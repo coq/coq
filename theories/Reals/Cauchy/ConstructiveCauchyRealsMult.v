@@ -20,74 +20,52 @@ Require CMorphisms.
 
 Local Open Scope CReal_scope.
 
-Fixpoint BoundFromZero (qn : nat -> Q) (k : nat) (A : positive) { struct k }
-  : (forall n:nat, le k n -> Qlt (Qabs (qn n)) (Z.pos A # 1))
-    -> { B : positive | forall n:nat, Qlt (Qabs (qn n)) (Z.pos B # 1) }.
-Proof.
-  intro H. destruct k.
-  - exists A. intros. apply H. apply le_0_n.
-  - destruct (Qarchimedean (Qabs (qn k))) as [a maj].
-    apply (BoundFromZero qn k (Pos.max A a)).
-    intros n H0. destruct (Nat.le_gt_cases n k).
-    + pose proof (Nat.le_antisymm n k H1 H0). subst k.
-      apply (Qlt_le_trans _ (Z.pos a # 1)). apply maj.
-      unfold Qle; simpl. rewrite Pos.mul_1_r. rewrite Pos.mul_1_r.
-      apply Pos.le_max_r.
-    + apply (Qlt_le_trans _ (Z.pos A # 1)). apply H.
-      apply H1. unfold Qle; simpl. rewrite Pos.mul_1_r. rewrite Pos.mul_1_r.
-      apply Pos.le_max_l.
-Qed.
+Definition QCauchySeq_bound (qn : nat -> Q) (cvmod : positive -> nat)
+  : positive
+  := match Qnum (qn (cvmod 1%positive)) with
+     | Z0 => 1%positive
+     | Z.pos p => p + 1
+     | Z.neg p => p + 1
+     end.
 
-Lemma QCauchySeq_bounded (qn : nat -> Q) (cvmod : positive -> nat)
+Lemma QCauchySeq_bounded_prop (qn : nat -> Q) (cvmod : positive -> nat)
   : QCauchySeq qn cvmod
-    -> { A : positive | forall n:nat, Qlt (Qabs (qn n)) (Z.pos A # 1) }.
+    -> forall n:nat, le (cvmod 1%positive) n
+             -> Qlt (Qabs (qn n)) (Z.pos (QCauchySeq_bound qn cvmod) # 1).
 Proof.
-  intros. remember (Zplus (Qnum (Qabs (qn (cvmod xH)))) 1) as z.
-  assert (Z.lt 0 z) as zPos.
-  { subst z. assert (Qle 0 (Qabs (qn (cvmod 1%positive)))).
-    apply Qabs_nonneg. destruct (Qabs (qn (cvmod 1%positive))). simpl.
-    unfold Qle in H0. simpl in H0. rewrite Zmult_1_r in H0.
-    apply (Z.lt_le_trans 0 1). unfold Z.lt. auto.
-    rewrite <- (Zplus_0_l 1). rewrite Zplus_assoc. apply Zplus_le_compat_r.
-    rewrite Zplus_0_r. assumption. }
-  assert { A : positive | forall n:nat,
-          le (cvmod xH) n -> Qlt ((Qabs (qn n)) * (1#A)) 1 }.
-  destruct z eqn:des.
-  - exfalso. apply (Z.lt_irrefl 0). assumption.
-  - exists p. intros. specialize (H xH (cvmod xH) n (le_refl _) H0).
-    assert (Qlt (Qabs (qn n)) (Qabs (qn (cvmod 1%positive)) + 1)).
-    { apply (Qplus_lt_l _ _ (-Qabs (qn (cvmod 1%positive)))).
-      rewrite <- (Qplus_comm 1). rewrite <- Qplus_assoc. rewrite Qplus_opp_r.
-      rewrite Qplus_0_r. apply (Qle_lt_trans _ (Qabs (qn n - qn (cvmod 1%positive)))).
-      apply Qabs_triangle_reverse. rewrite Qabs_Qminus. assumption. }
-    apply (Qlt_le_trans _ ((Qabs (qn (cvmod 1%positive)) + 1) * (1#p))).
-    apply Qmult_lt_r. unfold Qlt. simpl. unfold Z.lt. auto. assumption.
-    unfold Qle. simpl. rewrite Zmult_1_r. rewrite Zmult_1_r. rewrite Zmult_1_r.
-    rewrite Pos.mul_1_r. rewrite Pos2Z.inj_mul. rewrite Heqz.
-    destruct (Qabs (qn (cvmod 1%positive))) eqn:desAbs.
-    rewrite Z.mul_add_distr_l. rewrite Zmult_1_r.
-    apply Zplus_le_compat_r. rewrite <- (Zmult_1_l (QArith_base.Qnum (Qnum # Qden))).
-    rewrite Zmult_assoc. apply Zmult_le_compat_r. rewrite Zmult_1_r.
-    simpl. unfold Z.le. rewrite <- Pos2Z.inj_compare.
-    unfold Pos.compare. destruct Qden; discriminate.
-    simpl. assert (Qle 0 (Qnum # Qden)). rewrite <- desAbs.
-    apply Qabs_nonneg. unfold Qle in H2. simpl in H2. rewrite Zmult_1_r in H2.
-    assumption.
-  - exfalso. inversion zPos.
-  - destruct H0. apply (BoundFromZero _ (cvmod xH) x). intros n H0.
-    specialize (q n H0). setoid_replace (Z.pos x # 1)%Q with (/(1#x))%Q.
-    rewrite <- (Qmult_1_l (/(1#x))). apply Qlt_shift_div_l.
-    reflexivity. apply q. reflexivity.
+  intros H n H0. unfold QCauchySeq_bound.
+  specialize (H 1%positive (cvmod 1%positive) n (le_refl _) H0).
+  destruct (qn (cvmod 1%positive)) as [a b]. unfold Qnum.
+  rewrite Qabs_Qminus in H.
+  apply (Qplus_lt_l _ _ (-Qabs (a#b))).
+  apply (Qlt_le_trans _ 1).
+  exact (Qle_lt_trans _ _ _ (Qabs_triangle_reverse (qn n) (a#b)) H).
+  assert (forall p : positive,
+             (1 <= (Z.pos (p + 1) # 1) + - (Z.pos p # b))%Q).
+  { intro p. unfold Qle, Qopp, Qplus, Qnum, Qden.
+    rewrite Z.mul_1_r, Z.mul_1_r, Pos2Z.inj_add, Pos.mul_1_l.
+    apply (Z.add_le_mono_l _ _ (Z.pos p -Z.pos b)).
+    ring_simplify. apply (Z.le_trans _ (Z.pos p * 1)).
+    rewrite Z.mul_1_r. apply Z.le_refl.
+    apply Z.mul_le_mono_nonneg_l. discriminate. destruct b; discriminate. }
+  destruct a.
+  - setoid_replace (Qabs (0#b)) with 0%Q. 2: reflexivity.
+    rewrite Qplus_0_r. apply Qle_refl.
+  - apply H1.
+  - apply H1.
 Qed.
 
 Lemma CReal_mult_cauchy
   : forall (xn yn zn : nat -> Q) (Ay Az : positive) (cvmod : positive -> nat),
     QSeqEquiv xn yn cvmod
     -> QCauchySeq zn Pos.to_nat
-    -> (forall n:nat, Qlt (Qabs (yn n)) (Z.pos Ay # 1))
-    -> (forall n:nat, Qlt (Qabs (zn n)) (Z.pos Az # 1))
+    -> (forall n:nat, le (cvmod 2%positive) n
+              -> Qlt (Qabs (yn n)) (Z.pos Ay # 1))
+    -> (forall n:nat, le 1 n
+              -> Qlt (Qabs (zn n)) (Z.pos Az # 1))
     -> QSeqEquiv (fun n:nat => xn n * zn n) (fun n:nat => yn n * zn n)
-                (fun p => max (cvmod (2 * (Pos.max Ay Az) * p)%positive)
+                (fun p => max (max (cvmod 2%positive)
+                                (cvmod (2 * (Pos.max Ay Az) * p)%positive))
                            (Pos.to_nat (2 * (Pos.max Ay Az) * p)%positive)).
 Proof.
   intros xn yn zn Ay Az cvmod limx limz majy majz.
@@ -107,29 +85,39 @@ Proof.
   - apply (Qle_lt_trans _ ((1#z * k) * Qabs (zn p)%nat)).
     + apply Qmult_le_compat_r. apply Qle_lteq. left. apply limx.
       apply (le_trans _ (Init.Nat.max (cvmod (z * k)%positive) (Pos.to_nat (z * k)))).
-      apply Nat.le_max_l. assumption.
+      apply Nat.le_max_l. refine (le_trans _ _ _ _ H).
+      rewrite <- Nat.max_assoc. apply Nat.le_max_r.
       apply (le_trans _ (Init.Nat.max (cvmod (z * k)%positive) (Pos.to_nat (z * k)))).
-      apply Nat.le_max_l. assumption. apply Qabs_nonneg.
+      apply Nat.le_max_l. refine (le_trans _ _ _ _ H0).
+      rewrite <- Nat.max_assoc. apply Nat.le_max_r. apply Qabs_nonneg.
     + subst z. rewrite <- (Qmult_1_r (1 # 2 * k)).
       rewrite <- Pos.mul_assoc. rewrite <- (Pos.mul_comm k). rewrite Pos.mul_assoc.
       rewrite (factorDenom _ _ (2 * k)). rewrite <- Qmult_assoc.
-      apply Qmult_lt_l. unfold Qlt. simpl. unfold Z.lt. auto.
+      apply Qmult_lt_l. reflexivity.
       apply (Qle_lt_trans _ (Qabs (zn p)%nat * (1 # Az))).
       rewrite <- (Qmult_comm (1 # Az)). apply Qmult_le_compat_r.
       unfold Qle. simpl. rewrite Pos2Z.inj_max. apply Z.le_max_r.
       apply Qabs_nonneg. rewrite <- (Qmult_inv_r (1#Az)).
+      2: intro abs; inversion abs.
       rewrite Qmult_comm. apply Qmult_lt_l. reflexivity.
-      setoid_replace (/(1#Az))%Q with (Z.pos Az # 1)%Q. apply majz.
-      reflexivity. intro abs. inversion abs.
+      setoid_replace (/(1#Az))%Q with (Z.pos Az # 1)%Q.
+      2: reflexivity.
+      apply majz.
+      refine (le_trans _ _ _ _ H).
+      apply (le_trans _ (Pos.to_nat (2 * Pos.max Ay Az * k))).
+      apply Pos2Nat.is_pos. apply Nat.le_max_r.
   - apply (Qle_trans _ ((1 # z * k) * Qabs (yn q)%nat)).
     + rewrite Qmult_comm. apply Qmult_le_compat_r. apply Qle_lteq.
       left. apply limz.
       apply (le_trans _ (max (cvmod (z * k)%positive)
                              (Pos.to_nat (z * k)%positive))).
-      apply Nat.le_max_r. assumption.
+      apply Nat.le_max_r. refine (le_trans _ _ _ _ H).
+      rewrite <- Nat.max_assoc. apply Nat.le_max_r.
       apply (le_trans _ (max (cvmod (z * k)%positive)
                              (Pos.to_nat (z * k)%positive))).
-      apply Nat.le_max_r. assumption. apply Qabs_nonneg.
+      apply Nat.le_max_r. refine (le_trans _ _ _ _ H0).
+      rewrite <- Nat.max_assoc. apply Nat.le_max_r.
+      apply Qabs_nonneg.
     + subst z. rewrite <- (Qmult_1_r (1 # 2 * k)).
       rewrite <- Pos.mul_assoc. rewrite <- (Pos.mul_comm k). rewrite Pos.mul_assoc.
       rewrite (factorDenom _ _ (2 * k)). rewrite <- Qmult_assoc.
@@ -139,32 +127,42 @@ Proof.
       rewrite <- (Qmult_comm (1 # Ay)). apply Qmult_le_compat_r.
       unfold Qle. simpl. rewrite Pos2Z.inj_max. apply Z.le_max_l.
       apply Qabs_nonneg. rewrite <- (Qmult_inv_r (1#Ay)).
+      2: intro abs; inversion abs.
       rewrite Qmult_comm. apply Qmult_lt_l. reflexivity.
-      setoid_replace (/(1#Ay))%Q with (Z.pos Ay # 1)%Q. apply majy.
-      reflexivity. intro abs. inversion abs.
+      setoid_replace (/(1#Ay))%Q with (Z.pos Ay # 1)%Q. 2: reflexivity.
+      apply majy. refine (le_trans _ _ _ _ H0).
+      rewrite <- Nat.max_assoc. apply Nat.le_max_l.
   - rewrite Qinv_plus_distr. unfold Qeq. reflexivity.
 Qed.
 
 Lemma linear_max : forall (p Ax Ay : positive) (i : nat),
   le (Pos.to_nat p) i
-  -> (Init.Nat.max (Pos.to_nat (2 * Pos.max Ax Ay * p))
-                 (Pos.to_nat (2 * Pos.max Ax Ay * p)) <= Pos.to_nat (2 * Pos.max Ax Ay) * i)%nat.
+  -> (max (max 2 (Pos.to_nat (2 * Pos.max Ax Ay * p)))
+         (Pos.to_nat (2 * Pos.max Ax Ay * p))
+     <= Pos.to_nat (2 * Pos.max Ax Ay) * i)%nat.
 Proof.
-  intros. rewrite max_l. 2: apply le_refl.
+  intros. rewrite max_l. 2: apply Nat.le_max_r. rewrite max_r.
   rewrite Pos2Nat.inj_mul. apply Nat.mul_le_mono_nonneg.
-  apply le_0_n. apply le_refl. apply le_0_n. apply H.
+  apply le_0_n. apply le_refl. apply le_0_n. exact H.
+  apply (Pos2Nat.inj_le 2). rewrite <- Pos.mul_assoc.
+  apply (Pos.mul_le_mono_l 2 1).
+  rewrite <- (Pos.mul_le_mono_l 2 1).
+  destruct (Pos.max Ax Ay * p)%positive; discriminate.
 Qed.
 
 Definition CReal_mult (x y : CReal) : CReal.
 Proof.
   destruct x as [xn limx]. destruct y as [yn limy].
-  destruct (QCauchySeq_bounded xn Pos.to_nat limx) as [Ax majx].
-  destruct (QCauchySeq_bounded yn Pos.to_nat limy) as [Ay majy].
-  pose proof (CReal_mult_cauchy xn xn yn Ax Ay Pos.to_nat limx limy majx majy).
-  exists (fun n : nat => xn (Pos.to_nat (2 * Pos.max Ax Ay)* n)%nat
+  pose (QCauchySeq_bound xn Pos.to_nat) as Ax.
+  pose (QCauchySeq_bound yn Pos.to_nat) as Ay.
+  exists (fun n : nat => xn (Pos.to_nat (2 * Pos.max Ax Ay) * n)%nat
                * yn (Pos.to_nat (2 * Pos.max Ax Ay) * n)%nat).
   intros p n k H0 H1.
-  apply H; apply linear_max; assumption.
+  apply (CReal_mult_cauchy xn xn yn Ax Ay Pos.to_nat limx limy).
+  intros. apply (QCauchySeq_bounded_prop xn Pos.to_nat limx).
+  apply (le_trans _ (Pos.to_nat 2)). apply le_S, le_refl. exact H.
+  intros. exact (QCauchySeq_bounded_prop yn Pos.to_nat limy _ H).
+  apply linear_max; assumption. apply linear_max; assumption.
 Defined.
 
 Infix "*" := CReal_mult : CReal_scope.
@@ -174,21 +172,27 @@ Lemma CReal_mult_unfold : forall x y : CReal,
                 (fun n : nat => proj1_sig x n * proj1_sig y n)%Q.
 Proof.
   intros [xn limx] [yn limy]. unfold CReal_mult ; simpl.
-  destruct (QCauchySeq_bounded xn Pos.to_nat limx) as [Ax majx].
-  destruct (QCauchySeq_bounded yn Pos.to_nat limy) as [Ay majy].
-  simpl.
-  pose proof (CReal_mult_cauchy xn xn yn Ax Ay Pos.to_nat limx limy majx majy).
+  pose proof (QCauchySeq_bounded_prop xn Pos.to_nat limx) as majx.
+  pose proof (QCauchySeq_bounded_prop yn Pos.to_nat limy) as majy.
+  remember (QCauchySeq_bound xn Pos.to_nat) as Ax.
+  remember (QCauchySeq_bound yn Pos.to_nat) as Ay.
   exists (fun p : positive =>
          Init.Nat.max (Pos.to_nat (2 * Pos.max Ax Ay * p))
            (Pos.to_nat (2 * Pos.max Ax Ay * p))).
   intros p n k H0 H1. rewrite max_l in H0, H1.
-  2: apply le_refl. 2: apply le_refl.
-  apply H. apply linear_max.
-  apply (le_trans _ (Pos.to_nat (2 * Pos.max Ax Ay * p))).
+  apply (CReal_mult_cauchy xn xn yn Ax Ay Pos.to_nat limx limy).
+  2: apply majy. intros. apply majx.
+  refine (le_trans _ _ _ _ H). apply le_S, le_refl.
+  3: apply le_refl. 3: apply le_refl.
+  apply linear_max. refine (le_trans _ _ _ _ H0).
   rewrite <- (mult_1_l (Pos.to_nat p)). rewrite Pos2Nat.inj_mul.
   apply Nat.mul_le_mono_nonneg. auto. apply Pos2Nat.is_pos.
-  apply le_0_n. apply le_refl. apply H0. rewrite max_l.
-  apply H1. apply le_refl.
+  apply le_0_n. apply le_refl. rewrite max_l.
+  rewrite Nat.max_r. apply H1. apply Pos2Nat.inj_le.
+  2: apply Nat.le_max_r.
+  apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
+  rewrite <- Pos.mul_assoc, <- (Pos.mul_le_mono_l 2 1).
+  destruct (Pos.max Ax Ay * p)%positive; discriminate.
 Qed.
 
 Lemma CReal_mult_assoc_bounded_r : forall (xn yn zn : nat -> Q),
@@ -196,108 +200,129 @@ Lemma CReal_mult_assoc_bounded_r : forall (xn yn zn : nat -> Q),
     -> QSeqEquiv zn zn Pos.to_nat
     -> QSeqEquivEx (fun n => xn n * zn n)%Q (fun n => yn n * zn n)%Q.
 Proof.
-  intros. destruct H as [cvmod cveq].
-  destruct (QCauchySeq_bounded yn (fun k => cvmod (2 * k)%positive)
-                               (QSeqEquiv_cau_r xn yn cvmod cveq))
-    as [Ay majy].
-  destruct (QCauchySeq_bounded zn Pos.to_nat H0) as [Az majz].
-  exists (fun p => max (cvmod (2 * (Pos.max Ay Az) * p)%positive)
-               (Pos.to_nat (2 * (Pos.max Ay Az) * p)%positive)).
-  apply CReal_mult_cauchy; assumption.
+  intros xn yn zn [cvmod cveq] H0.
+  exists (fun p => max (max (cvmod 2%positive) (cvmod (2 * (Pos.max (QCauchySeq_bound yn (fun k : positive => cvmod (2 * k)%positive)) (QCauchySeq_bound zn Pos.to_nat)) * p)%positive))
+               (Pos.to_nat (2 * (Pos.max (QCauchySeq_bound yn (fun k : positive => cvmod (2 * k)%positive)) (QCauchySeq_bound zn Pos.to_nat)) * p)%positive)).
+  apply (CReal_mult_cauchy _ _ _ _ _ _ cveq H0).
+  exact (QCauchySeq_bounded_prop
+           yn (fun k => cvmod (2 * k)%positive)
+           (QSeqEquiv_cau_r xn yn cvmod cveq)).
+  exact (QCauchySeq_bounded_prop zn Pos.to_nat H0).
 Qed.
 
-Lemma CReal_mult_assoc : forall x y z : CReal,
-    CRealEq (CReal_mult (CReal_mult x y) z)
-            (CReal_mult x (CReal_mult y z)).
+Lemma CReal_mult_assoc : forall x y z : CReal, (x * y) * z == x * (y * z).
 Proof.
   intros. apply CRealEq_diff. apply CRealEq_modindep.
   apply (QSeqEquivEx_trans _ (fun n => proj1_sig x n * proj1_sig y n * proj1_sig z n)%Q).
   - apply (QSeqEquivEx_trans _ (fun n => proj1_sig (CReal_mult x y) n * proj1_sig z n)%Q).
     apply CReal_mult_unfold.
     destruct x as [xn limx], y as [yn limy], z as [zn limz]; unfold CReal_mult; simpl.
-    destruct (QCauchySeq_bounded xn Pos.to_nat limx) as [Ax majx].
-    destruct (QCauchySeq_bounded yn Pos.to_nat limy) as [Ay majy].
-    destruct (QCauchySeq_bounded zn Pos.to_nat limz) as [Az majz].
-    apply CReal_mult_assoc_bounded_r. 2: apply limz.
-    simpl.
-    pose proof (CReal_mult_cauchy xn xn yn Ax Ay Pos.to_nat limx limy majx majy).
+    pose proof (QCauchySeq_bounded_prop xn Pos.to_nat limx) as majx.
+    pose proof (QCauchySeq_bounded_prop yn Pos.to_nat limy) as majy.
+    pose proof (QCauchySeq_bounded_prop zn Pos.to_nat limz) as majz.
+    remember (QCauchySeq_bound xn Pos.to_nat) as Ax.
+    remember (QCauchySeq_bound yn Pos.to_nat) as Ay.
+    remember (QCauchySeq_bound zn Pos.to_nat) as Az.
+    apply CReal_mult_assoc_bounded_r. 2: exact limz.
     exists (fun p : positive =>
          Init.Nat.max (Pos.to_nat (2 * Pos.max Ax Ay * p))
                       (Pos.to_nat (2 * Pos.max Ax Ay * p))).
-    intros p n k H0 H1. rewrite max_l in H0, H1.
+    intros p n k H0 H1.
+    apply (CReal_mult_cauchy xn xn yn Ax Ay Pos.to_nat limx limy).
+    2: exact majy. intros. apply majx. refine (le_trans _ _ _ _ H).
+    apply le_S, le_refl. rewrite max_l in H0, H1.
     2: apply le_refl. 2: apply le_refl.
-    apply H. apply linear_max.
+    apply linear_max.
     apply (le_trans _ (Pos.to_nat (2 * Pos.max Ax Ay * p))).
     rewrite <- (mult_1_l (Pos.to_nat p)). rewrite Pos2Nat.inj_mul.
     apply Nat.mul_le_mono_nonneg. auto. apply Pos2Nat.is_pos.
-    apply le_0_n. apply le_refl. apply H0. rewrite max_l.
-    apply H1. apply le_refl.
-  - apply (QSeqEquivEx_trans _ (fun n => proj1_sig x n * proj1_sig (CReal_mult y z) n)%Q).
+    apply le_0_n. apply le_refl. apply H0. rewrite max_l. 2: apply Nat.le_max_r.
+    rewrite Nat.max_r in H1. 2: apply le_refl.
+    refine (le_trans _ _ _ _ H1). rewrite Nat.max_r.
+    apply le_refl. apply Pos2Nat.inj_le.
+    apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
+    rewrite <- Pos.mul_assoc, <- (Pos.mul_le_mono_l 2 1).
+    destruct (Pos.max Ax Ay * p)%positive; discriminate.
+  - apply (QSeqEquivEx_trans
+             _ (fun n => proj1_sig x n * proj1_sig (CReal_mult y z) n)%Q).
     2: apply QSeqEquivEx_sym; apply CReal_mult_unfold.
     destruct x as [xn limx], y as [yn limy], z as [zn limz]; unfold CReal_mult; simpl.
-    destruct (QCauchySeq_bounded xn Pos.to_nat limx) as [Ax majx].
-    destruct (QCauchySeq_bounded yn Pos.to_nat limy) as [Ay majy].
-    destruct (QCauchySeq_bounded zn Pos.to_nat limz) as [Az majz].
-    simpl.
+    pose proof (QCauchySeq_bounded_prop xn Pos.to_nat limx) as majx.
+    pose proof (QCauchySeq_bounded_prop yn Pos.to_nat limy) as majy.
+    pose proof (QCauchySeq_bounded_prop zn Pos.to_nat limz) as majz.
+    remember (QCauchySeq_bound xn Pos.to_nat) as Ax.
+    remember (QCauchySeq_bound yn Pos.to_nat) as Ay.
+    remember (QCauchySeq_bound zn Pos.to_nat) as Az.
     pose proof (CReal_mult_assoc_bounded_r (fun n0 : nat => yn n0 * zn n0)%Q (fun n : nat =>
           yn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat
           * zn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat)%Q xn)
       as [cvmod cveq].
-
-    pose proof (CReal_mult_cauchy yn yn zn Ay Az Pos.to_nat limy limz majy majz).
-    exists (fun p : positive =>
-         Init.Nat.max (Pos.to_nat (2 * Pos.max Ay Az * p))
-                      (Pos.to_nat (2 * Pos.max Ay Az * p))).
-    intros p n k H0 H1. rewrite max_l in H0, H1.
-    2: apply le_refl. 2: apply le_refl.
-    apply H. rewrite max_l. apply H0. apply le_refl.
-    apply linear_max.
-    apply (le_trans _ (Pos.to_nat (2 * Pos.max Ay Az * p))).
-    rewrite <- (mult_1_l (Pos.to_nat p)). rewrite Pos2Nat.inj_mul.
-    apply Nat.mul_le_mono_nonneg. auto. apply Pos2Nat.is_pos.
-    apply le_0_n. apply le_refl. apply H1.
-    apply limx.
-    exists cvmod. intros p k n H1 H2. specialize (cveq p k n H1 H2).
-    setoid_replace (xn k * yn k * zn k -
-     xn n *
-     (yn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat *
-      zn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat))%Q
-      with ((fun n : nat => yn n * zn n * xn n) k -
-            (fun n : nat =>
-             yn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat *
-             zn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat *
-             xn n) n)%Q.
-    apply cveq. ring.
+    + exists (fun p : positive =>
+           max (Pos.to_nat (2 * Pos.max Ay Az * p))
+               (Pos.to_nat (2 * Pos.max Ay Az * p))).
+      intros p n k H0 H1. rewrite max_l in H0, H1.
+      apply (CReal_mult_cauchy yn yn zn Ay Az Pos.to_nat limy limz).
+      2: exact majz. intros. apply majy. refine (le_trans _ _ _ _ H).
+      apply le_S, le_refl.
+      3: apply le_refl. 3: apply le_refl.
+      rewrite max_l. rewrite max_r. apply H0.
+      apply Pos2Nat.inj_le.
+      apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
+      rewrite <- Pos.mul_assoc, <- (Pos.mul_le_mono_l 2 1).
+      destruct (Pos.max Ay Az * p)%positive; discriminate.
+      apply Nat.le_max_r.
+      apply linear_max. refine (le_trans _ _ _ _ H1).
+      rewrite <- (mult_1_l (Pos.to_nat p)). rewrite Pos2Nat.inj_mul.
+      apply Nat.mul_le_mono_nonneg. auto. apply Pos2Nat.is_pos.
+      apply le_0_n. apply le_refl.
+    + exact limx.
+    + exists cvmod. intros p k n H1 H2. specialize (cveq p k n H1 H2).
+      setoid_replace (xn k * yn k * zn k -
+                      xn n *
+                      (yn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat *
+                       zn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat))%Q
+        with ((fun n : nat => yn n * zn n * xn n) k -
+              (fun n : nat =>
+                 yn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat *
+                 zn (Pos.to_nat (Pos.max Ay Az)~0 * n)%nat *
+                 xn n) n)%Q.
+      apply cveq. ring.
 Qed.
 
-Lemma CReal_mult_comm : forall x y : CReal,
-    CRealEq (CReal_mult x y) (CReal_mult y x).
+Lemma CReal_mult_comm : forall x y : CReal, x * y == y * x.
 Proof.
   intros. apply CRealEq_diff. apply CRealEq_modindep.
   apply (QSeqEquivEx_trans _ (fun n => proj1_sig y n * proj1_sig x n)%Q).
   destruct x as [xn limx], y as [yn limy]; simpl.
   2: apply QSeqEquivEx_sym; apply CReal_mult_unfold.
-  destruct (QCauchySeq_bounded xn Pos.to_nat limx) as [Ax majx].
-  destruct (QCauchySeq_bounded yn Pos.to_nat limy) as [Ay majy]; simpl.
+  pose proof (QCauchySeq_bounded_prop xn Pos.to_nat limx) as majx.
+  pose proof (QCauchySeq_bounded_prop yn Pos.to_nat limy) as majy.
+  remember (QCauchySeq_bound xn Pos.to_nat) as Ax.
+  remember (QCauchySeq_bound yn Pos.to_nat) as Ay.
   apply QSeqEquivEx_sym.
-
-  pose proof (CReal_mult_cauchy yn yn xn Ay Ax Pos.to_nat limy limx majy majx).
   exists (fun p : positive =>
        Init.Nat.max (Pos.to_nat (2 * Pos.max Ay Ax * p))
                     (Pos.to_nat (2 * Pos.max Ay Ax * p))).
   intros p n k H0 H1. rewrite max_l in H0, H1.
   2: apply le_refl. 2: apply le_refl.
   rewrite (Qmult_comm (xn (Pos.to_nat (Pos.max Ax Ay)~0 * k)%nat)).
-  apply (H p n). rewrite max_l. apply H0. apply le_refl.
-  rewrite max_l. apply (le_trans _ k). apply H1.
-  rewrite <- (mult_1_l k). rewrite mult_assoc.
-  apply Nat.mul_le_mono_nonneg. auto. rewrite mult_1_r.
-  apply Pos2Nat.is_pos. apply le_0_n. apply le_refl.
-  apply le_refl.
+  apply (CReal_mult_cauchy yn yn xn Ay Ax Pos.to_nat limy limx).
+  2: exact majx. intros. apply majy. refine (le_trans _ _ _ _ H).
+  apply le_S, le_refl.
+  rewrite max_l. rewrite max_r. apply H0.
+  apply Pos2Nat.inj_le.
+  apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
+  rewrite <- Pos.mul_assoc, <- (Pos.mul_le_mono_l 2 1).
+  destruct (Pos.max Ay Ax * p)%positive; discriminate.
+  apply Nat.le_max_r. rewrite (Pos.max_comm Ax Ay).
+  apply linear_max. refine (le_trans _ _ _ _ H1).
+  rewrite <- (mult_1_l (Pos.to_nat p)). rewrite Pos2Nat.inj_mul.
+  apply Nat.mul_le_mono_nonneg. auto. apply Pos2Nat.is_pos.
+  apply le_0_n. apply le_refl.
 Qed.
 
 Lemma CReal_mult_proper_l : forall x y z : CReal,
-    CRealEq y z -> CRealEq (CReal_mult x y) (CReal_mult x z).
+    y == z -> x * y == x * z.
 Proof.
   intros. apply CRealEq_diff. apply CRealEq_modindep.
   apply (QSeqEquivEx_trans _ (fun n => proj1_sig x n * proj1_sig y n)%Q).
@@ -307,36 +332,42 @@ Proof.
   apply (QSeqEquivEx_trans _ (fun n => proj1_sig x n * proj1_sig z n)%Q).
   apply CReal_mult_unfold.
   destruct x as [xn limx], y as [yn limy], z as [zn limz]; simpl.
-  destruct H. simpl in H.
-  destruct (QCauchySeq_bounded xn Pos.to_nat limx) as [Ax majx].
-  destruct (QCauchySeq_bounded zn Pos.to_nat limz) as [Az majz].
-  pose proof (CReal_mult_cauchy yn zn xn Az Ax x H limx majz majx).
+  destruct H as [cvmod H]. simpl in H.
+  pose proof (QCauchySeq_bounded_prop xn Pos.to_nat limx) as majx.
+  pose proof (QCauchySeq_bounded_prop
+           zn (fun k => cvmod (2 * k)%positive)
+           (QSeqEquiv_cau_r yn zn cvmod H)) as majz.
+  remember (QCauchySeq_bound xn Pos.to_nat) as Ax.
+  remember (QCauchySeq_bound zn (fun k => cvmod (2 * k)%positive)) as Az.
   apply QSeqEquivEx_sym.
   exists (fun p : positive =>
-       Init.Nat.max (x (2 * Pos.max Az Ax * p)%positive)
-                    (Pos.to_nat (2 * Pos.max Az Ax * p))).
-  intros p n k H1 H2. specialize (H0 p n k H1 H2).
+       max (max (cvmod (2%positive)) (cvmod (2 * Pos.max Az Ax * p)%positive))
+           (Pos.to_nat (2 * Pos.max Az Ax * p))).
+  intros p n k H1 H2.
   setoid_replace (xn n * yn n - xn k * zn k)%Q
-    with (yn n * xn n - zn k * xn k)%Q.
-  apply H0. ring.
+    with (yn n * xn n - zn k * xn k)%Q. 2: ring.
+  apply (CReal_mult_cauchy yn zn xn Az Ax cvmod H limx majz majx).
+  exact H1. exact H2.
 Qed.
 
 Lemma CReal_mult_lt_0_compat : forall x y : CReal,
-    CRealLt (inject_Q 0) x
-    -> CRealLt (inject_Q 0) y
-    -> CRealLt (inject_Q 0) (CReal_mult x y).
+    inject_Q 0 < x
+    -> inject_Q 0 < y
+    -> inject_Q 0 < x * y.
 Proof.
   intros. destruct H as [x0 H], H0 as [x1 H0].
   pose proof (CRealLt_aboveSig (inject_Q 0) x x0 H).
   pose proof (CRealLt_aboveSig (inject_Q 0) y x1 H0).
-  destruct x as [xn limx], y as [yn limy].
-  simpl in H, H1, H2. simpl.
-  destruct (QCauchySeq_bounded xn Pos.to_nat limx) as [Ax majx].
-  destruct (QCauchySeq_bounded yn Pos.to_nat limy) as [Ay majy].
+  destruct x as [xn limx], y as [yn limy]; simpl in H, H1, H2, H0.
+  pose proof (QCauchySeq_bounded_prop xn Pos.to_nat limx) as majx.
+  pose proof (QCauchySeq_bounded_prop yn Pos.to_nat limy) as majy.
   destruct (Qarchimedean (/ (xn (Pos.to_nat x0) - 0 - (2 # x0)))).
   destruct (Qarchimedean (/ (yn (Pos.to_nat x1) - 0 - (2 # x1)))).
   exists (Pos.max x0 x~0 * Pos.max x1 x2~0)%positive.
-  simpl. unfold Qminus. rewrite Qplus_0_r.
+  simpl.
+  remember (QCauchySeq_bound xn Pos.to_nat) as Ax.
+  remember (QCauchySeq_bound yn Pos.to_nat) as Ay.
+  unfold Qminus. rewrite Qplus_0_r.
   rewrite <- Pos2Nat.inj_mul.
   unfold Qminus in H1, H2.
   specialize (H1 ((Pos.max Ax Ay)~0 * (Pos.max x0 x~0 * Pos.max x1 x2~0))%positive).
@@ -381,9 +412,12 @@ Proof.
                                     * (proj1_sig y n + proj1_sig z n))%Q).
   - pose proof (CReal_plus_unfold y z).
     destruct x as [xn limx], y as [yn limy], z as [zn limz]; simpl; simpl in H.
-    destruct (QCauchySeq_bounded xn Pos.to_nat limx) as [Ax majx].
-    destruct (QCauchySeq_bounded yn Pos.to_nat limy) as [Ay majy].
-    destruct (QCauchySeq_bounded zn Pos.to_nat limz) as [Az majz].
+    pose proof (QCauchySeq_bounded_prop xn Pos.to_nat) as majx.
+    pose proof (QCauchySeq_bounded_prop yn Pos.to_nat) as majy.
+    pose proof (QCauchySeq_bounded_prop zn Pos.to_nat) as majz.
+    remember (QCauchySeq_bound xn Pos.to_nat) as Ax.
+    remember (QCauchySeq_bound yn Pos.to_nat) as Ay.
+    remember (QCauchySeq_bound zn Pos.to_nat) as Az.
     pose proof (CReal_mult_cauchy (fun n => yn (n + (n + 0))%nat + zn (n + (n + 0))%nat)%Q
                                   (fun n => yn n + zn n)%Q
                                   xn (Ay + Az) Ax
@@ -399,19 +433,38 @@ Proof.
       rewrite <- (mult_1_l (Pos.to_nat (2 * Pos.max (Ay + Az) Ax * p))).
       rewrite mult_assoc. apply Nat.mul_le_mono_nonneg. auto.
       simpl. auto. apply le_0_n. apply le_refl. }
-    apply H0. intro n0. apply (Qle_lt_trans _ (Qabs (yn n0) + Qabs (zn n0))).
-    apply Qabs_triangle. rewrite Pos2Z.inj_add.
-    rewrite <- Qinv_plus_distr. apply Qplus_lt_le_compat.
-    apply majy. apply Qlt_le_weak. apply majz.
-    apply majx. rewrite max_l.
-    apply H1. rewrite (Pos2Nat.inj_mul 2). apply H3.
-    rewrite max_l. apply H2. rewrite (Pos2Nat.inj_mul 2).
-    apply H3.
+    apply H0. intros n0 H4.
+    apply (Qle_lt_trans _ _ _ (Qabs_triangle _ _)).
+    rewrite Pos2Z.inj_add, <- Qinv_plus_distr. apply Qplus_lt_le_compat.
+    apply majy. exact limy.
+    refine (le_trans _ _ _ _ H4); apply le_n_S, le_0_n.
+    apply Qlt_le_weak. apply majz. exact limz.
+    refine (le_trans _ _ _ _ H4); apply le_n_S, le_0_n.
+    apply majx. exact limx. refine (le_trans _ _ _ _ H1).
+    rewrite max_l. rewrite max_r. apply le_refl.
+    apply Pos2Nat.inj_le. rewrite <- (Pos.mul_le_mono_l 2).
+    apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
+    rewrite <- Pos.mul_assoc, <- Pos.mul_le_mono_l.
+    destruct (Pos.max (Ay + Az) Ax * p)%positive; discriminate.
+    apply (le_trans _ (Pos.to_nat (2 * (2 * Pos.max (Ay + Az) Ax * p)))).
+    2: apply Nat.le_max_r. apply Pos2Nat.inj_le.
+    rewrite <- Pos.mul_assoc. rewrite (Pos.mul_assoc 2 2).
+    rewrite <- Pos.mul_le_mono_r. discriminate.
+    refine (le_trans _ _ _ _ H2). rewrite <- Nat.max_comm.
+    rewrite Nat.max_assoc. rewrite max_r. apply le_refl.
+    apply Nat.max_lub.
+    rewrite <- Pos2Nat.inj_mul in H3. apply H3. apply Pos2Nat.inj_le.
+    rewrite <- Pos.mul_le_mono_l.
+    apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
+    rewrite <- Pos.mul_assoc, <- Pos.mul_le_mono_l.
+    destruct (Pos.max (Ay + Az) Ax * p)%positive; discriminate.
   - destruct x as [xn limx], y as [yn limy], z as [zn limz]; simpl.
-    destruct (QCauchySeq_bounded xn Pos.to_nat limx) as [Ax majx].
-    destruct (QCauchySeq_bounded yn Pos.to_nat limy) as [Ay majy].
-    destruct (QCauchySeq_bounded zn Pos.to_nat limz) as [Az majz].
-    simpl.
+    pose proof (QCauchySeq_bounded_prop xn Pos.to_nat) as majx.
+    pose proof (QCauchySeq_bounded_prop yn Pos.to_nat) as majy.
+    pose proof (QCauchySeq_bounded_prop zn Pos.to_nat) as majz.
+    remember (QCauchySeq_bound xn Pos.to_nat) as Ax.
+    remember (QCauchySeq_bound yn Pos.to_nat) as Ay.
+    remember (QCauchySeq_bound zn Pos.to_nat) as Az.
     exists (fun p : positive => (Pos.to_nat (2 * (Pos.max (Pos.max Ax Ay) Az) * (2 * p)))).
     intros p n k H H0.
     setoid_replace (xn n * (yn n + zn n) -
@@ -431,59 +484,65 @@ Proof.
     apply Qabs_triangle.
     setoid_replace (1#p)%Q with ((1#2*p) + (1#2*p))%Q.
     apply Qplus_lt_le_compat.
-    + pose proof (CReal_mult_cauchy xn xn yn Ax Ay Pos.to_nat limx limy).
-      apply H1. apply majx. apply majy. rewrite max_l.
-      apply (le_trans _ (Pos.to_nat (2 * Pos.max (Pos.max Ax Ay) Az * (2 * p)))).
-      rewrite (Pos.mul_comm 2). rewrite <- Pos.mul_assoc.
-      rewrite <- (Pos.mul_comm (Pos.max (Pos.max Ax Ay) Az)).
-      rewrite <- Pos.mul_assoc.
-      rewrite Pos2Nat.inj_mul.
-      rewrite (Pos2Nat.inj_mul (Pos.max (Pos.max Ax Ay) Az)).
-      apply Nat.mul_le_mono_nonneg. apply le_0_n.
-      apply Pos2Nat.inj_le. apply Pos.le_max_l.
-      apply le_0_n. apply le_refl. apply H. apply le_refl.
-      rewrite max_l. apply (le_trans _ k).
-      apply (le_trans _ (Pos.to_nat (2 * Pos.max (Pos.max Ax Ay) Az * (2 * p)))).
-      rewrite (Pos.mul_comm 2). rewrite <- Pos.mul_assoc.
-      rewrite <- (Pos.mul_comm (Pos.max (Pos.max Ax Ay) Az)).
-      rewrite <- Pos.mul_assoc.
-      rewrite Pos2Nat.inj_mul.
-      rewrite (Pos2Nat.inj_mul (Pos.max (Pos.max Ax Ay) Az)).
-      apply Nat.mul_le_mono_nonneg. apply le_0_n.
-      apply Pos2Nat.inj_le. apply Pos.le_max_l.
-      apply le_0_n. apply le_refl. apply H0.
-      rewrite <- (mult_1_l k). rewrite mult_assoc.
-      apply Nat.mul_le_mono_nonneg. auto.
-      rewrite mult_1_r. apply Pos2Nat.is_pos. apply le_0_n.
-      apply le_refl. apply le_refl.
+    + apply (CReal_mult_cauchy xn xn yn Ax Ay Pos.to_nat limx limy).
+      intros. apply majx. exact limx.
+      refine (le_trans _ _ _ _ H1). apply le_S, le_refl.
+      apply majy. exact limy.
+      rewrite <- Nat.max_assoc.
+      rewrite (Nat.max_l ((Pos.to_nat (2 * Pos.max Ax Ay * (2 * p))))).
+      2: apply le_refl.
+      refine (le_trans _ _ _ _ H). apply Nat.max_lub.
+      apply Pos2Nat.inj_le. apply (Pos.le_trans _ (2*1)).
+      apply Pos.le_refl. rewrite <- Pos.mul_assoc, <- Pos.mul_le_mono_l.
+      destruct (Pos.max (Pos.max Ax Ay) Az * (2 * p))%positive; discriminate.
+      apply Pos2Nat.inj_le.
+      rewrite <- Pos.mul_assoc, <- Pos.mul_assoc.
+      rewrite <- Pos.mul_le_mono_l, <- Pos.mul_le_mono_r.
+      apply Pos.le_max_l.
+      rewrite <- Nat.max_assoc.
+      rewrite (Nat.max_l ((Pos.to_nat (2 * Pos.max Ax Ay * (2 * p))))).
+      2: apply le_refl.
+      rewrite max_r. apply (le_trans _ (1*k)).
+      rewrite Nat.mul_1_l. refine (le_trans _ _ _ _ H0).
+      apply Pos2Nat.inj_le.
+      rewrite <- Pos.mul_assoc, <- Pos.mul_assoc, <- Pos.mul_le_mono_l.
+      rewrite <- Pos.mul_le_mono_r.
+      apply Pos.le_max_l. apply Nat.mul_le_mono_nonneg_r. apply le_0_n.
+      apply Pos2Nat.is_pos. apply Pos2Nat.inj_le.
+      apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
+      rewrite <- Pos.mul_assoc, <- Pos.mul_le_mono_l.
+      destruct (Pos.max Ax Ay * (2 * p))%positive; discriminate.
     + apply Qlt_le_weak.
-      pose proof (CReal_mult_cauchy xn xn zn Ax Az Pos.to_nat limx limz).
-      apply H1. apply majx. apply majz. rewrite max_l. 2: apply le_refl.
-      apply (le_trans _ (Pos.to_nat (2 * Pos.max (Pos.max Ax Ay) Az * (2 * p)))).
-      rewrite (Pos.mul_comm 2). rewrite <- Pos.mul_assoc.
-      rewrite <- (Pos.mul_comm (Pos.max (Pos.max Ax Ay) Az)).
-      rewrite <- Pos.mul_assoc.
-      rewrite Pos2Nat.inj_mul.
-      rewrite (Pos2Nat.inj_mul (Pos.max (Pos.max Ax Ay) Az)).
-      apply Nat.mul_le_mono_nonneg. apply le_0_n.
-      rewrite <- Pos.max_assoc. rewrite (Pos.max_comm Ay Az).
-      rewrite Pos.max_assoc. apply Pos2Nat.inj_le. apply Pos.le_max_l.
-      apply le_0_n. apply le_refl. apply H.
-      rewrite max_l. apply (le_trans _ k).
-      apply (le_trans _ (Pos.to_nat (2 * Pos.max (Pos.max Ax Ay) Az * (2 * p)))).
-      rewrite (Pos.mul_comm 2). rewrite <- Pos.mul_assoc.
-      rewrite <- (Pos.mul_comm (Pos.max (Pos.max Ax Ay) Az)).
-      rewrite <- Pos.mul_assoc.
-      rewrite Pos2Nat.inj_mul.
-      rewrite (Pos2Nat.inj_mul (Pos.max (Pos.max Ax Ay) Az)).
-      apply Nat.mul_le_mono_nonneg. apply le_0_n.
-      rewrite <- Pos.max_assoc. rewrite (Pos.max_comm Ay Az).
-      rewrite Pos.max_assoc. apply Pos2Nat.inj_le. apply Pos.le_max_l.
-      apply le_0_n. apply le_refl. apply H0.
-      rewrite <- (mult_1_l k). rewrite mult_assoc.
-      apply Nat.mul_le_mono_nonneg. auto.
-      rewrite mult_1_r. apply Pos2Nat.is_pos. apply le_0_n.
-      apply le_refl. apply le_refl.
+      apply (CReal_mult_cauchy xn xn zn Ax Az Pos.to_nat limx limz).
+      intros. apply majx. exact limx.
+      refine (le_trans _ _ _ _ H1). apply le_S, le_refl.
+      intros. apply majz. exact limz. exact H1.
+      rewrite <- Nat.max_assoc.
+      rewrite (Nat.max_l ((Pos.to_nat (2 * Pos.max Ax Az * (2 * p))))).
+      2: apply le_refl.
+      refine (le_trans _ _ _ _ H). apply Nat.max_lub.
+      apply Pos2Nat.inj_le. apply (Pos.le_trans _ (2*1)).
+      apply Pos.le_refl. rewrite <- Pos.mul_assoc, <- Pos.mul_le_mono_l.
+      destruct (Pos.max (Pos.max Ax Ay) Az * (2 * p))%positive; discriminate.
+      apply Pos2Nat.inj_le.
+      rewrite <- Pos.mul_assoc, <- Pos.mul_assoc.
+      rewrite <- Pos.mul_le_mono_l, <- Pos.mul_le_mono_r.
+      rewrite <- Pos.max_assoc, (Pos.max_comm Ay Az), Pos.max_assoc.
+      apply Pos.le_max_l.
+      rewrite <- Nat.max_assoc.
+      rewrite (Nat.max_l ((Pos.to_nat (2 * Pos.max Ax Az * (2 * p))))).
+      2: apply le_refl.
+      rewrite max_r. apply (le_trans _ (1*k)).
+      rewrite Nat.mul_1_l. refine (le_trans _ _ _ _ H0).
+      apply Pos2Nat.inj_le.
+      rewrite <- Pos.mul_assoc, <- Pos.mul_assoc, <- Pos.mul_le_mono_l.
+      rewrite <- Pos.mul_le_mono_r.
+      rewrite <- Pos.max_assoc, (Pos.max_comm Ay Az), Pos.max_assoc.
+      apply Pos.le_max_l. apply Nat.mul_le_mono_nonneg_r. apply le_0_n.
+      apply Pos2Nat.is_pos. apply Pos2Nat.inj_le.
+      apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
+      rewrite <- Pos.mul_assoc, <- Pos.mul_le_mono_l.
+      destruct (Pos.max Ax Az * (2 * p))%positive; discriminate.
     + rewrite Qinv_plus_distr. unfold Qeq. reflexivity.
 Qed.
 
@@ -500,12 +559,15 @@ Lemma CReal_mult_1_l : forall r: CReal, 1 * r == r.
 Proof.
   intros [rn limr]. split.
   - intros [m maj]. simpl in maj.
-    destruct (QCauchySeq_bounded (fun _ : nat => 1%Q) Pos.to_nat (ConstCauchy 1)).
-    destruct (QCauchySeq_bounded rn Pos.to_nat limr).
-    simpl in maj. rewrite Qmult_1_l in maj.
+    rewrite Qmult_1_l in maj.
+    pose proof (QCauchySeq_bounded_prop (fun _ : nat => 1%Q) Pos.to_nat (ConstCauchy 1)).
+    pose proof (QCauchySeq_bounded_prop rn Pos.to_nat limr).
+    remember (QCauchySeq_bound (fun _ : nat => 1%Q) Pos.to_nat) as x.
+    remember (QCauchySeq_bound rn Pos.to_nat) as x0.
     specialize (limr m).
     apply (Qlt_not_le (2 # m) (1 # m)).
-    apply (Qlt_trans _ (rn (Pos.to_nat m) - rn (Pos.to_nat (Pos.max x x0)~0 * Pos.to_nat m)%nat)).
+    apply (Qlt_trans _ (rn (Pos.to_nat m)
+                        - rn (Pos.to_nat (Pos.max x x0)~0 * Pos.to_nat m)%nat)).
     apply maj.
     apply (Qle_lt_trans _ (Qabs (rn (Pos.to_nat m) - rn (Pos.to_nat (Pos.max x x0)~0 * Pos.to_nat m)%nat))).
     apply Qle_Qabs. apply limr. apply le_refl.
@@ -515,8 +577,10 @@ Proof.
     apply Z.mul_le_mono_nonneg. discriminate. discriminate.
     discriminate. apply Z.le_refl.
   - intros [m maj]. simpl in maj.
-    destruct (QCauchySeq_bounded (fun _ : nat => 1%Q) Pos.to_nat (ConstCauchy 1)).
-    destruct (QCauchySeq_bounded rn Pos.to_nat limr).
+    pose proof (QCauchySeq_bounded_prop (fun _ : nat => 1%Q) Pos.to_nat (ConstCauchy 1)).
+    pose proof (QCauchySeq_bounded_prop rn Pos.to_nat limr).
+    remember (QCauchySeq_bound (fun _ : nat => 1%Q) Pos.to_nat) as x.
+    remember (QCauchySeq_bound rn Pos.to_nat) as x0.
     simpl in maj. rewrite Qmult_1_l in maj.
     specialize (limr m).
     apply (Qlt_not_le (2 # m) (1 # m)).
@@ -1156,16 +1220,22 @@ Proof.
       apply CRealEq_modindep. apply CRealEq_diff.
       apply CReal_mult_proper_l. apply CReal_linear_shift_eq.
       destruct r as [rn limr], rneg as [rnn limneg]; simpl.
-      destruct (QCauchySeq_bounded
+      pose proof (QCauchySeq_bounded_prop
                   (fun n : nat => Qinv (rnn (Pos.to_nat k * (Pos.to_nat k * 1) * n)%nat))
                   Pos.to_nat (CReal_inv_neg rnn k limneg maj)).
-      destruct (QCauchySeq_bounded
+      pose proof (QCauchySeq_bounded_prop
             (fun n : nat => rnn (Pos.to_nat k * (Pos.to_nat k * 1) * n)%nat)
             Pos.to_nat
             (CReal_linear_shift
                (exist (fun x0 : nat -> Q => QCauchySeq x0 Pos.to_nat) rnn limneg)
                (Pos.to_nat k * (Pos.to_nat k * 1)) H)) ; simpl.
-      exists (fun n => 1%nat). intros p n m H0 H1. rewrite Qmult_comm.
+      remember (QCauchySeq_bound
+             (fun n0 : nat => / rnn (Pos.to_nat k * (Pos.to_nat k * 1) * n0)%nat)%Q
+             Pos.to_nat) as x.
+      remember (QCauchySeq_bound
+             (fun n0 : nat => rnn (Pos.to_nat k * (Pos.to_nat k * 1) * n0)%nat)
+             Pos.to_nat) as x0.
+      exists (fun n => 1%nat). intros p n m H2 H3. rewrite Qmult_comm.
       rewrite Qmult_inv_r. unfold Qminus. rewrite Qplus_opp_r.
       reflexivity. intro abs.
       specialize (maj (Pos.to_nat k * (Pos.to_nat k * 1)
@@ -1197,16 +1267,22 @@ Proof.
       apply CRealEq_modindep. apply CRealEq_diff.
       apply CReal_mult_proper_l. apply CReal_linear_shift_eq.
       destruct r as [rn limr], rneg as [rnn limneg]; simpl.
-      destruct (QCauchySeq_bounded
+      pose proof (QCauchySeq_bounded_prop
                   (fun n : nat => Qinv (rnn (Pos.to_nat k * (Pos.to_nat k * 1) * n)%nat))
                   Pos.to_nat (CReal_inv_pos rnn k limneg maj)).
-      destruct (QCauchySeq_bounded
+      pose proof (QCauchySeq_bounded_prop
             (fun n : nat => rnn (Pos.to_nat k * (Pos.to_nat k * 1) * n)%nat)
             Pos.to_nat
             (CReal_linear_shift
                (exist (fun x0 : nat -> Q => QCauchySeq x0 Pos.to_nat) rnn limneg)
                (Pos.to_nat k * (Pos.to_nat k * 1)) H)) ; simpl.
-      exists (fun n => 1%nat). intros p n m H0 H1. rewrite Qmult_comm.
+      remember (QCauchySeq_bound
+             (fun n0 : nat => / rnn (Pos.to_nat k * (Pos.to_nat k * 1) * n0)%nat)
+             Pos.to_nat)%Q as x.
+      remember (QCauchySeq_bound
+             (fun n0 : nat => rnn (Pos.to_nat k * (Pos.to_nat k * 1) * n0)%nat)
+             Pos.to_nat) as x0.
+      exists (fun n => 1%nat). intros p n m H2 H3. rewrite Qmult_comm.
       rewrite Qmult_inv_r. unfold Qminus. rewrite Qplus_opp_r.
       reflexivity. intro abs.
       specialize (maj (Pos.to_nat k * (Pos.to_nat k * 1)
@@ -1294,9 +1370,9 @@ Proof.
   apply CRealLt_above in c0. destruct c0 as [j jmaj]. simpl in jmaj.
   pose proof (CReal_abs_appart_zero y).
   destruct x as [xn xcau], y as [yn ycau]. simpl in kmaj.
-  destruct (QCauchySeq_bounded xn Pos.to_nat xcau) as [a amaj],
-  (QCauchySeq_bounded yn Pos.to_nat ycau) as [b bmaj]; simpl in kmaj.
-  clear amaj bmaj. simpl in imaj, jmaj. simpl in H0.
+  remember (QCauchySeq_bound xn Pos.to_nat) as a.
+  remember (QCauchySeq_bound yn Pos.to_nat) as b.
+  simpl in kmaj. simpl in imaj, jmaj. simpl in H0.
   specialize (kmaj (Pos.max k (Pos.max i j)) (Pos.le_max_l _ _)).
   destruct (H0 ((Pos.max a b)~0 * (Pos.max k (Pos.max i j)))%positive).
   - apply (Qlt_trans _ (2#k)).
@@ -1357,16 +1433,14 @@ Proof.
 Qed.
 
 Lemma CReal_invQ : forall (b : positive) (pos : Qlt 0 (Z.pos b # 1)),
-    CRealEq (CReal_inv (inject_Q (Z.pos b # 1)) (inr (CReal_injectQPos (Z.pos b # 1) pos)))
-            (inject_Q (1 # b)).
+    CReal_inv (inject_Q (Z.pos b # 1)) (inr (CReal_injectQPos (Z.pos b # 1) pos))
+    == inject_Q (1 # b).
 Proof.
   intros.
   apply (CReal_mult_eq_reg_l (inject_Q (Z.pos b # 1))).
   - right. apply CReal_injectQPos. exact pos.
   - rewrite CReal_mult_comm, CReal_inv_l.
-    apply CRealEq_diff. intro n. simpl;
-    destruct (QCauchySeq_bounded (fun _ : nat => 1 # b)%Q Pos.to_nat (ConstCauchy (1 # b))),
-    (QCauchySeq_bounded (fun _ : nat => Z.pos b # 1)%Q Pos.to_nat (ConstCauchy (Z.pos b # 1))); simpl.
+    apply CRealEq_diff. intro n. simpl.
     do 2 rewrite Pos.mul_1_r. rewrite Z.pos_sub_diag. discriminate.
 Qed.
 
@@ -1405,12 +1479,8 @@ Lemma inject_Q_mult : forall q r : Q,
 Proof.
   split.
   - intros [n maj]. simpl in maj.
-    destruct (QCauchySeq_bounded (fun _ : nat => q) Pos.to_nat (ConstCauchy q)).
-    destruct (QCauchySeq_bounded (fun _ : nat => r) Pos.to_nat (ConstCauchy r)).
     simpl in maj. ring_simplify in maj. discriminate maj.
   - intros [n maj]. simpl in maj.
-    destruct (QCauchySeq_bounded (fun _ : nat => q) Pos.to_nat (ConstCauchy q)).
-    destruct (QCauchySeq_bounded (fun _ : nat => r) Pos.to_nat (ConstCauchy r)).
     simpl in maj. ring_simplify in maj. discriminate maj.
 Qed.
 
