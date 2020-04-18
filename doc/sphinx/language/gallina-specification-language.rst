@@ -755,13 +755,28 @@ A definition can be seen as a way to give a meaning to a name or as a
 way to abbreviate a term. In any case, the name can later be replaced at
 any time by its definition.
 
-The operation of unfolding a name into its definition is called
-:math:`\delta`-conversion (see Section :ref:`delta-reduction`). A
-definition is accepted by the system if and only if the defined term is
-well-typed in the current context of the definition and if the name is
-not already used. The name defined by the definition is called a
-*constant* and the term it refers to is its *body*. A definition has a
-type which is the type of its body.
+.. glossary::
+
+   constant
+
+     The name associated to a term through a command like
+     :cmd:`Definition`.
+
+   body
+
+     The term associated to a name through a command like
+     :cmd:`Definition`.
+
+   unfolding
+
+     Replacing a constant by its body.  This reduction operation is
+     more formally denoted as :math:`\delta`\-conversion (see Section
+     :ref:`delta-reduction`).
+
+A definition is accepted by the system if and only if the defined term
+is well-typed in the current context of the definition and if the name
+is not already used.  A definition has a type which is the type of its
+body.
 
 A formal presentation of constants and environments is given in
 Section :ref:`typing-rules`.
