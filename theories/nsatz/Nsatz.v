@@ -34,6 +34,8 @@ Require Import ZArith.
 Require Import Lia.
 
 Require Export NsatzTactic.
+(** Make use of [discrR] in [nsatz] *)
+Ltac nsatz_internal_discrR ::= discrR.
 
 (* Real numbers *)
 Require Import Reals.

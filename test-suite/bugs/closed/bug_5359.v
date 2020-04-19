@@ -90,7 +90,7 @@ Goal False.
                                 (Ring_polynom.PEX Z 2)))
                           (Ring_polynom.PEmul (Ring_polynom.PEX Z 3)
                              (Ring_polynom.PEX Z 3)))) :: nil)%list ) in
-    Nsatz.nsatz_compute
+    NsatzTactic.nsatz_compute
           (@cons _ (@Ring_polynom.PEc _ sugar) (@cons _ (@Ring_polynom.PEc _ nparams) (@cons _ (@Ring_polynom.PEpow _ reified_goal power) reified_givens))).
 
   let sugar := constr:( 0%Z ) in
@@ -214,6 +214,6 @@ Goal False.
                                    (Ring_polynom.PEX Z 2)))
                              (Ring_polynom.PEmul (Ring_polynom.PEX Z 3)
                                 (Ring_polynom.PEX Z 3)))) :: nil)%list ) in
-    Nsatz.nsatz_compute
+    NsatzTactic.nsatz_compute
           (@cons _ (@Ring_polynom.PEc _ sugar) (@cons _ (@Ring_polynom.PEc _ nparams) (@cons _ (@Ring_polynom.PEpow _ reified_goal power) reified_givens))).
 Abort.

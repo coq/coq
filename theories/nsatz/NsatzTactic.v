@@ -29,7 +29,6 @@ Require Export Ncring.
 Require Export Ncring_initial.
 Require Export Ncring_tac.
 Require Export Integral_domain.
-Require Import DiscrR.
 Require Import ZArith.
 Require Import Lia.
 
@@ -347,6 +346,11 @@ Ltac get_lpol g :=
        let l := get_lpol g in constr:(p::l)
   end.
 
+(** We only make use of [discrR] if [nsatz] support for reals is
+    loaded.  To do this, we redefine this tactic in Nsatz.v to make
+    use of real discrimination. *)
+Ltac nsatz_internal_discrR := idtac.
+
 Ltac nsatz_generic radicalmax info lparam lvar :=
  let nparam := eval compute in (Z.of_nat (List.length lparam)) in
  match goal with
@@ -414,7 +418,7 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
             try exact integral_domain_minus_one_zero
           || (solve [simpl; unfold R2, equality, eq_notation, addition, add_notation,
                      one, one_notation, multiplication, mul_notation, zero, zero_notation;
-                     discrR || lia ])
+                     nsatz_internal_discrR || lia ])
           || ((*simpl*) idtac) || idtac "could not prove discrimination result"
         ]
       ]
