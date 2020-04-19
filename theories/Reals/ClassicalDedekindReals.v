@@ -149,32 +149,31 @@ Definition DRealAbstr : CReal -> DReal.
 Proof.
   intro x.
   assert (forall (q : Q) (n : nat),
-   {(fun n0 : nat => (proj1_sig x (S n0) <= q + (1 # Pos.of_nat (S n0)))%Q) n} +
-   {~ (fun n0 : nat => (proj1_sig x (S n0) <= q + (1 # Pos.of_nat (S n0)))%Q) n}).
-  { intros. destruct (Qlt_le_dec (q + (1 # Pos.of_nat (S n))) (proj1_sig x (S n))).
+   {(fun n0 : nat => (proj1_sig x (Pos.of_nat (S n0)) <= q + (1 # Pos.of_nat (S n0)))%Q) n} +
+   {~ (fun n0 : nat => (proj1_sig x (Pos.of_nat (S n0)) <= q + (1 # Pos.of_nat (S n0)))%Q) n}).
+  { intros. destruct (Qlt_le_dec (q + (1 # Pos.of_nat (S n))) (proj1_sig x (Pos.of_nat (S n)))).
     right. apply (Qlt_not_le _ _ q0). left. exact q0. }
 
-  exists (fun q:Q => if sig_forall_dec (fun n:nat => Qle (proj1_sig x (S n)) (q + (1#Pos.of_nat (S n)))) (H q)
+  exists (fun q:Q => if sig_forall_dec (fun n:nat => Qle (proj1_sig x (Pos.of_nat (S n))) (q + (1#Pos.of_nat (S n)))) (H q)
              then true else false).
   repeat split.
   - intros.
-    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (S n) <= q + (1 # Pos.of_nat (S n)))%Q)
+    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (Pos.of_nat (S n)) <= q + (1 # Pos.of_nat (S n)))%Q)
                              (H q)).
     reflexivity. exfalso.
-    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (S n) <= r + (1 # Pos.of_nat (S n)))%Q)
+    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (Pos.of_nat (S n)) <= r + (1 # Pos.of_nat (S n)))%Q)
                              (H r)).
     destruct s. apply n.
     apply (Qle_trans _ _ _ (q0 x0)).
     apply Qplus_le_l. exact H0. discriminate.
   - intro abs. destruct (Rfloor x) as [z [_ zmaj]].
     specialize (abs (z+3 # 1)%Q).
-    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (S n) <= (z+3 # 1) + (1 # Pos.of_nat (S n)))%Q)
+    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (Pos.of_nat (S n)) <= (z+3 # 1) + (1 # Pos.of_nat (S n)))%Q)
                              (H (z+3 # 1)%Q)).
     2: exfalso; discriminate. clear abs. destruct s as [n nmaj]. apply nmaj.
     rewrite <- (inject_Q_plus (z#1) 2) in zmaj.
     apply CRealLt_asym in zmaj. rewrite <- CRealLe_not_lt in zmaj.
     specialize (zmaj (Pos.of_nat (S n))). unfold inject_Q, proj1_sig in zmaj.
-    rewrite Nat2Pos.id in zmaj. 2: discriminate.
     destruct x as [xn xcau]; unfold proj1_sig.
     rewrite Qinv_plus_distr in zmaj.
     apply (Qplus_le_l _ _ (-(z + 2 # 1))). apply (Qle_trans _ _ _ zmaj).
@@ -187,7 +186,7 @@ Proof.
     replace (z + 3 + - (z + 2))%Z with 1%Z. apply Qle_refl. ring.
   - intro abs. destruct (Rfloor x) as [z [zmaj _]].
     specialize (abs (z-4 # 1)%Q).
-    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (S n) <= (z-4 # 1) + (1 # Pos.of_nat (S n)))%Q)
+    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (Pos.of_nat (S n)) <= (z-4 # 1) + (1 # Pos.of_nat (S n)))%Q)
                              (H (z-4 # 1)%Q)).
     exfalso; discriminate. clear abs.
     apply CRealLt_asym in zmaj. apply zmaj. clear zmaj.
@@ -195,30 +194,30 @@ Proof.
     specialize (q O).
     destruct x as [xn xcau]; unfold proj1_sig; unfold proj1_sig in q.
     unfold Pos.of_nat in q. rewrite Qinv_plus_distr in q.
-    unfold Pos.to_nat; simpl. apply (Qplus_lt_l _ _ (xn 1%nat - 2)).
+    apply (Qplus_lt_l _ _ (xn 1%positive - 2)).
     ring_simplify. rewrite Qinv_plus_distr.
     apply (Qle_lt_trans _ _ _ q). apply Qlt_minus_iff.
     unfold Qopp, Qnum, Qden. rewrite Qinv_plus_distr.
     replace (z + -2 + - (z - 4 + 1))%Z with 1%Z. 2: ring. reflexivity.
   - intros q H0 abs.
-    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (S n) <= q + (1 # Pos.of_nat (S n)))%Q) (H q)).
+    destruct (sig_forall_dec (fun n : nat => (proj1_sig x (Pos.of_nat (S n)) <= q + (1 # Pos.of_nat (S n)))%Q) (H q)).
     2: exfalso; discriminate. clear H0.
     destruct x as [xn xcau]; unfold proj1_sig in abs, s.
     destruct s as [n nmaj].
     (* We have that q < x as real numbers. The middle
        (q + xSn - 1/Sn)/2 is also lower than x, witnessed by the same index n. *)
-    specialize (abs ((q + xn (S n) - (1 # Pos.of_nat (S n))%Q)/2)%Q).
+    specialize (abs ((q + xn (Pos.of_nat (S n)) - (1 # Pos.of_nat (S n))%Q)/2)%Q).
     destruct abs.
     + apply (Qmult_le_r _ _ 2) in H0. field_simplify in H0.
       apply (Qplus_le_r _ _ ((1 # Pos.of_nat (S n)) - q)) in H0.
       ring_simplify in H0. apply nmaj. rewrite Qplus_comm. exact H0. reflexivity.
     + destruct (sig_forall_dec
            (fun n0 : nat =>
-            (xn (S n0) <= (q + xn (S n) - (1 # Pos.of_nat (S n))) / 2 + (1 # Pos.of_nat (S n0)))%Q)
-           (H ((q + xn (S n) - (1 # Pos.of_nat (S n))) / 2)%Q)).
+            (xn (Pos.of_nat (S n0)) <= (q + xn (Pos.of_nat (S n)) - (1 # Pos.of_nat (S n))) / 2 + (1 # Pos.of_nat (S n0)))%Q)
+           (H ((q + xn (Pos.of_nat (S n)) - (1 # Pos.of_nat (S n))) / 2)%Q)).
       discriminate. clear H0. specialize (q0 n).
       apply (Qmult_le_l _ _ 2) in q0. field_simplify in q0.
-      apply (Qplus_le_l _ _ (-xn (S n))) in q0. ring_simplify in q0.
+      apply (Qplus_le_l _ _ (-xn (Pos.of_nat (S n)))) in q0. ring_simplify in q0.
       contradiction. reflexivity.
 Defined.
 
@@ -234,23 +233,24 @@ Qed.
 
 Definition DRealRepr : DReal -> CReal.
 Proof.
-  intro x. exists (fun n => proj1_sig (DRealQlim x n)).
+  intro x. exists (fun n:positive => proj1_sig (DRealQlim x (Pos.to_nat n))).
   intros n p q H H0.
-  destruct (DRealQlim x p), (DRealQlim x q); unfold proj1_sig.
+  destruct (DRealQlim x (Pos.to_nat p)), (DRealQlim x (Pos.to_nat q))
+  ; unfold proj1_sig.
   destruct x as [f low]; unfold proj1_sig in a0, a.
   apply Qabs_case.
-  - intros. apply (Qlt_le_trans _ (1 # Pos.of_nat (S q))).
+  - intros. apply (Qlt_le_trans _ (1 # Pos.of_nat (S (Pos.to_nat q)))).
     apply (Qplus_lt_l _ _ x1). ring_simplify. apply (UpperAboveLower f).
     exact low. apply a. apply a0. unfold Qle, Qnum, Qden.
     do 2 rewrite Z.mul_1_l. apply Pos2Z.pos_le_pos.
-    apply Pos2Nat.inj_le. rewrite Nat2Pos.id. apply (le_trans _ _ _ H0), le_S, le_refl.
-    discriminate.
-  - intros. apply (Qlt_le_trans _ (1 # Pos.of_nat (S p))).
+    apply Pos2Nat.inj_le. rewrite Nat2Pos.id.
+    apply le_S, Pos2Nat.inj_le, H0. discriminate.
+  - intros. apply (Qlt_le_trans _ (1 # Pos.of_nat (S (Pos.to_nat p)))).
     apply (Qplus_lt_l _ _ x0). ring_simplify. apply (UpperAboveLower f).
     exact low. apply a0. apply a. unfold Qle, Qnum, Qden.
     do 2 rewrite Z.mul_1_l. apply Pos2Z.pos_le_pos.
-    apply Pos2Nat.inj_le. rewrite Nat2Pos.id. apply (le_trans _ _ _ H), le_S, le_refl.
-    discriminate.
+    apply Pos2Nat.inj_le. rewrite Nat2Pos.id.
+    apply le_S, Pos2Nat.inj_le, H. discriminate.
 Defined.
 
 Definition Rle (x y : DReal)
@@ -390,15 +390,15 @@ Qed.
 
 Lemma DRealAbstrFalse : forall (x : CReal) (q : Q) (n : nat),
     proj1_sig (DRealAbstr x) q = false
-    -> (proj1_sig x (S n) <= q + (1 # Pos.of_nat (S n)))%Q.
+    -> (proj1_sig x (Pos.of_nat (S n)) <= q + (1 # Pos.of_nat (S n)))%Q.
 Proof.
   intros. destruct x as [xn xcau].
   unfold DRealAbstr, proj1_sig in H.
   destruct (
-        sig_forall_dec (fun n : nat => (xn (S n) <= q + (1 # Pos.of_nat (S n)))%Q)
+        sig_forall_dec (fun n : nat => (xn (Pos.of_nat (S n)) <= q + (1 # Pos.of_nat (S n)))%Q)
           (fun n : nat =>
-           match Qlt_le_dec (q + (1 # Pos.of_nat (S n))) (xn (S n)) with
-           | left q0 => right (Qlt_not_le (q + (1 # Pos.of_nat (S n))) (xn (S n)) q0)
+           match Qlt_le_dec (q + (1 # Pos.of_nat (S n))) (xn (Pos.of_nat (S n))) with
+           | left q0 => right (Qlt_not_le (q + (1 # Pos.of_nat (S n))) (xn (Pos.of_nat (S n))) q0)
            | right q0 => left q0
            end)).
   discriminate. apply q0.
@@ -417,9 +417,10 @@ Proof.
     unfold proj1_sig in qmaj.
     rewrite Nat.succ_pred in qmaj.
     apply (Qlt_not_le _ _ pmaj), (Qplus_le_l _ _ q).
-    ring_simplify. apply (Qle_trans _ _ _ qmaj).
+    ring_simplify. rewrite Pos2Nat.id in qmaj.
+    apply (Qle_trans _ _ _ qmaj).
     rewrite <- Qplus_assoc. apply Qplus_le_r.
-    rewrite Pos2Nat.id. apply (Qle_trans _ ((1#p)+(1#p))).
+    apply (Qle_trans _ ((1#p)+(1#p))).
     apply Qplus_le_l. unfold Qle, Qnum, Qden.
     do 2 rewrite Z.mul_1_l.
     apply Pos2Z.pos_le_pos. apply Pos2Nat.inj_le.
@@ -434,30 +435,32 @@ Proof.
     (* By pmaj, x < q - 1/p *)
     unfold DRealAbstr, proj1_sig in qmaj.
     destruct (
-           sig_forall_dec (fun n : nat => (xn (S n) <= q + (1 # Pos.of_nat (S n)))%Q)
+           sig_forall_dec (fun n : nat => (xn (Pos.of_nat (S n)) <= q + (1 # Pos.of_nat (S n)))%Q)
              (fun n : nat =>
-              match Qlt_le_dec (q + (1 # Pos.of_nat (S n))) (xn (S n)) with
+              match Qlt_le_dec (q + (1 # Pos.of_nat (S n))) (xn (Pos.of_nat (S n))) with
               | left q0 =>
-                  right (Qlt_not_le (q + (1 # Pos.of_nat (S n))) (xn (S n)) q0)
+                  right (Qlt_not_le (q + (1 # Pos.of_nat (S n))) (xn (Pos.of_nat (S n))) q0)
               | right q0 => left q0
               end)).
     2: discriminate. clear qmaj.
     destruct s as [n nmaj]. apply nmaj.
-    apply (Qplus_lt_l _ _ (xn (Pos.to_nat p) + (1#Pos.of_nat (S n)))) in pmaj.
+    apply (Qplus_lt_l _ _ (xn p + (1#Pos.of_nat (S n)))) in pmaj.
     ring_simplify in pmaj. apply Qlt_le_weak. rewrite Qplus_comm.
-    apply (Qlt_trans _ ((2 # p) + xn (Pos.to_nat p) + (1 # Pos.of_nat (S n)))).
+    apply (Qlt_trans _ ((2 # p) + xn p + (1 # Pos.of_nat (S n)))).
     2: exact pmaj.
-    apply (Qplus_lt_l _ _ (-xn (Pos.to_nat p))).
+    apply (Qplus_lt_l _ _ (-xn p)).
     apply (Qle_lt_trans _ _ _ (Qle_Qabs _)).
     destruct (le_lt_dec (S n) (Pos.to_nat p)).
-    + specialize (xcau (Pos.of_nat (S n)) (S n) (Pos.to_nat p)).
+    + specialize (xcau (Pos.of_nat (S n)) (Pos.of_nat (S n)) p).
       apply (Qlt_trans _ (1# Pos.of_nat (S n))). apply xcau.
-      rewrite Nat2Pos.id. apply le_refl. discriminate.
+      apply Pos.le_refl. unfold id. apply Pos2Nat.inj_le.
       rewrite Nat2Pos.id. exact l. discriminate.
       apply (Qplus_lt_l _ _ (-(1#Pos.of_nat (S n)))).
       ring_simplify. reflexivity.
     + apply (Qlt_trans _ (1#p)). apply xcau.
-      apply le_S_n in l. apply le_S, l. apply le_refl.
+      apply le_S_n in l. unfold id. apply Pos2Nat.inj_le.
+      rewrite Nat2Pos.id.
+      apply le_S, l. discriminate. apply Pos.le_refl.
       ring_simplify. apply (Qlt_trans _ (2#p)).
       unfold Qlt, Qnum, Qden.
       apply Z.mul_lt_mono_pos_r. reflexivity. reflexivity.

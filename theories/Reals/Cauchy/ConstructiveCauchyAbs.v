@@ -31,9 +31,9 @@ Local Open Scope CReal_scope.
    uniquely extends to a uniformly continuous function
    CReal_abs : CReal -> CReal
 *)
-Lemma CauchyAbsStable : forall xn : nat -> Q,
-    QCauchySeq xn Pos.to_nat
-    -> QCauchySeq (fun n => Qabs (xn n)) Pos.to_nat.
+Lemma CauchyAbsStable : forall xn : positive -> Q,
+    QCauchySeq xn id
+    -> QCauchySeq (fun n => Qabs (xn n)) id.
 Proof.
   intros xn cau n p q H H0.
   specialize (cau n p q H H0).
@@ -53,23 +53,22 @@ Definition CReal_abs (x : CReal) : CReal
      exist _ (fun n => Qabs (xn n)) (CauchyAbsStable xn cau).
 
 Lemma CReal_neg_nth : forall (x : CReal) (n : positive),
-    (proj1_sig x (Pos.to_nat n) < -1#n)%Q
+    (proj1_sig x n < -1#n)%Q
     -> x < 0.
 Proof.
   intros. destruct x as [xn cau]; unfold proj1_sig in H.
   apply Qlt_minus_iff in H.
-  setoid_replace ((-1 # n) + - xn (Pos.to_nat n))%Q
-    with (- ((1 # n) + xn (Pos.to_nat n)))%Q in H.
-  destruct (Qarchimedean (2 / (-((1#n) + xn (Pos.to_nat n))))) as [k kmaj].
+  setoid_replace ((-1 # n) + - xn n)%Q
+    with (- ((1 # n) + xn n))%Q in H.
+  destruct (Qarchimedean (2 / (-((1#n) + xn n)))) as [k kmaj].
   exists (Pos.max k n). simpl. unfold Qminus; rewrite Qplus_0_l.
-  specialize (cau n (Pos.to_nat n) (max (Pos.to_nat k) (Pos.to_nat n))
-                  (le_refl _) (Nat.le_max_r _ _)).
+  specialize (cau n n (Pos.max k n)
+                  (Pos.le_refl _) (Pos.le_max_r _ _)).
   apply (Qle_lt_trans _ (2#k)).
   unfold Qle, Qnum, Qden.
   apply Z.mul_le_mono_nonneg_l. discriminate.
   apply Pos2Z.pos_le_pos, Pos.le_max_l.
-  rewrite <- Pos2Nat.inj_max in cau.
-  apply (Qmult_lt_l _ _ (-((1 # n) + xn (Pos.to_nat n)))) in kmaj.
+  apply (Qmult_lt_l _ _ (-((1 # n) + xn n))) in kmaj.
   rewrite Qmult_div_r in kmaj.
   apply (Qmult_lt_r _ _ (1 # k)) in kmaj.
   rewrite <- Qmult_assoc in kmaj.
@@ -77,13 +76,13 @@ Proof.
   rewrite Qmult_1_r in kmaj.
   setoid_replace (2#k)%Q with (2 * (1 # k))%Q. 2: reflexivity.
   apply (Qlt_trans _ _ _ kmaj). clear kmaj.
-  apply (Qplus_lt_l _ _ ((1#n) + xn (Pos.to_nat (Pos.max k n)))).
+  apply (Qplus_lt_l _ _ ((1#n) + xn (Pos.max k n))).
   ring_simplify. rewrite Qplus_comm.
-  apply (Qle_lt_trans _ (Qabs (xn (Pos.to_nat n) - xn (Pos.to_nat (Pos.max k n))))).
+  apply (Qle_lt_trans _ (Qabs (xn n - xn (Pos.max k n)))).
   2: exact cau.
   rewrite <- Qabs_opp.
-  setoid_replace (- (xn (Pos.to_nat n) - xn (Pos.to_nat (Pos.max k n))))%Q
-    with (xn (Pos.to_nat (Pos.max k n)) + -1 * xn (Pos.to_nat n))%Q.
+  setoid_replace (- (xn n - xn (Pos.max k n)))%Q
+    with (xn (Pos.max k n) + -1 * xn n)%Q.
   apply Qle_Qabs. ring. 2: reflexivity.
   unfold Qmult, Qeq, Qnum, Qden.
   rewrite Z.mul_1_r, Z.mul_1_r, Z.mul_1_l. reflexivity.
@@ -92,10 +91,10 @@ Proof.
 Qed.
 
 Lemma CReal_nonneg : forall (x : CReal) (n : positive),
-    0 <= x -> (-1#n <= proj1_sig x (Pos.to_nat n))%Q.
+    0 <= x -> (-1#n <= proj1_sig x n)%Q.
 Proof.
   intros. destruct x as [xn cau]; unfold proj1_sig.
-  destruct (Qlt_le_dec (xn (Pos.to_nat n)) (-1#n)).
+  destruct (Qlt_le_dec (xn n) (-1#n)).
   2: exact q. exfalso. apply H. clear H.
   apply (CReal_neg_nth _ n). exact q.
 Qed.
@@ -107,13 +106,13 @@ Proof.
   apply (CReal_nonneg _ n) in H. simpl in H.
   rewrite Qabs_pos.
   2: unfold Qminus; rewrite <- Qle_minus_iff; apply Qle_Qabs.
-  destruct (Qlt_le_dec (xn (Pos.to_nat n)) 0).
+  destruct (Qlt_le_dec (xn n) 0).
   - rewrite Qabs_neg. 2: apply Qlt_le_weak, q.
     apply Qopp_le_compat in H.
     apply (Qmult_le_l _ _ (1#2)). reflexivity. ring_simplify.
     setoid_replace ((1 # 2) * (2 # n))%Q with (-(-1#n))%Q.
     2: reflexivity.
-    setoid_replace ((-2 # 2) * xn (Pos.to_nat n))%Q with (- xn (Pos.to_nat n))%Q.
+    setoid_replace ((-2 # 2) * xn n)%Q with (- xn n)%Q.
     exact H. ring.
   - rewrite Qabs_pos. unfold Qminus. rewrite Qplus_opp_r. discriminate. exact q.
 Qed.
@@ -121,7 +120,7 @@ Qed.
 Lemma CReal_le_abs : forall x : CReal, x <= CReal_abs x.
 Proof.
   intros. intros [n nmaj]. destruct x as [xn cau]; simpl in nmaj.
-  apply (Qle_not_lt _ _ (Qle_Qabs (xn (Pos.to_nat n)))).
+  apply (Qle_not_lt _ _ (Qle_Qabs (xn n))).
   apply Qlt_minus_iff. apply (Qlt_trans _ (2#n)).
   reflexivity. exact nmaj.
 Qed.
@@ -129,7 +128,7 @@ Qed.
 Lemma CReal_abs_pos : forall x : CReal, 0 <= CReal_abs x.
 Proof.
   intros. intros [n nmaj]. destruct x as [xn cau]; simpl in nmaj.
-  apply (Qle_not_lt _ _ (Qabs_nonneg (xn (Pos.to_nat n)))).
+  apply (Qle_not_lt _ _ (Qabs_nonneg (xn n))).
   apply Qlt_minus_iff. apply (Qlt_trans _ (2#n)).
   reflexivity. exact nmaj.
 Qed.
@@ -153,7 +152,7 @@ Lemma CReal_abs_appart_0 : forall x : CReal,
     0 < CReal_abs x -> x # 0.
 Proof.
   intros x [n nmaj]. destruct x as [xn cau]; simpl in nmaj.
-  destruct (Qlt_le_dec (xn (Pos.to_nat n)) 0).
+  destruct (Qlt_le_dec (xn n) 0).
   - left. exists n. simpl. rewrite Qabs_neg in nmaj.
     apply (Qlt_le_trans _ _ _ nmaj). ring_simplify. apply Qle_refl.
     apply Qlt_le_weak, q.
@@ -189,7 +188,7 @@ Qed.
 Lemma CReal_abs_le : forall a b:CReal, -b <= a <= b -> CReal_abs a <= b.
 Proof.
   intros a b H [n nmaj]. destruct a as [an cau]; simpl in nmaj.
-  destruct (Qlt_le_dec (an (Pos.to_nat n)) 0).
+  destruct (Qlt_le_dec (an n) 0).
   - rewrite Qabs_neg in nmaj. destruct H. apply H. clear H H0.
     exists n. simpl.
     destruct b as [bn caub]; simpl; simpl in nmaj.
@@ -250,14 +249,14 @@ Lemma CReal_abs_gt : forall x : CReal,
     x < CReal_abs x -> x < 0.
 Proof.
   intros x [n nmaj]. destruct x as [xn cau]; simpl in nmaj.
-  assert (xn (Pos.to_nat n) < 0)%Q.
-  { destruct (Qlt_le_dec (xn (Pos.to_nat n)) 0). exact q.
+  assert (xn n < 0)%Q.
+  { destruct (Qlt_le_dec (xn n) 0). exact q.
     exfalso. rewrite Qabs_pos in nmaj. unfold Qminus in nmaj.
     rewrite Qplus_opp_r in nmaj. inversion nmaj. exact q. }
   rewrite Qabs_neg in nmaj. 2: apply Qlt_le_weak, H.
   apply (CReal_neg_nth _ n). simpl.
   ring_simplify in nmaj.
-  apply (Qplus_lt_l _ _ ((1#n) - xn (Pos.to_nat n))).
+  apply (Qplus_lt_l _ _ ((1#n) - xn n)).
   apply (Qmult_lt_l _ _ 2). reflexivity. ring_simplify.
   setoid_replace (2 * (1 # n))%Q with (2 # n)%Q. 2: reflexivity.
   rewrite <- Qplus_assoc.
@@ -274,7 +273,7 @@ Proof.
   destruct H as [i imaj]. destruct H0 as [j jmaj].
   exists (Pos.max i j). destruct x as [xn caux], y as [yn cauy]; simpl.
   simpl in imaj, jmaj.
-  destruct (Qlt_le_dec (xn (Pos.to_nat (Pos.max i j))) 0).
+  destruct (Qlt_le_dec (xn (Pos.max i j)) 0).
   - rewrite Qabs_neg.
     specialize (jmaj (Pos.max i j) (Pos.le_max_r _ _)).
     apply (Qle_lt_trans _ (2#j)). 2: exact jmaj.
