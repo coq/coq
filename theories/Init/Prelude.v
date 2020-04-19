@@ -18,10 +18,11 @@ Require Coq.Init.Decimal.
 Require Coq.Init.Nat.
 Require Export Peano.
 Require Export Coq.Init.Wf.
+Require Export Coq.Init.Ltac.
 Require Export Coq.Init.Tactics.
 Require Export Coq.Init.Tauto.
 (* Some initially available plugins. See also:
-   - ltac_plugin (in Notations)
+   - ltac_plugin (in Ltac)
    - tauto_plugin (in Tauto).
 *)
 Declare ML Module "cc_plugin".

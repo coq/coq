@@ -14,6 +14,7 @@ Set Implicit Arguments.
 Set Reversible Pattern Implicit.
 
 Require Import Notations.
+Require Import Ltac.
 Require Import Datatypes.
 Require Import Logic.
 

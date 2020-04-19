@@ -11,6 +11,7 @@
 Set Implicit Arguments.
 
 Require Export Notations.
+Require Import Ltac.
 
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 
