@@ -86,15 +86,15 @@ let compute_name internal id =
     Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
   else id
 
+let declare_definition_scheme = ref (fun ~internal ~univs ~role ~name c ->
+    CErrors.anomaly (Pp.str "scheme declaration not registered"))
+
 let define internal role id c poly univs =
   let id = compute_name internal id in
   let ctx = UState.minimize univs in
   let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst ctx) c in
   let univs = UState.univ_entry ~poly ctx in
-  let entry = Declare.pure_definition_entry ~univs c in
-  let kn, eff = Declare.declare_private_constant ~role ~kind:Decls.(IsDefinition Scheme) ~name:id entry in
-  let () = if internal then () else Declare.definition_message id in
-  kn, eff
+  !declare_definition_scheme ~internal ~univs ~role ~name:id c
 
 let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
   let (c, ctx), eff = f mode ind in

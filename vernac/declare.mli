@@ -135,8 +135,6 @@ type 'a constant_entry =
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
-val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
-
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
@@ -261,19 +259,6 @@ val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output
     focused proof.
     Returns [false] if an unsafe tactic has been used. *)
 val by : unit Proofview.tactic -> Proof.t -> Proof.t * bool
-
-(** Declare abstract constant; will check no evars are possible; *)
-val declare_abstract :
-     name:Names.Id.t
-  -> poly:bool
-  -> kind:Decls.logical_kind
-  -> sign:EConstr.named_context
-  -> secsign:Environ.named_context_val
-  -> opaque:bool
-  -> solve_tac:unit Proofview.tactic
-  -> Evd.evar_map
-  -> EConstr.t
-  -> Evd.side_effects * Evd.evar_map * EConstr.t * EConstr.t list * bool
 
 val build_by_tactic
   :  ?side_eff:bool

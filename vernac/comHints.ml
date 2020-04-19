@@ -97,7 +97,7 @@ let interp_hints ~poly h =
     let c, diff = Hints.prepare_hint true env sigma (evd, c) in
     if poly then (Hints.IsConstr (c, diff) [@ocaml.warning "-3"])
     else
-      let () = Declare.declare_universe_context ~poly:false diff in
+      let () = DeclareUctx.declare_universe_context ~poly:false diff in
       (Hints.IsConstr (c, Univ.ContextSet.empty) [@ocaml.warning "-3"])
   in
   let fref r =

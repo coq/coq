@@ -1719,7 +1719,8 @@ let vernac_print ~pstate ~atts =
   | PrintHintGoal ->
      begin match pstate with
      | Some pstate ->
-       Hints.pr_applicable_hint pstate
+       let pf = Declare.Proof.get_proof pstate in
+       Hints.pr_applicable_hint pf
      | None ->
        str "No proof in progress"
      end

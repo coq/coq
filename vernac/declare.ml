@@ -133,31 +133,6 @@ let _ = CErrors.register_handler (function
 
 type import_status = ImportDefaultBehavior | ImportNeedQualified
 
-(** Monomorphic universes need to survive sections. *)
-
-let name_instance inst =
-  let map lvl = match Univ.Level.name lvl with
-    | None -> (* Having Prop/Set/Var as section universes makes no sense *)
-      assert false
-    | Some na ->
-      try
-        let qid = Nametab.shortest_qualid_of_universe na in
-        Name (Libnames.qualid_basename qid)
-      with Not_found ->
-        (* Best-effort naming from the string representation of the level.
-           See univNames.ml for a similar hack. *)
-        Name (Id.of_string_soft (Univ.Level.to_string lvl))
-  in
-  Array.map map (Univ.Instance.to_array inst)
-
-let declare_universe_context ~poly ctx =
-  if poly then
-    let uctx = Univ.ContextSet.to_context ctx in
-    let nas = name_instance (Univ.UContext.instance uctx) in
-    Global.push_section_context (nas, uctx)
-  else
-    Global.push_context_set ~strict:true ctx
-
 (** Declaration of constants and parameters *)
 
 type constant_obj = {
@@ -589,7 +564,7 @@ let declare_variable ~name ~kind d =
       let univs = Univ.ContextSet.union body_ui entry_ui in
       (* We must declare the universe constraints before type-checking the
          term. *)
-      let () = declare_universe_context ~poly univs in
+      let () = DeclareUctx.declare_universe_context ~poly univs in
       let se = {
         Entries.secdef_body = body;
         secdef_secctx = de.proof_entry_secctx;
@@ -899,3 +874,13 @@ module Proof = struct
   let update_global_env = update_global_env
   let get_open_goals = get_open_goals
 end
+
+let declare_definition_scheme ~internal ~univs ~role ~name c =
+  let kind = Decls.(IsDefinition Scheme) in
+  let entry = pure_definition_entry ~univs c in
+  let kn, eff = declare_private_constant ~role ~kind ~name entry in
+  let () = if internal then () else definition_message name in
+  kn, eff
+
+let _ = Ind_tables.declare_definition_scheme := declare_definition_scheme
+let _ = Abstract.declare_abstract := declare_abstract
