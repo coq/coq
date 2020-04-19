@@ -91,12 +91,11 @@ let () =
       optwrite = (fun b -> rewriting_flag := b) }
 
 (* Util *)
-
 let define ~poly name sigma c types =
-  let f = declare_constant ~kind:Decls.(IsDefinition Scheme) in
   let univs = Evd.univ_entry ~poly sigma in
   let entry = Declare.definition_entry ~univs ?types c in
-  let kn = f ~name (DefinitionEntry entry) in
+  let kind = Decls.(IsDefinition Scheme) in
+  let kn = declare_constant ~kind ~name (DefinitionEntry entry) in
   definition_message name;
   kn
 
