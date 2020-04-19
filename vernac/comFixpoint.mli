@@ -58,7 +58,8 @@ val interp_recursive :
 (** Exported for Funind *)
 
 val interp_fixpoint
-  :  cofix:bool
+  :  ?check_recursivity:bool ->
+     cofix:bool
   -> lident option fix_expr_gen list
   -> (Constr.t, Constr.types) recursive_preentry *
      UState.universe_decl * UState.t *
