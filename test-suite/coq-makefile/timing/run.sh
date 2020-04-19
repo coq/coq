@@ -63,7 +63,7 @@ TO_SED_IN_PER_LINE=(
 
 for file in time-of-build-before.log time-of-build-after.log time-of-build-both.log; do
   for ext in "" .desired; do
-    grep -v 'warning: undefined variable' < ${file}${ext} | sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_FILE[@]}" > ${file}${ext}.processed
+    sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_FILE[@]}" ${file}${ext} > ${file}${ext}.processed
   done
   echo "cat $file"
   cat "$file"
