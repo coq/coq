@@ -1,5 +1,5 @@
 COQDEP VFILES
 COQC Slow.v
-Slow (real: 0.40, user: 0.35, sys: 0.04, mem: 394968 ko)
+Slow.vo (real: 0.40, user: 0.35, sys: 0.04, mem: 394968 ko)
 COQC Fast.v
-Fast (real: 0.04, user: 0.03, sys: 0.00, mem: 46564 ko)
+Fast.vo (real: 0.04, user: 0.03, sys: 0.00, mem: 46564 ko)

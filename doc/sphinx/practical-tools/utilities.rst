@@ -245,9 +245,9 @@ file timing data:
           COQDEP Fast.v
           COQDEP Slow.v
           COQC Slow.v
-          Slow (user: 0.34 mem: 395448 ko)
+          Slow.vo (user: 0.34 mem: 395448 ko)
           COQC Fast.v
-          Fast (user: 0.01 mem: 45184 ko)
+          Fast.vo (user: 0.01 mem: 45184 ko)
 
 + ``pretty-timed``
     this target stores the output of ``make TIMED=1`` into
@@ -280,15 +280,15 @@ file timing data:
         COQDEP Fast.v
         COQDEP Slow.v
         COQC Slow.v
-        Slow (user: 0.36 mem: 393912 ko)
+        Slow.vo (user: 0.36 mem: 393912 ko)
         COQC Fast.v
-        Fast (user: 0.05 mem: 45992 ko)
+        Fast.vo (user: 0.05 mem: 45992 ko)
         Time     | File Name
         --------------------
         0m00.41s | Total
         --------------------
-        0m00.36s | Slow
-        0m00.05s | Fast
+        0m00.36s | Slow.vo
+        0m00.05s | Fast.vo
 
 
 + ``print-pretty-timed-diff``
@@ -338,8 +338,8 @@ file timing data:
           --------------------------------------------------------
           0m00.39s | Total     | 0m00.35s || +0m00.03s | +11.42%
           --------------------------------------------------------
-          0m00.37s | Slow      | 0m00.01s || +0m00.36s | +3600.00%
-          0m00.02s | Fast      | 0m00.34s || -0m00.32s | -94.11%
+          0m00.37s | Slow.vo   | 0m00.01s || +0m00.36s | +3600.00%
+          0m00.02s | Fast.vo   | 0m00.34s || -0m00.32s | -94.11%
 
 
 The following targets and ``Makefile`` variables allow collection of per-
