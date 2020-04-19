@@ -45,14 +45,14 @@ Fixpoint bigint_of_pos p :=
   | xI p => bigint_succ (bigint_twice (bigint_of_pos p))
  end.
 
-Fixpoint bigint_of_z z :=
+Definition bigint_of_z z :=
  match z with
   | Z0 => bigint_zero
   | Zpos p => bigint_of_pos p
   | Zneg p => bigint_opp (bigint_of_pos p)
  end.
 
-Fixpoint bigint_of_n n :=
+Definition bigint_of_n n :=
  match n with
   | N0 => bigint_zero
   | Npos p => bigint_of_pos p

@@ -208,7 +208,7 @@ Definition gtb x y :=
     | _ => false
   end.
 
-Fixpoint eqb x y :=
+Definition eqb x y :=
   match x, y with
     | 0, 0 => true
     | pos p, pos q => Pos.eqb p q

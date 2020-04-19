@@ -179,7 +179,7 @@ Definition del_head_int n d :=
 (** [del_tail n d] removes [n] digits at end of [d]
     or returns [zero] if [d] has less than [n] digits. *)
 
-Fixpoint del_tail n d := rev (del_head n (rev d)).
+Definition del_tail n d := rev (del_head n (rev d)).
 
 Definition del_tail_int n d :=
   match d with

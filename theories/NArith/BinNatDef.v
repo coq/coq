@@ -126,7 +126,7 @@ Infix "?=" := compare (at level 70, no associativity) : N_scope.
 
 (** Boolean equality and comparison *)
 
-Fixpoint eqb n m :=
+Definition eqb n m :=
   match n, m with
     | 0, 0 => true
     | pos p, pos q => Pos.eqb p q
@@ -313,7 +313,7 @@ Definition land n m :=
 
 (** Logical [diff] *)
 
-Fixpoint ldiff n m :=
+Definition ldiff n m :=
  match n, m with
   | 0, _ => 0
   | _, 0 => n
