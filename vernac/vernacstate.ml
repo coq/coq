@@ -171,8 +171,12 @@ module Declare = struct
     cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~feedback_id st pf) pt,
                         Lemmas.Internal.get_info pt)
 
-  let close_proof ~opaque ~keep_body_ucst_separate =
-    cc_lemma (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate)) pt,
+  let close_proof ~opaque =
+    cc_lemma (fun pt -> pf_fold (close_proof ~opaque) pt,
+                        Lemmas.Internal.get_info pt)
+
+  let close_vio_proof () =
+    cc_lemma (fun pt -> pf_fold close_vio_proof pt,
                         Lemmas.Internal.get_info pt)
 
   let discard_all () = s_lemmas := None

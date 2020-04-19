@@ -112,7 +112,8 @@ type proof_object
 (** Used by the STM only to store info, should go away *)
 val get_po_name : proof_object -> Id.t
 
-val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Proof.t -> proof_object
+val close_proof : opaque:opacity_flag -> Proof.t -> proof_object
+val close_vio_proof : Proof.t -> proof_object
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 

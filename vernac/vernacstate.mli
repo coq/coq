@@ -74,7 +74,8 @@ module Declare : sig
     feedback_id:Stateid.t ->
     Declare.closed_proof_output Future.computation -> closed_proof
 
-  val close_proof : opaque:Declare.opacity_flag -> keep_body_ucst_separate:bool -> closed_proof
+  val close_proof : opaque:Declare.opacity_flag -> closed_proof
+  val close_vio_proof : unit -> closed_proof
 
   val discard_all : unit -> unit
   val update_global_env : unit -> unit

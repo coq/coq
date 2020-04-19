@@ -1664,11 +1664,9 @@ end = struct (* {{{ *)
         let _proof = PG_compat.return_partial_proof () in
         `OK_ADMITTED
       else begin
-      let opaque = Declare.Opaque in
 
       (* The original terminator, a hook, has not been saved in the .vio*)
-      let proof, _info =
-        PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true in
+      let proof, _info = PG_compat.close_vio_proof () in
 
       let info = Lemmas.Info.make () in
 
@@ -1683,7 +1681,7 @@ end = struct (* {{{ *)
        *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
-      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc ~control:[] (Proved (opaque,None)));
+      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc ~control:[] (Proved (Declare.Opaque,None)));
       (* Is this name the same than the one in scope? *)
       let name = Declare.get_po_name proof in
       `OK name
@@ -2524,7 +2522,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
                       | VtKeepAxiom -> assert false
                     in
-                    try Some (PG_compat.close_proof ~opaque ~keep_body_ucst_separate:false)
+                    try Some (PG_compat.close_proof ~opaque)
                     with exn ->
                       let iexn = Exninfo.capture exn in
                       Exninfo.iraise (State.exn_on id ~valid:eop iexn)
