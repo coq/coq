@@ -2559,6 +2559,33 @@ Section ReDun.
      * now apply incl_Add_inv with a l'.
   Qed.
 
+  Lemma NoDup_incl_NoDup (l l' : list A) : NoDup l ->
+    length l' <= length l -> incl l l' -> NoDup l'.
+  Proof.
+    revert l'; induction l; simpl; intros l' Hnd Hlen Hincl.
+    - now destruct l'; inversion Hlen.
+    - assert (In a l') as Ha by now apply Hincl; left.
+      apply in_split in Ha as [l1' [l2' ->]].
+      inversion_clear Hnd as [|? ? Hnin Hnd'].
+      apply (NoDup_Add (Add_app a l1' l2')); split.
+      + apply IHl; auto.
+        * rewrite app_length.
+          rewrite app_length in Hlen; simpl in Hlen; rewrite Nat.add_succ_r in Hlen.
+          now apply Nat.succ_le_mono.
+        * apply incl_Add_inv with (u:= l1' ++ l2') in Hincl; auto.
+          apply Add_app.
+      + intros Hnin'.
+        assert (incl (a :: l) (l1' ++ l2')) as Hincl''.
+        { apply incl_tran with (l1' ++ a :: l2'); auto.
+          intros x Hin.
+          apply in_app_or in Hin as [Hin|[->|Hin]]; intuition. }
+        apply NoDup_incl_length in Hincl''; [ | now constructor ].
+        apply (Nat.nle_succ_diag_l (length l1' + length l2')).
+        rewrite_all app_length.
+        simpl in Hlen; rewrite Nat.add_succ_r in Hlen.
+        now transitivity (S (length l)).
+  Qed.
+
 End ReDun.
 
 (** NoDup and map *)

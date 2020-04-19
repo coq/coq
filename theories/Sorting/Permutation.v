@@ -499,11 +499,13 @@ Proof.
        rewrite (NoDup_Add AD) in Hl'. tauto.
 Qed.
 
-Lemma NoDup_Permutation_bis l l' : NoDup l -> NoDup l' ->
+Lemma NoDup_Permutation_bis l l' : NoDup l ->
   length l' <= length l -> incl l l' -> Permutation l l'.
 Proof.
  intros. apply NoDup_Permutation; auto.
- split; auto. apply NoDup_length_incl; trivial.
+ - now apply NoDup_incl_NoDup with l.
+ - split; auto.
+   apply NoDup_length_incl; trivial.
 Qed.
 
 Lemma Permutation_NoDup l l' : Permutation l l' -> NoDup l -> NoDup l'.
