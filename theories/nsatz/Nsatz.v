@@ -33,8 +33,7 @@ Require Import DiscrR.
 Require Import ZArith.
 Require Import Lia.
 
-Require NsatzTactic.
-Include NsatzTactic.
+Require Export NsatzTactic.
 
 (* Real numbers *)
 Require Import Reals.
