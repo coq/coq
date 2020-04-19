@@ -31,6 +31,7 @@ type entry_type =
   | Abbreviation
   | Notation
   | Section
+  | Binder
 
 type index_entry =
   | Def of string * entry_type
@@ -177,6 +178,7 @@ let type_name = function
   | Abbreviation -> "abbreviation"
   | Notation -> "notation"
   | Section -> "section"
+  | Binder -> "binder"
 
 let prepare_entry s = function
   | Notation ->
@@ -268,6 +270,7 @@ let type_of_string = function
   | "mod" | "modtype" -> Module
   | "tac" -> TacticDefinition
   | "sec" -> Section
+  | "binder" -> Binder
   | s -> invalid_arg ("type_of_string:" ^ s)
 
 let ill_formed_glob_file f =

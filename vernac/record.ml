@@ -71,7 +71,7 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
          let impls =
            match i with
            | Anonymous -> impls
-           | Name id -> Id.Map.add id (compute_internalization_data env sigma Constrintern.Method t' impl) impls
+           | Name id -> Id.Map.add id (compute_internalization_data env sigma id Constrintern.Method t' impl) impls
          in
          let d = match b' with
            | None -> LocalAssum (make_annot i r,t')
