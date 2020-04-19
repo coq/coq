@@ -1275,7 +1275,7 @@ let vernac_hints ~atts dbnames h =
       "This command does not support the export attribute in sections.");
   | OptDefault | OptLocal -> ()
   in
-  Hints.add_hints ~locality dbnames (Hints.interp_hints ~poly h)
+  Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
 let vernac_syntactic_definition ~atts lid x only_parsing =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
