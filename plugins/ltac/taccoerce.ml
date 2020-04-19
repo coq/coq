@@ -293,6 +293,13 @@ let coerce_to_evaluable_ref env sigma v =
     | VarRef var -> EvalVarRef var
     | ConstRef c -> EvalConstRef c
     | IndRef _ | ConstructRef _ -> fail ()
+  else if has_type v (topwit wit_smart_global) then
+    let open GlobRef in
+    let r = out_gen (topwit wit_smart_global) v in
+    match r with
+    | VarRef var -> EvalVarRef var
+    | ConstRef c -> EvalConstRef c
+    | IndRef _ | ConstructRef _ -> fail ()
   else
     match Value.to_constr v with
     | Some c when isConst sigma c -> EvalConstRef (fst (destConst sigma c))

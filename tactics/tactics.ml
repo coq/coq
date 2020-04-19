@@ -5045,6 +5045,29 @@ let unify ?(state=TransparentState.full) x y =
     Proofview.tclZERO (PretypeError (env, sigma, CannotUnify (x, y, None)))
   end
 
+let with_set_strategy lvl_ql k =
+  let glob_key r =
+    match r with
+    | GlobRef.ConstRef sp -> ConstKey sp
+    | GlobRef.VarRef id -> VarKey id
+    | _ -> user_err Pp.(str
+        "cannot set an inductive type or a constructor as transparent") in
+  let kl = List.concat (List.map (fun (lvl, ql) -> List.map (fun q -> (lvl, glob_key q)) ql) lvl_ql) in
+  Proofview.tclENV >>= fun env ->
+  let orig_kl = List.map (fun (_lvl, k) ->
+      (Conv_oracle.get_strategy (Environ.oracle env) k, k))
+      kl in
+  let env = List.fold_left (fun env (lvl, k) ->
+    Environ.set_oracle env
+      (Conv_oracle.set_strategy (Environ.oracle env) k lvl)) env kl in
+  Proofview.Unsafe.tclSETENV env <*>
+  k <*>
+  Proofview.tclENV >>= fun env ->
+  let env = List.fold_left (fun env (lvl, k) ->
+    Environ.set_oracle env
+      (Conv_oracle.set_strategy (Environ.oracle env) k lvl)) env orig_kl in
+  Proofview.Unsafe.tclSETENV env
+
 module Simple = struct
   (** Simplified version of some of the above tactics *)
 

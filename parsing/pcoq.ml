@@ -276,6 +276,7 @@ module Prim =
     let reference = make_gen_entry uprim "reference"
     let by_notation = Entry.create "by_notation"
     let smart_global = Entry.create "smart_global"
+    let strategy_level = gec_gen "strategy_level"
 
     (* parsed like ident but interpreted as a term *)
     let var = gec_gen "var"
@@ -505,6 +506,7 @@ let () =
   Grammar.register0 wit_ident (Prim.ident);
   Grammar.register0 wit_var (Prim.var);
   Grammar.register0 wit_ref (Prim.reference);
+  Grammar.register0 wit_smart_global (Prim.smart_global);
   Grammar.register0 wit_sort_family (Constr.sort_family);
   Grammar.register0 wit_constr (Constr.constr);
   ()

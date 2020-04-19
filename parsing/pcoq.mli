@@ -170,6 +170,7 @@ module Prim :
     val ne_lstring : lstring Entry.t
     val var : lident Entry.t
     val bar_cbrace : unit Entry.t
+    val strategy_level : Conv_oracle.level Entry.t
   end
 
 module Constr :

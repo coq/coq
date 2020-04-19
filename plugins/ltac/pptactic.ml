@@ -1325,6 +1325,8 @@ let () =
   register_basic_print0 wit_int_or_var (pr_or_var int) (pr_or_var int) int;
   register_basic_print0 wit_ref
     pr_qualid (pr_or_var (pr_located pr_global)) pr_global;
+  register_basic_print0 wit_smart_global
+    (pr_or_by_notation pr_qualid) (pr_or_var (pr_located pr_global)) pr_global;
   register_basic_print0 wit_ident pr_id pr_id pr_id;
   register_basic_print0 wit_var pr_lident pr_lident pr_id;
   register_print0 wit_intropattern pr_raw_intro_pattern pr_glob_intro_pattern pr_intro_pattern_env [@warning "-3"];

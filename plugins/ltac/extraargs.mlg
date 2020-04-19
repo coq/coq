@@ -31,6 +31,8 @@ let create_generic_quotation name e wit =
 let () = create_generic_quotation "integer" Pcoq.Prim.integer Stdarg.wit_int
 let () = create_generic_quotation "string" Pcoq.Prim.string Stdarg.wit_string
 
+let () = create_generic_quotation "smart_global" Pcoq.Prim.smart_global Stdarg.wit_smart_global
+
 let () = create_generic_quotation "ident" Pcoq.Prim.ident Stdarg.wit_ident
 let () = create_generic_quotation "reference" Pcoq.Prim.reference Stdarg.wit_ref
 let () = create_generic_quotation "uconstr" Pcoq.Constr.lconstr Stdarg.wit_uconstr
@@ -341,4 +343,56 @@ let pr_lpar_id_colon _ _ _ _ = mt ()
 
 ARGUMENT EXTEND test_lpar_id_colon TYPED AS unit PRINTED BY { pr_lpar_id_colon }
 | [ local_test_lpar_id_colon(x) ] -> { () }
+END
+
+{
+
+(* Work around a limitation of the macro system *)
+let strategy_level0 = Pcoq.Prim.strategy_level
+
+let pr_strategy _ _ _ v = Conv_oracle.pr_level v
+
+}
+
+ARGUMENT EXTEND strategy_level PRINTED BY { pr_strategy }
+| [ strategy_level0(n) ] -> { n }
+END
+
+{
+
+let intern_strategy ist v = match v with
+| ArgVar id -> ArgVar (Tacintern.intern_hyp ist id)
+| ArgArg v -> ArgArg v
+
+let subst_strategy _ v = v
+
+let interp_strategy ist gl = function
+| ArgArg n -> gl.Evd.sigma, n
+| ArgVar { CAst.v = id; CAst.loc } ->
+  let v =
+    try Id.Map.find id ist.lfun
+    with Not_found ->
+      CErrors.user_err ?loc
+        (str "Unbound variable " ++ Id.print id ++ str".")
+  in
+  let v =
+    try Tacinterp.Value.cast (Genarg.topwit wit_strategy_level) v
+    with CErrors.UserError _ -> Taccoerce.error_ltac_variable ?loc id None v "a strategy_level"
+  in
+  gl.Evd.sigma, v
+
+let pr_loc_strategy _ _ _ v = Pputils.pr_or_var Conv_oracle.pr_level v
+
+}
+
+ARGUMENT EXTEND strategy_level_or_var
+    TYPED AS strategy_level
+    PRINTED BY { pr_strategy }
+    INTERPRETED BY { interp_strategy }
+    GLOBALIZED BY { intern_strategy }
+    SUBSTITUTED BY { subst_strategy }
+    RAW_PRINTED BY { pr_loc_strategy }
+    GLOB_PRINTED BY { pr_loc_strategy }
+| [ strategy_level(n) ] -> { ArgArg n }
+| [ identref(id) ] -> { ArgVar id }
 END

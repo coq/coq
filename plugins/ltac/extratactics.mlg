@@ -1119,3 +1119,11 @@ let tclOPTIMIZE_HEAP =
 TACTIC EXTEND optimize_heap
 | [ "optimize_heap" ] -> { tclOPTIMIZE_HEAP }
 END
+
+(** Tactic analogous to [Strategy] vernacular *)
+
+TACTIC EXTEND with_strategy
+| [ "with_strategy" strategy_level_or_var(v) "[" ne_smart_global_list(q) "]" tactic3(tac) ] -> {
+  with_set_strategy [(v, q)] (Tacinterp.tactic_of_value ist tac)
+}
+END

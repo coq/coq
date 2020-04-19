@@ -39,6 +39,8 @@ val wit_var : (lident, lident, Id.t) genarg_type
 
 val wit_ref : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
 
+val wit_smart_global : (qualid or_by_notation, GlobRef.t located or_var, GlobRef.t) genarg_type
+
 val wit_sort_family : (Sorts.family, unit, unit) genarg_type
 
 val wit_constr : (constr_expr, glob_constr_and_expr, constr) genarg_type
