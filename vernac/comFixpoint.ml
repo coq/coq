@@ -53,7 +53,7 @@ let rec partial_order cmp = function
                     (z, Inr (List.add_set cmp x (List.remove cmp y zge)))
                   else
                     (z, Inr zge)) res in
-            browse ((y,Inl x)::res) xge' (List.union cmp xge (List.remove cmp x yge))
+            browse ((y,Inl x)::res) xge' (List.union cmp xge yge)
           else
             browse res (List.add_set cmp y (List.union cmp xge' yge)) xge
         with Not_found -> browse res (List.add_set cmp y xge') xge
