@@ -131,7 +131,7 @@ Qed.
 (* test that the strategy tactic does persist through abstract *)
 Opaque id.
 Goal id 0 = 0.
-  Fail Time Timeout 5
+  Time Timeout 5
        with_strategy
        expand [id]
        assert (id (fact 100) = fact 100) by abstract reflexivity.

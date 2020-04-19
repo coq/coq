@@ -3370,7 +3370,9 @@ the conversion in hypotheses :n:`{+ @ident}`.
       Use this tactic with care, as effects do not persist past the
       end of the proof script.  Notably, this fine-tuning of the
       conversion strategy is not in effect during :cmd:`Qed` nor
-      :cmd:`Defined`, so this tactic is most useful to guard
+      :cmd:`Defined`, so this tactic is most useful either in
+      combination with :tacn:`abstract`, which will check the proof
+      early while the fine-tuning is still in effect, or to guard
       calls to conversion in tactic automation to ensure that, e.g.,
       :tacn:`unfold` does not fail just because the user made a
       constant :cmd:`Opaque`.
