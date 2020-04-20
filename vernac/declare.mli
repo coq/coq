@@ -279,3 +279,6 @@ val build_constant_by_tactic :
   EConstr.types ->
   unit Proofview.tactic ->
   Evd.side_effects proof_entry * bool * UState.t
+
+val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
+[@@ocaml.deprecated "Use DeclareUctx.declare_universe_context"]
