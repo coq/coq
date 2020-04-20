@@ -1,3 +1,5 @@
+.. |GtkSourceView| replace:: :smallcaps:`GtkSourceView`
+
 .. _coqintegrateddevelopmentenvironment:
 
 |Coq| Integrated Development Environment
@@ -158,7 +160,18 @@ presented as a notebook.
 The first section is for selecting the text font used for scripts,
 goal and message windows.
 
-The second and third sections are for controlling colors and style.
+The second and third sections are for controlling colors and style of
+the three main buffers. A predefined |Coq| highlighting style as well
+as standard |GtkSourceView| styles are available. Other styles can be
+added e.g. in ``$HOME/.local/share/gtksourceview-3.0/styles/`` (see
+the general documentation about |GtkSourceView| for the various
+possibilities). Note that the style of the rest of graphical part of
+Coqide is not under the control of |GtkSourceView| but of GTK+ and
+governed by files such as ``settings.ini`` and ``gtk.css`` in
+``$XDG_CONFIG_HOME/gtk-3.0`` or files in
+``$HOME/.themes/NameOfTheme/gtk-3.0``, as well as the environment
+variable ``GTK_THEME`` (search on internet for the various
+possibilities).
 
 The fourth section is for customizing the editor. It includes in
 particular the ability to activate an Emacs mode named

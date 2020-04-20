@@ -11,6 +11,7 @@
 class type proof_view =
   object
     inherit GObj.widget
+    method source_buffer : GSourceView3.source_buffer
     method buffer : GText.buffer
     method refresh : force:bool -> unit
     method clear : unit -> unit
