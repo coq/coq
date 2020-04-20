@@ -24,6 +24,10 @@ type option_value =
   | StringValue of string
   | StringOptValue of string option
 
+type table_value =
+  | StringRefValue of string
+  | QualidRefValue of qualid
+
 (** Summary of an option status *)
 type option_state = {
   opt_depr  : bool;
@@ -35,8 +39,13 @@ type option_state = {
 
 let nickname table = String.concat " " table
 
+let error_no_table_of_this_type ~kind key =
+  user_err ~hdr:"Goptions"
+    (str ("There is no " ^ kind ^ "-valued table with this name: \"" ^ nickname key ^ "\"."))
+
 let error_undeclared_key key =
-  user_err ~hdr:"Goptions" (str (nickname key) ++ str ": no table or option of this type")
+  user_err ~hdr:"Goptions"
+    (str ("There is no flag, option or table with this name: \"" ^ nickname key ^ "\"."))
 
 (****************************************************************************)
 (* 1- Tables                                                                *)
@@ -183,6 +192,23 @@ end
 
 module MakeRefTable =
   functor (A : RefConvertArg) -> MakeTable (RefConvert(A))
+
+type iter_table_aux = { aux : 'a. 'a table_of_A -> Environ.env -> 'a -> unit }
+
+let iter_table f key lv =
+  let aux = function
+    | StringRefValue s ->
+       begin
+         try f.aux (get_string_table key) (Global.env()) s
+         with Not_found -> error_no_table_of_this_type ~kind:"string" key
+       end
+    | QualidRefValue locqid ->
+       begin
+         try f.aux (get_ref_table key) (Global.env()) locqid
+         with Not_found -> error_no_table_of_this_type ~kind:"qualid" key
+       end
+  in
+  List.iter aux lv
 
 (****************************************************************************)
 (* 2- Flags.                                                              *)
@@ -387,9 +413,10 @@ let declare_interpreted_string_option_and_ref ~depr ~key ~(value:'a) from_string
 (* Setting values of options *)
 
 let warn_unknown_option =
-  CWarnings.create ~name:"unknown-option" ~category:"option"
-                   (fun key -> strbrk "There is no option " ++
-                                 str (nickname key) ++ str ".")
+  CWarnings.create
+    ~name:"unknown-option" ~category:"option"
+    (fun key -> strbrk "There is no flag or option with this name: \"" ++
+                  str (nickname key) ++ str "\".")
 
 let set_option_value ?(locality = OptDefault) check_and_cast key v =
   let opt = try Some (get_option key) with Not_found -> None in

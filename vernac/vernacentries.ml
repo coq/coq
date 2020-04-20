@@ -1554,26 +1554,11 @@ let vernac_set_option ~locality table v = match v with
       vernac_set_option0 ~locality table v
 | _ -> vernac_set_option0 ~locality table v
 
-let vernac_add_option key lv =
-  let f = function
-    | StringRefValue s -> (get_string_table key).add (Global.env()) s
-    | QualidRefValue locqid -> (get_ref_table key).add (Global.env()) locqid
-  in
-  try List.iter f lv with Not_found -> error_undeclared_key key
+let vernac_add_option = iter_table { aux = fun table -> table.add }
 
-let vernac_remove_option key lv =
-  let f = function
-  | StringRefValue s -> (get_string_table key).remove (Global.env()) s
-  | QualidRefValue locqid -> (get_ref_table key).remove (Global.env()) locqid
-  in
-  try List.iter f lv with Not_found -> error_undeclared_key key
+let vernac_remove_option = iter_table { aux = fun table -> table.remove }
 
-let vernac_mem_option key lv =
-  let f = function
-  | StringRefValue s -> (get_string_table key).mem (Global.env()) s
-  | QualidRefValue locqid -> (get_ref_table key).mem (Global.env()) locqid
-  in
-  try List.iter f lv with Not_found -> error_undeclared_key key
+let vernac_mem_option = iter_table { aux = fun table -> table.mem }
 
 let vernac_print_option key =
   try (get_ref_table key).print ()

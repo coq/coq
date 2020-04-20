@@ -187,6 +187,10 @@ type option_value =
   | StringValue of string
   | StringOptValue of string option
 
+type table_value =
+  | StringRefValue of string
+  | QualidRefValue of qualid
+
 val set_option_value : ?locality:option_locality ->
   ('a -> option_value -> option_value) -> option_name -> 'a -> unit
 (** [set_option_value ?locality f name v] sets [name] to the result of
@@ -203,5 +207,8 @@ type option_state = {
 
 val get_tables : unit -> option_state OptionMap.t
 val print_tables : unit -> Pp.t
+
+type iter_table_aux = { aux : 'a. 'a table_of_A -> Environ.env -> 'a -> unit }
+val iter_table : iter_table_aux -> option_name -> table_value list -> unit
 
 val error_undeclared_key : option_name -> 'a
