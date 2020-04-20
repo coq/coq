@@ -188,20 +188,19 @@ class CoqObject(ObjectDescription):
     def _add_index_entry(self, name, target):
         """Add `name` (pointing to `target`) to the main index."""
         assert isinstance(name, str)
-        if not name.startswith("_"):
-            # remove trailing . , found in commands, but not ... (ellipsis)
-            trim = name.endswith(".") and not name.endswith("...")
-            index_text = name[:-1] if trim else name
-            if self.index_suffix:
-                index_text += " " + self.index_suffix
-            self.indexnode['entries'].append(('single', index_text, target, '', None))
+        # remove trailing . , found in commands, but not ... (ellipsis)
+        trim = name.endswith(".") and not name.endswith("...")
+        index_text = name[:-1] if trim else name
+        if self.index_suffix:
+            index_text += " " + self.index_suffix
+        self.indexnode['entries'].append(('single', index_text, target, '', None))
 
     aliases = None  # additional indexed names for a command or other object
 
     def add_target_and_index(self, name, _, signode):
         """Attach a link target to `signode` and an index entry for `name`.
         This is only called (from ``ObjectDescription.run``) if ``:noindex:`` isn't specified."""
-        if name:
+        if name and not (isinstance(name, str) and name.startswith('_')):
             target = self._add_target(signode, name)
             self._add_index_entry(name, target)
             if self.aliases is not None:
