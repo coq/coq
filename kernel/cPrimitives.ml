@@ -52,6 +52,51 @@ type t =
   | Float64next_up
   | Float64next_down
 
+let parse = function
+  | "int63_head0" -> Int63head0
+  | "int63_tail0" -> Int63tail0
+  | "int63_add" -> Int63add
+  | "int63_sub" -> Int63sub
+  | "int63_mul" -> Int63mul
+  | "int63_div" -> Int63div
+  | "int63_mod" -> Int63mod
+  | "int63_lsr" -> Int63lsr
+  | "int63_lsl" -> Int63lsl
+  | "int63_land" -> Int63land
+  | "int63_lor" -> Int63lor
+  | "int63_lxor" -> Int63lxor
+  | "int63_addc" -> Int63addc
+  | "int63_subc" -> Int63subc
+  | "int63_addcarryc" -> Int63addCarryC
+  | "int63_subcarryc" -> Int63subCarryC
+  | "int63_mulc" -> Int63mulc
+  | "int63_diveucl" -> Int63diveucl
+  | "int63_div21" -> Int63div21
+  | "int63_addmuldiv" -> Int63addMulDiv
+  | "int63_eq" -> Int63eq
+  | "int63_lt" -> Int63lt
+  | "int63_le" -> Int63le
+  | "int63_compare" -> Int63compare
+  | "float64_opp" -> Float64opp
+  | "float64_abs" -> Float64abs
+  | "float64_eq" -> Float64eq
+  | "float64_lt" -> Float64lt
+  | "float64_le" -> Float64le
+  | "float64_compare" -> Float64compare
+  | "float64_classify" -> Float64classify
+  | "float64_add" -> Float64add
+  | "float64_sub" -> Float64sub
+  | "float64_mul" -> Float64mul
+  | "float64_div" -> Float64div
+  | "float64_sqrt" -> Float64sqrt
+  | "float64_of_int63" -> Float64ofInt63
+  | "float64_normfr_mantissa" -> Float64normfr_mantissa
+  | "float64_frshiftexp" -> Float64frshiftexp
+  | "float64_ldshiftexp" -> Float64ldshiftexp
+  | "float64_next_up" -> Float64next_up
+  | "float64_next_down" -> Float64next_down
+  | _ -> raise Not_found
+
 let equal (p1 : t) (p2 : t) =
   p1 == p2
 
@@ -229,3 +274,17 @@ let prim_type_to_string = function
 let op_or_type_to_string = function
   | OT_op op -> to_string op
   | OT_type t -> prim_type_to_string t
+
+let prim_type_of_string = function
+  | "int63_type" -> PT_int63
+  | "float64_type" -> PT_float64
+  | _ -> raise Not_found
+
+let op_or_type_of_string s =
+  try OT_type (prim_type_of_string s)
+  with Not_found -> OT_op (parse s)
+
+let parse_op_or_type ?loc s =
+  try op_or_type_of_string s
+  with Not_found ->
+    CErrors.user_err ?loc Pp.(str ("Built-in #"^s^" does not exist."))

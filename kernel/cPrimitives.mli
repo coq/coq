@@ -52,6 +52,10 @@ type t =
   | Float64next_up
   | Float64next_down
 
+(** Can raise [Not_found].
+    Beware that this is not exactly the reverse of [to_string] below. *)
+val parse : string -> t
+
 val equal : t -> t -> bool
 
 type arg_kind =
@@ -75,6 +79,10 @@ type prim_type =
   | PT_int63
   | PT_float64
 
+(** Can raise [Not_found] *)
+val prim_type_of_string : string -> prim_type
+val prim_type_to_string : prim_type -> string
+
 type 'a prim_ind =
   | PIT_bool : unit prim_ind
   | PIT_carry : prim_type prim_ind
@@ -90,7 +98,12 @@ type op_or_type =
   | OT_type of prim_type
 
 val prim_ind_to_string : 'a prim_ind -> string
+
+(** Can raise [Not_found] *)
+val op_or_type_of_string : string -> op_or_type
 val op_or_type_to_string : op_or_type -> string
+
+val parse_op_or_type : ?loc:Loc.t -> string -> op_or_type
 
 type ind_or_type =
   | PITT_ind : 'a prim_ind * 'a -> ind_or_type
