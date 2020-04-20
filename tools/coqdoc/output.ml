@@ -821,7 +821,7 @@ module Html = struct
      | Some n -> if lev <= n then add_toc_entry (Toc_section (lev, f, r))
                    else ());
     stop_item ();
-    printf "<a name=\"%s\"></a><h%d class=\"section\">" lab lev;
+    printf "<a id=\"%s\"></a><h%d class=\"section\">" lab lev;
     f ();
     printf "</h%d>\n" lev
 
@@ -835,7 +835,7 @@ module Html = struct
   let letter_index category idx (c,l) =
     if l <> [] then begin
       let cat = if category && idx <> "global" then "(" ^ idx ^ ")" else "" in
-      printf "<a name=\"%s_%c\"></a><h2>%s %s</h2>\n" idx c (display_letter c) cat;
+      printf "<a id=\"%s_%c\"></a><h2>%s %s</h2>\n" idx c (display_letter c) cat;
       List.iter
         (fun (id,(text,link,t)) ->
            let id' = prepare_entry id t in
