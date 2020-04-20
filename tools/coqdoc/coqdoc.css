@@ -331,3 +331,8 @@ ul.doclist {
     margin-top: 0em;
     margin-bottom: 0em;
 }
+
+.code :target {
+    border: 2px solid #D4D4D4;
+    background-color: #e5eecc;
+}
