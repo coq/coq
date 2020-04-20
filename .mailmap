@@ -9,7 +9,9 @@
 ## If you're mentioned here and want to update your information,
 ## either amend this file and commit it, or contact the coqdev list
 
+Guillaume Allais <guillaume.allais@ens-lyon.org>   gallais <guillaume.allais@ens-lyon.org>
 Abhishek Anand <abhishek.anand.iitg@gmail.com>     Abhishek Anand (@brixpro-home) <abhishek.anand.iitg@gmail.com>
+Abhishek Anand <abhishek.anand.iitg@gmail.com>     Abhishek Anand (optiplex7010@home) <abhishek.anand.iitg@gmail.com>
 Léo Andrès <leo@ndrs.fr>                           zapashcanon <leo@ndrs.fr>
 Jim Apple <github.public@jbapple.com>              jbapple <github.public@jbapple.com>
 Bruno Barras <bruno.barras@inria.fr>               barras <barras@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -21,13 +23,17 @@ Yves Bertot <yves.bertot@inria.fr>                 Yves Bertot <Yves.Bertot@inri
 Yves Bertot <yves.bertot@inria.fr>                 Yves Bertot <bertot@nardis.inria.fr>
 Frédéric Besson <frederic.besson@inria.fr>         fbesson <fbesson@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Siddharth Bhat <siddu.druid@gmail.com>             Siddharth <siddu.druid@gmail.com>
+Lasse Blaauwbroek <lasse@blaauwbroek.eu>           Lasse Blaauwbroek <lasse@lasse-work.localdomain>
 Simon Boulier <simon.boulier@ens-rennes.fr>        SimonBoulier <simon.boulier@ens-rennes.fr>
+Simon Boulier <simon.boulier@ens-rennes.fr>        SimonBoulier <SimonBoulier@users.noreply.github.com>
 Pierre Boutillier <pierre.boutillier@ens-lyon.org> pboutill <pboutill@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Pierre Boutillier <pierre.boutillier@ens-lyon.org> Pierre <pierre.boutillier@ens-lyon.org>
 Pierre Boutillier <pierre.boutillier@ens-lyon.org> Pierre Boutillier <pierre.boutillier@pps.univ-paris-diderot.fr>
+Michele Caci <michele.caci@gmail.com>              mcaci <michele.caci@gmail.com>
 Arthur Charguéraud <arthur@chargueraud.org>        charguer <arthur@chargueraud.org>
 Xavier Clerc <xavier.clerc@inria.fr>               xclerc <xclerc@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Xavier Clerc <xavier.clerc@inria.fr>               xclerc <xavier.clerc@inria.fr>
+Cyril Cohen <cohen@crans.org>                      Cyril Cohen <CohenCyril@users.noreply.github.com>
 Pierre Corbineau <Pierre.Corbineau@NOSPAM@imag.fr> corbinea <corbinea@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Judicaël Courant <courant@gforge>                  courant <courant@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Pierre Courtieu <Pierre.Courtieu@cnam.fr>          courtieu <courtieu@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -39,8 +45,10 @@ Maxime Dénès <mail@maximedenes.fr>                 Maxime Dénès <maxime.dene
 Olivier Desmettre <desmettr@gforge>                desmettr <desmettr@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Damien Doligez <doligez@gforge>                    doligez <doligez@85f007b7-540e-0410-9357-904b9bb8a0f7>
 İsmail Dönmez <ismail-s@users.noreply.github.com>  Ismail <ismail-s@users.noreply.github.com>
+formalize.eth <formalize@protonmail.com>           ilya <ilya@localhost.localdomain>
 Andres Erbsen <andreser@mit.edu>                   Andres Erbsen <andres@kevix.co>
 Jim Fehrle <jfehrle@sbcglobal.net>                 Jim <jfehrle@sbcglobal.net>
+Jim Fehrle <jfehrle@sbcglobal.net>                 Jim Fehrle <jim.fehrle@gmail.com>
 Jean-Christophe Filliâtre <Jean-Christophe.Filliatre@lri.fr> filliatr <filliatr@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Jean-Christophe Filliâtre <Jean-Christophe.Filliatre@lri.fr> Jean-Christophe Filliatre <Jean-Christophe.Filliatre@lri.fr>
 Julien Forest <julien.forest@ensiie.fr>            jforest <jforest@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -63,6 +71,7 @@ Jason Gross <jgross@mit.edu>                       Jason Gross <jasongross9@gmai
 Vincent Gross <vgross@gforge>                      vgross <vgross@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Huang Guan-Shieng <huang@gforge>                   huang <huang@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Hugo Herbelin <Hugo.Herbelin@inria.fr>             herbelin <herbelin@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Hugo Herbelin <Hugo.Herbelin@inria.fr>             Hugo Herbelin <herbelin@users.noreply.github.com>
 Jasper Hugunin <jasperh@cs.washington.edu>         Jasper Hugunin <jasper@hashplex.com>
 Tom Hutchinson <thutchin@gforge>                   thutchin <thutchin@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Cezary Kaliszyk <cek@gforge>                       cek <cek@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -74,13 +83,18 @@ Matej Košík <matej.kosik@inria.fr>                 Matej Kosik <matej.kosik@in
 Matej Košík <matej.kosik@inria.fr>                 Matej Košík <mail@matej-kosik.net>
 Ambroise Lafont <chaster_killer@hotmail.fr>        amblaf <you@example.com>
 Ambroise Lafont <chaster_killer@hotmail.fr>        Ambroise <chaster_killer@hotmail.fr>
-Vincent Laporte <Vincent.Laporte@fondation-inria.fr> Vincent Laporte <Vincent.Laporte@gmail.com>
+Vincent Laporte <Vincent.Laporte@inria.fr>         Vincent Laporte <Vincent.Laporte@gmail.com>
+Vincent Laporte <Vincent.Laporte@inria.fr>         Vincent Laporte <Vincent.Laporte@fondation-inria.fr>
 Marc Lasson <marc.lasson@gmail.com>                mlasson <marc.lasson@gmail.com>
 William Lawvere <mundungus.corleone@gmail.com>     william-lawvere <mundungus.corleone@gmail.com>
+Larry Darryl Lee Jr. <llee454@gmail.com>           llee454@gmail.com <llee454@gmail.com>
+Xavier Leroy <xavier.leroy@college-de-france.fr>   Xavier Leroy <xavier.leroy@inria.fr>
 Pierre Letouzey <pierre.letouzey@inria.fr>         letouzey <letouzey@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Pierre Letouzey <pierre.letouzey@inria.fr>         letouzey <pierre.letouzey@inria.fr>
 Xia Li-yao <lysxia@gmail.com>                      Lysxia <lysxia@gmail.com>
+Yishuai Li <yishuai@cis.upenn.edu>                 Yishuai Li <yishuai@upenn.edu>
 Assia Mahboubi <assia.mahboubi@inria.fr>           amahboub <amahboub@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Kenji Maillard <kenji.maillard@inria.fr>           Kenji Maillard <kenji@maillard.blue>
 Evgeny Makarov <emakarov@gforge>                   emakarov <emakarov@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Gregory Malecha <gmalecha@eecs.harvard.edu>        Gregory Malecha <gmalecha@cs.harvard.edu>
 Gregory Malecha <gmalecha@eecs.harvard.edu>        Gregory Malecha <gmalecha@gmail.com>
@@ -103,9 +117,11 @@ Christine Paulin <cpaulin@gforge>                  mohring <mohring@85f007b7-540
 Pierre-Marie Pédrot <pierre-marie.pedrot@inria.fr> ppedrot <ppedrot@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Frederic Peschanski <frederic.peschanski@lip6.fr>  fredokun <frederic.peschanski@lip6.fr>
 Clément Pit-Claudel <clement.pitclaudel@live.com>  Clément Pit--Claudel <clement.pitclaudel@live.com>
+Clément Pit-Claudel <clement.pitclaudel@live.com>  Clément Pit-Claudel <cpitclaudel@users.noreply.github.com>
 Loïc Pottier <pottier@gforge>                      pottier <pottier@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Matthias Puech <puech@gforge>                      puech <puech@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Lars Rasmusson <lars.rasmusson@sics.se>            larsr <Lars.Rasmusson@sics.se>
+Lars Rasmusson <lars.rasmusson@sics.se>            larsr <Lars.Rasmusson@gmail.com>
 Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr> ddr <ddr@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr> Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr>
 Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr> Daniel De Rauglaudre <ddr@gforge>
@@ -116,6 +132,7 @@ Pierre Roux <pierre@roux01.fr>                     Pierre Roux <pierre.roux@oner
 Matthew Ryan <mr_1993@hotmail.co.uk>               mrmr1993 <mr_1993@hotmail.co.uk>
 Claudio Sacerdoti Coen <sacerdot@gforge>           sacerdot <sacerdot@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Kazuhiko Sakaguchi <pi8027@gmail.com>              Kazuhiko Sakaguchi <sakaguchi@coins.tsukuba.ac.jp>
+Kazuhiko Sakaguchi <pi8027@gmail.com>              Kazuhiko Sakaguchi <sakaguchi@peano-system.jp>
 Vincent Siles <vsiles@gforge>                      vsiles <vsiles@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Michael Soegtrop <michael.soegtrop@intel.com>      Michael Soegtrop <7895506+MSoegtropIMC@users.noreply.github.com>
 Elie Soubiran <soubiran@gforge>                    soubiran <soubiran@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -138,8 +155,9 @@ Benjamin Werner <werner@gforge>                    werner <werner@85f007b7-540e-
 Wang Zhuyang <hawnzug@gmail.com>                   hawnzug <hawnzug@gmail.com>
 Beta Ziliani <beta@mpi-sws.org>                    Beta Ziliani <bziliani@famaf.unc.edu.ar>
 Beta Ziliani <beta@mpi-sws.org>                    beta <beta@mpi-sws.org>
-Théo Zimmermann <theo.zimmermann@univ-paris-diderot.fr> Theo Zimmermann <theo.zimmermann@ens.fr>
-Théo Zimmermann <theo.zimmermann@univ-paris-diderot.fr> Théo Zimmermann <theo.zimmi@gmail.com>
+Théo Zimmermann <theo.zimmermann@inria.fr>         Theo Zimmermann <theo.zimmermann@ens.fr>
+Théo Zimmermann <theo.zimmermann@inria.fr>         Théo Zimmermann <theo.zimmi@gmail.com>
+Théo Zimmermann <theo.zimmermann@inria.fr>         Théo Zimmermann <theo.zimmermann@univ-paris-diderot.fr>
 
 # Anonymous accounts
 
