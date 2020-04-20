@@ -938,23 +938,23 @@ GRAMMAR EXTEND Gram
       | IDENT "Print"; IDENT "Table"; table = option_table ->
           { VernacPrintOption table }
 
-      | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 option_ref_value
+      | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 table_value
         -> { VernacAddOption ([table;field], v) }
       (* A global value below will be hidden by a field above! *)
       (* In fact, we give priority to secondary tables *)
       (* No syntax for tertiary tables due to conflict *)
       (* (but they are unused anyway) *)
-      | IDENT "Add"; table = IDENT; v = LIST1 option_ref_value ->
+      | IDENT "Add"; table = IDENT; v = LIST1 table_value ->
           { VernacAddOption ([table], v) }
 
-      | IDENT "Test"; table = option_table; "for"; v = LIST1 option_ref_value
+      | IDENT "Test"; table = option_table; "for"; v = LIST1 table_value
         -> { VernacMemOption (table, v) }
       | IDENT "Test"; table = option_table ->
           { VernacPrintOption table }
 
-      | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 option_ref_value
+      | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 table_value
         -> { VernacRemoveOption ([table;field], v) }
-      | IDENT "Remove"; table = IDENT; v = LIST1 option_ref_value ->
+      | IDENT "Remove"; table = IDENT; v = LIST1 table_value ->
           { VernacRemoveOption ([table], v) } ]]
   ;
   query_command: (* TODO: rapprocher Eval et Check *)
@@ -1047,9 +1047,9 @@ GRAMMAR EXTEND Gram
       | n  = integer   -> { OptionSetInt n }
       | s  = STRING    -> { OptionSetString s } ] ]
   ;
-  option_ref_value:
-    [ [ id = global   -> { QualidRefValue id }
-      | s  = STRING   -> { StringRefValue s } ] ]
+  table_value:
+    [ [ id = global   -> { Goptions.QualidRefValue id }
+      | s  = STRING   -> { Goptions.StringRefValue s } ] ]
   ;
   option_table:
     [ [ fl = LIST1 [ x = IDENT -> { x } ] -> { fl } ]]

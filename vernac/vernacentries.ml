@@ -1554,23 +1554,6 @@ let vernac_set_option ~locality table v = match v with
       vernac_set_option0 ~locality table v
 | _ -> vernac_set_option0 ~locality table v
 
-type iter_table_aux = { aux : 'a. 'a Goptions.table_of_A -> Environ.env -> 'a -> unit }
-
-let iter_table f key lv =
-  let aux = function
-    | StringRefValue s ->
-       begin
-         try f.aux (get_string_table key) (Global.env()) s
-         with Not_found -> error_no_table_of_this_type ~kind:"string" key
-       end
-    | QualidRefValue locqid ->
-       begin
-         try f.aux (get_ref_table key) (Global.env()) locqid
-         with Not_found -> error_no_table_of_this_type ~kind:"qualid" key
-       end
-  in
-  List.iter aux lv
-
 let vernac_add_option = iter_table { aux = fun table -> table.add }
 
 let vernac_remove_option = iter_table { aux = fun table -> table.remove }

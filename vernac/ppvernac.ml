@@ -168,8 +168,8 @@ open Pputils
          keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search sl ++ pr_in_out_modules b
 
   let pr_option_ref_value = function
-    | QualidRefValue id -> pr_qualid id
-    | StringRefValue s -> qs s
+    | Goptions.QualidRefValue id -> pr_qualid id
+    | Goptions.StringRefValue s -> qs s
 
   let pr_printoption table b =
     prlist_with_sep spc str table ++

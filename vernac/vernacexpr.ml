@@ -121,10 +121,6 @@ type option_setting =
   | OptionSetInt of int
   | OptionSetString of string
 
-type option_ref_value =
-  | StringRefValue of string
-  | QualidRefValue of qualid
-
 (** Identifier and optional list of bound universes and constraints. *)
 
 type sort_expr = Sorts.family
@@ -406,9 +402,9 @@ type nonrec vernac_expr =
   | VernacSetStrategy of
       (Conv_oracle.level * qualid or_by_notation list) list
   | VernacSetOption of bool (* Export modifier? *) * Goptions.option_name * option_setting
-  | VernacAddOption of Goptions.option_name * option_ref_value list
-  | VernacRemoveOption of Goptions.option_name * option_ref_value list
-  | VernacMemOption of Goptions.option_name * option_ref_value list
+  | VernacAddOption of Goptions.option_name * Goptions.table_value list
+  | VernacRemoveOption of Goptions.option_name * Goptions.table_value list
+  | VernacMemOption of Goptions.option_name * Goptions.table_value list
   | VernacPrintOption of Goptions.option_name
   | VernacCheckMayEval of Genredexpr.raw_red_expr option * Goal_select.t option * constr_expr
   | VernacGlobalCheck of constr_expr
