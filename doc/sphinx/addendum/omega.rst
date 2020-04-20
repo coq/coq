@@ -1,4 +1,4 @@
-.. _omega:
+.. _omega_chapter:
 
 Omega: a solver for quantifier-free problems in Presburger Arithmetic
 =====================================================================
@@ -28,6 +28,7 @@ Description of ``omega``
 ------------------------
 
 .. tacn:: omega
+   :name: omega
 
    .. deprecated:: 8.12
 

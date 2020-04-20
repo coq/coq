@@ -55,7 +55,8 @@ __ 811Reals_
 Additionally, while the :tacn:`omega` tactic is not yet deprecated in
 this version of Coq, it should soon be the case and we already
 recommend users to switch to :tacn:`lia` in new proof scripts (see
-also the warning message in the :ref:`corresponding chapter <omega>`).
+also the warning message in the :ref:`corresponding chapter
+<omega_chapter>`).
 
 The ``dev/doc/critical-bugs`` file documents the known critical bugs
 of |Coq| and affected releases. See the `Changes in 8.11+beta1`_
