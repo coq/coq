@@ -716,7 +716,11 @@ library:ci-fiat-crypto:
   - plugin:ci-rewriter
 
 library:ci-flocq:
-  extends: .ci-template
+  extends: .ci-template-flambda
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build_ci
 
 library:ci-corn:
   extends: .ci-template-flambda
@@ -772,6 +776,13 @@ library:ci-verdi-raft:
 
 library:ci-vst:
   extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-flocq
+  dependencies:
+  - build:edge+flambda
+  - library:ci-flocq
 
 # Plugins are by definition the projects that depend on Coq's ML API
 
