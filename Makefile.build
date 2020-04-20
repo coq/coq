@@ -201,7 +201,7 @@ DEPENDENCIES := \
 
 # Default timing command
 # Use /usr/bin/env time on linux, gtime on Mac OS
-TIMEFMT?="$* (real: %e, user: %U, sys: %S, mem: %M ko)"
+TIMEFMT?="$@ (real: %e, user: %U, sys: %S, mem: %M ko)"
 ifneq (,$(TIMED))
 ifeq (0,$(shell /usr/bin/env time -f "" true >/dev/null 2>/dev/null; echo $$?))
 STDTIME?=/usr/bin/env time -f $(TIMEFMT)
