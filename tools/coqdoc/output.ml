@@ -659,7 +659,8 @@ module Html = struct
   let reference s r =
     match r with
     | Def (fullid,ty) ->
-        printf "<a name=\"%s\">" (sanitize_name fullid);
+        let s' = sanitize_name fullid in
+        printf "<a id=\"%s\" class=\"idref\" href=\"#%s\">" s' s';
         printf "<span class=\"id\" title=\"%s\">%s</span></a>" (type_name ty) s
     | Ref (m,fullid,ty) ->
         ident_ref m fullid (type_name ty) s
