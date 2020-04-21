@@ -76,6 +76,8 @@ ci-quickchick: ci-ext-lib ci-simple-io
 
 ci-metacoq: ci-equations
 
+ci-vst: ci-flocq
+
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
 	+./dev/ci/ci-wrapper.sh $*
