@@ -215,6 +215,14 @@
     margin-bottom: 0.28em;
 }
 
+.term-defn {
+    font-style: italic;
+}
+
+.std-term {
+    color: #2980B9;  /* override if :visited */
+}
+
 /* We can't display nested blocks otherwise */
 code, .rst-content tt, .rst-content code {
     background: transparent !important;

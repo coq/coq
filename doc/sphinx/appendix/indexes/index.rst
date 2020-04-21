@@ -17,6 +17,7 @@ find what you are looking for.
    ../../coq-optindex
    ../../coq-exnindex
    ../../coq-attrindex
+   ../../std-glossindex
 
 For reference, here are direct links to the documentation of:
 
