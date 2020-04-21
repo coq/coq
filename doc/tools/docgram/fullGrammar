@@ -524,12 +524,12 @@ command: [
 | "Set" option_table option_setting
 | "Unset" option_table
 | "Print" "Table" option_table
-| "Add" IDENT IDENT LIST1 option_ref_value
-| "Add" IDENT LIST1 option_ref_value
-| "Test" option_table "for" LIST1 option_ref_value
+| "Add" IDENT IDENT LIST1 table_value
+| "Add" IDENT LIST1 table_value
+| "Test" option_table "for" LIST1 table_value
 | "Test" option_table
-| "Remove" IDENT IDENT LIST1 option_ref_value
-| "Remove" IDENT LIST1 option_ref_value
+| "Remove" IDENT IDENT LIST1 table_value
+| "Remove" IDENT LIST1 table_value
 | "Write" "State" IDENT
 | "Write" "State" ne_string
 | "Restore" "State" IDENT
@@ -1318,7 +1318,7 @@ option_setting: [
 | STRING
 ]
 
-option_ref_value: [
+table_value: [
 | global
 | STRING
 ]
