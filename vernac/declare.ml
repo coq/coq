@@ -495,6 +495,17 @@ let declare_constant ?(local = ImportDefaultBehavior) ~name ~kind cd =
   let () = register_constant kn kind local in
   kn
 
+let get_cd_fix_exn = function
+  | DefinitionEntry de ->
+    Future.fix_exn_of de.proof_entry_body
+  | _ -> fun x -> x
+
+let declare_constant ?local ~name ~kind cd =
+  try declare_constant ?local ~name ~kind cd
+  with exn ->
+    let exn = Exninfo.capture exn in
+    Exninfo.iraise (get_cd_fix_exn cd exn)
+
 let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind de =
   let kn, eff =
     let de =
@@ -619,8 +630,6 @@ module Internal = struct
 
   let set_opacity ~opaque entry =
     { entry with proof_entry_opaque = opaque }
-
-  let get_fix_exn entry = Future.fix_exn_of entry.proof_entry_body
 
   let rec decompose len c t accu =
     let open Constr in

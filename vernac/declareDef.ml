@@ -59,13 +59,6 @@ let declare_entry ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ~uctx entry =
   Option.iter (fun hook -> Hook.call ~hook { Hook.S.uctx; obls; scope; dref }) hook;
   dref
 
-let declare_entry ~name ~scope ~kind ?hook ?obls ~impargs ~uctx entry =
-  try declare_entry ~name ~scope ~kind ?hook ?obls ~impargs ~uctx entry
-  with exn ->
-    let exn = Exninfo.capture exn in
-    let fix_exn = Declare.Internal.get_fix_exn entry in
-    Exninfo.iraise (fix_exn exn)
-
 let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
   match possible_indexes with
   | Some possible_indexes ->
