@@ -18,7 +18,7 @@ Check myeq_rew.
 Check myeq_rew_dep.
 Check myeq_rew_fwd_dep.
 Check myeq_rew_r.
-Check internal_myeq_sym_involutive.
+Check myeq_sym_involutive.
 Check myeq_rew_r_dep.
 Check myeq_rew_fwd_r_dep.
 

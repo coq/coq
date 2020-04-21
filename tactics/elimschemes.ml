@@ -62,7 +62,7 @@ let build_induction_scheme_in_type dep sort ind =
 
 let declare_individual_scheme_object name ?aux f =
   let f : individual_scheme_object_function =
-    fun _ ind -> f ind, Evd.empty_side_effects
+    fun _ ind -> f ind
   in
   declare_individual_scheme_object name ?aux f
 
