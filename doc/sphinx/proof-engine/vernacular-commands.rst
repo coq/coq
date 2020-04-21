@@ -91,9 +91,15 @@ capital letter.
    This command supports the :attr:`local`, :attr:`global` and :attr:`export` attributes.
    They are described :ref:`here <set_unset_scope_qualifiers>`.
 
-   .. warn:: There is no option @setting_name.
+   .. warn:: There is no flag or option with this name: "@setting_name".
 
-      This message also appears for unknown flags.
+      This warning message can be raised by :cmd:`Set` and
+      :cmd:`Unset` when :n:`@setting_name` is unknown.  It is a
+      warning rather than an error because this helps library authors
+      produce Coq code that is compatible with several Coq versions.
+      To preserve the same behavior, they may need to set some
+      compatibility flags or options that did not exist in previous
+      Coq versions.
 
 .. cmd:: Unset @setting_name
    :name: Unset
@@ -118,6 +124,20 @@ capital letter.
    If :n:`@setting_name` is a table: if the `for` clause is specified, reports
    whether the table contains each specified value, otherise this is equivalent to
    :cmd:`Print Table`.  The `for` clause is not valid for flags and options.
+
+   .. exn:: There is no flag, option or table with this name: "@setting_name".
+
+      This error message is raised when calling the :cmd:`Test`
+      command (without the `for` clause), or the :cmd:`Print Table`
+      command, for an unknown :n:`@setting_name`.
+
+   .. exn:: There is no qualid-valued table with this name: "@setting_name".
+            There is no string-valued table with this name: "@setting_name".
+
+      These error messages are raised when calling the :cmd:`Add` or
+      :cmd:`Remove` commands, or the :cmd:`Test` command with the
+      `for` clause, if :n:`@setting_name` is unknown or does not have
+      the right type.
 
 .. cmd:: Print Options
 
