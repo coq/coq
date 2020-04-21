@@ -620,8 +620,6 @@ let add_constant_aux senv (kn, cb) =
   in
   senv''
 
-let mk_pure_proof c = (c, Univ.ContextSet.empty), SideEffects.empty
-
 let inline_side_effects env body side_eff =
   let open Constr in
   (** First step: remove the constants that are still in the environment *)
