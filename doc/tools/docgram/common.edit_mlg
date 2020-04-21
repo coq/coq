@@ -906,14 +906,14 @@ command: [
 | DELETE "Unset" option_table
 | REPLACE "Set" option_table option_setting
 | WITH OPT "Export" "Set" option_table   (* set flag *)
-| REPLACE "Test" option_table "for" LIST1 option_ref_value
-| WITH "Test" option_table OPT ( "for" LIST1 option_ref_value )
+| REPLACE "Test" option_table "for" LIST1 table_value
+| WITH "Test" option_table OPT ( "for" LIST1 table_value )
 | DELETE "Test" option_table
 
 (* hide the fact that table names are limited to 2 IDENTs *)
-| REPLACE "Add" IDENT IDENT LIST1 option_ref_value
-| WITH "Add" option_table LIST1 option_ref_value
-| DELETE "Add" IDENT LIST1 option_ref_value
+| REPLACE "Add" IDENT IDENT LIST1 table_value
+| WITH "Add" option_table LIST1 table_value
+| DELETE "Add" IDENT LIST1 table_value
 | DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" ident
 | DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "as" ident
 | DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
@@ -969,9 +969,9 @@ command: [
 | DELETE "Preterm"
 
 (* hide the fact that table names are limited to 2 IDENTs *)
-| REPLACE "Remove" IDENT IDENT LIST1 option_ref_value
-| WITH "Remove" option_table LIST1 option_ref_value
-| DELETE "Remove" IDENT LIST1 option_ref_value
+| REPLACE "Remove" IDENT IDENT LIST1 table_value
+| WITH "Remove" option_table LIST1 table_value
+| DELETE "Remove" IDENT LIST1 table_value
 | DELETE "Restore" "State" IDENT
 | DELETE "Restore" "State" ne_string
 | "Restore" "State" [ IDENT | ne_string ]
@@ -1550,7 +1550,7 @@ SPLICE: [
 | constructor_type
 | record_binder
 | at_level_opt
-| option_ref_value
+| table_value
 | positive_search_mark
 | in_or_out_modules
 | option_setting
