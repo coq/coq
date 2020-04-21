@@ -1741,7 +1741,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
        (tclMAP (fun (dest,id) -> intro_move (Some id) dest) dephyps)]
       else
        [Proofview.tclUNIT ()]) @
-     [tclTRY (clear [x; hyp])])
+     [tclTRY (clear [hyp]); tclTRY (clear [x])])
   end
 
 (* Look for an hypothesis hyp of the form "x=rhs" or "rhs=x", rewrite
