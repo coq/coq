@@ -2071,7 +2071,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 
    Now we are in a contradictory context and the proof can be solved.
 
-   .. coqtop:: all
+   .. coqtop:: all abort
 
       inversion H.
 
