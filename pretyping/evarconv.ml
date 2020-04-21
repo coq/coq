@@ -195,7 +195,7 @@ let occur_rigidly flags env evd (evk,_) t =
     | Evar (evk',l as ev) ->
       if Evar.equal evk evk' then Rigid true
       else if is_frozen flags ev then
-        Rigid (Array.exists (fun x -> rigid_normal_occ (aux x)) l)
+        Rigid (List.exists (fun x -> rigid_normal_occ (aux x)) l)
       else Reducible
     | Cast (p, _, _) -> aux p
     | Lambda (na, t, b) -> aux b
@@ -350,6 +350,14 @@ let ise_array2 evd f v1 v2 =
   let lv1 = Array.length v1 in
   if Int.equal lv1 (Array.length v2) then allrec evd (pred lv1)
   else UnifFailure (evd,NotSameArgSize)
+
+let rec ise_inst2 evd f l1 l2 = match l1, l2 with
+| [], [] -> Success evd
+| [], (_ :: _) | (_ :: _), [] -> assert false
+| c1 :: l1, c2 :: l2 ->
+  match ise_inst2 evd f l1 l2 with
+  | Success evd' -> f evd' c1 c2
+  | UnifFailure _ as x -> x
 
 (* Applicative node of stack are read from the outermost to the innermost
    but are unified the other way. *)
@@ -1019,7 +1027,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           if Evar.equal sp1 sp2 then
             match ise_stack2 false env evd (evar_conv_x flags) sk1 sk2 with
             |None, Success i' ->
-              ise_array2 i' (fun i' -> evar_conv_x flags env i' CONV) al1 al2
+              ise_inst2 i' (fun i' -> evar_conv_x flags env i' CONV) al1 al2
             |_, (UnifFailure _ as x) -> x
             |Some _, _ -> UnifFailure (evd,NotSameArgSize)
           else UnifFailure (evd,NotSameHead)
@@ -1241,6 +1249,7 @@ let filter_possible_projections evd c ty ctxt args =
   (* Since args in the types will be replaced by holes, we count the
      fv of args to have a well-typed filter; don't know how necessary
     it is however to have a well-typed filter here *)
+  let args = Array.of_list args in
   let fv1 = free_rels evd (mkApp (c,args)) (* Hack: locally untyped *) in
   let fv2 = collect_vars evd (mkApp (c,args)) in
   let len = Array.length args in
@@ -1309,8 +1318,8 @@ let thin_evars env sigma sign c =
     match kind !sigma t with
     | Evar (ev, args) ->
        let evi = Evd.find_undefined !sigma ev in
-       let filter = Array.map (fun c -> Id.Set.subset (collect_vars !sigma c) ctx) args in
-       let filter = Filter.make (Array.to_list filter) in
+       let filter = List.map (fun c -> Id.Set.subset (collect_vars !sigma c) ctx) args in
+       let filter = Filter.make filter in
        let candidates = Option.map (List.map EConstr.of_constr) (evar_candidates evi) in
        let evd, ev = restrict_evar !sigma ev filter candidates in
        sigma := evd; whd_evar !sigma t
@@ -1336,9 +1345,9 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   if debug_ho_unification () then
     (Feedback.msg_debug Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs);
      Feedback.msg_debug Pp.(str"env evars: " ++ Termops.Internal.print_env env_evar));
-  let args = Array.map (nf_evar evd) args in
+  let args = List.map (nf_evar evd) args in
   let vars = List.map NamedDecl.get_id ctxt in
-  let argsubst = List.map2 (fun id c -> (id, c)) vars (Array.to_list args) in
+  let argsubst = List.map2 (fun id c -> (id, c)) vars args in
   let instance = List.map mkVar vars in
   let rhs = nf_evar evd rhs in
   if not (noccur_evar env_rhs evd evk rhs) then raise (TypingFailed evd);
@@ -1416,7 +1425,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      set_holes env_rhs' evd rhs' subst
   | [] -> evd, rhs in
 
-  let subst = make_subst (ctxt,Array.to_list args,argoccs) in
+  let subst = make_subst (ctxt,args,argoccs) in
 
   let evd, rhs' = set_holes env_rhs evd rhs subst in
   let rhs' = nf_evar evd rhs' in
@@ -1533,7 +1542,7 @@ let default_evar_selection flags evd (ev,args) =
       in spec :: aux args abs
     | l, [] -> List.map (fun _ -> default_occurrence_selection) l
     | [], _ :: _ -> assert false
-  in aux (Array.to_list args) evi.evar_abstract_arguments
+  in aux args evi.evar_abstract_arguments
 
 let second_order_matching_with_args flags env evd with_ho pbty ev l t =
   if with_ho then

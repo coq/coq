@@ -355,7 +355,7 @@ let iter_with_full_binders sigma g f n c =
   | Lambda (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
   | LetIn (na,b,t,c) -> f n b; f n t; f (g (LocalDef (na, b, t)) n) c
   | App (c,l) -> f n c; Array.Fun1.iter f n l
-  | Evar (_,l) -> Array.Fun1.iter f n l
+  | Evar (_,l) -> List.iter (fun c -> f n c) l
   | Case (_,p,c,bl) -> f n p; f n c; Array.Fun1.iter f n bl
   | Proj (p,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
@@ -717,7 +717,7 @@ let val_of_named_context e = val_of_named_context (cast_named_context unsafe_eq 
 let named_context_of_val e = cast_named_context (sym unsafe_eq) (named_context_of_val e)
 
 let of_existential : Constr.existential -> existential =
-  let gen : type a b. (a,b) eq -> 'c * b array -> 'c * a array = fun Refl x -> x in
+  let gen : type a b. (a,b) eq -> 'c * b list -> 'c * a list = fun Refl x -> x in
   gen unsafe_eq
 
 let lookup_rel i e = cast_rel_decl (sym unsafe_eq) (lookup_rel i e)

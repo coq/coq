@@ -670,7 +670,7 @@ let rec lambda_of_constr env c =
   match Constr.kind c with
   | Meta _ -> raise (Invalid_argument "Cbytegen.lambda_of_constr: Meta")
   | Evar (evk, args) ->
-    let args = lambda_of_args env 0 args in
+    let args = Array.map_of_list (fun c -> lambda_of_constr env c) args in
     Levar (evk, args)
 
   | Cast (c, _, _) -> lambda_of_constr env c
@@ -798,9 +798,6 @@ and lambda_of_args env start args =
     Array.init (nargs - start)
       (fun i -> lambda_of_constr env args.(start + i))
   else empty_args
-
-
-
 
 (*********************************)
 let dump_lambda = ref false

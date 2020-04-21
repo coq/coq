@@ -607,7 +607,7 @@ let pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk 
     ((id,c)::subst, update, sigma) in
   let subst,inst,sigma = List.fold_right f hyps ([],update,sigma) in
   check_instance loc subst inst;
-  sigma, Array.map_of_list snd subst
+  sigma, List.map snd subst
 
 module Default =
 struct

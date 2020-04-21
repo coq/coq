@@ -636,8 +636,8 @@ let map_constr_with_binders_left_to_right sigma g f l c =
       if b' == b then c
       else mkProj (p, b')
   | Evar (e,al) ->
-    let al' = Array.map_left (f l) al in
-      if Array.for_all2 (==) al' al then c
+    let al' = List.map_left (f l) al in
+      if List.for_all2 (==) al' al then c
       else mkEvar (e, al')
   | Case (ci,p,b,bl) ->
       (* In v8 concrete syntax, predicate is after the term to match! *)
@@ -707,8 +707,8 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
       let c' = f l c in
         if c' == c then cstr else mkProj (p, c')
   | Evar (e,al) ->
-      let al' = Array.map (f l) al in
-      if Array.for_all2 (==) al al' then cstr else mkEvar (e, al')
+      let al' = List.map (f l) al in
+      if List.for_all2 (==) al al' then cstr else mkEvar (e, al')
   | Case (ci,p,c,bl) when userview ->
       let p' = map_return_predicate_with_full_binders sigma g f l ci p in
       let c' = f l c in

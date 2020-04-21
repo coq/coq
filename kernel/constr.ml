@@ -71,7 +71,7 @@ type case_info =
 
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
-type 'constr pexistential = existential_key * 'constr array
+type 'constr pexistential = existential_key * 'constr list
 type ('constr, 'types) prec_declaration =
     Name.t binder_annot array * 'types array * 'constr array
 type ('constr, 'types) pfixpoint =
@@ -110,7 +110,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
 type t = (t, t, Sorts.t, Instance.t) kind_of_term
 type constr = t
 
-type existential = existential_key * constr array
+type existential = existential_key * constr list
 
 type types = constr
 
@@ -470,7 +470,7 @@ let fold f acc c = match kind c with
   | LetIn (_,b,t,c) -> f (f (f acc b) t) c
   | App (c,l) -> Array.fold_left f (f acc c) l
   | Proj (_p,c) -> f acc c
-  | Evar (_,l) -> Array.fold_left f acc l
+  | Evar (_,l) -> List.fold_left f acc l
   | Case (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
   | Fix (_,(_lna,tl,bl)) ->
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
@@ -490,7 +490,7 @@ let iter f c = match kind c with
   | LetIn (_,b,t,c) -> f b; f t; f c
   | App (c,l) -> f c; Array.iter f l
   | Proj (_p,c) -> f c
-  | Evar (_,l) -> Array.iter f l
+  | Evar (_,l) -> List.iter f l
   | Case (_,p,c,bl) -> f p; f c; Array.iter f bl
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
   | CoFix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
@@ -509,7 +509,7 @@ let iter_with_binders g f n c = match kind c with
   | Lambda (_,t,c) -> f n t; f (g n) c
   | LetIn (_,b,t,c) -> f n b; f n t; f (g n) c
   | App (c,l) -> f n c; Array.Fun1.iter f n l
-  | Evar (_,l) -> Array.Fun1.iter f n l
+  | Evar (_,l) -> List.iter (fun c -> f n c) l
   | Case (_,p,c,bl) -> f n p; f n c; Array.Fun1.iter f n bl
   | Proj (_p,c) -> f n c
   | Fix (_,(_,tl,bl)) ->
@@ -536,7 +536,7 @@ let fold_constr_with_binders g f n acc c =
   | LetIn (_na,b,t,c) -> f (g  n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (_p,c) -> f n acc c
-  | Evar (_,l) -> Array.fold_left (f n) acc l
+  | Evar (_,l) -> List.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(_,tl,bl)) ->
       let n' = iterate g (Array.length tl) n in
@@ -657,7 +657,7 @@ let map_gen userview f c = match kind c with
       if t' == t then c
       else mkProj (p, t')
   | Evar (e,l) ->
-      let l' = Array.Smart.map f l in
+      let l' = List.Smart.map f l in
       if l'==l then c
       else mkEvar (e, l')
   | Case (ci,p,b,bl) when userview ->
@@ -722,7 +722,8 @@ let fold_map f accu c = match kind c with
       if t' == t then accu, c
       else accu, mkProj (p, t')
   | Evar (e,l) ->
-      let accu, l' = Array.Smart.fold_left_map f accu l in
+    (* Doesn't matter, we should not hashcons evars anyways *)
+      let accu, l' = List.fold_left_map f accu l in
       if l'==l then accu, c
       else accu, mkEvar (e, l')
   | Case (ci,p,b,bl) ->
@@ -782,7 +783,7 @@ let map_with_binders g f l c0 = match kind c0 with
     if t' == t then c0
     else mkProj (p, t')
   | Evar (e, al) ->
-    let al' = Array.Fun1.Smart.map f l al in
+    let al' = List.Smart.map (fun c -> f l c) al in
     if al' == al then c0
     else mkEvar (e, al')
   | Case (ci, p, c, bl) ->
@@ -834,7 +835,7 @@ let fold_with_full_binders g f n acc c =
   | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (_,c) -> f n acc c
-  | Evar (_,l) -> Array.fold_left (f n) acc l
+  | Evar (_,l) -> List.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
       let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
@@ -880,7 +881,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
     Int.equal len (Array.length l2) &&
     leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
   | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq 0 c1 c2
-  | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal (eq 0) l1 l2
+  | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && List.equal (eq 0) l1 l2
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
     Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2
@@ -1039,7 +1040,7 @@ let constr_ord_int f t1 t2 =
     | Meta m1, Meta m2 -> Int.compare m1 m2
     | Meta _, _ -> -1 | _, Meta _ -> 1
     | Evar (e1,l1), Evar (e2,l2) ->
-        (Evar.compare =? (Array.compare f)) e1 e2 l1 l2
+        (Evar.compare =? (List.compare f)) e1 e2 l1 l2
     | Evar _, _ -> -1 | _, Evar _ -> 1
     | Sort s1, Sort s2 -> Sorts.compare s1 s2
     | Sort _, _ -> -1 | _, Sort _ -> 1
@@ -1141,7 +1142,7 @@ let hasheq t1 t2 =
       n1 == n2 && b1 == b2 && t1 == t2 && c1 == c2
     | App (c1,l1), App (c2,l2) -> c1 == c2 && array_eqeq l1 l2
     | Proj (p1,c1), Proj(p2,c2) -> p1 == p2 && c1 == c2
-    | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && array_eqeq l1 l2
+    | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && List.equal (==) l1 l2
     | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
     | Ind (ind1,u1), Ind (ind2,u2) -> ind1 == ind2 && u1 == u2
     | Construct (cstr1,u1), Construct (cstr2,u2) -> cstr1 == cstr2 && u1 == u2
@@ -1221,7 +1222,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
         let l, hl = hash_term_array l in
         (App (c,l), combinesmall 7 (combine hl hc))
       | Evar (e,l) ->
-        let l, hl = hash_term_array l in
+        let l, hl = hash_list_array l in
         (Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
       | Const (c,u) ->
         let c' = sh_con c in
@@ -1289,6 +1290,14 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
     let h = !accu land 0x3FFFFFFF in
     (HashsetTermArray.repr h t term_array_table, h)
 
+  and hash_list_array l =
+    let fold accu c =
+      let c, h = sh_rec c in
+      (combine accu h, c)
+    in
+    let h, l = List.fold_left_map fold 0 l in
+    (l, h land 0x3FFFFFFF)
+
   in
   (* Make sure our statically allocated Rels (1 to 16) are considered
      as canonical, and hence hash-consed to themselves *)
@@ -1316,7 +1325,7 @@ let rec hash t =
     | App (c,l) ->
       combinesmall 7 (combine (hash_term_array l) (hash c))
     | Evar (e,l) ->
-      combinesmall 8 (combine (Evar.hash e) (hash_term_array l))
+      combinesmall 8 (combine (Evar.hash e) (hash_term_list l))
     | Const (c,u) ->
       combinesmall 9 (combine (Constant.hash c) (Instance.hash u))
     | Ind (ind,u) ->
@@ -1338,6 +1347,9 @@ let rec hash t =
 
 and hash_term_array t =
   Array.fold_left (fun acc t -> combine acc (hash t)) 0 t
+
+and hash_term_list t =
+  List.fold_left (fun acc t -> combine (hash t) acc) 0 t
 
 module CaseinfoHash =
 struct
@@ -1458,7 +1470,7 @@ let rec debug_print c =
        prlist_with_sep spc debug_print (Array.to_list l) ++ str")")
   | Evar (e,l) -> hov 1
       (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
-       prlist_with_sep spc debug_print (Array.to_list l) ++str"}")
+       prlist_with_sep spc debug_print l ++str"}")
   | Const (c,u) -> str"Cst(" ++ pr_puniverses (Constant.debug_print c) u ++ str")"
   | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
   | Construct (((sp,i),j),u) ->

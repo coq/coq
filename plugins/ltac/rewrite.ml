@@ -1559,7 +1559,7 @@ let assert_replacing id newt tac =
         if Id.equal n id then ev' else mkVar n
       in
       let (e, _) = destEvar sigma ev in
-      (sigma, mkEvar (e, Array.map_of_list map nc))
+      (sigma, mkEvar (e, List.map map nc))
     end
   end in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)

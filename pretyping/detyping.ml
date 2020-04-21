@@ -790,7 +790,7 @@ and detype_r d flags avoid env sigma t =
           id,l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)),
-          (Array.map_to_list (fun c -> (Id.of_string "__",c)) cl)
+          (List.map (fun c -> (Id.of_string "__",c)) cl)
       in
         GEvar (id,
                List.map (on_snd (detype d flags avoid env sigma)) l)

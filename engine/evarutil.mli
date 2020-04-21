@@ -88,7 +88,7 @@ val new_evar_instance :
  named_context_val -> evar_map -> types ->
   constr list -> evar_map * constr
 
-val make_pure_subst : evar_info -> 'a array -> (Id.t * 'a) list
+val make_pure_subst : evar_info -> 'a list -> (Id.t * 'a) list
 
 val safe_evar_value : evar_map -> Constr.existential -> Constr.constr option
 

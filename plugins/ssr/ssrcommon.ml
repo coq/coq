@@ -537,7 +537,7 @@ let pf_abs_evars2 gl rigid (sigma, c0) =
   let rec put evlist c = match Constr.kind c with
   | Evar (k, a) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k || List.mem k rigid then evlist else
-    let n = max 0 (Array.length a - nenv) in
+    let n = max 0 (List.length a - nenv) in
     let t = abs_evar n k in (k, (n, t)) :: put evlist t
   | _ -> Constr.fold put evlist c in
   let evlist = put [] c0 in
@@ -549,6 +549,7 @@ let pf_abs_evars2 gl rigid (sigma, c0) =
   | Evar (ev, a) ->
     let j, n = lookup ev i evlist in
     if j = 0 then Constr.map (get i) c else if n = 0 then mkRel j else
+    let a = Array.of_list a in
     mkApp (mkRel j, Array.init n (fun k -> get i a.(n - 1 - k)))
   | _ -> Constr.map_with_binders ((+) 1) get i c in
   let rec loop c i = function
@@ -598,7 +599,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   let rec put evlist c = match Constr.kind c with
   | Evar (k, a) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k then evlist else
-    let n = max 0 (Array.length a - nenv) in
+    let n = max 0 (List.length a - nenv) in
     let k_ty =
       Retyping.get_sort_family_of
         (pf_env gl) sigma (Evd.evar_concl (Evd.find sigma k)) in
@@ -636,6 +637,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   | Evar (ev, a) ->
     let j, n = lookup ev i evlist in
     if j = 0 then Constr.map (get evlist i) c else if n = 0 then mkRel j else
+    let a = Array.of_list a in
     mkApp (mkRel j, Array.init n (fun k -> get evlist i a.(n - 1 - k)))
   | _ -> Constr.map_with_binders ((+) 1) (get evlist) i c in
   let rec app extra_args i c = match decompose_app c with

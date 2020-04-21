@@ -233,32 +233,27 @@ exception NotInstantiatedEvar
 (* Note: let-in contributes to the instance *)
 
 let evar_instance_array test_id info args =
-  let len = Array.length args in
-  let rec instrec filter ctxt i = match filter, ctxt with
-  | [], [] ->
-    if Int.equal i len then []
-    else instance_mismatch ()
-  | false :: filter, _ :: ctxt ->
-    instrec filter ctxt i
-  | true :: filter, d :: ctxt ->
-    if i < len then
-      let c = Array.unsafe_get args i in
-      if test_id d c then instrec filter ctxt (succ i)
-      else (NamedDecl.get_id d, c) :: instrec filter ctxt (succ i)
-    else instance_mismatch ()
+  let rec instrec filter ctxt args = match filter, ctxt, args with
+  | [], [], [] -> []
+  | false :: filter, _ :: ctxt, args ->
+    instrec filter ctxt args
+  | true :: filter, d :: ctxt, c :: args ->
+    if test_id d c then instrec filter ctxt args
+    else (NamedDecl.get_id d, c) :: instrec filter ctxt args
   | _ -> instance_mismatch ()
   in
   match Filter.repr (evar_filter info) with
   | None ->
-     let map i d =
-      if (i < len) then
-        let c = Array.unsafe_get args i in
-        if test_id d c then None else Some (NamedDecl.get_id d, c)
-      else instance_mismatch ()
+    let rec instance ctxt args = match ctxt, args with
+    | [], [] -> []
+    | d :: ctxt, c :: args ->
+      if test_id d c then instance ctxt args
+      else (NamedDecl.get_id d, c) :: instance ctxt args
+    | _ -> instance_mismatch ()
     in
-    List.map_filter_i map (evar_context info)
+    instance (evar_context info) args
   | Some filter ->
-    instrec filter (evar_context info) 0
+    instrec filter (evar_context info) args
 
 let make_evar_instance_array info args =
   evar_instance_array (NamedDecl.get_id %> isVarId) info args
@@ -794,7 +789,7 @@ let restrict evk filter ?candidates ?src evd =
   | _ -> Evar.Set.add evk evd.last_mods in
   let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
-  let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
+  let id_inst = List.map (NamedDecl.get_id %> mkVar) ctxt in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   let evar_flags = declare_restricted_evar evd.evar_flags evk evk' in
@@ -1405,7 +1400,7 @@ let evars_of_term evd c =
   let rec evrec acc c =
     let c = MiniEConstr.whd_evar evd c in
     match kind c with
-    | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
+    | Evar (n, l) -> Evar.Set.add n (List.fold_left evrec acc l)
     | _ -> Constr.fold evrec acc c
   in
   evrec Evar.Set.empty c
@@ -1413,7 +1408,7 @@ let evars_of_term evd c =
 let evar_nodes_of_term c =
   let rec evrec acc c =
     match kind c with
-    | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
+    | Evar (n, l) -> Evar.Set.add n (List.fold_left evrec acc l)
     | _ -> Constr.fold evrec acc c
   in
   evrec Evar.Set.empty c

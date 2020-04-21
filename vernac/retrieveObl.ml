@@ -72,7 +72,7 @@ let subst_evar_constr evm evs n idf t =
       *)
       let args =
         let n = match chop with None -> 0 | Some c -> c in
-        let l, r = CList.chop n (List.rev (Array.to_list args)) in
+        let l, r = CList.chop n (List.rev args) in
         List.rev r
       in
       let args =

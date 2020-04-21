@@ -24,7 +24,7 @@ type case_info_pattern =
 type constr_pattern =
   | PRef of GlobRef.t
   | PVar of Id.t
-  | PEvar of Evar.t * constr_pattern array
+  | PEvar of constr_pattern Constr.pexistential
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of patvar * constr_pattern list

@@ -76,7 +76,7 @@ let occur_meta_or_undefined_evar evd c =
     | Evar (ev,args) ->
         (match evar_body (Evd.find evd ev) with
         | Evar_defined c ->
-            occrec (EConstr.Unsafe.to_constr c); Array.iter occrec args
+            occrec (EConstr.Unsafe.to_constr c); List.iter occrec args
         | Evar_empty -> raise Occur)
     | _ -> Constr.iter occrec c
   in try occrec c; false with Occur | Not_found -> true
@@ -138,9 +138,9 @@ let abstract_list_all env evd typ c l =
         error_cannot_find_well_typed_abstraction env evd p l (Some (env',x)) in
   evd,(p,typp)
 
-let set_occurrences_of_last_arg args =
+let set_occurrences_of_last_arg n =
   Evarconv.AtOccurrences AllOccurrences ::
-    List.tl (Array.map_to_list (fun _ -> Evarconv.Unspecified Abstraction.Abstract) args)
+    List.tl (List.init n (fun _ -> Evarconv.Unspecified Abstraction.Abstract))
 
 let occurrence_test _ _ _ env sigma _ c1 c2 =
   match EConstr.eq_constr_universes env sigma c1 c2 with
@@ -153,7 +153,8 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let (evd, ev) = new_evar env evd typ in
   let evd,ev' = evar_absorb_arguments env evd (destEvar evd ev) l in
   let n = List.length l in
-  let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
+  let () = assert (n <= List.length (snd ev')) in
+  let argoccs = set_occurrences_of_last_arg n in
   let evd,b =
     Evarconv.second_order_matching
       (Evarconv.default_flags_of TransparentState.empty)
@@ -623,7 +624,7 @@ let subst_defined_metas_evars sigma (bl,el) c =
       substrec (EConstr.Unsafe.to_constr (pi2 (List.find select bl)))
     | Evar (evk,args) ->
       let eq c1 c2 = Constr.equal c1 (EConstr.Unsafe.to_constr c2) in
-      let select (_,(evk',args'),_) = Evar.equal evk evk' && Array.for_all2 eq args args' in
+      let select (_,(evk',args'),_) = Evar.equal evk evk' && List.for_all2 eq args args' in
       (try substrec (EConstr.Unsafe.to_constr (pi3 (List.find select el)))
        with Not_found -> Constr.map substrec c)
     | _ -> Constr.map substrec c

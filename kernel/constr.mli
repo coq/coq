@@ -83,7 +83,7 @@ val mkFloat : Float64.t -> constr
 val mkMeta : metavariable -> constr
 
 (** Constructs an existential variable *)
-type existential = Evar.t * constr array
+type existential = Evar.t * constr list
 val mkEvar : existential -> constr
 
 (** Construct a sort *)
@@ -203,9 +203,9 @@ val mkCoFix : cofixpoint -> constr
 
 (** {6 Concrete type for making pattern-matching. } *)
 
-(** [constr array] is an instance matching definitional [named_context] in
+(** [constr list] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
-type 'constr pexistential = Evar.t * 'constr array
+type 'constr pexistential = Evar.t * 'constr list
 
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Rel       of int                                  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
