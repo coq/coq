@@ -1732,7 +1732,9 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
       hyps
       (MoveBefore x,[x],[]))) in (* In practice, no dep hyps before x, so MoveBefore x is good enough *)
   (* Decides if x appears in conclusion *)
-  let depconcl = occur_var env sigma x concl in
+  let depconcl =
+    (* Do not consider section variables occurring indirectly *)
+    local_occur_var sigma x concl in
   let need_rewrite = not (List.is_empty dephyps) || depconcl in
   tclTHENLIST
     ((if need_rewrite then
@@ -1741,7 +1743,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
        (tclMAP (fun (dest,id) -> intro_move (Some id) dest) dephyps)]
       else
        [Proofview.tclUNIT ()]) @
-     [tclTRY (clear [x; hyp])])
+     [tclTRY (clear [hyp]); tclTRY (clear [x])])
   end
 
 (* Look for an hypothesis hyp of the form "x=rhs" or "rhs=x", rewrite
