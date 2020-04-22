@@ -36,6 +36,9 @@ Require CMorphisms.
 
     We define sequences as positive -> Q instead of nat -> Q,
     so that we can compute arguments like 2^n fast.
+
+    WARNING: this module is not meant to be imported directly,
+    please import `Reals.Abstract.ConstructiveReals` instead.
  *)
 Definition QSeqEquiv (un vn : positive -> Q) (cvmod : positive -> positive)
   : Prop
