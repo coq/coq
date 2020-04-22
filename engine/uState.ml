@@ -527,6 +527,14 @@ let demote_seff_univs univs uctx =
   let seff = LSet.union uctx.uctx_seff_univs univs in
   { uctx with uctx_seff_univs = seff }
 
+let demote_global_univs env uctx =
+  let env_ugraph = Environ.universes env in
+  let global_univs = UGraph.domain env_ugraph in
+  let global_constraints, _ = UGraph.constraints_of_universes env_ugraph in
+  let promoted_uctx =
+    ContextSet.(of_set global_univs |> add_constraints global_constraints) in
+  { uctx with uctx_local = ContextSet.diff uctx.uctx_local promoted_uctx }
+
 let merge_seff uctx ctx' =
   let levels = ContextSet.levels ctx' in
   let declare g =
