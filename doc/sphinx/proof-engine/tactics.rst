@@ -2099,15 +2099,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 See also the larger example of :tacn:`dependent induction`
 and an explanation of the underlying technique.
 
-.. seealso:: :tacn:`function induction`
-
-.. tacv:: functional induction (@qualid {+ @term}) as @simple_intropattern using @term with @bindings_list
-
-   Similarly to :tacn:`induction` and :tacn:`elim`, this allows giving
-   explicitly the name of the introduced variables, the induction principle, and
-   the values of dependent premises of the elimination scheme, including
-   *predicates* for mutual induction when :n:`@qualid` is part of a mutually
-   recursive definition.
+.. seealso:: :tacn:`functional induction`
 
 .. tacn:: discriminate @term
    :name: discriminate
@@ -2613,6 +2605,8 @@ and an explanation of the underlying technique.
 
       assumption.
       Qed.
+
+.. seealso:: :tacn:`functional inversion`
 
 .. tacn:: fix @ident @num
    :name: fix
