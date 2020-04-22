@@ -151,7 +151,7 @@ let set_buffer_handlers
       else if it#has_tag Tags.Script.processed then Some old
       else if it#has_tag Tags.Script.error_bg then aux it it#backward_char
       else None in
-    aux it it in
+    aux it it#copy in
   let insert_cb it s = if String.length s = 0 then () else begin
     Minilib.log ("insert_cb " ^ string_of_int it#offset);
     let text_mark = add_mark it in
