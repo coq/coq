@@ -1624,9 +1624,15 @@ previous :token:`i_item` have been performed.
 
 The second entry in the :token:`i_view` grammar rule,
 ``/ltac:(`` :token:`tactic` ``)``, executes :token:`tactic`.
-Notations can be used to name tactics,  for example::
+Notations can be used to name tactics,  for example
 
-    Notation myop := (ltac:(some ltac code)) : ssripat_scope.
+.. coqtop:: none
+
+      Tactic Notation "my" "ltac" "code" := idtac.
+
+.. coqtop:: in warn
+
+   Notation "'myop'" := (ltac:(my ltac code)) : ssripat_scope.
 
 lets one write just ``/myop`` in the intro pattern. Note the scope
 annotation: views are interpreted opening the ``ssripat`` scope.
