@@ -26,6 +26,7 @@
  *)
 
 Require Import Notations.
+Require Import Ltac.
 Require Import Datatypes.
 Require Import Logic.
 Require Coq.Init.Nat.

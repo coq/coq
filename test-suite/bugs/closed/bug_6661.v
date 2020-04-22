@@ -7,6 +7,7 @@
 
 
 Require Export Coq.Init.Notations.
+Require Export Coq.Init.Ltac.
 Notation "'∏'  x .. y , P" := (forall x, .. (forall y, P) ..)
   (at level 200, x binder, y binder, right associativity) : type_scope.
 Notation "'λ' x .. y , t" := (fun x => .. (fun y => t) ..)

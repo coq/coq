@@ -13,6 +13,7 @@
 
 Set Implicit Arguments.
 
+Require Import Ltac.
 Require Import Datatypes.
 Require Export Logic.
 

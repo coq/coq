@@ -16,6 +16,7 @@
 Set Implicit Arguments.
 
 Require Import Notations.
+Require Import Ltac.
 Require Import Logic.
 Require Import Datatypes.
 

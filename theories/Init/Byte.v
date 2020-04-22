@@ -10,6 +10,7 @@
 
 (** * Bytes *)
 
+Require Import Coq.Init.Ltac.
 Require Import Coq.Init.Datatypes.
 Require Import Coq.Init.Logic.
 Require Import Coq.Init.Specif.

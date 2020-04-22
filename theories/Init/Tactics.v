@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import Notations.
+Require Import Ltac.
 Require Import Logic.
 Require Import Specif.
 
