@@ -481,10 +481,12 @@ Changes in 8.11+beta1
   .. _811Reals:
 
 - **Added:**
-  Module `Reals.ConstructiveCauchyReals` defines constructive real numbers
+  Module `Reals.Cauchy.ConstructiveCauchyReals` defines constructive real numbers
   by Cauchy sequences of rational numbers
   (`#10445 <https://github.com/coq/coq/pull/10445>`_, by Vincent Semeria,
   with the help and review of Guillaume Melquiond and Bas Spitters).
+  This module is not meant to be imported directly, please import
+  `Reals.Abstract.ConstructiveReals` instead.
 - **Added:**
   New module `Reals.ClassicalDedekindReals` defines Dedekind real
   numbers as boolean-valued functions along with 3 logical axioms:
