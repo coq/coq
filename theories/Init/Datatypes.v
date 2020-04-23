@@ -497,6 +497,10 @@ Definition idProp : IDProp := fun A x => x.
 
 Register idProp as core.IDProp.idProp.
 
+(** Equivalence in [Type] *)
+#[universes(polymorphic)]
+Definition iffT (A B : Type) := ((A -> B) * (B -> A))%type.
+
 (* begin hide *)
 
 (* Compatibility *)

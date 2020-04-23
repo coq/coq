@@ -583,9 +583,9 @@ End Normalize.
 
 Lemma flip_arrow `(NA : Normalizes A R (flip R'''), NB : Normalizes B R' (flip R'')) :
   Normalizes (A -> B) (R ==> R') (flip (R''' ==> R'')%signatureT).
-Proof. 
+Proof.
   unfold Normalizes in *. intros.
-  rewrite NA, NB. firstorder. 
+  rewrite NA, NB. firstorder.
 Qed.
 
 Ltac normalizes :=

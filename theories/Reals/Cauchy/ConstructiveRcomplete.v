@@ -53,7 +53,7 @@ Qed.
 #[global]
 Instance seq_cv_morph
   : forall (un : nat -> CReal), CMorphisms.Proper
-      (CMorphisms.respectful CRealEq CRelationClasses.iffT) (seq_cv un).
+      (CMorphisms.respectful CRealEq iffT) (seq_cv un).
 Proof.
   split. intros. apply (seq_cv_proper un x). exact H0. exact H.
   intros. apply (seq_cv_proper un y). exact H0. symmetry. exact H.

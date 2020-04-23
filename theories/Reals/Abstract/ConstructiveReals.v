@@ -240,7 +240,7 @@ Lemma CRlt_proper
   : forall R : ConstructiveReals,
     CMorphisms.Proper
       (CMorphisms.respectful (CReq R)
-                             (CMorphisms.respectful (CReq R) CRelationClasses.iffT)) (CRlt R).
+                             (CMorphisms.respectful (CReq R) iffT)) (CRlt R).
 Proof.
   intros R x y H x0 y0 H0. destruct H, H0.
   destruct (CRltLinear R). split.
@@ -330,7 +330,7 @@ Qed.
 #[global]
 Instance CRlt_morph
   : forall {R : ConstructiveReals}, CMorphisms.Proper
-      (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) CRelationClasses.iffT)) (CRlt R).
+      (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) iffT)) (CRlt R).
 Proof.
   intros R x y H x0 y0 H0. destruct H, H0. split.
   - intro. destruct (CRltLinear R). destruct (s x y x0). assumption.
@@ -1137,7 +1137,7 @@ Qed.
 #[global]
 Instance CRapart_morph
   : forall {R : ConstructiveReals}, CMorphisms.Proper
-      (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) CRelationClasses.iffT)) (CRapart R).
+      (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) iffT)) (CRapart R).
 Proof.
   intros R x y H x0 y0 H0. destruct H, H0. split.
   - intro. destruct H3.

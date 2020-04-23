@@ -179,7 +179,7 @@ Qed.
 #[global]
 Instance CR_cv_morph
   : forall {R : ConstructiveReals} (un : nat -> CRcarrier R), CMorphisms.Proper
-      (CMorphisms.respectful (CReq R) CRelationClasses.iffT) (CR_cv R un).
+      (CMorphisms.respectful (CReq R) iffT) (CR_cv R un).
 Proof.
   split. intros. apply (CR_cv_proper un x). exact H0. exact H.
   intros. apply (CR_cv_proper un y). exact H0. symmetry. exact H.

@@ -76,7 +76,7 @@ Section Proper.
   (** Respectful morphisms. *)
   
   (** The fully dependent version, not used yet. *)
-  
+
   Definition respectful_hetero
   (A B : Type)
   (C : A -> Type) (D : B -> Type)
@@ -86,7 +86,7 @@ Section Proper.
     fun f g => forall x y, R x y -> R' x y (f x) (g y).
 
   (** The non-dependent version is an instance where we forget dependencies. *)
-  
+
   Definition respectful (R : relation A) (R' : relation B) : relation (A -> B) :=
     Eval compute in @respectful_hetero A A (fun _ => B) (fun _ => B) R (fun _ _ => R').
 
@@ -229,11 +229,11 @@ Section Relations.
   Context {A B : U} (P : A -> U).
 
   (** [forall_def] reifies the dependent product as a definition. *)
-  
+
   Definition forall_def : Type := forall x : A, P x.
-  
+
   (** Dependent pointwise lifting of a relation on the range. *)
-  
+
   Definition forall_relation 
              (sig : forall a, relation (P a)) : relation (forall x, P x) :=
     fun f g => forall a, sig a (f a) (g a).
@@ -241,28 +241,28 @@ Section Relations.
   Lemma pointwise_pointwise (R : relation B) :
     relation_equivalence (pointwise_relation A R) (@eq A ==> R).
   Proof. intros. split; reduce; subst; firstorder. Qed.
-  
+
   (** Subrelations induce a morphism on the identity. *)
-  
+
   Global Instance subrelation_id_proper `(subrelation A RA RA') : Proper (RA ==> RA') id.
   Proof. firstorder. Qed.
 
   (** The subrelation property goes through products as usual. *)
-  
+
   Lemma subrelation_respectful `(subl : subrelation A RA' RA, subr : subrelation B RB RB') :
     subrelation (RA ==> RB) (RA' ==> RB').
   Proof. unfold subrelation in *; firstorder. Qed.
 
   (** And of course it is reflexive. *)
-  
+
   Lemma subrelation_refl R : @subrelation A R R.
   Proof. unfold subrelation; firstorder. Qed.
 
   (** [Proper] is itself a covariant morphism for [subrelation].
    We use an unconvertible premise to avoid looping.
    *)
-  
-  Lemma subrelation_proper `(mor : Proper A R' m) 
+
+  Lemma subrelation_proper `(mor : Proper A R' m)
         `(unc : Unconvertible (relation A) R R')
         `(sub : subrelation A R' R) : Proper R m.
   Proof.
@@ -276,7 +276,7 @@ Section Relations.
   Global Instance pointwise_subrelation `(sub : subrelation B R R') :
     subrelation (pointwise_relation A R) (pointwise_relation A R') | 4.
   Proof. intros x y H a. unfold pointwise_relation in *. apply sub. apply H. Qed.
-  
+
   (** For dependent function types. *)
   Lemma forall_subrelation (R S : forall x : A, relation (P x)) :
     (forall a, subrelation (R a) (S a)) -> subrelation (forall_relation R) (forall_relation S).
@@ -286,7 +286,7 @@ End Relations.
 Global Typeclasses Opaque respectful pointwise_relation forall_relation.
 Arguments forall_relation {A P}%type sig%signature _ _.
 Arguments pointwise_relation A%type {B}%type R%signature _ _.
-  
+
 #[global]
 Hint Unfold Reflexive : core.
 #[global]
@@ -336,7 +336,7 @@ Section GenericInstances.
 
   (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
-  
+
   Program Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
 
   Next Obligation.
@@ -348,11 +348,11 @@ Section GenericInstances.
   Qed.
 
   (** The complement of a relation conserves its proper elements. *)
-  
+
   Program Definition complement_proper
           `(mR : Proper (A -> A -> Prop) (RA ==> RA ==> iff) R) :
     Proper (RA ==> RA ==> iff) (complement R) := _.
-  
+
   Next Obligation.
   Proof.
     intros RA R mR x y H x0 y0 H0.
@@ -366,7 +366,7 @@ Section GenericInstances.
   Program Definition flip_proper
           `(mor : Proper (A -> B -> C) (RA ==> RB ==> RC) f) :
     Proper (RB ==> RA ==> RC) (flip f) := _.
-  
+
   Next Obligation.
   Proof.
     intros RA RB RC f mor x y H x0 y0 H0; apply mor ; auto.
@@ -375,11 +375,11 @@ Section GenericInstances.
 
   (** Every Transitive relation gives rise to a binary morphism on [impl],
    contravariant in the first argument, covariant in the second. *)
-  
+
   Global Program 
   Instance trans_contra_co_morphism
     `(Transitive A R) : Proper (R --> R ++> impl) R.
-  
+
   Next Obligation.
   Proof with auto.
     intros R H x y H0 x0 y0 H1 H2.
@@ -484,7 +484,7 @@ Section GenericInstances.
   Proof. simpl_relation. Qed.
 
   (** [respectful] is a morphism for relation equivalence. *)
-  
+
   Global Instance respectful_morphism :
     Proper (relation_equivalence ++> relation_equivalence ++> relation_equivalence) 
            (@respectful A B).
@@ -492,12 +492,10 @@ Section GenericInstances.
     intros x y H x0 y0 H0 x1 x2.
     unfold respectful, relation_equivalence, predicate_equivalence in * ; simpl in *.
     split ; intros H1 x3 y1 H2.
-    
     - rewrite <- H0.
       apply H1.
       rewrite H.
       assumption.
-
     - rewrite H0.
       apply H1.
       rewrite <- H.
@@ -509,7 +507,7 @@ Section GenericInstances.
   Lemma Reflexive_partial_app_morphism `(Proper (A -> B) (R ==> R') m, ProperProxy A R x) :
     Proper R' (m x).
   Proof. simpl_relation. Qed.
-  
+
   Lemma flip_respectful (R : relation A) (R' : relation B) :
     relation_equivalence (flip (R ==> R')) (flip R ==> flip R').
   Proof.
@@ -518,25 +516,25 @@ Section GenericInstances.
     split ; intros ; intuition.
   Qed.
 
-  
+
   (** Treating flip: can't make them direct instances as we
    need at least a [flip] present in the goal. *)
-  
+
   Lemma flip1 `(subrelation A R' R) : subrelation (flip (flip R')) R.
   Proof. firstorder. Qed.
-  
+
   Lemma flip2 `(subrelation A R R') : subrelation R (flip (flip R')).
   Proof. firstorder. Qed.
-  
+
   (** That's if and only if *)
-  
+
   Lemma eq_subrelation `(Reflexive A R) : subrelation (@eq A) R.
   Proof. simpl_relation. Qed.
 
   (** Once we have normalized, we will apply this instance to simplify the problem. *)
-  
+
   Definition proper_flip_proper `(mor : Proper A R m) : Proper (flip R) m := mor.
-  
+
   Lemma proper_eq (x : A) : Proper (@eq A) x.
   Proof. intros. reflexivity. Qed.
   

@@ -375,7 +375,7 @@ Qed.
 #[global]
 Instance CRealLt_morph
   : CMorphisms.Proper
-      (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CRealLt.
+      (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq iffT)) CRealLt.
 Proof.
   intros x y Hxeqy x0 y0 Hx0eqy0.
   destruct Hxeqy as [Hylex Hxley].
@@ -396,7 +396,7 @@ Qed.
 #[global]
 Instance CRealGt_morph
   : CMorphisms.Proper
-      (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CRealGt.
+      (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq iffT)) CRealGt.
 Proof.
   intros x y Hxeqy x0 y0 Hx0eqy0. apply CRealLt_morph; assumption.
 Qed.
@@ -404,7 +404,7 @@ Qed.
 #[global]
 Instance CReal_appart_morph
   : CMorphisms.Proper
-      (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CReal_appart.
+      (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq iffT)) CReal_appart.
 Proof.
   intros x y Hxeqy x0 y0 Hx0eqy0.
   split.
