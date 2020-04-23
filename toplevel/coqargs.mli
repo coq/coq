@@ -20,7 +20,6 @@ type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
   toplevel_name     : Stm.interactive_top;
-  cumulative_sprop  : bool;
 }
 
 type coqargs_config = {

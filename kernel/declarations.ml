@@ -92,6 +92,8 @@ type typing_flags = {
   indices_matter: bool;
   (** The universe of an inductive type must be above that of its indices. *)
 
+  cumulative_sprop : bool;
+  (** SProp <= Type *)
 }
 
 (* some contraints are in constant_constraints, some other may be in

@@ -989,4 +989,5 @@ let print_and_diff oldp newp =
 let pr_typing_flags flags =
   str "check_guarded: " ++ bool flags.check_guarded ++ fnl ()
   ++ str "check_positive: " ++ bool flags.check_positive ++ fnl ()
-  ++ str "check_universes: " ++ bool flags.check_universes
+  ++ str "check_universes: " ++ bool flags.check_universes ++ fnl ()
+  ++ str "cumulative sprop: " ++ bool flags.cumulative_sprop

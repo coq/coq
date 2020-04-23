@@ -8,22 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Vernac Translation into the Vernac DSL *)
-val translate_vernac
-  : atts:Attributes.vernac_flags
-  -> Vernacexpr.vernac_expr
-  -> Vernacextend.typed_vernac
+open Declarations
 
-(** Vernacular require command *)
-val vernac_require :
-  Libnames.qualid option -> bool option -> Libnames.qualid list -> unit
-
-(** Hook to dissappear when #8240 is fixed *)
-val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
-  Evd.evar_map * Redexpr.red_expr) Hook.t
-
-(** Miscellaneous stuff *)
-val command_focus : unit Proof.focus_kind
-
-val allow_sprop_opt_name : string list
-val cumul_sprop_opt_name : string list
+let set_local_flags flags env =
+  let flags =
+    { (Environ.typing_flags env) with
+      check_guarded = flags.check_guarded;
+      check_positive = flags.check_positive;
+      check_universes = flags.check_universes;
+      conv_oracle = flags.conv_oracle;
+      cumulative_sprop = flags.cumulative_sprop;
+    }
+  in
+  Environ.set_typing_flags flags env

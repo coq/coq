@@ -26,6 +26,7 @@ let safe_flags oracle = {
   enable_VM = true;
   enable_native_compiler = true;
   indices_matter = true;
+  cumulative_sprop = false;
 }
 
 (** {6 Arities } *)
