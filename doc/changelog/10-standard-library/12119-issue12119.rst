@@ -1,0 +1,5 @@
+- **Changed:**
+  new lemma ``NoDup_incl_NoDup`` in ``List.v``
+  to remove useless hypothesis `NoDup l'` in ``Sorting.Permutation.NoDup_Permutation_bis``
+  (`#12119 <https://github.com/coq/coq/pull/12119>`_,
+  by Olivier Laurent).
