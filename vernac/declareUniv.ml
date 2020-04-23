@@ -94,7 +94,7 @@ let do_universe ~poly l =
   in
   let src = if poly then BoundUniv else UnqualifiedUniv in
   let () = Lib.add_anonymous_leaf (input_univ_names (src, l)) in
-  Declare.declare_universe_context ~poly ctx
+  DeclareUctx.declare_universe_context ~poly ctx
 
 let do_constraint ~poly l =
   let open Univ in
@@ -107,4 +107,4 @@ let do_constraint ~poly l =
       Constraint.empty l
   in
   let uctx = ContextSet.add_constraints constraints ContextSet.empty in
-  Declare.declare_universe_context ~poly uctx
+  DeclareUctx.declare_universe_context ~poly uctx

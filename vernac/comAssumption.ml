@@ -91,7 +91,7 @@ let declare_assumptions ~poly ~scope ~kind univs nl l =
   let () = match scope with
     | Discharge ->
       (* declare universes separately for variables *)
-      Declare.declare_universe_context ~poly (context_set_of_entry (fst univs))
+      DeclareUctx.declare_universe_context ~poly (context_set_of_entry (fst univs))
     | Global _ -> ()
   in
   let _, _ = List.fold_left (fun (subst,univs) ((is_coe,idl),typ,imps) ->
@@ -191,7 +191,7 @@ let context_subst subst (name,b,t,impl) =
 
 let context_insection sigma ~poly ctx =
   let uctx = Evd.universe_context_set sigma in
-  let () = Declare.declare_universe_context ~poly uctx in
+  let () = DeclareUctx.declare_universe_context ~poly uctx in
   let fn subst (name,_,_,_ as d) =
     let d = context_subst subst d in
     let () = match d with
@@ -226,7 +226,7 @@ let context_nosection sigma ~poly ctx =
       (* Multiple monomorphic axioms: declare universes separately to
          avoid redeclaring them. *)
       let uctx = Evd.universe_context_set sigma in
-      let () = Declare.declare_universe_context ~poly uctx in
+      let () = DeclareUctx.declare_universe_context ~poly uctx in
       Monomorphic_entry Univ.ContextSet.empty
   in
   let fn subst d =

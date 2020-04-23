@@ -22,7 +22,7 @@ val declare_instance : ?warn:bool -> env -> Evd.evar_map ->
     Does nothing — or emit a “not-a-class” warning if the [warn] argument is set —
     when said type is not a registered type class. *)
 
-val existing_instance : bool -> qualid -> Hints.hint_info_expr option -> unit
+val existing_instance : bool -> qualid -> ComHints.hint_info_expr option -> unit
 (** globality, reference, optional priority and pattern information *)
 
 val new_instance_interactive
@@ -34,7 +34,7 @@ val new_instance_interactive
   -> ?generalize:bool
   -> ?tac:unit Proofview.tactic
   -> ?hook:(GlobRef.t -> unit)
-  -> Hints.hint_info_expr
+  -> ComHints.hint_info_expr
   -> (bool * constr_expr) option
   -> Id.t * Lemmas.t
 
@@ -47,7 +47,7 @@ val new_instance
   -> (bool * constr_expr)
   -> ?generalize:bool
   -> ?hook:(GlobRef.t -> unit)
-  -> Hints.hint_info_expr
+  -> ComHints.hint_info_expr
   -> Id.t
 
 val new_instance_program
@@ -59,7 +59,7 @@ val new_instance_program
   -> (bool * constr_expr) option
   -> ?generalize:bool
   -> ?hook:(GlobRef.t -> unit)
-  -> Hints.hint_info_expr
+  -> ComHints.hint_info_expr
   -> Id.t
 
 val declare_new_instance
@@ -69,7 +69,7 @@ val declare_new_instance
   -> ident_decl
   -> local_binder_expr list
   -> constr_expr
-  -> Hints.hint_info_expr
+  -> ComHints.hint_info_expr
   -> unit
 
 (** {6 Low level interface used by Add Morphism, do not use } *)

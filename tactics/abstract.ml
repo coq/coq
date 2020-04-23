@@ -40,6 +40,9 @@ let name_op_to_name ~name_op ~name suffix =
   | Some s -> s
   | None -> Nameops.add_suffix name suffix
 
+let declare_abstract = ref (fun ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl ->
+  CErrors.anomaly (Pp.str "Abstract declaration hook not registered"))
+
 let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let open Tacticals.New in
   let open Tacmach.New in
@@ -77,7 +80,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let concl = it_mkNamedProd_or_LetIn concl sign in
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
   let effs, sigma, lem, args, safe =
-    Declare.declare_abstract ~name ~poly ~sign ~secsign ~kind ~opaque ~solve_tac sigma concl in
+    !declare_abstract ~name ~poly ~sign ~secsign ~kind ~opaque ~solve_tac sigma concl in
   let solve =
     Proofview.tclEFFECTS effs <*>
     tacK lem args

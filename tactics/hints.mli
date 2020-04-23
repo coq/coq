@@ -32,8 +32,6 @@ val empty_hint_info : 'a Typeclasses.hint_info_gen
 
 (** Pre-created hint databases *)
 
-type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
-
 type 'a hint_ast =
   | Res_pf     of 'a (* Hint Apply *)
   | ERes_pf    of 'a (* Hint EApply *)
@@ -78,10 +76,6 @@ type search_entry
 
 type hint_entry
 
-type reference_or_constr =
-  | HintsReference of Libnames.qualid
-  | HintsConstr of Constrexpr.constr_expr
-
 type hint_mode =
   | ModeInput (* No evars *)
   | ModeNoHeadEvar (* No evar at the head *)
@@ -91,16 +85,6 @@ type 'a hints_transparency_target =
   | HintsVariables
   | HintsConstants
   | HintsReferences of 'a list
-
-type hints_expr =
-  | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
-  | HintsResolveIFF of bool * Libnames.qualid list * int option
-  | HintsImmediate of reference_or_constr list
-  | HintsUnfold of Libnames.qualid list
-  | HintsTransparency of Libnames.qualid hints_transparency_target * bool
-  | HintsMode of Libnames.qualid * hint_mode list
-  | HintsConstructors of Libnames.qualid list
-  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
 type 'a hints_path_gen =
   | PathAtom of 'a hints_path_atom_gen
@@ -217,8 +201,6 @@ val current_db_names : unit -> String.Set.t
 
 val current_pure_db : unit -> hint_db list
 
-val interp_hints : poly:bool -> hints_expr -> hints_entry
-
 val add_hints : locality:Goptions.option_locality -> hint_db_name list -> hints_entry -> unit
 
 val prepare_hint : bool (* Check no remaining evars *) ->
@@ -306,7 +288,7 @@ val wrap_hint_warning_fun : env -> evar_map ->
 (** Printing  hints *)
 
 val pr_searchtable : env -> evar_map -> Pp.t
-val pr_applicable_hint : Declare.Proof.t -> Pp.t
+val pr_applicable_hint : Proof.t -> Pp.t
 val pr_hint_ref : env -> evar_map -> GlobRef.t -> Pp.t
 val pr_hint_db_by_name : env -> evar_map -> hint_db_name -> Pp.t
 val pr_hint_db_env : env -> evar_map -> Hint_db.t -> Pp.t

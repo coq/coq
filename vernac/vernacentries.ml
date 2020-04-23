@@ -1275,7 +1275,7 @@ let vernac_hints ~atts dbnames h =
       "This command does not support the export attribute in sections.");
   | OptDefault | OptLocal -> ()
   in
-  Hints.add_hints ~locality dbnames (Hints.interp_hints ~poly h)
+  Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
 let vernac_syntactic_definition ~atts lid x only_parsing =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
@@ -1727,7 +1727,8 @@ let vernac_print ~pstate ~atts =
   | PrintHintGoal ->
      begin match pstate with
      | Some pstate ->
-       Hints.pr_applicable_hint pstate
+       let pf = Declare.Proof.get_proof pstate in
+       Hints.pr_applicable_hint pf
      | None ->
        str "No proof in progress"
      end

@@ -1,5 +1,4 @@
 DeclareScheme
-Declare
 Dnet
 Dn
 Btermdn
@@ -18,7 +17,7 @@ Elim
 Equality
 Contradiction
 Inv
-Leminv
+DeclareUctx
 Hints
 Auto
 Eauto

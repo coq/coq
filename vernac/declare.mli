@@ -135,8 +135,6 @@ type 'a constant_entry =
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
-val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
-
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
@@ -162,16 +160,6 @@ val definition_entry
   -> constr
   -> Evd.side_effects proof_entry
 
-(** XXX: Scheduled for removal from public API, use `DeclareDef` instead *)
-val pure_definition_entry
-  : ?fix_exn:Future.fix_exn
-  -> ?opaque:bool
-  -> ?inline:bool
-  -> ?types:types
-  -> ?univs:Entries.universes_entry
-  -> constr
-  -> unit proof_entry
-
 type import_status = ImportDefaultBehavior | ImportNeedQualified
 
 (** [declare_constant id cd] declares a global declaration
@@ -188,14 +176,6 @@ val declare_constant
   -> kind:Decls.logical_kind
   -> Evd.side_effects constant_entry
   -> Constant.t
-
-val declare_private_constant
-  :  ?role:Evd.side_effect_role
-  -> ?local:import_status
-  -> name:Id.t
-  -> kind:Decls.logical_kind
-  -> unit proof_entry
-  -> Constant.t * Evd.side_effects
 
 (** [inline_private_constants ~sideff ~uctx env ce] will inline the
    constants in [ce]'s body and return the body plus the updated
@@ -262,19 +242,6 @@ val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output
     Returns [false] if an unsafe tactic has been used. *)
 val by : unit Proofview.tactic -> Proof.t -> Proof.t * bool
 
-(** Declare abstract constant; will check no evars are possible; *)
-val declare_abstract :
-     name:Names.Id.t
-  -> poly:bool
-  -> kind:Decls.logical_kind
-  -> sign:EConstr.named_context
-  -> secsign:Environ.named_context_val
-  -> opaque:bool
-  -> solve_tac:unit Proofview.tactic
-  -> Evd.evar_map
-  -> EConstr.t
-  -> Evd.side_effects * Evd.evar_map * EConstr.t * EConstr.t list * bool
-
 val build_by_tactic
   :  ?side_eff:bool
   -> Environ.env
@@ -312,3 +279,6 @@ val build_constant_by_tactic :
   EConstr.types ->
   unit Proofview.tactic ->
   Evd.side_effects proof_entry * bool * UState.t
+
+val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
+[@@ocaml.deprecated "Use DeclareUctx.declare_universe_context"]

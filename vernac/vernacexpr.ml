@@ -336,18 +336,18 @@ type nonrec vernac_expr =
       local_binder_expr list * (* binders *)
       constr_expr * (* type *)
       (bool * constr_expr) option * (* body (bool=true when using {}) *)
-      Hints.hint_info_expr
+      ComHints.hint_info_expr
 
   | VernacDeclareInstance of
       ident_decl * (* name *)
       local_binder_expr list * (* binders *)
       constr_expr * (* type *)
-      Hints.hint_info_expr
+      ComHints.hint_info_expr
 
   | VernacContext of local_binder_expr list
 
   | VernacExistingInstance of
-    (qualid * Hints.hint_info_expr) list (* instances names, priorities and patterns *)
+    (qualid * ComHints.hint_info_expr) list (* instances names, priorities and patterns *)
 
   | VernacExistingClass of qualid (* inductive or definition name *)
 
@@ -387,7 +387,7 @@ type nonrec vernac_expr =
   (* Commands *)
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * qualid list
-  | VernacHints of string list * Hints.hints_expr
+  | VernacHints of string list * ComHints.hints_expr
   | VernacSyntacticDefinition of
       lident * (Id.t list * constr_expr) *
       onlyparsing_flag
