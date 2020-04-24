@@ -530,6 +530,16 @@ rewrite H0.
 change (x+0=0).
 Abort.
 
+Goal (forall x y, x <= y -> y + x = 0 /\ True)  -> exists x y, (x <= 0 -> y <= 1 -> 0 = 0 /\ 1 = 0).
+intros.
+do 2 eexists.
+intros.
+eapply H in H0 as (H0,_), H1 as (H1,_).
+split.
+- exact H0.
+- exact H1.
+Qed.
+
 (* 2nd order apply used to have delta on local definitions even though
    it does not have delta on global definitions; keep it by
    compatibility while finding a more uniform way to proceed. *)
@@ -581,4 +591,23 @@ Goal forall n m, n = m -> m = 0 -> exists p, p = m /\ p = 0.
 intros. eexists ?[p]. split. rewrite H.
 reflexivity.
 exact H0.
+Qed.
+
+(* apply and side conditions: we check that apply in iterates only on
+   the main subgoals *)
+
+Goal (forall x, x=0 -> x>=0 -> x<=0 \/ x<=1) -> 0>=0 -> 1>=0 -> 1=0 -> True.
+intros f H H0 H1.
+apply f in H as [], H0 as [].
+1-3: change (0 <= 0) in H.
+4-6: change (0 <= 1) in H.
+1: change (1 <= 0) in H0.
+4: change (1 <= 0) in H0.
+2: change (1 <= 1) in H0.
+5: change (1 <= 1) in H0.
+1-2,4-5: exact I.
+1,2: exact H1.
+change (0 >= 0) in H.
+change (1 >= 0) in H0.
+exact (eq_refl 0).
 Qed.

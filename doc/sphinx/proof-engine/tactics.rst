@@ -878,38 +878,38 @@ Applying theorems
       This happens if the conclusion of :token:`ident` does not match any of
       the non-dependent premises of the type of :token:`term`.
 
-   .. tacv:: apply {+, @term} in @ident
+   .. tacv:: apply {+, @term} in {+, @ident}
 
-      This applies each :token:`term` in sequence in :token:`ident`.
+      This applies each :token:`term` in sequence in each hypothesis :token:`ident`.
 
-   .. tacv:: apply {+, @term with @bindings} in @ident
+   .. tacv:: apply {+, @term with @bindings} in {+, @ident}
 
-      This does the same but uses the bindings in each :n:`(@ident := @term)` to
-      instantiate the parameters of the corresponding type of :token:`term`
-      (see :ref:`bindings`).
+      This does the same but uses the bindings to instantiate
+      parameters of :token:`term` (see :ref:`bindings`).
 
-   .. tacv:: eapply {+, @term {? with @bindings } } in @ident
+   .. tacv:: eapply {+, @term {? with @bindings } } in {+, @ident}
 
       This works as :tacn:`apply … in` but turns unresolved bindings into
       existential variables, if any, instead of failing.
 
-   .. tacv:: apply {+, @term {? with @bindings } } in @ident as @simple_intropattern
+   .. tacv:: apply {+, @term {? with @bindings } } in {+, @ident {? as @simple_intropattern}}
       :name: apply … in … as
 
-      This works as :tacn:`apply … in` then applies the :token:`simple_intropattern`
-      to the hypothesis :token:`ident`.
+      This works as :tacn:`apply … in` but applying an associated
+      :token:`simple_intropattern` to each hypothesis :token:`ident`
+      that comes with such clause.
 
-   .. tacv:: simple apply @term in @ident
+   .. tacv:: simple apply @term in {+, @ident}
 
       This behaves like :tacn:`apply … in` but it reasons modulo conversion
       only on subterms that contain no variables to instantiate and does not
       traverse tuples. See :ref:`the corresponding example <simple_apply_ex>`.
 
-   .. tacv:: {? simple} apply {+, @term {? with @bindings}} in @ident {? as @simple_intropattern}
-             {? simple} eapply {+, @term {? with @bindings}} in @ident {? as @simple_intropattern}
+   .. tacv:: {? simple} apply {+, @term {? with @bindings}} in {+, @ident {? as @simple_intropattern}}
+             {? simple} eapply {+, @term {? with @bindings}} in {+, @ident {? as @simple_intropattern}}
 
-      This summarizes the different syntactic variants of :n:`apply @term in @ident`
-      and :n:`eapply @term in @ident`.
+      This summarizes the different syntactic variants of :n:`apply @term in {+, @ident}`
+      and :n:`eapply @term in {+, @ident}`.
 
 .. tacn:: constructor @natural
    :name: constructor

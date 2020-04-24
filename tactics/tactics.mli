@@ -233,7 +233,7 @@ val apply_in :
 val apply_delayed_in :
   advanced_flag -> evars_flag -> Id.t ->
     (clear_flag * delayed_open_constr_with_bindings CAst.t) list ->
-    intro_pattern option -> unit Proofview.tactic
+    intro_pattern option -> unit Proofview.tactic -> unit Proofview.tactic
 
 (** {6 Elimination tactics. } *)
 

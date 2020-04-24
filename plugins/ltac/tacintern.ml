@@ -444,10 +444,10 @@ let intern_red_expr ist = function
   | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | (Red _ | Hnf | ExtraRedExpr _ as r ) -> r
 
-let intern_in_hyp_as ist lf (id,ipat) =
-  (intern_hyp ist id, Option.map (intern_intro_pattern lf ist) ipat)
-
 let intern_hyp_list ist = List.map (intern_hyp ist)
+
+let intern_in_hyp_as ist lf (idl,ipat) =
+  (intern_hyp ist idl, Option.map (intern_intro_pattern lf ist) ipat)
 
 let intern_inversion_strength lf ist = function
   | NonDepInversion (k,idl,ids) ->
@@ -527,7 +527,7 @@ let rec intern_atomic lf ist x =
       TacIntroPattern (ev,List.map (intern_intro_pattern lf ist) l)
   | TacApply (a,ev,cb,inhyp) ->
       TacApply (a,ev,List.map (intern_constr_with_bindings_arg ist) cb,
-                Option.map (intern_in_hyp_as ist lf) inhyp)
+                List.map (intern_in_hyp_as ist lf) inhyp)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,intern_constr_with_bindings_arg ist cb,
                Option.map (intern_constr_with_bindings ist) cbo)
