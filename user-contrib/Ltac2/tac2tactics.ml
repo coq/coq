@@ -106,7 +106,7 @@ let apply adv ev cb cl =
   | None -> Tactics.apply_with_delayed_bindings_gen adv ev cb
   | Some (id, cl) ->
     let cl = Option.map mk_intro_pattern cl in
-    Tactics.apply_delayed_in adv ev id cb cl
+    Tactics.apply_delayed_in adv ev id cb cl Tacticals.New.tclIDTAC
 
 let mk_destruction_arg = function
 | ElimOnConstr c ->

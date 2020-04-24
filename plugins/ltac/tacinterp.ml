@@ -1667,10 +1667,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (k,(make ?loc f))) cb
         in
         let sigma,tac = match cl with
-          | None -> sigma, Tactics.apply_with_delayed_bindings_gen a ev l
-          | Some cl ->
-              let sigma,(id,cl) = interp_in_hyp_as ist env sigma cl in
-              sigma, Tactics.apply_delayed_in a ev id l cl in
+          | [] -> sigma, Tactics.apply_with_delayed_bindings_gen a ev l
+          | cl ->
+              let sigma,cl = List.fold_left_map (interp_in_hyp_as ist env) sigma cl in
+              sigma, List.fold_right (fun (id,ipat) -> Tactics.apply_delayed_in a ev id l ipat) cl Tacticals.New.tclIDTAC in
         Tacticals.New.tclWITHHOLES ev tac sigma
       end
       end

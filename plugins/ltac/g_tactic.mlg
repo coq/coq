@@ -407,8 +407,8 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   in_hyp_as:
-    [ [ "in"; id = id_or_meta; ipat = as_ipat -> { Some (id,ipat) }
-      | -> { None } ] ]
+    [ [ "in"; l = LIST1 [id = id_or_meta; ipat = as_ipat -> { (id,ipat) } ] SEP "," -> { l }
+      | -> { [] } ] ]
   ;
   orient_rw:
     [ [ "->" -> { true }
