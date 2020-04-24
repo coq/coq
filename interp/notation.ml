@@ -1324,27 +1324,6 @@ let entry_has_ident = function
   | InCustomEntryLevel (s,n) ->
      try String.Map.find s !entry_has_ident_map <= n with Not_found -> false
 
-let uninterp_prim_token c =
-  match glob_prim_constr_key c with
-  | None -> raise Notation_ops.No_match
-  | Some r ->
-     try
-       let (sc,info,_) = GlobRef.Map.find r !prim_token_uninterp_infos in
-       let uninterp = match info with
-         | Uid uid -> Hashtbl.find prim_token_uninterpreters uid
-         | NumeralNotation o -> InnerPrimToken.RawNumUninterp (Numeral.uninterp o)
-         | StringNotation o -> InnerPrimToken.StringUninterp (Strings.uninterp o)
-       in
-       match InnerPrimToken.do_uninterp uninterp (AnyGlobConstr c) with
-       | None -> raise Notation_ops.No_match
-       | Some n -> (sc,n)
-     with Not_found -> raise Notation_ops.No_match
-
-let uninterp_prim_token_cases_pattern c =
-  match glob_constr_of_closed_cases_pattern (Global.env()) c with
-  | exception Not_found -> raise Notation_ops.No_match
-  | na,c -> let (sc,n) = uninterp_prim_token c in (na,sc,n)
-
 let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
     try
@@ -1365,6 +1344,27 @@ let availability_of_prim_token n printer_scope local_scopes =
   in
   let scopes = make_current_scopes local_scopes in
   Option.map snd (find_without_delimiters f (NotationInScope printer_scope,None) scopes)
+
+let uninterp_prim_token c =
+  match glob_prim_constr_key c with
+  | None -> raise Notation_ops.No_match
+  | Some r ->
+     try
+       let (sc,info,_) = GlobRef.Map.find r !prim_token_uninterp_infos in
+       let uninterp = match info with
+         | Uid uid -> Hashtbl.find prim_token_uninterpreters uid
+         | NumeralNotation o -> InnerPrimToken.RawNumUninterp (Numeral.uninterp o)
+         | StringNotation o -> InnerPrimToken.StringUninterp (Strings.uninterp o)
+       in
+       match InnerPrimToken.do_uninterp uninterp (AnyGlobConstr c) with
+       | None -> raise Notation_ops.No_match
+       | Some n -> (sc,n)
+     with Not_found -> raise Notation_ops.No_match
+
+let uninterp_prim_token_cases_pattern c =
+  match glob_constr_of_closed_cases_pattern (Global.env()) c with
+  | exception Not_found -> raise Notation_ops.No_match
+  | na,c -> let (sc,n) = uninterp_prim_token c in (na,sc,n)
 
 (* Miscellaneous *)
 
