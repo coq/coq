@@ -1,0 +1,11 @@
+- **Fixed:**
+  Numeral Notations now play better with multiple scopes for the same
+  inductive type. Previously, when multiple numeral notations were defined
+  for the same inductive, only the last one was considered for
+  printing. Now, among the notations that are usable for printing and either
+  have a scope delimiter or are open, the selection is made according
+  to the order of open scopes, or according to the last defined
+  notation if no appropriate scope is open
+  (`#12163 <https://github.com/coq/coq/pull/12163>`_,
+  fixes `#12159 <https://github.com/coq/coq/pull/12159>`_,
+  by Pierre Roux, review by Hugo Herbelin and Jason Gross).

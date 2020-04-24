@@ -932,7 +932,7 @@ let prim_token_interp_infos =
 (* Table from global_reference to backtrack-able informations about
    prim_token uninterpretation (in particular uninterpreter unique id). *)
 let prim_token_uninterp_infos =
-  ref (GlobRef.Map.empty : (scope_name * prim_token_interp_info * bool) GlobRef.Map.t)
+  ref (GlobRef.Map.empty : ((scope_name * (prim_token_interp_info * bool)) list) GlobRef.Map.t)
 
 let hashtbl_check_and_set allow_overwrite uid f h eq =
   match Hashtbl.find h uid with
@@ -968,10 +968,13 @@ let cache_prim_token_interpretation (_,infos) =
   check_scope ~tolerant:true sc;
   prim_token_interp_infos :=
     String.Map.add sc (infos.pt_required,ptii) !prim_token_interp_infos;
-  List.iter (fun r -> prim_token_uninterp_infos :=
-                        GlobRef.Map.add r (sc,ptii,infos.pt_in_match)
-                          !prim_token_uninterp_infos)
-            infos.pt_refs
+  let add_uninterp r =
+    let l = try GlobRef.Map.find r !prim_token_uninterp_infos with Not_found -> [] in
+    let l = List.remove_assoc_f String.equal sc l in
+    prim_token_uninterp_infos :=
+      GlobRef.Map.add r ((sc,(ptii,infos.pt_in_match)) :: l)
+        !prim_token_uninterp_infos in
+  List.iter add_uninterp infos.pt_refs
 
 let subst_prim_token_interpretation (subs,infos) =
   { infos with
@@ -1345,26 +1348,59 @@ let availability_of_prim_token n printer_scope local_scopes =
   let scopes = make_current_scopes local_scopes in
   Option.map snd (find_without_delimiters f (NotationInScope printer_scope,None) scopes)
 
-let uninterp_prim_token c =
+let rec find_uninterpretation need_delim def find = function
+  | [] ->
+      List.find_map
+        (fun (sc,_,_) -> try Some (find need_delim sc) with Not_found -> None)
+        def
+  | OpenScopeItem scope :: scopes ->
+      (try find need_delim scope
+       with Not_found -> find_uninterpretation need_delim def find scopes)  (* TODO: here we should also update the need_delim list with all regular notations in scope [scope] that could shadow a numeral notation *)
+  | LonelyNotationItem ntn::scopes ->
+      find_uninterpretation (ntn::need_delim) def find scopes
+
+let uninterp_prim_token c local_scopes =
   match glob_prim_constr_key c with
   | None -> raise Notation_ops.No_match
   | Some r ->
-     try
-       let (sc,info,_) = GlobRef.Map.find r !prim_token_uninterp_infos in
-       let uninterp = match info with
-         | Uid uid -> Hashtbl.find prim_token_uninterpreters uid
-         | NumeralNotation o -> InnerPrimToken.RawNumUninterp (Numeral.uninterp o)
-         | StringNotation o -> InnerPrimToken.StringUninterp (Strings.uninterp o)
-       in
-       match InnerPrimToken.do_uninterp uninterp (AnyGlobConstr c) with
-       | None -> raise Notation_ops.No_match
-       | Some n -> (sc,n)
-     with Not_found -> raise Notation_ops.No_match
+     let uninterp (sc,(info,_)) =
+       try
+         let uninterp = match info with
+           | Uid uid -> Hashtbl.find prim_token_uninterpreters uid
+           | NumeralNotation o -> InnerPrimToken.RawNumUninterp (Numeral.uninterp o)
+           | StringNotation o -> InnerPrimToken.StringUninterp (Strings.uninterp o)
+         in
+         match InnerPrimToken.do_uninterp uninterp (AnyGlobConstr c) with
+         | None -> None
+         | Some n -> Some (sc,n)
+       with Not_found -> None in
+     let add_key (sc,n) =
+       Option.map (fun k -> sc,n,k) (availability_of_prim_token n sc local_scopes) in
+     let l =
+       try GlobRef.Map.find r !prim_token_uninterp_infos
+       with Not_found -> raise Notation_ops.No_match in
+     let l = List.map_filter uninterp l in
+     let l = List.map_filter add_key l in
+     let find need_delim sc =
+       let _,n,k = List.find (fun (sc',_,_) -> String.equal sc' sc) l in
+       if k <> None then n,k else
+         let hidden =
+           List.exists
+             (fun n' -> notation_eq n' (notation_of_prim_token n))
+             need_delim in
+         if not hidden then n,k else
+           match (String.Map.find sc !scope_map).delimiters with
+           | Some k -> n,Some k
+           | None -> raise Not_found
+     in
+     let scopes = make_current_scopes local_scopes in
+     try find_uninterpretation [] l find scopes
+     with Not_found -> match l with (_,n,k)::_ -> n,k | [] -> raise Notation_ops.No_match
 
-let uninterp_prim_token_cases_pattern c =
+let uninterp_prim_token_cases_pattern c local_scopes =
   match glob_constr_of_closed_cases_pattern (Global.env()) c with
   | exception Not_found -> raise Notation_ops.No_match
-  | na,c -> let (sc,n) = uninterp_prim_token c in (na,sc,n)
+  | na,c -> let (sc,n) = uninterp_prim_token c local_scopes in (na,sc,n)
 
 (* Miscellaneous *)
 

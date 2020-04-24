@@ -206,9 +206,9 @@ val interp_prim_token_cases_pattern_expr : ?loc:Loc.t -> (GlobRef.t -> unit) -> 
    raise [No_match] if no such token *)
 
 val uninterp_prim_token :
-  'a glob_constr_g -> scope_name * prim_token
+  'a glob_constr_g -> subscopes -> prim_token * delimiters option
 val uninterp_prim_token_cases_pattern :
-  'a cases_pattern_g -> Name.t * scope_name * prim_token
+  'a cases_pattern_g -> subscopes -> Name.t * prim_token * delimiters option
 
 val availability_of_prim_token :
   prim_token -> scope_name -> subscopes -> delimiters option option
