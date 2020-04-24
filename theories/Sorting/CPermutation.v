@@ -235,9 +235,8 @@ induction m as [| b m]; intros l HC.
   apply CPermutation_nil in HC; inversion HC.
 - symmetry in HC.
   destruct (CPermutation_vs_cons_inv HC) as [m1 [m2 [-> Heq]]].
-  apply map_eq_app in Heq as [l1 [l1' [-> [-> Heq]]]].
-  symmetry in Heq.
-  apply map_eq_cons in Heq as [a [l1'' [-> [-> ->]]]].
+  apply map_eq_app in Heq as [l1 [l1' [-> [<- Heq]]]].
+  apply map_eq_cons in Heq as [a [l1'' [-> [<- <-]]]].
   exists (a :: l1'' ++ l1); split.
   + now simpl; rewrite map_app.
   + now rewrite app_comm_cons.
