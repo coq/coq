@@ -95,6 +95,13 @@
 : "${Flocq_CI_ARCHIVEURL:=${Flocq_CI_GITURL}/-/archive}"
 
 ########################################################################
+# coq-tools
+########################################################################
+: "${coq_tools_CI_REF:=master}"
+: "${coq_tools_CI_GITURL:=https://github.com/JasonGross/coq-tools}"
+: "${coq_tools_CI_ARCHIVEURL:=${coq_tools_CI_GITURL}/archive}"
+
+########################################################################
 # Coquelicot
 ########################################################################
 : "${coquelicot_CI_REF:=master}"

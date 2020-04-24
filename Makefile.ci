@@ -20,6 +20,7 @@ CI_TARGETS= \
     ci-coquelicot \
     ci-corn \
     ci-cross-crypto \
+    ci-coq-tools \
     ci-coqprime \
     ci-elpi \
     ci-ext-lib \
