@@ -23,7 +23,14 @@
  (targets refman-html)
  (alias refman-html)
  (package coq-doc)
- (deps (alias refman-deps))
+ ; Cannot use this deps alias because of ocaml/dune#3415
+ ; (deps (alias refman-deps))
+ (deps
+  (package coq)
+  (source_tree sphinx)
+  (source_tree tools/coqrst)
+  unreleased.rst
+  (env_var SPHINXWARNOPT))
  (action
   (run env COQLIB=%{project_root} sphinx-build %{env:SPHINXWARNOPT=-W} -b html sphinx %{targets})))
 
@@ -31,7 +38,14 @@
  (targets refman-pdf)
  (alias refman-pdf)
  (package coq-doc)
- (deps (alias refman-deps))
+ ; Cannot use this deps alias because of ocaml/dune#3415
+ ; (deps (alias refman-deps))
+ (deps
+  (package coq)
+  (source_tree sphinx)
+  (source_tree tools/coqrst)
+  unreleased.rst
+  (env_var SPHINXWARNOPT))
  (action
   (progn
    (run env COQLIB=%{project_root} sphinx-build %{env:SPHINXWARNOPT=-W} -b latex sphinx %{targets})
