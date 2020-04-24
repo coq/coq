@@ -1301,10 +1301,7 @@ let build_ui () =
   in
   let refresh_language lang =
     let lang = lang_manager#language lang in
-    let iter_session v =
-      v.script#source_buffer#set_language lang;
-      v.proof#source_buffer#set_language lang;
-      v.messages#default_route#source_buffer#set_language lang in
+    let iter_session v = v.script#source_buffer#set_language lang in
     List.iter iter_session notebook#pages
   in
   let refresh_toolbar b =

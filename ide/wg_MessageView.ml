@@ -46,7 +46,6 @@ let message_view () : message_view =
   let buffer = GSourceView3.source_buffer
     ~highlight_matching_brackets:true
     ~tag_table:Tags.Message.table
-    ?language:(lang_manager#language source_language#get)
     ?style_scheme:(style_manager#style_scheme source_style#get) ()
   in
   let mark = buffer#create_mark ~left_gravity:false buffer#start_iter in
