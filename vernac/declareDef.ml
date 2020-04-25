@@ -112,7 +112,7 @@ let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~re
          declare_entry ~name ~scope ~kind ~impargs ~uctx entry)
       fixitems fixdecls
   in
-  let isfix = Option.is_empty possible_indexes in
+  let isfix = Option.has_some possible_indexes in
   let fixnames = List.map (fun { Recthm.name } -> name) fixitems in
   Declare.recursive_message isfix indexes fixnames;
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
