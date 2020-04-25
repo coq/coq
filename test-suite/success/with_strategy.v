@@ -138,6 +138,17 @@ Goal id 0 = 0.
   reflexivity.
 Time Timeout 5 Defined.
 
+(* test that it works even with [Qed] *)
+Goal id 0 = 0.
+Proof using Type.
+  Time Timeout 5
+       abstract
+       (with_strategy
+          expand [id]
+          assert (id (fact 100) = fact 100) by abstract reflexivity;
+       reflexivity).
+Time Timeout 5 Qed.
+
 (* check that module substitutions happen correctly *)
 Module F.
   Definition id {T} := @id T.

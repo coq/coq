@@ -3367,6 +3367,27 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    .. note::
 
+      This tactic unfortunately does not yet play well with tactic
+      internalization, resulting in interpretation-time errors when
+      you try to use it directly with opaque identifiers, as seen in
+      the following example.  This can be worked around by binding the
+      identifier to an |Ltac| variable, and this issue should
+      disappear in a future version of |Coq|; see
+      `#12179 <https://github.com/coq/coq/issues/12179>`_.
+
+   .. example::
+
+      .. coqtop:: all reset abort
+
+         Opaque id.
+         Goal id 10 = 10.
+         Fail unfold id.
+         (** This should work, but does not *)
+         Fail with_strategy transparent [id] unfold id.
+         let id' := id in with_strategy transparent [id] unfold id'.
+
+   .. warning::
+
       Use this tactic with care, as effects do not persist past the
       end of the proof script.  Notably, this fine-tuning of the
       conversion strategy is not in effect during :cmd:`Qed` nor
@@ -3376,6 +3397,75 @@ the conversion in hypotheses :n:`{+ @ident}`.
       calls to conversion in tactic automation to ensure that, e.g.,
       :tacn:`unfold` does not fail just because the user made a
       constant :cmd:`Opaque`.
+
+      This can be illustrated with the following example involving the
+      factorial function.
+
+      .. coqtop:: in reset
+
+         Fixpoint fact (n : nat) : nat :=
+           match n with
+           | 0 => 1
+           | S n' => n * fact n'
+           end.
+
+      Suppose now that, for whatever reason, we want in general to
+      unfold the :g:`id` function very late during conversion:
+
+      .. coqtop:: in
+
+         Strategy 1000 [id].
+
+      If we try to prove :g:`id (fact n) = fact n` by
+      :tacn:`reflexivity`, it will now take time proportional to
+      :math:`n!`, because |Coq| will keep unfolding :g:`fact` and
+      :g:`*` and :g:`+` before it unfolds :g:`id`, resulting in a full
+      computation of :g:`fact n` (in unary, because we are using
+      :g:`nat`), which takes time :math:`n!`.  We can see this cross
+      the relevant threshold at around :math:`n = 9`:
+
+      .. coqtop:: all abort
+
+         Goal True.
+         Time assert (id (fact 8) = fact 8) by reflexivity.
+         Time assert (id (fact 9) = fact 9) by reflexivity.
+
+      Note that behavior will be the same if you mark :g:`id` as
+      :g:`Opaque` because while most reduction tactics refuse to
+      unfold :g:`Opaque` constants, conversion treats :g:`Opaque` as
+      merely a hint to unfold this constant last.
+
+      We can get around this issue by using :tacn:`with_strategy`:
+
+      .. coqtop:: all
+
+         Goal True.
+         Fail Timeout 1 assert (id (fact 100) = fact 100) by reflexivity.
+         Time assert (id (fact 100) = fact 100) by with_strategy -1 [id] reflexivity.
+
+      However, when we go to close the proof, we will run into
+      trouble, because the reduction strategy changes are local to the
+      tactic passed to :tacn:`with_strategy`.
+
+      .. coqtop:: all abort
+
+         exact I.
+         Fail Timeout 1 Defined.
+
+      We can fix this issue by using :tacn:`abstract`:
+
+      .. coqtop:: all
+
+         Goal True.
+         Time assert (id (fact 100) = fact 100) by with_strategy -1 [id] abstract reflexivity.
+         exact I.
+         Time Defined.
+
+      On small examples this sort of behavior doesn't matter, but
+      because |Coq| is a super-linear performance domain in so many
+      places, unless great care is taken, tactic automation using
+      :tacn:`with_strategy` may not be robustly performant when
+      scaling the size of the input.
 
 Conversion tactics applied to hypotheses
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
