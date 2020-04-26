@@ -3447,10 +3447,10 @@ the conversion in hypotheses :n:`{+ @ident}`.
       trouble, because the reduction strategy changes are local to the
       tactic passed to :tacn:`with_strategy`.
 
-      .. coqtop:: all abort
+      .. coqtop:: all abort fail
 
          exact I.
-         Fail Timeout 1 Defined.
+         Timeout 1 Defined.
 
       We can fix this issue by using :tacn:`abstract`:
 
