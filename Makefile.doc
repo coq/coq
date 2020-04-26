@@ -100,6 +100,9 @@ doc-stdlib: \
 full-stdlib: \
   doc/stdlib/html/index.html doc/stdlib/FullLibrary.ps doc/stdlib/FullLibrary.pdf
 
+sphinx-clean:
+	rm -rf $(SPHINXBUILDDIR)
+
 .PHONY: plugin-tutorial
 plugin-tutorial: states tools
 	+$(MAKE) COQBIN=$(PWD)/bin/ -C $(PLUGINTUTO)
