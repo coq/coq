@@ -333,7 +333,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let seg_opaque = ObjFile.get_segment ch ~segment:"opaques" in
       let () = ObjFile.close_in ch in
       (* Actually read the data *)
-      let ch = open_in f in
+      let ch = open_in_bin f in
 
       let (sd:summary_disk) = marshal_in_segment ~validate ~value:Values.v_libsum ~segment:seg_sd f ch in
       let (md:library_disk) = marshal_in_segment ~validate ~value:Values.v_lib ~segment:seg_md f ch in

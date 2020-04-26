@@ -58,7 +58,7 @@ let in_delayed f ch ~segment =
 let fetch_delayed del =
   let { del_digest = digest; del_file = f; del_off = pos; } = del in
   try
-    let ch = open_in f in
+    let ch = open_in_bin f in
     let () = LargeFile.seek_in ch pos in
     let obj = System.marshal_in f ch in
     let digest' = Digest.input ch in
