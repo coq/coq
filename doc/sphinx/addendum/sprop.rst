@@ -12,22 +12,18 @@ proof irrelevant propositions (types in the sort :math:`\SProp`, also
 known as strict propositions) as described in
 :cite:`Gilbert:POPL2019`.
 
-Using :math:`\SProp` may be prevented by passing ``-disallow-sprop``
-to the |Coq| program or using :flag:`Allow StrictProp`.
+Use of |SProp| may be disabled by passing ``-disallow-sprop`` to the
+|Coq| program or by turning the :flag:`Allow StrictProp` flag off.
 
 .. flag:: Allow StrictProp
    :name: Allow StrictProp
 
-   Allows using :math:`\SProp` when set and forbids it when unset. The
-   initial value depends on whether you used the command line
-   ``-disallow-sprop`` and ``-allow-sprop``.
+   Enables or disables the use of |SProp|.  It is enabled by default.
+   The command-line flag ``-disallow-sprop`` disables |SProp| at
+   startup.
 
-.. exn:: SProp not allowed, you need to Set Allow StrictProp or to use the -allow-sprop command-line-flag.
-   :undocumented:
-
-.. coqtop:: none
-
-   Set Allow StrictProp.
+   .. exn:: SProp is disallowed because the "Allow StrictProp" flag is off.
+      :undocumented:
 
 Some of the definitions described in this document are available
 through ``Coq.Logic.StrictProp``, which see.
