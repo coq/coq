@@ -182,36 +182,9 @@ let marshal_in filename ch =
   | End_of_file -> error_corrupted filename "premature end of file"
   | Failure s -> error_corrupted filename s
 
-let digest_out = Digest.output
-let digest_in filename ch =
-  try Digest.input ch
-  with
-  | End_of_file -> error_corrupted filename "premature end of file"
-  | Failure s -> error_corrupted filename s
-
-let marshal_out_segment f ch v =
-  let start = pos_out ch in
-  output_binary_int ch 0;  (* dummy value for stop *)
-  marshal_out ch v;
-  let stop = pos_out ch in
-  seek_out ch start;
-  output_binary_int ch stop;
-  seek_out ch stop;
-  digest_out ch (Digest.file f)
-
-let marshal_in_segment f ch =
-  let stop = (input_binary_int f ch : int) in
-  let v = marshal_in f ch in
-  let digest = digest_in f ch in
-  v, stop, digest
-
-let skip_in_segment f ch =
-  let stop = (input_binary_int f ch : int) in
-  seek_in ch stop;
-  stop, digest_in f ch
-
-type magic_number_error = {filename: string; actual: int; expected: int}
+type magic_number_error = {filename: string; actual: int32; expected: int32}
 exception Bad_magic_number of magic_number_error
+exception Bad_version_number of magic_number_error
 
 let raw_extern_state magic filename =
   let channel = open_trapping_failure filename in
@@ -225,8 +198,8 @@ let raw_intern_state magic filename =
     if not (Int.equal actual_magic magic) then
         raise (Bad_magic_number {
             filename=filename;
-            actual=actual_magic;
-            expected=magic});
+            actual=Int32.of_int actual_magic;
+            expected=Int32.of_int magic});
     channel
   with
   | End_of_file -> error_corrupted filename "premature end of file"
@@ -256,10 +229,14 @@ let intern_state magic filename =
 
 let with_magic_number_check f a =
   try f a
-  with Bad_magic_number {filename=fname;actual=actual;expected=expected} ->
+  with
+  | Bad_magic_number {filename=fname; _} ->
     CErrors.user_err ~hdr:"with_magic_number_check"
-    (str"File " ++ str fname ++ strbrk" has bad magic number " ++
-    int actual ++ str" (expected " ++ int expected ++ str")." ++
+    (str"File " ++ str fname ++ strbrk" is corrupted.")
+  | Bad_version_number {filename=fname;actual=actual;expected=expected} ->
+    CErrors.user_err ~hdr:"with_magic_number_check"
+    (str"File " ++ str fname ++ strbrk" has bad version number " ++
+    (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++
     strbrk "It is corrupted or was compiled with another version of Coq.")
 

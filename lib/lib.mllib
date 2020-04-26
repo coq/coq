@@ -14,6 +14,7 @@ CWarnings
 AcyclicGraph
 Rtree
 System
+ObjFile
 Explore
 CProfile
 Future

@@ -349,14 +349,63 @@ let parse_header chan =
   let size64 = input_binary_int chan in
   { magic; length; size32; size64; objects }
 
+module ObjFile =
+struct
+
 type segment = {
   name : string;
-  mutable pos : int;
-  typ : Values.value;
+  pos : int64;
+  len : int64;
+  hash : Digest.t;
   mutable header : header;
 }
 
-let make_seg name typ = { name; typ; pos = 0; header = dummy_header }
+let input_int32 ch =
+  let accu = ref 0l in
+  for _i = 0 to 3 do
+    let c = input_byte ch in
+    accu := Int32.add (Int32.shift_left !accu 8) (Int32.of_int c)
+  done;
+  !accu
+
+let input_int64 ch =
+  let accu = ref 0L in
+  for _i = 0 to 7 do
+    let c = input_byte ch in
+    accu := Int64.add (Int64.shift_left !accu 8) (Int64.of_int c)
+  done;
+  !accu
+
+let input_segment_summary ch =
+  let nlen = input_int32 ch in
+  let name = really_input_string ch (Int32.to_int nlen) in
+  let pos = input_int64 ch in
+  let len = input_int64 ch in
+  let hash = Digest.input ch in
+  { name; pos; len; hash; header = dummy_header }
+
+let rec input_segment_summaries ch n accu =
+  if Int32.equal n 0l then Array.of_list (List.rev accu)
+  else
+    let s = input_segment_summary ch in
+    let accu = s :: accu in
+    input_segment_summaries ch (Int32.pred n) accu
+
+let parse_segments ch =
+  let magic = input_int32 ch in
+  let version = input_int32 ch in
+  let summary_pos = input_int64 ch in
+  let () = LargeFile.seek_in ch summary_pos in
+  let nsum = input_int32 ch in
+  let seg = input_segment_summaries ch nsum [] in
+  for i = 0 to Array.length seg - 1 do
+    let () = LargeFile.seek_in ch seg.(i).pos in
+    let header = parse_header ch in
+    seg.(i).header <- header
+  done;
+  (magic, version, seg)
+
+end
 
 let visit_vo f =
   Printf.printf "\nWelcome to votour !\n";
@@ -364,13 +413,13 @@ let visit_vo f =
   Printf.printf "Object sizes are in words (%d bits)\n" Sys.word_size;
   Printf.printf
     "At prompt, <n> enters the <n>-th child, u goes up 1 level, x exits\n\n%!";
-  let segments = [|
-    make_seg "summary" Values.v_libsum;
-    make_seg "library" Values.v_lib;
-    make_seg "univ constraints of opaque proofs" Values.v_univopaques;
-    make_seg "STM tasks" (Opt Values.v_stm_seg);
-    make_seg "opaque proofs" Values.v_opaquetable;
-  |] in
+  let known_segments = [
+    "summary", Values.v_libsum;
+    "library", Values.v_lib;
+    "universes", Values.v_univopaques;
+    "tasks", (Opt Values.v_stm_seg);
+    "opaques", Values.v_opaquetable;
+  ] in
   let repr =
     if Sys.word_size = 64 then (module ReprMem : S) else (module ReprObj : S)
     (* On 32-bit machines, representation may exceed the max size of arrays *)
@@ -379,28 +428,23 @@ let visit_vo f =
   let module Visit = Visit(Repr) in
   while true do
     let ch = open_in_bin f in
-    let magic = input_binary_int ch in
-    Printf.printf "File format: %d\n%!" magic;
-    for i=0 to Array.length segments - 1 do
-      let pos = input_binary_int ch in
-      segments.(i).pos <- pos_in ch;
-      let header = parse_header ch in
-      segments.(i).header <- header;
-      seek_in ch pos;
-      ignore(Digest.input ch);
-    done;
+    let (_magic, version, segments) = ObjFile.parse_segments ch in
+    Printf.printf "File format: %ld\n%!" version;
     Printf.printf "The file has %d segments, choose the one to visit:\n"
       (Array.length segments);
-    Array.iteri (fun i { name; pos; header } ->
+    Array.iteri (fun i ObjFile.{ name; pos; header } ->
       let size = if Sys.word_size = 64 then header.size64 else header.size32 in
-      Printf.printf "  %d: %s, starting at byte %d (size %iw)\n" i name pos size)
+      Printf.printf "  %d: %s, starting at byte %Ld (size %iw)\n" i name pos size)
       segments;
     match read_num (Array.length segments) with
     | Some seg ->
-       seek_in ch segments.(seg).pos;
+       let seg = segments.(seg) in
+       let open ObjFile in
+       LargeFile.seek_in ch seg.pos;
        let o = Repr.input ch in
        let () = Visit.init () in
-       Visit.visit segments.(seg).typ o []
+       let typ = try List.assoc seg.name known_segments with Not_found -> Any in
+       Visit.visit typ o []
     | None -> ()
   done
 
