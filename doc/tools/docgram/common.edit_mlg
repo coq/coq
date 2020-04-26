@@ -85,6 +85,7 @@ DELETE: [
 | test_ssrslashnum10
 | test_ssrslashnum11
 | test_ident_no_do
+| test_hash_ident
 | ssrdoarg  (* todo: this and the next one should be removed from the grammar? *)
 | ssrseqdir
 *)
@@ -1488,8 +1489,6 @@ scope_delimiter: [
 (* Don't show these details *)
 DELETE: [
 | register_token
-| register_prim_token
-| register_type_token
 ]
 
 

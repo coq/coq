@@ -158,8 +158,8 @@ class CoqObject(ObjectDescription):
     def _warn_if_duplicate_name(self, objects, name):
         """Check that two objects in the same domain don't have the same name."""
         if name in objects:
-            MSG = 'Duplicate object: {}; other is at {}'
-            msg = MSG.format(name, self.env.doc2path(objects[name][0]))
+            MSG = 'Duplicate {}: {}; other is at: {}'
+            msg = MSG.format(self.subdomain, name, objects[name][0])
             self.state_machine.reporter.warning(msg, line=self.lineno)
 
     def _record_name(self, name, target_id):
@@ -183,6 +183,10 @@ class CoqObject(ObjectDescription):
             signode['first'] = (not self.names)
             self.state.document.note_explicit_target(signode)
             self._record_name(name, targetid)
+        else:
+            names_in_subdomain = self.subdomain_data()
+            self._warn_if_duplicate_name(names_in_subdomain, name) # 2
+
         return targetid
 
     def _add_index_entry(self, name, target):
