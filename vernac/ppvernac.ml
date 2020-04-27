@@ -1312,7 +1312,7 @@ let pr_control_flag (p : control_flag) =
 
 let pr_vernac_control flags = Pp.prlist pr_control_flag flags
 
-let rec pr_vernac_flag (k, v) =
+let rec pr_vernac_flag ({CAst.v=k}, v) =
   let k = keyword k in
   let open Attributes in
   match v with

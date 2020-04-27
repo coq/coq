@@ -12,7 +12,7 @@ open CErrors
 
 (** The type of parsing attribute data *)
 type vernac_flags = vernac_flag list
-and vernac_flag = string * vernac_flag_value
+and vernac_flag = Names.lstring * vernac_flag_value
 and vernac_flag_value =
   | VernacFlagEmpty
   | VernacFlagLeaf of string
@@ -21,7 +21,7 @@ and vernac_flag_value =
 let warn_unsupported_attributes =
   CWarnings.create ~name:"unsupported-attributes" ~category:"parsing" ~default:CWarnings.AsError
     (fun atts ->
-       let keys = List.map fst atts in
+       let keys = List.map (fun ({CAst.v},_) -> v) atts in
        let keys = List.sort_uniq String.compare keys in
        let conj = match keys with [_] -> "this attribute: " | _ -> "these attributes: " in
        Pp.(str "This command does not support " ++ str conj ++ prlist str keys ++ str"."))
@@ -30,7 +30,7 @@ let unsupported_attributes = function
   | [] -> ()
   | atts -> warn_unsupported_attributes atts
 
-type 'a key_parser = 'a option -> vernac_flag_value -> 'a
+type 'a key_parser = ?loc:Loc.t -> 'a option -> vernac_flag_value -> 'a
 
 type 'a attribute = vernac_flags -> vernac_flags * 'a
 
@@ -77,32 +77,32 @@ module Notations = struct
 end
 open Notations
 
-let assert_empty k v =
+let assert_empty ?loc k v =
   if v <> VernacFlagEmpty
   then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
 
-let error_twice ~name : 'a =
-  user_err Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
+let error_twice ?loc ~name : 'a =
+  user_err ?loc Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
 
-let assert_once ~name prev =
+let assert_once ?loc ~name prev =
   if Option.has_some prev then
-    error_twice ~name
+    error_twice ?loc ~name
 
 let attribute_of_list (l:(string * 'a key_parser) list) : 'a option attribute =
   let rec p extra v = function
     | [] -> List.rev extra, v
-    | (key, attv as att) :: rem ->
+    | (CAst.{loc;v=key}, attv as att) :: rem ->
       (match CList.assoc_f String.equal key l with
        | exception Not_found -> p (att::extra) v rem
        | parser ->
-         let v = Some (parser v attv) in
+         let v = Some (parser ?loc v attv) in
          p extra v rem)
   in
   p [] None
 
-let single_key_parser ~name ~key v prev args =
-  assert_empty key args;
-  assert_once ~name prev;
+let single_key_parser ~name ~key v ?loc prev args =
+  assert_empty ?loc key args;
+  assert_once ?loc ~name prev;
   v
 
 let bool_attribute ~name ~on ~off : bool option attribute =
@@ -110,31 +110,31 @@ let bool_attribute ~name ~on ~off : bool option attribute =
                (off, single_key_parser ~name ~key:off false)]
 
 (* Variant of the [bool] attribute with only two values (bool has three). *)
-let get_bool_value ~key ~default =
+let get_bool_value ?loc ~key ~default =
   function
   | VernacFlagEmpty -> default
-  | VernacFlagList [ "true", VernacFlagEmpty ] -> true
-  | VernacFlagList [ "false", VernacFlagEmpty ] -> false
-  | _ -> user_err Pp.(str "Attribute " ++ str key ++ str " only accepts boolean values.")
+  | VernacFlagList [ {CAst.v="true"}, VernacFlagEmpty ] -> true
+  | VernacFlagList [ {CAst.v="false"}, VernacFlagEmpty ] -> false
+  | _ -> user_err ?loc Pp.(str "Attribute " ++ str key ++ str " only accepts boolean values.")
 
 let enable_attribute ~key ~default : bool attribute =
   fun atts ->
   let default = default () in
-  let this, extra = List.partition (fun (k, _) -> String.equal key k) atts in
+  let this, extra = List.partition (fun (k, _) -> String.equal key k.CAst.v) atts in
   extra,
   match this with
   | [] -> default
-  | [ _, value ] -> get_bool_value ~key ~default:true value
-  | _ -> error_twice ~name:key
+  | [ {CAst.loc}, value ] -> get_bool_value ?loc ~key ~default:true value
+  | ( {CAst.loc}, _ ) :: _ -> error_twice ?loc ~name:key
 
 let qualify_attribute qual (parser:'a attribute) : 'a attribute =
   fun atts ->
     let rec extract extra qualified = function
       | [] -> List.rev extra, List.flatten (List.rev qualified)
-      | (key,attv) :: rem when String.equal key qual ->
+      | (CAst.{loc;v=key},attv) :: rem when String.equal key qual ->
         (match attv with
          | VernacFlagEmpty | VernacFlagLeaf _ ->
-           CErrors.user_err ~hdr:"qualified_attribute"
+           CErrors.user_err ~hdr:"qualified_attribute" ?loc
              Pp.(str "Malformed attribute " ++ str qual ++ str ": attribute list expected.")
          | VernacFlagList atts ->
            extract extra (atts::qualified) rem)
@@ -142,7 +142,7 @@ let qualify_attribute qual (parser:'a attribute) : 'a attribute =
     in
     let extra, qualified = extract [] [] atts in
     let rem, v = parser qualified in
-    let extra = if rem = [] then extra else (qual, VernacFlagList rem) :: extra in
+    let extra = if rem = [] then extra else (CAst.make qual, VernacFlagList rem) :: extra in
     extra, v
 
 (** [program_mode] tells that Program mode has been activated, either
@@ -198,15 +198,16 @@ let template =
 let polymorphic =
   qualify_attribute ukey polymorphic_base
 
-let deprecation_parser : Deprecation.t key_parser = fun orig args ->
-  assert_once ~name:"deprecation" orig;
+let deprecation_parser : Deprecation.t key_parser = fun ?loc orig args ->
+  assert_once ?loc ~name:"deprecation" orig;
+  let open CAst in
   match args with
-  | VernacFlagList [ "since", VernacFlagLeaf since ; "note", VernacFlagLeaf note ]
-  | VernacFlagList [ "note", VernacFlagLeaf note ; "since", VernacFlagLeaf since ] ->
+  | VernacFlagList [ {v="since"}, VernacFlagLeaf since ; {v="note"}, VernacFlagLeaf note ]
+  | VernacFlagList [ {v="note"}, VernacFlagLeaf note ; {v="since"}, VernacFlagLeaf since ] ->
     Deprecation.make ~since ~note ()
-  | VernacFlagList [ "since", VernacFlagLeaf since ] ->
+  | VernacFlagList [ {v="since"}, VernacFlagLeaf since ] ->
     Deprecation.make ~since ()
-  | VernacFlagList [ "note", VernacFlagLeaf note ] ->
+  | VernacFlagList [ {v="note"}, VernacFlagLeaf note ] ->
     Deprecation.make ~note ()
   |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
 
@@ -217,8 +218,8 @@ let only_locality atts = parse locality atts
 let only_polymorphism atts = parse polymorphic atts
 
 
-let vernac_polymorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagEmpty]
-let vernac_monomorphic_flag = ukey, VernacFlagList ["monomorphic", VernacFlagEmpty]
+let vernac_polymorphic_flag ~loc = CAst.make ukey, VernacFlagList [CAst.make ~loc "polymorphic", VernacFlagEmpty]
+let vernac_monomorphic_flag ~loc = CAst.make ukey, VernacFlagList [CAst.make ~loc "monomorphic", VernacFlagEmpty]
 
 let canonical_field =
   enable_attribute ~key:"canonical" ~default:(fun () -> true)

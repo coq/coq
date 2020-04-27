@@ -113,7 +113,7 @@ GRAMMAR EXTEND Gram
     ]
   ;
   attribute:
-    [ [ k = ident ; v = attribute_value -> { Names.Id.to_string k, v } ]
+    [ [ k = lident ; v = attribute_value -> { CAst.(make ?loc:k.loc (Names.Id.to_string k.v)), v } ]
     ]
   ;
   attribute_value:
@@ -124,21 +124,21 @@ GRAMMAR EXTEND Gram
   ;
   legacy_attr:
     [ [ IDENT "Local" ->
-        { ("local", VernacFlagEmpty) }
+        { (CAst.make ~loc "local", VernacFlagEmpty) }
       | IDENT "Global" ->
-        { ("global", VernacFlagEmpty) }
+        { (CAst.make ~loc "global", VernacFlagEmpty) }
       | IDENT "Polymorphic" ->
-        { Attributes.vernac_polymorphic_flag }
+        { Attributes.vernac_polymorphic_flag ~loc }
       | IDENT "Monomorphic" ->
-        { Attributes.vernac_monomorphic_flag }
+        { Attributes.vernac_monomorphic_flag ~loc }
       | IDENT "Cumulative" ->
-        { ("universes", VernacFlagList ["cumulative", VernacFlagEmpty]) }
+        { (CAst.make "universes", VernacFlagList [CAst.make ~loc "cumulative", VernacFlagEmpty]) }
       | IDENT "NonCumulative" ->
-        { ("universes", VernacFlagList ["noncumulative", VernacFlagEmpty]) }
+        { (CAst.make "universes", VernacFlagList [CAst.make ~loc "noncumulative", VernacFlagEmpty]) }
       | IDENT "Private" ->
-        { ("private", VernacFlagList ["matching", VernacFlagEmpty]) }
+        { (CAst.make ~loc "private", VernacFlagList [CAst.make "matching", VernacFlagEmpty]) }
       | IDENT "Program" ->
-        { ("program", VernacFlagEmpty) }
+        { (CAst.make ~loc "program", VernacFlagEmpty) }
       ] ]
   ;
   vernac:

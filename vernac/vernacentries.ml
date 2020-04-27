@@ -2186,7 +2186,7 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacSetStrategy l ->
     VtDefault(fun () -> with_locality ~atts vernac_set_strategy l)
   | VernacSetOption (export,key,v) ->
-    let atts = if export then ("export", VernacFlagEmpty) :: atts else atts in
+    let atts = if export then (CAst.make "export", VernacFlagEmpty) :: atts else atts in
     VtDefault(fun () ->
         vernac_set_option ~locality:(parse option_locality atts) key v)
   | VernacRemoveOption (key,v) ->
