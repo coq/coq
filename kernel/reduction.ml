@@ -463,11 +463,11 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
            we throw them away *)
         if not (is_empty_stack v1 && is_empty_stack v2) then
           anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
-        let (x1,ty1,bd1) = destFLambda mk_clos hd1 in
-        let (_,ty2,bd2) = destFLambda mk_clos hd2 in
+        let (x1,_,bd1) = destFLambda mk_clos hd1 in
+        let (_,_,bd2) = destFLambda mk_clos hd2 in
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
-        let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
+        (* Domains do not need to be convertible in a PTS with eta-conversion *)
         ccnv CONV l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) bd1 bd2 cuniv
 
     | (FProd (x1, c1, c2, e), FProd (_, c'1, c'2, e')) ->
