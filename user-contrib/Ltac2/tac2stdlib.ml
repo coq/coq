@@ -124,8 +124,8 @@ let to_destruction_arg v = match Value.to_block v with
 | (0, [| c |]) ->
   let c = uthaw constr_with_bindings c in
   ElimOnConstr c
-| (1, [| id |]) -> ElimOnIdent (Value.to_ident id)
-| (2, [| n |]) -> ElimOnAnonHyp (Value.to_int n)
+| (1, [| id |]) -> ElimOnIdent (CAst.make (Value.to_ident id))
+| (2, [| n |]) -> ElimOnAnonHyp (CAst.make (Value.to_int n))
 | _ -> assert false
 
 let destruction_arg = make_to_repr to_destruction_arg

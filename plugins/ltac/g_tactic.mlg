@@ -130,7 +130,7 @@ let mkTacCase with_evar = function
   (* Reinterpret numbers as a notation for terms *)
   | [(clear,ElimOnAnonHyp n),(None,None),None],None ->
       TacCase (with_evar,
-        (clear,(CAst.make @@ CPrim (mkNumeral n),
+        (clear,(CAst.make @@ CPrim (mkNumeral n.CAst.v),
          NoBindings)))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
@@ -212,7 +212,7 @@ GRAMMAR EXTEND Gram
     [ [ c = constr -> { c } ] ]
   ;
   destruction_arg:
-    [ [ n = natural -> { (None,ElimOnAnonHyp n) }
+    [ [ n = lnatural -> { (None,ElimOnAnonHyp n) }
       | test_lpar_id_rpar; c = constr_with_bindings ->
         { (Some false,destruction_arg_of_constr c) }
       | c = constr_with_bindings_arg -> { on_snd destruction_arg_of_constr c }
@@ -223,8 +223,8 @@ GRAMMAR EXTEND Gram
       | c = constr_with_bindings -> { (None,c) } ] ]
   ;
   quantified_hypothesis:
-    [ [ id = ident -> { NamedHyp id }
-      | n = natural -> { AnonHyp n } ] ]
+    [ [ id = lident -> { NamedHyp id }
+      | n = lnatural -> { AnonHyp n } ] ]
   ;
   conversion:
     [ [ c = constr -> { (None, c) }
@@ -305,9 +305,12 @@ GRAMMAR EXTEND Gram
       | "_" -> { CAst.make ~loc @@ IntroAction IntroWildcard }
       | pat = naming_intropattern -> { CAst.make ~loc @@ IntroNaming pat } ] ]
   ;
+  lnatural:
+    [ [ n = natural -> { CAst.make ~loc n } ] ]
+  ;
   simple_binding:
-    [ [ "("; id = ident; ":="; c = lconstr; ")" -> { CAst.make ~loc (NamedHyp id, c) }
-      | "("; n = natural; ":="; c = lconstr; ")" -> { CAst.make ~loc (AnonHyp n, c) } ] ]
+    [ [ "("; id = lident; ":="; c = lconstr; ")" -> { CAst.make ~loc (NamedHyp id, c) }
+      | "("; n = lnatural; ":="; c = lconstr; ")" -> { CAst.make ~loc (AnonHyp n, c) } ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->

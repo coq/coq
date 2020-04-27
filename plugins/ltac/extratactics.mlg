@@ -90,7 +90,7 @@ END
 
 let induction_arg_of_quantified_hyp = function
   | AnonHyp n -> None,ElimOnAnonHyp n
-  | NamedHyp id -> None,ElimOnIdent (CAst.make id)
+  | NamedHyp id -> None,ElimOnIdent id
 
 (* Versions *_main must come first!! so that "1" is interpreted as a
    ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a
@@ -766,7 +766,7 @@ let case_eq_intros_rewrite x =
   end
 
 let rec find_a_destructable_match sigma t =
-  let cl = induction_arg_of_quantified_hyp (NamedHyp (Id.of_string "x")) in
+  let cl = induction_arg_of_quantified_hyp (NamedHyp (CAst.make (Id.of_string "x"))) in
   let cl = [cl, (None, None), None], None in
   let dest = TacAtom (CAst.make @@ TacInductionDestruct(false, false, cl)) in
   match EConstr.kind sigma t with

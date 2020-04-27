@@ -195,8 +195,8 @@ let string_of_genarg_arg (ArgumentType arg) =
     | EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
 
   let pr_quantified_hypothesis = function
-    | AnonHyp n -> int n
-    | NamedHyp id -> pr_id id
+    | AnonHyp n -> int n.CAst.v
+    | NamedHyp id -> pr_lident id
 
   let pr_clear_flag clear_flag pp x =
     match clear_flag with
@@ -504,7 +504,7 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_core_destruction_arg prc prlc = function
     | ElimOnConstr c -> pr_with_bindings prc prlc c
     | ElimOnIdent {CAst.loc;v=id} -> pr_with_comments ?loc (pr_id id)
-    | ElimOnAnonHyp n -> int n
+    | ElimOnAnonHyp {CAst.loc;v=n} -> pr_with_comments ?loc (int n)
 
   let pr_destruction_arg prc prlc (clear_flag,h) =
     pr_clear_flag clear_flag (pr_core_destruction_arg prc prlc) h

@@ -999,8 +999,8 @@ let rec make_rewrite_list expr_info max = function
                    (* dep proofs also: *) true
                    ( mkVar hp
                    , ExplicitBindings
-                       [ CAst.make @@ (NamedHyp def, expr_info.f_constr)
-                       ; CAst.make @@ (NamedHyp k, f_S max) ] )
+                       [ CAst.make @@ (NamedHyp (CAst.make def), expr_info.f_constr)
+                       ; CAst.make @@ (NamedHyp (CAst.make k), f_S max) ] )
                    false)
                 g))
          [ make_rewrite_list expr_info max l
@@ -1035,8 +1035,8 @@ let make_rewrite expr_info l hp max =
                     (* dep proofs also: *) true
                     ( mkVar hp
                     , ExplicitBindings
-                        [ CAst.make @@ (NamedHyp def, expr_info.f_constr)
-                        ; CAst.make @@ (NamedHyp k, f_S (f_S max)) ] )
+                        [ CAst.make @@ (NamedHyp (CAst.make def), expr_info.f_constr)
+                        ; CAst.make @@ (NamedHyp (CAst.make k), f_S (f_S max)) ] )
                     false))
               g)
           [ observe_tac

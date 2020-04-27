@@ -357,23 +357,23 @@ let coerce_to_reference sigma v =
 (* (as in Inversion) *)
 let coerce_to_quantified_hypothesis sigma v =
   match is_intro_pattern v with
-  | Some (IntroNaming (IntroIdentifier id)) -> NamedHyp id
+  | Some (IntroNaming (IntroIdentifier id)) -> NamedHyp (CAst.make id)
   | Some _ -> raise (CannotCoerceTo "a quantified hypothesis")
   | None ->
   if has_type v (topwit wit_var) then
     let id = out_gen (topwit wit_var) v in
-    NamedHyp id
+    NamedHyp (CAst.make id)
   else if has_type v (topwit wit_int) then
-    AnonHyp (out_gen (topwit wit_int) v)
+    AnonHyp (CAst.make (out_gen (topwit wit_int) v))
   else match Value.to_constr v with
-  | Some c when isVar sigma c -> NamedHyp (destVar sigma c)
+  | Some c when isVar sigma c -> NamedHyp (CAst.make (destVar sigma c))
   | _ -> raise (CannotCoerceTo "a quantified hypothesis")
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
 let coerce_to_decl_or_quant_hyp sigma v =
   if has_type v (topwit wit_int) then
-    AnonHyp (out_gen (topwit wit_int) v)
+    AnonHyp (CAst.make (out_gen (topwit wit_int) v))
   else
     try coerce_to_quantified_hypothesis sigma v
     with CannotCoerceTo _ ->

@@ -894,14 +894,14 @@ let interp_binding_name ist env sigma = function
       (* If a name is bound, it has to be a quantified hypothesis *)
       (* user has to use other names for variables if these ones clash with *)
       (* a name intended to be used as a (non-variable) identifier *)
-      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist (Some (env,sigma)) (make id)
+      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist (Some (env,sigma)) id
       with Not_found -> NamedHyp id
 
 let interp_declared_or_quantified_hypothesis ist env sigma = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       try try_interp_ltac_var
-            (coerce_to_decl_or_quant_hyp sigma) ist (Some (env,sigma)) (make id)
+            (coerce_to_decl_or_quant_hyp sigma) ist (Some (env,sigma)) id
       with Not_found -> NamedHyp id
 
 let interp_binding ist env sigma {loc;v=(b,c)} =
@@ -947,20 +947,20 @@ let interp_destruction_arg ist gl arg =
         interp_open_constr_with_bindings ist env sigma c
       end
   | keep,ElimOnAnonHyp n as x -> x
-  | keep,ElimOnIdent {loc;v=id} ->
+  | keep,ElimOnIdent ({loc;v=id} as lid) ->
       let error () = user_err ?loc
        (strbrk "Cannot coerce " ++ Id.print id ++
         strbrk " neither to a quantified hypothesis nor to a term.")
       in
-      let try_cast_id id' =
-        if Tactics.is_quantified_hypothesis id' gl
-        then keep,ElimOnIdent (make ?loc id')
+      let try_cast_id lid =
+        if Tactics.is_quantified_hypothesis lid gl
+        then keep,ElimOnIdent lid
         else
           (keep, ElimOnConstr begin fun env sigma ->
-          try (sigma, (constr_of_id env id', NoBindings))
+          try (sigma, (constr_of_id env lid.CAst.v, NoBindings))
           with Not_found ->
             user_err ?loc  ~hdr:"interp_destruction_arg" (
-            Id.print id ++ strbrk " binds to " ++ Id.print id' ++ strbrk " which is neither a declared nor a quantified hypothesis.")
+            Id.print id ++ strbrk " binds to " ++ Id.print lid.CAst.v ++ strbrk " which is neither a declared nor a quantified hypothesis.")
           end)
       in
       try
@@ -969,20 +969,20 @@ let interp_destruction_arg ist gl arg =
         if has_type v (topwit wit_intro_pattern) then
           let v = out_gen (topwit wit_intro_pattern) v in
           match v with
-          | {v=IntroNaming (IntroIdentifier id)} -> try_cast_id id
+          | {loc;v=IntroNaming (IntroIdentifier id)} -> try_cast_id (CAst.make ?loc id)
           | _ -> error ()
         else if has_type v (topwit wit_var) then
           let id = out_gen (topwit wit_var) v in
-          try_cast_id id
+          try_cast_id (CAst.make id)
         else if has_type v (topwit wit_int) then
-          keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
+          keep,ElimOnAnonHyp (CAst.make (out_gen (topwit wit_int) v))
         else match Value.to_constr v with
         | None -> error ()
         | Some c -> keep,ElimOnConstr (fun env sigma -> (sigma, (c,NoBindings)))
       with Not_found ->
         (* We were in non strict (interactive) mode *)
-        if Tactics.is_quantified_hypothesis id gl then
-          keep,ElimOnIdent (make ?loc id)
+        if Tactics.is_quantified_hypothesis lid gl then
+          keep,ElimOnIdent lid
         else
           let c = (DAst.make ?loc @@ GVar id,Some (make @@ CRef (qualid_of_ident ?loc id,None))) in
           let f env sigma =
