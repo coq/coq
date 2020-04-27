@@ -108,7 +108,7 @@ and constr_expr_r =
          * constr_expr * constr_expr
   | CHole   of Evar_kinds.t option * Namegen.intro_pattern_naming_expr * Genarg.raw_generic_argument option
   | CPatVar of Pattern.patvar
-  | CEvar   of Glob_term.existential_name * (Id.t * constr_expr) list
+  | CEvar   of Glob_term.existential_name * (lident * constr_expr) list
   | CSort   of Glob_term.glob_sort
   | CCast   of constr_expr * constr_expr Glob_term.cast_type
   | CNotation of notation_with_optional_scope option * notation * constr_notation_substitution

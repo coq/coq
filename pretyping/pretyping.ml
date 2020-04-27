@@ -365,9 +365,9 @@ let inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j = functio
   | Some t ->
     Coercion.inh_conv_coerce_to ?loc ~program_mode resolve_tc !!env sigma j t
 
-let check_instance loc subst = function
+let check_instance subst = function
   | [] -> ()
-  | (id,_) :: _ ->
+  | (CAst.{loc;v=id},_) :: _ ->
       if List.mem_assoc id subst then
         user_err ?loc  (Id.print id ++ str "appears more than once.")
       else
@@ -493,7 +493,7 @@ type 'a pretype_fun = ?loc:Loc.t -> program_mode:bool -> poly:bool -> bool -> ty
 type pretyper = {
   pretype_ref : pretyper -> GlobRef.t * glob_level list option -> unsafe_judgment pretype_fun;
   pretype_var : pretyper -> Id.t -> unsafe_judgment pretype_fun;
-  pretype_evar : pretyper -> existential_name * (Id.t * glob_constr) list -> unsafe_judgment pretype_fun;
+  pretype_evar : pretyper -> existential_name * (lident * glob_constr) list -> unsafe_judgment pretype_fun;
   pretype_patvar : pretyper -> Evar_kinds.matching_var_kind -> unsafe_judgment pretype_fun;
   pretype_app : pretyper -> glob_constr * glob_constr list -> unsafe_judgment pretype_fun;
   pretype_lambda : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
@@ -587,10 +587,10 @@ let pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk 
           strbrk " is not well-typed.") in
     let sigma, c, update =
       try
-        let c = List.assoc id update in
+        let c = snd (List.find (fun (CAst.{v=id'},c) -> Id.equal id id') update) in
         let sigma, c = eval_pretyper self ~program_mode ~poly resolve_tc (mk_tycon t) env sigma c in
         check_body sigma id (Some c.uj_val);
-        sigma, c.uj_val, List.remove_assoc id update
+        sigma, c.uj_val, List.remove_first (fun (CAst.{v=id'},_) -> Id.equal id id') update
       with Not_found ->
       try
         let (n,b',t') = lookup_rel_id id (rel_context !!env) in
@@ -609,7 +609,7 @@ let pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk 
           str " in current context: no binding for " ++ Id.print id ++ str ".") in
     ((id,c)::subst, update, sigma) in
   let subst,inst,sigma = List.fold_right f hyps ([],update,sigma) in
-  check_instance loc subst inst;
+  check_instance subst inst;
   sigma, List.map snd subst
 
 module Default =

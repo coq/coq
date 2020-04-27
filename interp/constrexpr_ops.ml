@@ -235,7 +235,7 @@ and constr_notation_substitution_eq (e1, el1, b1, bl1) (e2, el2, b2, bl2) =
   List.equal (List.equal local_binder_eq) bl1 bl2
 
 and instance_eq (x1,c1) (x2,c2) =
-  Id.equal x1 x2 && constr_expr_eq c1 c2
+  Id.equal x1.CAst.v x2.CAst.v && constr_expr_eq c1 c2
 
 and cast_expr_eq c1 c2 = match c1, c2 with
 | CastConv t1, CastConv t2
