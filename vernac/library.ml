@@ -183,12 +183,9 @@ let register_loaded_library m =
 
 (** Delayed / available tables of opaque terms *)
 
-type 'a table_status =
-  | ToFetch of 'a delayed
-  | Fetched of 'a
-
 let opaque_tables =
-  ref (DPmap.empty : (Constr.t * unit Opaqueproof.delayed_universes) table_status ref Int.Map.t DPmap.t)
+  ref (DPmap.empty : (Constr.t * unit Opaqueproof.delayed_universes) delayed Int.Map.t DPmap.t)
+
 let get_opaque_segment name = match CString.split_on_char '/' name with
 | ["opaques"; n] ->
   (try let n = int_of_string n in Some n with _ -> None)
@@ -198,28 +195,24 @@ let add_opaque_table dp (f, segments) =
   let fold name segment accu = match get_opaque_segment name with
   | Some n ->
     let (d, _) = in_delayed f ~segment in
-    Int.Map.add n (ref (ToFetch d)) accu
+    Int.Map.add n d accu
   | None -> accu
   in
   let opaques = CString.Map.fold fold segments Int.Map.empty in
   opaque_tables := DPmap.add dp opaques !opaque_tables
 
 let access_opaque_table dp i =
-  let r = Int.Map.find i (DPmap.find dp !opaque_tables) in
-  match !r with
-  | Fetched v -> Some v
-  | ToFetch f ->
-    let dir_path = Names.DirPath.to_string dp in
-    Flags.if_verbose Feedback.msg_info (str"Fetching opaque proofs from disk for " ++ str dir_path);
-    let v =
-      try fetch_delayed f
-      with Faulty f ->
-        user_err ~hdr:"Library.access_table"
-          (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
-            str ") is inaccessible or corrupted,\ncannot load some opaque proofs in it.\n")
-    in
-    let () = r := Fetched v in
-    Some v
+  let f = Int.Map.find i (DPmap.find dp !opaque_tables) in
+  let dir_path = Names.DirPath.to_string dp in
+  Flags.if_verbose Feedback.msg_info (str"Fetching opaque proofs from disk for " ++ str dir_path);
+  let v =
+    try fetch_delayed f
+    with Faulty f ->
+      user_err ~hdr:"Library.access_table"
+        (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
+          str ") is inaccessible or corrupted,\ncannot load some opaque proofs in it.\n")
+  in
+  Some v
 
 let indirect_accessor = {
   Opaqueproof.access_proof = access_opaque_table;
