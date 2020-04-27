@@ -788,10 +788,10 @@ and detype_r d flags avoid env sigma t =
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
           let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel n -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
           let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
-          id,l
+          id,List.map (fun (id,c) -> (CAst.make id,c)) l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)),
-          (List.map (fun c -> (Id.of_string "__",c)) cl)
+          (List.map (fun c -> (CAst.make @@ Id.of_string "__",c)) cl)
       in
         GEvar (id,
                List.map (on_snd (detype d flags avoid env sigma)) l)

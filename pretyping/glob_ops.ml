@@ -128,7 +128,7 @@ let fix_kind_eq k1 k2 = match k1, k2 with
   | (GFix _ | GCoFix _), _ -> false
 
 let instance_eq f (x1,c1) (x2,c2) =
-  Id.equal x1 x2 && f c1 c2
+  Id.equal x1.CAst.v x2.CAst.v && f c1 c2
 
 let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GRef (gr1, u1), GRef (gr2, u2) ->

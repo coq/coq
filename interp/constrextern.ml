@@ -1391,7 +1391,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       | None -> Id.of_string "__"
       | Some id -> id
       in
-      GEvar (id,List.map (on_snd (glob_of_pat avoid env sigma)) l)
+      GEvar (id,List.map (fun (id,c) -> (CAst.make id, glob_of_pat avoid env sigma c)) l)
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
         | Name id   -> id
