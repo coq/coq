@@ -1323,10 +1323,11 @@ let vernac_hints ~atts dbnames h =
   in
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
-let vernac_syntactic_definition ~atts lid x only_parsing =
+let vernac_syntactic_definition ~atts lid vars c only_parsing =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
   Dumpglob.dump_definition lid false "syndef";
-  Metasyntax.add_syntactic_definition ~local:module_local deprecation (Global.env()) lid.v x only_parsing
+  List.iter (fun {loc;v} -> Dumpglob.dump_binding ?loc (Id.to_string v)) vars;
+  Metasyntax.add_syntactic_definition ~local:module_local deprecation (Global.env()) lid vars c only_parsing
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;
@@ -2169,8 +2170,8 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacHints (dbnames,hints) ->
     VtDefault(fun () ->
         vernac_hints ~atts dbnames hints)
-  | VernacSyntacticDefinition (id,c,b) ->
-     VtDefault(fun () -> vernac_syntactic_definition ~atts id c b)
+  | VernacSyntacticDefinition (id,vars,c,b) ->
+     VtDefault(fun () -> vernac_syntactic_definition ~atts id vars c b)
   | VernacArguments (qid, args, more_implicits, flags) ->
     VtDefault(fun () ->
         with_section_locality ~atts

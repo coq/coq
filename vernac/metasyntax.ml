@@ -1842,11 +1842,11 @@ let try_interp_name_alias = function
   | [], { CAst.v = CRef (ref,_) } -> intern_reference ref
   | _ -> raise Not_found
 
-let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing } =
+let add_syntactic_definition ~local deprecation env ident vars c  { onlyparsing } =
   let acvars,pat,reversibility =
     try Id.Map.empty, NRef (try_interp_name_alias (vars,c)), APrioriReversible
     with Not_found ->
-      let fold accu id = Id.Map.add id NtnInternTypeAny accu in
+      let fold accu id = Id.Map.add id.CAst.v NtnInternTypeAny accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in
       let nenv = {
         ninterp_var_type = i_vars;
@@ -1854,11 +1854,11 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
       } in
       interp_notation_constr env nenv c
   in
-  let in_pat id = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
+  let in_pat id = (id.CAst.v,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
   let interp = make_interpretation_vars ~default_if_binding:AsIdentOrPattern [] 0 acvars (List.map in_pat vars) in
-  let vars = List.map (fun x -> (x, Id.Map.find x interp)) vars in
+  let vars = List.map (fun {CAst.v=x} -> (x, Id.Map.find x interp)) vars in
   let onlyparsing = onlyparsing || fst (printability None [] false reversibility pat) in
-  Syntax_def.declare_syntactic_definition ~local deprecation ident ~onlyparsing (vars,pat)
+  Syntax_def.declare_syntactic_definition ~local deprecation ident.CAst.v ~onlyparsing (vars,pat)
 
 (**********************************************************************)
 (* Declaration of custom entry                                        *)

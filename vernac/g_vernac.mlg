@@ -1144,9 +1144,9 @@ GRAMMAR EXTEND Gram
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
          { VernacInfix ((op,modl),p,sc) }
      | IDENT "Notation"; id = lident;
-         idl = LIST0 ident; ":="; c = constr; b = only_parsing ->
+         idl = LIST0 lident; ":="; c = constr; b = only_parsing ->
            { VernacSyntacticDefinition
-             (id,(idl,c),{ onlyparsing = b }) }
+             (id,idl,c,{ onlyparsing = b }) }
      | IDENT "Notation"; s = lstring; ":=";
          c = constr;
          modl = syntax_modifiers;

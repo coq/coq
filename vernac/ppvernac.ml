@@ -1077,11 +1077,11 @@ let pr_vernac_expr v =
     )
   | VernacHints (dbnames,h) ->
     return (pr_hints dbnames h pr_constr pr_constr_pattern_expr)
-  | VernacSyntacticDefinition (id,(ids,c),{onlyparsing}) ->
+  | VernacSyntacticDefinition (id,ids,c,{onlyparsing}) ->
     return (
       hov 2
         (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
-         prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
+         prlist_with_sep spc pr_lident ids ++ str":=" ++ pr_constrarg c ++
          pr_only_parsing_clause onlyparsing)
     )
   | VernacArguments (q, args, more_implicits, mods) ->
@@ -1100,6 +1100,7 @@ let pr_vernac_expr v =
             | Glob_term.Explicit -> if force then str"(",str")" else mt(),mt()
           in
           left ++ x ++ right
+
         in
         let get_arguments_like s imp tl =
           if s = None && imp = Glob_term.Explicit then [], tl

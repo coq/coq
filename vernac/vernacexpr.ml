@@ -414,8 +414,7 @@ type nonrec vernac_expr =
   | VernacRemoveHints of string list * qualid list
   | VernacHints of string list * hints_expr
   | VernacSyntacticDefinition of
-      lident * (Id.t list * constr_expr) *
-      onlyparsing_flag
+      lident * lident list * constr_expr * onlyparsing_flag
   | VernacArguments of
       qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *
