@@ -3952,10 +3952,10 @@ At Coq startup, only the core database is nonempty and can be used.
 :arith: This database contains all lemmas about Peano’s arithmetic proved in the
         directories Init and Arith.
 
-:zarith: contains lemmas about binary signed integers from the directories
-         theories/ZArith. When required, the module Omega also extends the
-         database zarith with a high-cost hint that calls ``omega`` on equations
-         and inequalities in ``nat`` or ``Z``.
+:zarith: contains lemmas about binary signed integers from the
+         directories theories/ZArith. The database also contains
+         high-cost hints that call :tacn:`lia` on equations and
+         inequalities in ``nat`` or ``Z``.
 
 :bool: contains lemmas about booleans, mostly from directory theories/Bool.
 
@@ -4601,18 +4601,6 @@ Automating
 
       The goal is not of the form :g:`t = u`. Especially note that :tacn:`btauto`
       doesn't introduce variables into the context on its own.
-
-.. tacn:: omega
-   :name: omega
-
-   The tactic :tacn:`omega`, due to Pierre Crégut, is an automatic decision
-   procedure for Presburger arithmetic. It solves quantifier-free
-   formulas built with `~`, `\\/`, `/\\`, `->` on top of equalities,
-   inequalities and disequalities on both the type :g:`nat` of natural numbers
-   and :g:`Z` of binary integers. This tactic must be loaded by the command
-   ``Require Import Omega``. See the additional documentation about omega
-   (see Chapter :ref:`omega`).
-
 
 .. tacn:: ring
    :name: ring
