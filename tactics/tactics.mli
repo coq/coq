@@ -439,7 +439,7 @@ val declare_intro_decomp_eq :
    locally to the tactic argument *)
 val with_set_strategy :
   (Conv_oracle.level * Names.GlobRef.t list) list ->
-  unit Proofview.tactic -> unit Proofview.tactic
+  'a Proofview.tactic -> 'a Proofview.tactic
 
 (** {6 Simple form of basic tactics. } *)
 

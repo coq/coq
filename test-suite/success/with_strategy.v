@@ -149,6 +149,42 @@ Proof using Type.
        reflexivity).
 Time Timeout 5 Qed.
 
+(* test that the strategy is correctly reverted after closing the goal completely *)
+Goal id 0 = 0.
+  assert (id 0 = 0) by with_strategy expand [id] reflexivity.
+  Fail unfold id.
+  reflexivity.
+Qed.
+
+(* test that the strategy is correctly reverted after failure *)
+Goal id 0 = 0.
+  let id' := id in
+  (try with_strategy expand [id] fail); assert_fails unfold id'.
+  Fail unfold id.
+  (* a more complicated test involving a success and then a failure after backtracking *)
+  let id' := id in
+  ((with_strategy expand [id] (unfold id' + fail)) + idtac);
+    lazymatch goal with |- id 0 = 0 => idtac end;
+    assert_fails unfold id'.
+  Fail unfold id.
+  reflexivity.
+Qed.
+
+(* test multi-success *)
+Goal id (fact 100) = fact 100.
+  Timeout 1
+          (with_strategy -1 [id] (((idtac + (abstract reflexivity))); fail)).
+  Undo.
+  Timeout 1
+          let id' := id in
+          (with_strategy -1 [id] (((idtac + (unfold id'; reflexivity))); fail)).
+  Undo.
+  Timeout 1
+          (with_strategy -1 [id] (idtac + (abstract reflexivity))); fail. (* should not time out *)
+  Undo.
+  with_strategy -1 [id] abstract reflexivity.
+Defined.
+
 (* check that module substitutions happen correctly *)
 Module F.
   Definition id {T} := @id T.
