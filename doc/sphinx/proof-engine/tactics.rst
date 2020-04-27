@@ -3370,10 +3370,11 @@ the conversion in hypotheses :n:`{+ @ident}`.
       This tactic unfortunately does not yet play well with tactic
       internalization, resulting in interpretation-time errors when
       you try to use it directly with opaque identifiers, as seen in
-      the following example.  This can be worked around by binding the
+      the first (failing) use of :tacn:`with_strategy` in the
+      following example.  This can be worked around by binding the
       identifier to an |Ltac| variable, and this issue should
-      disappear in a future version of |Coq|; see
-      `#12179 <https://github.com/coq/coq/issues/12179>`_.
+      disappear in a future version of |Coq|; see `#12179
+      <https://github.com/coq/coq/issues/12179>`_.
 
    .. example::
 
@@ -3382,7 +3383,6 @@ the conversion in hypotheses :n:`{+ @ident}`.
          Opaque id.
          Goal id 10 = 10.
          Fail unfold id.
-         (** This should work, but does not *)
          Fail with_strategy transparent [id] unfold id.
          let id' := id in with_strategy transparent [id] unfold id'.
 
