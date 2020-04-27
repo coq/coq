@@ -20,8 +20,8 @@ type advanced_flag = bool
 type 'a thunk = (unit, 'a) Tac2ffi.fun1
 
 type quantified_hypothesis = Tactypes.quantified_hypothesis =
-| AnonHyp of int
-| NamedHyp of Id.t
+| AnonHyp of int CAst.t
+| NamedHyp of Id.t CAst.t
 
 type explicit_bindings = (quantified_hypothesis * EConstr.t) list
 
@@ -34,8 +34,8 @@ type constr_with_bindings = EConstr.constr * bindings
 
 type core_destruction_arg =
 | ElimOnConstr of constr_with_bindings tactic
-| ElimOnIdent of Id.t
-| ElimOnAnonHyp of int
+| ElimOnIdent of Id.t CAst.t
+| ElimOnAnonHyp of int CAst.t
 
 type destruction_arg = core_destruction_arg
 

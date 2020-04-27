@@ -32,7 +32,7 @@ and 'constr or_and_intro_pattern_expr =
 
 (** Bindings *)
 
-type quantified_hypothesis = AnonHyp of int | NamedHyp of Id.t
+type quantified_hypothesis = AnonHyp of int CAst.t | NamedHyp of lident
 
 type 'a explicit_bindings = (quantified_hypothesis * 'a) CAst.t list
 

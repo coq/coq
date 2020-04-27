@@ -28,7 +28,7 @@ open Ltac_pretype
 
 (** {6 General functions. } *)
 
-val is_quantified_hypothesis : Id.t -> Proofview.Goal.t -> bool
+val is_quantified_hypothesis : lident -> Proofview.Goal.t -> bool
 
 (** {6 Primitive tactics. } *)
 
@@ -110,7 +110,7 @@ type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use 
 type 'a core_destruction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of lident
-  | ElimOnAnonHyp of int
+  | ElimOnAnonHyp of int CAst.t
 
 type 'a destruction_arg =
   clear_flag * 'a core_destruction_arg

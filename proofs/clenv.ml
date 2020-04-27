@@ -447,18 +447,18 @@ let clenv_independent clenv =
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
 let qhyp_eq h1 h2 = match h1, h2 with
-| NamedHyp n1, NamedHyp n2 -> Id.equal n1 n2
-| AnonHyp i1, AnonHyp i2 -> Int.equal i1 i2
+| NamedHyp n1, NamedHyp n2 -> Id.equal n1.CAst.v n2.CAst.v
+| AnonHyp i1, AnonHyp i2 -> Int.equal i1.CAst.v i2.CAst.v
 | _ -> false
 
 let check_bindings bl =
   match List.duplicates qhyp_eq (List.map (fun {CAst.v=x} -> fst x) bl) with
-    | NamedHyp s :: _ ->
-        user_err
+    | NamedHyp CAst.{loc;v=s} :: _ ->
+        user_err ?loc
           (str "The variable " ++ Id.print s ++
            str " occurs more than once in binding list.");
-    | AnonHyp n :: _ ->
-        user_err
+    | AnonHyp CAst.{loc;v=n} :: _ ->
+        user_err ?loc
           (str "The position " ++ int n ++
            str " occurs more than once in binding list.")
     | [] -> ()
@@ -480,7 +480,7 @@ let explain_no_such_bound_variable evd id =
          str (if List.length mvl == 1 then " is: " else "s are: ") ++
          pr_enum Id.print mvl ++ str").")))
 
-let meta_with_name evd id =
+let meta_with_name evd CAst.{loc;v=id} =
   let na = Name id in
   let fold (l1, l2 as l) (n, clb) =
     let (na',def) = match clb with
@@ -497,25 +497,25 @@ let meta_with_name evd id =
     | ([n],_|_,[n]) ->
         n
     | _  ->
-        user_err ~hdr:"Evd.meta_with_name"
+        user_err ?loc ~hdr:"Evd.meta_with_name"
           (str "Binder name \"" ++ Id.print id ++
            strbrk "\" occurs more than once in clause.")
 
 let meta_of_binder clause loc mvs = function
   | NamedHyp s -> meta_with_name clause.evd s
-  | AnonHyp n ->
+  | AnonHyp CAst.{loc;v=n} ->
       try List.nth mvs (n-1)
       with (Failure _|Invalid_argument _) ->
-        user_err  (str "No such binder.")
+        user_err ?loc (str "No such binder.")
 
 let error_already_defined b =
   match b with
-    | NamedHyp id ->
-        user_err
+    | NamedHyp CAst.{loc;v=id} ->
+        user_err ?loc
           (str "Binder name \"" ++ Id.print id ++
            str"\" already defined with incompatible value.")
-    | AnonHyp n ->
-        anomaly
+    | AnonHyp CAst.{loc;v=n} ->
+        anomaly ?loc
           (str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type clenv c t u =
@@ -795,7 +795,7 @@ let explain_no_such_bound_variable holes id =
   in
   user_err  (str "No such bound variable " ++ Id.print id ++ expl)
 
-let evar_with_name holes id =
+let evar_with_name holes CAst.{loc;v=id} =
   let map h = match h.hole_name with
   | Anonymous -> None
   | Name id' -> if Id.equal id id' then Some h else None
@@ -805,19 +805,19 @@ let evar_with_name holes id =
   | [] -> explain_no_such_bound_variable holes id
   | [h] -> h.hole_evar
   | _ ->
-    user_err
+    user_err ?loc
       (str "Binder name \"" ++ Id.print id ++
         str "\" occurs more than once in clause.")
 
 let evar_of_binder holes = function
 | NamedHyp s -> evar_with_name holes s
-| AnonHyp n ->
+| AnonHyp CAst.{loc;v=n} ->
   try
     let nondeps = List.filter (fun hole -> not hole.hole_deps) holes in
     let h = List.nth nondeps (pred n) in
     h.hole_evar
   with e when CErrors.noncritical e ->
-    user_err  (str "No such binder.")
+    user_err ?loc  (str "No such binder.")
 
 let define_with_type sigma env ev c =
   let open EConstr in
