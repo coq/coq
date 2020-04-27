@@ -100,19 +100,6 @@ processed color, though their preceding proofs have the processed color.
 Notice that for all these buttons, except for the "gears" button, their operations
 are also available in the menu, where their keyboard shortcuts are given.
 
-Proof folding
-------------------
-
-As your script grows bigger and bigger, it might be useful to hide the
-proofs of your theorems and lemmas.
-
-This feature is toggled via the Hide entry of the Navigation menu. The
-proof shall be enclosed between ``Proof.`` and ``Qed.``, both with their final
-dots. The proof that shall be hidden or revealed is the first one
-whose beginning statement (such as ``Theorem``) precedes the insertion
-cursor.
-
-
 Vernacular commands, templates
 -----------------------------------
 
