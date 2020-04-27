@@ -830,12 +830,12 @@ let pr_nth_open_subgoal ~proof n =
   let Proof.{goals;sigma} = Proof.data proof in
   pr_subgoal n sigma goals
 
-let pr_goal_by_id ~proof id =
+let pr_goal_by_id ~proof CAst.{loc;v=id} =
   try
     let { Proof.sigma } = Proof.data proof in
     let g = Evd.evar_key id sigma in
     pr_selected_subgoal (pr_id id) sigma g
-  with Not_found -> user_err Pp.(str "No such goal.")
+  with Not_found -> user_err ?loc Pp.(str "No such goal.")
 
 (** print a goal identified by the goal id as it appears in -emacs mode.
     sid should be the Stm state id corresponding to proof.  Used to support

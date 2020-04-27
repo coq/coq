@@ -21,7 +21,7 @@ type scope_name = string
 type goal_reference =
   | OpenSubgoals
   | NthGoal of int
-  | GoalId of Id.t
+  | GoalId of lident
 
 type printable =
   | PrintTypingFlags

@@ -682,7 +682,7 @@ let pr_vernac_expr v =
     let pr_goal_reference = function
       | OpenSubgoals -> mt ()
       | NthGoal n -> spc () ++ int n
-      | GoalId id -> spc () ++ pr_id id
+      | GoalId id -> spc () ++ pr_lident id
     in
     let pr_showable = function
       | ShowGoal n -> keyword "Show" ++ pr_goal_reference n
