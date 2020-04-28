@@ -22,7 +22,7 @@ let ssreflect = coqPackages.ssreflect.overrideAttrs (o: {
   }); in
 
 let coq-ext-lib = coqPackages.coq-ext-lib.overrideAttrs (o: {
-    src = fetchTarball "https://github.com/coq-ext-lib/coq-ext-lib/tarball/master";
+    src = fetchTarball "https://github.com/coq-community/coq-ext-lib/tarball/master";
   }); in
 
 let simple-io =
