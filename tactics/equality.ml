@@ -1347,7 +1347,7 @@ let inject_if_homogenous_dependent_pair ty =
     (* and compare the fst arguments of the dep pair *)
     (* Note: should work even if not an inductive type, but the table only *)
     (* knows inductive types *)
-    if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) ind &&
+    if not (Option.has_some (Ind_tables.lookup_scheme (!eq_dec_scheme_kind_name()) ind) &&
       pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
     check_required_library ["Coq";"Logic";"Eqdep_dec"];
     let new_eq_args = [|pf_get_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
