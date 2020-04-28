@@ -7,27 +7,26 @@ SProp (proof irrelevant propositions)
 
    The status of strict propositions is experimental.
 
+   In particular, conversion checking through bytecode or native code
+   compilation currently does not understand proof irrelevance.
+
 This section describes the extension of |Coq| with definitionally
 proof irrelevant propositions (types in the sort :math:`\SProp`, also
 known as strict propositions) as described in
 :cite:`Gilbert:POPL2019`.
 
-Using :math:`\SProp` may be prevented by passing ``-disallow-sprop``
-to the |Coq| program or using :flag:`Allow StrictProp`.
+Use of |SProp| may be disabled by passing ``-disallow-sprop`` to the
+|Coq| program or by turning the :flag:`Allow StrictProp` flag off.
 
 .. flag:: Allow StrictProp
    :name: Allow StrictProp
 
-   Allows using :math:`\SProp` when set and forbids it when unset. The
-   initial value depends on whether you used the command line
-   ``-disallow-sprop`` and ``-allow-sprop``.
+   Enables or disables the use of |SProp|.  It is enabled by default.
+   The command-line flag ``-disallow-sprop`` disables |SProp| at
+   startup.
 
-.. exn:: SProp not allowed, you need to Set Allow StrictProp or to use the -allow-sprop command-line-flag.
-   :undocumented:
-
-.. coqtop:: none
-
-   Set Allow StrictProp.
+   .. exn:: SProp is disallowed because the "Allow StrictProp" flag is off.
+      :undocumented:
 
 Some of the definitions described in this document are available
 through ``Coq.Logic.StrictProp``, which see.
@@ -38,29 +37,35 @@ Basic constructs
 The purpose of :math:`\SProp` is to provide types where all elements
 are convertible:
 
-.. coqdoc::
+.. coqtop:: all
 
-   Definition irrelevance (A:SProp) (P:A -> Prop) (x:A) (v:P x) (y:A) : P y := v.
+   Theorem irrelevance (A : SProp) (P : A -> Prop) : forall x : A, P x -> forall y : A, P y.
+   Proof.
+   intros * Hx *.
+   exact Hx.
+   Qed.
 
 Since we have definitional :ref:`eta-expansion` for
 functions, the property of being a type of definitionally irrelevant
 values is impredicative, and so is :math:`\SProp`:
 
-.. coqdoc::
+.. coqtop:: all
 
    Check fun (A:Type) (B:A -> SProp) => (forall x:A, B x) : SProp.
 
-.. warning::
-
-   Conversion checking through bytecode or native code compilation
-   currently does not understand proof irrelevance.
-
 In order to keep conversion tractable, cumulativity for :math:`\SProp`
-is forbidden:
+is forbidden, unless the :flag:`Cumulative StrictProp` flag is turned
+on:
 
 .. coqtop:: all
 
    Fail Check (fun (A:SProp) => A : Type).
+   Set Cumulative StrictProp.
+   Check (fun (A:SProp) => A : Type).
+
+.. coqtop:: none
+
+   Unset Cumulative StrictProp.
 
 We can explicitly lift strict propositions into the relevant world by
 using a wrapping inductive type. The inductive stops definitional
