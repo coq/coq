@@ -34,6 +34,7 @@ type dynlink = Opt | Byte | Both | No | Variable
 let option_noglob = ref false
 let option_dynlink = ref Both
 let option_boot = ref false
+let option_compute_missing = ref false
 
 let norec_dirs = ref StrSet.empty
 
@@ -343,9 +344,11 @@ let rec find_dependencies basename =
                       | Some pth -> pth @ str
                       in
                   warning_module_notfound f str;
-                  (match (phys_path str) with
-                  | Some estimated_path -> add_dep (DepRequire estimated_path)
-                  | None -> ())
+                  (if !option_compute_missing then
+                    (match (phys_path str) with
+                    | Some estimated_path -> add_dep (DepRequire estimated_path)
+                    | None -> ())
+                  else ())
               end) strl
         | Declare sl ->
             let declare suff dir s =

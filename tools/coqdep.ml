@@ -64,6 +64,7 @@ let treat_coqproject f =
 let rec parse = function
   | "-boot" :: ll -> option_boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
+  | "-compute_missing" :: ll -> option_compute_missing := true; parse ll
   | "-vos" :: ll -> write_vos := true; parse ll
   | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
   | "-f" :: f :: ll -> treat_coqproject f; parse ll

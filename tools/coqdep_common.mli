@@ -24,6 +24,7 @@ val find_dir_logpath: string -> string list
 val option_noglob : bool ref
 val option_boot : bool ref
 val write_vos : bool ref
+val option_compute_missing : bool ref
 
 type dynlink = Opt | Byte | Both | No | Variable
 val option_dynlink : dynlink ref
