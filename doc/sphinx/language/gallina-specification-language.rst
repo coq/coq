@@ -139,7 +139,7 @@ The following grammars describe the basic syntax of the terms of the
 *Calculus of Inductive Constructions* (also called Cic). The formal
 presentation of Cic is given in Chapter :ref:`calculusofinductiveconstructions`. Extensions of this syntax
 are given in Chapter :ref:`extensionsofgallina`. How to customize the syntax
-is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
+is described in Chapter :ref:`syntaxextensionsandnotationscopes`.
 
 .. insertprodn term field_def
 
@@ -161,7 +161,7 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
    one_term ::= @term1
    | @ @qualid {? @univ_annot }
    term1 ::= @term_projection
-   | @term0 % @scope
+   | @term0 % @scope_key
    | @term0
    term0 ::= @qualid {? @univ_annot }
    | @sort
@@ -225,7 +225,7 @@ Numerals and strings
 
 Numerals and strings have no predefined semantics in the calculus. They are
 merely notations that can be bound to objects through the notation mechanism
-(see Chapter :ref:`syntaxextensionsandinterpretationscopes` for details).
+(see Chapter :ref:`syntaxextensionsandnotationscopes` for details).
 Initially, numerals are bound to Peano’s representation of natural
 numbers (see :ref:`datatypes`).
 
@@ -456,7 +456,7 @@ Definition by cases: match
    pattern10 ::= @pattern1 as @name
    | @pattern1 {* @pattern1 }
    | @ @qualid {* @pattern1 }
-   pattern1 ::= @pattern0 % @scope
+   pattern1 ::= @pattern0 % @scope_key
    | @pattern0
    pattern0 ::= @qualid
    | %{%| {* @qualid := @pattern } %|%}
@@ -1246,7 +1246,7 @@ The ability to define co-inductive types by constructors, hereafter called
 a bit long: this is due to dependent pattern-matching which implies
 propositional η-equality, which itself would require full η-conversion for
 subject reduction to hold, but full η-conversion is not acceptable as it would
-make type-checking undecidable.
+make type checking undecidable.
 
 Since the introduction of primitive records in Coq 8.5, an alternative
 presentation is available, called *negative co-inductive types*. This consists

@@ -1,7 +1,7 @@
-.. _syntaxextensionsandinterpretationscopes:
+.. _syntaxextensionsandnotationscopes:
 
-Syntax extensions and interpretation scopes
-========================================================
+Syntax extensions and notation scopes
+=====================================
 
 In this chapter, we introduce advanced commands to modify the way Coq
 parses and prints objects, i.e. the translations between the concrete
@@ -14,7 +14,7 @@ variant of :cmd:`Notation` which does not modify the parser; this provides a
 form of :ref:`abbreviation <Abbreviations>`. It is
 sometimes expected that the same symbolic notation has different meanings in
 different contexts; to achieve this form of overloading, |Coq| offers a notion
-of :ref:`interpretation scopes <Scopes>`.
+of :ref:`notation scopes <Scopes>`.
 The main command to provide custom notations for tactics is :cmd:`Tactic Notation`.
 
 .. coqtop:: none
@@ -26,33 +26,43 @@ The main command to provide custom notations for tactics is :cmd:`Tactic Notatio
 Notations
 ---------
 
+
 Basic notations
 ~~~~~~~~~~~~~~~
 
-.. cmd:: Notation
+.. cmd:: Notation @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
 
-   A *notation* is a symbolic expression denoting some term or term
-   pattern.
+   Defines a *notation*, an alternate syntax for entering or displaying
+   a specific term or term pattern.
 
-A typical notation is the use of the infix symbol ``/\`` to denote the
-logical conjunction (and). Such a notation is declared by
+   This command supports the :attr:`local` attribute, which limits its effect to the
+   current module.
+   If the command is inside a section, its effect is limited to the section.
+
+   Specifying :token:`scope_name` associates the notation with that scope.  Otherwise
+   it is a *lonely notation*, that is, not associated with a scope.
+
+   .. todo indentation of this chapter is not consistent with other chapters.  Do we have a standard?
+
+For example, the following definition permits using the infix expression :g:`A /\ B`
+to represent :g:`(and A B)`:
 
 .. coqtop:: in
 
    Notation "A /\ B" := (and A B).
 
-The expression :g:`(and A B)` is the abbreviated term and the string :g:`"A /\ B"`
-(called a *notation*) tells how it is symbolically written.
+:g:`"A /\ B"` is a *notation*, which tells how to represent the abbreviated term
+:g:`(and A B)`.
 
-A notation is always surrounded by double quotes (except when the
+Notations must be in double quotes, except when the
 abbreviation has the form of an ordinary applicative expression;
-see :ref:`Abbreviations`). The notation is composed of *tokens* separated by
-spaces. Identifiers in the string (such as ``A`` and ``B``) are the *parameters*
-of the notation. Each of them must occur at least once in the denoted term. The
+see :ref:`Abbreviations`. The notation consists of *tokens* separated by
+spaces. Alphanumeric strings (such as ``A`` and ``B``) are the *parameters*
+of the notation. Each of them must occur at least once in the abbreviated term. The
 other elements of the string (such as ``/\``) are the *symbols*.
 
-An identifier can be used as a symbol but it must be surrounded by
-single quotes to avoid the confusion with a parameter. Similarly,
+Substrings enclosed in single quotes are treated as literals.  This is necessary
+for substrings that would otherwise be interpreted as :n:`@ident`\s.  Similarly,
 every symbol of at least 3 characters and starting with a simple quote
 must be quoted (then it starts by two single quotes). Here is an
 example.
@@ -63,7 +73,8 @@ example.
 
 A notation binds a syntactic expression to a term. Unless the parser
 and pretty-printer of Coq already know how to deal with the syntactic
-expression (see :ref:`ReservingNotations`), explicit precedences and
+expression (such as through :cmd:`Reserved Notation` or for notations
+that contain only literals), explicit precedences and
 associativity rules have to be given.
 
 .. note::
@@ -104,13 +115,12 @@ Similarly, an associativity is needed to decide whether :g:`True /\ False /\ Fal
 defaults to :g:`True /\ (False /\ False)` (right associativity) or to
 :g:`(True /\ False) /\ False` (left associativity). We may even consider that the
 expression is not well-formed and that parentheses are mandatory (this is a “no
-associativity”) [#no_associativity]_. We do not know of a special convention of
-the associativity of disjunction and conjunction, so let us apply for instance a
+associativity”) [#no_associativity]_. We do not know of a special convention for
+the associativity of disjunction and conjunction, so let us apply
 right associativity (which is the choice of Coq).
 
-Precedence levels and associativity rules of notations have to be
-given between parentheses in a list of :token:`modifiers` that the :cmd:`Notation`
-command understands. Here is how the previous examples refine.
+Precedence levels and associativity rules of notations are specified with a list of
+parenthesized :n:`@syntax_modifier`\s.  Here is how the previous examples refine:
 
 .. coqtop:: in
 
@@ -158,8 +168,8 @@ One can also define notations for binders.
    Notation "{ x : A | P }" := (sig A (fun x => P)).
 
 In the last case though, there is a conflict with the notation for
-type casts. The notation for types casts, as shown by the command :cmd:`Print
-Grammar constr` is at level 100. To avoid ``x : A`` being parsed as a type cast,
+type casts. The notation for type casts, as shown by the command :cmd:`Print
+Grammar` `constr` is at level 100. To avoid ``x : A`` being parsed as a type cast,
 it is necessary to put ``x`` at a level below 100, typically 99. Hence, a correct
 definition is the following:
 
@@ -204,16 +214,6 @@ have to be observed for notations starting with a symbol, e.g., rules
 starting with “\ ``{``\ ” or “\ ``(``\ ” should be put at level 0. The list
 of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
 
-.. cmd:: Print Grammar constr.
-
-   This command displays the current state of the Coq term parser.
-
-.. cmd:: Print Grammar pattern.
-
-   This displays the state of the subparser of patterns (the parser used in the
-   grammar of the ``match with`` constructions).
-
-
 Displaying symbolic notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -252,8 +252,7 @@ bar of the notation.
 
    Check (sig (fun x : nat => x=x)).
 
-The second, more powerful control on printing is by using the format
-:token:`modifier`. Here is an example
+The second, more powerful control on printing is by using :n:`@syntax_modifier`\s. Here is an example
 
 .. coqtop:: all
 
@@ -301,8 +300,8 @@ expression is performed at definition time. Type checking is done only
 at the time of use of the notation.
 
 .. note:: Sometimes, a notation is expected only for the parser. To do
-          so, the option ``only parsing`` is allowed in the list of :token:`modifiers`
-          of :cmd:`Notation`. Conversely, the ``only printing`` :token:`modifier` can be
+          so, the option ``only parsing`` is allowed in the list of :n:`@syntax_modifier`\s
+          in :cmd:`Notation`. Conversely, the ``only printing`` :n:`@syntax_modifier` can be
           used to declare that a notation should only be used for printing and
           should not declare a parsing rule. In particular, such notations do
           not modify the parser.
@@ -313,13 +312,14 @@ The Infix command
 The :cmd:`Infix` command is a shortcut for declaring notations for infix
 symbols.
 
-.. cmd:: Infix @string := @term {? (@modifiers) }
+.. cmd:: Infix @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
 
    This command is equivalent to
 
-       :n:`Notation "x @symbol y" := (@term x y) {? (@modifiers) }.`
+       :n:`Notation "x @string y" := (@one_term x y) {? ( {+, @syntax_modifier } ) } {? : @scope_name }`
 
-   where ``x`` and ``y`` are fresh names. Here is an example.
+   where ``x`` and ``y`` are fresh names and omitting the quotes around :n:`@string`.
+   Here is an example:
 
    .. coqtop:: in
 
@@ -330,7 +330,7 @@ symbols.
 Reserving notations
 ~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Reserved Notation @string {? (@modifiers) }
+.. cmd:: Reserved Notation @string {? ( {+, @syntax_modifier } ) }
 
    A given notation may be used in different contexts. Coq expects all
    uses of the notation to be defined at the same precedence and with the
@@ -349,26 +349,34 @@ Reserving notations
    .. note:: The notations mentioned in the module :ref:`init-notations` are reserved. Hence
              their precedence and associativity cannot be changed.
 
-   .. cmdv:: Reserved Infix "@symbol" {* @modifiers}
+   .. cmd:: Reserved Infix @string {? ( {+, @syntax_modifier } ) }
 
       This command declares an infix parsing rule without giving its
       interpretation.
 
-   When a format is attached to a reserved notation, it is used by
+   When a format is attached to a reserved notation (with the `format`
+   :token:`syntax_modifier`), it is used by
    default by all subsequent interpretations of the corresponding
-   notation. A specific interpretation can provide its own format
-   overriding the default format though.
+   notation. Individual interpretations can override the format.
 
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Thanks to reserved notations, the inductive, co-inductive, record, recursive and
-corecursive definitions can benefit from customized notations. To do this, insert
-a ``where`` notation clause after the definition of the (co)inductive type or
+Thanks to reserved notations, inductive, co-inductive, record, recursive and
+corecursive definitions can use customized notations. To do this, insert
+a :token:`decl_notations` clause after the definition of the (co)inductive type or
 (co)recursive term (or after the definition of each of them in case of mutual
 definitions). The exact syntax is given by :n:`@decl_notation` for inductive,
 co-inductive, recursive and corecursive definitions and in :ref:`record-types`
-for records. Here are examples:
+for records.
+
+   .. insertprodn decl_notations decl_notation
+
+   .. prodn::
+      decl_notations ::= where @decl_notation {* and @decl_notation }
+      decl_notation ::= @string := @one_term {? ( only parsing ) } {? : @scope_name }
+
+Here are examples:
 
 .. coqtop:: in
 
@@ -403,8 +411,31 @@ Displaying information about notations
 
 .. seealso::
 
-   :flag:`Printing All`
-      To disable other elements in addition to notations.
+   :flag:`Printing All` to disable other elements in addition to notations.
+
+
+.. cmd:: Print Grammar @ident
+
+   Shows the grammar for the nonterminal :token:`ident`, which must be one of the following:
+
+   - `constr` - for :token:`term`\s
+   - `pattern` - for :token:`pattern`\s
+   - `tactic` - for currently-defined tactic notations, :token:`tactic`\s and tacticals
+     (corresponding to :token:`ltac_expr` in the documentation).
+   - `vernac` - for :token:`command`\s
+
+   The first three of these give the precedence and associativity for each construct.
+   For example, these lines printed by `Print Grammar tactic` indicates that the `try` construct
+   is at level 3 and right-associative.  `SELF` represents the `tactic_expr` nonterminal
+   at level 5 (the top level)::
+
+     | "3" RIGHTA
+       [ IDENT "try"; SELF
+
+   Note that the productions printed by this command are represented in the form used by
+   |Coq|'s parser (coqpp), which differs from how productions are shown in the documentation.  The grammar
+   described in this documentation is equivalent to the grammar of the |Coq| parser, but has been
+   heavily edited to improve readability and presentation.
 
 .. _locating-notations:
 
@@ -427,7 +458,7 @@ Inheritance of the properties of arguments of constants bound to a notation
 
 If the right-hand side of a notation is a partially applied constant,
 the notation inherits the implicit arguments (see
-:ref:`ImplicitArguments`) and interpretation scopes (see
+:ref:`ImplicitArguments`) and notation scopes (see
 :ref:`Scopes`) of the constant. For instance:
 
 .. coqtop:: in reset
@@ -441,7 +472,7 @@ the notation inherits the implicit arguments (see
 
 As an exception, if the right-hand side is just of the form
 :n:`@@qualid`, this conventionally stops the inheritance of implicit
-arguments (but not of interpretation scopes).
+arguments (but not of notation scopes).
 
 Notations and binders
 ~~~~~~~~~~~~~~~~~~~~~
@@ -471,7 +502,7 @@ application of the notation:
 
    Check sigma z : nat, z = 0.
 
-Notice the :token:`modifier` ``x ident`` in the declaration of the
+Note the :n:`@syntax_modifier x ident` in the declaration of the
 notation. It tells to parse :g:`x` as a single identifier.
 
 Binders bound in the notation and parsed as patterns
@@ -491,7 +522,7 @@ binder. Here is an example:
 
    Check subset '(x,y), x+y=0.
 
-The :token:`modifier` ``p pattern`` in the declaration of the notation tells to parse
+The :n:`@syntax_modifier p pattern` in the declaration of the notation tells to parse
 :g:`p` as a pattern. Note that a single variable is both an identifier and a
 pattern, so, e.g., the following also works:
 
@@ -501,7 +532,7 @@ pattern, so, e.g., the following also works:
 
 If one wants to prevent such a notation to be used for printing when the
 pattern is reduced to a single identifier, one has to use instead
-the :token:`modifier` ``p strict pattern``. For parsing, however, a
+the :n:`@syntax_modifier p strict pattern`. For parsing, however, a
 ``strict pattern`` will continue to include the case of a
 variable. Here is an example showing the difference:
 
@@ -541,7 +572,7 @@ that ``x`` is parsed as a term at level 99 (as done in the notation for
 :g:`sumbool`), but that this term has actually to be an identifier.
 
 The notation :g:`{ x | P }` is already defined in the standard
-library with the ``as ident`` :token:`modifier`. We cannot redefine it but
+library with the ``as ident`` :n:`@syntax_modifier`. We cannot redefine it but
 one can define an alternative notation, say :g:`{ p such that P }`,
 using instead ``as pattern``.
 
@@ -561,7 +592,7 @@ is just an identifier, one could have said
 ``p at level 99 as strict pattern``.
 
 Note also that in the absence of a ``as ident``, ``as strict pattern`` or
-``as pattern`` :token:`modifier`\s, the default is to consider sub-expressions occurring
+``as pattern`` :n:`@syntax_modifier`\s, the default is to consider sub-expressions occurring
 in binding position and parsed as terms to be ``as ident``.
 
 .. _NotationsWithBinders:
@@ -640,7 +671,7 @@ and the terminating expression is ``nil``. Here are other examples:
 
 Notations with recursive patterns can be reserved like standard
 notations, they can also be declared within
-:ref:`interpretation scopes <Scopes>`.
+:ref:`notation scopes <Scopes>`.
 
 .. _RecursiveNotationsWithBinders:
 
@@ -662,7 +693,7 @@ except that in the iterator
 position of the binding variable of a ``fun`` or a ``forall``.
 
 To specify that the part “``x .. y``” of the notation parses a sequence of
-binders, ``x`` and ``y`` must be marked as ``binder`` in the list of :token:`modifiers`
+binders, ``x`` and ``y`` must be marked as ``binder`` in the list of :n:`@syntax_modifier`\s
 of the notation. The binders of the parsed sequence are used to fill the
 occurrences of the first placeholder of the iterating pattern which is
 repeatedly nested as many times as the number of binders generated. If ever the
@@ -740,9 +771,12 @@ Custom entries
 
 .. cmd:: Declare Custom Entry @ident
 
-   This command allows to define new grammar entries, called *custom
+   Defines new grammar entries, called *custom
    entries*, that can later be referred to using the entry name
    :n:`custom @ident`.
+
+   This command supports the :attr:`local` attribute, which limits the entry to the
+   current module.
 
 .. example::
 
@@ -887,67 +921,48 @@ gives a way to let any arbitrary expression which is not handled by the
 custom entry ``expr`` be parsed or printed by the main grammar of term
 up to the insertion of a pair of curly brackets.
 
-.. cmd:: Print Custom Grammar @ident.
+.. cmd:: Print Custom Grammar @ident
    :name: Print Custom Grammar
 
    This displays the state of the grammar for terms associated to
    the custom entry :token:`ident`.
 
-Summary
-~~~~~~~
-
 .. _NotationSyntax:
 
-Syntax of notations
-+++++++++++++++++++
+Syntax
+~~~~~~~
 
-The different syntactic forms taken by the commands declaring
-notations are given below. The optional :n:`@scope` is described in
-:ref:`Scopes`.
+Here are the syntax elements used by the various notation commands.
 
-.. productionlist:: coq
-   notation      : [Local] Notation `string` := `term` [(`modifiers`)] [: `scope`].
-                 : [Local] Infix `string` := `qualid` [(`modifiers`)] [: `scope`].
-                 : [Local] Reserved Notation `string` [(`modifiers`)] .
-                 : Inductive `ind_body` [`decl_notations`] with … with `ind_body` [`decl_notations`].
-                 : CoInductive `ind_body` [`decl_notations`] with … with `ind_body` [`decl_notations`].
-                 : Fixpoint `fix_body` [`decl_notations`] with … with `fix_body` [`decl_notations`].
-                 : CoFixpoint `fix_body` [`decl_notations`] with … with `fix_body` [`decl_notations`].
-                 : [Local] Declare Custom Entry `ident`.
-   modifiers     : `modifier`, … , `modifier`
-   modifier      : at level `num`
-                 : in custom `ident`
-                 : in custom `ident` at level `num`
-                 : `ident` , … , `ident` at level `num` [`binderinterp`]
-                 : `ident` , … , `ident` at next level [`binderinterp`]
-                 : `ident` `explicit_subentry`
-                 : left associativity
-                 : right associativity
-                 : no associativity
-                 : only parsing
-                 : only printing
-                 : format `string`
-   explicit_subentry : ident
-                 : global
-                 : bigint
-                 : [strict] pattern [at level `num`]
-                 : binder
-                 : closed binder
-                 : constr [`binderinterp`]
-                 : constr at level `num` [`binderinterp`]
-                 : constr at next level [`binderinterp`]
-                 : custom [`binderinterp`]
-                 : custom at level `num` [`binderinterp`]
-                 : custom at next level [`binderinterp`]
-   binderinterp  : as ident
-                 : as pattern
-                 : as strict pattern
+   .. insertprodn syntax_modifier level
 
-.. insertprodn decl_notations decl_notation
-
-.. prodn::
-   decl_notations ::= where @decl_notation {* and @decl_notation }
-   decl_notation ::= @string := @one_term {? ( only parsing ) } {? : @ident }
+   .. prodn::
+      syntax_modifier ::= at level @num
+      | in custom @ident {? at level @num }
+      | {+, @ident } at @level
+      | @ident at @level {? @binder_interp }
+      | @ident @explicit_subentry
+      | @ident @binder_interp
+      | left associativity
+      | right associativity
+      | no associativity
+      | only parsing
+      | only printing
+      | format @string {? @string }
+      explicit_subentry ::= ident
+      | global
+      | bigint
+      | strict pattern {? at level @num }
+      | binder
+      | closed binder
+      | constr {? at @level } {? @binder_interp }
+      | custom @ident {? at @level } {? @binder_interp }
+      | pattern {? at level @num }
+      binder_interp ::= as ident
+      | as pattern
+      | as strict pattern
+      level ::= level @num
+      | next level
 
 .. note:: No typing of the denoted expression is performed at definition
           time. Type checking is done only at the time of use of the notation.
@@ -981,106 +996,86 @@ notations are given below. The optional :n:`@scope` is described in
              due to legacy notation in the Coq standard library.
              It can be turned on with the ``-w disj-pattern-notation`` flag.
 
-Persistence of notations
-++++++++++++++++++++++++
-
-Notations disappear when a section is closed.
-
-.. cmd:: Local Notation @notation
-
-   Notations survive modules unless the command ``Local Notation`` is used instead
-   of :cmd:`Notation`.
-
-.. cmd:: Local Declare Custom Entry @ident
-
-   Custom entries survive modules unless the command ``Local Declare
-   Custom Entry`` is used instead of :cmd:`Declare Custom Entry`.
-
 .. _Scopes:
 
-Interpretation scopes
-----------------------
+Notation scopes
+---------------
 
-   .. insertprodn scope scope
+A *notation scope* is a set of notations for terms with their
+interpretations. Notation scopes provide a weak, purely
+syntactic form of notation overloading: a symbol may
+refer to different definitions depending on which notation scopes
+are currently open.  For instance, the infix symbol ``+`` can be
+used to refer to distinct definitions of the addition operator,
+such as for natural numbers, integers or reals.
+Notation scopes can include an interpretation for numerals and
+strings with the :cmd:`Numeral Notation` and :cmd:`String Notation` commands.
+
+   .. insertprodn scope scope_key
 
    .. prodn::
-      scope ::= @ident
+      scope ::= @scope_name
+      | @scope_key
+      scope_name ::= @ident
+      scope_key ::= @ident
 
-An *interpretation scope* is a set of notations for terms with their
-interpretations. Interpretation scopes provide a weak, purely
-syntactical form of notation overloading: the same notation, for
-instance the infix symbol ``+``, can be used to denote distinct
-definitions of the additive operator. Depending on which interpretation
-scopes are currently open, the interpretation is different.
-Interpretation scopes can include an interpretation for numerals and
-strings, either at the OCaml level or using :cmd:`Numeral Notation`
-or :cmd:`String Notation`.
+Each notation scope has a single :token:`scope_name`, which by convention
+ends with the suffix "_scope", as in "nat_scope".  One or more :token:`scope_key`\s
+(delimiting keys) may be associated with a notation scope with the :cmd:`Delimit Scope` command.
+Most commands use :token:`scope_name`; :token:`scope_key`\s are used within :token:`term`\s.
 
-.. cmd:: Declare Scope @scope
+.. cmd:: Declare Scope @scope_name
 
-   This adds a new scope named :n:`@scope`. Note that the initial
-   state of Coq declares by default the following interpretation scopes:
+   Declares a new notation scope. Note that the initial
+   state of Coq declares the following notation scopes:
    ``core_scope``, ``type_scope``, ``function_scope``, ``nat_scope``,
    ``bool_scope``, ``list_scope``, ``int_scope``, ``uint_scope``.
 
-The syntax to associate a notation to a scope is given
-:ref:`above <NotationSyntax>`. Here is a typical example which declares the
-notation for conjunction in the scope ``type_scope``.
-
-.. coqtop:: in
-
-   Notation "A /\ B" := (and A B) : type_scope.
-
-.. note:: A notation not defined in a scope is called a *lonely*
-          notation. No example of lonely notations can be found in the
-          initial state of Coq though.
-
+   Use commands such as :cmd:`Notation` to add notations to the scope.
 
 Global interpretation rules for notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 At any time, the interpretation of a notation for a term is done within
-a *stack* of interpretation scopes and lonely notations. In case a
-notation has several interpretations, the actual interpretation is the
-one defined by (or in) the more recently declared (or opened) lonely
-notation (or interpretation scope) which defines this notation.
-Typically if a given notation is defined in some scope ``scope`` but has
-also an interpretation not assigned to a scope, then, if ``scope`` is open
-before the lonely interpretation is declared, then the lonely
-interpretation is used (and this is the case even if the
-interpretation of the notation in scope is given after the lonely
-interpretation: otherwise said, only the order of lonely
-interpretations and opening of scopes matters, and not the declaration
-of interpretations within a scope).
+a *stack* of notation scopes and lonely notations. If a
+notation is defined in multiple scopes, |Coq| uses the interpretation from
+the most recently opened notation scope or declared lonely notation.
+
+Note that "stack" is a misleading name.  Each scope or lonely notation can only appear in
+the stack once.  New items are pushed onto the top of the stack, except that
+adding a item that's already in the stack moves it to the top of the stack instead.
+Scopes are removed by name (e.g. by :cmd:`Close Scope`) wherever they are in the
+stack, rather than through "pop" operations.
+
+Use the :cmd:`Print Visibility` command to display the current notation scope stack.
 
 .. cmd:: Open Scope @scope
 
-   The command to add a scope to the interpretation scope stack is
-   :n:`Open Scope @scope`.
+   Adds a scope to the notation scope stack.  If the scope is already present,
+   the command moves it to the top of the stack.
+
+   If the command appears in a section: By default, the scope is only added within the
+   section.  Specifying :attr:`global` marks the scope for export as part of the current
+   module.  Specifying :attr:`local` behaves like the default.
+
+   If the command does not appear in a section: By default, the scope marks the scope for
+   export as part of the current module.  Specifying :attr:`local` prevents exporting the scope.
+   Specifying :attr:`global` behaves like the default.
 
 .. cmd:: Close Scope @scope
 
-   It is also possible to remove a scope from the interpretation scope
-   stack by using the command :n:`Close Scope @scope`.
+   Removes a scope from the notation scope stack.
 
-   Notice that this command does not only cancel the last :n:`Open Scope @scope`
-   but all its invocations.
+   If the command appears in a section: By default, the scope is only removed within the
+   section.  Specifying :attr:`global` marks the scope removal for export as part of the current
+   module.  Specifying :attr:`local` behaves like the default.
 
-.. note:: ``Open Scope`` and ``Close Scope`` do not survive the end of sections
-          where they occur. When defined outside of a section, they are exported
-          to the modules that import the module where they occur.
+   If the command does not appear in a section: By default, the scope marks the scope removal for
+   export as part of the current module.  Specifying :attr:`local` prevents exporting the removal.
+   Specifying :attr:`global` behaves like the default.
 
-.. cmd:: Local Open Scope @scope.
-         Local Close Scope @scope.
-
-   These variants are not exported to the modules that import the module where
-   they occur, even if outside a section.
-
-.. cmd:: Global Open Scope @scope.
-         Global Close Scope @scope.
-
-   These variants survive sections. They behave as if Global were absent when
-   not inside a section.
+   .. todo: Strange notion, exporting something that _removes_ a scope.
+      See https://github.com/coq/coq/pull/11718#discussion_r413667817
 
 .. _LocalInterpretationRulesForNotations:
 
@@ -1090,133 +1085,41 @@ Local interpretation rules for notations
 In addition to the global rules of interpretation of notations, some
 ways to change the interpretation of subterms are available.
 
-Local opening of an interpretation scope
-+++++++++++++++++++++++++++++++++++++++++
+Opening a notation scope locally
+++++++++++++++++++++++++++++++++
 
-It is possible to locally extend the interpretation scope stack using the syntax
-:n:`(@term)%@ident` (or simply :n:`@term%@ident` for atomic terms), where :token:`ident` is a
-special identifier called a *delimiting key* and bound to a given scope.
+The notation scope stack can be locally extended within
+a :token:`term` with the syntax
+:n:`(@term)%@scope_key` (or simply :n:`@term%@scope_key` for atomic terms).
 
-In such a situation, the term term, and all its subterms, are
+In this case, :n:`@term` is
 interpreted in the scope stack extended with the scope bound to :token:`ident`.
 
-.. cmd:: Delimit Scope @scope with @ident
+.. cmd:: Delimit Scope @scope_name with @scope_key
 
-   To bind a delimiting key to a scope, use the command
-   :n:`Delimit Scope @scope with @ident`
+   Binds the delimiting key :token:`scope_key` to a scope.
 
-.. cmd:: Undelimit Scope @scope
+.. cmd:: Undelimit Scope @scope_name
 
-   To remove a delimiting key of a scope, use the command
-   :n:`Undelimit Scope @scope`
+   Removes the delimiting keys associated with a scope.
 
-Binding arguments of a constant to an interpretation scope
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Binding types or coercion classes to a notation scope
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. cmd:: Arguments @qualid {+ @name%@ident}
-   :name: Arguments (scopes)
+.. cmd:: Bind Scope @scope_name with {+ @class }
 
-   It is possible to set in advance that some arguments of a given constant have
-   to be interpreted in a given scope. The command is
-   :n:`Arguments @qualid {+ @name%@ident}` where the list is a prefix of the
-   arguments of ``qualid`` optionally annotated with their scope :token:`ident`. Grouping
-   round parentheses can be used to decorate multiple arguments with the same
-   scope. :token:`ident` can be either a scope name or its delimiting key. For
-   example the following command puts the first two arguments of :g:`plus_fct`
-   in the scope delimited by the key ``F`` (``Rfun_scope``) and the last
-   argument in the scope delimited by the key ``R`` (``R_scope``).
-
-   .. coqdoc::
-
-      Arguments plus_fct (f1 f2)%F x%R.
-
-   The ``Arguments`` command accepts scopes decoration to all grouping
-   parentheses. In the following example arguments A and B are marked as
-   maximally inserted implicit arguments and are put into the ``type_scope`` scope.
-
-   .. coqdoc::
-
-      Arguments respectful {A B}%type (R R')%signature _ _.
-
-   When interpreting a term, if some of the arguments of :token:`qualid` are built
-   from a notation, then this notation is interpreted in the scope stack
-   extended by the scope bound (if any) to this argument. The effect of
-   the scope is limited to the argument itself. It does not propagate to
-   subterms but the subterms that, after interpretation of the notation,
-   turn to be themselves arguments of a reference are interpreted
-   accordingly to the argument scopes bound to this reference.
-
-   .. cmdv:: Arguments @qualid : clear scopes
-
-      This command can be used to clear argument scopes of :token:`qualid`.
-
-   .. cmdv:: Arguments @qualid {+ @name%@ident} : extra scopes
-
-      Defines extra argument scopes, to be used in case of coercion to ``Funclass``
-      (see the :ref:`implicitcoercions` chapter) or with a computed type.
-
-   .. cmdv:: Global Arguments @qualid {+ @name%@ident}
-
-      This behaves like :n:`Arguments qualid {+ @name%@ident}` but survives when a
-      section is closed instead of stopping working at section closing. Without the
-      ``Global`` modifier, the effect of the command stops when the section it belongs
-      to ends.
-
-   .. cmdv:: Local Arguments @qualid {+ @name%@ident}
-
-      This behaves like :n:`Arguments @qualid {+ @name%@ident}` but does not
-      survive modules and files. Without the ``Local`` modifier, the effect of the
-      command is visible from within other modules or files.
-
-.. seealso::
-
-   The command :cmd:`About` can be used to show the scopes bound to the
-   arguments of a function.
-
-.. note::
-
-   In notations, the subterms matching the identifiers of the
-   notations are interpreted in the scope in which the identifiers
-   occurred at the time of the declaration of the notation. Here is an
-   example:
-
-   .. coqtop:: all
-
-      Parameter g : bool -> bool.
-      Declare Scope mybool_scope.
-
-      Notation "@@" := true (only parsing) : bool_scope.
-      Notation "@@" := false (only parsing): mybool_scope.
-
-      Bind Scope bool_scope with bool.
-      Notation "# x #" := (g x) (at level 40).
-      Check # @@ #.
-      Arguments g _%mybool_scope.
-      Check # @@ #.
-      Delimit Scope mybool_scope with mybool.
-      Check # @@%mybool #.
-
-Binding types of arguments to an interpretation scope
-+++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-.. cmd:: Bind Scope @ident with {+ @class }
-
-   When an interpretation scope is naturally associated to a type (e.g.  the
-   scope of operations on the natural numbers), it may be convenient to bind it
-   to this type. When a scope :token:`scope` is bound to a type :token:`type`, any function
-   gets its arguments of type :token:`type` interpreted by default in scope :token:`scope`
-   (this default behavior can however be overwritten by explicitly using the
-   command :cmd:`Arguments <Arguments (scopes)>`).
+   Binds the notation scope :token:`scope_name` to the type or coercion class :token:`class`.
+   When bound, arguments of that type for any function will be interpreted in
+   that scope by default.  This default can be overridden for individual functions
+   with the :cmd:`Arguments` command.  The association may be convenient
+   when a notation scope is naturally associated with a :token:`type` (e.g.
+   `nat` and the natural numbers).
 
    Whether the argument of a function has some type ``type`` is determined
    statically. For instance, if ``f`` is a polymorphic function of type
    :g:`forall X:Type, X -> X` and type :g:`t` is bound to a scope ``scope``,
    then :g:`a` of type :g:`t` in :g:`f t a` is not recognized as an argument to
    be interpreted in scope ``scope``.
-
-   More generally, any coercion :n:`@class` (see the :ref:`implicitcoercions` chapter)
-   can be bound to an interpretation scope. The command to do it is
-   :n:`Bind Scope @scope with @class`
 
    .. coqtop:: in reset
 
@@ -1237,13 +1140,13 @@ Binding types of arguments to an interpretation scope
    .. note:: When active, a bound scope has effect on all defined functions
              (even if they are defined after the :cmd:`Bind Scope` directive), except
              if argument scopes were assigned explicitly using the
-             :cmd:`Arguments <Arguments (scopes)>` command.
+             :cmd:`Arguments` command.
 
    .. note:: The scopes ``type_scope`` and ``function_scope`` also have a local
              effect on interpretation. See the next section.
 
-The ``type_scope`` interpretation scope
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``type_scope`` notation scope
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: type_scope
 
@@ -1258,8 +1161,8 @@ the type of a binder, the domain and codomain of implication, the codomain of
 products, and more generally any type argument of a declared or defined
 constant.
 
-The ``function_scope`` interpretation scope
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``function_scope`` notation scope
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: function_scope
 
@@ -1269,8 +1172,8 @@ recognized to be a ``Funclass`` instance, i.e., of type :g:`forall x:A, B` or
 :g:`A -> B`.
 
 
-Interpretation scopes used in the standard library of Coq
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Notation scopes used in the standard library of Coq
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We give an overview of the scopes used in the standard library of Coq.
 For a complete list of notations in each scope, use the commands :cmd:`Print
@@ -1356,40 +1259,52 @@ Scopes` or :cmd:`Print Scope`.
 Displaying information about scopes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Print Visibility
+.. cmd:: Print Visibility {? @scope_name }
 
-   This displays the current stack of notations in scopes and lonely
-   notations that is used to interpret a notation. The top of the stack
+   Displays the current notation scope stack. The top of the stack
    is displayed last. Notations in scopes whose interpretation is hidden
    by the same notation in a more recently opened scope are not displayed.
    Hence each notation is displayed only once.
 
-   .. cmdv:: Print Visibility @scope
-
-      This displays the current stack of notations in scopes and lonely
-      notations assuming that :token:`scope` is pushed on top of the stack. This is
-      useful to know how a subterm locally occurring in the scope :token:`scope` is
-      interpreted.
+   If :n:`@scope_name` is specified,
+   displays the current notation scope stack
+   as if the scope :n:`@scope_name` is pushed on top of the stack. This is
+   useful to see how a subterm occurring locally in the scope is
+   interpreted.
 
 .. cmd:: Print Scopes
 
-   This displays all the notations, delimiting keys and corresponding
-   classes of all the existing interpretation scopes. It also displays the
-   lonely notations.
+   Displays, for each existing notation scope, all accessible notations
+   (whether or not currently in the notation scope stack),
+   the most-recently defined delimiting key and the class the notation scope is bound to.
+   The display also includes lonely notations.
 
-   .. cmdv:: Print Scope @scope
-      :name: Print Scope
+   .. todo should the command report all delimiting keys?
 
-      This displays all the notations defined in the interpretation scope :token:`scope`.
-      It also displays the delimiting key if any and the class to which the
-      scope is bound, if any.
+   Use the :cmd:`Print Visibility` command to display the current notation scope stack.
+
+.. cmd:: Print Scope @scope_name
+   :name: Print Scope
+
+   Displays all notations defined in the notation scope :n:`@scope_name`.
+   It also displays the delimiting key and the class to which the
+   scope is bound, if any.
 
 .. _Abbreviations:
 
 Abbreviations
 --------------
 
-.. cmd:: {? Local} Notation @ident {+ @ident} := @term {? (only parsing)}.
+.. cmd:: Notation @ident {* @ident__parm } := @one_term {? ( only parsing ) }
+   :name: Notation (abbreviation)
+
+   .. todo: for some reason, Sphinx doesn't complain about a duplicate name if
+      :name: is omitted
+
+   Defines an abbreviation :token:`ident` with the parameters :n:`@ident__parm`.
+
+   This command supports the :attr:`local` attribute, which limits the notation to the
+   current module.
 
    An *abbreviation* is a name, possibly applied to arguments, that
    denotes a (presumably) more complex expression. Here are examples:
@@ -1416,6 +1331,14 @@ Abbreviations
 
       Check forall A:Prop, A <-> A.
       Check reflexive iff.
+
+   .. coqtop:: in
+
+      Notation Plus1 B := (Nat.add B 1).
+
+   .. coqtop:: all
+
+      Compute (Plus1 3).
 
    An abbreviation expects no precedence nor associativity, since it
    is parsed as an usual application. Abbreviations are used as
@@ -1453,7 +1376,7 @@ Abbreviations
 
    Like for notations, if the right-hand side of an abbreviation is a
    partially applied constant, the abbreviation inherits the implicit
-   arguments and interpretation scopes of the constant. As an
+   arguments and notation scopes of the constant. As an
    exception, if the right-hand side is just of the form :n:`@@qualid`,
    this conventionally stops the inheritance of implicit arguments.
 
@@ -1462,64 +1385,88 @@ Abbreviations
 Numeral notations
 -----------------
 
-.. cmd:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope.
+.. cmd:: Numeral Notation @qualid @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
    :name: Numeral Notation
+
+   .. insertprodn numeral_modifier numeral_modifier
+
+   .. prodn::
+      numeral_modifier ::= ( warning after @numeral )
+      | ( abstract after @numeral )
 
    This command allows the user to customize the way numeral literals
    are parsed and printed.
 
-   The token :n:`@ident__1` should be the name of an inductive type,
-   while :n:`@ident__2` and :n:`@ident__3` should be the names of the
-   parsing and printing functions, respectively.  The parsing function
-   :n:`@ident__2` should have one of the following types:
+      :n:`@qualid`
+         the name of an inductive type,
+         while :n:`@qualid__parse` and :n:`@qualid__print` should be the names of the
+         parsing and printing functions, respectively.  The parsing function
+         :n:`@qualid__parse` should have one of the following types:
 
-     * :n:`Decimal.int -> @ident__1`
-     * :n:`Decimal.int -> option @ident__1`
-     * :n:`Decimal.uint -> @ident__1`
-     * :n:`Decimal.uint -> option @ident__1`
-     * :n:`Z -> @ident__1`
-     * :n:`Z -> option @ident__1`
-     * :n:`Decimal.decimal -> @ident__1`
-     * :n:`Decimal.decimal -> option @ident__1`
+            * :n:`Decimal.int -> @qualid`
+            * :n:`Decimal.int -> option @qualid`
+            * :n:`Decimal.uint -> @qualid`
+            * :n:`Decimal.uint -> option @qualid`
+            * :n:`Z -> @qualid`
+            * :n:`Z -> option @qualid`
+            * :n:`Decimal.decimal -> @qualid`
+            * :n:`Decimal.decimal -> option @qualid`
 
-   And the printing function :n:`@ident__3` should have one of the
-   following types:
+         And the printing function :n:`@qualid__print` should have one of the
+         following types:
 
-     * :n:`@ident__1 -> Decimal.int`
-     * :n:`@ident__1 -> option Decimal.int`
-     * :n:`@ident__1 -> Decimal.uint`
-     * :n:`@ident__1 -> option Decimal.uint`
-     * :n:`@ident__1 -> Z`
-     * :n:`@ident__1 -> option Z`
-     * :n:`@ident__1 -> Decimal.decimal`
-     * :n:`@ident__1 -> option Decimal.decimal`
+            * :n:`@qualid -> Decimal.int`
+            * :n:`@qualid -> option Decimal.int`
+            * :n:`@qualid -> Decimal.uint`
+            * :n:`@qualid -> option Decimal.uint`
+            * :n:`@qualid -> Z`
+            * :n:`@qualid -> option Z`
+            * :n:`@qualid -> Decimal.decimal`
+            * :n:`@qualid -> option Decimal.decimal`
 
-     When parsing, the application of the parsing function
-     :n:`@ident__2` to the number will be fully reduced, and universes
-     of the resulting term will be refreshed.
+         When parsing, the application of the parsing function
+         :n:`@qualid__parse` to the number will be fully reduced, and universes
+         of the resulting term will be refreshed.
 
-     Note that only fully-reduced ground terms (terms containing only
-     function application, constructors, inductive type families,
-     sorts, and primitive integers) will be considered for printing.
+         Note that only fully-reduced ground terms (terms containing only
+         function application, constructors, inductive type families,
+         sorts, and primitive integers) will be considered for printing.
 
-   .. cmdv:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope (warning after @num).
+      :n:`( warning after @numeral )`
+         displays a warning message about a possible stack
+         overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@numeral`.
 
-     When a literal larger than :token:`num` is parsed, a warning
-     message about possible stack overflow, resulting from evaluating
-     :n:`@ident__2`, will be displayed.
+         .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
 
-   .. cmdv:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope (abstract after @num).
+            When a :cmd:`Numeral Notation` is registered in the current scope
+            with :n:`(warning after @numeral)`, this warning is emitted when
+            parsing a numeral greater than or equal to :token:`numeral`.
 
-     When a literal :g:`m` larger than :token:`num` is parsed, the
-     result will be :n:`(@ident__2 m)`, without reduction of this
-     application to a normal form.  Here :g:`m` will be a
-     :g:`Decimal.int` or :g:`Decimal.uint` or :g:`Z`, depending on the
-     type of the parsing function :n:`@ident__2`. This allows for a
-     more compact representation of literals in types such as :g:`nat`,
-     and limits parse failures due to stack overflow.  Note that a
-     warning will be emitted when an integer larger than :token:`num`
-     is parsed.  Note that :n:`(abstract after @num)` has no effect
-     when :n:`@ident__2` lands in an :g:`option` type.
+      :n:`( abstract after @numeral )`
+         returns :n:`(@qualid__parse m)` when parsing a literal
+         :n:`m` that's greater than :n:`@numeral` rather than reducing it to a normal form.
+         Here :g:`m` will be a
+         :g:`Decimal.int` or :g:`Decimal.uint` or :g:`Z`, depending on the
+         type of the parsing function :n:`@qualid__parse`. This allows for a
+         more compact representation of literals in types such as :g:`nat`,
+         and limits parse failures due to stack overflow.  Note that a
+         warning will be emitted when an integer larger than :token:`numeral`
+         is parsed.  Note that :n:`(abstract after @numeral)` has no effect
+         when :n:`@qualid__parse` lands in an :g:`option` type.
+
+         .. warn:: To avoid stack overflow, large numbers in @type are interpreted as applications of @qualid__parse.
+
+            When a :cmd:`Numeral Notation` is registered in the current scope
+            with :n:`(abstract after @numeral)`, this warning is emitted when
+            parsing a numeral greater than or equal to :token:`numeral`.
+            Typically, this indicates that the fully computed representation
+            of numerals can be so large that non-tail-recursive OCaml
+            functions run out of stack space when trying to walk them.
+
+         .. warn:: The 'abstract after' directive has no effect when the parsing function (@qualid__parse) targets an option type.
+
+            As noted above, the :n:`(abstract after @num)` directive has no
+            effect when :n:`@qualid__parse` lands in an :g:`option` type.
 
    .. exn:: Cannot interpret this number as a value of type @type
 
@@ -1529,21 +1476,15 @@ Numeral notations
      only for integers or non-negative integers, and the given numeral
      has a fractional or exponent part or is negative.
 
-
-   .. exn:: @ident should go from Decimal.int to @type or (option @type). Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).
+   .. exn:: @qualid__parse should go from Decimal.int to @type or (option @type). Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).
 
      The parsing function given to the :cmd:`Numeral Notation`
      vernacular is not of the right type.
 
-   .. exn:: @ident should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).
+   .. exn:: @qualid__print should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).
 
      The printing function given to the :cmd:`Numeral Notation`
      vernacular is not of the right type.
-
-   .. exn:: @type is not an inductive type.
-
-     Numeral notations can only be declared for inductive types with no
-     arguments.
 
    .. exn:: Unexpected term @term while parsing a numeral notation.
 
@@ -1559,98 +1500,39 @@ Numeral notations
      concrete numeral expressed as a decimal.  They may not return
      opaque constants.
 
-   .. exn:: Cannot interpret in @scope because @ident could not be found in the current environment.
-
-     The inductive type used to register the numeral notation is no
-     longer available in the environment.  Most likely, this is because
-     the numeral notation was declared inside a functor for an
-     inductive type inside the functor.  This use case is not currently
-     supported.
-
-     Alternatively, you might be trying to use a primitive token
-     notation from a plugin which forgot to specify which module you
-     must :g:`Require` for access to that notation.
-
-   .. exn:: Syntax error: [prim:reference] expected after 'Notation' (in [vernac:command]).
-
-     The type passed to :cmd:`Numeral Notation` must be a single
-     identifier.
-
-   .. exn:: Syntax error: [prim:reference] expected after [prim:reference] (in [vernac:command]).
-
-     Both functions passed to :cmd:`Numeral Notation` must be single
-     identifiers.
-
-   .. exn:: The reference @ident was not found in the current environment.
-
-     Identifiers passed to :cmd:`Numeral Notation` must exist in the
-     global environment.
-
-   .. exn:: @ident is bound to a notation that does not denote a reference.
-
-     Identifiers passed to :cmd:`Numeral Notation` must be global
-     references, or notations which denote to single identifiers.
-
-   .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
-
-     When a :cmd:`Numeral Notation` is registered in the current scope
-     with :n:`(warning after @num)`, this warning is emitted when
-     parsing a numeral greater than or equal to :token:`num`.
-
-   .. warn:: To avoid stack overflow, large numbers in @type are interpreted as applications of @ident__2.
-
-     When a :cmd:`Numeral Notation` is registered in the current scope
-     with :n:`(abstract after @num)`, this warning is emitted when
-     parsing a numeral greater than or equal to :token:`num`.
-     Typically, this indicates that the fully computed representation
-     of numerals can be so large that non-tail-recursive OCaml
-     functions run out of stack space when trying to walk them.
-
-     For example
-
-     .. coqtop:: all warn
-
-        Check 90000.
-
-   .. warn:: The 'abstract after' directive has no effect when the parsing function (@ident__2) targets an option type.
-
-     As noted above, the :n:`(abstract after @num)` directive has no
-     effect when :n:`@ident__2` lands in an :g:`option` type.
-
 String notations
 -----------------
 
-.. cmd:: String Notation @ident__1 @ident__2 @ident__3 : @scope.
+.. cmd:: String Notation @qualid @qualid__parse @qualid__print : @scope_name
    :name: String Notation
 
-   This command allows the user to customize the way strings are parsed
-   and printed.
+   Allows the user to customize how strings are parsed and printed.
 
-   The token :n:`@ident__1` should be the name of an inductive type,
-   while :n:`@ident__2` and :n:`@ident__3` should be the names of the
+   The token :n:`@qualid` should be the name of an inductive type,
+   while :n:`@qualid__parse` and :n:`@qualid__print` should be the names of the
    parsing and printing functions, respectively.  The parsing function
-   :n:`@ident__2` should have one of the following types:
+   :n:`@qualid__parse` should have one of the following types:
 
-     * :n:`Byte.byte -> @ident__1`
-     * :n:`Byte.byte -> option @ident__1`
-     * :n:`list Byte.byte -> @ident__1`
-     * :n:`list Byte.byte -> option @ident__1`
+      * :n:`Byte.byte -> @qualid`
+      * :n:`Byte.byte -> option @qualid`
+      * :n:`list Byte.byte -> @qualid`
+      * :n:`list Byte.byte -> option @qualid`
 
-   And the printing function :n:`@ident__3` should have one of the
+   The printing function :n:`@qualid__print` should have one of the
    following types:
 
-     * :n:`@ident__1 -> Byte.byte`
-     * :n:`@ident__1 -> option Byte.byte`
-     * :n:`@ident__1 -> list Byte.byte`
-     * :n:`@ident__1 -> option (list Byte.byte)`
+      * :n:`@qualid -> Byte.byte`
+      * :n:`@qualid -> option Byte.byte`
+      * :n:`@qualid -> list Byte.byte`
+      * :n:`@qualid -> option (list Byte.byte)`
 
-     When parsing, the application of the parsing function
-     :n:`@ident__2` to the string will be fully reduced, and universes
-     of the resulting term will be refreshed.
+   When parsing, the application of the parsing function
+   :n:`@qualid__parse` to the string will be fully reduced, and universes
+   of the resulting term will be refreshed.
 
-     Note that only fully-reduced ground terms (terms containing only
-     function application, constructors, inductive type families,
-     sorts, and primitive integers) will be considered for printing.
+   Note that only fully-reduced ground terms (terms containing only
+   function application, constructors, inductive type families,
+   sorts, and primitive integers) will be considered for printing.
 
    .. exn:: Cannot interpret this string as a value of type @type
 
@@ -1658,20 +1540,15 @@ String notations
      the given string.  This error is given when the interpretation
      function returns :g:`None`.
 
-   .. exn:: @ident should go from Byte.byte or (list Byte.byte) to @type or (option @type).
+   .. exn:: @qualid__parse should go from Byte.byte or (list Byte.byte) to @type or (option @type).
 
      The parsing function given to the :cmd:`String Notation`
      vernacular is not of the right type.
 
-   .. exn:: @ident should go from @type to Byte.byte or (option Byte.byte) or (list Byte.byte) or (option (list Byte.byte)).
+   .. exn:: @qualid__print should go from @type to Byte.byte or (option Byte.byte) or (list Byte.byte) or (option (list Byte.byte)).
 
      The printing function given to the :cmd:`String Notation`
      vernacular is not of the right type.
-
-   .. exn:: @type is not an inductive type.
-
-     String notations can only be declared for inductive types with no
-     arguments.
 
    .. exn:: Unexpected term @term while parsing a string notation.
 
@@ -1687,11 +1564,18 @@ String notations
      concrete string expressed as a decimal.  They may not return
      opaque constants.
 
-   .. exn:: Cannot interpret in @scope because @ident could not be found in the current environment.
+The following errors apply to both string and numeral notations:
 
-     The inductive type used to register the string notation is no
+   .. exn:: @type is not an inductive type.
+
+     String and numeral notations can only be declared for inductive types with no
+     arguments.
+
+   .. exn:: Cannot interpret in @scope_name because @qualid could not be found in the current environment.
+
+     The inductive type used to register the string or numeral notation is no
      longer available in the environment.  Most likely, this is because
-     the string notation was declared inside a functor for an
+     the notation was declared inside a functor for an
      inductive type inside the functor.  This use case is not currently
      supported.
 
@@ -1701,130 +1585,183 @@ String notations
 
    .. exn:: Syntax error: [prim:reference] expected after 'Notation' (in [vernac:command]).
 
-     The type passed to :cmd:`String Notation` must be a single
+     The type passed to :cmd:`String Notation` or :cmd:`Numeral Notation` must be a single qualified
      identifier.
 
    .. exn:: Syntax error: [prim:reference] expected after [prim:reference] (in [vernac:command]).
 
-     Both functions passed to :cmd:`String Notation` must be single
+     Both functions passed to :cmd:`String Notation` or :cmd:`Numeral Notation` must be single qualified
      identifiers.
 
-   .. exn:: The reference @ident was not found in the current environment.
+     .. todo: generally we don't document syntax errors.  Is this a good execption?
 
-     Identifiers passed to :cmd:`String Notation` must exist in the
-     global environment.
+   .. exn:: @qualid is bound to a notation that does not denote a reference.
 
-   .. exn:: @ident is bound to a notation that does not denote a reference.
+     Identifiers passed to :cmd:`String Notation` or :cmd:`Numeral Notation` must be global
+     references, or notations which evaluate to single qualified identifiers.
 
-     Identifiers passed to :cmd:`String Notation` must be global
-     references, or notations which denote to single identifiers.
+     .. todo note on "single qualified identifiers" https://github.com/coq/coq/pull/11718#discussion_r415076703
 
 .. _TacticNotation:
 
 Tactic Notations
 -----------------
 
-Tactic notations allow to customize the syntax of tactics. They have the following syntax:
+Tactic notations allow customizing the syntax of tactics.
 
-.. productionlist:: coq
-   tacn                 : Tactic Notation [`tactic_level`] [`prod_item` … `prod_item`] := `tactic`.
-   prod_item            : `string` | `tactic_argument_type`(`ident`)
-   tactic_level         : (at level `num`)
-   tactic_argument_type : ident | simple_intropattern | reference
-                        : hyp | hyp_list | ne_hyp_list
-                        : constr | uconstr | constr_list | ne_constr_list
-                        : integer | integer_list | ne_integer_list
-                        : int_or_var | int_or_var_list | ne_int_or_var_list
-                        : tactic | tactic0 | tactic1 | tactic2 | tactic3
-                        : tactic4 | tactic5
+.. todo move to the Ltac chapter
 
-.. cmd:: Tactic Notation {? (at level @num)} {+ @prod_item} := @tactic.
+.. todo to discuss after moving to the ltac chapter:
+   any words of wisdom on when to use tactic notation vs ltac?
+   can you run into problems if you shadow another tactic or tactic notation?
+   If so, how to avoid ambiguity?
 
-   A tactic notation extends the parser and pretty-printer of tactics with a new
-   rule made of the list of production items. It then evaluates into the
-   tactic expression ``tactic``. For simple tactics, it is recommended to use
-   a terminal symbol, i.e. a string, for the first production item. The
-   tactic level indicates the parsing precedence of the tactic notation.
-   This information is particularly relevant for notations of tacticals.
-   Levels 0 to 5 are available (default is 5).
+.. cmd:: Tactic Notation {? ( at level @num ) } {+ @ltac_production_item } := @ltac_expr
 
-   .. cmd:: Print Grammar tactic
+   .. insertprodn ltac_production_item ltac_production_item
 
-      To know the parsing precedences of the existing tacticals, use the command
-      ``Print Grammar tactic``.
+   .. prodn::
+      ltac_production_item ::= @string
+      | @ident {? ( @ident {? , @string } ) }
 
-   Each type of tactic argument has a specific semantic regarding how it
-   is parsed and how it is interpreted. The semantic is described in the
-   following table. The last command gives examples of tactics which use
-   the corresponding kind of argument.
+   Defines a *tactic notation*, which extends the parsing and pretty-printing of tactics.
+
+   This command supports the :attr:`local` attribute, which limits the notation to the
+   current module.
+
+      :token:`num`
+         The parsing precedence to assign to the notation.  This information is particularly
+         relevant for notations for tacticals.  Levels can be in the range 0 .. 5 (default is 5).
+
+      :n:`{+ @ltac_production_item }`
+         The notation syntax.  Notations for simple tactics should begin with a :token:`string`.
+         Note that `Tactic Notation foo := idtac` is not valid; it should be `Tactic Notation "foo" := idtac`.
+
+         .. todo: "Tactic Notation constr := idtac" gives a nice message, would be good to show
+            that message for the "foo" example above.
+
+      :token:`string`
+         represents a literal value in the notation
+
+      :n:`@ident`
+         is the name of a grammar nonterminal listed in the table below.  In a few cases,
+         to maintain backward compatibility, the name differs from the nonterminal name
+         used elsewhere in the documentation.
+
+      :n:`( @ident__parm {? , @string__s } )`
+         :n:`@ident__parm` is the parameter name associated with :n:`@ident`.   The :n:`@string__s`
+         is the separator string to use when :n:`@ident` specifies a list with separators
+         (i.e. :n:`@ident` ends with `_list_sep`).
+
+      :n:`@ltac_expr`
+         The tactic expression to substitute for the notation.  :n:`@ident__parm`
+         tokens appearing in :n:`@ltac_expr` are substituted with the associated
+         nonterminal value.
+
+   For example, the following command defines a notation with a single parameter `x`.
+
+   .. coqtop:: in
+
+      Tactic Notation "destruct_with_eqn" constr(x) := destruct x eqn:?.
+
+   For a complex example, examine the 16 `Tactic Notation "setoid_replace"`\s
+   defined in :file:`$COQLIB/theories/Classes/SetoidTactics.v`, which are designed
+   to accept any subset of 4 optional parameters.
+
+   The nonterminals that can specified in the tactic notation are:
+
+   .. todo uconstr represents a type with holes.  At the moment uconstr doesn't
+      appear in the documented grammar.  Maybe worth ressurecting with a better name,
+      maybe "open_term"?
+      see https://github.com/coq/coq/pull/11718#discussion_r413721234
+
+   .. todo 'open_constr' appears to be another possible value based on the
+      the message from "Tactic Notation open_constr := idtac".
+      Also (at least) "ref", "string", "preident", "int" and "ssrpatternarg".
+      (from reading .v files).
+      Looks like any string passed to "make0" in the code is valid.  But do
+      we want to support all these?
+      @JasonGross's opinion here: https://github.com/coq/coq/pull/11718#discussion_r415387421
 
    .. list-table::
       :header-rows: 1
 
-      * - Tactic argument type
-        - parsed as
-        - interpreted as
+      * -  Specified :token:`ident`
+        - Parsed as
+        - Interpreted as
         - as in tactic
 
       * - ``ident``
-        - identifier
+        - :token:`ident`
         - a user-given name
-        - intro
+        - :tacn:`intro`
 
       * - ``simple_intropattern``
-        - simple_intropattern
+        - :token:`simple_intropattern`
         - an introduction pattern
-        - assert as
+        - :tacn:`assert` `as`
 
       * - ``hyp``
-        - identifier
+        - :token:`ident`
         - a hypothesis defined in context
-        - clear
+        - :tacn:`clear`
 
       * - ``reference``
-        - qualified identifier
+        - :token:`qualid`
         - a global reference of term
-        - unfold
+        - :tacn:`unfold`
 
       * - ``constr``
-        - term
+        - :token:`term`
         - a term
-        - exact
+        - :tacn:`exact`
 
       * - ``uconstr``
-        - term
+        - :token:`term`
         - an untyped term
-        - refine
+        - :tacn:`refine`
 
       * - ``integer``
-        - integer
+        - :token:`int`
         - an integer
         -
 
       * - ``int_or_var``
-        - identifier or integer
+        - :token:`int_or_var`
         - an integer
-        - do
+        - :tacn:`do`
 
       * - ``tactic``
-        - tactic at level 5
+        - :token:`ltac_expr`
         - a tactic
         -
 
-      * - ``tacticn``
-        - tactic at level n
-        - a tactic
+      * - ``tactic``\ *n* (*n* in 0..5)
+        - :token:`ltac_expr`\ *n*
+        - a tactic at level *n*
         -
 
       * - *entry*\ ``_list``
-        - list of *entry*
+        - :n:`{* entry }`
         - a list of how *entry* is interpreted
         -
 
       * - ``ne_``\ *entry*\ ``_list``
-        - non-empty list of *entry*
+        - :n:`{+ entry }`
         - a list of how *entry* is interpreted
         -
+
+      * - *entry*\ ``_list_sep``
+        - :n:`{*s entry }`
+        - a list of how *entry* is interpreted
+        -
+
+      * - ``ne_``\ *entry*\ ``_list_sep``
+        - :n:`{+s entry }`
+        - a list of how *entry* is interpreted
+        -
+
+   .. todo: notation doesn't support italics
 
    .. note:: In order to be bound in tactic definitions, each syntactic
              entry for argument type must include the case of a simple |Ltac|
@@ -1834,16 +1771,11 @@ Tactic notations allow to customize the syntax of tactics. They have the followi
              evaluates to integers only but which syntactically includes
              identifiers in order to be usable in tactic definitions.
 
-   .. note:: The *entry*\ ``_list`` and ``ne_``\ *entry*\ ``_list`` entries can be used in
+   .. note:: The *entry*\ ``_list*`` and ``ne_``\ *entry*\ ``_list*`` entries can be used in
              primitive tactics or in other notations at places where a list of the
              underlying entry can be used: entry is either ``constr``, ``hyp``, ``integer``
              or ``int_or_var``.
 
-.. cmdv:: Local Tactic Notation
-
-   Tactic notations disappear when a section is closed. They survive when
-   a module is closed unless the command ``Local Tactic Notation`` is used instead
-   of :cmd:`Tactic Notation`.
 
 .. rubric:: Footnotes
 

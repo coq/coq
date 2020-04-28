@@ -3129,6 +3129,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    head normal form according to the :math:`\beta`:math:`\delta`:math:`\iota`:math:`\zeta`-reduction rules, i.e. it
    reduces the head of the goal until it becomes a product or an
    irreducible term. All inner :math:`\beta`:math:`\iota`-redexes are also reduced.
+   The behavior of both :tacn:`hnf` can be tuned using the :cmd:`Arguments` command.
 
    Example: The term :g:`fun n : nat => S n + S n` is not reduced by :n:`hnf`.
 
@@ -3155,76 +3156,10 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    The :tacn:`cbn` tactic accepts the same flags as :tacn:`cbv` and
    :tacn:`lazy`. The behavior of both :tacn:`simpl` and :tacn:`cbn`
-   can be tuned using the Arguments vernacular command as follows:
+   can be tuned using the :cmd:`Arguments` command.
 
-   + A constant can be marked to be never unfolded by :tacn:`cbn` or
-     :tacn:`simpl`:
-
-     .. example::
-
-        .. coqtop:: all
-
-           Arguments minus n m : simpl never.
-
-     After that command an expression like :g:`(minus (S x) y)` is left
-     untouched by the tactics :tacn:`cbn` and :tacn:`simpl`.
-
-   + A constant can be marked to be unfolded only if applied to enough
-     arguments. The number of arguments required can be specified using the
-     ``/`` symbol in the argument list of the :cmd:`Arguments` command.
-
-     .. example::
-
-        .. coqtop:: all
-
-           Definition fcomp A B C f (g : A -> B) (x : A) : C := f (g x).
-           Arguments fcomp {A B C} f g x /.
-           Notation "f \o g" := (fcomp f g) (at level 50).
-
-     After that command the expression :g:`(f \o g)` is left untouched by
-     :tacn:`simpl` while :g:`((f \o g) t)` is reduced to :g:`(f (g t))`.
-     The same mechanism can be used to make a constant volatile, i.e.
-     always unfolded.
-
-     .. example::
-
-        .. coqtop:: all
-
-           Definition volatile := fun x : nat => x.
-           Arguments volatile / x.
-
-   + A constant can be marked to be unfolded only if an entire set of
-     arguments evaluates to a constructor. The ``!`` symbol can be used to mark
-     such arguments.
-
-     .. example::
-
-        .. coqtop:: all
-
-           Arguments minus !n !m.
-
-     After that command, the expression :g:`(minus (S x) y)` is left untouched
-     by :tacn:`simpl`, while :g:`(minus (S x) (S y))` is reduced to :g:`(minus x y)`.
-
-   + A special heuristic to determine if a constant has to be unfolded
-     can be activated with the following command:
-
-     .. example::
-
-        .. coqtop:: all
-
-           Arguments minus n m : simpl nomatch.
-
-     The heuristic avoids to perform a simplification step that would expose a
-     match construct in head position. For example the expression
-     :g:`(minus (S (S x)) (S y))` is simplified to :g:`(minus (S x) y)`
-     even if an extra simplification is possible.
-
-   In detail, the tactic :tacn:`simpl` first applies :math:`\beta`:math:`\iota`-reduction. Then, it
-   expands transparent constants and tries to reduce further using :math:`\beta`:math:`\iota`-reduction.
-   But, when no :math:`\iota` rule is applied after unfolding then
-   :math:`\delta`-reductions are not applied. For instance trying to use :tacn:`simpl` on
-   :g:`(plus n O) = n` changes nothing.
+   .. todo add "See <subsection about controlling the behavior of reduction strategies>"
+      to TBA section
 
    Notice that only transparent constants whose name can be reused in the
    recursive calls are possibly unfolded by :tacn:`simpl`. For instance a

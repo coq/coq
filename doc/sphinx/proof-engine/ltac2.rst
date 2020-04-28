@@ -510,9 +510,9 @@ Static semantics
 ****************
 
 During internalization, Coq variables are resolved and antiquotations are
-type-checked as Ltac2 terms, effectively producing a ``glob_constr`` in Coq
+type checked as Ltac2 terms, effectively producing a ``glob_constr`` in Coq
 implementation terminology. Note that although it went through the
-type-checking of **Ltac2**, the resulting term has not been fully computed and
+type checking of **Ltac2**, the resulting term has not been fully computed and
 is potentially ill-typed as a runtime **Coq** term.
 
 .. example::
@@ -523,12 +523,12 @@ is potentially ill-typed as a runtime **Coq** term.
 
       Ltac2 myconstr () := constr:(nat -> 0).
 
-Term antiquotations are type-checked in the enclosing Ltac2 typing context
+Term antiquotations are type checked in the enclosing Ltac2 typing context
 of the corresponding term expression.
 
 .. example::
 
-   The following will type-check, with type `constr`.
+   The following will type check, with type `constr`.
 
    .. coqdoc::
 
@@ -539,7 +539,7 @@ expanded by the Coq binders from the term.
 
   .. example::
 
-     The following Ltac2 expression will **not** type-check::
+     The following Ltac2 expression will **not** type check::
 
      `constr:(fun x : nat => ltac2:(exact x))`
      `(* Error: Unbound variable 'x' *)`
@@ -583,7 +583,7 @@ Dynamic semantics
 *****************
 
 During evaluation, a quoted term is fully evaluated to a kernel term, and is
-in particular type-checked in the current environment.
+in particular type checked in the current environment.
 
 Evaluation of a quoted term goes as follows.
 
@@ -602,7 +602,7 @@ whole expression will thus evaluate to the term :g:`fun H : nat => H`.
 
 `let tac () := hyp @H in constr:(fun H : nat => ltac2:(tac ()))`
 
-Many standard tactics perform type-checking of their argument before going
+Many standard tactics perform type checking of their argument before going
 further. It is your duty to ensure that terms are well-typed when calling
 such tactics. Failure to do so will result in non-recoverable exceptions.
 
@@ -700,7 +700,7 @@ The following scopes are built-in.
 
   + parses :n:`c = @term` and produces :n:`constr:(c)`
 
-  This scope can be parameterized by a list of delimiting keys of interpretation
+  This scope can be parameterized by a list of delimiting keys of notation
   scopes (as described in :ref:`LocalInterpretationRulesForNotations`),
   describing how to interpret the parsed term. For instance, :n:`constr(A, B)`
   parses :n:`c = @term` and produces :n:`constr:(c%A%B)`.

@@ -327,7 +327,7 @@ Changes in 8.11+beta1
   the documentation by Théo Zimmermann and Jim Fehrle).
 - **Added:**
   Ltac2 tactic notations with “constr” arguments can specify the
-  interpretation scope for these arguments;
+  notation scope for these arguments;
   see :ref:`ltac2_notations` for details
   (`#10289 <https://github.com/coq/coq/pull/10289>`_,
   by Vincent Laporte).
@@ -1565,8 +1565,7 @@ changes:
     attribute.
 
   - Removed deprecated commands ``Arguments Scope`` and ``Implicit
-    Arguments`` in favor of :cmd:`Arguments (scopes)` and
-    :cmd:`Arguments`, with the help of Jasper Hugunin.
+    Arguments`` in favor of :cmd:`Arguments`, with the help of Jasper Hugunin.
 
   - New flag :flag:`Uniform Inductive Parameters` by Jasper Hugunin to
     avoid repeating uniform parameters in constructor declarations.
@@ -2404,9 +2403,9 @@ Tactics
 - Tactic "auto with real" can now discharge comparisons of literals.
 
 - The types of variables in patterns of "match" are now
-  beta-iota-reduced after type-checking. This has an impact on the
+  beta-iota-reduced after type checking. This has an impact on the
   type of the variables that the tactic "refine" introduces in the
-  context, producing types a priori closer to the expectations.
+  context, producing types that should be closer to the expectations.
 
 - In "Tactic Notation" or "TACTIC EXTEND", entry "constr_with_bindings"
   now uses type classes and rejects terms with unresolved holes, like
@@ -3472,7 +3471,7 @@ Tactics
   native_compute now strictly interpret it as the head of a pattern
   starting with this reference.
 
-- The "change p with c" tactic semantics changed, now type-checking
+- The "change p with c" tactic semantics changed, now type checking
   "c" at each matching occurrence "t" of the pattern "p", and
   converting "t" with "c".
 
@@ -4839,7 +4838,7 @@ Type classes
 - Declaring axiomatic type class instances in Module Type should be now
   done via new command "Declare Instance", while the syntax "Instance"
   now always provides a concrete instance, both in and out of Module Type.
-- Use [Existing Class foo] to declare foo as a class a posteriori.
+- Use [Existing Class foo] to declare a preexisting object [foo] as a class.
   [foo] can be an inductive type or a constant definition. No
   projections or instances are defined.
 - Various bug fixes and improvements: support for defined fields,
@@ -4849,7 +4848,7 @@ Type classes
 Vernacular commands
 
 - New command "Timeout <n> <command>." interprets a command and a timeout
-  interrupts the interpretation after <n> seconds.
+  interrupts the execution after <n> seconds.
 - New command "Compute <expr>." is a shortcut for "Eval vm_compute in <expr>".
 - New command "Fail <command>." interprets a command and is successful iff
   the command fails on an error (but not an anomaly). Handy for tests and
@@ -6034,7 +6033,7 @@ main motivations were
    syntax.
 
 Together with the revision of the concrete syntax, a new mechanism of
-*interpretation scopes* permits to reuse the same symbols (typically +,
+*notation scopes* permits to reuse the same symbols (typically +,
 -, \*, /, <, <=) in various mathematical theories without any
 ambiguities for |Coq|, leading to a largely improved readability of |Coq|
 scripts. New commands to easily add new symbols are also provided.
@@ -6072,7 +6071,7 @@ translator from old to new syntax released with |Coq| is also their work
 with contributions by Olivier Desmettre.
 
 Hugo Herbelin is the main designer and implementer of the notion of
-interpretation scopes and of the commands for easily adding new
+notation scopes and of the commands for easily adding new
 notations.
 
 Hugo Herbelin is the main implementer of the restructured standard library.
@@ -6294,12 +6293,12 @@ Syntax extensions
 - "Grammar" for terms disappears
 - "Grammar" for tactics becomes "Tactic Notation"
 - "Syntax" disappears
-- Introduction of a notion of interpretation scope allowing to use the
+- Introduction of a notion of notation scope allowing to use the
   same notations in various contexts without using specific delimiters
   (e.g the same expression "4<=3+x" is interpreted either in "nat",
   "positive", "N" (previously "entier"), "Z", "R", depending on which
-  interpretation scope is currently open) [see documentation for details]
-- Notation now mandatorily requires a precedence and associativity
+  Notation scope is currently open) [see documentation for details]
+- Notation now requires a precedence and associativity
   (default was to set precedence to 1 and associativity to none)
 
 Revision of the standard library
@@ -6376,7 +6375,7 @@ New syntax
   with no dependency of t1 and t2 in the arguments of the constructors;
   this may cause incompatibilities for files translated using coq 8.0beta
 
-Interpretation scopes
+Notation scopes
 
 - Delimiting key %bool for bool_scope added
 - Import no more needed to activate argument scopes from a module

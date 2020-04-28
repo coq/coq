@@ -210,7 +210,7 @@ definitions of “inversion predicates”.
 Version 1
 ~~~~~~~~~
 
-This software is a prototype type-checker for a higher-order logical
+This software is a prototype type checker for a higher-order logical
 formalism known as the Theory of Constructions, presented in his PhD
 thesis by Thierry Coquand, with influences from Girard's system F and
 de Bruijn's Automath.  The metamathematical analysis of the system is
@@ -409,7 +409,7 @@ synthesized with the help of tactics, it was entirely re-checked by
 the engine. Thus there was no need to certify the tactics, and the
 system took advantage of this fact by having tactics ignore the
 universe levels, universe consistency check being relegated to the
-final type-checking pass. This induced a certain puzzlement in early
+final type checking pass. This induced a certain puzzlement in early
 users who saw, after a successful proof search, their ``QED`` followed
 by silence, followed by a failure message due to a universe
 inconsistency…
@@ -1396,7 +1396,7 @@ Tactics
 Extraction (See details in plugins/extraction/CHANGES and README):
 
 - An experimental Scheme extraction is provided.
-- Concerning Ocaml, extracted code is now ensured to always type-check,
+- Concerning OCaml, extracted code is now ensured to always type check,
   thanks to automatic inserting of Obj.magic.
 - Experimental extraction of Coq new modules to Ocaml modules.
 

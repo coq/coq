@@ -47,7 +47,7 @@ one_term: [
 
 term1: [
 | term_projection
-| term0 "%" scope
+| term0 "%" scope_key
 | term0
 ]
 
@@ -343,7 +343,7 @@ pattern10: [
 ]
 
 pattern1: [
-| pattern0 "%" scope
+| pattern0 "%" scope_key
 | pattern0
 ]
 
@@ -370,14 +370,6 @@ subprf: [
 
 fix_definition: [
 | ident_decl LIST0 binder OPT fixannot OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
-]
-
-decl_notations: [
-| "where" decl_notation LIST0 ( "and" decl_notation )
-]
-
-decl_notation: [
-| string ":=" one_term OPT ( "(" "only" "parsing" ")" ) OPT [ ":" ident ]
 ]
 
 thm_token: [
@@ -571,43 +563,52 @@ smart_qualid: [
 ]
 
 by_notation: [
-| string OPT [ "%" scope ]
-]
-
-argument_spec_block: [
-| argument_spec
-| "/"
-| "&"
-| "(" LIST1 argument_spec ")" OPT ( "%" scope )
-| "[" LIST1 argument_spec "]" OPT ( "%" scope )
-| "{" LIST1 argument_spec "}" OPT ( "%" scope )
+| string OPT [ "%" scope_key ]
 ]
 
 argument_spec: [
-| OPT "!" name OPT ( "%" scope )
+| OPT "!" name OPT ( "%" scope_key )
 ]
 
-more_implicits_block: [
+arg_specs: [
+| argument_spec
+| "/"
+| "&"
+| "(" LIST1 argument_spec ")" OPT ( "%" scope_key )
+| "[" LIST1 argument_spec "]" OPT ( "%" scope_key )
+| "{" LIST1 argument_spec "}" OPT ( "%" scope_key )
+]
+
+implicits_alt: [
 | name
 | "[" LIST1 name "]"
 | "{" LIST1 name "}"
 ]
 
-arguments_modifier: [
+args_modifier: [
 | "simpl" "nomatch"
 | "simpl" "never"
 | "default" "implicits"
-| "clear" "bidirectionality" "hint"
 | "clear" "implicits"
 | "clear" "scopes"
-| "clear" "scopes" "and" "implicits"
-| "clear" "implicits" "and" "scopes"
+| "clear" "bidirectionality" "hint"
 | "rename"
 | "assert"
 | "extra" "scopes"
+| "clear" "scopes" "and" "implicits"
+| "clear" "implicits" "and" "scopes"
 ]
 
 scope: [
+| scope_name
+| scope_key
+]
+
+scope_name: [
+| ident
+]
+
+scope_key: [
 | ident
 ]
 
@@ -629,7 +630,6 @@ simple_reserv: [
 
 command: [
 | "Goal" term
-| "Declare" "Scope" ident
 | "Pwd"
 | "Cd" OPT string
 | "Load" OPT "Verbose" [ string | ident ]
@@ -669,8 +669,8 @@ command: [
 | "Print" "Hint" "*"
 | "Print" "HintDb" ident
 | "Print" "Scopes"
-| "Print" "Scope" ident
-| "Print" "Visibility" OPT ident
+| "Print" "Scope" scope_name
+| "Print" "Visibility" OPT scope_name
 | "Print" "Implicit" smart_qualid
 | "Print" OPT "Sorted" "Universes" OPT ( "Subgraph" "(" LIST0 qualid ")" ) OPT string
 | "Print" "Assumptions" smart_qualid
@@ -728,6 +728,7 @@ command: [
 | "Hint" hint OPT ( ":" LIST1 ident )
 | "Comments" LIST0 comment
 | "Declare" "Instance" ident_decl LIST0 binder ":" term OPT hint_info
+| "Declare" "Scope" scope_name
 | "Obligation" int OPT ( "of" ident ) OPT ( ":" term OPT ( "with" ltac_expr ) )
 | "Next" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
 | "Solve" "Obligation" int OPT ( "of" ident ) "with" ltac_expr
@@ -821,8 +822,8 @@ command: [
 | "Print" "Rings"      (* setoid_ring plugin *)
 | "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* setoid_ring plugin *)
 | "Print" "Fields"      (* setoid_ring plugin *)
-| "Numeral" "Notation" qualid qualid qualid ":" ident OPT numnotoption
-| "String" "Notation" qualid qualid qualid ":" ident
+| "Numeral" "Notation" qualid qualid qualid ":" scope_name OPT numeral_modifier
+| "String" "Notation" qualid qualid qualid ":" scope_name
 | "SubClass" ident_decl def_body
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
 | assumption_token OPT ( "Inline" OPT ( "(" num ")" ) ) [ LIST1 ( "(" assumpt ")" ) | assumpt ]
@@ -871,19 +872,19 @@ command: [
 | "Existing" "Instance" qualid OPT hint_info
 | "Existing" "Instances" LIST1 qualid OPT [ "|" num ]
 | "Existing" "Class" qualid
-| "Arguments" smart_qualid LIST0 argument_spec_block LIST0 [ "," LIST0 more_implicits_block ] OPT [ ":" LIST1 arguments_modifier SEP "," ]
+| "Arguments" smart_qualid LIST0 arg_specs LIST0 [ "," LIST0 implicits_alt ] OPT [ ":" LIST1 args_modifier SEP "," ]
 | "Implicit" [ "Type" | "Types" ] reserv_list
 | "Generalizable" [ [ "Variable" | "Variables" ] LIST1 ident | "All" "Variables" | "No" "Variables" ]
 | "Set" setting_name OPT [ int | string ]
 | "Unset" setting_name
-| "Open" "Scope" ident
-| "Close" "Scope" ident
-| "Delimit" "Scope" ident "with" ident
-| "Undelimit" "Scope" ident
-| "Bind" "Scope" ident "with" LIST1 class
-| "Infix" string ":=" one_term OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" ident ]
+| "Open" "Scope" scope
+| "Close" "Scope" scope
+| "Delimit" "Scope" scope_name "with" scope_key
+| "Undelimit" "Scope" scope_name
+| "Bind" "Scope" scope_name "with" LIST1 class
+| "Infix" string ":=" one_term OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" scope_name ]
 | "Notation" ident LIST0 ident ":=" one_term OPT ( "(" "only" "parsing" ")" )
-| "Notation" string ":=" one_term OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" ident ]
+| "Notation" string ":=" one_term OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" scope_name ]
 | "Format" "Notation" string string string
 | "Reserved" "Infix" string OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
 | "Reserved" "Notation" string OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
@@ -940,10 +941,6 @@ dirpath: [
 | LIST0 ( ident "." ) ident
 ]
 
-bignat: [
-| numeral
-]
-
 setting_name: [
 | LIST1 ident
 ]
@@ -956,7 +953,7 @@ comment: [
 
 search_item: [
 | one_term
-| string OPT ( "%" scope )
+| string OPT ( "%" scope_key )
 ]
 
 univ_name_list: [
@@ -987,13 +984,7 @@ tacdef_body: [
 
 ltac_production_item: [
 | string
-| ident "(" ident OPT ( "," string ) ")"
-| ident
-]
-
-numnotoption: [
-| "(" "warning" "after" bignat ")"
-| "(" "abstract" "after" bignat ")"
+| ident OPT ( "(" ident OPT ( "," string ) ")" )
 ]
 
 int_or_id: [
@@ -1033,6 +1024,11 @@ field_mod: [
 | "completeness" one_term      (* setoid_ring plugin *)
 ]
 
+numeral_modifier: [
+| "(" "warning" "after" numeral ")"
+| "(" "abstract" "after" numeral ")"
+]
+
 hints_path: [
 | "(" hints_path ")"
 | hints_path "*"
@@ -1050,46 +1046,50 @@ class: [
 | smart_qualid
 ]
 
-level: [
-| "level" num
-| "next" "level"
-]
-
 syntax_modifier: [
 | "at" "level" num
-| "in" "custom" ident
-| "in" "custom" ident "at" "level" num
+| "in" "custom" ident OPT ( "at" "level" num )
+| LIST1 ident SEP "," "at" level
+| ident "at" level OPT binder_interp
+| ident explicit_subentry
+| ident binder_interp
 | "left" "associativity"
 | "right" "associativity"
 | "no" "associativity"
-| "only" "printing"
 | "only" "parsing"
+| "only" "printing"
 | "format" string OPT string
-| ident "," LIST1 ident SEP "," "at" level
-| ident "at" level OPT constr_as_binder_kind
-| ident constr_as_binder_kind
-| ident syntax_extension_type
 ]
 
-constr_as_binder_kind: [
+explicit_subentry: [
+| "ident"
+| "global"
+| "bigint"
+| "strict" "pattern" OPT ( "at" "level" num )
+| "binder"
+| "closed" "binder"
+| "constr" OPT ( "at" level ) OPT binder_interp
+| "custom" ident OPT ( "at" level ) OPT binder_interp
+| "pattern" OPT ( "at" "level" num )
+]
+
+binder_interp: [
 | "as" "ident"
 | "as" "pattern"
 | "as" "strict" "pattern"
 ]
 
-syntax_extension_type: [
-| "ident"
-| "global"
-| "bigint"
-| "binder"
-| "constr"
-| "constr" OPT ( "at" level ) OPT constr_as_binder_kind
-| "pattern"
-| "pattern" "at" "level" num
-| "strict" "pattern"
-| "strict" "pattern" "at" "level" num
-| "closed" "binder"
-| "custom" ident OPT ( "at" level ) OPT constr_as_binder_kind
+level: [
+| "level" num
+| "next" "level"
+]
+
+decl_notations: [
+| "where" decl_notation LIST0 ( "and" decl_notation )
+]
+
+decl_notation: [
+| string ":=" one_term OPT ( "(" "only" "parsing" ")" ) OPT [ ":" scope_name ]
 ]
 
 simple_tactic: [

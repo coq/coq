@@ -224,8 +224,16 @@ IDENT: [
 | ident
 ]
 
-scope: [
+scope_key: [
 | IDENT
+]
+
+scope_name: [
+| IDENT
+]
+
+scope: [
+| scope_name | scope_key
 ]
 
 operconstr100: [
@@ -250,7 +258,7 @@ operconstr1: [
 | REPLACE operconstr0 ".(" global LIST0 appl_arg ")"
 | WITH    operconstr0 ".(" global LIST0 appl_arg ")" (* huh? *)
 | REPLACE operconstr0 "%" IDENT
-| WITH operconstr0 "%" scope
+| WITH operconstr0 "%" scope_key
 | MOVETO term_projection operconstr0 ".(" global LIST0 appl_arg ")"
 | MOVETO term_projection operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
 ]
@@ -376,7 +384,7 @@ pattern10: [
 
 pattern1: [
 | REPLACE pattern0 "%" IDENT
-| WITH pattern0 "%" scope
+| WITH pattern0 "%" scope_key
 ]
 
 pattern0: [
@@ -879,9 +887,14 @@ bar_cbrace: [
 ]
 
 printable: [
+| REPLACE "Scope" IDENT
+| WITH "Scope" scope_name
+| REPLACE "Visibility" OPT IDENT
+| WITH "Visibility" OPT scope_name
 | REPLACE [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT ne_string
 | WITH OPT "Sorted" "Universes" OPT printunivs_subgraph OPT ne_string
 | DELETE "Term" smart_global OPT univ_name_list  (* readded in commands *)
+
 | INSERTALL "Print"
 ]
 
@@ -1012,25 +1025,58 @@ command: [
 | REPLACE "Print" smart_global OPT univ_name_list
 | WITH "Print" OPT "Term" smart_global OPT univ_name_list
 
+| REPLACE "Declare" "Scope" IDENT
+| WITH "Declare" "Scope" scope_name
+
+(* odd that these are in command while other notation-related ones are in syntax *)
+| REPLACE "Numeral" "Notation" reference reference reference ":" ident numnotoption
+| WITH "Numeral" "Notation" reference reference reference ":" scope_name numnotoption
+| REPLACE "String" "Notation" reference reference reference ":" ident
+| WITH "String" "Notation" reference reference reference ":" scope_name
+
 ]
 
 option_setting: [
 | OPTINREF
 ]
 
-only_parsing: [
-| OPTINREF
-]
-
 syntax: [
+| REPLACE "Open" "Scope" IDENT
+| WITH "Open" "Scope" scope
+| REPLACE "Close" "Scope" IDENT
+| WITH "Close" "Scope" scope
+| REPLACE "Delimit" "Scope" IDENT; "with" IDENT
+| WITH "Delimit" "Scope" scope_name; "with" scope_key
+| REPLACE "Undelimit" "Scope" IDENT
+| WITH "Undelimit" "Scope" scope_name
+| REPLACE "Bind" "Scope" IDENT; "with" LIST1 class_rawexpr
+| WITH "Bind" "Scope" scope_name; "with" LIST1 class_rawexpr
 | REPLACE "Infix" ne_lstring ":=" constr [ "(" LIST1 syntax_modifier SEP "," ")" | ]   OPT [ ":" IDENT ]
-| WITH    "Infix" ne_lstring ":=" constr OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" IDENT ]
+| WITH    "Infix" ne_lstring ":=" constr OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" scope_name ]
 | REPLACE "Notation" lstring ":=" constr [ "(" LIST1 syntax_modifier SEP "," ")" | ]   OPT [ ":" IDENT ]
-| WITH    "Notation" lstring ":=" constr OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" IDENT ]
+| WITH    "Notation" lstring ":=" constr OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" scope_name ]
 | REPLACE "Reserved" "Infix" ne_lstring [ "(" LIST1 syntax_modifier SEP "," ")" | ]
 | WITH    "Reserved" "Infix" ne_lstring OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
 | REPLACE "Reserved" "Notation" ne_lstring [ "(" LIST1 syntax_modifier SEP "," ")" | ]
 | WITH    "Reserved" "Notation" ne_lstring OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
+]
+
+syntax_modifier: [
+| DELETE "in" "custom" IDENT
+| REPLACE "in" "custom" IDENT; "at" "level" natural
+| WITH "in" "custom" IDENT OPT ( "at" "level" natural )
+| REPLACE IDENT; "," LIST1 IDENT SEP "," "at" level
+| WITH LIST1 IDENT SEP "," "at" level
+]
+
+syntax_extension_type: [
+| REPLACE "strict" "pattern" "at" "level" natural
+| WITH "strict" "pattern" OPT ( "at" "level" natural )
+| DELETE "strict" "pattern"
+| DELETE "pattern"
+| REPLACE "pattern" "at" "level" natural
+| WITH "pattern" OPT ( "at" "level" natural )
+| DELETE "constr"    (* covered by another prod *)
 ]
 
 numnotoption: [
@@ -1407,12 +1453,12 @@ positive_search_mark: [
 
 by_notation: [
 | REPLACE ne_string OPT [ "%" IDENT ]
-| WITH ne_string OPT [ "%" scope ]
+| WITH ne_string OPT [ "%" scope_key ]
 ]
 
 scope_delimiter: [
 | REPLACE "%" IDENT
-| WITH "%" scope
+| WITH "%" scope_key
 ]
 
 (* Don't show these details *)
@@ -1420,6 +1466,23 @@ DELETE: [
 | register_token
 | register_prim_token
 | register_type_token
+]
+
+
+decl_notation: [
+| REPLACE ne_lstring ":=" constr only_parsing OPT [ ":" IDENT ]
+| WITH ne_lstring ":=" constr only_parsing OPT [ ":" scope_name ]
+]
+
+
+only_parsing: [
+| OPTINREF
+]
+
+ltac_production_item: [
+| REPLACE ident "(" ident OPT ltac_production_sep ")"
+| WITH ident OPT ( "(" ident OPT ltac_production_sep ")" )
+| DELETE ident
 ]
 
 SPLICE: [
@@ -1588,6 +1651,7 @@ SPLICE: [
 | searchabout_queries
 | locatable
 | scope_delimiter
+| bignat
 | one_import_filter_name
 ] (* end SPLICE *)
 
@@ -1640,6 +1704,12 @@ RENAME: [
 | smart_global smart_qualid
 | searchabout_query search_item
 | option_table setting_name
+| argument_spec_block arg_specs
+| more_implicits_block implicits_alt
+| arguments_modifier args_modifier
+| constr_as_binder_kind binder_interp
+| syntax_extension_type explicit_subentry
+| numnotoption numeral_modifier
 ]
 
 (* todo: positive_search_mark is a lousy name for OPT "-" *)

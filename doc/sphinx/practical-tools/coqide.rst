@@ -206,7 +206,7 @@ Displaying Unicode symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You just need to define suitable notations as described in the chapter
-:ref:`syntaxextensionsandinterpretationscopes`. For example, to use the
+:ref:`syntaxextensionsandnotationscopes`. For example, to use the
 mathematical symbols ∀ and ∃, you may define:
 
 .. coqtop:: in

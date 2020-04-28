@@ -201,7 +201,8 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
    or an accessible theorem, axiom, etc.:
    its kind (module, constant, assumption, inductive,
    constructor, abbreviation, …), long name, type, implicit arguments and
-   argument scopes. It does not print the body of definitions or proofs.
+   argument scopes (as set in the definition of :token:`smart_qualid` or
+   subsequently with the :cmd:`Arguments` command). It does not print the body of definitions or proofs.
 
 .. cmd:: Check @term
 
@@ -230,7 +231,7 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
    .. prodn::
       search_item ::= @one_term
-      | @string {? % @scope }
+      | @string {? % @scope_key }
 
    Displays the name and type of all hypotheses of the
    selected goal (if any) and theorems of the current context
