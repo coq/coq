@@ -5,4 +5,4 @@
 	cp $< $@
 
 %.vo: %.v
-	coqc -Q . test $<
+	coqc -Q . test -Q lib2 xxx $<
