@@ -165,23 +165,26 @@ and declare_scheme_dependence mode eff = function
     let _, eff' = define_mutual_scheme kind mode [] mind in
     Evd.concat_side_effects eff' eff
 
-let find_scheme_on_env_too kind ind =
-  let s = DeclareScheme.lookup_scheme kind ind in
-  s, Evd.empty_side_effects
-
 let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
-  try find_scheme_on_env_too kind ind
-  with Not_found ->
+  let open Proofview.Notations in
+  match lookup_scheme kind ind with
+  | Some s ->
+    (* FIXME: we need to perform this call to reset the environment, since the
+       imperative scheme table is desynchronized from the monadic interface. *)
+    Proofview.tclEFFECTS Evd.empty_side_effects <*>
+    Proofview.tclUNIT s
+  | None ->
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps ind in
     let eff = List.fold_left (fun eff dep -> declare_scheme_dependence mode eff dep) Evd.empty_side_effects deps in
-    define_individual_scheme_base kind s f mode None ind eff
+    let c, eff = define_individual_scheme_base kind s f mode None ind eff in
+    Proofview.tclEFFECTS eff <*> Proofview.tclUNIT c
   | s,MutualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps mind in
     let eff = List.fold_left (fun eff dep -> declare_scheme_dependence mode eff dep) Evd.empty_side_effects deps in
     let ca, eff = define_mutual_scheme_base kind s f mode [] mind eff in
-      ca.(i), eff
+    Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
 
 let define_individual_scheme kind mode names ind =
   ignore (define_individual_scheme kind mode names ind)
