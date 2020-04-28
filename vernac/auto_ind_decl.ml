@@ -133,6 +133,11 @@ let build_beq_scheme_deps kn =
   let nparrec = mib.mind_nparams_rec in
   check_no_indices mib;
   let make_one_eq accu i =
+    (* This function is only trying to recursively compute the inductive types
+       appearing as arguments of the constructors. This is done to support
+       equality decision over hereditarily first-order types. It could be
+       perfomed in a much cleaner way, e.g. using the kernel normal form of
+       constructor types and kernel whd_all for the argument types. *)
     let rec aux accu c =
       let (c,a) = Reductionops.whd_betaiota_stack Evd.empty EConstr.(of_constr c) in
       let (c,a) = EConstr.Unsafe.(to_constr c, List.map to_constr a) in
