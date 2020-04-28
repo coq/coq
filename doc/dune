@@ -49,7 +49,7 @@
  (action
   (progn
    (run env COQLIB=%{project_root} sphinx-build -q %{env:SPHINXWARNOPT=-W} -b latex sphinx %{targets})
-   (chdir %{targets} (run make)))))
+   (chdir %{targets} (run make LATEXMKOPTS=-silent)))))
 
 ; Installable directories are not yet fully supported by Dune.  See
 ; ocaml/dune#1868.  Yet, this makes coq-doc.install a valid target to
