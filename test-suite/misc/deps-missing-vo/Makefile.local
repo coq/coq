@@ -1,0 +1,5 @@
+%.v: %.c
+	cp $< $@
+
+%.vo: %.v
+	coqc -Q . test $<
