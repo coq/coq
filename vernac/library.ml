@@ -57,14 +57,18 @@ let in_delayed f ch ~segment =
 
 let fetch_delayed del =
   let { del_digest = digest; del_file = f; del_off = pos; } = del in
-  try
-    let ch = open_in_bin f in
-    let () = LargeFile.seek_in ch pos in
-    let obj = System.marshal_in f ch in
-    let digest' = Digest.input ch in
-    if not (String.equal digest digest') then raise (Faulty f);
-    obj
-  with e when CErrors.noncritical e -> raise (Faulty f)
+  let ch = open_in_bin f in
+  let obj, digest' =
+    try
+      let () = LargeFile.seek_in ch pos in
+      let obj = System.marshal_in f ch in
+      let digest' = Digest.input ch in
+      obj, digest'
+    with e -> close_in ch; raise e
+  in
+  close_in ch;
+  if not (String.equal digest digest') then raise (Faulty f);
+  obj
 
 end
 
@@ -200,7 +204,7 @@ let access_table what tables dp i =
         with Faulty f ->
           user_err ~hdr:"Library.access_table"
             (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
-             str ") is inaccessible or corrupted,\ncannot load some " ++
+             str ") is corrupted,\ncannot load some " ++
              str what ++ str " in it.\n")
       in
       tables := DPmap.add dp (Fetched t) !tables;
