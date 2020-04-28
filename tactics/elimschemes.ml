@@ -27,11 +27,11 @@ open Ind_tables
 let optimize_non_type_induction_scheme kind dep sort ind =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  if check_scheme kind ind then
+  match lookup_scheme kind ind with
+  | Some cte ->
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
-    let cte = lookup_scheme kind ind in
     let sigma, cte = Evd.fresh_constant_instance env sigma cte in
     let c = mkConstU cte in
     let t = type_of_constant_in (Global.env()) cte in
@@ -48,7 +48,7 @@ let optimize_non_type_induction_scheme kind dep sort ind =
     let sigma, t', c' = weaken_sort_scheme env sigma false sort npars c t in
     let sigma = Evd.minimize_universes sigma in
     (Evarutil.nf_evars_universes sigma c', Evd.evar_universe_context sigma)
-  else
+  | None ->
     let sigma, pind = Evd.fresh_inductive_instance ~rigid:UState.univ_rigid env sigma ind in
     let sigma, c = build_induction_scheme env sigma pind dep sort in
       (c, Evd.evar_universe_context sigma)

@@ -952,10 +952,11 @@ let fold_match env sigma c =
         then case_dep_scheme_kind_from_type
         else case_scheme_kind_from_type)
     in
-    let exists = Ind_tables.check_scheme sk ci.ci_ind in
-      if exists then
-        dep, pred, exists, Ind_tables.lookup_scheme sk ci.ci_ind
-      else raise Not_found
+    match Ind_tables.lookup_scheme sk ci.ci_ind with
+    | Some cst ->
+        dep, pred, true, cst
+    | None ->
+      raise Not_found
   in
   let app =
     let ind, args = Inductiveops.find_mrectype env sigma cty in

@@ -251,9 +251,10 @@ let build_beq_scheme mode kn =
             if MutInd.equal kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
             else begin
               try
-                let () = assert (check_scheme (!beq_scheme_kind_aux()) ind') in
-                let c = lookup_scheme (!beq_scheme_kind_aux()) ind' in
-                let eq = mkConst c in
+                let eq = match lookup_scheme (!beq_scheme_kind_aux()) ind' with
+                | Some c -> mkConst c
+                | None -> assert false
+                in
                 let eqa = Array.of_list @@ List.map aux a in
                 let args =
                   Array.append
@@ -586,9 +587,10 @@ let eqI ind l =
   let list_id = list_id l in
   let eA = Array.of_list((List.map (fun (s,_,_,_) -> mkVar s) list_id)@
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
-  and e =
-    try let c = lookup_scheme beq_scheme_kind ind in mkConst c
-    with Not_found -> user_err ~hdr:"AutoIndDecl.eqI"
+  and e = match lookup_scheme beq_scheme_kind ind with
+  | Some c -> mkConst c
+  | None ->
+    user_err ~hdr:"AutoIndDecl.eqI"
       (str "The boolean equality on " ++ Printer.pr_inductive (Global.env ()) ind ++ str " is needed.");
   in (if Array.equal Constr.equal eA [||] then e else mkApp(e,eA))
 

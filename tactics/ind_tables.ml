@@ -93,9 +93,10 @@ let compute_name internal id =
 let declare_definition_scheme = ref (fun ~internal ~univs ~role ~name c ->
     CErrors.anomaly (Pp.str "scheme declaration not registered"))
 
-let check_scheme kind ind =
-  try let _ = DeclareScheme.lookup_scheme kind ind in true
-  with Not_found -> false
+let lookup_scheme kind ind =
+  try Some (DeclareScheme.lookup_scheme kind ind) with Not_found -> None
+
+let check_scheme kind ind = Option.has_some (lookup_scheme kind ind)
 
 let define internal role id c poly univs =
   let id = compute_name internal id in
@@ -187,5 +188,3 @@ let define_individual_scheme kind mode names ind =
 
 let define_mutual_scheme kind mode names mind =
   ignore (define_mutual_scheme kind mode names mind)
-
-let lookup_scheme = DeclareScheme.lookup_scheme

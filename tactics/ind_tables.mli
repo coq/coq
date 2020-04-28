@@ -61,10 +61,8 @@ val define_mutual_scheme : mutual scheme_kind -> internal_flag (** internal *) -
 (** Main function to retrieve a scheme in the cache or to generate it *)
 val find_scheme : ?mode:internal_flag -> 'a scheme_kind -> inductive -> Constant.t * Evd.side_effects
 
-val check_scheme : 'a scheme_kind -> inductive -> bool
-
-(** Like [find_scheme] but fails when the scheme is not already in the cache *)
-val lookup_scheme : 'a scheme_kind -> inductive -> Constant.t
+(** Like [find_scheme] but does not generate a constant on the fly *)
+val lookup_scheme : 'a scheme_kind -> inductive -> Constant.t option
 
 val pr_scheme_kind : 'a scheme_kind -> Pp.t
 

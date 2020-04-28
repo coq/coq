@@ -248,8 +248,7 @@ let sym_scheme_kind =
 (**********************************************************************)
 
 let const_of_scheme kind env ind ctx =
-  let () = assert (check_scheme kind ind) in
-  let sym_scheme = lookup_scheme kind ind in
+  let sym_scheme = match lookup_scheme kind ind with Some cst -> cst | None -> assert false in
   let sym, ctx = with_context_set ctx
     (UnivGen.fresh_constant_instance (Global.env()) sym_scheme) in
     mkConstU sym, ctx
