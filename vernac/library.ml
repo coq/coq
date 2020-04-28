@@ -92,7 +92,7 @@ type summary_disk = {
 
 type library_t = {
   library_name : compilation_unit_name;
-  library_data : library_disk delayed;
+  library_data : library_disk;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digests : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t;
@@ -243,7 +243,7 @@ let mk_summary m = {
 let intern_from_file f =
   let ch = raw_intern_library f in
   let (lsd : seg_sum), digest_lsd = ObjFile.marshal_in_segment ch ~segment:"summary" in
-  let ((lmd : seg_lib delayed), digest_lmd) = in_delayed f ch ~segment:"library" in
+  let ((lmd : seg_lib), digest_lmd) = ObjFile.marshal_in_segment ch ~segment:"library" in
   let (univs : seg_univ option), digest_u = ObjFile.marshal_in_segment ch ~segment:"universes" in
   let ((del_opaque : seg_proofs delayed),_) = in_delayed f ch ~segment:"opaques" in
   ObjFile.close_in ch;
@@ -317,7 +317,7 @@ let native_name_from_filename f =
 *)
 
 let register_library m =
-  let l = fetch_delayed m.library_data in
+  let l = m.library_data in
   Declaremods.register_library
     m.library_name
     l.md_compiled
