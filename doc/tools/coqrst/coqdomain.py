@@ -472,8 +472,7 @@ class ProductionObject(CoqObject):
             op = "|"
             rhs = parts[1].strip()
         else:
-            nsplits = 2
-            parts = signature.split(maxsplit=nsplits)
+            parts = signature.split(maxsplit=2)
             if len(parts) != 3:
                 loc = os.path.basename(get_node_location(signode))
                 raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
@@ -1116,6 +1115,19 @@ class IndexXRefRole(XRefRole):
                 title = index.localname
         return title, target
 
+class StdGlossaryIndex(Index):
+    name, localname, shortname = "glossindex", "Glossary", "terms"
+
+    def generate(self, docnames=None):
+        content = defaultdict(list)
+
+        for ((type, itemname), (docname, anchor)) in self.domain.data['objects'].items():
+            if type == 'term':
+                entries = content[itemname[0].lower()]
+                entries.append([itemname, 0, docname, anchor, '', '', ''])
+        content = sorted(content.items())
+        return content, False
+
 def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """A grammar production not included in a ``productionlist`` directive.
 
@@ -1132,7 +1144,7 @@ def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, conte
     """
     #pylint: disable=dangerous-default-value, unused-argument
     env = inliner.document.settings.env
-    targetid = 'grammar-token-{}'.format(text)
+    targetid = nodes.make_id('grammar-token-{}'.format(text))
     target = nodes.target('', '', ids=[targetid])
     inliner.document.note_explicit_target(target)
     code = nodes.literal(rawtext, text, role=typ.lower())
@@ -1142,6 +1154,35 @@ def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, conte
     return [node], []
 
 GrammarProductionRole.role_name = "production"
+
+
+def GlossaryDefRole(typ, rawtext, text, lineno, inliner, options={}, content=[]):
+    """Marks the definition of a glossary term inline in the text.  Matching :term:`XXX`
+    constructs will link to it.  The term will also appear in the Glossary Index.
+
+    Example::
+
+       A :gdef:`prime` number is divisible only by itself and 1.
+    """
+    #pylint: disable=dangerous-default-value, unused-argument
+    env = inliner.document.settings.env
+    std = env.domaindata['std']['objects']
+    key = ('term', text)
+
+    if key in std:
+        MSG = 'Duplicate object: {}; other is at {}'
+        msg = MSG.format(text, env.doc2path(std[key][0]))
+        inliner.document.reporter.warning(msg, line=lineno)
+
+    targetid = nodes.make_id('term-{}'.format(text))
+    std[key] = (env.docname, targetid)
+    target = nodes.target('', '', ids=[targetid], names=[text])
+    inliner.document.note_explicit_target(target)
+    node = nodes.inline(rawtext, '', target, nodes.Text(text), classes=['term-defn'])
+    set_role_source_info(inliner, lineno, node)
+    return [node], []
+
+GlossaryDefRole.role_name = "gdef"
 
 class CoqDomain(Domain):
     """A domain to document Coq code.
@@ -1305,18 +1346,23 @@ COQ_ADDITIONAL_DIRECTIVES = [CoqtopDirective,
                              InferenceDirective,
                              PreambleDirective]
 
-COQ_ADDITIONAL_ROLES = [GrammarProductionRole]
+COQ_ADDITIONAL_ROLES = [GrammarProductionRole,
+                        GlossaryDefRole]
 
 def setup(app):
     """Register the Coq domain"""
 
     # A few sanity checks:
     subdomains = set(obj.subdomain for obj in CoqDomain.directives.values())
-    assert subdomains.issuperset(chain(*(idx.subdomains for idx in CoqDomain.indices)))
-    assert subdomains.issubset(CoqDomain.roles.keys())
+    found = set (obj for obj in chain(*(idx.subdomains for idx in CoqDomain.indices)))
+    assert subdomains.issuperset(found), "Missing subdomains: {}".format(found.difference(subdomains))
+
+    assert subdomains.issubset(CoqDomain.roles.keys()), \
+        "Missing from CoqDomain.roles: {}".format(subdomains.difference(CoqDomain.roles.keys()))
 
     # Add domain, directives, and roles
     app.add_domain(CoqDomain)
+    app.add_index_to_domain('std', StdGlossaryIndex)
 
     for role in COQ_ADDITIONAL_ROLES:
         app.add_role(role.role_name, role)

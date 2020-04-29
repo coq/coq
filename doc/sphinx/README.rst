@@ -358,6 +358,13 @@ In addition to the objects and directives above, the ``coqrst`` Sphinx plugin de
     <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_
     and reference its tokens using ``:token:`…```.
 
+``:gdef:`` Marks the definition of a glossary term inline in the text.  Matching :term:`XXX`
+    constructs will link to it.  The term will also appear in the Glossary Index.
+
+    Example::
+
+       A :gdef:`prime` number is divisible only by itself and 1.
+
 Common mistakes
 ===============
 
