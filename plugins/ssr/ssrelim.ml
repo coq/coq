@@ -448,9 +448,26 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   (* the elim tactic, with the eliminator and the predicated we computed *)
   let elim = project gl, elim in
   let seed =
+    let has_sep s = Str.string_match (Str.regexp ".+__.") (Id.to_string s) 0 in
+    let sep = Str.regexp_string "__" in
+    let split_at_sep s =
+      let s = Id.to_string s in
+      try
+        let n = Str.search_forward sep s 0 in
+        Id.of_string (String.sub s 0 n),
+        Id.of_string (String.sub s (n+2) (String.length s -n -2))
+      with Not_found -> assert false in
+    let rec interp_name_hints = function
+      | [] -> []
+      | Name.Name n :: Name.Anonymous :: rest when has_sep n ->
+          let n1, n2 = split_at_sep n in
+          Name.Name n1 :: interp_name_hints (Name.Name n2 :: rest)
+      | x :: xs -> x :: interp_name_hints xs in
     Array.map (fun ty ->
+      ppdebug(lazy Pp.(str"seeding_from=" ++ pp_term gl ty));
+
     let ctx,_ = EConstr.decompose_prod_assum (project gl) ty in
-    CList.rev_map Context.Rel.Declaration.get_name ctx) seed in
+    interp_name_hints @@ CList.rev_map Context.Rel.Declaration.get_name ctx) seed in
   (elim,seed,clr,is_rec,gen_eq_tac), orig_gl
 
   end >>= fun (elim, seed,clr,is_rec,gen_eq_tac) ->

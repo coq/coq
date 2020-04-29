@@ -654,3 +654,26 @@ End Exports.
 
 End NonPropType.
 Export NonPropType.Exports.
+
+(*****************************************************************************)
+
+(** Helper notation for giving names to induction principles. Example
+
+     Inductive p : t -> Prop :=
+      | Rule_for_K x t :
+                        q x    # q_x
+                        p t    # p_t__IHt
+                      (* ----*)
+                        p (K t)
+
+    This inductive seeds the elim tactic with names (for the Rule_for_K
+    branch): x t q_x p_t IHt. Elim interprets __ as a separator, so that
+    one can seed names for inductive hypotheses.
+
+    In order to enable this notation one has to Open Scope ssrelim_scope.
+
+*)
+
+Declare Scope ssrelim_scope.
+Notation "S # H T" := (forall H : S, T)
+  (H ident, T at level 200, at level 99, only parsing) : ssrelim_scope.
