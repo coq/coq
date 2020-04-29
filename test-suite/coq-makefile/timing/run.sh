@@ -55,10 +55,12 @@ TO_SED_IN_BOTH=(
 TO_SED_IN_PER_FILE=(
     -e s'/  */ /g' # unclear whether this is actually needed for per-file timing; it's been here from the start
     -e s'/\(Total.*\)-\(.*\)-/\1+\2+/g' # Overall time in the per-file timing diff should be around 0; if it comes out negative, we remove the sign
+    -e s'/- ko/ko/g' # for small amounts of memory, signs can flip, so we remove mem signs
 )
 
 TO_SED_IN_PER_LINE=(
     -e s'/  */ /g' # Sometimes 0 will show up as 0m00.s, sometimes it'll end up being more like 0m00.001s; we must strip out the spaces that result from left-aligning numbers of different widths based on how many digits Coq's [-time] gives
+    -e s'/^ *//g' # the number of leading spaces can differ, e.g., as in the difference between ' 0m13.53s' vs '0m13.582s'
     )
 
 for file in time-of-build-before.log time-of-build-after.log time-of-build-both.log; do

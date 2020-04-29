@@ -251,10 +251,11 @@ file timing data:
 
 + ``pretty-timed``
     this target stores the output of ``make TIMED=1`` into
-    ``time-of-build.log``, and displays a table of the times, sorted from
-    slowest to fastest, which is also stored in ``time-of-build-pretty.log``.
-    If you want to construct the ``log`` for targets other than the default
-    one, you can pass them via the variable ``TGTS``, e.g., ``make pretty-timed
+    ``time-of-build.log``, and displays a table of the times and peak
+    memory usages, sorted from slowest to fastest, which is also
+    stored in ``time-of-build-pretty.log``.  If you want to construct
+    the ``log`` for targets other than the default one, you can pass
+    them via the variable ``TGTS``, e.g., ``make pretty-timed
     TGTS="a.vo b.vo"``.
 
     .. note::
@@ -271,24 +272,29 @@ file timing data:
        ``TIMING_REAL=1`` to ``make pretty-timed`` will use real times
        rather than user times in the table.
 
+    .. note::
+       Passing ``TIMING_INCLUDE_MEM=0`` to ``make`` will result in the
+       tables not including peak memory usage information.  Passing
+       ``TIMING_SORT_BY_MEM=1`` to ``make`` will result in the tables
+       be sorted by peak memory usage rather than by the time taken.
+
     .. example::
 
       For example, the output of ``make pretty-timed`` may look like this:
 
       ::
 
-        COQDEP Fast.v
-        COQDEP Slow.v
+        COQDEP VFILES
         COQC Slow.v
-        Slow.vo (user: 0.36 mem: 393912 ko)
+        Slow.vo (real: 0.52, user: 0.39, sys: 0.12, mem: 394648 ko)
         COQC Fast.v
-        Fast.vo (user: 0.05 mem: 45992 ko)
-        Time     | File Name
-        --------------------
-        0m00.41s | Total
-        --------------------
-        0m00.36s | Slow.vo
-        0m00.05s | Fast.vo
+        Fast.vo (real: 0.06, user: 0.02, sys: 0.03, mem: 56980 ko)
+            Time |  Peak Mem | File Name
+        --------------------------------------------
+        0m00.41s | 394648 ko | Total Time / Peak Mem
+        --------------------------------------------
+        0m00.39s | 394648 ko | Slow.vo
+        0m00.02s |  56980 ko | Fast.vo
 
 
 + ``print-pretty-timed-diff``
@@ -325,7 +331,15 @@ file timing data:
 
     .. note::
        Just like ``pretty-timed``, this table defaults to using user
-       times.  Pass ``TIMING_REAL=1`` to ``make`` on the command line to show real times instead.
+       times.  Pass ``TIMING_REAL=1`` to ``make`` on the command line
+       to show real times instead.
+
+    .. note::
+       Just like ``pretty-timed``, passing ``TIMING_INCLUDE_MEM=0`` to
+       ``make`` will result in the tables not including peak memory
+       usage information.  Passing ``TIMING_SORT_BY_MEM=1`` to
+       ``make`` will result in the tables be sorted by peak memory
+       usage rather than by the time taken.
 
     .. example::
 
@@ -334,12 +348,12 @@ file timing data:
 
         ::
 
-          After    | File Name | Before   || Change    | % Change
-          --------------------------------------------------------
-          0m00.39s | Total     | 0m00.35s || +0m00.03s | +11.42%
-          --------------------------------------------------------
-          0m00.37s | Slow.vo   | 0m00.01s || +0m00.36s | +3600.00%
-          0m00.02s | Fast.vo   | 0m00.34s || -0m00.32s | -94.11%
+             After |  Peak Mem | File Name             |   Before |  Peak Mem ||    Change || Change (mem) |  % Change | % Change (mem)
+          -----------------------------------------------------------------------------------------------------------------------------
+          0m00.43s | 394700 ko | Total Time / Peak Mem | 0m00.41s | 394648 ko || +0m00.01s ||        52 ko |    +4.87% |         +0.01%
+          -----------------------------------------------------------------------------------------------------------------------------
+          0m00.39s | 394700 ko | Fast.vo               | 0m00.02s |  56980 ko || +0m00.37s ||    337720 ko | +1850.00% |       +592.69%
+          0m00.04s |  56772 ko | Slow.vo               | 0m00.39s | 394648 ko || -0m00.35s ||   -337876 ko |   -89.74% |        -85.61%
 
 
 The following targets and ``Makefile`` variables allow collection of per-

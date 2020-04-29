@@ -1,0 +1,1760 @@
+COQDEP src/Compilers/Z/Bounds/Pipeline/ReflectiveTactics.v
+COQDEP src/Compilers/Z/Bounds/Pipeline/Definition.v
+/home/jgross/.local64/coq/coq-master/bin/coq_makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-old
+COQ_MAKEFILE -f _CoqProject > Makefile.coq
+make --no-print-directory -C coqprime
+make[1]: Nothing to be done for 'all'.
+ECHO > _CoqProject
+COQC src/Compilers/Z/Bounds/Pipeline/Definition.v
+src/Compilers/Z/Bounds/Pipeline/Definition (real: 7.33, user: 7.18, sys: 0.14, mem: 574388 ko)
+COQC src/Compilers/Z/Bounds/Pipeline/ReflectiveTactics.v
+src/Compilers/Z/Bounds/Pipeline/ReflectiveTactics (real: 1.93, user: 1.72, sys: 0.20, mem: 544172 ko)
+COQC src/Compilers/Z/Bounds/Pipeline.v
+src/Compilers/Z/Bounds/Pipeline (real: 1.38, user: 1.19, sys: 0.16, mem: 539808 ko)
+COQC src/Specific/Framework/SynthesisFramework.v
+src/Specific/Framework/SynthesisFramework (real: 1.85, user: 1.67, sys: 0.17, mem: 646300 ko)
+COQC src/Specific/X25519/C64/Synthesis.v
+src/Specific/X25519/C64/Synthesis (real: 11.15, user: 10.37, sys: 0.18, mem: 687760 ko)
+COQC src/Specific/NISTP256/AMD64/Synthesis.v
+src/Specific/NISTP256/AMD64/Synthesis (real: 13.45, user: 12.55, sys: 0.19, mem: 668216 ko)
+COQC src/Specific/X25519/C64/feadd.v
+Finished transaction in 2.814 secs (2.624u,0.s) (successful)
+total time:      2.576s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.2%  97.4%       1    2.508s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  66.9%       1    1.724s
+─ReflectiveTactics.solve_side_conditions   0.0%  65.5%       1    1.688s
+─ReflectiveTactics.solve_post_reified_si   1.2%  37.0%       1    0.952s
+─Glue.refine_to_reflective_glue' -------   0.0%  30.3%       1    0.780s
+─ReflectiveTactics.do_reify ------------   0.0%  28.6%       1    0.736s
+─Reify.Reify_rhs_gen -------------------   2.2%  26.6%       1    0.684s
+─UnifyAbstractReflexivity.unify_transfor  20.3%  24.1%       7    0.164s
+─Glue.zrange_to_reflective -------------   0.0%  20.3%       1    0.524s
+─Glue.zrange_to_reflective_goal --------   9.5%  15.2%       1    0.392s
+─Reify.do_reify_abs_goal ---------------  13.7%  13.8%       2    0.356s
+─Reify.do_reifyf_goal ------------------  12.4%  12.6%      16    0.324s
+─ReflectiveTactics.unify_abstract_cbv_in   8.4%  11.2%       1    0.288s
+─unify (constr) (constr) ---------------   5.7%   5.7%       6    0.072s
+─Glue.pattern_sig_sig_assoc ------------   0.0%   5.4%       1    0.140s
+─assert (H : is_bounded_by' bounds (map'   4.8%   5.1%       2    0.072s
+─Glue.pattern_proj1_sig_in_sig ---------   1.7%   5.1%       1    0.132s
+─pose proof  (pf   :   Interpretation.Bo   3.7%   3.7%       1    0.096s
+─Glue.split_BoundedWordToZ -------------   0.3%   3.7%       1    0.096s
+─destruct_sig --------------------------   0.2%   3.3%       4    0.044s
+─destruct x ----------------------------   3.1%   3.1%       4    0.036s
+─eexact --------------------------------   3.0%   3.0%      18    0.008s
+─clearbody (ne_var_list) ---------------   3.0%   3.0%       4    0.060s
+─prove_interp_compile_correct ----------   0.0%   2.8%       1    0.072s
+─synthesize ----------------------------   0.0%   2.6%       1    0.068s
+─rewrite ?EtaInterp.InterpExprEta ------   2.5%   2.5%       1    0.064s
+─ClearbodyAll.clearbody_all ------------   0.0%   2.3%       2    0.060s
+─rewrite H -----------------------------   2.2%   2.2%       1    0.056s
+─reflexivity ---------------------------   2.2%   2.2%       7    0.032s
+─Reify.transitivity_tt -----------------   0.0%   2.2%       2    0.032s
+─transitivity --------------------------   2.0%   2.0%       5    0.024s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.2%  97.4%       1    2.508s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  66.9%       1    1.724s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  65.5%       1    1.688s
+ │ ├─ReflectiveTactics.solve_post_reifie   1.2%  37.0%       1    0.952s
+ │ │ ├─UnifyAbstractReflexivity.unify_tr  20.3%  24.1%       7    0.164s
+ │ │ │└unify (constr) (constr) ---------   3.0%   3.0%       5    0.028s
+ │ │ └─ReflectiveTactics.unify_abstract_   8.4%  11.2%       1    0.288s
+ │ │  └unify (constr) (constr) ---------   2.8%   2.8%       1    0.072s
+ │ └─ReflectiveTactics.do_reify --------   0.0%  28.6%       1    0.736s
+ │  └Reify.Reify_rhs_gen ---------------   2.2%  26.6%       1    0.684s
+ │   ├─Reify.do_reify_abs_goal ---------  13.7%  13.8%       2    0.356s
+ │   │└Reify.do_reifyf_goal ------------  12.4%  12.6%      16    0.324s
+ │   │└eexact --------------------------   2.6%   2.6%      16    0.008s
+ │   ├─prove_interp_compile_correct ----   0.0%   2.8%       1    0.072s
+ │   │└rewrite ?EtaInterp.InterpExprEta    2.5%   2.5%       1    0.064s
+ │   ├─rewrite H -----------------------   2.2%   2.2%       1    0.056s
+ │   └─Reify.transitivity_tt -----------   0.0%   2.2%       2    0.032s
+ └─Glue.refine_to_reflective_glue' -----   0.0%  30.3%       1    0.780s
+   ├─Glue.zrange_to_reflective ---------   0.0%  20.3%       1    0.524s
+   │ ├─Glue.zrange_to_reflective_goal --   9.5%  15.2%       1    0.392s
+   │ │└pose proof  (pf   :   Interpretat   3.7%   3.7%       1    0.096s
+   │ └─assert (H : is_bounded_by' bounds   4.8%   5.1%       2    0.072s
+   ├─Glue.pattern_sig_sig_assoc --------   0.0%   5.4%       1    0.140s
+   │└Glue.pattern_proj1_sig_in_sig -----   1.7%   5.1%       1    0.132s
+   │└ClearbodyAll.clearbody_all --------   0.0%   2.3%       2    0.060s
+   │└clearbody (ne_var_list) -----------   2.3%   2.3%       1    0.060s
+   └─Glue.split_BoundedWordToZ ---------   0.3%   3.7%       1    0.096s
+    └destruct_sig ----------------------   0.2%   3.3%       4    0.044s
+    └destruct x ------------------------   2.5%   2.5%       2    0.036s
+─synthesize ----------------------------   0.0%   2.6%       1    0.068s
+
+Finished transaction in 5.021 secs (4.636u,0.s) (successful)
+Closed under the global context
+total time:      2.576s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.2%  97.4%       1    2.508s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  66.9%       1    1.724s
+─ReflectiveTactics.solve_side_conditions   0.0%  65.5%       1    1.688s
+─ReflectiveTactics.solve_post_reified_si   1.2%  37.0%       1    0.952s
+─Glue.refine_to_reflective_glue' -------   0.0%  30.3%       1    0.780s
+─ReflectiveTactics.do_reify ------------   0.0%  28.6%       1    0.736s
+─Reify.Reify_rhs_gen -------------------   2.2%  26.6%       1    0.684s
+─UnifyAbstractReflexivity.unify_transfor  20.3%  24.1%       7    0.164s
+─Glue.zrange_to_reflective -------------   0.0%  20.3%       1    0.524s
+─Glue.zrange_to_reflective_goal --------   9.5%  15.2%       1    0.392s
+─Reify.do_reify_abs_goal ---------------  13.7%  13.8%       2    0.356s
+─Reify.do_reifyf_goal ------------------  12.4%  12.6%      16    0.324s
+─ReflectiveTactics.unify_abstract_cbv_in   8.4%  11.2%       1    0.288s
+─unify (constr) (constr) ---------------   5.7%   5.7%       6    0.072s
+─Glue.pattern_sig_sig_assoc ------------   0.0%   5.4%       1    0.140s
+─assert (H : is_bounded_by' bounds (map'   4.8%   5.1%       2    0.072s
+─Glue.pattern_proj1_sig_in_sig ---------   1.7%   5.1%       1    0.132s
+─pose proof  (pf   :   Interpretation.Bo   3.7%   3.7%       1    0.096s
+─Glue.split_BoundedWordToZ -------------   0.3%   3.7%       1    0.096s
+─destruct_sig --------------------------   0.2%   3.3%       4    0.044s
+─destruct x ----------------------------   3.1%   3.1%       4    0.036s
+─eexact --------------------------------   3.0%   3.0%      18    0.008s
+─clearbody (ne_var_list) ---------------   3.0%   3.0%       4    0.060s
+─prove_interp_compile_correct ----------   0.0%   2.8%       1    0.072s
+─synthesize ----------------------------   0.0%   2.6%       1    0.068s
+─rewrite ?EtaInterp.InterpExprEta ------   2.5%   2.5%       1    0.064s
+─ClearbodyAll.clearbody_all ------------   0.0%   2.3%       2    0.060s
+─rewrite H -----------------------------   2.2%   2.2%       1    0.056s
+─reflexivity ---------------------------   2.2%   2.2%       7    0.032s
+─Reify.transitivity_tt -----------------   0.0%   2.2%       2    0.032s
+─transitivity --------------------------   2.0%   2.0%       5    0.024s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.2%  97.4%       1    2.508s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  66.9%       1    1.724s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  65.5%       1    1.688s
+ │ ├─ReflectiveTactics.solve_post_reifie   1.2%  37.0%       1    0.952s
+ │ │ ├─UnifyAbstractReflexivity.unify_tr  20.3%  24.1%       7    0.164s
+ │ │ │└unify (constr) (constr) ---------   3.0%   3.0%       5    0.028s
+ │ │ └─ReflectiveTactics.unify_abstract_   8.4%  11.2%       1    0.288s
+ │ │  └unify (constr) (constr) ---------   2.8%   2.8%       1    0.072s
+ │ └─ReflectiveTactics.do_reify --------   0.0%  28.6%       1    0.736s
+ │  └Reify.Reify_rhs_gen ---------------   2.2%  26.6%       1    0.684s
+ │   ├─Reify.do_reify_abs_goal ---------  13.7%  13.8%       2    0.356s
+ │   │└Reify.do_reifyf_goal ------------  12.4%  12.6%      16    0.324s
+ │   │└eexact --------------------------   2.6%   2.6%      16    0.008s
+ │   ├─prove_interp_compile_correct ----   0.0%   2.8%       1    0.072s
+ │   │└rewrite ?EtaInterp.InterpExprEta    2.5%   2.5%       1    0.064s
+ │   ├─rewrite H -----------------------   2.2%   2.2%       1    0.056s
+ │   └─Reify.transitivity_tt -----------   0.0%   2.2%       2    0.032s
+ └─Glue.refine_to_reflective_glue' -----   0.0%  30.3%       1    0.780s
+   ├─Glue.zrange_to_reflective ---------   0.0%  20.3%       1    0.524s
+   │ ├─Glue.zrange_to_reflective_goal --   9.5%  15.2%       1    0.392s
+   │ │└pose proof  (pf   :   Interpretat   3.7%   3.7%       1    0.096s
+   │ └─assert (H : is_bounded_by' bounds   4.8%   5.1%       2    0.072s
+   ├─Glue.pattern_sig_sig_assoc --------   0.0%   5.4%       1    0.140s
+   │└Glue.pattern_proj1_sig_in_sig -----   1.7%   5.1%       1    0.132s
+   │└ClearbodyAll.clearbody_all --------   0.0%   2.3%       2    0.060s
+   │└clearbody (ne_var_list) -----------   2.3%   2.3%       1    0.060s
+   └─Glue.split_BoundedWordToZ ---------   0.3%   3.7%       1    0.096s
+    └destruct_sig ----------------------   0.2%   3.3%       4    0.044s
+    └destruct x ------------------------   2.5%   2.5%       2    0.036s
+─synthesize ----------------------------   0.0%   2.6%       1    0.068s
+
+src/Specific/X25519/C64/feadd (real: 22.81, user: 20.93, sys: 0.25, mem: 766300 ko)
+COQC src/Specific/X25519/C64/fecarry.v
+Finished transaction in 4.343 secs (4.016u,0.004s) (successful)
+total time:      3.976s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  99.0%       1    3.936s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  87.9%       1    3.496s
+─ReflectiveTactics.solve_side_conditions   0.0%  86.9%       1    3.456s
+─ReflectiveTactics.do_reify ------------   0.0%  56.9%       1    2.264s
+─Reify.Reify_rhs_gen -------------------   1.8%  56.2%       1    2.236s
+─Reify.do_reify_abs_goal ---------------  36.1%  36.5%       2    1.452s
+─Reify.do_reifyf_goal ------------------  34.8%  35.1%      29    1.396s
+─ReflectiveTactics.solve_post_reified_si   0.6%  30.0%       1    1.192s
+─UnifyAbstractReflexivity.unify_transfor  17.7%  21.7%       7    0.240s
+─Glue.refine_to_reflective_glue' -------   0.0%  11.1%       1    0.440s
+─eexact --------------------------------  10.9%  10.9%      31    0.024s
+─ReflectiveTactics.unify_abstract_cbv_in   5.2%   7.3%       1    0.292s
+─Glue.zrange_to_reflective -------------   0.0%   7.1%       1    0.284s
+─prove_interp_compile_correct ----------   0.0%   5.7%       1    0.228s
+─Glue.zrange_to_reflective_goal --------   4.3%   5.5%       1    0.220s
+─unify (constr) (constr) ---------------   5.3%   5.3%       6    0.084s
+─rewrite ?EtaInterp.InterpExprEta ------   5.2%   5.2%       1    0.208s
+─rewrite H -----------------------------   3.5%   3.5%       1    0.140s
+─tac -----------------------------------   1.9%   2.6%       2    0.104s
+─reflexivity ---------------------------   2.2%   2.2%       7    0.028s
+─Reify.transitivity_tt -----------------   0.0%   2.2%       2    0.056s
+─transitivity --------------------------   2.0%   2.0%       5    0.048s
+─Glue.split_BoundedWordToZ -------------   0.1%   2.0%       1    0.080s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  99.0%       1    3.936s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  87.9%       1    3.496s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  86.9%       1    3.456s
+ │ ├─ReflectiveTactics.do_reify --------   0.0%  56.9%       1    2.264s
+ │ │└Reify.Reify_rhs_gen ---------------   1.8%  56.2%       1    2.236s
+ │ │ ├─Reify.do_reify_abs_goal ---------  36.1%  36.5%       2    1.452s
+ │ │ │└Reify.do_reifyf_goal ------------  34.8%  35.1%      29    1.396s
+ │ │ │└eexact --------------------------  10.1%  10.1%      29    0.024s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   5.7%       1    0.228s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    5.2%   5.2%       1    0.208s
+ │ │ ├─rewrite H -----------------------   3.5%   3.5%       1    0.140s
+ │ │ ├─tac -----------------------------   1.9%   2.6%       1    0.104s
+ │ │ └─Reify.transitivity_tt -----------   0.0%   2.2%       2    0.056s
+ │ │  └transitivity --------------------   2.0%   2.0%       4    0.048s
+ │ └─ReflectiveTactics.solve_post_reifie   0.6%  30.0%       1    1.192s
+ │   ├─UnifyAbstractReflexivity.unify_tr  17.7%  21.7%       7    0.240s
+ │   │└unify (constr) (constr) ---------   3.2%   3.2%       5    0.048s
+ │   └─ReflectiveTactics.unify_abstract_   5.2%   7.3%       1    0.292s
+ │    └unify (constr) (constr) ---------   2.1%   2.1%       1    0.084s
+ └─Glue.refine_to_reflective_glue' -----   0.0%  11.1%       1    0.440s
+   ├─Glue.zrange_to_reflective ---------   0.0%   7.1%       1    0.284s
+   │└Glue.zrange_to_reflective_goal ----   4.3%   5.5%       1    0.220s
+   └─Glue.split_BoundedWordToZ ---------   0.1%   2.0%       1    0.080s
+
+Finished transaction in 7.078 secs (6.728u,0.s) (successful)
+Closed under the global context
+total time:      3.976s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  99.0%       1    3.936s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  87.9%       1    3.496s
+─ReflectiveTactics.solve_side_conditions   0.0%  86.9%       1    3.456s
+─ReflectiveTactics.do_reify ------------   0.0%  56.9%       1    2.264s
+─Reify.Reify_rhs_gen -------------------   1.8%  56.2%       1    2.236s
+─Reify.do_reify_abs_goal ---------------  36.1%  36.5%       2    1.452s
+─Reify.do_reifyf_goal ------------------  34.8%  35.1%      29    1.396s
+─ReflectiveTactics.solve_post_reified_si   0.6%  30.0%       1    1.192s
+─UnifyAbstractReflexivity.unify_transfor  17.7%  21.7%       7    0.240s
+─Glue.refine_to_reflective_glue' -------   0.0%  11.1%       1    0.440s
+─eexact --------------------------------  10.9%  10.9%      31    0.024s
+─ReflectiveTactics.unify_abstract_cbv_in   5.2%   7.3%       1    0.292s
+─Glue.zrange_to_reflective -------------   0.0%   7.1%       1    0.284s
+─prove_interp_compile_correct ----------   0.0%   5.7%       1    0.228s
+─Glue.zrange_to_reflective_goal --------   4.3%   5.5%       1    0.220s
+─unify (constr) (constr) ---------------   5.3%   5.3%       6    0.084s
+─rewrite ?EtaInterp.InterpExprEta ------   5.2%   5.2%       1    0.208s
+─rewrite H -----------------------------   3.5%   3.5%       1    0.140s
+─tac -----------------------------------   1.9%   2.6%       2    0.104s
+─reflexivity ---------------------------   2.2%   2.2%       7    0.028s
+─Reify.transitivity_tt -----------------   0.0%   2.2%       2    0.056s
+─transitivity --------------------------   2.0%   2.0%       5    0.048s
+─Glue.split_BoundedWordToZ -------------   0.1%   2.0%       1    0.080s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  99.0%       1    3.936s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  87.9%       1    3.496s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  86.9%       1    3.456s
+ │ ├─ReflectiveTactics.do_reify --------   0.0%  56.9%       1    2.264s
+ │ │└Reify.Reify_rhs_gen ---------------   1.8%  56.2%       1    2.236s
+ │ │ ├─Reify.do_reify_abs_goal ---------  36.1%  36.5%       2    1.452s
+ │ │ │└Reify.do_reifyf_goal ------------  34.8%  35.1%      29    1.396s
+ │ │ │└eexact --------------------------  10.1%  10.1%      29    0.024s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   5.7%       1    0.228s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    5.2%   5.2%       1    0.208s
+ │ │ ├─rewrite H -----------------------   3.5%   3.5%       1    0.140s
+ │ │ ├─tac -----------------------------   1.9%   2.6%       1    0.104s
+ │ │ └─Reify.transitivity_tt -----------   0.0%   2.2%       2    0.056s
+ │ │  └transitivity --------------------   2.0%   2.0%       4    0.048s
+ │ └─ReflectiveTactics.solve_post_reifie   0.6%  30.0%       1    1.192s
+ │   ├─UnifyAbstractReflexivity.unify_tr  17.7%  21.7%       7    0.240s
+ │   │└unify (constr) (constr) ---------   3.2%   3.2%       5    0.048s
+ │   └─ReflectiveTactics.unify_abstract_   5.2%   7.3%       1    0.292s
+ │    └unify (constr) (constr) ---------   2.1%   2.1%       1    0.084s
+ └─Glue.refine_to_reflective_glue' -----   0.0%  11.1%       1    0.440s
+   ├─Glue.zrange_to_reflective ---------   0.0%   7.1%       1    0.284s
+   │└Glue.zrange_to_reflective_goal ----   4.3%   5.5%       1    0.220s
+   └─Glue.split_BoundedWordToZ ---------   0.1%   2.0%       1    0.080s
+
+src/Specific/X25519/C64/fecarry (real: 27.11, user: 24.99, sys: 0.21, mem: 786052 ko)
+COQC src/Specific/solinas32_2e255m765_12limbs/Synthesis.v
+src/Specific/solinas32_2e255m765_12limbs/Synthesis (real: 40.13, user: 36.92, sys: 0.26, mem: 728464 ko)
+COQC src/Specific/solinas32_2e255m765_13limbs/Synthesis.v
+src/Specific/solinas32_2e255m765_13limbs/Synthesis (real: 49.44, user: 45.75, sys: 0.18, mem: 744240 ko)
+COQC src/Specific/X25519/C64/femul.v
+Finished transaction in 8.415 secs (7.664u,0.015s) (successful)
+total time:      7.616s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  94.8%       1    7.220s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  85.0%       1    6.476s
+─ReflectiveTactics.solve_side_conditions   0.0%  84.2%       1    6.416s
+─ReflectiveTactics.do_reify ------------   0.0%  50.3%       1    3.832s
+─Reify.Reify_rhs_gen -------------------   1.8%  49.4%       1    3.760s
+─ReflectiveTactics.solve_post_reified_si   0.5%  33.9%       1    2.584s
+─Reify.do_reify_abs_goal ---------------  31.1%  31.4%       2    2.392s
+─Reify.do_reifyf_goal ------------------  30.0%  30.3%      58    1.528s
+─UnifyAbstractReflexivity.unify_transfor  22.1%  27.3%       7    0.600s
+─Glue.refine_to_reflective_glue' -------   0.0%   9.8%       1    0.744s
+─eexact --------------------------------   8.2%   8.2%      60    0.024s
+─Glue.zrange_to_reflective -------------   0.1%   6.8%       1    0.516s
+─unify (constr) (constr) ---------------   5.9%   5.9%       6    0.124s
+─prove_interp_compile_correct ----------   0.0%   5.8%       1    0.444s
+─ReflectiveTactics.unify_abstract_cbv_in   3.9%   5.7%       1    0.432s
+─rewrite ?EtaInterp.InterpExprEta ------   5.4%   5.4%       1    0.408s
+─synthesize ----------------------------   0.0%   5.2%       1    0.396s
+─Glue.zrange_to_reflective_goal --------   3.0%   5.0%       1    0.384s
+─IntegrationTestTemporaryMiscCommon.do_r   0.1%   4.8%       1    0.364s
+─change G' -----------------------------   3.9%   3.9%       1    0.300s
+─rewrite H -----------------------------   3.0%   3.0%       1    0.232s
+─tac -----------------------------------   1.5%   2.3%       2    0.176s
+─Reify.transitivity_tt -----------------   0.0%   2.1%       2    0.092s
+─reflexivity ---------------------------   2.0%   2.0%       7    0.052s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  94.8%       1    7.220s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  85.0%       1    6.476s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  84.2%       1    6.416s
+ │ ├─ReflectiveTactics.do_reify --------   0.0%  50.3%       1    3.832s
+ │ │└Reify.Reify_rhs_gen ---------------   1.8%  49.4%       1    3.760s
+ │ │ ├─Reify.do_reify_abs_goal ---------  31.1%  31.4%       2    2.392s
+ │ │ │└Reify.do_reifyf_goal ------------  30.0%  30.3%      58    1.528s
+ │ │ │└eexact --------------------------   7.6%   7.6%      58    0.020s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   5.8%       1    0.444s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    5.4%   5.4%       1    0.408s
+ │ │ ├─rewrite H -----------------------   3.0%   3.0%       1    0.232s
+ │ │ ├─tac -----------------------------   1.5%   2.3%       1    0.176s
+ │ │ └─Reify.transitivity_tt -----------   0.0%   2.1%       2    0.092s
+ │ └─ReflectiveTactics.solve_post_reifie   0.5%  33.9%       1    2.584s
+ │   ├─UnifyAbstractReflexivity.unify_tr  22.1%  27.3%       7    0.600s
+ │   │└unify (constr) (constr) ---------   4.3%   4.3%       5    0.096s
+ │   └─ReflectiveTactics.unify_abstract_   3.9%   5.7%       1    0.432s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   9.8%       1    0.744s
+  └Glue.zrange_to_reflective -----------   0.1%   6.8%       1    0.516s
+  └Glue.zrange_to_reflective_goal ------   3.0%   5.0%       1    0.384s
+─synthesize ----------------------------   0.0%   5.2%       1    0.396s
+└IntegrationTestTemporaryMiscCommon.do_r   0.1%   4.8%       1    0.364s
+└change G' -----------------------------   3.9%   3.9%       1    0.300s
+
+Finished transaction in 14.616 secs (13.528u,0.008s) (successful)
+Closed under the global context
+total time:      7.616s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  94.8%       1    7.220s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  85.0%       1    6.476s
+─ReflectiveTactics.solve_side_conditions   0.0%  84.2%       1    6.416s
+─ReflectiveTactics.do_reify ------------   0.0%  50.3%       1    3.832s
+─Reify.Reify_rhs_gen -------------------   1.8%  49.4%       1    3.760s
+─ReflectiveTactics.solve_post_reified_si   0.5%  33.9%       1    2.584s
+─Reify.do_reify_abs_goal ---------------  31.1%  31.4%       2    2.392s
+─Reify.do_reifyf_goal ------------------  30.0%  30.3%      58    1.528s
+─UnifyAbstractReflexivity.unify_transfor  22.1%  27.3%       7    0.600s
+─Glue.refine_to_reflective_glue' -------   0.0%   9.8%       1    0.744s
+─eexact --------------------------------   8.2%   8.2%      60    0.024s
+─Glue.zrange_to_reflective -------------   0.1%   6.8%       1    0.516s
+─unify (constr) (constr) ---------------   5.9%   5.9%       6    0.124s
+─prove_interp_compile_correct ----------   0.0%   5.8%       1    0.444s
+─ReflectiveTactics.unify_abstract_cbv_in   3.9%   5.7%       1    0.432s
+─rewrite ?EtaInterp.InterpExprEta ------   5.4%   5.4%       1    0.408s
+─synthesize ----------------------------   0.0%   5.2%       1    0.396s
+─Glue.zrange_to_reflective_goal --------   3.0%   5.0%       1    0.384s
+─IntegrationTestTemporaryMiscCommon.do_r   0.1%   4.8%       1    0.364s
+─change G' -----------------------------   3.9%   3.9%       1    0.300s
+─rewrite H -----------------------------   3.0%   3.0%       1    0.232s
+─tac -----------------------------------   1.5%   2.3%       2    0.176s
+─Reify.transitivity_tt -----------------   0.0%   2.1%       2    0.092s
+─reflexivity ---------------------------   2.0%   2.0%       7    0.052s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  94.8%       1    7.220s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  85.0%       1    6.476s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  84.2%       1    6.416s
+ │ ├─ReflectiveTactics.do_reify --------   0.0%  50.3%       1    3.832s
+ │ │└Reify.Reify_rhs_gen ---------------   1.8%  49.4%       1    3.760s
+ │ │ ├─Reify.do_reify_abs_goal ---------  31.1%  31.4%       2    2.392s
+ │ │ │└Reify.do_reifyf_goal ------------  30.0%  30.3%      58    1.528s
+ │ │ │└eexact --------------------------   7.6%   7.6%      58    0.020s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   5.8%       1    0.444s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    5.4%   5.4%       1    0.408s
+ │ │ ├─rewrite H -----------------------   3.0%   3.0%       1    0.232s
+ │ │ ├─tac -----------------------------   1.5%   2.3%       1    0.176s
+ │ │ └─Reify.transitivity_tt -----------   0.0%   2.1%       2    0.092s
+ │ └─ReflectiveTactics.solve_post_reifie   0.5%  33.9%       1    2.584s
+ │   ├─UnifyAbstractReflexivity.unify_tr  22.1%  27.3%       7    0.600s
+ │   │└unify (constr) (constr) ---------   4.3%   4.3%       5    0.096s
+ │   └─ReflectiveTactics.unify_abstract_   3.9%   5.7%       1    0.432s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   9.8%       1    0.744s
+  └Glue.zrange_to_reflective -----------   0.1%   6.8%       1    0.516s
+  └Glue.zrange_to_reflective_goal ------   3.0%   5.0%       1    0.384s
+─synthesize ----------------------------   0.0%   5.2%       1    0.396s
+└IntegrationTestTemporaryMiscCommon.do_r   0.1%   4.8%       1    0.364s
+└change G' -----------------------------   3.9%   3.9%       1    0.300s
+
+src/Specific/X25519/C64/femul (real: 39.72, user: 36.32, sys: 0.26, mem: 825448 ko)
+COQC src/Specific/X25519/C64/feaddDisplay > src/Specific/X25519/C64/feaddDisplay.log
+COQC src/Specific/X25519/C64/fecarryDisplay > src/Specific/X25519/C64/fecarryDisplay.log
+COQC src/Specific/X25519/C64/fesub.v
+Finished transaction in 3.513 secs (3.211u,0.s) (successful)
+total time:      3.164s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  97.6%       1    3.088s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  74.1%       1    2.344s
+─ReflectiveTactics.solve_side_conditions   0.0%  72.9%       1    2.308s
+─ReflectiveTactics.do_reify ------------   0.0%  38.6%       1    1.220s
+─Reify.Reify_rhs_gen -------------------   1.5%  37.2%       1    1.176s
+─ReflectiveTactics.solve_post_reified_si   0.9%  34.4%       1    1.088s
+─UnifyAbstractReflexivity.unify_transfor  19.2%  23.9%       7    0.204s
+─Glue.refine_to_reflective_glue' -------   0.0%  23.5%       1    0.744s
+─Reify.do_reify_abs_goal ---------------  19.2%  19.5%       2    0.616s
+─Reify.do_reifyf_goal ------------------  18.0%  18.3%      16    0.580s
+─Glue.zrange_to_reflective -------------   0.1%  15.4%       1    0.488s
+─Glue.zrange_to_reflective_goal --------   6.8%  11.5%       1    0.364s
+─ReflectiveTactics.unify_abstract_cbv_in   6.2%   9.0%       1    0.284s
+─unify (constr) (constr) ---------------   5.9%   5.9%       6    0.080s
+─Glue.pattern_sig_sig_assoc ------------   0.0%   4.6%       1    0.144s
+─eexact --------------------------------   4.4%   4.4%      18    0.012s
+─Glue.pattern_proj1_sig_in_sig ---------   1.4%   4.3%       1    0.136s
+─prove_interp_compile_correct ----------   0.0%   3.9%       1    0.124s
+─rewrite H -----------------------------   3.8%   3.8%       1    0.120s
+─assert (H : is_bounded_by' bounds (map'   3.8%   3.8%       2    0.064s
+─rewrite ?EtaInterp.InterpExprEta ------   3.5%   3.5%       1    0.112s
+─pose proof  (pf   :   Interpretation.Bo   2.9%   2.9%       1    0.092s
+─Glue.split_BoundedWordToZ -------------   0.1%   2.8%       1    0.088s
+─tac -----------------------------------   1.9%   2.5%       2    0.080s
+─reflexivity ---------------------------   2.4%   2.4%       7    0.028s
+─synthesize ----------------------------   0.0%   2.4%       1    0.076s
+─destruct_sig --------------------------   0.0%   2.4%       4    0.040s
+─destruct x ----------------------------   2.4%   2.4%       4    0.032s
+─clearbody (ne_var_list) ---------------   2.3%   2.3%       4    0.060s
+─Reify.transitivity_tt -----------------   0.1%   2.3%       2    0.036s
+─transitivity --------------------------   2.1%   2.1%       5    0.032s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  97.6%       1    3.088s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  74.1%       1    2.344s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  72.9%       1    2.308s
+ │ ├─ReflectiveTactics.do_reify --------   0.0%  38.6%       1    1.220s
+ │ │└Reify.Reify_rhs_gen ---------------   1.5%  37.2%       1    1.176s
+ │ │ ├─Reify.do_reify_abs_goal ---------  19.2%  19.5%       2    0.616s
+ │ │ │└Reify.do_reifyf_goal ------------  18.0%  18.3%      16    0.580s
+ │ │ │└eexact --------------------------   3.9%   3.9%      16    0.012s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   3.9%       1    0.124s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    3.5%   3.5%       1    0.112s
+ │ │ ├─rewrite H -----------------------   3.8%   3.8%       1    0.120s
+ │ │ ├─tac -----------------------------   1.9%   2.5%       1    0.080s
+ │ │ └─Reify.transitivity_tt -----------   0.1%   2.3%       2    0.036s
+ │ │  └transitivity --------------------   2.0%   2.0%       4    0.032s
+ │ └─ReflectiveTactics.solve_post_reifie   0.9%  34.4%       1    1.088s
+ │   ├─UnifyAbstractReflexivity.unify_tr  19.2%  23.9%       7    0.204s
+ │   │└unify (constr) (constr) ---------   3.4%   3.4%       5    0.036s
+ │   └─ReflectiveTactics.unify_abstract_   6.2%   9.0%       1    0.284s
+ │    └unify (constr) (constr) ---------   2.5%   2.5%       1    0.080s
+ └─Glue.refine_to_reflective_glue' -----   0.0%  23.5%       1    0.744s
+   ├─Glue.zrange_to_reflective ---------   0.1%  15.4%       1    0.488s
+   │ ├─Glue.zrange_to_reflective_goal --   6.8%  11.5%       1    0.364s
+   │ │└pose proof  (pf   :   Interpretat   2.9%   2.9%       1    0.092s
+   │ └─assert (H : is_bounded_by' bounds   3.8%   3.8%       2    0.064s
+   ├─Glue.pattern_sig_sig_assoc --------   0.0%   4.6%       1    0.144s
+   │└Glue.pattern_proj1_sig_in_sig -----   1.4%   4.3%       1    0.136s
+   └─Glue.split_BoundedWordToZ ---------   0.1%   2.8%       1    0.088s
+    └destruct_sig ----------------------   0.0%   2.4%       4    0.040s
+─synthesize ----------------------------   0.0%   2.4%       1    0.076s
+
+Finished transaction in 6.12 secs (5.64u,0.008s) (successful)
+Closed under the global context
+total time:      3.164s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  97.6%       1    3.088s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  74.1%       1    2.344s
+─ReflectiveTactics.solve_side_conditions   0.0%  72.9%       1    2.308s
+─ReflectiveTactics.do_reify ------------   0.0%  38.6%       1    1.220s
+─Reify.Reify_rhs_gen -------------------   1.5%  37.2%       1    1.176s
+─ReflectiveTactics.solve_post_reified_si   0.9%  34.4%       1    1.088s
+─UnifyAbstractReflexivity.unify_transfor  19.2%  23.9%       7    0.204s
+─Glue.refine_to_reflective_glue' -------   0.0%  23.5%       1    0.744s
+─Reify.do_reify_abs_goal ---------------  19.2%  19.5%       2    0.616s
+─Reify.do_reifyf_goal ------------------  18.0%  18.3%      16    0.580s
+─Glue.zrange_to_reflective -------------   0.1%  15.4%       1    0.488s
+─Glue.zrange_to_reflective_goal --------   6.8%  11.5%       1    0.364s
+─ReflectiveTactics.unify_abstract_cbv_in   6.2%   9.0%       1    0.284s
+─unify (constr) (constr) ---------------   5.9%   5.9%       6    0.080s
+─Glue.pattern_sig_sig_assoc ------------   0.0%   4.6%       1    0.144s
+─eexact --------------------------------   4.4%   4.4%      18    0.012s
+─Glue.pattern_proj1_sig_in_sig ---------   1.4%   4.3%       1    0.136s
+─prove_interp_compile_correct ----------   0.0%   3.9%       1    0.124s
+─rewrite H -----------------------------   3.8%   3.8%       1    0.120s
+─assert (H : is_bounded_by' bounds (map'   3.8%   3.8%       2    0.064s
+─rewrite ?EtaInterp.InterpExprEta ------   3.5%   3.5%       1    0.112s
+─pose proof  (pf   :   Interpretation.Bo   2.9%   2.9%       1    0.092s
+─Glue.split_BoundedWordToZ -------------   0.1%   2.8%       1    0.088s
+─tac -----------------------------------   1.9%   2.5%       2    0.080s
+─reflexivity ---------------------------   2.4%   2.4%       7    0.028s
+─synthesize ----------------------------   0.0%   2.4%       1    0.076s
+─destruct_sig --------------------------   0.0%   2.4%       4    0.040s
+─destruct x ----------------------------   2.4%   2.4%       4    0.032s
+─clearbody (ne_var_list) ---------------   2.3%   2.3%       4    0.060s
+─Reify.transitivity_tt -----------------   0.1%   2.3%       2    0.036s
+─transitivity --------------------------   2.1%   2.1%       5    0.032s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  97.6%       1    3.088s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  74.1%       1    2.344s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  72.9%       1    2.308s
+ │ ├─ReflectiveTactics.do_reify --------   0.0%  38.6%       1    1.220s
+ │ │└Reify.Reify_rhs_gen ---------------   1.5%  37.2%       1    1.176s
+ │ │ ├─Reify.do_reify_abs_goal ---------  19.2%  19.5%       2    0.616s
+ │ │ │└Reify.do_reifyf_goal ------------  18.0%  18.3%      16    0.580s
+ │ │ │└eexact --------------------------   3.9%   3.9%      16    0.012s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   3.9%       1    0.124s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    3.5%   3.5%       1    0.112s
+ │ │ ├─rewrite H -----------------------   3.8%   3.8%       1    0.120s
+ │ │ ├─tac -----------------------------   1.9%   2.5%       1    0.080s
+ │ │ └─Reify.transitivity_tt -----------   0.1%   2.3%       2    0.036s
+ │ │  └transitivity --------------------   2.0%   2.0%       4    0.032s
+ │ └─ReflectiveTactics.solve_post_reifie   0.9%  34.4%       1    1.088s
+ │   ├─UnifyAbstractReflexivity.unify_tr  19.2%  23.9%       7    0.204s
+ │   │└unify (constr) (constr) ---------   3.4%   3.4%       5    0.036s
+ │   └─ReflectiveTactics.unify_abstract_   6.2%   9.0%       1    0.284s
+ │    └unify (constr) (constr) ---------   2.5%   2.5%       1    0.080s
+ └─Glue.refine_to_reflective_glue' -----   0.0%  23.5%       1    0.744s
+   ├─Glue.zrange_to_reflective ---------   0.1%  15.4%       1    0.488s
+   │ ├─Glue.zrange_to_reflective_goal --   6.8%  11.5%       1    0.364s
+   │ │└pose proof  (pf   :   Interpretat   2.9%   2.9%       1    0.092s
+   │ └─assert (H : is_bounded_by' bounds   3.8%   3.8%       2    0.064s
+   ├─Glue.pattern_sig_sig_assoc --------   0.0%   4.6%       1    0.144s
+   │└Glue.pattern_proj1_sig_in_sig -----   1.4%   4.3%       1    0.136s
+   └─Glue.split_BoundedWordToZ ---------   0.1%   2.8%       1    0.088s
+    └destruct_sig ----------------------   0.0%   2.4%       4    0.040s
+─synthesize ----------------------------   0.0%   2.4%       1    0.076s
+
+src/Specific/X25519/C64/fesub (real: 24.71, user: 22.65, sys: 0.24, mem: 778792 ko)
+COQC src/Specific/X25519/C64/fesquare.v
+Finished transaction in 6.132 secs (5.516u,0.012s) (successful)
+total time:      5.480s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize ----------------------------  -0.0% 100.0%       1    5.480s
+─Pipeline.refine_reflectively_gen ------   0.0%  95.7%       1    5.244s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  88.6%       1    4.856s
+─ReflectiveTactics.solve_side_conditions   0.0%  87.7%       1    4.804s
+─ReflectiveTactics.do_reify ------------   0.0%  53.3%       1    2.920s
+─Reify.Reify_rhs_gen -------------------   2.0%  52.5%       1    2.876s
+─ReflectiveTactics.solve_post_reified_si   0.6%  34.4%       1    1.884s
+─Reify.do_reify_abs_goal ---------------  33.2%  33.6%       2    1.844s
+─Reify.do_reifyf_goal ------------------  31.5%  32.0%      47    1.392s
+─UnifyAbstractReflexivity.unify_transfor  21.9%  26.6%       7    0.400s
+─eexact --------------------------------  10.0%  10.0%      49    0.028s
+─Glue.refine_to_reflective_glue' -------   0.0%   7.1%       1    0.388s
+─ReflectiveTactics.unify_abstract_cbv_in   5.0%   6.9%       1    0.380s
+─unify (constr) (constr) ---------------   5.8%   5.8%       6    0.104s
+─prove_interp_compile_correct ----------   0.0%   5.8%       1    0.316s
+─rewrite ?EtaInterp.InterpExprEta ------   5.3%   5.3%       1    0.288s
+─Glue.zrange_to_reflective -------------   0.1%   5.1%       1    0.280s
+─IntegrationTestTemporaryMiscCommon.do_r   0.1%   4.0%       1    0.220s
+─Glue.zrange_to_reflective_goal --------   3.1%   3.9%       1    0.212s
+─change G' -----------------------------   3.4%   3.4%       1    0.184s
+─tac -----------------------------------   2.0%   2.8%       2    0.156s
+─rewrite H -----------------------------   2.8%   2.8%       1    0.156s
+─reflexivity ---------------------------   2.8%   2.8%       7    0.064s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize ----------------------------  -0.0% 100.0%       1    5.480s
+ ├─Pipeline.refine_reflectively_gen ----   0.0%  95.7%       1    5.244s
+ │ ├─ReflectiveTactics.do_reflective_pip   0.0%  88.6%       1    4.856s
+ │ │└ReflectiveTactics.solve_side_condit   0.0%  87.7%       1    4.804s
+ │ │ ├─ReflectiveTactics.do_reify ------   0.0%  53.3%       1    2.920s
+ │ │ │└Reify.Reify_rhs_gen -------------   2.0%  52.5%       1    2.876s
+ │ │ │ ├─Reify.do_reify_abs_goal -------  33.2%  33.6%       2    1.844s
+ │ │ │ │└Reify.do_reifyf_goal ----------  31.5%  32.0%      47    1.392s
+ │ │ │ │└eexact ------------------------   9.1%   9.1%      47    0.024s
+ │ │ │ ├─prove_interp_compile_correct --   0.0%   5.8%       1    0.316s
+ │ │ │ │└rewrite ?EtaInterp.InterpExprEt   5.3%   5.3%       1    0.288s
+ │ │ │ ├─tac ---------------------------   2.0%   2.8%       1    0.156s
+ │ │ │ └─rewrite H ---------------------   2.8%   2.8%       1    0.156s
+ │ │ └─ReflectiveTactics.solve_post_reif   0.6%  34.4%       1    1.884s
+ │ │   ├─UnifyAbstractReflexivity.unify_  21.9%  26.6%       7    0.400s
+ │ │   │└unify (constr) (constr) -------   3.9%   3.9%       5    0.072s
+ │ │   └─ReflectiveTactics.unify_abstrac   5.0%   6.9%       1    0.380s
+ │ └─Glue.refine_to_reflective_glue' ---   0.0%   7.1%       1    0.388s
+ │  └Glue.zrange_to_reflective ---------   0.1%   5.1%       1    0.280s
+ │  └Glue.zrange_to_reflective_goal ----   3.1%   3.9%       1    0.212s
+ └─IntegrationTestTemporaryMiscCommon.do   0.1%   4.0%       1    0.220s
+  └change G' ---------------------------   3.4%   3.4%       1    0.184s
+
+Finished transaction in 10.475 secs (9.728u,0.007s) (successful)
+Closed under the global context
+total time:      5.480s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize ----------------------------  -0.0% 100.0%       1    5.480s
+─Pipeline.refine_reflectively_gen ------   0.0%  95.7%       1    5.244s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  88.6%       1    4.856s
+─ReflectiveTactics.solve_side_conditions   0.0%  87.7%       1    4.804s
+─ReflectiveTactics.do_reify ------------   0.0%  53.3%       1    2.920s
+─Reify.Reify_rhs_gen -------------------   2.0%  52.5%       1    2.876s
+─ReflectiveTactics.solve_post_reified_si   0.6%  34.4%       1    1.884s
+─Reify.do_reify_abs_goal ---------------  33.2%  33.6%       2    1.844s
+─Reify.do_reifyf_goal ------------------  31.5%  32.0%      47    1.392s
+─UnifyAbstractReflexivity.unify_transfor  21.9%  26.6%       7    0.400s
+─eexact --------------------------------  10.0%  10.0%      49    0.028s
+─Glue.refine_to_reflective_glue' -------   0.0%   7.1%       1    0.388s
+─ReflectiveTactics.unify_abstract_cbv_in   5.0%   6.9%       1    0.380s
+─unify (constr) (constr) ---------------   5.8%   5.8%       6    0.104s
+─prove_interp_compile_correct ----------   0.0%   5.8%       1    0.316s
+─rewrite ?EtaInterp.InterpExprEta ------   5.3%   5.3%       1    0.288s
+─Glue.zrange_to_reflective -------------   0.1%   5.1%       1    0.280s
+─IntegrationTestTemporaryMiscCommon.do_r   0.1%   4.0%       1    0.220s
+─Glue.zrange_to_reflective_goal --------   3.1%   3.9%       1    0.212s
+─change G' -----------------------------   3.4%   3.4%       1    0.184s
+─tac -----------------------------------   2.0%   2.8%       2    0.156s
+─rewrite H -----------------------------   2.8%   2.8%       1    0.156s
+─reflexivity ---------------------------   2.8%   2.8%       7    0.064s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize ----------------------------  -0.0% 100.0%       1    5.480s
+ ├─Pipeline.refine_reflectively_gen ----   0.0%  95.7%       1    5.244s
+ │ ├─ReflectiveTactics.do_reflective_pip   0.0%  88.6%       1    4.856s
+ │ │└ReflectiveTactics.solve_side_condit   0.0%  87.7%       1    4.804s
+ │ │ ├─ReflectiveTactics.do_reify ------   0.0%  53.3%       1    2.920s
+ │ │ │└Reify.Reify_rhs_gen -------------   2.0%  52.5%       1    2.876s
+ │ │ │ ├─Reify.do_reify_abs_goal -------  33.2%  33.6%       2    1.844s
+ │ │ │ │└Reify.do_reifyf_goal ----------  31.5%  32.0%      47    1.392s
+ │ │ │ │└eexact ------------------------   9.1%   9.1%      47    0.024s
+ │ │ │ ├─prove_interp_compile_correct --   0.0%   5.8%       1    0.316s
+ │ │ │ │└rewrite ?EtaInterp.InterpExprEt   5.3%   5.3%       1    0.288s
+ │ │ │ ├─tac ---------------------------   2.0%   2.8%       1    0.156s
+ │ │ │ └─rewrite H ---------------------   2.8%   2.8%       1    0.156s
+ │ │ └─ReflectiveTactics.solve_post_reif   0.6%  34.4%       1    1.884s
+ │ │   ├─UnifyAbstractReflexivity.unify_  21.9%  26.6%       7    0.400s
+ │ │   │└unify (constr) (constr) -------   3.9%   3.9%       5    0.072s
+ │ │   └─ReflectiveTactics.unify_abstrac   5.0%   6.9%       1    0.380s
+ │ └─Glue.refine_to_reflective_glue' ---   0.0%   7.1%       1    0.388s
+ │  └Glue.zrange_to_reflective ---------   0.1%   5.1%       1    0.280s
+ │  └Glue.zrange_to_reflective_goal ----   3.1%   3.9%       1    0.212s
+ └─IntegrationTestTemporaryMiscCommon.do   0.1%   4.0%       1    0.220s
+  └change G' ---------------------------   3.4%   3.4%       1    0.184s
+
+src/Specific/X25519/C64/fesquare (real: 33.08, user: 30.13, sys: 0.24, mem: 799620 ko)
+COQC src/Specific/X25519/C64/femulDisplay > src/Specific/X25519/C64/femulDisplay.log
+COQC src/Specific/X25519/C64/freeze.v
+Finished transaction in 7.307 secs (6.763u,0.011s) (successful)
+total time:      6.732s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_freeze ---------------------   0.0% 100.0%       1    6.732s
+─Pipeline.refine_reflectively_gen ------   0.0%  99.3%       1    6.684s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  92.8%       1    6.248s
+─ReflectiveTactics.solve_side_conditions   0.0%  92.0%       1    6.192s
+─ReflectiveTactics.do_reify ------------  -0.0%  60.3%       1    4.060s
+─Reify.Reify_rhs_gen -------------------   1.5%  59.6%       1    4.012s
+─Reify.do_reify_abs_goal ---------------  42.4%  42.7%       2    2.876s
+─Reify.do_reifyf_goal ------------------  41.3%  41.7%     129    2.804s
+─ReflectiveTactics.solve_post_reified_si   0.6%  31.7%       1    2.132s
+─UnifyAbstractReflexivity.unify_transfor  21.7%  25.8%       7    0.424s
+─eexact --------------------------------  13.7%  13.7%     131    0.036s
+─Glue.refine_to_reflective_glue' -------   0.0%   6.5%       1    0.436s
+─prove_interp_compile_correct ----------   0.0%   5.1%       1    0.344s
+─ReflectiveTactics.unify_abstract_cbv_in   3.4%   5.0%       1    0.336s
+─rewrite ?EtaInterp.InterpExprEta ------   4.7%   4.7%       1    0.316s
+─unify (constr) (constr) ---------------   4.6%   4.6%       6    0.100s
+─Glue.zrange_to_reflective -------------   0.0%   4.2%       1    0.280s
+─Glue.zrange_to_reflective_goal --------   2.4%   3.3%       1    0.220s
+─Reify.transitivity_tt -----------------   0.1%   2.6%       2    0.116s
+─rewrite H -----------------------------   2.6%   2.6%       1    0.172s
+─tac -----------------------------------   1.5%   2.3%       2    0.156s
+─reflexivity ---------------------------   2.3%   2.3%       7    0.052s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_freeze ---------------------   0.0% 100.0%       1    6.732s
+└Pipeline.refine_reflectively_gen ------   0.0%  99.3%       1    6.684s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  92.8%       1    6.248s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  92.0%       1    6.192s
+ │ ├─ReflectiveTactics.do_reify --------  -0.0%  60.3%       1    4.060s
+ │ │└Reify.Reify_rhs_gen ---------------   1.5%  59.6%       1    4.012s
+ │ │ ├─Reify.do_reify_abs_goal ---------  42.4%  42.7%       2    2.876s
+ │ │ │└Reify.do_reifyf_goal ------------  41.3%  41.7%     129    2.804s
+ │ │ │└eexact --------------------------  13.0%  13.0%     129    0.036s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   5.1%       1    0.344s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    4.7%   4.7%       1    0.316s
+ │ │ ├─Reify.transitivity_tt -----------   0.1%   2.6%       2    0.116s
+ │ │ ├─rewrite H -----------------------   2.6%   2.6%       1    0.172s
+ │ │ └─tac -----------------------------   1.5%   2.3%       1    0.156s
+ │ └─ReflectiveTactics.solve_post_reifie   0.6%  31.7%       1    2.132s
+ │   ├─UnifyAbstractReflexivity.unify_tr  21.7%  25.8%       7    0.424s
+ │   │└unify (constr) (constr) ---------   3.1%   3.1%       5    0.084s
+ │   └─ReflectiveTactics.unify_abstract_   3.4%   5.0%       1    0.336s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   6.5%       1    0.436s
+  └Glue.zrange_to_reflective -----------   0.0%   4.2%       1    0.280s
+  └Glue.zrange_to_reflective_goal ------   2.4%   3.3%       1    0.220s
+
+Finished transaction in 10.495 secs (9.756u,0.s) (successful)
+Closed under the global context
+total time:      6.732s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_freeze ---------------------   0.0% 100.0%       1    6.732s
+─Pipeline.refine_reflectively_gen ------   0.0%  99.3%       1    6.684s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  92.8%       1    6.248s
+─ReflectiveTactics.solve_side_conditions   0.0%  92.0%       1    6.192s
+─ReflectiveTactics.do_reify ------------  -0.0%  60.3%       1    4.060s
+─Reify.Reify_rhs_gen -------------------   1.5%  59.6%       1    4.012s
+─Reify.do_reify_abs_goal ---------------  42.4%  42.7%       2    2.876s
+─Reify.do_reifyf_goal ------------------  41.3%  41.7%     129    2.804s
+─ReflectiveTactics.solve_post_reified_si   0.6%  31.7%       1    2.132s
+─UnifyAbstractReflexivity.unify_transfor  21.7%  25.8%       7    0.424s
+─eexact --------------------------------  13.7%  13.7%     131    0.036s
+─Glue.refine_to_reflective_glue' -------   0.0%   6.5%       1    0.436s
+─prove_interp_compile_correct ----------   0.0%   5.1%       1    0.344s
+─ReflectiveTactics.unify_abstract_cbv_in   3.4%   5.0%       1    0.336s
+─rewrite ?EtaInterp.InterpExprEta ------   4.7%   4.7%       1    0.316s
+─unify (constr) (constr) ---------------   4.6%   4.6%       6    0.100s
+─Glue.zrange_to_reflective -------------   0.0%   4.2%       1    0.280s
+─Glue.zrange_to_reflective_goal --------   2.4%   3.3%       1    0.220s
+─Reify.transitivity_tt -----------------   0.1%   2.6%       2    0.116s
+─rewrite H -----------------------------   2.6%   2.6%       1    0.172s
+─tac -----------------------------------   1.5%   2.3%       2    0.156s
+─reflexivity ---------------------------   2.3%   2.3%       7    0.052s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_freeze ---------------------   0.0% 100.0%       1    6.732s
+└Pipeline.refine_reflectively_gen ------   0.0%  99.3%       1    6.684s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  92.8%       1    6.248s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  92.0%       1    6.192s
+ │ ├─ReflectiveTactics.do_reify --------  -0.0%  60.3%       1    4.060s
+ │ │└Reify.Reify_rhs_gen ---------------   1.5%  59.6%       1    4.012s
+ │ │ ├─Reify.do_reify_abs_goal ---------  42.4%  42.7%       2    2.876s
+ │ │ │└Reify.do_reifyf_goal ------------  41.3%  41.7%     129    2.804s
+ │ │ │└eexact --------------------------  13.0%  13.0%     129    0.036s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   5.1%       1    0.344s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    4.7%   4.7%       1    0.316s
+ │ │ ├─Reify.transitivity_tt -----------   0.1%   2.6%       2    0.116s
+ │ │ ├─rewrite H -----------------------   2.6%   2.6%       1    0.172s
+ │ │ └─tac -----------------------------   1.5%   2.3%       1    0.156s
+ │ └─ReflectiveTactics.solve_post_reifie   0.6%  31.7%       1    2.132s
+ │   ├─UnifyAbstractReflexivity.unify_tr  21.7%  25.8%       7    0.424s
+ │   │└unify (constr) (constr) ---------   3.1%   3.1%       5    0.084s
+ │   └─ReflectiveTactics.unify_abstract_   3.4%   5.0%       1    0.336s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   6.5%       1    0.436s
+  └Glue.zrange_to_reflective -----------   0.0%   4.2%       1    0.280s
+  └Glue.zrange_to_reflective_goal ------   2.4%   3.3%       1    0.220s
+
+src/Specific/X25519/C64/freeze (real: 34.35, user: 31.50, sys: 0.24, mem: 828104 ko)
+COQC src/Specific/NISTP256/AMD64/feadd.v
+Finished transaction in 8.784 secs (8.176u,0.011s) (successful)
+total time:      8.140s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  52.4%       1    4.268s
+─synthesize_montgomery -----------------   0.0%  47.6%       1    3.872s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  43.8%       1    3.568s
+─ReflectiveTactics.solve_side_conditions   0.0%  43.2%       1    3.520s
+─IntegrationTestTemporaryMiscCommon.fact   1.4%  23.6%       1    1.924s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%  22.1%       1    1.796s
+─ReflectiveTactics.do_reify ------------   0.1%  21.7%       1    1.768s
+─ReflectiveTactics.solve_post_reified_si   0.6%  21.5%       1    1.752s
+─Reify.Reify_rhs_gen -------------------   1.0%  20.9%       1    1.704s
+─op_sig_side_conditions_t --------------   0.0%  20.0%       1    1.624s
+─DestructHyps.do_all_matches_then ------   0.0%  20.0%       8    0.244s
+─DestructHyps.do_one_match_then --------   0.7%  19.9%      44    0.052s
+─do_tac --------------------------------   0.0%  19.2%      36    0.052s
+─destruct H ----------------------------  19.2%  19.2%      36    0.052s
+─rewrite <- (lem : lemT) by by_tac ltac:   0.2%  17.3%       1    1.408s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%  17.3%       1    1.408s
+─by_tac --------------------------------   0.0%  17.1%       4    0.504s
+─rewrite <- (ZRange.is_bounded_by_None_r  16.7%  16.7%       8    0.344s
+─UnifyAbstractReflexivity.unify_transfor  13.3%  16.1%       7    0.360s
+─Reify.do_reify_abs_goal ---------------   9.9%  10.1%       2    0.820s
+─Reify.do_reifyf_goal ------------------   9.1%   9.3%      93    0.748s
+─Glue.refine_to_reflective_glue' -------   0.0%   8.6%       1    0.700s
+─Glue.zrange_to_reflective -------------   0.0%   5.3%       1    0.432s
+─IntegrationTestTemporaryMiscCommon.do_s   0.0%   4.8%       1    0.388s
+─<Crypto.Util.Tactics.MoveLetIn.with_uco   0.9%   4.6%       3    0.368s
+─ReflectiveTactics.unify_abstract_cbv_in   3.3%   4.5%       1    0.368s
+─Glue.zrange_to_reflective_goal --------   2.6%   4.0%       1    0.324s
+─k -------------------------------------   3.5%   3.6%       1    0.296s
+─unify (constr) (constr) ---------------   3.3%   3.3%       8    0.092s
+─rewrite H -----------------------------   2.6%   2.6%       2    0.196s
+─eexact --------------------------------   2.6%   2.6%      95    0.024s
+─prove_interp_compile_correct ----------   0.0%   2.5%       1    0.204s
+─apply  (fun f =>   MapProjections.proj2   2.4%   2.4%       2    0.120s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  52.4%       1    4.268s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  43.8%       1    3.568s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  43.2%       1    3.520s
+ │ ├─ReflectiveTactics.do_reify --------   0.1%  21.7%       1    1.768s
+ │ │└Reify.Reify_rhs_gen ---------------   1.0%  20.9%       1    1.704s
+ │ │ ├─Reify.do_reify_abs_goal ---------   9.9%  10.1%       2    0.820s
+ │ │ │└Reify.do_reifyf_goal ------------   9.1%   9.3%      93    0.748s
+ │ │ │└eexact --------------------------   2.3%   2.3%      93    0.024s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   2.5%       1    0.204s
+ │ │ └─rewrite H -----------------------   2.4%   2.4%       1    0.196s
+ │ └─ReflectiveTactics.solve_post_reifie   0.6%  21.5%       1    1.752s
+ │   ├─UnifyAbstractReflexivity.unify_tr  13.3%  16.1%       7    0.360s
+ │   │└unify (constr) (constr) ---------   2.2%   2.2%       5    0.064s
+ │   └─ReflectiveTactics.unify_abstract_   3.3%   4.5%       1    0.368s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   8.6%       1    0.700s
+  └Glue.zrange_to_reflective -----------   0.0%   5.3%       1    0.432s
+  └Glue.zrange_to_reflective_goal ------   2.6%   4.0%       1    0.324s
+─synthesize_montgomery -----------------   0.0%  47.6%       1    3.872s
+ ├─IntegrationTestTemporaryMiscCommon.fa   1.4%  23.6%       1    1.924s
+ │└op_sig_side_conditions_t ------------   0.0%  20.0%       1    1.624s
+ │ ├─DestructHyps.do_all_matches_then --   0.0%  11.4%       4    0.244s
+ │ │└DestructHyps.do_one_match_then ----   0.3%  11.4%      24    0.052s
+ │ │└do_tac ----------------------------   0.0%  11.1%      20    0.052s
+ │ │└destruct H ------------------------  11.1%  11.1%      20    0.052s
+ │ └─rewrite <- (ZRange.is_bounded_by_No   8.4%   8.4%       4    0.328s
+ └─IntegrationTestTemporaryMiscCommon.do   0.0%  22.1%       1    1.796s
+   ├─IntegrationTestTemporaryMiscCommon.   0.0%  17.3%       1    1.408s
+   │└rewrite <- (lem : lemT) by by_tac l   0.2%  17.3%       1    1.408s
+   │└by_tac ----------------------------   0.0%  17.1%       4    0.504s
+   │ ├─DestructHyps.do_all_matches_then    0.0%   8.6%       4    0.184s
+   │ │└DestructHyps.do_one_match_then --   0.3%   8.5%      20    0.052s
+   │ │└do_tac --------------------------   0.0%   8.2%      16    0.052s
+   │ │└destruct H ----------------------   8.2%   8.2%      16    0.052s
+   │ └─rewrite <- (ZRange.is_bounded_by_   8.3%   8.3%       4    0.344s
+   └─IntegrationTestTemporaryMiscCommon.   0.0%   4.8%       1    0.388s
+    └<Crypto.Util.Tactics.MoveLetIn.with   0.9%   4.6%       3    0.368s
+    └k ---------------------------------   3.5%   3.6%       1    0.296s
+
+Finished transaction in 13.363 secs (12.516u,0.008s) (successful)
+Closed under the global context
+total time:      8.140s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  52.4%       1    4.268s
+─synthesize_montgomery -----------------   0.0%  47.6%       1    3.872s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  43.8%       1    3.568s
+─ReflectiveTactics.solve_side_conditions   0.0%  43.2%       1    3.520s
+─IntegrationTestTemporaryMiscCommon.fact   1.4%  23.6%       1    1.924s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%  22.1%       1    1.796s
+─ReflectiveTactics.do_reify ------------   0.1%  21.7%       1    1.768s
+─ReflectiveTactics.solve_post_reified_si   0.6%  21.5%       1    1.752s
+─Reify.Reify_rhs_gen -------------------   1.0%  20.9%       1    1.704s
+─op_sig_side_conditions_t --------------   0.0%  20.0%       1    1.624s
+─DestructHyps.do_all_matches_then ------   0.0%  20.0%       8    0.244s
+─DestructHyps.do_one_match_then --------   0.7%  19.9%      44    0.052s
+─do_tac --------------------------------   0.0%  19.2%      36    0.052s
+─destruct H ----------------------------  19.2%  19.2%      36    0.052s
+─rewrite <- (lem : lemT) by by_tac ltac:   0.2%  17.3%       1    1.408s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%  17.3%       1    1.408s
+─by_tac --------------------------------   0.0%  17.1%       4    0.504s
+─rewrite <- (ZRange.is_bounded_by_None_r  16.7%  16.7%       8    0.344s
+─UnifyAbstractReflexivity.unify_transfor  13.3%  16.1%       7    0.360s
+─Reify.do_reify_abs_goal ---------------   9.9%  10.1%       2    0.820s
+─Reify.do_reifyf_goal ------------------   9.1%   9.3%      93    0.748s
+─Glue.refine_to_reflective_glue' -------   0.0%   8.6%       1    0.700s
+─Glue.zrange_to_reflective -------------   0.0%   5.3%       1    0.432s
+─IntegrationTestTemporaryMiscCommon.do_s   0.0%   4.8%       1    0.388s
+─<Crypto.Util.Tactics.MoveLetIn.with_uco   0.9%   4.6%       3    0.368s
+─ReflectiveTactics.unify_abstract_cbv_in   3.3%   4.5%       1    0.368s
+─Glue.zrange_to_reflective_goal --------   2.6%   4.0%       1    0.324s
+─k -------------------------------------   3.5%   3.6%       1    0.296s
+─unify (constr) (constr) ---------------   3.3%   3.3%       8    0.092s
+─rewrite H -----------------------------   2.6%   2.6%       2    0.196s
+─eexact --------------------------------   2.6%   2.6%      95    0.024s
+─prove_interp_compile_correct ----------   0.0%   2.5%       1    0.204s
+─apply  (fun f =>   MapProjections.proj2   2.4%   2.4%       2    0.120s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  52.4%       1    4.268s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  43.8%       1    3.568s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  43.2%       1    3.520s
+ │ ├─ReflectiveTactics.do_reify --------   0.1%  21.7%       1    1.768s
+ │ │└Reify.Reify_rhs_gen ---------------   1.0%  20.9%       1    1.704s
+ │ │ ├─Reify.do_reify_abs_goal ---------   9.9%  10.1%       2    0.820s
+ │ │ │└Reify.do_reifyf_goal ------------   9.1%   9.3%      93    0.748s
+ │ │ │└eexact --------------------------   2.3%   2.3%      93    0.024s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   2.5%       1    0.204s
+ │ │ └─rewrite H -----------------------   2.4%   2.4%       1    0.196s
+ │ └─ReflectiveTactics.solve_post_reifie   0.6%  21.5%       1    1.752s
+ │   ├─UnifyAbstractReflexivity.unify_tr  13.3%  16.1%       7    0.360s
+ │   │└unify (constr) (constr) ---------   2.2%   2.2%       5    0.064s
+ │   └─ReflectiveTactics.unify_abstract_   3.3%   4.5%       1    0.368s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   8.6%       1    0.700s
+  └Glue.zrange_to_reflective -----------   0.0%   5.3%       1    0.432s
+  └Glue.zrange_to_reflective_goal ------   2.6%   4.0%       1    0.324s
+─synthesize_montgomery -----------------   0.0%  47.6%       1    3.872s
+ ├─IntegrationTestTemporaryMiscCommon.fa   1.4%  23.6%       1    1.924s
+ │└op_sig_side_conditions_t ------------   0.0%  20.0%       1    1.624s
+ │ ├─DestructHyps.do_all_matches_then --   0.0%  11.4%       4    0.244s
+ │ │└DestructHyps.do_one_match_then ----   0.3%  11.4%      24    0.052s
+ │ │└do_tac ----------------------------   0.0%  11.1%      20    0.052s
+ │ │└destruct H ------------------------  11.1%  11.1%      20    0.052s
+ │ └─rewrite <- (ZRange.is_bounded_by_No   8.4%   8.4%       4    0.328s
+ └─IntegrationTestTemporaryMiscCommon.do   0.0%  22.1%       1    1.796s
+   ├─IntegrationTestTemporaryMiscCommon.   0.0%  17.3%       1    1.408s
+   │└rewrite <- (lem : lemT) by by_tac l   0.2%  17.3%       1    1.408s
+   │└by_tac ----------------------------   0.0%  17.1%       4    0.504s
+   │ ├─DestructHyps.do_all_matches_then    0.0%   8.6%       4    0.184s
+   │ │└DestructHyps.do_one_match_then --   0.3%   8.5%      20    0.052s
+   │ │└do_tac --------------------------   0.0%   8.2%      16    0.052s
+   │ │└destruct H ----------------------   8.2%   8.2%      16    0.052s
+   │ └─rewrite <- (ZRange.is_bounded_by_   8.3%   8.3%       4    0.344s
+   └─IntegrationTestTemporaryMiscCommon.   0.0%   4.8%       1    0.388s
+    └<Crypto.Util.Tactics.MoveLetIn.with   0.9%   4.6%       3    0.368s
+    └k ---------------------------------   3.5%   3.6%       1    0.296s
+
+src/Specific/NISTP256/AMD64/feadd (real: 38.19, user: 35.40, sys: 0.30, mem: 799216 ko)
+COQC src/Specific/NISTP256/AMD64/fenz.v
+Finished transaction in 6.356 secs (5.82u,0.004s) (successful)
+total time:      5.800s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_nonzero --------------------   0.0% 100.0%       1    5.800s
+─IntegrationTestTemporaryMiscCommon.nonz   0.2%  85.5%       1    4.960s
+─destruct (Decidable.dec x), (Decidable.  37.4%  37.4%       1    2.168s
+─destruct (Decidable.dec x) as [H| H] --  22.0%  22.0%       1    1.276s
+─Pipeline.refine_reflectively_gen ------   0.0%  14.5%       1    0.840s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  10.9%       1    0.632s
+─ReflectiveTactics.solve_side_conditions   0.0%  10.6%       1    0.612s
+─ReflectiveTactics.solve_post_reified_si   0.3%   8.5%       1    0.492s
+─IntegrationTestTemporaryMiscCommon.op_s   0.1%   8.1%       2    0.368s
+─rewrite <- (ZRange.is_bounded_by_None_r   5.2%   5.2%       2    0.288s
+─UnifyAbstractReflexivity.unify_transfor   3.4%   4.3%       7    0.076s
+─ReflectiveTactics.unify_abstract_cbv_in   2.8%   3.8%       1    0.220s
+─Glue.refine_to_reflective_glue' -------   0.1%   3.6%       1    0.208s
+─rewrite H' ----------------------------   3.4%   3.4%       1    0.200s
+─generalize dependent (constr) ---------   3.0%   3.0%       4    0.060s
+─congruence ----------------------------   2.8%   2.8%       1    0.160s
+─do_tac --------------------------------   0.0%   2.6%       4    0.044s
+─destruct H ----------------------------   2.6%   2.6%       4    0.044s
+─IntegrationTestTemporaryMiscCommon.do_s   0.1%   2.6%       1    0.152s
+─DestructHyps.do_one_match_then --------   0.0%   2.6%       6    0.044s
+─DestructHyps.do_all_matches_then ------   0.0%   2.6%       2    0.076s
+─<Crypto.Util.Tactics.MoveLetIn.with_uco   0.4%   2.5%       3    0.140s
+─Glue.zrange_to_reflective -------------   0.0%   2.2%       1    0.128s
+─rewrite H -----------------------------   1.9%   2.1%       3    0.112s
+─ReflectiveTactics.do_reify ------------   0.0%   2.1%       1    0.120s
+─k -------------------------------------   1.9%   2.0%       1    0.116s
+─Reify.Reify_rhs_gen -------------------   0.1%   2.0%       1    0.116s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_nonzero --------------------   0.0% 100.0%       1    5.800s
+ ├─IntegrationTestTemporaryMiscCommon.no   0.2%  85.5%       1    4.960s
+ │ ├─destruct (Decidable.dec x), (Decida  37.4%  37.4%       1    2.168s
+ │ ├─destruct (Decidable.dec x) as [H| H  22.0%  22.0%       1    1.276s
+ │ ├─IntegrationTestTemporaryMiscCommon.   0.1%   8.1%       2    0.368s
+ │ │ ├─rewrite <- (ZRange.is_bounded_by_   5.2%   5.2%       2    0.288s
+ │ │ └─DestructHyps.do_all_matches_then    0.0%   2.6%       2    0.076s
+ │ │  └DestructHyps.do_one_match_then --   0.0%   2.6%       6    0.044s
+ │ │  └do_tac --------------------------   0.0%   2.6%       4    0.044s
+ │ │  └destruct H ----------------------   2.6%   2.6%       4    0.044s
+ │ ├─rewrite H' ------------------------   3.4%   3.4%       1    0.200s
+ │ ├─generalize dependent (constr) -----   3.0%   3.0%       4    0.060s
+ │ ├─congruence ------------------------   2.8%   2.8%       1    0.160s
+ │ ├─IntegrationTestTemporaryMiscCommon.   0.1%   2.6%       1    0.152s
+ │ │└<Crypto.Util.Tactics.MoveLetIn.with   0.4%   2.5%       3    0.140s
+ │ │└k ---------------------------------   1.9%   2.0%       1    0.116s
+ │ └─rewrite H -------------------------   1.7%   2.0%       2    0.112s
+ └─Pipeline.refine_reflectively_gen ----   0.0%  14.5%       1    0.840s
+   ├─ReflectiveTactics.do_reflective_pip   0.0%  10.9%       1    0.632s
+   │└ReflectiveTactics.solve_side_condit   0.0%  10.6%       1    0.612s
+   │ ├─ReflectiveTactics.solve_post_reif   0.3%   8.5%       1    0.492s
+   │ │ ├─UnifyAbstractReflexivity.unify_   3.4%   4.3%       7    0.076s
+   │ │ └─ReflectiveTactics.unify_abstrac   2.8%   3.8%       1    0.220s
+   │ └─ReflectiveTactics.do_reify ------   0.0%   2.1%       1    0.120s
+   │  └Reify.Reify_rhs_gen -------------   0.1%   2.0%       1    0.116s
+   └─Glue.refine_to_reflective_glue' ---   0.1%   3.6%       1    0.208s
+    └Glue.zrange_to_reflective ---------   0.0%   2.2%       1    0.128s
+
+Finished transaction in 6.657 secs (6.299u,0.s) (successful)
+Closed under the global context
+total time:      5.800s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_nonzero --------------------   0.0% 100.0%       1    5.800s
+─IntegrationTestTemporaryMiscCommon.nonz   0.2%  85.5%       1    4.960s
+─destruct (Decidable.dec x), (Decidable.  37.4%  37.4%       1    2.168s
+─destruct (Decidable.dec x) as [H| H] --  22.0%  22.0%       1    1.276s
+─Pipeline.refine_reflectively_gen ------   0.0%  14.5%       1    0.840s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  10.9%       1    0.632s
+─ReflectiveTactics.solve_side_conditions   0.0%  10.6%       1    0.612s
+─ReflectiveTactics.solve_post_reified_si   0.3%   8.5%       1    0.492s
+─IntegrationTestTemporaryMiscCommon.op_s   0.1%   8.1%       2    0.368s
+─rewrite <- (ZRange.is_bounded_by_None_r   5.2%   5.2%       2    0.288s
+─UnifyAbstractReflexivity.unify_transfor   3.4%   4.3%       7    0.076s
+─ReflectiveTactics.unify_abstract_cbv_in   2.8%   3.8%       1    0.220s
+─Glue.refine_to_reflective_glue' -------   0.1%   3.6%       1    0.208s
+─rewrite H' ----------------------------   3.4%   3.4%       1    0.200s
+─generalize dependent (constr) ---------   3.0%   3.0%       4    0.060s
+─congruence ----------------------------   2.8%   2.8%       1    0.160s
+─do_tac --------------------------------   0.0%   2.6%       4    0.044s
+─destruct H ----------------------------   2.6%   2.6%       4    0.044s
+─IntegrationTestTemporaryMiscCommon.do_s   0.1%   2.6%       1    0.152s
+─DestructHyps.do_one_match_then --------   0.0%   2.6%       6    0.044s
+─DestructHyps.do_all_matches_then ------   0.0%   2.6%       2    0.076s
+─<Crypto.Util.Tactics.MoveLetIn.with_uco   0.4%   2.5%       3    0.140s
+─Glue.zrange_to_reflective -------------   0.0%   2.2%       1    0.128s
+─rewrite H -----------------------------   1.9%   2.1%       3    0.112s
+─ReflectiveTactics.do_reify ------------   0.0%   2.1%       1    0.120s
+─k -------------------------------------   1.9%   2.0%       1    0.116s
+─Reify.Reify_rhs_gen -------------------   0.1%   2.0%       1    0.116s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_nonzero --------------------   0.0% 100.0%       1    5.800s
+ ├─IntegrationTestTemporaryMiscCommon.no   0.2%  85.5%       1    4.960s
+ │ ├─destruct (Decidable.dec x), (Decida  37.4%  37.4%       1    2.168s
+ │ ├─destruct (Decidable.dec x) as [H| H  22.0%  22.0%       1    1.276s
+ │ ├─IntegrationTestTemporaryMiscCommon.   0.1%   8.1%       2    0.368s
+ │ │ ├─rewrite <- (ZRange.is_bounded_by_   5.2%   5.2%       2    0.288s
+ │ │ └─DestructHyps.do_all_matches_then    0.0%   2.6%       2    0.076s
+ │ │  └DestructHyps.do_one_match_then --   0.0%   2.6%       6    0.044s
+ │ │  └do_tac --------------------------   0.0%   2.6%       4    0.044s
+ │ │  └destruct H ----------------------   2.6%   2.6%       4    0.044s
+ │ ├─rewrite H' ------------------------   3.4%   3.4%       1    0.200s
+ │ ├─generalize dependent (constr) -----   3.0%   3.0%       4    0.060s
+ │ ├─congruence ------------------------   2.8%   2.8%       1    0.160s
+ │ ├─IntegrationTestTemporaryMiscCommon.   0.1%   2.6%       1    0.152s
+ │ │└<Crypto.Util.Tactics.MoveLetIn.with   0.4%   2.5%       3    0.140s
+ │ │└k ---------------------------------   1.9%   2.0%       1    0.116s
+ │ └─rewrite H -------------------------   1.7%   2.0%       2    0.112s
+ └─Pipeline.refine_reflectively_gen ----   0.0%  14.5%       1    0.840s
+   ├─ReflectiveTactics.do_reflective_pip   0.0%  10.9%       1    0.632s
+   │└ReflectiveTactics.solve_side_condit   0.0%  10.6%       1    0.612s
+   │ ├─ReflectiveTactics.solve_post_reif   0.3%   8.5%       1    0.492s
+   │ │ ├─UnifyAbstractReflexivity.unify_   3.4%   4.3%       7    0.076s
+   │ │ └─ReflectiveTactics.unify_abstrac   2.8%   3.8%       1    0.220s
+   │ └─ReflectiveTactics.do_reify ------   0.0%   2.1%       1    0.120s
+   │  └Reify.Reify_rhs_gen -------------   0.1%   2.0%       1    0.116s
+   └─Glue.refine_to_reflective_glue' ---   0.1%   3.6%       1    0.208s
+    └Glue.zrange_to_reflective ---------   0.0%   2.2%       1    0.128s
+
+src/Specific/NISTP256/AMD64/fenz (real: 27.81, user: 25.50, sys: 0.22, mem: 756080 ko)
+COQC src/Specific/NISTP256/AMD64/feopp.v
+Finished transaction in 7.73 secs (7.112u,0.008s) (successful)
+total time:      7.072s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_montgomery -----------------   0.0%  62.5%       1    4.420s
+─IntegrationTestTemporaryMiscCommon.fact  18.7%  51.6%       1    3.648s
+─Pipeline.refine_reflectively_gen ------   0.0%  37.5%       1    2.652s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  32.6%       1    2.308s
+─ReflectiveTactics.solve_side_conditions   0.0%  32.2%       1    2.276s
+─reflexivity ---------------------------  24.8%  24.8%       8    1.700s
+─ReflectiveTactics.solve_post_reified_si   0.5%  18.5%       1    1.308s
+─ReflectiveTactics.do_reify ------------   0.0%  13.7%       1    0.968s
+─UnifyAbstractReflexivity.unify_transfor  11.2%  13.6%       7    0.284s
+─Reify.Reify_rhs_gen -------------------   0.6%  13.4%       1    0.948s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%   9.7%       1    0.684s
+─rewrite <- (ZRange.is_bounded_by_None_r   9.0%   9.0%       4    0.328s
+─op_sig_side_conditions_t --------------   0.0%   7.8%       1    0.552s
+─rewrite <- (lem : lemT) by by_tac ltac:   0.1%   7.4%       1    0.520s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%   7.4%       1    0.520s
+─by_tac --------------------------------   0.0%   7.2%       2    0.404s
+─Reify.do_reify_abs_goal ---------------   7.1%   7.2%       2    0.512s
+─Reify.do_reifyf_goal ------------------   6.6%   6.7%      62    0.472s
+─DestructHyps.do_one_match_then --------   0.2%   5.8%      14    0.048s
+─DestructHyps.do_all_matches_then ------   0.0%   5.8%       4    0.124s
+─do_tac --------------------------------   0.0%   5.6%      10    0.048s
+─destruct H ----------------------------   5.6%   5.6%      10    0.048s
+─Glue.refine_to_reflective_glue' -------   0.0%   4.9%       1    0.344s
+─ReflectiveTactics.unify_abstract_cbv_in   2.9%   4.2%       1    0.300s
+─Glue.zrange_to_reflective -------------   0.0%   3.3%       1    0.232s
+─unify (constr) (constr) ---------------   3.2%   3.2%       7    0.088s
+─Glue.zrange_to_reflective_goal --------   1.9%   2.6%       1    0.184s
+─IntegrationTestTemporaryMiscCommon.do_s   0.0%   2.3%       1    0.164s
+─<Crypto.Util.Tactics.MoveLetIn.with_uco   0.4%   2.2%       3    0.152s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_montgomery -----------------   0.0%  62.5%       1    4.420s
+ ├─IntegrationTestTemporaryMiscCommon.fa  18.7%  51.6%       1    3.648s
+ │ ├─reflexivity -----------------------  24.0%  24.0%       1    1.700s
+ │ └─op_sig_side_conditions_t ----------   0.0%   7.8%       1    0.552s
+ │   ├─rewrite <- (ZRange.is_bounded_by_   4.2%   4.2%       2    0.284s
+ │   └─DestructHyps.do_all_matches_then    0.0%   3.5%       2    0.124s
+ │    └DestructHyps.do_one_match_then --   0.2%   3.5%       8    0.044s
+ │    └do_tac --------------------------   0.0%   3.3%       6    0.040s
+ │    └destruct H ----------------------   3.3%   3.3%       6    0.040s
+ └─IntegrationTestTemporaryMiscCommon.do   0.0%   9.7%       1    0.684s
+   ├─IntegrationTestTemporaryMiscCommon.   0.0%   7.4%       1    0.520s
+   │└rewrite <- (lem : lemT) by by_tac l   0.1%   7.4%       1    0.520s
+   │└by_tac ----------------------------   0.0%   7.2%       2    0.404s
+   │ ├─rewrite <- (ZRange.is_bounded_by_   4.8%   4.8%       2    0.328s
+   │ └─DestructHyps.do_all_matches_then    0.0%   2.3%       2    0.088s
+   │  └DestructHyps.do_one_match_then --   0.0%   2.3%       6    0.048s
+   │  └do_tac --------------------------   0.0%   2.3%       4    0.048s
+   │  └destruct H ----------------------   2.3%   2.3%       4    0.048s
+   └─IntegrationTestTemporaryMiscCommon.   0.0%   2.3%       1    0.164s
+    └<Crypto.Util.Tactics.MoveLetIn.with   0.4%   2.2%       3    0.152s
+─Pipeline.refine_reflectively_gen ------   0.0%  37.5%       1    2.652s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  32.6%       1    2.308s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  32.2%       1    2.276s
+ │ ├─ReflectiveTactics.solve_post_reifie   0.5%  18.5%       1    1.308s
+ │ │ ├─UnifyAbstractReflexivity.unify_tr  11.2%  13.6%       7    0.284s
+ │ │ └─ReflectiveTactics.unify_abstract_   2.9%   4.2%       1    0.300s
+ │ └─ReflectiveTactics.do_reify --------   0.0%  13.7%       1    0.968s
+ │  └Reify.Reify_rhs_gen ---------------   0.6%  13.4%       1    0.948s
+ │  └Reify.do_reify_abs_goal -----------   7.1%   7.2%       2    0.512s
+ │  └Reify.do_reifyf_goal --------------   6.6%   6.7%      62    0.472s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   4.9%       1    0.344s
+  └Glue.zrange_to_reflective -----------   0.0%   3.3%       1    0.232s
+  └Glue.zrange_to_reflective_goal ------   1.9%   2.6%       1    0.184s
+
+Finished transaction in 7.732 secs (7.1u,0.003s) (successful)
+Closed under the global context
+total time:      7.072s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_montgomery -----------------   0.0%  62.5%       1    4.420s
+─IntegrationTestTemporaryMiscCommon.fact  18.7%  51.6%       1    3.648s
+─Pipeline.refine_reflectively_gen ------   0.0%  37.5%       1    2.652s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  32.6%       1    2.308s
+─ReflectiveTactics.solve_side_conditions   0.0%  32.2%       1    2.276s
+─reflexivity ---------------------------  24.8%  24.8%       8    1.700s
+─ReflectiveTactics.solve_post_reified_si   0.5%  18.5%       1    1.308s
+─ReflectiveTactics.do_reify ------------   0.0%  13.7%       1    0.968s
+─UnifyAbstractReflexivity.unify_transfor  11.2%  13.6%       7    0.284s
+─Reify.Reify_rhs_gen -------------------   0.6%  13.4%       1    0.948s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%   9.7%       1    0.684s
+─rewrite <- (ZRange.is_bounded_by_None_r   9.0%   9.0%       4    0.328s
+─op_sig_side_conditions_t --------------   0.0%   7.8%       1    0.552s
+─rewrite <- (lem : lemT) by by_tac ltac:   0.1%   7.4%       1    0.520s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%   7.4%       1    0.520s
+─by_tac --------------------------------   0.0%   7.2%       2    0.404s
+─Reify.do_reify_abs_goal ---------------   7.1%   7.2%       2    0.512s
+─Reify.do_reifyf_goal ------------------   6.6%   6.7%      62    0.472s
+─DestructHyps.do_one_match_then --------   0.2%   5.8%      14    0.048s
+─DestructHyps.do_all_matches_then ------   0.0%   5.8%       4    0.124s
+─do_tac --------------------------------   0.0%   5.6%      10    0.048s
+─destruct H ----------------------------   5.6%   5.6%      10    0.048s
+─Glue.refine_to_reflective_glue' -------   0.0%   4.9%       1    0.344s
+─ReflectiveTactics.unify_abstract_cbv_in   2.9%   4.2%       1    0.300s
+─Glue.zrange_to_reflective -------------   0.0%   3.3%       1    0.232s
+─unify (constr) (constr) ---------------   3.2%   3.2%       7    0.088s
+─Glue.zrange_to_reflective_goal --------   1.9%   2.6%       1    0.184s
+─IntegrationTestTemporaryMiscCommon.do_s   0.0%   2.3%       1    0.164s
+─<Crypto.Util.Tactics.MoveLetIn.with_uco   0.4%   2.2%       3    0.152s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_montgomery -----------------   0.0%  62.5%       1    4.420s
+ ├─IntegrationTestTemporaryMiscCommon.fa  18.7%  51.6%       1    3.648s
+ │ ├─reflexivity -----------------------  24.0%  24.0%       1    1.700s
+ │ └─op_sig_side_conditions_t ----------   0.0%   7.8%       1    0.552s
+ │   ├─rewrite <- (ZRange.is_bounded_by_   4.2%   4.2%       2    0.284s
+ │   └─DestructHyps.do_all_matches_then    0.0%   3.5%       2    0.124s
+ │    └DestructHyps.do_one_match_then --   0.2%   3.5%       8    0.044s
+ │    └do_tac --------------------------   0.0%   3.3%       6    0.040s
+ │    └destruct H ----------------------   3.3%   3.3%       6    0.040s
+ └─IntegrationTestTemporaryMiscCommon.do   0.0%   9.7%       1    0.684s
+   ├─IntegrationTestTemporaryMiscCommon.   0.0%   7.4%       1    0.520s
+   │└rewrite <- (lem : lemT) by by_tac l   0.1%   7.4%       1    0.520s
+   │└by_tac ----------------------------   0.0%   7.2%       2    0.404s
+   │ ├─rewrite <- (ZRange.is_bounded_by_   4.8%   4.8%       2    0.328s
+   │ └─DestructHyps.do_all_matches_then    0.0%   2.3%       2    0.088s
+   │  └DestructHyps.do_one_match_then --   0.0%   2.3%       6    0.048s
+   │  └do_tac --------------------------   0.0%   2.3%       4    0.048s
+   │  └destruct H ----------------------   2.3%   2.3%       4    0.048s
+   └─IntegrationTestTemporaryMiscCommon.   0.0%   2.3%       1    0.164s
+    └<Crypto.Util.Tactics.MoveLetIn.with   0.4%   2.2%       3    0.152s
+─Pipeline.refine_reflectively_gen ------   0.0%  37.5%       1    2.652s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  32.6%       1    2.308s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  32.2%       1    2.276s
+ │ ├─ReflectiveTactics.solve_post_reifie   0.5%  18.5%       1    1.308s
+ │ │ ├─UnifyAbstractReflexivity.unify_tr  11.2%  13.6%       7    0.284s
+ │ │ └─ReflectiveTactics.unify_abstract_   2.9%   4.2%       1    0.300s
+ │ └─ReflectiveTactics.do_reify --------   0.0%  13.7%       1    0.968s
+ │  └Reify.Reify_rhs_gen ---------------   0.6%  13.4%       1    0.948s
+ │  └Reify.do_reify_abs_goal -----------   7.1%   7.2%       2    0.512s
+ │  └Reify.do_reifyf_goal --------------   6.6%   6.7%      62    0.472s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   4.9%       1    0.344s
+  └Glue.zrange_to_reflective -----------   0.0%   3.3%       1    0.232s
+  └Glue.zrange_to_reflective_goal ------   1.9%   2.6%       1    0.184s
+
+src/Specific/NISTP256/AMD64/feopp (real: 31.00, user: 28.51, sys: 0.20, mem: 765208 ko)
+COQC src/Specific/NISTP256/AMD64/fesub.v
+Finished transaction in 12.996 secs (12.091u,0.004s) (successful)
+total time:     12.048s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_montgomery -----------------   0.0%  66.1%       1    7.964s
+─IntegrationTestTemporaryMiscCommon.fact  16.2%  50.9%       1    6.128s
+─Pipeline.refine_reflectively_gen ------   0.0%  33.9%       1    4.084s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  28.3%       1    3.404s
+─ReflectiveTactics.solve_side_conditions   0.0%  27.8%       1    3.352s
+─reflexivity ---------------------------  21.7%  21.7%       8    2.480s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%  14.1%       1    1.704s
+─ReflectiveTactics.solve_post_reified_si   0.4%  14.1%       1    1.696s
+─ReflectiveTactics.do_reify ------------   0.0%  13.7%       1    1.656s
+─Reify.Reify_rhs_gen -------------------   0.9%  13.2%       1    1.592s
+─DestructHyps.do_all_matches_then ------   0.0%  12.9%       8    0.232s
+─DestructHyps.do_one_match_then --------   0.6%  12.9%      44    0.052s
+─op_sig_side_conditions_t --------------   0.0%  12.7%       1    1.528s
+─do_tac --------------------------------   0.0%  12.3%      36    0.048s
+─destruct H ----------------------------  12.3%  12.3%      36    0.048s
+─rewrite <- (lem : lemT) by by_tac ltac:   0.1%  11.2%       1    1.352s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%  11.2%       1    1.352s
+─by_tac --------------------------------   0.0%  11.1%       4    0.476s
+─UnifyAbstractReflexivity.unify_transfor   8.8%  10.6%       7    0.344s
+─rewrite <- (ZRange.is_bounded_by_None_r  10.5%  10.5%       8    0.316s
+─Reify.do_reify_abs_goal ---------------   6.0%   6.1%       2    0.732s
+─Glue.refine_to_reflective_glue' -------   0.0%   5.6%       1    0.680s
+─Reify.do_reifyf_goal ------------------   5.4%   5.5%      80    0.660s
+─Glue.zrange_to_reflective -------------   0.0%   3.6%       1    0.428s
+─ReflectiveTactics.unify_abstract_cbv_in   2.2%   3.0%       1    0.360s
+─IntegrationTestTemporaryMiscCommon.do_s   0.0%   2.9%       1    0.348s
+─<Crypto.Util.Tactics.MoveLetIn.with_uco   0.5%   2.8%       3    0.332s
+─Glue.zrange_to_reflective_goal --------   1.7%   2.6%       1    0.316s
+─k -------------------------------------   2.1%   2.2%       1    0.268s
+─unify (constr) (constr) ---------------   2.1%   2.1%       8    0.092s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_montgomery -----------------   0.0%  66.1%       1    7.964s
+ ├─IntegrationTestTemporaryMiscCommon.fa  16.2%  50.9%       1    6.128s
+ │ ├─reflexivity -----------------------  20.6%  20.6%       1    2.480s
+ │ └─op_sig_side_conditions_t ----------   0.0%  12.7%       1    1.528s
+ │   ├─DestructHyps.do_all_matches_then    0.0%   7.3%       4    0.232s
+ │   │└DestructHyps.do_one_match_then --   0.3%   7.3%      24    0.052s
+ │   │└do_tac --------------------------   0.0%   7.0%      20    0.048s
+ │   │└destruct H ----------------------   6.9%   6.9%      20    0.048s
+ │   └─rewrite <- (ZRange.is_bounded_by_   5.2%   5.2%       4    0.300s
+ └─IntegrationTestTemporaryMiscCommon.do   0.0%  14.1%       1    1.704s
+   ├─IntegrationTestTemporaryMiscCommon.   0.0%  11.2%       1    1.352s
+   │└rewrite <- (lem : lemT) by by_tac l   0.1%  11.2%       1    1.352s
+   │└by_tac ----------------------------   0.0%  11.1%       4    0.476s
+   │ ├─DestructHyps.do_all_matches_then    0.0%   5.6%       4    0.176s
+   │ │└DestructHyps.do_one_match_then --   0.2%   5.6%      20    0.052s
+   │ │└do_tac --------------------------   0.0%   5.3%      16    0.048s
+   │ │└destruct H ----------------------   5.3%   5.3%      16    0.048s
+   │ └─rewrite <- (ZRange.is_bounded_by_   5.3%   5.3%       4    0.316s
+   └─IntegrationTestTemporaryMiscCommon.   0.0%   2.9%       1    0.348s
+    └<Crypto.Util.Tactics.MoveLetIn.with   0.5%   2.8%       3    0.332s
+    └k ---------------------------------   2.1%   2.2%       1    0.268s
+─Pipeline.refine_reflectively_gen ------   0.0%  33.9%       1    4.084s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  28.3%       1    3.404s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  27.8%       1    3.352s
+ │ ├─ReflectiveTactics.solve_post_reifie   0.4%  14.1%       1    1.696s
+ │ │ ├─UnifyAbstractReflexivity.unify_tr   8.8%  10.6%       7    0.344s
+ │ │ └─ReflectiveTactics.unify_abstract_   2.2%   3.0%       1    0.360s
+ │ └─ReflectiveTactics.do_reify --------   0.0%  13.7%       1    1.656s
+ │  └Reify.Reify_rhs_gen ---------------   0.9%  13.2%       1    1.592s
+ │  └Reify.do_reify_abs_goal -----------   6.0%   6.1%       2    0.732s
+ │  └Reify.do_reifyf_goal --------------   5.4%   5.5%      80    0.660s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   5.6%       1    0.680s
+  └Glue.zrange_to_reflective -----------   0.0%   3.6%       1    0.428s
+  └Glue.zrange_to_reflective_goal ------   1.7%   2.6%       1    0.316s
+
+Finished transaction in 13.895 secs (12.78u,0.02s) (successful)
+Closed under the global context
+total time:     12.048s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_montgomery -----------------   0.0%  66.1%       1    7.964s
+─IntegrationTestTemporaryMiscCommon.fact  16.2%  50.9%       1    6.128s
+─Pipeline.refine_reflectively_gen ------   0.0%  33.9%       1    4.084s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  28.3%       1    3.404s
+─ReflectiveTactics.solve_side_conditions   0.0%  27.8%       1    3.352s
+─reflexivity ---------------------------  21.7%  21.7%       8    2.480s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%  14.1%       1    1.704s
+─ReflectiveTactics.solve_post_reified_si   0.4%  14.1%       1    1.696s
+─ReflectiveTactics.do_reify ------------   0.0%  13.7%       1    1.656s
+─Reify.Reify_rhs_gen -------------------   0.9%  13.2%       1    1.592s
+─DestructHyps.do_all_matches_then ------   0.0%  12.9%       8    0.232s
+─DestructHyps.do_one_match_then --------   0.6%  12.9%      44    0.052s
+─op_sig_side_conditions_t --------------   0.0%  12.7%       1    1.528s
+─do_tac --------------------------------   0.0%  12.3%      36    0.048s
+─destruct H ----------------------------  12.3%  12.3%      36    0.048s
+─rewrite <- (lem : lemT) by by_tac ltac:   0.1%  11.2%       1    1.352s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%  11.2%       1    1.352s
+─by_tac --------------------------------   0.0%  11.1%       4    0.476s
+─UnifyAbstractReflexivity.unify_transfor   8.8%  10.6%       7    0.344s
+─rewrite <- (ZRange.is_bounded_by_None_r  10.5%  10.5%       8    0.316s
+─Reify.do_reify_abs_goal ---------------   6.0%   6.1%       2    0.732s
+─Glue.refine_to_reflective_glue' -------   0.0%   5.6%       1    0.680s
+─Reify.do_reifyf_goal ------------------   5.4%   5.5%      80    0.660s
+─Glue.zrange_to_reflective -------------   0.0%   3.6%       1    0.428s
+─ReflectiveTactics.unify_abstract_cbv_in   2.2%   3.0%       1    0.360s
+─IntegrationTestTemporaryMiscCommon.do_s   0.0%   2.9%       1    0.348s
+─<Crypto.Util.Tactics.MoveLetIn.with_uco   0.5%   2.8%       3    0.332s
+─Glue.zrange_to_reflective_goal --------   1.7%   2.6%       1    0.316s
+─k -------------------------------------   2.1%   2.2%       1    0.268s
+─unify (constr) (constr) ---------------   2.1%   2.1%       8    0.092s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_montgomery -----------------   0.0%  66.1%       1    7.964s
+ ├─IntegrationTestTemporaryMiscCommon.fa  16.2%  50.9%       1    6.128s
+ │ ├─reflexivity -----------------------  20.6%  20.6%       1    2.480s
+ │ └─op_sig_side_conditions_t ----------   0.0%  12.7%       1    1.528s
+ │   ├─DestructHyps.do_all_matches_then    0.0%   7.3%       4    0.232s
+ │   │└DestructHyps.do_one_match_then --   0.3%   7.3%      24    0.052s
+ │   │└do_tac --------------------------   0.0%   7.0%      20    0.048s
+ │   │└destruct H ----------------------   6.9%   6.9%      20    0.048s
+ │   └─rewrite <- (ZRange.is_bounded_by_   5.2%   5.2%       4    0.300s
+ └─IntegrationTestTemporaryMiscCommon.do   0.0%  14.1%       1    1.704s
+   ├─IntegrationTestTemporaryMiscCommon.   0.0%  11.2%       1    1.352s
+   │└rewrite <- (lem : lemT) by by_tac l   0.1%  11.2%       1    1.352s
+   │└by_tac ----------------------------   0.0%  11.1%       4    0.476s
+   │ ├─DestructHyps.do_all_matches_then    0.0%   5.6%       4    0.176s
+   │ │└DestructHyps.do_one_match_then --   0.2%   5.6%      20    0.052s
+   │ │└do_tac --------------------------   0.0%   5.3%      16    0.048s
+   │ │└destruct H ----------------------   5.3%   5.3%      16    0.048s
+   │ └─rewrite <- (ZRange.is_bounded_by_   5.3%   5.3%       4    0.316s
+   └─IntegrationTestTemporaryMiscCommon.   0.0%   2.9%       1    0.348s
+    └<Crypto.Util.Tactics.MoveLetIn.with   0.5%   2.8%       3    0.332s
+    └k ---------------------------------   2.1%   2.2%       1    0.268s
+─Pipeline.refine_reflectively_gen ------   0.0%  33.9%       1    4.084s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  28.3%       1    3.404s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  27.8%       1    3.352s
+ │ ├─ReflectiveTactics.solve_post_reifie   0.4%  14.1%       1    1.696s
+ │ │ ├─UnifyAbstractReflexivity.unify_tr   8.8%  10.6%       7    0.344s
+ │ │ └─ReflectiveTactics.unify_abstract_   2.2%   3.0%       1    0.360s
+ │ └─ReflectiveTactics.do_reify --------   0.0%  13.7%       1    1.656s
+ │  └Reify.Reify_rhs_gen ---------------   0.9%  13.2%       1    1.592s
+ │  └Reify.do_reify_abs_goal -----------   6.0%   6.1%       2    0.732s
+ │  └Reify.do_reifyf_goal --------------   5.4%   5.5%      80    0.660s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   5.6%       1    0.680s
+  └Glue.zrange_to_reflective -----------   0.0%   3.6%       1    0.428s
+  └Glue.zrange_to_reflective_goal ------   1.7%   2.6%       1    0.316s
+
+src/Specific/NISTP256/AMD64/fesub (real: 43.34, user: 39.59, sys: 0.26, mem: 793376 ko)
+COQC src/Specific/NISTP256/AMD64/feaddDisplay > src/Specific/NISTP256/AMD64/feaddDisplay.log
+COQC src/Specific/NISTP256/AMD64/fenzDisplay > src/Specific/NISTP256/AMD64/fenzDisplay.log
+COQC src/Specific/solinas32_2e255m765_12limbs/femul.v
+Finished transaction in 50.426 secs (46.528u,0.072s) (successful)
+total time:     46.544s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------  -0.0%  94.9%       1   44.164s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  87.1%       1   40.552s
+─ReflectiveTactics.solve_side_conditions   0.0%  86.7%       1   40.372s
+─ReflectiveTactics.do_reify ------------   0.0%  59.6%       1   27.740s
+─Reify.Reify_rhs_gen -------------------   1.6%  58.9%       1   27.432s
+─Reify.do_reify_abs_goal ---------------  43.3%  43.6%       2   20.312s
+─Reify.do_reifyf_goal ------------------  42.5%  42.8%     108   10.328s
+─ReflectiveTactics.solve_post_reified_si   0.1%  27.1%       1   12.632s
+─UnifyAbstractReflexivity.unify_transfor  18.6%  23.5%       7    3.552s
+─eexact --------------------------------  13.7%  13.7%     110    0.136s
+─Glue.refine_to_reflective_glue' -------   0.0%   7.8%       1    3.612s
+─Glue.zrange_to_reflective -------------   0.0%   7.2%       1    3.332s
+─Glue.zrange_to_reflective_goal --------   1.7%   5.5%       1    2.544s
+─synthesize ----------------------------   0.0%   5.1%       1    2.380s
+─unify (constr) (constr) ---------------   5.1%   5.1%       6    1.068s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%   5.0%       1    2.320s
+─change G' -----------------------------   4.8%   4.8%       1    2.252s
+─rewrite H -----------------------------   3.8%   3.8%       1    1.748s
+─pose proof  (pf   :   Interpretation.Bo   3.6%   3.6%       1    1.664s
+─prove_interp_compile_correct ----------   0.0%   3.5%       1    1.616s
+─rewrite ?EtaInterp.InterpExprEta ------   3.2%   3.2%       1    1.468s
+─ReflectiveTactics.unify_abstract_cbv_in   1.6%   2.4%       1    1.124s
+─reflexivity ---------------------------   2.1%   2.1%       7    0.396s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------  -0.0%  94.9%       1   44.164s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  87.1%       1   40.552s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  86.7%       1   40.372s
+ │ ├─ReflectiveTactics.do_reify --------   0.0%  59.6%       1   27.740s
+ │ │└Reify.Reify_rhs_gen ---------------   1.6%  58.9%       1   27.432s
+ │ │ ├─Reify.do_reify_abs_goal ---------  43.3%  43.6%       2   20.312s
+ │ │ │└Reify.do_reifyf_goal ------------  42.5%  42.8%     108   10.328s
+ │ │ │└eexact --------------------------  13.2%  13.2%     108    0.072s
+ │ │ ├─rewrite H -----------------------   3.8%   3.8%       1    1.748s
+ │ │ └─prove_interp_compile_correct ----   0.0%   3.5%       1    1.616s
+ │ │  └rewrite ?EtaInterp.InterpExprEta    3.2%   3.2%       1    1.468s
+ │ └─ReflectiveTactics.solve_post_reifie   0.1%  27.1%       1   12.632s
+ │   ├─UnifyAbstractReflexivity.unify_tr  18.6%  23.5%       7    3.552s
+ │   │└unify (constr) (constr) ---------   4.3%   4.3%       5    1.068s
+ │   └─ReflectiveTactics.unify_abstract_   1.6%   2.4%       1    1.124s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   7.8%       1    3.612s
+  └Glue.zrange_to_reflective -----------   0.0%   7.2%       1    3.332s
+  └Glue.zrange_to_reflective_goal ------   1.7%   5.5%       1    2.544s
+  └pose proof  (pf   :   Interpretation.   3.6%   3.6%       1    1.664s
+─synthesize ----------------------------   0.0%   5.1%       1    2.380s
+└IntegrationTestTemporaryMiscCommon.do_r   0.0%   5.0%       1    2.320s
+└change G' -----------------------------   4.8%   4.8%       1    2.252s
+
+Finished transaction in 80.129 secs (74.068u,0.024s) (successful)
+Closed under the global context
+total time:     46.544s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------  -0.0%  94.9%       1   44.164s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  87.1%       1   40.552s
+─ReflectiveTactics.solve_side_conditions   0.0%  86.7%       1   40.372s
+─ReflectiveTactics.do_reify ------------   0.0%  59.6%       1   27.740s
+─Reify.Reify_rhs_gen -------------------   1.6%  58.9%       1   27.432s
+─Reify.do_reify_abs_goal ---------------  43.3%  43.6%       2   20.312s
+─Reify.do_reifyf_goal ------------------  42.5%  42.8%     108   10.328s
+─ReflectiveTactics.solve_post_reified_si   0.1%  27.1%       1   12.632s
+─UnifyAbstractReflexivity.unify_transfor  18.6%  23.5%       7    3.552s
+─eexact --------------------------------  13.7%  13.7%     110    0.136s
+─Glue.refine_to_reflective_glue' -------   0.0%   7.8%       1    3.612s
+─Glue.zrange_to_reflective -------------   0.0%   7.2%       1    3.332s
+─Glue.zrange_to_reflective_goal --------   1.7%   5.5%       1    2.544s
+─synthesize ----------------------------   0.0%   5.1%       1    2.380s
+─unify (constr) (constr) ---------------   5.1%   5.1%       6    1.068s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%   5.0%       1    2.320s
+─change G' -----------------------------   4.8%   4.8%       1    2.252s
+─rewrite H -----------------------------   3.8%   3.8%       1    1.748s
+─pose proof  (pf   :   Interpretation.Bo   3.6%   3.6%       1    1.664s
+─prove_interp_compile_correct ----------   0.0%   3.5%       1    1.616s
+─rewrite ?EtaInterp.InterpExprEta ------   3.2%   3.2%       1    1.468s
+─ReflectiveTactics.unify_abstract_cbv_in   1.6%   2.4%       1    1.124s
+─reflexivity ---------------------------   2.1%   2.1%       7    0.396s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------  -0.0%  94.9%       1   44.164s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  87.1%       1   40.552s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  86.7%       1   40.372s
+ │ ├─ReflectiveTactics.do_reify --------   0.0%  59.6%       1   27.740s
+ │ │└Reify.Reify_rhs_gen ---------------   1.6%  58.9%       1   27.432s
+ │ │ ├─Reify.do_reify_abs_goal ---------  43.3%  43.6%       2   20.312s
+ │ │ │└Reify.do_reifyf_goal ------------  42.5%  42.8%     108   10.328s
+ │ │ │└eexact --------------------------  13.2%  13.2%     108    0.072s
+ │ │ ├─rewrite H -----------------------   3.8%   3.8%       1    1.748s
+ │ │ └─prove_interp_compile_correct ----   0.0%   3.5%       1    1.616s
+ │ │  └rewrite ?EtaInterp.InterpExprEta    3.2%   3.2%       1    1.468s
+ │ └─ReflectiveTactics.solve_post_reifie   0.1%  27.1%       1   12.632s
+ │   ├─UnifyAbstractReflexivity.unify_tr  18.6%  23.5%       7    3.552s
+ │   │└unify (constr) (constr) ---------   4.3%   4.3%       5    1.068s
+ │   └─ReflectiveTactics.unify_abstract_   1.6%   2.4%       1    1.124s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   7.8%       1    3.612s
+  └Glue.zrange_to_reflective -----------   0.0%   7.2%       1    3.332s
+  └Glue.zrange_to_reflective_goal ------   1.7%   5.5%       1    2.544s
+  └pose proof  (pf   :   Interpretation.   3.6%   3.6%       1    1.664s
+─synthesize ----------------------------   0.0%   5.1%       1    2.380s
+└IntegrationTestTemporaryMiscCommon.do_r   0.0%   5.0%       1    2.320s
+└change G' -----------------------------   4.8%   4.8%       1    2.252s
+
+src/Specific/solinas32_2e255m765_12limbs/femul (real: 155.79, user: 143.70, sys: 0.32, mem: 1454696 ko)
+COQC src/Specific/NISTP256/AMD64/feoppDisplay > src/Specific/NISTP256/AMD64/feoppDisplay.log
+COQC src/Specific/NISTP256/AMD64/fesubDisplay > src/Specific/NISTP256/AMD64/fesubDisplay.log
+COQC src/Specific/X25519/C64/fesquareDisplay > src/Specific/X25519/C64/fesquareDisplay.log
+COQC src/Specific/X25519/C64/fesubDisplay > src/Specific/X25519/C64/fesubDisplay.log
+COQC src/Specific/X25519/C64/freezeDisplay > src/Specific/X25519/C64/freezeDisplay.log
+COQC src/Specific/solinas32_2e255m765_13limbs/femul.v
+Finished transaction in 61.854 secs (57.328u,0.079s) (successful)
+total time:     57.348s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  94.6%       1   54.224s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  86.2%       1   49.452s
+─ReflectiveTactics.solve_side_conditions   0.0%  85.9%       1   49.264s
+─ReflectiveTactics.do_reify ------------  -0.0%  57.6%       1   33.004s
+─Reify.Reify_rhs_gen -------------------   1.3%  56.9%       1   32.608s
+─Reify.do_reify_abs_goal ---------------  43.1%  43.3%       2   24.840s
+─Reify.do_reifyf_goal ------------------  42.3%  42.6%     117   12.704s
+─ReflectiveTactics.solve_post_reified_si   0.1%  28.4%       1   16.260s
+─UnifyAbstractReflexivity.unify_transfor  19.6%  25.0%       7    4.824s
+─eexact --------------------------------  13.9%  13.9%     119    0.144s
+─Glue.refine_to_reflective_glue' -------   0.0%   8.3%       1    4.772s
+─Glue.zrange_to_reflective -------------   0.0%   7.8%       1    4.484s
+─Glue.zrange_to_reflective_goal --------   1.7%   6.0%       1    3.464s
+─synthesize ----------------------------   0.0%   5.4%       1    3.124s
+─unify (constr) (constr) ---------------   5.4%   5.4%       6    1.540s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%   5.3%       1    3.040s
+─change G' -----------------------------   5.2%   5.2%       1    2.964s
+─pose proof  (pf   :   Interpretation.Bo   4.2%   4.2%       1    2.416s
+─prove_interp_compile_correct ----------   0.0%   3.3%       1    1.904s
+─rewrite H -----------------------------   3.3%   3.3%       1    1.896s
+─rewrite ?EtaInterp.InterpExprEta ------   3.0%   3.0%       1    1.732s
+─ReflectiveTactics.unify_abstract_cbv_in   1.4%   2.1%       1    1.212s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  94.6%       1   54.224s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  86.2%       1   49.452s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  85.9%       1   49.264s
+ │ ├─ReflectiveTactics.do_reify --------  -0.0%  57.6%       1   33.004s
+ │ │└Reify.Reify_rhs_gen ---------------   1.3%  56.9%       1   32.608s
+ │ │ ├─Reify.do_reify_abs_goal ---------  43.1%  43.3%       2   24.840s
+ │ │ │└Reify.do_reifyf_goal ------------  42.3%  42.6%     117   12.704s
+ │ │ │└eexact --------------------------  13.4%  13.4%     117    0.084s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   3.3%       1    1.904s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    3.0%   3.0%       1    1.732s
+ │ │ └─rewrite H -----------------------   3.3%   3.3%       1    1.896s
+ │ └─ReflectiveTactics.solve_post_reifie   0.1%  28.4%       1   16.260s
+ │   ├─UnifyAbstractReflexivity.unify_tr  19.6%  25.0%       7    4.824s
+ │   │└unify (constr) (constr) ---------   4.8%   4.8%       5    1.540s
+ │   └─ReflectiveTactics.unify_abstract_   1.4%   2.1%       1    1.212s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   8.3%       1    4.772s
+  └Glue.zrange_to_reflective -----------   0.0%   7.8%       1    4.484s
+  └Glue.zrange_to_reflective_goal ------   1.7%   6.0%       1    3.464s
+  └pose proof  (pf   :   Interpretation.   4.2%   4.2%       1    2.416s
+─synthesize ----------------------------   0.0%   5.4%       1    3.124s
+└IntegrationTestTemporaryMiscCommon.do_r   0.0%   5.3%       1    3.040s
+└change G' -----------------------------   5.2%   5.2%       1    2.964s
+
+Finished transaction in 94.432 secs (86.96u,0.02s) (successful)
+Closed under the global context
+total time:     57.348s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  94.6%       1   54.224s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  86.2%       1   49.452s
+─ReflectiveTactics.solve_side_conditions   0.0%  85.9%       1   49.264s
+─ReflectiveTactics.do_reify ------------  -0.0%  57.6%       1   33.004s
+─Reify.Reify_rhs_gen -------------------   1.3%  56.9%       1   32.608s
+─Reify.do_reify_abs_goal ---------------  43.1%  43.3%       2   24.840s
+─Reify.do_reifyf_goal ------------------  42.3%  42.6%     117   12.704s
+─ReflectiveTactics.solve_post_reified_si   0.1%  28.4%       1   16.260s
+─UnifyAbstractReflexivity.unify_transfor  19.6%  25.0%       7    4.824s
+─eexact --------------------------------  13.9%  13.9%     119    0.144s
+─Glue.refine_to_reflective_glue' -------   0.0%   8.3%       1    4.772s
+─Glue.zrange_to_reflective -------------   0.0%   7.8%       1    4.484s
+─Glue.zrange_to_reflective_goal --------   1.7%   6.0%       1    3.464s
+─synthesize ----------------------------   0.0%   5.4%       1    3.124s
+─unify (constr) (constr) ---------------   5.4%   5.4%       6    1.540s
+─IntegrationTestTemporaryMiscCommon.do_r   0.0%   5.3%       1    3.040s
+─change G' -----------------------------   5.2%   5.2%       1    2.964s
+─pose proof  (pf   :   Interpretation.Bo   4.2%   4.2%       1    2.416s
+─prove_interp_compile_correct ----------   0.0%   3.3%       1    1.904s
+─rewrite H -----------------------------   3.3%   3.3%       1    1.896s
+─rewrite ?EtaInterp.InterpExprEta ------   3.0%   3.0%       1    1.732s
+─ReflectiveTactics.unify_abstract_cbv_in   1.4%   2.1%       1    1.212s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  94.6%       1   54.224s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  86.2%       1   49.452s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  85.9%       1   49.264s
+ │ ├─ReflectiveTactics.do_reify --------  -0.0%  57.6%       1   33.004s
+ │ │└Reify.Reify_rhs_gen ---------------   1.3%  56.9%       1   32.608s
+ │ │ ├─Reify.do_reify_abs_goal ---------  43.1%  43.3%       2   24.840s
+ │ │ │└Reify.do_reifyf_goal ------------  42.3%  42.6%     117   12.704s
+ │ │ │└eexact --------------------------  13.4%  13.4%     117    0.084s
+ │ │ ├─prove_interp_compile_correct ----   0.0%   3.3%       1    1.904s
+ │ │ │└rewrite ?EtaInterp.InterpExprEta    3.0%   3.0%       1    1.732s
+ │ │ └─rewrite H -----------------------   3.3%   3.3%       1    1.896s
+ │ └─ReflectiveTactics.solve_post_reifie   0.1%  28.4%       1   16.260s
+ │   ├─UnifyAbstractReflexivity.unify_tr  19.6%  25.0%       7    4.824s
+ │   │└unify (constr) (constr) ---------   4.8%   4.8%       5    1.540s
+ │   └─ReflectiveTactics.unify_abstract_   1.4%   2.1%       1    1.212s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   8.3%       1    4.772s
+  └Glue.zrange_to_reflective -----------   0.0%   7.8%       1    4.484s
+  └Glue.zrange_to_reflective_goal ------   1.7%   6.0%       1    3.464s
+  └pose proof  (pf   :   Interpretation.   4.2%   4.2%       1    2.416s
+─synthesize ----------------------------   0.0%   5.4%       1    3.124s
+└IntegrationTestTemporaryMiscCommon.do_r   0.0%   5.3%       1    3.040s
+└change G' -----------------------------   5.2%   5.2%       1    2.964s
+
+src/Specific/solinas32_2e255m765_13limbs/femul (real: 181.77, user: 168.52, sys: 0.40, mem: 1589516 ko)
+COQC src/Specific/NISTP256/AMD64/femul.v
+Finished transaction in 119.257 secs (109.936u,0.256s) (successful)
+total time:    110.140s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  97.1%       1  106.964s
+─ReflectiveTactics.do_reflective_pipelin  -0.0%  96.4%       1  106.196s
+─ReflectiveTactics.solve_side_conditions   0.0%  96.2%       1  105.992s
+─ReflectiveTactics.do_reify ------------  -0.0%  83.7%       1   92.208s
+─Reify.Reify_rhs_gen -------------------   0.7%  83.5%       1   91.960s
+─Reify.do_reify_abs_goal ---------------  77.7%  77.8%       2   85.708s
+─Reify.do_reifyf_goal ------------------  77.4%  77.5%     901   85.364s
+─eexact --------------------------------  17.9%  17.9%     903    0.136s
+─ReflectiveTactics.solve_post_reified_si   0.3%  12.5%       1   13.784s
+─UnifyAbstractReflexivity.unify_transfor   9.8%  11.2%       7    3.356s
+─synthesize_montgomery -----------------   0.0%   2.9%       1    3.176s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  97.1%       1  106.964s
+└ReflectiveTactics.do_reflective_pipelin  -0.0%  96.4%       1  106.196s
+└ReflectiveTactics.solve_side_conditions   0.0%  96.2%       1  105.992s
+ ├─ReflectiveTactics.do_reify ----------  -0.0%  83.7%       1   92.208s
+ │└Reify.Reify_rhs_gen -----------------   0.7%  83.5%       1   91.960s
+ │└Reify.do_reify_abs_goal -------------  77.7%  77.8%       2   85.708s
+ │└Reify.do_reifyf_goal ----------------  77.4%  77.5%     901   85.364s
+ │└eexact ------------------------------  17.7%  17.7%     901    0.136s
+ └─ReflectiveTactics.solve_post_reified_   0.3%  12.5%       1   13.784s
+  └UnifyAbstractReflexivity.unify_transf   9.8%  11.2%       7    3.356s
+─synthesize_montgomery -----------------   0.0%   2.9%       1    3.176s
+
+Finished transaction in 61.452 secs (58.503u,0.055s) (successful)
+Closed under the global context
+total time:    110.140s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  97.1%       1  106.964s
+─ReflectiveTactics.do_reflective_pipelin  -0.0%  96.4%       1  106.196s
+─ReflectiveTactics.solve_side_conditions   0.0%  96.2%       1  105.992s
+─ReflectiveTactics.do_reify ------------  -0.0%  83.7%       1   92.208s
+─Reify.Reify_rhs_gen -------------------   0.7%  83.5%       1   91.960s
+─Reify.do_reify_abs_goal ---------------  77.7%  77.8%       2   85.708s
+─Reify.do_reifyf_goal ------------------  77.4%  77.5%     901   85.364s
+─eexact --------------------------------  17.9%  17.9%     903    0.136s
+─ReflectiveTactics.solve_post_reified_si   0.3%  12.5%       1   13.784s
+─UnifyAbstractReflexivity.unify_transfor   9.8%  11.2%       7    3.356s
+─synthesize_montgomery -----------------   0.0%   2.9%       1    3.176s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─Pipeline.refine_reflectively_gen ------   0.0%  97.1%       1  106.964s
+└ReflectiveTactics.do_reflective_pipelin  -0.0%  96.4%       1  106.196s
+└ReflectiveTactics.solve_side_conditions   0.0%  96.2%       1  105.992s
+ ├─ReflectiveTactics.do_reify ----------  -0.0%  83.7%       1   92.208s
+ │└Reify.Reify_rhs_gen -----------------   0.7%  83.5%       1   91.960s
+ │└Reify.do_reify_abs_goal -------------  77.7%  77.8%       2   85.708s
+ │└Reify.do_reifyf_goal ----------------  77.4%  77.5%     901   85.364s
+ │└eexact ------------------------------  17.7%  17.7%     901    0.136s
+ └─ReflectiveTactics.solve_post_reified_   0.3%  12.5%       1   13.784s
+  └UnifyAbstractReflexivity.unify_transf   9.8%  11.2%       7    3.356s
+─synthesize_montgomery -----------------   0.0%   2.9%       1    3.176s
+
+src/Specific/NISTP256/AMD64/femul (real: 202.96, user: 189.62, sys: 0.64, mem: 3302508 ko)
+COQC src/Specific/NISTP256/AMD64/femulDisplay > src/Specific/NISTP256/AMD64/femulDisplay.log
+COQC src/Specific/X25519/C64/ladderstep.v
+total time:     52.080s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_xzladderstep ---------------   0.0% 100.0%       1   52.080s
+─Pipeline.refine_reflectively_gen ------   0.0%  98.5%       1   51.320s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  93.8%       1   48.872s
+─ReflectiveTactics.solve_side_conditions   0.0%  93.7%       1   48.776s
+─ReflectiveTactics.solve_post_reified_si   0.2%  56.5%       1   29.412s
+─UnifyAbstractReflexivity.unify_transfor  44.7%  49.1%       7    6.968s
+─ReflectiveTactics.do_reify ------------   0.0%  37.2%       1   19.364s
+─Reify.Reify_rhs_gen -------------------   2.1%  23.4%       1   12.200s
+─Reify.do_reifyf_goal ------------------  11.2%  11.3%     138    1.884s
+─Compilers.Reify.reify_context_variables   0.1%   9.2%       1    4.808s
+─rewrite H -----------------------------   7.3%   7.3%       1    3.816s
+─ReflectiveTactics.unify_abstract_cbv_in   4.7%   6.4%       1    3.336s
+─Glue.refine_to_reflective_glue' -------   0.0%   4.7%       1    2.448s
+─Glue.zrange_to_reflective -------------   0.0%   4.0%       1    2.068s
+─Reify.transitivity_tt -----------------   0.1%   3.7%       2    0.984s
+─transitivity --------------------------   3.5%   3.5%      10    0.880s
+─reflexivity ---------------------------   3.4%   3.4%      11    0.772s
+─Glue.zrange_to_reflective_goal --------   2.4%   3.3%       1    1.728s
+─eexact --------------------------------   3.2%   3.2%     140    0.032s
+─unify (constr) (constr) ---------------   3.1%   3.1%       6    0.852s
+─clear (var_list) ----------------------   3.1%   3.1%      98    0.584s
+─UnfoldArg.unfold_second_arg -----------   0.4%   3.0%       2    1.576s
+─tac -----------------------------------   2.1%   3.0%       2    1.564s
+─ClearAll.clear_all --------------------   0.2%   2.8%       7    0.584s
+─ChangeInAll.change_with_compute_in_all    0.0%   2.6%     221    0.012s
+─change c with c' in * -----------------   2.5%   2.5%     221    0.012s
+─Reify.do_reify_abs_goal ---------------   2.4%   2.5%       2    1.276s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_xzladderstep ---------------   0.0% 100.0%       1   52.080s
+└Pipeline.refine_reflectively_gen ------   0.0%  98.5%       1   51.320s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  93.8%       1   48.872s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  93.7%       1   48.776s
+ │ ├─ReflectiveTactics.solve_post_reifie   0.2%  56.5%       1   29.412s
+ │ │ ├─UnifyAbstractReflexivity.unify_tr  44.7%  49.1%       7    6.968s
+ │ │ │└ClearAll.clear_all --------------   0.2%   2.8%       7    0.584s
+ │ │ │└clear (var_list) ----------------   2.7%   2.7%      65    0.584s
+ │ │ └─ReflectiveTactics.unify_abstract_   4.7%   6.4%       1    3.336s
+ │ └─ReflectiveTactics.do_reify --------   0.0%  37.2%       1   19.364s
+ │   ├─Reify.Reify_rhs_gen -------------   2.1%  23.4%       1   12.200s
+ │   │ ├─rewrite H ---------------------   7.3%   7.3%       1    3.816s
+ │   │ ├─Reify.transitivity_tt ---------   0.1%   3.7%       2    0.984s
+ │   │ │└transitivity ------------------   3.4%   3.4%       4    0.880s
+ │   │ ├─tac ---------------------------   2.1%   3.0%       1    1.564s
+ │   │ └─Reify.do_reify_abs_goal -------   2.4%   2.5%       2    1.276s
+ │   │  └Reify.do_reifyf_goal ----------   2.2%   2.2%      25    1.148s
+ │   ├─Compilers.Reify.reify_context_var   0.1%   9.2%       1    4.808s
+ │   │└Reify.do_reifyf_goal ------------   9.0%   9.1%     113    1.884s
+ │   │└eexact --------------------------   2.4%   2.4%     113    0.032s
+ │   └─UnfoldArg.unfold_second_arg -----   0.4%   3.0%       2    1.576s
+ │    └ChangeInAll.change_with_compute_i   0.0%   2.6%     221    0.012s
+ │    └change c with c' in * -----------   2.5%   2.5%     221    0.012s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   4.7%       1    2.448s
+  └Glue.zrange_to_reflective -----------   0.0%   4.0%       1    2.068s
+  └Glue.zrange_to_reflective_goal ------   2.4%   3.3%       1    1.728s
+
+Finished transaction in 171.122 secs (161.392u,0.039s) (successful)
+Closed under the global context
+total time:     52.080s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_xzladderstep ---------------   0.0% 100.0%       1   52.080s
+─Pipeline.refine_reflectively_gen ------   0.0%  98.5%       1   51.320s
+─ReflectiveTactics.do_reflective_pipelin   0.0%  93.8%       1   48.872s
+─ReflectiveTactics.solve_side_conditions   0.0%  93.7%       1   48.776s
+─ReflectiveTactics.solve_post_reified_si   0.2%  56.5%       1   29.412s
+─UnifyAbstractReflexivity.unify_transfor  44.7%  49.1%       7    6.968s
+─ReflectiveTactics.do_reify ------------   0.0%  37.2%       1   19.364s
+─Reify.Reify_rhs_gen -------------------   2.1%  23.4%       1   12.200s
+─Reify.do_reifyf_goal ------------------  11.2%  11.3%     138    1.884s
+─Compilers.Reify.reify_context_variables   0.1%   9.2%       1    4.808s
+─rewrite H -----------------------------   7.3%   7.3%       1    3.816s
+─ReflectiveTactics.unify_abstract_cbv_in   4.7%   6.4%       1    3.336s
+─Glue.refine_to_reflective_glue' -------   0.0%   4.7%       1    2.448s
+─Glue.zrange_to_reflective -------------   0.0%   4.0%       1    2.068s
+─Reify.transitivity_tt -----------------   0.1%   3.7%       2    0.984s
+─transitivity --------------------------   3.5%   3.5%      10    0.880s
+─reflexivity ---------------------------   3.4%   3.4%      11    0.772s
+─Glue.zrange_to_reflective_goal --------   2.4%   3.3%       1    1.728s
+─eexact --------------------------------   3.2%   3.2%     140    0.032s
+─unify (constr) (constr) ---------------   3.1%   3.1%       6    0.852s
+─clear (var_list) ----------------------   3.1%   3.1%      98    0.584s
+─UnfoldArg.unfold_second_arg -----------   0.4%   3.0%       2    1.576s
+─tac -----------------------------------   2.1%   3.0%       2    1.564s
+─ClearAll.clear_all --------------------   0.2%   2.8%       7    0.584s
+─ChangeInAll.change_with_compute_in_all    0.0%   2.6%     221    0.012s
+─change c with c' in * -----------------   2.5%   2.5%     221    0.012s
+─Reify.do_reify_abs_goal ---------------   2.4%   2.5%       2    1.276s
+
+ tactic                                   local  total   calls       max 
+────────────────────────────────────────┴──────┴──────┴───────┴─────────┘
+─synthesize_xzladderstep ---------------   0.0% 100.0%       1   52.080s
+└Pipeline.refine_reflectively_gen ------   0.0%  98.5%       1   51.320s
+ ├─ReflectiveTactics.do_reflective_pipel   0.0%  93.8%       1   48.872s
+ │└ReflectiveTactics.solve_side_conditio   0.0%  93.7%       1   48.776s
+ │ ├─ReflectiveTactics.solve_post_reifie   0.2%  56.5%       1   29.412s
+ │ │ ├─UnifyAbstractReflexivity.unify_tr  44.7%  49.1%       7    6.968s
+ │ │ │└ClearAll.clear_all --------------   0.2%   2.8%       7    0.584s
+ │ │ │└clear (var_list) ----------------   2.7%   2.7%      65    0.584s
+ │ │ └─ReflectiveTactics.unify_abstract_   4.7%   6.4%       1    3.336s
+ │ └─ReflectiveTactics.do_reify --------   0.0%  37.2%       1   19.364s
+ │   ├─Reify.Reify_rhs_gen -------------   2.1%  23.4%       1   12.200s
+ │   │ ├─rewrite H ---------------------   7.3%   7.3%       1    3.816s
+ │   │ ├─Reify.transitivity_tt ---------   0.1%   3.7%       2    0.984s
+ │   │ │└transitivity ------------------   3.4%   3.4%       4    0.880s
+ │   │ ├─tac ---------------------------   2.1%   3.0%       1    1.564s
+ │   │ └─Reify.do_reify_abs_goal -------   2.4%   2.5%       2    1.276s
+ │   │  └Reify.do_reifyf_goal ----------   2.2%   2.2%      25    1.148s
+ │   ├─Compilers.Reify.reify_context_var   0.1%   9.2%       1    4.808s
+ │   │└Reify.do_reifyf_goal ------------   9.0%   9.1%     113    1.884s
+ │   │└eexact --------------------------   2.4%   2.4%     113    0.032s
+ │   └─UnfoldArg.unfold_second_arg -----   0.4%   3.0%       2    1.576s
+ │    └ChangeInAll.change_with_compute_i   0.0%   2.6%     221    0.012s
+ │    └change c with c' in * -----------   2.5%   2.5%     221    0.012s
+ └─Glue.refine_to_reflective_glue' -----   0.0%   4.7%       1    2.448s
+  └Glue.zrange_to_reflective -----------   0.0%   4.0%       1    2.068s
+  └Glue.zrange_to_reflective_goal ------   2.4%   3.3%       1    1.728s
+
+src/Specific/X25519/C64/ladderstep (real: 256.77, user: 241.34, sys: 0.45, mem: 1617000 ko)
+COQC src/Specific/X25519/C64/ladderstepDisplay > src/Specific/X25519/C64/ladderstepDisplay.log
