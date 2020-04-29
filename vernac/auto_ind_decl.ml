@@ -441,24 +441,9 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
     let type_of_pq = Tacmach.New.pf_get_type_of gl p in
     let sigma = Tacmach.New.project gl in
     let env = Tacmach.New.pf_env gl in
-    let u,v = destruct_ind env sigma type_of_pq
-    in let lb_type_of_p =
-        try
-          let c, eff = find_scheme ~mode lb_scheme_key (fst u) (*FIXME*) in
-          Proofview.tclUNIT (mkConst c, eff)
-        with Not_found ->
-          (* spiwack: the format of this error message should probably
-                      be improved. *)
-          let err_msg =
-            (str "Leibniz->boolean:" ++
-             str "You have to declare the" ++
-             str "decidability over " ++
-             Printer.pr_econstr_env env sigma type_of_pq ++
-             str " first.")
-          in
-          Tacticals.New.tclZEROMSG err_msg
-       in
-       lb_type_of_p >>= fun (lb_type_of_p,eff) ->
+    let u,v = destruct_ind env sigma type_of_pq in
+    find_scheme ~mode lb_scheme_key (fst u) (*FIXME*) >>= fun c ->
+    let lb_type_of_p = mkConst c in
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
                           v
@@ -468,7 +453,6 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
            Tacticals.New.tclTHENLIST [
-             Proofview.tclEFFECTS eff;
              Equality.replace p q ; apply app ; Auto.default_auto]
   end
 
@@ -514,22 +498,9 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
           in if eq_ind (fst u) ind
              then Tacticals.New.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
-               let bl_t1, eff =
-               try
-                 let c, eff = find_scheme bl_scheme_key (fst u) (*FIXME*) in
-                 mkConst c, eff
-               with Not_found ->
-                 (* spiwack: the format of this error message should probably
-                             be improved. *)
-                 let err_msg =
-                                        (str "boolean->Leibniz:" ++
-                                         str "You have to declare the" ++
-                                         str "decidability over " ++
-                                         Printer.pr_econstr_env env sigma tt1 ++
-                                         str " first.")
-                 in
-                 user_err err_msg
-               in let bl_args =
+               find_scheme bl_scheme_key (fst u) (*FIXME*) >>= fun c ->
+               let bl_t1 = mkConst c in
+               let bl_args =
                         Array.append (Array.append
                           v
                           (Array.Smart.map (fun x -> do_arg env sigma u x 1) v))
@@ -539,7 +510,6 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
                 Tacticals.New.tclTHENLIST [
-                  Proofview.tclEFFECTS eff;
                   Equality.replace_by t1 t2
                     (Tacticals.New.tclTHEN (apply app) (Auto.default_auto)) ;
                   aux q1 q2 ]
@@ -956,7 +926,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
   let eq = eq () and tt = tt ()
   and ff = ff () and bb = bb () in
   let list_id = list_id lnamesparrec in
-  let (_, eff) = find_scheme beq_scheme_kind ind in
+  find_scheme beq_scheme_kind ind >>= fun _ ->
   let eqI = eqI ind lnamesparrec in
   let avoid = ref [] in
   let eqtrue x = mkApp(eq,[|bb;x;tt|]) in
@@ -979,21 +949,11 @@ let compute_dec_tact ind lnamesparrec nparrec =
   let eqbnm = mkApp(eqI,[|mkVar freshn;mkVar freshm|]) in
   let arfresh = Array.of_list fresh_first_intros in
   let xargs = Array.sub arfresh 0 (2*nparrec) in
-  begin try
-          let c, eff = find_scheme bl_scheme_kind ind in
-          Proofview.tclUNIT (mkConst c,eff) with
-    Not_found ->
-      Tacticals.New.tclZEROMSG (str "Error during the decidability part, boolean to leibniz equality is required.")
-  end >>= fun (blI,eff') ->
-  begin try
-          let c, eff = find_scheme lb_scheme_kind ind in
-          Proofview.tclUNIT (mkConst c,eff) with
-    Not_found ->
-      Tacticals.New.tclZEROMSG (str "Error during the decidability part, leibniz to boolean equality is required.")
-  end >>= fun (lbI,eff'') ->
-  let eff = (Evd.concat_side_effects eff'' (Evd.concat_side_effects eff' eff)) in
+  find_scheme bl_scheme_kind ind >>= fun c ->
+  let blI = mkConst c in
+  find_scheme lb_scheme_kind ind >>= fun c ->
+  let lbI = mkConst c in
   Tacticals.New.tclTHENLIST [
-        Proofview.tclEFFECTS eff;
         intros_using fresh_first_intros;
         intros_using [freshn;freshm];
         (*we do this so we don't have to prove the same goal twice *)
