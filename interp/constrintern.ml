@@ -1428,62 +1428,28 @@ let inductive_of_record loc record =
 let sort_fields ~complete loc fields completer =
   match fields with
     | [] -> None
-    | (first_field_ref, first_field_value):: other_fields ->
+    | (first_field_ref, _):: _ ->
         let (first_field_glob_ref, record) =
           try
             let gr = locate_reference first_field_ref in
+            Dumpglob.add_glob ?loc:first_field_ref.CAst.loc gr;
             (gr, Recordops.find_projection gr)
           with Not_found ->
-            raise (InternalizationError(loc, NotAProjection first_field_ref))
+            raise (InternalizationError(first_field_ref.CAst.loc, NotAProjection first_field_ref))
         in
         (* the number of parameters *)
         let nparams = record.Recordops.s_EXPECTEDPARAM in
         (* the reference constructor of the record *)
-        let base_constructor =
-          let global_record_id = GlobRef.ConstructRef record.Recordops.s_CONST in
-          try Nametab.shortest_qualid_of_global ?loc Id.Set.empty global_record_id
-          with Not_found ->
-            anomaly (str "Environment corruption for records.") in
+        let base_constructor = GlobRef.ConstructRef record.Recordops.s_CONST in
         let () = check_duplicate ?loc fields in
-        let (end_index,    (* one past the last field index *)
-             first_field_index,  (* index of the first field of the record *)
-             proj_list)    (* list of projections *)
-          =
-          (* eliminate the first field from the projections,
-             but keep its index *)
-          let rec build_proj_list projs proj_kinds idx ~acc_first_idx acc =
-            match projs with
-              | [] -> (idx, acc_first_idx, acc)
-              | (Some field_glob_id) :: projs ->
-                 let field_glob_ref = GlobRef.ConstRef field_glob_id in
-                 let first_field = GlobRef.equal field_glob_ref first_field_glob_ref in
-                 begin match proj_kinds with
-                    | [] -> anomaly (Pp.str "Number of projections mismatch.")
-                    | { Recordops.pk_true_proj = regular } :: proj_kinds ->
-                       (* "regular" is false when the field is defined
-                           by a let-in in the record declaration
-                           (its value is fixed from other fields). *)
-                       if first_field && not regular && complete then
-                         user_err ?loc  (str "No local fields allowed in a record construction.")
-                       else if first_field then
-                         build_proj_list projs proj_kinds (idx+1) ~acc_first_idx:idx acc
-                       else if not regular && complete then
-                         (* skip non-regular fields *)
-                         build_proj_list projs proj_kinds idx ~acc_first_idx acc
-                       else
-                         build_proj_list projs proj_kinds (idx+1) ~acc_first_idx
-                                         ((idx, field_glob_id) :: acc)
-                 end
-              | None :: projs ->
-                 if complete then
-                   (* we don't want anonymous fields *)
-                   user_err ?loc  (str "This record contains anonymous fields.")
-                 else
-                   (* anonymous arguments don't appear in proj_kinds *)
-                   build_proj_list projs proj_kinds (idx+1) ~acc_first_idx acc
-          in
-          build_proj_list record.Recordops.s_PROJ record.Recordops.s_PROJKIND 1 ~acc_first_idx:0 []
-        in
+        let build_proj idx proj kind =
+          if proj = None && complete then
+            (* we don't want anonymous fields *)
+            user_err ?loc (str "This record contains anonymous fields.")
+          else
+            (idx, proj, kind.Recordops.pk_true_proj) in
+        let proj_list =
+          List.map2_i build_proj 1 record.Recordops.s_PROJ record.Recordops.s_PROJKIND in
         (* now we want to have all fields assignments indexed by their place in
            the constructor *)
         let rec index_fields fields remaining_projs acc =
@@ -1491,34 +1457,43 @@ let sort_fields ~complete loc fields completer =
             | (field_ref, field_value) :: fields ->
                let field_glob_ref = try locate_reference field_ref
                with Not_found ->
-                 user_err ?loc ~hdr:"intern"
+                 user_err ?loc:field_ref.CAst.loc ~hdr:"intern"
                                (str "The field \"" ++ pr_qualid field_ref ++ str "\" does not exist.") in
-               let this_field_record = try Recordops.find_projection field_glob_ref
-                 with Not_found ->
-                   let inductive_ref = inductive_of_record loc record in
-                   raise (InternalizationError(loc, NotAProjectionOf (field_ref, inductive_ref)))
-               in
-               let remaining_projs, (field_index, _) =
-                 let the_proj (idx, glob_id) = GlobRef.equal field_glob_ref (GlobRef.ConstRef glob_id) in
+               let remaining_projs, (field_index, _, regular) =
+                 let the_proj = function
+                   | (idx, Some glob_id, _) -> GlobRef.equal field_glob_ref (GlobRef.ConstRef glob_id)
+                   | (idx, None, _) -> false in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
-                   let ind1 = inductive_of_record loc record in
-                   let ind2 = inductive_of_record loc this_field_record in
+                   let floc = field_ref.CAst.loc in
+                   let this_field_record =
+                     try Recordops.find_projection field_glob_ref
+                     with Not_found ->
+                       let inductive_ref = inductive_of_record floc record in
+                       raise (InternalizationError(floc, NotAProjectionOf (field_ref, inductive_ref))) in
+                   let ind1 = inductive_of_record floc record in
+                   let ind2 = inductive_of_record floc this_field_record in
                    raise (InternalizationError(loc, ProjectionsOfDifferentRecords (ind1, ind2)))
                in
+               if not regular && complete then
+                 (* "regular" is false when the field is defined
+                    by a let-in in the record declaration
+                    (its value is fixed from other fields). *)
+                 user_err ?loc  (str "No local fields allowed in a record construction.");
+               Dumpglob.add_glob ?loc:field_ref.CAst.loc field_glob_ref;
                index_fields fields remaining_projs ((field_index, field_value) :: acc)
             | [] ->
-               (* the order does not matter as we sort them next,
-                  List.rev_* is just for efficiency *)
                let remaining_fields =
-                 let complete_field (idx, field_ref) = (idx,
-                 completer idx field_ref record.Recordops.s_CONST) in
-                 List.rev_map complete_field remaining_projs in
+                 let complete_field (idx, field_ref, regular) =
+                   if not regular && complete then
+                     (* For terms, we keep only regular fields *)
+                     None
+                   else
+                     Some (idx, completer idx field_ref record.Recordops.s_CONST) in
+                 List.map_filter complete_field remaining_projs in
                List.rev_append remaining_fields acc
         in
-        let unsorted_indexed_fields =
-          index_fields other_fields proj_list
-            [(first_field_index, first_field_value)] in
+        let unsorted_indexed_fields = index_fields fields proj_list [] in
         let sorted_indexed_fields =
           let cmp_by_index (i, _) (j, _) = Int.compare i j in
           List.sort cmp_by_index unsorted_indexed_fields in
@@ -1677,9 +1652,9 @@ let drop_notations_pattern looked_for genv =
             if get_asymmetric_patterns () then pl else
             let pars = List.make n (CAst.make ?loc @@ CPatAtom None) in
             List.rev_append pars pl in
-          match drop_syndef top scopes head pl with
-            | Some (a,b,c) -> DAst.make ?loc @@ RCPatCstr(a, b, c)
-            | None -> raise (InternalizationError (loc,NotAConstructor head))
+          let (_,argscs) = find_remaining_scopes [] pl head in
+          let pats = List.map2 (in_pat_sc scopes) argscs pl in
+          DAst.make ?loc @@ RCPatCstr(head, [], pats)
       end
     | CPatCstr (head, None, pl) ->
       begin
@@ -2064,7 +2039,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                      (fun _idx fieldname constructorname ->
                          let open Evar_kinds in
                          let fieldinfo : Evar_kinds.record_field =
-                             {fieldname=fieldname; recordname=inductive_of_constructor constructorname}
+                             {fieldname=Option.get fieldname; recordname=inductive_of_constructor constructorname}
                              in
                          CAst.make ?loc @@ CHole (Some
                  (Evar_kinds.QuestionMark { Evar_kinds.default_question_mark with
@@ -2076,10 +2051,12 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           match fields with
             | None -> user_err ?loc ~hdr:"intern" (str"No constructor inference.")
             | Some (n, constrname, args) ->
+                let args_scopes = find_arguments_scope constrname in
                 let pars = List.make n (CAst.make ?loc @@ CHole (None, IntroAnonymous, None)) in
-                let app = CAst.make ?loc @@ CAppExpl ((None, constrname,None), List.rev_append pars args) in
-          intern env app
-        end
+                let args = intern_args env args_scopes (List.rev_append pars args) in
+                let hd = DAst.make @@ GRef (constrname,None) in
+                DAst.make ?loc @@ GApp (hd, args)
+       end
     | CCases (sty, rtnpo, tms, eqns) ->
         let as_in_vars = List.fold_left (fun acc (_,na,inb) ->
           (Option.fold_left (fun acc { CAst.v = y } -> Name.fold_right Id.Set.add y acc) acc na))
