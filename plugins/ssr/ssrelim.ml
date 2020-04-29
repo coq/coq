@@ -66,21 +66,25 @@ let analyze_eliminator elimty env sigma =
   n_elim_args - pred_id, n_elim_args, is_rec_elim, elim_is_dep, n_pred_args,
   (ctx,concl)
 
-let subgoals_tys sigma (relctx, concl) =
-  let rec aux cur_depth acc = function
+let subgoals_tys sigma pred_id (relctx, concl) =
+  let rec aux (cur_depth,pred_id) acc = function
     | hd :: rest ->
         let ty = Context.Rel.Declaration.get_type hd in
-        if EConstr.Vars.noccurn sigma cur_depth concl &&
+        let ctx,ty_concl = EConstr.decompose_prod_assum sigma ty in
+        let hd, _ = EConstr.decompose_app sigma ty_concl in
+        let len_ctx = List.length ctx in
+        if EConstr.isRelN sigma (len_ctx + pred_id) hd &&
+           EConstr.Vars.noccurn sigma cur_depth concl &&
            List.for_all_i (fun i -> function
              | Context.Rel.Declaration.LocalAssum(_, t) ->
                 EConstr.Vars.noccurn sigma i t
              | Context.Rel.Declaration.LocalDef (_, b, t) ->
                 EConstr.Vars.noccurn sigma i t && EConstr.Vars.noccurn sigma i b) 1 rest
-        then aux (cur_depth - 1) (ty :: acc) rest
-        else aux (cur_depth - 1) acc rest
+        then aux (cur_depth - 1,pred_id+1) (ty :: acc) rest
+        else aux (cur_depth - 1,pred_id+1) acc rest
     | [] -> Array.of_list (List.rev acc)
   in
-    aux (List.length relctx) [] (List.rev relctx)
+    aux (List.length relctx,pred_id) [] (List.rev relctx)
 
 (* A case without explicit dependent terms but with both a view and an    *)
 (* occurrence switch and/or an equation is treated as dependent, with the *)
@@ -173,7 +177,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
       in
       let pred_id, n_elim_args, is_rec, elim_is_dep, n_pred_args,ctx_concl =
         analyze_eliminator elimty env (project gl) in
-      let seed = subgoals_tys (project gl) ctx_concl in
+      let seed = subgoals_tys (project gl) pred_id ctx_concl in
       let elim, elimty, elim_args, gl =
         pf_saturate ~beta:is_case gl elim ~ty:elimty n_elim_args in
       let pred = List.assoc pred_id elim_args in
@@ -224,7 +228,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
               mind.Declarations.mind_nparams (EConstr.of_constr x) in
           Array.map drop_params renamed_tys
         else
-          subgoals_tys (project gl) ctx_concl
+          subgoals_tys (project gl) pred_id ctx_concl
       in
       let rctx = fst (EConstr.decompose_prod_assum (project gl) unfolded_c_ty) in
       let n_c_args = Context.Rel.length rctx in
