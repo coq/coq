@@ -26,6 +26,18 @@ Fail Check (fun A : SProp => A : Type).
 Lemma foo : Prop.
 Proof. pose (fun A : SProp => A : Type); exact True. Fail Qed. Abort.
 
+Module Skippable.
+  (* Check that SProp can be used to skip hard problems
+
+     l and r are convertible but Coq can't actually check it
+     (replacing SProp by Prop gives a stack overflow currently, even
+     without that it would take a long time.) *)
+  Definition l := 999 * 998.
+  Definition r := 998 * 999.
+
+  Definition lr (P:SProp) (f:nat -> P) (Q:P -> Prop) (x:Q (f l)) : Q (f r) := x.
+End Skippable.
+
 (* define evar as product *)
 Check (fun (f:(_:SProp)) => f _).
 
