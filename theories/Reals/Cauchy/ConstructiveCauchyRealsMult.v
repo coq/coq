@@ -188,156 +188,56 @@ Proof.
   destruct (Pos.max Ax Ay * p)%positive; discriminate.
 Qed.
 
-Lemma CReal_mult_assoc_bounded_r : forall (xn yn zn : positive -> Q),
-    QSeqEquivEx xn yn (* both are Cauchy with same limit *)
-    -> QSeqEquiv zn zn id
-    -> QSeqEquivEx (fun n => xn n * zn n)%Q (fun n => yn n * zn n)%Q.
-Proof.
-  intros xn yn zn [cvmod cveq] H0.
-  exists (fun p => Pos.max (Pos.max (cvmod 2%positive) (cvmod (2 * (Pos.max (QCauchySeq_bound yn (fun k : positive => cvmod (2 * k)%positive)) (QCauchySeq_bound zn id)) * p)%positive))
-               (2 * (Pos.max (QCauchySeq_bound yn (fun k : positive => cvmod (2 * k)%positive)) (QCauchySeq_bound zn id)) * p)%positive).
-  apply (CReal_mult_cauchy _ _ _ _ _ _ cveq H0).
-  exact (QCauchySeq_bounded_prop
-           yn (fun k => cvmod (2 * k)%positive)
-           (QSeqEquiv_cau_r xn yn cvmod cveq)).
-  exact (QCauchySeq_bounded_prop zn id H0).
-Qed.
-
-Lemma CReal_mult_assoc : forall x y z : CReal, (x * y) * z == x * (y * z).
-Proof.
-  intros. apply CRealEq_diff. apply CRealEq_modindep.
-  apply (QSeqEquivEx_trans _ (fun n => proj1_sig x n * proj1_sig y n * proj1_sig z n)%Q).
-  - apply (QSeqEquivEx_trans _ (fun n => proj1_sig (CReal_mult x y) n * proj1_sig z n)%Q).
-    apply CReal_mult_unfold.
-    destruct x as [xn limx], y as [yn limy], z as [zn limz]; unfold CReal_mult; simpl.
-    pose proof (QCauchySeq_bounded_prop xn id limx) as majx.
-    pose proof (QCauchySeq_bounded_prop yn id limy) as majy.
-    pose proof (QCauchySeq_bounded_prop zn id limz) as majz.
-    remember (QCauchySeq_bound xn id) as Ax.
-    remember (QCauchySeq_bound yn id) as Ay.
-    remember (QCauchySeq_bound zn id) as Az.
-    apply CReal_mult_assoc_bounded_r. 2: exact limz.
-    exists (fun p : positive =>
-         Pos.max (2 * Pos.max Ax Ay * p)
-                 (2 * Pos.max Ax Ay * p)).
-    intros p n k H0 H1.
-    apply (CReal_mult_cauchy xn xn yn Ax Ay id limx limy).
-    2: exact majy. intros. apply majx. refine (Pos.le_trans _ _ _ _ H).
-    discriminate. rewrite Pos.max_l in H0, H1.
-    2: apply Pos.le_refl. 2: apply Pos.le_refl.
-    apply linear_max.
-    apply (Pos.le_trans _ (2 * Pos.max Ax Ay * p)).
-    apply (Pos.le_trans _ (1*p)). apply Pos.le_refl.
-    apply Pos.mul_le_mono_r. discriminate.
-    exact H0. rewrite Pos.max_l. 2: apply Pos.le_max_r.
-    rewrite Pos.max_r in H1. 2: apply Pos.le_refl.
-    refine (Pos.le_trans _ _ _ _ H1). rewrite Pos.max_r.
-    apply Pos.le_refl. apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
-    unfold id.
-    rewrite <- Pos.mul_assoc, <- (Pos.mul_le_mono_l 2 1).
-    destruct (Pos.max Ax Ay * p)%positive; discriminate.
-  - apply (QSeqEquivEx_trans
-             _ (fun n => proj1_sig x n * proj1_sig (CReal_mult y z) n)%Q).
-    2: apply QSeqEquivEx_sym; apply CReal_mult_unfold.
-    destruct x as [xn limx], y as [yn limy], z as [zn limz]; unfold CReal_mult; simpl.
-    pose proof (QCauchySeq_bounded_prop xn id limx) as majx.
-    pose proof (QCauchySeq_bounded_prop yn id limy) as majy.
-    pose proof (QCauchySeq_bounded_prop zn id limz) as majz.
-    remember (QCauchySeq_bound xn id) as Ax.
-    remember (QCauchySeq_bound yn id) as Ay.
-    remember (QCauchySeq_bound zn id) as Az.
-    pose proof (CReal_mult_assoc_bounded_r (fun n0 : positive => yn n0 * zn n0)%Q (fun n : positive =>
-          yn ((Pos.max Ay Az)~0 * n)%positive
-          * zn ((Pos.max Ay Az)~0 * n)%positive)%Q xn)
-      as [cvmod cveq].
-    + exists (fun p : positive =>
-           Pos.max (2 * Pos.max Ay Az * p)
-                   (2 * Pos.max Ay Az * p)).
-      intros p n k H0 H1. rewrite Pos.max_l in H0, H1.
-      apply (CReal_mult_cauchy yn yn zn Ay Az id limy limz).
-      2: exact majz. intros. apply majy. refine (Pos.le_trans _ _ _ _ H).
-      discriminate.
-      3: apply Pos.le_refl. 3: apply Pos.le_refl.
-      rewrite Pos.max_l. rewrite Pos.max_r. apply H0.
-      apply (Pos.le_trans _ (2*1)). apply Pos.le_refl. unfold id.
-      rewrite <- Pos.mul_assoc, <- (Pos.mul_le_mono_l 2 1).
-      destruct (Pos.max Ay Az * p)%positive; discriminate.
-      apply Pos.le_max_r.
-      apply linear_max. refine (Pos.le_trans _ _ _ _ H1).
-      apply (Pos.le_trans _ (1*p)). apply Pos.le_refl.
-      apply Pos.mul_le_mono_r. discriminate.
-    + exact limx.
-    + exists cvmod. intros p k n H1 H2. specialize (cveq p k n H1 H2).
-      setoid_replace (xn k * yn k * zn k -
-                      xn n *
-                      (yn ((Pos.max Ay Az)~0 * n)%positive *
-                       zn ((Pos.max Ay Az)~0 * n)%positive))%Q
-        with ((fun n : positive => yn n * zn n * xn n) k -
-              (fun n : positive =>
-                 yn ((Pos.max Ay Az)~0 * n)%positive *
-                 zn ((Pos.max Ay Az)~0 * n)%positive *
-                 xn n) n)%Q.
-      apply cveq. ring.
-Qed.
-
 Lemma CReal_mult_comm : forall x y : CReal, x * y == y * x.
 Proof.
-  intros. apply CRealEq_diff. apply CRealEq_modindep.
-  apply (QSeqEquivEx_trans _ (fun n => proj1_sig y n * proj1_sig x n)%Q).
-  destruct x as [xn limx], y as [yn limy]; simpl.
-  2: apply QSeqEquivEx_sym; apply CReal_mult_unfold.
-  pose proof (QCauchySeq_bounded_prop xn id limx) as majx.
-  pose proof (QCauchySeq_bounded_prop yn id limy) as majy.
-  remember (QCauchySeq_bound xn id) as Ax.
-  remember (QCauchySeq_bound yn id) as Ay.
-  apply QSeqEquivEx_sym.
-  exists (fun p : positive =>
-       Pos.max (2 * Pos.max Ay Ax * p)
-               (2 * Pos.max Ay Ax * p)).
-  intros p n k H0 H1. rewrite Pos.max_l in H0, H1.
-  2: apply Pos.le_refl. 2: apply Pos.le_refl.
-  rewrite (Qmult_comm (xn ((Pos.max Ax Ay)~0 * k)%positive)).
-  apply (CReal_mult_cauchy yn yn xn Ay Ax id limy limx).
-  2: exact majx. intros. apply majy. refine (Pos.le_trans _ _ _ _ H).
-  discriminate.
-  rewrite Pos.max_l. rewrite Pos.max_r. apply H0.
-  unfold id.
-  apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
-  rewrite <- Pos.mul_assoc, <- (Pos.mul_le_mono_l 2 1).
-  destruct (Pos.max Ay Ax * p)%positive; discriminate.
-  apply Pos.le_max_r. rewrite (Pos.max_comm Ax Ay).
-  apply linear_max. refine (Pos.le_trans _ _ _ _ H1).
-  apply (Pos.le_trans _ (1*p)). apply Pos.le_refl.
-  apply Pos.mul_le_mono_r. discriminate.
+  assert (forall x y : CReal, x * y <= y * x) as H.
+  { intros x y [n nmaj]. apply (Qlt_not_le _ _ nmaj). clear nmaj.
+    unfold CReal_mult, proj1_sig.
+    destruct x as [xn limx], y as [yn limy].
+    rewrite Pos.max_comm, Qmult_comm. ring_simplify. discriminate. }
+  split; apply H.
 Qed.
 
-Lemma CReal_mult_proper_l : forall x y z : CReal,
-    y == z -> x * y == x * z.
+Lemma CReal_mult_proper_0_l : forall x y : CReal,
+    y == 0 -> x * y == 0.
 Proof.
-  intros. apply CRealEq_diff. apply CRealEq_modindep.
-  apply (QSeqEquivEx_trans _ (fun n => proj1_sig x n * proj1_sig y n)%Q).
-  apply CReal_mult_unfold.
-  rewrite CRealEq_diff in H. rewrite <- CRealEq_modindep in H.
-  apply QSeqEquivEx_sym.
-  apply (QSeqEquivEx_trans _ (fun n => proj1_sig x n * proj1_sig z n)%Q).
-  apply CReal_mult_unfold.
-  destruct x as [xn limx], y as [yn limy], z as [zn limz]; simpl.
-  destruct H as [cvmod H]. simpl in H.
-  pose proof (QCauchySeq_bounded_prop xn id limx) as majx.
-  pose proof (QCauchySeq_bounded_prop
-           zn (fun k => cvmod (2 * k)%positive)
-           (QSeqEquiv_cau_r yn zn cvmod H)) as majz.
-  remember (QCauchySeq_bound xn id) as Ax.
-  remember (QCauchySeq_bound zn (fun k => cvmod (2 * k)%positive)) as Az.
-  apply QSeqEquivEx_sym.
-  exists (fun p : positive =>
-       Pos.max (Pos.max (cvmod (2%positive)) (cvmod (2 * Pos.max Az Ax * p)%positive))
-               (2 * Pos.max Az Ax * p)).
-  intros p n k H1 H2.
-  setoid_replace (xn n * yn n - xn k * zn k)%Q
-    with (yn n * xn n - zn k * xn k)%Q. 2: ring.
-  apply (CReal_mult_cauchy yn zn xn Az Ax cvmod H limx majz majx).
-  exact H1. exact H2.
+  assert (forall a:Q, a-0 == a)%Q as Qmin0.
+  { intros. ring. }
+  intros. apply CRealEq_diff. intros n.
+  destruct x as [xn limx], y as [yn limy].
+  unfold CReal_mult, proj1_sig, inject_Q.
+  rewrite CRealEq_diff in H; unfold proj1_sig, inject_Q in H.
+  specialize (H (2 * Pos.max (QCauchySeq_bound xn id)
+                             (QCauchySeq_bound yn id) * n))%positive.
+  rewrite Qmin0 in H. rewrite Qmin0, Qabs_Qmult, Qmult_comm.
+  apply (Qle_trans
+           _ ((2 # (2 * Pos.max (QCauchySeq_bound xn id) (QCauchySeq_bound yn id) * n)%positive) *
+       (Qabs (xn (2 * Pos.max (QCauchySeq_bound xn id) (QCauchySeq_bound yn id) * n)%positive) ))).
+  apply Qmult_le_compat_r.
+  2: apply Qabs_nonneg. exact H. clear H. rewrite Qmult_comm.
+  apply (Qle_trans _ ((Z.pos (QCauchySeq_bound xn id) # 1)
+                      * (2 # (2 * Pos.max (QCauchySeq_bound xn id) (QCauchySeq_bound yn id) * n)%positive))).
+  apply Qmult_le_compat_r.
+  apply Qlt_le_weak, (QCauchySeq_bounded_prop xn id limx).
+  discriminate. discriminate.
+  unfold Qle, Qmult, Qnum, Qden.
+  rewrite Pos.mul_1_l. rewrite <- (Z.mul_comm 2), <- Z.mul_assoc.
+  apply Z.mul_le_mono_nonneg_l. discriminate.
+  rewrite <- Pos2Z.inj_mul. apply Pos2Z.pos_le_pos, Pos.mul_le_mono_r.
+  apply (Pos.le_trans _ (2 * QCauchySeq_bound xn id)).
+  apply (Pos.le_trans _ (1 * QCauchySeq_bound xn id)).
+  apply Pos.le_refl. apply Pos.mul_le_mono_r. discriminate.
+  apply Pos.mul_le_mono_l. apply Pos.le_max_l.
+Qed.
+
+Lemma CReal_mult_0_r : forall r, r * 0 == 0.
+Proof.
+  intros. apply CReal_mult_proper_0_l. reflexivity.
+Qed.
+
+Lemma CReal_mult_0_l : forall r, 0 * r == 0.
+Proof.
+  intros. rewrite CReal_mult_comm. apply CReal_mult_0_r.
 Qed.
 
 Lemma CReal_mult_lt_0_compat : forall x y : CReal,
@@ -397,19 +297,20 @@ Proof.
   apply (QSeqEquivEx_trans _ (fun n => proj1_sig x n
                                     * (proj1_sig y n + proj1_sig z n))%Q).
   - pose proof (CReal_plus_unfold y z).
-    destruct x as [xn limx], y as [yn limy], z as [zn limz]; simpl; simpl in H.
+    destruct x as [xn limx], y as [yn limy], z as [zn limz].
+    unfold CReal_plus, proj1_sig in H. unfold CReal_plus, proj1_sig.
     pose proof (QCauchySeq_bounded_prop xn id) as majx.
     pose proof (QCauchySeq_bounded_prop yn id) as majy.
     pose proof (QCauchySeq_bounded_prop zn id) as majz.
     remember (QCauchySeq_bound xn id) as Ax.
     remember (QCauchySeq_bound yn id) as Ay.
     remember (QCauchySeq_bound zn id) as Az.
-    pose proof (CReal_mult_cauchy (fun n => yn (n~0)%positive + zn (n~0)%positive)%Q
+    pose proof (CReal_mult_cauchy (fun n => Qred (yn (n~0)%positive + zn (n~0)%positive))%Q
                                   (fun n => yn n + zn n)%Q
                                   xn (Ay + Az) Ax
                                   (fun p:positive => 2 * p)%positive H limx).
     exists (fun p : positive => (2 * (2 * Pos.max (Ay + Az) Ax * p))%positive).
-    intros p n k H1 H2.
+    intros p n k H1 H2. rewrite Qred_correct.
     setoid_replace (xn n * (yn (n~0)%positive + zn (n~0)%positive) - xn k * (yn k + zn k))%Q
       with ((yn (n~0)%positive + zn (n~0)%positive) * xn n - (yn k + zn k) * xn k)%Q.
     2: ring.
@@ -419,6 +320,7 @@ Proof.
       apply Pos.mul_le_mono_l.
       apply (Pos.le_trans _ (1*(Pos.max (Ay + Az) Ax * p))).
       apply Pos.le_refl. apply Pos.mul_le_mono_r. discriminate. }
+    rewrite <- (Qred_correct (yn (n~0)%positive + zn (n~0)%positive)).
     apply H0. intros n0 H4.
     apply (Qle_lt_trans _ _ _ (Qabs_triangle _ _)).
     rewrite Pos2Z.inj_add, <- Qinv_plus_distr. apply Qplus_lt_le_compat.
@@ -533,6 +435,144 @@ Proof.
   <- (CReal_mult_comm r1), <- (CReal_mult_comm r1).
   reflexivity.
 Qed.
+
+Lemma CReal_opp_mult_distr_r
+  : forall r1 r2 : CReal, - (r1 * r2) == r1 * (- r2).
+Proof.
+  intros. apply (CReal_plus_eq_reg_l (r1*r2)).
+  rewrite CReal_plus_opp_r, <- CReal_mult_plus_distr_l.
+  symmetry. apply CReal_mult_proper_0_l.
+  apply CReal_plus_opp_r.
+Qed.
+
+Lemma CReal_mult_proper_l : forall x y z : CReal,
+    y == z -> x * y == x * z.
+Proof.
+  intros. apply (CReal_plus_eq_reg_l (-(x*z))).
+  rewrite CReal_plus_opp_l, CReal_opp_mult_distr_r.
+  rewrite <- CReal_mult_plus_distr_l.
+  apply CReal_mult_proper_0_l. rewrite H. apply CReal_plus_opp_l.
+Qed.
+
+Lemma CReal_mult_proper_r : forall x y z : CReal,
+    y == z -> y * x == z * x.
+Proof.
+  intros. rewrite CReal_mult_comm, (CReal_mult_comm z).
+  apply CReal_mult_proper_l, H.
+Qed.
+
+Lemma CReal_mult_assoc_bounded_r : forall (xn yn zn : positive -> Q),
+    QSeqEquivEx xn yn (* both are Cauchy with same limit *)
+    -> QSeqEquiv zn zn id
+    -> QSeqEquivEx (fun n => xn n * zn n)%Q (fun n => yn n * zn n)%Q.
+Proof.
+  intros xn yn zn [cvmod cveq] H0.
+  exists (fun p => Pos.max (Pos.max (cvmod 2%positive) (cvmod (2 * (Pos.max (QCauchySeq_bound yn (fun k : positive => cvmod (2 * k)%positive)) (QCauchySeq_bound zn id)) * p)%positive))
+               (2 * (Pos.max (QCauchySeq_bound yn (fun k : positive => cvmod (2 * k)%positive)) (QCauchySeq_bound zn id)) * p)%positive).
+  apply (CReal_mult_cauchy _ _ _ _ _ _ cveq H0).
+  exact (QCauchySeq_bounded_prop
+           yn (fun k => cvmod (2 * k)%positive)
+           (QSeqEquiv_cau_r xn yn cvmod cveq)).
+  exact (QCauchySeq_bounded_prop zn id H0).
+Qed.
+
+Lemma CReal_mult_assoc : forall x y z : CReal, (x * y) * z == x * (y * z).
+Proof.
+  (*
+  assert (forall x y z : CReal, (x * y) * z <= x * (y * z)) as H.
+  { intros. intros [n nmaj]. apply (Qlt_not_le _ _ nmaj). clear nmaj.
+    destruct x as [xn limx], y as [yn limy], z as [zn limz];
+      unfold CReal_mult; simpl.
+    pose proof (QCauchySeq_bounded_prop xn id limx) as majx.
+    pose proof (QCauchySeq_bounded_prop yn id limy) as majy.
+    pose proof (QCauchySeq_bounded_prop zn id limz) as majz.
+    remember (QCauchySeq_bound xn id) as Ax.
+    remember (QCauchySeq_bound yn id) as Ay.
+    remember (QCauchySeq_bound zn id) as Az.
+  }
+  split. 2: apply H. rewrite CReal_mult_comm.
+  rewrite (CReal_mult_comm (x*y)).
+  apply (CReal_le_trans _ (z * y * x)).
+  apply CReal_mult_proper_r, CReal_mult_comm.
+  apply (CReal_le_trans _ (z * (y * x))).
+  apply H. apply CReal_mult_proper_l, CReal_mult_comm.
+*)
+
+  intros. apply CRealEq_diff. apply CRealEq_modindep.
+  apply (QSeqEquivEx_trans _ (fun n => proj1_sig x n * proj1_sig y n * proj1_sig z n)%Q).
+  - apply (QSeqEquivEx_trans _ (fun n => proj1_sig (CReal_mult x y) n * proj1_sig z n)%Q).
+    apply CReal_mult_unfold.
+    destruct x as [xn limx], y as [yn limy], z as [zn limz]; unfold CReal_mult; simpl.
+    pose proof (QCauchySeq_bounded_prop xn id limx) as majx.
+    pose proof (QCauchySeq_bounded_prop yn id limy) as majy.
+    pose proof (QCauchySeq_bounded_prop zn id limz) as majz.
+    remember (QCauchySeq_bound xn id) as Ax.
+    remember (QCauchySeq_bound yn id) as Ay.
+    remember (QCauchySeq_bound zn id) as Az.
+    apply CReal_mult_assoc_bounded_r. 2: exact limz.
+    exists (fun p : positive =>
+         Pos.max (2 * Pos.max Ax Ay * p)
+                 (2 * Pos.max Ax Ay * p)).
+    intros p n k H0 H1.
+    apply (CReal_mult_cauchy xn xn yn Ax Ay id limx limy).
+    2: exact majy. intros. apply majx. refine (Pos.le_trans _ _ _ _ H).
+    discriminate. rewrite Pos.max_l in H0, H1.
+    2: apply Pos.le_refl. 2: apply Pos.le_refl.
+    apply linear_max.
+    apply (Pos.le_trans _ (2 * Pos.max Ax Ay * p)).
+    apply (Pos.le_trans _ (1*p)). apply Pos.le_refl.
+    apply Pos.mul_le_mono_r. discriminate.
+    exact H0. rewrite Pos.max_l. 2: apply Pos.le_max_r.
+    rewrite Pos.max_r in H1. 2: apply Pos.le_refl.
+    refine (Pos.le_trans _ _ _ _ H1). rewrite Pos.max_r.
+    apply Pos.le_refl. apply (Pos.le_trans _ (2*1)). apply Pos.le_refl.
+    unfold id.
+    rewrite <- Pos.mul_assoc, <- (Pos.mul_le_mono_l 2 1).
+    destruct (Pos.max Ax Ay * p)%positive; discriminate.
+  - apply (QSeqEquivEx_trans
+             _ (fun n => proj1_sig x n * proj1_sig (CReal_mult y z) n)%Q).
+    2: apply QSeqEquivEx_sym; apply CReal_mult_unfold.
+    destruct x as [xn limx], y as [yn limy], z as [zn limz]; unfold CReal_mult; simpl.
+    pose proof (QCauchySeq_bounded_prop xn id limx) as majx.
+    pose proof (QCauchySeq_bounded_prop yn id limy) as majy.
+    pose proof (QCauchySeq_bounded_prop zn id limz) as majz.
+    remember (QCauchySeq_bound xn id) as Ax.
+    remember (QCauchySeq_bound yn id) as Ay.
+    remember (QCauchySeq_bound zn id) as Az.
+    pose proof (CReal_mult_assoc_bounded_r (fun n0 : positive => yn n0 * zn n0)%Q (fun n : positive =>
+          yn ((Pos.max Ay Az)~0 * n)%positive
+          * zn ((Pos.max Ay Az)~0 * n)%positive)%Q xn)
+      as [cvmod cveq].
+    + exists (fun p : positive =>
+           Pos.max (2 * Pos.max Ay Az * p)
+                   (2 * Pos.max Ay Az * p)).
+      intros p n k H0 H1. rewrite Pos.max_l in H0, H1.
+      apply (CReal_mult_cauchy yn yn zn Ay Az id limy limz).
+      2: exact majz. intros. apply majy. refine (Pos.le_trans _ _ _ _ H).
+      discriminate.
+      3: apply Pos.le_refl. 3: apply Pos.le_refl.
+      rewrite Pos.max_l. rewrite Pos.max_r. apply H0.
+      apply (Pos.le_trans _ (2*1)). apply Pos.le_refl. unfold id.
+      rewrite <- Pos.mul_assoc, <- (Pos.mul_le_mono_l 2 1).
+      destruct (Pos.max Ay Az * p)%positive; discriminate.
+      apply Pos.le_max_r.
+      apply linear_max. refine (Pos.le_trans _ _ _ _ H1).
+      apply (Pos.le_trans _ (1*p)). apply Pos.le_refl.
+      apply Pos.mul_le_mono_r. discriminate.
+    + exact limx.
+    + exists cvmod. intros p k n H1 H2. specialize (cveq p k n H1 H2).
+      setoid_replace (xn k * yn k * zn k -
+                      xn n *
+                      (yn ((Pos.max Ay Az)~0 * n)%positive *
+                       zn ((Pos.max Ay Az)~0 * n)%positive))%Q
+        with ((fun n : positive => yn n * zn n * xn n) k -
+              (fun n : positive =>
+                 yn ((Pos.max Ay Az)~0 * n)%positive *
+                 zn ((Pos.max Ay Az)~0 * n)%positive *
+                 xn n) n)%Q.
+      apply cveq. ring.
+Qed.
+
 
 Lemma CReal_mult_1_l : forall r: CReal, 1 * r == r.
 Proof.
@@ -655,17 +695,6 @@ Qed.
 Add Ring CRealRing : CReal_isRing.
 
 (**********)
-Lemma CReal_mult_0_l : forall r, 0 * r == 0.
-Proof.
-  intro; ring.
-Qed.
-
-Lemma CReal_mult_0_r : forall r, r * 0 == 0.
-Proof.
-  intro; ring.
-Qed.
-
-(**********)
 Lemma CReal_mult_1_r : forall r, r * 1 == r.
 Proof.
   intro; ring.
@@ -673,12 +702,6 @@ Qed.
 
 Lemma CReal_opp_mult_distr_l
   : forall r1 r2 : CReal, - (r1 * r2) == (- r1) * r2.
-Proof.
-  intros. ring.
-Qed.
-
-Lemma CReal_opp_mult_distr_r
-  : forall r1 r2 : CReal, - (r1 * r2) == r1 * (- r2).
 Proof.
   intros. ring.
 Qed.
@@ -775,7 +798,8 @@ Proof.
       apply Qle_Qabs. apply limx.
       apply Pos.le_max_l. apply Pos.le_refl.
   - apply (CReal_plus_lt_reg_l (-(2))). ring_simplify.
-    exists 4%positive. simpl.
+    exists 4%positive. unfold inject_Q, CReal_minus, CReal_plus, proj1_sig.
+    rewrite Qred_correct. simpl.
     rewrite <- Qinv_plus_distr.
     rewrite <- (Qplus_lt_r _ _ ((n#1) - (1#2))). ring_simplify.
     apply (Qle_lt_trans _ (xn 4%positive + (1 # 4)) _ H0).
@@ -834,79 +858,41 @@ Proof.
 Qed.
 
 Lemma CRealShiftReal : forall (x : CReal) (k : positive),
-    QCauchySeq (fun n => proj1_sig x (Pos.add n k)) id.
+    QCauchySeq (fun n => proj1_sig x (Pos.max n k)) id.
 Proof.
-  assert (forall p k : positive, (p <= p + k)%positive).
-  { intros. apply Pos2Nat.inj_le. rewrite Pos2Nat.inj_add.
-    apply (le_trans _ (Pos.to_nat p + 0)).
-    rewrite plus_0_r. apply le_refl. apply Nat.add_le_mono_l.
-    apply le_0_n. }
   intros x k n p q H0 H1.
   destruct x as [xn cau]; unfold proj1_sig.
-  apply cau. apply (Pos.le_trans _ _ _ H0). apply H.
-  apply (Pos.le_trans _ _ _ H1). apply H.
+  apply cau. exact (Pos.le_trans _ _ _ H0 (Pos.le_max_l _ _)).
+  exact (Pos.le_trans _ _ _ H1 (Pos.le_max_l _ _)).
 Qed.
 
 Lemma CRealShiftEqual : forall (x : CReal) (k : positive),
-    CRealEq x (exist _ (fun n => proj1_sig x (Pos.add n k)) (CRealShiftReal x k)).
+    x == exist _ (fun n => proj1_sig x (Pos.max n k)) (CRealShiftReal x k).
 Proof.
   intros. split.
   - intros [n maj]. destruct x as [xn cau]; simpl in maj.
-    specialize (cau n (n + k)%positive n).
-    apply Qlt_not_le in maj. apply maj. clear maj.
-    apply (Qle_trans _ (Qabs (xn (n + k)%positive - xn n))).
-    apply Qle_Qabs. apply (Qle_trans _ (1#n)). apply Zlt_le_weak.
-    apply cau. unfold id. apply Pos2Nat.inj_le. rewrite Pos2Nat.inj_add.
-    apply (le_trans _ (Pos.to_nat n + 0)).
-    rewrite plus_0_r. apply le_refl. apply Nat.add_le_mono_l.
-    apply le_0_n. apply Pos.le_refl.
-    apply Z.mul_le_mono_pos_r. apply Pos2Z.is_pos. discriminate.
+    specialize (cau n (Pos.max n k) n (Pos.le_max_l _ _ ) (Pos.le_refl _)).
+    apply (Qlt_not_le _ _ maj). clear maj.
+    apply (Qle_trans _ (Qabs (xn (Pos.max n k) - xn n))).
+    apply Qle_Qabs. apply Qlt_le_weak. apply (Qlt_trans _ _ _ cau).
+    unfold Qlt, Qnum, Qden.
+    apply Z.mul_lt_mono_pos_r. reflexivity. reflexivity.
   - intros [n maj]. destruct x as [xn cau]; simpl in maj.
-    specialize (cau n n (n + k)%positive).
-    apply Qlt_not_le in maj. apply maj. clear maj.
-    apply (Qle_trans _ (Qabs (xn n - xn (n + k)%positive))).
-    apply Qle_Qabs. apply (Qle_trans _ (1#n)). apply Zlt_le_weak.
-    apply cau. apply Pos.le_refl.
-    apply Pos2Nat.inj_le. rewrite Pos2Nat.inj_add.
-    apply (le_trans _ (Pos.to_nat n + 0)).
-    rewrite plus_0_r. apply le_refl. apply Nat.add_le_mono_l.
-    apply le_0_n.
-    apply Z.mul_le_mono_pos_r. apply Pos2Z.is_pos. discriminate.
+    specialize (cau n (Pos.max n k) n (Pos.le_max_l _ _ ) (Pos.le_refl _)).
+    apply (Qlt_not_le _ _ maj). clear maj.
+    rewrite Qabs_Qminus in cau.
+    apply (Qle_trans _ (Qabs (xn n - xn (Pos.max n k)))).
+    apply Qle_Qabs. apply Qlt_le_weak. apply (Qlt_trans _ _ _ cau).
+    unfold Qlt, Qnum, Qden.
+    apply Z.mul_lt_mono_pos_r. reflexivity. reflexivity.
 Qed.
 
-(* Find an equal negative real number, which rational sequence
-   stays below 0, so that it can be inversed. *)
-Definition CRealNegShift (x : CReal)
-  : x < inject_Q 0
-    -> { y : prod positive CReal
-      | x == (snd y) /\ forall n:positive, Qlt (proj1_sig (snd y) n) (-1 # fst y) }.
-Proof.
-  intro xNeg.
-  pose proof (CRealLt_aboveSig x (inject_Q 0)).
-  pose proof (CRealShiftReal x).
-  pose proof (CRealShiftEqual x).
-  destruct xNeg as [n maj], x as [xn cau]; simpl in maj.
-  specialize (H n maj); simpl in H.
-  destruct (Qarchimedean (/ (0 - xn n - (2 # n)))) as [a _].
-  remember (Pos.max n a~0) as k.
-  clear Heqk. clear maj. clear n.
-  exists (pair k (exist _ (fun n => xn (Pos.add n k)) (H0 k))).
-  split. apply H1. intro n. simpl. apply Qlt_minus_iff.
-  apply (Qlt_trans _ (-(2 # k) - xn (n + k)%positive)).
-  specialize (H (n + k)%positive).
-  unfold Qminus in H. rewrite Qplus_0_l in H. apply Qlt_minus_iff in H.
-  unfold Qminus. rewrite Qplus_comm. apply H. apply Pos2Nat.inj_le.
-  rewrite <- (plus_0_l (Pos.to_nat k)). rewrite Pos2Nat.inj_add.
-  apply Nat.add_le_mono_r. apply le_0_n.
-  apply Qplus_lt_l.
-  apply Z.mul_lt_mono_pos_r. simpl. apply Pos2Z.is_pos.
-  reflexivity.
-Qed.
-
+(* Find a positive negative real number, which rational sequence
+   stays above 0, so that it can be inversed. *)
 Definition CRealPosShift (x : CReal)
   : inject_Q 0 < x
-    -> { y : prod positive CReal
-      | x == (snd y) /\ forall n:positive, Qlt (1 # fst y) (proj1_sig (snd y) n) }.
+    -> { p : positive
+      | forall n:positive, Qlt (1 # p) (proj1_sig x (Pos.max n p)) }.
 Proof.
   intro xPos.
   pose proof (CRealLt_aboveSig (inject_Q 0) x).
@@ -917,87 +903,14 @@ Proof.
   destruct (Qarchimedean (/ (xn n - 0 - (2 # n)))) as [a _].
   specialize (H maj); simpl in H.
   remember (Pos.max n a~0) as k.
-  clear Heqk. clear maj. clear n.
-  exists (pair k (exist _ (fun n => xn (Pos.add n k)) (H0 k))).
-  split. apply H1. intro n. simpl. apply Qlt_minus_iff.
-  rewrite <- Qlt_minus_iff. apply (Qlt_trans _ (2 # k)).
-  apply Z.mul_lt_mono_pos_r. simpl. apply Pos2Z.is_pos.
-  reflexivity. specialize (H (n + k)%positive).
-  unfold Qminus in H. rewrite Qplus_0_r in H.
-  apply H. apply Pos2Nat.inj_le.
-  rewrite <- (plus_0_l (Pos.to_nat k)). rewrite Pos2Nat.inj_add.
-  apply Nat.add_le_mono_r. apply le_0_n.
+  clear Heqk. clear maj. clear n. exists k.
+  intro n. simpl. apply (Qlt_trans _ (2 # k)).
+  apply Z.mul_lt_mono_pos_r. reflexivity. reflexivity.
+  specialize (H (Pos.max n k) (Pos.le_max_r _ _)).
+  apply (Qlt_le_trans _ _ _ H). ring_simplify. apply Qle_refl.
 Qed.
 
-Lemma CReal_inv_neg : forall (yn : positive -> Q) (k : positive),
-    (QCauchySeq yn id)
-    -> (forall n : positive, yn n < -1 # k)%Q
-    -> QCauchySeq (fun n : positive => / yn (k ^ 2 * n)%positive) id.
-Proof.
-  (* Prove the inverse sequence is Cauchy *)
-  intros yn k cau maj n p q H0 H1.
-  setoid_replace (/ yn (k ^ 2 * p)%positive -
-                  / yn (k ^ 2 * q)%positive)%Q
-    with ((yn (k ^ 2 * q)%positive -
-           yn (k ^ 2 * p)%positive)
-            / (yn (k ^ 2 * q)%positive *
-               yn (k ^ 2 * p)%positive)).
-  + apply (Qle_lt_trans _ (Qabs (yn (k ^ 2 * q)%positive
-                                 - yn (k ^ 2 * p)%positive)
-                                / (1 # (k^2)))).
-    assert (1 # k ^ 2
-            < Qabs (yn (k ^ 2 * q)%positive * yn (k ^ 2 * p)%positive))%Q.
-    { rewrite Qabs_Qmult. unfold "^"%positive; simpl.
-      rewrite factorDenom. rewrite Pos.mul_1_r.
-      apply (Qlt_trans _ ((1#k) * Qabs (yn (k * (k * 1) * p)%positive))).
-      apply Qmult_lt_l. reflexivity. rewrite Qabs_neg.
-      specialize (maj (k * (k * 1) * p)%positive).
-      apply Qlt_minus_iff in maj. apply Qlt_minus_iff.
-      rewrite Qplus_comm. setoid_replace (-(1#k))%Q with (-1 # k)%Q. apply maj.
-      reflexivity. apply (Qle_trans _ (-1 # k)). apply Zlt_le_weak.
-      apply maj. discriminate. rewrite Pos.mul_1_r.
-      apply Qmult_lt_r. apply (Qlt_trans 0 (1#k)). reflexivity.
-      rewrite Qabs_neg.
-      specialize (maj (k * k * p)%positive).
-      apply Qlt_minus_iff in maj. apply Qlt_minus_iff.
-      rewrite Qplus_comm. setoid_replace (-(1#k))%Q with (-1 # k)%Q.
-      apply maj. reflexivity. apply (Qle_trans _ (-1 # k)). apply Zlt_le_weak.
-      apply maj. discriminate.
-      rewrite Qabs_neg.
-      specialize (maj (k * k * q)%positive).
-      apply Qlt_minus_iff in maj. apply Qlt_minus_iff.
-      rewrite Qplus_comm. setoid_replace (-(1#k))%Q with (-1 # k)%Q. apply maj.
-      reflexivity. apply (Qle_trans _ (-1 # k)). apply Zlt_le_weak.
-      apply maj. discriminate. }
-    unfold Qdiv. rewrite Qabs_Qmult. rewrite Qabs_Qinv.
-    rewrite Qmult_comm. rewrite <- (Qmult_comm (/ (1 # k ^ 2))).
-    apply Qmult_le_compat_r. apply Qlt_le_weak.
-    rewrite <- Qmult_1_l. apply Qlt_shift_div_r.
-    apply (Qlt_trans 0 (1 # k ^ 2)). reflexivity. apply H.
-    rewrite Qmult_comm. apply Qlt_shift_div_l.
-    reflexivity. rewrite Qmult_1_l. apply H.
-    apply Qabs_nonneg. simpl in maj.
-    specialize (cau (n * (k^2))%positive
-                    (k ^ 2 * q)%positive
-                    (k ^ 2 * p)%positive).
-    apply Qlt_shift_div_r. reflexivity.
-    apply (Qlt_le_trans _ (1 # n * k ^ 2)). apply cau.
-    rewrite Pos.mul_comm.
-    unfold "^"%positive. simpl.
-    unfold id. rewrite Pos.mul_1_r.
-    rewrite <- Pos.mul_le_mono_l. exact H1.
-    unfold id. rewrite Pos.mul_comm.
-    apply Pos.mul_le_mono_l. exact H0.
-    rewrite factorDenom. apply Qle_refl.
-  + field. split. intro abs.
-    specialize (maj (k ^ 2 * p)%positive).
-    rewrite abs in maj. inversion maj.
-    intro abs.
-    specialize (maj (k ^ 2 * q)%positive).
-    rewrite abs in maj. inversion maj.
-Qed.
-
-Lemma CReal_inv_pos : forall (yn : positive -> Q) (k : positive),
+Lemma CReal_inv_pos_cauchy : forall (yn : positive -> Q) (k : positive),
     (QCauchySeq yn id)
     -> (forall n : positive, 1 # k < yn n)%Q
     -> QCauchySeq (fun n : positive => / yn (k ^ 2 * n)%positive) id.
@@ -1056,18 +969,25 @@ Proof.
     rewrite abs in maj. inversion maj.
 Qed.
 
-Definition CReal_inv (x : CReal) (xnz : x # 0) : CReal.
+Definition CReal_inv_pos (x : CReal) (xPos : 0 < x) : CReal.
 Proof.
-  destruct xnz as [xNeg | xPos].
-  - destruct (CRealNegShift x xNeg) as [[k y] [_ maj]].
-    destruct y as [yn cau]; unfold proj1_sig, snd, fst in maj.
-    exists (fun n:positive => Qinv (yn (Pos.mul (k^2) n)%positive)).
-    apply (CReal_inv_neg yn). apply cau. apply maj.
-  - destruct (CRealPosShift x xPos) as [[k y] [_ maj]].
-    destruct y as [yn cau]; unfold proj1_sig, snd, fst in maj.
-    exists (fun n => Qinv (yn (Pos.mul (k^2) n))).
-    apply (CReal_inv_pos yn). apply cau. apply maj.
+  destruct (CRealPosShift x xPos) as [k maj].
+  exists (fun n : positive => / proj1_sig x (Pos.max (k ^ 2 * n) k)).
+  pose proof (CReal_inv_pos_cauchy (fun n => proj1_sig x (Pos.max n k)) k).
+  apply H. apply (CRealShiftReal x). apply maj.
 Defined.
+
+Lemma CReal_neg_lt_pos : forall x : CReal, x < 0 -> 0 < -x.
+Proof.
+  intros. apply (CReal_plus_lt_reg_l x).
+  rewrite (CReal_plus_opp_r x), CReal_plus_0_r. exact H.
+Qed.
+
+Definition CReal_inv (x : CReal) (xnz : x # 0) : CReal
+  := match xnz with
+     | inl xNeg => - CReal_inv_pos (-x) (CReal_neg_lt_pos x xNeg)
+     | inr xPos => CReal_inv_pos x xPos
+     end.
 
 Notation "/ x" := (CReal_inv x) (at level 35, right associativity) : CReal_scope.
 
@@ -1078,23 +998,25 @@ Proof.
   intros. unfold CReal_inv. simpl.
   destruct rnz.
   - exfalso. apply CRealLt_asym in H. contradiction.
-  - destruct (CRealPosShift r c) as [[k rpos] [req maj]].
-    clear req. destruct rpos as [rn cau]; simpl in maj.
+  - unfold CReal_inv_pos.
+    destruct (CRealPosShift r c) as [k maj].
+    pose (fun n => proj1_sig r (Pos.max n k)) as rn.
+    destruct r as [xn cau].
     unfold CRealLt; simpl.
     destruct (Qarchimedean (rn 1%positive)) as [A majA].
     exists (2 * (A + 1))%positive. unfold Qminus. rewrite Qplus_0_r.
-    rewrite <- (Qmult_1_l (Qinv (rn (k * (k * 1) * (2 * (A + 1)))%positive))).
+    simpl in rn.
+    rewrite <- (Qmult_1_l (/ xn (Pos.max (k ^ 2 * (2 * (A + 1))) k))).
     apply Qlt_shift_div_l. apply (Qlt_trans 0 (1#k)). reflexivity.
     apply maj. rewrite <- (Qmult_inv_r (Z.pos A + 1 # 1)).
     setoid_replace (2 # 2 * (A + 1))%Q with (Qinv (Z.pos A + 1 # 1)).
     2: reflexivity.
     rewrite Qmult_comm. apply Qmult_lt_r. reflexivity.
-    rewrite Pos.mul_1_r.
     rewrite <- (Qplus_lt_l _ _ (- rn 1%positive)).
-    apply (Qle_lt_trans _ (Qabs (rn (k * k * (2 * (A + 1)))%positive + - rn 1%positive))).
+    apply (Qle_lt_trans _ (Qabs (rn (k ^ 2 * (2 * (A + 1)))%positive + - rn 1%positive))).
     apply Qle_Qabs. apply (Qlt_le_trans _ 1). apply cau.
-    destruct (k * k * (2 * (A + 1)))%positive; discriminate.
-    apply Pos.le_refl.
+    destruct (Pos.max (k ^ 2 * (2 * (A + 1))) k)%positive; discriminate.
+    apply Pos.le_max_l.
     rewrite <- Qinv_plus_distr. rewrite <- (Qplus_comm 1).
     rewrite <- Qplus_0_r. rewrite <- Qplus_assoc. rewrite <- Qplus_assoc.
     rewrite Qplus_le_r. rewrite Qplus_0_l. apply Qlt_le_weak.
@@ -1114,7 +1036,7 @@ Proof.
 Qed.
 
 Lemma CReal_linear_shift_eq : forall (x : CReal) (k : positive),
-    CRealEq x
+    x ==
     (exist (fun n : positive -> Q => QCauchySeq n id)
            (fun n : positive => proj1_sig x (k * n)%positive) (CReal_linear_shift x k)).
 Proof.
@@ -1128,106 +1050,65 @@ Proof.
   apply Z.mul_le_mono_nonneg_r. discriminate. discriminate.
 Qed.
 
+Lemma CReal_inv_l_pos : forall (r:CReal) (rnz : 0 < r),
+    (CReal_inv_pos r rnz) * r == 1.
+Proof.
+  intros r c. unfold CReal_inv_pos.
+  destruct (CRealPosShift r c) as [k maj].
+  apply CRealEq_diff.
+  apply CRealEq_modindep.
+  pose (exist (fun x => QCauchySeq x id)
+              (fun n => proj1_sig r (Pos.max n k)) (CRealShiftReal r k))
+    as rshift.
+  apply (QSeqEquivEx_trans _
+             (proj1_sig (CReal_mult ((let
+              (yn, cau) as s
+               return ((forall n : positive, 1 # k < proj1_sig s n) -> CReal) := rshift in
+            fun maj0 : forall n : positive, 1 # k < yn n =>
+            exist (fun x : positive -> Q => QCauchySeq x id)
+              (fun n : positive => Qinv (yn (k * (k * 1) * n)%positive))
+              (CReal_inv_pos_cauchy yn k cau maj0)) maj) rshift)))%Q.
+  - apply CRealEq_modindep. apply CRealEq_diff.
+    apply CReal_mult_proper_l. apply CRealShiftEqual.
+  - assert (le 1 (Pos.to_nat k * (Pos.to_nat k * 1))%nat). rewrite mult_1_r.
+    rewrite <- Pos2Nat.inj_mul. apply Pos2Nat.is_pos.
+    apply (QSeqEquivEx_trans _
+             (proj1_sig (CReal_mult ((let
+              (yn, cau) as s
+               return ((forall n : positive, 1 # k < proj1_sig s n) -> CReal) := rshift in
+            fun maj0 : forall n : positive, 1 # k < yn n =>
+            exist (fun x : positive -> Q => QCauchySeq x id)
+              (fun n : positive => Qinv (yn (k * (k * 1) * n)%positive))
+              (CReal_inv_pos_cauchy yn k cau maj0)) maj)
+                                    (exist _ (fun n => proj1_sig rshift (k * (k * 1) * n)%positive) (CReal_linear_shift rshift _)))))%Q.
+    apply CRealEq_modindep. apply CRealEq_diff.
+    apply CReal_mult_proper_l. apply CReal_linear_shift_eq.
+    destruct r as [rn limr]. unfold rshift. simpl.
+    exists (fun n => 1%positive). intros p n m H2 H3.
+    remember (QCauchySeq_bound
+                (fun n0 : positive => / rn (Pos.max (k * (k * 1) * n0) k))
+                id)%Q as x.
+    remember (QCauchySeq_bound
+                (fun n0 : positive => rn (Pos.max (k * (k * 1) * n0) k)%positive)
+                id) as x0.
+    rewrite Qmult_comm.
+    rewrite Qmult_inv_r. unfold Qminus. rewrite Qplus_opp_r.
+    reflexivity. intro abs. unfold proj1_sig in maj.
+    specialize (maj ((k * (k * 1) * (Pos.max x x0 * n)~0)%positive)).
+    simpl in maj. rewrite abs in maj. inversion maj.
+Qed.
+
 Lemma CReal_inv_l : forall (r:CReal) (rnz : r # 0),
         ((/ r) rnz) * r == 1.
 Proof.
-  intros. unfold CReal_inv; simpl.
-  destruct rnz.
-  - (* r < 0 *) destruct (CRealNegShift r c) as [[k rneg] [req maj]].
-    simpl in req. apply CRealEq_diff. apply CRealEq_modindep.
-    apply (QSeqEquivEx_trans _
-             (proj1_sig (CReal_mult ((let
-              (yn, cau) as s
-               return ((forall n : positive, proj1_sig s n < -1 # k) -> CReal) := rneg in
-            fun maj0 : forall n : positive, yn n < -1 # k =>
-            exist (fun x : positive -> Q => QCauchySeq x id)
-              (fun n : positive => Qinv (yn (k * (k * 1) * n))%positive)
-              (CReal_inv_neg yn k cau maj0)) maj) rneg)))%Q.
-    + apply CRealEq_modindep. apply CRealEq_diff.
-      apply CReal_mult_proper_l. apply req.
-    + apply (QSeqEquivEx_trans _
-             (proj1_sig (CReal_mult ((let
-              (yn, cau) as s
-               return ((forall n : positive, proj1_sig s n < -1 # k) -> CReal) := rneg in
-            fun maj0 : forall n : positive, yn n < -1 # k =>
-            exist (fun x : positive -> Q => QCauchySeq x id)
-              (fun n : positive => Qinv (yn (k * (k * 1) * n)%positive))
-              (CReal_inv_neg yn k cau maj0)) maj)
-                                    (exist _ (fun n => proj1_sig rneg (k * (k * 1) * n)%positive) (CReal_linear_shift rneg _)))))%Q.
-      apply CRealEq_modindep. apply CRealEq_diff.
-      apply CReal_mult_proper_l. apply CReal_linear_shift_eq.
-      destruct r as [rn limr], rneg as [rnn limneg]; simpl.
-      pose proof (QCauchySeq_bounded_prop
-                  (fun n : positive => Qinv (rnn (k * (k * 1) * n)%positive))
-                  id (CReal_inv_neg rnn k limneg maj)).
-      pose proof (QCauchySeq_bounded_prop
-            (fun n : positive => rnn (k * (k * 1) * n)%positive)
-            id
-            (CReal_linear_shift
-               (exist (fun x0 : positive -> Q => QCauchySeq x0 id) rnn limneg)
-               (k * (k * 1)))) ; simpl.
-      remember (QCauchySeq_bound
-             (fun n0 : positive => / rnn (k * (k * 1) * n0)%positive)%Q
-             id) as x.
-      remember (QCauchySeq_bound
-             (fun n0 : positive => rnn (k * (k * 1) * n0)%positive)
-             id) as x0.
-      exists (fun n => 1%positive). intros p n m H2 H3. rewrite Qmult_comm.
-      rewrite Qmult_inv_r. unfold Qminus. rewrite Qplus_opp_r.
-      reflexivity. intro abs.
-      unfold snd,fst, proj1_sig in maj.
-      specialize (maj (k * (k * 1) * (Pos.max x x0 * n)~0)%positive).
-      rewrite abs in maj. inversion maj.
-  - (* r > 0 *) destruct (CRealPosShift r c) as [[k rneg] [req maj]].
-    simpl in req. apply CRealEq_diff. apply CRealEq_modindep.
-    apply (QSeqEquivEx_trans _
-             (proj1_sig (CReal_mult ((let
-              (yn, cau) as s
-               return ((forall n : positive, 1 # k < proj1_sig s n) -> CReal) := rneg in
-            fun maj0 : forall n : positive, 1 # k < yn n =>
-            exist (fun x : positive -> Q => QCauchySeq x id)
-              (fun n : positive => Qinv (yn (k * (k * 1) * n)%positive))
-              (CReal_inv_pos yn k cau maj0)) maj) rneg)))%Q.
-    + apply CRealEq_modindep. apply CRealEq_diff.
-      apply CReal_mult_proper_l. apply req.
-    + assert (le 1 (Pos.to_nat k * (Pos.to_nat k * 1))%nat). rewrite mult_1_r.
-      rewrite <- Pos2Nat.inj_mul. apply Pos2Nat.is_pos.
-      apply (QSeqEquivEx_trans _
-             (proj1_sig (CReal_mult ((let
-              (yn, cau) as s
-               return ((forall n : positive, 1 # k < proj1_sig s n) -> CReal) := rneg in
-            fun maj0 : forall n : positive, 1 # k < yn n =>
-            exist (fun x : positive -> Q => QCauchySeq x id)
-              (fun n : positive => Qinv (yn (k * (k * 1) * n)%positive))
-              (CReal_inv_pos yn k cau maj0)) maj)
-                                    (exist _ (fun n => proj1_sig rneg (k * (k * 1) * n)%positive) (CReal_linear_shift rneg _)))))%Q.
-      apply CRealEq_modindep. apply CRealEq_diff.
-      apply CReal_mult_proper_l. apply CReal_linear_shift_eq.
-      destruct r as [rn limr], rneg as [rnn limneg]; simpl.
-      pose proof (QCauchySeq_bounded_prop
-                  (fun n : positive => Qinv (rnn (k * (k * 1) * n)%positive))
-                  id (CReal_inv_pos rnn k limneg maj)).
-      pose proof (QCauchySeq_bounded_prop
-            (fun n : positive => rnn (k * (k * 1) * n)%positive)
-            id
-            (CReal_linear_shift
-               (exist (fun x0 : positive -> Q => QCauchySeq x0 id) rnn limneg)
-               (k * (k * 1)))) ; simpl.
-      remember (QCauchySeq_bound
-             (fun n0 : positive => / rnn (k * (k * 1) * n0)%positive)
-             id)%Q as x.
-      remember (QCauchySeq_bound
-             (fun n0 : positive => rnn (k * (k * 1) * n0)%positive)
-             id) as x0.
-      exists (fun n => 1%positive). intros p n m H2 H3. rewrite Qmult_comm.
-      rewrite Qmult_inv_r. unfold Qminus. rewrite Qplus_opp_r.
-      reflexivity. intro abs.
-      specialize (maj ((k * (k * 1) * (Pos.max x x0 * n)~0)%positive)).
-      simpl in maj. rewrite abs in maj. inversion maj.
+  intros. unfold CReal_inv; simpl. destruct rnz.
+  - rewrite <- CReal_opp_mult_distr_l, CReal_opp_mult_distr_r.
+    apply CReal_inv_l_pos.
+  - apply CReal_inv_l_pos.
 Qed.
 
 Lemma CReal_inv_r : forall (r:CReal) (rnz : r # 0),
-        r * ((/ r) rnz) == 1.
+    r * ((/ r) rnz) == 1.
 Proof.
   intros. rewrite CReal_mult_comm, CReal_inv_l.
   reflexivity.

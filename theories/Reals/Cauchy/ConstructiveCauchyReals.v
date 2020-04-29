@@ -842,53 +842,36 @@ Qed.
 (* Algebraic operations *)
 
 Lemma CReal_plus_cauchy
-  : forall (xn yn zn : positive -> Q) (cvmod : positive -> positive),
-    QSeqEquiv xn yn cvmod
-    -> QCauchySeq zn id
-    -> QSeqEquiv (fun n:positive => xn n + zn n) (fun n:positive => yn n + zn n)
-                (fun p => Pos.max (cvmod (2 * p)%positive)
-                               (2 * p)%positive).
+  : forall (x y : CReal),
+    QCauchySeq (fun n : positive => Qred (proj1_sig x (2 * n)%positive
+                                       + proj1_sig y (2 * n)%positive)) id.
 Proof.
-  intros. intros p n k H1 H2.
-  setoid_replace (xn n + zn n - (yn k + zn k))
-    with (xn n - yn k + (zn n - zn k)).
-  2: field.
-  apply (Qle_lt_trans _ (Qabs (xn n - yn k) + Qabs (zn n - zn k))).
-  apply Qabs_triangle.
-  setoid_replace (1#p)%Q with ((1#2*p) + (1#2*p))%Q.
+  destruct x as [xn limx], y as [yn limy]; unfold proj1_sig.
+  intros n p q H H0.
+  rewrite Qred_correct, Qred_correct.
+  setoid_replace (xn (2 * p)%positive + yn (2 * p)%positive
+                        - (xn (2 * q)%positive + yn (2 * q)%positive))
+    with (xn (2 * p)%positive - xn (2 * q)%positive
+          + (yn (2 * p)%positive - yn (2 * q)%positive)).
+  2: ring.
+  apply (Qle_lt_trans _ _ _ (Qabs_triangle _ _)).
+  setoid_replace (1#n)%Q with ((1#2*n) + (1#2*n))%Q.
   apply Qplus_lt_le_compat.
-  - apply H. apply (Pos.le_trans _ (Pos.max (cvmod (2 * p)%positive) (2 * p))).
-    apply Pos.le_max_l. apply H1.
-    apply (Pos.le_trans _ (Pos.max (cvmod (2 * p)%positive) (2 * p))).
-    apply Pos.le_max_l. apply H2.
-  - apply Qle_lteq. left. apply H0.
-    apply (Pos.le_trans _ (Pos.max (cvmod (2 * p)%positive) (2 * p))).
-    apply Pos.le_max_r. apply H1.
-    apply (Pos.le_trans _ (Pos.max (cvmod (2 * p)%positive) (2 * p))).
-    apply Pos.le_max_r. apply H2.
+  - apply limx. unfold id. apply Pos.mul_le_mono_l, H.
+    unfold id. apply Pos.mul_le_mono_l, H0.
+  - apply Qlt_le_weak, limy.
+    unfold id. apply Pos.mul_le_mono_l, H.
+    unfold id. apply Pos.mul_le_mono_l, H0.
   - rewrite Qinv_plus_distr. unfold Qeq. reflexivity.
 Qed.
 
-Definition CReal_plus (x y : CReal) : CReal.
-Proof.
-  destruct x as [xn limx], y as [yn limy].
-  pose proof (CReal_plus_cauchy xn xn yn id limx limy).
-  exists (fun n : positive => xn (2 * n)%positive + yn (2 * n)%positive).
-  intros p k n H0 H1. apply H.
-  - rewrite Pos.max_l. unfold id. rewrite <- Pos.mul_le_mono_l.
-    exact H0. apply Pos.le_refl.
-  - rewrite Pos.max_l. unfold id.
-    apply Pos.mul_le_mono_l. exact H1. apply Pos.le_refl.
-Defined.
+(* We reduce the rational numbers to accelerate calculations. *)
+Definition CReal_plus (x y : CReal) : CReal
+  := exist _ (fun n : positive => Qred (proj1_sig x (2 * n)%positive
+                                     + proj1_sig y (2 * n)%positive))
+           (CReal_plus_cauchy x y).
 
 Infix "+" := CReal_plus : CReal_scope.
-
-Lemma CReal_plus_nth : forall (x y : CReal) (n : positive),
-    proj1_sig (x + y) n = Qplus (proj1_sig x (2*n)%positive)
-                                (proj1_sig y (2*n)%positive).
-Proof.
-  intros. destruct x,y; reflexivity.
-Qed.
 
 Lemma CReal_plus_unfold : forall (x y : CReal),
     QSeqEquiv (proj1_sig (CReal_plus x y))
@@ -896,8 +879,8 @@ Lemma CReal_plus_unfold : forall (x y : CReal),
               (fun p => 2 * p)%positive.
 Proof.
   intros [xn limx] [yn limy].
-  unfold CReal_plus; simpl.
-  intros p n k H H0.
+  unfold CReal_plus, proj1_sig.
+  intros p n k H H0. rewrite Qred_correct.
   setoid_replace (xn (2 * n)%positive + yn (2 * n)%positive - (xn k + yn k))%Q
     with (xn (2 * n)%positive - xn k + (yn (2 * n)%positive - yn k))%Q.
   2: field.
@@ -936,12 +919,12 @@ Proof.
 Qed.
 
 Lemma CReal_plus_assoc : forall (x y z : CReal),
-    CRealEq (CReal_plus (CReal_plus x y) z)
-            (CReal_plus x (CReal_plus y z)).
+    (x + y) + z == x + (y + z).
 Proof.
   intros. apply CRealEq_diff. intro n.
   destruct x as [xn limx], y as [yn limy], z as [zn limz].
   unfold CReal_plus; unfold proj1_sig.
+  rewrite Qred_correct, Qred_correct, Qred_correct, Qred_correct.
   setoid_replace (xn (2 * (2 * n))%positive + yn (2 * (2 * n))%positive
                   + zn (2 * n)%positive
                     - (xn (2 * n)%positive + (yn (2 * (2 * n))%positive
@@ -962,12 +945,12 @@ Lemma CReal_plus_comm : forall x y : CReal,
     x + y == y + x.
 Proof.
   intros [xn limx] [yn limy]. apply CRealEq_diff. intros.
-  unfold CReal_plus, proj1_sig.
+  unfold CReal_plus, proj1_sig. rewrite Qred_correct, Qred_correct.
   setoid_replace (xn (2 * n)%positive + yn (2 * n)%positive
                     - (yn (2 * n)%positive + xn (2 * n)%positive))%Q
     with 0%Q.
   unfold Qle. simpl. unfold Z.le. intro absurd. inversion absurd.
-  field.
+  ring.
 Qed.
 
 Lemma CReal_plus_0_l : forall r : CReal,
@@ -976,7 +959,7 @@ Proof.
   intro r. split.
   - intros [n maj].
     destruct r as [xn q]; unfold CReal_plus, proj1_sig, inject_Q in maj.
-    rewrite Qplus_0_l in maj.
+    rewrite Qplus_0_l, Qred_correct in maj.
     specialize (q n n (Pos.mul 2 n) (Pos.le_refl _)).
     apply (Qlt_not_le (2#n) (xn n - xn (2 * n)%positive)).
     assumption.
@@ -987,7 +970,7 @@ Proof.
     discriminate. discriminate.
   - intros [n maj].
     destruct r as [xn q]; unfold CReal_plus, proj1_sig, inject_Q in maj.
-    rewrite Qplus_0_l in maj.
+    rewrite Qplus_0_l, Qred_correct in maj.
     specialize (q n n (Pos.mul 2 n) (Pos.le_refl _)).
     rewrite Qabs_Qminus in q.
     apply (Qlt_not_le (2#n) (xn (Pos.mul 2 n) - xn n)).
@@ -1015,8 +998,9 @@ Proof.
                   - proj1_sig (CReal_plus x y) n)%Q
     with (proj1_sig z (2 * n)%positive - proj1_sig y (2 * n)%positive)%Q.
   apply maj. apply belowMultiple.
-  simpl. destruct x as [xn limx], y as [yn limy], z as [zn limz].
-  simpl; ring.
+  destruct x as [xn limx], y as [yn limy], z as [zn limz];
+  unfold CReal_plus, proj1_sig.
+  rewrite Qred_correct, Qred_correct. ring.
 Qed.
 
 Lemma CReal_plus_lt_compat_r :
@@ -1037,8 +1021,9 @@ Proof.
   unfold Qle, Qnum, Qden. apply Z.mul_le_mono_nonneg_r.
   discriminate. discriminate.
   apply maj.
-  destruct x as [xn limx], y as [yn limy], z as [zn limz].
-  simpl; ring.
+  destruct x as [xn limx], y as [yn limy], z as [zn limz];
+    unfold CReal_plus, proj1_sig.
+  rewrite Qred_correct, Qred_correct. ring.
 Qed.
 
 Lemma CReal_plus_lt_reg_r :
@@ -1090,9 +1075,10 @@ Lemma CReal_plus_opp_r : forall x : CReal,
 Proof.
   intros [xn limx]. apply CRealEq_diff. intros.
   unfold CReal_plus, CReal_opp, inject_Q, proj1_sig.
+  rewrite Qred_correct.
   setoid_replace (xn (2 * n)%positive + - xn (2 * n)%positive - 0)%Q
     with 0%Q.
-  unfold Qle. simpl. unfold Z.le. intro absurd. inversion absurd. field.
+  unfold Qle. simpl. unfold Z.le. intro absurd. inversion absurd. ring.
 Qed.
 
 Lemma CReal_plus_opp_l : forall x : CReal,
@@ -1192,9 +1178,11 @@ Lemma inject_Q_plus : forall q r : Q,
     inject_Q (q + r) == inject_Q q + inject_Q r.
 Proof.
   split.
-  - intros [n nmaj]. simpl in nmaj.
+  - intros [n nmaj]. unfold CReal_plus, inject_Q, proj1_sig in nmaj.
+    rewrite Qred_correct in nmaj.
     ring_simplify in nmaj. discriminate.
-  - intros [n nmaj]. simpl in nmaj.
+  - intros [n nmaj]. unfold CReal_plus, inject_Q, proj1_sig in nmaj.
+    rewrite Qred_correct in nmaj.
     ring_simplify in nmaj. discriminate.
 Qed.
 
