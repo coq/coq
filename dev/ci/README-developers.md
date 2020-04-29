@@ -72,10 +72,10 @@ Moreover your PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) fil
 ### Experimental automatic overlay creation and building
 
 If you break external projects that are hosted on GitHub, you can use
-the `create-overlays.sh` script to automatically perform most of the
+the `create_overlays.sh` script to automatically perform most of the
 above steps. In order to do so, call the script as:
 ```
-./dev/tools/create-overlays.sh ejgallego 9873 aac_tactics elpi ltac
+./dev/tools/create_overlays.sh ejgallego 9873 aac_tactics elpi ltac
 ```
 replacing `ejgallego` by your GitHub nickname and `9873` by the actual PR
 number. The script will:
