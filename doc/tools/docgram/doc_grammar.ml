@@ -50,7 +50,7 @@ let default_args = {
   verify = false;
 }
 
-let start_symbols = ["document"]
+let start_symbols = ["document"; "REACHABLE"]
 let tokens = [ "bullet"; "string"; "unicode_id_part"; "unicode_letter" ]
 
 (* translated symbols *)
@@ -1710,6 +1710,28 @@ type seen = {
   cmdvs: (string * int) NTMap.t;
 }
 
+(* Sphinx notations can't handle empty productions *)
+let has_empty_prod rhs =
+  let rec has_empty_prod_r rhs =
+    match rhs with
+      | [] -> false
+      | Sterm _ :: tl
+      | Snterm _ :: tl
+      | Sedit _ :: tl
+      | Sedit2 (_, _) :: tl ->  has_empty_prod_r tl
+
+      | Slist1 sym :: tl
+      | Slist0 sym :: tl
+      | Slist1sep (sym, _) :: tl
+      | Slist0sep (sym, _) :: tl
+      | Sopt sym :: tl ->  has_empty_prod_r [ sym ] ||  has_empty_prod_r tl
+
+      | Sparen prod :: tl -> List.length prod = 0 || has_empty_prod_r tl
+      | Sprod prods :: tl -> List.fold_left
+          (fun rv prod -> List.length prod = 0 || has_empty_prod_r tl || rv) false prods
+  in
+  List.length rhs = 0 || has_empty_prod_r rhs
+
 let process_rst g file args seen tac_prods cmd_prods =
   let old_rst = open_in file in
   let new_rst = open_temp_bin file in
@@ -1740,6 +1762,9 @@ let process_rst g file args seen tac_prods cmd_prods =
         List.iteri (fun i prod ->
             let rhs = String.trim (prod_to_prodn prod) in
             let sep = if i = 0 then " ::=" else "|" in
+            if has_empty_prod prod then
+              error "%s line %d: Empty (sub-)production for %s, edit to remove: '%s %s'\n"
+                file !linenum nt sep rhs;
             fprintf new_rst "%s   %s%s %s\n" indent (if i = 0 then nt else "") sep rhs)
           prods;
         if nt <> end_ then copy_prods tl
