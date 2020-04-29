@@ -110,6 +110,11 @@ val merge : ?loc:Loc.t -> sideff:bool -> rigid -> t -> Univ.ContextSet.t -> t
 val merge_subst : t -> UnivSubst.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
+val demote_global_univs : Environ.env -> t -> t
+(** Removes from the uctx_local part of the UState the universes and constraints
+    that are present in the universe graph in the input env (supposedly the
+    global ones *)
+
 val demote_seff_univs : Univ.LSet.t -> t -> t
 (** Mark the universes as not local any more, because they have been
    globally declared by some side effect. You should be using
