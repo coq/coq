@@ -208,7 +208,7 @@ Defined.
 
 (* The [list] type constructor is a Functor. *)
 
-Import List.
+Require Import List.
 
 Definition setList (A:set_cat) := list A.
 Instance list_functor : Functor set_cat set_cat setList.

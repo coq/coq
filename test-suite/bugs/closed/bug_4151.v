@@ -9,7 +9,7 @@ Qed.
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
 Require Import Coq.Lists.SetoidList.
-Require Export Coq.Program.Program.
+Import ListNotations.
 
 Global Set Implicit Arguments.
 Global Set Asymmetric Patterns.
