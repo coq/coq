@@ -5084,6 +5084,13 @@ let with_set_strategy lvl_ql k =
     | GlobRef.VarRef id -> VarKey id
     | _ -> user_err Pp.(str
                           "cannot set an inductive type or a constructor as transparent") in
+  let eval_glob_ref_of_key r =
+    match r with
+    | ConstKey sp -> EvalConstRef sp
+    | VarKey id -> EvalVarRef id
+    | _ -> user_err Pp.(str
+                          "cannot set an inductive type or a constructor as transparent") in
+  let local = true in
   let kl = List.concat (List.map (fun (lvl, ql) -> List.map (fun q -> (lvl, glob_key q)) ql) lvl_ql) in
   tclWRAPFINALLY
     (Proofview.tclENV >>= fun env ->
@@ -5103,14 +5110,18 @@ let with_set_strategy lvl_ql k =
            (Conv_oracle.set_strategy (Environ.oracle env) k lvl)) env kl in
      Proofview.Unsafe.tclSETENV env <*>
      Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-         List.iter (fun (lvl, k) -> Global.set_strategy k lvl) kl)) <*>
+         List.iter (fun (lvl, k) -> Global.set_strategy k lvl;
+                     Redexpr.set_strategy local [(lvl, [eval_glob_ref_of_key k])])
+           kl)) <*>
      Proofview.tclUNIT (orig_kl, orig_kl_global))
     k
     (fun (orig_kl, orig_kl_global) ->
        (* TODO: When abstract no longer depends on Global, remove this
           [Proofview.tclLIFT] block *)
        Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-           List.iter (fun (lvl, k) -> Global.set_strategy k lvl) orig_kl_global)) <*>
+           List.iter (fun (lvl, k) -> Global.set_strategy k lvl;
+                       Redexpr.set_strategy local [(lvl, [eval_glob_ref_of_key k])])
+             orig_kl_global)) <*>
        Proofview.tclENV >>= fun env ->
        let env = List.fold_left (fun env (lvl, k) ->
            Environ.set_oracle env
