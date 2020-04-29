@@ -676,6 +676,9 @@ library:ci-color:
 library:ci-compcert:
   extends: .ci-template-flambda
 
+library:ci-coq-tools:
+  extends: .ci-template
+
 library:ci-coqprime:
   stage: stage-3
   extends: .ci-template-flambda
