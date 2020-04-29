@@ -845,7 +845,7 @@ printenv::
 	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo 'B $(d)' >> .merlin;)
 	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo 'S $(d)' >> .merlin;)
 	$(HIDE)$(MAKE) merlin-hook -f "$(SELF)"
-.PHONY: merlin
+.PHONY: .merlin
 
 merlin-hook::
 	@# Extension point
