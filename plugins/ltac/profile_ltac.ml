@@ -331,26 +331,33 @@ let exit_tactic ~count_call start_time c =
     end
 
 let do_profile s call_trace ?(count_call=true) tac =
-  Proofview.tclWRAPFINALLY
-    (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-         if !is_profiling then
-           match call_trace, Local.(!stack) with
-           | (_, c) :: _, parent :: rest ->
-             let name = string_of_call c in
-             let node = get_child name parent in
-             Local.(stack := node :: parent :: rest);
-             Some (time ())
-           | _ :: _, [] -> assert false
-           | _ -> None
-         else None)))
-    tac
-    (function
-      | Some start_time ->
-        (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-             (match call_trace with
-              | (_, c) :: _ -> exit_tactic ~count_call start_time c
-              | [] -> ()))))
-      | None -> Proofview.tclUNIT ())
+  let open Proofview.Notations in
+  (* We do an early check to [is_profiling] so that we save the
+     overhead of [Proofview.tclWRAPFINALLY] when profiling is not set
+     *)
+  Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> !is_profiling)) >>= function
+  | false -> tac
+  | true ->
+    Proofview.tclWRAPFINALLY
+      (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+           if !is_profiling then
+             match call_trace, Local.(!stack) with
+             | (_, c) :: _, parent :: rest ->
+               let name = string_of_call c in
+               let node = get_child name parent in
+               Local.(stack := node :: parent :: rest);
+               Some (time ())
+             | _ :: _, [] -> assert false
+             | _ -> None
+           else None)))
+      tac
+      (function
+        | Some start_time ->
+          (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+               (match call_trace with
+                | (_, c) :: _ -> exit_tactic ~count_call start_time c
+                | [] -> ()))))
+        | None -> Proofview.tclUNIT ())
 
 (* ************** Accumulation of data from workers ************************* *)
 
