@@ -135,11 +135,6 @@ type import_status = ImportDefaultBehavior | ImportNeedQualified
 
 (** Declaration of constants and parameters *)
 
-type constant_obj = {
-  cst_kind : Decls.logical_kind;
-  cst_locl : import_status;
-}
-
 type 'a proof_entry = {
   proof_entry_body   : 'a Entries.const_entry_body;
   (* List of section variables *)
@@ -265,8 +260,11 @@ type 'a constant_entry =
   | ParameterEntry of Entries.parameter_entry
   | PrimitiveEntry of Entries.primitive_entry
 
-(* At load-time, the segment starting from the module name to the discharge *)
-(* section (if Remark or Fact) is needed to access a construction *)
+type constant_obj = {
+  cst_kind : Decls.logical_kind;
+  cst_locl : import_status;
+}
+
 let load_constant i ((sp,kn), obj) =
   if Nametab.exists_cci sp then
     raise (AlreadyDeclared (None, Libnames.basename sp));
@@ -292,8 +290,7 @@ let check_exists id =
     raise (AlreadyDeclared (None, id))
 
 let cache_constant ((sp,kn), obj) =
-  (* Invariant: the constant must exist in the logical environment, except when
-     redefining it when exiting a section. See [discharge_constant]. *)
+  (* Invariant: the constant must exist in the logical environment *)
   let kn' =
     if Global.exists_objlabel (Label.of_id (Libnames.basename sp))
     then Constant.make1 kn
@@ -306,13 +303,7 @@ let cache_constant ((sp,kn), obj) =
 let discharge_constant ((sp, kn), obj) =
   Some obj
 
-(* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_constant cst = {
-  cst_kind = cst.cst_kind;
-  cst_locl = cst.cst_locl;
-}
-
-let classify_constant cst = Libobject.Substitute (dummy_constant cst)
+let classify_constant cst = Libobject.Substitute cst
 
 let (objConstant : constant_obj Libobject.Dyn.tag) =
   let open Libobject in
