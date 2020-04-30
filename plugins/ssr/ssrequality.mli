@@ -26,7 +26,7 @@ val mkclr : ssrclear -> ssrdocc
 val nodocc : ssrdocc
 val noclr : ssrdocc
 
-val simpltac : Ssrast.ssrsimpl -> Tacmach.tactic
+val simpltac : Ssrast.ssrsimpl -> unit Proofview.tactic
 
 val newssrcongrtac :
   int * Ssrast.ssrterm ->
@@ -61,7 +61,7 @@ val ssrrewritetac :
   Ltac_plugin.Tacinterp.interp_sign ->
    ssrrwarg list -> unit Proofview.tactic
 
-val ipat_rewrite : ssrocc -> ssrdir -> EConstr.t -> Tacmach.tactic
+val ipat_rewrite : ssrocc -> ssrdir -> EConstr.t -> unit Proofview.tactic
 
 val unlocktac :
   Ltac_plugin.Tacinterp.interp_sign ->

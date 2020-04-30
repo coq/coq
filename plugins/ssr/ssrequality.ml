@@ -66,6 +66,8 @@ let simpltac = function
   | SimplCut (n,m) -> tclTHEN (safe_simpltac m) (tclTRY (Proofview.V82.of_tactic (donetac n)))
   | Nop -> tclIDTAC
 
+let simpltac s = Proofview.V82.tactic ~nf_evars:false (simpltac s)
+
 (** The "congr" tactic *)
 
 let interp_congrarg_at ist gl n rf ty m =
@@ -197,7 +199,7 @@ let simplintac occ rdx sim gl =
         CErrors.user_err (Pp.str "Custom simpl tactic does not support patterns");
       if occ <> None then
         CErrors.user_err (Pp.str "Custom simpl tactic does not support occurrence numbers");
-      simpltac (Simpl m) gl
+      Proofview.V82.of_tactic (simpltac (Simpl m)) gl
     end else
       let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
       let simp env c _ _ = EConstr.Unsafe.to_constr (red_safe Tacred.simpl env sigma0 (EConstr.of_constr c)) in
@@ -207,7 +209,7 @@ let simplintac occ rdx sim gl =
   match sim with
   | Simpl m -> simptac m gl
   | SimplCut (n,m) -> tclTHEN (simptac m) (tclTRY (Proofview.V82.of_tactic (donetac n))) gl
-  | _ -> simpltac sim gl
+  | _ -> Proofview.V82.of_tactic (simpltac sim) gl
 
 let rec get_evalref env sigma c = match EConstr.kind sigma c with
   | Var id -> EvalVarRef id
@@ -627,7 +629,9 @@ let ssrinstancesofrule ist dir arg =
   with NoMatch -> Feedback.msg_info Pp.(str"END INSTANCES"); tclIDTAC gl
   end
 
-let ipat_rewrite occ dir c gl = rwrxtac occ None dir (project gl, c) gl
+let ipat_rewrite occ dir c = Proofview.V82.tactic ~nf_evars:false begin fun gl ->
+  rwrxtac occ None dir (project gl, c) gl
+end
 
 let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
   let fail = ref false in

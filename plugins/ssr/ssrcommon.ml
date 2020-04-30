@@ -1173,7 +1173,8 @@ let genclrtac cl cs clr =
            gl))
     (old_cleartac clr)
 
-let gentac gen gl =
+let gentac gen =
+  Proofview.V82.tactic begin fun gl ->
 (*   ppdebug(lazy(str"sigma@gentac=" ++ pr_evar_map None (project gl))); *)
   let conv, _, cl, c, clr, ucst,gl = pf_interp_gen_aux gl false gen in
   ppdebug(lazy(str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c));
@@ -1181,11 +1182,10 @@ let gentac gen gl =
   if conv
   then tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl
   else genclrtac cl [c] clr gl
+  end
 
 let genstac (gens, clr) =
-  Proofview.V82.tactic ~nf_evars:false begin fun gl ->
-  tclTHENLIST (old_cleartac clr :: List.rev_map gentac gens)
-  gl end
+  Tacticals.New.tclTHENLIST (cleartac clr :: List.rev_map gentac gens)
 
 let gen_tmp_ids
   ?(ist=Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })) gl
@@ -1195,7 +1195,7 @@ let gen_tmp_ids
     (tclTHENLIST
       (List.map (fun (id,orig_ref) ->
         tclTHEN
-        (gentac ((None,Some(false,[])),cpattern_of_id id))
+        (Proofview.V82.of_tactic (gentac ((None,Some(false,[])),cpattern_of_id id)))
         (rename_hd_prod orig_ref))
       ctx.tmp_ids) gl)
 ;;
@@ -1222,20 +1222,24 @@ let pfLIFT f =
  * since we don't want to wipe out let-ins, and it seems there is no flag
  * to change that behaviour in the standard unfold code *)
 let unprotecttac =
-  Proofview.V82.tactic ~nf_evars:false begin fun gl ->
-  let c, gl = pf_mkSsrConst "protect_term" gl in
-  let prot, _ = EConstr.destConst (project gl) c in
-  Tacticals.onClause (fun idopt ->
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let sigma, c = mkSsrConst "protect_term" env sigma in
+  let prot, _ = EConstr.destConst sigma c in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Tacticals.New.onClause (fun idopt ->
     let hyploc = Option.map (fun id -> id, InHyp) idopt in
-    Proofview.V82.of_tactic (Tactics.reduct_option ~check:false
+    Tactics.reduct_option ~check:false
       (Reductionops.clos_norm_flags
         (CClosure.RedFlags.mkflags
           [CClosure.RedFlags.fBETA;
            CClosure.RedFlags.fCONST prot;
            CClosure.RedFlags.fMATCH;
            CClosure.RedFlags.fFIX;
-           CClosure.RedFlags.fCOFIX]), DEFAULTcast) hyploc))
-    allHypsAndConcl gl
+           CClosure.RedFlags.fCOFIX]), DEFAULTcast) hyploc)
+    allHypsAndConcl
   end
 
 let is_protect hd env sigma =

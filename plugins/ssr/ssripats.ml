@@ -191,7 +191,7 @@ let isGEN_PUSH dg =
 (* generalize `id` as `new_name` *)
 let gen_astac id new_name =
  let gen = ((None,Some(false,[])),Ssrmatching.cpattern_of_id id) in
- V82.tactic (Ssrcommon.gentac gen)
+ Ssrcommon.gentac gen
  <*> Ssrcommon.tclRENAME_HD_PROD new_name
 
 (* performs and resets all delayed generalizations *)
@@ -494,11 +494,11 @@ let rec ipat_tac1 ipat : bool tactic =
       notTAC
 
   | IOpSimpl x ->
-      V82.tactic ~nf_evars:false (Ssrequality.simpltac x) <*> notTAC
+      Ssrequality.simpltac x <*> notTAC
 
   | IOpRewrite (occ,dir) ->
      Ssrcommon.tclWITHTOP
-       (fun x -> V82.tactic  ~nf_evars:false (Ssrequality.ipat_rewrite occ dir x)) <*> notTAC
+       (fun x -> Ssrequality.ipat_rewrite occ dir x) <*> notTAC
 
   | IOpAbstractVars ids -> tclMK_ABSTRACT_VARS ids <*> notTAC
 

@@ -355,7 +355,7 @@ val rewritetac : ?under:bool -> ssrdir -> EConstr.t -> tactic
 type name_hint = (int * EConstr.types array) option ref
 
 val gentac :
-   Ssrast.ssrdocc * Ssrmatching.cpattern -> v82tac
+   Ssrast.ssrdocc * Ssrmatching.cpattern -> unit Proofview.tactic
 
 val genstac :
   ((Ssrast.ssrhyp list option * Ssrmatching.occ) *
