@@ -751,10 +751,10 @@ let check_coqide () =
   if !prefs.coqide = Some No then set_ide No "CoqIde manually disabled";
   let dir, via = get_lablgtkdir () in
   if dir = ""
-  then set_ide No "LablGtk3 not found"
+  then set_ide No "LablGtk3 or LablGtkSourceView3 not found"
   else
     let (ok, version) = check_lablgtk_version () in
-    let found = sprintf "LablGtk3 found (%s)" version in
+    let found = sprintf "LablGtk3 and LablGtkSourceView3 found (%s)" version in
     if not ok then set_ide No (found^", but too old (required >= 3.0, found " ^ version ^ ")");
     (* We're now sure to produce at least one kind of coqide *)
     lablgtkdir := shorten_camllib dir;
