@@ -32,7 +32,6 @@ val tclIDTAC_MESSAGE  : Pp.t -> tactic
 
 (** [tclEVARS sigma] changes the current evar map *)
 val tclEVARS : evar_map -> tactic
-val tclPUSHEVARUNIVCONTEXT : UState.t -> tactic
 
 
 (** [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies

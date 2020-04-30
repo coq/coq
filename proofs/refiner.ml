@@ -271,5 +271,3 @@ let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
 
 (* Change evars *)
 let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
-let tclPUSHEVARUNIVCONTEXT ctx gl =
-  tclEVARS (Evd.merge_universe_context (project gl) ctx) gl
