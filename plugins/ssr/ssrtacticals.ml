@@ -45,6 +45,7 @@ let rot_hyps dir i hyps =
   rot (match dir with L2R -> i | R2L -> n - i) [] hyps
 
 let tclSEQAT ist atac1 dir (ivar, ((_, atacs2), atac3)) =
+  Proofview.V82.tactic begin
   let i = get_index ivar in
   let evtac t = Proofview.V82.of_tactic (ssrevaltac ist t) in
   let tac1 = evtac atac1 in
@@ -57,6 +58,7 @@ let tclSEQAT ist atac1 dir (ivar, ((_, atacs2), atac3)) =
   | L2R, [], [tac2] when atac3 = None -> Tacticals.tclTHENLAST tac1 tac2
   | L2R, pad, tacs2 -> Tacticals.tclTHENSFIRSTn tac1 (Array.of_list (pad @ tacs2)) tac3
   | R2L, pad, tacs2 -> Tacticals.tclTHENSLASTn tac1 tac3 (Array.of_list (tacs2 @ pad))
+  end
 
 (** The "in" pseudo-tactical *)(* {{{ **********************************************)
 
@@ -125,7 +127,9 @@ let endclausestac id_map clseq gl_id cl0 gl =
   if List.for_all not_hyp' all_ids && not c_hidden then mktac [] gl else
   errorstrm Pp.(str "tampering with discharged assumptions of \"in\" tactical")
 
-let tclCLAUSES tac (gens, clseq) gl =
+let tclCLAUSES tac (gens, clseq) =
+  let tac = Proofview.V82.of_tactic tac in
+  Proofview.V82.tactic begin fun gl ->
   if clseq = InGoal || clseq = InSeqGoal then tac gl else
   let clr_gens = pf_clauseids gl gens clseq in
   let clear = Tacticals.tclTHENLIST (List.rev(List.fold_right clr_of_wgen clr_gens [])) in
@@ -142,11 +146,13 @@ let tclCLAUSES tac (gens, clseq) gl =
       | _, None -> None) gens in
     endclausestac id_map clseq gl_id cl0 in
   Tacticals.tclTHENLIST (hidetacs clseq gl_id cl0 @ [dtac; clear; tac; endtac]) gl
+  end
 
 (** The "do" tactical. ********************************************************)
 
 let hinttac ist is_by (is_or, atacs) =
-  let dtac = if is_by then donetac ~-1 else Tacticals.tclIDTAC in
+  Proofview.V82.tactic begin
+  let dtac = if is_by then Proofview.V82.of_tactic (donetac ~-1) else Tacticals.tclIDTAC in
   let mktac = function
   | Some atac -> Tacticals.tclTHEN (Proofview.V82.of_tactic (ssrevaltac ist atac)) dtac
   | _ -> dtac in
@@ -154,10 +160,8 @@ let hinttac ist is_by (is_or, atacs) =
   | [] -> if is_or then dtac else Tacticals.tclIDTAC
   | [tac] -> tac
   | tacs -> Tacticals.tclFIRST tacs
+  end
 
 let ssrdotac ist (((n, m), tac), clauses) =
   let mul = get_index n, m in
-  tclCLAUSES (tclMULT mul (hinttac ist false tac)) clauses
-
-let tclCLAUSES tac g_c =
-  Proofview.V82.(tactic (tclCLAUSES (of_tactic tac) g_c))
+  tclCLAUSES (Proofview.V82.tactic (tclMULT mul (Proofview.V82.of_tactic (hinttac ist false tac)))) clauses

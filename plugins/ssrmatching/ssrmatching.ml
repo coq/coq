@@ -1315,7 +1315,8 @@ let () =
     Tacenv.register_ltac true false (Id.of_string "ssrpattern") tac in
   Mltop.declare_cache_obj obj "ssrmatching_plugin"
 
-let ssrinstancesof arg gl =
+let ssrinstancesof arg =
+  Proofview.V82.tactic begin fun gl ->
   let ok rhs lhs ise = true in
 (*   not (equal lhs (Evarutil.nf_evar ise rhs)) in *)
   let env, sigma, concl = pf_env gl, project gl, pf_concl gl in
@@ -1334,6 +1335,7 @@ let ssrinstancesof arg gl =
       ignore(find env concl 1 ~k:print)
     done; raise NoMatch
   with NoMatch -> ppnl (str"END INSTANCES"); tclIDTAC gl
+  end
 
 module Internal =
 struct

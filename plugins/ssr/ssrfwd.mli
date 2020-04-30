@@ -16,9 +16,9 @@ open Ltac_plugin
 
 open Ssrast
 
-val ssrsettac :  Id.t -> ((ssrfwdfmt * (Ssrmatching_plugin.Ssrmatching.cpattern * ast_closure_term option)) * ssrdocc) -> v82tac
+val ssrsettac :  Id.t -> ((ssrfwdfmt * (Ssrmatching_plugin.Ssrmatching.cpattern * ast_closure_term option)) * ssrdocc) -> unit Proofview.tactic
 
-val ssrposetac : Id.t * (ssrfwdfmt * ast_closure_term) -> v82tac
+val ssrposetac : Id.t * (ssrfwdfmt * ast_closure_term) -> unit Proofview.tactic
 
 val havetac : ist ->
            bool *
@@ -27,7 +27,7 @@ val havetac : ist ->
             (((Ssrast.ssrfwdkind * 'a) * ast_closure_term) *
              (bool * Tacinterp.Value.t option list))) ->
            bool ->
-           bool -> v82tac
+           bool -> unit Proofview.tactic
 
 val basecuttac :
            string ->
@@ -46,7 +46,7 @@ val wlogtac :
   Ltac_plugin.Tacinterp.Value.t Ssrast.ssrhint ->
   bool ->
   [< `Gen of Names.Id.t option option | `NoGen > `NoGen ] ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
 val sufftac :
   Ssrast.ist ->
@@ -55,7 +55,7 @@ val sufftac :
     (('a *
         ast_closure_term) *
        (bool * Tacinterp.Value.t option list)) ->
-  Tacmach.tactic
+  unit Proofview.tactic
 
 (* pad_intro (by default false) indicates whether the intro-pattern
    "=> i..." must be turned into "=> [i...|i...|i...|]" (n+1 branches,

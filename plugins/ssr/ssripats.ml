@@ -337,7 +337,7 @@ let tac_case t =
     Ssrcommon.tacTYPEOF t >>= fun ty ->
     Ssrcommon.tacIS_INJECTION_CASE ~ty t >>= fun is_inj ->
     if is_inj then
-      V82.tactic ~nf_evars:false (Ssrelim.perform_injection t)
+      Ssrelim.perform_injection t
     else
       Goal.enter begin fun g ->
          (Ssrelim.casetac t (fun ?seed k ->
@@ -477,7 +477,7 @@ let rec ipat_tac1 ipat : bool tactic =
 
   | IOpInj ipatss ->
      tclIORPAT (Ssrcommon.tclWITHTOP
-       (fun t -> V82.tactic  ~nf_evars:false (Ssrelim.perform_injection t)))
+       (fun t -> Ssrelim.perform_injection t))
        ipatss
      <*> notTAC
 
@@ -622,7 +622,7 @@ end
 let with_dgens { dgens; gens; clr } maintac = match gens with
   | [] -> with_defective maintac dgens clr
   | gen :: gens ->
-      V82.tactic ~nf_evars:false (Ssrcommon.genstac (gens, clr)) <*> maintac dgens gen
+      Ssrcommon.genstac (gens, clr) <*> maintac dgens gen
 
 let mkCoqEq env sigma =
   let eq = Coqlib.((build_coq_eq_data ()).eq) in
@@ -647,7 +647,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
          | ProdType (_, src, tgt) -> begin
              match kind_of_type sigma src with
              | AtomicType (hd, _) when Ssrcommon.is_protect hd env sigma ->
-                V82.tactic ~nf_evars:false Ssrcommon.unprotecttac <*>
+                Ssrcommon.unprotecttac <*>
                 Ssrcommon.tclINTRO_ID ipat
              | _ -> Ssrcommon.tclINTRO_ANON () <*> intro_eq ()
              end
@@ -700,7 +700,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
     | _ -> tclUNIT () in
   let unprotect =
     if eqid <> None && is_rec
-    then V82.tactic ~nf_evars:false Ssrcommon.unprotecttac else tclUNIT () in
+    then Ssrcommon.unprotecttac else tclUNIT () in
   begin match seed with
   | None -> ssrelim
   | Some s -> IpatMachine.tclSEED_SUBGOALS s ssrelim end <*>
@@ -816,7 +816,7 @@ let ssrcasetac (view, (eqid, (dgens, ipats))) =
         Ssrcommon.tacIS_INJECTION_CASE vc >>= fun inj ->
         let simple = (eqid = None && deps = [] && occ = None) in
         if simple && inj then
-          V82.tactic ~nf_evars:false (Ssrelim.perform_injection vc) <*>
+          Ssrelim.perform_injection vc <*>
           Tactics.clear (List.map Ssrcommon.hyp_id clear) <*>
           tclIPATssr ipats
         else
@@ -870,7 +870,7 @@ let tclIPAT ip =
 
 let ssrmovetac = function
   | _::_ as view, (_, ({ gens = lastgen :: gens; clr }, ipats)) ->
-     let gentac = V82.tactic ~nf_evars:false (Ssrcommon.genstac (gens, [])) in
+     let gentac = Ssrcommon.genstac (gens, []) in
      let conclusion _ t clear ccl =
        Tactics.apply_type ~typecheck:true ccl [t] <*>
        Tactics.clear (List.map Ssrcommon.hyp_id clear) in
@@ -884,7 +884,7 @@ let ssrmovetac = function
     let dgentac = with_dgens dgens eqmovetac in
     dgentac <*> tclIPAT (eqmoveipats (IpatMachine.tclCompileIPats [pat]) (IpatMachine.tclCompileIPats ipats))
   | _, (_, ({ gens = (_ :: _ as gens); dgens = []; clr}, ipats)) ->
-    let gentac = V82.tactic ~nf_evars:false (Ssrcommon.genstac (gens, clr)) in
+    let gentac = Ssrcommon.genstac (gens, clr) in
     gentac <*> tclIPAT (IpatMachine.tclCompileIPats ipats)
   | _, (_, ({ clr }, ipats)) ->
     Tacticals.New.tclTHENLIST [ssrsmovetac; Tactics.clear (List.map Ssrcommon.hyp_id clr); tclIPAT (IpatMachine.tclCompileIPats ipats)]

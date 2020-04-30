@@ -501,12 +501,13 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
   let xhavetac id c = Proofview.V82.of_tactic (Tactics.pose_proof (Name id) c) in
   Tacticals.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Proofview.V82.of_tactic (Tactics.clear [id])]
 
-let is_injection_case c gl =
-  let gl, cty = pfe_type_of gl c in
-  let (mind,_), _ = pf_reduce_to_quantified_ind gl cty in
+let is_injection_case env sigma c =
+  let sigma, cty = Typing.type_of env sigma c in
+  let (mind,_), _ = Tacred.reduce_to_quantified_ind env sigma cty in
   Coqlib.check_ind_ref "core.eq.type" mind
 
-let perform_injection c gl =
+let perform_injection c =
+  Proofview.V82.tactic ~nf_evars:false begin fun gl ->
   let gl, cty = pfe_type_of gl c in
   let mind, t = pf_reduce_to_quantified_ind gl cty in
   let dc, eqt = EConstr.decompose_prod (project gl) t in
@@ -520,7 +521,12 @@ let perform_injection c gl =
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
   let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in
   Tacticals.tclTHENLAST (Proofview.V82.of_tactic (Tactics.apply (EConstr.compose_lam dc cl1))) injtac gl
+  end
 
-let ssrscase_or_inj_tac c = Proofview.V82.tactic ~nf_evars:false (fun gl ->
-  if is_injection_case c gl then perform_injection c gl
-  else Proofview.V82.of_tactic (casetac c (fun ?seed:_ k -> k)) gl)
+let ssrscase_or_inj_tac c =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  if is_injection_case env sigma c then perform_injection c
+  else casetac c (fun ?seed:_ k -> k)
+  end

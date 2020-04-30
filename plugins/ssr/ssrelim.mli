@@ -41,10 +41,10 @@ val casetac :
   (?seed:Names.Name.t list array -> unit Proofview.tactic -> unit Proofview.tactic) ->
   unit Proofview.tactic
 
-val is_injection_case : EConstr.t -> Goal.goal Evd.sigma -> bool
+val is_injection_case : Environ.env -> Evd.evar_map -> EConstr.t -> bool
 val perform_injection :
   EConstr.constr ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
 val ssrscase_or_inj_tac :
   EConstr.constr ->

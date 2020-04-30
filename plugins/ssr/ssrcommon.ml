@@ -569,7 +569,7 @@ let pf_abs_evars gl t = pf_abs_evars2 gl [] t
  * the corresponding lambda looks like (fun evar_i : T(c)) where c is
  * the solution found by ssrautoprop.
  *)
-let ssrautoprop_tac = ref (fun gl -> assert false)
+let ssrautoprop_tac = ref (Proofview.Goal.enter (fun gl -> assert false))
 
 (* Thanks to Arnaud Spiwack for this snippet *)
 let call_on_evar tac e s =
@@ -620,7 +620,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
     if evplist = [] then evlist, [], sigma else
     List.fold_left (fun (ev, evp, sigma) (i, (_,t,_) as p) ->
       try
-        let ng, sigma = call_on_evar !ssrautoprop_tac i sigma in
+        let ng, sigma = call_on_evar (Proofview.V82.of_tactic !ssrautoprop_tac) i sigma in
         if (ng <> []) then errorstrm (str "Should we tell the user?");
         List.filter (fun (j,_) -> j <> i) ev, evp, sigma
       with _ -> ev, p::evp, sigma) (evlist, [], sigma) (List.rev evplist) in
@@ -857,7 +857,8 @@ let pf_abs_ssrterm ?(resolve_typeclasses=false) ist gl t =
 
 let top_id = mk_internal_id "top assumption"
 
-let ssr_n_tac seed n gl =
+let ssr_n_tac seed n =
+  Proofview.Goal.enter begin fun gl ->
   let name = if n = -1 then seed else ("ssr" ^ seed ^ string_of_int n) in
   let fail msg = CErrors.user_err (Pp.str msg) in
   let tacname =
@@ -867,9 +868,10 @@ let ssr_n_tac seed n gl =
       if n = -1 then fail "The ssreflect library was not loaded"
       else fail ("The tactic "^name^" was not found") in
   let tacexpr = CAst.make @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
-  Proofview.V82.of_tactic (Tacinterp.eval_tactic (Tacexpr.TacArg tacexpr)) gl
+  Tacinterp.eval_tactic (Tacexpr.TacArg tacexpr)
+  end
 
-let donetac n gl = ssr_n_tac "done" n gl
+let donetac n = ssr_n_tac "done" n
 
 open Constrexpr
 open Util
@@ -1181,7 +1183,9 @@ let gentac gen gl =
   else genclrtac cl [c] clr gl
 
 let genstac (gens, clr) =
+  Proofview.V82.tactic ~nf_evars:false begin fun gl ->
   tclTHENLIST (old_cleartac clr :: List.rev_map gentac gens)
+  gl end
 
 let gen_tmp_ids
   ?(ist=Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })) gl
@@ -1217,7 +1221,8 @@ let pfLIFT f =
 (* TASSI: This version of unprotects inlines the unfold tactic definition,
  * since we don't want to wipe out let-ins, and it seems there is no flag
  * to change that behaviour in the standard unfold code *)
-let unprotecttac gl =
+let unprotecttac =
+  Proofview.V82.tactic ~nf_evars:false begin fun gl ->
   let c, gl = pf_mkSsrConst "protect_term" gl in
   let prot, _ = EConstr.destConst (project gl) c in
   Tacticals.onClause (fun idopt ->
@@ -1231,6 +1236,7 @@ let unprotecttac gl =
            CClosure.RedFlags.fFIX;
            CClosure.RedFlags.fCOFIX]), DEFAULTcast) hyploc))
     allHypsAndConcl gl
+  end
 
 let is_protect hd env sigma =
   let _, protectC = mkSsrConst "protect_term" env sigma in

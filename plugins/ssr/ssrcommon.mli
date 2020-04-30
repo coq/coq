@@ -263,7 +263,7 @@ val red_product_skip_id :
   env -> evar_map -> EConstr.t -> EConstr.t
 
 val ssrautoprop_tac :
-           (Evar.t Evd.sigma -> Evar.t list Evd.sigma) ref
+           unit Proofview.tactic ref
 
 val mkProt :
   EConstr.t ->
@@ -306,8 +306,8 @@ val pf_interp_ty :
            (Glob_term.glob_constr * Constrexpr.constr_expr option) ->
            int * EConstr.t * EConstr.t * UState.t
 
-val ssr_n_tac : string -> int -> v82tac
-val donetac : int -> v82tac
+val ssr_n_tac : string -> int -> unit Proofview.tactic
+val donetac : int -> unit Proofview.tactic
 
 val applyn :
            with_evars:bool ->
@@ -361,7 +361,7 @@ val genstac :
   ((Ssrast.ssrhyp list option * Ssrmatching.occ) *
      Ssrmatching.cpattern)
     list * Ssrast.ssrhyp list ->
-  Tacmach.tactic
+  unit Proofview.tactic
 
 val pf_interp_gen :
   bool ->
@@ -392,7 +392,7 @@ val cleartac : ssrhyps -> unit Proofview.tactic
 
 val tclMULT : int * ssrmmod -> Tacmach.tactic -> Tacmach.tactic
 
-val unprotecttac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+val unprotecttac : unit Proofview.tactic
 val is_protect : EConstr.t -> Environ.env -> Evd.evar_map -> bool
 
 val abs_wgen :

@@ -58,12 +58,12 @@ let safe_simpltac n gl =
     let cl= red_safe (tacred_simpl gl) (pf_env gl) (project gl) (pf_concl gl) in
     Proofview.V82.of_tactic (convert_concl_no_check cl) gl
   else
-    ssr_n_tac "simpl" n gl
+    Proofview.V82.of_tactic (ssr_n_tac "simpl" n) gl
 
 let simpltac = function
   | Simpl n -> safe_simpltac n
-  | Cut n -> tclTRY (donetac n)
-  | SimplCut (n,m) -> tclTHEN (safe_simpltac m) (tclTRY (donetac n))
+  | Cut n -> tclTRY (Proofview.V82.of_tactic (donetac n))
+  | SimplCut (n,m) -> tclTHEN (safe_simpltac m) (tclTRY (Proofview.V82.of_tactic (donetac n)))
   | Nop -> tclIDTAC
 
 (** The "congr" tactic *)
@@ -112,7 +112,8 @@ let pf_typecheck t gl =
   let sigma,_  = pf_type_of gl t in
   re_sig [it] sigma
 
-let newssrcongrtac arg ist gl =
+let newssrcongrtac arg ist =
+  Proofview.V82.tactic begin fun gl ->
   ppdebug(lazy Pp.(str"===newcongr==="));
   ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
   (* utils *)
@@ -150,6 +151,7 @@ let newssrcongrtac arg ist gl =
                   ; congrtac (arg, mkRType) ist ])
     (fun _ _ -> errorstrm Pp.(str"Conclusion is not an equality nor an arrow")))
     gl
+  end
 
 (** 7. Rewriting tactics (rewrite, unlock) *)
 
@@ -204,7 +206,7 @@ let simplintac occ rdx sim gl =
         gl in
   match sim with
   | Simpl m -> simptac m gl
-  | SimplCut (n,m) -> tclTHEN (simptac m) (tclTRY (donetac n)) gl
+  | SimplCut (n,m) -> tclTHEN (simptac m) (tclTRY (Proofview.V82.of_tactic (donetac n))) gl
   | _ -> simpltac sim gl
 
 let rec get_evalref env sigma c = match EConstr.kind sigma c with
@@ -599,7 +601,8 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule gl =
   rwcltac ?under ?map_redex (EConstr.of_constr concl) (EConstr.of_constr rdx) d r gl
 ;;
 
-let ssrinstancesofrule ist dir arg gl =
+let ssrinstancesofrule ist dir arg =
+  Proofview.V82.tactic begin fun gl ->
   let sigma0, env0, concl0 = project gl, pf_env gl, pf_concl gl in
   let rule = interp_term ist gl arg in
   let r_sigma, rules = rwprocess_rule dir rule gl in
@@ -622,6 +625,7 @@ let ssrinstancesofrule ist dir arg gl =
       ignore(find env0 (EConstr.Unsafe.to_constr concl0) 1 ~k:print)
     done; raise NoMatch
   with NoMatch -> Feedback.msg_info Pp.(str"END INSTANCES"); tclIDTAC gl
+  end
 
 let ipat_rewrite occ dir c gl = rwrxtac occ None dir (project gl, c) gl
 
@@ -654,7 +658,9 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
 (** The "rewrite" tactic *)
 
 let ssrrewritetac ?under ?map_redex ist rwargs =
-  tclTHENLIST (List.map (rwargtac ?under ?map_redex ist) rwargs)
+  Proofview.V82.tactic begin fun gl ->
+  tclTHENLIST (List.map (rwargtac ?under ?map_redex ist) rwargs) gl
+  end
 
 (** The "unlock" tactic *)
 
@@ -666,7 +672,8 @@ let unfoldtac occ ko t kt gl =
   Proofview.V82.of_tactic
     (convert_concl ~check:true (pf_reduce (Reductionops.clos_norm_flags f) gl cl')) gl
 
-let unlocktac ist args gl =
+let unlocktac ist args =
+  Proofview.V82.tactic begin fun gl ->
   let utac (occ, gt) gl =
     unfoldtac occ occ (interp_term ist gl gt) (fst gt) gl in
   let locked, gl = pf_mkSsrConst "locked" gl in
@@ -675,3 +682,4 @@ let unlocktac ist args gl =
     (fun gl -> unfoldtac None None (project gl,locked) xInParens gl);
     Proofview.V82.of_tactic (Ssrelim.casetac key (fun ?seed:_ k -> k)) ] in
   tclTHENLIST (List.map utac args @ ktacs) gl
+  end

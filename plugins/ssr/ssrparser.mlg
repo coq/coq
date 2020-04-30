@@ -1611,17 +1611,6 @@ let tactic_expr = Pltac.tactic_expr
 
 (** 1. Utilities *)
 
-(** Tactic-level diagnosis *)
-
-(* debug *)
-
-{
-
-(* Let's play with the new proof engine API *)
-let old_tac = V82.tactic
-
-}
-
 (** Name generation *)
 
 (* Since Coq now does repeated internal checks of its external lexical *)
@@ -1731,18 +1720,20 @@ END
 
 {
 
-let ssrautoprop gl =
+let ssrautoprop =
+  Proofview.Goal.enter begin fun gl ->
   try
     let tacname =
       try Tacenv.locate_tactic (qualid_of_ident (Id.of_string "ssrautoprop"))
       with Not_found -> Tacenv.locate_tactic (ssrqid "ssrautoprop") in
     let tacexpr = CAst.make @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
-    V82.of_tactic (eval_tactic (Tacexpr.TacArg tacexpr)) gl
-  with Not_found -> V82.of_tactic (Auto.full_trivial []) gl
+    eval_tactic (Tacexpr.TacArg tacexpr)
+  with Not_found -> Auto.full_trivial []
+  end
 
 let () = ssrautoprop_tac := ssrautoprop
 
-let tclBY tac = Tacticals.tclTHEN tac (donetac ~-1)
+let tclBY tac = Tacticals.New.tclTHEN tac (donetac ~-1)
 
 (** Tactical arguments. *)
 
@@ -1760,7 +1751,7 @@ open Ssrfwd
 }
 
 TACTIC EXTEND ssrtclby
-| [ "by" ssrhintarg(tac) ] -> { V82.tactic (hinttac ist true tac) }
+| [ "by" ssrhintarg(tac) ] -> { hinttac ist true tac }
 END
 
 (* We can't parse "by" in ARGUMENT EXTEND because it will only be made *)
@@ -1778,7 +1769,7 @@ END
 let () = register_ssrtac "tcldo" begin fun args ist -> match args with
 | [arg] ->
   let arg = cast_arg wit_ssrdoarg arg in
-  V82.tactic (ssrdotac ist arg)
+  ssrdotac ist arg
 | _ -> assert false
 end
 
@@ -1827,7 +1818,7 @@ let () = register_ssrtac "tclseq" begin fun args ist -> match args with
   let tac = cast_arg wit_ssrtclarg tac in
   let dir = cast_arg wit_ssrseqdir dir in
   let arg = cast_arg wit_ssrseqarg arg in
-  V82.tactic (tclSEQAT ist tac dir arg)
+  tclSEQAT ist tac dir arg
 | _ -> assert false
 end
 
@@ -2191,9 +2182,9 @@ let vmexacttac pf =
 TACTIC EXTEND ssrexact
 | [ "exact" ssrexactarg(arg) ] -> {
      let views, (gens_clr, _) = arg in
-     V82.tactic (tclBY (V82.of_tactic (inner_ssrapplytac views gens_clr ist))) }
+     tclBY (inner_ssrapplytac views gens_clr ist) }
 | [ "exact" ] -> {
-     V82.tactic (Tacticals.tclORELSE (donetac ~-1) (tclBY (V82.of_tactic apply_top_tac))) }
+     Tacticals.New.tclORELSE (donetac ~-1) (tclBY apply_top_tac) }
 | [ "exact" "<:" lconstr(pf) ] -> { vmexacttac pf }
 END
 
@@ -2220,9 +2211,9 @@ END
 TACTIC EXTEND ssrcongr
 | [ "congr" ssrcongrarg(arg) ] ->
 { let arg, dgens = arg in
-  V82.tactic begin
+  Proofview.Goal.enter begin fun _ ->
     match dgens with
-    | [gens], clr -> Tacticals.tclTHEN (genstac (gens,clr)) (newssrcongrtac arg ist)
+    | [gens], clr -> Tacticals.New.tclTHEN (genstac (gens,clr)) (newssrcongrtac arg ist)
     | _ -> errorstrm (str"Dependent family abstractions not allowed in congr")
   end }
 END
@@ -2342,10 +2333,10 @@ ARGUMENT EXTEND ssrrwarg
 END
 
 TACTIC EXTEND ssrinstofruleL2R
-| [ "ssrinstancesofruleL2R" ssrterm(arg) ] -> { V82.tactic (ssrinstancesofrule ist L2R arg) }
+| [ "ssrinstancesofruleL2R" ssrterm(arg) ] -> { ssrinstancesofrule ist L2R arg }
 END
 TACTIC EXTEND ssrinstofruleR2L
-| [ "ssrinstancesofruleR2L" ssrterm(arg) ] -> { V82.tactic (ssrinstancesofrule ist R2L arg) }
+| [ "ssrinstancesofruleR2L" ssrterm(arg) ] -> { ssrinstancesofrule ist R2L arg }
 END
 
 (** Rewrite argument sequence *)
@@ -2395,7 +2386,7 @@ END
 
 TACTIC EXTEND ssrrewrite
   | [ "rewrite" ssrrwargs(args) ssrclauses(clauses) ] ->
-    { tclCLAUSES (old_tac (ssrrewritetac ist args)) clauses }
+    { tclCLAUSES (ssrrewritetac ist args) clauses }
 END
 
 (** The "unlock" tactic *)
@@ -2426,16 +2417,16 @@ END
 
 TACTIC EXTEND ssrunlock
   | [ "unlock" ssrunlockargs(args) ssrclauses(clauses) ] ->
-    { tclCLAUSES (old_tac (unlocktac ist args)) clauses }
+    { tclCLAUSES (unlocktac ist args) clauses }
 END
 
 (** 8. Forward chaining tactics (pose, set, have, suffice, wlog) *)
 
 
 TACTIC EXTEND ssrpose
-| [ "pose" ssrfixfwd(ffwd) ] -> { V82.tactic (ssrposetac ffwd) }
-| [ "pose" ssrcofixfwd(ffwd) ] -> { V82.tactic (ssrposetac ffwd) }
-| [ "pose" ssrfwdid(id) ssrposefwd(fwd) ] -> { V82.tactic (ssrposetac (id, fwd)) }
+| [ "pose" ssrfixfwd(ffwd) ] -> { ssrposetac ffwd }
+| [ "pose" ssrcofixfwd(ffwd) ] -> { ssrposetac ffwd }
+| [ "pose" ssrfwdid(id) ssrposefwd(fwd) ] -> { ssrposetac (id, fwd) }
 END
 
 (** The "set" tactic *)
@@ -2444,7 +2435,7 @@ END
 
 TACTIC EXTEND ssrset
 | [ "set" ssrfwdid(id) ssrsetfwd(fwd) ssrclauses(clauses) ] ->
-  { tclCLAUSES (old_tac (ssrsettac id fwd)) clauses }
+  { tclCLAUSES (ssrsettac id fwd) clauses }
 END
 
 (** The "have" tactic *)
@@ -2471,27 +2462,27 @@ END
 
 TACTIC EXTEND ssrhave
 | [ "have" ssrhavefwdwbinders(fwd) ] ->
-  { V82.tactic (havetac ist fwd false false) }
+  { havetac ist fwd false false }
 END
 
 TACTIC EXTEND ssrhavesuff
 | [ "have" "suff" ssrhpats_nobs(pats) ssrhavefwd(fwd) ] ->
-  { V82.tactic (havetac ist (false,(pats,fwd)) true false) }
+  { havetac ist (false,(pats,fwd)) true false }
 END
 
 TACTIC EXTEND ssrhavesuffices
 | [ "have" "suffices" ssrhpats_nobs(pats) ssrhavefwd(fwd) ] ->
-  { V82.tactic (havetac ist (false,(pats,fwd)) true false) }
+  { havetac ist (false,(pats,fwd)) true false }
 END
 
 TACTIC EXTEND ssrsuffhave
 | [ "suff" "have" ssrhpats_nobs(pats) ssrhavefwd(fwd) ] ->
-  { V82.tactic (havetac ist (false,(pats,fwd)) true true) }
+  { havetac ist (false,(pats,fwd)) true true }
 END
 
 TACTIC EXTEND ssrsufficeshave
 | [ "suffices" "have" ssrhpats_nobs(pats) ssrhavefwd(fwd) ] ->
-  { V82.tactic (havetac ist (false,(pats,fwd)) true true) }
+  { havetac ist (false,(pats,fwd)) true true }
 END
 
 (** The "suffice" tactic *)
@@ -2515,11 +2506,11 @@ END
 
 
 TACTIC EXTEND ssrsuff
-| [ "suff" ssrsufffwd(fwd) ] -> { V82.tactic (sufftac ist fwd) }
+| [ "suff" ssrsufffwd(fwd) ] -> { sufftac ist fwd }
 END
 
 TACTIC EXTEND ssrsuffices
-| [ "suffices" ssrsufffwd(fwd) ] -> { V82.tactic (sufftac ist fwd) }
+| [ "suffices" ssrsufffwd(fwd) ] -> { sufftac ist fwd }
 END
 
 (** The "wlog" (Without Loss Of Generality) tactic *)
@@ -2541,34 +2532,34 @@ END
 
 TACTIC EXTEND ssrwlog
 | [ "wlog" ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ] ->
-  { V82.tactic (wlogtac ist pats fwd hint false `NoGen) }
+  { wlogtac ist pats fwd hint false `NoGen }
 END
 
 TACTIC EXTEND ssrwlogs
 | [ "wlog" "suff" ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ] ->
-  { V82.tactic (wlogtac ist pats fwd hint true `NoGen) }
+  { wlogtac ist pats fwd hint true `NoGen }
 END
 
 TACTIC EXTEND ssrwlogss
 | [ "wlog" "suffices" ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ]->
-  { V82.tactic (wlogtac ist pats fwd hint true `NoGen) }
+  { wlogtac ist pats fwd hint true `NoGen }
 END
 
 TACTIC EXTEND ssrwithoutloss
 | [ "without" "loss" ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ] ->
-  { V82.tactic (wlogtac ist pats fwd hint false `NoGen) }
+  { wlogtac ist pats fwd hint false `NoGen }
 END
 
 TACTIC EXTEND ssrwithoutlosss
 | [ "without" "loss" "suff"
     ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ] ->
-  { V82.tactic (wlogtac ist pats fwd hint true `NoGen) }
+  { wlogtac ist pats fwd hint true `NoGen }
 END
 
 TACTIC EXTEND ssrwithoutlossss
 | [ "without" "loss" "suffices"
     ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ]->
-  { V82.tactic (wlogtac ist pats fwd hint true `NoGen) }
+  { wlogtac ist pats fwd hint true `NoGen }
 END
 
 {
@@ -2617,14 +2608,14 @@ TACTIC EXTEND ssrgenhave
 | [ "gen" "have" ssrclear(clr)
     ssr_idcomma(id) ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ] ->
   { let pats = augment_preclr clr pats in
-    V82.tactic (wlogtac ist pats fwd hint false (`Gen id)) }
+    wlogtac ist pats fwd hint false (`Gen id) }
 END
 
 TACTIC EXTEND ssrgenhave2
 | [ "generally" "have" ssrclear(clr)
     ssr_idcomma(id) ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ] ->
   { let pats = augment_preclr clr pats in
-    V82.tactic (wlogtac ist pats fwd hint false (`Gen id)) }
+    wlogtac ist pats fwd hint false (`Gen id) }
 END
 
 {

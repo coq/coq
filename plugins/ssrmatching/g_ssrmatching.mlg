@@ -107,7 +107,7 @@ ARGUMENT EXTEND ssrpatternarg TYPED AS rpattern PRINTED BY { pr_rpattern }
 END
 
 TACTIC EXTEND ssrinstoftpat
-| [ "ssrinstancesoftpat" cpattern(arg) ] -> { Proofview.V82.tactic (ssrinstancesof arg) }
+| [ "ssrinstancesoftpat" cpattern(arg) ] -> { ssrinstancesof arg }
 END
 
 {

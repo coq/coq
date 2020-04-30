@@ -20,7 +20,7 @@ val tclSEQAT :
   int Locus.or_var *
     (('a * Tacinterp.Value.t option list) *
        Tacinterp.Value.t option) ->
-  Tacmach.tactic
+  unit Proofview.tactic
 
 val tclCLAUSES :
   unit Proofview.tactic ->
@@ -33,7 +33,7 @@ val tclCLAUSES :
 
 val hinttac :
            Tacinterp.interp_sign ->
-           bool -> bool * Tacinterp.Value.t option list -> Ssrast.v82tac
+           bool -> bool * Tacinterp.Value.t option list -> unit Proofview.tactic
 
 val ssrdotac :
   Tacinterp.interp_sign ->
@@ -44,5 +44,5 @@ val ssrdotac :
            Ssrmatching.cpattern option)
           option)
        list * Ssrast.ssrclseq) ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
