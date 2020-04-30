@@ -521,10 +521,10 @@ let resolve_typeclasses ~where ~fail env sigma =
 let nf_evar sigma t =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
 
-let pf_abs_evars2 gl rigid (sigma, c0) =
+let abs_evars2 env sigma0 rigid (sigma, c0) =
   let c0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma c0 in
-  let sigma0, ucst = project gl, Evd.evar_universe_context sigma in
-  let nenv = env_size (pf_env gl) in
+  let sigma0, ucst = sigma0, Evd.evar_universe_context sigma in
+  let nenv = env_size env in
   let abs_evar n k =
     let evi = Evd.find sigma k in
     let concl = EConstr.Unsafe.to_constr evi.evar_concl in
@@ -558,6 +558,11 @@ let pf_abs_evars2 gl rigid (sigma, c0) =
   | [] -> c in
   List.length evlist, EConstr.of_constr (loop (get 1 c0) 1 evlist), List.map fst evlist, ucst
 
+let pf_abs_evars2 gl rigid c =
+  abs_evars2 (pf_env gl) (project gl) rigid c
+
+let abs_evars env sigma t = abs_evars2 env sigma [] t
+
 let pf_abs_evars gl t = pf_abs_evars2 gl [] t
 
 
@@ -581,12 +586,11 @@ open Pp
 let pp _ = () (* FIXME *)
 module Intset = Evar.Set
 
-let pf_abs_evars_pirrel gl (sigma, c0) =
+let abs_evars_pirrel env sigma0 (sigma, c0) =
   pp(lazy(str"==PF_ABS_EVARS_PIRREL=="));
-  pp(lazy(str"c0= " ++ Printer.pr_constr_env (pf_env gl) sigma c0));
-  let sigma0 = project gl in
+  pp(lazy(str"c0= " ++ Printer.pr_constr_env env sigma c0));
   let c0 = nf_evar sigma0 (nf_evar sigma c0) in
-  let nenv = env_size (pf_env gl) in
+  let nenv = env_size env in
   let abs_evar n k =
     let evi = Evd.find sigma k in
     let concl = EConstr.Unsafe.to_constr evi.evar_concl in
@@ -602,13 +606,13 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
     let n = max 0 (List.length a - nenv) in
     let k_ty =
       Retyping.get_sort_family_of
-        (pf_env gl) sigma (Evd.evar_concl (Evd.find sigma k)) in
+        env sigma (Evd.evar_concl (Evd.find sigma k)) in
     let is_prop = k_ty = InProp in
     let t = abs_evar n k in (k, (n, t, is_prop)) :: put evlist t
   | _ -> Constr.fold put evlist c in
   let evlist = put [] c0 in
   if evlist = [] then 0, c0 else
-  let pr_constr t = Printer.pr_econstr_env (pf_env gl) sigma (Reductionops.nf_beta (pf_env gl) (project gl) (EConstr.of_constr t)) in
+  let pr_constr t = Printer.pr_econstr_env env sigma (Reductionops.nf_beta env sigma0 (EConstr.of_constr t)) in
   pp(lazy(str"evlist=" ++ pr_list (fun () -> str";")
     (fun (k,_) -> Evar.print k) evlist));
   let evplist =
@@ -667,6 +671,9 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   pp(lazy(str"res= " ++ pr_constr res));
   List.length evlist, res
 
+let pf_abs_evars_pirrel gl c =
+  abs_evars_pirrel (pf_env gl) (project gl) c
+
 (* Strip all non-essential dependencies from an abstracted term, generating *)
 (* standard names for the abstracted holes.                                 *)
 
@@ -678,7 +685,8 @@ let nb_evar_deps = function
     (try int_of_string (String.sub s m (String.length s - 1 - m)) with _ -> 0)
   | _ -> 0
 
-let pf_type_id gl t = Id.of_string (Namegen.hdchar (pf_env gl) (project gl) t)
+let type_id env sigma t = Id.of_string (Namegen.hdchar env sigma t)
+let pf_type_id gl t = type_id (pf_env gl) (project gl) t
 let pfe_type_of gl t =
   let sigma, ty = pf_type_of gl t in
   re_sig (sig_it gl) sigma, ty
@@ -693,7 +701,7 @@ let pf_type_of gl t =
   let sigma, ty = pf_type_of gl (EConstr.of_constr t) in
   re_sig (sig_it gl)  sigma, EConstr.Unsafe.to_constr ty
 
-let pf_abs_cterm gl n c0 =
+let abs_cterm env sigma n c0 =
   if n <= 0 then c0 else
   let c0 = EConstr.Unsafe.to_constr c0 in
   let noargs = [|0|] in
@@ -725,12 +733,14 @@ let pf_abs_cterm gl n c0 =
       let na' = List.length dl in
       eva.(i) <- Array.of_list (na - na' :: dl);
       let x' =
-        if na' = 0 then Name (pf_type_id gl (EConstr.of_constr t2)) else mk_evar_name na' in
+        if na' = 0 then Name (type_id env sigma (EConstr.of_constr t2)) else mk_evar_name na' in
       mkLambda ({x with binder_name=x'}, t2, strip_evars (i + 1) c1)
 (*      if noccurn 1 c2 then lift (-1) c2 else
       mkLambda (Name (pf_type_id gl t2), t2, c2) *)
     | _ -> strip i c in
   EConstr.of_constr (strip_evars 0 c0)
+
+let pf_abs_cterm gl n c0 = abs_cterm (pf_env gl) (project gl) n c0
 
 (* }}} *)
 

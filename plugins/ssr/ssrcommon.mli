@@ -181,7 +181,22 @@ val mk_internal_id : string -> Id.t
 val mk_tagged_id : string -> int -> Id.t
 val mk_evar_name : int -> Name.t
 val ssr_anon_hyp : string
+val type_id : Environ.env -> Evd.evar_map -> EConstr.types -> Id.t
 val pf_type_id :  Goal.goal Evd.sigma -> EConstr.types -> Id.t
+
+val abs_evars :
+           Environ.env -> Evd.evar_map ->
+           evar_map * EConstr.t ->
+           int * EConstr.t * Evar.t list *
+           UState.t
+val abs_evars2 : (* ssr2 *)
+           Environ.env -> Evd.evar_map -> Evar.t list ->
+           evar_map * EConstr.t ->
+           int * EConstr.t * Evar.t list *
+           UState.t
+val abs_cterm :
+           Environ.env -> Evd.evar_map -> int -> EConstr.t -> EConstr.t
+
 
 val pf_abs_evars :
            Goal.goal Evd.sigma ->
@@ -241,6 +256,9 @@ val ssrqid : string -> Libnames.qualid
 val new_tmp_id :
   tac_ctx -> (Names.Id.t * Name.t ref) * tac_ctx
 val mk_anon_id : string -> Id.t list -> Id.t
+val abs_evars_pirrel :
+           Environ.env -> Evd.evar_map ->
+           evar_map * Constr.constr -> int * Constr.constr
 val pf_abs_evars_pirrel :
            Goal.goal Evd.sigma ->
            evar_map * Constr.constr -> int * Constr.constr
