@@ -162,17 +162,27 @@ let catching_error call_trace fail (e, info) =
     fail located_exc
   end
 
-let catch_error call_trace f x =
+let update_loc ?loc (e, info) =
+  (e, Option.cata (Loc.add_loc info) info loc)
+
+let catch_error ?loc call_trace f x =
   try f x
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
-    catching_error call_trace iraise e
+    let e = update_loc ?loc e in
+    catching_error call_trace Exninfo.iraise e
 
-let wrap_error tac k =
-  if is_traced () then Proofview.tclORELSE tac k else tac
+let catch_error_loc ?loc tac =
+  Proofview.tclOR tac (fun exn ->
+      let (e, info) = update_loc ?loc exn in
+      Proofview.tclZERO ~info e)
 
-let catch_error_tac call_trace tac =
-  wrap_error
+let wrap_error ?loc tac k =
+  if is_traced () then Proofview.tclORELSE tac k
+  else catch_error_loc ?loc tac
+
+let catch_error_tac ?loc call_trace tac =
+  wrap_error ?loc
     tac
     (catching_error call_trace (fun (e, info) -> Proofview.tclZERO ~info e))
 
@@ -545,9 +555,11 @@ let interp_gen kind ist pattern_mode flags env sigma c =
 
   (* Again this is called at times with no open proof! *)
   let name, poly = Id.of_string "tacinterp", ist.poly in
-  let (trace,_,_,_) = Proofview.apply ~name ~poly env (push_trace (loc_of_glob_constr term,LtacConstrInterp (term,vars)) ist) dummy_proofview in
+  let loc = loc_of_glob_constr term in
+  let trace = push_trace (loc,LtacConstrInterp (term,vars)) ist in
+  let (trace,_,_,_) = Proofview.apply ~name ~poly env trace dummy_proofview in
   let (evd,c) =
-    catch_error trace (understand_ltac flags env sigma vars kind) term
+    catch_error ?loc trace (understand_ltac flags env sigma vars kind) term
   in
   (* spiwack: to avoid unnecessary modifications of tacinterp, as this
      function already use effect, I call [run] hoping it doesn't mess
@@ -1069,7 +1081,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let call = LtacAtomCall t in
       push_trace(loc,call) ist >>= fun trace ->
       Profile_ltac.do_profile "eval_tactic:2" trace
-        (catch_error_tac trace (interp_atomic ist t))
+        (catch_error_tac ?loc trace (interp_atomic ist t))
   | TacFun _ | TacLetIn _ | TacMatchGoal _ | TacMatch _ -> interp_tactic ist tac
   | TacId [] -> Proofview.tclLIFT (db_breakpoint (curr_debug ist) [])
   | TacId s ->
@@ -1159,7 +1171,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         ; poly
         ; extra = TacStore.set ist.extra f_trace trace } in
         val_interp ist alias.Tacenv.alias_body >>= fun v ->
-        Ftactic.lift (tactic_of_value ist v)
+        Ftactic.lift (catch_error_loc ?loc (tactic_of_value ist v))
       in
       let tac =
         Ftactic.with_env interp_vars >>= fun (env, lr) ->
@@ -1185,7 +1197,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
       let tac args =
         let name _ _ = Pptactic.pr_extend (fun v -> print_top_val () v) 0 opn args in
-        Proofview.Trace.name_tactic name (catch_error_tac trace (tac args ist))
+        Proofview.Trace.name_tactic name (catch_error_tac ?loc trace (tac args ist))
       in
       Ftactic.run args tac
 
@@ -1288,7 +1300,7 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
                 ; extra = TacStore.set ist.extra f_trace []
                 } in
               Profile_ltac.do_profile "interp_app" trace ~count_call:false
-                (catch_error_tac trace (val_interp ist body)) >>= fun v ->
+                (catch_error_tac ?loc trace (val_interp ist body)) >>= fun v ->
               Ftactic.return (name_vfun (push_appl appl largs) v)
             end
             begin fun (e, info) ->
