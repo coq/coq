@@ -5,6 +5,6 @@ ci_dir="$(dirname "$0")"
 
 install_ssralg
 
-git_download GeoCoq
+git_download geocoq
 
-( cd "${CI_BUILD_DIR}/GeoCoq" && ./configure.sh && make )
+( cd "${CI_BUILD_DIR}/geocoq" && ./configure.sh && make )

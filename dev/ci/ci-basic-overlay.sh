@@ -46,9 +46,9 @@
 : "${math_classes_CI_GITURL:=https://github.com/coq-community/math-classes}"
 : "${math_classes_CI_ARCHIVEURL:=${math_classes_CI_GITURL}/archive}"
 
-: "${Corn_CI_REF:=master}"
-: "${Corn_CI_GITURL:=https://github.com/coq-community/corn}"
-: "${Corn_CI_ARCHIVEURL:=${Corn_CI_GITURL}/archive}"
+: "${corn_CI_REF:=master}"
+: "${corn_CI_GITURL:=https://github.com/coq-community/corn}"
+: "${corn_CI_ARCHIVEURL:=${corn_CI_GITURL}/archive}"
 
 ########################################################################
 # Iris
@@ -59,19 +59,19 @@
 : "${stdpp_CI_GITURL:=https://gitlab.mpi-sws.org/iris/stdpp}"
 : "${stdpp_CI_ARCHIVEURL:=${stdpp_CI_GITURL}/-/archive}"
 
-: "${Iris_CI_GITURL:=https://gitlab.mpi-sws.org/iris/iris}"
-: "${Iris_CI_ARCHIVEURL:=${Iris_CI_GITURL}/-/archive}"
+: "${iris_CI_GITURL:=https://gitlab.mpi-sws.org/iris/iris}"
+: "${iris_CI_ARCHIVEURL:=${iris_CI_GITURL}/-/archive}"
 
-: "${lambdaRust_CI_REF:=master}"
-: "${lambdaRust_CI_GITURL:=https://gitlab.mpi-sws.org/iris/lambda-rust}"
-: "${lambdaRust_CI_ARCHIVEURL:=${lambdaRust_CI_GITURL}/-/archive}"
+: "${lambda_rust_CI_REF:=master}"
+: "${lambda_rust_CI_GITURL:=https://gitlab.mpi-sws.org/iris/lambda-rust}"
+: "${lambda_rust_CI_ARCHIVEURL:=${lambda_rust_CI_GITURL}/-/archive}"
 
 ########################################################################
 # HoTT
 ########################################################################
-: "${HoTT_CI_REF:=master}"
-: "${HoTT_CI_GITURL:=https://github.com/HoTT/HoTT}"
-: "${HoTT_CI_ARCHIVEURL:=${HoTT_CI_GITURL}/archive}"
+: "${hott_CI_REF:=master}"
+: "${hott_CI_GITURL:=https://github.com/HoTT/HoTT}"
+: "${hott_CI_ARCHIVEURL:=${hott_CI_GITURL}/archive}"
 
 ########################################################################
 # CoqHammer
@@ -83,16 +83,16 @@
 ########################################################################
 # GeoCoq
 ########################################################################
-: "${GeoCoq_CI_REF:=master}"
-: "${GeoCoq_CI_GITURL:=https://github.com/GeoCoq/GeoCoq}"
-: "${GeoCoq_CI_ARCHIVEURL:=${GeoCoq_CI_GITURL}/archive}"
+: "${geocoq_CI_REF:=master}"
+: "${geocoq_CI_GITURL:=https://github.com/GeoCoq/GeoCoq}"
+: "${geocoq_CI_ARCHIVEURL:=${geocoq_CI_GITURL}/archive}"
 
 ########################################################################
 # Flocq
 ########################################################################
-: "${Flocq_CI_REF:=master}"
-: "${Flocq_CI_GITURL:=https://gitlab.inria.fr/flocq/flocq}"
-: "${Flocq_CI_ARCHIVEURL:=${Flocq_CI_GITURL}/-/archive}"
+: "${flocq_CI_REF:=master}"
+: "${flocq_CI_GITURL:=https://gitlab.inria.fr/flocq/flocq}"
+: "${flocq_CI_ARCHIVEURL:=${flocq_CI_GITURL}/-/archive}"
 
 ########################################################################
 # coq-tools
