@@ -2029,8 +2029,6 @@ type provername = string * int option
   * The caching mechanism.
   *)
 
-open Persistent_cache
-
 module MakeCache (T : sig
   type prover_option
   type coeff
@@ -2054,7 +2052,7 @@ struct
       Hash.((hash_pair T.hash_prover_option (List.fold_left hash_cstr)) 0)
   end
 
-  include PHashtable (E)
+  include Persistent_cache.PHashtable (E)
 
   let memo_opt use_cache cache_file f =
     let memof = memo cache_file f in
