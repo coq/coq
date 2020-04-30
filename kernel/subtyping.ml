@@ -336,7 +336,6 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
              mod_expr = Abstract;
              mod_type = subst_signature subst1 body_t1;
              mod_type_alg = None;
-             mod_constraints = mtb1.mod_constraints;
              mod_retroknowledge = ModBodyRK [];
              mod_delta = mtb1.mod_delta} env
         in
@@ -347,7 +346,6 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
 
 let check_subtypes env sup super =
   let env = add_module_type sup.mod_mp sup env in
-  let env = Environ.push_context_set ~strict:true super.mod_constraints env in
   check_modtypes Univ.Constraint.empty env
     (strengthen sup sup.mod_mp) super empty_subst
     (map_mp super.mod_mp sup.mod_mp sup.mod_delta) false

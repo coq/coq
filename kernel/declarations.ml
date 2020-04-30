@@ -295,8 +295,6 @@ and 'a generic_module_body =
     mod_expr : 'a; (** implementation *)
     mod_type : module_signature; (** expanded type *)
     mod_type_alg : module_expression option; (** algebraic type *)
-    mod_constraints : Univ.ContextSet.t; (**
-      set of all universes constraints in the module  *)
     mod_delta : Mod_subst.delta_resolver; (**
       quotiented set of equivalent constants and inductive names *)
     mod_retroknowledge : 'a module_retroknowledge }

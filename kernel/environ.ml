@@ -279,6 +279,9 @@ let indices_matter env = env.env_typing_flags.indices_matter
 let universes env = env.env_stratification.env_universes
 let universes_lbound env = env.env_stratification.env_universes_lbound
 
+let set_universes g env =
+  {env with env_stratification = {env.env_stratification with env_universes=g}}
+
 let set_universes_lbound env lbound =
   let env_stratification = { env.env_stratification with env_universes_lbound = lbound } in
   { env with env_stratification }

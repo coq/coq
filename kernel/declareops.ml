@@ -391,7 +391,6 @@ and hcons_generic_module_body :
   let expr' = hcons_impl mb.mod_expr in
   let type' = hcons_module_signature mb.mod_type in
   let type_alg' = mb.mod_type_alg in
-  let constraints' = Univ.hcons_universe_context_set mb.mod_constraints in
   let delta' = mb.mod_delta in
   let retroknowledge' = mb.mod_retroknowledge in
 
@@ -400,7 +399,6 @@ and hcons_generic_module_body :
     mb.mod_expr == expr' &&
     mb.mod_type == type' &&
     mb.mod_type_alg == type_alg' &&
-    mb.mod_constraints == constraints' &&
     mb.mod_delta == delta' &&
     mb.mod_retroknowledge == retroknowledge'
   then mb
@@ -409,7 +407,6 @@ and hcons_generic_module_body :
     mod_expr = expr';
     mod_type = type';
     mod_type_alg = type_alg';
-    mod_constraints = constraints';
     mod_delta = delta';
     mod_retroknowledge = retroknowledge';
   }

@@ -359,17 +359,17 @@ and v_impl =
 and v_noimpl = v_unit
 and v_module =
   Tuple ("module_body",
-         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_context_set;v_resolver;v_retroknowledge|])
+         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_resolver;v_retroknowledge|])
 and v_modtype =
   Tuple ("module_type_body",
-         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_context_set;v_resolver;v_unit|])
+         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_resolver;v_unit|])
 
 (** kernel/safe_typing *)
 
 let v_vodigest = Sum ("module_impl",0, [| [|String|]; [|String;String|] |])
 let v_deps = Array (v_tuple "dep" [|v_dp;v_vodigest|])
 let v_compiled_lib =
-  v_tuple "compiled" [|v_dp;v_module;v_deps;v_engagement;Any|]
+  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps;v_engagement;Any|]
 
 (** Library objects *)
 

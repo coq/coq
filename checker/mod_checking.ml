@@ -77,7 +77,6 @@ let mk_mtb mp sign delta =
     mod_expr = ();
     mod_type = sign;
     mod_type_alg = None;
-    mod_constraints = Univ.ContextSet.empty;
     mod_delta = delta;
     mod_retroknowledge = ModTypeRK; }
 

@@ -23,13 +23,13 @@ open Names
 *)
 
 val translate_module :
-  env -> ModPath.t -> inline -> module_entry -> module_body
+  env -> ModPath.t -> inline -> module_entry -> module_body * Univ.Constraint.t
 
 (** [translate_modtype] produces a [module_type_body] whose [mod_type_alg]
     cannot be [None] (and of course [mod_expr] is [Abstract]). *)
 
 val translate_modtype :
-  env -> ModPath.t -> inline -> module_type_entry -> module_type_body
+  env -> ModPath.t -> inline -> module_type_entry -> module_type_body * Univ.Constraint.t
 
 (** Low-level function for translating a module struct entry :
     - We translate to a module when a [ModPath.t] is given,
@@ -39,7 +39,7 @@ val translate_modtype :
       the extraction. *)
 
 type 'alg translation =
-  module_signature * 'alg * delta_resolver * Univ.ContextSet.t
+  module_signature * 'alg * delta_resolver * Univ.Constraint.t
 
 val translate_mse :
   env -> ModPath.t option -> inline -> module_struct_entry ->
@@ -51,7 +51,7 @@ val translate_mse :
 val finalize_module :
   env -> ModPath.t -> (module_expression option) translation ->
   (module_type_entry * inline) option ->
-  module_body
+  module_body * Univ.Constraint.t
 
 (** [translate_mse_incl] translate the mse of a module or
     module type given to an Include *)

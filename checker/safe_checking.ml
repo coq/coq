@@ -14,7 +14,7 @@ open Environ
 let import senv clib univs digest =
   let mb = Safe_typing.module_of_library clib in
   let env = Safe_typing.env_of_safe_env senv in
-  let env = push_context_set ~strict:true mb.mod_constraints env in
+  let env = push_context_set ~strict:true (Safe_typing.univs_of_library clib) env in
   let env = push_context_set ~strict:true univs env in
   let env = Modops.add_retroknowledge mb.mod_retroknowledge env in
   Mod_checking.check_module env mb.mod_mp mb;
