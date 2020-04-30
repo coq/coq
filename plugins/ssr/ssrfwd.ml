@@ -101,7 +101,7 @@ let basecuttac name c =
   Tactics.apply t
   end
 
-let introstac ipats = Proofview.V82.of_tactic (tclIPAT ipats)
+let introstac ipats = tclIPAT ipats
 
 let havetac ist
   (transp,((((clr, orig_pats), binders), simpl), (((fk, _), t), hint)))
@@ -119,16 +119,16 @@ let havetac ist
    match clr with
    | None -> introstac pats, []
    | Some clr -> introstac (tclCompileIPats (IPatClear clr :: orig_pats)), clr in
- let itac, id, clr = introstac pats, Tacticals.tclIDTAC, old_cleartac clr in
+ let itac, id, clr = introstac pats, Tacticals.New.tclIDTAC, cleartac clr in
  let binderstac n =
    let rec aux = function 0 -> [] | n -> IOpInaccessible None :: aux (n-1) in
-   Tacticals.tclTHEN (if binders <> [] then introstac (aux n) else Tacticals.tclIDTAC)
+   Tacticals.New.tclTHEN (if binders <> [] then introstac (aux n) else Tacticals.New.tclIDTAC)
      (introstac binders) in
  let simpltac = introstac simpl in
  let fixtc =
    not !ssrhaveNOtcresolution &&
    match fk with FwdHint(_,true) -> false | _ -> true in
- let hint = Proofview.V82.of_tactic (hinttac ist true hint) in
+ let hint = hinttac ist true hint in
  let cuttac t =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
@@ -147,7 +147,7 @@ let havetac ist
  let unlock_abs (idty,args_id) gl =
     let gl, _ = pf_e_type_of gl idty in
     pf_unify_HO gl args_id.(2) abstract_key in
- Tacticals.tclTHENFIRST itac_mkabs (fun gl ->
+ Tacticals.tclTHENFIRST (Proofview.V82.of_tactic itac_mkabs) (fun gl ->
   let mkt t = mk_term xNoFlag t in
   let mkl t = (xNoFlag, (t, None)) in
   let interp gl rtc t = pf_abs_ssrterm ~resolve_typeclasses:rtc ist gl t in
@@ -180,7 +180,7 @@ let havetac ist
        try Proofview.V82.of_tactic (convert_concl ~check:true (EConstr.it_mkProd_or_LetIn concl ctx)) gl
        with _ -> errorstrm (str "Given proof term is not of type " ++
          pr_econstr_env (pf_env gl) (project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) Sorts.Relevant concl)) in
-     gl, ty, Tacticals.tclTHEN assert_is_conv (Proofview.V82.of_tactic (Tactics.apply t)), id, itac_c
+     gl, ty, Tacticals.New.tclTHEN (Proofview.V82.tactic assert_is_conv) (Tactics.apply t), id, itac_c
    | FwdHave, false, false ->
      let skols = List.flatten (List.map (function
        | IOpAbstractVars ids -> ids
@@ -198,13 +198,13 @@ let havetac ist
      let gs =
        List.map (fun (_,a) ->
          Ssripats.Internal.pf_find_abstract_proof false gl (EConstr.Unsafe.to_constr a.(1))) skols_args in
-     let tacopen_skols gl = re_sig (gs @ [gl.Evd.it]) gl.Evd.sigma in
+     let tacopen_skols = Proofview.V82.tactic (fun gl -> re_sig (gs @ [gl.Evd.it]) gl.Evd.sigma) in
      let gl, ty = pf_e_type_of gl t in
-     gl, ty, Proofview.V82.of_tactic (Tactics.apply t), id,
-       Tacticals.tclTHEN (Tacticals.tclTHEN itac_c simpltac)
-         (Tacticals.tclTHEN tacopen_skols (fun gl ->
+     gl, ty, Tactics.apply t, id,
+       Tacticals.New.tclTHEN (Tacticals.New.tclTHEN itac_c simpltac)
+         (Tacticals.New.tclTHEN tacopen_skols (Proofview.V82.tactic (fun gl ->
             let abstract, gl = pf_mkSsrConst "abstract" gl in
-            Proofview.V82.of_tactic (unfold [abstract; abstract_key]) gl))
+            Proofview.V82.of_tactic (unfold [abstract; abstract_key]) gl)))
    | _,true,true  ->
      let _, ty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
      gl, EConstr.mkArrow ty Sorts.Relevant concl, hint, itac, clr
@@ -213,9 +213,9 @@ let havetac ist
      gl, EConstr.mkArrow ty Sorts.Relevant concl, hint, id, itac_c
    | _, false, false ->
      let n, cty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
-     gl, cty, Tacticals.tclTHEN (binderstac n) hint, id, Tacticals.tclTHEN itac_c simpltac
+     gl, cty, Tacticals.New.tclTHEN (binderstac n) hint, id, Tacticals.New.tclTHEN itac_c simpltac
    | _, true, false -> assert false in
-  Tacticals.tclTHENS (Proofview.V82.of_tactic (cuttac cut)) [ Tacticals.tclTHEN sol itac1; itac2 ] gl)
+  Proofview.V82.of_tactic (Tacticals.New.tclTHENS (cuttac cut) [ Tacticals.New.tclTHEN sol itac1; itac2 ]) gl)
  gl
 end
 
@@ -276,11 +276,11 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
          | LetIn(id,b,ty,c) -> EConstr.mkLetIn (id,b,ty,pired c args)
          | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr_env env sigma c) in
     c, args, pired c args, pf_merge_uc uc gl in
-  let tacipat pats = Proofview.V82.tactic (introstac pats) in
+  let tacipat pats = introstac pats in
   let tacigens =
     Tacticals.New.tclTHEN
       (Tacticals.New.tclTHENLIST(List.rev(List.fold_right mkclr gens [cleartac clr0])))
-      (Proofview.V82.tactic (introstac (List.fold_right mkpats gens []))) in
+      (introstac (List.fold_right mkpats gens [])) in
   let hinttac = hinttac ist true hint in
   let cut_kind, fst_goal_tac, snd_goal_tac =
     match suff, ghave with
@@ -316,12 +316,11 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
 (** The "suffice" tactic *)
 
 let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
-  Proofview.V82.tactic begin
   let clr = Option.default [] clr in
   let pats = tclCompileIPats pats in
   let binders = tclCompileIPats binders in
   let simpl = tclCompileIPats simpl in
-  let htac = Tacticals.tclTHEN (introstac pats) (Proofview.V82.of_tactic (hinttac ist true hint)) in
+  let htac = Tacticals.New.tclTHEN (introstac pats) (hinttac ist true hint) in
   let c = match Ssrcommon.ssrterm_of_ast_closure_term c with
   | (a, (b, Some ct)) ->
     begin match ct.CAst.v with
@@ -334,11 +333,12 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
     | _ -> anomaly "suff: ssr cast hole deleted by typecheck"
     end
   in
-  let ctac gl =
+  let ctac =
+    Proofview.V82.tactic begin fun gl ->
     let _,ty,_,uc = pf_interp_ty ist gl c in let gl = pf_merge_uc uc gl in
-    Proofview.V82.of_tactic (basecuttac "ssr_suff" ty) gl in
-  Tacticals.tclTHENS ctac [htac; Tacticals.tclTHEN (old_cleartac clr) (introstac (binders@simpl))]
-  end
+    Proofview.V82.of_tactic (basecuttac "ssr_suff" ty) gl
+  end in
+  Tacticals.New.tclTHENS ctac [htac; Tacticals.New.tclTHEN (cleartac clr) (introstac (binders@simpl))]
 
 open Proofview.Notations
 
