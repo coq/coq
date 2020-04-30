@@ -1043,7 +1043,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
     let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
     let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
     tclTHENS (assert_after Anonymous false_0)
-      [onLastHypId gen_absurdity; (Proofview.V82.tactic (Refiner.refiner ~check:true EConstr.Unsafe.(to_constr pf)))]
+      [onLastHypId gen_absurdity; (Refiner.refiner ~check:true EConstr.Unsafe.(to_constr pf))]
 
 let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
@@ -1360,8 +1360,8 @@ let inject_if_homogenous_dependent_pair ty =
         tclTHENS (cut (mkApp (ceq,new_eq_args)))
           [clear [destVar sigma hyp];
            Tacticals.New.pf_constr_of_global inj2 >>= fun inj2 ->
-           Proofview.V82.tactic (Refiner.refiner ~check:true EConstr.Unsafe.(to_constr
-             (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|]))))
+           Refiner.refiner ~check:true EConstr.Unsafe.(to_constr
+             (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|])))
           ])]
   with Exit ->
     Proofview.tclUNIT ()
@@ -1406,7 +1406,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
       (Proofview.tclIGNORE (Proofview.Monad.List.map
          (fun (pf,ty) -> tclTHENS (cut ty)
            [inject_if_homogenous_dependent_pair ty;
-            Proofview.V82.tactic (Refiner.refiner ~check:true EConstr.Unsafe.(to_constr pf))])
+            Refiner.refiner ~check:true EConstr.Unsafe.(to_constr pf)])
          (if l2r then List.rev injectors else injectors)))
       (tac (List.length injectors)))
 

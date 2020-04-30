@@ -37,6 +37,8 @@ let refiner ~check =
       CProfile.profile2 refiner_key (refiner ~check)
   else refiner ~check
 
+let refiner ~check c = Proofview.V82.tactic (refiner ~check c)
+
 (*********************)
 (*   Tacticals       *)
 (*********************)

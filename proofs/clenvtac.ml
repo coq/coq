@@ -77,7 +77,7 @@ let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
   let clenv = { clenv with evd = evd' } in
   Proofview.tclTHEN
     (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-    (Proofview.V82.tactic (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv)))))
+    (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
   end
 
 let clenv_pose_dependent_evars ?(with_evars=false) clenv =

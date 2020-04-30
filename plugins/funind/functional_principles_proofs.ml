@@ -41,7 +41,10 @@ let observe_tac s = observe_tac (fun _ _ -> Pp.str s)
 let finish_proof dynamic_infos g =
   observe_tac "finish" (Proofview.V82.of_tactic assumption) g
 
-let refine c = Refiner.refiner ~check:true EConstr.Unsafe.(to_constr c)
+let refine c =
+  Proofview.V82.of_tactic
+    (Refiner.refiner ~check:true EConstr.Unsafe.(to_constr c))
+
 let thin l = Proofview.V82.of_tactic (Tactics.clear l)
 let eq_constr sigma u v = EConstr.eq_constr_nounivs sigma u v
 
