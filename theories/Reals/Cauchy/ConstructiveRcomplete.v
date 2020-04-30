@@ -145,13 +145,13 @@ Proof.
     assert (k <= 2 * k)%positive.
     { apply (Pos.le_trans _ (1*k)). apply Pos.le_refl.
       apply Pos.mul_le_mono_r. discriminate. }
-    apply (Qle_trans _ (1#k)). apply Qlt_le_weak, cau.
+    apply (Qle_trans _ (1#k)). rewrite Qred_correct. apply Qlt_le_weak, cau.
     exact H0. apply (Pos.le_trans _ _ _ H0). apply Pos.lt_le_incl, H.
     rewrite <- (Qinv_plus_distr 1 1).
     apply (Qplus_le_l _ _ (-(1#k))). ring_simplify. discriminate.
   - subst n. rewrite Qplus_opp_r. discriminate.
   - specialize (cau n (2*k)%positive n).
-    apply (Qle_trans _ (1#n)). apply Qlt_le_weak, cau.
+    apply (Qle_trans _ (1#n)). rewrite Qred_correct. apply Qlt_le_weak, cau.
     apply Pos.lt_le_incl, H. apply Pos.le_refl.
     apply (Qplus_le_l _ _ (-(1#n))). ring_simplify. discriminate.
 Qed.
