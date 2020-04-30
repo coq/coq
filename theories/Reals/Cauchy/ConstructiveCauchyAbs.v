@@ -32,8 +32,8 @@ Local Open Scope CReal_scope.
    CReal_abs : CReal -> CReal
 *)
 Lemma CauchyAbsStable : forall xn : positive -> Q,
-    QCauchySeq xn id
-    -> QCauchySeq (fun n => Qabs (xn n)) id.
+    QCauchySeq xn
+    -> QCauchySeq (fun n => Qabs (xn n)).
 Proof.
   intros xn cau n p q H H0.
   specialize (cau n p q H H0).

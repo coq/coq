@@ -138,7 +138,7 @@ Proof.
   destruct x as [xn cau].
   unfold CReal_abs, CReal_minus, CReal_plus, CReal_opp, inject_Q, proj1_sig in kmaj.
   apply (Qlt_not_le _ _ kmaj). clear kmaj.
-  unfold QCauchySeq, QSeqEquiv in cau.
+  unfold QCauchySeq in cau.
   rewrite <- (Qplus_le_l _ _ (1#n)). ring_simplify. unfold id in cau.
   destruct (Pos.lt_total (2*k) n). 2: destruct H.
   - specialize (cau k (2*k)%positive n).
@@ -160,7 +160,7 @@ Qed.
 Lemma Rcauchy_limit : forall (xn : nat -> CReal) (xcau : Un_cauchy_mod xn),
     QCauchySeq
       (fun n : positive =>
-         let (p, _) := xcau (4 * n)%positive in proj1_sig (xn p) (4 * n)%positive) id.
+         let (p, _) := xcau (4 * n)%positive in proj1_sig (xn p) (4 * n)%positive).
 Proof.
   intros xn xcau n p q H0 H1.
   destruct (xcau (4 * p)%positive) as [i imaj],
@@ -225,33 +225,27 @@ Proof.
                 let (p, _) := cau (4 * n)%positive in
                 proj1_sig (xn p) (4 * n)%positive)
            (Rcauchy_limit xn cau)) (2*p)) as H.
-  simpl (inject_Q
-           (proj1_sig
-              (exist (fun x : positive -> Q => QCauchySeq x id)
-                 (fun n : positive =>
-                  let (p, _) := cau (4 * n)%positive in
-                  proj1_sig (xn p) (4 * n)%positive) (Rcauchy_limit xn cau))
-              (2 * p)%positive)) in H.
+  unfold proj1_sig in H.
   pose proof (cau (2*p)%positive) as [k cv].
-  destruct (cau (p~0~0~0)%positive) as [i imaj].
+  destruct (cau (4 * (2 * p))%positive) as [i imaj].
   (* The convergence modulus does not matter here, because a converging Cauchy
      sequence always converges to its limit with twice the Cauchy modulus. *)
   exists (max k i).
   intros j H0.
   setoid_replace (xn j -
-     exist (fun x : positive -> Q => QCauchySeq x id)
+     exist (fun x : positive -> Q => QCauchySeq x)
        (fun n : positive =>
         let (p0, _) := cau (4 * n)%positive in proj1_sig (xn p0) (4 * n)%positive)
        (Rcauchy_limit xn cau))
     with (xn j - inject_Q (proj1_sig (xn i) (p~0~0~0)%positive)
           + (inject_Q (proj1_sig (xn i) (p~0~0~0)%positive) -
-     exist (fun x : positive -> Q => QCauchySeq x id)
+     exist (fun x : positive -> Q => QCauchySeq x)
        (fun n : positive =>
         let (p0, _) := cau (4 * n)%positive in proj1_sig (xn p0) (4 * n)%positive)
        (Rcauchy_limit xn cau))).
   2: ring. apply (CReal_le_trans _ _ _ (CReal_abs_triang _ _)).
   apply (CReal_le_trans _ (inject_Q (1#2*p) + inject_Q (1#2*p))).
-  apply CReal_plus_le_compat.
+  apply CReal_plus_le_compat. unfold proj1_sig in H.
   2: rewrite CReal_abs_minus_sym; exact H.
   specialize (imaj j i (le_trans _ _ _ (Nat.le_max_r _ _) H0) (le_refl _)).
   apply (CReal_le_trans _ (inject_Q (1 # 4 * p) + inject_Q (1 # 4 * p))).

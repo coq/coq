@@ -105,7 +105,7 @@ Proof.
 Qed.
 
 Lemma approx_sqrt_Q_cauchy :
-  forall q:Q, QCauchySeq (approx_sqrt_Q q) id.
+  forall q:Q, QCauchySeq (approx_sqrt_Q q).
 Proof.
   intro q. destruct q as [k j]. destruct k.
   - intros n a b H H0. reflexivity.
