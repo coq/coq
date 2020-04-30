@@ -30,10 +30,12 @@ let get_index = function Locus.ArgArg i -> i | _ ->
 
 (** The "first" and "last" tacticals. *)
 
-let tclPERM perm tac gls =
-  let subgls = tac gls in
+let tclPERM perm tac =
+  Proofview.V82.tactic begin fun gls ->
+  let subgls = Proofview.V82.of_tactic tac gls in
   let subgll' = perm subgls.Evd.it in
   re_sig subgll' subgls.Evd.sigma
+  end
 
 let rot_hyps dir i hyps =
   let n = List.length hyps in
@@ -45,20 +47,18 @@ let rot_hyps dir i hyps =
   rot (match dir with L2R -> i | R2L -> n - i) [] hyps
 
 let tclSEQAT ist atac1 dir (ivar, ((_, atacs2), atac3)) =
-  Proofview.V82.tactic begin
   let i = get_index ivar in
-  let evtac t = Proofview.V82.of_tactic (ssrevaltac ist t) in
+  let evtac t = ssrevaltac ist t in
   let tac1 = evtac atac1 in
   if atacs2 = [] && atac3 <> None then tclPERM (rot_hyps dir i) tac1  else
-  let evotac = function Some atac -> evtac atac | _ -> Tacticals.tclIDTAC in
+  let evotac = function Some atac -> evtac atac | _ -> Tacticals.New.tclIDTAC in
   let tac3 = evotac atac3 in
   let rec mk_pad n = if n > 0 then tac3 :: mk_pad (n - 1) else [] in
   match dir, mk_pad (i - 1), List.map evotac atacs2 with
-  | L2R, [], [tac2] when atac3 = None -> Tacticals.tclTHENFIRST tac1 tac2
-  | L2R, [], [tac2] when atac3 = None -> Tacticals.tclTHENLAST tac1 tac2
-  | L2R, pad, tacs2 -> Tacticals.tclTHENSFIRSTn tac1 (Array.of_list (pad @ tacs2)) tac3
-  | R2L, pad, tacs2 -> Tacticals.tclTHENSLASTn tac1 tac3 (Array.of_list (tacs2 @ pad))
-  end
+  | L2R, [], [tac2] when atac3 = None -> Tacticals.New.tclTHENFIRST tac1 tac2
+  | L2R, [], [tac2] when atac3 = None -> Tacticals.New.tclTHENLAST tac1 tac2
+  | L2R, pad, tacs2 -> Tacticals.New.tclTHENSFIRSTn tac1 (Array.of_list (pad @ tacs2)) tac3
+  | R2L, pad, tacs2 -> Tacticals.New.tclTHENSLASTn tac1 tac3 (Array.of_list (tacs2 @ pad))
 
 (** The "in" pseudo-tactical *)(* {{{ **********************************************)
 
