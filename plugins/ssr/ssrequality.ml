@@ -637,7 +637,7 @@ end
 let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
   let fail = ref false in
   let interp_rpattern gl gc =
-    try interp_rpattern gl gc
+    try interp_rpattern (pf_env gl) (project gl) gc
     with _ when snd mult = May -> fail := true; project gl, T mkProp in
   let interp gc gl =
     try interp_term (pf_env gl) (project gl) ist gc

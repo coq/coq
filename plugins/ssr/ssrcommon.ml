@@ -1144,7 +1144,7 @@ let cleartac clr = check_hyps_uniq [] clr; Tactics.clear (hyps_ids clr)
 
 (* XXX the k of the redex should percolate out *)
 let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
-  let pat = interp_cpattern gl t None in (* UGLY API *)
+  let pat = interp_cpattern (pf_env gl) (project gl) t None in (* UGLY API *)
   let gl = pf_merge_uc_of (fst pat) gl in
   let cl, env, sigma = Tacmach.pf_concl gl, pf_env gl, project gl in
   let (c, ucst), cl =
@@ -1287,7 +1287,7 @@ let abs_wgen keep_let f gen (gl,args,c) =
      gl, EConstr.mkVar x :: args, prod
   | _, Some ((x, "@"), Some p) ->
      let x = hoi_id x in
-     let cp = interp_cpattern gl p None in
+     let cp = interp_cpattern (pf_env gl) (project gl) p None in
      let gl = pf_merge_uc_of (fst cp) gl in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
@@ -1300,7 +1300,7 @@ let abs_wgen keep_let f gen (gl,args,c) =
      pf_merge_uc ucst gl, args, EConstr.mkLetIn(make_annot (Name (f x)) r, ut, ty, c)
   | _, Some ((x, _), Some p) ->
      let x = hoi_id x in
-     let cp = interp_cpattern gl p None in
+     let cp = interp_cpattern (pf_env gl) (project gl) p None in
      let gl = pf_merge_uc_of (fst cp) gl in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
@@ -1489,7 +1489,7 @@ end
 
 let tacINTERP_CPATTERN cp =
   tacSIGMA >>= begin fun gl ->
-  tclUNIT (Ssrmatching.interp_cpattern gl cp None)
+  tclUNIT (Ssrmatching.interp_cpattern (pf_env gl) (project gl) cp None)
 end
 
 let tacUNIFY a b =

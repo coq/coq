@@ -14,7 +14,6 @@ open Ltac_plugin
 open Names
 open Pp
 open Genarg
-open Stdarg
 open Term
 open Context
 module CoqConstr = Constr
@@ -172,8 +171,6 @@ let loc_ofCG = function
 
 let mk_term k c ist = k, (mkRHole, Some c), ist
 let mk_lterm = mk_term ' '
-
-let pf_type_of gl t = let sigma, ty = pf_type_of gl t in re_sig (sig_it gl)  sigma, ty
 
 let nf_evar sigma c =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr c))
@@ -932,31 +929,15 @@ let id_of_Cterm t = match id_of_cpattern t with
   | Some x -> x
   | None -> loc_error (loc_of_cpattern t) "Only identifiers are allowed here"
 
-let of_ftactic ftac gl =
-  let r = ref None in
-  let tac = Ftactic.run ftac (fun ans -> r := Some ans; Proofview.tclUNIT ()) in
-  let tac = Proofview.V82.of_tactic tac in
-  let { sigma = sigma } = tac gl in
-  let ans = match !r with
-  | None -> assert false (* If the tactic failed we should not reach this point *)
-  | Some ans -> ans
-  in
-  (sigma, ans)
-
-let interp_wit wit ist gl x =
-  let globarg = in_gen (glbwit wit) x in
-  let arg = interp_genarg ist globarg in
-  let (sigma, arg) = of_ftactic arg gl in
-  sigma, Value.cast (topwit wit) arg
-let interp_open_constr ist gl gc =
-  interp_wit wit_open_constr ist gl gc
-let pf_intern_term gl (_, c, ist) = glob_constr ist (pf_env gl) (project gl) c
+let interp_open_constr ist env sigma gc =
+  Tacinterp.interp_open_constr ist env sigma gc
+let pf_intern_term env sigma (_, c, ist) = glob_constr ist env sigma c
 
 let interp_ssrterm ist gl t = Tacmach.project gl, interp_ssrterm ist t
 
-let interp_term gl = function
+let interp_term env sigma = function
   | (_, c, Some ist) ->
-      on_snd EConstr.Unsafe.to_constr (interp_open_constr ist gl c)
+      on_snd EConstr.Unsafe.to_constr (interp_open_constr ist env sigma c)
   | _ -> errorstrm (str"interpreting a term with no ist")
 
 let thin id sigma goal =
@@ -982,7 +963,7 @@ let pr_ist { lfun= lfun } =
         pr_id id ++ str":" ++ Geninterp.Val.pr ty) (Id.Map.bindings lfun)
 *)
 
-let interp_pattern ?wit_ssrpatternarg gl red redty =
+let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
   pp(lazy(str"interpreting: " ++ pr_pattern red));
   let xInT x y = X_In_T(x,y) and inXInT x y = In_X_In_T(x,y) in
   let inT x = In_T x and eInXInT e x t = E_In_X_In_T(e,x,t) in
@@ -990,7 +971,7 @@ let interp_pattern ?wit_ssrpatternarg gl red redty =
   let mkG ?(k=' ') x ist = k,(x,None), ist in
   let ist_of (_,_,ist) = ist in
   let decode (_,_,ist as t) ?reccall f g =
-    try match DAst.get (pf_intern_term gl t) with
+    try match DAst.get (pf_intern_term env sigma0 t) with
     | GCast(t,CastConv c) when isGHole t && isGLambda c->
       let (x, c) = destGLambda c in
       f x (' ',(c,None),ist)
@@ -1008,7 +989,7 @@ let interp_pattern ?wit_ssrpatternarg gl red redty =
   let cleanup_XinE h x rp sigma =
     let h_k = match kind h with Evar (k,_) -> k | _ -> assert false in
     let to_clean, update = (* handle rename if x is already used *)
-      let ctx = pf_hyps gl in
+      let ctx = Environ.named_context env in
       let len = Context.Named.length ctx in
       let name = ref None in
       try ignore(Context.Named.lookup x ctx); (name, fun k ->
@@ -1019,7 +1000,6 @@ let interp_pattern ?wit_ssrpatternarg gl red redty =
           name := Some (Context.Named.Declaration.get_id (List.nth nctx (nlen - len - 1)))
         end)
       with Not_found -> ref (Some x), fun _ -> () in
-    let sigma0 = project gl in
     let new_evars =
       let rec aux acc t = match kind t with
       | Evar (k,_) ->
@@ -1072,13 +1052,13 @@ let interp_pattern ?wit_ssrpatternarg gl red redty =
   match red with
   | T t -> T (combineCG t ty (mkCCast ?loc:(loc_ofCG t)) mkRCast)
   | X_In_T (x,t) ->
-      let gty = pf_intern_term gl ty in
+      let gty = pf_intern_term env sigma0 ty in
       E_As_X_In_T (mkG (mkRCast mkRHole gty) (ist_of ty), x, t)
   | E_In_X_In_T (e,x,t) ->
-      let ty = mkG (pf_intern_term gl ty) (ist_of ty) in
+      let ty = mkG (pf_intern_term env sigma0 ty) (ist_of ty) in
       E_In_X_In_T (combineCG e ty (mkCCast ?loc:(loc_ofCG t)) mkRCast, x, t)
   | E_As_X_In_T (e,x,t) ->
-      let ty = mkG (pf_intern_term gl ty) (ist_of ty) in
+      let ty = mkG (pf_intern_term env sigma0 ty) (ist_of ty) in
       E_As_X_In_T (combineCG e ty (mkCCast ?loc:(loc_ofCG t)) mkRCast, x, t)
   | red -> red in
   pp(lazy(str"typed as: " ++ pr_pattern_w_ids red));
@@ -1086,12 +1066,12 @@ let interp_pattern ?wit_ssrpatternarg gl red redty =
   | Some b -> a,(g,Some (mkCLetIn ?loc x (mkCHole ~loc) b)), ist
   | None -> a,(DAst.make ?loc @@ GLetIn (x, DAst.make ?loc @@ GHole (BinderType x, IntroAnonymous, None), None, g), None), ist in
   match red with
-  | T t -> let sigma, t = interp_term gl t in sigma, T t
-  | In_T t -> let sigma, t = interp_term gl t in sigma, In_T t
+  | T t -> let sigma, t = interp_term env sigma0 t in sigma, T t
+  | In_T t -> let sigma, t = interp_term env sigma0 t in sigma, In_T t
   | X_In_T (x, rp) | In_X_In_T (x, rp) ->
     let mk x p = match red with X_In_T _ -> X_In_T(x,p) | _ -> In_X_In_T(x,p) in
     let rp = mkXLetIn (Name x) rp in
-    let sigma, rp = interp_term gl rp in
+    let sigma, rp = interp_term env sigma0 rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
     let rp = subst1 h (nf_evar sigma rp) in
@@ -1100,15 +1080,15 @@ let interp_pattern ?wit_ssrpatternarg gl red redty =
     let mk e x p =
       match red with E_In_X_In_T _ ->E_In_X_In_T(e,x,p)|_->E_As_X_In_T(e,x,p) in
     let rp = mkXLetIn (Name x) rp in
-    let sigma, rp = interp_term gl rp in
+    let sigma, rp = interp_term env sigma0 rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
     let rp = subst1 h (nf_evar sigma rp) in
-    let sigma, e = interp_term (re_sig (sig_it gl) sigma) e in
+    let sigma, e = interp_term env sigma e in
     sigma, mk e h rp
 ;;
-let interp_cpattern gl red redty = interp_pattern gl (T red) redty;;
-let interp_rpattern ~wit_ssrpatternarg gl red = interp_pattern ~wit_ssrpatternarg gl red None;;
+let interp_cpattern env sigma red redty = interp_pattern env sigma (T red) redty;;
+let interp_rpattern ~wit_ssrpatternarg env sigma red = interp_pattern ~wit_ssrpatternarg env sigma red None;;
 
 let id_of_pattern = function
   | _, T t -> (match kind t with Var id -> Some id | _ -> None)
@@ -1286,18 +1266,23 @@ let wit_ssrpatternarg = wit_rpatternty
 
 let interp_rpattern = interp_rpattern ~wit_ssrpatternarg
 
-let ssrpatterntac _ist arg gl =
-  let pat = interp_rpattern gl arg in
-  let sigma0 = project gl in
-  let concl0 = pf_concl gl in
+let ssrpatterntac _ist arg =
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let sigma0 = Proofview.Goal.sigma gl in
+  let concl0 = Proofview.Goal.concl gl in
+  let env = Proofview.Goal.env gl in
+  let pat = interp_rpattern env sigma0 arg in
   let concl0 = EConstr.Unsafe.to_constr concl0 in
   let (t, uc), concl_x =
-    fill_occ_pattern (pf_env gl) sigma0 concl0 pat noindex 1 in
+    fill_occ_pattern env sigma0 concl0 pat noindex 1 in
   let t = EConstr.of_constr t in
   let concl_x = EConstr.of_constr concl_x in
-  let gl, tty = pf_type_of gl t in
+  let sigma, tty = Typing.type_of env sigma0 t in
   let concl = EConstr.mkLetIn (make_annot (Name (Id.of_string "selected")) Sorts.Relevant, t, tty, concl_x) in
-  Proofview.V82.of_tactic (convert_concl ~check:true concl DEFAULTcast) gl
+  Proofview.Unsafe.tclEVARS sigma <*>
+  convert_concl ~check:true concl DEFAULTcast
+  end
 
 (* Register "ssrpattern" tactic *)
 let () =
@@ -1305,7 +1290,7 @@ let () =
     let arg =
       let v = Id.Map.find (Names.Id.of_string "pattern") ist.lfun in
       Value.cast (topwit wit_ssrpatternarg) v in
-    Proofview.V82.tactic (ssrpatterntac ist arg) in
+    ssrpatterntac ist arg in
   let name = { mltac_plugin = "ssrmatching_plugin"; mltac_tactic = "ssrpattern"; } in
   let () = Tacenv.register_ml_tactic name [|mltac|] in
   let tac =
@@ -1321,7 +1306,7 @@ let ssrinstancesof arg =
 (*   not (equal lhs (Evarutil.nf_evar ise rhs)) in *)
   let env, sigma, concl = pf_env gl, project gl, pf_concl gl in
   let concl = EConstr.Unsafe.to_constr concl in
-  let sigma0, cpat = interp_cpattern gl arg None in
+  let sigma0, cpat = interp_cpattern (pf_env gl) (project gl) arg None in
   let pat = match cpat with T x -> x | _ -> errorstrm (str"Not supported") in
   let etpat, tpat = mk_tpattern env sigma (sigma0,pat) (ok pat) L2R pat in
   let find, conclude =

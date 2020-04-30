@@ -57,7 +57,7 @@ val redex_of_pattern :
 (** [interp_rpattern ise gl rpat] "internalizes" and "interprets" [rpat]
     in the current [Ltac] interpretation signature [ise] and tactic input [gl]*)
 val interp_rpattern :
-  goal sigma ->
+  Environ.env -> Evd.evar_map ->
   rpattern ->
     pattern
 
@@ -65,7 +65,7 @@ val interp_rpattern :
     in the current [Ltac] interpretation signature [ise] and tactic input [gl].
     [ty] is an optional type for the redex of [cpat] *)
 val interp_cpattern :
-  goal sigma ->
+  Environ.env -> Evd.evar_map ->
   cpattern -> (glob_constr_and_expr * Geninterp.interp_sign) option ->
     pattern
 

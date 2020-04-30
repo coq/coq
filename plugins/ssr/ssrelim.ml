@@ -183,7 +183,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
         else
           let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
           let pc = match c_gen with
-            | Some p -> interp_cpattern orig_gl p None
+            | Some p -> interp_cpattern (pf_env orig_gl) (project orig_gl) p None
             | _ -> mkTpat gl c in
           Some(c, c_ty, pc), gl in
       seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
@@ -233,7 +233,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
         pf_saturate ~beta:is_case gl elim ~ty:elimty n_elim_args in
       let pred = List.assoc pred_id elim_args in
       let pc = match n_c_args, c_gen with
-        | 0, Some p -> interp_cpattern orig_gl p None
+        | 0, Some p -> interp_cpattern (pf_env orig_gl) (project orig_gl) p None
         | _ -> mkTpat gl c in
       let cty = Some (c, c_ty, pc) in
       let elimty = Reductionops.whd_all env (project gl) elimty in
@@ -312,7 +312,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     let rec loop patterns clr i = function
       | [],[] -> patterns, clr, gl
       | ((oclr, occ), t):: deps, inf_t :: inf_deps ->
-          let p = interp_cpattern orig_gl t None in
+          let p = interp_cpattern (pf_env orig_gl) (project orig_gl) t None in
           let clr_t =
             interp_clr (project gl) (oclr,(tag_of_cpattern t,EConstr.of_constr (fst (redex_of_pattern env p)))) in
           (* if we are the index for the equation we do not clear *)

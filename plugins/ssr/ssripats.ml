@@ -727,7 +727,7 @@ let mkEq dir cl c t n env sigma =
 let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
   Ssrcommon.tacSIGMA >>= fun sigma0 ->
   Goal.enter_one begin fun g ->
-  let pat = Ssrmatching.interp_cpattern sigma0 t None in
+  let pat = Ssrmatching.interp_cpattern (Tacmach.pf_env sigma0) (Tacmach.project sigma0) t None in
   let cl0, env, sigma, hyps = Goal.(concl g, env g, sigma g, hyps g) in
   let cl = EConstr.to_constr ~abort_on_undefined_evars:false sigma cl0 in
   let (c, ucst), cl =
@@ -985,7 +985,7 @@ let ssrabstract dgens =
    Ssrcommon.tacSIGMA >>= fun gl0 ->
      let open Ssrmatching in
      let ipats = List.map (fun (_,cp) ->
-       match id_of_pattern (interp_cpattern gl0 cp None) with
+       match id_of_pattern (interp_cpattern (Tacmach.pf_env gl0) (Tacmach.project gl0) cp None) with
        | None -> IPatAnon (One None)
        | Some id -> IPatId id)
        (List.tl gens) in

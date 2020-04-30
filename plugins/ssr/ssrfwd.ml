@@ -43,7 +43,7 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) =
   let pty = Option.map (fun { Ssrast.body; interp_env } ->
     let ist = Option.get interp_env in
     (mkRHole, Some body), ist) pty in
-  let pat = interp_cpattern gl pat pty in
+  let pat = interp_cpattern (pf_env gl) (project gl) pat pty in
   let cl, sigma, env = pf_concl gl, project gl, pf_env gl in
   let (c, ucst), cl =
     let cl = EConstr.Unsafe.to_constr cl in
