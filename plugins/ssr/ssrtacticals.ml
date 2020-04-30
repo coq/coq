@@ -151,15 +151,15 @@ let tclCLAUSES tac (gens, clseq) =
 (** The "do" tactical. ********************************************************)
 
 let hinttac ist is_by (is_or, atacs) =
-  Proofview.V82.tactic begin
-  let dtac = if is_by then Proofview.V82.of_tactic (donetac ~-1) else Tacticals.tclIDTAC in
+  Proofview.Goal.enter begin fun _ ->
+  let dtac = if is_by then donetac ~-1 else Tacticals.New.tclIDTAC in
   let mktac = function
-  | Some atac -> Tacticals.tclTHEN (Proofview.V82.of_tactic (ssrevaltac ist atac)) dtac
+  | Some atac -> Tacticals.New.tclTHEN (ssrevaltac ist atac) dtac
   | _ -> dtac in
   match List.map mktac atacs with
-  | [] -> if is_or then dtac else Tacticals.tclIDTAC
+  | [] -> if is_or then dtac else Tacticals.New.tclIDTAC
   | [tac] -> tac
-  | tacs -> Tacticals.tclFIRST tacs
+  | tacs -> Tacticals.New.tclFIRST tacs
   end
 
 let ssrdotac ist (((n, m), tac), clauses) =

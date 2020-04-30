@@ -89,7 +89,7 @@ let pattern_id = mk_internal_id "pattern value"
 let congrtac ((n, t), ty) ist gl =
   ppdebug(lazy (Pp.str"===congr==="));
   ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (Tacmach.pf_concl gl)));
-  let sigma, _ as it = interp_term ist gl t in
+  let sigma, _ as it = interp_term (pf_env gl) (project gl) ist t in
   let gl = pf_merge_uc_of sigma gl in
   let _, f, _, _ucst = pf_abs_evars gl it in
   let ist' = {ist with lfun =
@@ -484,8 +484,7 @@ let closed0_check cl p gl =
 
 let dir_org = function L2R -> 1 | R2L -> 2
 
-let rwprocess_rule dir rule gl =
-  let env = pf_env gl in
+let rwprocess_rule env dir rule =
   let coq_prod = lz_coq_prod () in
   let is_setoid = ssr_is_setoid env in
   let r_sigma, rules =
@@ -564,7 +563,7 @@ let rwprocess_rule dir rule gl =
 
 let rwrxtac ?under ?map_redex occ rdx_pat dir rule gl =
   let env = pf_env gl in
-  let r_sigma, rules = rwprocess_rule dir rule gl in
+  let r_sigma, rules = rwprocess_rule env dir rule in
   let find_rule rdx =
     let rec rwtac = function
       | [] ->
@@ -604,10 +603,12 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule gl =
 ;;
 
 let ssrinstancesofrule ist dir arg =
-  Proofview.V82.tactic begin fun gl ->
-  let sigma0, env0, concl0 = project gl, pf_env gl, pf_concl gl in
-  let rule = interp_term ist gl arg in
-  let r_sigma, rules = rwprocess_rule dir rule gl in
+  Proofview.Goal.enter begin fun gl ->
+  let env0 = Proofview.Goal.env gl in
+  let sigma0 = Proofview.Goal.sigma gl in
+  let concl0 = Proofview.Goal.concl gl in
+  let rule = interp_term env0 sigma0 ist arg in
+  let r_sigma, rules = rwprocess_rule env0 dir rule in
   let find, conclude =
     let upats_origin = dir, EConstr.Unsafe.to_constr (snd rule) in
     let rpat env sigma0 (sigma, pats) (d, r, lhs, rhs) =
@@ -624,9 +625,9 @@ let ssrinstancesofrule ist dir arg =
   Feedback.msg_info Pp.(str"BEGIN INSTANCES");
   try
     while true do
-      ignore(find env0 (EConstr.Unsafe.to_constr concl0) 1 ~k:print)
+      ignore(find env0 (EConstr.to_constr sigma0 concl0) 1 ~k:print)
     done; raise NoMatch
-  with NoMatch -> Feedback.msg_info Pp.(str"END INSTANCES"); tclIDTAC gl
+  with NoMatch -> Feedback.msg_info Pp.(str"END INSTANCES"); Tacticals.New.tclIDTAC
   end
 
 let ipat_rewrite occ dir c = Proofview.V82.tactic ~nf_evars:false begin fun gl ->
@@ -639,7 +640,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
     try interp_rpattern gl gc
     with _ when snd mult = May -> fail := true; project gl, T mkProp in
   let interp gc gl =
-    try interp_term ist gl gc
+    try interp_term (pf_env gl) (project gl) ist gc
     with _ when snd mult = May -> fail := true; (project gl, EConstr.mkProp) in
   let rwtac gl =
     let rx = Option.map (interp_rpattern gl) grx in
@@ -679,7 +680,7 @@ let unfoldtac occ ko t kt gl =
 let unlocktac ist args =
   Proofview.V82.tactic begin fun gl ->
   let utac (occ, gt) gl =
-    unfoldtac occ occ (interp_term ist gl gt) (fst gt) gl in
+    unfoldtac occ occ (interp_term (pf_env gl) (project gl) ist gt) (fst gt) gl in
   let locked, gl = pf_mkSsrConst "locked" gl in
   let key, gl = pf_mkSsrConst "master_key" gl in
   let ktacs = [

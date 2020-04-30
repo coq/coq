@@ -131,7 +131,8 @@ val pf_intern_term :
     ssrterm -> Glob_term.glob_constr
 
 val interp_term :
-  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
+  Environ.env -> Evd.evar_map ->
+  Tacinterp.interp_sign ->
     ssrterm -> evar_map * EConstr.t
 
 val interp_wit :
@@ -145,7 +146,8 @@ val interp_refine :
     Glob_term.glob_constr -> evar_map * (evar_map * EConstr.constr)
 
 val interp_open_constr :
-  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
+  Environ.env -> Evd.evar_map ->
+  Tacinterp.interp_sign ->
     Genintern.glob_constr_and_expr -> evar_map * (evar_map * EConstr.t)
 
 val pf_e_type_of :

@@ -55,7 +55,7 @@ let pf_pr_glob_constr gl = pr_glob_constr_env (pf_env gl)
 let interp_nbargs ist gl rc =
   try
     let rc6 = mkRApp rc (mkRHoles 6) in
-    let sigma, t = interp_open_constr ist gl (rc6, None) in
+    let sigma, t = interp_open_constr (pf_env gl) (project gl) ist (rc6, None) in
     let si = sig_it gl in
     let gl = re_sig si sigma in
     6 + Ssrcommon.nbargs_open_constr gl t
@@ -63,7 +63,7 @@ let interp_nbargs ist gl rc =
 
 let interp_view_nbimps ist gl rc =
   try
-    let sigma, t = interp_open_constr ist gl (rc, None) in
+    let sigma, t = interp_open_constr (pf_env gl) (project gl) ist (rc, None) in
     let si = sig_it gl in
     let gl = re_sig si sigma in
     let pl, c = splay_open_constr gl t in

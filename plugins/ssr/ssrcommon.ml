@@ -253,11 +253,11 @@ let interp_refine ist gl rc =
   (sigma, (sigma, c))
 
 
-let interp_open_constr ist gl gc =
-  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist (pf_env gl) (project gl) (gc, Tactypes.NoBindings) in
-  (project gl, (sigma, c))
+let interp_open_constr env sigma0 ist gc =
+  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist env sigma0 (gc, Tactypes.NoBindings) in
+  (sigma0, (sigma, c))
 
-let interp_term ist gl (_, c) = snd (interp_open_constr ist gl c)
+let interp_term env sigma ist (_, c) = snd (interp_open_constr env sigma ist c)
 
 let of_ftactic ftac gl =
   let r = ref None in
@@ -845,7 +845,7 @@ let rewritetac ?(under=false) dir c =
 type name_hint = (int * EConstr.types array) option ref
 
 let pf_abs_ssrterm ?(resolve_typeclasses=false) ist gl t =
-  let sigma, ct as t = interp_term ist gl t in
+  let sigma, ct as t = interp_term (pf_env gl) (project gl) ist t in
   let sigma, _ as t =
     let env = pf_env gl in
     if not resolve_typeclasses then t
@@ -917,7 +917,7 @@ let pf_interp_ty ?(resolve_typeclasses=false) ist gl ty =
      | LetInType(n,v,ty,t) -> decr n_binders; mkLetIn (n, v, ty, aux t)
      | _ -> anomaly "pf_interp_ty: ssr Type cast deleted by typecheck" in
      sigma, aux t in
-   let sigma, cty as ty = strip_cast (interp_term ist gl ty) in
+   let sigma, cty as ty = strip_cast (interp_term (pf_env gl) (project gl) ist ty) in
    let ty =
      let env = pf_env gl in
      if not resolve_typeclasses then ty
