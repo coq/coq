@@ -27,13 +27,13 @@ from docutils.parsers.rst.roles import code_role #, set_classes
 from docutils.parsers.rst.directives.admonitions import BaseAdmonition
 
 from sphinx import addnodes
-from sphinx.roles import XRefRole
-from sphinx.errors import ExtensionError
-from sphinx.util.nodes import set_source_info, set_role_source_info, make_refnode
-from sphinx.util.logging import getLogger, get_node_location
 from sphinx.directives import ObjectDescription
 from sphinx.domains import Domain, ObjType, Index
-from sphinx.domains.std import token_xrefs
+from sphinx.errors import ExtensionError
+from sphinx.roles import XRefRole
+from sphinx.util.docutils import ReferenceRole
+from sphinx.util.logging import getLogger, get_node_location
+from sphinx.util.nodes import set_source_info, set_role_source_info, make_refnode
 
 from . import coqdoc
 from .repl import ansicolors
@@ -1162,25 +1162,34 @@ GrammarProductionRole.role_name = "production"
 
 def GlossaryDefRole(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """Marks the definition of a glossary term inline in the text.  Matching :term:`XXX`
-    constructs will link to it.  The term will also appear in the Glossary Index.
+    constructs will link to it.  Use the form :gdef:`text <term>` to display "text"
+    for the definition of "term", such as when "term" must be capitalized or plural
+    for grammatical reasons.  The term will also appear in the Glossary Index.
 
-    Example::
+    Examples::
 
        A :gdef:`prime` number is divisible only by itself and 1.
+       :gdef:`Composite <composite>` numbers are the non-prime numbers.
     """
     #pylint: disable=dangerous-default-value, unused-argument
     env = inliner.document.settings.env
     std = env.domaindata['std']['objects']
-    key = ('term', text)
+    m = ReferenceRole.explicit_title_re.match(text)
+    if m:
+        (text, term) = m.groups()
+        text = text.strip()
+    else:
+        term = text
+    key = ('term', term)
 
     if key in std:
         MSG = 'Duplicate object: {}; other is at {}'
-        msg = MSG.format(text, env.doc2path(std[key][0]))
+        msg = MSG.format(term, env.doc2path(std[key][0]))
         inliner.document.reporter.warning(msg, line=lineno)
 
-    targetid = nodes.make_id('term-{}'.format(text))
+    targetid = nodes.make_id('term-{}'.format(term))
     std[key] = (env.docname, targetid)
-    target = nodes.target('', '', ids=[targetid], names=[text])
+    target = nodes.target('', '', ids=[targetid], names=[term])
     inliner.document.note_explicit_target(target)
     node = nodes.inline(rawtext, '', target, nodes.Text(text), classes=['term-defn'])
     set_role_source_info(inliner, lineno, node)

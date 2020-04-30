@@ -359,11 +359,14 @@ In addition to the objects and directives above, the ``coqrst`` Sphinx plugin de
     and reference its tokens using ``:token:`…```.
 
 ``:gdef:`` Marks the definition of a glossary term inline in the text.  Matching :term:`XXX`
-    constructs will link to it.  The term will also appear in the Glossary Index.
+    constructs will link to it.  Use the form :gdef:`text <term>` to display "text"
+    for the definition of "term", such as when "term" must be capitalized or plural
+    for grammatical reasons.  The term will also appear in the Glossary Index.
 
-    Example::
+    Examples::
 
        A :gdef:`prime` number is divisible only by itself and 1.
+       :gdef:`Composite <composite>` numbers are the non-prime numbers.
 
 Common mistakes
 ===============
