@@ -420,12 +420,12 @@ let rwcltac ?under ?map_redex cl rdx dir sr gl =
       match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
-          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma,c) c_ty, tclIDTAC, gl
+          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma,c) c_ty, Tacticals.New.tclIDTAC, gl
       | _ ->
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
           let gl = pf_merge_uc_of sigma gl in
-          Proofview.V82.of_tactic (convert_concl ~check:true cl'), rewritetac ?under dir r', gl
+          Proofview.V82.of_tactic (convert_concl ~check:true cl'), Proofview.V82.tactic (rewritetac ?under dir r'), gl
     else
       let dc, r2 = EConstr.decompose_lam_n_assum (project gl) n r' in
       let r3, _, r3t  =
@@ -435,9 +435,9 @@ let rwcltac ?under ?map_redex cl rdx dir sr gl =
       let cl' = EConstr.mkNamedProd (make_annot rule_id Sorts.Relevant) (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
       let cl'' = EConstr.mkNamedProd (make_annot pattern_id Sorts.Relevant) rdxt cl' in
       let itacs = [introid pattern_id; introid rule_id] in
-      let cltac = Proofview.V82.of_tactic (Tactics.clear [pattern_id; rule_id]) in
-      let rwtacs = [rewritetac ?under dir (EConstr.mkVar rule_id); cltac] in
-      apply_type cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], tclTHENLIST (itacs @ rwtacs), gl
+      let cltac = Tactics.clear [pattern_id; rule_id] in
+      let rwtacs = [Proofview.V82.tactic (rewritetac ?under dir (EConstr.mkVar rule_id)); cltac] in
+      apply_type cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], Tacticals.New.tclTHENLIST (itacs @ rwtacs), gl
   in
   let cvtac' _ =
     try cvtac gl with
@@ -452,7 +452,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr gl =
           (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl)
         ++ error)
   in
-  tclTHEN cvtac' rwtac gl
+  tclTHEN cvtac' (Proofview.V82.of_tactic rwtac) gl
 
 [@@@ocaml.warning "-3"]
 let lz_coq_prod =

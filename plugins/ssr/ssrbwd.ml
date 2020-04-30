@@ -119,11 +119,13 @@ let refine_interp_apply_view dbl ist gl gv =
         else [])
 
 let apply_top_tac =
-  Tacticals.tclTHENLIST [
+  Proofview.Goal.enter begin fun _ ->
+  Tacticals.New.tclTHENLIST [
     introid top_id;
-    apply_rconstr (mkRVar top_id);
-    old_cleartac [SsrHyp(None,top_id)]
+    Proofview.V82.tactic (apply_rconstr (mkRVar top_id));
+    cleartac [SsrHyp(None,top_id)]
   ]
+  end
 
 let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:false (fun gl ->
  let _, clr = interp_hyps ist gl gclr in
@@ -150,7 +152,7 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:
     let gl = pf_merge_uc_of sigma gl in
     Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST [cleartac clr; refine_with ~beta:true lemma; cleartac clr']) gl
   | _, _ ->
-     Tacticals.tclTHENLIST [apply_top_tac; old_cleartac clr] gl) gl
+    Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST [apply_top_tac; cleartac clr]) gl) gl
 )
 
-let apply_top_tac = Proofview.V82.tactic ~nf_evars:false apply_top_tac
+let apply_top_tac = apply_top_tac

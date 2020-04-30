@@ -31,7 +31,7 @@ val havetac : ist ->
 
 val basecuttac :
            string ->
-           EConstr.t -> Goal.goal Evd.sigma -> Evar.t list Evd.sigma
+           EConstr.t -> unit Proofview.tactic
 
 val wlogtac :
   Ltac_plugin.Tacinterp.interp_sign ->

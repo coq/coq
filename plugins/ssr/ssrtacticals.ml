@@ -132,7 +132,7 @@ let tclCLAUSES tac (gens, clseq) =
   Proofview.V82.tactic begin fun gl ->
   if clseq = InGoal || clseq = InSeqGoal then tac gl else
   let clr_gens = pf_clauseids gl gens clseq in
-  let clear = Tacticals.tclTHENLIST (List.rev(List.fold_right clr_of_wgen clr_gens [])) in
+  let clear = Tacticals.New.tclTHENLIST (List.rev(List.fold_right clr_of_wgen clr_gens [])) in
   let gl_id = mk_anon_id hidden_goal_tag (Tacmach.pf_ids_of_hyps gl) in
   let cl0 = pf_concl gl in
   let dtac gl =
@@ -145,7 +145,7 @@ let tclCLAUSES tac (gens, clseq) =
       | _, Some ((x,_),_) -> let id = hoi_id x in Some (mk_discharged_id id, id)
       | _, None -> None) gens in
     endclausestac id_map clseq gl_id cl0 in
-  Tacticals.tclTHENLIST (hidetacs clseq gl_id cl0 @ [dtac; clear; tac; endtac]) gl
+  Tacticals.tclTHENLIST (hidetacs clseq gl_id cl0 @ [dtac; Proofview.V82.of_tactic clear; tac; endtac]) gl
   end
 
 (** The "do" tactical. ********************************************************)

@@ -398,7 +398,7 @@ val pfLIFT
 
 (** Basic tactics *)
 
-val introid : ?orig:Name.t ref -> Id.t -> v82tac
+val introid : ?orig:Name.t ref -> Id.t -> unit Proofview.tactic
 val intro_anon : v82tac
 
 val interp_clr :
@@ -427,7 +427,7 @@ val abs_wgen :
 
 val clr_of_wgen :
   ssrhyps * ((ssrhyp_or_id * 'a) * 'b option) option ->
-  Proofview.V82.tac list -> Proofview.V82.tac list
+  unit Proofview.tactic list -> unit Proofview.tactic list
 
 
 val unfold : EConstr.t list -> unit Proofview.tactic

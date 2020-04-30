@@ -1060,23 +1060,24 @@ let rec fst_prod red tac = Proofview.Goal.enter begin fun gl ->
          else Tacticals.New.tclTHEN Tactics.hnf_in_concl (fst_prod true tac)
 end
 
-let introid ?(orig=ref Anonymous) name = tclTHEN (fun gl ->
-   let g, env = Tacmach.pf_concl gl, pf_env gl in
-   let sigma = project gl in
+let introid ?(orig=ref Anonymous) name =
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let g = Proofview.Goal.concl gl in
    match EConstr.kind sigma g with
    | App (hd, _) when EConstr.isLambda sigma hd ->
-      Proofview.V82.of_tactic (convert_concl_no_check (Reductionops.whd_beta sigma g)) gl
-   | _ -> tclIDTAC gl)
-  (Proofview.V82.of_tactic
-    (fst_prod false (fun id -> orig := id; Tactics.intro_mustbe_force name)))
-;;
+      convert_concl_no_check (Reductionops.whd_beta sigma g)
+   | _ -> Tacticals.New.tclIDTAC
+  end <*>
+    (fst_prod false (fun id -> orig := id; Tactics.intro_mustbe_force name))
 
 let anontac decl gl =
   let id =  match RelDecl.get_name decl with
   | Name id ->
     if is_discharged_id id then id else mk_anon_id (Id.to_string id) (Tacmach.pf_ids_of_hyps gl)
   | _ -> mk_anon_id ssr_anon_hyp (Tacmach.pf_ids_of_hyps gl) in
-  introid id gl
+  Proofview.V82.of_tactic (introid id) gl
 
 let rec intro_anon gl =
   try anontac (List.hd (fst (EConstr.decompose_prod_n_assum (project gl) 1 (Tacmach.pf_concl gl)))) gl
@@ -1314,8 +1315,8 @@ let abs_wgen keep_let f gen (gl,args,c) =
 let clr_of_wgen gen clrs = match gen with
   | clr, Some ((x, _), None) ->
      let x = hoi_id x in
-     old_cleartac clr :: old_cleartac [SsrHyp(Loc.tag x)] :: clrs
-  | clr, _ -> old_cleartac clr :: clrs
+     cleartac clr :: cleartac [SsrHyp(Loc.tag x)] :: clrs
+  | clr, _ -> cleartac clr :: clrs
 
 
 let reduct_in_concl ~check t = Tactics.reduct_in_concl ~check (t, DEFAULTcast)

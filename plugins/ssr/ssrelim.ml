@@ -519,8 +519,8 @@ let perform_injection c =
   let cl1 = EConstr.mkLambda EConstr.(make_annot Anonymous Sorts.Relevant, mkArrow eqt Sorts.Relevant cl, mkApp (mkRel 1, [|c_eq|])) in
   let id = injecteq_id in
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
-  let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in
-  Tacticals.tclTHENLAST (Proofview.V82.of_tactic (Tactics.apply (EConstr.compose_lam dc cl1))) injtac gl
+  let injtac = Tacticals.New.tclTHEN (introid id) (Proofview.V82.tactic (injectidl2rtac id id_with_ebind)) in
+  Proofview.V82.of_tactic (Tacticals.New.tclTHENLAST (Tactics.apply (EConstr.compose_lam dc cl1)) injtac) gl
   end
 
 let ssrscase_or_inj_tac c =
