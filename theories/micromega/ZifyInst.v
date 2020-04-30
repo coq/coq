@@ -42,6 +42,9 @@ Instance Op_lt : BinRel lt :=
   {| TR := Z.lt; TRInj := Nat2Z.inj_lt |}.
 Add BinRel Op_lt.
 
+Instance Op_Nat_lt : BinRel Nat.lt := Op_lt.
+Add BinRel Op_Nat_lt.
+
 Instance Op_gt : BinRel gt :=
   {| TR := Z.gt; TRInj := Nat2Z.inj_gt |}.
 Add BinRel Op_gt.
@@ -50,9 +53,15 @@ Instance Op_le : BinRel le :=
   {| TR := Z.le; TRInj := Nat2Z.inj_le |}.
 Add BinRel Op_le.
 
+Instance Op_Nat_le : BinRel Nat.le := Op_le.
+Add BinRel Op_Nat_le.
+
 Instance Op_eq_nat : BinRel (@eq nat) :=
   {| TR := @eq Z ; TRInj := fun x y : nat => iff_sym (Nat2Z.inj_iff x y) |}.
 Add BinRel Op_eq_nat.
+
+Instance Op_Nat_eq : BinRel (Nat.eq) := Op_eq_nat.
+Add BinRel Op_Nat_eq.
 
 (* zify_nat_op *)
 Instance Op_plus : BinOp Nat.add :=
