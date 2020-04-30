@@ -453,7 +453,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
 
   let elim_tac =
     Tacticals.New.tclTHENLIST [
-      Proofview.V82.tactic (refine_with ~with_evars:false elim);
+      refine_with ~with_evars:false elim;
       cleartac clr] in
   let gen_eq_tac = Proofview.V82.tactic gen_eq_tac in
   Tacticals.New.tclTHENLIST [gen_eq_tac; elim_intro_tac ?seed:(Some seed) what eqid elim_tac is_rec clr]

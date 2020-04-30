@@ -97,7 +97,7 @@ let apply_rconstr ?ist t gl =
     if i > n then
       errorstrm Pp.(str"Cannot apply lemma "++pf_pr_glob_constr gl t)
     else try pf_match gl (mkRlemma i) (OfType cl) with _ -> loop (i + 1) in
-  refine_with (loop 0) gl
+  Proofview.V82.of_tactic (refine_with (loop 0)) gl
 
 let mkRAppView ist gl rv gv =
   let nb_view_imps = interp_view_nbimps ist gl rv in
@@ -112,7 +112,7 @@ let refine_interp_apply_view dbl ist gl gv =
     interp_refine ist gl (mkRApp hint (v :: mkRHoles i)) in
   let rec loop = function
   | [] -> (try apply_rconstr ~ist rv gl with _ -> view_error "apply" gv)
-  | h :: hs -> (try refine_with (snd (interp_with h)) gl with _ -> loop hs) in
+  | h :: hs -> (try Proofview.V82.of_tactic (refine_with (snd (interp_with h))) gl with _ -> loop hs) in
   loop (pair dbl (Ssrview.AdaptorDb.get dbl) @
         if dbl = Ssrview.AdaptorDb.Equivalence
         then pair Ssrview.AdaptorDb.Backward (Ssrview.AdaptorDb.(get Backward))
@@ -148,7 +148,7 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:
   | [], [agens] ->
     let clr', (sigma, lemma) = interp_agens ist gl agens in
     let gl = pf_merge_uc_of sigma gl in
-    Tacticals.tclTHENLIST [old_cleartac clr; refine_with ~beta:true lemma; old_cleartac clr'] gl
+    Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST [cleartac clr; refine_with ~beta:true lemma; cleartac clr']) gl
   | _, _ ->
      Tacticals.tclTHENLIST [apply_top_tac; old_cleartac clr] gl) gl
 )

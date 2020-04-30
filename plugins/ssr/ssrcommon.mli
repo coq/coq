@@ -335,7 +335,7 @@ val applyn :
            ?with_shelve:bool ->
            ?first_goes_last:bool ->
            int ->
-           EConstr.t -> v82tac
+           EConstr.t -> unit Proofview.tactic
 exception NotEnoughProducts
 val pf_saturate :
            ?beta:bool ->
@@ -359,7 +359,7 @@ val refine_with :
            ?first_goes_last:bool ->
            ?beta:bool ->
            ?with_evars:bool ->
-           evar_map * EConstr.t -> v82tac
+           evar_map * EConstr.t -> unit Proofview.tactic
 
 val pf_resolve_typeclasses :
   where:EConstr.t ->

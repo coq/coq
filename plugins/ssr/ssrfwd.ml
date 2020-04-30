@@ -128,7 +128,7 @@ let havetac ist
      let have_let, gl = pf_mkSsrConst "ssr_have_let" gl in
      let step = EConstr.mkApp (have_let, [|concl;t|]) in
      let gl, _ = pf_e_type_of gl step in
-     applyn ~with_evars:true ~with_shelve:false 2 step gl
+     Proofview.V82.of_tactic (applyn ~with_evars:true ~with_shelve:false 2 step) gl
    else basecuttac "ssr_have" t gl in
  (* Introduce now abstract constants, so that everything sees them *)
  let abstract_key, gl = pf_mkSsrConst "abstract_key" gl in

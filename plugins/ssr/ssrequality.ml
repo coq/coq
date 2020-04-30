@@ -107,7 +107,7 @@ let congrtac ((n, t), ty) ist gl =
       | Some cf -> cf
       | None -> loop (i + 1) in
       loop 1 in
-  tclTHEN (refine_with cf) (tclTRY (Proofview.V82.of_tactic Tactics.reflexivity)) gl
+  Proofview.V82.of_tactic Tacticals.New.(tclTHEN (refine_with cf) (tclTRY Tactics.reflexivity)) gl
 
 let pf_typecheck t gl =
   let it = sig_it gl in
@@ -373,8 +373,8 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
   in
   ppdebug(lazy Pp.(str"pirrel_rewrite: proof term: " ++ pr_econstr_env env sigma proof));
   ppdebug(lazy Pp.(str"pirrel_rewrite of type: " ++ pr_econstr_env env sigma proof_ty));
-  try refine_with
-    ~first_goes_last:(not !ssroldreworder || under) ~with_evars:under (sigma, proof) gl
+  try Proofview.V82.of_tactic (refine_with
+    ~first_goes_last:(not !ssroldreworder || under) ~with_evars:under (sigma, proof)) gl
   with _ ->
     (* we generate a msg like: "Unable to find an instance for the variable" *)
     let hd_ty, miss = match EConstr.kind sigma c with
