@@ -95,7 +95,7 @@ let congrtac ((n, t), ty) ist gl =
   let ist' = {ist with lfun =
     Id.Map.add pattern_id (Tacinterp.Value.of_constr f) Id.Map.empty } in
   let rf = mkRltacVar pattern_id in
-  let m = pf_nbargs gl f in
+  let m = pf_nbargs (pf_env gl) (project gl) f in
   let _, cf = if n > 0 then
     match interp_congrarg_at ist' gl n rf ty m with
     | Some cf -> cf

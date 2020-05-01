@@ -191,6 +191,8 @@ val mk_tpattern_matcher :
  * by [Rel 1] and the instance of [t] *)
 val pf_fill_occ_term : goal sigma -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
+val fill_occ_term : Environ.env -> Evd.evar_map -> EConstr.t -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
+
 (* It may be handy to inject a simple term into the first form of cpattern *)
 val cpattern_of_term : char * glob_constr_and_expr -> Geninterp.interp_sign -> cpattern
 

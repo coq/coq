@@ -58,7 +58,7 @@ let interp_nbargs ist gl rc =
     let sigma, t = interp_open_constr (pf_env gl) (project gl) ist (rc6, None) in
     let si = sig_it gl in
     let gl = re_sig si sigma in
-    6 + Ssrcommon.nbargs_open_constr gl t
+    6 + Ssrcommon.nbargs_open_constr (pf_env gl) t
   with _ -> 5
 
 let interp_view_nbimps ist gl rc =
@@ -66,7 +66,7 @@ let interp_view_nbimps ist gl rc =
     let sigma, t = interp_open_constr (pf_env gl) (project gl) ist (rc, None) in
     let si = sig_it gl in
     let gl = re_sig si sigma in
-    let pl, c = splay_open_constr gl t in
+    let pl, c = splay_open_constr (pf_env gl) t in
     if Ssrcommon.isAppInd (pf_env gl) (project gl) c then List.length pl else (-(List.length pl))
   with _ -> 0
 
@@ -88,7 +88,7 @@ let pf_match = pf_apply (fun e s c t -> understand_tcc e s ~expected_type:t c)
 let apply_rconstr ?ist t gl =
 (* ppdebug(lazy(str"sigma@apply_rconstr=" ++ pr_evar_map None (project gl))); *)
   let n = match ist, DAst.get t with
-    | None, (GVar id | GRef (Names.GlobRef.VarRef id,_)) -> pf_nbargs gl (EConstr.mkVar id)
+    | None, (GVar id | GRef (Names.GlobRef.VarRef id,_)) -> pf_nbargs (pf_env gl) (project gl) (EConstr.mkVar id)
     | Some ist, _ -> interp_nbargs ist gl t
     | _ -> anomaly "apply_rconstr without ist and not RVar" in
   let mkRlemma i = mkRApp t (mkRHoles i) in

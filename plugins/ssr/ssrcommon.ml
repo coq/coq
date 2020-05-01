@@ -221,8 +221,8 @@ let intern_term ist env (_, c) = glob_constr ist env c
 (* FUNCLASS, which is probably just as well since these can     *)
 (* lead to infinite arities.                                    *)
 
-let splay_open_constr gl (sigma, c) =
-  let env = pf_env gl in let t = Retyping.get_type_of env sigma c in
+let splay_open_constr env (sigma, c) =
+  let t = Retyping.get_type_of env sigma c in
   Reductionops.splay_prod env sigma t
 
 let isAppInd env sigma c =
@@ -322,10 +322,10 @@ let ssrdgens_of_parsed_dgens = function
   | _ -> assert false
 
 
-let nbargs_open_constr gl oc =
-  let pl, _ = splay_open_constr gl oc in List.length pl
+let nbargs_open_constr env oc =
+  let pl, _ = splay_open_constr env oc in List.length pl
 
-let pf_nbargs gl c = nbargs_open_constr gl (project gl, c)
+let pf_nbargs env sigma c = nbargs_open_constr env (sigma, c)
 
 let internal_names = ref []
 let add_internal_name pt = internal_names := pt :: !internal_names

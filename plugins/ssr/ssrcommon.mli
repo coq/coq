@@ -155,7 +155,7 @@ val pf_e_type_of :
   EConstr.constr -> Goal.goal Evd.sigma * EConstr.types
 
 val splay_open_constr :
-           Goal.goal Evd.sigma ->
+           Environ.env ->
            evar_map * EConstr.t ->
            (Names.Name.t Context.binder_annot * EConstr.t) list * EConstr.t
 val isAppInd : Environ.env -> Evd.evar_map -> EConstr.types -> bool
@@ -262,8 +262,8 @@ val abs_evars_pirrel :
 val pf_abs_evars_pirrel :
            Goal.goal Evd.sigma ->
            evar_map * Constr.constr -> int * Constr.constr
-val nbargs_open_constr : Goal.goal Evd.sigma -> Evd.evar_map * EConstr.t -> int
-val pf_nbargs : Goal.goal Evd.sigma -> EConstr.t -> int
+val nbargs_open_constr : Environ.env -> Evd.evar_map * EConstr.t -> int
+val pf_nbargs : Environ.env -> Evd.evar_map -> EConstr.t -> int
 val gen_tmp_ids :
            ?ist:Geninterp.interp_sign ->
            (Goal.goal * tac_ctx) Evd.sigma ->

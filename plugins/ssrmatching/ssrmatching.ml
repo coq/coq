@@ -1224,23 +1224,23 @@ let pf_fill_occ env concl occ sigma0 p (sigma, t) ok h =
  let rdx, _, (sigma, uc, p) = end_U () in
  sigma, uc, EConstr.of_constr p, EConstr.of_constr concl, EConstr.of_constr rdx
 
-let fill_occ_term env cl occ sigma0 (sigma, t) =
+let fill_occ_term env sigma0 cl occ (sigma, t) =
   try
     let sigma',uc,t',cl,_= pf_fill_occ env cl occ sigma0 t (sigma, t) all_ok 1 in
     if sigma' != sigma0 then CErrors.user_err Pp.(str "matching impacts evars")
-    else cl, (Evd.merge_universe_context sigma' uc, t')
+    else cl, t'
   with NoMatch -> try
     let sigma', uc, t' =
       unif_end env sigma0 (create_evar_defs sigma) t (fun _ -> true) in
     if sigma' != sigma0 then raise NoMatch
-    else cl, (Evd.merge_universe_context sigma' uc, t')
+    else cl, t'
   with _ ->
     errorstrm (str "partial term " ++ pr_econstr_pat env sigma t
             ++ str " does not match any subterm of the goal")
 
 let pf_fill_occ_term gl occ t =
   let sigma0 = project gl and env = pf_env gl and concl = pf_concl gl in
-  let cl,(_,t) = fill_occ_term env concl occ sigma0 t in
+  let cl, t = fill_occ_term env sigma0 concl occ t in
   cl, t
 
 let cpattern_of_id id =
