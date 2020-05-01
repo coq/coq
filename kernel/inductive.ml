@@ -1171,8 +1171,9 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
 
 
 let check_fix env ((nvect,i),(names,types,bodies as recdef)) =
-  let flags = Environ.typing_flags env in
-  if flags.check_guarded then
+  (* TODO: Re-enable eventually *)
+  (* let flags = Environ.typing_flags env in
+  if flags.check_guarded then *)
     let nvect = Array.map Option.get nvect in
     let fix = (nvect, i), (names, types, bodies) in
     let (minds, rdef) = inductive_of_mutfix env fix in
@@ -1189,8 +1190,8 @@ let check_fix env ((nvect,i),(names,types,bodies as recdef)) =
         error_ill_formed_rec_body fixenv err names i
           (push_rec_types recdef env) (judgment_of_fixpoint recdef)
     done
-  else
-    ()
+  (* else
+    () *)
 
 (*
 let cfkey = CProfile.declare_profile "check_fix";;

@@ -70,7 +70,7 @@ Fixpoint leb n m :=
     | S n', S m' => leb n' m'
   end.
 
-  Fixpoint filter T (f: T -> bool) (l: list T) :=
+Fixpoint filter T (f: T -> bool) (l: list T) :=
   match l with
   | nil => nil
   | cons x l' =>
