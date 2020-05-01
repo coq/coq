@@ -290,7 +290,7 @@ optional identifier is used when multiple functions have unsolved
 obligations (e.g. when defining mutually recursive blocks). The
 optional tactic is replaced by the default one if not specified.
 
-.. cmd:: {? {| Local | Global } } Obligation Tactic := @tactic
+.. cmd:: {? {| Local | Global } } Obligation Tactic := @ltac_expr
    :name: Obligation Tactic
 
    Sets the default obligation solving tactic applied to all obligations
@@ -314,11 +314,11 @@ optional tactic is replaced by the default one if not specified.
 
    Start the proof of the next unsolved obligation.
 
-.. cmd:: Solve Obligations {? {? of @ident} with @tactic}
+.. cmd:: Solve Obligations {? {? of @ident} with @ltac_expr}
 
    Tries to solve each obligation of ``ident`` using the given ``tactic`` or the default one.
 
-.. cmd:: Solve All Obligations {? with @tactic}
+.. cmd:: Solve All Obligations {? with @ltac_expr}
 
    Tries to solve each obligation of every program using the given
    tactic or the default one (useful for mutually recursive definitions).

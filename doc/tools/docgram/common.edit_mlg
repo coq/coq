@@ -179,7 +179,10 @@ case_item: [
 ]
 
 binder_constr: [
+| MOVETO term_forall_or_fun "forall" open_binders "," operconstr200
+| MOVETO term_forall_or_fun "fun" open_binders "=>" operconstr200
 | MOVETO term_let "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
+| MOVETO term_if "if" operconstr200 as_return_type "then" operconstr200 "else" operconstr200
 | MOVETO term_fix "let" "fix" fix_decl "in" operconstr200
 | MOVETO term_cofix "let" "cofix" cofix_decl "in" operconstr200
 | MOVETO term_let "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" operconstr200 "in" operconstr200
@@ -203,8 +206,10 @@ term_let: [
 ]
 
 atomic_constr: [
-(* @Zimmi48: "string" used only for notations, but keep to be consistent with patterns *)
-(* | DELETE string *)
+| MOVETO qualid_annotated global univ_instance
+| MOVETO primitive_notations NUMERAL
+| MOVETO primitive_notations string
+| MOVETO term_evar "_"
 | REPLACE "?" "[" ident "]"
 | WITH "?[" ident "]"
 | MOVETO term_evar "?[" ident "]"
@@ -243,7 +248,21 @@ operconstr100: [
 | MOVETO term_cast operconstr99 ":>"
 ]
 
+constr: [
+| REPLACE "@" global univ_instance
+| WITH "@" qualid_annotated
+| MOVETO term_explicit "@" qualid_annotated
+]
+
 operconstr10: [
+(* Separate this LIST0 in the nonempty and the empty case *)
+(* The empty case is covered by constr *)
+| REPLACE "@" global univ_instance LIST0 operconstr9
+| WITH "@" qualid_annotated LIST1 operconstr9
+| REPLACE operconstr9
+| WITH constr
+| MOVETO term_application operconstr9 LIST1 appl_arg
+| MOVETO term_application "@" qualid_annotated LIST1 operconstr9
 (* fixme: add in as a prodn somewhere *)
 | MOVETO dangling_pattern_extension_rule "@" pattern_identref LIST1 identref
 | DELETE dangling_pattern_extension_rule
@@ -259,6 +278,7 @@ operconstr1: [
 | WITH    operconstr0 ".(" global LIST0 appl_arg ")" (* huh? *)
 | REPLACE operconstr0 "%" IDENT
 | WITH operconstr0 "%" scope_key
+| MOVETO term_scope operconstr0 "%" scope_key
 | MOVETO term_projection operconstr0 ".(" global LIST0 appl_arg ")"
 | MOVETO term_projection operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
 ]
@@ -268,6 +288,10 @@ operconstr0: [
 | DELETE "{" binder_constr "}"
 | REPLACE "{|" record_declaration bar_cbrace
 | WITH "{|" LIST0 field_def bar_cbrace
+| MOVETO term_record "{|" LIST0 field_def bar_cbrace
+| MOVETO term_generalizing "`{" operconstr200 "}"
+| MOVETO term_generalizing "`(" operconstr200 ")"
+| MOVETO term_ltac "ltac" ":" "(" tactic_expr5 ")"
 ]
 
 fix_decls: [
@@ -1132,7 +1156,7 @@ assumption_token: [
 | WITH [ "Variable" | "Variables" ]
 ]
 
-all_attrs: [
+attributes: [
 | LIST0 ( "#[" LIST0 attribute SEP "," "]" ) LIST0 legacy_attr
 ]
 
@@ -1696,7 +1720,6 @@ RENAME: [
 | univ_instance univ_annot
 | simple_assum_coe assumpt
 | of_type_with_opt_coercion of_type
-| attribute attr
 | attribute_value attr_value
 | constructor_list_or_record_decl constructors_or_record
 | record_binder_body field_body
@@ -1807,12 +1830,12 @@ control_command: [ ]
 query_command: [ ] (* re-add since previously spliced *)
 
 sentence: [
-| OPT all_attrs command "."
-| OPT all_attrs OPT ( num ":" ) query_command "."
-| OPT all_attrs OPT toplevel_selector ltac_expr [ "." | "..." ]
+| OPT attributes command "."
+| OPT attributes OPT ( num ":" ) query_command "."
+| OPT attributes OPT toplevel_selector ltac_expr [ "." | "..." ]
 | control_command
 ]
 
-vernacular: [
+document: [
 | LIST0 sentence
 ]

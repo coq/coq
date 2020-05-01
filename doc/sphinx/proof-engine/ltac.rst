@@ -174,6 +174,14 @@ mode but it can also be used in toplevel definitions as shown below.
    ltac_def         : `ident` [`ident` ... `ident`] := `ltac_expr`
                     : `qualid` [`ident` ... `ident`] ::= `ltac_expr`
 
+Tactics in terms
+~~~~~~~~~~~~~~~~
+
+.. insertprodn term_ltac term_ltac
+
+.. prodn::
+   term_ltac ::= ltac : ( @ltac_expr )
+
 .. _ltac-semantics:
 
 Semantics

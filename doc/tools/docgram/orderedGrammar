@@ -15,10 +15,9 @@ ltac_use_default: [
 ]
 
 term: [
-| "forall" open_binders "," term
-| "fun" open_binders "=>" term
+| term_forall_or_fun
 | term_let
-| "if" term OPT [ OPT [ "as" name ] "return" term100 ] "then" term "else" term
+| term_if
 | term_fix
 | term_cofix
 | term100
@@ -30,44 +29,39 @@ term100: [
 ]
 
 term10: [
-| term1 LIST1 arg
-| "@" qualid OPT univ_annot LIST0 term1
-| term1
-]
-
-arg: [
-| "(" ident ":=" term ")"
-| term1
+| term_application
+| one_term
 ]
 
 one_term: [
+| term_explicit
 | term1
-| "@" qualid OPT univ_annot
 ]
 
 term1: [
 | term_projection
-| term0 "%" scope_key
+| term_scope
 | term0
 ]
 
 term0: [
-| qualid OPT univ_annot
+| qualid_annotated
 | sort
-| numeral
-| string
-| "_"
+| primitive_notations
 | term_evar
 | term_match
+| term_record
+| term_generalizing
+| term_ltac
 | "(" term ")"
-| "{|" LIST0 field_def "|}"
-| "`{" term "}"
-| "`(" term ")"
-| "ltac" ":" "(" ltac_expr ")"
 ]
 
-field_def: [
-| qualid LIST0 binder ":=" term
+qualid_annotated: [
+| qualid OPT univ_annot
+]
+
+term_ltac: [
+| "ltac" ":" "(" ltac_expr ")"
 ]
 
 term_projection: [
@@ -75,7 +69,12 @@ term_projection: [
 | term0 ".(" "@" qualid LIST0 ( term1 ) ")"
 ]
 
+term_scope: [
+| term0 "%" scope_key
+]
+
 term_evar: [
+| "_"
 | "?[" ident "]"
 | "?[" "?" ident "]"
 | "?" ident OPT ( "@{" LIST1 ( ident ":=" term ) SEP ";" "}" )
@@ -83,6 +82,25 @@ term_evar: [
 
 dangling_pattern_extension_rule: [
 | "@" "?" ident LIST1 ident
+]
+
+term_application: [
+| term1 LIST1 arg
+| "@" qualid_annotated LIST1 term1
+]
+
+arg: [
+| "(" ident ":=" term ")"
+| term1
+]
+
+term_explicit: [
+| "@" qualid_annotated
+]
+
+primitive_notations: [
+| numeral
+| string
 ]
 
 assumption_token: [
@@ -158,14 +176,14 @@ where: [
 | "before" ident
 ]
 
-vernacular: [
+document: [
 | LIST0 sentence
 ]
 
 sentence: [
-| OPT all_attrs command "."
-| OPT all_attrs OPT ( num ":" ) query_command "."
-| OPT all_attrs OPT toplevel_selector ltac_expr [ "." | "..." ]
+| OPT attributes command "."
+| OPT attributes OPT ( num ":" ) query_command "."
+| OPT attributes OPT toplevel_selector ltac_expr [ "." | "..." ]
 | control_command
 ]
 
@@ -178,17 +196,17 @@ query_command: [
 tacticals: [
 ]
 
-all_attrs: [
-| LIST0 ( "#[" LIST0 attr SEP "," "]" ) LIST0 legacy_attr
+attributes: [
+| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) LIST0 legacy_attr
 ]
 
-attr: [
+attribute: [
 | ident OPT attr_value
 ]
 
 attr_value: [
 | "=" string
-| "(" LIST0 attr SEP "," ")"
+| "(" LIST0 attribute SEP "," ")"
 ]
 
 legacy_attr: [
@@ -267,12 +285,21 @@ cofix_body: [
 | ident LIST0 binder OPT ( ":" type ) ":=" term
 ]
 
+term_if: [
+| "if" term OPT [ OPT [ "as" name ] "return" term100 ] "then" term "else" term
+]
+
 term_let: [
 | "let" name OPT ( ":" type ) ":=" term "in" term
 | "let" name LIST1 binder OPT ( ":" type ) ":=" term "in" term
 | "let" "(" LIST0 name SEP "," ")" OPT [ OPT [ "as" name ] "return" term100 ] ":=" term "in" term
 | "let" "'" pattern ":=" term OPT ( "return" term100 ) "in" term
 | "let" "'" pattern "in" pattern ":=" term "return" term100 "in" term
+]
+
+term_forall_or_fun: [
+| "forall" open_binders "," term
+| "fun" open_binders "=>" term
 ]
 
 open_binders: [
@@ -310,6 +337,11 @@ typeclass_constraint: [
 | OPT "!" term
 | "{" name "}" ":" OPT "!" term
 | name ":" OPT "!" term
+]
+
+term_generalizing: [
+| "`{" term "}"
+| "`(" term ")"
 ]
 
 term_cast: [
@@ -467,13 +499,21 @@ record_definition: [
 ]
 
 record_field: [
-| LIST0 ( "#[" LIST0 attr SEP "," "]" ) name OPT field_body OPT [ "|" num ] OPT decl_notations
+| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) name OPT field_body OPT [ "|" num ] OPT decl_notations
 ]
 
 field_body: [
 | LIST0 binder of_type
 | LIST0 binder of_type ":=" term
 | LIST0 binder ":=" term
+]
+
+term_record: [
+| "{|" LIST0 field_def "|}"
+]
+
+field_def: [
+| qualid LIST0 binder ":=" term
 ]
 
 inductive_definition: [

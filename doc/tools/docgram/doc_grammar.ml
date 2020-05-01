@@ -50,7 +50,7 @@ let default_args = {
   verify = false;
 }
 
-let start_symbols = ["vernacular"]
+let start_symbols = ["document"]
 let tokens = [ "bullet"; "string"; "unicode_id_part"; "unicode_letter" ]
 
 (* translated symbols *)

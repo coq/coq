@@ -23,3 +23,4 @@ installed with the `opam package manager
    ../../addendum/extraction
    ../../addendum/miscellaneous-extensions
    funind
+   writing

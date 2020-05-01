@@ -11,17 +11,17 @@ find what you are looking for.
 
 .. toctree::
 
-   ../../genindex
+   ../../std-glossindex
    ../../coq-cmdindex
    ../../coq-tacindex
+   ../../coq-attrindex
    ../../coq-optindex
    ../../coq-exnindex
-   ../../coq-attrindex
-   ../../std-glossindex
+   ../../genindex
 
 For reference, here are direct links to the documentation of:
 
-- :ref:`flags, options and tables <flags-options-tables>`;
+- :ref:`attributes`
+- :ref:`flags-options-tables`;
 - controlling the display of warning messages with the :opt:`Warnings`
   option;
-- :ref:`gallina-attributes`.

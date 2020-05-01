@@ -7,107 +7,12 @@
 This chapter describes Gallina, the specification language of Coq. It allows
 developing mathematical theories and to prove specifications of programs. The
 theories are built from axioms, hypotheses, parameters, lemmas, theorems and
-definitions of constants, functions, predicates and sets. The syntax of logical
-objects involved in theories is described in Section :ref:`term`. The
-language of commands, called *The Vernacular* is described in Section
-:ref:`vernacular`.
-
-In Coq, logical objects are typed to ensure their logical correctness.  The
-rules implemented by the typing algorithm are described in Chapter :ref:`calculusofinductiveconstructions`.
-
-
-..  About the grammars in the manual
-    ================================
-
-    Grammars are presented in Backus-Naur form (BNF). Terminal symbols are
-    set in black ``typewriter font``. In addition, there are special notations for
-    regular expressions.
-
-    An expression enclosed in square brackets ``[…]`` means at most one
-    occurrence of this expression (this corresponds to an optional
-    component).
-
-    The notation “``entry sep … sep entry``” stands for a non empty sequence
-    of expressions parsed by entry and separated by the literal “``sep``” [1]_.
-
-    Similarly, the notation “``entry … entry``” stands for a non empty
-    sequence of expressions parsed by the “``entry``” entry, without any
-    separator between.
-
-    At the end, the notation “``[entry sep … sep entry]``” stands for a
-    possibly empty sequence of expressions parsed by the “``entry``” entry,
-    separated by the literal “``sep``”.
+definitions of constants, functions, predicates and sets.
 
 .. _term:
 
 Terms
 =====
-
-Syntax of terms
----------------
-
-The following grammars describe the basic syntax of the terms of the
-*Calculus of Inductive Constructions* (also called Cic). The formal
-presentation of Cic is given in Chapter :ref:`calculusofinductiveconstructions`. Extensions of this syntax
-are given in Chapter :ref:`extensionsofgallina`. How to customize the syntax
-is described in Chapter :ref:`syntaxextensionsandnotationscopes`.
-
-.. insertprodn term field_def
-
-.. prodn::
-   term ::= forall @open_binders , @term
-   | fun @open_binders => @term
-   | @term_let
-   | if @term {? {? as @name } return @term100 } then @term else @term
-   | @term_fix
-   | @term_cofix
-   | @term100
-   term100 ::= @term_cast
-   | @term10
-   term10 ::= @term1 {+ @arg }
-   | @ @qualid {? @univ_annot } {* @term1 }
-   | @term1
-   arg ::= ( @ident := @term )
-   | @term1
-   one_term ::= @term1
-   | @ @qualid {? @univ_annot }
-   term1 ::= @term_projection
-   | @term0 % @scope_key
-   | @term0
-   term0 ::= @qualid {? @univ_annot }
-   | @sort
-   | @numeral
-   | @string
-   | _
-   | @term_evar
-   | @term_match
-   | ( @term )
-   | %{%| {* @field_def } %|%}
-   | `%{ @term %}
-   | `( @term )
-   | ltac : ( @ltac_expr )
-   field_def ::= @qualid {* @binder } := @term
-
-.. note::
-
-   Many commands and tactics use :n:`@one_term` rather than :n:`@term`.
-   The former need to be enclosed in parentheses unless they're very
-   simple, such as a single identifier.  This avoids confusing a space-separated
-   list of terms with a :n:`@term1` applied to a list of arguments.
-
-.. _types:
-
-Types
------
-
-.. prodn::
-   type ::= @term
-
-:n:`@type`\s are a subset of :n:`@term`\s; not every :n:`@term` is a :n:`@type`.
-Every term has an associated type, which
-can be determined by applying the :ref:`typing-rules`.  Distinct terms
-may share the same type, for example 0 and 1 are both of type `nat`, the
-natural numbers.
 
 .. _gallina-identifiers:
 
@@ -134,9 +39,15 @@ Field identifiers, written :n:`@field_ident`, are identifiers prefixed by
 Numerals and strings
 --------------------
 
+.. insertprodn primitive_notations primitive_notations
+
+.. prodn::
+   primitive_notations ::= @numeral
+   | @string
+
 Numerals and strings have no predefined semantics in the calculus. They are
 merely notations that can be bound to objects through the notation mechanism
-(see Chapter :ref:`syntaxextensionsandnotationscopes` for details).
+(see Chapter :ref:`syntax-extensions-and-notation-scopes` for details).
 Initially, numerals are bound to Peano’s representation of natural
 numbers (see :ref:`datatypes`).
 
@@ -263,6 +174,12 @@ Section :ref:`let-in`).
 Products: forall
 ----------------
 
+.. insertprodn term_forall_or_fun term_forall_or_fun
+
+.. prodn::
+   term_forall_or_fun ::= forall @open_binders , @term
+   | fun @open_binders => @term
+
 The expression :n:`forall @ident : @type, @term` denotes the
 *product* of the variable :n:`@ident` of type :n:`@type`, over the term :n:`@term`.
 As for abstractions, :g:`forall` is followed by a binder list, and products
@@ -283,6 +200,14 @@ the propositional implication and function types.
 
 Applications
 ------------
+
+.. insertprodn term_application arg
+
+.. prodn::
+   term_application ::= @term1 {+ @arg }
+   | @ @qualid_annotated {+ @term1 }
+   arg ::= ( @ident := @term )
+   | @term1
 
 :n:`@term__fun @term` denotes applying the function :n:`@term__fun` to :token:`term`.
 
@@ -545,34 +470,6 @@ co-recursion. It is the local counterpart of the :cmd:`CoFixpoint` command. When
 The Vernacular
 ==============
 
-.. insertprodn vernacular sentence
-
-.. prodn::
-   vernacular ::= {* @sentence }
-   sentence ::= {? @all_attrs } @command .
-   | {? @all_attrs } {? @num : } @query_command .
-   | {? @all_attrs } {? @toplevel_selector } @ltac_expr {| . | ... }
-   | @control_command
-
-The top-level input to |Coq| is a series of :n:`@sentence`\s,
-which are :production:`tactic`\s or :production:`command`\s,
-generally terminated with a period
-and optionally decorated with :ref:`gallina-attributes`.  :n:`@ltac_expr` syntax supports both simple
-and compound tactics.  For example: ``split`` is a simple tactic while ``split; auto`` combines two
-simple tactics.
-
-Tactics specify how to transform the current proof state as a step in creating a proof.  They
-are syntactically valid only when |Coq| is in proof mode, such as after a :cmd:`Theorem` command
-and before any subsequent proof-terminating command such as :cmd:`Qed`.  See :ref:`proofhandling` for more
-on proof mode.
-
-By convention, command names begin with uppercase letters, while
-tactic names begin with lowercase letters.  Commands appear in the
-HTML documentation in blue boxes after the label "Command".  In the pdf, they appear
-after the boldface label "Command:".  Commands are listed in the :ref:`command_index`.
-
-Similarly, tactics appear after the label "Tactic".  Tactics are listed in the :ref:`tactic_index`.
-
 .. _gallina-assumptions:
 
 Assumptions
@@ -608,7 +505,7 @@ has type :n:`@type`.
    of an object of this type) is accepted as a postulate.
 
    :cmd:`Axiom`, :cmd:`Conjecture`, :cmd:`Parameter` and their plural forms
-   are equivalent.  They can take the :attr:`local` attribute (see :ref:`gallina-attributes`),
+   are equivalent.  They can take the :attr:`local` :term:`attribute`,
    which makes the defined :n:`@ident`\s accessible by :cmd:`Import` and its variants
    only through their fully qualified names.
 
@@ -675,7 +572,7 @@ Section :ref:`typing-rules`.
       | {* @binder } : @type
 
    These commands bind :n:`@term` to the name :n:`@ident` in the environment,
-   provided that :n:`@term` is well-typed.  They can take the :attr:`local` attribute (see :ref:`gallina-attributes`),
+   provided that :n:`@term` is well-typed.  They can take the :attr:`local` :term:`attribute`,
    which makes the defined :n:`@ident` accessible by :cmd:`Import` and its variants
    only through their fully qualified names.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified

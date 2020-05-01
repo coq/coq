@@ -1,4 +1,4 @@
-.. _syntaxextensionsandnotationscopes:
+.. _syntax-extensions-and-notation-scopes:
 
 Syntax extensions and notation scopes
 =====================================
@@ -433,9 +433,7 @@ Displaying information about notations
        [ IDENT "try"; SELF
 
    Note that the productions printed by this command are represented in the form used by
-   |Coq|'s parser (coqpp), which differs from how productions are shown in the documentation.  The grammar
-   described in this documentation is equivalent to the grammar of the |Coq| parser, but has been
-   heavily edited to improve readability and presentation.
+   |Coq|'s parser (coqpp), which differs from how productions are shown in the documentation.
 
 .. _locating-notations:
 
@@ -1088,12 +1086,17 @@ ways to change the interpretation of subterms are available.
 Opening a notation scope locally
 ++++++++++++++++++++++++++++++++
 
+.. insertprodn term_scope term_scope
+
+.. prodn::
+   term_scope ::= @term0 % @scope_key
+
 The notation scope stack can be locally extended within
 a :token:`term` with the syntax
-:n:`(@term)%@scope_key` (or simply :n:`@term%@scope_key` for atomic terms).
+:n:`(@term)%@scope_key` (or simply :n:`@term0%@scope_key` for atomic terms).
 
 In this case, :n:`@term` is
-interpreted in the scope stack extended with the scope bound to :token:`ident`.
+interpreted in the scope stack extended with the scope bound to :n:`@scope_key`.
 
 .. cmd:: Delimit Scope @scope_name with @scope_key
 
