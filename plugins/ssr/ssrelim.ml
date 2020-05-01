@@ -492,15 +492,17 @@ let equality_inj l b id c gl =
     Feedback.msg_warning (Pp.str !msg);
     discharge_hyp (id, (id, "")) gl
 
-let injectidl2rtac id c gl =
+let injectidl2rtac id c =
+  Proofview.V82.tactic begin fun gl ->
   Tacticals.tclTHEN (equality_inj None true id c) (revtoptac (pf_nb_prod gl)) gl
+  end
 
 let injectl2rtac sigma c = match EConstr.kind sigma c with
 | Var id -> injectidl2rtac id (EConstr.mkVar id, NoBindings)
 | _ ->
   let id = injecteq_id in
-  let xhavetac id c = Proofview.V82.of_tactic (Tactics.pose_proof (Name id) c) in
-  Tacticals.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Proofview.V82.of_tactic (Tactics.clear [id])]
+  let xhavetac id c = Tactics.pose_proof (Name id) c in
+  Tacticals.New.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Tactics.clear [id]]
 
 let is_injection_case env sigma c =
   let sigma, cty = Typing.type_of env sigma c in
@@ -508,20 +510,25 @@ let is_injection_case env sigma c =
   Coqlib.check_ind_ref "core.eq.type" mind
 
 let perform_injection c =
-  Proofview.V82.tactic ~nf_evars:false begin fun gl ->
-  let gl, cty = pfe_type_of gl c in
-  let mind, t = pf_reduce_to_quantified_ind gl cty in
-  let dc, eqt = EConstr.decompose_prod (project gl) t in
-  if dc = [] then injectl2rtac (project gl) c gl else
-  if not (EConstr.Vars.closed0 (project gl) eqt) then
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let sigma, cty = Typing.type_of env sigma c in
+  let mind, t = Tacred.reduce_to_quantified_ind env sigma cty in
+  let dc, eqt = EConstr.decompose_prod sigma t in
+  if dc = [] then injectl2rtac sigma c else
+  if not (EConstr.Vars.closed0 sigma eqt) then
     CErrors.user_err (Pp.str "can't decompose a quantified equality") else
-  let cl = pf_concl gl in let n = List.length dc in
+  let cl = Proofview.Goal.concl gl in
+  let n = List.length dc in
   let c_eq = mkEtaApp c n 2 in
   let cl1 = EConstr.mkLambda EConstr.(make_annot Anonymous Sorts.Relevant, mkArrow eqt Sorts.Relevant cl, mkApp (mkRel 1, [|c_eq|])) in
   let id = injecteq_id in
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
-  let injtac = Tacticals.New.tclTHEN (introid id) (Proofview.V82.tactic (injectidl2rtac id id_with_ebind)) in
-  Proofview.V82.of_tactic (Tacticals.New.tclTHENLAST (Tactics.apply (EConstr.compose_lam dc cl1)) injtac) gl
+  let injtac = Tacticals.New.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Tacticals.New.tclTHENLAST (Tactics.apply (EConstr.compose_lam dc cl1)) injtac
   end
 
 let ssrscase_or_inj_tac c =
