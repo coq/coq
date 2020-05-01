@@ -1321,7 +1321,8 @@ end
 
 let tacREDUCE_TO_QUANTIFIED_IND ty =
   tacSIGMA >>= fun gl ->
-  tclUNIT (Tacmach.pf_reduce_to_quantified_ind gl ty)
+  try tclUNIT (Tacmach.pf_reduce_to_quantified_ind gl ty)
+  with e -> tclZERO e
 
 let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
   let sigma, env = Goal.sigma g, Goal.env g in
