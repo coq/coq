@@ -21,7 +21,6 @@ open CoqConstr
 open Vars
 open Libnames
 open Tactics
-open Tacticals
 open Termops
 open Recordops
 open Tacmach
@@ -1301,25 +1300,27 @@ let () =
   Mltop.declare_cache_obj obj "ssrmatching_plugin"
 
 let ssrinstancesof arg =
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let ok rhs lhs ise = true in
 (*   not (equal lhs (Evarutil.nf_evar ise rhs)) in *)
-  let env, sigma, concl = pf_env gl, project gl, pf_concl gl in
-  let concl = EConstr.Unsafe.to_constr concl in
-  let sigma0, cpat = interp_cpattern (pf_env gl) (project gl) arg None in
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  let concl = EConstr.to_constr ~abort_on_undefined_evars:false sigma concl in
+  let sigma0, cpat = interp_cpattern env sigma arg None in
   let pat = match cpat with T x -> x | _ -> errorstrm (str"Not supported") in
   let etpat, tpat = mk_tpattern env sigma (sigma0,pat) (ok pat) L2R pat in
   let find, conclude =
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true
       sigma None (etpat,[tpat]) in
-  let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_constr_env (pf_env gl) (gl.sigma) p ++ spc()
-                                     ++ str "matches:" ++ spc() ++ pr_constr_env (pf_env gl) (gl.sigma)  c)); c in
+  let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_constr_env env (Proofview.Goal.sigma gl) p ++ spc()
+                                     ++ str "matches:" ++ spc() ++ pr_constr_env env (Proofview.Goal.sigma gl)  c)); c in
   ppnl (str"BEGIN INSTANCES");
   try
     while true do
       ignore(find env concl 1 ~k:print)
     done; raise NoMatch
-  with NoMatch -> ppnl (str"END INSTANCES"); tclIDTAC gl
+  with NoMatch -> ppnl (str"END INSTANCES"); Tacticals.New.tclIDTAC
   end
 
 module Internal =

@@ -625,7 +625,7 @@ let ssrinstancesofrule ist dir arg =
   Feedback.msg_info Pp.(str"BEGIN INSTANCES");
   try
     while true do
-      ignore(find env0 (EConstr.to_constr sigma0 concl0) 1 ~k:print)
+      ignore(find env0 (EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0) 1 ~k:print)
     done; raise NoMatch
   with NoMatch -> Feedback.msg_info Pp.(str"END INSTANCES"); Tacticals.New.tclIDTAC
   end
