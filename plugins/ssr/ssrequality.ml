@@ -198,24 +198,26 @@ let norwmult = L2R, nomult
 let norwocc = noclr, None
 
 let simplintac occ rdx sim =
-  Proofview.V82.tactic begin fun gl ->
-  let simptac m gl =
+  let simptac m =
+    Proofview.Goal.enter begin fun gl ->
     if m <> ~-1 then begin
       if rdx <> None then
         CErrors.user_err (Pp.str "Custom simpl tactic does not support patterns");
       if occ <> None then
         CErrors.user_err (Pp.str "Custom simpl tactic does not support occurrence numbers");
-      Proofview.V82.of_tactic (simpltac (Simpl m)) gl
+      simpltac (Simpl m)
     end else
-      let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
+      let sigma0, concl0, env0 = Proofview.Goal.(sigma gl, concl gl, env gl) in
       let simp env c _ _ = EConstr.Unsafe.to_constr (red_safe Tacred.simpl env sigma0 (EConstr.of_constr c)) in
-      Proofview.V82.of_tactic
-        (convert_concl_no_check (EConstr.of_constr (eval_pattern env0 sigma0 (EConstr.Unsafe.to_constr concl0) rdx occ simp)))
-        gl in
+      convert_concl_no_check (EConstr.of_constr (eval_pattern env0 sigma0 (EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0) rdx occ simp))
+    end
+  in
+  let open Tacticals.New in
+  Proofview.Goal.enter begin fun _ ->
   match sim with
-  | Simpl m -> simptac m gl
-  | SimplCut (n,m) -> tclTHEN (simptac m) (tclTRY (Proofview.V82.of_tactic (donetac n))) gl
-  | _ -> Proofview.V82.of_tactic (simpltac sim) gl
+  | Simpl m -> simptac m
+  | SimplCut (n,m) -> tclTHEN (simptac m) (tclTRY (donetac n))
+  | _ -> simpltac sim
   end
 
 let rec get_evalref env sigma c = match EConstr.kind sigma c with
