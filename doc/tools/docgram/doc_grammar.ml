@@ -1915,7 +1915,7 @@ let process_rst g file args seen tac_prods cmd_prods =
   close_out new_rst;
   finish_with_file file args
 
-let report_omitted_prods entries seen label split =
+let report_omitted_prods g seen label split =
   let maybe_warn first last n =
     if first <> "" then begin
       if first <> last then
@@ -1925,14 +1925,21 @@ let report_omitted_prods entries seen label split =
     end
   in
 
+  let included = try
+      List.map (fun prod ->
+        match prod with
+        | Snterm nt :: tl -> nt
+        | _ -> "") (NTMap.find "NOTINRSTS" !g.map)
+    with Not_found -> []
+  in
   let first, last, n, total = List.fold_left (fun missing nt ->
       let first, last, n, total = missing in
-      if NTMap.mem nt seen then begin
+      if NTMap.mem nt seen || (List.mem nt included) then begin
         maybe_warn first last n;
         "", "", 0, total
       end else
         (if first = "" then nt else first), nt, n + 1, total + 1)
-    ("", "", 0, 0) entries in
+    ("", "", 0, 0) !g.order in
   maybe_warn first last n;
   if total <> 0 then
     Printf.eprintf "TOTAL %ss not included = %d\n" label total
@@ -2010,7 +2017,7 @@ let process_grammar args =
       let tac_list, tac_prods = plist "simple_tactic" in
       let cmd_list, cmd_prods = plist "command" in
       List.iter (fun file -> process_rst g file args seen tac_prods cmd_prods) args.rst_files;
-      report_omitted_prods !g.order !seen.nts "Nonterminal" "";
+      report_omitted_prods g !seen.nts "Nonterminal" "";
       let out = open_out (dir "updated_rsts") in
       close_out out;
     end;
