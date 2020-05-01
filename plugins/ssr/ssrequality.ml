@@ -197,7 +197,8 @@ let mk_rwarg (d, (n, _ as m)) ((clr, occ as docc), rx) (rt, _ as r) : ssrrwarg =
 let norwmult = L2R, nomult
 let norwocc = noclr, None
 
-let simplintac occ rdx sim gl =
+let simplintac occ rdx sim =
+  Proofview.V82.tactic begin fun gl ->
   let simptac m gl =
     if m <> ~-1 then begin
       if rdx <> None then
@@ -215,6 +216,7 @@ let simplintac occ rdx sim gl =
   | Simpl m -> simptac m gl
   | SimplCut (n,m) -> tclTHEN (simptac m) (tclTRY (Proofview.V82.of_tactic (donetac n))) gl
   | _ -> Proofview.V82.of_tactic (simpltac sim) gl
+  end
 
 let rec get_evalref env sigma c = match EConstr.kind sigma c with
   | Var id -> EvalVarRef id
@@ -242,7 +244,8 @@ let all_ok _ _ = true
 let fake_pmatcher_end () =
   mkProp, L2R, (Evd.empty, UState.empty, mkProp)
 
-let unfoldintac occ rdx t (kt,_) gl =
+let unfoldintac occ rdx t (kt,_) =
+  Proofview.V82.tactic begin fun gl ->
   let fs sigma x = Reductionops.nf_evar sigma x in
   let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
   let (sigma, t), const = strip_unfold_term env0 t kt in
@@ -295,9 +298,10 @@ let unfoldintac occ rdx t (kt,_) gl =
     with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
   let _ = conclude () in
   Proofview.V82.of_tactic (convert_concl ~check:true concl) gl
-;;
+  end
 
-let foldtac occ rdx ft gl =
+let foldtac occ rdx ft =
+  Proofview.V82.tactic begin fun gl ->
   let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
   let sigma, t = ft in
   let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
@@ -322,7 +326,7 @@ let foldtac occ rdx ft gl =
   let concl = eval_pattern env0 sigma0 concl0 rdx occ fold in
   let _ = conclude () in
   Proofview.V82.of_tactic (convert_concl ~check:true (EConstr.of_constr concl)) gl
-;;
+  end
 
 let converse_dir = function L2R -> R2L | R2L -> L2R
 
@@ -644,29 +648,36 @@ let ipat_rewrite occ dir c = Proofview.Goal.enter begin fun gl ->
   rwrxtac occ None dir (Proofview.Goal.sigma gl, c)
 end
 
+let pf_merge_uc_of s sigma =
+  Evd.merge_universe_context sigma (Evd.evar_universe_context s)
+
 let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) =
+  let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let fail = ref false in
-  let interp_rpattern gl gc =
-    try interp_rpattern (pf_env gl) (project gl) gc
-    with _ when snd mult = May -> fail := true; project gl, T mkProp in
+  let interp_rpattern env sigma gc =
+    try interp_rpattern env sigma gc
+    with _ when snd mult = May -> fail := true; sigma, T mkProp in
   let interp env sigma gc =
     try interp_term env sigma ist gc
     with _ when snd mult = May -> fail := true; (sigma, EConstr.mkProp) in
   let rwtac =
-    Proofview.V82.tactic begin fun gl ->
-    let rx = Option.map (interp_rpattern gl) grx in
-    let gl = match rx with
-      | None -> gl
-      | Some (s,_) -> pf_merge_uc_of s gl in
-    let t = interp (pf_env gl) (project gl) gt in
-    let gl = pf_merge_uc_of (fst t) gl in
+    Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let rx = Option.map (interp_rpattern env sigma) grx in
+    let sigma = match rx with
+      | None -> sigma
+      | Some (s,_) -> pf_merge_uc_of s sigma in
+    let t = interp env sigma gt in
+    let sigma = pf_merge_uc_of (fst t) sigma in
+    Proofview.Unsafe.tclEVARS sigma <*>
     (match kind with
     | RWred sim -> simplintac occ rx sim
     | RWdef -> if dir = R2L then foldtac occ rx t else unfoldintac occ rx t gt
-    | RWeq -> Proofview.V82.of_tactic (rwrxtac ?under ?map_redex occ rx dir t)) gl
+    | RWeq -> rwrxtac ?under ?map_redex occ rx dir t)
     end
   in
   let ctac = cleartac (interp_clr sigma (oclr, (fst gt, snd (interp env sigma gt)))) in
