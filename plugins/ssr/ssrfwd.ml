@@ -152,7 +152,7 @@ let havetac ist
   let mkl t = (xNoFlag, (t, None)) in
   let interp gl rtc t = pf_abs_ssrterm ~resolve_typeclasses:rtc ist gl t in
   let interp_ty gl rtc t =
-    let a,b,_,u = pf_interp_ty ~resolve_typeclasses:rtc ist gl t in a,b,u in
+    let a,b,_,u = pf_interp_ty ~resolve_typeclasses:rtc (pf_env gl) (project gl) ist t in a,b,u in
   let open CAst in
   let ct, cty, hole, loc = match Ssrcommon.ssrterm_of_ast_closure_term t with
     | _, (_, Some { loc; v = CCast (ct, CastConv cty)}) ->
@@ -261,7 +261,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
     let (sigma, ev) = Evarutil.new_evar env sigma EConstr.mkProp in
     let k, _ = EConstr.destEvar sigma ev in
     let fake_gl = {Evd.it = k; Evd.sigma = sigma} in
-    let _, ct, _, uc = pf_interp_ty ist fake_gl ct in
+    let _, ct, _, uc = pf_interp_ty (pf_env fake_gl) sigma ist ct in
     let rec var2rel c g s = match EConstr.kind sigma c, g with
       | Prod({binder_name=Anonymous} as x,_,c), [] -> EConstr.mkProd(x, EConstr.Vars.subst_vars s ct, c)
       | Sort _, [] -> EConstr.Vars.subst_vars s ct
@@ -335,7 +335,7 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
   in
   let ctac =
     Proofview.V82.tactic begin fun gl ->
-    let _,ty,_,uc = pf_interp_ty ist gl c in let gl = pf_merge_uc uc gl in
+    let _,ty,_,uc = pf_interp_ty (pf_env gl) (project gl) ist c in let gl = pf_merge_uc uc gl in
     Proofview.V82.of_tactic (basecuttac "ssr_suff" ty) gl
   end in
   Tacticals.New.tclTHENS ctac [htac; Tacticals.New.tclTHEN (cleartac clr) (introstac (binders@simpl))]

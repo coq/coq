@@ -902,7 +902,7 @@ let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, CastConv ty)
 let rec isCHoles = function { CAst.v = CHole _ } :: cl -> isCHoles cl | cl -> cl = []
 let rec isCxHoles = function ({ CAst.v = CHole _ }, None) :: ch -> isCxHoles ch | _ -> false
 
-let pf_interp_ty ?(resolve_typeclasses=false) ist gl ty =
+let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
    let n_binders = ref 0 in
    let ty = match ty with
    | a, (t, None) ->
@@ -927,15 +927,14 @@ let pf_interp_ty ?(resolve_typeclasses=false) ist gl ty =
      | LetInType(n,v,ty,t) -> decr n_binders; mkLetIn (n, v, ty, aux t)
      | _ -> anomaly "pf_interp_ty: ssr Type cast deleted by typecheck" in
      sigma, aux t in
-   let sigma, cty as ty = strip_cast (interp_term (pf_env gl) (project gl) ist ty) in
+   let sigma, cty as ty = strip_cast (interp_term env sigma0 ist ty) in
    let ty =
-     let env = pf_env gl in
      if not resolve_typeclasses then ty
      else
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma cty in
-   let n, c, _, ucst = pf_abs_evars gl ty in
-   let lam_c = pf_abs_cterm gl n c in
+   let n, c, _, ucst = abs_evars env sigma0 ty in
+   let lam_c = abs_cterm env sigma0 n c in
    let ctx, c = EConstr.decompose_lam_n_assum sigma n lam_c in
    n, EConstr.it_mkProd_or_LetIn c ctx, lam_c, ucst
 ;;

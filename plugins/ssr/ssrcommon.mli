@@ -320,8 +320,9 @@ val pf_abs_ssrterm :
 
 val pf_interp_ty :
            ?resolve_typeclasses:bool ->
+           Environ.env ->
+           Evd.evar_map ->
            Tacinterp.interp_sign ->
-           Goal.goal Evd.sigma ->
            Ssrast.ssrtermkind *
            (Glob_term.glob_constr * Constrexpr.constr_expr option) ->
            int * EConstr.t * EConstr.t * UState.t
