@@ -40,104 +40,16 @@ Require CMorphisms.
     WARNING: this module is not meant to be imported directly,
     please import `Reals.Abstract.ConstructiveReals` instead.
  *)
-Definition QSeqEquiv (un vn : positive -> Q) (cvmod : positive -> positive)
+Definition QCauchySeq (un : positive -> Q)
   : Prop
   := forall (k : positive) (p q : positive),
-      Pos.le (cvmod k) p
-      -> Pos.le (cvmod k) q
-      -> Qlt (Qabs (un p - vn q)) (1 # k).
-
-(* A Cauchy sequence is a sequence equivalent to itself.
-   If sequences are equivalent, they are both Cauchy and have the same limit. *)
-Definition QCauchySeq (un : positive -> Q) (cvmod : positive -> positive) : Prop
-  := QSeqEquiv un un cvmod.
-
-Lemma QSeqEquiv_sym : forall (un vn : positive -> Q) (cvmod : positive -> positive),
-    QSeqEquiv un vn cvmod
-    -> QSeqEquiv vn un cvmod.
-Proof.
-  intros. intros k p q H0 H1.
-  rewrite Qabs_Qminus. apply H; assumption.
-Qed.
-
-Lemma factorDenom : forall (a:Z) (b d:positive), (a # (d * b)) == (1#d) * (a#b).
-Proof.
-  intros. unfold Qeq. simpl. destruct a; reflexivity.
-Qed.
-
-Lemma QSeqEquiv_trans : forall (un vn wn : positive -> Q)
-                          (cvmod cvmodw : positive -> positive),
-    QSeqEquiv un vn cvmod
-    -> QSeqEquiv vn wn cvmodw
-    -> QSeqEquiv un wn (fun q => Pos.max (cvmod (2 * q)%positive)
-                                     (cvmodw (2 * q)%positive)).
-Proof.
-  intros. intros k p q H1 H2.
-  setoid_replace (un p - wn q) with (un p - vn p + (vn p - wn q)).
-  apply (Qle_lt_trans
-           _ (Qabs (un p - vn p) + Qabs (vn p - wn q))).
-  apply Qabs_triangle. apply (Qlt_le_trans _ ((1 # (2*k)) + (1 # (2*k)))).
-  apply Qplus_lt_le_compat.
-  - assert ((cvmod (2 * k)%positive <= p)%positive).
-    { apply (Pos.le_trans _ (Pos.max (cvmod (2 * k)%positive)
-                                     (cvmodw (2 * k)%positive))).
-      apply Pos.le_max_l. assumption. }
-    apply H. assumption. assumption.
-  - apply Qle_lteq. left. apply H0.
-    apply (Pos.le_trans _ (Pos.max (cvmod (2 * k)%positive)
-                                   (cvmodw (2 * k)%positive))).
-    apply Pos.le_max_r. assumption.
-    apply (Pos.le_trans _ (Pos.max (cvmod (2 * k)%positive)
-                                   (cvmodw (2 * k)%positive))).
-    apply Pos.le_max_r. assumption.
-  - rewrite (factorDenom _ _ 2). ring_simplify. apply Qle_refl.
-  - ring.
-Qed.
-
-Definition QSeqEquivEx (un vn : positive -> Q) : Prop
-  := exists (cvmod : positive -> positive), QSeqEquiv un vn cvmod.
-
-Lemma QSeqEquivEx_sym : forall (un vn : positive -> Q),
-    QSeqEquivEx un vn -> QSeqEquivEx vn un.
-Proof.
-  intros. destruct H. exists x. apply QSeqEquiv_sym. apply H.
-Qed.
-
-Lemma QSeqEquivEx_trans : forall un vn wn : positive -> Q,
-    QSeqEquivEx un vn
-    -> QSeqEquivEx vn wn
-    -> QSeqEquivEx un wn.
-Proof.
-  intros. destruct H,H0.
-  exists (fun q => Pos.max (x (2 * q)%positive) (x0 (2 * q)%positive)).
-  apply (QSeqEquiv_trans un vn wn); assumption.
-Qed.
-
-Lemma QSeqEquiv_cau_r : forall (un vn : positive -> Q) (cvmod : positive -> positive),
-    QSeqEquiv un vn cvmod
-    -> QCauchySeq vn (fun k => cvmod (2 * k)%positive).
-Proof.
-  intros. intros k p q H0 H1.
-  setoid_replace (vn p - vn q)
-    with (vn p
-          - un (cvmod (2 * k)%positive)
-          + (un (cvmod (2 * k)%positive) - vn q)).
-  - apply (Qle_lt_trans
-             _ (Qabs (vn p
-                      - un (cvmod (2 * k)%positive))
-                + Qabs (un (cvmod (2 * k)%positive) - vn q))).
-    apply Qabs_triangle.
-    apply (Qlt_le_trans _ ((1 # (2 * k)) + (1 # (2 * k)))).
-    apply Qplus_lt_le_compat.
-    + rewrite Qabs_Qminus. apply H. apply Pos.le_refl. assumption.
-    + apply Qle_lteq. left. apply H. apply Pos.le_refl. assumption.
-    + rewrite (factorDenom _ _ 2). ring_simplify. apply Qle_refl.
-  - ring.
-Qed.
+      Pos.le k p
+      -> Pos.le k q
+      -> Qlt (Qabs (un p - un q)) (1 # k).
 
 (* A Cauchy real is a Cauchy sequence with the standard modulus *)
 Definition CReal : Set
-  := { x : (positive -> Q) | QCauchySeq x id }.
+  := { x : (positive -> Q) | QCauchySeq x }.
 
 Declare Scope CReal_scope.
 
@@ -270,78 +182,6 @@ Proof.
     + apply CRealLe_not_lt. intro n. specialize (H n).
       apply (Qle_trans _ (Qabs (proj1_sig x n - proj1_sig y n))).
       apply Qle_Qabs. apply H.
-Qed.
-
-(* The equality on Cauchy reals is just QSeqEquiv,
-   which is independant of the convergence modulus. *)
-Lemma CRealEq_modindep : forall (x y : CReal),
-    QSeqEquivEx (proj1_sig x) (proj1_sig y)
-    <-> forall n:positive,
-      Qle (Qabs (proj1_sig x n - proj1_sig y n)) (2 # n).
-Proof.
-  assert (forall x y: CReal, QSeqEquivEx (proj1_sig x) (proj1_sig y) -> x <= y ).
-  { intros [xn limx] [yn limy] [cvmod H] [n abs]. simpl in abs, H.
-    pose (xn n - yn n - (2#n)) as eps.
-    destruct (Qarchimedean (/eps)) as [k maj].
-    remember (Pos.max (cvmod k) n) as p.
-    assert (Pos.le (cvmod k) p).
-    { rewrite Heqp. apply Pos.le_max_l. }
-    assert (n <= p)%positive.
-    { rewrite Heqp. apply Pos.le_max_r. }
-    specialize (H k p p H0 H0).
-    setoid_replace (Z.pos k #1)%Q with (/ (1#k)) in maj. 2: reflexivity.
-    apply Qinv_lt_contravar in maj. 2: reflexivity. unfold eps in maj.
-    clear abs. (* less precise majoration *)
-    apply (Qplus_lt_r _ _ (2#n)) in maj. ring_simplify in maj.
-    apply (Qlt_not_le _ _ maj). clear maj.
-    setoid_replace (xn n + -1 * yn n)
-      with (xn n - xn p + (xn p - yn p + (yn p - yn n))).
-    2: ring.
-    setoid_replace (2 # n)%Q with ((1 # n) + (1#n)).
-    rewrite <- Qplus_assoc.
-    apply Qplus_le_compat. apply (Qle_trans _ _ _ (Qle_Qabs _)).
-    apply Qlt_le_weak. apply limx. apply Pos.le_refl. assumption.
-    rewrite (Qplus_comm (1#n)).
-    apply Qplus_le_compat. apply (Qle_trans _ _ _ (Qle_Qabs _)).
-    apply Qlt_le_weak. exact H.
-    apply (Qle_trans _ _ _ (Qle_Qabs _)). apply Qlt_le_weak. apply limy.
-    assumption. apply Pos.le_refl. ring_simplify. reflexivity.
-    unfold eps. unfold Qminus. rewrite <- Qlt_minus_iff. exact abs. }
-  split.
-  - rewrite <- CRealEq_diff. intros. split.
-    apply H, QSeqEquivEx_sym. exact H0. apply H. exact H0.
-  - clear H. intros. destruct x as [xn limx], y as [yn limy].
-    exists (fun q:positive => 2 * (3 * q))%positive. intros k p q H0 H1.
-    unfold proj1_sig. specialize (H (2 * (3 * k))%positive).
-    assert (3 * k <= 2 * (3 * k))%positive.
-    { generalize (3 * k)%positive. intros. apply (Pos.le_trans _ (1 * p0)).
-      apply Pos.le_refl. rewrite <- Pos.mul_le_mono_r. discriminate. }
-    setoid_replace (xn p - yn q)
-      with (xn p - xn (2 * (3 * k))%positive
-            + (xn (2 * (3 * k))%positive - yn (2 * (3 * k))%positive
-               + (yn (2 * (3 * k))%positive - yn q))).
-    2: ring.
-    setoid_replace (1 # k)%Q with ((1 # 3 * k) + ((1 # 3 * k) + (1 # 3 * k))).
-    apply (Qle_lt_trans
-             _ (Qabs (xn p - xn (2 * (3 * k))%positive)
-                + (Qabs (xn (2 * (3 * k))%positive - yn (2 * (3 * k))%positive
-                         + (yn (2 * (3 * k))%positive - yn q))))).
-    apply Qabs_triangle. apply Qplus_lt_le_compat.
-    apply limx. apply (Pos.le_trans _ (2 * (3 * k))). assumption. assumption.
-    assumption.
-    apply (Qle_trans
-             _ (Qabs (xn (2 * (3 * k))%positive - yn (2 * (3 * k))%positive)
-                + Qabs (yn (2 * (3 * k))%positive - yn q))).
-    apply Qabs_triangle. apply Qplus_le_compat.
-    setoid_replace (1 # 3 * k)%Q with (2 # 2 * (3 * k))%Q. apply H.
-    rewrite (factorDenom _ _ 3).
-    rewrite (factorDenom _ _ 2). rewrite (factorDenom _ _ 3).
-    rewrite Qmult_assoc. rewrite (Qmult_comm (1#2)).
-    rewrite <- Qmult_assoc. apply Qmult_comp. reflexivity.
-    unfold Qeq. reflexivity.
-    apply Qle_lteq. left. apply limy. assumption.
-    apply (Pos.le_trans _ (2 * (3 * k))). assumption. assumption.
-    rewrite (factorDenom _ _ 3). ring_simplify. reflexivity.
 Qed.
 
 (* Extend separation to all indices above *)
@@ -687,8 +527,7 @@ Qed.
 
 (* Injection of Q into CReal *)
 
-Lemma ConstCauchy : forall q : Q,
-    QCauchySeq (fun _ => q) id.
+Lemma ConstCauchy : forall q : Q, QCauchySeq (fun _ => q).
 Proof.
   intros. intros k p r H H0.
   unfold Qminus. rewrite Qplus_opp_r. unfold Qlt. simpl.
@@ -844,7 +683,7 @@ Qed.
 Lemma CReal_plus_cauchy
   : forall (x y : CReal),
     QCauchySeq (fun n : positive => Qred (proj1_sig x (2 * n)%positive
-                                       + proj1_sig y (2 * n)%positive)) id.
+                                       + proj1_sig y (2 * n)%positive)).
 Proof.
   destruct x as [xn limx], y as [yn limy]; unfold proj1_sig.
   intros n p q H H0.
@@ -872,30 +711,6 @@ Definition CReal_plus (x y : CReal) : CReal
            (CReal_plus_cauchy x y).
 
 Infix "+" := CReal_plus : CReal_scope.
-
-Lemma CReal_plus_unfold : forall (x y : CReal),
-    QSeqEquiv (proj1_sig (CReal_plus x y))
-              (fun n : positive => proj1_sig x n + proj1_sig y n)%Q
-              (fun p => 2 * p)%positive.
-Proof.
-  intros [xn limx] [yn limy].
-  unfold CReal_plus, proj1_sig.
-  intros p n k H H0. rewrite Qred_correct.
-  setoid_replace (xn (2 * n)%positive + yn (2 * n)%positive - (xn k + yn k))%Q
-    with (xn (2 * n)%positive - xn k + (yn (2 * n)%positive - yn k))%Q.
-  2: field.
-  apply (Qle_lt_trans _ (Qabs (xn (2 * n)%positive - xn k) + Qabs (yn (2 * n)%positive - yn k))).
-  apply Qabs_triangle.
-  setoid_replace (1#p)%Q with ((1#2*p) + (1#2*p))%Q.
-  apply Qplus_lt_le_compat.
-  - apply limx. apply (Pos.le_trans _ n). apply H.
-    apply (Pos.le_trans _ (1 * n)). apply Pos.le_refl.
-    apply Pos.mul_le_mono_r. discriminate. exact H0.
-  - apply Qlt_le_weak. apply limy. apply (Pos.le_trans _ n). apply H.
-    apply (Pos.le_trans _ (1 * n)). apply Pos.le_refl.
-    apply Pos.mul_le_mono_r. discriminate. exact H0.
-  - rewrite Qinv_plus_distr. unfold Qeq. reflexivity.
-Qed.
 
 Definition CReal_opp (x : CReal) : CReal.
 Proof.
