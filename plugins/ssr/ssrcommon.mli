@@ -371,7 +371,7 @@ val resolve_typeclasses :
 
 (*********************** Wrapped Coq  tactics *****************************)
 
-val rewritetac : ?under:bool -> ssrdir -> EConstr.t -> tactic
+val rewritetac : ?under:bool -> ssrdir -> EConstr.t -> unit Proofview.tactic
 
 type name_hint = (int * EConstr.types array) option ref
 

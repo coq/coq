@@ -350,7 +350,8 @@ exception PRtype_error of (Environ.env * Evd.evar_map * Pretype_errors.pretype_e
 
 let id_map_redex _ sigma ~before:_ ~after = sigma, after
 
-let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
+let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty =
+  Proofview.V82.tactic begin fun gl ->
 (*   ppdebug(lazy(str"sigma@pirrel_rewrite=" ++ pr_evar_map None sigma)); *)
   let env = pf_env gl in
   let beta = Reductionops.clos_norm_flags CClosure.beta env sigma in
@@ -406,63 +407,72 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
     | _ -> anomaly "rewrite rule not an application" in
     errorstrm Pp.(Himsg.explain_refiner_error env sigma (Logic.UnresolvedBindings miss)++
       (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty))
-;;
+  end
+
+let pf_merge_uc_of s sigma =
+  Evd.merge_universe_context sigma (Evd.evar_universe_context s)
 
 let rwcltac ?under ?map_redex cl rdx dir sr =
-  Proofview.V82.tactic begin fun gl ->
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma0 = Proofview.Goal.sigma gl in
   let sr =
     let sigma, r = sr in
-    let sigma = resolve_typeclasses ~where:r ~fail:false (pf_env gl) sigma in
+    let sigma = resolve_typeclasses ~where:r ~fail:false env sigma in
     sigma, r in
-  let n, r_n,_, ucst = pf_abs_evars gl sr in
-  let r_n' = pf_abs_cterm gl n r_n in
+  let n, r_n,_, ucst = abs_evars env sigma0 sr in
+  let r_n' = abs_cterm env sigma0 n r_n in
   let r' = EConstr.Vars.subst_var pattern_id r_n' in
-  let gl = pf_unsafe_merge_uc ucst gl in
-  let rdxt = Retyping.get_type_of (pf_env gl) (fst sr) rdx in
+  let sigma0 = Evd.set_universe_context sigma0 ucst in
+  let rdxt = Retyping.get_type_of env (fst sr) rdx in
 (*         ppdebug(lazy(str"sigma@rwcltac=" ++ pr_evar_map None (fst sr))); *)
-        ppdebug(lazy Pp.(str"r@rwcltac=" ++ pr_econstr_env (pf_env gl) (project gl) (snd sr)));
-  let cvtac, rwtac, gl =
-    if EConstr.Vars.closed0 (project gl) r' then
-      let env, sigma, c, c_eq = pf_env gl, fst sr, snd sr, Coqlib.(lib_ref "core.eq.type") in
+        ppdebug(lazy Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma0 (snd sr)));
+  let cvtac, rwtac, sigma0 =
+    if EConstr.Vars.closed0 sigma0 r' then
+      let sigma, c, c_eq = fst sr, snd sr, Coqlib.(lib_ref "core.eq.type") in
       let sigma, c_ty = Typing.type_of env sigma c in
         ppdebug(lazy Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty));
       let open EConstr in
       match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
-          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma,c) c_ty, Tacticals.New.tclIDTAC, gl
+          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma,c) c_ty, Tacticals.New.tclIDTAC, sigma0
       | _ ->
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
-          let gl = pf_merge_uc_of sigma gl in
-          Proofview.V82.of_tactic (convert_concl ~check:true cl'), Proofview.V82.tactic (rewritetac ?under dir r'), gl
+          let sigma0 = pf_merge_uc_of sigma sigma0 in
+          convert_concl ~check:true cl', rewritetac ?under dir r', sigma0
     else
-      let dc, r2 = EConstr.decompose_lam_n_assum (project gl) n r' in
+      let dc, r2 = EConstr.decompose_lam_n_assum sigma0 n r' in
       let r3, _, r3t  =
-        try EConstr.destCast (project gl) r2 with _ ->
-        errorstrm Pp.(str "no cast from " ++ pr_econstr_pat (pf_env gl) (project gl) (snd sr)
-                    ++ str " to " ++ pr_econstr_env (pf_env gl) (project gl) r2) in
+        try EConstr.destCast sigma0 r2 with _ ->
+        errorstrm Pp.(str "no cast from " ++ pr_econstr_pat env sigma0 (snd sr)
+                    ++ str " to " ++ pr_econstr_env env sigma0 r2) in
       let cl' = EConstr.mkNamedProd (make_annot rule_id Sorts.Relevant) (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
       let cl'' = EConstr.mkNamedProd (make_annot pattern_id Sorts.Relevant) rdxt cl' in
       let itacs = [introid pattern_id; introid rule_id] in
       let cltac = Tactics.clear [pattern_id; rule_id] in
-      let rwtacs = [Proofview.V82.tactic (rewritetac ?under dir (EConstr.mkVar rule_id)); cltac] in
-      apply_type cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], Tacticals.New.tclTHENLIST (itacs @ rwtacs), gl
+      let rwtacs = [rewritetac ?under dir (EConstr.mkVar rule_id); cltac] in
+      Tactics.apply_type ~typecheck:true cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], Tacticals.New.tclTHENLIST (itacs @ rwtacs), sigma0
   in
-  let cvtac' _ =
-    try cvtac gl with
-    | PRtype_error e ->
+  let cvtac' =
+    Proofview.tclOR cvtac begin function
+    | (PRtype_error e, _) ->
       let error = Option.cata (fun (env, sigma, te) ->
           Pp.(fnl () ++ str "Type error was: " ++ Himsg.explain_pretype_error env sigma te))
           (Pp.mt ()) e in
-      if occur_existential (project gl) (Tacmach.pf_concl gl)
-      then errorstrm Pp.(str "Rewriting impacts evars" ++ error)
-      else errorstrm Pp.(str "Dependent type error in rewrite of "
-        ++ pr_econstr_env (pf_env gl) (project gl)
+      if occur_existential sigma0 (Tacmach.New.pf_concl gl)
+      then Tacticals.New.tclZEROMSG Pp.(str "Rewriting impacts evars" ++ error)
+      else Tacticals.New.tclZEROMSG Pp.(str "Dependent type error in rewrite of "
+        ++ pr_econstr_env env sigma0
           (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl)
         ++ error)
+    | (e, info) -> Proofview.tclZERO ~info e
+    end
   in
-  tclTHEN cvtac' (Proofview.V82.of_tactic rwtac) gl
+  Proofview.Unsafe.tclEVARS sigma0 <*>
+  Tacticals.New.tclTHEN cvtac' rwtac
   end
 
 [@@@ocaml.warning "-3"]
@@ -647,9 +657,6 @@ let ssrinstancesofrule ist dir arg =
 let ipat_rewrite occ dir c = Proofview.Goal.enter begin fun gl ->
   rwrxtac occ None dir (Proofview.Goal.sigma gl, c)
 end
-
-let pf_merge_uc_of s sigma =
-  Evd.merge_universe_context sigma (Evd.evar_universe_context s)
 
 let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) =
   let open Proofview.Notations in
