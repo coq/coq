@@ -473,14 +473,19 @@ let pf_nb_prod gl = nb_prod (project gl) (pf_concl gl)
 let rev_id = mk_internal_id "rev concl"
 let injecteq_id = mk_internal_id "injection equation"
 
-let revtoptac n0 gl =
-  let n = pf_nb_prod gl - n0 in
-  let dc, cl = EConstr.decompose_prod_n_assum (project gl) n (pf_concl gl) in
+let revtoptac n0 =
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  let n = nb_prod sigma concl - n0 in
+  let dc, cl = EConstr.decompose_prod_n_assum sigma n concl in
   let dc' = dc @ [Context.Rel.Declaration.LocalAssum(make_annot (Name rev_id) Sorts.Relevant, EConstr.it_mkProd_or_LetIn cl (List.rev dc))] in
   let f = EConstr.it_mkLambda_or_LetIn (mkEtaApp (EConstr.mkRel (n + 1)) (-n) 1) dc' in
-  Proofview.V82.of_tactic (Refiner.refiner ~check:true EConstr.Unsafe.(to_constr (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|])))) gl
+  Refiner.refiner ~check:true EConstr.Unsafe.(to_constr (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|])))
+  end
 
-let equality_inj l b id c gl =
+let equality_inj l b id c =
+  Proofview.V82.tactic begin fun gl ->
   let msg = ref "" in
   try Proofview.V82.of_tactic (Equality.inj None l b None c) gl
   with
@@ -491,10 +496,13 @@ let equality_inj l b id c gl =
        !msg = "Nothing to inject." ->
     Feedback.msg_warning (Pp.str !msg);
     discharge_hyp (id, (id, "")) gl
+  end
 
 let injectidl2rtac id c =
-  Proofview.V82.tactic begin fun gl ->
-  Tacticals.tclTHEN (equality_inj None true id c) (revtoptac (pf_nb_prod gl)) gl
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  Tacticals.New.tclTHEN (equality_inj None true id c) (revtoptac (nb_prod sigma concl))
   end
 
 let injectl2rtac sigma c = match EConstr.kind sigma c with
