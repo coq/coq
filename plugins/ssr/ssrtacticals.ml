@@ -76,7 +76,7 @@ let check_wgen_uniq gens =
   | [] -> () in
   check [] ids
 
-let pf_clauseids gl gens clseq =
+let pf_clauseids gens clseq =
   let keep_clears = List.map (fun (x, _) -> x, None) in
   if gens <> [] then (check_wgen_uniq gens; gens) else
   if clseq <> InAll && clseq <> InAllHyps then keep_clears gens else
@@ -84,14 +84,15 @@ let pf_clauseids gl gens clseq =
 
 let hidden_clseq = function InHyps | InHypsSeq | InAllHyps -> true | _ -> false
 
-let posetac id cl = Proofview.V82.of_tactic (Tactics.pose_tac (Name id) cl)
+let posetac id cl = Tactics.pose_tac (Name id) cl
 
 let hidetacs clseq idhide cl0 =
   if not (hidden_clseq clseq) then  [] else
   [posetac idhide cl0;
-   Proofview.V82.of_tactic (convert_concl_no_check (EConstr.mkVar idhide))]
+   convert_concl_no_check (EConstr.mkVar idhide)]
 
-let endclausestac id_map clseq gl_id cl0 gl =
+let endclausestac id_map clseq gl_id cl0 =
+  Proofview.V82.tactic begin fun gl ->
   let not_hyp' id = not (List.mem_assoc id id_map) in
   let orig_id id = try List.assoc id id_map with Not_found -> id in
   let dc, c = EConstr.decompose_prod_assum (project gl) (pf_concl gl) in
@@ -126,26 +127,29 @@ let endclausestac id_map clseq gl_id cl0 gl =
   let all_ids = ids_of_rel_context dc @ pf_ids_of_hyps gl in
   if List.for_all not_hyp' all_ids && not c_hidden then mktac [] gl else
   errorstrm Pp.(str "tampering with discharged assumptions of \"in\" tactical")
+  end
 
 let tclCLAUSES tac (gens, clseq) =
-  let tac = Proofview.V82.of_tactic tac in
-  Proofview.V82.tactic begin fun gl ->
-  if clseq = InGoal || clseq = InSeqGoal then tac gl else
-  let clr_gens = pf_clauseids gl gens clseq in
+  Proofview.Goal.enter begin fun gl ->
+  if clseq = InGoal || clseq = InSeqGoal then tac else
+  let clr_gens = pf_clauseids gens clseq in
   let clear = Tacticals.New.tclTHENLIST (List.rev(List.fold_right clr_of_wgen clr_gens [])) in
-  let gl_id = mk_anon_id hidden_goal_tag (Tacmach.pf_ids_of_hyps gl) in
-  let cl0 = pf_concl gl in
-  let dtac gl =
+  let gl_id = mk_anon_id hidden_goal_tag (Tacmach.New.pf_ids_of_hyps gl) in
+  let cl0 = Proofview.Goal.concl gl in
+  let dtac =
+    Proofview.V82.tactic begin fun gl ->
     let c = pf_concl gl in
     let gl, args, c =
       List.fold_right (abs_wgen true mk_discharged_id) gens (gl,[], c) in
-    apply_type c args gl in
+    apply_type c args gl
+    end
+  in
   let endtac =
     let id_map = CList.map_filter (function
       | _, Some ((x,_),_) -> let id = hoi_id x in Some (mk_discharged_id id, id)
       | _, None -> None) gens in
     endclausestac id_map clseq gl_id cl0 in
-  Tacticals.tclTHENLIST (hidetacs clseq gl_id cl0 @ [dtac; Proofview.V82.of_tactic clear; tac; endtac]) gl
+  Tacticals.New.tclTHENLIST (hidetacs clseq gl_id cl0 @ [dtac; clear; tac; endtac])
   end
 
 (** The "do" tactical. ********************************************************)

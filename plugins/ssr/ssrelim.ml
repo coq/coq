@@ -471,8 +471,6 @@ let casetac x k =
   let k ?seed _what _eqid elim_tac _is_rec _clr = k ?seed elim_tac in
   ssrelim ~is_case:true [] (`EConstr ([],None,x)) None k
 
-let pf_nb_prod gl = nb_prod (project gl) (pf_concl gl)
-
 let rev_id = mk_internal_id "rev concl"
 let injecteq_id = mk_internal_id "injection equation"
 
