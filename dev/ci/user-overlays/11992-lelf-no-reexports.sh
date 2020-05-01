@@ -18,4 +18,7 @@ if [ "$CI_PULL_REQUEST" = "11992" ] || [ "$CI_BRANCH" = "no-reexports" ] || [ "$
     fiat_parsers_CI_REF=no-reexports
     fiat_parsers_CI_GITURL=https://github.com/llelf/fiat
 
+    vst_CI_REF=no-reexports
+    vst_CI_GITURL=https://github.com/llelf/VST
+
 fi
