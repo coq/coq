@@ -453,7 +453,7 @@ let interp_params env udecl uparamsl paramsl =
  *)
 let maybe_unify_params_in env_ar_par sigma ~ninds ~nparams c =
   let is_ind sigma k c = match EConstr.kind sigma c with
-    | Constr.Rel n ->
+    | Constr.Rel (n, _) ->
       (* env is [uparams; inds; params; k other things] *)
       n > k + nparams && n <= k + nparams + ninds
     | _ -> false

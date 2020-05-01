@@ -92,7 +92,7 @@ let subst_evar_constr evm evs n idf t =
         List.exists
           (fun x ->
             match EConstr.kind evm x with
-            | Constr.Rel n -> Int.List.mem n fixrels
+            | Constr.Rel (n, _) -> Int.List.mem n fixrels
             | _ -> false)
           args
       then transparent := Id.Set.add idstr !transparent;
@@ -110,8 +110,8 @@ let subst_vars acc n t =
   let var_index id = Util.List.index Id.equal id acc in
   let rec substrec depth c =
     match Constr.kind c with
-    | Constr.Var v -> (
-      try Constr.mkRel (depth + var_index v) with Not_found -> c )
+    | Constr.Var (v, ans) -> (
+      try Constr.mkRelA (depth + var_index v) ans with Not_found -> c )
     | _ -> Constr.map_with_binders succ substrec depth c
   in
   substrec 0 t

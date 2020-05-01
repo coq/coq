@@ -127,10 +127,10 @@ let isRef sigma c = match kind sigma c with
 let isRefX sigma x c =
   let open GlobRef in
   match x, kind sigma c with
-  | ConstRef c, Const (c', _) -> Constant.equal c c'
-  | IndRef i, Ind (i', _) -> eq_ind i i'
+  | ConstRef c, Const ((c', _), _) -> Constant.equal c c'
+  | IndRef i, Ind ((i', _), _) -> eq_ind i i'
   | ConstructRef i, Construct (i', _) -> eq_constructor i i'
-  | VarRef id, Var id' -> Id.equal id id'
+  | VarRef id, Var (id', _) -> Id.equal id id'
   | _ -> false
 
 

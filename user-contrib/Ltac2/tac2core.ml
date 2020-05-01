@@ -513,8 +513,8 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let t = Value.to_constr t in
     let bl = Value.to_array Value.to_constr bl in
     EConstr.mkCase (ci, c, t, bl)
-    let recs = Value.to_array (Value.to_option Value.to_int) recs in
   | (14, [|recs; i; nas; cs|]) ->
+    let recs = Value.to_array (Value.to_option Value.to_int) recs in
     let i = Value.to_int i in
     let def = to_rec_declaration (nas, cs) in
     EConstr.mkFix ((recs, i), def)

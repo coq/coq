@@ -29,7 +29,7 @@ open Context.Rel.Declaration
 let type_of_inductive env (ind,u) =
  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
  let _ = Typeops.check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps in
- Inductive.type_of_inductive env (specif,u)
+ Inductive.type_of_inductive (specif,u)
 
 (* Return type as quoted by the user *)
 let type_of_constructor env (cstr,u) =

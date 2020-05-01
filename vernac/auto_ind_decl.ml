@@ -144,12 +144,12 @@ let build_beq_scheme_deps kn =
       match Constr.kind c with
       | Cast (x,_,_) -> aux accu (Term.applist (x,a))
       | App _ -> assert false
-      | Ind ((kn', _), _) ->
+      | Ind (((kn', _), _), _) ->
           if MutInd.equal kn kn' then accu
           else
             let eff = SchemeMutualDep (kn', !beq_scheme_kind_aux ()) in
             List.fold_left aux (eff :: accu) a
-      | Const (kn, u) ->
+      | Const ((kn, u), _) ->
         (match Environ.constant_opt_value_in env (kn, u) with
         | Some c -> aux accu (Term.applist (c,a))
         | None -> accu)

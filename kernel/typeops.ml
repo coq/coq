@@ -406,7 +406,7 @@ let type_of_inductive_knowing_parameters env (ind,u) args =
 let type_of_inductive env (ind,u) =
   let (mib,mip) = lookup_mind_specif env ind in
   let cstrnts = check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps in
-  let t,cst = Inductive.constrained_type_of_inductive env ((mib,mip),u) in
+  let t,cst = Inductive.constrained_type_of_inductive ((mib,mip),u) in
   check_constraints cst env;
   t, cstrnts
 

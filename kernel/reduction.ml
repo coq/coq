@@ -707,11 +707,11 @@ and convert_branches compare_annot l2r infos ci e1 e2 lft1 lft2 br1 br2 cuniv =
   in
   Array.fold_right3 fold ci.ci_cstr_nargs br1 br2 cuniv
 
-and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
+and convert_list compare_annot l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
 | [], [] -> cuniv
 | c1 :: v1, c2 :: v2 ->
-  let cuniv = ccnv CONV l2r infos lft1 lft2 c1 c2 cuniv in
-  convert_list l2r infos lft1 lft2 v1 v2 cuniv
+  let cuniv = ccnv compare_annot CONV l2r infos lft1 lft2 c1 c2 cuniv in
+  convert_list compare_annot l2r infos lft1 lft2 v1 v2 cuniv
 | _, _ -> raise NotConvertible
 
 let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =

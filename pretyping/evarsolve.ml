@@ -332,8 +332,8 @@ let eval alias =
   c
 
 let repr sigma alias = match EConstr.kind sigma alias.data with
-| Rel n -> Some (RelAlias (n + alias.lift))
-| Var id -> Some (VarAlias id)
+| Rel (n, _) -> Some (RelAlias (n + alias.lift))
+| Var (id, _) -> Some (VarAlias id)
 | _ -> None
 
 end
