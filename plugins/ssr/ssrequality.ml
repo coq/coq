@@ -42,31 +42,36 @@ let () =
 
 (* We must avoid zeta-converting any "let"s created by the "in" tactical. *)
 
-let tacred_simpl gl =
+let tacred_simpl env =
   let simpl_expr =
     Genredexpr.(
       Simpl(Redops.make_red_flag[FBeta;FMatch;FZeta;FDeltaBut []],None)) in
-  let esimpl, _ = Redexpr.reduction_of_red_expr (pf_env gl) simpl_expr in
+  let esimpl, _ = Redexpr.reduction_of_red_expr env simpl_expr in
   let esimpl e sigma c =
     let (_,t) = esimpl e sigma c in
     t in
   let simpl env sigma c = (esimpl env sigma c) in
   simpl
 
-let safe_simpltac n gl =
+let safe_simpltac n =
   if n = ~-1 then
-    let cl= red_safe (tacred_simpl gl) (pf_env gl) (project gl) (pf_concl gl) in
-    Proofview.V82.of_tactic (convert_concl_no_check cl) gl
+    Proofview.Goal.enter begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let concl = Proofview.Goal.concl gl in
+      let cl = red_safe (tacred_simpl env) env sigma concl in
+      convert_concl_no_check cl
+    end
   else
-    Proofview.V82.of_tactic (ssr_n_tac "simpl" n) gl
+    ssr_n_tac "simpl" n
 
 let simpltac = function
   | Simpl n -> safe_simpltac n
-  | Cut n -> tclTRY (Proofview.V82.of_tactic (donetac n))
-  | SimplCut (n,m) -> tclTHEN (safe_simpltac m) (tclTRY (Proofview.V82.of_tactic (donetac n)))
-  | Nop -> tclIDTAC
+  | Cut n -> Tacticals.New.tclTRY (donetac n)
+  | SimplCut (n,m) -> Tacticals.New.tclTHEN (safe_simpltac m) (Tacticals.New.tclTRY (donetac n))
+  | Nop -> Tacticals.New.tclIDTAC
 
-let simpltac s = Proofview.V82.tactic ~nf_evars:false (simpltac s)
+let simpltac s = Proofview.Goal.enter (fun _ -> simpltac s)
 
 (** The "congr" tactic *)
 
@@ -669,22 +674,36 @@ let ssrrewritetac ?under ?map_redex ist rwargs =
 
 (** The "unlock" tactic *)
 
-let unfoldtac occ ko t kt gl =
-  let env = pf_env gl in
-  let cl, c = pf_fill_occ_term gl occ (fst (strip_unfold_term env t kt)) in
-  let cl' = EConstr.Vars.subst1 (pf_unfoldn [OnlyOccurrences [1], get_evalref env (project gl) c] gl c) cl in
+let unfoldtac occ ko t kt =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  let concl = Evarutil.nf_evar sigma concl in
+  let cl, c = fill_occ_term env sigma concl occ (fst (strip_unfold_term env t kt)) in
+  let cl' = EConstr.Vars.subst1 (Tacred.unfoldn [OnlyOccurrences [1], get_evalref env sigma c] env sigma c) cl in
   let f = if ko = None then CClosure.betaiotazeta else CClosure.betaiota in
-  Proofview.V82.of_tactic
-    (convert_concl ~check:true (pf_reduce (Reductionops.clos_norm_flags f) gl cl')) gl
+  convert_concl ~check:true (Reductionops.clos_norm_flags f env sigma cl')
+  end
 
 let unlocktac ist args =
-  Proofview.V82.tactic begin fun gl ->
-  let utac (occ, gt) gl =
-    unfoldtac occ occ (interp_term (pf_env gl) (project gl) ist gt) (fst gt) gl in
-  let locked, gl = pf_mkSsrConst "locked" gl in
-  let key, gl = pf_mkSsrConst "master_key" gl in
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let utac (occ, gt) =
+    Proofview.Goal.enter begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      unfoldtac occ occ (interp_term env sigma ist gt) (fst gt)
+    end
+  in
+  let sigma, locked = mkSsrConst "locked" env sigma in
+  let sigma, key = mkSsrConst "master_key" env sigma in
   let ktacs = [
-    (fun gl -> unfoldtac None None (project gl,locked) xInParens gl);
-    Proofview.V82.of_tactic (Ssrelim.casetac key (fun ?seed:_ k -> k)) ] in
-  tclTHENLIST (List.map utac args @ ktacs) gl
+    (Proofview.tclEVARMAP >>= fun sigma -> unfoldtac None None (sigma, locked) xInParens);
+    Ssrelim.casetac key (fun ?seed:_ k -> k)
+  ] in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Tacticals.New.tclTHENLIST (List.map utac args @ ktacs)
   end
