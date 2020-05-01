@@ -676,7 +676,7 @@ library:ci-color:
 library:ci-compcert:
   extends: .ci-template-flambda
 
-library:ci-coq-tools:
+library:ci-coq_tools:
   extends: .ci-template
 
 library:ci-coqprime:
@@ -696,16 +696,16 @@ library:ci-coqprime:
 library:ci-coquelicot:
   extends: .ci-template
 
-library:ci-cross-crypto:
+library:ci-cross_crypto:
   extends: .ci-template
 
-library:ci-fcsl-pcm:
+library:ci-fcsl_pcm:
   extends: .ci-template
 
 # We cannot use flambda due to
 # https://github.com/ocaml/ocaml/issues/7842, see
 # https://github.com/coq/coq/pull/11916#issuecomment-609977375
-library:ci-fiat-crypto:
+library:ci-fiat_crypto:
   extends: .ci-template
   stage: stage-4
   needs:
@@ -731,10 +731,10 @@ library:ci-corn:
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
-  - library:ci-math-classes
+  - library:ci-math_classes
   dependencies:
   - build:edge+flambda
-  - library:ci-math-classes
+  - library:ci-math_classes
 
 library:ci-geocoq:
   extends: .ci-template-flambda
@@ -742,10 +742,10 @@ library:ci-geocoq:
 library:ci-hott:
   extends: .ci-template
 
-library:ci-iris-lambda-rust:
+library:ci-lambda_rust:
   extends: .ci-template-flambda
 
-library:ci-math-classes:
+library:ci-math_classes:
   extends: .ci-template-flambda
   stage: stage-3
   artifacts:
@@ -759,7 +759,7 @@ library:ci-math-classes:
   - build:edge+flambda
   - plugin:ci-bignums
 
-library:ci-math-comp:
+library:ci-mathcomp:
   extends: .ci-template-flambda
 
 library:ci-sf:
@@ -774,7 +774,7 @@ library:ci-tlc:
 library:ci-unimath:
   extends: .ci-template-flambda
 
-library:ci-verdi-raft:
+library:ci-verdi_raft:
   extends: .ci-template-flambda
 
 library:ci-vst:

@@ -3,6 +3,6 @@
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-git_download HoTT
+git_download hott
 
-( cd "${CI_BUILD_DIR}/HoTT" && ./autogen.sh -skip-submodules && ./configure && make && make validate )
+( cd "${CI_BUILD_DIR}/hott" && ./autogen.sh -skip-submodules && ./configure && make && make validate )
