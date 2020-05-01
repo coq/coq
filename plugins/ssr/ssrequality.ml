@@ -404,7 +404,8 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
       (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty))
 ;;
 
-let rwcltac ?under ?map_redex cl rdx dir sr gl =
+let rwcltac ?under ?map_redex cl rdx dir sr =
+  Proofview.V82.tactic begin fun gl ->
   let sr =
     let sigma, r = sr in
     let sigma = resolve_typeclasses ~where:r ~fail:false (pf_env gl) sigma in
@@ -458,6 +459,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr gl =
         ++ error)
   in
   tclTHEN cvtac' (Proofview.V82.of_tactic rwtac) gl
+  end
 
 [@@@ocaml.warning "-3"]
 let lz_coq_prod =
@@ -483,9 +485,9 @@ let ssr_is_setoid env =
     Rewrite.is_applied_rewrite_relation env
       sigma [] (EConstr.mkApp (r, args)) <> None
 
-let closed0_check cl p gl =
+let closed0_check env sigma cl p =
   if closed0 cl then
-    errorstrm Pp.(str"No occurrence of redex "++ pr_constr_env (pf_env gl) (project gl) p)
+    errorstrm Pp.(str"No occurrence of redex "++ pr_constr_env env sigma p)
 
 let dir_org = function L2R -> 1 | R2L -> 2
 
@@ -566,15 +568,17 @@ let rwprocess_rule env dir rule =
   in
     r_sigma, rules
 
-let rwrxtac ?under ?map_redex occ rdx_pat dir rule gl =
-  let env = pf_env gl in
+let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma0 = Proofview.Goal.sigma gl in
   let r_sigma, rules = rwprocess_rule env dir rule in
   let find_rule rdx =
     let rec rwtac = function
       | [] ->
-        errorstrm Pp.(str "pattern " ++ pr_econstr_pat env (project gl) rdx ++
+        errorstrm Pp.(str "pattern " ++ pr_econstr_pat env sigma0 rdx ++
                    str " does not match " ++ pr_dir_side dir ++
-                   str " of " ++ pr_econstr_pat env (project gl) (snd rule))
+                   str " of " ++ pr_econstr_pat env sigma0 (snd rule))
       | (d, r, lhs, rhs) :: rs ->
         try
           let ise = unify_HO env (Evd.create_evar_defs r_sigma) lhs rdx in
@@ -582,7 +586,8 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule gl =
           d, (ise, Evd.evar_universe_context ise, Reductionops.nf_evar ise r)
         with _ -> rwtac rs in
      rwtac rules in
-  let sigma0, env0, concl0 = project gl, pf_env gl, pf_concl gl in
+  let env0 = env in
+  let concl0 = Proofview.Goal.concl gl in
   let find_R, conclude = match rdx_pat with
   | Some (_, (In_T _ | In_X_In_T _)) | None ->
       let upats_origin = dir, EConstr.Unsafe.to_constr (snd rule) in
@@ -594,18 +599,18 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule gl =
       let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
       (fun e c _ i -> find_R ~k:(fun _ _ _ h -> mkRel h) e c i),
-      fun cl -> let rdx,d,r = end_R () in closed0_check cl rdx gl; (d,r),rdx
+      fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl rdx; (d,r),rdx
   | Some(_, (T e | X_In_T (_,e) | E_As_X_In_T (e,_,_) | E_In_X_In_T (e,_,_))) ->
       let r = ref None in
       (fun env c _ h -> do_once r (fun () -> find_rule (EConstr.of_constr c), c); mkRel h),
-      (fun concl -> closed0_check concl e gl;
+      (fun concl -> closed0_check env0 sigma0 concl e;
         let (d,(ev,ctx,c)) , x = assert_done r in (d,(ev,ctx, EConstr.to_constr ~abort_on_undefined_evars:false ev c)) , x) in
-  let concl0 = EConstr.Unsafe.to_constr concl0 in
+  let concl0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma0 concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
   let (d, r), rdx = conclude concl in
   let r = Evd.merge_universe_context (pi1 r) (pi2 r), EConstr.of_constr (pi3 r) in
-  rwcltac ?under ?map_redex (EConstr.of_constr concl) (EConstr.of_constr rdx) d r gl
-;;
+  rwcltac ?under ?map_redex (EConstr.of_constr concl) (EConstr.of_constr rdx) d r
+  end
 
 let ssrinstancesofrule ist dir arg =
   Proofview.Goal.enter begin fun gl ->
@@ -635,8 +640,8 @@ let ssrinstancesofrule ist dir arg =
   with NoMatch -> Feedback.msg_info Pp.(str"END INSTANCES"); Tacticals.New.tclIDTAC
   end
 
-let ipat_rewrite occ dir c = Proofview.V82.tactic ~nf_evars:false begin fun gl ->
-  rwrxtac occ None dir (project gl, c) gl
+let ipat_rewrite occ dir c = Proofview.Goal.enter begin fun gl ->
+  rwrxtac occ None dir (Proofview.Goal.sigma gl, c)
 end
 
 let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) =
@@ -661,7 +666,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
     (match kind with
     | RWred sim -> simplintac occ rx sim
     | RWdef -> if dir = R2L then foldtac occ rx t else unfoldintac occ rx t gt
-    | RWeq -> rwrxtac ?under ?map_redex occ rx dir t) gl
+    | RWeq -> Proofview.V82.of_tactic (rwrxtac ?under ?map_redex occ rx dir t)) gl
     end
   in
   let ctac = cleartac (interp_clr sigma (oclr, (fst gt, snd (interp env sigma gt)))) in
