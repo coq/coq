@@ -1105,16 +1105,17 @@ let interp_clr sigma = function
 let tclID tac = tac
 
 let tclDOTRY n tac =
+  let open Tacticals.New in
   if n <= 0 then tclIDTAC else
-  let rec loop i gl =
-    if i = n then tclTRY tac gl else
-    tclTRY (tclTHEN tac (loop (i + 1))) gl in
+  let rec loop i =
+    if i = n then tclTRY tac else
+    tclTRY (tclTHEN tac (loop (i + 1))) in
   loop 1
 
 let tclDO n tac =
   let prefix i = str"At iteration " ++ int i ++ str": " in
   let tac_err_at i gl =
-    try tac gl
+    try Proofview.V82.of_tactic tac gl
     with
     | CErrors.UserError (l, s) as e ->
       let _, info = Exninfo.capture e in
@@ -1125,11 +1126,15 @@ let tclDO n tac =
   let rec loop i gl =
     if i = n then tac_err_at i gl else
     (tclTHEN (tac_err_at i) (loop (i + 1))) gl in
-  loop 1
+  Proofview.V82.tactic ~nf_evars:false (loop 1)
+
+let tclAT_LEAST_ONCE t =
+  let open Tacticals.New in
+  tclTHEN t (tclREPEAT t)
 
 let tclMULT = function
-  | 0, May  -> tclREPEAT
-  | 1, May  -> tclTRY
+  | 0, May  -> Tacticals.New.tclREPEAT
+  | 1, May  -> Tacticals.New.tclTRY
   | n, May  -> tclDOTRY n
   | 0, Must -> tclAT_LEAST_ONCE
   | n, Must when n > 1 -> tclDO n

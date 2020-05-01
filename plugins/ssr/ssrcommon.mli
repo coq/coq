@@ -410,7 +410,7 @@ val genclrtac :
 val old_cleartac : ssrhyps -> v82tac
 val cleartac : ssrhyps -> unit Proofview.tactic
 
-val tclMULT : int * ssrmmod -> Tacmach.tactic -> Tacmach.tactic
+val tclMULT : int * ssrmmod -> unit Proofview.tactic -> unit Proofview.tactic
 
 val unprotecttac : unit Proofview.tactic
 val is_protect : EConstr.t -> Environ.env -> Evd.evar_map -> bool

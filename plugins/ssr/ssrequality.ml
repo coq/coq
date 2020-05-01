@@ -639,27 +639,34 @@ let ipat_rewrite occ dir c = Proofview.V82.tactic ~nf_evars:false begin fun gl -
   rwrxtac occ None dir (project gl, c) gl
 end
 
-let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
+let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
   let fail = ref false in
   let interp_rpattern gl gc =
     try interp_rpattern (pf_env gl) (project gl) gc
     with _ when snd mult = May -> fail := true; project gl, T mkProp in
-  let interp gc gl =
-    try interp_term (pf_env gl) (project gl) ist gc
-    with _ when snd mult = May -> fail := true; (project gl, EConstr.mkProp) in
-  let rwtac gl =
+  let interp env sigma gc =
+    try interp_term env sigma ist gc
+    with _ when snd mult = May -> fail := true; (sigma, EConstr.mkProp) in
+  let rwtac =
+    Proofview.V82.tactic begin fun gl ->
     let rx = Option.map (interp_rpattern gl) grx in
     let gl = match rx with
       | None -> gl
       | Some (s,_) -> pf_merge_uc_of s gl in
-    let t = interp gt gl in
+    let t = interp (pf_env gl) (project gl) gt in
     let gl = pf_merge_uc_of (fst t) gl in
     (match kind with
     | RWred sim -> simplintac occ rx sim
     | RWdef -> if dir = R2L then foldtac occ rx t else unfoldintac occ rx t gt
-    | RWeq -> rwrxtac ?under ?map_redex occ rx dir t) gl in
-  let ctac = old_cleartac (interp_clr (project gl) (oclr, (fst gt, snd (interp gt gl)))) in
-  if !fail then ctac gl else tclTHEN (tclMULT mult rwtac) ctac gl
+    | RWeq -> rwrxtac ?under ?map_redex occ rx dir t) gl
+    end
+  in
+  let ctac = cleartac (interp_clr sigma (oclr, (fst gt, snd (interp env sigma gt)))) in
+  if !fail then ctac else Tacticals.New.tclTHEN (tclMULT mult rwtac) ctac
+  end
 
 (** Rewrite argument sequence *)
 
@@ -668,8 +675,8 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
 (** The "rewrite" tactic *)
 
 let ssrrewritetac ?under ?map_redex ist rwargs =
-  Proofview.V82.tactic begin fun gl ->
-  tclTHENLIST (List.map (rwargtac ?under ?map_redex ist) rwargs) gl
+  Proofview.Goal.enter begin fun _ ->
+  Tacticals.New.tclTHENLIST (List.map (rwargtac ?under ?map_redex ist) rwargs)
   end
 
 (** The "unlock" tactic *)

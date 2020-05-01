@@ -164,4 +164,4 @@ let hinttac ist is_by (is_or, atacs) =
 
 let ssrdotac ist (((n, m), tac), clauses) =
   let mul = get_index n, m in
-  tclCLAUSES (Proofview.V82.tactic (tclMULT mul (Proofview.V82.of_tactic (hinttac ist false tac)))) clauses
+  tclCLAUSES (tclMULT mul (hinttac ist false tac)) clauses
