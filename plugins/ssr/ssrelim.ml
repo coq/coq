@@ -392,10 +392,12 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
           let erefl = fire_subst gl erefl in
           let erefl_ty = Retyping.get_type_of (pf_env gl) (project gl) erefl in
           let eq_ty = Retyping.get_type_of (pf_env gl) (project gl) erefl_ty in
-          let gen_eq_tac s =
+          let gen_eq_tac =
+            Proofview.V82.tactic ~nf_evars:false begin fun s ->
             let open Evd in
             let sigma = merge_universe_context s.sigma (evar_universe_context (project gl)) in
             apply_type new_concl [erefl] { s with sigma }
+            end
           in
           gen_eq_tac, eq_ty, gl in
         let rel = k + if c_is_head_p then 1 else 0 in
@@ -403,7 +405,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
         let concl = EConstr.mkArrow src Sorts.Relevant (EConstr.Vars.lift 1 concl) in
         let clr = if deps <> [] then clr else [] in
         concl, gen_eq_tac, clr, gl
-    | _ -> concl, Tacticals.tclIDTAC, clr, gl in
+    | _ -> concl, Tacticals.New.tclIDTAC, clr, gl in
     let mk_lam t r = EConstr.mkLambda_or_LetIn r t in
     let concl = List.fold_left mk_lam concl pred_rctx in
     let gl, concl =
@@ -455,7 +457,6 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     Tacticals.New.tclTHENLIST [
       refine_with ~with_evars:false elim;
       cleartac clr] in
-  let gen_eq_tac = Proofview.V82.tactic gen_eq_tac in
   Tacticals.New.tclTHENLIST [gen_eq_tac; elim_intro_tac ?seed:(Some seed) what eqid elim_tac is_rec clr]
 ;;
 
