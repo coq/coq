@@ -1483,7 +1483,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     let lemma = build_proof env (Evd.from_env env) start_tac end_tac in
     Lemmas.save_lemma_proved ~lemma ~opaque:opacity ~idopt:None
   in
-  let info = Lemmas.Info.make ~hook:(DeclareDef.Hook.make hook) () in
+  let info = Lemmas.Info.make ~hook:(Declare.Hook.make hook) () in
   let lemma =
     Lemmas.start_lemma ~name:na ~poly:false (* FIXME *) ~info sigma gls_type
   in
@@ -1721,7 +1721,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref Undefined in
   (* let _ = Pp.msgnl (fun _ _ -> str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
-  let hook {DeclareDef.Hook.S.uctx; _} =
+  let hook {Declare.Hook.S.uctx; _} =
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref =
       declare_f function_name Decls.(IsProof Lemma) arg_types term_ref
@@ -1767,5 +1767,5 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
         functional_ref
         (EConstr.of_constr rec_arg_type)
         relation rec_arg_num term_id using_lemmas (List.length res_vars) evd
-        (DeclareDef.Hook.make hook))
+        (Declare.Hook.make hook))
     ()

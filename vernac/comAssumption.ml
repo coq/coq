@@ -87,8 +87,7 @@ let context_set_of_entry = function
   | Monomorphic_entry uctx -> uctx
 
 let declare_assumptions ~poly ~scope ~kind univs nl l =
-  let open DeclareDef in
-  let () = match scope with
+  let () = let open Declare in match scope with
     | Discharge ->
       (* declare universes separately for variables *)
       DeclareUctx.declare_universe_context ~poly (context_set_of_entry (fst univs))
@@ -100,10 +99,10 @@ let declare_assumptions ~poly ~scope ~kind univs nl l =
       let univs,subst' =
         List.fold_left_map (fun univs id ->
             let refu = match scope with
-              | Discharge ->
+              | Declare.Discharge ->
                 declare_variable is_coe ~kind typ imps Glob_term.Explicit id;
                 GlobRef.VarRef id.CAst.v, Univ.Instance.empty
-              | Global local ->
+              | Declare.Global local ->
                 declare_axiom is_coe ~local ~poly ~kind typ univs imps nl id
             in
             next_univs univs, (id.CAst.v, Constr.mkRef refu))
@@ -130,7 +129,7 @@ let process_assumptions_udecls ~scope l =
       udecl, id
     | (_, ([], _))::_ | [] -> assert false
   in
-  let open DeclareDef in
+  let open Declare in
   let () = match scope, udecl with
     | Discharge, Some _ ->
       let loc = first_id.CAst.loc in
@@ -208,7 +207,7 @@ let context_insection sigma ~poly ctx =
         let uctx = Evd.evar_universe_context sigma in
         let kind = Decls.(IsDefinition Definition) in
         let _ : GlobRef.t =
-          DeclareDef.declare_entry ~name ~scope:DeclareDef.Discharge
+          Declare.declare_entry ~name ~scope:Declare.Discharge
             ~kind ~impargs:[] ~uctx entry
         in
         ()

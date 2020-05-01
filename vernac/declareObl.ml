@@ -55,10 +55,10 @@ module ProgramDecl = struct
     ; prg_implicits : Impargs.manual_implicits
     ; prg_notations : Vernacexpr.decl_notation list
     ; prg_poly : bool
-    ; prg_scope : DeclareDef.locality
+    ; prg_scope : Declare.locality
     ; prg_kind : Decls.definition_object_kind
     ; prg_reduce : constr -> constr
-    ; prg_hook : DeclareDef.Hook.t option
+    ; prg_hook : Declare.Hook.t option
     ; prg_opaque : bool
     }
 
@@ -373,7 +373,7 @@ let declare_definition prg =
   (* XXX: This is doing normalization twice *)
   let () = progmap_remove prg in
   let kn =
-    DeclareDef.declare_definition ~name ~scope ~kind ~impargs ?hook ~obls
+    Declare.declare_definition ~name ~scope ~kind ~impargs ?hook ~obls
       ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma
   in
   kn
@@ -426,7 +426,7 @@ let declare_mutual_definition l =
   let fixdefs, fixrs, fixtypes, fixitems =
     List.fold_right2 (fun (d,r,typ,impargs) name (a1,a2,a3,a4) ->
         d :: a1, r :: a2, typ :: a3,
-        DeclareDef.Recthm.{ name; typ; impargs; args = [] } :: a4
+        Declare.Recthm.{ name; typ; impargs; args = [] } :: a4
       ) defs first.prg_deps ([],[],[],[])
   in
   let fixkind = Option.get first.prg_fixkind in
@@ -446,13 +446,13 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let udecl = UState.default_univ_decl in
   let kns =
-    DeclareDef.declare_mutually_recursive ~scope ~opaque ~kind
+    Declare.declare_mutually_recursive ~scope ~opaque ~kind
       ~udecl ~ntns ~uctx:first.prg_ctx ~rec_declaration ~possible_indexes ~poly
       ~restrict_ucontext:false fixitems
   in
   (* Only for the first constant *)
   let dref = List.hd kns in
-  DeclareDef.Hook.(call ?hook:first.prg_hook { S.uctx = first.prg_ctx; obls; scope; dref });
+  Declare.Hook.(call ?hook:first.prg_hook { S.uctx = first.prg_ctx; obls; scope; dref });
   List.iter progmap_remove l;
   dref
 
@@ -556,7 +556,7 @@ let obligation_terminator entries uctx { name; num; auto } =
 
 (* Similar to the terminator but for interactive paths, as the
    terminator is only called in interactive proof mode *)
-let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } =
+let obligation_hook prg obl num auto { Declare.Hook.S.uctx = ctx'; dref; _ } =
   let { obls; remaining=rem } = prg.prg_obligations in
   let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
   let transparent = evaluable_constant cst (Global.env ()) in

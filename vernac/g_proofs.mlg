@@ -14,7 +14,6 @@ open Glob_term
 open Constrexpr
 open Vernacexpr
 open Hints
-open ComHints
 
 open Pcoq
 open Pcoq.Prim

@@ -460,7 +460,7 @@ let vernac_custom_entry ~module_local s =
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
   if Nametab.exists_cci (Lib.make_path id) || Termops.is_section_variable id ||
-     locality <> DeclareDef.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
+     locality <> Declare.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
@@ -504,7 +504,7 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let recguard,thms,snl = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   let thms = List.map (fun (name, (typ, (args, impargs))) ->
-      { DeclareDef.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
+      { Declare.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
   let () =
     let open UState in
     if not (udecl.univdecl_extensible_instance && udecl.univdecl_extensible_constraints) then
@@ -521,13 +521,13 @@ let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in 
 | Coercion ->
   Some (ComCoercion.add_coercion_hook ~poly)
 | CanonicalStructure ->
-  Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
+  Some (Declare.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
 | SubClass ->
   Some (ComCoercion.add_subclass_hook ~poly)
 | Definition when canonical_instance ->
-  Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
+  Some (Declare.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
 | Let when canonical_instance ->
-  Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure dref)))
+  Some (Declare.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure dref)))
 | _ -> None
 
 let default_thm_id = Id.of_string "Unnamed_thm"
@@ -542,7 +542,7 @@ let vernac_definition_name lid local =
          CAst.make ?loc (fresh_name_for_anonymous_theorem ())
     | { v = Name.Name n; loc } -> CAst.make ?loc n in
   let () =
-    let open DeclareDef in
+    let open Declare in
     match local with
     | Discharge -> Dumpglob.dump_definition lid true "var"
     | Global _ -> Dumpglob.dump_definition lid false "def"
@@ -603,8 +603,8 @@ let vernac_assumption ~atts discharge kind l nl =
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
           match scope with
-            | DeclareDef.Global _ -> Dumpglob.dump_definition lid false "ax"
-            | DeclareDef.Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
+            | Declare.Global _ -> Dumpglob.dump_definition lid false "ax"
+            | Declare.Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l
 
 let is_polymorphic_inductive_cumulativity =

@@ -10,6 +10,17 @@
 
 open Names
 
+(* object_kind , id *)
+exception AlreadyDeclared of (string option * Id.t)
+
+let _ = CErrors.register_handler (function
+    | AlreadyDeclared (kind, id) ->
+      Some
+        Pp.(seq [ Pp.pr_opt_no_spc (fun s -> str s ++ spc ()) kind
+                ; Id.print id; str " already exists."])
+    | _ ->
+      None)
+
 type universe_source =
   | BoundUniv (* polymorphic universe, bound in a function (this will go away someday) *)
   | QualifiedUniv of Id.t (* global universe introduced by some global value *)
@@ -19,7 +30,7 @@ type universe_name_decl = universe_source * (Id.t * Univ.Level.UGlobal.t) list
 
 let check_exists_universe sp =
   if Nametab.exists_universe sp then
-    raise (Declare.AlreadyDeclared (Some "Universe", Libnames.basename sp))
+    raise (AlreadyDeclared (Some "Universe", Libnames.basename sp))
   else ()
 
 let qualify_univ i dp src id =

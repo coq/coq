@@ -313,8 +313,8 @@ let instance_hook info global ?hook cst =
 
 let declare_instance_constant info global impargs ?hook name udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
-  let scope = DeclareDef.Global Declare.ImportDefaultBehavior in
-  let kn = DeclareDef.declare_definition ~name ~kind ~scope ~impargs
+  let scope = Declare.Global Declare.ImportDefaultBehavior in
+  let kn = Declare.declare_definition ~name ~kind ~scope ~impargs
       ~opaque:false ~poly sigma ~udecl ~types:(Some termtype) ~body:term in
   instance_hook info global ?hook kn
 
@@ -325,7 +325,7 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst
   in
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-  let sigma, entry = DeclareDef.prepare_parameter ~poly sigma ~udecl ~types:termtype in
+  let sigma, entry = Declare.prepare_parameter ~poly sigma ~udecl ~types:termtype in
   let cst = Declare.declare_constant ~name
       ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
   DeclareUniv.declare_univ_binders (GlobRef.ConstRef cst) (Evd.universe_binders sigma);
@@ -334,7 +334,7 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst
   instance_hook pri global cst
 
 let declare_instance_program env sigma ~global ~poly name pri impargs udecl term termtype =
-  let hook { DeclareDef.Hook.S.scope; dref; _ } =
+  let hook { Declare.Hook.S.scope; dref; _ } =
     let cst = match dref with GlobRef.ConstRef kn -> kn | _ -> assert false in
     let pri = intern_info pri in
     let env = Global.env () in
@@ -342,9 +342,9 @@ let declare_instance_program env sigma ~global ~poly name pri impargs udecl term
     declare_instance env sigma (Some pri) (not global) (GlobRef.ConstRef cst)
   in
   let obls, _, term, typ = RetrieveObl.retrieve_obligations env name sigma 0 term termtype in
-  let hook = DeclareDef.Hook.make hook in
+  let hook = Declare.Hook.make hook in
   let uctx = Evd.evar_universe_context sigma in
-  let scope, kind = DeclareDef.Global Declare.ImportDefaultBehavior, Decls.Instance in
+  let scope, kind = Declare.Global Declare.ImportDefaultBehavior, Decls.Instance in
   let _ : DeclareObl.progress =
     Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook ~impargs ~uctx typ obls
   in ()
@@ -357,7 +357,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decls.(IsDefinition Instance) in
-  let hook = DeclareDef.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global ?hook dref)) in
+  let hook = Declare.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global ?hook dref)) in
   let info = Lemmas.Info.make ~hook ~kind () in
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)

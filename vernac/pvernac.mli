@@ -28,7 +28,7 @@ module Vernac_ :
     val command_entry : vernac_expr Entry.t
     val main_entry : vernac_control option Entry.t
     val red_expr : raw_red_expr Entry.t
-    val hint_info : ComHints.hint_info_expr Entry.t
+    val hint_info : hint_info_expr Entry.t
   end
 
 (* To be removed when the parser is made functional wrt the tactic

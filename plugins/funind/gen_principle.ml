@@ -218,7 +218,7 @@ let build_functional_principle (sigma : Evd.evar_map) old_princ_type sorts funs
     Declare.build_by_tactic env ~uctx ~poly:false ~typ ftac
   in
   (* uctx was ignored before *)
-  let hook = DeclareDef.Hook.make (hook new_principle_type) in
+  let hook = Declare.Hook.make (hook new_principle_type) in
   (body, typ, univs, hook, sigma)
 
 let change_property_sort evd toSort princ princName =
@@ -318,8 +318,8 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
     let uctx = Evd.evar_universe_context sigma in
     let entry = Declare.definition_entry ~univs ?types body in
     let (_ : Names.GlobRef.t) =
-      DeclareDef.declare_entry ~name:new_princ_name ~hook
-        ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
+      Declare.declare_entry ~name:new_princ_name ~hook
+        ~scope:(Declare.Global Declare.ImportDefaultBehavior)
         ~kind:Decls.(IsProof Theorem)
         ~impargs:[] ~uctx entry
     in
@@ -400,7 +400,7 @@ let register_struct is_rec fixpoint_exprl =
           Pp.(str "Body of Function must be given")
     in
     ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
-      ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
+      ~scope:(Declare.Global Declare.ImportDefaultBehavior)
       ~kind:Decls.Definition univs binders None body (Some rtype);
     let evd, rev_pconstants =
       List.fold_left
@@ -419,7 +419,7 @@ let register_struct is_rec fixpoint_exprl =
     (None, evd, List.rev rev_pconstants)
   | _ ->
     ComFixpoint.do_fixpoint
-      ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~poly:false
+      ~scope:(Declare.Global Declare.ImportDefaultBehavior) ~poly:false
       fixpoint_exprl;
     let evd, rev_pconstants =
       List.fold_left

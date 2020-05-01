@@ -195,10 +195,12 @@ type syntax_modifier =
   | SetOnlyPrinting
   | SetFormat of string * lstring
 
+type opacity_flag = Opaque | Transparent
+
 type proof_end =
   | Admitted
   (*                         name in `Save ident` when closing goal *)
-  | Proved of Declare.opacity_flag * lident option
+  | Proved of opacity_flag * lident option
 
 type scheme =
   | InductionScheme of bool * qualid or_by_notation * sort_expr
@@ -286,6 +288,22 @@ type extend_name =
 
 type discharge = DoDischarge | NoDischarge
 
+type hint_info_expr = Constrexpr.constr_pattern_expr Typeclasses.hint_info_gen
+
+type reference_or_constr =
+  | HintsReference of Libnames.qualid
+  | HintsConstr of Constrexpr.constr_expr
+
+type hints_expr =
+  | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
+  | HintsResolveIFF of bool * Libnames.qualid list * int option
+  | HintsImmediate of reference_or_constr list
+  | HintsUnfold of Libnames.qualid list
+  | HintsTransparency of Libnames.qualid Hints.hints_transparency_target * bool
+  | HintsMode of Libnames.qualid * Hints.hint_mode list
+  | HintsConstructors of Libnames.qualid list
+  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
+
 type nonrec vernac_expr =
 
   | VernacLoad of verbose_flag * string
@@ -336,18 +354,18 @@ type nonrec vernac_expr =
       local_binder_expr list * (* binders *)
       constr_expr * (* type *)
       (bool * constr_expr) option * (* body (bool=true when using {}) *)
-      ComHints.hint_info_expr
+      hint_info_expr
 
   | VernacDeclareInstance of
       ident_decl * (* name *)
       local_binder_expr list * (* binders *)
       constr_expr * (* type *)
-      ComHints.hint_info_expr
+      hint_info_expr
 
   | VernacContext of local_binder_expr list
 
   | VernacExistingInstance of
-    (qualid * ComHints.hint_info_expr) list (* instances names, priorities and patterns *)
+    (qualid * hint_info_expr) list (* instances names, priorities and patterns *)
 
   | VernacExistingClass of qualid (* inductive or definition name *)
 
@@ -387,7 +405,7 @@ type nonrec vernac_expr =
   (* Commands *)
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * qualid list
-  | VernacHints of string list * ComHints.hints_expr
+  | VernacHints of string list * hints_expr
   | VernacSyntacticDefinition of
       lident * (Id.t list * constr_expr) *
       onlyparsing_flag

@@ -69,7 +69,7 @@ module Proof : sig
 
 end
 
-type opacity_flag = Opaque | Transparent
+type opacity_flag = Vernacexpr.opacity_flag = Opaque | Transparent
 
 (** [start_proof ~name ~udecl ~poly sigma goals] starts a proof of
    name [name] with goals [goals] (a list of pairs of environment and
@@ -194,13 +194,8 @@ val inline_private_constants
 val definition_message : Id.t -> unit
 val assumption_message : Id.t -> unit
 val fixpoint_message : int array option -> Id.t list -> unit
-val recursive_message : bool (** true = fixpoint *) ->
-  int array option -> Id.t list -> unit
 
 val check_exists : Id.t -> unit
-
-(* Used outside this module only in indschemes *)
-exception AlreadyDeclared of (string option * Id.t)
 
 (** {6 For legacy support, do not use}  *)
 
@@ -278,3 +273,127 @@ val build_constant_by_tactic :
 
 val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
 [@@ocaml.deprecated "Use DeclareUctx.declare_universe_context"]
+
+type locality = Discharge | Global of import_status
+
+(** Declaration hooks *)
+module Hook : sig
+  type t
+
+  (** Hooks allow users of the API to perform arbitrary actions at
+     proof/definition saving time. For example, to register a constant
+     as a Coercion, perform some cleanup, update the search database,
+     etc...  *)
+  module S : sig
+    type t =
+      { uctx : UState.t
+      (** [ustate]: universe constraints obtained when the term was closed *)
+      ; obls : (Id.t * Constr.t) list
+      (** [(n1,t1),...(nm,tm)]: association list between obligation
+          name and the corresponding defined term (might be a constant,
+          but also an arbitrary term in the Expand case of obligations) *)
+      ; scope : locality
+      (** [scope]: Locality of the original declaration *)
+      ; dref : GlobRef.t
+      (** [dref]: identifier of the original declaration *)
+      }
+  end
+
+  val make : (S.t -> unit) -> t
+  val call : ?hook:t -> S.t -> unit
+end
+
+(** Declare an interactively-defined constant *)
+val declare_entry
+  :  name:Id.t
+  -> scope:locality
+  -> kind:Decls.logical_kind
+  -> ?hook:Hook.t
+  -> ?obls:(Id.t * Constr.t) list
+  -> impargs:Impargs.manual_implicits
+  -> uctx:UState.t
+  -> Evd.side_effects proof_entry
+  -> GlobRef.t
+
+(** Declares a non-interactive constant; [body] and [types] will be
+   normalized w.r.t. the passed [evar_map] [sigma]. Universes should
+   be handled properly, including minimization and restriction. Note
+   that [sigma] is checked for unresolved evars, thus you should be
+   careful not to submit open terms or evar maps with stale,
+   unresolved existentials *)
+val declare_definition
+  :  name:Id.t
+  -> scope:locality
+  -> kind:Decls.logical_kind
+  -> opaque:bool
+  -> impargs:Impargs.manual_implicits
+  -> udecl:UState.universe_decl
+  -> ?hook:Hook.t
+  -> ?obls:(Id.t * Constr.t) list
+  -> poly:bool
+  -> ?inline:bool
+  -> types:EConstr.t option
+  -> body:EConstr.t
+  -> ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
+  -> Evd.evar_map
+  -> GlobRef.t
+
+val declare_assumption
+  :  ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
+  -> name:Id.t
+  -> scope:locality
+  -> hook:Hook.t option
+  -> impargs:Impargs.manual_implicits
+  -> uctx:UState.t
+  -> Entries.parameter_entry
+  -> GlobRef.t
+
+module Recthm : sig
+  type t =
+    { name : Id.t
+    (** Name of theorem *)
+    ; typ : Constr.t
+    (** Type of theorem  *)
+    ; args : Name.t list
+    (** Names to pre-introduce  *)
+    ; impargs : Impargs.manual_implicits
+    (** Explicitily declared implicit arguments  *)
+    }
+end
+
+val declare_mutually_recursive
+  : opaque:bool
+  -> scope:locality
+  -> kind:Decls.logical_kind
+  -> poly:bool
+  -> uctx:UState.t
+  -> udecl:UState.universe_decl
+  -> ntns:Vernacexpr.decl_notation list
+  -> rec_declaration:Constr.rec_declaration
+  -> possible_indexes:int list list option
+  -> ?restrict_ucontext:bool
+  (** XXX: restrict_ucontext should be always true, this seems like a
+     bug in obligations, so this parameter should go away *)
+  -> Recthm.t list
+  -> Names.GlobRef.t list
+
+val prepare_obligation
+  :  ?opaque:bool
+  -> ?inline:bool
+  -> name:Id.t
+  -> poly:bool
+  -> udecl:UState.universe_decl
+  -> types:EConstr.t option
+  -> body:EConstr.t
+  -> Evd.evar_map
+  -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_info
+
+val prepare_parameter
+  : poly:bool
+  -> udecl:UState.universe_decl
+  -> types:EConstr.types
+  -> Evd.evar_map
+  -> Evd.evar_map * Entries.parameter_entry
+
+(* Compat: will remove *)
+exception AlreadyDeclared of (string option * Names.Id.t)

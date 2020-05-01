@@ -230,7 +230,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
       let name = add_suffix recname "_func" in
       (* XXX: Mutating the evar_map in the hook! *)
       (* XXX: Likely the sigma is out of date when the hook is called .... *)
-      let hook sigma { DeclareDef.Hook.S.dref; _ } =
+      let hook sigma { Declare.Hook.S.dref; _ } =
         let sigma, h_body = Evarutil.new_global sigma dref in
         let body = it_mkLambda_or_LetIn (mkApp (h_body, [|make|])) binders_rel in
         let ty = it_mkProd_or_LetIn top_arity binders_rel in
@@ -248,13 +248,13 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
       hook, name, typ
     else
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
-      let hook sigma { DeclareDef.Hook.S.dref; _ } =
+      let hook sigma { Declare.Hook.S.dref; _ } =
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
           Impargs.declare_manual_implicits false dref impls
       in hook, recname, typ
   in
   (* XXX: Capturing sigma here... bad bad *)
-  let hook = DeclareDef.Hook.make (hook sigma) in
+  let hook = Declare.Hook.make (hook sigma) in
   RetrieveObl.check_evars env sigma;
   let evars, _, evars_def, evars_typ =
     RetrieveObl.retrieve_obligations env recname sigma 0 def typ
@@ -290,7 +290,7 @@ let do_program_recursive ~scope ~poly fixkind fixl =
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evm
         (List.length rec_sign) def typ in
-    ({ DeclareDef.Recthm.name; typ; impargs; args = [] }, def, evars)
+    ({ Declare.Recthm.name; typ; impargs; args = [] }, def, evars)
   in
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let fiximps = List.map pi2 info in

@@ -52,22 +52,22 @@ module ProgramDecl : sig
     ; prg_implicits : Impargs.manual_implicits
     ; prg_notations : Vernacexpr.decl_notation list
     ; prg_poly : bool
-    ; prg_scope : DeclareDef.locality
+    ; prg_scope : Declare.locality
     ; prg_kind : Decls.definition_object_kind
     ; prg_reduce : constr -> constr
-    ; prg_hook : DeclareDef.Hook.t option
+    ; prg_hook : Declare.Hook.t option
     ; prg_opaque : bool
     }
 
   val make :
     ?opaque:bool
-    -> ?hook:DeclareDef.Hook.t
+    -> ?hook:Declare.Hook.t
     -> Names.Id.t
     -> udecl:UState.universe_decl
     -> uctx:UState.t
     -> impargs:Impargs.manual_implicits
     -> poly:bool
-    -> scope:DeclareDef.locality
+    -> scope:Declare.locality
     -> kind:Decls.definition_object_kind
     -> Constr.constr option
     -> Constr.types
@@ -126,7 +126,7 @@ val obligation_hook
   -> Obligation.t
   -> Int.t
   -> (Names.Id.t option -> Int.Set.t -> 'a option -> 'b)
-  -> DeclareDef.Hook.S.t
+  -> Declare.Hook.S.t
   -> unit
 (** [obligation_hook] part 2 of saving an obligation, non-interactive mode *)
 
