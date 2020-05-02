@@ -15,14 +15,17 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
 .. cmd:: {| Record | Structure } @record_definition {* with @record_definition }
    :name: Record; Structure
 
-   .. insertprodn record_definition field_body
+   .. insertprodn record_definition field_def
 
    .. prodn::
       record_definition ::= {? > } @ident_decl {* @binder } {? : @type } {? @ident } %{ {*; @record_field } %} {? @decl_notations }
-      record_field ::= {* #[ {*, @attr } ] } @name {? @field_body } {? %| @num } {? @decl_notations }
+      record_field ::= {* #[ {*, @attribute } ] } @name {? @field_body } {? %| @num } {? @decl_notations }
       field_body ::= {* @binder } @of_type
       | {* @binder } @of_type := @term
       | {* @binder } := @term
+      term_record ::= %{%| {* @field_def } %|%}
+      field_def ::= @qualid {* @binder } := @term
+
 
    Each :n:`@record_definition` defines a record named by :n:`@ident_decl`.
    The constructor name is given by :n:`@ident`.

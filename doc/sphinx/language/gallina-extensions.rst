@@ -30,6 +30,11 @@ under its expanded form (see :flag:`Printing Matching`).
 Pattern-matching on boolean values: the if expression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. insertprodn term_if term_if
+
+.. prodn::
+   term_if ::= if @term {? {? as @name } return @term100 } then @term else @term
+
 For inductive types with exactly two constructors and for pattern matching
 expressions that do not depend on the arguments of the constructors, it is possible
 to use a ``if … then … else`` notation. For instance, the definition
@@ -852,7 +857,7 @@ Printing constructions in full
 .. flag:: Printing All
 
    Coercions, implicit arguments, the type of pattern matching, but also
-   notations (see :ref:`syntaxextensionsandnotationscopes`) can obfuscate the behavior of some
+   notations (see :ref:`syntax-extensions-and-notation-scopes`) can obfuscate the behavior of some
    tactics (typically the tactics applying to occurrences of subterms are
    sensitive to the implicit arguments). Turning this flag on
    deactivates all high-level printing features such as coercions,
@@ -913,7 +918,8 @@ Existential variables
 .. insertprodn term_evar term_evar
 
 .. prodn::
-   term_evar ::= ?[ @ident ]
+   term_evar ::= _
+   | ?[ @ident ]
    | ?[ ?@ident ]
    | ?@ident {? @%{ {+; @ident := @term } %} }
 

@@ -1559,7 +1559,7 @@ changes:
 
 - Vernacular:
 
-  - Experimental support for :ref:`attributes <gallina-attributes>` on
+  - Experimental support for :term:`attributes <attribute>` on
     commands, by Vincent Laporte, as in ``#[local] Lemma foo : bar.``
     Tactics and tactic notations now support the ``deprecated``
     attribute.

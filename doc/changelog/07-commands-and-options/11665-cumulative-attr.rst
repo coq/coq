@@ -6,7 +6,6 @@
   ``Private`` (`#11665 <https://github.com/coq/coq/pull/11665>`_, by
   Théo Zimmermann).
 
-- **Changed:**
-  Legacy attributes can now be passed in any order.  See
-  :ref:`gallina-attributes` (`#11665
-  <https://github.com/coq/coq/pull/11665>`_, by Théo Zimmermann).
+- **Changed:** :term:`Legacy attributes <attribute>` can now be passed
+  in any order (`#11665 <https://github.com/coq/coq/pull/11665>`_, by
+  Théo Zimmermann).

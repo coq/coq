@@ -351,7 +351,7 @@ application. Use the :n:`(@ident := @term)` form of :token:`arg` to do so,
 where :token:`ident` is the name of the implicit argument and :token:`term`
 is its corresponding explicit term. Alternatively, one can deactivate
 the hiding of implicit arguments for a single function application using the
-:n:`@ @qualid {? @univ_annot } {* @term1 }` form of :token:`term10`.
+:n:`@@qualid_annotated {+ @term1 }` form of :token:`term_application`.
 
 .. example:: Syntax for explicitly giving implicit arguments (continued)
 
@@ -420,6 +420,30 @@ but succeeds in
 Deactivation of implicit arguments for parsing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. insertprodn term_explicit term_explicit
+
+.. prodn::
+   term_explicit ::= @ @qualid_annotated
+
+This syntax can be used to disable implicit arguments for a single
+function.
+
+.. example::
+
+   The function `id` has one implicit argument and one explicit
+   argument.
+
+   .. coqtop:: all reset
+
+      Check (id 0).
+      Definition id' := @id.
+
+   The function `id'` has no implicit argument.
+
+   .. coqtop:: all
+
+      Check (id' nat 0).
+
 .. flag:: Parsing Explicit
 
    Turning this flag on (it is off by default) deactivates the use of implicit arguments.
@@ -428,6 +452,19 @@ Deactivation of implicit arguments for parsing
    constructors, etc, including the arguments declared as implicit, have
    to be given as if no arguments were implicit. By symmetry, this also
    affects printing.
+
+.. example::
+
+   We can reproduce the example above using the :flag:`Parsing
+   Explicit` flag:
+
+   .. coqtop:: all reset
+
+      Set Parsing Explicit.
+      Definition id' := id.
+      Unset Parsing Explicit.
+      Check (id 1).
+      Check (id' nat 1).
 
 .. _canonical-structure-declaration:
 
@@ -606,7 +643,7 @@ Implicit generalization
 .. index:: `[! ]
 .. index:: `(! )
 
-.. insertprodn generalizing_binder typeclass_constraint
+.. insertprodn generalizing_binder term_generalizing
 
 .. prodn::
    generalizing_binder ::= `( {+, @typeclass_constraint } )
@@ -615,7 +652,8 @@ Implicit generalization
    typeclass_constraint ::= {? ! } @term
    | %{ @name %} : {? ! } @term
    | @name : {? ! } @term
-
+   term_generalizing ::= `%{ @term %}
+   | `( @term )
 
 Implicit generalization is an automatic elaboration of a statement
 with free variables into a closed statement where these variables are

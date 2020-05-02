@@ -7,196 +7,12 @@
 This chapter describes Gallina, the specification language of Coq. It allows
 developing mathematical theories and to prove specifications of programs. The
 theories are built from axioms, hypotheses, parameters, lemmas, theorems and
-definitions of constants, functions, predicates and sets. The syntax of logical
-objects involved in theories is described in Section :ref:`term`. The
-language of commands, called *The Vernacular* is described in Section
-:ref:`vernacular`.
-
-In Coq, logical objects are typed to ensure their logical correctness.  The
-rules implemented by the typing algorithm are described in Chapter :ref:`calculusofinductiveconstructions`.
-
-
-..  About the grammars in the manual
-    ================================
-
-    Grammars are presented in Backus-Naur form (BNF). Terminal symbols are
-    set in black ``typewriter font``. In addition, there are special notations for
-    regular expressions.
-
-    An expression enclosed in square brackets ``[…]`` means at most one
-    occurrence of this expression (this corresponds to an optional
-    component).
-
-    The notation “``entry sep … sep entry``” stands for a non empty sequence
-    of expressions parsed by entry and separated by the literal “``sep``” [1]_.
-
-    Similarly, the notation “``entry … entry``” stands for a non empty
-    sequence of expressions parsed by the “``entry``” entry, without any
-    separator between.
-
-    At the end, the notation “``[entry sep … sep entry]``” stands for a
-    possibly empty sequence of expressions parsed by the “``entry``” entry,
-    separated by the literal “``sep``”.
-
-.. _lexical-conventions:
-
-Lexical conventions
-===================
-
-Blanks
-  Space, newline and horizontal tab are considered blanks.
-  Blanks are ignored but they separate tokens.
-
-Comments
-  Comments are enclosed between ``(*`` and ``*)``.  They can be nested.
-  They can contain any character. However, embedded :n:`@string` literals must be
-  correctly closed. Comments are treated as blanks.
-
-Identifiers
-  Identifiers, written :n:`@ident`, are sequences of letters, digits, ``_`` and
-  ``'``, that do not start with a digit or ``'``.  That is, they are
-  recognized by the following grammar (except that the string ``_`` is reserved;
-  it is not a valid identifier):
-
-  .. insertprodn ident subsequent_letter
-
-  .. prodn::
-     ident ::= @first_letter {* @subsequent_letter }
-     first_letter ::= {| a .. z | A .. Z | _ | @unicode_letter }
-     subsequent_letter ::= {| @first_letter | @digit | ' | @unicode_id_part }
-
-  All characters are meaningful. In particular, identifiers are case-sensitive.
-  :production:`unicode_letter` non-exhaustively includes Latin,
-  Greek, Gothic, Cyrillic, Arabic, Hebrew, Georgian, Hangul, Hiragana
-  and Katakana characters, CJK ideographs, mathematical letter-like
-  symbols and non-breaking space. :production:`unicode_id_part`
-  non-exhaustively includes symbols for prime letters and subscripts.
-
-Numerals
-  Numerals are sequences of digits with an optional fractional part
-  and exponent, optionally preceded by a minus sign. :n:`@int` is an integer;
-  a numeral without fractional or exponent parts. :n:`@num` is a non-negative
-  integer.  Underscores embedded in the digits are ignored, for example
-  ``1_000_000`` is the same as ``1000000``.
-
-  .. insertprodn numeral digit
-
-  .. prodn::
-     numeral ::= {+ @digit } {? . {+ @digit } } {? {| e | E } {? {| + | - } } {+ @digit } }
-     int ::= {? - } {+ @digit }
-     num ::= {+ @digit }
-     digit ::= 0 .. 9
-
-Strings
-  Strings begin and end with ``"`` (double quote).  Use ``""`` to represent
-  a double quote character within a string.  In the grammar, strings are
-  identified with :production:`string`.
-
-Keywords
-  The following character sequences are reserved keywords that cannot be
-  used as identifiers::
-
-    _ Axiom CoFixpoint Definition Fixpoint Hypothesis IF Parameter Prop
-    SProp Set Theorem Type Variable as at by cofix discriminated else
-    end exists exists2 fix for forall fun if in lazymatch let match
-    multimatch return then using where with
-
-  Note that plugins may define additional keywords when they are loaded.
-
-Other tokens
-  The set of
-  tokens defined at any given time can vary because the :cmd:`Notation`
-  command can define new tokens.  A :cmd:`Require` command may load more notation definitions,
-  while the end of a :cmd:`Section` may remove notations.  Some notations
-  are defined in the basic library (see :ref:`thecoqlibrary`) and are normally
-  loaded automatically at startup time.
-
-  Here are the character sequences that Coq directly defines as tokens
-  without using :cmd:`Notation` (omitting 25 specialized tokens that begin with
-  ``#int63_``)::
-
-    ! #[ % & ' ( () (bfs) (dfs) ) * ** + , - ->
-    . .( .. ... / : ::= := :> :>> ; < <+ <- <:
-    <<: <= = => > >-> >= ? @ @{ [ [= ] _
-    `( `{ { {| | |- || }
-
-  When multiple tokens match the beginning of a sequence of characters,
-  the longest matching token is used.
-  Occasionally you may need to insert spaces to separate tokens.  For example,
-  if ``~`` and ``~~`` are both defined as tokens, the inputs ``~ ~`` and
-  ``~~`` generate different tokens, whereas if `~~` is not defined, then the
-  two inputs are equivalent.
+definitions of constants, functions, predicates and sets.
 
 .. _term:
 
 Terms
 =====
-
-Syntax of terms
----------------
-
-The following grammars describe the basic syntax of the terms of the
-*Calculus of Inductive Constructions* (also called Cic). The formal
-presentation of Cic is given in Chapter :ref:`calculusofinductiveconstructions`. Extensions of this syntax
-are given in Chapter :ref:`extensionsofgallina`. How to customize the syntax
-is described in Chapter :ref:`syntaxextensionsandnotationscopes`.
-
-.. insertprodn term field_def
-
-.. prodn::
-   term ::= forall @open_binders , @term
-   | fun @open_binders => @term
-   | @term_let
-   | if @term {? {? as @name } return @term100 } then @term else @term
-   | @term_fix
-   | @term_cofix
-   | @term100
-   term100 ::= @term_cast
-   | @term10
-   term10 ::= @term1 {+ @arg }
-   | @ @qualid {? @univ_annot } {* @term1 }
-   | @term1
-   arg ::= ( @ident := @term )
-   | @term1
-   one_term ::= @term1
-   | @ @qualid {? @univ_annot }
-   term1 ::= @term_projection
-   | @term0 % @scope_key
-   | @term0
-   term0 ::= @qualid {? @univ_annot }
-   | @sort
-   | @numeral
-   | @string
-   | _
-   | @term_evar
-   | @term_match
-   | ( @term )
-   | %{%| {* @field_def } %|%}
-   | `%{ @term %}
-   | `( @term )
-   | ltac : ( @ltac_expr )
-   field_def ::= @qualid {* @binder } := @term
-
-.. note::
-
-   Many commands and tactics use :n:`@one_term` rather than :n:`@term`.
-   The former need to be enclosed in parentheses unless they're very
-   simple, such as a single identifier.  This avoids confusing a space-separated
-   list of terms with a :n:`@term1` applied to a list of arguments.
-
-.. _types:
-
-Types
------
-
-.. prodn::
-   type ::= @term
-
-:n:`@type`\s are a subset of :n:`@term`\s; not every :n:`@term` is a :n:`@type`.
-Every term has an associated type, which
-can be determined by applying the :ref:`typing-rules`.  Distinct terms
-may share the same type, for example 0 and 1 are both of type `nat`, the
-natural numbers.
 
 .. _gallina-identifiers:
 
@@ -223,9 +39,15 @@ Field identifiers, written :n:`@field_ident`, are identifiers prefixed by
 Numerals and strings
 --------------------
 
+.. insertprodn primitive_notations primitive_notations
+
+.. prodn::
+   primitive_notations ::= @numeral
+   | @string
+
 Numerals and strings have no predefined semantics in the calculus. They are
 merely notations that can be bound to objects through the notation mechanism
-(see Chapter :ref:`syntaxextensionsandnotationscopes` for details).
+(see Chapter :ref:`syntax-extensions-and-notation-scopes` for details).
 Initially, numerals are bound to Peano’s representation of natural
 numbers (see :ref:`datatypes`).
 
@@ -352,6 +174,12 @@ Section :ref:`let-in`).
 Products: forall
 ----------------
 
+.. insertprodn term_forall_or_fun term_forall_or_fun
+
+.. prodn::
+   term_forall_or_fun ::= forall @open_binders , @term
+   | fun @open_binders => @term
+
 The expression :n:`forall @ident : @type, @term` denotes the
 *product* of the variable :n:`@ident` of type :n:`@type`, over the term :n:`@term`.
 As for abstractions, :g:`forall` is followed by a binder list, and products
@@ -372,6 +200,14 @@ the propositional implication and function types.
 
 Applications
 ------------
+
+.. insertprodn term_application arg
+
+.. prodn::
+   term_application ::= @term1 {+ @arg }
+   | @ @qualid_annotated {+ @term1 }
+   arg ::= ( @ident := @term )
+   | @term1
 
 :n:`@term__fun @term` denotes applying the function :n:`@term__fun` to :token:`term`.
 
@@ -634,34 +470,6 @@ co-recursion. It is the local counterpart of the :cmd:`CoFixpoint` command. When
 The Vernacular
 ==============
 
-.. insertprodn vernacular sentence
-
-.. prodn::
-   vernacular ::= {* @sentence }
-   sentence ::= {? @all_attrs } @command .
-   | {? @all_attrs } {? @num : } @query_command .
-   | {? @all_attrs } {? @toplevel_selector } @ltac_expr {| . | ... }
-   | @control_command
-
-The top-level input to |Coq| is a series of :n:`@sentence`\s,
-which are :production:`tactic`\s or :production:`command`\s,
-generally terminated with a period
-and optionally decorated with :ref:`gallina-attributes`.  :n:`@ltac_expr` syntax supports both simple
-and compound tactics.  For example: ``split`` is a simple tactic while ``split; auto`` combines two
-simple tactics.
-
-Tactics specify how to transform the current proof state as a step in creating a proof.  They
-are syntactically valid only when |Coq| is in proof mode, such as after a :cmd:`Theorem` command
-and before any subsequent proof-terminating command such as :cmd:`Qed`.  See :ref:`proofhandling` for more
-on proof mode.
-
-By convention, command names begin with uppercase letters, while
-tactic names begin with lowercase letters.  Commands appear in the
-HTML documentation in blue boxes after the label "Command".  In the pdf, they appear
-after the boldface label "Command:".  Commands are listed in the :ref:`command_index`.
-
-Similarly, tactics appear after the label "Tactic".  Tactics are listed in the :ref:`tactic_index`.
-
 .. _gallina-assumptions:
 
 Assumptions
@@ -697,7 +505,7 @@ has type :n:`@type`.
    of an object of this type) is accepted as a postulate.
 
    :cmd:`Axiom`, :cmd:`Conjecture`, :cmd:`Parameter` and their plural forms
-   are equivalent.  They can take the :attr:`local` attribute (see :ref:`gallina-attributes`),
+   are equivalent.  They can take the :attr:`local` :term:`attribute`,
    which makes the defined :n:`@ident`\s accessible by :cmd:`Import` and its variants
    only through their fully qualified names.
 
@@ -764,7 +572,7 @@ Section :ref:`typing-rules`.
       | {* @binder } : @type
 
    These commands bind :n:`@term` to the name :n:`@ident` in the environment,
-   provided that :n:`@term` is well-typed.  They can take the :attr:`local` attribute (see :ref:`gallina-attributes`),
+   provided that :n:`@term` is well-typed.  They can take the :attr:`local` :term:`attribute`,
    which makes the defined :n:`@ident` accessible by :cmd:`Import` and its variants
    only through their fully qualified names.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
@@ -1638,82 +1446,6 @@ the proof and adds it to the environment.
 
    #. One can also use :cmd:`Admitted` in place of :cmd:`Qed` to turn the
       current asserted statement into an axiom and exit the proof editing mode.
-
-.. _gallina-attributes:
-
-Attributes
------------
-
-.. insertprodn all_attrs legacy_attr
-
-.. prodn::
-   all_attrs ::= {* #[ {*, @attr } ] } {* @legacy_attr }
-   attr ::= @ident {? @attr_value }
-   attr_value ::= = @string
-   | ( {*, @attr } )
-   legacy_attr ::= {| Local | Global }
-   | {| Polymorphic | Monomorphic }
-   | {| Cumulative | NonCumulative }
-   | Private
-   | Program
-
-Attributes modify the behavior of a command or tactic.
-Syntactically, most commands and tactics can be decorated with attributes, but
-attributes not supported by the command or tactic will be flagged as errors.
-
-The order of top-level attributes doesn't affect their meaning.  ``#[foo,bar]``, ``#[bar,foo]``,
-``#[foo]#[bar]`` and ``#[bar]#[foo]`` are equivalent.
-
-The legacy attributes (:n:`@legacy_attr`) provide an older, alternate syntax
-for certain attributes.  They are equivalent to new attributes as follows:
-
-================  ================================
-Legacy attribute  New attribute
-================  ================================
-`Local`           :attr:`local`
-`Global`          :attr:`global`
-`Polymorphic`     :attr:`universes(polymorphic)`
-`Monomorphic`     :attr:`universes(monomorphic)`
-`Cumulative`      :attr:`universes(cumulative)`
-`NonCumulative`   :attr:`universes(noncumulative)`
-`Private`         :attr:`private(matching)`
-`Program`         :attr:`program`
-================  ================================
-
-.. attr:: deprecated ( {? since = @string , } {? note = @string } )
-   :name: deprecated
-
-    At least one of :n:`since` or :n:`note` must be present.  If both are present,
-    either one may appear first and they must be separated by a comma.
-
-    This attribute is supported by the following commands: :cmd:`Ltac`,
-    :cmd:`Tactic Notation`, :cmd:`Notation`, :cmd:`Infix`.
-
-    It can trigger the following warnings:
-
-    .. warn:: Tactic @qualid is deprecated since @string__since. @string__note.
-              Tactic Notation @qualid is deprecated since @string__since. @string__note.
-              Notation @string is deprecated since @string__since. @string__note.
-
-       :n:`@qualid` or :n:`@string` is the notation, :n:`@string__since` is the version number,
-       :n:`@string__note` is the note (usually explains the replacement).
-
-    .. example::
-
-       .. coqtop:: all reset warn
-
-          #[deprecated(since="8.9.0", note="Use idtac instead.")]
-          Ltac foo := idtac.
-
-          Goal True.
-          Proof.
-          now foo.
-          Abort.
-
-.. warn:: Unsupported attribute
-
-   This warning is an error by default. It is caused by using a
-   command with some attribute it does not understand.
 
 .. [1]
    Except if the inductive type is empty in which case there is no

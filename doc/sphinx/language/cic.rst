@@ -24,9 +24,9 @@ to a type and takes the form “*for all x of type* :math:`T`, :math:`P`”. The
 “:math:`x` *of type* :math:`T`” is written “:math:`x:T`”. Informally, “:math:`x:T`” can be thought as
 “:math:`x` *belongs to* :math:`T`”.
 
-The types of types are *sorts*. Types and sorts are themselves terms
+The types of types are called :gdef:`sort`\s. Types and sorts are themselves terms
 so that terms, types and sorts are all components of a common
-syntactic language of terms which is described in Section :ref:`terms` but,
+syntactic language of terms which is described in Section :ref:`terms`.  But
 first, we describe sorts.
 
 

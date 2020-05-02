@@ -529,7 +529,7 @@ pass additional arguments such as ``using relation``.
           setoid_symmetry {? in @ident}
           setoid_transitivity
           setoid_rewrite {? @orientation} @term {? at @occurrences} {? in @ident}
-          setoid_replace @term with @term {? using relation @term} {? in @ident} {? by @tactic}
+          setoid_replace @term with @term {? using relation @term} {? in @ident} {? by @ltac_expr3}
    :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_rewrite; setoid_replace
 
    The ``using relation`` arguments cannot be passed to the unprefixed form.

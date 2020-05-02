@@ -186,6 +186,7 @@ nitpick_ignore = [ ('token', token) for token in [
     'binders',
     'collection',
     'modpath',
+    'tactic',
 ]]
 
 # -- Options for HTML output ----------------------------------------------
