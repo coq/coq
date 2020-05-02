@@ -18,6 +18,7 @@ Require Export ZArith_base.
 Require Import QArith_base.
 Require Import ConstructiveCauchyReals.
 Require Import ConstructiveCauchyRealsMult.
+Require Import ConstructiveRcomplete.
 Require Import ClassicalDedekindReals.
 
 

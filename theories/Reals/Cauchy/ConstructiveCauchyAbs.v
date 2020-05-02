@@ -12,9 +12,34 @@ Require Import QArith.
 Require Import Qabs.
 Require Import ConstructiveCauchyReals.
 Require Import ConstructiveCauchyRealsMult.
+Require Import Lia.
+Require Import Lqa.
+Require Import QExtra.
 
 Local Open Scope CReal_scope.
 
+Local Ltac simplify_Qabs :=
+  match goal with |- context [(Qabs ?a)%Q] => ring_simplify a end.
+
+Local Ltac simplify_Qlt :=
+  match goal with |- (?l < ?r)%Q => ring_simplify l; ring_simplify r end.
+
+Local Lemma Qopp_mult_mone : forall q : Q,
+  (-1 * q == -q)%Q.
+Proof.
+  intros; ring.
+Qed.
+
+Local Lemma Qabs_involutive: forall q : Q,
+  (Qabs (Qabs q) == Qabs q)%Q.
+Proof.
+  intros q; apply Qabs_case; intros Hcase.
+  - reflexivity.
+  - pose proof Qabs_nonneg q as Habspos.
+    pose proof Qle_antisym _ _ Hcase Habspos as Heq0.
+    setoid_rewrite Heq0.
+    reflexivity.
+Qed.
 
 (**
    The constructive formulation of the absolute value on the real numbers.
@@ -33,133 +58,136 @@ Local Open Scope CReal_scope.
    uniquely extends to a uniformly continuous function
    CReal_abs : CReal -> CReal
 *)
-Lemma CauchyAbsStable : forall xn : positive -> Q,
-    QCauchySeq xn
-    -> QCauchySeq (fun n => Qabs (xn n)).
+
+Definition CReal_abs_seq (x : CReal) (n : Z) := Qabs (seq x n).
+
+Definition CReal_abs_scale (x : CReal) := scale x.
+
+Lemma CReal_abs_cauchy: forall (x : CReal),
+    QCauchySeq (CReal_abs_seq x).
 Proof.
-  intros xn cau n p q H H0.
-  specialize (cau n p q H H0).
-  apply (Qle_lt_trans _ (Qabs (xn p - xn q))).
-  2: exact cau. apply Qabs_Qle_condition. split.
+  intros x n p q Hp Hq.
+  pose proof (cauchy x n p q Hp Hq) as Hxbnd.
+  apply (Qle_lt_trans _ (Qabs (seq x p - seq x q))).
+  2: exact Hxbnd. apply Qabs_Qle_condition. split.
   2: apply Qabs_triangle_reverse.
-  apply (Qplus_le_r _ _ (Qabs (xn q))).
+  apply (Qplus_le_r _ _ (Qabs (seq x q))).
   rewrite <- Qabs_opp.
   apply (Qle_trans _ _ _ (Qabs_triangle_reverse _ _)).
   ring_simplify.
-  setoid_replace (-xn q - (xn p - xn q))%Q with (-(xn p))%Q.
-  2: ring. rewrite Qabs_opp. apply Qle_refl.
+  unfold CReal_abs_seq.
+  simplify_Qabs; setoid_rewrite Qopp_mult_mone.
+  do 2 rewrite Qabs_opp.
+  lra.
 Qed.
 
-Definition CReal_abs (x : CReal) : CReal
-  := let (xn, cau) := x in
-     exist _ (fun n => Qabs (xn n)) (CauchyAbsStable xn cau).
-
-Lemma CReal_neg_nth : forall (x : CReal) (n : positive),
-    (proj1_sig x n < -1#n)%Q
-    -> x < 0.
+Lemma CReal_abs_bound : forall (x : CReal),
+  QBound (CReal_abs_seq x) (CReal_abs_scale x).
 Proof.
-  intros. destruct x as [xn cau]; unfold proj1_sig in H.
-  apply Qlt_minus_iff in H.
-  setoid_replace ((-1 # n) + - xn n)%Q
-    with (- ((1 # n) + xn n))%Q in H.
-  destruct (Qarchimedean (2 / (-((1#n) + xn n)))) as [k kmaj].
-  exists (Pos.max k n). simpl. unfold Qminus; rewrite Qplus_0_l.
-  specialize (cau n n (Pos.max k n)
-                  (Pos.le_refl _) (Pos.le_max_r _ _)).
-  apply (Qle_lt_trans _ (2#k)).
-  unfold Qle, Qnum, Qden.
-  apply Z.mul_le_mono_nonneg_l. discriminate.
-  apply Pos2Z.pos_le_pos, Pos.le_max_l.
-  apply (Qmult_lt_l _ _ (-((1 # n) + xn n))) in kmaj.
-  rewrite Qmult_div_r in kmaj.
-  apply (Qmult_lt_r _ _ (1 # k)) in kmaj.
-  rewrite <- Qmult_assoc in kmaj.
-  setoid_replace ((Z.pos k # 1) * (1 # k))%Q with 1%Q in kmaj.
-  rewrite Qmult_1_r in kmaj.
-  setoid_replace (2#k)%Q with (2 * (1 # k))%Q. 2: reflexivity.
-  apply (Qlt_trans _ _ _ kmaj). clear kmaj.
-  apply (Qplus_lt_l _ _ ((1#n) + xn (Pos.max k n))).
-  ring_simplify. rewrite Qplus_comm.
-  apply (Qle_lt_trans _ (Qabs (xn n - xn (Pos.max k n)))).
-  2: exact cau.
-  rewrite <- Qabs_opp.
-  setoid_replace (- (xn n - xn (Pos.max k n)))%Q
-    with (xn (Pos.max k n) + -1 * xn n)%Q.
-  apply Qle_Qabs. ring. 2: reflexivity.
-  unfold Qmult, Qeq, Qnum, Qden.
-  rewrite Z.mul_1_r, Z.mul_1_r, Z.mul_1_l. reflexivity.
-  2: exact H. intro abs. rewrite abs in H. exact (Qlt_irrefl 0 H).
-  setoid_replace (-1 # n)%Q with (-(1#n))%Q. ring. reflexivity.
+  intros x n.
+  unfold CReal_abs_seq, CReal_abs_scale.
+  rewrite Qabs_involutive.
+  apply (bound x).
 Qed.
 
-Lemma CReal_nonneg : forall (x : CReal) (n : positive),
-    0 <= x -> (-1#n <= proj1_sig x n)%Q.
+Definition CReal_abs (x : CReal) : CReal :=
+{|
+  seq := CReal_abs_seq x;
+  scale := CReal_abs_scale x;
+  cauchy := CReal_abs_cauchy x;
+  bound := CReal_abs_bound x
+|}.
+
+Lemma CRealLt_RQ_from_single_dist : forall (r : CReal) (q : Q) (n :Z),
+    (2^n < q - seq r n)%Q
+ -> r < inject_Q q.
 Proof.
-  intros. destruct x as [xn cau]; unfold proj1_sig.
-  destruct (Qlt_le_dec (xn n) (-1#n)).
-  2: exact q. exfalso. apply H. clear H.
-  apply (CReal_neg_nth _ n). exact q.
+  intros r q n Hapart.
+  pose proof Qpower_pos_lt 2 n ltac:(lra) as H2npos.
+  destruct (QarchimedeanLowExp2_Z (q - seq r n - 2^n) ltac:(lra)) as [k Hk].
+  unfold CRealLt; exists (Z.min n (k-1))%Z.
+  unfold inject_Q; rewrite CReal_red_seq.
+  pose proof cauchy r n n (Z.min n (k-1))%Z ltac:(lia) ltac:(lia) as Hrbnd.
+  pose proof Qpower_le_compat 2 (Z.min n (k - 1))%Z (k-1)%Z ltac:(lia) ltac:(lra).
+  apply (Qmult_le_l _ _ 2 ltac:(lra)) in H.
+  apply (Qle_lt_trans _ _ _ H); clear H.
+  rewrite Qpower_minus_pos.
+  simplify_Qlt.
+  apply Qabs_Qlt_condition in Hrbnd.
+  lra.
+Qed.
+
+Lemma CRealLe_0R_to_single_dist : forall (x : CReal) (n : Z),
+    0 <= x -> (-(2^n) <= seq x n)%Q.
+Proof.
+  intros x n Hxnonneg.
+  destruct (Qlt_le_dec (seq x n) (-(2^n))) as [Hdec|Hdec].
+  - exfalso; apply Hxnonneg.
+    apply (CRealLt_RQ_from_single_dist x 0 n); lra.
+  - exact Hdec.
 Qed.
 
 Lemma CReal_abs_right : forall x : CReal, 0 <= x -> CReal_abs x == x.
 Proof.
-  intros. apply CRealEq_diff. intro n.
-  destruct x as [xn cau]; unfold CReal_abs, proj1_sig.
-  apply (CReal_nonneg _ n) in H. simpl in H.
-  rewrite Qabs_pos.
-  2: unfold Qminus; rewrite <- Qle_minus_iff; apply Qle_Qabs.
-  destruct (Qlt_le_dec (xn n) 0).
-  - rewrite Qabs_neg. 2: apply Qlt_le_weak, q.
-    apply Qopp_le_compat in H.
-    apply (Qmult_le_l _ _ (1#2)). reflexivity. ring_simplify.
-    setoid_replace ((1 # 2) * (2 # n))%Q with (-(-1#n))%Q.
-    2: reflexivity.
-    setoid_replace ((-2 # 2) * xn n)%Q with (- xn n)%Q.
-    exact H. ring.
-  - rewrite Qabs_pos. unfold Qminus. rewrite Qplus_opp_r. discriminate. exact q.
+  intros x Hxnonneg; apply CRealEq_diff; intro n.
+  unfold CReal_abs, CReal_abs_seq, CReal_abs_scale;
+    rewrite CReal_red_seq.
+  pose proof CRealLe_0R_to_single_dist x n Hxnonneg.
+  pose proof Qpower_pos_lt 2 n ltac:(lra) as Hpowpos.
+  do 2 apply Qabs_case; intros H1 H2; lra.
 Qed.
 
 Lemma CReal_le_abs : forall x : CReal, x <= CReal_abs x.
 Proof.
-  intros. intros [n nmaj]. destruct x as [xn cau]; simpl in nmaj.
-  apply (Qle_not_lt _ _ (Qle_Qabs (xn n))).
-  apply Qlt_minus_iff. apply (Qlt_trans _ (2#n)).
-  reflexivity. exact nmaj.
+  intros x [n nmaj].
+  unfold CReal_abs, CReal_abs_seq, CReal_abs_scale in nmaj;
+    rewrite CReal_red_seq in nmaj.
+  apply (Qle_not_lt _ _ (Qle_Qabs (seq x n))).
+  apply Qlt_minus_iff. apply (Qlt_trans _ (2*2^n)).
+  - pose proof Qpower_pos_lt 2 n ltac:(lra); lra.
+  - exact nmaj.
 Qed.
 
 Lemma CReal_abs_pos : forall x : CReal, 0 <= CReal_abs x.
 Proof.
-  intros. intros [n nmaj]. destruct x as [xn cau]; simpl in nmaj.
-  apply (Qle_not_lt _ _ (Qabs_nonneg (xn n))).
-  apply Qlt_minus_iff. apply (Qlt_trans _ (2#n)).
-  reflexivity. exact nmaj.
+  intros x [n nmaj].
+  unfold CReal_abs, CReal_abs_seq, CReal_abs_scale in nmaj;
+    rewrite CReal_red_seq in nmaj.
+  apply (Qle_not_lt _ _ (Qabs_nonneg (seq x n))).
+  apply Qlt_minus_iff. apply (Qlt_trans _ (2*2^n)).
+  - pose proof Qpower_pos_lt 2 n ltac:(lra); lra.
+  - exact nmaj.
 Qed.
 
 Lemma CReal_abs_opp : forall x : CReal, CReal_abs (-x) == CReal_abs x.
 Proof.
-  intros. apply CRealEq_diff. intro n.
-  destruct x as [xn cau]; unfold CReal_abs, CReal_opp, proj1_sig.
-  rewrite Qabs_opp. unfold Qminus. rewrite Qplus_opp_r.
-  discriminate.
+  intros x; apply CRealEq_diff; intro n.
+  unfold CReal_abs, CReal_abs_seq, CReal_abs_scale;
+  unfold CReal_opp, CReal_opp_seq, CReal_opp_scale;
+    do 3 rewrite CReal_red_seq.
+  rewrite Qabs_opp. simplify_Qabs.
+  rewrite Qabs_pos by lra.
+  pose proof Qpower_pos_lt 2 n; lra.
 Qed.
 
 Lemma CReal_abs_left : forall x : CReal, x <= 0 -> CReal_abs x == -x.
 Proof.
-  intros.
-  apply CReal_opp_ge_le_contravar in H. rewrite CReal_opp_0 in H.
-  rewrite <- CReal_abs_opp. apply CReal_abs_right, H.
+  intros x Hxnonpos.
+  apply CReal_opp_ge_le_contravar in Hxnonpos. rewrite CReal_opp_0 in Hxnonpos.
+  rewrite <- CReal_abs_opp. apply CReal_abs_right, Hxnonpos.
 Qed.
 
 Lemma CReal_abs_appart_0 : forall x : CReal,
     0 < CReal_abs x -> x # 0.
 Proof.
-  intros x [n nmaj]. destruct x as [xn cau]; simpl in nmaj.
-  destruct (Qlt_le_dec (xn n) 0).
-  - left. exists n. simpl. rewrite Qabs_neg in nmaj.
-    apply (Qlt_le_trans _ _ _ nmaj). ring_simplify. apply Qle_refl.
-    apply Qlt_le_weak, q.
-  - right. exists n. simpl. rewrite Qabs_pos in nmaj.
-    exact nmaj. exact q.
+  intros x [n nmaj].
+  unfold CReal_abs, CReal_abs_seq, CReal_abs_scale in nmaj;
+    rewrite CReal_red_seq in nmaj.
+  destruct (Qlt_le_dec (seq x n) 0) as [Hdec|Hdec].
+  - left. exists n. cbn in nmaj |- * .
+    rewrite Qabs_neg in nmaj; lra.
+  - right. exists n. cbn. rewrite Qabs_pos in nmaj.
+    exact nmaj. exact Hdec.
 Qed.
 
 Add Parametric Morphism : CReal_abs
@@ -189,15 +217,15 @@ Qed.
 
 Lemma CReal_abs_le : forall a b:CReal, -b <= a <= b -> CReal_abs a <= b.
 Proof.
-  intros a b H [n nmaj]. destruct a as [an cau]; simpl in nmaj.
-  destruct (Qlt_le_dec (an n) 0).
-  - rewrite Qabs_neg in nmaj. destruct H. apply H. clear H H0.
-    exists n. simpl.
-    destruct b as [bn caub]; simpl; simpl in nmaj.
-    unfold Qminus. rewrite Qplus_comm. exact nmaj.
-    apply Qlt_le_weak, q.
-  - rewrite Qabs_pos in nmaj. destruct H. apply H0. clear H H0.
-    exists n. simpl. exact nmaj. exact q.
+  intros a b H [n nmaj].
+  unfold CReal_abs, CReal_abs_seq, CReal_abs_scale in nmaj;
+    rewrite CReal_red_seq in nmaj.
+  destruct (Qlt_le_dec (seq a n) 0) as [Hdec|Hdec].
+  - rewrite Qabs_neg in nmaj by lra. destruct H as [Hl Hr]. apply Hl. clear Hl Hr.
+    exists n; cbn.
+    unfold CReal_opp_seq; lra.
+  - rewrite Qabs_pos in nmaj. destruct H as [Hl Hr]. apply Hr. clear Hl Hr.
+    exists n; cbn. exact nmaj. exact Hdec.
 Qed.
 
 Lemma CReal_abs_minus_sym : forall x y : CReal,
@@ -250,46 +278,37 @@ Qed.
 Lemma CReal_abs_gt : forall x : CReal,
     x < CReal_abs x -> x < 0.
 Proof.
-  intros x [n nmaj]. destruct x as [xn cau]; simpl in nmaj.
-  assert (xn n < 0)%Q.
-  { destruct (Qlt_le_dec (xn n) 0). exact q.
-    exfalso. rewrite Qabs_pos in nmaj. unfold Qminus in nmaj.
-    rewrite Qplus_opp_r in nmaj. inversion nmaj. exact q. }
-  rewrite Qabs_neg in nmaj. 2: apply Qlt_le_weak, H.
-  apply (CReal_neg_nth _ n). simpl.
-  ring_simplify in nmaj.
-  apply (Qplus_lt_l _ _ ((1#n) - xn n)).
-  apply (Qmult_lt_l _ _ 2). reflexivity. ring_simplify.
-  setoid_replace (2 * (1 # n))%Q with (2 # n)%Q. 2: reflexivity.
-  rewrite <- Qplus_assoc.
-  setoid_replace ((2 # n) + 2 * (-1 # n))%Q with 0%Q.
-  rewrite Qplus_0_r. exact nmaj.
-  setoid_replace (2*(-1 # n))%Q with (-(2 # n))%Q.
-  rewrite Qplus_opp_r. reflexivity. reflexivity.
+  intros x [n nmaj].
+  unfold CReal_abs, CReal_abs_seq, CReal_abs_scale in nmaj;
+    rewrite CReal_red_seq in nmaj.
+  assert (seq x n < 0)%Q.
+  { destruct (Qlt_le_dec (seq x n) 0) as [Hdec|Hdec].
+    - exact Hdec.
+    - exfalso. rewrite Qabs_pos in nmaj by apply Hdec.
+      pose proof Qpower_pos_lt 2 n; lra. }
+  rewrite Qabs_neg in nmaj by apply Qlt_le_weak, H.
+  apply (CRealLt_RQ_from_single_dist _ _ n); lra.
 Qed.
 
 Lemma Rabs_def1 : forall x y : CReal,
     x < y -> -x < y -> CReal_abs x < y.
 Proof.
-  intros. apply CRealLt_above in H. apply CRealLt_above in H0.
-  destruct H as [i imaj]. destruct H0 as [j jmaj].
-  exists (Pos.max i j). destruct x as [xn caux], y as [yn cauy]; simpl.
-  simpl in imaj, jmaj.
-  destruct (Qlt_le_dec (xn (Pos.max i j)) 0).
-  - rewrite Qabs_neg.
-    specialize (jmaj (Pos.max i j) (Pos.le_max_r _ _)).
-    apply (Qle_lt_trans _ (2#j)). 2: exact jmaj.
-    unfold Qle, Qnum, Qden.
-    apply Z.mul_le_mono_nonneg_l. discriminate.
-    apply Pos2Z.pos_le_pos, Pos.le_max_r.
-    apply Qlt_le_weak, q.
-  - rewrite Qabs_pos.
-    specialize (imaj (Pos.max i j) (Pos.le_max_l _ _)).
-    apply (Qle_lt_trans _ (2#i)). 2: exact imaj.
-    unfold Qle, Qnum, Qden.
-    apply Z.mul_le_mono_nonneg_l. discriminate.
-    apply Pos2Z.pos_le_pos, Pos.le_max_l.
-    apply q.
+  intros x y Hxlty Hmxlty.
+
+  apply CRealLt_above in Hxlty. apply CRealLt_above in Hmxlty.
+  destruct Hxlty as [i imaj]. destruct Hmxlty as [j jmaj].
+  specialize (imaj (Z.min i j) ltac:(lia)).
+  specialize (jmaj (Z.min i j) ltac:(lia)).
+  cbn in jmaj; unfold CReal_opp_seq in jmaj.
+
+  exists (Z.min i j).
+  unfold CReal_abs, CReal_abs_seq, CReal_abs_scale;
+    rewrite CReal_red_seq.
+
+  pose proof Qpower_pos_lt 2 (Z.min i j)%Z ltac:(lra) as Hpowij.
+  pose proof Qpower_le_compat 2 (Z.min i j)%Z i ltac:(lia) ltac:(lra) as Hpowlei.
+  pose proof Qpower_le_compat 2 (Z.min i j)%Z j ltac:(lia) ltac:(lra) as Hpowlej.
+  apply Qabs_case; intros Hcase; lra.
 Qed.
 
 (* The proof by cases on the signs of x and y applies constructively,

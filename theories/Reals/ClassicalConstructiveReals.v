@@ -219,7 +219,7 @@ Qed.
 Lemma Rarchimedean : forall x y : R, x < y -> {q : Q & ((x < IQR q) * (IQR q < y))%type}.
 Proof.
   intros. rewrite Rlt_def in H. apply CRealLtEpsilon in H.
-  apply FQ_dense in H. destruct H as [q [H2 H3]].
+  apply CRealQ_dense in H. destruct H as [q [H2 H3]].
   exists q. split. rewrite Rlt_def. apply CRealLtForget.
   unfold IQR. rewrite Rquot2. exact H2.
   rewrite Rlt_def. apply CRealLtForget.

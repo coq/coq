@@ -58,7 +58,7 @@ Recursive Extraction
            Tauto.abst_form
            ZMicromega.cnfZ  ZMicromega.Zeval_const QMicromega.cnfQ
            List.map simpl_cone (*map_cone  indexes*)
-           denorm Qpower vm_add
+           denorm QArith_base.Qpower vm_add
    normZ normQ normQ n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
 
 (* Local Variables: *)
