@@ -208,16 +208,6 @@ val tclORELSE : 'a tactic -> (Exninfo.iexn -> 'a tactic) -> 'a tactic
     exception can be assumed non critical. *)
 val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (Exninfo.iexn -> 'b tactic) -> 'b tactic
 
-(** [tclWRAPFINALLY before tac finally] runs [before] before each
-    entry-point of [tac] and passes the result of [before] to
-    [finally], which is then run at each exit-point of [tac],
-    regardless of whether it succeeds or fails.  Said another way, if
-    [tac] succeeds, then it behaves as [before >>= fun v -> tac >>= fun
-    ret -> finally v <*> tclUNIT ret]; otherwise, if [tac] fails with
-    [e], it behaves as [before >>= fun v -> finally v <*> tclZERO
-    e]. *)
-val tclWRAPFINALLY : 'a tactic -> 'b tactic -> ('a -> unit tactic) -> 'b tactic
-
 (** [tclONCE t] behave like [t] except it has at most one success:
     [tclONCE t] stops after the first success of [t]. If [t] fails
     with [e], [tclONCE t] also fails with [e]. *)

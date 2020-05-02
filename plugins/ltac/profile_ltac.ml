@@ -330,15 +330,32 @@ let exit_tactic ~count_call start_time c =
       feedback_results parent
     end
 
+(** [tclWRAPFINALLY before tac finally] runs [before] before each
+    entry-point of [tac] and passes the result of [before] to
+    [finally], which is then run at each exit-point of [tac],
+    regardless of whether it succeeds or fails.  Said another way, if
+    [tac] succeeds, then it behaves as [before >>= fun v -> tac >>= fun
+    ret -> finally v <*> tclUNIT ret]; otherwise, if [tac] fails with
+    [e], it behaves as [before >>= fun v -> finally v <*> tclZERO
+    e]. *)
+let rec tclWRAPFINALLY before tac finally =
+  let open Proofview in
+  let open Proofview.Notations in
+  before >>= fun v -> tclCASE tac >>= function
+  | Fail (e, info) -> finally v >>= fun () -> tclZERO ~info e
+  | Next (ret, tac') -> tclOR
+                          (finally v >>= fun () -> tclUNIT ret)
+                          (fun e -> tclWRAPFINALLY before (tac' e) finally)
+
 let do_profile s call_trace ?(count_call=true) tac =
   let open Proofview.Notations in
   (* We do an early check to [is_profiling] so that we save the
-     overhead of [Proofview.tclWRAPFINALLY] when profiling is not set
+     overhead of [tclWRAPFINALLY] when profiling is not set
      *)
   Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> !is_profiling)) >>= function
   | false -> tac
   | true ->
-    Proofview.tclWRAPFINALLY
+    tclWRAPFINALLY
       (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
            if !is_profiling then
              match call_trace, Local.(!stack) with

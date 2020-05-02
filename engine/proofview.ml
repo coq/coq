@@ -297,23 +297,6 @@ let tclIFCATCH a s f =
     | Nil e -> f e
     | Cons (x,a') -> plus (s x) (fun e -> (a' e) >>= fun x' -> (s x'))
 
-(** [tclWRAPFINALLY before tac finally] runs [before] before each
-    entry-point of [tac] and passes the result of [before] to
-    [finally], which is then run at each exit-point of [tac],
-    regardless of whether it succeeds or fails.  Said another way, if
-    [tac] succeeds, then it behaves as [before >>= fun v -> tac >>= fun
-    ret -> finally v <*> tclUNIT ret]; otherwise, if [tac] fails with
-    [e], it behaves as [before >>= fun v -> finally v <*> tclZERO
-    e]. *)
-let rec tclWRAPFINALLY before tac finally =
-  let open Logic_monad in
-  let open Proof in
-  before >>= fun v -> split tac >>= function
-  | Nil e -> finally v >>= fun () -> zero e
-  | Cons (ret,tac') -> plus
-                         (finally v >>= fun () -> return ret)
-                         (fun e -> tclWRAPFINALLY before (tac' e) finally)
-
 (** [tclONCE t] behave like [t] except it has at most one success:
     [tclONCE t] stops after the first success of [t]. If [t] fails
     with [e], [tclONCE t] also fails with [e]. *)
