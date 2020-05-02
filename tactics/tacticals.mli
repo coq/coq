@@ -180,6 +180,7 @@ module New : sig
       middle. Raises an error if the number of resulting subgoals is
       strictly less than [n+m] *)
   val tclTHENS3PARTS     : unit tactic -> unit tactic array -> unit tactic -> unit tactic array -> unit tactic
+  val tclTHENSLASTn    : unit tactic -> unit tactic -> unit tactic array -> unit tactic
   val tclTHENSFIRSTn : unit tactic -> unit tactic array -> unit tactic -> unit tactic
   val tclTHENFIRSTn : unit tactic -> unit tactic array -> unit tactic
 
