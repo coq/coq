@@ -2199,7 +2199,7 @@ let build_scheme fas =
   List.iter2
     (fun (princ_id, _, _) (body, types, univs, opaque) ->
       let (_ : Constant.t) =
-        let opaque = if opaque = Proof_global.Opaque then true else false in
+        let opaque = if opaque = Declare.Opaque then true else false in
         let def_entry = Declare.definition_entry ~univs ~opaque ?types body in
         Declare.declare_constant ~name:princ_id
           ~kind:Decls.(IsProof Theorem)
