@@ -435,7 +435,7 @@ let v_stm_seg = v_pair v_tasks v_counters
 (** Toplevel structures in a vo (see Cic.mli) *)
 
 let v_libsum =
-  Tuple ("summary", [|v_dp;v_deps|])
+  Tuple ("summary", [|v_dp;v_deps;String|])
 
 let v_lib =
   Tuple ("library",[|v_compiled_lib;v_libraryobjs|])

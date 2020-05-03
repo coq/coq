@@ -263,6 +263,7 @@ let raw_intern_library f =
 type summary_disk = {
   md_name : compilation_unit_name;
   md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
+  md_ocaml : string;
 }
 
 module Dyn = Dyn.Make ()
@@ -288,6 +289,11 @@ let name_clash_message dir mdir f =
   str ("The file " ^ f ^ " contains library") ++ spc () ++
   pr_dirpath mdir ++ spc () ++ str "and not library" ++ spc() ++
   pr_dirpath dir
+
+let caml_version_mismatch s f =
+  str ("The file " ^ f ^ " was compiled with OCaml") ++ spc () ++
+  str s ++ spc () ++ str "while this instance of Coq was compiled with OCaml" ++
+  spc() ++ str Coq_config.caml_version
 
 type intern_mode = Rec | Root | Dep (* Rec = standard, Root = -norec, Dep = dependency of norec *)
 
@@ -345,6 +351,9 @@ let intern_from_file ~intern_mode (dir, f) =
       let () = close_in ch in
       let ch = open_in_bin f in
       let () = close_in ch in
+      if Coq_config.caml_version <> sd.md_ocaml then
+        user_err ~hdr:"intern_from_file"
+          (caml_version_mismatch sd.md_ocaml f);
       if dir <> sd.md_name then
         user_err ~hdr:"intern_from_file"
           (name_clash_message dir sd.md_name f);
