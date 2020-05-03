@@ -154,7 +154,7 @@ Qed.
 Lemma CPermutation_length_1 : forall a b, CPermutation [a] [b] -> a = b.
 Proof. intros; now apply Permutation_length_1, CPermutation_Permutation. Qed.
 
-Lemma CPermutation_length_1_inv : forall l a, CPermutation [a] l -> l = [a].
+Lemma CPermutation_length_1_inv : forall a l, CPermutation [a] l -> l = [a].
 Proof. intros; now apply Permutation_length_1_inv, CPermutation_Permutation. Qed.
 
 Lemma CPermutation_swap : forall a b, CPermutation [a; b] [b; a].
