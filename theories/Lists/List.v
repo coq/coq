@@ -517,18 +517,20 @@ Section Elts.
       exists (a::l1); exists l2; simpl; split; now f_equal.
   Qed.
 
-  Lemma nth_ext : forall l l' d, length l = length l' ->
-    (forall n, nth n l d = nth n l' d) -> l = l'.
+  Lemma nth_ext : forall l l' d d', length l = length l' ->
+    (forall n, n < length l -> nth n l d = nth n l' d') -> l = l'.
   Proof.
-    induction l; intros l' d Hlen Hnth; destruct l' as [| b l'].
+    induction l; intros l' d d' Hlen Hnth; destruct l' as [| b l'].
     - reflexivity.
     - inversion Hlen.
     - inversion Hlen.
     - change a with (nth 0 (a :: l) d).
-      change b with (nth 0 (b :: l') d).
+      change b with (nth 0 (b :: l') d').
       rewrite Hnth; f_equal.
-      apply IHl with d; [ now inversion Hlen | ].
-      intros n; apply (Hnth (S n)).
+      + apply IHl with d d'; [ now inversion Hlen | ].
+        intros n Hlen'; apply (Hnth (S n)).
+        now simpl; apply lt_n_S.
+      + simpl; apply Nat.lt_0_succ.
   Qed.
 
   (** Results about [nth_error] *)
