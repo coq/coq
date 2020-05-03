@@ -25,27 +25,20 @@ let is_profiling = Flags.profile_ltac
 let set_profiling b = is_profiling := b
 let get_profiling () = !is_profiling
 
-(** LtacProf cannot yet handle backtracking into multi-success tactics.
-    To properly support this, we'd have to somehow recreate our location in the
-    call-stack, and stop/restart the intervening timers. This is tricky and
-    possibly expensive, so instead we currently just emit a warning that
-    profiling results will be off. *)
-let encountered_multi_success_backtracking = ref false
+let encountered_invalid_stack_no_self = ref false
 
-let warn_profile_backtracking =
-  CWarnings.create ~name:"profile-backtracking" ~category:"ltac"
-    (fun () -> strbrk "Ltac Profiler cannot yet handle backtracking \
-       into multi-success tactics; profiling results may be wildly inaccurate.")
+let warn_invalid_stack_no_self =
+  CWarnings.create ~name:"profile-invalid-stack-no-self" ~category:"ltac"
+    (fun () -> strbrk
+        "Ltac Profiler encountered an invalid stack (no self \
+         node). This can happen if you reset the profile during \
+         tactic execution.")
 
-let warn_encountered_multi_success_backtracking () =
-  if !encountered_multi_success_backtracking then
-    warn_profile_backtracking ()
-
-let encounter_multi_success_backtracking () =
-  if not !encountered_multi_success_backtracking
+let encounter_invalid_stack_no_self () =
+  if not !encountered_invalid_stack_no_self
   then begin
-    encountered_multi_success_backtracking := true;
-    warn_encountered_multi_success_backtracking ()
+    encountered_invalid_stack_no_self := true;
+    warn_invalid_stack_no_self ()
   end
 
 
@@ -76,8 +69,7 @@ module Local = Summary.Local
 let stack = Local.ref ~name:"LtacProf-stack" [empty_treenode root]
 
 let reset_profile_tmp () =
-  Local.(stack := [empty_treenode root]);
-  encountered_multi_success_backtracking := false
+  Local.(stack := [empty_treenode root])
 
 (* ************** XML Serialization  ********************* *)
 
@@ -218,7 +210,6 @@ let to_string ~filter ?(cutoff=0.0) node =
     cumulate tree;
     !global
   in
-  warn_encountered_multi_success_backtracking ();
   let filter s n = filter s && (all_total <= 0.0 || n /. all_total >= cutoff /. 100.0) in
   let msg =
     h 0 (str "total time: " ++ padl 11 (format_sec (all_total))) ++
@@ -296,13 +287,15 @@ let exit_tactic ~count_call start_time c =
   match Local.(!stack) with
   | [] | [_] ->
     (* oops, our stack is invalid *)
-    encounter_multi_success_backtracking ();
+    encounter_invalid_stack_no_self ();
     reset_profile_tmp ()
   | node :: (parent :: rest as full_stack) ->
     let name = string_of_call c in
     if not (String.equal name node.name) then
       (* oops, our stack is invalid *)
-      encounter_multi_success_backtracking ();
+      CErrors.anomaly
+        (Pp.strbrk "Ltac Profiler encountered an invalid stack (wrong self node) \
+                    likely due to backtracking into multi-success tactics.");
     let node = { node with
       total = node.total +. diff;
       local = node.local +. diff;
@@ -332,38 +325,56 @@ let exit_tactic ~count_call start_time c =
     (* Calls are over, we reset the stack and send back data *)
     if rest == [] && get_profiling () then begin
       assert(String.equal root parent.name);
+      encountered_invalid_stack_no_self := false;
       reset_profile_tmp ();
       feedback_results parent
     end
 
-let tclFINALLY tac (finally : unit Proofview.tactic) =
+(** [tclWRAPFINALLY before tac finally] runs [before] before each
+    entry-point of [tac] and passes the result of [before] to
+    [finally], which is then run at each exit-point of [tac],
+    regardless of whether it succeeds or fails.  Said another way, if
+    [tac] succeeds, then it behaves as [before >>= fun v -> tac >>= fun
+    ret -> finally v <*> tclUNIT ret]; otherwise, if [tac] fails with
+    [e], it behaves as [before >>= fun v -> finally v <*> tclZERO
+    e]. *)
+let rec tclWRAPFINALLY before tac finally =
+  let open Proofview in
   let open Proofview.Notations in
-  Proofview.tclIFCATCH
-    tac
-    (fun v -> finally <*> Proofview.tclUNIT v)
-    (fun (exn, info) -> finally <*> Proofview.tclZERO ~info exn)
+  before >>= fun v -> tclCASE tac >>= function
+  | Fail (e, info) -> finally v >>= fun () -> tclZERO ~info e
+  | Next (ret, tac') -> tclOR
+                          (finally v >>= fun () -> tclUNIT ret)
+                          (fun e -> tclWRAPFINALLY before (tac' e) finally)
 
 let do_profile s call_trace ?(count_call=true) tac =
   let open Proofview.Notations in
-  Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-  if !is_profiling then
-    match call_trace, Local.(!stack) with
-      | (_, c) :: _, parent :: rest ->
-        let name = string_of_call c in
-        let node = get_child name parent in
-        Local.(stack := node :: parent :: rest);
-        Some (time ())
-      | _ :: _, [] -> assert false
-      | _ -> None
-  else None)) >>= function
-  | Some start_time ->
-    tclFINALLY
-      tac
+  (* We do an early check to [is_profiling] so that we save the
+     overhead of [tclWRAPFINALLY] when profiling is not set
+     *)
+  Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> !is_profiling)) >>= function
+  | false -> tac
+  | true ->
+    tclWRAPFINALLY
       (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-        (match call_trace with
-        | (_, c) :: _ -> exit_tactic ~count_call start_time c
-        | [] -> ()))))
-  | None -> tac
+           if !is_profiling then
+             match call_trace, Local.(!stack) with
+             | (_, c) :: _, parent :: rest ->
+               let name = string_of_call c in
+               let node = get_child name parent in
+               Local.(stack := node :: parent :: rest);
+               Some (time ())
+             | _ :: _, [] -> assert false
+             | _ -> None
+           else None)))
+      tac
+      (function
+        | Some start_time ->
+          (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+               (match call_trace with
+                | (_, c) :: _ -> exit_tactic ~count_call start_time c
+                | [] -> ()))))
+        | None -> Proofview.tclUNIT ())
 
 (* ************** Accumulation of data from workers ************************* *)
 
@@ -396,6 +407,7 @@ let _ =
     | _ -> ()))
 
 let reset_profile () =
+  encountered_invalid_stack_no_self := false;
   reset_profile_tmp ();
   data := SM.empty
 

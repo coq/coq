@@ -1786,15 +1786,21 @@ performance issue.
    and allow displaying and resetting the profile from tactic scripts for
    benchmarking purposes.
 
+.. warn:: Ltac Profiler encountered an invalid stack (no \
+         self node). This can happen if you reset the profile during \
+         tactic execution
+
+   Currently, :tacn:`reset ltac profile` is not very well-supported,
+   as it clears all profiling information about all tactics, including
+   ones above the current tactic.  As a result, the profiler has
+   trouble understanding where it is in tactic execution.  This mixes
+   especially poorly with backtracking into multi-success tactics.  In
+   general, non-top-level calls to :tacn:`reset ltac profile` should
+   be avoided.
+
 You can also pass the ``-profile-ltac`` command line option to ``coqc``, which
 turns the :flag:`Ltac Profiling` flag on at the beginning of each document,
 and performs a :cmd:`Show Ltac Profile` at the end.
-
-.. warning::
-
-   Note that the profiler currently does not handle backtracking into
-   multi-success tactics, and issues a warning to this effect in many cases
-   when such backtracking occurs.
 
 Run-time optimization tactic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

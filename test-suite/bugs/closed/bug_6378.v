@@ -7,11 +7,20 @@ Ltac profile_constr tac :=
 
 Ltac slow _ := eval vm_compute in (Z.div_eucl, Z.div_eucl, Z.div_eucl, Z.div_eucl, Z.div_eucl).
 
+Ltac manipulate_ltac_prof :=
+  start ltac profiling;
+  reset ltac profile;
+  try ((idtac + reset ltac profile + idtac); fail);
+  try ((idtac + start ltac profiling + idtac); fail);
+  try ((idtac + stop ltac profiling + idtac); fail).
+
 Goal True.
   start ltac profiling.
   reset ltac profile.
+  manipulate_ltac_prof.
   reset ltac profile.
   stop ltac profiling.
+  Set Warnings Append "+profile-invalid-stack-no-self".
   time profile_constr slow.
   show ltac profile cutoff 0.
   show ltac profile "slow".
