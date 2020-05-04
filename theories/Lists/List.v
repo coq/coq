@@ -2968,6 +2968,10 @@ Section Exists_Forall.
     now apply neg_Forall_Exists_neg.
   Defined.
 
+  Lemma incl_Forall_in_iff l l' :
+    incl l l' <-> Forall (fun x => In x l') l.
+  Proof. now rewrite Forall_forall; split. Qed.
+
 End Exists_Forall.
 
 Hint Constructors Exists : core.
