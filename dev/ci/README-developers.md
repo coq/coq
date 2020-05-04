@@ -73,16 +73,31 @@ Moreover your PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) fil
 
 If you break external projects that are hosted on GitHub, you can use
 the `create_overlays.sh` script to automatically perform most of the
-above steps. In order to do so, call the script as:
-```
-./dev/tools/create_overlays.sh ejgallego 9873 aac_tactics elpi ltac
-```
-replacing `ejgallego` by your GitHub nickname and `9873` by the actual PR
-number. The script will:
+above steps. In order to do so:
 
-- checkout the contributions and prepare the branch/remote so you can
-  just commit the fixes and push,
-- add the corresponding overlay file in `dev/ci/user-overlays`.
+- determine the list of failing projects:
+IDs can be found as ci-XXX1 ci-XXX2 ci-XXX3 in the list of GitLab CI failures;
+- for each project XXXi, look in [ci-basic-overlay.sh](https://github.com/coq/coq/blob/master/dev/ci/ci-basic-overlay.sh)
+to see if the corresponding `XXXi_CI_GITURL` is hosted on GitHub;
+- log on GitHub and fork all the XXXi projects hosted there;
+- call the script as:
+
+    ```
+    ./dev/tools/create_overlays.sh ejgallego 9873 XXX1 XXX2 XXX3
+    ```
+
+    replacing `ejgallego` by your GitHub nickname, `9873` by the actual PR
+number, and selecting the XXXi hosted on GitHub. The script will:
+
+    + checkout the contributions and prepare the branch/remote so you can
+      just commit the fixes and push,
+    + add the corresponding overlay file in `dev/ci/user-overlays`;
+
+- go to `_build_ci/XXXi` to prepare your overlay
+(you can test your modifications by using `make -C ../.. ci-XXXi`)
+and push using `git push ejgallego` (replacing `ejgallego` by your GitHub nickname);
+- finally push the `dev/ci/user-overlays/9873-elgallego-YYY.sh` file on your Coq fork
+(replacing `9873` by the actual PR number, and `ejgallego` by your GitHub nickname).
 
 For problems related to ML-plugins, if you use `dune build` to build
 Coq, it will actually be aware of the broken contributions and perform
@@ -124,7 +139,7 @@ Currently available artifacts are:
 - the Coq documentation, built in the `doc:*` jobs. When submitting a
   documentation PR, this can help reviewers checking the rendered
   result.  **@coqbot** will automatically post links to these
-  artifacts in the PR checks section.  Furthemore, these artifacts are
+  artifacts in the PR checks section.  Furthermore, these artifacts are
   automatically deployed at:
 
   + Coq's Reference Manual [master branch]:
