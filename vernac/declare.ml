@@ -120,7 +120,7 @@ let get_open_goals ps =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
   List.length shelf
 
-type import_status = ImportDefaultBehavior | ImportNeedQualified
+type import_status = Locality.import_status = ImportDefaultBehavior | ImportNeedQualified
 
 (** Declaration of constants and parameters *)
 
@@ -876,7 +876,7 @@ let _ = Abstract.declare_abstract := declare_abstract
 
 let declare_universe_context = DeclareUctx.declare_universe_context
 
-type locality = Discharge | Global of import_status
+type locality = Locality.locality = | Discharge | Global of import_status
 
 (* Hooks naturally belong here as they apply to both definitions and lemmas *)
 module Hook = struct
@@ -1053,3 +1053,653 @@ let prepare_parameter ~poly ~udecl ~types sigma =
 
 (* Compat: will remove *)
 exception AlreadyDeclared = DeclareUniv.AlreadyDeclared
+
+module Obls = struct
+
+open Constr
+
+type 'a obligation_body = DefinedObl of 'a | TermObl of constr
+
+module Obligation = struct
+  type t =
+    { obl_name : Id.t
+    ; obl_type : types
+    ; obl_location : Evar_kinds.t Loc.located
+    ; obl_body : pconstant obligation_body option
+    ; obl_status : bool * Evar_kinds.obligation_definition_status
+    ; obl_deps : Int.Set.t
+    ; obl_tac : unit Proofview.tactic option }
+
+  let set_type ~typ obl = {obl with obl_type = typ}
+  let set_body ~body obl = {obl with obl_body = Some body}
+end
+
+type obligations = {obls : Obligation.t array; remaining : int}
+type fixpoint_kind = IsFixpoint of lident option list | IsCoFixpoint
+
+module ProgramDecl = struct
+  type t =
+    { prg_name : Id.t
+    ; prg_body : constr
+    ; prg_type : constr
+    ; prg_ctx : UState.t
+    ; prg_univdecl : UState.universe_decl
+    ; prg_obligations : obligations
+    ; prg_deps : Id.t list
+    ; prg_fixkind : fixpoint_kind option
+    ; prg_implicits : Impargs.manual_implicits
+    ; prg_notations : Vernacexpr.decl_notation list
+    ; prg_poly : bool
+    ; prg_scope : locality
+    ; prg_kind : Decls.definition_object_kind
+    ; prg_reduce : constr -> constr
+    ; prg_hook : Hook.t option
+    ; prg_opaque : bool }
+
+  open Obligation
+
+  let make ?(opaque = false) ?hook n ~udecl ~uctx ~impargs ~poly ~scope ~kind b
+      t deps fixkind notations obls reduce =
+    let obls', b =
+      match b with
+      | None ->
+        assert (Int.equal (Array.length obls) 0);
+        let n = Nameops.add_suffix n "_obligation" in
+        ( [| { obl_name = n
+             ; obl_body = None
+             ; obl_location = Loc.tag Evar_kinds.InternalHole
+             ; obl_type = t
+             ; obl_status = (false, Evar_kinds.Expand)
+             ; obl_deps = Int.Set.empty
+             ; obl_tac = None } |]
+        , mkVar n )
+      | Some b ->
+        ( Array.mapi
+            (fun i (n, t, l, o, d, tac) ->
+              { obl_name = n
+              ; obl_body = None
+              ; obl_location = l
+              ; obl_type = t
+              ; obl_status = o
+              ; obl_deps = d
+              ; obl_tac = tac })
+            obls
+        , b )
+    in
+    let ctx = UState.make_flexible_nonalgebraic uctx in
+    { prg_name = n
+    ; prg_body = b
+    ; prg_type = reduce t
+    ; prg_ctx = ctx
+    ; prg_univdecl = udecl
+    ; prg_obligations = {obls = obls'; remaining = Array.length obls'}
+    ; prg_deps = deps
+    ; prg_fixkind = fixkind
+    ; prg_notations = notations
+    ; prg_implicits = impargs
+    ; prg_poly = poly
+    ; prg_scope = scope
+    ; prg_kind = kind
+    ; prg_reduce = reduce
+    ; prg_hook = hook
+    ; prg_opaque = opaque }
+
+  let set_uctx ~uctx prg = {prg with prg_ctx = uctx}
+end
+
+open Obligation
+open ProgramDecl
+
+(* Saving an obligation *)
+
+(* XXX: Is this the right place for this? *)
+let it_mkLambda_or_LetIn_or_clean t ctx =
+  let open Context.Rel.Declaration in
+  let fold t decl =
+    if is_local_assum decl then Term.mkLambda_or_LetIn decl t
+    else if Vars.noccurn 1 t then Vars.subst1 mkProp t
+    else Term.mkLambda_or_LetIn decl t
+  in
+  Context.Rel.fold_inside fold ctx ~init:t
+
+(* XXX: Is this the right place for this? *)
+let decompose_lam_prod c ty =
+  let open Context.Rel.Declaration in
+  let rec aux ctx c ty =
+    match (Constr.kind c, Constr.kind ty) with
+    | LetIn (x, b, t, c), LetIn (x', b', t', ty)
+      when Constr.equal b b' && Constr.equal t t' ->
+      let ctx' = Context.Rel.add (LocalDef (x, b', t')) ctx in
+      aux ctx' c ty
+    | _, LetIn (x', b', t', ty) ->
+      let ctx' = Context.Rel.add (LocalDef (x', b', t')) ctx in
+      aux ctx' (lift 1 c) ty
+    | LetIn (x, b, t, c), _ ->
+      let ctx' = Context.Rel.add (LocalDef (x, b, t)) ctx in
+      aux ctx' c (lift 1 ty)
+    | Lambda (x, b, t), Prod (x', b', t')
+    (* By invariant, must be convertible *) ->
+      let ctx' = Context.Rel.add (LocalAssum (x, b')) ctx in
+      aux ctx' t t'
+    | Cast (c, _, _), _ -> aux ctx c ty
+    | _, _ -> (ctx, c, ty)
+  in
+  aux Context.Rel.empty c ty
+
+(* XXX: What's the relation of this with Abstract.shrink ? *)
+let shrink_body c ty =
+  let ctx, b, ty =
+    match ty with
+    | None ->
+      let ctx, b = Term.decompose_lam_assum c in
+      (ctx, b, None)
+    | Some ty ->
+      let ctx, b, ty = decompose_lam_prod c ty in
+      (ctx, b, Some ty)
+  in
+  let b', ty', n, args =
+    List.fold_left
+      (fun (b, ty, i, args) decl ->
+        if Vars.noccurn 1 b && Option.cata (Vars.noccurn 1) true ty then
+          (Vars.subst1 mkProp b, Option.map (Vars.subst1 mkProp) ty, succ i, args)
+        else
+          let open Context.Rel.Declaration in
+          let args = if is_local_assum decl then mkRel i :: args else args in
+          ( Term.mkLambda_or_LetIn decl b
+          , Option.map (Term.mkProd_or_LetIn decl) ty
+          , succ i
+          , args ))
+      (b, ty, 1, []) ctx
+  in
+  (ctx, b', ty', Array.of_list args)
+
+(***********************************************************************)
+(* Saving an obligation                                                *)
+(***********************************************************************)
+
+let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
+
+let add_hint local prg cst =
+  let locality = if local then Goptions.OptLocal else Goptions.OptExport in
+  Hints.add_hints ~locality [Id.to_string prg.prg_name] (unfold_entry cst)
+
+(* true = hide obligations *)
+let get_hide_obligations =
+  Goptions.declare_bool_option_and_ref
+    ~depr:true
+    ~key:["Hide"; "Obligations"]
+    ~value:false
+
+let declare_obligation prg obl body ty uctx =
+  let body = prg.prg_reduce body in
+  let ty = Option.map prg.prg_reduce ty in
+  match obl.obl_status with
+  | _, Evar_kinds.Expand -> (false, {obl with obl_body = Some (TermObl body)})
+  | force, Evar_kinds.Define opaque ->
+    let opaque = (not force) && opaque in
+    let poly = prg.prg_poly in
+    let ctx, body, ty, args =
+      if not poly then shrink_body body ty
+      else ([], body, ty, [||])
+    in
+    let ce = definition_entry ?types:ty ~opaque ~univs:uctx body in
+    (* ppedrot: seems legit to have obligations as local *)
+    let constant =
+      declare_constant ~name:obl.obl_name
+        ~local:ImportNeedQualified
+        ~kind:Decls.(IsProof Property)
+        (DefinitionEntry ce)
+    in
+    if not opaque then
+      add_hint (Locality.make_section_locality None) prg constant;
+    definition_message obl.obl_name;
+    let body =
+      match uctx with
+      | Entries.Polymorphic_entry (_, uctx) ->
+        Some (DefinedObl (constant, Univ.UContext.instance uctx))
+      | Entries.Monomorphic_entry _ ->
+        Some
+          (TermObl
+             (it_mkLambda_or_LetIn_or_clean
+                (mkApp (mkConst constant, args))
+                ctx))
+    in
+    (true, {obl with obl_body = body})
+
+(* Updating the obligation meta-info on close *)
+
+let not_transp_msg =
+  Pp.(
+    str "Obligation should be transparent but was declared opaque."
+    ++ spc ()
+    ++ str "Use 'Defined' instead.")
+
+let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
+let err_not_transp () = pperror not_transp_msg
+
+module ProgMap = Id.Map
+
+module StateFunctional = struct
+
+  type t = ProgramDecl.t CEphemeron.key ProgMap.t
+
+  let _empty = ProgMap.empty
+
+  let pending pm =
+    ProgMap.filter
+      (fun _ v -> (CEphemeron.get v).prg_obligations.remaining > 0)
+      pm
+
+  let num_pending pm = pending pm |> ProgMap.cardinal
+
+  let first_pending pm =
+    pending pm |> ProgMap.choose_opt
+    |> Option.map (fun (_, v) -> CEphemeron.get v)
+
+  let get_unique_open_prog pm name : (_, Id.t list) result =
+    match name with
+    | Some n ->
+      Option.cata
+        (fun p -> Ok (CEphemeron.get p))
+        (Error []) (ProgMap.find_opt n pm)
+    | None -> (
+      let n = num_pending pm in
+      match n with
+      | 0 -> Error []
+      | 1 -> Option.cata (fun p -> Ok p) (Error []) (first_pending pm)
+      | _ ->
+        let progs = Id.Set.elements (ProgMap.domain pm) in
+        Error progs )
+
+  let add t key prg = ProgMap.add key (CEphemeron.create prg) t
+
+  let fold t ~f ~init =
+    let f k v acc = f k (CEphemeron.get v) acc in
+    ProgMap.fold f t init
+
+  let all pm = ProgMap.bindings pm |> List.map (fun (_,v) -> CEphemeron.get v)
+  let find m t = ProgMap.find_opt t m |> Option.map CEphemeron.get
+end
+
+module State = struct
+
+  type t = StateFunctional.t
+
+  open StateFunctional
+
+  let prg_ref, prg_tag =
+    Summary.ref_tag ProgMap.empty ~name:"program-tcc-table"
+
+  let num_pending () = num_pending !prg_ref
+  let first_pending () = first_pending !prg_ref
+  let get_unique_open_prog id = get_unique_open_prog !prg_ref id
+  let add id prg = prg_ref := add !prg_ref id prg
+  let fold ~f ~init = fold !prg_ref ~f ~init
+  let all () = all !prg_ref
+  let find id = find !prg_ref id
+
+end
+
+(* In all cases, the use of the map is read-only so we don't expose the ref *)
+let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
+
+let check_solved_obligations ~what_for : unit =
+  if not (ProgMap.is_empty !State.prg_ref) then
+    let keys = map_keys !State.prg_ref in
+    let have_string = if Int.equal (List.length keys) 1 then " has " else " have " in
+    CErrors.user_err ~hdr:"Program"
+      Pp.(
+        str "Unsolved obligations when closing "
+        ++ what_for ++ str ":" ++ spc ()
+        ++ prlist_with_sep spc (fun x -> Id.print x) keys
+        ++ str have_string
+        ++ str "unsolved obligations" )
+
+let map_replace k v m = ProgMap.add k (CEphemeron.create v) (ProgMap.remove k m)
+let progmap_remove pm prg = ProgMap.remove prg.prg_name pm
+let progmap_replace prg' pm = map_replace prg'.prg_name prg' pm
+let obligations_solved prg = Int.equal prg.prg_obligations.remaining 0
+
+let obligations_message rem =
+  Format.asprintf "%s %s remaining"
+    (if rem > 0 then string_of_int rem else "No more")
+    (CString.plural rem "obligation")
+  |> Pp.str |> Flags.if_verbose Feedback.msg_info
+
+type progress = Remain of int | Dependent | Defined of GlobRef.t
+
+let get_obligation_body expand obl =
+  match obl.obl_body with
+  | None -> None
+  | Some c -> (
+    if expand && snd obl.obl_status == Evar_kinds.Expand then
+      match c with
+      | DefinedObl pc -> Some (Environ.constant_value_in (Global.env ()) pc)
+      | TermObl c -> Some c
+    else
+      match c with DefinedObl pc -> Some (mkConstU pc) | TermObl c -> Some c )
+
+let obl_substitution expand obls deps =
+  Int.Set.fold
+    (fun x acc ->
+      let xobl = obls.(x) in
+      match get_obligation_body expand xobl with
+      | None -> acc
+      | Some oblb -> (xobl.obl_name, (xobl.obl_type, oblb)) :: acc)
+    deps []
+
+let rec intset_to = function
+  | -1 -> Int.Set.empty
+  | n -> Int.Set.add n (intset_to (pred n))
+
+let obligation_substitution expand prg =
+  let obls = prg.prg_obligations.obls in
+  let ints = intset_to (pred (Array.length obls)) in
+  obl_substitution expand obls ints
+
+let hide_obligation () =
+  Coqlib.check_required_library ["Coq"; "Program"; "Tactics"];
+  UnivGen.constr_of_monomorphic_global
+    (Coqlib.lib_ref "program.tactics.obligation")
+
+(* XXX: Is this the right place? *)
+let rec prod_app t n =
+  match
+    Constr.kind
+      (EConstr.Unsafe.to_constr
+         (Termops.strip_outer_cast Evd.empty (EConstr.of_constr t)))
+    (* FIXME *)
+  with
+  | Prod (_, _, b) -> Vars.subst1 n b
+  | LetIn (_, b, t, b') -> prod_app (Vars.subst1 b b') n
+  | _ ->
+    CErrors.user_err ~hdr:"prod_app"
+      Pp.(str "Needed a product, but didn't find one" ++ fnl ())
+
+(* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)
+let prod_applist t nL = List.fold_left prod_app t nL
+
+let replace_appvars subst =
+  let rec aux c =
+    let f, l = decompose_app c in
+    if isVar f then
+      try
+        let c' = List.map (Constr.map aux) l in
+        let t, b = Id.List.assoc (destVar f) subst in
+        mkApp
+          ( delayed_force hide_obligation
+          , [|prod_applist t c'; Term.applistc b c'|] )
+      with Not_found -> Constr.map aux c
+    else Constr.map aux c
+  in
+  Constr.map aux
+
+let subst_prog subst prg =
+  if get_hide_obligations () then
+    ( replace_appvars subst prg.prg_body
+    , replace_appvars subst (* Termops.refresh_universes *) prg.prg_type )
+  else
+    let subst' = List.map (fun (n, (_, b)) -> (n, b)) subst in
+    ( Vars.replace_vars subst' prg.prg_body
+    , Vars.replace_vars subst' (* Termops.refresh_universes *) prg.prg_type )
+
+let stm_get_fix_exn = ref (fun _ x -> x)
+
+let declare_definition prg =
+  let varsubst = obligation_substitution true prg in
+  let sigma = Evd.from_ctx prg.prg_ctx in
+  let body, types = subst_prog varsubst prg in
+  let body, types = EConstr.(of_constr body, Some (of_constr types)) in
+  (* All these should be grouped into a struct a some point *)
+  let opaque, poly, udecl, hook =
+    (prg.prg_opaque, prg.prg_poly, prg.prg_univdecl, prg.prg_hook)
+  in
+  let name, scope, kind, impargs =
+    ( prg.prg_name
+    , prg.prg_scope
+    , Decls.(IsDefinition prg.prg_kind)
+    , prg.prg_implicits )
+  in
+  let fix_exn = !stm_get_fix_exn () in
+  let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
+  (* XXX: This is doing normalization twice *)
+  let kn =
+    declare_definition ~name ~scope ~kind ~impargs ?hook ~obls
+      ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma
+  in
+  let pm = progmap_remove !State.prg_ref prg in
+  State.prg_ref := pm;
+  kn
+
+let rec lam_index n t acc =
+  match Constr.kind t with
+  | Lambda ({Context.binder_name = Name n'}, _, _) when Id.equal n n' -> acc
+  | Lambda (_, _, b) -> lam_index n b (succ acc)
+  | _ -> raise Not_found
+
+let compute_possible_guardness_evidences n fixbody fixtype =
+  match n with
+  | Some {CAst.loc; v = n} -> [lam_index n fixbody 0]
+  | None ->
+    (* If recursive argument was not given by user, we try all args.
+         An earlier approach was to look only for inductive arguments,
+         but doing it properly involves delta-reduction, and it finally
+         doesn't seem to worth the effort (except for huge mutual
+         fixpoints ?) *)
+    let m = Termops.nb_prod Evd.empty (EConstr.of_constr fixtype) (* FIXME *) in
+    let ctx = fst (Term.decompose_prod_n_assum m fixtype) in
+    List.map_i (fun i _ -> i) 0 ctx
+
+let declare_mutual_definition l =
+  let len = List.length l in
+  let first = List.hd l in
+  let defobl x =
+    let oblsubst = obligation_substitution true x in
+    let subs, typ = subst_prog oblsubst x in
+    let env = Global.env () in
+    let sigma = Evd.from_ctx x.prg_ctx in
+    let r = Retyping.relevance_of_type env sigma (EConstr.of_constr typ) in
+    let term =
+      snd (Reductionops.splay_lam_n env sigma len (EConstr.of_constr subs))
+    in
+    let typ =
+      snd (Reductionops.splay_prod_n env sigma len (EConstr.of_constr typ))
+    in
+    let term = EConstr.to_constr sigma term in
+    let typ = EConstr.to_constr sigma typ in
+    let def = (x.prg_reduce term, r, x.prg_reduce typ, x.prg_implicits) in
+    let oblsubst = List.map (fun (id, (_, c)) -> (id, c)) oblsubst in
+    (def, oblsubst)
+  in
+  let defs, obls =
+    List.fold_right
+      (fun x (defs, obls) ->
+        let xdef, xobls = defobl x in
+        (xdef :: defs, xobls @ obls))
+      l ([], [])
+  in
+  (*   let fixdefs = List.map reduce_fix fixdefs in *)
+  let fixdefs, fixrs, fixtypes, fixitems =
+    List.fold_right2
+      (fun (d, r, typ, impargs) name (a1, a2, a3, a4) ->
+        ( d :: a1
+        , r :: a2
+        , typ :: a3
+        , Recthm.{name; typ; impargs; args = []} :: a4 ))
+      defs first.prg_deps ([], [], [], [])
+  in
+  let fixkind = Option.get first.prg_fixkind in
+  let arrrec, recvec = (Array.of_list fixtypes, Array.of_list fixdefs) in
+  let rvec = Array.of_list fixrs in
+  let namevec = Array.of_list (List.map (fun x -> Name x.prg_name) l) in
+  let rec_declaration = (Array.map2 Context.make_annot namevec rvec, arrrec, recvec) in
+  let possible_indexes =
+    match fixkind with
+    | IsFixpoint wfl ->
+      Some (List.map3 compute_possible_guardness_evidences wfl fixdefs fixtypes)
+    | IsCoFixpoint -> None
+  in
+  (* In the future we will pack all this in a proper record *)
+  let poly, scope, ntns, opaque =
+    (first.prg_poly, first.prg_scope, first.prg_notations, first.prg_opaque)
+  in
+  let kind =
+    if fixkind != IsCoFixpoint then Decls.(IsDefinition Fixpoint)
+    else Decls.(IsDefinition CoFixpoint)
+  in
+  (* Declare the recursive definitions *)
+  let udecl = UState.default_univ_decl in
+  let kns =
+    declare_mutually_recursive ~scope ~opaque ~kind ~udecl ~ntns
+      ~uctx:first.prg_ctx ~rec_declaration ~possible_indexes ~poly
+      ~restrict_ucontext:false fixitems
+  in
+  (* Only for the first constant *)
+  let dref = List.hd kns in
+  Hook.(
+    call ?hook:first.prg_hook {S.uctx = first.prg_ctx; obls; scope; dref});
+  let pm = List.fold_left progmap_remove !State.prg_ref l in
+  State.prg_ref := pm;
+  dref
+
+let update_obls prg obls rem =
+  let prg_obligations = {obls; remaining = rem} in
+  let prg' = {prg with prg_obligations} in
+  let pm = progmap_replace prg' !State.prg_ref in
+  State.prg_ref := pm;
+  obligations_message rem;
+  if rem > 0 then Remain rem
+  else
+    match prg'.prg_deps with
+    | [] ->
+      let kn = declare_definition prg' in
+      let pm = progmap_remove !State.prg_ref prg' in
+      State.prg_ref := pm;
+      Defined kn
+    | l ->
+      let progs =
+        List.map (fun x -> CEphemeron.get (ProgMap.find x pm)) prg'.prg_deps
+      in
+      if List.for_all (fun x -> obligations_solved x) progs then
+        let kn = declare_mutual_definition progs in
+        Defined kn
+      else Dependent
+
+let dependencies obls n =
+  let res = ref Int.Set.empty in
+  Array.iteri
+    (fun i obl ->
+      if (not (Int.equal i n)) && Int.Set.mem n obl.obl_deps then
+        res := Int.Set.add i !res)
+    obls;
+  !res
+
+let update_program_decl_on_defined prg obls num obl ~uctx rem ~auto =
+  let obls = Array.copy obls in
+  let () = obls.(num) <- obl in
+  let prg = {prg with prg_ctx = uctx} in
+  let _progress = update_obls prg obls (pred rem) in
+  let () =
+    if pred rem > 0 then
+      let deps = dependencies obls num in
+      if not (Int.Set.is_empty deps) then
+        let _progress = auto (Some prg.prg_name) deps None in
+        ()
+      else ()
+    else ()
+  in
+  ()
+
+type obligation_resolver =
+     Id.t option
+  -> Int.Set.t
+  -> unit Proofview.tactic option
+  -> progress
+
+type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
+
+let obligation_terminator entries uctx {name; num; auto} =
+  match entries with
+  | [entry] ->
+    let env = Global.env () in
+    let ty = entry.proof_entry_type in
+    let body, uctx = inline_private_constants ~uctx env entry in
+    let sigma = Evd.from_ctx uctx in
+    Inductiveops.control_only_guard (Global.env ()) sigma
+      (EConstr.of_constr body);
+    (* Declare the obligation ourselves and drop the hook *)
+    let prg = Option.get (State.find name) in
+    let {obls; remaining = rem} = prg.prg_obligations in
+    let obl = obls.(num) in
+    let status =
+      match (obl.obl_status, entry.proof_entry_opaque) with
+      | (_, Evar_kinds.Expand), true -> err_not_transp ()
+      | (true, _), true -> err_not_transp ()
+      | (false, _), true -> Evar_kinds.Define true
+      | (_, Evar_kinds.Define true), false -> Evar_kinds.Define false
+      | (_, status), false -> status
+    in
+    let obl = {obl with obl_status = (false, status)} in
+    let uctx = if prg.prg_poly then uctx else UState.union prg.prg_ctx uctx in
+    let univs = UState.univ_entry ~poly:prg.prg_poly uctx in
+    let defined, obl = declare_obligation prg obl body ty univs in
+    let prg_ctx =
+      if prg.prg_poly then
+        (* Polymorphic *)
+        (* We merge the new universes and constraints of the
+           polymorphic obligation with the existing ones *)
+        UState.union prg.prg_ctx uctx
+      else if
+        (* The first obligation, if defined,
+           declares the univs of the constant,
+           each subsequent obligation declares its own additional
+           universes and constraints if any *)
+        defined
+      then
+        UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
+      else uctx
+    in
+    update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
+  | _ ->
+    CErrors.anomaly
+      Pp.(
+        str
+          "[obligation_terminator] close_proof returned more than one proof \
+           term")
+
+(* Similar to the terminator but for the admitted path; this assumes
+   the admitted constant was already declared.
+
+   FIXME: There is duplication of this code with obligation_terminator
+   and Obligations.admit_obligations *)
+let obligation_admitted_terminator {name; num; auto} ctx' dref =
+  let prg = Option.get (State.find name) in
+  let {obls; remaining = rem} = prg.prg_obligations in
+  let obl = obls.(num) in
+  let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
+  let transparent = Environ.evaluable_constant cst (Global.env ()) in
+  let () =
+    match obl.obl_status with
+    | true, Evar_kinds.Expand | true, Evar_kinds.Define true ->
+      if not transparent then err_not_transp ()
+    | _ -> ()
+  in
+  let inst, ctx' =
+    if not prg.prg_poly (* Not polymorphic *) then
+      (* The universe context was declared globally, we continue
+         from the new global environment. *)
+      let ctx =
+        UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
+      in
+      let ctx' = UState.merge_subst ctx (UState.subst ctx') in
+      (Univ.Instance.empty, ctx')
+    else
+      (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
+      let uctx = UState.context ctx' in
+      (Univ.UContext.instance uctx, ctx')
+  in
+  let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
+  let () = if transparent then add_hint true prg cst in
+  update_program_decl_on_defined prg obls num obl ~uctx:ctx' rem ~auto
+
+end

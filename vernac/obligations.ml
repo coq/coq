@@ -14,9 +14,9 @@ open Pp
 open Util
 
 (* For the records fields, opens should go away one these types are private *)
-open DeclareObl
-open DeclareObl.Obligation
-open DeclareObl.ProgramDecl
+open Declare.Obls
+open Declare.Obls.Obligation
+open Declare.Obls.ProgramDecl
 
 let reduce c =
   let env = Global.env () in
@@ -59,7 +59,7 @@ let default_tactic = ref (Proofview.tclUNIT ())
 let evar_of_obligation o = Evd.make_evar (Global.named_context_val ()) (EConstr.of_constr o.obl_type)
 
 let subst_deps expand obls deps t =
-  let osubst = DeclareObl.obl_substitution expand obls deps in
+  let osubst = Declare.Obls.obl_substitution expand obls deps in
     (Vars.replace_vars (List.map (fun (n, (_, b)) -> n, b) osubst) t)
 
 let subst_deps_obl obls obl =
@@ -141,7 +141,7 @@ let rec solve_obligation prg num tac =
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
-  let proof_ending = Lemmas.Proof_ending.End_obligation (DeclareObl.{name = prg.prg_name; num; auto}) in
+  let proof_ending = Lemmas.Proof_ending.End_obligation (Declare.Obls.{name = prg.prg_name; num; auto}) in
   let info = Lemmas.Info.make ~proof_ending ~scope ~kind () in
   let poly = prg.prg_poly in
   let lemma = Lemmas.start_lemma ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in
@@ -314,7 +314,7 @@ let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
   let {obls;_} = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose (msg_generating_obl name) obls;
-    let cst = DeclareObl.declare_definition prg in
+    let cst = Declare.Obls.declare_definition prg in
     Defined cst)
   else
     let () = Flags.if_verbose (msg_generating_obl name) obls in
@@ -374,7 +374,7 @@ let admit_prog prg =
               obls.(i) <- Obligation.set_body ~body:(DefinedObl (kn, Univ.Instance.empty)) x
         | Some _ -> ())
       obls;
-  DeclareObl.update_obls prg obls 0
+  Declare.Obls.update_obls prg obls 0
 
 (* get_any_prog *)
 let rec admit_all_obligations () =

@@ -16,7 +16,6 @@ Metasyntax
 DeclareUniv
 RetrieveObl
 Declare
-DeclareObl
 ComHints
 Canonical
 RecLemmas

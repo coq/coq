@@ -33,7 +33,7 @@ module Proof_ending : sig
 
   type t =
     | Regular
-    | End_obligation of DeclareObl.obligation_qed_info
+    | End_obligation of Declare.Obls.obligation_qed_info
     | End_derive of { f : Id.t; name : Id.t }
     | End_equations of
         { hook : Constant.t list -> Evd.evar_map -> unit

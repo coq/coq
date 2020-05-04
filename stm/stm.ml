@@ -202,7 +202,7 @@ let mkTransCmd cast cids ceff cqueue =
 (* Parts of the system state that are morally part of the proof state *)
 let summary_pstate = Evarutil.meta_counter_summary_tag,
                      Evd.evar_counter_summary_tag,
-                     DeclareObl.State.prg_tag
+                     Declare.Obls.State.prg_tag
 
 type cached_state =
   | EmptyState
@@ -878,7 +878,7 @@ end = struct (* {{{ *)
     Vernacstate.LemmaStack.t option *
     int *                                   (* Evarutil.meta_counter_summary_tag *)
     int *                                   (* Evd.evar_counter_summary_tag *)
-    DeclareObl.State.t
+    Declare.Obls.State.t
 
   type partial_state =
     [ `Full of Vernacstate.t
@@ -3308,7 +3308,7 @@ let unreachable_state_hook = Hooks.unreachable_state_hook
 let document_add_hook = Hooks.document_add_hook
 let document_edit_hook = Hooks.document_edit_hook
 let sentence_exec_hook = Hooks.sentence_exec_hook
-let () = Hook.set DeclareObl.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
+let () = Declare.Obls.stm_get_fix_exn := (fun () -> !State.fix_exn_ref)
 
 type document = VCS.vcs
 let backup () = VCS.backup ()

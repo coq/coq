@@ -25,7 +25,7 @@ module Proof_ending = struct
 
   type t =
     | Regular
-    | End_obligation of DeclareObl.obligation_qed_info
+    | End_obligation of Declare.Obls.obligation_qed_info
     | End_derive of { f : Id.t; name : Id.t }
     | End_equations of
         { hook : Constant.t list -> Evd.evar_map -> unit
@@ -291,7 +291,7 @@ let finish_admitted ~info ~uctx pe =
   (* If the constant was an obligation we need to update the program map *)
   match CEphemeron.get info.Info.proof_ending with
   | Proof_ending.End_obligation oinfo ->
-    DeclareObl.obligation_admitted_terminator oinfo uctx (List.hd cst)
+    Declare.Obls.obligation_admitted_terminator oinfo uctx (List.hd cst)
   | _ -> ()
 
 let save_lemma_admitted ~(lemma : t) =
@@ -383,7 +383,7 @@ let finalize_proof proof_obj proof_info =
   | Regular ->
     finish_proved proof_obj proof_info
   | End_obligation oinfo ->
-    DeclareObl.obligation_terminator proof_obj.entries proof_obj.uctx oinfo
+    Declare.Obls.obligation_terminator proof_obj.entries proof_obj.uctx oinfo
   | End_derive { f ; name } ->
     finish_derived ~f ~name ~entries:proof_obj.entries
   | End_equations { hook; i; types; sigma } ->

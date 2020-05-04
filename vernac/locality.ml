@@ -10,9 +10,12 @@
 
 (** * Managing locality *)
 
+type import_status = ImportDefaultBehavior | ImportNeedQualified
+type locality = Discharge | Global of import_status
+
 let importability_of_bool = function
-  | true -> Declare.ImportNeedQualified
-  | false -> Declare.ImportDefaultBehavior
+  | true -> ImportNeedQualified
+  | false -> ImportDefaultBehavior
 
 (** Positioning locality for commands supporting discharging and export
      outside of modules *)
@@ -34,15 +37,14 @@ let warn_local_declaration =
         strbrk "available without qualification when imported.")
 
 let enforce_locality_exp locality_flag discharge =
-  let open Declare in
   let open Vernacexpr in
   match locality_flag, discharge with
   | Some b, NoDischarge -> Global (importability_of_bool b)
-  | None, NoDischarge -> Global Declare.ImportDefaultBehavior
+  | None, NoDischarge -> Global ImportDefaultBehavior
   | None, DoDischarge when not (Global.sections_are_opened ()) ->
      (* If a Let/Variable is defined outside a section, then we consider it as a local definition *)
      warn_local_declaration ();
-     Global Declare.ImportNeedQualified
+     Global ImportNeedQualified
   | None, DoDischarge -> Discharge
   | Some true, DoDischarge -> CErrors.user_err Pp.(str "Local not allowed in this case")
   | Some false, DoDischarge -> CErrors.user_err Pp.(str "Global not allowed in this case")

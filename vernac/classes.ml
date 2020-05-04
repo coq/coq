@@ -345,7 +345,7 @@ let declare_instance_program env sigma ~global ~poly name pri impargs udecl term
   let hook = Declare.Hook.make hook in
   let uctx = Evd.evar_universe_context sigma in
   let scope, kind = Declare.Global Declare.ImportDefaultBehavior, Decls.Instance in
-  let _ : DeclareObl.progress =
+  let _ : Declare.Obls.progress =
     Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook ~impargs ~uctx typ obls
   in ()
 
