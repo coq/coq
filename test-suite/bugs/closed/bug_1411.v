@@ -1,5 +1,6 @@
 Require Import List.
 Require Import Program.
+Set Program Cases.
 
 Inductive Tree : Set :=
 | Br : Tree -> Tree -> Tree

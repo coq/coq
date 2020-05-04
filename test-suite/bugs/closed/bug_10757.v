@@ -1,4 +1,6 @@
 Require Import Program Extraction ExtrOcamlBasic.
+Set Program Cases.
+
 Print sig.
 Section FIXPOINT.
 

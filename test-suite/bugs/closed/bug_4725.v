@@ -2,6 +2,7 @@ Require Import EquivDec Equivalence List Program.
 Require Import Relation_Definitions.
 Import ListNotations.
 Generalizable All Variables.
+Set Program Cases.
 
 Fixpoint removeV `{eqDecV : @EqDec V eqV equivV}`(x : V) (l : list V) : list V
 :=

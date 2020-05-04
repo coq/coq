@@ -1,5 +1,6 @@
 (* This bug report actually revealed two bugs in the reconstruction of
    a term with "match" in the vm *)
+Set Program Cases.
 
 (* A simplified form of the first problem *)
 

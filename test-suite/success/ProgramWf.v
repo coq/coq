@@ -8,6 +8,7 @@ Require Import Arith Program.
 Require Import ZArith Zwf.
 
 Set Implicit Arguments.
+Set Program Cases.
 (* Set Printing All. *)
 Print sigT_rect.
 Obligation Tactic := program_simplify ; auto with *.
