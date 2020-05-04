@@ -141,8 +141,3 @@ Program Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=
           else in_right
       | _, _ => in_right
     end }.
-
-  Next Obligation. destruct y ; unfold not in *; eauto. Defined.
-
-  Solve Obligations with unfold equiv, complement in * ; 
-    program_simpl ; intuition (discriminate || eauto).

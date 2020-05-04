@@ -63,7 +63,7 @@ let mk_coq_and sigma l =
 
 (* true = transparent by default, false = opaque if possible *)
 let proofs_transparency = ref true
-let program_cases = ref true
+let program_cases = ref false
 let program_generalized_coercion = ref true
 
 let set_proofs_transparency = (:=) proofs_transparency
