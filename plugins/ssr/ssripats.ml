@@ -384,13 +384,11 @@ end
 
 let tclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
   let env, concl = Goal.(env gl, concl gl) in
-  let step = begin fun sigma ->
+  let step ablock abstract = begin fun sigma ->
     let (sigma, (abstract_proof, abstract_ty)) =
       let (sigma, (ty, _)) =
         Evarutil.new_type_evar env sigma Evd.univ_flexible_alg in
-      let (sigma, ablock) = Ssrcommon.mkSsrConst "abstract_lock" env sigma in
       let (sigma, lock) = Evarutil.new_evar env sigma ablock in
-      let (sigma, abstract) = Ssrcommon.mkSsrConst "abstract" env sigma in
       let (sigma, abstract_id) = mk_abstract_id env sigma in
       let abstract_ty = EConstr.mkApp(abstract, [|ty; abstract_id; lock|]) in
       let sigma, m = Evarutil.new_evar env sigma abstract_ty in
@@ -405,7 +403,9 @@ let tclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
     let sigma, _ = Typing.type_of env sigma term in
     sigma, term
   end in
-  Tactics.New.refine ~typecheck:false step <*>
+  Ssrcommon.tacMK_SSR_CONST "abstract_lock" >>= fun ablock ->
+  Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
+  Tactics.New.refine ~typecheck:false (step ablock abstract) <*>
   tclFOCUS 1 3 Proofview.shelve
 end
 

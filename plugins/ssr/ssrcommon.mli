@@ -233,15 +233,8 @@ val pf_abs_prod :
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
-val mkSsrConst :
-           string ->
-           env -> evar_map -> evar_map * EConstr.t
-val pf_mkSsrConst :
-           string ->
-           Goal.goal Evd.sigma ->
-           EConstr.t * Goal.goal Evd.sigma
-val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
 
+val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
 
 val pf_fresh_global :
            GlobRef.t ->

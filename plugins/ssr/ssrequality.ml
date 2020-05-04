@@ -120,6 +120,9 @@ let pf_typecheck t gl =
   re_sig [it] sigma
 
 let newssrcongrtac arg ist =
+  let open Proofview.Notations in
+  Proofview.Goal.enter_one ~__LOC__ begin fun _g ->
+    (Ssrcommon.tacMK_SSR_CONST "ssr_congr_arrow") end >>= fun arr ->
   Proofview.V82.tactic begin fun gl ->
   ppdebug(lazy Pp.(str"===newcongr==="));
   ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
@@ -137,7 +140,6 @@ let newssrcongrtac arg ist =
     let sigma = Evd.create_evar_defs sigma in
     let (sigma, x) = Evarutil.new_evar env sigma ty in
     x, re_sig si sigma in
-  let arr, gl = pf_mkSsrConst "ssr_congr_arrow" gl in
   let ssr_congr lr = EConstr.mkApp (arr, lr) in
   let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
   (* here the two cases: simple equality or arrow *)
@@ -720,9 +722,6 @@ let unfoldtac occ ko t kt =
 
 let unlocktac ist args =
   let open Proofview.Notations in
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
   let utac (occ, gt) =
     Proofview.Goal.enter begin fun gl ->
       let env = Proofview.Goal.env gl in
@@ -730,12 +729,10 @@ let unlocktac ist args =
       unfoldtac occ occ (interp_term env sigma ist gt) (fst gt)
     end
   in
-  let sigma, locked = mkSsrConst "locked" env sigma in
-  let sigma, key = mkSsrConst "master_key" env sigma in
+  Ssrcommon.tacMK_SSR_CONST "locked" >>= fun locked ->
+  Ssrcommon.tacMK_SSR_CONST "master_key" >>= fun key ->
   let ktacs = [
     (Proofview.tclEVARMAP >>= fun sigma -> unfoldtac None None (sigma, locked) xInParens);
     Ssrelim.casetac key (fun ?seed:_ k -> k)
   ] in
-  Proofview.Unsafe.tclEVARS sigma <*>
   Tacticals.New.tclTHENLIST (List.map utac args @ ktacs)
-  end

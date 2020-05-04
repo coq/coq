@@ -1240,30 +1240,6 @@ let pfLIFT f =
     Proofview.tclUNIT x
 ;;
 
-(* TASSI: This version of unprotects inlines the unfold tactic definition,
- * since we don't want to wipe out let-ins, and it seems there is no flag
- * to change that behaviour in the standard unfold code *)
-let unprotecttac =
-  let open Proofview.Notations in
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  let sigma, c = mkSsrConst "protect_term" env sigma in
-  let prot, _ = EConstr.destConst sigma c in
-  Proofview.Unsafe.tclEVARS sigma <*>
-  Tacticals.New.onClause (fun idopt ->
-    let hyploc = Option.map (fun id -> id, InHyp) idopt in
-    Tactics.reduct_option ~check:false
-      (Reductionops.clos_norm_flags
-        (CClosure.RedFlags.mkflags
-          [CClosure.RedFlags.fBETA;
-           CClosure.RedFlags.fCONST prot;
-           CClosure.RedFlags.fMATCH;
-           CClosure.RedFlags.fFIX;
-           CClosure.RedFlags.fCOFIX]), DEFAULTcast) hyploc)
-    allHypsAndConcl
-  end
-
 let is_protect hd env sigma =
   let _, protectC = mkSsrConst "protect_term" env sigma in
   EConstr.eq_constr_nounivs sigma hd protectC
@@ -1521,12 +1497,35 @@ let tclWITHTOP tac = Goal.enter begin fun gl ->
   Tactics.clear [top]
 end
 
-let tacMK_SSR_CONST name = Goal.enter_one ~__LOC__ begin fun g ->
-  let sigma, env = Goal.(sigma g, env g) in
+let tacMK_SSR_CONST name =
+  Proofview.tclENV >>= fun env ->
+  Proofview.tclEVARMAP >>= fun sigma ->
   let sigma, c = mkSsrConst name env sigma in
   Unsafe.tclEVARS sigma <*>
   tclUNIT c
-end
+
+let tacDEST_CONST c =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let c, _ = EConstr.destConst sigma c in
+  tclUNIT c
+
+(* TASSI: This version of unprotects inlines the unfold tactic definition,
+ * since we don't want to wipe out let-ins, and it seems there is no flag
+ * to change that behaviour in the standard unfold code *)
+let unprotecttac =
+  tacMK_SSR_CONST "protect_term" >>= tacDEST_CONST >>= fun prot ->
+  Tacticals.New.onClause (fun idopt ->
+    let hyploc = Option.map (fun id -> id, InHyp) idopt in
+    Tactics.reduct_option ~check:false
+      (Reductionops.clos_norm_flags
+        (CClosure.RedFlags.mkflags
+          [CClosure.RedFlags.fBETA;
+           CClosure.RedFlags.fCONST prot;
+           CClosure.RedFlags.fMATCH;
+           CClosure.RedFlags.fFIX;
+           CClosure.RedFlags.fCOFIX]), DEFAULTcast) hyploc)
+    allHypsAndConcl
+
 
 module type StateType = sig
   type state

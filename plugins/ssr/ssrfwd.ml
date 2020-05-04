@@ -89,17 +89,19 @@ let combineCG t1 t2 f g = match t1, t2 with
  | _, (_, (_, None)) -> anomaly "have: mixed C-G constr"
  | _ -> anomaly "have: mixed G-C constr"
 
-let basecuttac name c =
+let basecuttac name t =
   let open Proofview.Notations in
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  let sigma, hd = mkSsrConst name env sigma in
-  let t = EConstr.mkApp (hd, [|c|]) in
-  let sigma, _ = Typing.type_of env sigma t in
-  Proofview.Unsafe.tclEVARS sigma <*>
+  Ssrcommon.tacMK_SSR_CONST name >>= fun hd ->
+  let t = EConstr.mkApp (hd, [|t|]) in
+  Ssrcommon.tacTYPEOF t >>= fun _ty ->
   Tactics.apply t
-  end
+
+let evarcuttac name cs =
+  let open Proofview.Notations in
+  Ssrcommon.tacMK_SSR_CONST name >>= fun hd ->
+  let t = EConstr.mkApp (hd, cs) in
+  Ssrcommon.tacTYPEOF t >>= fun _ty ->
+  applyn ~with_evars:true ~with_shelve:false (Array.length cs) t
 
 let introstac ipats = tclIPAT ipats
 
@@ -107,6 +109,9 @@ let havetac ist
   (transp,((((clr, orig_pats), binders), simpl), (((fk, _), t), hint)))
   suff namefst
 =
+ let open Proofview.Notations in
+ Ssrcommon.tacMK_SSR_CONST "abstract_key" >>= fun abstract_key ->
+ Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
  Proofview.V82.tactic begin fun gl ->
  let concl = pf_concl gl in
  let pats = tclCompileIPats orig_pats in
@@ -129,21 +134,11 @@ let havetac ist
    not !ssrhaveNOtcresolution &&
    match fk with FwdHint(_,true) -> false | _ -> true in
  let hint = hinttac ist true hint in
- let cuttac t =
-  let open Proofview.Notations in
-  Proofview.Goal.enter begin fun gl ->
-   if transp then
-    let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
-     let sigma, have_let = mkSsrConst "ssr_have_let" env sigma in
-     let step = EConstr.mkApp (have_let, [|concl;t|]) in
-     let sigma, _ = Typing.type_of env sigma step in
-     Proofview.Unsafe.tclEVARS sigma <*>
-     applyn ~with_evars:true ~with_shelve:false 2 step
+ let cuttac t = Proofview.Goal.enter begin fun gl ->
+   if transp then evarcuttac "ssr_have_let" [|concl;t|]
    else basecuttac "ssr_have" t
   end in
  (* Introduce now abstract constants, so that everything sees them *)
- let abstract_key, gl = pf_mkSsrConst "abstract_key" gl in
  let unlock_abs (idty,args_id) gl =
     let gl, _ = pf_e_type_of gl idty in
     pf_unify_HO gl args_id.(2) abstract_key in
@@ -203,7 +198,6 @@ let havetac ist
      gl, ty, Tactics.apply t, id,
        Tacticals.New.tclTHEN (Tacticals.New.tclTHEN itac_c simpltac)
          (Tacticals.New.tclTHEN tacopen_skols (Proofview.V82.tactic (fun gl ->
-            let abstract, gl = pf_mkSsrConst "abstract" gl in
             Proofview.V82.of_tactic (unfold [abstract; abstract_key]) gl)))
    | _,true,true  ->
      let _, ty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
@@ -361,16 +355,14 @@ let intro_lock ipats =
              Proofview.tclDISPATCH
                (ncons (ng - 1) ssrsmovetac @ [Proofview.tclUNIT ()]) in
   let protect_subgoal env sigma hd args =
+    Ssrcommon.tacMK_SSR_CONST "Under_rel" >>= fun under_rel ->
+    Ssrcommon.tacMK_SSR_CONST "Under_rel_from_rel" >>= fun under_from_rel ->
     Tactics.New.refine ~typecheck:true (fun sigma ->
         let lm2 = Array.length args - 2 in
         let sigma, carrier =
           Typing.type_of env sigma args.(lm2) in
         let rel = EConstr.mkApp (hd, Array.sub args 0 lm2) in
         let rel_args = Array.sub args lm2 2 in
-        let sigma, under_rel =
-          Ssrcommon.mkSsrConst "Under_rel" env sigma in
-        let sigma, under_from_rel =
-          Ssrcommon.mkSsrConst "Under_rel_from_rel" env sigma in
         let under_rel_args = Array.append [|carrier; rel|] rel_args in
         let ty = EConstr.mkApp (under_rel, under_rel_args) in
         let sigma, t = Evarutil.new_evar env sigma ty in

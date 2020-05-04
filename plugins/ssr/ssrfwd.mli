@@ -29,9 +29,7 @@ val havetac : ist ->
            bool ->
            bool -> unit Proofview.tactic
 
-val basecuttac :
-           string ->
-           EConstr.t -> unit Proofview.tactic
+val basecuttac : string -> EConstr.t -> unit Proofview.tactic
 
 val wlogtac :
   Ltac_plugin.Tacinterp.interp_sign ->
