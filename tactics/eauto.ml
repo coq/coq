@@ -59,24 +59,6 @@ let registered_e_assumption =
 (*   PROLOG tactic                                                      *)
 (************************************************************************)
 
-(*s Tactics handling a list of goals. *)
-
-(* first_goal : goal list sigma -> goal sigma *)
-
-let first_goal gls =
-  let gl = gls.Evd.it and sig_0 = gls.Evd.sigma in
-  if List.is_empty gl then user_err Pp.(str "first_goal");
-  { Evd.it = List.hd gl; Evd.sigma = sig_0; }
-
-(* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
-
-let apply_tac_list tac glls =
-  match glls.it with
-  | (g1::rest) ->
-      let pack = tac (re_sig g1 glls.sigma) in
-      re_sig (pack.it @ rest) pack.sigma
-  | _ -> user_err Pp.(str "apply_tac_list")
-
 open Auto
 
 (***************************************************************************)
@@ -170,6 +152,15 @@ let e_possible_resolve env sigma db_list local_db secvars gl =
                (e_my_find_search env sigma db_list local_db secvars hd gl)
   with Not_found -> []
 
+(*s Tactics handling a list of goals. *)
+
+(* first_goal : goal list sigma -> goal sigma *)
+
+let first_goal gls =
+  let gl = gls.Evd.it and sig_0 = gls.Evd.sigma in
+  if List.is_empty gl then user_err Pp.(str "first_goal");
+  { Evd.it = List.hd gl; Evd.sigma = sig_0; }
+
 let find_first_goal gls =
   try first_goal gls with UserError _ -> assert false
 
@@ -200,6 +191,15 @@ module SearchProblem = struct
 
 (*   let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl) *)
 
+(* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
+
+  let apply_tac_list tac glls =
+    match glls.it with
+    | (g1::rest) ->
+        let pack = tac (re_sig g1 glls.sigma) in
+        pack.it, re_sig rest pack.sigma
+    | _ -> user_err Pp.(str "apply_tac_list")
+
   let filter_tactics glls l =
 (*     let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (*     let evars = Evarutil.nf_evars (Refiner.project glls) in *)
@@ -208,10 +208,10 @@ module SearchProblem = struct
       | [] -> []
       | (tac, cost, pptac) :: tacl ->
           try
-            let lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
+            let ngls, lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
 (* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
-              (lgls, cost, pptac) :: aux tacl
+              (ngls, lgls, cost, pptac) :: aux tacl
           with e when CErrors.noncritical e ->
             let e = Exninfo.capture e in
             Refiner.catch_failerror e; aux tacl
@@ -233,8 +233,6 @@ module SearchProblem = struct
     else
       let ps = if s.prev == Unknown then Unknown else State s in
       let lg = s.tacres in
-      let nbgl = List.length (sig_it lg) in
-      assert (nbgl > 0);
       let g = find_first_goal lg in
       let hyps = pf_ids_of_hyps g in
       let secvars = secvars_of_hyps (pf_hyps g) in
@@ -242,7 +240,9 @@ module SearchProblem = struct
       let assumption_tacs =
         let tacs = List.map map_assum hyps in
         let l = filter_tactics s.tacres tacs in
-        List.map (fun (res, cost, pp) -> { depth = s.depth; priority = cost; tacres = res;
+        List.map (fun (ngl, res, cost, pp) ->
+          let () = assert (List.is_empty ngl) in
+          { depth = s.depth; priority = cost; tacres = res;
                                     last_tactic = pp; dblist = s.dblist;
                                     localdb = List.tl s.localdb;
                                     prev = ps; local_lemmas = s.local_lemmas}) l
@@ -250,7 +250,8 @@ module SearchProblem = struct
       let intro_tac =
         let l = filter_tactics s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
         List.map
-          (fun (lgls, cost, pp) ->
+          (fun (ngls, lgls, cost, pp) ->
+             let lgls = re_sig (ngls @ lgls.it) lgls.sigma in
              let g' = first_goal lgls in
              let hintl =
                make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
@@ -270,13 +271,14 @@ module SearchProblem = struct
                          (e_possible_resolve (pf_env g) (project g) s.dblist (List.hd s.localdb) secvars concl)
         in
         List.map
-          (fun (lgls, cost, pp) ->
-             let nbgl' = List.length (sig_it lgls) in
-             if nbgl' < nbgl then
+          (fun (ngls, lgls, cost, pp) ->
+            match ngls with
+            | [] ->
                { depth = s.depth; priority = cost; tacres = lgls; last_tactic = pp;
                   prev = ps; dblist = s.dblist; localdb = List.tl s.localdb;
                   local_lemmas = s.local_lemmas }
-             else
+            | _ :: _ ->
+             let lgls = re_sig (ngls @ lgls.it) lgls.sigma in
                let newlocal =
                  let hyps = pf_hyps g in
                    List.map (fun gl ->
@@ -284,7 +286,7 @@ module SearchProblem = struct
                      let hyps' = pf_hyps gls in
                        if hyps' == hyps then List.hd s.localdb
                        else make_local_hint_db (pf_env gls) (project gls) ~ts:TransparentState.full true s.local_lemmas)
-                     (List.firstn ((nbgl'-nbgl) + 1) (sig_it lgls))
+                     ngls
                in
                  { depth = pred s.depth; priority = cost; tacres = lgls;
                    dblist = s.dblist; last_tactic = pp; prev = ps;
