@@ -26,12 +26,12 @@ val mkclr : ssrclear -> ssrdocc
 val nodocc : ssrdocc
 val noclr : ssrdocc
 
-val simpltac : Ssrast.ssrsimpl -> Tacmach.tactic
+val simpltac : Ssrast.ssrsimpl -> unit Proofview.tactic
 
 val newssrcongrtac :
   int * Ssrast.ssrterm ->
   Ltac_plugin.Tacinterp.interp_sign ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
 
 val mk_rwarg :
@@ -49,7 +49,7 @@ val ssrinstancesofrule :
   Ltac_plugin.Tacinterp.interp_sign ->
   Ssrast.ssrdir ->
   Ssrast.ssrterm ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
 (* map_redex (by default the identity on after) is called on the
  * redex (before) and its replacement (after). It is used to
@@ -59,11 +59,11 @@ val ssrrewritetac :
   ?map_redex:(Environ.env -> Evd.evar_map ->
                  before:EConstr.t -> after:EConstr.t -> Evd.evar_map * EConstr.t) ->
   Ltac_plugin.Tacinterp.interp_sign ->
-   ssrrwarg list -> Tacmach.tactic
+   ssrrwarg list -> unit Proofview.tactic
 
-val ipat_rewrite : ssrocc -> ssrdir -> EConstr.t -> Tacmach.tactic
+val ipat_rewrite : ssrocc -> ssrdir -> EConstr.t -> unit Proofview.tactic
 
 val unlocktac :
   Ltac_plugin.Tacinterp.interp_sign ->
   (Ssrmatching.occ * Ssrast.ssrterm) list ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic

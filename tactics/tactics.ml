@@ -1368,7 +1368,7 @@ let clenv_refine_in with_evars targetid id sigma0 clenv tac =
   if not with_evars && occur_meta clenv.evd new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
-  let exact_tac = Proofview.V82.tactic (Refiner.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf)) in
+  let exact_tac = Refiner.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
@@ -1670,7 +1670,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
             | Some (p,pt) ->
               Tacticals.New.tclTHENS
                 (assert_before_gen false (NamingAvoid avoid) pt)
-                [Proofview.V82.tactic (refiner ~check:true EConstr.Unsafe.(to_constr p));
+                [refiner ~check:true EConstr.Unsafe.(to_constr p);
                  (* Might be ill-typed due to forbidden elimination. *)
                  Tacticals.New.onLastHypId (tac (not isrec))]
            end)))

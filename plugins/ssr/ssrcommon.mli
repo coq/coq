@@ -131,7 +131,8 @@ val pf_intern_term :
     ssrterm -> Glob_term.glob_constr
 
 val interp_term :
-  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
+  Environ.env -> Evd.evar_map ->
+  Tacinterp.interp_sign ->
     ssrterm -> evar_map * EConstr.t
 
 val interp_wit :
@@ -145,7 +146,8 @@ val interp_refine :
     Glob_term.glob_constr -> evar_map * (evar_map * EConstr.constr)
 
 val interp_open_constr :
-  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
+  Environ.env -> Evd.evar_map ->
+  Tacinterp.interp_sign ->
     Genintern.glob_constr_and_expr -> evar_map * (evar_map * EConstr.t)
 
 val pf_e_type_of :
@@ -153,7 +155,7 @@ val pf_e_type_of :
   EConstr.constr -> Goal.goal Evd.sigma * EConstr.types
 
 val splay_open_constr :
-           Goal.goal Evd.sigma ->
+           Environ.env ->
            evar_map * EConstr.t ->
            (Names.Name.t Context.binder_annot * EConstr.t) list * EConstr.t
 val isAppInd : Environ.env -> Evd.evar_map -> EConstr.types -> bool
@@ -179,7 +181,22 @@ val mk_internal_id : string -> Id.t
 val mk_tagged_id : string -> int -> Id.t
 val mk_evar_name : int -> Name.t
 val ssr_anon_hyp : string
+val type_id : Environ.env -> Evd.evar_map -> EConstr.types -> Id.t
 val pf_type_id :  Goal.goal Evd.sigma -> EConstr.types -> Id.t
+
+val abs_evars :
+           Environ.env -> Evd.evar_map ->
+           evar_map * EConstr.t ->
+           int * EConstr.t * Evar.t list *
+           UState.t
+val abs_evars2 : (* ssr2 *)
+           Environ.env -> Evd.evar_map -> Evar.t list ->
+           evar_map * EConstr.t ->
+           int * EConstr.t * Evar.t list *
+           UState.t
+val abs_cterm :
+           Environ.env -> Evd.evar_map -> int -> EConstr.t -> EConstr.t
+
 
 val pf_abs_evars :
            Goal.goal Evd.sigma ->
@@ -216,15 +233,8 @@ val pf_abs_prod :
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
-val mkSsrConst :
-           string ->
-           env -> evar_map -> evar_map * EConstr.t
-val pf_mkSsrConst :
-           string ->
-           Goal.goal Evd.sigma ->
-           EConstr.t * Goal.goal Evd.sigma
-val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
 
+val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
 
 val pf_fresh_global :
            GlobRef.t ->
@@ -239,11 +249,14 @@ val ssrqid : string -> Libnames.qualid
 val new_tmp_id :
   tac_ctx -> (Names.Id.t * Name.t ref) * tac_ctx
 val mk_anon_id : string -> Id.t list -> Id.t
+val abs_evars_pirrel :
+           Environ.env -> Evd.evar_map ->
+           evar_map * Constr.constr -> int * Constr.constr
 val pf_abs_evars_pirrel :
            Goal.goal Evd.sigma ->
            evar_map * Constr.constr -> int * Constr.constr
-val nbargs_open_constr : Goal.goal Evd.sigma -> Evd.evar_map * EConstr.t -> int
-val pf_nbargs : Goal.goal Evd.sigma -> EConstr.t -> int
+val nbargs_open_constr : Environ.env -> Evd.evar_map * EConstr.t -> int
+val pf_nbargs : Environ.env -> Evd.evar_map -> EConstr.t -> int
 val gen_tmp_ids :
            ?ist:Geninterp.interp_sign ->
            (Goal.goal * tac_ctx) Evd.sigma ->
@@ -263,7 +276,7 @@ val red_product_skip_id :
   env -> evar_map -> EConstr.t -> EConstr.t
 
 val ssrautoprop_tac :
-           (Evar.t Evd.sigma -> Evar.t list Evd.sigma) ref
+           unit Proofview.tactic ref
 
 val mkProt :
   EConstr.t ->
@@ -300,14 +313,15 @@ val pf_abs_ssrterm :
 
 val pf_interp_ty :
            ?resolve_typeclasses:bool ->
+           Environ.env ->
+           Evd.evar_map ->
            Tacinterp.interp_sign ->
-           Goal.goal Evd.sigma ->
            Ssrast.ssrtermkind *
            (Glob_term.glob_constr * Constrexpr.constr_expr option) ->
            int * EConstr.t * EConstr.t * UState.t
 
-val ssr_n_tac : string -> int -> v82tac
-val donetac : int -> v82tac
+val ssr_n_tac : string -> int -> unit Proofview.tactic
+val donetac : int -> unit Proofview.tactic
 
 val applyn :
            with_evars:bool ->
@@ -315,7 +329,7 @@ val applyn :
            ?with_shelve:bool ->
            ?first_goes_last:bool ->
            int ->
-           EConstr.t -> v82tac
+           EConstr.t -> unit Proofview.tactic
 exception NotEnoughProducts
 val pf_saturate :
            ?beta:bool ->
@@ -339,7 +353,7 @@ val refine_with :
            ?first_goes_last:bool ->
            ?beta:bool ->
            ?with_evars:bool ->
-           evar_map * EConstr.t -> v82tac
+           evar_map * EConstr.t -> unit Proofview.tactic
 
 val pf_resolve_typeclasses :
   where:EConstr.t ->
@@ -350,18 +364,18 @@ val resolve_typeclasses :
 
 (*********************** Wrapped Coq  tactics *****************************)
 
-val rewritetac : ?under:bool -> ssrdir -> EConstr.t -> tactic
+val rewritetac : ?under:bool -> ssrdir -> EConstr.t -> unit Proofview.tactic
 
 type name_hint = (int * EConstr.types array) option ref
 
 val gentac :
-   Ssrast.ssrdocc * Ssrmatching.cpattern -> v82tac
+   Ssrast.ssrdocc * Ssrmatching.cpattern -> unit Proofview.tactic
 
 val genstac :
   ((Ssrast.ssrhyp list option * Ssrmatching.occ) *
      Ssrmatching.cpattern)
     list * Ssrast.ssrhyp list ->
-  Tacmach.tactic
+  unit Proofview.tactic
 
 val pf_interp_gen :
   bool ->
@@ -378,7 +392,7 @@ val pfLIFT
 
 (** Basic tactics *)
 
-val introid : ?orig:Name.t ref -> Id.t -> v82tac
+val introid : ?orig:Name.t ref -> Id.t -> unit Proofview.tactic
 val intro_anon : v82tac
 
 val interp_clr :
@@ -390,9 +404,9 @@ val genclrtac :
 val old_cleartac : ssrhyps -> v82tac
 val cleartac : ssrhyps -> unit Proofview.tactic
 
-val tclMULT : int * ssrmmod -> Tacmach.tactic -> Tacmach.tactic
+val tclMULT : int * ssrmmod -> unit Proofview.tactic -> unit Proofview.tactic
 
-val unprotecttac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+val unprotecttac : unit Proofview.tactic
 val is_protect : EConstr.t -> Environ.env -> Evd.evar_map -> bool
 
 val abs_wgen :
@@ -407,7 +421,7 @@ val abs_wgen :
 
 val clr_of_wgen :
   ssrhyps * ((ssrhyp_or_id * 'a) * 'b option) option ->
-  Proofview.V82.tac list -> Proofview.V82.tac list
+  unit Proofview.tactic list -> unit Proofview.tactic list
 
 
 val unfold : EConstr.t list -> unit Proofview.tactic

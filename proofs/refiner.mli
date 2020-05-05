@@ -22,7 +22,7 @@ val project : 'a sigma -> evar_map
 val pf_env  : Goal.goal sigma -> Environ.env
 val pf_hyps : Goal.goal sigma -> named_context
 
-val refiner : check:bool -> Constr.t -> tactic
+val refiner : check:bool -> Constr.t -> unit Proofview.tactic
 
 (** {6 Tacticals. } *)
 
@@ -32,7 +32,6 @@ val tclIDTAC_MESSAGE  : Pp.t -> tactic
 
 (** [tclEVARS sigma] changes the current evar map *)
 val tclEVARS : evar_map -> tactic
-val tclPUSHEVARUNIVCONTEXT : UState.t -> tactic
 
 
 (** [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies

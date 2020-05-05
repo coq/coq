@@ -221,8 +221,8 @@ let intern_term ist env (_, c) = glob_constr ist env c
 (* FUNCLASS, which is probably just as well since these can     *)
 (* lead to infinite arities.                                    *)
 
-let splay_open_constr gl (sigma, c) =
-  let env = pf_env gl in let t = Retyping.get_type_of env sigma c in
+let splay_open_constr env (sigma, c) =
+  let t = Retyping.get_type_of env sigma c in
   Reductionops.splay_prod env sigma t
 
 let isAppInd env sigma c =
@@ -253,11 +253,11 @@ let interp_refine ist gl rc =
   (sigma, (sigma, c))
 
 
-let interp_open_constr ist gl gc =
-  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist (pf_env gl) (project gl) (gc, Tactypes.NoBindings) in
-  (project gl, (sigma, c))
+let interp_open_constr env sigma0 ist gc =
+  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist env sigma0 (gc, Tactypes.NoBindings) in
+  (sigma0, (sigma, c))
 
-let interp_term ist gl (_, c) = snd (interp_open_constr ist gl c)
+let interp_term env sigma ist (_, c) = snd (interp_open_constr env sigma ist c)
 
 let of_ftactic ftac gl =
   let r = ref None in
@@ -322,10 +322,10 @@ let ssrdgens_of_parsed_dgens = function
   | _ -> assert false
 
 
-let nbargs_open_constr gl oc =
-  let pl, _ = splay_open_constr gl oc in List.length pl
+let nbargs_open_constr env oc =
+  let pl, _ = splay_open_constr env oc in List.length pl
 
-let pf_nbargs gl c = nbargs_open_constr gl (project gl, c)
+let pf_nbargs env sigma c = nbargs_open_constr env (sigma, c)
 
 let internal_names = ref []
 let add_internal_name pt = internal_names := pt :: !internal_names
@@ -521,10 +521,10 @@ let resolve_typeclasses ~where ~fail env sigma =
 let nf_evar sigma t =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
 
-let pf_abs_evars2 gl rigid (sigma, c0) =
+let abs_evars2 env sigma0 rigid (sigma, c0) =
   let c0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma c0 in
-  let sigma0, ucst = project gl, Evd.evar_universe_context sigma in
-  let nenv = env_size (pf_env gl) in
+  let sigma0, ucst = sigma0, Evd.evar_universe_context sigma in
+  let nenv = env_size env in
   let abs_evar n k =
     let evi = Evd.find sigma k in
     let concl = EConstr.Unsafe.to_constr evi.evar_concl in
@@ -558,6 +558,11 @@ let pf_abs_evars2 gl rigid (sigma, c0) =
   | [] -> c in
   List.length evlist, EConstr.of_constr (loop (get 1 c0) 1 evlist), List.map fst evlist, ucst
 
+let pf_abs_evars2 gl rigid c =
+  abs_evars2 (pf_env gl) (project gl) rigid c
+
+let abs_evars env sigma t = abs_evars2 env sigma [] t
+
 let pf_abs_evars gl t = pf_abs_evars2 gl [] t
 
 
@@ -569,7 +574,7 @@ let pf_abs_evars gl t = pf_abs_evars2 gl [] t
  * the corresponding lambda looks like (fun evar_i : T(c)) where c is
  * the solution found by ssrautoprop.
  *)
-let ssrautoprop_tac = ref (fun gl -> assert false)
+let ssrautoprop_tac = ref (Proofview.Goal.enter (fun gl -> assert false))
 
 (* Thanks to Arnaud Spiwack for this snippet *)
 let call_on_evar tac e s =
@@ -581,12 +586,11 @@ open Pp
 let pp _ = () (* FIXME *)
 module Intset = Evar.Set
 
-let pf_abs_evars_pirrel gl (sigma, c0) =
+let abs_evars_pirrel env sigma0 (sigma, c0) =
   pp(lazy(str"==PF_ABS_EVARS_PIRREL=="));
-  pp(lazy(str"c0= " ++ Printer.pr_constr_env (pf_env gl) sigma c0));
-  let sigma0 = project gl in
+  pp(lazy(str"c0= " ++ Printer.pr_constr_env env sigma c0));
   let c0 = nf_evar sigma0 (nf_evar sigma c0) in
-  let nenv = env_size (pf_env gl) in
+  let nenv = env_size env in
   let abs_evar n k =
     let evi = Evd.find sigma k in
     let concl = EConstr.Unsafe.to_constr evi.evar_concl in
@@ -602,13 +606,13 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
     let n = max 0 (List.length a - nenv) in
     let k_ty =
       Retyping.get_sort_family_of
-        (pf_env gl) sigma (Evd.evar_concl (Evd.find sigma k)) in
+        env sigma (Evd.evar_concl (Evd.find sigma k)) in
     let is_prop = k_ty = InProp in
     let t = abs_evar n k in (k, (n, t, is_prop)) :: put evlist t
   | _ -> Constr.fold put evlist c in
   let evlist = put [] c0 in
   if evlist = [] then 0, c0 else
-  let pr_constr t = Printer.pr_econstr_env (pf_env gl) sigma (Reductionops.nf_beta (pf_env gl) (project gl) (EConstr.of_constr t)) in
+  let pr_constr t = Printer.pr_econstr_env env sigma (Reductionops.nf_beta env sigma0 (EConstr.of_constr t)) in
   pp(lazy(str"evlist=" ++ pr_list (fun () -> str";")
     (fun (k,_) -> Evar.print k) evlist));
   let evplist =
@@ -620,7 +624,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
     if evplist = [] then evlist, [], sigma else
     List.fold_left (fun (ev, evp, sigma) (i, (_,t,_) as p) ->
       try
-        let ng, sigma = call_on_evar !ssrautoprop_tac i sigma in
+        let ng, sigma = call_on_evar (Proofview.V82.of_tactic !ssrautoprop_tac) i sigma in
         if (ng <> []) then errorstrm (str "Should we tell the user?");
         List.filter (fun (j,_) -> j <> i) ev, evp, sigma
       with _ -> ev, p::evp, sigma) (evlist, [], sigma) (List.rev evplist) in
@@ -667,6 +671,9 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   pp(lazy(str"res= " ++ pr_constr res));
   List.length evlist, res
 
+let pf_abs_evars_pirrel gl c =
+  abs_evars_pirrel (pf_env gl) (project gl) c
+
 (* Strip all non-essential dependencies from an abstracted term, generating *)
 (* standard names for the abstracted holes.                                 *)
 
@@ -678,7 +685,8 @@ let nb_evar_deps = function
     (try int_of_string (String.sub s m (String.length s - 1 - m)) with _ -> 0)
   | _ -> 0
 
-let pf_type_id gl t = Id.of_string (Namegen.hdchar (pf_env gl) (project gl) t)
+let type_id env sigma t = Id.of_string (Namegen.hdchar env sigma t)
+let pf_type_id gl t = type_id (pf_env gl) (project gl) t
 let pfe_type_of gl t =
   let sigma, ty = pf_type_of gl t in
   re_sig (sig_it gl) sigma, ty
@@ -693,7 +701,7 @@ let pf_type_of gl t =
   let sigma, ty = pf_type_of gl (EConstr.of_constr t) in
   re_sig (sig_it gl)  sigma, EConstr.Unsafe.to_constr ty
 
-let pf_abs_cterm gl n c0 =
+let abs_cterm env sigma n c0 =
   if n <= 0 then c0 else
   let c0 = EConstr.Unsafe.to_constr c0 in
   let noargs = [|0|] in
@@ -725,12 +733,14 @@ let pf_abs_cterm gl n c0 =
       let na' = List.length dl in
       eva.(i) <- Array.of_list (na - na' :: dl);
       let x' =
-        if na' = 0 then Name (pf_type_id gl (EConstr.of_constr t2)) else mk_evar_name na' in
+        if na' = 0 then Name (type_id env sigma (EConstr.of_constr t2)) else mk_evar_name na' in
       mkLambda ({x with binder_name=x'}, t2, strip_evars (i + 1) c1)
 (*      if noccurn 1 c2 then lift (-1) c2 else
       mkLambda (Name (pf_type_id gl t2), t2, c2) *)
     | _ -> strip i c in
   EConstr.of_constr (strip_evars 0 c0)
+
+let pf_abs_cterm gl n c0 = abs_cterm (pf_env gl) (project gl) n c0
 
 (* }}} *)
 
@@ -835,7 +845,7 @@ open Locus
 let rewritetac ?(under=false) dir c =
   (* Due to the new optional arg ?tac, application shouldn't be too partial *)
   let open Proofview.Notations in
-  Proofview.V82.of_tactic begin
+  Proofview.Goal.enter begin fun _ ->
       Equality.general_rewrite (dir = L2R) AllOccurrences true false c <*>
         if under then Proofview.cycle 1 else Proofview.tclUNIT ()
   end
@@ -845,7 +855,7 @@ let rewritetac ?(under=false) dir c =
 type name_hint = (int * EConstr.types array) option ref
 
 let pf_abs_ssrterm ?(resolve_typeclasses=false) ist gl t =
-  let sigma, ct as t = interp_term ist gl t in
+  let sigma, ct as t = interp_term (pf_env gl) (project gl) ist t in
   let sigma, _ as t =
     let env = pf_env gl in
     if not resolve_typeclasses then t
@@ -857,7 +867,8 @@ let pf_abs_ssrterm ?(resolve_typeclasses=false) ist gl t =
 
 let top_id = mk_internal_id "top assumption"
 
-let ssr_n_tac seed n gl =
+let ssr_n_tac seed n =
+  Proofview.Goal.enter begin fun gl ->
   let name = if n = -1 then seed else ("ssr" ^ seed ^ string_of_int n) in
   let fail msg = CErrors.user_err (Pp.str msg) in
   let tacname =
@@ -867,9 +878,10 @@ let ssr_n_tac seed n gl =
       if n = -1 then fail "The ssreflect library was not loaded"
       else fail ("The tactic "^name^" was not found") in
   let tacexpr = CAst.make @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
-  Proofview.V82.of_tactic (Tacinterp.eval_tactic (Tacexpr.TacArg tacexpr)) gl
+  Tacinterp.eval_tactic (Tacexpr.TacArg tacexpr)
+  end
 
-let donetac n gl = ssr_n_tac "done" n gl
+let donetac n = ssr_n_tac "done" n
 
 open Constrexpr
 open Util
@@ -890,7 +902,7 @@ let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, CastConv ty)
 let rec isCHoles = function { CAst.v = CHole _ } :: cl -> isCHoles cl | cl -> cl = []
 let rec isCxHoles = function ({ CAst.v = CHole _ }, None) :: ch -> isCxHoles ch | _ -> false
 
-let pf_interp_ty ?(resolve_typeclasses=false) ist gl ty =
+let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
    let n_binders = ref 0 in
    let ty = match ty with
    | a, (t, None) ->
@@ -915,15 +927,14 @@ let pf_interp_ty ?(resolve_typeclasses=false) ist gl ty =
      | LetInType(n,v,ty,t) -> decr n_binders; mkLetIn (n, v, ty, aux t)
      | _ -> anomaly "pf_interp_ty: ssr Type cast deleted by typecheck" in
      sigma, aux t in
-   let sigma, cty as ty = strip_cast (interp_term ist gl ty) in
+   let sigma, cty as ty = strip_cast (interp_term env sigma0 ist ty) in
    let ty =
-     let env = pf_env gl in
      if not resolve_typeclasses then ty
      else
        let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
        sigma, Evarutil.nf_evar sigma cty in
-   let n, c, _, ucst = pf_abs_evars gl ty in
-   let lam_c = pf_abs_cterm gl n c in
+   let n, c, _, ucst = abs_evars env sigma0 ty in
+   let lam_c = abs_cterm env sigma0 n c in
    let ctx, c = EConstr.decompose_lam_n_assum sigma n lam_c in
    n, EConstr.it_mkProd_or_LetIn c ctx, lam_c, ucst
 ;;
@@ -981,7 +992,8 @@ let dependent_apply_error =
  *
  * Refiner.refiner that does not handle metas with a non ground type but works
  * with dependently typed higher order metas. *)
-let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t gl =
+let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
+  Proofview.V82.tactic begin fun gl ->
   if with_evars then
     let refine gl =
       let t, ty, args, gl = pf_saturate ?beta ~bi_types:true gl t n in
@@ -1014,16 +1026,22 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t g
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env (pf_env gl) (project gl) t));
     Proofview.(V82.of_tactic
       (Tacticals.New.tclTHENLIST [
-         V82.tactic (Refiner.refiner ~check:false EConstr.Unsafe.(to_constr t));
+         Refiner.refiner ~check:false EConstr.Unsafe.(to_constr t);
          (if first_goes_last then cycle 1 else tclUNIT ())
       ])) gl
+  end
 
-let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc gl =
+let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
   let uct = Evd.evar_universe_context (fst oc) in
-  let n, oc = pf_abs_evars_pirrel gl (fst oc, EConstr.to_constr ~abort_on_undefined_evars:false (fst oc) (snd oc)) in
-  let gl = pf_unsafe_merge_uc uct gl in
-  try applyn ~with_evars ~first_goes_last ~with_shelve:true ?beta n (EConstr.of_constr oc) gl
-  with e when CErrors.noncritical e -> raise dependent_apply_error
+  let n, oc = abs_evars_pirrel env sigma (fst oc, EConstr.to_constr ~abort_on_undefined_evars:false (fst oc) (snd oc)) in
+  Proofview.Unsafe.tclEVARS (Evd.set_universe_context sigma uct) <*>
+  Proofview.tclOR (applyn ~with_evars ~first_goes_last ~with_shelve:true ?beta n (EConstr.of_constr oc))
+    (fun _ -> Proofview.tclZERO dependent_apply_error)
+  end
 
 (* We wipe out all the keywords generated by the grammar rules we defined. *)
 (* The user is supposed to Require Import ssreflect or Require ssreflect   *)
@@ -1041,23 +1059,24 @@ let rec fst_prod red tac = Proofview.Goal.enter begin fun gl ->
          else Tacticals.New.tclTHEN Tactics.hnf_in_concl (fst_prod true tac)
 end
 
-let introid ?(orig=ref Anonymous) name = tclTHEN (fun gl ->
-   let g, env = Tacmach.pf_concl gl, pf_env gl in
-   let sigma = project gl in
+let introid ?(orig=ref Anonymous) name =
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let g = Proofview.Goal.concl gl in
    match EConstr.kind sigma g with
    | App (hd, _) when EConstr.isLambda sigma hd ->
-      Proofview.V82.of_tactic (convert_concl_no_check (Reductionops.whd_beta sigma g)) gl
-   | _ -> tclIDTAC gl)
-  (Proofview.V82.of_tactic
-    (fst_prod false (fun id -> orig := id; Tactics.intro_mustbe_force name)))
-;;
+      convert_concl_no_check (Reductionops.whd_beta sigma g)
+   | _ -> Tacticals.New.tclIDTAC
+  end <*>
+    (fst_prod false (fun id -> orig := id; Tactics.intro_mustbe_force name))
 
 let anontac decl gl =
   let id =  match RelDecl.get_name decl with
   | Name id ->
     if is_discharged_id id then id else mk_anon_id (Id.to_string id) (Tacmach.pf_ids_of_hyps gl)
   | _ -> mk_anon_id ssr_anon_hyp (Tacmach.pf_ids_of_hyps gl) in
-  introid id gl
+  Proofview.V82.of_tactic (introid id) gl
 
 let rec intro_anon gl =
   try anontac (List.hd (fst (EConstr.decompose_prod_n_assum (project gl) 1 (Tacmach.pf_concl gl)))) gl
@@ -1085,16 +1104,17 @@ let interp_clr sigma = function
 let tclID tac = tac
 
 let tclDOTRY n tac =
+  let open Tacticals.New in
   if n <= 0 then tclIDTAC else
-  let rec loop i gl =
-    if i = n then tclTRY tac gl else
-    tclTRY (tclTHEN tac (loop (i + 1))) gl in
+  let rec loop i =
+    if i = n then tclTRY tac else
+    tclTRY (tclTHEN tac (loop (i + 1))) in
   loop 1
 
 let tclDO n tac =
   let prefix i = str"At iteration " ++ int i ++ str": " in
   let tac_err_at i gl =
-    try tac gl
+    try Proofview.V82.of_tactic tac gl
     with
     | CErrors.UserError (l, s) as e ->
       let _, info = Exninfo.capture e in
@@ -1105,11 +1125,15 @@ let tclDO n tac =
   let rec loop i gl =
     if i = n then tac_err_at i gl else
     (tclTHEN (tac_err_at i) (loop (i + 1))) gl in
-  loop 1
+  Proofview.V82.tactic ~nf_evars:false (loop 1)
+
+let tclAT_LEAST_ONCE t =
+  let open Tacticals.New in
+  tclTHEN t (tclREPEAT t)
 
 let tclMULT = function
-  | 0, May  -> tclREPEAT
-  | 1, May  -> tclTRY
+  | 0, May  -> Tacticals.New.tclREPEAT
+  | 1, May  -> Tacticals.New.tclTRY
   | n, May  -> tclDOTRY n
   | 0, Must -> tclAT_LEAST_ONCE
   | n, Must when n > 1 -> tclDO n
@@ -1124,7 +1148,7 @@ let cleartac clr = check_hyps_uniq [] clr; Tactics.clear (hyps_ids clr)
 
 (* XXX the k of the redex should percolate out *)
 let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
-  let pat = interp_cpattern gl t None in (* UGLY API *)
+  let pat = interp_cpattern (pf_env gl) (project gl) t None in (* UGLY API *)
   let gl = pf_merge_uc_of (fst pat) gl in
   let cl, env, sigma = Tacmach.pf_concl gl, pf_env gl, project gl in
   let (c, ucst), cl =
@@ -1171,7 +1195,8 @@ let genclrtac cl cs clr =
            gl))
     (old_cleartac clr)
 
-let gentac gen gl =
+let gentac gen =
+  Proofview.V82.tactic begin fun gl ->
 (*   ppdebug(lazy(str"sigma@gentac=" ++ pr_evar_map None (project gl))); *)
   let conv, _, cl, c, clr, ucst,gl = pf_interp_gen_aux gl false gen in
   ppdebug(lazy(str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c));
@@ -1179,9 +1204,10 @@ let gentac gen gl =
   if conv
   then tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl
   else genclrtac cl [c] clr gl
+  end
 
 let genstac (gens, clr) =
-  tclTHENLIST (old_cleartac clr :: List.rev_map gentac gens)
+  Tacticals.New.tclTHENLIST (cleartac clr :: List.rev_map gentac gens)
 
 let gen_tmp_ids
   ?(ist=Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })) gl
@@ -1191,7 +1217,7 @@ let gen_tmp_ids
     (tclTHENLIST
       (List.map (fun (id,orig_ref) ->
         tclTHEN
-        (gentac ((None,Some(false,[])),cpattern_of_id id))
+        (Proofview.V82.of_tactic (gentac ((None,Some(false,[])),cpattern_of_id id)))
         (rename_hd_prod orig_ref))
       ctx.tmp_ids) gl)
 ;;
@@ -1213,24 +1239,6 @@ let pfLIFT f =
     Proofview.Unsafe.tclEVARS sigma <*>
     Proofview.tclUNIT x
 ;;
-
-(* TASSI: This version of unprotects inlines the unfold tactic definition,
- * since we don't want to wipe out let-ins, and it seems there is no flag
- * to change that behaviour in the standard unfold code *)
-let unprotecttac gl =
-  let c, gl = pf_mkSsrConst "protect_term" gl in
-  let prot, _ = EConstr.destConst (project gl) c in
-  Tacticals.onClause (fun idopt ->
-    let hyploc = Option.map (fun id -> id, InHyp) idopt in
-    Proofview.V82.of_tactic (Tactics.reduct_option ~check:false
-      (Reductionops.clos_norm_flags
-        (CClosure.RedFlags.mkflags
-          [CClosure.RedFlags.fBETA;
-           CClosure.RedFlags.fCONST prot;
-           CClosure.RedFlags.fMATCH;
-           CClosure.RedFlags.fFIX;
-           CClosure.RedFlags.fCOFIX]), DEFAULTcast) hyploc))
-    allHypsAndConcl gl
 
 let is_protect hd env sigma =
   let _, protectC = mkSsrConst "protect_term" env sigma in
@@ -1259,7 +1267,7 @@ let abs_wgen keep_let f gen (gl,args,c) =
      gl, EConstr.mkVar x :: args, prod
   | _, Some ((x, "@"), Some p) ->
      let x = hoi_id x in
-     let cp = interp_cpattern gl p None in
+     let cp = interp_cpattern (pf_env gl) (project gl) p None in
      let gl = pf_merge_uc_of (fst cp) gl in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
@@ -1272,7 +1280,7 @@ let abs_wgen keep_let f gen (gl,args,c) =
      pf_merge_uc ucst gl, args, EConstr.mkLetIn(make_annot (Name (f x)) r, ut, ty, c)
   | _, Some ((x, _), Some p) ->
      let x = hoi_id x in
-     let cp = interp_cpattern gl p None in
+     let cp = interp_cpattern (pf_env gl) (project gl) p None in
      let gl = pf_merge_uc_of (fst cp) gl in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
@@ -1287,8 +1295,8 @@ let abs_wgen keep_let f gen (gl,args,c) =
 let clr_of_wgen gen clrs = match gen with
   | clr, Some ((x, _), None) ->
      let x = hoi_id x in
-     old_cleartac clr :: old_cleartac [SsrHyp(Loc.tag x)] :: clrs
-  | clr, _ -> old_cleartac clr :: clrs
+     cleartac clr :: cleartac [SsrHyp(Loc.tag x)] :: clrs
+  | clr, _ -> cleartac clr :: clrs
 
 
 let reduct_in_concl ~check t = Tactics.reduct_in_concl ~check (t, DEFAULTcast)
@@ -1321,7 +1329,8 @@ end
 
 let tacREDUCE_TO_QUANTIFIED_IND ty =
   tacSIGMA >>= fun gl ->
-  tclUNIT (Tacmach.pf_reduce_to_quantified_ind gl ty)
+  try tclUNIT (Tacmach.pf_reduce_to_quantified_ind gl ty)
+  with e -> tclZERO e
 
 let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
   let sigma, env = Goal.sigma g, Goal.env g in
@@ -1460,7 +1469,7 @@ end
 
 let tacINTERP_CPATTERN cp =
   tacSIGMA >>= begin fun gl ->
-  tclUNIT (Ssrmatching.interp_cpattern gl cp None)
+  tclUNIT (Ssrmatching.interp_cpattern (pf_env gl) (project gl) cp None)
 end
 
 let tacUNIFY a b =
@@ -1488,12 +1497,38 @@ let tclWITHTOP tac = Goal.enter begin fun gl ->
   Tactics.clear [top]
 end
 
-let tacMK_SSR_CONST name = Goal.enter_one ~__LOC__ begin fun g ->
-  let sigma, env = Goal.(sigma g, env g) in
-  let sigma, c = mkSsrConst name env sigma in
-  Unsafe.tclEVARS sigma <*>
-  tclUNIT c
-end
+let tacMK_SSR_CONST name =
+  Proofview.tclENV >>= fun env ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match mkSsrConst name env sigma with
+  | sigma, c -> Unsafe.tclEVARS sigma <*> tclUNIT c
+  | exception e when CErrors.noncritical e ->
+    tclLIFT (Proofview.NonLogical.raise (e, Exninfo.null))
+
+let tacDEST_CONST c =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.destConst sigma c with
+  | c, _ -> tclUNIT c
+  | exception e when CErrors.noncritical e ->
+    tclLIFT (Proofview.NonLogical.raise (e, Exninfo.null))
+
+(* TASSI: This version of unprotects inlines the unfold tactic definition,
+ * since we don't want to wipe out let-ins, and it seems there is no flag
+ * to change that behaviour in the standard unfold code *)
+let unprotecttac =
+  tacMK_SSR_CONST "protect_term" >>= tacDEST_CONST >>= fun prot ->
+  Tacticals.New.onClause (fun idopt ->
+    let hyploc = Option.map (fun id -> id, InHyp) idopt in
+    Tactics.reduct_option ~check:false
+      (Reductionops.clos_norm_flags
+        (CClosure.RedFlags.mkflags
+          [CClosure.RedFlags.fBETA;
+           CClosure.RedFlags.fCONST prot;
+           CClosure.RedFlags.fMATCH;
+           CClosure.RedFlags.fFIX;
+           CClosure.RedFlags.fCOFIX]), DEFAULTcast) hyploc)
+    allHypsAndConcl
+
 
 module type StateType = sig
   type state

@@ -191,7 +191,7 @@ let isGEN_PUSH dg =
 (* generalize `id` as `new_name` *)
 let gen_astac id new_name =
  let gen = ((None,Some(false,[])),Ssrmatching.cpattern_of_id id) in
- V82.tactic (Ssrcommon.gentac gen)
+ Ssrcommon.gentac gen
  <*> Ssrcommon.tclRENAME_HD_PROD new_name
 
 (* performs and resets all delayed generalizations *)
@@ -337,7 +337,7 @@ let tac_case t =
     Ssrcommon.tacTYPEOF t >>= fun ty ->
     Ssrcommon.tacIS_INJECTION_CASE ~ty t >>= fun is_inj ->
     if is_inj then
-      V82.tactic ~nf_evars:false (Ssrelim.perform_injection t)
+      Ssrelim.perform_injection t
     else
       Goal.enter begin fun g ->
          (Ssrelim.casetac t (fun ?seed k ->
@@ -384,13 +384,11 @@ end
 
 let tclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
   let env, concl = Goal.(env gl, concl gl) in
-  let step = begin fun sigma ->
+  let step ablock abstract = begin fun sigma ->
     let (sigma, (abstract_proof, abstract_ty)) =
       let (sigma, (ty, _)) =
         Evarutil.new_type_evar env sigma Evd.univ_flexible_alg in
-      let (sigma, ablock) = Ssrcommon.mkSsrConst "abstract_lock" env sigma in
       let (sigma, lock) = Evarutil.new_evar env sigma ablock in
-      let (sigma, abstract) = Ssrcommon.mkSsrConst "abstract" env sigma in
       let (sigma, abstract_id) = mk_abstract_id env sigma in
       let abstract_ty = EConstr.mkApp(abstract, [|ty; abstract_id; lock|]) in
       let sigma, m = Evarutil.new_evar env sigma abstract_ty in
@@ -405,7 +403,9 @@ let tclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
     let sigma, _ = Typing.type_of env sigma term in
     sigma, term
   end in
-  Tactics.New.refine ~typecheck:false step <*>
+  Ssrcommon.tacMK_SSR_CONST "abstract_lock" >>= fun ablock ->
+  Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
+  Tactics.New.refine ~typecheck:false (step ablock abstract) <*>
   tclFOCUS 1 3 Proofview.shelve
 end
 
@@ -477,7 +477,7 @@ let rec ipat_tac1 ipat : bool tactic =
 
   | IOpInj ipatss ->
      tclIORPAT (Ssrcommon.tclWITHTOP
-       (fun t -> V82.tactic  ~nf_evars:false (Ssrelim.perform_injection t)))
+       (fun t -> Ssrelim.perform_injection t))
        ipatss
      <*> notTAC
 
@@ -494,11 +494,11 @@ let rec ipat_tac1 ipat : bool tactic =
       notTAC
 
   | IOpSimpl x ->
-      V82.tactic ~nf_evars:false (Ssrequality.simpltac x) <*> notTAC
+      Ssrequality.simpltac x <*> notTAC
 
   | IOpRewrite (occ,dir) ->
      Ssrcommon.tclWITHTOP
-       (fun x -> V82.tactic  ~nf_evars:false (Ssrequality.ipat_rewrite occ dir x)) <*> notTAC
+       (fun x -> Ssrequality.ipat_rewrite occ dir x) <*> notTAC
 
   | IOpAbstractVars ids -> tclMK_ABSTRACT_VARS ids <*> notTAC
 
@@ -622,7 +622,7 @@ end
 let with_dgens { dgens; gens; clr } maintac = match gens with
   | [] -> with_defective maintac dgens clr
   | gen :: gens ->
-      V82.tactic ~nf_evars:false (Ssrcommon.genstac (gens, clr)) <*> maintac dgens gen
+      Ssrcommon.genstac (gens, clr) <*> maintac dgens gen
 
 let mkCoqEq env sigma =
   let eq = Coqlib.((build_coq_eq_data ()).eq) in
@@ -647,7 +647,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
          | ProdType (_, src, tgt) -> begin
              match kind_of_type sigma src with
              | AtomicType (hd, _) when Ssrcommon.is_protect hd env sigma ->
-                V82.tactic ~nf_evars:false Ssrcommon.unprotecttac <*>
+                Ssrcommon.unprotecttac <*>
                 Ssrcommon.tclINTRO_ID ipat
              | _ -> Ssrcommon.tclINTRO_ANON () <*> intro_eq ()
              end
@@ -700,7 +700,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
     | _ -> tclUNIT () in
   let unprotect =
     if eqid <> None && is_rec
-    then V82.tactic ~nf_evars:false Ssrcommon.unprotecttac else tclUNIT () in
+    then Ssrcommon.unprotecttac else tclUNIT () in
   begin match seed with
   | None -> ssrelim
   | Some s -> IpatMachine.tclSEED_SUBGOALS s ssrelim end <*>
@@ -727,7 +727,7 @@ let mkEq dir cl c t n env sigma =
 let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
   Ssrcommon.tacSIGMA >>= fun sigma0 ->
   Goal.enter_one begin fun g ->
-  let pat = Ssrmatching.interp_cpattern sigma0 t None in
+  let pat = Ssrmatching.interp_cpattern (Tacmach.pf_env sigma0) (Tacmach.project sigma0) t None in
   let cl0, env, sigma, hyps = Goal.(concl g, env g, sigma g, hyps g) in
   let cl = EConstr.to_constr ~abort_on_undefined_evars:false sigma cl0 in
   let (c, ucst), cl =
@@ -816,7 +816,7 @@ let ssrcasetac (view, (eqid, (dgens, ipats))) =
         Ssrcommon.tacIS_INJECTION_CASE vc >>= fun inj ->
         let simple = (eqid = None && deps = [] && occ = None) in
         if simple && inj then
-          V82.tactic ~nf_evars:false (Ssrelim.perform_injection vc) <*>
+          Ssrelim.perform_injection vc <*>
           Tactics.clear (List.map Ssrcommon.hyp_id clear) <*>
           tclIPATssr ipats
         else
@@ -870,7 +870,7 @@ let tclIPAT ip =
 
 let ssrmovetac = function
   | _::_ as view, (_, ({ gens = lastgen :: gens; clr }, ipats)) ->
-     let gentac = V82.tactic ~nf_evars:false (Ssrcommon.genstac (gens, [])) in
+     let gentac = Ssrcommon.genstac (gens, []) in
      let conclusion _ t clear ccl =
        Tactics.apply_type ~typecheck:true ccl [t] <*>
        Tactics.clear (List.map Ssrcommon.hyp_id clear) in
@@ -884,7 +884,7 @@ let ssrmovetac = function
     let dgentac = with_dgens dgens eqmovetac in
     dgentac <*> tclIPAT (eqmoveipats (IpatMachine.tclCompileIPats [pat]) (IpatMachine.tclCompileIPats ipats))
   | _, (_, ({ gens = (_ :: _ as gens); dgens = []; clr}, ipats)) ->
-    let gentac = V82.tactic ~nf_evars:false (Ssrcommon.genstac (gens, clr)) in
+    let gentac = Ssrcommon.genstac (gens, clr) in
     gentac <*> tclIPAT (IpatMachine.tclCompileIPats ipats)
   | _, (_, ({ clr }, ipats)) ->
     Tacticals.New.tclTHENLIST [ssrsmovetac; Tactics.clear (List.map Ssrcommon.hyp_id clr); tclIPAT (IpatMachine.tclCompileIPats ipats)]
@@ -985,7 +985,7 @@ let ssrabstract dgens =
    Ssrcommon.tacSIGMA >>= fun gl0 ->
      let open Ssrmatching in
      let ipats = List.map (fun (_,cp) ->
-       match id_of_pattern (interp_cpattern gl0 cp None) with
+       match id_of_pattern (interp_cpattern (Tacmach.pf_env gl0) (Tacmach.project gl0) cp None) with
        | None -> IPatAnon (One None)
        | Some id -> IPatId id)
        (List.tl gens) in

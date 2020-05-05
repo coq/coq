@@ -164,14 +164,17 @@ module Btauto = struct
 
   let reify env t = lapp eval [|convert_env env; convert t|]
 
-  let print_counterexample p penv gl =
+  let print_counterexample p penv =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
     let var = lapp witness [|p|] in
     let var = EConstr.of_constr var in
     (* Compute an assignment that dissatisfies the goal *)
-    let redfun, _ = Redexpr.reduction_of_red_expr (Refiner.pf_env gl) Genredexpr.(CbvVm None) in
-    let _, var = redfun Refiner.(pf_env gl) Refiner.(project gl) var in
+    let redfun, _ = Redexpr.reduction_of_red_expr env Genredexpr.(CbvVm None) in
+    let _, var = redfun env sigma var in
     let var = EConstr.Unsafe.to_constr var in
-    let rec to_list l = match decomp_term (Tacmach.project gl) l with
+    let rec to_list l = match decomp_term sigma l with
     | App (c, _)
       when c === (Lazy.force CoqList._nil) -> []
     | App (c, [|_; h; t|])
@@ -196,7 +199,6 @@ module Btauto = struct
         let assign = List.combine penv var in
         let map_msg (key, v) =
           let b = if v then str "true" else str "false" in
-          let sigma, env = Tacmach.project gl, Tacmach.pf_env gl in
           let term = Printer.pr_constr_env env sigma key in
           term ++ spc () ++ str ":=" ++ spc () ++ b
         in
@@ -205,7 +207,8 @@ module Btauto = struct
         str "Not a tautology:" ++ spc () ++ l
       with e when CErrors.noncritical e -> (str "Not a tautology")
     in
-    Tacticals.tclFAIL 0 msg gl
+    Tacticals.New.tclFAIL 0 msg
+  end
 
   let try_unification env =
     Proofview.Goal.enter begin fun gl ->
@@ -216,7 +219,7 @@ module Btauto = struct
       match t with
       | App (c, [|typ; p; _|]) when c === eq ->
       (* should be an equality [@eq poly ?p (Cst false)] *)
-          let tac = Tacticals.New.tclORELSE0 Tactics.reflexivity (Proofview.V82.tactic (print_counterexample p env)) in
+          let tac = Tacticals.New.tclORELSE0 Tactics.reflexivity (print_counterexample p env) in
           tac
       | _ ->
           let msg = str "Btauto: Internal error" in

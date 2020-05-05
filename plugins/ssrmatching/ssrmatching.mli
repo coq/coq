@@ -57,7 +57,7 @@ val redex_of_pattern :
 (** [interp_rpattern ise gl rpat] "internalizes" and "interprets" [rpat]
     in the current [Ltac] interpretation signature [ise] and tactic input [gl]*)
 val interp_rpattern :
-  goal sigma ->
+  Environ.env -> Evd.evar_map ->
   rpattern ->
     pattern
 
@@ -65,7 +65,7 @@ val interp_rpattern :
     in the current [Ltac] interpretation signature [ise] and tactic input [gl].
     [ty] is an optional type for the redex of [cpat] *)
 val interp_cpattern :
-  goal sigma ->
+  Environ.env -> Evd.evar_map ->
   cpattern -> (glob_constr_and_expr * Geninterp.interp_sign) option ->
     pattern
 
@@ -191,6 +191,8 @@ val mk_tpattern_matcher :
  * by [Rel 1] and the instance of [t] *)
 val pf_fill_occ_term : goal sigma -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
+val fill_occ_term : Environ.env -> Evd.evar_map -> EConstr.t -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
+
 (* It may be handy to inject a simple term into the first form of cpattern *)
 val cpattern_of_term : char * glob_constr_and_expr -> Geninterp.interp_sign -> cpattern
 
@@ -230,7 +232,7 @@ val pf_unsafe_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 (* One can also "Set SsrMatchingDebug" from a .v *)
 val debug : bool -> unit
 
-val ssrinstancesof : cpattern -> Tacmach.tactic
+val ssrinstancesof : cpattern -> unit Proofview.tactic
 
 (** Functions used for grammar extensions. Do not use. *)
 

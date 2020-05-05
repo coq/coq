@@ -183,7 +183,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
         else
           let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
           let pc = match c_gen with
-            | Some p -> interp_cpattern orig_gl p None
+            | Some p -> interp_cpattern (pf_env orig_gl) (project orig_gl) p None
             | _ -> mkTpat gl c in
           Some(c, c_ty, pc), gl in
       seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
@@ -233,7 +233,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
         pf_saturate ~beta:is_case gl elim ~ty:elimty n_elim_args in
       let pred = List.assoc pred_id elim_args in
       let pc = match n_c_args, c_gen with
-        | 0, Some p -> interp_cpattern orig_gl p None
+        | 0, Some p -> interp_cpattern (pf_env orig_gl) (project orig_gl) p None
         | _ -> mkTpat gl c in
       let cty = Some (c, c_ty, pc) in
       let elimty = Reductionops.whd_all env (project gl) elimty in
@@ -312,7 +312,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     let rec loop patterns clr i = function
       | [],[] -> patterns, clr, gl
       | ((oclr, occ), t):: deps, inf_t :: inf_deps ->
-          let p = interp_cpattern orig_gl t None in
+          let p = interp_cpattern (pf_env orig_gl) (project orig_gl) t None in
           let clr_t =
             interp_clr (project gl) (oclr,(tag_of_cpattern t,EConstr.of_constr (fst (redex_of_pattern env p)))) in
           (* if we are the index for the equation we do not clear *)
@@ -392,10 +392,15 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
           let erefl = fire_subst gl erefl in
           let erefl_ty = Retyping.get_type_of (pf_env gl) (project gl) erefl in
           let eq_ty = Retyping.get_type_of (pf_env gl) (project gl) erefl_ty in
-          let gen_eq_tac s =
+          let gen_eq_tac =
+            let open Proofview.Notations in
+            Proofview.Goal.enter begin fun s ->
+            let sigma = Proofview.Goal.sigma s in
             let open Evd in
-            let sigma = merge_universe_context s.sigma (evar_universe_context (project gl)) in
-            apply_type new_concl [erefl] { s with sigma }
+            let sigma = merge_universe_context sigma (evar_universe_context (project gl)) in
+            Proofview.Unsafe.tclEVARS sigma <*>
+            Tactics.apply_type ~typecheck:true new_concl [erefl]
+            end
           in
           gen_eq_tac, eq_ty, gl in
         let rel = k + if c_is_head_p then 1 else 0 in
@@ -403,7 +408,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
         let concl = EConstr.mkArrow src Sorts.Relevant (EConstr.Vars.lift 1 concl) in
         let clr = if deps <> [] then clr else [] in
         concl, gen_eq_tac, clr, gl
-    | _ -> concl, Tacticals.tclIDTAC, clr, gl in
+    | _ -> concl, Tacticals.New.tclIDTAC, clr, gl in
     let mk_lam t r = EConstr.mkLambda_or_LetIn r t in
     let concl = List.fold_left mk_lam concl pred_rctx in
     let gl, concl =
@@ -453,9 +458,8 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
 
   let elim_tac =
     Tacticals.New.tclTHENLIST [
-      Proofview.V82.tactic (refine_with ~with_evars:false elim);
+      refine_with ~with_evars:false elim;
       cleartac clr] in
-  let gen_eq_tac = Proofview.V82.tactic gen_eq_tac in
   Tacticals.New.tclTHENLIST [gen_eq_tac; elim_intro_tac ?seed:(Some seed) what eqid elim_tac is_rec clr]
 ;;
 
@@ -467,19 +471,22 @@ let casetac x k =
   let k ?seed _what _eqid elim_tac _is_rec _clr = k ?seed elim_tac in
   ssrelim ~is_case:true [] (`EConstr ([],None,x)) None k
 
-let pf_nb_prod gl = nb_prod (project gl) (pf_concl gl)
-
 let rev_id = mk_internal_id "rev concl"
 let injecteq_id = mk_internal_id "injection equation"
 
-let revtoptac n0 gl =
-  let n = pf_nb_prod gl - n0 in
-  let dc, cl = EConstr.decompose_prod_n_assum (project gl) n (pf_concl gl) in
+let revtoptac n0 =
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  let n = nb_prod sigma concl - n0 in
+  let dc, cl = EConstr.decompose_prod_n_assum sigma n concl in
   let dc' = dc @ [Context.Rel.Declaration.LocalAssum(make_annot (Name rev_id) Sorts.Relevant, EConstr.it_mkProd_or_LetIn cl (List.rev dc))] in
   let f = EConstr.it_mkLambda_or_LetIn (mkEtaApp (EConstr.mkRel (n + 1)) (-n) 1) dc' in
-  Refiner.refiner ~check:true EConstr.Unsafe.(to_constr (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|]))) gl
+  Refiner.refiner ~check:true EConstr.Unsafe.(to_constr (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|])))
+  end
 
-let equality_inj l b id c gl =
+let equality_inj l b id c =
+  Proofview.V82.tactic begin fun gl ->
   let msg = ref "" in
   try Proofview.V82.of_tactic (Equality.inj None l b None c) gl
   with
@@ -490,37 +497,53 @@ let equality_inj l b id c gl =
        !msg = "Nothing to inject." ->
     Feedback.msg_warning (Pp.str !msg);
     discharge_hyp (id, (id, "")) gl
+  end
 
-let injectidl2rtac id c gl =
-  Tacticals.tclTHEN (equality_inj None true id c) (revtoptac (pf_nb_prod gl)) gl
+let injectidl2rtac id c =
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  Tacticals.New.tclTHEN (equality_inj None true id c) (revtoptac (nb_prod sigma concl))
+  end
 
 let injectl2rtac sigma c = match EConstr.kind sigma c with
 | Var id -> injectidl2rtac id (EConstr.mkVar id, NoBindings)
 | _ ->
   let id = injecteq_id in
-  let xhavetac id c = Proofview.V82.of_tactic (Tactics.pose_proof (Name id) c) in
-  Tacticals.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Proofview.V82.of_tactic (Tactics.clear [id])]
+  let xhavetac id c = Tactics.pose_proof (Name id) c in
+  Tacticals.New.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Tactics.clear [id]]
 
-let is_injection_case c gl =
-  let gl, cty = pfe_type_of gl c in
-  let (mind,_), _ = pf_reduce_to_quantified_ind gl cty in
+let is_injection_case env sigma c =
+  let sigma, cty = Typing.type_of env sigma c in
+  let (mind,_), _ = Tacred.reduce_to_quantified_ind env sigma cty in
   Coqlib.check_ind_ref "core.eq.type" mind
 
-let perform_injection c gl =
-  let gl, cty = pfe_type_of gl c in
-  let mind, t = pf_reduce_to_quantified_ind gl cty in
-  let dc, eqt = EConstr.decompose_prod (project gl) t in
-  if dc = [] then injectl2rtac (project gl) c gl else
-  if not (EConstr.Vars.closed0 (project gl) eqt) then
+let perform_injection c =
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let sigma, cty = Typing.type_of env sigma c in
+  let mind, t = Tacred.reduce_to_quantified_ind env sigma cty in
+  let dc, eqt = EConstr.decompose_prod sigma t in
+  if dc = [] then injectl2rtac sigma c else
+  if not (EConstr.Vars.closed0 sigma eqt) then
     CErrors.user_err (Pp.str "can't decompose a quantified equality") else
-  let cl = pf_concl gl in let n = List.length dc in
+  let cl = Proofview.Goal.concl gl in
+  let n = List.length dc in
   let c_eq = mkEtaApp c n 2 in
   let cl1 = EConstr.mkLambda EConstr.(make_annot Anonymous Sorts.Relevant, mkArrow eqt Sorts.Relevant cl, mkApp (mkRel 1, [|c_eq|])) in
   let id = injecteq_id in
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
-  let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in
-  Tacticals.tclTHENLAST (Proofview.V82.of_tactic (Tactics.apply (EConstr.compose_lam dc cl1))) injtac gl
+  let injtac = Tacticals.New.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Tacticals.New.tclTHENLAST (Tactics.apply (EConstr.compose_lam dc cl1)) injtac
+  end
 
-let ssrscase_or_inj_tac c = Proofview.V82.tactic ~nf_evars:false (fun gl ->
-  if is_injection_case c gl then perform_injection c gl
-  else Proofview.V82.of_tactic (casetac c (fun ?seed:_ k -> k)) gl)
+let ssrscase_or_inj_tac c =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  if is_injection_case env sigma c then perform_injection c
+  else casetac c (fun ?seed:_ k -> k)
+  end

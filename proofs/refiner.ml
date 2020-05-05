@@ -37,6 +37,8 @@ let refiner ~check =
       CProfile.profile2 refiner_key (refiner ~check)
   else refiner ~check
 
+let refiner ~check c = Proofview.V82.tactic ~nf_evars:false (refiner ~check c)
+
 (*********************)
 (*   Tacticals       *)
 (*********************)
@@ -269,5 +271,3 @@ let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
 
 (* Change evars *)
 let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
-let tclPUSHEVARUNIVCONTEXT ctx gl =
-  tclEVARS (Evd.merge_universe_context (project gl) ctx) gl

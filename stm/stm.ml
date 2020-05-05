@@ -2023,12 +2023,16 @@ end = struct (* {{{ *)
           match Future.join f with
           | Some (pt, uc) ->
             let sigma, env = PG_compat.get_current_context () in
+            let push_state ctx =
+              Proofview.tclEVARMAP >>= fun sigma ->
+              Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma ctx)
+            in
             stm_pperr_endline (fun () -> hov 0 (
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr_env env sigma pt) ++ spc () ++
               str"uc=" ++ Termops.pr_evar_universe_context uc));
             (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
-              (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
+              (push_state uc <*>
               Tactics.exact_no_check (EConstr.of_constr pt))
           | None ->
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()

@@ -61,10 +61,7 @@ let clenv_pose_dependent_evars ?(with_evars=false) clenv =
   clenv_pose_metas_as_evars clenv dep_mvs
 
 let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
-  (* ppedrot: a Goal.enter here breaks things, because the tactic below may
-     solve goals by side effects, while the compatibility layer keeps those
-     useless goals. That deserves a FIXME. *)
-  Proofview.V82.tactic begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let clenv, evars = clenv_pose_dependent_evars ~with_evars clenv in
   let evd' =
     if with_classes then
@@ -78,9 +75,9 @@ let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
     else clenv.evd
   in
   let clenv = { clenv with evd = evd' } in
-  tclTHEN
-    (tclEVARS (Evd.clear_metas evd'))
-    (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv)))) gl
+  Proofview.tclTHEN
+    (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
+    (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
   end
 
 let clenv_pose_dependent_evars ?(with_evars=false) clenv =

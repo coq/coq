@@ -368,6 +368,9 @@ module New = struct
     Proofview.Unsafe.tclNEWGOALS tl <*>
     Proofview.tclUNIT ans
 
+  let tclTHENSLASTn t1 repeat l =
+    tclTHENS3PARTS t1 [||] repeat l
+
   let tclTHENLASTn t1 l =
     tclTHENS3PARTS t1 [||] (tclUNIT()) l
   let tclTHENLAST t1 t2 = tclTHENLASTn t1 [|t2|]
