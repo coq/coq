@@ -361,7 +361,8 @@ let make_initial_state dbg n gl dblist localdb lems =
     local_lemmas = lems;
   }
 
-let e_search_auto debug (in_depth,p) lems db_list gl =
+let e_search_auto debug (in_depth,p) lems db_list =
+  Proofview.V82.tactic ~nf_evars:false begin fun gl ->
   let local_db = make_local_hint_db (pf_env gl) (project gl) ~ts:TransparentState.full true lems in
   let d = mk_eauto_dbg debug in
   let tac = match in_depth,d with
@@ -377,25 +378,26 @@ let e_search_auto debug (in_depth,p) lems db_list gl =
     s.tacres
   with Not_found ->
     pr_info_nop d;
-    user_err Pp.(str "eauto: search failed")
+    tclIDTAC gl
+  end
 
 (* let e_search_auto_key = CProfile.declare_profile "e_search_auto" *)
 (* let e_search_auto = CProfile.profile5 e_search_auto_key e_search_auto *)
 
 let eauto_with_bases ?(debug=Off) np lems db_list =
-  Hints.wrap_hint_warning (Proofview.V82.tactic (tclTRY (e_search_auto debug np lems db_list)))
+  Hints.wrap_hint_warning (e_search_auto debug np lems db_list)
 
 let eauto ?(debug=Off) np lems dbnames =
   let db_list = make_db_list dbnames in
-  tclTRY (e_search_auto debug np lems db_list)
+  e_search_auto debug np lems db_list
 
-let full_eauto ?(debug=Off) n lems gl =
+let full_eauto ?(debug=Off) n lems =
   let db_list = current_pure_db () in
-  tclTRY (e_search_auto debug n lems db_list) gl
+  e_search_auto debug n lems db_list
 
 let gen_eauto ?(debug=Off) np lems = function
-  | None -> Hints.wrap_hint_warning (Proofview.V82.tactic (full_eauto ~debug np lems))
-  | Some l -> Hints.wrap_hint_warning (Proofview.V82.tactic (eauto ~debug np lems l))
+  | None -> Hints.wrap_hint_warning (full_eauto ~debug np lems)
+  | Some l -> Hints.wrap_hint_warning (eauto ~debug np lems l)
 
 let make_depth = function
   | None -> !default_search_depth
