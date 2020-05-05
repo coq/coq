@@ -95,9 +95,16 @@ let intern_string_or_var = intern_or_var (fun (s : string) -> s)
 let intern_global_reference ist qid =
   if qualid_is_ident qid && find_var (qualid_basename qid) ist then
     ArgVar (make ?loc:qid.CAst.loc @@ qualid_basename qid)
-  else
-    try ArgArg (qid.CAst.loc,locate_global_with_alias qid)
-    with Not_found -> Nametab.error_global_not_found qid
+  else if qualid_is_ident qid && find_hyp (qualid_basename qid) ist then
+    let id = qualid_basename qid in
+    ArgArg (qid.CAst.loc, GlobRef.VarRef id)
+  else match locate_global_with_alias qid with
+  | r -> ArgArg (qid.CAst.loc, r)
+  | exception Not_found ->
+    if not !strict_check && qualid_is_ident qid then
+      let id = qualid_basename qid in
+      ArgArg (qid.CAst.loc, GlobRef.VarRef id)
+    else Nametab.error_global_not_found qid
 
 let intern_ltac_variable ist qid =
   if qualid_is_ident qid && find_var (qualid_basename qid) ist then
