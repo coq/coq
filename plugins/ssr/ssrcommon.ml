@@ -1500,14 +1500,17 @@ end
 let tacMK_SSR_CONST name =
   Proofview.tclENV >>= fun env ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  let sigma, c = mkSsrConst name env sigma in
-  Unsafe.tclEVARS sigma <*>
-  tclUNIT c
+  match mkSsrConst name env sigma with
+  | sigma, c -> Unsafe.tclEVARS sigma <*> tclUNIT c
+  | exception e when CErrors.noncritical e ->
+    tclLIFT (Proofview.NonLogical.raise (e, Exninfo.null))
 
 let tacDEST_CONST c =
   Proofview.tclEVARMAP >>= fun sigma ->
-  let c, _ = EConstr.destConst sigma c in
-  tclUNIT c
+  match EConstr.destConst sigma c with
+  | c, _ -> tclUNIT c
+  | exception e when CErrors.noncritical e ->
+    tclLIFT (Proofview.NonLogical.raise (e, Exninfo.null))
 
 (* TASSI: This version of unprotects inlines the unfold tactic definition,
  * since we don't want to wipe out let-ins, and it seems there is no flag
