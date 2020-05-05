@@ -62,7 +62,7 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
       Definition bar x := S x.
       #[deprecated(since="1.2", note="Use bar instead.")]
-      Notation foo := bar.
+      Notation foo := bar (only parsing).
 
    Then, the following code still works, but emits a warning:
 
