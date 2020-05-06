@@ -395,7 +395,8 @@ let jmeq_refl () =
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
-  tclMAP (fun x -> Proofview.V82.of_tactic (Tactics.Simple.intro x)) l
+  Proofview.V82.of_tactic
+    (Tacticals.New.tclMAP (fun x -> Tactics.Simple.intro x) l)
 
 let h_id = Id.of_string "h"
 let hrec_id = Id.of_string "hrec"
@@ -428,15 +429,15 @@ let evaluable_of_global_reference r =
 
 let list_rewrite (rev : bool) (eqs : (EConstr.constr * bool) list) =
   let open Tacticals in
-  tclREPEAT
-    (List.fold_right
-       (fun (eq, b) i ->
-         tclORELSE
-           (Proofview.V82.of_tactic
-              ((if b then Equality.rewriteLR else Equality.rewriteRL) eq))
-           i)
-       (if rev then List.rev eqs else eqs)
-       (tclFAIL 0 (mt ())))
+  (tclREPEAT
+     (List.fold_right
+        (fun (eq, b) i ->
+          tclORELSE
+            (Proofview.V82.of_tactic
+               ((if b then Equality.rewriteLR else Equality.rewriteRL) eq))
+            i)
+        (if rev then List.rev eqs else eqs)
+        (tclFAIL 0 (mt ()))) [@ocaml.warning "-3"])
 
 let decompose_lam_n sigma n =
   if n < 0 then

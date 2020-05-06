@@ -29,6 +29,8 @@ module NamedDecl = Context.Named.Declaration
 
 type tactic = Proofview.V82.tac
 
+[@@@ocaml.warning "-3"]
+
 let tclIDTAC         = Refiner.tclIDTAC
 let tclIDTAC_MESSAGE = Refiner.tclIDTAC_MESSAGE
 let tclORELSE0       = Refiner.tclORELSE0
