@@ -243,19 +243,25 @@ let change_eq env sigma hyp_id (context : rel_context) x t end_of_type =
   let new_ctxt, new_end_of_type =
     decompose_prod_n_assum sigma ctxt_size new_type_of_hyp
   in
-  let prove_new_hyp : tactic =
-    tclTHEN
-      (tclDO ctxt_size (Proofview.V82.of_tactic intro))
-      (fun g ->
-        let all_ids = pf_ids_of_hyps g in
-        let new_ids, _ = list_chop ctxt_size all_ids in
-        let to_refine = applist (witness_fun, List.rev_map mkVar new_ids) in
-        let evm, _ = pf_apply Typing.type_of g to_refine in
-        tclTHEN (Refiner.tclEVARS evm) (refine to_refine) g)
+  let prove_new_hyp =
+    let open Tacticals.New in
+    let open Tacmach.New in
+    tclTHEN (tclDO ctxt_size intro)
+      (Proofview.Goal.enter (fun g ->
+           let all_ids = pf_ids_of_hyps g in
+           let new_ids, _ = list_chop ctxt_size all_ids in
+           let to_refine = applist (witness_fun, List.rev_map mkVar new_ids) in
+           let evm, _ =
+             Typing.type_of (Proofview.Goal.env g) (Proofview.Goal.sigma g)
+               to_refine
+           in
+           tclTHEN
+             (Proofview.Unsafe.tclEVARS evm)
+             (Proofview.V82.tactic (refine to_refine))))
   in
   let simpl_eq_tac =
     change_hyp_with_using "prove_pattern_simplification" hyp_id new_type_of_hyp
-      prove_new_hyp
+      (Proofview.V82.of_tactic prove_new_hyp)
   in
   (*     observe (str "In " ++ Ppconstr.pr_id hyp_id ++  *)
   (*             str "removing an equation " ++ fnl ()++  *)
@@ -534,11 +540,13 @@ let instantiate_hyps_with_args (do_prove : Id.t list -> tactic) hyps args_id =
         let prov_hid = pf_get_new_id hid g in
         let c = mkApp (mkVar hid, args) in
         let evm, _ = pf_apply Typing.type_of g c in
-        tclTHENLIST
-          [ Refiner.tclEVARS evm
-          ; Proofview.V82.of_tactic (pose_proof (Name prov_hid) c)
-          ; thin [hid]
-          ; Proofview.V82.of_tactic (rename_hyp [(prov_hid, hid)]) ]
+        let open Tacticals.New in
+        Proofview.V82.of_tactic
+          (tclTHENLIST
+             [ Proofview.Unsafe.tclEVARS evm
+             ; pose_proof (Name prov_hid) c
+             ; clear [hid]
+             ; rename_hyp [(prov_hid, hid)] ])
           g)
       (fun (*
           if not then we are in a mutual function block

@@ -2,7 +2,7 @@ open Names
 open Pp
 open Constr
 open Libnames
-open Refiner
+open Tacmach
 
 let mk_prefix pre id = Id.of_string (pre ^ Id.to_string id)
 let mk_rel_id = mk_prefix "R_"
@@ -427,6 +427,7 @@ let evaluable_of_global_reference r =
   | _ -> assert false
 
 let list_rewrite (rev : bool) (eqs : (EConstr.constr * bool) list) =
+  let open Tacticals in
   tclREPEAT
     (List.fold_right
        (fun (eq, b) i ->
