@@ -3,4 +3,5 @@
  (synopsis "Coq's Term Pretty Printing Library")
  (public_name coq-core.printing)
  (wrapped false)
+ (instrumentation (backend bisect_ppx))
  (libraries parsing proofs))

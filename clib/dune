@@ -3,5 +3,6 @@
  (synopsis "Coq's Utility Library [general purpose]")
  (public_name coq-core.clib)
  (wrapped false)
+ (instrumentation (backend bisect_ppx))
  (modules_without_implementation cSig)
  (libraries str unix threads))
