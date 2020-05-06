@@ -102,7 +102,7 @@ forget this paragraph and use the tactic according to your intuition.
 Concrete usage in Coq
 --------------------------
 
-.. tacn:: ring
+.. tacv:: ring
 
    This tactic solves equations upon polynomial expressions of a ring
    (or semiring) structure. It proceeds by normalizing both sides
@@ -110,7 +110,7 @@ Concrete usage in Coq
    distributivity, constant propagation, rewriting of monomials) and
    comparing syntactically the results.
 
-.. tacn:: ring_simplify
+.. tacv:: ring_simplify
 
    This tactic applies the normalization procedure described above to
    the given terms. The tactic then replaces all occurrences of the terms
@@ -511,7 +511,7 @@ application of the main correctness theorem to well-chosen arguments.
 Dealing with fields
 ------------------------
 
-.. tacn:: field
+.. tacv:: field
 
    This tactic is an extension of the :tacn:`ring` tactic that deals with rational
    expressions. Given a rational expression :math:`F = 0`. It first reduces the
