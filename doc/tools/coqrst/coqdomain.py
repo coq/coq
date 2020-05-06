@@ -131,12 +131,15 @@ class CoqObject(ObjectDescription):
         signature”); for example, the signature of the simplest form of the
         ``exact`` tactic is ``exact @id``.
 
-        Returns None by default, in which case no name will be automatically
-        generated.  This is a convenient way to automatically generate names
-        (link targets) without having to write explicit names everywhere.
+        Generates a name for the directive.  Override this method to return None
+        to avoid generating a name automatically.  This is a convenient way
+        to automatically generate names (link targets) without having to write
+        explicit names everywhere.
 
         """
-        return None
+        m = re.match(r"[a-zA-Z0-9_ ]+", signature)
+        if m:
+            return m.group(0).strip()
 
     def _render_signature(self, signature, signode):
         """Render a signature, placing resulting nodes into signode."""
@@ -343,7 +346,7 @@ class VernacVariantObject(VernacObject):
     def _name_from_signature(self, signature):
         return None
 
-class TacticNotationObject(NotationObject):
+class TacticObject(NotationObject):
     """A tactic, or a tactic notation.
 
     Example::
@@ -356,7 +359,7 @@ class TacticNotationObject(NotationObject):
     index_suffix = "(tactic)"
     annotation = "Tactic"
 
-class AttributeNotationObject(NotationObject):
+class AttributeObject(NotationObject):
     """An attribute.
 
     Example::
@@ -370,7 +373,7 @@ class AttributeNotationObject(NotationObject):
     def _name_from_signature(self, signature):
         return notation_to_string(signature)
 
-class TacticNotationVariantObject(TacticNotationObject):
+class TacticVariantObject(TacticObject):
     """A variant of a tactic.
 
     Example::
@@ -390,6 +393,9 @@ class TacticNotationVariantObject(TacticNotationObject):
     index_suffix = "(tactic variant)"
     annotation = "Variant"
 
+    def _name_from_signature(self, signature):
+        return None
+
 class OptionObject(NotationObject):
     """A Coq option (a setting with non-boolean value, e.g. a string or numeric value).
 
@@ -404,10 +410,6 @@ class OptionObject(NotationObject):
     subdomain = "opt"
     index_suffix = "(option)"
     annotation = "Option"
-
-    def _name_from_signature(self, signature):
-        return notation_to_string(signature)
-
 
 class FlagObject(NotationObject):
     """A Coq flag (i.e. a boolean setting).
@@ -424,10 +426,6 @@ class FlagObject(NotationObject):
     index_suffix = "(flag)"
     annotation = "Flag"
 
-    def _name_from_signature(self, signature):
-        return notation_to_string(signature)
-
-
 class TableObject(NotationObject):
     """A Coq table, i.e. a setting that is a set of values.
 
@@ -441,9 +439,6 @@ class TableObject(NotationObject):
     subdomain = "table"
     index_suffix = "(table)"
     annotation = "Table"
-
-    def _name_from_signature(self, signature):
-        return notation_to_string(signature)
 
 class ProductionObject(CoqObject):
     r"""A grammar production.
@@ -1251,12 +1246,12 @@ class CoqDomain(Domain):
         # the same role.
         'cmd': VernacObject,
         'cmdv': VernacVariantObject,
-        'tacn': TacticNotationObject,
-        'tacv': TacticNotationVariantObject,
+        'tacn': TacticObject,
+        'tacv': TacticVariantObject,
         'opt': OptionObject,
         'flag': FlagObject,
         'table': TableObject,
-        'attr': AttributeNotationObject,
+        'attr': AttributeObject,
         'thm': GallinaObject,
         'prodn' : ProductionObject,
         'exn': ExceptionObject,
