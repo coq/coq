@@ -552,7 +552,6 @@ Proof.
   - symmetry in HP.
     destruct (Permutation_vs_cons_inv HP) as [l3 [l4 Heq]].
     destruct (map_eq_app _ _ _ _ Heq) as [l1' [l2' [Heq1 [Heq2 Heq3]]]]; subst.
-    symmetry in Heq3.
     destruct (map_eq_cons _ _ Heq3) as [b [l1'' [Heq1' [Heq2' Heq3']]]]; subst.
     rewrite map_app in HP; simpl in HP.
     symmetry in HP.

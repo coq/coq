@@ -1141,7 +1141,7 @@ Section Map.
   Qed.
 
   Lemma map_eq_cons : forall l l' b,
-    map l = b :: l' -> exists a tl, l = a :: tl /\ b = f a /\ l' = map tl.
+    map l = b :: l' -> exists a tl, l = a :: tl /\ f a = b /\ map tl = l'.
   Proof.
     intros l l' b Heq.
     destruct l; inversion_clear Heq.
@@ -1149,7 +1149,7 @@ Section Map.
   Qed.
 
   Lemma map_eq_app  : forall l l1 l2,
-    map l = l1 ++ l2 -> exists l1' l2', l = l1' ++ l2' /\ l1 = map l1' /\ l2 = map l2'.
+    map l = l1 ++ l2 -> exists l1' l2', l = l1' ++ l2' /\ map l1' = l1 /\ map l2' = l2.
   Proof.
     induction l; simpl; intros l1 l2 Heq.
     - symmetry in Heq; apply app_eq_nil in Heq; destruct Heq; subst.
