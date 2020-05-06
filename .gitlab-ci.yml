@@ -40,7 +40,7 @@ variables:
   # echo $(md5sum dev/ci/docker/old_ubuntu_lts/Dockerfile | head -c 10)
   # echo $(md5sum dev/ci/docker/edge_ubuntu/Dockerfile | head -c 10)
   BASE_CACHEKEY: "old_ubuntu_lts-V2024-01-08-011994e15c"
-  EDGE_CACHEKEY: "edge_ubuntu-V2024-02-08-3ed9c93d7c"
+  EDGE_CACHEKEY: "edge_ubuntu-V2024-02-08-314a65abcb"
   BASE_IMAGE: "$CI_REGISTRY_IMAGE:$BASE_CACHEKEY"
   EDGE_IMAGE: "$CI_REGISTRY_IMAGE:$EDGE_CACHEKEY"
 
@@ -540,6 +540,28 @@ test-suite:base:dev:
     paths:
       - _build/log
       - _build/default/test-suite/logs
+    expire_in: 2 week
+  allow_failure: true
+
+test-suite:edge+coverage:
+  stage: build
+  script:
+    - ulimit -s 16384
+    - make dunestrap
+    - dune build --instrument-with bisect_ppx --workspace dev/dune-workspace.bisect @runtest
+    - find _build/coverage/ -name '*.coverage' -size 0 -exec rm {} \; # workaround truncated coverage file bug
+    - bisect-ppx-report html --source-path=_build/coverage --coverage-path=_build/coverage -o _build/coq-coverage --title="Coq's Test suite"
+    # TODO: deploy
+    # bisect-ppx-report send-to Codecov
+  variables:
+    OPAM_SWITCH: edge
+    OPAM_VARIANT: "+flambda"
+  artifacts:
+    name: "$CI_JOB_NAME.logs"
+    when: always
+    paths:
+      - _build/log
+      - _build/coq-coverage
     expire_in: 2 week
   allow_failure: true
 

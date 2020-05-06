@@ -4,4 +4,5 @@
  (public_name coq-core.pretyping)
  (wrapped false)
  (modules_without_implementation locus pattern glob_term ltac_pretype)
+ (instrumentation (backend bisect_ppx))
  (libraries engine))

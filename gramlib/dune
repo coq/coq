@@ -2,4 +2,5 @@
  (name gramlib)
  (public_name coq-core.gramlib)
  (modules_without_implementation plexing)
+ (instrumentation (backend bisect_ppx))
  (libraries coq-core.lib))

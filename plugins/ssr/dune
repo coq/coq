@@ -3,6 +3,7 @@
  (public_name coq-core.plugins.ssreflect)
  (synopsis "Coq's ssreflect plugin")
  (modules_without_implementation ssrast)
+ (instrumentation (backend bisect_ppx))
  (flags :standard -open Gramlib)
  (libraries coq-core.plugins.ssrmatching))
 
