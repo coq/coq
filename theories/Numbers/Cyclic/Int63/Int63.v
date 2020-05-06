@@ -978,7 +978,7 @@ Proof.
    case (leb_spec digits j); rewrite H; auto with zarith.
    intros _ HH; generalize (HH H1); discriminate.
  clear H.
- generalize (ltb_spec j i); case ltb; intros H2; unfold bit; simpl.
+ generalize (ltb_spec j i); case Int63.ltb; intros H2; unfold bit; simpl.
    assert (F2: (φ j < φ i)%Z) by (case H2; auto); clear H2.
    replace (is_zero (((x << i) >> j) << (digits - 1))) with true; auto.
    case (to_Z_bounded j); intros  H1j H2j.
