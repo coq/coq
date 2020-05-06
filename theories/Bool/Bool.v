@@ -9,9 +9,12 @@
 (************************************************************************)
 
 (** The type [bool] is defined in the prelude as
-    [Inductive bool : Set := true : bool | false : bool] *)
+[[
+Inductive bool : Set := true : bool | false : bool
+]]
+ *)
 
-(** Most of the lemmas in this file are trivial after breaking all booleans *)
+(** Most of the lemmas in this file are trivial by case analysis *)
 
 Ltac destr_bool :=
  intros; destruct_all bool; simpl in *; trivial; try discriminate.
@@ -75,9 +78,9 @@ Proof.
   destr_bool; intuition.
 Qed.
 
-(**********************)
+(************************)
 (** * Order on booleans *)
-(**********************)
+(************************)
 
 Definition leb (b1 b2:bool) :=
   match b1 with
@@ -93,9 +96,9 @@ Qed.
 
 (* Infix "<=" := leb : bool_scope. *)
 
-(*************)
+(***************)
 (** * Equality *)
-(*************)
+(***************)
 
 Definition eqb (b1 b2:bool) : bool :=
   match b1, b2 with
@@ -131,9 +134,9 @@ Proof.
   destr_bool; intuition.
 Qed.
 
-(************************)
+(**********************************)
 (** * A synonym of [if] on [bool] *)
-(************************)
+(**********************************)
 
 Definition ifb (b1 b2 b3:bool) : bool :=
   match b1 with
@@ -143,9 +146,9 @@ Definition ifb (b1 b2 b3:bool) : bool :=
 
 Open Scope bool_scope.
 
-(****************************)
-(** * De Morgan laws          *)
-(****************************)
+(*********************)
+(** * De Morgan laws *)
+(*********************)
 
 Lemma negb_orb : forall b1 b2:bool, negb (b1 || b2) = negb b1 && negb b2.
 Proof.
@@ -157,9 +160,9 @@ Proof.
   destr_bool.
 Qed.
 
-(********************************)
-(** * Properties of [negb]    *)
-(********************************)
+(***************************)
+(** * Properties of [negb] *)
+(***************************)
 
 Lemma negb_involutive : forall b:bool, negb (negb b) = b.
 Proof.
@@ -212,9 +215,9 @@ Proof.
 Qed.
 
 
-(********************************)
-(** * Properties of [orb]     *)
-(********************************)
+(**************************)
+(** * Properties of [orb] *)
+(**************************)
 
 Lemma orb_true_iff :
   forall b1 b2, b1 || b2 = true <-> b1 = true \/ b2 = true.
@@ -305,6 +308,11 @@ Proof.
 Qed.
 Hint Resolve orb_negb_r: bool.
 
+Lemma orb_negb_l : forall b:bool, negb b || b = true.
+Proof.
+  destr_bool.
+Qed.
+
 Notation orb_neg_b := orb_negb_r (only parsing).
 
 (** Commutativity *)
@@ -322,9 +330,9 @@ Proof.
 Qed.
 Hint Resolve orb_comm orb_assoc: bool.
 
-(*******************************)
-(** * Properties of [andb]     *)
-(*******************************)
+(***************************)
+(** * Properties of [andb] *)
+(***************************)
 
 Lemma andb_true_iff :
   forall b1 b2:bool, b1 && b2 = true <-> b1 = true /\ b2 = true.
@@ -404,6 +412,11 @@ Proof.
 Qed.
 Hint Resolve andb_negb_r: bool.
 
+Lemma andb_negb_l : forall b:bool, negb b && b = false.
+Proof.
+  destr_bool.
+Qed.
+
 Notation andb_neg_b := andb_negb_r (only parsing).
 
 (** Commutativity *)
@@ -422,9 +435,9 @@ Qed.
 
 Hint Resolve andb_comm andb_assoc: bool.
 
-(*******************************************)
+(*****************************************)
 (** * Properties mixing [andb] and [orb] *)
-(*******************************************)
+(*****************************************)
 
 (** Distributivity *)
 
@@ -476,9 +489,88 @@ Notation absoption_andb := absorption_andb (only parsing).
 Notation absoption_orb := absorption_orb (only parsing).
 (* end hide *)
 
-(*********************************)
-(** * Properties of [xorb]       *)
-(*********************************)
+(****************************)
+(** * Properties of [implb] *)
+(****************************)
+
+Lemma implb_true_iff : forall b1 b2:bool, implb b1 b2 = true <-> (b1 = true -> b2 = true).
+Proof.
+  destr_bool; intuition.
+Qed.
+
+Lemma implb_false_iff : forall b1 b2:bool, implb b1 b2 = false <-> (b1 = true /\ b2 = false).
+Proof.
+  destr_bool; intuition.
+Qed.
+
+Lemma implb_orb : forall b1 b2:bool, implb b1 b2 = negb b1 || b2.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_negb_orb : forall b1 b2:bool, implb (negb b1) b2 = b1 || b2.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_true_r : forall b:bool, implb b true = true.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_false_r : forall b:bool, implb b false = negb b.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_true_l : forall b:bool, implb true b = b.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_false_l : forall b:bool, implb false b = true.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_same : forall b:bool, implb b b = true.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_contrapositive : forall b1 b2:bool, implb (negb b1) (negb b2) = implb b2 b1.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_negb : forall b1 b2:bool, implb (negb b1) b2 = implb (negb b2) b1.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_curry : forall b1 b2 b3:bool, implb (b1 && b2) b3 = implb b1 (implb b2 b3).
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_andb_distrib_r : forall b1 b2 b3:bool, implb b1 (b2 && b3) = implb b1 b2 && implb b1 b3.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_orb_distrib_r : forall b1 b2 b3:bool, implb b1 (b2 || b3) = implb b1 b2 || implb b1 b3.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_orb_distrib_l : forall b1 b2 b3:bool, implb (b1 || b2) b3 = implb b1 b3 && implb b2 b3.
+Proof.
+  destr_bool.
+Qed.
+
+(***************************)
+(** * Properties of [xorb] *)
+(***************************)
 
 (** [false] is neutral for [xorb] *)
 
@@ -632,9 +724,9 @@ Proof.
 Qed.
 Hint Resolve trans_eq_bool : core.
 
-(*****************************************)
+(***************************************)
 (** * Reflection of [bool] into [Prop] *)
-(*****************************************)
+(***************************************)
 
 (** [Is_true] and equality *)
 
@@ -752,10 +844,10 @@ Proof.
   destr_bool.
 Qed.
 
-(*****************************************)
+(***********************************************)
 (** * Alternative versions of [andb] and [orb]
-    with lazy behavior (for vm_compute)  *)
-(*****************************************)
+    with lazy behavior (for vm_compute)        *)
+(***********************************************)
 
 Declare Scope lazy_bool_scope.
 
@@ -776,11 +868,11 @@ Proof.
   reflexivity.
 Qed.
 
-(*****************************************)
+(************************************************)
 (** * Reflect: a specialized inductive type for
     relating propositions and booleans,
-    as popularized by the Ssreflect library. *)
-(*****************************************)
+    as popularized by the Ssreflect library.    *)
+(************************************************)
 
 Inductive reflect (P : Prop) : bool -> Set :=
   | ReflectT : P -> reflect P true
