@@ -1,0 +1,4 @@
+File "stdin", line 4, characters 0-16:
+Error: Ltac variable x is bound to i > 0 which cannot be coerced to
+an evaluable reference.
+
