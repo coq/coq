@@ -48,28 +48,16 @@ def coqdoc(coq_code, coqdoc_bin=None):
     finally:
         os.remove(filename)
 
-def is_whitespace_string(elem):
-    return isinstance(elem, NavigableString) and elem.strip() == ""
-
-def strip_soup(soup, pred):
-    """Strip elements matching pred from front and tail of soup."""
-    while soup.contents and pred(soup.contents[-1]):
-        soup.contents.pop()
-
-    skip = 0
-    for elem in soup.contents:
-        if not pred(elem):
-            break
-        skip += 1
-
-    soup.contents[:] = soup.contents[skip:]
-
 def lex(source):
     """Convert source into a stream of (css_classes, token_string)."""
     coqdoc_output = coqdoc(source)
     soup = BeautifulSoup(coqdoc_output, "html.parser")
     root = soup.find(class_='code')
-    strip_soup(root, is_whitespace_string)
+    if root.children:
+        # strip the leading '\n'
+        first = next(root.children)
+        if isinstance(first, NavigableString) and first.string[0] == '\n':
+            first.string.replace_with(first.string[1:])
     for elem in root.children:
         if isinstance(elem, NavigableString):
             yield [], elem

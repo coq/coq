@@ -905,9 +905,17 @@ class CoqtopBlocksTransform(Transform):
         return isinstance(node, nodes.Element) and 'coqtop_options' in node
 
     @staticmethod
-    def split_sentences(source):
+    def split_sentences(node):
         """Split Coq sentences in source. Could be improved."""
-        return re.split(r"(?<=(?<!\.)\.)\s+", source)
+        lines = map(lambda s: s.rstrip(), node.rawsource.splitlines())
+        out = [""]
+        for l in lines:
+            out[-1] = out[-1] + l + "\n"
+            if l.endswith("."):
+                out.append("")
+        if out[-1] == "":
+            out.pop()
+        return out
 
     @staticmethod
     def parse_options(node):
@@ -986,7 +994,7 @@ class CoqtopBlocksTransform(Transform):
             repl.sendone('Unset Coqtop Exit On Error.')
         if options['warn']:
             repl.sendone('Set Warnings "default".')
-        for sentence in self.split_sentences(node.rawsource):
+        for sentence in self.split_sentences(node):
             pairs.append((sentence, repl.sendone(sentence)))
         if options['abort']:
             repl.sendone('Abort All.')
