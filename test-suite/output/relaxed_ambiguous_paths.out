@@ -3,7 +3,7 @@ Warning:
 New coercion path [ac; cd] : A >-> D is ambiguous with existing 
 [ab; bd] : A >-> D. [ambiguous-paths,typechecker]
 [ab] : A >-> B
-[ab; bd] : A >-> D
+[ac; cd] : A >-> D
 [ac] : A >-> C
 [bd] : B >-> D
 [cd] : C >-> D
@@ -27,7 +27,7 @@ New coercion path [ab; bc] : A >-> C is ambiguous with existing
 [B_A'; A'_A] : B >-> A
 [C_A'] : C >-> A'
 [C_A'; A'_A] : C >-> A
-[D_B; B_A'] : D >-> A'
+[D_C; C_A'] : D >-> A'
 [D_A] : D >-> A
 [D_B] : D >-> B
 [D_C] : D >-> C
@@ -40,7 +40,7 @@ New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing
 [B_A'; A'_A] : B >-> A
 [C_A'] : C >-> A'
 [C_A'; A'_A] : C >-> A
-[D_B; B_A'] : D >-> A'
+[D_C; C_A'] : D >-> A'
 [D_A] : D >-> A
 [D_B] : D >-> B
 [D_C] : D >-> C

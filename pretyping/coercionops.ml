@@ -353,7 +353,12 @@ let add_coercion_in_graph env sigma (ic,source,target) =
         if not (List.exists (fun c -> List.exists (coe_info_typ_equal c) q) p ||
                 compare_path env sigma i p q) then
           ambig_paths := (ij,p,q)::!ambig_paths;
-        false
+        if List.length p <= List.length q then begin
+          (* If the new coercion path is non-strictly shorter than the valid
+             one, we overwrite it with the new one. See #10825. *)
+          add_new_path ij p; true
+        end else
+          false
       | exception Not_found -> (add_new_path ij p; true)
     else
       false
