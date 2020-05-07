@@ -2021,82 +2021,6 @@ End Setincl.
 Hint Resolve incl_refl incl_tl incl_tran incl_appl incl_appr incl_cons
   incl_app: datatypes.
 
- Section SetIncl.
-
-   Variable A : Type.
-
-   Inductive Incl : list A -> list A -> Prop :=
-   | Incl_nil : forall l, Incl nil l
-   | Incl_cons : forall x l l', In x l' -> Incl l l' -> Incl (x :: l) l'.
-   Hint Constructors Incl : core.
-
-   Lemma In_Incl : forall a l m,
-       Incl l m -> In a l -> In a m.
-   Proof.
-     intros * H Ha.
-     induction H.
-     - inversion Ha.
-     - inversion Ha as [->|?]; auto.
-   Qed.
-
-   Lemma Incl_iff_incl : forall l m,
-       Incl l m <-> incl l m.
-   Proof.
-     intros; split; intro H.
-     - intros ? ?; apply In_Incl with l; auto.
-     - induction l.
-       + auto.
-       + destruct (incl_cons_inv H) as [].
-         constructor; auto.
-   Qed.
-
-   Lemma Incl_trans : forall l m n,
-       Incl l m -> Incl m n -> Incl l n.
-   Proof.
-     intros * Hlm ?.
-     induction Hlm as [| ? ? m ].
-     - auto.
-     - constructor.
-       + now apply In_Incl with m.
-       + auto.
-   Qed.
-
-   Lemma Incl_tl : forall a l m,
-       Incl l m -> Incl l (a :: m).
-   Proof.
-     intros * H.
-     induction H.
-     - auto.
-     - constructor; [simpl|]; auto.
-   Qed.
-
-   Lemma Incl_refl : forall l,
-       Incl l l.
-   Proof.
-     induction l.
-     - auto.
-     - constructor.
-       + simpl; auto.
-       + now apply Incl_tl.
-   Qed.
-
-   Lemma Incl_or_app : forall l m n,
-       Incl l m \/ Incl l n -> Incl l (m ++ n).
-   Proof.
-     intros * [H | H];
-       (induction H; [|constructor; [apply in_or_app|]]; auto).
-   Qed.
-
-   Lemma app_Incl : forall l m n,
-       Incl l n -> Incl m n -> Incl (l ++ m) n.
-   Proof.
-     intros l * Hln Hmn.
-     induction Hln.
-     - auto.
-     - rewrite <- app_comm_cons; constructor; auto.
-   Qed.
-
-End SetIncl.
 
 (**************************************)
 (** * Cutting a list at some position *)
@@ -3178,6 +3102,70 @@ Section ForallPairs.
     destruct (ForallOrdPairs_In Hl _ _ Hx Hy); subst; intuition.
   Qed.
 End ForallPairs.
+
+Section SetIncl.
+
+  Variable A : Type.
+
+  Definition Incl l m := Forall (fun a => @In A a m) l.
+  Hint Unfold Incl : core.
+
+  Lemma In_Incl : forall a l m,
+      Incl l m -> In a l -> In a m.
+  Proof.
+    intros.
+    pattern a.
+    eapply Forall_forall with l; auto.
+  Qed.
+
+  Lemma Incl_iff_incl : forall l m,
+      Incl l m <-> incl l m.
+  Proof.
+    intros; split; intro.
+    - intros a ?. pattern a. eapply Forall_forall with l; auto.
+    - apply Forall_forall. auto.
+  Qed.
+
+  Lemma Incl_trans : forall l m n,
+      Incl l m -> Incl m n -> Incl l n.
+  Proof.
+    intros.
+    eapply Forall_impl with (fun x => In x m).
+    - apply Forall_forall; auto.
+    - auto.
+  Qed.
+
+  Lemma Incl_tl : forall a l m,
+      Incl l m -> Incl l (a :: m).
+  Proof.
+    intros.
+    eapply Forall_impl with (fun x => In x m).
+    - intros; simpl; auto.
+    - auto.
+  Qed.
+
+  Lemma Incl_refl : forall l,
+      Incl l l.
+  Proof.
+    intros. apply Forall_forall. auto.
+  Qed.
+
+  Lemma Incl_or_app : forall l m n,
+      Incl l m \/ Incl l n -> Incl l (m ++ n).
+  Proof.
+    intros * []; apply Forall_forall; intros;
+    apply in_or_app; [left|right]; apply In_Incl with l; auto.
+  Qed.
+
+  Lemma app_Incl : forall l m n,
+      Incl l n -> Incl m n -> Incl (l ++ m) n.
+  Proof.
+    intros; apply Forall_forall; intros * Hin.
+    destruct (in_app_or _ _ _ Hin) as [];
+      [apply In_Incl with l|apply In_Incl with m]; auto.
+  Qed.
+
+End SetIncl.
 
 Section Repeat.
 
