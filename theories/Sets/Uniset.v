@@ -44,18 +44,18 @@ Definition In (s:uniset) (a:A) : Prop := charac s a = true.
 Hint Unfold In : core.
 
 (** uniset inclusion *)
-Definition incl (s1 s2:uniset) := forall a:A, leb (charac s1 a) (charac s2 a).
+Definition incl (s1 s2:uniset) := forall a:A, Bool.le (charac s1 a) (charac s2 a).
 Hint Unfold incl : core.
 
 (** uniset equality *)
 Definition seq (s1 s2:uniset) := forall a:A, charac s1 a = charac s2 a.
 Hint Unfold seq : core.
 
-Lemma leb_refl : forall b:bool, leb b b.
+Lemma le_refl : forall b, Bool.le b b.
 Proof.
 destruct b; simpl; auto.
 Qed.
-Hint Resolve leb_refl : core.
+Hint Resolve le_refl : core.
 
 Lemma incl_left : forall s1 s2:uniset, seq s1 s2 -> incl s1 s2.
 Proof.
