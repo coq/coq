@@ -3138,8 +3138,7 @@ Section SetIncl.
   Lemma Incl_tl : forall a l m,
       Incl l m -> Incl l (a :: m).
   Proof.
-    intros.
-    eapply Forall_impl with (fun x => In x m).
+    intros. eapply Forall_impl with (fun x => In x m).
     - intros; simpl; auto.
     - auto.
   Qed.
@@ -3153,15 +3152,15 @@ Section SetIncl.
   Lemma Incl_or_app : forall l m n,
       Incl l m \/ Incl l n -> Incl l (m ++ n).
   Proof.
-    intros * []; apply Forall_forall; intros;
-    apply in_or_app; eauto using In_Incl.
+    intros * []; apply Forall_forall;
+      intros; apply in_or_app; eauto using In_Incl.
   Qed.
 
   Lemma Incl_app : forall l m n,
       Incl l n -> Incl m n -> Incl (l ++ m) n.
   Proof.
-    intros; apply Forall_forall; intros.
-    edestruct in_app_or as []; eauto using In_Incl.
+    intros. apply Forall_forall.
+    intros. edestruct in_app_or as []; eauto using In_Incl.
   Qed.
 
   Lemma Incl_app_inv : forall l m n,
@@ -3182,6 +3181,26 @@ Section SetIncl.
       Incl l nil -> l = nil.
   Proof.
     intros * H. inversion H; [auto|contradiction].
+  Qed.
+
+  Lemma Incl_rev_l : forall l m,
+      Incl l m -> Incl (rev l) m.
+  Proof.
+    intros. apply Forall_rev. auto.
+  Qed.
+
+  Lemma Incl_rev_r : forall l m,
+      Incl l m -> Incl l (rev m).
+  Proof.
+    intros. apply Forall_forall.
+    intros. apply in_rev. rewrite rev_involutive. apply In_Incl with l; auto.
+  Qed.
+
+  Lemma Incl_Forall : forall P l m,
+      Incl l m -> Forall P m -> Forall P l.
+  Proof.
+    intros. apply Forall_forall.
+    intros. apply Forall_forall with m; eauto using In_Incl.
   Qed.
 
 End SetIncl.
