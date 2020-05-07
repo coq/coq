@@ -249,7 +249,7 @@ val build_by_tactic
   -> poly:bool
   -> typ:EConstr.types
   -> unit Proofview.tactic
-  -> Constr.constr * Constr.types option * bool * UState.t
+  -> Constr.constr * Constr.types option * Entries.universes_entry * bool * UState.t
 
 (** {6 Helpers to obtain proof state when in an interactive proof } *)
 

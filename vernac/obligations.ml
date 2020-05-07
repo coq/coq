@@ -133,7 +133,7 @@ let solve_by_tac ?loc name evi t poly uctx =
   try
     (* the status is dropped. *)
     let env = Global.env () in
-    let body, types, _, uctx =
+    let body, types, _univs, _, uctx =
       Declare.build_by_tactic env ~uctx ~poly ~typ:evi.evar_concl t in
     Inductiveops.control_only_guard env (Evd.from_ctx uctx) (EConstr.of_constr body);
     Some (body, types, uctx)

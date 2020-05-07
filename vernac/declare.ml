@@ -762,7 +762,7 @@ let build_constant_by_tactic ~name ?(opaque=Transparent) ~uctx ~sign ~poly typ t
 let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
   let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = Environ.(val_of_named_context (named_context env)) in
-  let ce, status, univs = build_constant_by_tactic ~name ~uctx ~sign ~poly typ tac in
+  let ce, status, uctx = build_constant_by_tactic ~name ~uctx ~sign ~poly typ tac in
   let cb, uctx =
     if side_eff then inline_private_constants ~uctx env ce
     else
@@ -770,7 +770,7 @@ let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
       let (cb, ctx), _eff = Future.force ce.proof_entry_body in
       cb, UState.merge ~sideff:false Evd.univ_rigid uctx ctx
   in
-  cb, ce.proof_entry_type, status, univs
+  cb, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
 
 let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
   (* EJGA: flush_and_check_evars is only used in abstract, could we
