@@ -127,6 +127,9 @@ let rec name_of_path p name dirname suffix =
 let coq_module filename =
   let bfname = Filename.chop_extension filename in
   let dirname, fname = normalize_filename bfname in
+  let _ = match Unicode.ident_refutation fname with
+    | Some err -> eprintf "\ncoqdoc: not a valid filename %s.v\n" fname; exit 1
+    | None -> () in
   let rec change_prefix = function
     (* Follow coqc: if in scope of -R, substitute logical name *)
     (* otherwise, keep only base name *)

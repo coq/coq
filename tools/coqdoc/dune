@@ -9,6 +9,6 @@
  (name main)
  (public_name coqdoc)
  (package coq)
- (libraries str coq.config))
+ (libraries str coq.config coq.clib))
 
 (ocamllex cpretty)
