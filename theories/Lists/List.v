@@ -3138,9 +3138,7 @@ Section SetIncl.
   Lemma Incl_tl : forall a l m,
       Incl l m -> Incl l (a :: m).
   Proof.
-    intros. eapply Forall_impl with (fun x => In x m).
-    - intros; simpl; auto.
-    - auto.
+    intros. apply Forall_impl with (fun x => In x m); auto using in_cons.
   Qed.
 
   Lemma Incl_refl : forall l,
