@@ -3154,15 +3154,14 @@ Section SetIncl.
       Incl l m \/ Incl l n -> Incl l (m ++ n).
   Proof.
     intros * []; apply Forall_forall; intros;
-    apply in_or_app; [left|right]; apply In_Incl with l; auto.
+    apply in_or_app; eauto using In_Incl.
   Qed.
 
   Lemma Incl_app : forall l m n,
       Incl l n -> Incl m n -> Incl (l ++ m) n.
   Proof.
-    intros; apply Forall_forall; intros * Hin.
-    destruct (in_app_or _ _ _ Hin) as [];
-      [apply In_Incl with l|apply In_Incl with m]; auto.
+    intros; apply Forall_forall; intros.
+    edestruct in_app_or as []; eauto using In_Incl.
   Qed.
 
   Lemma Incl_app_inv : forall l m n,
