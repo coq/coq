@@ -3157,12 +3157,32 @@ Section SetIncl.
     apply in_or_app; [left|right]; apply In_Incl with l; auto.
   Qed.
 
-  Lemma app_Incl : forall l m n,
+  Lemma Incl_app : forall l m n,
       Incl l n -> Incl m n -> Incl (l ++ m) n.
   Proof.
     intros; apply Forall_forall; intros * Hin.
     destruct (in_app_or _ _ _ Hin) as [];
       [apply In_Incl with l|apply In_Incl with m]; auto.
+  Qed.
+
+  Lemma Incl_app_inv : forall l m n,
+      Incl (l ++ m) n -> Incl l n /\ Incl m n.
+  Proof.
+    split;
+      (apply Incl_trans with (l ++ m);
+       [ apply Incl_or_app; auto using Incl_refl | auto ]).
+  Qed.
+
+  Lemma Incl_cons_inv : forall a l m,
+      Incl (a :: l) m -> In a m /\ Incl l m.
+  Proof.
+    intros * H. inversion H; auto.
+  Qed.
+
+  Lemma Incl_nil : forall l,
+      Incl l nil -> l = nil.
+  Proof.
+    intros * H. inversion H; [auto|contradiction].
   Qed.
 
 End SetIncl.
