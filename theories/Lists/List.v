@@ -1910,7 +1910,7 @@ Hint Resolve lel_refl lel_cons_cons lel_cons lel_nil lel_nil nil_cons:
 (** ** Set inclusion on list  *)
 (******************************)
 
-Section SetIncl.
+Section Setincl.
 
   Variable A : Type.
 
@@ -2016,11 +2016,87 @@ Section SetIncl.
     apply in_in_remove; intuition.
   Qed.
 
-End SetIncl.
+End Setincl.
 
 Hint Resolve incl_refl incl_tl incl_tran incl_appl incl_appr incl_cons
   incl_app: datatypes.
 
+ Section SetIncl.
+
+   Variable A : Type.
+
+   Inductive Incl : list A -> list A -> Prop :=
+   | Incl_nil : forall l, Incl nil l
+   | Incl_cons : forall x l l', In x l' -> Incl l l' -> Incl (x :: l) l'.
+   Hint Constructors Incl : core.
+
+   Lemma In_Incl : forall a l m,
+       Incl l m -> In a l -> In a m.
+   Proof.
+     intros * H Ha.
+     induction H.
+     - inversion Ha.
+     - inversion Ha as [->|?]; auto.
+   Qed.
+
+   Lemma Incl_iff_incl : forall l m,
+       Incl l m <-> incl l m.
+   Proof.
+     intros; split; intro H.
+     - intros ? ?; apply In_Incl with l; auto.
+     - induction l.
+       + auto.
+       + destruct (incl_cons_inv H) as [].
+         constructor; auto.
+   Qed.
+
+   Lemma Incl_trans : forall l m n,
+       Incl l m -> Incl m n -> Incl l n.
+   Proof.
+     intros * Hlm ?.
+     induction Hlm as [| ? ? m ].
+     - auto.
+     - constructor.
+       + now apply In_Incl with m.
+       + auto.
+   Qed.
+
+   Lemma Incl_tl : forall a l m,
+       Incl l m -> Incl l (a :: m).
+   Proof.
+     intros * H.
+     induction H.
+     - auto.
+     - constructor; [simpl|]; auto.
+   Qed.
+
+   Lemma Incl_refl : forall l,
+       Incl l l.
+   Proof.
+     induction l.
+     - auto.
+     - constructor.
+       + simpl; auto.
+       + now apply Incl_tl.
+   Qed.
+
+   Lemma Incl_or_app : forall l m n,
+       Incl l m \/ Incl l n -> Incl l (m ++ n).
+   Proof.
+     intros * [H | H];
+       (induction H; [|constructor; [apply in_or_app|]]; auto).
+   Qed.
+
+   Lemma app_Incl : forall l m n,
+       Incl l n -> Incl m n -> Incl (l ++ m) n.
+   Proof.
+     intros l * Hln Hmn.
+     induction Hln.
+     - auto.
+     - rewrite <- app_comm_cons; constructor; auto.
+   Qed.
+
+End SetIncl.
 
 (**************************************)
 (** * Cutting a list at some position *)
