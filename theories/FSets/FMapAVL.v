@@ -123,7 +123,7 @@ Definition create l x e r :=
 
 Definition assert_false := create.
 
-Fixpoint bal l x d r :=
+Definition bal l x d r :=
   let hl := height l in
   let hr := height r in
   if gt_le_dec hl (hr+2) then
@@ -191,7 +191,7 @@ Fixpoint remove_min l x d r : t*(key*elt) :=
   [|height t1 - height t2| <= 2].
 *)
 
-Fixpoint merge s1 s2 :=  match s1,s2 with
+Definition merge s1 s2 :=  match s1,s2 with
   | Leaf, _ => s2
   | _, Leaf => s1
   | _, Node l2 x2 d2 r2 h2 =>

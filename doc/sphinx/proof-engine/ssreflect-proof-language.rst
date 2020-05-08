@@ -286,7 +286,7 @@ example, the null and all list function(al)s can be defined as follows:
    .. coqtop:: all
 
       Variable d: Set.
-      Fixpoint null (s : list d) :=
+      Definition null (s : list d) :=
         if s is nil then true else false.
       Variable a : d -> bool.
       Fixpoint all (s : list d) : bool :=

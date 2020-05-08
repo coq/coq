@@ -53,7 +53,7 @@ let rec partial_order cmp = function
                     (z, Inr (List.add_set cmp x (List.remove cmp y zge)))
                   else
                     (z, Inr zge)) res in
-            browse ((y,Inl x)::res) xge' (List.union cmp xge (List.remove cmp x yge))
+            browse ((y,Inl x)::res) xge' (List.union cmp xge yge)
           else
             browse res (List.add_set cmp y (List.union cmp xge' yge)) xge
         with Not_found -> browse res (List.add_set cmp y xge') xge
@@ -82,16 +82,25 @@ let warn_non_full_mutual =
          (fun (x,xge,y,yge,isfix,rest) ->
           non_full_mutual_message x xge y yge isfix rest)
 
-let check_mutuality env evd isfix fixl =
+let warn_non_recursive =
+  CWarnings.create ~name:"non-recursive" ~category:"fixpoints"
+         (fun (x,isfix) ->
+          let k = if isfix then "fixpoint" else "cofixpoint" in
+          strbrk "Not a truly recursive " ++ str k ++ str ".")
+
+let check_true_recursivity env evd isfix fixl =
   let names = List.map fst fixl in
   let preorder =
     List.map (fun (id,def) ->
-      (id, List.filter (fun id' -> not (Id.equal id id') && Termops.occur_var env evd id' def) names))
+      (id, List.filter (fun id' -> Termops.occur_var env evd id' def) names))
       fixl in
   let po = partial_order Id.equal preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
     | (x,Inr xge)::(y,Inr yge)::rest ->
        warn_non_full_mutual (x,xge,y,yge,isfix,rest)
+    | _ ->
+  match po with
+    | [x,Inr []] -> warn_non_recursive (x,isfix)
     | _ -> ()
 
 let interp_fix_context ~program_mode ~cofix env sigma fix =
@@ -222,7 +231,7 @@ let interp_recursive ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen lis
 let check_recursive isfix env evd (fixnames,_,fixdefs,_) =
   if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
-    check_mutuality env evd isfix (List.combine fixnames fixdefs)
+    check_true_recursivity env evd isfix (List.combine fixnames fixdefs)
   end
 
 let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
@@ -232,12 +241,12 @@ let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
   Evd.evar_universe_context evd, (fixnames,fixrs,fixdefs,fixtypes)
 
 (* XXX: Unify with interp_recursive  *)
-let interp_fixpoint ~cofix l :
+let interp_fixpoint ?(check_recursivity=true) ~cofix l :
   ( (Constr.t, Constr.types) recursive_preentry *
     UState.universe_decl * UState.t *
     (EConstr.rel_context * Impargs.manual_implicits * int option) list) =
   let (env,_,pl,evd),fix,info = interp_recursive ~program_mode:false ~cofix l in
-  check_recursive true env evd fix;
+  if check_recursivity then check_recursive true env evd fix;
   let uctx,fix = ground_fixpoint env evd fix in
   (fix,pl,uctx,info)
 

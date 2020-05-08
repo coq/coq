@@ -42,14 +42,14 @@ Fixpoint int_of_pos p :=
   | xI p => int_succ (int_twice (int_of_pos p))
  end.
 
-Fixpoint int_of_z z :=
+Definition int_of_z z :=
  match z with
   | Z0 => int_zero
   | Zpos p => int_of_pos p
   | Zneg p => int_opp (int_of_pos p)
  end.
 
-Fixpoint int_of_n n :=
+Definition int_of_n n :=
  match n with
   | N0 => int_zero
   | Npos p => int_of_pos p

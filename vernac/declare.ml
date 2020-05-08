@@ -580,12 +580,12 @@ let fixpoint_message indexes l =
   | [] -> CErrors.anomaly (Pp.str "no recursive definition.")
   | [id] -> Id.print id ++ str " is recursively defined" ++
       (match indexes with
-         | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
+         | Some [|i|] -> str " (guarded on "++pr_rank i++str " argument)"
          | _ -> mt ())
   | l -> hov 0 (prlist_with_sep pr_comma Id.print l ++
                   spc () ++ str "are recursively defined" ++
                   match indexes with
-                    | Some a -> spc () ++ str "(decreasing respectively on " ++
+                    | Some a -> spc () ++ str "(guarded respectively on " ++
                         prvect_with_sep pr_comma pr_rank a ++
                         str " arguments)"
                     | None -> mt ()))

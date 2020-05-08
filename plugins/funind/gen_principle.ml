@@ -159,7 +159,7 @@ let recompute_binder_list fixpoint_exprl =
       fixpoint_exprl
   in
   let (_, _, _, typel), _, ctx, _ =
-    ComFixpoint.interp_fixpoint ~cofix:false fixl
+    ComFixpoint.interp_fixpoint ~check_recursivity:false ~cofix:false fixl
   in
   let constr_expr_typel =
     with_full_print

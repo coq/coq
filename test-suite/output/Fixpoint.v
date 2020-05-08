@@ -44,7 +44,39 @@ fix even_pos_odd_pos 2 with (odd_pos_even_pos n (H:odd n) {struct H} : n >= 1).
   lia.
 Qed.
 
-CoInductive Inf := S { projS : Inf }.
-Definition expand_Inf (x : Inf) := S (projS x).
-CoFixpoint inf := S inf.
+CoInductive Inf := IS { projS : Inf }.
+Definition expand_Inf (x : Inf) := IS (projS x).
+CoFixpoint inf := IS inf.
 Eval compute in inf.
+
+Module Recursivity.
+
+Open Scope nat_scope.
+
+Fixpoint f n := match n with 0 => 0 | S n => f n end.
+Fixpoint g n := match n with 0 => 0 | S n => n end.
+Fixpoint h1 n := match n with 0 => 0 | S n => h2 n end
+with h2 n := match n with 0 => 0 | S n => h1 n end.
+Fixpoint k1 n := match n with 0 => 0 | S n => k2 n end
+with k2 n := match n with 0 => 0 | S n => n end.
+Fixpoint l1 n := match n with 0 => 0 | S n => l1 n end
+with l2 n := match n with 0 => 0 | S n => l2 n end.
+Fixpoint m1 n := match n with 0 => 0 | S n => m1 n end
+with m2 n := match n with 0 => 0 | S n => n end.
+(* Why not to allow this definition ?
+Fixpoint h1' n := match n with 0 => 0 | S n => h2' n end
+with h2' n := h1' n.
+*)
+CoInductive S := cons : nat -> S -> S.
+CoFixpoint c := cons 0 c.
+CoFixpoint d := cons 0 c.
+CoFixpoint e1 := cons 0 e2
+with e2 := cons 1 e1.
+CoFixpoint a1 := cons 0 a1
+with a2 := cons 1 a2.
+(* Why not to allow this definition ?
+CoFixpoint b1 := cons 0 b2
+with b2 := b1.
+*)
+
+End Recursivity.
