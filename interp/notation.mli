@@ -245,7 +245,8 @@ val availability_of_notation : specific_notation -> subscopes ->
 
 (** {6 Miscellaneous} *)
 
-val interp_notation_as_global_reference : ?loc:Loc.t -> (GlobRef.t -> bool) ->
+(** If head is true, also allows applied global references. *)
+val interp_notation_as_global_reference : ?loc:Loc.t -> head:bool -> (GlobRef.t -> bool) ->
       notation_key -> delimiters option -> GlobRef.t
 
 (** Checks for already existing notations *)

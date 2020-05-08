@@ -62,15 +62,15 @@ let global_with_alias ?head qid =
   try locate_global_with_alias ?head qid
   with Not_found -> Nametab.error_global_not_found qid
 
-let smart_global ?head = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
+let smart_global ?(head = false) = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
   | AN r ->
-    global_with_alias ?head r
+    global_with_alias ~head r
   | ByNotation (ntn,sc) ->
-    Notation.interp_notation_as_global_reference ?loc (fun _ -> true) ntn sc)
+    Notation.interp_notation_as_global_reference ?loc ~head (fun _ -> true) ntn sc)
 
 let smart_global_inductive = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
   | AN r ->
     global_inductive_with_alias r
   | ByNotation (ntn,sc) ->
     destIndRef
-      (Notation.interp_notation_as_global_reference ?loc isIndRef ntn sc))
+      (Notation.interp_notation_as_global_reference ?loc ~head:false isIndRef ntn sc))

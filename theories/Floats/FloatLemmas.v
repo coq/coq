@@ -49,7 +49,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
   rewrite Hmod_elim.
   clear Hmod_elim.
   revert Hv.
-  unfold SpecFloat.valid_binary, bounded, canonical_mantissa.
+  unfold valid_binary, bounded, canonical_mantissa.
   unfold fexp.
   rewrite Bool.andb_true_iff.
   intro H'.
@@ -62,7 +62,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
     destruct (Z.max_spec (Z.pos (digits2_pos m) + e0 - prec) emin) as [ (H, Hm) | (H, Hm) ].
     + rewrite Hm in H1.
       rewrite <- H1.
-      rewrite !Z.max_l by (revert He; unfold emax, SpecFloat.emin, prec; lia).
+      rewrite !Z.max_l by (revert He; unfold emax, emin, prec; lia).
       replace (emin + _)%Z with emax by ring.
       unfold shl_align.
       rewrite <- H1 in H.
@@ -74,7 +74,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
       unfold fexp.
       unfold Zdigits2.
       unfold shr_record_of_loc, shr.
-      rewrite !Z.max_l by (revert H He; unfold emax, SpecFloat.emin, prec; lia).
+      rewrite !Z.max_l by (revert H He; unfold emax, emin, prec; lia).
       replace (_ - _)%Z with (Z.pos (digits2_pos (shift_pos p m)) - prec)%Z by ring.
       assert (Hs : (Z.pos (digits2_pos (shift_pos p m)) <= prec)%Z).
       {
@@ -103,26 +103,26 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
       unfold round_nearest_even.
       remember (Z.pos (digits2_pos (shift_pos p m)) - prec)%Z as ds.
       destruct ds.
-      * rewrite Z.max_l by (revert He; unfold emax, SpecFloat.emin, prec; lia).
+      * rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
         replace (_ - _)%Z with Z0 by lia.
         replace (_ <=? _)%Z with false by (symmetry; rewrite Z.leb_gt; lia).
-        rewrite Z.max_l by (revert He; unfold emax, SpecFloat.emin, prec; lia).
+        rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
         replace (_ - _)%Z with Z0 by lia.
-        rewrite Z.max_l by (revert He; unfold emax, SpecFloat.emin, prec; lia).
+        rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
         replace (_ - _)%Z with Z0 by lia.
         replace (_ <=? _)%Z with false by (symmetry; rewrite Z.leb_gt; lia).
         reflexivity.
       * exfalso; lia.
-      * rewrite Z.max_l by (revert He; unfold emax, SpecFloat.emin, prec; lia).
+      * rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
         replace (_ - _)%Z with (Zneg p0) by lia.
         replace (_ <=? _)%Z with false by (symmetry; rewrite Z.leb_gt; lia).
-        rewrite Z.max_l by (revert He; unfold emax, SpecFloat.emin, prec; lia).
+        rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
         replace (_ - _)%Z with (Zneg p0) by lia.
-        rewrite Z.max_l by (revert He; unfold emax, SpecFloat.emin, prec; lia).
+        rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
         replace (_ - _)%Z with (Zneg p0) by lia.
         replace (_ <=? _)%Z with false by (symmetry; rewrite Z.leb_gt; lia).
         reflexivity.
-    + rewrite !Z.max_l by (revert H He; unfold emax, SpecFloat.emin, prec; lia).
+    + rewrite !Z.max_l by (revert H He; unfold emax, emin, prec; lia).
       rewrite Hm in H1.
       clear Hm.
       replace (Zpos _ + _ - _)%Z with (e0 + (emax - emin))%Z by (rewrite <- H1 at 1; ring).
@@ -134,7 +134,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
       unfold shr_fexp.
       unfold fexp.
       unfold Zdigits2.
-      rewrite !Z.max_l by (revert H He; unfold emax, SpecFloat.emin, prec; lia).
+      rewrite !Z.max_l by (revert H He; unfold emax, emin, prec; lia).
       unfold shr_record_of_loc.
       unfold shr.
       unfold Zdigits2.
@@ -142,17 +142,17 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
       unfold shr_m.
       unfold loc_of_shr_record.
       unfold round_nearest_even.
-      rewrite Z.max_l by (revert H He; unfold emax, SpecFloat.emin, prec; lia).
+      rewrite Z.max_l by (revert H He; unfold emax, emin, prec; lia).
       replace (Zpos _ + _ - _ - _)%Z with Z0 by lia.
       replace (_ <=? _)%Z with false by (symmetry; rewrite Z.leb_gt; lia).
       replace (Zpos _ + _ - _ - _)%Z with Z0 by lia.
-      rewrite Z.max_l by (revert H He; unfold emax, SpecFloat.emin, prec; lia).
+      rewrite Z.max_l by (revert H He; unfold emax, emin, prec; lia).
       replace (Zpos _ + _ - _ - _)%Z with Z0 by lia.
       replace (_ <=? _)%Z with false by (symmetry; rewrite Z.leb_gt; lia).
       reflexivity.
   - rewrite Z.min_le_iff.
     intro H.
-    destruct H as [ He | Habs ]; [ | revert Habs; now unfold SpecFloat.emin, emax ].
+    destruct H as [ He | Habs ]; [ | revert Habs; now unfold emin, emax ].
     unfold shl_align.
     assert (Hprec : (Z.pos (digits2_pos m) <= prec)%Z).
     {

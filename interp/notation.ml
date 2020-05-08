@@ -1807,10 +1807,10 @@ let browse_notation strict ntn map =
       map [] in
   List.sort (fun x y -> String.compare (snd (fst x)) (snd (fst y))) l
 
-let global_reference_of_notation test (ntn,(sc,c,_)) =
+let global_reference_of_notation ~head test (ntn,(sc,c,_)) =
   match c with
   | NRef ref when test ref -> Some (ntn,sc,ref)
-  | NApp (NRef ref, l) when List.for_all isNVar_or_NHole l && test ref ->
+  | NApp (NRef ref, l) when head || List.for_all isNVar_or_NHole l && test ref ->
       Some (ntn,sc,ref)
   | _ -> None
 
@@ -1822,14 +1822,14 @@ let error_notation_not_reference ?loc ntn =
    (str "Unable to interpret " ++ quote (str ntn) ++
     str " as a reference.")
 
-let interp_notation_as_global_reference ?loc test ntn sc =
+let interp_notation_as_global_reference ?loc ~head test ntn sc =
   let scopes = match sc with
   | Some sc ->
       let scope = find_scope (find_delimiters_scope sc) in
       String.Map.add sc scope String.Map.empty
   | None -> !scope_map in
   let ntns = browse_notation true ntn scopes in
-  let refs = List.map (global_reference_of_notation test) ntns in
+  let refs = List.map (global_reference_of_notation ~head test) ntns in
   match Option.List.flatten refs with
   | [_,_,ref] -> ref
   | [] -> error_notation_not_reference ?loc ntn

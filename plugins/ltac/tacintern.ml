@@ -97,7 +97,7 @@ let intern_global_reference ist qid =
   else if qualid_is_ident qid && find_hyp (qualid_basename qid) ist then
     let id = qualid_basename qid in
     ArgArg (qid.CAst.loc, GlobRef.VarRef id)
-  else match locate_global_with_alias qid with
+  else match locate_global_with_alias ~head:true qid with
   | r -> ArgArg (qid.CAst.loc, r)
   | exception Not_found ->
     if not !strict_check && qualid_is_ident qid then
@@ -315,13 +315,13 @@ let intern_evaluable ist = function
     end
   | {v=ByNotation (ntn,sc);loc} ->
     let check = GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) in
-    let r = Notation.interp_notation_as_global_reference ?loc check ntn sc in
+    let r = Notation.interp_notation_as_global_reference ?loc ~head:true check ntn sc in
     evalref_of_globref ?loc r
 
 let intern_smart_global ist = function
   | {v=AN r} -> intern_global_reference ist r
   | {v=ByNotation (ntn,sc);loc} ->
-      ArgArg (loc, (Notation.interp_notation_as_global_reference ?loc
+      ArgArg (loc, (Notation.interp_notation_as_global_reference ?loc ~head:true
         GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc))
 
 let intern_unfold ist (l,qid) = (l,intern_evaluable ist qid)
