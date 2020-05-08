@@ -287,7 +287,7 @@ end
 class script_view (tv : source_view) (ct : Coq.coqtop) =
 
 let view = new GSourceView3.source_view (Gobject.unsafe_cast tv) in
-let provider = new Wg_Completion.completion_provider ct in
+let provider = new Wg_Completion.completion_provider view#buffer ct in
 
 object (self)
   inherit GSourceView3.source_view (Gobject.unsafe_cast tv)
