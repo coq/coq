@@ -90,9 +90,7 @@ list of assertion commands is given in :ref:`Assertions`. The command
 .. cmd:: Save @ident
    :name: Save
 
-   Forces the name of the original goal to be :token:`ident`. This
-   command can only be used if the original goal
-   was opened using the :cmd:`Goal` command.
+   Forces the name of the original goal to be :token:`ident`.
 
 .. cmd:: Admitted
 
@@ -821,7 +819,7 @@ in compacted hypotheses:
 ..
 
   .. image:: ../_static/diffs-coqide-compacted.png
-     :alt: coqide with Set Diffs on with compacted hyptotheses
+     :alt: coqide with Set Diffs on with compacted hypotheses
 
 Controlling the effect of proof editing commands
 ------------------------------------------------
