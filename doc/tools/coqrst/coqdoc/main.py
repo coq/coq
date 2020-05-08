@@ -48,16 +48,22 @@ def coqdoc(coq_code, coqdoc_bin=None):
     finally:
         os.remove(filename)
 
+def first_string_node(node):
+    """Return the first string node, or None if does not exist"""
+    while node.children:
+        node = next(node.children)
+        if isinstance(node, NavigableString):
+            return node
+
 def lex(source):
     """Convert source into a stream of (css_classes, token_string)."""
     coqdoc_output = coqdoc(source)
     soup = BeautifulSoup(coqdoc_output, "html.parser")
     root = soup.find(class_='code')
-    if root.children:
-        # strip the leading '\n'
-        first = next(root.children)
-        if isinstance(first, NavigableString) and first.string[0] == '\n':
-            first.string.replace_with(first.string[1:])
+    # strip the leading '\n'
+    first = first_string_node(root)
+    if first and first.string[0] == '\n':
+        first.string.replace_with(first.string[1:])
     for elem in root.children:
         if isinstance(elem, NavigableString):
             yield [], elem
