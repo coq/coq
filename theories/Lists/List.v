@@ -517,18 +517,20 @@ Section Elts.
       exists (a::l1); exists l2; simpl; split; now f_equal.
   Qed.
 
-  Lemma nth_ext : forall l l' d, length l = length l' ->
-    (forall n, nth n l d = nth n l' d) -> l = l'.
+  Lemma nth_ext : forall l l' d d', length l = length l' ->
+    (forall n, n < length l -> nth n l d = nth n l' d') -> l = l'.
   Proof.
-    induction l; intros l' d Hlen Hnth; destruct l' as [| b l'].
+    induction l; intros l' d d' Hlen Hnth; destruct l' as [| b l'].
     - reflexivity.
     - inversion Hlen.
     - inversion Hlen.
     - change a with (nth 0 (a :: l) d).
-      change b with (nth 0 (b :: l') d).
+      change b with (nth 0 (b :: l') d').
       rewrite Hnth; f_equal.
-      apply IHl with d; [ now inversion Hlen | ].
-      intros n; apply (Hnth (S n)).
+      + apply IHl with d d'; [ now inversion Hlen | ].
+        intros n Hlen'; apply (Hnth (S n)).
+        now simpl; apply lt_n_S.
+      + simpl; apply Nat.lt_0_succ.
   Qed.
 
   (** Results about [nth_error] *)
@@ -2008,6 +2010,9 @@ Section SetIncl.
       now apply incl_cons_inv in Hin.
   Qed.
 
+  Lemma incl_filter f l : incl (filter f l) l.
+  Proof. intros x Hin; now apply filter_In in Hin. Qed.
+
   Lemma remove_incl (eq_dec : forall x y : A, {x = y} + {x <> y}) : forall l1 l2 x,
     incl l1 l2 -> incl (remove eq_dec x l1) (remove eq_dec x l2).
   Proof.
@@ -2018,8 +2023,15 @@ Section SetIncl.
 
 End SetIncl.
 
+Lemma incl_map A B (f : A -> B) l1 l2 : incl l1 l2 -> incl (map f l1) (map f l2).
+Proof.
+  intros Hincl x Hinx.
+  destruct (proj1 (in_map_iff _ _ _) Hinx) as [y [<- Hiny]].
+  apply in_map; intuition.
+Qed.
+
 Hint Resolve incl_refl incl_tl incl_tran incl_appl incl_appr incl_cons
-  incl_app: datatypes.
+  incl_app incl_map: datatypes.
 
 
 (**************************************)
@@ -2410,6 +2422,15 @@ Section ReDun.
       by (rewrite <- (app_nil_r (rev l)) at 1; apply Add_app).
     apply NoDup_Add in Hadd; apply Hadd; intuition.
     now apply Hnin, in_rev.
+  Qed.
+
+  Lemma NoDup_filter f l : NoDup l -> NoDup (filter f l).
+  Proof.
+    induction l; simpl; intros Hnd; auto.
+    apply NoDup_cons_iff in Hnd.
+    destruct (f a); [ | intuition ].
+    apply NoDup_cons_iff; split; intuition.
+    apply filter_In in H; intuition.
   Qed.
 
   (** Effective computation of a list without duplicates *)
@@ -2946,6 +2967,10 @@ Section Exists_Forall.
     destruct (Forall_dec P Pdec l); [left|right]; trivial.
     now apply neg_Forall_Exists_neg.
   Defined.
+
+  Lemma incl_Forall_in_iff l l' :
+    incl l l' <-> Forall (fun x => In x l') l.
+  Proof. now rewrite Forall_forall; split. Qed.
 
 End Exists_Forall.
 
