@@ -309,12 +309,11 @@ Definition CRealConstructive : ConstructiveReals
   := Build_ConstructiveReals
        CReal CRealLt CRealLtIsLinear CRealLtProp
        CRealLtEpsilon CRealLtForget CRealLtDisjunctEpsilon
-       (inject_Q 0) (inject_Q 1)
+       inject_Q inject_Q_lt lt_inject_Q
        CReal_plus CReal_opp CReal_mult
+       inject_Q_plus inject_Q_mult
        CReal_isRing CReal_isRingExt CRealLt_0_1
        CReal_plus_lt_compat_l CReal_plus_lt_reg_l
        CReal_mult_lt_0_compat
        CReal_inv CReal_inv_l CReal_inv_0_lt_compat
-       inject_Q inject_Q_plus inject_Q_mult
-       inject_Q_one inject_Q_lt lt_inject_Q
        CRealQ_dense Rup_pos CReal_abs CRealAbsLUB CRealComplete.
