@@ -302,8 +302,14 @@ let evalref_of_globref ?loc ?short = function
   | GlobRef.ConstRef cst -> ArgArg (EvalConstRef cst, short)
   | GlobRef.VarRef id -> ArgArg (EvalVarRef id, short)
   | r ->
-    user_err ?loc (str "Cannot coerce" ++ spc () ++ Nametab.pr_global_env Id.Set.empty r ++
-     spc () ++ str "to an evaluable reference.")
+    let tpe = match r with
+    | GlobRef.IndRef _ -> "inductive"
+    | GlobRef.ConstructRef _ -> "constructor"
+    | (GlobRef.VarRef _ | GlobRef.ConstRef _) -> assert false
+    in
+    user_err ?loc (str "Cannot turn" ++ spc () ++ str tpe ++ spc () ++
+      Nametab.pr_global_env Id.Set.empty r ++ spc () ++
+      str "into an evaluable reference.")
 
 let intern_evaluable ist = function
   | {v=AN qid} ->
