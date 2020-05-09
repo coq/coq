@@ -6,13 +6,16 @@ copyright (c) 1999-2019, Inria, CNRS and contributors, with the
 exception of the Ubuntu font file UbuntuMono-B.ttf, which is Copyright
 2010,2011 Canonical Ltd and licensed under the Ubuntu font license,
 version 1.0
-(https://www.ubuntu.com/legal/terms-and-policies/font-licence), and
+(https://www.ubuntu.com/legal/terms-and-policies/font-licence), 
 its derivative CoqNotations.ttf distributed under the same
-license. The material connected to the Reference Manual may be
-distributed only subject to the terms and conditions set forth in the
-Open Publication License, v1.0 or later (the latest version is
-presently available at http://www.opencontent.org/openpub/).  Options
-A and B are *not* elected.
+license, and the _templates/versions.html file derived from
+sphinx_rtd_theme, which is Copyright 2013-2018 Dave Snider, Read the
+Docs, Inc. & contributors and distributed under the MIT License
+included in that file. The material connected to the Reference Manual
+may be distributed only subject to the terms and conditions set forth in
+the Open Publication License, v1.0 or later (the latest version is
+presently available at http://www.opencontent.org/openpub/).  Options A
+and B are *not* elected.
 
 The Coq Standard Library is a collective work from the Coq Development
 Team whose members are listed in the file CREDITS of the Coq source
