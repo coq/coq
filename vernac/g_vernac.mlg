@@ -68,6 +68,11 @@ let make_bullet s =
 let add_control_flag ~loc ~flag { CAst.v = cmd } =
   CAst.make ~loc { cmd with control = flag :: cmd.control }
 
+let test_hash_ident =
+  let open Pcoq.Lookahead in
+  to_entry "test_hash_ident" begin
+    lk_kw "#" >> lk_ident >> check_no_space
+  end
 }
 
 GRAMMAR EXTEND Gram
@@ -226,63 +231,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> { VernacConstraint l }
   ] ]
   ;
-
-   register_token:
-     [ [ r = register_prim_token -> { CPrimitives.OT_op r }
-       | r = register_type_token -> { CPrimitives.OT_type r } ] ]
-   ;
-
-   register_type_token:
-     [ [ "#int63_type" -> { CPrimitives.PT_int63 }
-       | "#float64_type" -> { CPrimitives.PT_float64 } ] ]
-   ;
-
-   register_prim_token:
-     [ [ "#int63_head0" -> { CPrimitives.Int63head0 }
-       | "#int63_tail0" -> { CPrimitives.Int63tail0 }
-       | "#int63_add" -> { CPrimitives.Int63add }
-       | "#int63_sub" -> { CPrimitives.Int63sub }
-       | "#int63_mul" -> { CPrimitives.Int63mul }
-       | "#int63_div" -> { CPrimitives.Int63div }
-       | "#int63_mod" -> { CPrimitives.Int63mod }
-       | "#int63_lsr" -> { CPrimitives.Int63lsr }
-       | "#int63_lsl" -> { CPrimitives.Int63lsl }
-       | "#int63_land" -> { CPrimitives.Int63land }
-       | "#int63_lor" -> { CPrimitives.Int63lor }
-       | "#int63_lxor" -> { CPrimitives.Int63lxor }
-       | "#int63_addc" -> { CPrimitives.Int63addc }
-       | "#int63_subc" -> { CPrimitives.Int63subc }
-       | "#int63_addcarryc" -> { CPrimitives.Int63addCarryC }
-       | "#int63_subcarryc" -> { CPrimitives.Int63subCarryC }
-       | "#int63_mulc" -> { CPrimitives.Int63mulc }
-       | "#int63_diveucl" -> { CPrimitives.Int63diveucl }
-       | "#int63_div21" -> { CPrimitives.Int63div21 }
-       | "#int63_addmuldiv" -> { CPrimitives.Int63addMulDiv }
-       | "#int63_eq" -> { CPrimitives.Int63eq }
-       | "#int63_lt" -> { CPrimitives.Int63lt }
-       | "#int63_le" -> { CPrimitives.Int63le }
-       | "#int63_compare" -> { CPrimitives.Int63compare }
-       | "#float64_opp" -> { CPrimitives.Float64opp }
-       | "#float64_abs" -> { CPrimitives.Float64abs }
-       | "#float64_eq" -> { CPrimitives.Float64eq }
-       | "#float64_lt" -> { CPrimitives.Float64lt }
-       | "#float64_le" -> { CPrimitives.Float64le }
-       | "#float64_compare" -> { CPrimitives.Float64compare }
-       | "#float64_classify" -> { CPrimitives.Float64classify }
-       | "#float64_add" -> { CPrimitives.Float64add }
-       | "#float64_sub" -> { CPrimitives.Float64sub }
-       | "#float64_mul" -> { CPrimitives.Float64mul }
-       | "#float64_div" -> { CPrimitives.Float64div }
-       | "#float64_sqrt" -> { CPrimitives.Float64sqrt }
-       | "#float64_of_int63" -> { CPrimitives.Float64ofInt63 }
-       | "#float64_normfr_mantissa" -> { CPrimitives.Float64normfr_mantissa }
-       | "#float64_frshiftexp" -> { CPrimitives.Float64frshiftexp }
-       | "#float64_ldshiftexp" -> { CPrimitives.Float64ldshiftexp }
-       | "#float64_next_up" -> { CPrimitives.Float64next_up }
-       | "#float64_next_down" -> { CPrimitives.Float64next_down }
-       ] ]
-    ;
-
+  register_token:
+    [ [ test_hash_ident; "#"; r = IDENT -> { CPrimitives.parse_op_or_type ~loc r } ] ]
+  ;
   thm_token:
     [ [ "Theorem" -> { Theorem }
       | IDENT "Lemma" -> { Lemma }

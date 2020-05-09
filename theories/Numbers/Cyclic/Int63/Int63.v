@@ -135,29 +135,29 @@ Register Inline subcarry.
 Definition addc_def x y :=
   let r := x + y in
   if r < x then C1 r else C0 r.
-(* the same but direct implementation for effeciancy *)
+(* the same but direct implementation for efficiency *)
 Primitive addc := #int63_addc.
 Notation "n '+c' m" := (addc n m) (at level 50, no associativity) : int63_scope.
 
 Definition addcarryc_def x y :=
   let r := addcarry x y in
   if r <= x then C1 r else C0 r.
-(* the same but direct implementation for effeciancy *)
+(* the same but direct implementation for efficiency *)
 Primitive addcarryc := #int63_addcarryc.
 
 Definition subc_def x y :=
   if y <= x then C0 (x - y) else C1 (x - y).
-(* the same but direct implementation for effeciancy *)
+(* the same but direct implementation for efficiency *)
 Primitive subc := #int63_subc.
 Notation "n '-c' m" := (subc n m) (at level 50, no associativity) : int63_scope.
 
 Definition subcarryc_def x y :=
   if y < x then C0 (x - y - 1) else C1 (x - y - 1).
-(* the same but direct implementation for effeciancy *)
+(* the same but direct implementation for efficiency *)
 Primitive subcarryc := #int63_subcarryc.
 
 Definition diveucl_def x y := (x/y, x\%y).
-(* the same but direct implementation for effeciancy *)
+(* the same but direct implementation for efficiency *)
 Primitive diveucl := #int63_diveucl.
 
 Primitive diveucl_21 := #int63_div21.
