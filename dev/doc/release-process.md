@@ -96,6 +96,8 @@ in time.
 - [ ] Delay non-blocking issues to the appropriate milestone and ensure
   blocking issues are solved. If required to solve some blocking issues,
   it is possible to revert some feature PRs in the version branch only.
+- [ ] Add a new link to the ``'versions'`` list of the refman (in
+      ``html_context`` in ``doc/sphinx/conf.py``).
 
 ## Before the beta release date ##
 

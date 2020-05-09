@@ -202,6 +202,7 @@ html_theme = 'sphinx_rtd_theme'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
+PDF_URL = "https://github.com/coq/coq/releases/download/V{version}/coq-{version}-reference-manual.pdf"
 html_theme_options = {
     'collapse_navigation': False
 }
@@ -210,7 +211,26 @@ html_context = {
     'github_user': 'coq',
     'github_repo': 'coq',
     'github_version': 'master',
-    'conf_py_path': '/doc/sphinx/'
+    'conf_py_path': '/doc/sphinx/',
+    # Versions and downloads listed in the versions menu (see _templates/versions.html)
+    'versions': [
+        ("master", "https://coq.github.io/doc/master/refman/"),
+        ("stable", "https://coq.inria.fr/distrib/current/refman/"),
+        ("v8.11", "https://coq.github.io/doc/v8.11/refman/"),
+        ("v8.10", "https://coq.github.io/doc/v8.10/refman/"),
+        ("v8.9", "https://coq.github.io/doc/v8.9/refman/"),
+        ("8.8", "https://coq.inria.fr/distrib/V8.8.2/refman/"),
+        ("8.7", "https://coq.inria.fr/distrib/V8.7.2/refman/"),
+        ("8.6", "https://coq.inria.fr/distrib/V8.6.1/refman/"),
+        ("8.5", "https://coq.inria.fr/distrib/V8.5pl3/refman/"),
+        ("8.4", "https://coq.inria.fr/distrib/V8.4pl6/refman/"),
+        ("8.3", "https://coq.inria.fr/distrib/V8.3pl5/refman/"),
+        ("8.2", "https://coq.inria.fr/distrib/V8.2pl3/refman/"),
+        ("8.1", "https://coq.inria.fr/distrib/V8.1pl6/refman/"),
+        ("8.0", "https://coq.inria.fr/distrib/V8.0/doc/")
+    ],
+    'downloads': ([("PDF", PDF_URL.format(version=version))]
+                  if coq_config.is_a_released_version else [])
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
