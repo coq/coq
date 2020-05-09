@@ -435,13 +435,10 @@ let extern_record_pattern cstrsp args =
 let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
   try
     if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
-    let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
+    let (na,p,key) = uninterp_prim_token_cases_pattern pat scopes in
     match availability_of_entry_coercion custom InConstrEntrySomeLevel with
       | None -> raise No_match
       | Some coercion ->
-    match availability_of_prim_token p sc scopes with
-      | None -> raise No_match
-      | Some key ->
         let loc = cases_pattern_loc pat in
         insert_pat_coercion ?loc coercion
           (insert_pat_alias ?loc (insert_pat_delimiters ?loc (CAst.make ?loc @@ CPatPrim p) key) na)
@@ -848,13 +845,11 @@ let same_binder_type ty nal c =
 (* one with no delimiter if possible)                                 *)
 
 let extern_possible_prim_token (custom,scopes) r =
-   let (sc,n) = uninterp_prim_token r in
+   let (n,key) = uninterp_prim_token r scopes in
    match availability_of_entry_coercion custom InConstrEntrySomeLevel with
    | None -> raise No_match
    | Some coercion ->
-   match availability_of_prim_token n sc scopes with
-   | None -> raise No_match
-   | Some key -> insert_entry_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
+      insert_entry_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
 
 let filter_enough_applied nargs l =
   match nargs with

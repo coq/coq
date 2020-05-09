@@ -349,8 +349,8 @@ let interp_index ist gl idx =
         begin match Tacinterp.Value.to_constr v with
         | Some c ->
           let rc = Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) c in
-          begin match Notation.uninterp_prim_token rc with
-          | _, Constrexpr.Numeral n when NumTok.Signed.is_int n ->
+          begin match Notation.uninterp_prim_token rc (None, []) with
+          | Constrexpr.Numeral n, _ when NumTok.Signed.is_int n ->
             int_of_string (NumTok.Signed.to_string n)
           | _ -> raise Not_found
           end
