@@ -3467,6 +3467,16 @@ the conversion in hypotheses :n:`{+ @ident}`.
       :tacn:`with_strategy` may not be robustly performant when
       scaling the size of the input.
 
+   .. warning::
+
+      In much the same way this tactic does not play well with
+      :cmd:`Qed` and :cmd:`Defined` without using :tacn:`abstract` as
+      an intermediary, this tactic does not play well with ``coqchk``,
+      even when used with :tacn:`abstract`, due to the inability of
+      tactics to persist information about conversion hints in the
+      proof term. See `#12200
+      <https://github.com/coq/coq/issues/12200>`_ for more details.
+
 Conversion tactics applied to hypotheses
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -572,3 +572,6 @@ Goal id 0 = 0.
                                    (assert_succeeds unfold_id))))))))))).
   reflexivity.
 Qed.
+
+(* Fake out coqchk to work around what is essentially COQBUG(https://github.com/coq/coq/issues/12200) *)
+Reset Initial.
