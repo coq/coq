@@ -22,6 +22,10 @@ Declare Scope Q_scope.
 Delimit Scope Q_scope with Q.
 Bind Scope Q_scope with Q.
 Arguments Qmake _%Z _%positive.
+
+Register Q as rat.Q.type.
+Register Qmake as rat.Q.Qmake.
+
 Open Scope Q_scope.
 Ltac simpl_mult := rewrite ?Pos2Z.inj_mul.
 
@@ -100,6 +104,10 @@ Infix "<=" := Qle : Q_scope.
 Notation "x > y" := (Qlt y x)(only parsing) : Q_scope.
 Notation "x >= y" := (Qle y x)(only parsing) : Q_scope.
 Notation "x <= y <= z" := (x<=y/\y<=z) : Q_scope.
+
+Register Qeq as rat.Q.Qeq.
+Register Qle as rat.Q.Qle.
+Register Qlt as rat.Q.Qlt.
 
 (** injection from Z is injective. *)
 
@@ -277,6 +285,11 @@ Infix "-" := Qminus : Q_scope.
 Infix "*" := Qmult : Q_scope.
 Notation "/ x" := (Qinv x) : Q_scope.
 Infix "/" := Qdiv : Q_scope.
+
+Register Qplus  as rat.Q.Qplus.
+Register Qminus as rat.Q.Qminus.
+Register Qopp   as rat.Q.Qopp.
+Register Qmult  as rat.Q.Qmult.
 
 (** A light notation for [Zpos] *)
 
@@ -1052,6 +1065,8 @@ Definition Qpower (q:Q) (z:Z) :=
     end.
 
 Notation " q ^ z " := (Qpower q z) : Q_scope.
+
+Register Qpower as  rat.Q.Qpower.
 
 Instance Qpower_comp : Proper (Qeq==>eq==>Qeq) Qpower.
 Proof.

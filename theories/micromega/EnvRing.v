@@ -31,6 +31,14 @@ Inductive PExpr {C} : Type :=
 | PEpow : PExpr -> N -> PExpr.
 Arguments PExpr : clear implicits.
 
+Register PEc as micromega.PExpr.PEc.
+Register PEX as micromega.PExpr.PEX.
+Register PEadd as micromega.PExpr.PEadd.
+Register PEsub as micromega.PExpr.PEsub.
+Register PEmul as micromega.PExpr.PEmul.
+Register PEopp as micromega.PExpr.PEopp.
+Register PEpow as micromega.PExpr.PEpow.
+
  (* Definition of multivariable polynomials with coefficients in C :
     Type [Pol] represents [X1 ... Xn].
     The representation is Horner's where a [n] variable polynomial
@@ -59,6 +67,10 @@ Inductive Pol {C} : Type :=
 | Pinj : positive -> Pol -> Pol
 | PX : Pol -> positive -> Pol -> Pol.
 Arguments Pol : clear implicits.
+
+Register Pc as micromega.Pol.Pc.
+Register Pinj as micromega.Pol.Pinj.
+Register PX   as micromega.Pol.PX.
 
 Section MakeRingPol.
 

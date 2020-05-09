@@ -154,6 +154,9 @@ Qed.
 
 Definition QWitness := Psatz Q.
 
+Register QWitness as micromega.QWitness.type.
+
+
 Definition QWeakChecker := check_normalised_formulas 0 1 Qplus Qmult Qeq_bool Qle_bool.
 
 Require Import List.

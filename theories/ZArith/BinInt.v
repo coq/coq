@@ -44,6 +44,7 @@ Register succ as num.Z.succ.
 Register pred as num.Z.pred.
 Register sub as num.Z.sub.
 Register mul as num.Z.mul.
+Register pow as num.Z.pow.
 Register of_nat as num.Z.of_nat.
 
 (** When including property functors, only inline t eq zero one two *)

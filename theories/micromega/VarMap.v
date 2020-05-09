@@ -33,6 +33,11 @@ Inductive t {A} : Type :=
 | Branch : t  -> A -> t  -> t .
 Arguments t : clear implicits.
 
+Register Branch as micromega.VarMap.Branch.
+Register Elt    as micromega.VarMap.Elt.
+Register Empty  as micromega.VarMap.Empty.
+Register t      as micromega.VarMap.type.
+
 Section MakeVarMap.
   
   Variable A : Type.

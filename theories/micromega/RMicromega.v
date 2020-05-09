@@ -150,7 +150,17 @@ Inductive Rcst :=
   | CInv  (r : Rcst)
   | COpp  (r : Rcst).
 
-
+Register Rcst   as micromega.Rcst.type.
+Register C0     as micromega.Rcst.C0.
+Register C1     as micromega.Rcst.C1.
+Register CQ     as micromega.Rcst.CQ.
+Register CZ     as micromega.Rcst.CZ.
+Register CPlus  as micromega.Rcst.CPlus.
+Register CMinus as micromega.Rcst.CMinus.
+Register CMult  as micromega.Rcst.CMult.
+Register CPow   as micromega.Rcst.CPow.
+Register CInv   as micromega.Rcst.CInv.
+Register COpp   as micromega.Rcst.COpp.
 
 Definition z_of_exp (z : Z + nat) :=
   match z with
