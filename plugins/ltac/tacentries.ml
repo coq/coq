@@ -683,6 +683,111 @@ let tactic_extend plugin_name tacname ~level ?deprecation sign =
   Tacenv.register_ml_tactic ml_tactic_name @@ Array.of_list (List.map eval sign);
   Mltop.declare_cache_obj obj plugin_name
 
+type (_, 'a) ml_ty_sig =
+| MLTyNil : ('a, 'a) ml_ty_sig
+| MLTyArg : ('r, 'a) ml_ty_sig -> (Geninterp.Val.t -> 'r, 'a) ml_ty_sig
+
+let rec ml_sig_len : type r a. (r, a) ml_ty_sig -> int = function
+| MLTyNil -> 0
+| MLTyArg sign -> 1 + ml_sig_len sign
+
+let rec cast_ml : type r a. (r, a) ml_ty_sig -> r -> Geninterp.Val.t list -> a =
+  fun sign f ->
+  match sign with
+  | MLTyNil ->
+    begin function
+    | [] -> f
+    | _ :: _ -> CErrors.anomaly (str "Arity mismatch")
+    end
+  | MLTyArg sign ->
+    function
+    | [] -> CErrors.anomaly (str "Arity mismatch")
+    | arg :: args -> cast_ml sign (f arg) args
+
+let ml_tactic_extend ~plugin ~name ~local ?deprecation sign tac =
+  let open Tacexpr in
+  let tac args _ = cast_ml sign tac args in
+  let ml_tactic_name = { mltac_tactic = name; mltac_plugin = plugin } in
+  let ml = { mltac_name = ml_tactic_name; mltac_index = 0 } in
+  let len = ml_sig_len sign in
+  let args = List.init len (fun i -> Id.of_string (Printf.sprintf "arg%i" i)) in
+  let vars = List.map (fun id -> Name id) args in
+  let args = List.map (fun id -> Reference (Locus.ArgVar (CAst.make id))) args in
+  let body = Tacexpr.TacFun (vars, Tacexpr.TacML (CAst.make (ml, args))) in
+  let id = Names.Id.of_string name in
+  let obj () = Tacenv.register_ltac true local id body ?deprecation in
+  let () = Tacenv.register_ml_tactic ml_tactic_name [|tac|] in
+  Mltop.declare_cache_obj obj plugin
+
+module MLName =
+struct
+  open Tacexpr
+  type t = ml_tactic_name
+  let compare tac1 tac2 =
+    let c = String.compare tac1.mltac_tactic tac2.mltac_tactic in
+    if c = 0 then String.compare tac1.mltac_plugin tac2.mltac_plugin
+    else c
+end
+
+module MLTacMap = Map.Make(MLName)
+
+let ml_table : (Geninterp.Val.t list -> Geninterp.Val.t Ftactic.t) MLTacMap.t ref = ref MLTacMap.empty
+
+type ml_ltac_val = {
+  tacval_tac : Tacexpr.ml_tactic_name;
+  tacval_var : Id.t list;
+}
+
+let in_tacval =
+(*  This is a hack to emulate value-returning ML-implemented tactics in Ltac.
+    We use a dummy generic argument to work around the limitations of the Ltac
+    runtime. Indeed, the TacML node needs to return unit values, since it is
+    considered a "tactic" in the runtime. Changing it to allow arbitrary values
+    would require to toggle this status, and thus to make it a "value" node.
+    This would in turn create too much backwards incompatibility. Instead, we
+    piggy back on the TacGeneric node, which by construction is used to return
+    values.
+
+    The trick is to represent a n-ary application of a ML function as a generic
+    argument. We store in the node the name of the tactic and its arity, while
+    giving canonical names to the bound variables of the closure. This trick is
+    already performed in several external developments for specific calls, we
+    make it here generic. The argument should not be used for other purposes, so
+    we only export the registering functions.
+  *)
+  let wit : (Empty.t, ml_ltac_val, Geninterp.Val.t) Genarg.genarg_type =
+    Genarg.create_arg "ltac:val"
+  in
+  (* No need to internalize this ever *)
+  let intern_fun _ e = Empty.abort e in
+  let subst_fun s v = v in
+  let () = Genintern.register_intern0 wit intern_fun in
+  let () = Genintern.register_subst0 wit subst_fun in
+  (* No need to register a value tag for it via register_val0 since we will
+     never access this genarg directly. *)
+  let interp_fun ist tac =
+    let args = List.map (fun id -> Id.Map.get id ist.Geninterp.lfun) tac.tacval_var in
+    let tac = MLTacMap.get tac.tacval_tac !ml_table in
+    tac args
+  in
+  let () = Geninterp.register_interp0 wit interp_fun in
+  (fun v -> Genarg.in_gen (Genarg.Glbwit wit) v)
+
+
+let ml_val_tactic_extend ~plugin ~name ~local ?deprecation sign tac =
+  let open Tacexpr in
+  let tac args = cast_ml sign tac args in
+  let ml_tactic_name = { mltac_tactic = name; mltac_plugin = plugin } in
+  let len = ml_sig_len sign in
+  let vars = List.init len (fun i -> Id.of_string (Printf.sprintf "arg%i" i)) in
+  let body = TacGeneric (in_tacval { tacval_tac = ml_tactic_name;  tacval_var = vars }) in
+  let vars = List.map (fun id -> Name id) vars in
+  let body = Tacexpr.TacFun (vars, Tacexpr.TacArg (CAst.make body)) in
+  let id = Names.Id.of_string name in
+  let obj () = Tacenv.register_ltac true local id body ?deprecation in
+  let () = assert (not @@ MLTacMap.mem ml_tactic_name !ml_table) in
+  let () = ml_table := MLTacMap.add ml_tactic_name tac !ml_table in
+  Mltop.declare_cache_obj obj plugin
 
 (** ARGUMENT EXTEND *)
 

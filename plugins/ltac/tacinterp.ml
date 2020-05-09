@@ -1895,8 +1895,7 @@ module Value = struct
     let closure = VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], tac) in
     of_tacvalue closure
 
-  (** Apply toplevel tactic values *)
-  let apply (f : value) (args: value list) =
+  let apply_expr f args =
     let fold arg (i, vars, lfun) =
       let id = Id.of_string ("x" ^ string_of_int i) in
       let x = Reference (ArgVar CAst.(make id)) in
@@ -1905,8 +1904,17 @@ module Value = struct
     let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
     let lfun = Id.Map.add (Id.of_string "F") f lfun in
     let ist = { (default_ist ()) with lfun = lfun; } in
-    let tac = TacArg(CAst.make @@ TacCall (CAst.make (ArgVar CAst.(make @@ Id.of_string "F"),args))) in
+    ist, TacArg(CAst.make @@ TacCall (CAst.make (ArgVar CAst.(make @@ Id.of_string "F"),args)))
+
+
+  (** Apply toplevel tactic values *)
+  let apply (f : value) (args: value list) =
+    let ist, tac = apply_expr f args in
     eval_tactic_ist ist tac
+
+  let apply_val (f : value) (args: value list) =
+    let ist, tac = apply_expr f args in
+    val_interp ist tac
 
 end
 

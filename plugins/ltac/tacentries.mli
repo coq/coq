@@ -69,6 +69,25 @@ val print_ltacs : unit -> unit
 val print_located_tactic : Libnames.qualid -> unit
 (** Display the absolute name of a tactic. *)
 
+(** {5 Low-level registering of tactics} *)
+
+type (_, 'a) ml_ty_sig =
+| MLTyNil : ('a, 'a) ml_ty_sig
+| MLTyArg : ('r, 'a) ml_ty_sig -> (Geninterp.Val.t -> 'r, 'a) ml_ty_sig
+
+val ml_tactic_extend : plugin:string -> name:string -> local:locality_flag ->
+  ?deprecation:Deprecation.t -> ('r, unit Proofview.tactic) ml_ty_sig -> 'r -> unit
+(** Helper function to define directly an Ltac function in OCaml without any
+    associated parsing rule nor further shenanigans. The Ltac function will be
+    defined as [name] in the Coq file that loads the ML plugin where this
+    function is called. It will have the arity given by the [ml_ty_sig]
+    argument. *)
+
+val ml_val_tactic_extend : plugin:string -> name:string -> local:locality_flag ->
+  ?deprecation:Deprecation.t -> ('r, Geninterp.Val.t Ftactic.t) ml_ty_sig -> 'r -> unit
+(** Same as {!ml_tactic_extend} but the function can return an argument
+    instead. *)
+
 (** {5 TACTIC EXTEND} *)
 
 type _ ty_sig =
