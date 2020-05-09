@@ -1894,10 +1894,10 @@ let declare_projection name instance_id r =
     in it_mkProd_or_LetIn ccl ctx
   in
   let types = Some (it_mkProd_or_LetIn typ ctx) in
-  let kind, opaque, scope = Decls.(IsDefinition Definition), false, DeclareDef.Global Declare.ImportDefaultBehavior in
+  let kind, opaque, scope = Decls.(IsDefinition Definition), false, Declare.Global Declare.ImportDefaultBehavior in
   let impargs, udecl = [], UState.default_univ_decl in
   let _r : GlobRef.t =
-    DeclareDef.declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ~poly ~types ~body sigma
+    Declare.declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ~poly ~types ~body sigma
   in ()
 
 let build_morphism_signature env sigma m =
@@ -1961,10 +1961,10 @@ let add_morphism_as_parameter atts m n : unit =
   let env = Global.env () in
   let evd = Evd.from_env env in
   let poly = atts.polymorphic in
-  let kind, opaque, scope = Decls.(IsAssumption Logical), false, DeclareDef.Global Declare.ImportDefaultBehavior in
+  let kind, opaque, scope = Decls.(IsAssumption Logical), false, Declare.Global Declare.ImportDefaultBehavior in
   let impargs, udecl = [], UState.default_univ_decl in
   let evd, types = build_morphism_signature env evd m in
-  let evd, pe = DeclareDef.prepare_parameter ~poly ~udecl ~types evd in
+  let evd, pe = Declare.prepare_parameter ~poly ~udecl ~types evd in
   let cst = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
   let cst = GlobRef.ConstRef cst in
   Classes.add_instance
@@ -1981,7 +1981,7 @@ let add_morphism_interactive atts m n : Lemmas.t =
   let poly = atts.polymorphic in
   let kind = Decls.(IsDefinition Instance) in
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
-  let hook { DeclareDef.Hook.S.dref; _ } = dref |> function
+  let hook { Declare.Hook.S.dref; _ } = dref |> function
     | GlobRef.ConstRef cst ->
       Classes.add_instance (Classes.mk_instance
                       (PropGlobal.proper_class env evd) Hints.empty_hint_info
@@ -1989,7 +1989,7 @@ let add_morphism_interactive atts m n : Lemmas.t =
       declare_projection n instance_id (GlobRef.ConstRef cst)
     | _ -> assert false
   in
-  let hook = DeclareDef.Hook.make hook in
+  let hook = Declare.Hook.make hook in
   let info = Lemmas.Info.make ~hook ~kind () in
   Flags.silently
     (fun () ->

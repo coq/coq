@@ -46,8 +46,8 @@ val try_add_new_identity_coercion
   -> local:bool
   -> poly:bool -> source:cl_typ -> target:cl_typ -> unit
 
-val add_coercion_hook : poly:bool -> DeclareDef.Hook.t
+val add_coercion_hook : poly:bool -> Declare.Hook.t
 
-val add_subclass_hook : poly:bool -> DeclareDef.Hook.t
+val add_subclass_hook : poly:bool -> Declare.Hook.t
 
 val class_of_global : GlobRef.t -> cl_typ

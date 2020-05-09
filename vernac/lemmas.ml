@@ -39,17 +39,17 @@ end
 module Info = struct
 
   type t =
-    { hook : DeclareDef.Hook.t option
+    { hook : Declare.Hook.t option
     ; proof_ending : Proof_ending.t CEphemeron.key
     (* This could be improved and the CEphemeron removed *)
-    ; scope : DeclareDef.locality
+    ; scope : Declare.locality
     ; kind : Decls.logical_kind
     (* thms and compute guard are specific only to start_lemma_with_initialization + regular terminator *)
-    ; thms : DeclareDef.Recthm.t list
+    ; thms : Declare.Recthm.t list
     ; compute_guard : lemma_possible_guards
     }
 
-  let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior)
+  let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=Declare.Global Declare.ImportDefaultBehavior)
       ?(kind=Decls.(IsProof Lemma)) () =
     { hook
     ; compute_guard = []
@@ -98,7 +98,7 @@ let initialize_named_context_for_proof () =
 
 let add_first_thm ~info ~name ~typ ~impargs =
   let thms =
-    { DeclareDef.Recthm.name
+    { Declare.Recthm.name
     ; impargs
     ; typ = EConstr.Unsafe.to_constr typ
     ; args = [] } :: info.Info.thms
@@ -128,7 +128,7 @@ let start_dependent_lemma ~name ~poly
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
-    match List.map (fun { DeclareDef.Recthm.name; typ } -> name, (EConstr.of_constr typ)) thms with
+    match List.map (fun { Declare.Recthm.name; typ } -> name, (EConstr.of_constr typ)) thms with
     | (id,_)::l -> Tactics.mutual_cofix id l 0
     | _ -> assert false
   else
@@ -136,12 +136,12 @@ let rec_tac_initializer finite guard thms snl =
     let nl = match snl with
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
-    in match List.map2 (fun { DeclareDef.Recthm.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
+    in match List.map2 (fun { Declare.Recthm.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
 let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recguard thms snl =
-  let intro_tac { DeclareDef.Recthm.args; _ } = Tactics.auto_intros_tac args in
+  let intro_tac { Declare.Recthm.args; _ } = Tactics.auto_intros_tac args in
   let init_tac, compute_guard = match recguard with
   | Some (finite,guard,init_terms) ->
     let rec_tac = rec_tac_initializer finite guard thms snl in
@@ -161,7 +161,7 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
     intro_tac (List.hd thms), [] in
   match thms with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
-  | { DeclareDef.Recthm.name; typ; impargs; _} :: thms ->
+  | { Declare.Recthm.name; typ; impargs; _} :: thms ->
     let info =
       Info.{ hook
            ; compute_guard
@@ -200,7 +200,7 @@ module MutualEntry : sig
 
 end = struct
 
-  (* XXX: Refactor this with the code in [DeclareDef.declare_mutdef] *)
+  (* XXX: Refactor this with the code in [Declare.declare_mutdef] *)
   let guess_decreasing env possible_indexes ((body, ctx), eff) =
     let open Constr in
     match Constr.kind body with
@@ -220,7 +220,7 @@ end = struct
         Pp.(str "Not a proof by induction: " ++
             Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
 
-  let declare_mutdef ~uctx ~info pe i DeclareDef.Recthm.{ name; impargs; typ; _} =
+  let declare_mutdef ~uctx ~info pe i Declare.Recthm.{ name; impargs; typ; _} =
     let { Info.hook; scope; kind; compute_guard; _ } = info in
     (* if i = 0 , we don't touch the type; this is for compat
        but not clear it is the right thing to do.
@@ -238,7 +238,7 @@ end = struct
         Declare.Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
     in
-    DeclareDef.declare_entry ~name ~scope ~kind ?hook ~impargs ~uctx pe
+    Declare.declare_entry ~name ~scope ~kind ?hook ~impargs ~uctx pe
 
   let declare_mutdef ~info ~uctx const =
     let pe = match info.Info.compute_guard with
@@ -256,8 +256,8 @@ end = struct
   let declare_variable ~info ~uctx pe =
     let { Info.scope; hook } = info in
     List.map_i (
-      fun i { DeclareDef.Recthm.name; typ; impargs } ->
-        DeclareDef.declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
+      fun i { Declare.Recthm.name; typ; impargs } ->
+        Declare.declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
     ) 0 info.Info.thms
 
 end
@@ -395,8 +395,8 @@ let process_idopt_for_save ~idopt info =
     (* Save foo was used; we override the info in the first theorem *)
     let thms =
       match info.Info.thms, CEphemeron.default info.Info.proof_ending Proof_ending.Regular with
-      | [ { DeclareDef.Recthm.name; _} as decl ], Proof_ending.Regular ->
-        [ { decl with DeclareDef.Recthm.name = save_name } ]
+      | [ { Declare.Recthm.name; _} as decl ], Proof_ending.Regular ->
+        [ { decl with Declare.Recthm.name = save_name } ]
       | _ ->
         err_save_forbidden_in_place_of_qed ()
     in { info with Info.thms }

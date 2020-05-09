@@ -77,11 +77,11 @@ val add_definition :
   -> ?udecl:UState.universe_decl (** Universe binders and constraints *)
   -> ?impargs:Impargs.manual_implicits
   -> poly:bool
-  -> ?scope:DeclareDef.locality
+  -> ?scope:Declare.locality
   -> ?kind:Decls.definition_object_kind
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(constr -> constr)
-  -> ?hook:DeclareDef.Hook.t
+  -> ?hook:Declare.Hook.t
   -> ?opaque:bool
   -> RetrieveObl.obligation_info
   -> DeclareObl.progress
@@ -91,15 +91,15 @@ val add_definition :
 (** Start a [Program Fixpoint] declaration, similar to the above,
    except it takes a list now. *)
 val add_mutual_definitions :
-     (DeclareDef.Recthm.t * Constr.t * RetrieveObl.obligation_info) list
+     (Declare.Recthm.t * Constr.t * RetrieveObl.obligation_info) list
   -> uctx:UState.t
   -> ?udecl:UState.universe_decl (** Universe binders and constraints *)
   -> ?tactic:unit Proofview.tactic
   -> poly:bool
-  -> ?scope:DeclareDef.locality
+  -> ?scope:Declare.locality
   -> ?kind:Decls.definition_object_kind
   -> ?reduce:(constr -> constr)
-  -> ?hook:DeclareDef.Hook.t
+  -> ?hook:Declare.Hook.t
   -> ?opaque:bool
   -> Vernacexpr.decl_notation list
   -> DeclareObl.fixpoint_kind

@@ -352,8 +352,8 @@ let try_add_new_identity_coercion id ~local ~poly ~source ~target =
 let try_add_new_coercion_with_source ref ~local ~poly ~source =
   try_add_new_coercion_core ref ~local poly (Some source) None false
 
-let add_coercion_hook poly { DeclareDef.Hook.S.scope; dref; _ } =
-  let open DeclareDef in
+let add_coercion_hook poly { Declare.Hook.S.scope; dref; _ } =
+  let open Declare in
   let local = match scope with
   | Discharge -> assert false (* Local Coercion in section behaves like Local Definition *)
   | Global ImportNeedQualified -> true
@@ -363,10 +363,10 @@ let add_coercion_hook poly { DeclareDef.Hook.S.scope; dref; _ } =
   let msg = Nametab.pr_global_env Id.Set.empty dref ++ str " is now a coercion" in
   Flags.if_verbose Feedback.msg_info msg
 
-let add_coercion_hook ~poly = DeclareDef.Hook.make (add_coercion_hook poly)
+let add_coercion_hook ~poly = Declare.Hook.make (add_coercion_hook poly)
 
-let add_subclass_hook ~poly { DeclareDef.Hook.S.scope; dref; _ } =
-  let open DeclareDef in
+let add_subclass_hook ~poly { Declare.Hook.S.scope; dref; _ } =
+  let open Declare in
   let stre = match scope with
   | Discharge -> assert false (* Local Subclass in section behaves like Local Definition *)
   | Global ImportNeedQualified -> true
@@ -375,4 +375,4 @@ let add_subclass_hook ~poly { DeclareDef.Hook.S.scope; dref; _ } =
   let cl = class_of_global dref in
   try_add_new_coercion_subclass cl ~local:stre ~poly
 
-let add_subclass_hook ~poly = DeclareDef.Hook.make (add_subclass_hook ~poly)
+let add_subclass_hook ~poly = Declare.Hook.make (add_subclass_hook ~poly)

@@ -13,23 +13,6 @@ open Util
 (** (Partial) implementation of the [Hint] command; some more
    functionality still lives in tactics/hints.ml *)
 
-type hint_info_expr = Constrexpr.constr_pattern_expr Typeclasses.hint_info_gen
-
-type reference_or_constr =
-  | HintsReference of Libnames.qualid
-  | HintsConstr of Constrexpr.constr_expr
-
-type hints_expr =
-  | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
-  | HintsResolveIFF of bool * Libnames.qualid list * int option
-  | HintsImmediate of reference_or_constr list
-  | HintsUnfold of Libnames.qualid list
-  | HintsTransparency of Libnames.qualid Hints.hints_transparency_target * bool
-  | HintsMode of Libnames.qualid * Hints.hint_mode list
-  | HintsConstructors of Libnames.qualid list
-  | HintsExtern of
-      int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
-
 let project_hint ~poly pri l2r r =
   let open EConstr in
   let open Coqlib in
@@ -108,6 +91,7 @@ let interp_hints ~poly h =
   let fr r = Tacred.evaluable_of_global_reference env (fref r) in
   let fi c =
     let open Hints in
+    let open Vernacexpr in
     match c with
     | HintsReference c ->
       let gr = Smartlocate.global_with_alias c in
@@ -126,15 +110,14 @@ let interp_hints ~poly h =
     in
     (info, poly, b, path, gr)
   in
-  let ft =
-    let open Hints in
-    function
+  let open Hints in
+  let open Vernacexpr in
+  let ft = function
     | HintsVariables -> HintsVariables
     | HintsConstants -> HintsConstants
     | HintsReferences lhints -> HintsReferences (List.map fr lhints)
   in
   let fp = Constrintern.intern_constr_pattern (Global.env ()) in
-  let open Hints in
   match h with
   | HintsResolve lhints -> HintsResolveEntry (List.map fres lhints)
   | HintsResolveIFF (l2r, lc, n) ->

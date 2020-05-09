@@ -49,11 +49,11 @@ module Info : sig
   type t
 
   val make
-    :  ?hook: DeclareDef.Hook.t
+    :  ?hook: Declare.Hook.t
     (** Callback to be executed at the end of the proof *)
     -> ?proof_ending : Proof_ending.t
     (** Info for special constants *)
-    -> ?scope : DeclareDef.locality
+    -> ?scope : Declare.locality
     (** locality  *)
     -> ?kind:Decls.logical_kind
     (** Theorem, etc... *)
@@ -85,14 +85,14 @@ type lemma_possible_guards = int list list
 
 (** Pretty much internal, used by the Lemma / Fixpoint vernaculars *)
 val start_lemma_with_initialization
-  :  ?hook:DeclareDef.Hook.t
+  :  ?hook:Declare.Hook.t
   -> poly:bool
-  -> scope:DeclareDef.locality
+  -> scope:Declare.locality
   -> kind:Decls.logical_kind
   -> udecl:UState.universe_decl
   -> Evd.evar_map
   -> (bool * lemma_possible_guards * Constr.t option list option) option
-  -> DeclareDef.Recthm.t list
+  -> Declare.Recthm.t list
   -> int list option
   -> t
 

@@ -257,7 +257,7 @@ let build_recthms ~indexes fixnames fixtypes fiximps =
   in
   let thms =
     List.map3 (fun name typ (ctx,impargs,_) ->
-        { DeclareDef.Recthm.name
+        { Declare.Recthm.name
         ; typ
         ; args = List.map Context.Rel.Declaration.get_name ctx
         ; impargs})
@@ -284,7 +284,7 @@ let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixt
   let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
   let fix_kind = Decls.IsDefinition fix_kind in
   let _ : GlobRef.t list =
-    DeclareDef.declare_mutually_recursive ~scope ~opaque:false ~kind:fix_kind ~poly ~uctx
+    Declare.declare_mutually_recursive ~scope ~opaque:false ~kind:fix_kind ~poly ~uctx
       ~possible_indexes:indexes ~restrict_ucontext:true ~udecl ~ntns ~rec_declaration
       fixitems
   in

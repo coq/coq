@@ -15,9 +15,9 @@ open Constrexpr
 (** {6 Definitions/Let} *)
 
 val do_definition
-  :  ?hook:DeclareDef.Hook.t
+  :  ?hook:Declare.Hook.t
   -> name:Id.t
-  -> scope:DeclareDef.locality
+  -> scope:Declare.locality
   -> poly:bool
   -> kind:Decls.definition_object_kind
   -> universe_decl_expr option
@@ -28,9 +28,9 @@ val do_definition
   -> unit
 
 val do_definition_program
-  :  ?hook:DeclareDef.Hook.t
+  :  ?hook:Declare.Hook.t
   -> name:Id.t
-  -> scope:DeclareDef.locality
+  -> scope:Declare.locality
   -> poly:bool
   -> kind:Decls.definition_object_kind
   -> universe_decl_expr option

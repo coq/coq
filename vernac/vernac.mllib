@@ -9,16 +9,15 @@ Himsg
 Locality
 Egramml
 Vernacextend
-Declare
-ComHints
 Ppvernac
 Proof_using
 Egramcoq
 Metasyntax
 DeclareUniv
 RetrieveObl
-DeclareDef
+Declare
 DeclareObl
+ComHints
 Canonical
 RecLemmas
 Library
@@ -48,3 +47,4 @@ Vernacstate
 Vernacinterp
 Proof_global
 Pfedit
+DeclareDef

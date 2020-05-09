@@ -34,7 +34,7 @@ let warn_local_declaration =
         strbrk "available without qualification when imported.")
 
 let enforce_locality_exp locality_flag discharge =
-  let open DeclareDef in
+  let open Declare in
   let open Vernacexpr in
   match locality_flag, discharge with
   | Some b, NoDischarge -> Global (importability_of_bool b)

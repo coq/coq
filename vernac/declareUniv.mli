@@ -10,6 +10,9 @@
 
 open Names
 
+(* object_kind , id *)
+exception AlreadyDeclared of (string option * Id.t)
+
 (** Global universe contexts, names and constraints *)
 val declare_univ_binders : GlobRef.t -> UnivNames.universe_binders -> unit
 

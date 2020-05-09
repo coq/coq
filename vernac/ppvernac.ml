@@ -185,7 +185,7 @@ open Pputils
     | [] -> mt()
     | _ as z -> str":" ++ spc() ++ prlist_with_sep sep str z
 
-  let pr_reference_or_constr pr_c = let open ComHints in function
+  let pr_reference_or_constr pr_c = function
     | HintsReference r -> pr_qualid r
     | HintsConstr c -> pr_c c
 
@@ -202,7 +202,6 @@ open Pputils
     let opth = pr_opt_hintbases db  in
     let pph =
       let open Hints in
-      let open ComHints in
       match h with
         | HintsResolve l ->
           keyword "Resolve " ++ prlist_with_sep sep
@@ -792,7 +791,6 @@ let string_of_definition_object_kind = let open Decls in function
         return (keyword "Admitted")
 
       | VernacEndProof (Proved (opac,o)) -> return (
-        let open Declare in
         match o with
           | None -> (match opac with
               | Transparent -> keyword "Defined"
