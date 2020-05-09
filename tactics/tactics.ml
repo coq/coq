@@ -5090,11 +5090,11 @@ let with_set_strategy lvl_ql k =
      let orig_kl = List.map (fun (_lvl, k) ->
          (Conv_oracle.get_strategy (Environ.oracle env) k, k))
          kl in
-     (* Because the global env might be desynchronized from the proof-local
-        env, we need to update the global env to have this tactic play
-        nicely with abstract.
-        TODO: When abstract no longer depends on Global, delete this variable
-        let-in *)
+     (* Because the global env might be desynchronized from the
+        proof-local env, we need to update the global env to have this
+        tactic play nicely with abstract.
+        TODO: When abstract no longer depends on Global, delete this
+        let orig_kl_global = ... in *)
      let orig_kl_global = List.map (fun (_lvl, k) ->
          (Conv_oracle.get_strategy (Environ.oracle (Global.env ())) k, k))
          kl in
@@ -5102,6 +5102,8 @@ let with_set_strategy lvl_ql k =
          Environ.set_oracle env
            (Conv_oracle.set_strategy (Environ.oracle env) k lvl)) env kl in
      Proofview.Unsafe.tclSETENV env <*>
+     (* TODO: When abstract no longer depends on Global, remove this
+        [Proofview.tclLIFT] block *)
      Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
          List.iter (fun (lvl, k) -> Global.set_strategy k lvl) kl)) <*>
      Proofview.tclUNIT (orig_kl, orig_kl_global))
