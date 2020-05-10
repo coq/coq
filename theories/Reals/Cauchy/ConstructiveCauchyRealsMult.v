@@ -9,7 +9,10 @@
 (************************************************************************)
 (************************************************************************)
 
-(* The multiplication and division of Cauchy reals. *)
+(** The multiplication and division of Cauchy reals.
+
+    WARNING: this file is experimental and likely to change in future releases.
+*)
 
 Require Import QArith Qabs Qround.
 Require Import Logic.ConstructiveEpsilon.

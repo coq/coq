@@ -11,7 +11,10 @@
 
 (** Proof that LPO and the excluded middle for negations imply
     the existence of least upper bounds for all non-empty and bounded
-    subsets of the real numbers. *)
+    subsets of the real numbers.
+
+   WARNING: this file is experimental and likely to change in future releases.
+*)
 
 Require Import QArith_base Qabs.
 Require Import ConstructiveReals.

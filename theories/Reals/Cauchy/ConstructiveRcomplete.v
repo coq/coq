@@ -16,6 +16,11 @@ Require Import ConstructiveCauchyRealsMult.
 Require Import Logic.ConstructiveEpsilon.
 Require Import ConstructiveCauchyAbs.
 
+(** Proof that Cauchy reals are Cauchy-complete.
+
+    WARNING: this file is experimental and likely to change in future releases.
+ *)
+
 Local Open Scope CReal_scope.
 
 (* We use <= in sort Prop rather than < in sort Set,

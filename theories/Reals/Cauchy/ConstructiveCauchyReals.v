@@ -39,6 +39,8 @@ Require CMorphisms.
 
     WARNING: this module is not meant to be imported directly,
     please import `Reals.Abstract.ConstructiveReals` instead.
+
+    WARNING: this file is experimental and likely to change in future releases.
  *)
 Definition QCauchySeq (un : positive -> Q)
   : Prop
