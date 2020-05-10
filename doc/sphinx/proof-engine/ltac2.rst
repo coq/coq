@@ -213,14 +213,21 @@ There is dedicated syntax for list and array literals.
 Ltac Definitions
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Ltac2 {? mutable} {? rec} @lident := @ltac2_term
+.. cmd:: Ltac2 {? mutable} {? rec} @lident := @ltac2_value
    :name: Ltac2
 
    This command defines a new global Ltac2 value.
 
-   For semantic reasons, the body of the Ltac2 definition must be a syntactical
-   value, that is, a function, a constant or a pure constructor recursively applied to
-   values.
+   The body of an Ltac2 definition is required to be a syntactical value
+   that is, a function, a constant, a pure constructor recursively applied to
+   values or a (non-recursive) let binding of a value in a value.
+
+   .. productionlist:: coq
+      ltac2_value: fun `ltac2_var` => `ltac2_term`
+                       : `ltac2_qualid`
+                       : `ltac2_constructor` `ltac2_value` ... `ltac2_value`
+                       : `ltac2_var`
+                       : let `ltac2_var` := `ltac2_value` in `ltac2_value`
 
    If ``rec`` is set, the tactic is expanded into a recursive binding.
 

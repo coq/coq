@@ -35,16 +35,31 @@ Ltac2 Set g := f.
 
 (* Rebinding with old values *)
 
-Ltac2 mutable qux () := Message.print (Message.of_string "Hello").
-
-Ltac2 Set qux as self := fun () => self (); self ().
-
-Ltac2 Eval qux ().
-
 Ltac2 Type rec nat := [O | S (nat)].
+
+Ltac2 rec nat_eq n m :=
+  match n with
+  | O => match m with | O => true | S _ => false end
+  | S n => match m with | O => false | S m => nat_eq n m end
+  end.
+
+Ltac2 Type exn ::= [ Assertion_failed ].
+
+Ltac2 assert_eq n m :=
+  match nat_eq n m with
+  | true => ()
+  | false => Control.throw Assertion_failed end.
+
+
+Ltac2 mutable qux n := S n.
+
+Ltac2 Set qux as self := fun n => self (self n).
+
+Ltac2 Eval assert_eq (qux O) (S (S O)).
+
 
 Ltac2 mutable quz := O.
 
 Ltac2 Set quz as self := S self.
 
-Ltac2 Eval quz.
+Ltac2 Eval (assert_eq quz (S O)).
