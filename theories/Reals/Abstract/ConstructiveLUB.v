@@ -108,7 +108,7 @@ Proof.
       rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
       apply Pos2Nat.inj_le. rewrite Nat2Pos.id.
       apply le_S, H0. discriminate.
-      rewrite <- CR_of_Q_zero. apply CR_of_Q_le. discriminate.
+      apply CR_of_Q_le. discriminate.
 Qed.
 
 Lemma is_upper_bound_dec :
@@ -272,7 +272,7 @@ Proof.
       apply CR_of_Q_pos. reflexivity.
       rewrite CRmult_assoc, <- CR_of_Q_mult, (CR_of_Q_plus R 1 1).
       setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-      rewrite CR_of_Q_one, CRmult_plus_distr_l, CRmult_1_r, CRmult_1_r.
+      rewrite CRmult_plus_distr_l, CRmult_1_r, CRmult_1_r.
       apply CRplus_lt_compat_r. exact H0. }
     destruct (CR_cv_open_below _ _ l lcv H1) as [p pmaj].
     assert (0 < (l-CR_of_Q R r) * CR_of_Q R (1#2)).
@@ -280,7 +280,6 @@ Proof.
       apply CRplus_lt_compat_r. exact H0. apply CR_of_Q_pos. reflexivity. }
     destruct (CRup_nat (CRinv R _ (inr H2))) as [i imaj].
     destruct i. exfalso. simpl in imaj.
-    rewrite CR_of_Q_zero in imaj.
     exact (CRlt_asym _ _ imaj (CRinv_0_lt_compat R _ (inr H2) H2)).
     specialize (pmaj (max (S i) (S p)) (le_trans p (S p) _ (le_S p p (le_refl p)) (Nat.le_max_r (S i) (S p)))).
     unfold proj1_sig in pmaj.
@@ -309,7 +308,7 @@ Proof.
          CR_of_Q R (1 # Pos.of_nat (S i)))).
     apply CRlt_asym, imaj. rewrite CRmult_assoc, <- CR_of_Q_mult.
     setoid_replace ((Z.of_nat (S i) # 1) * (1 # Pos.of_nat (S i)))%Q with 1%Q.
-    rewrite CR_of_Q_one, CRmult_1_r.
+    rewrite CRmult_1_r.
     unfold CRminus. rewrite CRmult_plus_distr_r, (CRplus_comm (-CR_of_Q R r)).
     rewrite (CRplus_comm (CR_of_Q R r)), CRmult_plus_distr_r.
     rewrite CRplus_assoc. apply CRplus_le_compat_l.

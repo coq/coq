@@ -163,9 +163,8 @@ Lemma CRmorph_zero : forall {R1 R2 : ConstructiveReals}
     CRmorph f 0 == 0.
 Proof.
   intros. apply (CReq_trans _ (CRmorph f (CR_of_Q R1 0))).
-  apply CRmorph_proper. apply CReq_sym, CR_of_Q_zero.
-  apply (CReq_trans _ (CR_of_Q R2 0)).
-  apply CRmorph_rat. apply CR_of_Q_zero.
+  apply CRmorph_proper. reflexivity.
+  apply CRmorph_rat.
 Qed.
 
 Lemma CRmorph_one : forall {R1 R2 : ConstructiveReals}
@@ -173,9 +172,8 @@ Lemma CRmorph_one : forall {R1 R2 : ConstructiveReals}
     CRmorph f 1 == 1.
 Proof.
   intros. apply (CReq_trans _ (CRmorph f (CR_of_Q R1 1))).
-  apply CRmorph_proper. apply CReq_sym, CR_of_Q_one.
-  apply (CReq_trans _ (CR_of_Q R2 1)).
-  apply CRmorph_rat. apply CR_of_Q_one.
+  apply CRmorph_proper. reflexivity.
+  apply CRmorph_rat.
 Qed.
 
 Lemma CRmorph_opp : forall {R1 R2 : ConstructiveReals}
@@ -228,9 +226,9 @@ Lemma CRplus_pos_rat_lt : forall {R : ConstructiveReals} (x : CRcarrier R) (q : 
     Qlt 0 q -> CRlt R x (CRplus R x (CR_of_Q R q)).
 Proof.
   intros.
-  apply (CRle_lt_trans _ (CRplus R x (CRzero R))). apply CRplus_0_r.
+  apply (CRle_lt_trans _ (CRplus R x 0)). apply CRplus_0_r.
   apply CRplus_lt_compat_l.
-  apply (CRle_lt_trans _ (CR_of_Q R 0)). apply CR_of_Q_zero.
+  apply (CRle_lt_trans _ (CR_of_Q R 0)). apply CRle_refl.
   apply CR_of_Q_lt. exact H.
 Defined.
 
@@ -238,10 +236,10 @@ Lemma CRplus_neg_rat_lt : forall {R : ConstructiveReals} (x : CRcarrier R) (q : 
     Qlt q 0 -> CRlt R (CRplus R x (CR_of_Q R q)) x.
 Proof.
   intros.
-  apply (CRlt_le_trans _ (CRplus R x (CRzero R))). 2: apply CRplus_0_r.
+  apply (CRlt_le_trans _ (CRplus R x 0)). 2: apply CRplus_0_r.
   apply CRplus_lt_compat_l.
   apply (CRlt_le_trans _ (CR_of_Q R 0)).
-  apply CR_of_Q_lt. exact H. apply CR_of_Q_zero.
+  apply CR_of_Q_lt. exact H. apply CRle_refl.
 Qed.
 
 Lemma CRmorph_plus_rat : forall {R1 R2 : ConstructiveReals}
@@ -276,7 +274,7 @@ Proof.
     destruct (CRisRing R1).
     apply (CRle_trans
              _ (CRplus R1 x (CRplus R1 (CR_of_Q R1 q) (CRopp R1 (CR_of_Q R1 q))))).
-    apply (CRle_trans _ (CRplus R1 x (CRzero R1))).
+    apply (CRle_trans _ (CRplus R1 x 0)).
     destruct (CRplus_0_r x). exact H.
     apply CRplus_le_compat_l. destruct (Ropp_def (CR_of_Q R1 q)). exact H.
     destruct (Radd_assoc x (CR_of_Q R1 q) (CRopp R1 (CR_of_Q R1 q))).
@@ -294,7 +292,7 @@ Proof.
              _ (CRplus R1 x (CRplus R1 (CR_of_Q R1 q) (CRopp R1 (CR_of_Q R1 q))))).
     destruct (Radd_assoc x (CR_of_Q R1 q) (CRopp R1 (CR_of_Q R1 q))).
     exact H0.
-    apply (CRle_trans _ (CRplus R1 x (CRzero R1))).
+    apply (CRle_trans _ (CRplus R1 x 0)).
     apply CRplus_le_compat_l. destruct (Ropp_def (CR_of_Q R1 q)). exact H1.
     destruct (CRplus_0_r x). exact H1.
     apply (CRlt_le_trans _ (CR_of_Q R1 (r-q))).
@@ -379,12 +377,12 @@ Proof.
     apply CRmorph_proper. destruct (CRisRing R1).
     apply (CReq_trans _ (CRplus R1 x (CRplus R1 y (CRopp R1 y)))).
     apply CReq_sym, Radd_assoc.
-    apply (CReq_trans _ (CRplus R1 x (CRzero R1))). 2: apply CRplus_0_r.
+    apply (CReq_trans _ (CRplus R1 x 0)). 2: apply CRplus_0_r.
     destruct (CRisRingExt R1). apply Radd_ext.
     apply CReq_refl. apply Ropp_def.
     apply (CRplus_lt_reg_r (CRmorph f y)).
     apply (CRlt_le_trans _ _ _ abs). clear abs.
-    apply (CRle_trans _ (CRplus R2 (CRmorph f (CRplus R1 x y)) (CRzero R2))).
+    apply (CRle_trans _ (CRplus R2 (CRmorph f (CRplus R1 x y)) 0)).
     destruct (CRplus_0_r (CRmorph f (CRplus R1 x y))). exact H.
     apply (CRle_trans _ (CRplus R2 (CRmorph f (CRplus R1 x y))
                                 (CRplus R2 (CRmorph f (CRopp R1 y)) (CRmorph f y)))).
@@ -407,29 +405,26 @@ Lemma CRmorph_mult_pos : forall {R1 R2 : ConstructiveReals}
 Proof.
   induction n.
   - simpl. destruct (CRisRingExt R1).
-    apply (CReq_trans _ (CRzero R2)).
-    + apply (CReq_trans _ (CRmorph f (CRzero R1))).
+    apply (CReq_trans _ 0).
+    + apply (CReq_trans _ (CRmorph f 0)).
       2: apply CRmorph_zero. apply CRmorph_proper.
-      apply (CReq_trans _ (CRmult R1 x (CRzero R1))).
-      2: apply CRmult_0_r. apply Rmul_ext. apply CReq_refl. apply CR_of_Q_zero.
-    + apply (CReq_trans _ (CRmult R2 (CRmorph f x) (CRzero R2))).
+      apply (CReq_trans _ (CRmult R1 x 0)).
+      2: apply CRmult_0_r. apply Rmul_ext. apply CReq_refl. reflexivity.
+    + apply (CReq_trans _ (CRmult R2 (CRmorph f x) 0)).
       apply CReq_sym, CRmult_0_r. destruct (CRisRingExt R2).
-      apply Rmul_ext0. apply CReq_refl. apply CReq_sym, CR_of_Q_zero.
+      apply Rmul_ext0. apply CReq_refl. reflexivity.
   - destruct (CRisRingExt R1), (CRisRingExt R2).
-    apply (CReq_trans
-             _  (CRmorph f (CRplus R1 x (CRmult R1 x (CR_of_Q R1 (Z.of_nat n # 1)))))).
+    transitivity (CRmorph f (CRplus R1 x (CRmult R1 x (CR_of_Q R1 (Z.of_nat n # 1))))).
     apply CRmorph_proper.
-    apply (CReq_trans
-             _ (CRmult R1 x (CRplus R1 (CRone R1) (CR_of_Q R1 (Z.of_nat n # 1))))).
-    apply Rmul_ext. apply CReq_refl.
-    apply (CReq_trans _ (CR_of_Q R1 (1 + (Z.of_nat n # 1)))).
+    transitivity (CRmult R1 x (CRplus R1 1 (CR_of_Q R1 (Z.of_nat n # 1)))).
+    apply Rmul_ext. reflexivity.
+    transitivity (CR_of_Q R1 (1 + (Z.of_nat n # 1))).
     apply CR_of_Q_morph. rewrite Nat2Z.inj_succ. unfold Z.succ.
     rewrite Z.add_comm. rewrite Qinv_plus_distr. reflexivity.
-    apply (CReq_trans _ (CRplus R1 (CR_of_Q R1 1) (CR_of_Q R1 (Z.of_nat n # 1)))).
-    apply CR_of_Q_plus. apply Radd_ext. apply CR_of_Q_one. apply CReq_refl.
-    apply (CReq_trans _ (CRplus R1 (CRmult R1 x (CRone R1))
-                                (CRmult R1 x (CR_of_Q R1 (Z.of_nat n # 1))))).
-    apply CRmult_plus_distr_l. apply Radd_ext. apply CRmult_1_r. apply CReq_refl.
+    rewrite CR_of_Q_plus. reflexivity.
+    transitivity (CRplus R1 (CRmult R1 x 1)
+                         (CRmult R1 x (CR_of_Q R1 (Z.of_nat n # 1)))).
+    apply CRmult_plus_distr_l. apply Radd_ext. apply CRmult_1_r. reflexivity.
     apply (CReq_trans
              _ (CRplus R2 (CRmorph f x)
                        (CRmorph f (CRmult R1 x (CR_of_Q R1 (Z.of_nat n # 1)))))).
@@ -439,16 +434,16 @@ Proof.
                        (CRmult R2 (CRmorph f x) (CR_of_Q R2 (Z.of_nat n # 1))))).
     apply Radd_ext0. apply CReq_refl. exact IHn.
     apply (CReq_trans
-             _ (CRmult R2 (CRmorph f x) (CRplus R2 (CRone R2) (CR_of_Q R2 (Z.of_nat n # 1))))).
+             _ (CRmult R2 (CRmorph f x) (CRplus R2 1 (CR_of_Q R2 (Z.of_nat n # 1))))).
     apply (CReq_trans
-             _ (CRplus R2 (CRmult R2 (CRmorph f x) (CRone R2))
+             _ (CRplus R2 (CRmult R2 (CRmorph f x) 1)
                        (CRmult R2 (CRmorph f x) (CR_of_Q R2 (Z.of_nat n # 1))))).
     apply Radd_ext0. 2: apply CReq_refl. apply CReq_sym, CRmult_1_r.
     apply CReq_sym, CRmult_plus_distr_l.
     apply Rmul_ext0. apply CReq_refl.
     apply (CReq_trans _ (CR_of_Q R2 (1 + (Z.of_nat n # 1)))).
     apply (CReq_trans _ (CRplus R2 (CR_of_Q R2 1) (CR_of_Q R2 (Z.of_nat n # 1)))).
-    apply Radd_ext0. apply CReq_sym, CR_of_Q_one. apply CReq_refl.
+    apply Radd_ext0. reflexivity. reflexivity.
     apply CReq_sym, CR_of_Q_plus.
     apply CR_of_Q_morph. rewrite Nat2Z.inj_succ. unfold Z.succ.
     rewrite Z.add_comm. rewrite Qinv_plus_distr. reflexivity.
@@ -501,7 +496,7 @@ Lemma CRmorph_mult_inv : forall {R1 R2 : ConstructiveReals}
 Proof.
   intros. apply (CRmult_eq_reg_r (CR_of_Q R2 (Z.pos p # 1))).
   left. apply (CRle_lt_trans _ (CR_of_Q R2 0)).
-  apply CR_of_Q_zero. apply CR_of_Q_lt. reflexivity.
+  apply CRle_refl. apply CR_of_Q_lt. reflexivity.
   apply (CReq_trans _ (CRmorph f x)).
   - apply (CReq_trans
              _ (CRmorph f (CRmult R1 (CRmult R1 x (CR_of_Q R1 (1 # p)))
@@ -511,22 +506,22 @@ Proof.
              _ (CRmult R1 x (CRmult R1 (CR_of_Q R1 (1 # p))
                                     (CR_of_Q R1 (Z.pos p # 1))))).
     destruct (CRisRing R1). apply CReq_sym, Rmul_assoc.
-    apply (CReq_trans _ (CRmult R1 x (CRone R1))).
+    apply (CReq_trans _ (CRmult R1 x 1)).
     apply (Rmul_ext (CRisRingExt R1)). apply CReq_refl.
     apply (CReq_trans _ (CR_of_Q R1 ((1#p) * (Z.pos p # 1)))).
     apply CReq_sym, CR_of_Q_mult.
     apply (CReq_trans _ (CR_of_Q R1 1)).
-    apply CR_of_Q_morph. reflexivity. apply CR_of_Q_one.
+    apply CR_of_Q_morph. reflexivity. reflexivity.
     apply CRmult_1_r.
   - apply (CReq_trans
              _ (CRmult R2 (CRmorph f x)
                        (CRmult R2 (CR_of_Q R2 (1 # p)) (CR_of_Q R2 (Z.pos p # 1))))).
     2: apply (Rmul_assoc (CRisRing R2)).
-    apply (CReq_trans _ (CRmult R2 (CRmorph f x) (CRone R2))).
+    apply (CReq_trans _ (CRmult R2 (CRmorph f x) 1)).
     apply CReq_sym, CRmult_1_r.
     apply (Rmul_ext (CRisRingExt R2)). apply CReq_refl.
     apply (CReq_trans _ (CR_of_Q R2 1)).
-    apply CReq_sym, CR_of_Q_one.
+    reflexivity.
     apply (CReq_trans _ (CR_of_Q R2 ((1#p)*(Z.pos p # 1)))).
     apply CR_of_Q_morph. reflexivity. apply CR_of_Q_mult.
 Qed.
@@ -571,7 +566,7 @@ Qed.
 Lemma CRmorph_mult_pos_pos_le : forall {R1 R2 : ConstructiveReals}
                                   (f : @ConstructiveRealsMorphism R1 R2)
                                   (x y : CRcarrier R1),
-    CRlt R1 (CRzero R1) y
+    CRlt R1 0 y
     -> CRmult R2 (CRmorph f x) (CRmorph f y)
        <= CRmorph f (CRmult R1 x y).
 Proof.
@@ -590,20 +585,20 @@ Proof.
     apply Qlt_minus_iff in H1. rewrite H4 in H1. inversion H1. }
   destruct (CR_Q_dense R1 (CRplus R1 x (CR_of_Q R1 ((q-r) * (1#A)))) x)
     as [s [H4 H5]].
-  - apply (CRlt_le_trans _ (CRplus R1 x (CRzero R1))).
+  - apply (CRlt_le_trans _ (CRplus R1 x 0)).
     2: apply CRplus_0_r. apply CRplus_lt_compat_l.
     apply (CRplus_lt_reg_l R1 (CR_of_Q R1 ((r-q) * (1#A)))).
-    apply (CRle_lt_trans _ (CRzero R1)).
+    apply (CRle_lt_trans _ 0).
     apply (CRle_trans _ (CR_of_Q R1 ((r-q)*(1#A) + (q-r)*(1#A)))).
     destruct (CR_of_Q_plus R1 ((r-q)*(1#A)) ((q-r)*(1#A))).
     exact H0. apply (CRle_trans _ (CR_of_Q R1 0)).
-    2: destruct (@CR_of_Q_zero R1); exact H4.
+    2: apply CRle_refl.
     intro H4. apply lt_CR_of_Q in H4. ring_simplify in H4.
     inversion H4.
     apply (CRlt_le_trans _ (CR_of_Q R1 ((r - q) * (1 # A)))).
     2: apply CRplus_0_r.
     apply (CRle_lt_trans _ (CR_of_Q R1 0)).
-    apply CR_of_Q_zero. apply CR_of_Q_lt.
+    apply CRle_refl. apply CR_of_Q_lt.
     rewrite <- (Qmult_0_r (r-q)). apply Qmult_lt_l.
     apply Qlt_minus_iff in H1. exact H1. reflexivity.
   - apply (CRmorph_increasing f) in H4.
@@ -637,7 +632,7 @@ Proof.
       apply (CRlt_le_trans
                _ (CRmult R2 (CR_of_Q R2 ((q - r) * (1 # A))) (CRmorph f y))).
       apply (CRmult_lt_reg_l (CR_of_Q R2 (/((r-q)*(1#A))))).
-      apply (CRle_lt_trans _ (CR_of_Q R2 0)). apply CR_of_Q_zero.
+      apply (CRle_lt_trans _ (CR_of_Q R2 0)). apply CRle_refl.
       apply CR_of_Q_lt, Qinv_lt_0_compat.
       rewrite <- (Qmult_0_r (r-q)). apply Qmult_lt_l.
       apply Qlt_minus_iff in H1. exact H1. reflexivity.
@@ -655,24 +650,24 @@ Proof.
       apply (CRlt_le_trans _ (CRmorph f (CR_of_Q R1 (Z.pos A # 1)))).
       apply CRmorph_increasing. exact Amaj.
       destruct (CRmorph_rat f (Z.pos A # 1)). exact H4.
-      apply (CRle_trans _ (CRmult R2 (CRopp R2 (CRone R2)) (CRmorph f y))).
-      apply (CRle_trans _ (CRopp R2 (CRmult R2 (CRone R2) (CRmorph f y)))).
+      apply (CRle_trans _ (CRmult R2 (CRopp R2 1) (CRmorph f y))).
+      apply (CRle_trans _ (CRopp R2 (CRmult R2 1 (CRmorph f y)))).
       destruct (Ropp_ext (CRisRingExt R2) (CRmorph f y)
-                         (CRmult R2 (CRone R2) (CRmorph f y))).
+                         (CRmult R2 1 (CRmorph f y))).
       apply CReq_sym, (Rmul_1_l (CRisRing R2)). exact H4.
-      destruct (CRopp_mult_distr_l (CRone R2) (CRmorph f y)). exact H4.
+      destruct (CRopp_mult_distr_l 1 (CRmorph f y)). exact H4.
       apply (CRle_trans _ (CRmult R2 (CRmult R2 (CR_of_Q R2 (/ ((r - q) * (1 # A))))
                                              (CR_of_Q R2 ((q - r) * (1 # A))))
                                   (CRmorph f y))).
       apply CRmult_le_compat_r_half.
-      apply (CRle_lt_trans _ (CRmorph f (CRzero R1))).
+      apply (CRle_lt_trans _ (CRmorph f 0)).
       apply CRmorph_zero. apply CRmorph_increasing. exact H.
       apply (CRle_trans _ (CR_of_Q R2 ((/ ((r - q) * (1 # A)))
                                        * ((q - r) * (1 # A))))).
       apply (CRle_trans _ (CR_of_Q R2 (-1))).
       apply (CRle_trans _ (CRopp R2 (CR_of_Q R2 1))).
-      destruct (Ropp_ext (CRisRingExt R2) (CRone R2) (CR_of_Q R2 1)).
-      apply CReq_sym, CR_of_Q_one. exact H4.
+      destruct (Ropp_ext (CRisRingExt R2) 1 (CR_of_Q R2 1)).
+      reflexivity. exact H4.
       destruct (@CR_of_Q_opp R2 1). exact H0.
       destruct (CR_of_Q_morph R2 (-1) (/ ((r - q) * (1 # A)) * ((q - r) * (1 # A)))).
       field. split.
@@ -685,7 +680,7 @@ Proof.
                            (CRmorph f y)).
       exact H0.
       apply CRmult_le_compat_r_half.
-      apply (CRle_lt_trans _ (CRmorph f (CRzero R1))).
+      apply (CRle_lt_trans _ (CRmorph f 0)).
       apply CRmorph_zero. apply CRmorph_increasing. exact H.
       destruct (CRmorph_rat f ((q - r) * (1 # A))). exact H0.
     + apply (CRle_trans _ (CRmorph f (CRmult R1 y (CR_of_Q R1 s)))).
@@ -696,14 +691,14 @@ Proof.
       destruct (CRmorph_proper f (CRmult R1 y (CR_of_Q R1 s))
                                (CRmult R1 (CR_of_Q R1 s) y)).
       apply (Rmul_comm (CRisRing R1)). exact H4.
-    + apply (CRle_lt_trans _ (CRmorph f (CRzero R1))).
+    + apply (CRle_lt_trans _ (CRmorph f 0)).
       apply CRmorph_zero. apply CRmorph_increasing. exact H.
 Qed.
 
 Lemma CRmorph_mult_pos_pos : forall {R1 R2 : ConstructiveReals}
                                (f : @ConstructiveRealsMorphism R1 R2)
                                (x y : CRcarrier R1),
-    CRlt R1 (CRzero R1) y
+    CRlt R1 0 y
     -> CRmorph f (CRmult R1 x y)
        == CRmult R2 (CRmorph f x) (CRmorph f y).
 Proof.
@@ -718,10 +713,10 @@ Proof.
   destruct (CR_archimedean R1 y) as [A Amaj].
   destruct (CR_Q_dense R1 x (CRplus R1 x (CR_of_Q R1 ((q-r) * (1#A)))))
     as [s [H4 H5]].
-  - apply (CRle_lt_trans _ (CRplus R1 x (CRzero R1))).
+  - apply (CRle_lt_trans _ (CRplus R1 x 0)).
     apply CRplus_0_r. apply CRplus_lt_compat_l.
     apply (CRle_lt_trans _ (CR_of_Q R1 0)).
-    apply CR_of_Q_zero. apply CR_of_Q_lt.
+    apply CRle_refl. apply CR_of_Q_lt.
     rewrite <- (Qmult_0_r (q-r)). apply Qmult_lt_l.
     apply Qlt_minus_iff in H3. exact H3. reflexivity.
   - apply (CRmorph_increasing f) in H5.
@@ -763,14 +758,14 @@ Proof.
                          (CRmult R2 (CR_of_Q R2 ((q - r) * (1 # A)))
                                  (CRmorph f y)))).
       apply CRplus_le_compat_l, CRmult_le_compat_r_half.
-      apply (CRle_lt_trans _ (CRmorph f (CRzero R1))).
+      apply (CRle_lt_trans _ (CRmorph f 0)).
       apply CRmorph_zero. apply CRmorph_increasing. exact H.
       destruct (CRmorph_rat f ((q - r) * (1 # A))). exact H2.
       apply (CRlt_le_trans _ (CRplus R2 (CR_of_Q R2 r)
                                      (CR_of_Q R2 ((q - r))))).
       apply CRplus_lt_compat_l.
       * apply (CRmult_lt_reg_l (CR_of_Q R2 (/((q - r) * (1 # A))))).
-        apply (CRle_lt_trans _ (CR_of_Q R2 0)). apply CR_of_Q_zero.
+        apply (CRle_lt_trans _ (CR_of_Q R2 0)). apply CRle_refl.
         apply CR_of_Q_lt, Qinv_lt_0_compat.
         rewrite <- (Qmult_0_r (q-r)). apply Qmult_lt_l.
         apply Qlt_minus_iff in H3. exact H3. reflexivity.
@@ -781,9 +776,9 @@ Proof.
         exact (proj2 (Rmul_assoc (CRisRing R2) (CR_of_Q R2 (/ ((q - r) * (1 # A))))
                                  (CR_of_Q R2 ((q - r) * (1 # A)))
                                  (CRmorph f y))).
-        apply (CRle_trans _ (CRmult R2 (CRone R2) (CRmorph f y))).
+        apply (CRle_trans _ (CRmult R2 1 (CRmorph f y))).
         apply CRmult_le_compat_r_half.
-        apply (CRle_lt_trans _ (CRmorph f (CRzero R1))).
+        apply (CRle_lt_trans _ (CRmorph f 0)).
         apply CRmorph_zero. apply CRmorph_increasing. exact H.
         apply (CRle_trans
                  _ (CR_of_Q R2 ((/ ((q - r) * (1 # A))) * ((q - r) * (1 # A))))).
@@ -793,7 +788,7 @@ Proof.
         field_simplify. reflexivity. split.
         intro H5. inversion H5. intro H5. apply Qlt_minus_iff in H3.
         rewrite H5 in H3. inversion H3. exact H2.
-        destruct (CR_of_Q_one R2). exact H2.
+        apply CRle_refl.
         destruct (Rmul_1_l (CRisRing R2) (CRmorph f y)).
         intro H5. contradiction.
         apply (CRlt_le_trans _ (CR_of_Q R2 (Z.pos A # 1))).
@@ -809,7 +804,7 @@ Proof.
       * apply (CRle_trans _ (CR_of_Q R2 (r + (q-r)))).
         exact (proj1 (CR_of_Q_plus R2 r (q-r))).
         destruct (CR_of_Q_morph R2 (r + (q-r)) q). ring. exact H2.
-    + apply (CRle_lt_trans _ (CRmorph f (CRzero R1))).
+    + apply (CRle_lt_trans _ (CRmorph f 0)).
       apply CRmorph_zero. apply CRmorph_increasing. exact H.
 Qed.
 
@@ -867,10 +862,10 @@ Lemma CRmorph_appart_zero : forall {R1 R2 : ConstructiveReals}
     CRmorph f x ≶ 0.
 Proof.
   intros. destruct app.
-  - left. apply (CRlt_le_trans _ (CRmorph f (CRzero R1))).
+  - left. apply (CRlt_le_trans _ (CRmorph f 0)).
     apply CRmorph_increasing. exact c.
     exact (proj2 (CRmorph_zero f)).
-  - right. apply (CRle_lt_trans  _ (CRmorph f (CRzero R1))).
+  - right. apply (CRle_lt_trans  _ (CRmorph f 0)).
     exact (proj1 (CRmorph_zero f)).
     apply CRmorph_increasing. exact c.
 Defined.
@@ -885,7 +880,7 @@ Lemma CRmorph_inv : forall {R1 R2 : ConstructiveReals}
 Proof.
   intros. apply (CRmult_eq_reg_r (CRmorph f x)).
   destruct fxnz. right. exact c. left. exact c.
-  apply (CReq_trans _ (CRone R2)).
+  apply (CReq_trans _ 1).
   2: apply CReq_sym, CRinv_l.
   apply (CReq_trans _ (CRmorph f (CRmult R1 ((/ x) xnz) x))).
   apply CReq_sym, CRmorph_mult.
@@ -915,11 +910,11 @@ Proof.
   - simpl. unfold INR.
     rewrite (CRmorph_proper f _ (1 + CR_of_Q R1 (Z.of_nat n # 1))).
     rewrite CRmorph_plus. unfold INR in IHn.
-    rewrite IHn. rewrite CRmorph_one, <- CR_of_Q_one, <- CR_of_Q_plus.
+    rewrite IHn. rewrite CRmorph_one, <- CR_of_Q_plus.
     apply CR_of_Q_morph. rewrite Qinv_plus_distr.
     unfold Qeq, Qnum, Qden. do 2 rewrite Z.mul_1_r.
     rewrite Nat2Z.inj_succ. rewrite <- Z.add_1_l. reflexivity.
-    rewrite <- CR_of_Q_one, <- CR_of_Q_plus.
+    rewrite <- CR_of_Q_plus.
     apply CR_of_Q_morph. rewrite Qinv_plus_distr.
     unfold Qeq, Qnum, Qden. do 2 rewrite Z.mul_1_r.
     rewrite Nat2Z.inj_succ. rewrite <- Z.add_1_l. reflexivity.
@@ -1047,7 +1042,7 @@ Proof.
     apply Pos2Z.pos_le_pos, Pos2Nat.inj_le. rewrite Nat2Pos.id. exact H0.
     destruct i. inversion H0. pose proof (Pos2Nat.is_pos p).
     rewrite H2 in H1. inversion H1. discriminate.
-    rewrite <- CR_of_Q_zero. apply CR_of_Q_le. discriminate.
+    apply CR_of_Q_le. discriminate.
     rewrite CRplus_0_r. reflexivity. }
   pose proof (CR_cv_open_above _ _ _ H0 H) as [n nmaj].
   apply (CRle_lt_trans _ (CR_of_Q R2 (let (q0, _) := CR_Q_limit x n in

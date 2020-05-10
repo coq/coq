@@ -60,11 +60,11 @@ Lemma sum_const : forall {R : ConstructiveReals} (a : CRcarrier R) (n : nat),
     CRsum (fun _ => a) n == a * INR (S n).
 Proof.
   induction n.
-  - unfold INR. simpl. rewrite CR_of_Q_one, CRmult_1_r. reflexivity.
+  - unfold INR. simpl. rewrite CRmult_1_r. reflexivity.
   - simpl. rewrite IHn. unfold INR.
     replace (Z.of_nat (S (S n))) with (Z.of_nat (S n) + 1)%Z.
     rewrite <- Qinv_plus_distr, CR_of_Q_plus, CRmult_plus_distr_l.
-    apply CRplus_morph. reflexivity. rewrite CR_of_Q_one, CRmult_1_r. reflexivity.
+    apply CRplus_morph. reflexivity. rewrite CRmult_1_r. reflexivity.
     replace 1%Z with (Z.of_nat 1). rewrite <- Nat2Z.inj_add.
     apply f_equal. rewrite Nat.add_comm. reflexivity. reflexivity.
 Qed.
