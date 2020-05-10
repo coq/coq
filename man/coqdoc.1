@@ -1,4 +1,4 @@
-.TH coqdoc 1 "April, 2006"
+.TH coqdoc 1
 
 .SH NAME
 coqdoc \- A documentation tool for the Coq proof assistant
@@ -47,12 +47,12 @@ Select a TeXmacs output.
 Redirect the output to stdout
 .TP
 .BI \-o \ file, \-\-output \ file
-Redirect the output into the file 
+Redirect the output into the file
 .I file.
 .TP
 .BI \-d \ dir, \ \-\-directory \ dir
-Output files into directory 
-.I dir 
+Output files into directory
+.I dir
 instead of current directory (option
 \-d does not change the filename specified with option \-o, if any).
 .TP
@@ -102,7 +102,7 @@ Generate one page for each category and each letter in the index,
 together with a top page index.html.
 
 .SS Table of contents option
- 
+
 .TP
 .B \-toc, \ \-\-table\-of\-contents
 Insert a table of contents. For a LATEX output, it inserts a
@@ -136,7 +136,7 @@ Set the base path where the Coq files are installed, especially style files coqd
 .BI \-R \ dir \  coqdir
 Map physical directory dir to Coq logical directory coqdir (similarly
 to Coq option \-R).
-.B Note: 
+.B Note:
 option \-R only has effect on the files following it on the command
 line, so you will probably need to put this option first.
 
@@ -155,26 +155,26 @@ Light mode. Suppress proofs (as with \-g) and the following commands:
         * Require
         * Transparent / Opaque
         * Implicit Argument / Implicits
-        * Section / Variable / Hypothesis / End 
+        * Section / Variable / Hypothesis / End
 
 The behavior of options \-g and \-l can be locally overridden using the (* begin show *) ... (* end show *) environment (see above).
 
 .SS Language options
- 
+
 Default behavior is to assume ASCII 7 bits input files.
 
-.TP 
+.TP
 .B \-latin1, \ \-\-latin1
 Select ISO-8859-1 input files. It is equivalent to \-\-inputenc latin1
 \-\-charset iso\-8859\-1.
 
-.TP 
+.TP
 .B \-utf8, \ \-\-utf8
 Select UTF-8 (Unicode) input files. It is equivalent to \-\-inputenc
 utf8 \-\-charset utf\-8. LATEX UTF-8 support can be found at
 http://www.ctan.org/tex\-archive/macros/latex/contrib/supported/unicode/.
 
-.TP 
+.TP
 .BI \-\-inputenc \ string
 Give a LATEX input encoding, as an option to LATEX package inputenc.
 
@@ -187,4 +187,3 @@ Specify the HTML character set, to be inserted in the HTML header.
 
 .I
 The Coq Reference Manual from http://coq.inria.fr/
-

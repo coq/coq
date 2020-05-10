@@ -1,4 +1,4 @@
-.TH COQ 1 "28 March 1995" "Coq tools"
+.TH COQ 1
 
 .SH NAME
 coqdep \- Compute inter-module dependencies for Coq and Caml programs
@@ -31,13 +31,13 @@ When a directory is given as argument, it is recursively looked at.
 Dependencies of Coq modules are computed by looking at
 .IR Require \&
 commands (Require, Require Export, Require Import),
-.IR Declare \& 
-.IR ML \& 
+.IR Declare \&
+.IR ML \&
 .IR Module \&
 commands and
 .IR Load \&
 commands. Dependencies relative to modules from the Coq library are not
-printed except if 
+printed except if
 .BR \-boot \&
 is given.
 
@@ -51,27 +51,27 @@ directives and the dot notation
 .TP
 .BI \-f \ file
 Read filenames and options -I, -R and -Q from a _CoqProject FILE.
-.TP 
+.TP
 .BI \-I/\-Q/\-R \ options
 Have the same effects on load path and modules names as for other
 coq commands (coqtop, coqc).
-.TP 
+.TP
 .BI \-coqlib \ directory
 Indicates where is the Coq library. The default value has been
 determined at installation time, and therefore this option should not
 be used under normal circumstances.
-.TP 
+.TP
 .BI \-exclude-dir \ dir
 Skips subdirectory
 .IR dir \ during
 .BR -R/-Q \ search.
-.TP 
+.TP
 .B \-sort
 Output the given file name ordered by dependencies.
 .TP
 .B \-vos
 Output dependencies for .vos files (this is not the default as it breaks dune's Coq mode)
-.TP 
+.TP
 .B \-boot
 For coq developers, prints dependencies over coq library files
 (omitted by default).
@@ -106,7 +106,7 @@ Consider the files (in the same directory):
 
 where
 .TP
-.BI \+ 
+.BI \+
 D.ml contains the commands `open A', `open B' and `type t = C.t' ;
 .TP
 .BI \+
