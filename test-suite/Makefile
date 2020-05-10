@@ -281,8 +281,8 @@ OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
 
 # ML files from unit-test framework, not containing tests
-UNIT_SRCFILES:=$(shell find ./unit-tests/src -name *.ml)
-UNIT_ALLMLFILES:=$(shell find ./unit-tests -name *.ml)
+UNIT_SRCFILES:=$(shell find ./unit-tests/src -name '*.ml')
+UNIT_ALLMLFILES:=$(shell find ./unit-tests -name '*.ml')
 UNIT_MLFILES:=$(filter-out $(UNIT_SRCFILES),$(UNIT_ALLMLFILES))
 UNIT_LOGFILES:=$(patsubst %.ml,%.ml.log,$(UNIT_MLFILES))
 
