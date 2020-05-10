@@ -146,7 +146,7 @@ match ev with
 end.
 
 Ltac2 intros0 ev p :=
-  Control.enter (fun () => Std.intros false p).
+  Control.enter (fun () => Std.intros ev p).
 
 Ltac2 Notation "intros" p(intropatterns) := intros0 false p.
 Ltac2 Notation intros := intros.
