@@ -302,7 +302,8 @@ let tclONCE = Proof.once
 
 exception MoreThanOneSuccess
 let _ = CErrors.register_handler begin function
-  | MoreThanOneSuccess -> CErrors.user_err Pp.(str "This tactic has more than one success.")
+  | MoreThanOneSuccess ->
+    Pp.(str "This tactic has more than one success.")
   | _ -> raise CErrors.Unhandled
 end
 
@@ -347,8 +348,7 @@ exception NoSuchGoals of int
 
 let _ = CErrors.register_handler begin function
   | NoSuchGoals n ->
-    CErrors.user_err
-      (str "No such " ++ str (String.plural n "goal") ++ str ".")
+    (str "No such " ++ str (String.plural n "goal") ++ str ".")
   | _ -> raise CErrors.Unhandled
 end
 
@@ -420,12 +420,9 @@ let tclFOCUSID ?(nosuchgoal=tclZERO (NoSuchGoals 1)) id t =
 exception SizeMismatch of int*int
 let _ = CErrors.register_handler begin function
   | SizeMismatch (i,j) ->
-      let open Pp in
-      let errmsg =
-        str"Incorrect number of goals" ++ spc() ++
-        str"(expected "++int i++str(String.plural i " tactic") ++ str", was given "++ int j++str")."
-      in
-      CErrors.user_err  errmsg
+    let open Pp in
+    str"Incorrect number of goals" ++ spc() ++
+    str"(expected "++int i++str(String.plural i " tactic") ++ str", was given "++ int j++str")."
   | _ -> raise CErrors.Unhandled
 end
 
@@ -910,7 +907,8 @@ let tclPROGRESS t =
     tclZERO (CErrors.UserError (Some "Proofview.tclPROGRESS", Pp.str "Failed to progress."))
 
 let _ = CErrors.register_handler begin function
-  | Logic_monad.Tac_Timeout -> CErrors.user_err ~hdr:"Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
+  | Logic_monad.Tac_Timeout ->
+    Pp.str "Tactic timeout!"
   | _ -> raise CErrors.Unhandled
 end
 
