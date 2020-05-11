@@ -40,6 +40,8 @@ let subprf = Entry.create "vernac:subprf"
 let quoted_attributes = Entry.create "vernac:quoted_attributes"
 let class_rawexpr = Entry.create "vernac:class_rawexpr"
 let thm_token = Entry.create "vernac:thm_token"
+let def_token = Entry.create "vernac:def_token"
+let assumption_token = Entry.create "vernac:assumption_token"
 let def_body = Entry.create "vernac:def_body"
 let decl_notations = Entry.create "vernac:decl_notations"
 let record_field = Entry.create "vernac:record_field"
@@ -70,6 +72,13 @@ let test_hash_ident =
   to_entry "test_hash_ident" begin
     lk_kw "#" >> lk_ident >> check_no_space
   end
+
+let test_id_colon =
+  let open Pcoq.Lookahead in
+  to_entry "test_id_colon" begin
+    lk_ident >> lk_kw ":"
+  end
+
 }
 
 GRAMMAR EXTEND Gram
@@ -183,7 +192,7 @@ let name_of_ident_decl : ident_decl -> name_decl =
 
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
-  GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
+  GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type_with_opt_coercion
     record_field decl_notations rec_definition ident_decl univ_decl;
 
   gallina:
@@ -915,7 +924,7 @@ GRAMMAR EXTEND Gram
           { fun g -> VernacSearch (SearchPattern c,g, l) }
       | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules; "." ->
           { fun g -> VernacSearch (SearchRewrite c,g, l) }
-      | IDENT "Search"; s = searchabout_query; l = searchabout_queries; "." ->
+      | IDENT "Search"; s = search_query; l = search_queries; "." ->
           { let (sl,m) = l in fun g -> VernacSearch (Search (s::sl),g, m) }
       ] ]
   ;
@@ -1012,16 +1021,50 @@ GRAMMAR EXTEND Gram
   positive_search_mark:
     [ [ "-" -> { false } | -> { true } ] ]
   ;
-  searchabout_query:
-    [ [ b = positive_search_mark; s = ne_string; sc = OPT scope_delimiter ->
-            { (b, SearchString (s,sc)) }
-      | b = positive_search_mark; p = constr_pattern ->
-            { (b, SearchSubPattern p) }
+  search_query:
+    [ [ b = positive_search_mark; s = search_item -> { (b, SearchLiteral s) }
+      | b = positive_search_mark; "["; l = LIST1 (LIST1 search_query) SEP "|"; "]" -> { (b, SearchDisjConj l) }
       ] ]
   ;
-  searchabout_queries:
+  search_item:
+    [ [ test_id_colon; where = search_where; ":"; s = ne_string; sc = OPT scope_delimiter ->
+            { SearchString (where,s,sc) }
+      | IDENT "is"; ":"; kl = logical_kind ->
+            { SearchKind kl }
+      | s = ne_string; sc = OPT scope_delimiter ->
+            { SearchString ((Anywhere,false),s,sc) }
+      | test_id_colon; where = search_where; ":"; p = constr_pattern ->
+            { SearchSubPattern (where,p) }
+      | p = constr_pattern ->
+            { SearchSubPattern ((Anywhere,false),p) }
+      ] ]
+  ;
+  logical_kind:
+    [ [ k = thm_token -> { IsProof k }
+      | k = assumption_token -> { IsAssumption (snd k) }
+      | k = IDENT "Context" -> { IsAssumption Context }
+      | k = extended_def_token -> { IsDefinition k }
+      | IDENT "Primitive" -> { IsPrimitive } ] ]
+  ;
+  extended_def_token:
+    [ [ k = def_token -> { snd k }
+      | IDENT "Coercion" -> { Coercion }
+      | IDENT "Instance" -> { Instance }
+      | IDENT "Scheme" -> { Scheme }
+      | IDENT "Canonical" -> { CanonicalStructure }
+      | IDENT "Field" -> { StructureComponent }
+      | IDENT "Method" -> { Method } ] ]
+  ;
+  search_where:
+    [ [ IDENT "head" -> { Anywhere, true }
+      | IDENT "hyp" -> { InHyp, false }
+      | IDENT "concl" -> { InConcl, false }
+      | IDENT "headhyp" -> { InHyp, true }
+      | IDENT "headconcl" -> { InConcl, true } ] ]
+  ;
+  search_queries:
     [ [ m = ne_in_or_out_modules -> { ([],m) }
-      | s = searchabout_query; l = searchabout_queries ->
+      | s = search_query; l = search_queries ->
         { let (sl,m) = l in (s::sl,m) }
       | -> { ([],SearchOutside []) }
       ] ]

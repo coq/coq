@@ -61,15 +61,22 @@ type printable =
   | PrintStrategy of qualid or_by_notation option
   | PrintRegistered
 
+type glob_search_where = InHyp | InConcl | Anywhere
+
 type search_item =
-  | SearchSubPattern of constr_pattern_expr
-  | SearchString of string * scope_name option
+  | SearchSubPattern of (glob_search_where * bool) * constr_pattern_expr
+  | SearchString of (glob_search_where * bool) * string * scope_name option
+  | SearchKind of Decls.logical_kind
+
+type search_request =
+  | SearchLiteral of search_item
+  | SearchDisjConj of (bool * search_request) list list
 
 type searchable =
   | SearchPattern of constr_pattern_expr
   | SearchRewrite of constr_pattern_expr
   | SearchHead of constr_pattern_expr
-  | Search of (bool * search_item) list
+  | Search of (bool * search_request) list
 
 type locatable =
   | LocateAny of qualid or_by_notation

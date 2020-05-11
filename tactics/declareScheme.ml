@@ -40,3 +40,5 @@ let declare_scheme kind indcl =
   Lib.add_anonymous_leaf (inScheme (kind,indcl))
 
 let lookup_scheme kind ind = CString.Map.find kind (Indmap.find ind !scheme_map)
+
+let all_schemes () = Indmap.domain !scheme_map

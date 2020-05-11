@@ -12,15 +12,24 @@ open Names
 open Constr
 open Environ
 open Pattern
+open Vernacexpr
 
 (** {6 Search facilities. } *)
 
 type glob_search_item =
-  | GlobSearchSubPattern of constr_pattern
+  | GlobSearchSubPattern of glob_search_where * bool * constr_pattern
   | GlobSearchString of string
+  | GlobSearchKind of Decls.logical_kind
+  | GlobSearchFilter of (GlobRef.t -> bool)
 
-type filter_function = GlobRef.t -> env -> constr -> bool
-type display_function = GlobRef.t -> env -> constr -> unit
+type glob_search_request =
+  | GlobSearchLiteral of glob_search_item
+  | GlobSearchDisjConj of (bool * glob_search_request) list list
+
+type filter_function =
+  GlobRef.t -> Decls.logical_kind option -> env -> constr -> bool
+type display_function =
+  GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit
 
 (** {6 Generic filter functions} *)
 
@@ -44,7 +53,7 @@ val search_rewrite : ?pstate:Declare.Proof.t -> int option -> constr_pattern -> 
                   -> display_function -> unit
 val search_pattern : ?pstate:Declare.Proof.t -> int option -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
-val search         : ?pstate:Declare.Proof.t -> int option -> (bool * glob_search_item) list
+val search         : ?pstate:Declare.Proof.t -> int option -> (bool * glob_search_request) list
                   -> DirPath.t list * bool -> display_function -> unit
 
 type search_constraint =

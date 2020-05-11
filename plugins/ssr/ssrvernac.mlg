@@ -310,7 +310,7 @@ let interp_search_notation ?loc tag okey =
   | c ->
     glob_constr_of_notation_constr_with_binders ?loc (fun _ x -> (), None, x) sub () c in
   let _, npat = Patternops.pattern_of_glob_constr (sub () body) in
-  Search.GlobSearchSubPattern npat
+  Search.GlobSearchSubPattern (Vernacexpr.Anywhere,false,npat)
 
 }
 
@@ -401,9 +401,9 @@ let all_true _ = true
 let rec interp_search_about args accu = match args with
 | [] -> accu
 | (flag, arg) :: rem ->
-  fun gr env typ ->
-    let ans = Search.search_filter arg gr env typ in
-    (if flag then ans else not ans) && interp_search_about rem accu gr env typ
+  fun gr kind env typ ->
+    let ans = Search.search_filter arg gr kind env typ in
+    (if flag then ans else not ans) && interp_search_about rem accu gr kind env typ
 
 let interp_search_arg arg =
   let arg = List.map (fun (x,arg) -> x, match arg with
@@ -413,18 +413,20 @@ let interp_search_arg arg =
   | RGlobSearchSubPattern p ->
     let env = Global.env () in
     let _, p = Constrintern.intern_constr_pattern env (Evd.from_env env) p in
-    Search.GlobSearchSubPattern p) arg
+    Search.GlobSearchSubPattern (Vernacexpr.Anywhere,false,p)) arg
   in
   let hpat, a1 = match arg with
-  | (_, Search.GlobSearchSubPattern (Pattern.PMeta _)) :: a' -> all_true, a'
-  | (true, Search.GlobSearchSubPattern p) :: a' ->
+  | (_, Search.GlobSearchSubPattern (Vernacexpr.Anywhere,false,Pattern.PMeta _)) :: a' -> all_true, a'
+  | (true, Search.GlobSearchSubPattern (Vernacexpr.Anywhere,false,p)) :: a' ->
      let filter_head, p = interp_head_pat p in
      if filter_head then p, a' else all_true, arg
+  | (_, (Search.GlobSearchSubPattern (Vernacexpr.(InHyp|InConcl),_,_)
+        |Search.GlobSearchSubPattern (Vernacexpr.Anywhere,true,_))) :: a' -> CErrors.user_err (str "Unsupported.")
   | _ -> all_true, arg in
   let is_string =
     function (_, Search.GlobSearchString _) -> true | _ -> false in
   let a2, a3 = List.partition is_string a1 in
-  interp_search_about (a2 @ a3) (fun gr env typ -> hpat typ)
+  interp_search_about (a2 @ a3) (fun gr kind env typ -> hpat typ)
 
 (* Module path postfilter *)
 
@@ -455,10 +457,10 @@ let interp_modloc mr =
     CErrors.user_err ?loc:qid.CAst.loc (str "No Module " ++ pr_qualid qid) in
   let mr_out, mr_in = List.partition fst mr in
   let interp_bmod b = function
-  | [] -> fun _ _ _ -> true
+  | [] -> fun _ _ _ _ -> true
   | rmods -> Search.module_filter (List.map interp_mod rmods, b) in
   let is_in = interp_bmod false mr_in and is_out = interp_bmod true mr_out in
-  fun gr env typ -> is_in gr env typ && is_out gr env typ
+  fun gr kind env typ -> is_in gr kind env typ && is_out gr kind env typ
 
 (* The unified, extended vernacular "Search" command *)
 
@@ -472,9 +474,9 @@ VERNAC COMMAND EXTEND SsrSearchPattern CLASSIFIED AS QUERY
 | [ "Search" ssr_search_arg(a) ssr_modlocs(mr) ] ->
   { let hpat = interp_search_arg a in
     let in_mod = interp_modloc mr in
-    let post_filter gr env typ = in_mod gr env typ && hpat gr env typ in
-    let display gr env typ =
-      if post_filter gr env typ then ssrdisplaysearch gr env typ
+    let post_filter gr kind env typ = in_mod gr kind env typ && hpat gr kind env typ in
+    let display gr kind env typ =
+      if post_filter gr kind env typ then ssrdisplaysearch gr env typ
     in
     Search.generic_search None display }
 END

@@ -1774,22 +1774,51 @@ let interp_search_restriction = function
 
 open Search
 
+let kind_searcher = Decls.(function
+  (* Kinds referring to the keyword introducing the object *)
+  | IsAssumption _
+  | IsDefinition (Definition | Example | Fixpoint | CoFixpoint | Method | StructureComponent | Let)
+  | IsProof _
+  | IsPrimitive as k -> Inl k
+  (* Kinds referring to the status of the object *)
+  | IsDefinition (Coercion | SubClass | IdentityCoercion as k') ->
+    let coercions = Coercionops.coercions () in
+    Inr (fun gr -> List.exists (fun c -> GlobRef.equal c.Coercionops.coe_value gr &&
+                                      (k' <> SubClass && k' <> IdentityCoercion || c.Coercionops.coe_is_identity)) coercions)
+  | IsDefinition CanonicalStructure ->
+    let canonproj = Recordops.canonical_projections () in
+    Inr (fun gr -> List.exists (fun c -> GlobRef.equal (snd c).Recordops.o_ORIGIN gr) canonproj)
+  | IsDefinition Scheme ->
+    let schemes = DeclareScheme.all_schemes () in
+    Inr (fun gr -> Indset.exists (fun c -> GlobRef.equal (GlobRef.IndRef c) gr) schemes)
+  | IsDefinition Instance ->
+    let instances = Typeclasses.all_instances () in
+    Inr (fun gr -> List.exists (fun c -> GlobRef.equal c.Typeclasses.is_impl gr) instances))
+
 let interp_search_item env sigma =
   function
-  | SearchSubPattern pat ->
+  | SearchSubPattern ((where,head),pat) ->
       let _,pat = Constrintern.intern_constr_pattern env sigma pat in
-      GlobSearchSubPattern pat
-  | SearchString (s,None) when Id.is_valid s ->
+      GlobSearchSubPattern (where,head,pat)
+  | SearchString ((Anywhere,false),s,None) when Id.is_valid s ->
       GlobSearchString s
-  | SearchString (s,sc) ->
-      try
+  | SearchString ((where,head),s,sc) ->
+      (try
         let ref =
           Notation.interp_notation_as_global_reference
             ~head:false (fun _ -> true) s sc in
-        GlobSearchSubPattern (Pattern.PRef ref)
+        GlobSearchSubPattern (where,head,Pattern.PRef ref)
       with UserError _ ->
         user_err ~hdr:"interp_search_item"
-          (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component")
+          (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component"))
+  | SearchKind k ->
+     match kind_searcher k with
+     | Inl k -> GlobSearchKind k
+     | Inr f -> GlobSearchFilter f
+
+let rec interp_search_request env sigma = function
+  | b, SearchLiteral i -> b, GlobSearchLiteral (interp_search_item env sigma i)
+  | b, SearchDisjConj l -> b, GlobSearchDisjConj (List.map (List.map (interp_search_request env sigma)) l)
 
 (* 05f22a5d6d5b8e3e80f1a37321708ce401834430 introduced the
    `search_output_name_only` option to avoid excessive printing when
@@ -1823,7 +1852,7 @@ let vernac_search ~pstate ~atts s gopt r =
     | Some g -> snd (get_goal_or_global_context ~pstate g) , Some g
   in
   let get_pattern c = snd (Constrintern.intern_constr_pattern env Evd.(from_env env) c) in
-  let pr_search ref env c =
+  let pr_search ref kind env c =
     let pr = pr_global ref in
     let pp = if !search_output_name_only
       then pr
@@ -1844,7 +1873,7 @@ let vernac_search ~pstate ~atts s gopt r =
   | SearchHead c ->
       (Search.search_by_head ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | Search sl ->
-      (Search.search ?pstate gopt (List.map (on_snd (interp_search_item env Evd.(from_env env))) sl) r |>
+      (Search.search ?pstate gopt (List.map (interp_search_request env Evd.(from_env env)) sl) r |>
        Search.prioritize_search) pr_search);
   Feedback.msg_notice (str "(use \"About\" for full details on implicit arguments)")
 

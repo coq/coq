@@ -10,3 +10,4 @@
 
 val declare_scheme : string -> (Names.inductive * Names.Constant.t) array -> unit
 val lookup_scheme : string -> Names.inductive -> Names.Constant.t
+val all_schemes : unit -> Names.Indset.t
