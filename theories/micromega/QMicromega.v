@@ -1,7 +1,7 @@
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *         Copyright INRIA, CNRS and contributors             *)
-(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2019       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
 (*   \VV/  **************************************************************)
 (*    //   *    This file is distributed under the terms of the         *)
 (*         *     GNU Lesser General Public License Version 2.1          *)
@@ -107,7 +107,7 @@ Proof.
   apply QNpower.
 Qed.
 
-Definition Qeval_op2 (o : Op2) : Q -> Q -> Prop :=
+Definition Qeval_pop2 (o : Op2) : Q -> Q -> Prop :=
 match o with
 | OpEq =>  Qeq
 | OpNEq => fun x y  => ~ x == y
@@ -117,13 +117,63 @@ match o with
 | OpGt => fun x y => Qlt y x
 end.
 
-Definition Qeval_formula (e:PolEnv Q) (ff : Formula Q) :=
-  let (lhs,o,rhs) := ff in Qeval_op2 o (Qeval_expr e lhs) (Qeval_expr e rhs).
+
+Definition Qlt_bool (x y : Q) :=
+  (Qnum x * QDen y <? Qnum y * QDen x)%Z.
+
+Definition Qeval_bop2 (o : Op2) : Q -> Q -> bool :=
+  match o with
+  | OpEq  => Qeq_bool
+  | OpNEq => fun x y => negb (Qeq_bool x y)
+  | OpLe  => Qle_bool
+  | OpGe  => fun x y => Qle_bool y x
+  | OpLt  => Qlt_bool
+  | OpGt  => fun x y => Qlt_bool y x
+  end.
+
+Lemma Qlt_bool_iff : forall q1 q2,
+    Qlt_bool q1 q2 = true <-> q1 < q2.
+Proof.
+  unfold Qlt_bool.
+  unfold Qlt. intros.
+  apply Z.ltb_lt.
+Qed.
+
+Lemma pop2_bop2 :
+  forall (op : Op2) (q1 q2 : Q), is_true (Qeval_bop2 op q1 q2) <-> Qeval_pop2 op q1 q2.
+Proof.
+  unfold is_true.
+  destruct op ; simpl; intros.
+  - apply Qeq_bool_iff.
+  - rewrite <- Qeq_bool_iff.
+    rewrite negb_true_iff.
+    destruct (Qeq_bool q1 q2) ; intuition congruence.
+  - apply Qle_bool_iff.
+  - apply Qle_bool_iff.
+  - apply Qlt_bool_iff.
+  - apply Qlt_bool_iff.
+Qed.
+
+Definition Qeval_op2 (k:Tauto.kind) :  Op2 ->  Q -> Q -> Tauto.rtyp k:=
+  if k as k0 return (Op2 -> Q -> Q -> Tauto.rtyp k0)
+  then Qeval_pop2 else Qeval_bop2.
+
+
+Lemma Qeval_op2_hold : forall k op q1 q2,
+    Tauto.hold k (Qeval_op2 k op q1 q2) <-> Qeval_pop2 op q1 q2.
+Proof.
+  destruct k.
+  simpl ; tauto.
+  simpl. apply pop2_bop2.
+Qed.
+
+Definition Qeval_formula (e:PolEnv Q) (k: Tauto.kind) (ff : Formula Q) :=
+  let (lhs,o,rhs) := ff in Qeval_op2 k o (Qeval_expr e lhs) (Qeval_expr e rhs).
 
 Definition Qeval_formula' :=
   eval_formula  Qplus Qmult Qminus Qopp Qeq Qle Qlt (fun x => x) (fun x => x) (pow_N 1 Qmult).
 
-Lemma Qeval_formula_compat : forall env f, Qeval_formula env f <-> Qeval_formula' env f.
+ Lemma Qeval_formula_compat : forall env b f, Tauto.hold b (Qeval_formula env b f) <-> Qeval_formula' env f.
 Proof.
   intros.
   unfold Qeval_formula.
@@ -131,6 +181,8 @@ Proof.
   repeat rewrite Qeval_expr_compat.
   unfold Qeval_formula'.
   unfold Qeval_expr'.
+  simpl.
+  rewrite Qeval_op2_hold.
   split ; destruct Fop ; simpl; auto.
 Qed.
 
@@ -186,10 +238,10 @@ Definition qdeduce := nformula_plus_nformula 0 Qplus Qeq_bool.
 Definition normQ  := norm 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
 Declare Equivalent Keys normQ RingMicromega.norm.
 
-Definition cnfQ (Annot TX AF: Type) (f: TFormula (Formula Q) Annot TX AF) :=
+Definition cnfQ (Annot:Type) (TX: Tauto.kind -> Type)  (AF: Type) (k: Tauto.kind) (f: TFormula (Formula Q) Annot TX AF k) :=
   rxcnf qunsat qdeduce (Qnormalise Annot) (Qnegate Annot) true f.
 
-Definition QTautoChecker (f : BFormula (Formula Q)) (w: list QWitness)  : bool :=
+Definition QTautoChecker  (f : BFormula (Formula Q) Tauto.isProp) (w: list QWitness)  : bool :=
   @tauto_checker (Formula Q) (NFormula Q) unit
   qunsat qdeduce
   (Qnormalise unit)
@@ -208,8 +260,11 @@ Proof.
     destruct t.
     apply (check_inconsistent_sound Qsor QSORaddon) ; auto.
   - unfold qdeduce. intros. revert H. apply (nformula_plus_nformula_correct Qsor QSORaddon);auto.
-  - intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now  eapply (cnf_normalise_correct Qsor QSORaddon);eauto.
-  - intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now eapply (cnf_negate_correct Qsor QSORaddon);eauto.
+  - intros.
+    rewrite Qeval_formula_compat.
+    eapply (cnf_normalise_correct Qsor QSORaddon)  ; eauto.
+  - intros. rewrite Tauto.hold_eNOT. rewrite Qeval_formula_compat.
+    now eapply (cnf_negate_correct Qsor QSORaddon);eauto.
   - intros t w0.
     unfold eval_tt.
     intros.

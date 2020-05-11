@@ -176,7 +176,7 @@ Proof.
   rewrite ZNpower. congruence.
 Qed.
 
-Definition Zeval_op2 (o : Op2) : Z -> Z -> Prop :=
+Definition Zeval_pop2 (o : Op2) : Z -> Z -> Prop :=
 match o with
 | OpEq =>  @eq Z
 | OpNEq => fun x y  => ~ x = y
@@ -187,14 +187,62 @@ match o with
 end.
 
 
-Definition Zeval_formula (env : PolEnv Z) (f : Formula Z):=
+Definition Zeval_bop2 (o : Op2) : Z -> Z -> bool :=
+match o with
+| OpEq =>  Z.eqb
+| OpNEq => fun x y => negb (Z.eqb x y)
+| OpLe => Z.leb
+| OpGe => Z.geb
+| OpLt => Z.ltb
+| OpGt => Z.gtb
+end.
+
+Lemma pop2_bop2 :
+  forall (op : Op2) (q1 q2 : Z), is_true (Zeval_bop2 op q1 q2) <-> Zeval_pop2 op q1 q2.
+Proof.
+  unfold is_true.
+  destruct op ; simpl; intros.
+  - apply Z.eqb_eq.
+  - rewrite <- Z.eqb_eq.
+    rewrite negb_true_iff.
+    destruct (q1 =? q2) ; intuition congruence.
+  - apply Z.leb_le.
+  - rewrite Z.geb_le. rewrite Z.ge_le_iff. tauto.
+  - apply Z.ltb_lt.
+  - rewrite <- Zgt_is_gt_bool; tauto.
+Qed.
+
+Definition Zeval_op2 (k: Tauto.kind) :  Op2 ->  Z -> Z -> Tauto.rtyp k:=
+  if k as k0 return (Op2 -> Z -> Z -> Tauto.rtyp k0)
+  then Zeval_pop2 else Zeval_bop2.
+
+
+Lemma Zeval_op2_hold : forall k op q1 q2,
+    Tauto.hold k (Zeval_op2 k op q1 q2) <-> Zeval_pop2 op q1 q2.
+Proof.
+  destruct k.
+  simpl ; tauto.
+  simpl. apply pop2_bop2.
+Qed.
+
+
+Definition Zeval_formula (env : PolEnv Z) (k: Tauto.kind) (f : Formula Z):=
   let (lhs, op, rhs) := f in
-    (Zeval_op2 op) (Zeval_expr env lhs) (Zeval_expr env rhs).
+    (Zeval_op2 k op) (Zeval_expr env lhs) (Zeval_expr env rhs).
 
 Definition Zeval_formula' :=
   eval_formula  Z.add Z.mul Z.sub Z.opp (@eq Z) Z.le Z.lt (fun x => x) (fun x => x) (pow_N 1 Z.mul).
 
-Lemma Zeval_formula_compat' : forall env f,  Zeval_formula env  f <-> Zeval_formula' env f.
+Lemma Zeval_formula_compat : forall env k f, Tauto.hold k (Zeval_formula env k f) <-> Zeval_formula env Tauto.isProp f.
+Proof.
+  destruct k ; simpl.
+  - tauto.
+  - destruct f ; simpl.
+    rewrite <- Zeval_op2_hold with (k:=Tauto.isBool).
+    simpl. tauto.
+Qed.
+
+Lemma Zeval_formula_compat' : forall env f,  Zeval_formula env Tauto.isProp f <-> Zeval_formula' env f.
 Proof.
   intros.
   unfold Zeval_formula.
@@ -312,7 +360,7 @@ Definition xnnormalise (t : Formula Z) : NFormula Z :=
 
 Lemma xnnormalise_correct :
   forall env f,
-    eval_nformula env (xnnormalise f) <-> Zeval_formula env  f.
+    eval_nformula env (xnnormalise f) <-> Zeval_formula env Tauto.isProp f.
 Proof.
   intros.
   rewrite Zeval_formula_compat'.
@@ -393,6 +441,7 @@ Proof.
 Qed.
 
 
+
 Require Import Coq.micromega.Tauto BinNums.
 
 Definition cnf_of_list {T: Type} (tg : T) (l : list (NFormula Z)) :=
@@ -435,7 +484,7 @@ Definition normalise {T : Type} (t:Formula Z) (tg:T) : cnf (NFormula Z) T :=
   if Zunsat f then cnf_ff _ _
   else cnf_of_list tg (xnormalise f).
 
-Lemma normalise_correct : forall (T: Type) env t (tg:T), eval_cnf eval_nformula env (normalise t tg) <-> Zeval_formula env t.
+Lemma normalise_correct : forall (T: Type) env t (tg:T), eval_cnf eval_nformula env (normalise t tg) <-> Zeval_formula env Tauto.isProp t.
 Proof.
   intros.
   rewrite <- xnnormalise_correct.
@@ -448,6 +497,7 @@ Proof.
   - rewrite cnf_of_list_correct.
     apply xnormalise_correct.
 Qed.
+
 
 Definition xnegate (f:NFormula Z) : list (NFormula Z)  :=
   let (e,o) := f in
@@ -478,7 +528,7 @@ Proof.
   - tauto.
 Qed.
 
-Lemma negate_correct : forall T env t (tg:T), eval_cnf eval_nformula env (negate t tg) <-> ~ Zeval_formula env  t.
+Lemma negate_correct : forall T env t (tg:T), eval_cnf eval_nformula env (negate t tg) <-> ~ Zeval_formula env Tauto.isProp t.
 Proof.
   intros.
   rewrite <- xnnormalise_correct.
@@ -492,10 +542,10 @@ Proof.
     apply xnegate_correct.
 Qed.
 
-Definition cnfZ (Annot: Type) (TX : Type)  (AF : Type)  (f : TFormula (Formula Z) Annot TX AF) :=
+Definition cnfZ (Annot: Type) (TX : Tauto.kind -> Type)  (AF : Type) (k: Tauto.kind) (f : TFormula (Formula Z) Annot TX AF k) :=
   rxcnf Zunsat Zdeduce normalise negate true f.
 
-Definition ZweakTautoChecker (w: list ZWitness) (f : BFormula (Formula Z)) : bool :=
+Definition ZweakTautoChecker (w: list ZWitness) (f : BFormula (Formula Z) Tauto.isProp) : bool :=
   @tauto_checker (Formula Z)  (NFormula Z) unit Zunsat Zdeduce normalise negate  ZWitness (fun cl => ZWeakChecker (List.map fst cl)) f w.
 
 (* To get a complete checker, the proof format has to be enriched *)
@@ -1672,9 +1722,7 @@ Proof.
     apply Nat.lt_succ_diag_r.
 Qed.
 
-
-
-Definition ZTautoChecker  (f : BFormula (Formula Z)) (w: list ZArithProof): bool :=
+Definition ZTautoChecker  (f : BFormula (Formula Z) Tauto.isProp) (w: list ZArithProof): bool :=
   @tauto_checker (Formula Z) (NFormula Z) unit Zunsat Zdeduce normalise negate  ZArithProof (fun cl => ZChecker (List.map fst cl)) f w.
 
 Lemma ZTautoChecker_sound : forall f w, ZTautoChecker f w = true -> forall env, eval_bf  (Zeval_formula env)  f.
@@ -1692,10 +1740,12 @@ Proof.
   -
     intros.
     rewrite normalise_correct  in H.
-    auto.
+    rewrite Zeval_formula_compat; auto.
   -
     intros.
     rewrite negate_correct in H ; auto.
+    rewrite Tauto.hold_eNOT.
+    rewrite Zeval_formula_compat; auto.
   - intros t w0.
     unfold eval_tt.
     intros.
@@ -1703,8 +1753,6 @@ Proof.
     eapply ZChecker_sound; eauto.
     tauto.
 Qed.
-
-
 Fixpoint xhyps_of_pt (base:nat) (acc : list nat) (pt:ZArithProof)  : list nat :=
   match pt with
     | DoneProof => acc

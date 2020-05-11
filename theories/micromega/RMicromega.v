@@ -1,7 +1,7 @@
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *         Copyright INRIA, CNRS and contributors             *)
-(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2019       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
 (*   \VV/  **************************************************************)
 (*    //   *    This file is distributed under the terms of the         *)
 (*         *     GNU Lesser General Public License Version 2.1          *)
@@ -15,14 +15,13 @@
 (************************************************************************)
 
 Require Import OrderedRing.
-Require Import RingMicromega.
+Require Import QMicromega RingMicromega.
 Require Import Refl.
-Require Import Raxioms Rfunctions RIneq Rpow_def.
+Require Import Sumbool Raxioms Rfunctions RIneq Rpow_def.
 Require Import QArith.
 Require Import Qfield.
 Require Import Qreals.
 Require Import DeclConstant.
-Require Import Ztac.
 
 Require Setoid.
 (*Declare ML Module "micromega_plugin".*)
@@ -344,16 +343,17 @@ Proof.
       apply Qeq_bool_eq in C2.
       rewrite C2.
       simpl.
-      rewrite Qpower0.
+      assert (z <> 0%Z).
+      { intro ; subst. apply Z.lt_irrefl in C1. auto. }
+      rewrite Qpower0 by auto.
       apply Q2R_0.
-      intro ; subst ; slia C1 C1.
     + rewrite Q2RpowerRZ.
       rewrite IHc.
       reflexivity.
       rewrite andb_false_iff in C.
       destruct C.
       simpl. apply Z.ltb_ge in H.
-      right ; normZ. slia H H0.
+      right. Ztac.normZ. Ztac.slia H H0.
       left ; apply Qeq_bool_neq; auto.
     + simpl.
       rewrite <- IHc.
@@ -382,7 +382,7 @@ Definition INZ (n:N) : R :=
 Definition Reval_expr := eval_pexpr  Rplus Rmult Rminus Ropp R_of_Rcst N.to_nat pow.
 
 
-Definition Reval_op2 (o:Op2) : R -> R -> Prop :=
+Definition Reval_pop2 (o:Op2) : R -> R -> Prop :=
     match o with
       | OpEq =>  @eq R
       | OpNEq => fun x y  => ~ x = y
@@ -392,27 +392,91 @@ Definition Reval_op2 (o:Op2) : R -> R -> Prop :=
       | OpGt => Rgt
     end.
 
+Definition sumboolb {A B : Prop} (x : @sumbool A B) : bool :=
+  if x then true else false.
 
-Definition Reval_formula (e: PolEnv R) (ff : Formula Rcst) :=
-  let (lhs,o,rhs) := ff in Reval_op2 o (Reval_expr e lhs) (Reval_expr e rhs).
+
+Definition Reval_bop2 (o : Op2) : R -> R -> bool :=
+  match o with
+  | OpEq  => fun x y => sumboolb (Req_EM_T x y)
+  | OpNEq => fun x y => negb (sumboolb (Req_EM_T x y))
+  | OpLe  => fun x y => (sumboolb (Rle_lt_dec x y))
+  | OpGe  => fun x y => (sumboolb (Rge_gt_dec x y))
+  | OpLt  => fun x y => (sumboolb (Rlt_le_dec x y))
+  | OpGt  => fun x y => (sumboolb (Rgt_dec x y))
+  end.
+
+Lemma pop2_bop2 :
+  forall (op : Op2) (r1 r2 : R), is_true (Reval_bop2 op r1 r2) <-> Reval_pop2 op r1 r2.
+Proof.
+  unfold is_true.
+  destruct op ; simpl; intros;
+  match goal with
+  | |- context[sumboolb (?F ?X ?Y)] =>
+    destruct (F X Y) ; simpl; intuition try congruence
+  end.
+  - apply Rlt_not_le in r. tauto.
+  - apply Rgt_not_ge in r. tauto.
+  - apply Rlt_not_le in H. tauto.
+Qed.
+
+Definition Reval_op2 (k: Tauto.kind) :  Op2 ->  R -> R -> Tauto.rtyp k:=
+  if k as k0 return (Op2 -> R -> R -> Tauto.rtyp k0)
+  then Reval_pop2 else Reval_bop2.
+
+Lemma Reval_op2_hold : forall b op q1 q2,
+    Tauto.hold b (Reval_op2 b op q1 q2) <-> Reval_pop2 op q1 q2.
+Proof.
+  destruct b.
+  simpl ; tauto.
+  simpl. apply pop2_bop2.
+Qed.
+
+Definition Reval_formula (e: PolEnv R) (k: Tauto.kind) (ff : Formula Rcst) :=
+  let (lhs,o,rhs) := ff in Reval_op2 k o (Reval_expr e lhs) (Reval_expr e rhs).
 
 
 Definition Reval_formula' :=
   eval_sformula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt N.to_nat pow R_of_Rcst.
 
-Definition QReval_formula := 
-  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt Q2R N.to_nat pow .
+Lemma Reval_pop2_eval_op2 : forall o e1 e2,
+  Reval_pop2 o e1 e2  <->
+  eval_op2 eq Rle Rlt o e1 e2.
+Proof.
+  destruct o ; simpl ; try tauto.
+  split.
+  apply Rge_le.
+  apply Rle_ge.
+Qed.
 
-Lemma Reval_formula_compat : forall env f, Reval_formula env f <-> Reval_formula' env f.
+Lemma Reval_formula_compat : forall env b f, Tauto.hold b (Reval_formula env b f) <-> Reval_formula' env f.
 Proof.
   intros.
   unfold Reval_formula.
   destruct f.
   unfold Reval_formula'.
-  unfold Reval_expr.
-  split ; destruct Fop ; simpl ; auto.
-  apply Rge_le.
-  apply Rle_ge.
+  simpl.
+  rewrite Reval_op2_hold.
+  apply Reval_pop2_eval_op2.
+Qed.
+
+Definition QReval_expr := eval_pexpr Rplus Rmult Rminus Ropp Q2R to_nat pow.
+
+Definition QReval_formula (e: PolEnv R) (k: Tauto.kind) (ff : Formula Q) :=
+  let (lhs,o,rhs) := ff in Reval_op2 k o (QReval_expr e lhs) (QReval_expr e rhs).
+
+
+Definition QReval_formula' :=
+  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt Q2R N.to_nat pow.
+
+Lemma QReval_formula_compat : forall env b f, Tauto.hold b (QReval_formula env b f) <-> QReval_formula' env f.
+Proof.
+  intros.
+  unfold QReval_formula.
+  destruct f.
+  unfold QReval_formula'.
+  rewrite Reval_op2_hold.
+  apply Reval_pop2_eval_op2.
 Qed.
 
 Definition Qeval_nformula :=
@@ -451,7 +515,7 @@ Definition runsat := check_inconsistent 0%Q Qeq_bool Qle_bool.
 
 Definition rdeduce := nformula_plus_nformula 0%Q Qplus Qeq_bool.
 
-Definition RTautoChecker (f : BFormula (Formula Rcst)) (w: list RWitness)  : bool :=
+Definition RTautoChecker (f : BFormula (Formula Rcst) Tauto.isProp) (w: list RWitness)  : bool :=
   @tauto_checker (Formula Q) (NFormula Q)
   unit runsat rdeduce
   (Rnormalise unit) (Rnegate unit)
@@ -463,18 +527,20 @@ Proof.
   unfold RTautoChecker.
   intros TC env.
   apply tauto_checker_sound with (eval:=QReval_formula) (eval':=    Qeval_nformula) (env := env) in TC.
-  - change (eval_f (fun x : Prop => x) (QReval_formula env))
+  - change (eval_f e_rtyp (QReval_formula env))
       with
         (eval_bf  (QReval_formula env)) in TC.
     rewrite eval_bf_map in TC.
     unfold eval_bf in TC.
     rewrite eval_f_morph with (ev':= Reval_formula env) in TC ; auto.
-  intro.
-  unfold QReval_formula.
-  rewrite <- eval_formulaSC  with (phiS := R_of_Rcst).
-  rewrite Reval_formula_compat.
-  tauto.
-  intro. rewrite Q_of_RcstR. reflexivity.
+    intros.
+    apply Tauto.hold_eiff.
+    rewrite QReval_formula_compat.
+    unfold QReval_formula'.
+    rewrite <- eval_formulaSC  with (phiS := R_of_Rcst).
+    rewrite Reval_formula_compat.
+    tauto.
+    intro. rewrite Q_of_RcstR. reflexivity.
   -
   apply Reval_nformula_dec.
   - destruct t.
@@ -482,8 +548,12 @@ Proof.
   - unfold rdeduce.
     intros. revert H.
     eapply (nformula_plus_nformula_correct Rsor QSORaddon); eauto.
-  - now apply (cnf_normalise_correct Rsor QSORaddon).
-  - intros. now eapply (cnf_negate_correct Rsor QSORaddon); eauto.
+  -
+    intros.
+    rewrite QReval_formula_compat.
+    eapply (cnf_normalise_correct Rsor QSORaddon) ; eauto.
+  - intros. rewrite Tauto.hold_eNOT. rewrite QReval_formula_compat.
+    now eapply (cnf_negate_correct Rsor QSORaddon); eauto.
   - intros t w0.
     unfold eval_tt.
     intros.

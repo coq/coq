@@ -34,19 +34,19 @@ Class InjTyp (S : Type) (T : Type) :=
 
 (** [BinOp Op] declares a source operator [Op: S1 -> S2 -> S3].
  *)
-Class BinOp {S1 S2 S3:Type} {T:Type} (Op : S1 -> S2 -> S3) {I1 : InjTyp S1 T} {I2 : InjTyp S2 T} {I3 : InjTyp S3 T} :=
+Class BinOp {S1 S2 S3 T1 T2 T3:Type} (Op : S1 -> S2 -> S3) {I1 : InjTyp S1 T1} {I2 : InjTyp S2 T2} {I3 : InjTyp S3 T3} :=
   mkbop {
       (* [TBOp] is the target operator after injection of operands. *)
-      TBOp : T -> T -> T;
+      TBOp : T1 -> T2 -> T3;
       (* [TBOpInj] states the correctness of the injection. *)
       TBOpInj : forall (n:S1) (m:S2), inj (Op n m) = TBOp (inj n) (inj m)
     }.
 
 (** [Unop Op] declares a source operator [Op : S1 -> S2]. *)
-Class UnOp {S1 S2 T:Type} (Op : S1 -> S2) {I1 : InjTyp S1 T} {I2 : InjTyp S2 T}  :=
+Class UnOp {S1 S2 T1 T2:Type} (Op : S1 -> S2) {I1 : InjTyp S1 T1} {I2 : InjTyp S2 T2}  :=
   mkuop {
       (* [TUOp] is the target operator after injection of operands. *)
-      TUOp : T -> T;
+      TUOp : T1 -> T2;
       (* [TUOpInj] states the correctness of the injection. *)
       TUOpInj : forall (x:S1), inj (Op x) = TUOp (inj x)
     }.
@@ -141,9 +141,6 @@ Record injprop  :=
       injprop_ok : source_prop <-> target_prop}.
 
 
-
-
-
 (** Lemmas for building rewrite rules. *)
 
 Definition PropOp_iff (Op : Prop -> Prop -> Prop) :=
@@ -152,22 +149,22 @@ Definition PropOp_iff (Op : Prop -> Prop -> Prop) :=
 Definition PropUOp_iff (Op : Prop -> Prop) :=
   forall (p1 q1 :Prop), (p1 <-> q1) -> (Op p1 <-> Op q1).
 
-Lemma mkapp2 (S1 S2 S3 T : Type) (Op : S1 -> S2 -> S3)
-      (I1 : S1 -> T) (I2 : S2 -> T) (I3 : S3 -> T)
-      (TBOP : T -> T -> T)
+Lemma mkapp2 (S1 S2 S3 T1 T2 T3 : Type) (Op : S1 -> S2 -> S3)
+      (I1 : S1 -> T1) (I2 : S2 -> T2) (I3 : S3 -> T3)
+      (TBOP : T1 -> T2 -> T3)
       (TBOPINJ : forall n m, I3 (Op n m) = TBOP (I1 n) (I2 m))
-      (s1 : S1) (t1 : T) (P1: I1 s1 = t1)
-      (s2 : S2) (t2 : T) (P2: I2 s2 = t2):  I3 (Op s1 s2) = TBOP t1 t2.
+      (s1 : S1) (t1 : T1) (P1: I1 s1 = t1)
+      (s2 : S2) (t2 : T2) (P2: I2 s2 = t2):  I3 (Op s1 s2) = TBOP t1 t2.
 Proof.
   subst. apply TBOPINJ.
 Qed.
 
-Lemma mkapp (S1 S2 T : Type) (OP : S1 -> S2)
-      (I1 : S1 -> T)
-      (I2 : S2 -> T)
-      (TUOP : T -> T)
+Lemma mkapp (S1 S2 T1 T2 : Type) (OP : S1 -> S2)
+      (I1 : S1 -> T1)
+      (I2 : S2 -> T2)
+      (TUOP : T1 -> T2)
       (TUOPINJ : forall n, I2 (OP n) = TUOP (I1 n))
-      (s1: S1) (t1: T) (P1: I1 s1 = t1): I2 (OP s1) = TUOP t1.
+      (s1: S1) (t1: T1) (P1: I1 s1 = t1): I2 (OP s1) = TUOP t1.
 Proof.
   subst. apply TUOPINJ.
 Qed.

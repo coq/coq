@@ -47,6 +47,8 @@ Register mul as num.Z.mul.
 Register pow as num.Z.pow.
 Register of_nat as num.Z.of_nat.
 
+
+
 (** When including property functors, only inline t eq zero one two *)
 
 Set Inline Level 30.
@@ -81,6 +83,11 @@ Register le as num.Z.le.
 Register lt as num.Z.lt.
 Register ge as num.Z.ge.
 Register gt as num.Z.gt.
+Register leb as num.Z.leb.
+Register ltb as num.Z.ltb.
+Register geb as num.Z.geb.
+Register gtb as num.Z.gtb.
+Register eqb as num.Z.eqb.
 
 (** * Decidability of equality. *)
 
