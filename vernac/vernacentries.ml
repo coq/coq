@@ -1774,7 +1774,7 @@ let interp_search_restriction = function
 
 open Search
 
-let interp_search_about_item env sigma =
+let interp_search_item env sigma =
   function
   | SearchSubPattern pat ->
       let _,pat = Constrintern.intern_constr_pattern env sigma pat in
@@ -1788,7 +1788,7 @@ let interp_search_about_item env sigma =
             ~head:false (fun _ -> true) s sc in
         GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->
-        user_err ~hdr:"interp_search_about_item"
+        user_err ~hdr:"interp_search_item"
           (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component")
 
 (* 05f22a5d6d5b8e3e80f1a37321708ce401834430 introduced the
@@ -1844,7 +1844,7 @@ let vernac_search ~pstate ~atts s gopt r =
   | SearchHead c ->
       (Search.search_by_head ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | Search sl ->
-      (Search.search ?pstate gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
+      (Search.search ?pstate gopt (List.map (on_snd (interp_search_item env Evd.(from_env env))) sl) r |>
        Search.prioritize_search) pr_search);
   Feedback.msg_notice (str "(use \"About\" for full details on implicit arguments)")
 

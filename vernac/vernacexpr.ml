@@ -61,7 +61,7 @@ type printable =
   | PrintStrategy of qualid or_by_notation option
   | PrintRegistered
 
-type search_about_item =
+type search_item =
   | SearchSubPattern of constr_pattern_expr
   | SearchString of string * scope_name option
 
@@ -69,7 +69,7 @@ type searchable =
   | SearchPattern of constr_pattern_expr
   | SearchRewrite of constr_pattern_expr
   | SearchHead of constr_pattern_expr
-  | Search of (bool * search_about_item) list
+  | Search of (bool * search_item) list
 
 type locatable =
   | LocateAny of qualid or_by_notation

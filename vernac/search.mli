@@ -15,7 +15,7 @@ open Pattern
 
 (** {6 Search facilities. } *)
 
-type glob_search_about_item =
+type glob_search_item =
   | GlobSearchSubPattern of constr_pattern
   | GlobSearchString of string
 
@@ -30,7 +30,7 @@ val blacklist_filter : filter_function
 val module_filter : DirPath.t list * bool -> filter_function
 (** Check whether a reference pertains or not to a set of modules *)
 
-val search_filter : glob_search_about_item -> filter_function
+val search_filter : glob_search_item -> filter_function
 
 (** {6 Specialized search functions}
 
@@ -44,7 +44,7 @@ val search_rewrite : ?pstate:Declare.Proof.t -> int option -> constr_pattern -> 
                   -> display_function -> unit
 val search_pattern : ?pstate:Declare.Proof.t -> int option -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
-val search         : ?pstate:Declare.Proof.t -> int option -> (bool * glob_search_about_item) list
+val search         : ?pstate:Declare.Proof.t -> int option -> (bool * glob_search_item) list
                   -> DirPath.t list * bool -> display_function -> unit
 
 type search_constraint =

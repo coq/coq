@@ -29,7 +29,7 @@ query, separated by a newline. This type of output is useful for
 editors (like emacs), to generate a list of completion candidates
 without having to parse through the types of all symbols. *)
 
-type glob_search_about_item =
+type glob_search_item =
   | GlobSearchSubPattern of constr_pattern
   | GlobSearchString of string
 
