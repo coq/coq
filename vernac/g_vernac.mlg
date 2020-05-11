@@ -790,12 +790,6 @@ GRAMMAR EXTEND Gram
        { List.map (fun name -> (name.CAst.v, MaxImplicit)) items }
     ]
   ];
-  strategy_level:
-    [ [ IDENT "expand" -> { Conv_oracle.Expand }
-      | IDENT "opaque" -> { Conv_oracle.Opaque }
-      | n=integer -> { Conv_oracle.Level n }
-      | IDENT "transparent" -> { Conv_oracle.transparent } ] ]
-  ;
   instance_name:
     [ [ name = ident_decl; bl = binders ->
           { (CAst.map (fun id -> Name id) (fst name), snd name), bl }

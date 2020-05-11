@@ -1839,3 +1839,7 @@ sentence: [
 document: [
 | LIST0 sentence
 ]
+
+strategy_level: [
+| DELETE strategy_level0
+]

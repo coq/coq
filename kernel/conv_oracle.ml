@@ -19,6 +19,12 @@ open Names
  * The default value is [Level 100].
  *)
 type level = Expand | Level of int | Opaque
+let pr_level = function
+  | Expand -> Pp.str "expand"
+  | Level 0 -> Pp.str "transparent"
+  | Level n -> Pp.int n
+  | Opaque -> Pp.str "opaque"
+
 let default = Level 0
 let is_default = function
 | Level 0 -> true

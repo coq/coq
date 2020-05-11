@@ -817,13 +817,15 @@ described first.
 
 .. cmd:: Strategy {+ @strategy_level [ {+ @smart_qualid } ] }
 
-   .. insertprodn strategy_level strategy_level
+   .. insertprodn strategy_level strategy_level_or_var
 
    .. prodn::
       strategy_level ::= opaque
       | @int
       | expand
       | transparent
+      strategy_level_or_var ::= @strategy_level
+      | @ident
 
    This command accepts the :attr:`local` attribute, which limits its effect
    to the current section or module, in which case the section and module

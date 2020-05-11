@@ -1714,6 +1714,11 @@ Tactic notations allow customizing the syntax of tactics.
         - a global reference of term
         - :tacn:`unfold`
 
+      * - ``smart_global``
+        - :token:`smart_qualid`
+        - a global reference of term
+        - :tacn:`with_strategy`
+
       * - ``constr``
         - :token:`term`
         - a term
@@ -1733,6 +1738,16 @@ Tactic notations allow customizing the syntax of tactics.
         - :token:`int_or_var`
         - an integer
         - :tacn:`do`
+
+      * - ``strategy_level``
+        - :token:`strategy_level`
+        - a strategy level
+        -
+
+      * - ``strategy_level_or_var``
+        - :token:`strategy_level_or_var`
+        - a strategy level
+        - :tacn:`with_strategy`
 
       * - ``tactic``
         - :token:`ltac_expr`
@@ -1766,18 +1781,24 @@ Tactic notations allow customizing the syntax of tactics.
 
    .. todo: notation doesn't support italics
 
-   .. note:: In order to be bound in tactic definitions, each syntactic
-             entry for argument type must include the case of a simple |Ltac|
-             identifier as part of what it parses. This is naturally the case for
-             ``ident``, ``simple_intropattern``, ``reference``, ``constr``, ... but not for ``integer``.
-             This is the reason for introducing a special entry ``int_or_var`` which
-             evaluates to integers only but which syntactically includes
+   .. note:: In order to be bound in tactic definitions, each
+             syntactic entry for argument type must include the case
+             of a simple |Ltac| identifier as part of what it
+             parses. This is naturally the case for ``ident``,
+             ``simple_intropattern``, ``reference``, ``constr``, ...
+             but not for ``integer`` nor for ``strategy_level``.  This
+             is the reason for introducing special entries
+             ``int_or_var`` and ``strategy_level_or_var`` which
+             evaluate to integers or strategy levels only,
+             respectively, but which syntactically includes
              identifiers in order to be usable in tactic definitions.
 
-   .. note:: The *entry*\ ``_list*`` and ``ne_``\ *entry*\ ``_list*`` entries can be used in
-             primitive tactics or in other notations at places where a list of the
-             underlying entry can be used: entry is either ``constr``, ``hyp``, ``integer``
-             or ``int_or_var``.
+   .. note:: The *entry*\ ``_list*`` and ``ne_``\ *entry*\ ``_list*``
+             entries can be used in primitive tactics or in other
+             notations at places where a list of the underlying entry
+             can be used: entry is either ``constr``, ``hyp``,
+             ``integer``, ``smart_qualid``, ``strategy_level``,
+             ``strategy_level_or_var``, or ``int_or_var``.
 
 
 .. rubric:: Footnotes

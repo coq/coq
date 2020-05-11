@@ -659,6 +659,11 @@ strategy_level: [
 | "transparent"
 ]
 
+strategy_level_or_var: [
+| strategy_level
+| ident
+]
+
 reserv_list: [
 | LIST1 ( "(" simple_reserv ")" )
 | simple_reserv
@@ -1234,6 +1239,7 @@ simple_tactic: [
 | "guard" int_or_var comparison int_or_var
 | "decompose" "[" LIST1 one_term "]" one_term
 | "optimize_heap"
+| "with_strategy" strategy_level_or_var "[" LIST1 smart_qualid "]" ltac_expr3
 | "start" "ltac" "profiling"
 | "stop" "ltac" "profiling"
 | "reset" "ltac" "profile"

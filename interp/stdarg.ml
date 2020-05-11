@@ -42,6 +42,8 @@ let wit_var =
 
 let wit_ref = make0 "ref"
 
+let wit_smart_global = make0 ~dyn:(val_tag (topwit wit_ref)) "smart_global"
+
 let wit_sort_family = make0 "sort_family"
 
 let wit_constr =

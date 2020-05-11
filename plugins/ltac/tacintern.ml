@@ -305,6 +305,12 @@ let intern_evaluable_reference_or_by_notation ist = function
       (Notation.interp_notation_as_global_reference ?loc
         GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
 
+let intern_smart_global ist = function
+  | {v=AN r} -> intern_global_reference ist r
+  | {v=ByNotation (ntn,sc);loc} ->
+      ArgArg (loc, (Notation.interp_notation_as_global_reference ?loc
+        GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc))
+
 (* Globalize a reduction expression *)
 let intern_evaluable ist r =
   let f ist r =
@@ -813,6 +819,7 @@ let intern_ltac ist tac =
 
 let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);
+  Genintern.register_intern0 wit_smart_global (lift intern_smart_global);
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
   Genintern.register_intern0 wit_pre_ident (fun ist c -> (ist,c));
   Genintern.register_intern0 wit_ident intern_ident';

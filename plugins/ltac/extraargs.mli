@@ -78,3 +78,7 @@ val wit_in_clause :
   (lident Locus.clause_expr,
    lident Locus.clause_expr,
    Id.t   Locus.clause_expr) Genarg.genarg_type
+
+val wit_strategy_level : Conv_oracle.level Genarg.uniform_genarg_type
+
+val wit_strategy_level_or_var : (Conv_oracle.level Locus.or_var, Conv_oracle.level Locus.or_var, Conv_oracle.level) Genarg.genarg_type

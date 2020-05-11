@@ -451,6 +451,14 @@ bar_cbrace: [
 | test_pipe_closedcurly "|" "}"
 ]
 
+strategy_level: [
+| "expand"
+| "opaque"
+| integer
+| "transparent"
+| strategy_level0
+]
+
 vernac_toplevel: [
 | "Drop" "."
 | "Quit" "."
@@ -1213,13 +1221,6 @@ more_implicits_block: [
 | "{" LIST1 name "}"
 ]
 
-strategy_level: [
-| "expand"
-| "opaque"
-| integer
-| "transparent"
-]
-
 instance_name: [
 | ident_decl binders
 |
@@ -1598,6 +1599,7 @@ simple_tactic: [
 | "guard" test
 | "decompose" "[" LIST1 constr "]" constr
 | "optimize_heap"
+| "with_strategy" strategy_level_or_var "[" LIST1 smart_global "]" tactic3
 | "eassumption"
 | "eexact" constr
 | "trivial" auto_using hintbases
@@ -1853,6 +1855,11 @@ in_clause: [
 
 test_lpar_id_colon: [
 | local_test_lpar_id_colon
+]
+
+strategy_level_or_var: [
+| strategy_level
+| identref
 ]
 
 comparison: [

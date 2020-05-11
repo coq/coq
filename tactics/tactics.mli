@@ -435,6 +435,12 @@ val declare_intro_decomp_eq :
    (types * constr * constr) ->
    constr * types -> unit Proofview.tactic) -> unit
 
+(** Tactic analogous to the [Strategy] vernacular, but only applied
+   locally to the tactic argument *)
+val with_set_strategy :
+  (Conv_oracle.level * Names.GlobRef.t list) list ->
+  'a Proofview.tactic -> 'a Proofview.tactic
+
 (** {6 Simple form of basic tactics. } *)
 
 module Simple : sig
