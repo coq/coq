@@ -5464,6 +5464,17 @@ equivalences are indeed taken into account, otherwise only single
 .. cmd:: Search {? @pattern }  {* {? - } {| @string | @pattern } {? % @ident} } {? in {+ {? - } @qualid } }
    :name: Search (ssreflect)
 
+   .. versionchanged:: 8.12
+
+      This command is only available when loading a separate plugin
+      (`ssrsearch`).
+
+   .. deprecated:: 8.12
+
+      This command is deprecated since all the additional features it
+      provides have been integrated in the standard :cmd:`Search`
+      command.
+
    This is the |SSR| extension of the Search command. :token:`qualid` is the
    name of an open module. This command returns the list of lemmas:
 
@@ -5502,7 +5513,11 @@ equivalences are indeed taken into account, otherwise only single
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all
+     .. coqtop:: in
+
+        Require Import ssrsearch.
+
+     .. coqtop:: all warn
 
         Search "~~".
 

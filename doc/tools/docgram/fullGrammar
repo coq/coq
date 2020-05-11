@@ -1201,7 +1201,7 @@ query_command: [
 | "SearchHead" constr_pattern in_or_out_modules "."
 | "SearchPattern" constr_pattern in_or_out_modules "."
 | "SearchRewrite" constr_pattern in_or_out_modules "."
-| "Search" searchabout_query searchabout_queries "."
+| "Search" search_query search_queries "."
 ]
 
 printable: [
@@ -1298,14 +1298,48 @@ positive_search_mark: [
 |
 ]
 
-searchabout_query: [
-| positive_search_mark ne_string OPT scope_delimiter
-| positive_search_mark constr_pattern
+search_query: [
+| positive_search_mark search_item
+| positive_search_mark "[" LIST1 ( LIST1 search_query ) SEP "|" "]"
 ]
 
-searchabout_queries: [
+search_item: [
+| test_id_colon search_where ":" ne_string OPT scope_delimiter
+| "is" ":" logical_kind
+| ne_string OPT scope_delimiter
+| test_id_colon search_where ":" constr_pattern
+| constr_pattern
+]
+
+logical_kind: [
+| thm_token
+| assumption_token
+| "Context"
+| extended_def_token
+| "Primitive"
+]
+
+extended_def_token: [
+| def_token
+| "Coercion"
+| "Instance"
+| "Scheme"
+| "Canonical"
+| "Field"
+| "Method"
+]
+
+search_where: [
+| "head"
+| "hyp"
+| "concl"
+| "headhyp"
+| "headconcl"
+]
+
+search_queries: [
 | ne_in_or_out_modules
-| searchabout_query searchabout_queries
+| search_query search_queries
 |
 ]
 
