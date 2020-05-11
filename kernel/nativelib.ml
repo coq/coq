@@ -37,7 +37,7 @@ let ( / ) = Filename.concat
 let my_temp_dir = lazy (CUnix.mktemp_dir "Coq_native" "")
 
 let () = at_exit (fun () ->
-    if Lazy.is_val my_temp_dir then
+    if not !Flags.debug && Lazy.is_val my_temp_dir then
       try
         let d = Lazy.force my_temp_dir in
         Array.iter (fun f -> Sys.remove (Filename.concat d f)) (Sys.readdir d);
