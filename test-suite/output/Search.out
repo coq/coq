@@ -18,7 +18,6 @@ le_sind:
   P n ->
   (forall m : nat, n <= m -> P m -> P (S m)) ->
   forall n0 : nat, n <= n0 -> P n0
-(use "About" for full details on implicit arguments)
 false: bool
 true: bool
 is_true: bool -> Prop
@@ -136,7 +135,6 @@ bool_choice:
   forall [S : Set] [R1 R2 : S -> Prop],
   (forall x : S, {R1 x} + {R2 x}) ->
   {f : S -> bool | forall x : S, f x = true /\ R1 x \/ f x = false /\ R2 x}
-(use "About" for full details on implicit arguments)
 mult_n_O: forall n : nat, 0 = n * 0
 plus_O_n: forall n : nat, 0 + n = n
 plus_n_O: forall n : nat, n = n + 0
@@ -162,7 +160,6 @@ f_equal2_mult:
 f_equal2_nat:
   forall (B : Type) (f : nat -> nat -> B) (x1 y1 x2 y2 : nat),
   x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2
-(use "About" for full details on implicit arguments)
 Numeral.internal_numeral_dec_lb:
   forall x y : Numeral.numeral, x = y -> Numeral.numeral_beq x y = true
 Numeral.internal_int_dec_lb1:
@@ -216,7 +213,6 @@ bool_choice:
   forall [S : Set] [R1 R2 : S -> Prop],
   (forall x : S, {R1 x} + {R2 x}) ->
   {f : S -> bool | forall x : S, f x = true /\ R1 x \/ f x = false /\ R2 x}
-(use "About" for full details on implicit arguments)
 Numeral.internal_numeral_dec_lb:
   forall x y : Numeral.numeral, x = y -> Numeral.numeral_beq x y = true
 Numeral.internal_numeral_dec_bl:
@@ -266,23 +262,15 @@ Hexadecimal.internal_uint_dec_lb0:
 andb_true_intro:
   forall [b1 b2 : bool], b1 = true /\ b2 = true -> (b1 && b2)%bool = true
 andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
-(use "About" for full details on implicit arguments)
 andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
-(use "About" for full details on implicit arguments)
 h: n <> newdef n
 h': newdef n <> n
-(use "About" for full details on implicit arguments)
 h: n <> newdef n
 h': newdef n <> n
-(use "About" for full details on implicit arguments)
 h: n <> newdef n
-(use "About" for full details on implicit arguments)
 h: n <> newdef n
-(use "About" for full details on implicit arguments)
 h: n <> newdef n
 h': newdef n <> n
-(use "About" for full details on implicit arguments)
-(use "About" for full details on implicit arguments)
 The command has indeed failed with message:
 [Focus] No such goal.
 The command has indeed failed with message:
@@ -291,14 +279,9 @@ The command has indeed failed with message:
 Query commands only support the single numbered goal selector.
 h: P n
 h': ~ P n
-(use "About" for full details on implicit arguments)
 h: P n
 h': ~ P n
-(use "About" for full details on implicit arguments)
 h: P n
 h': ~ P n
-(use "About" for full details on implicit arguments)
 h: P n
-(use "About" for full details on implicit arguments)
 h: P n
-(use "About" for full details on implicit arguments)

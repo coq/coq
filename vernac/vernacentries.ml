@@ -1852,14 +1852,20 @@ let vernac_search ~pstate ~atts s gopt r =
     | Some g -> snd (get_goal_or_global_context ~pstate g) , Some g
   in
   let get_pattern c = snd (Constrintern.intern_constr_pattern env Evd.(from_env env) c) in
+  let warnlist = ref [] in
   let pr_search ref kind env c =
     let pr = pr_global ref in
     let pp = if !search_output_name_only
       then pr
       else begin
         let open Impargs in
-        let impargs = select_stronger_impargs (implicits_of_global ref) in
+        let impls = implicits_of_global ref in
+        let impargs = select_stronger_impargs impls in
         let impargs = List.map binding_kind_of_status impargs in
+        if List.length impls > 1 ||
+           List.exists Glob_term.(function Explicit -> false | MaxImplicit | NonMaxImplicit -> true)
+             (List.skipn_at_least (Termops.nb_prod_modulo_zeta Evd.(from_env env) (EConstr.of_constr c)) impargs)
+          then warnlist := pr :: !warnlist;
         let pc = pr_ltype_env env Evd.(from_env env) ~impargs c in
         hov 2 (pr ++ str":" ++ spc () ++ pc)
       end
@@ -1875,7 +1881,10 @@ let vernac_search ~pstate ~atts s gopt r =
   | Search sl ->
       (Search.search ?pstate gopt (List.map (interp_search_request env Evd.(from_env env)) sl) r |>
        Search.prioritize_search) pr_search);
-  Feedback.msg_notice (str "(use \"About\" for full details on implicit arguments)")
+  if !warnlist <> [] then
+  Feedback.msg_notice (str "(" ++
+    hov 0 (strbrk "use \"About\" for full details on the implicit arguments of " ++
+           pr_enum (fun x -> x) !warnlist ++ str ")"))
 
 let vernac_locate ~pstate = let open Constrexpr in function
   | LocateAny {v=AN qid}  -> Prettyp.print_located_qualid qid

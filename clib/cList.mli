@@ -265,7 +265,7 @@ sig
       This is the second part of [chop]. *)
 
   val skipn_at_least : int -> 'a list -> 'a list
-  (** Same as [skipn] but returns [] if [n] is larger than the list of
+  (** Same as [skipn] but returns [] if [n] is larger than the length of
       the list. *)
 
   val drop_prefix : 'a eq -> 'a list -> 'a list -> 'a list
