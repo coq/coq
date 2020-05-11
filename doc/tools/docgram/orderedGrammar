@@ -823,7 +823,7 @@ command: [
 | "Hint" "Cut" "[" hints_path "]" OPT ( ":" LIST1 ident )
 | "Typeclasses" "Transparent" LIST0 qualid
 | "Typeclasses" "Opaque" LIST0 qualid
-| "Typeclasses" "eauto" ":=" OPT "debug" OPT [ "(bfs)" | "(dfs)" ] OPT int
+| "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" eauto_search_strategy_name ")" ) OPT int
 | "Proof" "with" ltac_expr OPT [ "using" section_subset_expr ]
 | "Proof" "using" section_subset_expr OPT [ "with" ltac_expr ]
 | "Tactic" "Notation" OPT ( "(" "at" "level" num ")" ) LIST1 ltac_production_item ":=" ltac_expr
@@ -1083,6 +1083,11 @@ hints_path: [
 | LIST1 qualid
 | "_"
 | hints_path hints_path
+]
+
+eauto_search_strategy_name: [
+| "bfs"
+| "dfs"
 ]
 
 class: [

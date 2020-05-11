@@ -59,6 +59,7 @@ DELETE: [
 | lookup_at_as_comma
 | test_only_starredidentrefs
 | test_bracket_ident
+| test_hash_ident
 | test_lpar_id_colon
 | test_lpar_id_coloneq  (* todo: grammar seems incorrect, repeats the "(" IDENT ":=" *)
 | test_lpar_id_rpar
@@ -1485,14 +1486,6 @@ scope_delimiter: [
 | WITH "%" scope_key
 ]
 
-(* Don't show these details *)
-DELETE: [
-| register_token
-| register_prim_token
-| register_type_token
-]
-
-
 decl_notation: [
 | REPLACE ne_lstring ":=" constr only_parsing OPT [ ":" IDENT ]
 | WITH ne_lstring ":=" constr only_parsing OPT [ ":" scope_name ]
@@ -1677,6 +1670,7 @@ SPLICE: [
 | scope_delimiter
 | bignat
 | one_import_filter_name
+| register_token
 ] (* end SPLICE *)
 
 RENAME: [
