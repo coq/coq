@@ -1108,6 +1108,75 @@ between universes for inductive types in the Type hierarchy.
 
       Check infinite_loop (lam (@id Lam)) : False.
 
+.. example:: Non strictly positive occurrence
+
+   It is less obvious why inductive type definitions with occurences
+   that are positive but not strictly positive are harmful.
+   We will see that in presence of an impredicative type they
+   are unsound:
+
+   .. coqtop:: all
+
+      Fail Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
+
+   If we were to accept this definition we could derive a contradiction
+   by creating an injective function from :math:`A → \Prop` to :math:`A`.
+
+   This function is defined by composing the injective constructor of
+   the type :math:`A` with the function :math:`λx. λz. z = x` injecting
+   any type :math:`T` into :math:`T → \Prop`.
+
+   .. coqtop:: none
+
+      Unset Positivity Checking.
+      Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
+      Set Positivity Checking.
+
+   .. coqtop:: all
+
+      Definition f (x: A -> Prop): A := introA (fun z => z = x).
+
+   .. coqtop:: in
+
+      Lemma f_inj: forall x y, f x = f y -> x = y.
+      Proof.
+        unfold f; intros ? ? H; injection H.
+        set (F := fun z => z = y); intro HF.
+        symmetry; replace (y = x) with (F y).
+        + unfold F; reflexivity.
+        + rewrite <- HF; reflexivity.
+      Qed.
+
+   The type :math:`A → \Prop` can be understood as the powerset
+   of the type :math:`A`. To derive a contradiction from the
+   injective function :math:`f` we use Cantor's classic diagonal
+   argument.
+
+   .. coqtop:: all
+
+      Definition d: A -> Prop := fun x => exists s, x = f s /\ ~s x.
+      Definition fd: A := f d.
+
+   .. coqtop:: in
+
+      Lemma cantor: (d fd) <-> ~(d fd).
+      Proof.
+        split.
+        + intros [s [H1 H2]]; unfold fd in H1.
+          replace d with s.
+          * assumption.
+          * apply f_inj; congruence.
+        + intro; exists d; tauto.
+      Qed.
+
+      Lemma bad: False.
+      Proof.
+        pose cantor; tauto.
+      Qed.
+
+   This derivation was first presented by Thierry Coquand and Christine
+   Paulin in :cite:`CP90`.
+
 .. _Template-polymorphism:
 
 Template polymorphism
