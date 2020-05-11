@@ -69,7 +69,7 @@ let is_substring s1 s2 =
   if !break then len2 - len1
   else -1
 
-class completion_provider coqtop =
+class completion_provider buffer coqtop =
   let self_provider = ref None in
   let active = ref true in
   let provider = object (self)
@@ -97,9 +97,13 @@ class completion_provider coqtop =
       ctx#add_proposals (Option.get !self_provider) props true
 
     method populate ctx =
-      let iter = ctx#iter in
+      let iter = buffer#get_iter_at_mark `INSERT in
+      let () = insert_offset <- iter#offset in
+      let () = Minilib.log (Printf.sprintf "Completion at offset: %i" insert_offset) in
       let buffer = new GText.buffer iter#buffer in
+      if not (Gtk_parsing.ends_word iter#backward_char) then self#add_proposals ctx Proposals.empty else
       let start = Gtk_parsing.find_word_start iter in
+      if iter#offset - start#offset < auto_complete_length then self#add_proposals ctx Proposals.empty else
       let w = start#get_text ~stop:iter in
       let () = Minilib.log ("Completion of prefix: '" ^ w ^ "'") in
       let (off, prefix, props) = cache in
@@ -127,17 +131,7 @@ class completion_provider coqtop =
         let occupied () = update synt in
         Coq.try_grab coqtop query occupied
 
-    method matched ctx =
-      if !active then
-        let iter = ctx#iter in
-        let () = insert_offset <- iter#offset in
-        let log = Printf.sprintf "Completion at offset: %i" insert_offset in
-        let () = Minilib.log log in
-        if Gtk_parsing.ends_word iter#backward_char then
-          let start = Gtk_parsing.find_word_start iter in
-          iter#offset - start#offset >= auto_complete_length
-        else false
-      else false
+    method matched ctx = !active
 
     method activation = [`INTERACTIVE; `USER_REQUESTED]
 
