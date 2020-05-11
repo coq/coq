@@ -69,18 +69,15 @@ exception FullyUnfocused
 
 let _ = CErrors.register_handler begin function
   | CannotUnfocusThisWay ->
-    CErrors.user_err Pp.(str "This proof is focused, but cannot be unfocused this way")
+    Pp.(str "This proof is focused, but cannot be unfocused this way")
   | NoSuchGoals (i,j) when Int.equal i j ->
-      CErrors.user_err ~hdr:"Focus" Pp.(str"No such goal (" ++ int i ++ str").")
+    Pp.(str"No such goal (" ++ int i ++ str").")
   | NoSuchGoals (i,j) ->
-      CErrors.user_err ~hdr:"Focus" Pp.(
-        str"Not every goal in range ["++ int i ++ str","++int j++str"] exist."
-      )
+    Pp.(str"Not every goal in range ["++ int i ++ str","++int j++str"] exist.")
   | NoSuchGoal id ->
-      CErrors.user_err
-        ~hdr:"Focus"
-        Pp.(str "No such goal: " ++ str (Names.Id.to_string id) ++ str ".")
-  | FullyUnfocused -> CErrors.user_err Pp.(str "The proof is not focused")
+    Pp.(str "No such goal: " ++ str (Names.Id.to_string id) ++ str ".")
+  | FullyUnfocused ->
+    Pp.(str "The proof is not focused")
   | _ -> raise CErrors.Unhandled
 end
 
