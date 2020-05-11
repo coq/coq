@@ -155,6 +155,8 @@ type proof_object =
   ; uctx: UState.t
   }
 
+let get_po_name { name } = name
+
 let private_poly_univs =
   Goptions.declare_bool_option_and_ref
     ~depr:false
@@ -846,23 +848,6 @@ let get_current_goal_context pf =
 let get_current_context pf =
   let p = get_proof pf in
   Proof.get_proof_context p
-
-module Proof = struct
-  type nonrec t = t
-  let get_proof = get_proof
-  let get_proof_name = get_proof_name
-  let get_used_variables = get_used_variables
-  let get_universe_decl = get_universe_decl
-  let get_initial_euctx = get_initial_euctx
-  let map_proof = map_proof
-  let map_fold_proof = map_fold_proof
-  let map_fold_proof_endline = map_fold_proof_endline
-  let set_endline_tactic = set_endline_tactic
-  let set_used_variables = set_used_variables
-  let compact = compact_the_proof
-  let update_global_env = update_global_env
-  let get_open_goals = get_open_goals
-end
 
 let declare_definition_scheme ~internal ~univs ~role ~name c =
   let kind = Decls.(IsDefinition Scheme) in
@@ -1702,4 +1687,333 @@ let obligation_admitted_terminator {name; num; auto} ctx' dref =
   let () = if transparent then add_hint true prg cst in
   update_program_decl_on_defined prg obls num obl ~uctx:ctx' rem ~auto
 
+end
+
+(************************************************************************)
+(* Commom constant saving path, for both Qed and Admitted               *)
+(************************************************************************)
+
+(* Support for mutually proved theorems *)
+
+module Proof_ending = struct
+
+  type t =
+    | Regular
+    | End_obligation of Obls.obligation_qed_info
+    | End_derive of { f : Id.t; name : Id.t }
+    | End_equations of
+        { hook : Constant.t list -> Evd.evar_map -> unit
+        ; i : Id.t
+        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+        ; sigma : Evd.evar_map
+        }
+
+end
+
+type lemma_possible_guards = int list list
+
+module Info = struct
+
+  type t =
+    { hook : Hook.t option
+    ; proof_ending : Proof_ending.t CEphemeron.key
+    (* This could be improved and the CEphemeron removed *)
+    ; scope : locality
+    ; kind : Decls.logical_kind
+    (* thms and compute guard are specific only to start_lemma_with_initialization + regular terminator *)
+    ; thms : Recthm.t list
+    ; compute_guard : lemma_possible_guards
+    }
+
+  let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=Global ImportDefaultBehavior)
+      ?(kind=Decls.(IsProof Lemma)) ?(compute_guard=[]) ?(thms=[]) () =
+    { hook
+    ; compute_guard
+    ; proof_ending = CEphemeron.create proof_ending
+    ; thms
+    ; scope
+    ; kind
+    }
+
+  (* This is used due to a deficiency on the API, should fix *)
+  let add_first_thm ~info ~name ~typ ~impargs =
+    let thms =
+      { Recthm.name
+      ; impargs
+      ; typ = EConstr.Unsafe.to_constr typ
+      ; args = [] } :: info.thms
+    in
+    { info with thms }
+
+end
+
+(* XXX: this should be unified with the code for non-interactive
+   mutuals previously on this file. *)
+module MutualEntry : sig
+
+  val declare_variable
+    : info:Info.t
+    -> uctx:UState.t
+    -> Entries.parameter_entry
+    -> Names.GlobRef.t list
+
+  val declare_mutdef
+    (* Common to all recthms *)
+    : info:Info.t
+    -> uctx:UState.t
+    -> Evd.side_effects proof_entry
+    -> Names.GlobRef.t list
+
+end = struct
+
+  (* XXX: Refactor this with the code in [Declare.declare_mutdef] *)
+  let guess_decreasing env possible_indexes ((body, ctx), eff) =
+    let open Constr in
+    match Constr.kind body with
+    | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
+      let env = Safe_typing.push_private_constants env eff.Evd.seff_private in
+      let indexes = Pretyping.search_guard env possible_indexes fixdecls in
+      (mkFix ((indexes,0),fixdecls), ctx), eff
+    | _ -> (body, ctx), eff
+
+  let select_body i t =
+    let open Constr in
+    match Constr.kind t with
+    | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
+    | CoFix (0,decls) -> mkCoFix (i,decls)
+    | _ ->
+      CErrors.anomaly
+        Pp.(str "Not a proof by induction: " ++
+            Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
+
+  let declare_mutdef ~uctx ~info pe i Recthm.{ name; impargs; typ; _} =
+    let { Info.hook; scope; kind; compute_guard; _ } = info in
+    (* if i = 0 , we don't touch the type; this is for compat
+       but not clear it is the right thing to do.
+    *)
+    let pe, ubind =
+      if i > 0 && not (CList.is_empty compute_guard)
+      then Internal.map_entry_type pe ~f:(fun _ -> Some typ), UnivNames.empty_binders
+      else pe, UState.universe_binders uctx
+    in
+    (* We when compute_guard was [] in the previous step we should not
+       substitute the body *)
+    let pe = match compute_guard with
+      | [] -> pe
+      | _ ->
+        Internal.map_entry_body pe
+          ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
+    in
+    declare_entry ~name ~scope ~kind ?hook ~impargs ~uctx pe
+
+  let declare_mutdef ~info ~uctx const =
+    let pe = match info.Info.compute_guard with
+    | [] ->
+      (* Not a recursive statement *)
+      const
+    | possible_indexes ->
+      (* Try all combinations... not optimal *)
+      let env = Global.env() in
+      Internal.map_entry_body const
+        ~f:(guess_decreasing env possible_indexes)
+    in
+    List.map_i (declare_mutdef ~info ~uctx pe) 0 info.Info.thms
+
+  let declare_variable ~info ~uctx pe =
+    let { Info.scope; hook } = info in
+    List.map_i (
+      fun i { Recthm.name; typ; impargs } ->
+        declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
+    ) 0 info.Info.thms
+
+end
+
+(************************************************************************)
+(* Admitting a lemma-like constant                                      *)
+(************************************************************************)
+
+(* Admitted *)
+let get_keep_admitted_vars =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Keep"; "Admitted"; "Variables"]
+    ~value:true
+
+let compute_proof_using_for_admitted proof typ pproofs =
+  if not (get_keep_admitted_vars ()) then None
+  else match get_used_variables proof, pproofs with
+    | Some _ as x, _ -> x
+    | None, pproof :: _ ->
+      let env = Global.env () in
+      let ids_typ = Environ.global_vars_set env typ in
+      (* [pproof] is evar-normalized by [partial_proof]. We don't
+         count variables appearing only in the type of evars. *)
+      let ids_def = Environ.global_vars_set env (EConstr.Unsafe.to_constr pproof) in
+      Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
+    | _ -> None
+
+let finish_admitted ~info ~uctx pe =
+  let cst = MutualEntry.declare_variable ~info ~uctx pe in
+  (* If the constant was an obligation we need to update the program map *)
+  match CEphemeron.get info.Info.proof_ending with
+  | Proof_ending.End_obligation oinfo ->
+    Obls.obligation_admitted_terminator oinfo uctx (List.hd cst)
+  | _ -> ()
+
+let save_lemma_admitted ~proof ~info  =
+  let udecl = get_universe_decl proof in
+  let Proof.{ poly; entry } = Proof.data (get_proof proof) in
+  let typ = match Proofview.initial_goals entry with
+    | [typ] -> snd typ
+    | _ -> CErrors.anomaly ~label:"Lemmas.save_lemma_admitted" (Pp.str "more than one statement.")
+  in
+  let typ = EConstr.Unsafe.to_constr typ in
+  let iproof = get_proof proof in
+  let pproofs = Proof.partial_proof iproof in
+  let sec_vars = compute_proof_using_for_admitted proof typ pproofs in
+  let uctx = get_initial_euctx proof in
+  let univs = UState.check_univ_decl ~poly uctx udecl in
+  finish_admitted ~info ~uctx (sec_vars, (typ, univs), None)
+
+(************************************************************************)
+(* Saving a lemma-like constant                                         *)
+(************************************************************************)
+
+let finish_proved po info =
+  match po with
+  | { entries=[const]; uctx } ->
+    let _r : Names.GlobRef.t list = MutualEntry.declare_mutdef ~info ~uctx const in
+    ()
+  | _ ->
+    CErrors.anomaly ~label:"finish_proved" Pp.(str "close_proof returned more than one proof term")
+
+let finish_derived ~f ~name ~entries =
+  (* [f] and [name] correspond to the proof of [f] and of [suchthat], respectively. *)
+
+  let f_def, lemma_def =
+    match entries with
+    | [_;f_def;lemma_def] ->
+      f_def, lemma_def
+    | _ -> assert false
+  in
+  (* The opacity of [f_def] is adjusted to be [false], as it
+     must. Then [f] is declared in the global environment. *)
+  let f_def = Internal.set_opacity ~opaque:false f_def in
+  let f_kind = Decls.(IsDefinition Definition) in
+  let f_def = DefinitionEntry f_def in
+  let f_kn = declare_constant ~name:f ~kind:f_kind f_def in
+  let f_kn_term = Constr.mkConst f_kn in
+  (* In the type and body of the proof of [suchthat] there can be
+     references to the variable [f]. It needs to be replaced by
+     references to the constant [f] declared above. This substitution
+     performs this precise action. *)
+  let substf c = Vars.replace_vars [f,f_kn_term] c in
+  (* Extracts the type of the proof of [suchthat]. *)
+  let lemma_pretype typ =
+    match typ with
+    | Some t -> Some (substf t)
+    | None -> assert false (* Declare always sets type here. *)
+  in
+  (* The references of [f] are subsituted appropriately. *)
+  let lemma_def = Internal.map_entry_type lemma_def ~f:lemma_pretype in
+  (* The same is done in the body of the proof. *)
+  let lemma_def = Internal.map_entry_body lemma_def ~f:(fun ((b,ctx),fx) -> (substf b, ctx), fx) in
+  let lemma_def = DefinitionEntry lemma_def in
+  let _ : Names.Constant.t = declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
+  ()
+
+let finish_proved_equations ~kind ~hook i proof_obj types sigma0 =
+
+  let obls = ref 1 in
+  let sigma, recobls =
+    CList.fold_left2_map (fun sigma (_evar_env, ev, _evi, local_context, _type) entry ->
+        let id =
+          match Evd.evar_ident ev sigma0 with
+          | Some id -> id
+          | None -> let n = !obls in incr obls; Nameops.add_suffix i ("_obligation_" ^ string_of_int n)
+        in
+        let entry, args = Internal.shrink_entry local_context entry in
+        let cst = declare_constant ~name:id ~kind (DefinitionEntry entry) in
+        let sigma, app = Evarutil.new_global sigma (GlobRef.ConstRef cst) in
+        let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
+        sigma, cst) sigma0
+      types proof_obj.entries
+  in
+  hook recobls sigma
+
+let finalize_proof proof_obj proof_info =
+  let open Proof_ending in
+  match CEphemeron.default proof_info.Info.proof_ending Regular with
+  | Regular ->
+    finish_proved proof_obj proof_info
+  | End_obligation oinfo ->
+    Obls.obligation_terminator proof_obj.entries proof_obj.uctx oinfo
+  | End_derive { f ; name } ->
+    finish_derived ~f ~name ~entries:proof_obj.entries
+  | End_equations { hook; i; types; sigma } ->
+    finish_proved_equations ~kind:proof_info.Info.kind ~hook i proof_obj types sigma
+
+let err_save_forbidden_in_place_of_qed () =
+  CErrors.user_err (Pp.str "Cannot use Save with more than one constant or in this proof mode")
+
+let process_idopt_for_save ~idopt info =
+  match idopt with
+  | None -> info
+  | Some { CAst.v = save_name } ->
+    (* Save foo was used; we override the info in the first theorem *)
+    let thms =
+      match info.Info.thms, CEphemeron.default info.Info.proof_ending Proof_ending.Regular with
+      | [ { Recthm.name; _} as decl ], Proof_ending.Regular ->
+        [ { decl with Recthm.name = save_name } ]
+      | _ ->
+        err_save_forbidden_in_place_of_qed ()
+    in { info with Info.thms }
+
+let save_lemma_proved ~proof ~info ~opaque ~idopt =
+  (* Env and sigma are just used for error printing in save_remaining_recthms *)
+  let proof_obj = close_proof ~opaque ~keep_body_ucst_separate:false proof in
+  let proof_info = process_idopt_for_save ~idopt info in
+  finalize_proof proof_obj proof_info
+
+(***********************************************************************)
+(* Special case to close a lemma without forcing a proof               *)
+(***********************************************************************)
+let save_lemma_admitted_delayed ~proof ~info =
+  let { entries; uctx } = proof in
+  if List.length entries <> 1 then
+    CErrors.user_err Pp.(str "Admitted does not support multiple statements");
+  let { proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
+  let poly = match proof_entry_universes with
+    | Entries.Monomorphic_entry _ -> false
+    | Entries.Polymorphic_entry (_, _) -> true in
+  let typ = match proof_entry_type with
+    | None -> CErrors.user_err Pp.(str "Admitted requires an explicit statement");
+    | Some typ -> typ in
+  let ctx = UState.univ_entry ~poly uctx in
+  let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
+  finish_admitted ~uctx ~info (sec_vars, (typ, ctx), None)
+
+let save_lemma_proved_delayed ~proof ~info ~idopt =
+  (* vio2vo calls this but with invalid info, we have to workaround
+     that to add the name to the info structure *)
+  if CList.is_empty info.Info.thms then
+    let name = get_po_name proof in
+    let info = Info.add_first_thm ~info ~name ~typ:EConstr.mkSet ~impargs:[] in
+    finalize_proof proof info
+  else
+    let info = process_idopt_for_save ~idopt info in
+    finalize_proof proof info
+
+module Proof = struct
+  type nonrec t = t
+  let get_proof = get_proof
+  let get_proof_name = get_proof_name
+  let map_proof = map_proof
+  let map_fold_proof = map_fold_proof
+  let map_fold_proof_endline = map_fold_proof_endline
+  let set_endline_tactic = set_endline_tactic
+  let set_used_variables = set_used_variables
+  let compact = compact_the_proof
+  let update_global_env = update_global_env
+  let get_open_goals = get_open_goals
 end

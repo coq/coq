@@ -141,7 +141,10 @@ let rec solve_obligation prg num tac =
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
-  let proof_ending = Lemmas.Proof_ending.End_obligation (Declare.Obls.{name = prg.prg_name; num; auto}) in
+  let proof_ending =
+    Declare.Proof_ending.End_obligation
+      {Declare.Obls.name = prg.prg_name; num; auto}
+  in
   let info = Lemmas.Info.make ~proof_ending ~scope ~kind () in
   let poly = prg.prg_poly in
   let lemma = Lemmas.start_lemma ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in

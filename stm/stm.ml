@@ -1684,7 +1684,9 @@ end = struct (* {{{ *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
       ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc ~control:[] (Proved (opaque,None)));
-      `OK proof
+      (* Is this name the same than the one in scope? *)
+      let name = Declare.get_po_name proof in
+      `OK name
       end
     with e ->
       let (e, info) = Exninfo.capture e in
@@ -1723,7 +1725,7 @@ end = struct (* {{{ *)
     | `ERROR -> exit 1
     | `ERROR_ADMITTED -> cst, false
     | `OK_ADMITTED -> cst, false
-    | `OK { Declare.name } ->
+    | `OK name ->
         let con = Nametab.locate_constant (Libnames.qualid_of_ident name) in
         let c = Global.lookup_constant con in
         let o = match c.Declarations.const_body with

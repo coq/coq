@@ -28,39 +28,8 @@ val pf_fold : (Declare.Proof.t -> 'a) -> t -> 'a
 val by : unit Proofview.tactic -> t -> t * bool
 (** [by tac l] apply a tactic to [l] *)
 
-(** Creating high-level proofs with an associated constant *)
-module Proof_ending : sig
-
-  type t =
-    | Regular
-    | End_obligation of Declare.Obls.obligation_qed_info
-    | End_derive of { f : Id.t; name : Id.t }
-    | End_equations of
-        { hook : Constant.t list -> Evd.evar_map -> unit
-        ; i : Id.t
-        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
-        ; sigma : Evd.evar_map
-        }
-
-end
-
-module Info : sig
-
-  type t
-
-  val make
-    :  ?hook: Declare.Hook.t
-    (** Callback to be executed at the end of the proof *)
-    -> ?proof_ending : Proof_ending.t
-    (** Info for special constants *)
-    -> ?scope : Declare.locality
-    (** locality  *)
-    -> ?kind:Decls.logical_kind
-    (** Theorem, etc... *)
-    -> unit
-    -> t
-
-end
+module Proof_ending = Declare.Proof_ending
+module Info = Declare.Info
 
 (** Starts the proof of a constant *)
 val start_lemma
@@ -99,6 +68,7 @@ val start_lemma_with_initialization
 (** {4 Saving proofs} *)
 
 val save_lemma_admitted : lemma:t -> unit
+
 val save_lemma_proved
   :  lemma:t
   -> opaque:Declare.opacity_flag
@@ -110,12 +80,3 @@ module Internal : sig
   val get_info : t -> Info.t
   (** Only needed due to the Declare compatibility layer. *)
 end
-
-(** Special cases for delayed proofs, in this case we must provide the
-   proof information so the proof won't be forced. *)
-val save_lemma_admitted_delayed : proof:Declare.proof_object -> info:Info.t -> unit
-val save_lemma_proved_delayed
-  :  proof:Declare.proof_object
-  -> info:Info.t
-  -> idopt:Names.lident option
-  -> unit
