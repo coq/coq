@@ -197,7 +197,6 @@ let proof_view () =
   let buffer = GSourceView3.source_buffer
     ~highlight_matching_brackets:true
     ~tag_table:Tags.Proof.table
-    ?language:(lang_manager#language source_language#get)
     ?style_scheme:(style_manager#style_scheme source_style#get) ()
   in
   let text_buffer = new GText.buffer buffer#as_buffer in
