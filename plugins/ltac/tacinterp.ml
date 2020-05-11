@@ -1087,7 +1087,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacShowHyps tac ->
          Proofview.V82.tactic begin
            tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))
-         end
+         end [@ocaml.warning "-3"]
   | TacAbstract (t,ido) ->
       let call = LtacMLCall tac in
       let trace = push_trace(None,call) ist in

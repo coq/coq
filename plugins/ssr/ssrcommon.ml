@@ -22,7 +22,7 @@ open Locusops
 
 open Ltac_plugin
 open Tacmach
-open Refiner
+open Tacticals
 open Libnames
 open Ssrmatching_plugin
 open Ssrmatching
@@ -80,6 +80,9 @@ let nullhint = true, []
 let nohint = false, []
 
 type 'a tac_a = (goal * 'a) sigma -> (goal * 'a) list sigma
+
+let project gl = gl.Evd.sigma
+let re_sig it sigma = { Evd.it = it; Evd.sigma = sigma }
 
 let push_ctx  a gl = re_sig (sig_it gl, a) (project gl)
 let push_ctxs a gl =

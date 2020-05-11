@@ -703,9 +703,16 @@ let terminate_letin (na, b, t, e) expr_info continuation_tac info g =
   in
   continuation_tac {info with info = new_e; forbidden_ids = new_forbidden} g
 
-let pf_type c tac gl =
-  let evars, ty = Typing.type_of (pf_env gl) (project gl) c in
-  tclTHEN (Refiner.tclEVARS evars) (tac ty) gl
+let pf_type c tac =
+  let open Tacticals.New in
+  Proofview.Goal.enter (fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let evars, ty = Typing.type_of env sigma c in
+      tclTHEN (Proofview.Unsafe.tclEVARS evars) (tac ty))
+
+let pf_type c tac =
+  Proofview.V82.of_tactic (pf_type c (fun ty -> Proofview.V82.tactic (tac ty)))
 
 let pf_typel l tac =
   let rec aux tys l =
