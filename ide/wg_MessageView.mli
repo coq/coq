@@ -18,6 +18,7 @@ end
 class type message_view =
   object
     inherit GObj.widget
+    method source_buffer : GSourceView3.source_buffer
     method connect : message_view_signals
     method clear : unit
     method add : Pp.t -> unit
