@@ -32,6 +32,7 @@ ComPrimitive
 ComAssumption
 DeclareInd
 Search
+ComSearch
 Prettyp
 ComInductive
 ComFixpoint

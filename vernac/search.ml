@@ -141,7 +141,7 @@ module ConstrPriority = struct
   let num_symbols t =
     ConstrSet.(cardinal (symbols empty t))
 
-  let priority t : priority =
+  let priority gref t : priority =
     -(3*(num_symbols t) + size t)
 
   let compare (_,_,_,_,p1) (_,_,_,_,p2) =
@@ -167,7 +167,7 @@ let rec iter_priority_queue q fn =
 let prioritize_search seq fn =
   let acc = ref PriorityQueue.empty in
   let iter gref kind env t =
-    let p = ConstrPriority.priority t in
+    let p = ConstrPriority.priority gref t in
     acc := PriorityQueue.add (gref,kind,env,t,p) !acc
   in
   let () = seq iter in
