@@ -1810,7 +1810,7 @@ let interp_search_item env sigma =
         GlobSearchSubPattern (where,head,Pattern.PRef ref)
       with UserError _ ->
         user_err ~hdr:"interp_search_item"
-          (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component"))
+          (str "Unable to interpret " ++ quote (str s) ++ str " as a reference."))
   | SearchKind k ->
      match kind_searcher k with
      | Inl k -> GlobSearchKind k
