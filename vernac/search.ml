@@ -22,7 +22,7 @@ open Vernacexpr
 module NamedDecl = Context.Named.Declaration
 
 type filter_function =
-  GlobRef.t -> Decls.logical_kind option -> env -> constr -> bool
+  GlobRef.t -> Decls.logical_kind option -> env -> Evd.evar_map -> constr -> bool
 type display_function =
   GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit
 
@@ -64,22 +64,6 @@ let iter_constructors indsp u fn env nconstr =
     fn (GlobRef.ConstructRef (indsp, i)) None env typ
   done
 
-let iter_named_context_name_type f =
-  List.iter (fun decl -> f (NamedDecl.get_id decl) (NamedDecl.get_type decl))
-
-let get_current_or_goal_context ?pstate glnum =
-  match pstate with
-  | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Declare.get_goal_context p glnum
-
-(* General search over hypothesis of a goal *)
-let iter_hypothesis ?pstate glnum (fn : GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit) =
-  let env = Global.env () in
-  let iter_hyp idh typ = fn (GlobRef.VarRef idh) None env typ in
-  let evmap,e = get_current_or_goal_context ?pstate glnum in
-  let pfctxt = named_context e in
-  iter_named_context_name_type iter_hyp pfctxt
-
 (* FIXME: this is a Libobject hack that should be replaced with a proper
    registration mechanism. *)
 module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> unit end)
@@ -89,8 +73,7 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
 | exception Not_found -> ()
 
 (* General search over declarations *)
-let iter_declarations (fn : GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit) =
-  let env = Global.env () in
+let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit) =
   List.iter (fun d -> fn (GlobRef.VarRef (NamedDecl.get_id d)) None env (NamedDecl.get_type d))
     (Environ.named_context env);
   let iter_obj (sp, kn) lobj = match lobj with
@@ -124,12 +107,6 @@ let iter_declarations (fn : GlobRef.t -> Decls.logical_kind option -> env -> con
   in
   try Declaremods.iter_all_segments iter_obj
   with Not_found -> ()
-
-let generic_search ?pstate glnumopt fn =
-  (match glnumopt with
-  | None -> ()
-  | Some glnum -> iter_hypothesis ?pstate glnum fn);
-  iter_declarations fn
 
 (** This module defines a preference on constrs in the form of a
     [compare] function (preferred constr must be big for this
@@ -221,12 +198,12 @@ let full_name_of_reference ref =
   DirPath.to_string dir ^ "." ^ Id.to_string id
 
 (** Whether a reference is blacklisted *)
-let blacklist_filter ref kind env typ =
+let blacklist_filter ref kind env sigma typ =
   let name = full_name_of_reference ref in
   let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
   CString.Set.for_all is_not_bl (SearchBlacklist.v ())
 
-let module_filter (mods, outside) ref kind env typ =
+let module_filter (mods, outside) ref kind env sigma typ =
   let sp = Nametab.path_of_global ref in
   let sl = dirpath sp in
   let is_outside md = not (is_dirpath_prefix_of md sl) in
@@ -236,7 +213,7 @@ let module_filter (mods, outside) ref kind env typ =
 
 let name_of_reference ref = Id.to_string (Nametab.basename_of_global ref)
 
-let search_filter query gr kind env typ = match query with
+let search_filter query gr kind env sigma typ = match query with
 | GlobSearchSubPattern (where,head,pat) ->
   let open Context.Rel.Declaration in
   let collect_hyps ctx =
@@ -254,7 +231,7 @@ let search_filter query gr kind env typ = match query with
       let f =
         if head then Constr_matching.is_matching_head
         else Constr_matching.is_matching_appsubterm ~closed:false in
-      f env (Evd.from_env env) pat (EConstr.of_constr typ)) typl
+      f env sigma pat (EConstr.of_constr typ)) typl
 | GlobSearchString s ->
   String.string_contains ~where:(name_of_reference gr) ~what:s
 | GlobSearchKind k -> (match kind with None -> false | Some k' -> k = k')
@@ -262,16 +239,16 @@ let search_filter query gr kind env typ = match query with
 
 (** SearchPattern *)
 
-let search_pattern ?pstate gopt pat mods pr_search =
+let search_pattern env sigma pat mods pr_search =
   let filter ref kind env typ =
-    module_filter mods ref kind env typ &&
-    pattern_filter pat ref env (Evd.from_env env) (* FIXME *) (EConstr.of_constr typ) &&
-    blacklist_filter ref kind env typ
+    module_filter mods ref kind env sigma typ &&
+    pattern_filter pat ref env sigma (EConstr.of_constr typ) &&
+    blacklist_filter ref kind env sigma typ
   in
   let iter ref kind env typ =
     if filter ref kind env typ then pr_search ref kind env typ
   in
-  generic_search ?pstate gopt iter
+  generic_search env iter
 
 (** SearchRewrite *)
 
@@ -283,49 +260,49 @@ let rewrite_pat1 pat =
 let rewrite_pat2 pat =
   PApp (PRef (eq ()), [| PMeta None; PMeta None; pat |])
 
-let search_rewrite ?pstate gopt pat mods pr_search =
+let search_rewrite env sigma pat mods pr_search =
   let pat1 = rewrite_pat1 pat in
   let pat2 = rewrite_pat2 pat in
   let filter ref kind env typ =
-    module_filter mods ref kind env typ &&
-    (pattern_filter pat1 ref env (Evd.from_env env) (* FIXME *) (EConstr.of_constr typ) ||
-       pattern_filter pat2 ref env (Evd.from_env env) (EConstr.of_constr typ)) &&
-    blacklist_filter ref kind env typ
+    module_filter mods ref kind env sigma typ &&
+    (pattern_filter pat1 ref env sigma (EConstr.of_constr typ) ||
+       pattern_filter pat2 ref env sigma (EConstr.of_constr typ)) &&
+    blacklist_filter ref kind env sigma typ
   in
   let iter ref kind env typ =
     if filter ref kind env typ then pr_search ref kind env typ
   in
-  generic_search ?pstate gopt iter
+  generic_search env iter
 
 (** Search *)
 
-let search_by_head ?pstate gopt pat mods pr_search =
+let search_by_head env sigma pat mods pr_search =
   let filter ref kind env typ =
-    module_filter mods ref kind env typ &&
-    head_filter pat ref env (Evd.from_env env) (* FIXME *) (EConstr.of_constr typ) &&
-    blacklist_filter ref kind env typ
+    module_filter mods ref kind env sigma typ &&
+    head_filter pat ref env sigma (EConstr.of_constr typ) &&
+    blacklist_filter ref kind env sigma typ
   in
   let iter ref kind env typ =
     if filter ref kind env typ then pr_search ref kind env typ
   in
-  generic_search ?pstate gopt iter
+  generic_search env iter
 
 (** Search *)
 
-let search ?pstate gopt items mods pr_search =
+let search env sigma items mods pr_search =
   let filter ref kind env typ =
     let eqb b1 b2 = if b1 then b2 else not b2 in
-    module_filter mods ref kind env typ &&
+    module_filter mods ref kind env sigma typ &&
       let rec aux = function
-        | GlobSearchLiteral i -> search_filter i ref kind env typ
+        | GlobSearchLiteral i -> search_filter i ref kind env sigma typ
         | GlobSearchDisjConj l -> List.exists (List.for_all aux') l
       and aux' (b,s) = eqb b (aux s) in
-      List.for_all aux' items && blacklist_filter ref kind env typ
+      List.for_all aux' items && blacklist_filter ref kind env sigma typ
   in
   let iter ref kind env typ =
     if filter ref kind env typ then pr_search ref kind env typ
   in
-  generic_search ?pstate gopt iter
+  generic_search env iter
 
 type search_constraint =
   | Name_Pattern of Str.regexp
@@ -340,7 +317,7 @@ type 'a coq_object = {
   coq_object_object : 'a;
 }
 
-let interface_search ?pstate =
+let interface_search env sigma =
   let rec extract_flags name tpe subtpe mods blacklist = function
   | [] -> (name, tpe, subtpe, mods, blacklist)
   | (Name_Pattern regexp, b) :: l ->
@@ -354,7 +331,7 @@ let interface_search ?pstate =
   | (Include_Blacklist, b) :: l ->
     extract_flags name tpe subtpe mods b l
   in
-  fun ?glnum flags ->
+  fun flags ->
   let (name, tpe, subtpe, mods, blacklist) =
     extract_flags [] [] [] [] false flags
   in
@@ -366,12 +343,12 @@ let interface_search ?pstate =
       toggle (Str.string_match regexp id 0) flag
     in
     let match_type (pat, flag) =
-      toggle (Constr_matching.is_matching env (Evd.from_env env) pat (EConstr.of_constr constr)) flag
+      toggle (Constr_matching.is_matching env sigma pat (EConstr.of_constr constr)) flag
     in
     let match_subtype (pat, flag) =
       toggle
         (Constr_matching.is_matching_appsubterm ~closed:false
-           env (Evd.from_env env) pat (EConstr.of_constr constr)) flag
+           env sigma pat (EConstr.of_constr constr)) flag
     in
     let match_module (mdl, flag) =
       toggle (Libnames.is_dirpath_prefix_of mdl path) flag
@@ -380,7 +357,7 @@ let interface_search ?pstate =
     List.for_all match_type tpe &&
     List.for_all match_subtype subtpe &&
     List.for_all match_module mods &&
-    (blacklist || blacklist_filter ref kind env constr)
+    (blacklist || blacklist_filter ref kind env sigma constr)
   in
   let ans = ref [] in
   let print_function ref env constr =
@@ -409,5 +386,5 @@ let interface_search ?pstate =
   let iter ref kind env typ =
     if filter_function ref env typ then print_function ref env typ
   in
-  let () = generic_search ?pstate glnum iter in
+  let () = generic_search env iter in
   !ans

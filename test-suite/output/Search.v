@@ -35,3 +35,12 @@ Goal forall n (P:nat -> Prop), P n -> ~P n -> False.
 
 Abort.
 
+Module M.
+Section S.
+Variable A:Type.
+Variable a:A.
+Theorem Thm (b:A) : True.
+Search A. (* Test search in hypotheses *)
+Abort.
+End S.
+End M.

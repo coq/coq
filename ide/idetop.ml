@@ -341,7 +341,10 @@ let import_search_constraint = function
 
 let search flags =
   let pstate = Vernacstate.Declare.get_pstate () in
-  List.map export_coq_object (Search.interface_search ?pstate (
+  let sigma, env = match pstate with
+  | None -> let env = Global.env () in Evd.(from_env env, env)
+  | Some p -> Declare.get_goal_context p 1 in
+  List.map export_coq_object (Search.interface_search env sigma (
     List.map (fun (c, b) -> (import_search_constraint c, b)) flags)
   )
   [@@ocaml.warning "-3"]

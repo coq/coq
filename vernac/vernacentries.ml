@@ -1843,15 +1843,15 @@ let () =
 let vernac_search ~pstate ~atts s gopt r =
   let gopt = query_command_selector gopt in
   let r = interp_search_restriction r in
-  let env,gopt =
+  let sigma, env =
     match gopt with | None ->
       (* 1st goal by default if it exists, otherwise no goal at all *)
-      (try snd (get_goal_or_global_context ~pstate 1) , Some 1
-       with _ -> Global.env (),None)
+      (try get_goal_or_global_context ~pstate 1
+       with _ -> let env = Global.env () in (Evd.from_env env, env))
     (* if goal selector is given and wrong, then let exceptions be raised. *)
-    | Some g -> snd (get_goal_or_global_context ~pstate g) , Some g
+    | Some g -> get_goal_or_global_context ~pstate g
   in
-  let get_pattern c = snd (Constrintern.intern_constr_pattern env Evd.(from_env env) c) in
+  let get_pattern c = snd (Constrintern.intern_constr_pattern env sigma c) in
   let warnlist = ref [] in
   let pr_search ref kind env c =
     let pr = pr_global ref in
@@ -1873,13 +1873,13 @@ let vernac_search ~pstate ~atts s gopt r =
   in
   (match s with
   | SearchPattern c ->
-      (Search.search_pattern ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
+      (Search.search_pattern env sigma (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchRewrite c ->
-      (Search.search_rewrite ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
+      (Search.search_rewrite env sigma (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchHead c ->
-      (Search.search_by_head ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
+      (Search.search_by_head env sigma (get_pattern c) r |> Search.prioritize_search) pr_search
   | Search sl ->
-      (Search.search ?pstate gopt (List.map (interp_search_request env Evd.(from_env env)) sl) r |>
+      (Search.search env sigma (List.map (interp_search_request env Evd.(from_env env)) sl) r |>
        Search.prioritize_search) pr_search);
   if !warnlist <> [] then
   Feedback.msg_notice (str "(" ++

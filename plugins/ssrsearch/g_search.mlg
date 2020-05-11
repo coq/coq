@@ -233,7 +233,7 @@ let rec interp_search_about args accu = match args with
 | [] -> accu
 | (flag, arg) :: rem ->
   fun gr kind env typ ->
-    let ans = Search.search_filter arg gr kind env typ in
+    let ans = Search.search_filter arg gr kind env (Evd.from_env env) typ in
     (if flag then ans else not ans) && interp_search_about rem accu gr kind env typ
 
 let interp_search_arg arg =
@@ -288,10 +288,10 @@ let interp_modloc mr =
     CErrors.user_err ?loc:qid.CAst.loc (str "No Module " ++ pr_qualid qid) in
   let mr_out, mr_in = List.partition fst mr in
   let interp_bmod b = function
-  | [] -> fun _ _ _ _ -> true
+  | [] -> fun _ _ _ _ _ -> true
   | rmods -> Search.module_filter (List.map interp_mod rmods, b) in
   let is_in = interp_bmod false mr_in and is_out = interp_bmod true mr_out in
-  fun gr kind env typ -> is_in gr kind env typ && is_out gr kind env typ
+  fun gr kind env typ -> is_in gr kind env (Evd.from_env env) typ && is_out gr kind env (Evd.from_env env) typ
 
 (* The unified, extended vernacular "Search" command *)
 
@@ -316,5 +316,6 @@ VERNAC COMMAND EXTEND SsrSearchPattern CLASSIFIED AS QUERY
     let display gr kind env typ =
       if post_filter gr kind env typ then ssrdisplaysearch gr env typ
     in
-    Search.generic_search None display }
+    let env = Global.env () in
+    Search.generic_search env display }
 END
