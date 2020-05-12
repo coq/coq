@@ -1096,7 +1096,7 @@ let explain_typeclass_error env sigma = function
 (* Refiner errors *)
 
 let explain_refiner_bad_type env sigma arg ty conclty =
-  let pm, pn = with_diffs (pr_lconstr_env env sigma ty) (pr_lconstr_env env sigma conclty) in
+  let pm, pn = with_diffs (pr_lconstr_env env sigma ty) (pr_leconstr_env env sigma conclty) in
   str "Refiner was given an argument" ++ brk(1,1) ++
   pr_lconstr_env env sigma arg ++ spc () ++
   str "of type" ++ brk(1,1) ++ pm ++ spc () ++

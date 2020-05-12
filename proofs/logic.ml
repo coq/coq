@@ -28,7 +28,7 @@ module NamedDecl = Context.Named.Declaration
 type refiner_error =
 
   (* Errors raised by the refiner *)
-  | BadType of constr * constr * constr
+  | BadType of constr * constr * EConstr.t
   | UnresolvedBindings of Name.t list
   | CannotApply of constr * constr
   | NotWellTyped of constr
@@ -318,7 +318,7 @@ let check_meta_variables env sigma c =
 
 let check_conv_leq_goal env sigma arg ty conclty =
   if !check then
-    let ans = Reductionops.infer_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr conclty) in
+    let ans = Reductionops.infer_conv env sigma (EConstr.of_constr ty) conclty in
     match ans with
     | Some evm -> evm
     | None -> raise (RefinerError (env, sigma, BadType (arg,ty,conclty)))
@@ -354,7 +354,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     else
       match kind trm with
       | Meta _ ->
-        let conclty = nf_betaiota env sigma (EConstr.of_constr conclty) in
+        let conclty = nf_betaiota env sigma conclty in
           if !check && occur_meta sigma conclty then
             raise (RefinerError (env, sigma, MetaInType conclty));
           let (gl,ev,sigma) = mk_goal hyps conclty in
@@ -365,7 +365,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
       | Cast (t,k, ty) ->
         let sigma = check_typability env sigma ty in
         let sigma = check_conv_leq_goal env sigma trm ty conclty in
-        let res = mk_refgoals sigma goal goalacc ty t in
+        let res = mk_refgoals sigma goal goalacc (EConstr.of_constr ty) t in
         (* we keep the casts (in particular VMcast and NATIVEcast) except
            when they are annotating metas *)
         if isMeta t then begin
@@ -437,7 +437,7 @@ and mk_hdgoals sigma goal goalacc trm =
 
     | Cast (t,_, ty) ->
         let sigma = check_typability env sigma ty in
-        mk_refgoals sigma goal goalacc ty t
+        mk_refgoals sigma goal goalacc (EConstr.of_constr ty) t
 
     | App (f,l) ->
         let (acc',hdty,sigma,applicand) =
@@ -485,7 +485,7 @@ and mk_arggoals sigma goal goalacc funty allargs =
     let t = collapse t in
     match kind t with
     | Prod (_, c1, b) ->
-      let (acc, hargty, sigma, arg) = mk_refgoals sigma goal goalacc c1 harg in
+      let (acc, hargty, sigma, arg) = mk_refgoals sigma goal goalacc (EConstr.of_constr c1) harg in
       (acc, subst1 harg b, sigma), arg
     | _ ->
       let env = Goal.V82.env sigma goal in
@@ -577,7 +577,6 @@ let convert_hyp ~check ~reorder env sigma d =
 let prim_refiner r sigma goal =
   let env = Goal.V82.env sigma goal in
   let cl = Goal.V82.concl sigma goal in
-  let cl = EConstr.Unsafe.to_constr cl in
   check_meta_variables env sigma r;
   let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl r in
   let sgl = List.rev sgl in

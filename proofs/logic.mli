@@ -33,7 +33,7 @@ val prim_refiner : check:bool -> constr -> evar_map -> Goal.goal -> Goal.goal li
 type refiner_error =
 
   (*i Errors raised by the refiner i*)
-  | BadType of constr * constr * constr
+  | BadType of constr * constr * EConstr.t
   | UnresolvedBindings of Name.t list
   | CannotApply of constr * constr
   | NotWellTyped of constr
