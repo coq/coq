@@ -242,6 +242,35 @@ Ltac Definitions
    The previous value of the binding can be optionally accessed using the `as`
    binding syntax.
 
+   .. example:: Dynamic nature of mutable cells
+
+      .. coqtop:: all
+
+         Ltac2 mutable x := true.
+         Ltac2 y := x.
+         Ltac2 Eval y.
+         Ltac2 Set x := false.
+         Ltac2 Eval y.
+
+   .. example:: Interaction with recursive calls
+
+
+      .. coqtop:: all
+
+         Ltac2 mutable rec f b := match b with true => 0 | _ => f true end.
+         Ltac2 Set f := fun b =>
+                  match b with true => 1 | _ => f true end.
+         Ltac2 Eval (f false).
+         Ltac2 Set f as oldf := fun b =>
+                  match b with true => 2 | _ => oldf false end.
+         Ltac2 Eval (f false).
+
+      In the definition, the `f` in the body is resolved statically
+      because the definition is marked recursive. In the first re-definition,
+      the `f` in the body is resolved dynamically. This is witnessed by
+      the second re-definition.
+
+
 Reduction
 ~~~~~~~~~
 
