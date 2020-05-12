@@ -176,14 +176,8 @@ and ``coqtop``, unless stated otherwise:
   This is equivalent to running :n:`From` :n:`@dirpath` :cmd:`Require Export` :n:`@qualid`.
 :-require *qualid*: Deprecated; use ``-ri`` *qualid*.
 :-batch: Exit just after argument parsing. Available for ``coqtop`` only.
-:-compile *file.v*: Deprecated; use ``coqc`` instead. Compile file *file.v* into *file.vo*. This option
-  implies -batch (exit just after argument parsing). It is available only
-  for `coqtop`, as this behavior is the purpose of ``coqc``.
-:-compile-verbose *file.v*: Deprecated. Use ``coqc -verbose``. Same as -compile but also output the
-  content of *file.v* as it is compiled.
 :-verbose: Output the content of the input file as it is compiled.
-  This option is available for ``coqc`` only; it is the counterpart of
-  -compile-verbose.
+  This option is available for ``coqc`` only.
 :-vos: Indicate |Coq| to skip the processing of opaque proofs
   (i.e., proofs ending with ``Qed`` or ``Admitted``), output a ``.vos`` files
   instead of a ``.vo`` file, and to load ``.vos`` files instead of ``.vo`` files
