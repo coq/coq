@@ -49,6 +49,10 @@ let has_poly_univs = function
   | [] -> false
   | sec :: _ -> sec.has_poly_univs
 
+let map_custom f sec = match sec with
+| [] -> []
+| sec :: secs -> {sec with sec_custom = f sec.sec_custom} :: secs
+
 let find_emap e (cmap, imap) = match e with
 | SecDefinition con -> Cmap.find con cmap
 | SecInductive ind -> Mindmap.find ind imap
