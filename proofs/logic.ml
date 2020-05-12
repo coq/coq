@@ -565,23 +565,18 @@ let convert_hyp ~check ~reorder env sigma d =
 (************************************************************************)
 (* Primitive tactics are handled here *)
 
-let prim_refiner ~check r sigma goal =
-  let env = Goal.V82.env sigma goal in
-  let cl = Goal.V82.concl sigma goal in
+let refiner ~check r =
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let env = Proofview.Goal.env gl in
+  let st = Proofview.Goal.state gl in
+  let cl = Proofview.Goal.concl gl in
   check_meta_variables env sigma r;
   let (sgl,cl',sigma,oterm) = mk_refgoals ~check env sigma [] cl r in
-  let sgl = List.rev sgl in
-  let sigma = Goal.V82.partial_solution env sigma goal (EConstr.of_constr oterm) in
-  { Evd.it = sgl; Evd.sigma = sigma; }
-
-let refiner ~check r { Evd.sigma = sigma; Evd.it = goal } =
-  prim_refiner ~check r sigma goal
-
-(* Profiling refiner *)
-let refiner ~check =
-  if Flags.profile then
-    let refiner_key = CProfile.declare_profile "refiner" in
-      CProfile.profile2 refiner_key (refiner ~check)
-  else refiner ~check
-
-let refiner ~check c = Proofview.V82.tactic ~nf_evars:false (refiner ~check c)
+  let map gl = Proofview.goal_with_state gl st in
+  let sgl = List.rev_map map sgl in
+  let sigma = Goal.V82.partial_solution env sigma (Proofview.Goal.goal gl) (EConstr.of_constr oterm) in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Proofview.Unsafe.tclSETGOALS sgl
+  end
