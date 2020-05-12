@@ -291,6 +291,30 @@ let parse_option_set opt =
     let v = String.sub opt (eqi+1) (len - eqi - 1) in
     to_opt_key (String.sub opt 0 eqi), Some v
 
+let warn_no_native_compiler =
+  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
+    Pp.(fun s -> strbrk "Native compiler is disabled," ++
+                   strbrk " -native-compiler " ++ strbrk s ++
+                   strbrk " option ignored.")
+
+let get_native_compiler s =
+  (* We use two boolean flags because the four states make sense, even if
+  only three are accessible to the user at the moment. The selection of the
+  produced artifact(s) (`.vo`, `.vio`, `.coq-native`, ...) should be done by
+  a separate flag, and the "ondemand" value removed. Once this is done, use
+  [get_bool] here. *)
+  let n = match s with
+    | ("yes" | "on") -> NativeOn {ondemand=false}
+    | "ondemand" -> NativeOn {ondemand=true}
+    | ("no" | "off") -> NativeOff
+    | _ ->
+       error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler") in
+  if not Coq_config.native_compiler && n <> NativeOff then
+    let () = warn_no_native_compiler s in
+    NativeOff
+  else
+    n
+
 (* Main parsing routine *)
 (*s Parsing of the command line *)
 
@@ -474,20 +498,7 @@ let parse_args ~help ~init arglist : t * string list =
       { oval with config = { oval.config with enable_VM = get_bool opt (next ()) }}
 
     |"-native-compiler" ->
-
-      (* We use two boolean flags because the four states make sense, even if
-      only three are accessible to the user at the moment. The selection of the
-      produced artifact(s) (`.vo`, `.vio`, `.coq-native`, ...) should be done by
-      a separate flag, and the "ondemand" value removed. Once this is done, use
-      [get_bool] here. *)
-      let native_compiler =
-        match (next ()) with
-        | ("yes" | "on") -> NativeOn {ondemand=false}
-        | "ondemand" -> NativeOn {ondemand=true}
-        | ("no" | "off") -> NativeOff
-        | _ ->
-          error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler")
-      in
+      let native_compiler = get_native_compiler (next ()) in
       { oval with config = { oval.config with native_compiler }}
 
     | "-set" ->
