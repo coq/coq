@@ -1,8 +1,14 @@
 The command has indeed failed with message:
 Bad type of value for this option: expected int, got string.
 The command has indeed failed with message:
-Bad type of value for this option: expected bool, got string.
+This is an option. A value must be provided.
 The command has indeed failed with message:
-Bad type of value for this option: expected bool, got int.
+Bad type of value for this option: expected string, got int.
 The command has indeed failed with message:
-Bad type of value for this option: expected bool, got int.
+This is an option. A value must be provided.
+The command has indeed failed with message:
+This is a flag. It does not take a value.
+The command has indeed failed with message:
+This is a flag. It does not take a value.
+The command has indeed failed with message:
+This option does not support the "Unset" command.
