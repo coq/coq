@@ -273,8 +273,8 @@ Proof.
   exact Permutation_length.
 Qed.
 
-Instance Permutation_Forall (P : A -> Prop) :
- Proper ((@Permutation A) ==> Basics.impl) (Forall P).
+Global Instance Permutation_Forall (P : A -> Prop) :
+ Proper ((@Permutation A) ==> Basics.impl) (Forall P) | 10.
 Proof.
   intros l1 l2 HP.
   induction HP; intro HF; auto.
@@ -283,8 +283,8 @@ Proof.
     inversion_clear HF2; auto.
 Qed.
 
-Instance Permutation_Exists (P : A -> Prop) :
- Proper ((@Permutation A) ==> Basics.impl) (Exists P).
+Global Instance Permutation_Exists (P : A -> Prop) :
+ Proper ((@Permutation A) ==> Basics.impl) (Exists P) | 10.
 Proof.
   intros l1 l2 HP.
   induction HP; intro HF; auto.
@@ -581,8 +581,8 @@ Proof.
   now contradiction (Hf x).
 Qed.
 
-Instance Permutation_flat_map (g : A -> list B) :
- Proper ((@Permutation A) ==> (@Permutation B)) (flat_map g).
+Global Instance Permutation_flat_map (g : A -> list B) :
+ Proper ((@Permutation A) ==> (@Permutation B)) (flat_map g) | 10.
 Proof.
   intros l1; induction l1; intros l2 HP.
   - now apply Permutation_nil in HP; subst.
@@ -773,7 +773,7 @@ Qed.
 
 End Permutation_alt.
 
-Instance Permutation_list_sum : Proper (@Permutation nat ==> eq) list_sum.
+Instance Permutation_list_sum : Proper (@Permutation nat ==> eq) list_sum | 10.
 Proof.
   intros l1 l2 HP; induction HP; simpl; intuition.
   - rewrite 2 (Nat.add_comm x).
@@ -781,7 +781,7 @@ Proof.
   - now transitivity (list_sum l').
 Qed.
 
-Instance Permutation_list_max : Proper (@Permutation nat ==> eq) list_max.
+Instance Permutation_list_max : Proper (@Permutation nat ==> eq) list_max | 10.
 Proof.
   intros l1 l2 HP; induction HP; simpl; intuition.
   - rewrite 2 (Nat.max_comm x).
@@ -806,7 +806,7 @@ Proof.
   now apply (perm_t_trans IHHP2).
 Qed.
 
-Instance Permutation_transp_equiv : Equivalence Permutation_transp.
+Global Instance Permutation_transp_equiv : Equivalence Permutation_transp | 100.
 Proof.
   split.
   - intros l; apply perm_t_refl.
