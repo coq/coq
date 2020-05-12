@@ -581,10 +581,19 @@ let prim_refiner r sigma goal =
   let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl r in
   let sgl = List.rev sgl in
   let sigma = Goal.V82.partial_solution env sigma goal (EConstr.of_constr oterm) in
-  (sgl, sigma)
+  { Evd.it = sgl; Evd.sigma = sigma; }
 
-let prim_refiner ~check r sigma goal =
+let refiner ~check r { Evd.sigma = sigma; Evd.it = goal } =
   if check then
     with_check (prim_refiner r sigma) goal
   else
     prim_refiner r sigma goal
+
+(* Profiling refiner *)
+let refiner ~check =
+  if Flags.profile then
+    let refiner_key = CProfile.declare_profile "refiner" in
+      CProfile.profile2 refiner_key (refiner ~check)
+  else refiner ~check
+
+let refiner ~check c = Proofview.V82.tactic ~nf_evars:false (refiner ~check c)

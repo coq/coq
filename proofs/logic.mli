@@ -26,7 +26,7 @@ open Evd
 
 (** The primitive refiner. *)
 
-val prim_refiner : check:bool -> constr -> evar_map -> Goal.goal -> Goal.goal list * evar_map
+val refiner : check:bool -> constr -> unit Proofview.tactic
 
 (** {6 Refiner errors. } *)
 
