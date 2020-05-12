@@ -82,34 +82,39 @@ Qed.
 (** * Order on booleans *)
 (************************)
 
-Definition leb (b1 b2:bool) :=
+#[ local ] Definition le (b1 b2:bool) :=
   match b1 with
     | true => b2 = true
     | false => True
   end.
-Hint Unfold leb: bool.
+Hint Unfold le: bool.
 
-Lemma leb_implb : forall b1 b2, leb b1 b2 <-> implb b1 b2 = true.
+Lemma le_implb : forall b1 b2, le b1 b2 <-> implb b1 b2 = true.
 Proof.
   destr_bool; intuition.
 Qed.
 
-Definition ltb (b1 b2:bool) :=
+#[deprecated(since="8.12",note="Use Bool.le instead.")]
+Notation leb := le (only parsing).
+#[deprecated(since="8.12",note="Use Bool.le_implb instead.")]
+Notation leb_implb := le_implb (only parsing).
+
+#[ local ] Definition lt (b1 b2:bool) :=
   match b1 with
     | true => False
     | false => b2 = true
   end.
-Hint Unfold ltb: bool.
+Hint Unfold lt: bool.
 
-Definition compareb (b1 b2 : bool) :=
+#[ local ] Definition compare (b1 b2 : bool) :=
   match b1, b2 with
    | false, true => Lt
    | true, false => Gt
    | _, _ => Eq
   end.
 
-Lemma compareb_spec : forall b1 b2,
-  CompareSpec (b1 = b2) (ltb b1 b2) (ltb b2 b1) (compareb b1 b2).
+Lemma compare_spec : forall b1 b2,
+  CompareSpec (b1 = b2) (lt b1 b2) (lt b2 b1) (compare b1 b2).
 Proof. destr_bool; auto. Qed.
 
 
@@ -935,8 +940,8 @@ Defined.
 
 (** Notations *)
 Module BoolNotations.
-Infix "<=" := leb : bool_scope.
-Infix "<" := ltb : bool_scope.
-Infix "?=" := compareb (at level 70) : bool_scope.
+Infix "<=" := le : bool_scope.
+Infix "<" := lt : bool_scope.
+Infix "?=" := compare (at level 70) : bool_scope.
 Infix "=?" := eqb (at level 70) : bool_scope.
 End BoolNotations.
