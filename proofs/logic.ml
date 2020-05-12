@@ -31,13 +31,11 @@ type refiner_error =
   | BadType of constr * constr * EConstr.t
   | UnresolvedBindings of Name.t list
   | CannotApply of constr * constr
-  | NotWellTyped of constr
   | NonLinearProof of constr
   | MetaInType of EConstr.constr
 
   (* Errors raised by the tactics *)
   | IntroNeedsProduct
-  | DoesNotOccurIn of constr * Id.t
   | NoSuchHyp of Id.t
 
 exception RefinerError of Environ.env * Evd.evar_map * refiner_error

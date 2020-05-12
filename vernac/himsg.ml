@@ -1112,15 +1112,8 @@ let explain_refiner_cannot_apply env sigma t harg =
   pr_lconstr_env env sigma t ++ spc () ++ str "could not be applied to" ++ brk(1,1) ++
   pr_lconstr_env env sigma harg ++ str "."
 
-let explain_refiner_not_well_typed env sigma c =
-  str "The term " ++ pr_lconstr_env env sigma c ++ str " is not well-typed."
-
 let explain_intro_needs_product () =
   str "Introduction tactics needs products."
-
-let explain_does_not_occur_in env sigma c hyp =
-  str "The term" ++ spc () ++ pr_lconstr_env env sigma c ++ spc () ++
-  str "does not occur in" ++ spc () ++ Id.print hyp ++ str "."
 
 let explain_non_linear_proof env sigma c =
   str "Cannot refine with term" ++ brk(1,1) ++ pr_lconstr_env env sigma c ++
@@ -1137,9 +1130,7 @@ let explain_refiner_error env sigma = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type env sigma arg ty conclty
   | UnresolvedBindings t -> explain_refiner_unresolved_bindings t
   | CannotApply (t,harg) -> explain_refiner_cannot_apply env sigma t harg
-  | NotWellTyped c -> explain_refiner_not_well_typed env sigma c
   | IntroNeedsProduct -> explain_intro_needs_product ()
-  | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in env sigma c hyp
   | NonLinearProof c -> explain_non_linear_proof env sigma c
   | MetaInType c -> explain_meta_in_type env sigma c
   | NoSuchHyp id -> explain_no_such_hyp id
