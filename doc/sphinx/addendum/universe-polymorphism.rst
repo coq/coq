@@ -195,7 +195,7 @@ constraints by prefixing the level names with symbols.
 Because inductive subtypings are only produced by comparing inductives
 to themselves with universes changed, they amount to variance
 information: each universe is either invariant, covariant or
-irrelevant (there are no contravariant subtypings in Coq),
+irrelevant (there are no contravariant subtypings in |Coq|),
 respectively represented by the symbols `=`, `+` and `*`.
 
 Here we see that :g:`list` binds an irrelevant universe, so any two
@@ -414,6 +414,19 @@ universes are the ones declared. In the term and in general in proof
 mode, introduced universe names can be referred to in terms. Note that
 local universe names shadow global universe names. During a proof, one
 can use :cmd:`Show Universes` to display the current context of universes.
+
+It is possible to provide only some universe levels and let |Coq| infer the others
+by adding a :g:`+` in the list of bound universe levels:
+
+.. coqtop:: all
+
+   Fail Definition foobar@{u} : Type@{u} := Type.
+   Definition foobar@{u +} : Type@{u} := Type.
+   Set Printing Universes.
+   Print foobar.
+
+This can be used to find which universes need to be explicitly bound in a given
+definition.
 
 Definitions can also be instantiated explicitly, giving their full
 instance:
