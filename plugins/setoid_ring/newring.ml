@@ -690,15 +690,13 @@ let ring_lookup (f : Value.t) lH rl t =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
-    try (* find_ring_strucure can raise an exception *)
-      let rl = make_args_list sigma rl t in
-      let evdref = ref sigma in
-      let e = find_ring_structure env sigma rl in
-      let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.ring_carrier) rl) in
-      let lH = carg (make_hyp_list env evdref lH) in
-      let ring = ltac_ring_structure e in
-      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (Value.apply f (ring@[lH;rl]))
-    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+    let rl = make_args_list sigma rl t in
+    let evdref = ref sigma in
+    let e = find_ring_structure env sigma rl in
+    let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.ring_carrier) rl) in
+    let lH = carg (make_hyp_list env evdref lH) in
+    let ring = ltac_ring_structure e in
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (Value.apply f (ring@[lH;rl]))
   end
 
 (***********************************************************************)
@@ -984,13 +982,11 @@ let field_lookup (f : Value.t) lH rl t =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
-    try
-      let rl = make_args_list sigma rl t in
-      let evdref = ref sigma in
-      let e = find_field_structure env sigma rl in
-      let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.field_carrier) rl) in
-      let lH = carg (make_hyp_list env evdref lH) in
-      let field = ltac_field_structure e in
-      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (Value.apply f (field@[lH;rl]))
-    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+    let rl = make_args_list sigma rl t in
+    let evdref = ref sigma in
+    let e = find_field_structure env sigma rl in
+    let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.field_carrier) rl) in
+    let lH = carg (make_hyp_list env evdref lH) in
+    let field = ltac_field_structure e in
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (Value.apply f (field@[lH;rl]))
   end
