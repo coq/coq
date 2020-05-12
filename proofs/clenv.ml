@@ -321,10 +321,6 @@ let clenv_unique_resolver_gen ?(flags=default_unify_flags ()) clenv concl =
     clenv_unify CUMUL ~flags
       (meta_reducible_instance clenv.evd clenv.templtyp) concl clenv
 
-let old_clenv_unique_resolver ?flags clenv gl =
-  let concl = Goal.V82.concl clenv.evd (sig_it gl) in
-  clenv_unique_resolver_gen ?flags clenv concl
-
 let clenv_unique_resolver ?flags clenv gl =
   let concl = Proofview.Goal.concl gl in
   clenv_unique_resolver_gen ?flags clenv concl
