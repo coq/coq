@@ -1835,6 +1835,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       Lemma induction_test : forall n:nat, n = n -> n <= n.
       intros n H.
       induction n.
+      exact (le_n 0).
 
 .. exn:: Not an inductive product.
    :undocumented:
