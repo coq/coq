@@ -1707,12 +1707,42 @@ let is_eq_x gl x d =
   with Constr_matching.PatternMatchingFailure ->
     ()
 
+exception FoundDepInGlobal of Id.t option * GlobRef.t
+
+let test_non_indirectly_dependent_section_variable gl x =
+  let env = Proofview.Goal.env gl in
+  let sigma = Tacmach.New.project gl in
+  let hyps = Proofview.Goal.hyps gl in
+  let concl = Proofview.Goal.concl gl in
+  List.iter (fun decl ->
+    NamedDecl.iter_constr (fun c ->
+      match occur_var_indirectly env sigma x c with
+      | Some gr -> raise (FoundDepInGlobal (Some (NamedDecl.get_id decl), gr))
+      | None -> ()) decl) hyps;
+  match occur_var_indirectly env sigma x concl with
+    | Some gr -> raise (FoundDepInGlobal (None, gr))
+    | None -> ()
+
+let check_non_indirectly_dependent_section_variable gl x =
+  try test_non_indirectly_dependent_section_variable gl x
+  with FoundDepInGlobal (pos,gr) ->
+    let where = match pos with
+      | Some id -> str "hypothesis " ++ Id.print id
+      | None -> str "the conclusion of the goal" in
+    user_err ~hdr:"Subst"
+      (strbrk "Section variable " ++ Id.print x ++
+       strbrk " occurs implicitly in global declaration " ++ Printer.pr_global gr ++
+       strbrk " present in " ++ where ++ strbrk ".")
+
+let is_non_indirectly_dependent_section_variable gl z =
+  try test_non_indirectly_dependent_section_variable gl z; true
+  with FoundDepInGlobal (pos,gr) -> false
+
 (* Rewrite "hyp:x=rhs" or "hyp:rhs=x" (if dir=false) everywhere and
    erase hyp and x; proceed by generalizing all dep hyps *)
 
 let subst_one dep_proof_ok x (hyp,rhs,dir) =
   Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let hyps = Proofview.Goal.hyps gl in
   let concl = Proofview.Goal.concl gl in
@@ -1721,7 +1751,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
     List.rev (pi3 (List.fold_right (fun dcl (dest,deps,allhyps) ->
       let id = NamedDecl.get_id dcl in
       if not (Id.equal id hyp)
-         && List.exists (fun y -> occur_var_in_decl env sigma y dcl) deps
+         && List.exists (fun y -> local_occur_var_in_decl sigma y dcl) deps
       then
         let id_dest = if !regular_subst_tactic then dest else MoveLast in
         (dest,id::deps,(id_dest,id)::allhyps)
@@ -1730,7 +1760,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
       hyps
       (MoveBefore x,[x],[]))) in (* In practice, no dep hyps before x, so MoveBefore x is good enough *)
   (* Decides if x appears in conclusion *)
-  let depconcl = occur_var env sigma x concl in
+  let depconcl = local_occur_var sigma x concl in
   let need_rewrite = not (List.is_empty dephyps) || depconcl in
   tclTHENLIST
     ((if need_rewrite then
@@ -1761,6 +1791,8 @@ let subst_one_var dep_proof_ok x =
             (str "Cannot find any non-recursive equality over " ++ Id.print x ++
                str".")
         with FoundHyp res -> res in
+      if is_section_variable x then
+        check_non_indirectly_dependent_section_variable gl x;
       subst_one dep_proof_ok x res
   end
 
@@ -1794,53 +1826,37 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
 
   if !regular_subst_tactic then
 
-  (* First step: find hypotheses to treat in linear time *)
-  let find_equations gl =
-    let env = Proofview.Goal.env gl in
-    let sigma = project gl in
-    let find_eq_data_decompose = pf_apply find_eq_data_decompose gl in
-    let select_equation_name decl =
+    (* Find hypotheses to treat in linear time *)
+    let process hyp =
+      Proofview.Goal.enter begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = project gl in
+      let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
       try
-        let lbeq,u,(_,x,y) = find_eq_data_decompose (NamedDecl.get_type decl) in
+        let lbeq,u,(_,x,y) = pf_apply find_eq_data_decompose gl c in
         let u = EInstance.kind sigma u in
         let eq = Constr.mkRef (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match EConstr.kind sigma x, EConstr.kind sigma y with
-        | Var z, _  when not (is_evaluable env (EvalVarRef z)) ->
-            Some (NamedDecl.get_id decl)
-        | _, Var z when not (is_evaluable env (EvalVarRef z)) ->
-            Some (NamedDecl.get_id decl)
+        | Var x, Var y when Id.equal x y ->
+            Proofview.tclUNIT ()
+        | Var x', _ when not (Termops.local_occur_var sigma x' y) &&
+                        not (is_evaluable env (EvalVarRef x')) &&
+                        is_non_indirectly_dependent_section_variable gl x' ->
+            subst_one flags.rewrite_dependent_proof x' (hyp,y,true)
+        | _, Var y' when not (Termops.local_occur_var sigma y' x) &&
+                        not (is_evaluable env (EvalVarRef y')) &&
+                        is_non_indirectly_dependent_section_variable gl y' ->
+            subst_one flags.rewrite_dependent_proof y' (hyp,x,false)
         | _ ->
-            None
-      with Constr_matching.PatternMatchingFailure -> None
+            Proofview.tclUNIT ()
+      with Constr_matching.PatternMatchingFailure ->
+         Proofview.tclUNIT ()
+        end
     in
-    let hyps = Proofview.Goal.hyps gl in
-    List.rev (List.map_filter select_equation_name hyps)
-  in
-
-  (* Second step: treat equations *)
-  let process hyp =
     Proofview.Goal.enter begin fun gl ->
-    let sigma = project gl in
-    let env = Proofview.Goal.env gl in
-    let find_eq_data_decompose = pf_apply find_eq_data_decompose gl in
-    let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
-    let _,_,(_,x,y) = find_eq_data_decompose c in
-    (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
-    if EConstr.eq_constr sigma x y then Proofview.tclUNIT () else
-      match EConstr.kind sigma x, EConstr.kind sigma y with
-      | Var x', _ when not (Termops.local_occur_var sigma x' y) && not (is_evaluable env (EvalVarRef x')) ->
-          subst_one flags.rewrite_dependent_proof x' (hyp,y,true)
-      | _, Var y' when not (Termops.local_occur_var sigma y' x) && not (is_evaluable env (EvalVarRef y')) ->
-          subst_one flags.rewrite_dependent_proof y' (hyp,x,false)
-      | _ ->
-          Proofview.tclUNIT ()
+      tclMAP process (List.rev (List.map NamedDecl.get_id (Proofview.Goal.hyps gl)))
     end
-  in
-  Proofview.Goal.enter begin fun gl ->
-    let ids = find_equations gl in
-    tclMAP process ids
-  end
 
   else
 

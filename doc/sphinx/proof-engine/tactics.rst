@@ -2832,6 +2832,11 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
    If :n:`@ident` is a local definition of the form :n:`@ident := t`, it is also
    unfolded and cleared.
 
+   If :n:`@ident` is a section variable it is expected to have no
+   indirect occurrences in the goal, i.e. that no global declarations
+   implicitly depending on the section variable must be present in the
+   goal.
+
    .. note::
       + When several hypotheses have the form :n:`@ident = t` or :n:`t = @ident`, the
         first one is used.
@@ -2845,9 +2850,11 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
 
    .. tacv:: subst
 
-      This applies subst repeatedly from top to bottom to all identifiers of the
+      This applies :tacn:`subst` repeatedly from top to bottom to all hypotheses of the
       context for which an equality of the form :n:`@ident = t` or :n:`t = @ident`
-      or :n:`@ident := t` exists, with :n:`@ident` not occurring in ``t``.
+      or :n:`@ident := t` exists, with :n:`@ident` not occurring in
+      ``t`` and :n:`@ident` not a section variable with indirect
+      dependencies in the goal.
 
    .. flag:: Regular Subst Tactic
 
@@ -2872,6 +2879,15 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
       with `u′` not a variable. Finally, it preserves the initial order of
       hypotheses, which without the flag it may break.
       default.
+
+   .. exn:: Cannot find any non-recursive equality over :n:`@ident`.
+      :undocumented:
+
+   .. exn:: Section variable :n:`@ident` occurs implicitly in global declaration :n:`@qualid` present in hypothesis :n:`@ident`.
+            Section variable :n:`@ident` occurs implicitly in global declaration :n:`@qualid` present in the conclusion.
+
+      Raised when the variable is a section variable with indirect
+      dependencies in the goal.
 
 
 .. tacn:: stepl @term

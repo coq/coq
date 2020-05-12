@@ -803,23 +803,29 @@ let occur_evar sigma n c =
 
 let occur_in_global env id constr =
   let vars = vars_of_global env constr in
-  if Id.Set.mem id vars then raise Occur
+  Id.Set.mem id vars
 
 let occur_var env sigma id c =
   let rec occur_rec c =
     match EConstr.destRef sigma c with
-    | gr, _ -> occur_in_global env id gr
+    | gr, _ -> if occur_in_global env id gr then raise Occur
     | exception DestKO -> EConstr.iter sigma occur_rec c
   in
   try occur_rec c; false with Occur -> true
 
+exception OccurInGlobal of GlobRef.t
+
+let occur_var_indirectly env sigma id c =
+  let var = GlobRef.VarRef id in
+  let rec occur_rec c =
+    match EConstr.destRef sigma c with
+    | gr, _ -> if not (GlobRef.equal gr var) && occur_in_global env id gr then raise (OccurInGlobal gr)
+    | exception DestKO -> EConstr.iter sigma occur_rec c
+  in
+  try occur_rec c; None with OccurInGlobal gr -> Some gr
+
 let occur_var_in_decl env sigma hyp decl =
-  let open NamedDecl in
-  match decl with
-    | LocalAssum (_,typ) -> occur_var env sigma hyp typ
-    | LocalDef (_, body, typ) ->
-        occur_var env sigma hyp typ ||
-        occur_var env sigma hyp body
+  NamedDecl.exists (occur_var env sigma hyp) decl
 
 let local_occur_var sigma id c =
   let rec occur c = match EConstr.kind sigma c with
@@ -827,6 +833,9 @@ let local_occur_var sigma id c =
   | _ -> EConstr.iter sigma occur c
   in
   try occur c; false with Occur -> true
+
+let local_occur_var_in_decl sigma hyp decl =
+  NamedDecl.exists (local_occur_var sigma hyp) decl
 
   (* returns the list of free debruijn indices in a term *)
 
