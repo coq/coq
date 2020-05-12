@@ -95,6 +95,12 @@ let () =
       optread  = (fun () -> !search_output_name_only);
       optwrite = (:=) search_output_name_only }
 
+let deprecated_searchhead =
+  CWarnings.create
+    ~name:"deprecated-searchhead"
+    ~category:"deprecated"
+    (fun () -> Pp.str("SearchHead is deprecated. Use the headconcl: clause of Search instead."))
+
 let interp_search env sigma s r =
   let r = interp_search_restriction r in
   let get_pattern c = snd (Constrintern.intern_constr_pattern env sigma c) in
@@ -123,6 +129,7 @@ let interp_search env sigma s r =
   | SearchRewrite c ->
       (Search.search_rewrite env sigma (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchHead c ->
+      deprecated_searchhead ();
       (Search.search_by_head env sigma (get_pattern c) r |> Search.prioritize_search) pr_search
   | Search sl ->
       (Search.search env sigma (List.map (interp_search_request env Evd.(from_env env)) sl) r |>
