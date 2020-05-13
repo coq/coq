@@ -86,7 +86,7 @@ let rec interp (ist : environment) = function
 | GTacVar id -> return (get_var ist id)
 | GTacRef kn ->
   let data = get_ref ist kn in
-  return (eval_pure (Some kn) data)
+  return (eval_pure Id.Map.empty (Some kn) data)
 | GTacFun (ids, e) ->
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
   let f = interp_app cls in
@@ -187,26 +187,41 @@ and interp_set ist e p r =
   let () = Valexpr.set_field e p r in
   return (Valexpr.make_int 0)
 
-and eval_pure kn = function
+and eval_pure bnd kn = function
+| GTacVar id -> Id.Map.get id bnd
 | GTacAtm (AtmInt n) -> Valexpr.make_int n
 | GTacRef kn ->
   let { Tac2env.gdata_expr = e } =
     try Tac2env.interp_global kn
     with Not_found -> assert false
   in
-  eval_pure (Some kn) e
+  eval_pure bnd (Some kn) e
 | GTacFun (na, e) ->
-  let cls = { clos_ref = kn; clos_env = Id.Map.empty; clos_var = na; clos_exp = e } in
+  let cls = { clos_ref = kn; clos_env = bnd; clos_var = na; clos_exp = e } in
   let f = interp_app cls in
   Tac2ffi.of_closure f
 | GTacCst (_, n, []) -> Valexpr.make_int n
-| GTacCst (_, n, el) -> Valexpr.make_block n (Array.map_of_list eval_unnamed el)
-| GTacOpn (kn, el) -> Tac2ffi.of_open (kn, Array.map_of_list eval_unnamed el)
-| GTacAtm (AtmStr _) | GTacLet _ | GTacVar _ | GTacSet _
+| GTacCst (_, n, el) -> Valexpr.make_block n (eval_pure_args bnd el)
+| GTacOpn (kn, el) -> Tac2ffi.of_open (kn, eval_pure_args bnd el)
+| GTacLet (isrec, vals, body) ->
+  let () = assert (not isrec) in
+  let fold accu (na, e) = match na with
+  | Anonymous ->
+    (* No need to evaluate, we know this is a value *)
+    accu
+  | Name id ->
+    let v = eval_pure bnd None e in
+    Id.Map.add id v accu
+  in
+  let bnd = List.fold_left fold bnd vals in
+  eval_pure bnd kn body
+| GTacAtm (AtmStr _) | GTacSet _
 | GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ | GTacWth _ ->
   anomaly (Pp.str "Term is not a syntactical value")
 
-and eval_unnamed e = eval_pure None e
+and eval_pure_args bnd args =
+  let map e = eval_pure bnd None e in
+  Array.map_of_list map args
 
 
 (** Cross-boundary hacks. *)

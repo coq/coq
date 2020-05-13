@@ -336,7 +336,7 @@ let register_ltac ?(local = false) ?(mut = false) isrec tactics =
     if isrec then inline_rec_tactic tactics else tactics
   in
   let map ({loc;v=id}, e) =
-    let (e, t) = intern ~strict:true e in
+    let (e, t) = intern ~strict:true [] e in
     let () =
       if not (is_value e) then
         user_err ?loc (str "Tactic definition must be a syntactical value")
@@ -728,19 +728,26 @@ let register_notation ?(local = false) tkn lev body = match tkn, lev with
 type redefinition = {
   redef_kn : ltac_constant;
   redef_body : glb_tacexpr;
+  redef_old : Id.t option;
 }
 
 let perform_redefinition (_, redef) =
   let kn = redef.redef_kn in
   let data = Tac2env.interp_global kn in
-  let data = { data with Tac2env.gdata_expr = redef.redef_body } in
+  let body = match redef.redef_old with
+  | None -> redef.redef_body
+  | Some id ->
+    (* Rebind the old value with a let-binding *)
+    GTacLet (false, [Name id, data.Tac2env.gdata_expr], redef.redef_body)
+  in
+  let data = { data with Tac2env.gdata_expr = body } in
   Tac2env.define_global kn data
 
 let subst_redefinition (subst, redef) =
   let kn = Mod_subst.subst_kn subst redef.redef_kn in
   let body = Tac2intern.subst_expr subst redef.redef_body in
   if kn == redef.redef_kn && body == redef.redef_body then redef
-  else { redef_kn = kn; redef_body = body }
+  else { redef_kn = kn; redef_body = body; redef_old = redef.redef_old }
 
 let classify_redefinition o = Substitute o
 
@@ -751,7 +758,7 @@ let inTac2Redefinition : redefinition -> obj =
      subst_function = subst_redefinition;
      classify_function = classify_redefinition }
 
-let register_redefinition ?(local = false) qid e =
+let register_redefinition ?(local = false) qid old e =
   let kn =
     try Tac2env.locate_ltac qid
     with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown tactic " ++ pr_qualid qid)
@@ -766,7 +773,11 @@ let register_redefinition ?(local = false) qid e =
     if not (data.Tac2env.gdata_mutable) then
       user_err ?loc:qid.CAst.loc (str "The tactic " ++ pr_qualid qid ++ str " is not declared as mutable")
   in
-  let (e, t) = intern ~strict:true e in
+  let ctx = match old with
+  | None -> []
+  | Some { CAst.v = id } -> [id, data.Tac2env.gdata_type]
+  in
+  let (e, t) = intern ~strict:true ctx e in
   let () =
     if not (is_value e) then
       user_err ?loc:qid.CAst.loc (str "Tactic definition must be a syntactical value")
@@ -777,15 +788,17 @@ let register_redefinition ?(local = false) qid e =
       user_err ?loc:qid.CAst.loc (str "Type " ++ pr_glbtype name (snd t) ++
         str " is not a subtype of " ++ pr_glbtype name (snd data.Tac2env.gdata_type))
   in
+  let old = Option.map (fun { CAst.v = id } -> id) old in
   let def = {
     redef_kn = kn;
     redef_body = e;
+    redef_old = old;
   } in
   Lib.add_anonymous_leaf (inTac2Redefinition def)
 
 let perform_eval ~pstate e =
   let env = Global.env () in
-  let (e, ty) = Tac2intern.intern ~strict:false e in
+  let (e, ty) = Tac2intern.intern ~strict:false [] e in
   let v = Tac2interp.interp Tac2interp.empty_environment e in
   let selector, proof =
     match pstate with
@@ -818,7 +831,7 @@ let register_struct ?local str = match str with
 | StrTyp (isrec, t) -> register_type ?local isrec t
 | StrPrm (id, t, ml) -> register_primitive ?local id t ml
 | StrSyn (tok, lev, e) -> register_notation ?local tok lev e
-| StrMut (qid, e) -> register_redefinition ?local qid e
+| StrMut (qid, old, e) -> register_redefinition ?local qid old e
 
 (** Toplevel exception *)
 
@@ -913,7 +926,7 @@ let solve ~pstate default tac =
 
 let call ~pstate ~default e =
   let loc = e.loc in
-  let (e, t) = intern ~strict:false e in
+  let (e, t) = intern ~strict:false [] e in
   let () = check_unit ?loc t in
   let tac = Tac2interp.interp Tac2interp.empty_environment e in
   solve ~pstate default (Proofview.tclIGNORE tac)

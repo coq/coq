@@ -396,11 +396,13 @@ let is_pure_constructor kn =
 
 let rec is_value = function
 | GTacAtm (AtmInt _) | GTacVar _ | GTacRef _ | GTacFun _ -> true
-| GTacAtm (AtmStr _) | GTacApp _ | GTacLet _ -> false
+| GTacAtm (AtmStr _) | GTacApp _ | GTacLet (true, _, _) -> false
 | GTacCst (Tuple _, _, el) -> List.for_all is_value el
 | GTacCst (_, _, []) -> true
 | GTacOpn (_, el) -> List.for_all is_value el
 | GTacCst (Other kn, _, el) -> is_pure_constructor kn && List.for_all is_value el
+| GTacLet (false, bnd, e) ->
+  is_value e && List.for_all (fun (_, e) -> is_value e) bnd
 | GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _
 | GTacWth _ -> false
 
@@ -457,6 +459,10 @@ let abstract_var env (t : UF.elt glb_typexpr) : mix_type_scheme =
 let monomorphic (t : UF.elt glb_typexpr) : mix_type_scheme =
   let subst id = GTypVar (GVar id) in
   (0, subst_type subst t)
+
+let polymorphic ((n, t) : type_scheme) : mix_type_scheme =
+  let subst id = GTypVar (LVar id) in
+  (n, subst_type subst t)
 
 let warn_not_unit =
   CWarnings.create ~name:"not-unit" ~category:"ltac"
@@ -1138,9 +1144,13 @@ let normalize env (count, vars) (t : UF.elt glb_typexpr) =
   in
   subst_type subst t
 
-let intern ~strict e =
+type context = (Id.t * type_scheme) list
+
+let intern ~strict ctx e =
   let env = empty_env () in
   let env = if strict then env else { env with env_str = false } in
+  let fold accu (id, t) = push_name (Name id) (polymorphic t) accu in
+  let env = List.fold_left fold env ctx in
   let (e, t) = intern_rec env e in
   let count = ref 0 in
   let vars = ref UF.Map.empty in

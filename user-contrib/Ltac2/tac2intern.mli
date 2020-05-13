@@ -12,7 +12,9 @@ open Names
 open Mod_subst
 open Tac2expr
 
-val intern : strict:bool -> raw_tacexpr -> glb_tacexpr * type_scheme
+type context = (Id.t * type_scheme) list
+
+val intern : strict:bool -> context -> raw_tacexpr -> glb_tacexpr * type_scheme
 val intern_typedef : (KerName.t * int) Id.Map.t -> raw_quant_typedef -> glb_quant_typedef
 val intern_open_type : raw_typexpr -> type_scheme
 

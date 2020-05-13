@@ -289,7 +289,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2def_mut:
-    [ [ "Set"; qid = Prim.qualid; ":="; e = tac2expr -> { StrMut (qid, e) } ] ]
+    [ [ "Set"; qid = Prim.qualid; old = OPT [ "as"; id = locident -> { id } ]; ":="; e = tac2expr -> { StrMut (qid, old, e) } ] ]
   ;
   tac2typ_knd:
     [ [ t = tac2type -> { CTydDef (Some t) }

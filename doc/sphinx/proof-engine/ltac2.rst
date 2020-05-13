@@ -213,25 +213,63 @@ There is dedicated syntax for list and array literals.
 Ltac Definitions
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Ltac2 {? mutable} {? rec} @lident := @ltac2_term
+.. cmd:: Ltac2 {? mutable} {? rec} @lident := @ltac2_value
    :name: Ltac2
 
    This command defines a new global Ltac2 value.
 
-   For semantic reasons, the body of the Ltac2 definition must be a syntactical
-   value, that is, a function, a constant or a pure constructor recursively applied to
-   values.
+   The body of an Ltac2 definition is required to be a syntactical value
+   that is, a function, a constant, a pure constructor recursively applied to
+   values or a (non-recursive) let binding of a value in a value.
+
+   .. productionlist:: coq
+      ltac2_value: fun `ltac2_var` => `ltac2_term`
+                       : `ltac2_qualid`
+                       : `ltac2_constructor` `ltac2_value` ... `ltac2_value`
+                       : `ltac2_var`
+                       : let `ltac2_var` := `ltac2_value` in `ltac2_value`
 
    If ``rec`` is set, the tactic is expanded into a recursive binding.
 
    If ``mutable`` is set, the definition can be redefined at a later stage (see below).
 
-.. cmd:: Ltac2 Set @qualid := @ltac2_term
+.. cmd:: Ltac2 Set @qualid {? as @lident} := @ltac2_term
    :name: Ltac2 Set
 
    This command redefines a previous ``mutable`` definition.
    Mutable definitions act like dynamic binding, i.e. at runtime, the last defined
    value for this entry is chosen. This is useful for global flags and the like.
+   The previous value of the binding can be optionally accessed using the `as`
+   binding syntax.
+
+   .. example:: Dynamic nature of mutable cells
+
+      .. coqtop:: all
+
+         Ltac2 mutable x := true.
+         Ltac2 y := x.
+         Ltac2 Eval y.
+         Ltac2 Set x := false.
+         Ltac2 Eval y.
+
+   .. example:: Interaction with recursive calls
+
+
+      .. coqtop:: all
+
+         Ltac2 mutable rec f b := match b with true => 0 | _ => f true end.
+         Ltac2 Set f := fun b =>
+                  match b with true => 1 | _ => f true end.
+         Ltac2 Eval (f false).
+         Ltac2 Set f as oldf := fun b =>
+                  match b with true => 2 | _ => oldf false end.
+         Ltac2 Eval (f false).
+
+      In the definition, the `f` in the body is resolved statically
+      because the definition is marked recursive. In the first re-definition,
+      the `f` in the body is resolved dynamically. This is witnessed by
+      the second re-definition.
+
 
 Reduction
 ~~~~~~~~~

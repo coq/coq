@@ -168,7 +168,7 @@ type strexpr =
   (** External definition *)
 | StrSyn of sexpr list * int option * raw_tacexpr
   (** Syntactic extensions *)
-| StrMut of qualid * raw_tacexpr
+| StrMut of qualid * Names.lident option * raw_tacexpr
   (** Redefinition of mutable globals *)
 
 (** {5 Dynamic semantics} *)
