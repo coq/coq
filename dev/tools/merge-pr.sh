@@ -49,10 +49,29 @@ ask_confirmation() {
   fi
 }
 
+curl_paginate() {
+  # as per https://developer.github.com/v3/guides/traversing-with-pagination/#changing-the-number-of-items-received, GitHub will never give us more than 100
+  url="$1?per_page=100"
+  # we search for something like 'page=34>; rel="last"' to get the number of pages, as per https://developer.github.com/v3/guides/traversing-with-pagination/#changing-the-number-of-items-received
+  url_info="$(curl -sI "${url}")"
+  page_count="$(echo "${url_info}" | grep -o 'page=\([0-9]*\)>; rel="last"' | grep -o '[0-9]*')"
+  if [ -z "${page_count}" ]; then
+    page_count=1
+  fi
+  for page in $(seq 1 ${page_count}); do
+    curl -s "${url}&page=${page}"
+  done
+}
+
+curl_paginate_array() {
+  curl_paginate "$@" | jq '[.[]]' # we concatenate the arrays
+}
+
 check_util jq
 check_util curl
 check_util git
 check_util gpg
+check_util grep
 
 # command line parsing
 
@@ -203,7 +222,7 @@ fi
 # Generate commit message
 
 info "Fetching review data"
-reviews=$(curl -s "$API/pulls/$PR/reviews")
+reviews=$(curl_paginate_array "$API/pulls/$PR/reviews")
 msg="Merge PR #$PR: $TITLE"
 
 has_state() {
