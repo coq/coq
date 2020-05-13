@@ -183,7 +183,7 @@ let rec cs_pattern_of_constr env t =
     let patt, n, args = cs_pattern_of_constr env f in
     patt, n, args @ Array.to_list vargs
   | Rel n -> Default_cs, Some n, []
-  | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
+  | Prod (_,_,_) -> Prod_cs, None, [t]
   | Proj (p, c) ->
     let { Environ.uj_type = ty } = Typeops.infer env c in
     let _, params = Inductive.find_rectype env ty in
@@ -243,7 +243,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
 
 let pr_cs_pattern = function
     Const_cs c -> Nametab.pr_global_env Id.Set.empty c
-  | Prod_cs -> str "_ -> _"
+  | Prod_cs -> str "forall _, _"
   | Default_cs -> str "_"
   | Sort_cs s -> Sorts.pr_sort_family s
 

@@ -70,3 +70,13 @@ Section W.
   Check (refl_equal _ : l _ = x2).
 End W.
 Fail Check (refl_equal _ : l _ = x2).
+
+
+
+(* Dependent function fields *)
+Section DepProd.
+  Structure hello := { hello_key : Type }.
+  Canonical Structure hello_dep := {| hello_key := forall x : nat, x = x |}.
+
+  Example ex_hello := let h := _ in fun f : hello_key h => (f : forall x : nat, x = x) 1.
+End DepProd.
