@@ -111,3 +111,11 @@ Warning: The format modifier is irrelevant for only parsing rules.
 File "stdin", line 280, characters 0-63:
 Warning: The only parsing modifier has no effect in Reserved Notation.
 [irrelevant-reserved-notation-only-parsing,parsing]
+fun x : nat => U (S x)
+     : nat -> nat
+V tt
+     : unit * (unit -> unit)
+fun x : nat => V x
+     : forall x : nat, nat * (?T -> ?T)
+where
+?T : [x : nat  x0 : ?T |- Type] (x0 cannot be used)

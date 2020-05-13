@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Util
 open Pp
 open CErrors
 open Names
@@ -82,16 +81,9 @@ let in_syntax_constant : (bool * syndef) -> obj =
     subst_function = subst_syntax_constant;
     classify_function = classify_syntax_constant }
 
-type syndef_interpretation = (Id.t * subscopes) list * notation_constr
-
-(* Coercions to the general format of notation that also supports
-   variables bound to list of expressions *)
-let in_pat (ids,ac) = (List.map (fun (id,sc) -> (id,((Constrexpr.InConstrEntrySomeLevel,sc),NtnTypeConstr))) ids,ac)
-let out_pat (ids,ac) = (List.map (fun (id,((_,sc),typ)) -> (id,sc)) ids,ac)
-
 let declare_syntactic_definition ~local deprecation id ~onlyparsing pat =
   let syndef =
-    { syndef_pattern = in_pat pat;
+    { syndef_pattern = pat;
       syndef_onlyparsing = onlyparsing;
       syndef_deprecation = deprecation;
     }
@@ -106,14 +98,12 @@ let warn_deprecated_syntactic_definition =
 
 let search_syntactic_definition ?loc kn =
   let syndef = KNmap.find kn !syntax_table in
-  let def = out_pat syndef.syndef_pattern in
   Option.iter (fun d -> warn_deprecated_syntactic_definition ?loc (kn,d)) syndef.syndef_deprecation;
-  def
+  syndef.syndef_pattern
 
 let search_filtered_syntactic_definition ?loc filter kn =
   let syndef = KNmap.find kn !syntax_table in
-  let def = out_pat syndef.syndef_pattern in
-  let res = filter def in
+  let res = filter syndef.syndef_pattern in
   if Option.has_some res then
     Option.iter (fun d -> warn_deprecated_syntactic_definition ?loc (kn,d)) syndef.syndef_deprecation;
   res

@@ -280,3 +280,13 @@ Notation "###" := 0 (at level 0, only parsing, format "###").
 Reserved Notation "##" (at level 0, only parsing, format "##").
 
 End N.
+
+Module O.
+
+Notation U t := (match t with 0 => 0 | S t => t | _ => 0 end).
+Check fun x => U (S x).
+Notation V t := (t,fun t => t).
+Check V tt.
+Check fun x : nat => V x.
+
+End O.
