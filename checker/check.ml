@@ -290,11 +290,6 @@ let name_clash_message dir mdir f =
   pr_dirpath mdir ++ spc () ++ str "and not library" ++ spc() ++
   pr_dirpath dir
 
-let caml_version_mismatch s f =
-  str ("The file " ^ f ^ " was compiled with OCaml") ++ spc () ++
-  str s ++ spc () ++ str "while this instance of Coq was compiled with OCaml" ++
-  spc() ++ str Coq_config.caml_version
-
 type intern_mode = Rec | Root | Dep (* Rec = standard, Root = -norec, Dep = dependency of norec *)
 
 (* Dependency graph *)
@@ -351,9 +346,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let () = close_in ch in
       let ch = open_in_bin f in
       let () = close_in ch in
-      if Coq_config.caml_version <> sd.md_ocaml then
-        user_err ~hdr:"intern_from_file"
-          (caml_version_mismatch sd.md_ocaml f);
+      let () = System.check_caml_version ~caml:sd.md_ocaml ~file:f in
       if dir <> sd.md_name then
         user_err ~hdr:"intern_from_file"
           (name_clash_message dir sd.md_name f);

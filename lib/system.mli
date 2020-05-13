@@ -88,6 +88,8 @@ val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
 val marshal_out : out_channel -> 'a -> unit
 val marshal_in : string -> in_channel -> 'a
 
+val check_caml_version : caml:string -> file:string -> unit
+
 (** {6 Time stamps.} *)
 
 type time
