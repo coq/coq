@@ -351,3 +351,10 @@
 : "${metacoq_CI_REF:=master}"
 : "${metacoq_CI_GITURL:=https://github.com/MetaCoq/metacoq}"
 : "${metacoq_CI_ARCHIVEURL:=${metacoq_CI_GITURL}/archive}"
+
+########################################################################
+# SF suite
+########################################################################
+: "${sf_CI_REF:=master}"
+: "${sf_CI_GITURL:=https://github.com/DeepSpec/sf}"
+: "${sf_CI_ARCHIVEURL:=${sf_CI_GITURL}/archive}"
