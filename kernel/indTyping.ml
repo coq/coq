@@ -321,7 +321,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
       if has_template_poly then
         (* For that particular case, we typecheck the inductive in an environment
            where the universes introduced by the definition are only [>= Prop] *)
-        let env = set_universes_lbound env Univ.Level.prop in
+        let env = set_universes_lbound env UGraph.Bound.Prop in
         push_context_set ~strict:false ctx env
       else
         (* In the regular case, all universes are [> Set] *)

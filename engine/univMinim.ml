@@ -267,12 +267,16 @@ let minimize_univ_variables ctx us algs left right cstrs =
 module UPairs = OrderedType.UnorderedPair(Univ.Level)
 module UPairSet = Set.Make (UPairs)
 
+let is_bound l lbound = match lbound with
+| UGraph.Bound.Prop -> Level.is_prop l
+| UGraph.Bound.Set -> Level.is_set l
+
 (* TODO check is_small/sprop *)
 let normalize_context_set ~lbound g ctx us algs weak =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
-    Constraint.partition (fun (l,d,r) -> d == Le && (Level.equal l lbound || Level.is_sprop l)) csts
+    Constraint.partition (fun (l,d,r) -> d == Le && (is_bound l lbound || Level.is_sprop l)) csts
   in
   let smallles = if get_set_minimization ()
     then Constraint.filter (fun (l,d,r) -> LMap.mem r us && not (Level.is_sprop l)) smallles
@@ -299,7 +303,7 @@ let normalize_context_set ~lbound g ctx us algs weak =
   (* We ignore the trivial Prop/Set <= i constraints. *)
   let noneqs =
     Constraint.filter
-      (fun (l,d,r) -> not ((d == Le && Level.equal l lbound) ||
+      (fun (l,d,r) -> not ((d == Le && is_bound l lbound) ||
                            (Level.is_prop l && d == Lt && Level.is_set r)))
       csts
   in
