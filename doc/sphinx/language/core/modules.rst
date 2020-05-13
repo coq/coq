@@ -118,7 +118,7 @@ reduced term :math:`t_i` in :math:`p`.
    \WEV{E}{S~\with~x := p}{}\\
    \Struct~e_1 ;…;e_i ; \ModA{X}{p};e_{i+2} \{p/X\} ;…;e_n \{p/X\} ~\End
    \end{array}
-  
+
 .. inference:: WEVAL-WITH-MOD-REC
 
    \begin{array}{c}
@@ -130,7 +130,7 @@ reduced term :math:`t_i` in :math:`p`.
    \WEV{E}{S~\with~X_1.p := p_1}{} \\
    \Struct~e_1 ;…;e_i ; \ModS{X}{\ovl{S_2}};e_{i+2} \{p_1 /X_1.p\} ;…;e_n \{p_1 /X_1.p\} ~\End
    \end{array}
-  
+
 .. inference:: WEVAL-WITH-DEF
 
    \begin{array}{c}
@@ -419,7 +419,7 @@ Component access rules
    E[Γ] ⊢ p.c : T
 
 Notice that the following rule extends the delta rule defined in section :ref:`Conversion-rules`
-  
+
 .. inference:: ACC-DELTA
 
     E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\Def{}{c}{t}{U};… ~\End
