@@ -26,16 +26,6 @@ open Pcoq.Constr
 (* TODO: avoid this redefinition without an extra dep to Notation_ops *)
 let ldots_var = Id.of_string ".."
 
-let constr_kw =
-  [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for";
-    "end"; "as"; "let"; "if"; "then"; "else"; "return";
-    "SProp"; "Prop"; "Set"; "Type";
-    ":="; "=>"; "->"; ".."; "<:"; "<<:"; ":>";
-    ".("; "()"; "`{"; "`("; "@{"; "{|";
-    "_"; "@"; "+"; "!"; "?"; ";"; ","; ":" ]
-
-let _ = List.iter CLexer.add_keyword constr_kw
-
 let mk_cast = function
     (c,(_,None)) -> c
   | (c,(_,Some ty)) ->

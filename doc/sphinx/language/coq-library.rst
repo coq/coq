@@ -9,11 +9,11 @@ The |Coq| library
 
 The |Coq| library has two parts:
 
-  * **The basic library**: definitions and theorems for
+  * The :gdef:`prelude`: definitions and theorems for
     the most commonly used elementary logical notions and
     data types. |Coq| normally loads these files automatically when it starts.
 
-  * **The standard library**: general-purpose libraries with
+  * The :gdef:`standard library`: general-purpose libraries with
     definitions and theorems for sets, lists, sorting,
     arithmetic, etc. To use these files, users must load them explicitly
     with the ``Require`` command (see :ref:`compiled-files`)
@@ -28,8 +28,8 @@ also be browsed at http://coq.inria.fr/stdlib/.
 
 
 
-The basic library
------------------
+The prelude
+-----------
 
 This section lists the basic notions and results which are directly
 available in the standard |Coq| system. Most of these constructions

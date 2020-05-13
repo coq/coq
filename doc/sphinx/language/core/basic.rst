@@ -130,30 +130,37 @@ Strings
   identified with :production:`string`.
 
 Keywords
-  The following character sequences are reserved keywords that cannot be
-  used as identifiers::
+  The following character sequences are keywords defined in the main Coq grammar
+  that cannot be used as identifiers (even when starting Coq with the `-noinit`
+  command-line flag)::
 
     _ Axiom CoFixpoint Definition Fixpoint Hypothesis Parameter Prop
-    SProp Set Theorem Type Variable as at cofix discriminated else end
+    SProp Set Theorem Type Variable as at cofix else end
     fix for forall fun if in let match return then where with
 
-  Note that notations and plugins may define additional keywords.
+  The following are keywords defined in notations or plugins loaded in the :term:`prelude`::
+
+    IF by exists exists2 using
+
+  Note that loading additional modules or plugins may expand the set of reserved
+  keywords.
 
 Other tokens
-  The set of
-  tokens defined at any given time can vary because the :cmd:`Notation`
-  command can define new tokens.  A :cmd:`Require` command may load more notation definitions,
-  while the end of a :cmd:`Section` may remove notations.  Some notations
-  are defined in the standard library (see :ref:`thecoqlibrary`) and are generally
-  loaded automatically at startup time.
+  The following character sequences are tokens defined in the main Coq grammar
+  (even when starting Coq with the `-noinit` command-line flag)::
 
-  Here are the character sequences that |Coq| directly defines as tokens
-  without using :cmd:`Notation`::
-
-    ! #[ % & ' ( () (bfs) (dfs) ) * ** + , - ->
+    ! #[ % & ' ( () ) * + , - ->
     . .( .. ... / : ::= := :> :>> ; < <+ <- <:
-    <<: <= = => > >-> >= ? @ @{ [ [= ] _
-    `( `{ { {| | |- || }
+    <<: <= = => > >-> >= ? @ @{ [ ] _
+    `( `{ { {| | }
+
+  The following character sequences are tokens defined in notations or plugins
+  loaded in the :term:`prelude`::
+
+    ** [= |- || ->
+
+  Note that loading additional modules or plugins may expand the set of defined
+  tokens.
 
   When multiple tokens match the beginning of a sequence of characters,
   the longest matching token is used.

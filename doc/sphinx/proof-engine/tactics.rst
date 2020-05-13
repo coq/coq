@@ -36,6 +36,18 @@ language will be described in Chapter :ref:`ltac`.
 Common elements of tactics
 --------------------------
 
+Reserved keywords
+~~~~~~~~~~~~~~~~~
+
+The tactics described in this chapter reserve the following keywords::
+
+  by using
+
+Thus, these keywords cannot be used as identifiers. It also declares
+the following character sequences as tokens::
+
+  ** [= |-
+
 .. _invocation-of-tactics:
 
 Invocation of tactics

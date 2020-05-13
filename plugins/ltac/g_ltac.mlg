@@ -216,8 +216,8 @@ GRAMMAR EXTEND Gram
   ;
   match_key:
     [ [ "match" -> { Once }
-      | "lazymatch" -> { Select }
-      | "multimatch" -> { General } ] ]
+      | IDENT "lazymatch" -> { Select }
+      | IDENT "multimatch" -> { General } ] ]
   ;
   input_fun:
     [ [ "_" -> { Name.Anonymous }
