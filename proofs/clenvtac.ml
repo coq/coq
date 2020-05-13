@@ -13,7 +13,6 @@ open Constr
 open Termops
 open Evd
 open EConstr
-open Refiner
 open Logic
 open Reduction
 open Clenv

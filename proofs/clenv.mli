@@ -63,9 +63,6 @@ val clenv_unify :
   ?flags:unify_flags -> conv_pb -> constr -> constr -> clausenv -> clausenv
 
 (** unifies the concl of the goal with the type of the clenv *)
-val old_clenv_unique_resolver :
-  ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
-
 val clenv_unique_resolver :
   ?flags:unify_flags -> clausenv -> Proofview.Goal.t -> clausenv
 

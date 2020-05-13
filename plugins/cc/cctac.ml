@@ -290,7 +290,6 @@ let constr_of_term c = EConstr.of_constr (constr_of_term c)
 
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
-  try (* type_of can raise exceptions *)
   match p.p_rule with
       Ax c -> exact_check (EConstr.of_constr c)
     | SymAx c ->
@@ -350,7 +349,6 @@ let rec proof_tac p : unit Proofview.tactic =
            app_global_with_holes _f_equal [|intype;outtype;proj;ti;tj|] 1 in
          Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
                                (Tacticals.New.tclTHEN injt (proof_tac prf))))
-  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
 let refute_tac c t1 t2 p =
@@ -508,11 +506,9 @@ let f_equal =
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
     let cut_eq c1 c2 =
-      try (* type_of can raise an exception *)
         Tacticals.New.tclTHENS
           (mk_eq _eq c1 c2 Tactics.cut)
           [Proofview.tclUNIT ();Tacticals.New.tclTRY ((app_global _refl_equal [||]) apply)]
-      with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
     in
     Proofview.tclORELSE
       begin match EConstr.kind sigma concl with

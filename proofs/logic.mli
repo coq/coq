@@ -26,23 +26,21 @@ open Evd
 
 (** The primitive refiner. *)
 
-val prim_refiner : check:bool -> constr -> evar_map -> Goal.goal -> Goal.goal list * evar_map
+val refiner : check:bool -> constr -> unit Proofview.tactic
 
 (** {6 Refiner errors. } *)
 
 type refiner_error =
 
   (*i Errors raised by the refiner i*)
-  | BadType of constr * constr * constr
+  | BadType of constr * constr * EConstr.t
   | UnresolvedBindings of Name.t list
   | CannotApply of constr * constr
-  | NotWellTyped of constr
   | NonLinearProof of constr
   | MetaInType of EConstr.constr
 
   (*i Errors raised by the tactics i*)
   | IntroNeedsProduct
-  | DoesNotOccurIn of constr * Id.t
   | NoSuchHyp of Id.t
 
 exception RefinerError of Environ.env * evar_map * refiner_error

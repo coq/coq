@@ -12,7 +12,6 @@ open Pp
 open CErrors
 open Util
 open Evd
-open Logic
 
 type tactic = Proofview.V82.tac
 
@@ -26,18 +25,7 @@ let project x = x.sigma
 let pf_env gls = Global.env_of_context (Goal.V82.hyps (project gls) (sig_it gls))
 let pf_hyps gls = EConstr.named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls))
 
-let refiner ~check pr goal_sigma =
-  let (sgl,sigma') = prim_refiner ~check pr goal_sigma.sigma goal_sigma.it in
-  { it = sgl; sigma = sigma'; }
-
-(* Profiling refiner *)
-let refiner ~check =
-  if Flags.profile then
-    let refiner_key = CProfile.declare_profile "refiner" in
-      CProfile.profile2 refiner_key (refiner ~check)
-  else refiner ~check
-
-let refiner ~check c = Proofview.V82.tactic ~nf_evars:false (refiner ~check c)
+let refiner = Logic.refiner
 
 (*********************)
 (*   Tacticals       *)
