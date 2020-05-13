@@ -598,3 +598,10 @@
 : "${perennial_CI_REF:=b420367026ec5d24b2bf38e7f986ca35af21f073}"
 : "${perennial_CI_GITURL:=https://github.com/mit-pdos/perennial}"
 : "${perennial_CI_ARCHIVEURL:=${perennial_CI_GITURL}/archive}"
+
+########################################################################
+# SF suite
+########################################################################
+: "${sf_CI_REF:=d41a56ee075259f271ae5288f7860b340cabc3a1}"
+: "${sf_CI_GITURL:=https://github.com/DeepSpec/sf}"
+: "${sf_CI_ARCHIVEURL:=${sf_CI_GITURL}/archive}"
