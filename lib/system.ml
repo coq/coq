@@ -168,6 +168,15 @@ let try_remove filename =
 let error_corrupted file s =
   CErrors.user_err ~hdr:"System" (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
 
+let check_caml_version ~caml:s ~file:f =
+  if not (String.equal Coq_config.caml_version s) then
+    CErrors.user_err (str ("The file " ^ f ^ " was compiled with OCaml") ++
+    spc () ++ str s ++ spc () ++ str "while this instance of Coq was compiled \
+    with OCaml" ++ spc() ++ str Coq_config.caml_version ++ str "." ++ spc () ++
+    str "Coq object files need to be compiled with the same OCaml toolchain to \
+    be compatible.")
+  else ()
+
 let input_binary_int f ch =
   try input_binary_int ch
   with

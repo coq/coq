@@ -263,6 +263,7 @@ let raw_intern_library f =
 type summary_disk = {
   md_name : compilation_unit_name;
   md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
+  md_ocaml : string;
 }
 
 module Dyn = Dyn.Make ()
@@ -345,6 +346,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let () = close_in ch in
       let ch = open_in_bin f in
       let () = close_in ch in
+      let () = System.check_caml_version ~caml:sd.md_ocaml ~file:f in
       if dir <> sd.md_name then
         user_err ~hdr:"intern_from_file"
           (name_clash_message dir sd.md_name f);

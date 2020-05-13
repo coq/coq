@@ -89,6 +89,7 @@ type library_disk = {
 type summary_disk = {
   md_name : compilation_unit_name;
   md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
+  md_ocaml : string;
 }
 
 (*s Modules loaded in memory contain the following informations. They are
@@ -251,6 +252,7 @@ let intern_from_file f =
   let (univs : seg_univ option), digest_u = ObjFile.marshal_in_segment ch ~segment:"universes" in
   let ((del_opaque : seg_proofs delayed),_) = in_delayed f ch ~segment:"opaques" in
   ObjFile.close_in ch;
+  System.check_caml_version ~caml:lsd.md_ocaml ~file:f;
   register_library_filename lsd.md_name f;
   add_opaque_table lsd.md_name (ToFetch del_opaque);
   let open Safe_typing in
@@ -401,6 +403,7 @@ let load_library_todo f =
   let tasks, _ = ObjFile.marshal_in_segment ch ~segment:"tasks" in
   let (s4 : seg_proofs), _ = ObjFile.marshal_in_segment ch ~segment:"opaques" in
   ObjFile.close_in ch;
+  System.check_caml_version ~caml:s0.md_ocaml ~file:f;
   if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
   if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
   if snd (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
@@ -486,6 +489,7 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
     let sd = {
     md_name = dir;
     md_deps = Array.of_list (current_deps ());
+    md_ocaml = Coq_config.caml_version;
   } in
   let md = {
     md_compiled = cenv;
