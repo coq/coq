@@ -78,6 +78,10 @@ val of_bool : bool -> valexpr
 val to_bool : valexpr -> bool
 val bool : bool repr
 
+val of_case : Constr.case_info -> valexpr
+val to_case : valexpr -> Constr.case_info
+val case : Constr.case_info repr
+
 val of_char : char -> valexpr
 val to_char : valexpr -> char
 val char : char repr
@@ -101,6 +105,10 @@ val exn : Exninfo.iexn repr
 val of_ident : Id.t -> valexpr
 val to_ident : valexpr -> Id.t
 val ident : Id.t repr
+
+val of_inductive : Names.inductive -> valexpr
+val to_inductive : valexpr -> Names.inductive
+val inductive : Names.inductive repr
 
 val of_closure : closure -> valexpr
 val to_closure : valexpr -> closure

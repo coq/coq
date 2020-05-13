@@ -413,7 +413,7 @@ let () = define1 "constr_kind" constr begin fun c ->
     |]
   | Ind (ind, u) ->
     v_blk 11 [|
-      Value.of_ext Value.val_inductive ind;
+      Value.of_inductive ind;
       of_instance u;
     |]
   | Construct (cstr, u) ->
@@ -423,7 +423,7 @@ let () = define1 "constr_kind" constr begin fun c ->
     |]
   | Case (ci, c, t, bl) ->
     v_blk 13 [|
-      Value.of_ext Value.val_case ci;
+      Value.of_case ci;
       Value.of_constr c;
       Value.of_constr t;
       Value.of_array Value.of_constr bl;
@@ -500,7 +500,7 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let u = to_instance u in
     EConstr.mkConstU (cst, u)
   | (11, [|ind; u|]) ->
-    let ind = Value.to_ext Value.val_inductive ind in
+    let ind = Value.to_inductive ind in
     let u = to_instance u in
     EConstr.mkIndU (ind, u)
   | (12, [|cstr; u|]) ->
@@ -508,7 +508,7 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let u = to_instance u in
     EConstr.mkConstructU (cstr, u)
   | (13, [|ci; c; t; bl|]) ->
-    let ci = Value.to_ext Value.val_case ci in
+    let ci = Value.to_case ci in
     let c = Value.to_constr c in
     let t = Value.to_constr t in
     let bl = Value.to_array Value.to_constr bl in
@@ -557,15 +557,6 @@ end
 let () = define3 "constr_closenl" (list ident) int constr begin fun ids k c ->
   let ans = EConstr.Vars.substn_vars k ids c in
   return (Value.of_constr ans)
-end
-
-let () = define1 "constr_case" (repr_ext val_inductive) begin fun ind ->
-  Proofview.tclENV >>= fun env ->
-  try
-    let ans = Inductiveops.make_case_info env ind Sorts.Relevant Constr.RegularStyle in
-    return (Value.of_ext Value.val_case ans)
-  with e when CErrors.noncritical e ->
-    throw err_notfound
 end
 
 let () = define2 "constr_constructor" (repr_ext val_inductive) int begin fun (ind, i) k ->
@@ -650,6 +641,25 @@ end
 
 let () = define1 "constr_binder_type" (repr_ext val_binder) begin fun (bnd, ty) ->
   return (of_constr ty)
+end
+
+let () = define1 "constr_case_make" (repr_ext val_inductive) begin fun ind ->
+  Proofview.tclENV >>= fun env ->
+  try
+    let ans = Inductiveops.make_case_info env ind Sorts.Relevant Constr.RegularStyle in
+    return (Value.of_case ans)
+  with e when CErrors.noncritical e ->
+    throw err_notfound
+end
+
+let () = define1 "constr_case_inductive" (repr_ext val_case) begin fun ci ->
+  let open Constr in
+  return (Value.of_inductive ci.ci_ind)
+end
+
+let () = define1 "constr_case_nparameters" (repr_ext val_case) begin fun ci ->
+  let open Constr in
+  return (Value.of_int ci.ci_npar)
 end
 
 (** Patterns *)

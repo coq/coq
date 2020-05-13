@@ -220,6 +220,10 @@ let repr_ext tag = {
   r_id = false;
 }
 
+let of_case c = of_ext val_case c
+let to_case c = to_ext val_case c
+let case = repr_ext val_case
+
 let of_constr c = of_ext val_constr c
 let to_constr c = to_ext val_constr c
 let constr = repr_ext val_constr
@@ -227,6 +231,10 @@ let constr = repr_ext val_constr
 let of_ident c = of_ext val_ident c
 let to_ident c = to_ext val_ident c
 let ident = repr_ext val_ident
+
+let of_inductive c = of_ext val_inductive c
+let to_inductive c = to_ext val_inductive c
+let inductive = repr_ext val_inductive
 
 let of_pattern c = of_ext val_pattern c
 let to_pattern c = to_ext val_pattern c
@@ -354,13 +362,13 @@ let constant = repr_ext val_constant
 let of_reference = let open GlobRef in function
 | VarRef id -> ValBlk (0, [| of_ident id |])
 | ConstRef cst -> ValBlk (1, [| of_constant cst |])
-| IndRef ind -> ValBlk (2, [| of_ext val_inductive ind |])
+| IndRef ind -> ValBlk (2, [| of_inductive ind |])
 | ConstructRef cstr -> ValBlk (3, [| of_ext val_constructor cstr |])
 
 let to_reference = let open GlobRef in function
 | ValBlk (0, [| id |]) -> VarRef (to_ident id)
 | ValBlk (1, [| cst |]) -> ConstRef (to_constant cst)
-| ValBlk (2, [| ind |]) -> IndRef (to_ext val_inductive ind)
+| ValBlk (2, [| ind |]) -> IndRef (to_inductive ind)
 | ValBlk (3, [| cstr |]) -> ConstructRef (to_ext val_constructor cstr)
 | _ -> assert false
 

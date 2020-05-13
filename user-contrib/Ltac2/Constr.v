@@ -20,6 +20,7 @@ Module Unsafe.
 
 (** Low-level access to kernel terms. Use with care! *)
 
+(** XXX TODO PR Should this be moved to [Constr.case]? *)
 Ltac2 Type case.
 
 Ltac2 Type kind := [
@@ -61,7 +62,8 @@ Ltac2 @ external closenl : ident list -> int -> constr -> constr := "ltac2" "con
 (** [closenl [x₁;...;xₙ] k c] abstracts over variables [x₁;...;xₙ] and replaces them with
     [Rel(k); ...; Rel(k+n-1)] in [c]. If two names are identical, the one of least index is kept. *)
 
-Ltac2 @ external case : inductive -> case := "ltac2" "constr_case".
+(* XXX TODO: Deprecate this.  We can't do #[deprecated(since="8.12",note="Use Constr.Case.make instead.")] because of COQBUG(https://github.com/coq/coq/issues/12317) *)
+Ltac2 @ external case : inductive -> case := "ltac2" "constr_case_make".
 (** Generate the case information for a given inductive type. *)
 
 Ltac2 @ external constructor : inductive -> int -> constructor := "ltac2" "constr_constructor".
@@ -82,6 +84,19 @@ Ltac2 @ external type : binder -> constr := "ltac2" "constr_binder_type".
 (** Retrieve the type of a binder. *)
 
 End Binder.
+
+Module Case.
+
+Ltac2 @ external make : inductive -> Unsafe.case := "ltac2" "constr_case_make".
+(** Generate the case information for a given inductive type. *)
+
+Ltac2 @ external inductive : Unsafe.case -> inductive := "ltac2" "constr_case_inductive".
+(** Retrieve the inductive of a case. *)
+
+Ltac2 @ external nparameters : Unsafe.case -> int := "ltac2" "constr_case_nparameters".
+(** Retrieve the number of parameters of the inductive in a case. *)
+
+End Case.
 
 Ltac2 @ external in_context : ident -> constr -> (unit -> unit) -> constr := "ltac2" "constr_in_context".
 (** On a focused goal [Γ ⊢ A], [in_context id c tac] evaluates [tac] in a
