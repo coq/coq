@@ -102,3 +102,18 @@ Section L5.
     {| cs_lambda_key := Nat.add 1 |}.
   Check (refl_equal _ : cs_lambda_key _ = fun x => 1 + x).
 End L5.
+
+Section DepProd.
+  Structure hello := { hello_key : Type }.
+  Section FixedTypes.
+    Local Canonical Structure hello_dep1 := {| hello_key := forall x : nat, x = x |}.
+    Example ex_hello2 := let h := _ in fun f : hello_key h => (f : forall x : nat, x = x) 1.
+  End FixedTypes.
+
+  Section VariableTypes.
+    Local Canonical Structure hello_dep2 v1 v2 := {| hello_key := forall x : list v1, x = v2 |}.
+    Set Debug Unification.
+    Example ex_hello1 : _ -> _ = nil :=
+      let h := _ in fun f : hello_key h => (f : forall x : list _, _ = _) (@nil nat).
+  End VariableTypes.
+End DepProd.
