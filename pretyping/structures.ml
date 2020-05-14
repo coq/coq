@@ -161,6 +161,7 @@ let rec of_constr env t =
     let patt, n, args = of_constr env f in
     patt, n, args @ Array.to_list vargs
   | Rel n -> Default_cs, Some n, []
+  | Lambda (_, _, b) -> let patt, _, _ = of_constr env b in patt, None, []
   | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
   | Proj (p, c) -> Proj_cs (Names.Projection.repr p), None, [c]
   | Sort s -> Sort_cs (Sorts.family s), None, []
@@ -222,6 +223,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
   let lpj = keep_true_projections lpj in
   let nenv = Termops.push_rels_assum sign env in
   List.fold_left2 (fun acc (spopt, canonical) t ->
+      let t = EConstr.Unsafe.to_constr (shrink_eta env (EConstr.of_constr t)) in
       if canonical
       then
         Option.cata (fun proji_sp ->

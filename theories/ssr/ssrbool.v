@@ -297,7 +297,6 @@ Require Import ssreflect ssrfun.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Set Warnings "-projection-no-head-constant".
 
 Notation reflect := Bool.reflect.
 Notation ReflectT := Bool.ReflectT.
@@ -1227,7 +1226,9 @@ Definition clone_pred T U :=
 Notation "[ 'predType' 'of' T ]" := (@clone_pred _ T _ id _ id) : form_scope.
 
 Canonical predPredType T := PredType (@id (pred T)).
+Set Warnings "-redundant-canonical-projection".
 Canonical boolfunPredType T := PredType (@id (T -> bool)).
+Set Warnings "redundant-canonical-projection".
 
 (** The type of abstract collective predicates.
  While {pred T} is contertible to pred T, it presents the pred_sort coercion
