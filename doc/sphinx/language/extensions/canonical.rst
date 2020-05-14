@@ -14,6 +14,8 @@ of another, complementary, use of canonical structures: advanced proof search.
 This latter papers also presents many techniques one can employ to tune the
 inference of canonical structures.
 
+ .. extracted from implicit arguments section
+
 .. _canonical-structure-declaration:
 
 Declaraction of canonical structures

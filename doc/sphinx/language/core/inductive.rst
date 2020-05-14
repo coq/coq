@@ -508,6 +508,8 @@ constructions.
          | cons t f' => (tree_size t + forest_size f')
          end.
 
+.. extracted from CIC chapter
+
 .. _inductive-definitions:
 
 Theory of inductive definitions

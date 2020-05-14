@@ -1,3 +1,5 @@
+.. extracted from Gallina extensions chapter
+
 .. _existential-variables:
 
 Existential variables
@@ -62,6 +64,8 @@ the syntax :n:`?[@ident]`. This is useful when the existential
 variable needs to be explicitly handled later in the script (e.g.
 with a named-goal selector, see :ref:`goal-selectors`).
 
+.. extracted from Gallina chapter
+
 .. index:: _
 
 Inferable subterms
@@ -70,6 +74,8 @@ Inferable subterms
 Expressions often contain redundant pieces of information. Subterms that can be
 automatically inferred by Coq can be replaced by the symbol ``_`` and Coq will
 guess the missing piece of information.
+
+.. extracted from Gallina extensions chapter
 
 .. _explicit-display-existentials:
 

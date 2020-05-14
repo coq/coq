@@ -747,6 +747,8 @@ Controlling display
    after each tactic.  The information is used by the Prooftree tool in Proof
    General. (https://askra.de/software/prooftree)
 
+.. extracted from Gallina extensions chapter
+
 .. _printing_constructions_full:
 
 Printing constructions in full

@@ -1383,6 +1383,8 @@ Abbreviations
    exception, if the right-hand side is just of the form :n:`@@qualid`,
    this conventionally stops the inheritance of implicit arguments.
 
+.. extracted from Gallina chapter
+
 Numerals and strings
 --------------------
 

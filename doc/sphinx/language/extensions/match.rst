@@ -9,6 +9,8 @@ This section describes the full form of pattern matching in |Coq| terms.
 
 .. |rhs| replace:: right hand sides
 
+ .. extracted from Gallina extensions chapter
+
 Variants and extensions of :g:`match`
 -------------------------------------
 

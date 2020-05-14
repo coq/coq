@@ -50,6 +50,8 @@ A module type abbreviation is written :math:`\ModType{Y}{S}`,
 where :math:`Y` is an identifier and :math:`S` is any structure
 expression .
 
+.. extracted from Gallina extensions chapter
+
 Using modules
 -------------
 
@@ -851,6 +853,8 @@ and :math:`Γ_C` is :math:`[c_1 :C_1 ;…;c_n :C_n ]`.
    E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{}{Γ_P}{Γ_C}{Γ_I}{p'} ;… ~\End
    --------------------------
    E[] ⊢ p.c_i \triangleright_δ p'.c_i
+
+.. extracted from Gallina extensions chapter
 
 Libraries and qualified names
 ---------------------------------
