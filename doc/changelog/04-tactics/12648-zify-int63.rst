@@ -1,0 +1,3 @@
+- **Added:**
+  The :tacn:`zify` tactic provides support for primitive integers (module :g:`ZifyInt63`).
+  (`#12648 <https://github.com/coq/coq/pull/12648>`_,  by Frédéric Besson).

@@ -464,13 +464,18 @@ module ECstOp = struct
   let cast x = CstOp x
   let dest = function CstOp x -> Some x | _ -> None
 
+  let isConstruct evd c =
+    match EConstr.kind evd c with
+    | Construct _ | Int _ | Float _ -> true
+    | _ -> false
+
   let mk_elt evd i a =
     { source = a.(0)
     ; target = a.(1)
     ; inj = get_inj evd a.(3)
     ; cst = a.(4)
     ; cstinj = a.(5)
-    ; is_construct = EConstr.isConstruct evd a.(2) }
+    ; is_construct = isConstruct evd a.(2) }
 
   let get_key = 2
 end
@@ -979,17 +984,21 @@ let is_arrow env evd a p1 p2 =
      where c is the head symbol and [a] is the array of arguments.
      The function also transforms (x -> y) as (arrow x y) *)
 let get_operator barrow env evd e =
-  match EConstr.kind evd e with
+  let e' = EConstr.whd_evar evd e in
+  match EConstr.kind evd e' with
   | Prod (a, p1, p2) ->
-    if barrow && is_arrow env evd a p1 p2 then (arrow, [|p1; p2|])
+    if barrow && is_arrow env evd a p1 p2 then (arrow, [|p1; p2|], false)
     else raise Not_found
   | App (c, a) -> (
-    match EConstr.kind evd c with
+    let c' = EConstr.whd_evar evd c in
+    match EConstr.kind evd c' with
     | Construct _ (* e.g. Z0 , Z.pos *) | Const _ (* e.g. Z.max *) | Proj _
      |Lambda _ (* e.g projections *) | Ind _ (* e.g. eq *) ->
-      (c, a)
+      (c', a, false)
     | _ -> raise Not_found )
-  | Construct _ -> (EConstr.whd_evar evd e, [||])
+  | Const _ -> (e', [||], false)
+  | Construct _ -> (e', [||], true)
+  | Int _ | Float _ -> (e', [||], true)
   | _ -> raise Not_found
 
 let decompose_app env evd e =
@@ -1065,37 +1074,41 @@ let rec trans_expr env evd e =
   let inj = e.inj in
   let e = e.constr in
   try
-    let c, a = get_operator false env evd e in
-    let k, t =
-      find_option (match_operator env evd c a) (HConstr.find_all c !table_cache)
-    in
-    let n = Array.length a in
-    match k with
-    | CstOp {deriv = c'} ->
-      ECstOpT.(if c'.is_construct then Term else Prf (c'.cst, c'.cstinj))
-    | UnOp {deriv = unop} ->
-      let prf =
-        trans_expr env evd
-          { constr = a.(n - 1)
-          ; typ = unop.EUnOpT.source1
-          ; inj = unop.EUnOpT.inj1_t }
+    let c, a, is_constant = get_operator false env evd e in
+    if is_constant then Term
+    else
+      let k, t =
+        find_option
+          (match_operator env evd c a)
+          (HConstr.find_all c !table_cache)
       in
-      app_unop evd e unop a.(n - 1) prf
-    | BinOp {deriv = binop} ->
-      let prf1 =
-        trans_expr env evd
-          { constr = a.(n - 2)
-          ; typ = binop.EBinOpT.source1
-          ; inj = binop.EBinOpT.inj1 }
-      in
-      let prf2 =
-        trans_expr env evd
-          { constr = a.(n - 1)
-          ; typ = binop.EBinOpT.source2
-          ; inj = binop.EBinOpT.inj2 }
-      in
-      app_binop evd e binop a.(n - 2) prf1 a.(n - 1) prf2
-    | d -> mkvar evd inj e
+      let n = Array.length a in
+      match k with
+      | CstOp {deriv = c'} ->
+        ECstOpT.(if c'.is_construct then Term else Prf (c'.cst, c'.cstinj))
+      | UnOp {deriv = unop} ->
+        let prf =
+          trans_expr env evd
+            { constr = a.(n - 1)
+            ; typ = unop.EUnOpT.source1
+            ; inj = unop.EUnOpT.inj1_t }
+        in
+        app_unop evd e unop a.(n - 1) prf
+      | BinOp {deriv = binop} ->
+        let prf1 =
+          trans_expr env evd
+            { constr = a.(n - 2)
+            ; typ = binop.EBinOpT.source1
+            ; inj = binop.EBinOpT.inj1 }
+        in
+        let prf2 =
+          trans_expr env evd
+            { constr = a.(n - 1)
+            ; typ = binop.EBinOpT.source2
+            ; inj = binop.EBinOpT.inj2 }
+        in
+        app_binop evd e binop a.(n - 2) prf1 a.(n - 1) prf2
+      | d -> mkvar evd inj e
   with Not_found ->
     (* Feedback.msg_debug
        Pp.(str "Not found " ++ Termops.Internal.debug_print_constr e); *)

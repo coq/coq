@@ -50,6 +50,7 @@ theories/micromega/ZCoeff.v
 theories/micromega/ZMicromega.v
 theories/micromega/ZifyInst.v
 theories/micromega/ZifyBool.v
+theories/micromega/ZifyInt63.v
 theories/micromega/ZifyComparison.v
 theories/micromega/ZifyClasses.v
 theories/micromega/ZifyPow.v

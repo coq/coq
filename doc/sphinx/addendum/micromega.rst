@@ -284,7 +284,12 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    :name: zify
 
    This tactic is internally called by :tacn:`lia` to support additional types e.g., :g:`nat`, :g:`positive` and :g:`N`.
-   By requiring the module ``ZifyBool``, the boolean type :g:`bool` and some comparison operators are also supported.
+   Some additional support is provided by the following modules
+
+   + For boolean operators (e.g., :g:`Nat.leb`), require the module :g:`ZifyBool`.
+   + For comparison operators (e.g., :g:`Z.compare`), require the module :g:`ZifyComparison`.
+   + For native 63 bit integers, require the module :g:`ZifyInt63`.
+
    :tacn:`zify` can also be extended by rebinding the tactics `Zify.zify_pre_hook` and `Zify.zify_post_hook` that are
    respectively run in the first and the last steps of :tacn:`zify`.
 
