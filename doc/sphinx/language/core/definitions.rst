@@ -1,3 +1,6 @@
+Definitions
+===========
+
 .. index:: let ... := ... (term)
 
 .. _let-in:
@@ -19,6 +22,31 @@ denotes the local binding of :n:`@term` to the variable
 :n:`@ident` in :n:`@term`’. There is a syntactic sugar for let-in
 definition of functions: :n:`let @ident {+ @binder} := @term in @term’`
 stands for :n:`let @ident := fun {+ @binder} => @term in @term’`.
+
+.. index::
+   single: ... : ... (type cast)
+   single: ... <: ...
+   single: ... <<: ...
+
+Type cast
+---------
+
+.. insertprodn term_cast term_cast
+
+.. prodn::
+   term_cast ::= @term10 <: @term
+   | @term10 <<: @term
+   | @term10 : @term
+   | @term10 :>
+
+The expression :n:`@term : @type` is a type cast expression. It enforces
+the type of :n:`@term` to be :n:`@type`.
+
+:n:`@term <: @type` locally sets up the virtual machine for checking that
+:n:`@term` has type :n:`@type`.
+
+:n:`@term <<: @type` uses native compilation for checking that :n:`@term`
+has type :n:`@type`.
 
 .. _gallina-definitions:
 
