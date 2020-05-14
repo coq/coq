@@ -828,7 +828,12 @@ organization, because of a limitation of GitHub).
 
   - the overlays that are backward-compatible (normally the case for
     overlays fixing Coq code) should have been merged *before* the PR
-    can be merged;
+    can be merged; it might be a good idea to ask the PR author to
+    remove the overlay information from the PR to get a fresh CI run
+    and ensure that all the overlays have been merged; the PR assignee
+    may also push a commit removing the overlay information (in that
+    case the assignee is not considered a co-author, hence no need to
+    change the assignee)
 
   - the overlays that are not backward-compatible (normally only the
     case for overlays fixing OCaml code) should be merged *just after*
