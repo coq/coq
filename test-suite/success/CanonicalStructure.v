@@ -70,3 +70,11 @@ Section W.
   Check (refl_equal _ : l _ = x2).
 End W.
 Fail Check (refl_equal _ : l _ = x2).
+
+(* Lambda keys *)
+Section L.
+  Structure cs_lambda := { cs_lambda_key : nat -> nat }.
+  Canonical Structure cs_lambda_func := {| cs_lambda_key := fun x => x+1 |}.
+  (* [Check] is too lenient. We need a [Definition]/[Example] to force Coq to infer the canonical structure. *)
+  Example cs_lambda_ex0 := (refl_equal _ : (cs_lambda_key _) = (fun _ => _)).
+End L.
