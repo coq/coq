@@ -171,6 +171,10 @@ End sFix.
 
 Fail Definition fix_relevance : _ -> nat := fun _ : iUnit => 0.
 
+(* Check that VM/native properly keep the relevance of the predicate in the case info
+   (bad-relevance warning as error otherwise) *)
+Definition vm_rebuild_case := Eval vm_compute in eq_sind.
+
 Require Import ssreflect.
 
 Goal forall T : SProp, T -> True.

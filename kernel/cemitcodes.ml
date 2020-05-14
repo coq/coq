@@ -13,7 +13,6 @@
 (* Extension: Arnaud Spiwack (support for native arithmetic), May 2005 *)
 
 open Names
-open Constr
 open Vmvalues
 open Cbytecodes
 open Copcodes
@@ -424,12 +423,11 @@ let subst_strcst s sc =
   | Const_float _ -> sc
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
+let subst_annot _ (a : annot_switch) = a
+
 let subst_reloc s ri =
   match ri with
-  | Reloc_annot a ->
-      let (kn,i) = a.ci.ci_ind in
-      let ci = {a.ci with ci_ind = (subst_mind s kn,i)} in
-      Reloc_annot {a with ci = ci}
+  | Reloc_annot a -> Reloc_annot (subst_annot s a)
   | Reloc_const sc -> Reloc_const (subst_strcst s sc)
   | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
   | Reloc_proj_name p -> Reloc_proj_name (subst_proj_repr s p)

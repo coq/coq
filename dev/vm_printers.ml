@@ -1,6 +1,5 @@
 open Format
 open Term
-open Constr
 open Names
 open Cemitcodes
 open Vmvalues
@@ -8,9 +7,7 @@ open Vmvalues
 let ppripos (ri,pos) =
   (match ri with
   | Reloc_annot a ->
-      let sp,i = a.ci.ci_ind in
-      print_string
-        ("annot : MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^")\n")
+      print_string "switch\n"
   | Reloc_const _ ->
       print_string "structured constant\n"
   | Reloc_getglobal kn ->

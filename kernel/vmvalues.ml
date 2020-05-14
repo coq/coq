@@ -9,7 +9,6 @@
 (************************************************************************)
 open Names
 open Univ
-open Constr
 
 (********************************************)
 (* Initialization of the abstract machine ***)
@@ -61,8 +60,9 @@ type structured_constant =
 
 type reloc_table = (tag * int) array
 
+(** When changing this, adapt Is_tailrec_switch in coq_values.h accordingly *)
 type annot_switch =
-   {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
+   { rtbl : reloc_table; tailcall : bool; max_stack_size : int }
 
 let rec eq_structured_values v1 v2 =
   v1 == v2 ||
@@ -123,22 +123,16 @@ let hash_structured_constant c =
   | Const_float f -> combinesmall 7 (Float64.hash f)
 
 let eq_annot_switch asw1 asw2 =
-  let eq_ci ci1 ci2 =
-    eq_ind ci1.ci_ind ci2.ci_ind &&
-    Int.equal ci1.ci_npar ci2.ci_npar &&
-    CArray.equal Int.equal ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls
-  in
   let eq_rlc (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2 in
-  eq_ci asw1.ci asw2.ci &&
   CArray.equal eq_rlc asw1.rtbl asw2.rtbl &&
-  (asw1.tailcall : bool) == asw2.tailcall
+  (asw1.tailcall : bool) == asw2.tailcall &&
+  Int.equal asw1.max_stack_size asw2.max_stack_size
 
 let hash_annot_switch asw =
   let open Hashset.Combine in
-  let h1 = Constr.case_info_hash asw.ci in
-  let h2 = Array.fold_left (fun h (t, i) -> combine3 h t i) 0 asw.rtbl in
-  let h3 = if asw.tailcall then 1 else 0 in
-  combine3 h1 h2 h3
+  let h1 = Array.fold_left (fun h (t, i) -> combine3 h t i) 0 asw.rtbl in
+  let h2 = if asw.tailcall then 1 else 0 in
+  combine3 h1 h2 asw.max_stack_size
 
 let pp_sort s =
   let open Sorts in

@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Constr
 
 (** Values *)
 
@@ -52,7 +51,7 @@ val pp_struct_const : structured_constant -> Pp.t
 type reloc_table = (tag * int) array
 
 type annot_switch =
-   {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
+   { rtbl : reloc_table; tailcall : bool; max_stack_size : int }
 
 val eq_structured_constant : structured_constant -> structured_constant -> bool
 val hash_structured_constant : structured_constant -> int

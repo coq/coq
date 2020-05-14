@@ -262,19 +262,14 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       nf_stk env sigma (mkApp(fa,[|c|])) (subst1 c codom) stk
   | Zswitch sw :: stk ->
       assert (from = 0) ;
-      let ci = sw.sw_annot.Vmvalues.ci in
       let ((mind,_ as ind), u), allargs = find_rectype_a env t in
-      let iv = if Typeops.should_invert_case env ci then
-          CaseInvert {univs=u; args=allargs}
-        else NoInvert
-      in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
       let params,realargs = Util.Array.chop nparams allargs in
       let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT =
         hnf_prod_applist_assum env nparamdecls (type_of_ind env (ind,u)) (Array.to_list params) in
-      let p = nf_predicate env sigma (ind,u) mip params (type_of_switch sw) pT in
+      let p, relevance = nf_predicate env sigma (ind,u) mip params (type_of_switch sw) pT in
       (* Calcul du type des branches *)
       let btypes = build_branches_type env sigma ind mib mip u params p in
       (* calcul des branches *)
@@ -286,6 +281,11 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       in
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type p realargs c in
+      let ci = Inductiveops.make_case_info env ind relevance RegularStyle in
+      let iv = if Typeops.should_invert_case env ci then
+          CaseInvert {univs=u; args=allargs}
+        else NoInvert
+      in
       nf_stk env sigma (mkCase(ci, p, iv, c, branchs)) tcase stk
   | Zproj p :: stk ->
      assert (from = 0) ;
@@ -296,17 +296,17 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
 and nf_predicate env sigma ind mip params v pT =
   match kind (whd_allnolet env pT) with
   | LetIn (name,b,t,pT) ->
-      let body =
+      let body, rel =
         nf_predicate (push_rel (LocalDef (name,b,t)) env) sigma ind mip params v pT in
-      mkLetIn (name,b,t,body)
+      mkLetIn (name,b,t,body), rel
   | Prod (name,dom,codom) -> begin
     match whd_val v with
     | Vfun f ->
       let k = nb_rel env in
       let vb = reduce_fun k f in
-      let body =
+      let body, rel =
         nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
-      mkLambda(name,dom,body)
+      mkLambda(name,dom,body), rel
     | _ -> assert false
     end
   | _ ->
@@ -321,8 +321,10 @@ and nf_predicate env sigma ind mip params v pT =
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
       let r = Inductive.relevance_of_inductive env (fst ind) in
       let name = make_annot name r in
-      let body = nf_vtype (push_rel (LocalAssum (name,dom)) env) sigma vb in
-      mkLambda(name,dom,body)
+      let env = push_rel (LocalAssum (name,dom)) env in
+      let body = nf_vtype env sigma vb in
+      let rel = Retyping.relevance_of_type env sigma (EConstr.of_constr body) in
+      mkLambda(name,dom,body), rel
     | _ -> assert false
 
 and nf_args env sigma vargs ?from:(f=0) t =
