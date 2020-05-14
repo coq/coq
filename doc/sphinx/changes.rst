@@ -701,6 +701,59 @@ Changes in 8.11.1
   (`#11329 <https://github.com/coq/coq/pull/11329>`_,
   by Hugo Herbelin, fixes `#11114 <https://github.com/coq/coq/pull/11114>`_).
 
+Changes in 8.11.2
+~~~~~~~~~~~~~~~~~
+
+**Kernel**
+
+- **Fixed:**
+  Using :cmd:`Require` inside a section caused an anomaly when closing
+  the section. (`#11972 <https://github.com/coq/coq/pull/11972>`_, by
+  Gaëtan Gilbert, fixing `#11783
+  <https://github.com/coq/coq/issues/11783>`_, reported by Attila
+  Boros).
+
+**Tactics**
+
+- **Fixed:**
+  Anomaly with induction schemes whose conclusion is not normalized
+  (`#12116 <https://github.com/coq/coq/pull/12116>`_,
+  by Hugo Herbelin; fixes
+  `#12045 <https://github.com/coq/coq/pull/12045>`_)
+- **Fixed:**
+  Loss of location of some tactic errors
+  (`#12223 <https://github.com/coq/coq/pull/12223>`_,
+  by Hugo Herbelin; fixes
+  `#12152 <https://github.com/coq/coq/pull/12152>`_ and
+  `#12255 <https://github.com/coq/coq/pull/12255>`_).
+
+**Commands and options**
+
+- **Changed:**
+  Ignore -native-compiler option when built without native compute
+  support.
+  (`#12070 <https://github.com/coq/coq/pull/12070>`_,
+  by Pierre Roux).
+
+**CoqIDE**
+
+- **Changed:**
+  CoqIDE now uses native window frames by default on Windows.
+  The GTK window frames can be restored by setting the `GTK_CSD` environment variable to `1`
+  (`#12060 <https://github.com/coq/coq/pull/12060>`_,
+  fixes `#11080 <https://github.com/coq/coq/issues/11080>`_,
+  by Attila Gáspár).
+- **Fixed:**
+  New patch presumably fixing the random Coq 8.11 segfault issue with CoqIDE completion
+  (`#12068 <https://github.com/coq/coq/pull/12068>`_,
+  by Hugo Herbelin, presumably fixing
+  `#11943 <https://github.com/coq/coq/pull/11943>`_).
+- **Fixed:**
+  Highlighting style consistently applied to all three buffers of CoqIDE
+  (`#12106 <https://github.com/coq/coq/pull/12106>`_,
+  by Hugo Herbelin; fixes
+  `#11506 <https://github.com/coq/coq/pull/11506>`_).
+
 Version 8.10
 ------------
 
