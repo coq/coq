@@ -72,11 +72,12 @@ Section :ref:`typing-rules`.
 .. cmd:: {| Definition | Example } @ident_decl @def_body
    :name: Definition; Example
 
-   .. insertprodn def_body def_body
+   .. insertprodn def_body reduce
 
    .. prodn::
       def_body ::= {* @binder } {? : @type } := {? @reduce } @term
       | {* @binder } : @type
+      reduce ::= Eval @red_expr in
 
    These commands bind :n:`@term` to the name :n:`@ident` in the environment,
    provided that :n:`@term` is well-typed.  They can take the :attr:`local` :term:`attribute`,

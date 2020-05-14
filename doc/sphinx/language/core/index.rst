@@ -34,10 +34,17 @@ will have to check their output.
    :maxdepth: 1
 
    basic
-   ../gallina-specification-language
+   sorts
+   assumptions
+   definitions
+   conversion
    ../cic
+   variants
    records
+   inductive
+   coinductive
+   sections
+   modules
+   primitive
    ../../addendum/universe-polymorphism
    ../../addendum/sprop
-   sections
-   ../module-system

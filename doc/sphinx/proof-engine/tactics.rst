@@ -2977,6 +2977,41 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
 Performing computations
 ---------------------------
 
+.. insertprodn red_expr pattern_occ
+
+.. prodn::
+   red_expr ::= red
+   | hnf
+   | simpl {? @delta_flag } {? @ref_or_pattern_occ }
+   | cbv {? @strategy_flag }
+   | cbn {? @strategy_flag }
+   | lazy {? @strategy_flag }
+   | compute {? @delta_flag }
+   | vm_compute {? @ref_or_pattern_occ }
+   | native_compute {? @ref_or_pattern_occ }
+   | unfold {+, @unfold_occ }
+   | fold {+ @one_term }
+   | pattern {+, @pattern_occ }
+   | @ident
+   delta_flag ::= {? - } [ {+ @smart_qualid } ]
+   strategy_flag ::= {+ @red_flags }
+   | @delta_flag
+   red_flags ::= beta
+   | iota
+   | match
+   | fix
+   | cofix
+   | zeta
+   | delta {? @delta_flag }
+   ref_or_pattern_occ ::= @smart_qualid {? at @occs_nums }
+   | @one_term {? at @occs_nums }
+   occs_nums ::= {+ {| @num | @ident } }
+   | - {| @num | @ident } {* @int_or_var }
+   int_or_var ::= @int
+   | @ident
+   unfold_occ ::= @smart_qualid {? at @occs_nums }
+   pattern_occ ::= @one_term {? at @occs_nums }
+
 This set of tactics implements different specialized usages of the
 tactic :tacn:`change`.
 

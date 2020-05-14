@@ -1383,10 +1383,29 @@ Abbreviations
    exception, if the right-hand side is just of the form :n:`@@qualid`,
    this conventionally stops the inheritance of implicit arguments.
 
+Numerals and strings
+--------------------
+
+.. insertprodn primitive_notations primitive_notations
+
+.. prodn::
+   primitive_notations ::= @numeral
+   | @string
+
+Numerals and strings have no predefined semantics in the calculus. They are
+merely notations that can be bound to objects through the notation mechanism.
+Initially, numerals are bound to Peano’s representation of natural
+numbers (see :ref:`datatypes`).
+
+.. note::
+
+   Negative integers are not at the same level as :n:`@num`, for this
+   would make precedence unnatural.
+
 .. _numeral-notations:
 
 Numeral notations
------------------
+~~~~~~~~~~~~~~~~~
 
 .. cmd:: Numeral Notation @qualid @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
    :name: Numeral Notation
@@ -1504,7 +1523,7 @@ Numeral notations
      opaque constants.
 
 String notations
------------------
+~~~~~~~~~~~~~~~~
 
 .. cmd:: String Notation @qualid @qualid__parse @qualid__print : @scope_name
    :name: String Notation

@@ -333,10 +333,6 @@ Mutually defined inductive types
    A generic command :cmd:`Scheme` is useful to build automatically various
    mutual induction principles.
 
-.. [1]
-   Except if the inductive type is empty in which case there is no
-   equation that can be used to infer the return type.
-
 .. index::
    single: fix
 
@@ -548,7 +544,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
 
    which corresponds to the result of the |Coq| declaration:
 
-   .. coqtop:: in
+   .. coqtop:: in reset
 
       Inductive list (A:Set) : Set :=
       | nil : list A
@@ -1103,7 +1099,7 @@ respect to the hierarchy :math:`\Prop ⊂ \Set_p ⊂ \Type` where :math:`\Set_p`
 (i.e. an inductive definition of which all inductive types are
 singleton – see Section :ref:`Destructors`) is set in :math:`\Prop`, a small non-singleton
 inductive type is set in :math:`\Set` (even in case :math:`\Set` is impredicative – see
-Section The-Calculus-of-Inductive-Construction-with-impredicative-Set_),
+:ref:`The-Calculus-of-Inductive-Construction-with-impredicative-Set`),
 and otherwise in the Type hierarchy.
 
 Note that the side-condition about allowed elimination sorts in the rule

@@ -109,7 +109,7 @@ Setting properties of a function's arguments
          clears argument scopes of :n:`@smart_qualid`
       `extra scopes`
          defines extra argument scopes, to be used in case of coercion to ``Funclass``
-         (see the :ref:`implicitcoercions` chapter) or with a computed type.
+         (see :ref:`coercions`) or with a computed type.
       `simpl nomatch`
          prevents performing a simplification step for :n:`@smart_qualid`
          that would expose a match construct in the head position.  See :ref:`Args_effect_on_unfolding`.

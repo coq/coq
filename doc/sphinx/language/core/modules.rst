@@ -864,7 +864,7 @@ The theories developed in |Coq| are stored in *library files* which are
 hierarchically classified into *libraries* and *sublibraries*. To
 express this hierarchy, library names are represented by qualified
 identifiers qualid, i.e. as list of identifiers separated by dots (see
-:ref:`gallina-identifiers`). For instance, the library file ``Mult`` of the standard
+:ref:`qualified-names`). For instance, the library file ``Mult`` of the standard
 |Coq| library ``Arith`` is named ``Coq.Arith.Mult``. The identifier that starts
 the name of a library is called a *library root*. All library files of
 the standard library of |Coq| have the reserved root |Coq| but library
@@ -875,8 +875,14 @@ started, unless option ``-top`` or ``-notop`` is set (see :ref:`command-line-opt
 
 .. _qualified-names:
 
-Qualified names
-~~~~~~~~~~~~~~~
+Qualified identifiers
+---------------------
+
+.. insertprodn qualid field_ident
+
+.. prodn::
+   qualid ::= @ident {* @field_ident }
+   field_ident ::= .@ident
 
 Library files are modules which possibly contain submodules which
 eventually contain constructions (axioms, parameters, definitions,

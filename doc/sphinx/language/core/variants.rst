@@ -52,6 +52,8 @@ Private (matching) inductive types
 
 .. index:: match ... with ...
 
+.. _match:
+
 Definition by cases: match
 --------------------------
 
@@ -194,3 +196,7 @@ a type with annotations. For this third subcase, both the clauses ``as`` and
 There are specific notations for case analysis on types with one or two
 constructors: ``if … then … else …`` and ``let (…,…) := … in …`` (see
 Sections :ref:`if-then-else` and :ref:`irrefutable-patterns`).
+
+.. [1]
+   Except if the inductive type is empty in which case there is no
+   equation that can be used to infer the return type.

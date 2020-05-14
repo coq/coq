@@ -142,7 +142,7 @@ We build an infix notation == for a comparison predicate. Such
 notation will be overloaded, and its meaning will depend on the types
 of the terms that are compared.
 
-.. coqtop:: all
+.. coqtop:: all reset
 
   Module EQ.
     Record class (T : Type) := Class { cmp : T -> T -> Prop }.

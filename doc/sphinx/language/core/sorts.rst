@@ -1,7 +1,26 @@
-.. _Sorts:
+.. index::
+   single: Set (sort)
+   single: SProp
+   single: Prop
+   single: Type
+
+.. _sorts:
 
 Sorts
 ~~~~~~~~~~~
+
+.. insertprodn sort universe_expr
+
+.. prodn::
+   sort ::= Set
+   | Prop
+   | SProp
+   | Type
+   | Type @%{ _ %}
+   | Type @%{ @universe %}
+   universe ::= max ( {+, @universe_expr } )
+   | @universe_expr
+   universe_expr ::= @universe_name {? + @num }
 
 The types of types are called :gdef:`sort`\s.
 
@@ -13,6 +32,8 @@ The sort :math:`\Prop` intends to be the type of logical propositions. If :math:
 logical proposition then it denotes the class of terms representing
 proofs of :math:`M`. An object :math:`m` belonging to :math:`M` witnesses the fact that :math:`M` is
 provable. An object of type :math:`\Prop` is called a proposition.
+We denote propositions by :n:`@form`.
+This constitutes a semantic subclass of the syntactic class :n:`@term`.
 
 The sort :math:`\SProp` is like :math:`\Prop` but the propositions in
 :math:`\SProp` are known to have irrelevant proofs (all proofs are
@@ -24,6 +45,8 @@ considerations.
 The sort :math:`\Set` intends to be the type of small sets. This includes data
 types such as booleans and naturals, but also products, subsets, and
 function types over these data types.
+We denote specifications (program types) by :n:`@specif`.
+This constitutes a semantic subclass of the syntactic class :n:`@term`.
 
 :math:`\SProp`, :math:`\Prop` and :math:`\Set` themselves can be manipulated as ordinary terms.
 Consequently they also have a type. Because assuming simply that :math:`\Set`

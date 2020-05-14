@@ -14,6 +14,9 @@ constructors. Infinite objects are introduced by a non-ending (but
 effective) process of construction, defined in terms of the constructors
 of the type.
 
+More information on co-inductive definitions can be found in
+:cite:`Gimenez95b,Gim98,GimCas05`.
+
 .. cmd:: CoInductive @inductive_definition {* with @inductive_definition }
 
    This command introduces a co-inductive type.

@@ -519,16 +519,6 @@ One can consequently derive the following property.
    \WF{E;E′}{Γ}
 
 
-.. _Co-inductive-types:
-
-Co-inductive types
-----------------------
-
-The implementation contains also co-inductive definitions, which are
-types inhabited by infinite objects. More information on co-inductive
-definitions can be found in :cite:`Gimenez95b,Gim98,GimCas05`.
-
-
 .. _The-Calculus-of-Inductive-Construction-with-impredicative-Set:
 
 The Calculus of Inductive Constructions with impredicative Set

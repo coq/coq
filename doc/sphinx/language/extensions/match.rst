@@ -287,7 +287,7 @@ This example emphasizes what the printing settings offer.
 Patterns
 --------
 
-The full syntax of :g:`match` is presented in section :ref:`term`.
+The full syntax of `match` is presented in :ref:`match`.
 Identifiers in patterns are either constructor names or variables. Any
 identifier that is not the constructor of an inductive or co-inductive
 type is considered to be a variable. A variable name cannot occur more
