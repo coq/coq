@@ -116,7 +116,7 @@ let prove_trivial_eq h_id context (constructor, type_of_term, term) =
         refine to_refine g) ]
 
 let find_rectype env sigma c =
-  let t, l = decompose_app sigma (Reductionops.whd_betaiotazeta sigma c) in
+  let t, l = decompose_app sigma (Reductionops.whd_betaiotazeta env sigma c) in
   match EConstr.kind sigma t with
   | Ind ind -> (t, l)
   | Construct _ -> (t, l)

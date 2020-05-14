@@ -139,7 +139,7 @@ let build_beq_scheme_deps kn =
        perfomed in a much cleaner way, e.g. using the kernel normal form of
        constructor types and kernel whd_all for the argument types. *)
     let rec aux accu c =
-      let (c,a) = Reductionops.whd_betaiota_stack Evd.empty EConstr.(of_constr c) in
+      let (c,a) = Reductionops.whd_betaiota_stack env Evd.empty EConstr.(of_constr c) in
       let (c,a) = EConstr.Unsafe.(to_constr c, List.map to_constr a) in
       match Constr.kind c with
       | Cast (x,_,_) -> aux accu (Term.applist (x,a))
@@ -238,7 +238,7 @@ let build_beq_scheme mode kn =
     let compute_A_equality rel_list nlist eqA ndx t =
       let lifti = ndx in
       let rec aux c =
-        let (c,a) = Reductionops.whd_betaiota_stack Evd.empty EConstr.(of_constr c) in
+        let (c,a) = Reductionops.whd_betaiota_stack env Evd.empty EConstr.(of_constr c) in
         let (c,a) = EConstr.Unsafe.(to_constr c, List.map to_constr a) in
         match Constr.kind c with
         | Rel x -> mkRel (x-nlist+ndx)

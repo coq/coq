@@ -33,7 +33,7 @@ let project_hint ~poly pri l2r r =
   let p = if l2r then lib_ref "core.iff.proj1" else lib_ref "core.iff.proj2" in
   let sigma, p = Evd.fresh_global env sigma p in
   let c =
-    Reductionops.whd_beta sigma
+    Reductionops.whd_beta env sigma
       (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign))
   in
   let c =

@@ -108,7 +108,7 @@ let app_opt env sigma f t =
   | None -> sigma, t
   | Some f -> f sigma t
   in
-  sigma, whd_betaiota sigma t
+  sigma, whd_betaiota env sigma t
 
 let pair_of_array a = (a.(0), a.(1))
 
@@ -130,7 +130,7 @@ let disc_subset sigma x =
 exception NoSubtacCoercion
 
 let hnf env sigma c = whd_all env sigma c
-let hnf_nodelta env sigma c = whd_betaiota sigma c
+let hnf_nodelta env sigma c = whd_betaiota env sigma c
 
 let lift_args n sign =
   let rec liftrec k = function
@@ -343,7 +343,7 @@ let app_coercion env sigma coercion v =
   | Some f ->
     let sigma, v' = f sigma v in
     let sigma, v' = Typing.solve_evars env sigma v' in
-    sigma, whd_betaiota sigma v'
+    sigma, whd_betaiota env sigma v'
 
 let coerce_itf ?loc env sigma v t c1 =
   let sigma, coercion = coerce ?loc env sigma t c1 in

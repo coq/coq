@@ -653,7 +653,7 @@ let fix_r2l_forward_rew_scheme (c, ctx') =
         (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 1) p)
           (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 2) hp)
             (mkLambda_or_LetIn (RelDecl.map_constr (lift 2) ind)
-              (EConstr.Unsafe.to_constr (Reductionops.whd_beta sigma
+              (EConstr.Unsafe.to_constr (Reductionops.whd_beta env sigma
                 (EConstr.of_constr (applist (c,
                   Context.Rel.to_extended_list mkRel 3 indargs @ [mkRel 1;mkRel 3;mkRel 2]))))))))
       in c', ctx'

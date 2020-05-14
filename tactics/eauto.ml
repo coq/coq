@@ -485,7 +485,7 @@ let unfold_head env sigma (ids, csts) c =
         true, EConstr.of_constr (Environ.constant_value_in env (cst, u))
     | App (f, args) ->
         (match aux f with
-        | true, f' -> true, Reductionops.whd_betaiota sigma (mkApp (f', args))
+        | true, f' -> true, Reductionops.whd_betaiota env sigma (mkApp (f', args))
         | false, _ ->
             let done_, args' =
               Array.fold_left_i (fun i (done_, acc) arg ->

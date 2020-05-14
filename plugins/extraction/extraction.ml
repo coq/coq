@@ -259,7 +259,7 @@ let parse_ind_args si args relmax =
 
 
 let rec extract_type env sg db j c args =
-  match EConstr.kind sg (whd_betaiotazeta sg c) with
+  match EConstr.kind sg (whd_betaiotazeta env sg c) with
     | App (d, args') ->
         (* We just accumulate the arguments. *)
         extract_type env sg db j d (Array.to_list args' @ args)
@@ -380,7 +380,7 @@ and extract_type_app env sg db (r,s) args =
 and extract_type_scheme env sg db c p =
   if Int.equal p 0 then extract_type env sg db 0 c []
   else
-    let c = whd_betaiotazeta sg c in
+    let c = whd_betaiotazeta env sg c in
     match EConstr.kind sg c with
       | Lambda (n,t,d) ->
           extract_type_scheme (push_rel_assum (n,t) env) sg db d (p-1)

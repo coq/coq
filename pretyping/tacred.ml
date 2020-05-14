@@ -252,7 +252,7 @@ let invert_name labs l {binder_name=na0} env sigma ref na =
                 | None -> None
                 | Some c ->
                     let labs',ccl = decompose_lam sigma c in
-                    let _, l' = whd_betalet_stack sigma ccl in
+                    let _, l' = whd_betalet_stack env sigma ccl in
                     let labs' = List.map snd labs' in
                     (* ppedrot: there used to be generic equality on terms here *)
                     let eq_constr c1 c2 = EConstr.eq_constr sigma c1 c2 in
@@ -288,7 +288,7 @@ let compute_consteval_direct env sigma ref =
 
 let compute_consteval_mutual_fix env sigma ref =
   let rec srec env minarg labs ref c =
-    let c',l = whd_betalet_stack sigma c in
+    let c',l = whd_betalet_stack env sigma c in
     let nargs = List.length l in
     match EConstr.kind sigma c' with
       | Lambda (na,t,g) when List.is_empty l ->
@@ -424,7 +424,7 @@ let solve_arity_problem env sigma fxminargs c =
   let evm = ref sigma in
   let set_fix i = evm := Evd.define i (mkVar vfx) !evm in
   let rec check strict c =
-    let c' = whd_betaiotazeta sigma c in
+    let c' = whd_betaiotazeta env sigma c in
     let (h,rcargs) = decompose_app_vect sigma c' in
     match EConstr.kind sigma h with
         Evar(i,_) when Evar.Map.mem i fxminargs && not (Evd.is_defined !evm i) ->
@@ -725,7 +725,7 @@ let rec red_elim_const env sigma ref u largs =
           if evaluable_reference_eq sigma ref refgoal then
             (c,args)
           else
-            let c', lrest = whd_betalet_stack sigma (applist(c,args)) in
+            let c', lrest = whd_betalet_stack env sigma (applist(c,args)) in
             descend (destEvalRefU sigma c') lrest in
         let (_, midargs as s) = descend (ref,u) largs in
         let d, lrest = whd_nothing_for_iota env sigma (applist s) in
@@ -736,11 +736,11 @@ let rec red_elim_const env sigma ref u largs =
            | Reduced (c,rest) -> (nf_beta env sigma c, rest), nocase)
     | NotAnElimination when unfold_nonelim ->
          let c = reference_value env sigma ref u in
-           (whd_betaiotazeta sigma (applist (c, largs)), []), nocase
+           (whd_betaiotazeta env sigma (applist (c, largs)), []), nocase
     | _ -> raise Redelimination
     with Redelimination when unfold_anyway ->
        let c = reference_value env sigma ref u in
-         (whd_betaiotazeta sigma (applist (c, largs)), []), nocase
+         (whd_betaiotazeta env sigma (applist (c, largs)), []), nocase
 
 and reduce_params env sigma stack l =
   let len = List.length stack in
@@ -849,7 +849,7 @@ and whd_construct_stack env sigma s =
 let try_red_product env sigma c =
   let simpfun c = clos_norm_flags betaiotazeta env sigma c in
   let rec redrec env x =
-    let x = whd_betaiota sigma x in
+    let x = whd_betaiota env sigma x in
     match EConstr.kind sigma x with
       | App (f,l) ->
           (match EConstr.kind sigma f with
@@ -875,7 +875,7 @@ let try_red_product env sigma c =
           | _ -> redrec env c
         in
         let npars = Projection.npars p in
-          (match reduce_projection env sigma p ~npars (whd_betaiotazeta_stack sigma c') [] with
+          (match reduce_projection env sigma p ~npars (whd_betaiotazeta_stack env sigma c') [] with
           | Reduced s -> simpfun (applist s)
           | NotReducible -> raise Redelimination)
       | _ ->

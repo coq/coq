@@ -88,9 +88,9 @@ let is_lax_conjunction = function
 let prod_assum sigma t = fst (decompose_prod_assum sigma t)
 
 (* whd_beta normalize the types of arguments in a product *)
-let rec whd_beta_prod sigma c = match EConstr.kind sigma c with
-  | Prod (n,t,c) -> mkProd (n,Reductionops.whd_beta sigma t,whd_beta_prod sigma c)
-  | LetIn (n,d,t,c) -> mkLetIn (n,d,t,whd_beta_prod sigma c)
+let rec whd_beta_prod env sigma c = match EConstr.kind sigma c with
+  | Prod (n,t,c) -> mkProd (n,Reductionops.whd_beta env sigma t,whd_beta_prod env sigma c)
+  | LetIn (n,d,t,c) -> mkLetIn (n,d,t,whd_beta_prod env sigma c)
   | _ -> c
 
 let match_with_one_constructor env sigma style onlybinary allow_rec t =
@@ -119,7 +119,7 @@ let match_with_one_constructor env sigma style onlybinary allow_rec t =
         else
           let ctx, cty = mip.mind_nf_lc.(0) in
           let cty = EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx) in
-          let ctyp = whd_beta_prod sigma
+          let ctyp = whd_beta_prod env sigma
             (Termops.prod_applist_assum sigma (Context.Rel.length mib.mind_params_ctxt) cty args) in
           let cargs = List.map RelDecl.get_type (prod_assum sigma ctyp) in
           if not (is_lax_conjunction style) || has_nodep_prod env sigma ctyp then

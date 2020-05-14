@@ -109,7 +109,7 @@ let deepen seq={seq with depth=seq.depth-1}
 
 let record item seq={seq with history=History.add item seq.history}
 
-let lookup sigma item seq=
+let lookup env sigma item seq=
   History.mem item seq.history ||
   match item with
       (_,None)->false
@@ -117,7 +117,7 @@ let lookup sigma item seq=
         let p (id2,o)=
           match o with
               None -> false
-            | Some (m2, t2)-> GlobRef.equal id id2 && m2>m && more_general sigma (m2, EConstr.of_constr t2) (m, EConstr.of_constr t) in
+            | Some (m2, t2)-> GlobRef.equal id id2 && m2>m && more_general env sigma (m2, EConstr.of_constr t2) (m, EConstr.of_constr t) in
           History.exists p seq.history
 
 let add_formula env sigma side nam t seq =

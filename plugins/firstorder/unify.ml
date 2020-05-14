@@ -29,7 +29,7 @@ let subst_meta subst t =
   let subst = List.map (fun (m, c) -> (m, EConstr.Unsafe.to_constr c)) subst in
   EConstr.of_constr (subst_meta subst (EConstr.Unsafe.to_constr t))
 
-let unif evd t1 t2=
+let unif env evd t1 t2=
   let bige=Queue.create ()
   and sigma=ref [] in
   let bind i t=
@@ -46,8 +46,8 @@ let unif evd t1 t2=
     Queue.add (t1,t2) bige;
     try while true do
       let t1,t2=Queue.take bige in
-      let nt1=head_reduce (whd_betaiotazeta evd t1)
-      and nt2=head_reduce (whd_betaiotazeta evd t2) in
+      let nt1=head_reduce (whd_betaiotazeta env evd t1)
+      and nt2=head_reduce (whd_betaiotazeta env evd t2) in
         match (EConstr.kind evd nt1),(EConstr.kind evd nt2) with
             Meta i,Meta j->
               if not (Int.equal i j) then
@@ -123,9 +123,9 @@ let mk_rel_inst evd t=
   in
   let nt=renum_rec 0 t in (!new_rel - 1,nt)
 
-let unif_atoms evd i dom t1 t2=
+let unif_atoms env evd i dom t1 t2=
   try
-    let t=Int.List.assoc i (unif evd t1 t2) in
+    let t=Int.List.assoc i (unif env evd t1 t2) in
       if isMeta evd t then Some (Phantom dom)
       else Some (Real(mk_rel_inst evd t,value evd i t1))
   with
@@ -136,11 +136,11 @@ let renum_metas_from k n t= (* requires n = max (free_rels t) *)
   let l=List.init n (fun i->mkMeta (k+i)) in
     substl l t
 
-let more_general evd (m1,t1) (m2,t2)=
+let more_general env evd (m1,t1) (m2,t2)=
   let mt1=renum_metas_from 0 m1 t1
   and mt2=renum_metas_from m1 m2 t2 in
     try
-      let sigma=unif evd mt1 mt2 in
+      let sigma=unif env evd mt1 mt2 in
       let p (n,t)= n<m1 || isMeta evd t in
         List.for_all p sigma
     with UFAIL(_,_)->false
