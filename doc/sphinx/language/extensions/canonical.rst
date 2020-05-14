@@ -23,7 +23,7 @@ notation will be overloaded, and its meaning will depend on the types
 of the terms that are compared.
 
 .. coqtop:: all
-  
+
   Module EQ.
     Record class (T : Type) := Class { cmp : T -> T -> Prop }.
     Structure type := Pack { obj : Type; class_of : class obj }.
@@ -54,7 +54,7 @@ The following line tests that, when we assume a type ``e`` that is in
 theEQ class, we can relate two of its objects with ``==``.
 
 .. coqtop:: all
-  
+
   Import EQ.theory.
   Check forall (e : EQ.type) (a b : EQ.obj e), a == b.
 
@@ -67,7 +67,7 @@ Still, no concrete type is in the ``EQ`` class.
 We amend that by equipping ``nat`` with a comparison relation.
 
 .. coqtop:: all
-  
+
    Definition nat_eq (x y : nat) := Nat.compare x y = Eq.
    Definition nat_EQcl : EQ.class nat := EQ.Class nat_eq.
    Canonical Structure nat_EQty : EQ.type := EQ.Pack nat nat_EQcl.
@@ -109,7 +109,7 @@ how to do that.
 
   Definition pair_eq (e1 e2 : EQ.type) (x y : EQ.obj e1 * EQ.obj e2) :=
     fst x == fst y /\ snd x == snd y.
-  
+
   Definition pair_EQcl e1 e2 := EQ.Class (pair_eq e1 e2).
 
   Canonical Structure pair_EQty (e1 e2 : EQ.type) : EQ.type :=
@@ -147,7 +147,7 @@ order relation, to which we associate the infix ``<=`` notation.
     Arguments op {_} x y : simpl never.
 
     Arguments Class {T} cmp.
-  
+
     Module theory.
 
       Notation "x <= y" := (op x y) (at level 70).
@@ -203,7 +203,7 @@ We need to define a new class that inherits from both ``EQ`` and ``LE``.
 
     Record mixin (e : EQ.type) (le : EQ.obj e -> EQ.obj e -> Prop) :=
       Mixin { compat : forall x y : EQ.obj e, le x y /\ le y x <-> x == y }.
-    
+
     Record class T := Class {
                         EQ_class : EQ.class T;
                         LE_class : LE.class T;
@@ -249,7 +249,7 @@ type.
 
     Definition to_LE (e : type) : LE.type :=
        LE.Pack (obj e) (LE_class _ (class_of e)).
- 
+
     Canonical Structure to_LE.
 
 We can now formulate out first theorem on the objects of the ``LEQ``
@@ -259,7 +259,7 @@ structure.
 
      Lemma lele_eq (e : type) (x y : obj e) : x <= y -> y <= x -> x == y.
 
-     now intros; apply (compat _ _ (extra _ (class_of e)) x y); split. 
+     now intros; apply (compat _ _ (extra _ (class_of e)) x y); split.
 
      Qed.
 
@@ -280,14 +280,14 @@ setting to any concrete instate of the algebraic structure.
 
   Example test_algebraic (n m : nat) : n <= m -> m <= n -> n == m.
 
-  Fail apply (lele_eq n m). 
+  Fail apply (lele_eq n m).
 
   Abort.
 
   Example test_algebraic2 (l1 l2 : LEQ.type) (n m : LEQ.obj l1 * LEQ.obj l2) :
        n <= m -> m <= n -> n == m.
 
-  Fail apply (lele_eq n m). 
+  Fail apply (lele_eq n m).
 
   Abort.
 
@@ -332,14 +332,14 @@ subsection we show how to make them more compact.
 
      Example test_algebraic (n m : nat) : n <= m -> m <= n -> n == m.
 
-     now apply (lele_eq n m). 
+     now apply (lele_eq n m).
 
      Qed.
 
      Example test_algebraic2 (n m : nat * nat) : n <= m -> m <= n -> n == m.
 
      now apply (lele_eq n m). Qed.
-  
+
   End Add_instance_attempt.
 
 Note that no direct proof of ``n <= m -> m <= n -> n == m`` is provided by
@@ -424,7 +424,7 @@ The declaration of canonical instances can now be way more compact:
 .. coqtop:: all
 
   Canonical Structure nat_LEQty := Eval hnf in Pack nat nat_LEQmx.
-  
+
   Canonical Structure pair_LEQty (l1 l2 : LEQ.type) :=
      Eval hnf in Pack (LEQ.obj l1 * LEQ.obj l2) (pair_LEQmx l1 l2).
 
@@ -434,4 +434,3 @@ the message).
 .. coqtop:: all
 
   Fail Canonical Structure err := Eval hnf in Pack bool nat_LEQmx.
-
