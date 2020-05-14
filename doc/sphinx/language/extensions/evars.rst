@@ -69,7 +69,7 @@ with a named-goal selector, see :ref:`goal-selectors`).
 .. index:: _
 
 Inferable subterms
-------------------
+~~~~~~~~~~~~~~~~~~
 
 Expressions often contain redundant pieces of information. Subterms that can be
 automatically inferred by Coq can be replaced by the symbol ``_`` and Coq will
