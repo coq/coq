@@ -906,7 +906,7 @@ let print_name env sigma na udecl =
   match na with
   | {loc; v=Constrexpr.ByNotation (ntn,sc)} ->
     print_any_name env sigma
-      (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
+      (Term (Notation.interp_notation_as_global_reference ?loc ~head:false (fun _ -> true)
                ntn sc))
       udecl
   | {loc; v=Constrexpr.AN ref} ->
@@ -960,7 +960,7 @@ let print_about env sigma na udecl =
   match na with
   | {loc;v=Constrexpr.ByNotation (ntn,sc)} ->
       print_about_any ?loc env sigma
-        (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
+        (Term (Notation.interp_notation_as_global_reference ?loc ~head:false (fun _ -> true)
                ntn sc)) udecl
   | {loc;v=Constrexpr.AN ref} ->
       print_about_any ?loc env sigma (locate_any_name ref) udecl

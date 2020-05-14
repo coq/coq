@@ -195,8 +195,8 @@ Opaque F.id.
 
 Goal F.id 0 = F.id 0.
   Fail unfold F.id.
-  (* This should work, but it fails with "Cannot coerce F.id to an evaluable reference." *)
-  Fail F.with_transparent_id ltac:(progress unfold F.id).
+  F.with_transparent_id ltac:(progress unfold F.id).
+  Undo.
   F.with_transparent_id ltac:(let x := constr:(@F.id) in progress unfold x).
 Abort.
 
@@ -212,8 +212,8 @@ Opaque F2.id.
 
 Goal F2.id 0 = F2.id 0.
   Fail unfold F2.id.
-  (* This should work, but it fails with "Cannot coerce F2.id to an evaluable reference." *)
-  Fail F2.with_transparent_id ltac:(progress unfold F2.id).
+  F2.with_transparent_id ltac:(progress unfold F2.id).
+  Undo.
   F2.with_transparent_id ltac:(let x := constr:(@F2.id) in progress unfold x).
 Abort.
 

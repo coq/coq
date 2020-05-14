@@ -1785,7 +1785,7 @@ let interp_search_about_item env sigma =
       try
         let ref =
           Notation.interp_notation_as_global_reference
-            (fun _ -> true) s sc in
+            ~head:false (fun _ -> true) s sc in
         GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->
         user_err ~hdr:"interp_search_about_item"
