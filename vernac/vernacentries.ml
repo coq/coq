@@ -95,8 +95,14 @@ let show_proof ~pstate =
   try
     let pstate = Option.get pstate in
     let p = Declare.Proof.get_proof pstate in
-    let sigma, env = Declare.get_current_context pstate in
+    let sigma, _ = Declare.get_current_context pstate in
     let pprf = Proof.partial_proof p in
+    (* In the absence of an environment explicitly attached to the
+       proof and on top of which side effects of the proof would be pushed, ,
+       we take the global environment which in practise should be a
+       superset of the initial environment in which the proof was
+       started *)
+    let env = Global.env() in
     Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
   (* We print nothing if there are no goals left *)
   with
