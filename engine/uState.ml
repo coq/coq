@@ -34,7 +34,7 @@ type t =
    (** The subset of unification variables that can be instantiated with
         algebraic universes as they appear in inferred types only. *)
    uctx_universes : UGraph.t; (** The current graph extended with the local constraints *)
-   uctx_universes_lbound : Univ.Level.t; (** The lower bound on universes (e.g. Set or Prop) *)
+   uctx_universes_lbound : UGraph.Bound.t; (** The lower bound on universes (e.g. Set or Prop) *)
    uctx_initial_universes : UGraph.t; (** The graph at the creation of the evar_map *)
    uctx_weak_constraints : UPairSet.t
  }
@@ -48,7 +48,7 @@ let empty =
     uctx_univ_variables = LMap.empty;
     uctx_univ_algebraic = LSet.empty;
     uctx_universes = initial_sprop_cumulative;
-    uctx_universes_lbound = Univ.Level.set;
+    uctx_universes_lbound = UGraph.Bound.Set;
     uctx_initial_universes = initial_sprop_cumulative;
     uctx_weak_constraints = UPairSet.empty; }
 
@@ -443,6 +443,10 @@ let check_univ_decl ~poly uctx decl =
       (ContextSet.constraints uctx.uctx_local);
   ctx
 
+let is_bound l lbound = match lbound with
+| UGraph.Bound.Prop -> Level.is_prop l
+| UGraph.Bound.Set -> Level.is_set l
+
 let restrict_universe_context ~lbound (univs, csts) keep =
   let removed = LSet.diff univs keep in
   if LSet.is_empty removed then univs, csts
@@ -455,7 +459,7 @@ let restrict_universe_context ~lbound (univs, csts) keep =
   let allkept = LSet.union (UGraph.domain UGraph.initial_universes) (LSet.diff allunivs removed) in
   let csts = UGraph.constraints_for ~kept:allkept g in
   let csts = Constraint.filter (fun (l,d,r) ->
-      not ((Level.equal l lbound && d == Le) || (Level.is_prop l && d == Lt && Level.is_set r))) csts in
+      not ((is_bound l lbound && d == Le) || (Level.is_prop l && d == Lt && Level.is_set r))) csts in
   (LSet.inter univs keep, csts)
 
 let restrict ctx vars =
@@ -600,10 +604,10 @@ let make_with_initial_binders ~lbound e us =
 
 let add_global_univ uctx u =
   let initial =
-    UGraph.add_universe ~lbound:Univ.Level.set ~strict:true u uctx.uctx_initial_universes
+    UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:true u uctx.uctx_initial_universes
   in
   let univs =
-    UGraph.add_universe ~lbound:Univ.Level.set ~strict:true u uctx.uctx_universes
+    UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:true u uctx.uctx_universes
   in
   { uctx with uctx_local = ContextSet.add_universe u uctx.uctx_local;
                                      uctx_initial_universes = initial;

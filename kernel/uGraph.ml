@@ -148,8 +148,14 @@ let enforce_leq_alg u v g =
   assert (check_leq g u v);
   cg
 
+module Bound =
+struct
+  type t = Prop | Set
+end
+
 exception AlreadyDeclared = G.AlreadyDeclared
 let add_universe u ~lbound ~strict g =
+  let lbound = match lbound with Bound.Prop -> Level.prop | Bound.Set -> Level.set in
   let graph = G.add u g.graph in
   let d = if strict then Lt else Le in
   enforce_constraint (lbound,d,u) {g with graph}

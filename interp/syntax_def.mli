@@ -13,12 +13,10 @@ open Notation_term
 
 (** Syntactic definitions. *)
 
-type syndef_interpretation = (Id.t * subscopes) list * notation_constr
-
 val declare_syntactic_definition : local:bool -> Deprecation.t option -> Id.t ->
-  onlyparsing:bool -> syndef_interpretation -> unit
+  onlyparsing:bool -> interpretation -> unit
 
-val search_syntactic_definition : ?loc:Loc.t -> KerName.t -> syndef_interpretation
+val search_syntactic_definition : ?loc:Loc.t -> KerName.t -> interpretation
 
 val search_filtered_syntactic_definition : ?loc:Loc.t ->
-  (syndef_interpretation -> 'a option) -> KerName.t -> 'a option
+  (interpretation -> 'a option) -> KerName.t -> 'a option

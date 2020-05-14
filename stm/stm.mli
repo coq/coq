@@ -52,6 +52,20 @@ type stm_doc_type =
   | VioDoc      of string       (* file path *)
   | Interactive of interactive_top    (* module path *)
 
+type option_command = OptionSet of string option | OptionUnset
+
+type injection_command =
+  | OptionInjection of (Goptions.option_name * option_command)
+  (** Set flags or options before the initial state is ready. *)
+  | RequireInjection of (string * string option * bool option)
+  (** Require libraries before the initial state is
+     ready. Parameters follow [Library], that is to say,
+     [lib,prefix,import_export] means require library [lib] from
+     optional [prefix] and [import_export] if [Some false/Some true]
+     is used.  *)
+  (* -load-vernac-source interleaving is not supported yet *)
+  (* | LoadInjection of (string * bool) *)
+
 (** STM initialization options: *)
 type stm_init_options =
   { doc_type : stm_doc_type
@@ -66,12 +80,9 @@ type stm_init_options =
   (** [vo] load paths for the document. Usually extracted from -R
      options / _CoqProject *)
 
-  ; require_libs : (string * string option * bool option) list
-  (** Require [require_libs] before the initial state is
-     ready. Parameters follow [Library], that is to say,
-     [lib,prefix,import_export] means require library [lib] from
-     optional [prefix] and [import_export] if [Some false/Some true]
-     is used.  *)
+  ; injections : injection_command list
+  (** Injects Require and Set/Unset commands before the initial
+     state is ready *)
 
   ; stm_options  : AsyncOpts.stm_opt
   (** Low-level STM options *)

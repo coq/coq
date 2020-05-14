@@ -92,41 +92,6 @@ let create_empty_file filename =
   let f = open_out filename in
   close_out f
 
-let interp_set_option opt v old =
-  let open Goptions in
-  let err expect =
-    let opt = String.concat " " opt in
-    let got = v in (* avoid colliding with Pp.v *)
-    CErrors.user_err
-      Pp.(str "-set: " ++ str opt ++
-          str" expects " ++ str expect ++
-          str" but got " ++ str got)
-  in
-  match old with
-  | BoolValue _ ->
-    let v = match String.trim v with
-      | "true" -> true
-      | "false" | "" -> false
-      | _ -> err "a boolean"
-    in
-    BoolValue v
-  | IntValue _ ->
-    let v = String.trim v in
-    let v = match int_of_string_opt v with
-      | Some _ as v -> v
-      | None -> if v = "" then None else err "an int"
-    in
-    IntValue v
-  | StringValue _ -> StringValue v
-  | StringOptValue _ -> StringOptValue (Some v)
-
-let set_option = let open Goptions in function
-  | opt, OptionUnset -> unset_option_value_gen ~locality:OptLocal opt
-  | opt, OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
-  | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
-
-let set_options = List.iter set_option
-
 (* Compile a vernac file *)
 let compile opts copts ~echo ~f_in ~f_out =
   let open Vernac.State in
@@ -140,7 +105,7 @@ let compile opts copts ~echo ~f_in ~f_out =
                     ++ str ".")
   in
   let ml_load_path, vo_load_path = build_load_path opts in
-  let require_libs = require_libs opts in
+  let injections = injection_commands opts in
   let stm_options = opts.config.stm_flags in
   let output_native_objects = match opts.config.native_compiler with
     | NativeOff -> false | NativeOn {ondemand} -> not ondemand
@@ -165,11 +130,10 @@ let compile opts copts ~echo ~f_in ~f_out =
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
           Stm.{ doc_type = VoDoc long_f_dot_out; ml_load_path;
-                vo_load_path; require_libs; stm_options;
+                vo_load_path; injections; stm_options;
               } in
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
-      set_options opts.config.set_options;
       let ldir = Stm.get_ldir ~doc:state.doc in
       Aux_file.(start_aux_file
         ~aux_file:(aux_file_name_for long_f_dot_out)
@@ -218,12 +182,11 @@ let compile opts copts ~echo ~f_in ~f_out =
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
           Stm.{ doc_type = VioDoc long_f_dot_out; ml_load_path;
-                vo_load_path; require_libs; stm_options;
+                vo_load_path; injections; stm_options;
               } in
 
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
-      set_options opts.config.set_options;
       let ldir = Stm.get_ldir ~doc:state.doc in
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_in in
       let doc = Stm.finish ~doc:state.doc in

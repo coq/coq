@@ -67,7 +67,7 @@ end
 type stratification = {
   env_universes : UGraph.t;
   env_sprop_allowed : bool;
-  env_universes_lbound : Univ.Level.t;
+  env_universes_lbound : UGraph.Bound.t;
   env_engagement : engagement
 }
 
@@ -129,7 +129,7 @@ let empty_env = {
   env_stratification = {
     env_universes = UGraph.initial_universes;
     env_sprop_allowed = true;
-    env_universes_lbound = Univ.Level.set;
+    env_universes_lbound = UGraph.Bound.Set;
     env_engagement = PredicativeSet };
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
