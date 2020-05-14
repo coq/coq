@@ -14,6 +14,12 @@ forall b1 b2, b1 = b2
      : Prop
 fun b => b = b
      : bool -> Prop
+fun b c : bool => b = c
+     : bool -> bool -> Prop
+fun c b : bool => b = c
+     : bool -> bool -> Prop
+fun b1 b2 => b1 = b2
+     : bool -> bool -> Prop
 fix f b (n : nat) {struct n} : bool :=
   match n with
   | 0 => b

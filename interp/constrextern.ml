@@ -836,7 +836,7 @@ let rec flatten_application c = match DAst.get c with
 
 let same_binder_type ty nal c =
   match nal, DAst.get c with
-  | _::_, GProd (_,_,ty',_) -> glob_constr_eq ty ty'
+  | _::_, (GProd (_,_,ty',_) | GLambda (_,_,ty',_)) -> glob_constr_eq ty ty'
   | [], _ -> true
   | _ -> assert false
 
