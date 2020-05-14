@@ -18,6 +18,7 @@ open Indfun_common
 open Indfun
 open Stdarg
 open Tacarg
+open Extraargs
 open Tactypes
 open Pcoq.Prim
 open Pcoq.Constr
@@ -96,14 +97,12 @@ let functional_induction b c x pat =
 }
 
 TACTIC EXTEND newfunind
-| ["functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] ->
-     {
-       let c = match cl with
-         | [] -> assert false
-         | [c] -> c
-         | c::cl -> EConstr.applist(c,cl)
-       in
-       Extratactics.onSomeWithHoles (fun x -> functional_induction true c x pat) princl }
+| ["functional" "induction" lconstr(c) fun_ind_using(princl) with_names(pat)] ->
+   {
+     (Extratactics.onSomeWithHoles
+          (fun x -> functional_induction true c x pat) princl)
+   }
+
 END
 (***** debug only ***)
 TACTIC EXTEND snewfunind
