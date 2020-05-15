@@ -32,7 +32,7 @@ val do_definition_program
   -> name:Id.t
   -> scope:Declare.locality
   -> poly:bool
-  -> kind:Decls.definition_object_kind
+  -> kind:Decls.logical_kind
   -> universe_decl_expr option
   -> local_binder_expr list
   -> red_expr option

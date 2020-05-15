@@ -95,7 +95,7 @@ let warn_solve_errored =
         ; fnl ()
         ; str "This will become an error in the future" ])
 
-let solve_by_tac ?loc name evi t poly uctx =
+let solve_by_tac ?loc name evi t ~poly ~uctx =
   (* the status is dropped. *)
   try
     let env = Global.env () in
@@ -137,7 +137,7 @@ let rec solve_obligation prg num tac =
   let obl = subst_deps_obl obls obl in
   let scope = Declare.(Global Declare.ImportNeedQualified) in
   let kind = kind_of_obligation (snd obl.obl_status) in
-  let evd = Evd.from_ctx prg.prg_ctx in
+  let evd = Evd.from_ctx prg.prg_uctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
   let proof_ending =
@@ -145,7 +145,7 @@ let rec solve_obligation prg num tac =
       {Declare.name = prg.prg_name; num; auto}
   in
   let info = Declare.Info.make ~proof_ending ~scope ~kind () in
-  let poly = prg.prg_poly in
+  let poly = Internal.get_poly prg in
   let lemma = Declare.start_proof ~name:obl.obl_name ~poly ~impargs:[] ~udecl:UState.default_univ_decl ~info evd (EConstr.of_constr obl.obl_type) in
   let lemma = fst @@ Declare.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Declare.Proof.set_endline_tactic tac lemma) lemma tac in
@@ -177,21 +177,20 @@ and solve_obligation_by_tac prg obls i tac =
             | Some t -> t
             | None -> !default_tactic
         in
-        let evd = Evd.from_ctx prg.prg_ctx in
-        let evd = Evd.update_sigma_env evd (Global.env ()) in
-        match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac
-                prg.prg_poly (Evd.evar_universe_context evd) with
+        let uctx = Internal.get_uctx prg in
+        let uctx = UState.update_sigma_env uctx (Global.env ()) in
+        let poly = Internal.get_poly prg in
+        match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac ~poly ~uctx with
         | None -> None
         | Some (t, ty, uctx) ->
-          let prg = ProgramDecl.set_uctx ~uctx prg in
-          (* Why is uctx not used above? *)
+          let prg = ProgramDecl.Internal.set_uctx ~uctx prg in
           let def, obl' = declare_obligation prg obl ~body:t ~types:ty ~uctx in
           obls.(i) <- obl';
-          if def && not prg.prg_poly then (
+          if def && not poly then (
             (* Declare the term constraints with the first obligation only *)
             let uctx_global = UState.from_env (Global.env ()) in
             let uctx = UState.merge_subst uctx_global (UState.subst uctx) in
-            Some (ProgramDecl.set_uctx ~uctx prg))
+            Some (ProgramDecl.Internal.set_uctx ~uctx prg))
           else Some prg
       else None
 
@@ -313,9 +312,12 @@ let msg_generating_obl name obls =
 let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
     ?(impargs = []) ~poly
     ?(scope = Declare.Global Declare.ImportDefaultBehavior)
-    ?(kind = Decls.Definition) ?tactic ?(reduce = reduce) ?hook
+    ?(kind = Decls.(IsDefinition Definition)) ?tactic ?(reduce = reduce) ?hook
     ?(opaque = false) obls =
-  let prg = ProgramDecl.make ~opaque name ~udecl term t ~uctx [] None [] obls ~impargs ~poly ~scope ~kind reduce ?hook in
+  let prg =
+    let info = Declare.CInfo.make ~poly ~opaque ~udecl ~impargs ~scope ~kind ?hook () in
+    ProgramDecl.make name ~info ~body:term ~types:t ~uctx ~reduce ~ntns:[] ~deps:[] None obls
+  in
   let {obls;_} = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose (msg_generating_obl name) obls;
@@ -333,16 +335,16 @@ let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
 
 let add_mutual_definitions l ~uctx ?(udecl = UState.default_univ_decl)
     ?tactic ~poly ?(scope = Declare.Global Declare.ImportDefaultBehavior)
-    ?(kind = Decls.Definition) ?(reduce = reduce) ?hook ?(opaque = false)
+    ?(kind = Decls.(IsDefinition Definition)) ?(reduce = reduce) ?hook ?(opaque = false)
     notations fixkind =
   let deps = List.map (fun ({Declare.Recthm.name; _}, _, _) -> name) l in
   let pm =
     List.fold_left
       (fun () ({Declare.Recthm.name; typ; impargs; _}, b, obls) ->
+        let info = Declare.CInfo.make ~impargs ~poly ~scope ~kind ~opaque ~udecl ?hook () in
         let prg =
-          ProgramDecl.make ~opaque name ~udecl (Some b) typ ~uctx deps
-            (Some fixkind) notations obls ~impargs ~poly ~scope ~kind reduce
-            ?hook
+          ProgramDecl.make name ~info ~body:(Some b) ~types:typ ~uctx ~deps
+            (Some fixkind) ~ntns:notations obls ~reduce
         in
         State.add name prg)
       () l
@@ -371,9 +373,10 @@ let admit_prog prg =
         match x.obl_body with
         | None ->
             let x = subst_deps_obl obls x in
-            let ctx = UState.univ_entry ~poly:false prg.prg_ctx in
+            let uctx = Internal.get_uctx prg in
+            let univs = UState.univ_entry ~poly:false uctx in
             let kn = Declare.declare_constant ~name:x.obl_name ~local:Declare.ImportNeedQualified
-              (Declare.ParameterEntry (None, (x.obl_type, ctx), None)) ~kind:Decls.(IsAssumption Conjectural)
+              (Declare.ParameterEntry (None, (x.obl_type, univs), None)) ~kind:Decls.(IsAssumption Conjectural)
             in
               Declare.assumption_message x.obl_name;
               obls.(i) <- Obligation.set_body ~body:(DefinedObl (kn, Univ.Instance.empty)) x

@@ -577,6 +577,7 @@ let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt 
       let sigma = Evd.from_env env in
       Some (snd (Hook.get f_interp_redexp env sigma r)) in
   if program_mode then
+    let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~name:name.v
       ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook
   else

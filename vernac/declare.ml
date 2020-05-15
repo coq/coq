@@ -1037,6 +1037,26 @@ let declare_universe_context = DeclareUctx.declare_universe_context
 
 type locality = Locality.locality = | Discharge | Global of import_status
 
+module CInfo = struct
+
+  type t =
+    { poly : bool
+    ; opaque : bool
+    ; inline : bool
+    ; kind : Decls.logical_kind
+    ; udecl : UState.universe_decl
+    ; scope : locality
+    ; impargs : Impargs.manual_implicits
+    ; hook : Hook.t option
+    }
+
+  let make ?(poly=false) ?(opaque=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
+      ?(udecl=UState.default_univ_decl) ?(scope=Global ImportNeedQualified) ?(impargs=[])
+      ?hook () =
+    { poly; opaque; inline; kind; udecl; scope; impargs; hook }
+
+end
+
 (* Locality stuff *)
 let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
   let should_suggest =
@@ -1077,7 +1097,8 @@ let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
     let vars = Vars.universes_of_constr (List.hd fixdecls) in
     vars, fixdecls, None
 
-let declare_mutually_recursive_core ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) fixitems =
+let declare_mutually_recursive_core ~info ~ntns ~uctx ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) fixitems =
+  let { CInfo.poly; udecl; opaque; scope; kind; _ } = info in
   let vars, fixdecls, indexes =
     mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes in
   let uctx, univs =
@@ -1127,20 +1148,21 @@ let declare_assumption ~name ~scope ~hook ~impargs ~uctx pe =
 
 (* Preparing proof entries *)
 
-let prepare_definition ?opaque ?inline ~poly ~udecl ~types ~body sigma =
+let prepare_definition ~info ~types ~body sigma =
+  let { CInfo.poly; udecl; opaque; inline; _ } = info in
   let env = Global.env () in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf body, Option.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  let entry = definition_entry ?opaque ?inline ?types ~univs body in
+  let entry = definition_entry ~opaque ~inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
-let declare_definition_core ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
-    ~obls ~poly ?inline ~types ~body sigma =
-  let entry, uctx = prepare_definition ~opaque ~poly ~udecl ~types ~body ?inline sigma in
+let declare_definition_core ~name ~info ~obls ~types ~body sigma =
+  let entry, uctx = prepare_definition ~info ~types ~body sigma in
+  let { CInfo.scope; kind; impargs; hook; _ } = info in
   declare_entry_core ~name ~scope ~kind ~impargs ~obls ?hook ~uctx entry
 
 let declare_definition = declare_definition_core ~obls:[]
@@ -1196,37 +1218,32 @@ type obligations = {obls : Obligation.t array; remaining : int}
 type fixpoint_kind = IsFixpoint of lident option list | IsCoFixpoint
 
 module ProgramDecl = struct
+
   type t =
     { prg_name : Id.t
+    ; prg_info : CInfo.t
     ; prg_body : constr
     ; prg_type : constr
-    ; prg_ctx : UState.t
-    ; prg_univdecl : UState.universe_decl
+    ; prg_uctx : UState.t
     ; prg_obligations : obligations
     ; prg_deps : Id.t list
     ; prg_fixkind : fixpoint_kind option
-    ; prg_implicits : Impargs.manual_implicits
     ; prg_notations : Vernacexpr.decl_notation list
-    ; prg_poly : bool
-    ; prg_scope : locality
-    ; prg_kind : Decls.definition_object_kind
     ; prg_reduce : constr -> constr
-    ; prg_hook : Hook.t option
-    ; prg_opaque : bool }
+    }
 
   open Obligation
 
-  let make ?(opaque = false) ?hook n ~udecl ~uctx ~impargs ~poly ~scope ~kind b
-      t deps fixkind notations obls reduce =
-    let obls', b =
-      match b with
+  let make prg_name ~info ~ntns ~reduce ~deps ~uctx ~types ~body fixkind obls =
+    let obls', body =
+      match body with
       | None ->
         assert (Int.equal (Array.length obls) 0);
-        let n = Nameops.add_suffix n "_obligation" in
+        let n = Nameops.add_suffix prg_name "_obligation" in
         ( [| { obl_name = n
              ; obl_body = None
              ; obl_location = Loc.tag Evar_kinds.InternalHole
-             ; obl_type = t
+             ; obl_type = types
              ; obl_status = (false, Evar_kinds.Expand)
              ; obl_deps = Int.Set.empty
              ; obl_tac = None } |]
@@ -1244,25 +1261,23 @@ module ProgramDecl = struct
             obls
         , b )
     in
-    let ctx = UState.make_flexible_nonalgebraic uctx in
-    { prg_name = n
-    ; prg_body = b
-    ; prg_type = reduce t
-    ; prg_ctx = ctx
-    ; prg_univdecl = udecl
+    let prg_uctx = UState.make_flexible_nonalgebraic uctx in
+    { prg_name
+    ; prg_info = info
+    ; prg_body = body
+    ; prg_type = reduce types
+    ; prg_uctx
     ; prg_obligations = {obls = obls'; remaining = Array.length obls'}
     ; prg_deps = deps
     ; prg_fixkind = fixkind
-    ; prg_notations = notations
-    ; prg_implicits = impargs
-    ; prg_poly = poly
-    ; prg_scope = scope
-    ; prg_kind = kind
-    ; prg_reduce = reduce
-    ; prg_hook = hook
-    ; prg_opaque = opaque }
+    ; prg_notations = ntns
+    ; prg_reduce = reduce }
 
-  let set_uctx ~uctx prg = {prg with prg_ctx = uctx}
+  module Internal = struct
+    let get_uctx prg = prg.prg_uctx
+    let get_poly prg = prg.prg_info.CInfo.poly
+    let set_uctx ~uctx prg = {prg with prg_uctx = uctx}
+  end
 end
 
 open Obligation
@@ -1349,14 +1364,15 @@ let get_hide_obligations =
     ~value:false
 
 let declare_obligation prg obl ~uctx ~types ~body =
-  let univs = UState.univ_entry ~poly:prg.prg_poly uctx in
+  let poly = prg.prg_info.CInfo.poly in
+  let univs = UState.univ_entry ~poly uctx in
   let body = prg.prg_reduce body in
   let types = Option.map prg.prg_reduce types in
   match obl.obl_status with
   | _, Evar_kinds.Expand -> (false, {obl with obl_body = Some (TermObl body)})
   | force, Evar_kinds.Define opaque ->
     let opaque = (not force) && opaque in
-    let poly = prg.prg_poly in
+    let poly = prg.prg_info.CInfo.poly in
     let ctx, body, ty, args =
       if not poly then shrink_body body types
       else ([], body, types, [||])
@@ -1562,25 +1578,13 @@ let subst_prog subst prg =
 
 let declare_definition prg =
   let varsubst = obligation_substitution true prg in
-  let sigma = Evd.from_ctx prg.prg_ctx in
+  let sigma = Evd.from_ctx prg.prg_uctx in
   let body, types = subst_prog varsubst prg in
   let body, types = EConstr.(of_constr body, Some (of_constr types)) in
-  (* All these should be grouped into a struct a some point *)
-  let opaque, poly, udecl, hook =
-    (prg.prg_opaque, prg.prg_poly, prg.prg_univdecl, prg.prg_hook)
-  in
-  let name, scope, kind, impargs =
-    ( prg.prg_name
-    , prg.prg_scope
-    , Decls.(IsDefinition prg.prg_kind)
-    , prg.prg_implicits )
-  in
+  let name, info = prg.prg_name, prg.prg_info in
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
-  let kn =
-    declare_definition_core ~name ~scope ~kind ~impargs ?hook ~obls
-      ~opaque ~poly ~udecl ~types ~body sigma
-  in
+  let kn = declare_definition_core ~name ~info ~obls ~types ~body sigma in
   let pm = progmap_remove !State.prg_ref prg in
   State.prg_ref := pm;
   kn
@@ -1611,7 +1615,7 @@ let declare_mutual_definition l =
     let oblsubst = obligation_substitution true x in
     let subs, typ = subst_prog oblsubst x in
     let env = Global.env () in
-    let sigma = Evd.from_ctx x.prg_ctx in
+    let sigma = Evd.from_ctx x.prg_uctx in
     let r = Retyping.relevance_of_type env sigma (EConstr.of_constr typ) in
     let term =
       snd (Reductionops.splay_lam_n env sigma len (EConstr.of_constr subs))
@@ -1621,7 +1625,7 @@ let declare_mutual_definition l =
     in
     let term = EConstr.to_constr sigma term in
     let typ = EConstr.to_constr sigma typ in
-    let def = (x.prg_reduce term, r, x.prg_reduce typ, x.prg_implicits) in
+    let def = (x.prg_reduce term, r, x.prg_reduce typ, x.prg_info.CInfo.impargs) in
     let oblsubst = List.map (fun (id, (_, c)) -> (id, c)) oblsubst in
     (def, oblsubst)
   in
@@ -1654,24 +1658,22 @@ let declare_mutual_definition l =
     | IsCoFixpoint -> None
   in
   (* In the future we will pack all this in a proper record *)
-  let poly, scope, ntns, opaque =
-    (first.prg_poly, first.prg_scope, first.prg_notations, first.prg_opaque)
-  in
-  let kind =
+  (* XXX: info refactoring *)
+  let _kind =
     if fixkind != IsCoFixpoint then Decls.(IsDefinition Fixpoint)
     else Decls.(IsDefinition CoFixpoint)
   in
+  let scope = first.prg_info.CInfo.scope in
   (* Declare the recursive definitions *)
-  let udecl = UState.default_univ_decl in
   let kns =
-    declare_mutually_recursive_core ~scope ~opaque ~kind ~udecl ~ntns
-      ~uctx:first.prg_ctx ~rec_declaration ~possible_indexes ~poly
+    declare_mutually_recursive_core ~info:first.prg_info ~ntns:first.prg_notations
+      ~uctx:first.prg_uctx ~rec_declaration ~possible_indexes
       ~restrict_ucontext:false fixitems
   in
   (* Only for the first constant *)
   let dref = List.hd kns in
   Hook.(
-    call ?hook:first.prg_hook {S.uctx = first.prg_ctx; obls; scope; dref});
+    call ?hook:first.prg_info.CInfo.hook {S.uctx = first.prg_uctx; obls; scope; dref});
   let pm = List.fold_left progmap_remove !State.prg_ref l in
   State.prg_ref := pm;
   dref
@@ -1711,7 +1713,7 @@ let dependencies obls n =
 let update_program_decl_on_defined prg obls num obl ~uctx rem ~auto =
   let obls = Array.copy obls in
   let () = obls.(num) <- obl in
-  let prg = {prg with prg_ctx = uctx} in
+  let prg = {prg with prg_uctx = uctx} in
   let _progress = update_obls prg obls (pred rem) in
   let () =
     if pred rem > 0 then
@@ -1746,14 +1748,15 @@ let obligation_terminator entries uctx {name; num; auto} =
       | (_, status), false -> status
     in
     let obl = {obl with obl_status = (false, status)} in
-    let uctx = if prg.prg_poly then uctx else UState.union prg.prg_ctx uctx in
+    let poly = prg.prg_info.CInfo.poly in
+    let uctx = if poly then uctx else UState.union prg.prg_uctx uctx in
     let defined, obl = declare_obligation prg obl ~body ~types:ty ~uctx in
     let prg_ctx =
-      if prg.prg_poly then
+      if poly then
         (* Polymorphic *)
         (* We merge the new universes and constraints of the
            polymorphic obligation with the existing ones *)
-        UState.union prg.prg_ctx uctx
+        UState.union prg.prg_uctx uctx
       else if
         (* The first obligation, if defined,
            declares the univs of the constant,
@@ -1790,7 +1793,7 @@ let obligation_admitted_terminator {name; num; auto} ctx' dref =
     | _ -> ()
   in
   let inst, ctx' =
-    if not prg.prg_poly (* Not polymorphic *) then
+    if not prg.prg_info.CInfo.poly (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
       let ctx = UState.from_env (Global.env ()) in

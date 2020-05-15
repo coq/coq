@@ -354,6 +354,28 @@ val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
 
 type locality = Locality.locality = Discharge | Global of import_status
 
+(** Information for a constant *)
+module CInfo : sig
+
+  type t
+
+  val make :
+    ?poly:bool
+    -> ?opaque : bool
+    -> ?inline : bool
+    -> ?kind : Decls.logical_kind
+    (** Theorem, etc... *)
+    -> ?udecl : UState.universe_decl
+    -> ?scope : locality
+    (** locality  *)
+    -> ?impargs : Impargs.manual_implicits
+    -> ?hook : Hook.t
+    (** Callback to be executed after saving the constant *)
+    -> unit
+    -> t
+
+end
+
 (** XXX: This is an internal, low-level API and could become scheduled
     for removal from the public API, use higher-level declare APIs
     instead *)
@@ -375,14 +397,7 @@ val declare_entry
    unresolved existentials *)
 val declare_definition
   :  name:Id.t
-  -> scope:locality
-  -> kind:Decls.logical_kind
-  -> opaque:bool
-  -> impargs:Impargs.manual_implicits
-  -> udecl:UState.universe_decl
-  -> ?hook:Hook.t
-  -> poly:bool
-  -> ?inline:bool
+  -> info:CInfo.t
   -> types:EConstr.t option
   -> body:EConstr.t
   -> Evd.evar_map
@@ -398,13 +413,9 @@ val declare_assumption
   -> GlobRef.t
 
 val declare_mutually_recursive
-  : opaque:bool
-  -> scope:locality
-  -> kind:Decls.logical_kind
-  -> poly:bool
-  -> uctx:UState.t
-  -> udecl:UState.universe_decl
+  : info:CInfo.t
   -> ntns:Vernacexpr.decl_notation list
+  -> uctx:UState.t
   -> rec_declaration:Constr.rec_declaration
   -> possible_indexes:lemma_possible_guards option
   -> Recthm.t list
@@ -453,42 +464,37 @@ type fixpoint_kind = IsFixpoint of lident option list | IsCoFixpoint
 module ProgramDecl : sig
   type t = private
     { prg_name : Id.t
+    ; prg_info : CInfo.t
     ; prg_body : constr
     ; prg_type : constr
-    ; prg_ctx : UState.t
-    ; prg_univdecl : UState.universe_decl
+    ; prg_uctx : UState.t
     ; prg_obligations : obligations
     ; prg_deps : Id.t list
     ; prg_fixkind : fixpoint_kind option
-    ; prg_implicits : Impargs.manual_implicits
     ; prg_notations : Vernacexpr.decl_notation list
-    ; prg_poly : bool
-    ; prg_scope : locality
-    ; prg_kind : Decls.definition_object_kind
     ; prg_reduce : constr -> constr
-    ; prg_hook : Hook.t option
-    ; prg_opaque : bool }
+    }
 
   val make :
-       ?opaque:bool
-    -> ?hook:Hook.t
-    -> Names.Id.t
-    -> udecl:UState.universe_decl
+       Names.Id.t
+    -> info:CInfo.t
+    -> ntns:Vernacexpr.decl_notation list
+    -> reduce:(Constr.constr -> Constr.constr)
+    -> deps:Names.Id.t list
     -> uctx:UState.t
-    -> impargs:Impargs.manual_implicits
-    -> poly:bool
-    -> scope:locality
-    -> kind:Decls.definition_object_kind
-    -> Constr.constr option
-    -> Constr.types
-    -> Names.Id.t list
+    -> types:Constr.types
+    -> body:Constr.constr option
     -> fixpoint_kind option
-    -> Vernacexpr.decl_notation list
     -> RetrieveObl.obligation_info
-    -> (Constr.constr -> Constr.constr)
     -> t
 
-  val set_uctx : uctx:UState.t -> t -> t
+  (* This is internal, only here as obligations get merged into the
+     regular declaration path *)
+  module Internal : sig
+    val get_poly : t -> bool
+    val get_uctx : t -> UState.t
+    val set_uctx : uctx:UState.t -> t -> t
+  end
 end
 
 (** [declare_obligation prg obl ~uctx ~types ~body] Save an obligation

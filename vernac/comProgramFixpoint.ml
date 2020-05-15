@@ -314,8 +314,8 @@ let do_program_recursive ~scope ~poly fixkind fixl =
   end in
   let uctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
-  | Declare.Obls.IsFixpoint _ -> Decls.Fixpoint
-  | Declare.Obls.IsCoFixpoint -> Decls.CoFixpoint
+  | Declare.Obls.IsFixpoint _ -> Decls.(IsDefinition Fixpoint)
+  | Declare.Obls.IsCoFixpoint -> Decls.(IsDefinition CoFixpoint)
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
   Obligations.add_mutual_definitions defs ~poly ~scope ~kind ~udecl ~uctx ntns fixkind

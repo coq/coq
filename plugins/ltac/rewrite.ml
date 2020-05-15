@@ -1902,8 +1902,9 @@ let declare_projection name instance_id r =
   let types = Some (it_mkProd_or_LetIn typ ctx) in
   let kind, opaque, scope = Decls.(IsDefinition Definition), false, Declare.Global Declare.ImportDefaultBehavior in
   let impargs, udecl = [], UState.default_univ_decl in
+  let info = Declare.CInfo.make ~scope ~kind ~opaque ~impargs ~udecl ~poly () in
   let _r : GlobRef.t =
-    Declare.declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ~poly ~types ~body sigma
+    Declare.declare_definition ~name ~info ~types ~body sigma
   in ()
 
 let build_morphism_signature env sigma m =

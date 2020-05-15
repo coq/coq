@@ -78,7 +78,7 @@ val add_definition :
   -> ?impargs:Impargs.manual_implicits
   -> poly:bool
   -> ?scope:Declare.locality
-  -> ?kind:Decls.definition_object_kind
+  -> ?kind:Decls.logical_kind
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(constr -> constr)
   -> ?hook:Declare.Hook.t
@@ -97,7 +97,7 @@ val add_mutual_definitions :
   -> ?tactic:unit Proofview.tactic
   -> poly:bool
   -> ?scope:Declare.locality
-  -> ?kind:Decls.definition_object_kind
+  -> ?kind:Decls.logical_kind
   -> ?reduce:(constr -> constr)
   -> ?hook:Declare.Hook.t
   -> ?opaque:bool
