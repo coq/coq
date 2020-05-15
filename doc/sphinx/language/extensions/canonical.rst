@@ -18,8 +18,8 @@ inference of canonical structures.
 
 .. _canonical-structure-declaration:
 
-Declaraction of canonical structures
-------------------------------------
+Declaration of canonical structures
+-----------------------------------
 
 A canonical structure is an instance of a record/structure type that
 can be used to solve unification problems involving a projection
