@@ -55,7 +55,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
      applied to zero or more arguments.
    * Any :token:`@sort`.
    * Literal functions:  `fun … => …`.
-   * Literal function types without type dependencies, i.e. implications: `… -> …`.
+   * Literal, non-dependent function types, i.e. implications: `… -> …`.
    * Variables bound in :token:`qualid`.
 
    When searching for a canonical extension of a field |x_i|, only the head symbol of
