@@ -182,7 +182,9 @@ let match_eqdec env sigma c =
       let neq = mkApp (noteq,[|mkApp (eq2,[|t;x;y|])|]) in
       if eqonleft then mkApp (op,[|eq;neq|]) else mkApp (op,[|neq;eq|]) in
     Proofview.tclUNIT (eqonleft,mk,c1,c2,ty)
-  with PatternMatchingFailure -> Proofview.tclZERO PatternMatchingFailure
+  with PatternMatchingFailure as exn ->
+    let _, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info PatternMatchingFailure
 
 (* /spiwack *)
 

@@ -49,7 +49,9 @@ let absurd c = absurd c
 (** [f] does not assume its argument to be [nf_evar]-ed. *)
 let filter_hyp f tac =
   let rec seek = function
-    | [] -> Proofview.tclZERO Not_found
+    | [] ->
+      let info = Exninfo.reify () in
+      Proofview.tclZERO ~info Not_found
     | d::rest when f (NamedDecl.get_type d) -> tac (NamedDecl.get_id d)
     | _::rest -> seek rest in
   Proofview.Goal.enter begin fun gl ->
@@ -62,7 +64,9 @@ let contradiction_context =
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let rec seek_neg l = match l with
-      | [] ->  Tacticals.New.tclZEROMSG (Pp.str"No such contradiction")
+      | [] ->
+        let info = Exninfo.reify () in
+        Tacticals.New.tclZEROMSG ~info (Pp.str"No such contradiction")
       | d :: rest ->
           let id = NamedDecl.get_id d in
           let typ = nf_evar sigma (NamedDecl.get_type d) in
@@ -83,7 +87,8 @@ let contradiction_context =
                    (* Checking on the fly that it type-checks *)
                    simplest_elim (mkApp (mkVar id,[|p|]))
                | None ->
-                 Tacticals.New.tclZEROMSG (Pp.str"Not a negated unit type."))
+                 let info = Exninfo.reify () in
+                 Tacticals.New.tclZEROMSG ~info (Pp.str"Not a negated unit type."))
               (Proofview.tclORELSE
                  (Proofview.Goal.enter begin fun gl ->
                    let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
@@ -123,10 +128,12 @@ let contradiction_term (c,lbind as cl) =
             filter_hyp (fun c -> is_negation_of env sigma typ c)
               (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
           else
-            Proofview.tclZERO Not_found
+            let info = Exninfo.reify () in
+            Proofview.tclZERO ~info Not_found
         end
         begin function (e, info) -> match e with
-          | Not_found -> Tacticals.New.tclZEROMSG (Pp.str"Not a contradiction.")
+          | Not_found ->
+            Tacticals.New.tclZEROMSG ~info (Pp.str"Not a contradiction.")
           | e -> Proofview.tclZERO ~info e
         end
   end

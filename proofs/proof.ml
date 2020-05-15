@@ -525,7 +525,10 @@ let solve ?with_end_tac gi info_lvl tac pr =
       | None -> tac
       | Some _ -> Proofview.Trace.record_info_trace tac
     in
-    let nosuchgoal = Proofview.tclZERO (SuggestNoSuchGoals (1,pr)) in
+    let nosuchgoal =
+      let info = Exninfo.reify () in
+      Proofview.tclZERO ~info (SuggestNoSuchGoals (1,pr))
+    in
     let tac = let open Goal_select in match gi with
       | SelectAlreadyFocused ->
         let open Proofview.Notations in
@@ -537,7 +540,8 @@ let solve ?with_end_tac gi info_lvl tac pr =
                Pp.(str "Expected a single focused goal but " ++
                    int n ++ str " goals are focused."))
           in
-          Proofview.tclZERO e
+          let info = Exninfo.reify () in
+          Proofview.tclZERO ~info e
 
       | SelectNth i -> Proofview.tclFOCUS ~nosuchgoal i i tac
       | SelectList l -> Proofview.tclFOCUSLIST ~nosuchgoal l tac

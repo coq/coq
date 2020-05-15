@@ -160,7 +160,8 @@ let double_ind h1 h2 =
   let abs =
     if abs_i < abs_j then Proofview.tclUNIT (abs_i,abs_j) else
     if abs_i > abs_j then  Proofview.tclUNIT (abs_j,abs_i) else
-      tclZEROMSG (Pp.str "Both hypotheses are the same.") in
+      let info = Exninfo.reify () in
+      tclZEROMSG ~info (Pp.str "Both hypotheses are the same.") in
   abs >>= fun (abs_i,abs_j) ->
   (tclTHEN (tclDO abs_i intro)
      (onLastHypId

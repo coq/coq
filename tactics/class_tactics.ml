@@ -166,7 +166,9 @@ let clenv_unique_resolver_tac with_evars ~flags clenv' =
   Proofview.Goal.enter begin fun gls ->
     let resolve =
       try Proofview.tclUNIT (clenv_unique_resolver ~flags clenv' gls)
-      with e when noncritical e -> Proofview.tclZERO e
+      with e when noncritical e ->
+        let _, info = Exninfo.capture e in
+        Proofview.tclZERO ~info e
     in resolve >>= fun clenv' ->
        Clenvtac.clenv_refine ~with_evars ~with_classes:false clenv'
   end
@@ -207,12 +209,14 @@ let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
 let unify_resolve_refine poly flags gl clenv =
   Proofview.tclORELSE
     (unify_resolve_refine poly flags gl clenv)
-    (fun ie ->
-      match fst ie with
+    (fun (exn,info) ->
+      match exn with
       | Evarconv.UnableToUnify _ ->
-         Tacticals.New.tclZEROMSG (str "Unable to unify")
-      | e ->
-         Tacticals.New.tclZEROMSG (str "Unexpected error"))
+        Tacticals.New.tclZEROMSG ~info (str "Unable to unify")
+      | e when CErrors.noncritical e ->
+        Tacticals.New.tclZEROMSG ~info (str "Unexpected error")
+      | _ ->
+        Exninfo.iraise (exn,info))
 
 (** Dealing with goals of the form A -> B and hints of the form
   C -> A -> B.
@@ -234,10 +238,13 @@ let with_prods nprods poly (c, clenv) f =
   if get_typeclasses_limit_intros () then
     Proofview.Goal.enter begin fun gl ->
       try match clenv_of_prods poly nprods (c, clenv) gl with
-          | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
+          | None ->
+            let info = Exninfo.reify () in
+            Tacticals.New.tclZEROMSG ~info (str"Not enough premisses")
           | Some (diff, clenv') -> f gl (c, diff, clenv')
       with e when CErrors.noncritical e ->
-        Tacticals.New.tclZEROMSG (CErrors.print e) end
+        let e, info = Exninfo.capture e in
+        Tacticals.New.tclZEROMSG ~info (CErrors.print e) end
   else Proofview.Goal.enter
          begin fun gl ->
          if Int.equal nprods 0 then f gl (c, None, clenv)
@@ -811,7 +818,9 @@ module Search = struct
       search_tac hints limit (succ depth) info
     in
     fun info ->
-    if Int.equal depth (succ limit) then Proofview.tclZERO ReachedLimitEx
+    if Int.equal depth (succ limit) then
+      let info = Exninfo.reify () in
+      Proofview.tclZERO ~info ReachedLimitEx
     else
       Proofview.tclOR (hints_tac hints info kont)
                       (fun e -> Proofview.tclOR (intro info kont)
@@ -860,9 +869,13 @@ module Search = struct
   let fix_iterative_limit limit t =
     let open Proofview in
     let rec aux depth =
-      if Int.equal depth (succ limit) then tclZERO ReachedLimitEx
-      else tclOR (t depth) (function (ReachedLimitEx, _) -> aux (succ depth)
-                                   | (e,ie) -> Proofview.tclZERO ~info:ie e)
+      if Int.equal depth (succ limit)
+      then
+        let info = Exninfo.reify () in
+        tclZERO ~info ReachedLimitEx
+      else tclOR (t depth) (function
+          | (ReachedLimitEx, _) -> aux (succ depth)
+          | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
 
   let eauto_tac_stuck mst ?(unique=false)
@@ -884,18 +897,18 @@ module Search = struct
         | None -> fix_iterative search
         | Some l -> fix_iterative_limit l search
     in
-    let error (e, ie) =
+    let error (e, info) =
       match e with
       | ReachedLimitEx ->
-         Tacticals.New.tclFAIL 0 (str"Proof search reached its limit")
+        Tacticals.New.tclFAIL ~info 0 (str"Proof search reached its limit")
       | NoApplicableEx ->
-         Tacticals.New.tclFAIL 0 (str"Proof search failed" ++
+        Tacticals.New.tclFAIL ~info 0 (str"Proof search failed" ++
                                     (if Option.is_empty depth then mt()
                                      else str" without reaching its limit"))
       | Proofview.MoreThanOneSuccess ->
-         Tacticals.New.tclFAIL 0 (str"Proof search failed: " ++
-                                  str"more than one success found")
-      | e -> Proofview.tclZERO ~info:ie e
+        Tacticals.New.tclFAIL ~info 0 (str"Proof search failed: " ++
+                                       str"more than one success found")
+      | e -> Proofview.tclZERO ~info e
     in
     let tac = Proofview.tclOR tac error in
     let tac =

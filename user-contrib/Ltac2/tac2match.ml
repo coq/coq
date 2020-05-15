@@ -131,7 +131,9 @@ module PatternMatching (E:StaticEnvironment) = struct
     { stream = fun k ctx -> m.stream (fun () ctx -> y.stream k ctx) ctx }
 
   (** Failure of the pattern-matching monad: no success. *)
-  let fail (type a) : a m = { stream = fun _ _ -> Proofview.tclZERO matching_error }
+  let fail (type a) : a m = { stream = fun _ _ ->
+      let info = Exninfo.reify () in
+      Proofview.tclZERO ~info matching_error }
 
   let run (m : 'a m) =
     let ctx = {
@@ -150,7 +152,11 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   let put_subst subst : unit m =
     let s = { subst } in
-    { stream = fun k ctx -> match merge s ctx with None -> Proofview.tclZERO matching_error | Some s -> k () s }
+    { stream = fun k ctx -> match merge s ctx with
+          | None ->
+            let info = Exninfo.reify () in
+            Proofview.tclZERO ~info matching_error
+          | Some s -> k () s }
 
   (** {6 Pattern-matching} *)
 

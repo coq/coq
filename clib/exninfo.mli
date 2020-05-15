@@ -79,3 +79,5 @@ val capture : exn -> iexn
 
 val iraise : iexn -> 'a
 (** Raise the given enriched exception. *)
+
+val reify : unit -> info

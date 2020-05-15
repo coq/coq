@@ -774,7 +774,9 @@ let interp_message_token ist = function
   | MsgIdent {loc;v=id} ->
     let v = try Some (Id.Map.find id ist.lfun) with Not_found -> None in
     match v with
-    | None -> Ftactic.lift (Tacticals.New.tclZEROMSG (Id.print id ++ str" not found."))
+    | None -> Ftactic.lift (
+        let info = Exninfo.reify () in
+        Tacticals.New.tclZEROMSG ~info (Id.print id ++ str" not found."))
     | Some v -> message_of_value v
 
 let interp_message ist l =
@@ -1087,11 +1089,15 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       end
   | TacFail (g,n,s) ->
       let msg = interp_message ist s in
-      let tac l = Tacticals.New.tclFAIL (interp_int_or_var ist n) l in
+      let tac ~info l = Tacticals.New.tclFAIL ~info (interp_int_or_var ist n) l in
       let tac =
         match g with
-        | TacLocal -> fun l -> Proofview.tclINDEPENDENT (tac l)
-        | TacGlobal -> tac
+        | TacLocal ->
+          let info = Exninfo.reify () in
+          fun l -> Proofview.tclINDEPENDENT (tac ~info l)
+        | TacGlobal ->
+          let info = Exninfo.reify () in
+          tac ~info
       in
       Ftactic.run msg tac
   | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
@@ -1174,8 +1180,11 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         let len1 = List.length alias.Tacenv.alias_args in
         let len2 = List.length l in
         if len1 = len2 then tac
-        else Tacticals.New.tclZEROMSG (str "Arguments length mismatch: \
-          expected " ++ int len1 ++ str ", found " ++ int len2)
+        else
+          let info = Exninfo.reify () in
+          Tacticals.New.tclZEROMSG ~info
+            (str "Arguments length mismatch: \
+                  expected " ++ int len1 ++ str ", found " ++ int len2)
       in
       Ftactic.run tac (fun () -> Proofview.tclUNIT ())
 
@@ -1267,7 +1276,7 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
 and interp_app loc ist fv largs : Val.t Ftactic.t =
   Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
   let (>>=) = Ftactic.bind in
-  let fail = Tacticals.New.tclZEROMSG (str "Illegal tactic application.") in
+  let fail ~info = Tacticals.New.tclZEROMSG ~info (str "Illegal tactic application.") in
   if has_type fv (topwit wit_tacvalue) then
   match to_tacvalue fv with
      (* if var=[] and body has been delayed by val_interp, then body
@@ -1313,12 +1322,18 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
         Ftactic.return (of_tacvalue (VFun(push_appl appl largs,trace,newlfun,lvar,body)))
     | (VFun(appl,trace,olfun,[],body)) ->
       let extra_args = List.length largs in
-      Tacticals.New.tclZEROMSG (str "Illegal tactic application: got " ++
-                                str (string_of_int extra_args) ++
-                                str " extra " ++ str (String.plural extra_args "argument") ++
-                                str ".")
-    | VRec(_,_) -> fail
-  else fail
+      let info = Exninfo.reify () in
+      Tacticals.New.tclZEROMSG ~info
+        (str "Illegal tactic application: got " ++
+         str (string_of_int extra_args) ++
+         str " extra " ++ str (String.plural extra_args "argument") ++
+         str ".")
+    | VRec(_,_) ->
+      let info = Exninfo.reify () in
+      fail ~info
+  else
+    let info = Exninfo.reify () in
+    fail ~info
 
 (* Gives the tactic corresponding to the tactic value *)
 and tactic_of_value ist vle =
@@ -1346,7 +1361,8 @@ and tactic_of_value ist vle =
      let givenargs =
        List.map (fun (arg,_) -> Names.Id.to_string arg) (Names.Id.Map.bindings vmap) in
      let numgiven = List.length givenargs in
-     Tacticals.New.tclZEROMSG
+     let info = Exninfo.reify () in
+     Tacticals.New.tclZEROMSG ~info
        (Pp.str tactic_nm ++ Pp.str " was not fully applied:" ++ spc() ++
           (match numargs with
             0 -> assert false
@@ -1364,11 +1380,15 @@ and tactic_of_value ist vle =
           | _ ->
              Pp.str "arguments were provided for variables " ++
                pr_enum Pp.str givenargs ++ Pp.str ".")
-  | VRec _ -> Tacticals.New.tclZEROMSG (str "A fully applied tactic is expected.")
+  | VRec _ ->
+    let info = Exninfo.reify () in
+    Tacticals.New.tclZEROMSG ~info (str "A fully applied tactic is expected.")
   else if has_type vle (topwit wit_tactic) then
     let tac = out_gen (topwit wit_tactic) vle in
     tactic_of_value ist tac
-  else Tacticals.New.tclZEROMSG (str "Expression does not evaluate to a tactic.")
+  else
+    let info = Exninfo.reify () in
+    Tacticals.New.tclZEROMSG ~info (str "Expression does not evaluate to a tactic.")
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist llc u =
@@ -1562,10 +1582,12 @@ and interp_ltac_constr ist e : EConstr.t Ftactic.t =
           pr_econstr_env env sigma cresult)
     end <*>
     Ftactic.return cresult
-  with CannotCoerceTo _ ->
+  with CannotCoerceTo _ as exn ->
+    let _, info = Exninfo.capture exn in
     let env = Proofview.Goal.env gl in
-    Tacticals.New.tclZEROMSG (str "Must evaluate to a closed term" ++ fnl() ++
-      str "offending expression: " ++ fnl() ++ pr_inspect env e result)
+    Tacticals.New.tclZEROMSG ~info
+      (str "Must evaluate to a closed term" ++ fnl() ++
+       str "offending expression: " ++ fnl() ++ pr_inspect env e result)
   end
 
 
