@@ -983,6 +983,15 @@ function make_ocaml {
       cp Changes      "$PREFIXOCAML/license_readme/ocaml/Changes.txt"
     fi
 
+    # Since 4.07 this library is part of ocaml
+    mkdir -p "$PREFIXOCAML/libocaml/site-lib/seq/"
+    cat > "$PREFIXOCAML/libocaml/site-lib/seq/META" <<EOT
+name="seq"
+version="[distributed with OCaml 4.07 or above]"
+description="dummy backward-compatibility package for iterators"
+requires=""
+EOT
+
     build_post
   fi
 }
@@ -1093,13 +1102,14 @@ function make_camlp5 {
   make_ocaml
   make_findlib
 
-  if build_prep https://github.com/camlp5/camlp5/archive rel707 tar.gz 1 camlp5-rel707; then
+  if build_prep https://github.com/camlp5/camlp5/archive rel711 tar.gz 1 camlp5-rel711; then
     logn configure ./configure
     # Somehow my virus scanner has the boot.new/SAVED directory locked after the move for a second => repeat until success
     sed -i 's/mv boot.new boot/until mv boot.new boot; do sleep 1; done/' Makefile
     # shellcheck disable=SC2086
     log1 make world.opt $MAKE_OPT
     log2 make install
+    cp lib/*.a "$PREFIXOCAML/libocaml/camlp5/"
     log2 make clean
     # For some reason META is not built / copied, but it is required
     log2 make -C etc META
@@ -1152,6 +1162,47 @@ function make_lablgtk {
     # log2 dune clean
     build_post
   fi
+}
+
+##### Elpi #####
+
+function make_seq {
+  make_ocaml
+  # since 4.07 this package is part of ocaml
+
+}
+
+function make_re {
+  make_ocaml
+  make_dune
+  make_seq
+
+  if build_prep https://github.com/ocaml/ocaml-re/archive 1.9.0 tar.gz 1 ocaml-re; then
+
+    log2 dune build -p re
+    log2 dune install re
+
+    build_post
+  fi
+
+}
+
+function make_elpi {
+  make_ocaml
+  make_findlib
+  make_camlp5
+  make_dune
+  make_re
+
+  if build_prep https://github.com/LPCIC/elpi/archive v1.11.0 tar.gz; then
+
+    log2 make build DUNE_OPTS="-p elpi"
+    log2 make install DUNE_OPTS="-p elpi"
+
+    build_post
+
+  fi
+
 }
 
 ##### COQ #####
@@ -1900,6 +1951,36 @@ function make_addon_gappa {
     logn configure ./configure
     logn remake ./remake
     logn install ./remake install
+    build_post
+  fi
+}
+
+# Elpi: extension language for Coq based. It lets one define commands in tactics
+# in a high level programming language with support for binders and unification
+# variables.
+
+function make_addon_elpi {
+  make_elpi
+  installer_addon_dependency elpi
+  if build_prep_overlay elpi ; then
+    installer_addon_section elpi "Elpi extension language" "Coq plugin for the Elpi extension language" ""
+    logn build make
+    logn installe make install
+    build_post
+  fi
+}
+
+# Hierarchy Builder: high level language to declare a hierarchy of structures
+# compiled down to records and canonical structures.
+
+function make_addon_HB {
+  installer_addon_dependency_beg elpi_hb
+  make_addon_elpi
+  installer_addon_dependency_end
+  if build_prep_overlay elpi_hb ; then
+    installer_addon_section elpi_hb "Hierarchy Builder" "Coq library to declare algebraic hierarchies" ""
+    logn build make
+    logn install make install VFILES=structures.v
     build_post
   fi
 }

@@ -16,7 +16,7 @@ call MakeCoq_SetRootPath
 call MakeCoq_MinGW.bat ^
   -arch=64 ^
   -installer=Y ^
-  -coqver=git-trunk ^
+  -coqver=git-master ^
   -destcyg="%ROOTPATH%\cygwin_coq64_trunk_inst" ^
   -destcoq="%ROOTPATH%\coq64_trunk_inst"
 
