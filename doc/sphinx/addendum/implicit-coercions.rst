@@ -1,4 +1,4 @@
-.. _implicitcoercions:
+.. _coercions:
 
 Implicit Coercions
 ====================

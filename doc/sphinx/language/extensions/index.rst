@@ -16,13 +16,13 @@ language presented in the :ref:`previous chapter <core-language>`.
 .. toctree::
    :maxdepth: 1
 
-   ../gallina-extensions
+   evars
    implicit-arguments
-   ../../addendum/extended-pattern-matching
+   match
    ../../user-extensions/syntax-extensions
    arguments-command
    ../../addendum/implicit-coercions
    ../../addendum/type-classes
-   ../../addendum/canonical-structures
+   canonical
    ../../addendum/program
    ../../proof-engine/vernacular-commands

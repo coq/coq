@@ -365,6 +365,21 @@ it is an atomic universe (i.e. not an algebraic max() universe).
 Explicit Universes
 -------------------
 
+.. insertprodn universe_name univ_constraint
+
+.. prodn::
+   universe_name ::= @qualid
+   | Set
+   | Prop
+   univ_annot ::= @%{ {* @universe_level } %}
+   universe_level ::= Set
+   | Prop
+   | Type
+   | _
+   | @qualid
+   univ_decl ::= @%{ {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
+   univ_constraint ::= @universe_name {| < | = | <= } @universe_name
+
 The syntax has been extended to allow users to explicitly bind names
 to universes and explicitly instantiate polymorphic definitions.
 
@@ -403,6 +418,37 @@ to universes and explicitly instantiate polymorphic definitions.
    .. exn:: Polymorphic universe constraints can only be declared inside sections, use Monomorphic Constraint instead
       :undocumented:
 
+.. _printing-universes:
+
+Printing universes
+------------------
+
+.. flag:: Printing Universes
+
+   Turn this flag on to activate the display of the actual level of each
+   occurrence of :g:`Type`. See :ref:`Sorts` for details. This wizard flag, in
+   combination with :flag:`Printing All` can help to diagnose failures to unify
+   terms apparently identical but internally different in the Calculus of Inductive
+   Constructions.
+
+.. cmd:: Print {? Sorted } Universes {? Subgraph ( {* @qualid } ) } {? @string }
+   :name: Print Universes
+
+   This command can be used to print the constraints on the internal level
+   of the occurrences of :math:`\Type` (see :ref:`Sorts`).
+
+   The :n:`Subgraph` clause limits the printed graph to the requested names (adjusting
+   constraints to preserve the implied transitive constraints between
+   kept universes).
+
+   The :n:`Sorted` clause makes each universe
+   equivalent to a numbered label reflecting its level (with a linear
+   ordering) in the universe hierarchy.
+
+   :n:`@string` is an optional output filename.
+   If :n:`@string` ends in ``.dot`` or ``.gv``, the constraints are printed in the DOT
+   language, and can be processed by Graphviz tools. The format is
+   unspecified if `string` doesn’t end in ``.dot`` or ``.gv``.
 
 Polymorphic definitions
 ~~~~~~~~~~~~~~~~~~~~~~~

@@ -14,6 +14,128 @@ of another, complementary, use of canonical structures: advanced proof search.
 This latter papers also presents many techniques one can employ to tune the
 inference of canonical structures.
 
+ .. extracted from implicit arguments section
+
+.. _canonical-structure-declaration:
+
+Declaration of canonical structures
+-----------------------------------
+
+A canonical structure is an instance of a record/structure type that
+can be used to solve unification problems involving a projection
+applied to an unknown structure instance (an implicit argument) and a
+value. The complete documentation of canonical structures can be found
+in :ref:`canonicalstructures`; here only a simple example is given.
+
+.. cmd:: Canonical {? Structure } @smart_qualid
+         Canonical {? Structure } @ident_decl @def_body
+   :name: Canonical Structure; _
+
+   The first form of this command declares an existing :n:`@smart_qualid` as a
+   canonical instance of a structure (a record).
+
+   The second form defines a new constant as if the :cmd:`Definition` command
+   had been used, then declares it as a canonical instance as if the first
+   form had been used on the defined object.
+
+   This command supports the :attr:`local` attribute.  When used, the
+   structure is canonical only within the :cmd:`Section` containing it.
+
+   Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
+   structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
+   Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
+   solved during the type checking process, :token:`qualid` is used as a solution.
+   Otherwise said, :token:`qualid` is canonically used to extend the field |c_i|
+   into a complete structure built on |c_i|.
+
+   Canonical structures are particularly useful when mixed with coercions
+   and strict implicit arguments.
+
+   .. example::
+
+      Here is an example.
+
+      .. coqtop:: all reset
+
+         Require Import Relations.
+
+         Require Import EqNat.
+
+         Set Implicit Arguments.
+
+         Unset Strict Implicit.
+
+         Structure Setoid : Type := {Carrier :> Set; Equal : relation Carrier;
+                                     Prf_equiv : equivalence Carrier Equal}.
+
+         Definition is_law (A B:Setoid) (f:A -> B) := forall x y:A, Equal x y -> Equal (f x) (f y).
+
+         Axiom eq_nat_equiv : equivalence nat eq_nat.
+
+         Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
+
+         Canonical nat_setoid.
+
+      Thanks to :g:`nat_setoid` declared as canonical, the implicit arguments :g:`A`
+      and :g:`B` can be synthesized in the next statement.
+
+      .. coqtop:: all abort
+
+         Lemma is_law_S : is_law S.
+
+   .. note::
+      If a same field occurs in several canonical structures, then
+      only the structure declared first as canonical is considered.
+
+   .. attr:: canonical(false)
+
+      To prevent a field from being involved in the inference of
+      canonical instances, its declaration can be annotated with the
+      :attr:`canonical(false)` attribute (cf. the syntax of
+      :n:`@record_field`).
+
+      .. example::
+
+         For instance, when declaring the :g:`Setoid` structure above, the
+         :g:`Prf_equiv` field declaration could be written as follows.
+
+         .. coqdoc::
+
+            #[canonical(false)] Prf_equiv : equivalence Carrier Equal
+
+      See :ref:`canonicalstructures` for a more realistic example.
+
+.. attr:: canonical
+
+   This attribute can decorate a :cmd:`Definition` or :cmd:`Let` command.
+   It is equivalent to having a :cmd:`Canonical Structure` declaration just
+   after the command.
+
+.. cmd:: Print Canonical Projections {* @smart_qualid }
+
+   This displays the list of global names that are components of some
+   canonical structure. For each of them, the canonical structure of
+   which it is a projection is indicated. If constants are given as
+   its arguments, only the unification rules that involve or are
+   synthesized from simultaneously all given constants will be shown.
+
+   .. example::
+
+      For instance, the above example gives the following output:
+
+      .. coqtop:: all
+
+         Print Canonical Projections.
+
+      .. coqtop:: all
+
+         Print Canonical Projections nat.
+
+      .. note::
+
+         The last line in the first example would not show up if the
+         corresponding projection (namely :g:`Prf_equiv`) were annotated as not
+         canonical, as described above.
 
 Notation overloading
 -------------------------
@@ -22,8 +144,8 @@ We build an infix notation == for a comparison predicate. Such
 notation will be overloaded, and its meaning will depend on the types
 of the terms that are compared.
 
-.. coqtop:: all
-  
+.. coqtop:: all reset
+
   Module EQ.
     Record class (T : Type) := Class { cmp : T -> T -> Prop }.
     Structure type := Pack { obj : Type; class_of : class obj }.
@@ -54,7 +176,7 @@ The following line tests that, when we assume a type ``e`` that is in
 theEQ class, we can relate two of its objects with ``==``.
 
 .. coqtop:: all
-  
+
   Import EQ.theory.
   Check forall (e : EQ.type) (a b : EQ.obj e), a == b.
 
@@ -67,7 +189,7 @@ Still, no concrete type is in the ``EQ`` class.
 We amend that by equipping ``nat`` with a comparison relation.
 
 .. coqtop:: all
-  
+
    Definition nat_eq (x y : nat) := Nat.compare x y = Eq.
    Definition nat_EQcl : EQ.class nat := EQ.Class nat_eq.
    Canonical Structure nat_EQty : EQ.type := EQ.Pack nat nat_EQcl.
@@ -109,7 +231,7 @@ how to do that.
 
   Definition pair_eq (e1 e2 : EQ.type) (x y : EQ.obj e1 * EQ.obj e2) :=
     fst x == fst y /\ snd x == snd y.
-  
+
   Definition pair_EQcl e1 e2 := EQ.Class (pair_eq e1 e2).
 
   Canonical Structure pair_EQty (e1 e2 : EQ.type) : EQ.type :=
@@ -147,7 +269,7 @@ order relation, to which we associate the infix ``<=`` notation.
     Arguments op {_} x y : simpl never.
 
     Arguments Class {T} cmp.
-  
+
     Module theory.
 
       Notation "x <= y" := (op x y) (at level 70).
@@ -203,7 +325,7 @@ We need to define a new class that inherits from both ``EQ`` and ``LE``.
 
     Record mixin (e : EQ.type) (le : EQ.obj e -> EQ.obj e -> Prop) :=
       Mixin { compat : forall x y : EQ.obj e, le x y /\ le y x <-> x == y }.
-    
+
     Record class T := Class {
                         EQ_class : EQ.class T;
                         LE_class : LE.class T;
@@ -249,7 +371,7 @@ type.
 
     Definition to_LE (e : type) : LE.type :=
        LE.Pack (obj e) (LE_class _ (class_of e)).
- 
+
     Canonical Structure to_LE.
 
 We can now formulate out first theorem on the objects of the ``LEQ``
@@ -259,7 +381,7 @@ structure.
 
      Lemma lele_eq (e : type) (x y : obj e) : x <= y -> y <= x -> x == y.
 
-     now intros; apply (compat _ _ (extra _ (class_of e)) x y); split. 
+     now intros; apply (compat _ _ (extra _ (class_of e)) x y); split.
 
      Qed.
 
@@ -280,14 +402,14 @@ setting to any concrete instate of the algebraic structure.
 
   Example test_algebraic (n m : nat) : n <= m -> m <= n -> n == m.
 
-  Fail apply (lele_eq n m). 
+  Fail apply (lele_eq n m).
 
   Abort.
 
   Example test_algebraic2 (l1 l2 : LEQ.type) (n m : LEQ.obj l1 * LEQ.obj l2) :
        n <= m -> m <= n -> n == m.
 
-  Fail apply (lele_eq n m). 
+  Fail apply (lele_eq n m).
 
   Abort.
 
@@ -332,14 +454,14 @@ subsection we show how to make them more compact.
 
      Example test_algebraic (n m : nat) : n <= m -> m <= n -> n == m.
 
-     now apply (lele_eq n m). 
+     now apply (lele_eq n m).
 
      Qed.
 
      Example test_algebraic2 (n m : nat * nat) : n <= m -> m <= n -> n == m.
 
      now apply (lele_eq n m). Qed.
-  
+
   End Add_instance_attempt.
 
 Note that no direct proof of ``n <= m -> m <= n -> n == m`` is provided by
@@ -424,7 +546,7 @@ The declaration of canonical instances can now be way more compact:
 .. coqtop:: all
 
   Canonical Structure nat_LEQty := Eval hnf in Pack nat nat_LEQmx.
-  
+
   Canonical Structure pair_LEQty (l1 l2 : LEQ.type) :=
      Eval hnf in Pack (LEQ.obj l1 * LEQ.obj l2) (pair_LEQmx l1 l2).
 
@@ -434,4 +556,3 @@ the message).
 .. coqtop:: all
 
   Fail Canonical Structure err := Eval hnf in Pack bool nat_LEQmx.
-

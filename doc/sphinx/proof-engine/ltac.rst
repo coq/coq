@@ -28,9 +28,8 @@ especially about its foundations, please refer to :cite:`Del00`.
 Syntax
 ------
 
-The syntax of the tactic language is given below. See Chapter
-:ref:`gallinaspecificationlanguage` for a description of the BNF metasyntax used
-in these grammar rules. Various already defined entries will be used in this
+The syntax of the tactic language is given below.
+Various already defined entries will be used in this
 chapter: entries :token:`num`, :token:`int`, :token:`ident`
 :token:`qualid`, :token:`term`, :token:`cpattern` and :token:`tactic`
 represent respectively natural and integer numbers,

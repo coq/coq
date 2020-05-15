@@ -747,6 +747,36 @@ Controlling display
    after each tactic.  The information is used by the Prooftree tool in Proof
    General. (https://askra.de/software/prooftree)
 
+.. extracted from Gallina extensions chapter
+
+.. _printing_constructions_full:
+
+Printing constructions in full
+------------------------------
+
+.. flag:: Printing All
+
+   Coercions, implicit arguments, the type of pattern matching, but also
+   notations (see :ref:`syntax-extensions-and-notation-scopes`) can obfuscate the behavior of some
+   tactics (typically the tactics applying to occurrences of subterms are
+   sensitive to the implicit arguments). Turning this flag on
+   deactivates all high-level printing features such as coercions,
+   implicit arguments, returned type of pattern matching, notations and
+   various syntactic sugar for pattern matching or record projections.
+   Otherwise said, :flag:`Printing All` includes the effects of the flags
+   :flag:`Printing Implicit`, :flag:`Printing Coercions`, :flag:`Printing Synth`,
+   :flag:`Printing Projections`, and :flag:`Printing Notations`. To reactivate
+   the high-level printing features, use the command ``Unset Printing All``.
+
+   .. note:: In some cases, setting :flag:`Printing All` may display terms
+      that are so big they become very hard to read.  One technique to work around
+      this is use :cmd:`Undelimit Scope` and/or :cmd:`Close Scope` to turn off the
+      printing of notations bound to particular scope(s).  This can be useful when
+      notations in a given scope are getting in the way of understanding
+      a goal, but turning off all notations with :flag:`Printing All` would make
+      the goal unreadable.
+
+      .. see a contrived example here: https://github.com/coq/coq/pull/11718#discussion_r415481854
 
 .. _vernac-controlling-the-reduction-strategies:
 
