@@ -58,8 +58,8 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    * Literal, non-dependent function types, i.e. implications: `… -> …`.
    * Variables bound in :token:`qualid`.
 
-   When searching for a canonical extension of a field |x_i|, only the head symbol of
-   any existing instance's field |c_i| is considered.
+   When searching for a canonical extension, only the head symbol of any existing instance's field |c_i|
+   is considered.
    We call this head symbol the *key* and we say ":token:`qualid` keys field |x_i| to |k|" when |c_i|'s
    head symbol is key |k|.
    Keys are the only piece of information that is used for canonical extension.
@@ -74,8 +74,8 @@ in :ref:`canonicalstructures`; here only a simple example is given.
      domain and co-domain.
    * For variables bound in :token:`qualid`: a catch-all key denoted `_`.
 
-   This means that, for example, `fun (x : nat) => x+1` and `fun (x : bool) => true` do not constitute
-   distinct keys, and neither do `some_constant x1` and `some_constant (other_constant y1 y2) x2`.
+   This means that, for example, `(fun (x : nat) => x+1)` and `(fun (x : bool) => true)` do not constitute
+   distinct keys, and neither do `(some_constant x1)` and `(some_constant (other_constant y1 y2) x2)`.
 
    Variables bound in :token:`qualid` are considered to match any term for the purpose of canonical
    extension.
@@ -83,7 +83,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    1. Unless another key—and, thus, instance—matches |c_i|, the instance will always be considered by
       unification.
    2. |c_i| will be considered overlapping with (i.e. not distinct from) any other canonical instance
-      that keys |x_i| to one of its respective variables.
+      that keys |x_i| to one of its own respective variables.
 
    A record's field |x_i| can only be keyed once to each key.
    Coq will print a warning when :token:`qualid` keys |x_i| to a term
