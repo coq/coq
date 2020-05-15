@@ -48,6 +48,50 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    Otherwise said, :token:`qualid` is canonically used to extend the field |c_i|
    into a complete structure built on |c_i|.
 
+   The following kinds of terms are supported for the fields |c_i| of :token:`qualid`:
+
+   * Constants (defined through :cmd:`Definition`, :cmd:`Inductive` and constructors thereof,
+     :cmd:`Record` and fields thereof, etc.) and section variables of an active section,
+     applied to zero or more arguments.
+   * Any :token:`@sort`.
+   * Literal functions:  `fun … => …`.
+   * Literal function types without type dependencies, i.e. implications: `… -> …`.
+   * Variables bound in :token:`qualid`.
+
+   When searching for a canonical extension of a field |x_i|, only the head symbol of
+   any existing instance's field |c_i| is considered.
+   We call this head symbol the *key* and we say ":token:`qualid` keys field |x_i| to |k|" when |c_i|'s
+   head symbol is key |k|.
+   Keys are the only piece of information that is used for canonical extension.
+   The keys corresponding to the kinds of terms listed above are:
+
+   * For constants and section variables, potentially applied to arguments:
+     the constant or variable itself, disregarding any arguments.
+   * For sorts: the sort itself.
+   * For literal functions: a disembodied function key denoted `fun _ => _`, disregarding both its domain
+     and body.
+   * For literal functions types: a disembodied implication key denoted `_ -> _`, disregarding both its
+     domain and co-domain.
+   * For variables bound in :token:`qualid`: a catch-all key denoted `_`.
+
+   This means that, for example, `fun (x : nat) => x+1` and `fun (x : bool) => true` do not constitute
+   distinct keys, and neither do `some_constant x1` and `some_constant (other_constant y1 y2) x2`.
+
+   Variables bound in :token:`qualid` are considered to match any term for the purpose of canonical
+   extension.
+   This has two major consequences for a field |c_i| keyed to a variable of :token:`qualid`:
+   1. Unless another key—and, thus, instance—matches |c_i|, the instance will always be considered by
+      unification.
+   2. |c_i| will be considered overlapping with (i.e. not distinct from) any other canonical instance
+      that keys |x_i| to one of its respective variables.
+
+   A record's field |x_i| can only be keyed once to each key.
+   Coq will print a warning when :token:`qualid` keys |x_i| to a term
+   whose head symbol is already keyed to by an existing canonical instance.
+   In this case, Coq will not register that particular field :token:`qualid` as a canonical
+   extension.
+   (The remaining fields of the instance can still be used for canonical extension.)
+
    Canonical structures are particularly useful when mixed with coercions
    and strict implicit arguments.
 
