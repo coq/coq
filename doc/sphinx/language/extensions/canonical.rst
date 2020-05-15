@@ -41,14 +41,14 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    This command supports the :attr:`local` attribute.  When used, the
    structure is canonical only within the :cmd:`Section` containing it.
 
-   Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
-   structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
-   Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
+   Assume that :token:`qualid` denotes an object ``(Build_struct`` :n:`c__1` … :n:`c__n` ``)`` in the
+   structure :g:`struct` of which the fields are :n:`x__1`, …, :n:`x__n`.
+   Then, each time an equation of the form ``(``\ :n:`x__i` ``_)`` |eq_beta_delta_iota_zeta| :n:`c__i` has to be
    solved during the type checking process, :token:`qualid` is used as a solution.
-   Otherwise said, :token:`qualid` is canonically used to extend the field |c_i|
-   into a complete structure built on |c_i|.
+   Otherwise said, :token:`qualid` is canonically used to extend the field :n:`c__i`
+   into a complete structure built on :n:`c__i`.
 
-   The following kinds of terms are supported for the fields |c_i| of :token:`qualid`:
+   The following kinds of terms are supported for the fields :n:`c__i` of :token:`qualid`:
 
    * Constants (defined through :cmd:`Definition`, :cmd:`Inductive` and constructors thereof,
      :cmd:`Record` and fields thereof, etc.) and section variables of an active section,
@@ -58,10 +58,10 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    * Literal, non-dependent function types, i.e. implications: `… -> …`.
    * Variables bound in :token:`qualid`.
 
-   When searching for a canonical extension, only the head symbol of any existing instance's field |c_i|
+   When searching for a canonical extension, only the head symbol of any existing instance's field :n:`c__i`
    is considered.
-   We call this head symbol the *key* and we say ":token:`qualid` keys field |x_i| to |k|" when |c_i|'s
-   head symbol is key |k|.
+   We call this head symbol the *key* and we say ":token:`qualid` keys field :n:`x__i` to :n:`k`" when :n:`c__i`'s
+   head symbol is key :n:`k`.
    Keys are the only piece of information that is used for canonical extension.
    The keys corresponding to the kinds of terms listed above are:
 
@@ -79,14 +79,15 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
    Variables bound in :token:`qualid` are considered to match any term for the purpose of canonical
    extension.
-   This has two major consequences for a field |c_i| keyed to a variable of :token:`qualid`:
-   1. Unless another key—and, thus, instance—matches |c_i|, the instance will always be considered by
-      unification.
-   2. |c_i| will be considered overlapping with (i.e. not distinct from) any other canonical instance
-      that keys |x_i| to one of its own respective variables.
+   This has two major consequences for a field :n:`c__i` keyed to a variable of :token:`qualid`:
 
-   A record's field |x_i| can only be keyed once to each key.
-   Coq will print a warning when :token:`qualid` keys |x_i| to a term
+   1. Unless another key—and, thus, instance—matches :n:`c__i`, the instance will always be considered by
+      unification.
+   2. :n:`c__i` will be considered overlapping with (i.e. not distinct from) any other canonical instance
+      that keys :n:`x__i` to one of its own respective variables.
+
+   A record's field :n:`x__i` can only be keyed once to each key.
+   Coq will print a warning when :token:`qualid` keys :n:`x__i` to a term
    whose head symbol is already keyed to by an existing canonical instance.
    In this case, Coq will not register that particular field :token:`qualid` as a canonical
    extension.
