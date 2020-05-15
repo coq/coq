@@ -53,7 +53,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    * Constants (defined through :cmd:`Definition`, :cmd:`Inductive` and constructors thereof,
      :cmd:`Record` and fields thereof, etc.) and section variables of an active section,
      applied to zero or more arguments.
-   * Any :token:`@sort`.
+   * Any :token:`sort`.
    * Literal functions:  `fun … => …`.
    * Literal, non-dependent function types, i.e. implications: `… -> …`.
    * Variables bound in :token:`qualid`.
