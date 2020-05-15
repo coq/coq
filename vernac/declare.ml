@@ -140,9 +140,9 @@ let default_univ_entry = Entries.Monomorphic_entry Univ.ContextSet.empty
 
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
-let definition_entry_core ?fix_exn ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?types
+let definition_entry_core ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?types
     ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
-  { proof_entry_body = Future.from_val ?fix_exn ((body,univsbody), eff);
+  { proof_entry_body = Future.from_val ((body,univsbody), eff);
     proof_entry_secctx = section_vars;
     proof_entry_type = types;
     proof_entry_universes = univs;
@@ -151,7 +151,7 @@ let definition_entry_core ?fix_exn ?(opaque=false) ?(inline=false) ?feedback_id 
     proof_entry_inline_code = inline}
 
 let definition_entry =
-  definition_entry_core ?fix_exn:None ?eff:None ?univsbody:None ?feedback_id:None ?section_vars:None
+  definition_entry_core ?eff:None ?univsbody:None ?feedback_id:None ?section_vars:None
 
 type proof_object =
   { name : Names.Id.t
@@ -369,9 +369,9 @@ let record_aux env s_ty s_bo =
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" v
 
-let pure_definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
+let pure_definition_entry ?(opaque=false) ?(inline=false) ?types
     ?(univs=default_univ_entry) body =
-  { proof_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), ());
+  { proof_entry_body = Future.from_val ((body,Univ.ContextSet.empty), ());
     proof_entry_secctx = None;
     proof_entry_type = types;
     proof_entry_universes = univs;
@@ -503,17 +503,6 @@ let declare_constant ?(local = ImportDefaultBehavior) ~name ~kind cd =
   (* Register the libobjects attached to the constants *)
   let () = register_constant kn kind local in
   kn
-
-let get_cd_fix_exn = function
-  | DefinitionEntry de ->
-    Future.fix_exn_of de.proof_entry_body
-  | _ -> fun x -> x
-
-let declare_constant ?local ~name ~kind cd =
-  try declare_constant ?local ~name ~kind cd
-  with exn ->
-    let exn = Exninfo.capture exn in
-    Exninfo.iraise (get_cd_fix_exn cd exn)
 
 let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind de =
   let kn, eff =
@@ -1010,29 +999,22 @@ let declare_assumption ~name ~scope ~hook ~impargs ~uctx pe =
   let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
   dref
 
-let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
-  try declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
-  with exn ->
-    let exn = Exninfo.capture exn in
-    let exn = Option.cata (fun fix -> fix exn) exn fix_exn in
-    Exninfo.iraise exn
-
 (* Preparing proof entries *)
 
-let prepare_definition ?opaque ?inline ?fix_exn ~poly ~udecl ~types ~body sigma =
+let prepare_definition ?opaque ?inline ~poly ~udecl ~types ~body sigma =
   let env = Global.env () in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf body, Option.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  let entry = definition_entry_core ?fix_exn ?opaque ?inline ?types ~univs body in
+  let entry = definition_entry ?opaque ?inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
 let declare_definition_core ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
-    ~obls ~poly ?inline ~types ~body ?fix_exn sigma =
-  let entry, uctx = prepare_definition ?fix_exn ~opaque ~poly ~udecl ~types ~body ?inline sigma in
+    ~obls ~poly ?inline ~types ~body sigma =
+  let entry, uctx = prepare_definition ~opaque ~poly ~udecl ~types ~body ?inline sigma in
   declare_entry_core ~name ~scope ~kind ~impargs ~obls ?hook ~uctx entry
 
 let declare_definition = declare_definition_core ~obls:[]
@@ -1454,8 +1436,6 @@ let subst_prog subst prg =
     ( Vars.replace_vars subst' prg.prg_body
     , Vars.replace_vars subst' (* Termops.refresh_universes *) prg.prg_type )
 
-let stm_get_fix_exn = ref (fun _ x -> x)
-
 let declare_definition prg =
   let varsubst = obligation_substitution true prg in
   let sigma = Evd.from_ctx prg.prg_ctx in
@@ -1471,12 +1451,11 @@ let declare_definition prg =
     , Decls.(IsDefinition prg.prg_kind)
     , prg.prg_implicits )
   in
-  let fix_exn = !stm_get_fix_exn () in
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
   let kn =
     declare_definition_core ~name ~scope ~kind ~impargs ?hook ~obls
-      ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma
+      ~opaque ~poly ~udecl ~types ~body sigma
   in
   let pm = progmap_remove !State.prg_ref prg in
   State.prg_ref := pm;

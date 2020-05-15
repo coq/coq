@@ -305,13 +305,11 @@ val declare_definition
   -> ?inline:bool
   -> types:EConstr.t option
   -> body:EConstr.t
-  -> ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
   -> Evd.evar_map
   -> GlobRef.t
 
 val declare_assumption
-  :  ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
-  -> name:Id.t
+  :  name:Id.t
   -> scope:locality
   -> hook:Hook.t option
   -> impargs:Impargs.manual_implicits
@@ -494,11 +492,6 @@ val obl_substitution :
   -> (Id.t * (Constr.types * Constr.types)) list
 
 val dependencies : Obligation.t array -> int -> Int.Set.t
-
-(* This is a hack to make it possible for Obligations to craft a Qed
- * behind the scenes.  The fix_exn the Stm attaches to the Future proof
- * is not available here, so we provide a side channel to get it *)
-val stm_get_fix_exn : (unit -> Exninfo.iexn -> Exninfo.iexn) ref
 
 end
 

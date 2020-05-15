@@ -830,8 +830,6 @@ module State : sig
     ?redefine:bool -> ?cache:bool ->
     ?feedback_processed:bool -> (unit -> unit) -> Stateid.t -> unit
 
-  val fix_exn_ref : (Exninfo.iexn -> Exninfo.iexn) ref
-
   val install_cached : Stateid.t -> unit
   (* val install_parsing_state : Stateid.t -> unit *)
   val is_cached : ?cache:bool -> Stateid.t -> bool
@@ -865,8 +863,6 @@ end = struct (* {{{ *)
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
    * failed, so the global state may contain garbage *)
   let cur_id = ref Stateid.dummy
-  let fix_exn_ref = ref (fun x -> x)
-
   let freeze () = { id = !cur_id; vernac_state = Vernacstate.freeze_interp_state ~marshallable:false }
   let unfreeze st =
     Vernacstate.unfreeze_interp_state st.vernac_state;
@@ -1001,10 +997,7 @@ end = struct (* {{{ *)
     try
       stm_prerr_endline (fun () -> "defining "^str_id^" (cache="^
         if cache then "Y)" else "N)");
-      let good_id = match safe_id with None -> !cur_id | Some id -> id in
-      fix_exn_ref := exn_on id ~valid:good_id;
       f ();
-      fix_exn_ref := (fun x -> x);
       if cache then cache_state ~marshallable:false id;
       stm_prerr_endline (fun () -> "setting cur id to "^str_id);
       cur_id := id;
@@ -1495,7 +1488,7 @@ end = struct (* {{{ *)
         feedback (InProgress ~-1)
 
   let build_proof_here ~doc ?loc ~drop_pt (id,valid) eop =
-    Future.create (State.exn_on id ~valid) (fun () ->
+    Future.create ~fix_exn:(State.exn_on id ~valid) (fun () ->
       let wall_clock1 = Unix.gettimeofday () in
       Reach.known_state ~doc ~cache:(VCS.is_interactive ()) eop;
       let wall_clock2 = Unix.gettimeofday () in
@@ -1517,7 +1510,6 @@ end = struct (* {{{ *)
       (* We typecheck the proof with the kernel (in the worker) to spot
        * the few errors tactics don't catch, like the "fix" tactic building
        * a bad fixpoint *)
-      let fix_exn = Future.fix_exn_of future_proof in
       (* STATE: We use the current installed imperative state *)
       let st = State.freeze () in
       if not drop then begin
@@ -1527,12 +1519,22 @@ end = struct (* {{{ *)
              to set the state manually here *)
           State.unfreeze st;
           let pobject, _info =
-            PG_compat.close_future_proof ~feedback_id:stop (Future.from_val ~fix_exn p) in
+            PG_compat.close_future_proof ~feedback_id:stop (Future.from_val p) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           let opaque = Declare.Opaque in
-          stm_qed_delay_proof ~st ~id:stop
-            ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None))) in
+          try
+            stm_qed_delay_proof ~st ~id:stop
+              ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None))
+          with exn ->
+            (* If [stm_qed_delay_proof] fails above we need to use the
+               exn callback in the same way than build_proof_here;
+               this is actually wronly named fix_exn as it does _way_
+               more than just modifying exn info *)
+            let iexn = Exninfo.capture exn in
+            let iexn = State.exn_on (fst exn_info) ~valid:(snd exn_info) iexn in
+            Exninfo.iraise iexn)
+        in
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
@@ -1540,7 +1542,7 @@ end = struct (* {{{ *)
       RespBuiltProof(proof,time)
     with
     | e when CErrors.noncritical e || e = Stack_overflow ->
-        let (e, info) = Exninfo.capture e in
+        let e, info = Exninfo.capture e in
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
         let e_error_at, e_safe_id = match Stateid.get info with
@@ -3310,7 +3312,6 @@ let unreachable_state_hook = Hooks.unreachable_state_hook
 let document_add_hook = Hooks.document_add_hook
 let document_edit_hook = Hooks.document_edit_hook
 let sentence_exec_hook = Hooks.sentence_exec_hook
-let () = Declare.Obls.stm_get_fix_exn := (fun () -> !State.fix_exn_ref)
 
 type document = VCS.vcs
 let backup () = VCS.backup ()
