@@ -23,6 +23,9 @@ Check forall b1 b2, b1 = b2.
 
 (* Check in "fun" *)
 Check fun b => b = b.
+Check fun b c => b = c.
+Check fun c b => b = c.
+Check fun b1 b2 => b1 = b2.
 
 (* Check in binders *)
 Check fix f b n := match n with 0 => b | S p => f b p end.
