@@ -77,3 +77,20 @@ Please see [INSTALL.make.md](dev/doc/INSTALL.make.md) for build and
 installation instructions using `make`. If you wish to experiment with
 the Dune-based system see the [dune guide for
 developers](dev/doc/build-system.dune.md).
+
+Run-time dependencies of native compilation
+-------------------------------------------
+
+The OCaml compiler and findlib are build-time dependencies, but also
+run-time dependencies if you wish to use the native compiler.
+
+OCaml toolchain advisory
+------------------------
+
+When loading plugins or `vo` files, you should make sure that these
+were compiled with the same OCaml setup (version, flags,
+dependencies...) as Coq.  Distribution of pre-compiled plugins and
+`.vo` files is only possible if users are guaranteed to have the same
+Coq version compiled with the same OCaml toolchain.  An OCaml setup
+mismatch is the most probable cause for an `Error while loading ...:
+implementation mismatch on ...`.
