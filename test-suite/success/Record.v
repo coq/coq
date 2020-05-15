@@ -3,6 +3,7 @@ Definition CProp := Prop.
 Record test : CProp :=  {n : nat ; m : bool ; _ : n <> 0 }.
 Require Import Program.
 Require Import List.
+Import ListNotations.
 
 Record vector {A : Type} {n : nat} := { vec_list : list A ; vec_len : length vec_list = n }.
 Arguments vector : clear implicits.
