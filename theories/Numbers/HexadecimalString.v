@@ -8,16 +8,19 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Decimal Ascii String.
+Require Import Hexadecimal Ascii String.
 
-(** * Conversion between decimal numbers and Coq strings *)
+(** * Conversion between hexadecimal numbers and Coq strings *)
 
 (** Pretty straightforward, which is precisely the point of the
-    [Decimal.int] datatype. The only catch is [Decimal.Nil] : we could
+    [Hexadecimal.int] datatype. The only catch is [Hexadecimal.Nil] : we could
     choose to convert it as [""] or as ["0"]. In the first case, it is
     awkward to consider "" (or "-") as a number, while in the second case
     we don't have a perfect bijection. Since the second variant is implemented
-    thanks to the first one, we provide both. *)
+    thanks to the first one, we provide both.
+
+    Hexadecimal digits are lower case ('a'..'f'). We ignore upper case
+    digits ('A'..'F') for the sake of simplicity. *)
 
 Local Open Scope string_scope.
 
@@ -38,6 +41,12 @@ Definition uint_of_char (a:ascii)(d:option uint) :=
     | "7" => Some (D7 d)
     | "8" => Some (D8 d)
     | "9" => Some (D9 d)
+    | "a" => Some (Da d)
+    | "b" => Some (Db d)
+    | "c" => Some (Dc d)
+    | "d" => Some (Dd d)
+    | "e" => Some (De d)
+    | "f" => Some (Df d)
     | _ => None
     end
   end%char.
@@ -53,13 +62,19 @@ Lemma uint_of_char_spec c d d' :
   c = "6" /\ d' = D6 d \/
   c = "7" /\ d' = D7 d \/
   c = "8" /\ d' = D8 d \/
-  c = "9" /\ d' = D9 d)%char.
+  c = "9" /\ d' = D9 d \/
+  c = "a" /\ d' = Da d \/
+  c = "b" /\ d' = Db d \/
+  c = "c" /\ d' = Dc d \/
+  c = "d" /\ d' = Dd d \/
+  c = "e" /\ d' = De d \/
+  c = "f" /\ d' = Df d)%char.
 Proof.
   destruct c as [[|] [|] [|] [|] [|] [|] [|] [|]];
   intros [= <-]; intuition.
 Qed.
 
-(** Decimal/String conversion where [Nil] is [""] *)
+(** Hexadecimal/String conversion where [Nil] is [""] *)
 
 Module NilEmpty.
 
@@ -76,6 +91,12 @@ Fixpoint string_of_uint (d:uint) :=
   | D7 d => String "7" (string_of_uint d)
   | D8 d => String "8" (string_of_uint d)
   | D9 d => String "9" (string_of_uint d)
+  | Da d => String "a" (string_of_uint d)
+  | Db d => String "b" (string_of_uint d)
+  | Dc d => String "c" (string_of_uint d)
+  | Dd d => String "d" (string_of_uint d)
+  | De d => String "e" (string_of_uint d)
+  | Df d => String "f" (string_of_uint d)
   end.
 
 Fixpoint uint_of_string s :=
@@ -152,7 +173,7 @@ Qed.
 
 End NilEmpty.
 
-(** Decimal/String conversions where [Nil] is ["0"] *)
+(** Hexadecimal/String conversions where [Nil] is ["0"] *)
 
 Module NilZero.
 
@@ -207,14 +228,14 @@ Proof.
 Qed.
 
 Lemma usu_nil :
-  uint_of_string (string_of_uint Nil) = Some Decimal.zero.
+  uint_of_string (string_of_uint Nil) = Some Hexadecimal.zero.
 Proof.
   reflexivity.
 Qed.
 
 Lemma usu_gen d :
   uint_of_string (string_of_uint d) = Some d \/
-  uint_of_string (string_of_uint d) = Some Decimal.zero.
+  uint_of_string (string_of_uint d) = Some Hexadecimal.zero.
 Proof.
   destruct d; (now right) || (left; now apply usu).
 Qed.
@@ -236,7 +257,7 @@ Proof.
 Qed.
 
 Lemma isi_posnil :
-  int_of_string (string_of_int (Pos Nil)) = Some (Pos Decimal.zero).
+  int_of_string (string_of_int (Pos Nil)) = Some (Pos Hexadecimal.zero).
 Proof.
   reflexivity.
 Qed.

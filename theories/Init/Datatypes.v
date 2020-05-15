@@ -159,6 +159,9 @@ Inductive nat : Set :=
   | O : nat
   | S : nat -> nat.
 
+Declare Scope hex_nat_scope.
+Delimit Scope hex_nat_scope with xnat.
+
 Declare Scope nat_scope.
 Delimit Scope nat_scope with nat.
 Bind Scope nat_scope with nat.

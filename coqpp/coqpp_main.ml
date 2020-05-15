@@ -202,7 +202,7 @@ function
 | "PATTERNIDENT", s -> fprintf fmt "Tok.PPATTERNIDENT (%a)" print_pat s
 | "FIELD", s -> fprintf fmt "Tok.PFIELD (%a)" print_pat s
 | "NUMERAL", None -> fprintf fmt "Tok.PNUMERAL None"
-| "NUMERAL", Some s -> fprintf fmt "Tok.PNUMERAL (Some (NumTok.int %a))" print_string s
+| "NUMERAL", Some s -> fprintf fmt "Tok.PNUMERAL (Some (NumTok.Unsigned.of_string %a))" print_string s
 | "STRING", s -> fprintf fmt "Tok.PSTRING (%a)" print_pat s
 | "LEFTQMARK", None -> fprintf fmt "Tok.PLEFTQMARK"
 | "BULLET", s -> fprintf fmt "Tok.PBULLET (%a)" print_pat s

@@ -6,6 +6,32 @@
      : int
 9223372036854775807
      : int
+427
+     : int
+427
+     : int
+427
+     : int
+427
+     : int
+427
+     : int
+The command has indeed failed with message:
+Cannot interpret this number as a value of type Coq.Numbers.Cyclic.Int63.Int63.int
+The command has indeed failed with message:
+Cannot interpret this number as a value of type Coq.Numbers.Cyclic.Int63.Int63.int
+0
+     : int
+0
+     : int
+The command has indeed failed with message:
+The reference xg was not found in the current environment.
+The command has indeed failed with message:
+The reference xG was not found in the current environment.
+The command has indeed failed with message:
+The reference x1 was not found in the current environment.
+The command has indeed failed with message:
+The reference x was not found in the current environment.
 2 + 2
      : int
 2 + 2

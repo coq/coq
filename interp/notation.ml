@@ -382,7 +382,7 @@ module InnerPrimToken = struct
     | _ -> false
 
   let mkNumeral n =
-    Numeral (NumTok.Signed.of_bigint n)
+    Numeral (NumTok.Signed.of_bigint CDec n)
 
   let mkString = function
     | None -> None
@@ -423,23 +423,32 @@ type numnot_option =
   | Abstract of NumTok.UnsignedNat.t
 
 type int_ty =
-  { uint : Names.inductive;
+  { dec_uint : Names.inductive;
+    dec_int : Names.inductive;
+    hex_uint : Names.inductive;
+    hex_int : Names.inductive;
+    uint : Names.inductive;
     int : Names.inductive }
 
 type z_pos_ty =
   { z_ty : Names.inductive;
     pos_ty : Names.inductive }
 
-type decimal_ty =
+type numeral_ty =
   { int : int_ty;
-    decimal : Names.inductive }
+    decimal : Names.inductive;
+    hexadecimal : Names.inductive;
+    numeral : Names.inductive }
 
 type target_kind =
-  | Int of int_ty (* Coq.Init.Decimal.int + uint *)
-  | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
+  | Int of int_ty (* Coq.Init.Numeral.int + uint *)
+  | UInt of int_ty (* Coq.Init.Numeral.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
   | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
-  | Decimal of decimal_ty (* Coq.Init.Decimal.decimal + uint + int *)
+  | Numeral of numeral_ty (* Coq.Init.Numeral.numeral + uint + int *)
+  | DecimalInt of int_ty (* Coq.Init.Decimal.int + uint (deprecated) *)
+  | DecimalUInt of int_ty (* Coq.Init.Decimal.uint (deprecated) *)
+  | Decimal of numeral_ty (* Coq.Init.Decimal.Decimal + uint + int (deprecated) *)
 
 type string_target_kind =
   | ListByte
@@ -601,17 +610,23 @@ let warn_abstract_large_num =
 (** Decimal.Nil has index 1, then Decimal.D0 has index 2 .. Decimal.D9 is 11 *)
 
 let digit_of_char c =
-  assert ('0' <= c && c <= '9');
-  Char.code c - Char.code '0' + 2
+  assert ('0' <= c && c <= '9' || 'a' <= c && c <= 'f');
+  if c <= '9' then Char.code c - Char.code '0' + 2
+  else Char.code c - Char.code 'a' + 12
 
 let char_of_digit n =
-  assert (2<=n && n<=11);
-  Char.chr (n-2 + Char.code '0')
+  assert (2<=n && n<=17);
+  if n <= 11 then Char.chr (n-2 + Char.code '0')
+  else Char.chr (n-12 + Char.code 'a')
 
-let coquint_of_rawnum uint n =
+let coquint_of_rawnum inds c n =
+  let uint = match c with CDec -> inds.dec_uint | CHex -> inds.hex_uint in
   let nil = mkConstruct (uint,1) in
   match n with None -> nil | Some n ->
   let str = NumTok.UnsignedNat.to_string n in
+  let str = match c with
+    | CDec -> str
+    | CHex -> String.sub str 2 (String.length str - 2) in  (* cut "0x" *)
   let rec do_chars s i acc =
     if i < 0 then acc
     else
@@ -620,60 +635,125 @@ let coquint_of_rawnum uint n =
   in
   do_chars str (String.length str - 1) nil
 
-let coqint_of_rawnum inds (sign,n) =
-  let uint = coquint_of_rawnum inds.uint (Some n) in
+let coqint_of_rawnum inds c (sign,n) =
+  let ind = match c with CDec -> inds.dec_int | CHex -> inds.hex_int in
+  let uint = coquint_of_rawnum inds c (Some n) in
   let pos_neg = match sign with SPlus -> 1 | SMinus -> 2 in
-  mkApp (mkConstruct (inds.int, pos_neg), [|uint|])
+  mkApp (mkConstruct (ind, pos_neg), [|uint|])
 
-let coqdecimal_of_rawnum inds n =
-  let i, f, e = NumTok.Signed.to_decimal_and_exponent n in
-  let i = coqint_of_rawnum inds.int i in
-  let f = coquint_of_rawnum inds.int.uint f in
+let coqnumeral_of_rawnum inds c n =
+  let ind = match c with CDec -> inds.decimal | CHex -> inds.hexadecimal in
+  let i, f, e = NumTok.Signed.to_int_frac_and_exponent n in
+  let i = coqint_of_rawnum inds.int c i in
+  let f = coquint_of_rawnum inds.int c f in
   match e with
-  | None -> mkApp (mkConstruct (inds.decimal, 1), [|i; f|])  (* Decimal *)
+  | None -> mkApp (mkConstruct (ind, 1), [|i; f|])  (* (D|Hexad)ecimal *)
   | Some e ->
-    let e = coqint_of_rawnum inds.int e in
-    mkApp (mkConstruct (inds.decimal, 2), [|i; f; e|])  (* DecimalExp *)
+    let e = coqint_of_rawnum inds.int CDec e in
+    mkApp (mkConstruct (ind, 2), [|i; f; e|])  (* (D|Hexad)ecimalExp *)
 
-let rawnum_of_coquint c =
+let mkDecHex ind c n = match c with
+  | CDec -> mkApp (mkConstruct (ind, 1), [|n|])  (* (UInt|Int|)Dec *)
+  | CHex -> mkApp (mkConstruct (ind, 2), [|n|])  (* (UInt|Int|)Hex *)
+
+exception NonDecimal
+
+let decimal_coqnumeral_of_rawnum inds n =
+  if NumTok.Signed.classify n <> CDec then raise NonDecimal;
+  coqnumeral_of_rawnum inds CDec n
+
+let coqnumeral_of_rawnum inds n =
+  let c = NumTok.Signed.classify n in
+  let n = coqnumeral_of_rawnum inds c n in
+  mkDecHex inds.numeral c n
+
+let decimal_coquint_of_rawnum inds n =
+  if NumTok.UnsignedNat.classify n <> CDec then raise NonDecimal;
+  coquint_of_rawnum inds CDec (Some n)
+
+let coquint_of_rawnum inds n =
+  let c = NumTok.UnsignedNat.classify n in
+  let n = coquint_of_rawnum inds c (Some n) in
+  mkDecHex inds.uint c n
+
+let decimal_coqint_of_rawnum inds n =
+  if NumTok.SignedNat.classify n <> CDec then raise NonDecimal;
+  coqint_of_rawnum inds CDec n
+
+let coqint_of_rawnum inds n =
+  let c = NumTok.SignedNat.classify n in
+  let n = coqint_of_rawnum inds c n in
+  mkDecHex inds.int c n
+
+let rawnum_of_coquint cl c =
   let rec of_uint_loop c buf =
     match Constr.kind c with
     | Construct ((_,1), _) (* Nil *) -> ()
     | App (c, [|a|]) ->
        (match Constr.kind c with
-        | Construct ((_,n), _) (* D0 to D9 *) ->
+        | Construct ((_,n), _) (* D0 to Df *) ->
            let () = Buffer.add_char buf (char_of_digit n) in
            of_uint_loop a buf
         | _ -> raise NotAValidPrimToken)
     | _ -> raise NotAValidPrimToken
   in
   let buf = Buffer.create 64 in
+  if cl = CHex then (Buffer.add_char buf '0'; Buffer.add_char buf 'x');
   let () = of_uint_loop c buf in
-  if Int.equal (Buffer.length buf) 0 then
+  if Int.equal (Buffer.length buf) (match cl with CDec -> 0 | CHex -> 2) then
     (* To avoid ambiguities between Nil and (D0 Nil), we choose
        to not display Nil alone as "0" *)
     raise NotAValidPrimToken
   else NumTok.UnsignedNat.of_string (Buffer.contents buf)
 
-let rawnum_of_coqint c =
+let rawnum_of_coqint cl c =
   match Constr.kind c with
   | App (c,[|c'|]) ->
      (match Constr.kind c with
-      | Construct ((_,1), _) (* Pos *) -> (SPlus,rawnum_of_coquint c')
-      | Construct ((_,2), _) (* Neg *) -> (SMinus,rawnum_of_coquint c')
+      | Construct ((_,1), _) (* Pos *) -> (SPlus,rawnum_of_coquint cl c')
+      | Construct ((_,2), _) (* Neg *) -> (SMinus,rawnum_of_coquint cl c')
       | _ -> raise NotAValidPrimToken)
   | _ -> raise NotAValidPrimToken
 
-let rawnum_of_decimal c =
+let rawnum_of_coqnumeral cl c =
   let of_ife i f e =
-    let n = rawnum_of_coqint i in
-    let f = try Some (rawnum_of_coquint f) with NotAValidPrimToken -> None in
-    let e = match e with None -> None | Some e -> Some (rawnum_of_coqint e) in
-    NumTok.Signed.of_decimal_and_exponent n f e in
+    let n = rawnum_of_coqint cl i in
+    let f = try Some (rawnum_of_coquint cl f) with NotAValidPrimToken -> None in
+    let e = match e with None -> None | Some e -> Some (rawnum_of_coqint CDec e) in
+    NumTok.Signed.of_int_frac_and_exponent n f e in
   match Constr.kind c with
   | App (_,[|i; f|]) -> of_ife i f None
   | App (_,[|i; f; e|]) -> of_ife i f (Some e)
   | _ -> raise NotAValidPrimToken
+
+let destDecHex c = match Constr.kind c with
+  | App (c,[|c'|]) ->
+     (match Constr.kind c with
+      | Construct ((_,1), _) (* (UInt|Int|)Dec *) -> CDec, c'
+      | Construct ((_,2), _) (* (UInt|Int|)Hex *) -> CHex, c'
+      | _ -> raise NotAValidPrimToken)
+  | _ -> raise NotAValidPrimToken
+
+let decimal_rawnum_of_coqnumeral c =
+  rawnum_of_coqnumeral CDec c
+
+let rawnum_of_coqnumeral c =
+  let cl, c = destDecHex c in
+  rawnum_of_coqnumeral cl c
+
+let decimal_rawnum_of_coquint c =
+  rawnum_of_coquint CDec c
+
+let rawnum_of_coquint c =
+  let cl, c = destDecHex c in
+  rawnum_of_coquint cl c
+
+let decimal_rawnum_of_coqint c =
+  rawnum_of_coqint CDec c
+
+let rawnum_of_coqint c =
+  let cl, c = destDecHex c in
+  rawnum_of_coqint cl c
 
 (***********************************************************************)
 
@@ -768,15 +848,24 @@ let interp o ?loc n =
   let c = match fst o.to_kind, NumTok.Signed.to_int n with
     | Int int_ty, Some n ->
        coqint_of_rawnum int_ty n
-    | UInt uint_ty, Some (SPlus, n) ->
-       coquint_of_rawnum uint_ty (Some n)
+    | UInt int_ty, Some (SPlus, n) ->
+       coquint_of_rawnum int_ty n
+    | DecimalInt int_ty, Some n ->
+       (try decimal_coqint_of_rawnum int_ty n
+        with NonDecimal -> no_such_prim_token "number" ?loc o.ty_name)
+    | DecimalUInt int_ty, Some (SPlus, n) ->
+       (try decimal_coquint_of_rawnum int_ty n
+        with NonDecimal -> no_such_prim_token "number" ?loc o.ty_name)
     | Z z_pos_ty, Some n ->
        z_of_bigint z_pos_ty (NumTok.SignedNat.to_bigint n)
     | Int63, Some n ->
        interp_int63 ?loc (NumTok.SignedNat.to_bigint n)
-    | (Int _ | UInt _ | Z _ | Int63), _ ->
+    | (Int _ | UInt _ | DecimalInt _ | DecimalUInt _ | Z _ | Int63), _ ->
        no_such_prim_token "number" ?loc o.ty_name
-    | Decimal decimal_ty, _ -> coqdecimal_of_rawnum decimal_ty n
+    | Numeral numeral_ty, _ -> coqnumeral_of_rawnum numeral_ty n
+    | Decimal numeral_ty, _ ->
+       (try decimal_coqnumeral_of_rawnum numeral_ty n
+        with NonDecimal -> no_such_prim_token "number" ?loc o.ty_name)
   in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -797,9 +886,12 @@ let uninterp o n =
     begin function
       | (Int _, c) -> NumTok.Signed.of_int (rawnum_of_coqint c)
       | (UInt _, c) -> NumTok.Signed.of_nat (rawnum_of_coquint c)
-      | (Z _, c) -> NumTok.Signed.of_bigint (bigint_of_z c)
-      | (Int63, c) -> NumTok.Signed.of_bigint (bigint_of_int63 c)
-      | (Decimal _, c) -> rawnum_of_decimal c
+      | (Z _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_z c)
+      | (Int63, c) -> NumTok.Signed.of_bigint CDec (bigint_of_int63 c)
+      | (Numeral _, c) -> rawnum_of_coqnumeral c
+      | (DecimalInt _, c) -> NumTok.Signed.of_int (decimal_rawnum_of_coqint c)
+      | (DecimalUInt _, c) -> NumTok.Signed.of_nat (decimal_rawnum_of_coquint c)
+      | (Decimal _, c) -> decimal_rawnum_of_coqnumeral c
     end o n
 end
 
@@ -1126,8 +1218,8 @@ let find_notation ntn sc =
   NotationMap.find ntn (find_scope sc).notations
 
 let notation_of_prim_token = function
-  | Numeral (SPlus,n) -> InConstrEntrySomeLevel, NumTok.Unsigned.sprint n
-  | Numeral (SMinus,n) -> InConstrEntrySomeLevel, "- "^NumTok.Unsigned.sprint n
+  | Constrexpr.Numeral (SPlus,n) -> InConstrEntrySomeLevel, NumTok.Unsigned.sprint n
+  | Constrexpr.Numeral (SMinus,n) -> InConstrEntrySomeLevel, "- "^NumTok.Unsigned.sprint n
   | String _ -> raise Not_found
 
 let find_prim_token check_allowed ?loc p sc =
@@ -1333,14 +1425,14 @@ let availability_of_prim_token n printer_scope local_scopes =
       let uid = snd (String.Map.find scope !prim_token_interp_infos) in
       let open InnerPrimToken in
       match n, uid with
-      | Numeral _, NumeralNotation _ -> true
+      | Constrexpr.Numeral _, NumeralNotation _ -> true
       | _, NumeralNotation _ -> false
       | String _, StringNotation _ -> true
       | _, StringNotation _ -> false
       | _, Uid uid ->
         let interp = Hashtbl.find prim_token_interpreters uid in
         match n, interp with
-        | Numeral _, (RawNumInterp _ | BigNumInterp _) -> true
+        | Constrexpr.Numeral _, (RawNumInterp _ | BigNumInterp _) -> true
         | String _, StringInterp _ -> true
         | _ -> false
     with Not_found -> false

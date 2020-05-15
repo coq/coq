@@ -11,7 +11,7 @@
 (** Numerals in different forms: signed or unsigned, possibly with
     fractional part and exponent.
 
-    Numerals are represented using raw strings of decimal
+    Numerals are represented using raw strings of (hexa)decimal
     literals and a separate sign flag.
 
     Note that this representation is not unique, due to possible
@@ -25,20 +25,28 @@
 
 type sign = SPlus | SMinus
 
+type num_class = CDec | CHex
+
+type 'a exp = EDec of 'a | EBin of 'a
+
 (** {6 String representation of a natural number } *)
 
 module UnsignedNat :
 sig
   type t
   val of_string : string -> t
-    (** Convert from a non-empty sequence of digits (which may contain "_") *)
+    (** Convert from a non-empty sequence of digits (which may contain "_")
+        (or hexdigits when starting with "0x" or "0X") *)
 
   val to_string : t -> string
-    (** Convert to a non-empty sequence of digit that does not contain "_" *)
+    (** Convert to a non-empty sequence of digit that does not contain "_"
+        (or hexdigits, starting with "0x", all hexdigits are lower case) *)
 
   val sprint : t -> string
   val print : t -> Pp.t
     (** [sprint] and [print] returns the numeral as it was parsed, for printing *)
+
+  val classify : t -> num_class
 
   val compare : t -> t -> int
 end
@@ -49,13 +57,16 @@ module SignedNat :
 sig
   type t = sign * UnsignedNat.t
   val of_string : string -> t
-    (** Convert from a non-empty sequence of digits which may contain "_" *)
+    (** Convert from a non-empty sequence of (hex)digits which may contain "_" *)
 
   val to_string : t -> string
-    (** Convert to a non-empty sequence of digit that does not contain "_" *)
+    (** Convert to a non-empty sequence of (hex)digit that does not contain "_"
+        (hexadecimals start with "0x" and all hexdigits are lower case) *)
 
+  val classify : t -> num_class
+
+  val of_bigint : num_class -> Bigint.bigint -> t
   val to_bigint : t -> Bigint.bigint
-  val of_bigint : Bigint.bigint -> t
 end
 
 (** {6 Unsigned decimal numerals } *)
@@ -78,11 +89,17 @@ sig
 
         The recognized syntax is:
         - integer part: \[0-9\]\[0-9_\]*
-        - decimal part: empty or .\[0-9_\]+
-        - exponent part: empty or \[eE\]\[+-\]?\[0-9\]\[0-9_\]* *)
+        - fractional part: empty or .\[0-9_\]+
+        - exponent part: empty or \[eE\]\[+-\]?\[0-9\]\[0-9_\]*
+        or
+        - integer part: 0\[xX\]\[0-9a-fA-F\]\[0-9a-fA-F_\]*
+        - fractional part: empty or .\[0-9a-fA-F_\]+
+        - exponent part: empty or \[pP\]\[+-\]?\[0-9\]\[0-9_\]* *)
 
   val parse_string : string -> t option
-    (** Parse the string as a positive Coq numeral, if possible *)
+    (** Parse the string as a non negative Coq numeral, if possible *)
+
+  val classify : t -> num_class
 
 end
 
@@ -114,17 +131,20 @@ sig
   val to_string : t -> string
     (** Returns a string in the syntax of OCaml's float_of_string *)
 
-  val of_bigint : Bigint.bigint -> t
+  val of_bigint : num_class -> Bigint.bigint -> t
   val to_bigint : t -> Bigint.bigint option
     (** Convert from and to bigint when the denotation of a bigint *)
 
-  val of_decimal_and_exponent : SignedNat.t -> UnsignedNat.t option -> SignedNat.t option -> t
-  val to_decimal_and_exponent : t -> SignedNat.t * UnsignedNat.t option * SignedNat.t option
-    (** n, p and q such that the number is n.p*10^q *)
+  val of_int_frac_and_exponent : SignedNat.t -> UnsignedNat.t option -> SignedNat.t option -> t
+  val to_int_frac_and_exponent : t -> SignedNat.t * UnsignedNat.t option * SignedNat.t option
+    (** n, p and q such that the number is n.p*10^q or n.p*2^q
+        pre/postcondition: classify n = classify p, classify q = CDec *)
 
-  val to_bigint_and_exponent : t -> Bigint.bigint * Bigint.bigint
-  val of_bigint_and_exponent : Bigint.bigint -> Bigint.bigint -> t
-    (** n and p such that the number is n*10^p *)
+  val of_bigint_and_exponent : Bigint.bigint -> Bigint.bigint exp -> t
+  val to_bigint_and_exponent : t -> Bigint.bigint * Bigint.bigint exp
+    (** n and p such that the number is n*10^p or n*2^p *)
+
+  val classify : t -> num_class
 
   val is_bigger_int_than : t -> UnsignedNat.t -> bool
     (** Test if an integer whose absolute value is bounded *)

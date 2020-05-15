@@ -85,7 +85,51 @@ Definition to_decimal (q:Q) : option Decimal.decimal :=
   | _ => None
   end.
 
-Numeral Notation Q of_decimal to_decimal : Q_scope.
+Definition of_hexadecimal (d:Hexadecimal.hexadecimal) : Q :=
+  let '(i, f, e) :=
+    match d with
+    | Hexadecimal.Hexadecimal i f => (i, f, Decimal.Pos Decimal.Nil)
+    | Hexadecimal.HexadecimalExp i f e => (i, f, e)
+    end in
+  let num := Z.of_hex_int (Hexadecimal.app_int i f) in
+  let e := Z.sub (Z.of_int e) (Z.mul 4 (Z.of_nat (Hexadecimal.nb_digits f))) in
+  match e with
+  | Z0 => Qmake num 1
+  | Zpos e => Qmake (Pos.iter (Z.mul 2) num e) 1
+  | Zneg e => Qmake num (Pos.iter (Pos.mul 2) 1%positive e)
+  end.
+
+Definition to_hexadecimal (q:Q) : option Hexadecimal.hexadecimal :=
+  let mk_exp i e :=
+    Hexadecimal.HexadecimalExp i Hexadecimal.Nil (Z.to_int (Z.opp e)) in
+  let num := Z.to_hex_int (Qnum q) in
+  let (den, e_den) := Hexadecimal.nztail (Pos.to_hex_uint (Qden q)) in
+  let e := Z.of_nat e_den in
+  match den with
+  | Hexadecimal.D1 Hexadecimal.Nil =>
+    match e_den with
+    | O => Some (Hexadecimal.Hexadecimal num Hexadecimal.Nil)
+    | _ => Some (mk_exp num (4 * e)%Z)
+    end
+  | Hexadecimal.D2 Hexadecimal.Nil => Some (mk_exp num (1 + 4 * e)%Z)
+  | Hexadecimal.D4 Hexadecimal.Nil => Some (mk_exp num (2 + 4 * e)%Z)
+  | Hexadecimal.D8 Hexadecimal.Nil => Some (mk_exp num (3 + 4 * e)%Z)
+  | _ => None
+  end.
+
+Definition of_numeral (d:Numeral.numeral) : option Q :=
+  match d with
+  | Numeral.Dec d => Some (of_decimal d)
+  | Numeral.Hex d => Some (of_hexadecimal d)
+  end.
+
+Definition to_numeral (q:Q) : option Numeral.numeral :=
+  match to_decimal q with
+  | None => None
+  | Some q => Some (Numeral.Dec q)
+  end.
+
+Numeral Notation Q of_numeral to_numeral : Q_scope.
 
 Definition inject_Z (x : Z) := Qmake x 1.
 Arguments inject_Z x%Z.

@@ -21,6 +21,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/Init/Byte.v
     theories/Init/Nat.v
     theories/Init/Decimal.v
+    theories/Init/Hexadecimal.v
+    theories/Init/Numeral.v
     theories/Init/Peano.v
     theories/Init/Specif.v
     theories/Init/Tactics.v
@@ -235,7 +237,15 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/DecimalPos.v
     theories/Numbers/DecimalN.v
     theories/Numbers/DecimalZ.v
+    theories/Numbers/DecimalQ.v
     theories/Numbers/DecimalString.v
+    theories/Numbers/HexadecimalFacts.v
+    theories/Numbers/HexadecimalNat.v
+    theories/Numbers/HexadecimalPos.v
+    theories/Numbers/HexadecimalN.v
+    theories/Numbers/HexadecimalZ.v
+    theories/Numbers/HexadecimalQ.v
+    theories/Numbers/HexadecimalString.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;NatInt</b>:

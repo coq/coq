@@ -8,18 +8,18 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * Decimal numbers *)
+(** * Hexadecimal numbers *)
 
-(** These numbers coded in base 10 will be used for parsing and printing
+(** These numbers coded in base 16 will be used for parsing and printing
     other Coq numeral datatypes in an human-readable way.
     See the [Numeral Notation] command.
-    We represent numbers in base 10 as lists of decimal digits,
+    We represent numbers in base 16 as lists of hexadecimal digits,
     in big-endian order (most significant digit comes first). *)
 
-Require Import Datatypes Specif.
+Require Import Datatypes Specif Decimal.
 
 (** Unsigned integers are just lists of digits.
-    For instance, ten is (D1 (D0 Nil)) *)
+    For instance, sixteen is (D1 (D0 Nil)) *)
 
 Inductive uint :=
  | Nil
@@ -32,7 +32,13 @@ Inductive uint :=
  | D6 (_:uint)
  | D7 (_:uint)
  | D8 (_:uint)
- | D9 (_:uint).
+ | D9 (_:uint)
+ | Da (_:uint)
+ | Db (_:uint)
+ | Dc (_:uint)
+ | Dd (_:uint)
+ | De (_:uint)
+ | Df (_:uint).
 
 (** [Nil] is the number terminator. Taken alone, it behaves as zero,
     but rather use [D0 Nil] instead, since this form will be denoted
@@ -44,35 +50,36 @@ Notation zero := (D0 Nil).
 
 Variant int := Pos (d:uint) | Neg (d:uint).
 
-(** For decimal numbers, we use two constructors [Decimal] and
-    [DecimalExp], depending on whether or not they are given with an
-    exponent (e.g., 1.02e+01). [i] is the integral part while [f] is
+(** For decimal numbers, we use two constructors [Hexadecimal] and
+    [HexadecimalExp], depending on whether or not they are given with an
+    exponent (e.g., 0x1.a2p+01). [i] is the integral part while [f] is
     the fractional part (beware that leading zeroes do matter). *)
 
-Variant decimal :=
- | Decimal (i:int) (f:uint)
- | DecimalExp (i:int) (f:uint) (e:int).
+Variant hexadecimal :=
+ | Hexadecimal (i:int) (f:uint)
+ | HexadecimalExp (i:int) (f:uint) (e:Decimal.int).
 
 Scheme Equality for uint.
 Scheme Equality for int.
-Scheme Equality for decimal.
+Scheme Equality for hexadecimal.
 
-Declare Scope dec_uint_scope.
-Delimit Scope dec_uint_scope with uint.
-Bind Scope dec_uint_scope with uint.
+Declare Scope hex_uint_scope.
+Delimit Scope hex_uint_scope with huint.
+Bind Scope hex_uint_scope with uint.
 
-Declare Scope dec_int_scope.
-Delimit Scope dec_int_scope with int.
-Bind Scope dec_int_scope with int.
+Declare Scope hex_int_scope.
+Delimit Scope hex_int_scope with hint.
+Bind Scope hex_int_scope with int.
 
-Register uint as num.uint.type.
-Register int as num.int.type.
-Register decimal as num.decimal.type.
+Register uint as num.hexadecimal_uint.type.
+Register int as num.hexadecimal_int.type.
+Register hexadecimal as num.hexadecimal.type.
 
 Fixpoint nb_digits d :=
   match d with
   | Nil => O
-  | D0 d | D1 d | D2 d | D3 d | D4 d | D5 d | D6 d | D7 d | D8 d | D9 d =>
+  | D0 d | D1 d | D2 d | D3 d | D4 d | D5 d | D6 d | D7 d | D8 d | D9 d
+  | Da d | Db d | Dc d | Dd d | De d | Df d =>
     S (nb_digits d)
   end.
 
@@ -134,6 +141,12 @@ Fixpoint revapp (d d' : uint) :=
   | D7 d => revapp d (D7 d')
   | D8 d => revapp d (D8 d')
   | D9 d => revapp d (D9 d')
+  | Da d => revapp d (Da d')
+  | Db d => revapp d (Db d')
+  | Dc d => revapp d (Dc d')
+  | Dd d => revapp d (Dd d')
+  | De d => revapp d (De d')
+  | Df d => revapp d (Df d')
   end.
 
 Definition rev d := revapp d Nil.
@@ -160,37 +173,6 @@ Definition nztail_int d :=
   | Neg d => let (r, n) := nztail d in pair (Neg r) n
   end.
 
-(** [del_head n d] removes [n] digits at beginning of [d]
-    or returns [zero] if [d] has less than [n] digits. *)
-
-Fixpoint del_head n d :=
-  match n with
-  | O => d
-  | S n =>
-    match d with
-    | Nil => zero
-    | D0 d | D1 d | D2 d | D3 d | D4 d | D5 d | D6 d | D7 d | D8 d | D9 d =>
-      del_head n d
-    end
-  end.
-
-Definition del_head_int n d :=
-  match d with
-  | Pos d => del_head n d
-  | Neg d => del_head n d
-  end.
-
-(** [del_tail n d] removes [n] digits at end of [d]
-    or returns [zero] if [d] has less than [n] digits. *)
-
-Definition del_tail n d := rev (del_head n (rev d)).
-
-Definition del_tail_int n d :=
-  match d with
-  | Pos d => Pos (del_tail n d)
-  | Neg d => Neg (del_tail n d)
-  end.
-
 Module Little.
 
 (** Successor of little-endian numbers *)
@@ -207,7 +189,13 @@ Fixpoint succ d :=
   | D6 d => D7 d
   | D7 d => D8 d
   | D8 d => D9 d
-  | D9 d => D0 (succ d)
+  | D9 d => Da d
+  | Da d => Db d
+  | Db d => Dc d
+  | Dc d => Dd d
+  | Dd d => De d
+  | De d => Df d
+  | Df d => D0 (succ d)
   end.
 
 (** Doubling little-endian numbers *)
@@ -220,11 +208,17 @@ Fixpoint double d :=
   | D2 d => D4 (double d)
   | D3 d => D6 (double d)
   | D4 d => D8 (double d)
-  | D5 d => D0 (succ_double d)
-  | D6 d => D2 (succ_double d)
-  | D7 d => D4 (succ_double d)
-  | D8 d => D6 (succ_double d)
-  | D9 d => D8 (succ_double d)
+  | D5 d => Da (double d)
+  | D6 d => Dc (double d)
+  | D7 d => De (double d)
+  | D8 d => D0 (succ_double d)
+  | D9 d => D2 (succ_double d)
+  | Da d => D4 (succ_double d)
+  | Db d => D6 (succ_double d)
+  | Dc d => D8 (succ_double d)
+  | Dd d => Da (succ_double d)
+  | De d => Dc (succ_double d)
+  | Df d => De (succ_double d)
   end
 
 with succ_double d :=
@@ -235,17 +229,17 @@ with succ_double d :=
   | D2 d => D5 (double d)
   | D3 d => D7 (double d)
   | D4 d => D9 (double d)
-  | D5 d => D1 (succ_double d)
-  | D6 d => D3 (succ_double d)
-  | D7 d => D5 (succ_double d)
-  | D8 d => D7 (succ_double d)
-  | D9 d => D9 (succ_double d)
+  | D5 d => Db (double d)
+  | D6 d => Dd (double d)
+  | D7 d => Df (double d)
+  | D8 d => D1 (succ_double d)
+  | D9 d => D3 (succ_double d)
+  | Da d => D5 (succ_double d)
+  | Db d => D7 (succ_double d)
+  | Dc d => D9 (succ_double d)
+  | Dd d => Db (succ_double d)
+  | De d => Dd (succ_double d)
+  | Df d => Df (succ_double d)
   end.
 
 End Little.
-
-(** Pseudo-conversion functions used when declaring
-    Numeral Notations on [uint] and [int]. *)
-
-Definition uint_of_uint (i:uint) := i.
-Definition int_of_int (i:int) := i.

@@ -21,55 +21,111 @@ le_sind:
 (use "About" for full details on implicit arguments)
 false: bool
 true: bool
-eq_true: bool -> Prop
 is_true: bool -> Prop
+eq_true: bool -> Prop
 negb: bool -> bool
+xorb: bool -> bool -> bool
 andb: bool -> bool -> bool
 orb: bool -> bool -> bool
 implb: bool -> bool -> bool
-xorb: bool -> bool -> bool
-Nat.even: nat -> bool
 Nat.odd: nat -> bool
+Nat.even: nat -> bool
 BoolSpec: Prop -> Prop -> bool -> Prop
-Nat.ltb: nat -> nat -> bool
-Nat.testbit: nat -> nat -> bool
+Numeral.numeral_beq: Numeral.numeral -> Numeral.numeral -> bool
 Nat.eqb: nat -> nat -> bool
+Nat.testbit: nat -> nat -> bool
+Decimal.decimal_beq: Decimal.decimal -> Decimal.decimal -> bool
+Numeral.uint_beq: Numeral.uint -> Numeral.uint -> bool
+Decimal.uint_beq: Decimal.uint -> Decimal.uint -> bool
+Hexadecimal.hexadecimal_beq:
+  Hexadecimal.hexadecimal -> Hexadecimal.hexadecimal -> bool
+Numeral.int_beq: Numeral.int -> Numeral.int -> bool
+Hexadecimal.uint_beq: Hexadecimal.uint -> Hexadecimal.uint -> bool
+Nat.ltb: nat -> nat -> bool
 Nat.leb: nat -> nat -> bool
+Hexadecimal.int_beq: Hexadecimal.int -> Hexadecimal.int -> bool
+Decimal.int_beq: Decimal.int -> Decimal.int -> bool
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
+eq_true_rec_r:
+  forall (P : bool -> Set) [b : bool], P b -> eq_true b -> P true
+eq_true_ind:
+  forall P : bool -> Prop, P true -> forall b : bool, eq_true b -> P b
 bool_rec: forall P : bool -> Set, P true -> P false -> forall b : bool, P b
+eq_true_rect_r:
+  forall (P : bool -> Type) [b : bool], P b -> eq_true b -> P true
+bool_rect: forall P : bool -> Type, P true -> P false -> forall b : bool, P b
 eq_true_ind_r:
   forall (P : bool -> Prop) [b : bool], P b -> eq_true b -> P true
+eq_true_rect:
+  forall P : bool -> Type, P true -> forall b : bool, eq_true b -> P b
+bool_sind:
+  forall P : bool -> SProp, P true -> P false -> forall b : bool, P b
 eq_true_rec:
   forall P : bool -> Set, P true -> forall b : bool, eq_true b -> P b
 bool_ind: forall P : bool -> Prop, P true -> P false -> forall b : bool, P b
-eq_true_rect:
-  forall P : bool -> Type, P true -> forall b : bool, eq_true b -> P b
 eq_true_sind:
   forall P : bool -> SProp, P true -> forall b : bool, eq_true b -> P b
-bool_rect: forall P : bool -> Type, P true -> P false -> forall b : bool, P b
-eq_true_ind:
-  forall P : bool -> Prop, P true -> forall b : bool, eq_true b -> P b
-eq_true_rec_r:
-  forall (P : bool -> Set) [b : bool], P b -> eq_true b -> P true
-eq_true_rect_r:
-  forall (P : bool -> Type) [b : bool], P b -> eq_true b -> P true
-bool_sind:
-  forall P : bool -> SProp, P true -> P false -> forall b : bool, P b
-Byte.to_bits:
-  Byte.byte ->
-  bool * (bool * (bool * (bool * (bool * (bool * (bool * bool))))))
+Numeral.internal_uint_dec_bl1:
+  forall x y : Numeral.uint, Numeral.uint_beq x y = true -> x = y
+Hexadecimal.internal_hexadecimal_dec_lb:
+  forall x y : Hexadecimal.hexadecimal,
+  x = y -> Hexadecimal.hexadecimal_beq x y = true
+Hexadecimal.internal_int_dec_lb0:
+  forall x y : Hexadecimal.int, x = y -> Hexadecimal.int_beq x y = true
+Numeral.internal_numeral_dec_lb:
+  forall x y : Numeral.numeral, x = y -> Numeral.numeral_beq x y = true
+Decimal.internal_decimal_dec_lb:
+  forall x y : Decimal.decimal, x = y -> Decimal.decimal_beq x y = true
+Hexadecimal.internal_int_dec_bl0:
+  forall x y : Hexadecimal.int, Hexadecimal.int_beq x y = true -> x = y
+Numeral.internal_int_dec_lb1:
+  forall x y : Numeral.int, x = y -> Numeral.int_beq x y = true
+Numeral.internal_int_dec_bl1:
+  forall x y : Numeral.int, Numeral.int_beq x y = true -> x = y
+Hexadecimal.internal_hexadecimal_dec_bl:
+  forall x y : Hexadecimal.hexadecimal,
+  Hexadecimal.hexadecimal_beq x y = true -> x = y
+Numeral.internal_uint_dec_lb1:
+  forall x y : Numeral.uint, x = y -> Numeral.uint_beq x y = true
+Decimal.internal_int_dec_bl:
+  forall x y : Decimal.int, Decimal.int_beq x y = true -> x = y
+Decimal.internal_int_dec_lb:
+  forall x y : Decimal.int, x = y -> Decimal.int_beq x y = true
+Numeral.internal_numeral_dec_bl:
+  forall x y : Numeral.numeral, Numeral.numeral_beq x y = true -> x = y
 Byte.of_bits:
   bool * (bool * (bool * (bool * (bool * (bool * (bool * bool)))))) ->
   Byte.byte
+Byte.to_bits:
+  Byte.byte ->
+  bool * (bool * (bool * (bool * (bool * (bool * (bool * bool))))))
+Decimal.internal_decimal_dec_bl:
+  forall x y : Decimal.decimal, Decimal.decimal_beq x y = true -> x = y
+Hexadecimal.internal_uint_dec_bl0:
+  forall x : Hexadecimal.uint,
+  (fun x0 : Hexadecimal.uint =>
+   forall y : Hexadecimal.uint, Hexadecimal.uint_beq x0 y = true -> x0 = y) x
+Decimal.internal_uint_dec_bl:
+  forall x : Decimal.uint,
+  (fun x0 : Decimal.uint =>
+   forall y : Decimal.uint, Decimal.uint_beq x0 y = true -> x0 = y) x
+Decimal.internal_uint_dec_lb:
+  forall x : Decimal.uint,
+  (fun x0 : Decimal.uint =>
+   forall y : Decimal.uint, x0 = y -> Decimal.uint_beq x0 y = true) x
+Hexadecimal.internal_uint_dec_lb0:
+  forall x : Hexadecimal.uint,
+  (fun x0 : Hexadecimal.uint =>
+   forall y : Hexadecimal.uint, x0 = y -> Hexadecimal.uint_beq x0 y = true) x
 andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
 andb_true_intro:
   forall [b1 b2 : bool], b1 = true /\ b2 = true -> (b1 && b2)%bool = true
-BoolSpec_sind:
-  forall [P Q : Prop] (P0 : bool -> SProp),
-  (P -> P0 true) ->
-  (Q -> P0 false) -> forall b : bool, BoolSpec P Q b -> P0 b
 BoolSpec_ind:
   forall [P Q : Prop] (P0 : bool -> Prop),
+  (P -> P0 true) ->
+  (Q -> P0 false) -> forall b : bool, BoolSpec P Q b -> P0 b
+BoolSpec_sind:
+  forall [P Q : Prop] (P0 : bool -> SProp),
   (P -> P0 true) ->
   (Q -> P0 false) -> forall b : bool, BoolSpec P Q b -> P0 b
 Byte.to_bits_of_bits:
@@ -107,14 +163,106 @@ f_equal2_nat:
   forall (B : Type) (f : nat -> nat -> B) (x1 y1 x2 y2 : nat),
   x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2
 (use "About" for full details on implicit arguments)
+Numeral.internal_numeral_dec_lb:
+  forall x y : Numeral.numeral, x = y -> Numeral.numeral_beq x y = true
+Numeral.internal_int_dec_lb1:
+  forall x y : Numeral.int, x = y -> Numeral.int_beq x y = true
+Numeral.internal_numeral_dec_bl:
+  forall x y : Numeral.numeral, Numeral.numeral_beq x y = true -> x = y
+Hexadecimal.internal_hexadecimal_dec_lb:
+  forall x y : Hexadecimal.hexadecimal,
+  x = y -> Hexadecimal.hexadecimal_beq x y = true
+Numeral.internal_int_dec_bl1:
+  forall x y : Numeral.int, Numeral.int_beq x y = true -> x = y
+Numeral.internal_uint_dec_lb1:
+  forall x y : Numeral.uint, x = y -> Numeral.uint_beq x y = true
+Numeral.internal_uint_dec_bl1:
+  forall x y : Numeral.uint, Numeral.uint_beq x y = true -> x = y
+Decimal.internal_decimal_dec_lb:
+  forall x y : Decimal.decimal, x = y -> Decimal.decimal_beq x y = true
+Hexadecimal.internal_hexadecimal_dec_bl:
+  forall x y : Hexadecimal.hexadecimal,
+  Hexadecimal.hexadecimal_beq x y = true -> x = y
+Hexadecimal.internal_int_dec_lb0:
+  forall x y : Hexadecimal.int, x = y -> Hexadecimal.int_beq x y = true
+Hexadecimal.internal_int_dec_bl0:
+  forall x y : Hexadecimal.int, Hexadecimal.int_beq x y = true -> x = y
+Decimal.internal_int_dec_lb:
+  forall x y : Decimal.int, x = y -> Decimal.int_beq x y = true
+Decimal.internal_decimal_dec_bl:
+  forall x y : Decimal.decimal, Decimal.decimal_beq x y = true -> x = y
+Decimal.internal_int_dec_bl:
+  forall x y : Decimal.int, Decimal.int_beq x y = true -> x = y
+Decimal.internal_uint_dec_bl:
+  forall x : Decimal.uint,
+  (fun x0 : Decimal.uint =>
+   forall y : Decimal.uint, Decimal.uint_beq x0 y = true -> x0 = y) x
+Decimal.internal_uint_dec_lb:
+  forall x : Decimal.uint,
+  (fun x0 : Decimal.uint =>
+   forall y : Decimal.uint, x0 = y -> Decimal.uint_beq x0 y = true) x
+Hexadecimal.internal_uint_dec_lb0:
+  forall x : Hexadecimal.uint,
+  (fun x0 : Hexadecimal.uint =>
+   forall y : Hexadecimal.uint, x0 = y -> Hexadecimal.uint_beq x0 y = true) x
+Hexadecimal.internal_uint_dec_bl0:
+  forall x : Hexadecimal.uint,
+  (fun x0 : Hexadecimal.uint =>
+   forall y : Hexadecimal.uint, Hexadecimal.uint_beq x0 y = true -> x0 = y) x
+andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
 andb_true_intro:
   forall [b1 b2 : bool], b1 = true /\ b2 = true -> (b1 && b2)%bool = true
-andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
 bool_choice:
   forall [S : Set] [R1 R2 : S -> Prop],
   (forall x : S, {R1 x} + {R2 x}) ->
   {f : S -> bool | forall x : S, f x = true /\ R1 x \/ f x = false /\ R2 x}
 (use "About" for full details on implicit arguments)
+Numeral.internal_numeral_dec_lb:
+  forall x y : Numeral.numeral, x = y -> Numeral.numeral_beq x y = true
+Numeral.internal_numeral_dec_bl:
+  forall x y : Numeral.numeral, Numeral.numeral_beq x y = true -> x = y
+Numeral.internal_int_dec_lb1:
+  forall x y : Numeral.int, x = y -> Numeral.int_beq x y = true
+Numeral.internal_int_dec_bl1:
+  forall x y : Numeral.int, Numeral.int_beq x y = true -> x = y
+Numeral.internal_uint_dec_lb1:
+  forall x y : Numeral.uint, x = y -> Numeral.uint_beq x y = true
+Numeral.internal_uint_dec_bl1:
+  forall x y : Numeral.uint, Numeral.uint_beq x y = true -> x = y
+Hexadecimal.internal_hexadecimal_dec_lb:
+  forall x y : Hexadecimal.hexadecimal,
+  x = y -> Hexadecimal.hexadecimal_beq x y = true
+Hexadecimal.internal_hexadecimal_dec_bl:
+  forall x y : Hexadecimal.hexadecimal,
+  Hexadecimal.hexadecimal_beq x y = true -> x = y
+Hexadecimal.internal_int_dec_lb0:
+  forall x y : Hexadecimal.int, x = y -> Hexadecimal.int_beq x y = true
+Hexadecimal.internal_int_dec_bl0:
+  forall x y : Hexadecimal.int, Hexadecimal.int_beq x y = true -> x = y
+Decimal.internal_decimal_dec_lb:
+  forall x y : Decimal.decimal, x = y -> Decimal.decimal_beq x y = true
+Decimal.internal_decimal_dec_bl:
+  forall x y : Decimal.decimal, Decimal.decimal_beq x y = true -> x = y
+Decimal.internal_int_dec_lb:
+  forall x y : Decimal.int, x = y -> Decimal.int_beq x y = true
+Decimal.internal_int_dec_bl:
+  forall x y : Decimal.int, Decimal.int_beq x y = true -> x = y
+Hexadecimal.internal_uint_dec_bl0:
+  forall x : Hexadecimal.uint,
+  (fun x0 : Hexadecimal.uint =>
+   forall y : Hexadecimal.uint, Hexadecimal.uint_beq x0 y = true -> x0 = y) x
+Decimal.internal_uint_dec_bl:
+  forall x : Decimal.uint,
+  (fun x0 : Decimal.uint =>
+   forall y : Decimal.uint, Decimal.uint_beq x0 y = true -> x0 = y) x
+Decimal.internal_uint_dec_lb:
+  forall x : Decimal.uint,
+  (fun x0 : Decimal.uint =>
+   forall y : Decimal.uint, x0 = y -> Decimal.uint_beq x0 y = true) x
+Hexadecimal.internal_uint_dec_lb0:
+  forall x : Hexadecimal.uint,
+  (fun x0 : Hexadecimal.uint =>
+   forall y : Hexadecimal.uint, x0 = y -> Hexadecimal.uint_beq x0 y = true) x
 andb_true_intro:
   forall [b1 b2 : bool], b1 = true /\ b2 = true -> (b1 && b2)%bool = true
 andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true

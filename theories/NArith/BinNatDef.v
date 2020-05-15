@@ -388,10 +388,30 @@ Definition iter (n:N) {A} (f:A->A) (x:A) : A :=
 
 Definition of_uint (d:Decimal.uint) := Pos.of_uint d.
 
+Definition of_hex_uint (d:Hexadecimal.uint) := Pos.of_hex_uint d.
+
+Definition of_num_uint (d:Numeral.uint) :=
+  match d with
+  | Numeral.UIntDec d => of_uint d
+  | Numeral.UIntHex d => of_hex_uint d
+  end.
+
 Definition of_int (d:Decimal.int) :=
   match Decimal.norm d with
   | Decimal.Pos d => Some (Pos.of_uint d)
   | Decimal.Neg _ => None
+  end.
+
+Definition of_hex_int (d:Hexadecimal.int) :=
+  match Hexadecimal.norm d with
+  | Hexadecimal.Pos d => Some (Pos.of_hex_uint d)
+  | Hexadecimal.Neg _ => None
+  end.
+
+Definition of_num_int (d:Numeral.int) :=
+  match d with
+  | Numeral.IntDec d => of_int d
+  | Numeral.IntHex d => of_hex_int d
   end.
 
 Definition to_uint n :=
@@ -400,11 +420,23 @@ Definition to_uint n :=
   | pos p => Pos.to_uint p
   end.
 
+Definition to_hex_uint n :=
+  match n with
+  | 0 => Hexadecimal.zero
+  | pos p => Pos.to_hex_uint p
+  end.
+
+Definition to_num_uint n := Numeral.UIntDec (to_uint n).
+
 Definition to_int n := Decimal.Pos (to_uint n).
 
-Numeral Notation N of_uint to_uint : N_scope.
+Definition to_hex_int n := Hexadecimal.Pos (to_hex_uint n).
+
+Definition to_num_int n := Numeral.IntDec (to_int n).
+
+Numeral Notation N of_num_uint to_num_uint : N_scope.
 
 End N.
 
 (** Re-export the notation for those who just [Import NatIntDef] *)
-Numeral Notation N N.of_uint N.to_uint : N_scope.
+Numeral Notation N N.of_num_uint N.to_num_uint : N_scope.

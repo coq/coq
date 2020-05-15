@@ -15,8 +15,8 @@ open Nameops
 open Libnames
 open Namegen
 open Glob_term
-open Constrexpr
 open Notation
+open Constrexpr
 
 (***********************)
 (* For binders parsing *)

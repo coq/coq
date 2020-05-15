@@ -1452,26 +1452,32 @@ Numeral notations
          parsing and printing functions, respectively.  The parsing function
          :n:`@qualid__parse` should have one of the following types:
 
-            * :n:`Decimal.int -> @qualid`
-            * :n:`Decimal.int -> option @qualid`
-            * :n:`Decimal.uint -> @qualid`
-            * :n:`Decimal.uint -> option @qualid`
+            * :n:`Numeral.int -> @qualid`
+            * :n:`Numeral.int -> option @qualid`
+            * :n:`Numeral.uint -> @qualid`
+            * :n:`Numeral.uint -> option @qualid`
             * :n:`Z -> @qualid`
             * :n:`Z -> option @qualid`
-            * :n:`Decimal.decimal -> @qualid`
-            * :n:`Decimal.decimal -> option @qualid`
+            * :n:`Numeral.numeral -> @qualid`
+            * :n:`Numeral.numeral -> option @qualid`
 
          And the printing function :n:`@qualid__print` should have one of the
          following types:
 
-            * :n:`@qualid -> Decimal.int`
-            * :n:`@qualid -> option Decimal.int`
-            * :n:`@qualid -> Decimal.uint`
-            * :n:`@qualid -> option Decimal.uint`
+            * :n:`@qualid -> Numeral.int`
+            * :n:`@qualid -> option Numeral.int`
+            * :n:`@qualid -> Numeral.uint`
+            * :n:`@qualid -> option Numeral.uint`
             * :n:`@qualid -> Z`
             * :n:`@qualid -> option Z`
-            * :n:`@qualid -> Decimal.decimal`
-            * :n:`@qualid -> option Decimal.decimal`
+            * :n:`@qualid -> Numeral.numeral`
+            * :n:`@qualid -> option Numeral.numeral`
+
+         .. deprecated:: 8.12
+            Numeral notations on :g:`Decimal.uint`, :g:`Decimal.int` and
+            :g:`Decimal.decimal` are replaced respectively by numeral
+            notations on :g:`Numeral.uint`, :g:`Numeral.int` and
+            :g:`Numeral.numeral`.
 
          When parsing, the application of the parsing function
          :n:`@qualid__parse` to the number will be fully reduced, and universes
@@ -1495,7 +1501,7 @@ Numeral notations
          returns :n:`(@qualid__parse m)` when parsing a literal
          :n:`m` that's greater than :n:`@numeral` rather than reducing it to a normal form.
          Here :g:`m` will be a
-         :g:`Decimal.int` or :g:`Decimal.uint` or :g:`Z`, depending on the
+         :g:`Numeral.int` or :g:`Numeral.uint` or :g:`Z`, depending on the
          type of the parsing function :n:`@qualid__parse`. This allows for a
          more compact representation of literals in types such as :g:`nat`,
          and limits parse failures due to stack overflow.  Note that a
@@ -1525,12 +1531,13 @@ Numeral notations
      only for integers or non-negative integers, and the given numeral
      has a fractional or exponent part or is negative.
 
-   .. exn:: @qualid__parse should go from Decimal.int to @type or (option @type). Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).
+
+   .. exn:: @qualid__parse should go from Numeral.int to @type or (option @type). Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
 
      The parsing function given to the :cmd:`Numeral Notation`
      vernacular is not of the right type.
 
-   .. exn:: @qualid__print should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).
+   .. exn:: @qualid__print should go from @type to Numeral.int or (option Numeral.int).  Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
 
      The printing function given to the :cmd:`Numeral Notation`
      vernacular is not of the right type.
@@ -1546,7 +1553,7 @@ Numeral notations
 
      Parsing functions expected to return an :g:`option` must always
      return a concrete :g:`Some` or :g:`None` when applied to a
-     concrete numeral expressed as a decimal.  They may not return
+     concrete numeral expressed as a (hexa)decimal.  They may not return
      opaque constants.
 
 String notations

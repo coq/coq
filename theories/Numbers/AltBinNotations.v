@@ -55,10 +55,10 @@ Definition n_of_z z :=
   end.
 
 Definition n_to_z n :=
- match n with
-   | N0 => Z0
-   | Npos p => Zpos p
- end.
+  match n with
+    | N0 => Z0
+    | Npos p => Zpos p
+  end.
 
 Numeral Notation N n_of_z n_to_z : N_scope.
 

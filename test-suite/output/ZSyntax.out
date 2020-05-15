@@ -1,5 +1,7 @@
 32%Z
      : Z
+eq_refl : 42%Z = 42%Z
+     : 42%Z = 42%Z
 fun f : nat -> Z => (f 0%nat + 0)%Z
      : (nat -> Z) -> Z
 fun x : positive => Z.pos x~0
@@ -23,4 +25,10 @@ fun x : positive => (- Z.pos x~0 + 0)%Z
 Z.of_nat 0 = 0%Z
      : Prop
 (0 + Z.of_nat 11)%Z
+     : Z
+0x2a%Z
+     : Z
+(-0x2a)%Z
+     : Z
+0x0%Z
      : Z

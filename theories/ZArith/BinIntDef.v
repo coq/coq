@@ -309,10 +309,30 @@ Definition to_pos (z:Z) : positive :=
 
 Definition of_uint (d:Decimal.uint) := of_N (Pos.of_uint d).
 
+Definition of_hex_uint (d:Hexadecimal.uint) := of_N (Pos.of_hex_uint d).
+
+Definition of_num_uint (d:Numeral.uint) :=
+  match d with
+  | Numeral.UIntDec d => of_uint d
+  | Numeral.UIntHex d => of_hex_uint d
+  end.
+
 Definition of_int (d:Decimal.int) :=
   match d with
   | Decimal.Pos d => of_uint d
   | Decimal.Neg d => opp (of_uint d)
+  end.
+
+Definition of_hex_int (d:Hexadecimal.int) :=
+  match d with
+  | Hexadecimal.Pos d => of_hex_uint d
+  | Hexadecimal.Neg d => opp (of_hex_uint d)
+  end.
+
+Definition of_num_int (d:Numeral.int) :=
+  match d with
+  | Numeral.IntDec d => of_int d
+  | Numeral.IntHex d => of_hex_int d
   end.
 
 Definition to_int n :=
@@ -321,6 +341,15 @@ Definition to_int n :=
   | pos p => Decimal.Pos (Pos.to_uint p)
   | neg p => Decimal.Neg (Pos.to_uint p)
   end.
+
+Definition to_hex_int n :=
+  match n with
+  | 0 => Hexadecimal.Pos Hexadecimal.zero
+  | pos p => Hexadecimal.Pos (Pos.to_hex_uint p)
+  | neg p => Hexadecimal.Neg (Pos.to_hex_uint p)
+  end.
+
+Definition to_num_int n := Numeral.IntDec (to_int n).
 
 (** ** Iteration of a function
 
@@ -639,9 +668,9 @@ Definition lxor a b :=
    | neg a, neg b => of_N (N.lxor (Pos.pred_N a) (Pos.pred_N b))
  end.
 
-Numeral Notation Z of_int to_int : Z_scope.
+Numeral Notation Z of_num_int to_num_int : Z_scope.
 
 End Z.
 
 (** Re-export the notation for those who just [Import BinIntDef] *)
-Numeral Notation Z Z.of_int Z.to_int : Z_scope.
+Numeral Notation Z Z.of_num_int Z.to_num_int : Z_scope.

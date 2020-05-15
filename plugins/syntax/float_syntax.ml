@@ -42,7 +42,7 @@ let interp_float ?loc n =
     | Float64.(PZero | NZero) -> not (NumTok.Signed.is_zero n)
     | Float64.(PNormal | NNormal | PSubn | NSubn) ->
        let m, e =
-         let (_, i), f, e = NumTok.Signed.to_decimal_and_exponent n in
+         let (_, i), f, e = NumTok.Signed.to_int_frac_and_exponent n in
          let i = NumTok.UnsignedNat.to_string i in
          let f = match f with
            | None -> "" | Some f -> NumTok.UnsignedNat.to_string f in
@@ -70,7 +70,8 @@ let interp_float ?loc n =
        else  (* e < 0 *)
          if e' <= e then check m' (-e) m (e - e')
          else check' m' (-e) (e' - e) m in
-  if inexact () then warn_inexact_float ?loc (sn, f);
+  if NumTok.(Signed.classify n = CDec) && inexact () then
+    warn_inexact_float ?loc (sn, f);
   DAst.make ?loc (GFloat f)
 
 (* Pretty printing is already handled in constrextern.ml *)

@@ -19,13 +19,13 @@ open Libnames
 open Namegen
 open Impargs
 open CAst
+open Notation
 open Constrexpr
 open Constrexpr_ops
 open Notation_ops
 open Glob_term
 open Glob_ops
 open Pattern
-open Notation
 open Detyping
 
 module NamedDecl = Context.Named.Declaration
