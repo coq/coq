@@ -8,7 +8,7 @@ early enough in the process for this person to be known at that point
 in time.
 
 - [ ] Create a new issue to track the release process where you can copy-paste
-  the present checklist from dev/doc/release-process.md.
+  the present checklist from `dev/doc/release-process.md`.
 - [ ] Change the version name to the next major version and the magic
   numbers (see [#7008](https://github.com/coq/coq/pull/7008/files)).
 
