@@ -41,9 +41,9 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    This command supports the :attr:`local` attribute.  When used, the
    structure is canonical only within the :cmd:`Section` containing it.
 
-   Assume that :token:`qualid` denotes an object ``(Build_struct`` :n:`c__1` … :n:`c__n` ``)`` in the
-   structure :g:`struct` of which the fields are :n:`x__1`, …, :n:`x__n`.
-   Then, each time an equation of the form ``(``\ :n:`x__i` ``_)`` |eq_beta_delta_iota_zeta| :n:`c__i` has to be
+   Assume that :token:`qualid` denotes an object :n:`(Build_struct c__1 … c__n)` in the
+   structure :g:`struct` of which the fields are :n:`x__1, …, x__n`.
+   Then, each time an equation of the form :n:`(x__i _)` |eq_beta_delta_iota_zeta| :n:`c__i` has to be
    solved during the type checking process, :token:`qualid` is used as a solution.
    Otherwise said, :token:`qualid` is canonically used to extend the field :n:`c__i`
    into a complete structure built on :n:`c__i`.
