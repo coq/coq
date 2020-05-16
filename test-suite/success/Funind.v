@@ -77,7 +77,7 @@ Functional Scheme app_ind := Induction for app Sort Prop.
 
 Lemma appnil : forall (A : Set) (l l' : list A), l' = nil -> l = l ++ l'.
 intros A l l'.
- functional induction app A l l';  intuition.
+ functional induction app l l';  intuition.
  rewrite <- H0; trivial.
 Qed.
 
