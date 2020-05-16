@@ -76,7 +76,9 @@ let unify_e_resolve poly flags (c,clenv) =
         (Tactics.Simple.eapply c)
     end
 
-let hintmap_of sigma secvars hdc concl =
+let hintmap_of sigma secvars concl =
+  (* Warning: for computation sharing, we need to return a closure *)
+  let hdc = try Some (decompose_app_bound sigma concl) with Bound -> None in
   match hdc with
   | None -> fun db -> Hint_db.map_none ~secvars db
   | Some hdc ->
@@ -112,8 +114,8 @@ let rec e_trivial_fail_db db_list local_db =
   Tacticals.New.tclSOLVE tacl
   end
 
-and e_my_find_search env sigma db_list local_db secvars hdc concl =
-  let hint_of_db = hintmap_of sigma secvars hdc concl in
+and e_my_find_search env sigma db_list local_db secvars concl =
+  let hint_of_db = hintmap_of sigma secvars concl in
   let hintl =
       List.map_append (fun db ->
         let flags = auto_flags_of_state (Hint_db.transparent_state db) in
@@ -142,14 +144,12 @@ and e_my_find_search env sigma db_list local_db secvars hdc concl =
   List.map tac_of_hint hintl
 
 and e_trivial_resolve env sigma db_list local_db secvars gl =
-  let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
-  try priority (e_my_find_search env sigma db_list local_db secvars hd gl)
+  try priority (e_my_find_search env sigma db_list local_db secvars gl)
   with Not_found -> []
 
 let e_possible_resolve env sigma db_list local_db secvars gl =
-  let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
   try List.map (fun (b, (tac, pp)) -> (tac, b, pp))
-               (e_my_find_search env sigma db_list local_db secvars hd gl)
+               (e_my_find_search env sigma db_list local_db secvars gl)
   with Not_found -> []
 
 (*s Tactics handling a list of goals. *)
