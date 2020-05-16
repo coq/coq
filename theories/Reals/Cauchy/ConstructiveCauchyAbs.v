@@ -20,6 +20,8 @@ Local Open Scope CReal_scope.
    The constructive formulation of the absolute value on the real numbers.
    This is followed by the constructive definitions of minimum and maximum,
    as min x y := (x + y - |x-y|) / 2.
+
+   WARNING: this file is experimental and likely to change in future releases.
 *)
 
 

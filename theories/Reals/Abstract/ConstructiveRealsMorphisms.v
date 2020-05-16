@@ -23,14 +23,16 @@
 
     Apart from the speed, those unique isomorphisms also serve as
     sanity checks of the interface ConstructiveReals :
-    it captures a concept with a strong notion of uniqueness. *)
+    it captures a concept with a strong notion of uniqueness.
+
+    WARNING: this file is experimental and likely to change in future releases.
+*)
 
 Require Import QArith.
 Require Import Qabs.
 Require Import ConstructiveReals.
 Require Import ConstructiveLimits.
 Require Import ConstructiveAbs.
-Require Import ConstructiveSum.
 
 Local Open Scope ConstructiveReals.
 
@@ -889,37 +891,6 @@ Proof.
   apply CRmorph_one.
 Qed.
 
-Lemma CRmorph_sum : forall {R1 R2 : ConstructiveReals}
-                      (f : @ConstructiveRealsMorphism R1 R2)
-                      (un : nat -> CRcarrier R1) (n : nat),
-  CRmorph f (CRsum un n) ==
-  CRsum (fun n0 : nat => CRmorph f (un n0)) n.
-Proof.
-  induction n.
-  - reflexivity.
-  - simpl. rewrite CRmorph_plus, IHn. reflexivity.
-Qed.
-
-Lemma CRmorph_INR : forall {R1 R2 : ConstructiveReals}
-                      (f : @ConstructiveRealsMorphism R1 R2)
-                      (n : nat),
-  CRmorph f (INR n) == INR n.
-Proof.
-  induction n.
-  - apply CRmorph_rat.
-  - simpl. unfold INR.
-    rewrite (CRmorph_proper f _ (1 + CR_of_Q R1 (Z.of_nat n # 1))).
-    rewrite CRmorph_plus. unfold INR in IHn.
-    rewrite IHn. rewrite CRmorph_one, <- CR_of_Q_plus.
-    apply CR_of_Q_morph. rewrite Qinv_plus_distr.
-    unfold Qeq, Qnum, Qden. do 2 rewrite Z.mul_1_r.
-    rewrite Nat2Z.inj_succ. rewrite <- Z.add_1_l. reflexivity.
-    rewrite <- CR_of_Q_plus.
-    apply CR_of_Q_morph. rewrite Qinv_plus_distr.
-    unfold Qeq, Qnum, Qden. do 2 rewrite Z.mul_1_r.
-    rewrite Nat2Z.inj_succ. rewrite <- Z.add_1_l. reflexivity.
-Qed.
-
 Lemma CRmorph_rat_cv
   : forall {R1 R2 : ConstructiveReals}
            (qn : nat -> Q),
@@ -1138,35 +1109,4 @@ Proof.
   unfold CRminus in H. rewrite <- CRmorph_opp, <- CRmorph_plus, CRmorph_abs in H.
   rewrite <- (CRmorph_rat f (1#p)) in H.
   apply (CRmorph_le_inv f) in H. exact H.
-Qed.
-
-Lemma CRmorph_min : forall {R1 R2 : ConstructiveReals}
-                      (f : @ConstructiveRealsMorphism R1 R2)
-                      (a b : CRcarrier R1),
-    CRmorph f (CRmin a b)
-    == CRmin (CRmorph f a) (CRmorph f b).
-Proof.
-  intros. unfold CRmin.
-  rewrite CRmorph_mult. apply CRmult_morph.
-  2: apply CRmorph_rat.
-  unfold CRminus. do 2 rewrite CRmorph_plus. apply CRplus_morph.
-  apply CRplus_morph. reflexivity. reflexivity.
-  rewrite CRmorph_opp. apply CRopp_morph.
-  rewrite <- CRmorph_abs. apply CRabs_morph.
-  rewrite CRmorph_plus. apply CRplus_morph.
-  reflexivity.
-  rewrite CRmorph_opp. apply CRopp_morph, CRmorph_proper. reflexivity.
-Qed.
-
-Lemma CRmorph_series_cv : forall {R1 R2 : ConstructiveReals}
-                     (f : @ConstructiveRealsMorphism R1 R2)
-                     (un : nat -> CRcarrier R1)
-                     (l : CRcarrier R1),
-    series_cv un l
-    -> series_cv (fun n => CRmorph f (un n)) (CRmorph f l).
-Proof.
-  intros.
-  apply (CR_cv_eq _ (fun n => CRmorph f (CRsum un n))).
-  intro n. apply CRmorph_sum.
-  apply CRmorph_cv, H.
 Qed.

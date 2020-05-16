@@ -64,7 +64,10 @@ Structure R := {
   on the real numbers. In "Sheaves in Geometry and Logic",
   MacLane and Moerdijk show a topos in which all functions R -> Z
   are constant. Consequently all functions R -> Q are constant and
-  it is not possible to approximate real numbers by rational numbers. *)
+  it is not possible to approximate real numbers by rational numbers.
+
+  WARNING: this file is experimental and likely to change in future releases.
+ *)
 
 
 Require Import QArith Qabs Qround.

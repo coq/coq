@@ -10,13 +10,17 @@
 
 Require Import QArith Qabs.
 Require Import ConstructiveReals.
+Require Import ConstructiveRealsMorphisms.
 Require Import ConstructiveAbs.
+Require Import ConstructiveLimits.
 
 Local Open Scope ConstructiveReals.
 
 
 (**
    Definition and properties of finite sums and powers.
+
+   WARNING: this file is experimental and likely to change in future releases.
 *)
 
 Fixpoint CRsum {R : ConstructiveReals}
@@ -24,12 +28,6 @@ Fixpoint CRsum {R : ConstructiveReals}
   match N with
     | O => f 0%nat
     | S i => CRsum f i + f (S i)
-  end.
-
-Fixpoint CRpow {R : ConstructiveReals} (r:CRcarrier R) (n:nat) : CRcarrier R :=
-  match n with
-    | O => 1
-    | S n => r * (CRpow r n)
   end.
 
 Lemma CRsum_eq :
@@ -260,89 +258,333 @@ Proof.
     reflexivity. rewrite CRplus_0_r. rewrite CRplus_assoc. reflexivity.
 Qed.
 
+Definition series_cv {R : ConstructiveReals}
+           (un : nat -> CRcarrier R) (s : CRcarrier R) : Set
+  := CR_cv R (CRsum un) s.
 
-(* Power *)
+Definition series_cv_lim_lt {R : ConstructiveReals}
+           (un : nat -> CRcarrier R) (x : CRcarrier R) : Set
+  := { l : CRcarrier R & prod (series_cv un l) (l < x) }.
 
-Lemma pow_R1_Rle : forall {R : ConstructiveReals} (x : CRcarrier R) (n : nat),
-    1 <= x
-    -> 1 <= CRpow x n.
+Definition series_cv_le_lim {R : ConstructiveReals}
+           (x : CRcarrier R) (un : nat -> CRcarrier R) : Set
+  := { l : CRcarrier R & prod (series_cv un l) (x <= l) }.
+
+Lemma series_cv_maj : forall {R : ConstructiveReals}
+                        (un vn : nat -> CRcarrier R) (s : CRcarrier R),
+    (forall n:nat, CRabs R (un n) <= vn n)
+    -> series_cv vn s
+    -> { l : CRcarrier R & prod (series_cv un l) (l <= s) }.
 Proof.
-  induction n.
-  - intros. apply CRle_refl.
-  - intros. simpl. apply (CRle_trans _ (x * 1)).
-    rewrite CRmult_1_r. exact H.
-    apply CRmult_le_compat_l_half. apply (CRlt_le_trans _ 1).
-    apply CRzero_lt_one. exact H.
-    apply IHn. exact H.
+  intros. destruct (CR_complete R (CRsum un)).
+  - intros n.
+    specialize (H0 (2*n)%positive) as [N maj].
+    exists N. intros i j H0 H1.
+    apply (CRle_trans _ (CRsum vn (max i j) - CRsum vn (min i j))).
+    apply Abs_sum_maj. apply H.
+    setoid_replace (CRsum vn (max i j) - CRsum vn (min i j))
+      with (CRabs R (CRsum vn (max i j) - (CRsum vn (min i j)))).
+    setoid_replace (CRsum vn (Init.Nat.max i j) - CRsum vn (Init.Nat.min i j))
+      with (CRsum vn (Init.Nat.max i j) - s - (CRsum vn (Init.Nat.min i j) - s)).
+    apply (CRle_trans _ _ _ (CRabs_triang _ _)).
+    setoid_replace (1#n)%Q with ((1#2*n) + (1#2*n))%Q.
+    rewrite CR_of_Q_plus.
+    apply CRplus_le_compat.
+    apply maj. apply (le_trans _ i). assumption. apply Nat.le_max_l.
+    rewrite CRabs_opp. apply maj.
+    apply Nat.min_case. apply (le_trans _ i). assumption. apply le_refl.
+    assumption. rewrite Qinv_plus_distr. reflexivity.
+    unfold CRminus. rewrite CRplus_assoc. apply CRplus_morph.
+    reflexivity. rewrite CRopp_plus_distr, CRopp_involutive.
+    rewrite CRplus_comm, CRplus_assoc, CRplus_opp_r, CRplus_0_r.
+    reflexivity.
+    rewrite CRabs_right. reflexivity.
+    rewrite <- (CRplus_opp_r (CRsum vn (Init.Nat.min i j))).
+    apply CRplus_le_compat. apply pos_sum_more.
+    intros. apply (CRle_trans _ (CRabs R (un k))). apply CRabs_pos.
+    apply H. apply (le_trans _ i). apply Nat.le_min_l. apply Nat.le_max_l.
+    apply CRle_refl.
+  - exists x. split. assumption.
+    (* x <= s *)
+    apply (CRplus_le_reg_r (-x)). rewrite CRplus_opp_r.
+    apply (CR_cv_bound_down (fun n => CRsum vn n - CRsum un n) _ _ 0).
+    intros. rewrite <- (CRplus_opp_r (CRsum un n)).
+    apply CRplus_le_compat. apply sum_Rle.
+    intros. apply (CRle_trans _ (CRabs R (un k))).
+    apply CRle_abs. apply H. apply CRle_refl.
+    apply CR_cv_plus. assumption.
+    apply CR_cv_opp. assumption.
 Qed.
 
-Lemma pow_le : forall {R : ConstructiveReals} (x : CRcarrier R) (n : nat),
-    0 <= x
-    -> 0 <= CRpow x n.
+Lemma series_cv_abs_lt
+  : forall {R : ConstructiveReals} (un vn : nat -> CRcarrier R) (l : CRcarrier R),
+    (forall n:nat, CRabs R (un n) <= vn n)
+    -> series_cv_lim_lt vn l
+    -> series_cv_lim_lt un l.
 Proof.
-  induction n.
-  - intros. apply CRlt_asym, CRzero_lt_one.
-  - intros. simpl. apply CRmult_le_0_compat.
-    exact H. apply IHn. exact H.
+  intros. destruct H0 as [x [H0 H1]].
+  destruct (series_cv_maj un vn x H H0) as [x0 H2].
+  exists x0. split. apply H2. apply (CRle_lt_trans _ x).
+  apply H2. apply H1.
 Qed.
 
-Lemma pow_lt : forall {R : ConstructiveReals} (x : CRcarrier R) (n : nat),
-    0 < x
-    -> 0 < CRpow x n.
+Definition series_cv_abs {R : ConstructiveReals} (u : nat -> CRcarrier R)
+  : CR_cauchy R (CRsum (fun n => CRabs R (u n)))
+    -> { l : CRcarrier R & series_cv u l }.
 Proof.
-  induction n.
-  - intros. apply CRzero_lt_one.
-  - intros. simpl. apply CRmult_lt_0_compat. exact H.
-    apply IHn. exact H.
+  intros. apply CR_complete in H. destruct H.
+  destruct (series_cv_maj u (fun k => CRabs R (u k)) x).
+  intro n. apply CRle_refl. assumption. exists x0. apply p.
 Qed.
 
-Lemma pow_mult : forall {R : ConstructiveReals} (x y : CRcarrier R) (n:nat),
-    CRpow x n * CRpow y n == CRpow (x*y) n.
+Lemma series_cv_unique :
+  forall {R : ConstructiveReals} (Un:nat -> CRcarrier R) (l1 l2:CRcarrier R),
+    series_cv Un l1 -> series_cv Un l2 -> l1 == l2.
 Proof.
-  induction n.
-  - simpl. rewrite CRmult_1_r. reflexivity.
-  - simpl. rewrite <- IHn. do 2 rewrite <- (Rmul_assoc (CRisRing R)).
-    apply CRmult_morph. reflexivity.
-    rewrite <- (Rmul_comm (CRisRing R)). rewrite <- (Rmul_assoc (CRisRing R)).
-    apply CRmult_morph. reflexivity.
-    rewrite <- (Rmul_comm (CRisRing R)). reflexivity.
+  intros. apply (CR_cv_unique (CRsum Un)); assumption.
 Qed.
 
-Lemma pow_one : forall {R : ConstructiveReals} (n:nat),
-    @CRpow R 1 n == 1.
+Lemma series_cv_abs_eq
+  : forall {R : ConstructiveReals} (u : nat -> CRcarrier R) (a : CRcarrier R)
+           (cau : CR_cauchy R (CRsum (fun n => CRabs R (u n)))),
+    series_cv u a
+    -> (a == (let (l,_):= series_cv_abs u cau in l))%ConstructiveReals.
 Proof.
-  induction n. reflexivity.
-  transitivity (CRmult R 1 (CRpow 1 n)). reflexivity.
-  rewrite IHn. rewrite CRmult_1_r. reflexivity.
+  intros. destruct (series_cv_abs u cau).
+  apply (series_cv_unique u). exact H. exact s.
 Qed.
 
-Lemma pow_proper : forall {R : ConstructiveReals} (x y : CRcarrier R) (n : nat),
-    x == y -> CRpow x n == CRpow y n.
+Lemma series_cv_abs_cv
+  : forall {R : ConstructiveReals} (u : nat -> CRcarrier R)
+           (cau : CR_cauchy R (CRsum (fun n => CRabs R (u n)))),
+    series_cv u (let (l,_):= series_cv_abs u cau in l).
 Proof.
-  induction n.
-  - intros. reflexivity.
-  - intros. simpl. rewrite IHn, H. reflexivity. exact H.
+  intros. destruct (series_cv_abs u cau). exact s.
 Qed.
 
-Lemma pow_inv : forall {R : ConstructiveReals} (x : CRcarrier R) (xPos : 0 < x) (n : nat),
-    CRpow (CRinv R x (inr xPos)) n
-    == CRinv R (CRpow x n) (inr (pow_lt x n xPos)).
+Lemma series_cv_opp : forall {R : ConstructiveReals}
+                        (s : CRcarrier R) (u : nat -> CRcarrier R),
+    series_cv u s
+    -> series_cv (fun n => - u n) (- s).
 Proof.
-  induction n.
-  - rewrite CRinv_1. reflexivity.
-  - transitivity (CRinv R x (inr xPos) * CRpow (CRinv R x (inr xPos)) n).
-    reflexivity. rewrite IHn.
-    assert (0 < x * CRpow x n).
-    { apply CRmult_lt_0_compat. exact xPos. apply pow_lt, xPos. }
-    rewrite <- (CRinv_mult_distr _ _ _ _ (inr H)).
-    apply CRinv_morph. reflexivity.
+  intros. intros p. specialize (H p) as [N H].
+  exists N. intros n H0.
+  setoid_replace (CRsum (fun n0 : nat => - u n0) n - - s)
+    with (-(CRsum (fun n0 : nat => u n0) n - s)).
+  rewrite CRabs_opp.
+  apply H, H0. unfold CRminus.
+  rewrite sum_opp. rewrite CRopp_plus_distr. reflexivity.
 Qed.
 
-Lemma pow_plus_distr : forall {R : ConstructiveReals} (x : CRcarrier R) (n p:nat),
-    CRpow x n * CRpow x p == CRpow x (n+p).
+Lemma series_cv_scale : forall {R : ConstructiveReals}
+                          (a : CRcarrier R) (s : CRcarrier R) (u : nat -> CRcarrier R),
+    series_cv u s
+    -> series_cv (fun n => (u n) * a) (s * a).
+Proof.
+  intros.
+  apply (CR_cv_eq _ (fun n => CRsum u n * a)).
+  intro n. rewrite sum_scale. reflexivity. apply CR_cv_scale, H.
+Qed.
+
+Lemma series_cv_plus : forall {R : ConstructiveReals}
+                         (u v : nat -> CRcarrier R) (s t : CRcarrier R),
+    series_cv u s
+    -> series_cv v t
+    -> series_cv (fun n => u n + v n) (s + t).
+Proof.
+  intros. apply (CR_cv_eq _ (fun n => CRsum u n + CRsum v n)).
+  intro n. symmetry. apply sum_plus. apply CR_cv_plus. exact H. exact H0.
+Qed.
+
+Lemma series_cv_minus : forall {R : ConstructiveReals}
+                          (u v : nat -> CRcarrier R) (s t : CRcarrier R),
+    series_cv u s
+    -> series_cv v t
+    -> series_cv (fun n => u n - v n) (s - t).
+Proof.
+  intros. apply (CR_cv_eq _ (fun n => CRsum u n - CRsum v n)).
+  intro n. symmetry. unfold CRminus. rewrite sum_plus.
+  rewrite sum_opp. reflexivity.
+  apply CR_cv_plus. exact H. apply CR_cv_opp. exact H0.
+Qed.
+
+Lemma series_cv_nonneg : forall {R : ConstructiveReals}
+                           (u : nat -> CRcarrier R) (s : CRcarrier R),
+    (forall n:nat, 0 <= u n) -> series_cv u s -> 0 <= s.
+Proof.
+  intros. apply (CRle_trans 0 (CRsum u 0)). apply H.
+  apply (growing_ineq (CRsum u)). intro n. simpl.
+  rewrite <- CRplus_0_r. apply CRplus_le_compat.
+  rewrite CRplus_0_r. apply CRle_refl. apply H. apply H0.
+Qed.
+
+Lemma series_cv_eq : forall {R : ConstructiveReals}
+                       (u v : nat -> CRcarrier R) (s : CRcarrier R),
+    (forall n:nat, u n == v n)
+    -> series_cv u s
+    -> series_cv v s.
+Proof.
+  intros. intros p. specialize (H0 p). destruct H0 as [N H0].
+  exists N. intros. unfold CRminus.
+  rewrite <- (CRsum_eq u). apply H0, H1. intros. apply H.
+Qed.
+
+Lemma series_cv_remainder_maj : forall {R : ConstructiveReals} (u : nat -> CRcarrier R)
+                                  (s eps : CRcarrier R)
+                                  (N : nat),
+    series_cv u s
+    -> 0 < eps
+    -> (forall n:nat, 0 <= u n)
+    -> CRabs R (CRsum u N - s) <= eps
+    -> forall n:nat, CRsum (fun k=> u (N + S k)%nat) n <= eps.
+Proof.
+  intros. pose proof (sum_assoc u N n).
+  rewrite <- (CRsum_eq (fun k : nat => u (S N + k)%nat)).
+  apply (CRplus_le_reg_l (CRsum u N)). rewrite <- H3.
+  apply (CRle_trans _ s). apply growing_ineq.
+  2: apply H.
+  intro k. simpl. rewrite <- CRplus_0_r, CRplus_assoc.
+  apply CRplus_le_compat_l. rewrite CRplus_0_l. apply H1.
+  rewrite CRabs_minus_sym in H2.
+  rewrite CRplus_comm. apply (CRplus_le_reg_r (-CRsum u N)).
+  rewrite CRplus_assoc. rewrite CRplus_opp_r. rewrite CRplus_0_r.
+  apply (CRle_trans _ (CRabs R (s - CRsum u N))). apply CRle_abs.
+  assumption. intros. rewrite Nat.add_succ_r. reflexivity.
+Qed.
+
+
+Lemma series_cv_abs_remainder : forall {R : ConstructiveReals} (u : nat -> CRcarrier R)
+                                  (s sAbs : CRcarrier R)
+                                  (n : nat),
+    series_cv u s
+    -> series_cv (fun n => CRabs R (u n)) sAbs
+    -> CRabs R (CRsum u n - s)
+      <= sAbs - CRsum (fun n => CRabs R (u n)) n.
+Proof.
+  intros.
+  apply (CR_cv_le (fun N => CRabs R (CRsum u n - (CRsum u (n + N))))
+                   (fun N => CRsum (fun n : nat => CRabs R (u n)) (n + N)
+                          - CRsum (fun n : nat => CRabs R (u n)) n)).
+  - intro N. destruct N. rewrite plus_0_r. unfold CRminus.
+    rewrite CRplus_opp_r. rewrite CRplus_opp_r.
+    rewrite CRabs_right. apply CRle_refl. apply CRle_refl.
+    rewrite Nat.add_succ_r.
+    replace (S (n + N)) with (S n + N)%nat. 2: reflexivity.
+    unfold CRminus. rewrite sum_assoc. rewrite sum_assoc.
+    rewrite CRopp_plus_distr.
+    rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l, CRabs_opp.
+    rewrite CRplus_comm, <- CRplus_assoc, CRplus_opp_l.
+    rewrite CRplus_0_l. apply multiTriangleIneg.
+  - apply CR_cv_dist_cont. intros eps.
+    specialize (H eps) as [N lim].
+    exists N. intros. rewrite plus_comm. apply lim. apply (le_trans N i).
+    assumption. rewrite <- (plus_0_r i). rewrite <- plus_assoc.
+    apply Nat.add_le_mono_l. apply le_0_n.
+  - apply CR_cv_plus. 2: apply CR_cv_const. intros eps.
+    specialize (H0 eps) as [N lim].
+    exists N. intros. rewrite plus_comm. apply lim. apply (le_trans N i).
+    assumption. rewrite <- (plus_0_r i). rewrite <- plus_assoc.
+    apply Nat.add_le_mono_l. apply le_0_n.
+Qed.
+
+Lemma series_cv_triangle : forall {R : ConstructiveReals}
+                             (u : nat -> CRcarrier R) (s sAbs : CRcarrier R),
+    series_cv u s
+    -> series_cv (fun n => CRabs R (u n)) sAbs
+    -> CRabs R s <= sAbs.
+Proof.
+  intros.
+  apply (CR_cv_le (fun n => CRabs R (CRsum u n))
+                   (CRsum (fun n => CRabs R (u n)))).
+  intros. apply multiTriangleIneg. apply CR_cv_abs_cont. assumption. assumption.
+Qed.
+
+Lemma series_cv_shift :
+  forall {R : ConstructiveReals} (f : nat -> CRcarrier R) k l,
+    series_cv (fun n => f (S k + n)%nat) l
+    -> series_cv f (l + CRsum f k).
+Proof.
+  intros. intro p. specialize (H p) as [n nmaj].
+  exists (S k+n)%nat. intros. destruct (Nat.le_exists_sub (S k) i).
+  apply (le_trans _ (S k + 0)). rewrite Nat.add_0_r. apply le_refl.
+  apply (le_trans _ (S k + n)). apply Nat.add_le_mono_l, le_0_n.
+  exact H. destruct H0. subst i.
+  rewrite Nat.add_comm in H. rewrite <- Nat.add_le_mono_r in H.
+  specialize (nmaj x H). unfold CRminus.
+  rewrite Nat.add_comm, (sum_assoc f k x).
+  setoid_replace (CRsum f k + CRsum (fun k0 : nat => f (S k + k0)%nat) x - (l + CRsum f k))
+    with (CRsum (fun k0 : nat => f (S k + k0)%nat) x - l).
+  exact nmaj. unfold CRminus. rewrite (CRplus_comm (CRsum f k)).
+  rewrite CRplus_assoc. apply CRplus_morph. reflexivity.
+  rewrite CRplus_comm, CRopp_plus_distr, CRplus_assoc.
+  rewrite CRplus_opp_l, CRplus_0_r. reflexivity.
+Qed.
+
+Lemma series_cv_shift' : forall {R : ConstructiveReals}
+                           (un : nat -> CRcarrier R) (s : CRcarrier R) (shift : nat),
+    series_cv un s
+    -> series_cv (fun n => un (n+shift)%nat)
+                       (s - match shift with
+                            | O => 0
+                            | S p => CRsum un p
+                            end).
+Proof.
+  intros. destruct shift as [|p].
+  - unfold CRminus. rewrite CRopp_0. rewrite CRplus_0_r.
+    apply (series_cv_eq un). intros.
+    rewrite plus_0_r. reflexivity. apply H.
+  - apply (CR_cv_eq _ (fun n => CRsum un (n + S p) - CRsum un p)).
+    intros. rewrite plus_comm. unfold CRminus.
+    rewrite sum_assoc. simpl. rewrite CRplus_comm, <- CRplus_assoc.
+    rewrite CRplus_opp_l, CRplus_0_l.
+    apply CRsum_eq. intros. rewrite (plus_comm i). reflexivity.
+    apply CR_cv_plus. apply (CR_cv_shift' _ (S p) _ H).
+    intros n. exists (Pos.to_nat n). intros.
+    unfold CRminus. simpl.
+    rewrite CRopp_involutive, CRplus_opp_l. rewrite CRabs_right.
+    apply CR_of_Q_le. discriminate. apply CRle_refl.
+Qed.
+
+Lemma CRmorph_sum : forall {R1 R2 : ConstructiveReals}
+                      (f : @ConstructiveRealsMorphism R1 R2)
+                      (un : nat -> CRcarrier R1) (n : nat),
+  CRmorph f (CRsum un n) ==
+  CRsum (fun n0 : nat => CRmorph f (un n0)) n.
 Proof.
   induction n.
-  - intros. simpl. rewrite CRmult_1_l. reflexivity.
-  - intros. simpl. rewrite CRmult_assoc. apply CRmult_morph.
-    reflexivity. apply IHn.
+  - reflexivity.
+  - simpl. rewrite CRmorph_plus, IHn. reflexivity.
+Qed.
+
+Lemma CRmorph_INR : forall {R1 R2 : ConstructiveReals}
+                      (f : @ConstructiveRealsMorphism R1 R2)
+                      (n : nat),
+  CRmorph f (INR n) == INR n.
+Proof.
+  induction n.
+  - apply CRmorph_rat.
+  - simpl. unfold INR.
+    rewrite (CRmorph_proper f _ (1 + CR_of_Q R1 (Z.of_nat n # 1))).
+    rewrite CRmorph_plus. unfold INR in IHn.
+    rewrite IHn. rewrite CRmorph_one, <- CR_of_Q_plus.
+    apply CR_of_Q_morph. rewrite Qinv_plus_distr.
+    unfold Qeq, Qnum, Qden. do 2 rewrite Z.mul_1_r.
+    rewrite Nat2Z.inj_succ. rewrite <- Z.add_1_l. reflexivity.
+    rewrite <- CR_of_Q_plus.
+    apply CR_of_Q_morph. rewrite Qinv_plus_distr.
+    unfold Qeq, Qnum, Qden. do 2 rewrite Z.mul_1_r.
+    rewrite Nat2Z.inj_succ. rewrite <- Z.add_1_l. reflexivity.
+Qed.
+
+Lemma CRmorph_series_cv : forall {R1 R2 : ConstructiveReals}
+                     (f : @ConstructiveRealsMorphism R1 R2)
+                     (un : nat -> CRcarrier R1)
+                     (l : CRcarrier R1),
+    series_cv un l
+    -> series_cv (fun n => CRmorph f (un n)) (CRmorph f l).
+Proof.
+  intros.
+  apply (CR_cv_eq _ (fun n => CRmorph f (CRsum un n))).
+  intro n. apply CRmorph_sum.
+  apply CRmorph_cv, H.
 Qed.
