@@ -90,7 +90,7 @@ before_script:
 
     - echo 'start:coq.build'
     # uncomment next line to get statistics
-    # - export COQ_STATS_DIR=$PWD
+    - export COQ_STATS_DIR=$PWD
     - make -j "$NJOBS" byte
     - make -j "$NJOBS" world $EXTRA_TARGET
     - make test-suite/misc/universes/all_stdlib.v
