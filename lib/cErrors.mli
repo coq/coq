@@ -21,7 +21,7 @@ val push : exn -> Exninfo.iexn
  [Anomaly] is used for system errors and [UserError] for the
    user's ones. *)
 
-val anomaly : ?loc:Loc.t -> ?label:string -> Pp.t -> 'a
+val anomaly : ?loc:Loc.t -> ?info:Exninfo.info -> ?label:string -> Pp.t -> 'a
 (** Raise an anomaly, with an optional location and an optional
     label identifying the anomaly. *)
 
@@ -34,7 +34,7 @@ exception UserError of string option * Pp.t
 (** Main error signaling exception. It carries a header plus a pretty printing
     doc *)
 
-val user_err : ?loc:Loc.t -> ?hdr:string -> Pp.t -> 'a
+val user_err : ?loc:Loc.t -> ?info:Exninfo.info -> ?hdr:string -> Pp.t -> 'a
 (** Main error raising primitive. [user_err ?loc ?hdr pp] signals an
     error [pp] with optional header and location [hdr] [loc] *)
 

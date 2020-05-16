@@ -43,8 +43,9 @@ end
 
 exception GlobalizationError of qualid
 
-let error_global_not_found qid =
-  Loc.raise ?loc:qid.CAst.loc (GlobalizationError qid)
+let error_global_not_found ~info qid =
+  let info = Option.cata (Loc.add_loc info) info qid.CAst.loc in
+  Exninfo.iraise (GlobalizationError qid, info)
 
 (* The visibility can be registered either
    - for all suffixes not shorter then a given int - when the object
@@ -499,8 +500,9 @@ let global qid =
         user_err ?loc:qid.CAst.loc ~hdr:"global"
           (str "Unexpected reference to a notation: " ++
            pr_qualid qid)
-  with Not_found ->
-    error_global_not_found qid
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
+    error_global_not_found ~info qid
 
 (* Exists functions ********************************************************)
 
@@ -566,8 +568,10 @@ let shortest_qualid_of_universe ?loc kn =
 
 let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)
-  with Not_found as e ->
-    if !Flags.debug then Feedback.msg_debug (Pp.str "pr_global_env not found"); raise e
+  with Not_found as exn ->
+    let exn, info = Exninfo.capture exn in
+    if !Flags.debug then Feedback.msg_debug (Pp.str "pr_global_env not found");
+    Exninfo.iraise (exn, info)
 
 let global_inductive qid =
   let open GlobRef in

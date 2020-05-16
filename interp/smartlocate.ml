@@ -56,11 +56,15 @@ let global_inductive_with_alias qid  =
   | ref ->
       user_err ?loc:qid.CAst.loc ~hdr:"global_inductive"
         (pr_qualid qid ++ spc () ++ str "is not an inductive type.")
-  with Not_found -> Nametab.error_global_not_found qid
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
+    Nametab.error_global_not_found ~info qid
 
 let global_with_alias ?head qid =
   try locate_global_with_alias ?head qid
-  with Not_found -> Nametab.error_global_not_found qid
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
+    Nametab.error_global_not_found ~info qid
 
 let smart_global ?(head = false) = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
   | AN r ->

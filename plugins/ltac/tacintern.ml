@@ -97,13 +97,19 @@ let intern_global_reference ist qid =
   else if qualid_is_ident qid && find_hyp (qualid_basename qid) ist then
     let id = qualid_basename qid in
     ArgArg (qid.CAst.loc, GlobRef.VarRef id)
-  else match locate_global_with_alias ~head:true qid with
-  | r -> ArgArg (qid.CAst.loc, r)
-  | exception Not_found ->
-    if not !strict_check && qualid_is_ident qid then
-      let id = qualid_basename qid in
-      ArgArg (qid.CAst.loc, GlobRef.VarRef id)
-    else Nametab.error_global_not_found qid
+  else
+    let r =
+      try locate_global_with_alias ~head:true qid
+      with
+      | Not_found as exn ->
+        if not !strict_check && qualid_is_ident qid then
+          let id = qualid_basename qid in
+          GlobRef.VarRef id
+        else
+          let _, info = Exninfo.capture exn in
+          Nametab.error_global_not_found ~info qid
+    in
+    ArgArg (qid.CAst.loc, r)
 
 let intern_ltac_variable ist qid =
   if qualid_is_ident qid && find_var (qualid_basename qid) ist then
@@ -148,9 +154,10 @@ let intern_isolated_tactic_reference strict ist qid =
   with Not_found ->
   (* Tolerance for compatibility, allow not to use "constr:" *)
   try ConstrMayEval (ConstrTerm (intern_constr_reference strict ist qid))
-  with Not_found ->
-  (* Reference not found *)
-  Nametab.error_global_not_found qid
+  with Not_found as exn ->
+    (* Reference not found *)
+    let _, info = Exninfo.capture exn in
+    Nametab.error_global_not_found ~info qid
 
 (* Internalize an applied tactic reference *)
 
@@ -167,9 +174,10 @@ let intern_applied_tactic_reference ist qid =
   with Not_found ->
   (* A global tactic *)
   try intern_applied_global_tactic_reference qid
-  with Not_found ->
-  (* Reference not found *)
-  Nametab.error_global_not_found qid
+  with Not_found as exn ->
+    (* Reference not found *)
+    let _, info = Exninfo.capture exn in
+    Nametab.error_global_not_found ~info qid
 
 (* Intern a reference parsed in a non-tactic entry *)
 
@@ -182,7 +190,7 @@ let intern_non_tactic_reference strict ist qid =
   with Not_found ->
   (* Tolerance for compatibility, allow not to use "ltac:" *)
   try intern_isolated_global_tactic_reference qid
-  with Not_found ->
+  with Not_found as exn ->
   (* By convention, use IntroIdentifier for unbound ident, when not in a def *)
   if qualid_is_ident qid && not strict then
     let id = qualid_basename qid in
@@ -190,7 +198,8 @@ let intern_non_tactic_reference strict ist qid =
     TacGeneric ipat
   else
     (* Reference not found *)
-    Nametab.error_global_not_found qid
+    let _, info = Exninfo.capture exn in
+    Nametab.error_global_not_found ~info qid
 
 let intern_message_token ist = function
   | (MsgString _ | MsgInt _ as x) -> x

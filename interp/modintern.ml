@@ -22,14 +22,15 @@ exception ModuleInternalizationError of module_internalization_error
 
 type module_kind = Module | ModType | ModAny
 
-let error_not_a_module_loc kind loc qid =
+let error_not_a_module_loc ~info kind loc qid =
   let s = string_of_qualid qid in
   let e = match kind with
     | Module -> Modops.ModuleTypingError (Modops.NotAModule s)
     | ModType -> Modops.ModuleTypingError (Modops.NotAModuleType s)
     | ModAny -> ModuleInternalizationError (NotAModuleNorModtype s)
   in
-  Loc.raise ?loc e
+  let info = Option.cata (Loc.add_loc info) info loc in
+  Exninfo.iraise (e,info)
 
 let error_application_to_not_path loc me =
   Loc.raise ?loc (Modops.ModuleTypingError (Modops.ApplicationToNotPath me))
@@ -57,7 +58,9 @@ let lookup_module_or_modtype kind qid =
       if kind == Module then raise Not_found;
       let mp = Nametab.locate_modtype qid in
       Dumpglob.dump_modref ?loc mp "mod"; (mp,ModType)
-    with Not_found -> error_not_a_module_loc kind loc qid
+    with Not_found as exn ->
+      let _, info = Exninfo.capture exn in
+      error_not_a_module_loc ~info kind loc qid
 
 let lookup_module lqid = fst (lookup_module_or_modtype Module lqid)
 

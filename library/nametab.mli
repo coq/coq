@@ -91,7 +91,7 @@ end
 exception GlobalizationError of qualid
 
 (** Raises a globalization error *)
-val error_global_not_found : qualid -> 'a
+val error_global_not_found : info:Exninfo.info -> qualid -> 'a
 
 (** {6 Register visibility of things } *)
 

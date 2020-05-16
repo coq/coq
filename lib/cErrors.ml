@@ -25,12 +25,17 @@ let _ =
   in
   Printexc.register_printer pr
 
-let anomaly ?loc ?label pp =
-  Loc.raise ?loc (Anomaly (label, pp))
+let anomaly ?loc ?info ?label pp =
+  let info = Option.default Exninfo.null info in
+  let info = Option.cata (Loc.add_loc info) info loc in
+  Exninfo.iraise (Anomaly (label, pp), info)
 
 exception UserError of string option * Pp.t (* User errors *)
 
-let user_err ?loc ?hdr strm = Loc.raise ?loc (UserError (hdr, strm))
+let user_err ?loc ?info ?hdr strm =
+  let info = Option.default Exninfo.null info in
+  let info = Option.cata (Loc.add_loc info) info loc in
+  Exninfo.iraise (UserError (hdr, strm), info)
 
 exception Timeout
 

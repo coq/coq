@@ -378,7 +378,9 @@ let interp_reference ist env sigma = function
     with Not_found ->
       try
         GlobRef.VarRef (get_id (Environ.lookup_named id env))
-      with Not_found -> Nametab.error_global_not_found (qualid_of_ident ?loc id)
+      with Not_found as exn ->
+        let _, info = Exninfo.capture exn in
+        Nametab.error_global_not_found ~info (qualid_of_ident ?loc id)
 
 let try_interp_evaluable env (loc, id) =
   let v = Environ.lookup_named id env in
@@ -391,17 +393,21 @@ let interp_evaluable ist env sigma = function
     (* Maybe [id] has been introduced by Intro-like tactics *)
     begin
       try try_interp_evaluable env (loc, id)
-      with Not_found ->
+      with Not_found as exn ->
         match r with
         | EvalConstRef _ -> r
-        | _ -> Nametab.error_global_not_found (qualid_of_ident ?loc id)
+        | _ ->
+          let _, info = Exninfo.capture exn in
+          Nametab.error_global_not_found ~info (qualid_of_ident ?loc id)
     end
   | ArgArg (r,None) -> r
   | ArgVar {loc;v=id} ->
     try try_interp_ltac_var (coerce_to_evaluable_ref env sigma) ist (Some (env,sigma)) (make ?loc id)
     with Not_found ->
       try try_interp_evaluable env (loc, id)
-      with Not_found -> Nametab.error_global_not_found (qualid_of_ident ?loc id)
+      with Not_found as exn ->
+        let _, info = Exninfo.capture exn in
+        Nametab.error_global_not_found ~info (qualid_of_ident ?loc id)
 
 (* Interprets an hypothesis name *)
 let interp_occurrences ist occs =
@@ -663,8 +669,9 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
         let c = coerce_to_closed_constr env x in
         Inr (pattern_of_constr env sigma (EConstr.to_constr sigma c)) in
     (try try_interp_ltac_var coerce_eval_ref_or_constr ist (Some (env,sigma)) (make ?loc id)
-     with Not_found ->
-       Nametab.error_global_not_found (qualid_of_ident ?loc id))
+     with Not_found as exn ->
+       let _, info = Exninfo.capture exn in
+       Nametab.error_global_not_found ~info (qualid_of_ident ?loc id))
   | Inl (ArgArg _ as b) -> Inl (interp_evaluable ist env sigma b)
   | Inr c -> Inr (interp_typed_pattern ist env sigma c) in
   interp_occurrences ist occs, p

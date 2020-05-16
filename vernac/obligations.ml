@@ -20,7 +20,7 @@ open DeclareObl
 open DeclareObl.Obligation
 open DeclareObl.ProgramDecl
 
-let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
+let pperror ?info cmd = CErrors.user_err ~hdr:"Program" ?info cmd
 let error s = pperror (str s)
 
 let reduce c =
@@ -92,10 +92,16 @@ let get_any_prog () =
   else raise (NoObligations None)
 
 let get_prog_err n =
-  try get_prog n with NoObligations id -> pperror (explain_no_obligations id)
+  try get_prog n
+  with NoObligations id as exn ->
+    let _, info = Exninfo.capture exn in
+    pperror ~info (explain_no_obligations id)
 
 let get_any_prog_err () =
-  try get_any_prog () with NoObligations id -> pperror (explain_no_obligations id)
+  try get_any_prog ()
+  with NoObligations id as exn ->
+    let _, info = Exninfo.capture exn in
+    pperror ~info (explain_no_obligations id)
 
 let all_programs () =
   ProgMap.fold (fun k p l -> p :: l) (get_prg_info_map ()) []
