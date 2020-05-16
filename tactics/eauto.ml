@@ -65,8 +65,6 @@ open Auto
 (* A tactic similar to Auto, but using EApply, Assumption and e_give_exact *)
 (***************************************************************************)
 
-let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
-
 let unify_e_resolve poly flags (c,clenv) =
   Proofview.Goal.enter begin fun gl ->
       let clenv', c = connect_hint_clenv ~poly c clenv gl in
@@ -109,7 +107,7 @@ let rec e_trivial_fail_db db_list local_db =
   let tacl =
     registered_e_assumption ::
     (Tacticals.New.tclTHEN Tactics.intro next) ::
-    (List.map fst (e_trivial_resolve (Tacmach.New.pf_env gl) (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_concl gl)))
+    (e_trivial_resolve (Tacmach.New.pf_env gl) (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_concl gl))
   in
   Tacticals.New.tclSOLVE tacl
   end
@@ -127,29 +125,28 @@ and e_my_find_search env sigma db_list local_db secvars concl =
       | Unfold_nth _ -> 1
       | _ -> b
       in
-      (b,
-        let tac = function
-        | Res_pf (term,cl) -> unify_resolve ~poly st (term,cl)
-        | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
-        | Give_exact (c,cl) -> e_exact poly st (c,cl)
-        | Res_pf_THEN_trivial_fail (term,cl) ->
-          Tacticals.New.tclTHEN (unify_e_resolve poly st (term,cl))
-            (e_trivial_fail_db db_list local_db)
-        | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
-        | Extern tacast -> conclPattern concl p tacast
-       in
-       let tac = run_hint t tac in
-       (tac, lazy (pr_hint env sigma t)))
+      let tac = function
+      | Res_pf (term,cl) -> unify_resolve ~poly st (term,cl)
+      | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
+      | Give_exact (c,cl) -> e_exact poly st (c,cl)
+      | Res_pf_THEN_trivial_fail (term,cl) ->
+        Tacticals.New.tclTHEN (unify_e_resolve poly st (term,cl))
+          (e_trivial_fail_db db_list local_db)
+      | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
+      | Extern tacast -> conclPattern concl p tacast
+      in
+      let tac = run_hint t tac in
+      (tac, b, lazy (pr_hint env sigma t))
   in
   List.map tac_of_hint hintl
 
 and e_trivial_resolve env sigma db_list local_db secvars gl =
-  try priority (e_my_find_search env sigma db_list local_db secvars gl)
+  let filter (tac, pr, _) = if Int.equal pr 0 then Some tac else None in
+  try List.map_filter filter (e_my_find_search env sigma db_list local_db secvars gl)
   with Not_found -> []
 
 let e_possible_resolve env sigma db_list local_db secvars gl =
-  try List.map (fun (b, (tac, pp)) -> (tac, b, pp))
-               (e_my_find_search env sigma db_list local_db secvars gl)
+  try e_my_find_search env sigma db_list local_db secvars gl
   with Not_found -> []
 
 (*s Tactics handling a list of goals. *)
