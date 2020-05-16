@@ -190,9 +190,9 @@ Tactics
 
    .. note::
       :n:`(@qualid {+ @term})` must be a correct full application
-         of :n:`@qualid`. In particular, the rules for implicit arguments are the
-         same as usual. For example use :n:`@qualid` if you want to write implicit
-         arguments explicitly.
+      of :n:`@qualid`. In particular, the rules for implicit arguments are the
+      same as usual. For example use :n:`@@qualid` if you want to write implicit
+      arguments explicitly.
 
    .. note::
       Parentheses around :n:`@qualid {+ @term}` are not mandatory and can be skipped.
