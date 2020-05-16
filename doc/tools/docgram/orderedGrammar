@@ -823,7 +823,7 @@ command: [
 | "Hint" "Cut" "[" hints_path "]" OPT ( ":" LIST1 ident )
 | "Typeclasses" "Transparent" LIST0 qualid
 | "Typeclasses" "Opaque" LIST0 qualid
-| "Typeclasses" "eauto" ":=" OPT "debug" OPT [ "(bfs)" | "(dfs)" ] OPT int
+| "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" eauto_search_strategy_name ")" ) OPT int
 | "Proof" "with" ltac_expr OPT [ "using" section_subset_expr ]
 | "Proof" "using" section_subset_expr OPT [ "with" ltac_expr ]
 | "Tactic" "Notation" OPT ( "(" "at" "level" num ")" ) LIST1 ltac_production_item ":=" ltac_expr
@@ -940,7 +940,7 @@ command: [
 | "SearchHead" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "SearchPattern" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "SearchRewrite" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
-| "Search" LIST1 ( OPT "-" search_item ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "Search" LIST1 ( search_query ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "Time" sentence
 | "Redirect" string sentence
 | "Timeout" num sentence
@@ -996,9 +996,31 @@ comment: [
 | num
 ]
 
+search_query: [
+| search_item
+| "-" search_query
+| "[" LIST1 ( LIST1 search_query ) SEP "|" "]"
+]
+
 search_item: [
-| one_term
-| string OPT ( "%" scope_key )
+| OPT ( [ "head" | "hyp" | "concl" | "headhyp" | "headconcl" ] ":" ) string OPT ( "%" scope_key )
+| OPT ( [ "head" | "hyp" | "concl" | "headhyp" | "headconcl" ] ":" ) one_term
+| "is" ":" logical_kind
+]
+
+logical_kind: [
+| thm_token
+| assumption_token
+| "Context"
+| "Definition"
+| "Example"
+| "Coercion"
+| "Instance"
+| "Scheme"
+| "Canonical"
+| "Field"
+| "Method"
+| "Primitive"
 ]
 
 univ_name_list: [
@@ -1083,6 +1105,11 @@ hints_path: [
 | LIST1 qualid
 | "_"
 | hints_path hints_path
+]
+
+eauto_search_strategy_name: [
+| "bfs"
+| "dfs"
 ]
 
 class: [

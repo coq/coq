@@ -6,12 +6,9 @@ Setting properties of a function's arguments
 .. cmd:: Arguments @smart_qualid {* @arg_specs } {* , {* @implicits_alt } } {? : {+, @args_modifier } }
    :name: Arguments
 
-   .. insertprodn smart_qualid args_modifier
+   .. insertprodn argument_spec args_modifier
 
    .. prodn::
-      smart_qualid ::= @qualid
-      | @by_notation
-      by_notation ::= @string {? % @scope_key }
       argument_spec ::= {? ! } @name {? % @scope_key }
       arg_specs ::= @argument_spec
       | /

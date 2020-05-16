@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val declare_scheme : string -> (Names.inductive * Names.Constant.t) array -> unit
-val lookup_scheme : string -> Names.inductive -> Names.Constant.t
-val all_schemes : unit -> Names.Indset.t
+(* Interpretation of search commands *)
+
+val interp_search : Environ.env -> Evd.evar_map ->
+  Vernacexpr.searchable -> Vernacexpr.search_restriction -> unit

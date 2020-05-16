@@ -108,6 +108,38 @@ open Pputils
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
 
+  let string_of_theorem_kind = let open Decls in function
+    | Theorem -> "Theorem"
+    | Lemma -> "Lemma"
+    | Fact -> "Fact"
+    | Remark -> "Remark"
+    | Property -> "Property"
+    | Proposition -> "Proposition"
+    | Corollary -> "Corollary"
+
+  let string_of_definition_object_kind = let open Decls in function
+    | Definition -> "Definition"
+    | Example -> "Example"
+    | Coercion -> "Coercion"
+    | SubClass -> "SubClass"
+    | CanonicalStructure -> "Canonical Structure"
+    | Instance -> "Instance"
+    | Let -> "Let"
+    | (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method) ->
+      CErrors.anomaly (Pp.str "Internal definition kind.")
+
+  let string_of_assumption_kind = let open Decls in function
+    | Definitional -> "Parameter"
+    | Logical -> "Axiom"
+    | Conjectural -> "Conjecture"
+    | Context -> "Context"
+
+  let string_of_logical_kind = let open Decls in function
+    | IsAssumption k -> string_of_assumption_kind k
+    | IsDefinition k -> string_of_definition_object_kind k
+    | IsProof k -> string_of_theorem_kind k
+    | IsPrimitive -> "Primitive"
+
   let pr_notation_entry = function
     | InConstrEntry -> keyword "constr"
     | InCustomEntry s -> keyword "custom" ++ spc () ++ str s
@@ -148,14 +180,28 @@ open Pputils
     | SearchOutside [] -> mt()
     | SearchOutside l -> spc() ++ keyword "outside" ++ spc() ++ prlist_with_sep sep pr_module l
 
-  let pr_search (b,c) =
-    (if b then str "-" else mt()) ++
-      match c with
-        | SearchSubPattern p ->
+  let pr_search_where = function
+    | Anywhere, false -> mt ()
+    | Anywhere, true -> str "head:"
+    | InHyp, true -> str "headhyp:"
+    | InHyp, false -> str "hyp:"
+    | InConcl, true -> str "headconcl:"
+    | InConcl, false -> str "concl:"
+
+  let pr_search_item = function
+        | SearchSubPattern (where,p) ->
           let env = Global.env () in
           let sigma = Evd.from_env env in
-          pr_constr_pattern_expr env sigma p
-        | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
+          pr_search_where where ++ pr_constr_pattern_expr env sigma p
+        | SearchString (where,s,sc) -> pr_search_where where ++ qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
+        | SearchKind kind -> str "is:" ++ str (string_of_logical_kind kind)
+
+  let rec pr_search_request = function
+    | SearchLiteral a -> pr_search_item a
+    | SearchDisjConj l -> str "[" ++ prlist_with_sep spc (prlist_with_sep pr_bar pr_search_default) l ++ str "]"
+
+  and pr_search_default (b, s) =
+    (if b then mt() else str "-") ++ pr_search_request s
 
   let pr_search a gopt b pr_p =
     pr_opt (fun g -> Goal_select.pr_goal_selector g ++ str ":"++ spc()) gopt
@@ -165,7 +211,7 @@ open Pputils
       | SearchPattern c -> keyword "SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
       | SearchRewrite c -> keyword "SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
       | Search sl ->
-         keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search sl ++ pr_in_out_modules b
+         keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search_default sl ++ pr_in_out_modules b
 
   let pr_option_ref_value = function
     | Goptions.QualidRefValue id -> pr_qualid id
@@ -386,15 +432,6 @@ open Pputils
   prlist_with_sep pr_semicolon (pr_params pr_c)
 *)
 
-let string_of_theorem_kind = let open Decls in function
-  | Theorem -> "Theorem"
-  | Lemma -> "Lemma"
-  | Fact -> "Fact"
-  | Remark -> "Remark"
-  | Property -> "Property"
-  | Proposition -> "Proposition"
-  | Corollary -> "Corollary"
-
   let pr_thm_token k = keyword (string_of_theorem_kind k)
 
   let pr_syntax_modifier = let open Gramlib.Gramext in function
@@ -610,18 +647,6 @@ let string_of_theorem_kind = let open Decls in function
       hov 1 (pr_sequence identity (aux rl cl))
     with Not_found ->
       hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
-
-
-let string_of_definition_object_kind = let open Decls in function
-  | Definition -> "Definition"
-  | Example -> "Example"
-  | Coercion -> "Coercion"
-  | SubClass -> "SubClass"
-  | CanonicalStructure -> "Canonical Structure"
-  | Instance -> "Instance"
-  | Let -> "Let"
-  | (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method) ->
-    CErrors.anomaly (Pp.str "Internal definition kind.")
 
   let pr_vernac_expr v =
     let return = tag_vernac v in

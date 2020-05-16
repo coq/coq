@@ -12,15 +12,24 @@ open Names
 open Constr
 open Environ
 open Pattern
+open Vernacexpr
 
 (** {6 Search facilities. } *)
 
-type glob_search_about_item =
-  | GlobSearchSubPattern of constr_pattern
+type glob_search_item =
+  | GlobSearchSubPattern of glob_search_where * bool * constr_pattern
   | GlobSearchString of string
+  | GlobSearchKind of Decls.logical_kind
+  | GlobSearchFilter of (GlobRef.t -> bool)
 
-type filter_function = GlobRef.t -> env -> constr -> bool
-type display_function = GlobRef.t -> env -> constr -> unit
+type glob_search_request =
+  | GlobSearchLiteral of glob_search_item
+  | GlobSearchDisjConj of (bool * glob_search_request) list list
+
+type filter_function =
+  GlobRef.t -> Decls.logical_kind option -> env -> Evd.evar_map -> constr -> bool
+type display_function =
+  GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit
 
 (** {6 Generic filter functions} *)
 
@@ -30,7 +39,7 @@ val blacklist_filter : filter_function
 val module_filter : DirPath.t list * bool -> filter_function
 (** Check whether a reference pertains or not to a set of modules *)
 
-val search_filter : glob_search_about_item -> filter_function
+val search_filter : glob_search_item -> filter_function
 
 (** {6 Specialized search functions}
 
@@ -38,13 +47,13 @@ val search_filter : glob_search_about_item -> filter_function
 goal and the global environment for things matching [pattern] and
 satisfying module exclude/include clauses of [modinout]. *)
 
-val search_by_head : ?pstate:Declare.Proof.t -> int option -> constr_pattern -> DirPath.t list * bool
+val search_by_head : env -> Evd.evar_map -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
-val search_rewrite : ?pstate:Declare.Proof.t -> int option -> constr_pattern -> DirPath.t list * bool
+val search_rewrite : env -> Evd.evar_map -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
-val search_pattern : ?pstate:Declare.Proof.t -> int option -> constr_pattern -> DirPath.t list * bool
+val search_pattern : env -> Evd.evar_map -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
-val search         : ?pstate:Declare.Proof.t -> int option -> (bool * glob_search_about_item) list
+val search         : env -> Evd.evar_map -> (bool * glob_search_request) list
                   -> DirPath.t list * bool -> display_function -> unit
 
 type search_constraint =
@@ -65,12 +74,11 @@ type 'a coq_object = {
   coq_object_object : 'a;
 }
 
-val interface_search : ?pstate:Declare.Proof.t -> ?glnum:int -> (search_constraint * bool) list ->
-  constr coq_object list
+val interface_search : env -> Evd.evar_map -> (search_constraint * bool) list -> constr coq_object list
 
 (** {6 Generic search function} *)
 
-val generic_search : ?pstate:Declare.Proof.t -> int option -> display_function -> unit
+val generic_search : env -> display_function -> unit
 (** This function iterates over all hypothesis of the goal numbered
     [glnum] (if present) and all known declarations. *)
 

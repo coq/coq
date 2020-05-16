@@ -96,38 +96,125 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
    .. seealso:: Section :ref:`performingcomputations`.
 
-.. cmd:: Search {+ {? - } @search_item } {? {| inside | outside } {+ @qualid } }
+.. cmd:: Search {+ @search_query } {? {| inside | outside } {+ @qualid } }
+
+   This command can be used to filter the goal and the global context
+   to retrieve objects whose name or type satisfies a number of
+   conditions.  Library files that were not loaded with :cmd:`Require`
+   are not considered.  The :table:`Search Blacklist` table can also
+   be used to exclude some things from all calls to :cmd:`Search`.
+
+   The output of the command is a list of qualified identifiers and
+   their types.  If the :flag:`Search Output Name Only` flag is on,
+   the types are omitted.
+
+   .. insertprodn search_query search_query
+
+   .. prodn::
+      search_query ::= @search_item
+      | - @search_query
+      | [ {+| {+ @search_query } } ]
+
+   Multiple :n:`@search_item`\s can be combined into a complex
+   :n:`@search_query`:
+
+   :n:`- @search_query`
+      Excludes the objects that would be filtered by
+      :n:`@search_query`.  Cf. :ref:`this example
+      <search-disambiguate-notation>`.
+
+   :n:`[ @search_query ... @search_query | ... | @search_query ... @search_query ]`
+      This is a disjunction of conjunctions of queries.  A simple
+      conjunction can be expressed by having a single disjunctive
+      branch.  For a conjunction at top-level, the surrounding
+      brackets are not required.
 
    .. insertprodn search_item search_item
 
    .. prodn::
-      search_item ::= @one_term
-      | @string {? % @scope_key }
+      search_item ::= {? {| head | hyp | concl | headhyp | headconcl } : } @string {? % @scope_key }
+      | {? {| head | hyp | concl | headhyp | headconcl } : } @one_term
+      | is : @logical_kind
 
-   Displays the name and type of all hypotheses of the
-   selected goal (if any) and theorems of the current context
-   matching :n:`@search_item`\s.
-   It's useful for finding the names of library lemmas.
+   Searched objects can be filtered by patterns, by the constants they
+   contain (identified by their name or a notation) and by their
+   names.
+   The location of the pattern or constant within a term
 
-   * :n:`@one_term` - Search for objects containing a subterm matching the pattern
-     :n:`@one_term` in which holes of the pattern are indicated by `_` or :n:`?@ident`.
-     If the same :n:`?@ident` occurs more than once in the pattern, all occurrences must
-     match the same value.
+   :n:`@one_term`
+      Search for objects whose type contains a subterm matching the
+      pattern :n:`@one_term`.  Holes of the pattern are indicated by
+      `_` or :n:`?@ident`.  If the same :n:`?@ident` occurs more than
+      once in the pattern, all occurrences in the subterm must be
+      identical.  Cf. :ref:`this example <search-pattern>`.
 
-   * :n:`@string` - If :n:`@string` is a substring of a valid identifier,
-     search for objects whose name contains :n:`@string`. If :n:`@string` is a notation
-     string associated with a :n:`@qualid`, that's equivalent to :cmd:`Search` :n:`@qualid`.
-     For example, specifying `"+"` or `"_ + _"`, which are notations for `Nat.add`, are equivalent
-     to :cmd:`Search` `Nat.add`.
+   :n:`@string {? % @scope_key }`
+      - If :n:`@string` is a substring of a valid identifier and no
+        :n:`% @scope_key` is provided, search for objects whose name
+        contains :n:`@string`.  Cf. :ref:`this example
+        <search-part-ident>`.
 
-   * :n:`% @scope` - limits the search to the scope bound to
-     the delimiting key :n:`@scope`, such as, for example, :n:`%nat`.
-     This clause may be used only if :n:`@string` contains a notation string.
-     (see Section :ref:`LocalInterpretationRulesForNotations`)
+      - If :n:`@string` is not a substring of a valid identifier or if
+        the optional :n:`% @scope_key` is provided, search for objects
+        whose type contains the reference that this string,
+        interpreted as a notation, is attached to (as in
+        :n:`@smart_qualid`).  Cf. :ref:`this example
+        <search-by-notation>`.
 
-   If you specify multiple :n:`@search_item`\s, all the conditions must be satisfied
-   for the object to be displayed.  The minus sign `-` excludes objects that contain
-   the :n:`@search_item`.
+      .. note::
+
+         If the string is a substring of a valid identifier but you
+         still want to look for a reference by notation, you can put
+         it between single quotes or provide a scope explictly.
+         Cf. :ref:`this example <search-disambiguate-notation>`.
+
+   :n:`hyp:`
+      The provided pattern or reference is matched against any subterm
+      of an hypothesis of the type of the objects.  Cf. :ref:`this
+      example <search-hyp>`.
+
+   :n:`headhyp:`
+      The provided pattern or reference is matched against the
+      subterms in head position (any partial applicative subterm) of
+      the hypotheses of the type of the objects.  Cf. :ref:`the
+      previous example <search-hyp>`.
+
+   :n:`concl:`
+      The provided pattern or reference is matched against any subterm
+      of the conclusion of the type of the objects.  Cf. :ref:`this
+      example <search-concl>`.
+
+   :n:`headconcl:`
+      The provided pattern or reference is matched against the
+      subterms in head position (any partial applicative subterm) of
+      the conclusion of the type of the objects.  Cf. :ref:`the
+      previous example <search-concl>`.
+
+   :n:`head:`
+      This is simply the union between `headconcl:` and `headhyp:`.
+
+   :n:`is: @logical_kind`
+      .. insertprodn logical_kind logical_kind
+
+      .. prodn::
+         logical_kind ::= @thm_token
+         | @assumption_token
+         | Context
+         | Definition
+         | Example
+         | Coercion
+         | Instance
+         | Scheme
+         | Canonical
+         | Field
+         | Method
+         | Primitive
+
+      Filters objects by the keyword that was used to define them
+      (`Theorem`, `Lemma`, `Axiom`, `Variable`, `Context`,
+      `Primitive`...) or its status (`Coercion`, `Instance`, `Scheme`,
+      `Canonical`, `Field` for record fields, `Method` for class
+      fields).  Cf. :ref:`this example <search-by-keyword>`.
 
    Additional clauses:
 
@@ -139,32 +226,123 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
       There is no constant in the environment named :n:`@qualid`, where :n:`@qualid`
       is in an `inside` or `outside` clause.
 
-   .. example:: :cmd:`Search` examples
+   .. _search-pattern:
 
-      .. coqtop:: in
+   .. example:: Searching for a pattern
 
-         Require Import ZArith.
+      .. coqtop:: none reset
+
+         Require Import PeanoNat.
+
+      We can repeat meta-variables to narrow down the search.  Here,
+      we are looking for commutativity lemmas.
 
       .. coqtop:: all
 
-         Search Z.mul Z.add "distr".
-         Search "+"%Z "*"%Z "distr" -Prop.
-         Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
+         Search (_ ?n ?m = _ ?m ?n).
 
+   .. _search-part-ident:
+
+   .. example:: Searching for part of an identifier
+
+      .. coqtop:: all reset
+
+         Search "_assoc".
+
+   .. _search-by-notation:
+
+   .. example:: Searching for a reference by notation
+
+      .. coqtop:: all reset
+
+         Search "+".
+
+   .. _search-disambiguate-notation:
+
+   .. example:: Disambiguating between part of identifier and notation
+
+      .. coqtop:: none reset
+
+         Require Import PeanoNat.
+
+      In this example, we show two ways of searching for all the
+      objects whose type contains `Nat.modulo` but which do not
+      contain the substring "mod".
+
+      .. coqtop:: all
+
+         Search "'mod'" -"mod".
+         Search "mod"%nat -"mod".
+
+   .. _search-hyp:
+
+   .. example:: Search in hypotheses
+
+      The following search shows the objects whose type contains
+      `bool` in an hypothesis as a strict subterm only:
+
+      .. coqtop:: none reset
+
+         Add Search Blacklist "internal_".
+
+      .. coqtop:: all
+
+         Search hyp:bool -headhyp:bool.
+
+   .. _search-concl:
+
+   .. example:: Search in conclusion
+
+      The following search shows the objects whose type contains `bool`
+      in the conclusion as a strict subterm only:
+
+      .. coqtop:: all
+
+         Search concl:bool -headconcl:bool.
+
+   .. _search-by-keyword:
+
+   .. example:: Search by keyword or status
+
+      The following search shows the definitions whose type is a `nat`
+      or a function which returns a `nat` and the lemmas about `+`:
+
+      .. coqtop:: all reset
+
+         Search [ is:Definition headconcl:nat | is:Lemma (_ + _) ].
+
+      The following search shows the instances whose type includes the
+      classes `Reflexive` or `Symmetric`:
+
+      .. coqtop:: none reset
+
+         Require Import Morphisms.
+
+      .. coqtop:: all
+
+         Search is:Instance [ Reflexive | Symmetric ].
 
 .. cmd:: SearchHead @one_term {? {| inside | outside } {+ @qualid } }
+
+   .. deprecated:: 8.12
+
+      Use the `headconcl:` clause of :cmd:`Search` instead.
 
    Displays the name and type of all hypotheses of the
    selected goal (if any) and theorems of the current context that have the
    form :n:`{? forall {* @binder }, } {* P__i -> } C` where :n:`@one_term`
-   matches a prefix of `C`.  For example, a :n:`@one_term` of `f _ b`
-   matches `f a b`, which is a prefix of `C` when `C` is `f a b c`.
+   matches a subterm of `C` in head position.  For example, a :n:`@one_term` of `f _ b`
+   matches `f a b`, which is a subterm of `C` in head position when `C` is `f a b c`.
 
    See :cmd:`Search` for an explanation of the `inside`/`outside` clauses.
 
    .. example:: :cmd:`SearchHead` examples
 
-      .. coqtop:: reset all
+      .. coqtop:: none reset
+
+         Add Search Blacklist "internal_".
+
+      .. coqtop:: all warn
 
          SearchHead le.
          SearchHead (@eq bool).
@@ -225,6 +403,12 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
    Use the :cmd:`Add` and :cmd:`Remove` commands to update the set of
    blacklisted strings.
 
+.. flag:: Search Output Name Only
+
+   This flag restricts the output of search commands to identifier names;
+   turning it on causes invocations of :cmd:`Search`, :cmd:`SearchHead`,
+   :cmd:`SearchPattern`, :cmd:`SearchRewrite` etc. to omit types from their
+   output, printing only identifiers.
 
 .. _requests-to-the-environment:
 
@@ -252,6 +436,13 @@ Requests to the environment
    Displays all the assumptions and constants :n:`@smart_qualid` depends on.
 
 .. cmd:: Locate @smart_qualid
+
+   .. insertprodn smart_qualid by_notation
+
+   .. prodn::
+      smart_qualid ::= @qualid
+      | @by_notation
+      by_notation ::= @string {? % @scope_key }
 
    Displays the full name of objects from |Coq|'s various qualified namespaces such as terms,
    modules and Ltac.  It also displays notation definitions.
@@ -705,13 +896,6 @@ Controlling display
    default, the latter containing the warnings enabled by default. The flags are
    interpreted from left to right, so in case of an overlap, the flags on the
    right have higher priority, meaning that `A,-A` is equivalent to `-A`.
-
-.. flag:: Search Output Name Only
-
-   This flag restricts the output of search commands to identifier names;
-   turning it on causes invocations of :cmd:`Search`, :cmd:`SearchHead`,
-   :cmd:`SearchPattern`, :cmd:`SearchRewrite` etc. to omit types from their
-   output, printing only identifiers.
 
 .. opt:: Printing Width @num
    :name: Printing Width

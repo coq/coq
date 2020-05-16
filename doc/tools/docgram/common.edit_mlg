@@ -59,6 +59,8 @@ DELETE: [
 | lookup_at_as_comma
 | test_only_starredidentrefs
 | test_bracket_ident
+| test_hash_ident
+| test_id_colon
 | test_lpar_id_colon
 | test_lpar_id_coloneq  (* todo: grammar seems incorrect, repeats the "(" IDENT ":=" *)
 | test_lpar_id_rpar
@@ -1231,8 +1233,8 @@ query_command: [
 | WITH "SearchPattern" constr_pattern in_or_out_modules
 | REPLACE "SearchRewrite" constr_pattern in_or_out_modules "."
 | WITH "SearchRewrite" constr_pattern in_or_out_modules
-| REPLACE "Search" searchabout_query searchabout_queries "."
-| WITH "Search" searchabout_queries
+| REPLACE "Search" search_query search_queries "."
+| WITH "Search" search_queries
 ]
 
 vernac_toplevel: [
@@ -1457,22 +1459,36 @@ ne_in_or_out_modules: [
 | DELETE "outside" LIST1 global
 ]
 
-searchabout_query: [
-| REPLACE positive_search_mark ne_string OPT scope_delimiter
-| WITH ne_string OPT scope_delimiter
-| REPLACE positive_search_mark constr_pattern
-| WITH constr_pattern
-]
-
-searchabout_queries: [
+search_queries: [
 | DELETE ne_in_or_out_modules
-| REPLACE searchabout_query searchabout_queries
-| WITH LIST1 ( positive_search_mark searchabout_query ) OPT ne_in_or_out_modules
+| REPLACE search_query search_queries
+| WITH LIST1 ( search_query ) OPT ne_in_or_out_modules
 | DELETE (* empty *)
 ]
 
 positive_search_mark: [
 | OPTINREF
+]
+
+SPLICE: [
+| positive_search_mark
+]
+
+search_query: [
+| REPLACE OPT "-" search_item
+| WITH search_item
+| "-" search_query
+| REPLACE OPT "-" "[" LIST1 ( LIST1 search_query ) SEP "|" "]"
+| WITH "[" LIST1 ( LIST1 search_query ) SEP "|" "]"
+]
+
+search_item: [
+| REPLACE search_where ":" ne_string OPT scope_delimiter
+| WITH OPT ( search_where ":" ) ne_string OPT scope_delimiter
+| DELETE ne_string OPT scope_delimiter
+| REPLACE search_where ":" constr_pattern
+| WITH OPT ( search_where ":" ) constr_pattern
+| DELETE constr_pattern
 ]
 
 by_notation: [
@@ -1484,14 +1500,6 @@ scope_delimiter: [
 | REPLACE "%" IDENT
 | WITH "%" scope_key
 ]
-
-(* Don't show these details *)
-DELETE: [
-| register_token
-| register_prim_token
-| register_type_token
-]
-
 
 decl_notation: [
 | REPLACE ne_lstring ":=" constr only_parsing OPT [ ":" IDENT ]
@@ -1638,7 +1646,6 @@ SPLICE: [
 | record_binder
 | at_level_opt
 | table_value
-| positive_search_mark
 | in_or_out_modules
 | option_setting
 | orient
@@ -1672,11 +1679,14 @@ SPLICE: [
 | intropatterns
 | instance_name
 | ne_in_or_out_modules
-| searchabout_queries
+| search_queries
 | locatable
 | scope_delimiter
 | bignat
 | one_import_filter_name
+| register_token
+| search_where
+| extended_def_token
 ] (* end SPLICE *)
 
 RENAME: [
@@ -1725,7 +1735,9 @@ RENAME: [
 | record_binder_body field_body
 | class_rawexpr class
 | smart_global smart_qualid
+(*
 | searchabout_query search_item
+*)
 | option_table setting_name
 | argument_spec_block arg_specs
 | more_implicits_block implicits_alt
@@ -1734,8 +1746,6 @@ RENAME: [
 | syntax_extension_type explicit_subentry
 | numnotoption numeral_modifier
 ]
-
-(* todo: positive_search_mark is a lousy name for OPT "-" *)
 
 (* todo: doesn't work if up above... maybe because 'clause' doesn't exist? *)
 clause_dft_concl: [

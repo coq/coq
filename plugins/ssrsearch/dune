@@ -1,0 +1,7 @@
+(library
+ (name ssrsearch_plugin)
+ (public_name coq.plugins.ssrsearch)
+ (synopsis "Deprecated Search command from SSReflect")
+ (libraries coq.plugins.ssreflect))
+
+(coq.pp (modules g_search))

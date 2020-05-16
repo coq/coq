@@ -1,10 +1,17 @@
+File "stdin", line 3, characters 0-14:
+Warning:
+SearchHead is deprecated. Use the headconcl: clause of Search instead.
+[deprecated-searchhead,deprecated]
 le_n: forall n : nat, n <= n
 le_0_n: forall n : nat, 0 <= n
 le_S: forall n m : nat, n <= m -> n <= S m
 le_pred: forall n m : nat, n <= m -> Nat.pred n <= Nat.pred m
 le_n_S: forall n m : nat, n <= m -> S n <= S m
 le_S_n: forall n m : nat, S n <= S m -> n <= m
-(use "About" for full details on implicit arguments)
+File "stdin", line 4, characters 0-16:
+Warning:
+SearchHead is deprecated. Use the headconcl: clause of Search instead.
+[deprecated-searchhead,deprecated]
 false: bool
 true: bool
 negb: bool -> bool
@@ -28,7 +35,10 @@ Hexadecimal.uint_beq: Hexadecimal.uint -> Hexadecimal.uint -> bool
 Decimal.decimal_beq: Decimal.decimal -> Decimal.decimal -> bool
 Decimal.int_beq: Decimal.int -> Decimal.int -> bool
 Decimal.uint_beq: Decimal.uint -> Decimal.uint -> bool
-(use "About" for full details on implicit arguments)
+File "stdin", line 5, characters 0-21:
+Warning:
+SearchHead is deprecated. Use the headconcl: clause of Search instead.
+[deprecated-searchhead,deprecated]
 mult_n_O: forall n : nat, 0 = n * 0
 plus_O_n: forall n : nat, 0 + n = n
 plus_n_O: forall n : nat, n = n + 0
@@ -47,8 +57,13 @@ f_equal2_plus:
   forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 + x2 = y1 + y2
 f_equal2_mult:
   forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 * x2 = y1 * y2
-(use "About" for full details on implicit arguments)
+File "stdin", line 11, characters 2-20:
+Warning:
+SearchHead is deprecated. Use the headconcl: clause of Search instead.
+[deprecated-searchhead,deprecated]
 h: newdef n
-(use "About" for full details on implicit arguments)
+File "stdin", line 17, characters 2-15:
+Warning:
+SearchHead is deprecated. Use the headconcl: clause of Search instead.
+[deprecated-searchhead,deprecated]
 h: P n
-(use "About" for full details on implicit arguments)

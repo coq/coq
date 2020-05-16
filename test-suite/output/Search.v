@@ -35,3 +35,34 @@ Goal forall n (P:nat -> Prop), P n -> ~P n -> False.
 
 Abort.
 
+Module M.
+Section S.
+Variable A:Type.
+Variable a:A.
+Theorem Thm (b:A) : True.
+Search A. (* Test search in hypotheses *)
+Abort.
+End S.
+End M.
+
+(* Reproduce the example of the doc *)
+
+Reset Initial.
+
+Search "_assoc".
+Search "+".
+Search hyp:bool -headhyp:bool.
+Search concl:bool -headconcl:bool.
+Search [ is:Definition headconcl:nat | is:Lemma (_ + _) ].
+
+Require Import PeanoNat.
+
+Search (_ ?n ?m = _ ?m ?n).
+Search "'mod'" -"mod".
+Search "mod"%nat -"mod".
+
+Reset Initial.
+
+Require Import Morphisms.
+
+Search is:Instance [ Reflexive | Symmetric ].

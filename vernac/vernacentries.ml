@@ -1762,91 +1762,17 @@ let vernac_print ~pstate ~atts =
   | PrintStrategy r -> print_strategy r
   | PrintRegistered -> print_registered ()
 
-let global_module qid =
-  try Nametab.full_name_module qid
-  with Not_found ->
-    user_err ?loc:qid.CAst.loc ~hdr:"global_module"
-     (str "Module/section " ++ pr_qualid qid ++ str " not found.")
-
-let interp_search_restriction = function
-  | SearchOutside l -> (List.map global_module l, true)
-  | SearchInside l -> (List.map global_module l, false)
-
-open Search
-
-let interp_search_about_item env sigma =
-  function
-  | SearchSubPattern pat ->
-      let _,pat = Constrintern.intern_constr_pattern env sigma pat in
-      GlobSearchSubPattern pat
-  | SearchString (s,None) when Id.is_valid s ->
-      GlobSearchString s
-  | SearchString (s,sc) ->
-      try
-        let ref =
-          Notation.interp_notation_as_global_reference
-            ~head:false (fun _ -> true) s sc in
-        GlobSearchSubPattern (Pattern.PRef ref)
-      with UserError _ ->
-        user_err ~hdr:"interp_search_about_item"
-          (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component")
-
-(* 05f22a5d6d5b8e3e80f1a37321708ce401834430 introduced the
-   `search_output_name_only` option to avoid excessive printing when
-   searching.
-
-   The motivation was to make search usable for IDE completion,
-   however, it is still too slow due to the non-indexed nature of the
-   underlying search mechanism.
-
-   In the future we should deprecate the option and provide a fast,
-   indexed name-searching interface.
-*)
-let search_output_name_only = ref false
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Search";"Output";"Name";"Only"];
-      optread  = (fun () -> !search_output_name_only);
-      optwrite = (:=) search_output_name_only }
-
 let vernac_search ~pstate ~atts s gopt r =
+  let open ComSearch in
   let gopt = query_command_selector gopt in
-  let r = interp_search_restriction r in
-  let env,gopt =
+  let sigma, env =
     match gopt with | None ->
       (* 1st goal by default if it exists, otherwise no goal at all *)
-      (try snd (get_goal_or_global_context ~pstate 1) , Some 1
-       with _ -> Global.env (),None)
+      (try get_goal_or_global_context ~pstate 1
+       with _ -> let env = Global.env () in (Evd.from_env env, env))
     (* if goal selector is given and wrong, then let exceptions be raised. *)
-    | Some g -> snd (get_goal_or_global_context ~pstate g) , Some g
-  in
-  let get_pattern c = snd (Constrintern.intern_constr_pattern env Evd.(from_env env) c) in
-  let pr_search ref env c =
-    let pr = pr_global ref in
-    let pp = if !search_output_name_only
-      then pr
-      else begin
-        let open Impargs in
-        let impargs = select_stronger_impargs (implicits_of_global ref) in
-        let impargs = List.map binding_kind_of_status impargs in
-        let pc = pr_ltype_env env Evd.(from_env env) ~impargs c in
-        hov 2 (pr ++ str":" ++ spc () ++ pc)
-      end
-    in Feedback.msg_notice pp
-  in
-  (match s with
-  | SearchPattern c ->
-      (Search.search_pattern ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
-  | SearchRewrite c ->
-      (Search.search_rewrite ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
-  | SearchHead c ->
-      (Search.search_by_head ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
-  | Search sl ->
-      (Search.search ?pstate gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
-       Search.prioritize_search) pr_search);
-  Feedback.msg_notice (str "(use \"About\" for full details on implicit arguments)")
+    | Some g -> get_goal_or_global_context ~pstate g in
+  interp_search env sigma s r
 
 let vernac_locate ~pstate = let open Constrexpr in function
   | LocateAny {v=AN qid}  -> Prettyp.print_located_qualid qid

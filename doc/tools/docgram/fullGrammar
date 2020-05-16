@@ -798,58 +798,7 @@ gallina: [
 ]
 
 register_token: [
-| register_prim_token
-| register_type_token
-]
-
-register_type_token: [
-| "#int63_type"
-| "#float64_type"
-]
-
-register_prim_token: [
-| "#int63_head0"
-| "#int63_tail0"
-| "#int63_add"
-| "#int63_sub"
-| "#int63_mul"
-| "#int63_div"
-| "#int63_mod"
-| "#int63_lsr"
-| "#int63_lsl"
-| "#int63_land"
-| "#int63_lor"
-| "#int63_lxor"
-| "#int63_addc"
-| "#int63_subc"
-| "#int63_addcarryc"
-| "#int63_subcarryc"
-| "#int63_mulc"
-| "#int63_diveucl"
-| "#int63_div21"
-| "#int63_addmuldiv"
-| "#int63_eq"
-| "#int63_lt"
-| "#int63_le"
-| "#int63_compare"
-| "#float64_opp"
-| "#float64_abs"
-| "#float64_eq"
-| "#float64_lt"
-| "#float64_le"
-| "#float64_compare"
-| "#float64_classify"
-| "#float64_add"
-| "#float64_sub"
-| "#float64_mul"
-| "#float64_div"
-| "#float64_sqrt"
-| "#float64_of_int63"
-| "#float64_normfr_mantissa"
-| "#float64_frshiftexp"
-| "#float64_ldshiftexp"
-| "#float64_next_up"
-| "#float64_next_down"
+| test_hash_ident "#" IDENT
 ]
 
 thm_token: [
@@ -1252,7 +1201,7 @@ query_command: [
 | "SearchHead" constr_pattern in_or_out_modules "."
 | "SearchPattern" constr_pattern in_or_out_modules "."
 | "SearchRewrite" constr_pattern in_or_out_modules "."
-| "Search" searchabout_query searchabout_queries "."
+| "Search" search_query search_queries "."
 ]
 
 printable: [
@@ -1349,14 +1298,48 @@ positive_search_mark: [
 |
 ]
 
-searchabout_query: [
-| positive_search_mark ne_string OPT scope_delimiter
-| positive_search_mark constr_pattern
+search_query: [
+| positive_search_mark search_item
+| positive_search_mark "[" LIST1 ( LIST1 search_query ) SEP "|" "]"
 ]
 
-searchabout_queries: [
+search_item: [
+| test_id_colon search_where ":" ne_string OPT scope_delimiter
+| "is" ":" logical_kind
+| ne_string OPT scope_delimiter
+| test_id_colon search_where ":" constr_pattern
+| constr_pattern
+]
+
+logical_kind: [
+| thm_token
+| assumption_token
+| "Context"
+| extended_def_token
+| "Primitive"
+]
+
+extended_def_token: [
+| def_token
+| "Coercion"
+| "Instance"
+| "Scheme"
+| "Canonical"
+| "Field"
+| "Method"
+]
+
+search_where: [
+| "head"
+| "hyp"
+| "concl"
+| "headhyp"
+| "headconcl"
+]
+
+search_queries: [
 | ne_in_or_out_modules
-| searchabout_query searchabout_queries
+| search_query search_queries
 |
 ]
 
@@ -1910,9 +1893,13 @@ debug: [
 |
 ]
 
+eauto_search_strategy_name: [
+| "bfs"
+| "dfs"
+]
+
 eauto_search_strategy: [
-| "(bfs)"
-| "(dfs)"
+| "(" eauto_search_strategy_name ")"
 |
 ]
 
