@@ -107,7 +107,7 @@ GRAMMLIFILES := $(addsuffix .mli, $(GRAMFILES))
 GENGRAMMLFILES := $(GRAMMLFILES) gramlib/.pack/gramlib.ml # why is gramlib.ml not in GRAMMLFILES?
 
 GENMLGFILES:= $(MLGFILES:.mlg=.ml)
-GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES) $(GENGRAMMLFILES) ide/coqide_os_specific.ml kernel/copcodes.ml kernel/uint63.ml
+GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES) $(GENGRAMMLFILES) ide/coqide/coqide_os_specific.ml kernel/copcodes.ml kernel/uint63.ml
 GENMLIFILES:=$(GRAMMLIFILES)
 GENHFILES:=kernel/byterun/coq_instruct.h kernel/byterun/coq_jumptbl.h
 GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) kernel/genOpcodeFiles.exe
@@ -262,10 +262,10 @@ optclean:
 
 clean-ide:
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDE)
-	rm -f ide/input_method_lexer.ml
-	rm -f ide/highlight.ml ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
-	rm -f ide/utf8_convert.ml
-	rm -f ide/default.bindings ide/default_bindings_src.exe
+	rm -f ide/coqide/input_method_lexer.ml
+	rm -f ide/coqide/highlight.ml ide/coqide/config_lexer.ml ide/coqide/config_parser.mli ide/coqide/config_parser.ml
+	rm -f ide/coqide/utf8_convert.ml
+	rm -f ide/coqide/default.bindings ide/coqide/default_bindings_src.exe
 	rm -rf $(COQIDEAPP)
 
 mlgclean:

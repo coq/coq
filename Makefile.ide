@@ -13,13 +13,13 @@
 ## NB: For the moment, the build system of CoqIDE is part of
 ## the one of Coq. In particular, this Makefile.ide is included in
 ## Makefile.build. Please ensure that the rules define here are
-## indeed specific to files of the form ide/*
+## indeed specific to files of the form ide/coqide/*
 
 ## Coqide-related variables set by ./configure in config/Makefile
 
 #HASCOQIDE : opt / byte / no
 #IDEFLAGS : some extra cma, for instance
-#IDEOPTCDEPS : on windows, ide/ide_win32_stubs.o ide/coq_icon.o
+#IDEOPTCDEPS : on windows, ide/coqide/ide_win32_stubs.o ide/coqide/coq_icon.o
 #IDECDEPS
 #IDECDEPSFLAGS
 #IDEINT : X11 / QUARTZ / WIN32
@@ -34,11 +34,11 @@ COQIDEINAPP:=$(COQIDEAPP)/Contents/MacOS/coqide
 ## CoqIDE source directory and files
 
 # Note : for just building bin/coqide, we could only consider
-# config, lib, ide and ide/utils. But the coqidetop plugin (the
+# config, lib, ide/coqide and ide/coqide/utils. But the coqidetop plugin (the
 # one that will be loaded by coqidetop) refers to some
 # core modules of coq, for instance printing/*.
 
-IDESRCDIRS:= $(CORESRCDIRS) ide ide/protocol
+IDESRCDIRS:= $(CORESRCDIRS) ide/coqide ide/coqide/protocol
 
 ifeq ($(HASCOQIDE),no)
 COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS))
@@ -46,20 +46,20 @@ else
 COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) -package lablgtk3-sourceview3
 endif
 
-IDEDEPS:=config/config.cma clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma
-IDECMA:=ide/ide.cma
+IDEDEPS:=config/config.cma clib/clib.cma lib/lib.cma ide/coqide/protocol/ideprotocol.cma
+IDECMA:=ide/coqide/ide.cma
 IDETOPEXE=bin/coqidetop$(EXE)
 IDETOP=bin/coqidetop.opt$(EXE)
 IDETOPBYTE=bin/coqidetop.byte$(EXE)
 
-LINKIDE:=$(IDEDEPS) $(IDECDEPS) $(IDECMA) ide/coqide_os_specific.cmo ide/coqide_main.mli ide/coqide_main.ml
-LINKIDEOPT:=$(IDEOPTCDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide_os_specific.cmx ide/coqide_main.mli ide/coqide_main.ml
+LINKIDE:=$(IDEDEPS) $(IDECDEPS) $(IDECMA) ide/coqide/coqide_os_specific.cmo ide/coqide/coqide_main.mli ide/coqide/coqide_main.ml
+LINKIDEOPT:=$(IDEOPTCDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide/coqide_os_specific.cmx ide/coqide/coqide_main.mli ide/coqide/coqide_main.ml
 
-IDEBINDINGS:=ide/default.bindings
-IDEBINDINGSSRC:=ide/default_bindings_src.ml
-IDEBINDINGSEXE:=ide/default_bindings_src.exe
+IDEBINDINGS:=ide/coqide/default.bindings
+IDEBINDINGSSRC:=ide/coqide/default_bindings_src.ml
+IDEBINDINGSEXE:=ide/coqide/default_bindings_src.exe
 
-IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png $(IDEBINDINGS)
+IDEFILES=$(wildcard ide/coqide/*.lang) ide/coqide/coq_style.xml ide/coqide/coq.png $(IDEBINDINGS)
 
 ## GTK for Coqide MacOS bundle
 
@@ -118,49 +118,49 @@ $(COQIDEBYTE): $(LINKIDE)
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ \
 	       -linkpkg -package str,unix,threads,lablgtk3-sourceview3 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
 
-ide/coqide_os_specific.ml: ide/coqide_$(IDEINT).ml.in config/Makefile
+ide/coqide/coqide_os_specific.ml: ide/coqide/coqide_$(IDEINT).ml.in config/Makefile
 	rm -f $@ && cp $< $@ && chmod a-w $@
 
-ide/%.cmi: ide/%.mli
+ide/coqide/%.cmi: ide/coqide/%.mli
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
-ide/%.cmo: ide/%.ml
+ide/coqide/%.cmo: ide/coqide/%.ml
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
-ide/%.cmx: ide/%.ml
+ide/coqide/%.cmx: ide/coqide/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
 # We need to compile this file without -safe-string due mess with
 # lablgtk API. Other option is to require lablgtk >= 3.0.0
-ide/ideutils.cmo: ide/ideutils.ml
+ide/coqide/ideutils.cmo: ide/coqide/ideutils.ml
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(filter-out -safe-string,$(OCAMLC)) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
-ide/ideutils.cmx: ide/ideutils.ml
+ide/coqide/ideutils.cmx: ide/coqide/ideutils.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(filter-out -safe-string,$(OCAMLOPT)) $(COQIDEFLAGS) $(filter-out -safe-string,$(OPTFLAGS)) -c $<
 
-IDETOPCMA:=ide/ide_common.cma
+IDETOPCMA:=ide/coqide/ide_common.cma
 IDETOPCMX:=$(IDETOPCMA:.cma=.cmxa)
 
 # Special rule for coqidetop
 $(IDETOPEXE): $(IDETOP:.opt=.$(BEST))
 	rm -f $@ && cp $< $@
 
-$(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
+$(IDETOP): ide/coqide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
+	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide/coqide -I ide/coqide/protocol/ \
 			   $(SYSMOD) \
 			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
 	$(STRIP_HIDE) $@
 	$(CODESIGN_HIDE) $@
 
-$(IDETOPBYTE): ide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
+$(IDETOPBYTE): ide/coqide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
+	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) -I ide/coqide -I ide/coqide/protocol/ \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
 			 $(SYSMOD) \
 			 $(LINKCMO) $(IDETOPCMA) $(BYTEFLAGS) $< -o $@
@@ -219,12 +219,12 @@ endif
 
 install-ide-files: #Please update $(COQIDEAPP)/Contents/Resources/ at the same time
 	$(MKDIR) $(FULLDATADIR)
-	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $(FULLDATADIR)
+	$(INSTALLLIB) ide/coqide/coq.png ide/coqide/*.lang ide/coqide/coq_style.xml $(IDEBINDINGS) $(FULLDATADIR)
 	$(MKDIR) $(FULLCONFIGDIR)
 
 install-ide-info:
 	$(MKDIR) $(FULLDOCDIR)
-	$(INSTALLLIB) ide/FAQ $(FULLDOCDIR)/FAQ-CoqIde
+	$(INSTALLLIB) ide/coqide/FAQ $(FULLDOCDIR)/FAQ-CoqIde
 
 ###########################################################################
 # CoqIde MacOS special targets
@@ -235,10 +235,10 @@ install-ide-info:
 $(COQIDEAPP)/Contents:
 	rm -rdf $@
 	$(MKDIR) $@
-	sed -e "s/VERSION/$(VERSION4MACOS)/g" ide/MacOS/Info.plist.template > $@/Info.plist
+	sed -e "s/VERSION/$(VERSION4MACOS)/g" ide/coqide/MacOS/Info.plist.template > $@/Info.plist
 	$(MKDIR) "$@/MacOS"
 
-$(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
+$(COQIDEINAPP): ide/coqide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
 	        -linkpkg -package str,unix,threads,lablgtk3-sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
@@ -246,7 +246,7 @@ $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 
 $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
 	$(MKDIR) $@/coq/
-	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $@/coq/
+	$(INSTALLLIB) ide/coqide/coq.png ide/coqide/*.lang ide/coqide/coq_style.xml $(IDEBINDINGS) $@/coq/
 	$(MKDIR) $@/gtksourceview-3.0/{language-specs,styles}
 	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-3.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-3.0/language-specs/
 	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-3.0/styles/{styles.rng,classic.xml} $@/gtksourceview-3.0/styles/
@@ -287,7 +287,7 @@ $(COQIDEAPP)/Contents/Resources/lib: $(COQIDEAPP)/Contents/Resources/immodules $
 	done
 
 $(COQIDEAPP)/Contents/Resources:$(COQIDEAPP)/Contents/Resources/etc $(COQIDEAPP)/Contents/Resources/share
-	$(INSTALLLIB) ide/MacOS/*.icns $@
+	$(INSTALLLIB) ide/coqide/MacOS/*.icns $@
 
 $(COQIDEAPP):$(COQIDEAPP)/Contents/Resources
 	$(CODESIGN_HIDE) $@

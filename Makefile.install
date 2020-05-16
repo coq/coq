@@ -91,12 +91,12 @@ install-tools:
 # - the ones corresponding to packed plugins
 
 INSTALLCMI = $(sort \
-	$(filter-out checker/% ide/% tools/%, $(MLIFILES:.mli=.cmi)) \
+	$(filter-out checker/% ide/coqide/% tools/%, $(MLIFILES:.mli=.cmi)) \
 	$(GRAMMLIFILES:.mli=.cmi) gramlib/.pack/gramlib.cmi \
 	$(foreach lib,$(CORECMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES))))) \
 	$(PLUGINS:.cmo=.cmi)
 
-INSTALLCMX = $(sort $(filter-out checker/% ide/% tools/% dev/% \
+INSTALLCMX = $(sort $(filter-out checker/% ide/coqide/% tools/% dev/% \
 	configure.cmx toplevel/coqtop_byte_bin.cmx plugins/extraction/big.cmx, \
 	$(GRAMMLFILES:.ml=.cmx) $(MLFILES:.ml=.cmx)))
 
