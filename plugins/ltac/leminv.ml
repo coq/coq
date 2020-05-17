@@ -246,11 +246,7 @@ let add_inversion_lemma_exn ~poly na com comsort bool tac =
   let sigma = Evd.from_env env in
   let sigma, c = Constrintern.interp_type_evars ~program_mode:false env sigma com in
   let sigma, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid sigma comsort in
-  try
-    add_inversion_lemma ~poly na env sigma c sort bool tac
-  with
-    |   UserError (Some "Case analysis",s) -> (* Reference to Indrec *)
-          user_err ~hdr:"Inv needs Nodep Prop Set" s
+  add_inversion_lemma ~poly na env sigma c sort bool tac
 
 (* ================================= *)
 (* Applying a given inversion lemma  *)
