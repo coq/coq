@@ -178,7 +178,9 @@ but if you wish to save more time you can skip the job by setting
 `SKIP_DOCKER` to `true`.
 
 This means you will need to change its value when the Docker image
-needs to be updated. You can do so for a single pipeline by starting
-it through the web interface.
+needs to be updated. You can do so for a single pipeline by manually
+starting a job using the green "Run pipeline" button on the
+[web interface](https://gitlab.com/coq/coq/pipelines) with the
+`SKIP_DOCKER` environment variable set to `false`.
 
 See also [`docker/README.md`](docker/README.md).
