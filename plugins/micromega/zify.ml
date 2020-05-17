@@ -45,9 +45,7 @@ let op_iff = lazy (zify "iff")
 let op_iff_morph = lazy (zify "iff_morph")
 let op_not = lazy (zify "not")
 let op_not_morph = lazy (zify "not_morph")
-
-(* identity function *)
-(*let identity = lazy (zify "identity")*)
+let op_True = lazy (zify "True")
 let whd = Reductionops.clos_whd_flags CClosure.all
 
 (** [unsafe_to_constr c] returns a [Constr.t] without considering an evar_map.
@@ -356,6 +354,7 @@ let specs_cache = ref HConstr.empty
 
 (** Each type-class gives rise to a different table.
     They only differ on how projections are extracted.  *)
+
 module EInj = struct
   open EInjT
 
@@ -366,6 +365,11 @@ module EInj = struct
   let cast x = InjTyp x
   let dest = function InjTyp x -> Some x | _ -> None
 
+  let is_cstr_true evd c =
+    match EConstr.kind evd c with
+    | Lambda (_, _, c) -> EConstr.eq_constr_nounivs evd c (Lazy.force op_True)
+    | _ -> false
+
   let mk_elt evd i (a : EConstr.t array) =
     let isid = EConstr.eq_constr_nounivs evd a.(0) a.(1) in
     { isid
@@ -373,7 +377,7 @@ module EInj = struct
     ; target = a.(1)
     ; inj = a.(2)
     ; pred = a.(3)
-    ; cstr = (if isid then None else Some a.(4)) }
+    ; cstr = (if is_cstr_true evd a.(3) then None else Some a.(4)) }
 
   let get_key = 0
 end
@@ -385,6 +389,28 @@ let get_inj evd c =
     let t = string_of_ppcmds (pr_constr env evd c) in
     failwith ("Cannot register term " ^ t)
   | Some a -> EInj.mk_elt evd c a
+
+let rec decomp_type evd ty =
+  match EConstr.kind_of_type evd ty with
+  | EConstr.ProdType (_, t1, rst) -> t1 :: decomp_type evd rst
+  | _ -> [ty]
+
+let pp_type env evd l =
+  Pp.prlist_with_sep (fun _ -> Pp.str " -> ") (pr_constr env evd) l
+
+let check_typ evd expty op =
+  let env = Global.env () in
+  let ty = Retyping.get_type_of env evd op in
+  let ty = decomp_type evd ty in
+  if List.for_all2 (EConstr.eq_constr_nounivs evd) ty expty then ()
+  else
+    raise
+      (CErrors.user_err
+         Pp.(
+           str ": Cannot register operator "
+           ++ pr_constr env evd op ++ str ". It has type " ++ pp_type env evd ty
+           ++ str " instead of expected type "
+           ++ pp_type env evd expty))
 
 module EBinOp = struct
   type elt = EBinOpT.t
@@ -398,7 +424,9 @@ module EBinOp = struct
     let i1 = get_inj evd a.(7) in
     let i2 = get_inj evd a.(8) in
     let i3 = get_inj evd a.(9) in
+    let bop = a.(6) in
     let tbop = a.(10) in
+    check_typ evd EInjT.[i1.source; i2.source; i3.source] bop;
     { source1 = a.(0)
     ; source2 = a.(1)
     ; source3 = a.(2)
@@ -408,7 +436,7 @@ module EBinOp = struct
     ; inj1 = i1
     ; inj2 = i2
     ; inj3 = i3
-    ; bop = a.(6)
+    ; bop
     ; tbop
     ; tbopinj = a.(11)
     ; classify_binop =
@@ -460,6 +488,7 @@ module EUnOp = struct
     let i1 = get_inj evd a.(5) in
     let i2 = get_inj evd a.(6) in
     let uop = a.(4) in
+    check_typ evd EInjT.[i1.source; i2.source] uop;
     let tuop = a.(7) in
     { source1 = a.(0)
     ; source2 = a.(1)
@@ -491,6 +520,7 @@ module EBinRel = struct
     let i = get_inj evd a.(3) in
     let brel = a.(2) in
     let tbrel = a.(4) in
+    check_typ evd EInjT.[i.source; i.source; EConstr.mkProp] brel;
     { source = a.(0)
     ; target = a.(1)
     ; inj = get_inj evd a.(3)
@@ -627,17 +657,30 @@ module ESat = struct
   let get_key = 1
 end
 
-module ESpec = struct
+module EUnopSpec = struct
   open ESpecT
 
   type elt = ESpecT.t
 
-  let name = "Spec"
+  let name = "UnopSpec"
+  let table = specs
+  let cast x = Spec x
+  let dest = function Spec x -> Some x | _ -> None
+  let mk_elt evd i a = {spec = a.(4)}
+  let get_key = 2
+end
+
+module EBinOpSpec = struct
+  open ESpecT
+
+  type elt = ESpecT.t
+
+  let name = "BinOpSpec"
   let table = specs
   let cast x = Spec x
   let dest = function Spec x -> Some x | _ -> None
   let mk_elt evd i a = {spec = a.(5)}
-  let get_key = 2
+  let get_key = 3
 end
 
 module BinOp = MakeTable (EBinOp)
@@ -647,7 +690,8 @@ module BinRel = MakeTable (EBinRel)
 module PropBinOp = MakeTable (EPropBinOp)
 module PropUnOp = MakeTable (EPropUnOp)
 module Saturate = MakeTable (ESat)
-module Spec = MakeTable (ESpec)
+module UnOpSpec = MakeTable (EUnopSpec)
+module BinOpSpec = MakeTable (EBinOpSpec)
 
 let init_cache () =
   table_cache := !table;

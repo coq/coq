@@ -28,9 +28,8 @@ VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
 | ["Add" "PropOp"    constr(t) ] -> { Zify.PropBinOp.register t }
 | ["Add" "PropBinOp"    constr(t) ] -> { Zify.PropBinOp.register t }
 | ["Add" "PropUOp"   constr(t) ] -> { Zify.PropUnOp.register t }
-| ["Add" "Spec"      constr(t) ] -> { Zify.Spec.register t }
-| ["Add" "BinOpSpec" constr(t) ] -> { Zify.Spec.register t }
-| ["Add" "UnOpSpec"  constr(t) ] -> { Zify.Spec.register t }
+| ["Add" "BinOpSpec" constr(t) ] -> { Zify.BinOpSpec.register t }
+| ["Add" "UnOpSpec"  constr(t) ] -> { Zify.UnOpSpec.register t }
 | ["Add" "Saturate"  constr(t) ] -> { Zify.Saturate.register t }
 END
 
@@ -51,5 +50,5 @@ VERNAC COMMAND EXTEND ZifyPrint CLASSIFIED AS SIDEFF
 |[ "Show" "Zify" "UnOp" ]   -> { Zify.UnOp.print () }
 |[ "Show" "Zify" "CstOp"]   -> { Zify.CstOp.print () }
 |[ "Show" "Zify" "BinRel"]  -> { Zify.BinRel.print () }
-|[ "Show" "Zify" "Spec"]    -> { Zify.Spec.print () }
+|[ "Show" "Zify" "Spec"]    -> { Zify.BinOpSpec.print () ; Zify.UnOpSpec.print()}
 END

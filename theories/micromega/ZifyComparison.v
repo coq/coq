@@ -79,4 +79,4 @@ Instance ZcompareSpec : BinOpSpec ZcompareZ :=
                            /\
                            (x < y  -> r = -1)
               ; BSpec := Zcompare_spec|}.
-Add Spec ZcompareSpec.
+Add BinOpSpec ZcompareSpec.

@@ -459,45 +459,24 @@ Add UnOp Op_Z_to_nat.
 
 (** Specification of derived operators over Z *)
 
-Lemma z_max_spec : forall n m,
-    n <= Z.max n m /\ m <= Z.max n m /\ (Z.max n m = n \/ Z.max n m = m).
-Proof.
-  intros.
-  generalize (Z.le_max_l n m).
-  generalize (Z.le_max_r n m).
-  generalize (Z.max_spec_le n m).
-  intuition idtac.
-Qed.
-
 Instance ZmaxSpec : BinOpSpec Z.max :=
   {| BPred := fun n m r => n < m /\ r = m \/ m <= n /\ r = n ; BSpec := Z.max_spec|}.
-Add Spec ZmaxSpec.
-
-Lemma z_min_spec : forall n m,
-    Z.min n m <= n /\ Z.min n m <= m /\ (Z.min n m = n \/ Z.min n m = m).
-Proof.
-  intros.
-  generalize (Z.le_min_l n m).
-  generalize (Z.le_min_r n m).
-  generalize (Z.min_spec_le n m).
-  intuition idtac.
-Qed.
-
+Add BinOpSpec ZmaxSpec.
 
 Instance ZminSpec : BinOpSpec Z.min :=
   {| BPred := fun n m r => n < m /\ r = n \/ m <= n /\ r = m ;
      BSpec := Z.min_spec |}.
-Add Spec ZminSpec.
+Add BinOpSpec ZminSpec.
 
 Instance ZsgnSpec : UnOpSpec Z.sgn :=
   {| UPred := fun n r : Z => 0 < n /\ r = 1 \/ 0 = n /\ r = 0 \/ n < 0 /\ r = - (1) ;
      USpec := Z.sgn_spec|}.
-Add Spec ZsgnSpec.
+Add UnOpSpec ZsgnSpec.
 
 Instance ZabsSpec : UnOpSpec Z.abs :=
   {| UPred := fun n r: Z =>  0 <= n /\ r = n \/ n < 0 /\ r = - n ;
      USpec := Z.abs_spec|}.
-Add Spec ZabsSpec.
+Add UnOpSpec ZabsSpec.
 
 (** Saturate positivity constraints *)
 

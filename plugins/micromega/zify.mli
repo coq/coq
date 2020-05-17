@@ -21,7 +21,8 @@ module CstOp : S
 module BinRel : S
 module PropBinOp : S
 module PropUnOp : S
-module Spec : S
+module BinOpSpec : S
+module UnOpSpec : S
 module Saturate : S
 
 val zify_tac : unit Proofview.tactic
