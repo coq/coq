@@ -300,6 +300,35 @@ VERNAC COMMAND EXTEND HintView CLASSIFIED AS SIDEFF
           Ssrview.AdaptorDb.declare k hints }
 END
 
+(** Search compatibility *)
+
+{
+
+  let warn_search_moved_enabled = ref true
+  let warn_search_moved = CWarnings.create ~name:"ssr-search-moved"
+      ~category:"deprecated" ~default:CWarnings.Enabled
+      (fun () ->
+         (Pp.strbrk
+            "SSReflect's Search command has been moved to the \
+             ssrsearch module; please Require that module if you \
+             still want to use SSReflect's Search command"))
+
+open G_vernac
+}
+
+GRAMMAR EXTEND Gram
+  GLOBAL: query_command;
+
+  query_command:
+    [ [ IDENT "Search"; s = search_query; l = search_queries; "." ->
+          { let (sl,m) = l in
+            if !warn_search_moved_enabled then warn_search_moved ();
+            fun g ->
+              Vernacexpr.VernacSearch (Vernacexpr.Search (s::sl),g, m) }
+      ] ]
+;
+END
+
 (** Keyword compatibility fixes. *)
 
 (* Coq v8.1 notation uses "by" and "of" quasi-keywords, i.e., reserved *)
