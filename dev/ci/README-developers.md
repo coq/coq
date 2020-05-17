@@ -179,6 +179,11 @@ but if you wish to save more time you can skip the job by setting
 
 This means you will need to change its value when the Docker image
 needs to be updated. You can do so for a single pipeline by starting
-it through the web interface.
+it through the web interface. Here is a direct link that you can use
+to trigger such a build:
+`https://gitlab.com/coq/coq/pipelines/new?var[SKIP_DOCKER]=false&ref=pr-XXXXX`.
+Note that this link will give a 404 error if you are not logged in or
+a member of the Coq organization on GitLab.  To request to join the
+Coq organization, go to https://gitlab.com/coq to request access.
 
 See also [`docker/README.md`](docker/README.md).
