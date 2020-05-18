@@ -52,14 +52,27 @@ ask_confirmation() {
 curl_paginate() {
   # as per https://developer.github.com/v3/guides/traversing-with-pagination/#changing-the-number-of-items-received, GitHub will never give us more than 100
   url="$1?per_page=100"
-  # we search for something like 'page=34>; rel="last"' to get the number of pages, as per https://developer.github.com/v3/guides/traversing-with-pagination/#changing-the-number-of-items-received
-  url_info="$(curl -sI "${url}")"
-  page_count="$(echo "${url_info}" | grep -o 'page=\([0-9]*\)>; rel="last"' | grep -o '[0-9]*')"
-  if [ -z "${page_count}" ]; then
-    page_count=1
-  fi
-  for page in $(seq 1 ${page_count}); do
-    curl -s "${url}&page=${page}"
+  # We need to process the header to get the pagination.  We have two
+  # options:
+  #
+  # 1. We can make an extra API call at the beginning to get the total
+  #    number of pages, search for a rel="last" link, and then loop
+  #    over all the pages.
+  #
+  # 2. We can ask for the header info with every single curl request,
+  #    search for a rel="next" link to follow to the next page, and
+  #    then parse out the body from the header.
+  #
+  # Although (1) is a bit simpler, we choose to do (2) to save an
+  # extra API call per invocation of curl.
+  while [ ! -z "${url}" ]; do
+    response="$(curl -si "${url}")"
+    # we search for something like 'link: <https://api.github.com/repositories/1377159/pulls/12129/reviews?page=2>; rel="next", <https://api.github.com/repositories/1377159/pulls/12129/reviews?page=2>; rel="last"' and take the first 'next' url
+    url="$(echo "${response}" | grep -m 1 -io '^link: .*>; rel="next"' | grep -o '<[^>]*>; rel="next"' | grep -o '<[^>]*>' | sed s'/[<>]//g')"
+    # we extract the body by looking for the first line that starts
+    # with [ or {, using the perl-regexp mode for grep as in
+    # https://stackoverflow.com/a/7167115/377022
+    echo "${response}" | grep -Pzao '(?s)\n\s*[\[{].*' | tr '\0' '\n'
   done
 }
 
@@ -72,6 +85,7 @@ check_util curl
 check_util git
 check_util gpg
 check_util grep
+check_util tr
 
 # command line parsing
 
@@ -89,6 +103,8 @@ fi
 
 # Fetching PR metadata
 
+# The main API call returns a dict/object, not an array, so we don't
+# bother paginating
 PRDATA=$(curl -s "$API/pulls/$PR")
 
 TITLE=$(echo "$PRDATA" | jq -r '.title')
