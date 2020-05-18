@@ -697,8 +697,7 @@ let empty = {
   extras = Store.empty;
 }
 
-let from_env e =
-  { empty with universes = UState.make ~lbound:(Environ.universes_lbound e) (Environ.universes e) }
+let from_env e = { empty with universes = UState.from_env e }
 
 let from_ctx ctx = { empty with universes = ctx }
 
@@ -861,9 +860,6 @@ let universe_subst evd =
 
 let merge_context_set ?loc ?(sideff=false) rigid evd ctx' =
   {evd with universes = UState.merge ?loc ~sideff rigid evd.universes ctx'}
-
-let merge_universe_subst evd subst =
-  {evd with universes = UState.merge_subst evd.universes subst }
 
 let with_context_set ?loc rigid d (a, ctx) =
   (merge_context_set ?loc rigid d ctx, a)

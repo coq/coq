@@ -63,6 +63,8 @@ let make ~lbound u =
     uctx_universes_lbound = lbound;
     uctx_initial_universes = u}
 
+let from_env e = make ~lbound:(Environ.universes_lbound e) (Environ.universes e)
+
 let is_empty ctx =
   ContextSet.is_empty ctx.uctx_local &&
     LMap.is_empty ctx.uctx_univ_variables

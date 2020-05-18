@@ -1641,7 +1641,7 @@ let obligation_terminator entries uctx {name; num; auto} =
            universes and constraints if any *)
         defined
       then
-        UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
+        UState.from_env (Global.env ())
       else uctx
     in
     update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
@@ -1673,9 +1673,7 @@ let obligation_admitted_terminator {name; num; auto} ctx' dref =
     if not prg.prg_poly (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
-      let ctx =
-        UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
-      in
+      let ctx = UState.from_env (Global.env ()) in
       let ctx' = UState.merge_subst ctx (UState.subst ctx') in
       (Univ.Instance.empty, ctx')
     else
