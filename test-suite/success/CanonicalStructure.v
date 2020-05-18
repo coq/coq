@@ -76,7 +76,15 @@ Fail Check (refl_equal _ : l _ = x2).
 (* Dependent function fields *)
 Section DepProd.
   Structure hello := { hello_key : Type }.
-  Canonical Structure hello_dep := {| hello_key := forall x : nat, x = x |}.
+  Section FixedTypes.
+    Local Canonical Structure hello_dep1 := {| hello_key := forall x : nat, x = x |}.
+    Example ex_hello2 := let h := _ in fun f : hello_key h => (f : forall x : nat, x = x) 1.
+  End FixedTypes.
 
-  Example ex_hello := let h := _ in fun f : hello_key h => (f : forall x : nat, x = x) 1.
+  Section VariableTypes.
+    Local Canonical Structure hello_dep2 v1 v2 := {| hello_key := forall x : list v1, x = v2 |}.
+    Set Debug Unification.
+    Example ex_hello1 : _ -> _ = nil :=
+      let h := _ in fun f : hello_key h => (f : forall x : list _, _ = _) (@nil nat).
+  End VariableTypes.
 End DepProd.
