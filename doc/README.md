@@ -30,12 +30,12 @@ To produce the complete documentation in HTML, you will need Coq dependencies
 listed in [`INSTALL.md`](../INSTALL.md). Additionally, the Sphinx-based
 reference manual requires Python 3, and the following Python packages:
 
-  - sphinx >= 1.8.0
-  - sphinx_rtd_theme >= 0.2.5b2
+  - sphinx >= 2.3.1
+  - sphinx_rtd_theme >= 0.4.3
   - beautifulsoup4 >= 4.0.6
   - antlr4-python3-runtime >= 4.7.1
   - pexpect >= 4.2.1
-  - sphinxcontrib-bibtex >= 0.4.0
+  - sphinxcontrib-bibtex >= 0.4.2
 
 To install them, you should first install pip and setuptools (for instance,
 with `apt install python3-pip python3-setuptools` on Debian / Ubuntu) then run:
@@ -68,7 +68,7 @@ install them with:
 Or if you want to use less disk space:
 
     apt install texlive-latex-extra texlive-fonts-recommended texlive-xetex \
-                latexmk xindy
+                latexmk xindy fonts-freefont-otf
 
 Compilation
 -----------
