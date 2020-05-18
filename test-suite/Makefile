@@ -117,10 +117,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output output-coqtop \
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile tools $(UNIT_TESTS)
 
-PREREQUISITELOG = prerequisite/admit.v.log			\
-  prerequisite/make_local.v.log prerequisite/make_notation.v.log \
-  prerequisite/bind_univs.v.log prerequisite/module_bug8416.v.log \
-  prerequisite/module_bug7192.v.log
+PREREQUISITELOG = $(addsuffix .log,$(wildcard prerequisite/*.v))
 
 #######################################################################
 # Phony targets
