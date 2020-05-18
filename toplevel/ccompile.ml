@@ -50,7 +50,7 @@ let load_init_vernaculars opts ~state =
 (* File Compilation                                                           *)
 (******************************************************************************)
 let warn_file_no_extension =
-  CWarnings.create ~name:"file-no-extension" ~category:"filesystem"
+  CWarnings.(create ~name:"file-no-extension" ~category:Filesystem)
          (fun (f,ext) ->
           str "File \"" ++ str f ++
             strbrk "\" has been implicitly expanded to \"" ++

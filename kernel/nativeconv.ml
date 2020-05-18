@@ -146,7 +146,7 @@ and conv_fix env lvl t1 f1 t2 f2 cu =
 
 let warn_no_native_compiler =
   let open Pp in
-  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
+  CWarnings.(create ~name:"native-compiler-disabled" ~category:Native_compiler)
          (fun () -> strbrk "Native compiler is disabled," ++
                       strbrk " falling back to VM conversion test.")
 

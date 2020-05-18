@@ -5,7 +5,7 @@ DECLARE PLUGIN "tuto0_plugin"
 open Pp
 open Ltac_plugin
 
-let tuto_warn = CWarnings.create ~name:"name" ~category:"category"
+let tuto_warn = CWarnings.(create ~name:"name" ~category:Debug)
                             (fun _ -> strbrk Tuto0_main.message)
 
 }

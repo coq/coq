@@ -412,7 +412,7 @@ let it_mkPLambda_or_LetIn = List.fold_left (fun c d -> mkPLambda_or_LetIn d c)
 let err ?loc pp = user_err ?loc ~hdr:"pattern_of_glob_constr" pp
 
 let warn_cast_in_pattern =
-  CWarnings.create ~name:"cast-in-pattern" ~category:"automation"
+  CWarnings.(create ~name:"cast-in-pattern" ~category:Automation)
     (fun () -> Pp.strbrk "Casts are ignored in patterns")
 
 let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function

@@ -117,13 +117,11 @@ let make_depth n = snd (Eauto.make_dimension n None)
 
 (* deprecated in 8.13; the second int_or_var will be removed *)
 let deprecated_eauto_bfs =
-  CWarnings.create
-    ~name:"eauto_bfs" ~category:"deprecated"
+  CWarnings.(create ~name:"eauto_bfs" ~category:Deprecated)
     (fun () -> Pp.str "The syntax [eauto @int_or_var @int_or_var] is deprecated. Use [bfs eauto] instead.")
 
 let deprecated_bfs tacname =
-  CWarnings.create
-    ~name:"eauto_bfs" ~category:"deprecated"
+  CWarnings.(create ~name:"eauto_bfs" ~category:Deprecated)
     (fun () -> Pp.str "The syntax [" ++ Pp.str tacname ++ Pp.str "@int_or_var @int_or_var] is deprecated. No replacement yet.")
 
 }

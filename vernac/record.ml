@@ -264,7 +264,7 @@ type record_error =
   | BadTypedProj of Id.t * env * Type_errors.type_error
 
 let warn_cannot_define_projection =
-  CWarnings.create ~name:"cannot-define-projection" ~category:"records"
+  CWarnings.(create ~name:"cannot-define-projection" ~category:Records)
          (fun msg -> hov 0 msg)
 
 (* If a projection is not definable, we throw an error if the user
@@ -767,7 +767,7 @@ let add_inductive_class env sigma ind =
   Classes.add_class env sigma k
 
 let warn_already_existing_class =
-  CWarnings.create ~name:"already-existing-class" ~category:"automation" Pp.(fun g ->
+  CWarnings.(create ~name:"already-existing-class" ~category:Automation) Pp.(fun g ->
       Printer.pr_global g ++ str " is already declared as a typeclass.")
 
 let declare_existing_class g =

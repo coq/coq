@@ -15,7 +15,7 @@ open Stdarg
 open Tacarg
 
 let warn_deprecated_Spec =
-  CWarnings.create ~name:"deprecated-Zify-Spec" ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-Zify-Spec" ~category:Deprecated)
     (fun () ->
       Pp.strbrk ("Show Zify Spec is deprecated. Use either \"Show Zify BinOpSpec\" or \"Show Zify UnOpSpec\"."))
 

@@ -628,7 +628,7 @@ let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declar
 let declare_mutually_recursive = declare_mutually_recursive_core ~restrict_ucontext:true ()
 
 let warn_let_as_axiom =
-  CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
+  CWarnings.(create ~name:"let-as-axiom" ~category:Vernacular)
     Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
                   spc () ++ strbrk "declared as an axiom.")
 
@@ -2147,7 +2147,7 @@ let kind_of_obligation o =
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
 let warn_solve_errored =
-  CWarnings.create ~name:"solve_obligation_error" ~category:"tactics"
+  CWarnings.(create ~name:"solve_obligation_error" ~category:Tactics)
     (fun err ->
       Pp.seq
         [ str "Solve Obligations tactic returned error: "

@@ -369,7 +369,7 @@ let in_require : require_obj -> obj =
    if [export = Some true] *)
 
 let warn_require_in_module =
-  CWarnings.create ~name:"require-in-module" ~category:"deprecated"
+  CWarnings.(create ~name:"require-in-module" ~category:Deprecated)
                    (fun () -> strbrk "Require inside a module is" ++
                               strbrk " deprecated and strongly discouraged. " ++
                               strbrk "You can Require a module at toplevel " ++

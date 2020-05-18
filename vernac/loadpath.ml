@@ -48,7 +48,7 @@ let remove_load_path dir =
   load_paths := List.filter filter !load_paths
 
 let warn_overriding_logical_loadpath =
-  CWarnings.create ~name:"overriding-logical-loadpath" ~category:"loadpath"
+  CWarnings.(create ~name:"overriding-logical-loadpath" ~category:Loadpath)
     (fun (phys_path, old_path, coq_path) ->
        Pp.(seq [str phys_path; strbrk " was previously bound to "
                ; DP.print old_path; strbrk "; it is remapped to "
@@ -121,7 +121,7 @@ type locate_error = LibUnmappedDir | LibNotFound
 type 'a locate_result = ('a, locate_error) result
 
 let warn_several_object_files =
-  CWarnings.create ~name:"several-object-files" ~category:"require"
+  CWarnings.(create ~name:"several-object-files" ~category:Require)
     Pp.(fun (vi, vo) ->
         seq [ str "Loading"; spc (); str vi
             ; strbrk " instead of "; str vo
@@ -232,11 +232,11 @@ type vo_path =
   }
 
 let warn_cannot_open_path =
-  CWarnings.create ~name:"cannot-open-path" ~category:"filesystem"
+  CWarnings.(create ~name:"cannot-open-path" ~category:Filesystem)
     (fun unix_path -> Pp.(str "Cannot open " ++ str unix_path))
 
 let warn_cannot_use_directory =
-  CWarnings.create ~name:"cannot-use-directory" ~category:"filesystem"
+  CWarnings.(create ~name:"cannot-use-directory" ~category:Filesystem)
     (fun d ->
        Pp.(str "Directory " ++ str d ++
            strbrk " cannot be used as a Coq identifier (skipped)"))

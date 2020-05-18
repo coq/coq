@@ -60,7 +60,7 @@ let infer_assumption env t ty =
 
 let warn_bad_relevance_name = "bad-relevance"
 let warn_bad_relevance =
-  CWarnings.create ~name:warn_bad_relevance_name ~category:"debug" ~default:CWarnings.Disabled
+  CWarnings.(create ~name:warn_bad_relevance_name ~category:Debug ~default:Disabled)
     Pp.(function
         | None ->  str "Bad relevance in case annotation."
         | Some x -> str "Bad relevance for binder " ++ Name.print x.binder_name ++ str ".")

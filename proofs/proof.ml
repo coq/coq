@@ -325,11 +325,11 @@ let _ = CErrors.register_handler begin function
   end
 
 let warn_remaining_shelved_goals =
-  CWarnings.create ~name:"remaining-shelved-goals" ~category:"tactics"
+  CWarnings.(create ~name:"remaining-shelved-goals" ~category:Tactics)
     (fun () -> Pp.str"The proof has remaining shelved goals")
 
 let warn_remaining_unresolved_evars =
-  CWarnings.create ~name:"remaining-unresolved-evars" ~category:"tactics"
+  CWarnings.(create ~name:"remaining-unresolved-evars" ~category:Tactics)
     (fun () -> Pp.str"The proof has unresolved variables")
 
 let return ?pid (p : t) =
@@ -413,7 +413,7 @@ module V82 = struct
     Proofview.V82.top_evars p.entry p.proofview
 
   let warn_deprecated_grab_existentials =
-    CWarnings.create ~name:"deprecated-grab-existentials" ~category:"deprecated"
+    CWarnings.(create ~name:"deprecated-grab-existentials" ~category:Deprecated)
        Pp.(fun () -> str "The Grab Existential Variables command is " ++
          str"deprecated. Please use the Unshelve command or the unshelve tactical " ++
          str"instead.")
@@ -426,7 +426,7 @@ module V82 = struct
       { p with proofview = Proofview.V82.grab p.proofview }
 
   let warn_deprecated_existential =
-    CWarnings.create ~name:"deprecated-existential" ~category:"deprecated"
+    CWarnings.(create ~name:"deprecated-existential" ~category:Deprecated)
        Pp.(fun () -> str "The Existential command is " ++
          str"deprecated. Please use the Unshelve command or the unshelve " ++
          str"tactical, and the instantiate tactic instead.")

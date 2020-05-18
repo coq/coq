@@ -32,7 +32,7 @@ let cbv_vm env sigma c =
     compute env sigma c
 
 let warn_native_compute_disabled =
-  CWarnings.create ~name:"native-compute-disabled" ~category:"native-compiler"
+  CWarnings.(create ~name:"native-compute-disabled" ~category:Native_compiler)
   (fun () ->
    strbrk "native_compute disabled at configure time; falling back to vm_compute.")
 
@@ -217,7 +217,7 @@ let contextualize f g = function
   | None -> e_red g
 
 let warn_simpl_unfolding_modifiers =
-  CWarnings.create ~name:"simpl-unfolding-modifiers" ~category:"tactics"
+  CWarnings.(create ~name:"simpl-unfolding-modifiers" ~category:Tactics)
          (fun () ->
           Pp.strbrk "The legacy simpl ignores constant unfolding modifiers.")
 

@@ -466,11 +466,11 @@ let polymorphic ((n, t) : type_scheme) : mix_type_scheme =
   (n, subst_type subst t)
 
 let warn_not_unit =
-  CWarnings.create ~name:"not-unit" ~category:"ltac"
+  CWarnings.(create ~name:"not-unit" ~category:Ltac)
     (fun () -> strbrk "The following expression should have type unit.")
 
 let warn_redundant_clause =
-  CWarnings.create ~name:"redundant-clause" ~category:"ltac"
+  CWarnings.(create ~name:"redundant-clause" ~category:Ltac)
     (fun () -> strbrk "The following clause is redundant.")
 
 let check_elt_unit loc env t =

@@ -19,7 +19,7 @@ include Minisys
     warns if [root] does not exist *)
 
 let warn_cannot_open_dir =
-  CWarnings.create ~name:"cannot-open-dir" ~category:"filesystem"
+  CWarnings.(create ~name:"cannot-open-dir" ~category:Filesystem)
   (fun dir -> str ("Cannot open directory " ^ dir))
 
 let all_subdirs ~unix_path:root =
@@ -92,7 +92,7 @@ let rec search paths test =
   | lpe :: rem -> test lpe @ search rem test
 
 let warn_ambiguous_file_name =
-  CWarnings.create ~name:"ambiguous-file-name" ~category:"filesystem"
+  CWarnings.(create ~name:"ambiguous-file-name" ~category:Filesystem)
     (fun (filename,l,f) -> str filename ++ str " has been found in" ++ spc () ++
                 hov 0 (str "[ " ++
                          hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
@@ -140,7 +140,7 @@ let is_in_path lpath filename =
   with Not_found -> false
 
 let warn_path_not_found =
-  CWarnings.create ~name:"path-not-found" ~category:"filesystem"
+  CWarnings.(create ~name:"path-not-found" ~category:Filesystem)
   (fun () -> str "system variable PATH not found")
 
 let is_in_system_path filename =
@@ -157,7 +157,7 @@ let open_trapping_failure name =
     CErrors.user_err ~hdr:"System.open" (str "Can't open " ++ str name)
 
 let warn_cannot_remove_file =
-  CWarnings.create ~name:"cannot-remove-file" ~category:"filesystem"
+  CWarnings.(create ~name:"cannot-remove-file" ~category:Filesystem)
   (fun filename -> str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
 let try_remove filename =

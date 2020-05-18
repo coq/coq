@@ -69,9 +69,7 @@ let freeze_summaries ~marshallable : frozen =
 
 let warn_summary_out_of_scope =
   let name = "summary-out-of-scope" in
-  let category = "dev" in
-  let default = CWarnings.Disabled in
-  CWarnings.create ~name ~category ~default (fun name ->
+  CWarnings.(create ~name ~category:Dev ~default:Disabled) (fun name ->
     Pp.str (Printf.sprintf
       "A Coq plugin was loaded inside a local scope (such as a Section). It is recommended to load plugins at the start of the file. Summary entry: %s"
       name)

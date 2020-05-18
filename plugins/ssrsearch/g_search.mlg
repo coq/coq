@@ -302,9 +302,7 @@ let ssrdisplaysearch gr env t =
   Feedback.msg_notice (hov 2 pr_res ++ fnl ())
 
 let deprecated_search =
-  CWarnings.create
-    ~name:"deprecated-ssr-search"
-    ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-ssr-search" ~category:Deprecated)
     (fun () -> Pp.(str"SSReflect's Search command is deprecated."))
 
 }

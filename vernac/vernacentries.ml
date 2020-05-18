@@ -1228,7 +1228,7 @@ let vernac_end_segment ~pm ({v=id} as lid) =
 (* Libraries *)
 
 let warn_require_in_section =
-  CWarnings.create ~name:"require-in-section" ~category:"fragile"
+  CWarnings.(create ~name:"require-in-section" ~category:Fragile)
     (fun () -> strbrk "Use of “Require” inside a section is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
@@ -1397,7 +1397,7 @@ let vernac_create_hintdb ~module_local id b =
   Hints.create_hint_db module_local id TransparentState.full b
 
 let warn_implicit_core_hint_db =
-  CWarnings.create ~name:"implicit-core-hint-db" ~category:"deprecated"
+  CWarnings.(create ~name:"implicit-core-hint-db" ~category:Deprecated)
          (fun () -> strbrk "Adding and removing hints in the core database implicitly is deprecated. "
              ++ strbrk"Please specify a hint database.")
 

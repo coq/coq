@@ -29,7 +29,7 @@ let make_non_locality = function Some false -> false | _ -> true
 let make_locality = function Some true -> true | _ -> false
 
 let warn_local_declaration =
-  CWarnings.create ~name:"local-declaration" ~category:"scope"
+  CWarnings.(create ~name:"local-declaration" ~category:Scope)
     Pp.(fun () ->
         Pp.strbrk "Interpreting this declaration as if " ++
         strbrk "a global declaration prefixed by \"Local\", " ++

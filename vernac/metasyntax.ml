@@ -435,7 +435,7 @@ let make_hunks etyps symbols from_level =
 let error_format ?loc () = user_err ?loc Pp.(str "The format does not match the notation.")
 
 let warn_format_break =
-  CWarnings.create ~name:"notation-both-format-and-spaces" ~category:"parsing"
+  CWarnings.(create ~name:"notation-both-format-and-spaces" ~category:Parsing)
          (fun () ->
           strbrk "Discarding format implicitly indicated by multiple spaces in notation because an explicit format modifier is given.")
 
@@ -721,7 +721,7 @@ let error_parsing_incompatible_level ntn ntn' oldprec oldtyps prec typs =
     pr_level ntn prec typs ++ str ".")
 
 let warn_incompatible_format =
-  CWarnings.create ~name:"notation-incompatible-format" ~category:"parsing"
+  CWarnings.(create ~name:"notation-incompatible-format" ~category:Parsing)
     (fun (specific,ntn) ->
        let head,scope = match specific with
        | None -> str "Notation", mt ()
@@ -894,7 +894,7 @@ end
 
 (* To be turned into a fatal warning in 8.14 *)
 let warn_deprecated_ident_entry =
-  CWarnings.create ~name:"deprecated-ident-entry" ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-ident-entry" ~category:Deprecated)
          (fun () -> strbrk "grammar entry \"ident\" permitted \"_\" in addition to proper identifiers; this use is deprecated and its meaning will change in the future; use \"name\" instead.")
 
 let interp_modifiers modl = let open NotationMods in
@@ -1104,12 +1104,12 @@ let check_rule_productivity l =
     user_err Pp.(str "A recursive notation must start with at least one symbol.")
 
 let warn_notation_bound_to_variable =
-  CWarnings.create ~name:"notation-bound-to-variable" ~category:"parsing"
+  CWarnings.(create ~name:"notation-bound-to-variable" ~category:Parsing)
          (fun () ->
           strbrk "This notation will not be used for printing as it is bound to a single variable.")
 
 let warn_non_reversible_notation =
-  CWarnings.create ~name:"non-reversible-notation" ~category:"parsing"
+  CWarnings.(create ~name:"non-reversible-notation" ~category:Parsing)
          (function
           | APrioriReversible -> assert false
           | HasLtac ->
@@ -1349,7 +1349,7 @@ let compute_syntax_data ~local deprecation df modifiers =
   }
 
 let warn_only_parsing_reserved_notation =
-  CWarnings.create ~name:"irrelevant-reserved-notation-only-parsing" ~category:"parsing"
+  CWarnings.(create ~name:"irrelevant-reserved-notation-only-parsing" ~category:Parsing)
     (fun () -> strbrk "The only parsing modifier has no effect in Reserved Notation.")
 
 let compute_pure_syntax_data ~local df mods =
@@ -1522,7 +1522,7 @@ let make_parsing_rules (sd : SynData.syn_data) = let open SynData in
   }
 
 let warn_irrelevant_format =
-  CWarnings.create ~name:"irrelevant-format-only-parsing" ~category:"parsing"
+  CWarnings.(create ~name:"irrelevant-format-only-parsing" ~category:Parsing)
     (fun () -> str "The format modifier is irrelevant for only parsing rules.")
 
 let make_printing_rules reserved (sd : SynData.syn_data) = let open SynData in
@@ -1539,7 +1539,7 @@ let make_printing_rules reserved (sd : SynData.syn_data) = let open SynData in
   }
 
 let warn_unused_interpretation =
-  CWarnings.create ~name:"unused-notation" ~category:"parsing"
+  CWarnings.(create ~name:"unused-notation" ~category:Parsing)
          (fun b ->
           strbrk "interpretation is used neither for printing nor for parsing, " ++
           (if b then strbrk "the declaration could be replaced by \"Reserved Notation\"."
@@ -1816,7 +1816,7 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
 (* Declaration of custom entry                                        *)
 
 let warn_custom_entry =
-  CWarnings.create ~name:"custom-entry-overridden" ~category:"parsing"
+  CWarnings.(create ~name:"custom-entry-overridden" ~category:Parsing)
          (fun s ->
           strbrk "Custom entry " ++ str s ++ strbrk " has been overridden.")
 

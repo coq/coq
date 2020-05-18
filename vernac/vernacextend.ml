@@ -88,8 +88,7 @@ let vinterp_map s =
       (str"Cannot find vernac command " ++ str (fst s) ++ str".")
 
 let warn_deprecated_command =
-  let open CWarnings in
-  create ~name:"deprecated-command" ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-command" ~category:Deprecated)
          (fun pr -> str "Deprecated vernacular command: " ++ pr)
 
 (* Interpretation of a vernac command *)

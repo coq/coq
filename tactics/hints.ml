@@ -1188,7 +1188,7 @@ let create_hint_db l n st b =
   Lib.add_anonymous_leaf (inAutoHint hint)
 
 let warn_deprecated_hint_without_locality =
-  CWarnings.create ~name:"deprecated-hint-without-locality" ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-hint-without-locality" ~category:Deprecated)
     (fun () -> strbrk "The default value for hint locality is currently \
     \"local\" in a section and \"global\" otherwise, but is scheduled to change \
     in a future release. For the time being, adding hints outside of sections \
@@ -1581,7 +1581,7 @@ let log_hint h =
     Proofview.Unsafe.tclEVARS (set_extra_data store sigma)
 
 let warn_non_imported_hint =
-  CWarnings.create ~name:"non-imported-hint" ~category:"automation"
+  CWarnings.(create ~name:"non-imported-hint" ~category:Automation)
          (fun (hint,mp) ->
           strbrk "Hint used but not imported: " ++ hint ++ print_mp mp)
 

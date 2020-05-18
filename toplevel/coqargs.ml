@@ -190,11 +190,11 @@ let set_query opts q =
   }
 
 let warn_deprecated_sprop_cumul =
-  CWarnings.create ~name:"deprecated-spropcumul" ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-spropcumul" ~category:Deprecated)
          (fun () -> Pp.strbrk "Use the \"Cumulative StrictProp\" flag instead.")
 
 let warn_deprecated_inputstate =
-  CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-inputstate" ~category:Deprecated)
          (fun () -> Pp.strbrk "The inputstate option is deprecated and discouraged.")
 
 let set_inputstate opts s =
@@ -283,7 +283,7 @@ let parse_option_set opt =
     to_opt_key (String.sub opt 0 eqi), Some v
 
 let warn_no_native_compiler =
-  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
+  CWarnings.(create ~name:"native-compiler-disabled" ~category:Native_compiler)
     Pp.(fun s -> strbrk "Native compiler is disabled," ++
                    strbrk " -native-compiler " ++ strbrk s ++
                    strbrk " option ignored.")

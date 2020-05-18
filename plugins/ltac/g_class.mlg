@@ -110,8 +110,7 @@ END
 
 {
 let deprecated_autoapply_using =
-  CWarnings.create
-    ~name:"autoapply-using" ~category:"deprecated"
+  CWarnings.(create ~name:"autoapply-using" ~category:Deprecated)
     (fun () -> Pp.str "The syntax [autoapply ... using] is deprecated. Use [autoapply ... with] instead.")
 }
 

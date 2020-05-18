@@ -23,7 +23,7 @@ let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 (*** Parsing for float in digital notation ***)
 
 let warn_inexact_float =
-  CWarnings.create ~name:"inexact-float" ~category:"parsing"
+  CWarnings.(create ~name:"inexact-float" ~category:Parsing)
     (fun (sn, f) ->
       Pp.strbrk
         (Printf.sprintf

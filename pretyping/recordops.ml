@@ -186,7 +186,7 @@ let rec cs_pattern_of_constr env t =
   | _ -> Const_cs (fst @@ destRef t) , None, []
 
 let warn_projection_no_head_constant =
-  CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
+  CWarnings.(create ~name:"projection-no-head-constant" ~category:Typechecker)
          (fun (sign,env,t,ref,proji_sp) ->
           let env = Termops.push_rels_assum sign env in
           let con_pp = Nametab.pr_global_env Id.Set.empty ref in
@@ -243,7 +243,7 @@ let pr_cs_pattern = function
   | Sort_cs s -> Sorts.pr_sort_family s
 
 let warn_redundant_canonical_projection =
-  CWarnings.create ~name:"redundant-canonical-projection" ~category:"typechecker"
+  CWarnings.(create ~name:"redundant-canonical-projection" ~category:Typechecker)
          (fun (hd_val,prj,new_can_s,old_can_s) ->
           strbrk "Ignoring canonical projection to " ++ hd_val
           ++ strbrk " by " ++ prj ++ strbrk " in "

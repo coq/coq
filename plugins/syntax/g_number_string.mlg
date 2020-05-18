@@ -28,7 +28,7 @@ let pr_number_after = function
 let pr_deprecated_number_modifier m = str "(" ++ pr_number_after m ++ str ")"
 
 let warn_deprecated_numeral_notation =
-  CWarnings.create ~name:"numeral-notation" ~category:"deprecated"
+  CWarnings.(create ~name:"numeral-notation" ~category:Deprecated)
     (fun () ->
       strbrk "Numeral Notation is deprecated, please use Number Notation instead.")
 

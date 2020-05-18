@@ -121,8 +121,7 @@ let add_instance i =
 
 let warning_not_a_class =
   let name = "not-a-class" in
-  let category = "typeclasses" in
-  CWarnings.create ~name ~category (fun (n, ty) ->
+  CWarnings.(create ~name ~category:Typeclasses) (fun (n, ty) ->
       let env = Global.env () in
       let evd = Evd.from_env env in
       Pp.(str "Ignored instance declaration for “"

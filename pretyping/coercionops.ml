@@ -310,7 +310,7 @@ let install_path_comparator f = path_comparator := f
 let compare_path p q = !path_comparator p q
 
 let warn_ambiguous_path =
-  CWarnings.create ~name:"ambiguous-paths" ~category:"typechecker"
+  CWarnings.(create ~name:"ambiguous-paths" ~category:Typechecker)
     (fun l -> prlist_with_sep fnl (fun (c,p,q) ->
          str"New coercion path " ++ print_path (c,p) ++
          if List.is_empty q then

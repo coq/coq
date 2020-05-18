@@ -35,7 +35,7 @@ and pr_vernac_flag (s, arguments) =
   str s ++ (pr_vernac_flag_value arguments)
 
 let warn_unsupported_attributes =
-  CWarnings.create ~name:"unsupported-attributes" ~category:"parsing" ~default:CWarnings.AsError
+  CWarnings.(create ~name:"unsupported-attributes" ~category:Parsing ~default:AsError)
     (fun atts ->
        let keys = List.map fst atts in
        let keys = List.sort_uniq String.compare keys in
@@ -162,10 +162,10 @@ let legacy_bool_attribute ~name ~on ~off : bool option attribute =
 
 (* important note: we use on as the default for the new bool_attribute ! *)
 let deprecated_bool_attribute_warning =
-  CWarnings.create
+  CWarnings.(create
     ~name:"deprecated-attribute-syntax"
-    ~category:"parsing"
-    ~default:CWarnings.Enabled
+    ~category:Parsing
+    ~default:Enabled)
     (fun name ->
        Pp.(str "Syntax for switching off boolean attributes has been updated, use " ++ str name ++ str "=no instead."))
 

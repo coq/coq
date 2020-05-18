@@ -122,12 +122,12 @@ let rec add_vio_args peek next oval =
   else oval
 
 let warn_deprecated_outputstate =
-  CWarnings.create ~name:"deprecated-outputstate" ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-outputstate" ~category:Deprecated)
          (fun () ->
           Pp.strbrk "The outputstate option is deprecated and discouraged.")
 
 let warn_deprecated_quick =
-  CWarnings.create ~name:"deprecated-quick" ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-quick" ~category:Deprecated)
          (fun () ->
           Pp.strbrk "The -quick option is renamed -vio. Please consider using the -vos feature instead.")
 

@@ -152,10 +152,79 @@ let parse_flags s =
 let set_flags s =
   reset_default_warnings (); let s = parse_flags s in flags := s
 
+type category =
+  | Automation
+  | Bytecode_compiler
+  | Debug
+  | Deprecated
+  | Dev
+  | Extraction
+  | Filesystem
+  | Fixpoints
+  | Fragile
+  | Funind
+  | Implicits
+  | Loadpath
+  | Ltac
+  | Native_compiler
+  | Non_interactive
+  | Notation
+  | Numbers
+  | Option
+  | Parsing
+  | Pattern_matching
+  | Pedantic
+  | Records
+  | Require
+  | Schemes
+  | Scope
+  | Ssr
+  | Syntax
+  | Tactics
+  | Typechecker
+  | Typeclasses
+  | Vernacular
+  | Other of string
+
+let category_to_string = function
+  | Automation -> "automation"
+  | Bytecode_compiler -> "bytecode_compiler"
+  | Debug -> "debug"
+  | Deprecated -> "deprecated"
+  | Dev -> "dev"
+  | Extraction -> "extraction"
+  | Filesystem -> "filesystem"
+  | Fixpoints -> "fixpoints"
+  | Fragile -> "fragile"
+  | Funind -> "funind"
+  | Implicits -> "implicits"
+  | Loadpath -> "loadpath"
+  | Ltac -> "ltac"
+  | Native_compiler -> "native-compiler"
+  | Non_interactive -> "non-interactive"
+  | Notation -> "notation"
+  | Numbers -> "numbers"
+  | Option -> "option"
+  | Parsing -> "parsing"
+  | Pattern_matching -> "pattern-matching"
+  | Pedantic -> "pedantic"
+  | Records -> "records"
+  | Require -> "require"
+  | Schemes -> "schemes"
+  | Scope -> "scope"
+  | Ssr -> "ssr"
+  | Syntax -> "syntax"
+  | Tactics -> "tactics"
+  | Typechecker -> "typechecker"
+  | Typeclasses -> "typeclasses"
+  | Vernacular -> "vernacular"
+  | Other string -> string
+
 (* Adds a warning to the [warnings] and [category] tables. We then reparse the
    warning flags string, because the warning being created might have been set
    already. *)
 let create ~name ~category ?(default=Enabled) pp =
+  let category = category_to_string category in
   let pp x = let open Pp in
     pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
     str category ++ str "]"

@@ -246,7 +246,7 @@ let interp_place ist gl p =
 let subst_place subst pl = pl
 
 let warn_deprecated_instantiate_syntax =
-  CWarnings.create ~name:"deprecated-instantiate-syntax" ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-instantiate-syntax" ~category:Deprecated)
          (fun (v,v',id) ->
            let s = Id.to_string id in
            Pp.strbrk

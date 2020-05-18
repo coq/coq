@@ -139,7 +139,7 @@ let is_recursive mie =
   | _ -> false
 
 let warn_non_primitive_record =
-  CWarnings.create ~name:"non-primitive-record" ~category:"record"
+  CWarnings.(create ~name:"non-primitive-record" ~category:Records)
     (fun indsp ->
        Pp.(hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef indsp) ++
                   strbrk" could not be defined as a primitive record")))

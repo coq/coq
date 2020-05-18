@@ -1600,7 +1600,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
     ()
 
 let warn_funind_cannot_build_inversion =
-  CWarnings.create ~name:"funind-cannot-build-inversion" ~category:"funind"
+  CWarnings.(create ~name:"funind-cannot-build-inversion" ~category:Funind)
     Pp.(
       fun e' ->
         strbrk "Cannot build inversion information"
@@ -1858,12 +1858,12 @@ let do_generate_principle_aux pconstants on_error register_built
   lemma
 
 let warn_cannot_define_graph =
-  CWarnings.create ~name:"funind-cannot-define-graph" ~category:"funind"
+  CWarnings.(create ~name:"funind-cannot-define-graph" ~category:Funind)
     (fun (names, error) ->
       Pp.(strbrk "Cannot define graph(s) for " ++ hv 1 names ++ error))
 
 let warn_cannot_define_principle =
-  CWarnings.create ~name:"funind-cannot-define-principle" ~category:"funind"
+  CWarnings.(create ~name:"funind-cannot-define-principle" ~category:Funind)
     (fun (names, error) ->
       Pp.(
         strbrk "Cannot define induction principle(s) for " ++ hv 1 names ++ error))

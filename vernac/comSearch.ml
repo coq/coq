@@ -106,9 +106,7 @@ let () =
       optwrite = (:=) search_output_name_only }
 
 let deprecated_searchhead =
-  CWarnings.create
-    ~name:"deprecated-searchhead"
-    ~category:"deprecated"
+  CWarnings.(create ~name:"deprecated-searchhead" ~category:Deprecated)
     (fun () -> Pp.str("SearchHead is deprecated. Use the headconcl: clause of Search instead."))
 
 let interp_search env sigma s r =

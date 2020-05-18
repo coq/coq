@@ -559,7 +559,7 @@ let set_pattern_catch_all_var ?loc eqn = function
   | _ -> ()
 
 let warn_named_multi_catch_all =
-  CWarnings.create ~name:"unused-pattern-matching-variable" ~category:"pattern-matching"
+  CWarnings.(create ~name:"unused-pattern-matching-variable" ~category:Pattern_matching)
          (fun id ->
           strbrk "Unused variable " ++ Id.print id ++ strbrk " catches more than one case.")
 

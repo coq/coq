@@ -326,7 +326,7 @@ let mkGLambda ?loc (na,bk,t) body = DAst.make ?loc @@ GLambda (na, bk, t, body)
 (* Utilities for binders                                              *)
 
 let warn_shadowed_implicit_name =
-  CWarnings.create ~name:"shadowed-implicit-name" ~category:"syntax"
+  CWarnings.(create ~name:"shadowed-implicit-name" ~category:Syntax)
     Pp.(fun na -> str "Making shadowed name of implicit argument accessible by position.")
 
 let exists_name na l =
@@ -497,7 +497,7 @@ let restore_binders_impargs env l =
   List.fold_right pure_push_name_env l env
 
 let warn_ignoring_unexpected_implicit_binder_declaration =
-  CWarnings.create ~name:"unexpected-implicit-declaration" ~category:"syntax"
+  CWarnings.(create ~name:"unexpected-implicit-declaration" ~category:Syntax)
     Pp.(fun () -> str "Ignoring implicit binder declaration in unexpected position.")
 
 let check_implicit_meaningful ?loc k env =
@@ -1282,7 +1282,7 @@ let intern_qualid_for_pattern test_global intern_not qid pats =
     | None -> raise Not_found
 
 let warn_nonprimitive_projection =
-  CWarnings.create ~name:"nonprimitive-projection-syntax" ~category:"syntax" ~default:CWarnings.Disabled
+  CWarnings.(create ~name:"nonprimitive-projection-syntax" ~category:Syntax ~default:Disabled)
     Pp.(fun f -> pr_qualid f ++ str " used as a primitive projection but is not one.")
 
 let error_nonprojection_syntax ?loc qid =

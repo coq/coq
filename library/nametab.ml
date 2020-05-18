@@ -117,7 +117,7 @@ struct
      The argument X of the functor F is masked by the inner module X.
    *)
   let warn_masking_absolute =
-    CWarnings.create ~name:"masking-absolute-name" ~category:"deprecated"
+    CWarnings.(create ~name:"masking-absolute-name" ~category:Deprecated)
       (fun n -> str ("Trying to mask the absolute name \"" ^ U.to_string n ^ "\"!"))
 
   type user_name = U.t

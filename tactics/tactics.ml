@@ -1111,7 +1111,7 @@ let msg_quantified_hypothesis = function
       str " non dependent hypothesis"
 
 let warn_deprecated_intros_until_0 =
-  CWarnings.create ~name:"deprecated-intros-until-0" ~category:"tactics"
+  CWarnings.(create ~name:"deprecated-intros-until-0" ~category:Tactics)
     (fun () ->
        strbrk"\"intros until 0\" is deprecated, use \"intros *\"; instead of \"induction 0\" and \"destruct 0\" use explicitly a name.\"")
 
@@ -3082,7 +3082,7 @@ let unfold_body x =
   end
 
 let warn_cannot_remove_as_expected =
-  CWarnings.create ~name:"cannot-remove-as-expected" ~category:"tactics"
+  CWarnings.(create ~name:"cannot-remove-as-expected" ~category:Tactics)
          (fun (id,inglobal) ->
            let pp = match inglobal with
              | None -> mt ()
@@ -3135,7 +3135,7 @@ let expand_hyp id =
  *)
 
 let warn_unused_intro_pattern env sigma =
-  CWarnings.create ~name:"unused-intro-pattern" ~category:"tactics"
+  CWarnings.(create ~name:"unused-intro-pattern" ~category:Tactics)
     (fun names ->
        strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern") ++
        str": " ++ prlist_with_sep spc

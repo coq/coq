@@ -155,7 +155,7 @@ let init_scope_map () =
 (* Operations on scopes *)
 
 let warn_undeclared_scope =
-  CWarnings.create ~name:"undeclared-scope" ~category:"deprecated"
+  CWarnings.(create ~name:"undeclared-scope" ~category:Deprecated)
                    (fun (scope) ->
                     strbrk "Declaring a scope implicitly is deprecated; use in advance an explicit "
                     ++ str "\"Declare Scope " ++ str scope ++ str ".\".")
@@ -802,7 +802,7 @@ module Numbers = struct
 open PrimTokenNotation
 
 let warn_large_num =
-  CWarnings.create ~name:"large-number" ~category:"numbers"
+  CWarnings.(create ~name:"large-number" ~category:Numbers)
     (fun ty ->
       strbrk "Stack overflow or segmentation fault happens when " ++
       strbrk "working with large numbers in " ++ pr_qualid ty ++
@@ -810,7 +810,7 @@ let warn_large_num =
       strbrk " on your system limits and on the command executed).")
 
 let warn_abstract_large_num =
-  CWarnings.create ~name:"abstract-large-number" ~category:"numbers"
+  CWarnings.(create ~name:"abstract-large-number" ~category:Numbers)
     (fun (ty,f) ->
       strbrk "To avoid stack overflow, large numbers in " ++
       pr_qualid ty ++ strbrk " are interpreted as applications of " ++
@@ -1406,13 +1406,13 @@ let pr_optional_scope = function
   | NotationInScope scope -> spc () ++ strbrk "in scope" ++ spc () ++ str scope
 
 let warn_notation_overridden =
-  CWarnings.create ~name:"notation-overridden" ~category:"parsing"
+  CWarnings.(create ~name:"notation-overridden" ~category:Parsing)
                    (fun (scope,ntn) ->
                     str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
                     ++ strbrk "was already used" ++ pr_optional_scope scope ++ str ".")
 
 let warn_deprecation_overridden =
-  CWarnings.create ~name:"notation-overridden" ~category:"parsing"
+  CWarnings.(create ~name:"notation-overridden" ~category:Parsing)
                  (fun ((scope,ntn),old,now) ->
                   match old, now with
                   | None, None -> assert false
