@@ -1179,24 +1179,6 @@ Controlling Typing Flags
    :cmd:`Print Assumptions`. It has the same effect as `-type-in-type` command line
    argument (see :ref:`command-line-options`).
 
-.. flag:: Conversion Checking
-
-   This flag enables and disables checking of conversion
-   problems. Conversion tests which infer universe constraints (e.g.
-   those used by elaboration) are not affected. Disabling checking breaks the
-   consistency of the system and risks unsafe memory accesses (through
-   VM and native compute). Note that `coqchk` ignores this flag and
-   always checks conversions.
-
-   For instance :g:`0 : bool` is accepted. When a specific form is
-   expected (e.g. match discriminees need to have an inductive type, binder
-   annotations must have a sort type, application heads must have a
-   function type) an explicit cast may be needed. For instance :g:`0
-   0` is not accepted, but `(0 : bool -> bool) 0` is accepted.
-
-   Since the upper layer checks are not affected, you may need to work
-   around them (for instance using :tacn:`exact_no_check`) to use this flag.
-
 .. cmd:: Print Typing Flags
 
    Print the status of the typing flags described above, and also

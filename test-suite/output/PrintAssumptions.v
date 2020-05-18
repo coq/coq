@@ -162,11 +162,3 @@ Print Assumptions M7192.D.f.
 (* A regression introduced in the original fix to #7192 was missing implementations *)
 Require Import TestSuite.module_bug8416.
 Print Assumptions M8416.f.
-
-Module UnsetConv.
-
-  Unset Conversion Checking.
-  Definition hell : bool := ltac:(exact_no_check 0).
-  Print Assumptions hell.
-
-End UnsetConv.
