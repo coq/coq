@@ -8,7 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.12 *)
-
-Require Export Coq.Compat.Coq813.
-Set Firstorder Solver auto with *.
+(** Compatibility file for making Coq act similar to Coq v8.13 *)
