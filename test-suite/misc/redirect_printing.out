@@ -1,0 +1,2 @@
+nat_ind
+     : forall P : nat -> Prop, P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n

@@ -404,6 +404,7 @@ let with_output_to_file fname func input =
   let channel = open_out (String.concat "." [fname; "out"]) in
   let old_fmt = !std_ft, !err_ft, !deep_ft in
   let new_ft = Format.formatter_of_out_channel channel in
+  set_gp new_ft (get_gp !std_ft);
   std_ft := new_ft;
   err_ft := new_ft;
   deep_ft := new_ft;
@@ -412,6 +413,7 @@ let with_output_to_file fname func input =
     std_ft := Util.pi1 old_fmt;
     err_ft := Util.pi2 old_fmt;
     deep_ft := Util.pi3 old_fmt;
+    Format.pp_print_flush new_ft ();
     close_out channel;
     output
   with reraise ->
@@ -419,6 +421,7 @@ let with_output_to_file fname func input =
     std_ft := Util.pi1 old_fmt;
     err_ft := Util.pi2 old_fmt;
     deep_ft := Util.pi3 old_fmt;
+    Format.pp_print_flush new_ft ();
     close_out channel;
     Exninfo.iraise reraise
 
