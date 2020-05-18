@@ -117,7 +117,11 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output output-coqtop \
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile tools $(UNIT_TESTS)
 
-PREREQUISITELOG = $(addsuffix .log,$(wildcard prerequisite/*.v))
+.csdp.cache: .csdp.cache.test-suite
+	cp $< $@
+	chmod u+w $@
+
+PREREQUISITELOG = $(addsuffix .log,$(wildcard prerequisite/*.v)) .csdp.cache
 
 #######################################################################
 # Phony targets
@@ -470,6 +474,7 @@ approve-output: output output-coqtop
 output/MExtraction.out: ../plugins/micromega/micromega.ml
 	$(SHOW) GEN $@
 	$(HIDE) cp $< $@
+	$(HIDE) chmod u+w $@
 	$(HIDE) echo >> $@
 
 $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
