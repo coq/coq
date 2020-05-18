@@ -35,6 +35,9 @@ open Attributes
 
 let query_command = Entry.create "vernac:query_command"
 
+let search_query = Entry.create "vernac:search_query"
+let search_queries = Entry.create "vernac:search_queries"
+
 let subprf = Entry.create "vernac:subprf"
 
 let quoted_attributes = Entry.create "vernac:quoted_attributes"
@@ -819,7 +822,7 @@ GRAMMAR EXTEND Gram
 END
 
 GRAMMAR EXTEND Gram
-  GLOBAL: command query_command class_rawexpr gallina_ext;
+  GLOBAL: command query_command class_rawexpr gallina_ext search_query search_queries;
 
   gallina_ext:
     [ [ IDENT "Export"; "Set"; table = option_table; v = option_setting ->

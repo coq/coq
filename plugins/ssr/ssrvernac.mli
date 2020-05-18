@@ -9,3 +9,5 @@
 (************************************************************************)
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
+
+val warn_search_moved_enabled : bool ref
