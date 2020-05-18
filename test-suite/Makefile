@@ -281,8 +281,8 @@ OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
 
 # ML files from unit-test framework, not containing tests
-UNIT_SRCFILES:=$(shell find ./unit-tests/src -name *.ml)
-UNIT_ALLMLFILES:=$(shell find ./unit-tests -name *.ml)
+UNIT_SRCFILES:=$(shell find ./unit-tests/src -name '*.ml')
+UNIT_ALLMLFILES:=$(shell find ./unit-tests -name '*.ml')
 UNIT_MLFILES:=$(filter-out $(UNIT_SRCFILES),$(UNIT_ALLMLFILES))
 UNIT_LOGFILES:=$(patsubst %.ml,%.ml.log,$(UNIT_MLFILES))
 
@@ -310,11 +310,6 @@ unit-tests: $(UNIT_LOGFILES)
 unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
 	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coq.toplevel,oUnit \
-	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
-	$(HIDE)./$<.test
-unit-tests/ide/%.ml.log: unit-tests/ide/%.ml unit-tests/src/$(UNIT_LINK)
-	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coq.ide,oUnit \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)./$<.test
 
