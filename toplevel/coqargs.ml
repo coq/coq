@@ -263,6 +263,7 @@ let get_native_name s =
   with _ -> ""
 
 let get_compat_file = function
+  | "8.13" -> "Coq.Compat.Coq813"
   | "8.12" -> "Coq.Compat.Coq812"
   | "8.11" -> "Coq.Compat.Coq811"
   | "8.10" -> "Coq.Compat.Coq810"
