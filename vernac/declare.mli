@@ -439,13 +439,7 @@ module ProgramDecl : sig
     -> Names.Id.t list
     -> fixpoint_kind option
     -> Vernacexpr.decl_notation list
-    -> ( Names.Id.t
-       * Constr.types
-       * Evar_kinds.t Loc.located
-       * (bool * Evar_kinds.obligation_definition_status)
-       * Int.Set.t
-       * unit Proofview.tactic option )
-       array
+    -> RetrieveObl.obligation_info
     -> (Constr.constr -> Constr.constr)
     -> t
 
