@@ -446,13 +446,14 @@ module ProgramDecl : sig
   val set_uctx : uctx:UState.t -> t -> t
 end
 
-(** [declare_obligation] Save an obligation *)
+(** [declare_obligation prg obl ~uctx ~types ~body] Save an obligation
+   [obl] for program definition [prg] *)
 val declare_obligation :
      ProgramDecl.t
   -> Obligation.t
-  -> Constr.types
-  -> Constr.types option
-  -> Entries.universes_entry
+  -> uctx:UState.t
+  -> types:Constr.types option
+  -> body:Constr.types
   -> bool * Obligation.t
 
 module State : sig

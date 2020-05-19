@@ -53,7 +53,6 @@ module Error = struct
 
 end
 
-let assumption_message = Declare.assumption_message
 let default_tactic = ref (Proofview.tclUNIT ())
 
 let evar_of_obligation o = Evd.make_evar (Global.named_context_val ()) (EConstr.of_constr o.obl_type)
@@ -183,16 +182,15 @@ and solve_obligation_by_tac prg obls i tac =
         match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac
                 prg.prg_poly (Evd.evar_universe_context evd) with
         | None -> None
-        | Some (t, ty, ctx) ->
-          let prg = ProgramDecl.set_uctx ~uctx:ctx prg in
+        | Some (t, ty, uctx) ->
+          let prg = ProgramDecl.set_uctx ~uctx prg in
           (* Why is uctx not used above? *)
-          let uctx = UState.univ_entry ~poly:prg.prg_poly ctx in
-          let def, obl' = declare_obligation prg obl t ty uctx in
+          let def, obl' = declare_obligation prg obl ~body:t ~types:ty ~uctx in
           obls.(i) <- obl';
           if def && not prg.prg_poly then (
             (* Declare the term constraints with the first obligation only *)
-            let uctx = UState.from_env (Global.env ()) in
-            let uctx = UState.merge_subst uctx (UState.subst ctx) in
+            let uctx_global = UState.from_env (Global.env ()) in
+            let uctx = UState.merge_subst uctx_global (UState.subst uctx) in
             Some (ProgramDecl.set_uctx ~uctx prg))
           else Some prg
       else None
@@ -372,7 +370,7 @@ let admit_prog prg =
             let kn = Declare.declare_constant ~name:x.obl_name ~local:Declare.ImportNeedQualified
               (Declare.ParameterEntry (None, (x.obl_type, ctx), None)) ~kind:Decls.(IsAssumption Conjectural)
             in
-              assumption_message x.obl_name;
+              Declare.assumption_message x.obl_name;
               obls.(i) <- Obligation.set_body ~body:(DefinedObl (kn, Univ.Instance.empty)) x
         | Some _ -> ())
       obls;
