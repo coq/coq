@@ -15,5 +15,5 @@ let build_by_tactic ?side_eff env ~uctx ~poly ~typ tac =
   b, t, safe, uctx
 [@@ocaml.deprecated "Use [Proof.build_by_tactic]"]
 
-let build_constant_by_tactic = Declare.build_constant_by_tactic
+let build_constant_by_tactic = Declare.build_constant_by_tactic [@ocaml.warning "-3"]
 [@@ocaml.deprecated "Use [Proof.build_constant_by_tactic]"]

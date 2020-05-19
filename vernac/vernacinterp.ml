@@ -225,9 +225,9 @@ let interp_qed_delayed ~proof ~info ~st pe : Vernacstate.LemmaStack.t option =
   let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
   let () = match pe with
     | Admitted ->
-      Lemmas.save_lemma_admitted_delayed ~proof ~info
+      Declare.save_lemma_admitted_delayed ~proof ~info
     | Proved (_,idopt) ->
-      Lemmas.save_lemma_proved_delayed ~proof ~info ~idopt in
+      Declare.save_lemma_proved_delayed ~proof ~info ~idopt in
   stack
 
 let interp_qed_delayed_control ~proof ~info ~st ~control { CAst.loc; v=pe } =

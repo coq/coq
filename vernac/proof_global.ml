@@ -10,3 +10,4 @@ let get_proof = Declare.Proof.get_proof
 type opacity_flag = Declare.opacity_flag =
   | Opaque [@ocaml.deprecated "Use [Declare.Opaque]"]
   | Transparent [@ocaml.deprecated "Use [Declare.Transparent]"]
+[@@ocaml.deprecated "Use [Declare.opacity_flag]"]

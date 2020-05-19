@@ -202,7 +202,7 @@ let mkTransCmd cast cids ceff cqueue =
 (* Parts of the system state that are morally part of the proof state *)
 let summary_pstate = Evarutil.meta_counter_summary_tag,
                      Evd.evar_counter_summary_tag,
-                     DeclareObl.program_tcc_summary_tag
+                     Declare.Obls.State.prg_tag
 
 type cached_state =
   | EmptyState
@@ -878,7 +878,7 @@ end = struct (* {{{ *)
     Vernacstate.LemmaStack.t option *
     int *                                   (* Evarutil.meta_counter_summary_tag *)
     int *                                   (* Evd.evar_counter_summary_tag *)
-    DeclareObl.ProgramDecl.t CEphemeron.key Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
+    Declare.Obls.State.t
 
   type partial_state =
     [ `Full of Vernacstate.t
@@ -1684,7 +1684,9 @@ end = struct (* {{{ *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
       ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc ~control:[] (Proved (opaque,None)));
-      `OK proof
+      (* Is this name the same than the one in scope? *)
+      let name = Declare.get_po_name proof in
+      `OK name
       end
     with e ->
       let (e, info) = Exninfo.capture e in
@@ -1723,7 +1725,7 @@ end = struct (* {{{ *)
     | `ERROR -> exit 1
     | `ERROR_ADMITTED -> cst, false
     | `OK_ADMITTED -> cst, false
-    | `OK { Declare.name } ->
+    | `OK name ->
         let con = Nametab.locate_constant (Libnames.qualid_of_ident name) in
         let c = Global.lookup_constant con in
         let o = match c.Declarations.const_body with
@@ -3308,7 +3310,7 @@ let unreachable_state_hook = Hooks.unreachable_state_hook
 let document_add_hook = Hooks.document_add_hook
 let document_edit_hook = Hooks.document_edit_hook
 let sentence_exec_hook = Hooks.sentence_exec_hook
-let () = Hook.set DeclareObl.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
+let () = Declare.Obls.stm_get_fix_exn := (fun () -> !State.fix_exn_ref)
 
 type document = VCS.vcs
 let backup () = VCS.backup ()

@@ -17,9 +17,9 @@ open Entries
    environment. It also updates some accesory tables such as [Nametab]
    (name resolution), [Impargs], and [Notations]. *)
 
-(** We provide two kind of fuctions:
+(** We provide two kind of functions:
 
-  - one go functions, that will register a constant in one go, suited
+  - one-go functions, that will register a constant in one go, suited
    for non-interactive definitions where the term is given.
 
   - two-phase [start/declare] functions which will create an
@@ -28,6 +28,13 @@ open Entries
 
   Internally, these functions mainly differ in that usually, the first
   case doesn't require setting up the tactic engine.
+
+  Note that the API in this file is still in a state of flux, don't
+  hesitate to contact the maintainers if you have any question.
+
+  Additionally, this file does contain some low-level functions, marked
+  as such; these functions are unstable and should not be used unless you
+  already know what they are doing.
 
  *)
 
@@ -40,11 +47,6 @@ module Proof : sig
      lemmas is merged here *)
   val get_proof : t -> Proof.t
   val get_proof_name : t -> Names.Id.t
-
-  (** XXX: These 3 are only used in lemmas  *)
-  val get_used_variables : t -> Names.Id.Set.t option
-  val get_universe_decl : t -> UState.universe_decl
-  val get_initial_euctx : t -> UState.t
 
   val map_proof : (Proof.t -> Proof.t) -> t -> t
   val map_fold_proof : (Proof.t -> Proof.t * 'a) -> t -> t * 'a
@@ -97,39 +99,33 @@ val start_dependent_proof
 (** Proof entries represent a proof that has been finished, but still
    not registered with the kernel.
 
-   XXX: Scheduled for removal from public API, don't rely on it *)
-type 'a proof_entry = private {
-  proof_entry_body   : 'a Entries.const_entry_body;
-  (* List of section variables *)
-  proof_entry_secctx : Id.Set.t option;
-  (* State id on which the completion of type checking is reported *)
-  proof_entry_feedback : Stateid.t option;
-  proof_entry_type        : Constr.types option;
-  proof_entry_universes   : Entries.universes_entry;
-  proof_entry_opaque      : bool;
-  proof_entry_inline_code : bool;
-}
+   XXX: This is an internal, low-level API and could become scheduled
+   for removal from the public API, use higher-level declare APIs
+   instead *)
+type 'a proof_entry
 
-(** XXX: Scheduled for removal from public API, don't rely on it *)
-type proof_object = private
-  { name : Names.Id.t
-  (** name of the proof *)
-  ; entries : Evd.side_effects proof_entry list
-  (** list of the proof terms (in a form suitable for definitions). *)
-  ; uctx: UState.t
-  (** universe state *)
-  }
+(** XXX: This is an internal, low-level API and could become scheduled
+   for removal from the public API, use higher-level declare APIs
+   instead *)
+type proof_object
+
+(** Used by the STM only to store info, should go away *)
+val get_po_name : proof_object -> Id.t
 
 val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Proof.t -> proof_object
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
-(** XXX: Scheduled for removal from public API, don't rely on it *)
+(** XXX: This is an internal, low-level API and could become scheduled
+   for removal from the public API, use higher-level declare APIs
+   instead *)
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects proof_entry
   | SectionLocalAssum of { typ:types; impl:Glob_term.binding_kind; }
 
-(** XXX: Scheduled for removal from public API, don't rely on it *)
+(** XXX: This is an internal, low-level API and could become scheduled
+   for removal from the public API, use higher-level declare APIs
+   instead *)
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry
   | ParameterEntry of parameter_entry
@@ -144,7 +140,9 @@ val declare_variable
 (** Declaration of global constructions
    i.e. Definition/Theorem/Axiom/Parameter/...
 
-   XXX: Scheduled for removal from public API, use `DeclareDef` instead *)
+   XXX: This is an internal, low-level API and could become scheduled
+   for removal from the public API, use higher-level declare APIs
+   instead *)
 val definition_entry
   : ?fix_exn:Future.fix_exn
   -> ?opaque:bool
@@ -160,7 +158,7 @@ val definition_entry
   -> constr
   -> Evd.side_effects proof_entry
 
-type import_status = ImportDefaultBehavior | ImportNeedQualified
+type import_status = Locality.import_status = ImportDefaultBehavior | ImportNeedQualified
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
@@ -169,24 +167,15 @@ type import_status = ImportDefaultBehavior | ImportNeedQualified
   internal specify if the constant has been created by the kernel or by the
   user, and in the former case, if its errors should be silent
 
-  XXX: Scheduled for removal from public API, use `DeclareDef` instead *)
+  XXX: This is an internal, low-level API and could become scheduled
+  for removal from the public API, use higher-level declare APIs
+  instead *)
 val declare_constant
   :  ?local:import_status
   -> name:Id.t
   -> kind:Decls.logical_kind
   -> Evd.side_effects constant_entry
   -> Constant.t
-
-(** [inline_private_constants ~sideff ~uctx env ce] will inline the
-   constants in [ce]'s body and return the body plus the updated
-   [UState.t].
-
-   XXX: Scheduled for removal from public API, don't rely on it *)
-val inline_private_constants
-  :  uctx:UState.t
-  -> Environ.env
-  -> Evd.side_effects proof_entry
-  -> Constr.t * UState.t
 
 (** Declaration messages *)
 
@@ -200,13 +189,6 @@ val check_exists : Id.t -> unit
 (** {6 For legacy support, do not use}  *)
 
 module Internal : sig
-
-  val map_entry_body : f:('a Entries.proof_output -> 'b Entries.proof_output) -> 'a proof_entry -> 'b proof_entry
-  val map_entry_type : f:(Constr.t option -> Constr.t option) -> 'a proof_entry -> 'a proof_entry
-  (* Overriding opacity is indeed really hacky *)
-  val set_opacity : opaque:bool -> 'a proof_entry -> 'a proof_entry
-
-  val shrink_entry : EConstr.named_context -> 'a proof_entry -> 'a proof_entry * Constr.constr list
 
   type constant_obj
 
@@ -233,6 +215,7 @@ val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output
     Returns [false] if an unsafe tactic has been used. *)
 val by : unit Proofview.tactic -> Proof.t -> Proof.t * bool
 
+(** Semantics of this function is a bit dubious, use with care *)
 val build_by_tactic
   :  ?side_eff:bool
   -> Environ.env
@@ -260,7 +243,7 @@ val get_current_goal_context : Proof.t -> Evd.evar_map * Environ.env
   environment and empty evar_map. *)
 val get_current_context : Proof.t -> Evd.evar_map * Environ.env
 
-(** Temporarily re-exported for 3rd party code; don't use  *)
+(** XXX: Temporarily re-exported for 3rd party code; don't use  *)
 val build_constant_by_tactic :
   name:Names.Id.t ->
   ?opaque:opacity_flag ->
@@ -270,11 +253,12 @@ val build_constant_by_tactic :
   EConstr.types ->
   unit Proofview.tactic ->
   Evd.side_effects proof_entry * bool * UState.t
+[@@ocaml.deprecated "This function is deprecated, used newer API in declare"]
 
 val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
 [@@ocaml.deprecated "Use DeclareUctx.declare_universe_context"]
 
-type locality = Discharge | Global of import_status
+type locality = Locality.locality = Discharge | Global of import_status
 
 (** Declaration hooks *)
 module Hook : sig
@@ -303,7 +287,9 @@ module Hook : sig
   val call : ?hook:t -> S.t -> unit
 end
 
-(** Declare an interactively-defined constant *)
+(** XXX: This is an internal, low-level API and could become scheduled
+    for removal from the public API, use higher-level declare APIs
+    instead *)
 val declare_entry
   :  name:Id.t
   -> scope:locality
@@ -361,6 +347,8 @@ module Recthm : sig
     }
 end
 
+type lemma_possible_guards = int list list
+
 val declare_mutually_recursive
   : opaque:bool
   -> scope:locality
@@ -370,13 +358,14 @@ val declare_mutually_recursive
   -> udecl:UState.universe_decl
   -> ntns:Vernacexpr.decl_notation list
   -> rec_declaration:Constr.rec_declaration
-  -> possible_indexes:int list list option
+  -> possible_indexes:lemma_possible_guards option
   -> ?restrict_ucontext:bool
   (** XXX: restrict_ucontext should be always true, this seems like a
      bug in obligations, so this parameter should go away *)
   -> Recthm.t list
   -> Names.GlobRef.t list
 
+(** Prepare API, to be removed once we provide the corresponding 1-step API *)
 val prepare_obligation
   :  ?opaque:bool
   -> ?inline:bool
@@ -397,3 +386,214 @@ val prepare_parameter
 
 (* Compat: will remove *)
 exception AlreadyDeclared of (string option * Names.Id.t)
+
+module Obls : sig
+
+type 'a obligation_body = DefinedObl of 'a | TermObl of constr
+
+module Obligation : sig
+  type t = private
+    { obl_name : Id.t
+    ; obl_type : types
+    ; obl_location : Evar_kinds.t Loc.located
+    ; obl_body : pconstant obligation_body option
+    ; obl_status : bool * Evar_kinds.obligation_definition_status
+    ; obl_deps : Int.Set.t
+    ; obl_tac : unit Proofview.tactic option }
+
+  val set_type : typ:Constr.types -> t -> t
+  val set_body : body:pconstant obligation_body -> t -> t
+end
+
+type obligations = {obls : Obligation.t array; remaining : int}
+type fixpoint_kind = IsFixpoint of lident option list | IsCoFixpoint
+
+(* Information about a single [Program {Definition,Lemma,..}] declaration *)
+module ProgramDecl : sig
+  type t = private
+    { prg_name : Id.t
+    ; prg_body : constr
+    ; prg_type : constr
+    ; prg_ctx : UState.t
+    ; prg_univdecl : UState.universe_decl
+    ; prg_obligations : obligations
+    ; prg_deps : Id.t list
+    ; prg_fixkind : fixpoint_kind option
+    ; prg_implicits : Impargs.manual_implicits
+    ; prg_notations : Vernacexpr.decl_notation list
+    ; prg_poly : bool
+    ; prg_scope : locality
+    ; prg_kind : Decls.definition_object_kind
+    ; prg_reduce : constr -> constr
+    ; prg_hook : Hook.t option
+    ; prg_opaque : bool }
+
+  val make :
+       ?opaque:bool
+    -> ?hook:Hook.t
+    -> Names.Id.t
+    -> udecl:UState.universe_decl
+    -> uctx:UState.t
+    -> impargs:Impargs.manual_implicits
+    -> poly:bool
+    -> scope:locality
+    -> kind:Decls.definition_object_kind
+    -> Constr.constr option
+    -> Constr.types
+    -> Names.Id.t list
+    -> fixpoint_kind option
+    -> Vernacexpr.decl_notation list
+    -> ( Names.Id.t
+       * Constr.types
+       * Evar_kinds.t Loc.located
+       * (bool * Evar_kinds.obligation_definition_status)
+       * Int.Set.t
+       * unit Proofview.tactic option )
+       array
+    -> (Constr.constr -> Constr.constr)
+    -> t
+
+  val set_uctx : uctx:UState.t -> t -> t
+end
+
+(** [declare_obligation] Save an obligation *)
+val declare_obligation :
+     ProgramDecl.t
+  -> Obligation.t
+  -> Constr.types
+  -> Constr.types option
+  -> Entries.universes_entry
+  -> bool * Obligation.t
+
+module State : sig
+
+  val num_pending : unit -> int
+  val first_pending : unit -> ProgramDecl.t option
+
+  (** Returns [Error duplicate_list] if not a single program is open *)
+  val get_unique_open_prog :
+    Id.t option -> (ProgramDecl.t, Id.t list) result
+
+  (** Add a new obligation *)
+  val add : Id.t -> ProgramDecl.t -> unit
+
+  val fold : f:(Id.t -> ProgramDecl.t -> 'a -> 'a) -> init:'a -> 'a
+
+  val all : unit -> ProgramDecl.t list
+
+  val find : Id.t -> ProgramDecl.t option
+
+  (* Internal *)
+  type t
+  val prg_tag : t Summary.Dyn.tag
+end
+
+val declare_definition : ProgramDecl.t -> Names.GlobRef.t
+
+(** Resolution status of a program *)
+type progress =
+  | Remain of int  (** n obligations remaining *)
+  | Dependent  (** Dependent on other definitions *)
+  | Defined of GlobRef.t  (** Defined as id *)
+
+type obligation_resolver =
+     Id.t option
+  -> Int.Set.t
+  -> unit Proofview.tactic option
+  -> progress
+
+type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
+
+(** [update_obls prg obls n progress] What does this do? *)
+val update_obls :
+  ProgramDecl.t -> Obligation.t array -> int -> progress
+
+(** Check obligations are properly solved before closing the
+   [what_for] section / module *)
+val check_solved_obligations : what_for:Pp.t -> unit
+
+(** { 2 Util }  *)
+
+val obl_substitution :
+     bool
+  -> Obligation.t array
+  -> Int.Set.t
+  -> (Id.t * (Constr.types * Constr.types)) list
+
+val dependencies : Obligation.t array -> int -> Int.Set.t
+val err_not_transp : unit -> unit
+
+(* This is a hack to make it possible for Obligations to craft a Qed
+ * behind the scenes.  The fix_exn the Stm attaches to the Future proof
+ * is not available here, so we provide a side channel to get it *)
+val stm_get_fix_exn : (unit -> Exninfo.iexn -> Exninfo.iexn) ref
+
+end
+
+(** Creating high-level proofs with an associated constant *)
+module Proof_ending : sig
+
+  type t =
+    | Regular
+    | End_obligation of Obls.obligation_qed_info
+    | End_derive of { f : Id.t; name : Id.t }
+    | End_equations of
+        { hook : Constant.t list -> Evd.evar_map -> unit
+        ; i : Id.t
+        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+        ; sigma : Evd.evar_map
+        }
+
+end
+
+module Info : sig
+  type t
+  val make
+    :  ?hook: Hook.t
+    (** Callback to be executed at the end of the proof *)
+    -> ?proof_ending : Proof_ending.t
+    (** Info for special constants *)
+    -> ?scope : locality
+    (** locality  *)
+    -> ?kind:Decls.logical_kind
+    (** Theorem, etc... *)
+    -> ?compute_guard:lemma_possible_guards
+    -> ?thms:Recthm.t list
+    (** Both of those are internal, used by the upper layers but will
+       become handled natively here in the future *)
+    -> unit
+    -> t
+
+  (* Internal; used to initialize non-mutual proofs *)
+  val add_first_thm :
+    info:t
+    -> name:Id.t
+    -> typ:EConstr.t
+    -> impargs:Impargs.manual_implicits
+    -> t
+end
+
+val save_lemma_proved
+  : proof:Proof.t
+  -> info:Info.t
+  -> opaque:opacity_flag
+  -> idopt:Names.lident option
+  -> unit
+
+val save_lemma_admitted :
+     proof:Proof.t
+  -> info:Info.t
+  -> unit
+
+(** Special cases for delayed proofs, in this case we must provide the
+   proof information so the proof won't be forced. *)
+val save_lemma_admitted_delayed :
+     proof:proof_object
+  -> info:Info.t
+  -> unit
+
+val save_lemma_proved_delayed
+  : proof:proof_object
+  -> info:Info.t
+  -> idopt:Names.lident option
+  -> unit

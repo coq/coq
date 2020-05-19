@@ -273,7 +273,7 @@ let collect_evars_of_term evd c ty =
   evars (Evd.from_ctx (Evd.evar_universe_context evd))
 
 let do_program_recursive ~scope ~poly fixkind fixl =
-  let cofix = fixkind = DeclareObl.IsCoFixpoint in
+  let cofix = fixkind = Declare.Obls.IsCoFixpoint in
   let (env, rec_sign, udecl, evd), fix, info =
     interp_recursive ~cofix ~program_mode:true fixl
   in
@@ -314,8 +314,8 @@ let do_program_recursive ~scope ~poly fixkind fixl =
   end in
   let uctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
-  | DeclareObl.IsFixpoint _ -> Decls.Fixpoint
-  | DeclareObl.IsCoFixpoint -> Decls.CoFixpoint
+  | Declare.Obls.IsFixpoint _ -> Decls.Fixpoint
+  | Declare.Obls.IsCoFixpoint -> Decls.CoFixpoint
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
   Obligations.add_mutual_definitions defs ~poly ~scope ~kind ~udecl ~uctx ntns fixkind
@@ -345,7 +345,7 @@ let do_fixpoint ~scope ~poly l =
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
       let annots = List.map (fun fix ->
           Vernacexpr.(ComFixpoint.adjust_rec_order ~structonly:true fix.binders fix.rec_order)) l in
-      let fixkind = DeclareObl.IsFixpoint annots in
+      let fixkind = Declare.Obls.IsFixpoint annots in
       let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
       do_program_recursive ~scope ~poly fixkind l
 
@@ -355,4 +355,4 @@ let do_fixpoint ~scope ~poly l =
 
 let do_cofixpoint ~scope ~poly fixl =
   let fixl = List.map (fun fix -> { fix with Vernacexpr.rec_order = None }) fixl in
-  do_program_recursive ~scope ~poly DeclareObl.IsCoFixpoint fixl
+  do_program_recursive ~scope ~poly Declare.Obls.IsCoFixpoint fixl
