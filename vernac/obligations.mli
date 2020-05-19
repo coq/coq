@@ -52,13 +52,9 @@ open Constr
 {2} Saving of obligations: as open obligations use the regular proof
    mode, a `Qed` will call `Lemmas.save_lemma` first. For this reason
    obligations code is split in two: this file, [Obligations], taking
-   care of the top-level vernac commands, and [DeclareObl], which is
+   care of the top-level vernac commands, and [Declare], which is
    called by `Lemmas` to close an obligation proof and eventually to
    declare the top-level [Program]ed constant.
-
-    There is little obligations-specific code in [DeclareObl], so
-   eventually that file should be integrated in the regular [Declare]
-   path, as it gains better support for "dependent_proofs".
 
  *)
 

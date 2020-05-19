@@ -1033,8 +1033,6 @@ let declare_definition_scheme ~internal ~univs ~role ~name c =
 let _ = Ind_tables.declare_definition_scheme := declare_definition_scheme
 let _ = Abstract.declare_abstract := declare_abstract
 
-let declare_universe_context = DeclareUctx.declare_universe_context
-
 type locality = Locality.locality = | Discharge | Global of import_status
 
 module CInfo = struct

@@ -174,7 +174,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
       uvars, (coe,t,imps))
       Univ.LSet.empty l
   in
-  (* XXX: Using `DeclareDef.prepare_parameter` here directly is not
+  (* XXX: Using `Declare.prepare_parameter` here directly is not
      possible as we indeed declare several parameters; however,
      restrict_universe_context should be called in a centralized place
      IMO, thus I think we should adapt `prepare_parameter` to handle
@@ -202,7 +202,7 @@ let context_insection sigma ~poly ctx =
           else Monomorphic_entry Univ.ContextSet.empty
         in
         let entry = Declare.definition_entry ~univs ~types:t b in
-        (* XXX Fixme: Use DeclareDef.prepare_definition *)
+        (* XXX Fixme: Use Declare.prepare_definition *)
         let uctx = Evd.evar_universe_context sigma in
         let kind = Decls.(IsDefinition Definition) in
         let _ : GlobRef.t =

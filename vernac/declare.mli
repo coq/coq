@@ -280,7 +280,7 @@ val fixpoint_message : int array option -> Id.t list -> unit
 
 val check_exists : Id.t -> unit
 
-(** {6 For legacy support, do not use}  *)
+(** {6 For internal support, do not use}  *)
 
 module Internal : sig
 
@@ -336,21 +336,6 @@ val get_current_goal_context : Proof.t -> Evd.evar_map * Environ.env
   If there is no pending proof then it returns the current global
   environment and empty evar_map. *)
 val get_current_context : Proof.t -> Evd.evar_map * Environ.env
-
-(** XXX: Temporarily re-exported for 3rd party code; don't use  *)
-val build_constant_by_tactic :
-  name:Names.Id.t ->
-  ?opaque:opacity_flag ->
-  uctx:UState.t ->
-  sign:Environ.named_context_val ->
-  poly:bool ->
-  EConstr.types ->
-  unit Proofview.tactic ->
-  Evd.side_effects proof_entry * bool * UState.t
-[@@ocaml.deprecated "This function is deprecated, used newer API in declare"]
-
-val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
-[@@ocaml.deprecated "Use DeclareUctx.declare_universe_context"]
 
 type locality = Locality.locality = Discharge | Global of import_status
 
