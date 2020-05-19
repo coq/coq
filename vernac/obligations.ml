@@ -125,7 +125,7 @@ let get_unique_prog prg =
 
 let rec solve_obligation prg num tac =
   let user_num = succ num in
-  let { obls; remaining=rem } = prg.prg_obligations in
+  let { obls; remaining=rem } = Internal.get_obligations prg in
   let obl = obls.(num) in
   let remaining = deps_remaining obls obl.obl_deps in
   let () =
@@ -137,12 +137,12 @@ let rec solve_obligation prg num tac =
   let obl = subst_deps_obl obls obl in
   let scope = Declare.(Global Declare.ImportNeedQualified) in
   let kind = kind_of_obligation (snd obl.obl_status) in
-  let evd = Evd.from_ctx prg.prg_uctx in
+  let evd = Evd.from_ctx (Internal.get_uctx prg) in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
   let proof_ending =
-    Declare.Proof_ending.End_obligation
-      {Declare.name = prg.prg_name; num; auto}
+    let name = Internal.get_name prg in
+    Declare.Proof_ending.End_obligation {Declare.name; num; auto}
   in
   let info = Declare.Info.make ~proof_ending ~scope ~kind () in
   let poly = Internal.get_poly prg in
@@ -154,7 +154,7 @@ let rec solve_obligation prg num tac =
 and obligation (user_num, name, typ) tac =
   let num = pred user_num in
   let prg = get_unique_prog name in
-  let { obls; remaining } = prg.prg_obligations in
+  let { obls; remaining } = Internal.get_obligations prg in
   if num >= 0 && num < Array.length obls then
     let obl = obls.(num) in
     match obl.obl_body with
@@ -195,7 +195,7 @@ and solve_obligation_by_tac prg obls i tac =
       else None
 
 and solve_prg_obligations prg ?oblset tac =
-  let { obls; remaining } = prg.prg_obligations in
+  let { obls; remaining } = Internal.get_obligations prg in
   let rem = ref remaining in
   let obls' = Array.copy obls in
   let set = ref Int.Set.empty in
@@ -230,7 +230,7 @@ and solve_all_obligations tac =
 
 and try_solve_obligation n prg tac =
   let prg = get_unique_prog prg in
-  let {obls; remaining } = prg.prg_obligations in
+  let {obls; remaining} = Internal.get_obligations prg in
   let obls' = Array.copy obls in
   match solve_obligation_by_tac prg obls' n tac with
   | Some prg' ->
@@ -248,8 +248,6 @@ and auto_solve_obligations n ?oblset tac : Declare.progress =
   let prg = get_unique_prog n in
   solve_prg_obligations prg ?oblset tac
 
-open Pp
-
 let show_single_obligation i n obls x =
   let x = subst_deps_obl obls x in
   let env = Global.env () in
@@ -263,8 +261,8 @@ let show_single_obligation i n obls x =
   Feedback.msg_info msg
 
 let show_obligations_of_prg ?(msg = true) prg =
-  let n = prg.prg_name in
-  let {obls; remaining} = prg.prg_obligations in
+  let n = Internal.get_name prg in
+  let {obls; remaining} = Internal.get_obligations prg in
   let showed = ref 5 in
     if msg then Feedback.msg_info (int remaining ++ str " obligation(s) remaining: ");
     Array.iteri
@@ -292,13 +290,7 @@ let show_obligations ?(msg = true) n =
 
 let show_term n =
   let prg = get_unique_prog n in
-  let n = prg.prg_name in
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  Id.print n ++ spc () ++ str ":" ++ spc ()
-  ++ Printer.pr_constr_env env sigma prg.prg_type
-  ++ spc () ++ str ":=" ++ fnl ()
-  ++ Printer.pr_constr_env env sigma prg.prg_body
+  ProgramDecl.show prg
 
 let msg_generating_obl name obls =
   let len = Array.length obls in
@@ -318,7 +310,7 @@ let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
     let info = Declare.CInfo.make ~poly ~opaque ~udecl ~impargs ~scope ~kind ?hook () in
     ProgramDecl.make name ~info ~body:term ~types:t ~uctx ~reduce ~ntns:[] ~deps:[] None obls
   in
-  let {obls;_} = prg.prg_obligations in
+  let {obls;_} = Internal.get_obligations prg in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose (msg_generating_obl name) obls;
     let cst = Declare.Obls.declare_definition prg in
@@ -366,7 +358,7 @@ let add_mutual_definitions l ~uctx ?(udecl = UState.default_univ_decl)
   pm
 
 let admit_prog prg =
-  let {obls; remaining} = prg.prg_obligations in
+  let {obls; remaining} = Internal.get_obligations prg in
   let obls = Array.copy obls in
     Array.iteri
       (fun i x ->
@@ -406,7 +398,7 @@ let next_obligation n tac =
     | None -> State.first_pending () |> Option.get
     | Some _ -> get_unique_prog n
   in
-  let {obls; remaining} = prg.prg_obligations in
+  let {obls; remaining} = Internal.get_obligations prg in
   let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
   let i = match Array.findi is_open obls with
     | Some i -> i

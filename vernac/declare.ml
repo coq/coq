@@ -1273,10 +1273,21 @@ module ProgramDecl = struct
     ; prg_notations = ntns
     ; prg_reduce = reduce }
 
+  let show prg =
+    let n = prg.prg_name in
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    Id.print n ++ spc () ++ str ":" ++ spc ()
+    ++ Printer.pr_constr_env env sigma prg.prg_type
+    ++ spc () ++ str ":=" ++ fnl ()
+    ++ Printer.pr_constr_env env sigma prg.prg_body
+
   module Internal = struct
+    let get_name prg = prg.prg_name
     let get_uctx prg = prg.prg_uctx
-    let get_poly prg = prg.prg_info.CInfo.poly
     let set_uctx ~uctx prg = {prg with prg_uctx = uctx}
+    let get_poly prg = prg.prg_info.CInfo.poly
+    let get_obligations prg = prg.prg_obligations
   end
 end
 

@@ -462,18 +462,7 @@ type fixpoint_kind = IsFixpoint of lident option list | IsCoFixpoint
 
 (* Information about a single [Program {Definition,Lemma,..}] declaration *)
 module ProgramDecl : sig
-  type t = private
-    { prg_name : Id.t
-    ; prg_info : CInfo.t
-    ; prg_body : constr
-    ; prg_type : constr
-    ; prg_uctx : UState.t
-    ; prg_obligations : obligations
-    ; prg_deps : Id.t list
-    ; prg_fixkind : fixpoint_kind option
-    ; prg_notations : Vernacexpr.decl_notation list
-    ; prg_reduce : constr -> constr
-    }
+  type t
 
   val make :
        Names.Id.t
@@ -488,12 +477,16 @@ module ProgramDecl : sig
     -> RetrieveObl.obligation_info
     -> t
 
+  val show : t -> Pp.t
+
   (* This is internal, only here as obligations get merged into the
      regular declaration path *)
   module Internal : sig
     val get_poly : t -> bool
+    val get_name : t -> Id.t
     val get_uctx : t -> UState.t
     val set_uctx : uctx:UState.t -> t -> t
+    val get_obligations : t -> obligations
   end
 end
 
