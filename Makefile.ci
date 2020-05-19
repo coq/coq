@@ -23,6 +23,7 @@ CI_TARGETS= \
     ci-coq_tools \
     ci-coqprime \
     ci-elpi \
+    ci-engine_bench \
     ci-ext_lib \
     ci-equations \
     ci-fcsl_pcm \

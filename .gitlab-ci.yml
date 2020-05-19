@@ -699,6 +699,9 @@ library:ci-coquelicot:
 library:ci-cross_crypto:
   extends: .ci-template
 
+library:ci-engine_bench:
+  extends: .ci-template
+
 library:ci-fcsl_pcm:
   extends: .ci-template
 
