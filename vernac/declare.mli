@@ -517,7 +517,6 @@ val obl_substitution :
   -> (Id.t * (Constr.types * Constr.types)) list
 
 val dependencies : Obligation.t array -> int -> Int.Set.t
-val err_not_transp : unit -> unit
 
 (* This is a hack to make it possible for Obligations to craft a Qed
  * behind the scenes.  The fix_exn the Stm attaches to the Future proof
