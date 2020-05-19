@@ -337,6 +337,7 @@ val split                : constr bindings -> unit Proofview.tactic
 val left_with_bindings  : evars_flag -> constr bindings -> unit Proofview.tactic
 val right_with_bindings : evars_flag -> constr bindings -> unit Proofview.tactic
 val split_with_bindings : evars_flag -> constr bindings list -> unit Proofview.tactic
+val split_with_delayed_bindings : evars_flag -> constr bindings delayed_open list -> unit Proofview.tactic
 
 val simplest_left        : unit Proofview.tactic
 val simplest_right       : unit Proofview.tactic
