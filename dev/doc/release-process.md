@@ -25,7 +25,10 @@ in time.
   the next branch point with the `--release` flag (see next section).
 - [ ] Put the corresponding alpha tag using `git tag -s`.
   The `VX.X+alpha` tag marks the first commit to be in `master` and not in the
-  branch of the previous version.
+  branch of the previous version. Note that this commit is the first commit
+  in the first PR merged in master, not the merge commit for that PR.
+  After tagging double check that `git describe` picks up
+  the tag you just made (if not, you tagged the wrong commit).
 - [ ] Create the `X.X+beta1` milestone if it did not already exist.
 - [ ] Decide the release calendar with the team (freeze date, beta date, final
   release date) and put this information in the milestone (using the
