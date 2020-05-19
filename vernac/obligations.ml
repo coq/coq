@@ -251,27 +251,32 @@ and auto_solve_obligations n ?oblset tac : progress =
 
 open Pp
 
+let show_single_obligation i n obls x =
+  let x = subst_deps_obl obls x in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let msg =
+    str "Obligation" ++ spc ()
+    ++ int (succ i)
+    ++ spc () ++ str "of" ++ spc () ++ Id.print n ++ str ":" ++ spc ()
+    ++ hov 1 (Printer.pr_constr_env env sigma x.obl_type
+              ++ str "." ++ fnl ()) in
+  Feedback.msg_info msg
+
 let show_obligations_of_prg ?(msg = true) prg =
   let n = prg.prg_name in
   let {obls; remaining} = prg.prg_obligations in
   let showed = ref 5 in
     if msg then Feedback.msg_info (int remaining ++ str " obligation(s) remaining: ");
-    Array.iteri (fun i x ->
-                   match x.obl_body with
-                   | None ->
-                       if !showed > 0 then (
-                         decr showed;
-                         let x = subst_deps_obl obls x in
-                         let env = Global.env () in
-                         let sigma = Evd.from_env env in
-                         Feedback.msg_info
-                           ( str "Obligation" ++ spc ()
-                           ++ int (succ i)
-                           ++ spc () ++ str "of" ++ spc () ++ Id.print n ++ str ":" ++ spc ()
-                           ++ hov 1
-                                ( Printer.pr_constr_env env sigma x.obl_type
-                                ++ str "." ++ fnl () ) ) )
-                   | Some _ -> ())
+    Array.iteri
+      (fun i x ->
+         match x.obl_body with
+         | None ->
+           if !showed > 0 then begin
+             decr showed;
+             show_single_obligation i n obls x
+           end
+         | Some _ -> ())
       obls
 
 let show_obligations ?(msg = true) n =
