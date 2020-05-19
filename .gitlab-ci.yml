@@ -366,12 +366,11 @@ pkg:opam:
   dependencies: []
   script:
     - set -e
-    - opam pin add --kind=path coq.$COQ_VERSION .
-    - opam pin add --kind=path coqide-server.$COQ_VERSION .
-    - opam pin add --kind=path coqide.$COQ_VERSION .
+    - opam pin add --kind=path coq.dev .
+    - opam pin add --kind=path coqide-server.dev .
+    - opam pin add --kind=path coqide.dev .
     - set +e
   variables:
-    COQ_VERSION: "8.13"
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
   only: *full-ci
