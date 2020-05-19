@@ -45,8 +45,8 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    structure :g:`struct` of which the fields are :n:`x__1, …, x__n`.
    Then, each time an equation of the form :n:`(x__i _)` |eq_beta_delta_iota_zeta| :n:`c__i` has to be
    solved during the type checking process, :token:`qualid` is used as a solution.
-   Otherwise said, :token:`qualid` is canonically used to extend the field :n:`c__i`
-   into a complete structure built on :n:`c__i`.
+   Otherwise said, :token:`qualid` is canonically used to extend the field :n:`x__i`
+   into a complete structure built on :n:`c__i` when :n:`c__i` unifies with :n:`(x__i _)`.
 
    The following kinds of terms are supported for the fields :n:`c__i` of :token:`qualid`:
 
