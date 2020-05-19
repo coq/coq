@@ -1488,6 +1488,8 @@ end = struct (* {{{ *)
         feedback (InProgress ~-1)
 
   let build_proof_here ~doc ?loc ~drop_pt (id,valid) eop =
+    (* [~fix_exn:exn_on] here does more than amending the exn
+       information, it also updates the STM state *)
     Future.create ~fix_exn:(State.exn_on id ~valid) (fun () ->
       let wall_clock1 = Unix.gettimeofday () in
       Reach.known_state ~doc ~cache:(VCS.is_interactive ()) eop;
@@ -1502,41 +1504,39 @@ end = struct (* {{{ *)
     try
       VCS.restore document;
       VCS.print ();
-      let proof, future_proof, time =
+      let proof, time =
         let wall_clock = Unix.gettimeofday () in
         let fp = build_proof_here ~doc:dummy_doc (* XXX should be document *) ?loc ~drop_pt:drop exn_info stop in
         let proof = Future.force fp in
-        proof, fp, Unix.gettimeofday () -. wall_clock in
+        proof, Unix.gettimeofday () -. wall_clock in
       (* We typecheck the proof with the kernel (in the worker) to spot
        * the few errors tactics don't catch, like the "fix" tactic building
        * a bad fixpoint *)
       (* STATE: We use the current installed imperative state *)
       let st = State.freeze () in
       if not drop then begin
-        let checked_proof = Future.chain future_proof (fun p ->
-
-          (* Unfortunately close_future_proof and friends are not pure so we need
-             to set the state manually here *)
+        (* Unfortunately close_future_proof and friends are not pure so we need
+           to set the state manually here *)
           State.unfreeze st;
           let pobject, _info =
-            PG_compat.close_future_proof ~feedback_id:stop (Future.from_val p) in
+            PG_compat.close_future_proof ~feedback_id:stop (Future.from_val proof) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           let opaque = Declare.Opaque in
           try
-            stm_qed_delay_proof ~st ~id:stop
-              ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None))
+            let _pstate =
+              stm_qed_delay_proof ~st ~id:stop
+                ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None)) in
+            ()
           with exn ->
             (* If [stm_qed_delay_proof] fails above we need to use the
                exn callback in the same way than build_proof_here;
-               this is actually wronly named fix_exn as it does _way_
-               more than just modifying exn info *)
+               actually [fix_exn] there does more more than just
+               modifying exn info, it also updates the STM state *)
             let iexn = Exninfo.capture exn in
             let iexn = State.exn_on (fst exn_info) ~valid:(snd exn_info) iexn in
-            Exninfo.iraise iexn)
-        in
-        ignore(Future.join checked_proof);
-      end;
+            Exninfo.iraise iexn
+        end;
       (* STATE: Restore the state XXX: handle exn *)
       State.unfreeze st;
       RespBuiltProof(proof,time)
