@@ -203,15 +203,6 @@ class CoqObject(ObjectDescription):
         if name and not (isinstance(name, str) and name.startswith('_')):
             target = self._add_target(signode, name)
             self._add_index_entry(name, target)
-            if self.aliases is not None:
-                parent = signode.parent
-                for alias in self.aliases:
-                    aliasnode = nodes.inline('', '')
-                    signode.parent.append(aliasnode)
-                    target2 = self._add_target(aliasnode, alias)
-                    self._add_index_entry(name, target2)
-                parent.remove(signode) # move to the end
-                parent.append(signode)
             return target
 
     def _prepare_names(self):
@@ -234,7 +225,20 @@ class CoqObject(ObjectDescription):
 
     def run(self):
         self._prepare_names()
-        return super().run()
+        [index, node] = super().run()
+        if self.aliases is None:
+            return [index, node]
+        else:
+            newnode = nodes.inline('', '')
+            for alias in self.aliases:
+                aliasnode = nodes.inline('', '')
+                newnode += aliasnode
+                targetid = self._add_target(aliasnode, alias)
+                target = nodes.target('', '', ids=[targetid], names=[targetid])
+                aliasnode += target
+                self._add_index_entry(alias, targetid)
+            newnode.append(node)
+            return [index, newnode]
 
 class DocumentableObject(CoqObject):
 
