@@ -11,7 +11,7 @@ Their goal is that everyone feels safe and welcome when contributing to Coq or
 interacting with others in Coq related forums.
 
 These rules apply to all spaces managed by the Coq development team.
-This includes the GitHub repository, the mailing lists, the Gitter channel,
+This includes the GitHub repository, the Discourse forum, the Zulip chat, the mailing lists,
 physical events like Coq working groups and workshops, and any other forums
 created or managed by the development team which the community uses for
 communication. In addition, violations of these rules outside these spaces may

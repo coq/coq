@@ -2,7 +2,8 @@
 
 [![GitLab][gitlab-badge]][gitlab-link]
 [![Azure Pipelines][azure-badge]][azure-link]
-[![Gitter][gitter-badge]][gitter-link]
+[![Zulip][zulip-badge]][zulip-link]
+[![Discourse][discourse-badge]][discourse-link]
 [![DOI][doi-badge]][doi-link]
 
 [gitlab-badge]: https://gitlab.com/coq/coq/badges/master/pipeline.svg
@@ -11,8 +12,11 @@
 [azure-badge]: https://dev.azure.com/coq/coq/_apis/build/status/coq.coq?branchName=master
 [azure-link]: https://dev.azure.com/coq/coq/_build/latest?definitionId=1?branchName=master
 
-[gitter-badge]: https://badges.gitter.im/coq/coq.svg
-[gitter-link]: https://gitter.im/coq/coq
+[discourse-badge]: https://img.shields.io/badge/Discourse-forum-informational.svg
+[discourse-link]: https://coq.discourse.group/
+
+[zulip-badge]: https://img.shields.io/badge/Zulip-chat-informational.svg
+[zulip-link]: https://coq.zulipchat.com/
 
 [doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.1003420.svg
 [doi-link]: https://doi.org/10.5281/zenodo.1003420
@@ -102,12 +106,12 @@ approach some problems you may encounter.
 We have a number of channels to reach the user community and the
 development team:
 
-- Our [Discourse forum](https://coq.discourse.group).
-- Our mailing list, the [Coq-Club](https://sympa.inria.fr/sympa/info/coq-club).
-- Our [Gitter channel][gitter-link], which is a good way to reach
-  developers for quick chat and development questions.
+- Our [Zulip chat][zulip-link], for casual and high traffic discussions.
+- Our [Discourse forum][discourse-link], for more structured and easily browsable discussions and Q&A.
+- Our historical mailing list, the [Coq-Club](https://sympa.inria.fr/sympa/info/coq-club).
 
-See also [coq.inria.fr/community](https://coq.inria.fr/community.html).
+See also [coq.inria.fr/community](https://coq.inria.fr/community.html), which
+lists several other active platforms.
 
 ## Bug reports
 

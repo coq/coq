@@ -179,7 +179,8 @@ Learn how to write a Coq plugin, and about best practices, in the Coq
 progress, so do not hesitate to expand it, or ask questions.
 
 If you want quick feedback on best practices, or how to talk to the
-Coq API, a good place to hang out is the Coq [Gitter channel][Gitter].
+Coq API, a good place to hang out is the [Coq devs & plugin devs
+stream][Zulip-dev] of our Zulip chat.
 
 Finally, we strongly encourage authors of plugins to submit their
 plugins to join Coq's continuous integration (CI) early on.  Indeed,
@@ -285,7 +286,7 @@ GitHub account).  You can file a bug for any of the following:
 It would help if you search the existing issues before reporting a
 bug. This can be difficult, so consider it extra credit.  We don't
 mind duplicate bug reports.  If unsure, you are always very welcome to
-ask on our [Discourse forum][Discourse] or [Gitter chat][Gitter]
+ask on our [Discourse forum][Discourse] or [Zulip chat][Zulip]
 before, after, or while writing a bug report.
 
 It is better if you can test that your bug is still present in the
@@ -364,7 +365,7 @@ Being in this team will grant you the following access:
   idea for a new feature).
 - **Creating new labels:** if you feel a `part:` label is missing, do
   not hesitate to create it.  If you are not sure, you may discuss it
-  with other contributors and developers on [Gitter][] first.
+  with other contributors and developers on [Zulip][Zulip-dev] first.
 - **Closing issues:** if a bug cannot be reproduced anymore, is a
   duplicate, or should not be considered a bug report in the first
   place, you should close it.  When doing so, try putting an
@@ -1133,7 +1134,7 @@ before a change is ready on your side.
 When opening a draft PR, make sure to give it a descriptive enough
 title so that interested developers still notice it in their
 notification feed.  You may also advertise it by talking about it in
-our [developer chat][Gitter].  If you know which developer would be
+our [developer chat][Zulip-dev].  If you know which developer would be
 able to provide useful feedback to you, you may also ping them.
 
 ###### Turning a PR into draft mode ######
@@ -1182,8 +1183,9 @@ documentation is still a work-in-progress.
 ### Online forum and chat to talk to developers ###
 
 We have a [Discourse forum][Discourse] (see in particular the [Coq
-development category][Discourse-development-category]) and a [Gitter
-chat][Gitter].  Feel free to join any of them and ask questions.
+development][Discourse-development-category] category) and a [Zulip
+chat][Zulip] (see in particular the [Coq devs & plugin devs][Zulip-dev]
+stream).  Feel free to join any of them and ask questions.
 People are generally happy to help and very reactive.
 
 Obviously, the issue tracker is also a good place to ask questions,
@@ -1267,7 +1269,6 @@ can be found [on the wiki][wiki-CUDW].
 [GitHub-wiki-extensions]: https://help.github.com/en/articles/editing-wiki-content
 [GitLab-coq]: https://gitlab.com/coq
 [GitLab-doc]: https://docs.gitlab.com/
-[Gitter]: https://gitter.im/coq/coq
 [JasonGross-coq-tools]: https://github.com/JasonGross/coq-tools
 [jenkins-doc]: https://github.com/coq/coq/wiki/Jenkins-(automated-benchmarking)
 [kind-documentation]: https://github.com/coq/coq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22
@@ -1311,3 +1312,5 @@ can be found [on the wiki][wiki-CUDW].
 [wiki-CUDW]: https://github.com/coq/coq/wiki/CoqImplementorsWorkshop
 [wiki-WG]: https://github.com/coq/coq/wiki/Coq-Working-Groups
 [YouTube]: https://www.youtube.com/channel/UCbJo6gYYr0OF18x01M4THdQ
+[Zulip]:  https://coq.zulipchat.com
+[Zulip-dev]: https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs
