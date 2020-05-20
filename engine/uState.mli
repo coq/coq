@@ -29,6 +29,8 @@ val make : lbound:UGraph.Bound.t -> UGraph.t -> t
 
 val make_with_initial_binders : lbound:UGraph.Bound.t -> UGraph.t -> lident list -> t
 
+val from_env : Environ.env -> t
+
 val is_empty : t -> bool
 
 val union : t -> t -> t

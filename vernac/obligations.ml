@@ -191,10 +191,9 @@ and solve_obligation_by_tac prg obls i tac =
           obls.(i) <- obl';
           if def && not prg.prg_poly then (
             (* Declare the term constraints with the first obligation only *)
-            let evd = Evd.from_env (Global.env ()) in
-            let evd = Evd.merge_universe_subst evd (UState.subst ctx) in
-            let ctx' = Evd.evar_universe_context evd in
-            Some (ProgramDecl.set_uctx ~uctx:ctx' prg))
+            let uctx = UState.from_env (Global.env ()) in
+            let uctx = UState.merge_subst uctx (UState.subst ctx) in
+            Some (ProgramDecl.set_uctx ~uctx prg))
           else Some prg
       else None
 
