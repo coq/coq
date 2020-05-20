@@ -76,7 +76,7 @@ COQREFMAN_FILES := $(wildcard $(SPHINXBUILDDIR)/latex/CoqRefMan*)
 LATEX_REMOVE_FILES := $(filter-out $(SPHINXBUILDDIR)/latex/CoqRefMan.tex, $(COQREFMAN_FILES))
 refman-pdf: refman-latex
 	rm -f $(LATEX_REMOVE_FILES)
-	+$(MAKE) -C $(SPHINXBUILDDIR)/latex
+	+$(MAKE) -C $(SPHINXBUILDDIR)/latex LATEXMKOPTS=-silent
 
 refman: $(SPHINX_DEPS)
 	+$(MAKE) refman-html
