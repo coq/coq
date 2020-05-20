@@ -1,28 +1,22 @@
+[![Zulip][zulip-badge]][zulip-link]
+[![Discourse][discourse-badge]][discourse-link]
+
+[discourse-badge]: https://img.shields.io/badge/Discourse-forum-informational.svg
+[discourse-link]: https://coq.discourse.group/
+
+[zulip-badge]: https://img.shields.io/badge/Zulip-chat-informational.svg
+[zulip-link]: https://coq.zulipchat.com/
+
 # Support #
 
-Get in touch with the user community and ask questions about Coq on
-our [Discourse forum][]. Posts in other languages than English are
-explicitly welcome there. There is also a historic mailing list called
-the [Coq-Club][] which has lots of subscribers, and an IRC channel
-(`irc://irc.freenode.net/#coq`).
+<!-- content copied verbatim from "Questions and discussion" in README.md -->
 
-In addition, you may also ask questions about Coq on [Stack
-Overflow][] (use the tag [coq][Stack Overflow tag]) or on the
-meta-theory of Coq on the [TCS Stack Exchange][] (which also has a
-[coq][TCS SE tag] tag).
+We have a number of channels to reach the user community and the
+development team:
 
-You can reach the Coq development team through the [development
-category][] of the above mentioned Discourse forum, the [Gitter
-channel][], and of course the bug tracker.
+- Our [Zulip chat][zulip-link], for casual and high traffic discussions.
+- Our [Discourse forum][discourse-link], for more structured and easily browsable discussions and Q&A.
+- Our historical mailing list, the [Coq-Club](https://sympa.inria.fr/sympa/info/coq-club).
 
-See also [coq.inria.fr/community](https://coq.inria.fr/community.html).
-
-[Discourse forum]: https://coq.discourse.group
-[Coq-Club]: https://sympa.inria.fr/sympa/arc/coq-club
-[Stack Overflow]: https://stackoverflow.com
-[Stack Overflow tag]: https://stackoverflow.com/questions/tagged/coq
-[TCS Stack Exchange]: https://cstheory.stackexchange.com/
-[TCS SE tag]: https://cstheory.stackexchange.com/questions/tagged/coq
-[development category]: https://coq.discourse.group/c/coq-development
-[Gitter channel]: https://gitter.im/coq/coq
-[bug tracker]: https://github.com/coq/coq/issues
+See also [coq.inria.fr/community](https://coq.inria.fr/community.html), which
+lists several other active platforms.
