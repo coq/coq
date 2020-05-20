@@ -239,6 +239,13 @@
 : "${elpi_hb_CI_ARCHIVEURL:=${elpi_hb_CI_GITURL}/archive}"
 
 ########################################################################
+# Engine-Bench
+########################################################################
+: "${engine_bench_CI_REF:=master}"
+: "${engine_bench_CI_GITURL:=https://github.com/mit-plv/engine-bench}"
+: "${engine_bench_CI_ARCHIVEURL:=${engine_bench_CI_GITURL}/archive}"
+
+########################################################################
 # fcsl-pcm
 ########################################################################
 : "${fcsl_pcm_CI_REF:=master}"
