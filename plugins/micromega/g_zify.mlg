@@ -50,5 +50,6 @@ VERNAC COMMAND EXTEND ZifyPrint CLASSIFIED AS SIDEFF
 |[ "Show" "Zify" "UnOp" ]   -> { Zify.UnOp.print () }
 |[ "Show" "Zify" "CstOp"]   -> { Zify.CstOp.print () }
 |[ "Show" "Zify" "BinRel"]  -> { Zify.BinRel.print () }
-|[ "Show" "Zify" "Spec"]    -> { Zify.BinOpSpec.print () ; Zify.UnOpSpec.print()}
+|[ "Show" "Zify" "Spec"] -> { (* This prints both UnOpSpec and BinOpSpec *)
+    Zify.UnOpSpec.print() }
 END

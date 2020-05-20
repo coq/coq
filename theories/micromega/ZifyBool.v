@@ -21,18 +21,15 @@ Add InjTyp Inj_bool_bool.
 (** Boolean operators *)
 
 Instance Op_andb : BinOp andb :=
-  { TBOp := andb ;
-    TBOpInj := ltac: (reflexivity)}.
+  { TBOp := andb ; TBOpInj := fun _ _  => eq_refl}.
 Add BinOp Op_andb.
 
 Instance Op_orb : BinOp orb :=
-  { TBOp := orb ;
-    TBOpInj := ltac:(reflexivity)}.
+  { TBOp := orb ; TBOpInj := fun _ _ => eq_refl}.
 Add BinOp Op_orb.
 
 Instance Op_implb : BinOp implb :=
-  { TBOp := implb;
-    TBOpInj := ltac:(reflexivity) }.
+  { TBOp := implb; TBOpInj := fun _ _ => eq_refl }.
 Add BinOp Op_implb.
 
 Definition xorb_eq : forall b1 b2,
@@ -42,16 +39,15 @@ Proof.
 Qed.
 
 Instance Op_xorb : BinOp xorb :=
-  { TBOp := fun x y => andb (orb x y) (negb (eqb x y));
-    TBOpInj := xorb_eq }.
+  { TBOp := fun x y => andb (orb x y) (negb (eqb x y)); TBOpInj := xorb_eq }.
 Add BinOp Op_xorb.
 
 Instance Op_eqb : BinOp eqb :=
-  { TBOp := eqb; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := eqb; TBOpInj := fun _ _ => eq_refl }.
 Add BinOp Op_eqb.
 
 Instance Op_negb : UnOp negb :=
-  { TUOp := negb ; TUOpInj := ltac:(reflexivity)}.
+  { TUOp := negb ; TUOpInj := fun _ => eq_refl}.
 Add UnOp Op_negb.
 
 Instance Op_eq_bool : BinRel (@eq bool) :=
@@ -69,31 +65,23 @@ Add CstOp Op_false.
 (** Comparison over Z *)
 
 Instance Op_Zeqb : BinOp Z.eqb :=
-  { TBOp := Z.eqb ; TBOpInj := ltac:(reflexivity)}.
+  { TBOp := Z.eqb ; TBOpInj := fun _ _ => eq_refl }.
 Add BinOp Op_Zeqb.
 
 Instance Op_Zleb : BinOp Z.leb :=
-  { TBOp := Z.leb;
-    TBOpInj :=  ltac: (reflexivity);
-  }.
+  { TBOp := Z.leb; TBOpInj :=  fun _ _ => eq_refl }.
 Add BinOp Op_Zleb.
 
 Instance Op_Zgeb : BinOp Z.geb :=
-  { TBOp := Z.geb;
-    TBOpInj := ltac:(reflexivity)
-  }.
+  { TBOp := Z.geb; TBOpInj := fun _ _ => eq_refl }.
 Add BinOp Op_Zgeb.
 
 Instance Op_Zltb : BinOp Z.ltb :=
-  { TBOp := Z.ltb ;
-    TBOpInj := ltac:(reflexivity)
-  }.
+  { TBOp := Z.ltb ; TBOpInj := fun _ _ => eq_refl }.
 Add BinOp Op_Zltb.
 
 Instance Op_Zgtb : BinOp Z.gtb :=
-  { TBOp := Z.gtb;
-    TBOpInj := ltac:(reflexivity)
-  }.
+  { TBOp := Z.gtb; TBOpInj := fun _ _  => eq_refl }.
 Add BinOp Op_Zgtb.
 
 (** Comparison over nat *)
@@ -129,36 +117,28 @@ Proof.
 Qed.
 
 Instance Op_nat_eqb : BinOp Nat.eqb :=
-   { TBOp := Z.eqb;
-     TBOpInj := Z_of_nat_eqb_iff }.
+  { TBOp := Z.eqb; TBOpInj := Z_of_nat_eqb_iff }.
 Add BinOp Op_nat_eqb.
 
 Instance Op_nat_leb : BinOp Nat.leb :=
-  { TBOp := Z.leb ;
-    TBOpInj := Z_of_nat_leb_iff
-  }.
+  { TBOp := Z.leb; TBOpInj := Z_of_nat_leb_iff }.
 Add BinOp Op_nat_leb.
 
 Instance Op_nat_ltb : BinOp Nat.ltb :=
-  { TBOp := Z.ltb;
-    TBOpInj := Z_of_nat_ltb_iff
-  }.
+  { TBOp := Z.ltb; TBOpInj := Z_of_nat_ltb_iff }.
 Add BinOp Op_nat_ltb.
 
 Lemma b2n_b2z :  forall x,  Z.of_nat (Nat.b2n x) = Z.b2z x.
 Proof.
-  intro.
-  destruct x ; reflexivity.
+  intro. destruct x ; reflexivity.
 Qed.
 
 Instance Op_b2n : UnOp Nat.b2n :=
-  { TUOp := Z.b2z;
-    TUOpInj := b2n_b2z }.
+  { TUOp := Z.b2z; TUOpInj := b2n_b2z }.
 Add UnOp Op_b2n.
 
 Instance Op_b2z : UnOp Z.b2z :=
-  { TUOp := Z.b2z;
-    TUOpInj := ltac:(reflexivity) }.
+  { TUOp := Z.b2z; TUOpInj := fun _ => eq_refl }.
 Add UnOp Op_b2z.
 
 Lemma b2z_spec : forall b, (b = true /\ Z.b2z b = 1) \/ (b = false /\ Z.b2z b = 0).
@@ -167,15 +147,15 @@ Proof.
 Qed.
 
 Instance b2zSpec : UnOpSpec Z.b2z :=
-  {| UPred := fun b r => (b = true /\ r = 1) \/ (b = false /\ r = 0);
-     USpec := b2z_spec
-  |}.
+  { UPred := fun b r => (b = true /\ r = 1) \/ (b = false /\ r = 0);
+    USpec := b2z_spec
+  }.
 Add UnOpSpec b2zSpec.
 
 Ltac elim_bool_cstr :=
   repeat match goal with
          | C : ?B = true \/ ?B = false |- _ =>
-           destruct C ; subst
+           destruct C as [C|C]; rewrite C in *
          end.
 
 Ltac Zify.zify_post_hook ::= elim_bool_cstr.
