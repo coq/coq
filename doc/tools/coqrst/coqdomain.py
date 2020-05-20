@@ -37,6 +37,7 @@ from sphinx.roles import XRefRole
 from sphinx.util.docutils import ReferenceRole
 from sphinx.util.logging import getLogger, get_node_location
 from sphinx.util.nodes import set_source_info, set_role_source_info, make_refnode
+from sphinx.writers.latex import LaTeXTranslator
 
 from . import coqdoc
 from .repl import ansicolors
@@ -44,6 +45,20 @@ from .repl.coqtop import CoqTop, CoqTopError
 from .notations.parsing import ParseError
 from .notations.sphinx import sphinxify
 from .notations.plain import stringify_with_ellipses
+
+# FIXME: Patch this in Sphinx
+# https://github.com/coq/coq/issues/12361
+def visit_desc_signature(self, node):
+    hyper = ''
+    if node.parent['objtype'] != 'describe' and node['ids']:
+        for id in node['ids']:
+            hyper += self.hypertarget(id)
+    self.body.append(hyper)
+    if not node.get('is_multiline'):
+        self._visit_signature_line(node)
+    else:
+        self.body.append('%\n\\pysigstartmultiline\n')
+LaTeXTranslator.visit_desc_signature = visit_desc_signature
 
 PARSE_ERROR = """{}:{} Parse error in notation!
 Offending notation: {}
@@ -151,17 +166,18 @@ class CoqObject(ObjectDescription):
         """Prefix signature with the proper annotation, then render it using
         ``_render_signature`` (for example, add “Command” in front of commands).
 
-        :returns: the name given to the resulting node, if any
+        :returns: the names given to the resulting node.
         """
         self._render_annotation(signode)
         self._render_signature(signature, signode)
-        name = self._sig_names.get(signature)
-        if name is None:
+        names = self._sig_names.get(signature)
+        if names is None:
             name = self._name_from_signature(signature) # pylint: disable=assignment-from-none
             # remove trailing ‘.’ found in commands, but not ‘...’ (ellipsis)
             if name is not None and name.endswith(".") and not name.endswith("..."):
                 name = name[:-1]
-        return name
+            names = [name] if name else None
+        return names
 
     def _warn_if_duplicate_name(self, objects, name, signode):
         """Check that two objects in the same domain don't have the same name."""
@@ -190,7 +206,6 @@ class CoqObject(ObjectDescription):
             signode['ids'].append(targetid)
             signode['names'].append(name)
             signode['first'] = (not self.names)
-            self.state.document.note_explicit_target(signode)
             self._record_name(name, targetid, signode)
         return targetid
 
@@ -204,43 +219,46 @@ class CoqObject(ObjectDescription):
             index_text += " " + self.index_suffix
         self.indexnode['entries'].append(('single', index_text, target, '', None))
 
-    aliases = None  # additional indexed names for a command or other object
-
-    def add_target_and_index(self, name, _, signode):
-        """Attach a link target to `signode` and an index entry for `name`.
+    def add_target_and_index(self, names, _, signode):
+        """Attach a link target to `signode` and an index entries for `names`.
         This is only called (from ``ObjectDescription.run``) if ``:noindex:`` isn't specified."""
-        if name and not (isinstance(name, str) and name.startswith('_')):
-            target = self._add_target(signode, name)
-            self._add_index_entry(name, target)
-            if self.aliases is not None:
-                parent = signode.parent
-                for alias in self.aliases:
-                    aliasnode = nodes.inline('', '')
-                    signode.parent.append(aliasnode)
-                    target2 = self._add_target(aliasnode, alias)
-                    self._add_index_entry(name, target2)
-                parent.remove(signode) # move to the end
-                parent.append(signode)
-            return target
-        return None
+        if names:
+            for name in names:
+                if isinstance(name, str) and name.startswith('_'):
+                    continue
+                target = self._add_target(signode, name)
+                self._add_index_entry(name, target)
+            self.state.document.note_explicit_target(signode)
 
     def _prepare_names(self):
+        """Construct ``self._sig_names``, a map from signatures to names.
+
+        A node may have either one signature with no name, multiple signatures
+        with one name per signatures, or one signature with multiple names.
+
+        (That last case isn't ideal; in the Sphinx tradition, it would be better
+        to have one signature per name, like this:
+
+        .. cmd:: Definition …
+                 Fact …
+                 Lemma …
+                 …
+           :name: Definition; Fact; Lemma; …)
+        """
         sigs = self.get_signatures()
         names = self.options.get("name")
         if names is None:
             self._sig_names = {}
         else:
             names = [n.strip() for n in names.split(";")]
-            if len(sigs) > 1 and len(names) != len(sigs):
-                ERR = ("Expected {} semicolon-separated names, got {}.  " +
-                       "Please provide one name per signature line.")
-                raise self.error(ERR.format(len(names), len(sigs)))
-            if len(sigs) == 1 and len(names) > 1:
-                self.aliases = names[:-1]
-                names = names[-1:]
+            if len(names) != len(sigs):
+                if len(sigs) != 1: #Multiple names for one signature
+                    ERR = ("Expected {} semicolon-separated names, got {}.  " +
+                           "Please provide one name per signature line.")
+                    raise self.error(ERR.format(len(names), len(sigs)))
+                self._sig_names = { sigs[0]: names }
             else:
-                self.aliases = None
-            self._sig_names = dict(zip(sigs, names))
+                self._sig_names = { sig: [name] for (sig, name) in zip(sigs, names) }
 
     def run(self):
         self._prepare_names()
@@ -491,7 +509,7 @@ class ProductionObject(CoqObject):
                 raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
 
         self.signatures.append((lhs, op, rhs))
-        return ('token', lhs) if op == '::=' else None
+        return [('token', lhs)] if op == '::=' else None
 
     def _add_index_entry(self, name, target):
         pass
