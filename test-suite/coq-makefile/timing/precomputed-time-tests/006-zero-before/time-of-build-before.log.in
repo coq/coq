@@ -1,0 +1,40 @@
+./src/Rewriter/PerfTesting/Specific/make.py primes.txt
+make --no-print-directory -C rewriter
+make[2]: Nothing to be done for 'real-all'.
+make --no-print-directory -C bedrock2/deps/coqutil
+Generating Makefile.coq.all
+make -f Makefile.coq.all
+make[3]: Nothing to be done for 'real-all'.
+make --no-print-directory -C bedrock2/bedrock2 noex
+Generating Makefile.coq.noex
+rm -f .coqdeps.d
+make -f Makefile.coq.noex
+make[3]: Nothing to be done for 'real-all'.
+make --no-print-directory -C coqprime src/Coqprime/PrimalityTest/Zp.vo
+make[1]: 'src/Coqprime/PrimalityTest/Zp.vo' is up to date.
+coq_makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-coq
+COQ_MAKEFILE -f _CoqProject > Makefile.coq
+make --no-print-directory -C rewriter
+make[2]: Nothing to be done for 'real-all'.
+make --no-print-directory -C bedrock2/deps/coqutil
+Generating Makefile.coq.all
+make -f Makefile.coq.all
+make[3]: Nothing to be done for 'real-all'.
+make --no-print-directory -C bedrock2/bedrock2 noex
+Generating Makefile.coq.noex
+rm -f .coqdeps.d
+make -f Makefile.coq.noex
+make[3]: Nothing to be done for 'real-all'.
+make --no-print-directory -C coqprime src/Coqprime/PrimalityTest/Zp.vo
+make[1]: 'src/Coqprime/PrimalityTest/Zp.vo' is up to date.
+DIFF Crypto.Fancy.Montgomery256.Prod.MontRed256
+DIFF Crypto.Fancy.Montgomery256.prod_montred256_correct
+DIFF Crypto.Fancy.Montgomery256.prod_montred256_correct.Assumptions
+DIFF Crypto.Fancy.Montgomery256.montred256
+DIFF Crypto.Fancy.Barrett256.Prod.MulMod
+DIFF Crypto.Fancy.Barrett256.prod_barrett_red256_correct
+DIFF Crypto.Fancy.Barrett256.prod_barrett_red256_correct.Assumptions
+DIFF Crypto.Fancy.Barrett256.barrett_red256
+cp -f AUTHORS fiat-rust/AUTHORS
+cp -f CONTRIBUTORS fiat-rust/CONTRIBUTORS
+cp -f LICENSE fiat-rust/LICENSE
