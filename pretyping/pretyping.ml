@@ -78,14 +78,31 @@ let nf_fix sigma (nas, cs, ts) =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   (nas, Array.map inj cs, Array.map inj ts)
 
+(** Check guardedness or well-sized-typed based on flags
+    If neither flag is on, don't check at all
+    If both flags are on, throw guardedness' error if both fail
+    Otherwise, simply check according to flag *)
+let check_guard env fix fix_opt =
+  let flags = Environ.typing_flags env in
+  let check_guarded = flags.Declarations.check_guarded in
+  let check_sized = flags.Declarations.check_sized in
+  match check_guarded, check_sized with
+  | false, false -> ()
+  | true, false -> check_fix env fix_opt
+  | false, true -> Typeops.infer_fix env fix
+  | _ -> try
+    Typeops.infer_fix env fix
+    with Stages.RecCheckFailed _ -> check_fix env fix_opt
+
 let search_guard ?loc env possible_indexes fixdefs =
   (* Standard situation with only one possibility for each fix. *)
   (* We treat it separately in order to get proper error msg. *)
   let is_singleton = function [_] -> true | _ -> false in
   if List.for_all is_singleton possible_indexes then
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
-    let fix = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
-    (try check_fix env fix
+    let fix_opt = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
+    let fix = ((indexes, 0), fixdefs) in
+    (try check_guard env fix fix_opt
      with reraise ->
        let (e, info) = Exninfo.capture reraise in
        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
@@ -96,7 +113,8 @@ let search_guard ?loc env possible_indexes fixdefs =
     (try
       List.iter (fun l ->
         let indexes = Array.of_list l in
-        let fix = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
+        let fix_opt = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
+        let fix = ((indexes, 0), fixdefs) in
         (* spiwack: We search for a unspecified structural
            argument under the assumption that we need to check the
            guardedness condition (otherwise the first inductive argument
@@ -104,7 +122,7 @@ let search_guard ?loc env possible_indexes fixdefs =
            error when totality is assumed but the strutural argument is
            not specified. *)
         try
-          check_fix env fix; raise (Found indexes)
+          check_guard env fix fix_opt; raise (Found indexes)
         with TypeError _ -> ())
       (List.combinations possible_indexes);
       let errmsg = "Cannot guess decreasing argument of fix." in

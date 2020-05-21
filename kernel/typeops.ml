@@ -806,6 +806,12 @@ let infer =
       CProfile.profile2 infer_key (fun b c -> infer b c)
   else (fun b c -> infer b c)
 
+let infer_fix env fix =
+  (* FIXME: This breaks when used in Pretyping because
+    universe levels are not in the environment;
+    Implement this in Pretyping/Typing instead. *)
+  ignore @@ execute_fix env State.init (empty ()) fix
+
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
   infer_assumption env c t
 
