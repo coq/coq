@@ -163,20 +163,21 @@ class CoqObject(ObjectDescription):
                 name = name[:-1]
         return name
 
-    def _warn_if_duplicate_name(self, objects, name):
+    def _warn_if_duplicate_name(self, objects, name, signode):
         """Check that two objects in the same domain don't have the same name."""
         if name in objects:
-            MSG = 'Duplicate object: {}; other is at {}'
-            msg = MSG.format(name, self.env.doc2path(objects[name][0]))
+            MSG = 'Duplicate name {} (other is in {}) attached to {}'
+            msg = MSG.format(name, self.env.doc2path(objects[name][0]), signode)
             self.state_machine.reporter.warning(msg, line=self.lineno)
 
-    def _record_name(self, name, target_id):
-        """Record a name, mapping it to target_id
+    def _record_name(self, name, target_id, signode):
+        """Record a `name` in the current subdomain, mapping it to `target_id`.
 
-        Warns if another object of the same name already exists.
+        Warns if another object of the same name already exists; `signode` is
+        used in the warning.
         """
         names_in_subdomain = self.subdomain_data()
-        self._warn_if_duplicate_name(names_in_subdomain, name)
+        self._warn_if_duplicate_name(names_in_subdomain, name, signode)
         names_in_subdomain[name] = (self.env.docname, self.objtype, target_id)
 
     def _target_id(self, name):
@@ -190,7 +191,7 @@ class CoqObject(ObjectDescription):
             signode['names'].append(name)
             signode['first'] = (not self.names)
             self.state.document.note_explicit_target(signode)
-            self._record_name(name, targetid)
+            self._record_name(name, targetid, signode)
         return targetid
 
     def _add_index_entry(self, name, target):
@@ -498,10 +499,10 @@ class ProductionObject(CoqObject):
     def _target_id(self, name):
         return 'grammar-token-{}'.format(nodes.make_id(name[1]))
 
-    def _record_name(self, name, targetid):
+    def _record_name(self, name, targetid, signode):
         env = self.state.document.settings.env
         objects = env.domaindata['std']['objects']
-        self._warn_if_duplicate_name(objects, name)
+        self._warn_if_duplicate_name(objects, name, signode)
         objects[name] = env.docname, targetid
 
     def run(self):
