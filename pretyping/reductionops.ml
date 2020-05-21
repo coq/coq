@@ -572,11 +572,9 @@ let reduce_and_refold_fix recfun env sigma fix sk =
 
 let fix_recarg ((recindices,bodynum),_) stack =
   assert (0 <= bodynum && bodynum < Array.length recindices);
-  let recargnumopt = Array.get recindices bodynum in
+  let recargnum = Array.get recindices bodynum in
   try
-    match recargnumopt with
-    | Some recargnum -> Some (recargnum, Stack.nth stack recargnum)
-    | None -> None
+    Some (recargnum, Stack.nth stack recargnum)
   with Not_found ->
     None
 

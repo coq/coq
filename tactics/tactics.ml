@@ -561,7 +561,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
     let (sigma, evs) = mk_holes nenv sigma (List.map pi3 all) in
     let ids = List.map pi1 all in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
-    let indxs = Array.of_list (List.map (fun (_, n, _) -> Some (n-1)) all) in
+    let indxs = Array.of_list (List.map (fun (_, n, _) -> n - 1) all) in
     (* TODO relevance *)
     let funnames = Array.of_list (List.map (fun i -> make_annot (Name i) Sorts.Relevant) ids) in
     let typarray = Array.of_list (List.map pi3 all) in

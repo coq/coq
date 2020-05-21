@@ -82,17 +82,17 @@ let nf_fix sigma (nas, cs, ts) =
     If neither flag is on, don't check at all
     If both flags are on, throw guardedness' error if both fail
     Otherwise, simply check according to flag *)
-let check_guard env fix fix_opt =
+let check_guard env fix =
   let flags = Environ.typing_flags env in
   let check_guarded = flags.Declarations.check_guarded in
   let check_sized = flags.Declarations.check_sized in
   match check_guarded, check_sized with
   | false, false -> ()
-  | true, false -> check_fix env fix_opt
+  | true, false -> check_fix env fix
   | false, true -> Typeops.infer_fix env fix
   | _ -> try
     Typeops.infer_fix env fix
-    with Stages.RecCheckFailed _ -> check_fix env fix_opt
+    with Stages.RecCheckFailed _ -> check_fix env fix
 
 let search_guard ?loc env possible_indexes fixdefs =
   (* Standard situation with only one possibility for each fix. *)
@@ -100,9 +100,8 @@ let search_guard ?loc env possible_indexes fixdefs =
   let is_singleton = function [_] -> true | _ -> false in
   if List.for_all is_singleton possible_indexes then
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
-    let fix_opt = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
     let fix = ((indexes, 0), fixdefs) in
-    (try check_guard env fix fix_opt
+    (try check_guard env fix
      with reraise ->
        let (e, info) = Exninfo.capture reraise in
        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
@@ -113,7 +112,6 @@ let search_guard ?loc env possible_indexes fixdefs =
     (try
       List.iter (fun l ->
         let indexes = Array.of_list l in
-        let fix_opt = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
         let fix = ((indexes, 0), fixdefs) in
         (* spiwack: We search for a unspecified structural
            argument under the assumption that we need to check the
@@ -122,7 +120,7 @@ let search_guard ?loc env possible_indexes fixdefs =
            error when totality is assumed but the strutural argument is
            not specified. *)
         try
-          check_guard env fix fix_opt; raise (Found indexes)
+          check_guard env fix; raise (Found indexes)
         with TypeError _ -> ())
       (List.combinations possible_indexes);
       let errmsg = "Cannot guess decreasing argument of fix." in
@@ -768,9 +766,7 @@ struct
                 | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
               vn) in
           let fixdecls = (names,ftys,fdefs) in
-          let indexes = if (typing_flags !!env).Declarations.check_guarded then
-            Array.map (fun i -> Some i) @@ esearch_guard ?loc !!env sigma possible_indexes fixdecls
-            else vn in
+          let indexes = esearch_guard ?loc !!env sigma possible_indexes fixdecls in
           make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
         | GCoFix i ->
           let fixdecls = (names,ftys,fdefs) in

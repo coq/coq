@@ -806,7 +806,7 @@ let rec subterm_specif renv stack t =
                         Large... *)
           assign_var_spec renv'
           (nbfix-i, lazy (Subterm(Strict,recargs))) in
-        let decrArg = Option.get recindxs.(i) in
+        let decrArg = recindxs.(i) in
         let theBody = bodies.(i)   in
         let nbOfAbst = decrArg+1 in
         let sign,strippedBody = Term.decompose_lam_n_assum nbOfAbst theBody in
@@ -1005,7 +1005,7 @@ let check_one_fix renv recpos trees def =
            then f is guarded with respect to S in (g a1 ... am).
            Eduardo 7/9/98 *)
         | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
-            let decrArg = Option.get recindxs.(i) in
+            let decrArg = recindxs.(i) in
             begin try
               List.iter (check_rec_call renv []) l;
               Array.iter (check_rec_call renv []) typarray;
@@ -1173,7 +1173,6 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
 let check_fix env ((nvect,i),(names,types,bodies as recdef)) =
   let flags = Environ.typing_flags env in
   if flags.check_guarded then
-    let nvect = Array.map Option.get nvect in
     let fix = (nvect, i), (names, types, bodies) in
     let (minds, rdef) = inductive_of_mutfix env fix in
     let get_tree (kn,i) =

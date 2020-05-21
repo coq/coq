@@ -541,8 +541,6 @@ let check_binder_annot s x =
   then x
   else (warn_bad_relevance x; {x with binder_relevance = r'})
 
-exception Found of State.t * Constraints.t * constr * types
-
 (* The typing machine. *)
     (* ATTENTION : faudra faire le typage du contexte des Const,
     Ind et Constructsi un jour cela devient des constructions
@@ -655,33 +653,7 @@ let rec execute env stg cstrnt cstr =
       in
       stg, union cstrntlf cstrntci, cstr, t
 
-    | Fix ((von, i), (_, lar, _ as recdef)) ->
-      let possible_indices =
-        List.map Array.of_list @@
-        List.combinations @@
-        Array.to_list @@ Array.map2
-        (fun on ar -> match on with
-          | Some n -> [n]
-          | None ->
-            List.map_i (fun i _ -> i) 0 @@
-            List.filter Context.Rel.Declaration.is_local_assum @@
-            Term.prod_assum ar)
-        von lar in
-
-      let try_vn vn =
-        let stg, cstrnt, cstr, ty = execute_fix env stg cstrnt ((vn, i), recdef) in
-        raise (Found (State.pop stg, cstrnt, cstr, ty)) in
-
-      begin try
-        if Int.equal 1 @@ List.length possible_indices then
-          try_vn @@ List.hd possible_indices
-        else
-          List.iter (fun vn -> try try_vn vn with TypeError _ -> ()) possible_indices;
-          user_err ~hdr:"execute"
-            (Pp.str "Cannot guess decreasing argument of fix.")
-      with Found (stg, cstrnt, c, ty) ->
-        stg, cstrnt, c, ty
-      end
+    | Fix fix -> execute_fix env stg cstrnt fix
 
     | CoFix cofix -> execute_cofix env stg cstrnt cofix
 
@@ -745,13 +717,12 @@ and execute_fix env stg cstrnt ((vn, i), (names, lar, vdef)) =
   let stg_check, cstrnt_check =
     let alphas = get_rec_vars env vn lar' in
     let vstars, vneq = get_vstar_vneq stg' lar' vdef' in
-    let cstr = mkFixOpt ((vn, i), (names', lar', vdef')) in
+    let cstr = mkFix ((vn, i), (names', lar', vdef')) in
     execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstars, vneq) Finite in
 
   let fix =
     let lar_star = Array.Smart.map (erase_star (get_pos_vars stg_check)) lar' in
-    let von = Array.map (fun n -> Some n) vn in
-    ((von, i), (names', lar_star, vdef')) in
+    ((vn, i), (names', lar_star, vdef')) in
 
   check_fix env fix; State.pop stg_check, cstrnt_check, mkFix fix, lar'.(i)
 

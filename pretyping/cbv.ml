@@ -177,7 +177,7 @@ let fixp_reducible flgs ((reci,i),_) stk =
   if red_set flgs fFIX then
     match stk with
       | APP(appl,_) ->
-          let n = Option.get reci.(i) in
+          let n = reci.(i) in
           Array.length appl > n &&
           (match appl.(n) with
               CONSTR _ -> true

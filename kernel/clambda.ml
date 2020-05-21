@@ -747,13 +747,12 @@ let rec lambda_of_constr env c =
     in
     Lcase(ci, rtbl, lt, la, branches)
 
-  | Fix((rec_indices_opt, i),(names,type_bodies,rec_bodies)) ->
+  | Fix((rec_init, i),(names,type_bodies,rec_bodies)) ->
     let ltypes = lambda_of_args env 0 type_bodies in
     Renv.push_rels env names;
     let lbodies = lambda_of_args env 0 rec_bodies in
     Renv.popn env (Array.length names);
-    let rec_indices = Array.map Option.get rec_indices_opt in
-    Lfix((rec_indices, i), (names, ltypes, lbodies))
+    Lfix((rec_init, i), (names, ltypes, lbodies))
 
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
     let rec_bodies = Array.map2 (Reduction.eta_expand env.global_env) rec_bodies type_bodies in

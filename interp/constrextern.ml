@@ -1430,9 +1430,9 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       (avoid, env, []) lna in
      let n = Array.length tl in
      let v = Array.map3
-               (fun c t i -> Detyping.share_pattern_names glob_of_pat (Option.get i + 1) [] def_avoid def_env sigma c (Patternops.lift_pattern n t))
+               (fun c t i -> Detyping.share_pattern_names glob_of_pat (i + 1) [] def_avoid def_env sigma c (Patternops.lift_pattern n t))
     bl tl ln in
-     GRec(GFix (ln,i),Array.of_list (List.rev lfi),
+     GRec(GFix (Array.map (fun i -> Some i) ln,i),Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)

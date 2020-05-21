@@ -573,7 +573,6 @@ let rec lambda_of_constr cache env sigma c =
         let prefix = get_mind_prefix env (fst ind) in
         (prefix, ind)
       in
-      let pos = Array.map Option.get pos in
       let inds = Array.map2 map pos type_bodies in
       let env = Environ.push_rec_types (names, type_bodies, rec_bodies) env in
       let lbodies = lambda_of_args cache env sigma 0 rec_bodies in

@@ -431,7 +431,7 @@ let () = define1 "constr_kind" constr begin fun c ->
   | Fix ((recs, i), def) ->
     let (nas, cs) = of_rec_declaration def in
     v_blk 14 [|
-      Value.of_array (Value.of_option Value.of_int) recs;
+      Value.of_array (Value.of_int) recs;
       Value.of_int i;
       nas;
       cs;
@@ -514,7 +514,7 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let bl = Value.to_array Value.to_constr bl in
     EConstr.mkCase (ci, c, t, bl)
   | (14, [|recs; i; nas; cs|]) ->
-    let recs = Value.to_array (Value.to_option Value.to_int) recs in
+    let recs = Value.to_array (Value.to_int) recs in
     let i = Value.to_int i in
     let def = to_rec_declaration (nas, cs) in
     EConstr.mkFix ((recs, i), def)

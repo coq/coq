@@ -81,7 +81,7 @@ and kind_of_head env t =
   | Case (_,_,c,_) -> aux k [] c true
   | Int _ | Float _ -> ConstructorHead
   | Fix ((i,j),_) ->
-      let n = Option.get i.(j) in
+      let n = i.(j) in
       try aux k [] (List.nth l n) true
       with Failure _ -> FlexibleHead (k + n + 1, k + n + 1, 0, true)
   and on_subterm k l with_case = function

@@ -130,7 +130,6 @@ val mkConstructU : constructor * EInstance.t -> t
 val mkConstructUi : (inductive * EInstance.t) * int -> t
 val mkCase : case_info * t * t * t array -> t
 val mkFix : (t, t) pfixpoint -> t
-val mkFixOpt : (t, t) pfixpoint_nopt -> t
 val mkCoFix : (t, t) pcofixpoint -> t
 val mkArrow : t -> Sorts.relevance  -> t -> t
 val mkArrowR : t -> t -> t

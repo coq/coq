@@ -233,7 +233,7 @@ let rec is_rigid_head sigma t = match kind sigma t with
   | Proj (p,c) -> true
   | App (f,args) ->
       (match kind sigma f with
-        | Fix ((fi,i),_) -> is_rigid_head sigma (args.(Option.get fi.(i)))
+        | Fix ((fi,i),_) -> is_rigid_head sigma (args.(fi.(i)))
         | _ -> is_rigid_head sigma f)
   | Lambda _ | LetIn _ | Construct _ | CoFix _ | Fix _
   | Prod _ | Meta _ | Cast _ | Int _ | Float _ -> assert false

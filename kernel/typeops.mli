@@ -25,7 +25,7 @@ open Stages
    Do not discard the result. *)
 
 val infer      : env -> constr -> unsafe_judgment
-val infer_fix  : env -> fixpoint_nopt -> unit
+val infer_fix  : env -> fixpoint -> unit
 val infer_type : env -> types  -> unsafe_type_judgment
 
 val check_context :

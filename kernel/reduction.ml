@@ -593,7 +593,7 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        with Not_found -> raise NotConvertible)
 
     | (FFix (((op1, i1),(na1,tys1,cl1)),e1), FFix(((op2, i2),(_,tys2,cl2)),e2)) ->
-        if Int.equal i1 i2 && Array.equal (Option.equal Int.equal) op1 op2
+        if Int.equal i1 i2 && Array.equal Int.equal op1 op2
         then
           let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in

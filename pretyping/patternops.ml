@@ -55,7 +55,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
   constr_pattern_eq r1 r2 &&
   List.equal pattern_eq l1 l2
 | PFix ((ln1,i1),f1), PFix ((ln2,i2),f2) ->
-  Array.equal (Option.equal Int.equal) ln1 ln2 && Int.equal i1 i2 && rec_declaration_eq f1 f2
+  Array.equal Int.equal ln1 ln2 && Int.equal i1 i2 && rec_declaration_eq f1 f2
 | PCoFix (i1,f1), PCoFix (i2,f2) ->
   Int.equal i1 i2 && rec_declaration_eq f1 f2
 | PProj (p1, t1), PProj (p2, t2) ->
@@ -482,7 +482,7 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       | None -> err ?loc (Pp.str "\"struct\" annotation is expected.")
         (* TODO why can't the annotation be omitted? *)
     in
-    let ln = Array.map (fun n -> Some (get_struct_arg n)) ln in
+    let ln = Array.map get_struct_arg ln in
     let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls tl in
     let tl = Array.map (fun (ctx,tl) -> it_mkPProd_or_LetIn tl ctx) ctxtl in
     let vars = Array.fold_left (fun vars na -> Name na::vars) vars ids in

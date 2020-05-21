@@ -926,7 +926,7 @@ let rec knh info m stk =
     | FApp(a,b) -> knh info a (append_stack b (zupdate info m stk))
     | FCaseT(ci,p,t,br,e) -> knh info t (ZcaseT(ci,p,br,e)::zupdate info m stk)
     | FFix(((ri,n),_),_) ->
-        (match get_nth_arg m (Option.get ri.(n)) stk with
+        (match get_nth_arg m ri.(n) stk with
              (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
     | FProj (p,c) ->

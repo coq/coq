@@ -309,11 +309,9 @@ let do_program_recursive ~scope ~poly fixkind fixl =
         Array.of_list fixtypes,
         Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in
-      let indexes =
-        Array.map (fun i -> Some i) @@ Pretyping.search_guard (Global.env ()) possible_indexes fixdecls in
+      let indexes = Pretyping.search_guard (Global.env ()) possible_indexes fixdecls in
       List.iteri (fun i _ ->
-          Inductive.check_fix env
-                              ((indexes,i),fixdecls))
+          Inductive.check_fix env ((indexes, i), fixdecls))
         fixl
   end in
   let uctx = Evd.evar_universe_context evd in

@@ -176,7 +176,7 @@ external closure_arity : vfun -> int = "coq_closure_arity"
 
 val current_fix : vfix -> int
 val check_fix : vfix -> vfix -> bool
-val rec_args : vfix -> int option array
+val rec_args : vfix -> int array
 val first_fix : vfix -> vfix
 val fix_types : vfix -> tcode array
 val cofix_types : vcofix -> tcode array
