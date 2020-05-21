@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2020-05-18-V3"
+# CACHEKEY: "bionic_coq-V2020-05-19-V33"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -58,7 +58,7 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
 
 # EDGE switch
 ENV COMPILER_EDGE="4.10.0" \
-    BASE_OPAM_EDGE="dune.2.5.0 dune-release.1.3.3 ocamlformat.0.14.0"
+    BASE_OPAM_EDGE="dune.2.5.1 dune-release.1.3.3 ocamlformat.0.14.2"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
