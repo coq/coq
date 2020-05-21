@@ -1210,19 +1210,20 @@ let get_hide_obligations =
     ~key:["Hide"; "Obligations"]
     ~value:false
 
-let declare_obligation prg obl body ty uctx =
+let declare_obligation prg obl ~uctx ~types ~body =
+  let univs = UState.univ_entry ~poly:prg.prg_poly uctx in
   let body = prg.prg_reduce body in
-  let ty = Option.map prg.prg_reduce ty in
+  let types = Option.map prg.prg_reduce types in
   match obl.obl_status with
   | _, Evar_kinds.Expand -> (false, {obl with obl_body = Some (TermObl body)})
   | force, Evar_kinds.Define opaque ->
     let opaque = (not force) && opaque in
     let poly = prg.prg_poly in
     let ctx, body, ty, args =
-      if not poly then shrink_body body ty
-      else ([], body, ty, [||])
+      if not poly then shrink_body body types
+      else ([], body, types, [||])
     in
-    let ce = definition_entry ?types:ty ~opaque ~univs:uctx body in
+    let ce = definition_entry ?types:ty ~opaque ~univs body in
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
       declare_constant ~name:obl.obl_name
@@ -1234,7 +1235,7 @@ let declare_obligation prg obl body ty uctx =
       add_hint (Locality.make_section_locality None) prg constant;
     definition_message obl.obl_name;
     let body =
-      match uctx with
+      match univs with
       | Entries.Polymorphic_entry (_, uctx) ->
         Some (DefinedObl (constant, Univ.UContext.instance uctx))
       | Entries.Monomorphic_entry _ ->
@@ -1621,8 +1622,7 @@ let obligation_terminator entries uctx {name; num; auto} =
     in
     let obl = {obl with obl_status = (false, status)} in
     let uctx = if prg.prg_poly then uctx else UState.union prg.prg_ctx uctx in
-    let univs = UState.univ_entry ~poly:prg.prg_poly uctx in
-    let defined, obl = declare_obligation prg obl body ty univs in
+    let defined, obl = declare_obligation prg obl ~body ~types:ty ~uctx in
     let prg_ctx =
       if prg.prg_poly then
         (* Polymorphic *)

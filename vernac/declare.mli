@@ -439,26 +439,21 @@ module ProgramDecl : sig
     -> Names.Id.t list
     -> fixpoint_kind option
     -> Vernacexpr.decl_notation list
-    -> ( Names.Id.t
-       * Constr.types
-       * Evar_kinds.t Loc.located
-       * (bool * Evar_kinds.obligation_definition_status)
-       * Int.Set.t
-       * unit Proofview.tactic option )
-       array
+    -> RetrieveObl.obligation_info
     -> (Constr.constr -> Constr.constr)
     -> t
 
   val set_uctx : uctx:UState.t -> t -> t
 end
 
-(** [declare_obligation] Save an obligation *)
+(** [declare_obligation prg obl ~uctx ~types ~body] Save an obligation
+   [obl] for program definition [prg] *)
 val declare_obligation :
      ProgramDecl.t
   -> Obligation.t
-  -> Constr.types
-  -> Constr.types option
-  -> Entries.universes_entry
+  -> uctx:UState.t
+  -> types:Constr.types option
+  -> body:Constr.types
   -> bool * Obligation.t
 
 module State : sig
@@ -517,7 +512,6 @@ val obl_substitution :
   -> (Id.t * (Constr.types * Constr.types)) list
 
 val dependencies : Obligation.t array -> int -> Int.Set.t
-val err_not_transp : unit -> unit
 
 (* This is a hack to make it possible for Obligations to craft a Qed
  * behind the scenes.  The fix_exn the Stm attaches to the Future proof
