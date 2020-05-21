@@ -13,7 +13,10 @@ Currently geared towards Coq's manual, rather than Coq source files, but one
 could imagine extending it.
 """
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=missing-type-doc, missing-param-doc
+# pylint: disable=missing-return-type-doc, missing-return-doc
+# pylint: disable=too-few-public-methods, too-many-ancestors, arguments-differ
+# pylint: disable=import-outside-toplevel, abstract-method, too-many-lines
 
 import os
 import re
@@ -60,6 +63,7 @@ def notation_to_string(notation):
     try:
         return stringify_with_ellipses(notation)
     except ParseError as e:
+        # FIXME source and line aren't defined below — see cc93f419e0
         raise ExtensionError(PARSE_ERROR.format(os.path.basename(source), line, notation, e.msg)) from e
 
 def highlight_using_coqdoc(sentence):
@@ -100,6 +104,10 @@ class CoqObject(ObjectDescription):
     # The annotation to add to headers of objects of this type
     # (eg. “Command”, “Theorem”)
     annotation = None # type: str
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._sig_names = None
 
     def _name_from_signature(self, signature): # pylint: disable=no-self-use, unused-argument
         """Convert a signature into a name to link to.
@@ -147,7 +155,7 @@ class CoqObject(ObjectDescription):
         """
         self._render_annotation(signode)
         self._render_signature(signature, signode)
-        name = self._names.get(signature)
+        name = self._sig_names.get(signature)
         if name is None:
             name = self._name_from_signature(signature) # pylint: disable=assignment-from-none
             # remove trailing ‘.’ found in commands, but not ‘...’ (ellipsis)
@@ -213,12 +221,13 @@ class CoqObject(ObjectDescription):
                 parent.remove(signode) # move to the end
                 parent.append(signode)
             return target
+        return None
 
     def _prepare_names(self):
         sigs = self.get_signatures()
         names = self.options.get("name")
         if names is None:
-            self._names = {}
+            self._sig_names = {}
         else:
             names = [n.strip() for n in names.split(";")]
             if len(sigs) > 1 and len(names) != len(sigs):
@@ -230,7 +239,7 @@ class CoqObject(ObjectDescription):
                 names = names[-1:]
             else:
                 self.aliases = None
-            self._names = dict(zip(sigs, names))
+            self._sig_names = dict(zip(sigs, names))
 
     def run(self):
         self._prepare_names()
@@ -301,8 +310,7 @@ class VernacObject(NotationObject):
 
     def _name_from_signature(self, signature):
         m = re.match(r"[a-zA-Z ]+", signature)
-        if m:
-            return m.group(0).strip()
+        return m.group(0).strip() if m else None
 
 class VernacVariantObject(VernacObject):
     """A variant of a Coq command.
@@ -455,7 +463,7 @@ class ProductionObject(CoqObject):
 
     # handle_signature is called for each line of input in the prodn::
     # 'signatures' accumulates them in order to combine the lines into a single table:
-    signatures = None
+    signatures = None # FIXME this should be in init, shouldn't it?
 
     def _render_signature(self, signature, signode):
         raise NotImplementedError(self)
@@ -476,11 +484,10 @@ class ProductionObject(CoqObject):
             if len(parts) != 3:
                 loc = os.path.basename(get_node_location(signode))
                 raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
-            else:
-                lhs, op, rhs = (part.strip() for part in parts)
-                if op not in ["::=", "+="]:
-                    loc = os.path.basename(get_node_location(signode))
-                    raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
+            lhs, op, rhs = (part.strip() for part in parts)
+            if op not in ["::=", "+="]:
+                loc = os.path.basename(get_node_location(signode))
+                raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
 
         self.signatures.append((lhs, op, rhs))
         return ('token', lhs) if op == '::=' else None
@@ -503,7 +510,7 @@ class ProductionObject(CoqObject):
 
         table = nodes.inline(classes=['prodn-table'])
         tgroup = nodes.inline(classes=['prodn-column-group'])
-        for i in range(3):
+        for _ in range(3):
             tgroup += nodes.inline(classes=['prodn-column'])
         table += tgroup
         tbody = nodes.inline(classes=['prodn-row-group'])
@@ -938,7 +945,6 @@ class CoqtopBlocksTransform(Transform):
             raise ExtensionError("{}: Exactly one display option must be passed to .. coqtop::".format(loc))
 
         opt_all = 'all' in options
-        opt_none = 'none' in options
         opt_input = 'in' in options
         opt_output = 'out' in options
 
@@ -960,10 +966,7 @@ class CoqtopBlocksTransform(Transform):
 
         :param should_show: Whether this node should be displayed"""
         is_empty = contents is not None and re.match(r"^\s*$", contents)
-        if is_empty or not should_show:
-            return ['coqtop-hidden']
-        else:
-            return []
+        return ['coqtop-hidden'] if is_empty or not should_show else []
 
     @staticmethod
     def make_rawsource(pairs, opt_input, opt_output):
@@ -1042,7 +1045,7 @@ class CoqtopBlocksTransform(Transform):
                                     if c != 'coqtop-hidden']
 
     @staticmethod
-    def merge_consecutive_coqtop_blocks(app, doctree, _):
+    def merge_consecutive_coqtop_blocks(_app, doctree, _):
         """Merge consecutive divs wrapping lists of Coq sentences; keep ‘dl’s separate."""
         for node in doctree.traverse(CoqtopBlocksTransform.is_coqtop_block):
             if node.parent:
@@ -1108,7 +1111,7 @@ class CoqExceptionIndex(CoqSubdomainsIndex):
 
 class IndexXRefRole(XRefRole):
     """A link to one of our domain-specific indices."""
-    lowercase = True,
+    lowercase = True
     innernodeclass = nodes.inline
     warn_dangling = True
 
@@ -1294,6 +1297,7 @@ class CoqDomain(Domain):
         for index in CoqDomain.indices:
             if index.name == targetid:
                 return index
+        return None
 
     def get_objects(self):
         # Used for searching and object inventories (intersphinx)
@@ -1325,6 +1329,7 @@ class CoqDomain(Domain):
             if resolved:
                 (todocname, _, targetid) = resolved
                 return make_refnode(builder, fromdocname, todocname, targetid, contnode, targetname)
+        return None
 
     def clear_doc(self, docname_to_clear):
         for subdomain_objects in self.data['objects'].values():
