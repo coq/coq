@@ -49,10 +49,26 @@ ask_confirmation() {
   fi
 }
 
+curl_paginate_array() {
+  # as per https://developer.github.com/v3/guides/traversing-with-pagination/#changing-the-number-of-items-received, GitHub will never give us more than 100
+  url="$1?per_page=100"
+  # we keep fetching pages until the response is below the per-page limit (possibly 0 elements)
+  page=1
+  while true; do
+    response="$(curl -s "${url}&page=${page}")"
+    echo "${response}"
+    if [ "$(jq 'length' <<< "$response")" -lt 100 ]; then # done
+      break
+    fi
+    page=$(($page + 1))
+  done | jq '[.[]]' # we concatenate the arrays
+}
+
 check_util jq
 check_util curl
 check_util git
 check_util gpg
+check_util grep
 
 # command line parsing
 
@@ -70,6 +86,8 @@ fi
 
 # Fetching PR metadata
 
+# The main API call returns a dict/object, not an array, so we don't
+# bother paginating
 PRDATA=$(curl -s "$API/pulls/$PR")
 
 TITLE=$(echo "$PRDATA" | jq -r '.title')
@@ -203,7 +221,7 @@ fi
 # Generate commit message
 
 info "Fetching review data"
-reviews=$(curl -s "$API/pulls/$PR/reviews")
+reviews=$(curl_paginate_array "$API/pulls/$PR/reviews")
 msg="Merge PR #$PR: $TITLE"
 
 has_state() {
