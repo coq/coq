@@ -138,7 +138,9 @@ type 'a proof_entry = {
 
 let default_univ_entry = Entries.Monomorphic_entry Univ.ContextSet.empty
 
-let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?types
+(** [univsbody] are universe-constraints attached to the body-only,
+   used in vio-delayed opaque constants and private poly universes *)
+let definition_entry_core ?fix_exn ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?types
     ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
   { proof_entry_body = Future.from_val ?fix_exn ((body,univsbody), eff);
     proof_entry_secctx = section_vars;
@@ -147,6 +149,9 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?feedback_id ?sect
     proof_entry_opaque = opaque;
     proof_entry_feedback = feedback_id;
     proof_entry_inline_code = inline}
+
+let definition_entry =
+  definition_entry_core ?fix_exn:None ?eff:None ?univsbody:None ?feedback_id:None ?section_vars:None
 
 type proof_object =
   { name : Names.Id.t
@@ -241,7 +246,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
         let utyp = UState.check_univ_decl ~poly ctx udecl in
         utyp, Univ.ContextSet.empty
     in
-    definition_entry ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
+    definition_entry_core ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
   let entries = CList.map make_entry elist  in
   { name; entries; uctx }
@@ -998,7 +1003,7 @@ let prepare_definition ?opaque ?inline ?fix_exn ~poly ~udecl ~types ~body sigma 
       sigma (fun nf -> nf body, Option.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  let entry = definition_entry ?fix_exn ?opaque ?inline ?types ~univs body in
+  let entry = definition_entry_core ?fix_exn ?opaque ?inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
