@@ -778,6 +778,21 @@ let infer =
   else (fun b c -> infer b c)
 
 let infer_fix env fix =
+  (** NB: This doesn't work. The Rel context might have Evar and Meta.
+  let open Rel.Declaration in
+  let infer_rel _ rd (env, stg, cstrnt) =
+    match rd with
+    | LocalAssum (na, ty) ->
+      let stg, cstrnt, ty, _ = execute env stg cstrnt ty in
+      push_rel (LocalAssum (na, ty)) env, stg, cstrnt
+    | LocalDef (na, c, _) ->
+      let stg, cstrnt, c, ty = execute env stg cstrnt c in
+      push_rel (LocalDef (na, c, ty)) env, stg, cstrnt
+    in
+  let env' = reset_with_named_context (named_context_val env) env in
+  let env, stg, cstrnt = fold_rel_context infer_rel env ~init:(env', State.init, empty ()) in
+  ignore @@ execute_fix env stg cstrnt fix
+  **)
   ignore @@ execute_fix env State.init (empty ()) fix
 
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
