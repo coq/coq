@@ -132,5 +132,4 @@ val show_obligations : ?msg:bool -> Names.Id.t option -> unit
 val show_term : Names.Id.t option -> Pp.t
 val admit_obligations : Names.Id.t option -> unit
 
-val explain_no_obligations : Names.Id.t option -> Pp.t
 val check_program_libraries : unit -> unit
