@@ -153,13 +153,12 @@ let e_possible_resolve env sigma db_list local_db secvars gl =
 
 (* first_goal : goal list sigma -> goal sigma *)
 
-let first_goal gls =
-  let gl = gls.Evd.it and sig_0 = gls.Evd.sigma in
-  if List.is_empty gl then user_err Pp.(str "first_goal");
-  { Evd.it = List.hd gl; Evd.sigma = sig_0; }
-
 let find_first_goal gls =
-  try first_goal gls with UserError _ -> assert false
+  let gl = gls.Evd.it and sig_0 = gls.Evd.sigma in
+  match gl with
+  | [] -> assert false
+  | (gl, db) :: _ ->
+    { Evd.it = gl; Evd.sigma = sig_0; }, db
 
 (*s The following module [SearchProblem] is used to instantiate the generic
     exploration functor [Explore.Make]. *)
@@ -167,10 +166,9 @@ let find_first_goal gls =
 type search_state = {
   priority : int;
   depth : int; (*r depth of search before failing *)
-  tacres : Goal.goal list sigma;
+  tacres : (Goal.goal * hint_db) list sigma;
   last_tactic : Pp.t Lazy.t;
   dblist : hint_db list;
-  localdb :  hint_db list;
   prev : prev_search_state;
   local_lemmas : delayed_open_constr list;
 }
@@ -190,14 +188,14 @@ module SearchProblem = struct
 
 (* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
 
-  let apply_tac_list tac glls =
+  let apply_tac_list tac mkdb glls =
     match glls.it with
-    | (g1::rest) ->
+    | ((g1, db) :: rest) ->
         let pack = tac (re_sig g1 glls.sigma) in
-        pack.it, re_sig rest pack.sigma
+        List.map (fun gl -> gl, mkdb db (re_sig gl pack.sigma)) pack.it, re_sig rest pack.sigma
     | _ -> user_err Pp.(str "apply_tac_list")
 
-  let filter_tactics glls l =
+  let filter_tactics mkdb glls l =
 (*     let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (*     let evars = Evarutil.nf_evars (Refiner.project glls) in *)
 (*     msg (str"Goal:" ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
@@ -205,7 +203,7 @@ module SearchProblem = struct
       | [] -> []
       | (tac, cost, pptac) :: tacl ->
           try
-            let ngls, lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
+            let ngls, lgls = apply_tac_list (Proofview.V82.of_tactic tac) mkdb glls in
 (* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
               (ngls, lgls, cost, pptac) :: aux tacl
@@ -230,65 +228,54 @@ module SearchProblem = struct
     else
       let ps = if s.prev == Unknown then Unknown else State s in
       let lg = s.tacres in
-      let g = find_first_goal lg in
+      let g, db = find_first_goal lg in
       let hyps = pf_ids_of_hyps g in
       let secvars = secvars_of_hyps (pf_hyps g) in
       let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ Id.print id)) in
       let assumption_tacs =
         let tacs = List.map map_assum hyps in
-        let l = filter_tactics s.tacres tacs in
+        let mkdb db gl = assert false in (* no goal can be generated *)
+        let l = filter_tactics mkdb s.tacres tacs in
         List.map (fun (ngl, res, cost, pp) ->
           let () = assert (List.is_empty ngl) in
           { depth = s.depth; priority = cost; tacres = res;
                                     last_tactic = pp; dblist = s.dblist;
-                                    localdb = List.tl s.localdb;
                                     prev = ps; local_lemmas = s.local_lemmas}) l
       in
       let intro_tac =
-        let l = filter_tactics s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
+        let mkdb db gl =
+          let hintl = make_resolve_hyp (pf_env gl) (project gl) (pf_last_hyp gl) in
+          Hint_db.add_list (pf_env gl) (project gl) hintl db
+        in
+        let l = filter_tactics mkdb s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
         List.map
           (fun (ngls, lgls, cost, pp) ->
              let lgls = re_sig (ngls @ lgls.it) lgls.sigma in
-             let g' = first_goal lgls in
-             let hintl =
-               make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
-             in
-             let ldb = Hint_db.add_list (pf_env g') (project g')
-                  hintl (List.hd s.localdb) in
              { depth = s.depth; priority = cost; tacres = lgls;
                last_tactic = pp; dblist = s.dblist;
-               localdb = ldb :: List.tl s.localdb; prev = ps;
+               prev = ps;
                local_lemmas = s.local_lemmas})
           l
       in
       let rec_tacs =
+        let hyps = pf_hyps g in
+        let mkdb db gls =
+          let hyps' = pf_hyps gls in
+            if hyps' == hyps then db
+            else make_local_hint_db (pf_env gls) (project gls) ~ts:TransparentState.full true s.local_lemmas
+        in
         let l =
           let concl = Reductionops.nf_evar (project g) (pf_concl g) in
-          filter_tactics s.tacres
-                         (e_possible_resolve (pf_env g) (project g) s.dblist (List.hd s.localdb) secvars concl)
+          filter_tactics mkdb s.tacres
+                         (e_possible_resolve (pf_env g) (project g) s.dblist db secvars concl)
         in
         List.map
           (fun (ngls, lgls, cost, pp) ->
-            match ngls with
-            | [] ->
-               { depth = s.depth; priority = cost; tacres = lgls; last_tactic = pp;
-                  prev = ps; dblist = s.dblist; localdb = List.tl s.localdb;
-                  local_lemmas = s.local_lemmas }
-            | _ :: _ ->
-             let lgls = re_sig (ngls @ lgls.it) lgls.sigma in
-               let newlocal =
-                 let hyps = pf_hyps g in
-                   List.map (fun gl ->
-                     let gls = {Evd.it = gl; sigma = lgls.Evd.sigma } in
-                     let hyps' = pf_hyps gls in
-                       if hyps' == hyps then List.hd s.localdb
-                       else make_local_hint_db (pf_env gls) (project gls) ~ts:TransparentState.full true s.local_lemmas)
-                     ngls
-               in
-                 { depth = pred s.depth; priority = cost; tacres = lgls;
-                   dblist = s.dblist; last_tactic = pp; prev = ps;
-                   localdb = newlocal @ List.tl s.localdb;
-                   local_lemmas = s.local_lemmas })
+            let lgls = re_sig (ngls @ lgls.it) lgls.sigma in
+            let depth = if List.is_empty ngls then s.depth else pred s.depth in
+            { depth; priority = cost; tacres = lgls; last_tactic = pp;
+              prev = ps; dblist = s.dblist;
+              local_lemmas = s.local_lemmas })
           l
       in
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
@@ -352,10 +339,9 @@ let pr_info dbg s =
 let make_initial_state dbg n gl dblist localdb lems =
   { depth = n;
     priority = 0;
-    tacres = tclIDTAC gl;
+    tacres = re_sig [gl.it, localdb] gl.sigma;
     last_tactic = lazy (mt());
     dblist = dblist;
-    localdb = [localdb];
     prev = if dbg == Info then Init else Unknown;
     local_lemmas = lems;
   }
@@ -374,7 +360,7 @@ let e_search_auto debug (in_depth,p) lems db_list =
     pr_dbg_header d;
     let s = tac (make_initial_state d p gl db_list local_db lems) in
     pr_info d s;
-    s.tacres
+    re_sig (List.map fst s.tacres.it) s.tacres.sigma
   with Not_found ->
     pr_info_nop d;
     tclIDTAC gl
