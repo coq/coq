@@ -30,6 +30,15 @@ Check -0xb.2cp-2.
 Check 1e309.
 Check -1e309.
 
+Set Printing All.
+Check 0.5.
+Unset Printing All.
+Check 0.5.
+Unset Printing Float.
+Check 0.5.
+Set Printing Float.
+Check 0.5.
+
 Open Scope nat_scope.
 
 Check 2.

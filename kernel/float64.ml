@@ -19,29 +19,27 @@ let is_nan (f : float) = f <> f
 let is_infinity f = f = infinity
 let is_neg_infinity f = f = neg_infinity
 
-(* Printing a binary64 float in 17 decimal places and parsing it again
-   will yield the same float. We assume [to_string_raw] is not given a
-   [nan] or an infinity as input. *)
-let to_string_raw f = Printf.sprintf "%.17g" f
-
 (* OCaml gives a sign to nan values which should not be displayed as
    all NaNs are considered equal here.
    OCaml prints infinities as "inf" (resp. "-inf")
    but we want "infinity" (resp. "neg_infinity"). *)
-let to_string f =
+let to_string_raw fmt f =
   if is_nan f then "nan"
   else if is_infinity f then "infinity"
   else if is_neg_infinity f then "neg_infinity"
-  else to_string_raw f
+  else Printf.sprintf fmt f
+
+let to_hex_string = to_string_raw "%h"
+
+(* Printing a binary64 float in 17 decimal places and parsing it again
+   will yield the same float. *)
+let to_string = to_string_raw "%.17g"
 
 let of_string = float_of_string
 
 (* Compiles a float to OCaml code *)
 let compile f =
-  let s =
-    if is_nan f then "nan" else if is_neg_infinity f then "neg_infinity"
-    else Printf.sprintf "%h" f in
-  Printf.sprintf "Float64.of_float (%s)" s
+  Printf.sprintf "Float64.of_float (%s)" (to_hex_string f)
 
 let of_float f = f
 

@@ -6,13 +6,13 @@
      : float
 File "stdin", line 9, characters 6-13:
 Warning: The constant 2.5e123 is not a binary64 floating-point value. A
-closest value will be used and unambiguously printed 2.4999999999999999e+123.
-[inexact-float,parsing]
+closest value 0x1.e412f0f768fadp+409 will be used and unambiguously printed
+2.4999999999999999e+123. [inexact-float,parsing]
 2.4999999999999999e+123%float
      : float
 File "stdin", line 10, characters 7-16:
 Warning: The constant -2.5e-123 is not a binary64 floating-point value. A
-closest value will be used and unambiguously printed
+closest value -0x1.a71368f0f3047p-408 will be used and unambiguously printed
 -2.5000000000000001e-123. [inexact-float,parsing]
 (-2.5000000000000001e-123)%float
      : float
@@ -28,13 +28,13 @@ closest value will be used and unambiguously printed
      : float
 File "stdin", line 19, characters 6-13:
 Warning: The constant 2.5e123 is not a binary64 floating-point value. A
-closest value will be used and unambiguously printed 2.4999999999999999e+123.
-[inexact-float,parsing]
+closest value 0x1.e412f0f768fadp+409 will be used and unambiguously printed
+2.4999999999999999e+123. [inexact-float,parsing]
 2.4999999999999999e+123
      : float
 File "stdin", line 20, characters 7-16:
 Warning: The constant -2.5e-123 is not a binary64 floating-point value. A
-closest value will be used and unambiguously printed
+closest value -0x1.a71368f0f3047p-408 will be used and unambiguously printed
 -2.5000000000000001e-123. [inexact-float,parsing]
 -2.5000000000000001e-123
      : float
@@ -56,15 +56,23 @@ closest value will be used and unambiguously printed
      : float
 File "stdin", line 30, characters 6-11:
 Warning: The constant 1e309 is not a binary64 floating-point value. A closest
-value will be used and unambiguously printed infinity.
+value infinity will be used and unambiguously printed infinity.
 [inexact-float,parsing]
 infinity
      : float
 File "stdin", line 31, characters 6-12:
 Warning: The constant -1e309 is not a binary64 floating-point value. A
-closest value will be used and unambiguously printed neg_infinity.
-[inexact-float,parsing]
+closest value neg_infinity will be used and unambiguously printed
+neg_infinity. [inexact-float,parsing]
 neg_infinity
+     : float
+0x1p-1
+     : float
+0.5
+     : float
+0x1p-1
+     : float
+0.5
      : float
 2
      : nat
