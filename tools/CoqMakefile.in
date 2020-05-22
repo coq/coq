@@ -146,6 +146,20 @@ TIME_OF_PRETTY_BUILD_EXTRA_FILES ?= - # also output to the command line
 
 TGTS ?=
 
+# Retro compatibility (DESTDIR is standard on Unix, DSTROOT is not)
+ifdef DSTROOT
+DESTDIR := $(DSTROOT)
+endif
+
+# Substitution of the path by appending $(DESTDIR) if needed.
+# The variable $(COQMF_WINDRIVE) can be needed for Cygwin environments.
+destination_path = $(if $(DESTDIR),$(DESTDIR)/$(if $(COQMF_WINDRIVE),$(subst $(COQMF_WINDRIVE),/,$(1)),$(1)),$(1))
+
+# Installation paths of libraries and documentation.
+COQLIBINSTALL ?= $(call destination_path,$(COQLIB)/user-contrib)
+COQDOCINSTALL ?= $(call destination_path,$(DOCDIR)/user-contrib)
+COQTOPINSTALL ?= $(call destination_path,$(COQLIB)/toploop) # FIXME: Unused variable?
+
 ########## End of parameters ##################################################
 # What follows may be relevant to you only if you need to
 # extend this Makefile.  If so, look for 'Extension point' here and
@@ -226,17 +240,6 @@ endif
 else
 TIMING_ARG=
 endif
-
-# Retro compatibility (DESTDIR is standard on Unix, DSTROOT is not)
-ifdef DSTROOT
-DESTDIR := $(DSTROOT)
-endif
-
-concat_path = $(if $(1),$(1)/$(if $(COQMF_WINDRIVE),$(subst $(COQMF_WINDRIVE),/,$(2)),$(2)),$(2))
-
-COQLIBINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)/user-contrib)
-COQDOCINSTALL = $(call concat_path,$(DESTDIR),$(DOCDIR)/user-contrib)
-COQTOPINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)/toploop)
 
 # Files #######################################################################
 #
@@ -577,7 +580,7 @@ uninstall::
 	 instf="$(COQLIBINSTALL)/$$df/`basename $$f`" &&\
 	 rm -f "$$instf" &&\
 	 echo RM "$$instf" &&\
-	 (rmdir "$(call concat_path,,$(COQLIBINSTALL)/$$df/)" 2>/dev/null || true); \
+	 (rmdir "$(COQLIBINSTALL)/$$df/" 2>/dev/null || true); \
 	done
 .PHONY: uninstall
 

@@ -170,6 +170,10 @@ Here we describe only few of them.
    override the flags passed to ``coqdoc``. By default ``-interpolate -utf8``.
 :COQDOCEXTRAFLAGS:
    extend the flags passed to ``coqdoc``
+:COQLIBINSTALL, COQDOCINSTALL:
+   specify where the Coq libraries and documentation will be installed.
+   By default a combination of ``$(DESTDIR)`` (if defined) with
+   ``$(COQLIB)/user-contrib`` and ``$(DOCDIR)/user-contrib``.
 
 **Rule extension**
 
