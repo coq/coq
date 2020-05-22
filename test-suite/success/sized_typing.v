@@ -41,8 +41,8 @@ Fixpoint mult x y :=
 
 Fixpoint leb n m :=
   match n, m with
-    | 0, _ => true
-    | _, 0 => false
+    | O, _ => true
+    | _, O => false
     | S n', S m' => leb n' m'
   end.
 
@@ -72,6 +72,12 @@ Definition tail T (l: list T) :=
   match l with
   | nil => nil
   | cons _ l' => l'
+  end.
+
+Fixpoint count T (l: list T) :=
+  match l with
+  | nil => O
+  | cons x l => S (count T l)
   end.
 
 Fixpoint append T (l1 l2: list T) :=
