@@ -115,7 +115,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output output-coqtop \
   coqdoc ssr primitive/uint63 primitive/float ltac2
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile tools $(UNIT_TESTS)
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
 
 .csdp.cache: .csdp.cache.test-suite
 	cp $< $@
@@ -192,6 +192,7 @@ summary:
 	  $(call summary_dir, "IDE tests", ide); \
 	  $(call summary_dir, "VI tests", vio); \
 	  $(call summary_dir, "Coqchk tests", coqchk); \
+	  $(call summary_dir, "Output tests with coqchk", output-coqchk); \
 	  $(call summary_dir, "Coqwc tests", coqwc); \
 	  $(call summary_dir, "Coq makefile", coq-makefile); \
 	  $(call summary_dir, "Coqdoc tests", coqdoc); \
@@ -461,6 +462,43 @@ $(addsuffix .log,$(wildcard output-coqtop/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
+
+output-coqchk: $(addsuffix .log,$(wildcard output-coqchk/*.v))
+$(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
+	$(HIDE){ \
+	  opts="$(if $(findstring modules/,$<),-R modules Mods)"; \
+	  echo $(call log_intro,$<); \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") $$opts 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (should be accepted)"; \
+	    $(FAIL); \
+	  fi; \
+	} > "$@"
+	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
+	$(HIDE)if ! grep -q -F "Error!" $@; then { \
+	  echo $(call log_intro,$<); \
+	  output=$*.out.real; \
+	  export LC_CTYPE=C; \
+	  export LANG=C; \
+	  $(coqchk) -o -silent $(call get_set_impredicativity,$<) $(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-Q $(shell dirname $<) "" -norec $(shell basename $< .v)) 2>&1 \
+	    | sed 's/File "[^"]*"/File "stdin"/' \
+	    > $$output; \
+	  diff -a -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	    rm $$output; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (unexpected output)"; \
+	    $(FAIL); \
+	  fi; \
+	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 
 .PHONY: approve-output
 approve-output: output output-coqtop

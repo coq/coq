@@ -30,4 +30,4 @@ val add_load_path : physical_path * logical_path -> unit
 val recheck_library : safe_environment ->
   norec:object_file list ->
   admit:object_file list ->
-  check:object_file list -> safe_environment
+  check:object_file list -> safe_environment * Cset.t Cmap.t

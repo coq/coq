@@ -38,8 +38,14 @@ let pr_assumptions ass axs =
   else
     hv 2 (str ass ++ str ":" ++ fnl() ++ prlist_with_sep fnl str axs)
 
-let pr_axioms env =
-  let csts = fold_constants (fun c cb acc -> if not (Declareops.constant_has_body cb) then Constant.to_string c :: acc else acc) env [] in
+let pr_axioms env opac =
+  let add c cb acc =
+    if Declareops.constant_has_body cb then acc else
+      match Cmap.find_opt c opac with
+      | None -> Cset.add c acc
+      | Some s -> Cset.union s acc in
+  let csts = fold_constants add env Cset.empty in
+  let csts = Cset.fold (fun c acc -> Constant.to_string c :: acc) csts [] in
   pr_assumptions "Axioms" csts
 
 let pr_type_in_type env =
@@ -56,20 +62,20 @@ let pr_nonpositive env =
   let inds = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_positive then MutInd.to_string c :: acc else acc) env [] in
   pr_assumptions "Inductives whose positivity is assumed" inds
 
-let print_context env =
+let print_context env opac =
   if !output_context then begin
     Feedback.msg_notice
       (hov 0
       (fnl() ++ str"CONTEXT SUMMARY" ++ fnl() ++
       str"===============" ++ fnl() ++ fnl() ++
       str "* " ++ hov 0 (pr_engagement env ++ fnl()) ++ fnl() ++
-      str "* " ++ hov 0 (pr_axioms env ++ fnl()) ++ fnl() ++
+      str "* " ++ hov 0 (pr_axioms env opac ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_type_in_type env ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_unguarded env ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_nonpositive env ++ fnl()))
       )
   end
 
-let stats env =
-  print_context env;
+let stats env opac =
+  print_context env opac;
   print_memory_stat ()

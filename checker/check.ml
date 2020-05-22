@@ -119,11 +119,12 @@ let check_one_lib admit senv (dir,m) =
     if LibrarySet.mem dir admit then
       (Flags.if_verbose Feedback.msg_notice
          (str "Admitting library: " ++ pr_dirpath dir);
-       Safe_checking.unsafe_import senv md m.library_extra_univs dig)
+       Safe_checking.unsafe_import (fst senv) md m.library_extra_univs dig),
+      (snd senv)
     else
       (Flags.if_verbose Feedback.msg_notice
          (str "Checking library: " ++ pr_dirpath dir);
-       Safe_checking.import senv md m.library_extra_univs dig)
+       Safe_checking.import (fst senv) (snd senv) md m.library_extra_univs dig)
   in
     register_loaded_library m; senv
 
@@ -435,6 +436,6 @@ let recheck_library senv ~norec ~admit ~check =
   Flags.if_verbose Feedback.msg_notice (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
     prlist
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
-  let senv = List.fold_left (check_one_lib nochk) senv needed in
+  let senv = List.fold_left (check_one_lib nochk) (senv, Cmap.empty) needed in
   Flags.if_verbose Feedback.msg_notice (str"Modules were successfully checked");
   senv
