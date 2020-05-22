@@ -943,7 +943,7 @@ module Recthm = struct
     }
 end
 
-let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) fixitems =
+let declare_mutually_recursive_core ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) fixitems =
   let vars, fixdecls, indexes =
     mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes in
   let uctx, univs =
@@ -968,6 +968,8 @@ let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~re
   recursive_message isfix indexes fixnames;
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   csts
+
+let declare_mutually_recursive = declare_mutually_recursive_core ~restrict_ucontext:true
 
 let warn_let_as_axiom =
   CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
@@ -1540,7 +1542,7 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let udecl = UState.default_univ_decl in
   let kns =
-    declare_mutually_recursive ~scope ~opaque ~kind ~udecl ~ntns
+    declare_mutually_recursive_core ~scope ~opaque ~kind ~udecl ~ntns
       ~uctx:first.prg_ctx ~rec_declaration ~possible_indexes ~poly
       ~restrict_ucontext:false fixitems
   in

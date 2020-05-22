@@ -285,7 +285,7 @@ let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixt
   let fix_kind = Decls.IsDefinition fix_kind in
   let _ : GlobRef.t list =
     Declare.declare_mutually_recursive ~scope ~opaque:false ~kind:fix_kind ~poly ~uctx
-      ~possible_indexes:indexes ~restrict_ucontext:true ~udecl ~ntns ~rec_declaration
+      ~possible_indexes:indexes ~udecl ~ntns ~rec_declaration
       fixitems
   in
   ()
