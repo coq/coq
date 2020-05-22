@@ -370,6 +370,11 @@ let ehole_var = EConstr.mkVar (Id.of_string "_")
 let pr_econstr_pat env sigma c0 =
   let rec wipe_evar c = let open EConstr in
     if isEvar sigma c then ehole_var else map sigma wipe_evar c in
+  let dummy_decl =
+    let dummy_prod = mkProd (make_annot Anonymous Sorts.Relevant,mkProp,mkProp) in
+    let na = make_annot (EConstr.destVar sigma ehole_var) Sorts.Relevant in
+    Context.Named.Declaration.(LocalAssum (na, dummy_prod)) in
+  let env = Environ.push_named dummy_decl env in
   pr_econstr_env env sigma (wipe_evar c0)
 
 (* Turn (new) evars into metas *)

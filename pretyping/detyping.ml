@@ -25,7 +25,7 @@ open Namegen
 open Libnames
 open Globnames
 open Mod_subst
-open Context.Named.Declaration
+open Context.Rel.Declaration
 open Ltac_pretype
 
 type detyping_flags = {
@@ -125,21 +125,8 @@ let print_universes = ref false
 (** If true, prints local context of evars, whatever print_arguments *)
 let print_evar_arguments = ref false
 
-let add_name na b t (nenv, env) =
-  let open Context.Rel.Declaration in
-  (* Is this just a dummy? Be careful, printing doesn't always give us
-     a correct env. *)
-  let r = Sorts.Relevant in
-  add_name na nenv, push_rel (match b with
-                              | None -> LocalAssum (make_annot na r,t)
-                              | Some b -> LocalDef (make_annot na r,b,t)
-                             )
-                             env
-
-let add_name_opt na b t (nenv, env) =
-  match t with
-  | None -> Termops.add_name na nenv, env
-  | Some t -> add_name na b t (nenv, env)
+let add_name decl (nenv, env) =
+  add_name (get_name decl) nenv, push_rel decl env
 
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
@@ -406,24 +393,28 @@ let update_name sigma na ((_,(e,_)),c) =
   | _ ->
       na
 
+let get_domain env sigma c =
+  let (_,t,_) = EConstr.destProd sigma (Reductionops.whd_all env sigma (Retyping.get_type_of env sigma c)) in
+  t
+
 let rec decomp_branch tags nal flags (avoid,env as e) sigma c =
   match tags with
   | [] -> (List.rev nal,(e,c))
   | b::tags ->
-      let na,c,let_in,body,t =
+      let decl, c, let_in =
         match EConstr.kind sigma (strip_outer_cast sigma c), b with
-        | Lambda (na,t,c),false -> na.binder_name,c,true,None,Some t
-        | LetIn (na,b,t,c),true ->
-            na.binder_name,c,false,Some b,Some t
+        | Lambda (na,t,c),false -> LocalAssum (na,t), c, true
+        | LetIn (na,b,t,c),true -> LocalDef (na,b,t), c, false
         | _, false ->
-          Name default_dependent_ident,(applist (lift 1 c, [mkRel 1])),
-            false,None,None
+          let na = make_annot (Name default_dependent_ident) Sorts.Relevant (* dummy *) in
+          LocalAssum (na, get_domain (snd env) sigma c), applist (lift 1 c, [mkRel 1]), false
         | _, true ->
-          Anonymous,lift 1 c,false,None,None
+          let na = make_annot Anonymous Sorts.Relevant (* dummy *) in
+          LocalDef (na, mkProp (* dummy *), type1), lift 1 c, false
     in
-    let na',avoid' = compute_name sigma ~let_in ~pattern:true flags avoid env na c in
+    let na',avoid' = compute_name sigma ~let_in ~pattern:true flags avoid env (get_name decl) c in
     decomp_branch tags (na'::nal) flags
-      (avoid', add_name_opt na' body t env) sigma c
+      (avoid', add_name (set_name na' decl) env) sigma c
 
 let rec build_tree na isgoal e sigma ci cl =
   let mkpat n rhs pl =
@@ -564,26 +555,29 @@ let rec share_names detype flags n l avoid env sigma c t =
   match EConstr.kind sigma c, EConstr.kind sigma t with
     (* factorize even when not necessary to have better presentation *)
     | Lambda (na,t,c), Prod (na',t',c') ->
+        let decl = LocalAssum (na,t) in
         let na = Nameops.Name.pick_annot na na' in
         let t' = detype flags avoid env sigma t in
         let id, avoid = next_name_away flags na.binder_name avoid in
-        let env = add_name (Name id) None t env in
+        let env = add_name (set_name (Name id) decl) env in
         share_names detype flags (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
     (* May occur for fix built interactively *)
     | LetIn (na,b,t',c), _ when n > 0 ->
+        let decl = LocalDef (na,b,t') in
         let t'' = detype flags avoid env sigma t' in
         let b' = detype flags avoid env sigma b in
         let id, avoid = next_name_away flags na.binder_name avoid in
-        let env = add_name (Name id) (Some b) t' env in
+        let env = add_name (set_name (Name id) decl) env in
         share_names detype flags n ((Name id,Explicit,Some b',t'')::l) avoid env sigma c (lift 1 t)
     (* Only if built with the f/n notation or w/o let-expansion in types *)
     | _, LetIn (_,b,_,t) when n > 0 ->
         share_names detype flags n l avoid env sigma c (subst1 b t)
     (* If it is an open proof: we cheat and eta-expand *)
     | _, Prod (na',t',c') when n > 0 ->
+        let decl = LocalAssum (na',t') in
         let t'' = detype flags avoid env sigma t' in
         let id, avoid = next_name_away flags na'.binder_name avoid in
-        let env = add_name (Name id) None t' env in
+        let env = add_name (set_name (Name id) decl) env in
         let appc = mkApp (lift 1 c,[|mkRel 1|]) in
         share_names detype flags (n-1) ((Name id,Explicit,None,t'')::l) avoid env sigma appc c'
     (* If built with the f/n notation: we renounce to share names *)
@@ -621,7 +615,7 @@ let detype_fix detype flags avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
     Array.fold_left2
       (fun (avoid, env, l) na ty ->
          let id, avoid = next_name_away flags na.binder_name avoid in
-         (avoid, add_name (Name id) None ty env, id::l))
+         (avoid, add_name (set_name (Name id) (LocalAssum (na,ty))) env, id::l))
       (avoid, env, []) names tys in
   let n = Array.length tys in
   let v = Array.map3
@@ -637,7 +631,7 @@ let detype_cofix detype flags avoid env sigma n (names,tys,bodies) =
     Array.fold_left2
       (fun (avoid, env, l) na ty ->
          let id, avoid = next_name_away flags na.binder_name avoid in
-         (avoid, add_name (Name id) None ty env, id::l))
+         (avoid, add_name (set_name (Name id) (LocalAssum (na,ty))) env, id::l))
       (avoid, env, []) names tys in
   let ntys = Array.length tys in
   let v = Array.map2
@@ -734,9 +728,9 @@ and detype_r d flags avoid env sigma t =
     | _ -> CastConv d2
     in
         GCast(d1,cast)
-    | Prod (na,ty,c) -> detype_binder d flags BProd avoid env sigma na None ty c
-    | Lambda (na,ty,c) -> detype_binder d flags BLambda avoid env sigma na None ty c
-    | LetIn (na,b,ty,c) -> detype_binder d flags BLetIn avoid env sigma na (Some b) ty c
+    | Prod (na,ty,c) -> detype_binder d flags BProd avoid env sigma (LocalAssum (na,ty)) c
+    | Lambda (na,ty,c) -> detype_binder d flags BLambda avoid env sigma (LocalAssum (na,ty)) c
+    | LetIn (na,b,ty,c) -> detype_binder d flags BLetIn avoid env sigma (LocalDef (na,b,ty)) c
     | App (f,args) ->
       let mkapp f' args' =
         match DAst.get f' with
@@ -770,6 +764,7 @@ and detype_r d flags avoid env sigma t =
         else noparams ()
 
     | Evar (evk,cl) ->
+        let open Context.Named.Declaration in
         let bound_to_itself_or_letin decl c =
           match decl with
           | LocalDef _ -> true
@@ -823,12 +818,12 @@ and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
       (Array.map3 (detype_eqn d flags avoid env sigma) constructs consnargsl bl)
 
 and detype_eqn d flags avoid env sigma constr construct_nargs branch =
-  let make_pat x avoid env b body ty ids =
+  let make_pat decl avoid env b ids =
     if force_wildcard () && noccurn sigma 1 b then
-      DAst.make @@ PatVar Anonymous,avoid,(add_name Anonymous body ty env),ids
+      DAst.make @@ PatVar Anonymous,avoid,(add_name (set_name Anonymous decl) env),ids
     else
-      let na,avoid' = compute_name sigma ~let_in:false ~pattern:true flags avoid env x b in
-      DAst.make (PatVar na),avoid',(add_name na body ty env),add_vname ids na
+      let na,avoid' = compute_name sigma ~let_in:false ~pattern:true flags avoid env (get_name decl) b in
+      DAst.make (PatVar na),avoid',(add_name (set_name na decl) env),add_vname ids na
   in
   let rec buildrec ids patlist avoid env l b =
     match EConstr.kind sigma b, l with
@@ -837,11 +832,11 @@ and detype_eqn d flags avoid env sigma constr construct_nargs branch =
          [DAst.make @@ PatCstr(constr, List.rev patlist,Anonymous)],
          detype d flags avoid env sigma b)
       | Lambda (x,t,b), false::l ->
-            let pat,new_avoid,new_env,new_ids = make_pat x.binder_name avoid env b None t ids in
+            let pat,new_avoid,new_env,new_ids = make_pat (LocalAssum (x,t)) avoid env b ids in
             buildrec new_ids (pat::patlist) new_avoid new_env l b
 
       | LetIn (x,b,t,b'), true::l ->
-            let pat,new_avoid,new_env,new_ids = make_pat x.binder_name avoid env b' (Some b) t ids in
+            let pat,new_avoid,new_env,new_ids = make_pat (LocalDef (x,b,t)) avoid env b' ids in
             buildrec new_ids (pat::patlist) new_avoid new_env l b'
 
       | Cast (c,_,_), l ->    (* Oui, il y a parfois des cast *)
@@ -856,18 +851,22 @@ and detype_eqn d flags avoid env sigma constr construct_nargs branch =
                termes seront construits à partir de la syntaxe Cases *)
             (* nommage de la nouvelle variable *)
             let new_b = applist (lift 1 b, [mkRel 1]) in
+            let typ = get_domain (snd env) sigma b in
             let pat,new_avoid,new_env,new_ids =
-              make_pat Anonymous avoid env new_b None mkProp ids in
+              make_pat (LocalAssum (make_annot Anonymous Sorts.Relevant (* dummy *),typ)) avoid env new_b ids in
             buildrec new_ids (pat::patlist) new_avoid new_env l new_b
 
   in
   buildrec Id.Set.empty [] avoid env construct_nargs branch
 
-and detype_binder d flags bk avoid env sigma {binder_name=na} body ty c =
+and detype_binder d flags bk avoid env sigma decl c =
+  let na = get_name decl in
+  let body = get_value decl in
+  let ty = get_type decl in
   let na',avoid' = match bk with
   | BLetIn -> compute_name sigma ~let_in:true ~pattern:false flags avoid env na c
   | _ -> compute_name sigma ~let_in:false ~pattern:false flags avoid env na c in
-  let r =  detype d flags avoid' (add_name na' body ty env) sigma c in
+  let r =  detype d flags avoid' (add_name (set_name na' decl) env) sigma c in
   match bk with
   | BProd   -> GProd (na',Explicit,detype d { flags with flg_isgoal = false } avoid env sigma ty, r)
   | BLambda -> GLambda (na',Explicit,detype d { flags with flg_isgoal = false } avoid env sigma ty, r)
@@ -883,7 +882,6 @@ let detype_rel_context d flags where avoid env sigma sign =
   let rec aux avoid env = function
   | [] -> []
   | decl::rest ->
-      let open Context.Rel.Declaration in
       let na = get_name decl in
       let t = get_type decl in
       let na',avoid' =
@@ -898,7 +896,7 @@ let detype_rel_context d flags where avoid env sigma sign =
       in
       let b' = Option.map (detype d flags avoid env sigma) b in
       let t' = detype d flags avoid env sigma t in
-      (na',Explicit,b',t') :: aux avoid' (add_name na' b t env) rest
+      (na',Explicit,b',t') :: aux avoid' (add_name (set_name na' decl) env) rest
   in aux avoid env (List.rev sign)
 
 let detype_names isgoal avoid nenv env sigma t =
@@ -916,7 +914,6 @@ let detype_rel_context d ?(lax = false) where avoid env sigma sign =
   detype_rel_context d flags where avoid env sigma sign
 
 let detype_closed_glob ?lax isgoal avoid env sigma t =
-  let open Context.Rel.Declaration in
   let convert_id cl id =
     try Id.Map.find id cl.idents
     with Not_found -> id
