@@ -567,7 +567,7 @@ let rec execute env stg cstrnt cstr =
       let annots, stg = next_annots numvars stg in
       stg, cstrnt, mkVarA id annots, t
 
-    | Const (c, _ans) ->
+    | Const (c, _) ->
       let numvars = stage_vars_in_constant env c in
       let s, stg = next stg in
       let t, cstrnt' = type_of_constant env c in
@@ -778,9 +778,6 @@ let infer =
   else (fun b c -> infer b c)
 
 let infer_fix env fix =
-  (* FIXME: This breaks when used in Pretyping because
-    universe levels are not in the environment;
-    Implement this in Pretyping/Typing instead. *)
   ignore @@ execute_fix env State.init (empty ()) fix
 
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
