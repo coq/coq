@@ -1266,8 +1266,8 @@ let not_transp_msg =
     ++ spc ()
     ++ str "Use 'Defined' instead.")
 
-let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
-let err_not_transp () = pperror not_transp_msg
+let err_not_transp () =
+  CErrors.user_err ~hdr:"Program" not_transp_msg
 
 module ProgMap = Id.Map
 
