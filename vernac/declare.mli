@@ -288,7 +288,6 @@ val declare_entry
   -> scope:locality
   -> kind:Decls.logical_kind
   -> ?hook:Hook.t
-  -> ?obls:(Id.t * Constr.t) list
   -> impargs:Impargs.manual_implicits
   -> uctx:UState.t
   -> Evd.side_effects proof_entry
@@ -308,7 +307,6 @@ val declare_definition
   -> impargs:Impargs.manual_implicits
   -> udecl:UState.universe_decl
   -> ?hook:Hook.t
-  -> ?obls:(Id.t * Constr.t) list
   -> poly:bool
   -> ?inline:bool
   -> types:EConstr.t option

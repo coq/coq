@@ -894,7 +894,7 @@ module Hook = struct
 end
 
 (* Locality stuff *)
-let declare_entry ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ~uctx entry =
+let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
   let should_suggest = entry.proof_entry_opaque &&
                        Option.is_empty entry.proof_entry_secctx in
   let ubind = UState.universe_binders uctx in
@@ -914,6 +914,8 @@ let declare_entry ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ~uctx entry =
   let () = definition_message name in
   Option.iter (fun hook -> Hook.call ~hook { Hook.S.uctx; obls; scope; dref }) hook;
   dref
+
+let declare_entry = declare_entry_core ~obls:[]
 
 let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
   match possible_indexes with
@@ -1007,10 +1009,12 @@ let prepare_definition ?opaque ?inline ?fix_exn ~poly ~udecl ~types ~body sigma 
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
-let declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
-    ?obls ~poly ?inline ~types ~body ?fix_exn sigma =
+let declare_definition_core ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
+    ~obls ~poly ?inline ~types ~body ?fix_exn sigma =
   let entry, uctx = prepare_definition ?fix_exn ~opaque ~poly ~udecl ~types ~body ?inline sigma in
-  declare_entry ~name ~scope ~kind ~impargs ?obls ?hook ~uctx entry
+  declare_entry_core ~name ~scope ~kind ~impargs ~obls ?hook ~uctx entry
+
+let declare_definition = declare_definition_core ~obls:[]
 
 let prepare_obligation ~name ~types ~body sigma =
   let env = Global.env () in
@@ -1450,7 +1454,7 @@ let declare_definition prg =
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
   let kn =
-    declare_definition ~name ~scope ~kind ~impargs ?hook ~obls
+    declare_definition_core ~name ~scope ~kind ~impargs ?hook ~obls
       ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma
   in
   let pm = progmap_remove !State.prg_ref prg in
