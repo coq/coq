@@ -18,7 +18,7 @@ let set_indirect_accessor f = indirect_accessor := f
 let register_opacified_constant env opac kn cb =
   let rec gather_consts s c =
     match Constr.kind c with
-    | Constr.Const (c, _) -> Cset.add c s
+    | Constr.Const ((c, _), _) -> Cset.add c s
     | _ -> Constr.fold gather_consts s c
   in
   let wo_body =
