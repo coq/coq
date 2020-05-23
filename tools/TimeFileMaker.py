@@ -468,6 +468,7 @@ def make_table_string(stats_dict,
                       for name in names])
 
 def print_or_write_table(table, files):
+    if table[-1] != '\n': table += '\n'
     if len(files) == 0 or '-' in files:
         if hasattr(sys.stdout, 'buffer'):
             sys.stdout.buffer.write(table.encode("utf-8"))
