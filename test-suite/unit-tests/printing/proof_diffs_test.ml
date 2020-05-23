@@ -76,11 +76,14 @@ let _ = add_test "tokenize_string/diff_mode in lexer" t
 
 open Pp
 
+let write_diffs_option s =
+  Goptions.set_string_option_value Proof_diffs.opt_name s
+
 (* example that was failing from #8922 *)
 let t () =
-  Proof_diffs.write_diffs_option "removed";
+  write_diffs_option "removed";
   ignore (diff_str "X : ?Goal" "X : forall x : ?Goal0, ?Goal1");
-  Proof_diffs.write_diffs_option "on"
+  write_diffs_option "on"
 let _ = add_test "shorten_diff_span failure from #8922" t
 
 (* note pp_to_string concatenates adjacent strings, could become one token,
@@ -181,7 +184,7 @@ let _ = if false then add_test "diff_pp/add_diff_tags token containing white spa
 
 let add_entries map idents rhs_pp =
   let make_entry() = { idents; rhs_pp; done_ = false } in
-  List.iter (fun ident -> map := (StringMap.add ident (make_entry ()) !map); ()) idents;;
+  List.iter (fun ident -> map := (CString.Map.add ident (make_entry ()) !map); ()) idents;;
 
 let print_list hyps = List.iter (fun x -> cprintf "%s\n" (string_of_ppcmds (flatten x))) hyps
 let db_print_list hyps = List.iter (fun x -> cprintf "%s\n" (db_string_of_pp (flatten x))) hyps
@@ -194,11 +197,11 @@ let db_print_list hyps = List.iter (fun x -> cprintf "%s\n" (db_string_of_pp (fl
 let t () =
   write_diffs_option "removed";   (* turn on "removed" option *)
   let o_line_idents = [ ["a"]; ["b"]] in
-  let o_hyp_map = ref StringMap.empty in
+  let o_hyp_map = ref CString.Map.empty in
   add_entries o_hyp_map ["a"] (str " : foo");
   add_entries o_hyp_map ["b"] (str " : bar car");
   let n_line_idents = [ ["b"]; ["a"]] in
-  let n_hyp_map = ref StringMap.empty in
+  let n_hyp_map = ref CString.Map.empty in
   add_entries n_hyp_map ["b"] (str " : car");
   add_entries n_hyp_map ["a"] (str " : foo bar");
   let expected = [flatten (wrap_in_bg "diff.removed" (seq [str "b"; str " : "; (tag "diff.removed" (str "bar")); str " car" ]));
@@ -224,11 +227,11 @@ let _ = add_test "diff_hyps simple diffs" t
 let t () =
   write_diffs_option "removed";   (* turn on "removed" option *)
   let o_line_idents = [ ["a"]; ["c"; "d"]] in
-  let o_hyp_map = ref StringMap.empty in
+  let o_hyp_map = ref CString.Map.empty in
   add_entries o_hyp_map ["a"] (str " : nat");
   add_entries o_hyp_map ["c"; "d"] (str " : int");
   let n_line_idents = [ ["a"; "b"]; ["d"]] in
-  let n_hyp_map = ref StringMap.empty in
+  let n_hyp_map = ref CString.Map.empty in
   add_entries n_hyp_map ["a"; "b"] (str " : nat");
   add_entries n_hyp_map ["d"] (str " : int");
   let expected = [flatten (wrap_in_bg "diff.added" (seq [str "a"; (tag "start.diff.added" (str ", ")); (tag "end.diff.added" (str "b")); str " : nat" ]));
@@ -264,12 +267,12 @@ DIFFS
 let t () =
   write_diffs_option "removed";   (* turn on "removed" option *)
   let o_line_idents = [ ["a"]; ["b"]; ["c"]] in
-  let o_hyp_map = ref StringMap.empty in
+  let o_hyp_map = ref CString.Map.empty in
   add_entries o_hyp_map ["a"] (str " : foo");
   add_entries o_hyp_map ["b"] (str " : bar");
   add_entries o_hyp_map ["c"] (str " : nat");
   let n_line_idents = [ ["b"; "a"; "c"] ] in
-  let n_hyp_map = ref StringMap.empty in
+  let n_hyp_map = ref CString.Map.empty in
   add_entries n_hyp_map ["b"; "a"; "c"] (str " : nat");
   let expected = [flatten (wrap_in_bg "diff.removed" (seq [str "b"; str " : "; (tag "diff.removed" (str "bar"))]));
                   flatten (wrap_in_bg "diff.added" (seq [str "b"; str " : "; (tag "diff.added" (str "nat"))]));
@@ -302,10 +305,10 @@ DIFFS
 let t () =
   write_diffs_option "removed";   (* turn on "removed" option *)
   let o_line_idents = [ ["b"; "a"; "c"] ] in
-  let o_hyp_map = ref StringMap.empty in
+  let o_hyp_map = ref CString.Map.empty in
   add_entries o_hyp_map ["b"; "a"; "c"] (str " : nat");
   let n_line_idents = [ ["a"]; ["b"]; ["c"]] in
-  let n_hyp_map = ref StringMap.empty in
+  let n_hyp_map = ref CString.Map.empty in
   add_entries n_hyp_map ["a"] (str " : foo");
   add_entries n_hyp_map ["b"] (str " : bar");
   add_entries n_hyp_map ["c"] (str " : nat");
