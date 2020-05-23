@@ -1,5 +1,0 @@
-- **Added:**
-  ``remove'`` and ``count_occ'`` over lists,
-  alternatives to ``remove`` and ``count_occ`` based on ``filter``
-  (`#11350 <https://github.com/coq/coq/pull/11350>`_,
-  by Yishuai Li).
