@@ -81,7 +81,7 @@ info "PR $PR targets branch $BASE_BRANCH"
 CURRENT_LOCAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 info "you are merging in $CURRENT_LOCAL_BRANCH"
 
-REMOTE=$(git config --get "branch.$CURRENT_LOCAL_BRANCH.remote")
+REMOTE=$(git config --get "branch.$CURRENT_LOCAL_BRANCH.remote" || true)
 if [ -z "$REMOTE" ]; then
   error "branch $CURRENT_LOCAL_BRANCH has not associated remote"
   error "don't know where to fetch the PR from"

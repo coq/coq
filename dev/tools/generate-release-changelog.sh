@@ -31,14 +31,14 @@ if ! git diff --quiet; then
     ask_confirmation
 fi
 
-remote=$(git config --get "branch.${branch}.remote")
+remote=$(git config --get "branch.${branch}.remote" || true)
 
 if [ -z "$remote" ]; then
     echo "Warning: branch $branch has no associated remote."
     ask_confirmation
 else
 
-    if [ "$remote" != $(git config --get "branch.master.remote") ]; then
+    if [ "$remote" != $(git config --get "branch.master.remote" || true) ]; then
         echo "Warning: branch master and branch $branch do not have the same remote."
         ask_confirmation
     fi

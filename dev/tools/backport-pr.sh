@@ -30,7 +30,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-REMOTE=$(git config --get "branch.master.remote")
+REMOTE=$(git config --get "branch.master.remote" || true)
 if [ -z "$REMOTE" ]; then
     echo "Branch master has no remote. Using the local state of the master branch instead."
     MASTER=master
