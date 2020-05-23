@@ -22,7 +22,7 @@ Sorts
    | @universe_expr
    universe_expr ::= @universe_name {? + @num }
 
-The types of types are called :gdef:`sort`\s.
+The types of types are called :gdef:`sorts <sort>`.
 
 All sorts have a type and there is an infinite well-founded typing
 hierarchy of sorts whose base sorts are :math:`\SProp`, :math:`\Prop`

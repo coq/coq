@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2020-05-06-V70"
+# CACHEKEY: "bionic_coq-V2020-05-18-V3"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -14,12 +14,13 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         # Dependencies of stdlib and sphinx doc
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
         xindy python3-pip python3-setuptools python3-pexpect python3-bs4 \
+        fonts-freefont-otf \
         # Dependencies of source-doc and coq-makefile
         texlive-science tipa
 
 # More dependencies of the sphinx doc
-RUN pip3 install sphinx==1.8.0 sphinx_rtd_theme==0.2.5b2 \
-                 antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==0.4.0
+RUN pip3 install sphinx==2.3.1 sphinx_rtd_theme==0.4.3 \
+                 antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==0.4.2
 
 # We need to install OPAM 2.0 manually for now.
 RUN wget https://github.com/ocaml/opam/releases/download/2.0.6/opam-2.0.6-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam
