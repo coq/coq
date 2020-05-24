@@ -58,7 +58,6 @@ additional tools are required:
   - makeindex
   - xelatex
   - latexmk
-  - xindy
 
 All of them are part of the TexLive distribution. E.g. on Debian / Ubuntu,
 install them with:
@@ -68,7 +67,7 @@ install them with:
 Or if you want to use less disk space:
 
     apt install texlive-latex-extra texlive-fonts-recommended texlive-xetex \
-                latexmk xindy fonts-freefont-otf
+                latexmk fonts-freefont-otf
 
 Compilation
 -----------
