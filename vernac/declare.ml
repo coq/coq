@@ -217,27 +217,27 @@ let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
   let ubody = UState.check_mono_univ_decl uctx_body udecl in
   utyp, ubody
 
-let make_univs ~poly ~uctx ~opaque ~udecl (used_univs_typ, typ) (used_univs_body, body) =
-
+let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
   let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-  if poly && opaque && private_poly_univs () then
-    let universes = UState.restrict uctx used_univs in
-    let typus = UState.restrict universes used_univs_typ in
-    let utyp = UState.check_univ_decl ~poly typus udecl in
-    let ubody = Univ.ContextSet.diff
-        (UState.context_set universes)
-        (UState.context_set typus)
-    in
-    utyp, ubody
-  else
-    (* Since the proof is computed now, we can simply have 1 set of
-       constraints in which we merge the ones for the body and the ones
-       for the typ. We recheck the declaration after restricting with
-       the actually used universes.
-       TODO: check if restrict is really necessary now. *)
-    let ctx = UState.restrict uctx used_univs in
-    let utyp = UState.check_univ_decl ~poly ctx udecl in
-    utyp, Univ.ContextSet.empty
+  let universes = UState.restrict uctx used_univs in
+  let typus = UState.restrict universes used_univs_typ in
+  let utyp = UState.check_univ_decl ~poly typus udecl in
+  let ubody = Univ.ContextSet.diff
+      (UState.context_set universes)
+      (UState.context_set typus)
+  in
+  utyp, ubody
+
+let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
+  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  (* Since the proof is computed now, we can simply have 1 set of
+     constraints in which we merge the ones for the body and the ones
+     for the typ. We recheck the declaration after restricting with
+     the actually used universes.
+     TODO: check if restrict is really necessary now. *)
+  let ctx = UState.restrict uctx used_univs in
+  let utyp = UState.check_univ_decl ~poly ctx udecl in
+  utyp, Univ.ContextSet.empty
 
 let close_proof ~opaque ~keep_body_ucst_separate ps =
 
@@ -248,13 +248,16 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
   let opaque = match opaque with Opaque -> true | Transparent -> false in
 
   let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
-    (* allow_deferred case *)
     let utyp, ubody =
+      (* allow_deferred case *)
       if not poly &&
          (keep_body_ucst_separate
           || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
       then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl t b
-      else make_univs ~poly ~opaque ~uctx ~udecl t b
+      (* private_poly_univs case *)
+      else if poly && opaque && private_poly_univs ()
+      then make_univs_private_poly ~poly ~uctx ~udecl t b
+      else make_univs ~poly ~uctx ~udecl t b
     in
     definition_entry_core ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
