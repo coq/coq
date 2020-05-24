@@ -114,11 +114,6 @@ END
 
 (** Eauto *)
 
-TACTIC EXTEND prolog DEPRECATED { Deprecation.make ~note:"Use eauto instead" () }
-| [ "prolog" "[" uconstr_list(l) "]" int_or_var(n) ] ->
-    { Eauto.prolog_tac (eval_uconstrs ist l) n }
-END
-
 {
 
 let make_depth n = snd (Eauto.make_dimension n None)
