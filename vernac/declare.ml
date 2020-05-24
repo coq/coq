@@ -199,21 +199,25 @@ let prepare_proof ~unsafe_typ { proof } =
   let proofs = List.map (fun (body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
   proofs, Evd.evar_universe_context evd
 
-let make_univs ~poly ~initial_euctx ~uctx ~opaque ~udecl ~allow_deferred typ body =
+let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl typ body =
+  let used_univs_body = Vars.universes_of_constr body in
+  let used_univs_typ = Vars.universes_of_constr typ in
+  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  let utyp = UState.univ_entry ~poly initial_euctx in
+  let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
+  (* For vi2vo compilation proofs are computed now but we need to
+     complement the univ constraints of the typ with the ones of
+     the body.  So we keep the two sets distinct. *)
+  let uctx_body = UState.restrict uctx used_univs in
+  let ubody = UState.check_mono_univ_decl uctx_body udecl in
+  utyp, ubody
+
+let make_univs ~poly ~uctx ~opaque ~udecl typ body =
 
   let used_univs_body = Vars.universes_of_constr body in
   let used_univs_typ = Vars.universes_of_constr typ in
   let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-  if allow_deferred then
-    let utyp = UState.univ_entry ~poly initial_euctx in
-    let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
-    (* For vi2vo compilation proofs are computed now but we need to
-       complement the univ constraints of the typ with the ones of
-       the body.  So we keep the two sets distinct. *)
-    let uctx_body = UState.restrict uctx used_univs in
-    let ubody = UState.check_mono_univ_decl uctx_body udecl in
-    utyp, ubody
-  else if poly && opaque && private_poly_univs () then
+  if poly && opaque && private_poly_univs () then
     let universes = UState.restrict uctx used_univs in
     let typus = UState.restrict universes used_univs_typ in
     let utyp = UState.check_univ_decl ~poly typus udecl in
@@ -241,12 +245,14 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
   let opaque = match opaque with Opaque -> true | Transparent -> false in
 
   let make_entry ((body, eff), typ) =
-    let allow_deferred =
-      not poly &&
-      (keep_body_ucst_separate
-       || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
+    (* allow_deferred case *)
+    let utyp, ubody =
+      if not poly &&
+         (keep_body_ucst_separate
+          || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
+      then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl typ body
+      else make_univs ~poly ~opaque ~uctx ~udecl typ body
     in
-    let utyp, ubody = make_univs ~initial_euctx ~poly ~opaque ~uctx ~allow_deferred ~udecl typ body in
     definition_entry_core ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
   let entries = CList.map make_entry elist  in
