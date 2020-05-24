@@ -357,6 +357,9 @@ latex_elements = {
 
 latex_engine = "xelatex"
 
+# Cf. https://github.com/sphinx-doc/sphinx/issues/7015
+latex_use_xindy = False
+
 ########
 # done #
 ########
