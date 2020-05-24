@@ -1,3 +1,6 @@
-# If you want to use a more sophisticated set of arguments:
-# $ nix-shell default.nix --arg shell true
-import ./default.nix { shell = true; }
+{ pkgs ? null
+, ocamlPackages ? null
+, buildDoc ? null
+, doInstallCheck ? null
+, coq-version ? null
+} @ args: import ./default.nix (args // { shell = true; })
