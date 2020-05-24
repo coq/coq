@@ -15,6 +15,8 @@ settings that |Coq| provides.
 Syntax and lexical conventions
 ------------------------------
 
+.. _syntax-conventions:
+
 Syntax conventions
 ~~~~~~~~~~~~~~~~~~
 

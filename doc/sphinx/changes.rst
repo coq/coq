@@ -853,6 +853,64 @@ Changes in 8.12+beta1
   (`#9803 <https://github.com/coq/coq/pull/9803>`_,
   by Laurent Théry and Michael Soegtrop).
 
+**Reference manual**
+
+- **Changed:**
+  The reference manual has been restructured.  In the new version,
+  there are less top-level chapters, and, in the HTML format, chapters
+  are split on multiple pages.  This is still a work-in-progress and
+  further restructuring is expected in the next versions of Coq
+  (`CEP#43 <https://github.com/coq/ceps/pull/43>`_, implemented in
+  `#11601 <https://github.com/coq/coq/pull/11601>`_,
+  `#11871 <https://github.com/coq/coq/pull/11871>`_,
+  `#11914 <https://github.com/coq/coq/pull/11914>`_,
+  `#12148 <https://github.com/coq/coq/pull/12148>`_,
+  `#12172 <https://github.com/coq/coq/pull/12172>`_,
+  `#12239 <https://github.com/coq/coq/pull/12239>`_
+  and `#12330 <https://github.com/coq/coq/pull/12330>`_,
+  effort inspired by Matthieu Sozeau, led by Théo Zimmermann, with
+  help and reviews of Jim Fehrle, Clément Pit-Claudel and others).
+- **Changed:**
+  Most of the grammar is now presented using the same box mechanism as
+  was already used to present commands and tactics since Coq 8.8 and
+  which is documented in :ref:`syntax-conventions`
+  (`#11183 <https://github.com/coq/coq/pull/11183>`_,
+  `#11314 <https://github.com/coq/coq/pull/11314>`_,
+  `#11423 <https://github.com/coq/coq/pull/11423>`_,
+  `#11705 <https://github.com/coq/coq/pull/11705>`_,
+  `#11718 <https://github.com/coq/coq/pull/11718>`_,
+  `#11720 <https://github.com/coq/coq/pull/11720>`_
+  and `#11961 <https://github.com/coq/coq/pull/11961>`_, by Jim
+  Fehrle, with reviews of Théo Zimmermann).
+- **Added:**
+  A glossary of terms and an index of attributes
+  (`#11869 <https://github.com/coq/coq/pull/11869>`_,
+  `#12150 <https://github.com/coq/coq/pull/12150>`_
+  and `#12224 <https://github.com/coq/coq/pull/12224>`_,
+  by Jim Fehrle and Théo Zimmermann,
+  with reviews of Clément Pit-Claudel)
+- **Added:**
+  A selector that allows to switch between versions of the reference
+  manual (`#12286 <https://github.com/coq/coq/pull/12286>`_, by
+  Clément Pit-Claudel).
+- **Fixed:**
+  A large part of the documented syntax has been fixed to correspond
+  more accurately to what is actually implemented, thanks to an
+  internal `doc_grammar` tool introduced for this purpose
+  (`#9884 <https://github.com/coq/coq/pull/9884>`_,
+  `#10614 <https://github.com/coq/coq/pull/10614>`_,
+  `#11314 <https://github.com/coq/coq/pull/11314>`_,
+  `#11423 <https://github.com/coq/coq/pull/11423>`_,
+  `#11705 <https://github.com/coq/coq/pull/11705>`_,
+  `#11718 <https://github.com/coq/coq/pull/11718>`_,
+  `#11720 <https://github.com/coq/coq/pull/11720>`_
+  `#11797 <https://github.com/coq/coq/pull/11797>`_,
+  `#11913 <https://github.com/coq/coq/pull/11913>`_,
+  `#11958 <https://github.com/coq/coq/pull/11958>`_
+  `#11960 <https://github.com/coq/coq/pull/11960>`_
+  and `#11961 <https://github.com/coq/coq/pull/11961>`_, by Jim
+  Fehrle, with reviews of Théo Zimmermann).
+
 **Infrastructure and dependencies**
 
 - **Changed:**
