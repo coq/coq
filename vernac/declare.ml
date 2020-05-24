@@ -178,11 +178,17 @@ let prepare_proof ~unsafe_typ { proof } =
   let evd = Evd.minimize_universes evd in
   let to_constr_body c =
     match EConstr.to_constr_opt evd c with
-    | Some p -> p
-    | None -> CErrors.user_err Pp.(str "Some unresolved existential variables remain")
+    | Some p ->
+      Vars.universes_of_constr p, p
+    | None ->
+      CErrors.user_err Pp.(str "Some unresolved existential variables remain")
   in
   let to_constr_typ t =
-    if unsafe_typ then EConstr.Unsafe.to_constr t else to_constr_body t
+    if unsafe_typ
+    then
+      let t = EConstr.Unsafe.to_constr t in
+      Vars.universes_of_constr t, t
+    else to_constr_body t
   in
   (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
@@ -199,9 +205,8 @@ let prepare_proof ~unsafe_typ { proof } =
   let proofs = List.map (fun (body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
   proofs, Evd.evar_universe_context evd
 
-let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl typ body =
-  let used_univs_body = Vars.universes_of_constr body in
-  let used_univs_typ = Vars.universes_of_constr typ in
+let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
+    (used_univs_typ, typ) (used_univs_body, body) =
   let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
   let utyp = UState.univ_entry ~poly initial_euctx in
   let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
@@ -212,10 +217,8 @@ let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl typ body =
   let ubody = UState.check_mono_univ_decl uctx_body udecl in
   utyp, ubody
 
-let make_univs ~poly ~uctx ~opaque ~udecl typ body =
+let make_univs ~poly ~uctx ~opaque ~udecl (used_univs_typ, typ) (used_univs_body, body) =
 
-  let used_univs_body = Vars.universes_of_constr body in
-  let used_univs_typ = Vars.universes_of_constr typ in
   let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
   if poly && opaque && private_poly_univs () then
     let universes = UState.restrict uctx used_univs in
@@ -244,14 +247,14 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
   let elist, uctx = prepare_proof ~unsafe_typ ps in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
 
-  let make_entry ((body, eff), typ) =
+  let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
     (* allow_deferred case *)
     let utyp, ubody =
       if not poly &&
          (keep_body_ucst_separate
           || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
-      then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl typ body
-      else make_univs ~poly ~opaque ~uctx ~udecl typ body
+      then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl t b
+      else make_univs ~poly ~opaque ~uctx ~udecl t b
     in
     definition_entry_core ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
@@ -746,7 +749,7 @@ let return_partial_proof { proof } =
 
 let return_proof ps =
   let p, uctx = prepare_proof ~unsafe_typ:false ps in
-  List.map fst p, uctx
+  List.map (fun (((_ub, body),eff),_) -> (body,eff)) p, uctx
 
 let update_global_env =
   map_proof (fun p ->
