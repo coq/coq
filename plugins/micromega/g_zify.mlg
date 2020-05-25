@@ -14,23 +14,44 @@ open Ltac_plugin
 open Stdarg
 open Tacarg
 
+let warn_deprecated_Spec =
+  CWarnings.create ~name:"deprecated-Zify-Spec" ~category:"deprecated"
+    (fun () ->
+      Pp.strbrk ("Show Zify Spec is deprecated. Use either \"Show Zify BinOpSpec\" or \"Show Zify UnOpSpec\"."))
+
+let warn_deprecated_Add =
+  CWarnings.create ~name:"deprecated-Zify-Add" ~category:"deprecated"
+    (fun () ->
+      Pp.strbrk ("Add <X> is deprecated. Use instead Add Zify <X>."))
+
 
 }
 
 DECLARE PLUGIN "zify_plugin"
 
 VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
-| ["Add" "InjTyp"    constr(t) ] -> { Zify.InjTable.register t }
-| ["Add" "BinOp"     constr(t) ] -> { Zify.BinOp.register t }
-| ["Add" "UnOp"      constr(t) ] -> { Zify.UnOp.register t }
-| ["Add" "CstOp"     constr(t) ] -> { Zify.CstOp.register t }
-| ["Add" "BinRel"    constr(t) ] -> { Zify.BinRel.register t }
-| ["Add" "PropOp"    constr(t) ] -> { Zify.PropBinOp.register t }
-| ["Add" "PropBinOp"    constr(t) ] -> { Zify.PropBinOp.register t }
-| ["Add" "PropUOp"   constr(t) ] -> { Zify.PropUnOp.register t }
-| ["Add" "BinOpSpec" constr(t) ] -> { Zify.BinOpSpec.register t }
-| ["Add" "UnOpSpec"  constr(t) ] -> { Zify.UnOpSpec.register t }
-| ["Add" "Saturate"  constr(t) ] -> { Zify.Saturate.register t }
+| ["Add" "Zify" "InjTyp"    constr(t) ] -> { Zify.InjTable.register t }
+| ["Add" "Zify" "BinOp"     constr(t) ] -> { Zify.BinOp.register t }
+| ["Add" "Zify" "UnOp"      constr(t) ] -> { Zify.UnOp.register t }
+| ["Add" "Zify" "CstOp"     constr(t) ] -> { Zify.CstOp.register t }
+| ["Add" "Zify" "BinRel"    constr(t) ] -> { Zify.BinRel.register t }
+| ["Add" "Zify" "PropOp"    constr(t) ] -> { Zify.PropBinOp.register t }
+| ["Add" "Zify" "PropBinOp"    constr(t) ] -> { Zify.PropBinOp.register t }
+| ["Add" "Zify" "PropUOp"   constr(t) ] -> { Zify.PropUnOp.register t }
+| ["Add" "Zify" "BinOpSpec" constr(t) ] -> { Zify.BinOpSpec.register t }
+| ["Add" "Zify" "UnOpSpec"  constr(t) ] -> { Zify.UnOpSpec.register t }
+| ["Add" "Zify" "Saturate"  constr(t) ] -> { Zify.Saturate.register t }
+| ["Add" "InjTyp"    constr(t) ] -> { warn_deprecated_Add (); Zify.InjTable.register t }
+| ["Add" "BinOp"     constr(t) ] -> { warn_deprecated_Add (); Zify.BinOp.register t }
+| ["Add" "UnOp"      constr(t) ] -> { warn_deprecated_Add (); Zify.UnOp.register t }
+| ["Add" "CstOp"     constr(t) ] -> { warn_deprecated_Add (); Zify.CstOp.register t }
+| ["Add" "BinRel"    constr(t) ] -> { warn_deprecated_Add (); Zify.BinRel.register t }
+| ["Add" "PropOp"    constr(t) ] -> { warn_deprecated_Add (); Zify.PropBinOp.register t }
+| ["Add" "PropBinOp"    constr(t) ] -> { warn_deprecated_Add (); Zify.PropBinOp.register t }
+| ["Add" "PropUOp"   constr(t) ] -> { warn_deprecated_Add (); Zify.PropUnOp.register t }
+| ["Add" "BinOpSpec" constr(t) ] -> { warn_deprecated_Add (); Zify.BinOpSpec.register t }
+| ["Add" "UnOpSpec"  constr(t) ] -> { warn_deprecated_Add (); Zify.UnOpSpec.register t }
+| ["Add" "Saturate"  constr(t) ] -> { warn_deprecated_Add (); Zify.Saturate.register t }
 END
 
 TACTIC EXTEND ITER
@@ -50,6 +71,9 @@ VERNAC COMMAND EXTEND ZifyPrint CLASSIFIED AS SIDEFF
 |[ "Show" "Zify" "UnOp" ]   -> { Zify.UnOp.print () }
 |[ "Show" "Zify" "CstOp"]   -> { Zify.CstOp.print () }
 |[ "Show" "Zify" "BinRel"]  -> { Zify.BinRel.print () }
-|[ "Show" "Zify" "Spec"] -> { (* This prints both UnOpSpec and BinOpSpec *)
-    Zify.UnOpSpec.print() }
+|[ "Show" "Zify" "UnOpSpec"] -> { Zify.UnOpSpec.print() }
+|[ "Show" "Zify" "BinOpSpec"] -> { Zify.BinOpSpec.print() }
+|[ "Show" "Zify" "Spec"] -> {
+    warn_deprecated_Spec () ;
+    Zify.UnOpSpec.print() ; Zify.BinOpSpec.print ()}
 END

@@ -320,7 +320,8 @@ type decl_kind =
   | UnOp of EUnOpT.t decl
   | CstOp of ECstOpT.t decl
   | Saturate of ESatT.t decl
-  | Spec of ESpecT.t decl
+  | UnOpSpec of ESpecT.t decl
+  | BinOpSpec of ESpecT.t decl
 
 type term_kind = Application of EConstr.constr | OtherTerm of EConstr.constr
 
@@ -664,8 +665,8 @@ module EUnopSpec = struct
 
   let name = "UnopSpec"
   let table = specs
-  let cast x = Spec x
-  let dest = function Spec x -> Some x | _ -> None
+  let cast x = UnOpSpec x
+  let dest = function UnOpSpec x -> Some x | _ -> None
   let mk_elt evd i a = {spec = a.(4)}
   let get_key = 2
 end
@@ -677,8 +678,8 @@ module EBinOpSpec = struct
 
   let name = "BinOpSpec"
   let table = specs
-  let cast x = Spec x
-  let dest = function Spec x -> Some x | _ -> None
+  let cast x = BinOpSpec x
+  let dest = function BinOpSpec x -> Some x | _ -> None
   let mk_elt evd i a = {spec = a.(5)}
   let get_key = 3
 end
@@ -1419,7 +1420,7 @@ let rec spec_of_term env evd (senv : spec_env) t =
     with Not_found -> (
       try
         match snd (HConstr.find c !specs_cache) with
-        | Spec s ->
+        | UnOpSpec s | BinOpSpec s ->
           let thm = EConstr.mkApp (s.deriv.ESpecT.spec, a') in
           register_constr senv' t' thm
         | _ -> (get_name t' senv', senv')

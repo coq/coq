@@ -28,30 +28,30 @@ Qed.
 
 Instance Inj_comparison_Z : InjTyp comparison Z :=
   { inj := Z_of_comparison ; pred :=(fun x => -1 <= x <= 1) ; cstr := Z_of_comparison_bound}.
-Add InjTyp Inj_comparison_Z.
+Add Zify InjTyp Inj_comparison_Z.
 
 Definition ZcompareZ (x y : Z) :=
   Z_of_comparison (Z.compare x y).
 
 Program Instance BinOp_Zcompare : BinOp Z.compare :=
   { TBOp := ZcompareZ }.
-Add BinOp BinOp_Zcompare.
+Add Zify BinOp BinOp_Zcompare.
 
 Instance Op_eq_comparison : BinRel (@eq comparison) :=
   {TR := @eq Z ; TRInj := ltac:(destruct n,m; simpl ; intuition congruence) }.
-Add BinRel Op_eq_comparison.
+Add Zify BinRel Op_eq_comparison.
 
 Instance Op_Eq : CstOp Eq :=
   { TCst := 0 ; TCstInj := eq_refl }.
-Add CstOp Op_Eq.
+Add Zify CstOp Op_Eq.
 
 Instance Op_Lt : CstOp Lt :=
   { TCst := -1 ; TCstInj := eq_refl }.
-Add CstOp Op_Lt.
+Add Zify CstOp Op_Lt.
 
 Instance Op_Gt : CstOp Gt :=
   { TCst := 1 ; TCstInj := eq_refl }.
-Add CstOp Op_Gt.
+Add Zify CstOp Op_Gt.
 
 
 Lemma Zcompare_spec : forall x y,
@@ -79,4 +79,4 @@ Instance ZcompareSpec : BinOpSpec ZcompareZ :=
                            /\
                            (x < y  -> r = -1)
               ; BSpec := Zcompare_spec|}.
-Add BinOpSpec ZcompareSpec.
+Add Zify BinOpSpec ZcompareSpec.

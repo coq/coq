@@ -284,37 +284,54 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    + To support :g:`Z.quot` and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.quot_rem_to_equations``.
    + To support :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot`, and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations``.
 
+   The :tacn:`zify` tactic can be extended with new types and operators by declaring and registering new typeclass instances using the following commands.
+   The typeclass declarations can be found in the module ``ZifyClasses`` and the default instances can be found in the module ``ZifyInst``.
 
-.. cmd:: Show Zify InjTyp
-   :name: Show Zify InjTyp
+.. cmd:: Add Zify {| InjTyp | BinOp | UnOp |CstOp | BinRel | UnOpSpec | BinOpSpec } @qualid
 
-   This command shows the list of types that can be injected into :g:`Z`.
+   This command registers an instance of one of the typeclasses among ``InjTyp``, ``BinOp``, ``UnOp``, ``CstOp``,  ``BinRel``,
+   ``UnOpSpec``, ``BinOpSpec``.
 
-.. cmd:: Show Zify BinOp
-   :name: Show Zify BinOp
+.. cmd:: Show Zify {| InjTyp | BinOp | UnOp |CstOp | BinRel | UnOpSpec | BinOpSpec }
 
-   This command shows the list of binary operators processed by :tacn:`zify`.
-
-.. cmd:: Show Zify BinRel
-   :name: Show Zify BinRel
-
-   This command shows the list of binary relations processed by :tacn:`zify`.
-
-
-.. cmd:: Show Zify UnOp
-   :name: Show Zify UnOp
-
-   This command shows the list of unary operators processed by :tacn:`zify`.
-
-.. cmd:: Show Zify CstOp
-   :name: Show Zify CstOp
-
-   This command shows the list of constants processed by :tacn:`zify`.
+   The command prints the typeclass instances of one the typeclasses
+   among ``InjTyp``, ``BinOp``, ``UnOp``, ``CstOp``, ``BinRel``,
+   ``UnOpSpec``, ``BinOpSpec``. For instance, :cmd:`Show Zify` ``InjTyp``
+   prints the list of types that supported by :tacn:`zify` i.e.,
+   :g:`Z`, :g:`nat`, :g:`positive` and :g:`N`.
 
 .. cmd:: Show Zify Spec
-   :name: Show Zify Spec
 
-   This command shows the list of operators over :g:`Z` that are compiled using their specification e.g., :g:`Z.min`.
+   .. deprecated:: 8.13
+       Use instead either :cmd:`Show Zify` ``UnOpSpec`` or :cmd:`Show Zify` ``BinOpSpec``.
+
+.. cmd:: Add InjTyp
+
+   .. deprecated:: 8.13
+       Use instead either :cmd:`Add Zify` ``InjTyp``.
+
+.. cmd:: Add BinOp
+
+   .. deprecated:: 8.13
+       Use instead either :cmd:`Add Zify` ``BinOp``.
+
+.. cmd:: Add UnOp
+
+   .. deprecated:: 8.13
+       Use instead either :cmd:`Add Zify` ``UnOp``.
+
+.. cmd:: Add CstOp
+
+   .. deprecated:: 8.13
+       Use instead either :cmd:`Add Zify` ``CstOp``.
+
+.. cmd:: Add BinRel
+
+   .. deprecated:: 8.13
+       Use instead either :cmd:`Add Zify` ``BinRel``.
+
+
+
 
 .. [#csdp] Sources and binaries can be found at https://projects.coin-or.org/Csdp
 .. [#fnpsatz] Variants deal with equalities and strict inequalities.
