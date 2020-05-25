@@ -363,7 +363,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)
   let termtype = Evarutil.nf_evar sigma termtype in
-  let lemma = Declare.start_proof ~name:id ~poly ~info ~impargs sigma termtype in
+  let lemma = Declare.Proof.start ~name:id ~poly ~info ~impargs sigma termtype in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
     match term with
@@ -375,15 +375,15 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
           Tactics.New.reduce_after_refine;
         ]
       in
-      let lemma, _ = Declare.by init_refine lemma in
+      let lemma, _ = Declare.Proof.by init_refine lemma in
       lemma
     | None ->
-      let lemma, _ = Declare.by (Tactics.auto_intros_tac ids) lemma in
+      let lemma, _ = Declare.Proof.by (Tactics.auto_intros_tac ids) lemma in
       lemma
   in
   match tac with
   | Some tac ->
-    let lemma, _ = Declare.by tac lemma in
+    let lemma, _ = Declare.Proof.by tac lemma in
     lemma
   | None ->
     lemma

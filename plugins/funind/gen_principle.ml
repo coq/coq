@@ -1520,15 +1520,15 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let typ, _ = lemmas_types_infos.(i) in
           let info = Declare.Info.make () in
           let lemma =
-            Declare.start_proof ~name:lem_id ~poly:false ~info ~impargs:[] !evd
+            Declare.Proof.start ~name:lem_id ~poly:false ~info ~impargs:[] !evd
               typ
           in
           let lemma =
-            fst @@ Declare.by (Proofview.V82.tactic (proving_tac i)) lemma
+            fst @@ Declare.Proof.by (Proofview.V82.tactic (proving_tac i)) lemma
           in
           let () =
-            Declare.save_lemma_proved ~proof:lemma
-              ~opaque:Vernacexpr.Transparent ~idopt:None
+            Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent
+              ~idopt:None
           in
           let finfo =
             match find_Function_infos (fst f_as_constant) with
@@ -1586,12 +1586,12 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let lem_id = mk_complete_id f_id in
           let info = Declare.Info.make () in
           let lemma =
-            Declare.start_proof ~name:lem_id ~poly:false sigma ~info ~impargs:[]
+            Declare.Proof.start ~name:lem_id ~poly:false sigma ~info ~impargs:[]
               (fst lemmas_types_infos.(i))
           in
           let lemma =
             fst
-              (Declare.by
+              (Declare.Proof.by
                  (Proofview.V82.tactic
                     (observe_tac
                        ("prove completeness (" ^ Id.to_string f_id ^ ")")
@@ -1599,8 +1599,8 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
                  lemma)
           in
           let () =
-            Declare.save_lemma_proved ~proof:lemma
-              ~opaque:Vernacexpr.Transparent ~idopt:None
+            Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent
+              ~idopt:None
           in
           let finfo =
             match find_Function_infos (fst f_as_constant) with

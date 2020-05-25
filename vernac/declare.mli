@@ -133,8 +133,57 @@ module Proof : sig
 
   type t
 
-  (** XXX: These are internal and will go away from publis API once
-     lemmas is merged here *)
+  (** [start ~name ~poly ~info sigma goals] starts a proof of
+      name [name] with goals [goals] (a list of pairs of environment and
+      conclusion); [poly] determines if the proof is universe
+      polymorphic. The proof is started in the evar map [sigma] (which
+      can typically contain universe constraints). *)
+  val start
+    :  name:Names.Id.t
+    -> poly:bool
+    -> ?impargs:Impargs.manual_implicits
+    -> info:Info.t
+    -> Evd.evar_map
+    -> EConstr.t
+    -> t
+
+  (** Like [start] except that there may be dependencies between initial goals. *)
+  val start_dependent
+    :  name:Names.Id.t
+    -> poly:bool
+    -> info:Info.t
+    -> Proofview.telescope
+    -> t
+
+  (** Pretty much internal, used by the Lemma / Fixpoint vernaculars *)
+  val start_with_initialization
+    :  ?hook:Hook.t
+    -> poly:bool
+    -> scope:Locality.locality
+    -> kind:Decls.logical_kind
+    -> udecl:UState.universe_decl
+    -> Evd.evar_map
+    -> (bool * lemma_possible_guards * Constr.t option list option) option
+    -> Recthm.t list
+    -> int list option
+    -> t
+
+  (** Qed a proof  *)
+  val save
+    : proof:t
+    -> opaque:Vernacexpr.opacity_flag
+    -> idopt:Names.lident option
+    -> unit
+
+  (** Admit a proof *)
+  val save_admitted : proof:t -> unit
+
+  (** [by tac] applies tactic [tac] to the 1st subgoal of the current
+      focused proof.
+      Returns [false] if an unsafe tactic has been used. *)
+  val by : unit Proofview.tactic -> t -> t * bool
+
+  (** Operations on ongoing proofs *)
   val get : t -> Proof.t
   val get_name : t -> Names.Id.t
 
@@ -148,8 +197,7 @@ module Proof : sig
 
   (** Sets the section variables assumed by the proof, returns its closure
    * (w.r.t. type dependencies and let-ins covered by it) *)
-  val set_used_variables : t ->
-    Names.Id.t list -> Constr.named_context * t
+  val set_used_variables : t -> Names.Id.t list -> Constr.named_context * t
 
   val compact : t -> t
 
@@ -160,46 +208,27 @@ module Proof : sig
 
   val get_open_goals : t -> int
 
+  (** Helpers to obtain proof state when in an interactive proof *)
+
+  (** [get_goal_context n] returns the context of the [n]th subgoal of
+      the current focused proof or raises a [UserError] if there is no
+      focused proof or if there is no more subgoals *)
+
+  val get_goal_context : t -> int -> Evd.evar_map * Environ.env
+
+  (** [get_current_goal_context ()] works as [get_goal_context 1] *)
+  val get_current_goal_context : t -> Evd.evar_map * Environ.env
+
+  (** [get_current_context ()] returns the context of the
+      current focused goal. If there is no focused goal but there
+      is a proof in progress, it returns the corresponding evar_map.
+      If there is no pending proof then it returns the current global
+      environment and empty evar_map. *)
+  val get_current_context : t -> Evd.evar_map * Environ.env
+
   (* Internal, don't use *)
   val info : t -> Info.t
 end
-
-(** [start_proof ~name ~udecl ~poly sigma goals] starts a proof of
-   name [name] with goals [goals] (a list of pairs of environment and
-   conclusion); [poly] determines if the proof is universe
-   polymorphic. The proof is started in the evar map [sigma] (which
-   can typically contain universe constraints), and with universe
-   bindings [udecl]. *)
-val start_proof
-  :  name:Names.Id.t
-  -> poly:bool
-  -> ?impargs:Impargs.manual_implicits
-  -> info:Info.t
-  -> Evd.evar_map
-  -> EConstr.t
-  -> Proof.t
-
-(** Like [start_proof] except that there may be dependencies between
-    initial goals. *)
-val start_dependent_proof
-  :  name:Names.Id.t
-  -> poly:bool
-  -> info:Info.t
-  -> Proofview.telescope
-  -> Proof.t
-
-(** Pretty much internal, used by the Lemma / Fixpoint vernaculars *)
-val start_proof_with_initialization
-  :  ?hook:Hook.t
-  -> poly:bool
-  -> scope:Locality.locality
-  -> kind:Decls.logical_kind
-  -> udecl:UState.universe_decl
-  -> Evd.evar_map
-  -> (bool * lemma_possible_guards * Constr.t option list option) option
-  -> Recthm.t list
-  -> int list option
-  -> Proof.t
 
 (** Proof entries represent a proof that has been finished, but still
    not registered with the kernel.
@@ -300,11 +329,6 @@ val return_proof : Proof.t -> closed_proof_output
 val return_partial_proof : Proof.t -> closed_proof_output
 val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output Future.computation -> proof_object
 
-(** [by tac] applies tactic [tac] to the 1st subgoal of the current
-    focused proof.
-    Returns [false] if an unsafe tactic has been used. *)
-val by : unit Proofview.tactic -> Proof.t -> Proof.t * bool
-
 (** Semantics of this function is a bit dubious, use with care *)
 val build_by_tactic
   :  ?side_eff:bool
@@ -314,24 +338,6 @@ val build_by_tactic
   -> typ:EConstr.types
   -> unit Proofview.tactic
   -> Constr.constr * Constr.types option * Entries.universes_entry * bool * UState.t
-
-(** {6 Helpers to obtain proof state when in an interactive proof } *)
-
-(** [get_goal_context n] returns the context of the [n]th subgoal of
-   the current focused proof or raises a [UserError] if there is no
-   focused proof or if there is no more subgoals *)
-
-val get_goal_context : Proof.t -> int -> Evd.evar_map * Environ.env
-
-(** [get_current_goal_context ()] works as [get_goal_context 1] *)
-val get_current_goal_context : Proof.t -> Evd.evar_map * Environ.env
-
-(** [get_current_context ()] returns the context of the
-  current focused goal. If there is no focused goal but there
-  is a proof in progress, it returns the corresponding evar_map.
-  If there is no pending proof then it returns the current global
-  environment and empty evar_map. *)
-val get_current_context : Proof.t -> Evd.evar_map * Environ.env
 
 (** Information for a constant *)
 module CInfo : sig
@@ -523,16 +529,6 @@ val obl_substitution :
 val dependencies : Obligation.t array -> int -> Int.Set.t
 
 end
-
-val save_lemma_proved
-  : proof:Proof.t
-  -> opaque:Vernacexpr.opacity_flag
-  -> idopt:Names.lident option
-  -> unit
-
-val save_lemma_admitted :
-     proof:Proof.t
-  -> unit
 
 (** Special cases for delayed proofs, in this case we must provide the
    proof information so the proof won't be forced. *)

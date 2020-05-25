@@ -58,8 +58,7 @@ let declare_fun name kind ?univs value =
     (Declare.declare_constant ~name ~kind (Declare.DefinitionEntry ce))
 
 let defined lemma =
-  Declare.save_lemma_proved ~proof:lemma ~opaque:Vernacexpr.Transparent
-    ~idopt:None
+  Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent ~idopt:None
 
 let def_of_const t =
   match Constr.kind t with
@@ -1490,19 +1489,19 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
                      [Hints.Hint_db.empty TransparentState.empty false] ]))
     in
     let lemma = build_proof env (Evd.from_env env) start_tac end_tac in
-    Declare.save_lemma_proved ~proof:lemma ~opaque:opacity ~idopt:None
+    Declare.Proof.save ~proof:lemma ~opaque:opacity ~idopt:None
   in
   let info = Declare.Info.make ~hook:(Declare.Hook.make hook) () in
   let lemma =
-    Declare.start_proof ~name:na ~poly:false (* FIXME *) ~info ~impargs:[] sigma
+    Declare.Proof.start ~name:na ~poly:false (* FIXME *) ~info ~impargs:[] sigma
       gls_type
   in
   let lemma =
     if Indfun_common.is_strict_tcc () then
-      fst @@ Declare.by (Proofview.V82.tactic tclIDTAC) lemma
+      fst @@ Declare.Proof.by (Proofview.V82.tactic tclIDTAC) lemma
     else
       fst
-      @@ Declare.by
+      @@ Declare.Proof.by
            (Proofview.V82.tactic (fun g ->
                 tclTHEN decompose_and_tac
                   (tclORELSE
@@ -1533,18 +1532,18 @@ let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
   let start_proof env ctx tac_start tac_end =
     let info = Declare.Info.make ~hook () in
     let lemma =
-      Declare.start_proof ~name:thm_name ~poly:false (*FIXME*) ~info ctx
+      Declare.Proof.start ~name:thm_name ~poly:false (*FIXME*) ~info ctx
         ~impargs:[]
         (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref))
     in
     let lemma =
       fst
-      @@ Declare.by
+      @@ Declare.Proof.by
            (New.observe_tac (fun _ _ -> str "starting_tac") tac_start)
            lemma
     in
     fst
-    @@ Declare.by
+    @@ Declare.Proof.by
          (Proofview.V82.tactic
             (observe_tac
                (fun _ _ -> str "whole_start")
@@ -1607,12 +1606,12 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   let equation_lemma_type = subst1 f_constr equation_lemma_type in
   let info = Declare.Info.make () in
   let lemma =
-    Declare.start_proof ~name:eq_name ~poly:false evd ~info ~impargs:[]
+    Declare.Proof.start ~name:eq_name ~poly:false evd ~info ~impargs:[]
       (EConstr.of_constr equation_lemma_type)
   in
   let lemma =
     fst
-    @@ Declare.by
+    @@ Declare.Proof.by
          (Proofview.V82.tactic
             (start_equation f_ref terminate_ref (fun x ->
                  prove_eq
@@ -1646,8 +1645,7 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   in
   let _ =
     Flags.silently
-      (fun () ->
-        Declare.save_lemma_proved ~proof:lemma ~opaque:opacity ~idopt:None)
+      (fun () -> Declare.Proof.save ~proof:lemma ~opaque:opacity ~idopt:None)
       ()
   in
   ()

@@ -855,13 +855,14 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num
      constructing the lemma Ensures by: obvious i*)
   let info = Declare.Info.make () in
   let lemma =
-    Declare.start_proof ~name:(mk_equation_id f_id) ~poly:false ~info
+    Declare.Proof.start ~name:(mk_equation_id f_id) ~poly:false ~info
       ~impargs:[] evd lemma_type
   in
-  let lemma, _ = Declare.by (Proofview.V82.tactic prove_replacement) lemma in
+  let lemma, _ =
+    Declare.Proof.by (Proofview.V82.tactic prove_replacement) lemma
+  in
   let () =
-    Declare.save_lemma_proved ~proof:lemma ~opaque:Vernacexpr.Transparent
-      ~idopt:None
+    Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent ~idopt:None
   in
   evd
 

@@ -34,12 +34,12 @@ let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
 let get_current_or_global_context ~pstate =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Declare.get_current_context p
+  | Some p -> Declare.Proof.get_current_context p
 
 let get_goal_or_global_context ~pstate glnum =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Declare.get_goal_context p glnum
+  | Some p -> Declare.Proof.get_goal_context p glnum
 
 let cl_of_qualid = function
   | FunClass -> Coercionops.CL_FUN
@@ -95,7 +95,7 @@ let show_proof ~pstate =
   try
     let pstate = Option.get pstate in
     let p = Declare.Proof.get pstate in
-    let sigma, _ = Declare.get_current_context pstate in
+    let sigma, _ = Declare.Proof.get_current_context pstate in
     let pprf = Proof.partial_proof p in
     (* In the absence of an environment explicitly attached to the
        proof and on top of which side effects of the proof would be pushed, ,
@@ -521,7 +521,7 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
     else (* We fix the variables to ensure they won't be lowered to Set *)
       Evd.fix_undefined_variables evd
   in
-  Declare.start_proof_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
+  Declare.Proof.start_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
 
 let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in function
 | Coercion ->
@@ -595,15 +595,15 @@ let vernac_start_proof ~atts kind l =
 
 let vernac_end_proof ~lemma = let open Vernacexpr in function
   | Admitted ->
-    Declare.save_lemma_admitted ~proof:lemma
+    Declare.Proof.save_admitted ~proof:lemma
   | Proved (opaque,idopt) ->
-    Declare.save_lemma_proved ~proof:lemma ~opaque ~idopt
+    Declare.Proof.save ~proof:lemma ~opaque ~idopt
 
 let vernac_exact_proof ~lemma c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
-  let lemma, status = Declare.by (Tactics.exact_proof c) lemma in
-  let () = Declare.save_lemma_proved ~proof:lemma ~opaque:Opaque ~idopt:None in
+  let lemma, status = Declare.Proof.by (Tactics.exact_proof c) lemma in
+  let () = Declare.Proof.save ~proof:lemma ~opaque:Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =
@@ -1602,8 +1602,8 @@ let get_current_context_of_args ~pstate =
     let env = Global.env () in Evd.(from_env env, env)
   | Some lemma ->
     function
-    | Some n -> Declare.get_goal_context lemma n
-    | None -> Declare.get_current_context lemma
+    | Some n -> Declare.Proof.get_goal_context lemma n
+    | None -> Declare.Proof.get_current_context lemma
 
 let query_command_selector ?loc = function
   | None -> None
@@ -1703,7 +1703,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    let sigma, env = Declare.get_current_context pstate in
+    let sigma, env = Declare.Proof.get_current_context pstate in
     v 0 (Id.print id ++ str":" ++ pr_econstr_env env sigma (NamedDecl.get_type decl) ++ fnl() ++ fnl()
          ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)

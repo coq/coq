@@ -2079,6 +2079,12 @@ let save_lemma_proved_delayed ~proof ~info ~idopt =
 
 module Proof = struct
   type nonrec t = t
+  let start = start_proof
+  let start_dependent = start_dependent_proof
+  let start_with_initialization = start_proof_with_initialization
+  let save = save_lemma_proved
+  let save_admitted = save_lemma_admitted
+  let by = by
   let get = get_proof
   let get_name = get_proof_name
   let fold ~f = fold_proof f
@@ -2091,4 +2097,7 @@ module Proof = struct
   let update_global_env = update_global_env
   let get_open_goals = get_open_goals
   let info { info } = info
+  let get_goal_context = get_goal_context
+  let get_current_goal_context = get_current_goal_context
+  let get_current_context = get_current_context
 end

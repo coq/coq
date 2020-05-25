@@ -730,7 +730,7 @@ let extract_and_compile l =
 let show_extraction ~pstate =
   init ~inner:true false false;
   let prf = Declare.Proof.get pstate in
-  let sigma, env = Declare.get_current_context pstate in
+  let sigma, env = Declare.Proof.get_current_context pstate in
   let trms = Proof.partial_proof prf in
   let extr_term t =
     let ast, ty = extract_constr env sigma t in
