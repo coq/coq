@@ -264,7 +264,7 @@ Class DependentEliminationPackage (A : Type) :=
 
 Ltac elim_tac tac p :=
   let ty := type of p in
-  let eliminator := eval simpl in (@elim (_ : DependentEliminationPackage ty)) in
+  let eliminator := eval simpl in (@elim _ (_ : DependentEliminationPackage ty)) in
     tac p eliminator.
 
 (** Specialization to do case analysis or induction.
