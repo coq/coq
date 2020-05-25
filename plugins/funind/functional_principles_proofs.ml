@@ -853,8 +853,10 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num
 
   (*i The next call to mk_equation_id is valid since we are
      constructing the lemma Ensures by: obvious i*)
+  let info = Declare.Info.make () in
   let lemma =
-    Lemmas.start_lemma ~name:(mk_equation_id f_id) ~poly:false evd lemma_type
+    Declare.start_proof ~name:(mk_equation_id f_id) ~poly:false ~info
+      ~impargs:[] ~udecl:UState.default_univ_decl evd lemma_type
   in
   let lemma, _ = Declare.by (Proofview.V82.tactic prove_replacement) lemma in
   let () =

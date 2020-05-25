@@ -1492,7 +1492,8 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
   in
   let info = Declare.Info.make ~hook:(Declare.Hook.make hook) () in
   let lemma =
-    Lemmas.start_lemma ~name:na ~poly:false (* FIXME *) ~info sigma gls_type
+    Declare.start_proof ~name:na ~poly:false (* FIXME *) ~info ~impargs:[]
+      ~udecl:UState.default_univ_decl sigma gls_type
   in
   let lemma =
     if Indfun_common.is_strict_tcc () then
@@ -1530,7 +1531,8 @@ let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
   let start_proof env ctx tac_start tac_end =
     let info = Declare.Info.make ~hook () in
     let lemma =
-      Lemmas.start_lemma ~name:thm_name ~poly:false (*FIXME*) ~info ctx
+      Declare.start_proof ~name:thm_name ~poly:false (*FIXME*) ~info ctx
+        ~impargs:[] ~udecl:UState.default_univ_decl
         (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref))
     in
     let lemma =
@@ -1601,8 +1603,10 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   let evd = Evd.from_ctx uctx in
   let f_constr = constr_of_monomorphic_global f_ref in
   let equation_lemma_type = subst1 f_constr equation_lemma_type in
+  let info = Declare.Info.make () in
   let lemma =
-    Lemmas.start_lemma ~name:eq_name ~poly:false evd
+    Declare.start_proof ~name:eq_name ~poly:false evd ~info ~impargs:[]
+      ~udecl:UState.default_univ_decl
       (EConstr.of_constr equation_lemma_type)
   in
   let lemma =

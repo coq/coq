@@ -146,7 +146,7 @@ let rec solve_obligation prg num tac =
   in
   let info = Declare.Info.make ~proof_ending ~scope ~kind () in
   let poly = prg.prg_poly in
-  let lemma = Lemmas.start_lemma ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in
+  let lemma = Declare.start_proof ~name:obl.obl_name ~poly ~impargs:[] ~udecl:UState.default_univ_decl ~info evd (EConstr.of_constr obl.obl_type) in
   let lemma = fst @@ Declare.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Declare.Proof.set_endline_tactic tac lemma) lemma tac in
   lemma

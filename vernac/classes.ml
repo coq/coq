@@ -362,7 +362,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)
   let termtype = Evarutil.nf_evar sigma termtype in
-  let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info ~impargs sigma termtype in
+  let lemma = Declare.start_proof ~name:id ~poly ~udecl ~info ~impargs sigma termtype in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
     match term with
