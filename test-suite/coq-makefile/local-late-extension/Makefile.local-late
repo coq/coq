@@ -1,0 +1,4 @@
+MYVOFILES := $(VOFILES)
+
+printvo::
+	echo '$(MYVOFILES)'

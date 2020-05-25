@@ -913,6 +913,11 @@ debug:
 
 .DEFAULT_GOAL := all
 
+# This file can be created by the user to hook into double colon rules
+# or add any other Makefile code he may need, making use of defined
+# variables if necessary.
+-include @LOCAL_LATE_FILE@
+
 # Local Variables:
 # mode: makefile-gmake
 # End:
