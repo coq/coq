@@ -466,7 +466,7 @@ let vernac_custom_entry ~module_local s =
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
   if Nametab.exists_cci (Lib.make_path id) || Termops.is_section_variable id ||
-     locality <> Declare.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
+     locality <> Locality.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
@@ -548,7 +548,6 @@ let vernac_definition_name lid local =
          CAst.make ?loc (fresh_name_for_anonymous_theorem ())
     | { v = Name.Name n; loc } -> CAst.make ?loc n in
   let () =
-    let open Declare in
     match local with
     | Discharge -> Dumpglob.dump_definition lid true "var"
     | Global _ -> Dumpglob.dump_definition lid false "def"
@@ -604,7 +603,7 @@ let vernac_exact_proof ~lemma c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
   let lemma, status = Declare.by (Tactics.exact_proof c) lemma in
-  let () = Declare.save_lemma_proved ~proof:lemma ~opaque:Declare.Opaque ~idopt:None in
+  let () = Declare.save_lemma_proved ~proof:lemma ~opaque:Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =
@@ -614,8 +613,8 @@ let vernac_assumption ~atts discharge kind l nl =
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
           match scope with
-            | Declare.Global _ -> Dumpglob.dump_definition lid false "ax"
-            | Declare.Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
+            | Global _ -> Dumpglob.dump_definition lid false "ax"
+            | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l
 
 let is_polymorphic_inductive_cumulativity =

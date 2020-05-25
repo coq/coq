@@ -319,7 +319,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
     let entry = Declare.definition_entry ~univs ?types body in
     let (_ : Names.GlobRef.t) =
       Declare.declare_entry ~name:new_princ_name ~hook
-        ~scope:(Declare.Global Declare.ImportDefaultBehavior)
+        ~scope:(Locality.Global Locality.ImportDefaultBehavior)
         ~kind:Decls.(IsProof Theorem)
         ~impargs:[] ~uctx entry
     in
@@ -400,7 +400,7 @@ let register_struct is_rec fixpoint_exprl =
           Pp.(str "Body of Function must be given")
     in
     ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
-      ~scope:(Declare.Global Declare.ImportDefaultBehavior)
+      ~scope:(Locality.Global Locality.ImportDefaultBehavior)
       ~kind:Decls.Definition univs binders None body (Some rtype);
     let evd, rev_pconstants =
       List.fold_left
@@ -419,7 +419,7 @@ let register_struct is_rec fixpoint_exprl =
     (None, evd, List.rev rev_pconstants)
   | _ ->
     ComFixpoint.do_fixpoint
-      ~scope:(Declare.Global Declare.ImportDefaultBehavior) ~poly:false
+      ~scope:(Locality.Global Locality.ImportDefaultBehavior) ~poly:false
       fixpoint_exprl;
     let evd, rev_pconstants =
       List.fold_left
@@ -1370,12 +1370,12 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
       | None -> raise Not_found
       | Some finfos -> finfos
     in
-    let open Declare in
     match finfos.equation_lemma with
-    | None -> Transparent (* non recursive definition *)
+    | None -> Vernacexpr.Transparent (* non recursive definition *)
     | Some equation ->
-      if Declareops.is_opaque (Global.lookup_constant equation) then Opaque
-      else Transparent
+      if Declareops.is_opaque (Global.lookup_constant equation) then
+        Vernacexpr.Opaque
+      else Vernacexpr.Transparent
   in
   let body, typ, univs, _hook, sigma0 =
     try
@@ -1527,8 +1527,8 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
             fst @@ Declare.by (Proofview.V82.tactic (proving_tac i)) lemma
           in
           let () =
-            Declare.save_lemma_proved ~proof:lemma ~opaque:Declare.Transparent
-              ~idopt:None
+            Declare.save_lemma_proved ~proof:lemma
+              ~opaque:Vernacexpr.Transparent ~idopt:None
           in
           let finfo =
             match find_Function_infos (fst f_as_constant) with
@@ -1600,8 +1600,8 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
                  lemma)
           in
           let () =
-            Declare.save_lemma_proved ~proof:lemma ~opaque:Declare.Transparent
-              ~idopt:None
+            Declare.save_lemma_proved ~proof:lemma
+              ~opaque:Vernacexpr.Transparent ~idopt:None
           in
           let finfo =
             match find_Function_infos (fst f_as_constant) with
@@ -2205,7 +2205,7 @@ let build_scheme fas =
   List.iter2
     (fun (princ_id, _, _) (body, types, univs, opaque) ->
       let (_ : Constant.t) =
-        let opaque = if opaque = Declare.Opaque then true else false in
+        let opaque = if opaque = Vernacexpr.Opaque then true else false in
         let def_entry = Declare.definition_entry ~univs ~opaque ?types body in
         Declare.declare_constant ~name:princ_id
           ~kind:Decls.(IsProof Theorem)

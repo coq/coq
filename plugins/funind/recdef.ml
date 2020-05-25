@@ -58,7 +58,8 @@ let declare_fun name kind ?univs value =
     (Declare.declare_constant ~name ~kind (Declare.DefinitionEntry ce))
 
 let defined lemma =
-  Declare.save_lemma_proved ~proof:lemma ~opaque:Declare.Transparent ~idopt:None
+  Declare.save_lemma_proved ~proof:lemma ~opaque:Vernacexpr.Transparent
+    ~idopt:None
 
 let def_of_const t =
   match Constr.kind t with
@@ -1414,11 +1415,12 @@ let build_new_goal_type lemma =
 
 let is_opaque_constant c =
   let cb = Global.lookup_constant c in
+  let open Vernacexpr in
   match cb.Declarations.const_body with
-  | Declarations.OpaqueDef _ -> Declare.Opaque
-  | Declarations.Undef _ -> Declare.Opaque
-  | Declarations.Def _ -> Declare.Transparent
-  | Declarations.Primitive _ -> Declare.Opaque
+  | Declarations.OpaqueDef _ -> Opaque
+  | Declarations.Undef _ -> Opaque
+  | Declarations.Def _ -> Transparent
+  | Declarations.Primitive _ -> Opaque
 
 let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     (gls_type, decompose_and_tac, nb_goal) =

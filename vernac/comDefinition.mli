@@ -17,7 +17,7 @@ open Constrexpr
 val do_definition
   :  ?hook:Declare.Hook.t
   -> name:Id.t
-  -> scope:Declare.locality
+  -> scope:Locality.locality
   -> poly:bool
   -> kind:Decls.definition_object_kind
   -> universe_decl_expr option
@@ -30,7 +30,7 @@ val do_definition
 val do_definition_program
   :  ?hook:Declare.Hook.t
   -> name:Id.t
-  -> scope:Declare.locality
+  -> scope:Locality.locality
   -> poly:bool
   -> kind:Decls.logical_kind
   -> universe_decl_expr option

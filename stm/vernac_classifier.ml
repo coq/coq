@@ -37,7 +37,7 @@ let string_of_vernac_classification = function
   | VtMeta -> "Meta "
   | VtProofMode _ -> "Proof Mode"
 
-let vtkeep_of_opaque = let open Declare in function
+let vtkeep_of_opaque = function
   | Opaque -> VtKeepOpaque
   | Transparent -> VtKeepDefined
 

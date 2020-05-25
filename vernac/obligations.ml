@@ -135,7 +135,7 @@ let rec solve_obligation prg num tac =
     then Error.depends user_num remaining
   in
   let obl = subst_deps_obl obls obl in
-  let scope = Declare.(Global Declare.ImportNeedQualified) in
+  let scope = Locality.Global Locality.ImportNeedQualified in
   let kind = kind_of_obligation (snd obl.obl_status) in
   let evd = Evd.from_ctx (Internal.get_uctx prg) in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
@@ -303,7 +303,7 @@ let msg_generating_obl name obls =
 
 let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
     ?(impargs = []) ~poly
-    ?(scope = Declare.Global Declare.ImportDefaultBehavior)
+    ?(scope = Locality.Global Locality.ImportDefaultBehavior)
     ?(kind = Decls.(IsDefinition Definition)) ?tactic ?(reduce = reduce) ?hook
     ?(opaque = false) obls =
   let prg =
@@ -326,7 +326,7 @@ let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
     | _ -> res
 
 let add_mutual_definitions l ~uctx ?(udecl = UState.default_univ_decl)
-    ?tactic ~poly ?(scope = Declare.Global Declare.ImportDefaultBehavior)
+    ?tactic ~poly ?(scope = Locality.Global Locality.ImportDefaultBehavior)
     ?(kind = Decls.(IsDefinition Definition)) ?(reduce = reduce) ?hook ?(opaque = false)
     notations fixkind =
   let deps = List.map (fun ({Declare.Recthm.name; _}, _, _) -> name) l in
@@ -367,7 +367,7 @@ let admit_prog prg =
             let x = subst_deps_obl obls x in
             let uctx = Internal.get_uctx prg in
             let univs = UState.univ_entry ~poly:false uctx in
-            let kn = Declare.declare_constant ~name:x.obl_name ~local:Declare.ImportNeedQualified
+            let kn = Declare.declare_constant ~name:x.obl_name ~local:Locality.ImportNeedQualified
               (Declare.ParameterEntry (None, (x.obl_type, univs), None)) ~kind:Decls.(IsAssumption Conjectural)
             in
               Declare.assumption_message x.obl_name;

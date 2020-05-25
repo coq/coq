@@ -162,8 +162,6 @@ module Proof : sig
   val info : t -> Info.t
 end
 
-type opacity_flag = Vernacexpr.opacity_flag = Opaque | Transparent
-
 (** [start_proof ~name ~udecl ~poly sigma goals] starts a proof of
    name [name] with goals [goals] (a list of pairs of environment and
    conclusion); [poly] determines if the proof is universe
@@ -219,7 +217,7 @@ type proof_object
 (** Used by the STM only to store info, should go away *)
 val get_po_name : proof_object -> Id.t
 
-val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Proof.t -> proof_object
+val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> Proof.t -> proof_object
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
@@ -252,8 +250,6 @@ val definition_entry
   -> constr
   -> Evd.side_effects proof_entry
 
-type import_status = Locality.import_status = ImportDefaultBehavior | ImportNeedQualified
-
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
    the full path of the declaration
@@ -265,7 +261,7 @@ type import_status = Locality.import_status = ImportDefaultBehavior | ImportNeed
   for removal from the public API, use higher-level declare APIs
   instead *)
 val declare_constant
-  :  ?local:import_status
+  :  ?local:Locality.import_status
   -> name:Id.t
   -> kind:Decls.logical_kind
   -> Evd.side_effects constant_entry
@@ -337,8 +333,6 @@ val get_current_goal_context : Proof.t -> Evd.evar_map * Environ.env
   environment and empty evar_map. *)
 val get_current_context : Proof.t -> Evd.evar_map * Environ.env
 
-type locality = Locality.locality = Discharge | Global of import_status
-
 (** Information for a constant *)
 module CInfo : sig
 
@@ -351,7 +345,7 @@ module CInfo : sig
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)
     -> ?udecl : UState.universe_decl
-    -> ?scope : locality
+    -> ?scope : Locality.locality
     (** locality  *)
     -> ?impargs : Impargs.manual_implicits
     -> ?hook : Hook.t
@@ -366,7 +360,7 @@ end
     instead *)
 val declare_entry
   :  name:Id.t
-  -> scope:locality
+  -> scope:Locality.locality
   -> kind:Decls.logical_kind
   -> ?hook:Hook.t
   -> impargs:Impargs.manual_implicits
@@ -390,7 +384,7 @@ val declare_definition
 
 val declare_assumption
   :  name:Id.t
-  -> scope:locality
+  -> scope:Locality.locality
   -> hook:Hook.t option
   -> impargs:Impargs.manual_implicits
   -> uctx:UState.t
@@ -532,7 +526,7 @@ end
 
 val save_lemma_proved
   : proof:Proof.t
-  -> opaque:opacity_flag
+  -> opaque:Vernacexpr.opacity_flag
   -> idopt:Names.lident option
   -> unit
 

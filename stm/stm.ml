@@ -1523,7 +1523,7 @@ end = struct (* {{{ *)
             PG_compat.close_future_proof ~feedback_id:stop (Future.from_val proof) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
-          let opaque = Declare.Opaque in
+          let opaque = Opaque in
           try
             let _pstate =
               stm_qed_delay_proof ~st ~id:stop
@@ -1667,7 +1667,7 @@ end = struct (* {{{ *)
         let _proof = PG_compat.return_partial_proof () in
         `OK_ADMITTED
       else begin
-      let opaque = Declare.Opaque in
+      let opaque = Opaque in
 
       (* The original terminator, a hook, has not been saved in the .vio*)
       let proof, _info =
@@ -2162,7 +2162,7 @@ let collect_proof keep cur hd brkind id =
    | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).expr.CAst.loc in
  let is_defined_expr = function
-   | VernacEndProof (Proved (Declare.Transparent,_)) -> true
+   | VernacEndProof (Proved (Transparent,_)) -> true
    | _ -> false in
  let is_defined = function
    | _, { expr = e } -> is_defined_expr e.CAst.v.expr
@@ -2527,7 +2527,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                   | VtKeep VtKeepAxiom ->
                       qed.fproof <- Some (None, ref false); None
                   | VtKeep opaque ->
-                    let opaque = let open Declare in  match opaque with
+                    let opaque = match opaque with
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
                       | VtKeepAxiom -> assert false
                     in

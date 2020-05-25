@@ -313,7 +313,7 @@ let instance_hook info global ?hook cst =
 
 let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
-  let scope = Declare.Global Declare.ImportDefaultBehavior in
+  let scope = Locality.Global Locality.ImportDefaultBehavior in
   let info = Declare.CInfo.make ~kind ~scope ~impargs ~opaque:false ~poly ~udecl () in
   let kn = Declare.declare_definition ~name ~info ~types:(Some termtype) ~body:term sigma in
   instance_hook iinfo global ?hook kn
@@ -344,7 +344,7 @@ let declare_instance_program env sigma ~global ~poly name pri impargs udecl term
   let obls, _, term, typ = RetrieveObl.retrieve_obligations env name sigma 0 term termtype in
   let hook = Declare.Hook.make hook in
   let uctx = Evd.evar_universe_context sigma in
-  let scope, kind = Declare.Global Declare.ImportDefaultBehavior,
+  let scope, kind = Locality.Global Locality.ImportDefaultBehavior,
                     Decls.IsDefinition Decls.Instance in
   let _ : Declare.progress =
     Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook ~impargs ~uctx typ obls

@@ -16,8 +16,6 @@ open Names
 open Safe_typing
 module NamedDecl = Context.Named.Declaration
 
-type opacity_flag = Vernacexpr.opacity_flag = Opaque | Transparent
-
 (* Hooks naturally belong here as they apply to both definitions and lemmas *)
 module Hook = struct
   module S = struct
@@ -284,8 +282,6 @@ let get_open_goals ps =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
   List.length shelf
 
-type import_status = Locality.import_status = ImportDefaultBehavior | ImportNeedQualified
-
 (** Declaration of constants and parameters *)
 
 type 'a proof_entry = {
@@ -409,7 +405,9 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
   let { Proof.name; poly } = Proof.data proof in
   let unsafe_typ = keep_body_ucst_separate && not poly in
   let elist, uctx = prepare_proof ~unsafe_typ ps in
-  let opaque = match opaque with Opaque -> true | Transparent -> false in
+  let opaque = match opaque with
+    | Vernacexpr.Opaque -> true
+    | Vernacexpr.Transparent -> false in
 
   let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
     let utyp, ubody =
@@ -435,7 +433,7 @@ type 'a constant_entry =
 
 type constant_obj = {
   cst_kind : Decls.logical_kind;
-  cst_locl : import_status;
+  cst_locl : Locality.import_status;
 }
 
 let load_constant i ((sp,kn), obj) =
@@ -449,8 +447,8 @@ let load_constant i ((sp,kn), obj) =
 let open_constant f i ((sp,kn), obj) =
   (* Never open a local definition *)
   match obj.cst_locl with
-  | ImportNeedQualified -> ()
-  | ImportDefaultBehavior ->
+  | Locality.ImportNeedQualified -> ()
+  | Locality.ImportDefaultBehavior ->
     let con = Global.constant_of_delta_kn kn in
     if Libobject.in_filter_ref (GlobRef.ConstRef con) f then
       Nametab.push (Nametab.Exactly i) sp (GlobRef.ConstRef con)
@@ -504,7 +502,7 @@ let register_constant kn kind local =
   update_tables kn
 
 let register_side_effect (c, role) =
-  let () = register_constant c Decls.(IsProof Theorem) ImportDefaultBehavior in
+  let () = register_constant c Decls.(IsProof Theorem) Locality.ImportDefaultBehavior in
   match role with
   | None -> ()
   | Some (Evd.Schema (ind, kind)) -> DeclareScheme.declare_scheme kind [|ind,c|]
@@ -661,14 +659,14 @@ let define_constant ~name cd =
   if unsafe || is_unsafe_typing_flags() then feedback_axiom();
   kn
 
-let declare_constant ?(local = ImportDefaultBehavior) ~name ~kind cd =
+let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind cd =
   let () = check_exists name in
   let kn = define_constant ~name cd in
   (* Register the libobjects attached to the constants *)
   let () = register_constant kn kind local in
   kn
 
-let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind de =
+let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~name ~kind de =
   let kn, eff =
     let de =
       if not de.proof_entry_opaque then
@@ -921,7 +919,7 @@ let next = let n = ref 0 in fun () -> incr n; !n
 
 let by tac = map_fold_proof (Proof.solve (Goal_select.SelectNth 1) None tac)
 
-let build_constant_by_tactic ~name ?(opaque=Transparent) ~uctx ~sign ~poly typ tac =
+let build_constant_by_tactic ~name ?(opaque=Vernacexpr.Transparent) ~uctx ~sign ~poly typ tac =
   let evd = Evd.from_ctx uctx in
   let info = Info.make () in
   let pf = start_proof_core ~name ~poly ~sign ~udecl:UState.default_univ_decl ~impargs:[] ~info evd typ in
@@ -962,7 +960,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
   let concl = EConstr.of_constr concl in
   let uctx = Evd.evar_universe_context sigma in
   let (const, safe, uctx) =
-    try build_constant_by_tactic ~name ~opaque:Transparent ~poly ~uctx ~sign:secsign concl solve_tac
+    try build_constant_by_tactic ~name ~opaque:Vernacexpr.Transparent ~poly ~uctx ~sign:secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -986,7 +984,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
     (* do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in
     (* ppedrot: seems legit to have abstracted subproofs as local*)
-    declare_private_constant ~local:ImportNeedQualified ~name ~kind const
+    declare_private_constant ~local:Locality.ImportNeedQualified ~name ~kind const
   in
   let cst, eff = Impargs.with_implicit_protection cst () in
   let inst = match const.proof_entry_universes with
@@ -1033,8 +1031,6 @@ let declare_definition_scheme ~internal ~univs ~role ~name c =
 let _ = Ind_tables.declare_definition_scheme := declare_definition_scheme
 let _ = Abstract.declare_abstract := declare_abstract
 
-type locality = Locality.locality = | Discharge | Global of import_status
-
 module CInfo = struct
 
   type t =
@@ -1043,13 +1039,13 @@ module CInfo = struct
     ; inline : bool
     ; kind : Decls.logical_kind
     ; udecl : UState.universe_decl
-    ; scope : locality
+    ; scope : Locality.locality
     ; impargs : Impargs.manual_implicits
     ; hook : Hook.t option
     }
 
   let make ?(poly=false) ?(opaque=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
-      ?(udecl=UState.default_univ_decl) ?(scope=Global ImportNeedQualified) ?(impargs=[])
+      ?(udecl=UState.default_univ_decl) ?(scope=Locality.Global Locality.ImportNeedQualified) ?(impargs=[])
       ?hook () =
     { poly; opaque; inline; kind; udecl; scope; impargs; hook }
 
@@ -1064,11 +1060,11 @@ let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
   in
   let ubind = UState.universe_binders uctx in
   let dref = match scope with
-  | Discharge ->
+  | Locality.Discharge ->
     let () = declare_variable_core ~name ~kind (SectionLocalDef entry) in
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
-  | Global local ->
+  | Locality.Global local ->
     let kn = declare_constant ~name ~local ~kind (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
     if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
@@ -1131,8 +1127,8 @@ let warn_let_as_axiom =
 
 let declare_assumption ~name ~scope ~hook ~impargs ~uctx pe =
   let local = match scope with
-    | Discharge -> warn_let_as_axiom name; ImportNeedQualified
-    | Global local -> local
+    | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
+    | Locality.Global local -> local
   in
   let kind = Decls.(IsAssumption Conjectural) in
   let decl = ParameterEntry pe in
@@ -1390,7 +1386,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
       declare_constant ~name:obl.obl_name
-        ~local:ImportNeedQualified
+        ~local:Locality.ImportNeedQualified
         ~kind:Decls.(IsProof Property)
         (DefinitionEntry ce)
     in
