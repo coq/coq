@@ -147,7 +147,7 @@ Changes in 8.11+beta1
   dropped when forcing a delayed opaque proof inside a polymorphic section. Also
   relaxes the nesting criterion for sections, as polymorphic sections can now
   appear inside a monomorphic one
-  (`#10664, <https://github.com/coq/coq/pull/10664>`_ by Pierre-Marie Pédrot).
+  (`#10664 <https://github.com/coq/coq/pull/10664>`_, by Pierre-Marie Pédrot).
 - **Changed:**
   Using ``SProp`` is now allowed by default, without needing to pass
   ``-allow-sprop`` or use :flag:`Allow StrictProp` (`#10811
@@ -476,7 +476,7 @@ Changes in 8.11+beta1
   by Vincent Laporte).
 - **Removed:**
   Deprecated modules `Coq.ZArith.Zlogarithm` and `Coq.ZArith.Zsqrt_compat`
-  (`#9881 <https://github.com/coq/coq/pull/9811>`_,
+  (`#9811 <https://github.com/coq/coq/pull/9811>`_,
   by Vincent Laporte).
 
   .. _811Reals:
@@ -690,7 +690,7 @@ Changes in 8.11.1
   Bump official OCaml support and CI testing to 4.10.0
   (`#11131 <https://github.com/coq/coq/pull/11131>`_,
   `#11123 <https://github.com/coq/coq/pull/11123>`_,
-  `#11102 <https://github.com/coq/coq/pull/11123>`_,
+  `#11102 <https://github.com/coq/coq/pull/11102>`_,
   by Emilio Jesus Gallego Arias, Jacques-Henri Jourdan,
   Guillaume Melquiond, and Guillaume Munch-Maccagnoni).
 
@@ -1091,7 +1091,7 @@ Other changes in 8.10+beta1
     e.g., a numeral notation whose parsing function outputs a proof of
     :g:`Nat.gcd x y = 1` will no longer fail to parse due to containing the
     constant :g:`Nat.gcd` in the parameter-argument of :g:`eq_refl`)
-    (`#9874 <https://github.com/coq/coq/pull/9840>`_,
+    (`#9874 <https://github.com/coq/coq/pull/9874>`_,
     closes `#9840 <https://github.com/coq/coq/issues/9840>`_
     and `#9844 <https://github.com/coq/coq/issues/9844>`_,
     by Jason Gross).
@@ -1107,7 +1107,7 @@ Other changes in 8.10+beta1
 
   - Allow inspecting custom grammar entries by :cmd:`Print Custom Grammar`
     (`#10061 <https://github.com/coq/coq/pull/10061>`_,
-    fixes `#9681 <http://github.com/coq/coq/pull/9681>`_,
+    fixes `#9681 <https://github.com/coq/coq/pull/9681>`_,
     by Jasper Hugunin, review by Pierre-Marie Pédrot and Hugo Herbelin).
 
 - The `quote plugin
