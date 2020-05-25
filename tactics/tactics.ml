@@ -2265,6 +2265,10 @@ let left_with_bindings  with_evars = constructor_tac with_evars (Some 2) 1
 let right_with_bindings with_evars = constructor_tac with_evars (Some 2) 2
 let split_with_bindings with_evars l =
   Tacticals.New.tclMAP (constructor_tac with_evars (Some 1) 1) l
+let split_with_delayed_bindings with_evars =
+  Tacticals.New.tclMAP (fun bl ->
+    Tacticals.New.tclDELAYEDWITHHOLES with_evars bl
+    (constructor_tac with_evars (Some 1) 1))
 
 let left           = left_with_bindings false
 let simplest_left  = left NoBindings

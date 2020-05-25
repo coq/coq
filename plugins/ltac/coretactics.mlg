@@ -165,18 +165,6 @@ END
 
 (** Split *)
 
-{
-
-let rec delayed_list = function
-| [] -> fun _ sigma -> (sigma, [])
-| x :: l ->
-  fun env sigma ->
-    let (sigma, x) = x env sigma in
-    let (sigma, l) = delayed_list l env sigma in
-    (sigma, x :: l)
-
-}
-
 TACTIC EXTEND split
 | [ "split" ] -> { Tactics.split_with_bindings false [NoBindings] }
 END
@@ -199,16 +187,12 @@ END
 
 TACTIC EXTEND exists
 | [ "exists" ] -> { Tactics.split_with_bindings false [NoBindings] }
-| [ "exists" ne_bindings_list_sep(bll, ",") ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES false (delayed_list bll) (fun bll -> Tactics.split_with_bindings false bll)
-  }
+| [ "exists" ne_bindings_list_sep(bll, ",") ] -> { Tactics.split_with_delayed_bindings false bll }
 END
 
 TACTIC EXTEND eexists
 | [ "eexists" ] -> { Tactics.split_with_bindings true [NoBindings] }
-| [ "eexists" ne_bindings_list_sep(bll, ",") ] -> {
-    Tacticals.New.tclDELAYEDWITHHOLES true (delayed_list bll) (fun bll -> Tactics.split_with_bindings true bll)
-  }
+| [ "eexists" ne_bindings_list_sep(bll, ",") ] -> { Tactics.split_with_delayed_bindings true bll }
 END
 
 (** Intro *)
