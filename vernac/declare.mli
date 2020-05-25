@@ -38,7 +38,7 @@ open Entries
 
  *)
 
-(** Declaration hooks *)
+(** Declaration hooks, to be run when a constant is saved. Use with care. *)
 module Hook : sig
   type t
 
@@ -64,6 +64,79 @@ module Hook : sig
   val make : (S.t -> unit) -> t
   val call : ?hook:t -> S.t -> unit
 end
+
+(** {2 One-go, non-interactive declaration API } *)
+
+(** Information for a top-level constant *)
+module CInfo : sig
+
+  type t
+
+  val make :
+    ?poly:bool
+    -> ?opaque : bool
+    -> ?inline : bool
+    -> ?kind : Decls.logical_kind
+    (** Theorem, etc... *)
+    -> ?udecl : UState.universe_decl
+    -> ?scope : Locality.locality
+    (** locality  *)
+    -> ?impargs : Impargs.manual_implicits
+    -> ?hook : Hook.t
+    (** Callback to be executed after saving the constant *)
+    -> unit
+    -> t
+
+end
+
+(** Declares a non-interactive constant; [body] and [types] will be
+   normalized w.r.t. the passed [evar_map] [sigma]. Universes should
+   be handled properly, including minimization and restriction. Note
+   that [sigma] is checked for unresolved evars, thus you should be
+   careful not to submit open terms or evar maps with stale,
+   unresolved existentials *)
+val declare_definition
+  :  name:Id.t
+  -> info:CInfo.t
+  -> types:EConstr.t option
+  -> body:EConstr.t
+  -> Evd.evar_map
+  -> GlobRef.t
+
+val declare_assumption
+  :  name:Id.t
+  -> scope:Locality.locality
+  -> hook:Hook.t option
+  -> impargs:Impargs.manual_implicits
+  -> uctx:UState.t
+  -> Entries.parameter_entry
+  -> GlobRef.t
+
+module Recthm : sig
+  type t =
+    { name : Id.t
+    (** Name of theorem *)
+    ; typ : Constr.t
+    (** Type of theorem  *)
+    ; args : Name.t list
+    (** Names to pre-introduce  *)
+    ; impargs : Impargs.manual_implicits
+    (** Explicitily declared implicit arguments  *)
+    }
+end
+
+type lemma_possible_guards = int list list
+
+val declare_mutually_recursive
+  : info:CInfo.t
+  -> ntns:Vernacexpr.decl_notation list
+  -> uctx:UState.t
+  -> rec_declaration:Constr.rec_declaration
+  -> possible_indexes:lemma_possible_guards option
+  -> Recthm.t list
+  -> Names.GlobRef.t list
+
+(** {2 Declaration of interactive constants }  *)
 
 (** Resolution status of a program *)
 type progress =
@@ -93,21 +166,6 @@ module Proof_ending : sig
         ; sigma : Evd.evar_map
         }
 
-end
-
-type lemma_possible_guards = int list list
-
-module Recthm : sig
-  type t =
-    { name : Id.t
-    (** Name of theorem *)
-    ; typ : Constr.t
-    (** Type of theorem  *)
-    ; args : Name.t list
-    (** Names to pre-introduce  *)
-    ; impargs : Impargs.manual_implicits
-    (** Explicitily declared implicit arguments  *)
-    }
 end
 
 module Info : sig
@@ -230,6 +288,8 @@ module Proof : sig
   val info : t -> Info.t
 end
 
+(** {2 low-level, internla API, avoid using unless you have special needs } *)
+
 (** Proof entries represent a proof that has been finished, but still
    not registered with the kernel.
 
@@ -238,26 +298,28 @@ end
    instead *)
 type 'a proof_entry
 
+val definition_entry
+  :  ?opaque:bool
+  -> ?inline:bool
+  -> ?types:types
+  -> ?univs:Entries.universes_entry
+  -> constr
+  -> Evd.side_effects proof_entry
+
 (** XXX: This is an internal, low-level API and could become scheduled
-   for removal from the public API, use higher-level declare APIs
-   instead *)
-type proof_object
-
-(** Used by the STM only to store info, should go away *)
-val get_po_name : proof_object -> Id.t
-
-val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> Proof.t -> proof_object
+    for removal from the public API, use higher-level declare APIs
+    instead *)
+val declare_entry
+  :  name:Id.t
+  -> scope:Locality.locality
+  -> kind:Decls.logical_kind
+  -> ?hook:Hook.t
+  -> impargs:Impargs.manual_implicits
+  -> uctx:UState.t
+  -> Evd.side_effects proof_entry
+  -> GlobRef.t
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
-
-(** XXX: This is an internal, low-level API and could become scheduled
-   for removal from the public API, use higher-level declare APIs
-   instead *)
-type 'a constant_entry =
-  | DefinitionEntry of 'a proof_entry
-  | ParameterEntry of parameter_entry
-  | PrimitiveEntry of primitive_entry
-
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
@@ -271,20 +333,21 @@ val declare_variable
    XXX: This is an internal, low-level API and could become scheduled
    for removal from the public API, use higher-level declare APIs
    instead *)
-val definition_entry
-  :  ?opaque:bool
-  -> ?inline:bool
-  -> ?types:types
-  -> ?univs:Entries.universes_entry
-  -> constr
-  -> Evd.side_effects proof_entry
+type 'a constant_entry =
+  | DefinitionEntry of 'a proof_entry
+  | ParameterEntry of parameter_entry
+  | PrimitiveEntry of primitive_entry
+
+val prepare_parameter
+  : poly:bool
+  -> udecl:UState.universe_decl
+  -> types:EConstr.types
+  -> Evd.evar_map
+  -> Evd.evar_map * Entries.parameter_entry
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
    the full path of the declaration
-
-  internal specify if the constant has been created by the kernel or by the
-  user, and in the former case, if its errors should be silent
 
   XXX: This is an internal, low-level API and could become scheduled
   for removal from the public API, use higher-level declare APIs
@@ -296,7 +359,45 @@ val declare_constant
   -> Evd.side_effects constant_entry
   -> Constant.t
 
-(** Declaration messages *)
+(** {2 Proof delay API, warning, internal, not stable *)
+
+(* Intermediate step necessary to delegate the future.
+ * Both access the current proof state. The former is supposed to be
+ * chained with a computation that completed the proof *)
+type closed_proof_output
+
+(** Requires a complete proof. *)
+val return_proof : Proof.t -> closed_proof_output
+
+(** An incomplete proof is allowed (no error), and a warn is given if
+   the proof is complete. *)
+val return_partial_proof : Proof.t -> closed_proof_output
+
+(** XXX: This is an internal, low-level API and could become scheduled
+   for removal from the public API, use higher-level declare APIs
+   instead *)
+type proof_object
+
+val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> Proof.t -> proof_object
+val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output Future.computation -> proof_object
+
+(** Special cases for delayed proofs, in this case we must provide the
+   proof information so the proof won't be forced. *)
+val save_lemma_admitted_delayed :
+     proof:proof_object
+  -> info:Info.t
+  -> unit
+
+val save_lemma_proved_delayed
+  : proof:proof_object
+  -> info:Info.t
+  -> idopt:Names.lident option
+  -> unit
+
+(** Used by the STM only to store info, should go away *)
+val get_po_name : proof_object -> Id.t
+
+(** Declaration messages, for internal use *)
 
 (** XXX: Scheduled for removal from public API, do not use *)
 val definition_message : Id.t -> unit
@@ -316,19 +417,6 @@ module Internal : sig
 
 end
 
-(* Intermediate step necessary to delegate the future.
- * Both access the current proof state. The former is supposed to be
- * chained with a computation that completed the proof *)
-type closed_proof_output
-
-(** Requires a complete proof. *)
-val return_proof : Proof.t -> closed_proof_output
-
-(** An incomplete proof is allowed (no error), and a warn is given if
-   the proof is complete. *)
-val return_partial_proof : Proof.t -> closed_proof_output
-val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output Future.computation -> proof_object
-
 (** Semantics of this function is a bit dubious, use with care *)
 val build_by_tactic
   :  ?side_eff:bool
@@ -339,72 +427,7 @@ val build_by_tactic
   -> unit Proofview.tactic
   -> Constr.constr * Constr.types option * Entries.universes_entry * bool * UState.t
 
-(** Information for a constant *)
-module CInfo : sig
-
-  type t
-
-  val make :
-    ?poly:bool
-    -> ?opaque : bool
-    -> ?inline : bool
-    -> ?kind : Decls.logical_kind
-    (** Theorem, etc... *)
-    -> ?udecl : UState.universe_decl
-    -> ?scope : Locality.locality
-    (** locality  *)
-    -> ?impargs : Impargs.manual_implicits
-    -> ?hook : Hook.t
-    (** Callback to be executed after saving the constant *)
-    -> unit
-    -> t
-
-end
-
-(** XXX: This is an internal, low-level API and could become scheduled
-    for removal from the public API, use higher-level declare APIs
-    instead *)
-val declare_entry
-  :  name:Id.t
-  -> scope:Locality.locality
-  -> kind:Decls.logical_kind
-  -> ?hook:Hook.t
-  -> impargs:Impargs.manual_implicits
-  -> uctx:UState.t
-  -> Evd.side_effects proof_entry
-  -> GlobRef.t
-
-(** Declares a non-interactive constant; [body] and [types] will be
-   normalized w.r.t. the passed [evar_map] [sigma]. Universes should
-   be handled properly, including minimization and restriction. Note
-   that [sigma] is checked for unresolved evars, thus you should be
-   careful not to submit open terms or evar maps with stale,
-   unresolved existentials *)
-val declare_definition
-  :  name:Id.t
-  -> info:CInfo.t
-  -> types:EConstr.t option
-  -> body:EConstr.t
-  -> Evd.evar_map
-  -> GlobRef.t
-
-val declare_assumption
-  :  name:Id.t
-  -> scope:Locality.locality
-  -> hook:Hook.t option
-  -> impargs:Impargs.manual_implicits
-  -> uctx:UState.t
-  -> Entries.parameter_entry
-  -> GlobRef.t
-
-val declare_mutually_recursive
-  : info:CInfo.t
-  -> ntns:Vernacexpr.decl_notation list
-  -> uctx:UState.t
-  -> rec_declaration:Constr.rec_declaration
-  -> possible_indexes:lemma_possible_guards option
-  -> Recthm.t list
-  -> Names.GlobRef.t list
+(** {2 Program mode API} *)
 
 (** Prepare API, to be removed once we provide the corresponding 1-step API *)
 val prepare_obligation
@@ -413,13 +436,6 @@ val prepare_obligation
   -> body:EConstr.t
   -> Evd.evar_map
   -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_info
-
-val prepare_parameter
-  : poly:bool
-  -> udecl:UState.universe_decl
-  -> types:EConstr.types
-  -> Evd.evar_map
-  -> Evd.evar_map * Entries.parameter_entry
 
 (* Compat: will remove *)
 exception AlreadyDeclared of (string option * Names.Id.t)
@@ -529,16 +545,3 @@ val obl_substitution :
 val dependencies : Obligation.t array -> int -> Int.Set.t
 
 end
-
-(** Special cases for delayed proofs, in this case we must provide the
-   proof information so the proof won't be forced. *)
-val save_lemma_admitted_delayed :
-     proof:proof_object
-  -> info:Info.t
-  -> unit
-
-val save_lemma_proved_delayed
-  : proof:proof_object
-  -> info:Info.t
-  -> idopt:Names.lident option
-  -> unit
