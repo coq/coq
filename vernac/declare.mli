@@ -406,17 +406,6 @@ val fixpoint_message : int array option -> Id.t list -> unit
 
 val check_exists : Id.t -> unit
 
-(** {6 For internal support, do not use}  *)
-
-module Internal : sig
-
-  type constant_obj
-
-  val objConstant : constant_obj Libobject.Dyn.tag
-  val objVariable : unit Libobject.Dyn.tag
-
-end
-
 (** Semantics of this function is a bit dubious, use with care *)
 val build_by_tactic
   :  ?side_eff:bool
@@ -436,9 +425,6 @@ val prepare_obligation
   -> body:EConstr.t
   -> Evd.evar_map
   -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_info
-
-(* Compat: will remove *)
-exception AlreadyDeclared of (string option * Names.Id.t)
 
 module Obls : sig
 
@@ -543,5 +529,16 @@ val obl_substitution :
   -> (Id.t * (Constr.types * Constr.types)) list
 
 val dependencies : Obligation.t array -> int -> Int.Set.t
+
+end
+
+(** {6 For internal support, do not use}  *)
+
+module Internal : sig
+
+  type constant_obj
+
+  val objConstant : constant_obj Libobject.Dyn.tag
+  val objVariable : unit Libobject.Dyn.tag
 
 end

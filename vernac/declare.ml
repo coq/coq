@@ -1184,9 +1184,6 @@ let prepare_parameter ~poly ~udecl ~types sigma =
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   sigma, (None(*proof using*), (typ, univs), None(*inline*))
 
-(* Compat: will remove *)
-exception AlreadyDeclared = DeclareUniv.AlreadyDeclared
-
 module Obls = struct
 
 open Constr
