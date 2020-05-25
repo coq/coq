@@ -119,7 +119,7 @@ let find_rectype env sigma c =
   let t, l = decompose_app sigma (Reductionops.whd_betaiotazeta env sigma c) in
   match EConstr.kind sigma t with
   | Ind (ind, stg) -> (t, l)
-  | Construct _ -> (t,l)
+  | Construct _ -> (t, l)
   | _ -> raise Not_found
 
 let isAppConstruct ?(env = Global.env ()) sigma t =

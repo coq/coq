@@ -24,5 +24,5 @@ val print_lia_profile : unit -> unit
 
 (** {5 Use Micromega independently from tactics. } *)
 
-(** [dump_proof_term] generates the Coq representation of a Micromega proof witness *)
 val dump_proof_term : Micromega.zArithProof -> EConstr.t
+(** [dump_proof_term] generates the Coq representation of a Micromega proof witness *)
