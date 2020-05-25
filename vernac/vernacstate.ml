@@ -48,9 +48,9 @@ module LemmaStack = struct
     pn :: pns
 
   let copy_info src tgt =
-    Declare.Proof.map ~f:(fun _ -> Declare.Proof.fold ~f:(fun x -> x) tgt) src
+    Declare.Proof.map ~f:(fun _ -> Declare.Proof.get tgt) src
 
-  let copy_info ~src ~tgt =
+  let copy_info ~(src : t) ~(tgt : t) =
     let (ps, psl), (ts,tsl) = src, tgt in
     copy_info ps ts,
     List.map2 (fun op p -> copy_info op p) psl tsl
@@ -160,11 +160,11 @@ module Declare = struct
 
   let close_future_proof ~feedback_id pf =
     cc (fun pt -> Declare.close_future_proof ~feedback_id pt pf,
-                  Declare.Proof.get_info pt)
+                  Declare.Proof.info pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate =
     cc (fun pt -> Declare.close_proof ~opaque ~keep_body_ucst_separate pt,
-                  Declare.Proof.get_info pt)
+                  Declare.Proof.info pt)
 
   let discard_all () = s_lemmas := None
   let update_global_env () = dd (Declare.Proof.update_global_env)

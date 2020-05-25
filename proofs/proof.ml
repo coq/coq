@@ -120,7 +120,7 @@ type t =
   ; name : Names.Id.t
   (** the name of the theorem whose proof is being constructed *)
   ; poly : bool
-  (** Locality, polymorphism, and "kind" [Coercion, Definition, etc...] *)
+  (** polymorphism *)
   }
 
 (*** General proof functions ***)

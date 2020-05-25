@@ -97,11 +97,11 @@ module Info = struct
     }
 
   let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=Locality.Global Locality.ImportDefaultBehavior)
-      ?(kind=Decls.(IsProof Lemma)) ?(compute_guard=[]) ?(thms=[]) () =
+      ?(kind=Decls.(IsProof Lemma)) () =
     { hook
-    ; compute_guard
+    ; compute_guard = []
     ; proof_ending = CEphemeron.create proof_ending
-    ; thms
+    ; thms = []
     ; scope
     ; kind
     }
@@ -204,6 +204,50 @@ let start_dependent_proof ~name ~udecl ~poly ~info goals =
   ; initial_euctx
   ; info
   }
+
+let rec_tac_initializer finite guard thms snl =
+  if finite then
+    match List.map (fun { Recthm.name; typ } -> name, (EConstr.of_constr typ)) thms with
+    | (id,_)::l -> Tactics.mutual_cofix id l 0
+    | _ -> assert false
+  else
+    (* nl is dummy: it will be recomputed at Qed-time *)
+    let nl = match snl with
+     | None -> List.map succ (List.map List.last guard)
+     | Some nl -> nl
+    in match List.map2 (fun { Recthm.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
+       | (id,n,_)::l -> Tactics.mutual_fix id n l 0
+       | _ -> assert false
+
+let start_proof_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recguard thms snl =
+  let intro_tac { Recthm.args; _ } = Tactics.auto_intros_tac args in
+  let init_tac, compute_guard = match recguard with
+  | Some (finite,guard,init_terms) ->
+    let rec_tac = rec_tac_initializer finite guard thms snl in
+    let term_tac =
+      match init_terms with
+      | None ->
+        List.map intro_tac thms
+      | Some init_terms ->
+        (* This is the case for hybrid proof mode / definition
+           fixpoint, where terms for some constants are given with := *)
+        let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC) init_terms in
+        List.map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl thms
+    in
+    Tacticals.New.tclTHENS rec_tac term_tac, guard
+  | None ->
+    let () = match thms with [_] -> () | _ -> assert false in
+    intro_tac (List.hd thms), [] in
+  match thms with
+  | [] -> CErrors.anomaly (Pp.str "No proof to start.")
+  | { Recthm.name; typ; impargs; _} :: thms ->
+    let info = Info.make ?hook ~scope ~kind () in
+    let info = { info with Info.compute_guard; thms } in
+    (* start_lemma has the responsibility to add (name, impargs, typ)
+       to thms, once Info.t is more refined this won't be necessary *)
+    let lemma = start_proof ~name ~impargs ~poly ~udecl ~info sigma (EConstr.of_constr typ) in
+    map_proof (fun p ->
+        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) lemma
 
 let get_used_variables pf = pf.section_vars
 let get_universe_decl pf = pf.udecl
@@ -2039,5 +2083,5 @@ module Proof = struct
   let compact = compact_the_proof
   let update_global_env = update_global_env
   let get_open_goals = get_open_goals
-  let get_info { info } = info
+  let info { info } = info
 end

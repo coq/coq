@@ -271,7 +271,7 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
   let init_terms = Some fixdefs in
   let evd = Evd.from_ctx ctx in
   let lemma =
-    Lemmas.start_lemma_with_initialization ~poly ~scope ~kind:(Decls.IsDefinition fix_kind) ~udecl
+    Declare.start_proof_with_initialization ~poly ~scope ~kind:(Decls.IsDefinition fix_kind) ~udecl
       evd (Some(cofix,indexes,init_terms)) thms None in
   (* Declare notations *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;

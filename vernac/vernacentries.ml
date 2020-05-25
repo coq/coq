@@ -521,7 +521,7 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
     else (* We fix the variables to ensure they won't be lowered to Set *)
       Evd.fix_undefined_variables evd
   in
-  Lemmas.start_lemma_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
+  Declare.start_proof_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
 
 let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in function
 | Coercion ->

@@ -121,10 +121,6 @@ module Info : sig
     (** locality  *)
     -> ?kind:Decls.logical_kind
     (** Theorem, etc... *)
-    -> ?compute_guard:lemma_possible_guards
-    -> ?thms:Recthm.t list
-    (** Both of those are internal, used by the upper layers but will
-       become handled natively here in the future *)
     -> unit
     -> t
 
@@ -163,7 +159,7 @@ module Proof : sig
   val get_open_goals : t -> int
 
   (* Internal, don't use *)
-  val get_info : t -> Info.t
+  val info : t -> Info.t
 end
 
 type opacity_flag = Vernacexpr.opacity_flag = Opaque | Transparent
@@ -192,6 +188,19 @@ val start_dependent_proof
   -> poly:bool
   -> info:Info.t
   -> Proofview.telescope
+  -> Proof.t
+
+(** Pretty much internal, used by the Lemma / Fixpoint vernaculars *)
+val start_proof_with_initialization
+  :  ?hook:Hook.t
+  -> poly:bool
+  -> scope:Locality.locality
+  -> kind:Decls.logical_kind
+  -> udecl:UState.universe_decl
+  -> Evd.evar_map
+  -> (bool * lemma_possible_guards * Constr.t option list option) option
+  -> Recthm.t list
+  -> int list option
   -> Proof.t
 
 (** Proof entries represent a proof that has been finished, but still
