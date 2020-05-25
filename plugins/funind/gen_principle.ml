@@ -1520,10 +1520,10 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let typ, _ = lemmas_types_infos.(i) in
           let lemma = Lemmas.start_lemma ~name:lem_id ~poly:false !evd typ in
           let lemma =
-            fst @@ Lemmas.by (Proofview.V82.tactic (proving_tac i)) lemma
+            fst @@ Declare.by (Proofview.V82.tactic (proving_tac i)) lemma
           in
           let () =
-            Lemmas.save_lemma_proved ~lemma ~opaque:Declare.Transparent
+            Declare.save_lemma_proved ~proof:lemma ~opaque:Declare.Transparent
               ~idopt:None
           in
           let finfo =
@@ -1586,7 +1586,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           in
           let lemma =
             fst
-              (Lemmas.by
+              (Declare.by
                  (Proofview.V82.tactic
                     (observe_tac
                        ("prove completeness (" ^ Id.to_string f_id ^ ")")
@@ -1594,7 +1594,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
                  lemma)
           in
           let () =
-            Lemmas.save_lemma_proved ~lemma ~opaque:Declare.Transparent
+            Declare.save_lemma_proved ~proof:lemma ~opaque:Declare.Transparent
               ~idopt:None
           in
           let finfo =
@@ -1769,7 +1769,7 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt
     using_lemmas args ret_type body
 
 let do_generate_principle_aux pconstants on_error register_built
-    interactive_proof fixpoint_exprl : Lemmas.t option =
+    interactive_proof fixpoint_exprl : Declare.Proof.t option =
   List.iter
     (fun {Vernacexpr.notations} ->
       if not (List.is_empty notations) then
@@ -2155,7 +2155,7 @@ let make_graph (f_ref : GlobRef.t) =
 
 (* *************** statically typed entrypoints ************************* *)
 
-let do_generate_principle_interactive fixl : Lemmas.t =
+let do_generate_principle_interactive fixl : Declare.Proof.t =
   match do_generate_principle_aux [] warning_error true true fixl with
   | Some lemma -> lemma
   | None ->

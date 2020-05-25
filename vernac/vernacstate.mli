@@ -22,11 +22,11 @@ module LemmaStack : sig
 
   type t
 
-  val pop : t -> Lemmas.t * t option
-  val push : t option -> Lemmas.t -> t
+  val pop : t -> Declare.Proof.t * t option
+  val push : t option -> Declare.Proof.t -> t
 
-  val map_top_pstate : f:(Declare.Proof.t -> Declare.Proof.t) -> t -> t
-  val with_top_pstate : t -> f:(Declare.Proof.t -> 'a ) -> 'a
+  val map_top : f:(Declare.Proof.t -> Declare.Proof.t) -> t -> t
+  val with_top : t -> f:(Declare.Proof.t -> 'a ) -> 'a
 
 end
 
@@ -68,7 +68,7 @@ module Declare : sig
   val return_proof : unit -> Declare.closed_proof_output
   val return_partial_proof : unit -> Declare.closed_proof_output
 
-  type closed_proof = Declare.proof_object * Lemmas.Info.t
+  type closed_proof = Declare.proof_object * Declare.Info.t
 
   val close_future_proof :
     feedback_id:Stateid.t ->

@@ -94,7 +94,7 @@ let show_proof ~pstate =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   try
     let pstate = Option.get pstate in
-    let p = Declare.Proof.get_proof pstate in
+    let p = Declare.Proof.get pstate in
     let sigma, _ = Declare.get_current_context pstate in
     let pprf = Proof.partial_proof p in
     (* In the absence of an environment explicitly attached to the
@@ -595,15 +595,15 @@ let vernac_start_proof ~atts kind l =
 
 let vernac_end_proof ~lemma = let open Vernacexpr in function
   | Admitted ->
-    Lemmas.save_lemma_admitted ~lemma
+    Declare.save_lemma_admitted ~proof:lemma
   | Proved (opaque,idopt) ->
-    Lemmas.save_lemma_proved ~lemma ~opaque ~idopt
+    Declare.save_lemma_proved ~proof:lemma ~opaque ~idopt
 
 let vernac_exact_proof ~lemma c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
-  let lemma, status = Lemmas.by (Tactics.exact_proof c) lemma in
-  let () = Lemmas.save_lemma_proved ~lemma ~opaque:Declare.Opaque ~idopt:None in
+  let lemma, status = Declare.by (Tactics.exact_proof c) lemma in
+  let () = Declare.save_lemma_proved ~proof:lemma ~opaque:Declare.Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =
@@ -1187,7 +1187,7 @@ let focus_command_cond = Proof.no_cond command_focus
      all tactics fail if there are no further goals to prove. *)
 
 let vernac_solve_existential ~pstate n com =
-  Declare.Proof.map_proof (fun p ->
+  Declare.Proof.map ~f:(fun p ->
       let intern env sigma = Constrintern.intern_constr env sigma com in
       Proof.V82.instantiate_evar (Global.env ()) n intern p) pstate
 
@@ -1200,7 +1200,7 @@ let vernac_set_end_tac ~pstate tac =
 let vernac_set_used_variables ~pstate e : Declare.Proof.t =
   let env = Global.env () in
   let initial_goals pf = Proofview.initial_goals Proof.(data pf).Proof.entry in
-  let tys = List.map snd (initial_goals (Declare.Proof.get_proof pstate)) in
+  let tys = List.map snd (initial_goals (Declare.Proof.get pstate)) in
   let tys = List.map EConstr.Unsafe.to_constr tys in
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
@@ -1668,7 +1668,7 @@ let vernac_global_check c =
 
 
 let get_nth_goal ~pstate n =
-  let pf = Declare.Proof.get_proof pstate in
+  let pf = Declare.Proof.get pstate in
   let Proof.{goals;sigma} = Proof.data pf in
   let gl = {Evd.it=List.nth goals (n-1) ; sigma = sigma; } in
   gl
@@ -1747,7 +1747,7 @@ let vernac_print ~pstate ~atts =
   | PrintHintGoal ->
      begin match pstate with
      | Some pstate ->
-       let pf = Declare.Proof.get_proof pstate in
+       let pf = Declare.Proof.get pstate in
        Hints.pr_applicable_hint pf
      | None ->
        str "No proof in progress"
@@ -1833,7 +1833,7 @@ let vernac_register qid r =
 (* Proof management *)
 
 let vernac_focus ~pstate gln =
-  Declare.Proof.map_proof (fun p ->
+  Declare.Proof.map ~f:(fun p ->
     match gln with
       | None -> Proof.focus focus_command_cond () 1 p
       | Some 0 ->
@@ -1844,13 +1844,13 @@ let vernac_focus ~pstate gln =
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus ~pstate =
-  Declare.Proof.map_proof
-    (fun p -> Proof.unfocus command_focus p ())
+  Declare.Proof.map
+    ~f:(fun p -> Proof.unfocus command_focus p ())
     pstate
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
 let vernac_unfocused ~pstate =
-  let p = Declare.Proof.get_proof pstate in
+  let p = Declare.Proof.get pstate in
   if Proof.unfocused p then
     str"The proof is indeed fully unfocused."
   else
@@ -1863,7 +1863,7 @@ let subproof_kind = Proof.new_focus_kind ()
 let subproof_cond = Proof.done_cond subproof_kind
 
 let vernac_subproof gln ~pstate =
-  Declare.Proof.map_proof (fun p ->
+  Declare.Proof.map ~f:(fun p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
     | Some (Goal_select.SelectNth n) -> Proof.focus subproof_cond () n p
@@ -1873,12 +1873,12 @@ let vernac_subproof gln ~pstate =
     pstate
 
 let vernac_end_subproof ~pstate =
-  Declare.Proof.map_proof (fun p ->
+  Declare.Proof.map ~f:(fun p ->
       Proof.unfocus subproof_kind p ())
     pstate
 
 let vernac_bullet (bullet : Proof_bullet.t) ~pstate =
-  Declare.Proof.map_proof (fun p ->
+  Declare.Proof.map ~f:(fun p ->
     Proof_bullet.put p bullet) pstate
 
 (* Stack is needed due to show proof names, should deprecate / remove
@@ -1895,7 +1895,7 @@ let vernac_show ~pstate =
     end
   (* Show functions that require a proof state *)
   | Some pstate ->
-    let proof = Declare.Proof.get_proof pstate in
+    let proof = Declare.Proof.get pstate in
     begin function
     | ShowGoal goalref ->
       begin match goalref with
@@ -1907,14 +1907,14 @@ let vernac_show ~pstate =
     | ShowUniverses -> show_universes ~proof
     (* Deprecate *)
     | ShowProofNames ->
-      Id.print (Declare.Proof.get_proof_name pstate)
+      Id.print (Declare.Proof.get_name pstate)
     | ShowIntros all -> show_intro ~proof all
     | ShowProof -> show_proof ~pstate:(Some pstate)
     | ShowMatch id -> show_match id
     end
 
 let vernac_check_guard ~pstate =
-  let pts = Declare.Proof.get_proof pstate in
+  let pts = Declare.Proof.get pstate in
   let pfterm = List.hd (Proof.partial_proof pts) in
   let message =
     try

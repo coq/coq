@@ -38,6 +38,98 @@ open Entries
 
  *)
 
+(** Declaration hooks *)
+module Hook : sig
+  type t
+
+  (** Hooks allow users of the API to perform arbitrary actions at
+     proof/definition saving time. For example, to register a constant
+     as a Coercion, perform some cleanup, update the search database,
+     etc...  *)
+  module S : sig
+    type t =
+      { uctx : UState.t
+      (** [ustate]: universe constraints obtained when the term was closed *)
+      ; obls : (Id.t * Constr.t) list
+      (** [(n1,t1),...(nm,tm)]: association list between obligation
+          name and the corresponding defined term (might be a constant,
+          but also an arbitrary term in the Expand case of obligations) *)
+      ; scope : Locality.locality
+      (** [scope]: Locality of the original declaration *)
+      ; dref : GlobRef.t
+      (** [dref]: identifier of the original declaration *)
+      }
+  end
+
+  val make : (S.t -> unit) -> t
+  val call : ?hook:t -> S.t -> unit
+end
+
+(** Resolution status of a program *)
+type progress =
+  | Remain of int  (** n obligations remaining *)
+  | Dependent  (** Dependent on other definitions *)
+  | Defined of GlobRef.t  (** Defined as id *)
+
+type obligation_resolver =
+     Id.t option
+  -> Int.Set.t
+  -> unit Proofview.tactic option
+  -> progress
+
+type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
+
+(** Creating high-level proofs with an associated constant *)
+module Proof_ending : sig
+
+  type t =
+    | Regular
+    | End_obligation of obligation_qed_info
+    | End_derive of { f : Id.t; name : Id.t }
+    | End_equations of
+        { hook : Constant.t list -> Evd.evar_map -> unit
+        ; i : Id.t
+        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+        ; sigma : Evd.evar_map
+        }
+
+end
+
+type lemma_possible_guards = int list list
+
+module Recthm : sig
+  type t =
+    { name : Id.t
+    (** Name of theorem *)
+    ; typ : Constr.t
+    (** Type of theorem  *)
+    ; args : Name.t list
+    (** Names to pre-introduce  *)
+    ; impargs : Impargs.manual_implicits
+    (** Explicitily declared implicit arguments  *)
+    }
+end
+
+module Info : sig
+  type t
+  val make
+    :  ?hook: Hook.t
+    (** Callback to be executed at the end of the proof *)
+    -> ?proof_ending : Proof_ending.t
+    (** Info for special constants *)
+    -> ?scope : Locality.locality
+    (** locality  *)
+    -> ?kind:Decls.logical_kind
+    (** Theorem, etc... *)
+    -> ?compute_guard:lemma_possible_guards
+    -> ?thms:Recthm.t list
+    (** Both of those are internal, used by the upper layers but will
+       become handled natively here in the future *)
+    -> unit
+    -> t
+
+end
+
 (** [Declare.Proof.t] Construction of constants using interactive proofs. *)
 module Proof : sig
 
@@ -45,12 +137,13 @@ module Proof : sig
 
   (** XXX: These are internal and will go away from publis API once
      lemmas is merged here *)
-  val get_proof : t -> Proof.t
-  val get_proof_name : t -> Names.Id.t
+  val get : t -> Proof.t
+  val get_name : t -> Names.Id.t
 
-  val map_proof : (Proof.t -> Proof.t) -> t -> t
-  val map_fold_proof : (Proof.t -> Proof.t * 'a) -> t -> t * 'a
-  val map_fold_proof_endline : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
+  val fold : f:(Proof.t -> 'a) -> t -> 'a
+  val map : f:(Proof.t -> Proof.t) -> t -> t
+  val map_fold : f:(Proof.t -> Proof.t * 'a) -> t -> t * 'a
+  val map_fold_endline : f:(unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
 
   (** Sets the tactic to be used when a tactic line is closed with [...] *)
   val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
@@ -69,6 +162,8 @@ module Proof : sig
 
   val get_open_goals : t -> int
 
+  (* Internal, don't use *)
+  val get_info : t -> Info.t
 end
 
 type opacity_flag = Vernacexpr.opacity_flag = Opaque | Transparent
@@ -83,6 +178,8 @@ val start_proof
   :  name:Names.Id.t
   -> udecl:UState.universe_decl
   -> poly:bool
+  -> ?impargs:Impargs.manual_implicits
+  -> info:Info.t
   -> Evd.evar_map
   -> EConstr.t
   -> Proof.t
@@ -93,6 +190,7 @@ val start_dependent_proof
   :  name:Names.Id.t
   -> udecl:UState.universe_decl
   -> poly:bool
+  -> info:Info.t
   -> Proofview.telescope
   -> Proof.t
 
@@ -247,33 +345,6 @@ val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
 
 type locality = Locality.locality = Discharge | Global of import_status
 
-(** Declaration hooks *)
-module Hook : sig
-  type t
-
-  (** Hooks allow users of the API to perform arbitrary actions at
-     proof/definition saving time. For example, to register a constant
-     as a Coercion, perform some cleanup, update the search database,
-     etc...  *)
-  module S : sig
-    type t =
-      { uctx : UState.t
-      (** [ustate]: universe constraints obtained when the term was closed *)
-      ; obls : (Id.t * Constr.t) list
-      (** [(n1,t1),...(nm,tm)]: association list between obligation
-          name and the corresponding defined term (might be a constant,
-          but also an arbitrary term in the Expand case of obligations) *)
-      ; scope : locality
-      (** [scope]: Locality of the original declaration *)
-      ; dref : GlobRef.t
-      (** [dref]: identifier of the original declaration *)
-      }
-  end
-
-  val make : (S.t -> unit) -> t
-  val call : ?hook:t -> S.t -> unit
-end
-
 (** XXX: This is an internal, low-level API and could become scheduled
     for removal from the public API, use higher-level declare APIs
     instead *)
@@ -316,21 +387,6 @@ val declare_assumption
   -> uctx:UState.t
   -> Entries.parameter_entry
   -> GlobRef.t
-
-module Recthm : sig
-  type t =
-    { name : Id.t
-    (** Name of theorem *)
-    ; typ : Constr.t
-    (** Type of theorem  *)
-    ; args : Name.t list
-    (** Names to pre-introduce  *)
-    ; impargs : Impargs.manual_implicits
-    (** Explicitily declared implicit arguments  *)
-    }
-end
-
-type lemma_possible_guards = int list list
 
 val declare_mutually_recursive
   : opaque:bool
@@ -461,20 +517,6 @@ end
 
 val declare_definition : ProgramDecl.t -> Names.GlobRef.t
 
-(** Resolution status of a program *)
-type progress =
-  | Remain of int  (** n obligations remaining *)
-  | Dependent  (** Dependent on other definitions *)
-  | Defined of GlobRef.t  (** Defined as id *)
-
-type obligation_resolver =
-     Id.t option
-  -> Int.Set.t
-  -> unit Proofview.tactic option
-  -> progress
-
-type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
-
 (** [update_obls prg obls n progress] What does this do? *)
 val update_obls :
   ProgramDecl.t -> Obligation.t array -> int -> progress
@@ -495,59 +537,14 @@ val dependencies : Obligation.t array -> int -> Int.Set.t
 
 end
 
-(** Creating high-level proofs with an associated constant *)
-module Proof_ending : sig
-
-  type t =
-    | Regular
-    | End_obligation of Obls.obligation_qed_info
-    | End_derive of { f : Id.t; name : Id.t }
-    | End_equations of
-        { hook : Constant.t list -> Evd.evar_map -> unit
-        ; i : Id.t
-        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
-        ; sigma : Evd.evar_map
-        }
-
-end
-
-module Info : sig
-  type t
-  val make
-    :  ?hook: Hook.t
-    (** Callback to be executed at the end of the proof *)
-    -> ?proof_ending : Proof_ending.t
-    (** Info for special constants *)
-    -> ?scope : locality
-    (** locality  *)
-    -> ?kind:Decls.logical_kind
-    (** Theorem, etc... *)
-    -> ?compute_guard:lemma_possible_guards
-    -> ?thms:Recthm.t list
-    (** Both of those are internal, used by the upper layers but will
-       become handled natively here in the future *)
-    -> unit
-    -> t
-
-  (* Internal; used to initialize non-mutual proofs *)
-  val add_first_thm :
-    info:t
-    -> name:Id.t
-    -> typ:EConstr.t
-    -> impargs:Impargs.manual_implicits
-    -> t
-end
-
 val save_lemma_proved
   : proof:Proof.t
-  -> info:Info.t
   -> opaque:opacity_flag
   -> idopt:Names.lident option
   -> unit
 
 val save_lemma_admitted :
      proof:Proof.t
-  -> info:Info.t
   -> unit
 
 (** Special cases for delayed proofs, in this case we must provide the

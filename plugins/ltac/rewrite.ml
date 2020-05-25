@@ -1978,7 +1978,7 @@ let add_morphism_as_parameter atts m n : unit =
        (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global cst);
   declare_projection n instance_id cst
 
-let add_morphism_interactive atts m n : Lemmas.t =
+let add_morphism_interactive atts m n : Declare.Proof.t =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
   let env = Global.env () in
@@ -1996,11 +1996,11 @@ let add_morphism_interactive atts m n : Lemmas.t =
     | _ -> assert false
   in
   let hook = Declare.Hook.make hook in
-  let info = Lemmas.Info.make ~hook ~kind () in
+  let info = Declare.Info.make ~hook ~kind () in
   Flags.silently
     (fun () ->
        let lemma = Lemmas.start_lemma ~name:instance_id ~poly ~info evd morph in
-       fst (Lemmas.by (Tacinterp.interp tac) lemma)) ()
+       fst (Declare.by (Tacinterp.interp tac) lemma)) ()
 
 let add_morphism atts binders m s n =
   init_setoid ();

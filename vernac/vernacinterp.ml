@@ -39,14 +39,14 @@ let interp_typed_vernac c ~stack =
   | VtOpenProof f ->
     Some (Vernacstate.LemmaStack.push stack (f ()))
   | VtModifyProof f ->
-    Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:(fun pstate -> f ~pstate)) stack
+    Option.map (Vernacstate.LemmaStack.map_top ~f:(fun pstate -> f ~pstate)) stack
   | VtReadProofOpt f ->
-    let pstate = Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:(fun x -> x)) stack in
+    let pstate = Option.map (Vernacstate.LemmaStack.with_top ~f:(fun x -> x)) stack in
     f ~pstate;
     stack
   | VtReadProof f ->
     vernac_require_open_lemma ~stack
-      (Vernacstate.LemmaStack.with_top_pstate ~f:(fun pstate -> f ~pstate));
+      (Vernacstate.LemmaStack.with_top ~f:(fun pstate -> f ~pstate));
     stack
 
 (* Default proof mode, to be set at the beginning of proofs for
@@ -202,7 +202,7 @@ and interp_control ~st ({ CAst.v = cmd } as vernac) =
        let before_univs = Global.universes () in
        let pstack = interp_expr ~atts:cmd.attrs ~st cmd.expr in
        if before_univs == Global.universes () then pstack
-       else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Declare.Proof.update_global_env) pstack)
+       else Option.map (Vernacstate.LemmaStack.map_top ~f:Declare.Proof.update_global_env) pstack)
     ~st
 
 (* XXX: This won't properly set the proof mode, as of today, it is

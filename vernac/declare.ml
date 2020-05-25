@@ -18,6 +18,106 @@ module NamedDecl = Context.Named.Declaration
 
 type opacity_flag = Vernacexpr.opacity_flag = Opaque | Transparent
 
+(* Hooks naturally belong here as they apply to both definitions and lemmas *)
+module Hook = struct
+  module S = struct
+    type t =
+      { uctx : UState.t
+      (** [ustate]: universe constraints obtained when the term was closed *)
+      ; obls : (Names.Id.t * Constr.t) list
+      (** [(n1,t1),...(nm,tm)]: association list between obligation
+          name and the corresponding defined term (might be a constant,
+          but also an arbitrary term in the Expand case of obligations) *)
+      ; scope : Locality.locality
+      (**  [locality]: Locality of the original declaration *)
+      ; dref : Names.GlobRef.t
+      (** [ref]: identifier of the original declaration *)
+      }
+  end
+
+  type t = (S.t -> unit) CEphemeron.key
+
+  let make hook = CEphemeron.create hook
+
+  let call ?hook x = Option.iter (fun hook -> CEphemeron.get hook x) hook
+
+end
+
+type progress = Remain of int | Dependent | Defined of GlobRef.t
+
+type obligation_resolver =
+     Id.t option
+  -> Int.Set.t
+  -> unit Proofview.tactic option
+  -> progress
+
+type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
+
+module Proof_ending = struct
+
+  type t =
+    | Regular
+    | End_obligation of obligation_qed_info
+    | End_derive of { f : Id.t; name : Id.t }
+    | End_equations of
+        { hook : Constant.t list -> Evd.evar_map -> unit
+        ; i : Id.t
+        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+        ; sigma : Evd.evar_map
+        }
+
+end
+
+type lemma_possible_guards = int list list
+
+module Recthm = struct
+  type t =
+    { name : Names.Id.t
+    (** Name of theorem *)
+    ; typ : Constr.t
+    (** Type of theorem  *)
+    ; args : Names.Name.t list
+    (** Names to pre-introduce  *)
+    ; impargs : Impargs.manual_implicits
+    (** Explicitily declared implicit arguments  *)
+    }
+end
+
+module Info = struct
+
+  type t =
+    { hook : Hook.t option
+    ; proof_ending : Proof_ending.t CEphemeron.key
+    (* This could be improved and the CEphemeron removed *)
+    ; scope : Locality.locality
+    ; kind : Decls.logical_kind
+    (* thms and compute guard are specific only to start_lemma_with_initialization + regular terminator *)
+    ; thms : Recthm.t list
+    ; compute_guard : lemma_possible_guards
+    }
+
+  let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=Locality.Global Locality.ImportDefaultBehavior)
+      ?(kind=Decls.(IsProof Lemma)) ?(compute_guard=[]) ?(thms=[]) () =
+    { hook
+    ; compute_guard
+    ; proof_ending = CEphemeron.create proof_ending
+    ; thms
+    ; scope
+    ; kind
+    }
+
+  (* This is used due to a deficiency on the API, should fix *)
+  let add_first_thm ~info ~name ~typ ~impargs =
+    let thms =
+      { Recthm.name
+      ; impargs
+      ; typ = EConstr.Unsafe.to_constr typ
+      ; args = [] } :: info.thms
+    in
+    { info with thms }
+
+end
+
 type t =
   { endline_tactic : Genarg.glob_generic_argument option
   ; section_vars : Id.Set.t option
@@ -26,6 +126,7 @@ type t =
   (** Initial universe declarations *)
   ; initial_euctx : UState.t
   (** The initial universe context (for the statement) *)
+  ; info : Info.t
   }
 
 (*** Proof Global manipulation ***)
@@ -35,6 +136,7 @@ let get_proof_name ps = (Proof.data ps.proof).Proof.name
 
 let get_initial_euctx ps = ps.initial_euctx
 
+let fold_proof f p = f p.proof
 let map_proof f p = { p with proof = f p.proof }
 let map_fold_proof f p = let proof, res = f p.proof in { p with proof }, res
 
@@ -73,7 +175,7 @@ let initialize_named_context_for_proof () =
    conclusion). The proof is started in the evar map [sigma] (which
    can typically contain universe constraints), and with universe
    bindings [udecl]. *)
-let start_proof_core ~name ~udecl ~poly ?(sign=initialize_named_context_for_proof ()) sigma typ =
+let start_proof_core ~name ~udecl ~poly ?(impargs=[]) ?(sign=initialize_named_context_for_proof ()) ~info sigma typ =
   (* In ?sign, we remove the bodies of variables in the named context
      marked "opaque", this is a hack tho, see #10446, and
      build_constant_by_tactic uses a different method that would break
@@ -81,16 +183,18 @@ let start_proof_core ~name ~udecl ~poly ?(sign=initialize_named_context_for_proo
   let goals = [Global.env_of_context sign, typ] in
   let proof = Proof.start ~name ~poly sigma goals in
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
+  let info = Info.add_first_thm ~name ~typ ~impargs ~info in
   { proof
   ; endline_tactic = None
   ; section_vars = None
   ; udecl
   ; initial_euctx
+  ; info
   }
 
 let start_proof = start_proof_core ?sign:None
 
-let start_dependent_proof ~name ~udecl ~poly goals =
+let start_dependent_proof ~name ~udecl ~poly ~info goals =
   let proof = Proof.dependent_start ~name ~poly goals in
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   { proof
@@ -98,6 +202,7 @@ let start_dependent_proof ~name ~udecl ~poly goals =
   ; section_vars = None
   ; udecl
   ; initial_euctx
+  ; info
   }
 
 let get_used_variables pf = pf.section_vars
@@ -774,7 +879,8 @@ let by tac = map_fold_proof (Proof.solve (Goal_select.SelectNth 1) None tac)
 
 let build_constant_by_tactic ~name ?(opaque=Transparent) ~uctx ~sign ~poly typ tac =
   let evd = Evd.from_ctx uctx in
-  let pf = start_proof_core ~name ~poly ~sign ~udecl:UState.default_univ_decl evd typ in
+  let info = Info.make () in
+  let pf = start_proof_core ~name ~poly ~sign ~udecl:UState.default_univ_decl ~impargs:[] ~info evd typ in
   let pf, status = by tac pf in
   let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false pf in
   match entries with
@@ -887,31 +993,6 @@ let declare_universe_context = DeclareUctx.declare_universe_context
 
 type locality = Locality.locality = | Discharge | Global of import_status
 
-(* Hooks naturally belong here as they apply to both definitions and lemmas *)
-module Hook = struct
-  module S = struct
-    type t =
-      { uctx : UState.t
-      (** [ustate]: universe constraints obtained when the term was closed *)
-      ; obls : (Names.Id.t * Constr.t) list
-      (** [(n1,t1),...(nm,tm)]: association list between obligation
-          name and the corresponding defined term (might be a constant,
-          but also an arbitrary term in the Expand case of obligations) *)
-      ; scope : locality
-      (**  [locality]: Locality of the original declaration *)
-      ; dref : Names.GlobRef.t
-      (** [ref]: identifier of the original declaration *)
-      }
-  end
-
-  type t = (S.t -> unit) CEphemeron.key
-
-  let make hook = CEphemeron.create hook
-
-  let call ?hook x = Option.iter (fun hook -> CEphemeron.get hook x) hook
-
-end
-
 (* Locality stuff *)
 let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
   let should_suggest =
@@ -951,19 +1032,6 @@ let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
     let fixdecls = CList.map_i (fun i _ -> Constr.mkCoFix (i,rec_declaration)) 0 fixitems in
     let vars = Vars.universes_of_constr (List.hd fixdecls) in
     vars, fixdecls, None
-
-module Recthm = struct
-  type t =
-    { name : Names.Id.t
-    (** Name of theorem *)
-    ; typ : Constr.t
-    (** Type of theorem  *)
-    ; args : Names.Name.t list
-    (** Names to pre-introduce  *)
-    ; impargs : Impargs.manual_implicits
-    (** Explicitily declared implicit arguments  *)
-    }
-end
 
 let declare_mutually_recursive_core ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) fixitems =
   let vars, fixdecls, indexes =
@@ -1373,8 +1441,6 @@ let obligations_message rem =
     (CString.plural rem "obligation")
   |> Pp.str |> Flags.if_verbose Feedback.msg_info
 
-type progress = Remain of int | Dependent | Defined of GlobRef.t
-
 let get_obligation_body expand obl =
   match obl.obl_body with
   | None -> None
@@ -1614,14 +1680,6 @@ let update_program_decl_on_defined prg obls num obl ~uctx rem ~auto =
   in
   ()
 
-type obligation_resolver =
-     Id.t option
-  -> Int.Set.t
-  -> unit Proofview.tactic option
-  -> progress
-
-type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
-
 let obligation_terminator entries uctx {name; num; auto} =
   match entries with
   | [entry] ->
@@ -1710,58 +1768,6 @@ end
 (************************************************************************)
 
 (* Support for mutually proved theorems *)
-
-module Proof_ending = struct
-
-  type t =
-    | Regular
-    | End_obligation of Obls.obligation_qed_info
-    | End_derive of { f : Id.t; name : Id.t }
-    | End_equations of
-        { hook : Constant.t list -> Evd.evar_map -> unit
-        ; i : Id.t
-        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
-        ; sigma : Evd.evar_map
-        }
-
-end
-
-type lemma_possible_guards = int list list
-
-module Info = struct
-
-  type t =
-    { hook : Hook.t option
-    ; proof_ending : Proof_ending.t CEphemeron.key
-    (* This could be improved and the CEphemeron removed *)
-    ; scope : locality
-    ; kind : Decls.logical_kind
-    (* thms and compute guard are specific only to start_lemma_with_initialization + regular terminator *)
-    ; thms : Recthm.t list
-    ; compute_guard : lemma_possible_guards
-    }
-
-  let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=Global ImportDefaultBehavior)
-      ?(kind=Decls.(IsProof Lemma)) ?(compute_guard=[]) ?(thms=[]) () =
-    { hook
-    ; compute_guard
-    ; proof_ending = CEphemeron.create proof_ending
-    ; thms
-    ; scope
-    ; kind
-    }
-
-  (* This is used due to a deficiency on the API, should fix *)
-  let add_first_thm ~info ~name ~typ ~impargs =
-    let thms =
-      { Recthm.name
-      ; impargs
-      ; typ = EConstr.Unsafe.to_constr typ
-      ; args = [] } :: info.thms
-    in
-    { info with thms }
-
-end
 
 (* XXX: this should be unified with the code for non-interactive
    mutuals previously on this file. *)
@@ -1876,7 +1882,7 @@ let finish_admitted ~info ~uctx pe =
     Obls.obligation_admitted_terminator oinfo uctx (List.hd cst)
   | _ -> ()
 
-let save_lemma_admitted ~proof ~info  =
+let save_lemma_admitted ~proof =
   let udecl = get_universe_decl proof in
   let Proof.{ poly; entry } = Proof.data (get_proof proof) in
   let typ = match Proofview.initial_goals entry with
@@ -1889,7 +1895,7 @@ let save_lemma_admitted ~proof ~info  =
   let sec_vars = compute_proof_using_for_admitted proof typ pproofs in
   let uctx = get_initial_euctx proof in
   let univs = UState.check_univ_decl ~poly uctx udecl in
-  finish_admitted ~info ~uctx (sec_vars, (typ, univs), None)
+  finish_admitted ~info:proof.info ~uctx (sec_vars, (typ, univs), None)
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
@@ -1985,10 +1991,10 @@ let process_idopt_for_save ~idopt info =
         err_save_forbidden_in_place_of_qed ()
     in { info with Info.thms }
 
-let save_lemma_proved ~proof ~info ~opaque ~idopt =
+let save_lemma_proved ~proof ~opaque ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
   let proof_obj = close_proof ~opaque ~keep_body_ucst_separate:false proof in
-  let proof_info = process_idopt_for_save ~idopt info in
+  let proof_info = process_idopt_for_save ~idopt proof.info in
   finalize_proof proof_obj proof_info
 
 (***********************************************************************)
@@ -2022,14 +2028,16 @@ let save_lemma_proved_delayed ~proof ~info ~idopt =
 
 module Proof = struct
   type nonrec t = t
-  let get_proof = get_proof
-  let get_proof_name = get_proof_name
-  let map_proof = map_proof
-  let map_fold_proof = map_fold_proof
-  let map_fold_proof_endline = map_fold_proof_endline
+  let get = get_proof
+  let get_name = get_proof_name
+  let fold ~f = fold_proof f
+  let map ~f = map_proof f
+  let map_fold ~f = map_fold_proof f
+  let map_fold_endline ~f = map_fold_proof_endline f
   let set_endline_tactic = set_endline_tactic
   let set_used_variables = set_used_variables
   let compact = compact_the_proof
   let update_global_env = update_global_env
   let get_open_goals = get_open_goals
+  let get_info { info } = info
 end

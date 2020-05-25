@@ -2,9 +2,9 @@
 
 type t = Declare.Proof.t
 [@@ocaml.deprecated "Use [Declare.Proof.t]"]
-let map_proof = Declare.Proof.map_proof
+let map_proof = Declare.Proof.map
 [@@ocaml.deprecated "Use [Declare.Proof.map_proof]"]
-let get_proof = Declare.Proof.get_proof
+let get_proof = Declare.Proof.get
 [@@ocaml.deprecated "Use [Declare.Proof.get_proof]"]
 
 type opacity_flag = Declare.opacity_flag =

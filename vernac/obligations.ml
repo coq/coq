@@ -142,13 +142,13 @@ let rec solve_obligation prg num tac =
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
   let proof_ending =
     Declare.Proof_ending.End_obligation
-      {Declare.Obls.name = prg.prg_name; num; auto}
+      {Declare.name = prg.prg_name; num; auto}
   in
-  let info = Lemmas.Info.make ~proof_ending ~scope ~kind () in
+  let info = Declare.Info.make ~proof_ending ~scope ~kind () in
   let poly = prg.prg_poly in
   let lemma = Lemmas.start_lemma ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in
-  let lemma = fst @@ Lemmas.by !default_tactic lemma in
-  let lemma = Option.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
+  let lemma = fst @@ Declare.by !default_tactic lemma in
+  let lemma = Option.cata (fun tac -> Declare.Proof.set_endline_tactic tac lemma) lemma tac in
   lemma
 
 and obligation (user_num, name, typ) tac =
@@ -243,7 +243,7 @@ and try_solve_obligations n tac =
   let _ = solve_obligations n tac in
   ()
 
-and auto_solve_obligations n ?oblset tac : progress =
+and auto_solve_obligations n ?oblset tac : Declare.progress =
   Flags.if_verbose Feedback.msg_info
     (str "Solving obligations automatically...");
   let prg = get_unique_prog n in
@@ -320,13 +320,13 @@ let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose (msg_generating_obl name) obls;
     let cst = Declare.Obls.declare_definition prg in
-    Defined cst)
+    Declare.Defined cst)
   else
     let () = Flags.if_verbose (msg_generating_obl name) obls in
     let () = State.add name prg in
     let res = auto_solve_obligations (Some name) tactic in
     match res with
-    | Remain rem ->
+    | Declare.Remain rem ->
       Flags.if_verbose (show_obligations ~msg:false) (Some name);
       res
     | _ -> res
@@ -354,7 +354,7 @@ let add_mutual_definitions l ~uctx ?(udecl = UState.default_univ_decl)
         else
           let res = auto_solve_obligations (Some x) tactic in
           match res with
-          | Defined _ ->
+          | Declare.Defined _ ->
             (* If one definition is turned into a constant,
                the whole block is defined. *)
             (pm, true)

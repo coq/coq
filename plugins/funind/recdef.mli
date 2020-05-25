@@ -25,4 +25,4 @@ val recursive_definition :
       -> EConstr.constr
       -> unit)
   -> Constrexpr.constr_expr list
-  -> Lemmas.t option
+  -> Declare.Proof.t option

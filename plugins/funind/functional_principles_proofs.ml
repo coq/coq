@@ -856,9 +856,10 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num
   let lemma =
     Lemmas.start_lemma ~name:(mk_equation_id f_id) ~poly:false evd lemma_type
   in
-  let lemma, _ = Lemmas.by (Proofview.V82.tactic prove_replacement) lemma in
+  let lemma, _ = Declare.by (Proofview.V82.tactic prove_replacement) lemma in
   let () =
-    Lemmas.save_lemma_proved ~lemma ~opaque:Declare.Transparent ~idopt:None
+    Declare.save_lemma_proved ~proof:lemma ~opaque:Declare.Transparent
+      ~idopt:None
   in
   evd
 

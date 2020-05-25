@@ -26,18 +26,16 @@ end
 
 module LemmaStack = struct
 
-  type t = Lemmas.t * Lemmas.t list
+  type t = Declare.Proof.t * Declare.Proof.t list
 
   let map f (pf, pfl) = (f pf, List.map f pfl)
-
-  let map_top_pstate ~f (pf, pfl) = (Lemmas.pf_map f pf, pfl)
+  let map_top ~f (pf, pfl) = (f pf, pfl)
 
   let pop (ps, p) = match p with
     | [] -> ps, None
     | pp :: p -> ps, Some (pp, p)
 
   let with_top (p, _) ~f = f p
-  let with_top_pstate (p, _) ~f = Lemmas.pf_fold f p
 
   let push ontop a =
     match ontop with
@@ -45,12 +43,12 @@ module LemmaStack = struct
     | Some (l,ls) -> a, (l :: ls)
 
   let get_all_proof_names (pf : t) =
-    let prj x = Lemmas.pf_fold Declare.Proof.get_proof x in
+    let prj x = Declare.Proof.get x in
     let (pn, pns) = map Proof.(function pf -> (data (prj pf)).name) pf in
     pn :: pns
 
   let copy_info src tgt =
-    Lemmas.pf_map (fun _ -> Lemmas.pf_fold (fun x -> x) tgt) src
+    Declare.Proof.map ~f:(fun _ -> Declare.Proof.fold ~f:(fun x -> x) tgt) src
 
   let copy_info ~src ~tgt =
     let (ps, psl), (ts,tsl) = src, tgt in
@@ -111,7 +109,7 @@ module Declare = struct
   let set x = s_lemmas := x
 
   let get_pstate () =
-    Option.map (LemmaStack.with_top ~f:(Lemmas.pf_fold (fun x -> x))) !s_lemmas
+    Option.map (LemmaStack.with_top ~f:(fun x -> x)) !s_lemmas
 
   let freeze ~marshallable:_ = get ()
   let unfreeze x = s_lemmas := Some x
@@ -125,14 +123,7 @@ module Declare = struct
       | _ -> None
     end
 
-  open Lemmas
-  open Declare
-
   let cc f = match !s_lemmas with
-    | None -> raise NoCurrentProof
-    | Some x -> LemmaStack.with_top_pstate ~f x
-
-  let cc_lemma f = match !s_lemmas with
     | None -> raise NoCurrentProof
     | Some x -> LemmaStack.with_top ~f x
 
@@ -142,41 +133,41 @@ module Declare = struct
 
   let dd f = match !s_lemmas with
     | None -> raise NoCurrentProof
-    | Some x -> s_lemmas := Some (LemmaStack.map_top_pstate ~f x)
+    | Some x -> s_lemmas := Some (LemmaStack.map_top ~f x)
 
   let there_are_pending_proofs () = !s_lemmas <> None
-  let get_open_goals () = cc Proof.get_open_goals
+  let get_open_goals () = cc Declare.Proof.get_open_goals
 
-  let give_me_the_proof_opt () = Option.map (LemmaStack.with_top_pstate ~f:Proof.get_proof) !s_lemmas
-  let give_me_the_proof () = cc Proof.get_proof
-  let get_current_proof_name () = cc Proof.get_proof_name
+  let give_me_the_proof_opt () = Option.map (LemmaStack.with_top ~f:Declare.Proof.get) !s_lemmas
+  let give_me_the_proof () = cc Declare.Proof.get
+  let get_current_proof_name () = cc Declare.Proof.get_name
 
-  let map_proof f = dd (Proof.map_proof f)
+  let map_proof f = dd (Declare.Proof.map ~f)
   let with_current_proof f =
     match !s_lemmas with
     | None -> raise NoCurrentProof
     | Some stack ->
-      let pf, res = LemmaStack.with_top_pstate stack ~f:(Proof.map_fold_proof_endline f) in
-      let stack = LemmaStack.map_top_pstate stack ~f:(fun _ -> pf) in
+      let pf, res = LemmaStack.with_top stack ~f:(Declare.Proof.map_fold_endline ~f) in
+      let stack = LemmaStack.map_top stack ~f:(fun _ -> pf) in
       s_lemmas := Some stack;
       res
 
-  type closed_proof = Declare.proof_object * Lemmas.Info.t
+  type closed_proof = Declare.proof_object * Declare.Info.t
 
 
-  let return_proof () = cc return_proof
-  let return_partial_proof () = cc return_partial_proof
+  let return_proof () = cc Declare.return_proof
+  let return_partial_proof () = cc Declare.return_partial_proof
 
   let close_future_proof ~feedback_id pf =
-    cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~feedback_id st pf) pt,
-                        Lemmas.Internal.get_info pt)
+    cc (fun pt -> Declare.close_future_proof ~feedback_id pt pf,
+                  Declare.Proof.get_info pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate =
-    cc_lemma (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate)) pt,
-                        Lemmas.Internal.get_info pt)
+    cc (fun pt -> Declare.close_proof ~opaque ~keep_body_ucst_separate pt,
+                  Declare.Proof.get_info pt)
 
   let discard_all () = s_lemmas := None
-  let update_global_env () = dd (Proof.update_global_env)
+  let update_global_env () = dd (Declare.Proof.update_global_env)
 
   let get_current_context () = cc Declare.get_current_context
 

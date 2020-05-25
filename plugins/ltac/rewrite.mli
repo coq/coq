@@ -101,7 +101,7 @@ val add_setoid
   -> Id.t
   -> unit
 
-val add_morphism_interactive : rewrite_attributes -> constr_expr -> Id.t -> Lemmas.t
+val add_morphism_interactive : rewrite_attributes -> constr_expr -> Id.t -> Declare.Proof.t
 val add_morphism_as_parameter : rewrite_attributes -> constr_expr -> Id.t -> unit
 
 val add_morphism
@@ -110,7 +110,7 @@ val add_morphism
   -> constr_expr
   -> constr_expr
   -> Id.t
-  -> Lemmas.t
+  -> Declare.Proof.t
 
 val get_reflexive_proof : env -> evar_map -> constr -> constr -> evar_map * constr
 

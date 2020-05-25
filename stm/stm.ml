@@ -1157,7 +1157,8 @@ end = struct (* {{{ *)
 
   let get_proof ~doc id =
     match state_of_id ~doc id with
-    | `Valid (Some vstate) -> Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:Declare.Proof.get_proof) vstate.Vernacstate.lemmas
+    | `Valid (Some vstate) ->
+      Option.map (Vernacstate.LemmaStack.with_top ~f:Declare.Proof.get) vstate.Vernacstate.lemmas
     | _ -> None
 
   let undo_vernac_classifier v ~doc =
@@ -1526,7 +1527,7 @@ end = struct (* {{{ *)
           try
             let _pstate =
               stm_qed_delay_proof ~st ~id:stop
-                ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None)) in
+                ~proof:pobject ~info:(Declare.Info.make ()) ~loc ~control:[] (Proved (opaque,None)) in
             ()
           with exn ->
             (* If [stm_qed_delay_proof] fails above we need to use the
@@ -1672,7 +1673,7 @@ end = struct (* {{{ *)
       let proof, _info =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true in
 
-      let info = Lemmas.Info.make () in
+      let info = Declare.Info.make () in
 
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)

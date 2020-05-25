@@ -345,7 +345,7 @@ let declare_instance_program env sigma ~global ~poly name pri impargs udecl term
   let hook = Declare.Hook.make hook in
   let uctx = Evd.evar_universe_context sigma in
   let scope, kind = Declare.Global Declare.ImportDefaultBehavior, Decls.Instance in
-  let _ : Declare.Obls.progress =
+  let _ : Declare.progress =
     Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook ~impargs ~uctx typ obls
   in ()
 
@@ -358,7 +358,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decls.(IsDefinition Instance) in
   let hook = Declare.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global ?hook dref)) in
-  let info = Lemmas.Info.make ~hook ~kind () in
+  let info = Declare.Info.make ~hook ~kind () in
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)
   let termtype = Evarutil.nf_evar sigma termtype in
@@ -374,15 +374,15 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
           Tactics.New.reduce_after_refine;
         ]
       in
-      let lemma, _ = Lemmas.by init_refine lemma in
+      let lemma, _ = Declare.by init_refine lemma in
       lemma
     | None ->
-      let lemma, _ = Lemmas.by (Tactics.auto_intros_tac ids) lemma in
+      let lemma, _ = Declare.by (Tactics.auto_intros_tac ids) lemma in
       lemma
   in
   match tac with
   | Some tac ->
-    let lemma, _ = Lemmas.by tac lemma in
+    let lemma, _ = Declare.by tac lemma in
     lemma
   | None ->
     lemma

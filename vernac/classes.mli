@@ -36,7 +36,7 @@ val new_instance_interactive
   -> ?hook:(GlobRef.t -> unit)
   -> Vernacexpr.hint_info_expr
   -> (bool * constr_expr) option
-  -> Id.t * Lemmas.t
+  -> Id.t * Declare.Proof.t
 
 val new_instance
   :  ?global:bool (** Not global by default. *)

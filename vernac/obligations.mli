@@ -84,7 +84,7 @@ val add_definition :
   -> ?hook:Declare.Hook.t
   -> ?opaque:bool
   -> RetrieveObl.obligation_info
-  -> Declare.Obls.progress
+  -> Declare.progress
 
 (* XXX: unify with MutualEntry *)
 
@@ -109,15 +109,15 @@ val add_mutual_definitions :
 val obligation :
      int * Names.Id.t option * Constrexpr.constr_expr option
   -> Genarg.glob_generic_argument option
-  -> Lemmas.t
+  -> Declare.Proof.t
 
 (** Implementation of the [Next Obligation] command *)
 val next_obligation :
-  Names.Id.t option -> Genarg.glob_generic_argument option -> Lemmas.t
+  Names.Id.t option -> Genarg.glob_generic_argument option -> Declare.Proof.t
 
 (** Implementation of the [Solve Obligation] command *)
 val solve_obligations :
-  Names.Id.t option -> unit Proofview.tactic option -> Declare.Obls.progress
+  Names.Id.t option -> unit Proofview.tactic option -> Declare.progress
 
 val solve_all_obligations : unit Proofview.tactic option -> unit
 

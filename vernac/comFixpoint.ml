@@ -322,7 +322,7 @@ let do_fixpoint_common (fixl : Vernacexpr.fixpoint_expr list) =
   let (_, _, _, info as fix) = interp_fixpoint ~cofix:false fixl in
   fixl, ntns, fix, List.map compute_possible_guardness_evidences info
 
-let do_fixpoint_interactive ~scope ~poly l : Lemmas.t =
+let do_fixpoint_interactive ~scope ~poly l : Declare.Proof.t =
   let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
   let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes ~scope ~poly fix ntns in
   lemma

@@ -13,38 +13,6 @@
 
 open Util
 
-(* Support for terminators and proofs with an associated constant
-   [that can be saved] *)
-
-type lemma_possible_guards = int list list
-
-module Proof_ending = Declare.Proof_ending
-module Info = Declare.Info
-
-(* Proofs with a save constant function *)
-type t =
-  { proof : Declare.Proof.t
-  ; info : Info.t
-  }
-
-let pf_map f pf = { pf with proof = f pf.proof }
-let pf_fold f pf = f pf.proof
-
-let set_endline_tactic t = pf_map (Declare.Proof.set_endline_tactic t)
-
-(* To be removed *)
-module Internal = struct
-
-  (** Gets the current terminator without checking that the proof has
-      been completed. Useful for the likes of [Admitted]. *)
-  let get_info ps = ps.info
-
-end
-
-let by tac pf =
-  let proof, res = Declare.by tac pf.proof in
-  { pf with proof }, res
-
 (************************************************************************)
 (* Creating a lemma-like constant                                       *)
 (************************************************************************)
@@ -52,19 +20,16 @@ let by tac pf =
 (* Starting a goal *)
 let start_lemma ~name ~poly
     ?(udecl=UState.default_univ_decl)
-    ?(info=Info.make ()) ?(impargs=[]) sigma c =
-  let proof = Declare.start_proof sigma ~name ~udecl ~poly c in
-  let info = Declare.Info.add_first_thm ~info ~name ~typ:c ~impargs in
-  { proof; info }
+    ?(info=Declare.Info.make ()) ?(impargs=[]) sigma c =
+  Declare.start_proof sigma ~name ~udecl ~poly ~impargs ~info c
 
 (* Note that proofs opened by start_dependent lemma cannot be closed
    by the regular terminators, thus we don't need to update the [thms]
    field. We will capture this invariant by typing in the future *)
 let start_dependent_lemma ~name ~poly
     ?(udecl=UState.default_univ_decl)
-    ?(info=Info.make ()) telescope =
-  let proof = Declare.start_dependent_proof ~name ~udecl ~poly telescope in
-  { proof; info }
+    ?(info=Declare.Info.make ()) telescope =
+  Declare.start_dependent_proof ~name ~udecl ~poly ~info telescope
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -102,15 +67,9 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
   match thms with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
   | { Declare.Recthm.name; typ; impargs; _} :: thms ->
-    let info = Info.make ?hook ~scope ~kind ~compute_guard ~thms () in
+    let info = Declare.Info.make ?hook ~scope ~kind ~compute_guard ~thms () in
     (* start_lemma has the responsibility to add (name, impargs, typ)
        to thms, once Info.t is more refined this won't be necessary *)
     let lemma = start_lemma ~name ~impargs ~poly ~udecl ~info sigma (EConstr.of_constr typ) in
-    pf_map (Declare.Proof.map_proof (fun p ->
-        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)) lemma
-
-let save_lemma_admitted ~lemma =
-  Declare.save_lemma_admitted ~proof:lemma.proof ~info:lemma.info
-
-let save_lemma_proved ~lemma ~opaque ~idopt =
-  Declare.save_lemma_proved ~proof:lemma.proof ~info:lemma.info ~opaque ~idopt
+    Declare.Proof.map ~f:(fun p ->
+        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) lemma
