@@ -25,11 +25,17 @@ case "$type_first_letter" in
      exit 1;;
 esac
 
+printf "Fixes? (space separated list of bug numbers)\n"
+read -r fixes_list
+
+fixes_string="$(echo $fixes_list | sed 's/ /~  and /g; s,\([0-9]\+\),`#\1 <https://github.com/coq/coq/issues/\1>`_,g' | tr '~' '\n')"
+if [ ! -z "$fixes_string" ]; then fixes_string="$(printf '\n  fixes %s,' "$fixes_string")"; fi
+
 # shellcheck disable=SC2016
 # the ` are regular strings, this is intended
 # use %s for the leading - to avoid looking like an option (not sure
 # if necessary but doesn't hurt)
-printf '%s **%s:**\n  Bla bla\n  (`#%s <https://github.com/coq/coq/pull/%s>`_,\n  by %s).' - "$type_full" "$PR" "$PR" "$(git config user.name)" > "$where"
+printf '%s **%s:**\n  Bla bla\n  (`#%s <https://github.com/coq/coq/pull/%s>`_,%s\n  by %s).' - "$type_full" "$PR" "$PR" "$fixes_string" "$(git config user.name)" > "$where"
 
 printf "Name of created changelog file:\n"
 printf "$where\n"
