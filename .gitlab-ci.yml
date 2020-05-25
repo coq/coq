@@ -663,13 +663,13 @@ library:ci-bedrock2:
     NJOBS: "1"
 
 library:ci-color:
-  extends: .ci-template-flambda
+  extends: .ci-template
   stage: stage-3
   needs:
-  - build:edge+flambda
+  - build:base
   - plugin:ci-bignums
   dependencies:
-  - build:edge+flambda
+  - build:base
   - plugin:ci-bignums
 
 library:ci-compcert:
@@ -680,16 +680,16 @@ library:ci-coq_tools:
 
 library:ci-coqprime:
   stage: stage-3
-  extends: .ci-template-flambda
+  extends: .ci-template
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
       - _build_ci
   needs:
-  - build:edge+flambda
+  - build:base
   - plugin:ci-bignums
   dependencies:
-  - build:edge+flambda
+  - build:base
   - plugin:ci-bignums
 
 library:ci-coquelicot:
@@ -711,12 +711,12 @@ library:ci-fiat_crypto:
   extends: .ci-template
   stage: stage-4
   needs:
-  - build:edge+flambda
+  - build:base
   - library:ci-coqprime
   - plugin:ci-bignums
   - plugin:ci-rewriter
   dependencies:
-  - build:edge+flambda
+  - build:base
   - library:ci-coqprime
   - plugin:ci-rewriter
 
@@ -728,14 +728,14 @@ library:ci-flocq:
       - _build_ci
 
 library:ci-corn:
-  extends: .ci-template-flambda
+  extends: .ci-template
   stage: stage-4
   needs:
-  - build:edge+flambda
+  - build:base
   - plugin:ci-bignums
   - library:ci-math_classes
   dependencies:
-  - build:edge+flambda
+  - build:base
   - library:ci-math_classes
 
 library:ci-geocoq:
@@ -748,17 +748,17 @@ library:ci-lambda_rust:
   extends: .ci-template-flambda
 
 library:ci-math_classes:
-  extends: .ci-template-flambda
+  extends: .ci-template
   stage: stage-3
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
       - _build_ci
   needs:
-  - build:edge+flambda
+  - build:base
   - plugin:ci-bignums
   dependencies:
-  - build:edge+flambda
+  - build:base
   - plugin:ci-bignums
 
 library:ci-mathcomp:
@@ -795,7 +795,7 @@ plugin:ci-aac_tactics:
   extends: .ci-template
 
 plugin:ci-bignums:
-  extends: .ci-template-flambda
+  extends: .ci-template
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -856,7 +856,7 @@ plugin:ci-relation_algebra:
   extends: .ci-template
 
 plugin:ci-rewriter:
-  extends: .ci-template-flambda
+  extends: .ci-template
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
