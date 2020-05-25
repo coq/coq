@@ -2000,7 +2000,7 @@ let add_morphism_interactive atts m n : Declare.Proof.t =
   let info = Declare.Info.make ~hook ~kind () in
   Flags.silently
     (fun () ->
-       let lemma = Declare.start_proof ~name:instance_id ~poly ~info ~impargs:[] ~udecl:UState.default_univ_decl evd morph in
+       let lemma = Declare.start_proof ~name:instance_id ~poly ~info ~impargs:[] evd morph in
        fst (Declare.by (Tacinterp.interp tac) lemma)) ()
 
 let add_morphism atts binders m s n =

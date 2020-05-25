@@ -1520,8 +1520,8 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let typ, _ = lemmas_types_infos.(i) in
           let info = Declare.Info.make () in
           let lemma =
-            Declare.start_proof ~name:lem_id ~poly:false ~info ~impargs:[]
-              ~udecl:UState.default_univ_decl !evd typ
+            Declare.start_proof ~name:lem_id ~poly:false ~info ~impargs:[] !evd
+              typ
           in
           let lemma =
             fst @@ Declare.by (Proofview.V82.tactic (proving_tac i)) lemma
@@ -1587,7 +1587,6 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let info = Declare.Info.make () in
           let lemma =
             Declare.start_proof ~name:lem_id ~poly:false sigma ~info ~impargs:[]
-              ~udecl:UState.default_univ_decl
               (fst lemmas_types_infos.(i))
           in
           let lemma =

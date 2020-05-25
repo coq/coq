@@ -121,6 +121,8 @@ module Info : sig
     (** locality  *)
     -> ?kind:Decls.logical_kind
     (** Theorem, etc... *)
+    -> ?udecl:UState.universe_decl
+    (** Universe declaration *)
     -> unit
     -> t
 
@@ -170,7 +172,6 @@ end
    bindings [udecl]. *)
 val start_proof
   :  name:Names.Id.t
-  -> udecl:UState.universe_decl
   -> poly:bool
   -> ?impargs:Impargs.manual_implicits
   -> info:Info.t
@@ -182,7 +183,6 @@ val start_proof
     initial goals. *)
 val start_dependent_proof
   :  name:Names.Id.t
-  -> udecl:UState.universe_decl
   -> poly:bool
   -> info:Info.t
   -> Proofview.telescope

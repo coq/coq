@@ -89,19 +89,23 @@ module Info = struct
     (* This could be improved and the CEphemeron removed *)
     ; scope : Locality.locality
     ; kind : Decls.logical_kind
-    (* thms and compute guard are specific only to start_lemma_with_initialization + regular terminator *)
+    ; udecl: UState.universe_decl
+    (** Initial universe declarations *)
     ; thms : Recthm.t list
     ; compute_guard : lemma_possible_guards
+    (** thms and compute guard are specific only to
+       start_lemma_with_initialization + regular terminator *)
     }
 
   let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=Locality.Global Locality.ImportDefaultBehavior)
-      ?(kind=Decls.(IsProof Lemma)) () =
+      ?(kind=Decls.(IsProof Lemma)) ?(udecl=UState.default_univ_decl) () =
     { hook
     ; compute_guard = []
     ; proof_ending = CEphemeron.create proof_ending
     ; thms = []
     ; scope
     ; kind
+    ; udecl
     }
 
   (* This is used due to a deficiency on the API, should fix *)
@@ -120,8 +124,6 @@ type t =
   { endline_tactic : Genarg.glob_generic_argument option
   ; section_vars : Id.Set.t option
   ; proof : Proof.t
-  ; udecl: UState.universe_decl
-  (** Initial universe declarations *)
   ; initial_euctx : UState.t
   (** The initial universe context (for the statement) *)
   ; info : Info.t
@@ -131,7 +133,6 @@ type t =
 
 let get_proof ps = ps.proof
 let get_proof_name ps = (Proof.data ps.proof).Proof.name
-
 let get_initial_euctx ps = ps.initial_euctx
 
 let fold_proof f p = f p.proof
@@ -173,7 +174,7 @@ let initialize_named_context_for_proof () =
    conclusion). The proof is started in the evar map [sigma] (which
    can typically contain universe constraints), and with universe
    bindings [udecl]. *)
-let start_proof_core ~name ~udecl ~poly ?(impargs=[]) ?(sign=initialize_named_context_for_proof ()) ~info sigma typ =
+let start_proof_core ~name ~poly ?(impargs=[]) ?(sign=initialize_named_context_for_proof ()) ~info sigma typ =
   (* In ?sign, we remove the bodies of variables in the named context
      marked "opaque", this is a hack tho, see #10446, and
      build_constant_by_tactic uses a different method that would break
@@ -185,20 +186,18 @@ let start_proof_core ~name ~udecl ~poly ?(impargs=[]) ?(sign=initialize_named_co
   { proof
   ; endline_tactic = None
   ; section_vars = None
-  ; udecl
   ; initial_euctx
   ; info
   }
 
 let start_proof = start_proof_core ?sign:None
 
-let start_dependent_proof ~name ~udecl ~poly ~info goals =
+let start_dependent_proof ~name ~poly ~info goals =
   let proof = Proof.dependent_start ~name ~poly goals in
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   { proof
   ; endline_tactic = None
   ; section_vars = None
-  ; udecl
   ; initial_euctx
   ; info
   }
@@ -239,16 +238,16 @@ let start_proof_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
   match thms with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
   | { Recthm.name; typ; impargs; _} :: thms ->
-    let info = Info.make ?hook ~scope ~kind () in
+    let info = Info.make ?hook ~scope ~kind ~udecl () in
     let info = { info with Info.compute_guard; thms } in
     (* start_lemma has the responsibility to add (name, impargs, typ)
        to thms, once Info.t is more refined this won't be necessary *)
-    let lemma = start_proof ~name ~impargs ~poly ~udecl ~info sigma (EConstr.of_constr typ) in
+    let lemma = start_proof ~name ~impargs ~poly ~info sigma (EConstr.of_constr typ) in
     map_proof (fun p ->
         pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) lemma
 
 let get_used_variables pf = pf.section_vars
-let get_universe_decl pf = pf.udecl
+let get_universe_decl pf = pf.info.Info.udecl
 
 let set_used_variables ps l =
   let open Context.Named.Declaration in
@@ -401,7 +400,7 @@ let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) 
 
 let close_proof ~opaque ~keep_body_ucst_separate ps =
 
-  let { section_vars; proof; udecl; initial_euctx } = ps in
+  let { section_vars; proof; initial_euctx; info = { Info.udecl } } = ps in
   let { Proof.name; poly } = Proof.data proof in
   let unsafe_typ = keep_body_ucst_separate && not poly in
   let elist, uctx = prepare_proof ~unsafe_typ ps in
@@ -851,7 +850,7 @@ end
 type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
 let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
-  let { section_vars; proof; udecl; initial_euctx } = ps in
+  let { section_vars; proof; initial_euctx; info = { Info.udecl } } = ps in
   let { Proof.name; poly; entry; sigma } = Proof.data proof in
 
   (* We don't allow poly = true in this path *)
@@ -922,7 +921,7 @@ let by tac = map_fold_proof (Proof.solve (Goal_select.SelectNth 1) None tac)
 let build_constant_by_tactic ~name ?(opaque=Vernacexpr.Transparent) ~uctx ~sign ~poly typ tac =
   let evd = Evd.from_ctx uctx in
   let info = Info.make () in
-  let pf = start_proof_core ~name ~poly ~sign ~udecl:UState.default_univ_decl ~impargs:[] ~info evd typ in
+  let pf = start_proof_core ~name ~poly ~sign ~impargs:[] ~info evd typ in
   let pf, status = by tac pf in
   let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false pf in
   match entries with
