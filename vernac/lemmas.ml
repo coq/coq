@@ -13,8 +13,6 @@
 
 open Util
 
-module NamedDecl = Context.Named.Declaration
-
 (* Support for terminators and proofs with an associated constant
    [that can be saved] *)
 
@@ -51,23 +49,11 @@ let by tac pf =
 (* Creating a lemma-like constant                                       *)
 (************************************************************************)
 
-let initialize_named_context_for_proof () =
-  let sign = Global.named_context () in
-  List.fold_right
-    (fun d signv ->
-      let id = NamedDecl.get_id d in
-      let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
-      Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
-
 (* Starting a goal *)
 let start_lemma ~name ~poly
     ?(udecl=UState.default_univ_decl)
     ?(info=Info.make ()) ?(impargs=[]) sigma c =
-  (* We remove the bodies of variables in the named context marked
-     "opaque", this is a hack tho, see #10446 *)
-  let sign = initialize_named_context_for_proof () in
-  let goals = [ Global.env_of_context sign , c ] in
-  let proof = Declare.start_proof sigma ~name ~udecl ~poly goals in
+  let proof = Declare.start_proof sigma ~name ~udecl ~poly c in
   let info = Declare.Info.add_first_thm ~info ~name ~typ:c ~impargs in
   { proof; info }
 

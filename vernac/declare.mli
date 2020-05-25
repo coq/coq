@@ -84,7 +84,7 @@ val start_proof
   -> udecl:UState.universe_decl
   -> poly:bool
   -> Evd.evar_map
-  -> (Environ.env * EConstr.types) list
+  -> EConstr.t
   -> Proof.t
 
 (** Like [start_proof] except that there may be dependencies between

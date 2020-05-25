@@ -60,12 +60,25 @@ let compact_the_proof pf = map_proof Proof.compact pf
 let set_endline_tactic tac ps =
   { ps with endline_tactic = Some tac }
 
+let initialize_named_context_for_proof () =
+  let sign = Global.named_context () in
+  List.fold_right
+    (fun d signv ->
+      let id = NamedDecl.get_id d in
+      let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
+      Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
+
 (** [start_proof ~name ~udecl ~poly sigma goals] starts a proof of
    name [name] with goals [goals] (a list of pairs of environment and
    conclusion). The proof is started in the evar map [sigma] (which
    can typically contain universe constraints), and with universe
    bindings [udecl]. *)
-let start_proof ~name ~udecl ~poly sigma goals =
+let start_proof_core ~name ~udecl ~poly ?(sign=initialize_named_context_for_proof ()) sigma typ =
+  (* In ?sign, we remove the bodies of variables in the named context
+     marked "opaque", this is a hack tho, see #10446, and
+     build_constant_by_tactic uses a different method that would break
+     program_inference_hook *)
+  let goals = [Global.env_of_context sign, typ] in
   let proof = Proof.start ~name ~poly sigma goals in
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   { proof
@@ -74,6 +87,8 @@ let start_proof ~name ~udecl ~poly sigma goals =
   ; udecl
   ; initial_euctx
   }
+
+let start_proof = start_proof_core ?sign:None
 
 let start_dependent_proof ~name ~udecl ~poly goals =
   let proof = Proof.dependent_start ~name ~poly goals in
@@ -759,8 +774,7 @@ let by tac = map_fold_proof (Proof.solve (Goal_select.SelectNth 1) None tac)
 
 let build_constant_by_tactic ~name ?(opaque=Transparent) ~uctx ~sign ~poly typ tac =
   let evd = Evd.from_ctx uctx in
-  let goals = [ (Global.env_of_context sign , typ) ] in
-  let pf = start_proof ~name ~poly ~udecl:UState.default_univ_decl evd goals in
+  let pf = start_proof_core ~name ~poly ~sign ~udecl:UState.default_univ_decl evd typ in
   let pf, status = by tac pf in
   let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false pf in
   match entries with
