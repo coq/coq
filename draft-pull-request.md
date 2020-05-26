@@ -97,7 +97,7 @@ The file `checker/values.ml` has been altered accordingly. I don't know what thi
   ```
   This is caused by the call to `Typeops.infer_fix` within `Pretyping.search_guard`. Inference is called on the fixpoint term `f`, while `id` lives in the environment. However, since size inference has not been run on `id`, it has the incorrect type. Running inference on all named and rel contexts will not work, since at the pretyping stage, they may contain `Evar`s and `Meta`s, which cannot be handled by `Typeops`. I suspect everything in the kernel's `Typeops.execute` will have to be replicated in pretyping's `Typing.execute` to correctly deal with this.
 
-* Even with sized typing turned off by default, only part of the Coq standard library (`make coqlib`) can be compiled. Maybe this is caused by the new fields in `Constr.constr`? See e.g. [this pipeline](https://gitlab.com/ionathanch/coq/pipelines/148863698) for details.
+* Some files in the standard library compile very slowly, e.g. `Byte.v` and `Field_theory.v` (see [this](https://gitlab.com/ionathanch/coq/-/jobs/567110467) build). The extra checks for fixpoints in `Typeops.execute` could be what's causing this performance hit.
 
 * There seem to be a lot of similarities between the implementation of polymorphic universes and sized types. Maybe the design of the sized types implementation should be modified to be more similar to polymorphic universes, and maybe even reuse parts of its implementation (e.g. `UGraph`, perhaps).
 
