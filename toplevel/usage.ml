@@ -50,10 +50,10 @@ let print_usage_common co command =
 \n  -require-export lib, -re lib\
 \n                         load and transitively import Coq library lib\
 \n                         (equivalent to Require Export lib.)\
-\n  -require-import-from root lib, -rifrom lib\
+\n  -require-import-from root lib, -rifrom root lib\
 \n                         load and import Coq library lib\
 \n                         (equivalent to From root Require Import lib.)\
-\n  -require-export-from root lib, -refrom lib\
+\n  -require-export-from root lib, -refrom root lib\
 \n                         load and transitively import Coq library lib\
 \n                         (equivalent to From root Require Export lib.)\
 \n\
