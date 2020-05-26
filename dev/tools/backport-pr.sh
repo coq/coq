@@ -30,7 +30,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-MASTER=origin/master
+REMOTE=$(git config --get "branch.master.remote" || true)
+if [ -z "$REMOTE" ]; then
+    echo "Branch master has no remote. Using the local state of the master branch instead."
+    MASTER=master
+else
+    MASTER="$REMOTE/master"
+fi
 
 if ! git log $MASTER --grep "Merge PR #$PRNUM" | grep "." > /dev/null; then
     echo "PR #${PRNUM} does not exist."
