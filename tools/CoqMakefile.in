@@ -153,7 +153,8 @@ endif
 
 # Substitution of the path by appending $(DESTDIR) if needed.
 # The variable $(COQMF_WINDRIVE) can be needed for Cygwin environments.
-destination_path = $(if $(DESTDIR),$(DESTDIR)/$(if $(COQMF_WINDRIVE),$(subst $(COQMF_WINDRIVE),/,$(1)),$(1)),$(1))
+windrive_path = $(if $(COQMF_WINDRIVE),$(subst $(COQMF_WINDRIVE),/,$(1)),$(1))
+destination_path = $(if $(DESTDIR),$(DESTDIR)/$(call windrive_path,$(1)),$(1))
 
 # Installation paths of libraries and documentation.
 COQLIBINSTALL ?= $(call destination_path,$(COQLIB)/user-contrib)
