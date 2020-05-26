@@ -189,6 +189,10 @@ Changes in 8.12+beta1
   Improve the efficiency of :tacn:`zify` by rewritting the remaining Ltac code in OCaml
   (`#11429 <https://github.com/coq/coq/pull/11429>`_, by Frédéric Besson).
 - **Changed:**
+  Backtrace information for tactics has been improved
+  (`#11755 <https://github.com/coq/coq/pull/11755>`_,
+  by Emilio Jesus Gallego Arias).
+- **Changed:**
   The default tactic used by :g:`firstorder` is
   :g:`auto with core` instead of :g:`auto with *`;
   see :ref:`decisionprocedures` for details;
@@ -853,6 +857,25 @@ Changes in 8.12+beta1
   (`#9803 <https://github.com/coq/coq/pull/9803>`_,
   by Laurent Théry and Michael Soegtrop).
 
+**Extraction**
+
+- **Added:**
+  Support for better extraction of strings in OCaml and Haskell:
+  `ExtOcamlNativeString` provides bindings from the Coq `String` type to
+  the OCaml `string` type, and string literals can be extracted to literals,
+  both in OCaml and Haskell (`#10486
+  <https://github.com/coq/coq/pull/10486>`_, by Xavier Leroy, with help from
+  Maxime Dénès, review by Hugo Herbelin).
+- **Fixed:**
+  In Haskell extraction with ``ExtrHaskellString``, equality comparisons on
+  strings and characters are now guaranteed to be uniquely well-typed, even in
+  very polymorphic contexts under ``unsafeCoerce``; this is achieved by adding
+  type annotations to the extracted code, and by making ``ExtrHaskellString``
+  export ``ExtrHaskellBasic`` (`#12263
+  <https://github.com/coq/coq/pull/12263>`_, by Jason Gross, fixes `#12257
+  <https://github.com/coq/coq/issues/12257>`_ and `#12258
+  <https://github.com/coq/coq/issues/12258>`_).
+
 **Reference manual**
 
 - **Changed:**
@@ -923,29 +946,6 @@ Changes in 8.12+beta1
   Python 2 is not longer required in any part of the codebase
   (`#11245 <https://github.com/coq/coq/pull/11245>`_,
   by Emilio Jesus Gallego Arias).
-
-**Miscellaneous**
-
-- **Added:**
-  Support for better extraction of strings in OCaml and Haskell:
-  `ExtOcamlNativeString` provides bindings from the Coq `String` type to
-  the OCaml `string` type, and string literals can be extracted to literals,
-  both in OCaml and Haskell (`#10486
-  <https://github.com/coq/coq/pull/10486>`_, by Xavier Leroy, with help from
-  Maxime Dénès, review by Hugo Herbelin).
-- **Added:**
-  Backtrace information for tactics has been improved
-  (`#11755 <https://github.com/coq/coq/pull/11755>`_,
-  by Emilio Jesus Gallego Arias).
-- **Fixed:**
-  In Haskell extraction with ``ExtrHaskellString``, equality comparisons on
-  strings and characters are now guaranteed to be uniquely well-typed, even in
-  very polymorphic contexts under ``unsafeCoerce``; this is achieved by adding
-  type annotations to the extracted code, and by making ``ExtrHaskellString``
-  export ``ExtrHaskellBasic`` (`#12263
-  <https://github.com/coq/coq/pull/12263>`_, by Jason Gross, fixes `#12257
-  <https://github.com/coq/coq/issues/12257>`_ and `#12258
-  <https://github.com/coq/coq/issues/12258>`_).
 
 Version 8.11
 ------------
