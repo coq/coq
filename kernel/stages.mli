@@ -78,6 +78,7 @@ end
 module Annot :
 sig
   type t = Empty | Star | Glob | Stage of Stage.t
+  type ts = t list option
   val infty : t
   val hat : t -> t
   val compare : t -> t -> int
@@ -85,6 +86,7 @@ sig
   val pr : t -> Pp.t
   val show : t -> string
   val hash : t -> int
+  val hashAns : ts -> int
 end
 
 module State :

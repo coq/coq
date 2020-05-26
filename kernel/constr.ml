@@ -91,8 +91,8 @@ type pconstructor = constructor puniverses
 (* [Var] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
-  | Rel       of int * Annot.t list option
-  | Var       of Id.t * Annot.t list option
+  | Rel       of int * Annot.ts
+  | Var       of Id.t * Annot.ts
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of 'sort
@@ -101,7 +101,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Lambda    of Name.t binder_annot * 'types * 'constr
   | LetIn     of Name.t binder_annot * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of (Constant.t * 'univs) * Annot.t list option
+  | Const     of (Constant.t * 'univs) * Annot.ts
   | Ind       of (inductive * 'univs) * Annot.t
   | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
@@ -1392,7 +1392,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
   let rec hash_term t =
     match t with
       | Var (i, ans) ->
-        (Var ((sh_id i), ans), combinesmall 1 (Id.hash i))
+        (Var ((sh_id i), ans), combinesmall 1 (combine (Id.hash i) (Annot.hashAns ans)))
       | Sort s ->
         (Sort (sh_sort s), combinesmall 2 (Sorts.hash s))
       | Cast (c, k, t) ->
@@ -1422,7 +1422,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Const ((c,u), ans) ->
         let c' = sh_con c in
         let u', hu = sh_instance u in
-        (Const ((c', u'), ans), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
+        (Const ((c', u'), ans), combinesmall 9 (combine3 (Constant.SyntacticOrd.hash c) hu (Annot.hashAns ans)))
       | Ind ((ind,u), stg) ->
         let u', hu = sh_instance u in
         (Ind ((sh_ind ind, u'), stg),
@@ -1455,8 +1455,8 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
         (CoFix (ln,(lna,tl,bl)), combinesmall 14 h)
       | Meta n ->
         (t, combinesmall 15 n)
-      | Rel (n, _) ->
-        (t, combinesmall 16 n)
+      | Rel (n, ans) ->
+        (t, combinesmall 16 (combine n (Annot.hashAns ans)))
       | Proj (p,c) ->
         let c, hc = sh_rec c in
         let p' = Projection.hcons p in
@@ -1502,7 +1502,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 
 (* Exported hashing fonction on constr, used mainly in plugins.
    Slight differences from [snd (hash_term t)] above: it ignores binders
-   and doesn't do [land  0x3FFFFFFF]. *)
+   and stage annotations and doesn't do [land  0x3FFFFFFF]. *)
 
 let rec hash t =
   match kind t with
@@ -1523,8 +1523,8 @@ let rec hash t =
       combinesmall 8 (combine (Evar.hash e) (hash_term_list l))
     | Const ((c,u), _) ->
       combinesmall 9 (combine (Constant.hash c) (Instance.hash u))
-    | Ind ((ind,u), stg) ->
-      combinesmall 10 (combine3 (ind_hash ind) (Instance.hash u) (Annot.hash stg))
+    | Ind ((ind,u), _) ->
+      combinesmall 10 (combine (ind_hash ind) (Instance.hash u))
     | Construct (c,u) ->
       combinesmall 11 (combine (constructor_hash c) (Instance.hash u))
     | Case (_ , p, c, bl) ->

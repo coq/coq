@@ -4,7 +4,7 @@ open Util
 (** Helpers *)
 let (<<) f g x = f @@ g x
 
-(** Collection of stage variables *)
+(** Collections of stage variables *)
 
 module SVars =
 struct
@@ -64,6 +64,9 @@ struct
     | Glob (* Marks the positions of the (co)recursive types in global definitions *)
     | Stage (* Sized types *) of Stage.t
 
+  (* For annotating Consts, Vars, and Rels *)
+  type ts = t list option
+
   let infty = Stage Infty
 
   let mk var size = Stage (Stage.mk var size)
@@ -102,6 +105,9 @@ struct
     | Glob  -> combine 3 (show a |> String.hash)
     | Stage Infty -> combine 4 (show a |> String.hash)
     | Stage (StageVar (n, i)) -> combine3 5 (Int.hash n) (Int.hash i)
+
+  let hashAns =
+    Option.hash (List.fold_left (fun h a -> combine h (hash a)) 0)
 end
 
 (** Stage state, keeping track of used stage variables *)
