@@ -63,8 +63,8 @@ val find_Function_of_graph : inductive -> function_info option
 val add_Function : bool -> Constant.t -> unit
 val update_Function : function_info -> unit
 
-val pr_info : Environ.env -> Evd.evar_map -> function_info -> Pp.t
 (** debugging *)
+val pr_info : Environ.env -> Evd.evar_map -> function_info -> Pp.t
 
 val pr_table : Environ.env -> Evd.evar_map -> Pp.t
 

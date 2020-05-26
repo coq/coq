@@ -328,20 +328,20 @@ type term_kind = Application of EConstr.constr | OtherTerm of EConstr.constr
 module type Elt = sig
   type elt
 
-  val name : string
   (** name *)
+  val name : string
 
   val table : (term_kind * decl_kind) HConstr.t ref
   val cast : elt decl -> decl_kind
   val dest : decl_kind -> elt decl option
 
-  val get_key : int
   (** [get_key] is the type-index used as key for the instance *)
+  val get_key : int
 
-  val mk_elt : Evd.evar_map -> EConstr.t -> EConstr.t array -> elt
   (** [mk_elt evd i [a0,..,an]  returns the element of the table
         built from the type-instance i and the arguments (type indexes and projections)
         of the type-class constructor. *)
+  val mk_elt : Evd.evar_map -> EConstr.t -> EConstr.t array -> elt
 
   (*  val arity : int*)
 end
