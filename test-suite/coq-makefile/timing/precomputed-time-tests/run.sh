@@ -12,3 +12,4 @@ export COQLIB
 ./003-non-utf8/run.sh
 ./004-per-file-fuzz/run.sh
 ./005-correct-diff-sorting-order-mem/run.sh
+./006-zero-before/run.sh
