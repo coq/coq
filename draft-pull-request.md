@@ -42,7 +42,7 @@ Sized typing is off by default; turn it on with the flag `Set Sized Typing`. If 
 
 ## Structure of stages and constraints
 
-There's a giant comment in `Stages.mli` that will be informative.
+There's a giant comment in [`Stages.mli`](https://github.com/ionathanch/coq/blob/dev/kernel/stages.mli) that will be informative.
 
 ## Very brief summary of the size inference algorithm
 
@@ -63,7 +63,7 @@ CIC^ adds to inductive types a vector of polarities for each type parameter. We 
 
 CIC^\_ disallows free stage variables in non-type locations within terms. This prevents us from defining type aliases (e.g. `Definition myNat := nat.`), so we have removed this restriction. We then add a vector of stage annotations to constants, variables, and relatives so that all (co)inductive types can properly be assigned stage annotations. This is probably similar to how polymorphic universes work.
 
-We add a new kind of annotation, global position annotations, which mark the argument and return types of global definitions that have the "same" size.
+We add a new kind of annotation, global position annotations (ⁱ), which mark the argument and return types of global definitions that have the "same" size. These serve essentially the same purpose as star position annotations (*), which mark the types in fixpoints rather than global definitions.
 
 ## Overview of significant changes to OCaml codebase
 
@@ -81,30 +81,6 @@ The file `checker/values.ml` has been altered accordingly. I don't know what thi
 
 # Problems to Fix
 
-* The following Coq code incorrectly fails to type check:
+See the [issues](https://github.com/ionathanch/coq/issues) for a list of known problems and enhancement ideas.
 
-  ```coq
-  Unset Guard Checking.
-  Set Sized Typing.
-
-  Definition outer :=
-  let id x := x in
-  fix f n :=
-    match n with
-    | O => O
-    | S n' => f (id n')
-    end.
-  ```
-  This is caused by the call to `Typeops.infer_fix` within `Pretyping.search_guard`. Inference is called on the fixpoint term `f`, while `id` lives in the environment. However, since size inference has not been run on `id`, it has the incorrect type. Running inference on all named and rel contexts will not work, since at the pretyping stage, they may contain `Evar`s and `Meta`s, which cannot be handled by `Typeops`. I suspect everything in the kernel's `Typeops.execute` will have to be replicated in pretyping's `Typing.execute` to correctly deal with this.
-
-* Some files in the standard library compile very slowly, e.g. `Byte.v` and `Field_theory.v` (see [this](https://gitlab.com/ionathanch/coq/-/jobs/567110467) build). The extra checks for fixpoints in `Typeops.execute` could be what's causing this performance hit.
-
-* There seem to be a lot of similarities between the implementation of polymorphic universes and sized types. Maybe the design of the sized types implementation should be modified to be more similar to polymorphic universes, and maybe even reuse parts of its implementation (e.g. `UGraph`, perhaps).
-
-* Counting the number of stage annotations in definitions every time a const/var/rel is encountered is ineffecient. This information should be saved in the environment.
-
-* `Nativeconv` and `Vconv`'s `conv_val` don't produce sets of stage constraints. Is this necessary? Is this a problem?
-
-* The sized-typing–related error messages are *horrendous*, as well as how (and when) stage annotations are printed.
-
-* Files to remove: `README.v`, `draft-pull-request.md`.
+Files to remove: `README.v`, `draft-pull-request.md`.
