@@ -130,7 +130,6 @@ module Make(T : Task) () = struct
         (* Options to discard: 1 argument *)
         | ( "-async-proofs" | "-vio2vo" | "-o"
           | "-load-vernac-source" | "-l" | "-load-vernac-source-verbose" | "-lv"
-          | "-compile" | "-compile-verbose"
           | "-async-proofs-cache" | "-async-proofs-j" | "-async-proofs-tac-j"
           | "-async-proofs-private-flags" | "-async-proofs-tactic-error-resilience"
           | "-async-proofs-command-error-resilience" | "-async-proofs-delegation-threshold"
