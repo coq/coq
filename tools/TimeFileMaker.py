@@ -387,8 +387,8 @@ def make_diff_table_string(left_dict, right_dict,
     total_string = 'Total' if not include_mem else 'Total Time / Peak Mem'
     middle_width = max(map(len, names + [tag, total_string]))
 
-    left_peak = max(v.get(MEM_KEY, 0) for v in left_dict.values())
-    right_peak = max(v.get(MEM_KEY, 0) for v in right_dict.values())
+    left_peak = max([0] + [v.get(MEM_KEY, 0) for v in left_dict.values()])
+    right_peak = max([0] + [v.get(MEM_KEY, 0) for v in right_dict.values()])
     diff_peak = left_peak - right_peak
     percent_diff_peak = (format_percentage((left_peak - right_peak) / float(right_peak))
                          if right_peak != 0 else (INFINITY if left_peak > 0 else 'N/A'))
