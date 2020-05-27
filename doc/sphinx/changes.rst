@@ -895,10 +895,11 @@ Reference manual
 ^^^^^^^^^^^^^^^^
 
 - **Changed:**
-  The reference manual has been restructured.  In the new version,
-  there are less top-level chapters, and, in the HTML format, chapters
-  are split on multiple pages.  This is still a work-in-progress and
-  further restructuring is expected in the next versions of Coq
+  The reference manual has been restructured to get a more logical
+  organization.  In the new version, there are fewer top-level
+  chapters, and, in the HTML format, chapters are split into smaller
+  pages.  This is still a work in progress and further restructuring
+  is expected in the next versions of Coq
   (`CEP#43 <https://github.com/coq/ceps/pull/43>`_, implemented in
   `#11601 <https://github.com/coq/coq/pull/11601>`_,
   `#11871 <https://github.com/coq/coq/pull/11871>`_,
@@ -910,8 +911,8 @@ Reference manual
   effort inspired by Matthieu Sozeau, led by Théo Zimmermann, with
   help and reviews of Jim Fehrle, Clément Pit-Claudel and others).
 - **Changed:**
-  Most of the grammar is now presented using the same box mechanism as
-  was already used to present commands and tactics since Coq 8.8 and
+  Most of the grammar is now presented using the notation mechanism
+  that has been used to present commands and tactics since Coq 8.8 and
   which is documented in :ref:`syntax-conventions`
   (`#11183 <https://github.com/coq/coq/pull/11183>`_,
   `#11314 <https://github.com/coq/coq/pull/11314>`_,
@@ -920,22 +921,23 @@ Reference manual
   `#11718 <https://github.com/coq/coq/pull/11718>`_,
   `#11720 <https://github.com/coq/coq/pull/11720>`_
   and `#11961 <https://github.com/coq/coq/pull/11961>`_, by Jim
-  Fehrle, with reviews of Théo Zimmermann).
+  Fehrle, reviewed by Théo Zimmermann).
 - **Added:**
   A glossary of terms and an index of attributes
   (`#11869 <https://github.com/coq/coq/pull/11869>`_,
   `#12150 <https://github.com/coq/coq/pull/12150>`_
   and `#12224 <https://github.com/coq/coq/pull/12224>`_,
   by Jim Fehrle and Théo Zimmermann,
-  with reviews of Clément Pit-Claudel)
+  reviewed by Clément Pit-Claudel)
 - **Added:**
-  A selector that allows to switch between versions of the reference
+  A selector that allows switching between versions of the reference
   manual (`#12286 <https://github.com/coq/coq/pull/12286>`_, by
   Clément Pit-Claudel).
 - **Fixed:**
-  A large part of the documented syntax has been fixed to correspond
-  more accurately to what is actually implemented, thanks to an
-  internal `doc_grammar` tool introduced for this purpose
+  Most of the documented syntax has been thoroughly updated to make it
+  accurate and easily understood.  This was done using a
+  semi-automated `doc_grammar` tool introduced for this purpose and
+  through significant revisions to the text
   (`#9884 <https://github.com/coq/coq/pull/9884>`_,
   `#10614 <https://github.com/coq/coq/pull/10614>`_,
   `#11314 <https://github.com/coq/coq/pull/11314>`_,
@@ -948,7 +950,7 @@ Reference manual
   `#11958 <https://github.com/coq/coq/pull/11958>`_
   `#11960 <https://github.com/coq/coq/pull/11960>`_
   and `#11961 <https://github.com/coq/coq/pull/11961>`_, by Jim
-  Fehrle, with reviews of Théo Zimmermann).
+  Fehrle, reviewed by Théo Zimmermann).
 
 Infrastructure and dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -960,7 +962,7 @@ Infrastructure and dependencies
   (`#12224 <https://github.com/coq/coq/pull/12224>`_,
   by Jim Fehrle and Théo Zimmermann).
 - **Removed:**
-  Python 2 is not longer required in any part of the codebase
+  Python 2 is no longer required in any part of the codebase
   (`#11245 <https://github.com/coq/coq/pull/11245>`_,
   by Emilio Jesus Gallego Arias).
 
