@@ -242,6 +242,13 @@ Tactics
   arguments should be omitted. Rare source of incompatibility
   (`#12326 <https://github.com/coq/coq/pull/12326>`_,
   by Pierre Courtieu).
+- **Changed:**
+  When using :tacn:`exists` or :tacn:`eexists` with multiple arguments,
+  the evaluation of arguments and applications of constructors are now interleaved.
+  This improves unification in some cases
+  (`#12366 <https://github.com/coq/coq/pull/12366>`_,
+  fixes `#12365 <https://github.com/coq/coq/issues/12365>`_,
+  by Attila Gáspár).
 - **Removed:**
   Undocumented ``omega with``.  Using :tacn:`lia` is the recommended
   replacement, although the old semantics of ``omega with *`` can also
@@ -638,6 +645,12 @@ Tools
   coqchk incorrectly reporting names from opaque modules as axioms
   (`#12076 <https://github.com/coq/coq/pull/12076>`_,
   by Pierre Roux; fixes `#5030 <https://github.com/coq/coq/issues/5030>`_).
+- **Fixed:**
+  coq_makefile-generated ``Makefile``\s ``pretty-timed-diff`` target
+  no longer raises Python exceptions in the rare corner case where the
+  log of times contains no files (`#12388
+  <https://github.com/coq/coq/pull/12388>`_, fixes `#12387
+  <https://github.com/coq/coq/pull/12387>`_, by Jason Gross).
 
 CoqIDE
 ^^^^^^
