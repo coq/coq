@@ -159,6 +159,7 @@ Fail Fixpoint decr n :=
 (** Constraint scoping. *)
 (** `outer` used to fail since constraints weren't passed around, but not anymore *)
 
+(* Currently broken *)
 Definition outer :=
   let id x := x in
   fix f n :=
@@ -199,6 +200,7 @@ Fail Definition innerSucc :=
  **)
 
 (* Relative *)
+(* Currently broken *)
 
 Definition rel1 :=
   let N := nat in

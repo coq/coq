@@ -1322,7 +1322,6 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 
 (* Use [whd_betaiotazeta] for reducing everything except Consts *)
 (* Use [whd_all] for reducing everything including Consts *)
-(* For now, use betaiotazeta, not all, since Consts don't have stage annotations *)
 let whd = whd_all
 
 (* Add [Glob] annotations to [ty_def] where they appear in [ty_glob] *)

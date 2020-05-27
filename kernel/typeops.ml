@@ -490,7 +490,7 @@ let check_fixpoint env (names, lar', vdef, vdeft) lar'' =
 (* Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'',
   check Γ ⊢ Δ' ≤ Δ''; Γ ⊢ U' ≤ U'' for inductive, and
   check Γ ⊢ Δ'' ≤ Δ'; Γ ⊢ U'' ≤ U' for coinductive *)
-let check_fixpoint_type env lar' lar'' recursivity =
+let _check_fixpoint_type env lar' lar'' recursivity =
   let unzip_prod_assums arr =
     let decls, body = List.split @@ Array.to_list @@
       Array.map Term.decompose_prod_assum arr in
@@ -681,30 +681,35 @@ and execute_recdef env stg cstrnt (names, lar, vdef) =
   stg_vdef, cstrnt_vdef, (names', lar', vdef', vdeft)
 
 (* Try RecCheck; if failure, try removing some stage variables from vstar *)
-and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) vars recursivity =
+and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars, _ as vars) _recursivity =
+  let flags = Environ.typing_flags env in
+  if not flags.check_sized then
+    let vstar = SVars.union_list vstars in
+    let stg = remove_pos_vars vstar stg in
+    let cstrnt' = check_fixpoint env recdeft lar' in
+    stg, union cstrnt cstrnt'
+  else begin
   let rec try_rec_check stg (alphas, vstars, vneq) =
     let vstar = SVars.union_list vstars in
     let lar'' = Array.map (annotate_succ vstar) lar' in
     let cstrnt_fix = check_fixpoint env recdeft lar'' in
-    let cstrnt_fix_ty = check_fixpoint_type env lar' lar'' recursivity in
-    let cstrnt' = union_list [cstrnt; cstrnt_fix; cstrnt_fix_ty] in
+    (* let cstrnt_fix_ty = _check_fixpoint_type env lar' lar'' _recursivity in *)
+    let cstrnt' = union_list [cstrnt; cstrnt_fix; (* cstrnt_fix_ty *)] in
 
     let rec_check_all cstrnts (alpha, vstar) = union cstrnts (rec_check alpha vstar vneq cstrnts) in
-    let flags = Environ.typing_flags env in
-    if flags.check_sized then
-      try stg, List.fold_left rec_check_all cstrnt' (List.combine alphas vstars)
-      with RecCheckFailed (cstrnt'', si_inf, si) ->
-        let rm = inter (inter si_inf si) (diff vstar (SVars.of_list alphas)) in
-        if is_empty rm then begin
-          if flags.check_guarded then stg, cstrnt else
-            error_unsatisfied_stage_constraints env cstrnt'' cstr si_inf si
-        end else
-          let vstars = List.map (fun vstar -> diff vstar rm) vstars in
-          let vneq = SVars.union vneq rm in
-          let stg = remove_pos_vars rm stg in
-          try_rec_check stg (alphas, vstars, vneq)
-    else stg, cstrnt' in
+    try stg, List.fold_left rec_check_all cstrnt' (List.combine alphas vstars)
+    with RecCheckFailed (cstrnt'', si_inf, si) ->
+      let rm = inter (inter si_inf si) (diff vstar (SVars.of_list alphas)) in
+      if is_empty rm then begin
+        if flags.check_guarded then stg, cstrnt else
+          error_unsatisfied_stage_constraints env cstrnt'' cstr si_inf si
+      end else
+        let vstars = List.map (fun vstar -> diff vstar rm) vstars in
+        let vneq = SVars.union vneq rm in
+        let stg = remove_pos_vars rm stg in
+        try_rec_check stg (alphas, vstars, vneq) in
   try_rec_check stg vars
+  end
 
 and execute_fix env stg cstrnt ((vn, i), (names, lar, vdef)) =
   let stg = State.push stg in
