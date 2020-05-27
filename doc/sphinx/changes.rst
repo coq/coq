@@ -17,7 +17,11 @@ Summary of changes
 Changes in 8.12+beta1
 ~~~~~~~~~~~~~~~~~~~~~
 
-**Specification language, type inference**
+.. contents::
+   :local:
+
+Specification language, type inference
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **Changed:**
   The deprecation warning raised since Coq 8.10 when a trailing
@@ -73,7 +77,8 @@ Changes in 8.12+beta1
   (`#12323 <https://github.com/coq/coq/pull/12323>`_,
   by Hugo Herbelin; fixes `#12322 <https://github.com/coq/coq/pull/12322>`_).
 
-**Notations**
+Notations
+^^^^^^^^^
 
 - **Changed:** Notation scopes are now always inherited in
   notations binding a partially applied constant, including for
@@ -152,7 +157,8 @@ Changes in 8.12+beta1
   fixes `#12159 <https://github.com/coq/coq/pull/12159>`_,
   by Pierre Roux, review by Hugo Herbelin and Jason Gross).
 
-**Tactics**
+Tactics
+^^^^^^^
 
 - **Changed:**
   The :tacn:`rapply` tactic in :g:`Coq.Program.Tactics` now handles
@@ -307,7 +313,8 @@ Changes in 8.12+beta1
   fixes `#11761 <https://github.com/coq/coq/issues/11761>`_,
   reported by Lasse Blaauwbroek).
 
-**Tactic language**
+Tactic language
+^^^^^^^^^^^^^^^
 
 - **Changed:**
   The "reference" tactic generic argument now accepts arbitrary
@@ -347,7 +354,8 @@ Changes in 8.12+beta1
   <https://github.com/coq/coq/issues/12196>`_, `#12197
   <https://github.com/coq/coq/pull/12197>`_, by Jason Gross).
 
-**SSReflect**
+SSReflect
+^^^^^^^^^
 
 - **Changed:** The :cmd:`Search (ssreflect)` command that used to be
   available when loading the `ssreflect` plugin has been moved to a
@@ -360,7 +368,8 @@ Changes in 8.12+beta1
   :cmd:`Search` (part of `#8855
   <https://github.com/coq/coq/pull/8855>`_, by Théo Zimmermann).
 
-**Flags, options and attributes**
+Flags, options and attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **Changed:** :term:`Legacy attributes <attribute>` can now be passed
   in any order (`#11665 <https://github.com/coq/coq/pull/11665>`_, by
@@ -407,7 +416,8 @@ Changes in 8.12+beta1
   (`#12034 <https://github.com/coq/coq/pull/12034>`_, by Gaëtan
   Gilbert).
 
-**Commands**
+Commands
+^^^^^^^^
 
 - **Changed:**
   The :cmd:`Coercion` command has been improved to check the coherence of the
@@ -477,7 +487,8 @@ Changes in 8.12+beta1
   by Hugo Herbelin; fixes
   `#12234 <https://github.com/coq/coq/pull/12234>`_).
 
-**Tools**
+Tools
+^^^^^
 
 - **Changed:**
   Internal options and behavior of ``coqdep``. ``coqdep``
@@ -628,7 +639,8 @@ Changes in 8.12+beta1
   (`#12076 <https://github.com/coq/coq/pull/12076>`_,
   by Pierre Roux; fixes `#5030 <https://github.com/coq/coq/issues/5030>`_).
 
-**CoqIDE**
+CoqIDE
+^^^^^^
 
 - **Removed:**
   "Tactic" menu from CoqIDE which had been unmaintained for a number of years
@@ -639,7 +651,8 @@ Changes in 8.12+beta1
   (`#11415 <https://github.com/coq/coq/pull/11415>`_,
   by Pierre-Marie Pédrot).
 
-**Standard library**
+Standard library
+^^^^^^^^^^^^^^^^
 
 - **Changed:**
   Notations :n:`[|@term|]` and :n:`[||@term||]` for morphisms from 63-bit
@@ -806,7 +819,8 @@ Changes in 8.12+beta1
   by formalize.eth (formalize@protonmail.com);
   fixes `#12015 <https://github.com/coq/coq/issues/12015>`_).
 
-**Reals library**
+Reals library
+^^^^^^^^^^^^^
 
 - **Changed:**
   Cleanup of names in the Reals theory: replaced `tan_is_inj` with
@@ -857,7 +871,8 @@ Changes in 8.12+beta1
   (`#9803 <https://github.com/coq/coq/pull/9803>`_,
   by Laurent Théry and Michael Soegtrop).
 
-**Extraction**
+Extraction
+^^^^^^^^^^
 
 - **Added:**
   Support for better extraction of strings in OCaml and Haskell:
@@ -876,7 +891,8 @@ Changes in 8.12+beta1
   <https://github.com/coq/coq/issues/12257>`_ and `#12258
   <https://github.com/coq/coq/issues/12258>`_).
 
-**Reference manual**
+Reference manual
+^^^^^^^^^^^^^^^^
 
 - **Changed:**
   The reference manual has been restructured.  In the new version,
@@ -934,7 +950,8 @@ Changes in 8.12+beta1
   and `#11961 <https://github.com/coq/coq/pull/11961>`_, by Jim
   Fehrle, with reviews of Théo Zimmermann).
 
-**Infrastructure and dependencies**
+Infrastructure and dependencies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **Changed:**
   Minimal versions of dependencies for building the reference manual:
