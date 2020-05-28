@@ -1035,13 +1035,6 @@ let type_uconstr ?(flags = (constr_flags ()))
   understand_ltac flags env sigma vars expected_type term
   end
 
-let warn_deprecated_info =
-  CWarnings.create ~name:"deprecated-info-tactical" ~category:"deprecated"
-         (fun () ->
-          strbrk "The general \"info\" tactic is currently not working." ++ spc()++
-            strbrk "There is an \"Info\" command to replace it." ++fnl () ++
-            strbrk "Some specific verbose tactics may also exist, such as info_eauto.")
-
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftactic.t =
   (* The name [appl] of applied top-level Ltac names is ignored in
@@ -1154,9 +1147,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacSolve l -> Tacticals.New.tclSOLVE (List.map (interp_tactic ist) l)
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
   | TacArg a -> interp_tactic ist (TacArg a)
-  | TacInfo tac ->
-      warn_deprecated_info ();
-      eval_tactic ist tac
   | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
   | TacAlias {loc; v=(s,l)} ->

@@ -1,4 +1,4 @@
-(* testing info/debug auto/eauto *)
+(* testing info_*/debug auto/eauto *)
 
 Goal False \/ (True -> True).
 info_auto.

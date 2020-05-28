@@ -173,8 +173,7 @@ GRAMMAR EXTEND Gram
           { TacFun (it,body) }
       | "let"; isrec = [IDENT "rec" -> { true } | -> { false } ];
           llc = LIST1 let_clause SEP "with"; "in";
-          body = tactic_expr LEVEL "5" -> { TacLetIn (isrec,llc,body) }
-      | IDENT "info"; tc = tactic_expr LEVEL "5" -> { TacInfo tc } ] ]
+          body = tactic_expr LEVEL "5" -> { TacLetIn (isrec,llc,body) } ] ]
   ;
   (* Tactic arguments to the right of an application *)
   tactic_arg_compat:

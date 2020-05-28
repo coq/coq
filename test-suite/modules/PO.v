@@ -23,11 +23,11 @@ Module Pair (X: PO) (Y: PO) <: PO.
   Hint Unfold le.
 
   Lemma le_refl : forall p : T, le p p.
-    info auto.
+    auto.
   Qed.
 
   Lemma le_trans : forall p1 p2 p3 : T, le p1 p2 -> le p2 p3 -> le p1 p3.
-    unfold le;  intuition; info  eauto.
+    unfold le;  intuition; eauto.
   Qed.
 
   Lemma le_antis : forall p1 p2 : T, le p1 p2 -> le p2 p1 -> p1 = p2.
@@ -39,9 +39,9 @@ Module Pair (X: PO) (Y: PO) <: PO.
      enough (t0 = t2) as ->.
     reflexivity.
 
-    info auto.
+    auto.
 
-    info auto.
+    auto.
   Qed.
 
 End Pair.
@@ -53,5 +53,5 @@ Require Nat.
 Module NN := Pair Nat Nat.
 
 Lemma zz_min : forall p : NN.T, NN.le (0, 0) p.
-  info auto with arith.
+  auto with arith.
 Qed.

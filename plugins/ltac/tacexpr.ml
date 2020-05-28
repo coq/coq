@@ -225,7 +225,6 @@ and 'a gen_tactic_expr =
       'a gen_tactic_expr * Id.t option
   | TacId of 'n message_token list
   | TacFail of global_flag * int or_var * 'n message_token list
-  | TacInfo of 'a gen_tactic_expr
   | TacLetIn of rec_flag *
       (lname * 'a gen_tactic_arg) list *
       'a gen_tactic_expr
