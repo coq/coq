@@ -309,6 +309,9 @@ type ml_module_object = {
 }
 
 let add_module_digest m =
+  if not has_dynlink then
+    m, NoDigest
+  else
   try
     let file = file_of_name m in
     let path, file = System.where_in_path ~warn:false !coq_mlpath_copy file in
