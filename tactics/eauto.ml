@@ -77,31 +77,6 @@ let apply_tac_list tac glls =
       re_sig (pack.it @ rest) pack.sigma
   | _ -> user_err Pp.(str "apply_tac_list")
 
-let one_step l gl =
-  [Proofview.V82.of_tactic Tactics.intro]
-  @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) (List.map mkVar (pf_ids_of_hyps gl)))
-  @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) l)
-  @ (List.map (fun c -> Proofview.V82.of_tactic (assumption c)) (pf_ids_of_hyps gl))
-
-let rec prolog l n gl =
-  if n <= 0 then user_err Pp.(str "prolog - failure");
-  let prol = (prolog l (n-1)) in
-  (tclFIRST (List.map (fun t -> (tclTHEN t prol)) (one_step l gl))) gl
-
-let prolog_tac l n =
-  Proofview.V82.tactic begin fun gl ->
-  let map c =
-    let (sigma, c) = c (pf_env gl) (project gl) in
-    (* Dropping the universe context is probably wrong *)
-    let (c, _) = pf_apply (prepare_hint false) gl (sigma, c) in
-    c
-  in
-  let l = List.map map l in
-  try (prolog l n gl)
-  with UserError (Some "Refiner.tclFIRST",_) ->
-    user_err ~hdr:"Prolog.prolog" (str "Prolog failed.")
-  end
-
 open Auto
 
 (***************************************************************************)

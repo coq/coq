@@ -18,8 +18,6 @@ val registered_e_assumption : unit Proofview.tactic
 
 val e_give_exact : ?flags:Unification.unify_flags -> constr -> unit Proofview.tactic
 
-val prolog_tac : delayed_open_constr list -> int -> unit Proofview.tactic
-
 val gen_eauto : ?debug:debug -> bool * int -> delayed_open_constr list ->
   hint_db_name list option -> unit Proofview.tactic
 
