@@ -250,19 +250,6 @@ before_script:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
-.platform-template:
-  stage: build
-  interruptible: true
-  variables:
-    PLATFORM: "https://github.com/coq/platform/archive/dev-ci.zip"
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - artifacts
-    when: always
-    expire_in: 1 month
-  before_script: [] # We don't want to use the shared 'before_script'
-
 .deploy-template:
   stage: deploy
   except:
@@ -335,18 +322,6 @@ build:quick:
       - $UNRELIABLE =~ /enabled/
   artifacts:
     when: always
-
-windows64:
-  extends: .platform-template
-  variables:
-    ARCH: "64"
-  script:
-    - call dev/ci/platform-windows.bat
-  tags:
-    - windows-inria
-  only:
-    variables:
-      - $WINDOWS =~ /enabled/
 
 lint:
   stage: build

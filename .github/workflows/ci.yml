@@ -4,27 +4,31 @@ on: [push, pull_request]
 
 jobs:
   Windows:
+    name: Windows
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture:
+          # - '32'
+          - '64'
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Cygwin
-        uses: egor-tensin/setup-cygwin@v1
-        with:
-          packages: rsync patch diffutils make unzip m4 findutils time wget curl git mingw64-x86_64-binutils mingw64-x86_64-gcc-core mingw64-x86_64-gcc-g++ mingw64-x86_64-pkg-config mingw64-x86_64-windows_default_manifest mingw64-x86_64-headers mingw64-x86_64-runtime mingw64-x86_64-pthreads mingw64-x86_64-zlib mingw64-x86_64-gmp python3
-
-      - name: Create home dir
+      - name: Set git to use LF
         run: |
-          C:\tools\cygwin\bin\bash.exe --login -c 'env'
+          git config --global core.autocrlf false
+          git config --global core.eol lf
 
-      - name: Install opam
-        run: |
-          C:\tools\cygwin\bin\bash.exe dev\ci\azure-opam.sh
+      - name: Git checkout
+        uses: actions/checkout@v2
 
-      - name: Build Coq
+      - name: Run common platform script
+        env:
+          ARCH: ${{matrix.architecture}}
+          PLATFORM: "https://github.com/coq/platform/archive/dev-ci.zip"
+        shell: cmd
         run: |
-          C:\tools\cygwin\bin\bash.exe dev\ci\azure-build.sh
+          .\dev\ci\platform-windows.bat
 
   macOS:
     runs-on: macOS-10.15

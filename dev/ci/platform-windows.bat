@@ -29,7 +29,7 @@ SET CYGCACHE=C:\ci\cache\cgwin
 
 CALL :MakeUniqueFolder %CYGROOT% CYGROOT
 
-SET CI_PROJECT_DIR_MFMT=%CI_PROJECT_DIR:\=/%
+SET CI_PROJECT_DIR_MFMT=%GITHUB_WORKSPACE:\=/%
 SET CI_PROJECT_DIR_CFMT=%CI_PROJECT_DIR_MFMT:C:/=/cygdrive/c/%
 SET COQREGTESTING=y
 SET PATH=%PATH%;C:\Program Files\7-Zip;C:\Program Files\Git\mingw64\bin
@@ -49,8 +49,8 @@ call coq_platform_make_windows.bat ^
   -parallel=p ^
   -jobs=2 ^
   -switch=d ^
-  -override-dev-pkg="coq=%CI_PROJECT_URL%/-/archive/%CI_COMMIT_SHA%/coq-%CI_COMMIT_SHA%.tar.gz" ^
-  -override-dev-pkg="coqide=%CI_PROJECT_URL%/-/archive/%CI_COMMIT_SHA%/coq-%CI_COMMIT_SHA%.tar.gz" ^
+  -override-dev-pkg="coq=%GITHUB_SERVER_URL%/%GITHUB_REPOSITORY%/archive/%GITHUB_SHA%.tar.gz" ^
+  -override-dev-pkg="coqide=%GITHUB_SERVER_URL%/%GITHUB_REPOSITORY%/archive/%GITHUB_SHA%.tar.gz" ^
   || GOTO ErrorCopyLogFilesAndExit
 
 cd ..
@@ -60,7 +60,7 @@ SET BASH=%CYGROOT%\bin\bash
 ECHO "Start Artifact Creation"
 TIME /T
 
-MKDIR %CI_PROJECT_DIR%\artifacts
+MKDIR %GITHUB_WORKSPACE%\artifacts
 %BASH% --login -c "cd coq-platform && windows/create_installer_windows.sh && cp windows_installer/*.exe %CI_PROJECT_DIR_CFMT%/artifacts" || GOTO ErrorCopyLogFilesAndExit
 TIME /T
 
