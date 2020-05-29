@@ -144,17 +144,10 @@ val declare_variable
    for removal from the public API, use higher-level declare APIs
    instead *)
 val definition_entry
-  : ?fix_exn:Future.fix_exn
-  -> ?opaque:bool
+  :  ?opaque:bool
   -> ?inline:bool
-  -> ?feedback_id:Stateid.t
-  -> ?section_vars:Id.Set.t
   -> ?types:types
   -> ?univs:Entries.universes_entry
-  -> ?eff:Evd.side_effects
-  -> ?univsbody:Univ.ContextSet.t
-  (** Universe-constraints attached to the body-only, used in
-     vio-delayed opaque constants and private poly universes *)
   -> constr
   -> Evd.side_effects proof_entry
 
@@ -295,7 +288,6 @@ val declare_entry
   -> scope:locality
   -> kind:Decls.logical_kind
   -> ?hook:Hook.t
-  -> ?obls:(Id.t * Constr.t) list
   -> impargs:Impargs.manual_implicits
   -> uctx:UState.t
   -> Evd.side_effects proof_entry
@@ -315,7 +307,6 @@ val declare_definition
   -> impargs:Impargs.manual_implicits
   -> udecl:UState.universe_decl
   -> ?hook:Hook.t
-  -> ?obls:(Id.t * Constr.t) list
   -> poly:bool
   -> ?inline:bool
   -> types:EConstr.t option
@@ -359,9 +350,6 @@ val declare_mutually_recursive
   -> ntns:Vernacexpr.decl_notation list
   -> rec_declaration:Constr.rec_declaration
   -> possible_indexes:lemma_possible_guards option
-  -> ?restrict_ucontext:bool
-  (** XXX: restrict_ucontext should be always true, this seems like a
-     bug in obligations, so this parameter should go away *)
   -> Recthm.t list
   -> Names.GlobRef.t list
 

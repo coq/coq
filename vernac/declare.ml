@@ -138,7 +138,9 @@ type 'a proof_entry = {
 
 let default_univ_entry = Entries.Monomorphic_entry Univ.ContextSet.empty
 
-let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?types
+(** [univsbody] are universe-constraints attached to the body-only,
+   used in vio-delayed opaque constants and private poly universes *)
+let definition_entry_core ?fix_exn ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?types
     ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
   { proof_entry_body = Future.from_val ?fix_exn ((body,univsbody), eff);
     proof_entry_secctx = section_vars;
@@ -147,6 +149,9 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?feedback_id ?sect
     proof_entry_opaque = opaque;
     proof_entry_feedback = feedback_id;
     proof_entry_inline_code = inline}
+
+let definition_entry =
+  definition_entry_core ?fix_exn:None ?eff:None ?univsbody:None ?feedback_id:None ?section_vars:None
 
 type proof_object =
   { name : Names.Id.t
@@ -173,11 +178,17 @@ let prepare_proof ~unsafe_typ { proof } =
   let evd = Evd.minimize_universes evd in
   let to_constr_body c =
     match EConstr.to_constr_opt evd c with
-    | Some p -> p
-    | None -> CErrors.user_err Pp.(str "Some unresolved existential variables remain")
+    | Some p ->
+      Vars.universes_of_constr p, p
+    | None ->
+      CErrors.user_err Pp.(str "Some unresolved existential variables remain")
   in
   let to_constr_typ t =
-    if unsafe_typ then EConstr.Unsafe.to_constr t else to_constr_body t
+    if unsafe_typ
+    then
+      let t = EConstr.Unsafe.to_constr t in
+      Vars.universes_of_constr t, t
+    else to_constr_body t
   in
   (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
@@ -194,6 +205,40 @@ let prepare_proof ~unsafe_typ { proof } =
   let proofs = List.map (fun (body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
   proofs, Evd.evar_universe_context evd
 
+let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
+    (used_univs_typ, typ) (used_univs_body, body) =
+  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  let utyp = UState.univ_entry ~poly initial_euctx in
+  let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
+  (* For vi2vo compilation proofs are computed now but we need to
+     complement the univ constraints of the typ with the ones of
+     the body.  So we keep the two sets distinct. *)
+  let uctx_body = UState.restrict uctx used_univs in
+  let ubody = UState.check_mono_univ_decl uctx_body udecl in
+  utyp, ubody
+
+let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
+  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  let universes = UState.restrict uctx used_univs in
+  let typus = UState.restrict universes used_univs_typ in
+  let utyp = UState.check_univ_decl ~poly typus udecl in
+  let ubody = Univ.ContextSet.diff
+      (UState.context_set universes)
+      (UState.context_set typus)
+  in
+  utyp, ubody
+
+let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
+  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  (* Since the proof is computed now, we can simply have 1 set of
+     constraints in which we merge the ones for the body and the ones
+     for the typ. We recheck the declaration after restricting with
+     the actually used universes.
+     TODO: check if restrict is really necessary now. *)
+  let ctx = UState.restrict uctx used_univs in
+  let utyp = UState.check_univ_decl ~poly ctx udecl in
+  utyp, Univ.ContextSet.empty
+
 let close_proof ~opaque ~keep_body_ucst_separate ps =
 
   let { section_vars; proof; udecl; initial_euctx } = ps in
@@ -202,46 +247,19 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
   let elist, uctx = prepare_proof ~unsafe_typ ps in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
 
-  let make_entry ((body, eff), typ) =
-
-    let allow_deferred =
-      not poly &&
-      (keep_body_ucst_separate
-       || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
-    in
-    let used_univs_body = Vars.universes_of_constr body in
-    let used_univs_typ = Vars.universes_of_constr typ in
-    let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
     let utyp, ubody =
-      if allow_deferred then
-        let utyp = UState.univ_entry ~poly initial_euctx in
-        let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
-        (* For vi2vo compilation proofs are computed now but we need to
-           complement the univ constraints of the typ with the ones of
-           the body.  So we keep the two sets distinct. *)
-        let uctx_body = UState.restrict uctx used_univs in
-        let ubody = UState.check_mono_univ_decl uctx_body udecl in
-        utyp, ubody
-      else if poly && opaque && private_poly_univs () then
-        let universes = UState.restrict uctx used_univs in
-        let typus = UState.restrict universes used_univs_typ in
-        let utyp = UState.check_univ_decl ~poly typus udecl in
-        let ubody = Univ.ContextSet.diff
-            (UState.context_set universes)
-            (UState.context_set typus)
-        in
-        utyp, ubody
-      else
-        (* Since the proof is computed now, we can simply have 1 set of
-           constraints in which we merge the ones for the body and the ones
-           for the typ. We recheck the declaration after restricting with
-           the actually used universes.
-           TODO: check if restrict is really necessary now. *)
-        let ctx = UState.restrict uctx used_univs in
-        let utyp = UState.check_univ_decl ~poly ctx udecl in
-        utyp, Univ.ContextSet.empty
+      (* allow_deferred case *)
+      if not poly &&
+         (keep_body_ucst_separate
+          || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
+      then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl t b
+      (* private_poly_univs case *)
+      else if poly && opaque && private_poly_univs ()
+      then make_univs_private_poly ~poly ~uctx ~udecl t b
+      else make_univs ~poly ~uctx ~udecl t b
     in
-    definition_entry ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
+    definition_entry_core ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
   let entries = CList.map make_entry elist  in
   { name; entries; uctx }
@@ -734,7 +752,7 @@ let return_partial_proof { proof } =
 
 let return_proof ps =
   let p, uctx = prepare_proof ~unsafe_typ:false ps in
-  List.map fst p, uctx
+  List.map (fun (((_ub, body),eff),_) -> (body,eff)) p, uctx
 
 let update_global_env =
   map_proof (fun p ->
@@ -889,7 +907,7 @@ module Hook = struct
 end
 
 (* Locality stuff *)
-let declare_entry ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ~uctx entry =
+let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
   let should_suggest = entry.proof_entry_opaque &&
                        Option.is_empty entry.proof_entry_secctx in
   let ubind = UState.universe_binders uctx in
@@ -909,6 +927,8 @@ let declare_entry ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ~uctx entry =
   let () = definition_message name in
   Option.iter (fun hook -> Hook.call ~hook { Hook.S.uctx; obls; scope; dref }) hook;
   dref
+
+let declare_entry = declare_entry_core ~obls:[]
 
 let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
   match possible_indexes with
@@ -936,7 +956,7 @@ module Recthm = struct
     }
 end
 
-let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) fixitems =
+let declare_mutually_recursive_core ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) fixitems =
   let vars, fixdecls, indexes =
     mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes in
   let uctx, univs =
@@ -961,6 +981,8 @@ let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~re
   recursive_message isfix indexes fixnames;
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   csts
+
+let declare_mutually_recursive = declare_mutually_recursive_core ~restrict_ucontext:true
 
 let warn_let_as_axiom =
   CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
@@ -998,14 +1020,16 @@ let prepare_definition ?opaque ?inline ?fix_exn ~poly ~udecl ~types ~body sigma 
       sigma (fun nf -> nf body, Option.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  let entry = definition_entry ?fix_exn ?opaque ?inline ?types ~univs body in
+  let entry = definition_entry_core ?fix_exn ?opaque ?inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
-let declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
-    ?obls ~poly ?inline ~types ~body ?fix_exn sigma =
+let declare_definition_core ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
+    ~obls ~poly ?inline ~types ~body ?fix_exn sigma =
   let entry, uctx = prepare_definition ?fix_exn ~opaque ~poly ~udecl ~types ~body ?inline sigma in
-  declare_entry ~name ~scope ~kind ~impargs ?obls ?hook ~uctx entry
+  declare_entry_core ~name ~scope ~kind ~impargs ~obls ?hook ~uctx entry
+
+let declare_definition = declare_definition_core ~obls:[]
 
 let prepare_obligation ~name ~types ~body sigma =
   let env = Global.env () in
@@ -1255,8 +1279,8 @@ let not_transp_msg =
     ++ spc ()
     ++ str "Use 'Defined' instead.")
 
-let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
-let err_not_transp () = pperror not_transp_msg
+let err_not_transp () =
+  CErrors.user_err ~hdr:"Program" not_transp_msg
 
 module ProgMap = Id.Map
 
@@ -1445,7 +1469,7 @@ let declare_definition prg =
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
   let kn =
-    declare_definition ~name ~scope ~kind ~impargs ?hook ~obls
+    declare_definition_core ~name ~scope ~kind ~impargs ?hook ~obls
       ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma
   in
   let pm = progmap_remove !State.prg_ref prg in
@@ -1531,7 +1555,7 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let udecl = UState.default_univ_decl in
   let kns =
-    declare_mutually_recursive ~scope ~opaque ~kind ~udecl ~ntns
+    declare_mutually_recursive_core ~scope ~opaque ~kind ~udecl ~ntns
       ~uctx:first.prg_ctx ~rec_declaration ~possible_indexes ~poly
       ~restrict_ucontext:false fixitems
   in
