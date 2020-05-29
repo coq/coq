@@ -12,22 +12,22 @@ open Names
 open Constr
 open Entries
 
-(** This module provides the official functions to declare new
+(** This module provides the functions to declare new
    variables, parameters, constants and inductive types in the global
    environment. It also updates some accesory tables such as [Nametab]
    (name resolution), [Impargs], and [Notations]. *)
 
-(** We provide two kind of functions:
+(** We provide three main entry points:
 
   - one-go functions, that will register a constant in one go, suited
    for non-interactive definitions where the term is given.
 
-  - two-phase [start/declare] functions which will create an
-   interactive proof, allow its modification, and saving when
-   complete.
+  - two-phase [start/save] functions which will create an
+   interactive proof, allow its modification using tactics, and saving
+   when complete.
 
-  Internally, these functions mainly differ in that usually, the first
-  case doesn't require setting up the tactic engine.
+  - program mode API, that allow to declare a constant with holes, to
+   be fullfilled later.
 
   Note that the API in this file is still in a state of flux, don't
   hesitate to contact the maintainers if you have any question.
@@ -38,14 +38,16 @@ open Entries
 
  *)
 
-(** Declaration hooks, to be run when a constant is saved. Use with care. *)
+(** Declaration hooks, to be run when a constant is saved. Use with
+   care, as imperative effects may become not supported in the
+   future. *)
 module Hook : sig
   type t
 
   (** Hooks allow users of the API to perform arbitrary actions at
      proof/definition saving time. For example, to register a constant
      as a Coercion, perform some cleanup, update the search database,
-     etc...  *)
+     etc... *)
   module S : sig
     type t =
       { uctx : UState.t
