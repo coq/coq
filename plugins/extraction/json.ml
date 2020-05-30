@@ -256,7 +256,7 @@ let rec pp_structure_elem = function
       (* for the moment we simply discard module type *)
 
 and pp_module_expr = function
-  | MEstruct (mp,sel) -> List.concat (List.map pp_structure_elem sel)
+  | MEstruct (mp,_,sel) -> List.concat (List.map pp_structure_elem sel)
   | MEfunctor _ -> []
       (* for the moment we simply discard unapplied functors *)
   | MEident _ | MEapply _ -> assert false

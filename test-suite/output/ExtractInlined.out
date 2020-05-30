@@ -1,0 +1,24 @@
+
+type nat =
+| O
+| S of nat
+
+module type T =
+ sig
+  val p : nat
+
+  val n : nat
+ end
+
+module M =
+ struct
+  (** val p : nat **)
+
+  let p =
+    O
+
+  (** val n : nat **)
+
+  let n = 1
+ end
+

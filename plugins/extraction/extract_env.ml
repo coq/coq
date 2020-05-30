@@ -337,7 +337,7 @@ and extract_mexpr env mp = function
          For now, we also extract everything, dead code will be removed later
          (see [Modutil.optimize_struct]. *)
       let sign, delta = expand_mexpr env mp me in
-      extract_msignature env mp delta ~all:true sign
+      extract_msignature env mp delta ~sealed:true ~all:true sign
   | MEident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
       Visit.add_mp_all mp; Miniml.MEident mp
@@ -359,17 +359,17 @@ and extract_mexpression env mp mty = function
          extract_mbody_spec env mp1 mtb,
          extract_mexpression env' mp mty me)
 
-and extract_msignature env mp reso ~all = function
+and extract_msignature env mp reso ~sealed ~all = function
   | NoFunctor struc ->
       let env' = Modops.add_structure mp struc reso env in
-      Miniml.MEstruct (mp,extract_structure env' mp reso ~all struc)
+      Miniml.MEstruct (mp,sealed,extract_structure env' mp reso ~all struc)
   | MoreFunctor (mbid, mtb, me) ->
       let mp1 = MPbound mbid in
       let env' = Modops.add_module_type mp1 mtb	env in
       Miniml.MEfunctor
         (mbid,
          extract_mbody_spec env mp1 mtb,
-         extract_msignature env' mp reso ~all me)
+         extract_msignature env' mp reso ~sealed ~all me)
 
 and extract_module env mp ~all mb =
   (* A module has an empty [mod_expr] when :
@@ -386,17 +386,17 @@ and extract_module env mp ~all mb =
          We extract just the elements required by this signature. *)
       let () = add_labels mp mb.mod_type in
       let sign = Modops.annotate_struct_body sign mb.mod_type in
-      extract_msignature env mp mb.mod_delta ~all:false sign
-    | FullStruct -> extract_msignature env mp mb.mod_delta ~all mb.mod_type
+      extract_msignature env mp mb.mod_delta ~sealed:true ~all:false sign
+    | FullStruct -> extract_msignature env mp mb.mod_delta ~sealed:false ~all mb.mod_type
   in
   (* Slight optimization: for modules without explicit signatures
      ([FullStruct] case), we build the type out of the extracted
      implementation *)
-  let typ = match mb.mod_expr with
+  let sealed, typ = match mb.mod_expr with
     | FullStruct ->
       assert (Option.is_empty mb.mod_type_alg);
-      mtyp_of_mexpr impl
-    | _ -> extract_mbody_spec env mp mb
+      false, mtyp_of_mexpr impl
+    | _ -> true, extract_mbody_spec env mp mb
   in
   { ml_mod_expr = impl;
     ml_mod_type = typ }
@@ -694,7 +694,7 @@ let flatten_structure struc =
     |SEmodule m -> match m.ml_mod_expr with
       |MEfunctor _ -> []
       |MEident _ | MEapply _ -> assert false (* should be expanded *)
-      |MEstruct (_,elems) -> flatten_elems elems
+      |MEstruct (_,_,elems) -> flatten_elems elems
   and flatten_elems l = List.flatten (List.map flatten_elem l)
   in flatten_elems (List.flatten (List.map snd struc))
 

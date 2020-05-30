@@ -580,9 +580,9 @@ let pp_mind kn i =
     | Record fields -> pp_record kn fields (i.ind_equiv,0) i.ind_packets.(0)
     | Standard -> pp_ind false kn i
 
-let pp_decl = function
-    | Dtype (r,_,_) when is_inline_custom r -> mt ()
-    | Dterm (r,_,_) when is_inline_custom r -> mt ()
+let pp_decl sealed = function
+    | Dtype (r,_,_) when is_inline_custom r && not sealed -> mt ()
+    | Dterm (r,_,_) when is_inline_custom r && not sealed -> mt ()
     | Dind (kn,i) -> pp_mind kn i
     | Dtype (r, l, t) ->
         let name = pp_global_name Type r in
@@ -705,12 +705,12 @@ and pp_module_type params = function
 
 let is_short = function MEident _ | MEapply _ -> true | _ -> false
 
-let rec pp_structure_elem = function
+let rec pp_structure_elem sealed = function
   | (l,SEdecl d) ->
      (match Common.get_duplicate (top_visible_mp ()) l with
-      | None -> pp_decl d
+      | None -> pp_decl sealed d
       | Some ren ->
-         v 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
+         v 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl sealed d) ++
          fnl () ++ str "end" ++ fnl () ++ str ("include "^ren))
   | (l,SEmodule m) ->
       let typ =
@@ -744,10 +744,10 @@ and pp_module_expr params = function
       let typ = pp_module_type [] mt in
       let def = pp_module_expr (MPbound mbid :: params) me in
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
-  | MEstruct (mp, sel) ->
+  | MEstruct (mp, sealed, sel) ->
       push_visible mp params;
       let try_pp_structure_elem l x =
-        let px = pp_structure_elem x in
+        let px = pp_structure_elem sealed x in
         if Pp.ismt px then l else px::l
       in
       (* We cannot use fold_right here due to side effects in pp_structure_elem *)
@@ -781,7 +781,7 @@ let do_struct f s =
   (if not (modular ()) then repeat (List.length s) pop_visible ());
   v 0 p ++ fnl ()
 
-let pp_struct s = do_struct pp_structure_elem s
+let pp_struct s = do_struct (pp_structure_elem false) s
 
 let pp_signature s = do_struct pp_specif s
 
@@ -794,5 +794,5 @@ let ocaml_descr = {
   sig_suffix = Some ".mli";
   sig_preamble = sig_preamble;
   pp_sig = pp_signature;
-  pp_decl = pp_decl;
+  pp_decl = pp_decl false;
 }
