@@ -166,8 +166,8 @@ let dummy_goal env sigma =
     Goal.V82.mk_goal sigma (named_context_val env) EConstr.mkProp in
   {Evd.it = gl; Evd.sigma = sigma}
 
-let constr_of evd v = match Value.to_constr v with
-  | Some c -> EConstr.to_constr evd c
+let constr_of sigma v = match Value.to_constr v with
+  | Some c -> EConstr.to_constr sigma c
   | None -> failwith "Ring.exec_tactic: anomaly"
 
 let tactic_res = ref [||]
@@ -185,7 +185,7 @@ let get_res =
   Tacenv.register_ml_tactic name [| tac |];
   entry
 
-let exec_tactic env evd n f args =
+let exec_tactic env sigma n f args =
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
     let x = Reference (ArgVar CAst.(make id)) in
@@ -199,11 +199,11 @@ let exec_tactic env evd n f args =
   let get_res = TacML (CAst.make (get_res, [TacGeneric (None, n)])) in
   let getter = Tacexp (TacFun (List.map (fun n -> Name n) lid, get_res)) in
   (* Evaluate the whole result *)
-  let gl = dummy_goal env evd in
+  let gl = dummy_goal env sigma in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
-  let evd = Evd.minimize_universes gls.Evd.sigma in
-  let nf c = constr_of evd c in
-  Array.map nf !tactic_res, Evd.universe_context_set evd
+  let sigma = Evd.minimize_universes gls.Evd.sigma in
+  let nf c = constr_of sigma c in
+  Array.map nf !tactic_res, Evd.universe_context_set sigma
 
 let gen_constant n = lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref n)))
 let gen_reference n = lazy (Coqlib.lib_ref n)
@@ -470,10 +470,10 @@ let ring_equality env sigma (r,add,mul,opp,req) =
                  op_smorph r add mul req add_m_lem mul_m_lem) in
           (setoid,op_morph)
 
-let build_setoid_params env evd r add mul opp req eqth =
+let build_setoid_params env sigma r add mul opp req eqth =
   match eqth with
       Some th -> th
-    | None -> ring_equality env evd (r,add,mul,opp,req)
+    | None -> ring_equality env sigma (r,add,mul,opp,req)
 
 let dest_ring env sigma th_spec =
   let th_typ = Retyping.get_type_of env sigma th_spec in
@@ -654,12 +654,12 @@ let make_args_list sigma rl t =
   | [] -> let (_,t1,t2) = dest_rel0 sigma t in [t1;t2]
   | _ -> rl
 
-let make_term_list env evd carrier rl =
-  let evd, l = List.fold_right
-    (fun x (evd,l) -> plapp evd coq_cons [|carrier;x;l|]) rl
-    (plapp evd coq_nil [|carrier|])
+let make_term_list env sigma carrier rl =
+  let sigma, l = List.fold_right
+    (fun x (sigma,l) -> plapp sigma coq_cons [|carrier;x;l|]) rl
+    (plapp sigma coq_nil [|carrier|])
   in
-  Typing.solve_evars env evd l
+  Typing.solve_evars env sigma l
 
 let carg c = Tacinterp.Value.of_constr (EConstr.of_constr c)
 let tacarg expr =
@@ -682,16 +682,16 @@ let ltac_ring_structure e =
 
 let ring_lookup (f : Value.t) lH rl t =
   Proofview.Goal.enter begin fun gl ->
-    let evd = Tacmach.New.project gl in
+    let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
-    let rl = make_args_list evd rl t in
-    let e = find_ring_structure env evd rl in
-    let evd, l = make_term_list env evd (EConstr.of_constr e.ring_carrier) rl in
+    let rl = make_args_list sigma rl t in
+    let e = find_ring_structure env sigma rl in
+    let sigma, l = make_term_list env sigma (EConstr.of_constr e.ring_carrier) rl in
     let rl = Value.of_constr l in
-    let evd, l = make_hyp_list env evd lH in
+    let sigma, l = make_hyp_list env sigma lH in
     let lH = carg l in
     let ring = ltac_ring_structure e in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Value.apply f (ring@[lH;rl]))
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Value.apply f (ring@[lH;rl]))
   end
 
 (***********************************************************************)
@@ -749,23 +749,23 @@ let sfield_theory = my_reference "semi_field_theory"
 let af_ar = my_reference"AF_AR"
 let f_r = my_reference"F_R"
 let sf_sr = my_reference"SF_SR"
-let dest_field env evd th_spec =
-  let th_typ = Retyping.get_type_of env evd th_spec in
-  match EConstr.kind evd th_typ with
+let dest_field env sigma th_spec =
+  let th_typ = Retyping.get_type_of env sigma th_spec in
+  match EConstr.kind sigma th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when isRefX evd (Lazy.force afield_theory) f ->
-        let evd, rth = plapp evd af_ar
+        when isRefX sigma (Lazy.force afield_theory) f ->
+        let sigma, rth = plapp sigma af_ar
           [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (None,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when isRefX evd (Lazy.force field_theory) f ->
-        let evd, rth =
-          plapp evd f_r
+        when isRefX sigma (Lazy.force field_theory) f ->
+        let sigma, rth =
+          plapp sigma f_r
             [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (Some false,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;div;inv;req|])
-        when isRefX evd (Lazy.force sfield_theory) f ->
-        let evd, rth = plapp evd sf_sr
+        when isRefX sigma (Lazy.force sfield_theory) f ->
+        let sigma, rth = plapp sigma sf_sr
           [|r;zero;one;add;mul;div;inv;req;th_spec|] in
         (Some true,r,zero,one,add,mul,None,None,div,inv,req,rth)
     | _ -> error "bad field structure"
