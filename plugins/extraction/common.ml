@@ -599,6 +599,13 @@ let pp_global k r =
       | Haskell -> if modular () then pp_haskell_gen k mp rls else s
       | Ocaml -> pp_ocaml_gen k mp rls (Some l)
 
+(* Main name printing function for declaring a reference *)
+
+let pp_global_name k r =
+  let ls = ref_renaming (k,r) in
+  assert (List.length ls > 1);
+  List.hd ls
+
 (* The next function is used only in Ocaml extraction...*)
 
 let pp_module mp =
