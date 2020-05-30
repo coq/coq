@@ -38,3 +38,15 @@ Theorem check_setoid_ring_modules :
 intros.
 ring.
 Qed.
+
+(* Check that an Add Ring definition in a section is really local *)
+
+Module Ring_in_section.
+
+Section S.
+Add Ring CoefRing1 : cRth.
+End S.
+
+Add Ring CoefRing1 : cRth.
+
+End Ring_in_section.

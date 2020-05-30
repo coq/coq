@@ -147,15 +147,15 @@ let ic_unsafe c = (*FIXME remove *)
   fst (Constrintern.interp_constr env sigma c)
 
 let decl_constant name univs c =
-  let open Constr in
   let vars = CVars.universes_of_constr c in
   let univs = UState.restrict_universe_context ~lbound:(Global.universes_lbound ()) univs vars in
   let () = DeclareUctx.declare_universe_context ~poly:false univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
   let univs = Monomorphic_entry Univ.ContextSet.empty in
-  mkConst(declare_constant ~name
-            ~kind:Decls.(IsProof Lemma)
-            (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c)))
+  let scope = if Global.sections_are_opened () then Locality.Discharge false else Locality.(Global ImportDefaultBehavior) in
+  let gr = declare_entry ~scope ~name ~kind:Decls.(IsProof Lemma) ~impargs:[] ~uctx:UState.empty
+            (definition_entry ~opaque:true ~types ~univs c) in
+  UnivGen.constr_of_monomorphic_global gr
 
 (* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =
