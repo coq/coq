@@ -61,8 +61,11 @@ let wit_uconstr = make0 "uconstr"
 
 let wit_open_constr = make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
 
-let wit_clause_dft_concl  =
+let wit_clause_dft_concl =
   make0 "clause_dft_concl"
+
+let wit_binders =
+  make0 "binders"
 
 (** Aliases for compatibility *)
 

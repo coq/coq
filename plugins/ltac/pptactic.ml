@@ -1260,6 +1260,9 @@ let declare_extra_vernac_genarg_pprule wit f =
   let f x = Genprint.PrinterBasic (fun env sigma -> f env sigma pr_constr_expr pr_lconstr_expr pr_raw_tactic_level x) in
   Genprint.register_vernac_print0 wit f
 
+let () =
+  declare_extra_vernac_genarg_pprule Stdarg.wit_binders (fun env sigma _ _ _ -> Ppconstr.pr_binders env sigma)
+
 (** Registering *)
 
 let pr_intro_pattern_env p = Genprint.TopPrinterNeedsContext (fun env sigma ->

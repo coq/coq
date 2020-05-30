@@ -66,4 +66,5 @@ let () =
   register_grammar wit_ltac (tactic);
   register_grammar wit_clause_dft_concl (clause_dft_concl);
   register_grammar wit_destruction_arg (destruction_arg);
+  register_grammar Stdarg.wit_binders (Pcoq.Constr.binders);
   ()
