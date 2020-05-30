@@ -116,9 +116,13 @@ end
 
 val annots_to_svars : Annot.t list option -> SVars.t
 
+(* N.B. Only [rec_check] should be exposed, but we expose the rest for testing. *)
 module RecCheck :
 sig
   type g
+  val to_graph : Constraints.t -> g
+  val of_graph : g -> Constraints.t
+
   val contains : g -> SVars.var -> SVars.var -> bool
   val sup : g -> SVars.var -> SVars.t
   val sub : g -> SVars.var -> SVars.t
@@ -131,13 +135,3 @@ sig
 
   val rec_check : SVars.var -> SVars.t -> SVars.t -> Constraints.t -> Constraints.t
 end
-
-(* N.B. We expose the following ONLY for testing in Stages_test:
-  * SVars.is_empty
-  * RecCheck.contains
-  * RecCheck.sup
-  * RecCheck.sub
-  * RecCheck.bellman_ford
-  * RecCheck.downward
-  * RecCheck.upward
-*)

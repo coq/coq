@@ -5,6 +5,7 @@ open SVars
 open Stage
 open Annot
 open Constraints
+open RecCheck
 
 let log_out_ch = open_log_out_ch __FILE__
 
@@ -67,27 +68,27 @@ let add2 = mk_eq_test
 let add3 = mk_bool_test
   (add_name 3)
   "s0+1⊑s0 is added"
-  (contains (add s0_1 s0_0 (empty ())) 0 0)
+  (contains (to_graph (add s0_1 s0_0 (empty ()))) 0 0)
 let add4 = mk_bool_test
   (add_name 4)
   "∞⊑s0 is added"
-  (contains (add infty s0_0 (empty ())) inf 0)
+  (contains (to_graph (add infty s0_0 (empty ()))) inf 0)
 let add5 = mk_bool_test
   (add_name 5)
   "s9⊑s0 is added"
-  (contains (add s9_0 s0_0 (empty ())) 9 0)
+  (contains (to_graph (add s9_0 s0_0 (empty ()))) 9 0)
 let add6 = mk_bool_test
   (add_name 6)
   "s9+1⊑s0+1 is added"
-  (contains (add s9_1 s0_1 (empty ())) 9 0)
+  (contains (to_graph (add s9_1 s0_1 (empty ()))) 9 0)
 let add7 = mk_bool_test
   (add_name 7)
   "adding s0⊑s9 does not add s9⊑s0"
-  (not (contains (add s0_0 s9_0 (empty ())) 9 0))
+  (not (contains (to_graph (add s0_0 s9_0 (empty ()))) 9 0))
 let add_tests = [add1; add2; add3; add4; add5; add6]
 
 let sup1 =
-  let cstrnts = add s5_0 s9_0 (add s5_0 s0_0 (empty ())) in
+  let cstrnts = to_graph (add s5_0 s9_0 (add s5_0 s0_0 (empty ()))) in
   let sups = sup cstrnts 5 in
   mk_bool_test
     (test_prefix ^ "-sup1")
@@ -96,7 +97,7 @@ let sup1 =
 let sup_tests = [sup1]
 
 let sub1 =
-  let cstrnts = add s9_0 s5_0 (add s0_0 s5_0 (empty ())) in
+  let cstrnts = to_graph (add s9_0 s5_0 (add s0_0 s5_0 (empty ()))) in
   let subs = sub cstrnts 5 in
   mk_bool_test
     (test_prefix ^ "-sub1")
@@ -113,35 +114,35 @@ let bf1 = mk_eq_test
   (bf_name 1)
   "Bellman-Ford returns empty set for positive size 2 cycle"
   SVars.empty
-  (bellman_ford pos_cycle)
+  (bellman_ford (to_graph pos_cycle))
 let bf2 = mk_eq_test
   (bf_name 2)
   "Bellman-Ford returns empty set for positive size 3 cycle"
   SVars.empty
-  (bellman_ford pos_cycle_bigger)
+  (bellman_ford (to_graph pos_cycle_bigger))
 let bf3 = mk_bool_test
   (bf_name 3)
   "Bellman-Ford returns nonempty set for negative size 2 cycle"
-  (not (is_empty (bellman_ford neg_cycle)))
+  (not (is_empty (bellman_ford (to_graph neg_cycle))))
 let bf4 = mk_bool_test
   (bf_name 4)
   "Bellman-Ford returns nonempty set for negative size 3 cycle"
-  (not (is_empty (bellman_ford neg_cycle_bigger)))
+  (not (is_empty (bellman_ford (to_graph neg_cycle_bigger))))
 let bf5 = mk_bool_test
   (bf_name 5)
   "Bellman-Form returns nonempty set for size 3 cycle without vertices NOT in cycle"
-  (let vs = bellman_ford neg_cycle_extra1 in
+  (let vs = bellman_ford (to_graph neg_cycle_extra1) in
   (not (is_empty vs) && not (mem 2 vs)))
 let bellman_ford_tests = [bf1; bf2; bf3; bf4; bf5]
 
 let upward_closure =
-  let up = upward neg_cycle_extra1 (SVars.add 0 SVars.empty) in
+  let up = upward (to_graph neg_cycle_extra1) (SVars.add 0 SVars.empty) in
   mk_bool_test
     (test_prefix ^ "-upward_closure")
     "upward closure from s0"
     (List.for_all (fun var -> mem var up) [0; 5; 9])
 let downward_closure =
-  let down = downward neg_cycle_extra2 (SVars.add 0 SVars.empty) in
+  let down = downward (to_graph neg_cycle_extra2) (SVars.add 0 SVars.empty) in
   mk_bool_test
     (test_prefix ^ "-downward_closure")
     "downward closure from s0"
