@@ -19,6 +19,7 @@ open Stdarg
 open Tacarg
 open Pcoq.Constr
 open Pltac
+open Extraargs
 
 }
 
@@ -82,8 +83,8 @@ VERNAC ARGUMENT EXTEND ring_mods
 END
 
 VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
-  | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods_opt(l) ] ->
-    { add_theory id t (Option.default [] l) }
+  | [ "Add" "Ring" ident(id) binders(b) ":" constr(t) ring_mods_opt(l) ] ->
+    { add_theory id b t (Option.default [] l) }
   | [ "Print" "Rings" ] => { Vernacextend.classify_as_query } -> {
     print_rings ()
   }
@@ -120,8 +121,8 @@ VERNAC ARGUMENT EXTEND field_mods
 END
 
 VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
-| [ "Add" "Field" ident(id) ":" constr(t) field_mods_opt(l) ] ->
-  { let l = match l with None -> [] | Some l -> l in add_field_theory id t l }
+| [ "Add" "Field" ident(id) binders(b) ":" constr(t) field_mods_opt(l) ] ->
+  { let l = match l with None -> [] | Some l -> l in add_field_theory id b t l }
 | [ "Print" "Fields" ] => {Vernacextend.classify_as_query} -> {
     print_fields ()
   }

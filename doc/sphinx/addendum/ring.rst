@@ -304,7 +304,7 @@ following property:
 
 The syntax for adding a new ring is 
 
-.. cmd:: Add Ring @ident : @one_term {? ( {+, @ring_mod } ) }
+.. cmd:: Add Ring @ident {* @binder } : @one_term {? ( {+, @ring_mod } ) }
 
    .. insertprodn ring_mod ring_mod
 
@@ -324,7 +324,8 @@ The syntax for adding a new ring is
 
    The :n:`@ident` is used only for error messages. The
    :n:`@one_term` is a proof that the ring signature satisfies the (semi-)ring
-   axioms. The optional list of modifiers is used to tailor the behavior
+   axioms (the proof can depend on the parameters given in the :n:`@binder`\s).
+   The :n:`ring_mod`\s are used to tailor the behavior
    of the tactic. Here are their effects:
 
    :n:`abstract`
@@ -659,7 +660,7 @@ zero for the correctness of the algorithm.
 
 The syntax for adding a new field is 
 
-.. cmd:: Add Field @ident : @one_term {? ( {+, @field_mod } ) }
+.. cmd:: Add Field @ident {* @binder } : @one_term {? ( {+, @field_mod } ) }
 
    .. insertprodn field_mod field_mod
 
@@ -669,8 +670,8 @@ The syntax for adding a new field is
 
    The :n:`@ident` is used only for error
    messages. :n:`@one_term` is a proof that the field signature satisfies the
-   (semi-)field axioms. The optional list of modifiers is used to tailor
-   the behavior of the tactic.
+   (semi-)field axioms (the proof can depend on the parameters given in the :n:`@binder`\s).
+   The :n:`ring_mod`\s are used to tailor the behavior of the tactic.
 
    Since field tactics are built upon ``ring``
    tactics, all modifiers of :cmd:`Add Ring` apply. There is only one
@@ -768,6 +769,3 @@ semantics by applying the correctness theorem.
 
 .. rubric:: Footnotes
 .. [#f1] based on previous work from Patrick Loiseleur and Samuel Boutin
-
-
-

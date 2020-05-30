@@ -19,6 +19,7 @@ val protect_tac : string -> unit Proofview.tactic
 
 val add_theory :
   Id.t ->
+  Constrexpr.local_binder_expr list ->
   constr_expr ->
   constr_expr ring_mod list -> unit
 
@@ -31,6 +32,7 @@ val ring_lookup :
 
 val add_field_theory :
   Id.t ->
+  Constrexpr.local_binder_expr list ->
   constr_expr ->
   constr_expr field_mod list -> unit
 
