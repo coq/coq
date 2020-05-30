@@ -207,27 +207,6 @@ VERNAC COMMAND EXTEND AddRelation3 CLASSIFIED AS SIDEFF
       { declare_relation atts a aeq n None None (Some lemma3) }
 END
 
-{
-
-type binders_argtype = local_binder_expr list
-
-let wit_binders =
- (Genarg.create_arg "binders" : binders_argtype Genarg.uniform_genarg_type)
-
-let binders = Pcoq.create_generic_entry2 "binders" (Genarg.rawwit wit_binders)
-
-let () =
-  let raw_printer env sigma _ _ _ l = Pp.pr_non_empty_arg (Ppconstr.pr_binders env sigma) l in
-  Pptactic.declare_extra_vernac_genarg_pprule wit_binders raw_printer
-
-}
-
-GRAMMAR EXTEND Gram
-  GLOBAL: binders;
-    binders:
-    [ [ b = Pcoq.Constr.binders -> { b } ] ];
-END
-
 VERNAC COMMAND EXTEND AddParametricRelation CLASSIFIED AS SIDEFF
   | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
         "reflexivity" "proved" "by" constr(lemma1)

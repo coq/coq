@@ -82,3 +82,5 @@ val wit_in_clause :
 val wit_strategy_level : Conv_oracle.level Genarg.uniform_genarg_type
 
 val wit_strategy_level_or_var : (Conv_oracle.level Locus.or_var, Conv_oracle.level Locus.or_var, Conv_oracle.level) Genarg.genarg_type
+
+val wit_binders : Constrexpr.local_binder_expr list Genarg.uniform_genarg_type
