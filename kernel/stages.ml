@@ -166,16 +166,16 @@ struct
         vars = add state.next state.vars;
         pos_vars = add state.next state.pos_vars }
     | _ -> (s, state)
+
   let next_annots on state =
     match on with
     | None -> None, state
     | Some n ->
-      let rec next_annots n state =
-        if Int.equal 0 n then [], state else
-        let annot,  state = next state in
-        let annots, state = next_annots (pred n) state in
-        annot :: annots, state in
-      let annots, state = next_annots n state in
+      let next_vars = List.interval state.next (state.next + n - 1) in
+      let annots = List.map (fun n -> mk n 0) next_vars in
+      let state = { state with
+        next = state.next + n;
+        vars = union state.vars (of_list next_vars) } in
       Some annots, state
 
   let pr state =
@@ -197,61 +197,40 @@ struct
   open Stage
   open Annot
 
-  module G = WeightedDigraph.Make(Int)
-  type t = G.t
+  module S = Set.Make(struct
+    module G = WeightedDigraph.Make(Int)
+    type t = G.edge
+    let compare = G.E.compare
+  end)
+  type t = S.t
   type 'a constrained = 'a * t
+  let mkEdge var1 size var2 = (var1, size, var2)
 
   let infty = Stage.infty
 
-  let empty () = G.create ()
-  let union_list gs =
-    let size = List.fold_left (+) 0 @@ List.map G.nb_vertex gs in
-    let g = G.create ~size () in
-    List.iter (G.iter_edges_e (G.add_edge_e g)) gs; g
-  let union g1 g2 = union_list [g1;g2]
-  let remove g s =
-    if G.mem_vertex g s
-    then
-      let g' = G.copy g in
-      G.remove_vertex g' s; g'
-    else g
-  let contains g vfrom vto =
-    not @@ List.is_empty @@ G.find_all_edges g vfrom vto
-  let add a1 a2 g =
+  let empty () = S.empty
+  let union = S.union
+  let union_list = List.fold_left union (empty ())
+
+  let add a1 a2 set =
     begin
     match a1, a2 with
     | Stage s1, Stage s2 ->
       begin
       match s1, s2 with
-      | Infty, Infty -> g
+      | Infty, Infty -> set
       | StageVar (var1, sz1), StageVar (var2, sz2) ->
-        if var_equal var1 var2 && sz1 <= sz2 then g
+        if var_equal var1 var2 && sz1 <= sz2 then set
         else
-          let g' = G.copy g in
-          G.add_edge_e g' (var1, (sz2 - sz1), var2); g'
+          S.add (mkEdge var1 (sz2 - sz1) var2) set
       | Infty, StageVar (var, _) ->
-        let g' = G.copy g in
-        G.add_edge_e g' (infty, 0, var); g'
-      | StageVar _, Infty -> g
+        S.add (mkEdge infty 0 var) set
+      | StageVar _, Infty -> set
       end
-    | _ -> g
+    | _ -> set
     end
 
-  let sup g s =
-    if G.mem_vertex g s
-    then SVars.of_list @@ G.succ g s
-    else SVars.empty
-  let sub g s =
-    if G.mem_vertex g s
-    then SVars.of_list @@ G.pred g s
-    else SVars.empty
-
-  let bellman_ford g =
-    let edges = G.bellman_ford g in
-    List.fold_left (fun vars (vfrom, _, vto) ->
-      SVars.add vfrom @@ SVars.add vto vars) SVars.empty edges
-
-  let pr g =
+  let pr set =
     let open Pp in
     let pr_edge (vfrom, wt, vto) =
       let sfrom, sto =
@@ -263,7 +242,7 @@ struct
       seq [Stage.pr sfrom; str "⊑"; Stage.pr sto] in
     let pr_graph =
       prlist_with_sep pr_comma identity @@
-      G.fold_edges_e (fun edge prs -> pr_edge edge :: prs) g [] in
+      S.fold (fun edge prs -> pr_edge edge :: prs) set [] in
     seq [str "{"; pr_graph; str "}"]
 end
 
@@ -280,65 +259,101 @@ let annots_to_svars =
       | _ -> svars)
       empty ans
 
-(** RecCheck *)
-open SVars
+(** RecCheck functions and internal graph representation of constraints *)
 
-exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
+module RecCheck =
+  struct
+  open SVars
 
-(* We could use ocamlgraph's Fixpoint module to compute closures
-  but their implementation is very wordy and this suffices *)
-let closure get_adj cstrnts init =
-  let rec closure_rec init fin =
-    match choose_opt init with
-    | None -> fin
-    | Some s ->
-      let init_rest = remove s init in
-      if mem s fin
-      then closure_rec init_rest fin
-      else
-        let init_new = get_adj cstrnts s in
-        closure_rec (union init_rest init_new) (add s fin) in
-  filter (not << Stage.var_equal Stage.infty) (closure_rec init empty)
+  module G = WeightedDigraph.Make(Int)
+  module S = Constraints.S
+  type g = G.t
 
-let downward = closure Constraints.sub
-let upward = closure Constraints.sup
+  let to_graph set =
+    let g = G.create () in
+    S.iter (G.add_edge_e g) set; g
+  let of_graph g =
+    G.fold_edges_e S.add g S.empty
 
-let rec_check alpha vstar vneq cstrnts =
-  let add_from_set annot_sub =
-    fold (fun var_sup cstrnts ->
-      Constraints.add annot_sub (Annot.mk var_sup 0) cstrnts) in
-  let remove_from_set =
-    fold (fun var cstrnts ->
-      Constraints.remove cstrnts var) in
+  (* N.B. [insert] and [remove] are mutating functions!! *)
+  let insert g vfrom wt vto =
+    G.add_edge_e g (Constraints.mkEdge vfrom wt vto)
+  let remove g s =
+    G.remove_vertex g s
+  let contains g vfrom vto =
+    not @@ List.is_empty @@ G.find_all_edges g vfrom vto
 
-  (* Step 1: Si = downward closure containing V* *)
-  let si = downward cstrnts vstar in
+  let sup g s =
+    if G.mem_vertex g s
+    then SVars.of_list @@ G.succ g s
+    else SVars.empty
+  let sub g s =
+    if G.mem_vertex g s
+    then SVars.of_list @@ G.pred g s
+    else SVars.empty
 
-  (* Step 2: Add α ⊑ Si *)
-  let cstrnts1 = add_from_set (Annot.mk alpha 0) si cstrnts in
+  let bellman_ford g =
+    let edges = G.bellman_ford g in
+    List.fold_left (fun vars (vfrom, _, vto) ->
+      SVars.add vfrom @@ SVars.add vto vars) SVars.empty edges
 
-  (* Step 3: Remove negative cycles *)
-  let rec remove_neg cstrnts =
-    let v_neg = upward cstrnts (Constraints.bellman_ford cstrnts) in
-    let cstrnts_neg = remove_from_set v_neg cstrnts in
-    let cstrnts_inf = add_from_set Annot.infty v_neg cstrnts_neg in
-    if is_empty v_neg then cstrnts else remove_neg cstrnts_inf in
-  let cstrnts2 = remove_neg cstrnts1 in
+  exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
 
-  (* Step 4: Si⊑ = upward closure containing Si *)
-  let si_up = upward cstrnts2 si in
+  (* We could use ocamlgraph's Fixpoint module to compute closures
+    but their implementation is very wordy and this suffices *)
+  let closure get_adj cstrnts init =
+    let rec closure_rec init fin =
+      match choose_opt init with
+      | None -> fin
+      | Some s ->
+        let init_rest = SVars.remove s init in
+        if mem s fin
+        then closure_rec init_rest fin
+        else
+          let init_new = get_adj cstrnts s in
+          closure_rec (union init_rest init_new) (add s fin) in
+    filter (not << Stage.var_equal Stage.infty) (closure_rec init empty)
 
-  (* Step 5: S¬i = upward closure containing V≠ *)
-  let si_neq = upward cstrnts2 vneq in
+  let downward = closure sub
+  let upward = closure sup
 
-  (* Step 6: Add ∞ ⊑ S¬i ∩ Si⊑ *)
-  let si_inter = inter si_neq si_up in
-  let cstrnts3 = add_from_set Annot.infty si_inter cstrnts2 in
+  let rec_check alpha vstar vneq cstrnts =
+    let cstrnts' = to_graph cstrnts in
+    let insert_from_set var_sub cstrnts =
+      iter (fun var_sup -> insert cstrnts var_sub 0 var_sup) in
+    let remove_from_set cstrnts =
+      iter (fun var ->
+        remove cstrnts var) in
 
-  (* Step 7: S∞ = upward closure containing {∞} *)
-  let si_inf = upward cstrnts3 (singleton Stage.infty) in
+    (* Step 1: Si = downward closure containing V* *)
+    let si = downward cstrnts' vstar in
 
-  (* Step 8: Check S∞ ∩ Si = ∅ *)
-  let si_null = inter si_inf si in
-  if is_empty si_null then cstrnts3
-  else raise (RecCheckFailed (cstrnts, si_inf, si))
+    (* Step 2: Add α ⊑ Si *)
+    let () = insert_from_set alpha cstrnts' si in
+
+    (* Step 3: Remove negative cycles *)
+    let rec remove_neg cstrnts =
+      let v_neg = upward cstrnts (bellman_ford cstrnts) in
+      let () = remove_from_set cstrnts' v_neg in
+      let () = insert_from_set Stage.infty cstrnts v_neg in
+      if not (is_empty v_neg) then remove_neg cstrnts in
+    let () = remove_neg cstrnts' in
+
+    (* Step 4: Si⊑ = upward closure containing Si *)
+    let si_up = upward cstrnts' si in
+
+    (* Step 5: S¬i = upward closure containing V≠ *)
+    let si_neq = upward cstrnts' vneq in
+
+    (* Step 6: Add ∞ ⊑ S¬i ∩ Si⊑ *)
+    let si_inter = inter si_neq si_up in
+    let () = insert_from_set Stage.infty cstrnts' si_inter in
+
+    (* Step 7: S∞ = upward closure containing {∞} *)
+    let si_inf = upward cstrnts' (singleton Stage.infty) in
+
+    (* Step 8: Check S∞ ∩ Si = ∅ *)
+    let si_null = inter si_inf si in
+    if is_empty si_null then of_graph cstrnts'
+    else raise (RecCheckFailed (cstrnts, si_inf, si))
+end

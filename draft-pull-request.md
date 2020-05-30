@@ -24,7 +24,7 @@ Relevant discussion [here](https://github.com/coq/coq/wiki/CoqTerminationDiscuss
 
 # Summary
 
-The purpose of this draft pull request is a) to bring attention to the work that has been done with implementing sized types in Coq here, and b) to solicit help with development, debugging, design suggestions, etc.
+The purpose of this draft pull request is a) to bring attention to the work that has been done with implementing sized types in Coq here, and b) to solicit help with development, debugging, design suggestions, etc. This follows a short discussion at POPL 2020 with @mattam82 and @wilbowma.
 
 This implements CIC^\*, a CIC with sized types, in the kernel's main type-checking algorithm by doing size inference on fully-elaborated terms; users do not (and cannot) provide size annotations themselves. It is based on Jorge Luis Sacchini's work on sized types in CIC (various papers), and the formal details of CIC^\* is provided in [Practical Sized Typing for Coq](https://arxiv.org/abs/1912.05601). See the Related Work section of PSTC for references to related languages such as CIC^\_, CIC^, and CC^\_\omega.
 
@@ -32,7 +32,7 @@ As opposed to sized types in Agda, sizes are not first-class, and do not appear 
 
 There exist terms which don't type-check in CIC^\* but do pass the existing guard check, and vice versa. `gcd` is an example of the former, and `quicksort` and example of the latter; these and more examples are provided in `README.v`. Therefore, we can take advantage of both methods of termination-checking (and checking productivity) by accepting terms that pass either sized typing or guard checking.
 
-There are no metatheoretical results yet for CIC^\*. CIC^ and various other dialects of CIC with sized types have an array of metatheory (proofs of subject reduction, strong normalization, well-typedness of size inference, etc.). Work is currently undergoing in this area.
+There are no metatheoretical results yet for CIC^\*. CIC^ and various other dialects of CIC with sized types have an array of metatheory (proofs of subject reduction, strong normalization, well-typedness of size inference, etc.). Work is currently undergoing in this area by @lim495062.
 
 # Usage
 
@@ -40,7 +40,7 @@ Sized typing is off by default; turn it on with the flag `Set Sized Typing`. If 
 
 # Technical Details
 
-## Structure of stages and constraints
+## Structure of sizes, stages, and constraints
 
 There's a giant comment in [`Stages.mli`](https://github.com/ionathanch/coq/blob/dev/kernel/stages.mli) that will be informative.
 

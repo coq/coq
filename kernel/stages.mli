@@ -110,29 +110,34 @@ sig
   val empty : unit -> t
   val union : t -> t -> t
   val union_list : t list -> t
-  val contains : t -> SVars.var -> SVars.var -> bool
   val add : Annot.t -> Annot.t -> t -> t
-  val sup : t -> SVars.var -> SVars.t
-  val sub : t -> SVars.var -> SVars.t
-  val bellman_ford : t -> SVars.t
   val pr : t -> Pp.t
 end
 
 val annots_to_svars : Annot.t list option -> SVars.t
 
-exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
+module RecCheck :
+sig
+  type g
+  val contains : g -> SVars.var -> SVars.var -> bool
+  val sup : g -> SVars.var -> SVars.t
+  val sub : g -> SVars.var -> SVars.t
+  val bellman_ford : g -> SVars.t
 
-val downward : Constraints.t -> SVars.t -> SVars.t
-val upward   : Constraints.t -> SVars.t -> SVars.t
+  exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
 
-val rec_check : SVars.var -> SVars.t -> SVars.t -> Constraints.t -> Constraints.t
+  val downward : g -> SVars.t -> SVars.t
+  val upward   : g -> SVars.t -> SVars.t
+
+  val rec_check : SVars.var -> SVars.t -> SVars.t -> Constraints.t -> Constraints.t
+end
 
 (* N.B. We expose the following ONLY for testing in Stages_test:
   * SVars.is_empty
-  * Constraints.contains
-  * Constraints.sup
-  * Constraints.sub
-  * bellman_ford
-  * downward
-  * upward
+  * RecCheck.contains
+  * RecCheck.sup
+  * RecCheck.sub
+  * RecCheck.bellman_ford
+  * RecCheck.downward
+  * RecCheck.upward
 *)

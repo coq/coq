@@ -20,6 +20,7 @@ open SVars
 open Annot
 open State
 open Constraints
+open RecCheck
 open Staging
 open Context
 open Vars

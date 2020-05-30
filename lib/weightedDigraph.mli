@@ -8,9 +8,16 @@ end
 module Make : functor(V: COMPARABLE) -> sig
   type t
   type vertex = V.t
-  type edge = vertex * int * vertex
+
+  module E : sig
+    type t = vertex * int * vertex
+    val compare : t -> t -> int
+  end
+
+  type edge = E.t
   val nb_vertex : t -> int
   val mem_vertex : t -> vertex -> bool
+  val mem_edge_e : t -> edge -> bool
   val create : ?size:int -> unit -> t
   val copy : t -> t
   val add_edge_e : t -> edge -> unit

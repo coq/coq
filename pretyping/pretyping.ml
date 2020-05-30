@@ -92,7 +92,7 @@ let check_guard env fix =
   | false, true -> Typeops.infer_fix env fix
   | _ -> try
     Typeops.infer_fix env fix
-    with Stages.RecCheckFailed _ -> check_fix env fix
+    with Stages.RecCheck.RecCheckFailed _ -> check_fix env fix
 
 let search_guard ?loc env possible_indexes fixdefs =
   (* Standard situation with only one possibility for each fix. *)
