@@ -249,3 +249,55 @@ Proof.
     unfold CRminus. rewrite CRplus_comm, <- CRplus_assoc.
     rewrite CRplus_opp_l, CRplus_0_l. reflexivity.
 Qed.
+
+Lemma CR_rm : forall (R : ConstructiveReals),
+    ring_morph 0 1 (CRplus R) (CRmult R) (CRminus R) (CRopp R) (CReq R)
+               0%Q 1%Q Qplus Qmult Qminus Qopp Qeq_bool (CR_of_Q R).
+Proof.
+  split.
+  - reflexivity.
+  - reflexivity.
+  - intros. apply CR_of_Q_plus.
+  - intros. unfold Qminus. rewrite CR_of_Q_plus, CR_of_Q_opp.
+    reflexivity.
+  - intros. apply CR_of_Q_mult.
+  - intros. apply CR_of_Q_opp.
+  - intros. apply CR_of_Q_morph.
+    apply Qeq_bool_iff in H. exact H.
+Qed.
+
+Ltac CR_of_Q_tac t :=
+  match t with
+  | CR_of_Q _ ?q =>
+    match isQcst q with
+    | true => q
+    | _ => constr:(InitialRing.NotConstant)
+    end
+  | _ => constr:(InitialRing.NotConstant)
+  end.
+
+Lemma CR_power_theory
+  : forall (R : ConstructiveReals),
+    Ring_theory.power_theory 1 (CRmult R) (CReq R) N.to_nat CRpow.
+Proof.
+  intro R. apply Ring_theory.mkpow_th.
+  intros r. unfold pow_N. destruct n. reflexivity.
+  induction p.
+  - unfold N.to_nat. rewrite Pos2Nat.inj_xI. simpl.
+    apply CRmult_morph. reflexivity. rewrite Nat.add_0_r.
+    rewrite <- IHp. rewrite <- CRpow_plus_distr. reflexivity.
+  - simpl. rewrite <- IHp.
+    replace (Pos.to_nat p~0) with (2*Pos.to_nat p)%nat.
+    simpl. rewrite <- CRpow_plus_distr. rewrite Nat.add_0_r. reflexivity.
+    rewrite Pos2Nat.inj_xO. reflexivity.
+  - simpl. apply CRmult_1_r.
+Qed.
+
+Ltac CRpow_tac t :=
+  match isnatcst t with
+  | false => constr:(InitialRing.NotConstant)
+  | _ => constr:(N.of_nat t)
+  end.
+
+Add Ring CRRing (R : ConstructiveReals)
+  : (CRisRing R) (morphism (CR_rm R), constants [CR_of_Q_tac], power_tac (CR_power_theory R) [CRpow_tac]).
