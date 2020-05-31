@@ -27,6 +27,7 @@ CI_TARGETS= \
     ci-equations \
     ci-fcsl_pcm \
     ci-fiat_crypto \
+    ci-fiat_crypto_ocaml \
     ci-fiat_parsers \
     ci-flocq \
     ci-geocoq \
@@ -71,6 +72,7 @@ ci-corn: ci-math_classes
 ci-mtac2: ci-unicoq
 
 ci-fiat_crypto: ci-coqprime ci-rewriter
+ci-fiat_crypto_ocaml: ci-fiat_crypto
 
 ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io
