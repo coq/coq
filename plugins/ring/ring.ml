@@ -413,7 +413,7 @@ let setoid_of_relation env sigma a r =
     let sigma, trans = Rewrite.get_transitive_proof env sigma a r in
     sigma, lapp coq_mk_Setoid [|a ; r ; refl; sym; trans |]
   with Not_found ->
-    error "cannot find setoid relation"
+    CErrors.user_err (str "Cannot find a setoid structure for relation " ++ pr_econstr_env env sigma r ++ str ".")
 
 let op_morph r add mul opp req m1 m2 m3 =
   lapp coq_mk_reqe [| r; add; mul; opp; req; m1; m2; m3 |]
@@ -438,35 +438,35 @@ let ring_equality env sigma (r,add,mul,opp,req) =
         let add_m, add_m_lem =
           try Rewrite.default_morphism signature add
           with Not_found ->
-            error "ring addition should be declared as a morphism" in
+            CErrors.user_err (str "Ring addition " ++ pr_econstr_env env sigma add ++ str " should be declared as a morphism.") in
         let mul_m, mul_m_lem =
           try Rewrite.default_morphism signature mul
           with Not_found ->
-            error "ring multiplication should be declared as a morphism" in
+            CErrors.user_err (str "Ring multiplication " ++ pr_econstr_env env sigma mul ++ str " should be declared as a morphism.") in
         let op_morph =
           match opp with
             | Some opp ->
                 (let opp_m,opp_m_lem =
                   try Rewrite.default_morphism ([Some(r,Some req)],Some(r,Some req)) opp
                   with Not_found ->
-                    error "ring opposite should be declared as a morphism" in
+                    CErrors.user_err (str "Ring opposite " ++ pr_econstr_env env sigma opp ++ str " should be declared as a morphism.") in
                 let op_morph =
                   op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
                   Flags.if_verbose
                     Feedback.msg_info
                     (str"Using setoid \""++ pr_econstr_env env sigma req++str"\""++spc()++
-                        str"and morphisms \""++pr_econstr_env env sigma add_m_lem ++
-                        str"\","++spc()++ str"\""++pr_econstr_env env sigma mul_m_lem++
-                        str"\""++spc()++str"and \""++pr_econstr_env env sigma opp_m_lem++
+                        str"and morphisms \""++pr_econstr_env env sigma add_m ++
+                        str"\","++spc()++ str"\""++pr_econstr_env env sigma mul_m++
+                        str"\""++spc()++str"and \""++pr_econstr_env env sigma opp_m++
                         str"\"");
                   op_morph)
             | None ->
                 (Flags.if_verbose
                     Feedback.msg_info
                     (str"Using setoid \""++pr_econstr_env env sigma req ++str"\"" ++ spc() ++
-                        str"and morphisms \""++pr_econstr_env env sigma add_m_lem ++
+                        str"and morphisms \""++pr_econstr_env env sigma add_m ++
                         str"\""++spc()++str"and \""++
-                        pr_econstr_env env sigma mul_m_lem++str"\"");
+                        pr_econstr_env env sigma mul_m++str"\"");
                  op_smorph r add mul req add_m_lem mul_m_lem) in
           (setoid,op_morph)
 
