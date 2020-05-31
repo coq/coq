@@ -1174,12 +1174,34 @@ let meta_declare mv v ?(name=Anonymous) evd =
   let metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) evd.metas in
   set_metas evd metas
 
+(* If the meta is defined then forget its name *)
+let meta_name evd mv =
+  try fst (clb_name (Metamap.find mv evd.metas)) with Not_found -> Anonymous
+
+let evar_source_of_meta mv evd =
+  match meta_name evd mv with
+  | Anonymous -> Loc.tag Evar_kinds.GoalEvar
+  | Name id   -> Loc.tag @@ Evar_kinds.VarInstance id
+
+let use_meta_source evd mv v =
+  match Constr.kind v with
+  | Evar (evk,_) ->
+    let f = function
+    | None -> None
+    | Some evi as x ->
+      match evi.evar_source with
+      | None, Evar_kinds.GoalEvar -> Some { evi with evar_source = evar_source_of_meta mv evd }
+      | _ -> x in
+    { evd with undf_evars = EvMap.update evk f evd.undf_evars }
+  | _ -> evd
+
 let meta_assign mv (v, pb) evd =
   let modify _ = function
   | Cltyp (na, ty) -> Clval (na, (mk_freelisted v, pb), ty)
   | _ -> anomaly ~label:"meta_assign" (Pp.str "already defined.")
   in
   let metas = Metamap.modify mv modify evd.metas in
+  let evd = use_meta_source evd mv v in
   set_metas evd metas
 
 let meta_reassign mv (v, pb) evd =
@@ -1189,10 +1211,6 @@ let meta_reassign mv (v, pb) evd =
   in
   let metas = Metamap.modify mv modify evd.metas in
   set_metas evd metas
-
-(* If the meta is defined then forget its name *)
-let meta_name evd mv =
-  try fst (clb_name (Metamap.find mv evd.metas)) with Not_found -> Anonymous
 
 let clear_metas evd = {evd with metas = Metamap.empty}
 
@@ -1216,11 +1234,6 @@ let retract_coercible_metas evd =
   in
   let metas = Metamap.Smart.mapi map evd.metas in
   !mc, set_metas evd metas
-
-let evar_source_of_meta mv evd =
-  match meta_name evd mv with
-  | Anonymous -> Loc.tag Evar_kinds.GoalEvar
-  | Name id   -> Loc.tag @@ Evar_kinds.VarInstance id
 
 let dependent_evar_ident ev evd =
   let evi = find evd ev in

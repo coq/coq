@@ -9,3 +9,27 @@ Unable to unify "T" with "?X@{x0:=x; x:=C a}" (cannot instantiate
 The command has indeed failed with message:
 The term "id" has type "ID" while it is expected to have type 
 "Type -> ?T" (cannot instantiate "?T" because "A" is not in its scope).
+1 focused subgoal
+(shelved: 1)
+  
+  H : forall x : nat, S (S (S x)) = x
+  ============================
+  ?x = 0
+1 focused subgoal
+(shelved: 1)
+  
+  H : forall x : nat, S (S (S x)) = x
+  ============================
+  ?x = 0
+1 focused subgoal
+(shelved: 1)
+  
+  H : forall x : nat, S (S (S x)) = x
+  ============================
+  ?x = 0
+1 focused subgoal
+(shelved: 1)
+  
+  H : forall x : nat, S x = x
+  ============================
+  ?y = 0
