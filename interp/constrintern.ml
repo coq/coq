@@ -2625,6 +2625,27 @@ let interp_context_evars ?program_mode ?(impl_env=empty_internalization_env) env
   let sigma, x = interp_glob_context_evars ?program_mode env sigma bl in
   sigma, (int_env, x)
 
+let id_of_name ids = function
+  | Name id ->
+    if Id.Set.mem id ids then CErrors.user_err (str "Name " ++ Id.print id ++ str " is used twice.");
+    (Id.Set.add id ids, id)
+  | Anonymous -> user_err (str "Unnamed binder.")
+
+let named_context_of_rel_context ctx =
+  let rec aux ids subst newctx = function
+  | d :: ctx ->
+    let ids, id = id_of_name ids (Context.Rel.Declaration.get_name d) in
+    let d = Context.Rel.Declaration.map_constr (EConstr.Vars.substl subst) d in
+    let d = Context.Named.Declaration.of_rel_decl (fun _ -> id) d in
+    aux ids (EConstr.mkVar id :: subst) (d :: newctx) ctx
+  | [] -> newctx in
+  aux Id.Set.empty [] [] (List.rev ctx)
+
+let interp_named_context ?program_mode ?(impl_env=empty_internalization_env) env sigma params =
+  let sigma, (impl_env, ((_env, ctx), impls)) =
+    interp_context_evars ?program_mode ~impl_env env sigma params in
+  let ctx = named_context_of_rel_context ctx in
+  let env = EConstr.push_named_context ctx env in                                                                           (sigma, (impl_env, ((env, ctx), impls)))
 
 (** Local universe and constraint declarations. *)
 
