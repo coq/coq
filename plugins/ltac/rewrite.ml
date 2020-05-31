@@ -1903,16 +1903,19 @@ let build_morphism_signature env sigma m =
   let evd = solve_constraints env !evd in
   evd, morph
 
-let default_morphism sign m =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
+let default_morphism_env env sigma signature m =
   let t = Retyping.get_type_of env sigma m in
   let evars, _, sign, cstrs =
-    PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
+    PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst signature) (snd signature)
   in
   let evars, morph = app_poly_check env evars (PropGlobal.proper_type env) [| t; sign; m |] in
   let evars, mor = resolve_one_typeclass env (goalevars evars) morph in
     mor, proper_projection env sigma mor morph
+
+let default_morphism signature m =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  default_morphism_env env sigma signature m
 
 let add_setoid atts binders a aeq t n =
   init_setoid ();

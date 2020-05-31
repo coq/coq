@@ -118,6 +118,15 @@ val get_symmetric_proof : env -> evar_map -> constr -> constr -> evar_map * cons
 
 val get_transitive_proof : env -> evar_map -> constr -> constr -> evar_map * constr
 
+(** Lookup morphism proof for operation m in global tables.
+    For example, the proof that the addition on the real numbers
+    respects the setoid equality on the real numbers. *)
+val default_morphism_env :
+  Environ.env ->
+  Evd.evar_map ->
+  (types * constr option) option list * (types * types option) option ->
+  constr -> constr * constr
+
 val default_morphism :
   (types * constr option) option list * (types * types option) option ->
   constr -> constr * constr
