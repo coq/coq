@@ -301,10 +301,13 @@ let rec phys_path_best_match (prefix: string list) (logpath: string list) :  (st
                         | Some p -> Some (p,h::tl))
               | Some p -> Some p
 
+let fconcatl (ls: string list) : string =
+    List.fold_left Filename.concat "" ls
+
 let phys_path (logpath: string list) : string option =
-  match phys_path_best_match [] logpath with
-  | None  -> None
-  | Some (ppath, suffix) -> Some (String.concat "" (ppath::[String.concat "/" (""::suffix)]))
+  match (phys_path_best_match [] logpath) with
+  | None -> None
+  | Some (ppath, suffix) -> Some (fconcatl (ppath::suffix))
 
 let rec find_dependencies basename =
   let verbose = true in (* for past/future use? *)
