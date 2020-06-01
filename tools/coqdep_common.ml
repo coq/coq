@@ -349,12 +349,11 @@ let rec find_dependencies basename =
                       | None -> str
                       | Some pth -> pth @ str
                       in
-                  warning_module_notfound f str;
                   (if !option_compute_missing then
                     (match (phys_path str) with
                     | Some estimated_path -> add_dep (DepRequire estimated_path)
-                    | None -> ())
-                  else ())
+                    | None -> warning_module_notfound f str)
+                  else warning_module_notfound f str)
               end) strl
         | Declare sl ->
             let declare suff dir s =
