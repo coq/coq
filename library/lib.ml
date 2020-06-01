@@ -280,7 +280,7 @@ let start_mod is_type export id mp fs =
     else Nametab.exists_dir dir
   in
   if exists then
-    user_err ~hdr:"open_module" (Id.print id ++ str " already exists");
+    user_err ~hdr:"open_module" (Id.print id ++ str " already exists.");
   add_entry (make_foname id) (OpenedModule (is_type,export,prefix,fs));
   lib_state := { !lib_state with path_prefix = prefix} ;
   prefix
