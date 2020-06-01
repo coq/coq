@@ -285,18 +285,21 @@ let string_of_dependency_list suffix_for_require deps =
     in
   String.concat " " (List.map string_of_dep deps)
 
-let rec phys_path_best_match (prefix: string list) (logpath: string list) :  (string (* physical path corresponding to a prefix of logpath *) * string list (* unmatched suffix *)) option =
+(**
+    phys_path_best_match prefix logpath = Some (p,s) ->
+    [p] is the physical path corresponding to the largest matching prefix of logpath (logical path)
+    [s] is the unmatched suffix of the logical path
+*)
+let rec phys_path_best_match (prefix: string list) (logpath: string list) :  (string * string list) option =
   match logpath with
   | [] -> (match find_physpath prefix with
           | None -> None
           | Some p -> Some (p,[]))
-  | h::tl ->
-          match phys_path_best_match (prefix@[h]) tl with
-          | None -> (match find_physpath prefix with
-                    | None -> None
-                    | Some p -> Some (p,h::tl)
-                    )
-          | Some p -> Some p
+  | h::tl -> match phys_path_best_match (prefix@[h]) tl with
+             | None -> (match find_physpath prefix with
+                        | None -> None
+                        | Some p -> Some (p,h::tl))
+              | Some p -> Some p
 
 let phys_path (logpath: string list) : string option =
   match phys_path_best_match [] logpath with
