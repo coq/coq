@@ -6,6 +6,7 @@ stages:
   - stage-2 # Only dependencies in stage 1
   - stage-3 # Only dependencies in stage 1 and 2
   - stage-4 # Only dependencies in stage 1, 2 and 3
+  - stage-5 # Only dependencies in stage 1, 2, 3, and 4
   - deploy
 
 # When a job has no dependencies, it goes to stage 1.  Otherwise, we
@@ -704,12 +705,13 @@ library:ci-engine_bench:
 library:ci-fcsl_pcm:
   extends: .ci-template
 
-# We cannot use flambda due to
-# https://github.com/ocaml/ocaml/issues/7842, see
-# https://github.com/coq/coq/pull/11916#issuecomment-609977375
 library:ci-fiat_crypto:
-  extends: .ci-template
+  extends: .ci-template-flambda
   stage: stage-4
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build_ci
   needs:
   - build:edge+flambda
   - library:ci-coqprime
@@ -719,6 +721,19 @@ library:ci-fiat_crypto:
   - build:edge+flambda
   - library:ci-coqprime
   - plugin:ci-rewriter
+
+# We cannot use flambda due to
+# https://github.com/ocaml/ocaml/issues/7842, see
+# https://github.com/coq/coq/pull/11916#issuecomment-609977375
+library:ci-fiat_crypto_ocaml:
+  extends: .ci-template
+  stage: stage-5
+  needs:
+  - build:edge+flambda
+  - library:ci-fiat_crypto
+  dependencies:
+  - build:edge+flambda
+  - library:ci-fiat_crypto
 
 library:ci-flocq:
   extends: .ci-template-flambda
