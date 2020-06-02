@@ -2,6 +2,8 @@
 
 (* Main prefilter *)
 
+DECLARE PLUGIN "ssrsearch_plugin"
+
 {
 
 module CoqConstr = Constr
