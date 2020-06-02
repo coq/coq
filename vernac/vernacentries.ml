@@ -1066,10 +1066,9 @@ let vernac_end_segment ({v=id} as lid) =
 (* Libraries *)
 
 let warn_require_in_section =
-  let name = "require-in-section" in
-  let category = "deprecated" in
-  CWarnings.create ~name ~category
-    (fun () -> strbrk "Use of “Require” inside a section is deprecated.")
+  CWarnings.create ~name:"require-in-section" ~category:"fragile"
+    (fun () -> strbrk "Use of “Require” inside a section is fragile." ++ spc() ++
+               strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
 let vernac_require from import qidl =
   if Global.sections_are_opened () then warn_require_in_section ();
