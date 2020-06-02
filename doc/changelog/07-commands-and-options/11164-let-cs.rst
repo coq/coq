@@ -1,3 +1,0 @@
-- **Added:** A section variable introduced with :cmd:`Let` can be
-  declared as a :cmd:`Canonical Structure` (`#11164
-  <https://github.com/coq/coq/pull/11164>`_, by Enrico Tassi).
