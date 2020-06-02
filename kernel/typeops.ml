@@ -695,7 +695,7 @@ and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars,
     let lar'' = Array.map (annotate_succ vstar) lar' in
     let cstrnt_fix = check_fixpoint env recdeft lar'' in
     (* let cstrnt_fix_ty = _check_fixpoint_type env lar' lar'' _recursivity in *)
-    let cstrnt' = union_list [cstrnt; cstrnt_fix; (* cstrnt_fix_ty *)] in
+    let cstrnt' = union cstrnt cstrnt_fix in
 
     let rec_check_all cstrnts (alpha, vstar) = union cstrnts (rec_check alpha vstar vneq cstrnts) in
     try stg, List.fold_left rec_check_all cstrnt' (List.combine alphas vstars)
