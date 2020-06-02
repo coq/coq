@@ -167,7 +167,7 @@
 ########################################################################
 # fiat_crypto
 ########################################################################
-: "${fiat_crypto_CI_REF:=493b5fddaa39ed34e439a702892102b79bcd620d}"
+: "${fiat_crypto_CI_REF:=a841138d470f6f44c4e4afe8e18c0b56bb3a7b27}"
 : "${fiat_crypto_CI_GITURL:=https://github.com/mit-plv/fiat-crypto}"
 : "${fiat_crypto_CI_ARCHIVEURL:=${fiat_crypto_CI_GITURL}/archive}"
 
