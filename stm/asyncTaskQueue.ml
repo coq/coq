@@ -130,19 +130,23 @@ module Make(T : Task) () = struct
         (* Options to discard: 1 argument *)
         | ( "-async-proofs" | "-vio2vo" | "-o"
           | "-load-vernac-source" | "-l" | "-load-vernac-source-verbose" | "-lv"
-          | "-compile" | "-compile-verbose"
+          | "-require-import" | "-require-export" | "-ri" | "-re"
+          | "-load-vernac-object"
+          | "-set" | "-unset" | "-compat" | "-mangle-names" | "-diffs" | "-w"
           | "-async-proofs-cache" | "-async-proofs-j" | "-async-proofs-tac-j"
           | "-async-proofs-private-flags" | "-async-proofs-tactic-error-resilience"
           | "-async-proofs-command-error-resilience" | "-async-proofs-delegation-threshold"
           | "-async-proofs-worker-priority" | "-worker-id") :: _ :: tl ->
           set_slave_opt tl
+        (* Options to discard: 2 arguments *)
+        | ( "-rifrom" | "-refrom" | "-rfrom"
+          | "-require-import-from" | "-require-export-from") :: _ :: _ :: tl ->
+           set_slave_opt tl
         (* We need to pass some options with one argument *)
-        | ( "-I" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir" | "-compat"
-          | "-require-import" | "-require-export" | "-require-import-from" | "-require-export-from"
-          | "-ri" | "-re" | "-rifrom" | "-refrom" | "-load-vernac-object"
-          | "-w" | "-color" | "-init-file"
-          | "-profile-ltac-cutoff" | "-main-channel" | "-control-channel" | "-mangle-names" | "-set" | "-unset"
-          | "-diffs" | "-mangle-name" | "-dump-glob" | "-bytecode-compiler" | "-native-compiler" as x) :: a :: tl ->
+        | ( "-I" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir"
+          | "-color" | "-init-file"
+          | "-profile-ltac-cutoff" | "-main-channel" | "-control-channel"
+          | "-dump-glob" | "-bytecode-compiler" | "-native-compiler" as x) :: a :: tl ->
           x :: a :: set_slave_opt tl
         (* We need to pass some options with two arguments *)
         | ( "-R" | "-Q" as x) :: a1 :: a2 :: tl ->
