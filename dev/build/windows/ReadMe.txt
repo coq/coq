@@ -423,7 +423,7 @@ Binary file ./bin/ocpp5.exe matches
 Binary file ./lib/config/coq_config.cmo matches
 Binary file ./lib/config/coq_config.o matches
 Binary file ./lib/grammar/grammar.cma matches
-Binary file ./lib/ide/ide_win32_stubs.o matches
+Binary file ./lib/ide/coqide/ide_win32_stubs.o matches
 Binary file ./lib/lib/clib.a matches
 Binary file ./lib/lib/clib.cma matches
 Binary file ./lib/libcoqrun.a matches

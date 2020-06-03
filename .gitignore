@@ -121,14 +121,14 @@ doc/unreleased.rst
 
 coqpp/coqpp_lex.ml
 dev/ocamlweb-doc/lex.ml
-ide/coq_lex.ml
-ide/config_lexer.ml
-ide/utf8_convert.ml
+ide/coqide/coq_lex.ml
+ide/coqide/config_lexer.ml
+ide/coqide/utf8_convert.ml
 tools/coqwc.ml
 tools/coqdep_lexer.ml
 tools/ocamllibdep.ml
 tools/coqdoc/cpretty.ml
-ide/protocol/xml_lexer.ml
+ide/coqide/protocol/xml_lexer.ml
 
 # .mly files
 
@@ -143,7 +143,7 @@ plugins/ltac/coretactics.ml
 plugins/ltac/extratactics.ml
 plugins/ltac/extraargs.ml
 plugins/ltac/profile_ltac_tactics.ml
-ide/coqide_os_specific.ml
+ide/coqide/coqide_os_specific.ml
 plugins/ssrmatching/ssrmatching.ml
 plugins/ssr/ssrparser.ml
 plugins/ssr/ssrvernac.ml
@@ -155,9 +155,9 @@ kernel/byterun/coq_jumptbl.h
 kernel/genOpcodeFiles.exe
 kernel/copcodes.ml
 kernel/uint63.ml
-ide/default.bindings
-ide/default_bindings_src.exe
-ide/index_urls.txt
+ide/coqide/default.bindings
+ide/coqide/default_bindings_src.exe
+ide/coqide/index_urls.txt
 .lia.cache
 .nia.cache
 
@@ -187,4 +187,4 @@ META.coq
 *.install
 !Makefile.install
 
-ide/coqide.keys
+ide/coqide/coqide.keys

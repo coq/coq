@@ -1303,11 +1303,11 @@ function copy_coq_gtk {
     install -D -T "$PREFIXMINGW/share/glib-2.0/schemas/gschemas.compiled"        "$PREFIXCOQ/share/glib-2.0/schemas/gschemas.compiled"
 
     install_glob  "$PREFIXMINGW/share/gtksourceview-3.0/language-specs" '*'      "$PREFIXCOQ/share/gtksourceview-3.0/language-specs"
-    install -D -T "ide/coq.lang"                                                 "$PREFIXCOQ/share/gtksourceview-3.0/language-specs/coq.lang"
-    install -D -T "ide/coq-ssreflect.lang"                                       "$PREFIXCOQ/share/gtksourceview-3.0/language-specs/coq-ssreflect.lang"
+    install -D -T "ide/coqide/coq.lang"                                                 "$PREFIXCOQ/share/gtksourceview-3.0/language-specs/coq.lang"
+    install -D -T "ide/coqide/coq-ssreflect.lang"                                       "$PREFIXCOQ/share/gtksourceview-3.0/language-specs/coq-ssreflect.lang"
 
     install_glob  "$PREFIXMINGW/share/gtksourceview-3.0/styles" '*'              "$PREFIXCOQ/share/gtksourceview-3.0/styles"
-    install -D -T "ide/coq_style.xml"                                            "$PREFIXCOQ/share/gtksourceview-3.0/styles/coq_style.xml"
+    install -D -T "ide/coqide/coq_style.xml"                                            "$PREFIXCOQ/share/gtksourceview-3.0/styles/coq_style.xml"
 
     install_rec   "$PREFIXMINGW/share/themes" '*'                                "$PREFIXCOQ/share/themes"
 
@@ -1340,8 +1340,8 @@ function copy_coq_gtk {
     #   COQSHARE="$PREFIXCOQ/share/"
     # fi
 
-    # mkdir -p "$PREFIXCOQ/ide"
-    # mv "$COQSHARE"*.png  "$PREFIXCOQ/ide"
+    # mkdir -p "$PREFIXCOQ/ide/coqide"
+    # mv "$COQSHARE"*.png  "$PREFIXCOQ/ide/coqide"
     # rmdir "$PREFIXCOQ/share/coq" || true
   fi
 }
@@ -1598,7 +1598,7 @@ function make_coq_installer {
     cp ../patches/ReplaceInFile.nsh dev/nsis
     VERSION=$(grep '^VERSION=' config/Makefile | cut -d = -f 2 | tr -d '\r')
     cd dev/nsis
-    logn nsis-installer "$NSIS" -DVERSION="$VERSION" -DARCH="$ARCH" -DCOQ_SRC_PATH="$PREFIXCOQ" -DCOQ_ICON=..\\..\\ide\\coq.ico -DCOQ_ADDONS="$COQ_ADDONS" coq_new.nsi
+    logn nsis-installer "$NSIS" -DVERSION="$VERSION" -DARCH="$ARCH" -DCOQ_SRC_PATH="$PREFIXCOQ" -DCOQ_ICON=..\\..\\ide\\coqide\\coq.ico -DCOQ_ADDONS="$COQ_ADDONS" coq_new.nsi
 
     build_post
   fi
