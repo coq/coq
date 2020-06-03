@@ -353,6 +353,9 @@ windows32:
 
 lint:
   stage: stage-1
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   script: dev/lint-repository.sh
   dependencies: []
   variables:
@@ -362,6 +365,9 @@ lint:
 
 pkg:opam:
   stage: stage-1
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   interruptible: true
   # OPAM will build out-of-tree so no point in importing artifacts
   dependencies: []
@@ -379,9 +385,6 @@ pkg:opam:
 
 .nix-template:
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   stage: stage-1
   variables:
@@ -421,6 +424,9 @@ pkg:nix:deploy:
   only:
     - master
     - /^v.*\..*$/
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
 
 pkg:nix:deploy:channel:
   extends: .deploy-template
@@ -445,8 +451,11 @@ pkg:nix:deploy:channel:
 pkg:nix:
   extends: .nix-template
   except:
-    - master
-    - /^v.*\..*$/
+    refs:
+      - master
+      - /^v.*\..*$/
+    variables:
+      - $ONLY_WINDOWS == "true"
 
 doc:refman:
   extends: .doc-template
@@ -552,6 +561,10 @@ test-suite:edge+flambda:
 
 test-suite:edge:dune:dev:
   stage: stage-2
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
+  interruptible: true
   dependencies:
     - build:edge+flambda:dune:dev
   needs:
@@ -572,6 +585,10 @@ test-suite:edge:dune:dev:
 
 test-suite:edge+4.11+trunk+dune:
   stage: stage-1
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
+  interruptible: true
   dependencies: []
   script:
     - opam switch create 4.11.0 --empty
@@ -854,6 +871,10 @@ plugin:ci-perennial:
 
 plugin:plugin-tutorial:
   stage: stage-1
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
+  interruptible: true
   dependencies: []
   script:
     - ./configure -local -warn-error yes
