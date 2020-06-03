@@ -4,3 +4,7 @@
  (public_name coq.stm)
  (wrapped false)
  (libraries vernac))
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))

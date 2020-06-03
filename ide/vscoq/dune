@@ -1,0 +1,23 @@
+;(library
+; (name core)
+; (public_name vscoq-server.core)
+; (wrapped false)
+; (modules document)
+; (libraries coq.lib))
+
+(executable
+ (name vscoqtop)
+ (public_name vscoqtop.opt)
+ (package vscoq-server)
+ (modules vscoqtop)
+ (libraries coq.toplevel yojson lwt)
+ (link_flags -linkall))
+
+(install
+ (section bin)
+ (package vscoq-server)
+ (files (vscoqtop.bc as vscoqtop.byte)))
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))

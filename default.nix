@@ -43,7 +43,7 @@ stdenv.mkDerivation rec {
     hostname
     python3 time # coq-makefile timing tools
   ]
-  ++ (with ocamlPackages; [ ocaml findlib ])
+  ++ (with ocamlPackages; [ ocaml findlib yojson ])
   ++ optionals buildIde [
     ocamlPackages.lablgtk3-sourceview3
     glib gnome3.defaultIconTheme wrapGAppsHook

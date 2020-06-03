@@ -85,7 +85,7 @@ states:
 NONDOC_INSTALL_TARGETS:=coq.install coqide-server.install coqide.install
 
 world:
-	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)
+	dune build --profile=release $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)
 
 watch:
 	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS) -w
