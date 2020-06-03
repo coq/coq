@@ -119,13 +119,6 @@ val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Proof.t
 (** XXX: This is an internal, low-level API and could become scheduled
    for removal from the public API, use higher-level declare APIs
    instead *)
-type variable_declaration =
-  | SectionLocalDef of Evd.side_effects proof_entry
-  | SectionLocalAssum of { typ:types; impl:Glob_term.binding_kind; }
-
-(** XXX: This is an internal, low-level API and could become scheduled
-   for removal from the public API, use higher-level declare APIs
-   instead *)
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry
   | ParameterEntry of parameter_entry
@@ -134,7 +127,8 @@ type 'a constant_entry =
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
-  -> variable_declaration
+  -> typ:types
+  -> impl:Glob_term.binding_kind
   -> unit
 
 (** Declaration of global constructions

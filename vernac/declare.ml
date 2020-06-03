@@ -554,7 +554,7 @@ let objVariable : unit Libobject.Dyn.tag =
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
-let declare_variable ~name ~kind d =
+let declare_variable_core ~name ~kind d =
   (* Variables are distinguished by only short names *)
   if Decls.variable_exists name then
     raise (DeclareUniv.AlreadyDeclared (None, name));
@@ -590,6 +590,9 @@ let declare_variable ~name ~kind d =
   ignore(Lib.add_leaf name (inVariable ()) : Libobject.object_name);
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
+
+let declare_variable ~name ~kind ~typ ~impl =
+  declare_variable_core ~name ~kind (SectionLocalAssum { typ; impl })
 
 (* Declaration messages *)
 
@@ -913,7 +916,7 @@ let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
   let ubind = UState.universe_binders uctx in
   let dref = match scope with
   | Discharge ->
-    let () = declare_variable ~name ~kind (SectionLocalDef entry) in
+    let () = declare_variable_core ~name ~kind (SectionLocalDef entry) in
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
   | Global local ->
