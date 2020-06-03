@@ -9,8 +9,6 @@
 (************************************************************************)
 
 open Names
-open Constr
-open Entries
 
 (** This module provides the functions to declare new
    variables, parameters, constants and inductive types in the global
@@ -303,9 +301,9 @@ type 'a proof_entry
 val definition_entry
   :  ?opaque:bool
   -> ?inline:bool
-  -> ?types:types
+  -> ?types:Constr.types
   -> ?univs:Entries.universes_entry
-  -> constr
+  -> Constr.constr
   -> Evd.side_effects proof_entry
 
 (** XXX: This is an internal, low-level API and could become scheduled
@@ -325,7 +323,7 @@ val declare_entry
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
-  -> typ:types
+  -> typ:Constr.types
   -> impl:Glob_term.binding_kind
   -> unit
 
@@ -337,8 +335,8 @@ val declare_variable
    instead *)
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry
-  | ParameterEntry of parameter_entry
-  | PrimitiveEntry of primitive_entry
+  | ParameterEntry of Entries.parameter_entry
+  | PrimitiveEntry of Entries.primitive_entry
 
 val prepare_parameter
   : poly:bool
@@ -430,20 +428,20 @@ val prepare_obligation
 
 module Obls : sig
 
-type 'a obligation_body = DefinedObl of 'a | TermObl of constr
+type 'a obligation_body = DefinedObl of 'a | TermObl of Constr.constr
 
 module Obligation : sig
   type t = private
     { obl_name : Id.t
-    ; obl_type : types
+    ; obl_type : Constr.types
     ; obl_location : Evar_kinds.t Loc.located
-    ; obl_body : pconstant obligation_body option
+    ; obl_body : Constr.pconstant obligation_body option
     ; obl_status : bool * Evar_kinds.obligation_definition_status
     ; obl_deps : Int.Set.t
     ; obl_tac : unit Proofview.tactic option }
 
   val set_type : typ:Constr.types -> t -> t
-  val set_body : body:pconstant obligation_body -> t -> t
+  val set_body : body:Constr.pconstant obligation_body -> t -> t
 end
 
 type obligations = {obls : Obligation.t array; remaining : int}
