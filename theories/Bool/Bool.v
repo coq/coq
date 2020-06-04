@@ -740,6 +740,8 @@ Hint Resolve absurd_eq_true : core.
 (* A specific instance of eq_trans, useful for [eauto], but too strong
 to keep compatibility. *)
 
+#[deprecated(since="8.12",
+note="Use the trans_eq lemma or transitivity tactic instead.")]
 Lemma trans_eq_bool : forall x y z:bool, x = y -> y = z -> x = z.
 Proof.
   apply eq_trans.
