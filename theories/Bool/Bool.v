@@ -737,14 +737,13 @@ Proof.
 Qed.
 Hint Resolve absurd_eq_true : core.
 
-(* A specific instance of eq_trans that preserves compatibility with
-   old hint bool_2 *)
+(* A specific instance of eq_trans, useful for [eauto], but too strong
+to keep compatibility. *)
 
 Lemma trans_eq_bool : forall x y z:bool, x = y -> y = z -> x = z.
 Proof.
   apply eq_trans.
 Qed.
-Hint Resolve trans_eq_bool : core.
 
 (***************************************)
 (** * Reflection of [bool] into [Prop] *)
