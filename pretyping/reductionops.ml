@@ -723,7 +723,7 @@ let debug_RAKAM =
     ~key:["Debug";"RAKAM"]
     ~value:false
 
-let rec whd_state_gen flags env sigma =
+let rec whd_state_gen ~local flags env sigma =
   let open Context.Named.Declaration in
   let rec whrec (x, stack) : state =
     let () = if debug_RAKAM () then
@@ -741,11 +741,11 @@ let rec whd_state_gen flags env sigma =
       ((EConstr.of_kind c0, stack))
     in
     match c0 with
-    | Rel n when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
+    | Rel n when not local && CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
       (match lookup_rel n env with
       | LocalDef (_,body,_) -> whrec (lift n body, stack)
       | _ -> fold ())
-    | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
+    | Var id when not local && CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
       (match lookup_named id env with
       | LocalDef (_,body,_) ->
         whrec (body, stack)
@@ -758,7 +758,7 @@ let rec whd_state_gen flags env sigma =
     | Const (c,u as const) ->
       reduction_effect_hook env sigma c
          (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,stack))));
-      if CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) then
+      if not local && CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) then
        let u' = EInstance.kind sigma u in
        match constant_value_in env (c, u') with
        | body ->
@@ -790,7 +790,7 @@ let rec whd_state_gen flags env sigma =
         apply_subst (fun _ -> whrec) [] sigma x stack
       | None when CClosure.RedFlags.red_set flags CClosure.RedFlags.fETA ->
         let env' = push_rel (LocalAssum (na, t)) env in
-        let whrec' = whd_state_gen flags env' sigma in
+        let whrec' = whd_state_gen ~local flags env' sigma in
         (match EConstr.kind sigma (Stack.zip sigma (whrec' (c, Stack.empty))) with
         | App (f,cl) ->
           let napp = Array.length cl in
@@ -871,84 +871,11 @@ let rec whd_state_gen flags env sigma =
   whrec
 
 (** reduction machine without global env and refold machinery *)
-let local_whd_state_gen flags _env sigma =
-  let rec whrec (x, stack) =
-    let c0 = EConstr.kind sigma x in
-    let s = (EConstr.of_kind c0, stack) in
-    match c0 with
-    | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
-      stacklam whrec [b] sigma c stack
-    | Cast (c,_,_) -> whrec (c, stack)
-    | App (f,cl)  -> whrec (f, Stack.append_app cl stack)
-    | Lambda (_,_,c) ->
-      (match Stack.decomp stack with
-      | Some (a,m) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
-        stacklam whrec [a] sigma c m
-      | None when CClosure.RedFlags.red_set flags CClosure.RedFlags.fETA ->
-        (match EConstr.kind sigma (Stack.zip sigma (whrec (c, Stack.empty))) with
-        | App (f,cl) ->
-          let napp = Array.length cl in
-          if napp > 0 then
-            let x', l' = whrec (Array.last cl, Stack.empty) in
-            match EConstr.kind sigma x', l' with
-            | Rel 1, [] ->
-              let lc = Array.sub cl 0 (napp-1) in
-              let u = if Int.equal napp 1 then f else mkApp (f,lc) in
-              if noccurn sigma 1 u then (pop u,Stack.empty) else s
-            | _ -> s
-          else s
-        | _ -> s)
-      | _ -> s)
-
-    | Proj (p,c) when CClosure.RedFlags.red_projection flags p ->
-      (whrec (c, Stack.Proj (p) :: stack))
-
-    | Case (ci,p,iv,d,lf) ->
-      whrec (d, Stack.Case (ci,p,iv,lf) :: stack)
-
-    | Fix ((ri,n),_ as f) ->
-      (match Stack.strip_n_app ri.(n) stack with
-      |None -> s
-      |Some (bef,arg,s') -> whrec (arg, Stack.Fix(f,bef)::s'))
-
-    | Evar ev -> s
-    | Meta ev ->
-      (match safe_meta_value sigma ev with
-        Some c -> whrec (c,stack)
-      | None -> s)
-
-    | Construct ((ind,c),u) ->
-      let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
-      let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
-      if use_match || use_fix then
-        match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, _, lf)::s') when use_match ->
-          whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
-        |args, (Stack.Proj (p) :: s') when use_match ->
-          whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
-        |args, (Stack.Fix (f,s')::s'') when use_fix ->
-          let x' = Stack.zip sigma (x,args) in
-          whrec (contract_fix sigma f, s' @ (Stack.append_app [|x'|] s''))
-        |_, (Stack.App _)::_ -> assert false
-        |_, _ -> s
-      else s
-
-    | CoFix cofix ->
-      if CClosure.RedFlags.red_set flags CClosure.RedFlags.fCOFIX then
-        match Stack.strip_app stack with
-        |args, ((Stack.Case _ | Stack.Proj _)::s') ->
-          whrec (contract_cofix sigma cofix, stack)
-        |_ -> s
-      else s
-
-    | Rel _ | Var _ | Sort _ | Prod _ | LetIn _ | Const _  | Ind _ | Proj _
-      | Int _ | Float _ | Array _ -> s
-
-  in
-  whrec
+let local_whd_state_gen flags env sigma s =
+  whd_state_gen ~local:true flags env sigma s
 
 let raw_whd_state_gen flags env =
-  let f sigma s = whd_state_gen flags env sigma s in
+  let f sigma s = whd_state_gen ~local:false flags env sigma s in
   f
 
 let stack_red_of_state_red f =
@@ -958,7 +885,7 @@ let stack_red_of_state_red f =
 (* Drops the Cst_stack *)
 let iterate_whd_gen flags env sigma s =
   let rec aux t =
-  let (hd,sk) = whd_state_gen flags env sigma (t,Stack.empty) in
+  let (hd,sk) = whd_state_gen ~local:false flags env sigma (t,Stack.empty) in
   let whd_sk = Stack.map aux sk in
   Stack.zip sigma (hd,whd_sk)
   in aux s
@@ -1393,7 +1320,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
     | _ -> None
   in
   let rec whrec s =
-    let (t, stack as s) = whd_state_gen CClosure.betaiota env sigma s in
+    let (t, stack as s) = whd_state_gen ~local:false CClosure.betaiota env sigma s in
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
         begin match whd_opt (t, args) with

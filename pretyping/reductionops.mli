@@ -128,7 +128,7 @@ val strong_with_flags :
 val strong : reduction_function -> reduction_function
 
 val whd_state_gen :
-  CClosure.RedFlags.reds -> Environ.env -> Evd.evar_map -> state -> state
+  local:bool -> CClosure.RedFlags.reds -> Environ.env -> Evd.evar_map -> state -> state
 
 val iterate_whd_gen : CClosure.RedFlags.reds ->
   Environ.env -> Evd.evar_map -> constr -> constr
