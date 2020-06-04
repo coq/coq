@@ -723,7 +723,7 @@ let debug_RAKAM =
     ~key:["Debug";"RAKAM"]
     ~value:false
 
-let rec whd_state_gen ~local flags env sigma =
+let rec whd_state_gen flags env sigma =
   let open Context.Named.Declaration in
   let rec whrec (x, stack) : state =
     let () = if debug_RAKAM () then
@@ -741,11 +741,11 @@ let rec whd_state_gen ~local flags env sigma =
       ((EConstr.of_kind c0, stack))
     in
     match c0 with
-    | Rel n when not local && CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
+    | Rel n when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
       (match lookup_rel n env with
       | LocalDef (_,body,_) -> whrec (lift n body, stack)
       | _ -> fold ())
-    | Var id when not local && CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
+    | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
       (match lookup_named id env with
       | LocalDef (_,body,_) ->
         whrec (body, stack)
@@ -758,7 +758,7 @@ let rec whd_state_gen ~local flags env sigma =
     | Const (c,u as const) ->
       reduction_effect_hook env sigma c
          (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,stack))));
-      if not local && CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) then
+      if CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) then
        let u' = EInstance.kind sigma u in
        match constant_value_in env (c, u') with
        | body ->
@@ -790,7 +790,7 @@ let rec whd_state_gen ~local flags env sigma =
         apply_subst (fun _ -> whrec) [] sigma x stack
       | None when CClosure.RedFlags.red_set flags CClosure.RedFlags.fETA ->
         let env' = push_rel (LocalAssum (na, t)) env in
-        let whrec' = whd_state_gen ~local flags env' sigma in
+        let whrec' = whd_state_gen flags env' sigma in
         (match EConstr.kind sigma (Stack.zip sigma (whrec' (c, Stack.empty))) with
         | App (f,cl) ->
           let napp = Array.length cl in
@@ -870,12 +870,8 @@ let rec whd_state_gen ~local flags env sigma =
   in
   whrec
 
-(** reduction machine without global env and refold machinery *)
-let local_whd_state_gen flags env sigma s =
-  whd_state_gen ~local:true flags env sigma s
-
 let raw_whd_state_gen flags env =
-  let f sigma s = whd_state_gen ~local:false flags env sigma s in
+  let f sigma s = whd_state_gen flags env sigma s in
   f
 
 let stack_red_of_state_red f =
@@ -885,7 +881,7 @@ let stack_red_of_state_red f =
 (* Drops the Cst_stack *)
 let iterate_whd_gen flags env sigma s =
   let rec aux t =
-  let (hd,sk) = whd_state_gen ~local:false flags env sigma (t,Stack.empty) in
+  let (hd,sk) = whd_state_gen flags env sigma (t,Stack.empty) in
   let whd_sk = Stack.map aux sk in
   Stack.zip sigma (hd,whd_sk)
   in aux s
@@ -895,17 +891,17 @@ let red_of_state_red f env sigma x =
 
 (* 0. No Reduction Functions *)
 
-let whd_nored_state = local_whd_state_gen CClosure.nored
+let whd_nored_state = whd_state_gen CClosure.nored
 let whd_nored_stack = stack_red_of_state_red whd_nored_state
 let whd_nored = red_of_state_red whd_nored_state
 
 (* 1. Beta Reduction Functions *)
 
-let whd_beta_state = local_whd_state_gen CClosure.beta
+let whd_beta_state = whd_state_gen CClosure.beta
 let whd_beta_stack = stack_red_of_state_red whd_beta_state
 let whd_beta = red_of_state_red whd_beta_state
 
-let whd_betalet_state = local_whd_state_gen CClosure.betazeta
+let whd_betalet_state = whd_state_gen CClosure.betazeta
 let whd_betalet_stack = stack_red_of_state_red whd_betalet_state
 let whd_betalet = red_of_state_red whd_betalet_state
 
@@ -921,11 +917,11 @@ let whd_betadeltazeta = red_of_state_red whd_betadeltazeta_state
 
 (* 3. Iota reduction Functions *)
 
-let whd_betaiota_state = local_whd_state_gen CClosure.betaiota
+let whd_betaiota_state = whd_state_gen CClosure.betaiota
 let whd_betaiota_stack = stack_red_of_state_red whd_betaiota_state
 let whd_betaiota = red_of_state_red whd_betaiota_state
 
-let whd_betaiotazeta_state = local_whd_state_gen CClosure.betaiotazeta
+let whd_betaiotazeta_state = whd_state_gen CClosure.betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
 let whd_betaiotazeta = red_of_state_red whd_betaiotazeta_state
 
@@ -941,11 +937,11 @@ let whd_allnolet = red_of_state_red whd_allnolet_state
 
 let shrink_eta env c =
   let evd = Evd.from_env env in
-  Stack.zip evd (local_whd_state_gen eta env evd (c,Stack.empty))
+  Stack.zip evd (whd_state_gen eta env evd (c,Stack.empty))
 
 (* 5. Zeta Reduction Functions *)
 
-let whd_zeta_state = local_whd_state_gen CClosure.zeta
+let whd_zeta_state = whd_state_gen CClosure.zeta
 let whd_zeta_stack = stack_red_of_state_red whd_zeta_state
 let whd_zeta = red_of_state_red whd_zeta_state
 
@@ -1320,7 +1316,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
     | _ -> None
   in
   let rec whrec s =
-    let (t, stack as s) = whd_state_gen ~local:false CClosure.betaiota env sigma s in
+    let (t, stack as s) = whd_state_gen CClosure.betaiota env sigma s in
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
         begin match whd_opt (t, args) with
