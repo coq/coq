@@ -127,10 +127,10 @@ list of assertion commands is given in :ref:`Assertions`. The command
 
    .. warning::
 
-      The use of this command is discouraged.  In particular, it is
-      known to not work in Proof General because this command must
-      immediately follow the command that opened the proof mode, but
-      Proof General inserts :cmd:`Unset` :flag:`Silent` before (see
+      Use of this command is discouraged.  In particular, it
+      doesn't work in Proof General because it must
+      immediately follow the command that opened proof mode, but
+      Proof General inserts :cmd:`Unset` :flag:`Silent` before it (see
       `Proof General issue #498
       <https://github.com/ProofGeneral/PG/issues/498>`_).
 
