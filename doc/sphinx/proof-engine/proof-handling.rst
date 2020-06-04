@@ -125,6 +125,15 @@ list of assertion commands is given in :ref:`Assertions`. The command
    That is, you have to give the full proof in one gulp, as a
    proof term (see Section :ref:`applyingtheorems`).
 
+   .. warning::
+
+      The use of this command is discouraged.  In particular, it is
+      known to not work in Proof General because this command must
+      immediately follow the command that opened the proof mode, but
+      Proof General inserts :cmd:`Unset` :flag:`Silent` before (see
+      `Proof General issue #498
+      <https://github.com/ProofGeneral/PG/issues/498>`_).
+
 .. cmd:: Proof
 
    Is a no-op which is useful to delimit the sequence of tactic commands
