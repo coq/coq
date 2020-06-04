@@ -58,7 +58,8 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=elpi ^
     -addon=HB
 ) ELSE (
-  SET "EXTRA_ADDONS= "
+  SET EXTRA_ADDONS=^
+    -addon=coquelicot
 )
 
 call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
