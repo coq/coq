@@ -1814,7 +1814,7 @@ function make_addon_coquelicot {
   installer_addon_dependency_end
   if build_prep_overlay coquelicot; then
     installer_addon_section coquelicot "Coquelicot" "Coq library for real analysis" ""
-    logn autogen ./autogen.sh
+    log1 autoreconf -i -s
     logn configure ./configure --libdir="$PREFIXCOQ/lib/coq/user-contrib/Coquelicot"
     logn remake ./remake
     logn remake-install ./remake install
