@@ -220,7 +220,7 @@ class CoqObject(ObjectDescription):
         self.indexnode['entries'].append(('single', index_text, target, '', None))
 
     def add_target_and_index(self, names, _, signode):
-        """Attach a link target to `signode` and an index entries for `names`.
+        """Attach a link target to `signode` and index entries for `names`.
         This is only called (from ``ObjectDescription.run``) if ``:noindex:`` isn't specified."""
         if names:
             for name in names:
@@ -235,15 +235,6 @@ class CoqObject(ObjectDescription):
 
         A node may have either one signature with no name, multiple signatures
         with one name per signatures, or one signature with multiple names.
-
-        (That last case isn't ideal; in the Sphinx tradition, it would be better
-        to have one signature per name, like this:
-
-        .. cmd:: Definition …
-                 Fact …
-                 Lemma …
-                 …
-           :name: Definition; Fact; Lemma; …)
         """
         sigs = self.get_signatures()
         names = self.options.get("name")
