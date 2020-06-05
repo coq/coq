@@ -76,6 +76,11 @@ Specification language, type inference
   Anomaly which could be raised when printing binders with implicit types
   (`#12323 <https://github.com/coq/coq/pull/12323>`_,
   by Hugo Herbelin; fixes `#12322 <https://github.com/coq/coq/pull/12322>`_).
+- **Fixed:**
+  Case of an anomaly in trying to infer the return clause of an ill-typed :g:`match`
+  (`#12422 <https://github.com/coq/coq/pull/12422>`_,
+  fixes `#12418 <https://github.com/coq/coq/pull/12418>`_,
+  by Hugo Herbelin).
 
 Notations
 ^^^^^^^^^
@@ -440,6 +445,11 @@ Commands
   Several commands (:cmd:`Search`, :cmd:`About`, ...) now print the
   implicit arguments in brackets when printing types (`#11795
   <https://github.com/coq/coq/pull/11795>`_, by Simon Boulier).
+- **Changed:** The warning when using :cmd:`Require` inside a section
+  moved from the ``deprecated`` category to the ``fragile`` category,
+  because there is no plan to remove the functionality at this time
+  (`#11972 <https://github.com/coq/coq/pull/11972>`_, by Gaëtan
+  Gilbert).
 - **Changed:**
   :cmd:`Redirect` now obeys the :opt:`Printing Width` and
   :opt:`Printing Depth` options
