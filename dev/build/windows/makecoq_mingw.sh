@@ -921,6 +921,69 @@ function make_gtk_sourceview3 {
   build_conf_make_inst  https://download.gnome.org/sources/gtksourceview/3.24  gtksourceview-3.24.11  tar.xz  make_arch_pkg_config
 }
 
+##### FLEXDLL FLEXLINK #####
+
+# Note: there is a circular dependency between flexlink and ocaml (resolved in Ocaml 4.03.)
+# For MinGW it is not even possible to first build an Ocaml without flexlink support,
+# Because Makefile.nt doesn't support this. So we have to use a binary flexlink.
+# One could of cause do a bootstrap run ...
+
+# Install flexdll objects
+
+function install_flexdll {
+  cp flexdll.h "$PREFIXMINGW/include"
+  if [ "$TARGET_ARCH" == "i686-w64-mingw32" ]; then
+    cp flexdll*_mingw.o "/usr/$TARGET_ARCH/bin"
+    cp flexdll*_mingw.o "$PREFIXOCAML/bin"
+  elif [ "$TARGET_ARCH" == "x86_64-w64-mingw32" ]; then
+    cp flexdll*_mingw64.o "/usr/$TARGET_ARCH/bin"
+    cp flexdll*_mingw64.o "$PREFIXOCAML/bin"
+  else
+    echo "Unknown target architecture"
+    return 1
+  fi
+}
+
+# Install flexlink
+
+function install_flexlink {
+  cp flexlink.exe "/usr/$TARGET_ARCH/bin"
+
+  cp flexlink.exe "$PREFIXOCAML/bin"
+}
+
+# Get binary flexdll flexlink for building OCaml
+# An alternative is to first build an OCaml without shared library support and build flexlink with it
+
+function get_flex_dll_link_bin {
+  if build_prep https://github.com/alainfrisch/flexdll/releases/download/0.37/ flexdll-bin-0.37 zip 1 ; then
+    install_flexdll
+    install_flexlink
+    build_post
+  fi
+}
+
+# Build flexdll and flexlink from sources after building OCaml
+
+function make_flex_dll_link {
+  if build_prep https://github.com/alainfrisch/flexdll/archive 0.37 tar.gz 1 flexdll-0.37 ; then
+    if [ "$TARGET_ARCH" == "i686-w64-mingw32" ]; then
+      # shellcheck disable=SC2086
+      log1 make $MAKE_OPT build_mingw flexlink.exe
+    elif [ "$TARGET_ARCH" == "x86_64-w64-mingw32" ]; then
+      # shellcheck disable=SC2086
+      log1 make $MAKE_OPT build_mingw64 flexlink.exe
+    else
+      echo "Unknown target architecture"
+      return 1
+    fi
+    install_flexdll
+    install_flexlink
+    log2 make clean
+    build_post
+  fi
+}
+
 ##### LN replacement #####
 
 # Note: this does support symlinks, but symlinks require special user rights on Windows.
@@ -953,22 +1016,39 @@ function make_arch_pkg_config {
 ##### OCAML #####
 
 function make_ocaml {
-  if build_prep https://github.com/ocaml/ocaml/archive 4.08.1 tar.gz 1 ocaml-4.08.1 ; then
-    # see https://github.com/ocaml/ocaml/blob/4.08/README.win32.adoc
+  get_flex_dll_link_bin
+  if build_prep https://github.com/ocaml/ocaml/archive 4.07.1 tar.gz 1 ocaml-4.07.1 ; then
+    # See README.win32.adoc
+    cp config/m-nt.h byterun/caml/m.h
+    cp config/s-nt.h byterun/caml/s.h
+    if [ "$TARGET_ARCH" == "i686-w64-mingw32" ]; then
+        cp config/Makefile.mingw config/Makefile
+    elif [ "$TARGET_ARCH" == "x86_64-w64-mingw32" ]; then
+        cp config/Makefile.mingw64 config/Makefile
+    else
+        echo "Unknown target architecture"
+        return 1
+    fi
 
-    # get flexdll sources into folder ./flexdll
-    get_expand_source_tar https://github.com/alainfrisch/flexdll/archive 0.37 tar.gz 1 flexdll-0.37 flexdll
+    # Prefix is fixed in make file - replace it with the real one
+    # TODO: this might not work if PREFIX contains spaces
+    sed -i "s|^PREFIX=.*|PREFIX=$PREFIXOCAML|" config/Makefile
 
     # We don't want to mess up Coq's directory structure so put the OCaml library in a separate folder
-    logn configure ./configure --build=i686-pc-cygwin --host="$TARGET_ARCH" --prefix="$PREFIXOCAML" --libdir="$PREFIXOCAML/libocaml"
+    # If we refer to the make variable ${PREFIX} below, camlp5 ends up having the wrong path:
+    # D:\bin\coq64_buildtest_abs_ocaml4\bin>ocamlc -where => D:/bin/coq64_buildtest_abs_ocaml4/libocaml
+    # D:\bin\coq64_buildtest_abs_ocaml4\bin>camlp4 -where => ${PREFIX}/libocaml\camlp4
+    # So we put an explicit path in there
+    sed -i "s|^LIBDIR=.*|LIBDIR=$PREFIXOCAML/libocaml|" config/Makefile
 
-    log2 make flexdll $MAKE_OPT
-    # Note the next command might change after 4.09.x to just make
-    # see        https://github.com/ocaml/ocaml/blob/4.09/README.win32.adoc
-    # compare to https://github.com/ocaml/ocaml/blob/4.10/README.win32.adoc
-    log2 make world.opt $MAKE_OPT
-    log2 make flexlink.opt $MAKE_OPT
-    log2 make install $MAKE_OPT
+    # Note: ocaml doesn't support -j 8, so don't pass MAKE_OPT
+    # I verified that 4.02.3 still doesn't support parallel build
+    log2 make world -f Makefile.nt
+    log2 make bootstrap -f Makefile.nt
+    log2 make opt -f Makefile.nt
+    log2 make opt.opt -f Makefile.nt
+    log2 make install -f Makefile.nt
+    # TODO log2 make clean -f Makefile.nt Temporarily disabled for ocamlbuild development
 
     # Move license files and other into into special folder
     if [ "$INSTALLMODE" == "absolute" ] || [ "$INSTALLMODE" == "relocatable" ]; then
@@ -994,6 +1074,7 @@ EOT
 
     build_post
   fi
+  make_flex_dll_link
 }
 
 ##### OCAML EXTRA TOOLS #####
@@ -1027,7 +1108,7 @@ function make_num {
 
 function make_ocamlbuild {
   make_ocaml
-  if build_prep https://github.com/ocaml/ocamlbuild/archive 0.14.0 tar.gz 1 ocamlbuild-0.14.0; then
+  if build_prep https://github.com/ocaml/ocamlbuild/archive 0.12.0 tar.gz 1 ocamlbuild-0.12.0; then
     log2 make configure OCAML_NATIVE=true OCAMLBUILD_PREFIX=$PREFIXOCAML OCAMLBUILD_BINDIR=$PREFIXOCAML/bin OCAMLBUILD_LIBDIR=$PREFIXOCAML/lib
     log1 make $MAKE_OPT
     log2 make install
@@ -1040,7 +1121,6 @@ function make_ocamlbuild {
 function make_findlib {
   make_ocaml
   make_ocamlbuild
-  # Note: latest is 1.8.1 but http://projects.camlcity.org/projects/dl/findlib-1.8.1/doc/README says this is for OCaml 4.09
   if build_prep https://opam.ocaml.org/1.2.2/archives ocamlfind.1.8.0+opam tar.gz 1 ; then
     logn configure ./configure -bindir "$PREFIXOCAML\\bin" -sitelib "$PREFIXOCAML\\libocaml\\site-lib" -config "$PREFIXOCAML\\etc\\findlib.conf"
     # Note: findlib doesn't support -j 8, so don't pass MAKE_OPT
