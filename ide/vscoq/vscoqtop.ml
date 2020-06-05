@@ -148,32 +148,6 @@ let textDocumentDidSave params =
   send_highlights uri new_doc;
   publish_diagnostics uri new_doc
 
-(*
-let mk_hypothesis env sigma decl =
-  let ids, pbody, typ = match decl with
-    | CompactedDecl.LocalAssum (ids, typ) ->
-       ids, mt (), typ
-    | CompactedDecl.LocalDef (ids,c,typ) ->
-       (* Force evaluation *)
-       let pb = pr_lconstr_env ~inctx:true env sigma c in
-       let pb = if isCast c then surround pb else pb in
-       ids, (str" := " ++ pb ++ cut ()), typ
-  in
-  let pids = prlist_with_sep pr_comma (fun id -> pr_id id.binder_name) ids in
-  let pt = pr_ltype_env env sigma typ in
-  let ptyp = (str" : " ++ pt) in
-  hov 0 (pids ++ pbody ++ ptyp)
-
-let mk_hypothesis d (env,l) =
-  let d' = CompactedDecl.to_named_context d in
-    (List.fold_right Environ.push_named d' env,
-     (pr_compacted_decl env sigma d) :: l) in
-identifiers
-type
-body
-diff
-*)
-
 let mk_goal sigma g =
   let env = Goal.V82.env sigma g in
   let min_env = Environ.reset_context env in
