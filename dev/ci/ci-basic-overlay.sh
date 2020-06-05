@@ -311,11 +311,13 @@
 : "${reduction_effects_CI_ARCHIVEURL:=${reduction_effects_CI_GITURL}/archive}"
 
 ########################################################################
-# menhirlib
+# menhir and menhirlib
 ########################################################################
-: "${menhirlib_CI_REF:=master}"
-: "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/coq-menhirlib}"
-: "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
+# The latest release is from one week ago, should be compatible with
+# Coq 8.12.
+: "${menhir_CI_REF:=20200525}"
+: "${menhir_CI_GITURL:=https://gitlab.inria.fr/fpottier/menhir}"
+: "${menhir_CI_ARCHIVEURL:=${menhir_CI_GITURL}/-/archive}"
 
 ########################################################################
 # aac_tactics

@@ -1168,10 +1168,11 @@ function make_menhir {
   make_findlib
   make_ocamlbuild
   # This is the version required by latest CompCert
-  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20190626 menhir-20190626 tar.gz 1 ; then
-    # Note: menhir doesn't support -j 8, so don't pass MAKE_OPT
-    log2 make all PREFIX="$PREFIXOCAML"
-    log2 make install PREFIX="$PREFIXOCAML"
+  if build_prep_overlay menhir; then
+    log2 dune build -p menhirLib,menhirSdk,menhir
+    log2 dune install menhirLib
+    log2 dune install menhirSdk
+    log2 dune install menhir
     build_post
   fi
 }
@@ -1807,10 +1808,10 @@ function make_addon_menhir {
 
 function make_addon_menhirlib {
   installer_addon_dependency menhirlib
-  if build_prep_overlay menhirlib; then
+  if build_prep_overlay menhir; then
     installer_addon_section menhirlib "Menhirlib" "Coq support library for using Menhir generated parsers in Coq" ""
     # The supplied makefiles don't work in any way on cygwin
-    cd src
+    cd coq-menhirlib/src
     echo -R . MenhirLib > _CoqProject
     ls -1 *.v >> _CoqProject
     log1 coq_makefile -f _CoqProject -o Makefile.coq
