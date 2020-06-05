@@ -9,6 +9,7 @@ Eqschemes
 Elimschemes
 Genredexpr
 Redops
+Cbn
 Redexpr
 Ppred
 Tactics

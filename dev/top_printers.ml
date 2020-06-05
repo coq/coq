@@ -169,7 +169,6 @@ let pp_idpred s = pp (pr_idpred s)
 let pp_cpred s = pp (pr_cpred s)
 let pp_transparent_state s = pp (pr_transparent_state s)
 let pp_stack_t n = pp (Reductionops.Stack.pr (EConstr.of_constr %> pr_econstr) n)
-let pp_cst_stack_t n = pp (Reductionops.Cst_stack.pr Global.(env()) Evd.empty n)
 let pp_state_t n = pp (Reductionops.pr_state Global.(env()) Evd.empty n)
 
 (* proof printers *)

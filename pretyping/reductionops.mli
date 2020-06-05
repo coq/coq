@@ -19,6 +19,11 @@ open Environ
 
 exception Elimconst
 
+val debug_RAKAM : unit -> bool
+
+module CredNative : Primred.RedNative with
+  type elem = EConstr.t and type args = EConstr.t array and type evd = Evd.evar_map
+
 (** Machinery to customize the behavior of the reduction *)
 module ReductionBehaviour : sig
 
@@ -46,41 +51,17 @@ val set_reduction_effect : Constant.t -> effect_name -> unit
 val reduction_effect_hook : Environ.env -> Evd.evar_map -> Constant.t ->
   Constr.constr Lazy.t -> unit
 
-(** {6 Machinery about a stack of unfolded constant }
-
-    cst applied to params must convertible to term of the state applied to args
-*)
-module Cst_stack : sig
-  type t
-  val empty : t
-  val add_param : constr -> t -> t
-  val add_args : constr array -> t -> t
-  val add_cst : constr -> t -> t
-  val best_cst : t -> (constr * constr list) option
-  val best_replace : Evd.evar_map -> constr -> t -> constr -> constr
-  val reference : Evd.evar_map -> t -> Constant.t option
-  val pr : env -> Evd.evar_map -> t -> Pp.t
-end
-
 module Stack : sig
   type 'a app_node
 
   val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
-  type cst_member =
-    | Cst_const of pconstant
-    | Cst_proj of Projection.t
-
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * Cst_stack.t
-  | Proj of Projection.t * Cst_stack.t
-  | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
-  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
-  | Cst of cst_member
-           * int (* current foccussed arg *)
-           * int list (* remaining args *)
-    * 'a t * Cst_stack.t
+  | Case of case_info * 'a * 'a array
+  | Proj of Projection.t
+  | Fix of ('a, 'a) pfixpoint * 'a t
+  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
   and 'a t = 'a member list
 
   val pr : ('a -> Pp.t) -> 'a t -> Pp.t
@@ -119,8 +100,7 @@ module Stack : sig
   val tail : int -> 'a t -> 'a t
   val nth : 'a t -> int -> 'a
 
-  val best_state : evar_map -> constr * constr t -> Cst_stack.t -> constr * constr t
-  val zip : ?refold:bool -> evar_map -> constr * constr t -> constr
+  val zip : evar_map -> constr * constr t -> constr
 end
 
 (************************************************************************)
@@ -155,10 +135,10 @@ val stack_reduction_of_reduction :
 i*)
 val stacklam : (state -> 'a) -> constr list -> evar_map -> constr -> constr Stack.t -> 'a
 
-val whd_state_gen : ?csts:Cst_stack.t -> refold:bool -> tactic_mode:bool ->
-  CClosure.RedFlags.reds -> Environ.env -> Evd.evar_map -> state -> state * Cst_stack.t
+val whd_state_gen :
+  CClosure.RedFlags.reds -> Environ.env -> Evd.evar_map -> state -> state
 
-val iterate_whd_gen : bool -> CClosure.RedFlags.reds ->
+val iterate_whd_gen : CClosure.RedFlags.reds ->
   Environ.env -> Evd.evar_map -> constr -> constr
 
 (** {6 Generic Optimized Reduction Function using Closures } *)
@@ -260,7 +240,7 @@ val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EI
 val is_arity : env ->  evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 
-val contract_fix : ?env:Environ.env -> evar_map -> ?reference:Constant.t -> fixpoint -> constr
+val contract_fix : evar_map -> fixpoint -> constr
 val fix_recarg : ('a, 'a) pfixpoint -> 'b Stack.t -> (int * 'b) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)

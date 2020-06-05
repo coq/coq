@@ -487,7 +487,7 @@ let expand_table_key env = function
   | RelKey _ -> None
 
 let unfold_projection env p stk =
-  let s = Stack.Proj (p, Cst_stack.empty) in
+  let s = Stack.Proj p in
   s :: stk
 
 let expand_key ts env sigma = function

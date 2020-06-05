@@ -44,11 +44,7 @@ let cbv_native env sigma c =
     (warn_native_compute_disabled ();
      cbv_vm env sigma c)
 
-let whd_cbn flags env sigma t =
-  let (state,_) =
-    (whd_state_gen ~refold:true ~tactic_mode:true flags env sigma (t,Reductionops.Stack.empty))
-  in
-  Reductionops.Stack.zip ~refold:true sigma state
+let whd_cbn = Cbn.whd_cbn
 
 let strong_cbn flags =
   strong_with_flags whd_cbn flags
