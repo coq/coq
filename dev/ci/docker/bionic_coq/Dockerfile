@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2020-05-19-V33"
+# CACHEKEY: "bionic_coq-V2020-05-24-V1"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -13,8 +13,7 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         libgtksourceview-3.0-dev \
         # Dependencies of stdlib and sphinx doc
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
-        xindy python3-pip python3-setuptools python3-pexpect python3-bs4 \
-        fonts-freefont-otf \
+        python3-pip python3-setuptools python3-pexpect python3-bs4 fonts-freefont-otf \
         # Dependencies of source-doc and coq-makefile
         texlive-science tipa
 
