@@ -20,11 +20,11 @@ type ast = Vernacexpr.vernac_control
 type state
 (** Execution state, includes the cache *)
 
-type progress_hook = state -> unit
+type progress_hook = state -> unit Lwt.t
 
 val init : Vernacstate.t -> state
 
-val observe : progress_hook -> schedule -> sentence_id -> state -> state
+val observe : progress_hook -> schedule -> sentence_id -> state -> state Lwt.t
 val query : sentence_id -> state -> ast -> state
 
 val invalidate : schedule -> sentence_id -> state -> state

@@ -455,7 +455,7 @@ type document = {
   more_to_parse : bool;
 }
 
-type progress_hook = document -> unit
+type progress_hook = document -> unit Lwt.t
 
 let parsed_ranges doc = ParsedDoc.parsed_ranges doc.raw_doc doc.parsed_doc
 
@@ -638,9 +638,10 @@ let apply_text_edits document edits =
     let executed_loc = Option.map (min parsed_loc) document.executed_loc in
     { document with parsed_loc; executed_loc }
 
-let interpret_to_loc ~after ?(progress_hook=fun doc -> ()) doc loc =
+let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) doc loc : (document * proof_data) Lwt.t =
   log @@ "Interpreting to loc " ^ string_of_int loc;
   let rec make_progress doc =
+    let open Lwt.Infix in
     let doc = validate_document doc in
     log @@ ParsedDoc.to_string doc.parsed_doc;
     (** We jump to the sentence before the position, otherwise jumping to the
@@ -648,10 +649,10 @@ let interpret_to_loc ~after ?(progress_hook=fun doc -> ()) doc loc =
     executing the sentence, which is unnatural. *)
     let find = if after then ParsedDoc.find_sentence else ParsedDoc.find_sentence_before in
     match find doc.parsed_doc loc with
-    | None -> (* document is empty *) (doc, None)
+    | None -> (* document is empty *) Lwt.return (doc, None)
     | Some { id; stop; start } ->
       let progress_hook st = progress_hook { doc with execution_state = st; executed_loc = Some stop } in
-      let st = ExecutionManager.observe progress_hook (ParsedDoc.schedule doc.parsed_doc) id doc.execution_state in
+      ExecutionManager.observe progress_hook (ParsedDoc.schedule doc.parsed_doc) id doc.execution_state >>= fun st ->
       log @@ "Observed " ^ Stateid.to_string id;
       let doc = { doc with execution_state = st } in
       if doc.parsed_loc < loc && doc.more_to_parse then
@@ -662,7 +663,7 @@ let interpret_to_loc ~after ?(progress_hook=fun doc -> ()) doc loc =
         | None -> None
         | Some pv -> let pos = RawDoc.position_of_loc doc.raw_doc stop in Some (pv, pos)
       in
-      { doc with executed_loc }, proof_data
+      Lwt.return ({ doc with executed_loc }, proof_data)
   in
   make_progress doc
 
@@ -672,13 +673,13 @@ let interpret_to_position ?progress_hook doc pos =
 
 let interpret_to_previous doc =
   match doc.executed_loc with
-  | None -> doc, None
+  | None -> Lwt.return (doc, None)
   | Some loc ->
     interpret_to_loc ~after:false doc (loc-1)
 
 let interpret_to_next doc =
   match doc.executed_loc with
-  | None -> doc, None
+  | None -> Lwt.return (doc, None)
   | Some stop ->
     interpret_to_loc ~after:true doc (stop+1)
 

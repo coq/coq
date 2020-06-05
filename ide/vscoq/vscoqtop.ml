@@ -29,30 +29,31 @@ let log msg = Format.eprintf "@[%s@]@\n%!" msg
 
 let string_field name obj = Yojson.Basic.to_string (List.assoc name obj)
 
-let read_request ic =
-  let header = input_line ic in
+let read_request ic : Yojson.Basic.t Lwt.t =
+  let open Lwt.Infix in
+  Lwt_io.read_line ic >>= fun header ->
   let scan_header = Scanf.Scanning.from_string header in
-  let obj_str =
-    Scanf.bscanf scan_header "Content-Length: %d\r" (fun size ->
-        let buf = Bytes.create size in
-        (* Discard a second newline *)
-        let _ = input_line ic in
-        really_input ic buf 0 size;
-        Bytes.to_string buf
-      ) in
+  Scanf.bscanf scan_header "Content-Length: %d" (fun size ->
+      let buf = Bytes.create size in
+      (* Discard a second newline *)
+      Lwt_io.read_line ic >>= fun _ ->
+      Lwt_io.read_into_exactly ic buf 0 size >>= fun () ->
+      Lwt.return @@ Bytes.to_string buf
+    ) >>= fun obj_str ->
   log @@ "received: " ^ obj_str;
-  Yojson.Basic.from_string obj_str
+  Lwt.return @@ Yojson.Basic.from_string obj_str
 
-let output_json obj =
+let output_json obj : unit Lwt.t =
   let msg  = Yojson.Basic.pretty_to_string ~std:true obj in
   let size = String.length msg in
-  Format.printf "Content-Length: %d\r\n\r\n%s%!" size msg;
-  log @@ "replied: " ^ msg
+  let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
+  log @@ "replied: " ^ msg;
+  Lwt_io.write Lwt_io.stdout s
 
 let mk_notification ~event ~params = `Assoc ["jsonrpc", `String "2.0"; "method", `String event; "params", params]
 let mk_response ~id ~result = `Assoc ["jsonrpc", `String "2.0"; "id", `Int id; "result", result]
 
-let do_initialize ~id =
+let do_initialize ~id : unit Lwt.t =
   let capabilities = `Assoc [
     "textDocumentSync", `Int 2 (* Incremental *)
   ]
@@ -78,7 +79,7 @@ let mk_range range =
     "end", mk_loc range.range_end;
   ]
 
-let publish_diagnostics uri doc =
+let publish_diagnostics uri doc : unit Lwt.t =
   let mk_diagnostic d =
     `Assoc [
       "range", mk_range d.range;
@@ -94,7 +95,7 @@ let publish_diagnostics uri doc =
   in
   output_json @@ mk_notification ~event:"textDocument/publishDiagnostics" ~params
 
-let send_highlights uri doc =
+let send_highlights uri doc : unit Lwt.t =
   let executed_ranges = List.map mk_range @@ DocumentManager.executed_ranges doc in
   let params = `Assoc [
     "uri", `String uri;
@@ -108,19 +109,21 @@ let send_highlights uri doc =
   in
   output_json @@ mk_notification ~event:"coqtop/updateHighlights" ~params
 
-let textDocumentDidOpen params =
+let textDocumentDidOpen params : unit Lwt.t =
   let open Yojson.Basic.Util in
+  let open Lwt.Infix in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let text = textDocument |> member "text" |> to_string in
   let document = create_document (get_init_state ()) text in
   Hashtbl.add documents uri document;
-  send_highlights uri document;
+  send_highlights uri document <&>
   publish_diagnostics uri document
 
 
-let textDocumentDidChange params =
+let textDocumentDidChange params : unit Lwt.t =
   let open Yojson.Basic.Util in
+  let open Lwt.Infix in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let contentChanges = params |> member "contentChanges" |> to_list in
@@ -135,17 +138,18 @@ let textDocumentDidChange params =
   let document = Hashtbl.find documents uri in
   let new_doc = DocumentManager.apply_text_edits document textEdits in
   Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc;
+  send_highlights uri new_doc <&>
   publish_diagnostics uri new_doc
 
-let textDocumentDidSave params =
+let textDocumentDidSave params : unit Lwt.t =
   let open Yojson.Basic.Util in
+  let open Lwt.Infix in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let document = Hashtbl.find documents uri in
   let new_doc = DocumentManager.validate_document document in
   Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc;
+  send_highlights uri new_doc <&>
   publish_diagnostics uri new_doc
 
 let mk_goal sigma g =
@@ -194,82 +198,88 @@ let mk_proofview loc Proof.{ goals; shelf; given_up; sigma } =
     "focus", mk_loc loc
   ]
 
-let progress_hook uri doc =
-  send_highlights uri doc;
+let progress_hook uri doc : unit Lwt.t =
+  let open Lwt.Infix in
+  send_highlights uri doc <&>
   publish_diagnostics uri doc
 
-let coqtopInterpretToPoint ~id params =
+let coqtopInterpretToPoint ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
+  let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let loc = params |> member "location" |> parse_loc in
   let document = Hashtbl.find documents uri in
   let progress_hook = progress_hook uri in
-  let new_doc, proof = DocumentManager.interpret_to_position ~progress_hook document loc in
+  DocumentManager.interpret_to_position ~progress_hook document loc >>= fun (new_doc, proof) ->
   Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc;
-  publish_diagnostics uri new_doc;
+  send_highlights uri new_doc <&>
+  publish_diagnostics uri new_doc <&>
   match proof with
-  | None -> ()
+  | None -> Lwt.return ()
   | Some (proofview, pos) ->
     let result = mk_proofview pos proofview in
     output_json @@ mk_response ~id ~result
 
-let coqtopStepBackward ~id params =
+let coqtopStepBackward ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
+  let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let document = Hashtbl.find documents uri in
-  let new_doc, proof = DocumentManager.interpret_to_previous document in
+  DocumentManager.interpret_to_previous document >>= fun (new_doc, proof) ->
   Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc;
-  publish_diagnostics uri new_doc;
+  send_highlights uri new_doc <&>
+  publish_diagnostics uri new_doc <&>
   match proof with
-  | None -> ()
+  | None -> Lwt.return ()
   | Some (proofview, pos) ->
     let result = mk_proofview pos proofview in
     output_json @@ mk_response ~id ~result
 
-let coqtopStepForward ~id params =
+let coqtopStepForward ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
+  let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let document = Hashtbl.find documents uri in
-  let new_doc, proof = DocumentManager.interpret_to_next document in
+  DocumentManager.interpret_to_next document >>= fun (new_doc, proof) ->
   Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc;
-  publish_diagnostics uri new_doc;
+  send_highlights uri new_doc <&>
+  publish_diagnostics uri new_doc <&>
   match proof with
-  | None -> ()
+  | None -> Lwt.return ()
   | Some (proofview, pos) ->
     let result = mk_proofview pos proofview in
     output_json @@ mk_response ~id ~result
 
-let coqtopResetCoq ~id params =
+let coqtopResetCoq ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
+  let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let document = Hashtbl.find documents uri in
   let new_doc = DocumentManager.reset (get_init_state ()) document in
   Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc;
+  send_highlights uri new_doc <&>
   publish_diagnostics uri new_doc
 
-let coqtopInterpretToEnd ~id params =
+let coqtopInterpretToEnd ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
+  let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let document = Hashtbl.find documents uri in
   let progress_hook = progress_hook uri in
-  let new_doc, proof = DocumentManager.interpret_to_end ~progress_hook document in
+  DocumentManager.interpret_to_end ~progress_hook document >>= fun (new_doc, proof) ->
   Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc;
-  publish_diagnostics uri new_doc;
+  send_highlights uri new_doc <&>
+  publish_diagnostics uri new_doc <&>
   match proof with
-  | None -> ()
+  | None -> Lwt.return ()
   | Some (proofview, pos) ->
     let result = mk_proofview pos proofview in
     output_json @@ mk_response ~id ~result
 
-let dispatch_method ~id method_name params =
+let dispatch_method ~id method_name params : unit Lwt.t =
   match method_name with
   | "initialize" -> do_initialize ~id
-  | "initialized" -> ()
+  | "initialized" -> Lwt.return ()
   | "textDocument/didOpen" -> textDocumentDidOpen params
   | "textDocument/didChange" -> textDocumentDidChange params
   | "textDocument/didSave" -> textDocumentDidSave params
@@ -278,7 +288,7 @@ let dispatch_method ~id method_name params =
   | "coqtop/stepForward" -> coqtopStepForward ~id params
   | "coqtop/resetCoq" -> coqtopResetCoq ~id params
   | "coqtop/interpretToEnd" -> coqtopInterpretToEnd ~id params
-  | _ -> log @@ "Ignoring call to unknown method: " ^ method_name
+  | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; Lwt.return ()
 
 
 let vscoqtop_specific_usage = Usage.{
@@ -305,15 +315,16 @@ let loop run_mode ~opts:_ state =
   init_state := Some (Vernacstate.freeze_interp_state ~marshallable:false);
   let rec loop () =
     let open Yojson.Basic.Util in
-    let req = read_request stdin in
+    let open Lwt.Infix in
+    read_request Lwt_io.stdin >>= fun req ->
     let id = Option.default 0 (req |> member "id" |> to_int_option) in
     let method_name = req |> member "method" |> to_string in
     let params = req |> member "params" in
     log @@ "received request: " ^ method_name;
-    dispatch_method ~id method_name params;
+    dispatch_method ~id method_name params <&>
     loop ()
   in
-  try loop ()
+  try Lwt_main.run @@ loop ()
   with exn ->
     let bt = Printexc.get_backtrace () in
     log Printexc.(to_string exn);

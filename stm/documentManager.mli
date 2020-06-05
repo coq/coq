@@ -33,7 +33,7 @@ type text_edit = range * string
 
 type proof_data = (Proof.data * position) option
 
-type progress_hook = document -> unit
+type progress_hook = document -> unit Lwt.t
 
 val apply_text_edits : document -> text_edit list -> document
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The
@@ -45,19 +45,19 @@ val validate_document : document -> document
     text of [doc] has not changed since the last call to [validate_document], it
     has no effect. *)
 
-val interpret_to_position : ?progress_hook:progress_hook -> document -> position -> document * proof_data
+val interpret_to_position : ?progress_hook:progress_hook -> document -> position -> (document * proof_data) Lwt.t
 (** [interpret_to_position doc pos] navigates to the last sentence ending
     before or at [pos] and returns the proofview from the resulting state. *)
 
-val interpret_to_previous : document -> document * proof_data
+val interpret_to_previous : document -> (document * proof_data) Lwt.t
 (** [interpret_to_previous doc] navigates to the previous sentence in [doc]
     and returns the proofview from the resulting state. *)
 
-val interpret_to_next : document -> document * proof_data
+val interpret_to_next : document -> (document * proof_data) Lwt.t
 (** [interpret_to_next doc] navigates to the next sentence in [doc]
     and returns the proofview from the resulting state. *)
 
-val interpret_to_end : ?progress_hook:progress_hook -> document -> document * proof_data
+val interpret_to_end : ?progress_hook:progress_hook -> document -> (document * proof_data) Lwt.t
 (** [interpret_to_next doc] navigates to the last sentence in [doc]
     and returns the proofview from the resulting state. *)
 

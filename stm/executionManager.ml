@@ -27,7 +27,7 @@ type state = {
   cache : execution_status SM.t;
 }
 
-type progress_hook = state -> unit
+type progress_hook = state -> unit Lwt.t
 
 let init vernac_state = {
     initial = vernac_state;
@@ -71,7 +71,7 @@ let execute st task =
     end
   | _ -> CErrors.anomaly Pp.(str "task not supported yet")
 
-let observe progress_hook schedule id st =
+let observe progress_hook schedule id st : state Lwt.t =
   log @@ "Observe " ^ Stateid.to_string id;
   let rec build_tasks id tasks =
     begin match SM.find_opt id st.cache with
@@ -98,13 +98,15 @@ let observe progress_hook schedule id st =
   let tasks = build_tasks id [] in
   let interrupted = ref false in
   let execute st task =
-    if !interrupted then st
-    else try
+    let open Lwt.Infix in
+    if !interrupted then Lwt.return st
+    else
+    try
       let st = execute st task in
-      progress_hook st; st
-    with Sys.Break -> (interrupted := true; st)
+      progress_hook st >>= fun () -> Lwt.return st
+    with Sys.Break -> (interrupted := true; Lwt.return st)
   in
-  List.fold_left execute st tasks
+  Lwt_list.fold_left_s execute st tasks
 
 let errors st =
   List.fold_left (fun acc (id, status) -> match status with Error ((loc,e),_st) -> (id,loc,e) :: acc | _ -> acc)
