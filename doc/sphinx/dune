@@ -1,4 +1,4 @@
-(dirs :standard _static)
+(dirs :standard _static _templates)
 
 (rule
  (targets README.gen.rst)
