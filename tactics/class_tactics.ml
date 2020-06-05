@@ -516,25 +516,21 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
   let is_class = iscl env cty in
   let keep = not only_classes || is_class in
     if keep then
-      let c = mkVar id in
-      let name = PathHints [GlobRef.VarRef id] in
+      let id = GlobRef.VarRef id in
+      let name = PathHints [id] in
       let hints =
         if is_class then
-          let hints = build_subclasses ~check:false env sigma (GlobRef.VarRef id) empty_hint_info in
+          let hints = build_subclasses ~check:false env sigma id empty_hint_info in
             (List.map_append
              (fun (path,info,c) ->
               let h = IsConstr (EConstr.of_constr c,Univ.ContextSet.empty) [@ocaml.warning "-3"] in
               make_resolves env sigma ~name:(PathHints path)
-                  (true,false,not !Flags.quiet) info ~poly:false
+                  (true,false,not !Flags.quiet) info ~check:true ~poly:false
                  h)
                hints)
         else []
       in
-        (hints @ List.map_filter
-         (fun f -> try Some (f (c, cty, Univ.ContextSet.empty))
-           with Failure _ | UserError _ -> None)
-         [make_exact_entry ~name env sigma pri ~poly:false;
-          make_apply_entry ~name env sigma flags pri ~poly:false])
+        (hints @ make_resolves env sigma flags pri ~name ~check:false ~poly:false (IsGlobRef id))
     else []
 
 let make_hints g (modes,st) only_classes sign =

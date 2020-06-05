@@ -206,36 +206,6 @@ val add_hints : locality:Goptions.option_locality -> hint_db_name list -> hints_
 val prepare_hint : bool (* Check no remaining evars *) ->
   env -> evar_map -> evar_map * constr -> (constr * Univ.ContextSet.t)
 
-(** [make_exact_entry info (c, ctyp, ctx)].
-   [c] is the term given as an exact proof to solve the goal;
-   [ctyp] is the type of [c].
-   [ctx] is its (refreshable) universe context.
-   In info:
-   [hint_priority] is the hint's desired priority, it is 0 if unspecified
-   [hint_pattern] is the hint's desired pattern, it is inferred if not specified
-*)
-
-val make_exact_entry : env -> evar_map -> hint_info -> poly:bool -> ?name:hints_path_atom ->
-  (constr * types * Univ.ContextSet.t) -> hint_entry
-
-(** [make_apply_entry (eapply,hnf,verbose) info (c,cty,ctx))].
-   [eapply] is true if this hint will be used only with EApply;
-   [hnf] should be true if we should expand the head of cty before searching for
-   products;
-   [c] is the term given as an exact proof to solve the goal;
-   [cty] is the type of [c].
-   [ctx] is its (refreshable) universe context.
-   In info:
-   [hint_priority] is the hint's desired priority, it is computed as the number of products in [cty]
-   if unspecified
-   [hint_pattern] is the hint's desired pattern, it is inferred from the conclusion of [cty]
-   if not specified
-*)
-
-val make_apply_entry :
-  env -> evar_map -> bool * bool * bool -> hint_info -> poly:bool -> ?name:hints_path_atom ->
-  (constr * types * Univ.ContextSet.t) -> hint_entry
-
 (** A constr which is Hint'ed will be:
    - (1) used as an Exact, if it does not start with a product
    - (2) used as an Apply, if its HNF starts with a product, and
@@ -244,7 +214,7 @@ val make_apply_entry :
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool * bool -> hint_info -> poly:bool -> ?name:hints_path_atom ->
+  env -> evar_map -> bool * bool * bool -> hint_info -> check:bool -> poly:bool -> ?name:hints_path_atom ->
   hint_term -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].
