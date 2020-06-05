@@ -1880,7 +1880,7 @@ function make_addon_quickchick {
 function make_addon_flocq {
   if build_prep_overlay flocq; then
     installer_addon_section flocq "Flocq" "Coq library for floating point arithmetic" ""
-    log1 autoconf
+    log1 autoreconf
     logn configure ./configure
     logn remake ./remake --jobs=$MAKE_THREADS
     logn install ./remake install
@@ -1899,7 +1899,7 @@ function make_addon_interval {
   installer_addon_dependency_end
   if build_prep_overlay interval; then
     installer_addon_section interval "Interval" "Coq library and tactic for proving real inequalities" ""
-    logn autogen ./autogen.sh
+    log1 autoreconf
     logn configure ./configure
     logn remake ./remake --jobs=$MAKE_THREADS
     logn install ./remake install
@@ -1947,7 +1947,7 @@ function make_addon_gappa {
   installer_addon_dependency_end
   if build_prep_overlay gappa_plugin ; then
     installer_addon_section gappa "Gappa plugin" "Coq plugin for the Gappa tool" ""
-    logn autogen ./autogen.sh
+    log1 autoreconf
     logn configure ./configure
     logn remake ./remake
     logn install ./remake install
