@@ -67,25 +67,26 @@ let execute st task =
 let observe progress_hook schedule id st =
   log @@ "Observe " ^ Stateid.to_string id;
   let rec build_tasks id tasks =
-    let (base_id, task as todo) = task_for_sentence schedule id in
-    match base_id with
-    | None -> (* task should be executed in initial state *)
-      todo :: tasks
-    | Some base_id ->
-      begin match SM.find_opt base_id st.cache with
-      | Some (Success vernac_st) ->
-        (* We reached an already computed state *)
-        log @@ "Reached computed state " ^ Stateid.to_string base_id;
-        todo::tasks
-      | Some Executing -> CErrors.anomaly Pp.(str "depending on a state that is being executed")
-      | Some (Error _) ->
-        (* We try to be resilient to an error *)
-        log @@ "Error resiliency on state " ^ Stateid.to_string base_id;
-        todo::tasks
-      | None ->
-        log @@ "Non-computed state " ^ Stateid.to_string base_id;
+    begin match SM.find_opt id st.cache with
+    | Some (Success vernac_st) ->
+      (* We reached an already computed state *)
+      log @@ "Reached computed state " ^ Stateid.to_string id;
+      tasks
+    | Some Executing -> CErrors.anomaly Pp.(str "depending on a state that is being executed")
+    | Some (Error _) ->
+      (* We try to be resilient to an error *)
+      log @@ "Error resiliency on state " ^ Stateid.to_string id;
+      tasks
+    | None ->
+      log @@ "Non-computed state " ^ Stateid.to_string id;
+      let (base_id, task as todo) = task_for_sentence schedule id in
+      begin match base_id with
+      | None -> (* task should be executed in initial state *)
+        todo :: tasks
+      | Some base_id ->
         build_tasks base_id (todo::tasks)
       end
+    end
   in
   let tasks = build_tasks id [] in
   let execute st task =
