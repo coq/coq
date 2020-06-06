@@ -242,6 +242,30 @@ let coqtopStepForward ~id params =
     let result = mk_proofview pos proofview in
     output_json @@ mk_response ~id ~result
 
+let coqtopResetCoq ~id params =
+  let open Yojson.Basic.Util in
+  let uri = params |> member "uri" |> to_string in
+  let document = Hashtbl.find documents uri in
+  let new_doc = DocumentManager.reset (get_init_state ()) document in
+  Hashtbl.replace documents uri new_doc;
+  send_highlights uri new_doc;
+  publish_diagnostics uri new_doc
+
+let coqtopInterpretToEnd ~id params =
+  let open Yojson.Basic.Util in
+  let uri = params |> member "uri" |> to_string in
+  let document = Hashtbl.find documents uri in
+  let progress_hook = progress_hook uri in
+  let new_doc, proof = DocumentManager.interpret_to_end ~progress_hook document in
+  Hashtbl.replace documents uri new_doc;
+  send_highlights uri new_doc;
+  publish_diagnostics uri new_doc;
+  match proof with
+  | None -> ()
+  | Some (proofview, pos) ->
+    let result = mk_proofview pos proofview in
+    output_json @@ mk_response ~id ~result
+
 let dispatch_method ~id method_name params =
   match method_name with
   | "initialize" -> do_initialize ~id
@@ -252,6 +276,8 @@ let dispatch_method ~id method_name params =
   | "coqtop/interpretToPoint" -> coqtopInterpretToPoint ~id params
   | "coqtop/stepBackward" -> coqtopStepBackward ~id params
   | "coqtop/stepForward" -> coqtopStepForward ~id params
+  | "coqtop/resetCoq" -> coqtopResetCoq ~id params
+  | "coqtop/interpretToEnd" -> coqtopInterpretToEnd ~id params
   | _ -> log @@ "Ignoring call to unknown method: " ^ method_name
 
 

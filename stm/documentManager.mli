@@ -57,6 +57,10 @@ val interpret_to_next : document -> document * proof_data
 (** [interpret_to_next doc] navigates to the next sentence in [doc]
     and returns the proofview from the resulting state. *)
 
+val interpret_to_end : ?progress_hook:progress_hook -> document -> document * proof_data
+(** [interpret_to_next doc] navigates to the last sentence in [doc]
+    and returns the proofview from the resulting state. *)
+
 val parsed_ranges : document -> range list
 (** parsed_ranges [doc] returns the ranges corresponding to the sentences
     that have been parsed in [doc]. *)
@@ -64,6 +68,8 @@ val parsed_ranges : document -> range list
 val executed_ranges : document -> range list
 (** parsed_ranges [doc] returns the ranges corresponding to the sentences
     that have been executed in [doc]. *)
+
+val reset : Vernacstate.t -> document -> document
 
 type severity =
   | Warning

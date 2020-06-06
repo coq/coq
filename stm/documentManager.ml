@@ -98,6 +98,7 @@ module RawDoc : sig
 
   val position_of_loc : t -> int -> position
   val loc_of_position : t -> position -> int
+  val end_loc : t -> int
 
   val range_of_loc : t -> Loc.t -> range
 
@@ -128,6 +129,9 @@ end = struct
 
   let loc_of_position raw { line; char } =
     raw.lines.(line) + char
+
+  let end_loc raw =
+    String.length raw.text
 
   let range_of_loc raw loc =
     { range_start = position_of_loc raw loc.Loc.bp;
@@ -638,3 +642,16 @@ let interpret_to_next doc =
   | None -> doc, None
   | Some (_,stop) ->
     interpret_to_loc ~after:true doc (stop+1)
+
+let interpret_to_end ?progress_hook doc =
+  interpret_to_loc ~after:false ?progress_hook doc (RawDoc.end_loc doc.raw_doc)
+
+let reset vernac_state doc =
+  let execution_state = ExecutionManager.init vernac_state in
+  validate_document
+    { doc with validated_pos = -1;
+      parsed_doc = ParsedDoc.empty;
+      more_to_parse = true;
+      execution_state;
+      current_range = None;
+    }
