@@ -99,6 +99,17 @@ let errors st =
   List.fold_left (fun acc (id, status) -> match status with Error ((loc,e),_st) -> (id,loc,e) :: acc | _ -> acc)
     [] @@ SM.bindings st.cache
 
+let shift_locs st pos offset =
+  let shift_error status = match status with
+  | Error ((Some loc,e),st) ->
+    let (start,stop) = Loc.unloc loc in
+    if start >= pos then Error ((Some (Loc.shift_loc offset offset loc),e),st)
+    else if stop >= pos then Error ((Some (Loc.shift_loc 0 offset loc),e),st)
+    else status
+  | _ -> status
+  in
+  { st with cache = SM.map shift_error st.cache }
+
 let executed_ids st =
   SM.fold (fun id status acc -> match status with Success _ | Error _ -> id :: acc | _ -> acc) st.cache []
 

@@ -104,7 +104,7 @@ module RawDoc : sig
 
   type edit = range * string
 
-  val apply_text_edit : t -> edit -> t
+  val apply_text_edit : t -> edit -> t * int
 
 end = struct
 
@@ -147,7 +147,9 @@ end = struct
     let after = String.sub raw.text range_end (String.length raw.text - range_end) in
     let new_text = before ^ editText ^ after in (* FIXME avoid concatenation *)
     let new_lines = compute_lines new_text in (* FIXME compute this incrementally *)
-    { text = new_text; lines = new_lines }
+    let old_length = range_end - range_start in
+    let shift = String.length editText - old_length in
+    { text = new_text; lines = new_lines }, shift
 
 end
 
@@ -373,14 +375,20 @@ end = struct
       match ov with
       | None -> before
       | Some (stop,v) when Int.equal stop loc ->
-        LM.add (stop + offset) { v with start = v.start + offset } before
+        LM.add (stop + offset) { v with stop = v.stop + offset } before
       | Some (stop,v) ->
         LM.add (stop + offset) v before
     in
     let sentences_by_end =
-      LM.fold (fun stop v acc -> LM.add (stop + offset) { v with start = v.start + offset } acc) after res
+      LM.fold (fun stop v acc -> LM.add (stop + offset) { v with start = v.start + offset; stop = v.stop + offset } acc) after res
     in
-    { parsed with sentences_by_end }
+    let shift_sentence s =
+      if s.start >= loc then { s with start = s.start + offset; stop = s.stop + offset }
+      else if s.stop >= loc then { s with stop = s.stop + offset }
+      else s
+    in
+    let sentences_by_id = SM.map shift_sentence parsed.sentences_by_id in
+    { parsed with sentences_by_end; sentences_by_id }
 
   let previous_sentence parsed id =
     let current = SM.find id parsed.sentences_by_id in
@@ -450,12 +458,14 @@ let executed_ranges doc =
   | Some loc ->
     ParsedDoc.executed_ranges doc.raw_doc doc.parsed_doc doc.execution_state loc
 
-let diagnostics doc = let exec_errors = ExecutionManager.errors doc.execution_state in
-       log @@ "exec errors in diags: " ^ string_of_int (List.length exec_errors); let mk_exec_diag (id,oloc,message) =
-      ParsedDoc.make_diagnostic doc.raw_doc doc.parsed_doc id oloc message Error
-    in
-    let exec_diags = List.map mk_exec_diag exec_errors in
-    ParsedDoc.parse_errors doc.raw_doc doc.parsed_doc @ exec_diags
+let diagnostics doc =
+  let exec_errors = ExecutionManager.errors doc.execution_state in
+  log @@ "exec errors in diags: " ^ string_of_int (List.length exec_errors);
+  let mk_exec_diag (id,oloc,message) =
+    ParsedDoc.make_diagnostic doc.raw_doc doc.parsed_doc id oloc message Error
+  in
+  let exec_diags = List.map mk_exec_diag exec_errors in
+  ParsedDoc.parse_errors doc.raw_doc doc.parsed_doc @ exec_diags
 
 let rec stream_tok n_tok acc (str,loc_fn) begin_line begin_char =
   let e = Stream.next str in
@@ -600,15 +610,25 @@ let create_document vernac_state text =
       execution_state;
     }
 
-let apply_text_edits ({ parsed_loc; raw_doc; parsed_doc; execution_state; executed_loc } as document) edits =
+let apply_text_edit document edit =
+  let loc = RawDoc.loc_of_position document.raw_doc (fst edit).range_end in
+  let raw_doc, offset = RawDoc.apply_text_edit document.raw_doc edit in
+  log @@ "Edit offset " ^ string_of_int offset;
+  let parsed_doc = ParsedDoc.shift_sentences document.parsed_doc loc offset in
+  let execution_state = ExecutionManager.shift_locs document.execution_state loc offset in
+  { document with raw_doc; parsed_doc; execution_state }
+
+let apply_text_edits document edits =
   match edits with
   | [] -> document
   | _ ->
-    let top_edit : int = RawDoc.loc_of_position raw_doc @@ top_edit_position edits in
-    let raw_doc = List.fold_left RawDoc.apply_text_edit raw_doc edits in
-    let parsed_loc = min top_edit parsed_loc in
-    let executed_loc = Option.map (min parsed_loc) executed_loc in
-    { document with raw_doc; parsed_loc; executed_loc }
+    let top_edit : int = RawDoc.loc_of_position document.raw_doc @@ top_edit_position edits in
+    (* FIXME is top_edit_position correct with multiple edits? Shouldn't it be
+       computed as part of the fold below? *)
+    let document = List.fold_left apply_text_edit document edits in
+    let parsed_loc = min top_edit document.parsed_loc in
+    let executed_loc = Option.map (min parsed_loc) document.executed_loc in
+    { document with parsed_loc; executed_loc }
 
 let interpret_to_loc ~after ?(progress_hook=fun doc -> ()) doc loc =
   log @@ "Interpreting to loc " ^ string_of_int loc;
