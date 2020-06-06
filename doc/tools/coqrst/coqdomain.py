@@ -13,7 +13,10 @@ Currently geared towards Coq's manual, rather than Coq source files, but one
 could imagine extending it.
 """
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=missing-type-doc, missing-param-doc
+# pylint: disable=missing-return-type-doc, missing-return-doc
+# pylint: disable=too-few-public-methods, too-many-ancestors, arguments-differ
+# pylint: disable=import-outside-toplevel, abstract-method, too-many-lines
 
 import os
 import re
@@ -34,6 +37,7 @@ from sphinx.roles import XRefRole
 from sphinx.util.docutils import ReferenceRole
 from sphinx.util.logging import getLogger, get_node_location
 from sphinx.util.nodes import set_source_info, set_role_source_info, make_refnode
+from sphinx.writers.latex import LaTeXTranslator
 
 from . import coqdoc
 from .repl import ansicolors
@@ -41,6 +45,20 @@ from .repl.coqtop import CoqTop, CoqTopError
 from .notations.parsing import ParseError
 from .notations.sphinx import sphinxify
 from .notations.plain import stringify_with_ellipses
+
+# FIXME: Patch this in Sphinx
+# https://github.com/coq/coq/issues/12361
+def visit_desc_signature(self, node):
+    hyper = ''
+    if node.parent['objtype'] != 'describe' and node['ids']:
+        for id in node['ids']:
+            hyper += self.hypertarget(id)
+    self.body.append(hyper)
+    if not node.get('is_multiline'):
+        self._visit_signature_line(node)
+    else:
+        self.body.append('%\n\\pysigstartmultiline\n')
+LaTeXTranslator.visit_desc_signature = visit_desc_signature
 
 PARSE_ERROR = """{}:{} Parse error in notation!
 Offending notation: {}
@@ -60,6 +78,7 @@ def notation_to_string(notation):
     try:
         return stringify_with_ellipses(notation)
     except ParseError as e:
+        # FIXME source and line aren't defined below — see cc93f419e0
         raise ExtensionError(PARSE_ERROR.format(os.path.basename(source), line, notation, e.msg)) from e
 
 def highlight_using_coqdoc(sentence):
@@ -100,6 +119,10 @@ class CoqObject(ObjectDescription):
     # The annotation to add to headers of objects of this type
     # (eg. “Command”, “Theorem”)
     annotation = None # type: str
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._sig_names = None
 
     def _name_from_signature(self, signature): # pylint: disable=no-self-use, unused-argument
         """Convert a signature into a name to link to.
@@ -143,32 +166,34 @@ class CoqObject(ObjectDescription):
         """Prefix signature with the proper annotation, then render it using
         ``_render_signature`` (for example, add “Command” in front of commands).
 
-        :returns: the name given to the resulting node, if any
+        :returns: the names given to the resulting node.
         """
         self._render_annotation(signode)
         self._render_signature(signature, signode)
-        name = self._names.get(signature)
-        if name is None:
+        names = self._sig_names.get(signature)
+        if names is None:
             name = self._name_from_signature(signature) # pylint: disable=assignment-from-none
             # remove trailing ‘.’ found in commands, but not ‘...’ (ellipsis)
             if name is not None and name.endswith(".") and not name.endswith("..."):
                 name = name[:-1]
-        return name
+            names = [name] if name else None
+        return names
 
-    def _warn_if_duplicate_name(self, objects, name):
+    def _warn_if_duplicate_name(self, objects, name, signode):
         """Check that two objects in the same domain don't have the same name."""
         if name in objects:
-            MSG = 'Duplicate object: {}; other is at {}'
-            msg = MSG.format(name, self.env.doc2path(objects[name][0]))
+            MSG = 'Duplicate name {} (other is in {}) attached to {}'
+            msg = MSG.format(name, self.env.doc2path(objects[name][0]), signode)
             self.state_machine.reporter.warning(msg, line=self.lineno)
 
-    def _record_name(self, name, target_id):
-        """Record a name, mapping it to target_id
+    def _record_name(self, name, target_id, signode):
+        """Record a `name` in the current subdomain, mapping it to `target_id`.
 
-        Warns if another object of the same name already exists.
+        Warns if another object of the same name already exists; `signode` is
+        used in the warning.
         """
         names_in_subdomain = self.subdomain_data()
-        self._warn_if_duplicate_name(names_in_subdomain, name)
+        self._warn_if_duplicate_name(names_in_subdomain, name, signode)
         names_in_subdomain[name] = (self.env.docname, self.objtype, target_id)
 
     def _target_id(self, name):
@@ -181,8 +206,7 @@ class CoqObject(ObjectDescription):
             signode['ids'].append(targetid)
             signode['names'].append(name)
             signode['first'] = (not self.names)
-            self.state.document.note_explicit_target(signode)
-            self._record_name(name, targetid)
+            self._record_name(name, targetid, signode)
         return targetid
 
     def _add_index_entry(self, name, target):
@@ -195,42 +219,37 @@ class CoqObject(ObjectDescription):
             index_text += " " + self.index_suffix
         self.indexnode['entries'].append(('single', index_text, target, '', None))
 
-    aliases = None  # additional indexed names for a command or other object
-
-    def add_target_and_index(self, name, _, signode):
-        """Attach a link target to `signode` and an index entry for `name`.
+    def add_target_and_index(self, names, _, signode):
+        """Attach a link target to `signode` and index entries for `names`.
         This is only called (from ``ObjectDescription.run``) if ``:noindex:`` isn't specified."""
-        if name and not (isinstance(name, str) and name.startswith('_')):
-            target = self._add_target(signode, name)
-            self._add_index_entry(name, target)
-            if self.aliases is not None:
-                parent = signode.parent
-                for alias in self.aliases:
-                    aliasnode = nodes.inline('', '')
-                    signode.parent.append(aliasnode)
-                    target2 = self._add_target(aliasnode, alias)
-                    self._add_index_entry(name, target2)
-                parent.remove(signode) # move to the end
-                parent.append(signode)
-            return target
+        if names:
+            for name in names:
+                if isinstance(name, str) and name.startswith('_'):
+                    continue
+                target = self._add_target(signode, name)
+                self._add_index_entry(name, target)
+            self.state.document.note_explicit_target(signode)
 
     def _prepare_names(self):
+        """Construct ``self._sig_names``, a map from signatures to names.
+
+        A node may have either one signature with no name, multiple signatures
+        with one name per signatures, or one signature with multiple names.
+        """
         sigs = self.get_signatures()
         names = self.options.get("name")
         if names is None:
-            self._names = {}
+            self._sig_names = {}
         else:
             names = [n.strip() for n in names.split(";")]
-            if len(sigs) > 1 and len(names) != len(sigs):
-                ERR = ("Expected {} semicolon-separated names, got {}.  " +
-                       "Please provide one name per signature line.")
-                raise self.error(ERR.format(len(names), len(sigs)))
-            if len(sigs) == 1 and len(names) > 1:
-                self.aliases = names[:-1]
-                names = names[-1:]
+            if len(names) != len(sigs):
+                if len(sigs) != 1: #Multiple names for one signature
+                    ERR = ("Expected {} semicolon-separated names, got {}.  " +
+                           "Please provide one name per signature line.")
+                    raise self.error(ERR.format(len(names), len(sigs)))
+                self._sig_names = { sigs[0]: names }
             else:
-                self.aliases = None
-            self._names = dict(zip(sigs, names))
+                self._sig_names = { sig: [name] for (sig, name) in zip(sigs, names) }
 
     def run(self):
         self._prepare_names()
@@ -301,8 +320,7 @@ class VernacObject(NotationObject):
 
     def _name_from_signature(self, signature):
         m = re.match(r"[a-zA-Z ]+", signature)
-        if m:
-            return m.group(0).strip()
+        return m.group(0).strip() if m else None
 
 class VernacVariantObject(VernacObject):
     """A variant of a Coq command.
@@ -455,7 +473,7 @@ class ProductionObject(CoqObject):
 
     # handle_signature is called for each line of input in the prodn::
     # 'signatures' accumulates them in order to combine the lines into a single table:
-    signatures = None
+    signatures = None # FIXME this should be in init, shouldn't it?
 
     def _render_signature(self, signature, signode):
         raise NotImplementedError(self)
@@ -476,14 +494,13 @@ class ProductionObject(CoqObject):
             if len(parts) != 3:
                 loc = os.path.basename(get_node_location(signode))
                 raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
-            else:
-                lhs, op, rhs = (part.strip() for part in parts)
-                if op not in ["::=", "+="]:
-                    loc = os.path.basename(get_node_location(signode))
-                    raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
+            lhs, op, rhs = (part.strip() for part in parts)
+            if op not in ["::=", "+="]:
+                loc = os.path.basename(get_node_location(signode))
+                raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
 
         self.signatures.append((lhs, op, rhs))
-        return ('token', lhs) if op == '::=' else None
+        return [('token', lhs)] if op == '::=' else None
 
     def _add_index_entry(self, name, target):
         pass
@@ -491,10 +508,10 @@ class ProductionObject(CoqObject):
     def _target_id(self, name):
         return 'grammar-token-{}'.format(nodes.make_id(name[1]))
 
-    def _record_name(self, name, targetid):
+    def _record_name(self, name, targetid, signode):
         env = self.state.document.settings.env
         objects = env.domaindata['std']['objects']
-        self._warn_if_duplicate_name(objects, name)
+        self._warn_if_duplicate_name(objects, name, signode)
         objects[name] = env.docname, targetid
 
     def run(self):
@@ -503,7 +520,7 @@ class ProductionObject(CoqObject):
 
         table = nodes.inline(classes=['prodn-table'])
         tgroup = nodes.inline(classes=['prodn-column-group'])
-        for i in range(3):
+        for _ in range(3):
             tgroup += nodes.inline(classes=['prodn-column'])
         table += tgroup
         tbody = nodes.inline(classes=['prodn-row-group'])
@@ -938,7 +955,6 @@ class CoqtopBlocksTransform(Transform):
             raise ExtensionError("{}: Exactly one display option must be passed to .. coqtop::".format(loc))
 
         opt_all = 'all' in options
-        opt_none = 'none' in options
         opt_input = 'in' in options
         opt_output = 'out' in options
 
@@ -960,10 +976,7 @@ class CoqtopBlocksTransform(Transform):
 
         :param should_show: Whether this node should be displayed"""
         is_empty = contents is not None and re.match(r"^\s*$", contents)
-        if is_empty or not should_show:
-            return ['coqtop-hidden']
-        else:
-            return []
+        return ['coqtop-hidden'] if is_empty or not should_show else []
 
     @staticmethod
     def make_rawsource(pairs, opt_input, opt_output):
@@ -1042,7 +1055,7 @@ class CoqtopBlocksTransform(Transform):
                                     if c != 'coqtop-hidden']
 
     @staticmethod
-    def merge_consecutive_coqtop_blocks(app, doctree, _):
+    def merge_consecutive_coqtop_blocks(_app, doctree, _):
         """Merge consecutive divs wrapping lists of Coq sentences; keep ‘dl’s separate."""
         for node in doctree.traverse(CoqtopBlocksTransform.is_coqtop_block):
             if node.parent:
@@ -1108,7 +1121,7 @@ class CoqExceptionIndex(CoqSubdomainsIndex):
 
 class IndexXRefRole(XRefRole):
     """A link to one of our domain-specific indices."""
-    lowercase = True,
+    lowercase = True
     innernodeclass = nodes.inline
     warn_dangling = True
 
@@ -1294,6 +1307,7 @@ class CoqDomain(Domain):
         for index in CoqDomain.indices:
             if index.name == targetid:
                 return index
+        return None
 
     def get_objects(self):
         # Used for searching and object inventories (intersphinx)
@@ -1325,6 +1339,7 @@ class CoqDomain(Domain):
             if resolved:
                 (todocname, _, targetid) = resolved
                 return make_refnode(builder, fromdocname, todocname, targetid, contnode, targetname)
+        return None
 
     def clear_doc(self, docname_to_clear):
         for subdomain_objects in self.data['objects'].values():

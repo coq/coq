@@ -1003,41 +1003,30 @@ Summary of changes
 
 The main changes brought by |Coq| version 8.11 are:
 
-- `Ltac2`__, a new tactic language for writing more robust larger scale
+- `Ltac2 <811Ltac2>`_, a new tactic language for writing more robust larger scale
   tactics, with built-in support for datatypes and the multi-goal tactic monad.
-- `Primitive floats`__ are integrated in terms and follow the binary64 format
+- `Primitive floats <811PrimitiveFloats>`_ are integrated in terms and follow the binary64 format
   of the IEEE 754 standard, as specified in the `Coq.Float.Floats` library.
-- `Cleanups`__ of the section mechanism, delayed proofs and further
+- `Cleanups <811Sections>`_ of the section mechanism, delayed proofs and further
   restrictions of template polymorphism to fix soundness issues related to
   universes.
-- New `unsafe flags`__ to disable locally guard, positivity and universe
+- New `unsafe flags <811UnsafeFlags>`_ to disable locally guard, positivity and universe
   checking. Reliance on these flags is always printed by
   :g:`Print Assumptions`.
-- `Fixed bugs`__ of :g:`Export` and :g:`Import` that can have a
+- `Fixed bugs <811ExportBug>`_ of :g:`Export` and :g:`Import` that can have a
   significant impact on user developments (**common source of
   incompatibility!**).
-- New interactive development method based on `vos` `interface files`__,
+- New interactive development method based on `vos` `interface files <811vos>`_,
   allowing to work on a file without recompiling the proof parts of their
   dependencies.
-- New :g:`Arguments` annotation for `bidirectional type inference`__
+- New :g:`Arguments` annotation for `bidirectional type inference <811BidirArguments>`_
   configuration for reference (e.g. constants, inductive) applications.
-- New `refine attribute`__ for :cmd:`Instance` can be used instead of
+- New `refine attribute <811RefineInstance>`_ for :cmd:`Instance` can be used instead of
   the removed ``Refine Instance Mode``.
-- Generalization of the :g:`under` and :g:`over` tactics__ of SSReflect to
+- Generalization of the :g:`under` and :g:`over` `tactics <811SSRUnderOver>`_ of SSReflect to
   arbitrary relations.
-- `Revision`__ of the :g:`Coq.Reals` library, its axiomatisation and
+- `Revision <811Reals>`_ of the :g:`Coq.Reals` library, its axiomatisation and
   instances of the constructive and classical real numbers.
-
-__ 811Ltac2_
-__ 811PrimitiveFloats_
-__ 811Sections_
-__ 811UnsafeFlags_
-__ 811ExportBug_
-__ 811vos_
-__ 811BidirArguments_
-__ 811RefineInstance_
-__ 811SSRUnderOver_
-__ 811Reals_
 
 Additionally, while the :tacn:`omega` tactic is not yet deprecated in
 this version of Coq, it should soon be the case and we already
