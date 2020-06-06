@@ -490,12 +490,18 @@ let assert_before_gen b naming t =
 let assert_before na = assert_before_gen false (naming_of_name na)
 let assert_before_replacing id = assert_before_gen true (NamingMustBe (CAst.make id))
 
-let assert_after_then_gen b naming t tac =
+let replace_error_option err tac =
+  match err with
+    | None -> tac
+    | Some (e, info) ->
+      Proofview.tclORELSE tac (fun _ -> Proofview.tclZERO ~info e)
+
+let assert_after_then_gen ?err b naming t tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
     let id = find_name b (LocalAssum (make_annot Anonymous Sorts.Relevant,t)) naming gl in
     Tacticals.New.tclTHENFIRST
-      (internal_cut_rev b id t)
+      (replace_error_option err (internal_cut_rev b id t))
       (tac id)
   end
 
@@ -1366,7 +1372,7 @@ let do_replace id = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in with_evars targetid id sigma0 clenv tac =
+let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
   let clenv = Clenvtac.clenv_pose_dependent_evars ~with_evars clenv in
   let clenv =
       { clenv with evd = Typeclasses.resolve_typeclasses
@@ -1383,7 +1389,7 @@ let clenv_refine_in with_evars targetid id sigma0 clenv tac =
   Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARS (clear_metas clenv.evd))
     (Tacticals.New.tclTHENLAST
-         (assert_after_then_gen with_clear naming new_hyp_typ tac) exact_tac)
+      (assert_after_then_gen ?err with_clear naming new_hyp_typ tac) exact_tac)
 
 (********************************************)
 (*       Elimination tactics                *)
@@ -1668,24 +1674,28 @@ let descend_in_conjunctions avoid tac (err, info) c =
             let (_, elim) = build_case_analysis_scheme env sigma (ind,u) false sort in
             let elim = EConstr.of_constr elim in
             NotADefinedRecordUseScheme elim in
-        Tacticals.New.tclORELSE0
-        (Tacticals.New.tclFIRST
-          (List.init n (fun i ->
+        let or_tac t1 t2 e = Proofview.tclORELSE (t1 e) t2 in
+        List.fold_right or_tac
+          (List.init n (fun i (err, info) ->
             Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
             let sigma = Tacmach.New.project gl in
             match make_projection env sigma params cstr sign elim i n c u with
             | None ->
-              let info = Exninfo.reify () in
-              Tacticals.New.tclFAIL ~info 0 (mt())
+              Proofview.tclZERO ~info err
             | Some (p,pt) ->
               Tacticals.New.tclTHENS
-                (assert_before_gen false (NamingAvoid avoid) pt)
-                [refiner ~check:true EConstr.Unsafe.(to_constr p);
+                (Proofview.tclORELSE
+                  (assert_before_gen false (NamingAvoid avoid) pt)
+                  (fun _ -> Proofview.tclZERO ~info err))
+                [Proofview.tclORELSE
+                   (refiner ~check:true EConstr.Unsafe.(to_constr p))
+                   (fun _ -> Proofview.tclZERO ~info err);
                  (* Might be ill-typed due to forbidden elimination. *)
-                 Tacticals.New.onLastHypId (tac (not isrec))]
-           end)))
-          (Proofview.tclZERO ~info err)
+                 Tacticals.New.onLastHypId (tac (err, info) (not isrec))]
+           end))
+          (fun (err, info) -> Proofview.tclZERO ~info err)
+          (err, info)
     | None -> Proofview.tclZERO ~info err
   with RefinerError _|UserError _ -> Proofview.tclZERO ~info err
   end
@@ -1750,7 +1760,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
         let tac =
           if with_destruct then
             descend_in_conjunctions Id.Set.empty
-              (fun b id ->
+              (fun _ b id ->
                 Tacticals.New.tclTHEN
                   (try_main_apply b (mkVar id))
                   (clear [id]))
@@ -1879,7 +1889,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
   let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
   let targetid = find_name true (LocalAssum (make_annot Anonymous Sorts.Relevant,t')) naming gl in
-  let rec aux idstoclear with_destruct c =
+  let rec aux ?err idstoclear with_destruct c =
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
@@ -1891,18 +1901,17 @@ let apply_in_once ?(respect_opaque = false) with_delta
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
       let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
-      clenv_refine_in with_evars targetid id sigma clause
+      clenv_refine_in ?err with_evars targetid id sigma clause
         (fun id ->
-          Tacticals.New.tclTHENLIST [
-            apply_clear_request clear_flag false c;
-            clear idstoclear;
-            tac id
-          ])
+          replace_error_option err (
+            apply_clear_request clear_flag false c <*>
+            clear idstoclear) <*>
+          tac id)
     with e when with_destruct && CErrors.noncritical e ->
-      let (e, info) = Exninfo.capture e in
+      let err = Option.default (Exninfo.capture e) err in
         (descend_in_conjunctions (Id.Set.singleton targetid)
-           (fun b id -> aux (id::idstoclear) b (mkVar id))
-           (e, info) c)
+           (fun err b id -> aux ~err (id::idstoclear) b (mkVar id))
+           err c)
     end
   in
   aux [] with_destruct d
