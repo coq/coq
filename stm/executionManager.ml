@@ -27,6 +27,8 @@ type state = {
   cache : execution_status SM.t;
 }
 
+type progress_hook = state -> unit
+
 let init vernac_state = {
     initial = vernac_state;
     cache = SM.empty;
@@ -62,7 +64,7 @@ let execute st task =
     end
   | _ -> CErrors.anomaly Pp.(str "task not supported yet")
 
-let observe schedule id st =
+let observe progress_hook schedule id st =
   log @@ "Observe " ^ Stateid.to_string id;
   let rec build_tasks id tasks =
     let (base_id, task as todo) = task_for_sentence schedule id in
@@ -86,6 +88,10 @@ let observe schedule id st =
       end
   in
   let tasks = build_tasks id [] in
+  let execute st task =
+    let st = execute st task in
+    progress_hook st; st
+  in
   List.fold_left execute st tasks
 
 let errors st =

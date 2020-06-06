@@ -428,6 +428,8 @@ type document = {
   current_range : (int * int) option; (* FIXME only current pos is needed *)
 }
 
+type progress_hook = document -> unit
+
 let parsed_ranges doc = ParsedDoc.parsed_ranges doc.raw_doc doc.parsed_doc
 
 let executed_ranges doc = ParsedDoc.executed_ranges doc.raw_doc doc.parsed_doc doc.execution_state
@@ -593,7 +595,7 @@ let apply_text_edits ({ validated_pos; raw_doc; parsed_doc; execution_state } as
     let validated_pos = min top_edit validated_pos in
     { document with raw_doc; validated_pos }
 
-let interpret_to_loc ~after doc loc =
+let interpret_to_loc ~after ?(progress_hook=fun doc -> ()) doc loc =
   log @@ "Interpreting to loc " ^ string_of_int loc;
   let rec make_progress doc =
     let doc = validate_document doc in
@@ -605,7 +607,8 @@ let interpret_to_loc ~after doc loc =
     match find doc.parsed_doc loc with
     | None -> (* document is empty *) (doc, None)
     | Some { id; stop; start } ->
-      let st = ExecutionManager.observe (ParsedDoc.schedule doc.parsed_doc) id doc.execution_state in
+      let progress_hook st = progress_hook { doc with execution_state = st } in
+      let st = ExecutionManager.observe progress_hook (ParsedDoc.schedule doc.parsed_doc) id doc.execution_state in
       log @@ "Observed " ^ Stateid.to_string id;
       let doc = { doc with execution_state = st } in
       if doc.validated_pos < loc && doc.more_to_parse then
@@ -620,9 +623,9 @@ let interpret_to_loc ~after doc loc =
   in
   make_progress doc
 
-let interpret_to_position doc pos =
+let interpret_to_position ?progress_hook doc pos =
   let loc = RawDoc.loc_of_position doc.raw_doc pos in
-  interpret_to_loc ~after:false doc loc
+  interpret_to_loc ~after:false ?progress_hook doc loc
 
 let interpret_to_previous doc =
   match doc.current_range with

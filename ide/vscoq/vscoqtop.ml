@@ -194,12 +194,17 @@ let mk_proofview loc Proof.{ goals; shelf; given_up; sigma } =
     "focus", mk_loc loc
   ]
 
+let progress_hook uri doc =
+  send_highlights uri doc;
+  publish_diagnostics uri doc
+
 let coqtopInterpretToPoint ~id params =
   let open Yojson.Basic.Util in
   let uri = params |> member "uri" |> to_string in
   let loc = params |> member "location" |> parse_loc in
   let document = Hashtbl.find documents uri in
-  let new_doc, proof = DocumentManager.interpret_to_position document loc in
+  let progress_hook = progress_hook uri in
+  let new_doc, proof = DocumentManager.interpret_to_position ~progress_hook document loc in
   Hashtbl.replace documents uri new_doc;
   send_highlights uri new_doc;
   publish_diagnostics uri new_doc;
