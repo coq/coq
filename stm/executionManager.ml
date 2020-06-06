@@ -101,6 +101,11 @@ let errors st =
 let executed_ids st =
   SM.fold (fun id status acc -> match status with Success _ | Error _ -> id :: acc | _ -> acc) st.cache []
 
+let is_executed st id =
+  match SM.find_opt id st.cache with
+  | Some (Success _ | Error _) -> true
+  | _ -> false
+
 let query id st ast = assert false
 
 let rec invalidate schedule id st =

@@ -31,6 +31,7 @@ val invalidate : schedule -> sentence_id -> state -> state
 
 val errors : state -> (sentence_id * Loc.t option * string) list
 val executed_ids : state -> sentence_id list
+val is_executed : state -> sentence_id -> bool
 
 val get_parsing_state_after : state -> sentence_id -> Vernacstate.Parser.state option
 val get_proofview : state -> sentence_id -> Proof.data option

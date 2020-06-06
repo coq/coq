@@ -185,7 +185,7 @@ module ParsedDoc : sig
   val schedule : t -> schedule
 
   val parsed_ranges : RawDoc.t -> t -> range list
-  val executed_ranges : RawDoc.t -> t -> ExecutionManager.state -> range list
+  val executed_ranges : RawDoc.t -> t -> ExecutionManager.state -> int -> range list
 
   val make_diagnostic : RawDoc.t -> t -> sentence_id -> Loc.t option -> string -> severity -> diagnostic
   val parse_errors : RawDoc.t -> t -> diagnostic list
@@ -193,6 +193,7 @@ module ParsedDoc : sig
   val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Parser.state -> Scheduler.state -> t * Scheduler.state
   val remove_sentence : t -> sentence_id -> t
   val remove_sentences_after : t -> int -> t * Stateid.Set.t
+  val sentences_before : t -> int -> sentence list
   val sentences_after : t -> int -> sentence list
   val find_sentence : t -> int -> sentence option
   val find_sentence_before : t -> int -> sentence option
@@ -251,9 +252,6 @@ end = struct
       parsed.sentences_by_id
       []
 
-  let executed_ranges raw parsed execution_state =
-    List.map (range_of_id raw parsed) @@ ExecutionManager.executed_ids execution_state
-
   let make_diagnostic raw parsed id oloc message severity =
     let range =
       match oloc with
@@ -306,6 +304,11 @@ end = struct
     let sentences_by_id = Stateid.Set.fold (fun id m -> log @@ "Remove sentence (after) " ^ Stateid.to_string id; SM.remove id m) removed parsed.sentences_by_id in
     (* TODO clean up the schedule and free cached states *)
     { parsed with sentences_by_id; sentences_by_end = before}, removed
+
+  let sentences_before parsed loc =
+    let (before,ov,after) = LM.split loc parsed.sentences_by_end in
+    let before = Option.cata (fun v -> LM.add loc v before) before ov in
+    List.map (fun (_id,s) -> s) @@ LM.bindings before
 
   let sentences_after parsed loc =
     let (before,ov,after) = LM.split loc parsed.sentences_by_end in
@@ -387,6 +390,11 @@ end = struct
     let current = SM.find id parsed.sentences_by_id in
     Option.map snd @@ LM.find_first_opt (fun stop -> stop > current.stop) parsed.sentences_by_end
 
+  let executed_ranges raw parsed execution_state executed_loc =
+    let valid_ids = List.map (fun s -> s.id) @@ sentences_before parsed executed_loc in
+    let executed_ids = List.filter (ExecutionManager.is_executed execution_state) valid_ids in
+    List.map (range_of_id raw parsed) executed_ids
+
   let patch_sentence parsed scheduler_state_before id ({ ast; start; stop } : pre_sentence) =
     log @@ "Patching sentence " ^ Stateid.to_string id;
     let old_sentence = SM.find id parsed.sentences_by_id in
@@ -424,24 +432,26 @@ let rec diff old_sentences new_sentences =
 end
 
 type document = {
-  validated_pos : int;
+  parsed_loc : int;
+  executed_loc : int option;
   raw_doc : RawDoc.t;
   parsed_doc : ParsedDoc.t;
   execution_state : ExecutionManager.state;
   more_to_parse : bool;
-  current_range : (int * int) option; (* FIXME only current pos is needed *)
 }
 
 type progress_hook = document -> unit
 
 let parsed_ranges doc = ParsedDoc.parsed_ranges doc.raw_doc doc.parsed_doc
 
-let executed_ranges doc = ParsedDoc.executed_ranges doc.raw_doc doc.parsed_doc doc.execution_state
+let executed_ranges doc =
+  match doc.executed_loc with
+  | None -> []
+  | Some loc ->
+    ParsedDoc.executed_ranges doc.raw_doc doc.parsed_doc doc.execution_state loc
 
-let diagnostics doc =
-    let exec_errors = ExecutionManager.errors doc.execution_state in
-    log @@ "exec errors in diags: " ^ string_of_int (List.length exec_errors);
-    let mk_exec_diag (id,oloc,message) =
+let diagnostics doc = let exec_errors = ExecutionManager.errors doc.execution_state in
+       log @@ "exec errors in diags: " ^ string_of_int (List.length exec_errors); let mk_exec_diag (id,oloc,message) =
       ParsedDoc.make_diagnostic doc.raw_doc doc.parsed_doc id oloc message Error
     in
     let exec_diags = List.map mk_exec_diag exec_errors in
@@ -565,8 +575,8 @@ let invalidate top_edit parsed_doc new_sentences exec_st =
   invalidate_diff parsed_doc scheduler_state exec_st diff
 
 (** Validate document when raw text has changed *)
-let validate_document ({ validated_pos; raw_doc; parsed_doc; execution_state } as document) =
-  match ParsedDoc.state_at_pos parsed_doc execution_state validated_pos with
+let validate_document ({ parsed_loc; raw_doc; parsed_doc; execution_state } as document) =
+  match ParsedDoc.state_at_pos parsed_doc execution_state parsed_loc with
   | None -> document
   | Some (stop, parsing_state, _scheduler_state) ->
     let text = RawDoc.text raw_doc in
@@ -575,29 +585,30 @@ let validate_document ({ validated_pos; raw_doc; parsed_doc; execution_state } a
     log @@ Format.sprintf "Parsing more from pos %i" stop;
     let new_sentences, more_to_parse = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
     let execution_state, parsed_doc = invalidate (stop+1) document.parsed_doc new_sentences execution_state in
-    let validated_pos = ParsedDoc.pos_at_end parsed_doc in
-    { document with parsed_doc; execution_state; more_to_parse; validated_pos }
+    let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
+    { document with parsed_doc; execution_state; more_to_parse; parsed_loc }
 
 let create_document vernac_state text =
   let raw_doc = RawDoc.create text in
   let execution_state = ExecutionManager.init vernac_state in
   validate_document
-    { validated_pos = -1;
+    { parsed_loc = -1;
+      executed_loc = None;
       raw_doc;
       parsed_doc = ParsedDoc.empty;
       more_to_parse = true;
       execution_state;
-      current_range = None;
     }
 
-let apply_text_edits ({ validated_pos; raw_doc; parsed_doc; execution_state } as document) edits =
+let apply_text_edits ({ parsed_loc; raw_doc; parsed_doc; execution_state; executed_loc } as document) edits =
   match edits with
   | [] -> document
   | _ ->
     let top_edit : int = RawDoc.loc_of_position raw_doc @@ top_edit_position edits in
     let raw_doc = List.fold_left RawDoc.apply_text_edit raw_doc edits in
-    let validated_pos = min top_edit validated_pos in
-    { document with raw_doc; validated_pos }
+    let parsed_loc = min top_edit parsed_loc in
+    let executed_loc = Option.map (min parsed_loc) executed_loc in
+    { document with raw_doc; parsed_loc; executed_loc }
 
 let interpret_to_loc ~after ?(progress_hook=fun doc -> ()) doc loc =
   log @@ "Interpreting to loc " ^ string_of_int loc;
@@ -611,19 +622,19 @@ let interpret_to_loc ~after ?(progress_hook=fun doc -> ()) doc loc =
     match find doc.parsed_doc loc with
     | None -> (* document is empty *) (doc, None)
     | Some { id; stop; start } ->
-      let progress_hook st = progress_hook { doc with execution_state = st } in
+      let progress_hook st = progress_hook { doc with execution_state = st; executed_loc = Some stop } in
       let st = ExecutionManager.observe progress_hook (ParsedDoc.schedule doc.parsed_doc) id doc.execution_state in
       log @@ "Observed " ^ Stateid.to_string id;
       let doc = { doc with execution_state = st } in
-      if doc.validated_pos < loc && doc.more_to_parse then
+      if doc.parsed_loc < loc && doc.more_to_parse then
         make_progress doc
       else
-      let current_range = Some (start, stop) in
+      let executed_loc = Some stop in
       let proof_data = match ExecutionManager.get_proofview st id with
         | None -> None
         | Some pv -> let pos = RawDoc.position_of_loc doc.raw_doc stop in Some (pv, pos)
       in
-      { doc with current_range }, proof_data
+      { doc with executed_loc }, proof_data
   in
   make_progress doc
 
@@ -632,15 +643,15 @@ let interpret_to_position ?progress_hook doc pos =
   interpret_to_loc ~after:false ?progress_hook doc loc
 
 let interpret_to_previous doc =
-  match doc.current_range with
+  match doc.executed_loc with
   | None -> doc, None
-  | Some (_,stop) ->
-    interpret_to_loc ~after:false doc (stop-1)
+  | Some loc ->
+    interpret_to_loc ~after:false doc (loc-1)
 
 let interpret_to_next doc =
-  match doc.current_range with
+  match doc.executed_loc with
   | None -> doc, None
-  | Some (_,stop) ->
+  | Some stop ->
     interpret_to_loc ~after:true doc (stop+1)
 
 let interpret_to_end ?progress_hook doc =
@@ -649,9 +660,9 @@ let interpret_to_end ?progress_hook doc =
 let reset vernac_state doc =
   let execution_state = ExecutionManager.init vernac_state in
   validate_document
-    { doc with validated_pos = -1;
+    { doc with parsed_loc = -1;
+      executed_loc = None;
       parsed_doc = ParsedDoc.empty;
       more_to_parse = true;
       execution_state;
-      current_range = None;
     }
