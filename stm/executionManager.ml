@@ -53,11 +53,18 @@ let execute st task =
     log @@ "Going to execute: " ^ Stateid.to_string id ^ " : " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
     let vernac_st = base_vernac_st base_id in
     begin try
+      Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
       let vernac_st = Vernacinterp.interp ~st:vernac_st ast in (* TODO set status to "Executing" *)
+      Sys.(set_signal sigint Signal_ignore);
       { st with cache = SM.add id (Success vernac_st) st.cache }
     with
+    | Sys.Break as exn ->
+      let exn = Exninfo.capture exn in
+      Sys.(set_signal sigint Signal_ignore);
+      Exninfo.iraise exn
     | any ->
       let (e, info) = Exninfo.capture any in
+      Sys.(set_signal sigint Signal_ignore);
       let loc = Loc.get_loc info in
       let msg = CErrors.iprint (e, info) in
       { st with cache = SM.add id (Error ((loc, Pp.string_of_ppcmds msg), vernac_st)) st.cache }
@@ -89,9 +96,13 @@ let observe progress_hook schedule id st =
     end
   in
   let tasks = build_tasks id [] in
+  let interrupted = ref false in
   let execute st task =
-    let st = execute st task in
-    progress_hook st; st
+    if !interrupted then st
+    else try
+      let st = execute st task in
+      progress_hook st; st
+    with Sys.Break -> (interrupted := true; st)
   in
   List.fold_left execute st tasks
 

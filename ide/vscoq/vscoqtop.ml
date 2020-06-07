@@ -329,4 +329,6 @@ let main () =
       opts = islave_default_opts } in
   Coqtop.start_coq custom
 
-let _ = main ()
+let _ =
+  Sys.(set_signal sigint Signal_ignore);
+  main ()
