@@ -1832,6 +1832,7 @@ function make_addon_compcert {
   installer_addon_dependency_beg compcert
   make_menhir
   make_addon_menhirlib
+  make_addon_flocq
   installer_addon_dependency_end
   if build_prep_overlay compcert; then
     installer_addon_section compcert "CompCert" "ATTENTION: THIS IS NOT OPEN SOURCE! CompCert verified C compiler and Clightgen (required for using VST for your own code)" "off"

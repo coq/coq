@@ -146,11 +146,14 @@
 ########################################################################
 # CompCert
 ########################################################################
-# First commit compatible with Coq 8.12.  Compared to the latest
-# release (3.7), it contains relatively few changes but not only bug
-# fixes.  Determine what to do before releasing 8.12.0.
-: "${compcert_CI_REF:=e464549037dcf94494c5aea462e6c3854b44976d}"
-: "${compcert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
+# This corresponds to http://coq.io/opam/coq-compcert.3.7~coq-platform.html
+# With these additional changes:
+# - use ocamlfind to find the OCaml menhirLib
+# - don't build the bundled Coq menhirLib
+#   (that the platforms upplied Coq menhirLib is used is alredy in opam)
+# - List compatibility patch for 8.12
+: "${compcert_CI_REF:=coq-platform-8.12.beta}"
+: "${compcert_CI_GITURL:=https://github.com/MSoegtropIMC/CompCert}"
 : "${compcert_CI_ARCHIVEURL:=${compcert_CI_GITURL}/archive}"
 
 ########################################################################
