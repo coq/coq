@@ -39,7 +39,7 @@ class CoqTop:
     confuse it).
     """
 
-    COQTOP_PROMPT = re.compile("\r\n[^< ]+ < ")
+    COQTOP_PROMPT = re.compile("\r\n[^< \r\n]+ < ")
 
     def __init__(self, coqtop_bin=None, color=False, args=None) -> str:
         """Configure a coqtop instance (but don't start it yet).
