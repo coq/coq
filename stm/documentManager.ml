@@ -217,6 +217,8 @@ module ParsedDoc : sig
 
   val diff : sentence list -> pre_sentence list -> diff list
 
+  val string_of_diff : diff -> string
+
 end = struct
 
   type t = {
@@ -374,10 +376,10 @@ end = struct
     let res =
       match ov with
       | None -> before
-      | Some (stop,v) when Int.equal stop loc ->
-        LM.add (stop + offset) { v with stop = v.stop + offset } before
+      | Some (stop,v) when v.start >= loc ->
+        LM.add (stop + offset) { v with start = v.start + offset; stop = v.stop + offset } before
       | Some (stop,v) ->
-        LM.add (stop + offset) v before
+        LM.add (stop + offset) { v with stop = v.stop + offset } before
     in
     let sentences_by_end =
       LM.fold (fun stop v acc -> LM.add (stop + offset) { v with start = v.start + offset; stop = v.stop + offset } acc) after res
@@ -436,6 +438,11 @@ let rec diff old_sentences new_sentences =
     if same_tokens old_sentence new_sentence then
       Equal [(old_sentence.id,new_sentence)] :: diff old_sentences new_sentences
     else Deleted [old_sentence.id] :: Added [new_sentence] :: diff old_sentences new_sentences
+
+let string_of_diff = function
+  | Deleted ids -> "- " ^ String.concat "," (List.map Stateid.to_string ids)
+  | Added sentences -> String.concat "\n" (List.map (fun (s : pre_sentence) -> "+ " ^ string_of_parsed_ast s.ast) sentences)
+  | Equal l -> "= " ^ String.concat "," (List.map (fun (id,_) -> Stateid.to_string id) l)
 
 end
 
@@ -582,6 +589,7 @@ let invalidate top_edit parsed_doc new_sentences exec_st =
   let (_,_parsing_state,scheduler_state) = Option.get @@ ParsedDoc.state_at_pos parsed_doc exec_st top_edit in
   let old_sentences = ParsedDoc.sentences_after parsed_doc top_edit in
   let diff = ParsedDoc.diff old_sentences new_sentences in
+  log @@ String.concat "\n" (List.map ParsedDoc.string_of_diff diff);
   invalidate_diff parsed_doc scheduler_state exec_st diff
 
 (** Validate document when raw text has changed *)
