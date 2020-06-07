@@ -414,9 +414,16 @@ function build_prep {
 #
 # Parameters
 # $1 base name of module in ci-basic-overlay.sh, e.g. mathcomp, bignums, ...
+# $2 [optional] override base name of module (defaults to $1)
 # ------------------------------------------------------------------------------
 
 function build_prep_overlay {
+  # Handle optional parameters
+  if [ "$#" -ge 2 ] ; then
+    baseame=$2
+  else
+    baseame=$1
+  fi
   urlvar=$1_CI_ARCHIVEURL
   gitvar=$1_CI_GITURL
   refvar=$1_CI_REF
@@ -428,7 +435,7 @@ function build_prep_overlay {
       # $1_CI_REF must have been a tag or hash, not a branch
       ver="$ref"
   fi
-  build_prep "$url" "$ver" tar.gz 1 "$1-$ver" "$1"
+  build_prep "$url" "$ver" tar.gz 1 "$baseame-$ver" "$baseame"
 }
 
 # ------------------------------------------------------------------------------
@@ -1169,10 +1176,9 @@ function make_menhir {
   make_ocamlbuild
   # This is the version required by latest CompCert
   if build_prep_overlay menhir; then
-    log2 dune build -p menhirLib,menhirSdk,menhir
-    log2 dune install menhirLib
-    log2 dune install menhirSdk
-    log2 dune install menhir
+    # ToDo: don't know if this is the intended / most reliable way of doing it, but it works
+    log2 dune build @install
+    log2 dune install menhir menhirSdk menhirLib
     build_post
   fi
 }
@@ -1793,10 +1799,8 @@ function make_addon_menhir {
       touch "$FLAGFILES/menhir-addon.started"
       # Menhir executable
       install_glob "$PREFIXOCAML/bin" 'menhir.exe' "$PREFIXCOQ/bin/"
-      # Menhir Standard library
-      install_glob "$PREFIXOCAML/share/menhir/" '*.mly' "$PREFIXCOQ/share/menhir/"
       # Menhir PDF doc
-      install_glob "$PREFIXOCAML/share/doc/menhir/" '*.pdf' "$PREFIXCOQ/doc/menhir/"
+      install_glob "$PREFIXOCAML/doc/menhir/" '*.pdf' "$PREFIXCOQ/doc/menhir/"
       touch "$FLAGFILES/menhir-addon.finished"
       LOGTARGET=other
       installer_addon_end
@@ -1808,9 +1812,10 @@ function make_addon_menhir {
 
 function make_addon_menhirlib {
   installer_addon_dependency menhirlib
-  if build_prep_overlay menhir; then
+  if build_prep_overlay menhir menhirlib; then
     installer_addon_section menhirlib "Menhirlib" "Coq support library for using Menhir generated parsers in Coq" ""
     # The supplied makefiles don't work in any way on cygwin
+    # ToDo: dune also doesn't seem to work for the coq files
     cd coq-menhirlib/src
     echo -R . MenhirLib > _CoqProject
     ls -1 *.v >> _CoqProject
