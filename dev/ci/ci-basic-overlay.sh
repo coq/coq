@@ -132,8 +132,38 @@
 ########################################################################
 # CompCert
 ########################################################################
-: "${compcert_CI_REF:=4a676623badb718da4055b7f26ee05f5097f4e7b}"
-: "${compcert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
+# This uses the platform supplied version of Flocq and Menhirlib as
+# published in http://coq.io/opam/coq-compcert.3.7~coq-platform.html
+# with a few additional patches for 8.12
+# Author codes:
+# SN : Michael Soegtrop, new (not in the above opam release)
+# SO : Michael Soegtrop, opam (in the above opam release)
+# CN : CompCert GIT, new (not in the above opam release)
+# CO : CompCert GIT, opam (in the above opam release)
+# 172f55fd SN Don't build MenhirLib (platform version is used)
+# 1feb12c8 SO Use platform supplied menhirlib as suggested by jhjourdan
+# 6a8204d4 SN Use ocamlfind to find menhirLib
+# e2c86f5a CN Coq-MenhirLib: explicit import ListNotations (#354)
+# 48d9cbd2 CN Import ListNotations explicitly
+# 4accc3dd SO Use Coq platform supplied Flocq
+# 16878a61 CO Update the list of dual-licensed files
+# cea50ef9 CO Dual-license aarch64/{Archi.v,Cbuiltins.ml,extractionMachdep.v}
+# b7980c83 CO Install "compcert.config" file along the Coq development
+# 76a4ff8f    Updates for release 3.7
+: "${compcert_platform_CI_REF:=coq-platform-8.12.beta}"
+: "${compcert_platform_CI_GITURL:=https://github.com/MSoegtropIMC/CompCert}"
+: "${compcert_platform_CI_ARCHIVEURL:=${compcert_platform_CI_GITURL}/archive}"
+
+# As above, but does use bundled Flocq and Menhirlib rather than the
+# platform supplied version
+# 10bafbaa CN Coq-MenhirLib: explicit import ListNotations (#354)
+# f494c983 CN Import ListNotations explicitly
+# 16878a61 CO Update the list of dual-licensed files
+# cea50ef9 CO Dual-license aarch64/{Archi.v,Cbuiltins.ml,extractionMachdep.v}
+# b7980c83 CO Install "compcert.config" file along the Coq development
+# 76a4ff8f    Updates for release 3.7
+: "${compcert_CI_REF:=coq-8.12.beta}"
+: "${compcert_CI_GITURL:=https://github.com/MSoegtropIMC/CompCert}"
 : "${compcert_CI_ARCHIVEURL:=${compcert_CI_GITURL}/archive}"
 
 ########################################################################
