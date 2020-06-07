@@ -1711,10 +1711,8 @@ function make_addon_menhir {
       touch "$FLAGFILES/menhir-addon.started"
       # Menhir executable
       install_glob "$PREFIXOCAML/bin" 'menhir.exe' "$PREFIXCOQ/bin/"
-      # Menhir Standard library
-      install_glob "$PREFIXOCAML/share/menhir/" '*.mly' "$PREFIXCOQ/share/menhir/"
       # Menhir PDF doc
-      install_glob "$PREFIXOCAML/share/doc/menhir/" '*.pdf' "$PREFIXCOQ/doc/menhir/"
+      install_glob "$PREFIXOCAML/doc/menhir/" '*.pdf' "$PREFIXCOQ/doc/menhir/"
       touch "$FLAGFILES/menhir-addon.finished"
       LOGTARGET=other
       installer_addon_end
