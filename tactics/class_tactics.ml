@@ -525,7 +525,7 @@ let make_resolve_hyp env sigma st only_classes pri decl =
              (fun (path,info,c) ->
               let h = IsConstr (EConstr.of_constr c,Univ.ContextSet.empty) [@ocaml.warning "-3"] in
               make_resolves env sigma ~name:(PathHints path)
-                  (true,false,not !Flags.quiet) info ~check:true ~poly:false
+                  (true, false, false) info ~check:true ~poly:false
                  h)
                hints)
         else []
