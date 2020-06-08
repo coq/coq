@@ -489,7 +489,6 @@ module Hint_db :
 sig
 type t
 val empty : ?name:hint_db_name -> TransparentState.t -> bool -> t
-val find : GlobRef.t -> t -> search_entry
 val map_none : secvars:Id.Pred.t -> t -> full_hint list
 val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 val map_existential : evar_map -> secvars:Id.Pred.t ->

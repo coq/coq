@@ -70,8 +70,6 @@ type 'a with_metadata = private
 
 type full_hint = hint with_metadata
 
-type search_entry
-
 (** The head may not be bound. *)
 
 type hint_entry
@@ -117,7 +115,6 @@ module Hint_db :
   sig
     type t
     val empty : ?name:hint_db_name -> TransparentState.t -> bool -> t
-    val find : GlobRef.t -> t -> search_entry
 
     (** All hints which have no pattern.
      * [secvars] represent the set of section variables that
