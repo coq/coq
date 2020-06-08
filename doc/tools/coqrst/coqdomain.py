@@ -923,12 +923,32 @@ class CoqtopBlocksTransform(Transform):
 
     @staticmethod
     def split_lines(source):
-        """Split Coq input in chunks
+        r"""Split Coq input in chunks
 
         A chunk is a minimal sequence of consecutive lines of the input that
         ends with a '.'
+
+        >>> split_lines('A.\nB.''')
+        ['A.', 'B.']
+
+        >>> split_lines('A.\n\nB.''')
+        ['A.', '\nB.']
+
+        >>> split_lines('A.\n\nB.\n''')
+        ['A.', '\nB.']
+
+        >>> split_lines("SearchPattern (_ + _ = _ + _).\n"
+        ...             "SearchPattern (nat -> bool).\n"
+        ...             "SearchPattern (forall l : list _, _ l l).")
+        ... # doctest: +NORMALIZE_WHITESPACE
+        ['SearchPattern (_ + _ = _ + _).',
+         'SearchPattern (nat -> bool).',
+         'SearchPattern (forall l : list _, _ l l).']
+
+        >>> split_lines('SearchHead le.\nSearchHead (@eq bool).')
+        ['SearchHead le.', 'SearchHead (@eq bool).']
         """
-        return re.split(r"(?<=(?<!\.)\.)\s+\n", source)
+        return re.split(r"(?<=(?<!\.)\.)\n", source.strip())
 
     @staticmethod
     def parse_options(node):
