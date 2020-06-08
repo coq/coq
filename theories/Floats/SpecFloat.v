@@ -222,7 +222,7 @@ Section FloatOps.
 
   Definition SFleb f1 f2 :=
     match SFcompare f1 f2 with
-    | Some Le => true
+    | Some (Lt | Eq) => true
     | _ => false
     end.
 
