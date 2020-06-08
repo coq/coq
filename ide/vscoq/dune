@@ -13,10 +13,10 @@
  (libraries coq.toplevel yojson lwt.unix)
  (link_flags -linkall))
 
-(install
- (section bin)
- (package vscoq-server)
- (files (vscoqtop.bc as vscoqtop.byte)))
+; (install
+;  (section bin)
+;  (package vscoq-server)
+;  (files (vscoqtop.bc as vscoqtop.byte)))
 
 (env
   (dev
