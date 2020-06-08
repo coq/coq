@@ -905,8 +905,11 @@ end
 
 (* Locality stuff *)
 let declare_entry ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ~uctx entry =
-  let should_suggest = entry.proof_entry_opaque &&
-                       Option.is_empty entry.proof_entry_secctx in
+  let should_suggest =
+    entry.proof_entry_opaque
+    && not (List.is_empty (Global.named_context()))
+    && Option.is_empty entry.proof_entry_secctx
+  in
   let ubind = UState.universe_binders uctx in
   let dref = match scope with
   | Discharge ->
