@@ -225,12 +225,6 @@ val make_resolves :
 val make_resolve_hyp :
   env -> evar_map -> named_declaration -> hint_entry list
 
-(** [make_extern pri pattern tactic_expr] *)
-
-val make_extern :
-  int -> constr_pattern option -> Genarg.glob_generic_argument
-      -> hint_entry
-
 val run_hint : hint ->
   ((raw_hint * clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
 
