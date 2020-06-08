@@ -417,8 +417,16 @@ more precise description of the scope of these settings):
 
 .. FIXME Convert "Extraction Language" to an option.
 
-Flags, options and tables are identified by a series of identifiers, each with an initial
-capital letter.
+.. insertprodn setting_name setting_name
+
+.. prodn::
+   setting_name ::= {+ @ident }
+
+..
+
+   Flags, options and tables are identified by a series of
+   identifiers.  By convention, each of the identifiers start with an
+   initial capital letter.
 
 Flags, options and tables appear in the HTML documentation in blue or
 gray boxes after the labels "Flag", "Option" and "Table".  In the pdf,
@@ -427,11 +435,6 @@ they appear after a boldface label.  They are listed in the
 
 .. cmd:: Set @setting_name {? {| @int | @string } }
    :name: Set
-
-   .. insertprodn setting_name setting_name
-
-   .. prodn::
-      setting_name ::= {+ @ident }
 
    If :n:`@setting_name` is a flag, no value may be provided; the flag
    is set to on.
@@ -533,4 +536,4 @@ Newly opened modules and sections inherit the current settings.
    :cmd:`Unset` commands.  If your goal is to define
    project-wide settings, you should rather use the command-line
    arguments ``-set`` and ``-unset`` for setting flags and options
-   (cf. :ref:`command-line-options`).
+   (see :ref:`command-line-options`).
