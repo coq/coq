@@ -499,7 +499,7 @@ let evars_to_goals p evm =
   else Some (goals, nongoals)
 
 (** Making local hints  *)
-let make_resolve_hyp env sigma st flags only_classes pri decl =
+let make_resolve_hyp env sigma st only_classes pri decl =
   let id = NamedDecl.get_id decl in
   let cty = Evarutil.nf_evar sigma (NamedDecl.get_type decl) in
   let rec iscl env ty =
@@ -530,7 +530,7 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
                hints)
         else []
       in
-        (hints @ make_resolves env sigma flags pri ~name ~check:false ~poly:false (IsGlobRef id))
+        (hints @ make_resolves env sigma (true, false, false) pri ~name ~check:false ~poly:false (IsGlobRef id))
     else []
 
 let make_hints g (modes,st) only_classes sign =
@@ -546,7 +546,7 @@ let make_hints g (modes,st) only_classes sign =
         in
         if consider then
           let hint =
-            pf_apply make_resolve_hyp g st (true,false,false) only_classes empty_hint_info hyp
+            pf_apply make_resolve_hyp g st only_classes empty_hint_info hyp
           in hint @ hints
         else hints)
       ([]) sign
@@ -793,7 +793,7 @@ module Search = struct
     let decl = Tacmach.New.pf_last_hyp gl in
     let hint =
       make_resolve_hyp env sigma (Hint_db.transparent_state info.search_hints)
-                       (true,false,false) info.search_only_classes empty_hint_info decl in
+                       info.search_only_classes empty_hint_info decl in
     let ldb = Hint_db.add_list env sigma hint info.search_hints in
     let info' =
       { info with search_hints = ldb; last_tac = lazy (str"intro");
