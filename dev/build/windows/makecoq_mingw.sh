@@ -1880,9 +1880,9 @@ function make_addon_quickchick {
 # Flocq: Floating point library
 
 function make_addon_flocq {
-  if build_prep_overlay Flocq; then
+  if build_prep_overlay flocq; then
     installer_addon_section flocq "Flocq" "Coq library for floating point arithmetic" ""
-    logn autogen ./autogen.sh
+    log1 autoconf
     logn configure ./configure
     logn remake ./remake --jobs=$MAKE_THREADS
     logn install ./remake install
