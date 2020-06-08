@@ -1586,7 +1586,6 @@ struct
   let run (h : t) k = run_hint h.code k
   let print env sigma (h : t) = pr_hint env sigma h.code
   let name (h : t) = h.name
-  let secvars (h : t) = h.secvars
 
   let repr (h : t) = h.code.obj
 end

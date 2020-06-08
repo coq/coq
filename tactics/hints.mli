@@ -58,7 +58,6 @@ sig
   val database : t -> string option
   val run : t -> ((raw_hint * clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val name : t -> hints_path_atom
-  val secvars : t -> Id.Pred.t
   val print : env -> evar_map -> t -> Pp.t
 
   (** This function is for backward compatibility only, not to use in newly

@@ -350,7 +350,6 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
       let b = FullHint.priority h in
       let poly = FullHint.is_polymorphic h in
       let p = FullHint.pattern h in
-      let secvars = FullHint.secvars h in (* The use below looks suspicious *)
       let name = FullHint.name h in
       let tac = function
         | Res_pf (term,cl) ->
