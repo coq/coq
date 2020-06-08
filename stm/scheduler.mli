@@ -23,14 +23,11 @@ type ast = Vernacexpr.vernac_control
 type task =
   | Skip of sentence_id
   | Exec of sentence_id * ast
-  | DelegateOpaqueProof of {
-      proof_script: sentence_id * ast list;
-      section_info: string list;
-    }
-  | DelegateQuery of sentence_id * ast
+  | OpaqueProof of sentence_id * sentence_id list
+  | Query of sentence_id * ast
 
 type schedule
-(** Holds the dependencies among sentences and a schdule to evaluate all
+(** Holds the dependencies among sentences and a schedule to evaluate all
     sentences *)
 
 val initial_schedule : schedule
@@ -45,3 +42,5 @@ val task_for_sentence : schedule -> sentence_id -> sentence_id option * task
 
 val dependents : schedule -> sentence_id -> Stateid.Set.t
 (** Computes what should be invalidated *)
+
+val string_of_schedule : schedule -> string

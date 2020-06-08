@@ -69,6 +69,26 @@ let execute st task =
       let msg = CErrors.iprint (e, info) in
       { st with cache = SM.add id (Error ((loc, Pp.string_of_ppcmds msg), vernac_st)) st.cache }
     end
+  | base_id, OpaqueProof (id,ids) ->
+    let vernac_st = base_vernac_st base_id in
+    begin try
+      Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
+      let ast = Vernacexpr.{ expr = VernacEndProof Admitted; attrs = []; control = [] } in
+      let vernac_st = Vernacinterp.interp ~st:vernac_st (CAst.make ast) in (* TODO set status to "Executing" *)
+      Sys.(set_signal sigint Signal_ignore);
+      { st with cache = SM.add id (Success vernac_st) st.cache }
+    with
+    | Sys.Break as exn ->
+      let exn = Exninfo.capture exn in
+      Sys.(set_signal sigint Signal_ignore);
+      Exninfo.iraise exn
+    | any ->
+      let (e, info) = Exninfo.capture any in
+      Sys.(set_signal sigint Signal_ignore);
+      let loc = Loc.get_loc info in
+      let msg = CErrors.iprint (e, info) in
+      { st with cache = SM.add id (Error ((loc, Pp.string_of_ppcmds msg), vernac_st)) st.cache }
+    end
   | _ -> CErrors.anomaly Pp.(str "task not supported yet")
 
 let observe progress_hook schedule id st : state Lwt.t =

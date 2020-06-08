@@ -644,6 +644,7 @@ let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) doc loc : 
     let open Lwt.Infix in
     let doc = validate_document doc in
     log @@ ParsedDoc.to_string doc.parsed_doc;
+    log @@ Scheduler.string_of_schedule @@ ParsedDoc.schedule doc.parsed_doc;
     (** We jump to the sentence before the position, otherwise jumping to the
     whitespace at the beginning of a sentence will observe the state after
     executing the sentence, which is unnatural. *)
