@@ -79,12 +79,15 @@ let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> co
   let iter_obj (sp, kn) lobj = match lobj with
     | AtomicObject o ->
       let handler =
-        DynHandle.add Declare.Internal.objConstant begin fun _ ->
-          let cst = Global.constant_of_delta_kn kn in
-          let gr = GlobRef.ConstRef cst in
-          let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
-          let kind = Dumpglob.constant_kind cst in
-          fn gr (Some kind) env typ
+        DynHandle.add Declare.Internal.objConstant begin fun o ->
+          match Declare.Internal.const_local o with
+          | Locality.ImportNeedQualified -> ()
+          | Locality.ImportDefaultBehavior ->
+            let cst = Global.constant_of_delta_kn kn in
+            let gr = GlobRef.ConstRef cst in
+            let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
+            let kind = Dumpglob.constant_kind cst in
+            fn gr (Some kind) env typ
         end @@
         DynHandle.add DeclareInd.Internal.objInductive begin fun _ ->
           let mind = Global.mind_of_delta_kn kn in

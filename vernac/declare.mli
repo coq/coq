@@ -182,6 +182,8 @@ module Internal : sig
   val objConstant : constant_obj Libobject.Dyn.tag
   val objVariable : unit Libobject.Dyn.tag
 
+  val const_local : constant_obj -> import_status
+
 end
 
 (* Intermediate step necessary to delegate the future.

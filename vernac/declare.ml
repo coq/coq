@@ -694,6 +694,8 @@ module Internal = struct
   let objVariable = objVariable
   let objConstant = objConstant
 
+  let const_local o = o.cst_locl
+
 end
 (*** Proof Global Environment ***)
 
