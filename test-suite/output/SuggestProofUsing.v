@@ -1,10 +1,22 @@
+Require Program.Tactics.
+
 Set Suggest Proof Using.
+
+Lemma nosec : nat. Proof. exact 0. Qed.
+
+Lemma nosec_exactproof : bool. Proof false.
+
+Program Definition nosec_program : nat := _.
+Next Obligation. exact 1. Qed.
+
+Lemma nosec_abstract : nat.
+Proof. abstract exact 3. Defined.
 
 Section Sec.
   Variables A B : Type.
 
   (* Some normal lemma. *)
-  Lemma nat : Set.
+  Lemma Nat : Set.
   Proof.
     exact nat.
   Qed.
@@ -27,5 +39,16 @@ Section Sec.
   Proof.
     exact A.
   Defined.
+
+  (* No suggest, is this OK? There's nowhere to put it anyway. *)
+  Program Definition program : nat := _.
+  Next Obligation. exact 1. Qed.
+
+  (* Must not suggest *)
+  Lemma sec_abstract : nat.
+  Proof. abstract exact 3. Defined.
+
+  (* Suggests even though there's nowhere to put it, bug? *)
+  Lemma sec_exactproof : bool. Proof true.
 
 End Sec.
