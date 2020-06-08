@@ -24,10 +24,10 @@ val default_search_depth : int ref
 val auto_flags_of_state : TransparentState.t -> Unification.unify_flags
 
 val connect_hint_clenv
-  : poly:bool -> hint -> Proofview.Goal.t -> clausenv * constr
+  : hint -> Proofview.Goal.t -> clausenv * constr
 
 (** Try unification with the precompiled clause, then use registered Apply *)
-val unify_resolve : poly:bool -> Unification.unify_flags -> hint -> unit Proofview.tactic
+val unify_resolve : Unification.unify_flags -> hint -> unit Proofview.tactic
 
 (** [ConclPattern concl pat tacast]:
    if the term concl matches the pattern pat, (in sense of

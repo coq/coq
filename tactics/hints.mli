@@ -44,6 +44,7 @@ type hint = {
   hint_type : types;
   hint_uctx : Univ.ContextSet.t;
   hint_clnv : clausenv;
+  hint_poly : bool;
 }
 
 type 'a hints_path_atom_gen =
@@ -58,7 +59,6 @@ module FullHint :
 sig
   type t
   val priority : t -> int
-  val is_polymorphic : t -> bool
   val pattern : t -> Pattern.constr_pattern option
   val database : t -> string option
   val run : t -> (hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
