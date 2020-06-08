@@ -214,7 +214,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool * bool -> hint_info -> check:bool -> poly:bool -> ?name:hints_path_atom ->
+  env -> evar_map -> hint_info -> check:bool -> poly:bool -> ?name:hints_path_atom ->
   hint_term -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].

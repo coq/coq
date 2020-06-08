@@ -1336,6 +1336,9 @@ let constructor_hints env sigma eapply lems =
   List.map_append (fun (poly, lem) ->
       make_resolves env sigma (eapply,true,false) empty_hint_info ~check:true ~poly lem) lems
 
+let make_resolves env sigma info ~check ~poly ?name hint =
+  make_resolves env sigma (true, false, false) info ~check ~poly ?name hint
+
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
   let lems = List.map map lems in

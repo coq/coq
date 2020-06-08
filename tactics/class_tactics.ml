@@ -524,13 +524,11 @@ let make_resolve_hyp env sigma st only_classes pri decl =
             (List.map_append
              (fun (path,info,c) ->
               let h = IsConstr (EConstr.of_constr c,Univ.ContextSet.empty) [@ocaml.warning "-3"] in
-              make_resolves env sigma ~name:(PathHints path)
-                  (true, false, false) info ~check:true ~poly:false
-                 h)
+              make_resolves env sigma ~name:(PathHints path) info ~check:true ~poly:false h)
                hints)
         else []
       in
-        (hints @ make_resolves env sigma (true, false, false) pri ~name ~check:false ~poly:false (IsGlobRef id))
+        (hints @ make_resolves env sigma pri ~name ~check:false ~poly:false (IsGlobRef id))
     else []
 
 let make_hints g (modes,st) only_classes sign =
