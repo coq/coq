@@ -117,7 +117,7 @@ let intern_ind_arity env sigma ind =
 let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
   let sigma,t = understand_tcc env sigma ~expected_type:IsType c in
   match Reductionops.sort_of_arity env sigma t with
-  | exception Invalid_argument _ ->
+  | exception Reduction.NotArity ->
     user_err ?loc (str "Not an arity")
   | s ->
     let concl = match pseudo_poly with
