@@ -1576,4 +1576,17 @@ let run_hint tac k = match warn_hint () with
     let info = Exninfo.reify () in
     Proofview.tclZERO ~info (UserError (None, (str "Tactic failure.")))
 
-let repr_hint h = h.obj
+module FullHint =
+struct
+  type t = full_hint
+  let priority (h : t) = h.pri
+  let is_polymorphic (h : t) = h.poly
+  let pattern (h : t) = h.pat
+  let database (h : t) = h.db
+  let run (h : t) k = run_hint h.code k
+  let print env sigma (h : t) = pr_hint env sigma h.code
+  let name (h : t) = h.name
+  let secvars (h : t) = h.secvars
+
+  let repr (h : t) = h.code.obj
+end

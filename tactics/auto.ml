@@ -29,7 +29,7 @@ open Hints
 (*          tactics with a trace mechanism for automatic search           *)
 (**************************************************************************)
 
-let priority l = List.filter (fun (_, hint) -> Int.equal hint.pri 0) l
+let priority l = List.filter (fun (_, hint) -> Int.equal (FullHint.priority hint) 0) l
 
 let compute_secvars gl =
   let hyps = Proofview.Goal.hyps gl in
@@ -381,7 +381,8 @@ and my_find_search_delta sigma db_list local_db secvars hdc concl =
           in List.map (fun x -> (Some flags,x)) l)
         (local_db::db_list)
 
-and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=dbname})) =
+and tac_of_hint dbg db_list local_db concl (flags, h) =
+  let poly = FullHint.is_polymorphic h in
   let tactic = function
     | Res_pf (c,cl) -> unify_resolve_gen ~poly flags (c,cl)
     | ERes_pf _ -> Proofview.Goal.enter (fun gl ->
@@ -403,16 +404,17 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
          Tacticals.New.tclFAIL ~info 0 (str"Unbound reference")
        end
     | Extern tacast ->
+      let p = FullHint.pattern h in
       conclPattern concl p tacast
   in
   let pr_hint env sigma =
-    let origin = match dbname with
+    let origin = match FullHint.database h with
     | None -> mt ()
     | Some n -> str " (in " ++ str n ++ str ")"
     in
-    pr_hint env sigma t ++ origin
+    FullHint.print env sigma h ++ origin
   in
-  tclLOG dbg pr_hint (run_hint t tactic)
+  tclLOG dbg pr_hint (FullHint.run h tactic)
 
 and trivial_resolve sigma dbg mod_delta db_list local_db secvars cl =
   try

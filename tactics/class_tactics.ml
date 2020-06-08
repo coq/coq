@@ -346,7 +346,12 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
     with e when CErrors.noncritical e -> AllowAll
   in
   let tac_of_hint =
-    fun (flags, {pri = b; pat = p; poly = poly; code = t; secvars; name = name}) ->
+    fun (flags, h) ->
+      let b = FullHint.priority h in
+      let poly = FullHint.is_polymorphic h in
+      let p = FullHint.pattern h in
+      let secvars = FullHint.secvars h in (* The use below looks suspicious *)
+      let name = FullHint.name h in
       let tac = function
         | Res_pf (term,cl) ->
            if get_typeclasses_filtered_unification () then
@@ -391,7 +396,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
          Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
       | Extern tacast -> conclPattern concl p tacast
       in
-      let tac = run_hint t tac in
+      let tac = FullHint.run h tac in
       let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
       let pp =
         match p with
@@ -399,9 +404,9 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
            str " with pattern " ++ Printer.pr_constr_pattern_env env sigma pat
         | _ -> mt ()
       in
-        match repr_hint t with
-        | Extern _ -> (tac, b, true, name, lazy (pr_hint env sigma t ++ pp))
-        | _ -> (tac, b, false, name, lazy (pr_hint env sigma t ++ pp))
+        match FullHint.repr h with
+        | Extern _ -> (tac, b, true, name, lazy (FullHint.print env sigma h ++ pp))
+        | _ -> (tac, b, false, name, lazy (FullHint.print env sigma h ++ pp))
   in
   let hint_of_db = hintmap_of sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with

@@ -205,7 +205,7 @@ open Hints
 
 let extend_with_auto_hints env sigma l seq =
   let f (seq,sigma) p_a_t =
-    match repr_hint p_a_t.code with
+    match FullHint.repr p_a_t with
     | Res_pf (c,_) | Give_exact (c,_)
     | Res_pf_THEN_trivial_fail (c,_) ->
       let (c, _, _) = c in
