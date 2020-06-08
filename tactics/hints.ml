@@ -137,7 +137,12 @@ type 'a with_uid = {
 
 type raw_hint = constr * types * Univ.ContextSet.t
 
-type hint = (raw_hint * clausenv) hint_ast with_uid
+type hint = {
+  hint_term : constr;
+  hint_type : types;
+  hint_uctx : Univ.ContextSet.t;
+  hint_clnv : clausenv;
+}
 
 type 'a with_metadata =
   { pri     : int
@@ -156,7 +161,7 @@ type 'a with_metadata =
   (** the tactic to apply when the concl matches pat *)
   }
 
-type full_hint = hint with_metadata
+type full_hint = hint hint_ast with_uid with_metadata
 
 type hint_entry = GlobRef.t option *
   raw_hint hint_ast with_uid with_metadata
@@ -303,16 +308,18 @@ let instantiate_hint env sigma p =
   let mk_clenv (c, cty, ctx) =
     let sigma = Evd.merge_context_set univ_flexible sigma ctx in
     let cl = mk_clenv_from_env env sigma None (c,cty) in
-      {cl with templval =
+    let cl = {cl with templval =
           { cl.templval with rebus = strip_params env sigma cl.templval.rebus };
         env = empty_env}
+    in
+    { hint_term = c; hint_type = cty; hint_uctx = ctx; hint_clnv = cl; }
   in
   let code = match p.code.obj with
-    | Res_pf c -> Res_pf (c, mk_clenv c)
-    | ERes_pf c -> ERes_pf (c, mk_clenv c)
+    | Res_pf c -> Res_pf (mk_clenv c)
+    | ERes_pf c -> ERes_pf (mk_clenv c)
     | Res_pf_THEN_trivial_fail c ->
-      Res_pf_THEN_trivial_fail (c, mk_clenv c)
-    | Give_exact c -> Give_exact (c, mk_clenv c)
+      Res_pf_THEN_trivial_fail (mk_clenv c)
+    | Give_exact c -> Give_exact (mk_clenv c)
     | Unfold_nth e -> Unfold_nth e
     | Extern t -> Extern t
   in
@@ -1367,13 +1374,13 @@ let make_db_list dbnames =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
-let pr_hint_elt env sigma (c, _, _) = pr_econstr_env env sigma c
+let pr_hint_elt env sigma h = pr_econstr_env env sigma h.hint_term
 
 let pr_hint env sigma h = match h.obj with
-  | Res_pf (c, _) -> (str"simple apply " ++ pr_hint_elt env sigma c)
-  | ERes_pf (c, _) -> (str"simple eapply " ++ pr_hint_elt env sigma c)
-  | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt env sigma c)
-  | Res_pf_THEN_trivial_fail (c, _) ->
+  | Res_pf c -> (str"simple apply " ++ pr_hint_elt env sigma c)
+  | ERes_pf c -> (str"simple eapply " ++ pr_hint_elt env sigma c)
+  | Give_exact c -> (str"exact " ++ pr_hint_elt env sigma c)
+  | Res_pf_THEN_trivial_fail c ->
       (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c

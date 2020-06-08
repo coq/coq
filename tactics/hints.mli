@@ -39,7 +39,12 @@ type 'a hint_ast =
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Genarg.glob_generic_argument       (* Hint Extern *)
 
-type raw_hint = constr * types * Univ.ContextSet.t
+type hint = {
+  hint_term : constr;
+  hint_type : types;
+  hint_uctx : Univ.ContextSet.t;
+  hint_clnv : clausenv;
+}
 
 type 'a hints_path_atom_gen =
   | PathHints of 'a list
@@ -56,13 +61,13 @@ sig
   val is_polymorphic : t -> bool
   val pattern : t -> Pattern.constr_pattern option
   val database : t -> string option
-  val run : t -> ((raw_hint * clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
+  val run : t -> (hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val name : t -> hints_path_atom
   val print : env -> evar_map -> t -> Pp.t
 
   (** This function is for backward compatibility only, not to use in newly
     written code. *)
-  val repr : t -> (raw_hint * clausenv) hint_ast
+  val repr : t -> hint hint_ast
 end
 
 (** The head may not be bound. *)
