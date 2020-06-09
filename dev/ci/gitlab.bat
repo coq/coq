@@ -53,17 +53,19 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=flocq ^
     -addon=interval ^
     -addon=gappa_tool ^
-    -addon=gappa ^
     -addon=flocq ^
     -addon=vst
-REM    -addon=elpi
-REM    -addon=HB
+REM These plugins don't work yet:
+REM -addon=elpi
+REM -addon=HB
+REM -addon=gappa
 ) ELSE (
   SET EXTRA_ADDONS=^
     -addon=menhir ^
     -addon=menhirlib ^
     -addon=compcert ^
-    -addon=vst
+    -addon=vst ^
+    -addon=gappa_tool
 )
 
 call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
