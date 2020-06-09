@@ -53,7 +53,6 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=flocq ^
     -addon=interval ^
     -addon=gappa_tool ^
-    -addon=flocq ^
     -addon=vst
 REM These plugins don't work yet:
 REM -addon=elpi
@@ -63,6 +62,7 @@ REM -addon=gappa
   SET EXTRA_ADDONS=^
     -addon=menhir ^
     -addon=menhirlib ^
+    -addon=flocq ^
     -addon=compcert ^
     -addon=vst ^
     -addon=gappa_tool
