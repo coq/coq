@@ -1,0 +1,6 @@
+- **Fixed:**
+  Fix the specification of :n:`PrimFloat.leb` which made
+  :n:`(x <= y)%float` true for any non NaN :n:`x` and :n:`y`.
+  (`#12484 <https://github.com/coq/coq/pull/12484>`_,
+  fixes `#12483 <https://github.com/coq/coq/issues/12483>`_,
+  by Pierre Roux).
