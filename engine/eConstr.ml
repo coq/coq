@@ -733,6 +733,11 @@ let map_rel_context_in_env f env sign =
   in
   aux env [] (List.rev sign)
 
+let match_named_context_val :
+  named_context_val -> (named_declaration * lazy_val * named_context_val) option =
+  match unsafe_eq with
+  | Refl -> match_named_context_val
+
 let fresh_global ?loc ?rigid ?names env sigma reference =
   let (evd,t) = Evd.fresh_global ?loc ?rigid ?names env sigma reference in
   evd, t

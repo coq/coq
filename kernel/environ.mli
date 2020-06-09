@@ -176,6 +176,8 @@ val named_body : variable -> env -> constr option
 val fold_named_context :
   (env -> Constr.named_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
 
+val match_named_context_val : named_context_val -> (named_declaration * lazy_val * named_context_val) option
+
 (** Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :
   ('a -> Constr.named_declaration -> 'a) -> init:'a -> env -> 'a
