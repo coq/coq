@@ -156,6 +156,7 @@
 
 # As above, but does use bundled Flocq and Menhirlib rather than the
 # platform supplied version
+# This is used by the Windows Installer (and the Coq platform)
 # 10bafbaa CN Coq-MenhirLib: explicit import ListNotations (#354)
 # f494c983 CN Import ListNotations explicitly
 # 16878a61 CO Update the list of dual-licensed files
@@ -169,9 +170,19 @@
 ########################################################################
 # VST
 ########################################################################
-: "${vst_CI_REF:=815244771c92585a23363ebbff2bab7d7050e435}"
+# This commit sets the version number to 2.6
+# M.Soegtrop discussed with A.Appel via email to use this commit for 8.12.beta
+: "${vst_CI_REF:=766971b60f705e7e8b890e533518bdc79a9a60b5}"
 : "${vst_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${vst_CI_ARCHIVEURL:=${vst_CI_GITURL}/archive}"
+
+# This is a paltform friendly variant using paltform supplied compcert and Flocq
+# This is used by the Windows Installer (and the Coq platform)
+# This includes one extra commit relative to the above:
+# 45239bb5 MSoegtrop Changed build and CI system to use opam / coq-platform supplied CompCert
+: "${vst_platform_CI_REF:=coq-platform-8.12.beta}"
+: "${vst_platform_CI_GITURL:=https://github.com/MSoegtropIMC/VST}"
+: "${vst_platform_CI_ARCHIVEURL:=${vst_platform_CI_GITURL}/archive}"
 
 ########################################################################
 # cross-crypto
