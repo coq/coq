@@ -90,7 +90,8 @@
 ########################################################################
 # Flocq
 ########################################################################
-: "${flocq_CI_REF:=db11908f26581a366d791b03c50b3ea74791f193}"
+# The latest release (from today) is compatible with Coq 8.12.
+: "${flocq_CI_REF:=flocq-3.3.1}"
 : "${flocq_CI_GITURL:=https://gitlab.inria.fr/flocq/flocq}"
 : "${flocq_CI_ARCHIVEURL:=${flocq_CI_GITURL}/-/archive}"
 
