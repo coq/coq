@@ -1922,7 +1922,9 @@ function make_addon_gappa_tool {
   install_boost
   if build_prep_overlay gappa_tool; then
     installer_addon_section gappa_tool "Gappa tool" "Stand alone tool for automated generation of numerical arithmetic proofs" ""
-    logn autogen ./autogen.sh
+    log1 autoreconf
+    # Note: configure.in seems to reference this file
+    touch stamp-config_h.in
     logn configure ./configure --build="$HOST" --host="$HOST" --target="$TARGET" --prefix="$PREFIXCOQ"
     logn remake ./remake --jobs=$MAKE_THREADS
     logn install ./remake -d install
