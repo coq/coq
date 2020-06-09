@@ -1072,7 +1072,7 @@ let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
   in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = definition_message name in
-  Option.iter (fun hook -> Hook.call ~hook { Hook.S.uctx; obls; scope; dref }) hook;
+  Hook.call ?hook { Hook.S.uctx; obls; scope; dref };
   dref
 
 let declare_entry = declare_entry_core ~obls:[]
