@@ -79,12 +79,13 @@ jobs:
       opam switch set ocaml-base-compiler.$COMPILER
       eval $(opam env)
       opam update
-      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3
+      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3${LABLGTK_VER}
       opam list
     displayName: 'Install OCaml dependencies'
     env:
       COMPILER: "4.10.0"
       FINDLIB_VER: ".1.8.1"
+      LABLGTK_VER: ".3.0.beta8"
       OPAMYES: "true"
 
   - script: |
