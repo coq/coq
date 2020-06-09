@@ -370,7 +370,7 @@ Proof.
     + destruct (total_order_T (IZR (Z.pred n) - r) 1). destruct s.
       left. exact r1. right. exact e.
       exfalso. destruct nmaj as [_ nmaj].
-      pose proof Rrepr_IZR as iz. unfold inject_Z in iz.
+      pose proof Rrepr_IZR as iz.
       rewrite <- iz in nmaj.
       apply (Rlt_asym (IZR n) (r + 2)).
       rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_plus. rewrite (Rrepr_plus 1 1).

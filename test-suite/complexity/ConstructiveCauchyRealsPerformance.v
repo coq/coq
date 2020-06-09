@@ -4,92 +4,143 @@
 
 Require Import QArith Qabs.
 Require Import ConstructiveCauchyRealsMult.
+Require Import Lqa.
+Require Import Lia.
 
 Local Open Scope CReal_scope.
 
-Definition approx_sqrt_Q (q : Q) (n : positive) : Q
+(* We would need a shift instruction on positives to do this properly *)
+
+Definition CReal_sqrt_Q_seq (q : Q) (n : Z) : Q
   := let (k,j) := q in
      match k with
      | Z0 => 0
-     | Z.pos i => Z.pos (Pos.sqrt (i*j*n*n)) # (j*n)
+     | Z.pos i => match n with
+         | Z0
+         | Z.pos _ => Z.pos (Pos.sqrt (i*j)) # (j)
+         | Z.neg n' => Z.pos (Pos.sqrt (i*j*2^(2*n'))) # (j*2^n')
+         end
      | Z.neg i => 0 (* unused *)
      end.
 
+Local Lemma Pos_pow_twice_r a b : (a^(2*b) = a^b * a^b)%positive.
+Proof.
+  apply Pos2Z.inj.
+  rewrite Pos2Z.inj_mul.
+  do 2 rewrite Pos2Z.inj_pow.
+  rewrite Pos2Z.inj_mul.
+  apply Z.pow_twice_r.
+Qed.
+
 (* Approximation of the square root from below,
    improves the convergence modulus. *)
-Lemma approx_sqrt_Q_le_below : forall (q : Q) (n : positive),
-    Qle 0 q -> Qle (approx_sqrt_Q q n * approx_sqrt_Q q n) q.
+Lemma CReal_sqrt_Q_le_below : forall (q : Q) (n : Z),
+    (0<=q)%Q -> (CReal_sqrt_Q_seq q n * CReal_sqrt_Q_seq q n <= q)%Q.
 Proof.
-  intros. destruct q as [k j]. unfold approx_sqrt_Q.
-  destruct k as [|i|i]. apply Z.le_refl.
-  pose proof (Pos.sqrt_spec (i * j * n * n)). simpl in H0.
-  destruct H0 as [H0 _].
-  unfold Qle, Qmult, Qnum, Qden.
-  rewrite <- Pos2Z.inj_mul, <- Pos2Z.inj_mul, <- Pos2Z.inj_mul.
-  apply Pos2Z.pos_le_pos. rewrite (Pos.mul_comm i (j * n * (j * n))).
-  rewrite <- (Pos.mul_comm j), <- (Pos.mul_assoc j), <- (Pos.mul_assoc j).
-  apply Pos.mul_le_mono_l.
-  apply (Pos.le_trans _ _ _ H0).
-  rewrite <- (Pos.mul_comm n), <- (Pos.mul_assoc n).
-  apply Pos.mul_le_mono_l.
-  rewrite (Pos.mul_comm i j), <- Pos.mul_assoc, <- Pos.mul_assoc.
-  apply Pos.mul_le_mono_l. rewrite Pos.mul_comm. apply Pos.le_refl.
-  exfalso. unfold Qle, Z.le in H; simpl in H. exact (H eq_refl).
-Qed.
-
-Require Import Lia.
-
-Lemma approx_sqrt_Q_le_below_lia : forall (q : Q) (n : positive),
-    (0 <= q)%Q -> (approx_sqrt_Q q n * approx_sqrt_Q q n <= q)%Q.
-Proof.
-  intros. destruct q as [k j]. unfold approx_sqrt_Q.
+  intros q n Hqpos. destruct q as [k j]. unfold CReal_sqrt_Q_seq.
   destruct k as [|i|i].
   - apply Z.le_refl.
-  - unfold Qle, Qmult, Qnum, Qden.
-    pose proof (Pos.sqrt_spec (i * j * n * n)) as Hsqrt; simpl in Hsqrt.
-    destruct Hsqrt as [Hsqrt _]; apply (Pos.mul_le_mono_l j) in Hsqrt.
-    lia.
-  - unfold Qle, Qnum, Qden in H; lia.
+  - destruct n as [|n|n].
+    + pose proof (Pos.sqrt_spec (i * j)) as H. simpl in H.
+      destruct H as [H _].
+      unfold Qle, Qmult, Qnum, Qden.
+      rewrite <- Pos2Z.inj_mul, <- Pos2Z.inj_mul, <- Pos2Z.inj_mul.
+      apply Pos2Z.pos_le_pos. rewrite (Pos.mul_assoc i j j).
+      apply Pos.mul_le_mono_r; exact H.
+    + pose proof (Pos.sqrt_spec (i * j)) as H. simpl in H.
+      destruct H as [H _].
+      unfold Qle, Qmult, Qnum, Qden.
+      rewrite <- Pos2Z.inj_mul, <- Pos2Z.inj_mul, <- Pos2Z.inj_mul.
+      apply Pos2Z.pos_le_pos. rewrite (Pos.mul_assoc i j j).
+      apply Pos.mul_le_mono_r; exact H.
+    + pose proof (Pos.sqrt_spec (i * j * 2^(2*n))) as H. simpl in H.
+      destruct H as [H _].
+      unfold Qle, Qmult, Qnum, Qden.
+      rewrite <- Pos2Z.inj_mul, <- Pos2Z.inj_mul, <- Pos2Z.inj_mul.
+      apply Pos2Z.pos_le_pos. rewrite (Pos.mul_comm j (2^n)) at 2.
+      do 3 rewrite Pos.mul_assoc.
+      apply Pos.mul_le_mono_r.
+      simpl.
+      rewrite Pos_pow_twice_r in H at 3.
+      rewrite Pos.mul_assoc in H.
+      exact H.
+  - exact Hqpos.
 Qed.
 
-Print Assumptions approx_sqrt_Q_le_below_lia.
-
-Lemma approx_sqrt_Q_lt_above : forall (q : Q) (n : positive),
-    Qle 0 q -> Qlt q ((approx_sqrt_Q q n + (1#n)) * (approx_sqrt_Q q n + (1#n))).
+Lemma CReal_sqrt_Q_lt_above : forall (q : Q) (n : Z),
+    (0 <= q)%Q -> (q < ((CReal_sqrt_Q_seq q n + 2^n) * (CReal_sqrt_Q_seq q n + 2^n)))%Q.
 Proof.
-  intros. destruct q as [k j]. unfold approx_sqrt_Q.
-  destruct k as [|i|i]. reflexivity.
-  2: exfalso; unfold Qle, Z.le in H; simpl in H; exact (H eq_refl).
-  pose proof (Pos.sqrt_spec (i * j * n * n)). simpl in H0.
-  destruct H0 as [_ H0].
-  apply (Qlt_le_trans
-           _ (((Z.pos ((Pos.sqrt (i * j * n * n)) + 1) # j * n))
-              * ((Z.pos ((Pos.sqrt (i * j * n * n)) + 1) # j * n)))).
-  unfold Qlt, Qmult, Qnum, Qden.
-  rewrite <- Pos2Z.inj_mul, <- Pos2Z.inj_mul, <- Pos2Z.inj_mul.
-  apply Pos2Z.pos_lt_pos.
-  rewrite Pos.mul_comm, <- Pos.mul_assoc, <- Pos.mul_assoc, Pos.mul_comm.
-  apply Pos.mul_lt_mono_r. rewrite Pplus_one_succ_r in H0.
-  refine (Pos.le_lt_trans _ _ _ _ H0). rewrite Pos.mul_comm.
-  apply Pos.mul_le_mono_r.
-  rewrite <- Pos.mul_assoc, (Pos.mul_comm i), <- Pos.mul_assoc.
-  apply Pos.mul_le_mono_l. rewrite Pos.mul_comm. apply Pos.le_refl.
-  setoid_replace (1#n)%Q with (Z.pos j#j*n)%Q. 2: reflexivity.
-  rewrite Qinv_plus_distr.
-  unfold Qle, Qmult, Qnum, Qden. apply Z.mul_le_mono_nonneg_r.
-  discriminate. apply Z.mul_le_mono_nonneg.
-  discriminate. 2: discriminate.
-  rewrite Pos2Z.inj_add. apply Z.add_le_mono_l.
-  apply Pos2Z.pos_le_pos. destruct j; discriminate.
-  rewrite Pos2Z.inj_add. apply Z.add_le_mono_l.
-  apply Pos2Z.pos_le_pos. destruct j; discriminate.
+  intros. destruct q as [k j]. unfold CReal_sqrt_Q_seq.
+  destruct k as [|i|i].
+  - ring_simplify.
+    setoid_rewrite <- Qpower.Qpower_mult.
+    setoid_rewrite QExtra.Qzero_eq.
+    pose proof QExtra.Qpower_pos_lt 2 (n*2)%Z ltac:(lra).
+    lra.
+  - destruct n as [|n|n].
+    + pose proof (Pos.sqrt_spec (i * j)). simpl in H0.
+      destruct H0 as [_ H0].
+      change (2^0)%Q with 1%Q.
+      unfold Qlt, Qplus, Qmult, Qnum, Qden.
+      rewrite Pos.mul_1_r, Z.mul_1_r, Z.mul_1_l.
+      repeat rewrite <- Pos2Z.inj_add, <- Pos2Z.inj_mul.
+      apply Pos2Z.pos_lt_pos.
+      rewrite Pos.mul_assoc.
+      apply Pos.mul_lt_mono_r.
+      apply (Pos.lt_le_trans _ _ _ H0).
+      apply Pos.mul_le_mono; lia.
+    + pose proof (Pos.sqrt_spec (i * j)). simpl in H0.
+      destruct H0 as [_ H0].
+      rewrite QExtra.Qpower_decomp'.
+      unfold Qlt, Qplus, Qmult, Qnum, Qden.
+      rewrite PosExtra.Pos_pow_1_r.
+      rewrite Pos.mul_1_r, Z.mul_1_r.
+      rewrite <- Pos2Z.inj_pow; do 2 rewrite <- Pos2Z.inj_mul; rewrite <- Pos2Z.inj_add.
+      apply Pos2Z.pos_lt_pos.
+      rewrite Pos.mul_assoc.
+      apply Pos.mul_lt_mono_r.
+      apply (Pos.lt_le_trans _ _ _ H0).
+      apply Pos.mul_le_mono;
+        pose proof Pos.le_1_l (2 ^ n * j)%positive; lia.
+    + pose proof (Pos.sqrt_spec (i * j * 2 ^ (2 * n))). simpl in H0.
+      destruct H0 as [_ H0].
+      rewrite <- Pos2Z.opp_pos, Qpower.Qpower_opp.
+      rewrite QExtra.Qpower_decomp'.
+      rewrite <- Pos2Z.inj_pow, PosExtra.Pos_pow_1_r, <- QExtra.Qinv_swap_pos.
+      unfold Qlt, Qplus, Qmult, Qnum, Qden.
+      repeat rewrite  Pos2Z.inj_mul.
+      ring_simplify.
+      replace (Z.pos i * Z.pos j ^ 2 * Z.pos (2 ^ n) ^ 4)%Z
+      with ((Z.pos i * Z.pos j * Z.pos (2 ^ n) ^ 2) * (Z.pos j * Z.pos (2 ^ n) ^ 2))%Z by ring.
+      replace (
+        Z.pos j ^ 3 * Z.pos (2 ^ n) ^ 2 +
+        2 * Z.pos j ^ 2 * Z.pos (2 ^ n) ^ 2 * Z.pos (Pos.sqrt (i * j * 2 ^ (2 * n))) +
+        Z.pos j * Z.pos (2 ^ n) ^ 2 * Z.pos (Pos.sqrt (i * j * 2 ^ (2 * n))) ^ 2)%Z
+      with (
+        (Z.pos j + Z.pos (Pos.sqrt (i * j * 2 ^ (2 * n))))^2 *
+        (Z.pos j * Z.pos (2 ^ n) ^ 2))%Z by ring.
+      repeat rewrite Pos2Z.inj_pow.
+      rewrite <- Z.pow_mul_r by lia.
+      repeat rewrite <- Pos2Z.inj_mul.
+      repeat rewrite <- Pos2Z.inj_pow.
+      repeat rewrite <- Pos2Z.inj_mul.
+      repeat rewrite <- Pos2Z.inj_add.
+      apply Pos2Z.pos_lt_pos.
+      rewrite (Pos.mul_comm n 2); change (2*n)%positive with (n~0)%positive.
+      apply Pos.mul_lt_mono_r.
+      apply (Pos.lt_le_trans _ _ _ H0).
+      apply Pos.mul_le_mono;
+        pose proof Pos.le_1_l (2 ^ n * j)%positive; lia.
+ - exfalso; unfold Qle, Z.le in H; simpl in H; exact (H eq_refl).
 Qed.
 
-Lemma approx_sqrt_Q_pos : forall (q : Q) (n : positive),
-    Qle 0 q -> Qle 0 (approx_sqrt_Q q n).
+Lemma CReal_sqrt_Q_pos : forall (q : Q) (n : Z),
+   (0 <= (CReal_sqrt_Q_seq q n))%Q.
 Proof.
-  intros. unfold approx_sqrt_Q. destruct q, Qnum.
-  apply Qle_refl. discriminate. apply Qle_refl.
+  intros. unfold CReal_sqrt_Q_seq. destruct q, Qnum.
+  - apply Qle_refl.
+  - destruct n as [|n|n]; discriminate.
+  - apply Qle_refl.
 Qed.
 
 Lemma Qsqrt_lt : forall q r :Q,
@@ -104,46 +155,95 @@ Proof.
   - exfalso. rewrite q0 in H0. exact (Qlt_irrefl _ H0).
 Qed.
 
-Lemma approx_sqrt_Q_cauchy :
-  forall q:Q, QCauchySeq (approx_sqrt_Q q).
+Lemma CReal_sqrt_Q_cauchy :
+  forall q:Q, QCauchySeq (CReal_sqrt_Q_seq q).
 Proof.
   intro q. destruct q as [k j]. destruct k.
-  - intros n a b H H0. reflexivity.
-  - assert (forall n a b, Pos.le n b ->
-               (approx_sqrt_Q (Z.pos p # j) a - approx_sqrt_Q (Z.pos p # j) b
-                < 1 # n)%Q).
-    { intros. rewrite <- (Qplus_lt_r _ _ (approx_sqrt_Q (Z.pos p # j) b)).
+  - intros n a b H H0.
+    change (Qabs _) with 0%Q.
+    apply QExtra.Qpower_pos_lt; reflexivity.
+  - assert (forall n a b, (b<=n)%Z ->
+               (CReal_sqrt_Q_seq (Z.pos p # j) a - CReal_sqrt_Q_seq (Z.pos p # j) b
+                < 2^n)%Q).
+    { intros.
+      pose proof QExtra.Qpower_pos_lt 2 n eq_refl as Hpow.
+      rewrite <- (Qplus_lt_r _ _ (CReal_sqrt_Q_seq (Z.pos p # j) b)).
       ring_simplify. apply Qsqrt_lt.
-      apply (Qle_trans _ (0+(1#n))). rewrite Qplus_0_l. discriminate.
-      apply Qplus_le_l. apply approx_sqrt_Q_pos. discriminate.
+        { apply (Qle_trans _ (0+2^n)). lra.
+          apply Qplus_le_l. apply CReal_sqrt_Q_pos. }
       apply (Qle_lt_trans _ (Z.pos p # j)).
-      apply approx_sqrt_Q_le_below. discriminate.
-      apply (Qlt_le_trans _ ((approx_sqrt_Q (Z.pos p # j) b + (1 # b)) *
-                             (approx_sqrt_Q (Z.pos p # j) b + (1 # b)))).
-      apply approx_sqrt_Q_lt_above. discriminate.
-      apply (Qle_trans _ ((approx_sqrt_Q (Z.pos p # j) b + (1 # n)) *
-                          (approx_sqrt_Q (Z.pos p # j) b + (1 # b)))).
-      apply Qmult_le_r.
-      apply (Qlt_le_trans _ (0+(1#b))). rewrite Qplus_0_l. reflexivity.
-      apply Qplus_le_l. apply approx_sqrt_Q_pos. discriminate.
-      apply Qplus_le_r. unfold Qle; simpl.
-      apply Pos2Z.pos_le_pos, H.
-      apply Qmult_le_l.
-      apply (Qlt_le_trans _ (0+(1#n))). rewrite Qplus_0_l. reflexivity.
-      apply Qplus_le_l. apply approx_sqrt_Q_pos. discriminate.
-      apply Qplus_le_r. unfold Qle; simpl.
-      apply Pos2Z.pos_le_pos, H. }
+        { apply CReal_sqrt_Q_le_below. discriminate. }
+      apply (Qlt_le_trans _ ((CReal_sqrt_Q_seq (Z.pos p # j) b + (2^b)) *
+                             (CReal_sqrt_Q_seq (Z.pos p # j) b + (2^b)))).
+        { apply CReal_sqrt_Q_lt_above. discriminate. }
+      apply (Qle_trans _ ((CReal_sqrt_Q_seq (Z.pos p # j) b + (2^n)) *
+                          (CReal_sqrt_Q_seq (Z.pos p # j) b + (2^b)))).
+        { apply Qmult_le_r.
+          - apply (Qlt_le_trans _ (0+(2^b))).
+            + rewrite Qplus_0_l. apply QExtra.Qpower_pos_lt. reflexivity.
+            + apply Qplus_le_l. apply CReal_sqrt_Q_pos.
+          - apply Qplus_le_r. apply QExtra.Qpower_le_compat.
+              exact H. discriminate. }
+      apply QExtra.Qmult_le_compat_nonneg.
+      - split.
+        + pose proof CReal_sqrt_Q_pos (Z.pos p # j) b.
+          lra.
+        + apply Qle_refl.
+      - split.
+        + pose proof CReal_sqrt_Q_pos (Z.pos p # j) b.
+          pose proof QExtra.Qpower_pos_lt 2 b eq_refl as Hpowb.
+          lra.
+        + apply Qplus_le_r.
+          apply QExtra.Qpower_le_compat.
+            exact H. discriminate.
+    }
     intros n a b H0 H1. apply Qabs_case.
     intros. apply H, H1.
     intros.
-    setoid_replace (- (approx_sqrt_Q (Z.pos p # j) a - approx_sqrt_Q (Z.pos p # j) b))%Q
-      with (approx_sqrt_Q (Z.pos p # j) b - approx_sqrt_Q (Z.pos p # j) a)%Q.
+    setoid_replace (- (CReal_sqrt_Q_seq (Z.pos p # j) a - CReal_sqrt_Q_seq (Z.pos p # j) b))%Q
+      with (CReal_sqrt_Q_seq (Z.pos p # j) b - CReal_sqrt_Q_seq (Z.pos p # j) a)%Q.
     2: ring. apply H, H0.
-  - intros n a b H H0. reflexivity.
+  - intros n a b H H0.
+    change (Qabs _) with 0%Q.
+    apply QExtra.Qpower_pos_lt; reflexivity.
 Qed.
 
-Definition CReal_sqrt_Q (q : Q) : CReal
-  := exist _ (approx_sqrt_Q q) (approx_sqrt_Q_cauchy q).
+Definition CReal_sqrt_Q_scale (q : Q) : Z
+  := ((QExtra.Qbound_lt_ZExp2 q + 1)/2)%Z.
 
+Lemma CReal_sqrt_Q_bound : forall (q : Q),
+  QBound (CReal_sqrt_Q_seq q) (CReal_sqrt_Q_scale q).
+Proof.
+  intros q k.
+  unfold CReal_sqrt_Q_scale.
+  rewrite Qabs_pos.
+    2: apply CReal_sqrt_Q_pos.
+  apply Qsqrt_lt.
+    1: apply Qpower.Qpower_pos; discriminate.
+  destruct (Qlt_le_dec q 0) as [Hq|Hq].
+  - destruct q as [[|n|n] d].
+    + discriminate Hq.
+    + discriminate Hq.
+    + reflexivity.
+  - apply (Qle_lt_trans _ _ _ (CReal_sqrt_Q_le_below _ _ Hq)).
+    rewrite <- Qpower.Qpower_plus.
+      2: discriminate.
+    rewrite Z.add_diag, Z.mul_comm.
+    pose proof Zdiv.Zmod_eq (QExtra.Qbound_lt_ZExp2 q + 1) 2 eq_refl as Hmod.
+    assert (forall a b c : Z, c=b-a -> a=b-c)%Z as H by (intros a b c H'; rewrite H';  ring).
+    apply H in Hmod; rewrite Hmod; clear H Hmod.
+    apply (Qlt_le_trans _ _ _ (QExtra.Qbound_lt_ZExp2_spec q)).
+    apply QExtra.Qpower_le_compat. 2: discriminate.
+    pose proof Z.mod_pos_bound (QExtra.Qbound_lt_ZExp2 q + 1)%Z 2%Z eq_refl.
+    lia.
+Qed.
 
-Time Eval vm_compute in (proj1_sig (CReal_sqrt_Q 2) (10 ^ 400)%positive).
+Definition CReal_sqrt_Q (q : Q) : CReal :=
+{|
+  seq := CReal_sqrt_Q_seq q;
+  scale := CReal_sqrt_Q_scale q;
+  cauchy := CReal_sqrt_Q_cauchy q;
+  bound := CReal_sqrt_Q_bound q
+|}.
+
+Time Eval vm_compute in (seq (CReal_sqrt_Q 2) (-1000)%Z).
