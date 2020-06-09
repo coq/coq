@@ -54,15 +54,16 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=interval ^
     -addon=gappa_tool ^
     -addon=gappa ^
-    -addon=flocq
+    -addon=flocq ^
+    -addon=vst
 REM    -addon=elpi
 REM    -addon=HB
-REM    -addon=vst
 ) ELSE (
   SET EXTRA_ADDONS=^
     -addon=menhir ^
     -addon=menhirlib ^
-    -addon=compcert
+    -addon=compcert ^
+    -addon=vst
 )
 
 call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
