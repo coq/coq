@@ -102,17 +102,17 @@ forget this paragraph and use the tactic according to your intuition.
 Concrete usage in Coq
 --------------------------
 
-.. tacn:: ring
+.. tacn:: ring {? [ {+ @term } ] }
 
-   This tactic solves equations upon polynomial expressions of a ring
+   Solves polynomical equations of a ring
    (or semiring) structure. It proceeds by normalizing both sides
    of the equation (w.r.t. associativity, commutativity and
    distributivity, constant propagation, rewriting of monomials) and
-   comparing syntactically the results.
+   syntactically comparing the results.
 
-.. tacn:: ring_simplify
+.. tacn:: ring_simplify {? [ {+ @term } ] } {+ @term } {? in @ident }
 
-   This tactic applies the normalization procedure described above to
+   Applies the normalization procedure described above to
    the given terms. The tactic then replaces all occurrences of the terms
    given in the conclusion of the goal by their normal forms. If no term
    is given, then the conclusion should be an equation and both
@@ -125,6 +125,10 @@ Concrete usage in Coq
    ``Require Import ZArithRing`` or simply ``Require Import ZArith``; for |N|, do
    ``Require Import NArithRing`` or ``Require Import NArith``.
 
+   All declared field structures can be printed with the :cmd:`Print Rings` command.
+
+   .. cmd:: Print Rings
+      :undocumented:
 
 .. example::
 
@@ -511,7 +515,7 @@ application of the main correctness theorem to well-chosen arguments.
 Dealing with fields
 ------------------------
 
-.. tacn:: field
+.. tacn:: field {? [ {+ @term } ] }
 
    This tactic is an extension of the :tacn:`ring` tactic that deals with rational
    expressions. Given a rational expression :math:`F = 0`. It first reduces the
@@ -568,7 +572,7 @@ Dealing with fields
    Rewriting works with the equality  :g:`m = p` only if :g:`p` is a polynomial since
    rewriting is handled by the underlying ring tactic.
 
-.. tacv:: field_simplify
+.. tacn:: field_simplify {? [ {+ @term } ] } {+ @term } {? in @ident }
  
    performs the simplification in the conclusion of the
    goal, :math:`F_1 = F_2` becomes :math:`N_1 / D_1 = N_2 / D_2`. A normalization step
@@ -602,7 +606,7 @@ Dealing with fields
    assumption :token:`ident` using the
    equalities defined by the :token:`term`\s inside the brackets.
 
-.. tacv:: field_simplify_eq
+.. tacn:: field_simplify_eq {? [ {+ @term } ] } {? in @ident }
 
    performs the simplification in the conclusion of
    the goal removing the denominator. :math:`F_1 = F_2` becomes :math:`N_1 D_2 = N_2 D_1`.

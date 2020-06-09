@@ -3,7 +3,7 @@
 Setting properties of a function's arguments
 ++++++++++++++++++++++++++++++++++++++++++++
 
-.. cmd:: Arguments @smart_qualid {* @arg_specs } {* , {* @implicits_alt } } {? : {+, @args_modifier } }
+.. cmd:: Arguments @reference {* @arg_specs } {* , {* @implicits_alt } } {? : {+, @args_modifier } }
    :name: Arguments
 
    .. insertprodn argument_spec args_modifier
@@ -37,7 +37,7 @@ Setting properties of a function's arguments
    extensions into the core language used by the kernel).  The command's effects include:
 
    * Making arguments implicit. Afterward, implicit arguments
-     must be omitted in any expression that applies :token:`smart_qualid`.
+     must be omitted in any expression that applies :token:`reference`.
    * Declaring that some arguments of a given function should
      be interpreted in a given scope.
    * Affecting when the :tacn:`simpl` and :tacn:`cbn` tactics unfold the function.
@@ -82,7 +82,7 @@ Setting properties of a function's arguments
          evaulate to constructors.  See :ref:`Args_effect_on_unfolding`.
 
       :n:`@name {? % @scope }`
-         a *formal parameter* of the function :n:`@smart_qualid` (i.e.
+         a *formal parameter* of the function :n:`@reference` (i.e.
          the parameter name used in the function definition).  Unless `rename` is specified,
          the list of :n:`@name`\s must be a prefix of the formal parameters, including all implicit
          arguments.  `_` can be used to skip over a formal parameter.
@@ -103,15 +103,15 @@ Setting properties of a function's arguments
             :undocumented:
 
       `clear scopes`
-         clears argument scopes of :n:`@smart_qualid`
+         clears argument scopes of :n:`@reference`
       `extra scopes`
          defines extra argument scopes, to be used in case of coercion to ``Funclass``
          (see :ref:`coercions`) or with a computed type.
       `simpl nomatch`
-         prevents performing a simplification step for :n:`@smart_qualid`
+         prevents performing a simplification step for :n:`@reference`
          that would expose a match construct in the head position.  See :ref:`Args_effect_on_unfolding`.
       `simpl never`
-         prevents performing a simplification step for :n:`@smart_qualid`.  See :ref:`Args_effect_on_unfolding`.
+         prevents performing a simplification step for :n:`@reference`.  See :ref:`Args_effect_on_unfolding`.
 
       `clear bidirectionality hint`
          removes the bidirectionality hint, the `&`
@@ -130,7 +130,7 @@ Setting properties of a function's arguments
          .. todo the above feature seems a bit unnatural and doesn't play well with partial
             application.  See https://github.com/coq/coq/pull/11718#discussion_r408841762
 
-   Use :cmd:`About` to view the current implicit arguments setting for a :token:`smart_qualid`.
+   Use :cmd:`About` to view the current implicit arguments setting for a :token:`reference`.
 
    Or use the :cmd:`Print Implicit` command to see the implicit arguments
    of an object (see :ref:`displaying-implicit-args`).
@@ -268,7 +268,7 @@ Binding arguments to a scope
 
          Arguments plus_fct (f1 f2)%F x%R.
 
-   When interpreting a term, if some of the arguments of :token:`smart_qualid` are built
+   When interpreting a term, if some of the arguments of :token:`reference` are built
    from a notation, then this notation is interpreted in the scope stack
    extended by the scope bound (if any) to this argument. The effect of
    the scope is limited to the argument itself. It does not propagate to

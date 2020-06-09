@@ -177,8 +177,8 @@ and ``coqtop``, unless stated otherwise:
      the command-line.
 
 :-rfrom *dirpath* *qualid*: Load |Coq| compiled library :n:`@qualid`.
-  This is equivalent to running :cmd:`From <From ... Require>`
-  :n:`@dirpath` :cmd:`Require <From ... Require>` :n:`@qualid`.
+  This is equivalent to running :cmd:`From <From … Require>`
+  :n:`@dirpath` :cmd:`Require <From … Require>` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
 :-ri *qualid*, -require-import *qualid*: Load |Coq| compiled library :n:`@qualid` and import it.
@@ -191,14 +191,14 @@ and ``coqtop``, unless stated otherwise:
   of command-line options.
 :-rifrom *dirpath* *qualid*, -require-import-from *dirpath* *qualid*:
   Load |Coq| compiled library :n:`@qualid` and import it.  This is
-  equivalent to running :cmd:`From <From ... Require>` :n:`@dirpath`
-  :cmd:`Require Import <From ... Require>` :n:`@qualid`.  See the
+  equivalent to running :cmd:`From <From … Require>` :n:`@dirpath`
+  :cmd:`Require Import <From … Require>` :n:`@qualid`.  See the
   :ref:`note above <interleave-command-line>` regarding the order of
   command-line options.
 :-refrom *dirpath* *qualid*, -require-export-from *dirpath* *qualid*:
   Load |Coq| compiled library :n:`@qualid` and transitively import it.
-  This is equivalent to running :cmd:`From <From ... Require>`
-  :n:`@dirpath` :cmd:`Require Export <From ... Require>` :n:`@qualid`.
+  This is equivalent to running :cmd:`From <From … Require>`
+  :n:`@dirpath` :cmd:`Require Export <From … Require>` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the
   order of command-line options.
 :-batch: Exit just after argument parsing. Available for ``coqtop`` only.

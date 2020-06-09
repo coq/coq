@@ -50,7 +50,7 @@ let default_args = {
   verify = false;
 }
 
-let start_symbols = ["document"]
+let start_symbols = ["document"; "REACHABLE"]
 let tokens = [ "bullet"; "string"; "unicode_id_part"; "unicode_letter" ]
 
 (* translated symbols *)
@@ -417,21 +417,34 @@ let add_symdef nt file symdef_map =
   in
   symdef_map := StringMap.add nt (Filename.basename file::ent) !symdef_map
 
-let rec edit_SELF nt cur_level next_level right_assoc prod =
+let rec edit_SELF nt cur_level next_level right_assoc inner prod =
+  let subedit sym = List.hd (edit_SELF nt cur_level next_level right_assoc true [sym]) in
   let len = List.length prod in
   List.mapi (fun i sym ->
     match sym with
-    | Snterm s -> begin match s with
-      | s when s = nt || s = "SELF" ->
-        if i = 0 then Snterm next_level
-        else if i+1 < len then sym
-        else if right_assoc then Snterm cur_level else Snterm next_level
-      | "NEXT" -> Snterm next_level
-      | _ -> sym
-    end
-    | Slist1 sym -> Slist1 (List.hd (edit_SELF nt cur_level next_level right_assoc [sym]))
-    | Slist0 sym -> Slist0 (List.hd (edit_SELF nt cur_level next_level right_assoc [sym]))
-    | x -> x)
+    | Sterm _ -> sym
+
+    | Snterm s when s = nt || s = "SELF"->
+      if inner then
+        Snterm nt (* first level *)
+      else if i = 0 then
+        Snterm next_level
+      else if i + 1 = len then
+        (if right_assoc then Snterm cur_level else Snterm next_level)
+      else
+        Snterm nt
+    | Snterm "NEXT" -> Snterm next_level
+    | Snterm _ -> sym
+
+    | Slist1 sym -> Slist1 (subedit sym)
+    | Slist0 sym -> Slist0 (subedit sym)
+    | Slist1sep (sym, sep) -> Slist1sep ((subedit sym), (subedit sep))
+    | Slist0sep (sym, sep) -> Slist0sep ((subedit sym), (subedit sep))
+    | Sopt sym -> Sopt (subedit sym)
+    | Sparen syms -> Sparen (List.map (fun sym -> subedit sym) syms)
+    | Sprod prods -> Sprod (List.map (fun prod -> edit_SELF nt cur_level next_level right_assoc true prod) prods)
+    | Sedit _ -> sym
+    | Sedit2 _ -> sym)
   prod
 
 
@@ -501,6 +514,7 @@ in
 let has_match p prods = List.exists (fun p2 -> ematch p p2) prods
 
 let plugin_regex = Str.regexp "^plugins/\\([a-zA-Z0-9_]+\\)/"
+let level_regex = Str.regexp "[a-zA-Z0-9_]*$"
 
 let read_mlg is_edit ast file level_renames symdef_map =
   let res = ref [] in
@@ -541,6 +555,10 @@ let read_mlg is_edit ast file level_renames symdef_map =
                   -> lev
                 (* Looks like FIRST/LAST can be ignored for documenting the current grammar *)
                 | _ -> "" in
+              if len > 1 && level = "" then
+                error "Missing level string for `%s`\n" nt
+              else if not (Str.string_match level_regex level 0) then
+                error "Invalid level string `%s` for `%s`\n" level nt;
               let cur_level = nt ^ level in
               let next_level = nt ^
                   if i+1 < len then (get_label (List.nth ent.gentry_rules (i+1)).grule_label) else "" in
@@ -552,7 +570,7 @@ let read_mlg is_edit ast file level_renames symdef_map =
               let cvted = List.map cvt_gram_prod rule.grule_prods in
               (* edit names for levels *)
               (* See https://camlp5.github.io/doc/html/grammars.html#b:Associativity *)
-              let edited = List.map (edit_SELF nt cur_level next_level right_assoc) cvted in
+              let edited = List.map (edit_SELF nt cur_level next_level right_assoc false) cvted in
               let prods_to_add =
                 if cur_level <> nt && i+1 < len then
                   edited @ [[Snterm next_level]]
@@ -761,7 +779,7 @@ let rec edit_prod g top edit_map prod =
         begin
           try let splice_prods = NTMap.find nt !g.map in
             match splice_prods with
-            | [] -> assert false
+            | [] -> error "Empty splice for '%s'\n" nt; []
             | [p] -> List.rev (remove_Sedit2 p)
             | _ -> [Sprod (List.map remove_Sedit2 splice_prods)]
           with Not_found -> error "Missing nt '%s' for splice\n" nt; [Snterm nt]
@@ -1145,6 +1163,10 @@ let report_undef_nts g prod rec_nt =
     nts
 
 let apply_edit_file g edits =
+  let moveto src_nt dest_nt oprod prods =
+    g_add_prod_after g (Some src_nt) dest_nt oprod;
+    remove_prod oprod prods src_nt      (* remove orig prod *)
+  in
   List.iter (fun b ->
       let (nt, eprod) = b in
       if not (edit_all_prods g nt eprod) then begin
@@ -1158,17 +1180,26 @@ let apply_edit_file g edits =
               error "DELETENT for undefined nonterminal `%s`\n" nt;
             g_remove g nt;
             aux tl prods false
-          | (Snterm "MOVETO" :: Snterm nt2 :: oprod) :: tl ->
-            g_add_prod_after g (Some nt) nt2 oprod;
-            let prods' = (try
+          | (Snterm "MOVETO" :: Snterm dest_nt :: oprod) :: tl ->
+            let prods = try (* add "nt -> dest_nt" production *)
               let posn = find_first oprod prods nt in
-              let prods = if List.mem [Snterm nt2] prods then prods
-                else insert_after posn [[Snterm nt2]] prods (* insert new prod *)
-              in
-              remove_prod oprod prods nt      (* remove orig prod *)
-              with Not_found -> prods)
-            in
+              if List.mem [Snterm dest_nt] prods then prods
+                else insert_after posn [[Snterm dest_nt]] prods (* insert new prod *)
+            with Not_found -> prods in
+            let prods' = moveto nt dest_nt oprod prods in
             aux tl prods' add_nt
+          | [Snterm "MOVEALLBUT"; Snterm dest_nt] :: tl ->
+            List.iter (fun tlprod ->
+                if not (List.mem tlprod prods) then
+                  error "MOVEALLBUT for %s can't find '%s'\n" nt (prod_to_str tlprod))
+              tl;
+            let prods' = List.fold_left (fun prods oprod ->
+                if not (List.mem oprod tl) then begin
+                  moveto nt dest_nt oprod prods
+                end else
+                  prods)
+              prods prods in
+            prods', add_nt
           | (Snterm "OPTINREF" :: _) :: tl ->
             if not (has_match [] prods) then
               error "OPTINREF but no empty production for %s\n" nt;
@@ -1679,6 +1710,28 @@ type seen = {
   cmdvs: (string * int) NTMap.t;
 }
 
+(* Sphinx notations can't handle empty productions *)
+let has_empty_prod rhs =
+  let rec has_empty_prod_r rhs =
+    match rhs with
+      | [] -> false
+      | Sterm _ :: tl
+      | Snterm _ :: tl
+      | Sedit _ :: tl
+      | Sedit2 (_, _) :: tl ->  has_empty_prod_r tl
+
+      | Slist1 sym :: tl
+      | Slist0 sym :: tl
+      | Slist1sep (sym, _) :: tl
+      | Slist0sep (sym, _) :: tl
+      | Sopt sym :: tl ->  has_empty_prod_r [ sym ] ||  has_empty_prod_r tl
+
+      | Sparen prod :: tl -> List.length prod = 0 || has_empty_prod_r tl
+      | Sprod prods :: tl -> List.fold_left
+          (fun rv prod -> List.length prod = 0 || has_empty_prod_r tl || rv) false prods
+  in
+  List.length rhs = 0 || has_empty_prod_r rhs
+
 let process_rst g file args seen tac_prods cmd_prods =
   let old_rst = open_in file in
   let new_rst = open_temp_bin file in
@@ -1709,6 +1762,9 @@ let process_rst g file args seen tac_prods cmd_prods =
         List.iteri (fun i prod ->
             let rhs = String.trim (prod_to_prodn prod) in
             let sep = if i = 0 then " ::=" else "|" in
+            if has_empty_prod prod then
+              error "%s line %d: Empty (sub-)production for %s, edit to remove: '%s %s'\n"
+                file !linenum nt sep rhs;
             fprintf new_rst "%s   %s%s %s\n" indent (if i = 0 then nt else "") sep rhs)
           prods;
         if nt <> end_ then copy_prods tl
@@ -1772,10 +1828,10 @@ let process_rst g file args seen tac_prods cmd_prods =
     "doc/sphinx/language/core/sections.rst";
     "doc/sphinx/language/extensions/implicit-arguments.rst";
     "doc/sphinx/language/extensions/arguments-command.rst";
-    "doc/sphinx/language/using/libraries/funind.rst";
-
-    "doc/sphinx/language/gallina-specification-language.rst";
     "doc/sphinx/language/gallina-extensions.rst";
+    "doc/sphinx/language/gallina-specification-language.rst";
+    "doc/sphinx/language/using/libraries/funind.rst";
+    "doc/sphinx/proof-engine/ltac.rst";
     "doc/sphinx/proof-engine/vernacular-commands.rst";
     "doc/sphinx/user-extensions/syntax-extensions.rst"
   ]
@@ -1859,7 +1915,7 @@ let process_rst g file args seen tac_prods cmd_prods =
   close_out new_rst;
   finish_with_file file args
 
-let report_omitted_prods entries seen label split =
+let report_omitted_prods g seen label split =
   let maybe_warn first last n =
     if first <> "" then begin
       if first <> last then
@@ -1869,14 +1925,21 @@ let report_omitted_prods entries seen label split =
     end
   in
 
+  let included = try
+      List.map (fun prod ->
+        match prod with
+        | Snterm nt :: tl -> nt
+        | _ -> "") (NTMap.find "NOTINRSTS" !g.map)
+    with Not_found -> []
+  in
   let first, last, n, total = List.fold_left (fun missing nt ->
       let first, last, n, total = missing in
-      if NTMap.mem nt seen then begin
+      if NTMap.mem nt seen || (List.mem nt included) then begin
         maybe_warn first last n;
         "", "", 0, total
       end else
         (if first = "" then nt else first), nt, n + 1, total + 1)
-    ("", "", 0, 0) entries in
+    ("", "", 0, 0) !g.order in
   maybe_warn first last n;
   if total <> 0 then
     Printf.eprintf "TOTAL %ss not included = %d\n" label total
@@ -1954,7 +2017,7 @@ let process_grammar args =
       let tac_list, tac_prods = plist "simple_tactic" in
       let cmd_list, cmd_prods = plist "command" in
       List.iter (fun file -> process_rst g file args seen tac_prods cmd_prods) args.rst_files;
-      report_omitted_prods !g.order !seen.nts "Nonterminal" "";
+      report_omitted_prods g !seen.nts "Nonterminal" "";
       let out = open_out (dir "updated_rsts") in
       close_out out;
     end;
@@ -1996,10 +2059,12 @@ let process_grammar args =
 
       let cmd_nts = ["command"] in
       (* TODO: need to handle tactic_mode (overlaps with query_command) and subprf *)
-      cmdReport "prodnCommands" "cmds" cmd_nts !seen.cmds !seen.cmdvs;
+      if args.check_cmds then
+        cmdReport "prodnCommands" "cmds" cmd_nts !seen.cmds !seen.cmdvs;
 
       let tac_nts = ["simple_tactic"] in
-      cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs
+      if args.check_tacs then
+        cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs
     end;
 
     (* generate prodnGrammar for reference *)
