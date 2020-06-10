@@ -96,6 +96,16 @@ Changes in 8.12+beta1
 .. contents::
    :local:
 
+Kernel
+^^^^^^
+
+- **Fixed:**
+  Specification of :n:`PrimFloat.leb` which made
+  :n:`(x <= y)%float` true for any non NaN :n:`x` and :n:`y`.
+  (`#12484 <https://github.com/coq/coq/pull/12484>`_,
+  fixes `#12483 <https://github.com/coq/coq/issues/12483>`_,
+  by Pierre Roux).
+
 Specification language, type inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1040,8 +1050,9 @@ Reference manual
   `#11423 <https://github.com/coq/coq/pull/11423>`_,
   `#11705 <https://github.com/coq/coq/pull/11705>`_,
   `#11718 <https://github.com/coq/coq/pull/11718>`_,
-  `#11720 <https://github.com/coq/coq/pull/11720>`_
-  and `#11961 <https://github.com/coq/coq/pull/11961>`_, by Jim
+  `#11720 <https://github.com/coq/coq/pull/11720>`_,
+  `#11961 <https://github.com/coq/coq/pull/11961>`_
+  and `#12103 <https://github.com/coq/coq/pull/12103>`_, by Jim
   Fehrle, reviewed by Théo Zimmermann).
 - **Added:**
   A glossary of terms and an index of attributes
@@ -1068,10 +1079,11 @@ Reference manual
   `#11720 <https://github.com/coq/coq/pull/11720>`_
   `#11797 <https://github.com/coq/coq/pull/11797>`_,
   `#11913 <https://github.com/coq/coq/pull/11913>`_,
-  `#11958 <https://github.com/coq/coq/pull/11958>`_
-  `#11960 <https://github.com/coq/coq/pull/11960>`_
-  and `#11961 <https://github.com/coq/coq/pull/11961>`_, by Jim
-  Fehrle, reviewed by Théo Zimmermann).
+  `#11958 <https://github.com/coq/coq/pull/11958>`_,
+  `#11960 <https://github.com/coq/coq/pull/11960>`_,
+  `#11961 <https://github.com/coq/coq/pull/11961>`_
+  and `#12103 <https://github.com/coq/coq/pull/12103>`_, by Jim
+  Fehrle, reviewed by Théo Zimmermann and Jason Gross).
 
 Infrastructure and dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
