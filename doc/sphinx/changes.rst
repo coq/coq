@@ -14,6 +14,82 @@ Version 8.12
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
+|Coq| version 8.12 integrates many quality-of-life improvements,
+in particular with respect to notations, scopes and implicit arguments,
+along with many bug-fixes and major improvements to the reference manual.
+The main changes include:
+
+- New :ref:`binder notation<812Implicit>` for non-maximal implicit arguments using :g:`[ ]`
+  allowing to set and see the implicit status of arguments immediately.
+- New notation :g:`Inductive I A | x : s := ...` to distinguish the
+  :ref:`uniform<812Uniform>` from the non-uniform parameters in inductive definitions.
+- More robust and expressive treatment of :ref:`implicit inductive<812ImplicitInductive>`
+  parameters in inductive declarations.
+- Improvements in the treatment of implicit arguments and partially applied
+  constants in :ref:`notations<812Notations>`, parsing of hexadecimal number notation and better
+  handling of scopes and coercions for printing.
+- A correct and efficient :ref:`coercion coherence<812Coercions>` checking algorithm, avoiding
+  spurious or duplicate warnings.
+- An improved :cmd:`Search` :ref:`command<812Search>` which accepts complex queries. Note that
+  this takes precedence over the now deprecated :ref:`ssreflect search<812SSRSearch>`.
+- Many additions and improvements of the :ref:`standard library<812Stdlib>`.
+- Improvements to the :ref:`reference manual<812Refman>` include a more logical organization
+  of chapters along with updated syntax descriptions that match Coq's grammar
+  in most but not all chapters.
+
+Additionally, the :tacn:`omega` tactic is deprecated in this version of Coq,
+and we recommend users to switch to :tacn:`lia` in new proof scripts (see
+also the warning message in the :ref:`corresponding chapter
+<omega_chapter>`).
+
+See the `Changes in 8.12+beta1`_ section and following sections for the
+detailed list of changes, including potentially breaking changes marked
+with **Changed**.
+
+Coq's documentation is available at https://coq.github.io/doc/v8.12/refman (reference
+manual), and https://coq.github.io/doc/v8.12/stdlib (documentation of
+the standard library). Developer documentation of the ML API is available
+at https://coq.github.io/doc/v8.12/api.
+
+Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
+Soegtrop and Théo Zimmermann worked on maintaining and improving the
+continuous integration system and package building infrastructure.
+
+The OPAM repository for |Coq| packages has been maintained by
+Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
+contributions from many users. A list of packages is available at
+https://coq.inria.fr/opam/www/.
+
+The 59 contributors to this version are Abhishek Anand, Yves Bertot, Frédéric
+Besson, Lasse Blaauwbroek, Simon Boulier, Quentin Carbonneaux, Tej Chajed,
+Arthur Charguéraud, Cyril Cohen, Pierre Courtieu, Matthew Dempsky, Maxime Dénès,
+Andres Erbsen, Erika (@rrika), Nikita Eshkeev, Jim Fehrle, @formalize, Emilio
+Jesús Gallego Arias, Paolo G. Giarrusso, Gaëtan Gilbert, Jason Gross, Samuel
+Gruetter, Attila Gáspár, Hugo Herbelin, Jan-Oliver Kaiser, Robbert Krebbers,
+Vincent Laporte, Olivier Laurent, Xavier Leroy, Thomas Letan, Yishuai Li,
+Kenji Maillard, Erik Martin-Dorel, Guillaume Melquiond, Ike Mulder,
+Guillaume Munch-Maccagnoni, Antonio Nikishaev, Karl Palmskog, Clément
+Pit-Claudel, Pierre-Marie Pédrot, Ramkumar Ramachandra, Lars Rasmusson, Daniel
+de Rauglaudre, Talia Ringer, Pierre Roux, Kazuhiko Sakaguchi, Vincent Semeria,
+@scinart, Kartik Singhal, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi,
+Laurent Théry, Ralf Treinen, Anton Trunov, Bernhard M. Wiedemann, Li-yao Xia,
+Nickolai Zeldovich and Théo Zimmermann.
+
+Many power users helped to improve the design of this new version via
+the GitHub issue and pull request system, the |Coq| development mailing list
+coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
+<https://coq.discourse.group/>`_ and the new `Coq Zulip chat <http://coq.zulipchat.com>`_
+(thanks to Cyril Cohen for organizing the move from Gitter).
+
+Version 8.12's development spanned 6 months from the release of
+|Coq| 8.11.0. Emilio Jesus Gallego Arias and Théo Zimmermann are
+the release managers of Coq 8.12. This release is the result of
+~500 PRs merged, closing ~100 issues.
+
+| Nantes, June 2020,
+| Matthieu Sozeau for the |Coq| development team
+|
+
 Changes in 8.12+beta1
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -44,17 +120,23 @@ Specification language, type inference
   <https://github.com/coq/coq/pull/4696>`_, `#5173
   <https://github.com/coq/coq/pull/5173>`_, `#9098
   <https://github.com/coq/coq/pull/9098>`_).
+
+  .. _812Implicit:
+
 - **Added:**
   Syntax for non-maximal implicit arguments in definitions and terms using
   square brackets. The syntax is ``[x : A]``, ``[x]``, ```[A]``
   to be consistent with the command :cmd:`Arguments`
   (`#11235 <https://github.com/coq/coq/pull/11235>`_,
-  by SimonBoulier).
+  by Simon Boulier).
 - **Added:**
   :cmd:`Implicit Types` are now taken into account for printing. To inhibit it,
   unset the :flag:`Printing Use Implicit Types` flag
   (`#11261 <https://github.com/coq/coq/pull/11261>`_,
   by Hugo Herbelin, granting `#10366 <https://github.com/coq/coq/pull/10366>`_).
+
+  .. _812Uniform:
+
 - **Added:**
   New syntax :cmd:`Inductive` :n:`@ident {* @binder } | {* @binder } := ...`
   to specify which parameters of an inductive type are uniform.
@@ -65,6 +147,9 @@ Specification language, type inference
   definitions which are not recursive
   (`#12121 <https://github.com/coq/coq/pull/12121>`_,
   by Hugo Herbelin).
+
+  .. _812ImplicitInductive:
+
 - **Fixed:**
   More robust and expressive treatment of implicit inductive
   parameters in inductive declarations (`#11579
@@ -81,6 +166,8 @@ Specification language, type inference
   (`#12422 <https://github.com/coq/coq/pull/12422>`_,
   fixes `#12418 <https://github.com/coq/coq/pull/12418>`_,
   by Hugo Herbelin).
+
+  .. _812Notations:
 
 Notations
 ^^^^^^^^^
@@ -369,6 +456,8 @@ Tactic language
 SSReflect
 ^^^^^^^^^
 
+  .. _812SSRSearch:
+
 - **Changed:** The :cmd:`Search (ssreflect)` command that used to be
   available when loading the `ssreflect` plugin has been moved to a
   separate plugin that needs to be loaded separately: `ssrsearch`
@@ -431,6 +520,8 @@ Flags, options and attributes
 Commands
 ^^^^^^^^
 
+  .. _812Coercions:
+
 - **Changed:**
   The :cmd:`Coercion` command has been improved to check the coherence of the
   inheritance graph. It checks whether a circular inheritance path of `C >-> C`
@@ -488,6 +579,9 @@ Commands
 - **Added:** Support for universe bindings and universe contrainsts in
   :cmd:`Let` definitions (`#11534
   <https://github.com/coq/coq/pull/11534>`_, by Théo Zimmermann).
+
+  .. _812Search:
+
 - **Added:** Support for new clauses `hyp:`, `headhyp:`, `concl:`,
   `headconcl:`, `head:` and `is:` in :cmd:`Search`.  Support for
   complex search queries combining disjunctions, conjunctions and
@@ -673,6 +767,8 @@ CoqIDE
   "Revert all buffers" command from CoqIDE which had been broken for a long time
   (`#11415 <https://github.com/coq/coq/pull/11415>`_,
   by Pierre-Marie Pédrot).
+
+  .. _812Stdlib:
 
 Standard library
 ^^^^^^^^^^^^^^^^
@@ -914,6 +1010,8 @@ Extraction
   <https://github.com/coq/coq/issues/12257>`_ and `#12258
   <https://github.com/coq/coq/issues/12258>`_).
 
+  .. _812Refman:
+
 Reference manual
 ^^^^^^^^^^^^^^^^
 
@@ -1003,29 +1101,29 @@ Summary of changes
 
 The main changes brought by |Coq| version 8.11 are:
 
-- `Ltac2 <811Ltac2>`_, a new tactic language for writing more robust larger scale
+- :ref:`Ltac2<811Ltac2>`, a new tactic language for writing more robust larger scale
   tactics, with built-in support for datatypes and the multi-goal tactic monad.
-- `Primitive floats <811PrimitiveFloats>`_ are integrated in terms and follow the binary64 format
+- :ref:`Primitive floats<811PrimitiveFloats>` are integrated in terms and follow the binary64 format
   of the IEEE 754 standard, as specified in the `Coq.Float.Floats` library.
-- `Cleanups <811Sections>`_ of the section mechanism, delayed proofs and further
+- :ref:`Cleanups<811Sections>` of the section mechanism, delayed proofs and further
   restrictions of template polymorphism to fix soundness issues related to
   universes.
-- New `unsafe flags <811UnsafeFlags>`_ to disable locally guard, positivity and universe
+- New :ref:`unsafe flags<811UnsafeFlags>` to disable locally guard, positivity and universe
   checking. Reliance on these flags is always printed by
   :g:`Print Assumptions`.
-- `Fixed bugs <811ExportBug>`_ of :g:`Export` and :g:`Import` that can have a
+- :ref:`Fixed bugs<811ExportBug>` of :g:`Export` and :g:`Import` that can have a
   significant impact on user developments (**common source of
   incompatibility!**).
-- New interactive development method based on `vos` `interface files <811vos>`_,
+- New interactive development method based on `vos` :ref:`interface files<811vos>`,
   allowing to work on a file without recompiling the proof parts of their
   dependencies.
-- New :g:`Arguments` annotation for `bidirectional type inference <811BidirArguments>`_
+- New :g:`Arguments` annotation for :ref:`bidirectional type inference<811BidirArguments>`
   configuration for reference (e.g. constants, inductive) applications.
-- New `refine attribute <811RefineInstance>`_ for :cmd:`Instance` can be used instead of
+- New :ref:`refine attribute<811RefineInstance>` for :cmd:`Instance` can be used instead of
   the removed ``Refine Instance Mode``.
-- Generalization of the :g:`under` and :g:`over` `tactics <811SSRUnderOver>`_ of SSReflect to
+- Generalization of the :g:`under` and :g:`over` :ref:`tactics<811SSRUnderOver>` of SSReflect to
   arbitrary relations.
-- `Revision <811Reals>`_ of the :g:`Coq.Reals` library, its axiomatisation and
+- :ref:`Revision<811Reals>` of the :g:`Coq.Reals` library, its axiomatisation and
   instances of the constructive and classical real numbers.
 
 Additionally, while the :tacn:`omega` tactic is not yet deprecated in
