@@ -1193,10 +1193,10 @@ function make_elpi {
   make_dune
   make_re
 
-  if build_prep https://github.com/LPCIC/elpi/archive v1.11.0 tar.gz; then
+  if build_prep https://github.com/LPCIC/elpi/archive v1.11.0 tar.gz 1 elpi; then
 
-    log2 make build DUNE_OPTS="-p elpi"
-    log2 make install DUNE_OPTS="-p elpi"
+    log2 dune build -p elpi
+    log2 dune install elpi
 
     build_post
 
