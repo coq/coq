@@ -1,0 +1,27 @@
+diff/patch file created on jeu. juin 11 12:44:25 CEST 2020 with:
+difftar-folder.sh coq-gappalib-coq-1.4.3.tar.gz gappa-coq 1
+TARFILE= coq-gappalib-coq-1.4.3.tar.gz
+FOLDER= gappa-coq
+TARSTRIP= 1
+TARPREFIX= coq-gappalib-coq-1.4.3/
+ORIGFOLDER= gappa-coq.orig
+--- gappa-coq.orig/src/gappatac.c	2020-04-04 19:33:16.000000000 +0200
++++ gappa-coq/src/gappatac.c	2020-06-11 12:43:36.731331841 +0200
+@@ -43,7 +43,7 @@
+ #if COQVERSION >= 81000
+ 
+ let pr_constr t =
+-  let sigma, env = Vernacstate.Proof_global.get_current_context () in
++  let sigma, env = Vernacstate.Declare.get_current_context () in
+   Printer.pr_econstr_env env sigma t
+ 
+ let constr_of_global = UnivGen.constr_of_monomorphic_global
+@@ -51,7 +51,7 @@
+ let binder_name = Context.binder_name
+ 
+ let refine_no_check t gl =
+-  Refiner.refiner ~check:false (EConstr.Unsafe.to_constr t) gl
++  Proofview.V82.of_tactic (Refiner.refiner ~check:false (EConstr.Unsafe.to_constr t)) gl
+ 
+ #else
+ 
