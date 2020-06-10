@@ -37,8 +37,9 @@ SET CI_PROJECT_DIR_CFMT=%CI_PROJECT_DIR_MFMT:C:/=/cygdrive/c/%
 SET COQREGTESTING=Y
 SET PATH=%PATH%;C:\Program Files\7-Zip\;C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
 
-IF "%WINDOWS%" == "enabled_all_addons" (
-  SET EXTRA_ADDONS=^
+REM Enable all addons on release branch
+
+SET EXTRA_ADDONS=^
     -addon=bignums ^
     -addon=equations ^
     -addon=mtac2 ^
@@ -57,9 +58,6 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=gappa ^
     -addon=elpi ^
     -addon=HB
-) ELSE (
-  SET "EXTRA_ADDONS= "
-)
 
 call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -arch=%ARCH% -installer=Y -coqver=%CI_PROJECT_DIR_CFMT% ^
