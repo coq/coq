@@ -44,7 +44,7 @@ Formally, the syntax of classes is defined as:
    .. prodn::
       class ::= Funclass
       | Sortclass
-      | @smart_qualid
+      | @reference
 
 
 

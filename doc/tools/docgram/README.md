@@ -200,6 +200,11 @@ that appear in the specified production:
 `MOVETO <destination> <production>` - moves the production to `<destination>` and,
  if needed, creates a new production <edited_nt> -> \<destination>.
 
+
+`MOVEALLBUT <destination>` - moves all the productions in the nonterminal to `<destination>`
+*except* for the productions following the `MOVEALLBUT` production in the edit script
+(terminated only by the closing `]`).
+
 `OPTINREF` - verifies that <edited_nt> has an empty production.  If so, it removes
 the empty production and replaces all references to <edited_nt> throughout the
 grammar with `OPT <edited_nt>`

@@ -1425,7 +1425,7 @@ simple_tactic: [
 | "firstorder" OPT tactic firstorder_using "with" LIST1 preident
 | "gintuition" OPT tactic
 | "functional" "inversion" quantified_hypothesis OPT reference      (* funind plugin *)
-| "functional" "induction" LIST1 constr fun_ind_using with_names      (* funind plugin *)
+| "functional" "induction" lconstr fun_ind_using with_names      (* funind plugin *)
 | "soft" "functional" "induction" LIST1 constr fun_ind_using with_names      (* funind plugin *)
 | "reflexivity"
 | "exact" casted_constr
@@ -1591,7 +1591,6 @@ simple_tactic: [
 | "auto" OPT int_or_var auto_using hintbases
 | "info_auto" OPT int_or_var auto_using hintbases
 | "debug" "auto" OPT int_or_var auto_using hintbases
-| "prolog" "[" LIST0 uconstr "]" int_or_var
 | "eauto" OPT int_or_var OPT int_or_var auto_using hintbases
 | "new" "auto" OPT int_or_var auto_using hintbases
 | "debug" "eauto" OPT int_or_var OPT int_or_var auto_using hintbases

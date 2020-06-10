@@ -90,7 +90,7 @@ list of assertion commands is given in :ref:`Assertions`. The command
 .. cmd:: Save @ident
    :name: Save
 
-   Forces the name of the original goal to be :token:`ident`.
+   Saves a completed proof with the name :token:`ident`.
 
 .. cmd:: Admitted
 
