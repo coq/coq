@@ -174,10 +174,13 @@ let type_of_constant_in env (kn,_u as cst) =
   constant_type_in env cst, cstrnts
 
 let stage_vars_in_constant env (kn, _) =
-  let cb = lookup_constant kn env in
-  match cb.const_body with
-  | Def c -> Some (count_annots @@ Mod_subst.force_constr c)
-  | _ -> None
+  let flags = Environ.typing_flags env in
+  if flags.Declarations.check_sized then
+    let cb = lookup_constant kn env in
+    match cb.const_body with
+    | Def c -> Some (count_annots @@ Mod_subst.force_constr c)
+    | _ -> None
+  else None
 
 (* Type of a lambda-abstraction. *)
 

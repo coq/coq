@@ -280,6 +280,43 @@ Definition const3 :=
     | S n' => f n'
     end.
 
+(** Definitions used outside of Sized Typing. *)
+(** Global constants checked without sized typing do /not/ have stage annotations;
+  * This is for performance reasons, since even in the standard library,
+  * global definitions may require huge amounts of annotations in their bodies.
+ **)
+
+Section sizeless_local.
+
+Let anat := nat.
+
+Unset Sized Typing.
+Set Guard Checking.
+
+Definition letnat := anat. (* This was defined with a Let (i.e. as a Var). *)
+Definition defnat := N. (* This was defined with a Definition (i.e. as a Const). *)
+
+Unset Guard Checking.
+Set Sized Typing.
+
+(* In the core calculus, this is
+    fix f : nat* -> nat  := (\n: defnat. n)
+  The lambda has type (defnat -> defnat).
+  When it gets compared to the fixpoint type,
+  it expands to nat^∞ -> nat^∞, since that is the body of defnat.
+  But the recursive argument type's size cannot be infinite!
+  Intuitively, it's as if this declaration is
+    fix f (n: nat^∞) := n *)
+Fail Definition const4 :=
+  fix f (n: defnat) := n.
+
+(* However (and perhaps unintuitively?), local constants checked without sized typing /do/. *)
+
+Definition var4 :=
+  fix f (n: letnat) := n.
+
+End sizeless_local.
+
 (** Definitions that illustrate size-preservation. *)
 
 (* [Definition] itself does not preserve size of types. *)
