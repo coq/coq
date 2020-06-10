@@ -85,12 +85,14 @@ Definition R1 := fun (x : nat) (p : P x) m (q : P (x+1)) (r : Q x p) => m > 0.
 Inductive myEx1 : Type :=
   ExI1 : forall n (pn : P n) pn' (q : Q n pn), R1 n pn n pn' q -> myEx1.
 
-Hint Resolve (Q1 P1) : SSR.
+Definition my_hint := Q1 P1.
+
+Hint Resolve my_hint : SSR.
 
 (* tests that goals in prop are solved in the right order, propagating instantiations,
    thus the goal Q 1 ?p1 is faced by trivial after ?p1, and is thus evar free *)
 Lemma testmE14 : myEx1.
 Proof.
 apply: ExI1 1 _ _ _ _.
-match goal with |- is_true (R1 1 P1 1 P11 (Q1 P1)) => done | _ => fail end.
+match goal with |- is_true (R1 1 P1 1 P11 my_hint) => done | _ => fail end.
 Qed.

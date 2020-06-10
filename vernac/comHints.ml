@@ -64,12 +64,11 @@ let project_hint ~poly pri l2r r =
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
   (info, true, Hints.PathAny, Hints.hint_globref (GlobRef.ConstRef c))
 
-let warn_deprecated_hint_constr =
-  CWarnings.create ~name:"fragile-hint-constr" ~category:"automation"
-    (fun () ->
-      Pp.strbrk
-        "Declaring arbitrary terms as hints is fragile; it is recommended to \
-         declare a toplevel constant instead")
+let hint_proxy =
+  Goptions.declare_bool_option_and_ref
+    ~depr:true
+    ~key:["Declare";"Hint";"Proxy"]
+    ~value:true
 
 (* Only error when we have to (axioms may be instantiated if from functors)
    XXX maybe error if not from a functor argument?
@@ -99,7 +98,6 @@ let interp_hints ~poly h =
       let gr = Smartlocate.global_with_alias c in
       (PathHints [gr], hint_globref gr)
     | HintsConstr c ->
-      let () = warn_deprecated_hint_constr () in
       let env = Global.env () in
       let sigma = Evd.from_env env in
       let c, uctx = Constrintern.interp_constr env sigma c in
@@ -107,12 +105,34 @@ let interp_hints ~poly h =
       let c = Evarutil.nf_evar (Evd.from_ctx uctx) c in
       let diff = UState.context_set uctx in
       let c =
-        if poly then (c, Some diff)
+        if hint_proxy () then
+          let sigma = Evd.merge_context_set UState.UnivRigid sigma diff in
+          let avoid = Environ.ids_of_named_context_val (Environ.named_context_val env) in
+          (* This is a hack to ensure that including two modules defining anonymous
+            hints will not trigger an already defined error. *)
+          let name = Printf.sprintf "Private_hint_local_%x_" (ModPath.hash @@ Global.current_modpath ()) in
+          let name = Namegen.next_global_ident_away (Id.of_string name) avoid in
+          let ctx = Evd.univ_entry ~poly sigma in
+          let c = EConstr.to_constr sigma c in
+          let cb =
+            Declare.(DefinitionEntry (definition_entry ~univs:ctx ~opaque:false c))
+          in
+          let c =
+            Declare.declare_constant ~local:Locality.ImportNeedQualified ~name
+              ~kind:Decls.(IsDefinition Definition)
+              cb
+          in
+          Hints.hint_globref (GlobRef.ConstRef c)
         else
-          let () = DeclareUctx.declare_universe_context ~poly:false diff in
-          (c, None)
+          let c =
+            if poly then (c, Some diff)
+            else
+              let () = DeclareUctx.declare_universe_context ~poly:false diff in
+              (c, None)
+          in
+          Hints.hint_constr c [@ocaml.warning "-3"]
       in
-      (PathAny, Hints.hint_constr c) [@ocaml.warning "-3"]
+      (PathAny, c)
   in
   let fp = Constrintern.intern_constr_pattern env sigma in
   let fres (info, b, r) =
