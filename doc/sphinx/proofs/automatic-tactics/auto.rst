@@ -412,7 +412,9 @@ Creating Hints
 
       :n:`@one_term`
         Permits declaring a hint without declaring a new
-        constant first, but this is not recommended.
+        constant first, but this is not recommended. The command first declares
+        the term as a local definition and then performs the above with the resulting
+        global reference.
 
          .. warn:: Declaring arbitrary terms as hints is fragile; it is recommended to declare a toplevel constant instead
             :undocumented:
@@ -630,6 +632,13 @@ Creating Hints
 
    This command displays all hints from database :n:`@ident`.
 
+.. flag:: Declare Hint Proxy
+
+   .. deprecated:: 8.15
+
+   When unset, the :cmd:`Hint Resolve` and :cmd:`Hint Immediate` commands will not
+   declare a local definition if given terms that are not qualified
+   identifiers as arguments.
 
 Hint databases defined in the Coq standard library
 --------------------------------------------------
