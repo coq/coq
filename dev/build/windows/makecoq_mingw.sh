@@ -1087,11 +1087,10 @@ function make_menhir {
   make_ocaml
   make_findlib
   make_ocamlbuild
-  # This is the version required by latest CompCert
-  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20190626 menhir-20190626 tar.gz 1 ; then
-    # Note: menhir doesn't support -j 8, so don't pass MAKE_OPT
-    log2 make all PREFIX="$PREFIXOCAML"
-    log2 make install PREFIX="$PREFIXOCAML"
+  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20200525 menhir-20200525 tar.gz 1 ; then
+    # ToDo: don't know if this is the intended / most reliable to do it, but it works
+    log2 dune build @install
+    log2 dune install menhir menhirSdk menhirLib
     build_post
   fi
 }
@@ -1194,10 +1193,10 @@ function make_elpi {
   make_dune
   make_re
 
-  if build_prep https://github.com/LPCIC/elpi/archive v1.11.0 tar.gz; then
+  if build_prep https://github.com/LPCIC/elpi/archive v1.11.0 tar.gz 1 elpi; then
 
-    log2 make build DUNE_OPTS="-p elpi"
-    log2 make install DUNE_OPTS="-p elpi"
+    log2 dune build -p elpi
+    log2 dune install elpi
 
     build_post
 
@@ -1712,10 +1711,8 @@ function make_addon_menhir {
       touch "$FLAGFILES/menhir-addon.started"
       # Menhir executable
       install_glob "$PREFIXOCAML/bin" 'menhir.exe' "$PREFIXCOQ/bin/"
-      # Menhir Standard library
-      install_glob "$PREFIXOCAML/share/menhir/" '*.mly' "$PREFIXCOQ/share/menhir/"
       # Menhir PDF doc
-      install_glob "$PREFIXOCAML/share/doc/menhir/" '*.pdf' "$PREFIXCOQ/doc/menhir/"
+      install_glob "$PREFIXOCAML/doc/menhir/" '*.pdf' "$PREFIXCOQ/doc/menhir/"
       touch "$FLAGFILES/menhir-addon.finished"
       LOGTARGET=other
       installer_addon_end
@@ -1730,7 +1727,8 @@ function make_addon_menhirlib {
   if build_prep_overlay menhirlib; then
     installer_addon_section menhirlib "Menhirlib" "Coq support library for using Menhir generated parsers in Coq" ""
     # The supplied makefiles don't work in any way on cygwin
-    cd src
+    # ToDo: dune also doesn't seem to work for the coq files
+    cd coq-menhirlib/src
     echo -R . MenhirLib > _CoqProject
     ls -1 *.v >> _CoqProject
     log1 coq_makefile -f _CoqProject -o Makefile.coq
@@ -1816,7 +1814,7 @@ function make_addon_coquelicot {
   installer_addon_dependency_end
   if build_prep_overlay coquelicot; then
     installer_addon_section coquelicot "Coquelicot" "Coq library for real analysis" ""
-    logn autogen ./autogen.sh
+    log1 autoreconf -i -s
     logn configure ./configure --libdir="$PREFIXCOQ/lib/coq/user-contrib/Coquelicot"
     logn remake ./remake
     logn remake-install ./remake install
@@ -1882,7 +1880,7 @@ function make_addon_quickchick {
 function make_addon_flocq {
   if build_prep_overlay flocq; then
     installer_addon_section flocq "Flocq" "Coq library for floating point arithmetic" ""
-    log1 autoconf
+    log1 autoreconf
     logn configure ./configure
     logn remake ./remake --jobs=$MAKE_THREADS
     logn install ./remake install
@@ -1901,7 +1899,7 @@ function make_addon_interval {
   installer_addon_dependency_end
   if build_prep_overlay interval; then
     installer_addon_section interval "Interval" "Coq library and tactic for proving real inequalities" ""
-    logn autogen ./autogen.sh
+    log1 autoreconf
     logn configure ./configure
     logn remake ./remake --jobs=$MAKE_THREADS
     logn install ./remake install
@@ -1930,7 +1928,9 @@ function make_addon_gappa_tool {
   install_boost
   if build_prep_overlay gappa_tool; then
     installer_addon_section gappa_tool "Gappa tool" "Stand alone tool for automated generation of numerical arithmetic proofs" ""
-    logn autogen ./autogen.sh
+    log1 autoreconf
+    # Note: configure.in seems to reference this file
+    touch stamp-config_h.in
     logn configure ./configure --build="$HOST" --host="$HOST" --target="$TARGET" --prefix="$PREFIXCOQ"
     logn remake ./remake --jobs=$MAKE_THREADS
     logn install ./remake -d install
@@ -1947,7 +1947,7 @@ function make_addon_gappa {
   installer_addon_dependency_end
   if build_prep_overlay gappa_plugin ; then
     installer_addon_section gappa "Gappa plugin" "Coq plugin for the Gappa tool" ""
-    logn autogen ./autogen.sh
+    log1 autoreconf
     logn configure ./configure
     logn remake ./remake
     logn install ./remake install
