@@ -55,15 +55,14 @@ let generic_refine ~typecheck f gl =
   (* Create the refinement term *)
   Proofview.Unsafe.tclEVARS (Evd.reset_future_goals sigma) >>= fun () ->
   f >>= fun (v, c) ->
-  Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.tclEVARMAP >>= fun sigma' ->
   Proofview.V82.wrap_exceptions begin fun () ->
-  let evs = Evd.save_future_goals sigma in
   (* Redo the effects in sigma in the monad's env *)
-  let privates_csts = Evd.eval_side_effects sigma in
+  let privates_csts = Evd.eval_side_effects sigma' in
   let env = Safe_typing.push_private_constants env privates_csts.Evd.seff_private in
   (* Check that the introduced evars are well-typed *)
   let fold accu ev = typecheck_evar ev env accu in
-  let sigma = if typecheck then Evd.fold_future_goals fold sigma evs else sigma in
+  let sigma = if typecheck then Evd.fold_future_goals fold sigma' else sigma' in
   (* Check that the refined term is typesafe *)
   let sigma = if typecheck then Typing.check env sigma c concl else sigma in
   (* Check that the goal itself does not appear in the refined term *)
@@ -75,7 +74,7 @@ let generic_refine ~typecheck f gl =
   (* Restore the [future goals] state. *)
   let sigma = Evd.restore_future_goals sigma prev_future_goals in
   (* Select the goals *)
-  let evs = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) evs in
+  let evs = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) sigma' in
   let comb,shelf,given_up,evkmain = Evd.dispatch_future_goals evs in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with

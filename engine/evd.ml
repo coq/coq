@@ -1089,23 +1089,27 @@ let restore_future_goals evd (gls,pgl,map) =
   { evd with future_goals = gls ; principal_future_goal = pgl;
              future_goals_status = map }
 
-let fold_future_goals f sigma (gls,pgl,map) =
-  List.fold_left f sigma gls
+let fold_future_goals f sigma =
+  List.fold_left f sigma sigma.future_goals
 
-let map_filter_future_goals f (gls,pgl,map) =
+let map_filter_future_goals f evd =
   (* Note: map is now a superset of filtered evs, but its size should
     not be too big, so that's probably ok not to update it *)
-  (List.map_filter f gls,Option.bind pgl f,map)
+  let future_goals = List.map_filter f evd.future_goals in
+  let principal_future_goal = Option.bind evd.principal_future_goal f in
+  { evd with future_goals; principal_future_goal }
 
-let filter_future_goals f (gls,pgl,map) =
-  (List.filter f gls,Option.bind pgl (fun a -> if f a then Some a else None),map)
+let filter_future_goals f evd =
+  let future_goals = List.filter f evd.future_goals in
+  let principal_future_goal = Option.bind evd.principal_future_goal (fun a -> if f a then Some a else None) in
+  { evd with future_goals; principal_future_goal }
 
-let dispatch_future_goals_gen distinguish_shelf (gls,pgl,map) =
+let dispatch_future_goals_gen distinguish_shelf evd =
   let rec aux (comb,shelf,givenup as acc) = function
     | [] -> acc
     | evk :: gls ->
        let acc =
-        try match EvMap.find evk map with
+        try match EvMap.find evk evd.future_goals_status with
         | ToGiveUp -> (comb,shelf,evk::givenup)
         | ToShelve ->
            if distinguish_shelf then (comb,evk::shelf,givenup)
@@ -1113,18 +1117,20 @@ let dispatch_future_goals_gen distinguish_shelf (gls,pgl,map) =
         with Not_found -> (evk::comb,shelf,givenup) in
        aux acc gls in
   (* Note: this reverses the order of initial list on purpose *)
-  let (comb,shelf,givenup) = aux ([],[],[]) gls in
-  (comb,shelf,givenup,pgl)
+  let (comb,shelf,givenup) = aux ([],[],[]) evd.future_goals in
+  (comb,shelf,givenup,evd.principal_future_goal)
 
 let dispatch_future_goals =
   dispatch_future_goals_gen true
 
-let extract_given_up_future_goals goals =
-  let (comb,_,givenup,_) = dispatch_future_goals_gen false goals in
+let extract_given_up_future_goals evd =
+  let (comb,_,givenup,_) = dispatch_future_goals_gen false evd in
   (comb,givenup)
 
-let shelve_on_future_goals shelved (gls,pgl,map) =
-  (shelved @ gls, pgl, List.fold_right (fun evk -> EvMap.add evk ToShelve) shelved map)
+let shelve_on_future_goals shelved evd =
+  let future_goals = shelved @ evd.future_goals in
+  let future_goals_status = List.fold_right (fun evk -> EvMap.add evk ToShelve) shelved evd.future_goals_status in
+  {evd with future_goals; future_goals_status }
 
 (**********************************************************)
 (* Accessing metas *)
