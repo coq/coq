@@ -451,8 +451,6 @@ let key id (_, idtoev) =
 
 end
 
-type goal_kind = ToShelve
-
 type evar_flags =
   { obligation_evars : Evar.Set.t;
     restricted_evars : Evar.t Evar.Map.t;
@@ -464,6 +462,19 @@ type side_effect_role =
 type side_effects = {
   seff_private : Safe_typing.private_constants;
   seff_roles : side_effect_role Cmap.t;
+}
+
+type future_goals = {
+  future_comb : Evar.t list;
+  future_shelf : Evar.t list;
+  future_principal : Evar.t option; (** if [Some e], [e] must be
+                                        contained in
+                                        [future_comb]. The evar
+                                        [e] will inherit
+                                        properties (now: the
+                                        name) of the evar which
+                                        will be instantiated with
+                                        a term containing [e]. *)
 }
 
 type evar_map = {
@@ -481,17 +492,8 @@ type evar_map = {
   evar_flags : evar_flags;
   (** Interactive proofs *)
   effects    : side_effects;
-  future_goals : Evar.t list; (** list of newly created evars, to be
-                                  eventually turned into goals if not solved.*)
-  principal_future_goal : Evar.t option; (** if [Some e], [e] must be
-                                             contained
-                                             [future_goals]. The evar
-                                             [e] will inherit
-                                             properties (now: the
-                                             name) of the evar which
-                                             will be instantiated with
-                                             a term containing [e]. *)
-  future_goals_status : goal_kind EvMap.t;
+  future_goals : future_goals list; (** list of newly created evars, to be
+                                         eventually turned into goals if not solved.*)
   given_up : Evar.Set.t;
   extras : Store.t;
 }
@@ -591,14 +593,19 @@ let new_evar evd ?name ?typeclass_candidate evi =
 let remove d e =
   let undf_evars = EvMap.remove e d.undf_evars in
   let defn_evars = EvMap.remove e d.defn_evars in
-  let principal_future_goal = match d.principal_future_goal with
-  | None -> None
-  | Some e' -> if Evar.equal e e' then None else d.principal_future_goal
+  let remove_future fgl =
+    let future_principal = match fgl.future_principal with
+    | None -> None
+    | Some e' -> if Evar.equal e e' then None else fgl.future_principal
+    in
+    let filter e' = not (Evar.equal e e') in
+    let future_comb = List.filter filter fgl.future_comb in
+    let future_shelf = List.filter filter fgl.future_shelf in
+    { future_principal; future_comb; future_shelf }
   in
-  let future_goals = List.filter (fun e' -> not (Evar.equal e e')) d.future_goals in
-  let future_goals_status = EvMap.remove e d.future_goals_status in
+  let future_goals = List.map remove_future d.future_goals in
   let evar_flags = remove_evar_flags e d.evar_flags in
-  { d with undf_evars; defn_evars; principal_future_goal; future_goals; future_goals_status;
+  { d with undf_evars; defn_evars; future_goals;
            evar_flags }
 
 let find d e =
@@ -714,6 +721,12 @@ let empty_side_effects = {
   seff_roles = Cmap.empty;
 }
 
+let empty_future_goals = {
+  future_principal = None;
+  future_comb = [];
+  future_shelf = [];
+}
+
 let empty = {
   defn_evars = EvMap.empty;
   undf_evars = EvMap.empty;
@@ -724,9 +737,7 @@ let empty = {
   metas      = Metamap.empty;
   effects    = empty_side_effects;
   evar_names = EvNames.empty; (* id<->key for undefined evars *)
-  future_goals = [];
-  principal_future_goal = None;
-  future_goals_status = EvMap.empty;
+  future_goals = [empty_future_goals];
   given_up = Evar.Set.empty;
   extras = Store.empty;
 }
@@ -1063,73 +1074,94 @@ let drop_side_effects evd =
 let eval_side_effects evd = evd.effects
 
 (* Future goals *)
-let declare_future_goal ?tag evk evd =
-  { evd with future_goals = evk::evd.future_goals;
-             future_goals_status = Option.fold_right (EvMap.add evk) tag evd.future_goals_status }
+let set_future_goals f = function
+  | [] -> anomaly Pp.(str"future_goals stack should not be empty")
+  | hd :: tl ->
+    f hd :: tl
 
-let declare_principal_goal ?tag evk evd =
-  match evd.principal_future_goal with
-  | None -> { evd with
-    future_goals = evk::evd.future_goals;
-    principal_future_goal=Some evk;
-    future_goals_status = Option.fold_right (EvMap.add evk) tag evd.future_goals_status;
+let declare_future_goal ?(shelve=false) evk evd =
+  let add_goal fgl =
+    let (future_comb,future_shelf) =
+      if shelve then (fgl.future_comb,evk::fgl.future_shelf)
+      else (evk::fgl.future_comb,fgl.future_shelf)
+    in
+    { fgl with future_comb; future_shelf }
+  in
+  let future_goals = set_future_goals add_goal evd.future_goals in
+  { evd with future_goals }
+
+let declare_principal_goal ?(shelve=false) evk evd =
+  let add_goal fgl =
+    let (future_comb,future_shelf) =
+      if shelve then (fgl.future_comb,evk::fgl.future_shelf)
+      else (evk::fgl.future_comb,fgl.future_shelf)
+    in
+    let future_principal = Some evk in
+    { future_comb; future_shelf; future_principal }
+  in
+  match (List.hd evd.future_goals).future_principal with
+  | None ->
+    let future_goals = set_future_goals add_goal evd.future_goals in
+    { evd with
+      future_goals;
     }
   | Some _ -> CErrors.user_err Pp.(str "Only one main subgoal per instantiation.")
 
-type future_goals = Evar.t list * Evar.t option * goal_kind EvMap.t
+let push_future_goals evd =
+  { evd with future_goals = empty_future_goals :: evd.future_goals }
 
-let future_goals evd = evd.future_goals
+let pop_future_goals evd =
+  match evd.future_goals with
+  | [] -> anomaly Pp.(str"future_goals stack should not be empty")
+  | hd :: tl ->
+    hd, { evd with future_goals = tl }
 
-let principal_future_goal evd = evd.principal_future_goal
+let future_goals evd =
+  let future_goals = List.hd evd.future_goals in
+  future_goals.future_shelf @ future_goals.future_comb
 
-let save_future_goals evd =
-  (evd.future_goals, evd.principal_future_goal, evd.future_goals_status)
-
-let reset_future_goals evd =
-  { evd with future_goals = [] ; principal_future_goal = None;
-             future_goals_status = EvMap.empty }
-
-let restore_future_goals evd (gls,pgl,map) =
-  { evd with future_goals = gls ; principal_future_goal = pgl;
-             future_goals_status = map }
+let principal_future_goal evd =
+  (List.hd evd.future_goals).future_principal
 
 let fold_future_goals f sigma =
-  List.fold_left f sigma sigma.future_goals
+  let future_goals = List.hd sigma.future_goals in
+  let future_goals = future_goals.future_comb @ future_goals.future_shelf in
+  List.fold_left f sigma future_goals
 
-let map_filter_future_goals f evd =
+let map_filter_future_goals f future_goals =
   (* Note: map is now a superset of filtered evs, but its size should
     not be too big, so that's probably ok not to update it *)
-  let future_goals = List.map_filter f evd.future_goals in
-  let principal_future_goal = Option.bind evd.principal_future_goal f in
-  { evd with future_goals; principal_future_goal }
+  let future_comb = List.map_filter f future_goals.future_comb in
+  let future_shelf = List.map_filter f future_goals.future_shelf in
+  let future_principal = Option.bind future_goals.future_principal f in
+  { future_comb; future_shelf; future_principal }
 
-let filter_future_goals f evd =
-  let future_goals = List.filter f evd.future_goals in
-  let principal_future_goal = Option.bind evd.principal_future_goal (fun a -> if f a then Some a else None) in
-  { evd with future_goals; principal_future_goal }
+let filter_future_goals f future_goals =
+  let future_comb = List.filter f future_goals.future_comb in
+  let future_shelf = List.filter f future_goals.future_shelf in
+  let future_principal = Option.bind future_goals.future_principal (fun a -> if f a then Some a else None) in
+  { future_comb; future_shelf; future_principal }
 
 let dispatch_future_goals_gen distinguish_shelf evd =
-  let rec aux (comb,shelf as acc) = function
-    | [] -> acc
-    | evk :: gls ->
-       let acc =
-        try match EvMap.find evk evd.future_goals_status with
-        | ToShelve ->
-           if distinguish_shelf then (comb,evk::shelf)
-           else raise Not_found
-        with Not_found -> (evk::comb,shelf) in
-       aux acc gls in
+  let future_goals = List.hd evd.future_goals in
   (* Note: this reverses the order of initial list on purpose *)
-  let (comb,shelf) = aux ([],[]) evd.future_goals in
-  (comb,shelf,evd.principal_future_goal)
+  (List.rev future_goals.future_comb,
+   List.rev future_goals.future_shelf,
+   future_goals.future_principal)
 
 let dispatch_future_goals =
   dispatch_future_goals_gen true
 
 let shelve_on_future_goals shelved evd =
-  let future_goals = shelved @ evd.future_goals in
-  let future_goals_status = List.fold_right (fun evk -> EvMap.add evk ToShelve) shelved evd.future_goals_status in
-  {evd with future_goals; future_goals_status }
+  let shelve_future future_goals =
+    let future_shelf = shelved @ future_goals.future_shelf in
+    { future_goals with future_shelf }
+  in
+  { evd with future_goals = set_future_goals shelve_future evd.future_goals }
+
+let remove_future_goal evd evk =
+  let f evk' = not (Evar.equal evk evk') in
+  { evd with future_goals = set_future_goals (filter_future_goals f) evd.future_goals }
 
 let give_up ev evd =
   { evd with given_up = Evar.Set.add ev evd.given_up }
@@ -1152,8 +1184,6 @@ let set_metas evd metas = {
   effects = evd.effects;
   evar_names = evd.evar_names;
   future_goals = evd.future_goals;
-  future_goals_status = evd.future_goals_status;
-  principal_future_goal = evd.principal_future_goal;
   given_up = evd.given_up;
   extras = evd.extras;
 }

@@ -60,6 +60,10 @@ type telescope =
   | TNil of Evd.evar_map
   | TCons of Environ.env * Evd.evar_map * EConstr.types * (Evd.evar_map -> EConstr.constr -> telescope)
 
+let map_telescope_evd f = function
+  | TNil sigma -> TNil (f sigma)
+  | TCons (env,sigma,ty,g) -> TCons(env,(f sigma),ty,g)
+
 let dependent_init =
   (* Goals don't have a source location. *)
   let src = Loc.tag @@ Evar_kinds.GoalEvar in
@@ -74,9 +78,10 @@ let dependent_init =
     entry, { solution = sol; comb = with_empty_state gl :: comb; shelf = [] }
   in
   fun t ->
+    let t = map_telescope_evd Evd.push_future_goals t in
     let entry, v = aux t in
     (* The created goal are not to be shelved. *)
-    let solution = Evd.reset_future_goals v.solution in
+    let _goals, solution = Evd.pop_future_goals v.solution in
     entry, { v with solution }
 
 let init =
@@ -746,17 +751,16 @@ let with_shelf tac =
   let open Proof in
   Pv.get >>= fun pv ->
   let { shelf; solution } = pv in
-  Pv.set { pv with shelf = []; solution = Evd.reset_future_goals solution } >>
+  Pv.set { pv with shelf = []; solution = Evd.push_future_goals solution } >>
   tac >>= fun ans ->
   Pv.get >>= fun npv ->
   let { shelf = gls; solution = sigma } = npv in
   (* The pending future goals are necessarily coming from V82.tactic *)
   (* and thus considered as to shelve, as in Proof.run_tactic *)
-  let gls' = Evd.future_goals sigma in
-  let fgoals = Evd.save_future_goals solution in
-  let sigma = Evd.restore_future_goals sigma fgoals in
+  let fgl, sigma = Evd.pop_future_goals sigma in
   (* Ensure we mark and return only unsolved goals *)
-  let gls' = undefined_evars sigma (CList.rev_append gls' gls) in
+  let gls' = CList.rev_append fgl.Evd.future_shelf (CList.rev_append fgl.Evd.future_comb gls) in
+  let gls' = undefined_evars sigma gls' in
   let sigma = mark_in_evm ~goal:false sigma gls' in
   let npv = { npv with shelf; solution = sigma } in
   Pv.set npv >> tclUNIT (gls', ans)
@@ -1017,8 +1021,8 @@ module Unsafe = struct
   let tclEVARUNIVCONTEXT ctx =
     Pv.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
 
-  let reset_future_goals p =
-    { p with solution = Evd.reset_future_goals p.solution }
+  let push_future_goals p =
+    { p with solution = Evd.push_future_goals p.solution }
 
   let mark_as_goals evd content =
     mark_in_evm ~goal:true evd content

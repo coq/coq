@@ -715,8 +715,8 @@ module Search = struct
             shelve_goals shelved <*>
               (if List.is_empty goals then tclUNIT ()
                else
-                 let sigma' = make_unresolvables (fun x -> List.mem_f Evar.equal x goals) sigma in
-                 with_shelf (Unsafe.tclEVARS sigma' <*> Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state goals)) >>=
+                 let make_unresolvables = tclEVARMAP >>= fun sigma -> Unsafe.tclEVARS @@ make_unresolvables (fun x -> List.mem_f Evar.equal x goals) sigma in
+                 with_shelf (make_unresolvables <*> Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state goals)) >>=
                       fun s -> result s i (Some (Option.default 0 k + j)))
           end
         in with_shelf res >>= fun (sh, ()) ->
@@ -934,6 +934,7 @@ module Search = struct
        let tac = tac <*> Proofview.Unsafe.tclGETGOALS >>=
          fun stuck -> Proofview.shelve_goals (List.map Proofview_monad.drop_state stuck) in
        let evm = Evd.set_typeclass_evars evm Evar.Set.empty in
+       let evm = Evd.push_future_goals evm in
        let _, pv = Proofview.init evm [] in
        let pv = Proofview.unshelve goalsl pv in
        try
@@ -955,14 +956,14 @@ module Search = struct
                          (str "leaking evar " ++ int (Evar.repr ev) ++
                             spc () ++ pr_ev evm' ev);
                      acc && okev) evm' true);
-           let evm = Evd.shelve_on_future_goals shelved evm in
-           let fgoals = Evd.save_future_goals evm in
-           let evm' = Evd.restore_future_goals evm' fgoals in
+           let _, evm' = Evd.pop_future_goals evm' in
+           let evm' = Evd.shelve_on_future_goals shelved evm' in
            let nongoals' =
              Evar.Set.fold (fun ev acc -> match Evarutil.advance evm' ev with
                  | Some ev' -> Evar.Set.add ev acc
                  | None -> acc) (Evar.Set.union goals nongoals) (Evd.get_typeclass_evars evm')
            in
+           (* let evm' = { evm' with metas = evm.metas } *)
            let evm' = evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm in
            let evm' = Evd.set_typeclass_evars evm' nongoals' in
              Some evm'

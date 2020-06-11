@@ -51,9 +51,9 @@ let generic_refine ~typecheck f gl =
   let state = Proofview.Goal.state gl in
   (* Save the [future_goals] state to restore them after the
      refinement. *)
-  let prev_future_goals = Evd.save_future_goals sigma in
+  let sigma = Evd.push_future_goals sigma in
   (* Create the refinement term *)
-  Proofview.Unsafe.tclEVARS (Evd.reset_future_goals sigma) >>= fun () ->
+  Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   f >>= fun (v, c) ->
   Proofview.tclEVARMAP >>= fun sigma' ->
   Proofview.V82.wrap_exceptions begin fun () ->
@@ -72,17 +72,16 @@ let generic_refine ~typecheck f gl =
     else Pretype_errors.error_occur_check env sigma self c
   in
   (* Restore the [future goals] state. *)
-  let sigma = Evd.restore_future_goals sigma prev_future_goals in
+  let future_goals, sigma = Evd.pop_future_goals sigma in
   (* Select the goals *)
-  let evs = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) sigma' in
-  let comb,shelf,evkmain = Evd.dispatch_future_goals evs in
+  let future_goals = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) future_goals in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with
   | None ->
     (* Nothing to do, the goal has been solved by side-effect *)
     sigma
   | Some self ->
-    match evkmain with
+    match future_goals.Evd.future_principal with
     | None -> Evd.define self c sigma
     | Some evk ->
         let id = Evd.evar_ident self sigma in
@@ -92,16 +91,16 @@ let generic_refine ~typecheck f gl =
         | Some id -> Evd.rename evk id sigma
   in
   (* Mark goals *)
-  let sigma = Proofview.Unsafe.mark_as_goals sigma comb in
-  let sigma = Proofview.Unsafe.mark_unresolvables sigma shelf in
-  let comb = CList.map (fun x -> Proofview.goal_with_state x state) comb in
+  let sigma = Proofview.Unsafe.mark_as_goals sigma future_goals.Evd.future_comb in
+  let sigma = Proofview.Unsafe.mark_unresolvables sigma future_goals.Evd.future_shelf in
+  let comb = CList.rev_map (fun x -> Proofview.goal_with_state x state) future_goals.Evd.future_comb in
   let trace env sigma = Pp.(hov 2 (str"simple refine"++spc()++
                                    Termops.Internal.print_constr_env env sigma c)) in
   Proofview.Trace.name_tactic trace (Proofview.tclUNIT v) >>= fun v ->
   Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
-  Proofview.Unsafe.tclPUTSHELF shelf <*>
+  Proofview.Unsafe.tclPUTSHELF @@ List.rev future_goals.Evd.future_shelf <*>
   Proofview.tclUNIT v
   end
 

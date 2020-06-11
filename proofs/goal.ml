@@ -56,18 +56,12 @@ module V82 = struct
        be shelved. It must not appear as a future_goal, so the future
        goals are restored to their initial value after the evar is
        created. *)
+    let evars = Evd.push_future_goals evars in
     let inst = EConstr.identity_subst_val hyps in
-    let evi = { Evd.evar_hyps = hyps;
-                Evd.evar_concl = concl;
-                Evd.evar_filter = Evd.Filter.identity;
-                Evd.evar_abstract_arguments = Evd.Abstraction.identity;
-                Evd.evar_body = Evd.Evar_empty;
-                Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
-                Evd.evar_candidates = None;
-                Evd.evar_identity = Evd.Identity.make inst;
-              }
+    let (evars,evk) =
+      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false ~identity:inst hyps evars concl
     in
-    let (evars, evk) = Evd.new_evar evars ~typeclass_candidate:false evi in
+    let _, evars = Evd.pop_future_goals evars in
     let ev = EConstr.mkEvar (evk,inst) in
     (evk, ev, evars)
 

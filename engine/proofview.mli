@@ -474,7 +474,7 @@ module Unsafe : sig
   val tclEVARUNIVCONTEXT : UState.t -> unit tactic
 
   (** Clears the future goals store in the proof view. *)
-  val reset_future_goals : proofview -> proofview
+  val push_future_goals : proofview -> proofview
 
   (** Give the evars the status of a goal (changes their source location
       and makes them unresolvable for type classes. *)

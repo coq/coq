@@ -363,28 +363,28 @@ let update_sigma_env p env =
 
 let run_tactic env tac pr =
   let open Proofview.Notations in
-  let sp = pr.proofview in
   let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
   let tac =
     tac >>= fun result ->
     Proofview.tclEVARMAP >>= fun sigma ->
     (* Already solved goals are not to be counted as shelved. Nor are
       they to be marked as unresolvable. *)
-    let retrieved = Evd.filter_future_goals (Evd.is_undefined sigma) sigma in
-    let retrieved = List.rev @@ Evd.future_goals retrieved in
+    let retrieved, sigma = Evd.pop_future_goals sigma in
+    let retrieved = Evd.filter_future_goals (Evd.is_undefined sigma) retrieved in
+    let retrieved = List.rev_append retrieved.Evd.future_shelf (List.rev retrieved.Evd.future_comb) in
     let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT (result,retrieved)
   in
-  let { name; poly } = pr in
+  let { name; poly; proofview } = pr in
+  let proofview = Proofview.Unsafe.push_future_goals proofview in
   let ((result,retrieved),proofview,(status,to_shelve),info_trace) =
-    Proofview.apply ~name ~poly env tac sp
+    Proofview.apply ~name ~poly env tac proofview
   in
   let sigma = Proofview.return proofview in
   let to_shelve = undef sigma to_shelve in
   let shelf = (undef sigma pr.shelf)@retrieved@to_shelve in
   let proofview = Proofview.Unsafe.mark_as_unresolvables proofview to_shelve in
-  let proofview = Proofview.Unsafe.reset_future_goals proofview in
   { pr with proofview ; shelf },(status,info_trace),result
 
 (*** Commands ***)
@@ -569,7 +569,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let eff = Evd.eval_side_effects sigma in
   let sigma = Evd.drop_side_effects sigma in
   (* Save the existing goals *)
-  let prev_future_goals = Evd.save_future_goals sigma in
+  let sigma = Evd.push_future_goals sigma in
   (* Start a proof *)
   let prf = start ~name ~poly sigma [env, ty] in
   let (prf, _, ()) =
@@ -593,12 +593,12 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let sigma = Evd.drop_side_effects sigma in
   let sigma = Evd.emit_side_effects eff sigma in
   (* Restore former goals *)
-  let sigma = Evd.restore_future_goals sigma prev_future_goals in
+  let _goals, sigma = Evd.pop_future_goals sigma in
   (* Push remaining goals as future_goals which is the only way we
      have to inform the caller that there are goals to collect while
      not being encapsulated in the monad *)
   (* Goals produced by tactic "shelve" *)
-  let sigma = List.fold_right (Evd.declare_future_goal ~tag:Evd.ToShelve) shelf sigma in
+  let sigma = List.fold_right (Evd.declare_future_goal ~shelve:true) shelf sigma in
   (* Other goals *)
   let sigma = List.fold_right Evd.declare_future_goal goals sigma in
   (* Get rid of the fresh side-effects by internalizing them in the term
