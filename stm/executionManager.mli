@@ -13,6 +13,7 @@
     them. *)
 
 open Scheduler
+open Document
 
 type sentence_id = Stateid.t
 type ast = Vernacexpr.vernac_control
@@ -20,11 +21,17 @@ type ast = Vernacexpr.vernac_control
 type state
 (** Execution state, includes the cache *)
 
-type progress_hook = state -> unit Lwt.t
+type progress_hook = state option -> unit Lwt.t
 
 val init : Vernacstate.t -> state
 
-val observe : progress_hook -> schedule -> sentence_id -> state -> state Lwt.t
+type action
+type 'a actions = ([> `Workers of action ] as 'a) Lwt.t list
+
+val perform_workers_action : action -> 'a actions Lwt.t
+
+val observe : progress_hook -> document -> sentence_id -> state ->
+  (state * 'a actions) Lwt.t
 val query : sentence_id -> state -> ast -> state
 
 val invalidate : schedule -> sentence_id -> state -> state

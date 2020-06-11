@@ -26,7 +26,7 @@ let get_init_state () =
 
 let states : (string, DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
-let log msg = Format.eprintf "@[%s@]@\n%!" msg
+let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
 let string_field name obj = Yojson.Basic.to_string (List.assoc name obj)
 
@@ -48,7 +48,7 @@ let output_json obj : unit Lwt.t =
   let msg  = Yojson.Basic.pretty_to_string ~std:true obj in
   let size = String.length msg in
   let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
-  log @@ "replied: " ^ msg;
+  (*log @@ "replied: " ^ msg;*)
   Lwt_io.write Lwt_io.stdout s
 
 let mk_notification ~event ~params = `Assoc ["jsonrpc", `String "2.0"; "method", `String event; "params", params]
@@ -201,55 +201,62 @@ let mk_proofview loc Proof.{ goals; sigma } =
 
 let progress_hook uri doc : unit Lwt.t =
   let open Lwt.Infix in
+  let doc =
+    match doc with
+    | None -> Hashtbl.find states uri
+    | Some x -> x in
   send_highlights uri doc >>= fun () ->
   publish_diagnostics uri doc
 
-let coqtopInterpretToPoint ~id params : unit Lwt.t =
+let coqtopInterpretToPoint ~id params : 'a ExecutionManager.actions Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let loc = params |> member "location" |> parse_loc in
   let st = Hashtbl.find states uri in
   let progress_hook = progress_hook uri in
-  DocumentManager.interpret_to_position ~progress_hook st loc >>= fun (st, proof) ->
+  DocumentManager.interpret_to_position ~progress_hook st loc >>= fun (st, proof, actions) ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st >>= fun () ->
   match proof with
-  | None -> Lwt.return ()
+  | None -> Lwt.return actions
   | Some (proofview, pos) ->
     let result = mk_proofview pos proofview in
-    output_json @@ mk_response ~id ~result
+    output_json @@ mk_response ~id ~result >>= fun () ->
+    Lwt.return actions
 
-let coqtopStepBackward ~id params : unit Lwt.t =
+let coqtopStepBackward ~id params : 'a ExecutionManager.actions Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
-  DocumentManager.interpret_to_previous st >>= fun (st, proof) ->
+  DocumentManager.interpret_to_previous st >>= fun (st, proof, actions) ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st >>= fun () ->
   match proof with
-  | None -> Lwt.return ()
+  | None -> Lwt.return actions
   | Some (proofview, pos) ->
     let result = mk_proofview pos proofview in
-    output_json @@ mk_response ~id ~result
+    output_json @@ mk_response ~id ~result >>= fun () ->
+    Lwt.return actions
 
-let coqtopStepForward ~id params : unit Lwt.t =
+let coqtopStepForward ~id params : 'a ExecutionManager.actions Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
-  DocumentManager.interpret_to_next st >>= fun (st, proof) ->
+  DocumentManager.interpret_to_next st >>= fun (st, proof, actions) ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st >>= fun () ->
   match proof with
-  | None -> Lwt.return ()
+  | None -> Lwt.return actions
   | Some (proofview, pos) ->
     let result = mk_proofview pos proofview in
-    output_json @@ mk_response ~id ~result
+    output_json @@ mk_response ~id ~result >>= fun () ->
+    Lwt.return actions
 
 let coqtopResetCoq ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
@@ -261,35 +268,37 @@ let coqtopResetCoq ~id params : unit Lwt.t =
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st
 
-let coqtopInterpretToEnd ~id params : unit Lwt.t =
+let coqtopInterpretToEnd ~id params : 'a ExecutionManager.actions Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let progress_hook = progress_hook uri in
-  DocumentManager.interpret_to_end ~progress_hook st >>= fun (st, proof) ->
+  DocumentManager.interpret_to_end ~progress_hook st >>= fun (st, proof, actions) ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st >>= fun () ->
   match proof with
-  | None -> Lwt.return ()
+  | None -> Lwt.return actions
   | Some (proofview, pos) ->
     let result = mk_proofview pos proofview in
-    output_json @@ mk_response ~id ~result
+    output_json @@ mk_response ~id ~result >>= fun () ->
+    Lwt.return actions
 
-let dispatch_method ~id method_name params : unit Lwt.t =
+let dispatch_method ~id method_name params : 'a ExecutionManager.actions Lwt.t =
+  let open Lwt.Infix in
   match method_name with
-  | "initialize" -> do_initialize ~id
-  | "initialized" -> Lwt.return ()
-  | "textDocument/didOpen" -> textDocumentDidOpen params
-  | "textDocument/didChange" -> textDocumentDidChange params
-  | "textDocument/didSave" -> textDocumentDidSave params
+  | "initialize" -> do_initialize ~id >>= fun () -> Lwt.return []
+  | "initialized" -> Lwt.return []
+  | "textDocument/didOpen" -> textDocumentDidOpen params >>= fun () -> Lwt.return []
+  | "textDocument/didChange" -> textDocumentDidChange params >>= fun () -> Lwt.return []
+  | "textDocument/didSave" -> textDocumentDidSave params >>= fun () -> Lwt.return []
   | "coqtop/interpretToPoint" -> coqtopInterpretToPoint ~id params
   | "coqtop/stepBackward" -> coqtopStepBackward ~id params
   | "coqtop/stepForward" -> coqtopStepForward ~id params
-  | "coqtop/resetCoq" -> coqtopResetCoq ~id params
+  | "coqtop/resetCoq" -> coqtopResetCoq ~id params >>= fun () -> Lwt.return []
   | "coqtop/interpretToEnd" -> coqtopInterpretToEnd ~id params
-  | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; Lwt.return ()
+  | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; Lwt.return []
 
 
 let vscoqtop_specific_usage = Usage.{
@@ -314,18 +323,30 @@ let islave_init run_mode ~opts =
 
 let loop run_mode ~opts:_ state =
   init_state := Some (Vernacstate.freeze_interp_state ~marshallable:false);
-  let rec loop () =
+  let open Lwt.Infix in
+  let ui () = read_request Lwt_io.stdin >>= fun req -> log "[T] UI req ready"; Lwt.return @@ `Ui req in
+  let rec loop (actions : [> `Ui of Yojson.Basic.t | `Workers of ExecutionManager.action ] Lwt.t list) =
     let open Yojson.Basic.Util in
-    let open Lwt.Infix in
-    read_request Lwt_io.stdin >>= fun req ->
-    let id = Option.default 0 (req |> member "id" |> to_int_option) in
-    let method_name = req |> member "method" |> to_string in
-    let params = req |> member "params" in
-    log @@ "received request: " ^ method_name;
-    dispatch_method ~id method_name params <&>
-    loop ()
+    log @@ "[T] looking for next step";
+    Lwt_io.flush_all () >>= fun () ->
+    Lwt.nchoose_split actions >>= fun (solved, rest) ->
+      let perform rest = function
+      | `Workers action ->
+          log @@ "[T] worker step";
+          ExecutionManager.perform_workers_action action >>= fun more_actions ->
+          Lwt.return @@ rest @ more_actions
+      | `Ui req ->
+          let id = Option.default 0 (req |> member "id" |> to_int_option) in
+          let method_name = req |> member "method" |> to_string in
+          let params = req |> member "params" in
+          log @@ "[T] ui step: " ^ method_name;
+          dispatch_method ~id method_name params >>= fun more_actions ->
+          Lwt.return @@ rest @ more_actions @ [ui()]
+      in
+        Lwt_list.fold_left_s perform rest solved >>= fun actions ->
+        loop actions
   in
-  try Lwt_main.run @@ loop ()
+  try Lwt_main.run @@ loop [ui ()]
   with exn ->
     let bt = Printexc.get_backtrace () in
     log Printexc.(to_string exn);

@@ -65,6 +65,7 @@ type sentence = {
 }
 
 (* TODO refine this API *)
+val get_sentence : document -> sentence_id -> sentence option
 val find_sentence : document -> int -> sentence option
 val find_sentence_before : document -> int -> sentence option
 val more_to_parse : document -> bool

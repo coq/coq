@@ -1,3 +1,5 @@
+Require Import ssreflect.
+
 (* Some boilerplate *)
 Fixpoint fib n := match n with
   | O => 1
@@ -5,8 +7,8 @@ Fixpoint fib n := match n with
     | O => 1
     | S o => fib o + fib m end end.
 
-Ltac sleep n :=
-  try (cut (fib n = S (fib n)); reflexivity).
+Ltac sleep x n :=
+  try (have ? : (fib n = S (fib n)) by reflexivity).
 
 (* Tune that depending on your PC *)
 Let time := 18.
@@ -20,18 +22,18 @@ Variable i : True.
 
 Lemma a : True.
 Proof using i.
-  sleep time.
+  sleep 1 time.
   idtac.
-  sleep time.
+  sleep 2 time.
   (* Error, jump back to fix it, then Qed again *)
   exact (i i).
 Qed.
 
 Lemma b : True.
-Proof using i. 
-  sleep time.
+Proof using i.
+  sleep 3 time.
   idtac.
-  sleep time.
+  sleep 4 time.
   (* Here we use "a" *)
   exact a.
 Qed.

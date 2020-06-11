@@ -190,6 +190,7 @@ module ParsedDoc : sig
   val remove_sentences_after : t -> int -> t * Stateid.Set.t
   val sentences_before : t -> int -> sentence list
   val sentences_after : t -> int -> sentence list
+  val get_sentence : t -> sentence_id -> sentence option
   val find_sentence : t -> int -> sentence option
   val find_sentence_before : t -> int -> sentence option
   val shift_sentences : t -> int -> int -> t
@@ -304,6 +305,9 @@ end = struct
     let (before,ov,after) = LM.split loc parsed.sentences_by_end in
     let after = Option.cata (fun v -> LM.add loc v after) after ov in
     List.map (fun (_id,s) -> s) @@ LM.bindings after
+
+  let get_sentence parsed id =
+    SM.find_opt id parsed.sentences_by_id
 
   let find_sentence parsed loc =
     match LM.find_first_opt (fun k -> loc <= k) parsed.sentences_by_end with
@@ -603,6 +607,7 @@ let apply_text_edits document edits =
     *)
     { document with parsed_loc }
 
+let get_sentence doc id = ParsedDoc.get_sentence doc.parsed_doc id
 let find_sentence doc loc = ParsedDoc.find_sentence doc.parsed_doc loc
 let find_sentence_before doc loc = ParsedDoc.find_sentence_before doc.parsed_doc loc
 

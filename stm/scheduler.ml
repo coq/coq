@@ -131,7 +131,7 @@ let dependents schedule id =
 let string_of_task (id,(base_id,task)) =
   let s = match task with
   | Skip id -> "Skip " ^ Stateid.to_string id
-  | Exec (id, ast) -> "Exec " ^ Stateid.to_string id
+  | Exec (id, ast) -> "Exec " ^ Stateid.to_string id ^ " (" ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^ ")"
   | OpaqueProof (id, ids) -> "OpaqueProof [" ^ Stateid.to_string id ^ " | " ^ String.concat "," (List.map Stateid.to_string ids) ^ "]"
   | Query(id,ast) -> "Query " ^ Stateid.to_string id
   in

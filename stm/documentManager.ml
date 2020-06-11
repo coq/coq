@@ -10,7 +10,7 @@
 open Scheduler
 open Document
 
-let log msg = Format.eprintf "@[%s@]@\n%!" msg
+let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
 type proof_data = (Proof.data * Position.t) option
 
@@ -30,7 +30,7 @@ type state = {
   executed_loc : int option;
 }
 
-type progress_hook = state -> unit Lwt.t
+type progress_hook = state option -> unit Lwt.t
 
 let executed_ranges doc execution_state executed_loc =
   let valid_ids = List.map (fun s -> s.id) @@ Document.sentences_before doc executed_loc in
@@ -55,7 +55,6 @@ let make_diagnostic doc id oloc message severity =
 let diagnostics st =
   let parse_errors = Document.parse_errors st.document in
   let exec_errors = ExecutionManager.errors st.execution_state in
-  log @@ "exec errors in diags: " ^ string_of_int (List.length exec_errors);
   let mk_diag (id,oloc,message) =
     make_diagnostic st.document id oloc message Error
   in
@@ -65,8 +64,8 @@ let init vernac_state document =
   let execution_state = ExecutionManager.init vernac_state in
   { document; execution_state; executed_loc = None }
 
-let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data) Lwt.t =
-  log @@ "Interpreting to loc " ^ string_of_int loc;
+let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data * 'a ExecutionManager.actions) Lwt.t =
+  log @@ "[DM] Interpreting to loc " ^ string_of_int loc;
   let rec make_progress state =
     let open Lwt.Infix in
     let invalid_ids, document = validate_document state.document in
@@ -80,11 +79,11 @@ let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc 
     executing the sentence, which is unnatural. *)
     let find = if after then find_sentence else find_sentence_before in
     match find state.document loc with
-    | None -> (* document is empty *) Lwt.return (state, None)
+    | None -> (* document is empty *) Lwt.return (state, None, [])
     | Some { id; stop; start } ->
-      let progress_hook st = progress_hook { state with execution_state = st; executed_loc = Some stop } in
-      ExecutionManager.observe progress_hook (Document.schedule state.document) id state.execution_state >>= fun st ->
-      log @@ "Observed " ^ Stateid.to_string id;
+      let progress_hook st = progress_hook (Option.map (fun st -> { state with execution_state = st; executed_loc = Some stop }) st) in
+      ExecutionManager.observe progress_hook state.document id state.execution_state >>= fun (st,actions) ->
+      log @@ "[DM] Observed " ^ Stateid.to_string id;
       let state = { state with execution_state = st } in
       if Document.parsed_loc state.document < loc && Document.more_to_parse state.document then
         make_progress state
@@ -94,7 +93,7 @@ let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc 
         | None -> None
         | Some pv -> let pos = Document.position_of_loc state.document stop in Some (pv, pos)
       in
-      Lwt.return ({ state with executed_loc }, proof_data)
+      Lwt.return ({ state with executed_loc }, proof_data, actions)
   in
   make_progress state
 
@@ -104,13 +103,13 @@ let interpret_to_position ?progress_hook state pos =
 
 let interpret_to_previous doc =
   match doc.executed_loc with
-  | None -> Lwt.return (doc, None)
+  | None -> Lwt.return (doc, None, [])
   | Some loc ->
     interpret_to_loc ~after:false doc (loc-1)
 
 let interpret_to_next doc =
   match doc.executed_loc with
-  | None -> Lwt.return (doc, None)
+  | None -> Lwt.return (doc, None, [])
   | Some stop ->
     interpret_to_loc ~after:true doc (stop+1)
 
