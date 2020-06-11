@@ -44,10 +44,11 @@ fun and forall gets identical. Moreover, parentheses can be omitted in
 the case of a single sequence of bindings sharing the same type (e.g.:
 :g:`fun (x y z : A) => t` can be shortened in :g:`fun x y z : A => t`).
 
-.. index:: fun ... => ...
+.. index:: fun
+.. index:: forall
 
-Abstractions: fun
------------------
+Functions (fun) and function types (forall)
+-------------------------------------------
 
 .. insertprodn term_forall_or_fun term_forall_or_fun
 
@@ -69,11 +70,6 @@ a let-binder occurs in
 the list of binders, it is expanded to a let-in definition (see
 Section :ref:`let-in`).
 
-.. index:: forall
-
-Products: forall
-----------------
-
 The expression :n:`forall @ident : @type, @term` denotes the
 *product* of the variable :n:`@ident` of type :n:`@type`, over the term :n:`@term`.
 As for abstractions, :g:`forall` is followed by a binder list, and products
@@ -92,8 +88,8 @@ Non dependent product types have a special notation: :g:`A -> B` stands for
 :g:`forall _ : A, B`. The *non dependent product* is used both to denote
 the propositional implication and function types.
 
-Applications
-------------
+Function application
+--------------------
 
 .. insertprodn term_application arg
 
