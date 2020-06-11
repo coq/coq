@@ -361,6 +361,7 @@ it is an atomic universe (i.e. not an algebraic max() universe).
    to the sort :g:`Set` and only collapses floating universes between
    themselves.
 
+.. _explicit-universes:
 
 Explicit Universes
 -------------------
@@ -387,7 +388,7 @@ to universes and explicitly instantiate polymorphic definitions.
          Polymorphic Universe @ident
 
    In the monorphic case, this command declares a new global universe
-   named :g:`ident`, which can be referred to using its qualified name
+   named :token:`ident`, which can be referred to using its qualified name
    as well. Global universe names live in a separate namespace. The
    command supports the :attr:`universes(polymorphic)` attribute (or
    the ``Polymorphic`` prefix) only in sections, meaning the universe
