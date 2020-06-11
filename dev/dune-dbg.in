@@ -8,7 +8,7 @@ case $1 in
         ;;
     coqide)
         shift
-        exe=_build/default/ide/coqide_main.bc
+        exe=_build/default/ide/coqide/coqide_main.bc
         ;;
     coqc)
         shift
