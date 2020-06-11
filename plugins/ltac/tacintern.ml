@@ -649,7 +649,6 @@ and intern_tactic_seq onlytac ist = function
   | TacDo (n,tac) ->
       ist.ltacvars, TacDo (intern_int_or_var ist n,intern_pure_tactic ist tac)
   | TacTry tac -> ist.ltacvars, TacTry (intern_pure_tactic ist tac)
-  | TacInfo tac -> ist.ltacvars, TacInfo (intern_pure_tactic ist tac)
   | TacRepeat tac -> ist.ltacvars, TacRepeat (intern_pure_tactic ist tac)
   | TacTimeout (n,tac) ->
       ist.ltacvars, TacTimeout (intern_int_or_var ist n,intern_tactic onlytac ist tac)

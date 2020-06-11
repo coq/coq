@@ -200,7 +200,6 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacTimeout (n,tac) -> TacTimeout (n,subst_tactic subst tac)
   | TacTime (s,tac) -> TacTime (s,subst_tactic subst tac)
   | TacTry tac -> TacTry (subst_tactic subst tac)
-  | TacInfo tac -> TacInfo (subst_tactic subst tac)
   | TacRepeat tac -> TacRepeat (subst_tactic subst tac)
   | TacOr (tac1,tac2) ->
       TacOr (subst_tactic subst tac1,subst_tactic subst tac2)

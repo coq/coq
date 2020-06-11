@@ -642,7 +642,6 @@ let pr_goal_selector ~toplevel s =
   let lcall = 1
   let leval = 1
   let ltatom = 1
-  let linfo = 5
 
   let level_of p = match p with LevelLe n -> n | LevelLt n -> n-1 | LevelSome -> lseq
 
@@ -988,11 +987,6 @@ let pr_goal_selector ~toplevel s =
                 keyword "infoH" ++ spc ()
                 ++ pr_tac (LevelLe ltactical) t),
               ltactical
-            | TacInfo t ->
-              hov 1 (
-                keyword "info" ++ spc ()
-                ++ pr_tac (LevelLe ltactical) t),
-              linfo
             | TacOr (t1,t2) ->
               hov 1 (
                 pr_tac (LevelLt lorelse) t1 ++ spc ()
