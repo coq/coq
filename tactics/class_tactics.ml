@@ -970,7 +970,6 @@ module Search = struct
        let tac = tac <*> Proofview.Unsafe.tclGETGOALS >>=
          fun stuck -> Proofview.shelve_goals (List.map Proofview_monad.drop_state stuck) in
        let evm = Evd.set_typeclass_evars evm Evar.Set.empty in
-       let fgoals = Evd.save_future_goals evm in
        let _, pv = Proofview.init evm [] in
        let pv = Proofview.unshelve goalsl pv in
        try
@@ -992,7 +991,8 @@ module Search = struct
                          (str "leaking evar " ++ int (Evar.repr ev) ++
                             spc () ++ pr_ev evm' ev);
                      acc && okev) evm' true);
-           let fgoals = Evd.shelve_on_future_goals shelved fgoals in
+           let evm = Evd.shelve_on_future_goals shelved evm in
+           let fgoals = Evd.save_future_goals evm in
            let evm' = Evd.restore_future_goals evm' fgoals in
            let nongoals' =
              Evar.Set.fold (fun ev acc -> match Evarutil.advance evm' ev with

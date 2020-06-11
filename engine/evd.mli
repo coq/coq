@@ -365,23 +365,23 @@ val restore_future_goals : evar_map -> future_goals -> evar_map
     goals has been consumed. Used by the [refine] primitive of the
     tactic engine. *)
 
-val fold_future_goals : (evar_map -> Evar.t -> evar_map) -> evar_map -> future_goals -> evar_map
+val fold_future_goals : (evar_map -> Evar.t -> evar_map) -> evar_map -> evar_map
 (** Fold future goals *)
 
-val map_filter_future_goals : (Evar.t -> Evar.t option) -> future_goals -> future_goals
+val map_filter_future_goals : (Evar.t -> Evar.t option) -> evar_map -> evar_map
 (** Applies a function on the future goals *)
 
-val filter_future_goals : (Evar.t -> bool) -> future_goals -> future_goals
+val filter_future_goals : (Evar.t -> bool) -> evar_map -> evar_map
 (** Applies a filter on the future goals *)
 
-val dispatch_future_goals : future_goals -> Evar.t list * Evar.t list * Evar.t list * Evar.t option
+val dispatch_future_goals : evar_map -> Evar.t list * Evar.t list * Evar.t list * Evar.t option
 (** Returns the future_goals dispatched into regular, shelved, given_up
    goals; last argument is the goal tagged as principal if any *)
 
-val extract_given_up_future_goals : future_goals -> Evar.t list * Evar.t list
+val extract_given_up_future_goals : evar_map -> Evar.t list * Evar.t list
 (** An ad hoc variant for Proof.proof; not for general use *)
 
-val shelve_on_future_goals : Evar.t list -> future_goals -> future_goals
+val shelve_on_future_goals : Evar.t list -> evar_map -> evar_map
 (** Push goals on the shelve of future goals *)
 
 (** {5 Sort variables}

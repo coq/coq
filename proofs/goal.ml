@@ -57,7 +57,6 @@ module V82 = struct
        be shelved. It must not appear as a future_goal, so the future
        goals are restored to their initial value after the evar is
        created. *)
-    let prev_future_goals = Evd.save_future_goals evars in
     let evi = { Evd.evar_hyps = hyps;
                 Evd.evar_concl = concl;
                 Evd.evar_filter = Evd.Filter.identity;
@@ -66,8 +65,7 @@ module V82 = struct
                 Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
                 Evd.evar_candidates = None }
     in
-    let (evars, evk) = Evarutil.new_pure_evar_full evars ~typeclass_candidate:false evi in
-    let evars = Evd.restore_future_goals evars prev_future_goals in
+    let (evars, evk) = Evd.new_evar evars ~typeclass_candidate:false evi in
     let ctxt = Environ.named_context_of_val hyps in
     let inst = List.map (NamedDecl.get_id %> EConstr.mkVar) ctxt in
     let ev = EConstr.mkEvar (evk,inst) in

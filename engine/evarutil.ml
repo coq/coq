@@ -537,9 +537,7 @@ let restrict_evar evd evk filter ?src candidates =
      let evd, evk' = Evd.restrict evk filter ?candidates ?src evd in
      (* Mark new evar as future goal, removing previous one,
         circumventing Proofview.advance but making Proof.run_tactic catch these. *)
-     let future_goals = Evd.save_future_goals evd in
-     let future_goals = Evd.filter_future_goals (fun evk' -> not (Evar.equal evk evk')) future_goals in
-     let evd = Evd.restore_future_goals evd future_goals in
+     let evd = Evd.filter_future_goals (fun evk' -> not (Evar.equal evk evk')) evd in
      (Evd.declare_future_goal evk' evd, evk')
 
 let rec check_and_clear_in_constr env evdref err ids global c =

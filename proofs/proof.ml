@@ -369,7 +369,7 @@ let run_tactic env tac pr =
     Proofview.tclEVARMAP >>= fun sigma ->
     (* Already solved goals are not to be counted as shelved. Nor are
       they to be marked as unresolvable. *)
-    let retrieved = Evd.filter_future_goals (Evd.is_undefined sigma) (Evd.save_future_goals sigma) in
+    let retrieved = Evd.filter_future_goals (Evd.is_undefined sigma) sigma in
     let retrieved,retrieved_given_up = Evd.extract_given_up_future_goals retrieved in
     (* Check that retrieved given up is empty *)
     if not (List.is_empty retrieved_given_up) then
