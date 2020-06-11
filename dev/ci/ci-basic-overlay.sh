@@ -9,7 +9,8 @@
 ########################################################################
 # MathComp
 ########################################################################
-: "${mathcomp_CI_REF:=3515b33b1245ea169fbaf61405dc60954509fee2}"
+# Released on 2020-06-09 and compatible with Coq 8.12.
+: "${mathcomp_CI_REF:=mathcomp-1.11.0}"
 : "${mathcomp_CI_GITURL:=https://github.com/math-comp/math-comp}"
 : "${mathcomp_CI_ARCHIVEURL:=${mathcomp_CI_GITURL}/archive}"
 
@@ -31,11 +32,16 @@
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
+# This is the last commit on master and the only one that is
+# compatible with 8.12.  There was no branch nor any tag compatible
+# with 8.11 either.
 : "${unicoq_CI_REF:=68ed13294ea8860a8c39950f7ca2ff0aa7211b9f}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
-: "${mtac2_CI_REF:=62071fe76d05e7d1bd43583514ad498102b556bd}"
+# There's no 8.12-compatible release yet but there is an
+# 8.12-compatible branch.
+: "${mtac2_CI_REF:=master-8.12}"
 : "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2}"
 : "${mtac2_CI_ARCHIVEURL:=${mtac2_CI_GITURL}/archive}"
 
@@ -90,7 +96,8 @@
 ########################################################################
 # Flocq
 ########################################################################
-: "${flocq_CI_REF:=db11908f26581a366d791b03c50b3ea74791f193}"
+# Released on 2020-06-05 and compatible with Coq 8.12.
+: "${flocq_CI_REF:=flocq-3.3.1}"
 : "${flocq_CI_GITURL:=https://gitlab.inria.fr/flocq/flocq}"
 : "${flocq_CI_ARCHIVEURL:=${flocq_CI_GITURL}/-/archive}"
 
@@ -104,20 +111,23 @@
 ########################################################################
 # Coquelicot
 ########################################################################
-: "${coquelicot_CI_REF:=4b000e5220d7b30ebc323564c10c60f6e2d22733}"
+# The latest release (from 3 months ago) is compatible with Coq 8.12.
+: "${coquelicot_CI_REF:=coquelicot-3.1.0}"
 : "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/coquelicot/coquelicot}"
 : "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
 
 ########################################################################
 # Coq-interval
 ########################################################################
-: "${interval_CI_REF:=540621b251bff27698b321375568a05726a86991}"
+# The latest release (from 3 months ago) is compatible with Coq 8.12.
+: "${interval_CI_REF:=interval-3.4.2}"
 : "${interval_CI_GITURL:=https://gitlab.inria.fr/coqinterval/interval}"
 : "${interval_CI_ARCHIVEURL:=${interval_CI_GITURL}/-/archive}"
 
 ########################################################################
 # Gappa stand alone tool
 ########################################################################
+# Keeping same version from Coq 8.11 release (no new release since)
 : "${gappa_tool_CI_REF:=f53e105cd73484fc76eb58ba24ead73be502c608}"
 : "${gappa_tool_CI_GITURL:=https://gitlab.inria.fr/gappa/gappa}"
 : "${gappa_tool_CI_ARCHIVEURL:=${gappa_tool_CI_GITURL}/-/archive}"
@@ -125,23 +135,66 @@
 ########################################################################
 # Gappa plugin
 ########################################################################
-: "${gappa_plugin_CI_REF:=494fb283b2fba166aa1c108715e9820c5adabac1}"
+# This is the latest release (from 1 month ago) but it is not
+# compatible with Coq 8.12.  We include a patch to make it compatible.
+: "${gappa_plugin_CI_REF:=gappalib-coq-1.4.3}"
 : "${gappa_plugin_CI_GITURL:=https://gitlab.inria.fr/gappa/coq}"
 : "${gappa_plugin_CI_ARCHIVEURL:=${gappa_plugin_CI_GITURL}/-/archive}"
 
 ########################################################################
 # CompCert
 ########################################################################
-: "${compcert_CI_REF:=4a676623badb718da4055b7f26ee05f5097f4e7b}"
-: "${compcert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
+# This uses the platform supplied version of Flocq and Menhirlib as
+# published in http://coq.io/opam/coq-compcert.3.7~coq-platform.html
+# with a few additional patches for 8.12
+# Author codes:
+# SN : Michael Soegtrop, new (not in the above opam release)
+# SO : Michael Soegtrop, opam (in the above opam release)
+# CN : CompCert GIT, new (not in the above opam release)
+# CO : CompCert GIT, opam (in the above opam release)
+# 172f55fd SN Don't build MenhirLib (platform version is used)
+# 1feb12c8 SO Use platform supplied menhirlib as suggested by jhjourdan
+# 6a8204d4 SN Use ocamlfind to find menhirLib
+# e2c86f5a CN Coq-MenhirLib: explicit import ListNotations (#354)
+# 48d9cbd2 CN Import ListNotations explicitly
+# 4accc3dd SO Use Coq platform supplied Flocq
+# 16878a61 CO Update the list of dual-licensed files
+# cea50ef9 CO Dual-license aarch64/{Archi.v,Cbuiltins.ml,extractionMachdep.v}
+# b7980c83 CO Install "compcert.config" file along the Coq development
+# 76a4ff8f    Updates for release 3.7
+: "${compcert_platform_CI_REF:=coq-platform-8.12.beta}"
+: "${compcert_platform_CI_GITURL:=https://github.com/MSoegtropIMC/CompCert}"
+: "${compcert_platform_CI_ARCHIVEURL:=${compcert_platform_CI_GITURL}/archive}"
+
+# As above, but does use bundled Flocq and Menhirlib rather than the
+# platform supplied version
+# This is used by the Windows Installer (and the Coq platform)
+# 10bafbaa CN Coq-MenhirLib: explicit import ListNotations (#354)
+# f494c983 CN Import ListNotations explicitly
+# 16878a61 CO Update the list of dual-licensed files
+# cea50ef9 CO Dual-license aarch64/{Archi.v,Cbuiltins.ml,extractionMachdep.v}
+# b7980c83 CO Install "compcert.config" file along the Coq development
+# 76a4ff8f    Updates for release 3.7
+: "${compcert_CI_REF:=coq-8.12.beta}"
+: "${compcert_CI_GITURL:=https://github.com/MSoegtropIMC/CompCert}"
 : "${compcert_CI_ARCHIVEURL:=${compcert_CI_GITURL}/archive}"
 
 ########################################################################
 # VST
 ########################################################################
-: "${vst_CI_REF:=815244771c92585a23363ebbff2bab7d7050e435}"
+# This commit sets the version number to 2.6
+# M.Soegtrop discussed with A.Appel via email to use this commit for 8.12.beta
+: "${vst_CI_REF:=766971b60f705e7e8b890e533518bdc79a9a60b5}"
 : "${vst_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${vst_CI_ARCHIVEURL:=${vst_CI_GITURL}/archive}"
+
+# This is a paltform friendly variant using paltform supplied compcert and Flocq
+# This is used by the Windows Installer (and the Coq platform)
+# This includes one extra commit relative to the above:
+# 45239bb5 MSoegtrop Changed build and CI system to use opam / coq-platform supplied CompCert
+: "${vst_platform_CI_REF:=coq-platform-8.12.beta}"
+: "${vst_platform_CI_GITURL:=https://github.com/MSoegtropIMC/VST}"
+: "${vst_platform_CI_ARCHIVEURL:=${vst_platform_CI_GITURL}/archive}"
 
 ########################################################################
 # cross-crypto
@@ -195,7 +248,9 @@
 ########################################################################
 # Bignums
 ########################################################################
-: "${bignums_CI_REF:=657e8d07f7bf26a55b51456cf26332dfea730bc2}"
+# There's no 8.12-compatible release yet but there is an
+# 8.12-compatible branch.
+: "${bignums_CI_REF:=v8.12}"
 : "${bignums_CI_GITURL:=https://github.com/coq/bignums}"
 : "${bignums_CI_ARCHIVEURL:=${bignums_CI_GITURL}/archive}"
 
@@ -223,6 +278,10 @@
 ########################################################################
 # Equations
 ########################################################################
+# No Coq 8.12-specific tag or branch.  This is the latest commit on
+# master and the only one compatible with Coq 8.12.  Compared to the
+# latest release (1.2.1-8.11), it virtually only contains
+# compatibility fixes.  Check whether there is a tag for Coq 8.12.0.
 : "${equations_CI_REF:=74f048116242d7fb13cbc554522f02fe270720d2}"
 : "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
@@ -230,11 +289,16 @@
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
+# There is no 8.12-specific branch yet.  This commit is the latest on
+# coq-master and the only one compatible with Coq 8.12.  Compared to
+# the latest release (1.4.0), it virtually only contains compatibility
+# fixes.
 : "${elpi_CI_REF:=75b82ca6826270a5d399250fd5862da7aa9c9fdd}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
-: "${elpi_hb_CI_REF:=7852848fe5587d27c419871ea22dd91f96b51ab2}"
+# This was just released and is compatible with Coq 8.12.
+: "${elpi_hb_CI_REF:=v0.9.1}"
 : "${elpi_hb_CI_GITURL:=https://github.com/math-comp/hierarchy-builder}"
 : "${elpi_hb_CI_ARCHIVEURL:=${elpi_hb_CI_GITURL}/archive}"
 
@@ -248,7 +312,9 @@
 ########################################################################
 # ext-lib
 ########################################################################
-: "${ext_lib_CI_REF:=ac5f1df273b98f53ba2573cfffcbbbf1e388e4d2}"
+# This commit contains two compatibility fixes compared to the last
+# released version
+: "${ext_lib_CI_REF:=ad7ba4509212e032f78056a60459c2ddba8b4235}"
 : "${ext_lib_CI_GITURL:=https://github.com/coq-community/coq-ext-lib}"
 : "${ext_lib_CI_ARCHIVEURL:=${ext_lib_CI_GITURL}/archive}"
 
@@ -262,6 +328,11 @@
 ########################################################################
 # quickchick
 ########################################################################
+# There is no Coq 8.12-specific branch yet.  This is the latest commit
+# on master and the only one that's compatible with Coq 8.12.
+# Compared to the latest release (1.3.1), the new commits are only
+# infrastructure changes and compatibility fixes.  Check whether a new
+# tag or branch exists for Coq 8.12.0.
 : "${quickchick_CI_REF:=2d430e638124af66a343bec51243d1adc182a8cf}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
@@ -277,14 +348,16 @@
 # menhirlib
 ########################################################################
 # Note: menhirlib is now in subfolder coq-menhirlib of menhir
-: "${menhirlib_CI_REF:=master}"
+: "${menhirlib_CI_REF:=20200525}"
 : "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/menhir}"
 : "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
 
 ########################################################################
 # aac_tactics
 ########################################################################
-: "${aac_tactics_CI_REF:=2db18d6483fe473de83d59373535ad56c02f7640}"
+# There is not yet a Coq 8.12-specific tag but there is already a
+# branch.
+: "${aac_tactics_CI_REF:=v8.12}"
 : "${aac_tactics_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
 : "${aac_tactics_CI_ARCHIVEURL:=${aac_tactics_CI_GITURL}/archive}"
 
