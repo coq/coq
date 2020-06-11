@@ -967,9 +967,7 @@ module Search = struct
            let evm' = Evd.set_typeclass_evars evm' nongoals' in
              Some evm'
         in
-        let (), pv', (unsafe, shelved, gaveup), _ = Proofview.apply ~name ~poly env tac pv in
-        if not (List.is_empty gaveup) then
-          CErrors.anomaly (Pp.str "run_on_evars not assumed to apply tactics generating given up goals.");
+        let (), pv', (unsafe, shelved), _ = Proofview.apply ~name ~poly env tac pv in
         if Proofview.finished pv' then finish pv' shelved
         else raise Not_found
        with Logic_monad.TacticFailure _ -> raise Not_found

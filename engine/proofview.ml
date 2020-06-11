@@ -230,8 +230,7 @@ let apply ~name ~poly env t sp =
   match ans with
   | Nil (e, info) -> Exninfo.iraise (TacticFailure e, info)
   | Cons ((r, (state, _), status, info), _) ->
-    let (status, gaveup) = status in
-    let status = (status, state.shelf, gaveup) in
+    let status = (status, state.shelf) in
     let state = { state with shelf = [] } in
     r, state, status, Trace.to_tree info
 
@@ -833,14 +832,18 @@ let mark_as_unsafe = Status.put false
 
 (** Gives up on the goal under focus. Reports an unsafe status. Proofs
     with given up goals cannot be closed. *)
+
+let give_up evs pv =
+  let solution = List.fold_left (fun sigma ev -> Evd.give_up (drop_state ev) sigma) pv.solution evs in
+  { pv with solution }
+
 let give_up =
   let open Proof in
   Comb.get >>= fun initial ->
   Comb.set [] >>
   mark_as_unsafe >>
   InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"give_up")) >>
-  Giveup.put (CList.map drop_state initial)
-
+  Pv.modify (give_up initial)
 
 
 (** {7 Control primitives} *)
@@ -1007,8 +1010,6 @@ module Unsafe = struct
 
   let tclPUTSHELF to_shelve =
     tclBIND tclGETSHELF (fun shelf -> tclSETSHELF (to_shelve@shelf))
-
-  let tclPUTGIVENUP = Giveup.put
 
   let tclEVARSADVANCE evd =
     Pv.modify (fun ps -> { ps with solution = evd; comb = undefined evd ps.comb })

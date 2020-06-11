@@ -92,7 +92,7 @@ module P : sig
   type s = proofview * Environ.env
 
   (** Status (safe/unsafe) * given up *)
-  type w = bool * goal list
+  type w = bool
 
   val wunit : w
   val wprod : w -> w -> w
@@ -140,10 +140,6 @@ module Status : Writer with type t := bool
 (** Lens to the list of goals which have been shelved during the
     execution of the tactic. *)
 module Shelf : State with type t = goal list
-
-(** Lens to the list of goals which were given up during the execution
-    of the tactic. *)
-module Giveup : Writer with type t = goal list
 
 (** Lens and utilities pertaining to the info trace *)
 module InfoL : sig

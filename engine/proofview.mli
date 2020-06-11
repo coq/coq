@@ -162,7 +162,7 @@ val apply
   -> 'a tactic
   -> proofview
   -> 'a * proofview
-       * (bool*Evar.t list*Evar.t list)
+       * (bool*Evar.t list)
        * Proofview_monad.Info.tree
 
 (** {7 Monadic primitives} *)
@@ -469,9 +469,6 @@ module Unsafe : sig
 
   (** [tclPUTSHELF] appends goals to the shelf. *)
   val tclPUTSHELF : Evar.t list -> unit tactic
-
-  (** [tclPUTGIVENUP] add an given up goal. *)
-  val tclPUTGIVENUP : Evar.t list -> unit tactic
 
   (** Sets the evar universe context. *)
   val tclEVARUNIVCONTEXT : UState.t -> unit tactic

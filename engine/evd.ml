@@ -451,7 +451,7 @@ let key id (_, idtoev) =
 
 end
 
-type goal_kind = ToShelve | ToGiveUp
+type goal_kind = ToShelve
 
 type evar_flags =
   { obligation_evars : Evar.Set.t;
@@ -492,6 +492,7 @@ type evar_map = {
                                              will be instantiated with
                                              a term containing [e]. *)
   future_goals_status : goal_kind EvMap.t;
+  given_up : Evar.Set.t;
   extras : Store.t;
 }
 
@@ -726,6 +727,7 @@ let empty = {
   future_goals = [];
   principal_future_goal = None;
   future_goals_status = EvMap.empty;
+  given_up = Evar.Set.empty;
   extras = Store.empty;
 }
 
@@ -734,6 +736,8 @@ let from_env e = { empty with universes = UState.from_env e }
 let from_ctx ctx = { empty with universes = ctx }
 
 let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
+
+let has_given_up evd = not (Evar.Set.is_empty evd.given_up)
 
 let evars_reset_evd ?(with_conv_pbs=false) ?(with_univs=true) evd d =
   let conv_pbs = if with_conv_pbs then evd.conv_pbs else d.conv_pbs in
@@ -1105,32 +1109,32 @@ let filter_future_goals f evd =
   { evd with future_goals; principal_future_goal }
 
 let dispatch_future_goals_gen distinguish_shelf evd =
-  let rec aux (comb,shelf,givenup as acc) = function
+  let rec aux (comb,shelf as acc) = function
     | [] -> acc
     | evk :: gls ->
        let acc =
         try match EvMap.find evk evd.future_goals_status with
-        | ToGiveUp -> (comb,shelf,evk::givenup)
         | ToShelve ->
-           if distinguish_shelf then (comb,evk::shelf,givenup)
+           if distinguish_shelf then (comb,evk::shelf)
            else raise Not_found
-        with Not_found -> (evk::comb,shelf,givenup) in
+        with Not_found -> (evk::comb,shelf) in
        aux acc gls in
   (* Note: this reverses the order of initial list on purpose *)
-  let (comb,shelf,givenup) = aux ([],[],[]) evd.future_goals in
-  (comb,shelf,givenup,evd.principal_future_goal)
+  let (comb,shelf) = aux ([],[]) evd.future_goals in
+  (comb,shelf,evd.principal_future_goal)
 
 let dispatch_future_goals =
   dispatch_future_goals_gen true
-
-let extract_given_up_future_goals evd =
-  let (comb,_,givenup,_) = dispatch_future_goals_gen false evd in
-  (comb,givenup)
 
 let shelve_on_future_goals shelved evd =
   let future_goals = shelved @ evd.future_goals in
   let future_goals_status = List.fold_right (fun evk -> EvMap.add evk ToShelve) shelved evd.future_goals_status in
   {evd with future_goals; future_goals_status }
+
+let give_up ev evd =
+  { evd with given_up = Evar.Set.add ev evd.given_up }
+
+let given_up evd = evd.given_up
 
 (**********************************************************)
 (* Accessing metas *)
@@ -1150,6 +1154,7 @@ let set_metas evd metas = {
   future_goals = evd.future_goals;
   future_goals_status = evd.future_goals_status;
   principal_future_goal = evd.principal_future_goal;
+  given_up = evd.given_up;
   extras = evd.extras;
 }
 

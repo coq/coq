@@ -75,7 +75,7 @@ let generic_refine ~typecheck f gl =
   let sigma = Evd.restore_future_goals sigma prev_future_goals in
   (* Select the goals *)
   let evs = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) sigma' in
-  let comb,shelf,given_up,evkmain = Evd.dispatch_future_goals evs in
+  let comb,shelf,evkmain = Evd.dispatch_future_goals evs in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with
   | None ->
@@ -102,7 +102,6 @@ let generic_refine ~typecheck f gl =
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
   Proofview.Unsafe.tclPUTSHELF shelf <*>
-  Proofview.Unsafe.tclPUTGIVENUP given_up <*>
   Proofview.tclUNIT v
   end
 

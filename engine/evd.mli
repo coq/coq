@@ -167,6 +167,10 @@ val has_undefined : evar_map -> bool
 (** [has_undefined sigma] is [true] if and only if
     there are uninstantiated evars in [sigma]. *)
 
+val has_given_up : evar_map -> bool
+(** [has_given_up sigma] is [true] if and only if
+    there are given up evars in [sigma]. *)
+
 val new_evar : evar_map ->
   ?name:Id.t -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
 (** Creates a fresh evar mapping to the given information. *)
@@ -343,7 +347,7 @@ val drop_side_effects : evar_map -> evar_map
 
 (** {5 Future goals} *)
 
-type goal_kind = ToShelve | ToGiveUp
+type goal_kind = ToShelve
 
 val declare_future_goal : ?tag:goal_kind -> Evar.t -> evar_map -> evar_map
 (** Adds an existential variable to the list of future goals. For
@@ -387,15 +391,16 @@ val map_filter_future_goals : (Evar.t -> Evar.t option) -> evar_map -> evar_map
 val filter_future_goals : (Evar.t -> bool) -> evar_map -> evar_map
 (** Applies a filter on the future goals *)
 
-val dispatch_future_goals : evar_map -> Evar.t list * Evar.t list * Evar.t list * Evar.t option
+val dispatch_future_goals : evar_map -> Evar.t list * Evar.t list * Evar.t option
 (** Returns the future_goals dispatched into regular, shelved, given_up
    goals; last argument is the goal tagged as principal if any *)
 
-val extract_given_up_future_goals : evar_map -> Evar.t list * Evar.t list
-(** An ad hoc variant for Proof.proof; not for general use *)
-
 val shelve_on_future_goals : Evar.t list -> evar_map -> evar_map
 (** Push goals on the shelve of future goals *)
+
+val give_up : Evar.t -> evar_map -> evar_map
+
+val given_up : evar_map -> Evar.Set.t
 
 (** {5 Sort variables}
 

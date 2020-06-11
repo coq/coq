@@ -180,10 +180,10 @@ module P = struct
   type e = { trace: bool; name : Names.Id.t; poly : bool }
 
   (** Status (safe/unsafe) * shelved goals * given up *)
-  type w = bool * goal list
+  type w = bool
 
-  let wunit = true , []
-  let wprod (b1, g1) (b2, g2) = b1 && b2 , g1@g2
+  let wunit = true
+  let wprod b1 b2 = b1 && b2
 
   type u = Info.state
 
@@ -235,7 +235,7 @@ module Env : State with type t := Environ.env = struct
 end
 
 module Status : Writer with type t := bool = struct
-  let put s = Logical.put (s, [])
+  let put s = Logical.put s
 end
 
 module Shelf : State with type t = goal list = struct
@@ -244,12 +244,6 @@ module Shelf : State with type t = goal list = struct
   let get = Logical.map (fun {shelf} -> shelf) Pv.get
   let set c = Pv.modify (fun pv -> { pv with shelf = c })
   let modify f = Pv.modify (fun pv -> { pv with shelf = f pv.shelf })
-end
-
-module Giveup : Writer with type t = goal list = struct
-    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
-  type t = goal list
-  let put gs = Logical.put (true, gs)
 end
 
 (** Lens and utilities pertaining to the info trace *)
