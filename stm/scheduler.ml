@@ -51,7 +51,11 @@ let initial_schedule = {
 let push_id id st =
   match st with l::q -> (id::l)::q | _ -> assert false
 
-let base_id st = match st with (b::_)::_ -> Some b | _ -> None
+let base_id st =
+  match st with
+  | (b::_)::_ -> Some b
+  | [] :: (b::_)::_ -> Some b
+  | _ -> None
 
 let merge = function
   | [] -> assert false
@@ -64,7 +68,7 @@ let merge = function
 let push_state id ast st =
   let open Vernacextend in
   match Vernac_classifier.classify_vernac ast with
-  | VtStartProof _ -> base_id st, [id] :: push_id id st, Exec(id,ast)
+  | VtStartProof _ -> base_id st, [] :: push_id id st, Exec(id,ast)
   | VtQed (VtKeep (VtKeepAxiom | VtKeepOpaque)) ->
     let pop = List.tl st in
     base_id pop, push_id id pop, OpaqueProof(id, List.rev @@ List.hd st)
