@@ -269,19 +269,6 @@ struct
     seq [str "{"; pr_graph; str "}"]
 end
 
-(** I don't know where to put this... *)
-let annots_to_svars =
-  let open SVars in
-  let open Stage in
-  let open Annot in
-  function
-  | None -> empty
-  | Some ans ->
-    List.fold_left (fun svars -> function
-      | Stage (StageVar (var, _)) -> add var svars
-      | _ -> svars)
-      empty ans
-
 (** RecCheck functions and internal graph representation of constraints *)
 
 module RecCheck =

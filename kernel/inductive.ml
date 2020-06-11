@@ -66,22 +66,29 @@ let instantiate_inductive_constraints mib u =
 
 (* Build the substitution that replaces Rels by the appropriate *)
 (* inductives *)
-let ind_subst ?ans mind mib u =
+let ind_subst ?ian mind mib u =
   let ntypes = mib.mind_ntypes in
-  let ans = match ans with
-    | Some ans when Int.equal ntypes (List.length ans) -> ans
-    | _ -> List.init ntypes (fun _ -> infty) in
-  let make_Ik k =
-    let i = ntypes-k-1 in
-    mkIndUS ((mind,i),u) (List.nth ans i) in
+  let make_Ik =
+  match ian with
+  | Some (i, an) ->
+    fun k ->
+      let j = ntypes - k - 1 in
+      if Int.equal i j then
+        mkIndUS ((mind, j), u) an
+      else
+        mkIndUS ((mind, j), u) infty
+  | _ -> fun k -> mkIndUS ((mind, ntypes - k - 1), u) infty in
   List.init ntypes make_Ik
 
 (* Instantiate inductives in constructor type *)
-let constructor_instantiate ?ans mind u mib c =
-  let s = ind_subst ?ans mind mib u in
+let constructor_instantiate ?ian mind u mib c =
+  let s = ind_subst ?ian mind mib u in
   let ty = substl s (subst_instance_constr u c) in
-  let args, c = Term.decompose_prod ty in
-  Term.compose_prod args (annotate_succ (annots_to_svars ans) c)
+  match ian with
+  | Some (_, Stage (StageVar (var, _))) ->
+    let args, c = Term.decompose_prod ty in
+    Term.compose_prod args (annotate_succ (SVars.add var SVars.empty) c)
+  | _ -> ty
 
 let instantiate_params full t u args sign =
   let fail () =
@@ -106,8 +113,8 @@ let full_inductive_instantiate mib u params sign =
   let t = Term.mkArity (Vars.subst_instance_context u sign,dummy) in
     fst (Term.destArity (instantiate_params true t u params mib.mind_params_ctxt))
 
-let full_constructor_instantiate ?ans ((mind,_),u,(mib,_),params) t =
-  let inst_ind = constructor_instantiate ?ans mind u mib t in
+let full_constructor_instantiate ?ian ((mind,_),u,(mib,_),params) t =
+  let inst_ind = constructor_instantiate ?ian mind u mib t in
    instantiate_params true inst_ind u params mib.mind_params_ctxt
 
 (************************************************************************)
@@ -271,17 +278,17 @@ let max_inductive_sort =
 (************************************************************************)
 (* Type of a constructor *)
 
-let type_of_constructor ?ans (cstr, u) (mib,mip) =
+let type_of_constructor ?ian (cstr, u) (mib,mip) =
   check_instance mib u;
   let ind = inductive_of_constructor cstr in
   let specif = mip.mind_user_lc in
   let i = index_of_constructor cstr in
   let nconstr = Array.length mip.mind_consnames in
   if i > nconstr then user_err Pp.(str "Not enough constructors in the type.");
-  constructor_instantiate ?ans (fst ind) u mib specif.(i-1)
+  constructor_instantiate ?ian (fst ind) u mib specif.(i-1)
 
-let constrained_type_of_constructor ?ans (_cstr,u as cstru) (mib,_mip as ind) =
-  let ty = type_of_constructor ?ans cstru ind in
+let constrained_type_of_constructor ?ian (_cstr,u as cstru) (mib,_mip as ind) =
+  let ty = type_of_constructor ?ian cstru ind in
   let cst = instantiate_inductive_constraints mib u in
     (ty, cst)
 
@@ -378,10 +385,10 @@ let is_correct_arity env c pj ind specif params s =
 
 (* [p] is the predicate, [i] is the constructor number (starting from 0),
    and [cty] is the type of the constructor (params not instantiated) *)
-let build_branches_type ?ans (ind,u) (_,mip as specif) params p =
+let build_branches_type ?ian (ind,u) (_,mip as specif) params p =
   let build_one_branch i (ctx, c) =
     let cty = Term.it_mkProd_or_LetIn c ctx in
-    let typi = full_constructor_instantiate ?ans (ind,u,specif,params) cty in
+    let typi = full_constructor_instantiate ?ian (ind,u,specif,params) cty in
     let (cstrsign,ccl) = Term.decompose_prod_assum typi in
     let nargs = Context.Rel.length cstrsign in
     let (_,allargs) = decompose_app ccl in
@@ -399,13 +406,13 @@ let build_branches_type ?ans (ind,u) (_,mip as specif) params p =
 let build_case_type env n p c realargs =
   whd_betaiota env (Term.lambda_appvect_assum (n+1) p (Array.of_list (realargs@[c])))
 
-let type_case_branches ?ans env (pind,largs) pj c s =
+let type_case_branches ?ian env (pind,largs) pj c s =
   let specif = lookup_mind_specif env (fst pind) in
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
   let cstrnts = is_correct_arity env c pj pind specif params s in
-  let lc = build_branches_type ?ans pind specif params p in
+  let lc = build_branches_type ?ian pind specif params p in
   let ty = build_case_type env (snd specif).mind_nrealdecls p c realargs in
   lc, ty, cstrnts
 

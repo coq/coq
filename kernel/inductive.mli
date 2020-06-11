@@ -35,7 +35,7 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 val lookup_mind_specif : env -> inductive -> mind_specif
 
 (** {6 Functions to build standard types related to inductive } *)
-val ind_subst : ?ans:Annot.t list -> MutInd.t -> mutual_inductive_body -> Instance.t -> constr list
+val ind_subst : ?ian:int * Annot.t -> MutInd.t -> mutual_inductive_body -> Instance.t -> constr list
 
 val inductive_paramdecls : mutual_inductive_body puniverses -> Constr.rel_context
 
@@ -66,8 +66,8 @@ val is_primitive_record : mind_specif -> bool
 
 (** Return type as quoted by the user *)
 
-val constrained_type_of_constructor : ?ans:Annot.t list -> pconstructor -> mind_specif -> types Univ.constrained
-val type_of_constructor : ?ans:Annot.t list -> pconstructor -> mind_specif -> types
+val constrained_type_of_constructor : ?ian:int * Annot.t -> pconstructor -> mind_specif -> types Univ.constrained
+val type_of_constructor : ?ian:int * Annot.t -> pconstructor -> mind_specif -> types
 
 (** Return constructor types in normal form *)
 val arities_of_constructors : pinductive -> mind_specif -> types array
@@ -88,11 +88,11 @@ val inductive_params : mind_specif -> int
    the universe constraints generated.
  *)
 val type_case_branches :
-  ?ans:Annot.t list -> env -> pinductive * constr list -> unsafe_judgment -> constr -> Annot.t
+  ?ian:int * Annot.t -> env -> pinductive * constr list -> unsafe_judgment -> constr -> Annot.t
     -> types array * types * Constraints.t
 
 val build_branches_type :
-  ?ans:Annot.t list -> pinductive -> mutual_inductive_body * one_inductive_body ->
+  ?ian:int * Annot.t -> pinductive -> mutual_inductive_body * one_inductive_body ->
     constr list -> constr -> types array
 
 (** Return the arity of an inductive type *)

@@ -114,8 +114,6 @@ sig
   val pr : t -> Pp.t
 end
 
-val annots_to_svars : Annot.t list option -> SVars.t
-
 (* N.B. Only [rec_check] should be exposed, but we expose the rest for testing. *)
 module RecCheck :
 sig
