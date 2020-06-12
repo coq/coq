@@ -47,21 +47,11 @@ type fix_exn = Exninfo.iexn -> Exninfo.iexn
    by forcing the computations or any computation that is chained after
    it. It is used by STM to attach errors to their corresponding states,
    and to communicate to the code catching the exception a valid state id. *)
-val create : fix_exn -> (unit -> 'a) -> 'a computation
+val create : fix_exn:fix_exn -> (unit -> 'a) -> 'a computation
 
 (* Usually from_val is used to create "fake" futures, to use the same API
-   as if a real asynchronous computations was there.  In this case fixing
-   the exception is not needed, but *if* the future is chained, the fix_exn
-   argument should really be given *)
-val from_val : ?fix_exn:fix_exn -> 'a -> 'a computation
-
-(* To get the fix_exn of a computation and build a Lemmas.declaration_hook.
- * When a future enters the environment a corresponding hook is run to perform
- * some work.  If this fails, then its failure has to be annotated with the
- * same state id that corresponds to the future computation end.  I.e. Qed
- * is split into two parts, the lazy one (the future) and the eager one
- * (the hook), both performing some computations for the same state id. *)
-val fix_exn_of : 'a computation -> fix_exn
+   as if a real asynchronous computations was there. *)
+val from_val : 'a -> 'a computation
 
 (* Run remotely, returns the function to assign.
    If not blocking (the default) it raises NotReady if forced before the

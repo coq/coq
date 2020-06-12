@@ -67,8 +67,8 @@ and 'a computation = 'a comput ref
 
 let unnamed = "unnamed"
 
-let create ?(name=unnamed) ?(uuid=UUID.fresh ()) f x =
-  ref (Ongoing (name, CEphemeron.create (uuid, f, ref x)))
+let create ?(name=unnamed) ?(uuid=UUID.fresh ()) ~fix_exn x =
+  ref (Ongoing (name, CEphemeron.create (uuid, fix_exn, ref x)))
 let get x =
   match !x with
   | Finished v -> unnamed, UUID.invalid, id, ref (Val v)
@@ -97,9 +97,7 @@ let peek_val kx = let _, _, _, x = get kx in match !x with
 
 let uuid kx = let _, id, _, _ = get kx in id
 
-let from_val ?(fix_exn=id) v = create fix_exn (Val v)
-
-let fix_exn_of ck = let _, _, fix_exn, _ = get ck in fix_exn
+let from_val v = create ~fix_exn:id (Val v)
 
 let create_delegate ?(blocking=true) ~name fix_exn =
   let assignment signal ck = fun v ->
@@ -116,7 +114,7 @@ let create_delegate ?(blocking=true) ~name fix_exn =
     let cond = Condition.create () in
     (fun () -> Mutex.lock lock; Condition.wait cond lock; Mutex.unlock lock),
     (fun () -> Mutex.lock lock; Condition.broadcast cond; Mutex.unlock lock) in
-  let ck = create ~name fix_exn (Delegated wait) in
+  let ck = create ~name ~fix_exn (Delegated wait) in
   ck, assignment signal ck
 
 (* TODO: get rid of try/catch to be stackless *)
@@ -143,12 +141,12 @@ let force x = match compute x with
 
 let chain ck f =
   let name, uuid, fix_exn, c = get ck in
-  create ~uuid ~name fix_exn (match !c with
+  create ~uuid ~name ~fix_exn (match !c with
   | Closure _ | Delegated _ -> Closure (fun () -> f (force ck))
   | Exn _ as x -> x
   | Val v -> Val (f v))
 
-let create fix_exn f = create fix_exn (Closure f)
+let create ~fix_exn f = create ~fix_exn (Closure f)
 
 let replace kx y =
   let _, _, _, x = get kx in
