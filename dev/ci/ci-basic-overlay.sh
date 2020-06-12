@@ -289,11 +289,9 @@
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-# There is no 8.12-specific branch yet.  This commit is the latest on
-# coq-master and the only one compatible with Coq 8.12.  Compared to
-# the latest release (1.4.0), it virtually only contains compatibility
-# fixes.
-: "${elpi_CI_REF:=75b82ca6826270a5d399250fd5862da7aa9c9fdd}"
+# There is no 8.12-compatible tag yet but there is an 8.12-specific
+# branch.
+: "${elpi_CI_REF:=coq-v8.12}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
