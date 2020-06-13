@@ -394,12 +394,16 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
     let hd_ty, miss = match EConstr.kind sigma c with
     | App (hd, args) ->
         let hd_ty = Retyping.get_type_of env sigma hd in
-        let names = let rec aux t = function 0 -> [] | n ->
+        let names = let rec aux env t = function 0 -> [] | n ->
           let t = Reductionops.whd_all env sigma t in
           let open EConstr in
           match kind_of_type sigma t with
-          | ProdType (name, _, t) -> name.binder_name :: aux t (n-1)
-          | _ -> assert false in aux hd_ty (Array.length args) in
+          | ProdType (name, ty, t) ->
+              name.binder_name ::
+                aux (EConstr.push_rel (Context.Rel.Declaration.LocalAssum (name,ty)) env) t (n-1)
+          | _ ->
+              (* In the case the head is an HO constant it may accept more arguments *)
+              CList.init n (fun _ -> Names.Name.Anonymous) in aux env hd_ty (Array.length args) in
         hd_ty, Util.List.map_filter (fun (t, name) ->
           let evs = Evar.Set.elements (Evarutil.undefined_evars_of_term sigma t) in
           let open_evs = List.filter (fun k ->
