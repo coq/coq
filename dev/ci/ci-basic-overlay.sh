@@ -135,9 +135,8 @@
 ########################################################################
 # Gappa plugin
 ########################################################################
-# This is the latest release (from 1 month ago) but it is not
-# compatible with Coq 8.12.  We include a patch to make it compatible.
-: "${gappa_plugin_CI_REF:=gappalib-coq-1.4.3}"
+# Released on 2020-06-13 and compatible with Coq 8.12.
+: "${gappa_plugin_CI_REF:=gappalib-coq-1.4.4}"
 : "${gappa_plugin_CI_GITURL:=https://gitlab.inria.fr/gappa/coq}"
 : "${gappa_plugin_CI_ARCHIVEURL:=${gappa_plugin_CI_GITURL}/-/archive}"
 
