@@ -73,6 +73,7 @@ Infix "&&" := andb : bool_scope.
 
 Register andb as core.bool.andb.
 Register orb as core.bool.orb.
+Register implb as core.bool.implb.
 Register xorb as core.bool.xorb.
 Register negb as core.bool.negb.
 

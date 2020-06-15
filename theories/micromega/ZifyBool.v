@@ -9,176 +9,82 @@
 (************************************************************************)
 Require Import Bool ZArith.
 Require Import Zify ZifyClasses.
+Require Import ZifyInst.
 Local Open Scope Z_scope.
-(* Instances of [ZifyClasses] for dealing with boolean operators.
-   Various encodings of boolean are possible.  One objective is to
-   have an encoding that is terse but also lia friendly.
- *)
+(* Instances of [ZifyClasses] for dealing with boolean operators. *)
 
-(** [Z_of_bool] is the injection function for boolean *)
-Definition Z_of_bool (b : bool) : Z := if b then 1 else 0.
-
-(** [bool_of_Z] is a compatible reverse operation *)
-Definition bool_of_Z (z : Z) : bool := negb (Z.eqb z 0).
-
-Lemma Z_of_bool_bound : forall x,   0 <= Z_of_bool x <= 1.
-Proof.
-  destruct x ; simpl; compute; intuition congruence.
-Qed.
-
-Instance Inj_bool_Z : InjTyp bool Z :=
-  { inj := Z_of_bool ; pred :=(fun x => 0 <= x <= 1) ; cstr := Z_of_bool_bound}.
-Add InjTyp Inj_bool_Z.
+Instance Inj_bool_bool : InjTyp bool bool :=
+  { inj := (fun x => x) ; pred := (fun b => b = true \/ b = false) ;
+    cstr := (ltac:(intro b; destruct b; tauto))}.
+Add Zify InjTyp Inj_bool_bool.
 
 (** Boolean operators *)
 
 Instance Op_andb : BinOp andb :=
-  { TBOp := Z.min ;
-    TBOpInj := ltac: (destruct n,m; reflexivity)}.
-Add BinOp Op_andb.
+  { TBOp := andb ; TBOpInj := fun _ _  => eq_refl}.
+Add Zify BinOp Op_andb.
 
 Instance Op_orb : BinOp orb :=
-  { TBOp := Z.max ;
-    TBOpInj := ltac:(destruct n,m; reflexivity)}.
-Add BinOp Op_orb.
+  { TBOp := orb ; TBOpInj := fun _ _ => eq_refl}.
+Add Zify BinOp Op_orb.
 
 Instance Op_implb : BinOp implb :=
-  { TBOp := fun x y => Z.max (1 - x) y;
-    TBOpInj := ltac:(destruct n,m; reflexivity) }.
-Add BinOp Op_implb.
+  { TBOp := implb; TBOpInj := fun _ _ => eq_refl }.
+Add Zify BinOp Op_implb.
+
+Definition xorb_eq : forall b1 b2,
+    xorb b1 b2 = andb (orb b1 b2) (negb (eqb b1 b2)).
+Proof.
+  destruct b1,b2 ; reflexivity.
+Qed.
 
 Instance Op_xorb : BinOp xorb :=
-  { TBOp := fun x y => Z.max (x - y) (y - x);
-    TBOpInj := ltac:(destruct n,m; reflexivity) }.
-Add BinOp Op_xorb.
+  { TBOp := fun x y => andb (orb x y) (negb (eqb x y)); TBOpInj := xorb_eq }.
+Add Zify BinOp Op_xorb.
+
+Instance Op_eqb : BinOp eqb :=
+  { TBOp := eqb; TBOpInj := fun _ _ => eq_refl }.
+Add Zify BinOp Op_eqb.
 
 Instance Op_negb : UnOp negb :=
-  { TUOp := fun x => 1 - x ; TUOpInj := ltac:(destruct x; reflexivity)}.
-Add UnOp Op_negb.
+  { TUOp := negb ; TUOpInj := fun _ => eq_refl}.
+Add Zify UnOp Op_negb.
 
 Instance Op_eq_bool : BinRel (@eq bool) :=
-  {TR := @eq Z ; TRInj := ltac:(destruct n,m; simpl ; intuition congruence) }.
-Add BinRel Op_eq_bool.
+  {TR := @eq bool ; TRInj := ltac:(reflexivity) }.
+Add Zify BinRel Op_eq_bool.
 
 Instance Op_true : CstOp true :=
-  { TCst := 1 ; TCstInj := eq_refl }.
-Add CstOp Op_true.
+  { TCst := true ; TCstInj := eq_refl }.
+Add Zify CstOp Op_true.
 
 Instance Op_false : CstOp false :=
-  { TCst := 0 ; TCstInj := eq_refl }.
-Add CstOp Op_false.
-
-(** Comparisons are encoded using the predicates [isZero] and [isLeZero].*)
-
-Definition isZero (z : Z) := Z_of_bool (Z.eqb z 0).
-
-Definition isLeZero (x : Z) := Z_of_bool (Z.leb x 0).
-
-Instance Op_isZero : UnOp isZero :=
-  { TUOp := isZero; TUOpInj := ltac: (reflexivity) }.
-Add UnOp Op_isZero.
-
-Instance Op_isLeZero : UnOp isLeZero :=
-  { TUOp := isLeZero; TUOpInj := ltac: (reflexivity) }.
-Add UnOp Op_isLeZero.
-
-(* Some intermediate lemma *)
-
-Lemma Z_eqb_isZero : forall n m,
-    Z_of_bool (n =? m) = isZero (n - m).
-Proof.
-  intros ; unfold isZero.
-  destruct ( n =? m) eqn:EQ.
-  - simpl. rewrite Z.eqb_eq in EQ.
-    rewrite EQ. rewrite Z.sub_diag.
-    reflexivity.
-  -
-    destruct (n - m =? 0) eqn:EQ'.
-    rewrite Z.eqb_neq in EQ.
-    rewrite Z.eqb_eq in EQ'.
-    apply Zminus_eq in EQ'.
-    congruence.
-    reflexivity.
-Qed.
-
-Lemma Z_leb_sub : forall x y, x <=? y  = ((x - y) <=? 0).
-Proof.
-  intros.
-  destruct (x <=?y) eqn:B1 ;
-    destruct (x - y <=?0) eqn:B2 ; auto.
-  - rewrite Z.leb_le in B1.
-    rewrite Z.leb_nle in B2.
-    rewrite Z.le_sub_0 in B2. tauto.
-  - rewrite Z.leb_nle in B1.
-    rewrite Z.leb_le in B2.
-    rewrite Z.le_sub_0 in B2. tauto.
-Qed.
-
-Lemma Z_ltb_leb : forall x y, x <? y  = (x +1 <=? y).
-Proof.
-  intros.
-  destruct (x <?y) eqn:B1 ;
-    destruct (x + 1 <=?y) eqn:B2 ; auto.
-  - rewrite Z.ltb_lt in B1.
-    rewrite Z.leb_nle in B2.
-    apply Zorder.Zlt_le_succ in B1.
-    unfold Z.succ in B1.
-    tauto.
-  - rewrite Z.ltb_nlt in B1.
-    rewrite Z.leb_le in B2.
-    apply Zorder.Zle_lt_succ in B2.
-    unfold Z.succ in B2.
-    apply Zorder.Zplus_lt_reg_r in B2.
-    tauto.
-Qed.
-
+  { TCst := false ; TCstInj := eq_refl }.
+Add Zify CstOp Op_false.
 
 (** Comparison over Z *)
 
 Instance Op_Zeqb : BinOp Z.eqb :=
-  { TBOp := fun x y => isZero (Z.sub x y) ; TBOpInj := Z_eqb_isZero}.
+  { TBOp := Z.eqb ; TBOpInj := fun _ _ => eq_refl }.
+Add Zify BinOp Op_Zeqb.
 
 Instance Op_Zleb : BinOp Z.leb :=
-  { TBOp := fun x y => isLeZero (x-y) ;
-    TBOpInj :=
-      ltac: (intros;unfold isLeZero;
-               rewrite Z_leb_sub;
-               auto) }.
-Add BinOp Op_Zleb.
+  { TBOp := Z.leb; TBOpInj :=  fun _ _ => eq_refl }.
+Add Zify BinOp Op_Zleb.
 
 Instance Op_Zgeb : BinOp Z.geb :=
-  { TBOp := fun x y => isLeZero (y-x) ;
-    TBOpInj := ltac:(
-                 intros;
-                   unfold isLeZero;
-                   rewrite Z.geb_leb;
-                   rewrite Z_leb_sub;
-                   auto) }.
-Add BinOp Op_Zgeb.
+  { TBOp := Z.geb; TBOpInj := fun _ _ => eq_refl }.
+Add Zify BinOp Op_Zgeb.
 
 Instance Op_Zltb : BinOp Z.ltb :=
-  { TBOp := fun x y => isLeZero (x+1-y) ;
-    TBOpInj := ltac:(
-                 intros;
-                   unfold isLeZero;
-                   rewrite Z_ltb_leb;
-                   rewrite <- Z_leb_sub;
-                   reflexivity) }.
+  { TBOp := Z.ltb ; TBOpInj := fun _ _ => eq_refl }.
+Add Zify BinOp Op_Zltb.
 
 Instance Op_Zgtb : BinOp Z.gtb :=
-  { TBOp := fun x y => isLeZero (y-x+1) ;
-    TBOpInj := ltac:(
-                 intros;
-                   unfold isLeZero;
-                   rewrite Z.gtb_ltb;
-                   rewrite Z_ltb_leb;
-                   rewrite Z_leb_sub;
-                   rewrite Z.add_sub_swap;
-                   reflexivity) }.
-Add BinOp Op_Zgtb.
+  { TBOp := Z.gtb; TBOpInj := fun _ _  => eq_refl }.
+Add Zify BinOp Op_Zgtb.
 
 (** Comparison over nat *)
-
 
 Lemma Z_of_nat_eqb_iff : forall n m,
     (n =? m)%nat = (Z.of_nat n =? Z.of_nat m).
@@ -211,68 +117,45 @@ Proof.
 Qed.
 
 Instance Op_nat_eqb : BinOp Nat.eqb :=
-   { TBOp := fun x y => isZero (Z.sub x y) ;
-     TBOpInj := ltac:(
-                  intros; simpl;
-                    rewrite  <- Z_eqb_isZero;
-                  f_equal; apply Z_of_nat_eqb_iff) }.
-Add BinOp Op_nat_eqb.
+  { TBOp := Z.eqb; TBOpInj := Z_of_nat_eqb_iff }.
+Add Zify BinOp Op_nat_eqb.
 
 Instance Op_nat_leb : BinOp Nat.leb :=
-  { TBOp := fun x y => isLeZero (x-y) ;
-    TBOpInj := ltac:(
-                 intros;
-                 rewrite Z_of_nat_leb_iff;
-                 unfold isLeZero;
-                 rewrite Z_leb_sub;
-                 auto) }.
-Add BinOp Op_nat_leb.
+  { TBOp := Z.leb; TBOpInj := Z_of_nat_leb_iff }.
+Add Zify BinOp Op_nat_leb.
 
 Instance Op_nat_ltb : BinOp Nat.ltb :=
-  { TBOp := fun x y => isLeZero (x+1-y) ;
-     TBOpInj := ltac:(
-                  intros;
-                  rewrite Z_of_nat_ltb_iff;
-                    unfold isLeZero;
-                    rewrite Z_ltb_leb;
-                    rewrite <- Z_leb_sub;
-                    reflexivity) }.
-Add BinOp Op_nat_ltb.
+  { TBOp := Z.ltb; TBOpInj := Z_of_nat_ltb_iff }.
+Add Zify BinOp Op_nat_ltb.
 
-(** Injected boolean operators *)
-
-Lemma Z_eqb_ZSpec_ok : forall x,  0 <= isZero x <= 1 /\
-                                  (x = 0 <-> isZero x = 1).
+Lemma b2n_b2z :  forall x,  Z.of_nat (Nat.b2n x) = Z.b2z x.
 Proof.
-  intros.
-  unfold isZero.
-  destruct (x =? 0) eqn:EQ.
-  -  apply Z.eqb_eq in EQ.
-     simpl. intuition try congruence;
-     compute ; congruence.
-  - apply Z.eqb_neq in EQ.
-    simpl. intuition try congruence;
-             compute ; congruence.
+  intro. destruct x ; reflexivity.
 Qed.
 
+Instance Op_b2n : UnOp Nat.b2n :=
+  { TUOp := Z.b2z; TUOpInj := b2n_b2z }.
+Add Zify UnOp Op_b2n.
 
-Instance Z_eqb_ZSpec : UnOpSpec isZero :=
-  {| UPred := fun n r => 0 <= r <= 1 /\ (n = 0 <-> isZero n = 1) ; USpec := Z_eqb_ZSpec_ok |}.
-Add Spec Z_eqb_ZSpec.
+Instance Op_b2z : UnOp Z.b2z :=
+  { TUOp := Z.b2z; TUOpInj := fun _ => eq_refl }.
+Add Zify UnOp Op_b2z.
 
-Lemma leZeroSpec_ok : forall x,  x <= 0 /\ isLeZero x = 1 \/ x > 0 /\ isLeZero x = 0.
+Lemma b2z_spec : forall b, (b = true /\ Z.b2z b = 1) \/ (b = false /\ Z.b2z b = 0).
 Proof.
-  intros.
-  unfold isLeZero.
-  destruct (x <=? 0) eqn:EQ.
-  -  apply Z.leb_le in EQ.
-     simpl. intuition congruence.
-  -  simpl.
-     apply Z.leb_nle in EQ.
-     apply Zorder.Znot_le_gt in EQ.
-     tauto.
+  destruct b ; simpl; intuition congruence.
 Qed.
 
-Instance leZeroSpec : UnOpSpec isLeZero :=
-  {| UPred := fun n r => (n<=0 /\ r = 1) \/ (n > 0 /\ r = 0) ; USpec := leZeroSpec_ok|}.
-Add Spec leZeroSpec.
+Instance b2zSpec : UnOpSpec Z.b2z :=
+  { UPred := fun b r => (b = true /\ r = 1) \/ (b = false /\ r = 0);
+    USpec := b2z_spec
+  }.
+Add Zify UnOpSpec b2zSpec.
+
+Ltac elim_bool_cstr :=
+  repeat match goal with
+         | C : ?B = true \/ ?B = false |- _ =>
+           destruct C as [C|C]; rewrite C in *
+         end.
+
+Ltac Zify.zify_post_hook ::= elim_bool_cstr.

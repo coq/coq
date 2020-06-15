@@ -130,6 +130,8 @@ Definition eqb (b1 b2:bool) : bool :=
     | false, false => true
   end.
 
+Register eqb as core.bool.eqb.
+
 Lemma eqb_subst :
   forall (P:bool -> Prop) (b1 b2:bool), eqb b1 b2 = true -> P b1 -> P b2.
 Proof.

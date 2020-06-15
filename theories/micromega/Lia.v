@@ -19,7 +19,6 @@ Require Import BinNums.
 Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
-
 Ltac zchecker :=
   intros ?__wit ?__varmap ?__ff ;
   exact (ZTautoChecker_sound __ff __wit
@@ -29,7 +28,6 @@ Ltac zchecker :=
 Ltac lia := Zify.zify; xlia zchecker.
                
 Ltac nia := Zify.zify; xnlia zchecker.
-
 
 (* Local Variables: *)
 (* coding: utf-8 *)
