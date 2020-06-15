@@ -1932,8 +1932,7 @@ end = struct (* {{{ *)
          List.for_all (Context.Named.Declaration.for_all is_ground)
                       Evd.(evar_context g))
        then
-         CErrors.user_err ~hdr:"STM" Pp.(strbrk("the par: goal selector supports ground "^
-           "goals only"))
+         CErrors.user_err ~hdr:"STM" Pp.(strbrk("The par: goal selector does not support goals with existential variables"))
        else begin
         let (i, ast) = r_ast in
         PG_compat.map_proof (fun p -> Proof.focus focus_cond () i p);
@@ -1950,10 +1949,15 @@ end = struct (* {{{ *)
         | Evd.Evar_empty -> RespNoProgress
         | Evd.Evar_defined t ->
             let t = Evarutil.nf_evar sigma t in
-            if Evarutil.is_ground_term sigma t then
+            let evars = Evarutil.undefined_evars_of_term sigma t in
+            if Evar.Set.is_empty evars then
               let t = EConstr.Unsafe.to_constr t in
               RespBuiltSubProof (t, Evd.evar_universe_context sigma)
-            else CErrors.user_err ~hdr:"STM" Pp.(str"The solution is not ground")
+            else
+              CErrors.user_err ~hdr:"STM"
+                Pp.(str"The par: selector requires a tactic that makes no progress or fully" ++
+                    str" solves the goal and leaves no unresolved existential variables. The following" ++
+                    str" existentials remain unsolved: " ++ prlist (Termops.pr_existential_key sigma) (Evar.Set.elements evars))
        end) ()
     with e when CErrors.noncritical e -> RespError (CErrors.print e)
 
