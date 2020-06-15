@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download unicoq
 
-( cd "${CI_BUILD_DIR}/unicoq" && coq_makefile -f Make -o Makefile && make && make install )
+( cd "${CI_BUILD_DIR}/unicoq" && coq_makefile -f _CoqProject -o Makefile && make && make install )
