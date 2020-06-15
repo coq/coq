@@ -582,7 +582,7 @@ test-suite:edge:dune:dev:
     # Gitlab doesn't support yet "expire_in: never" so we use the instance default
     # expire_in: never
 
-test-suite:edge+4.11+trunk+dune:
+.test-suite:ocaml+beta+dune-template:
   stage: stage-1
   except:
     variables:
@@ -590,11 +590,11 @@ test-suite:edge+4.11+trunk+dune:
   interruptible: true
   dependencies: []
   script:
-    - opam switch create 4.11.0 --empty
+    - opam switch create $OCAMLVER --empty
     - eval $(opam env)
     - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
     - opam update
-    - opam install ocaml-variants=4.11.0+trunk
+    - opam install ocaml-variants=$OCAMLVER
     - opam install dune num
     - eval $(opam env)
     - export COQ_UNIT_TEST=noop
@@ -609,6 +609,16 @@ test-suite:edge+4.11+trunk+dune:
       - _build/default/test-suite/logs
     expire_in: 2 week
   allow_failure: true
+
+test-suite:4.11+trunk+dune:
+  extends: .test-suite:ocaml+beta+dune-template
+  variables:
+    OCAMLVER: 4.11.0+trunk
+
+test-suite:4.12+trunk+dune:
+  extends: .test-suite:ocaml+beta+dune-template
+  variables:
+    OCAMLVER: 4.12.0+trunk
 
 test-suite:base+async:
   extends: .test-suite-template
