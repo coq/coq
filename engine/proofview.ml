@@ -716,13 +716,13 @@ let guard_no_unifiable =
       tclUNIT (Some l)
 
 (** [unshelve l p] moves all the goals in [l] from the shelf and put them at
-    the end of the focused goals of p, if they are still undefined after [advance] *)
+    the beginning of the focused goals of p, if they are still undefined after [advance] *)
 let unshelve l p =
   let solution = Evd.unshelve p.solution l in
   let l = List.map with_empty_state l in
   (* advance the goals in case of clear *)
   let l = undefined p.solution l in
-  { comb = p.comb@l; solution }
+  { comb = l@p.comb; solution }
 
 let filter_shelf f pv =
   { pv with solution = Evd.filter_shelf f pv.solution }
