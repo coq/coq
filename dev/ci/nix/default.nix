@@ -74,9 +74,20 @@ let Verdi = (coqPackages.Verdi.override { inherit Cheerios ssreflect; })
     src = fetchTarball "https://github.com/uwplse/verdi/tarball/master";
   }); in
 
+let flocq = coqPackages.flocq.overrideAttrs (o: {
+    src = fetchTarball "https://gitlab.inria.fr/flocq/flocq/-/archive/master/flocq-master.tar.gz";
+    configurePhase = ''
+      autoreconf
+      ${bash}/bin/bash configure --libdir=$out/lib/coq/${coq.coq-version}/user-contrib/Flocq
+    '';
+    buildPhase = ''
+      ./remake
+    '';
+  }); in
+
 let callPackage = newScope { inherit coq
   bignums coq-ext-lib coqprime corn iris math-classes
-  mathcomp simple-io ssreflect stdpp unicoq Verdi;
+  mathcomp simple-io ssreflect stdpp unicoq Verdi flocq;
 }; in
 
 # Environments for building CI libraries with this Coq
@@ -93,6 +104,7 @@ let projects = {
   fiat_crypto = callPackage ./fiat_crypto.nix {};
   flocq = callPackage ./flocq.nix {};
   formal-topology = callPackage ./formal-topology.nix {};
+  gappa = callPackage ./gappa.nix {};
   GeoCoq = callPackage ./GeoCoq.nix {};
   HoTT = callPackage ./HoTT.nix {};
   iris = callPackage ./iris.nix {};
