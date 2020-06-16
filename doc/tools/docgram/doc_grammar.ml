@@ -90,6 +90,8 @@ module DocGram = struct
   exception Duplicate
   exception Invalid
 
+  let g_empty () = ref { map = NTMap.empty; order = [] }
+
   (* add an nt at the end (if not already present) then set its prods *)
   let g_maybe_add g nt prods =
     if not (NTMap.mem nt !g.map) then
@@ -211,8 +213,8 @@ let rec output_prod plist need_semi = function
           sprintf "%s%s" sep prod)
         sym_list_list))
     | Sedit s -> sprintf "%s" s
-    (* todo: make PLUGIN info output conditional on the set of prods? *)
-    | Sedit2 ("PLUGIN", plugin) ->
+    (* todo: make TAG info output conditional on the set of prods? *)
+    | Sedit2 ("TAG", plugin) ->
       if plist then
         sprintf "     (%s plugin)" plugin
       else
@@ -275,7 +277,7 @@ let rec output_prodn = function
         sym_list))
       rcurly
   | Sedit s -> sprintf "%s" s
-  | Sedit2 ("PLUGIN", s2) -> ""
+  | Sedit2 ("TAG", s2) -> ""
   | Sedit2 (s, s2) -> sprintf "%s \"%s\"" s s2
 
 and output_sep sep =
@@ -291,6 +293,13 @@ and prod_to_prodn_r prod =
   | [] -> []
 
 and prod_to_prodn prod = String.concat " " (prod_to_prodn_r prod)
+
+let get_tag prod =
+  List.fold_left (fun rv sym ->
+      match sym with
+      | Sedit2 ("TAG", s2) -> "   " ^ s2
+      | _ -> rv
+    ) "" prod
 
 let pr_prods nt prods = (* duplicative *)
   Printf.printf "%s: [\n" nt;
@@ -397,6 +406,8 @@ and cvt_gram_sym_list l =
     (Sedit2 ("NOTE", s2)) :: cvt_gram_sym_list tl
   | GSymbQualid ("USE_NT", _) :: GSymbQualid (s2, l) :: tl ->
     (Sedit2 ("USE_NT", s2)) :: cvt_gram_sym_list tl
+  | GSymbQualid ("TAG", _) :: GSymbQualid (s2, l) :: tl ->
+    (Sedit2 ("TAG", s2)) :: cvt_gram_sym_list tl
   | GSymbString s :: tl ->
     (* todo: not seeing "(bfs)" here for some reason *)
     keywords := StringSet.add s !keywords;
@@ -516,17 +527,31 @@ let has_match p prods = List.exists (fun p2 -> ematch p p2) prods
 let plugin_regex = Str.regexp "^plugins/\\([a-zA-Z0-9_]+\\)/"
 let level_regex = Str.regexp "[a-zA-Z0-9_]*$"
 
-let read_mlg is_edit ast file level_renames symdef_map =
+let get_plugin_name file =
+  if file = "user-contrib/Ltac2/g_ltac2.mlg" then
+    "Ltac2"
+  else if Str.string_match plugin_regex file 0 then
+    Str.matched_group 1 file
+  else
+    ""
+
+let read_mlg g is_edit ast file level_renames symdef_map =
   let res = ref [] in
   let locals = ref StringSet.empty in
+  let dup_renames = ref StringMap.empty in
   let add_prods nt prods =
     if not is_edit then
+      if NTMap.mem nt !g.map && nt <> "command" && nt <> "simple_tactic" then begin
+        let new_name = String.uppercase_ascii (Filename.remove_extension (Filename.basename file)) ^ "_" ^ nt in
+        dup_renames := StringMap.add nt new_name !dup_renames;
+        Printf.printf "** dup sym %s -> %s in %s\n" nt new_name file
+      end;
       add_symdef nt file symdef_map;
+    let plugin = get_plugin_name file in
     let prods = if not is_edit &&
         not (List.mem file autoloaded_mlgs) &&
-        Str.string_match plugin_regex file 0 then
-      let plugin = Str.matched_group 1 file in
-      List.map (fun p -> p @ [Sedit2 ("PLUGIN", plugin)]) prods
+        plugin <> "" then
+      List.map (fun p -> p @ [Sedit2 ("TAG", plugin)]) prods
     else
       prods
     in
@@ -600,7 +625,7 @@ let read_mlg is_edit ast file level_renames symdef_map =
   in
 
   List.iter prod_loop ast;
-  List.rev !res, !locals
+  List.rev !res, !locals, !dup_renames
 
 let dir s = "doc/tools/docgram/" ^ s
 
@@ -608,7 +633,7 @@ let read_mlg_edit file =
   let fdir = dir file in
   let level_renames = ref StringMap.empty in (* ignored *)
   let symdef_map = ref StringMap.empty in (* ignored *)
-  let prods, _ = read_mlg true (parse_file fdir) fdir level_renames symdef_map in
+  let prods, _, _ = read_mlg (g_empty ()) true (parse_file fdir) fdir level_renames symdef_map in
   prods
 
 let add_rule g nt prods file =
@@ -622,30 +647,6 @@ let add_rule g nt prods file =
         [prod])
     prods) in
   g_maybe_add_begin g nt (ent @ nodups)
-
-let read_mlg_files g args symdef_map =
-  let level_renames = ref StringMap.empty in
-  let last_autoloaded = List.hd (List.rev autoloaded_mlgs) in
-  List.iter (fun file ->
-    (* does nt renaming, deletion and splicing *)
-    let rules, locals = read_mlg false (parse_file file) file level_renames symdef_map in
-    let numprods = List.fold_left (fun num rule ->
-        let nt, prods = rule in
-        if NTMap.mem nt !g.map && (StringSet.mem nt locals) &&
-            StringSet.cardinal (StringSet.of_list (StringMap.find nt !symdef_map)) > 1 then
-          warn "%s: local nonterminal '%s' already defined\n" file nt;
-        add_rule g nt prods file;
-        num + List.length prods)
-      0 rules
-    in
-    if args.verbose then begin
-      Printf.eprintf "%s:  %d nts,  %d prods\n" file (List.length rules) numprods;
-      if file = last_autoloaded then
-        Printf.eprintf "  Optionally loaded plugins:\n"
-    end
-  ) args.mlg_files;
-  g_reverse g;
-  !level_renames
 
 
  (* get the nt's in the production, preserving order, don't worry about dups *)
@@ -701,7 +702,7 @@ let create_edit_map g op edits =
       | "RENAME" ->
         if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
           error "Unused/undefined  nt `%s` in RENAME\n" key;
-(*      todo: could not get the following codeto type check
+(*      todo: could not get the following code to type check
         (match binding with
         | _ :: Snterm new_nt :: _ ->
           if not (StringSet.mem new_nt all_nts_ref) then
@@ -781,7 +782,7 @@ let rec edit_prod g top edit_map prod =
             match splice_prods with
             | [] -> error "Empty splice for '%s'\n" nt; []
             | [p] -> List.rev (remove_Sedit2 p)
-            | _ -> [Sprod (List.map remove_Sedit2 splice_prods)]
+            | _ -> [Sprod (List.map remove_Sedit2 splice_prods)] (* todo? check if we create a dup *)
           with Not_found -> error "Missing nt '%s' for splice\n" nt; [Snterm nt]
         end
       | _ -> [Snterm binding]
@@ -897,6 +898,34 @@ let insert_after posn insert prods =
   List.concat (List.mapi (fun i prod ->
       if i = posn then prod :: insert else [prod])
     prods)
+
+
+let read_mlg_files g args symdef_map =
+  let level_renames = ref StringMap.empty in
+  let last_autoloaded = List.hd (List.rev autoloaded_mlgs) in
+  List.iter (fun file ->
+    (* todo: ??? does nt renaming, deletion and splicing *)
+    let rules, locals, dup_renames = read_mlg g false (parse_file file) file level_renames symdef_map in
+    let numprods = List.fold_left (fun num rule ->
+        let nt, prods = rule in
+        (* rename local duplicates *)
+        let prods = List.map (fun prod -> List.hd (edit_prod g true dup_renames prod)) prods in
+        let nt = try StringMap.find nt dup_renames with Not_found -> nt in
+(*        if NTMap.mem nt !g.map && (StringSet.mem nt locals) &&*)
+(*            StringSet.cardinal (StringSet.of_list (StringMap.find nt !symdef_map)) > 1 then*)
+(*          warn "%s: local nonterminal '%s' already defined\n" file nt;  (* todo: goes away *)*)
+        add_rule g nt prods file;
+        num + List.length prods)
+      0 rules
+    in
+    if args.verbose then begin
+      Printf.eprintf "%s:  %d nts,  %d prods\n" file (List.length rules) numprods;
+      if file = last_autoloaded then
+        Printf.eprintf "  Optionally loaded plugins:\n"
+    end
+  ) args.mlg_files;
+  g_reverse g;
+  !level_renames
 
 (*** replace LIST*, OPT with new nonterminals ***)
 
@@ -1559,7 +1588,7 @@ let rec dump prod =
 [@@@ocaml.warning "+32"]
 
 let reorder_grammar eg reordered_rules file =
-  let og = ref { map = NTMap.empty; order = [] } in
+  let og = g_empty () in
   List.iter (fun rule ->
       let nt, prods = rule in
       try
@@ -1832,6 +1861,7 @@ let process_rst g file args seen tac_prods cmd_prods =
     "doc/sphinx/language/gallina-specification-language.rst";
     "doc/sphinx/language/using/libraries/funind.rst";
     "doc/sphinx/proof-engine/ltac.rst";
+    "doc/sphinx/proof-engine/ltac2.rst";
     "doc/sphinx/proof-engine/vernacular-commands.rst";
     "doc/sphinx/user-extensions/syntax-extensions.rst"
   ]
@@ -1941,12 +1971,16 @@ let report_omitted_prods g seen label split =
         (if first = "" then nt else first), nt, n + 1, total + 1)
     ("", "", 0, 0) !g.order in
   maybe_warn first last n;
+(*    List.iter (fun nt ->
+        if not (NTMap.mem nt seen || (List.mem nt included)) then
+          warn "%s %s not included in .rst files\n" "Nonterminal" nt)
+      !g.order;*)
   if total <> 0 then
     Printf.eprintf "TOTAL %ss not included = %d\n" label total
 
 let process_grammar args =
   let symdef_map = ref StringMap.empty in
-  let g = ref { map = NTMap.empty; order = [] } in
+  let g = g_empty () in
 
   let level_renames = read_mlg_files g args symdef_map in
   if args.verbose then begin

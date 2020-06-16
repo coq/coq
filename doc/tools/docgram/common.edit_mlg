@@ -12,19 +12,59 @@
 
 DOC_GRAMMAR
 
+(* first, fixup symbols duplicated across files *)
+lglob: [
+| lconstr
+| DELETE EXTRAARGS_lconstr
+]
+
+hint: [
+| "Extern" natural OPT constr_pattern "=>" tactic
+]
+
+(* todo: does ARGUMENT EXTEND make the symbol global? It is in both extraargs and extratactics *)
+strategy_level_or_var: [
+| DELETE EXTRAARGS_strategy_level
+| strategy_level
+]
+
+operconstr0: [
+| "ltac" ":" "(" tactic_expr5 ")"
+]
+
+EXTRAARGS_natural: [ | DELETENT ]
+EXTRAARGS_lconstr:  [ | DELETENT ]
+EXTRAARGS_strategy_level: [ | DELETENT ]
+G_LTAC_hint: [ | DELETENT ]
+G_LTAC_operconstr0: [ | DELETENT ]
+
+G_REWRITE_binders: [
+| DELETE Pcoq.Constr.binders
+| binders
+]
+
+G_TACTIC_in_clause: [
+| in_clause
+| MOVEALLBUT in_clause
+| in_clause
+]
+
+SPLICE: [
+| G_REWRITE_binders
+| G_TACTIC_in_clause
+]
+
 (* renames to eliminate qualified names
    put other renames at the end *)
 RENAME: [
   (* map missing names for rhs *)
 | Constr.constr term
-| Constr.constr_pattern constr_pattern
 | Constr.global global
 | Constr.lconstr lconstr
 | Constr.lconstr_pattern cpattern
 | G_vernac.query_command query_command
 | G_vernac.section_subset_expr section_subset_expr
 | Pltac.tactic tactic
-| Pltac.tactic_expr tactic_expr5
 | Prim.ident ident
 | Prim.reference reference
 | Pvernac.Vernac_.main_entry vernac_control
@@ -154,15 +194,6 @@ dirpath: [
 | REPLACE ident LIST0 field
 | WITH LIST0 ( ident "." ) ident
 ]
-
-binders: [
-| DELETE Pcoq.Constr.binders  (* todo: not sure why there are 2 "binders:" *)
-]
-
-lconstr: [
-| DELETE l_constr
-]
-
 
 let_type_cstr: [
 | DELETE OPT [ ":" lconstr ]
@@ -2068,8 +2099,4 @@ NOTINRSTS: [
 
 REACHABLE: [
 | NOTINRSTS
-]
-
-strategy_level: [
-| DELETE strategy_level0
 ]
