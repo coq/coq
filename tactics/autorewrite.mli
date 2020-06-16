@@ -43,22 +43,3 @@ val auto_multi_rewrite : ?conds:conditions -> string list -> Locus.clause -> uni
 val auto_multi_rewrite_with : ?conds:conditions -> unit Proofview.tactic -> string list -> Locus.clause -> unit Proofview.tactic
 
 val print_rewrite_hintdb : string -> Pp.t
-
-open Clenv
-
-
-type hypinfo = {
-  hyp_cl : clausenv;
-  hyp_prf : constr;
-  hyp_ty : types;
-  hyp_car : constr;
-  hyp_rel : constr;
-  hyp_l2r : bool;
-  hyp_left : constr;
-  hyp_right : constr;
-}
-
-val find_applied_relation :
-  ?loc:Loc.t -> bool ->
-  Environ.env -> Evd.evar_map -> constr -> bool -> hypinfo
-

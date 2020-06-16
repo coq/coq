@@ -215,23 +215,15 @@ let inHintRewrite : string * HintDN.t -> Libobject.obj =
 open Clenv
 
 type hypinfo = {
-  hyp_cl : clausenv;
-  hyp_prf : constr;
   hyp_ty : types;
-  hyp_car : constr;
-  hyp_rel : constr;
-  hyp_l2r : bool;
   hyp_left : constr;
   hyp_right : constr;
 }
 
-let decompose_applied_relation metas env sigma c ctype left2right =
+let decompose_applied_relation env sigma c ctype left2right =
   let find_rel ty =
     let eqclause = Clenv.mk_clenv_from_env env sigma None (EConstr.of_constr c,ty) in
-    let eqclause =
-      if metas then eqclause
-      else fst (clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd))
-    in
+    let eqclause = fst (clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)) in
     let (equiv, args) = EConstr.decompose_app sigma (Clenv.clenv_type eqclause) in
     let rec split_last_two = function
       | [c1;c2] -> [],(c1, c2)
@@ -241,18 +233,15 @@ let decompose_applied_relation metas env sigma c ctype left2right =
     in
       try
         let others,(c1,c2) = split_last_two args in
-        let ty1, ty2 = Retyping.get_type_of env eqclause.evd c1, Retyping.get_type_of env eqclause.evd c2 in
+        let _ty1, _ty2 = Retyping.get_type_of env eqclause.evd c1, Retyping.get_type_of env eqclause.evd c2 in
         (* XXX: It looks like mk_clenv_from_env should be fixed instead? *)
         let open EConstr in
         let hyp_ty = Unsafe.to_constr ty in
-        let hyp_car = Unsafe.to_constr ty1 in
-        let hyp_prf = Unsafe.to_constr @@ Clenv.clenv_value eqclause in
-        let hyp_rel = Unsafe.to_constr @@ mkApp (equiv, Array.of_list others) in
         let hyp_left = Unsafe.to_constr @@ c1 in
         let hyp_right = Unsafe.to_constr @@ c2 in
 (* 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
 (* 	  else *)
-        Some { hyp_cl=eqclause; hyp_prf; hyp_ty; hyp_car; hyp_rel; hyp_l2r=left2right; hyp_left; hyp_right; }
+        Some { hyp_ty; hyp_left; hyp_right; }
       with Not_found -> None
   in
     match find_rel ctype with
@@ -263,9 +252,9 @@ let decompose_applied_relation metas env sigma c ctype left2right =
         | Some c -> Some c
         | None -> None
 
-let find_applied_relation ?loc metas env sigma c left2right =
+let find_applied_relation ?loc env sigma c left2right =
   let ctype = Retyping.get_type_of env sigma (EConstr.of_constr c) in
-    match decompose_applied_relation metas env sigma c ctype left2right with
+    match decompose_applied_relation env sigma c ctype left2right with
     | Some c -> c
     | None ->
         user_err ?loc ~hdr:"decompose_applied_relation"
@@ -283,7 +272,7 @@ let add_rew_rules base lrul =
     List.fold_left
       (fun dn {CAst.loc;v=((c,ctx),b,t)} ->
         let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
-        let info = find_applied_relation ?loc false env sigma c b in
+        let info = find_applied_relation ?loc env sigma c b in
         let pat = if b then info.hyp_left else info.hyp_right in
         let rul = { rew_lemma = c; rew_type = info.hyp_ty;
                     rew_pat = pat; rew_ctx = ctx; rew_l2r = b;
