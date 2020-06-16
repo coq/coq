@@ -368,13 +368,14 @@ a :token:`decl_notations` clause after the definition of the (co)inductive type 
 (co)recursive term (or after the definition of each of them in case of mutual
 definitions). The exact syntax is given by :n:`@decl_notation` for inductive,
 co-inductive, recursive and corecursive definitions and in :ref:`record-types`
-for records.
+for records. Note that only syntax modifiers that do not require to add or
+change a parsing rule are accepted.
 
    .. insertprodn decl_notations decl_notation
 
    .. prodn::
       decl_notations ::= where @decl_notation {* and @decl_notation }
-      decl_notation ::= @string := @one_term {? ( only parsing ) } {? : @scope_name }
+      decl_notation ::= @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
 
 Here are examples:
 

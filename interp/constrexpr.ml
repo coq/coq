@@ -29,10 +29,10 @@ type notation_entry_level = InConstrEntrySomeLevel | InCustomEntryLevel of strin
 type notation_key = string
 
 (* A notation associated to a given parsing rule *)
-type notation = notation_entry_level * notation_key
+type notation = notation_entry * notation_key
 
 (* A notation associated to a given interpretation *)
-type specific_notation = notation_with_optional_scope * notation
+type specific_notation = notation_with_optional_scope * (notation_entry * notation_key)
 
 type 'a or_by_notation_r =
   | AN of 'a

@@ -359,14 +359,14 @@ let make_notation_gen loc ntn mknot mkprim destprim l bl =
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
     | "- _", [Some (Numeral p)] when not (NumTok.Signed.is_zero p) ->
         assert (bl=[]);
-        mknot (loc,ntn,([mknot (loc,(InConstrEntrySomeLevel,"( _ )"),l,[])]),[])
+        mknot (loc,ntn,([mknot (loc,(InConstrEntry,"( _ )"),l,[])]),[])
     | _ ->
         match decompose_notation_key ntn, l with
-        | (InConstrEntrySomeLevel,[Terminal "-"; Terminal x]), [] ->
+        | (InConstrEntry,[Terminal "-"; Terminal x]), [] ->
            begin match NumTok.Unsigned.parse_string x with
            | Some n -> mkprim (loc, Numeral (NumTok.SMinus,n))
            | None -> mknot (loc,ntn,l,bl) end
-        | (InConstrEntrySomeLevel,[Terminal x]), [] ->
+        | (InConstrEntry,[Terminal x]), [] ->
            begin match NumTok.Unsigned.parse_string x with
            | Some n -> mkprim (loc, Numeral (NumTok.SPlus,n))
            | None -> mknot (loc,ntn,l,bl) end
@@ -486,7 +486,13 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop
   function
     | NotationRule (_,ntn as specific_ntn) ->
       begin
-        match availability_of_entry_coercion custom (fst ntn) with
+        let notation_entry_level = match (fst ntn) with
+          | InConstrEntry -> InConstrEntrySomeLevel
+          | InCustomEntry s ->
+            let (_,level,_) = Notation.level_of_notation ntn in
+            InCustomEntryLevel (s, level)
+        in
+        match availability_of_entry_coercion custom notation_entry_level with
         | None -> raise No_match
         | Some coercion ->
         match availability_of_notation specific_ntn (tmp_scope,scopes) with
@@ -1260,7 +1266,13 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
         (* Try availability of interpretation ... *)
         match keyrule with
           | NotationRule (_,ntn as specific_ntn) ->
-             (match availability_of_entry_coercion custom (fst ntn) with
+            let notation_entry_level = match (fst ntn) with
+              | InConstrEntry -> InConstrEntrySomeLevel
+              | InCustomEntry s ->
+                let (_,level,_) = Notation.level_of_notation ntn in
+                InCustomEntryLevel (s, level)
+             in
+             (match availability_of_entry_coercion custom notation_entry_level with
              | None -> raise No_match
              | Some coercion ->
                match availability_of_notation specific_ntn scopes with

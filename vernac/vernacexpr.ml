@@ -137,11 +137,21 @@ type definition_expr =
   | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
       * constr_expr option
 
+type syntax_modifier =
+  | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level
+  | SetLevel of int
+  | SetCustomEntry of string * int option
+  | SetAssoc of Gramlib.Gramext.g_assoc
+  | SetEntryType of string * Extend.simple_constr_prod_entry_key
+  | SetOnlyParsing
+  | SetOnlyPrinting
+  | SetFormat of string * lstring
+
 type decl_notation =
   { decl_ntn_string : lstring
   ; decl_ntn_interp : constr_expr
-  ; decl_ntn_only_parsing : bool
   ; decl_ntn_scope : scope_name option
+  ; decl_ntn_modifiers : syntax_modifier list
   }
 
 type 'a fix_expr_gen =
@@ -191,16 +201,6 @@ and typeclass_context = typeclass_constraint list
 
 type proof_expr =
   ident_decl * (local_binder_expr list * constr_expr)
-
-type syntax_modifier =
-  | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level
-  | SetLevel of int
-  | SetCustomEntry of string * int option
-  | SetAssoc of Gramlib.Gramext.g_assoc
-  | SetEntryType of string * Extend.simple_constr_prod_entry_key
-  | SetOnlyParsing
-  | SetOnlyPrinting
-  | SetFormat of string * lstring
 
 type opacity_flag = Opaque | Transparent
 

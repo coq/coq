@@ -13,7 +13,6 @@ open Pp
 open CErrors
 open Notation
 open Constrexpr
-open Notgram_ops
 
 (*s Pretty-print. *)
 
