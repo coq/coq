@@ -1468,7 +1468,8 @@ let hint_globref gr = IsGlobRef gr
 let hint_constr (c, diff) = IsConstr (c, diff)
 
 let expand_constructor_hints env sigma lems =
-  List.map_append (fun (evd,lem) ->
+  List.map_append (fun lem ->
+    let evd, lem = lem env sigma in
     match EConstr.kind sigma lem with
     | Ind (ind,u) ->
         List.init (nconstructors env ind)
@@ -1480,14 +1481,23 @@ let expand_constructor_hints env sigma lems =
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
-let constructor_hints env sigma eapply lems =
-  let lems = expand_constructor_hints env sigma lems in
-  List.map_append (fun lem ->
-      make_resolves env sigma (eapply, true) empty_hint_info ~check:true lem) lems
+let pose_local_lemmas lems =
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let lems = expand_constructor_hints env sigma lems in
+    let map h =
+      Proofview.tclEVARMAP >>= fun sigma ->
+      let c, ctx = fresh_global_or_constr env sigma h in
+      let sigma = merge_context_set_opt sigma ctx in
+      Proofview.Unsafe.tclEVARS sigma <*>
+      Tactics.pose_proof Anonymous c
+    in
+    Tacticals.tclMAP map lems
+  end
 
-let make_local_hint_db env sigma ts eapply lems =
-  let map c = c env sigma in
-  let lems = List.map map lems in
+let make_local_hint_db env sigma ?ts eapply =
   let sign = EConstr.named_context env in
   let ts = match ts with
     | None -> Hint_db.transparent_state (searchtable_map "core")
@@ -1496,10 +1506,6 @@ let make_local_hint_db env sigma ts eapply lems =
   let hintlist = List.map_append (fun decl -> make_resolve_hyp env sigma (Named.Declaration.get_id decl)) sign in
   Hint_db.empty ts false
   |> Hint_db.add_list env sigma hintlist
-  |> Hint_db.add_list env sigma (constructor_hints env sigma eapply lems)
-
-let make_local_hint_db env sigma ?ts eapply lems =
-  make_local_hint_db env sigma ts eapply lems
 
 let make_db_list dbnames =
   let use_core = not (List.mem "nocore" dbnames) in

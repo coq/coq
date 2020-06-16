@@ -350,28 +350,30 @@ and trivial_resolve env sigma dbg db_list local_db secvars cl =
     "nocore" amongst the databases. *)
 
 let trivial ?(debug=Off) lems dbnames =
+  let d = mk_trivial_dbg debug in
   Hints.wrap_hint_warning @@
+  tclTRY_dbg d (
+  pose_local_lemmas lems <*>
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let db_list = make_db_list dbnames in
-  let d = mk_trivial_dbg debug in
-  let hints = make_local_hint_db env sigma false lems in
-  tclTRY_dbg d
-    (trivial_fail_db d db_list hints)
-  end
+  let hints = make_local_hint_db env sigma false in
+  trivial_fail_db d db_list hints
+  end)
 
 let full_trivial ?(debug=Off) lems =
+  let d = mk_trivial_dbg debug in
   Hints.wrap_hint_warning @@
+  tclTRY_dbg d (
+  pose_local_lemmas lems <*>
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let db_list = current_pure_db () in
-  let d = mk_trivial_dbg debug in
-  let hints = make_local_hint_db env sigma false lems in
-  tclTRY_dbg d
-    (trivial_fail_db d db_list hints)
-  end
+  let hints = make_local_hint_db env sigma false in
+  trivial_fail_db d db_list hints
+  end)
 
 let gen_trivial ?(debug=Off) lems = function
   | None -> full_trivial ~debug lems
@@ -440,32 +442,32 @@ let search d n db_list local_db =
 let default_search_depth = ref 5
 
 let delta_auto debug n lems dbnames =
+  let d = mk_auto_dbg debug in
   Hints.wrap_hint_warning @@
+  tclTRY_dbg d (pose_local_lemmas lems <*>
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let db_list = make_db_list dbnames in
-  let d = mk_auto_dbg debug in
-  let hints = make_local_hint_db env sigma false lems in
-  tclTRY_dbg d
-    (search d n db_list hints)
-  end
+  let hints = make_local_hint_db env sigma false in
+  search d n db_list hints
+  end)
 
 let auto ?(debug=Off) n = delta_auto debug n
 
 let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto ?(debug=Off) n lems =
+  let d = mk_auto_dbg debug in
   Hints.wrap_hint_warning @@
+  tclTRY_dbg d (pose_local_lemmas lems <*>
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let db_list = current_pure_db () in
-  let d = mk_auto_dbg debug in
-  let hints = make_local_hint_db env sigma false lems in
-  tclTRY_dbg d
-    (search d n db_list hints)
-  end
+  let hints = make_local_hint_db env sigma false in
+  search d n db_list hints
+  end)
 
 let full_auto ?(debug=Off) n = delta_full_auto ~debug n
 

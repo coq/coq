@@ -19,7 +19,6 @@ open Evd
 open Tactics
 open Auto
 open Genredexpr
-open Tactypes
 open Locus
 open Locusops
 open Hints
@@ -153,7 +152,6 @@ type search_state = {
   last_tactic : Pp.t Lazy.t;
   dblist : hint_db list;
   prev : prev_search_state;
-  local_lemmas : delayed_open_constr list;
 }
 
 and prev_search_state = (* for info eauto *)
@@ -232,7 +230,7 @@ module SearchProblem = struct
         let mkdb env sigma db =
           let hyps' = EConstr.named_context env in
             if hyps' == hyps then db
-            else make_local_hint_db env sigma ~ts:TransparentState.full true s.local_lemmas
+            else make_local_hint_db env sigma ~ts:TransparentState.full true
         in
         filter_tactics ~is_done:false s.sigma mkdb s.tacres
                         (e_possible_resolve env s.sigma s.dblist db secvars concl)
@@ -240,8 +238,7 @@ module SearchProblem = struct
       let map (sigma, is_done, lgls, cost, pp) =
         let depth = if is_done then s.depth else pred s.depth in
         { depth; priority = cost; tacres = lgls @ rest; sigma; last_tactic = pp;
-          prev = ps; dblist = s.dblist;
-          local_lemmas = s.local_lemmas }
+          prev = ps; dblist = s.dblist; }
       in
       List.sort compare (List.map map (assumption_tacs @ intro_tac @ rec_tacs))
 
@@ -301,7 +298,7 @@ let pr_info dbg s =
 
 (** Eauto main code *)
 
-let make_initial_state sigma evk dbg n dblist localdb lems =
+let make_initial_state sigma evk dbg n dblist localdb =
   { depth = n;
     priority = 0;
     tacres = [evk, localdb];
@@ -309,14 +306,13 @@ let make_initial_state sigma evk dbg n dblist localdb lems =
     last_tactic = lazy (mt());
     dblist = dblist;
     prev = if dbg == Info then Init else Unknown;
-    local_lemmas = lems;
   }
 
 let e_search_auto debug (in_depth,p) lems db_list =
   let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
-  let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true lems in
+  let local_db = make_local_hint_db (pf_env gl) sigma ~ts:TransparentState.full true in
   let d = mk_eauto_dbg debug in
   let tac = match in_depth,d with
     | (true,Debug) -> Search.debug_depth_first
@@ -326,7 +322,7 @@ let e_search_auto debug (in_depth,p) lems db_list =
   in
   let () = pr_dbg_header d in
   let evk = Proofview.Goal.goal gl in
-  match tac (make_initial_state sigma evk d p db_list local_db lems) with
+  match tac (make_initial_state sigma evk d p db_list local_db) with
   | s ->
     let () = pr_info d s in
     let () = assert (List.is_empty s.tacres) in
