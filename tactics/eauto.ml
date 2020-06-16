@@ -69,9 +69,7 @@ let unify_e_resolve flags h =
   Proofview.Goal.enter begin fun gl ->
       let clenv', c = connect_hint_clenv h gl in
       let clenv' = clenv_unique_resolver ~flags clenv' gl in
-      Proofview.tclTHEN
-        (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
-        (Tactics.Simple.eapply c)
+      Clenvtac.clenv_refine ~with_evars:true ~with_classes:true clenv'
     end
 
 let hintmap_of sigma secvars concl =
