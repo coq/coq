@@ -224,25 +224,19 @@ let decompose_applied_relation env sigma c ctype left2right =
   let find_rel ty =
     let eqclause = Clenv.mk_clenv_from_env env sigma None (EConstr.of_constr c,ty) in
     let eqclause = fst (clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)) in
-    let (equiv, args) = EConstr.decompose_app sigma (Clenv.clenv_type eqclause) in
-    let rec split_last_two = function
-      | [c1;c2] -> [],(c1, c2)
-      | x::y::z ->
-          let l,res = split_last_two (y::z) in x::l, res
-      | _ -> raise Not_found
-    in
-      try
-        let others,(c1,c2) = split_last_two args in
+    let (_, args) = Termops.decompose_app_vect sigma (Clenv.clenv_type eqclause) in
+    let len = Array.length args in
+    if 2 <= len then
+        let c1 = args.(len - 2) in
+        let c2 = args.(len - 1) in
         let _ty1, _ty2 = Retyping.get_type_of env eqclause.evd c1, Retyping.get_type_of env eqclause.evd c2 in
         (* XXX: It looks like mk_clenv_from_env should be fixed instead? *)
         let open EConstr in
         let hyp_ty = Unsafe.to_constr ty in
         let hyp_left = Unsafe.to_constr @@ c1 in
         let hyp_right = Unsafe.to_constr @@ c2 in
-(* 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
-(* 	  else *)
         Some { hyp_ty; hyp_left; hyp_right; }
-      with Not_found -> None
+    else None
   in
     match find_rel ctype with
     | Some c -> Some c
