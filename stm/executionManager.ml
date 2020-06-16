@@ -387,10 +387,10 @@ let get_proofview st id =
   | None -> log "Cannot find state for proofview"; None
   | Some (Error _) -> log "Proofview requested in error state"; None
   | Some (Success None) -> log "Proofview requested in a remotely checked state"; None
-  | Some (Success (Some st)) ->
-    Vernacstate.unfreeze_interp_state st;
-    try
-      let newp = Vernacstate.Declare.give_me_the_proof () in
-      Some (Proof.data newp)
-    with Vernacstate.Declare.NoCurrentProof -> None
-  [@@ocaml.warning "-3"];;
+  | Some (Success (Some { Vernacstate.lemmas = None; _ })) -> log "Proofview requested in a state with no proof"; None
+  | Some (Success (Some { Vernacstate.lemmas = Some st; _ })) ->
+      (* nicely design API: Proof is both a file and a deprecated module *)
+      let open Proof in
+      let open Declare in
+      let open Vernacstate in
+      st |> LemmaStack.with_top_pstate ~f:Proof.get_proof |> data |> Option.make
