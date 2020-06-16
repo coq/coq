@@ -56,9 +56,9 @@ let notation_with_optional_scope_eq inscope1 inscope2 = match (inscope1,inscope2
  | (LastLonelyNotation | NotationInScope _), _ -> false
 
 let notation_eq (from1,ntn1) (from2,ntn2) =
-  notation_entry_level_eq from1 from2 && String.equal ntn1 ntn2
+  notation_entry_eq from1 from2 && String.equal ntn1 ntn2
 
-let pr_notation (from,ntn) = qstring ntn ++ match from with InConstrEntrySomeLevel -> mt () | InCustomEntryLevel (s,n) -> str " in custom " ++ str s
+let pr_notation (from,ntn) = qstring ntn ++ match from with InConstrEntry -> mt () | InCustomEntry s -> str " in custom " ++ str s
 
 module NotationOrd =
   struct
@@ -342,6 +342,33 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
   | NApp (_,args) -> Oth, AppBoundedNotation (List.length args)
   | NList (_,_,NApp (NVar x,_),_,_) when x = Notation_ops.ldots_var -> Oth, AppUnboundedNotation
   | _ -> Oth, NotAppNotation
+
+(** Dealing with precedences *)
+
+type level = notation_entry * entry_level * entry_relative_level list
+  (* first argument is InCustomEntry s for custom entries *)
+
+let entry_relative_level_eq t1 t2 = match t1, t2 with
+| LevelLt n1, LevelLt n2 -> Int.equal n1 n2
+| LevelLe n1, LevelLe n2 -> Int.equal n1 n2
+| LevelSome, LevelSome -> true
+| (LevelLt _ | LevelLe _ | LevelSome), _ -> false
+
+let level_eq (s1, l1, t1) (s2, l2, t2) =
+  notation_entry_eq s1 s2 && Int.equal l1 l2 && List.equal entry_relative_level_eq t1 t2
+
+let notation_level_map = Summary.ref ~name:"notation_level_map" NotationMap.empty
+
+let declare_notation_level ntn level =
+  try
+    let _ = NotationMap.find ntn !notation_level_map in
+    anomaly (str "Notation " ++ pr_notation ntn ++ str " is already assigned a level.")
+  with Not_found ->
+  notation_level_map := NotationMap.add ntn level !notation_level_map
+
+let level_of_notation ntn =
+  NotationMap.find ntn !notation_level_map
+
 
 (**********************************************************************)
 (* Interpreting numbers (not in summary because functional objects)   *)
@@ -1234,8 +1261,8 @@ let find_notation ntn sc =
   NotationMap.find ntn (find_scope sc).notations
 
 let notation_of_prim_token = function
-  | Constrexpr.Numeral (SPlus,n) -> InConstrEntrySomeLevel, NumTok.Unsigned.sprint n
-  | Constrexpr.Numeral (SMinus,n) -> InConstrEntrySomeLevel, "- "^NumTok.Unsigned.sprint n
+  | Constrexpr.Numeral (SPlus,n) -> InConstrEntry, NumTok.Unsigned.sprint n
+  | Constrexpr.Numeral (SMinus,n) -> InConstrEntry, "- "^NumTok.Unsigned.sprint n
   | String _ -> raise Not_found
 
 let find_prim_token check_allowed ?loc p sc =
@@ -1262,7 +1289,7 @@ let find_prim_token check_allowed ?loc p sc =
 
 let interp_prim_token_gen ?loc g p local_scopes =
   let scopes = make_current_scopes local_scopes in
-  let p_as_ntn = try notation_of_prim_token p with Not_found -> InConstrEntrySomeLevel,"" in
+  let p_as_ntn = try notation_of_prim_token p with Not_found -> InConstrEntry,"" in
   try
     let (pat,loc), sc = find_interpretation p_as_ntn (find_prim_token ?loc g p) scopes in
     pat, (loc,sc)
@@ -1342,7 +1369,8 @@ module EntryCoercionOrd =
 
 module EntryCoercionMap = Map.Make(EntryCoercionOrd)
 
-let entry_coercion_map = ref EntryCoercionMap.empty
+let entry_coercion_map : (((entry_level option * entry_level option) * entry_coercion) list EntryCoercionMap.t) ref =
+  ref EntryCoercionMap.empty
 
 let level_ord lev lev' =
   match lev, lev' with
@@ -1355,13 +1383,18 @@ let rec search nfrom nto = function
   | ((pfrom,pto),coe)::l ->
     if level_ord pfrom nfrom && level_ord nto pto then coe else search nfrom nto l
 
-let decompose_custom_entry = function
+let make_notation_entry_level entry level =
+  match entry with
+  | InConstrEntry -> InConstrEntrySomeLevel
+  | InCustomEntry s -> InCustomEntryLevel (s,level)
+
+let decompose_notation_entry_level = function
   | InConstrEntrySomeLevel -> InConstrEntry, None
   | InCustomEntryLevel (s,n) -> InCustomEntry s, Some n
 
 let availability_of_entry_coercion entry entry' =
-  let entry, lev = decompose_custom_entry entry in
-  let entry', lev' = decompose_custom_entry entry' in
+  let entry, lev = decompose_notation_entry_level entry in
+  let entry', lev' = decompose_notation_entry_level entry' in
   if notation_entry_eq entry entry' && level_ord lev' lev then Some []
   else
     try Some (search lev lev' (EntryCoercionMap.find (entry,entry') !entry_coercion_map))
@@ -1383,28 +1416,27 @@ let rec insert_coercion_path path = function
       else if shorter_path path path' then path::allpaths
       else path'::insert_coercion_path path paths
 
-let declare_entry_coercion (scope,(entry,_) as specific_ntn) entry' =
-  let entry, lev = decompose_custom_entry entry in
-  let entry', lev' = decompose_custom_entry entry' in
+let declare_entry_coercion (scope,(entry,key)) lev entry' =
+  let entry', lev' = decompose_notation_entry_level entry' in
   (* Transitive closure *)
   let toaddleft =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
         List.fold_right (fun ((lev'',lev'''),path) l ->
         if notation_entry_eq entry entry''' && level_ord lev lev''' &&
            not (notation_entry_eq entry' entry'')
-        then ((entry'',entry'),((lev'',lev'),path@[specific_ntn]))::l else l) paths l)
+        then ((entry'',entry'),((lev'',lev'),path@[(scope,(entry,key))]))::l else l) paths l)
       !entry_coercion_map [] in
   let toaddright =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
         List.fold_right (fun ((lev'',lev'''),path) l ->
         if entry' = entry'' && level_ord lev' lev'' && entry <> entry'''
-        then ((entry,entry'''),((lev,lev'''),path@[specific_ntn]))::l else l) paths l)
+        then ((entry,entry'''),((lev,lev'''),path@[(scope,(entry,key))]))::l else l) paths l)
       !entry_coercion_map [] in
   entry_coercion_map :=
     List.fold_right (fun (pair,path) ->
         let olds = try EntryCoercionMap.find pair !entry_coercion_map with Not_found -> [] in
         EntryCoercionMap.add pair (insert_coercion_path path olds))
-      (((entry,entry'),((lev,lev'),[specific_ntn]))::toaddright@toaddleft)
+      (((entry,entry'),((lev,lev'),[(scope,(entry,key))]))::toaddright@toaddleft)
       !entry_coercion_map
 
 let entry_has_global_map = ref String.Map.empty

@@ -207,7 +207,7 @@ let cook_notation (from,df) sc =
   done;
   let df = Bytes.sub_string ntn 0 !j in
   let df_sc = match sc with Some sc -> ":" ^ sc ^ ":" ^ df | _ -> "::" ^ df in
-  let from_df_sc = match from with Constrexpr.InCustomEntryLevel (from,_) -> ":" ^ from ^ df_sc | Constrexpr.InConstrEntrySomeLevel -> ":" ^ df_sc in
+  let from_df_sc = match from with Constrexpr.InCustomEntry from -> ":" ^ from ^ df_sc | Constrexpr.InConstrEntry -> ":" ^ df_sc in
   from_df_sc
 
 let dump_notation_location posl df (((path,secpath),_),sc) =

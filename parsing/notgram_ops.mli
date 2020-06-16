@@ -12,14 +12,14 @@
 open Constrexpr
 open Notation_gram
 
-val level_eq : level -> level -> bool
-val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
+(** {6 Declare the parsing rules and entries of a (possibly uninterpreted) notation } *)
 
-(** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
-
-val declare_notation_level : notation -> notation_grammar option -> level -> unit
-val level_of_notation : notation -> notation_grammar option * level
+val declare_notation_grammar : notation -> notation_grammar -> unit
+val grammar_of_notation : notation -> notation_grammar
   (** raise [Not_found] if not declared *)
+
+val declare_notation_subentries : notation -> Extend.constr_entry_key list -> unit
+val subentries_of_notation : notation -> Extend.constr_entry_key list
 
 (** Returns notations with defined parsing/printing rules *)
 val get_defined_notations : unit -> notation list

@@ -165,11 +165,11 @@ GRAMMAR EXTEND Gram
              collapse -(3) into the numeral -3. *)
           (match c.CAst.v with
             | CPrim (Numeral (NumTok.SPlus,n)) ->
-                CAst.make ~loc @@ CNotation(None,(InConstrEntrySomeLevel,"( _ )"),([c],[],[],[]))
+                CAst.make ~loc @@ CNotation(None,(InConstrEntry,"( _ )"),([c],[],[],[]))
             | _ -> c) }
       | "{|"; c = record_declaration; bar_cbrace -> { c }
       | "{"; c = binder_constr ; "}" ->
-        { CAst.make ~loc @@ CNotation(None,(InConstrEntrySomeLevel,"{ _ }"),([c],[],[],[])) }
+        { CAst.make ~loc @@ CNotation(None,(InConstrEntry,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = operconstr LEVEL "200"; "}" ->
         { CAst.make ~loc @@ CGeneralization (MaxImplicit, None, c) }
       | "`("; c = operconstr LEVEL "200"; ")" ->
@@ -346,7 +346,7 @@ GRAMMAR EXTEND Gram
              collapse -(3) into the numeral -3. *)
           match p.CAst.v with
           | CPatPrim (Numeral (NumTok.SPlus,n)) ->
-              CAst.make ~loc @@ CPatNotation(None,(InConstrEntrySomeLevel,"( _ )"),([p],[]),[])
+              CAst.make ~loc @@ CPatNotation(None,(InConstrEntry,"( _ )"),([p],[]),[])
           | _ -> p }
       | "("; p = pattern LEVEL "200"; "|" ; pl = LIST1 pattern LEVEL "200" SEP "|"; ")" ->
         { CAst.make ~loc @@ CPatOr (p::pl) }

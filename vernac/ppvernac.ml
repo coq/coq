@@ -462,11 +462,11 @@ open Pputils
     let
       { decl_ntn_string = {CAst.loc;v=ntn};
         decl_ntn_interp = c;
-        decl_ntn_only_parsing = onlyparsing;
+        decl_ntn_modifiers = modifiers;
         decl_ntn_scope = scopt } = decl_ntn in
     fnl () ++ keyword "where " ++ qs ntn ++ str " := "
     ++ Flags.without_option Flags.beautify prc c
-    ++ pr_only_parsing_clause onlyparsing
+    ++ pr_syntax_modifiers modifiers
     ++ pr_opt (fun sc -> str ": " ++ str sc) scopt
 
   let pr_rec_definition { fname; univs; rec_order; binders; rtype; body_def; notations } =

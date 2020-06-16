@@ -303,8 +303,8 @@ type symbol =
 val symbol_eq : symbol -> symbol -> bool
 
 (** Make/decompose a notation of the form "_ U _" *)
-val make_notation_key : notation_entry_level -> symbol list -> notation
-val decompose_notation_key : notation -> notation_entry_level * symbol list
+val make_notation_key : notation_entry -> symbol list -> notation
+val decompose_notation_key : notation -> notation_entry * symbol list
 
 (** Decompose a notation of the form "a 'U' b" *)
 val decompose_raw_notation : string -> symbol list
@@ -318,8 +318,10 @@ val locate_notation : (glob_constr -> Pp.t) -> notation_key ->
 
 val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
 
+val make_notation_entry_level : notation_entry -> entry_level -> notation_entry_level
+
 type entry_coercion = (notation_with_optional_scope * notation) list
-val declare_entry_coercion : specific_notation -> notation_entry_level -> unit
+val declare_entry_coercion : specific_notation -> entry_level option -> notation_entry_level -> unit
 val availability_of_entry_coercion : notation_entry_level -> notation_entry_level -> entry_coercion option
 
 val declare_custom_entry_has_global : string -> int -> unit
@@ -327,6 +329,20 @@ val declare_custom_entry_has_ident : string -> int -> unit
 
 val entry_has_global : notation_entry_level -> bool
 val entry_has_ident : notation_entry_level -> bool
+
+(** Dealing with precedences *)
+
+type level = notation_entry * entry_level * entry_relative_level list
+  (* first argument is InCustomEntry s for custom entries *)
+
+val level_eq : level -> level -> bool
+val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
+
+(** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
+
+val declare_notation_level : notation -> level -> unit
+val level_of_notation : notation -> level
+  (** raise [Not_found] if not declared *)
 
 (** Rem: printing rules for primitive token are canonical *)
 
