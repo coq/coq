@@ -59,7 +59,6 @@ universe: [
 
 lconstr: [
 | operconstr200
-| l_constr
 ]
 
 constr: [
@@ -119,7 +118,6 @@ operconstr0: [
 | "{" binder_constr "}"
 | "`{" operconstr200 "}"
 | "`(" operconstr200 ")"
-| "ltac" ":" "(" Pltac.tactic_expr ")"
 ]
 
 record_declaration: [
@@ -305,7 +303,6 @@ open_binders: [
 
 binders: [
 | LIST0 binder
-| Pcoq.Constr.binders
 ]
 
 binder: [
@@ -435,7 +432,6 @@ integer: [
 
 natural: [
 | bignat
-| _natural
 ]
 
 bigint: [
@@ -456,7 +452,6 @@ strategy_level: [
 | "opaque"
 | integer
 | "transparent"
-| strategy_level0
 ]
 
 vernac_toplevel: [
@@ -635,20 +630,20 @@ command: [
 | "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
 | "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
 | "Add" "Relation" constr constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
-| "Add" "Parametric" "Relation" binders ":" constr constr "transitivity" "proved" "by" constr "as" ident
+| "Add" "Parametric" "Relation" G_REWRITE_binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" ident
+| "Add" "Parametric" "Relation" G_REWRITE_binders ":" constr constr "reflexivity" "proved" "by" constr "as" ident
+| "Add" "Parametric" "Relation" G_REWRITE_binders ":" constr constr "as" ident
+| "Add" "Parametric" "Relation" G_REWRITE_binders ":" constr constr "symmetry" "proved" "by" constr "as" ident
+| "Add" "Parametric" "Relation" G_REWRITE_binders ":" constr constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
+| "Add" "Parametric" "Relation" G_REWRITE_binders ":" constr constr "reflexivity" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
+| "Add" "Parametric" "Relation" G_REWRITE_binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "transitivity" "proved" "by" constr "as" ident
+| "Add" "Parametric" "Relation" G_REWRITE_binders ":" constr constr "transitivity" "proved" "by" constr "as" ident
 | "Add" "Setoid" constr constr constr "as" ident
-| "Add" "Parametric" "Setoid" binders ":" constr constr constr "as" ident
+| "Add" "Parametric" "Setoid" G_REWRITE_binders ":" constr constr constr "as" ident
 | "Add" "Morphism" constr ":" ident
 | "Declare" "Morphism" constr ":" ident
 | "Add" "Morphism" constr "with" "signature" lconstr "as" ident
-| "Add" "Parametric" "Morphism" binders ":" constr "with" "signature" lconstr "as" ident
+| "Add" "Parametric" "Morphism" G_REWRITE_binders ":" constr "with" "signature" lconstr "as" ident
 | "Print" "Rewrite" "HintDb" preident
 | "Reset" "Ltac" "Profile"
 | "Show" "Ltac" "Profile"
@@ -700,7 +695,6 @@ hint: [
 | "Mode" global mode
 | "Unfold" LIST1 global
 | "Constructors" LIST1 global
-| "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
 ]
 
 constr_body: [
@@ -1791,6 +1785,10 @@ orient: [
 |
 ]
 
+EXTRAARGS_natural: [
+| _natural
+]
+
 occurrences: [
 | LIST1 integer
 | var
@@ -1800,8 +1798,12 @@ glob: [
 | constr
 ]
 
+EXTRAARGS_lconstr: [
+| l_constr
+]
+
 lglob: [
-| lconstr
+| EXTRAARGS_lconstr
 ]
 
 casted_constr: [
@@ -1829,18 +1831,18 @@ by_arg_tac: [
 
 in_clause: [
 | in_clause'
-| "*" occs
-| "*" "|-" concl_occ
-| LIST0 hypident_occ SEP "," "|-" concl_occ
-| LIST0 hypident_occ SEP ","
 ]
 
 test_lpar_id_colon: [
 | local_test_lpar_id_colon
 ]
 
+EXTRAARGS_strategy_level: [
+| strategy_level0
+]
+
 strategy_level_or_var: [
-| strategy_level
+| EXTRAARGS_strategy_level
 | identref
 ]
 
@@ -2124,6 +2126,14 @@ tactic_mode: [
 | "par" ":" OPT ltac_info tactic ltac_use_default
 ]
 
+G_LTAC_hint: [
+| "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
+]
+
+G_LTAC_operconstr0: [
+| "ltac" ":" "(" Pltac.tactic_expr ")"
+]
+
 ltac_selector: [
 | toplevel_selector
 ]
@@ -2192,6 +2202,10 @@ rewstrategy: [
 | "terms" LIST0 constr
 | "eval" red_expr
 | "fold" constr
+]
+
+G_REWRITE_binders: [
+| Pcoq.Constr.binders
 ]
 
 int_or_var: [
@@ -2372,19 +2386,26 @@ hypident_occ: [
 | hypident occs
 ]
 
+G_TACTIC_in_clause: [
+| "*" occs
+| "*" "|-" concl_occ
+| LIST0 hypident_occ SEP "," "|-" concl_occ
+| LIST0 hypident_occ SEP ","
+]
+
 clause_dft_concl: [
-| "in" in_clause
+| "in" G_TACTIC_in_clause
 | occs
 |
 ]
 
 clause_dft_all: [
-| "in" in_clause
+| "in" G_TACTIC_in_clause
 |
 ]
 
 opt_clause: [
-| "in" in_clause
+| "in" G_TACTIC_in_clause
 | "at" occs_nums
 |
 ]

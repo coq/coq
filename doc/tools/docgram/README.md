@@ -37,13 +37,16 @@ for documentation purposes:
 1.  The tool reads all the `mlg` files and generates `fullGrammar`, which includes
     all the grammar without the actions for each production or the OCaml code.  This
     file is provided as a convenience to make it easier to examine the (mostly)
-    unprocessed grammar of the mlg files with less clutter.  Nonterminals that use
-    levels (`"5" RIGHTA` below) are modified, for example:
+    unprocessed grammar of the mlg files with less clutter.  This step includes two
+    transformations that rename some nonterminal symbols:
+
+    First, nonterminals that use levels (`"5" RIGHTA` below) are modified, for example:
 
     ```
     tactic_expr:
       [ "5" RIGHTA
         [ te = binder_tactic -> { te } ]
+      [ "4"   ...
     ```
 
     becomes
@@ -54,6 +57,17 @@ for documentation purposes:
     | tactic_expr4
     ]
     ```
+
+    Second, nonterminals that are local to an .mlg will be renamed, if necessary, to
+    make them unique.  For example, `strategy_level` is defined as a local nonterminal
+    in both `g_prim.mlg` and in `extraargs.mlg`.  The nonterminal defined in the former
+    remains `strategy_level` because it happens to be processed before the latter,
+    in which the nonterminal is renamed to `EXTRAARGS_strategy_level` to make the local
+    symbol unique.
+
+    Nonterminals listed after `GLOBAL:` are global; otherwise they are local.
+
+    References to renamed symbols are updated with the modified names.
 
 2.  The tool applies grammar editing operations specified by `common.edit_mlg` to
     generate `editedGrammar`.
