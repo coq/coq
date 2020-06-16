@@ -35,11 +35,13 @@ type progress_hook = state option -> unit Lwt.t
 let executed_ranges doc execution_state executed_loc =
   let valid_ids = List.map (fun s -> s.id) @@ Document.sentences_before doc executed_loc in
   let executed_ids = List.filter (ExecutionManager.is_executed execution_state) valid_ids in
-  List.map (Document.range_of_id doc) executed_ids
+  let remotely_executed_ids = List.filter (ExecutionManager.is_remotely_executed execution_state) valid_ids in
+  List.map (Document.range_of_id doc) executed_ids,
+  List.map (Document.range_of_id doc) remotely_executed_ids
 
 let executed_ranges st =
   match st.executed_loc with
-  | None -> []
+  | None -> [], []
   | Some loc ->
     executed_ranges st.document st.execution_state loc
 

@@ -356,7 +356,12 @@ let executed_ids st =
 
 let is_executed st id =
   match find_fulfilled_opt id st.cache with
-  | Some (Success _ | Error _) -> true
+  | Some (Success (Some _) | Error (_,Some _)) -> true
+  | _ -> false
+
+let is_remotely_executed st id =
+  match find_fulfilled_opt id st.cache with
+  | Some (Success None | Error (_,None)) -> true
   | _ -> false
 
 let query id st ast = assert false
@@ -393,4 +398,4 @@ let get_proofview st id =
       let open Proof in
       let open Declare in
       let open Vernacstate in
-      st |> LemmaStack.with_top_pstate ~f:Proof.get_proof |> data |> Option.make
+      st |> LemmaStack.with_top ~f:Proof.get |> data |> Option.make

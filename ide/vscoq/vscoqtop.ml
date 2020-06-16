@@ -97,13 +97,15 @@ let publish_diagnostics uri doc : unit Lwt.t =
   output_json @@ mk_notification ~event:"textDocument/publishDiagnostics" ~params
 
 let send_highlights uri doc : unit Lwt.t =
-  let executed_ranges = List.map mk_range @@ DocumentManager.executed_ranges doc in
+  let executed_ranges, incomplete_ranges = DocumentManager.executed_ranges doc in
+  let executed_ranges = List.map mk_range executed_ranges in
+  let incomplete_ranges = List.map mk_range incomplete_ranges in
   let params = `Assoc [
     "uri", `String uri;
     "stateErrorRange", `List [];
     "parsingRange", `List [];
     "processingRange", `List [];
-    "incompleteRange", `List [];
+    "incompleteRange", `List incomplete_ranges;
     "axiomRange", `List [];
     "processedRange", `List executed_ranges;
   ]

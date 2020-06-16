@@ -49,10 +49,10 @@ val interpret_to_end : ?progress_hook:progress_hook -> state -> (state * proof_d
     and returns the proofview from the resulting state. *)
 
 val reset : Vernacstate.t -> state -> state
-val executed_ranges : state -> Range.t list
+val executed_ranges : state -> Range.t list * Range.t list
 
 (** parsed_ranges [doc] returns the ranges corresponding to the sentences
-    that have been executed in [doc]. *)
+    that have been executed and remotely execute in [doc]. *)
 
 type severity =
   | Warning
