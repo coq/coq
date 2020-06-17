@@ -55,7 +55,7 @@ exception ComplexSort
 
 let glob_sort_family = let open Sorts in function
   | UAnonymous {rigid=true} -> InType
-  | UNamed [GSProp,0] -> InProp
+  | UNamed [GSProp,0] -> InSProp
   | UNamed [GProp,0] -> InProp
   | UNamed [GSet,0] -> InSet
   | _ -> raise ComplexSort
