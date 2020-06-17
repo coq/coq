@@ -119,8 +119,8 @@
 ########################################################################
 # Coq-interval
 ########################################################################
-# The latest release (from 3 months ago) is compatible with Coq 8.12.
-: "${interval_CI_REF:=interval-3.4.2}"
+# Released on 2020-06-17 and compatible with Coq 8.12.
+: "${interval_CI_REF:=interval-4.0.0}"
 : "${interval_CI_GITURL:=https://gitlab.inria.fr/coqinterval/interval}"
 : "${interval_CI_ARCHIVEURL:=${interval_CI_GITURL}/-/archive}"
 
