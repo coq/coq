@@ -158,26 +158,32 @@ let fork_worker : remote_mapping -> role Lwt.t = fun remote_mapping ->
           Lwt.return (Master pid)
 ;;
 
-let queue = Queue.create ()
+let queue = ref []
 let queue_lock = Lwt_mutex.create ()
 let queue_cond = Lwt_condition.create ()
 
 type remote_tasks = (ast * execution_status Lwt.u) list
 
-let enqueue (m : remote_mapping * remote_tasks * Vernacstate.t) : unit Lwt.t =
+let enqueue (m : remote_mapping * remote_tasks * Vernacstate.t * Stateid.t) : unit Lwt.t =
   Lwt_mutex.with_lock queue_lock (fun () -> (log @@ "pushing in the queue");
-    Queue.push m queue; Lwt_condition.signal queue_cond (); Lwt.return ())
+    queue := !queue @ [m]; Lwt_condition.signal queue_cond (); Lwt.return ())
 
-let dequeue () : (remote_mapping * remote_tasks * Vernacstate.t) Lwt.t =
-  let open Lwt.Infix in
+let dequeue () : (remote_mapping * remote_tasks * Vernacstate.t * Stateid.t) Lwt.t =
   Lwt_mutex.with_lock queue_lock (fun () ->
     begin
-      if Queue.is_empty queue
+      if !queue = []
       then (log @@ "[Q] empty queue... wait"; Lwt_condition.wait ~mutex:queue_lock queue_cond)
       else Lwt.return ()
     end >>= fun () ->
     log @@ "[Q] non empty queue";
-    Lwt.return @@ Queue.pop queue)
+    let x = List.hd !queue in
+    queue := List.tl !queue;
+    Lwt.return x)
+
+let invalidate_delegation_queue id : unit Lwt.t =
+  Lwt_mutex.with_lock queue_lock (fun () ->
+    queue := List.filter (fun (_,_,_,id1) -> not(Stateid.equal id id1)) !queue;
+    Lwt.return ())
 
 let exec1 vernac_st ast =
   try
@@ -217,18 +223,32 @@ let exec1_remote st (ast,resolver) : Vernacstate.t option =
 
 type action =
   | WorkerEnd of (int * Unix.process_status)
-  | JobAvailable of (remote_mapping * remote_tasks * Vernacstate.t)
+  | JobAvailable of (remote_mapping * remote_tasks * Vernacstate.t * Stateid.t)
 type 'a actions = ([> `Workers of action ] as 'a) Lwt.t list
 
-let wait () = let open Lwt.Infix in Lwt_unix.wait () >>= fun x -> log @@ "[T] vacation request ready"; Lwt.return @@ `Workers (WorkerEnd x)
-let pop () = let open Lwt.Infix in dequeue () >>= fun x -> log @@ "[T] fork request ready"; Lwt.return @@ `Workers (JobAvailable x)
+let pool = Lwt_condition.create ()
+let pool_occupants = ref 0
+let pool_size = 1 (* TODO: config option *)
+
+let wait () =
+  Lwt_unix.wait () >>= fun x ->
+  decr pool_occupants; Lwt_condition.signal pool ();
+  log @@ "[T] vacation request ready";
+  Lwt.return @@ `Workers (WorkerEnd x)
+
+let pop () =
+  (if !pool_occupants >= pool_size then Lwt_condition.wait pool else Lwt.return ())
+  >>= fun () ->
+  incr pool_occupants;
+  dequeue () >>= fun x ->
+  log @@ "[T] fork request ready"; Lwt.return @@ `Workers (JobAvailable x)
 
 let perform_workers_action =
   function
   | WorkerEnd (pid, status) ->
-      log @@ "[M] Worker went on holidays";
+      log @@ Printf.sprintf "[M] Worker %d went on holidays" pid;
       Lwt.return []
-  | JobAvailable(remote_mapping,remote_tasks,initial_state) ->
+  | JobAvailable(remote_mapping,remote_tasks,initial_state,_) ->
       fork_worker remote_mapping >>= function
       | Master pid ->
           log @@ "[M] Spawned worker " ^ string_of_int pid;
@@ -258,7 +278,7 @@ let build_remote_tasks doc st remote_mapping ids =
 let rec delegate ~progress_hook doc base_id ids st vernac_st : state Lwt.t =
   let remote_mapping = empty_remote_mapping ~progress_hook in
   let remote_tasks, st, remote_mapping = build_remote_tasks doc st remote_mapping ids in
-  enqueue (remote_mapping, remote_tasks, vernac_st) >>= fun () ->
+  enqueue (remote_mapping, remote_tasks, vernac_st, Option.get base_id) >>= fun () ->
   Lwt.return st
 
 and execute ~progress_hook doc st task : (state * [> `Workers of action ] Lwt.t list) Lwt.t =
@@ -372,9 +392,12 @@ let invalidate1 cache id =
 let rec invalidate schedule id st =
   log @@ "Invalidating: " ^ Stateid.to_string id;
   let cache = invalidate1 st.cache id in
-  if cache == st.cache then st else
+  invalidate_delegation_queue id >>= fun () ->
+  if cache == st.cache then Lwt.return st else
   let deps = Scheduler.dependents schedule id in
-  Stateid.Set.fold (fun dep_id st -> invalidate schedule dep_id st) deps { st with cache }
+  Stateid.Set.fold (fun dep_id st ->
+    st >>= fun st -> invalidate schedule dep_id st) deps
+    (Lwt.return { st with cache })
 
 let get_parsing_state_after st id =
   Option.bind (find_fulfilled_opt id st.cache)

@@ -71,7 +71,9 @@ let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc 
   let rec make_progress state =
     let open Lwt.Infix in
     let invalid_ids, document = validate_document state.document in
-    let state = { state with document } in (* FIXME invalidate invalid_ids *)
+    Lwt_list.fold_left_s (fun st id ->
+        ExecutionManager.invalidate (Document.schedule state.document) id st) state.execution_state (Stateid.Set.elements invalid_ids) >>= fun execution_state ->
+    let state = { state with document; execution_state } in
     (*
     log @@ ParsedDoc.to_string doc.parsed_doc;
     log @@ Scheduler.string_of_schedule @@ ParsedDoc.schedule doc.parsed_doc;

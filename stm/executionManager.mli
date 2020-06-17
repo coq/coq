@@ -34,7 +34,7 @@ val observe : progress_hook -> document -> sentence_id -> state ->
   (state * 'a actions) Lwt.t
 val query : sentence_id -> state -> ast -> state
 
-val invalidate : schedule -> sentence_id -> state -> state
+val invalidate : schedule -> sentence_id -> state -> state Lwt.t
 
 val errors : state -> (sentence_id * Loc.t option * string) list
 val shift_locs : state -> int -> int -> state

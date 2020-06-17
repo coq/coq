@@ -119,7 +119,7 @@ let textDocumentDidOpen params : unit Lwt.t =
   let uri = textDocument |> member "uri" |> to_string in
   let text = textDocument |> member "text" |> to_string in
   let doc = Document.create_document text in
-  let st = DocumentManager.init (get_init_state ()) doc in
+  DocumentManager.init (get_init_state ()) doc >>= fun st ->
   Hashtbl.add states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st
@@ -150,7 +150,7 @@ let textDocumentDidSave params : unit Lwt.t =
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
-  let st = DocumentManager.validate_document st in
+  DocumentManager.validate_document st >>= fun st ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st
@@ -265,7 +265,7 @@ let coqtopResetCoq ~id params : unit Lwt.t =
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
-  let st = DocumentManager.reset (get_init_state ()) st in
+  DocumentManager.reset (get_init_state ()) st >>= fun st ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st
@@ -323,11 +323,17 @@ let islave_default_opts =
 let islave_init run_mode ~opts =
   Coqtop.init_toploop opts
 
+type actors = [ `Ui of Yojson.Basic.t | `Workers of ExecutionManager.action ] Lwt.t
+
+let ui () =
+  let open Lwt.Infix in
+  read_request Lwt_io.stdin >>= fun req ->
+  log "[T] UI req ready"; Lwt.return @@ `Ui req
+
 let loop run_mode ~opts:_ state =
   init_state := Some (Vernacstate.freeze_interp_state ~marshallable:false);
   let open Lwt.Infix in
-  let ui () = read_request Lwt_io.stdin >>= fun req -> log "[T] UI req ready"; Lwt.return @@ `Ui req in
-  let rec loop (actions : [> `Ui of Yojson.Basic.t | `Workers of ExecutionManager.action ] Lwt.t list) =
+  let rec loop (actions : actors list) =
     let open Yojson.Basic.Util in
     log @@ "[T] looking for next step";
     Lwt_io.flush_all () >>= fun () ->
