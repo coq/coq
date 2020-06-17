@@ -1023,6 +1023,8 @@ let start_module l senv =
   mp,
   { empty_environment with
     env = senv.env;
+    modresolver = senv.modresolver;
+    paramresolver = senv.paramresolver;
     modpath = mp;
     modvariant = STRUCT ([],senv);
     required = senv.required }
@@ -1034,6 +1036,8 @@ let start_modtype l senv =
   mp,
   { empty_environment with
     env = senv.env;
+    modresolver = senv.modresolver;
+    paramresolver = senv.paramresolver;
     modpath = mp;
     modvariant = SIG ([], senv);
     required = senv.required }
