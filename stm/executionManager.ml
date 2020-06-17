@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 open Scheduler
+open Lwt.Infix
 
 let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
@@ -46,7 +47,6 @@ let find_fulfilled_opt x m =
   with Not_found -> None
 
 let base_vernac_st st base_id =
-  let open Lwt.Infix in
   match base_id with
   | None -> Lwt.return st.initial
   | Some base_id ->
@@ -75,7 +75,6 @@ let empty_remote_mapping ~progress_hook = { taskno = 0; taskmap = Int.Map.empty;
 
 (* Reads values from the worker and passes them to the resolvers in master *)
 let new_manager : remote_mapping -> link -> unit = fun remote_mapping link ->
-  let open Lwt.Infix in
   log @@ "[M] installing manager";
   let rec main () =
     Lwt_io.read_value link.read_from >>= fun (i,v) ->
@@ -96,7 +95,6 @@ let lighten_exec_status = function
 
 (* Reads values from the local premises and writes them to master *)
 let new_worker : remote_mapping -> link -> unit = fun remote_mapping link ->
-  let open Lwt.Infix in
   let m = Lwt_mutex.create () in
   log @@ "[W] installing async fulfillers";
   Lwt.async_exception_hook := (fun x ->
@@ -125,7 +123,6 @@ let lwt_remotely_wait (r : remote_mapping) :  remote_mapping * (execution_status
 type role = Master of int | Worker
 
 let fork_worker : remote_mapping -> role Lwt.t = fun remote_mapping ->
-  let open Lwt.Infix in
   let open Lwt_unix in
   let chan = socket PF_INET SOCK_STREAM 0 in
   bind chan (ADDR_INET (Unix.inet_addr_loopback,0)) >>= fun () ->
@@ -227,7 +224,6 @@ let wait () = let open Lwt.Infix in Lwt_unix.wait () >>= fun x -> log @@ "[T] va
 let pop () = let open Lwt.Infix in dequeue () >>= fun x -> log @@ "[T] fork request ready"; Lwt.return @@ `Workers (JobAvailable x)
 
 let perform_workers_action =
-  let open Lwt.Infix in
   function
   | WorkerEnd (pid, status) ->
       log @@ "[M] Worker went on holidays";
@@ -260,14 +256,12 @@ let build_remote_tasks doc st remote_mapping ids =
   List.rev tasks_rev, st, remote_mapping
 
 let rec delegate ~progress_hook doc base_id ids st vernac_st : state Lwt.t =
-  let open Lwt.Infix in
   let remote_mapping = empty_remote_mapping ~progress_hook in
   let remote_tasks, st, remote_mapping = build_remote_tasks doc st remote_mapping ids in
   enqueue (remote_mapping, remote_tasks, vernac_st) >>= fun () ->
   Lwt.return st
 
 and execute ~progress_hook doc st task : (state * [> `Workers of action ] Lwt.t list) Lwt.t =
-  let open Lwt.Infix in
   let update_st st id v acts = Lwt.return ({ st with cache = SM.add id (Lwt.return v) st.cache },acts) in
   match task with
   | base_id, Skip id ->
@@ -288,7 +282,6 @@ and execute ~progress_hook doc st task : (state * [> `Workers of action ] Lwt.t 
   | _ -> CErrors.anomaly Pp.(str "task not supported yet")
 
 let observe progress_hook doc id st : (state * [> `Workers of action ] Lwt.t list) Lwt.t =
-  let open Lwt.Infix in
   log @@ "[M] Observe " ^ Stateid.to_string id;
   let rec build_tasks id tasks =
     begin match find_fulfilled_opt id st.cache with
