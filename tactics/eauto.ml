@@ -37,7 +37,7 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   if occur_existential sigma t1 || occur_existential sigma t2 then
     Tacticals.New.tclTHENLIST
       [Proofview.Unsafe.tclEVARS sigma;
-       Clenvtac.unify ~flags t1;
+       Clenv.unify ~flags t1;
        exact_no_check c]
   else exact_check c
   end
@@ -68,7 +68,7 @@ open Auto
 let unify_e_resolve flags h =
   Proofview.Goal.enter begin fun gl ->
       let clenv', c = connect_hint_clenv h gl in
-      Clenvtac.res_pf ~with_evars:true ~with_classes:true ~flags clenv'
+      Clenv.res_pf ~with_evars:true ~with_classes:true ~flags clenv'
     end
 
 let hintmap_of sigma secvars concl =

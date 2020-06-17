@@ -695,7 +695,7 @@ module New = struct
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
     Proofview.tclTHEN
-      (Clenvtac.res_pf ~flags elimclause')
+      (Clenv.res_pf ~flags elimclause')
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
     end) end
 

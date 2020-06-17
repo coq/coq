@@ -99,7 +99,7 @@ let connect_hint_clenv h gl =
 let unify_resolve flags (h : hint) =
   Proofview.Goal.enter begin fun gl ->
   let clenv, c = connect_hint_clenv h gl in
-  Clenvtac.res_pf ~flags clenv
+  Clenv.res_pf ~flags clenv
   end
 
 let unify_resolve_nodelta h = unify_resolve auto_unif_flags h

@@ -261,7 +261,7 @@ let lemInv id c =
   try
     let clause = mk_clenv_from_env (pf_env gls) (project gls) None (c, pf_get_type_of gls c) in
     let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
-    Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
+    Clenv.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with
     | NoSuchBinding ->
         user_err

@@ -109,6 +109,14 @@ val make_clenv_binding :
 exception NotExtensibleClause
 val clenv_push_prod : clausenv -> clausenv
 
+(** {6 Clenv tactics} *)
+
+val unify : ?flags:unify_flags -> constr -> unit Proofview.tactic
+val res_pf : ?with_evars:bool -> ?with_classes:bool -> ?flags:unify_flags -> clausenv -> unit Proofview.tactic
+
+val clenv_pose_dependent_evars : ?with_evars:bool -> clausenv -> clausenv
+val clenv_value_cast_meta : clausenv -> constr
+
 (** {6 Pretty-print (debug only) } *)
 val pr_clenv : clausenv -> Pp.t
 
