@@ -3045,7 +3045,7 @@ following:
 For backward compatibility, the notation :n:`in {+ @ident}` performs
 the conversion in hypotheses :n:`{+ @ident}`.
 
-.. tacn:: {? @strategy_flag }
+.. tacn:: cbv {? @strategy_flag }
           lazy {? @strategy_flag }
    :name: cbv; lazy
 
