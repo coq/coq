@@ -1997,12 +1997,22 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacInductive (finite, l) ->
     VtDefault(fun () -> vernac_inductive ~atts finite l)
   | VernacFixpoint (discharge, l) ->
+    let (atts, guard) = parse_with_extra guard_check atts in
+    let with_guard_check f _ =
+      match guard with
+      | Some b ->
+        let before = (Global.typing_flags ()).Declarations.check_guarded in
+        Global.set_check_guarded b;
+        let res = f () in
+        Global.set_check_guarded before;
+        res
+      | _ -> f () in
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
     if opens then
-      VtOpenProof (fun () ->
+      VtOpenProof (with_guard_check @@ fun _ ->
         with_def_attributes ~atts vernac_fixpoint_interactive discharge l)
     else
-      VtDefault (fun () ->
+      VtDefault (with_guard_check @@ fun _ ->
         with_def_attributes ~atts vernac_fixpoint discharge l)
   | VernacCoFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in

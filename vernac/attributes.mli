@@ -45,6 +45,7 @@ end
 
 val polymorphic : bool attribute
 val program : bool attribute
+val guard_check : bool option attribute
 val template : bool option attribute
 val locality : bool option attribute
 val option_locality : Goptions.option_locality attribute

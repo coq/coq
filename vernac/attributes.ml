@@ -161,6 +161,8 @@ let () = let open Goptions in
 let program =
   enable_attribute ~key:"program" ~default:(fun () -> !program_mode)
 
+let guard_check = bool_attribute ~name:"Guard Checking" ~on:"guard" ~off:"unguard"
+
 let locality = bool_attribute ~name:"Locality" ~on:"local" ~off:"global"
 
 let option_locality =
