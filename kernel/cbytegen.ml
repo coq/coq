@@ -130,7 +130,7 @@ type comp_env = {
     nb_uni_stack : int ;         (* number of universes on the stack,      *)
                                  (* universes are always at the bottom.    *)
     nb_stack : int;              (* number of variables on the stack       *)
-    in_stack : int list;         (* position in the stack                  *)
+    in_stack : int Range.t;      (* position in the stack                  *)
     nb_rec : int;                (* number of mutually recursive functions *)
     pos_rec  : instruction list; (* instruction d'acces pour les variables *)
                                  (*  de point fix ou de cofix              *)
@@ -158,7 +158,7 @@ let empty_comp_env ()=
   { arity = 0;
     nb_uni_stack = 0;
     nb_stack = 0;
-    in_stack = [];
+    in_stack = Range.empty;
     nb_rec = 0;
     pos_rec = [];
     offset = 0;
@@ -188,13 +188,13 @@ let ensure_stack_capacity f x =
 (*i Creation functions for comp_env *)
 
 let rec add_param n sz l =
-  if Int.equal n 0 then l else add_param (n - 1) sz (n+sz::l)
+  if Int.equal n 0 then l else add_param (n - 1) sz (Range.cons (n+sz) l)
 
 let comp_env_fun ?(univs=0) arity =
   { arity;
     nb_uni_stack = univs ;
     nb_stack = arity;
-    in_stack = add_param arity 0 [];
+    in_stack = add_param arity 0 Range.empty;
     nb_rec = 0;
     pos_rec = [];
     offset = 1;
@@ -206,7 +206,7 @@ let comp_env_fix_type  rfv =
   { arity = 0;
     nb_uni_stack = 0;
     nb_stack = 0;
-    in_stack = [];
+    in_stack = Range.empty;
     nb_rec = 0;
     pos_rec = [];
     offset = 1;
@@ -221,7 +221,7 @@ let comp_env_fix ndef curr_pos arity rfv =
    { arity;
      nb_uni_stack = 0;
      nb_stack = arity;
-     in_stack = add_param arity 0 [];
+     in_stack = add_param arity 0 Range.empty;
      nb_rec = ndef;
      pos_rec = !prec;
      offset = 2 * (ndef - curr_pos - 1)+1;
@@ -232,7 +232,7 @@ let comp_env_cofix_type ndef rfv =
   { arity = 0;
     nb_uni_stack = 0;
     nb_stack = 0;
-    in_stack = [];
+    in_stack = Range.empty;
     nb_rec = 0;
     pos_rec = [];
     offset = 1+ndef;
@@ -247,7 +247,7 @@ let comp_env_cofix ndef arity rfv =
    { arity;
      nb_uni_stack = 0;
      nb_stack = arity;
-     in_stack = add_param arity 0 [];
+     in_stack = add_param arity 0 Range.empty;
      nb_rec = ndef;
      pos_rec = !prec;
      offset = ndef+1;
@@ -264,7 +264,7 @@ let push_param n sz r =
 let push_local sz r =
   { r with
     nb_stack = r.nb_stack + 1;
-    in_stack = (sz + 1) :: r.in_stack }
+    in_stack = Range.cons (sz + 1) r.in_stack }
 
 (*i Compilation of variables *)
 let find_at fv env = FvMap.find fv env.fv_fwd
@@ -280,7 +280,7 @@ let pos_named id r =
 
 let pos_rel i r sz =
   if i <= r.nb_stack then
-    Kacc(sz - (List.nth r.in_stack (i-1)))
+    Kacc(sz - (Range.get r.in_stack (i-1)))
   else
     let i = i - r.nb_stack in
     if i <= r.nb_rec then
