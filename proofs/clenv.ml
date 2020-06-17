@@ -42,7 +42,6 @@ type clausenv = {
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
-let clenv_nf_meta clenv c = nf_meta clenv.env clenv.evd c
 let clenv_term clenv c = meta_instance clenv.env clenv.evd c
 let clenv_meta_type clenv mv = Typing.meta_type clenv.env clenv.evd mv
 let clenv_value clenv = meta_instance clenv.env clenv.evd clenv.templval
@@ -444,8 +443,6 @@ let clenv_fchain ?with_univs ?(flags=fchain_flags ()) mv clenv nextclenv =
 
 (***************************************************************)
 (* Bindings *)
-
-type arg_bindings = constr explicit_bindings
 
 (* [clenv_independent clenv]
  * returns a list of metavariables which appear in the term cval,
