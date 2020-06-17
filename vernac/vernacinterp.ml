@@ -166,8 +166,6 @@ let rec interp_expr ~atts ~st c =
     interp_typed_vernac ~stack fv
 
 and vernac_load ~verbosely fname =
-  let exception End_of_input in
-
   (* Note that no proof should be open here, so the state here is just token for now *)
   let st = Vernacstate.freeze_interp_state ~marshallable:false in
   let fname =
@@ -180,20 +178,15 @@ and vernac_load ~verbosely fname =
   (* Parsing loop *)
   let v_mod = if verbosely then Flags.verbosely else Flags.silently in
   let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing
-      (fun po ->
-         match Pcoq.Entry.parse (Pvernac.main_entry proof_mode) po with
-         | Some x -> x
-         | None -> raise End_of_input) in
+      (Pcoq.Entry.parse (Pvernac.main_entry proof_mode))
+  in
   let rec load_loop ~stack =
-    try
-      let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
-      let stack =
-        v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack })
-          (parse_sentence proof_mode input) in
-      load_loop ~stack
-    with
-      End_of_input ->
-      stack
+    let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
+    match parse_sentence proof_mode input with
+    | None -> stack
+    | Some stm ->
+      let stack = v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack }) stm in
+      (load_loop [@ocaml.tailcall]) ~stack
   in
   let stack = load_loop ~stack:st.Vernacstate.lemmas in
   (* If Load left a proof open, we fail too. *)

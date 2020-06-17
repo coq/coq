@@ -499,7 +499,7 @@ let rec vernac_loop ~state =
   if !print_emacs then top_stderr (str (top_buffer.prompt state.doc));
   resynch_buffer top_buffer;
   let state, drop = read_and_execute ~state in
-  if drop then state else vernac_loop ~state
+  if drop then state else (vernac_loop [@ocaml.tailcall]) ~state
 
 (* Default toplevel loop, machinery for drop is below *)
 

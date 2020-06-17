@@ -110,7 +110,7 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
       let state =
         Flags.silently (interp_vernac ~check ~interactive ~state) ast in
 
-      loop state (state.sid :: ids)
+      (loop [@ocaml.tailcall]) state (state.sid :: ids)
   in
   try loop state []
   with any ->   (* whatever the exception *)
