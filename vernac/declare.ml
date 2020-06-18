@@ -222,11 +222,9 @@ let rec_tac_initializer finite guard thms snl =
        | _ -> assert false
 
 let start_proof_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma thm =
-  let intro_tac { Recthm.args; _ } = Tactics.auto_intros_tac args in
-  let init_tac = intro_tac thm in
-  let { Recthm.name; typ; impargs; _} = thm in
+  let { Recthm.name; typ; impargs; args } = thm in
+  let init_tac = Tactics.auto_intros_tac args in
   let info = Info.make ?hook ~scope ~kind ~udecl () in
-  let info = { info with Info.thms = [] } in
   (* start_lemma has the responsibility to add (name, impargs, typ)
        to thms, once Info.t is more refined this won't be necessary *)
   let lemma = start_proof ~name ~impargs ~poly ~info sigma (EConstr.of_constr typ) in
