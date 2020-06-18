@@ -113,16 +113,20 @@ val declare_assumption
   -> GlobRef.t
 
 module Recthm : sig
-  type t =
+  type 'constr t =
     { name : Id.t
     (** Name of theorem *)
-    ; typ : Constr.t
+    ; typ : 'constr
     (** Type of theorem  *)
     ; args : Name.t list
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
     }
+
+  (* Eventually we would like to remove the constr parameter *)
+  val to_constr : Evd.evar_map -> EConstr.t t -> Constr.t t
+
 end
 
 type lemma_possible_guards = int list list
@@ -133,7 +137,7 @@ val declare_mutually_recursive
   -> uctx:UState.t
   -> rec_declaration:Constr.rec_declaration
   -> possible_indexes:lemma_possible_guards option
-  -> Recthm.t list
+  -> Constr.t Recthm.t list
   -> Names.GlobRef.t list
 
 (** {2 Declaration of interactive constants }  *)
@@ -221,7 +225,7 @@ module Proof : sig
     -> kind:Decls.logical_kind
     -> udecl:UState.universe_decl
     -> Evd.evar_map
-    -> Recthm.t
+    -> Constr.t Recthm.t
     -> t
 
   type mutual_info = (bool * lemma_possible_guards * Constr.t option list option)
@@ -235,7 +239,7 @@ module Proof : sig
     -> udecl:UState.universe_decl
     -> Evd.evar_map
     -> mutual_info:mutual_info
-    -> Recthm.t list
+    -> Constr.t Recthm.t list
     -> int list option
     -> t
 

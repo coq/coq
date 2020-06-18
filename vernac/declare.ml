@@ -69,16 +69,20 @@ end
 type lemma_possible_guards = int list list
 
 module Recthm = struct
-  type t =
+
+  type 'constr t =
     { name : Names.Id.t
     (** Name of theorem *)
-    ; typ : Constr.t
+    ; typ : 'constr
     (** Type of theorem  *)
     ; args : Names.Name.t list
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
     }
+
+  let to_constr sigma thm = { thm with typ = EConstr.to_constr sigma thm.typ }
+
 end
 
 module Info = struct
@@ -91,7 +95,7 @@ module Info = struct
     ; kind : Decls.logical_kind
     ; udecl: UState.universe_decl
     (** Initial universe declarations *)
-    ; thms : Recthm.t list
+    ; thms : Constr.t Recthm.t list
     (** thms contains each individual constant info in a mutual decl *)
     ; compute_guard : lemma_possible_guards
     (** thms and compute guard are specific only to

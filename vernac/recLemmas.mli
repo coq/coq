@@ -9,14 +9,14 @@
 (************************************************************************)
 
 type mutual_info =
-  | NonMutual of Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits
+  | NonMutual of EConstr.t Declare.Recthm.t
   | Mutual of
-      { mutual_info : bool * int list list * Constr.t option list option
-      ; thms : (Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits) list
+      { mutual_info : Declare.Proof.mutual_info
+      ; thms : EConstr.t Declare.Recthm.t list
       ; possible_guards : int list
       }
 
 val look_for_possibly_mutual_statements
   :  Evd.evar_map
-  -> (Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits) list
+  -> EConstr.t Declare.Recthm.t list
   -> mutual_info

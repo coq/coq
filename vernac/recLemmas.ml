@@ -16,9 +16,8 @@ module RelDecl = Context.Rel.Declaration
 
 let find_mutually_recursive_statements sigma thms =
     let n = List.length thms in
-    let inds = List.map (fun (id,t,args,impls) ->
-      let (hyps,ccl) = EConstr.decompose_prod_assum sigma t in
-      let x = (id,t,args,impls) in
+    let inds = List.map (fun ({ Declare.Recthm.name; typ; args; impargs} as x) ->
+      let (hyps,ccl) = EConstr.decompose_prod_assum sigma typ in
       let whnf_hyp_hds = EConstr.map_rel_context_in_env
         (fun env c -> fst (Reductionops.whd_all_stack env sigma c))
         (Global.env()) hyps in
@@ -90,18 +89,18 @@ let find_mutually_recursive_statements sigma thms =
     (finite,guard,None), ordered_inds
 
 type mutual_info =
-  | NonMutual of Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits
+  | NonMutual of EConstr.t Declare.Recthm.t
   | Mutual of
-      { mutual_info : bool * int list list * Constr.t option list option
-      ; thms : (Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits) list
+      { mutual_info : Declare.Proof.mutual_info
+      ; thms : EConstr.t Declare.Recthm.t list
       ; possible_guards : int list
       }
 
 let look_for_possibly_mutual_statements sigma thms : mutual_info =
   match thms with
-  | [id,t,args,impls] ->
+  | [thm] ->
       (* One non recursively proved theorem *)
-    NonMutual (id,t,args,impls)
+    NonMutual thm
   | _::_ as thms ->
     (* More than one statement and/or an explicit decreasing mark: *)
     (* we look for a common inductive hyp or a common coinductive conclusion *)

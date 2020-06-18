@@ -87,7 +87,7 @@ val add_definition :
 (** Start a [Program Fixpoint] declaration, similar to the above,
    except it takes a list now. *)
 val add_mutual_definitions :
-     (Declare.Recthm.t * Constr.t * RetrieveObl.obligation_info) list
+     (Constr.t Declare.Recthm.t * Constr.t * RetrieveObl.obligation_info) list
   -> uctx:UState.t
   -> ?udecl:UState.universe_decl (** Universe binders and constraints *)
   -> ?tactic:unit Proofview.tactic
