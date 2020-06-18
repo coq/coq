@@ -66,7 +66,7 @@ let init vernac_state document =
   let execution_state = ExecutionManager.init vernac_state in
   { document; execution_state; executed_loc = None }
 
-let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data * 'a ExecutionManager.actions) Lwt.t =
+let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data * 'a DelegationManager.events) Lwt.t =
   log @@ "[DM] Interpreting to loc " ^ string_of_int loc;
   let rec make_progress state =
     let open Lwt.Infix in

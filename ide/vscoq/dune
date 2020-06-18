@@ -9,7 +9,7 @@
  (name vscoqtop)
  (public_name vscoqtop.opt)
  (package vscoq-server)
- (modules vscoqtop)
+ (modules vscoqtop lspManager)
  (libraries coq.toplevel yojson lwt.unix)
  (link_flags -linkall))
 

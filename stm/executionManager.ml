@@ -58,105 +58,6 @@ let base_vernac_st st base_id =
     with Not_found -> CErrors.anomaly Pp.(str "Missing state in cache (execute): " ++ Stateid.print base_id)
     end
 
-type link = {
-  write_to :  Lwt_io.output_channel;
-  read_from:  Lwt_io.input_channel;
-}
-
-type ('a,'b) corresponding = { on_worker : 'b; on_master : 'a }
-
-type remote_mapping = {
-  taskno : int;
-  taskmap : (execution_status Lwt.u, execution_status Lwt.t) corresponding Int.Map.t;
-  progress_hook : unit -> unit Lwt.t
-}
-
-let empty_remote_mapping ~progress_hook = { taskno = 0; taskmap = Int.Map.empty; progress_hook = fun () -> progress_hook None }
-
-(* Reads values from the worker and passes them to the resolvers in master *)
-let new_manager : remote_mapping -> link -> unit = fun remote_mapping link ->
-  log @@ "[M] installing manager";
-  let rec main () =
-    Lwt_io.read_value link.read_from >>= fun (i,v) ->
-    let resolver = Int.Map.find i remote_mapping.taskmap in
-    log @@ "[M] Manager fulfilling " ^ string_of_int i;
-    Lwt.wakeup_later resolver.on_master v;
-    remote_mapping.progress_hook () >>= fun () ->
-    main ()
-  in
-    Lwt.async_exception_hook := (fun x ->
-      log @@ "[M] Manager terminated " ^ Printexc.to_string x); (* HACK *)
-    Lwt.async @@ main
-;;
-
-let lighten_exec_status = function
-  | Success _ -> Success None
-  | Error (msg,_) -> Error (msg,None)
-
-(* Reads values from the local premises and writes them to master *)
-let new_worker : remote_mapping -> link -> unit = fun remote_mapping link ->
-  let m = Lwt_mutex.create () in
-  log @@ "[W] installing async fulfillers";
-  Lwt.async_exception_hook := (fun x ->
-    log @@ "[W] Worker terminated " ^ Printexc.to_string x); (* HACK *)
-  Int.Map.iter (fun i { on_worker } ->
-    Lwt.async @@ (fun () -> on_worker >>= fun v ->
-      Lwt_mutex.with_lock m (fun () ->
-        log @@ "[W] Remote fulfilling of " ^ string_of_int i;
-        Lwt_io.write_value link.write_to (i,lighten_exec_status v) >>= fun () ->
-        Lwt_io.flush_all ())
-    )
-  ) remote_mapping.taskmap
-;;
-
-(* Like Lwt.wait but the resolved is remote_mapping, via IPC *)
-let lwt_remotely_wait (r : remote_mapping) :  remote_mapping * (execution_status Lwt.t * execution_status Lwt.u) =
-  let j = r.taskno in
-  let m = r.taskmap in
-  (* task = cancellable promise *)
-  let master, on_master = Lwt.task () in
-  let on_worker, worker = Lwt.task () in
-  let m = Int.Map.add j { on_master; on_worker } m in
-  { r with taskno = j+1; taskmap = m }, (master, worker)
-;;
-
-type role = Master of int | Worker
-
-let fork_worker : remote_mapping -> role Lwt.t = fun remote_mapping ->
-  let open Lwt_unix in
-  let chan = socket PF_INET SOCK_STREAM 0 in
-  bind chan (ADDR_INET (Unix.inet_addr_loopback,0)) >>= fun () ->
-  listen chan 1;
-  let address = getsockname chan in
-  log @@ "[M] Forking...";
-  Lwt_io.flush_all () >>= fun () ->
-  let pid = Lwt_unix.fork () in
-  if pid = 0 then
-    close chan >>= fun () ->
-    log @@ "[W] Borning...";
-    let chan = socket PF_INET SOCK_STREAM 0 in
-    connect chan address >>= fun () ->
-    let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input chan in
-    let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output chan in
-    let link = { write_to; read_from } in
-    new_worker remote_mapping link;
-    Lwt.return Worker
-  else
-    let timeout = sleep 2. >>= fun () -> Lwt.return None in
-    let accept = accept chan >>= fun x -> Lwt.return @@ Some x in
-    Lwt.pick [timeout; accept] >>= function
-      | None ->
-          log @@ "[M] Forked worker does not connect back";
-          Lwt.return (Master 0) (* TODO, error *)
-      | Some (worker, _worker_addr) -> (* TODO: timeout *)
-          close chan >>= fun () ->
-          log @@ "[M] Forked pid " ^ string_of_int pid;
-          let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input worker in
-          let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output worker in
-          let link = { write_to; read_from } in
-          new_manager remote_mapping link;
-          Lwt.return (Master pid)
-;;
 
 let queue = ref []
 let queue_lock = Lwt_mutex.create ()
@@ -164,11 +65,11 @@ let queue_cond = Lwt_condition.create ()
 
 type remote_tasks = (ast * execution_status Lwt.u) list
 
-let enqueue (m : remote_mapping * remote_tasks * Vernacstate.t * Stateid.t) : unit Lwt.t =
+let enqueue (m : execution_status DelegationManager.remote_mapping * (remote_tasks * Vernacstate.t * Stateid.t)) : unit Lwt.t =
   Lwt_mutex.with_lock queue_lock (fun () -> (log @@ "pushing in the queue");
     queue := !queue @ [m]; Lwt_condition.signal queue_cond (); Lwt.return ())
 
-let dequeue () : (remote_mapping * remote_tasks * Vernacstate.t * Stateid.t) Lwt.t =
+let dequeue () : (execution_status DelegationManager.remote_mapping * (remote_tasks * Vernacstate.t * Stateid.t)) Lwt.t =
   Lwt_mutex.with_lock queue_lock (fun () ->
     begin
       if !queue = []
@@ -182,7 +83,7 @@ let dequeue () : (remote_mapping * remote_tasks * Vernacstate.t * Stateid.t) Lwt
 
 let invalidate_delegation_queue id : unit Lwt.t =
   Lwt_mutex.with_lock queue_lock (fun () ->
-    queue := List.filter (fun (_,_,_,id1) -> not(Stateid.equal id id1)) !queue;
+    queue := List.filter (fun (_,(_,_,id1)) -> not(Stateid.equal id id1)) !queue;
     Lwt.return ())
 
 let exec1 vernac_st ast =
@@ -221,42 +122,15 @@ let exec1_remote st (ast,resolver) : Vernacstate.t option =
       | Success (Some st) -> Some st
       | _ -> None
 
-type action =
-  | WorkerEnd of (int * Unix.process_status)
-  | JobAvailable of (remote_mapping * remote_tasks * Vernacstate.t * Stateid.t)
-type 'a actions = ([> `Workers of action ] as 'a) Lwt.t list
-
-let pool = Lwt_condition.create ()
-let pool_occupants = ref 0
-let pool_size = 1 (* TODO: config option *)
-
-let wait () =
-  Lwt_unix.wait () >>= fun x ->
-  decr pool_occupants; Lwt_condition.signal pool ();
-  log @@ "[T] vacation request ready";
-  Lwt.return @@ `Workers (WorkerEnd x)
-
-let pop () =
-  (if !pool_occupants >= pool_size then Lwt_condition.wait pool else Lwt.return ())
-  >>= fun () ->
-  incr pool_occupants;
-  dequeue () >>= fun x ->
-  log @@ "[T] fork request ready"; Lwt.return @@ `Workers (JobAvailable x)
-
-let perform_workers_action =
-  function
-  | WorkerEnd (pid, status) ->
-      log @@ Printf.sprintf "[M] Worker %d went on holidays" pid;
-      Lwt.return []
-  | JobAvailable(remote_mapping,remote_tasks,initial_state,_) ->
-      fork_worker remote_mapping >>= function
-      | Master pid ->
-          log @@ "[M] Spawned worker " ^ string_of_int pid;
-          Lwt.return [wait ()]
-      | Worker ->
-          let _ = List.fold_left exec1_remote (Some initial_state) remote_tasks in
-          log @@ "[W] Worker goes on holidays"; (* Send back states? *)
-          exit 0
+let worker_action = function
+  | DelegationManager.Master ->
+      log @@ "[M] Spawned worker";
+      fun _ -> Lwt.return ()
+  | DelegationManager.Worker ->
+      fun (remote_tasks , initial_state, _state_id) ->
+        let _ = List.fold_left exec1_remote (Some initial_state) remote_tasks in
+        log @@ "[W] Worker goes on holidays"; (* Send back states? *)
+        exit 0
 ;;
 
 let build_remote_tasks doc st remote_mapping ids =
@@ -266,7 +140,7 @@ let build_remote_tasks doc st remote_mapping ids =
     | Some sentence ->
       begin match sentence.ast with
       | ValidAst (ast,_) ->
-        let remote_mapping, (p,r) = lwt_remotely_wait remote_mapping in
+        let remote_mapping, (p,r) = DelegationManager.lwt_remotely_wait remote_mapping in
         let st = { st with cache = SM.add id p st.cache } in
         (ast,r) :: acc, st, remote_mapping
       | ParseError _ -> acc, st, remote_mapping (* error resiliency, we skip the proof step *)
@@ -276,12 +150,12 @@ let build_remote_tasks doc st remote_mapping ids =
   List.rev tasks_rev, st, remote_mapping
 
 let rec delegate ~progress_hook doc base_id ids st vernac_st : state Lwt.t =
-  let remote_mapping = empty_remote_mapping ~progress_hook in
+  let remote_mapping = DelegationManager.empty_remote_mapping ~progress_hook:(fun () -> progress_hook None) in
   let remote_tasks, st, remote_mapping = build_remote_tasks doc st remote_mapping ids in
-  enqueue (remote_mapping, remote_tasks, vernac_st, Option.get base_id) >>= fun () ->
+  enqueue (remote_mapping, (remote_tasks, vernac_st, Option.get base_id)) >>= fun () ->
   Lwt.return st
 
-and execute ~progress_hook doc st task : (state * [> `Workers of action ] Lwt.t list) Lwt.t =
+and execute ~progress_hook doc st task : (state * 'a DelegationManager.events) Lwt.t =
   let update_st st id v acts = Lwt.return ({ st with cache = SM.add id (Lwt.return v) st.cache },acts) in
   match task with
   | base_id, Skip id ->
@@ -298,10 +172,10 @@ and execute ~progress_hook doc st task : (state * [> `Workers of action ] Lwt.t 
     base_vernac_st st base_id >>= fun vernac_st ->
     delegate ~progress_hook doc base_id ids st vernac_st >>= fun st ->
     let ast = CAst.make @@ Vernacexpr.{ expr = VernacEndProof Admitted; attrs = []; control = [] } in
-    update_st st id (exec1 vernac_st ast) [pop()]
+    update_st st id (exec1 vernac_st ast) (DelegationManager.worker_available ~job:dequeue ~action:worker_action)
   | _ -> CErrors.anomaly Pp.(str "task not supported yet")
 
-let observe progress_hook doc id st : (state * [> `Workers of action ] Lwt.t list) Lwt.t =
+let observe progress_hook doc id st : (state * 'a DelegationManager.events) Lwt.t =
   log @@ "[M] Observe " ^ Stateid.to_string id;
   let rec build_tasks id tasks =
     begin match find_fulfilled_opt id st.cache with
