@@ -2132,3 +2132,40 @@ End inj_can_sym_in_on.
 Arguments inj_can_sym_in_on {aT rT aD rD f g}.
 Arguments inj_can_sym_on {aT rT aD f g}.
 Arguments inj_can_sym_in {aT rT rD f g}.
+
+(* additional contra lemmas involving [P,Q : Prop] *)
+
+Section Contra.
+Implicit Types (P Q : Prop) (b : bool).
+
+Lemma contra_not P Q : (Q -> P) -> (~ P -> ~ Q). Proof. by auto. Qed.
+
+Lemma contraPnot P Q : (Q -> ~ P) -> (P -> ~ Q). Proof. by auto. Qed.
+
+Lemma contraTnot b P : (P -> ~~ b) -> (b -> ~ P).
+Proof. by case: b; auto. Qed.
+
+Lemma contraNnot P b : (P -> b) -> (~~ b -> ~ P).
+Proof. rewrite -{1}[b]negbK; exact: contraTnot. Qed.
+
+Lemma contraPT P b : (~~ b -> ~ P) -> P -> b.
+Proof. by case: b => //= /(_ isT) nP /nP. Qed.
+
+Lemma contra_notT P b : (~~ b -> P) -> ~ P -> b.
+Proof. by case: b => //= /(_ isT) HP /(_ HP). Qed.
+
+Lemma contra_notN P b : (b -> P) -> ~ P -> ~~ b.
+Proof. rewrite -{1}[b]negbK; exact: contra_notT. Qed.
+
+Lemma contraPN P b : (b -> ~ P) -> (P -> ~~ b).
+Proof. by case: b => //=; move/(_ isT) => HP /HP. Qed.
+
+Lemma contraFnot P b : (P -> b) -> b = false -> ~ P.
+Proof. by case: b => //; auto. Qed.
+
+Lemma contraPF P b : (b -> ~ P) -> P -> b = false.
+Proof. by case: b => // /(_ isT). Qed.
+
+Lemma contra_notF P b : (b -> P) -> ~ P -> b = false.
+Proof. by case: b => // /(_ isT). Qed.
+End Contra.
