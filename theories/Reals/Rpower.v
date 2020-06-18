@@ -97,6 +97,12 @@ Qed.
 (** *                     Properties of  Exp                      *)
 (******************************************************************)
 
+Lemma exp_neq_0 : forall x:R, exp x <> 0.
+Proof.
+  intro x.
+  exact (not_eq_sym (Rlt_not_eq 0 (exp x) (exp_pos x))).
+Qed.
+
 Theorem exp_increasing : forall x y:R, x < y -> exp x < exp y.
 Proof.
   intros x y H.
@@ -198,6 +204,8 @@ Definition ln (x:R) : R :=
     | right a => 0
   end.
 
+Definition Rlog x y := (ln y)/(ln x).
+
 Lemma exp_ln : forall x:R, 0 < x -> exp (ln x) = x.
 Proof.
   intros; unfold ln; decide (Rlt_dec 0 x) with H.
@@ -268,6 +276,16 @@ Proof.
     elim (Rlt_irrefl _ H2).
 Qed.
 
+Lemma ln_neq_0 : forall x:R, x <> 1 -> 0 < x -> ln x <> 0.
+Proof.
+  intros x Hneq_x_1 Hlt_0_x.
+  rewrite <- ln_1.
+  intro H.
+  assert (x = 1) as H0.
+  + exact (ln_inv x 1 Hlt_0_x (ltac:(lra) : 0 < 1) H).
+  + contradiction.
+Qed.
+
 Theorem ln_mult : forall x y:R, 0 < x -> 0 < y -> ln (x * y) = ln x + ln y.
 Proof.
   intros x y H H0; apply exp_inv.
@@ -277,6 +295,25 @@ Proof.
   assumption.
   assumption.
   apply Rmult_lt_0_compat; assumption.
+Qed.
+
+Lemma ln_pow : forall (x : R), 0 < x -> forall (n : nat), ln (x^n) = (INR n)*(ln x).
+Proof.
+  intros x Hx.
+  induction n as [|m Hm].
+  + simpl.
+    rewrite ln_1.
+    exact (eq_sym (Rmult_0_l (ln x))).
+  + unfold pow.
+    fold pow.
+    rewrite (ln_mult x (x^m) Hx (pow_lt x m Hx)).
+    rewrite Hm.
+    rewrite <- (Rmult_1_l (ln x)) at 1.
+    rewrite <- (Rmult_plus_distr_r 1 (INR m) (ln x)).
+    rewrite (Rplus_comm 1 (INR m)).
+    destruct m as [|m]; simpl.
+    - lra.
+    - reflexivity.
 Qed.
 
 Theorem ln_Rinv : forall x:R, 0 < x -> ln (/ x) = - ln x.
@@ -379,8 +416,6 @@ Qed.
 
 Definition Rpower (x y:R) := exp (y * ln x).
 
-Local Infix "^R" := Rpower (at level 30, right associativity) : R_scope.
-
 (******************************************************************)
 (** *                     Properties of  Rpower                   *)
 (******************************************************************)
@@ -395,13 +430,13 @@ Local Infix "^R" := Rpower (at level 30, right associativity) : R_scope.
     default value of [Rpower] on the negative side, as it is the case
     for [Rpower_O]). *)
 
-Theorem Rpower_plus : forall x y z:R, z ^R (x + y) = z ^R x * z ^R y.
+Theorem Rpower_plus : forall x y z:R, Rpower z (x + y) = Rpower z x * Rpower z y.
 Proof.
   intros x y z; unfold Rpower.
   rewrite Rmult_plus_distr_r; rewrite exp_plus; auto.
 Qed.
 
-Theorem Rpower_mult : forall x y z:R, (x ^R y) ^R z = x ^R (y * z).
+Theorem Rpower_mult : forall x y z:R, Rpower (Rpower x y) z = Rpower x (y * z).
 Proof.
   intros x y z; unfold Rpower.
   rewrite ln_exp.
@@ -410,19 +445,19 @@ Proof.
   ring.
 Qed.
 
-Theorem Rpower_O : forall x:R, 0 < x -> x ^R 0 = 1.
+Theorem Rpower_O : forall x:R, 0 < x -> Rpower x 0 = 1.
 Proof.
   intros x _; unfold Rpower.
   rewrite Rmult_0_l; apply exp_0.
 Qed.
 
-Theorem Rpower_1 : forall x:R, 0 < x -> x ^R 1 = x.
+Theorem Rpower_1 : forall x:R, 0 < x -> Rpower x 1 = x.
 Proof.
   intros x H; unfold Rpower.
   rewrite Rmult_1_l; apply exp_ln; apply H.
 Qed.
 
-Theorem Rpower_pow : forall (n:nat) (x:R), 0 < x -> x ^R INR n = x ^ n.
+Theorem Rpower_pow : forall (n:nat) (x:R), 0 < x -> Rpower x (INR n) = x ^ n.
 Proof.
   intros n; elim n; simpl; auto; fold INR.
   intros x H; apply Rpower_O; auto.
@@ -432,8 +467,15 @@ Proof.
     try apply Rmult_comm || assumption.
 Qed.
 
+Lemma Rpower_nonzero : forall (x : R) (n : nat), 0 < x -> Rpower x (INR n) <> 0.
+Proof.
+  intros x n H.
+  rewrite (Rpower_pow n x H).
+  exact (pow_nonzero x n (not_eq_sym (Rlt_not_eq 0 x H))).
+Qed.
+
 Theorem Rpower_lt :
-  forall x y z:R, 1 < x -> y < z -> x ^R y < x ^R z.
+  forall x y z:R, 1 < x -> y < z -> Rpower x y < Rpower x z.
 Proof.
   intros x y z H H1.
   unfold Rpower.
@@ -445,7 +487,19 @@ Proof.
   apply H1.
 Qed.
 
-Theorem Rpower_sqrt : forall x:R, 0 < x -> x ^R (/ 2) = sqrt x.
+Lemma Rpower_Rlog : forall x y:R, x <> 1 -> 0 < x -> 0 < y -> Rpower x (Rlog x y) = y.
+Proof.
+  intros x y H_neq_x_1 H_lt_0_x H_lt_0_y.
+  unfold Rpower.
+  unfold Rlog.
+  unfold Rdiv.
+  rewrite (Rmult_assoc (ln y) (/ln x) (ln x)).
+  rewrite (Rinv_l (ln x) (ln_neq_0 x H_neq_x_1 H_lt_0_x)).
+  rewrite (Rmult_1_r (ln y)).
+  exact (exp_ln y H_lt_0_y).
+Qed.
+
+Theorem Rpower_sqrt : forall x:R, 0 < x -> Rpower x (/ 2) = sqrt x.
 Proof.
   intros x H.
   apply ln_inv.
@@ -454,7 +508,7 @@ Proof.
   apply Rmult_eq_reg_l with (INR 2).
   apply exp_inv.
   fold Rpower.
-  cut ((x ^R (/ INR 2)) ^R INR 2 = sqrt x ^R INR 2).
+  cut (Rpower (Rpower x (/ INR 2)) (INR 2) = Rpower (sqrt x) (INR 2)).
   unfold Rpower; auto.
   rewrite Rpower_mult.
   rewrite Rinv_l.
@@ -468,7 +522,7 @@ Proof.
   apply not_O_INR; discriminate.
 Qed.
 
-Theorem Rpower_Ropp : forall x y:R, x ^R (- y) = / x ^R y.
+Theorem Rpower_Ropp : forall x y:R, Rpower x (- y) = / (Rpower x y).
 Proof.
   unfold Rpower.
   intros x y; rewrite Ropp_mult_distr_l_reverse.
@@ -490,13 +544,34 @@ Proof.
 Qed.
 
 Theorem Rle_Rpower :
-  forall e n m:R, 1 <= e -> n <= m -> e ^R n <= e ^R m.
+  forall e n m:R, 1 <= e -> n <= m -> Rpower e n <= Rpower e m.
 Proof.
   intros e n m [H | H]; intros H1.
   case H1.
     intros H2; left; apply Rpower_lt; assumption.
     intros H2; rewrite H2; right; reflexivity.
   now rewrite <- H; unfold Rpower; rewrite ln_1, !Rmult_0_r; apply Rle_refl.
+Qed.
+
+Lemma ln_Rpower : forall x y:R, ln (Rpower x y) = y * ln x.
+Proof.
+  intros x y.
+  unfold Rpower.
+  rewrite (ln_exp (y * ln x)).
+  reflexivity.
+Qed.
+
+Lemma Rlog_pow : forall (x : R) (n : nat), x <> 1 -> 0 < x -> Rlog x (x^n) = INR n.
+Proof.
+  intros x n H_neq_x_1 H_lt_0_x.
+  rewrite <- (Rpower_pow n x H_lt_0_x).
+  unfold Rpower.
+  unfold Rlog.
+  rewrite (ln_exp (INR n * ln x)).
+  unfold Rdiv.
+  rewrite (Rmult_assoc (INR n) (ln x) (/ln x)).
+  rewrite (Rinv_r (ln x) (ln_neq_0 x H_neq_x_1 H_lt_0_x)).
+  exact (Rmult_1_r (INR n)).
 Qed.
 
 Theorem ln_lt_2 : / 2 < ln 2.
@@ -506,7 +581,7 @@ Proof.
   rewrite Rinv_r.
   apply exp_lt_inv.
   apply Rle_lt_trans with (1 := exp_le_3).
-  change (3 < 2 ^R (1 + 1)).
+  change (3 < Rpower 2 (1 + 1)).
   repeat rewrite Rpower_plus; repeat rewrite Rpower_1.
   now apply (IZR_lt 3 4).
   prove_sup0.
@@ -651,7 +726,7 @@ Qed.
 Theorem Dpower :
   forall y z:R,
     0 < y ->
-    D_in (fun x:R => x ^R z) (fun x:R => z * x ^R (z - 1)) (
+    D_in (fun x:R => Rpower x z) (fun x:R => z * Rpower x (z - 1)) (
       fun x:R => 0 < x) y.
 Proof.
   intros y z H;
@@ -682,7 +757,7 @@ Qed.
 
 Theorem derivable_pt_lim_power :
   forall x y:R,
-    0 < x -> derivable_pt_lim (fun x => x ^R y) x (y * x ^R (y - 1)).
+    0 < x -> derivable_pt_lim (fun x => Rpower x y) x (y * Rpower x (y - 1)).
 Proof.
   intros x y H.
   unfold Rminus; rewrite Rpower_plus.
@@ -711,13 +786,13 @@ intros x y z x0 y0; unfold Rpower.
 rewrite <- exp_plus, ln_mult, Rmult_plus_distr_l; auto.
 Qed.
 
-Lemma Rlt_Rpower_l a b c: 0 < c -> 0 < a < b -> a ^R c < b ^R c.
+Lemma Rlt_Rpower_l a b c: 0 < c -> 0 < a < b -> Rpower a c < Rpower b c.
 Proof.
 intros c0 [a0 ab]; apply exp_increasing.
 now apply Rmult_lt_compat_l; auto; apply ln_increasing; lra.
 Qed.
 
-Lemma Rle_Rpower_l a b c: 0 <= c -> 0 < a <= b -> a ^R c <= b ^R c.
+Lemma Rle_Rpower_l a b c: 0 <= c -> 0 < a <= b -> Rpower a c <= Rpower b c.
 Proof.
 intros [c0 | c0];
  [ | intros; rewrite <- c0, !Rpower_O; [apply Rle_refl | |] ].
