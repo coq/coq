@@ -92,6 +92,7 @@ module Info = struct
     ; udecl: UState.universe_decl
     (** Initial universe declarations *)
     ; thms : Recthm.t list
+    (** thms contains each individual constant info in a mutual decl *)
     ; compute_guard : lemma_possible_guards
     (** thms and compute guard are specific only to
        start_lemma_with_initialization + regular terminator *)
@@ -216,10 +217,24 @@ let rec_tac_initializer finite guard thms snl =
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
-let start_proof_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recguard thms snl =
+let start_proof_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma thm =
   let intro_tac { Recthm.args; _ } = Tactics.auto_intros_tac args in
-  let init_tac, compute_guard = match recguard with
-  | Some (finite,guard,init_terms) ->
+  let init_tac = intro_tac thm in
+  let { Recthm.name; typ; impargs; _} = thm in
+  let info = Info.make ?hook ~scope ~kind ~udecl () in
+  let info = { info with Info.thms = [] } in
+  (* start_lemma has the responsibility to add (name, impargs, typ)
+       to thms, once Info.t is more refined this won't be necessary *)
+  let lemma = start_proof ~name ~impargs ~poly ~info sigma (EConstr.of_constr typ) in
+  map_proof (fun p ->
+      pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) lemma
+
+type mutual_info = (bool * lemma_possible_guards * Constr.t option list option)
+
+let start_mutual_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma ~mutual_info thms snl =
+  let intro_tac { Recthm.args; _ } = Tactics.auto_intros_tac args in
+  let init_tac, compute_guard =
+    let (finite,guard,init_terms) = mutual_info in
     let rec_tac = rec_tac_initializer finite guard thms snl in
     let term_tac =
       match init_terms with
@@ -232,9 +247,7 @@ let start_proof_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
         List.map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl thms
     in
     Tacticals.New.tclTHENS rec_tac term_tac, guard
-  | None ->
-    let () = match thms with [_] -> () | _ -> assert false in
-    intro_tac (List.hd thms), [] in
+  in
   match thms with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
   | { Recthm.name; typ; impargs; _} :: thms ->
@@ -2079,6 +2092,8 @@ module Proof = struct
   let start = start_proof
   let start_dependent = start_dependent_proof
   let start_with_initialization = start_proof_with_initialization
+  type nonrec mutual_info = mutual_info
+  let start_mutual_with_initialization = start_mutual_with_initialization
   let save = save_lemma_proved
   let save_admitted = save_lemma_admitted
   let by = by

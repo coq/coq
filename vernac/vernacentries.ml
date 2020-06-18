@@ -490,6 +490,16 @@ let program_inference_hook env sigma ev =
     user_err Pp.(str "The statement obligations could not be resolved \
                       automatically, write a statement definition first.")
 
+(* Checks for start_lemma_com *)
+let post_check_evd ~udecl ~poly evd =
+  let () =
+    let open UState in
+    if not (udecl.univdecl_extensible_instance && udecl.univdecl_extensible_constraints) then
+      ignore (Evd.check_univ_decl ~poly evd udecl) in
+  if poly then evd
+  else (* We fix the variables to ensure they won't be lowered to Set *)
+    Evd.fix_undefined_variables evd
+
 let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let env0 = Global.env () in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
@@ -505,23 +515,20 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
     let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
     let ids = List.map Context.Rel.Declaration.get_name ctx in
     check_name_freshness scope id;
-    evd, (id.CAst.v, (EConstr.it_mkProd_or_LetIn t' ctx, (ids, imps @ imps'))))
+    evd, (id.CAst.v, EConstr.it_mkProd_or_LetIn t' ctx, ids, imps @ imps'))
       evd thms in
-  let recguard,thms,snl = RecLemmas.look_for_possibly_mutual_statements evd thms in
+  let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
-  let thms = List.map (fun (name, (typ, (args, impargs))) ->
-      { Declare.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
-  let () =
-    let open UState in
-    if not (udecl.univdecl_extensible_instance && udecl.univdecl_extensible_constraints) then
-       ignore (Evd.check_univ_decl ~poly evd udecl)
-  in
-  let evd =
-    if poly then evd
-    else (* We fix the variables to ensure they won't be lowered to Set *)
-      Evd.fix_undefined_variables evd
-  in
-  Declare.Proof.start_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
+  match mut_analysis with
+  | RecLemmas.NonMutual (name, typ, args, impargs) ->
+    let thm = { Declare.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs } in
+    let evd = post_check_evd ~udecl ~poly evd in
+    Declare.Proof.start_with_initialization ?hook ~poly ~scope ~kind evd ~udecl thm
+  | RecLemmas.Mutual { mutual_info; thms ; possible_guards } ->
+    let thms = List.map (fun (name, typ, args, impargs) ->
+        { Declare.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
+    let evd = post_check_evd ~udecl ~poly evd in
+    Declare.Proof.start_mutual_with_initialization ?hook ~poly ~scope ~kind evd ~udecl ~mutual_info thms (Some possible_guards)
 
 let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in function
 | Coercion ->

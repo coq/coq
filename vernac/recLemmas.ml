@@ -16,9 +16,9 @@ module RelDecl = Context.Rel.Declaration
 
 let find_mutually_recursive_statements sigma thms =
     let n = List.length thms in
-    let inds = List.map (fun (id,(t,impls)) ->
+    let inds = List.map (fun (id,t,args,impls) ->
       let (hyps,ccl) = EConstr.decompose_prod_assum sigma t in
-      let x = (id,(t,impls)) in
+      let x = (id,t,args,impls) in
       let whnf_hyp_hds = EConstr.map_rel_context_in_env
         (fun env c -> fst (Reductionops.whd_all_stack env sigma c))
         (Global.env()) hyps in
@@ -89,14 +89,23 @@ let find_mutually_recursive_statements sigma thms =
     in
     (finite,guard,None), ordered_inds
 
-let look_for_possibly_mutual_statements sigma = function
-  | [id,(t,impls)] ->
+type mutual_info =
+  | NonMutual of Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits
+  | Mutual of
+      { mutual_info : bool * int list list * Constr.t option list option
+      ; thms : (Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits) list
+      ; possible_guards : int list
+      }
+
+let look_for_possibly_mutual_statements sigma thms : mutual_info =
+  match thms with
+  | [id,t,args,impls] ->
       (* One non recursively proved theorem *)
-      None,[id,(t,impls)],None
+    NonMutual (id,t,args,impls)
   | _::_ as thms ->
     (* More than one statement and/or an explicit decreasing mark: *)
     (* we look for a common inductive hyp or a common coinductive conclusion *)
     let recguard,ordered_inds = find_mutually_recursive_statements sigma thms in
     let thms = List.map pi2 ordered_inds in
-    Some recguard,thms, Some (List.map (fun (_,_,i) -> succ i) ordered_inds)
+    Mutual { mutual_info = recguard; thms; possible_guards = List.map (fun (_,_,i) -> succ i) ordered_inds }
   | [] -> CErrors.anomaly (Pp.str "Empty list of theorems.")

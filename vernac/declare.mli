@@ -213,7 +213,7 @@ module Proof : sig
     -> Proofview.telescope
     -> t
 
-  (** Pretty much internal, used by the Lemma / Fixpoint vernaculars *)
+  (** Pretty much internal, used by the Lemmavernaculars *)
   val start_with_initialization
     :  ?hook:Hook.t
     -> poly:bool
@@ -221,7 +221,20 @@ module Proof : sig
     -> kind:Decls.logical_kind
     -> udecl:UState.universe_decl
     -> Evd.evar_map
-    -> (bool * lemma_possible_guards * Constr.t option list option) option
+    -> Recthm.t
+    -> t
+
+  type mutual_info = (bool * lemma_possible_guards * Constr.t option list option)
+
+  (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars *)
+  val start_mutual_with_initialization
+    :  ?hook:Hook.t
+    -> poly:bool
+    -> scope:Locality.locality
+    -> kind:Decls.logical_kind
+    -> udecl:UState.universe_decl
+    -> Evd.evar_map
+    -> mutual_info:mutual_info
     -> Recthm.t list
     -> int list option
     -> t

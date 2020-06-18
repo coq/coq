@@ -8,8 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type mutual_info =
+  | NonMutual of Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits
+  | Mutual of
+      { mutual_info : bool * int list list * Constr.t option list option
+      ; thms : (Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits) list
+      ; possible_guards : int list
+      }
+
 val look_for_possibly_mutual_statements
   :  Evd.evar_map
-  -> ('a * (EConstr.t * 'b)) list
-  -> (bool * int list list * 'c option) option *
-     ('a * (EConstr.t * 'b)) list * int list option
+  -> (Names.Id.t * EConstr.t * Names.Name.t list * Impargs.manual_implicits) list
+  -> mutual_info
