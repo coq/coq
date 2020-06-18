@@ -122,15 +122,10 @@ let exec1_remote st (ast,resolver) : Vernacstate.t option =
       | Success (Some st) -> Some st
       | _ -> None
 
-let worker_action = function
-  | DelegationManager.Master ->
-      log @@ "[M] Spawned worker";
-      fun _ -> Lwt.return ()
-  | DelegationManager.Worker ->
-      fun (remote_tasks , initial_state, _state_id) ->
-        let _ = List.fold_left exec1_remote (Some initial_state) remote_tasks in
-        log @@ "[W] Worker goes on holidays"; (* Send back states? *)
-        exit 0
+let worker_action (remote_tasks , initial_state, _state_id) =
+  let _ = List.fold_left exec1_remote (Some initial_state) remote_tasks in
+  log @@ "[W] Worker goes on holidays"; (* Send back states? *)
+  exit 0
 ;;
 
 let build_remote_tasks doc st remote_mapping ids =

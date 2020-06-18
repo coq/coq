@@ -76,7 +76,7 @@ let lwt_remotely_wait (r : 'a remote_mapping) :  'a remote_mapping * ('a Lwt.t *
 type role = Master | Worker
 
 type event =
- | WorkerStart : 'a remote_mapping * 'job * (role -> 'job -> unit Lwt.t) -> event
+ | WorkerStart : 'a remote_mapping * 'job * ('job -> unit Lwt.t) -> event
  | WorkerEnd of (int * Unix.process_status)
 type 'a events = ([> `DelegationManager of event ] as 'a) Lwt.t list
 
@@ -134,8 +134,9 @@ let handle_event = function
       Lwt.return []
   | WorkerStart (mapping,job,action) ->
       fork_worker mapping >>= fun (role,events) ->
-      action role job >>= fun () ->
-      Lwt.return events
+      match role with
+      | Master -> Lwt.return events
+      | Worker -> action job >>= fun () -> Lwt.return events
 
 let worker_available ~job ~action = [
   begin
