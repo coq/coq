@@ -361,7 +361,7 @@
 ########################################################################
 # paramcoq
 ########################################################################
-: "${paramcoq_CI_REF:=aa2f620e75a6fabe6af654a61b3959902df2d69e}"
+: "${paramcoq_CI_REF:=v8.12}"
 : "${paramcoq_CI_GITURL:=https://github.com/coq-community/paramcoq}"
 : "${paramcoq_CI_ARCHIVEURL:=${paramcoq_CI_GITURL}/archive}"
 
