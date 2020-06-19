@@ -62,13 +62,6 @@ struct
     compare s "0" = 0
 end
 
-(* Helper function *)
-let div2_with_rest =
-  let two = Z.of_int 2 in
-  fun n ->
-    let res, rem = Z.div_rem n two in
-    res, Z.equal rem Z.one
-
 type sign = SPlus | SMinus
 
 type 'a exp = EDec of 'a | EBin of 'a
@@ -87,61 +80,12 @@ struct
   let to_string (sign,n) =
     (match sign with SPlus -> "" | SMinus -> "-") ^ UnsignedNat.to_string n
   let classify (_,n) = UnsignedNat.classify n
-  let bigint_of_string (sign,n) =
-    (* nasty code to remove when switching to zarith
-       since zarith's of_string handles hexadecimal *)
-    match UnsignedNat.classify n with
-    | CDec -> Z.of_string (to_string (sign,n))
-    | CHex ->
-       let int_of_char c = match c with
-         | 'a'..'f' -> 10 + int_of_char c - int_of_char 'a'
-         | _ -> int_of_char c - int_of_char '0' in
-       let c16 = Z.of_int 16 in
-       let s = UnsignedNat.to_string n in
-       let n = ref Z.zero in
-       let len = String.length s in
-       for d = 2 to len - 1 do
-         n := Z.(add (mul !n c16) (of_int (int_of_char s.[d])))
-       done;
-       match sign with SPlus -> !n | SMinus -> Z.neg !n
+  let bigint_of_string (sign,n) = Z.of_string (to_string (sign,n))
   let to_bigint n = bigint_of_string n
   let string_of_nonneg_bigint c n =
-    (* nasty code to remove when switching to zarith
-       since zarith's format handles hexadecimal *)
     match c with
-    | CDec -> Z.to_string n
-    | CHex ->
-       let div16 n =
-         let n, r0 = div2_with_rest n in
-         let n, r1 = div2_with_rest n in
-         let n, r2 = div2_with_rest n in
-         let n, r3 = div2_with_rest n in
-         let r = match r3, r2, r1, r0 with
-           | false, false, false, false -> "0"
-           | false, false, false,  true -> "1"
-           | false, false,  true, false -> "2"
-           | false, false,  true,  true -> "3"
-           | false,  true, false, false -> "4"
-           | false,  true, false,  true -> "5"
-           | false,  true,  true, false -> "6"
-           | false,  true,  true,  true -> "7"
-           |  true, false, false, false -> "8"
-           |  true, false, false,  true -> "9"
-           |  true, false,  true, false -> "a"
-           |  true, false,  true,  true -> "b"
-           |  true,  true, false, false -> "c"
-           |  true,  true, false,  true -> "d"
-           |  true,  true,  true, false -> "e"
-           |  true,  true,  true,  true -> "f" in
-         n, r in
-       let n = ref n in
-       let l = ref [] in
-       while Int.equal 1 (Z.sign !n) do
-         let n', r = div16 !n in
-         n := n';
-         l := r :: !l
-       done;
-       "0x" ^ String.concat "" (List.rev !l)
+    | CDec -> Z.format "%d" n
+    | CHex -> Z.format "0x%x" n
   let of_bigint c n =
     let sign, n = if Int.equal (-1) (Z.sign n) then (SMinus, Z.neg n) else (SPlus, n) in
     (sign, string_of_nonneg_bigint c n)
