@@ -93,7 +93,7 @@ type state = {
 
 type progress_hook = state option -> unit Lwt.t
 
-let init vernac_state = {
+let init_master vernac_state = {
   initial = vernac_state;
   of_sentence = SM.empty;
 }
@@ -228,8 +228,8 @@ let observe progress_hook doc id st : (state * 'a DelegationManager.events) Lwt.
 (* If we don't work we have re-create a minimal state that is good enough to
    execute the sentences and send feedback. It is easier/faster than sending a
    stripped state *)
-let new_process_worker initial_vs remote_mapping link =
-  let st = init initial_vs in
+let init_worker initial_vs remote_mapping link =
+  let st = init_master initial_vs in
   let ids = DelegationManager.ids_of_mapping remote_mapping in
   let remote_mapping = DelegationManager.empty_remote_mapping ~progress_hook:Lwt.return in
   let st, remote_mapping = List.fold_left add_remote_promise (st, remote_mapping) ids in

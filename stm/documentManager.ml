@@ -63,7 +63,7 @@ let diagnostics st =
   List.map mk_diag @@ parse_errors @ exec_errors
 
 let init vernac_state document =
-  let execution_state = ExecutionManager.init vernac_state in
+  let execution_state = ExecutionManager.init_master vernac_state in
   { document; execution_state; executed_loc = None }
 
 let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data * 'a DelegationManager.events) Lwt.t =
