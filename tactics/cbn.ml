@@ -555,11 +555,11 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       ((EConstr.of_kind c0, stack),cst_l)
     in
     match c0 with
-    | Rel n when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
+    | Rel (n, _) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
       (match lookup_rel n env with
       | LocalDef (_,body,_) -> whrec Cst_stack.empty (lift n body, stack)
       | _ -> fold ())
-    | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
+    | Var (id, _) when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
       (match lookup_named id env with
       | LocalDef (_,body,_) ->
         whrec (if refold then Cst_stack.add_cst (mkVar id) cst_l else cst_l) (body, stack)
@@ -569,7 +569,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       (match safe_meta_value sigma ev with
       | Some body -> whrec cst_l (body, stack)
       | None -> fold ())
-    | Const (c,u as const) ->
+    | Const (c,u as const, _) ->
       Reductionops.reduction_effect_hook env sigma c
          (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,stack))));
       if CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) then
@@ -690,7 +690,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
           if napp > 0 then
             let (x', l'),_ = whrec' (Array.last cl, Stack.empty) in
             match EConstr.kind sigma x', l' with
-            | Rel 1, [] ->
+            | Rel (1, _), [] ->
               let lc = Array.sub cl 0 (napp-1) in
               let u = if Int.equal napp 1 then f else mkApp (f,lc) in
               if noccurn sigma 1 u then (pop u,Stack.empty),Cst_stack.empty else fold ()
