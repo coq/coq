@@ -17,6 +17,7 @@ let main_worker port ~opts:_ state =
   let open Lwt.Infix in
   let open Lwt_unix in
   let main () =
+  (* TODO: encalpsulate this into a function in DelegationManager *)
     let chan = socket PF_INET SOCK_STREAM 0 in
     let address = ADDR_INET (Unix.inet_addr_loopback,port) in
     log @@ "[PW] connecting to " ^ string_of_int port;
