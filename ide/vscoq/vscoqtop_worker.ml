@@ -42,7 +42,7 @@ let vscoqtop_specific_usage = Usage.{
 let islave_parse ~opts extra_args =
   match extra_args with
   [ "-vscoqtop_master"; port ] -> int_of_string port, []
-  | _ -> assert false
+  | _ -> assert false (* TODO: error *)
 
 let islave_default_opts =
   Coqargs.default
