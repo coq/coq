@@ -42,7 +42,5 @@ val get_proofview : state -> sentence_id -> Proof.data option
 
 type job
 val worker_main : state -> job -> unit Lwt.t
-
-type execution_status
-val init_worker : Vernacstate.t -> execution_status DelegationManager.marshalable_remote_mapping -> DelegationManager.link -> state
+val init_worker : Vernacstate.t -> DelegationManager.link -> (state * job) Lwt.t
 val init_master : Vernacstate.t -> state

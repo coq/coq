@@ -26,7 +26,16 @@ type 'a events = ([> `DelegationManager of event ] as 'a) Lwt.t list
 val handle_event : event -> 'a events Lwt.t
 
 (* When a worker is available [job] is called and when it returns the
-   event becomes ready; in turn the event triggers the action *)
+   event becomes ready; in turn the event triggers the action.
+   If we can fork, job is passed to fork_action. Things are automatically
+   wired up so that all the promises in the mapping are remotely fullfilled.
+
+   Otherwise we create a new process passing the -vscoqtop_master <port>
+   flag. The process must connect back to localhost:port, it then receives
+   the marshalable_remote_mapping corresponding to the job and the job.
+   This process has then to recreate a remote_mapping and call
+   new_process_worker to set up remote promise fullfillment. See
+   ExecutionManager.init_worker *)
 val worker_available :
   job:(unit -> ('a remote_mapping * 'job) Lwt.t) ->
   fork_action:('job  -> unit Lwt.t) ->
