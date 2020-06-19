@@ -76,7 +76,7 @@ let lwt_remotely_wait (r : 'a remote_mapping) :  'a remote_mapping * ('a Lwt.t *
 type role = Master | Worker
 
 type event =
- | WorkerStart : 'a remote_mapping * 'job * ('job -> unit Lwt.t) -> event
+ | WorkerStart : 'a remote_mapping * 'state * 'job * ('state -> 'job -> unit Lwt.t) * string -> event
  | WorkerEnd of (int * Unix.process_status)
 type 'a events = ([> `DelegationManager of event ] as 'a) Lwt.t list
 
@@ -90,6 +90,13 @@ let wait_worker pid = [
   decr pool_occupants; Lwt_condition.signal pool ();
   log @@ "[T] vacation request ready";
   Lwt.return @@ `DelegationManager (WorkerEnd x)
+]
+
+let wait_process proc = [
+  proc >>= fun x ->
+  decr pool_occupants; Lwt_condition.signal pool ();
+  log @@ "[T] vacation request ready";
+  Lwt.return @@ `DelegationManager (WorkerEnd (0,x))
 ]
 
 let fork_worker : 'a remote_mapping -> (role * 'b events) Lwt.t = fun remote_mapping ->
@@ -128,19 +135,58 @@ let fork_worker : 'a remote_mapping -> (role * 'b events) Lwt.t = fun remote_map
           Lwt.return (Master, wait_worker pid)
 ;;
 
+let create_process_worker procname state remote_mapping job =
+  let open Lwt_unix in
+  let chan = socket PF_INET SOCK_STREAM 0 in
+  bind chan (ADDR_INET (Unix.inet_addr_loopback,0)) >>= fun () ->
+  listen chan 1;
+  let port = match getsockname chan with
+    | ADDR_INET(_,port) -> port
+    | _ -> assert false in
+  let proc =
+    (* BIG SUCK: if procname does not exists, this does nothing and
+       Lwt.bind waits forever ... *)
+    Lwt_process.exec
+      (procname,[|procname;"-vscoqtop_master";string_of_int port|]) in
+  log @@ "[M] Created worker pid waiting on port " ^ string_of_int port;
+  let timeout = sleep 2. >>= fun () -> Lwt.return None in
+  let accept = accept chan >>= fun x -> Lwt.return @@ Some x in
+  Lwt.pick [timeout; accept] >>= function
+  | None -> log @@ "[M] Created worker does not connect back"; Lwt.return [] (* TODO ERR *)
+  | Some (worker, _) ->
+      close chan >>= fun () ->
+      let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input worker in
+      let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output worker in
+      let link = { write_to; read_from } in
+      new_manager remote_mapping link;
+      log @@ "[M] sending mapping";
+      Lwt_io.write_value write_to remote_mapping >>= fun () ->
+      log @@ "[M] sending state";
+      Lwt_io.write_value write_to state >>= fun () ->
+      log @@ "[M] sending job";
+      Lwt_io.write_value write_to job >>= fun () ->
+      Lwt.return (wait_process proc)
+
+let new_process_worker remote_mapping link =
+  new_worker remote_mapping link
+
 let handle_event = function
   | WorkerEnd (pid, _status) ->
       log @@ Printf.sprintf "[M] Worker %d went on holidays" pid;
       Lwt.return []
-  | WorkerStart (mapping,job,action) ->
-      fork_worker mapping >>= fun (role,events) ->
-      match role with
-      | Master -> Lwt.return events
-      | Worker ->
-         action job >>= fun () ->
-         log @@ "[W] Worker goes on holidays"; exit 0
+  | WorkerStart (mapping,state,job,action,procname) ->
+      if Sys.os_type = "Unix" && false then
+        fork_worker mapping >>= fun (role,events) ->
+        match role with
+        | Master -> Lwt.return events
+        | Worker ->
+          action state job >>= fun () ->
+          log @@ "[W] Worker goes on holidays"; exit 0
+      else
+        create_process_worker procname state mapping job >>= fun events ->
+        Lwt.return events
 
-let worker_available ~job ~action = [
+let worker_available state ~job ~fork_action ~process_action = [
   begin
     if !pool_occupants >= pool_size
     then Lwt_condition.wait pool
@@ -148,6 +194,6 @@ let worker_available ~job ~action = [
   end
   >>= fun () ->
   job () >>= fun (mapping, job) ->
-  Lwt.return @@ `DelegationManager (WorkerStart (mapping,job,action))
+  Lwt.return @@ `DelegationManager (WorkerStart (mapping,state,job,fork_action,process_action))
 ]
 ;;

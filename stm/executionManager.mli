@@ -40,3 +40,8 @@ val is_remotely_executed : state -> sentence_id -> bool
 
 val get_parsing_state_after : state -> sentence_id -> Vernacstate.Parser.t option
 val get_proofview : state -> sentence_id -> Proof.data option
+
+type job
+val worker_main : state -> job -> unit Lwt.t
+
+val new_process_worker : state -> 'a DelegationManager.remote_mapping -> DelegationManager.link -> state

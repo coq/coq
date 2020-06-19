@@ -13,6 +13,14 @@
  (libraries coq.toplevel yojson lwt.unix)
  (link_flags -linkall))
 
+(executable
+ (name vscoqtop_worker)
+ (public_name vscoqtop_worker.opt)
+ (package vscoq-server)
+ (modules vscoqtop_worker)
+ (libraries coq.toplevel lwt.unix)
+ (link_flags -linkall))
+
 ; (install
 ;  (section bin)
 ;  (package vscoq-server)
