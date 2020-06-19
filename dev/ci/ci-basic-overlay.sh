@@ -32,10 +32,8 @@
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
-# This is the last commit on master and the only one that is
-# compatible with 8.12.  There was no branch nor any tag compatible
-# with 8.11 either.
-: "${unicoq_CI_REF:=68ed13294ea8860a8c39950f7ca2ff0aa7211b9f}"
+# Tagged on 2020-06-13 and compatible with Coq 8.12.
+: "${unicoq_CI_REF:=v1.4-8.12}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
@@ -111,7 +109,7 @@
 ########################################################################
 # Coquelicot
 ########################################################################
-# The latest release (from 3 months ago) is compatible with Coq 8.12.
+# Released on 2020-02-24 and compatible with Coq 8.12.
 : "${coquelicot_CI_REF:=coquelicot-3.1.0}"
 : "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/coquelicot/coquelicot}"
 : "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
@@ -187,7 +185,7 @@
 : "${vst_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${vst_CI_ARCHIVEURL:=${vst_CI_GITURL}/archive}"
 
-# This is a paltform friendly variant using paltform supplied compcert and Flocq
+# This is a platform friendly variant using platform supplied compcert and Flocq
 # This is used by the Windows Installer (and the Coq platform)
 # This includes one extra commit relative to the above:
 # 45239bb5 MSoegtrop Changed build and CI system to use opam / coq-platform supplied CompCert
@@ -277,11 +275,8 @@
 ########################################################################
 # Equations
 ########################################################################
-# No Coq 8.12-specific tag or branch.  This is the latest commit on
-# master and the only one compatible with Coq 8.12.  Compared to the
-# latest release (1.2.1-8.11), it virtually only contains
-# compatibility fixes.  Check whether there is a tag for Coq 8.12.0.
-: "${equations_CI_REF:=74f048116242d7fb13cbc554522f02fe270720d2}"
+# Released on 2020-06-19 and compatible with Coq 8.12
+: "${equations_CI_REF:=v1.2.2-8.12}"
 : "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
 
@@ -294,7 +289,7 @@
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
-# This was just released and is compatible with Coq 8.12.
+# Released on 2020-06-03 and compatible with Coq 8.12.
 : "${elpi_hb_CI_REF:=v0.9.1}"
 : "${elpi_hb_CI_GITURL:=https://github.com/math-comp/hierarchy-builder}"
 : "${elpi_hb_CI_ARCHIVEURL:=${elpi_hb_CI_GITURL}/archive}"
@@ -419,7 +414,7 @@
 ########################################################################
 # metacoq
 ########################################################################
-: "${metacoq_CI_REF:=4e6d6df053b772e627dab8dd00627bd37830787a}"
+: "${metacoq_CI_REF:=coq-8.12}"
 : "${metacoq_CI_GITURL:=https://github.com/MetaCoq/metacoq}"
 : "${metacoq_CI_ARCHIVEURL:=${metacoq_CI_GITURL}/archive}"
 
