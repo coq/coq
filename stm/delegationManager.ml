@@ -136,7 +136,9 @@ let handle_event = function
       fork_worker mapping >>= fun (role,events) ->
       match role with
       | Master -> Lwt.return events
-      | Worker -> action job >>= fun () -> Lwt.return events
+      | Worker ->
+         action job >>= fun () ->
+         log @@ "[W] Worker goes on holidays"; exit 0
 
 let worker_available ~job ~action = [
   begin
