@@ -16,7 +16,8 @@ val empty_remote_mapping :
   progress_hook:(unit -> unit Lwt.t) -> 'a remote_mapping
 
 (* Like Lwt.wait() but remotely resolvable *)
-val lwt_remotely_wait : 'a remote_mapping -> 'a remote_mapping * ('a Lwt.t * 'a Lwt.u)
+type sentence_id = Stateid.t
+val lwt_remotely_wait : 'a remote_mapping -> sentence_id -> 'a remote_mapping * ('a Lwt.t * 'a Lwt.u)
 
 (* Event for the main loop *)
 type event
@@ -39,5 +40,8 @@ type link = {
   read_from:  Lwt_io.input_channel;
 }
 
-val new_process_worker : 'a remote_mapping -> link -> unit
-
+type 'a marshalable_remote_mapping
+val marshalable_remote_mapping : 'a remote_mapping -> 'a marshalable_remote_mapping
+val new_process_worker : 'a marshalable_remote_mapping -> link -> unit
+val lwt_remotely_wait_m : 'a marshalable_remote_mapping -> sentence_id -> 'a marshalable_remote_mapping * ('a Lwt.t * 'a Lwt.u)
+val ids_of_mapping_m : 'a marshalable_remote_mapping -> sentence_id list

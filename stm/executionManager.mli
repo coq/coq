@@ -44,4 +44,5 @@ val get_proofview : state -> sentence_id -> Proof.data option
 type job
 val worker_main : state -> job -> unit Lwt.t
 
-val new_process_worker : state -> 'a DelegationManager.remote_mapping -> DelegationManager.link -> state
+type execution_status
+val new_process_worker : state -> execution_status DelegationManager.marshalable_remote_mapping -> DelegationManager.link -> state
