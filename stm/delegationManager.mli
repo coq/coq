@@ -28,9 +28,8 @@ val handle_event : event -> 'a events Lwt.t
 (* When a worker is available [job] is called and when it returns the
    event becomes ready; in turn the event triggers the action *)
 val worker_available :
-  'state ->
   job:(unit -> ('a remote_mapping * 'job) Lwt.t) ->
-  fork_action:('state -> 'job  -> unit Lwt.t) ->
+  fork_action:('job  -> unit Lwt.t) ->
   process_action:string ->
   'c events
 
@@ -42,6 +41,5 @@ type link = {
 
 type 'a marshalable_remote_mapping
 val marshalable_remote_mapping : 'a remote_mapping -> 'a marshalable_remote_mapping
-val new_process_worker : 'a marshalable_remote_mapping -> link -> unit
-val lwt_remotely_wait_m : 'a marshalable_remote_mapping -> sentence_id -> 'a marshalable_remote_mapping * ('a Lwt.t * 'a Lwt.u)
-val ids_of_mapping_m : 'a marshalable_remote_mapping -> sentence_id list
+val new_process_worker : 'a remote_mapping -> link -> unit
+val ids_of_mapping : 'a marshalable_remote_mapping -> sentence_id list

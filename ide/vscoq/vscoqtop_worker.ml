@@ -25,7 +25,6 @@ let main_worker port ~opts:_ state =
     let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output chan in
     let link = { DelegationManager.read_from; write_to } in
     Lwt_io.read_value read_from >>= fun mapping ->
-    Lwt_io.read_value read_from >>= fun _state ->
     Lwt_io.read_value read_from >>= fun job ->
     let state = ExecutionManager.new_process_worker (ExecutionManager.init (Vernacstate.freeze_interp_state ~marshallable:false)) mapping link in
     ExecutionManager.worker_main state job in
