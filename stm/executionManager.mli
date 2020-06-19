@@ -45,4 +45,4 @@ type job
 val worker_main : state -> job -> unit Lwt.t
 
 type execution_status
-val new_process_worker : state -> execution_status DelegationManager.marshalable_remote_mapping -> DelegationManager.link -> state
+val new_process_worker : Vernacstate.t -> execution_status DelegationManager.marshalable_remote_mapping -> DelegationManager.link -> state

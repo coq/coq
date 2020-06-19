@@ -119,7 +119,7 @@ module Jobs = struct
 end
 module Queue = MakeQueue(Jobs)
 
-let mk_remote (st, remote_mapping) id =
+let add_remote_promise (st, remote_mapping) id =
   let remote_mapping, pr = DelegationManager.lwt_remotely_wait remote_mapping id in
   ({ st with of_sentence = SM.add id pr st.of_sentence }, remote_mapping)
 
@@ -129,7 +129,7 @@ let remotize doc (st,remote_mapping) id =
   | Some sentence ->
     begin match sentence.ast with
     | ValidAst (ast,_) ->
-      mk_remote (st, remote_mapping) id, PExec(id,ast)
+      add_remote_promise (st, remote_mapping) id, PExec(id,ast)
     | ParseError _ -> (st, remote_mapping), PSkip id
     end
 
@@ -225,12 +225,14 @@ let observe progress_hook doc id st : (state * 'a DelegationManager.events) Lwt.
   Lwt_list.fold_left_s execute_w_progress (vs,[],false) tasks >>= fun (_,events,_) ->
   Lwt.return (st,events)
 
-(* Like the OpaqueProof part of prepare_task, but we don't need the tasks.
-   In short: we fill st with entries for the sentences in the mapping *)
-let new_process_worker st remote_mapping link =
+(* If we don't work we have re-create a minimal state that is good enough to
+   execute the sentences and send feedback. It is easier/faster than sending a
+   stripped state *)
+let new_process_worker initial_vs remote_mapping link =
+  let st = init initial_vs in
   let ids = DelegationManager.ids_of_mapping remote_mapping in
   let remote_mapping = DelegationManager.empty_remote_mapping ~progress_hook:Lwt.return in
-  let st, remote_mapping = List.fold_left mk_remote (st,remote_mapping) ids in
+  let st, remote_mapping = List.fold_left add_remote_promise (st, remote_mapping) ids in
   DelegationManager.new_process_worker remote_mapping link;
   st
 
