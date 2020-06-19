@@ -322,6 +322,9 @@ val lookup_named_val : variable -> named_context_val -> named_declaration
 val map_rel_context_in_env :
   (env -> constr -> constr) -> env -> rel_context -> rel_context
 
+val match_named_context_val :
+  named_context_val -> (named_declaration * lazy_val * named_context_val) option
+
 (* XXX Missing Sigma proxy *)
 val fresh_global :
   ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->

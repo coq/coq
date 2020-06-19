@@ -287,7 +287,7 @@ let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
   EConstr.of_constr c
 
 type ext_named_context =
-  csubst * Id.Set.t * EConstr.named_context
+  csubst * Id.Set.t * named_context_val
 
 let push_var id { csubst_len = n; csubst_var = v; csubst_rel = s; csubst_rev = r } =
   let s = Int.Map.add n (Constr.mkVar id) s in
@@ -325,22 +325,22 @@ type naming_mode =
 
 let push_rel_decl_to_named_context
   ?(hypnaming=KeepUserNameAndRenameExistingButSectionNames)
-  sigma decl (subst, avoid, nc) =
+  sigma decl ((subst, avoid, nc) : ext_named_context) =
   let open EConstr in
   let open Vars in
   let map_decl f d =
     NamedDecl.map_constr f d
   in
-  let rec replace_var_named_declaration id0 id = function
-  | [] -> []
-  | decl :: nc ->
+  let rec replace_var_named_declaration id0 id nc = match match_named_context_val nc with
+  | None -> empty_named_context_val
+  | Some (decl, _, nc) ->
     if Id.equal id0 (NamedDecl.get_id decl) then
       (* Stop here, the variable cannot occur before its definition *)
-      (NamedDecl.set_id id decl) :: nc
+      push_named_context_val (NamedDecl.set_id id decl) nc
     else
       let nc = replace_var_named_declaration id0 id nc in
       let vsubst = [id0 , mkVar id] in
-      map_decl (fun c -> replace_vars vsubst c) decl :: nc
+      push_named_context_val (map_decl (fun c -> replace_vars vsubst c) decl) nc
   in
   let extract_if_neq id = function
     | Anonymous -> None
@@ -372,7 +372,7 @@ let push_rel_decl_to_named_context
       let subst = update_var id0 id subst in
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (csubst_subst subst) in
       let nc = replace_var_named_declaration id0 id nc in
-      (push_var id0 subst, Id.Set.add id avoid, d :: nc)
+      (push_var id0 subst, Id.Set.add id avoid, push_named_context_val d nc)
   | Some id0 when hypnaming = FailIfConflict ->
        user_err Pp.(Id.print id0 ++ str " is already used.")
   | _ ->
@@ -381,7 +381,7 @@ let push_rel_decl_to_named_context
           the new binder has name [id]. Which amounts to the same
           behaviour than when [id=id0]. *)
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst subst) in
-      (push_var id subst, Id.Set.add id avoid, d :: nc)
+      (push_var id subst, Id.Set.add id avoid, push_named_context_val d nc)
 
 let push_rel_context_to_named_context ?hypnaming env sigma typ =
   (* compute the instances relative to the named context and rel_context *)
@@ -399,8 +399,8 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
     (* We do keep the instances corresponding to local definition (see above) *)
     let (subst, _, env) =
       Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ?hypnaming sigma d acc)
-        (rel_context env) ~init:(empty_csubst, avoid, named_context env) in
-    (val_of_named_context env, csubst_subst subst typ, inst_rels@inst_vars, subst)
+        (rel_context env) ~init:(empty_csubst, avoid, named_context_val env) in
+    (env, csubst_subst subst typ, inst_rels@inst_vars, subst)
 
 (*------------------------------------*
  * Entry points to define new evars   *
