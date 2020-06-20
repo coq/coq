@@ -684,7 +684,6 @@ module New = struct
       | None   -> elimclause'
       | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
     in
-    let clenv' = clenv_unique_resolver ~flags elimclause' gl in
     let after_tac i =
       let ba = { branchsign = branchsigns.(i);
                  branchnames = brnames.(i);
@@ -696,7 +695,7 @@ module New = struct
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
     Proofview.tclTHEN
-      (Clenvtac.clenv_refine clenv')
+      (Clenvtac.res_pf ~flags elimclause')
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
     end) end
 

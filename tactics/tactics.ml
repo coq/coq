@@ -4371,8 +4371,7 @@ let induction_tac with_evars params indvars elim =
   (* elimclause' is built from elimclause by instantiating all args and params. *)
   let elimclause' = recolle_clenv i params indvars elimclause gl in
   (* one last resolution (useless?) *)
-  let resolved = clenv_unique_resolver ~flags:(elim_flags ()) elimclause' gl in
-  Clenvtac.clenv_refine ~with_evars resolved
+  Clenvtac.res_pf ~with_evars ~flags:(elim_flags ()) elimclause'
   end
 
 (* Apply induction "in place" taking into account dependent

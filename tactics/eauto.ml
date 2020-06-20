@@ -68,8 +68,7 @@ open Auto
 let unify_e_resolve flags h =
   Proofview.Goal.enter begin fun gl ->
       let clenv', c = connect_hint_clenv h gl in
-      let clenv' = clenv_unique_resolver ~flags clenv' gl in
-      Clenvtac.clenv_refine ~with_evars:true ~with_classes:true clenv'
+      Clenvtac.res_pf ~with_evars:true ~with_classes:true ~flags clenv'
     end
 
 let hintmap_of sigma secvars concl =
