@@ -140,9 +140,7 @@ let ifOnHyp pred tac1 tac2 id gl =
 
 type branch_args = {
   ity        : pinductive;   (* the type we were eliminating on *)
-  largs      : constr list; (* its arguments *)
   branchnum  : int;         (* the branch number *)
-  pred       : constr;      (* the predicate we used *)
   nassums    : int;         (* number of assumptions/letin to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
                                true=assumption, false=let-in *)
@@ -688,14 +686,11 @@ module New = struct
     in
     let clenv' = clenv_unique_resolver ~flags elimclause' gl in
     let after_tac i =
-      let (hd,largs) = decompose_app clenv'.evd clenv'.templtyp.Evd.rebus in
       let ba = { branchsign = branchsigns.(i);
                  branchnames = brnames.(i);
                  nassums = List.length branchsigns.(i);
                  branchnum = i+1;
-                 ity = ind;
-                 largs = List.map (clenv_nf_meta clenv') largs;
-                 pred = clenv_nf_meta clenv' hd }
+                 ity = ind; }
       in
       tac ba
     in

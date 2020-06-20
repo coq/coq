@@ -89,9 +89,7 @@ val onClauseLR : (Id.t option -> tactic) -> clause -> tactic
 
 type branch_args = private {
   ity        : pinductive;  (** the type we were eliminating on *)
-  largs      : constr list; (** its arguments *)
   branchnum  : int;         (** the branch number *)
-  pred       : constr;      (** the predicate we used *)
   nassums    : int;         (** number of assumptions/letin to be introduced *)
   branchsign : bool list;   (** the signature of the branch.
                                 true=assumption, false=let-in *)
