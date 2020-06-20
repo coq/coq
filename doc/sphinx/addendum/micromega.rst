@@ -278,7 +278,8 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
    This tactic is internally called by :tacn:`lia` to support additional types e.g., :g:`nat`, :g:`positive` and :g:`N`.
    By requiring the module ``ZifyBool``, the boolean type :g:`bool` and some comparison operators are also supported.
-   :tacn:`zify` can also be extended by rebinding the tactic `Zify.zify_post_hook` that is run immediately after :tacn:`zify`.
+   :tacn:`zify` can also be extended by rebinding the tactics `Zify.zify_pre_hook` and `Zify.zify_post_hook` that are
+   respectively run in the first and the last steps of :tacn:`zify`.
 
    + To support :g:`Z.div` and :g:`Z.modulo`: ``Ltac Zify.zify_post_hook ::= Z.div_mod_to_equations``.
    + To support :g:`Z.quot` and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.quot_rem_to_equations``.
