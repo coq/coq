@@ -41,6 +41,7 @@ val get_parsing_state_after : state -> sentence_id -> Vernacstate.Parser.t optio
 val get_proofview : state -> sentence_id -> Proof.data option
 
 type job
+type execution_status
 val worker_main : state -> job -> unit Lwt.t
-val init_worker : Vernacstate.t -> DelegationManager.link -> (state * job) Lwt.t
+val init_worker : Vernacstate.t -> sentence_id list -> DelegationManager.link -> (execution_status DelegationManager.remote_mapping * state) Lwt.t
 val init_master : Vernacstate.t -> state

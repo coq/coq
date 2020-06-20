@@ -23,8 +23,6 @@ type ('a,'b) corresponding = { on_worker : 'b; on_master : 'a }
 
 module M = Map.Make(Stateid)
 
-type 'a marshalable_remote_mapping = sentence_id list
-
 type 'a remote_mapping = {
   it : ('a Lwt.u, 'a Lwt.t) corresponding M.t;
   progress_hook : unit -> unit Lwt.t
@@ -202,3 +200,25 @@ let worker_available ~job ~fork_action ~process_action = [
   Lwt.return @@ `DelegationManager (WorkerStart (mapping,job,fork_action,process_action))
 ]
 ;;
+
+type options = int
+
+let setup_plumbing port =
+  let open Lwt_unix in
+  (* TODO: encalpsulate this into a function in DelegationManager *)
+  let chan = socket PF_INET SOCK_STREAM 0 in
+  let address = ADDR_INET (Unix.inet_addr_loopback,port) in
+  log @@ "[PW] connecting to " ^ string_of_int port;
+  connect chan address >>= fun () ->
+  let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input chan in
+  let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output chan in
+  let link = { read_from; write_to } in
+  Lwt_io.read_value link.read_from >>= fun (ids : sentence_id list) ->
+  Lwt_io.read_value link.read_from >>= fun (job : 'job) ->
+  Lwt.return (ids, link, job)
+
+type ('a,'b) coqtop_extra_args_fn = opts:'b -> string list -> 'a * string list
+let parse_options ~opts extra_args =
+  match extra_args with
+  [ "-vscoqtop_master"; port ] -> int_of_string port, []
+  | _ -> assert false (* TODO: error *)

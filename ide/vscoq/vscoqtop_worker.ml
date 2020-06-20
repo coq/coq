@@ -13,19 +13,14 @@
 
 let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
-let main_worker port ~opts:_ state =
+let main_worker options ~opts:_ state =
   let open Lwt.Infix in
   let open Lwt_unix in
+  let initial_vernac_state = Vernacstate.freeze_interp_state ~marshallable:false in
   let main () =
-  (* TODO: encalpsulate this into a function in DelegationManager *)
-    let chan = socket PF_INET SOCK_STREAM 0 in
-    let address = ADDR_INET (Unix.inet_addr_loopback,port) in
-    log @@ "[PW] connecting to " ^ string_of_int port;
-    connect chan address >>= fun () ->
-    let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input chan in
-    let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output chan in
-    let link = { DelegationManager.read_from; write_to } in
-    ExecutionManager.init_worker (Vernacstate.freeze_interp_state ~marshallable:false) link >>= fun (state,job) ->
+    DelegationManager.setup_plumbing options >>= fun (mapping, link, job) ->
+    ExecutionManager.init_worker initial_vernac_state mapping link >>= fun (remote_mapping,state) ->
+    DelegationManager.new_process_worker remote_mapping link;
     ExecutionManager.worker_main state job in
   try Lwt_main.run @@ main ()
   with exn ->
@@ -40,11 +35,6 @@ let vscoqtop_specific_usage = Usage.{
   extra_options = "";
 }
 
-let islave_parse ~opts extra_args =
-  match extra_args with
-  [ "-vscoqtop_master"; port ] -> int_of_string port, []
-  | _ -> assert false (* TODO: error *)
-
 let islave_default_opts =
   Coqargs.default
 
@@ -53,7 +43,7 @@ let islave_init run_mode ~opts =
 
 let main () =
   let custom = Coqtop.{
-      parse_extra = islave_parse;
+      parse_extra = DelegationManager.parse_options;
       help = vscoqtop_specific_usage;
       init = islave_init;
       run = main_worker;

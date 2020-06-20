@@ -30,12 +30,11 @@ val handle_event : event -> 'a events Lwt.t
    If we can fork, job is passed to fork_action. Things are automatically
    wired up so that all the promises in the mapping are remotely fullfilled.
 
-   Otherwise we create a new process passing the -vscoqtop_master <port>
-   flag. The process must connect back to localhost:port, it then receives
-   the marshalable_remote_mapping corresponding to the job and the job.
-   This process has then to recreate a remote_mapping and call
-   new_process_worker to set up remote promise fullfillment. See
-   ExecutionManager.init_worker *)
+   Otherwise we create a new process. That process must be a Coq toplevel (see
+   Coqtop module) parsing extra argument using [parse_options] then sets up
+   a link with master via [setup_plumbing] and finally calls
+   [new_process_workers] to setup remote promise fullfillment.
+   See ExecutionManager.init_worker *)
 val worker_available :
   job:(unit -> ('a remote_mapping * 'job) Lwt.t) ->
   fork_action:('job  -> unit Lwt.t) ->
@@ -43,12 +42,13 @@ val worker_available :
   'c events
 
 (* for worker toplevels *)
-type link = {
-  write_to :  Lwt_io.output_channel;
-  read_from:  Lwt_io.input_channel;
-}
+type link
 
-type 'a marshalable_remote_mapping
-val marshalable_remote_mapping : 'a remote_mapping -> 'a marshalable_remote_mapping
+(* Coqtop module not in scope *)
+type ('a,'b) coqtop_extra_args_fn = opts:'b -> string list -> 'a * string list
+
+type options
+val parse_options : (options,'b) coqtop_extra_args_fn
+(* the sentence ids of the remote_mapping being delegated *)
+val setup_plumbing : options -> (sentence_id list * link * 'job) Lwt.t
 val new_process_worker : 'a remote_mapping -> link -> unit
-val ids_of_mapping : 'a marshalable_remote_mapping -> sentence_id list

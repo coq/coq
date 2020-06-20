@@ -228,15 +228,11 @@ let observe progress_hook doc id st : (state * 'a DelegationManager.events) Lwt.
 (* If we don't work we have re-create a minimal state that is good enough to
    execute the sentences and send feedback. It is easier/faster than sending a
    stripped state *)
-let init_worker initial_vs link =
-  Lwt_io.read_value link.DelegationManager.read_from >>= fun (remote_mapping : execution_status DelegationManager.marshalable_remote_mapping) ->
-  Lwt_io.read_value link.DelegationManager.read_from >>= fun (job : job) ->
+let init_worker initial_vs ids link =
   let st = init_master initial_vs in
-  let ids = DelegationManager.ids_of_mapping remote_mapping in
   let remote_mapping = DelegationManager.empty_remote_mapping ~progress_hook:Lwt.return in
   let st, remote_mapping = List.fold_left add_remote_promise (st, remote_mapping) ids in
-  DelegationManager.new_process_worker remote_mapping link;
-  Lwt.return (st, job)
+  Lwt.return (remote_mapping,st)
 
 let get_fulfilled_opt x =
   match Lwt.state x with
