@@ -1,3 +1,5 @@
+.. index:: coqdoc
+
 .. _coqdoc:
 
 Documenting |Coq| files with coqdoc
