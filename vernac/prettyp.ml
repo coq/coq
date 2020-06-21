@@ -549,8 +549,8 @@ let print_located_qualid ref = print_located_qualid "object" LocAny ref
 (****  Gallina layer                  *****)
 
 let gallina_print_typed_value_in_env env sigma (trm,typ) =
-  (pr_leconstr_env ~inctx:true env sigma trm ++ fnl () ++
-     str "     : " ++ pr_letype_env env sigma typ)
+  hv 0 (pr_leconstr_env ~inctx:true env sigma trm ++ spc () ++
+          str ": " ++ pr_letype_env env sigma typ)
 
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside pr_lconstr, so that
@@ -604,7 +604,8 @@ let print_body env evd = function
   | None -> (str"<no body>")
 
 let print_typed_body env evd (val_0,typ) =
-  (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd typ)
+  hv 0 (print_body env evd val_0 ++ spc () ++
+          str ": " ++ pr_ltype_env env evd typ)
 
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
@@ -731,7 +732,7 @@ let gallina_print_context env sigma with_values =
 
 let gallina_print_eval red_fun env sigma _ {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env sigma trm in
-  (str "     = " ++ gallina_print_typed_value_in_env env sigma (ntrm,typ))
+  (str "= " ++ gallina_print_typed_value_in_env env sigma (ntrm,typ))
 
 (******************************************)
 (**** Printing abstraction layer          *)
