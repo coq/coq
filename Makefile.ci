@@ -29,6 +29,7 @@ CI_TARGETS= \
     ci-equations \
     ci-fcsl_pcm \
     ci-fiat_crypto \
+    ci-fiat_crypto_legacy \
     ci-fiat_crypto_ocaml \
     ci-fiat_parsers \
     ci-flocq \

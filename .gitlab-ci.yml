@@ -742,6 +742,9 @@ library:ci-fiat_crypto:
   - library:ci-coqprime
   - plugin:ci-rewriter
 
+library:ci-fiat_crypto_legacy:
+  extends: .ci-template-flambda
+
 # We cannot use flambda due to
 # https://github.com/ocaml/ocaml/issues/7842, see
 # https://github.com/coq/coq/pull/11916#issuecomment-609977375
