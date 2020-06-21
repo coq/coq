@@ -20,7 +20,7 @@ genTest() {
         echo >&2 "genTest expects 10 arguments"
     fi
     TACTICS=(":" "<:" "<<:")
-    OPS=("==" "<" "<=" "?=")
+    OPS=("=?" "<?" "<=?" "?=")
     x="$1"
     y="$2"
     OPS1=("$3" "$4" "$5" "$6")  # for x y

@@ -40,7 +40,7 @@ in the |Coq| root directory; this includes the modules
 ``Datatypes``,
 ``Specif``,
 ``Peano``,
-``Wf`` and 
+``Wf`` and
 ``Tactics``.
 Module ``Logic_Type`` also makes it in the initial state.
 
@@ -175,7 +175,7 @@ Quantifiers
 Then we find first-order quantifiers:
 
 .. coqtop:: in
-  
+
    Definition all (A:Set) (P:A -> Prop) := forall x:A, P x.
    Inductive ex (A: Set) (P:A -> Prop) : Prop :=
     ex_intro (x:A) (_:P x).
@@ -256,12 +256,12 @@ Finally, a few easy lemmas are provided.
   single: f_equal2 ... f_equal5 (term)
 
 The theorem ``f_equal`` is extended to functions with two to five
-arguments. The theorem are names ``f_equal2``, ``f_equal3``, 
+arguments. The theorem are names ``f_equal2``, ``f_equal3``,
 ``f_equal4`` and ``f_equal5``.
 For instance ``f_equal3`` is defined the following way.
 
 .. coqtop:: in abort
-  
+
   Theorem f_equal3 :
    forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B)
      (x1 y1:A1) (x2 y2:A2) (x3 y3:A3),
@@ -324,7 +324,7 @@ Programming
 
 Note that zero is the letter ``O``, and *not* the numeral ``0``.
 
-The predicate ``identity`` is logically 
+The predicate ``identity`` is logically
 equivalent to equality but it lives in sort ``Type``.
 It is mainly maintained for compatibility.
 
@@ -367,7 +367,7 @@ infix notation ``||``), ``xorb``, ``implb`` and ``negb``.
 Specification
 ~~~~~~~~~~~~~
 
-The following notions defined in module ``Specif.v`` allow to build new data-types and specifications. 
+The following notions defined in module ``Specif.v`` allow to build new data-types and specifications.
 They are available with the syntax shown in the previous section :ref:`datatypes`.
 
 For instance, given :g:`A:Type` and :g:`P:A->Prop`, the construct
@@ -393,11 +393,11 @@ provided.
 .. coqtop:: in
 
   Inductive sig (A:Set) (P:A -> Prop) : Set := exist (x:A) (_:P x).
-  Inductive sig2 (A:Set) (P Q:A -> Prop) : Set := 
+  Inductive sig2 (A:Set) (P Q:A -> Prop) : Set :=
     exist2 (x:A) (_:P x) (_:Q x).
 
 A *strong (dependent) sum* :g:`{x:A & P x}` may be also defined,
-when the predicate ``P`` is now defined as a 
+when the predicate ``P`` is now defined as a
 constructor of types in ``Type``.
 
 .. index::
@@ -556,7 +556,7 @@ section :tacn:`refine`). This scope is opened by default.
 Now comes the content of module ``Peano``:
 
 .. coqdoc::
-  
+
   Theorem eq_S : forall x y:nat, x = y -> S x = S y.
   Definition pred (n:nat) : nat :=
    match n with
@@ -628,7 +628,7 @@ induction principle.
 .. coqdoc::
 
   Theorem nat_case :
-   forall (n:nat) (P:nat -> Prop), 
+   forall (n:nat) (P:nat -> Prop),
    P 0 -> (forall m:nat, P (S m)) -> P n.
   Theorem nat_double_ind :
    forall R:nat -> nat -> Prop,
@@ -640,7 +640,7 @@ induction principle.
 Well-founded recursion
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The basic library contains the basics of well-founded recursion and 
+The basic library contains the basics of well-founded recursion and
 well-founded induction, in module ``Wf.v``.
 
 .. index::
@@ -669,7 +669,7 @@ well-founded induction, in module ``Wf.v``.
    forall P:A -> Prop,
     (forall x:A, (forall y:A, R y x -> P y) -> P x) -> forall a:A, P a.
 
-The automatically generated scheme ``Acc_rect`` 
+The automatically generated scheme ``Acc_rect``
 can be used to define functions by fixpoints using
 well-founded relations to justify termination. Assuming
 extensionality of the functional used for the recursive call, the
@@ -741,7 +741,7 @@ The standard library
 Survey
 ~~~~~~
 
-The rest of the standard library is structured into the following 
+The rest of the standard library is structured into the following
 subdirectories:
 
   * **Logic** : Classical logic and dependent equality
@@ -751,8 +751,8 @@ subdirectories:
   * **ZArith** : Basic relative integer arithmetic
   * **Numbers** : Various approaches to natural, integer and cyclic numbers (currently axiomatically and on top of 2^31 binary words)
   * **Bool** : Booleans (basic functions and results)
-  * **Lists** : Monomorphic and polymorphic lists (basic functions and results), Streams (infinite sequences defined with co-inductive types) 
-  * **Sets** : Sets (classical, constructive, finite, infinite, power set, etc.) 
+  * **Lists** : Monomorphic and polymorphic lists (basic functions and results), Streams (infinite sequences defined with co-inductive types)
+  * **Sets** : Sets (classical, constructive, finite, infinite, power set, etc.)
   * **FSets** : Specification and implementations of finite sets and finite maps (by lists and by AVL trees)
   * **Reals** : Axiomatization of real numbers (classical, basic functions, integer part, fractional part, limit, derivative, Cauchy series, power series and results,...)
   * **Floats** : Machine implementation of floating-point arithmetic (for the binary64 format)
@@ -903,7 +903,7 @@ tactics (see Chapter :ref:`tactics`), there are also:
 
 .. tacn:: discrR
   :name: discrR
-  
+
   Proves that two real integer constants are different.
 
 .. example::
@@ -931,7 +931,7 @@ tactics (see Chapter :ref:`tactics`), there are also:
 
 .. tacn:: split_Rmult
   :name: split_Rmult
- 
+
   Splits a condition that a product is non null into subgoals
   corresponding to the condition on each operand of the product.
 
@@ -963,7 +963,7 @@ List library
   single: fold_left (term)
   single: fold_right (term)
 
-Some elementary operations on polymorphic lists are defined here. 
+Some elementary operations on polymorphic lists are defined here.
 They can be accessed by requiring module ``List``.
 
 It defines the following notions:
@@ -1052,9 +1052,9 @@ Notation     Interpretation
 ``_ + _``    ``add``
 ``_ * _``    ``mul``
 ``_ / _``    ``div``
-``_ == _``   ``eqb``
-``_ < _``    ``ltb``
-``_ <= _``   ``leb``
+``_ =? _``   ``eqb``
+``_ <? _``    ``ltb``
+``_ <=? _``   ``leb``
 ``_ ?= _``   ``compare``
 ===========  ==============
 
