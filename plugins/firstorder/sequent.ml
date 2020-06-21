@@ -205,10 +205,10 @@ open Hints
 
 let extend_with_auto_hints env sigma l seq =
   let f (seq,sigma) p_a_t =
-    match repr_hint p_a_t.code with
-    | Res_pf (c,_) | Give_exact (c,_)
-    | Res_pf_THEN_trivial_fail (c,_) ->
-      let (c, _, _) = c in
+    match FullHint.repr p_a_t with
+    | Res_pf c | Give_exact c
+    | Res_pf_THEN_trivial_fail c ->
+      let c = c.hint_term in
       (match  EConstr.destRef sigma c with
        | exception Constr.DestKO -> seq, sigma
        | gr, _ ->

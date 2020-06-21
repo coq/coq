@@ -65,9 +65,9 @@ open Auto
 (* A tactic similar to Auto, but using EApply, Assumption and e_give_exact *)
 (***************************************************************************)
 
-let unify_e_resolve poly flags (c,clenv) =
+let unify_e_resolve flags h =
   Proofview.Goal.enter begin fun gl ->
-      let clenv', c = connect_hint_clenv ~poly c clenv gl in
+      let clenv', c = connect_hint_clenv h gl in
       let clenv' = clenv_unique_resolver ~flags clenv' gl in
       Proofview.tclTHEN
         (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
@@ -88,9 +88,9 @@ let hintmap_of sigma secvars concl =
      else (fun db -> Hint_db.map_auto sigma ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
-let e_exact poly flags (c,clenv) =
+let e_exact flags h =
   Proofview.Goal.enter begin fun gl ->
-    let clenv', c = connect_hint_clenv ~poly c clenv gl in
+    let clenv', c = connect_hint_clenv h gl in
     Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
     (e_give_exact c)
@@ -120,23 +120,23 @@ and e_my_find_search env sigma db_list local_db secvars concl =
           List.map (fun x -> flags, x) (hint_of_db db)) (local_db::db_list)
   in
   let tac_of_hint =
-    fun (st, {pri = b; pat = p; code = t; poly = poly}) ->
-      let b = match Hints.repr_hint t with
+    fun (st, h) ->
+      let b = match FullHint.repr h with
       | Unfold_nth _ -> 1
-      | _ -> b
+      | _ -> FullHint.priority h
       in
       let tac = function
-      | Res_pf (term,cl) -> unify_resolve ~poly st (term,cl)
-      | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
-      | Give_exact (c,cl) -> e_exact poly st (c,cl)
-      | Res_pf_THEN_trivial_fail (term,cl) ->
-        Tacticals.New.tclTHEN (unify_e_resolve poly st (term,cl))
+      | Res_pf h -> unify_resolve st h
+      | ERes_pf h -> unify_e_resolve st h
+      | Give_exact h -> e_exact st h
+      | Res_pf_THEN_trivial_fail h ->
+        Tacticals.New.tclTHEN (unify_e_resolve st h)
           (e_trivial_fail_db db_list local_db)
       | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
-      | Extern tacast -> conclPattern concl p tacast
+      | Extern tacast -> conclPattern concl (FullHint.pattern h) tacast
       in
-      let tac = run_hint t tac in
-      (tac, b, lazy (pr_hint env sigma t))
+      let tac = FullHint.run h tac in
+      (tac, b, lazy (FullHint.print env sigma h))
   in
   List.map tac_of_hint hintl
 

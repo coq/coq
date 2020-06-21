@@ -135,15 +135,20 @@ type 'a with_uid = {
   uid : KerName.t;
 }
 
-type raw_hint = constr * types * Univ.ContextSet.t
+type raw_hint = constr * types * Univ.ContextSet.t * bool (* poly *)
 
-type hint = (raw_hint * clausenv) hint_ast with_uid
+type hint = {
+  hint_term : constr;
+  hint_type : types;
+  hint_uctx : Univ.ContextSet.t;
+  hint_clnv : clausenv;
+  hint_poly : bool;
+  (** Is the hint polymorpic and hence should be refreshed at each application *)
+}
 
 type 'a with_metadata =
   { pri     : int
   (** A number lower is higher priority *)
-  ; poly    : bool
-  (** Is the hint polymorpic and hence should be refreshed at each application *)
   ; pat     : constr_pattern option
   (** A pattern for the concl of the Goal *)
   ; name    : hints_path_atom
@@ -156,7 +161,7 @@ type 'a with_metadata =
   (** the tactic to apply when the concl matches pat *)
   }
 
-type full_hint = hint with_metadata
+type full_hint = hint hint_ast with_uid with_metadata
 
 type hint_entry = GlobRef.t option *
   raw_hint hint_ast with_uid with_metadata
@@ -300,19 +305,21 @@ let strip_params env sigma c =
   | _ -> c
 
 let instantiate_hint env sigma p =
-  let mk_clenv (c, cty, ctx) =
+  let mk_clenv (c, cty, ctx, poly) =
     let sigma = Evd.merge_context_set univ_flexible sigma ctx in
     let cl = mk_clenv_from_env env sigma None (c,cty) in
-      {cl with templval =
+    let cl = {cl with templval =
           { cl.templval with rebus = strip_params env sigma cl.templval.rebus };
         env = empty_env}
+    in
+    { hint_term = c; hint_type = cty; hint_uctx = ctx; hint_clnv = cl; hint_poly = poly }
   in
   let code = match p.code.obj with
-    | Res_pf c -> Res_pf (c, mk_clenv c)
-    | ERes_pf c -> ERes_pf (c, mk_clenv c)
+    | Res_pf c -> Res_pf (mk_clenv c)
+    | ERes_pf c -> ERes_pf (mk_clenv c)
     | Res_pf_THEN_trivial_fail c ->
-      Res_pf_THEN_trivial_fail (c, mk_clenv c)
-    | Give_exact c -> Give_exact (c, mk_clenv c)
+      Res_pf_THEN_trivial_fail (mk_clenv c)
+    | Give_exact c -> Give_exact (mk_clenv c)
     | Unfold_nth e -> Unfold_nth e
     | Extern t -> Extern t
   in
@@ -489,7 +496,6 @@ module Hint_db :
 sig
 type t
 val empty : ?name:hint_db_name -> TransparentState.t -> bool -> t
-val find : GlobRef.t -> t -> search_entry
 val map_none : secvars:Id.Pred.t -> t -> full_hint list
 val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 val map_existential : evar_map -> secvars:Id.Pred.t ->
@@ -800,9 +806,9 @@ let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
         | None -> pat
         in
         (Some hd,
-         { pri; poly; pat = Some pat; name;
+         { pri; pat = Some pat; name;
            db = None; secvars;
-           code = with_uid (Give_exact (c, cty, ctx)); })
+           code = with_uid (Give_exact (c, cty, ctx, poly)); })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (c, cty, ctx) =
   let cty = if hnf then hnf_constr env sigma cty else cty in
@@ -824,10 +830,10 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (
     in
     if Int.equal nmiss 0 then
       (Some hd,
-       { pri; poly; pat = Some pat; name;
+       { pri; pat = Some pat; name;
          db = None;
          secvars;
-         code = with_uid (Res_pf(c,cty,ctx)); })
+         code = with_uid (Res_pf(c,cty,ctx,poly)); })
     else begin
       if not eapply then failwith "make_apply_entry";
       if verbose then begin
@@ -843,9 +849,9 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (
         )
       end;
       (Some hd,
-       { pri; poly; pat = Some pat; name;
+       { pri; pat = Some pat; name;
          db = None; secvars;
-         code = with_uid (ERes_pf(c,cty,ctx)); })
+         code = with_uid (ERes_pf(c,cty,ctx,poly)); })
     end
   | _ -> failwith "make_apply_entry"
 
@@ -916,7 +922,6 @@ let make_unfold eref =
   let g = global_of_evaluable_reference eref in
   (Some g,
    { pri = 4;
-     poly = false;
      pat = None;
      name = PathHints [g];
      db = None;
@@ -927,7 +932,6 @@ let make_extern pri pat tacast =
   let hdconstr = Option.map try_head_pattern pat in
   (hdconstr,
    { pri = pri;
-     poly = false;
      pat = pat;
      name = PathAny;
      db = None;
@@ -954,12 +958,11 @@ let make_trivial env sigma poly ?(name=PathAny) r =
   let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd,
    { pri=1;
-     poly = poly;
      pat = Some (Patternops.pattern_of_constr env ce.evd (EConstr.to_constr sigma (clenv_type ce)));
      name = name;
      db = None;
      secvars = secvars_of_constr env sigma c;
-     code= with_uid (Res_pf_THEN_trivial_fail(c,t,ctx)) })
+     code= with_uid (Res_pf_THEN_trivial_fail(c,t,ctx,poly)) })
 
 
 
@@ -1070,29 +1073,30 @@ let subst_autohint (subst, obj) =
       (try head_constr_bound Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)
        with Bound -> gr')
   in
+  let subst_mps subst c = EConstr.of_constr (subst_mps subst (EConstr.Unsafe.to_constr c)) in
+  let subst_aux ((c, t, ctx, poly) as h) =
+    let c' = subst_mps subst c in
+    let t' = subst_mps subst t in
+    if c==c' && t'==t then h else (c', t', ctx, poly)
+  in
   let subst_hint (k,data as hint) =
     let k' = Option.Smart.map subst_key k in
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let pat' = Option.Smart.map (subst_pattern env sigma subst) data.pat in
-    let subst_mps subst c = EConstr.of_constr (subst_mps subst (EConstr.Unsafe.to_constr c)) in
     let code' = match data.code.obj with
-      | Res_pf (c,t,ctx) ->
-          let c' = subst_mps subst c in
-          let t' = subst_mps subst t in
-          if c==c' && t'==t then data.code.obj else Res_pf (c', t',ctx)
-      | ERes_pf (c,t,ctx) ->
-          let c' = subst_mps subst c in
-          let t' = subst_mps subst t in
-          if c==c' && t'==t then data.code.obj else ERes_pf (c',t',ctx)
-      | Give_exact (c,t,ctx) ->
-          let c' = subst_mps subst c in
-          let t' = subst_mps subst t in
-          if c==c' && t'== t then data.code.obj else Give_exact (c',t',ctx)
-      | Res_pf_THEN_trivial_fail (c,t,ctx) ->
-          let c' = subst_mps subst c in
-          let t' = subst_mps subst t in
-          if c==c' && t==t' then data.code.obj else Res_pf_THEN_trivial_fail (c',t',ctx)
+      | Res_pf h ->
+        let h' = subst_aux h in
+        if h == h' then data.code.obj else Res_pf h'
+      | ERes_pf h ->
+        let h' = subst_aux h in
+        if h == h' then data.code.obj else ERes_pf h'
+      | Give_exact h ->
+        let h' = subst_aux h in
+        if h == h' then data.code.obj else Give_exact h'
+      | Res_pf_THEN_trivial_fail h ->
+        let h' = subst_aux h in
+        if h == h' then data.code.obj else Res_pf_THEN_trivial_fail h'
       | Unfold_nth ref ->
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code.obj else Unfold_nth ref'
@@ -1336,6 +1340,9 @@ let constructor_hints env sigma eapply lems =
   List.map_append (fun (poly, lem) ->
       make_resolves env sigma (eapply,true,false) empty_hint_info ~check:true ~poly lem) lems
 
+let make_resolves env sigma info ~check ~poly ?name hint =
+  make_resolves env sigma (true, false, false) info ~check ~poly ?name hint
+
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
   let lems = List.map map lems in
@@ -1365,13 +1372,13 @@ let make_db_list dbnames =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
-let pr_hint_elt env sigma (c, _, _) = pr_econstr_env env sigma c
+let pr_hint_elt env sigma h = pr_econstr_env env sigma h.hint_term
 
 let pr_hint env sigma h = match h.obj with
-  | Res_pf (c, _) -> (str"simple apply " ++ pr_hint_elt env sigma c)
-  | ERes_pf (c, _) -> (str"simple eapply " ++ pr_hint_elt env sigma c)
-  | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt env sigma c)
-  | Res_pf_THEN_trivial_fail (c, _) ->
+  | Res_pf c -> (str"simple apply " ++ pr_hint_elt env sigma c)
+  | ERes_pf c -> (str"simple eapply " ++ pr_hint_elt env sigma c)
+  | Give_exact c -> (str"exact " ++ pr_hint_elt env sigma c)
+  | Res_pf_THEN_trivial_fail c ->
       (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
@@ -1574,4 +1581,15 @@ let run_hint tac k = match warn_hint () with
     let info = Exninfo.reify () in
     Proofview.tclZERO ~info (UserError (None, (str "Tactic failure.")))
 
-let repr_hint h = h.obj
+module FullHint =
+struct
+  type t = full_hint
+  let priority (h : t) = h.pri
+  let pattern (h : t) = h.pat
+  let database (h : t) = h.db
+  let run (h : t) k = run_hint h.code k
+  let print env sigma (h : t) = pr_hint env sigma h.code
+  let name (h : t) = h.name
+
+  let repr (h : t) = h.code.obj
+end

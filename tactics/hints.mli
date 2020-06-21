@@ -15,7 +15,6 @@ open Environ
 open Evd
 open Tactypes
 open Clenv
-open Pattern
 open Typeclasses
 
 (** {6 General functions. } *)
@@ -40,8 +39,13 @@ type 'a hint_ast =
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Genarg.glob_generic_argument       (* Hint Extern *)
 
-type hint
-type raw_hint = constr * types * Univ.ContextSet.t
+type hint = {
+  hint_term : constr;
+  hint_type : types;
+  hint_uctx : Univ.ContextSet.t;
+  hint_clnv : clausenv;
+  hint_poly : bool;
+}
 
 type 'a hints_path_atom_gen =
   | PathHints of 'a list
@@ -51,26 +55,20 @@ type 'a hints_path_atom_gen =
 type hints_path_atom = GlobRef.t hints_path_atom_gen
 type hint_db_name = string
 
-type 'a with_metadata = private
-  { pri     : int
-  (** A number lower is higher priority *)
-  ; poly    : bool
-  (** Is the hint polymorpic and hence should be refreshed at each application *)
-  ; pat     : constr_pattern option
-  (** A pattern for the concl of the Goal *)
-  ; name    : hints_path_atom
-  (** A potential name to refer to the hint *)
-  ; db : string option
-  (** The database from which the hint comes *)
-  ; secvars : Id.Pred.t
-  (** The set of section variables the hint depends on *)
-  ; code    : 'a
-  (** the tactic to apply when the concl matches pat *)
-  }
+module FullHint :
+sig
+  type t
+  val priority : t -> int
+  val pattern : t -> Pattern.constr_pattern option
+  val database : t -> string option
+  val run : t -> (hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
+  val name : t -> hints_path_atom
+  val print : env -> evar_map -> t -> Pp.t
 
-type full_hint = hint with_metadata
-
-type search_entry
+  (** This function is for backward compatibility only, not to use in newly
+    written code. *)
+  val repr : t -> hint hint_ast
+end
 
 (** The head may not be bound. *)
 
@@ -117,42 +115,41 @@ module Hint_db :
   sig
     type t
     val empty : ?name:hint_db_name -> TransparentState.t -> bool -> t
-    val find : GlobRef.t -> t -> search_entry
 
     (** All hints which have no pattern.
      * [secvars] represent the set of section variables that
      * can be used in the hint. *)
-    val map_none : secvars:Id.Pred.t -> t -> full_hint list
+    val map_none : secvars:Id.Pred.t -> t -> FullHint.t list
 
     (** All hints associated to the reference *)
-    val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
+    val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> FullHint.t list
 
     (** All hints associated to the reference, respecting modes if evars appear in the
         arguments, _not_ using the discrimination net.
         Returns a [ModeMismatch] if there are declared modes and none matches.
         *)
     val map_existential : evar_map -> secvars:Id.Pred.t ->
-      (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
+      (GlobRef.t * constr array) -> constr -> t -> FullHint.t list with_mode
 
     (** All hints associated to the reference, respecting modes if evars appear in the
         arguments and using the discrimination net.
         Returns a [ModeMismatch] if there are declared modes and none matches. *)
-    val map_eauto : evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
+    val map_eauto : evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> FullHint.t list with_mode
 
     (** All hints associated to the reference.
         Precondition: no evars should appear in the arguments, so no modes
         are checked. *)
     val map_auto : evar_map -> secvars:Id.Pred.t ->
-       (GlobRef.t * constr array) -> constr -> t -> full_hint list
+       (GlobRef.t * constr array) -> constr -> t -> FullHint.t list
 
     val add_one : env -> evar_map -> hint_entry -> t -> t
     val add_list : env -> evar_map -> hint_entry list -> t -> t
     val remove_one : GlobRef.t -> t -> t
     val remove_list : GlobRef.t list -> t -> t
     val iter : (GlobRef.t option ->
-                hint_mode array list -> full_hint list -> unit) -> t -> unit
+                hint_mode array list -> FullHint.t list -> unit) -> t -> unit
 
-    val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : (GlobRef.t option -> hint_mode array list -> FullHint.t list -> 'a -> 'a) -> t -> 'a -> 'a
 
     val use_dn : t -> bool
     val transparent_state : t -> TransparentState.t
@@ -214,7 +211,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool * bool -> hint_info -> check:bool -> poly:bool -> ?name:hints_path_atom ->
+  env -> evar_map -> hint_info -> check:bool -> poly:bool -> ?name:hints_path_atom ->
   hint_term -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].
@@ -224,19 +221,6 @@ val make_resolves :
 
 val make_resolve_hyp :
   env -> evar_map -> named_declaration -> hint_entry list
-
-(** [make_extern pri pattern tactic_expr] *)
-
-val make_extern :
-  int -> constr_pattern option -> Genarg.glob_generic_argument
-      -> hint_entry
-
-val run_hint : hint ->
-  ((raw_hint * clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
-
-(** This function is for backward compatibility only, not to use in newly
-    written code. *)
-val repr_hint : hint -> (raw_hint * clausenv) hint_ast
 
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;
@@ -262,4 +246,3 @@ val pr_applicable_hint : Proof.t -> Pp.t
 val pr_hint_ref : env -> evar_map -> GlobRef.t -> Pp.t
 val pr_hint_db_by_name : env -> evar_map -> hint_db_name -> Pp.t
 val pr_hint_db_env : env -> evar_map -> Hint_db.t -> Pp.t
-val pr_hint : env -> evar_map -> hint -> Pp.t
