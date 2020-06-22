@@ -34,19 +34,6 @@ type universe_binders = Univ.Level.t Names.Id.Map.t
 
 let empty_binders = Id.Map.empty
 
-let name_universe lvl =
-  (* Best-effort naming from the string representation of the level. This is
-     completely hackish and should be solved in upper layers instead. *)
-  Id.of_string_soft (Level.to_string lvl)
-
-let compute_instance_binders inst ubinders =
-  let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
-  let map lvl =
-    try Name (LMap.find lvl revmap)
-    with Not_found -> Name (name_universe lvl)
-  in
-  Array.map map (Instance.to_array inst)
-
 type univ_name_list = Names.lname list
 
 let universe_binders_with_opt_names orig names =

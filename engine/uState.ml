@@ -114,12 +114,25 @@ let constraints ctx = snd ctx.local
 
 let context ctx = ContextSet.to_context ctx.local
 
+let name_universe lvl =
+  (* Best-effort naming from the string representation of the level. This is
+     completely hackish and should be solved in upper layers instead. *)
+  Id.of_string_soft (Level.to_string lvl)
+
+let compute_instance_binders inst ubinders =
+  let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
+  let map lvl =
+    try Name (LMap.find lvl revmap)
+    with Not_found -> Name (name_universe lvl)
+  in
+  Array.map map (Instance.to_array inst)
+
 let univ_entry ~poly uctx =
   let open Entries in
   if poly then
     let (binders, _) = uctx.names in
     let uctx = context uctx in
-    let nas = UnivNames.compute_instance_binders (UContext.instance uctx) binders in
+    let nas = compute_instance_binders (UContext.instance uctx) binders in
     Polymorphic_entry (nas, uctx)
   else Monomorphic_entry (context_set uctx)
 
@@ -433,7 +446,7 @@ let check_univ_decl ~poly uctx decl =
     if poly then
       let (binders, _) = uctx.names in
       let uctx = universe_context ~names ~extensible uctx in
-      let nas = UnivNames.compute_instance_binders (UContext.instance uctx) binders in
+      let nas = compute_instance_binders (UContext.instance uctx) binders in
       Entries.Polymorphic_entry (nas, uctx)
     else
       let () = check_universe_context_set ~names ~extensible uctx in
