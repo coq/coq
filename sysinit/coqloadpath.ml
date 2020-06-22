@@ -44,8 +44,18 @@ let init_load_path ~coqlib =
   let coq_path = Names.DirPath.make [Libnames.coq_root] in
 
   (* ML includes *)
-  let plugins_dirs = System.all_subdirs ~unix_path:(coqlib/"plugins") |> List.map fst in
-
+  let unix_path =
+    (* Usually lib/coq-stdlib/../plugins ; this kind of hacks with the
+       ML path should go away once we use ocamlfind to load plugins *)
+    CPath.choose_existing
+      [ CPath.make [ coqlib ; "plugins" ]
+      ; CPath.make [ coqlib ; ".."; "coq-core"; "plugins" ]
+      ] |> function
+    | None ->
+      CErrors.user_err (Pp.str "Cannot find plugins directory")
+    | Some f -> (f :> string)
+  in
+  let plugins_dirs = System.all_subdirs ~unix_path |> List.map fst in
   let contrib_ml, contrib_vo = build_userlib_path ~unix_path:user_contrib in
 
   let misc_ml, misc_vo =

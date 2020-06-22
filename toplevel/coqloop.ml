@@ -480,6 +480,11 @@ let drop_args = ref None
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
 let init_ocaml_path ~coqlib =
+  let coqlib : string =
+    if Sys.file_exists (CPath.make [coqlib; "plugins"] :> string)
+    then coqlib
+    else (CPath.make [ coqlib ; ".."; "coq-core" ] :> string)
+  in
   let add_subdir dl = Mltop.add_ml_dir (Filename.concat coqlib dl) in
   List.iter add_subdir ("dev" :: Coq_config.all_src_dirs)
 

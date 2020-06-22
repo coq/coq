@@ -37,6 +37,7 @@ COQLIBS_NOML      := $(COQMF_COQLIBS_NOML)
 CMDLINE_COQLIBS   := $(COQMF_CMDLINE_COQLIBS)
 LOCAL             := $(COQMF_LOCAL)
 COQLIB            := $(COQMF_COQLIB)
+COQCORELIB        := $(COQMF_COQCORELIB)
 DOCDIR            := $(COQMF_DOCDIR)
 OCAMLFIND         := $(COQMF_OCAMLFIND)
 CAMLFLAGS         := $(COQMF_CAMLFLAGS)
@@ -97,9 +98,9 @@ COQMKFILE ?= "$(COQBIN)coq_makefile"
 OCAMLLIBDEP ?= "$(COQBIN)ocamllibdep"
 
 # Timing scripts
-COQMAKE_ONE_TIME_FILE ?= "$(COQLIB)/tools/make-one-time-file.py"
-COQMAKE_BOTH_TIME_FILES ?= "$(COQLIB)/tools/make-both-time-files.py"
-COQMAKE_BOTH_SINGLE_TIMING_FILES ?= "$(COQLIB)/tools/make-both-single-timing-files.py"
+COQMAKE_ONE_TIME_FILE ?= "$(COQCORELIB)/tools/make-one-time-file.py"
+COQMAKE_BOTH_TIME_FILES ?= "$(COQCORELIB)/tools/make-both-time-files.py"
+COQMAKE_BOTH_SINGLE_TIMING_FILES ?= "$(COQCORELIB)/tools/make-both-single-timing-files.py"
 BEFORE ?=
 AFTER ?=
 
@@ -220,7 +221,7 @@ COQDOCLIBS?=$(COQLIBS_NOML)
 COQ_VERSION:=$(shell $(COQC) --print-version | cut -d " " -f 1)
 COQMAKEFILE_VERSION:=@COQ_VERSION@
 
-COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)/$(d)")
+COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQCORELIB)/$(d)")
 
 CAMLFLAGS+=$(OCAMLLIBS) $(COQSRCLIBS)
 # ocamldoc fails with unknown argument otherwise
@@ -822,6 +823,7 @@ printenv::
 	$(warning write extensions in @LOCAL_FILE@ or include @CONF_FILE@)
 	@echo 'LOCAL = $(LOCAL)'
 	@echo 'COQLIB = $(COQLIB)'
+	@echo 'COQCORELIB = $(COQCORELIB)'
 	@echo 'DOCDIR = $(DOCDIR)'
 	@echo 'OCAMLFIND = $(OCAMLFIND)'
 	@echo 'HASNATDYNLINK = $(HASNATDYNLINK)'
@@ -840,12 +842,12 @@ printenv::
 .merlin:
 	$(SHOW)'FILL .merlin'
 	$(HIDE)echo 'FLG $(COQMF_CAMLFLAGS)' > .merlin
-	$(HIDE)echo 'B $(COQLIB)' >> .merlin
-	$(HIDE)echo 'S $(COQLIB)' >> .merlin
+	$(HIDE)echo 'B $(COQCORELIB)' >> .merlin
+	$(HIDE)echo 'S $(COQCORELIB)' >> .merlin
 	$(HIDE)$(foreach d,$(COQ_SRC_SUBDIRS), \
-		echo 'B $(COQLIB)$(d)' >> .merlin;)
+		echo 'B $(COQCORELIB)$(d)' >> .merlin;)
 	$(HIDE)$(foreach d,$(COQ_SRC_SUBDIRS), \
-		echo 'S $(COQLIB)$(d)' >> .merlin;)
+		echo 'S $(COQCORELIB)$(d)' >> .merlin;)
 	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo 'B $(d)' >> .merlin;)
 	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo 'S $(d)' >> .merlin;)
 	$(HIDE)$(MAKE) merlin-hook -f "$(SELF)"

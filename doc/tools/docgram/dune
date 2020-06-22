@@ -1,6 +1,6 @@
 (executable
  (name doc_grammar)
- (libraries coq.clib coqpp))
+ (libraries coq-core.clib coqpp))
 
 (env (_ (binaries doc_grammar.exe)))
 

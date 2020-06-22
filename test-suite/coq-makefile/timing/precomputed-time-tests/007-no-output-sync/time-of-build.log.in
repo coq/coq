@@ -744,7 +744,7 @@ CONTRIBUTING.md
 CREDITS
 INSTALL.md
 LICENSE
-META.coq.in
+META.coq-core.in
 Makefile
 Makefile.build
 Makefile.checker

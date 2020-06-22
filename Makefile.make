@@ -187,10 +187,10 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 ###########################################################################
 # OCaml dev files
 ###########################################################################
-camldevfiles: $(MERLINFILES) META.coq
+camldevfiles: $(MERLINFILES) META.coq-core
 
 # prevent submake dependency
-META.coq.in $(MERLININFILES): ;
+META.coq-core.in $(MERLININFILES): ;
 
 .merlin: .merlin.in
 	cp -a "$<" "$@"
@@ -198,7 +198,7 @@ META.coq.in $(MERLININFILES): ;
 %/.merlin: %/.merlin.in
 	cp -a "$<" "$@"
 
-META.coq: META.coq.in
+META.coq-core: META.coq-core.in
 	cp -a "$<" "$@"
 
 ###########################################################################
@@ -222,7 +222,7 @@ cruftclean: mlgclean
 	rm -f gmon.out core
 
 camldevfilesclean:
-	rm -f $(MERLINFILES) META.coq
+	rm -f $(MERLINFILES) META.coq-core
 
 indepclean:
 	rm -f $(GENFILES)

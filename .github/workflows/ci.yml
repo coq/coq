@@ -63,17 +63,17 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: "10.11"
           NJOBS: "2"
 
+      - name: Install Coq
+        run: |
+          make install install-byte
+
       - name: Run Coq Test Suite
         run: |
           eval $(opam env)
-          export OCAMLPATH=$(pwd):"$OCAMLPATH"
+          export OCAMLPATH="$(pwd)/_install_ci/lib":"$OCAMLPATH"
           make -j "$NJOBS" test-suite PRINT_LOGS=1
         env:
           NJOBS: "2"
-
-      - name: Install Coq
-        run: |
-          make install
 
       - name: Create the dmg bundle
         run: |

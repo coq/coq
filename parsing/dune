@@ -1,7 +1,7 @@
 (library
  (name parsing)
- (public_name coq.parsing)
+ (public_name coq-core.parsing)
  (wrapped false)
- (libraries coq.gramlib interp))
+ (libraries coq-core.gramlib interp))
 
 (coq.pp (modules g_prim g_constr))

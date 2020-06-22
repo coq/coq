@@ -1,9 +1,9 @@
 (library
  (name library)
  (synopsis "Coq's Loadable Libraries (vo) Support")
- (public_name coq.library)
+ (public_name coq-core.library)
  (wrapped false)
  (libraries kernel))
 
 (documentation
- (package coq))
+ (package coq-core))

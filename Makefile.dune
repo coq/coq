@@ -56,7 +56,8 @@ help-install:
 	@echo ""
 	@echo " Provided opam/dune packages are:"
 	@echo ""
-	@echo "  - coq: base Coq package, toplevel compilers, tools, stdlib, no GTK"
+	@echo "  - coq-core: base Coq package, toplevel compilers, plugins, tools, no stdlib, no GTK"
+	@echo "  - coq-stdlib: Coq's standard library"
 	@echo "  - coqide-server: XML protocol language server"
 	@echo "  - coqide: CoqIDE gtk application"
 	@echo ""
@@ -82,7 +83,7 @@ voboot:
 states:
 	dune build $(DUNEOPT) dev/shim/coqtop-prelude
 
-NONDOC_INSTALL_TARGETS:=coq.install coqide-server.install coqide.install
+NONDOC_INSTALL_TARGETS:=coq-core.install coq-stdlib.install coqide-server.install coqide.install
 
 world:
 	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)

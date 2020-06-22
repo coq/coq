@@ -336,9 +336,16 @@ let arg_profile = Arg.String (fun s -> prefs := Profiles.get s !prefs)
 
 (* TODO : earlier any option -foo was also available as --foo *)
 
+let check_absolute = function
+  | None -> ()
+  | Some path ->
+    if Filename.is_relative path then
+      die "argument to -prefix must be an absolute path"
+    else ()
+
 let args_options = Arg.align [
-  "-prefix", arg_string_option (fun p prefix -> { p with prefix }),
-    "<dir> Set installation directory to <dir>";
+  "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
+    "<dir> Set installation directory to <dir> (absolute path required)";
   "-local", arg_set (fun p local -> { p with local }),
     " Set installation directory to the current source tree";
   "-no-ask", arg_clear (fun p interactive -> { p with interactive }),

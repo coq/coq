@@ -1,15 +1,15 @@
 (library
  (name ltac_plugin)
- (public_name coq.plugins.ltac)
+ (public_name coq-core.plugins.ltac)
  (synopsis "Coq's LTAC tactic language")
  (modules :standard \ tauto)
- (libraries coq.stm))
+ (libraries coq-core.stm))
 
 (library
  (name tauto_plugin)
- (public_name coq.plugins.tauto)
+ (public_name coq-core.plugins.tauto)
  (synopsis "Coq's tauto tactic")
  (modules tauto)
- (libraries coq.plugins.ltac))
+ (libraries coq-core.plugins.ltac))
 
 (coq.pp (modules extratactics g_tactic  g_rewrite g_eqdecide g_auto g_obligations g_ltac profile_ltac_tactics coretactics g_class extraargs))

@@ -35,7 +35,7 @@ package "lib" (
 
   directory   = "lib"
 
-  requires    = "coq.clib, coq.config, dynlink"
+  requires    = "coq-core.clib, coq-core.config, dynlink"
 
   archive(byte)   = "lib.cma"
   archive(native) = "lib.cmxa"
@@ -68,7 +68,7 @@ package "kernel" (
 
   directory   = "kernel"
 
-  requires    = "coq.lib, coq.vm"
+  requires    = "coq-core.lib, coq-core.vm"
 
   archive(byte)    = "kernel.cma"
   archive(native)  = "kernel.cmxa"
@@ -80,7 +80,7 @@ package "library" (
   description = "Coq Libraries (vo) support"
   version     = "8.14"
 
-  requires    = "coq.kernel"
+  requires    = "coq-core.kernel"
 
   directory   = "library"
 
@@ -94,7 +94,7 @@ package "engine" (
   description = "Coq Tactic Engine"
   version     = "8.14"
 
-  requires    = "coq.library"
+  requires    = "coq-core.library"
   directory   = "engine"
 
   archive(byte)    = "engine.cma"
@@ -107,7 +107,7 @@ package "pretyping" (
   description = "Coq Pretyper"
   version     = "8.14"
 
-  requires    = "coq.engine"
+  requires    = "coq-core.engine"
   directory   = "pretyping"
 
   archive(byte)    = "pretyping.cma"
@@ -120,7 +120,7 @@ package "interp" (
   description = "Coq Term Interpretation"
   version     = "8.14"
 
-  requires    = "zarith, coq.pretyping"
+  requires    = "zarith, coq-core.pretyping"
   directory   = "interp"
 
   archive(byte)    = "interp.cma"
@@ -133,7 +133,7 @@ package "proofs" (
   description = "Coq Proof Engine"
   version     = "8.14"
 
-  requires    = "coq.interp"
+  requires    = "coq-core.interp"
   directory   = "proofs"
 
   archive(byte)    = "proofs.cma"
@@ -146,7 +146,7 @@ package "gramlib" (
   description = "Coq Grammar Engine"
   version     = "8.14"
 
-  requires    = "coq.lib"
+  requires    = "coq-core.lib"
   directory   = "gramlib/.pack"
 
   archive(byte)    = "gramlib.cma"
@@ -158,7 +158,7 @@ package "parsing" (
   description = "Coq Parsing Engine"
   version     = "8.14"
 
-  requires    = "coq.gramlib, coq.proofs"
+  requires    = "coq-core.gramlib, coq-core.proofs"
   directory   = "parsing"
 
   archive(byte)    = "parsing.cma"
@@ -171,7 +171,7 @@ package "printing" (
   description = "Coq Printing Engine"
   version     = "8.14"
 
-  requires    = "coq.parsing"
+  requires    = "coq-core.parsing"
   directory   = "printing"
 
   archive(byte)    = "printing.cma"
@@ -184,7 +184,7 @@ package "tactics" (
   description = "Coq Basic Tactics"
   version     = "8.14"
 
-  requires    = "coq.printing"
+  requires    = "coq-core.printing"
   directory   = "tactics"
 
   archive(byte)    = "tactics.cma"
@@ -197,7 +197,7 @@ package "vernac" (
   description = "Coq Vernacular Interpreter"
   version     = "8.14"
 
-  requires    = "coq.tactics"
+  requires    = "coq-core.tactics"
   directory   = "vernac"
 
   archive(byte)    = "vernac.cma"
@@ -210,7 +210,7 @@ package "stm" (
   description = "Coq State Transaction Machine"
   version     = "8.14"
 
-  requires    = "coq.sysinit"
+  requires    = "coq-core.sysinit"
   directory   = "stm"
 
   archive(byte)    = "stm.cma"
@@ -223,7 +223,7 @@ package "sysinit" (
   description = "Coq initialization"
   version     = "8.14"
 
-  requires    = "coq.vernac"
+  requires    = "coq-core.vernac"
   directory   = "sysinit"
 
   archive(byte)    = "sysinit.cma"
@@ -236,7 +236,7 @@ package "toplevel" (
   description = "Coq Toplevel"
   version     = "8.14"
 
-  requires    = "coq.stm"
+  requires    = "coq-core.stm"
   directory   = "toplevel"
 
   archive(byte)    = "toplevel.cma"
@@ -249,7 +249,7 @@ package "idetop" (
   description = "Coq IDE Libraries"
   version     = "8.14"
 
-  requires    = "coq.toplevel"
+  requires    = "coq-core.toplevel"
   directory   = "ide"
 
   archive(byte)    = "coqidetop.cma"
@@ -262,7 +262,7 @@ package "ide" (
   description = "Coq IDE Libraries"
   version     = "8.14"
 
-  requires    = "coq.lib, coq.ideprotocol, lablgtk3, lablgtk3-sourceview3"
+  requires    = "coq-core.lib, coq-core.ideprotocol, lablgtk3, lablgtk3-sourceview3"
   directory   = "ide"
 
   archive(byte)    = "ide.cma"
@@ -275,7 +275,7 @@ package "ideprotocol" (
   description = "Coq IDE protocol"
   version     = "8.14"
 
-  requires    = "coq.toplevel"
+  requires    = "coq-core.toplevel"
   directory   = "ide/protocol"
 
   archive(byte)    = "ideprotocol.cma"
@@ -295,7 +295,7 @@ package "plugins" (
     description = "Coq LTAC Plugin"
     version     = "8.14"
 
-    requires    = "coq.stm"
+    requires    = "coq-core.stm"
     directory   = "ltac"
 
     archive(byte)    = "ltac_plugin.cmo"
@@ -310,7 +310,7 @@ package "plugins" (
     description = "Coq tauto plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "ltac"
 
     archive(byte)    = "tauto_plugin.cmo"
@@ -325,7 +325,7 @@ package "plugins" (
     description = "Coq omega plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "omega"
 
     archive(byte)    = "omega_plugin.cmo"
@@ -340,7 +340,7 @@ package "plugins" (
     description = "Coq micromega plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "micromega"
 
     archive(byte)    = "micromega_plugin.cmo"
@@ -355,7 +355,7 @@ package "plugins" (
     description = "Coq Zify plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "micromega"
 
     archive(byte)    = "zify_plugin.cmo"
@@ -385,7 +385,7 @@ package "plugins" (
     description = "Coq extraction plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "extraction"
 
     archive(byte)    = "extraction_plugin.cmo"
@@ -400,7 +400,7 @@ package "plugins" (
     description = "Coq cc plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "cc"
 
     archive(byte)    = "cc_plugin.cmo"
@@ -415,7 +415,7 @@ package "plugins" (
     description = "Coq ground plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "firstorder"
 
     archive(byte)    = "ground_plugin.cmo"
@@ -430,7 +430,7 @@ package "plugins" (
     description = "Coq rtauto plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "rtauto"
 
     archive(byte)    = "rtauto_plugin.cmo"
@@ -445,7 +445,7 @@ package "plugins" (
     description = "Coq btauto plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "btauto"
 
     archive(byte)    = "btauto_plugin.cmo"
@@ -460,7 +460,7 @@ package "plugins" (
     description = "Coq recdef plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.extraction"
+    requires    = "coq-core.plugins.extraction"
     directory   = "funind"
 
     archive(byte)    = "recdef_plugin.cmo"
@@ -475,7 +475,7 @@ package "plugins" (
     description = "Coq nsatz plugin"
     version     = "8.14"
 
-    requires    = "zarith, coq.plugins.ltac"
+    requires    = "zarith, coq-core.plugins.ltac"
     directory   = "nsatz"
 
     archive(byte)    = "nsatz_plugin.cmo"
@@ -505,7 +505,7 @@ package "plugins" (
     description = "Coq string_notation plugin"
     version     = "8.14"
 
-    requires    = "coq.vernac"
+    requires    = "coq-core.vernac"
     directory   = "syntax"
 
     archive(byte)    = "string_notation_plugin.cmo"
@@ -519,7 +519,7 @@ package "plugins" (
     description = "Coq numeral notation plugin"
     version 	= "8.14"
 
-    requires    = "coq.vernac"
+    requires    = "coq-core.vernac"
     directory 	= "numeral_notation"
 
     archive(byte)    = "numeral_notation_plugin.cmo"
@@ -549,7 +549,7 @@ package "plugins" (
     description = "Coq ssrmatching plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "ssrmatching"
 
     archive(byte)    = "ssrmatching_plugin.cmo"
@@ -564,7 +564,7 @@ package "plugins" (
     description = "Coq ssreflect plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ssrmatching"
+    requires    = "coq-core.plugins.ssrmatching"
     directory   = "ssr"
 
     archive(byte)    = "ssreflect_plugin.cmo"
@@ -579,7 +579,7 @@ package "plugins" (
     description = "Coq Ltac2 Plugin"
     version     = "8.14"
 
-    requires    = "coq.plugins.ltac"
+    requires    = "coq-core.plugins.ltac"
     directory   = "../user-contrib/Ltac2"
 
     archive(byte)    = "ltac2_plugin.cmo"

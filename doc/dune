@@ -13,7 +13,8 @@
   ;   + %{bin:coqdoc} etc...
   ;   + config/coq_config.py
   ;   + tools/coqdoc/coqdoc.css
-  (package coq)
+  (package coq-core)
+  (package coq-stdlib)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   unreleased.rst
@@ -26,7 +27,8 @@
  ; Cannot use this deps alias because of ocaml/dune#3415
  ; (deps (alias refman-deps))
  (deps
-  (package coq)
+  (package coq-core)
+  (package coq-stdlib)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   unreleased.rst
@@ -41,7 +43,8 @@
  ; Cannot use this deps alias because of ocaml/dune#3415
  ; (deps (alias refman-deps))
  (deps
-  (package coq)
+  (package coq-core)
+  (package coq-stdlib)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   unreleased.rst

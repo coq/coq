@@ -14,7 +14,7 @@
 
 /configure*        @coq/legacy-build-maintainers @coq/build-maintainers
 
-/META.coq.in       @coq/legacy-build-maintainers
+/META.coq-core.in       @coq/legacy-build-maintainers
 
 ########## CI infrastructure ##########
 
