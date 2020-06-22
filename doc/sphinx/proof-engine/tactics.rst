@@ -2996,7 +2996,7 @@ Performing computations
    | fold {+ @one_term }
    | pattern {+, @pattern_occ }
    | @ident
-   delta_flag ::= {? - } [ {+ @reference } ]
+   delta_flag ::= {? - } [ {+ @smart_global } ]
    strategy_flag ::= {+ @red_flags }
    | @delta_flag
    red_flags ::= beta
@@ -3006,13 +3006,13 @@ Performing computations
    | cofix
    | zeta
    | delta {? @delta_flag }
-   ref_or_pattern_occ ::= @reference {? at @occs_nums }
+   ref_or_pattern_occ ::= @smart_global {? at @occs_nums }
    | @one_term {? at @occs_nums }
    occs_nums ::= {+ {| @num | @ident } }
    | - {| @num | @ident } {* @int_or_var }
    int_or_var ::= @int
    | @ident
-   unfold_occ ::= @reference {? at @occs_nums }
+   unfold_occ ::= @smart_global {? at @occs_nums }
    pattern_occ ::= @one_term {? at @occs_nums }
 
 This set of tactics implements different specialized usages of the
@@ -3421,7 +3421,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    This is the most general syntax that combines the different variants.
 
-.. tacn:: with_strategy @strategy_level_or_var [ {+ @reference } ] @ltac_expr3
+.. tacn:: with_strategy @strategy_level_or_var [ {+ @smart_global } ] @ltac_expr3
    :name: with_strategy
 
    Executes :token:`ltac_expr3`, applying the alternate unfolding

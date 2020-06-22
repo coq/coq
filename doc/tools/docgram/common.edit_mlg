@@ -2016,7 +2016,6 @@ RENAME: [
 | constructor_list_or_record_decl constructors_or_record
 | record_binder_body field_body
 | class_rawexpr class
-| smart_global reference
 (*
 | searchabout_query search_item
 *)

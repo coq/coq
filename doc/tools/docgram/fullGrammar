@@ -1,473 +1,6 @@
 (* Coq grammar generated from .mlg files.  Do not edit by hand.  Not compiled into Coq *)
 DOC_GRAMMAR
 
-Constr.ident: [
-| Prim.ident
-]
-
-Prim.name: [
-| "_"
-]
-
-global: [
-| Prim.reference
-]
-
-constr_pattern: [
-| constr
-]
-
-lconstr_pattern: [
-| lconstr
-]
-
-sort: [
-| "Set"
-| "Prop"
-| "SProp"
-| "Type"
-| "Type" "@{" "_" "}"
-| "Type" "@{" universe "}"
-]
-
-sort_family: [
-| "Set"
-| "Prop"
-| "SProp"
-| "Type"
-]
-
-universe_increment: [
-| "+" natural
-|
-]
-
-universe_name: [
-| global
-| "Set"
-| "Prop"
-]
-
-universe_expr: [
-| universe_name universe_increment
-]
-
-universe: [
-| "max" "(" LIST1 universe_expr SEP "," ")"
-| universe_expr
-]
-
-lconstr: [
-| operconstr200
-| l_constr
-]
-
-constr: [
-| operconstr8
-| "@" global univ_instance
-]
-
-operconstr200: [
-| binder_constr
-| operconstr100
-]
-
-operconstr100: [
-| operconstr99 "<:" operconstr200
-| operconstr99 "<<:" operconstr200
-| operconstr99 ":" operconstr200
-| operconstr99 ":>"
-| operconstr99
-]
-
-operconstr99: [
-| operconstr90
-]
-
-operconstr90: [
-| operconstr10
-]
-
-operconstr10: [
-| operconstr9 LIST1 appl_arg
-| "@" global univ_instance LIST0 operconstr9
-| "@" pattern_identref LIST1 identref
-| operconstr9
-]
-
-operconstr9: [
-| ".." operconstr0 ".."
-| operconstr8
-]
-
-operconstr8: [
-| operconstr1
-]
-
-operconstr1: [
-| operconstr0 ".(" global LIST0 appl_arg ")"
-| operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
-| operconstr0 "%" IDENT
-| operconstr0
-]
-
-operconstr0: [
-| atomic_constr
-| match_constr
-| "(" operconstr200 ")"
-| "{|" record_declaration bar_cbrace
-| "{" binder_constr "}"
-| "`{" operconstr200 "}"
-| "`(" operconstr200 ")"
-| "ltac" ":" "(" Pltac.tactic_expr ")"
-]
-
-record_declaration: [
-| fields_def
-]
-
-fields_def: [
-| field_def ";" fields_def
-| field_def
-|
-]
-
-field_def: [
-| global binders ":=" lconstr
-]
-
-binder_constr: [
-| "forall" open_binders "," operconstr200
-| "fun" open_binders "=>" operconstr200
-| "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
-| "let" "fix" fix_decl "in" operconstr200
-| "let" "cofix" cofix_decl "in" operconstr200
-| "let" [ "(" LIST0 name SEP "," ")" | "()" ] return_type ":=" operconstr200 "in" operconstr200
-| "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
-| "let" "'" pattern200 ":=" operconstr200 case_type "in" operconstr200
-| "let" "'" pattern200 "in" pattern200 ":=" operconstr200 case_type "in" operconstr200
-| "if" operconstr200 return_type "then" operconstr200 "else" operconstr200
-| "fix" fix_decls
-| "cofix" cofix_decls
-]
-
-appl_arg: [
-| test_lpar_id_coloneq "(" ident ":=" lconstr ")"
-| operconstr9
-]
-
-atomic_constr: [
-| global univ_instance
-| sort
-| NUMERAL
-| string
-| "_"
-| "?" "[" ident "]"
-| "?" "[" pattern_ident "]"
-| pattern_ident evar_instance
-]
-
-inst: [
-| ident ":=" lconstr
-]
-
-evar_instance: [
-| "@{" LIST1 inst SEP ";" "}"
-|
-]
-
-univ_instance: [
-| "@{" LIST0 universe_level "}"
-|
-]
-
-universe_level: [
-| "Set"
-| "Prop"
-| "Type"
-| "_"
-| global
-]
-
-fix_decls: [
-| fix_decl
-| fix_decl "with" LIST1 fix_decl SEP "with" "for" identref
-]
-
-cofix_decls: [
-| cofix_decl
-| cofix_decl "with" LIST1 cofix_decl SEP "with" "for" identref
-]
-
-fix_decl: [
-| identref binders_fixannot type_cstr ":=" operconstr200
-]
-
-cofix_decl: [
-| identref binders type_cstr ":=" operconstr200
-]
-
-match_constr: [
-| "match" LIST1 case_item SEP "," OPT case_type "with" branches "end"
-]
-
-case_item: [
-| operconstr100 OPT [ "as" name ] OPT [ "in" pattern200 ]
-]
-
-case_type: [
-| "return" operconstr100
-]
-
-return_type: [
-| OPT [ OPT [ "as" name ] case_type ]
-]
-
-branches: [
-| OPT "|" LIST0 eqn SEP "|"
-]
-
-mult_pattern: [
-| LIST1 pattern200 SEP ","
-]
-
-eqn: [
-| LIST1 mult_pattern SEP "|" "=>" lconstr
-]
-
-record_pattern: [
-| global ":=" pattern200
-]
-
-record_patterns: [
-| record_pattern ";" record_patterns
-| record_pattern
-|
-]
-
-pattern200: [
-| pattern100
-]
-
-pattern100: [
-| pattern99 ":" operconstr200
-| pattern99
-]
-
-pattern99: [
-| pattern90
-]
-
-pattern90: [
-| pattern10
-]
-
-pattern10: [
-| pattern1 "as" name
-| pattern1 LIST1 pattern1
-| "@" Prim.reference LIST0 pattern1
-| pattern1
-]
-
-pattern1: [
-| pattern0 "%" IDENT
-| pattern0
-]
-
-pattern0: [
-| Prim.reference
-| "{|" record_patterns bar_cbrace
-| "_"
-| "(" pattern200 ")"
-| "(" pattern200 "|" LIST1 pattern200 SEP "|" ")"
-| NUMERAL
-| string
-]
-
-fixannot: [
-| "{" "struct" identref "}"
-| "{" "wf" constr identref "}"
-| "{" "measure" constr OPT identref OPT constr "}"
-]
-
-binders_fixannot: [
-| ensure_fixannot fixannot
-| binder binders_fixannot
-|
-]
-
-open_binders: [
-| name LIST0 name ":" lconstr
-| name LIST0 name binders
-| name ".." name
-| closed_binder binders
-]
-
-binders: [
-| LIST0 binder
-| Pcoq.Constr.binders
-]
-
-binder: [
-| name
-| closed_binder
-]
-
-closed_binder: [
-| "(" name LIST1 name ":" lconstr ")"
-| "(" name ":" lconstr ")"
-| "(" name ":=" lconstr ")"
-| "(" name ":" lconstr ":=" lconstr ")"
-| "{" name "}"
-| "{" name LIST1 name ":" lconstr "}"
-| "{" name ":" lconstr "}"
-| "{" name LIST1 name "}"
-| "[" name "]"
-| "[" name LIST1 name ":" lconstr "]"
-| "[" name ":" lconstr "]"
-| "[" name LIST1 name "]"
-| "`(" LIST1 typeclass_constraint SEP "," ")"
-| "`{" LIST1 typeclass_constraint SEP "," "}"
-| "`[" LIST1 typeclass_constraint SEP "," "]"
-| "'" pattern0
-]
-
-typeclass_constraint: [
-| "!" operconstr200
-| "{" name "}" ":" [ "!" | ] operconstr200
-| test_name_colon name ":" [ "!" | ] operconstr200
-| operconstr200
-]
-
-type_cstr: [
-| ":" lconstr
-|
-]
-
-let_type_cstr: [
-| OPT [ ":" lconstr ]
-]
-
-preident: [
-| IDENT
-]
-
-ident: [
-| IDENT
-]
-
-pattern_ident: [
-| LEFTQMARK ident
-]
-
-pattern_identref: [
-| pattern_ident
-]
-
-var: [
-| ident
-]
-
-identref: [
-| ident
-]
-
-field: [
-| FIELD
-]
-
-fields: [
-| field fields
-| field
-]
-
-fullyqualid: [
-| ident fields
-| ident
-]
-
-name: [
-| "_"
-| ident
-]
-
-reference: [
-| ident fields
-| ident
-]
-
-qualid: [
-| reference
-]
-
-by_notation: [
-| ne_string OPT [ "%" IDENT ]
-]
-
-smart_global: [
-| reference
-| by_notation
-]
-
-ne_string: [
-| STRING
-]
-
-ne_lstring: [
-| ne_string
-]
-
-dirpath: [
-| ident LIST0 field
-]
-
-string: [
-| STRING
-]
-
-lstring: [
-| string
-]
-
-integer: [
-| bigint
-]
-
-natural: [
-| bignat
-| _natural
-]
-
-bigint: [
-| NUMERAL
-| test_minus_nat "-" NUMERAL
-]
-
-bignat: [
-| NUMERAL
-]
-
-bar_cbrace: [
-| test_pipe_closedcurly "|" "}"
-]
-
-strategy_level: [
-| "expand"
-| "opaque"
-| integer
-| "transparent"
-| strategy_level0
-]
-
-vernac_toplevel: [
-| "Drop" "."
-| "Quit" "."
-| "BackTo" natural "."
-| test_show_goal "Show" "Goal" natural "at" natural "."
-| "Show" "Proof" "Diffs" OPT "removed" "."
-| Pvernac.Vernac_.main_entry
-]
-
 opt_hintbases: [
 |
 | ":" LIST1 IDENT
@@ -655,6 +188,17 @@ command: [
 | "Show" "Ltac" "Profile" "CutOff" int
 | "Show" "Ltac" "Profile" string
 | "Show" "Lia" "Profile"      (* micromega plugin *)
+| "Add" "Zify" "InjTyp" constr      (* micromega plugin *)
+| "Add" "Zify" "BinOp" constr      (* micromega plugin *)
+| "Add" "Zify" "UnOp" constr      (* micromega plugin *)
+| "Add" "Zify" "CstOp" constr      (* micromega plugin *)
+| "Add" "Zify" "BinRel" constr      (* micromega plugin *)
+| "Add" "Zify" "PropOp" constr      (* micromega plugin *)
+| "Add" "Zify" "PropBinOp" constr      (* micromega plugin *)
+| "Add" "Zify" "PropUOp" constr      (* micromega plugin *)
+| "Add" "Zify" "BinOpSpec" constr      (* micromega plugin *)
+| "Add" "Zify" "UnOpSpec" constr      (* micromega plugin *)
+| "Add" "Zify" "Saturate" constr      (* micromega plugin *)
 | "Add" "InjTyp" constr      (* micromega plugin *)
 | "Add" "BinOp" constr      (* micromega plugin *)
 | "Add" "UnOp" constr      (* micromega plugin *)
@@ -663,7 +207,6 @@ command: [
 | "Add" "PropOp" constr      (* micromega plugin *)
 | "Add" "PropBinOp" constr      (* micromega plugin *)
 | "Add" "PropUOp" constr      (* micromega plugin *)
-| "Add" "Spec" constr      (* micromega plugin *)
 | "Add" "BinOpSpec" constr      (* micromega plugin *)
 | "Add" "UnOpSpec" constr      (* micromega plugin *)
 | "Add" "Saturate" constr      (* micromega plugin *)
@@ -672,6 +215,8 @@ command: [
 | "Show" "Zify" "UnOp"      (* micromega plugin *)
 | "Show" "Zify" "CstOp"      (* micromega plugin *)
 | "Show" "Zify" "BinRel"      (* micromega plugin *)
+| "Show" "Zify" "UnOpSpec"      (* micromega plugin *)
+| "Show" "Zify" "BinOpSpec"      (* micromega plugin *)
 | "Show" "Zify" "Spec"      (* micromega plugin *)
 | "Add" "Ring" ident ":" constr OPT ring_mods      (* setoid_ring plugin *)
 | "Print" "Rings"      (* setoid_ring plugin *)
@@ -1413,6 +958,473 @@ constr_as_binder_kind: [
 | "as" "strict" "pattern"
 ]
 
+vernac_toplevel: [
+| "Drop" "."
+| "Quit" "."
+| "BackTo" natural "."
+| test_show_goal "Show" "Goal" natural "at" natural "."
+| "Show" "Proof" "Diffs" OPT "removed" "."
+| Pvernac.Vernac_.main_entry
+]
+
+Constr.ident: [
+| Prim.ident
+]
+
+Prim.name: [
+| "_"
+]
+
+global: [
+| Prim.reference
+]
+
+constr_pattern: [
+| constr
+]
+
+lconstr_pattern: [
+| lconstr
+]
+
+sort: [
+| "Set"
+| "Prop"
+| "SProp"
+| "Type"
+| "Type" "@{" "_" "}"
+| "Type" "@{" universe "}"
+]
+
+sort_family: [
+| "Set"
+| "Prop"
+| "SProp"
+| "Type"
+]
+
+universe_increment: [
+| "+" natural
+|
+]
+
+universe_name: [
+| global
+| "Set"
+| "Prop"
+]
+
+universe_expr: [
+| universe_name universe_increment
+]
+
+universe: [
+| "max" "(" LIST1 universe_expr SEP "," ")"
+| universe_expr
+]
+
+lconstr: [
+| operconstr200
+| l_constr
+]
+
+constr: [
+| operconstr8
+| "@" global univ_instance
+]
+
+operconstr200: [
+| binder_constr
+| operconstr100
+]
+
+operconstr100: [
+| operconstr99 "<:" operconstr200
+| operconstr99 "<<:" operconstr200
+| operconstr99 ":" operconstr200
+| operconstr99 ":>"
+| operconstr99
+]
+
+operconstr99: [
+| operconstr90
+]
+
+operconstr90: [
+| operconstr10
+]
+
+operconstr10: [
+| operconstr9 LIST1 appl_arg
+| "@" global univ_instance LIST0 operconstr9
+| "@" pattern_identref LIST1 identref
+| operconstr9
+]
+
+operconstr9: [
+| ".." operconstr0 ".."
+| operconstr8
+]
+
+operconstr8: [
+| operconstr1
+]
+
+operconstr1: [
+| operconstr0 ".(" global LIST0 appl_arg ")"
+| operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
+| operconstr0 "%" IDENT
+| operconstr0
+]
+
+operconstr0: [
+| atomic_constr
+| match_constr
+| "(" operconstr200 ")"
+| "{|" record_declaration bar_cbrace
+| "{" binder_constr "}"
+| "`{" operconstr200 "}"
+| "`(" operconstr200 ")"
+| "ltac" ":" "(" Pltac.tactic_expr ")"
+]
+
+record_declaration: [
+| fields_def
+]
+
+fields_def: [
+| field_def ";" fields_def
+| field_def
+|
+]
+
+field_def: [
+| global binders ":=" lconstr
+]
+
+binder_constr: [
+| "forall" open_binders "," operconstr200
+| "fun" open_binders "=>" operconstr200
+| "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
+| "let" "fix" fix_decl "in" operconstr200
+| "let" "cofix" cofix_decl "in" operconstr200
+| "let" [ "(" LIST0 name SEP "," ")" | "()" ] return_type ":=" operconstr200 "in" operconstr200
+| "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
+| "let" "'" pattern200 ":=" operconstr200 case_type "in" operconstr200
+| "let" "'" pattern200 "in" pattern200 ":=" operconstr200 case_type "in" operconstr200
+| "if" operconstr200 return_type "then" operconstr200 "else" operconstr200
+| "fix" fix_decls
+| "cofix" cofix_decls
+]
+
+appl_arg: [
+| test_lpar_id_coloneq "(" ident ":=" lconstr ")"
+| operconstr9
+]
+
+atomic_constr: [
+| global univ_instance
+| sort
+| NUMERAL
+| string
+| "_"
+| "?" "[" ident "]"
+| "?" "[" pattern_ident "]"
+| pattern_ident evar_instance
+]
+
+inst: [
+| ident ":=" lconstr
+]
+
+evar_instance: [
+| "@{" LIST1 inst SEP ";" "}"
+|
+]
+
+univ_instance: [
+| "@{" LIST0 universe_level "}"
+|
+]
+
+universe_level: [
+| "Set"
+| "Prop"
+| "Type"
+| "_"
+| global
+]
+
+fix_decls: [
+| fix_decl
+| fix_decl "with" LIST1 fix_decl SEP "with" "for" identref
+]
+
+cofix_decls: [
+| cofix_decl
+| cofix_decl "with" LIST1 cofix_decl SEP "with" "for" identref
+]
+
+fix_decl: [
+| identref binders_fixannot type_cstr ":=" operconstr200
+]
+
+cofix_decl: [
+| identref binders type_cstr ":=" operconstr200
+]
+
+match_constr: [
+| "match" LIST1 case_item SEP "," OPT case_type "with" branches "end"
+]
+
+case_item: [
+| operconstr100 OPT [ "as" name ] OPT [ "in" pattern200 ]
+]
+
+case_type: [
+| "return" operconstr100
+]
+
+return_type: [
+| OPT [ OPT [ "as" name ] case_type ]
+]
+
+branches: [
+| OPT "|" LIST0 eqn SEP "|"
+]
+
+mult_pattern: [
+| LIST1 pattern200 SEP ","
+]
+
+eqn: [
+| LIST1 mult_pattern SEP "|" "=>" lconstr
+]
+
+record_pattern: [
+| global ":=" pattern200
+]
+
+record_patterns: [
+| record_pattern ";" record_patterns
+| record_pattern
+|
+]
+
+pattern200: [
+| pattern100
+]
+
+pattern100: [
+| pattern99 ":" operconstr200
+| pattern99
+]
+
+pattern99: [
+| pattern90
+]
+
+pattern90: [
+| pattern10
+]
+
+pattern10: [
+| pattern1 "as" name
+| pattern1 LIST1 pattern1
+| "@" Prim.reference LIST0 pattern1
+| pattern1
+]
+
+pattern1: [
+| pattern0 "%" IDENT
+| pattern0
+]
+
+pattern0: [
+| Prim.reference
+| "{|" record_patterns bar_cbrace
+| "_"
+| "(" pattern200 ")"
+| "(" pattern200 "|" LIST1 pattern200 SEP "|" ")"
+| NUMERAL
+| string
+]
+
+fixannot: [
+| "{" "struct" identref "}"
+| "{" "wf" constr identref "}"
+| "{" "measure" constr OPT identref OPT constr "}"
+]
+
+binders_fixannot: [
+| ensure_fixannot fixannot
+| binder binders_fixannot
+|
+]
+
+open_binders: [
+| name LIST0 name ":" lconstr
+| name LIST0 name binders
+| name ".." name
+| closed_binder binders
+]
+
+binders: [
+| LIST0 binder
+| Pcoq.Constr.binders
+]
+
+binder: [
+| name
+| closed_binder
+]
+
+closed_binder: [
+| "(" name LIST1 name ":" lconstr ")"
+| "(" name ":" lconstr ")"
+| "(" name ":=" lconstr ")"
+| "(" name ":" lconstr ":=" lconstr ")"
+| "{" name "}"
+| "{" name LIST1 name ":" lconstr "}"
+| "{" name ":" lconstr "}"
+| "{" name LIST1 name "}"
+| "[" name "]"
+| "[" name LIST1 name ":" lconstr "]"
+| "[" name ":" lconstr "]"
+| "[" name LIST1 name "]"
+| "`(" LIST1 typeclass_constraint SEP "," ")"
+| "`{" LIST1 typeclass_constraint SEP "," "}"
+| "`[" LIST1 typeclass_constraint SEP "," "]"
+| "'" pattern0
+]
+
+typeclass_constraint: [
+| "!" operconstr200
+| "{" name "}" ":" [ "!" | ] operconstr200
+| test_name_colon name ":" [ "!" | ] operconstr200
+| operconstr200
+]
+
+type_cstr: [
+| ":" lconstr
+|
+]
+
+let_type_cstr: [
+| OPT [ ":" lconstr ]
+]
+
+preident: [
+| IDENT
+]
+
+ident: [
+| IDENT
+]
+
+pattern_ident: [
+| LEFTQMARK ident
+]
+
+pattern_identref: [
+| pattern_ident
+]
+
+var: [
+| ident
+]
+
+identref: [
+| ident
+]
+
+field: [
+| FIELD
+]
+
+fields: [
+| field fields
+| field
+]
+
+fullyqualid: [
+| ident fields
+| ident
+]
+
+name: [
+| "_"
+| ident
+]
+
+reference: [
+| ident fields
+| ident
+]
+
+qualid: [
+| reference
+]
+
+by_notation: [
+| ne_string OPT [ "%" IDENT ]
+]
+
+smart_global: [
+| reference
+| by_notation
+]
+
+ne_string: [
+| STRING
+]
+
+ne_lstring: [
+| ne_string
+]
+
+dirpath: [
+| ident LIST0 field
+]
+
+string: [
+| STRING
+]
+
+lstring: [
+| string
+]
+
+integer: [
+| bigint
+]
+
+natural: [
+| bignat
+| _natural
+]
+
+bigint: [
+| NUMERAL
+| test_minus_nat "-" NUMERAL
+]
+
+bignat: [
+| NUMERAL
+]
+
+bar_cbrace: [
+| test_pipe_closedcurly "|" "}"
+]
+
+strategy_level: [
+| "expand"
+| "opaque"
+| integer
+| "transparent"
+| strategy_level0
+]
+
 simple_tactic: [
 | "btauto"
 | "congruence"
@@ -1985,7 +1997,6 @@ failkw: [
 binder_tactic: [
 | "fun" LIST1 input_fun "=>" tactic_expr5
 | "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" tactic_expr5
-| "info" tactic_expr5
 ]
 
 tactic_arg_compat: [

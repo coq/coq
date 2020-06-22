@@ -11,14 +11,14 @@ Displaying
 
 .. _Print:
 
-.. cmd:: Print {? Term } @reference {? @univ_name_list }
+.. cmd:: Print {? Term } @smart_global {? @univ_name_list }
 
    .. insertprodn univ_name_list univ_name_list
 
    .. prodn::
       univ_name_list ::= @%{ {* @name } %}
 
-   Displays definitions of terms, including opaque terms, for the object :n:`@reference`.
+   Displays definitions of terms, including opaque terms, for the object :n:`@smart_global`.
 
    * :n:`Term` - a syntactic marker to allow printing a term
      that is the same as one of the various :n:`Print` commands.  For example,
@@ -26,7 +26,7 @@ Displaying
      information on the object whose name is ":n:`All`".
 
    * :n:`@univ_name_list` - locally renames the
-     polymorphic universes of :n:`@reference`.
+     polymorphic universes of :n:`@smart_global`.
      The name `_` means the usual name is printed.
 
    .. exn:: @qualid not a defined object.
@@ -65,14 +65,14 @@ If no selector is provided,
 the command applies to the current goal.  If no proof is open, then the command only applies
 to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
-.. cmd:: About @reference {? @univ_name_list }
+.. cmd:: About @smart_global {? @univ_name_list }
 
-   Displays information about the :n:`@reference` object, which,
+   Displays information about the :n:`@smart_global` object, which,
    if a proof is open,  may be a hypothesis of the selected goal,
    or an accessible theorem, axiom, etc.:
    its kind (module, constant, assumption, inductive,
    constructor, abbreviation, …), long name, type, implicit arguments and
-   argument scopes (as set in the definition of :token:`reference` or
+   argument scopes (as set in the definition of :token:`smart_global` or
    subsequently with the :cmd:`Arguments` command). It does not print the body of definitions or proofs.
 
 .. cmd:: Check @term
@@ -84,7 +84,7 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
    Performs the specified reduction on :n:`@term` and displays
    the resulting term with its type. If a proof is open, :n:`@term`
-   may reference hypotheses of the selected goal.
+   may refer to hypotheses of the selected goal.
 
    .. seealso:: Section :ref:`performingcomputations`.
 
@@ -157,7 +157,7 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
       - Otherwise, search for objects
         whose type contains the reference that this string,
         interpreted as a notation, is attached to (as described in
-        :n:`@reference`).  See :ref:`this example <search-by-notation>`.
+        :n:`@smart_global`).  See :ref:`this example <search-by-notation>`.
 
      .. note::
 
@@ -405,7 +405,7 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 Requests to the environment
 -------------------------------
 
-.. cmd:: Print Assumptions @reference
+.. cmd:: Print Assumptions @smart_global
 
    Displays all the assumptions (axioms, parameters and
    variables) a theorem or definition depends on.
@@ -413,24 +413,24 @@ Requests to the environment
    The message "Closed under the global context" indicates that the theorem or
    definition has no dependencies.
 
-.. cmd:: Print Opaque Dependencies @reference
+.. cmd:: Print Opaque Dependencies @smart_global
 
-   Displays the assumptions and opaque constants that :n:`@reference` depends on.
+   Displays the assumptions and opaque constants that :n:`@smart_global` depends on.
 
-.. cmd:: Print Transparent Dependencies @reference
+.. cmd:: Print Transparent Dependencies @smart_global
 
-   Displays the assumptions and  transparent constants that :n:`@reference` depends on.
+   Displays the assumptions and  transparent constants that :n:`@smart_global` depends on.
 
-.. cmd:: Print All Dependencies @reference
+.. cmd:: Print All Dependencies @smart_global
 
-   Displays all the assumptions and constants :n:`@reference` depends on.
+   Displays all the assumptions and constants :n:`@smart_global` depends on.
 
-.. cmd:: Locate @reference
+.. cmd:: Locate @smart_global
 
-   .. insertprodn reference reference
+   .. insertprodn smart_global smart_global
 
    .. prodn::
-      reference ::= @qualid
+      smart_global ::= @qualid
       | @string {? % @scope_key }
 
    Displays the full name of objects from |Coq|'s various qualified namespaces such as terms,
@@ -450,7 +450,7 @@ Requests to the environment
 
    .. todo somewhere we should list all the qualified namespaces
 
-.. cmd:: Locate Term @reference
+.. cmd:: Locate Term @smart_global
 
    Like :cmd:`Locate`, but limits the search to terms
 
@@ -973,7 +973,7 @@ as numbers, and for reflection-based tactics. The commands to fine-
 tune the reduction strategies and the lazy conversion algorithm are
 described first.
 
-.. cmd:: Opaque {+ @reference }
+.. cmd:: Opaque {+ @smart_global }
 
    This command accepts the :attr:`global` attribute.  By default, the scope
    of :cmd:`Opaque` is limited to the current section or module.
@@ -982,7 +982,7 @@ described first.
    defined by :cmd:`Definition` or :cmd:`Let` (with an explicit body), or by a command
    assimilated to a definition such as :cmd:`Fixpoint`, :cmd:`Program Definition`, etc,
    or by a proof ended by :cmd:`Defined`. The command tells not to unfold the
-   constants in the :n:`@reference` sequence in tactics using δ-conversion (unfolding
+   constants in the :n:`@smart_global` sequence in tactics using δ-conversion (unfolding
    a constant is replacing it by its definition).
 
    :cmd:`Opaque` has also an effect on the conversion algorithm of |Coq|, telling
@@ -995,7 +995,7 @@ described first.
       Sections :ref:`performingcomputations`, :ref:`tactics-automating`,
       :ref:`proof-editing-mode`
 
-.. cmd:: Transparent {+ @reference }
+.. cmd:: Transparent {+ @smart_global }
 
    This command accepts the :attr:`global` attribute.  By default, the scope
    of :cmd:`Transparent` is limited to the current section or module.
@@ -1022,7 +1022,7 @@ described first.
 
 .. _vernac-strategy:
 
-.. cmd:: Strategy {+ @strategy_level [ {+ @reference } ] }
+.. cmd:: Strategy {+ @strategy_level [ {+ @smart_global } ] }
 
    .. insertprodn strategy_level strategy_level_or_var
 
@@ -1041,7 +1041,7 @@ described first.
    This command generalizes the behavior of the :cmd:`Opaque` and :cmd:`Transparent`
    commands. It is used to fine-tune the strategy for unfolding
    constants, both at the tactic level and at the kernel level. This
-   command associates a :n:`@strategy_level` with the qualified names in the :n:`@reference`
+   command associates a :n:`@strategy_level` with the qualified names in the :n:`@smart_global`
    sequence. Whenever two
    expressions with two distinct head constants are compared (for
    instance, this comparison can be triggered by a type cast), the one
@@ -1062,10 +1062,10 @@ described first.
       like −∞)
     + ``transparent`` : Equivalent to level 0
 
-.. cmd:: Print Strategy @reference
+.. cmd:: Print Strategy @smart_global
 
-   This command prints the strategy currently associated with :n:`@reference`. It
-   fails if :n:`@reference` is not an unfoldable reference, that is, neither a
+   This command prints the strategy currently associated with :n:`@smart_global`. It
+   fails if :n:`@smart_global` is not an unfoldable reference, that is, neither a
    variable nor a constant.
 
    .. exn:: The reference is not unfoldable.

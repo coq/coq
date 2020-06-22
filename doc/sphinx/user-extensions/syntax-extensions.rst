@@ -1789,7 +1789,7 @@ Tactic notations allow customizing the syntax of tactics.
         - :tacn:`unfold`
 
       * - ``smart_global``
-        - :token:`reference`
+        - :token:`smart_global`
         - a global reference of term
         - :tacn:`with_strategy`
 

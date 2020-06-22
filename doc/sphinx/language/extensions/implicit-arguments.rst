@@ -373,7 +373,7 @@ the hiding of implicit arguments for a single function application using the
 Displaying implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Print Implicit @reference
+.. cmd:: Print Implicit @smart_global
 
    Displays the implicit arguments associated with an object,
    identifying which arguments are applied maximally or not.
