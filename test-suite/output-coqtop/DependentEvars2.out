@@ -90,13 +90,13 @@ Try unfocusing with "}".
 (shelved: 2)
 
 subgoal 1 is:
- ?P -> (?Goal2 -> P4) /\ ?Goal2
+ ?P -> (?P0 -> P4) /\ ?P0
 subgoal 2 is:
- ?P -> (?Goal2 -> P4) /\ ?Goal2
+ ?P -> (?P0 -> P4) /\ ?P0
 subgoal 3 is:
  ?P
 
-(dependent evars: ?X4:?P, ?X5 using ?X10 ?X11, ?X10 using ?X11, ?X11:?Goal2; in current goal:)
+(dependent evars: ?X4:?P, ?X5 using ?X10 ?X11, ?X10 using ?X11, ?X11:?P0; in current goal:)
 
 p14 < 3 focused subgoals
 (shelved: 2)
@@ -106,14 +106,14 @@ p14 < 3 focused subgoals
   p123 : (P1 -> P2) -> P3
   p34 : P3 -> P4
   ============================
-  ?P -> (?Goal2 -> P4) /\ ?Goal2
+  ?P -> (?P0 -> P4) /\ ?P0
 
 subgoal 2 is:
- ?P -> (?Goal2 -> P4) /\ ?Goal2
+ ?P -> (?P0 -> P4) /\ ?P0
 subgoal 3 is:
  ?P
 
-(dependent evars: ?X4:?P, ?X5 using ?X10 ?X11, ?X10 using ?X11, ?X11:?Goal2; in current goal: ?X4 ?X5 ?X10 ?X11)
+(dependent evars: ?X4:?P, ?X5 using ?X10 ?X11, ?X10 using ?X11, ?X11:?P0; in current goal: ?X4 ?X5 ?X10 ?X11)
 
 p14 < 
 Coq < 
