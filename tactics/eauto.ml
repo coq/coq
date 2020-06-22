@@ -67,7 +67,7 @@ open Auto
 let unify_e_resolve flags h =
   Hints.hint_res_pf ~with_evars:true ~with_classes:true ~flags h
 
-let hintmap_of sigma secvars concl =
+let hintmap_of env sigma secvars concl =
   (* Warning: for computation sharing, we need to return a closure *)
   let hdc = try Some (decompose_app_bound sigma concl) with Bound -> None in
   match hdc with
@@ -78,7 +78,7 @@ let hintmap_of sigma secvars concl =
           match Hint_db.map_existential sigma ~secvars hdc concl db with
           | ModeMatch l -> l
           | ModeMismatch -> [])
-     else (fun db -> Hint_db.map_auto sigma ~secvars hdc concl db)
+     else (fun db -> Hint_db.map_auto env sigma ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
 let e_exact flags h =
@@ -106,7 +106,7 @@ let rec e_trivial_fail_db db_list local_db =
   end
 
 and e_my_find_search env sigma db_list local_db secvars concl =
-  let hint_of_db = hintmap_of sigma secvars concl in
+  let hint_of_db = hintmap_of env sigma secvars concl in
   let hintl =
       List.map_append (fun db ->
         let flags = auto_flags_of_state (Hint_db.transparent_state db) in

@@ -243,7 +243,7 @@ sig
   type t
   val empty : t
   val add : TransparentState.t option -> t -> Pattern.constr_pattern -> stored_data -> t
-  val lookup : Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> stored_data list
+  val lookup : Environ.env -> Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> stored_data list
 end =
 struct
   module Data = struct type t = stored_data let compare = pri_order_int end
@@ -257,18 +257,18 @@ struct
 
   let add st net p v = ref (Diff ((st, p, v), net))
 
-  let rec force net = match !net with
+  let rec force env net = match !net with
   | Bnet dn -> dn
   | Diff ((st, p, v), rem) ->
-    let dn = force rem in
-    let p = Bnet.pattern st p in
+    let dn = force env rem in
+    let p = Bnet.pattern env st p in
     let dn = Bnet.add dn p v in
     let () = net := (Bnet dn) in
     dn
 
-  let lookup sigma st net p =
-    let dn = force net in
-    Bnet.lookup sigma st dn p
+  let lookup env sigma st net p =
+    let dn = force env net in
+    Bnet.lookup env sigma st dn p
 end
 
 type search_entry = {
@@ -307,8 +307,8 @@ let rebuild_dn st se =
   in
   { se with sentry_bnet = dn' }
 
-let lookup_tacs sigma concl st se =
-  let l'  = Bounded_net.lookup sigma st se.sentry_bnet concl in
+let lookup_tacs env sigma concl st se =
+  let l'  = Bounded_net.lookup env sigma st se.sentry_bnet concl in
   let sl' = List.stable_sort pri_order_int l' in
   List.merge pri_order_int se.sentry_nopat sl'
 
@@ -529,14 +529,14 @@ val map_none : secvars:Id.Pred.t -> t -> full_hint list
 val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 val map_existential : evar_map -> secvars:Id.Pred.t ->
                       (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
-val map_eauto : evar_map -> secvars:Id.Pred.t ->
+val map_eauto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                 (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
-val map_auto : evar_map -> secvars:Id.Pred.t ->
+val map_auto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                (GlobRef.t * constr array) -> constr -> t -> full_hint list
 val add_one : env -> evar_map -> hint_entry -> t -> t
 val add_list : env -> evar_map -> hint_entry list -> t -> t
-val remove_one : GlobRef.t -> t -> t
-val remove_list : GlobRef.t list -> t -> t
+val remove_one : Environ.env -> GlobRef.t -> t -> t
+val remove_list : Environ.env -> GlobRef.t list -> t -> t
 val iter : (GlobRef.t option -> hint_mode array list -> full_hint list -> unit) -> t -> unit
 val use_dn : t -> bool
 val transparent_state : t -> TransparentState.t
@@ -629,10 +629,10 @@ struct
     merge_entry secvars db se.sentry_nopat se.sentry_pat
 
   (* Precondition: concl has no existentials *)
-  let map_auto sigma ~secvars (k,args) concl db =
+  let map_auto env sigma ~secvars (k,args) concl db =
     let se = find k db in
     let st = if db.use_dn then  (Some db.hintdb_state) else None in
-    let pat = lookup_tacs sigma concl st se in
+    let pat = lookup_tacs env sigma concl st se in
     merge_entry secvars db [] pat
 
   let map_existential sigma ~secvars (k,args) concl db =
@@ -642,11 +642,11 @@ struct
       else ModeMismatch
 
   (* [c] contains an existential *)
-  let map_eauto sigma ~secvars (k,args) concl db =
+  let map_eauto env sigma ~secvars (k,args) concl db =
     let se = find k db in
       if matches_modes sigma args se.sentry_mode then
         let st = if db.use_dn then Some db.hintdb_state else None in
-        let pat = lookup_tacs sigma concl st se in
+        let pat = lookup_tacs env sigma concl st se in
         ModeMatch (merge_entry secvars db [] pat)
       else ModeMismatch
 
@@ -720,14 +720,14 @@ struct
     if sl1' == se.sentry_nopat && sl2' == se.sentry_pat then se
     else rebuild_dn st { se with sentry_nopat = sl1'; sentry_pat = sl2' }
 
-  let remove_list grs db =
+  let remove_list env grs db =
     let filter (_, h) =
       match h.name with PathHints [gr] -> not (List.mem_f GlobRef.equal gr grs) | _ -> true in
     let hintmap = GlobRef.Map.map (remove_he db.hintdb_state filter) db.hintdb_map in
     let hintnopat = List.filter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
-  let remove_one gr db = remove_list [gr] db
+  let remove_one env gr db = remove_list env [gr] db
 
   let get_entry se =
     let h = List.merge pri_order_int se.sentry_nopat se.sentry_pat in
@@ -1044,8 +1044,9 @@ let add_transparency dbname target b =
   in searchtable_add (dbname, Hint_db.set_transparent_state db st')
 
 let remove_hint dbname grs =
+  let env = Global.env () in
   let db = get_db dbname in
-  let db' = Hint_db.remove_list grs db in
+  let db' = Hint_db.remove_list env grs db in
     searchtable_add (dbname, db')
 
 type hint_action =
@@ -1463,7 +1464,7 @@ let pr_hint_term env sigma cl =
               (fun db -> match Hint_db.map_existential sigma ~secvars:Id.Pred.full hdc cl db with
               | ModeMatch l -> l
               | ModeMismatch -> [])
-            else Hint_db.map_auto sigma ~secvars:Id.Pred.full hdc cl
+            else Hint_db.map_auto env sigma ~secvars:Id.Pred.full hdc cl
         with Bound -> Hint_db.map_none ~secvars:Id.Pred.full
       in
       let fn db = List.map (fun x -> 0, x) (fn db) in

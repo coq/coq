@@ -257,13 +257,13 @@ let shelve_dependencies gls =
      Feedback.msg_debug (str" shelving dependent subgoals: " ++ pr_gls sigma gls);
    shelve_goals gls)
 
-let hintmap_of sigma hdc secvars concl =
+let hintmap_of env sigma hdc secvars concl =
   match hdc with
   | None -> fun db -> ModeMatch (Hint_db.map_none ~secvars db)
   | Some hdc ->
      fun db ->
        if Hint_db.use_dn db then (* Using dnet *)
-         Hint_db.map_eauto sigma ~secvars hdc concl db
+         Hint_db.map_eauto env sigma ~secvars hdc concl db
       else Hint_db.map_existential sigma ~secvars hdc concl db
 
 (** Hack to properly solve dependent evars that are typeclasses *)
@@ -373,7 +373,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
         | Extern _ -> (tac, b, true, name, lazy (FullHint.print env sigma h ++ pp))
         | _ -> (tac, b, false, name, lazy (FullHint.print env sigma h ++ pp))
   in
-  let hint_of_db = hintmap_of sigma hdc secvars concl in
+  let hint_of_db = hintmap_of env sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with
       | ModeMatch l -> Some (db, l)
       | ModeMismatch -> None)

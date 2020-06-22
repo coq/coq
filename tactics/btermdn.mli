@@ -30,14 +30,14 @@ sig
 
   type pattern
 
-  val pattern : TransparentState.t option -> constr_pattern -> pattern
+  val pattern : Environ.env -> TransparentState.t option -> constr_pattern -> pattern
 
   val empty : t
 
   val add : t -> pattern -> Z.t -> t
   val rmv : t -> pattern -> Z.t -> t
 
-  val lookup : Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> Z.t list
+  val lookup : Environ.env -> Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> Z.t list
   val app : (Z.t -> unit) -> t -> unit
 end
 

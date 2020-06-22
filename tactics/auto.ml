@@ -266,7 +266,7 @@ let flags_of_state st =
 let auto_flags_of_state st =
   auto_unif_flags_of TransparentState.full st
 
-let hintmap_of sigma secvars hdc concl =
+let hintmap_of env sigma secvars hdc concl =
   match hdc with
   | None -> Hint_db.map_none ~secvars
   | Some hdc ->
@@ -274,7 +274,7 @@ let hintmap_of sigma secvars hdc concl =
        (fun db -> match Hint_db.map_existential sigma ~secvars hdc concl db with
                   | ModeMatch l -> l
                   | ModeMismatch -> [])
-     else Hint_db.map_auto sigma ~secvars hdc concl
+     else Hint_db.map_auto env sigma ~secvars hdc concl
 
 let exists_evaluable_reference env = function
   | EvalConstRef _ -> true
@@ -300,23 +300,24 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
   Proofview.Goal.enter begin fun gl ->
     let concl = Tacmach.New.pf_concl gl in
     let sigma = Tacmach.New.project gl in
+    let env = Proofview.Goal.env gl in
     let secvars = compute_secvars gl in
     Tacticals.New.tclFIRST
       ((dbg_assumption dbg)::intro_tac::
           (List.map Tacticals.New.tclCOMPLETE
-             (trivial_resolve sigma dbg mod_delta db_list local_db secvars concl)))
+             (trivial_resolve env sigma dbg mod_delta db_list local_db secvars concl)))
   end
 
-and my_find_search_nodelta sigma db_list local_db secvars hdc concl =
+and my_find_search_nodelta env sigma db_list local_db secvars hdc concl =
   List.map (fun hint -> (None,hint))
-    (List.map_append (hintmap_of sigma secvars hdc concl) (local_db::db_list))
+    (List.map_append (hintmap_of env sigma secvars hdc concl) (local_db::db_list))
 
 and my_find_search mod_delta =
   if mod_delta then my_find_search_delta
   else my_find_search_nodelta
 
-and my_find_search_delta sigma db_list local_db secvars hdc concl =
-  let f = hintmap_of sigma secvars hdc concl in
+and my_find_search_delta env sigma db_list local_db secvars hdc concl =
+  let f = hintmap_of env sigma secvars hdc concl in
     if occur_existential sigma concl then
       List.map_append
         (fun db ->
@@ -340,7 +341,7 @@ and my_find_search_delta sigma db_list local_db secvars hdc concl =
               | None -> Hint_db.map_none ~secvars db
               | Some hdc ->
                   if TransparentState.is_empty st
-                  then Hint_db.map_auto sigma ~secvars hdc concl db
+                  then Hint_db.map_auto env sigma ~secvars hdc concl db
                   else match Hint_db.map_existential sigma ~secvars hdc concl db with
                       | ModeMatch l -> l
                       | ModeMismatch -> []
@@ -381,7 +382,7 @@ and tac_of_hint dbg db_list local_db concl (flags, h) =
   in
   tclLOG dbg pr_hint (FullHint.run h tactic)
 
-and trivial_resolve sigma dbg mod_delta db_list local_db secvars cl =
+and trivial_resolve env sigma dbg mod_delta db_list local_db secvars cl =
   try
     let head =
       try let hdconstr = decompose_app_bound sigma cl in
@@ -390,7 +391,7 @@ and trivial_resolve sigma dbg mod_delta db_list local_db secvars cl =
     in
       List.map (tac_of_hint dbg db_list local_db cl)
         (priority
-            (my_find_search mod_delta sigma db_list local_db secvars head cl))
+            (my_find_search mod_delta env sigma db_list local_db secvars head cl))
   with Not_found -> []
 
 (** The use of the "core" database can be de-activated by passing
@@ -430,7 +431,7 @@ let h_trivial ?(debug=Off) lems l = gen_trivial ~debug lems l
 (*                       The classical Auto tactic                        *)
 (**************************************************************************)
 
-let possible_resolve sigma dbg mod_delta db_list local_db secvars cl =
+let possible_resolve env sigma dbg mod_delta db_list local_db secvars cl =
   try
     let head =
       try let hdconstr = decompose_app_bound sigma cl in
@@ -438,7 +439,7 @@ let possible_resolve sigma dbg mod_delta db_list local_db secvars cl =
       with Bound -> None
     in
       List.map (tac_of_hint dbg db_list local_db cl)
-        (my_find_search mod_delta sigma db_list local_db secvars head cl)
+        (my_find_search mod_delta env sigma db_list local_db secvars head cl)
   with Not_found -> []
 
 let extend_local_db decl db gl =
@@ -473,12 +474,13 @@ let search d n mod_delta db_list local_db =
              ( Proofview.Goal.enter begin fun gl ->
                let concl = Tacmach.New.pf_concl gl in
                let sigma = Tacmach.New.project gl in
+               let env = Proofview.Goal.env gl in
                let secvars = compute_secvars gl in
                let d' = incr_dbg d in
                Tacticals.New.tclFIRST
                  (List.map
                     (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
-                    (possible_resolve sigma d mod_delta db_list local_db secvars concl))
+                    (possible_resolve env sigma d mod_delta db_list local_db secvars concl))
              end))
     end []
   in
