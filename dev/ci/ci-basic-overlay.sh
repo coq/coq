@@ -349,7 +349,7 @@
 ########################################################################
 # perennial
 ########################################################################
-: "${perennial_CI_REF:=master}"
+: "${perennial_CI_REF:=coq/tested}"
 : "${perennial_CI_GITURL:=https://github.com/mit-pdos/perennial}"
 : "${perennial_CI_ARCHIVEURL:=${perennial_CI_GITURL}/archive}"
 
