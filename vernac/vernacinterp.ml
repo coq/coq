@@ -213,21 +213,21 @@ and interp_control ~st ({ CAst.v = cmd } as vernac) =
 *)
 
 (* Interpreting a possibly delayed proof *)
-let interp_qed_delayed ~proof ~info ~st pe : Vernacstate.LemmaStack.t option =
+let interp_qed_delayed ~proof ~pinfo ~st pe : Vernacstate.LemmaStack.t option =
   let stack = st.Vernacstate.lemmas in
   let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
   let () = match pe with
     | Admitted ->
-      Declare.save_lemma_admitted_delayed ~proof ~info
+      Declare.save_lemma_admitted_delayed ~proof ~pinfo
     | Proved (_,idopt) ->
-      Declare.save_lemma_proved_delayed ~proof ~info ~idopt in
+      Declare.save_lemma_proved_delayed ~proof ~pinfo ~idopt in
   stack
 
-let interp_qed_delayed_control ~proof ~info ~st ~control { CAst.loc; v=pe } =
+let interp_qed_delayed_control ~proof ~pinfo ~st ~control { CAst.loc; v=pe } =
   let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe }) in
   List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
     control
-    (fun ~st -> interp_qed_delayed ~proof ~info ~st pe)
+    (fun ~st -> interp_qed_delayed ~proof ~pinfo ~st pe)
     ~st
 
 (* General interp with management of state *)
@@ -257,6 +257,6 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
 let interp ?(verbosely=true) ~st cmd =
   interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
 
-let interp_qed_delayed_proof ~proof ~info ~st ~control pe : Vernacstate.t =
+let interp_qed_delayed_proof ~proof ~pinfo ~st ~control pe : Vernacstate.t =
   interp_gen ~verbosely:false ~st
-    ~interp_fn:(interp_qed_delayed_control ~proof ~info ~control) pe
+    ~interp_fn:(interp_qed_delayed_control ~proof ~pinfo ~control) pe

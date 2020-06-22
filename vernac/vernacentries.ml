@@ -503,9 +503,8 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
       let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
       check_name_freshness scope id;
-      let thm = { Declare.Recthm.name = id.CAst.v
-                ; typ = EConstr.it_mkProd_or_LetIn t' ctx
-                ; args = ids; impargs = imps @ imps' } in
+      let thm = Declare.CInfo.make ~name:id.CAst.v ~typ:(EConstr.it_mkProd_or_LetIn t' ctx)
+          ~args:ids ~impargs:(imps @ imps') () in
       evd, thm)
     evd thms
 
@@ -530,13 +529,15 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let evd = Evd.minimize_universes evd in
   match mut_analysis with
   | RecLemmas.NonMutual thm ->
-    let thm = Declare.Recthm.to_constr evd thm in
+    let thm = Declare.CInfo.to_constr evd thm in
     let evd = post_check_evd ~udecl ~poly evd in
-    Declare.Proof.start_with_initialization ?hook ~poly ~scope ~kind evd ~udecl thm
+    let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl () in
+    Declare.Proof.start_with_initialization ~info ~cinfo:thm evd
   | RecLemmas.Mutual { mutual_info; thms ; possible_guards } ->
-    let thms = List.map (Declare.Recthm.to_constr evd) thms in
+    let thms = List.map (Declare.CInfo.to_constr evd) thms in
     let evd = post_check_evd ~udecl ~poly evd in
-    Declare.Proof.start_mutual_with_initialization ?hook ~poly ~scope ~kind evd ~udecl ~mutual_info thms (Some possible_guards)
+    let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl () in
+    Declare.Proof.start_mutual_with_initialization ~info ~cinfo:thms evd ~mutual_info (Some possible_guards)
 
 let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in function
 | Coercion ->

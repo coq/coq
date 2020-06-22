@@ -1902,9 +1902,10 @@ let declare_projection name instance_id r =
   let types = Some (it_mkProd_or_LetIn typ ctx) in
   let kind, opaque, scope = Decls.(IsDefinition Definition), false, Locality.Global Locality.ImportDefaultBehavior in
   let impargs, udecl = [], UState.default_univ_decl in
-  let info = Declare.CInfo.make ~scope ~kind ~opaque ~impargs ~udecl ~poly () in
+  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
+  let info = Declare.Info.make ~scope ~kind ~udecl ~poly () in
   let _r : GlobRef.t =
-    Declare.declare_definition ~name ~info ~types ~body sigma
+    Declare.declare_definition ~cinfo ~info ~opaque ~body sigma
   in ()
 
 let build_morphism_signature env sigma m =
@@ -1997,10 +1998,11 @@ let add_morphism_interactive atts m n : Declare.Proof.t =
     | _ -> assert false
   in
   let hook = Declare.Hook.make hook in
-  let info = Declare.Info.make ~hook ~kind () in
   Flags.silently
     (fun () ->
-       let lemma = Declare.Proof.start ~name:instance_id ~poly ~info ~impargs:[] evd morph in
+       let cinfo = Declare.CInfo.make ~name:instance_id ~typ:morph () in
+       let info = Declare.Info.make ~poly ~hook ~kind () in
+       let lemma = Declare.Proof.start ~cinfo ~info evd in
        fst (Declare.Proof.by (Tacinterp.interp tac) lemma)) ()
 
 let add_morphism atts binders m s n =

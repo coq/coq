@@ -290,7 +290,8 @@ let do_program_recursive ~scope ~poly fixkind fixl =
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evm
         (List.length rec_sign) def typ in
-    ({ Declare.Recthm.name; typ; impargs; args = [] }, def, evars)
+    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
+    (cinfo, def, evars)
   in
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let fiximps = List.map pi2 info in

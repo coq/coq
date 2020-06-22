@@ -16,7 +16,8 @@ module RelDecl = Context.Rel.Declaration
 
 let find_mutually_recursive_statements sigma thms =
     let n = List.length thms in
-    let inds = List.map (fun ({ Declare.Recthm.name; typ; args; impargs} as x) ->
+    let inds = List.map (fun x ->
+      let typ = Declare.CInfo.get_typ x in
       let (hyps,ccl) = EConstr.decompose_prod_assum sigma typ in
       let whnf_hyp_hds = EConstr.map_rel_context_in_env
         (fun env c -> fst (Reductionops.whd_all_stack env sigma c))
@@ -89,10 +90,10 @@ let find_mutually_recursive_statements sigma thms =
     (finite,guard,None), ordered_inds
 
 type mutual_info =
-  | NonMutual of EConstr.t Declare.Recthm.t
+  | NonMutual of EConstr.t Declare.CInfo.t
   | Mutual of
       { mutual_info : Declare.Proof.mutual_info
-      ; thms : EConstr.t Declare.Recthm.t list
+      ; thms : EConstr.t Declare.CInfo.t list
       ; possible_guards : int list
       }
 

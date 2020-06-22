@@ -9,14 +9,14 @@
 (************************************************************************)
 
 type mutual_info =
-  | NonMutual of EConstr.t Declare.Recthm.t
+  | NonMutual of EConstr.t Declare.CInfo.t
   | Mutual of
       { mutual_info : Declare.Proof.mutual_info
-      ; thms : EConstr.t Declare.Recthm.t list
+      ; thms : EConstr.t Declare.CInfo.t list
       ; possible_guards : int list
       }
 
 val look_for_possibly_mutual_statements
   :  Evd.evar_map
-  -> EConstr.t Declare.Recthm.t list
+  -> EConstr.t Declare.CInfo.t list
   -> mutual_info

@@ -1492,10 +1492,8 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     Declare.Proof.save ~proof:lemma ~opaque:opacity ~idopt:None
   in
   let info = Declare.Info.make ~hook:(Declare.Hook.make hook) () in
-  let lemma =
-    Declare.Proof.start ~name:na ~poly:false (* FIXME *) ~info ~impargs:[] sigma
-      gls_type
-  in
+  let cinfo = Declare.CInfo.make ~name:na ~typ:gls_type () in
+  let lemma = Declare.Proof.start ~cinfo ~info sigma in
   let lemma =
     if Indfun_common.is_strict_tcc () then
       fst @@ Declare.Proof.by (Proofview.V82.tactic tclIDTAC) lemma
@@ -1530,12 +1528,13 @@ let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
     fonctional_ref input_type relation rec_arg_num thm_name using_lemmas nb_args
     ctx hook =
   let start_proof env ctx tac_start tac_end =
-    let info = Declare.Info.make ~hook () in
-    let lemma =
-      Declare.Proof.start ~name:thm_name ~poly:false (*FIXME*) ~info ctx
-        ~impargs:[]
-        (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref))
+    let cinfo =
+      Declare.CInfo.make ~name:thm_name
+        ~typ:(EConstr.of_constr (compute_terminate_type nb_args fonctional_ref))
+        ()
     in
+    let info = Declare.Info.make ~hook () in
+    let lemma = Declare.Proof.start ~cinfo ~info ctx in
     let lemma =
       fst
       @@ Declare.Proof.by
@@ -1605,10 +1604,12 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   let f_constr = constr_of_monomorphic_global f_ref in
   let equation_lemma_type = subst1 f_constr equation_lemma_type in
   let info = Declare.Info.make () in
-  let lemma =
-    Declare.Proof.start ~name:eq_name ~poly:false evd ~info ~impargs:[]
-      (EConstr.of_constr equation_lemma_type)
+  let cinfo =
+    Declare.CInfo.make ~name:eq_name
+      ~typ:(EConstr.of_constr equation_lemma_type)
+      ()
   in
+  let lemma = Declare.Proof.start ~cinfo evd ~info in
   let lemma =
     fst
     @@ Declare.Proof.by

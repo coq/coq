@@ -68,7 +68,7 @@ module Declare : sig
   val return_proof : unit -> Declare.closed_proof_output
   val return_partial_proof : unit -> Declare.closed_proof_output
 
-  type closed_proof = Declare.proof_object * Declare.Info.t
+  type closed_proof = Declare.proof_object * Declare.Proof.Proof_info.t
 
   val close_future_proof :
     feedback_id:Stateid.t ->

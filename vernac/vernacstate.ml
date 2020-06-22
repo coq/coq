@@ -152,8 +152,7 @@ module Declare = struct
       s_lemmas := Some stack;
       res
 
-  type closed_proof = Declare.proof_object * Declare.Info.t
-
+  type closed_proof = Declare.proof_object * Declare.Proof.Proof_info.t
 
   let return_proof () = cc Declare.return_proof
   let return_partial_proof () = cc Declare.return_partial_proof

@@ -144,9 +144,10 @@ let rec solve_obligation prg num tac =
     let name = Internal.get_name prg in
     Declare.Proof_ending.End_obligation {Declare.name; num; auto}
   in
-  let info = Declare.Info.make ~proof_ending ~scope ~kind () in
+  let cinfo = Declare.CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) () in
   let poly = Internal.get_poly prg in
-  let lemma = Declare.Proof.start ~name:obl.obl_name ~poly ~impargs:[] ~info evd (EConstr.of_constr obl.obl_type) in
+  let info = Declare.Info.make ~scope ~kind ~poly () in
+  let lemma = Declare.Proof.start ~cinfo ~info ~proof_ending evd  in
   let lemma = fst @@ Declare.Proof.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Declare.Proof.set_endline_tactic tac lemma) lemma tac in
   lemma
@@ -307,8 +308,9 @@ let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
     ?(kind = Decls.(IsDefinition Definition)) ?tactic ?(reduce = reduce) ?hook
     ?(opaque = false) obls =
   let prg =
-    let info = Declare.CInfo.make ~poly ~opaque ~udecl ~impargs ~scope ~kind ?hook () in
-    ProgramDecl.make name ~info ~body:term ~types:t ~uctx ~reduce ~ntns:[] ~deps:[] None obls
+    let info = Declare.Info.make ~poly ~udecl ~scope ~kind ?hook () in
+    let cinfo = Declare.CInfo.make ~name ~typ:t ~impargs () in
+    ProgramDecl.make ~info ~cinfo ~body:term ~opaque ~uctx ~reduce ~ntns:[] ~deps:[] ~fixpoint_kind:None obls
   in
   let {obls;_} = Internal.get_obligations prg in
   if Int.equal (Array.length obls) 0 then (
@@ -329,16 +331,16 @@ let add_mutual_definitions l ~uctx ?(udecl = UState.default_univ_decl)
     ?tactic ~poly ?(scope = Locality.Global Locality.ImportDefaultBehavior)
     ?(kind = Decls.(IsDefinition Definition)) ?(reduce = reduce) ?hook ?(opaque = false)
     notations fixkind =
-  let deps = List.map (fun ({Declare.Recthm.name; _}, _, _) -> name) l in
+  let deps = List.map (fun (ci,_,_) -> Declare.CInfo.get_name ci) l in
   let pm =
     List.fold_left
-      (fun () ({Declare.Recthm.name; typ; impargs; _}, b, obls) ->
-        let info = Declare.CInfo.make ~impargs ~poly ~scope ~kind ~opaque ~udecl ?hook () in
+      (fun () (cinfo, b, obls) ->
+        let info = Declare.Info.make ~poly ~scope ~kind ~udecl ?hook () in
         let prg =
-          ProgramDecl.make name ~info ~body:(Some b) ~types:typ ~uctx ~deps
-            (Some fixkind) ~ntns:notations obls ~reduce
+          ProgramDecl.make ~info ~cinfo ~opaque ~body:(Some b) ~uctx ~deps
+            ~fixpoint_kind:(Some fixkind) ~ntns:notations obls ~reduce
         in
-        State.add name prg)
+        State.add (Declare.CInfo.get_name cinfo) prg)
       () l
   in
   let pm, _defined =

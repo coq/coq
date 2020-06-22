@@ -314,8 +314,9 @@ let instance_hook info global ?hook cst =
 let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
   let scope = Locality.Global Locality.ImportDefaultBehavior in
-  let info = Declare.CInfo.make ~kind ~scope ~impargs ~opaque:false ~poly ~udecl () in
-  let kn = Declare.declare_definition ~name ~info ~types:(Some termtype) ~body:term sigma in
+  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:(Some termtype) () in
+  let info = Declare.Info.make ~kind ~scope ~poly ~udecl () in
+  let kn = Declare.declare_definition ~cinfo ~info ~opaque:false ~body:term sigma in
   instance_hook iinfo global ?hook kn
 
 let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst name =
@@ -359,11 +360,12 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decls.(IsDefinition Instance) in
   let hook = Declare.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global ?hook dref)) in
-  let info = Declare.Info.make ~hook ~kind ~udecl () in
+  let info = Declare.Info.make ~hook ~kind ~udecl ~poly () in
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)
   let termtype = Evarutil.nf_evar sigma termtype in
-  let lemma = Declare.Proof.start ~name:id ~poly ~info ~impargs sigma termtype in
+  let cinfo = Declare.CInfo.make ~name:id ~impargs ~typ:termtype () in
+  let lemma = Declare.Proof.start ~cinfo ~info sigma in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
     match term with

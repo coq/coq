@@ -1519,10 +1519,8 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let lem_id = mk_correct_id f_id in
           let typ, _ = lemmas_types_infos.(i) in
           let info = Declare.Info.make () in
-          let lemma =
-            Declare.Proof.start ~name:lem_id ~poly:false ~info ~impargs:[] !evd
-              typ
-          in
+          let cinfo = Declare.CInfo.make ~name:lem_id ~typ () in
+          let lemma = Declare.Proof.start ~cinfo ~info !evd in
           let lemma =
             fst @@ Declare.Proof.by (Proofview.V82.tactic (proving_tac i)) lemma
           in
@@ -1585,10 +1583,10 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
             i*)
           let lem_id = mk_complete_id f_id in
           let info = Declare.Info.make () in
-          let lemma =
-            Declare.Proof.start ~name:lem_id ~poly:false sigma ~info ~impargs:[]
-              (fst lemmas_types_infos.(i))
+          let cinfo =
+            Declare.CInfo.make ~name:lem_id ~typ:(fst lemmas_types_infos.(i)) ()
           in
+          let lemma = Declare.Proof.start ~cinfo sigma ~info in
           let lemma =
             fst
               (Declare.Proof.by

@@ -67,21 +67,43 @@ end
 
 (** {2 One-go, non-interactive declaration API } *)
 
-(** Information for a top-level constant *)
+(** Information for a single top-level named constant *)
 module CInfo : sig
+  type 'constr t
+
+  val make :
+    name : Id.t
+    -> typ:'constr
+    -> ?args:Name.t list
+    -> ?impargs:Impargs.manual_implicits
+    -> unit
+    -> 'constr t
+
+  (* Eventually we would like to remove the constr parameter *)
+  val to_constr : Evd.evar_map -> EConstr.t t -> Constr.t t
+
+  val get_typ : 'constr t -> 'constr
+  (* To be removed once obligations are merged here *)
+  val get_name : 'constr t -> Id.t
+
+end
+
+(** Information for a declaration, interactive or not, includes
+   parameters shared by mutual constants *)
+module Info : sig
 
   type t
 
-  val make :
-    ?poly:bool
-    -> ?opaque : bool
+  (** Note that [opaque] doesn't appear here as it is not known at the
+     start of the proof in the interactive case. *)
+  val make
+    : ?poly:bool
     -> ?inline : bool
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)
     -> ?udecl : UState.universe_decl
     -> ?scope : Locality.locality
     (** locality  *)
-    -> ?impargs : Impargs.manual_implicits
     -> ?hook : Hook.t
     (** Callback to be executed after saving the constant *)
     -> unit
@@ -96,9 +118,9 @@ end
    careful not to submit open terms or evar maps with stale,
    unresolved existentials *)
 val declare_definition
-  :  name:Id.t
-  -> info:CInfo.t
-  -> types:EConstr.t option
+  :  info:Info.t
+  -> cinfo:EConstr.t option CInfo.t
+  -> opaque:bool
   -> body:EConstr.t
   -> Evd.evar_map
   -> GlobRef.t
@@ -112,32 +134,16 @@ val declare_assumption
   -> Entries.parameter_entry
   -> GlobRef.t
 
-module Recthm : sig
-  type 'constr t =
-    { name : Id.t
-    (** Name of theorem *)
-    ; typ : 'constr
-    (** Type of theorem  *)
-    ; args : Name.t list
-    (** Names to pre-introduce  *)
-    ; impargs : Impargs.manual_implicits
-    (** Explicitily declared implicit arguments  *)
-    }
-
-  (* Eventually we would like to remove the constr parameter *)
-  val to_constr : Evd.evar_map -> EConstr.t t -> Constr.t t
-
-end
-
 type lemma_possible_guards = int list list
 
 val declare_mutually_recursive
-  : info:CInfo.t
+  : info:Info.t
+  -> cinfo: Constr.t CInfo.t list
+  -> opaque:bool
   -> ntns:Vernacexpr.decl_notation list
   -> uctx:UState.t
   -> rec_declaration:Constr.rec_declaration
   -> possible_indexes:lemma_possible_guards option
-  -> Constr.t Recthm.t list
   -> Names.GlobRef.t list
 
 (** {2 Declaration of interactive constants }  *)
@@ -172,74 +178,44 @@ module Proof_ending : sig
 
 end
 
-module Info : sig
-  type t
-  val make
-    :  ?hook: Hook.t
-    (** Callback to be executed at the end of the proof *)
-    -> ?proof_ending : Proof_ending.t
-    (** Info for special constants *)
-    -> ?scope : Locality.locality
-    (** locality  *)
-    -> ?kind:Decls.logical_kind
-    (** Theorem, etc... *)
-    -> ?udecl:UState.universe_decl
-    (** Universe declaration *)
-    -> unit
-    -> t
-
-end
-
 (** [Declare.Proof.t] Construction of constants using interactive proofs. *)
 module Proof : sig
 
   type t
 
-  (** [start ~name ~poly ~info sigma goals] starts a proof of
-      name [name] with goals [goals] (a list of pairs of environment and
-      conclusion); [poly] determines if the proof is universe
-      polymorphic. The proof is started in the evar map [sigma] (which
-      can typically contain universe constraints). *)
+  (** [start_proof ~info ~cinfo sigma] starts a proof of [cinfo].
+      The proof is started in the evar map [sigma] (which
+      can typically contain universe constraints) *)
   val start
-    :  name:Names.Id.t
-    -> poly:bool
-    -> ?impargs:Impargs.manual_implicits
-    -> info:Info.t
+    :  info:Info.t
+    -> cinfo:EConstr.t CInfo.t
+    -> ?proof_ending:Proof_ending.t
     -> Evd.evar_map
-    -> EConstr.t
     -> t
 
   (** Like [start] except that there may be dependencies between initial goals. *)
   val start_dependent
-    :  name:Names.Id.t
-    -> poly:bool
-    -> info:Info.t
+    : info:Info.t
+    -> name:Id.t
     -> Proofview.telescope
+    -> proof_ending:Proof_ending.t
     -> t
 
   (** Pretty much internal, used by the Lemmavernaculars *)
   val start_with_initialization
-    :  ?hook:Hook.t
-    -> poly:bool
-    -> scope:Locality.locality
-    -> kind:Decls.logical_kind
-    -> udecl:UState.universe_decl
+    :  info:Info.t
+    -> cinfo:Constr.t CInfo.t
     -> Evd.evar_map
-    -> Constr.t Recthm.t
     -> t
 
   type mutual_info = (bool * lemma_possible_guards * Constr.t option list option)
 
   (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars *)
   val start_mutual_with_initialization
-    :  ?hook:Hook.t
-    -> poly:bool
-    -> scope:Locality.locality
-    -> kind:Decls.logical_kind
-    -> udecl:UState.universe_decl
-    -> Evd.evar_map
+    :  info:Info.t
+    -> cinfo:Constr.t CInfo.t list
     -> mutual_info:mutual_info
-    -> Constr.t Recthm.t list
+    -> Evd.evar_map
     -> int list option
     -> t
 
@@ -302,7 +278,12 @@ module Proof : sig
   val get_current_context : t -> Evd.evar_map * Environ.env
 
   (* Internal, don't use *)
-  val info : t -> Info.t
+  module Proof_info : sig
+    type t
+    (* Make a dummy value, used in the stm *)
+    val default : unit -> t
+  end
+  val info : t -> Proof_info.t
 end
 
 (** {2 low-level, internla API, avoid using unless you have special needs } *)
@@ -402,12 +383,12 @@ val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output
    proof information so the proof won't be forced. *)
 val save_lemma_admitted_delayed :
      proof:proof_object
-  -> info:Info.t
+  -> pinfo:Proof.Proof_info.t
   -> unit
 
 val save_lemma_proved_delayed
   : proof:proof_object
-  -> info:Info.t
+  -> pinfo:Proof.Proof_info.t
   -> idopt:Names.lident option
   -> unit
 
@@ -469,15 +450,15 @@ module ProgramDecl : sig
   type t
 
   val make :
-       Names.Id.t
-    -> info:CInfo.t
+       info:Info.t
+    -> cinfo:Constr.types CInfo.t
+    -> opaque:bool
     -> ntns:Vernacexpr.decl_notation list
     -> reduce:(Constr.constr -> Constr.constr)
     -> deps:Names.Id.t list
     -> uctx:UState.t
-    -> types:Constr.types
     -> body:Constr.constr option
-    -> fixpoint_kind option
+    -> fixpoint_kind:fixpoint_kind option
     -> RetrieveObl.obligation_info
     -> t
 
