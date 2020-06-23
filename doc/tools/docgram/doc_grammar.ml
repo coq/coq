@@ -82,6 +82,138 @@ type gram = {
   order: string list;
 }
 
+
+(*** Print routines ***)
+
+let sprintf = Printf.sprintf
+
+let map_and_concat f ?(delim="") l =
+  String.concat delim (List.map f l)
+
+let rec db_output_prodn = function
+  | Sterm s -> sprintf "(Sterm %s) " s
+  | Snterm s -> sprintf "(Snterm %s) " s
+  | Slist1 sym -> sprintf "(Slist1 %s) " (db_output_prodn sym)
+  | Slist1sep (sym, sep) -> sprintf "(Slist1sep %s %s) " (db_output_prodn sep) (db_output_prodn sym)
+  | Slist0 sym -> sprintf "(Slist0 %s) " (db_output_prodn sym)
+  | Slist0sep (sym, sep) -> sprintf "(Slist0sep %s %s)  " (db_output_prodn sep) (db_output_prodn sym)
+  | Sopt sym -> sprintf "(Sopt %s) " (db_output_prodn sym)
+  | Sparen prod -> sprintf "(Sparen %s) " (db_out_list prod)
+  | Sprod prods -> sprintf "(Sprod %s) " (db_out_prods prods)
+  | Sedit s -> sprintf "(Sedit %s) " s
+  | Sedit2 (s, s2) -> sprintf "(Sedit2 %s %s) " s s2
+and db_out_list prod = sprintf "(%s)" (map_and_concat db_output_prodn prod)
+and db_out_prods prods = sprintf "( %s )" (map_and_concat ~delim:" | " db_out_list prods)
+
+(* identify special chars that don't get a trailing space in output *)
+let omit_space s = List.mem s ["?"; "."; "#"]
+
+let rec output_prod plist need_semi = function
+    | Sterm s -> if plist then sprintf "%s" s else sprintf "\"%s\"" s
+    | Snterm s ->
+        if plist then sprintf "`%s`" s else
+          sprintf "%s%s" s (if s = "IDENT" && need_semi then ";" else "")
+    | Slist1 sym -> sprintf "LIST1 %s" (prod_to_str ~plist [sym])
+    | Slist1sep (sym, sep) -> sprintf "LIST1 %s SEP %s" (prod_to_str ~plist [sym]) (prod_to_str ~plist [sep])
+    | Slist0 sym -> sprintf "LIST0 %s" (prod_to_str ~plist [sym])
+    | Slist0sep (sym, sep) -> sprintf "LIST0 %s SEP %s" (prod_to_str ~plist [sym]) (prod_to_str ~plist [sep])
+    | Sopt sym -> sprintf "OPT %s" (prod_to_str ~plist [sym])
+    | Sparen sym_list -> sprintf "( %s )" (prod_to_str sym_list)
+    | Sprod sym_list_list ->
+      sprintf "[ %s ]" (String.concat " " (List.mapi (fun i r ->
+          let prod = (prod_to_str r) in
+          let sep = if i = 0 then "" else
+              if prod <> "" then "| " else "|" in
+          sprintf "%s%s" sep prod)
+        sym_list_list))
+    | Sedit s -> sprintf "%s" s
+    (* todo: make TAG info output conditional on the set of prods? *)
+    | Sedit2 ("TAG", plugin) ->
+      if plist then
+        sprintf "     (%s plugin)" plugin
+      else
+        sprintf "     (* %s plugin *)" plugin
+    | Sedit2 ("FILE", file) ->
+      let file_suffix_regex = Str.regexp ".*/\\([a-zA-Z0-9_\\.]+\\)" in
+      let suffix = if Str.string_match file_suffix_regex file 0 then Str.matched_group 1 file else file in
+      if plist then
+        sprintf "     (%s)" suffix
+      else
+        sprintf "     (* %s *)" suffix
+    | Sedit2 (s, s2) -> sprintf "%s \"%s\"" s s2
+
+and prod_to_str_r plist prod =
+  match prod with
+  | Sterm s :: Snterm "ident" :: tl when omit_space s && plist ->
+    (sprintf "%s`ident`" s) :: (prod_to_str_r plist tl)
+  | p :: tl ->
+    let need_semi =
+      match prod with
+      | Snterm "IDENT" :: Sterm _ :: _
+      | Snterm "IDENT" :: Sprod _ :: _ -> true
+      | _ -> false in
+    (output_prod plist need_semi p) :: (prod_to_str_r plist tl)
+  | [] -> []
+
+and prod_to_str ?(plist=false) prod =
+  String.concat " " (prod_to_str_r plist prod)
+
+(* Determine if 2 productions are equal ignoring Sedit and Sedit2 *)
+let ematch prod edit =
+  let rec ematchr prod edit =
+    (*Printf.printf "%s and\n  %s\n\n" (prod_to_str prod) (prod_to_str edit);*)
+    match (prod, edit) with
+    | (_, Sedit _ :: tl)
+    | (_, Sedit2 _ :: tl)
+      -> ematchr prod tl
+    | (Sedit _ :: tl, _)
+    | (Sedit2 _ :: tl, _)
+      -> ematchr tl edit
+    | (phd :: ptl, hd :: tl) ->
+      let m = match (phd, hd) with
+        | (Slist1 psym, Slist1 sym)
+        | (Slist0 psym, Slist0 sym)
+        | (Sopt psym, Sopt sym)
+          -> ematchr [psym] [sym]
+        | (Slist1sep (psym, psep), Slist1sep (sym, sep))
+        | (Slist0sep (psym, psep), Slist0sep (sym, sep))
+          -> ematchr [psym] [sym] && ematchr [psep] [sep]
+        | (Sparen psyml, Sparen syml)
+          -> ematchr psyml syml
+        | (Sprod psymll, Sprod symll) ->
+          if List.compare_lengths psymll symll != 0 then false
+          else
+            List.fold_left (&&) true (List.map2 ematchr psymll symll)
+        | _, _ -> phd = hd
+      in
+      m && ematchr ptl tl
+    | ([], hd :: tl) -> false
+    | (phd :: ptl, []) -> false
+    | ([], []) -> true
+in
+  (*Printf.printf "\n";*)
+  let rv = ematchr prod edit in
+  (*Printf.printf "%b\n" rv;*)
+  rv
+
+let get_first m_prod prods =
+  let rec find_first_r prods i =
+    match prods with
+    | [] ->
+      raise Not_found
+    | prod :: tl ->
+      if ematch prod m_prod then i
+      else find_first_r tl (i+1)
+  in
+  find_first_r prods 0
+
+let find_first edit prods nt =
+  try
+    get_first edit prods
+  with Not_found ->
+    error "Can't find '%s' in edit for '%s'\n" (prod_to_str edit) nt;
+    raise Not_found
+
 module DocGram = struct
   (* these guarantee that order and map have a 1-1 relationship
      on the nt name.  They don't guarantee that nts on rhs of a production
@@ -169,81 +301,6 @@ module DocGram = struct
 end
 open DocGram
 
-(*** Print routines ***)
-
-let sprintf = Printf.sprintf
-
-let map_and_concat f ?(delim="") l =
-  String.concat delim (List.map f l)
-
-let rec db_output_prodn = function
-  | Sterm s -> sprintf "(Sterm %s) " s
-  | Snterm s -> sprintf "(Snterm %s) " s
-  | Slist1 sym -> sprintf "(Slist1 %s) " (db_output_prodn sym)
-  | Slist1sep (sym, sep) -> sprintf "(Slist1sep %s %s) " (db_output_prodn sep) (db_output_prodn sym)
-  | Slist0 sym -> sprintf "(Slist0 %s) " (db_output_prodn sym)
-  | Slist0sep (sym, sep) -> sprintf "(Slist0sep %s %s)  " (db_output_prodn sep) (db_output_prodn sym)
-  | Sopt sym -> sprintf "(Sopt %s) " (db_output_prodn sym)
-  | Sparen prod -> sprintf "(Sparen %s) " (db_out_list prod)
-  | Sprod prods -> sprintf "(Sprod %s) " (db_out_prods prods)
-  | Sedit s -> sprintf "(Sedit %s) " s
-  | Sedit2 (s, s2) -> sprintf "(Sedit2 %s %s) " s s2
-and db_out_list prod = sprintf "(%s)" (map_and_concat db_output_prodn prod)
-and db_out_prods prods = sprintf "( %s )" (map_and_concat ~delim:" | " db_out_list prods)
-
-(* identify special chars that don't get a trailing space in output *)
-let omit_space s = List.mem s ["?"; "."; "#"]
-
-let rec output_prod plist need_semi = function
-    | Sterm s -> if plist then sprintf "%s" s else sprintf "\"%s\"" s
-    | Snterm s ->
-        if plist then sprintf "`%s`" s else
-          sprintf "%s%s" s (if s = "IDENT" && need_semi then ";" else "")
-    | Slist1 sym -> sprintf "LIST1 %s" (prod_to_str ~plist [sym])
-    | Slist1sep (sym, sep) -> sprintf "LIST1 %s SEP %s" (prod_to_str ~plist [sym]) (prod_to_str ~plist [sep])
-    | Slist0 sym -> sprintf "LIST0 %s" (prod_to_str ~plist [sym])
-    | Slist0sep (sym, sep) -> sprintf "LIST0 %s SEP %s" (prod_to_str ~plist [sym]) (prod_to_str ~plist [sep])
-    | Sopt sym -> sprintf "OPT %s" (prod_to_str ~plist [sym])
-    | Sparen sym_list -> sprintf "( %s )" (prod_to_str sym_list)
-    | Sprod sym_list_list ->
-      sprintf "[ %s ]" (String.concat " " (List.mapi (fun i r ->
-          let prod = (prod_to_str r) in
-          let sep = if i = 0 then "" else
-              if prod <> "" then "| " else "|" in
-          sprintf "%s%s" sep prod)
-        sym_list_list))
-    | Sedit s -> sprintf "%s" s
-    (* todo: make TAG info output conditional on the set of prods? *)
-    | Sedit2 ("TAG", plugin) ->
-      if plist then
-        sprintf "     (%s plugin)" plugin
-      else
-        sprintf "     (* %s plugin *)" plugin
-    | Sedit2 ("FILE", file) ->
-      let file_suffix_regex = Str.regexp ".*/\\([a-zA-Z0-9_\\.]+\\)" in
-      let suffix = if Str.string_match file_suffix_regex file 0 then Str.matched_group 1 file else file in
-      if plist then
-        sprintf "     (%s)" suffix
-      else
-        sprintf "     (* %s *)" suffix
-    | Sedit2 (s, s2) -> sprintf "%s \"%s\"" s s2
-
-and prod_to_str_r plist prod =
-  match prod with
-  | Sterm s :: Snterm "ident" :: tl when omit_space s && plist ->
-    (sprintf "%s`ident`" s) :: (prod_to_str_r plist tl)
-  | p :: tl ->
-    let need_semi =
-      match prod with
-      | Snterm "IDENT" :: Sterm _ :: _
-      | Snterm "IDENT" :: Sprod _ :: _ -> true
-      | _ -> false in
-    (output_prod plist need_semi p) :: (prod_to_str_r plist tl)
-  | [] -> []
-
-and prod_to_str ?(plist=false) prod =
-  String.concat " " (prod_to_str_r plist prod)
-
 
 let rec output_prodn = function
   | Sterm s ->
@@ -294,10 +351,13 @@ and prod_to_prodn_r prod =
 
 and prod_to_prodn prod = String.concat " " (prod_to_prodn_r prod)
 
-let get_tag prod =
+let get_tag file prod =
   List.fold_left (fun rv sym ->
       match sym with
-      | Sedit2 ("TAG", s2) -> "   " ^ s2
+        (* todo: temporarily limited to Ltac2 tags in prodn when not in ltac2.rst *)
+      | Sedit2 ("TAG", s2)
+        when (s2 = "Ltac2" || s2 = "not Ltac2") &&
+            file <> "doc/sphinx/proof-engine/ltac2.rst" -> "   " ^ s2
       | _ -> rv
     ) "" prod
 
@@ -408,6 +468,8 @@ and cvt_gram_sym_list l =
     (Sedit2 ("USE_NT", s2)) :: cvt_gram_sym_list tl
   | GSymbQualid ("TAG", _) :: GSymbQualid (s2, l) :: tl ->
     (Sedit2 ("TAG", s2)) :: cvt_gram_sym_list tl
+  | GSymbQualid ("TAG", _) :: GSymbString (s2) :: tl ->
+    (Sedit2 ("TAG", s2)) :: cvt_gram_sym_list tl
   | GSymbString s :: tl ->
     (* todo: not seeing "(bfs)" here for some reason *)
     keywords := StringSet.add s !keywords;
@@ -484,43 +546,6 @@ let autoloaded_mlgs = [ (* in the order they are loaded by Coq *)
  "plugins/syntax/g_numeral.mlg";
 ]
 
-
-let ematch prod edit =
-  let rec ematchr prod edit =
-    (*Printf.printf "%s and\n  %s\n\n" (prod_to_str prod) (prod_to_str edit);*)
-    match (prod, edit) with
-    | (_, Sedit _ :: tl)
-    | (_, Sedit2 _ :: tl)
-      -> ematchr prod tl
-    | (Sedit _ :: tl, _)
-    | (Sedit2 _ :: tl, _)
-      -> ematchr tl edit
-    | (phd :: ptl, hd :: tl) ->
-      let m = match (phd, hd) with
-        | (Slist1 psym, Slist1 sym)
-        | (Slist0 psym, Slist0 sym)
-        | (Sopt psym, Sopt sym)
-          -> ematchr [psym] [sym]
-        | (Slist1sep (psym, psep), Slist1sep (sym, sep))
-        | (Slist0sep (psym, psep), Slist0sep (sym, sep))
-          -> ematchr [psym] [sym] && ematchr [psep] [sep]
-        | (Sparen psyml, Sparen syml)
-          -> ematchr psyml syml
-        | (Sprod psymll, Sprod symll) ->
-          if List.compare_lengths psymll symll != 0 then false
-          else
-            List.fold_left (&&) true (List.map2 ematchr psymll symll)
-        | _, _ -> phd = hd
-      in
-      m && ematchr ptl tl
-    | ([], hd :: tl) -> false
-    | (phd :: ptl, []) -> false
-    | ([], []) -> true
-in
-  (*Printf.printf "\n";*)
-  let rv = ematchr prod edit in
-  (*Printf.printf "%b\n" rv;*)
-  rv
 
 let has_match p prods = List.exists (fun p2 -> ematch p p2) prods
 
@@ -649,125 +674,8 @@ let add_rule g nt prods file =
   g_maybe_add_begin g nt (ent @ nodups)
 
 
- (* get the nt's in the production, preserving order, don't worry about dups *)
- let nts_in_prod prod =
-  let rec traverse = function
-  | Sterm s -> []
-  | Snterm s -> if List.mem s tokens then [] else [s]
-  | Slist1 sym
-  | Slist0 sym
-  | Sopt sym
-    -> traverse sym
-  | Slist1sep (sym, sep)
-  | Slist0sep (sym, sep)
-    -> traverse sym @ (traverse sep)
-  | Sparen sym_list -> List.concat (List.map traverse sym_list)
-  | Sprod sym_list_list -> List.concat (List.map (fun l -> List.concat (List.map traverse l)) sym_list_list)
-  | Sedit _
-  | Sedit2 _ -> []
-  in
-  List.rev (List.concat (List.map traverse prod))
-
-let get_refdef_nts g =
-  let rec get_nts_r refd defd bindings =
-    match bindings with
-    | [] -> refd, defd
-    | (nt, prods) :: tl ->
-      get_nts_r (List.fold_left (fun res prod ->
-                  StringSet.union res (StringSet.of_list (nts_in_prod prod)))
-                refd prods)
-        (StringSet.add nt defd) tl
-   in
-   let toks = StringSet.of_list tokens in
-   get_nts_r toks toks (NTMap.bindings !g.map)
-
-
-(*** global editing ops ***)
-
-let create_edit_map g op edits =
-  let rec aux edits map =
-    match edits with
-    | [] -> map
-    | edit :: tl ->
-      let (key, binding) = edit in
-      let all_nts_ref, all_nts_def = get_refdef_nts g in
-      (match op with
-      (* todo: messages should tell you which edit file causes the error *)
-      | "SPLICE" ->
-        if not (StringSet.mem key all_nts_def) then
-          error "Undefined nt `%s` in SPLICE\n" key
-      | "DELETE" ->
-        if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
-          error "Unused/undefined nt `%s` in DELETE\n" key;
-      | "RENAME" ->
-        if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
-          error "Unused/undefined  nt `%s` in RENAME\n" key;
-(*      todo: could not get the following code to type check
-        (match binding with
-        | _ :: Snterm new_nt :: _ ->
-          if not (StringSet.mem new_nt all_nts_ref) then
-            error "nt `%s` already exists in %s\n" new_nt op
-        | _ -> ())
-*)
-      | _ -> ());
-      aux tl (StringMap.add key binding map)
-  in
-  aux edits StringMap.empty
-
 let remove_Sedit2 p =
   List.filter (fun sym -> match sym with | Sedit2 _ -> false | _ -> true) p
-
-(* don't deal with Sedit, Sedit2 yet (ever?) *)
-let rec pmatch fullprod fullpat repl =
-  let map_prod prod = List.concat (List.map (fun s -> pmatch [s] fullpat repl) prod) in
-  let pmatch_wrap sym =
-    let r = pmatch [sym] fullpat repl in
-    match r with
-    | a :: b :: tl -> Sparen r
-    | [a] -> a
-    | x -> error "pmatch: should not happen"; Sterm "??"
-  in
-
-  let symmatch_r s =
-  let res = match s with
-  | Slist1 sym -> Slist1 (pmatch_wrap sym)
-  | Slist1sep (sym, sep) -> Slist1sep (pmatch_wrap sym, sep)
-  | Slist0 sym -> Slist0 (pmatch_wrap sym)
-  | Slist0sep (sym, sep) -> Slist0sep (pmatch_wrap sym, sep)
-  | Sopt sym -> Sopt (pmatch_wrap sym)
-  | Sparen prod -> Sparen (map_prod prod)
-  | Sprod prods -> Sprod (List.map map_prod prods)
-  | sym -> sym
-  in
-(*  Printf.printf "symmatch of %s gives %s\n" (prod_to_str [s]) (prod_to_str [res]);*)
-  res
-  in
-
-  let rec pmatch_r prod pat match_start start_res res =
-(*    Printf.printf "pmatch_r: prod = %s;  pat = %s;  res = %s\n" (prod_to_str prod) (prod_to_str pat) (prod_to_str res);*)
-    match prod, pat with
-    | _, [] ->
-      let new_res = (List.rev repl) @ res in
-      pmatch_r prod fullpat prod new_res new_res (* subst and continue *)
-    | [], _ -> (List.rev ((List.rev match_start) @ res)) (* leftover partial match *)
-    | hdprod :: tlprod, hdpat :: tlpat ->
-      if hdprod = hdpat then
-        pmatch_r tlprod tlpat match_start start_res res
-      else
-        (* match from the next starting position *)
-        match match_start with
-        | hd :: tl ->
-          let new_res = (symmatch_r hd) :: start_res in
-          pmatch_r tl fullpat tl new_res new_res
-        | [] -> List.rev res (* done *)
-  in
-  pmatch_r fullprod fullpat fullprod [] []
-
-(* global replace of production substrings, rhs only *)
-let global_repl g pat repl =
-  List.iter (fun nt ->
-      g_update_prods g nt (List.map (fun prod -> pmatch prod pat repl) (NTMap.find nt !g.map))
-  ) !g.order
 
 (* edit a production: rename nonterminals, drop nonterminals, substitute nonterminals *)
 let rec edit_prod g top edit_map prod =
@@ -842,64 +750,6 @@ and edit_rule g edit_map nt rule =
   in
   (nt, (List.concat (List.map (edit_prod g true edit_map) rule)))
 
-(*** splice: replace a reference to a nonterminal with its definition ***)
-
-(* todo: create a better splice routine *)
-let apply_splice g splice_map =
-  List.iter (fun b ->
-      let (nt0, prods0) = b in
-      let rec splice_loop nt prods cnt =
-        let max_cnt = 10 in
-        let (nt', prods') = edit_rule g splice_map nt prods in
-        if cnt > max_cnt then
-          error "Splice for '%s' not done after %d iterations\n" nt0 max_cnt;
-        if nt' = nt && prods' = prods then
-          (nt', prods')
-        else
-          splice_loop nt' prods' (cnt+1)
-      in
-      let (nt', prods') = splice_loop nt0 prods0 0 in
-      g_update_prods g nt' prods')
-    (NTMap.bindings !g.map);
-  List.iter (fun b ->
-      let (nt, op) = b in
-      match op with
-      | "DELETE"
-      | "SPLICE" ->
-        g_remove g nt;
-      | _ -> ())
-    (StringMap.bindings splice_map)
-
-let find_first edit prods nt =
-  let rec find_first_r edit prods nt i =
-    match prods with
-    | [] ->
-      error "Can't find '%s' in edit for '%s'\n" (prod_to_str edit) nt;
-      raise Not_found
-    | prod :: tl ->
-      if ematch prod edit then i
-      else find_first_r edit tl nt (i+1)
-  in
-  find_first_r edit prods nt 0
-
-let remove_prod edit prods nt =
-  let res, got_first = List.fold_left (fun args prod ->
-      let res, got_first = args in
-      if not got_first && ematch prod edit then
-        res, true
-      else
-        prod :: res, got_first)
-    ([], false) prods in
-  if not got_first then
-    error "Can't find '%s' to DELETE for '%s'\n" (prod_to_str edit) nt;
-  List.rev res
-
-let insert_after posn insert prods =
-  List.concat (List.mapi (fun i prod ->
-      if i = posn then prod :: insert else [prod])
-    prods)
-
-
 let read_mlg_files g args symdef_map =
   let level_renames = ref StringMap.empty in
   let last_autoloaded = List.hd (List.rev autoloaded_mlgs) in
@@ -926,6 +776,175 @@ let read_mlg_files g args symdef_map =
   ) args.mlg_files;
   g_reverse g;
   !level_renames
+
+
+ (* get the nt's in the production, preserving order, don't worry about dups *)
+ let nts_in_prod prod =
+  let rec traverse = function
+  | Sterm s -> []
+  | Snterm s -> if List.mem s tokens then [] else [s]
+  | Slist1 sym
+  | Slist0 sym
+  | Sopt sym
+    -> traverse sym
+  | Slist1sep (sym, sep)
+  | Slist0sep (sym, sep)
+    -> traverse sym @ (traverse sep)
+  | Sparen sym_list -> List.concat (List.map traverse sym_list)
+  | Sprod sym_list_list -> List.concat (List.map (fun l -> List.concat (List.map traverse l)) sym_list_list)
+  | Sedit _
+  | Sedit2 _ -> []
+  in
+  List.rev (List.concat (List.map traverse prod))
+
+let get_refdef_nts g =
+  let rec get_nts_r refd defd bindings =
+    match bindings with
+    | [] -> refd, defd
+    | (nt, prods) :: tl ->
+      get_nts_r (List.fold_left (fun res prod ->
+                  StringSet.union res (StringSet.of_list (nts_in_prod prod)))
+                refd prods)
+        (StringSet.add nt defd) tl
+   in
+   let toks = StringSet.of_list tokens in
+   get_nts_r toks toks (NTMap.bindings !g.map)
+
+
+(*** global editing ops ***)
+
+let create_edit_map g op edits =
+  let rec aux edits map =
+    match edits with
+    | [] -> map
+    | edit :: tl ->
+      let (key, binding) = edit in
+      let all_nts_ref, all_nts_def = get_refdef_nts g in
+      (match op with
+      (* todo: messages should tell you which edit file causes the error *)
+      | "SPLICE" ->
+        if not (StringSet.mem key all_nts_def) then
+          error "Undefined nt `%s` in SPLICE\n" key
+      | "DELETE" ->
+        if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
+          error "Unused/undefined nt `%s` in DELETE\n" key;
+      | "RENAME" ->
+        if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
+          error "Unused/undefined  nt `%s` in RENAME\n" key;
+      | "MERGE" ->
+        if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
+          error "Unused/undefined  nt `%s` in MERGE\n" key;
+        if not (StringSet.mem binding all_nts_ref || (StringSet.mem binding all_nts_def)) then
+          error "Unused/undefined  nt `%s` in MERGE\n" key;
+(*      todo: could not get the following code to type check
+        (match binding with
+        | _ :: Snterm new_nt :: _ ->
+          if not (StringSet.mem new_nt all_nts_ref) then
+            error "nt `%s` already exists in %s\n" new_nt op
+        | _ -> ())
+*)
+      | _ -> ());
+      aux tl (StringMap.add key binding map)
+  in
+  aux edits StringMap.empty
+
+(* don't deal with Sedit, Sedit2 yet (ever?) *)
+let rec pmatch fullprod fullpat repl =
+  let map_prod prod = List.concat (List.map (fun s -> pmatch [s] fullpat repl) prod) in
+  let pmatch_wrap sym =
+    let r = pmatch [sym] fullpat repl in
+    match r with
+    | a :: b :: tl -> Sparen r
+    | [a] -> a
+    | x -> error "pmatch: should not happen"; Sterm "??"
+  in
+
+  let symmatch_r s =
+  let res = match s with
+  | Slist1 sym -> Slist1 (pmatch_wrap sym)
+  | Slist1sep (sym, sep) -> Slist1sep (pmatch_wrap sym, sep)
+  | Slist0 sym -> Slist0 (pmatch_wrap sym)
+  | Slist0sep (sym, sep) -> Slist0sep (pmatch_wrap sym, sep)
+  | Sopt sym -> Sopt (pmatch_wrap sym)
+  | Sparen prod -> Sparen (map_prod prod)
+  | Sprod prods -> Sprod (List.map map_prod prods)
+  | sym -> sym
+  in
+(*  Printf.printf "symmatch of %s gives %s\n" (prod_to_str [s]) (prod_to_str [res]);*)
+  res
+  in
+
+  let rec pmatch_r prod pat match_start start_res res =
+(*    Printf.printf "pmatch_r: prod = %s;  pat = %s;  res = %s\n" (prod_to_str prod) (prod_to_str pat) (prod_to_str res);*)
+    match prod, pat with
+    | _, [] ->
+      let new_res = (List.rev repl) @ res in
+      pmatch_r prod fullpat prod new_res new_res (* subst and continue *)
+    | [], _ -> (List.rev ((List.rev match_start) @ res)) (* leftover partial match *)
+    | hdprod :: tlprod, hdpat :: tlpat ->
+      if hdprod = hdpat then
+        pmatch_r tlprod tlpat match_start start_res res
+      else
+        (* match from the next starting position *)
+        match match_start with
+        | hd :: tl ->
+          let new_res = (symmatch_r hd) :: start_res in
+          pmatch_r tl fullpat tl new_res new_res
+        | [] -> List.rev res (* done *)
+  in
+  pmatch_r fullprod fullpat fullprod [] []
+
+(* global replace of production substrings, rhs only *)
+let global_repl g pat repl =
+  List.iter (fun nt ->
+      g_update_prods g nt (List.map (fun prod -> pmatch prod pat repl) (NTMap.find nt !g.map))
+  ) !g.order
+
+(*** splice: replace a reference to a nonterminal with its definition ***)
+
+(* todo: create a better splice routine *)
+let apply_splice g edit_map =
+  List.iter (fun b ->
+      let (nt0, prods0) = b in
+      let rec splice_loop nt prods cnt =
+        let max_cnt = 10 in
+        let (nt', prods') = edit_rule g edit_map nt prods in
+        if cnt > max_cnt then
+          error "Splice for '%s' not done after %d iterations\n" nt0 max_cnt;
+        if nt' = nt && prods' = prods then
+          (nt', prods')
+        else
+          splice_loop nt' prods' (cnt+1)
+      in
+      let (nt', prods') = splice_loop nt0 prods0 0 in
+      g_update_prods g nt' prods')
+    (NTMap.bindings !g.map);
+  List.iter (fun b ->
+      let (nt, op) = b in
+      match op with
+      | "DELETE"
+      | "SPLICE" ->
+        g_remove g nt;
+      | _ -> ())
+    (StringMap.bindings edit_map)
+
+
+let remove_prod edit prods nt =
+  let res, got_first = List.fold_left (fun args prod ->
+      let res, got_first = args in
+      if not got_first && ematch prod edit then
+        res, true
+      else
+        prod :: res, got_first)
+    ([], false) prods in
+  if not got_first then
+    error "Can't find '%s' to DELETE for '%s'\n" (prod_to_str edit) nt;
+  List.rev res
+
+let insert_after posn insert prods =
+  List.concat (List.mapi (fun i prod ->
+      if i = posn then prod :: insert else [prod])
+    prods)
 
 (*** replace LIST*, OPT with new nonterminals ***)
 
@@ -1116,6 +1135,29 @@ let expand_lists g =
   with
   | Queue.Empty -> ()
 
+let apply_merge g edit_map =
+  List.iter (fun b ->
+      let (from_nt, to_nt) = b in
+      let from_prods = NTMap.find from_nt !g.map in
+      List.iter (fun prod ->
+          try
+            ignore( get_first prod (NTMap.find to_nt !g.map));
+          with Not_found -> g_add_prod_after g None to_nt prod)
+        from_prods)
+    (NTMap.bindings edit_map)
+
+let apply_rename_delete g edit_map =
+  List.iter (fun b -> let (nt, _) = b in
+      let prods = try NTMap.find nt !g.map  with Not_found -> [] in
+      let (nt', prods') = edit_rule g edit_map nt prods in
+      if nt' = "" then
+        g_remove g nt
+      else if nt <> nt' then
+        g_rename_merge g nt nt' prods'
+      else
+        g_update_prods g nt prods')
+    (NTMap.bindings !g.map)
+
 let edit_all_prods g op eprods =
   let do_it op eprods num =
     let rec aux eprods res =
@@ -1130,25 +1172,20 @@ let edit_all_prods g op eprods =
             op (prod_to_str eprod) num;
         aux tl res
     in
-    let map = create_edit_map g op (aux eprods []) in
-    if op = "SPLICE" then
-      apply_splice g map
-    else (* RENAME/DELETE *)
-      List.iter (fun b -> let (nt, _) = b in
-          let prods = try NTMap.find nt !g.map  with Not_found -> [] in
-          let (nt', prods') = edit_rule g map nt prods in
-          if nt' = "" then
-            g_remove g nt
-          else if nt <> nt' then
-            g_rename_merge g nt nt' prods'
-          else
-            g_update_prods g nt prods')
-        (NTMap.bindings !g.map);
+    let edit_map = create_edit_map g op (aux eprods []) in
+    match op with
+    | "SPLICE" -> apply_splice g edit_map
+    | "MERGE" -> apply_merge g edit_map; apply_rename_delete g edit_map
+    | "RENAME"
+    | "DELETE" -> apply_rename_delete g edit_map
+    | _ -> ()
+
   in
   match op with
   | "RENAME" -> do_it op eprods 2; true
   | "DELETE" -> do_it op eprods 1; true
   | "SPLICE" -> do_it op eprods 1; true
+  | "MERGE" -> do_it op eprods 2; true
   | "EXPAND" ->
     if List.length eprods > 1 || List.length (List.hd eprods) <> 0 then
       error "'EXPAND:' expects a single empty production\n";
@@ -1790,11 +1827,12 @@ let process_rst g file args seen tac_prods cmd_prods =
         let prods = NTMap.find nt !g.map in
         List.iteri (fun i prod ->
             let rhs = String.trim (prod_to_prodn prod) in
+            let tag = get_tag file prod in
             let sep = if i = 0 then " ::=" else "|" in
             if has_empty_prod prod then
               error "%s line %d: Empty (sub-)production for %s, edit to remove: '%s %s'\n"
                 file !linenum nt sep rhs;
-            fprintf new_rst "%s   %s%s %s\n" indent (if i = 0 then nt else "") sep rhs)
+            fprintf new_rst "%s   %s%s %s%s\n" indent (if i = 0 then nt else "") sep rhs tag)
           prods;
         if nt <> end_ then copy_prods tl
     in
