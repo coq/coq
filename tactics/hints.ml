@@ -55,6 +55,23 @@ let head_constr_bound sigma t =
   | Proj (p, _) -> ConstRef (Projection.constant p)
   | _ -> raise Bound
 
+(* Slightly different from above, can they be merged? *)
+let rec head_bound sigma t = match EConstr.kind sigma t with
+| Prod (_, _, b)  -> head_bound sigma b
+| LetIn (_, _, _, b) -> head_bound sigma b
+| App (c, _) -> head_bound sigma c
+| Case (_, _, _, c, _) -> head_bound sigma c
+| Ind (ind, _) -> GlobRef.IndRef ind
+| Const (c, _) -> GlobRef.ConstRef c
+| Construct (c, _) -> GlobRef.ConstructRef c
+| Var id -> GlobRef.VarRef id
+| Proj (p, _) -> GlobRef.ConstRef (Projection.constant p)
+| Cast (c, _, _) -> head_bound sigma c
+| Evar _ | Rel _ | Meta _ | Sort _ | Fix _ | Lambda _ ->
+  raise Bound
+| CoFix _ | Int _ | Float _ | Array _ ->
+  anomaly ~label:"head_pattern_bound" (Pp.str "not a type.")
+
 let head_constr sigma c =
   try head_constr_bound sigma c
   with Bound -> user_err (Pp.str "Head identifier must be a constant, section variable, \
@@ -801,12 +818,6 @@ let rec nb_hyp sigma c = match EConstr.kind sigma c with
 
 (* adding and removing tactics in the search table *)
 
-let try_head_pattern c =
-  try head_pattern_bound c
-  with BoundPattern ->
-    user_err (Pp.str "Head pattern or sub-pattern must be a global constant, a section variable, \
-                      an if, case, or let expression, an application, or a projection.")
-
 let with_uid c = { obj = c; uid = fresh_key () }
 
 let secvars_of_idset s =
@@ -827,15 +838,15 @@ let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
     match EConstr.kind sigma cty with
     | Prod _ -> failwith "make_exact_entry"
     | _ ->
-        let pat = Patternops.pattern_of_constr env sigma (EConstr.to_constr ~abort_on_undefined_evars:false sigma cty) in
         let hd =
-          try head_pattern_bound pat
-          with BoundPattern -> failwith "make_exact_entry"
+          try head_bound sigma cty
+          with Bound -> failwith "make_exact_entry"
         in
         let pri = match info.hint_priority with None -> 0 | Some p -> p in
         let pat = match info.hint_pattern with
         | Some pat -> snd pat
-        | None -> pat
+        | None ->
+          Patternops.pattern_of_constr env sigma (EConstr.to_constr ~abort_on_undefined_evars:false sigma cty)
         in
         (Some hd,
          { pri; pat = Some pat; name;
@@ -849,16 +860,17 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (
     let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
     let ce = mk_clenv_from_env env sigma' None (c,cty) in
     let c' = clenv_type (* ~reduce:false *) ce in
-    let pat = Patternops.pattern_of_constr env ce.evd (EConstr.to_constr ~abort_on_undefined_evars:false sigma c') in
     let hd =
-      try head_pattern_bound pat
-      with BoundPattern -> failwith "make_apply_entry" in
+      try head_bound ce.evd c'
+      with Bound -> failwith "make_apply_entry" in
     let miss = clenv_missing ce in
     let nmiss = List.length miss in
     let secvars = secvars_of_constr env sigma c in
     let pri = match info.hint_priority with None -> nb_hyp sigma' cty + nmiss | Some p -> p in
     let pat = match info.hint_pattern with
-      | Some p -> snd p | None -> pat
+    | Some p -> snd p
+    | None ->
+      Patternops.pattern_of_constr env ce.evd (EConstr.to_constr ~abort_on_undefined_evars:false sigma c')
     in
     if Int.equal nmiss 0 then
       (Some hd,
@@ -961,7 +973,14 @@ let make_unfold eref =
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
-  let hdconstr = Option.map try_head_pattern pat in
+  let hdconstr = match pat with
+  | None -> None
+  | Some c ->
+    try Some (head_pattern_bound c)
+    with BoundPattern ->
+      user_err (Pp.str "Head pattern or sub-pattern must be a global constant, a section variable, \
+                        an if, case, or let expression, an application, or a projection.")
+  in
   (hdconstr,
    { pri = pri;
      pat = pat;
