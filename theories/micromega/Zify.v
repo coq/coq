@@ -11,12 +11,15 @@
 Require Import ZifyClasses ZifyInst.
 Declare ML Module "zify_plugin".
 
-(** [zify_post_hook] is there to be redefined. *)
+(** [zify_pre_hook] and [zify_post_hook] are there to be redefined. *)
+Ltac zify_pre_hook := idtac.
+
 Ltac zify_post_hook := idtac.
 
 Ltac iter_specs := zify_iter_specs.
 
 Ltac zify := intros;
+             zify_pre_hook ;
              zify_elim_let ;
              zify_op ;
              (zify_iter_specs) ;

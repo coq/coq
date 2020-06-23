@@ -159,7 +159,7 @@ Require Import ZifyClasses.
 Require Import ZifyInst.
 
 Instance Zero : CstOp (@zero znat : nat) := Op_O.
-Add CstOp Zero.
+Add Zify CstOp Zero.
 
 
 Goal  @zero znat = 0%nat.
@@ -226,4 +226,13 @@ Qed.
 Goal forall (f : Z -> bool), negb (negb (f 0)) = f 0.
 Proof.
   intros. lia.
+Qed.
+
+Ltac Zify.zify_pre_hook ::= unfold is_true in *.
+
+Goal forall x y : nat, is_true (Nat.eqb x 1) ->
+                       is_true (Nat.eqb y 0) ->
+                       is_true (Nat.eqb (x + y) 1).
+Proof.
+lia.
 Qed.
