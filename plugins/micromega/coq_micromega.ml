@@ -12,7 +12,7 @@
 (*                                                                      *)
 (* ** Toplevel definition of tactics **                                 *)
 (*                                                                      *)
-(* - Modules M, Mc, Env, Cache, CacheZ                                  *)
+(* - Modules Mc, Env, Cache, CacheZ                                  *)
 (*                                                                      *)
 (*  Frédéric Besson (Irisa/Inria) 2006-2019                             *)
 (*                                                                      *)

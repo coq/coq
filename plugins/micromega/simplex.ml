@@ -534,7 +534,7 @@ type ('a, 'b) hitkind =
 
 let cut env rmin sol vm (rst : Restricted.t) tbl (x, v) =
   let n, r = Vect.decomp_cst v in
-  let fn = frac_num n in
+  let fn = frac_num (Q.abs n) in
   if fn =/ Q.zero then Forget (* The solution is integral *)
   else
     (* The cut construction is from:
