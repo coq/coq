@@ -302,16 +302,12 @@ let msg_generating_obl name obls =
        info ++ str ", generating " ++ int len ++
        str (String.plural len " obligation"))
 
-let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
-    ?(impargs = []) ~poly
-    ?(scope = Locality.Global Locality.ImportDefaultBehavior)
-    ?(kind = Decls.(IsDefinition Definition)) ?tactic ?(reduce = reduce) ?hook
-    ?(opaque = false) obls =
+let add_definition ~cinfo ~info ?term ~uctx
+    ?tactic ?(reduce = reduce) ?(opaque = false) obls =
   let prg =
-    let info = Declare.Info.make ~poly ~udecl ~scope ~kind ?hook () in
-    let cinfo = Declare.CInfo.make ~name ~typ:t ~impargs () in
     ProgramDecl.make ~info ~cinfo ~body:term ~opaque ~uctx ~reduce ~ntns:[] ~deps:[] ~fixpoint_kind:None obls
   in
+  let name = Declare.CInfo.get_name cinfo in
   let {obls;_} = Internal.get_obligations prg in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose (msg_generating_obl name) obls;
@@ -327,18 +323,15 @@ let add_definition ~name ?term t ~uctx ?(udecl = UState.default_univ_decl)
       res
     | _ -> res
 
-let add_mutual_definitions l ~uctx ?(udecl = UState.default_univ_decl)
-    ?tactic ~poly ?(scope = Locality.Global Locality.ImportDefaultBehavior)
-    ?(kind = Decls.(IsDefinition Definition)) ?(reduce = reduce) ?hook ?(opaque = false)
-    notations fixkind =
+let add_mutual_definitions l ~info ~uctx
+    ?tactic ?(reduce = reduce) ?(opaque = false) ~ntns fixkind =
   let deps = List.map (fun (ci,_,_) -> Declare.CInfo.get_name ci) l in
   let pm =
     List.fold_left
       (fun () (cinfo, b, obls) ->
-        let info = Declare.Info.make ~poly ~scope ~kind ~udecl ?hook () in
         let prg =
           ProgramDecl.make ~info ~cinfo ~opaque ~body:(Some b) ~uctx ~deps
-            ~fixpoint_kind:(Some fixkind) ~ntns:notations obls ~reduce
+            ~fixpoint_kind:(Some fixkind) ~ntns obls ~reduce
         in
         State.add (Declare.CInfo.get_name cinfo) prg)
       () l

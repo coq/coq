@@ -66,18 +66,12 @@ val default_tactic : unit Proofview.tactic ref
    will return whether all the obligations were solved; if so, it will
    also register [c] with the kernel. *)
 val add_definition :
-     name:Names.Id.t
+     cinfo:types Declare.CInfo.t
+  -> info:Declare.Info.t
   -> ?term:constr
-  -> types
   -> uctx:UState.t
-  -> ?udecl:UState.universe_decl (** Universe binders and constraints *)
-  -> ?impargs:Impargs.manual_implicits
-  -> poly:bool
-  -> ?scope:Locality.locality
-  -> ?kind:Decls.logical_kind
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(constr -> constr)
-  -> ?hook:Declare.Hook.t
   -> ?opaque:bool
   -> RetrieveObl.obligation_info
   -> Declare.progress
@@ -88,16 +82,12 @@ val add_definition :
    except it takes a list now. *)
 val add_mutual_definitions :
      (Constr.t Declare.CInfo.t * Constr.t * RetrieveObl.obligation_info) list
+  -> info:Declare.Info.t
   -> uctx:UState.t
-  -> ?udecl:UState.universe_decl (** Universe binders and constraints *)
   -> ?tactic:unit Proofview.tactic
-  -> poly:bool
-  -> ?scope:Locality.locality
-  -> ?kind:Decls.logical_kind
   -> ?reduce:(constr -> constr)
-  -> ?hook:Declare.Hook.t
   -> ?opaque:bool
-  -> Vernacexpr.decl_notation list
+  -> ntns:Vernacexpr.decl_notation list
   -> Declare.Obls.fixpoint_kind
   -> unit
 

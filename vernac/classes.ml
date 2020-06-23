@@ -347,8 +347,10 @@ let declare_instance_program env sigma ~global ~poly name pri impargs udecl term
   let uctx = Evd.evar_universe_context sigma in
   let scope, kind = Locality.Global Locality.ImportDefaultBehavior,
                     Decls.IsDefinition Decls.Instance in
+  let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
+  let info = Declare.Info.make  ~udecl ~scope ~poly ~kind ~hook () in
   let _ : Declare.progress =
-    Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook ~impargs ~uctx typ obls
+    Obligations.add_definition ~cinfo ~info ~term ~uctx obls
   in ()
 
 let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl ids term termtype =
