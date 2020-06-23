@@ -65,14 +65,14 @@ module Declare : sig
   val with_current_proof :
       (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
 
-  val return_proof : unit -> Declare.closed_proof_output
-  val return_partial_proof : unit -> Declare.closed_proof_output
+  val return_proof : unit -> Declare.Proof.closed_proof_output
+  val return_partial_proof : unit -> Declare.Proof.closed_proof_output
 
-  type closed_proof = Declare.proof_object * Declare.Proof.Proof_info.t
+  type closed_proof = Declare.Proof.proof_object * Declare.Proof.Proof_info.t
 
   val close_future_proof :
     feedback_id:Stateid.t ->
-    Declare.closed_proof_output Future.computation -> closed_proof
+    Declare.Proof.closed_proof_output Future.computation -> closed_proof
 
   val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> closed_proof
 

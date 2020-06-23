@@ -284,6 +284,45 @@ module Proof : sig
     val default : unit -> t
   end
   val info : t -> Proof_info.t
+
+  (** {2 Proof delay API, warning, internal, not stable *)
+
+  (* Intermediate step necessary to delegate the future.
+   * Both access the current proof state. The former is supposed to be
+   * chained with a computation that completed the proof *)
+  type closed_proof_output
+
+  (** Requires a complete proof. *)
+  val return_proof : t -> closed_proof_output
+
+  (** An incomplete proof is allowed (no error), and a warn is given if
+      the proof is complete. *)
+  val return_partial_proof : t -> closed_proof_output
+
+  (** XXX: This is an internal, low-level API and could become scheduled
+      for removal from the public API, use higher-level declare APIs
+      instead *)
+  type proof_object
+
+  val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
+  val close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
+
+  (** Special cases for delayed proofs, in this case we must provide the
+      proof information so the proof won't be forced. *)
+  val save_lemma_admitted_delayed :
+    proof:proof_object
+    -> pinfo:Proof_info.t
+    -> unit
+
+  val save_lemma_proved_delayed
+    : proof:proof_object
+    -> pinfo:Proof_info.t
+    -> idopt:Names.lident option
+    -> unit
+
+  (** Used by the STM only to store info, should go away *)
+  val get_po_name : proof_object -> Id.t
+
 end
 
 (** {2 low-level, internla API, avoid using unless you have special needs } *)
@@ -356,44 +395,6 @@ val declare_constant
   -> kind:Decls.logical_kind
   -> Evd.side_effects constant_entry
   -> Constant.t
-
-(** {2 Proof delay API, warning, internal, not stable *)
-
-(* Intermediate step necessary to delegate the future.
- * Both access the current proof state. The former is supposed to be
- * chained with a computation that completed the proof *)
-type closed_proof_output
-
-(** Requires a complete proof. *)
-val return_proof : Proof.t -> closed_proof_output
-
-(** An incomplete proof is allowed (no error), and a warn is given if
-   the proof is complete. *)
-val return_partial_proof : Proof.t -> closed_proof_output
-
-(** XXX: This is an internal, low-level API and could become scheduled
-   for removal from the public API, use higher-level declare APIs
-   instead *)
-type proof_object
-
-val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> Proof.t -> proof_object
-val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output Future.computation -> proof_object
-
-(** Special cases for delayed proofs, in this case we must provide the
-   proof information so the proof won't be forced. *)
-val save_lemma_admitted_delayed :
-     proof:proof_object
-  -> pinfo:Proof.Proof_info.t
-  -> unit
-
-val save_lemma_proved_delayed
-  : proof:proof_object
-  -> pinfo:Proof.Proof_info.t
-  -> idopt:Names.lident option
-  -> unit
-
-(** Used by the STM only to store info, should go away *)
-val get_po_name : proof_object -> Id.t
 
 (** Declaration messages, for internal use *)
 

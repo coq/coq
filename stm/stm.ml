@@ -147,7 +147,7 @@ let update_global_env () =
     PG_compat.update_global_env ()
 
 module Vcs_ = Vcs.Make(Stateid.Self)
-type future_proof = Declare.closed_proof_output Future.computation
+type future_proof = Declare.Proof.closed_proof_output Future.computation
 
 type depth = int
 type branch_type =
@@ -1352,7 +1352,7 @@ module rec ProofTask : sig
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Declare.closed_proof_output Future.assignment -> unit;
+    t_assign   : Declare.Proof.closed_proof_output Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1375,7 +1375,7 @@ module rec ProofTask : sig
     ?loc:Loc.t ->
     drop_pt:bool ->
     Stateid.t * Stateid.t -> Stateid.t ->
-      Declare.closed_proof_output Future.computation
+      Declare.Proof.closed_proof_output Future.computation
 
   (* If set, only tasks overlapping with this list are processed *)
   val set_perspective : Stateid.t list -> unit
@@ -1391,7 +1391,7 @@ end = struct (* {{{ *)
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Declare.closed_proof_output Future.assignment -> unit;
+    t_assign   : Declare.Proof.closed_proof_output Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1413,7 +1413,7 @@ end = struct (* {{{ *)
     e_safe_states : Stateid.t list }
 
   type response =
-    | RespBuiltProof of Declare.closed_proof_output * float
+    | RespBuiltProof of Declare.Proof.closed_proof_output * float
     | RespError of error
     | RespStates of (Stateid.t * State.partial_state) list
 
@@ -1689,7 +1689,7 @@ end = struct (* {{{ *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
       ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~pinfo ~loc ~control:[] (Proved (opaque,None)));
       (* Is this name the same than the one in scope? *)
-      let name = Declare.get_po_name proof in
+      let name = Declare.Proof.get_po_name proof in
       `OK name
       end
     with e ->

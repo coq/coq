@@ -152,17 +152,17 @@ module Declare = struct
       s_lemmas := Some stack;
       res
 
-  type closed_proof = Declare.proof_object * Declare.Proof.Proof_info.t
+  type closed_proof = Declare.Proof.proof_object * Declare.Proof.Proof_info.t
 
-  let return_proof () = cc Declare.return_proof
-  let return_partial_proof () = cc Declare.return_partial_proof
+  let return_proof () = cc Declare.Proof.return_proof
+  let return_partial_proof () = cc Declare.Proof.return_partial_proof
 
   let close_future_proof ~feedback_id pf =
-    cc (fun pt -> Declare.close_future_proof ~feedback_id pt pf,
+    cc (fun pt -> Declare.Proof.close_future_proof ~feedback_id pt pf,
                   Declare.Proof.info pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate =
-    cc (fun pt -> Declare.close_proof ~opaque ~keep_body_ucst_separate pt,
+    cc (fun pt -> Declare.Proof.close_proof ~opaque ~keep_body_ucst_separate pt,
                   Declare.Proof.info pt)
 
   let discard_all () = s_lemmas := None

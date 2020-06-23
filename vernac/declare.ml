@@ -41,31 +41,6 @@ module Hook = struct
 
 end
 
-type progress = Remain of int | Dependent | Defined of GlobRef.t
-
-type obligation_resolver =
-     Id.t option
-  -> Int.Set.t
-  -> unit Proofview.tactic option
-  -> progress
-
-type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
-
-module Proof_ending = struct
-
-  type t =
-    | Regular
-    | End_obligation of obligation_qed_info
-    | End_derive of { f : Id.t; name : Id.t }
-    | End_equations of
-        { hook : Constant.t list -> Evd.evar_map -> unit
-        ; i : Id.t
-        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
-        ; sigma : Evd.evar_map
-        }
-
-end
-
 module CInfo = struct
 
   type 'constr t =
@@ -112,212 +87,6 @@ module Info = struct
 
 end
 
-type lemma_possible_guards = int list list
-
-module Proof_info = struct
-
-  type t =
-    { cinfo : Constr.t CInfo.t list
-    (** cinfo contains each individual constant info in a mutual decl *)
-    ; info : Info.t
-    ; proof_ending : Proof_ending.t CEphemeron.key
-    (* This could be improved and the CEphemeron removed *)
-    ; compute_guard : lemma_possible_guards
-    (** thms and compute guard are specific only to
-       start_lemma_with_initialization + regular terminator, so we
-       could make this per-proof kind *)
-    }
-
-  let make ~cinfo ~info ?(compute_guard=[]) ?(proof_ending=Proof_ending.Regular) () =
-    { cinfo
-    ; info
-    ; compute_guard
-    ; proof_ending = CEphemeron.create proof_ending
-    }
-
-  (* This is used due to a deficiency on the API, should fix *)
-  let add_first_thm ~pinfo ~name ~typ ~impargs =
-    let cinfo : Constr.t CInfo.t = CInfo.make ~name ~impargs ~typ:(EConstr.Unsafe.to_constr typ) () in
-    { pinfo with cinfo = cinfo :: pinfo.cinfo }
-
-  (* This is called by the STM, and we have to fixup cinfo later as
-     indeed it will not be correct *)
-  let default () = make ~cinfo:[] ~info:(Info.make ()) ()
-end
-
-type t =
-  { endline_tactic : Genarg.glob_generic_argument option
-  ; section_vars : Id.Set.t option
-  ; proof : Proof.t
-  ; initial_euctx : UState.t
-  (** The initial universe context (for the statement) *)
-  ; pinfo : Proof_info.t
-  }
-
-(*** Proof Global manipulation ***)
-
-let get_proof ps = ps.proof
-let get_proof_name ps = (Proof.data ps.proof).Proof.name
-let get_initial_euctx ps = ps.initial_euctx
-
-let fold_proof f p = f p.proof
-let map_proof f p = { p with proof = f p.proof }
-let map_fold_proof f p = let proof, res = f p.proof in { p with proof }, res
-
-let map_fold_proof_endline f ps =
-  let et =
-    match ps.endline_tactic with
-    | None -> Proofview.tclUNIT ()
-    | Some tac ->
-      let open Geninterp in
-      let {Proof.poly} = Proof.data ps.proof in
-      let ist = { lfun = Id.Map.empty; poly; extra = TacStore.empty } in
-      let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
-      let tac = Geninterp.interp tag ist tac in
-      Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
-  in
-  let (newpr,ret) = f et ps.proof in
-  let ps = { ps with proof = newpr } in
-  ps, ret
-
-let compact_the_proof pf = map_proof Proof.compact pf
-
-(* Sets the tactic to be used when a tactic line is closed with [...] *)
-let set_endline_tactic tac ps =
-  { ps with endline_tactic = Some tac }
-
-let initialize_named_context_for_proof () =
-  let sign = Global.named_context () in
-  List.fold_right
-    (fun d signv ->
-      let id = NamedDecl.get_id d in
-      let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
-      Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
-
-let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof ()) sigma =
-  (* In ?sign, we remove the bodies of variables in the named context
-     marked "opaque", this is a hack tho, see #10446, and
-     build_constant_by_tactic uses a different method that would break
-     program_inference_hook *)
-  let { Proof_info.info = { Info.poly; _ }; _ } = pinfo in
-  let goals = [Global.env_of_context sign, typ] in
-  let proof = Proof.start ~name ~poly sigma goals in
-  let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
-  { proof
-  ; endline_tactic = None
-  ; section_vars = None
-  ; initial_euctx
-  ; pinfo
-  }
-
-(** [start_proof ~info ~cinfo sigma] starts a proof of [cinfo].
-   The proof is started in the evar map [sigma] (which
-   can typically contain universe constraints) *)
-let start_proof ~info ~cinfo ?proof_ending sigma =
-  let { CInfo.name; typ; _ } = cinfo in
-  let cinfo = [{ cinfo with CInfo.typ = EConstr.Unsafe.to_constr cinfo.CInfo.typ }] in
-  let pinfo = Proof_info.make ~cinfo ~info ?proof_ending () in
-  start_proof_core ~name ~typ ~pinfo ?sign:None sigma
-
-let start_dependent_proof ~info ~name goals ~proof_ending =
-  let proof = Proof.dependent_start ~name ~poly:info.Info.poly goals in
-  let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
-  let cinfo = [] in
-  let pinfo = Proof_info.make ~info ~cinfo ~proof_ending () in
-  { proof
-  ; endline_tactic = None
-  ; section_vars = None
-  ; initial_euctx
-  ; pinfo
-  }
-
-let rec_tac_initializer finite guard thms snl =
-  if finite then
-    match List.map (fun { CInfo.name; typ } -> name, (EConstr.of_constr typ)) thms with
-    | (id,_)::l -> Tactics.mutual_cofix id l 0
-    | _ -> assert false
-  else
-    (* nl is dummy: it will be recomputed at Qed-time *)
-    let nl = match snl with
-     | None -> List.map succ (List.map List.last guard)
-     | Some nl -> nl
-    in match List.map2 (fun { CInfo.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
-       | (id,n,_)::l -> Tactics.mutual_fix id n l 0
-       | _ -> assert false
-
-let start_proof_with_initialization ~info ~cinfo sigma =
-  let { CInfo.name; typ; args } = cinfo in
-  let init_tac = Tactics.auto_intros_tac args in
-  let pinfo = Proof_info.make ~cinfo:[cinfo] ~info () in
-  let lemma = start_proof_core ~name ~typ:(EConstr.of_constr typ) ~pinfo ?sign:None sigma in
-  map_proof (fun p ->
-      pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) lemma
-
-type mutual_info = (bool * lemma_possible_guards * Constr.t option list option)
-
-let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
-  let intro_tac { CInfo.args; _ } = Tactics.auto_intros_tac args in
-  let init_tac, compute_guard =
-    let (finite,guard,init_terms) = mutual_info in
-    let rec_tac = rec_tac_initializer finite guard cinfo snl in
-    let term_tac =
-      match init_terms with
-      | None ->
-        List.map intro_tac cinfo
-      | Some init_terms ->
-        (* This is the case for hybrid proof mode / definition
-           fixpoint, where terms for some constants are given with := *)
-        let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC) init_terms in
-        List.map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl cinfo
-    in
-    Tacticals.New.tclTHENS rec_tac term_tac, guard
-  in
-  match cinfo with
-  | [] -> CErrors.anomaly (Pp.str "No proof to start.")
-  | { CInfo.name; typ; impargs; _} :: thms ->
-    let pinfo = Proof_info.make ~cinfo ~info ~compute_guard () in
-    (* start_lemma has the responsibility to add (name, impargs, typ)
-       to thms, once Info.t is more refined this won't be necessary *)
-    let typ = EConstr.of_constr typ in
-    let lemma = start_proof_core ~name ~typ ~pinfo sigma in
-    map_proof (fun p ->
-        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p) lemma
-
-let get_used_variables pf = pf.section_vars
-let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
-
-let set_used_variables ps l =
-  let open Context.Named.Declaration in
-  let env = Global.env () in
-  let ids = List.fold_right Id.Set.add l Id.Set.empty in
-  let ctx = Environ.keep_hyps env ids in
-  let ctx_set =
-    List.fold_right Id.Set.add (List.map NamedDecl.get_id ctx) Id.Set.empty in
-  let vars_of = Environ.global_vars_set in
-  let aux env entry (ctx, all_safe as orig) =
-    match entry with
-    | LocalAssum ({Context.binder_name=x},_) ->
-       if Id.Set.mem x all_safe then orig
-       else (ctx, all_safe)
-    | LocalDef ({Context.binder_name=x},bo, ty) as decl ->
-       if Id.Set.mem x all_safe then orig else
-       let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
-       if Id.Set.subset vars all_safe
-       then (decl :: ctx, Id.Set.add x all_safe)
-       else (ctx, all_safe) in
-  let ctx, _ =
-    Environ.fold_named_context aux env ~init:(ctx,ctx_set) in
-  if not (Option.is_empty ps.section_vars) then
-    CErrors.user_err Pp.(str "Used section variables can be declared only once");
-  ctx, { ps with section_vars = Some (Context.Named.to_vars ctx) }
-
-let get_open_goals ps =
-  let Proof.{ goals; stack; shelf } = Proof.data ps.proof in
-  List.length goals +
-  List.fold_left (+) 0
-    (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
-  List.length shelf
-
 (** Declaration of constants and parameters *)
 
 type 'a proof_entry = {
@@ -348,120 +117,6 @@ let definition_entry_core ?(opaque=false) ?(inline=false) ?feedback_id ?section_
 
 let definition_entry =
   definition_entry_core ?eff:None ?univsbody:None ?feedback_id:None ?section_vars:None
-
-type proof_object =
-  { name : Names.Id.t
-  (* [name] only used in the STM *)
-  ; entries : Evd.side_effects proof_entry list
-  ; uctx: UState.t
-  }
-
-let get_po_name { name } = name
-
-let private_poly_univs =
-  Goptions.declare_bool_option_and_ref
-    ~depr:false
-    ~key:["Private";"Polymorphic";"Universes"]
-    ~value:true
-
-(* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
-(* XXX: Unsafe_typ:true is needed by vio files, see bf0499bc507d5a39c3d5e3bf1f69191339270729 *)
-let prepare_proof ~unsafe_typ { proof } =
-  let Proof.{name=pid;entry;poly} = Proof.data proof in
-  let initial_goals = Proofview.initial_goals entry in
-  let evd = Proof.return ~pid proof in
-  let eff = Evd.eval_side_effects evd in
-  let evd = Evd.minimize_universes evd in
-  let to_constr_body c =
-    match EConstr.to_constr_opt evd c with
-    | Some p ->
-      Vars.universes_of_constr p, p
-    | None ->
-      CErrors.user_err Pp.(str "Some unresolved existential variables remain")
-  in
-  let to_constr_typ t =
-    if unsafe_typ
-    then
-      let t = EConstr.Unsafe.to_constr t in
-      Vars.universes_of_constr t, t
-    else to_constr_body t
-  in
-  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-     side-effects... This may explain why one need to uniquize side-effects
-     thereafter... *)
-  (* EJGA: actually side-effects de-duplication and this codepath is
-     unrelated. Duplicated side-effects arise from incorrect scheme
-     generation code, the main bulk of it was mostly fixed by #9836
-     but duplication can still happen because of rewriting schemes I
-     think; however the code below is mostly untested, the only
-     code-paths that generate several proof entries are derive and
-     equations and so far there is no code in the CI that will
-     actually call those and do a side-effect, TTBOMK *)
-  (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
-  let proofs = List.map (fun (body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
-  proofs, Evd.evar_universe_context evd
-
-let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
-    (used_univs_typ, typ) (used_univs_body, body) =
-  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-  let utyp = UState.univ_entry ~poly initial_euctx in
-  let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
-  (* For vi2vo compilation proofs are computed now but we need to
-     complement the univ constraints of the typ with the ones of
-     the body.  So we keep the two sets distinct. *)
-  let uctx_body = UState.restrict uctx used_univs in
-  let ubody = UState.check_mono_univ_decl uctx_body udecl in
-  utyp, ubody
-
-let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
-  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-  let universes = UState.restrict uctx used_univs in
-  let typus = UState.restrict universes used_univs_typ in
-  let utyp = UState.check_univ_decl ~poly typus udecl in
-  let ubody = Univ.ContextSet.diff
-      (UState.context_set universes)
-      (UState.context_set typus)
-  in
-  utyp, ubody
-
-let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
-  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-  (* Since the proof is computed now, we can simply have 1 set of
-     constraints in which we merge the ones for the body and the ones
-     for the typ. We recheck the declaration after restricting with
-     the actually used universes.
-     TODO: check if restrict is really necessary now. *)
-  let ctx = UState.restrict uctx used_univs in
-  let utyp = UState.check_univ_decl ~poly ctx udecl in
-  utyp, Univ.ContextSet.empty
-
-let close_proof ~opaque ~keep_body_ucst_separate ps =
-
-  let { section_vars; proof; initial_euctx; pinfo } = ps in
-  let { Proof_info.info = { Info.udecl } } = pinfo in
-  let { Proof.name; poly } = Proof.data proof in
-  let unsafe_typ = keep_body_ucst_separate && not poly in
-  let elist, uctx = prepare_proof ~unsafe_typ ps in
-  let opaque = match opaque with
-    | Vernacexpr.Opaque -> true
-    | Vernacexpr.Transparent -> false in
-
-  let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
-    let utyp, ubody =
-      (* allow_deferred case *)
-      if not poly &&
-         (keep_body_ucst_separate
-          || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
-      then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl t b
-      (* private_poly_univs case *)
-      else if poly && opaque && private_poly_univs ()
-      then make_univs_private_poly ~poly ~uctx ~udecl t b
-      else make_univs ~poly ~uctx ~udecl t b
-    in
-    definition_entry_core ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
-  in
-  let entries = CList.map make_entry elist  in
-  { name; entries; uctx }
 
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry
@@ -883,184 +538,6 @@ module Internal = struct
   let objConstant = objConstant
 
 end
-(*** Proof Global Environment ***)
-
-type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
-
-let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
-  let { section_vars; proof; initial_euctx; pinfo } = ps in
-  let { Proof_info.info = { Info.udecl } } = pinfo in
-  let { Proof.name; poly; entry; sigma } = Proof.data proof in
-
-  (* We don't allow poly = true in this path *)
-  if poly then
-    CErrors.anomaly (Pp.str "Cannot delay universe-polymorphic constants.");
-
-  let fpl, uctx = Future.split2 fpl in
-  (* Because of dependent subgoals at the beginning of proofs, we could
-     have existential variables in the initial types of goals, we need to
-     normalise them for the kernel. *)
-  let subst_evar k = Evd.existential_opt_value0 sigma k in
-  let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar (UState.subst initial_euctx) in
-
-  (* We only support opaque proofs, this will be enforced by using
-     different entries soon *)
-  let opaque = true in
-  let make_entry p (_, types) =
-    (* Already checked the univ_decl for the type universes when starting the proof. *)
-    let univs = UState.univ_entry ~poly:false initial_euctx in
-    let types = nf (EConstr.Unsafe.to_constr types) in
-
-    Future.chain p (fun (pt,eff) ->
-        (* Deferred proof, we already checked the universe declaration with
-             the initial universes, ensure that the final universes respect
-             the declaration as well. If the declaration is non-extensible,
-             this will prevent the body from adding universes and constraints. *)
-        let uctx = Future.force uctx in
-        let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
-        let used_univs = Univ.LSet.union
-            (Vars.universes_of_constr types)
-            (Vars.universes_of_constr pt)
-        in
-        let univs = UState.restrict uctx used_univs in
-        let univs = UState.check_mono_univ_decl univs udecl in
-        (pt,univs),eff)
-    |> delayed_definition_entry ~opaque ~feedback_id ~section_vars ~univs ~types
-  in
-  let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in
-  { name; entries; uctx = initial_euctx }
-
-let close_future_proof = close_proof_delayed
-
-let return_partial_proof { proof } =
- let proofs = Proof.partial_proof proof in
- let Proof.{sigma=evd} = Proof.data proof in
- let eff = Evd.eval_side_effects evd in
- (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-     side-effects... This may explain why one need to uniquize side-effects
-     thereafter... *)
- let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
- proofs, Evd.evar_universe_context evd
-
-let return_proof ps =
-  let p, uctx = prepare_proof ~unsafe_typ:false ps in
-  List.map (fun (((_ub, body),eff),_) -> (body,eff)) p, uctx
-
-let update_global_env =
-  map_proof (fun p ->
-      let { Proof.sigma } = Proof.data p in
-      let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
-      let p, (status,info), _ = Proof.run_tactic (Global.env ()) tac p in
-      p)
-
-let next = let n = ref 0 in fun () -> incr n; !n
-
-let by tac = map_fold_proof (Proof.solve (Goal_select.SelectNth 1) None tac)
-
-let build_constant_by_tactic ~name ?(opaque=Vernacexpr.Transparent) ~uctx ~sign ~poly (typ : EConstr.t) tac =
-  let evd = Evd.from_ctx uctx in
-  let typ_ = EConstr.Unsafe.to_constr typ in
-  let cinfo = [CInfo.make ~name ~typ:typ_ ()] in
-  let info = Info.make ~poly () in
-  let pinfo = Proof_info.make ~cinfo ~info () in
-  let pf = start_proof_core ~name ~typ ~pinfo ~sign evd in
-  let pf, status = by tac pf in
-  let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false pf in
-  match entries with
-  | [entry] ->
-    entry, status, uctx
-  | _ ->
-    CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
-
-let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
-  let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
-  let sign = Environ.(val_of_named_context (named_context env)) in
-  let ce, status, uctx = build_constant_by_tactic ~name ~uctx ~sign ~poly typ tac in
-  let cb, uctx =
-    if side_eff then inline_private_constants ~uctx env ce
-    else
-      (* GG: side effects won't get reset: no need to treat their universes specially *)
-      let (cb, ctx), _eff = Future.force ce.proof_entry_body in
-      cb, UState.merge ~sideff:false Evd.univ_rigid uctx ctx
-  in
-  cb, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
-
-let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
-  (* EJGA: flush_and_check_evars is only used in abstract, could we
-     use a different API? *)
-  let concl =
-    try Evarutil.flush_and_check_evars sigma concl
-    with Evarutil.Uninstantiated_evar _ ->
-      CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials.")
-  in
-  let sigma, concl =
-    (* FIXME: should be done only if the tactic succeeds *)
-    let sigma = Evd.minimize_universes sigma in
-    sigma, Evarutil.nf_evars_universes sigma concl
-  in
-  let concl = EConstr.of_constr concl in
-  let uctx = Evd.evar_universe_context sigma in
-  let (const, safe, uctx) =
-    try build_constant_by_tactic ~name ~opaque:Vernacexpr.Transparent ~poly ~uctx ~sign:secsign concl solve_tac
-    with Logic_monad.TacticFailure e as src ->
-    (* if the tactic [tac] fails, it reports a [TacticFailure e],
-       which is an error irrelevant to the proof system (in fact it
-       means that [e] comes from [tac] failing to yield enough
-       success). Hence it reraises [e]. *)
-    let (_, info) = Exninfo.capture src in
-    Exninfo.iraise (e, info)
-  in
-  let sigma = Evd.set_universe_context sigma uctx in
-  let body, effs = Future.force const.proof_entry_body in
-  (* We drop the side-effects from the entry, they already exist in the ambient environment *)
-  let const = Internal.map_entry_body const ~f:(fun _ -> body, ()) in
-  (* EJGA: Hack related to the above call to
-     `build_constant_by_tactic` with `~opaque:Transparent`. Even if
-     the abstracted term is destined to be opaque, if we trigger the
-     `if poly && opaque && private_poly_univs ()` in `Proof_global`
-     kernel will boom. This deserves more investigation. *)
-  let const = Internal.set_opacity ~opaque const in
-  let const, args = Internal.shrink_entry sign const in
-  let cst () =
-    (* do not compute the implicit arguments, it may be costly *)
-    let () = Impargs.make_implicit_args false in
-    (* ppedrot: seems legit to have abstracted subproofs as local*)
-    declare_private_constant ~local:Locality.ImportNeedQualified ~name ~kind const
-  in
-  let cst, eff = Impargs.with_implicit_protection cst () in
-  let inst = match const.proof_entry_universes with
-  | Entries.Monomorphic_entry _ -> EConstr.EInstance.empty
-  | Entries.Polymorphic_entry (_, ctx) ->
-    (* We mimic what the kernel does, that is ensuring that no additional
-       constraints appear in the body of polymorphic constants. Ideally this
-       should be enforced statically. *)
-    let (_, body_uctx), _ = Future.force const.proof_entry_body in
-    let () = assert (Univ.ContextSet.is_empty body_uctx) in
-    EConstr.EInstance.make (Univ.UContext.instance ctx)
-  in
-  let args = List.map EConstr.of_constr args in
-  let lem = EConstr.mkConstU (cst, inst) in
-  let effs = Evd.concat_side_effects eff effs in
-  effs, sigma, lem, args, safe
-
-let get_goal_context pf i =
-  let p = get_proof pf in
-  Proof.get_goal_context_gen p i
-
-let get_current_goal_context pf =
-  let p = get_proof pf in
-  try Proof.get_goal_context_gen p 1
-  with
-  | Proof.NoSuchGoal _ ->
-    (* spiwack: returning empty evar_map, since if there is no goal,
-       under focus, there is no accessible evar either. EJGA: this
-       seems strange, as we have pf *)
-    let env = Global.env () in
-    Evd.from_env env, env
-
-let get_current_context pf =
-  let p = get_proof pf in
-  Proof.get_proof_context p
 
 let declare_definition_scheme ~internal ~univs ~role ~name c =
   let kind = Decls.(IsDefinition Scheme) in
@@ -1068,9 +545,6 @@ let declare_definition_scheme ~internal ~univs ~role ~name c =
   let kn, eff = declare_private_constant ~role ~kind ~name entry in
   let () = if internal then () else definition_message name in
   kn, eff
-
-let _ = Ind_tables.declare_definition_scheme := declare_definition_scheme
-let _ = Abstract.declare_abstract := declare_abstract
 
 (* Locality stuff *)
 let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
@@ -1206,6 +680,16 @@ let prepare_parameter ~poly ~udecl ~types sigma =
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   sigma, (None(*proof using*), (typ, univs), None(*inline*))
+
+type progress = Remain of int | Dependent | Defined of GlobRef.t
+
+type obligation_resolver =
+     Id.t option
+  -> Int.Set.t
+  -> unit Proofview.tactic option
+  -> progress
+
+type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
 
 module Obls = struct
 
@@ -1751,54 +1235,46 @@ let update_program_decl_on_defined prg obls num obl ~uctx rem ~auto =
   in
   ()
 
-let obligation_terminator entries uctx {name; num; auto} =
-  match entries with
-  | [entry] ->
-    let env = Global.env () in
-    let ty = entry.proof_entry_type in
-    let body, uctx = inline_private_constants ~uctx env entry in
-    let sigma = Evd.from_ctx uctx in
-    Inductiveops.control_only_guard (Global.env ()) sigma
-      (EConstr.of_constr body);
-    (* Declare the obligation ourselves and drop the hook *)
-    let prg = Option.get (State.find name) in
-    let {obls; remaining = rem} = prg.prg_obligations in
-    let obl = obls.(num) in
-    let status =
-      match (obl.obl_status, entry.proof_entry_opaque) with
-      | (_, Evar_kinds.Expand), true -> err_not_transp ()
-      | (true, _), true -> err_not_transp ()
-      | (false, _), true -> Evar_kinds.Define true
-      | (_, Evar_kinds.Define true), false -> Evar_kinds.Define false
-      | (_, status), false -> status
-    in
-    let obl = {obl with obl_status = (false, status)} in
-    let poly = prg.prg_info.Info.poly in
-    let uctx = if poly then uctx else UState.union prg.prg_uctx uctx in
-    let defined, obl = declare_obligation prg obl ~body ~types:ty ~uctx in
-    let prg_ctx =
-      if poly then
-        (* Polymorphic *)
-        (* We merge the new universes and constraints of the
-           polymorphic obligation with the existing ones *)
-        UState.union prg.prg_uctx uctx
-      else if
-        (* The first obligation, if defined,
-           declares the univs of the constant,
-           each subsequent obligation declares its own additional
-           universes and constraints if any *)
-        defined
-      then
-        UState.from_env (Global.env ())
-      else uctx
-    in
-    update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
-  | _ ->
-    CErrors.anomaly
-      Pp.(
-        str
-          "[obligation_terminator] close_proof returned more than one proof \
-           term")
+let obligation_terminator ~entry ~uctx ~oinfo:{name; num; auto} =
+  let env = Global.env () in
+  let ty = entry.proof_entry_type in
+  let body, uctx = inline_private_constants ~uctx env entry in
+  let sigma = Evd.from_ctx uctx in
+  Inductiveops.control_only_guard (Global.env ()) sigma
+    (EConstr.of_constr body);
+  (* Declare the obligation ourselves and drop the hook *)
+  let prg = Option.get (State.find name) in
+  let {obls; remaining = rem} = prg.prg_obligations in
+  let obl = obls.(num) in
+  let status =
+    match (obl.obl_status, entry.proof_entry_opaque) with
+    | (_, Evar_kinds.Expand), true -> err_not_transp ()
+    | (true, _), true -> err_not_transp ()
+    | (false, _), true -> Evar_kinds.Define true
+    | (_, Evar_kinds.Define true), false -> Evar_kinds.Define false
+    | (_, status), false -> status
+  in
+  let obl = {obl with obl_status = (false, status)} in
+  let poly = prg.prg_info.Info.poly in
+  let uctx = if poly then uctx else UState.union prg.prg_uctx uctx in
+  let defined, obl = declare_obligation prg obl ~body ~types:ty ~uctx in
+  let prg_ctx =
+    if poly then
+      (* Polymorphic *)
+      (* We merge the new universes and constraints of the
+         polymorphic obligation with the existing ones *)
+      UState.union prg.prg_uctx uctx
+    else if
+      (* The first obligation, if defined,
+         declares the univs of the constant,
+         each subsequent obligation declares its own additional
+         universes and constraints if any *)
+      defined
+    then
+      UState.from_env (Global.env ())
+    else uctx
+  in
+  update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
 
 (* Similar to the terminator but for the admitted path; this assumes
    the admitted constant was already declared.
@@ -1836,8 +1312,523 @@ let obligation_admitted_terminator {name; num; auto} ctx' dref =
 end
 
 (************************************************************************)
-(* Commom constant saving path, for both Qed and Admitted               *)
+(* Handling of interactive proofs                                       *)
 (************************************************************************)
+
+type lemma_possible_guards = int list list
+
+module Proof_ending = struct
+
+  type t =
+    | Regular
+    | End_obligation of obligation_qed_info
+    | End_derive of { f : Id.t; name : Id.t }
+    | End_equations of
+        { hook : Constant.t list -> Evd.evar_map -> unit
+        ; i : Id.t
+        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+        ; sigma : Evd.evar_map
+        }
+
+end
+
+module Proof = struct
+
+module Proof_info = struct
+
+  type t =
+    { cinfo : Constr.t CInfo.t list
+    (** cinfo contains each individual constant info in a mutual decl *)
+    ; info : Info.t
+    ; proof_ending : Proof_ending.t CEphemeron.key
+    (* This could be improved and the CEphemeron removed *)
+    ; compute_guard : lemma_possible_guards
+    (** thms and compute guard are specific only to
+       start_lemma_with_initialization + regular terminator, so we
+       could make this per-proof kind *)
+    }
+
+  let make ~cinfo ~info ?(compute_guard=[]) ?(proof_ending=Proof_ending.Regular) () =
+    { cinfo
+    ; info
+    ; compute_guard
+    ; proof_ending = CEphemeron.create proof_ending
+    }
+
+  (* This is used due to a deficiency on the API, should fix *)
+  let add_first_thm ~pinfo ~name ~typ ~impargs =
+    let cinfo : Constr.t CInfo.t = CInfo.make ~name ~impargs ~typ:(EConstr.Unsafe.to_constr typ) () in
+    { pinfo with cinfo = cinfo :: pinfo.cinfo }
+
+  (* This is called by the STM, and we have to fixup cinfo later as
+     indeed it will not be correct *)
+  let default () = make ~cinfo:[] ~info:(Info.make ()) ()
+end
+
+type t =
+  { endline_tactic : Genarg.glob_generic_argument option
+  ; section_vars : Id.Set.t option
+  ; proof : Proof.t
+  ; initial_euctx : UState.t
+  (** The initial universe context (for the statement) *)
+  ; pinfo : Proof_info.t
+  }
+
+(*** Proof Global manipulation ***)
+
+let info { pinfo } = pinfo
+let get ps = ps.proof
+let get_name ps = (Proof.data ps.proof).Proof.name
+let get_initial_euctx ps = ps.initial_euctx
+
+let fold ~f p = f p.proof
+let map ~f p = { p with proof = f p.proof }
+let map_fold ~f p = let proof, res = f p.proof in { p with proof }, res
+
+let map_fold_endline ~f ps =
+  let et =
+    match ps.endline_tactic with
+    | None -> Proofview.tclUNIT ()
+    | Some tac ->
+      let open Geninterp in
+      let {Proof.poly} = Proof.data ps.proof in
+      let ist = { lfun = Id.Map.empty; poly; extra = TacStore.empty } in
+      let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
+      let tac = Geninterp.interp tag ist tac in
+      Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
+  in
+  let (newpr,ret) = f et ps.proof in
+  let ps = { ps with proof = newpr } in
+  ps, ret
+
+let compact pf = map ~f:Proof.compact pf
+
+(* Sets the tactic to be used when a tactic line is closed with [...] *)
+let set_endline_tactic tac ps =
+  { ps with endline_tactic = Some tac }
+
+let initialize_named_context_for_proof () =
+  let sign = Global.named_context () in
+  List.fold_right
+    (fun d signv ->
+      let id = NamedDecl.get_id d in
+      let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
+      Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
+
+let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof ()) sigma =
+  (* In ?sign, we remove the bodies of variables in the named context
+     marked "opaque", this is a hack tho, see #10446, and
+     build_constant_by_tactic uses a different method that would break
+     program_inference_hook *)
+  let { Proof_info.info = { Info.poly; _ }; _ } = pinfo in
+  let goals = [Global.env_of_context sign, typ] in
+  let proof = Proof.start ~name ~poly sigma goals in
+  let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
+  { proof
+  ; endline_tactic = None
+  ; section_vars = None
+  ; initial_euctx
+  ; pinfo
+  }
+
+(** [start_proof ~info ~cinfo sigma] starts a proof of [cinfo].
+   The proof is started in the evar map [sigma] (which
+   can typically contain universe constraints) *)
+let start ~info ~cinfo ?proof_ending sigma =
+  let { CInfo.name; typ; _ } = cinfo in
+  let cinfo = [{ cinfo with CInfo.typ = EConstr.Unsafe.to_constr cinfo.CInfo.typ }] in
+  let pinfo = Proof_info.make ~cinfo ~info ?proof_ending () in
+  start_proof_core ~name ~typ ~pinfo ?sign:None sigma
+
+let start_dependent ~info ~name goals ~proof_ending =
+  let proof = Proof.dependent_start ~name ~poly:info.Info.poly goals in
+  let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
+  let cinfo = [] in
+  let pinfo = Proof_info.make ~info ~cinfo ~proof_ending () in
+  { proof
+  ; endline_tactic = None
+  ; section_vars = None
+  ; initial_euctx
+  ; pinfo
+  }
+
+let rec_tac_initializer finite guard thms snl =
+  if finite then
+    match List.map (fun { CInfo.name; typ } -> name, (EConstr.of_constr typ)) thms with
+    | (id,_)::l -> Tactics.mutual_cofix id l 0
+    | _ -> assert false
+  else
+    (* nl is dummy: it will be recomputed at Qed-time *)
+    let nl = match snl with
+     | None -> List.map succ (List.map List.last guard)
+     | Some nl -> nl
+    in match List.map2 (fun { CInfo.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
+       | (id,n,_)::l -> Tactics.mutual_fix id n l 0
+       | _ -> assert false
+
+let start_with_initialization ~info ~cinfo sigma =
+  let { CInfo.name; typ; args } = cinfo in
+  let init_tac = Tactics.auto_intros_tac args in
+  let pinfo = Proof_info.make ~cinfo:[cinfo] ~info () in
+  let lemma = start_proof_core ~name ~typ:(EConstr.of_constr typ) ~pinfo ?sign:None sigma in
+  map lemma ~f:(fun p ->
+      pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
+
+type mutual_info = (bool * lemma_possible_guards * Constr.t option list option)
+
+let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
+  let intro_tac { CInfo.args; _ } = Tactics.auto_intros_tac args in
+  let init_tac, compute_guard =
+    let (finite,guard,init_terms) = mutual_info in
+    let rec_tac = rec_tac_initializer finite guard cinfo snl in
+    let term_tac =
+      match init_terms with
+      | None ->
+        List.map intro_tac cinfo
+      | Some init_terms ->
+        (* This is the case for hybrid proof mode / definition
+           fixpoint, where terms for some constants are given with := *)
+        let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC) init_terms in
+        List.map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl cinfo
+    in
+    Tacticals.New.tclTHENS rec_tac term_tac, guard
+  in
+  match cinfo with
+  | [] -> CErrors.anomaly (Pp.str "No proof to start.")
+  | { CInfo.name; typ; impargs; _} :: thms ->
+    let pinfo = Proof_info.make ~cinfo ~info ~compute_guard () in
+    (* start_lemma has the responsibility to add (name, impargs, typ)
+       to thms, once Info.t is more refined this won't be necessary *)
+    let typ = EConstr.of_constr typ in
+    let lemma = start_proof_core ~name ~typ ~pinfo sigma in
+    map lemma ~f:(fun p ->
+        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
+
+let get_used_variables pf = pf.section_vars
+let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
+
+let set_used_variables ps l =
+  let open Context.Named.Declaration in
+  let env = Global.env () in
+  let ids = List.fold_right Id.Set.add l Id.Set.empty in
+  let ctx = Environ.keep_hyps env ids in
+  let ctx_set =
+    List.fold_right Id.Set.add (List.map NamedDecl.get_id ctx) Id.Set.empty in
+  let vars_of = Environ.global_vars_set in
+  let aux env entry (ctx, all_safe as orig) =
+    match entry with
+    | LocalAssum ({Context.binder_name=x},_) ->
+       if Id.Set.mem x all_safe then orig
+       else (ctx, all_safe)
+    | LocalDef ({Context.binder_name=x},bo, ty) as decl ->
+       if Id.Set.mem x all_safe then orig else
+       let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
+       if Id.Set.subset vars all_safe
+       then (decl :: ctx, Id.Set.add x all_safe)
+       else (ctx, all_safe) in
+  let ctx, _ =
+    Environ.fold_named_context aux env ~init:(ctx,ctx_set) in
+  if not (Option.is_empty ps.section_vars) then
+    CErrors.user_err Pp.(str "Used section variables can be declared only once");
+  ctx, { ps with section_vars = Some (Context.Named.to_vars ctx) }
+
+let get_open_goals ps =
+  let Proof.{ goals; stack; shelf } = Proof.data ps.proof in
+  List.length goals +
+  List.fold_left (+) 0
+    (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
+  List.length shelf
+
+type proof_object =
+  { name : Names.Id.t
+  (* [name] only used in the STM *)
+  ; entries : Evd.side_effects proof_entry list
+  ; uctx: UState.t
+  }
+
+let get_po_name { name } = name
+
+let private_poly_univs =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Private";"Polymorphic";"Universes"]
+    ~value:true
+
+(* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
+(* XXX: Unsafe_typ:true is needed by vio files, see bf0499bc507d5a39c3d5e3bf1f69191339270729 *)
+let prepare_proof ~unsafe_typ { proof } =
+  let Proof.{name=pid;entry;poly} = Proof.data proof in
+  let initial_goals = Proofview.initial_goals entry in
+  let evd = Proof.return ~pid proof in
+  let eff = Evd.eval_side_effects evd in
+  let evd = Evd.minimize_universes evd in
+  let to_constr_body c =
+    match EConstr.to_constr_opt evd c with
+    | Some p ->
+      Vars.universes_of_constr p, p
+    | None ->
+      CErrors.user_err Pp.(str "Some unresolved existential variables remain")
+  in
+  let to_constr_typ t =
+    if unsafe_typ
+    then
+      let t = EConstr.Unsafe.to_constr t in
+      Vars.universes_of_constr t, t
+    else to_constr_body t
+  in
+  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
+     side-effects... This may explain why one need to uniquize side-effects
+     thereafter... *)
+  (* EJGA: actually side-effects de-duplication and this codepath is
+     unrelated. Duplicated side-effects arise from incorrect scheme
+     generation code, the main bulk of it was mostly fixed by #9836
+     but duplication can still happen because of rewriting schemes I
+     think; however the code below is mostly untested, the only
+     code-paths that generate several proof entries are derive and
+     equations and so far there is no code in the CI that will
+     actually call those and do a side-effect, TTBOMK *)
+  (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
+  let proofs = List.map (fun (body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
+  proofs, Evd.evar_universe_context evd
+
+let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
+    (used_univs_typ, typ) (used_univs_body, body) =
+  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  let utyp = UState.univ_entry ~poly initial_euctx in
+  let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
+  (* For vi2vo compilation proofs are computed now but we need to
+     complement the univ constraints of the typ with the ones of
+     the body.  So we keep the two sets distinct. *)
+  let uctx_body = UState.restrict uctx used_univs in
+  let ubody = UState.check_mono_univ_decl uctx_body udecl in
+  utyp, ubody
+
+let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
+  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  let universes = UState.restrict uctx used_univs in
+  let typus = UState.restrict universes used_univs_typ in
+  let utyp = UState.check_univ_decl ~poly typus udecl in
+  let ubody = Univ.ContextSet.diff
+      (UState.context_set universes)
+      (UState.context_set typus)
+  in
+  utyp, ubody
+
+let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
+  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+  (* Since the proof is computed now, we can simply have 1 set of
+     constraints in which we merge the ones for the body and the ones
+     for the typ. We recheck the declaration after restricting with
+     the actually used universes.
+     TODO: check if restrict is really necessary now. *)
+  let ctx = UState.restrict uctx used_univs in
+  let utyp = UState.check_univ_decl ~poly ctx udecl in
+  utyp, Univ.ContextSet.empty
+
+let close_proof ~opaque ~keep_body_ucst_separate ps =
+
+  let { section_vars; proof; initial_euctx; pinfo } = ps in
+  let { Proof_info.info = { Info.udecl } } = pinfo in
+  let { Proof.name; poly } = Proof.data proof in
+  let unsafe_typ = keep_body_ucst_separate && not poly in
+  let elist, uctx = prepare_proof ~unsafe_typ ps in
+  let opaque = match opaque with
+    | Vernacexpr.Opaque -> true
+    | Vernacexpr.Transparent -> false in
+
+  let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
+    let utyp, ubody =
+      (* allow_deferred case *)
+      if not poly &&
+         (keep_body_ucst_separate
+          || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
+      then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl t b
+      (* private_poly_univs case *)
+      else if poly && opaque && private_poly_univs ()
+      then make_univs_private_poly ~poly ~uctx ~udecl t b
+      else make_univs ~poly ~uctx ~udecl t b
+    in
+    definition_entry_core ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
+  in
+  let entries = CList.map make_entry elist  in
+  { name; entries; uctx }
+
+type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
+
+let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
+  let { section_vars; proof; initial_euctx; pinfo } = ps in
+  let { Proof_info.info = { Info.udecl } } = pinfo in
+  let { Proof.name; poly; entry; sigma } = Proof.data proof in
+
+  (* We don't allow poly = true in this path *)
+  if poly then
+    CErrors.anomaly (Pp.str "Cannot delay universe-polymorphic constants.");
+
+  let fpl, uctx = Future.split2 fpl in
+  (* Because of dependent subgoals at the beginning of proofs, we could
+     have existential variables in the initial types of goals, we need to
+     normalise them for the kernel. *)
+  let subst_evar k = Evd.existential_opt_value0 sigma k in
+  let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar (UState.subst initial_euctx) in
+
+  (* We only support opaque proofs, this will be enforced by using
+     different entries soon *)
+  let opaque = true in
+  let make_entry p (_, types) =
+    (* Already checked the univ_decl for the type universes when starting the proof. *)
+    let univs = UState.univ_entry ~poly:false initial_euctx in
+    let types = nf (EConstr.Unsafe.to_constr types) in
+
+    Future.chain p (fun (pt,eff) ->
+        (* Deferred proof, we already checked the universe declaration with
+             the initial universes, ensure that the final universes respect
+             the declaration as well. If the declaration is non-extensible,
+             this will prevent the body from adding universes and constraints. *)
+        let uctx = Future.force uctx in
+        let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
+        let used_univs = Univ.LSet.union
+            (Vars.universes_of_constr types)
+            (Vars.universes_of_constr pt)
+        in
+        let univs = UState.restrict uctx used_univs in
+        let univs = UState.check_mono_univ_decl univs udecl in
+        (pt,univs),eff)
+    |> delayed_definition_entry ~opaque ~feedback_id ~section_vars ~univs ~types
+  in
+  let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in
+  { name; entries; uctx = initial_euctx }
+
+let close_future_proof = close_proof_delayed
+
+let return_partial_proof { proof } =
+ let proofs = Proof.partial_proof proof in
+ let Proof.{sigma=evd} = Proof.data proof in
+ let eff = Evd.eval_side_effects evd in
+ (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
+     side-effects... This may explain why one need to uniquize side-effects
+     thereafter... *)
+ let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
+ proofs, Evd.evar_universe_context evd
+
+let return_proof ps =
+  let p, uctx = prepare_proof ~unsafe_typ:false ps in
+  List.map (fun (((_ub, body),eff),_) -> (body,eff)) p, uctx
+
+let update_global_env =
+  map ~f:(fun p ->
+      let { Proof.sigma } = Proof.data p in
+      let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
+      let p, (status,info), _ = Proof.run_tactic (Global.env ()) tac p in
+      p)
+
+let next = let n = ref 0 in fun () -> incr n; !n
+
+let by tac = map_fold ~f:(Proof.solve (Goal_select.SelectNth 1) None tac)
+
+let build_constant_by_tactic ~name ?(opaque=Vernacexpr.Transparent) ~uctx ~sign ~poly (typ : EConstr.t) tac =
+  let evd = Evd.from_ctx uctx in
+  let typ_ = EConstr.Unsafe.to_constr typ in
+  let cinfo = [CInfo.make ~name ~typ:typ_ ()] in
+  let info = Info.make ~poly () in
+  let pinfo = Proof_info.make ~cinfo ~info () in
+  let pf = start_proof_core ~name ~typ ~pinfo ~sign evd in
+  let pf, status = by tac pf in
+  let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false pf in
+  match entries with
+  | [entry] ->
+    entry, status, uctx
+  | _ ->
+    CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
+
+let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
+  let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
+  let sign = Environ.(val_of_named_context (named_context env)) in
+  let ce, status, uctx = build_constant_by_tactic ~name ~uctx ~sign ~poly typ tac in
+  let cb, uctx =
+    if side_eff then inline_private_constants ~uctx env ce
+    else
+      (* GG: side effects won't get reset: no need to treat their universes specially *)
+      let (cb, ctx), _eff = Future.force ce.proof_entry_body in
+      cb, UState.merge ~sideff:false Evd.univ_rigid uctx ctx
+  in
+  cb, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
+
+let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
+  (* EJGA: flush_and_check_evars is only used in abstract, could we
+     use a different API? *)
+  let concl =
+    try Evarutil.flush_and_check_evars sigma concl
+    with Evarutil.Uninstantiated_evar _ ->
+      CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials.")
+  in
+  let sigma, concl =
+    (* FIXME: should be done only if the tactic succeeds *)
+    let sigma = Evd.minimize_universes sigma in
+    sigma, Evarutil.nf_evars_universes sigma concl
+  in
+  let concl = EConstr.of_constr concl in
+  let uctx = Evd.evar_universe_context sigma in
+  let (const, safe, uctx) =
+    try build_constant_by_tactic ~name ~opaque:Vernacexpr.Transparent ~poly ~uctx ~sign:secsign concl solve_tac
+    with Logic_monad.TacticFailure e as src ->
+    (* if the tactic [tac] fails, it reports a [TacticFailure e],
+       which is an error irrelevant to the proof system (in fact it
+       means that [e] comes from [tac] failing to yield enough
+       success). Hence it reraises [e]. *)
+    let (_, info) = Exninfo.capture src in
+    Exninfo.iraise (e, info)
+  in
+  let sigma = Evd.set_universe_context sigma uctx in
+  let body, effs = Future.force const.proof_entry_body in
+  (* We drop the side-effects from the entry, they already exist in the ambient environment *)
+  let const = Internal.map_entry_body const ~f:(fun _ -> body, ()) in
+  (* EJGA: Hack related to the above call to
+     `build_constant_by_tactic` with `~opaque:Transparent`. Even if
+     the abstracted term is destined to be opaque, if we trigger the
+     `if poly && opaque && private_poly_univs ()` in `close_proof`
+     kernel will boom. This deserves more investigation. *)
+  let const = Internal.set_opacity ~opaque const in
+  let const, args = Internal.shrink_entry sign const in
+  let cst () =
+    (* do not compute the implicit arguments, it may be costly *)
+    let () = Impargs.make_implicit_args false in
+    (* ppedrot: seems legit to have abstracted subproofs as local*)
+    declare_private_constant ~local:Locality.ImportNeedQualified ~name ~kind const
+  in
+  let cst, eff = Impargs.with_implicit_protection cst () in
+  let inst = match const.proof_entry_universes with
+  | Entries.Monomorphic_entry _ -> EConstr.EInstance.empty
+  | Entries.Polymorphic_entry (_, ctx) ->
+    (* We mimic what the kernel does, that is ensuring that no additional
+       constraints appear in the body of polymorphic constants. Ideally this
+       should be enforced statically. *)
+    let (_, body_uctx), _ = Future.force const.proof_entry_body in
+    let () = assert (Univ.ContextSet.is_empty body_uctx) in
+    EConstr.EInstance.make (Univ.UContext.instance ctx)
+  in
+  let args = List.map EConstr.of_constr args in
+  let lem = EConstr.mkConstU (cst, inst) in
+  let effs = Evd.concat_side_effects eff effs in
+  effs, sigma, lem, args, safe
+
+let get_goal_context pf i =
+  let p = get pf in
+  Proof.get_goal_context_gen p i
+
+let get_current_goal_context pf =
+  let p = get pf in
+  try Proof.get_goal_context_gen p 1
+  with
+  | Proof.NoSuchGoal _ ->
+    (* spiwack: returning empty evar_map, since if there is no goal,
+       under focus, there is no accessible evar either. EJGA: this
+       seems strange, as we have pf *)
+    let env = Global.env () in
+    Evd.from_env env, env
+
+let get_current_context pf =
+  let p = get pf in
+  Proof.get_proof_context p
 
 (* Support for mutually proved theorems *)
 
@@ -1855,7 +1846,7 @@ module MutualEntry : sig
     (* Common to all recthms *)
     : pinfo:Proof_info.t
     -> uctx:UState.t
-    -> Evd.side_effects proof_entry
+    -> entry:Evd.side_effects proof_entry
     -> Names.GlobRef.t list
 
 end = struct
@@ -1901,15 +1892,15 @@ end = struct
     in
     declare_entry ~name ~scope ~kind ?hook ~impargs ~uctx pe
 
-  let declare_mutdef ~pinfo ~uctx const =
+  let declare_mutdef ~pinfo ~uctx ~entry =
     let pe = match pinfo.Proof_info.compute_guard with
     | [] ->
       (* Not a recursive statement *)
-      const
+      entry
     | possible_indexes ->
       (* Try all combinations... not optimal *)
       let env = Global.env() in
-      Internal.map_entry_body const
+      Internal.map_entry_body entry
         ~f:(guess_decreasing env possible_indexes)
     in
     List.map_i (declare_mutdef ~pinfo ~uctx pe) 0 pinfo.Proof_info.cinfo
@@ -1955,15 +1946,15 @@ let finish_admitted ~pinfo ~uctx pe =
     Obls.obligation_admitted_terminator oinfo uctx (List.hd cst)
   | _ -> ()
 
-let save_lemma_admitted ~proof =
+let save_admitted ~proof =
   let udecl = get_universe_decl proof in
-  let Proof.{ poly; entry } = Proof.data (get_proof proof) in
+  let Proof.{ poly; entry } = Proof.data (get proof) in
   let typ = match Proofview.initial_goals entry with
     | [typ] -> snd typ
     | _ -> CErrors.anomaly ~label:"Lemmas.save_lemma_admitted" (Pp.str "more than one statement.")
   in
   let typ = EConstr.Unsafe.to_constr typ in
-  let iproof = get_proof proof in
+  let iproof = get proof in
   let pproofs = Proof.partial_proof iproof in
   let sec_vars = compute_proof_using_for_admitted proof typ pproofs in
   let uctx = get_initial_euctx proof in
@@ -1973,14 +1964,6 @@ let save_lemma_admitted ~proof =
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
 (************************************************************************)
-
-let finish_proved po pinfo =
-  match po with
-  | { entries=[const]; uctx } ->
-    let _r : Names.GlobRef.t list = MutualEntry.declare_mutdef ~pinfo ~uctx const in
-    ()
-  | _ ->
-    CErrors.anomaly ~label:"finish_proved" Pp.(str "close_proof returned more than one proof term")
 
 let finish_derived ~f ~name ~entries =
   (* [f] and [name] correspond to the proof of [f] and of [suchthat], respectively. *)
@@ -2036,17 +2019,28 @@ let finish_proved_equations ~kind ~hook i proof_obj types sigma0 =
   in
   hook recobls sigma
 
+let check_single_entry { entries; uctx } label =
+  match entries with
+  | [entry] -> entry, uctx
+  | _ ->
+    CErrors.anomaly ~label Pp.(str "close_proof returned more than one proof term")
+
 let finalize_proof proof_obj proof_info =
   let open Proof_ending in
   match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
   | Regular ->
-    finish_proved proof_obj proof_info
+    let entry, uctx = check_single_entry proof_obj "Proof.save" in
+    let _ : GlobRef.t list =
+      MutualEntry.declare_mutdef ~entry ~uctx ~pinfo:proof_info in
+    ()
   | End_obligation oinfo ->
-    Obls.obligation_terminator proof_obj.entries proof_obj.uctx oinfo
+    let entry, uctx = check_single_entry proof_obj "Obligation.save" in
+    Obls.obligation_terminator ~entry ~uctx ~oinfo
   | End_derive { f ; name } ->
     finish_derived ~f ~name ~entries:proof_obj.entries
   | End_equations { hook; i; types; sigma } ->
-    finish_proved_equations ~kind:proof_info.Proof_info.info.Info.kind ~hook i proof_obj types sigma
+    let kind = proof_info.Proof_info.info.Info.kind in
+    finish_proved_equations ~kind ~hook i proof_obj types sigma
 
 let err_save_forbidden_in_place_of_qed () =
   CErrors.user_err (Pp.str "Cannot use Save with more than one constant or in this proof mode")
@@ -2064,7 +2058,7 @@ let process_idopt_for_save ~idopt info =
         err_save_forbidden_in_place_of_qed ()
     in { info with Proof_info.cinfo }
 
-let save_lemma_proved ~proof ~opaque ~idopt =
+let save ~proof ~opaque ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
   let proof_obj = close_proof ~opaque ~keep_body_ucst_separate:false proof in
   let proof_info = process_idopt_for_save ~idopt proof.pinfo in
@@ -2099,30 +2093,9 @@ let save_lemma_proved_delayed ~proof ~pinfo ~idopt =
     let info = process_idopt_for_save ~idopt pinfo in
     finalize_proof proof info
 
-module Proof = struct
-  type nonrec t = t
-  let start = start_proof
-  let start_dependent = start_dependent_proof
-  let start_with_initialization = start_proof_with_initialization
-  type nonrec mutual_info = mutual_info
-  let start_mutual_with_initialization = start_mutual_with_initialization
-  let save = save_lemma_proved
-  let save_admitted = save_lemma_admitted
-  let by = by
-  let get = get_proof
-  let get_name = get_proof_name
-  let fold ~f = fold_proof f
-  let map ~f = map_proof f
-  let map_fold ~f = map_fold_proof f
-  let map_fold_endline ~f = map_fold_proof_endline f
-  let set_endline_tactic = set_endline_tactic
-  let set_used_variables = set_used_variables
-  let compact = compact_the_proof
-  let update_global_env = update_global_env
-  let get_open_goals = get_open_goals
-  let info { pinfo } = pinfo
-  let get_goal_context = get_goal_context
-  let get_current_goal_context = get_current_goal_context
-  let get_current_context = get_current_context
-  module Proof_info = Proof_info
-end
+end (* Proof module *)
+
+let _ = Ind_tables.declare_definition_scheme := declare_definition_scheme
+let _ = Abstract.declare_abstract := Proof.declare_abstract
+
+let build_by_tactic = Proof.build_by_tactic
