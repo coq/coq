@@ -151,23 +151,15 @@ struct
 
  type t = Dn.t
 
+  type pattern = Dn.pattern
+
+  let pattern st pat = match st with
+  | None -> Dn.pattern bounded_constr_pat_discr (pat, !dnet_depth)
+  | Some st -> Dn.pattern (bounded_constr_pat_discr_st st) (pat, !dnet_depth)
+
   let empty = Dn.empty
-
-  let add = function
-    | None ->
-        (fun dn (c,v) ->
-           Dn.add dn bounded_constr_pat_discr ((c,!dnet_depth),v))
-    | Some st ->
-        (fun dn (c,v) ->
-           Dn.add dn (bounded_constr_pat_discr_st st) ((c,!dnet_depth),v))
-
-  let rmv = function
-    | None ->
-        (fun dn (c,v) ->
-           Dn.rmv dn bounded_constr_pat_discr ((c,!dnet_depth),v))
-    | Some st ->
-        (fun dn (c,v) ->
-         Dn.rmv dn (bounded_constr_pat_discr_st st) ((c,!dnet_depth),v))
+  let add = Dn.add
+  let rmv = Dn.rmv
 
   let lookup sigma = function
     | None ->

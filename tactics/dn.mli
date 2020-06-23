@@ -18,9 +18,13 @@ sig
      must decompose any tree into a label characterizing its root node and
      the list of its subtree *)
 
-  val add : t -> 'a decompose_fun -> 'a * Z.t -> t
+  type pattern
 
-  val rmv : t -> 'a decompose_fun -> 'a * Z.t -> t
+  val pattern : 'a decompose_fun -> 'a -> pattern
+
+  val add : t -> pattern -> Z.t -> t
+
+  val rmv : t -> pattern -> Z.t -> t
 
   type 'tree lookup_fun = 'tree -> (Y.t * 'tree list) lookup_res
 
