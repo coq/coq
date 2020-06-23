@@ -42,20 +42,6 @@ type debug = Debug | Info | Off
 
 exception Bound
 
-let head_constr_bound sigma t =
-  let t = strip_outer_cast sigma t in
-  let _,ccl = decompose_prod_assum sigma t in
-  let hd,args = decompose_app sigma ccl in
-  let open GlobRef in
-  match EConstr.kind sigma hd with
-  | Const (c, _) -> ConstRef c
-  | Ind (i, _) -> IndRef i
-  | Construct (c, _) -> ConstructRef c
-  | Var id -> VarRef id
-  | Proj (p, _) -> ConstRef (Projection.constant p)
-  | _ -> raise Bound
-
-(* Slightly different from above, can they be merged? *)
 let rec head_bound sigma t = match EConstr.kind sigma t with
 | Prod (_, _, b)  -> head_bound sigma b
 | LetIn (_, _, _, b) -> head_bound sigma b
@@ -67,13 +53,11 @@ let rec head_bound sigma t = match EConstr.kind sigma t with
 | Var id -> GlobRef.VarRef id
 | Proj (p, _) -> GlobRef.ConstRef (Projection.constant p)
 | Cast (c, _, _) -> head_bound sigma c
-| Evar _ | Rel _ | Meta _ | Sort _ | Fix _ | Lambda _ ->
-  raise Bound
-| CoFix _ | Int _ | Float _ | Array _ ->
-  anomaly ~label:"head_pattern_bound" (Pp.str "not a type.")
+| Evar _ | Rel _ | Meta _ | Sort _ | Fix _ | Lambda _
+| CoFix _ | Int _ | Float _ | Array _ -> raise Bound
 
 let head_constr sigma c =
-  try head_constr_bound sigma c
+  try head_bound sigma c
   with Bound -> user_err (Pp.str "Head identifier must be a constant, section variable, \
                                   (co)inductive type, (co)inductive type constructor, or projection.")
 
@@ -1121,7 +1105,7 @@ let subst_autohint (subst, obj) =
     match t with
     | None -> gr'
     | Some t ->
-      (try head_constr_bound Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)
+      (try head_bound Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)
        with Bound -> gr')
   in
   let subst_mps subst c = EConstr.of_constr (subst_mps subst (EConstr.Unsafe.to_constr c)) in
