@@ -83,14 +83,15 @@ module Info = struct
     ; udecl : UState.universe_decl
     ; scope : Locality.locality
     ; hook : Hook.t option
+    ; typing_flags : Declarations.typing_flags option
     }
 
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
   let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
       ?(udecl=UState.default_univ_decl) ?(scope=Locality.Global Locality.ImportDefaultBehavior)
-      ?hook () =
-    { poly; inline; kind; udecl; scope; hook }
+      ?hook ?typing_flags () =
+    { poly; inline; kind; udecl; scope; hook; typing_flags }
 
 end
 
@@ -325,12 +326,28 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proo
 
 let feedback_axiom () = Feedback.(feedback AddedAxiom)
 
-let is_unsafe_typing_flags () =
+let is_unsafe_typing_flags flags =
   let open Declarations in
-  let flags = Environ.typing_flags (Global.env()) in
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
-let define_constant ~name cd =
+(* Maybe it would make sense to push this logic down to
+   Safe_typing.add_constant? *)
+let add_constant_with_flags ~typing_flags ~unsafe ~name decl =
+  let current_flags = Global.typing_flags () in
+  let typing_flags = Option.cata
+      (fun new_flags -> Global.set_typing_flags new_flags; new_flags)
+      current_flags typing_flags in
+  try
+    let kn = Global.add_constant name decl in
+    Global.set_typing_flags current_flags;
+    if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
+    kn
+  with exn ->
+    let ie = Exninfo.capture exn in
+    Global.set_typing_flags current_flags;
+    Exninfo.iraise ie
+
+let define_constant ~name ~typing_flags cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
   let decl, unsafe = match cd with
     | DefinitionEntry de ->
@@ -354,13 +371,11 @@ let define_constant ~name cd =
     | PrimitiveEntry e ->
       ConstantEntry (Entries.PrimitiveEntry e), false
   in
-  let kn = Global.add_constant name decl in
-  if unsafe || is_unsafe_typing_flags() then feedback_axiom();
-  kn
+  add_constant_with_flags ~unsafe ~typing_flags ~name decl
 
-let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind cd =
+let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags cd =
   let () = check_exists name in
-  let kn = define_constant ~name cd in
+  let kn = define_constant ~typing_flags ~name cd in
   (* Register the libobjects attached to the constants *)
   let () = register_constant kn kind local in
   kn
@@ -557,7 +572,7 @@ let declare_definition_scheme ~internal ~univs ~role ~name c =
   kn, eff
 
 (* Locality stuff *)
-let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
+let declare_entry_core ~name ~scope ~kind ~typing_flags ?hook ~obls ~impargs ~uctx entry =
   let should_suggest =
     entry.proof_entry_opaque
     && not (List.is_empty (Global.named_context()))
@@ -570,7 +585,7 @@ let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
   | Locality.Global local ->
-    let kn = declare_constant ~name ~local ~kind (DefinitionEntry entry) in
+    let kn = declare_constant ~name ~local ~kind ~typing_flags (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
     if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
     let () = DeclareUniv.declare_univ_binders gr ubind in
@@ -597,7 +612,7 @@ let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
     vars, fixdecls, None
 
 let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) () =
-  let { Info.poly; udecl; scope; kind; _ } = info in
+  let { Info.poly; udecl; scope; kind; typing_flags; _ } = info in
   let vars, fixdecls, indexes =
     mutual_make_bodies ~fixitems:cinfo ~rec_declaration ~possible_indexes in
   let uctx, univs =
@@ -614,7 +629,7 @@ let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declar
   let csts = CList.map2
       (fun CInfo.{ name; typ; impargs; using } body ->
          let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
-         declare_entry ~name ~scope ~kind ~impargs ~uctx entry)
+         declare_entry ~name ~scope ~kind ~impargs ~uctx ~typing_flags entry)
       cinfo fixdecls
   in
   let isfix = Option.has_some possible_indexes in
@@ -637,7 +652,7 @@ let declare_assumption ~name ~scope ~hook ~impargs ~uctx pe =
   in
   let kind = Decls.(IsAssumption Conjectural) in
   let decl = ParameterEntry pe in
-  let kn = declare_constant ~name ~local ~kind decl in
+  let kn = declare_constant ~name ~local ~kind ~typing_flags:None decl in
   let dref = Names.GlobRef.ConstRef kn in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = assumption_message name in
@@ -680,8 +695,8 @@ let prepare_definition ~info ~opaque ?using ~body ~typ sigma =
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body sigma =
   let { CInfo.name; impargs; typ; using; _ } = cinfo in
   let entry, uctx = prepare_definition ~info ~opaque ?using ~body ~typ sigma in
-  let { Info.scope; kind; hook; _ } = info in
-  declare_entry_core ~name ~scope ~kind ~impargs ~obls ?hook ~uctx entry, uctx
+  let { Info.scope; kind; hook; typing_flags; _ } = info in
+  declare_entry_core ~name ~scope ~kind ~impargs ~typing_flags ~obls ?hook ~uctx entry, uctx
 
 let declare_definition ~info ~cinfo ~opaque ~body sigma =
   declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body sigma |> fst
@@ -913,6 +928,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
       declare_constant ~name:obl.obl_name
+        ~typing_flags:prg.prg_info.Info.typing_flags
         ~local:Locality.ImportNeedQualified
         ~kind:Decls.(IsProof Property)
         (DefinitionEntry ce)
@@ -1886,7 +1902,7 @@ end = struct
 
   let declare_mutdef ~uctx ~pinfo pe i CInfo.{ name; impargs; typ; _} =
     let { Proof_info.info; compute_guard; _ } = pinfo in
-    let { Info.hook; scope; kind; _ } = info in
+    let { Info.hook; scope; kind; typing_flags; _ } = info in
     (* if i = 0 , we don't touch the type; this is for compat
        but not clear it is the right thing to do.
     *)
@@ -1903,7 +1919,7 @@ end = struct
         Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
     in
-    declare_entry ~name ~scope ~kind ?hook ~impargs ~uctx pe
+    declare_entry ~name ~scope ~kind ?hook ~impargs ~typing_flags ~uctx pe
 
   let declare_mutdef ~pinfo ~uctx ~entry =
     let pe = match pinfo.Proof_info.compute_guard with
@@ -1993,7 +2009,7 @@ let finish_derived ~f ~name ~entries =
   let f_def = Internal.set_opacity ~opaque:false f_def in
   let f_kind = Decls.(IsDefinition Definition) in
   let f_def = DefinitionEntry f_def in
-  let f_kn = declare_constant ~name:f ~kind:f_kind f_def in
+  let f_kn = declare_constant ~name:f ~kind:f_kind f_def ~typing_flags:None in
   let f_kn_term = Constr.mkConst f_kn in
   (* In the type and body of the proof of [suchthat] there can be
      references to the variable [f]. It needs to be replaced by
@@ -2011,7 +2027,7 @@ let finish_derived ~f ~name ~entries =
   (* The same is done in the body of the proof. *)
   let lemma_def = Internal.map_entry_body lemma_def ~f:(fun ((b,ctx),fx) -> (substf b, ctx), fx) in
   let lemma_def = DefinitionEntry lemma_def in
-  let ct = declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
+  let ct = declare_constant ~name ~typing_flags:None ~kind:Decls.(IsProof Proposition) lemma_def in
   [GlobRef.ConstRef f_kn; GlobRef.ConstRef ct]
 
 let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
@@ -2025,7 +2041,7 @@ let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
           | None -> let n = !obls in incr obls; Nameops.add_suffix i ("_obligation_" ^ string_of_int n)
         in
         let entry, args = Internal.shrink_entry local_context entry in
-        let cst = declare_constant ~name:id ~kind (DefinitionEntry entry) in
+        let cst = declare_constant ~name:id ~kind ~typing_flags:None (DefinitionEntry entry) in
         let sigma, app = Evarutil.new_global sigma (GlobRef.ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
         sigma, cst) sigma0
@@ -2519,3 +2535,9 @@ type nonrec progress = progress =
 end
 
 module OblState = Obls_.State
+
+let declare_constant ?local ~name ~kind ?typing_flags =
+  declare_constant ?local ~name ~kind ~typing_flags
+
+let declare_entry ~name ~scope ~kind =
+  declare_entry ~name ~scope ~kind ~typing_flags:None
