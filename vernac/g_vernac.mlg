@@ -816,7 +816,9 @@ GRAMMAR EXTEND Gram
   ;
   hint_info:
     [ [ "|"; i = OPT natural; pat = OPT constr_pattern ->
-         { Typeclasses.{ hint_priority = i; hint_pattern = pat; hint_commit = NoCommit } }
+        { Typeclasses.{ hint_priority = i; hint_pattern = pat; hint_commit = NoCommit } }
+      | "!"; i = OPT natural; pat = OPT constr_pattern ->
+         { Typeclasses.{ hint_priority = i; hint_pattern = pat; hint_commit = Commit } }
       | -> {  Hints.empty_hint_info } ] ]
   ;
   reserv_list:
