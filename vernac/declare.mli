@@ -79,12 +79,11 @@ module CInfo : sig
     -> unit
     -> 'constr t
 
-  (* Eventually we would like to remove the constr parameter *)
+  (* Used only in Vernacentries, may disappear from public API *)
   val to_constr : Evd.evar_map -> EConstr.t t -> Constr.t t
 
+  (* Used only in RecLemmas, may disappear from public API *)
   val get_typ : 'constr t -> 'constr
-  (* To be removed once obligations are merged here *)
-  val get_name : 'constr t -> Id.t
 
 end
 
@@ -147,20 +146,6 @@ val declare_mutually_recursive
   -> Names.GlobRef.t list
 
 (** {2 Declaration of interactive constants }  *)
-
-(** Resolution status of a program *)
-type progress =
-  | Remain of int  (** n obligations remaining *)
-  | Dependent  (** Dependent on other definitions *)
-  | Defined of GlobRef.t  (** Defined as id *)
-
-type obligation_resolver =
-     Id.t option
-  -> Int.Set.t
-  -> unit Proofview.tactic option
-  -> progress
-
-type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
 
 (** [Declare.Proof.t] Construction of constants using interactive proofs. *)
 module Proof : sig
@@ -472,6 +457,12 @@ end
 val check_solved_obligations : what_for:Pp.t -> unit
 
 val default_tactic : unit Proofview.tactic ref
+
+(** Resolution status of a program *)
+type progress =
+  | Remain of int  (** n obligations remaining *)
+  | Dependent  (** Dependent on other definitions *)
+  | Defined of GlobRef.t  (** Defined as id *)
 
 (** Prepare API, to be removed once we provide the corresponding 1-step API *)
 val prepare_obligation

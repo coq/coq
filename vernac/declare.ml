@@ -2513,5 +2513,7 @@ let prepare_obligation = prepare_obligation
 let check_solved_obligations = Obls_.check_solved_obligations
 type fixpoint_kind = Obls_.fixpoint_kind =
   | IsFixpoint of lident option list | IsCoFixpoint
+type nonrec progress = progress =
+  | Remain of int | Dependent | Defined of GlobRef.t
 
 end

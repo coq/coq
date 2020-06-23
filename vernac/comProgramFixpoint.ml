@@ -262,7 +262,8 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ () in
   let info = Declare.Info.make ~udecl ~poly ~hook () in
-  let _ : Declare.progress = Declare.Obls.add_definition ~cinfo ~info ~term:evars_def ~uctx evars in
+  let _ : Declare.Obls.progress =
+    Declare.Obls.add_definition ~cinfo ~info ~term:evars_def ~uctx evars in
   ()
 
 let out_def = function

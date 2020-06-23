@@ -349,7 +349,7 @@ let declare_instance_program env sigma ~global ~poly name pri impargs udecl term
                     Decls.IsDefinition Decls.Instance in
   let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
   let info = Declare.Info.make  ~udecl ~scope ~poly ~kind ~hook () in
-  let _ : Declare.progress =
+  let _ : Declare.Obls.progress =
     Declare.Obls.add_definition ~cinfo ~info ~term ~uctx obls
   in ()
 
