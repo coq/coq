@@ -369,8 +369,7 @@ and tac_of_hint dbg db_list local_db concl (flags, h) =
          let info = Exninfo.reify () in
          Tacticals.New.tclFAIL ~info 0 (str"Unbound reference")
        end
-    | Extern tacast ->
-      let p = FullHint.pattern h in
+    | Extern (p, tacast) ->
       conclPattern concl p tacast
   in
   let pr_hint env sigma =

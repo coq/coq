@@ -105,7 +105,7 @@ type 'a hint_ast =
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of Genarg.glob_generic_argument (* Hint Extern *)
+  | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument (* Hint Extern *)
 
 
 type 'a hints_path_atom_gen =
@@ -349,8 +349,7 @@ let instantiate_hint env sigma p =
     | Res_pf_THEN_trivial_fail c ->
       Res_pf_THEN_trivial_fail (mk_clenv c)
     | Give_exact c -> Give_exact (mk_clenv c)
-    | Unfold_nth e -> Unfold_nth e
-    | Extern t -> Extern t
+    | (Unfold_nth _ | Extern _) as h -> h
   in
   { p with code = { p.code with obj = code } }
 
@@ -969,7 +968,7 @@ let make_extern pri pat tacast =
      name = PathAny;
      db = None;
      secvars = Id.Pred.empty; (* Approximation *)
-     code = with_uid (Extern tacast) })
+     code = with_uid (Extern (pat, tacast)) })
 
 let make_mode ref m =
   let open Term in
@@ -1133,9 +1132,10 @@ let subst_autohint (subst, obj) =
       | Unfold_nth ref ->
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code.obj else Unfold_nth ref'
-      | Extern tac ->
+      | Extern (pat, tac) ->
+          let pat' = Option.Smart.map (subst_pattern env sigma subst) data.pat in
           let tac' = Genintern.generic_substitute subst tac in
-          if tac==tac' then data.code.obj else Extern tac'
+          if pat==pat' && tac==tac' then data.code.obj else Extern (pat', tac')
     in
     let name' = subst_path_atom subst data.name in
     let uid' = subst_kn subst data.code.uid in
@@ -1415,7 +1415,7 @@ let pr_hint env sigma h = match h.obj with
       (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
-  | Extern tac ->
+  | Extern (_, tac) ->
     str "(*external*) " ++ Pputils.pr_glb_generic env sigma tac
 
 let pr_id_hint env sigma (id, v) =
