@@ -162,22 +162,6 @@ type obligation_resolver =
 
 type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
 
-(** Creating high-level proofs with an associated constant *)
-module Proof_ending : sig
-
-  type t =
-    | Regular
-    | End_obligation of obligation_qed_info
-    | End_derive of { f : Id.t; name : Id.t }
-    | End_equations of
-        { hook : Constant.t list -> Evd.evar_map -> unit
-        ; i : Id.t
-        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
-        ; sigma : Evd.evar_map
-        }
-
-end
-
 (** [Declare.Proof.t] Construction of constants using interactive proofs. *)
 module Proof : sig
 
@@ -189,19 +173,27 @@ module Proof : sig
   val start
     :  info:Info.t
     -> cinfo:EConstr.t CInfo.t
-    -> ?proof_ending:Proof_ending.t
     -> Evd.evar_map
     -> t
 
-  (** Like [start] except that there may be dependencies between initial goals. *)
-  val start_dependent
-    : info:Info.t
-    -> name:Id.t
+  (** [start_{derive,equations}] are functions meant to handle
+     interactive proofs with multiple goals, they should be considered
+     experimental until we provide a more general API encompassing
+     both of them. Please, get in touch with the developers if you
+     would like to experiment with multi-goal dependent proofs so we
+     can use your input on the design of the new API. *)
+  val start_derive : f:Id.t -> name:Id.t -> info:Info.t -> Proofview.telescope -> t
+
+  val start_equations :
+       name:Id.t
+    -> info:Info.t
+    -> hook:(Constant.t list -> Evd.evar_map -> unit)
+    -> types:(Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+    -> Evd.evar_map
     -> Proofview.telescope
-    -> proof_ending:Proof_ending.t
     -> t
 
-  (** Pretty much internal, used by the Lemmavernaculars *)
+  (** Pretty much internal, used by the Lemma vernaculars *)
   val start_with_initialization
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t

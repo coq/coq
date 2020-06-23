@@ -1435,13 +1435,15 @@ let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof
 (** [start_proof ~info ~cinfo sigma] starts a proof of [cinfo].
    The proof is started in the evar map [sigma] (which
    can typically contain universe constraints) *)
-let start ~info ~cinfo ?proof_ending sigma =
+let start_core ~info ~cinfo ?proof_ending sigma =
   let { CInfo.name; typ; _ } = cinfo in
   let cinfo = [{ cinfo with CInfo.typ = EConstr.Unsafe.to_constr cinfo.CInfo.typ }] in
   let pinfo = Proof_info.make ~cinfo ~info ?proof_ending () in
   start_proof_core ~name ~typ ~pinfo ?sign:None sigma
 
-let start_dependent ~info ~name goals ~proof_ending =
+let start = start_core ?proof_ending:None
+
+let start_dependent ~info ~name ~proof_ending goals =
   let proof = Proof.dependent_start ~name ~poly:info.Info.poly goals in
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   let cinfo = [] in
@@ -1452,6 +1454,14 @@ let start_dependent ~info ~name goals ~proof_ending =
   ; initial_euctx
   ; pinfo
   }
+
+let start_derive ~f ~name ~info goals =
+  let proof_ending = Proof_ending.End_derive {f; name} in
+  start_dependent ~info ~name ~proof_ending goals
+
+let start_equations ~name ~info ~hook ~types sigma goals =
+  let proof_ending = Proof_ending.End_equations {hook; i=name; types; sigma} in
+  start_dependent ~name ~info ~proof_ending goals
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -2238,7 +2248,7 @@ let rec solve_obligation prg num tac =
   let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) () in
   let poly = Internal.get_poly prg in
   let info = Info.make ~scope ~kind ~poly () in
-  let lemma = Proof.start ~cinfo ~info ~proof_ending evd  in
+  let lemma = Proof.start_core ~cinfo ~info ~proof_ending evd  in
   let lemma = fst @@ Proof.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Proof.set_endline_tactic tac lemma) lemma tac in
   lemma

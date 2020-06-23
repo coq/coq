@@ -41,7 +41,6 @@ let start_deriving f suchthat name : Declare.Proof.t =
   in
 
   let info = Declare.Info.make ~poly ~kind () in
-  let proof_ending = Declare.Proof_ending.(End_derive {f; name}) in
-  let lemma = Declare.Proof.start_dependent ~name ~info ~proof_ending goals in
+  let lemma = Declare.Proof.start_derive ~name ~f ~info goals in
   Declare.Proof.map lemma ~f:(fun p ->
       Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p)
