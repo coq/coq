@@ -84,7 +84,7 @@ let with_module_locality ~atts f =
 
 let with_def_attributes ~atts f =
   let atts = DefAttributes.parse atts in
-  if atts.DefAttributes.program then Obligations.check_program_libraries ();
+  if atts.DefAttributes.program then Declare.Obls.check_program_libraries ();
   f ~atts
 
 (*******************)
@@ -471,7 +471,7 @@ let check_name_freshness locality {CAst.loc;v=id} : unit =
     user_err ?loc  (Id.print id ++ str " already exists.")
 
 let program_inference_hook env sigma ev =
-  let tac = !Obligations.default_tactic in
+  let tac = !Declare.Obls.default_tactic in
   let evi = Evd.find sigma ev in
   let evi = Evarutil.nf_evar_info sigma evi in
   let env = Evd.evar_filtered_env env evi in

@@ -28,7 +28,7 @@ let () =
   let tac = Proofview.tclBIND (Proofview.tclUNIT ()) begin fun () ->
     snd (get_default_tactic ())
   end in
-  Obligations.default_tactic := tac
+  Declare.Obls.default_tactic := tac
 
 let with_tac f tac =
   let env = Genintern.empty_glob_sign (Global.env ()) in
@@ -78,10 +78,10 @@ GRAMMAR EXTEND Gram
 
 {
 
-open Obligations
+open Declare.Obls
 
-let obligation obl tac = with_tac (fun t -> Obligations.obligation obl t) tac
-let next_obligation obl tac = with_tac (fun t -> Obligations.next_obligation obl t) tac
+let obligation obl tac = with_tac (fun t -> obligation obl t) tac
+let next_obligation obl tac = with_tac (fun t -> next_obligation obl t) tac
 
 let classify_obbl _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpacity,[]))
 

@@ -23,7 +23,6 @@ Library
 ComCoercion
 Auto_ind_decl
 Indschemes
-Obligations
 ComDefinition
 Classes
 ComPrimitive

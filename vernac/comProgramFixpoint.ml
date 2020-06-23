@@ -262,7 +262,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ () in
   let info = Declare.Info.make ~udecl ~poly ~hook () in
-  let _ : Declare.progress = Obligations.add_definition ~cinfo ~info ~term:evars_def ~uctx evars in
+  let _ : Declare.progress = Declare.Obls.add_definition ~cinfo ~info ~term:evars_def ~uctx evars in
   ()
 
 let out_def = function
@@ -322,7 +322,7 @@ let do_program_recursive ~scope ~poly fixkind fixl =
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
   let info = Declare.Info.make ~poly ~scope ~kind ~udecl () in
-  Obligations.add_mutual_definitions defs ~info ~uctx ~ntns fixkind
+  Declare.Obls.add_mutual_definitions defs ~info ~uctx ~ntns fixkind
 
 let do_fixpoint ~scope ~poly l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in

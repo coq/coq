@@ -127,10 +127,9 @@ let do_definition_program ?hook ~name ~scope ~poly ~kind udecl bl red_option c c
   let (body, types), evd, udecl, impargs =
     interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
-  let term, typ, uctx, obls = Declare.prepare_obligation ~name ~body ~types evd in
+  let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let _ : Declare.progress =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
     let info = Declare.Info.make ~udecl ~scope ~poly ~kind ?hook () in
-    Obligations.add_definition
-      ~cinfo ~info ~term ~uctx obls
+    Declare.Obls.add_definition ~cinfo ~info ~term ~uctx obls
   in ()
