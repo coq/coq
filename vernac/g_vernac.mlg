@@ -702,8 +702,14 @@ GRAMMAR EXTEND Gram
 
       | IDENT "Existing"; IDENT "Instances"; ids = LIST1 global;
         pri = OPT [ "|"; i = natural -> { i } ] ->
-         { let info = { Typeclasses.hint_priority = pri; hint_pattern = None } in
-         let insts = List.map (fun i -> (i, info)) ids in
+        {
+          let info = Typeclasses.{
+            hint_priority = pri;
+            hint_pattern = None;
+            hint_commit = NoCommit
+          }
+          in
+          let insts = List.map (fun i -> (i, info)) ids in
           VernacExistingInstance insts }
 
       | IDENT "Existing"; IDENT "Class"; is = global -> { VernacExistingClass is }
@@ -810,8 +816,8 @@ GRAMMAR EXTEND Gram
   ;
   hint_info:
     [ [ "|"; i = OPT natural; pat = OPT constr_pattern ->
-         { { Typeclasses.hint_priority = i; hint_pattern = pat } }
-      | -> { { Typeclasses.hint_priority = None; hint_pattern = None } } ] ]
+         { Typeclasses.{ hint_priority = i; hint_pattern = pat; hint_commit = NoCommit } }
+      | -> {  Hints.empty_hint_info } ] ]
   ;
   reserv_list:
     [ [ bl = LIST1 reserv_tuple -> { bl } | b = simple_reserv -> { [b] } ] ]

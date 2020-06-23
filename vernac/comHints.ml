@@ -60,8 +60,13 @@ let project_hint ~poly commit pri l2r r =
       ~kind:Decls.(IsDefinition Definition)
       cb
   in
-  let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
-  (info, false, commit, true, Hints.PathAny, Hints.IsGlobRef (Names.GlobRef.ConstRef c))
+  let info = Typeclasses.{
+      hint_priority = pri;
+      hint_pattern = None;
+      hint_commit = commit
+    }
+  in
+  (info, false, true, Hints.PathAny, Hints.IsGlobRef (Names.GlobRef.ConstRef c))
 
 let warn_deprecated_hint_constr =
   CWarnings.create ~name:"deprecated-hint-constr" ~category:"deprecated"
@@ -71,6 +76,7 @@ let warn_deprecated_hint_constr =
          reference instead")
 
 let interp_hints ~poly commit h =
+  (* TODO error if commit = Commit but ignored *)
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let f poly c =
@@ -95,20 +101,20 @@ let interp_hints ~poly commit h =
     match c with
     | HintsReference c ->
       let gr = Smartlocate.global_with_alias c in
-      (PathHints [gr], poly, commit, IsGlobRef gr)
+      (PathHints [gr], IsGlobRef gr)
     | HintsConstr c ->
       let () = warn_deprecated_hint_constr () in
-      (PathAny, poly, commit, f poly c)
+      (PathAny, f poly c)
   in
   let fp = Constrintern.intern_constr_pattern env sigma in
   let fres (info, b, r) =
-    let path, poly, commit, gr = fi r in
+    let path, gr = fi r in
     let info =
       { info with
         Typeclasses.hint_pattern = Option.map fp info.Typeclasses.hint_pattern
       }
     in
-    (info, poly, commit, b, path, gr)
+    (info, poly, b, path, gr)
   in
   let open Hints in
   let open Vernacexpr in
@@ -122,7 +128,12 @@ let interp_hints ~poly commit h =
   | HintsResolve lhints -> HintsResolveEntry (List.map fres lhints)
   | HintsResolveIFF (l2r, lc, n) ->
     HintsResolveEntry (List.map (project_hint ~poly commit n l2r) lc)
-  | HintsImmediate lhints -> HintsImmediateEntry (List.map fi lhints)
+  | HintsImmediate lhints ->
+    let fi c =
+      let a, b = fi c in
+      a, poly, commit, b
+    in
+    HintsImmediateEntry (List.map fi lhints)
   | HintsUnfold lhints -> HintsUnfoldEntry (List.map fr lhints)
   | HintsTransparency (t, b) -> HintsTransparencyEntry (ft t, b)
   | HintsMode (r, l) -> HintsModeEntry (fref r, l)
@@ -136,9 +147,8 @@ let interp_hints ~poly commit h =
       List.init (Inductiveops.nconstructors env ind) (fun i ->
           let c = (ind, i + 1) in
           let gr = Names.GlobRef.ConstructRef c in
-          ( empty_hint_info
+          ( {empty_hint_info with Typeclasses.hint_commit = commit}
           , Declareops.inductive_is_polymorphic mib
-          , commit
           , true
           , PathHints [gr]
           , IsGlobRef gr ))
@@ -155,4 +165,4 @@ let interp_hints ~poly commit h =
     let env = Genintern.{(empty_glob_sign env) with ltacvars} in
     let _, tacexp = Genintern.generic_intern env tacexp in
     HintsExternEntry
-      ({Typeclasses.hint_priority = Some pri; hint_pattern = pat}, commit, tacexp)
+      ({Typeclasses.hint_priority = Some pri; hint_pattern = pat; hint_commit = commit}, tacexp)

@@ -13,6 +13,7 @@
 open Glob_term
 open Constrexpr
 open Vernacexpr
+open Typeclasses
 open Hints
 
 open Pcoq

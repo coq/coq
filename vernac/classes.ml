@@ -45,7 +45,7 @@ let add_instance_hint inst path ~locality info poly =
      Flags.silently (fun () ->
        Hints.add_hints ~locality [typeclasses_db]
           (Hints.HintsResolveEntry
-             [info, poly, Hints.NoCommit, false, Hints.PathHints path, inst])) ()
+             [info, poly, false, Hints.PathHints path, inst])) ()
 
 let is_local_for_hint i =
   match i.is_global with
@@ -141,7 +141,7 @@ let warning_not_a_class =
 
 let declare_instance ?(warn = false) env sigma info local glob =
   let ty, _ = Typeops.type_of_global_in_context env glob in
-  let info = Option.default {hint_priority = None; hint_pattern = None} info in
+  let info = Option.default Hints.empty_hint_info info in
   match class_of_constr env sigma (EConstr.of_constr ty) with
   | Some (rels, ((tc,_), args) as _cl) ->
     assert (not (isVarRef glob) || local);
@@ -257,11 +257,11 @@ let add_class env sigma cl =
       | _ -> ())
     cl.cl_projs
 
-let intern_info {hint_priority;hint_pattern} =
+let intern_info info =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let hint_pattern = Option.map (Constrintern.intern_constr_pattern env sigma) hint_pattern in
-  {hint_priority;hint_pattern}
+  let hint_pattern = Option.map (Constrintern.intern_constr_pattern env sigma) info.hint_pattern in
+  {info with hint_pattern}
 
 (** TODO: add subinstances *)
 let existing_instance glob g info =

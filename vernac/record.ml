@@ -720,7 +720,12 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite records =
     | [r], [d] -> r, d
     | _, _ -> CErrors.user_err (str "Mutual definitional classes are not handled")
     in
-    let priorities = List.map (fun (_, { rf_priority }) -> {hint_priority = rf_priority ; hint_pattern = None}) cfs in
+    let priorities = List.map (fun (_, { rf_priority }) ->
+        { hint_priority = rf_priority;
+          hint_pattern = None;
+          hint_commit = NoCommit; })
+        cfs
+    in
     let coers = List.map (fun (_, { rf_subclass }) -> rf_subclass) cfs in
     declare_class def cumulative ubinders univs id.CAst.v idbuild
       implpars params univ arity template implfs fields coers priorities

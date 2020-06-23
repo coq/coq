@@ -15,10 +15,16 @@ open Environ
 
 type direction = Forward | Backward
 
+type hint_commit =
+  | NoCommit (** the default *)
+  | Commit (** do not try to backtrack the application of this hint *)
+
 (* Core typeclasses hints *)
-type 'a hint_info_gen =
-    { hint_priority : int option;
-      hint_pattern : 'a option }
+type 'a hint_info_gen = {
+  hint_priority : int option;
+  hint_pattern : 'a option;
+  hint_commit : hint_commit;
+}
 
 type hint_info = (Pattern.patvar list * Pattern.constr_pattern) hint_info_gen
 

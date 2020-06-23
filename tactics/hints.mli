@@ -55,16 +55,12 @@ type 'a hints_path_atom_gen =
 type hints_path_atom = GlobRef.t hints_path_atom_gen
 type hint_db_name = string
 
-type commit =
-  | NoCommit (** the default *)
-  | Commit (** do not try to backtrack the application of this hint *)
-
 module FullHint :
 sig
   type t
   val priority : t -> int
   val pattern : t -> Pattern.constr_pattern option
-  val commit : t -> commit
+  val commit : t -> hint_commit
   val database : t -> string option
   val run : t -> (hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val name : t -> hints_path_atom
@@ -178,13 +174,13 @@ type hint_term =
   | IsConstr of constr * Univ.ContextSet.t [@ocaml.deprecated "Declare a hint constant instead"]
 
 type hints_entry =
-  | HintsResolveEntry of (hint_info * bool * commit * hnf * hints_path_atom * hint_term) list
-  | HintsImmediateEntry of (hints_path_atom * bool * commit * hint_term) list
+  | HintsResolveEntry of (hint_info * bool * hnf * hints_path_atom * hint_term) list
+  | HintsImmediateEntry of (hints_path_atom * bool * hint_commit * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
-  | HintsExternEntry of hint_info * commit * Genarg.glob_generic_argument
+  | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
 val searchtable_map : hint_db_name -> hint_db
 
@@ -216,7 +212,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> hint_info -> commit -> check:bool -> poly:bool -> ?name:hints_path_atom ->
+  env -> evar_map -> hint_info -> check:bool -> poly:bool -> ?name:hints_path_atom ->
   hint_term -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].

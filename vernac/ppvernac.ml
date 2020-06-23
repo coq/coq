@@ -241,8 +241,8 @@ open Pputils
     | ModeOutput -> str"-"
 
   let pr_hint_commit = function
-    | Hints.NoCommit -> mt ()
-    | Hints.Commit -> str "Commited"
+    | Typeclasses.NoCommit -> mt ()
+    | Typeclasses.Commit -> str "Commited"
 
   let pr_hint_info pr_pat { Typeclasses.hint_priority = pri; hint_pattern = pat } =
     pr_opt (fun x -> str"|" ++ int x) pri ++
