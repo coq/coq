@@ -376,21 +376,21 @@ let adjust_meta_source evd mv = function
 *)
 
 let clenv_pose_metas_as_evars clenv dep_mvs =
-  let rec fold clenv evs = function
-  | [] -> clenv, evs
+  let rec fold clenv = function
+  | [] -> clenv
   | mv::mvs ->
       let ty = clenv_meta_type clenv mv in
       (* Postpone the evar-ization if dependent on another meta *)
       (* This assumes no cycle in the dependencies - is it correct ? *)
-      if occur_meta clenv.evd ty then fold clenv evs (mvs@[mv])
+      if occur_meta clenv.evd ty then fold clenv (mvs@[mv])
       else
         let src = evar_source_of_meta mv clenv.evd in
         let src = adjust_meta_source clenv.evd mv src in
         let evd = clenv.evd in
         let (evd, evar) = new_evar (cl_env clenv) evd ~src ty in
         let clenv = clenv_assign mv evar {clenv with evd=evd} in
-        fold clenv (fst (destEvar evd evar) :: evs) mvs in
-  fold clenv [] dep_mvs
+        fold clenv mvs in
+  fold clenv dep_mvs
 
 (******************************************************************)
 
@@ -641,7 +641,7 @@ let clenv_pose_dependent_evars ?(with_evars=false) clenv =
 
 let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
   Proofview.Goal.enter begin fun gl ->
-  let clenv, evars = clenv_pose_dependent_evars ~with_evars clenv in
+  let clenv = clenv_pose_dependent_evars ~with_evars clenv in
   let evd' =
     if with_classes then
       let evd' =
@@ -658,9 +658,6 @@ let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
     (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
     (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
   end
-
-let clenv_pose_dependent_evars ?(with_evars=false) clenv =
-  fst (clenv_pose_dependent_evars ~with_evars clenv)
 
 open Unification
 
