@@ -693,6 +693,9 @@ library:ci-color:
 library:ci-compcert:
   extends: .ci-template-flambda
 
+library:ci-coq_performance_tests:
+  extends: .ci-template
+
 library:ci-coq_tools:
   extends: .ci-template
 
