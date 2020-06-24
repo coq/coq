@@ -241,7 +241,6 @@ val is_arity : env ->  evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 
 val contract_fix : evar_map -> fixpoint -> constr
-val fix_recarg : ('a, 'a) pfixpoint -> 'b Stack.t -> (int * 'b) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
 val is_transparent : Environ.env -> Constant.t tableKey -> bool

@@ -572,14 +572,6 @@ let reduce_and_refold_fix recfun env sigma fix sk =
     (fun _ (t,sk') -> recfun (t,sk'))
     [] sigma raw_answer sk
 
-let fix_recarg ((recindices,bodynum),_) stack =
-  assert (0 <= bodynum && bodynum < Array.length recindices);
-  let recargnum = Array.get recindices bodynum in
-  try
-    Some (recargnum, Stack.nth stack recargnum)
-  with Not_found ->
-    None
-
 open Primred
 
 module CNativeEntries =

@@ -557,6 +557,14 @@ let recargs = function
   | EvalVar _ | EvalRel _ | EvalEvar _ -> None
   | EvalConst c -> ReductionBehaviour.get (GlobRef.ConstRef c)
 
+let fix_recarg ((recindices,bodynum),_) stack =
+  assert (0 <= bodynum && bodynum < Array.length recindices);
+  let recargnum = Array.get recindices bodynum in
+  try
+    Some (recargnum, List.nth stack recargnum)
+  with Failure _ ->
+    None
+
 let reduce_projection env sigma p ~npars (recarg'hd,stack') stack =
   (match EConstr.kind sigma recarg'hd with
   | Construct _ ->
@@ -761,7 +769,7 @@ and whd_simpl_stack env sigma =
   redrec
 
 and reduce_fix env sigma fix stack =
-  match fix_recarg fix (Stack.append_app_list stack Stack.empty) with
+  match fix_recarg fix stack with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
         let (recarg'hd,_ as recarg') = whd_construct_stack env sigma recarg in
@@ -771,7 +779,7 @@ and reduce_fix env sigma fix stack =
            | _ -> NotReducible)
 
 and reduce_fix_use_function env sigma f fix stack =
-  match fix_recarg fix (Stack.append_app_list stack Stack.empty) with
+  match fix_recarg fix stack with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
         let (recarg'hd,_ as recarg') =
@@ -857,10 +865,10 @@ let try_red_product env sigma c =
       | App (f,l) ->
           (match EConstr.kind sigma f with
              | Fix fix ->
-                 let stack = Stack.append_app l Stack.empty in
-                 (match fix_recarg fix stack with
+                 (match fix_recarg fix (Array.to_list l) with
                     | None -> raise Redelimination
                     | Some (recargnum,recarg) ->
+                        let stack = Stack.append_app l Stack.empty in
                         let recarg' = redrec env recarg in
                         let stack' = Stack.assign stack recargnum recarg' in
                         simpfun (Stack.zip sigma (f,stack')))
