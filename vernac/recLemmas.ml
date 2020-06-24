@@ -93,7 +93,7 @@ type mutual_info =
   | NonMutual of EConstr.t Declare.CInfo.t
   | Mutual of
       { mutual_info : Declare.Proof.mutual_info
-      ; thms : EConstr.t Declare.CInfo.t list
+      ; cinfo : EConstr.t Declare.CInfo.t list
       ; possible_guards : int list
       }
 
@@ -106,6 +106,6 @@ let look_for_possibly_mutual_statements sigma thms : mutual_info =
     (* More than one statement and/or an explicit decreasing mark: *)
     (* we look for a common inductive hyp or a common coinductive conclusion *)
     let recguard,ordered_inds = find_mutually_recursive_statements sigma thms in
-    let thms = List.map pi2 ordered_inds in
-    Mutual { mutual_info = recguard; thms; possible_guards = List.map (fun (_,_,i) -> succ i) ordered_inds }
+    let cinfo = List.map pi2 ordered_inds in
+    Mutual { mutual_info = recguard; cinfo; possible_guards = List.map (fun (_,_,i) -> succ i) ordered_inds }
   | [] -> CErrors.anomaly (Pp.str "Empty list of theorems.")

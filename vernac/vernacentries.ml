@@ -533,11 +533,11 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
     let evd = post_check_evd ~udecl ~poly evd in
     let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl () in
     Declare.Proof.start_with_initialization ~info ~cinfo:thm evd
-  | RecLemmas.Mutual { mutual_info; thms ; possible_guards } ->
-    let thms = List.map (Declare.CInfo.to_constr evd) thms in
+  | RecLemmas.Mutual { mutual_info; cinfo ; possible_guards } ->
+    let cinfo = List.map (Declare.CInfo.to_constr evd) cinfo in
     let evd = post_check_evd ~udecl ~poly evd in
     let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl () in
-    Declare.Proof.start_mutual_with_initialization ~info ~cinfo:thms evd ~mutual_info (Some possible_guards)
+    Declare.Proof.start_mutual_with_initialization ~info ~cinfo evd ~mutual_info (Some possible_guards)
 
 let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in function
 | Coercion ->
