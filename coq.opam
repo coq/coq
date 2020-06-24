@@ -28,6 +28,6 @@ depends: [
 ]
 
 build: [
-  [ "./configure" "-prefix" prefix ]
+  [ "./configure" "-prefix" prefix "-native-compiler" "no" ]
   [ "dune" "build" "-p" name "-j" jobs ]
 ]
