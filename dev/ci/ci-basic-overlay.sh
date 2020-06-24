@@ -95,6 +95,13 @@
 : "${flocq_CI_ARCHIVEURL:=${flocq_CI_GITURL}/-/archive}"
 
 ########################################################################
+# coq-performance-tests
+########################################################################
+: "${coq_performance_tests_CI_REF:=master}"
+: "${coq_performance_tests_CI_GITURL:=https://github.com/coq-community/coq-performance-tests}"
+: "${coq_performance_tests_CI_ARCHIVEURL:=${coq_performance_tests_CI_GITURL}/archive}"
+
+########################################################################
 # coq-tools
 ########################################################################
 : "${coq_tools_CI_REF:=master}"
