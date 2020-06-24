@@ -927,3 +927,36 @@ plugin:ci-rewriter:
     name: "$CI_JOB_NAME"
     paths:
       - _build_ci
+
+bench:
+  stage: stage-1
+  when: manual
+  before_script:
+    - printenv -0 | sort -z | tr '\0' '\n'
+  script:
+    - . ~/.opam/opam-init/init.sh
+    - ./dev/bench/gitlab.sh
+  tags:
+    - timing
+  variables:
+    coq_pr_number: ""
+    coq_pr_comment_id: ""
+    new_ocaml_switch: "ocaml-base-compiler.4.07.1"
+    old_ocaml_switch: "ocaml-base-compiler.4.07.1"
+    new_coq_repository: "https://gitlab.com/coq/coq.git"
+    old_coq_repository: "https://gitlab.com/coq/coq.git"
+    new_coq_commit: "$CI_COMMIT_SHA"
+    old_coq_commit: "master"
+    new_coq_opam_archive_git_uri: "https://github.com/coq/opam-coq-archive.git"
+    old_coq_opam_archive_git_uri: "https://github.com/coq/opam-coq-archive.git"
+    new_coq_opam_archive_git_branch: "master"
+    old_coq_opam_archive_git_branch: "master"
+    num_of_iterations: 1
+    coq_opam_packages: "coq-performance-tests coq-engine-bench coq-hott coq-bignums coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-sf-plf coq-coquelicot coq-lambda-rust coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast"
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _bench/html/**/*.v.html
+      - _bench/logs
+    when: always
+    expire_in: 2 months
