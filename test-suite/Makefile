@@ -629,7 +629,14 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v $(PREREQUISITELOG
 	} > "$@"
 
 # Additional dependencies for module tests
-$(addsuffix .log,$(wildcard modules/*.v)): %.v.log: modules/Nat.vo modules/plik.vo
+COMMON_MODULE_DEPENDENCIES := modules/plik.v modules/Nat.v
+# We exclude Nat.v.log and plik.v.log because these log files do not
+# depend on having the corresponding .vo files built first, and we end
+# up with pseudo-cyclic build rules if we don't exclude them (See
+# COQBUG(https://github.com/coq/coq/issues/12582)). Additionally, we
+# impose order-only dependencies to ensure that we won't rebuild the
+# .vo files in the .log target after we've already built them.
+$(addsuffix .log,$(filter-out $(COMMON_MODULE_DEPENDENCIES),$(wildcard modules/*.v))): %.v.log: $(COMMON_MODULE_DEPENDENCIES:.v=.vo) | $(COMMON_MODULE_DEPENDENCIES:.v=.v.log)
 modules/%.vo: modules/%.v
 	$(HIDE)$(coqc) -R modules Mods $<
 
