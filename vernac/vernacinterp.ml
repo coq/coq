@@ -220,7 +220,9 @@ let interp_qed_delayed ~proof ~pinfo ~st pe : Vernacstate.LemmaStack.t option =
     | Admitted ->
       Declare.Proof.save_lemma_admitted_delayed ~proof ~pinfo
     | Proved (_,idopt) ->
-      Declare.Proof.save_lemma_proved_delayed ~proof ~pinfo ~idopt in
+      let _ : _ list = Declare.Proof.save_lemma_proved_delayed ~proof ~pinfo ~idopt in
+      ()
+  in
   stack
 
 let interp_qed_delayed_control ~proof ~pinfo ~st ~control { CAst.loc; v=pe } =

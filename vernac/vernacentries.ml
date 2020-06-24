@@ -613,13 +613,14 @@ let vernac_end_proof ~lemma = let open Vernacexpr in function
   | Admitted ->
     Declare.Proof.save_admitted ~proof:lemma
   | Proved (opaque,idopt) ->
-    Declare.Proof.save ~proof:lemma ~opaque ~idopt
+    let _ : Names.GlobRef.t list = Declare.Proof.save ~proof:lemma ~opaque ~idopt
+    in ()
 
 let vernac_exact_proof ~lemma c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
   let lemma, status = Declare.Proof.by (Tactics.exact_proof c) lemma in
-  let () = Declare.Proof.save ~proof:lemma ~opaque:Opaque ~idopt:None in
+  let _ : _ list = Declare.Proof.save ~proof:lemma ~opaque:Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =

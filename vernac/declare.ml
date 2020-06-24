@@ -877,7 +877,8 @@ let declare_obligation prg obl ~uctx ~types ~body =
   let body = prg.prg_reduce body in
   let types = Option.map prg.prg_reduce types in
   match obl.obl_status with
-  | _, Evar_kinds.Expand -> (false, {obl with obl_body = Some (TermObl body)})
+  | _, Evar_kinds.Expand ->
+    (false, {obl with obl_body = Some (TermObl body)}, [])
   | force, Evar_kinds.Define opaque ->
     let opaque = (not force) && opaque in
     let poly = prg.prg_info.Info.poly in
@@ -907,7 +908,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
                 (mkApp (mkConst constant, args))
                 ctx))
     in
-    (true, {obl with obl_body = body})
+    (true, {obl with obl_body = body}, [GlobRef.ConstRef constant])
 
 (* Updating the obligation meta-info on close *)
 
@@ -1256,7 +1257,7 @@ let obligation_terminator ~entry ~uctx ~oinfo:{name; num; auto} =
   let obl = {obl with obl_status = (false, status)} in
   let poly = prg.prg_info.Info.poly in
   let uctx = if poly then uctx else UState.union prg.prg_uctx uctx in
-  let defined, obl = declare_obligation prg obl ~body ~types:ty ~uctx in
+  let defined, obl, cst = declare_obligation prg obl ~body ~types:ty ~uctx in
   let prg_ctx =
     if poly then
       (* Polymorphic *)
@@ -1273,7 +1274,8 @@ let obligation_terminator ~entry ~uctx ~oinfo:{name; num; auto} =
       UState.from_env (Global.env ())
     else uctx
   in
-  update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
+  update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto;
+  cst
 
 (* Similar to the terminator but for the admitted path; this assumes
    the admitted constant was already declared.
@@ -2008,8 +2010,8 @@ let finish_derived ~f ~name ~entries =
   (* The same is done in the body of the proof. *)
   let lemma_def = Internal.map_entry_body lemma_def ~f:(fun ((b,ctx),fx) -> (substf b, ctx), fx) in
   let lemma_def = DefinitionEntry lemma_def in
-  let _ : Names.Constant.t = declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
-  ()
+  let ct = declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
+  [GlobRef.ConstRef ct]
 
 let finish_proved_equations ~kind ~hook i proof_obj types sigma0 =
 
@@ -2028,7 +2030,8 @@ let finish_proved_equations ~kind ~hook i proof_obj types sigma0 =
         sigma, cst) sigma0
       types proof_obj.entries
   in
-  hook recobls sigma
+  hook recobls sigma;
+  List.map (fun cst -> GlobRef.ConstRef cst) recobls
 
 let check_single_entry { entries; uctx } label =
   match entries with
@@ -2041,9 +2044,7 @@ let finalize_proof proof_obj proof_info =
   match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
   | Regular ->
     let entry, uctx = check_single_entry proof_obj "Proof.save" in
-    let _ : GlobRef.t list =
-      MutualEntry.declare_mutdef ~entry ~uctx ~pinfo:proof_info in
-    ()
+    MutualEntry.declare_mutdef ~entry ~uctx ~pinfo:proof_info
   | End_obligation oinfo ->
     let entry, uctx = check_single_entry proof_obj "Obligation.save" in
     Obls_.obligation_terminator ~entry ~uctx ~oinfo
@@ -2286,7 +2287,7 @@ and solve_obligation_by_tac prg obls i tac =
         | None -> None
         | Some (t, ty, uctx) ->
           let prg = ProgramDecl.Internal.set_uctx ~uctx prg in
-          let def, obl' = declare_obligation prg obl ~body:t ~types:ty ~uctx in
+          let def, obl', _cst = declare_obligation prg obl ~body:t ~types:ty ~uctx in
           obls.(i) <- obl';
           if def && not poly then (
             (* Declare the term constraints with the first obligation only *)

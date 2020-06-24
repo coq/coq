@@ -58,7 +58,10 @@ let declare_fun name kind ?univs value =
     (Declare.declare_constant ~name ~kind (Declare.DefinitionEntry ce))
 
 let defined lemma =
-  Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent ~idopt:None
+  let (_ : _ list) =
+    Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent ~idopt:None
+  in
+  ()
 
 let def_of_const t =
   match Constr.kind t with
@@ -1489,7 +1492,10 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
                      [Hints.Hint_db.empty TransparentState.empty false] ]))
     in
     let lemma = build_proof env (Evd.from_env env) start_tac end_tac in
-    Declare.Proof.save ~proof:lemma ~opaque:opacity ~idopt:None
+    let (_ : _ list) =
+      Declare.Proof.save ~proof:lemma ~opaque:opacity ~idopt:None
+    in
+    ()
   in
   let info = Declare.Info.make ~hook:(Declare.Hook.make hook) () in
   let cinfo = Declare.CInfo.make ~name:na ~typ:gls_type () in

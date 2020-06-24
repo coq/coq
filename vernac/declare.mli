@@ -201,7 +201,7 @@ module Proof : sig
     : proof:t
     -> opaque:Vernacexpr.opacity_flag
     -> idopt:Names.lident option
-    -> unit
+    -> GlobRef.t list
 
   (** Admit a proof *)
   val save_admitted : proof:t -> unit
@@ -295,7 +295,7 @@ module Proof : sig
     : proof:proof_object
     -> pinfo:Proof_info.t
     -> idopt:Names.lident option
-    -> unit
+    -> GlobRef.t list
 
   (** Used by the STM only to store info, should go away *)
   val get_po_name : proof_object -> Id.t
