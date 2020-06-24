@@ -20,7 +20,6 @@ open Environ
 open Reductionops
 open Inductiveops
 open Typing
-open Type_errors
 open Retyping
 
 module NamedDecl = Context.Named.Declaration
@@ -40,34 +39,6 @@ type refiner_error =
 
 exception RefinerError of Environ.env * Evd.evar_map * refiner_error
 
-open Pretype_errors
-
-(** FIXME: this is quite brittle. Why not accept any PretypeError? *)
-let is_typing_error = function
-| UnexpectedType (_, _) | NotProduct _
-| VarNotFound _ | TypingError _ -> true
-| _ -> false
-
-let is_unification_error = function
-| CannotUnify _ | CannotUnifyLocal _| CannotGeneralize _
-| NoOccurrenceFound _ | CannotUnifyBindingType _
-| ActualTypeNotCoercible _ | UnifOccurCheck _
-| CannotFindWellTypedAbstraction _ | WrongAbstractionType _
-| UnsolvableImplicit _| AbstractionOverMeta _
-| UnsatisfiableConstraints _ -> true
-| _ -> false
-
-let catchable_exception = function
-  | CErrors.UserError _ | TypeError _
-  | Proof.OpenProof _
-  (* abstract will call close_proof inside a tactic *)
-  | RefinerError _ | Indrec.RecursionSchemeError _
-  | Nametab.GlobalizationError _
-  (* reduction errors *)
-  | Tacred.ReductionTacticError _ -> true
-  (* unification and typing errors *)
-  | PretypeError(_,_, e) -> is_unification_error e || is_typing_error e
-  | _ -> false
 
 let error_no_such_hypothesis env sigma id = raise (RefinerError (env, sigma, NoSuchHyp id))
 
