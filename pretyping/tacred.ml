@@ -358,30 +358,6 @@ let reference_eval env sigma = function
 
 let x = Name default_dependent_ident
 
-let make_elim_fun (names,(nbfix,lv,n)) u largs =
-  let lu = List.firstn n largs in
-  let p = List.length lv in
-  let lyi = List.map fst lv in
-  let la =
-    List.map_i (fun q aq ->
-      (* k from the comment is q+1 *)
-      try mkRel (p+1-(List.index Int.equal (n-q) lyi))
-      with Not_found -> aq)
-      0 (List.map (Vars.lift p) lu)
-  in
-  fun i ->
-    match names.(i) with
-      | None -> None
-      | Some (minargs,ref) ->
-          let body = applist (mkEvalRef ref u, la) in
-          let g =
-            List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
-              let subst = List.map (Vars.lift (-q)) (List.firstn (n-ij) la) in
-              let tij' = Vars.substl (List.rev subst) tij in
-              let x = make_annot x Sorts.Relevant in  (* TODO relevance *)
-              mkLambda (x,tij',c)) 1 body (List.rev lv)
-          in Some (minargs,g)
-
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)]:
    do so that the reduction uses this extra information *)
 
@@ -660,7 +636,7 @@ let rec red_elim_const env sigma ref u largs =
     | EliminationFix (min,minfxargs,infos) when nargs >= min ->
         let c = reference_value env sigma ref u in
         let d, lrest = whd_nothing_for_iota env sigma (c, largs) in
-        let f = make_elim_fun ([|Some (minfxargs,ref)|],infos) u largs in
+        let f = ([|Some (minfxargs,ref)|],infos), u, largs in
         (match reduce_fix_use_function env sigma f (destFix sigma d) lrest with
            | NotReducible -> raise Redelimination
            | Reduced (c,rest) -> (nf_beta env sigma c, rest), nocase)
@@ -674,7 +650,7 @@ let rec red_elim_const env sigma ref u largs =
             descend (destEvalRefU sigma c') lrest in
         let (_, midargs as s) = descend (ref,u) largs in
         let d, lrest = whd_nothing_for_iota env sigma s in
-        let f = make_elim_fun refinfos u midargs in
+        let f = refinfos, u, midargs in
         (match reduce_fix_use_function env sigma f (destFix sigma d) lrest with
            | NotReducible -> raise Redelimination
            | Reduced (c,rest) -> (nf_beta env sigma c, rest), nocase)
@@ -791,6 +767,29 @@ and reduce_fix_use_function env sigma f fix stack =
         let stack' = List.assign stack recargnum (applist recarg') in
         (match EConstr.kind sigma recarg'hd with
            | Construct _ ->
+              let (names, (nbfix, lv, n)), u, largs = f in
+              let lu = List.firstn n largs in
+              let p = List.length lv in
+              let lyi = List.map fst lv in
+              let la =
+                List.map_i (fun q aq ->
+                  (* k from the comment is q+1 *)
+                  try mkRel (p+1-(List.index Int.equal (n-q) lyi))
+                  with Not_found -> Vars.lift p aq)
+                  0 lu
+              in
+              let f i = match names.(i) with
+              | None -> None
+              | Some (minargs,ref) ->
+                  let body = applist (mkEvalRef ref u, la) in
+                  let g =
+                    List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
+                      let subst = List.map (Vars.lift (-q)) (List.firstn (n-ij) la) in
+                      let tij' = Vars.substl (List.rev subst) tij in
+                      let x = make_annot x Sorts.Relevant in  (* TODO relevance *)
+                      mkLambda (x,tij',c)) 1 body (List.rev lv)
+                  in Some (minargs,g)
+              in
                Reduced (contract_fix_use_function env sigma f fix,stack')
            | _ -> NotReducible)
 
