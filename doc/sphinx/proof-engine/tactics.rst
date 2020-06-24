@@ -3431,7 +3431,9 @@ the conversion in hypotheses :n:`{+ @ident}`.
    never unfolded by tactics like :tacn:`simpl` and :tacn:`cbn` or to
    ensure that unfolding does not fail.
 
+Change #1
    .. example::
+   Change #3   
 
       .. coqtop:: all reset abort
 
