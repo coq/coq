@@ -85,6 +85,8 @@ val of_constr_matching : constr_matching -> raw_tacexpr
 
 val of_goal_matching : goal_matching -> raw_tacexpr
 
+val of_format : lstring -> raw_tacexpr
+
 (** {5 Generic arguments} *)
 
 val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern) Arg.tag

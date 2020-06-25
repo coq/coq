@@ -35,6 +35,7 @@ Ltac2 Type preterm.
 Ltac2 Type binder.
 
 Ltac2 Type message.
+Ltac2 Type ('a, 'b, 'c, 'd) format.
 Ltac2 Type exn := [ .. ].
 Ltac2 Type 'a array.
 

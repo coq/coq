@@ -691,6 +691,7 @@ through the <tt>Require Import</tt> command.</p>
     user-contrib/Ltac2/Notations.v
     user-contrib/Ltac2/Option.v
     user-contrib/Ltac2/Pattern.v
+    user-contrib/Ltac2/Printf.v
     user-contrib/Ltac2/Std.v
     user-contrib/Ltac2/String.v
   </dd>

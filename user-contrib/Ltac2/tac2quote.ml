@@ -35,6 +35,7 @@ let prefix_gen n =
 let control_prefix = prefix_gen "Control"
 let pattern_prefix = prefix_gen "Pattern"
 let array_prefix = prefix_gen "Array"
+let format_prefix = MPdot (prefix_gen "Message", Label.make "Format")
 
 let kername prefix n = KerName.make prefix (Label.of_id (Id.of_string_soft n))
 let std_core n = kername Tac2env.std_prefix n
@@ -74,6 +75,9 @@ let of_tuple ?loc el = match el with
 | el ->
   let len = List.length el in
   CAst.make ?loc @@ CTacApp (CAst.make ?loc @@ CTacCst (AbsKn (Tuple len)), el)
+
+let of_string {loc;v=n} =
+  CAst.make ?loc @@ CTacAtm (AtmStr n)
 
 let of_int {loc;v=n} =
   CAst.make ?loc @@ CTacAtm (AtmInt n)
@@ -489,3 +493,27 @@ let of_assertion {loc;v=ast} = match ast with
   let id = of_anti of_ident id in
   let c = of_constr c in
   std_constructor ?loc "AssertValue" [id; c]
+
+let of_format accu = function
+| Tac2print.FmtString ->
+  CAst.make @@ CTacApp (global_ref (kername format_prefix "string"), [accu])
+| Tac2print.FmtInt ->
+  CAst.make @@ CTacApp (global_ref (kername format_prefix "int"), [accu])
+| Tac2print.FmtConstr ->
+  CAst.make @@ CTacApp (global_ref (kername format_prefix "constr"), [accu])
+| Tac2print.FmtIdent ->
+  CAst.make @@ CTacApp (global_ref (kername format_prefix "ident"), [accu])
+| Tac2print.FmtLiteral lit ->
+  let s = of_string (CAst.make lit) in
+  CAst.make @@ CTacApp (global_ref (kername format_prefix "literal"), [s; accu])
+| Tac2print.FmtAlpha ->
+  CAst.make @@ CTacApp (global_ref (kername format_prefix "alpha"), [accu])
+
+let of_format { v = fmt; loc } =
+  let fmt =
+    try Tac2print.parse_format fmt
+    with Tac2print.InvalidFormat ->
+      CErrors.user_err ?loc (str "Invalid format")
+  in
+  let stop = CAst.make @@ CTacApp (global_ref (kername format_prefix "stop"), [of_tuple []]) in
+  List.fold_left of_format stop fmt
