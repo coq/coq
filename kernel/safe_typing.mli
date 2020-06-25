@@ -93,6 +93,7 @@ val export_private_constants :
 
 (** returns the main constant *)
 val add_constant :
+  ?typing_flags:Declarations.typing_flags ->
   Label.t -> global_declaration -> Constant.t safe_transformer
 
 (** Similar to add_constant but also returns a certificate *)
