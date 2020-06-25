@@ -154,7 +154,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
   let try_occ (evd', c') =
-    Clenvtac.clenv_pose_dependent_evars ~with_evars:true {eqclause with evd = evd'}
+    Clenv.clenv_pose_dependent_evars ~with_evars:true {eqclause with evd = evd'}
   in
   let flags = make_flags frzevars (Tacmach.New.project gl) rewrite_unif_flags eqclause in
   let occs =
@@ -1045,7 +1045,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
     discrimination_pf e (t,t1,t2) discriminator lbeq false_kind >>= fun pf ->
     let pf_ty = mkArrow eqn Sorts.Relevant false_0 in
     let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
-    let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
+    let pf = Clenv.clenv_value_cast_meta absurd_clause in
     tclTHENS (assert_after Anonymous false_0)
       [onLastHypId gen_absurdity; (Refiner.refiner ~check:true EConstr.Unsafe.(to_constr pf))]
 
@@ -1067,7 +1067,7 @@ let onEquality with_evars tac (c,lbindc) =
   let t = pf_get_type_of gl c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
-  let eq_clause' = Clenvtac.clenv_pose_dependent_evars ~with_evars eq_clause in
+  let eq_clause' = Clenv.clenv_pose_dependent_evars ~with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
   (* FIXME evar leak *)
   let (eq,u,eq_args) = pf_apply find_this_eq_data_decompose gl eqn in
@@ -1397,7 +1397,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
       let pf = applist(congr,[t;resty;injfun;t1;t2]) in
       let sigma, pf_typ = Typing.type_of env sigma pf in
       let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
-      let pf = Clenvtac.clenv_value_cast_meta inj_clause in
+      let pf = Clenv.clenv_value_cast_meta inj_clause in
       let ty = simplify_args env sigma (clenv_type inj_clause) in
         evdref := sigma;
         Some (pf, ty)

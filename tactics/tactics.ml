@@ -1373,7 +1373,7 @@ let do_replace id = function
    [id] is replaced by P using the proof given by [tac] *)
 
 let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
-  let clenv = Clenvtac.clenv_pose_dependent_evars ~with_evars clenv in
+  let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
   let clenv =
       { clenv with evd = Typeclasses.resolve_typeclasses
           ~fail:(not with_evars) clenv.env clenv.evd }
@@ -1475,7 +1475,7 @@ let general_elim_clause with_evars flags where indclause elim =
   match where with
   | None ->
     let elimclause = clenv_fchain ~flags indmv elimclause indclause in
-    Clenvtac.res_pf elimclause ~with_evars ~with_classes:true ~flags
+    Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
   | Some id ->
     let hypmv =
       match List.remove Int.equal indmv (clenv_independent elimclause) with
@@ -1737,7 +1737,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
         if n<0 then error "Applied theorem does not have enough premises.";
         let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
-        Clenvtac.res_pf clause ~with_evars ~flags
+        Clenv.res_pf clause ~with_evars ~flags
       with exn when noncritical exn ->
         let exn, info = Exninfo.capture exn in
         Proofview.tclZERO ~info exn
@@ -4371,8 +4371,7 @@ let induction_tac with_evars params indvars elim =
   (* elimclause' is built from elimclause by instantiating all args and params. *)
   let elimclause' = recolle_clenv i params indvars elimclause gl in
   (* one last resolution (useless?) *)
-  let resolved = clenv_unique_resolver ~flags:(elim_flags ()) elimclause' gl in
-  Clenvtac.clenv_refine ~with_evars resolved
+  Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause'
   end
 
 (* Apply induction "in place" taking into account dependent
@@ -4813,7 +4812,7 @@ let elim_scheme_type elim t =
           (* t is inductive, then CUMUL or CONV is irrelevant *)
           clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
             (clenv_meta_type clause mv) clause in
-        Clenvtac.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
+        Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
     | _ -> anomaly (Pp.str "elim_scheme_type.")
   end
 

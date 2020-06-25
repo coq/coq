@@ -66,7 +66,6 @@ open Pretyping
 open Cbv
 open Coercionops
 open Clenv
-open Clenvtac
 open Constr_matching
 open Glob_term
 open Glob_ops

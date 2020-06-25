@@ -37,9 +37,6 @@ val clenv_value     : clausenv -> constr
 (** type of clenv (instantiated) *)
 val clenv_type      : clausenv -> types
 
-(** substitute resolved metas *)
-val clenv_nf_meta   : clausenv -> EConstr.constr -> EConstr.constr
-
 (** type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
 
@@ -62,17 +59,7 @@ val clenv_fchain :
 val clenv_unify :
   ?flags:unify_flags -> conv_pb -> constr -> constr -> clausenv -> clausenv
 
-(** unifies the concl of the goal with the type of the clenv *)
-val clenv_unique_resolver :
-  ?flags:unify_flags -> clausenv -> Proofview.Goal.t -> clausenv
-
-val clenv_dependent : clausenv -> metavariable list
-
-val clenv_pose_metas_as_evars : clausenv -> metavariable list -> clausenv * Evar.t list
-
 (** {6 Bindings } *)
-
-type arg_bindings = constr explicit_bindings
 
 (** bindings where the key is the position in the template of the
    clenv (dependent or not). Positions can be negative meaning to
@@ -108,6 +95,14 @@ val make_clenv_binding :
 (** if the clause is a product, add an extra meta for this product *)
 exception NotExtensibleClause
 val clenv_push_prod : clausenv -> clausenv
+
+(** {6 Clenv tactics} *)
+
+val unify : ?flags:unify_flags -> constr -> unit Proofview.tactic
+val res_pf : ?with_evars:bool -> ?with_classes:bool -> ?flags:unify_flags -> clausenv -> unit Proofview.tactic
+
+val clenv_pose_dependent_evars : ?with_evars:bool -> clausenv -> clausenv
+val clenv_value_cast_meta : clausenv -> constr
 
 (** {6 Pretty-print (debug only) } *)
 val pr_clenv : clausenv -> Pp.t

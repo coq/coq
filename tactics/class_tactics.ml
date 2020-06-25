@@ -14,7 +14,6 @@
  *)
 
 open Pp
-open CErrors
 open Util
 open Names
 open Term
@@ -159,27 +158,17 @@ let e_give_exact flags h =
   in
   let (sigma, t1) = Typing.type_of (pf_env gl) sigma c in
   Proofview.Unsafe.tclEVARS sigma <*>
-  Clenvtac.unify ~flags t1 <*> exact_no_check c
-  end
-
-let clenv_unique_resolver_tac with_evars ~flags clenv' =
-  Proofview.Goal.enter begin fun gls ->
-    let resolve =
-      try Proofview.tclUNIT (clenv_unique_resolver ~flags clenv' gls)
-      with e when noncritical e ->
-        let _, info = Exninfo.capture e in
-        Proofview.tclZERO ~info e
-    in resolve >>= fun clenv' ->
-       Clenvtac.clenv_refine ~with_evars ~with_classes:false clenv'
+  Clenv.unify ~flags t1 <*> exact_no_check c
   end
 
 let unify_e_resolve flags = begin fun gls (h, _) ->
   let clenv', c = connect_hint_clenv h gls in
-  clenv_unique_resolver_tac true ~flags clenv' end
+  Clenv.res_pf ~with_evars:true ~with_classes:false ~flags clenv'
+  end
 
 let unify_resolve flags = begin fun gls (h, _) ->
   let clenv', _ = connect_hint_clenv h gls in
-  clenv_unique_resolver_tac false ~flags clenv'
+  Clenv.res_pf ~with_evars:false ~with_classes:false ~flags clenv'
   end
 
 (** Application of a lemma using [refine] instead of the old [w_unify] *)
