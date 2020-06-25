@@ -327,25 +327,9 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proo
 let feedback_axiom () = Feedback.(feedback AddedAxiom)
 
 let is_unsafe_typing_flags flags =
+  let flags = Option.default (Global.typing_flags ()) flags in
   let open Declarations in
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
-
-(* Maybe it would make sense to push this logic down to
-   Safe_typing.add_constant? *)
-let add_constant_with_flags ~typing_flags ~unsafe ~name decl =
-  let current_flags = Global.typing_flags () in
-  let typing_flags = Option.cata
-      (fun new_flags -> Global.set_typing_flags new_flags; new_flags)
-      current_flags typing_flags in
-  try
-    let kn = Global.add_constant name decl in
-    Global.set_typing_flags current_flags;
-    if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
-    kn
-  with exn ->
-    let ie = Exninfo.capture exn in
-    Global.set_typing_flags current_flags;
-    Exninfo.iraise ie
 
 let define_constant ~name ~typing_flags cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
@@ -371,7 +355,9 @@ let define_constant ~name ~typing_flags cd =
     | PrimitiveEntry e ->
       ConstantEntry (Entries.PrimitiveEntry e), false
   in
-  add_constant_with_flags ~unsafe ~typing_flags ~name decl
+  let kn = Global.add_constant ?typing_flags name decl in
+  if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
+  kn
 
 let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags cd =
   let () = check_exists name in
