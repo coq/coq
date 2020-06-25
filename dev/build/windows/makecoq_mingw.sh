@@ -1755,7 +1755,7 @@ function make_addon_unicoq {
   installer_addon_dependency unicoq
   if build_prep_overlay unicoq; then
     installer_addon_section unicoq "Unicoq" "Coq plugin for an enhanced unification algorithm" ""
-    log1 coq_makefile -f Make -o Makefile
+    log1 coq_makefile -f _CoqProject -o Makefile
     log1 make $MAKE_OPT
     log2 make install
     build_post
