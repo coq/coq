@@ -373,26 +373,12 @@ Proof.
  apply lt_succ_r, le_sub_l.
 Qed.
 
-Lemma mod_ex : forall x y z : nat, z <> 0 -> x = y mod z -> exists k : nat, k * z + x = y.
+Lemma mod_ex : forall x y z : nat, z <> 0 ->
+ x = y mod z -> exists k : nat, k * z + x = y.
 Proof.
-  intros x y z.
-  destruct z.
-  + contradiction.
-  + intro Hz.
-    unfold modulo.
-    intro H.
-    apply (ex_intro (fun k => k * S z + x = y) (fst (divmod y z 0 z))).
-    set (H0 := (divmod_spec y z 0 z (le_refl z))).
-    rewrite (mul_0_r (S z)) in H0.
-    rewrite (add_0_r y) in H0.
-    rewrite (sub_diag z) in H0.
-    rewrite (add_0_r y) in H0.
-    rewrite (surjective_pairing (divmod y z 0 z)) in H0.
-    set (H1 := proj1 H0).
-    rewrite <- H in H1.
-    set (H2 := @eq_sym y (S z * fst (divmod y z 0 z) + x) H1).
-    rewrite (mul_comm (S z) (fst (divmod y z 0 z))) in H2.
-    assumption.
+ intros x y z Hy%(div_mod y) ->.
+ exists (y / z); symmetry.
+ now rewrite mul_comm.
 Qed.
 
 (** ** Square root *)
