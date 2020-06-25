@@ -1097,12 +1097,17 @@ let pb_equal = function
   | Reduction.CUMUL -> Reduction.CONV
   | Reduction.CONV -> Reduction.CONV
 
+exception AnomalyInConversion of exn
+
+let _ = CErrors.register_handler (function
+    | AnomalyInConversion e ->
+      Some Pp.(str "Conversion test raised an anomaly:" ++
+               spc () ++ CErrors.print e)
+    | _ -> None)
+
 let report_anomaly (e, info) =
   let e =
-    if is_anomaly e then
-      let msg = Pp.(str "Conversion test raised an anomaly:" ++
-                    spc () ++ CErrors.print e) in
-      UserError (None, msg)
+    if is_anomaly e then AnomalyInConversion e
     else e
   in
   Exninfo.iraise (e, info)
