@@ -446,10 +446,6 @@ let e_possible_resolve db_list local_db secvars only_classes env sigma concl =
 let cut_of_hints h =
   List.fold_left (fun cut db -> PathOr (Hint_db.cut db, cut)) PathEmpty h
 
-let catchable = function
-  | Refiner.FailError _ -> true
-  | e -> Logic.catchable_exception e [@@ocaml.warning "-3"]
-
 let pr_depth l =
   let rec fmt elts =
     match elts with
