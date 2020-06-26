@@ -9,17 +9,6 @@
 (************************************************************************)
 
 open Util
-open Evd
-
-type tactic = Proofview.V82.tac
-
-let sig_it x = x.it
-let project x = x.sigma
-
-(* Getting env *)
-
-let pf_env gls = Global.env_of_context (Goal.V82.hyps (project gls) (sig_it gls))
-let pf_hyps gls = EConstr.named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls))
 
 (* A special exception for levels for the Fail tactic *)
 exception FailError of int * Pp.t Lazy.t

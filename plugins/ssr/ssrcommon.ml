@@ -748,7 +748,7 @@ let pf_abs_cterm gl n c0 = abs_cterm (pf_env gl) (project gl) n c0
 (* }}} *)
 
 let pf_merge_uc uc gl =
-  re_sig (sig_it gl) (Evd.merge_universe_context (Refiner.project gl) uc)
+  re_sig (sig_it gl) (Evd.merge_universe_context gl.Evd.sigma uc)
 let pf_merge_uc_of sigma gl =
   let ucst = Evd.evar_universe_context sigma in
   pf_merge_uc ucst gl

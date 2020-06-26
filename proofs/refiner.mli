@@ -10,18 +10,6 @@
 
 (** Legacy proof engine. Do not use in newly written code. *)
 
-open Evd
-open EConstr
-
-(** The refiner (handles primitive rules and high-level tactics). *)
-type tactic = Proofview.V82.tac
-
-val sig_it  : 'a sigma -> 'a
-val project : 'a sigma -> evar_map
-
-val pf_env  : Goal.goal sigma -> Environ.env
-val pf_hyps : Goal.goal sigma -> named_context
-
 (** A special exception for levels for the Fail tactic *)
 exception FailError of int * Pp.t Lazy.t
 
