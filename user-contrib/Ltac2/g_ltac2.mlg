@@ -262,12 +262,16 @@ GRAMMAR EXTEND Gram
     | "1" LEFTA
       [ t = SELF; qid = Prim.qualid -> { CAst.make ~loc @@ CTypRef (RelId qid, [t]) } ]
     | "0"
-      [ "("; t = tac2type LEVEL "5"; ")"  -> { t }
+      [ "(";  p = LIST1 tac2type LEVEL "5" SEP ","; ")"; qid = OPT Prim.qualid ->
+        { match p, qid with
+          | [t], None -> t
+          | _, None -> CErrors.user_err ~loc (Pp.str "Syntax error")
+          | ts, Some qid -> CAst.make ~loc @@ CTypRef (RelId qid, p)
+        }
       | id = typ_param -> { CAst.make ~loc @@ CTypVar (Name id) }
       | "_" -> { CAst.make ~loc @@ CTypVar Anonymous }
       | qid = Prim.qualid -> { CAst.make ~loc @@ CTypRef (RelId qid, []) }
-      | "("; p = LIST1 tac2type LEVEL "5" SEP ","; ")"; qid = Prim.qualid ->
-        { CAst.make ~loc @@ CTypRef (RelId qid, p) } ]
+      ]
     ];
   locident:
     [ [ id = Prim.ident -> { CAst.make ~loc id } ] ]
