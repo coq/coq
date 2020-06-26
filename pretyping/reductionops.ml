@@ -1097,6 +1097,14 @@ let pb_equal = function
   | Reduction.CUMUL -> Reduction.CONV
   | Reduction.CONV -> Reduction.CONV
 
+(* NOTE: We absorb anomalies happening in the conversion tactic, which
+   is a bit ugly. This is mostly due to efficiency both in tactics and
+   in the conversion machinery itself. It is not uncommon for a tactic
+   to send some ill-typed term to the engine.
+
+   We would usually say that a tactic that converts ill-typed terms is
+   buggy, but fixing the tactic could have a very large runtime cost
+   *)
 exception AnomalyInConversion of exn
 
 let _ = CErrors.register_handler (function
