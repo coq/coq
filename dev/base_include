@@ -114,7 +114,6 @@ open Logic
 open Proof
 open Proof_using
 open Redexpr
-open Refiner
 open Tacmach
 
 open Hints
