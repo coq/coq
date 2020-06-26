@@ -22,8 +22,6 @@ val project : 'a sigma -> evar_map
 val pf_env  : Goal.goal sigma -> Environ.env
 val pf_hyps : Goal.goal sigma -> named_context
 
-val refiner : check:bool -> Constr.t -> unit Proofview.tactic
-
 (** A special exception for levels for the Fail tactic *)
 exception FailError of int * Pp.t Lazy.t
 

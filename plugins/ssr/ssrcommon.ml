@@ -1029,7 +1029,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env (pf_env gl) (project gl) t));
     Proofview.(V82.of_tactic
       (Tacticals.New.tclTHENLIST [
-         Refiner.refiner ~check:false EConstr.Unsafe.(to_constr t);
+         Logic.refiner ~check:false EConstr.Unsafe.(to_constr t);
          (if first_goes_last then cycle 1 else tclUNIT ())
       ])) gl
   end

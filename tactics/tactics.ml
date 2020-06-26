@@ -1383,7 +1383,7 @@ let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
   if not with_evars && occur_meta clenv.evd new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
-  let exact_tac = Refiner.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
+  let exact_tac = Logic.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN

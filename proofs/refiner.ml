@@ -21,8 +21,6 @@ let project x = x.sigma
 let pf_env gls = Global.env_of_context (Goal.V82.hyps (project gls) (sig_it gls))
 let pf_hyps gls = EConstr.named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls))
 
-let refiner = Logic.refiner
-
 (* A special exception for levels for the Fail tactic *)
 exception FailError of int * Pp.t Lazy.t
 
