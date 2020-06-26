@@ -1183,7 +1183,7 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
       try
         Proofview.V82.of_tactic
         (Search.eauto_tac (modes,st) ~only_classes:true ~depth [hints] ~dep:true) gls
-      with Refiner.FailError _ -> raise Not_found
+      with Tacticals.FailError _ -> raise Not_found
   in
   let evd = sig_sig gls' in
   let t' = mkEvar (ev, subst) in

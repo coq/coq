@@ -15,6 +15,13 @@ open Evd
 open Locus
 open Tactypes
 
+(** A special exception for levels for the Fail tactic *)
+exception FailError of int * Pp.t Lazy.t
+
+(** Takes an exception and either raise it at the next
+   level or do nothing. *)
+val catch_failerror  : Exninfo.iexn -> unit
+
 (** Tacticals i.e. functions from tactics to tactics. *)
 
 type tactic = Proofview.V82.tac

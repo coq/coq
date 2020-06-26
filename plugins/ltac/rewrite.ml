@@ -1567,7 +1567,7 @@ let assert_replacing id newt tac =
 
 let newfail n s =
   let info = Exninfo.reify () in
-  Proofview.tclZERO ~info (Refiner.FailError (n, lazy s))
+  Proofview.tclZERO ~info (Tacticals.FailError (n, lazy s))
 
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
@@ -1656,7 +1656,7 @@ let cl_rewrite_clause_strat progress strat clause =
       (fun (e, info) -> match e with
        | RewriteFailure e ->
          tclZEROMSG ~info (str"setoid rewrite failed: " ++ e)
-       | Refiner.FailError (n, pp) ->
+       | Tacticals.FailError (n, pp) ->
          tclFAIL ~info n (str"setoid rewrite failed: " ++ Lazy.force pp)
        | e ->
          Proofview.tclZERO ~info e))

@@ -9,10 +9,3 @@
 (************************************************************************)
 
 (** Legacy proof engine. Do not use in newly written code. *)
-
-(** A special exception for levels for the Fail tactic *)
-exception FailError of int * Pp.t Lazy.t
-
-(** Takes an exception and either raise it at the next
-   level or do nothing. *)
-val catch_failerror  : Exninfo.iexn -> unit

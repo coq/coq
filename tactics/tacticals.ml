@@ -31,7 +31,13 @@ type tactic = Proofview.V82.tac
 
 open Evd
 
-exception FailError = Refiner.FailError
+exception FailError of int * Pp.t Lazy.t
+
+let catch_failerror (e, info) =
+  match e with
+  | FailError (lvl,s) when lvl > 0 ->
+    Exninfo.iraise (FailError (lvl - 1, s), info)
+  | e -> Control.check_for_interrupt ()
 
 let unpackage glsig = (ref (glsig.sigma)), glsig.it
 
@@ -196,7 +202,7 @@ let tclORELSE0 t1 t2 g =
     t1 g
   with (* Breakpoint *)
     | e when CErrors.noncritical e ->
-      let e = Exninfo.capture e in Refiner.catch_failerror e; t2 g
+      let e = Exninfo.capture e in catch_failerror e; t2 g
 
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress,
    then applies t2 *)
@@ -209,7 +215,7 @@ let tclORELSE_THEN t1 t2then t2else gls =
   match
     try Some(tclPROGRESS t1 gls)
     with e when CErrors.noncritical e ->
-      let e = Exninfo.capture e in Refiner.catch_failerror e; None
+      let e = Exninfo.capture e in catch_failerror e; None
   with
     | None -> t2else gls
     | Some sgl ->
@@ -464,7 +470,7 @@ module New = struct
       | None -> Exninfo.reify ()
       | Some info -> info
     in
-    tclZERO ~info (Refiner.FailError (lvl,lazy msg))
+    tclZERO ~info (FailError (lvl,lazy msg))
 
   let tclZEROMSG ?info ?loc msg =
     let info = match info with
@@ -482,7 +488,7 @@ module New = struct
 
   let catch_failerror e =
     try
-      Refiner.catch_failerror e;
+      catch_failerror e;
       tclUNIT ()
     with e when CErrors.noncritical e ->
       let _, info = Exninfo.capture e in
@@ -513,7 +519,7 @@ module New = struct
 
   let tclONCE = Proofview.tclONCE
 
-  let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (Refiner.FailError(0,lazy (assert false))) t
+  let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (FailError(0,lazy (assert false))) t
 
   let tclIFCATCH t tt te =
     tclINDEPENDENT begin
@@ -763,7 +769,7 @@ module New = struct
       begin function (e, info) -> match e with
         | Logic_monad.Tac_Timeout as e ->
           let info = Exninfo.reify () in
-          Proofview.tclZERO ~info (Refiner.FailError (0,lazy (CErrors.print e)))
+          Proofview.tclZERO ~info (FailError (0,lazy (CErrors.print e)))
         | e -> Proofview.tclZERO ~info e
       end
 

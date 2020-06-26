@@ -2206,7 +2206,7 @@ let solve_by_tac ?loc name evi t ~poly ~uctx =
     Inductiveops.control_only_guard env (Evd.from_ctx uctx) (EConstr.of_constr body);
     Some (body, types, uctx)
   with
-  | Refiner.FailError (_, s) as exn ->
+  | Tacticals.FailError (_, s) as exn ->
     let _ = Exninfo.capture exn in
     CErrors.user_err ?loc ~hdr:"solve_obligation" (Lazy.force s)
   (* If the proof is open we absorb the error and leave the obligation open *)

@@ -22,7 +22,6 @@ open Util
 open Names
 open Nameops
 open Libnames
-open Refiner
 open Tacmach.New
 open Tactic_debug
 open Constrexpr
@@ -1442,6 +1441,7 @@ and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
     if the left-hand side fails. *)
 and interp_match_successes lz ist s =
    let general =
+     let open Tacticals in
      let break (e, info) = match e with
        | FailError (0, _) -> None
        | FailError (n, s) -> Some (FailError (pred n, s), info)
