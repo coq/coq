@@ -30,7 +30,50 @@ let anomaly ?loc ?info ?label pp =
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (Anomaly (label, pp), info)
 
-exception UserError of Pp.t (* User errors *)
+module ErrorKind = struct
+  type t = Anomaly | Regular
+end
+
+(* TODO: support for errors with context *)
+module type S = sig
+  type t
+  val print : t -> Pp.t
+  val doc : Pp.t
+  val kind : ErrorKind.t
+end
+
+module type E = sig
+  type t
+  type exn += E of t
+end
+
+module type S0 = sig
+  val print : Pp.t
+  val doc : Pp.t
+  val kind : ErrorKind.t
+end
+
+module type E0 = sig
+  type exn += E
+end
+
+module CoqError : sig
+  module Make (X : S) : E with type t = X.t
+  module Make0 (X : S0) : E0
+end = struct
+  module Make (X : S) = struct
+    type t = X.t
+    type exn += E of t
+    (* register printer *)
+  end
+  module Make0 (X : S0) = struct
+    type exn += E
+    (* register printer *)
+  end
+end
+
+(* TODO remove the option *)
+exception UserError of Pp.t
 
 let user_err ?loc ?info strm =
   let info = Option.default Exninfo.null info in
@@ -132,8 +175,13 @@ let print_no_report e = iprint_no_report (e, Exninfo.info e)
 (** Predefined handlers **)
 
 let _ = register_handler begin function
+<<<<<<< HEAD
   | UserError pps ->
     Some pps
+=======
+  | UserError (s, pps) ->
+    Some (where s ++ pps)
+>>>>>>> [errors] Introduce error registration API
   | _ -> None
   end
 
