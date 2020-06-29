@@ -54,6 +54,9 @@ let interp_typed_vernac c ~pm ~stack =
   | VtDeclareProgram f ->
     let lemma = f ~pm in
     Some (Vernacstate.LemmaStack.push stack lemma), pm
+  | VtOpenProofProgram f ->
+    let pm, lemma = f ~pm in
+    Some (Vernacstate.LemmaStack.push stack lemma), pm
 
 (* Default proof mode, to be set at the beginning of proofs for
    programs that cannot be statically classified. *)

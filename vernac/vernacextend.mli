@@ -81,6 +81,7 @@ type typed_vernac =
   | VtReadProgram of (pm:Declare.OblState.t -> unit)
   | VtModifyProgram of (pm:Declare.OblState.t -> Declare.OblState.t)
   | VtDeclareProgram of (pm:Declare.OblState.t -> Declare.Proof.t)
+  | VtOpenProofProgram of (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t)
 
 type vernac_command = atts:Attributes.vernac_flags -> typed_vernac
 
