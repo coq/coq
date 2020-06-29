@@ -182,7 +182,7 @@ module Proof : sig
   val start_equations :
        name:Id.t
     -> info:Info.t
-    -> hook:(Constant.t list -> Evd.evar_map -> unit)
+    -> hook:(pm:OblState.t -> Constant.t list -> Evd.evar_map -> OblState.t)
     -> types:(Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
     -> Evd.evar_map
     -> Proofview.telescope

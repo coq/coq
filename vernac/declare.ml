@@ -1317,7 +1317,7 @@ module Proof_ending = struct
     | End_obligation of Obls_.obligation_qed_info
     | End_derive of { f : Id.t; name : Id.t }
     | End_equations of
-        { hook : Constant.t list -> Evd.evar_map -> unit
+        { hook : pm:Obls_.State.t -> Constant.t list -> Evd.evar_map -> Obls_.State.t
         ; i : Id.t
         ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
         ; sigma : Evd.evar_map
@@ -2005,7 +2005,7 @@ let finish_derived ~f ~name ~entries =
   let ct = declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
   [GlobRef.ConstRef ct]
 
-let finish_proved_equations ~kind ~hook i proof_obj types sigma0 =
+let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
 
   let obls = ref 1 in
   let sigma, recobls =
@@ -2022,8 +2022,8 @@ let finish_proved_equations ~kind ~hook i proof_obj types sigma0 =
         sigma, cst) sigma0
       types proof_obj.entries
   in
-  hook recobls sigma;
-  List.map (fun cst -> GlobRef.ConstRef cst) recobls
+  let pm = hook ~pm recobls sigma in
+  pm, List.map (fun cst -> GlobRef.ConstRef cst) recobls
 
 let check_single_entry { entries; uctx } label =
   match entries with
@@ -2044,7 +2044,7 @@ let finalize_proof ~pm proof_obj proof_info =
     pm, finish_derived ~f ~name ~entries:proof_obj.entries
   | End_equations { hook; i; types; sigma } ->
     let kind = proof_info.Proof_info.info.Info.kind in
-    pm, finish_proved_equations ~kind ~hook i proof_obj types sigma
+    finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma
 
 let err_save_forbidden_in_place_of_qed () =
   CErrors.user_err (Pp.str "Cannot use Save with more than one constant or in this proof mode")
