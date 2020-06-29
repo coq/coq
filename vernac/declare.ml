@@ -39,6 +39,7 @@ module Hook = struct
   let make_g hook = CEphemeron.create hook
   let make (hook : S.t -> unit) : t = CEphemeron.create (fun x () -> hook x)
 
+  let call_g ?hook x s = Option.cata (fun hook -> CEphemeron.get hook x s) s hook
   let call ?hook x = Option.iter (fun hook -> CEphemeron.get hook x ()) hook
 
 end
@@ -655,9 +656,10 @@ let declare_definition_core ~info ~cinfo ~opaque ~obls ~body sigma =
   let { CInfo.name; impargs; typ; _ } = cinfo in
   let entry, uctx = prepare_definition ~info ~opaque ~body ~typ sigma in
   let { Info.scope; kind; hook; _ } = info in
-  declare_entry_core ~name ~scope ~kind ~impargs ~obls ?hook ~uctx entry
+  declare_entry_core ~name ~scope ~kind ~impargs ~obls ?hook ~uctx entry, uctx
 
-let declare_definition = declare_definition_core ~obls:[]
+let declare_definition ~info ~cinfo ~opaque ~body sigma =
+  declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body sigma |> fst
 
 let prepare_obligation ~name ~types ~body sigma =
   let env = Global.env () in
@@ -710,10 +712,11 @@ type fixpoint_kind = IsFixpoint of lident option list | IsCoFixpoint
 
 module ProgramDecl = struct
 
-  type t =
+  type 'a t =
     { prg_cinfo : constr CInfo.t
     ; prg_info : Info.t
     ; prg_opaque : bool
+    ; prg_hook : 'a Hook.g option
     ; prg_body : constr
     ; prg_uctx : UState.t
     ; prg_obligations : obligations
@@ -725,7 +728,7 @@ module ProgramDecl = struct
 
   open Obligation
 
-  let make ~info ~cinfo ~opaque ~ntns ~reduce ~deps ~uctx ~body ~fixpoint_kind obls =
+  let make ~info ~cinfo ~opaque ~ntns ~reduce ~deps ~uctx ~body ~fixpoint_kind ?obl_hook obls =
     let obls', body =
       match body with
       | None ->
@@ -755,6 +758,7 @@ module ProgramDecl = struct
     let prg_uctx = UState.make_flexible_nonalgebraic uctx in
     { prg_cinfo = { cinfo with CInfo.typ = reduce cinfo.CInfo.typ }
     ; prg_info = info
+    ; prg_hook = obl_hook
     ; prg_opaque = opaque
     ; prg_body = body
     ; prg_uctx
@@ -919,7 +923,7 @@ module ProgMap = Id.Map
 
 module State = struct
 
-  type t = ProgramDecl.t CEphemeron.key ProgMap.t
+  type t = t ProgramDecl.t CEphemeron.key ProgMap.t
 
   let empty = ProgMap.empty
 
@@ -1069,7 +1073,11 @@ let declare_definition ~pm prg =
   let name, info, opaque = prg.prg_cinfo.CInfo.name, prg.prg_info, prg.prg_opaque in
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
-  let kn = declare_definition_core ~cinfo ~info ~obls ~body ~opaque sigma in
+  let kn, uctx = declare_definition_core ~cinfo ~info ~obls ~body ~opaque sigma in
+  (* XXX: We call the obligation hook here, by consistency with the
+     previous imperative behaviour, however I'm not sure this is right *)
+  let pm = Hook.call_g ?hook:prg.prg_hook
+      { Hook.S.uctx; obls; scope = prg.prg_info.Info.scope; dref = kn} pm in
   let pm = progmap_remove pm prg in
   pm, kn
 
@@ -1156,8 +1164,11 @@ let declare_mutual_definition ~pm l =
   in
   (* Only for the first constant *)
   let dref = List.hd kns in
-  Hook.(
-    call ?hook:first.prg_info.Info.hook {S.uctx = first.prg_uctx; obls; scope; dref});
+  let s_hook = {Hook.S.uctx = first.prg_uctx; obls; scope; dref} in
+  Hook.call ?hook:first.prg_info.Info.hook s_hook;
+  (* XXX: We call the obligation hook here, by consistency with the
+     previous imperative behaviour, however I'm not sure this is right *)
+  let pm = Hook.call_g ?hook:first.prg_hook s_hook pm in
   let pm = List.fold_left progmap_remove pm l in
   pm, dref
 
@@ -2384,10 +2395,10 @@ let msg_generating_obl name obls =
        info ++ str ", generating " ++ int len ++
        str (String.plural len " obligation"))
 
-let add_definition ~pm ~cinfo ~info ?term ~uctx
+let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
     ?tactic ?(reduce = reduce) ?(opaque = false) obls =
   let prg =
-    ProgramDecl.make ~info ~cinfo ~body:term ~opaque ~uctx ~reduce ~ntns:[] ~deps:[] ~fixpoint_kind:None obls
+    ProgramDecl.make ~info ~cinfo ~body:term ~opaque ~uctx ~reduce ~ntns:[] ~deps:[] ~fixpoint_kind:None ?obl_hook obls
   in
   let name = CInfo.get_name cinfo in
   let {obls;_} = Internal.get_obligations prg in
@@ -2405,7 +2416,7 @@ let add_definition ~pm ~cinfo ~info ?term ~uctx
       pm, res
     | _ -> pm, res
 
-let add_mutual_definitions l ~pm ~info ~uctx
+let add_mutual_definitions l ~pm ~info ?obl_hook ~uctx
     ?tactic ?(reduce = reduce) ?(opaque = false) ~ntns fixkind =
   let deps = List.map (fun (ci,_,_) -> CInfo.get_name ci) l in
   let pm =
@@ -2413,7 +2424,7 @@ let add_mutual_definitions l ~pm ~info ~uctx
       (fun pm (cinfo, b, obls) ->
         let prg =
           ProgramDecl.make ~info ~cinfo ~opaque ~body:(Some b) ~uctx ~deps
-            ~fixpoint_kind:(Some fixkind) ~ntns obls ~reduce
+            ~fixpoint_kind:(Some fixkind) ~ntns ~reduce ?obl_hook obls
         in
         State.add pm (CInfo.get_name cinfo) prg)
       pm l

@@ -487,6 +487,7 @@ val add_definition :
      pm:OblState.t
   -> cinfo:Constr.types CInfo.t
   -> info:Info.t
+  -> ?obl_hook: OblState.t Hook.g
   -> ?term:Constr.t
   -> uctx:UState.t
   -> ?tactic:unit Proofview.tactic
@@ -503,6 +504,7 @@ val add_mutual_definitions :
      (Constr.t CInfo.t * Constr.t * RetrieveObl.obligation_info) list
   -> pm:OblState.t
   -> info:Info.t
+  -> ?obl_hook: OblState.t Hook.g
   -> uctx:UState.t
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
