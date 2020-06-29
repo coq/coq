@@ -74,8 +74,8 @@ to literally pass an argument ``foo`` to ``coqc``: in the
 example, this allows to pass the two-word option ``-w all`` (see
 :ref:`command line options <command-line-options>`).
 
-Currently, both |CoqIDE| and Proof-General (version ≥ ``4.3pre``)
-understand ``_CoqProject`` files and invoke |Coq| with the desired options.
+|CoqIDE|, Proof-General and VSCoq all
+understand ``_CoqProject`` files and can be used to invoke |Coq| with the desired options.
 
 The ``coq_makefile`` utility can be used to set up a build infrastructure
 for the |Coq| project based on makefiles. The recommended way of
