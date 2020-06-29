@@ -40,7 +40,9 @@ open Names
    care, as imperative effects may become not supported in the
    future. *)
 module Hook : sig
-  type t
+  type 'a g
+
+  type t = unit g
 
   (** Hooks allow users of the API to perform arbitrary actions at
      proof/definition saving time. For example, to register a constant
@@ -61,6 +63,7 @@ module Hook : sig
       }
   end
 
+  val make_g : (S.t -> 'a -> 'a) -> 'a g
   val make : (S.t -> unit) -> t
   val call : ?hook:t -> S.t -> unit
 end

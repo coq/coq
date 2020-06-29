@@ -33,11 +33,13 @@ module Hook = struct
       }
   end
 
-  type t = (S.t -> unit) CEphemeron.key
+  type 'a g = (S.t -> 'a -> 'a) CEphemeron.key
+  type t = unit g
 
-  let make hook = CEphemeron.create hook
+  let make_g hook = CEphemeron.create hook
+  let make (hook : S.t -> unit) : t = CEphemeron.create (fun x () -> hook x)
 
-  let call ?hook x = Option.iter (fun hook -> CEphemeron.get hook x) hook
+  let call ?hook x = Option.iter (fun hook -> CEphemeron.get hook x ()) hook
 
 end
 
