@@ -147,7 +147,7 @@ let update_global_env () =
     PG_compat.update_global_env ()
 
 module Vcs_ = Vcs.Make(Stateid.Self)
-type future_proof = Declare.closed_proof_output Future.computation
+type future_proof = Declare.Proof.closed_proof_output Future.computation
 
 type depth = int
 type branch_type =
@@ -1047,9 +1047,9 @@ end = struct (* {{{ *)
 end (* }}} *)
 
 (* Wrapper for the proof-closing special path for Qed *)
-let stm_qed_delay_proof ?route ~proof ~info ~id ~st ~loc ~control pending : Vernacstate.t =
+let stm_qed_delay_proof ?route ~proof ~pinfo ~id ~st ~loc ~control pending : Vernacstate.t =
   set_id_for_feedback ?route dummy_doc id;
-  Vernacinterp.interp_qed_delayed_proof ~proof ~info ~st ~control (CAst.make ?loc pending)
+  Vernacinterp.interp_qed_delayed_proof ~proof ~pinfo ~st ~control (CAst.make ?loc pending)
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
@@ -1157,7 +1157,8 @@ end = struct (* {{{ *)
 
   let get_proof ~doc id =
     match state_of_id ~doc id with
-    | `Valid (Some vstate) -> Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:Declare.Proof.get_proof) vstate.Vernacstate.lemmas
+    | `Valid (Some vstate) ->
+      Option.map (Vernacstate.LemmaStack.with_top ~f:Declare.Proof.get) vstate.Vernacstate.lemmas
     | _ -> None
 
   let undo_vernac_classifier v ~doc =
@@ -1351,7 +1352,7 @@ module rec ProofTask : sig
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Declare.closed_proof_output Future.assignment -> unit;
+    t_assign   : Declare.Proof.closed_proof_output Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1374,7 +1375,7 @@ module rec ProofTask : sig
     ?loc:Loc.t ->
     drop_pt:bool ->
     Stateid.t * Stateid.t -> Stateid.t ->
-      Declare.closed_proof_output Future.computation
+      Declare.Proof.closed_proof_output Future.computation
 
   (* If set, only tasks overlapping with this list are processed *)
   val set_perspective : Stateid.t list -> unit
@@ -1390,7 +1391,7 @@ end = struct (* {{{ *)
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Declare.closed_proof_output Future.assignment -> unit;
+    t_assign   : Declare.Proof.closed_proof_output Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1412,7 +1413,7 @@ end = struct (* {{{ *)
     e_safe_states : Stateid.t list }
 
   type response =
-    | RespBuiltProof of Declare.closed_proof_output * float
+    | RespBuiltProof of Declare.Proof.closed_proof_output * float
     | RespError of error
     | RespStates of (Stateid.t * State.partial_state) list
 
@@ -1522,11 +1523,12 @@ end = struct (* {{{ *)
             PG_compat.close_future_proof ~feedback_id:stop (Future.from_val proof) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
-          let opaque = Declare.Opaque in
+          let opaque = Opaque in
           try
             let _pstate =
+              let pinfo = Declare.Proof.Proof_info.default () in
               stm_qed_delay_proof ~st ~id:stop
-                ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None)) in
+                ~proof:pobject ~pinfo ~loc ~control:[] (Proved (opaque,None)) in
             ()
           with exn ->
             (* If [stm_qed_delay_proof] fails above we need to use the
@@ -1666,13 +1668,13 @@ end = struct (* {{{ *)
         let _proof = PG_compat.return_partial_proof () in
         `OK_ADMITTED
       else begin
-      let opaque = Declare.Opaque in
+      let opaque = Opaque in
 
       (* The original terminator, a hook, has not been saved in the .vio*)
       let proof, _info =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true in
 
-      let info = Lemmas.Info.make () in
+      let pinfo = Declare.Proof.Proof_info.default () in
 
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
@@ -1685,9 +1687,9 @@ end = struct (* {{{ *)
        *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
-      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc ~control:[] (Proved (opaque,None)));
+      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~pinfo ~loc ~control:[] (Proved (opaque,None)));
       (* Is this name the same than the one in scope? *)
-      let name = Declare.get_po_name proof in
+      let name = Declare.Proof.get_po_name proof in
       `OK name
       end
     with e ->
@@ -2161,7 +2163,7 @@ let collect_proof keep cur hd brkind id =
    | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).expr.CAst.loc in
  let is_defined_expr = function
-   | VernacEndProof (Proved (Declare.Transparent,_)) -> true
+   | VernacEndProof (Proved (Transparent,_)) -> true
    | _ -> false in
  let is_defined = function
    | _, { expr = e } -> is_defined_expr e.CAst.v.expr
@@ -2496,13 +2498,13 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepDefined ->
                         CErrors.anomaly (Pp.str "Cannot delegate transparent proofs, this is a bug in the STM.")
                     in
-                    let proof, info =
+                    let proof, pinfo =
                       PG_compat.close_future_proof ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_interp_state ~marshallable:false in
                     let control, pe = extract_pe x in
-                    ignore(stm_qed_delay_proof ~id ~st ~proof ~info ~loc ~control pe);
+                    ignore(stm_qed_delay_proof ~id ~st ~proof ~pinfo ~loc ~control pe);
                     feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
@@ -2526,7 +2528,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                   | VtKeep VtKeepAxiom ->
                       qed.fproof <- Some (None, ref false); None
                   | VtKeep opaque ->
-                    let opaque = let open Declare in  match opaque with
+                    let opaque = match opaque with
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
                       | VtKeepAxiom -> assert false
                     in
@@ -2541,9 +2543,9 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let st = Vernacstate.freeze_interp_state ~marshallable:false in
                 let _st = match proof with
                   | None ->  stm_vernac_interp id st x
-                  | Some (proof, info) ->
+                  | Some (proof, pinfo) ->
                     let control, pe = extract_pe x in
-                    stm_qed_delay_proof ~id ~st ~proof ~info ~loc ~control pe
+                    stm_qed_delay_proof ~id ~st ~proof ~pinfo ~loc ~control pe
                 in
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at ?loc:x.expr.CAst.loc "proof_check_time"

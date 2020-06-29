@@ -257,11 +257,9 @@ let build_recthms ~indexes fixnames fixtypes fiximps =
   in
   let thms =
     List.map3 (fun name typ (ctx,impargs,_) ->
-        { Declare.Recthm.name
-        ; typ
-        ; args = List.map Context.Rel.Declaration.get_name ctx
-        ; impargs})
-      fixnames fixtypes fiximps
+        let args = List.map Context.Rel.Declaration.get_name ctx in
+        Declare.CInfo.make ~name ~typ ~args ~impargs ()
+      ) fixnames fixtypes fiximps
   in
   fix_kind, cofix, thms
 
@@ -270,9 +268,10 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
   let indexes = Option.default [] indexes in
   let init_terms = Some fixdefs in
   let evd = Evd.from_ctx ctx in
+  let info = Declare.Info.make ~poly ~scope ~kind:(Decls.IsDefinition fix_kind) ~udecl () in
   let lemma =
-    Lemmas.start_lemma_with_initialization ~poly ~scope ~kind:(Decls.IsDefinition fix_kind) ~udecl
-      evd (Some(cofix,indexes,init_terms)) thms None in
+    Declare.Proof.start_mutual_with_initialization ~info
+      evd ~mutual_info:(cofix,indexes,init_terms) ~cinfo:thms None in
   (* Declare notations *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   lemma
@@ -283,10 +282,11 @@ let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixt
   let fixdefs = List.map Option.get fixdefs in
   let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
   let fix_kind = Decls.IsDefinition fix_kind in
+  let info = Declare.Info.make ~scope ~kind:fix_kind ~poly ~udecl () in
+  let cinfo = fixitems in
   let _ : GlobRef.t list =
-    Declare.declare_mutually_recursive ~scope ~opaque:false ~kind:fix_kind ~poly ~uctx
-      ~possible_indexes:indexes ~udecl ~ntns ~rec_declaration
-      fixitems
+    Declare.declare_mutually_recursive ~cinfo ~info ~opaque:false ~uctx
+      ~possible_indexes:indexes ~ntns ~rec_declaration
   in
   ()
 
@@ -322,7 +322,7 @@ let do_fixpoint_common (fixl : Vernacexpr.fixpoint_expr list) =
   let (_, _, _, info as fix) = interp_fixpoint ~cofix:false fixl in
   fixl, ntns, fix, List.map compute_possible_guardness_evidences info
 
-let do_fixpoint_interactive ~scope ~poly l : Lemmas.t =
+let do_fixpoint_interactive ~scope ~poly l : Declare.Proof.t =
   let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
   let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes ~scope ~poly fix ntns in
   lemma

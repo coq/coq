@@ -8,8 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type mutual_info =
+  | NonMutual of EConstr.t Declare.CInfo.t
+  | Mutual of
+      { mutual_info : Declare.Proof.mutual_info
+      ; cinfo : EConstr.t Declare.CInfo.t list
+      ; possible_guards : int list
+      }
+
 val look_for_possibly_mutual_statements
   :  Evd.evar_map
-  -> ('a * (EConstr.t * 'b)) list
-  -> (bool * int list list * 'c option) option *
-     ('a * (EConstr.t * 'b)) list * int list option
+  -> EConstr.t Declare.CInfo.t list
+  -> mutual_info

@@ -9,25 +9,23 @@
 (************************************************************************)
 
 open Names
-open Constr
-open Entries
 
-(** This module provides the official functions to declare new
+(** This module provides the functions to declare new
    variables, parameters, constants and inductive types in the global
    environment. It also updates some accesory tables such as [Nametab]
    (name resolution), [Impargs], and [Notations]. *)
 
-(** We provide two kind of functions:
+(** We provide three main entry points:
 
   - one-go functions, that will register a constant in one go, suited
    for non-interactive definitions where the term is given.
 
-  - two-phase [start/declare] functions which will create an
-   interactive proof, allow its modification, and saving when
-   complete.
+  - two-phase [start/save] functions which will create an
+   interactive proof, allow its modification using tactics, and saving
+   when complete.
 
-  Internally, these functions mainly differ in that usually, the first
-  case doesn't require setting up the tactic engine.
+  - program mode API, that allow to declare a constant with holes, to
+   be fullfilled later.
 
   Note that the API in this file is still in a state of flux, don't
   hesitate to contact the maintainers if you have any question.
@@ -38,27 +36,196 @@ open Entries
 
  *)
 
+(** Declaration hooks, to be run when a constant is saved. Use with
+   care, as imperative effects may become not supported in the
+   future. *)
+module Hook : sig
+  type t
+
+  (** Hooks allow users of the API to perform arbitrary actions at
+     proof/definition saving time. For example, to register a constant
+     as a Coercion, perform some cleanup, update the search database,
+     etc... *)
+  module S : sig
+    type t =
+      { uctx : UState.t
+      (** [ustate]: universe constraints obtained when the term was closed *)
+      ; obls : (Id.t * Constr.t) list
+      (** [(n1,t1),...(nm,tm)]: association list between obligation
+          name and the corresponding defined term (might be a constant,
+          but also an arbitrary term in the Expand case of obligations) *)
+      ; scope : Locality.locality
+      (** [scope]: Locality of the original declaration *)
+      ; dref : GlobRef.t
+      (** [dref]: identifier of the original declaration *)
+      }
+  end
+
+  val make : (S.t -> unit) -> t
+  val call : ?hook:t -> S.t -> unit
+end
+
+(** {2 One-go, non-interactive declaration API } *)
+
+(** Information for a single top-level named constant *)
+module CInfo : sig
+  type 'constr t
+
+  val make :
+    name : Id.t
+    -> typ:'constr
+    -> ?args:Name.t list
+    -> ?impargs:Impargs.manual_implicits
+    -> unit
+    -> 'constr t
+
+  (* Used only in Vernacentries, may disappear from public API *)
+  val to_constr : Evd.evar_map -> EConstr.t t -> Constr.t t
+
+  (* Used only in RecLemmas, may disappear from public API *)
+  val get_typ : 'constr t -> 'constr
+
+end
+
+(** Information for a declaration, interactive or not, includes
+   parameters shared by mutual constants *)
+module Info : sig
+
+  type t
+
+  (** Note that [opaque] doesn't appear here as it is not known at the
+     start of the proof in the interactive case. *)
+  val make
+    : ?poly:bool
+    -> ?inline : bool
+    -> ?kind : Decls.logical_kind
+    (** Theorem, etc... *)
+    -> ?udecl : UState.universe_decl
+    -> ?scope : Locality.locality
+    (** locality  *)
+    -> ?hook : Hook.t
+    (** Callback to be executed after saving the constant *)
+    -> unit
+    -> t
+
+end
+
+(** Declares a non-interactive constant; [body] and [types] will be
+   normalized w.r.t. the passed [evar_map] [sigma]. Universes should
+   be handled properly, including minimization and restriction. Note
+   that [sigma] is checked for unresolved evars, thus you should be
+   careful not to submit open terms or evar maps with stale,
+   unresolved existentials *)
+val declare_definition
+  :  info:Info.t
+  -> cinfo:EConstr.t option CInfo.t
+  -> opaque:bool
+  -> body:EConstr.t
+  -> Evd.evar_map
+  -> GlobRef.t
+
+val declare_assumption
+  :  name:Id.t
+  -> scope:Locality.locality
+  -> hook:Hook.t option
+  -> impargs:Impargs.manual_implicits
+  -> uctx:UState.t
+  -> Entries.parameter_entry
+  -> GlobRef.t
+
+type lemma_possible_guards = int list list
+
+val declare_mutually_recursive
+  : info:Info.t
+  -> cinfo: Constr.t CInfo.t list
+  -> opaque:bool
+  -> ntns:Vernacexpr.decl_notation list
+  -> uctx:UState.t
+  -> rec_declaration:Constr.rec_declaration
+  -> possible_indexes:lemma_possible_guards option
+  -> Names.GlobRef.t list
+
+(** {2 Declaration of interactive constants }  *)
+
 (** [Declare.Proof.t] Construction of constants using interactive proofs. *)
 module Proof : sig
 
   type t
 
-  (** XXX: These are internal and will go away from publis API once
-     lemmas is merged here *)
-  val get_proof : t -> Proof.t
-  val get_proof_name : t -> Names.Id.t
+  (** [start_proof ~info ~cinfo sigma] starts a proof of [cinfo].
+      The proof is started in the evar map [sigma] (which
+      can typically contain universe constraints) *)
+  val start
+    :  info:Info.t
+    -> cinfo:EConstr.t CInfo.t
+    -> Evd.evar_map
+    -> t
 
-  val map_proof : (Proof.t -> Proof.t) -> t -> t
-  val map_fold_proof : (Proof.t -> Proof.t * 'a) -> t -> t * 'a
-  val map_fold_proof_endline : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
+  (** [start_{derive,equations}] are functions meant to handle
+     interactive proofs with multiple goals, they should be considered
+     experimental until we provide a more general API encompassing
+     both of them. Please, get in touch with the developers if you
+     would like to experiment with multi-goal dependent proofs so we
+     can use your input on the design of the new API. *)
+  val start_derive : f:Id.t -> name:Id.t -> info:Info.t -> Proofview.telescope -> t
+
+  val start_equations :
+       name:Id.t
+    -> info:Info.t
+    -> hook:(Constant.t list -> Evd.evar_map -> unit)
+    -> types:(Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+    -> Evd.evar_map
+    -> Proofview.telescope
+    -> t
+
+  (** Pretty much internal, used by the Lemma vernaculars *)
+  val start_with_initialization
+    :  info:Info.t
+    -> cinfo:Constr.t CInfo.t
+    -> Evd.evar_map
+    -> t
+
+  type mutual_info = (bool * lemma_possible_guards * Constr.t option list option)
+
+  (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars *)
+  val start_mutual_with_initialization
+    :  info:Info.t
+    -> cinfo:Constr.t CInfo.t list
+    -> mutual_info:mutual_info
+    -> Evd.evar_map
+    -> int list option
+    -> t
+
+  (** Qed a proof  *)
+  val save
+    : proof:t
+    -> opaque:Vernacexpr.opacity_flag
+    -> idopt:Names.lident option
+    -> GlobRef.t list
+
+  (** Admit a proof *)
+  val save_admitted : proof:t -> unit
+
+  (** [by tac] applies tactic [tac] to the 1st subgoal of the current
+      focused proof.
+      Returns [false] if an unsafe tactic has been used. *)
+  val by : unit Proofview.tactic -> t -> t * bool
+
+  (** Operations on ongoing proofs *)
+  val get : t -> Proof.t
+  val get_name : t -> Names.Id.t
+
+  val fold : f:(Proof.t -> 'a) -> t -> 'a
+  val map : f:(Proof.t -> Proof.t) -> t -> t
+  val map_fold : f:(Proof.t -> Proof.t * 'a) -> t -> t * 'a
+  val map_fold_endline : f:(unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
 
   (** Sets the tactic to be used when a tactic line is closed with [...] *)
   val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
 
   (** Sets the section variables assumed by the proof, returns its closure
    * (w.r.t. type dependencies and let-ins covered by it) *)
-  val set_used_variables : t ->
-    Names.Id.t list -> Constr.named_context * t
+  val set_used_variables : t -> Names.Id.t list -> Constr.named_context * t
 
   val compact : t -> t
 
@@ -69,32 +236,73 @@ module Proof : sig
 
   val get_open_goals : t -> int
 
+  (** Helpers to obtain proof state when in an interactive proof *)
+
+  (** [get_goal_context n] returns the context of the [n]th subgoal of
+      the current focused proof or raises a [UserError] if there is no
+      focused proof or if there is no more subgoals *)
+
+  val get_goal_context : t -> int -> Evd.evar_map * Environ.env
+
+  (** [get_current_goal_context ()] works as [get_goal_context 1] *)
+  val get_current_goal_context : t -> Evd.evar_map * Environ.env
+
+  (** [get_current_context ()] returns the context of the
+      current focused goal. If there is no focused goal but there
+      is a proof in progress, it returns the corresponding evar_map.
+      If there is no pending proof then it returns the current global
+      environment and empty evar_map. *)
+  val get_current_context : t -> Evd.evar_map * Environ.env
+
+  (* Internal, don't use *)
+  module Proof_info : sig
+    type t
+    (* Make a dummy value, used in the stm *)
+    val default : unit -> t
+  end
+  val info : t -> Proof_info.t
+
+  (** {2 Proof delay API, warning, internal, not stable *)
+
+  (* Intermediate step necessary to delegate the future.
+   * Both access the current proof state. The former is supposed to be
+   * chained with a computation that completed the proof *)
+  type closed_proof_output
+
+  (** Requires a complete proof. *)
+  val return_proof : t -> closed_proof_output
+
+  (** An incomplete proof is allowed (no error), and a warn is given if
+      the proof is complete. *)
+  val return_partial_proof : t -> closed_proof_output
+
+  (** XXX: This is an internal, low-level API and could become scheduled
+      for removal from the public API, use higher-level declare APIs
+      instead *)
+  type proof_object
+
+  val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
+  val close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
+
+  (** Special cases for delayed proofs, in this case we must provide the
+      proof information so the proof won't be forced. *)
+  val save_lemma_admitted_delayed :
+    proof:proof_object
+    -> pinfo:Proof_info.t
+    -> unit
+
+  val save_lemma_proved_delayed
+    : proof:proof_object
+    -> pinfo:Proof_info.t
+    -> idopt:Names.lident option
+    -> GlobRef.t list
+
+  (** Used by the STM only to store info, should go away *)
+  val get_po_name : proof_object -> Id.t
+
 end
 
-type opacity_flag = Vernacexpr.opacity_flag = Opaque | Transparent
-
-(** [start_proof ~name ~udecl ~poly sigma goals] starts a proof of
-   name [name] with goals [goals] (a list of pairs of environment and
-   conclusion); [poly] determines if the proof is universe
-   polymorphic. The proof is started in the evar map [sigma] (which
-   can typically contain universe constraints), and with universe
-   bindings [udecl]. *)
-val start_proof
-  :  name:Names.Id.t
-  -> udecl:UState.universe_decl
-  -> poly:bool
-  -> Evd.evar_map
-  -> (Environ.env * EConstr.types) list
-  -> Proof.t
-
-(** Like [start_proof] except that there may be dependencies between
-    initial goals. *)
-val start_dependent_proof
-  :  name:Names.Id.t
-  -> udecl:UState.universe_decl
-  -> poly:bool
-  -> Proofview.telescope
-  -> Proof.t
+(** {2 low-level, internla API, avoid using unless you have special needs } *)
 
 (** Proof entries represent a proof that has been finished, but still
    not registered with the kernel.
@@ -104,30 +312,32 @@ val start_dependent_proof
    instead *)
 type 'a proof_entry
 
+val definition_entry
+  :  ?opaque:bool
+  -> ?inline:bool
+  -> ?types:Constr.types
+  -> ?univs:Entries.universes_entry
+  -> Constr.constr
+  -> Evd.side_effects proof_entry
+
 (** XXX: This is an internal, low-level API and could become scheduled
-   for removal from the public API, use higher-level declare APIs
-   instead *)
-type proof_object
-
-(** Used by the STM only to store info, should go away *)
-val get_po_name : proof_object -> Id.t
-
-val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Proof.t -> proof_object
+    for removal from the public API, use higher-level declare APIs
+    instead *)
+val declare_entry
+  :  name:Id.t
+  -> scope:Locality.locality
+  -> kind:Decls.logical_kind
+  -> ?hook:Hook.t
+  -> impargs:Impargs.manual_implicits
+  -> uctx:UState.t
+  -> Evd.side_effects proof_entry
+  -> GlobRef.t
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
-
-(** XXX: This is an internal, low-level API and could become scheduled
-   for removal from the public API, use higher-level declare APIs
-   instead *)
-type 'a constant_entry =
-  | DefinitionEntry of 'a proof_entry
-  | ParameterEntry of parameter_entry
-  | PrimitiveEntry of primitive_entry
-
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
-  -> typ:types
+  -> typ:Constr.types
   -> impl:Glob_term.binding_kind
   -> unit
 
@@ -137,34 +347,33 @@ val declare_variable
    XXX: This is an internal, low-level API and could become scheduled
    for removal from the public API, use higher-level declare APIs
    instead *)
-val definition_entry
-  :  ?opaque:bool
-  -> ?inline:bool
-  -> ?types:types
-  -> ?univs:Entries.universes_entry
-  -> constr
-  -> Evd.side_effects proof_entry
+type 'a constant_entry =
+  | DefinitionEntry of 'a proof_entry
+  | ParameterEntry of Entries.parameter_entry
+  | PrimitiveEntry of Entries.primitive_entry
 
-type import_status = Locality.import_status = ImportDefaultBehavior | ImportNeedQualified
+val prepare_parameter
+  : poly:bool
+  -> udecl:UState.universe_decl
+  -> types:EConstr.types
+  -> Evd.evar_map
+  -> Evd.evar_map * Entries.parameter_entry
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
    the full path of the declaration
 
-  internal specify if the constant has been created by the kernel or by the
-  user, and in the former case, if its errors should be silent
-
   XXX: This is an internal, low-level API and could become scheduled
   for removal from the public API, use higher-level declare APIs
   instead *)
 val declare_constant
-  :  ?local:import_status
+  :  ?local:Locality.import_status
   -> name:Id.t
   -> kind:Decls.logical_kind
   -> Evd.side_effects constant_entry
   -> Constant.t
 
-(** Declaration messages *)
+(** Declaration messages, for internal use *)
 
 (** XXX: Scheduled for removal from public API, do not use *)
 val definition_message : Id.t -> unit
@@ -172,35 +381,6 @@ val assumption_message : Id.t -> unit
 val fixpoint_message : int array option -> Id.t list -> unit
 
 val check_exists : Id.t -> unit
-
-(** {6 For legacy support, do not use}  *)
-
-module Internal : sig
-
-  type constant_obj
-
-  val objConstant : constant_obj Libobject.Dyn.tag
-  val objVariable : unit Libobject.Dyn.tag
-
-end
-
-(* Intermediate step necessary to delegate the future.
- * Both access the current proof state. The former is supposed to be
- * chained with a computation that completed the proof *)
-type closed_proof_output
-
-(** Requires a complete proof. *)
-val return_proof : Proof.t -> closed_proof_output
-
-(** An incomplete proof is allowed (no error), and a warn is given if
-   the proof is complete. *)
-val return_partial_proof : Proof.t -> closed_proof_output
-val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output Future.computation -> proof_object
-
-(** [by tac] applies tactic [tac] to the 1st subgoal of the current
-    focused proof.
-    Returns [false] if an unsafe tactic has been used. *)
-val by : unit Proofview.tactic -> Proof.t -> Proof.t * bool
 
 (** Semantics of this function is a bit dubious, use with care *)
 val build_by_tactic
@@ -212,138 +392,77 @@ val build_by_tactic
   -> unit Proofview.tactic
   -> Constr.constr * Constr.types option * Entries.universes_entry * bool * UState.t
 
-(** {6 Helpers to obtain proof state when in an interactive proof } *)
+(** {2 Program mode API} *)
 
-(** [get_goal_context n] returns the context of the [n]th subgoal of
-   the current focused proof or raises a [UserError] if there is no
-   focused proof or if there is no more subgoals *)
+(** Coq's Program mode support. This mode extends declarations of
+   constants and fixpoints with [Program Definition] and [Program
+   Fixpoint] to support incremental construction of terms using
+   delayed proofs, called "obligations"
 
-val get_goal_context : Proof.t -> int -> Evd.evar_map * Environ.env
+    The mode also provides facilities for managing and auto-solving
+   sets of obligations.
 
-(** [get_current_goal_context ()] works as [get_goal_context 1] *)
-val get_current_goal_context : Proof.t -> Evd.evar_map * Environ.env
+    The basic code flow of programs/obligations is as follows:
 
-(** [get_current_context ()] returns the context of the
-  current focused goal. If there is no focused goal but there
-  is a proof in progress, it returns the corresponding evar_map.
-  If there is no pending proof then it returns the current global
-  environment and empty evar_map. *)
-val get_current_context : Proof.t -> Evd.evar_map * Environ.env
+    - [add_definition] / [add_mutual_definitions] are called from the
+   respective [Program] vernacular command interpretation; at this
+   point the only extra work we do is to prepare the new definition
+   [d] using [RetrieveObl], which consists in turning unsolved evars
+   into obligations. [d] is not sent to the kernel yet, as it is not
+   complete and cannot be typchecked, but saved in a special
+   data-structure. Auto-solving of obligations is tried at this stage
+   (see below)
 
-(** XXX: Temporarily re-exported for 3rd party code; don't use  *)
-val build_constant_by_tactic :
-  name:Names.Id.t ->
-  ?opaque:opacity_flag ->
-  uctx:UState.t ->
-  sign:Environ.named_context_val ->
-  poly:bool ->
-  EConstr.types ->
-  unit Proofview.tactic ->
-  Evd.side_effects proof_entry * bool * UState.t
-[@@ocaml.deprecated "This function is deprecated, used newer API in declare"]
+   - [next_obligation] will retrieve the next obligation
+   ([RetrieveObl] sorts them by topological order) and will try to
+   solve it. When all obligations are solved, the original constant
+   [d] is grounded and sent to the kernel for addition to the global
+   environment. Auto-solving of obligations is also triggered on
+   obligation completion.
 
-val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
-[@@ocaml.deprecated "Use DeclareUctx.declare_universe_context"]
+{2} Solving of obligations: Solved obligations are stored as regular
+   global declarations in the global environment, usually with name
+   [constant_obligation_number] where [constant] is the original
+   [constant] and [number] is the corresponding (internal) number.
 
-type locality = Locality.locality = Discharge | Global of import_status
+   Solving an obligation can trigger a bit of a complex cascaded
+   callback path; closing an obligation can indeed allow all other
+   obligations to be closed, which in turn may trigged the declaration
+   of the original constant. Care must be taken, as this can modify
+   [Global.env] in arbitrarily ways. Current code takes some care to
+   refresh the [env] in the proper boundaries, but the invariants
+   remain delicate.
 
-(** Declaration hooks *)
-module Hook : sig
+{2} Saving of obligations: as open obligations use the regular proof
+   mode, a `Qed` will call `Lemmas.save_lemma` first. For this reason
+   obligations code is split in two: this file, [Obligations], taking
+   care of the top-level vernac commands, and [Declare], which is
+   called by `Lemmas` to close an obligation proof and eventually to
+   declare the top-level [Program]ed constant.
+
+ *)
+
+module Obls : sig
+
+type fixpoint_kind = IsFixpoint of lident option list | IsCoFixpoint
+
+module State : sig
+  (* Internal *)
   type t
-
-  (** Hooks allow users of the API to perform arbitrary actions at
-     proof/definition saving time. For example, to register a constant
-     as a Coercion, perform some cleanup, update the search database,
-     etc...  *)
-  module S : sig
-    type t =
-      { uctx : UState.t
-      (** [ustate]: universe constraints obtained when the term was closed *)
-      ; obls : (Id.t * Constr.t) list
-      (** [(n1,t1),...(nm,tm)]: association list between obligation
-          name and the corresponding defined term (might be a constant,
-          but also an arbitrary term in the Expand case of obligations) *)
-      ; scope : locality
-      (** [scope]: Locality of the original declaration *)
-      ; dref : GlobRef.t
-      (** [dref]: identifier of the original declaration *)
-      }
-  end
-
-  val make : (S.t -> unit) -> t
-  val call : ?hook:t -> S.t -> unit
+  val prg_tag : t Summary.Dyn.tag
 end
 
-(** XXX: This is an internal, low-level API and could become scheduled
-    for removal from the public API, use higher-level declare APIs
-    instead *)
-val declare_entry
-  :  name:Id.t
-  -> scope:locality
-  -> kind:Decls.logical_kind
-  -> ?hook:Hook.t
-  -> impargs:Impargs.manual_implicits
-  -> uctx:UState.t
-  -> Evd.side_effects proof_entry
-  -> GlobRef.t
+(** Check obligations are properly solved before closing the
+   [what_for] section / module *)
+val check_solved_obligations : what_for:Pp.t -> unit
 
-(** Declares a non-interactive constant; [body] and [types] will be
-   normalized w.r.t. the passed [evar_map] [sigma]. Universes should
-   be handled properly, including minimization and restriction. Note
-   that [sigma] is checked for unresolved evars, thus you should be
-   careful not to submit open terms or evar maps with stale,
-   unresolved existentials *)
-val declare_definition
-  :  name:Id.t
-  -> scope:locality
-  -> kind:Decls.logical_kind
-  -> opaque:bool
-  -> impargs:Impargs.manual_implicits
-  -> udecl:UState.universe_decl
-  -> ?hook:Hook.t
-  -> poly:bool
-  -> ?inline:bool
-  -> types:EConstr.t option
-  -> body:EConstr.t
-  -> Evd.evar_map
-  -> GlobRef.t
+val default_tactic : unit Proofview.tactic ref
 
-val declare_assumption
-  :  name:Id.t
-  -> scope:locality
-  -> hook:Hook.t option
-  -> impargs:Impargs.manual_implicits
-  -> uctx:UState.t
-  -> Entries.parameter_entry
-  -> GlobRef.t
-
-module Recthm : sig
-  type t =
-    { name : Id.t
-    (** Name of theorem *)
-    ; typ : Constr.t
-    (** Type of theorem  *)
-    ; args : Name.t list
-    (** Names to pre-introduce  *)
-    ; impargs : Impargs.manual_implicits
-    (** Explicitily declared implicit arguments  *)
-    }
-end
-
-type lemma_possible_guards = int list list
-
-val declare_mutually_recursive
-  : opaque:bool
-  -> scope:locality
-  -> kind:Decls.logical_kind
-  -> poly:bool
-  -> uctx:UState.t
-  -> udecl:UState.universe_decl
-  -> ntns:Vernacexpr.decl_notation list
-  -> rec_declaration:Constr.rec_declaration
-  -> possible_indexes:lemma_possible_guards option
-  -> Recthm.t list
-  -> Names.GlobRef.t list
+(** Resolution status of a program *)
+type progress =
+  | Remain of int  (** n obligations remaining *)
+  | Dependent  (** Dependent on other definitions *)
+  | Defined of GlobRef.t  (** Defined as id *)
 
 (** Prepare API, to be removed once we provide the corresponding 1-step API *)
 val prepare_obligation
@@ -353,212 +472,75 @@ val prepare_obligation
   -> Evd.evar_map
   -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_info
 
-val prepare_parameter
-  : poly:bool
-  -> udecl:UState.universe_decl
-  -> types:EConstr.types
-  -> Evd.evar_map
-  -> Evd.evar_map * Entries.parameter_entry
-
-(* Compat: will remove *)
-exception AlreadyDeclared of (string option * Names.Id.t)
-
-module Obls : sig
-
-type 'a obligation_body = DefinedObl of 'a | TermObl of constr
-
-module Obligation : sig
-  type t = private
-    { obl_name : Id.t
-    ; obl_type : types
-    ; obl_location : Evar_kinds.t Loc.located
-    ; obl_body : pconstant obligation_body option
-    ; obl_status : bool * Evar_kinds.obligation_definition_status
-    ; obl_deps : Int.Set.t
-    ; obl_tac : unit Proofview.tactic option }
-
-  val set_type : typ:Constr.types -> t -> t
-  val set_body : body:pconstant obligation_body -> t -> t
-end
-
-type obligations = {obls : Obligation.t array; remaining : int}
-type fixpoint_kind = IsFixpoint of lident option list | IsCoFixpoint
-
-(* Information about a single [Program {Definition,Lemma,..}] declaration *)
-module ProgramDecl : sig
-  type t = private
-    { prg_name : Id.t
-    ; prg_body : constr
-    ; prg_type : constr
-    ; prg_ctx : UState.t
-    ; prg_univdecl : UState.universe_decl
-    ; prg_obligations : obligations
-    ; prg_deps : Id.t list
-    ; prg_fixkind : fixpoint_kind option
-    ; prg_implicits : Impargs.manual_implicits
-    ; prg_notations : Vernacexpr.decl_notation list
-    ; prg_poly : bool
-    ; prg_scope : locality
-    ; prg_kind : Decls.definition_object_kind
-    ; prg_reduce : constr -> constr
-    ; prg_hook : Hook.t option
-    ; prg_opaque : bool }
-
-  val make :
-       ?opaque:bool
-    -> ?hook:Hook.t
-    -> Names.Id.t
-    -> udecl:UState.universe_decl
-    -> uctx:UState.t
-    -> impargs:Impargs.manual_implicits
-    -> poly:bool
-    -> scope:locality
-    -> kind:Decls.definition_object_kind
-    -> Constr.constr option
-    -> Constr.types
-    -> Names.Id.t list
-    -> fixpoint_kind option
-    -> Vernacexpr.decl_notation list
-    -> RetrieveObl.obligation_info
-    -> (Constr.constr -> Constr.constr)
-    -> t
-
-  val set_uctx : uctx:UState.t -> t -> t
-end
-
-(** [declare_obligation prg obl ~uctx ~types ~body] Save an obligation
-   [obl] for program definition [prg] *)
-val declare_obligation :
-     ProgramDecl.t
-  -> Obligation.t
+(** Start a [Program Definition c] proof. [uctx] [udecl] [impargs]
+   [kind] [scope] [poly] etc... come from the interpretation of the
+   vernacular; `obligation_info` was generated by [RetrieveObl] It
+   will return whether all the obligations were solved; if so, it will
+   also register [c] with the kernel. *)
+val add_definition :
+     cinfo:Constr.types CInfo.t
+  -> info:Info.t
+  -> ?term:Constr.t
   -> uctx:UState.t
-  -> types:Constr.types option
-  -> body:Constr.types
-  -> bool * Obligation.t
-
-module State : sig
-
-  val num_pending : unit -> int
-  val first_pending : unit -> ProgramDecl.t option
-
-  (** Returns [Error duplicate_list] if not a single program is open *)
-  val get_unique_open_prog :
-    Id.t option -> (ProgramDecl.t, Id.t list) result
-
-  (** Add a new obligation *)
-  val add : Id.t -> ProgramDecl.t -> unit
-
-  val fold : f:(Id.t -> ProgramDecl.t -> 'a -> 'a) -> init:'a -> 'a
-
-  val all : unit -> ProgramDecl.t list
-
-  val find : Id.t -> ProgramDecl.t option
-
-  (* Internal *)
-  type t
-  val prg_tag : t Summary.Dyn.tag
-end
-
-val declare_definition : ProgramDecl.t -> Names.GlobRef.t
-
-(** Resolution status of a program *)
-type progress =
-  | Remain of int  (** n obligations remaining *)
-  | Dependent  (** Dependent on other definitions *)
-  | Defined of GlobRef.t  (** Defined as id *)
-
-type obligation_resolver =
-     Id.t option
-  -> Int.Set.t
-  -> unit Proofview.tactic option
+  -> ?tactic:unit Proofview.tactic
+  -> ?reduce:(Constr.t -> Constr.t)
+  -> ?opaque:bool
+  -> RetrieveObl.obligation_info
   -> progress
 
-type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
+(* XXX: unify with MutualEntry *)
 
-(** [update_obls prg obls n progress] What does this do? *)
-val update_obls :
-  ProgramDecl.t -> Obligation.t array -> int -> progress
+(** Start a [Program Fixpoint] declaration, similar to the above,
+   except it takes a list now. *)
+val add_mutual_definitions :
+     (Constr.t CInfo.t * Constr.t * RetrieveObl.obligation_info) list
+  -> info:Info.t
+  -> uctx:UState.t
+  -> ?tactic:unit Proofview.tactic
+  -> ?reduce:(Constr.t -> Constr.t)
+  -> ?opaque:bool
+  -> ntns:Vernacexpr.decl_notation list
+  -> fixpoint_kind
+  -> unit
 
-(** Check obligations are properly solved before closing the
-   [what_for] section / module *)
-val check_solved_obligations : what_for:Pp.t -> unit
+(** Implementation of the [Obligation] command *)
+val obligation :
+     int * Names.Id.t option * Constrexpr.constr_expr option
+  -> Genarg.glob_generic_argument option
+  -> Proof.t
 
-(** { 2 Util }  *)
+(** Implementation of the [Next Obligation] command *)
+val next_obligation :
+  Names.Id.t option -> Genarg.glob_generic_argument option -> Proof.t
 
-val obl_substitution :
-     bool
-  -> Obligation.t array
-  -> Int.Set.t
-  -> (Id.t * (Constr.types * Constr.types)) list
+(** Implementation of the [Solve Obligation] command *)
+val solve_obligations :
+  Names.Id.t option -> unit Proofview.tactic option -> progress
 
-val dependencies : Obligation.t array -> int -> Int.Set.t
+val solve_all_obligations : unit Proofview.tactic option -> unit
+
+(** Number of remaining obligations to be solved for this program *)
+val try_solve_obligation :
+  int -> Names.Id.t option -> unit Proofview.tactic option -> unit
+
+val try_solve_obligations :
+  Names.Id.t option -> unit Proofview.tactic option -> unit
+
+val show_obligations : ?msg:bool -> Names.Id.t option -> unit
+val show_term : Names.Id.t option -> Pp.t
+val admit_obligations : Names.Id.t option -> unit
+
+val check_program_libraries : unit -> unit
 
 end
 
-(** Creating high-level proofs with an associated constant *)
-module Proof_ending : sig
+(** {6 For internal support, do not use}  *)
 
-  type t =
-    | Regular
-    | End_obligation of Obls.obligation_qed_info
-    | End_derive of { f : Id.t; name : Id.t }
-    | End_equations of
-        { hook : Constant.t list -> Evd.evar_map -> unit
-        ; i : Id.t
-        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
-        ; sigma : Evd.evar_map
-        }
+module Internal : sig
+
+  type constant_obj
+
+  val objConstant : constant_obj Libobject.Dyn.tag
+  val objVariable : unit Libobject.Dyn.tag
 
 end
-
-module Info : sig
-  type t
-  val make
-    :  ?hook: Hook.t
-    (** Callback to be executed at the end of the proof *)
-    -> ?proof_ending : Proof_ending.t
-    (** Info for special constants *)
-    -> ?scope : locality
-    (** locality  *)
-    -> ?kind:Decls.logical_kind
-    (** Theorem, etc... *)
-    -> ?compute_guard:lemma_possible_guards
-    -> ?thms:Recthm.t list
-    (** Both of those are internal, used by the upper layers but will
-       become handled natively here in the future *)
-    -> unit
-    -> t
-
-  (* Internal; used to initialize non-mutual proofs *)
-  val add_first_thm :
-    info:t
-    -> name:Id.t
-    -> typ:EConstr.t
-    -> impargs:Impargs.manual_implicits
-    -> t
-end
-
-val save_lemma_proved
-  : proof:Proof.t
-  -> info:Info.t
-  -> opaque:opacity_flag
-  -> idopt:Names.lident option
-  -> unit
-
-val save_lemma_admitted :
-     proof:Proof.t
-  -> info:Info.t
-  -> unit
-
-(** Special cases for delayed proofs, in this case we must provide the
-   proof information so the proof won't be forced. *)
-val save_lemma_admitted_delayed :
-     proof:proof_object
-  -> info:Info.t
-  -> unit
-
-val save_lemma_proved_delayed
-  : proof:proof_object
-  -> info:Info.t
-  -> idopt:Names.lident option
-  -> unit

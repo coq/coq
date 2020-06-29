@@ -808,7 +808,7 @@ let perform_eval ~pstate e =
       Goal_select.SelectAll, Proof.start ~name ~poly sigma []
     | Some pstate ->
       Goal_select.get_default_goal_selector (),
-      Declare.Proof.get_proof pstate
+      Declare.Proof.get pstate
   in
   let v = match selector with
   | Goal_select.SelectNth i -> Proofview.tclFOCUS i i v
@@ -912,15 +912,15 @@ let print_ltac qid =
 (** Calling tactics *)
 
 let solve ~pstate default tac =
-  let pstate, status = Declare.Proof.map_fold_proof_endline begin fun etac p ->
+  let pstate, status = Declare.Proof.map_fold_endline pstate ~f:(fun etac p ->
     let with_end_tac = if default then Some etac else None in
     let g = Goal_select.get_default_goal_selector () in
     let (p, status) = Proof.solve g None tac ?with_end_tac p in
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)
     let p = Proof.maximal_unfocus Vernacentries.command_focus p in
-    p, status
-  end pstate in
+    p, status)
+  in
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pstate
 

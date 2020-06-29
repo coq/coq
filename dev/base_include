@@ -111,10 +111,8 @@ open Search
 open Evar_refiner
 open Goal
 open Logic
-open Pfedit
 open Proof
 open Proof_using
-open Proof_global
 open Redexpr
 open Refiner
 open Tacmach

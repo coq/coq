@@ -20,11 +20,9 @@ ComHints
 Canonical
 RecLemmas
 Library
-Lemmas
 ComCoercion
 Auto_ind_decl
 Indschemes
-Obligations
 ComDefinition
 Classes
 ComPrimitive
@@ -45,6 +43,3 @@ ComArguments
 Vernacentries
 Vernacstate
 Vernacinterp
-Proof_global
-Pfedit
-DeclareDef

@@ -657,5 +657,3 @@ let make_cases ind =
        let consref = GlobRef.ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
        (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
     mip.mind_nf_lc []
-
-let declare_mutual_inductive_with_eliminations = DeclareInd.declare_mutual_inductive_with_eliminations

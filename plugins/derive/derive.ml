@@ -15,7 +15,7 @@ open Context.Named.Declaration
     (which can contain references to [f]) in the context extended by
     [f:=?x]. When the proof ends, [f] is defined as the value of [?x]
     and [lemma] as the proof. *)
-let start_deriving f suchthat name : Lemmas.t =
+let start_deriving f suchthat name : Declare.Proof.t =
 
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -40,8 +40,7 @@ let start_deriving f suchthat name : Lemmas.t =
                 TNil sigma))))))
   in
 
-  let info = Lemmas.Info.make ~proof_ending:(Declare.Proof_ending.(End_derive {f; name})) ~kind () in
-  let lemma = Lemmas.start_dependent_lemma ~name ~poly ~info goals in
-  Lemmas.pf_map (Declare.Proof.map_proof begin fun p ->
-    Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p
-  end) lemma
+  let info = Declare.Info.make ~poly ~kind () in
+  let lemma = Declare.Proof.start_derive ~name ~f ~info goals in
+  Declare.Proof.map lemma ~f:(fun p ->
+      Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p)

@@ -260,8 +260,11 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
     RetrieveObl.retrieve_obligations env recname sigma 0 def typ
   in
   let uctx = Evd.evar_universe_context sigma in
-  ignore(Obligations.add_definition ~name:recname ~term:evars_def ~udecl
-           ~poly evars_typ ~uctx evars ~hook)
+  let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ () in
+  let info = Declare.Info.make ~udecl ~poly ~hook () in
+  let _ : Declare.Obls.progress =
+    Declare.Obls.add_definition ~cinfo ~info ~term:evars_def ~uctx evars in
+  ()
 
 let out_def = function
   | Some def -> def
@@ -290,7 +293,8 @@ let do_program_recursive ~scope ~poly fixkind fixl =
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evm
         (List.length rec_sign) def typ in
-    ({ Declare.Recthm.name; typ; impargs; args = [] }, def, evars)
+    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
+    (cinfo, def, evars)
   in
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let fiximps = List.map pi2 info in
@@ -314,11 +318,12 @@ let do_program_recursive ~scope ~poly fixkind fixl =
   end in
   let uctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
-  | Declare.Obls.IsFixpoint _ -> Decls.Fixpoint
-  | Declare.Obls.IsCoFixpoint -> Decls.CoFixpoint
+  | Declare.Obls.IsFixpoint _ -> Decls.(IsDefinition Fixpoint)
+  | Declare.Obls.IsCoFixpoint -> Decls.(IsDefinition CoFixpoint)
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
-  Obligations.add_mutual_definitions defs ~poly ~scope ~kind ~udecl ~uctx ntns fixkind
+  let info = Declare.Info.make ~poly ~scope ~kind ~udecl () in
+  Declare.Obls.add_mutual_definitions defs ~info ~uctx ~ntns fixkind
 
 let do_fixpoint ~scope ~poly l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in

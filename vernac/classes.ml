@@ -311,12 +311,13 @@ let instance_hook info global ?hook cst =
   declare_instance env sigma (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant info global impargs ?hook name udecl poly sigma term termtype =
+let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
-  let scope = Declare.Global Declare.ImportDefaultBehavior in
-  let kn = Declare.declare_definition ~name ~kind ~scope ~impargs
-      ~opaque:false ~poly sigma ~udecl ~types:(Some termtype) ~body:term in
-  instance_hook info global ?hook kn
+  let scope = Locality.Global Locality.ImportDefaultBehavior in
+  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:(Some termtype) () in
+  let info = Declare.Info.make ~kind ~scope ~poly ~udecl () in
+  let kn = Declare.declare_definition ~cinfo ~info ~opaque:false ~body:term sigma in
+  instance_hook iinfo global ?hook kn
 
 let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst name =
   let subst = List.fold_left2
@@ -344,9 +345,12 @@ let declare_instance_program env sigma ~global ~poly name pri impargs udecl term
   let obls, _, term, typ = RetrieveObl.retrieve_obligations env name sigma 0 term termtype in
   let hook = Declare.Hook.make hook in
   let uctx = Evd.evar_universe_context sigma in
-  let scope, kind = Declare.Global Declare.ImportDefaultBehavior, Decls.Instance in
+  let scope, kind = Locality.Global Locality.ImportDefaultBehavior,
+                    Decls.IsDefinition Decls.Instance in
+  let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
+  let info = Declare.Info.make  ~udecl ~scope ~poly ~kind ~hook () in
   let _ : Declare.Obls.progress =
-    Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook ~impargs ~uctx typ obls
+    Declare.Obls.add_definition ~cinfo ~info ~term ~uctx obls
   in ()
 
 let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl ids term termtype =
@@ -358,11 +362,12 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decls.(IsDefinition Instance) in
   let hook = Declare.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global ?hook dref)) in
-  let info = Lemmas.Info.make ~hook ~kind () in
+  let info = Declare.Info.make ~hook ~kind ~udecl ~poly () in
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)
   let termtype = Evarutil.nf_evar sigma termtype in
-  let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info ~impargs sigma termtype in
+  let cinfo = Declare.CInfo.make ~name:id ~impargs ~typ:termtype () in
+  let lemma = Declare.Proof.start ~cinfo ~info sigma in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
     match term with
@@ -374,15 +379,15 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
           Tactics.New.reduce_after_refine;
         ]
       in
-      let lemma, _ = Lemmas.by init_refine lemma in
+      let lemma, _ = Declare.Proof.by init_refine lemma in
       lemma
     | None ->
-      let lemma, _ = Lemmas.by (Tactics.auto_intros_tac ids) lemma in
+      let lemma, _ = Declare.Proof.by (Tactics.auto_intros_tac ids) lemma in
       lemma
   in
   match tac with
   | Some tac ->
-    let lemma, _ = Lemmas.by tac lemma in
+    let lemma, _ = Declare.Proof.by tac lemma in
     lemma
   | None ->
     lemma

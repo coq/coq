@@ -16,4 +16,4 @@ val start_deriving
   :  Names.Id.t
   -> Constrexpr.constr_expr
   -> Names.Id.t
-  -> Lemmas.t
+  -> Declare.Proof.t

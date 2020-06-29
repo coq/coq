@@ -41,14 +41,6 @@ val do_mutual_inductive
 
 val make_cases : Names.inductive -> string list list
 
-val declare_mutual_inductive_with_eliminations
-  : ?primitive_expected:bool
-  -> Entries.mutual_inductive_entry
-  -> UnivNames.universe_binders
-  -> DeclareInd.one_inductive_impls list
-  -> Names.MutInd.t
-  [@@ocaml.deprecated "Please use DeclareInd.declare_mutual_inductive_with_eliminations"]
-
 val interp_mutual_inductive_constr
   : sigma:Evd.evar_map
   -> template:bool option

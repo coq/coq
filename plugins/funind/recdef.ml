@@ -58,7 +58,10 @@ let declare_fun name kind ?univs value =
     (Declare.declare_constant ~name ~kind (Declare.DefinitionEntry ce))
 
 let defined lemma =
-  Lemmas.save_lemma_proved ~lemma ~opaque:Declare.Transparent ~idopt:None
+  let (_ : _ list) =
+    Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent ~idopt:None
+  in
+  ()
 
 let def_of_const t =
   match Constr.kind t with
@@ -1343,7 +1346,7 @@ let whole_start concl_tac nb_args is_mes func input_type relation rec_arg_num :
     g
 
 let get_current_subgoals_types pstate =
-  let p = Declare.Proof.get_proof pstate in
+  let p = Declare.Proof.get pstate in
   let Proof.{goals = sgs; sigma; _} = Proof.data p in
   (sigma, List.map (Goal.V82.abstract_type sigma) sgs)
 
@@ -1405,7 +1408,7 @@ let clear_goals sigma =
   List.map clear_goal
 
 let build_new_goal_type lemma =
-  let sigma, sub_gls_types = Lemmas.pf_fold get_current_subgoals_types lemma in
+  let sigma, sub_gls_types = get_current_subgoals_types lemma in
   (* Pp.msgnl (str "sub_gls_types1 := " ++ Util.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
   let sub_gls_types = clear_goals sigma sub_gls_types in
   (* Pp.msgnl (str "sub_gls_types2 := " ++ Pp.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
@@ -1414,16 +1417,17 @@ let build_new_goal_type lemma =
 
 let is_opaque_constant c =
   let cb = Global.lookup_constant c in
+  let open Vernacexpr in
   match cb.Declarations.const_body with
-  | Declarations.OpaqueDef _ -> Declare.Opaque
-  | Declarations.Undef _ -> Declare.Opaque
-  | Declarations.Def _ -> Declare.Transparent
-  | Declarations.Primitive _ -> Declare.Opaque
+  | Declarations.OpaqueDef _ -> Opaque
+  | Declarations.Undef _ -> Opaque
+  | Declarations.Def _ -> Transparent
+  | Declarations.Primitive _ -> Opaque
 
 let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     (gls_type, decompose_and_tac, nb_goal) =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
-  let current_proof_name = Lemmas.pf_fold Declare.Proof.get_proof_name lemma in
+  let current_proof_name = Declare.Proof.get_name lemma in
   let name =
     match goal_name with
     | Some s -> s
@@ -1488,18 +1492,20 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
                      [Hints.Hint_db.empty TransparentState.empty false] ]))
     in
     let lemma = build_proof env (Evd.from_env env) start_tac end_tac in
-    Lemmas.save_lemma_proved ~lemma ~opaque:opacity ~idopt:None
+    let (_ : _ list) =
+      Declare.Proof.save ~proof:lemma ~opaque:opacity ~idopt:None
+    in
+    ()
   in
-  let info = Lemmas.Info.make ~hook:(Declare.Hook.make hook) () in
-  let lemma =
-    Lemmas.start_lemma ~name:na ~poly:false (* FIXME *) ~info sigma gls_type
-  in
+  let info = Declare.Info.make ~hook:(Declare.Hook.make hook) () in
+  let cinfo = Declare.CInfo.make ~name:na ~typ:gls_type () in
+  let lemma = Declare.Proof.start ~cinfo ~info sigma in
   let lemma =
     if Indfun_common.is_strict_tcc () then
-      fst @@ Lemmas.by (Proofview.V82.tactic tclIDTAC) lemma
+      fst @@ Declare.Proof.by (Proofview.V82.tactic tclIDTAC) lemma
     else
       fst
-      @@ Lemmas.by
+      @@ Declare.Proof.by
            (Proofview.V82.tactic (fun g ->
                 tclTHEN decompose_and_tac
                   (tclORELSE
@@ -1521,27 +1527,28 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
                   g))
            lemma
   in
-  if Lemmas.(pf_fold Declare.Proof.get_open_goals) lemma = 0 then (
-    defined lemma; None )
+  if Declare.Proof.get_open_goals lemma = 0 then (defined lemma; None)
   else Some lemma
 
 let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
     fonctional_ref input_type relation rec_arg_num thm_name using_lemmas nb_args
     ctx hook =
   let start_proof env ctx tac_start tac_end =
-    let info = Lemmas.Info.make ~hook () in
-    let lemma =
-      Lemmas.start_lemma ~name:thm_name ~poly:false (*FIXME*) ~info ctx
-        (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref))
+    let cinfo =
+      Declare.CInfo.make ~name:thm_name
+        ~typ:(EConstr.of_constr (compute_terminate_type nb_args fonctional_ref))
+        ()
     in
+    let info = Declare.Info.make ~hook () in
+    let lemma = Declare.Proof.start ~cinfo ~info ctx in
     let lemma =
       fst
-      @@ Lemmas.by
+      @@ Declare.Proof.by
            (New.observe_tac (fun _ _ -> str "starting_tac") tac_start)
            lemma
     in
     fst
-    @@ Lemmas.by
+    @@ Declare.Proof.by
          (Proofview.V82.tactic
             (observe_tac
                (fun _ _ -> str "whole_start")
@@ -1602,13 +1609,16 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   let evd = Evd.from_ctx uctx in
   let f_constr = constr_of_monomorphic_global f_ref in
   let equation_lemma_type = subst1 f_constr equation_lemma_type in
-  let lemma =
-    Lemmas.start_lemma ~name:eq_name ~poly:false evd
-      (EConstr.of_constr equation_lemma_type)
+  let info = Declare.Info.make () in
+  let cinfo =
+    Declare.CInfo.make ~name:eq_name
+      ~typ:(EConstr.of_constr equation_lemma_type)
+      ()
   in
+  let lemma = Declare.Proof.start ~cinfo evd ~info in
   let lemma =
     fst
-    @@ Lemmas.by
+    @@ Declare.Proof.by
          (Proofview.V82.tactic
             (start_equation f_ref terminate_ref (fun x ->
                  prove_eq
@@ -1642,7 +1652,7 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   in
   let _ =
     Flags.silently
-      (fun () -> Lemmas.save_lemma_proved ~lemma ~opaque:opacity ~idopt:None)
+      (fun () -> Declare.Proof.save ~proof:lemma ~opaque:opacity ~idopt:None)
       ()
   in
   ()
@@ -1651,7 +1661,7 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
 
 let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
     type_of_f r rec_arg_num eq generate_induction_principle using_lemmas :
-    Lemmas.t option =
+    Declare.Proof.t option =
   let open Term in
   let open Constr in
   let open CVars in

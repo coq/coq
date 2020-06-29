@@ -17,7 +17,7 @@ open Constrexpr
 val do_assumptions
   :  program_mode:bool
   -> poly:bool
-  -> scope:Declare.locality
+  -> scope:Locality.locality
   -> kind:Decls.assumption_object_kind
   -> Declaremods.inline
   -> (ident_decl list * constr_expr) with_coercion list
@@ -35,7 +35,7 @@ val declare_variable
 val declare_axiom
   : coercion_flag
   -> poly:bool
-  -> local:Declare.import_status
+  -> local:Locality.import_status
   -> kind:Decls.assumption_object_kind
   -> Constr.types
   -> Entries.universes_entry * UnivNames.universe_binders

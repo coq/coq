@@ -61,8 +61,8 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl {CAst.v=name
   let sigma = Evd.from_env env in
   let () = if do_instance then Classes.declare_instance env sigma None false gr in
   let local = match local with
-    | Declare.ImportNeedQualified -> true
-    | Declare.ImportDefaultBehavior -> false
+    | Locality.ImportNeedQualified -> true
+    | Locality.ImportDefaultBehavior -> false
   in
   let () = if is_coe then ComCoercion.try_add_new_coercion gr ~local ~poly in
   let inst = instance_of_univ_entry univs in
@@ -86,11 +86,11 @@ let context_set_of_entry = function
   | Monomorphic_entry uctx -> uctx
 
 let declare_assumptions ~poly ~scope ~kind univs nl l =
-  let () = let open Declare in match scope with
-    | Discharge ->
+  let () = match scope with
+    | Locality.Discharge ->
       (* declare universes separately for variables *)
       DeclareUctx.declare_universe_context ~poly (context_set_of_entry (fst univs))
-    | Global _ -> ()
+    | Locality.Global _ -> ()
   in
   let _, _ = List.fold_left (fun (subst,univs) ((is_coe,idl),typ,imps) ->
       (* NB: here univs are ignored when scope=Discharge *)
@@ -98,10 +98,10 @@ let declare_assumptions ~poly ~scope ~kind univs nl l =
       let univs,subst' =
         List.fold_left_map (fun univs id ->
             let refu = match scope with
-              | Declare.Discharge ->
+              | Locality.Discharge ->
                 declare_variable is_coe ~kind typ imps Glob_term.Explicit id;
                 GlobRef.VarRef id.CAst.v, Univ.Instance.empty
-              | Declare.Global local ->
+              | Locality.Global local ->
                 declare_axiom is_coe ~local ~poly ~kind typ univs imps nl id
             in
             next_univs univs, (id.CAst.v, Constr.mkRef refu))
@@ -128,9 +128,8 @@ let process_assumptions_udecls ~scope l =
       udecl, id
     | (_, ([], _))::_ | [] -> assert false
   in
-  let open Declare in
   let () = match scope, udecl with
-    | Discharge, Some _ ->
+    | Locality.Discharge, Some _ ->
       let loc = first_id.CAst.loc in
       let msg = Pp.str "Section variables cannot be polymorphic." in
       user_err ?loc  msg
@@ -174,7 +173,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
       uvars, (coe,t,imps))
       Univ.LSet.empty l
   in
-  (* XXX: Using `DeclareDef.prepare_parameter` here directly is not
+  (* XXX: Using `Declare.prepare_parameter` here directly is not
      possible as we indeed declare several parameters; however,
      restrict_universe_context should be called in a centralized place
      IMO, thus I think we should adapt `prepare_parameter` to handle
@@ -202,11 +201,11 @@ let context_insection sigma ~poly ctx =
           else Monomorphic_entry Univ.ContextSet.empty
         in
         let entry = Declare.definition_entry ~univs ~types:t b in
-        (* XXX Fixme: Use DeclareDef.prepare_definition *)
+        (* XXX Fixme: Use Declare.prepare_definition *)
         let uctx = Evd.evar_universe_context sigma in
         let kind = Decls.(IsDefinition Definition) in
         let _ : GlobRef.t =
-          Declare.declare_entry ~name ~scope:Declare.Discharge
+          Declare.declare_entry ~name ~scope:Locality.Discharge
             ~kind ~impargs:[] ~uctx entry
         in
         ()
@@ -237,8 +236,8 @@ let context_nosection sigma ~poly ctx =
         let entry = Declare.definition_entry ~univs ~types:t b in
         Declare.DefinitionEntry entry
     in
-    let local = if Lib.is_modtype () then Declare.ImportDefaultBehavior
-      else Declare.ImportNeedQualified
+    let local = if Lib.is_modtype () then Locality.ImportDefaultBehavior
+      else Locality.ImportNeedQualified
     in
     let cst = Declare.declare_constant ~name ~kind ~local decl in
     let () = Declare.assumption_message name in

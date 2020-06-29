@@ -116,9 +116,10 @@ let do_definition ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
     interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
   let kind = Decls.IsDefinition kind in
+  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
+  let info = Declare.Info.make ~scope ~kind ?hook ~udecl ~poly () in
   let _ : Names.GlobRef.t =
-    Declare.declare_definition ~name ~scope ~kind ?hook ~impargs
-      ~opaque:false ~poly evd ~udecl ~types ~body
+    Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
   in ()
 
 let do_definition_program ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
@@ -126,8 +127,9 @@ let do_definition_program ?hook ~name ~scope ~poly ~kind udecl bl red_option c c
   let (body, types), evd, udecl, impargs =
     interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
-  let term, ty, uctx, obls = Declare.prepare_obligation ~name ~body ~types evd in
+  let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let _ : Declare.Obls.progress =
-    Obligations.add_definition
-      ~name ~term ty ~uctx ~udecl ~impargs ~scope ~poly ~kind ?hook obls
+    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
+    let info = Declare.Info.make ~udecl ~scope ~poly ~kind ?hook () in
+    Declare.Obls.add_definition ~cinfo ~info ~term ~uctx obls
   in ()

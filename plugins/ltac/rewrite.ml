@@ -1900,10 +1900,12 @@ let declare_projection name instance_id r =
     in it_mkProd_or_LetIn ccl ctx
   in
   let types = Some (it_mkProd_or_LetIn typ ctx) in
-  let kind, opaque, scope = Decls.(IsDefinition Definition), false, Declare.Global Declare.ImportDefaultBehavior in
+  let kind, opaque, scope = Decls.(IsDefinition Definition), false, Locality.Global Locality.ImportDefaultBehavior in
   let impargs, udecl = [], UState.default_univ_decl in
+  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
+  let info = Declare.Info.make ~scope ~kind ~udecl ~poly () in
   let _r : GlobRef.t =
-    Declare.declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ~poly ~types ~body sigma
+    Declare.declare_definition ~cinfo ~info ~opaque ~body sigma
   in ()
 
 let build_morphism_signature env sigma m =
@@ -1967,7 +1969,7 @@ let add_morphism_as_parameter atts m n : unit =
   let env = Global.env () in
   let evd = Evd.from_env env in
   let poly = atts.polymorphic in
-  let kind, opaque, scope = Decls.(IsAssumption Logical), false, Declare.Global Declare.ImportDefaultBehavior in
+  let kind, opaque, scope = Decls.(IsAssumption Logical), false, Locality.Global Locality.ImportDefaultBehavior in
   let impargs, udecl = [], UState.default_univ_decl in
   let evd, types = build_morphism_signature env evd m in
   let evd, pe = Declare.prepare_parameter ~poly ~udecl ~types evd in
@@ -1978,7 +1980,7 @@ let add_morphism_as_parameter atts m n : unit =
        (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global cst);
   declare_projection n instance_id cst
 
-let add_morphism_interactive atts m n : Lemmas.t =
+let add_morphism_interactive atts m n : Declare.Proof.t =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
   let env = Global.env () in
@@ -1996,11 +1998,12 @@ let add_morphism_interactive atts m n : Lemmas.t =
     | _ -> assert false
   in
   let hook = Declare.Hook.make hook in
-  let info = Lemmas.Info.make ~hook ~kind () in
   Flags.silently
     (fun () ->
-       let lemma = Lemmas.start_lemma ~name:instance_id ~poly ~info evd morph in
-       fst (Lemmas.by (Tacinterp.interp tac) lemma)) ()
+       let cinfo = Declare.CInfo.make ~name:instance_id ~typ:morph () in
+       let info = Declare.Info.make ~poly ~hook ~kind () in
+       let lemma = Declare.Proof.start ~cinfo ~info evd in
+       fst (Declare.Proof.by (Tacinterp.interp tac) lemma)) ()
 
 let add_morphism atts binders m s n =
   init_setoid ();
