@@ -1171,7 +1171,6 @@ let update_obls ~pm prg obls rem =
     match prg'.prg_deps with
     | [] ->
       let pm, kn = declare_definition ~pm prg' in
-      let pm = progmap_remove pm prg' in
       pm, Defined kn
     | l ->
       let progs =
