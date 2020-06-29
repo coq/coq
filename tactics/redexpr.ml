@@ -192,8 +192,18 @@ let out_arg = function
   | Locus.ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable.")
   | Locus.ArgArg x -> x
 
+let out_occurrences occs =
+  let occs = Locusops.occurrences_map (List.map out_arg) occs in
+  match occs with
+  | Locus.OnlyOccurrences (n::_ as nl) when n < 0 ->
+     Locus.AllOccurrencesBut (List.map abs nl)
+  | Locus.OnlyOccurrences nl when List.exists (fun n -> n < 0) nl ->
+     CErrors.user_err Pp.(str "Illegal negative occurrence number.")
+  | Locus.OnlyOccurrences _ | Locus.AllOccurrencesBut _ | Locus.NoOccurrences
+  | Locus.AllOccurrences | Locus.AtLeastOneOccurrence -> occs
+
 let out_with_occurrences (occs,c) =
-  (Locusops.occurrences_map (List.map out_arg) occs, c)
+  (out_occurrences occs, c)
 
 let e_red f env evm c = evm, f env evm c
 
@@ -203,7 +213,7 @@ let head_style = false (* Turn to true to have a semantics where simpl
 
 let contextualize f g = function
   | Some (occs,c) ->
-      let l = Locusops.occurrences_map (List.map out_arg) occs in
+      let l = out_occurrences occs in
       let b,c,h = match c with
         | Inl r -> true,PRef (global_of_evaluable_reference r),f
         | Inr c -> false,c,f in
