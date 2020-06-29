@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-async-proofs" "off") *)
 Require Import Program.Tactics.
 Module Backtracking.
   Class A := { foo : nat }.
