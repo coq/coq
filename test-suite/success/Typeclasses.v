@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-async-proofs" "off") *)
 Module applydestruct.
   Class Foo (A : Type) :=
     { bar : nat -> A;
