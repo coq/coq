@@ -35,9 +35,7 @@ let usage () =
   eprintf "  -sort : output the given file name ordered by dependencies\n";
   eprintf "  -noglob | -no-glob : \n";
   eprintf "  -f file : read -I, -Q, -R and filenames from _CoqProject-formatted FILE.";
-  eprintf "  -I dir -as logname : add (non recursively) dir to coq load path under logical name logname\n";
   eprintf "  -I dir : add (non recursively) dir to ocaml path\n";
-  eprintf "  -R dir -as logname : add and import dir recursively to coq load path under logical name logname\n"; (* deprecate? *)
   eprintf "  -R dir logname : add and import dir recursively to coq load path under logical name logname\n";
   eprintf "  -Q dir logname : add (recursively) and open (non recursively) dir to coq load path under logical name logname\n";
   eprintf "  -vos : also output dependencies about .vos files\n";
