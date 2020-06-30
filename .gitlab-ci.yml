@@ -615,10 +615,11 @@ test-suite:4.11+trunk+dune:
   variables:
     OCAMLVER: 4.11.0+trunk
 
-test-suite:4.12+trunk+dune:
-  extends: .test-suite:ocaml+beta+dune-template
-  variables:
-    OCAMLVER: 4.12.0+trunk
+# Pending on https://github.com/ocaml/dune/pull/3585
+# test-suite:4.12+trunk+dune:
+#   extends: .test-suite:ocaml+beta+dune-template
+#   variables:
+#     OCAMLVER: 4.12.0+trunk
 
 test-suite:base+async:
   extends: .test-suite-template
