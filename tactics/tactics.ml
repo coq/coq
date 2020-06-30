@@ -436,7 +436,7 @@ let clear_hyps2 env sigma ids sign t cl =
   with Evarutil.ClearDependencyError (id,err,inglobal) ->
     error_replacing_dependency env sigma id err inglobal
 
-let internal_cut_gen ?(check=true) dir replace id t =
+let internal_cut ?(check=true) replace id t =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
@@ -457,22 +457,12 @@ let internal_cut_gen ?(check=true) dir replace id t =
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS sigma)
       (Refine.refine ~typecheck:false begin fun sigma ->
-        let (sigma,ev,ev') =
-          if dir then
-            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma nf_t in
-            let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true concl in
-            (sigma,ev,ev')
-          else
-            let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true concl in
-            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma nf_t in
-            (sigma,ev,ev') in
+        let (sigma, ev) = Evarutil.new_evar_from_context sign sigma nf_t in
+        let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true concl in
         let term = mkLetIn (make_annot (Name id) r, ev, t, EConstr.Vars.subst_var id ev') in
         (sigma, term)
       end)
   end
-
-let internal_cut ?(check=true) = internal_cut_gen ~check true
-let internal_cut_rev ?(check=true) = internal_cut_gen ~check false
 
 let assert_before_then_gen b naming t tac =
   let open Context.Rel.Declaration in
@@ -500,7 +490,7 @@ let assert_after_then_gen ?err b naming t tac =
   Proofview.Goal.enter begin fun gl ->
     let id = find_name b (LocalAssum (make_annot Anonymous Sorts.Relevant,t)) naming gl in
     Tacticals.New.tclTHENFIRST
-      (replace_error_option err (internal_cut_rev b id t))
+      (replace_error_option err (internal_cut b id t <*> Proofview.cycle 1))
       (tac id)
   end
 
