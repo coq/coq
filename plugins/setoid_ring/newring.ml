@@ -201,7 +201,7 @@ let exec_tactic env evd n f args =
   (* Evaluate the whole result *)
   let gl = dummy_goal env evd in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
-  let evd = Evd.minimize_universes (Refiner.project gls) in
+  let evd = Evd.minimize_universes gls.Evd.sigma in
   let nf c = constr_of evd c in
   Array.map nf !tactic_res, Evd.universe_context_set evd
 

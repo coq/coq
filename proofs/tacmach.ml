@@ -29,10 +29,10 @@ let re_sig it  gc = { it = it; sigma = gc; }
 
 type tactic = Proofview.V82.tac
 
-let sig_it   = Refiner.sig_it
-let project  = Refiner.project
-let pf_env   = Refiner.pf_env
-let pf_hyps  = Refiner.pf_hyps
+let sig_it x = x.it
+let project x = x.sigma
+let pf_env gls = Global.env_of_context (Goal.V82.hyps (project gls) (sig_it gls))
+let pf_hyps gls = EConstr.named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls))
 
 let test_conversion env sigma pb c1 c2 =
   Reductionops.check_conv ~pb env sigma c1 c2

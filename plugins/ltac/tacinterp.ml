@@ -22,7 +22,6 @@ open Util
 open Names
 open Nameops
 open Libnames
-open Refiner
 open Tacmach.New
 open Tactic_debug
 open Constrexpr
@@ -1103,8 +1102,8 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
   | TacShowHyps tac ->
          Proofview.V82.tactic begin
-           tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))
-         end [@ocaml.warning "-3"]
+           Tacticals.tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))
+         end
   | TacAbstract (t,ido) ->
       let call = LtacMLCall tac in
       let trace = push_trace(None,call) ist in
@@ -1442,6 +1441,7 @@ and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
     if the left-hand side fails. *)
 and interp_match_successes lz ist s =
    let general =
+     let open Tacticals in
      let break (e, info) = match e with
        | FailError (0, _) -> None
        | FailError (n, s) -> Some (FailError (pred n, s), info)

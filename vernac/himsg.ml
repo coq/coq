@@ -1398,7 +1398,7 @@ let rec vernac_interp_error_handler = function
     str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
     spc () ++ str "was not found" ++
     spc () ++ str "in the current" ++ spc () ++ str "environment."
-  | Refiner.FailError (i,s) ->
+  | Tacticals.FailError (i,s) ->
     let s = Lazy.force s in
     str "Tactic failure" ++
     (if Pp.ismt s then s else str ": " ++ s) ++

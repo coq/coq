@@ -748,7 +748,7 @@ let pf_abs_cterm gl n c0 = abs_cterm (pf_env gl) (project gl) n c0
 (* }}} *)
 
 let pf_merge_uc uc gl =
-  re_sig (sig_it gl) (Evd.merge_universe_context (Refiner.project gl) uc)
+  re_sig (sig_it gl) (Evd.merge_universe_context gl.Evd.sigma uc)
 let pf_merge_uc_of sigma gl =
   let ucst = Evd.evar_universe_context sigma in
   pf_merge_uc ucst gl
@@ -1029,7 +1029,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env (pf_env gl) (project gl) t));
     Proofview.(V82.of_tactic
       (Tacticals.New.tclTHENLIST [
-         Refiner.refiner ~check:false EConstr.Unsafe.(to_constr t);
+         Logic.refiner ~check:false EConstr.Unsafe.(to_constr t);
          (if first_goes_last then cycle 1 else tclUNIT ())
       ])) gl
   end

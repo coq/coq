@@ -16,7 +16,6 @@ open Constr
 open Context
 open Environ
 open Evd
-open Refiner
 open Constrextern
 open Ppconstr
 open Declarations
@@ -453,7 +452,7 @@ let pr_transparent_state ts =
  *)
 let pr_goal ?(diffs=false) ?og_s g_s =
   let g = sig_it g_s in
-  let sigma = project g_s in
+  let sigma = Tacmach.project g_s in
   let env = Goal.V82.env sigma g in
   let concl = Goal.V82.concl sigma g in
   let goal =

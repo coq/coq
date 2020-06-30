@@ -43,7 +43,7 @@ let finish_proof dynamic_infos g =
 
 let refine c =
   Proofview.V82.of_tactic
-    (Refiner.refiner ~check:true EConstr.Unsafe.(to_constr c))
+    (Logic.refiner ~check:true EConstr.Unsafe.(to_constr c))
 
 let thin l = Proofview.V82.of_tactic (Tactics.clear l)
 let eq_constr sigma u v = EConstr.eq_constr_nounivs sigma u v

@@ -30,7 +30,6 @@ open Genredexpr
 open Tacmach.New
 open Logic
 open Clenv
-open Refiner
 open Tacticals
 open Hipattern
 open Coqlib
@@ -355,7 +354,7 @@ let fresh_id_in_env avoid id env =
   next_ident_away_in_goal id avoid
 
 let fresh_id avoid id gl =
-  fresh_id_in_env avoid id (pf_env gl)
+  fresh_id_in_env avoid id (Tacmach.pf_env gl)
 
 let new_fresh_id avoid id gl =
   fresh_id_in_env avoid id (Proofview.Goal.env gl)
@@ -1007,7 +1006,7 @@ let find_intro_names ctxt gl =
       let name = fresh_id avoid (default_id env gl.sigma decl) gl in
       let newenv = push_rel decl env in
       (newenv, name :: idl, Id.Set.add name avoid))
-    ctxt (pf_env gl, [], Id.Set.empty) in
+    ctxt (Tacmach.pf_env gl, [], Id.Set.empty) in
   List.rev res
 
 let build_intro_tac id dest tac = match dest with
@@ -1383,7 +1382,7 @@ let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
   if not with_evars && occur_meta clenv.evd new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
-  let exact_tac = Refiner.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
+  let exact_tac = Logic.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN

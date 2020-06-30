@@ -206,7 +206,7 @@ module SearchProblem = struct
               (ngls, lgls, cost, pptac) :: aux tacl
           with e when CErrors.noncritical e ->
             let e = Exninfo.capture e in
-            Refiner.catch_failerror e; aux tacl
+            Tacticals.catch_failerror e; aux tacl
     in aux l
 
   (* Ordering of states is lexicographic on depth (greatest first) then
