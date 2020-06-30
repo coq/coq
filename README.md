@@ -59,11 +59,11 @@ environment for semi-interactive development of machine-checked proofs.
 [nixpkgs-badge]: https://repology.org/badge/version-for-repo/nix_unstable/coq.svg
 [nixpkgs-link]: https://nixos.org/nixos/packages.html#coq
 
-[dockerhub-badge]: https://img.shields.io/docker/automated/coqorg/coq.svg
-[dockerhub-link]: https://hub.docker.com/r/coqorg/coq "Automated build on Docker Hub"
+[dockerhub-badge]: https://img.shields.io/badge/images%20on-Docker%20Hub-blue.svg
+[dockerhub-link]: https://hub.docker.com/r/coqorg/coq#supported-tags "Supported tags on Docker Hub"
 
 [coqorg-badge]: https://images.microbadger.com/badges/version/coqorg/coq.svg
-[coqorg-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "Docker images of Coq"
+[coqorg-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "coqorg/coq:latest"
 
 Download the pre-built packages of the [latest release][] for Windows and macOS;
 read the [help page][opam-using] on how to install Coq with OPAM;
