@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download coq_performance_tests
 
-( cd "${CI_BUILD_DIR}/coq_performance_tests" && make coq perf && make validate && make install )
+( cd "${CI_BUILD_DIR}/coq_performance_tests" && make coq perf-Sanity && make validate && make install )
