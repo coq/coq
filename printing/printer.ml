@@ -173,6 +173,38 @@ let safe_gen f env sigma c =
 let safe_pr_lconstr_env = safe_gen pr_lconstr_env
 let safe_pr_constr_env = safe_gen pr_constr_env
 
+let u_ident = Id.of_string "u"
+
+let universe_binders_with_opt_names orig names =
+  let orig = Univ.AUContext.names orig in
+  let orig = Array.to_list orig in
+  let udecl = match names with
+  | None -> orig
+  | Some udecl ->
+    try
+      List.map2 (fun orig {CAst.v = na} ->
+          match na with
+          | Anonymous -> orig
+          | Name id -> Name id) orig udecl
+    with Invalid_argument _ ->
+      let len = List.length orig in
+      CErrors.user_err ~hdr:"universe_binders_with_opt_names"
+        Pp.(str "Universe instance should have length " ++ int len)
+  in
+  let fold_named i ubind = function
+    | Name id -> Id.Map.add id (Univ.Level.var i) ubind
+    | Anonymous -> ubind
+  in
+  let ubind = List.fold_left_i fold_named 0 UnivNames.empty_binders udecl in
+  let fold_anons i (u_ident, ubind) = function
+    | Name _ -> u_ident, ubind
+    | Anonymous ->
+      let id = Namegen.next_ident_away_from u_ident (fun id -> Id.Map.mem id ubind) in
+      (id, Id.Map.add id (Univ.Level.var i) ubind)
+  in
+  let (_, ubind) = List.fold_left_i fold_anons 0 (u_ident, ubind) udecl in
+  ubind
+
 let pr_universe_ctx_set sigma c =
   if !Detyping.print_universes && not (Univ.ContextSet.is_empty c) then
     fnl()++pr_in_comment (v 0 (Univ.pr_universe_context_set (Termops.pr_evd_level sigma) c))

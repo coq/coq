@@ -37,10 +37,10 @@ Arguments wrap {A}%type_scope {Wrap}
 bar@{u} = nat
      : Wrap@{u} Set
 (* u |= Set < u *)
-foo@{u UnivBinders.18 v} = 
-Type@{UnivBinders.18} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,UnivBinders.18+1,v+1)}
-(* u UnivBinders.18 v |=  *)
+foo@{u u0 v} = 
+Type@{u0} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1,u0+1,v+1)}
+(* u u0 v |=  *)
 Type@{i} -> Type@{j}
      : Type@{max(i+1,j+1)}
 (* {j i} |=  *)
@@ -76,10 +76,10 @@ foo@{E M N} =
 Type@{M} -> Type@{N} -> Type@{E}
      : Type@{max(E+1,M+1,N+1)}
 (* E M N |=  *)
-foo@{u UnivBinders.18 v} = 
-Type@{UnivBinders.18} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,UnivBinders.18+1,v+1)}
-(* u UnivBinders.18 v |=  *)
+foo@{u u0 v} = 
+Type@{u0} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1,u0+1,v+1)}
+(* u u0 v |=  *)
 Inductive Empty@{E} : Type@{E} :=  
 (* E |=  *)
 Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
@@ -142,16 +142,14 @@ Applied.infunct@{u v} =
 inmod@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* u v |=  *)
-axfoo@{i UnivBinders.58 UnivBinders.59} :
-Type@{UnivBinders.58} -> Type@{i}
-(* i UnivBinders.58 UnivBinders.59 |=  *)
+axfoo@{i u u0} : Type@{u} -> Type@{i}
+(* i u u0 |=  *)
 
 axfoo is universe polymorphic
 Arguments axfoo _%type_scope
 Expands to: Constant UnivBinders.axfoo
-axbar@{i UnivBinders.58 UnivBinders.59} :
-Type@{UnivBinders.59} -> Type@{i}
-(* i UnivBinders.58 UnivBinders.59 |=  *)
+axbar@{i u u0} : Type@{u0} -> Type@{i}
+(* i u u0 |=  *)
 
 axbar is universe polymorphic
 Arguments axbar _%type_scope
