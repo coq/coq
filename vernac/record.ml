@@ -343,6 +343,57 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
 
 (* TODO: refactor the declaration part here; this requires some
    surgery as Evarutil.finalize is called too early in the path *)
+let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramdecls
+    paramargs decl impls fid subst sp_projs nfi ti i indsp mib lifted_fields x rp =
+  let ccl = subst_projection fid subst ti in
+  let body, p_opt = match decl with
+    | LocalDef (_,ci,_) -> subst_projection fid subst ci, None
+    | LocalAssum ({binder_relevance=rci},_) ->
+      (* [ccl] is defined in context [params;x:rp] *)
+      (* [ccl'] is defined in context [params;x:rp;x:rp] *)
+      if primitive then
+        let p = Projection.Repr.make indsp
+            ~proj_npars:mib.mind_nparams ~proj_arg:i (Label.of_id fid) in
+        mkProj (Projection.make p true, mkRel 1), Some p
+      else
+        let ccl' = liftn 1 2 ccl in
+        let p = mkLambda (x, lift 1 rp, ccl') in
+        let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
+        let ci = Inductiveops.make_case_info env indsp rci LetStyle in
+        (* Record projections are always NoInvert because they're at
+           constant relevance *)
+        mkCase (ci, p, NoInvert, mkRel 1, [|branch|]), None
+  in
+  let proj = it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
+  let projtyp = it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
+  let entry = Declare.definition_entry ~univs ~types:projtyp proj in
+  let kind = Decls.IsDefinition kind in
+  let kn =
+    try Declare.declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry)
+    with Type_errors.TypeError (ctx,te) as exn when not primitive ->
+      let _, info = Exninfo.capture exn in
+      Exninfo.iraise (NotDefinable (BadTypedProj (fid,ctx,te)),info)
+  in
+  Declare.definition_message fid;
+  let term = match p_opt with
+    | Some p ->
+      let _ = DeclareInd.declare_primitive_projection p kn in
+      mkProj (Projection.make p false,mkRel 1)
+    | None ->
+      let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
+      match decl with
+      | LocalDef (_,ci,_) when primitive -> body
+      | _ -> applist (mkConstU (kn,uinstance),proj_args)
+  in
+  let refi = GlobRef.ConstRef kn in
+  Impargs.maybe_declare_manual_implicits false refi impls;
+  if flags.pf_subclass then begin
+    let cl = ComCoercion.class_of_global (GlobRef.IndRef indsp) in
+    ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~source:cl
+  end;
+  let i = if is_local_assum decl then i+1 else i in
+  (Some kn::sp_projs, i, Projection term::subst)
+
 let build_proj env mib indsp primitive x rp lifted_fields ~poly paramdecls paramargs ~uinstance ~kind ~univs
     (nfi,i,kinds,sp_projs,subst) flags decl impls =
   let fi = RelDecl.get_name decl in
@@ -352,55 +403,9 @@ let build_proj env mib indsp primitive x rp lifted_fields ~poly paramdecls param
     | Anonymous ->
       (None::sp_projs,i,NoProjection fi::subst)
     | Name fid ->
-      try
-        let ccl = subst_projection fid subst ti in
-        let body, p_opt = match decl with
-          | LocalDef (_,ci,_) -> subst_projection fid subst ci, None
-          | LocalAssum ({binder_relevance=rci},_) ->
-            (* [ccl] is defined in context [params;x:rp] *)
-            (* [ccl'] is defined in context [params;x:rp;x:rp] *)
-            if primitive then
-              let p = Projection.Repr.make indsp
-                  ~proj_npars:mib.mind_nparams ~proj_arg:i (Label.of_id fid) in
-              mkProj (Projection.make p true, mkRel 1), Some p
-            else
-              let ccl' = liftn 1 2 ccl in
-              let p = mkLambda (x, lift 1 rp, ccl') in
-              let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
-              let ci = Inductiveops.make_case_info env indsp rci LetStyle in
-              (* Record projections are always NoInvert because
-                        they're at constant relevance *)
-              mkCase (ci, p, NoInvert, mkRel 1, [|branch|]), None
-        in
-        let proj = it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
-        let projtyp = it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
-        let entry = Declare.definition_entry ~univs ~types:projtyp proj in
-        let kind = Decls.IsDefinition kind in
-        let kn =
-          try Declare.declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry)
-          with Type_errors.TypeError (ctx,te) as exn when not primitive ->
-            let _, info = Exninfo.capture exn in
-            Exninfo.iraise (NotDefinable (BadTypedProj (fid,ctx,te)),info)
-        in
-        Declare.definition_message fid;
-        let term = match p_opt with
-          | Some p ->
-            let _ = DeclareInd.declare_primitive_projection p kn in
-            mkProj (Projection.make p false,mkRel 1)
-          | None ->
-            let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
-            match decl with
-            | LocalDef (_,ci,_) when primitive -> body
-            | _ -> applist (mkConstU (kn,uinstance),proj_args)
-        in
-        let refi = GlobRef.ConstRef kn in
-        Impargs.maybe_declare_manual_implicits false refi impls;
-        if flags.pf_subclass then begin
-          let cl = ComCoercion.class_of_global (GlobRef.IndRef indsp) in
-          ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~source:cl
-        end;
-        let i = if is_local_assum decl then i+1 else i in
-        (Some kn::sp_projs, i, Projection term::subst)
+      try build_named_proj
+            ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramdecls paramargs decl impls fid
+            subst sp_projs nfi ti i indsp mib lifted_fields x rp
       with NotDefinable why as exn ->
         let _, info = Exninfo.capture exn in
         warning_or_error ~info flags.pf_subclass indsp why;
@@ -440,6 +445,38 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name
 
 open Typeclasses
 
+let check_template ~template ~poly ~univs ~params { Data.id; rdata = { DataR.min_univ; fields; _ }; _ } =
+  let template_candidate () =
+    (* we use some dummy values for the arities in the rel_context
+       as univs_of_constr doesn't care about localassums and
+       getting the real values is too annoying *)
+    let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
+    let param_levels =
+      List.fold_left (fun levels d -> match d with
+          | LocalAssum _ -> levels
+          | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+        Univ.LSet.empty params
+    in
+    let ctor_levels = List.fold_left
+        (fun univs d ->
+           let univs =
+             RelDecl.fold_constr (fun c univs -> add_levels c univs) d univs
+           in
+           univs)
+        param_levels fields
+    in
+    ComInductive.template_polymorphism_candidate ~ctor_levels univs params
+      (Some (Sorts.sort_of_univ min_univ))
+  in
+  match template with
+  | Some template, _ ->
+    (* templateness explicitly requested *)
+    if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
+    template
+  | None, template ->
+    (* auto detect template *)
+    ComInductive.should_auto_template id (template && template_candidate ())
+
 let load_structure i (_, structure) =
   Recordops.register_structure structure
 
@@ -466,7 +503,7 @@ let inStruc : Recordops.struc_typ -> Libobject.obj =
 let declare_structure_entry o =
   Lib.add_anonymous_leaf (inStruc o)
 
-let declare_structure ~cumulative finite ubinders ~univs paramimpls params template ?(kind=Decls.StructureComponent) ?name (record_data : Data.t list) =
+let declare_structure ~cumulative finite ~ubind ~univs paramimpls params template ?(kind=Decls.StructureComponent) ?name (record_data : Data.t list) =
   let nparams = List.length params in
   let poly, ctx =
     match univs with
@@ -496,39 +533,7 @@ let declare_structure ~cumulative finite ubinders ~univs paramimpls params templ
       mind_entry_lc = [type_constructor] }
   in
   let blocks = List.mapi mk_block record_data in
-  let check_template { Data.id; rdata = { DataR.min_univ; fields; _ }; _ } =
-      let template_candidate () =
-        (* we use some dummy values for the arities in the rel_context
-           as univs_of_constr doesn't care about localassums and
-           getting the real values is too annoying *)
-        let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
-        let param_levels =
-          List.fold_left (fun levels d -> match d with
-              | LocalAssum _ -> levels
-              | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-            Univ.LSet.empty params
-        in
-        let ctor_levels = List.fold_left
-            (fun univs d ->
-               let univs =
-                 RelDecl.fold_constr (fun c univs -> add_levels c univs) d univs
-               in
-               univs)
-            param_levels fields
-        in
-        ComInductive.template_polymorphism_candidate ~ctor_levels univs params
-          (Some (Sorts.sort_of_univ min_univ))
-      in
-      match template with
-      | Some template, _ ->
-        (* templateness explicitly requested *)
-        if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
-        template
-      | None, template ->
-        (* auto detect template *)
-        ComInductive.should_auto_template id (template && template_candidate ())
-  in
-  let template = List.for_all check_template record_data in
+  let template = List.for_all (check_template ~template ~univs ~poly ~params) record_data in
   let primitive =
     !primitive_flag &&
     List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) record_data
@@ -545,7 +550,7 @@ let declare_structure ~cumulative finite ubinders ~univs paramimpls params templ
     }
   in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
-  let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubinders impls
+  let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubind impls
       ~primitive_expected:!primitive_flag
   in
   let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; _ } =
@@ -571,7 +576,64 @@ let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
     (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class def cumulative ubinders univs id idbuild paramimpls params
+let build_class_constant ~univs ~rdata field implfs params paramimpls coers binder id proj_name =
+  let class_body = it_mkLambda_or_LetIn field params in
+  let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
+  let class_entry =
+    Declare.definition_entry ~types:class_type ~univs class_body in
+  let cst = Declare.declare_constant ~name:id
+      (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
+  in
+  let inst, univs = match univs with
+    | Polymorphic_entry (_, uctx) -> Univ.UContext.instance uctx, univs
+    | Monomorphic_entry _ -> Univ.Instance.empty, Monomorphic_entry Univ.ContextSet.empty
+  in
+  let cstu = (cst, inst) in
+  let inst_type = appvectc (mkConstU cstu)
+      (Termops.rel_vect 0 (List.length params)) in
+  let proj_type =
+    it_mkProd_or_LetIn (mkProd(binder, inst_type, lift 1 field)) params in
+  let proj_body =
+    it_mkLambda_or_LetIn (mkLambda (binder, inst_type, mkRel 1)) params in
+  let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
+  let proj_cst = Declare.declare_constant ~name:proj_name
+      (Declare.DefinitionEntry proj_entry) ~kind:Decls.(IsDefinition Definition)
+  in
+  let cref = GlobRef.ConstRef cst in
+  Impargs.declare_manual_implicits false cref paramimpls;
+  Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
+  Classes.set_typeclass_transparency (EvalConstRef cst) false false;
+  let sub = List.hd coers in
+  let m = {
+    meth_name = Name proj_name;
+    meth_info = sub;
+    meth_const = Some proj_cst;
+  } in
+  [cref, [m]]
+
+let build_record_constant ~rdata ~ubind ~univs ~cumulative ~template fields params paramimpls coers id idbuild binder_name =
+  let record_data =
+    { Data.id
+    ; idbuild
+    ; is_coercion = false
+    ; coers = List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields
+    ; rdata
+    } in
+  let inds = declare_structure ~cumulative Declarations.BiFinite ~ubind ~univs paramimpls
+      params template ~kind:Decls.Method ~name:[|binder_name|] [record_data]
+  in
+  let map ind =
+    let map decl b y = {
+      meth_name = RelDecl.get_name decl;
+      meth_info = b;
+      meth_const = y;
+    } in
+    let l = List.map3 map (List.rev fields) coers (Recordops.lookup_projections ind) in
+    GlobRef.IndRef ind, l
+  in
+  List.map map inds
+
+let declare_class def ~cumulative ~ubind ~univs id idbuild paramimpls params
     rdata template ?(kind=Decls.StructureComponent) coers =
   let implfs =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -586,60 +648,9 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params
     | [ LocalAssum ({binder_name=Name proj_name} as binder, field)
       | LocalDef ({binder_name=Name proj_name} as binder, _, field) ] when def ->
       let binder = {binder with binder_name=Name binder_name} in
-      let class_body = it_mkLambda_or_LetIn field params in
-      let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
-      let class_entry =
-        Declare.definition_entry ~types:class_type ~univs class_body in
-      let cst = Declare.declare_constant ~name:id
-        (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
-      in
-      let inst, univs = match univs with
-        | Polymorphic_entry (_, uctx) -> Univ.UContext.instance uctx, univs
-        | Monomorphic_entry _ -> Univ.Instance.empty, Monomorphic_entry Univ.ContextSet.empty
-      in
-      let cstu = (cst, inst) in
-      let inst_type = appvectc (mkConstU cstu)
-          (Termops.rel_vect 0 (List.length params)) in
-      let proj_type =
-        it_mkProd_or_LetIn (mkProd(binder, inst_type, lift 1 field)) params in
-      let proj_body =
-        it_mkLambda_or_LetIn (mkLambda (binder, inst_type, mkRel 1)) params in
-      let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
-      let proj_cst = Declare.declare_constant ~name:proj_name
-        (Declare.DefinitionEntry proj_entry) ~kind:Decls.(IsDefinition Definition)
-      in
-      let cref = GlobRef.ConstRef cst in
-      Impargs.declare_manual_implicits false cref paramimpls;
-      Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
-      Classes.set_typeclass_transparency (EvalConstRef cst) false false;
-      let sub = List.hd coers in
-      let m = {
-        meth_name = Name proj_name;
-        meth_info = sub;
-        meth_const = Some proj_cst;
-      } in
-      [cref, [m]]
+      build_class_constant ~rdata ~univs field implfs params paramimpls coers binder id proj_name
     | _ ->
-      let record_data =
-        { Data.id
-        ; idbuild
-        ; is_coercion = false
-        ; coers = List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields
-        ; rdata
-        } in
-      let inds = declare_structure ~cumulative Declarations.BiFinite ubinders ~univs paramimpls
-        params template ~kind:Decls.Method ~name:[|binder_name|] [record_data]
-      in
-      let map ind =
-        let map decl b y = {
-          meth_name = RelDecl.get_name decl;
-          meth_info = b;
-          meth_const = y;
-        } in
-        let l = List.map3 map (List.rev fields) coers (Recordops.lookup_projections ind) in
-        GlobRef.IndRef ind, l
-      in
-      List.map map inds
+      build_record_constant ~rdata ~ubind ~univs ~cumulative ~template fields params paramimpls coers id idbuild binder_name
   in
   let univs, params, fields =
     match univs with
@@ -782,6 +793,39 @@ let extract_record_data records =
   in
   ps, data
 
+(* declaring structures, common data to refactor *)
+let class_struture ~cumulative ~template ~ubind ~impargs ~univs ~params def records data =
+  let { Ast.name; cfs; idbuild; _ }, rdata = match records, data with
+    | [r], [d] -> r, d
+    | _, _ ->
+      CErrors.user_err (str "Mutual definitional classes are not handled")
+  in
+  let coers = List.map (fun (_, { rf_subclass; rf_priority }) ->
+      match rf_subclass with
+      | Vernacexpr.BackInstance -> Some {hint_priority = rf_priority; hint_pattern = None}
+      | Vernacexpr.NoInstance -> None)
+      cfs
+  in
+  declare_class def ~cumulative ~ubind ~univs name.CAst.v idbuild
+    impargs params rdata template coers
+
+let regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~params ~finite records data =
+  let adjust_impls impls = impargs @ [CAst.make None] @ impls in
+  let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
+  (* let map (min_univ, arity, fieldimpls, fields) { Ast.name; is_coercion; cfs; idbuild; _ } = *)
+  let map rdata { Ast.name; is_coercion; cfs; idbuild; _ } =
+    let coers = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
+        { pf_subclass =
+            (match rf_subclass with Vernacexpr.BackInstance -> true | Vernacexpr.NoInstance -> false);
+          pf_canonical = rf_canonical })
+        cfs
+    in
+    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers }
+  in
+  let data = List.map2 map data records in
+  let inds = declare_structure ~cumulative finite ~ubind ~univs impargs params template data in
+  List.map (fun ind -> GlobRef.IndRef ind) inds
+
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions
    or subinstances. *)
@@ -789,7 +833,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite (records 
   let () = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
-  let auto_template, implpars, ubinders, univs, params, data =
+  let auto_template, impargs, ubind, univs, params, data =
     (* In theory we should be able to use
        [Notation.with_notation_protection], due to the call to
        Metasyntax.set_notation_for_interpretation, however something
@@ -800,31 +844,6 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite (records 
   let template = template, auto_template in
   match kind with
   | Class def ->
-    let { Ast.name; cfs; idbuild; _ }, rdata = match records, data with
-    | [r], [d] -> r, d
-    | _, _ ->
-      CErrors.user_err (str "Mutual definitional classes are not handled")
-    in
-    let coers = List.map (fun (_, { rf_subclass; rf_priority }) ->
-        match rf_subclass with
-        | Vernacexpr.BackInstance -> Some {hint_priority = rf_priority; hint_pattern = None}
-        | Vernacexpr.NoInstance -> None)
-        cfs in
-    declare_class def cumulative ubinders univs name.CAst.v idbuild
-      implpars params rdata template coers
-  | _ ->
-    let adjust_impls impls = implpars @ [CAst.make None] @ impls in
-    let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
-    (* let map (min_univ, arity, fieldimpls, fields) { Ast.name; is_coercion; cfs; idbuild; _ } = *)
-    let map rdata { Ast.name; is_coercion; cfs; idbuild; _ } =
-      let coers = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
-          { pf_subclass =
-              (match rf_subclass with Vernacexpr.BackInstance -> true | Vernacexpr.NoInstance -> false);
-            pf_canonical = rf_canonical })
-          cfs
-      in
-      { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers }
-    in
-    let data = List.map2 map data records in
-    let inds = declare_structure ~cumulative finite ubinders ~univs implpars params template data in
-    List.map (fun ind -> GlobRef.IndRef ind) inds
+    class_struture ~template ~ubind ~impargs ~cumulative ~params ~univs def records data
+  | Inductive_kw | CoInductive | Variant | Record | Structure ->
+    regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~params ~finite records data
