@@ -838,3 +838,12 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite (records 
     class_struture ~template ~ubind ~impargs ~cumulative ~params ~univs def records data
   | Inductive_kw | CoInductive | Variant | Record | Structure ->
     regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~params ~finite records data
+
+module Internal = struct
+  type nonrec projection_flags = projection_flags = {
+    pf_subclass: bool;
+    pf_canonical: bool;
+  }
+  let declare_projections = declare_projections
+  let declare_structure_entry = declare_structure_entry
+end

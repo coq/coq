@@ -35,5 +35,24 @@ val definition_structure
 
 val declare_existing_class : GlobRef.t -> unit
 
-(** Used by elpi *)
-val declare_structure_entry : Recordops.struc_typ -> unit
+(* Implementation internals, consult Coq developers before using;
+   current user Elpi, see https://github.com/LPCIC/coq-elpi/pull/151 *)
+module Internal : sig
+  type projection_flags = {
+    pf_subclass: bool;
+    pf_canonical: bool;
+  }
+
+  val declare_projections
+    : Names.inductive
+    -> Entries.universes_entry
+    -> ?kind:Decls.definition_object_kind
+    -> Names.Id.t
+    -> projection_flags list
+    -> Impargs.manual_implicits list
+    -> Constr.rel_context
+    -> Recordops.proj_kind list * Names.Constant.t option list
+
+  val declare_structure_entry : Recordops.struc_typ -> unit
+
+end
