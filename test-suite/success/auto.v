@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-async-proofs" "off") *)
 (* Wish #2154 by E. van der Weegen *)
 
 (* auto was not using f_equal-style lemmas with metavariables occurring
