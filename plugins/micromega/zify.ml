@@ -1393,8 +1393,9 @@ let assert_inj t =
       try
         ignore (get_injection env evd t);
         Tacticals.tclIDTAC
-      with Not_found ->
-        Tacticals.tclFAIL 0 (Pp.str " InjTyp does not exist"))
+      with Not_found as exn ->
+        let _, info = Exninfo.capture exn in
+        Tacticals.tclFAIL ~info 0 (Pp.str " InjTyp does not exist"))
 
 let elim_binding x t ty =
   Proofview.Goal.enter (fun gl ->

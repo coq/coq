@@ -127,9 +127,9 @@ val tclTHEN : unit tactic -> unit tactic -> unit tactic
 (* [tclFAIL n msg] fails with [msg] as an error message at level [n]
     (meaning that it will jump over [n] error catching tacticals FROM
     THIS MODULE. *)
-val tclFAIL : ?info:Exninfo.info -> int -> Pp.t -> 'a tactic
+val tclFAIL : info:Exninfo.info -> int -> Pp.t -> 'a tactic
 
-val tclZEROMSG : ?info:Exninfo.info -> ?loc:Loc.t -> Pp.t -> 'a tactic
+val tclZEROMSG : info:Exninfo.info -> ?loc:Loc.t -> Pp.t -> 'a tactic
 (** Fail with a [User_Error] containing the given message. *)
 
 val tclOR : unit tactic -> unit tactic -> unit tactic

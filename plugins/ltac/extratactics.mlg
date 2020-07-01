@@ -522,7 +522,11 @@ END
 TACTIC EXTEND constr_eq_nounivs
 | [ "constr_eq_nounivs" constr(x) constr(y) ] -> {
     Proofview.tclEVARMAP >>= fun sigma ->
-    if EConstr.eq_constr_nounivs sigma x y then Proofview.tclUNIT () else Tacticals.tclFAIL 0 (str "Not equal") }
+    if EConstr.eq_constr_nounivs sigma x y
+    then Proofview.tclUNIT ()
+    else
+      let info = Exninfo.reify () in
+      Tacticals.tclFAIL ~info 0 (str "Not equal") }
 END
 
 TACTIC EXTEND is_evar
@@ -680,8 +684,9 @@ let guard tst =
   if run_test tst then
     Proofview.tclUNIT ()
   else
+    let info = Exninfo.reify () in
     let msg = Pp.(str"Condition not satisfied:"++ws 1++(pr_itest tst)) in
-    Tacticals.tclZEROMSG msg
+    Tacticals.tclZEROMSG ~info msg
 
 }
 

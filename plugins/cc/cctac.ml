@@ -356,7 +356,8 @@ let rec proof_tac p : unit Proofview.tactic =
              Tacticals.tclFIRST
                [Tacticals.tclTHEN lemma2 (proof_tac p2);
                 reflexivity;
-                Tacticals.tclZEROMSG
+                let info = Exninfo.reify () in
+                Tacticals.tclZEROMSG ~info
                     (Pp.str
                        "I don't know how to handle dependent equality")]])))
   | Inject (prf,cstr,nargs,argind) ->
@@ -451,7 +452,9 @@ let cc_tactic depth additional_terms b =
     let _ = debug_congruence (fun () -> Pp.str "Computation completed.") in
     let uf=forest state in
     match sol with
-      None -> Tacticals.tclFAIL 0 (str (if b then "simple congruence failed" else "congruence failed"))
+      None ->
+      let info = Exninfo.reify () in
+      Tacticals.tclFAIL ~info 0 (str (if b then "simple congruence failed" else "congruence failed"))
     | Some reason ->
       debug_congruence (fun () -> Pp.str "Goal solved, generating proof ...");
       match reason with
@@ -482,7 +485,8 @@ let cc_tactic depth additional_terms b =
                         end ++
                       fnl() ++ str "  replacing metavariables by arbitrary terms")
         in
-        Tacticals.tclFAIL 0 msg
+        let info = Exninfo.reify () in
+        Tacticals.tclFAIL ~info 0 msg
       | Contradiction dis ->
         let env = Proofview.Goal.env gl in
         let p=build_proof env sigma uf (`Prove (dis.lhs,dis.rhs)) in

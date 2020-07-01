@@ -217,9 +217,11 @@ let get_evaluable_reference = function
 | GlobRef.VarRef id -> Proofview.tclUNIT (Tacred.EvalVarRef id)
 | GlobRef.ConstRef cst -> Proofview.tclUNIT (Tacred.EvalConstRef cst)
 | r ->
-  Tacticals.tclZEROMSG (str "Cannot coerce" ++ spc () ++
-    Nametab.pr_global_env Id.Set.empty r ++ spc () ++
-    str "to an evaluable reference.")
+  let info = Exninfo.reify () in
+  Tacticals.tclZEROMSG ~info
+    (str "Cannot coerce" ++ spc () ++
+     Nametab.pr_global_env Id.Set.empty r ++ spc () ++
+     str "to an evaluable reference.")
 
 let reduce r cl =
   let cl = mk_clause cl in
@@ -419,7 +421,8 @@ let inversion knd arg pat ids =
   | Some (IntroAction (IntroOrAndPattern p)) ->
     Proofview.tclUNIT (Some (CAst.make @@ mk_or_and_intro_pattern p))
   | Some _ ->
-    Tacticals.tclZEROMSG (str "Inversion only accept disjunctive patterns")
+    let info = Exninfo.reify () in
+    Tacticals.tclZEROMSG ~info (str "Inversion only accept disjunctive patterns")
   end >>= fun pat ->
   let inversion _ arg =
     begin match arg with

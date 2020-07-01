@@ -290,7 +290,8 @@ let () = define_prim5 "tac_remember" bool name (thunk constr) (option intro_patt
     thaw constr c >>= fun c ->
     Tac2tactics.letin_pat_tac ev (Some (true, eqpat)) na (sigma, c) cl
   | _ ->
-    Tacticals.tclZEROMSG (Pp.str "Invalid pattern for remember")
+    let info = Exninfo.reify () in
+    Tacticals.tclZEROMSG ~info (Pp.str "Invalid pattern for remember")
 end
 
 let () = define_prim3 "tac_destruct" bool (list induction_clause) (option constr_with_bindings) begin fun ev ic using ->

@@ -299,7 +299,8 @@ let error_too_many_names pats =
   let loc = Loc.merge_opt (List.hd pats).CAst.loc (List.last pats).CAst.loc in
   Proofview.tclENV >>= fun env ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  tclZEROMSG ?loc (
+  let info = Exninfo.reify () in
+  tclZEROMSG ~info ?loc (
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
     str ": " ++ pr_enum (Miscprint.pr_intro_pattern
@@ -509,7 +510,8 @@ let wrap_inv_error id = function (e, info) -> match e with
       (_, Indrec.NotAllowedCaseAnalysis (_,(Type _ | Set as k),i)) ->
       Proofview.tclENV >>= fun env ->
       Proofview.tclEVARMAP >>= fun sigma ->
-      tclZEROMSG (
+      let info = Exninfo.reify () in
+      tclZEROMSG ~info (
         (strbrk "Inversion would require case analysis on sort " ++
         pr_sort sigma k ++
         strbrk " which is not allowed for inductive definition " ++

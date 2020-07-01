@@ -533,30 +533,44 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
         )
         end
     | ([],[]) -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclZEROMSG (str "Both side of the equality must have the same arity.")
+    | _ ->
+      let info = Exninfo.reify () in
+      Tacticals.tclZEROMSG ~info (str "Both side of the equality must have the same arity.")
   in
   Proofview.tclEVARMAP >>= fun sigma ->
   begin try Proofview.tclUNIT (destApp sigma lft)
-    with DestKO -> Tacticals.tclZEROMSG (str "replace failed.")
+    with DestKO ->
+      let info = Exninfo.reify () in
+      Tacticals.tclZEROMSG ~info (str "replace failed.")
   end >>= fun (ind1,ca1) ->
   begin try Proofview.tclUNIT (destApp sigma rgt)
-    with DestKO -> Tacticals.tclZEROMSG (str "replace failed.")
+    with DestKO ->
+      let info = Exninfo.reify () in
+      Tacticals.tclZEROMSG ~info (str "replace failed.")
   end >>= fun (ind2,ca2) ->
-  begin try Proofview.tclUNIT (fst (destInd sigma ind1))
+  begin
+    try Proofview.tclUNIT (fst (destInd sigma ind1))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind1)))
-        with DestKO -> Tacticals.tclZEROMSG (str "The expected type is an inductive one.")
+        with DestKO ->
+          let info = Exninfo.reify () in
+          Tacticals.tclZEROMSG ~info (str "The expected type is an inductive one.")
       end
   end >>= fun (sp1,i1) ->
-  begin try Proofview.tclUNIT (fst (destInd sigma ind2))
+  begin
+    try Proofview.tclUNIT (fst (destInd sigma ind2))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind2)))
-        with DestKO -> Tacticals.tclZEROMSG (str "The expected type is an inductive one.")
+        with DestKO ->
+          let info = Exninfo.reify () in
+          Tacticals.tclZEROMSG ~info (str "The expected type is an inductive one.")
       end
   end >>= fun (sp2,i2) ->
   Proofview.tclENV >>= fun env ->
   if not (Environ.QMutInd.equal env sp1 sp2) || not (Int.equal i1 i2)
-  then Tacticals.tclZEROMSG (str "Eq should be on the same type")
+  then
+    let info = Exninfo.reify () in
+    Tacticals.tclZEROMSG ~info (str "Eq should be on the same type")
   else aux (Array.to_list ca1) (Array.to_list ca2)
 
 (*
@@ -683,12 +697,16 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                             (ca.(1)))
                          Auto.default_auto
                      else
-                       Tacticals.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
-                  | _ -> Tacticals.tclZEROMSG (str" Failure while solving Boolean->Leibniz.")
+                       let info = Exninfo.reify () in
+                       Tacticals.tclZEROMSG ~info (str "Failure while solving Boolean->Leibniz.")
+                  | _ ->
+                    let info = Exninfo.reify () in
+                    Tacticals.tclZEROMSG ~info (str" Failure while solving Boolean->Leibniz.")
                 )
-                | _ -> Tacticals.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
+                | _ ->
+                  let info = Exninfo.reify () in
+                  Tacticals.tclZEROMSG ~info (str "Failure while solving Boolean->Leibniz.")
                 end
-
             ]
           end
       ]
@@ -808,10 +826,12 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
                                      nparrec
                                      ca'.(n-2) ca'.(n-1)
                                 | _ ->
-                                   Tacticals.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                                  let info = Exninfo.reify () in
+                                   Tacticals.tclZEROMSG ~info (str "Failure while solving Leibniz->Boolean.")
                                )
                 | _ ->
-                   Tacticals.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                  let info = Exninfo.reify () in
+                  Tacticals.tclZEROMSG ~info (str "Failure while solving Leibniz->Boolean.")
                 end
             ]
           end

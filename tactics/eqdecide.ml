@@ -224,7 +224,8 @@ let solveEqBranch rectype =
       end
     end
     begin function (e, info) -> match e with
-      | PatternMatchingFailure -> Tacticals.tclZEROMSG (Pp.str"Unexpected conclusion!")
+      | PatternMatchingFailure ->
+        Tacticals.tclZEROMSG ~info (Pp.str"Unexpected conclusion!")
       | e -> Proofview.tclZERO ~info e
     end
 
@@ -245,7 +246,9 @@ let decideGralEquality =
         let headtyp = hd_app sigma (pf_compute gl typ) in
         begin match EConstr.kind sigma headtyp with
         | Ind (mi,_) -> Proofview.tclUNIT mi
-        | _ -> tclZEROMSG (Pp.str"This decision procedure only works for inductive objects.")
+        | _ ->
+          let info = Exninfo.reify () in
+          tclZEROMSG ~info (Pp.str"This decision procedure only works for inductive objects.")
         end >>= fun rectype ->
           (tclTHEN
              (mkBranches data)
@@ -254,7 +257,7 @@ let decideGralEquality =
     end
     begin function (e, info) -> match e with
       | PatternMatchingFailure ->
-          Tacticals.tclZEROMSG (Pp.str"The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}.")
+        Tacticals.tclZEROMSG ~info (Pp.str"The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}.")
       | e -> Proofview.tclZERO ~info e
     end
 

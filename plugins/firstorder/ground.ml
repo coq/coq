@@ -55,7 +55,8 @@ let ground_tac solver startseq =
                       | Rforall->
                           let backtrack1=
                             if !qflag then
-                              tclFAIL 0 (Pp.str "reversible in 1st order mode")
+                              let info = Exninfo.reify () in
+                              tclFAIL ~info 0 (Pp.str "reversible in 1st order mode")
                             else
                               backtrack in
                             forall_tac backtrack1 continue (re_add seq1)

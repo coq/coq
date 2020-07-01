@@ -428,25 +428,13 @@ let tclIDTAC = tclUNIT ()
 let tclTHEN t1 t2 =
   t1 <*> t2
 
-let tclFAIL ?info lvl msg =
-  let info = match info with
-    (* If the backtrace points here it means the caller didn't save
-        the backtrace correctly *)
-    | None -> Exninfo.reify ()
-    | Some info -> info
-  in
+let tclFAIL ~info lvl msg =
   tclZERO ~info (FailError (lvl,lazy msg))
 
-let tclZEROMSG ?info ?loc msg =
-  let info = match info with
-    (* If the backtrace points here it means the caller didn't save
-        the backtrace correctly *)
-    | None -> Exninfo.reify ()
-    | Some info -> info
-  in
+let tclZEROMSG ~info ?loc msg =
   let info = match loc with
-  | None -> info
-  | Some loc -> Loc.add_loc info loc
+    | None -> info
+    | Some loc -> Loc.add_loc info loc
   in
   let err = UserError msg in
   tclZERO ~info err
@@ -525,7 +513,7 @@ let tclTHENS3PARTS t1 l1 repeat l2 =
                 str"Incorrect number of goals" ++ spc() ++
                 str"(expected "++int i++str(String.plural i " tactic") ++ str")"
               in
-              tclFAIL 0 errmsg
+              tclFAIL ~info 0 errmsg
           | reraise -> tclZERO ~info reraise
         end
   end
@@ -540,7 +528,9 @@ let tclBINDFIRST t1 t2 =
   t1 >>= fun ans ->
   Proofview.Unsafe.tclGETGOALS >>= fun gls ->
   match gls with
-  | [] -> tclFAIL 0 (str "Expect at least one goal.")
+  | [] ->
+    let info = Exninfo.reify () in
+    tclFAIL ~info 0 (str "Expect at least one goal.")
   | hd::tl ->
   Proofview.Unsafe.tclSETGOALS [hd] <*> t2 ans >>= fun ans ->
   Proofview.Unsafe.tclNEWGOALS tl <*>
@@ -559,7 +549,9 @@ let tclBINDLAST t1 t2 =
   t1 >>= fun ans ->
   Proofview.Unsafe.tclGETGOALS >>= fun gls ->
   match option_of_failure List.sep_last gls with
-  | None -> tclFAIL 0 (str "Expect at least one goal.")
+  | None ->
+    let info = Exninfo.reify () in
+    tclFAIL ~info 0 (str "Expect at least one goal.")
   | Some (last,firstn) ->
   Proofview.Unsafe.tclSETGOALS [last] <*> t2 ans >>= fun ans ->
   Proofview.Unsafe.tclGETGOALS >>= fun newgls ->
@@ -578,13 +570,12 @@ let tclTHENS t l =
                 str"Incorrect number of goals" ++ spc() ++
                 str"(expected "++int i++str(String.plural i " tactic") ++ str")"
               in
-              tclFAIL 0 errmsg
+              tclFAIL ~info 0 errmsg
           | reraise -> tclZERO ~info reraise
         end
   end
 let tclTHENLIST l =
   List.fold_left tclTHEN (tclUNIT()) l
-
 
 (* [tclMAP f [x1..xn]] builds [(f x1);(f x2);...(f xn)] *)
 let tclMAP tacfun l =
@@ -623,7 +614,9 @@ let rec tclFIRST = function
   | t::rest -> tclORELSE0 t (tclFIRST rest)
 
 let rec tclFIRST_PROGRESS_ON tac = function
-  | []    -> tclFAIL 0 (str "No applicable tactic")
+  | []    ->
+    let info = Exninfo.reify () in
+    tclFAIL ~info 0 (str "No applicable tactic")
   | [a]   -> tac a (* so that returned failure is the one from last item *)
   | a::tl -> tclORELSE (tac a) (tclFIRST_PROGRESS_ON tac tl)
 

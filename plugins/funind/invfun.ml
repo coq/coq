@@ -93,7 +93,12 @@ let functional_inversion kn hid fconst f_correct =
             ((fun hid -> intros_symmetry (Locusops.onHyp hid)), f_args, args.(2))
           | _, App (f, f_args) when EConstr.eq_constr sigma f fconst ->
             ((fun hid -> tclIDTAC), f_args, args.(1))
-          | _ -> ((fun hid -> tclFAIL 1 Pp.(mt ())), [||], args.(2))
+          | _ ->
+            ( (fun hid ->
+                let info = Exninfo.reify () in
+                tclFAIL ~info 1 Pp.(mt ()))
+            , [||]
+            , args.(2) )
         in
         tclTHENLIST
           [ pre_tac hid
@@ -109,7 +114,9 @@ let functional_inversion kn hid fconst f_correct =
                     (pf_ids_of_hyps gl)
                 in
                 tclMAP (revert_graph kn pre_tac) (hid :: new_ids)) ]
-      | _ -> tclFAIL 1 Pp.(mt ()))
+      | _ ->
+        let info = Exninfo.reify () in
+        tclFAIL ~info 1 Pp.(mt ()))
 
 let invfun qhyp f =
   let f =

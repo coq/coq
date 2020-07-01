@@ -252,7 +252,8 @@ let tclNOTSAMEGOAL tac =
     in
     Proofview.Monad.List.fold_left check false gls >>= fun has_same ->
     if has_same then
-      tclZEROMSG (str"Tactic generated a subgoal identical to the original goal.")
+      let info = Exninfo.reify () in
+      tclZEROMSG ~info (str"Tactic generated a subgoal identical to the original goal.")
     else
       Proofview.tclUNIT ()
   end
@@ -504,7 +505,9 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
         (* Otherwise, if we are told to rewrite in all hypothesis via the
            syntax "* |-", we fail iff all the different rewrites fail *)
         let rec do_hyps_atleastonce = function
-          | [] -> tclZEROMSG (Pp.str"Nothing to rewrite.")
+          | [] ->
+            let info = Exninfo.reify () in
+            tclZEROMSG ~info (Pp.str"Nothing to rewrite.")
           | id :: l ->
             tclIFTHENFIRSTTRYELSEMUST
              (general_rewrite ~where:(Some id) ~l2r AllOccurrences ~freeze:false ~dep:true ~with_evars ?tac c)
@@ -629,7 +632,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   in
   match evd with
   | None ->
-    tclFAIL 0 (str"Terms do not have convertible types")
+    let info = Exninfo.reify () in
+    tclFAIL ~info 0 (str"Terms do not have convertible types")
   | Some evd ->
     let e,sym =
       try lib_ref "core.eq.type", lib_ref "core.eq.sym"
@@ -997,7 +1001,8 @@ let gen_absurdity id =
   then
     simplest_elim (mkVar id)
   else
-    tclZEROMSG (str "Not the negation of an equality.")
+    let info = Exninfo.reify () in
+    tclZEROMSG ~info (str "Not the negation of an equality.")
   end
 
 (* Precondition: eq is leibniz equality
@@ -1417,7 +1422,8 @@ let inject_at_positions env sigma l2r eq posns tac =
   in
   let injectors = List.map_filter filter posns in
   if List.is_empty injectors then
-    tclZEROMSG (str "Failed to decompose the equality.")
+    let info = Exninfo.reify () in
+    tclZEROMSG ~info (str "Failed to decompose the equality.")
   else
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
     (Tacticals.tclTHENFIRST
@@ -1441,13 +1447,15 @@ let injEqThen keep_proofs tac l2r eql =
   | Inl _ ->
      assert false
   | Inr [] ->
+     let info = Exninfo.reify () in
      let suggestion =
          if keep_proofs then
             "" else
             " You can try to use option Set Keep Proof Equalities." in
-     tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
+     tclZEROMSG ~info (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
   | Inr [([],_,_)] ->
-     Proofview.tclZERO NothingToInject
+    let info = Exninfo.reify () in
+    Proofview.tclZERO ~info NothingToInject
   | Inr posns ->
       inject_at_positions env sigma l2r eql posns
         (tac (clenv_value eq_clause))

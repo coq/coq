@@ -695,7 +695,8 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       with Not_found -> false
     in
     if has_var then
-      Tacticals.tclZEROMSG (str "Variable already exists")
+      let info = Exninfo.reify () in
+      Tacticals.tclZEROMSG ~info (str "Variable already exists")
     else
       let open Context.Named.Declaration in
       let nenv = EConstr.push_named (LocalAssum (Context.make_annot id Sorts.Relevant, t)) env in
@@ -953,8 +954,10 @@ let () = define1 "hyp" ident begin fun id ->
   pf_apply begin fun env _ ->
     let mem = try ignore (Environ.lookup_named id env); true with Not_found -> false in
     if mem then return (Value.of_constr (EConstr.mkVar id))
-    else Tacticals.tclZEROMSG
-      (str "Hypothesis " ++ quote (Id.print id) ++ str " not found") (* FIXME: Do something more sensible *)
+    else
+      let info = Exninfo.reify () in
+      Tacticals.tclZEROMSG ~info
+        (str "Hypothesis " ++ quote (Id.print id) ++ str " not found") (* FIXME: Do something more sensible *)
   end
 end
 

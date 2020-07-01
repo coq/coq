@@ -75,7 +75,7 @@ let () =
 (** Base tactics *)
 
 let idtac = Proofview.tclUNIT ()
-let fail = Proofview.tclINDEPENDENT (tclFAIL 0 (Pp.mt ()))
+let fail ~info = Proofview.tclINDEPENDENT (tclFAIL ~info 0 (Pp.mt ()))
 
 let intro = Tactics.intro
 
@@ -99,7 +99,10 @@ let split = Tactics.split_with_bindings false [Tactypes.NoBindings]
 let is_empty _ ist =
   Proofview.tclENV >>= fun genv ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  if is_empty_type genv sigma (assoc_var "X1" ist) then idtac else fail
+  if is_empty_type genv sigma (assoc_var "X1" ist) then idtac
+  else
+    let info = Exninfo.reify () in
+    fail ~info
 
 (* Strictly speaking, this exceeds the propositional fragment as it
    matches also equality types (and solves them if a reflexivity) *)
@@ -108,7 +111,10 @@ let is_unit_or_eq _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let test = if flags.strict_unit then is_unit_type else is_unit_or_eq_type in
-  if test genv sigma (assoc_var "X1" ist) then idtac else fail
+  if test genv sigma (assoc_var "X1" ist) then idtac
+  else
+    let info = Exninfo.reify () in
+    fail ~info
 
 let bugged_is_binary sigma t =
   isApp sigma t &&
@@ -131,7 +137,9 @@ let is_conj _ ist =
          ~strict:flags.strict_in_hyp_and_ccl
          ~onlybinary:flags.binary_mode ind
     then idtac
-    else fail
+    else
+      let info = Exninfo.reify () in
+      fail ~info
 
 let flatten_contravariant_conj _ ist =
   Proofview.tclENV >>= fun genv ->
@@ -149,7 +157,9 @@ let flatten_contravariant_conj _ ist =
     let intros = tclMAP (fun _ -> intro) args in
     let by = tclTHENLIST [intros; apply hyp; split; assumption] in
     tclTHENLIST [assert_ ~by newtyp; clear (destVar sigma hyp)]
-  | _ -> fail
+  | _ ->
+    let info = Exninfo.reify () in
+    fail ~info
 
 (** Dealing with disjunction *)
 
@@ -163,7 +173,9 @@ let is_disj _ ist =
        ~strict:flags.strict_in_hyp_and_ccl
        ~onlybinary:flags.binary_mode t
   then idtac
-  else fail
+  else
+    let info = Exninfo.reify () in
+    fail ~info
 
 let flatten_contravariant_disj _ ist =
   Proofview.tclENV >>= fun genv ->
@@ -186,7 +198,9 @@ let flatten_contravariant_disj _ ist =
       let tacs = List.mapi map args in
       let tac0 = clear (destVar sigma hyp) in
       tclTHEN (tclTHENLIST tacs) tac0
-  | _ -> fail
+  | _ ->
+    let info = Exninfo.reify () in
+    fail ~info
 
 let evalglobref_of_globref =
   let open Tacred in
@@ -214,7 +228,9 @@ let apply_nnpp _ ist =
     begin fun () ->
       if Coqlib.has_ref nnpp
       then Tacticals.pf_constr_of_global (Coqlib.lib_ref nnpp) >>= apply
-      else tclFAIL 0 (Pp.mt ())
+      else
+        let info = Exninfo.reify () in
+        tclFAIL ~info 0 (Pp.mt ())
     end
 
 (* This is the uniform mode dealing with ->, not, iff and types isomorphic to
