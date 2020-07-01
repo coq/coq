@@ -435,6 +435,7 @@ type side_effects = {
 }
 
 type evar_map = {
+  evar_counter : int;
   (* Existential variables *)
   defn_evars : evar_info EvMap.t;
   undf_evars : evar_info EvMap.t;
@@ -544,14 +545,13 @@ let remove_evar_flags evk evar_flags =
 
 (** New evars *)
 
-let evar_counter_summary_name = "evar counter"
-
 (* Generator of existential names *)
-let evar_ctr, evar_counter_summary_tag = Summary.ref_tag 0 ~name:evar_counter_summary_name
-let new_untyped_evar () = incr evar_ctr; Evar.unsafe_of_int !evar_ctr
+let new_untyped_evar evd =
+  { evd with evar_counter = evd.evar_counter + 1 }
+  , Evar.unsafe_of_int evd.evar_counter
 
 let new_evar evd ?name ?typeclass_candidate evi =
-  let evk = new_untyped_evar () in
+  let evd, evk = new_untyped_evar evd in
   let evd = add_with_name evd ?name ?typeclass_candidate evk evi in
   (evd, evk)
 
@@ -682,6 +682,7 @@ let empty_side_effects = {
 }
 
 let empty = {
+  evar_counter = 0;
   defn_evars = EvMap.empty;
   undf_evars = EvMap.empty;
   universes  = UState.empty;
@@ -704,6 +705,7 @@ let from_ctx ctx = { empty with universes = ctx }
 let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
 
 let evars_reset_evd ?(with_conv_pbs=false) ?(with_univs=true) evd d =
+  let evar_counter = Int.max evd.evar_counter d.evar_counter in
   let conv_pbs = if with_conv_pbs then evd.conv_pbs else d.conv_pbs in
   let last_mods = if with_conv_pbs then evd.last_mods else d.last_mods in
   let universes =
@@ -712,7 +714,7 @@ let evars_reset_evd ?(with_conv_pbs=false) ?(with_univs=true) evd d =
   in
   { evd with
     metas = d.metas;
-    last_mods; conv_pbs; universes }
+    last_mods; conv_pbs; universes; evar_counter }
 
 let merge_universe_context evd uctx' =
   { evd with universes = UState.union evd.universes uctx' }
@@ -777,7 +779,7 @@ let declare_restricted_evar evar_flags evk evk' =
    and typeclass flags. *)
 
 let restrict evk filter ?candidates ?src evd =
-  let evk' = new_untyped_evar () in
+  let evd, evk' = new_untyped_evar evd in
   let evar_info = EvMap.find evk evd.undf_evars in
   let evar_info' =
     { evar_info with evar_filter = filter;
@@ -1104,6 +1106,7 @@ let shelve_on_future_goals shelved (gls,pgl,map) =
 (** We use this function to overcome OCaml compiler limitations and to prevent
     the use of costly in-place modifications. *)
 let set_metas evd metas = {
+  evar_counter = evd.evar_counter;
   defn_evars = evd.defn_evars;
   undf_evars = evd.undf_evars;
   universes  = evd.universes;
@@ -1220,7 +1223,8 @@ let meta_merge ?(with_univs = true) evd1 evd2 =
     if with_univs then UState.union evd2.universes evd1.universes
     else evd2.universes
   in
-  {evd2 with universes; metas; }
+  let evar_counter = Int.max evd1.evar_counter evd2.evar_counter in
+  {evd2 with evar_counter; universes; metas; }
 
 type metabinding = metavariable * constr * instance_status
 

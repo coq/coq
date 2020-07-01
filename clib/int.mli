@@ -16,6 +16,8 @@ external equal : t -> t -> bool = "%eq"
 
 external compare : t -> t -> int = "caml_int_compare"
 
+val max : t -> t -> t
+
 val hash : t -> int
 
 module Set : Set.S with type elt = t

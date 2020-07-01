@@ -14,6 +14,7 @@ external equal : int -> int -> bool = "%eq"
 
 external compare : int -> int -> int = "caml_int_compare"
 
+let max (x : t) (y : t) : t= if x >= y then x else y
 let hash i = i land 0x3FFFFFFF
 
 module Self =

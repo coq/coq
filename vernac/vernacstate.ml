@@ -237,7 +237,6 @@ module Stm = struct
   type nonrec pstate =
     LemmaStack.t option *
     int *                                   (* Evarutil.meta_counter_summary_tag *)
-    int *                                   (* Evd.evar_counter_summary_tag *)
     Declare.Obls.State.t
 
   (* Parts of the system state that are morally part of the proof state *)
@@ -245,10 +244,9 @@ module Stm = struct
     let st = System.Stm.summary system in
     lemmas,
     Summary.project_from_summary st Evarutil.meta_counter_summary_tag,
-    Summary.project_from_summary st Evd.evar_counter_summary_tag,
     Summary.project_from_summary st Declare.Obls.State.prg_tag
 
-  let set_pstate ({ lemmas; system } as s) (pstate,c1,c2,c3) =
+  let set_pstate ({ lemmas; system } as s) (pstate,meta,obls) =
     { s with
       lemmas =
         Declare_.copy_terminators ~src:s.lemmas ~tgt:pstate
@@ -256,9 +254,8 @@ module Stm = struct
         System.Stm.replace_summary s.system
           begin
             let st = System.Stm.summary s.system in
-            let st = Summary.modify_summary st Evarutil.meta_counter_summary_tag c1 in
-            let st = Summary.modify_summary st Evd.evar_counter_summary_tag c2 in
-            let st = Summary.modify_summary st Declare.Obls.State.prg_tag c3 in
+            let st = Summary.modify_summary st Evarutil.meta_counter_summary_tag meta in
+            let st = Summary.modify_summary st Declare.Obls.State.prg_tag obls in
             st
           end
       }
@@ -266,7 +263,6 @@ module Stm = struct
   let non_pstate { system } =
     let st = System.Stm.summary system in
     let st = Summary.remove_from_summary st Evarutil.meta_counter_summary_tag in
-    let st = Summary.remove_from_summary st Evd.evar_counter_summary_tag in
     let st = Summary.remove_from_summary st Declare.Obls.State.prg_tag in
     st, System.Stm.lib system
 
