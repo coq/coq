@@ -9,12 +9,27 @@
 (************************************************************************)
 
 module Parser : sig
-  type state
+  type t
 
-  val init : unit -> state
-  val cur_state : unit -> state
+  val init : unit -> t
+  val cur_state : unit -> t
 
-  val parse : state -> 'a Pcoq.Entry.t -> Pcoq.Parsable.t -> 'a
+  val parse : t -> 'a Pcoq.Entry.t -> Pcoq.Parsable.t -> 'a
+
+end
+
+(** System State *)
+module System : sig
+
+  (** The system state includes the summary and the libobject  *)
+  type t
+
+  (** [protect f x] runs [f x] and discards changes in the system state  *)
+  val protect : ('a -> 'b) -> 'a -> 'b
+
+  (** Load / Dump provide unsafe but convenient state dumping from / to disk *)
+  val dump : string -> unit
+  val load : string -> unit
 
 end
 
@@ -31,9 +46,9 @@ module LemmaStack : sig
 end
 
 type t =
-  { parsing : Parser.state
+  { parsing : Parser.t
   (** parsing state [parsing state may not behave 100% functionally yet, beware] *)
-  ; system  : States.state
+  ; system  : System.t
   (** summary + libstack *)
   ; lemmas  : LemmaStack.t option
   (** proofs of lemmas currently opened *)
@@ -44,10 +59,20 @@ type t =
 val freeze_interp_state : marshallable:bool -> t
 val unfreeze_interp_state : t -> unit
 
-val make_shallow : t -> t
-
 (* WARNING: Do not use, it will go away in future releases *)
 val invalidate_cache : unit -> unit
+
+(* STM-specific state handling *)
+module Stm : sig
+  type pstate
+
+  (** Surgery on states related to proof state *)
+  val pstate : t -> pstate
+  val set_pstate : t -> pstate -> t
+  val non_pstate : t -> Summary.frozen * Lib.frozen
+  val same_env : t -> t -> bool
+  val make_shallow : t -> t
+end
 
 (* Compatibility module: Do Not Use *)
 module Declare : sig

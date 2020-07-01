@@ -514,12 +514,3 @@ let get_used_load_paths () =
        String.Set.empty !libraries_loaded_list)
 
 let _ = Nativelib.get_load_paths := get_used_load_paths
-
-(* These commands may not be very safe due to ML-side plugin loading
-   etc... use at your own risk *)
-let extern_state s =
-  System.extern_state Coq_config.state_magic_number s (States.freeze ~marshallable:true)
-
-let intern_state s =
-  States.unfreeze (System.with_magic_number_check (System.intern_state Coq_config.state_magic_number) s);
-  overwrite_library_filenames s

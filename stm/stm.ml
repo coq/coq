@@ -199,16 +199,11 @@ let mkTransTac cast cblock cqueue =
 let mkTransCmd cast cids ceff cqueue =
   Cmd { ctac = false; cast; cblock = None; cqueue; cids; ceff }
 
-(* Parts of the system state that are morally part of the proof state *)
-let summary_pstate = Evarutil.meta_counter_summary_tag,
-                     Evd.evar_counter_summary_tag,
-                     Declare.Obls.State.prg_tag
-
 type cached_state =
   | EmptyState
-  | ParsingState of Vernacstate.Parser.state
+  | ParsingState of Vernacstate.Parser.t
   | FullState of Vernacstate.t
-  | ErrorState of Vernacstate.Parser.state option * Exninfo.iexn
+  | ErrorState of Vernacstate.Parser.t option * Exninfo.iexn
 type branch = Vcs_.Branch.t * branch_type Vcs_.branch_info
 type backup = { mine : branch; others : branch list }
 
@@ -334,7 +329,7 @@ module VCS : sig
 
   type vcs = (branch_type, transaction, vcs state_info, box) Vcs_.t
 
-  val init : stm_doc_type -> id -> Vernacstate.Parser.state -> doc
+  val init : stm_doc_type -> id -> Vernacstate.Parser.t -> doc
   (* val get_type : unit -> stm_doc_type *)
   val set_ldir : Names.DirPath.t -> unit
   val get_ldir : unit -> Names.DirPath.t
@@ -364,8 +359,8 @@ module VCS : sig
   val goals : id -> int -> unit
   val set_state : id -> cached_state -> unit
   val get_state : id -> cached_state
-  val set_parsing_state : id -> Vernacstate.Parser.state -> unit
-  val get_parsing_state : id -> Vernacstate.Parser.state option
+  val set_parsing_state : id -> Vernacstate.Parser.t -> unit
+  val get_parsing_state : id -> Vernacstate.Parser.t option
   val get_proof_mode : id -> Pvernac.proof_mode option
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
@@ -678,7 +673,7 @@ end = struct (* {{{ *)
         { info with state = EmptyState;
                     vcs_backup = None,None } in
     let make_shallow = function
-      | FullState st -> FullState (Vernacstate.make_shallow st)
+      | FullState st -> FullState (Vernacstate.Stm.make_shallow st)
       | x -> x
     in
     let copy_info_w_state v id =
@@ -870,22 +865,13 @@ end = struct (* {{{ *)
 
   let invalidate_cur_state () = cur_id := Stateid.dummy
 
-  type proof_part =
-    Vernacstate.LemmaStack.t option *
-    int *                                   (* Evarutil.meta_counter_summary_tag *)
-    int *                                   (* Evd.evar_counter_summary_tag *)
-    Declare.Obls.State.t
+  type proof_part = Vernacstate.Stm.pstate
 
   type partial_state =
     [ `Full of Vernacstate.t
     | `ProofOnly of Stateid.t * proof_part ]
 
-  let proof_part_of_frozen { Vernacstate.lemmas; system } =
-    let st = States.summary_of_state system in
-    lemmas,
-    Summary.project_from_summary st Util.(pi1 summary_pstate),
-    Summary.project_from_summary st Util.(pi2 summary_pstate),
-    Summary.project_from_summary st Util.(pi3 summary_pstate)
+  let proof_part_of_frozen st = Vernacstate.Stm.pstate st
 
   let cache_state ~marshallable id =
     VCS.set_state id (FullState (Vernacstate.freeze_interp_state ~marshallable))
@@ -952,21 +938,10 @@ end = struct (* {{{ *)
             else s
            with VCS.Expired -> s in
          VCS.set_state id (FullState s)
-    | `ProofOnly(ontop,(pstate,c1,c2,c3)) ->
+    | `ProofOnly(ontop,pstate) ->
          if is_cached_and_valid ontop then
            let s = get_cached ontop in
-           let s = { s with lemmas =
-             PG_compat.copy_terminators ~src:s.lemmas ~tgt:pstate } in
-           let s = { s with system =
-             States.replace_summary s.system
-               begin
-                 let st = States.summary_of_state s.system in
-                 let st = Summary.modify_summary st Util.(pi1 summary_pstate) c1 in
-                 let st = Summary.modify_summary st Util.(pi2 summary_pstate) c2 in
-                 let st = Summary.modify_summary st Util.(pi3 summary_pstate) c3 in
-                 st
-               end
-                } in
+           let s = Vernacstate.Stm.set_pstate s pstate in
            VCS.set_state id (FullState s)
     with VCS.Expired -> ()
 
@@ -978,12 +953,7 @@ end = struct (* {{{ *)
         execution_error ?loc id (iprint (e, info));
         (e, Stateid.add info ~valid id)
 
-  let same_env { Vernacstate.system = s1 } { Vernacstate.system = s2 } =
-    let s1 = States.summary_of_state s1 in
-    let e1 = Summary.project_from_summary s1 Global.global_env_summary_tag in
-    let s2 = States.summary_of_state s2 in
-    let e2 = Summary.project_from_summary s2 Global.global_env_summary_tag in
-    e1 == e2
+  let same_env = Vernacstate.Stm.same_env
 
   (* [define] puts the system in state [id] calling [f ()] *)
   (* [safe_id] is the last known valid state before execution *)
@@ -2373,21 +2343,16 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
-  let cherry_pick_non_pstate () =
-    let st = Summary.freeze_summaries ~marshallable:false in
-    let st = Summary.remove_from_summary st Util.(pi1 summary_pstate) in
-    let st = Summary.remove_from_summary st Util.(pi2 summary_pstate) in
-    let st = Summary.remove_from_summary st Util.(pi3 summary_pstate) in
-    st, Lib.freeze () in
-
   let inject_non_pstate (s,l) =
     Summary.unfreeze_summaries ~partial:true s; Lib.unfreeze l; update_global_env ()
   in
+
   let rec pure_cherry_pick_non_pstate safe_id id =
     State.purify (fun id ->
         stm_prerr_endline (fun () -> "cherry-pick non pstate " ^ Stateid.to_string id);
         reach ~safe_id id;
-        cherry_pick_non_pstate ())
+        let st = Vernacstate.freeze_interp_state ~marshallable:false in
+        Vernacstate.Stm.non_pstate st)
       id
 
   (* traverses the dag backward from nodes being already calculated *)

@@ -11,7 +11,7 @@
 let outputstate opts =
   Option.iter (fun ostate_file ->
     let fname = CUnix.make_suffix ostate_file ".coq" in
-    Library.extern_state fname) opts.Coqcargs.outputstate
+    Vernacstate.System.dump fname) opts.Coqcargs.outputstate
 
 let coqc_init _copts ~opts =
   Flags.quiet := true;

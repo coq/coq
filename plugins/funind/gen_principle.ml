@@ -70,7 +70,7 @@ let build_newrecursive lnameargsardef =
         CErrors.user_err ~hdr:"Function"
           (Pp.str "Body of Function must be given")
     in
-    States.with_state_protection (List.map f) lnameargsardef
+    Vernacstate.System.protect (List.map f) lnameargsardef
   in
   (recdef, rec_impls)
 

@@ -406,11 +406,11 @@ let rec printable_body dir =
     state after the printing *)
 
 let print_expression' is_type extent env mp me =
-  States.with_state_protection
+  Vernacstate.System.protect
     (fun e -> print_expression is_type extent env mp [] e) me
 
 let print_signature' is_type extent env mp me =
-  States.with_state_protection
+  Vernacstate.System.protect
     (fun e -> print_signature is_type extent env mp [] e) me
 
 let unsafe_print_module extent env mp with_body mb =

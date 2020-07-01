@@ -489,7 +489,7 @@ let register_ltac local ?deprecation tacl =
   in
   (* STATE XXX: Review what is going on here. Why does this needs
      protection? Why is not the STM level protection enough? Fishy *)
-  let defs = States.with_state_protection defs () in
+  let defs = Vernacstate.System.protect defs () in
   let iter (def, tac) = match def with
   | NewTac id ->
     Tacenv.register_ltac false local id tac ?deprecation;
