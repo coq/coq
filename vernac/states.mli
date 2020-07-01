@@ -30,4 +30,3 @@ val replace_lib : state -> Lib.frozen -> state
   state of the whole system as it was before applying [f] *)
 
 val with_state_protection : ('a -> 'b) -> 'a -> 'b
-

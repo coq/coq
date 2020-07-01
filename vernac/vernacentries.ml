@@ -175,7 +175,7 @@ let print_module qid =
     let globdir = Nametab.locate_dir qid in
       match globdir with
           DirModule Nametab.{ obj_dir; obj_mp; _ } ->
-          Printmod.print_module ~mod_ops:Declaremods.mod_ops (Printmod.printable_body obj_dir) obj_mp
+          Printmod.print_module (Printmod.printable_body obj_dir) obj_mp
         | _ -> raise Not_found
   with
     Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
@@ -183,12 +183,12 @@ let print_module qid =
 let print_modtype qid =
   try
     let kn = Nametab.locate_modtype qid in
-    Printmod.print_modtype ~mod_ops:Declaremods.mod_ops kn
+    Printmod.print_modtype kn
   with Not_found ->
     (* Is there a module of this name ? If yes we display its type *)
     try
       let mp = Nametab.locate_module qid in
-      Printmod.print_module ~mod_ops:Declaremods.mod_ops false mp
+      Printmod.print_module false mp
     with Not_found ->
       user_err (str"Unknown Module Type or Module " ++ pr_qualid qid)
 

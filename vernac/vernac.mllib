@@ -1,7 +1,9 @@
 Vernacexpr
 Attributes
 Pvernac
+States
 Declaremods
+Printmod
 G_vernac
 G_proofs
 Vernacprop

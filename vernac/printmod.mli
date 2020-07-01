@@ -17,10 +17,5 @@ val pr_mutual_inductive_body : Environ.env ->
   MutInd.t -> Declarations.mutual_inductive_body ->
   UnivNames.univ_name_list option -> Pp.t
 
-type mod_ops =
-  { import_module : export:bool -> ModPath.t -> unit
-  ; process_module_binding : MBId.t -> Declarations.module_alg_expr -> unit
-  }
-
-val print_module : mod_ops:mod_ops -> bool -> ModPath.t -> Pp.t
-val print_modtype : mod_ops:mod_ops -> ModPath.t -> Pp.t
+val print_module : bool -> ModPath.t -> Pp.t
+val print_modtype : ModPath.t -> Pp.t

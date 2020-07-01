@@ -46,10 +46,8 @@ type object_pr = {
   print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
 
-let gallina_print_module  = print_module ~mod_ops:Declaremods.mod_ops
-let gallina_print_modtype = print_modtype ~mod_ops:Declaremods.mod_ops
-
-
+let gallina_print_module  = print_module
+let gallina_print_modtype = print_modtype
 
 (**************)
 (** Utilities *)
@@ -701,10 +699,10 @@ let gallina_print_leaf_entry env sigma with_values ((sp, kn),lobj) =
     handle handler o
   | ModuleObject _ ->
     let (mp,l) = KerName.repr kn in
-    Some (print_module with_values ~mod_ops:Declaremods.mod_ops (MPdot (mp,l)))
+    Some (print_module with_values (MPdot (mp,l)))
   | ModuleTypeObject _ ->
     let (mp,l) = KerName.repr kn in
-          Some (print_modtype ~mod_ops:Declaremods.mod_ops (MPdot (mp,l)))
+          Some (print_modtype (MPdot (mp,l)))
   | _ -> None
 
 let gallina_print_library_entry env sigma with_values ent =

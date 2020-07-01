@@ -1103,9 +1103,3 @@ let debug_print_modtab _ =
   in
   let modules = MPmap.fold pr_modinfo (ModObjs.all ()) (mt ()) in
   hov 0 modules
-
-
-let mod_ops = {
-  Printmod.import_module = import_module Unfiltered;
-  process_module_binding = process_module_binding;
-}
