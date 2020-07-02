@@ -161,19 +161,20 @@ let e_give_exact flags h =
   Clenv.unify ~flags t1 <*> exact_no_check c
   end
 
-let unify_e_resolve flags = begin fun gls (h, _) ->
+let unify_e_resolve flags (h, _) = Proofview.Goal.enter begin fun gls ->
   let clenv', c = connect_hint_clenv h gls in
   Clenv.res_pf ~with_evars:true ~with_classes:false ~flags clenv'
   end
 
-let unify_resolve flags = begin fun gls (h, _) ->
+let unify_resolve flags (h, _) = Proofview.Goal.enter begin fun gls ->
   let clenv', _ = connect_hint_clenv h gls in
   Clenv.res_pf ~with_evars:false ~with_classes:false ~flags clenv'
   end
 
 (** Application of a lemma using [refine] instead of the old [w_unify] *)
-let unify_resolve_refine flags gls (h, n) =
-  let { hint_term = c; hint_type = t; hint_uctx = ctx; hint_clnv = clenv } = h in
+let unify_resolve_refine flags (h, n) =
+  Proofview.Goal.enter begin fun gls ->
+  let { hint_term = c; hint_type = t; hint_uctx = ctx } = h in
   let open Clenv in
   let env = Proofview.Goal.env gls in
   let concl = Proofview.Goal.concl gls in
@@ -195,10 +196,11 @@ let unify_resolve_refine flags gls (h, n) =
                     ~flags:(default_flags_of flags.core_unify_flags.modulo_delta)
                               env sigma' cl.cl_concl concl)
       in (sigma', term) end
+  end
 
-let unify_resolve_refine flags gl clenv =
+let unify_resolve_refine flags clenv =
   Proofview.tclORELSE
-    (unify_resolve_refine flags gl clenv)
+    (unify_resolve_refine flags clenv)
     (fun (exn,info) ->
       match exn with
       | Evarconv.UnableToUnify _ ->
@@ -216,7 +218,7 @@ let with_prods nprods h f =
     Proofview.Goal.enter begin fun gl ->
       let { hint_term = c; hint_clnv = clenv; hint_poly = poly } = h in
       if poly || Int.equal nprods 0 then
-        f gl (h, None)
+        f (h, None)
       else
         let sigma = Tacmach.New.project gl in
         let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
@@ -225,12 +227,12 @@ let with_prods nprods h f =
           (* Was Some clenv... *)
           let clenv = mk_clenv_from_n gl (Some diff) (c,ty) in
           let h = { h with hint_clnv = clenv } in
-          f gl (h, Some diff)
+          f (h, Some diff)
         else Tacticals.New.tclZEROMSG (str"Not enough premisses")
     end
   else Proofview.Goal.enter
          begin fun gl ->
-         if Int.equal nprods 0 then f gl (h, None)
+         if Int.equal nprods 0 then f (h, None)
          else Tacticals.New.tclZEROMSG (str"Not enough premisses") end
 
 let matches_pattern concl pat =
@@ -338,9 +340,9 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
            if get_typeclasses_filtered_unification () then
              let tac =
                with_prods nprods h
-                          (fun gl clenv ->
+                          (fun clenv ->
                              matches_pattern concl p <*>
-                               unify_resolve_refine flags gl clenv)
+                               unify_resolve_refine flags clenv)
              in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
@@ -350,9 +352,9 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
         | ERes_pf h ->
            if get_typeclasses_filtered_unification () then
              let tac = (with_prods nprods h
-                  (fun gl clenv ->
+                  (fun clenv ->
                              matches_pattern concl p <*>
-                             unify_resolve_refine flags gl clenv)) in
+                             unify_resolve_refine flags clenv)) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
@@ -364,7 +366,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
              let tac =
                matches_pattern concl p <*>
                  Proofview.Goal.enter
-                   (fun gl -> unify_resolve_refine flags gl (h, None)) in
+                   (fun gl -> unify_resolve_refine flags (h, None)) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              e_give_exact flags h
@@ -1227,7 +1229,7 @@ let autoapply c i =
   let cty = Tacmach.New.pf_get_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
   let h = { hint_term = c; hint_type = cty; hint_uctx = Univ.ContextSet.empty; hint_clnv = ce; hint_poly = false } in
-    unify_e_resolve flags gl (h, 0) <*>
+    unify_e_resolve flags (h, 0) <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.make_unresolvables
           (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.find sigma ev).evar_source))) sigma in
