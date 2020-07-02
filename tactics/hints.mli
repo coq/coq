@@ -239,6 +239,9 @@ val wrap_hint_warning_fun : env -> evar_map ->
   (evar_map -> 'a * evar_map) -> 'a * evar_map
 (** Variant of the above for non-tactics *)
 
+val connect_hint_clenv
+  : hint -> Proofview.Goal.t -> clausenv * constr
+
 (** Printing  hints *)
 
 val pr_searchtable : env -> evar_map -> Pp.t

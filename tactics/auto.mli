@@ -12,7 +12,6 @@
 
 open Names
 open EConstr
-open Clenv
 open Pattern
 open Hints
 open Tactypes
@@ -22,9 +21,6 @@ val compute_secvars : Proofview.Goal.t -> Id.Pred.t
 val default_search_depth : int ref
 
 val auto_flags_of_state : TransparentState.t -> Unification.unify_flags
-
-val connect_hint_clenv
-  : hint -> Proofview.Goal.t -> clausenv * constr
 
 (** Try unification with the precompiled clause, then use registered Apply *)
 val unify_resolve : Unification.unify_flags -> hint -> unit Proofview.tactic
