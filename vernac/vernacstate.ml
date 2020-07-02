@@ -10,7 +10,7 @@
 
 module Parser = struct
 
-  type state = Pcoq.frozen_t
+  type t = Pcoq.frozen_t
 
   let init () = Pcoq.freeze ~marshallable:false
 
@@ -22,6 +22,58 @@ module Parser = struct
       (fun () -> Pcoq.Entry.parse entry pa)
       ()
 
+end
+
+module System : sig
+  type t
+  val protect : ('a -> 'b) -> 'a -> 'b
+  val freeze : marshallable:bool -> t
+  val unfreeze : t -> unit
+
+  val dump : string -> unit
+  val load : string -> unit
+
+  module Stm : sig
+    val make_shallow : t -> t
+    val lib : t -> Lib.frozen
+    val summary : t -> Summary.frozen
+    val replace_summary : t -> Summary.frozen -> t
+  end
+end = struct
+  type t = Lib.frozen * Summary.frozen
+
+  let freeze ~marshallable =
+    (Lib.freeze (), Summary.freeze_summaries ~marshallable)
+
+  let unfreeze (fl,fs) =
+    Lib.unfreeze fl;
+    Summary.unfreeze_summaries fs
+
+  let protect f x =
+    let st = freeze ~marshallable:false in
+    try
+      let a = f x in unfreeze st; a
+    with reraise ->
+      let reraise = Exninfo.capture reraise in
+      (unfreeze st; Exninfo.iraise reraise)
+
+  (* These commands may not be very safe due to ML-side plugin loading
+     etc... use at your own risk *)
+  (* XXX: EJGA: this is ignoring parsing state, it works for now? *)
+  let dump s =
+    System.extern_state Coq_config.state_magic_number s (freeze ~marshallable:true)
+
+  let load s =
+    unfreeze (System.with_magic_number_check (System.intern_state Coq_config.state_magic_number) s);
+    Library.overwrite_library_filenames s
+
+  (* STM-specific state manipulations *)
+  module Stm = struct
+    let make_shallow (lib, summary) = Lib.drop_objects lib, summary
+    let lib = fst
+    let summary = snd
+    let replace_summary (lib,_) summary = (lib,summary)
+  end
 end
 
 module LemmaStack = struct
@@ -58,8 +110,8 @@ module LemmaStack = struct
 end
 
 type t = {
-  parsing : Parser.state;
-  system  : States.state;          (* summary + libstack *)
+  parsing : Parser.t;
+  system  : System.t;              (* summary + libstack *)
   lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
@@ -84,26 +136,19 @@ let do_if_not_cached rf f v =
     ()
 
 let freeze_interp_state ~marshallable =
-  { system = update_cache s_cache (States.freeze ~marshallable);
+  { system = update_cache s_cache (System.freeze ~marshallable);
     lemmas = !s_lemmas;
     shallow = false;
     parsing = Parser.cur_state ();
   }
 
 let unfreeze_interp_state { system; lemmas; parsing } =
-  do_if_not_cached s_cache States.unfreeze system;
+  do_if_not_cached s_cache System.unfreeze system;
   s_lemmas := lemmas;
   Pcoq.unfreeze parsing
 
-let make_shallow st =
-  let lib = States.lib_of_state st.system in
-  { st with
-    system = States.replace_lib st.system @@ Lib.drop_objects lib;
-    shallow = true;
-  }
-
 (* Compatibility module *)
-module Declare = struct
+module Declare_ = struct
 
   let get () = !s_lemmas
   let set x = s_lemmas := x
@@ -182,3 +227,61 @@ module Declare = struct
     | Some src, Some tgt -> Some (LemmaStack.copy_info ~src ~tgt)
 
 end
+
+(* STM-specific state-handling *)
+module Stm = struct
+
+  (* Proof-related state, for workers; ideally the two counters would
+     be contained in the lemmas state themselves, as there is no need
+     for evar / metas to be global among proofs *)
+  type nonrec pstate =
+    LemmaStack.t option *
+    int *                                   (* Evarutil.meta_counter_summary_tag *)
+    int *                                   (* Evd.evar_counter_summary_tag *)
+    Declare.Obls.State.t
+
+  (* Parts of the system state that are morally part of the proof state *)
+  let pstate { lemmas; system } =
+    let st = System.Stm.summary system in
+    lemmas,
+    Summary.project_from_summary st Evarutil.meta_counter_summary_tag,
+    Summary.project_from_summary st Evd.evar_counter_summary_tag,
+    Summary.project_from_summary st Declare.Obls.State.prg_tag
+
+  let set_pstate ({ lemmas; system } as s) (pstate,c1,c2,c3) =
+    { s with
+      lemmas =
+        Declare_.copy_terminators ~src:s.lemmas ~tgt:pstate
+    ; system =
+        System.Stm.replace_summary s.system
+          begin
+            let st = System.Stm.summary s.system in
+            let st = Summary.modify_summary st Evarutil.meta_counter_summary_tag c1 in
+            let st = Summary.modify_summary st Evd.evar_counter_summary_tag c2 in
+            let st = Summary.modify_summary st Declare.Obls.State.prg_tag c3 in
+            st
+          end
+      }
+
+  let non_pstate { system } =
+    let st = System.Stm.summary system in
+    let st = Summary.remove_from_summary st Evarutil.meta_counter_summary_tag in
+    let st = Summary.remove_from_summary st Evd.evar_counter_summary_tag in
+    let st = Summary.remove_from_summary st Declare.Obls.State.prg_tag in
+    st, System.Stm.lib system
+
+  let same_env { system = s1 } { system = s2 } =
+    let s1 = System.Stm.summary s1 in
+    let e1 = Summary.project_from_summary s1 Global.global_env_summary_tag in
+    let s2 = System.Stm.summary s2 in
+    let e2 = Summary.project_from_summary s2 Global.global_env_summary_tag in
+    e1 == e2
+
+  let make_shallow st =
+    { st with
+      system = System.Stm.make_shallow st.system
+    ; shallow = true
+    }
+
+end
+module Declare = Declare_

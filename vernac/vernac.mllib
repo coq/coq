@@ -1,9 +1,6 @@
 Vernacexpr
 Attributes
 Pvernac
-States
-Declaremods
-Printmod
 G_vernac
 G_proofs
 Vernacprop
@@ -21,6 +18,7 @@ Declare
 ComHints
 Canonical
 RecLemmas
+Declaremods
 Library
 ComCoercion
 Auto_ind_decl
@@ -32,10 +30,12 @@ ComAssumption
 DeclareInd
 Search
 ComSearch
-Prettyp
 ComInductive
 ComFixpoint
 ComProgramFixpoint
+Vernacstate
+Printmod
+Prettyp
 Record
 Assumptions
 Mltop
@@ -43,5 +43,4 @@ Topfmt
 Loadpath
 ComArguments
 Vernacentries
-Vernacstate
 Vernacinterp

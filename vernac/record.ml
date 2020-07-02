@@ -710,7 +710,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite records =
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
   let ubinders, univs, auto_template, params, implpars, data =
-    States.with_state_protection (fun () ->
+    Vernacstate.System.protect (fun () ->
       typecheck_params_and_fields (kind = Class true) poly udecl ps data) () in
   let template = template, auto_template in
   match kind with

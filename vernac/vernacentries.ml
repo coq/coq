@@ -1269,11 +1269,11 @@ let vernac_chdir = function
 
 let vernac_write_state file =
   let file = CUnix.make_suffix file ".coq" in
-  Library.extern_state file
+  Vernacstate.System.dump file
 
 let vernac_restore_state file =
   let file = Loadpath.locate_file (CUnix.make_suffix file ".coq") in
-  Library.intern_state file
+  Vernacstate.System.load file
 
 (************)
 (* Commands *)

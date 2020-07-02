@@ -52,7 +52,7 @@ let print_memory_stat () =
 let inputstate opts =
   Option.iter (fun istate_file ->
     let fname = Loadpath.locate_file (CUnix.make_suffix istate_file ".coq") in
-    Library.intern_state fname) opts.inputstate
+    Vernacstate.System.load fname) opts.inputstate
 
 (******************************************************************************)
 (* Fatal Errors                                                               *)
