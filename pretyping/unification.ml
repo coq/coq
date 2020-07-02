@@ -567,17 +567,16 @@ let force_eqs c =
   Set.fold
     (fun c acc ->
        let c' = match c with
-         (* Should we be forcing weak constraints? *)
-         | ULub (l, r) | UWeak (l, r) -> UEq (Univ.Universe.make l,Univ.Universe.make r)
-         | ULe _ | UEq _ -> c
+         | ULub (l, r) -> UEq (Univ.Universe.make l,Univ.Universe.make r)
+         | ULe _ | UEq _ | UWeak _ -> c
        in
         Set.add c' acc)
     c Set.empty
 
-let constr_cmp pb env sigma flags t u =
+let constr_cmp pb env sigma flags ?nargs t u =
   let cstrs =
-    if pb == Reduction.CONV then EConstr.eq_constr_universes env sigma t u
-    else EConstr.leq_constr_universes env sigma t u
+    if pb == Reduction.CONV then EConstr.eq_constr_universes env sigma ?nargs t u
+    else EConstr.leq_constr_universes env sigma ?nargs t u
   in
   match cstrs with
   | Some cstrs ->
@@ -705,7 +704,7 @@ let fast_occur_meta_or_undefined_evar sigma (c, gnd) = match gnd with
 | NotGround -> true
 
 let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top env cv_pb flags m n =
-  let rec unirec_rec (curenv,nb as curenvnb) pb opt ((sigma,metasubst,evarsubst) as substn : subst0) curm curn =
+  let rec unirec_rec (curenv,nb as curenvnb) pb opt ((sigma,metasubst,evarsubst) as substn : subst0) ?(nargs=0) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
     and cN = Evarutil.whd_head_evar sigma curn in
     let () =
@@ -817,7 +816,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
           (try unify_same_proj curenvnb cv_pb {opt with at_top = true}
                substn c1 c2
            with ex when precatchable_exception ex ->
-             unify_not_same_head curenvnb pb opt substn cM cN)
+             unify_not_same_head curenvnb pb opt substn ~nargs cM cN)
 
         (* eta-expansion *)
         | Lambda (na,t1,c1), _ when flags.modulo_eta ->
@@ -835,7 +834,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
           (try
              let l1', l2' = eta_constructor_app curenv sigma f1 l1 cN in
              let opt' = {opt with at_top = true; with_cs = false} in
-               Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
+               Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
            with ex when precatchable_exception ex ->
              match EConstr.kind sigma cN with
              | App(f2,l2) when
@@ -849,7 +848,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
           (try
              let l2', l1' = eta_constructor_app curenv sigma f2 l2 cM in
              let opt' = {opt with at_top = true; with_cs = false} in
-               Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
+               Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
            with ex when precatchable_exception ex ->
              match EConstr.kind sigma cM with
              | App(f1,l1) when
@@ -864,7 +863,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             (try
              if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then error_cannot_unify curenv sigma (cM,cN);
              let opt' = {opt with at_top = true; with_types = false} in
-               Array.fold_left2 (unirec_rec curenvnb CONV {opt with at_top = true})
+               Array.fold_left2 (unirec_rec curenvnb CONV {opt with at_top = true} ~nargs:0)
                (unirec_rec curenvnb CONV opt'
                 (unirec_rec curenvnb CONV opt' substn p1 p2) c1 c2)
                  cl1 cl2
@@ -876,8 +875,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             (try
              let opt' = {opt with at_top = true; with_types = false} in
              let curenvnb' = Array.fold_right2 (fun na t -> push (na,t)) lna1 tl1 curenvnb in
-               Array.fold_left2 (unirec_rec curenvnb' CONV opt')
-               (Array.fold_left2 (unirec_rec curenvnb CONV opt') substn tl1 tl2) bl1 bl2
+               Array.fold_left2 (unirec_rec curenvnb' CONV opt' ~nargs:0)
+               (Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn tl1 tl2) bl1 bl2
              with ex when precatchable_exception ex ->
                reduce curenvnb pb opt substn cM cN)
 
@@ -886,8 +885,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             (try
              let opt' = {opt with at_top = true; with_types = false} in
              let curenvnb' = Array.fold_right2 (fun na t -> push (na,t)) lna1 tl1 curenvnb in
-               Array.fold_left2 (unirec_rec curenvnb' CONV opt')
-               (Array.fold_left2 (unirec_rec curenvnb CONV opt') substn tl1 tl2) bl1 bl2
+               Array.fold_left2 (unirec_rec curenvnb' CONV opt' ~nargs:0)
+               (Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn tl1 tl2) bl1 bl2
              with ex when precatchable_exception ex ->
                reduce curenvnb pb opt substn cM cN)
 
@@ -911,7 +910,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
           unify_app curenvnb pb opt substn cM cM [||] cN f2 l2
 
         | _ ->
-          unify_not_same_head curenvnb pb opt substn cM cN
+          unify_not_same_head curenvnb pb opt substn ~nargs cM cN
 
   and unify_app_pattern dir curenvnb pb opt (sigma, _, _ as substn) cM f1 l1 cN f2 l2 =
     let f, l, t = if dir then f1, l1, cN else f2, l2, cM in
@@ -922,7 +921,9 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
           if dir then unify_app curenvnb pb opt substn cM f1 l1 t f' l'
           else unify_app curenvnb pb opt substn t f' l' cN f2 l2
         | Proj _ -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
-        | _ -> unify_not_same_head curenvnb pb opt substn cM cN)
+        | _ ->
+          (* XXX nargs could be better? *)
+          unify_not_same_head curenvnb pb opt substn ~nargs:0 cM cN)
       | Some l ->
         solve_pattern_eqn_array curenvnb f l t substn
 
@@ -951,8 +952,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
         if Array.length l1 == 0 then error_cannot_unify (fst curenvnb) sigma (cM,cN)
         else
-          Array.fold_left2 (unirec_rec curenvnb CONV opta)
-            (unirec_rec curenvnb CONV optf substn f1 f2) l1 l2
+          Array.fold_left2 (unirec_rec curenvnb CONV opta ~nargs:0)
+            (unirec_rec curenvnb CONV optf substn f1 f2 ~nargs:(Array.length l1)) l1 l2
     with ex when precatchable_exception ex ->
     try reduce curenvnb pb {opt with with_types = false} substn cM cN
     with ex when precatchable_exception ex ->
@@ -973,10 +974,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             (ty1, Unknown) (ty2, Unknown)
       with RetypeError _ -> substn
 
-  and unify_not_same_head curenvnb pb opt (sigma, metas, evars as substn : subst0) cM cN =
+  and unify_not_same_head curenvnb pb opt (sigma, metas, evars as substn : subst0) ~nargs cM cN =
     try canonical_projections curenvnb pb opt cM cN substn
     with ex when precatchable_exception ex ->
-    match constr_cmp cv_pb env sigma flags cM cN with
+    match constr_cmp cv_pb env sigma flags ~nargs cM cN with
     | Some sigma -> (sigma, metas, evars)
     | None ->
         try reduce curenvnb pb opt substn cM cN
