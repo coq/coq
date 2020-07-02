@@ -211,32 +211,23 @@ let unify_resolve_refine flags gl clenv =
 (** Dealing with goals of the form A -> B and hints of the form
   C -> A -> B.
 *)
-let clenv_of_prods nprods h gl =
-  let { hint_term = c; hint_clnv = clenv; hint_poly = poly } = h in
-  if poly || Int.equal nprods 0 then Some (None, clenv)
-  else
-    let sigma = Tacmach.New.project gl in
-    let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
-    let diff = nb_prod sigma ty - nprods in
-    if (>=) diff 0 then
-      (* Was Some clenv... *)
-      Some (Some diff,
-            mk_clenv_from_n gl (Some diff) (c,ty))
-    else None
-
 let with_prods nprods h f =
   if get_typeclasses_limit_intros () then
     Proofview.Goal.enter begin fun gl ->
-      try match clenv_of_prods nprods h gl with
-          | None ->
-            let info = Exninfo.reify () in
-            Tacticals.New.tclZEROMSG ~info (str"Not enough premisses")
-          | Some (diff, clenv') ->
-            let h = { h with hint_clnv = clenv' } in
-            f gl (h, diff)
-      with e when CErrors.noncritical e ->
-        let e, info = Exninfo.capture e in
-        Proofview.tclZERO ~info e end
+      let { hint_term = c; hint_clnv = clenv; hint_poly = poly } = h in
+      if poly || Int.equal nprods 0 then
+        f gl (h, None)
+      else
+        let sigma = Tacmach.New.project gl in
+        let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
+        let diff = nb_prod sigma ty - nprods in
+        if (>=) diff 0 then
+          (* Was Some clenv... *)
+          let clenv = mk_clenv_from_n gl (Some diff) (c,ty) in
+          let h = { h with hint_clnv = clenv } in
+          f gl (h, Some diff)
+        else Tacticals.New.tclZEROMSG (str"Not enough premisses")
+    end
   else Proofview.Goal.enter
          begin fun gl ->
          if Int.equal nprods 0 then f gl (h, None)
