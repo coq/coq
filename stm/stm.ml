@@ -834,15 +834,11 @@ module State : sig
 
   (* to send states across worker/master *)
   val get_cached : Stateid.t -> Vernacstate.t
-  val same_env : Vernacstate.t -> Vernacstate.t -> bool
-
-  type proof_part
 
   type partial_state =
     [ `Full of Vernacstate.t
-    | `ProofOnly of Stateid.t * proof_part ]
+    | `ProofOnly of Stateid.t * Vernacstate.Stm.pstate ]
 
-  val proof_part_of_frozen : Vernacstate.t -> proof_part
   val assign : Stateid.t -> partial_state -> unit
 
   (* Handlers for initial state, prior to document creation. *)
@@ -865,13 +861,9 @@ end = struct (* {{{ *)
 
   let invalidate_cur_state () = cur_id := Stateid.dummy
 
-  type proof_part = Vernacstate.Stm.pstate
-
   type partial_state =
     [ `Full of Vernacstate.t
-    | `ProofOnly of Stateid.t * proof_part ]
-
-  let proof_part_of_frozen st = Vernacstate.Stm.pstate st
+    | `ProofOnly of Stateid.t * Vernacstate.Stm.pstate ]
 
   let cache_state ~marshallable id =
     VCS.set_state id (FullState (Vernacstate.freeze_interp_state ~marshallable))
@@ -924,7 +916,6 @@ end = struct (* {{{ *)
     with VCS.Expired -> anomaly Pp.(str "not a cached state (expired).")
 
   let assign id what =
-    let open Vernacstate in
     if VCS.get_state id <> EmptyState then () else
     try match what with
     | `Full s ->
@@ -932,9 +923,11 @@ end = struct (* {{{ *)
            try
             let prev = (VCS.visit id).next in
             if is_cached_and_valid prev
-            then { s with lemmas =
-                PG_compat.copy_terminators
-                  ~src:((get_cached prev).lemmas) ~tgt:s.lemmas }
+            then
+              let open Vernacstate in
+              { s with
+                lemmas = PG_compat.copy_terminators
+                           ~src:((get_cached prev).lemmas) ~tgt:s.lemmas }
             else s
            with VCS.Expired -> s in
          VCS.set_state id (FullState s)
@@ -952,8 +945,6 @@ end = struct (* {{{ *)
         let loc = Loc.get_loc info in
         execution_error ?loc id (iprint (e, info));
         (e, Stateid.add info ~valid id)
-
-  let same_env = Vernacstate.Stm.same_env
 
   (* [define] puts the system in state [id] calling [f ()] *)
   (* [safe_id] is the last known valid state before execution *)
@@ -1549,8 +1540,8 @@ end = struct (* {{{ *)
       match prev, this with
       | _, None -> None
       | Some (prev, o, `Cmd { cast = { expr }}), Some n
-        when is_tac expr && State.same_env o n -> (* A pure tactic *)
-          Some (id, `ProofOnly (prev, State.proof_part_of_frozen n))
+        when is_tac expr && Vernacstate.Stm.same_env o n -> (* A pure tactic *)
+          Some (id, `ProofOnly (prev, Vernacstate.Stm.pstate n))
       | Some _, Some s ->
         if !Flags.debug then msg_debug (Pp.str "STM: sending back a fat state");
           Some (id, `Full s)

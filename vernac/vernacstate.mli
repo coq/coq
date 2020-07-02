@@ -64,15 +64,23 @@ val unfreeze_interp_state : t -> unit
 (* WARNING: Do not use, it will go away in future releases *)
 val invalidate_cache : unit -> unit
 
-(* STM-specific state handling *)
+(** STM-specific state handling *)
 module Stm : sig
+
+  (** Proof state + meta/evar counters *)
   type pstate
 
-  (** Surgery on states related to proof state *)
   val pstate : t -> pstate
   val set_pstate : t -> pstate -> t
-  val non_pstate : t -> Summary.frozen * Lib.frozen
+
+  (** Rest of the state, unfortunately this is used in low-level so we need to expose it *)
+  type non_pstate = Summary.frozen * Lib.frozen
+  val non_pstate : t -> non_pstate
+
+  (** Checks if two states have the same Environ.env (physical eq) *)
   val same_env : t -> t -> bool
+
+  (** Call [Lib.drop_objects] on the state *)
   val make_shallow : t -> t
 end
 

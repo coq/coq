@@ -267,6 +267,7 @@ module Stm = struct
           end
       }
 
+  type non_pstate = Summary.frozen * Lib.frozen
   let non_pstate { system } =
     let st = System.Stm.summary system in
     let st = Summary.remove_from_summary st Evarutil.meta_counter_summary_tag in
