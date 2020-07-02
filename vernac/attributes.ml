@@ -338,3 +338,46 @@ let uses_parser : string key_parser = fun orig args ->
   |  _ -> CErrors.user_err (Pp.str "Ill formed \"using\" attribute")
 
 let using = attribute_of_list ["using",uses_parser]
+
+let process_typing_att ~typing_flags att enable =
+  match att with
+  | "universes" ->
+    { typing_flags with
+      Declarations.check_universes = enable
+    }
+  | "guarded" ->
+    { typing_flags with
+      Declarations.check_guarded = enable
+    }
+  | "positive" ->
+    { typing_flags with
+      Declarations.check_positive = enable
+    }
+  | att ->
+    CErrors.user_err Pp.(str "Unknown “typing” attribute: " ++ str att)
+
+let process_typing_enable ~key = function
+  | VernacFlagEmpty | VernacFlagLeaf (FlagIdent "yes") ->
+    true
+  | VernacFlagLeaf (FlagIdent "no") ->
+    false
+  | _ ->
+    CErrors.user_err Pp.(str "Ill-formed attribute value, must be " ++ str key ++ str "={yes, no}")
+
+let typing_flags_parser : Declarations.typing_flags key_parser = fun orig args ->
+  let rec flag_parser typing_flags = function
+    | [] -> typing_flags
+    | (typing_att, enable) :: rest ->
+      let enable = process_typing_enable ~key:typing_att enable in
+      let typing_flags = process_typing_att ~typing_flags typing_att enable in
+      flag_parser typing_flags rest
+  in
+  match args with
+  | VernacFlagList atts ->
+    let typing_flags = Global.typing_flags () in
+    flag_parser typing_flags atts
+  | att ->
+    CErrors.user_err Pp.(str "Ill-formed “typing” attribute: " ++ pr_vernac_flag_value att)
+
+let typing_flags =
+  attribute_of_list ["typing", typing_flags_parser]

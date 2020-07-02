@@ -30,6 +30,7 @@ val do_definition
   -> name:Id.t
   -> scope:Locality.locality
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.definition_object_kind
   -> ?using:Vernacexpr.section_subset_expr
   -> universe_decl_expr option
@@ -45,6 +46,7 @@ val do_definition_program
   -> name:Id.t
   -> scope:Locality.locality
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.logical_kind
   -> ?using:Vernacexpr.section_subset_expr
   -> universe_decl_expr option

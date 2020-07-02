@@ -31,8 +31,8 @@ Inductive types
    proposition).
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(template)`, :attr:`universes(cumulative)`, and
-   :attr:`private(matching)` attributes.
+   :attr:`universes(template)`, :attr:`universes(cumulative)`,
+   :attr:`typing(positive)`, and :attr:`private(matching)` attributes.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
    The :n:`@ident`\s are simultaneously added to the environment before the types of constructors are checked.
@@ -49,10 +49,12 @@ Inductive types
 
    .. exn:: Non strictly positive occurrence of @ident in @type.
 
-      The types of the constructors have to satisfy a *positivity condition*
-      (see Section :ref:`positivity`). This condition ensures the soundness of
-      the inductive definition. The positivity checking can be disabled using
-      the :flag:`Positivity Checking` flag (see :ref:`controlling-typing-flags`).
+      The types of the constructors have to satisfy a *positivity
+      condition* (see Section :ref:`positivity`). This condition
+      ensures the soundness of the inductive definition. The
+      positivity checking can be disabled using the :flag:`Positivity
+      Checking` flag or the :attr:`typing(positive)` attribute (see
+      :ref:`controlling-typing-flags`).
 
    .. exn:: The conclusion of @type is not valid; it must be built from @ident.
 
@@ -848,9 +850,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      Unset Positivity Checking.
-      Inductive I : Prop := not_I_I (not_I : I -> False) : I.
-      Set Positivity Checking.
+      #[typing(positive=no)] Inductive I : Prop := not_I_I (not_I : I -> False) : I.
 
    .. coqtop:: all
 
@@ -884,9 +884,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      Unset Positivity Checking.
-      Inductive Lam := lam (_ : Lam -> Lam).
-      Set Positivity Checking.
+      #[typing(positive=no)] Inductive Lam := lam (_ : Lam -> Lam).
 
    .. coqtop:: all
 
@@ -915,9 +913,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      Unset Positivity Checking.
-      Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
-      Set Positivity Checking.
+      #[typing(positive=no)] Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
 
    .. coqtop:: all
 

@@ -584,10 +584,11 @@ let declare_entry_core ~name ~scope ~kind ~typing_flags ?hook ~obls ~impargs ~uc
 
 let declare_entry = declare_entry_core ~obls:[]
 
-let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
+let mutual_make_bodies ~typing_flags ~fixitems ~rec_declaration ~possible_indexes =
   match possible_indexes with
   | Some possible_indexes ->
     let env = Global.env() in
+    let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
     let indexes = Pretyping.search_guard env possible_indexes rec_declaration in
     let vars = Vars.universes_of_constr (Constr.mkFix ((indexes,0),rec_declaration)) in
     let fixdecls = CList.map_i (fun i _ -> Constr.mkFix ((indexes,i),rec_declaration)) 0 fixitems in
@@ -600,7 +601,7 @@ let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
 let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) () =
   let { Info.poly; udecl; scope; kind; typing_flags; _ } = info in
   let vars, fixdecls, indexes =
-    mutual_make_bodies ~fixitems:cinfo ~rec_declaration ~possible_indexes in
+    mutual_make_bodies ~typing_flags ~fixitems:cinfo ~rec_declaration ~possible_indexes in
   let uctx, univs =
     (* XXX: Obligations don't do this, this seems like a bug? *)
     if restrict_ucontext
@@ -1915,6 +1916,8 @@ end = struct
     | possible_indexes ->
       (* Try all combinations... not optimal *)
       let env = Global.env() in
+      let typing_flags = pinfo.Proof_info.info.Info.typing_flags in
+      let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
       Internal.map_entry_body entry
         ~f:(guess_decreasing env possible_indexes)
     in
