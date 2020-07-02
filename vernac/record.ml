@@ -28,32 +28,23 @@ module RelDecl = Context.Rel.Declaration
 (********** definition d'un record (structure) **************)
 
 (** Flag governing use of primitive projections. Disabled by default. *)
-let primitive_flag = ref false
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Primitive";"Projections"];
-      optread  = (fun () -> !primitive_flag) ;
-      optwrite = (fun b -> primitive_flag := b) }
+let primitive_flag =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Primitive";"Projections"]
+    ~value:false
 
-let typeclasses_strict = ref false
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Typeclasses";"Strict";"Resolution"];
-      optread  = (fun () -> !typeclasses_strict);
-      optwrite = (fun b -> typeclasses_strict := b); }
+let typeclasses_strict =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Typeclasses";"Strict";"Resolution"]
+    ~value:false
 
-let typeclasses_unique = ref false
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Typeclasses";"Unique";"Instances"];
-      optread  = (fun () -> !typeclasses_unique);
-      optwrite = (fun b -> typeclasses_unique := b); }
+let typeclasses_unique =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Typeclasses";"Unique";"Instances"]
+    ~value:false
 
 let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
   let _, sigma, impls, newfs, _ =
@@ -535,7 +526,7 @@ let declare_structure ~cumulative finite ~ubind ~univs paramimpls params templat
   let blocks = List.mapi mk_block record_data in
   let template = List.for_all (check_template ~template ~univs ~poly ~params) record_data in
   let primitive =
-    !primitive_flag &&
+    primitive_flag () &&
     List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) record_data
   in
   let mie =
@@ -551,7 +542,7 @@ let declare_structure ~cumulative finite ~ubind ~univs paramimpls params templat
   in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubind impls
-      ~primitive_expected:!primitive_flag
+      ~primitive_expected:(primitive_flag ())
   in
   let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
@@ -668,8 +659,8 @@ let declare_class def ~cumulative ~ubind ~univs id idbuild paramimpls params
     let k =
       { cl_univs = univs;
         cl_impl = impl;
-        cl_strict = !typeclasses_strict;
-        cl_unique = !typeclasses_unique;
+        cl_strict = typeclasses_strict ();
+        cl_unique = typeclasses_unique ();
         cl_context = params;
         cl_props = fields;
         cl_projs = projs }
@@ -693,8 +684,8 @@ let add_constant_class env sigma cst =
       cl_context = ctx;
       cl_props = [LocalAssum (make_annot Anonymous r, t)];
       cl_projs = [];
-      cl_strict = !typeclasses_strict;
-      cl_unique = !typeclasses_unique
+      cl_strict = typeclasses_strict ();
+      cl_unique = typeclasses_unique ()
     }
   in
   Classes.add_class env sigma tc;
@@ -715,8 +706,8 @@ let add_inductive_class env sigma ind =
         cl_context = ctx;
         cl_props = [LocalAssum (make_annot Anonymous r, ty)];
         cl_projs = [];
-        cl_strict = !typeclasses_strict;
-        cl_unique = !typeclasses_unique }
+        cl_strict = typeclasses_strict ();
+        cl_unique = typeclasses_unique () }
   in
   Classes.add_class env sigma k
 

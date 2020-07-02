@@ -12,8 +12,6 @@ open Names
 open Vernacexpr
 open Constrexpr
 
-val primitive_flag : bool ref
-
 module Ast : sig
   type t =
     { name : Names.lident
