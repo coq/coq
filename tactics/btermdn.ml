@@ -77,7 +77,7 @@ let constr_val_discr_st sigma ts t =
     | Const (c,u) -> if TransparentState.is_transparent_constant ts c then Everything else Label(GRLabel (ConstRef c),l)
     | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
-    | Var id when not (TransparentState.is_transparent_variable ts id) -> Label(GRLabel (VarRef id),l)
+    | Var id -> if TransparentState.is_transparent_variable ts id then Everything else Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) -> Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
       if List.is_empty l then
@@ -85,7 +85,8 @@ let constr_val_discr_st sigma ts t =
       else Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
-    | _ -> Nothing
+    | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Case _ | Fix _ | CoFix _
+    | Proj _ | Int _ | Float _ -> Nothing
 
 let constr_pat_discr_st ts t =
   let open GlobRef in
