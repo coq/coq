@@ -536,7 +536,7 @@ let eq_universes env sigma cstrs cv_pb refargs l l' =
       cstrs := cmp_constructors (mind,ind,ctor) nargs l l' !cstrs;
       true
 
-let test_constr_universes env sigma leq m n =
+let test_constr_universes env sigma leq ?(nargs=0) m n =
   let open UnivProblem in
   let kind c = kind sigma c in
   if m == n then Some Set.empty
@@ -569,16 +569,16 @@ let test_constr_universes env sigma leq m n =
           Constr.compare_head_gen_leq_with kind kind leq_universes leq_sorts
             eq_constr' leq_constr' nargs m n
         and leq_constr' nargs m n = m == n || compare_leq nargs m n in
-        compare_leq 0 m n
+        compare_leq nargs m n
       else
-        Constr.compare_head_gen_with kind kind eq_universes eq_sorts eq_constr' 0 m n
+        Constr.compare_head_gen_with kind kind eq_universes eq_sorts eq_constr' nargs m n
     in
     if res then Some !cstrs else None
 
-let eq_constr_universes env sigma m n =
-  test_constr_universes env sigma false m n
-let leq_constr_universes env sigma m n =
-  test_constr_universes env sigma true m n
+let eq_constr_universes env sigma ?nargs m n =
+  test_constr_universes env sigma false ?nargs m n
+let leq_constr_universes env sigma ?nargs m n =
+  test_constr_universes env sigma true ?nargs m n
 
 let compare_head_gen_proj env sigma equ eqs eqc' nargs m n =
   let kind c = kind sigma c in
