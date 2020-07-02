@@ -185,7 +185,7 @@ let rec cs_pattern_of_constr env t =
   | Rel n -> Default_cs, Some n, []
   | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
   | Proj (p, c) ->
-    let { Environ.uj_type = ty } = Typeops.infer env c in
+    let ty = Retyping.get_type_of_constr env c in
     let _, params = Inductive.find_rectype env ty in
     Const_cs (GlobRef.ConstRef (Projection.constant p)), None, params @ [c]
   | Sort s -> Sort_cs (Sorts.family s), None, []

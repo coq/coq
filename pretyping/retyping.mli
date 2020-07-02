@@ -30,6 +30,10 @@ exception RetypeError of retype_error
 val get_type_of :
   ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> types
 
+(** No-evar version of [get_type_of] *)
+val get_type_of_constr : ?polyprop:bool -> ?lax:bool
+  -> env -> ?uctx:UState.t -> Constr.t -> Constr.types
+
 val get_sort_of :
   ?polyprop:bool -> env -> evar_map -> types -> Sorts.t
 
