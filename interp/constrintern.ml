@@ -1659,12 +1659,12 @@ let drop_notations_pattern looked_for genv =
         | None -> DAst.make ?loc @@ RCPatAtom None
         | Some (n, head, pl) ->
           let pl =
-            if get_asymmetric_patterns () then pl else
             let pars = List.make n (CAst.make ?loc @@ CPatAtom None) in
-            List.rev_append pars pl in
+            List.rev_append pars pl
+          in
           let (_,argscs) = find_remaining_scopes [] pl head in
           let pats = List.map2 (in_pat_sc scopes) argscs pl in
-          DAst.make ?loc @@ RCPatCstr(head, [], pats)
+          DAst.make ?loc @@ RCPatCstr(head, pats, [])
       end
     | CPatCstr (head, None, pl) ->
       begin
