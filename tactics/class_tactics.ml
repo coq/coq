@@ -161,18 +161,26 @@ let e_give_exact flags h =
   Clenv.unify ~flags t1 <*> exact_no_check c
   end
 
-let unify_e_resolve flags (h, _) = Proofview.Goal.enter begin fun gls ->
-  let clenv', c = connect_hint_clenv h gls in
-  Clenv.res_pf ~with_evars:true ~with_classes:false ~flags clenv'
-  end
-
-let unify_resolve flags (h, _) = Proofview.Goal.enter begin fun gls ->
+let unify_resolve ~with_evars flags h diff = match diff with
+| None ->
+  Proofview.Goal.enter begin fun gls ->
   let clenv', _ = connect_hint_clenv h gls in
-  Clenv.res_pf ~with_evars:false ~with_classes:false ~flags clenv'
+  Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv'
+  end
+| Some (diff, ty) ->
+  let () = assert (not h.hint_poly) in
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = Tacmach.New.project gl in
+  let clenv = mk_clenv_from_n gl (Some diff) (h.hint_term, ty) in
+  let evd = Evd.evars_reset_evd ~with_conv_pbs:true ~with_univs:false sigma clenv.evd in
+  let evd = Evd.merge_context_set Evd.univ_flexible evd h.hint_uctx in
+  let clenv = { clenv with evd = evd ; env = Proofview.Goal.env gl } in
+  Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv
   end
 
 (** Application of a lemma using [refine] instead of the old [w_unify] *)
-let unify_resolve_refine flags (h, n) =
+let unify_resolve_refine flags h diff =
+  let len = match diff with None -> None | Some (diff, _) -> Some diff in
   Proofview.Goal.enter begin fun gls ->
   let { hint_term = c; hint_type = t; hint_uctx = ctx } = h in
   let open Clenv in
@@ -189,7 +197,7 @@ let unify_resolve_refine flags (h, n) =
           let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
           sigma, c, t
       in
-      let sigma', cl = Clenv.make_evar_clause env sigma ?len:n ty in
+      let sigma', cl = Clenv.make_evar_clause env sigma ?len ty in
       let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
       let sigma' =
         Evarconv.(unify_leq_delay
@@ -198,9 +206,9 @@ let unify_resolve_refine flags (h, n) =
       in (sigma', term) end
   end
 
-let unify_resolve_refine flags clenv =
+let unify_resolve_refine flags h diff =
   Proofview.tclORELSE
-    (unify_resolve_refine flags clenv)
+    (unify_resolve_refine flags h diff)
     (fun (exn,info) ->
       match exn with
       | Evarconv.UnableToUnify _ ->
@@ -217,22 +225,17 @@ let with_prods nprods h f =
   if get_typeclasses_limit_intros () then
     Proofview.Goal.enter begin fun gl ->
       let { hint_term = c; hint_clnv = clenv; hint_poly = poly } = h in
-      if poly || Int.equal nprods 0 then
-        f (h, None)
+      if poly || Int.equal nprods 0 then f None
       else
         let sigma = Tacmach.New.project gl in
         let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
         let diff = nb_prod sigma ty - nprods in
-        if (>=) diff 0 then
-          (* Was Some clenv... *)
-          let clenv = mk_clenv_from_n gl (Some diff) (c,ty) in
-          let h = { h with hint_clnv = clenv } in
-          f (h, Some diff)
+        if (>=) diff 0 then f (Some (diff, ty))
         else Tacticals.New.tclZEROMSG (str"Not enough premisses")
     end
   else Proofview.Goal.enter
          begin fun gl ->
-         if Int.equal nprods 0 then f (h, None)
+         if Int.equal nprods 0 then f None
          else Tacticals.New.tclZEROMSG (str"Not enough premisses") end
 
 let matches_pattern concl pat =
@@ -340,25 +343,25 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
            if get_typeclasses_filtered_unification () then
              let tac =
                with_prods nprods h
-                          (fun clenv ->
+                          (fun diff ->
                              matches_pattern concl p <*>
-                               unify_resolve_refine flags clenv)
+                               unify_resolve_refine flags h diff)
              in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
-               with_prods nprods h (unify_resolve flags) in
+               with_prods nprods h (unify_resolve ~with_evars:false flags h) in
                Proofview.tclBIND (Proofview.with_shelf tac)
                   (fun (gls, ()) -> shelve_dependencies gls)
         | ERes_pf h ->
            if get_typeclasses_filtered_unification () then
              let tac = (with_prods nprods h
-                  (fun clenv ->
+                  (fun diff ->
                              matches_pattern concl p <*>
-                             unify_resolve_refine flags clenv)) in
+                             unify_resolve_refine flags h diff)) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
-               with_prods nprods h (unify_e_resolve flags) in
+               with_prods nprods h (unify_resolve ~with_evars:true flags h) in
                Proofview.tclBIND (Proofview.with_shelf tac)
                   (fun (gls, ()) -> shelve_dependencies gls)
         | Give_exact h ->
@@ -366,12 +369,12 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
              let tac =
                matches_pattern concl p <*>
                  Proofview.Goal.enter
-                   (fun gl -> unify_resolve_refine flags (h, None)) in
+                   (fun gl -> unify_resolve_refine flags h None) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              e_give_exact flags h
       | Res_pf_THEN_trivial_fail h ->
-         let fst = with_prods nprods h (unify_e_resolve flags) in
+         let fst = with_prods nprods h (unify_resolve ~with_evars:true flags h) in
          let snd = if complete then Tacticals.New.tclIDTAC
                    else e_trivial_fail_db only_classes db_list local_db secvars in
          Tacticals.New.tclTHEN fst snd
@@ -1229,7 +1232,7 @@ let autoapply c i =
   let cty = Tacmach.New.pf_get_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
   let h = { hint_term = c; hint_type = cty; hint_uctx = Univ.ContextSet.empty; hint_clnv = ce; hint_poly = false } in
-    unify_e_resolve flags (h, 0) <*>
+    unify_resolve ~with_evars:true flags h None <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.make_unresolvables
           (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.find sigma ev).evar_source))) sigma in
