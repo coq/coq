@@ -1152,12 +1152,22 @@ Controlling Typing Flags
    anymore but it still affects the reduction of the term. Unchecked fixpoints are
    printed by :cmd:`Print Assumptions`.
 
+.. attr:: typing(guarded)
+
+   Similar to :flag:`Guard Checking`, but on a per-declaration
+   basis. Takes ``yes/no`` as parameters, i.e. ``typing(guarded=no)``.
+
 .. flag:: Positivity Checking
 
    This flag can be used to enable/disable the positivity checking of inductive
    types and the productivity checking of coinductive types. Warning: this can
    break the consistency of the system, use at your own risk. Unchecked
    (co)inductive types are printed by :cmd:`Print Assumptions`.
+
+.. attr:: typing(positive)
+
+   Similar to :flag:`Positivity Checking`, but on a per-declaration basis.
+   Takes ``yes/no`` as parameters, i.e. ``typing(positive=no)``.
 
 .. flag:: Universe Checking
 
@@ -1166,6 +1176,11 @@ Controlling Typing Flags
    at your own risk.  Constants relying on "type in type" are printed by
    :cmd:`Print Assumptions`. It has the same effect as `-type-in-type` command line
    argument (see :ref:`command-line-options`).
+
+.. attr:: typing(universes)
+
+   Similar to :flag:`Universe Checking`, but on a per-declaration basis.
+   Takes ``yes/no`` as parameters, i.e. ``typing(universes=no)``.
 
 .. cmd:: Print Typing Flags
 

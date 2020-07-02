@@ -1,4 +1,58 @@
+From Coq Require Import Program.Tactics.
 
+(* Part using attributes *)
+
+#[typing(guarded=no)] Fixpoint att_f' (n : nat) : nat := att_f' n.
+#[typing(guarded=no)] Program Fixpoint p_att_f' (n : nat) : nat := p_att_f' n.
+
+#[typing(universes=no)] Definition att_T := let t := Type in (t : t).
+#[typing(universes=no)] Program Definition p_att_T := let t := Type in (t : t).
+
+#[typing(positive=no)]
+Inductive att_Cor :=
+| att_Over : att_Cor
+| att_Next : ((att_Cor -> list nat) -> list nat) -> att_Cor.
+
+Fail #[typing(guarded=yes)] Fixpoint f_att_f' (n : nat) : nat := f_att_f' n.
+Fail #[typing(universes=yes)] Definition f_att_T := let t := Type in (t : t).
+
+Fail #[typing(positive=yes)]
+Inductive f_att_Cor :=
+| f_att_Over : f_att_Cor
+| f_att_Next : ((f_att_Cor -> list nat) -> list nat) -> f_att_Cor.
+
+Print Assumptions att_f'.
+Print Assumptions att_T.
+Print Assumptions att_Cor.
+
+(* Interactive + atts *)
+
+(* Coq's handling of environments in tactic mode is too broken for this to work yet *)
+
+(*
+#[typing(universes=no)] Definition i_att_T' : Type. Proof. exact (let t := Type in (t : t)). Defined.
+#[typing(universes=no)] Definition d_att_T' : Type. Proof. exact (let t := Type in (t : t)). Qed.
+#[typing(universes=no)] Program Definition pi_att_T' : Type. Proof. exact (let t := Type in (t : t)). Qed.
+*)
+
+(* Note: this works a bit by chance, the attribute only affects the
+   kernel call in Defined. Would the tactics perform a check we would
+   fail. *)
+#[typing(guarded=no)] Fixpoint i_att_f' (n : nat) : nat.
+Proof. exact (i_att_f' n). Defined.
+
+#[typing(guarded=no)] Fixpoint d_att_f' (n : nat) : nat.
+Proof. exact (d_att_f' n). Qed.
+
+(* check regular mode is still safe *)
+Fail Fixpoint f_att_f' (n : nat) : nat := f_att_f' n.
+Fail Definition f_att_T := let t := Type in (t : t).
+
+Fail Inductive f_att_Cor :=
+| f_att_Over : f_att_Cor
+| f_att_Next : ((f_att_Cor -> list nat) -> list nat) -> f_att_Cor.
+
+(* Part using Set/Unset *)
 Print Typing Flags.
 Unset Guard Checking.
 Fixpoint f' (n : nat) : nat := f' n.

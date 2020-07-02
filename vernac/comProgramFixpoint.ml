@@ -109,7 +109,7 @@ let telescope env sigma l =
 let nf_evar_context sigma ctx =
   List.map (map_constr (fun c -> Evarutil.nf_evar sigma c)) ctx
 
-let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?using r measure notation =
+let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r measure notation =
   let open EConstr in
   let open Vars in
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
@@ -266,7 +266,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?using r measure notat
   in
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using () in
-  let info = Declare.Info.make ~udecl ~poly ~hook () in
+  let info = Declare.Info.make ~udecl ~poly ~hook ?typing_flags () in
   let pm, _ =
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term:evars_def ~uctx evars in
   pm
@@ -280,10 +280,12 @@ let collect_evars_of_term evd c ty =
   Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
   evars (Evd.from_ctx (Evd.evar_universe_context evd))
 
-let do_program_recursive ~pm ~scope ~poly ?using fixkind fixl =
+let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
   let cofix = fixkind = Declare.Obls.IsCoFixpoint in
   let (env, rec_sign, udecl, evd), fix, info =
-    interp_recursive ~cofix ~program_mode:true fixl
+    let env = Global.env () in
+    let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+    interp_recursive env ~cofix ~program_mode:true fixl
   in
     (* Program-specific code *)
     (* Get the interesting evars, those that were not instantiated *)
@@ -320,10 +322,13 @@ let do_program_recursive ~pm ~scope ~poly ?using fixkind fixl =
         Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in
       let indexes =
-        Pretyping.search_guard (Global.env ()) possible_indexes fixdecls in
+        let env = Global.env () in
+        let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+        Pretyping.search_guard env possible_indexes fixdecls in
+      let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
       List.iteri (fun i _ ->
           Inductive.check_fix env
-                              ((indexes,i),fixdecls))
+            ((indexes,i),fixdecls))
         fixl
   end in
   let uctx = Evd.evar_universe_context evd in
@@ -332,16 +337,16 @@ let do_program_recursive ~pm ~scope ~poly ?using fixkind fixl =
   | Declare.Obls.IsCoFixpoint -> Decls.(IsDefinition CoFixpoint)
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
-  let info = Declare.Info.make ~poly ~scope ~kind ~udecl () in
+  let info = Declare.Info.make ~poly ~scope ~kind ~udecl ?typing_flags () in
   Declare.Obls.add_mutual_definitions ~pm defs ~info ~uctx ~ntns fixkind
 
-let do_fixpoint ~pm ~scope ~poly ?using l =
+let do_fixpoint ~pm ~scope ~poly ?typing_flags ?using l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
     match g, l with
     | [Some { CAst.v = CWfRec (n,r) }],
       [ Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations} ] ->
         let recarg = mkIdentC n.CAst.v in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?using r recarg notations
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?using r recarg notations
 
     | [Some { CAst.v = CMeasureRec (n, m, r) }],
       [Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations }] ->
@@ -354,7 +359,7 @@ let do_fixpoint ~pm ~scope ~poly ?using l =
           user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
         | _, _ -> r
       in
-        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?using
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly ?typing_flags ?using
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
@@ -362,7 +367,7 @@ let do_fixpoint ~pm ~scope ~poly ?using l =
           Vernacexpr.(ComFixpoint.adjust_rec_order ~structonly:true fix.binders fix.rec_order)) l in
       let fixkind = Declare.Obls.IsFixpoint annots in
       let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
-      do_program_recursive ~pm ~scope ~poly ?using fixkind l
+      do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind l
     | _, _ ->
       CErrors.user_err ~hdr:"do_fixpoint"
         (str "Well-founded fixpoints not allowed in mutually recursive blocks")

@@ -110,9 +110,10 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
   evd, (c, tyopt), imps
 
-let do_definition ?hook ~name ~scope ~poly ~kind ?using udecl bl red_option c ctypopt =
+let do_definition ?hook ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =
   let program_mode = false in
   let env = Global.env() in
+  let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
   (* Explicitly bound universes and constraints *)
   let evd, udecl = interp_univ_decl_opt env udecl in
   let evd, (body, types), impargs =
@@ -125,14 +126,15 @@ let do_definition ?hook ~name ~scope ~poly ~kind ?using udecl bl red_option c ct
   in
   let kind = Decls.IsDefinition kind in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ?using () in
-  let info = Declare.Info.make ~scope ~kind ?hook ~udecl ~poly () in
+  let info = Declare.Info.make ~scope ~kind ?hook ~udecl ~poly ?typing_flags () in
   let _ : Names.GlobRef.t =
     Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
   in ()
 
-let do_definition_program ?hook ~pm ~name ~scope ~poly ~kind ?using udecl bl red_option c ctypopt =
+let do_definition_program ?hook ~pm ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =
   let program_mode = true in
   let env = Global.env() in
+  let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
   (* Explicitly bound universes and constraints *)
   let evd, udecl = interp_univ_decl_opt env udecl in
   let evd, (body, types), impargs =
@@ -146,6 +148,6 @@ let do_definition_program ?hook ~pm ~name ~scope ~poly ~kind ?using udecl bl red
   let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let pm, _ =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
-    let info = Declare.Info.make ~udecl ~scope ~poly ~kind ?hook () in
+    let info = Declare.Info.make ~udecl ~scope ~poly ~kind ?hook ?typing_flags () in
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx obls
   in pm
