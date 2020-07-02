@@ -239,7 +239,9 @@ let ppnamedcontextval e =
 let ppaucontext auctx =
   let nas = AUContext.names auctx in
   let prlev l = match Level.var_index l with
-    | Some n -> Name.print nas.(n)
+    | Some n -> (match nas.(n) with
+        | Anonymous -> prlev l
+        | Name id -> Id.print id)
     | None -> prlev l
   in
   pp (pr_universe_context prlev (AUContext.repr auctx))
