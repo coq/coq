@@ -39,7 +39,7 @@ type 'a hint_ast =
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Genarg.glob_generic_argument       (* Hint Extern *)
 
-type hint = {
+type hint = private {
   hint_term : constr;
   hint_type : types;
   hint_uctx : Univ.ContextSet.t;
