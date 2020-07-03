@@ -263,7 +263,7 @@ let meta_reducible_instance env evd b =
   let rec irec u =
     let u = whd_betaiota env Evd.empty u (* FIXME *) in
     match EConstr.kind evd u with
-    | Case (ci,p,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
+    | Case (ci,p,iv,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
         let m = destMeta evd (strip_outer_cast evd c) in
         (match
           try
@@ -272,8 +272,8 @@ let meta_reducible_instance env evd b =
             if isConstruct evd g || not is_coerce then Some g else None
           with Not_found -> None
           with
-            | Some g -> irec (mkCase (ci,p,g,bl))
-            | None -> mkCase (ci,irec p,c,Array.map irec bl))
+            | Some g -> irec (mkCase (ci,p,iv,g,bl))
+            | None -> mkCase (ci,irec p,iv,c,Array.map irec bl))
     | App (f,l) when EConstr.isMeta evd (strip_outer_cast evd f) ->
         let m = destMeta evd (strip_outer_cast evd f) in
         (match
@@ -621,8 +621,8 @@ let clenv_cast_meta clenv =
             else mkCast (mkMeta mv, DEFAULTcast, b)
           with Not_found -> u)
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
-      | Case(ci,p,c,br) ->
-          mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
+      | Case(ci,p,iv,c,br) ->
+          mkCase (ci, crec_hd p, map_invert crec_hd iv, crec_hd c, Array.map crec br)
       | Proj (p, c) -> mkProj (p, crec_hd c)
       | _ -> u
   in

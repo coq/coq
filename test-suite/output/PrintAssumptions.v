@@ -45,6 +45,32 @@ Module Poly.
 
 End Poly.
 
+Module UIP.
+  Set Definitional UIP.
+
+  Inductive seq {A} (a:A) : A -> SProp :=
+    srefl : seq a a.
+  Arguments srefl {_ _}.
+
+  Definition eq_to_seq {A x y} (e:x = y :> A) : seq x y
+    := match e with eq_refl => srefl end.
+  Definition seq_to_eq {A x y} (e:seq x y) : x = y :> A
+    := match e with srefl => eq_refl end.
+
+  Definition norm {A x y} (e:x = y :> A) : x = y
+    := seq_to_eq (eq_to_seq e).
+
+  Definition norm_id {A x y} (e:x = y :> A) : norm e = e
+    := match e with eq_refl => eq_refl end.
+
+  Theorem UIP {A x y} (e e':x = y :> A) : e = e'.
+  Proof.
+    rewrite <-(norm_id e), <-(norm_id e').
+    reflexivity.
+  Defined.
+
+  Print Assumptions UIP.
+End UIP.
 
 (* The original test-case of the bug-report *)
 

@@ -147,7 +147,7 @@ let rec v_constr =
     [|v_puniverses v_cst|]; (* Const *)
     [|v_puniverses v_ind|]; (* Ind *)
     [|v_puniverses v_cons|]; (* Construct *)
-    [|v_caseinfo;v_constr;v_constr;Array v_constr|]; (* Case *)
+    [|v_caseinfo;v_constr;v_case_invert;v_constr;Array v_constr|]; (* Case *)
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
     [|v_proj;v_constr|]; (* Proj *)
@@ -159,6 +159,7 @@ and v_prec = Tuple ("prec_declaration",
                     [|Array (v_binder_annot v_name); Array v_constr; Array v_constr|])
 and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
+and v_case_invert = Sum ("case_inversion", 1, [|[|v_instance;Array v_constr|]|])
 
 let v_rdecl = v_sum "rel_declaration" 0
     [| [|v_binder_annot v_name; v_constr|];               (* LocalAssum *)
@@ -244,7 +245,7 @@ let v_typing_flags =
   v_tuple "typing_flags"
     [|v_bool; v_bool; v_bool;
       v_oracle; v_bool; v_bool;
-      v_bool; v_bool; v_bool|]
+      v_bool; v_bool; v_bool; v_bool|]
 
 let v_univs = v_sum "universes" 0 [|[|v_context_set|]; [|v_abs_context|]|]
 

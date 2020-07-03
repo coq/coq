@@ -756,7 +756,7 @@ let rec subterm_specif renv stack t =
   let f,l = decompose_app (whd_all renv.env t) in
     match kind f with
     | Rel k -> subterm_var k renv
-    | Case (ci,p,c,lbr) ->
+    | Case (ci,p,_iv,c,lbr) -> (* iv ignored: it's just a cache *)
        let stack' = push_stack_closures renv l stack in
        let cases_spec =
          branches_specif renv (lazy_subterm_specif renv [] c) ci
@@ -954,7 +954,7 @@ let check_one_fix renv recpos trees def =
                       check_rec_call renv stack (Term.applist(lift p c,l))
               end
 
-        | Case (ci,p,c_0,lrest) ->
+        | Case (ci,p,iv,c_0,lrest) -> (* iv ignored: it's just a cache *)
             begin try
               List.iter (check_rec_call renv []) (c_0::p::l);
               (* compute the recarg info for the arguments of each branch *)
@@ -976,7 +976,7 @@ let check_one_fix renv recpos trees def =
                   (* the call to whd_betaiotazeta will reduce the
                      apparent iota redex away *)
                   check_rec_call renv []
-                    (Term.applist (mkCase (ci,p,c_0,lrest), l))
+                    (Term.applist (mkCase (ci,p,iv,c_0,lrest), l))
               | _ -> Exninfo.iraise exn
             end
 
@@ -1254,7 +1254,7 @@ let check_one_cofix env nbfix def deftype =
             else
               raise (CoFixGuardError (env,UnguardedRecursiveCall c))
 
-        | Case (_,p,tm,vrest) ->
+        | Case (_,p,_,tm,vrest) -> (* iv ignored: just a cache *)
            begin
              let tree = match restrict_spec env (Subterm (Strict, tree)) p with
              | Dead_code -> assert false

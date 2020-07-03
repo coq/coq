@@ -776,7 +776,7 @@ let rec find_a_destructable_match sigma t =
   let cl = [cl, (None, None), None], None in
   let dest = TacAtom (CAst.make @@ TacInductionDestruct(false, false, cl)) in
   match EConstr.kind sigma t with
-    | Case (_,_,x,_) when closed0 sigma x ->
+    | Case (_,_,_,x,_) when closed0 sigma x ->
         if isVar sigma x then
           (* TODO check there is no rel n. *)
           raise (Found (Tacinterp.eval_tactic dest))

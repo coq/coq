@@ -68,6 +68,7 @@ type ('constr, 'types) ptype_error =
   | UndeclaredUniverse of Level.t
   | DisallowedSProp
   | BadRelevance
+  | BadInvert
 
 type type_error = (constr, types) ptype_error
 
@@ -159,6 +160,9 @@ let error_disallowed_sprop env =
 let error_bad_relevance env =
   raise (TypeError (env, BadRelevance))
 
+let error_bad_invert env =
+  raise (TypeError (env, BadInvert))
+
 let map_pguard_error f = function
 | NotEnoughAbstractionInFixBody -> NotEnoughAbstractionInFixBody
 | RecursionNotOnInductiveType c -> RecursionNotOnInductiveType (f c)
@@ -202,3 +206,4 @@ let map_ptype_error f = function
 | UndeclaredUniverse l -> UndeclaredUniverse l
 | DisallowedSProp -> DisallowedSProp
 | BadRelevance -> BadRelevance
+| BadInvert -> BadInvert

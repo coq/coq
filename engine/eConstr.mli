@@ -128,7 +128,7 @@ val mkIndU : inductive * EInstance.t -> t
 val mkConstruct : constructor -> t
 val mkConstructU : constructor * EInstance.t -> t
 val mkConstructUi : (inductive * EInstance.t) * int -> t
-val mkCase : case_info * t * t * t array -> t
+val mkCase : case_info * t * (t,EInstance.t) case_invert * t * t array -> t
 val mkFix : (t, t) pfixpoint -> t
 val mkCoFix : (t, t) pcofixpoint -> t
 val mkArrow : t -> Sorts.relevance  -> t -> t
@@ -198,7 +198,7 @@ val destConst : Evd.evar_map -> t -> Constant.t * EInstance.t
 val destEvar : Evd.evar_map -> t -> t pexistential
 val destInd : Evd.evar_map -> t -> inductive * EInstance.t
 val destConstruct : Evd.evar_map -> t -> constructor * EInstance.t
-val destCase : Evd.evar_map -> t -> case_info * t * t * t array
+val destCase : Evd.evar_map -> t -> case_info * t * (t,EInstance.t) case_invert * t * t array
 val destProj : Evd.evar_map -> t -> Projection.t * t
 val destFix : Evd.evar_map -> t -> (t, t) pfixpoint
 val destCoFix : Evd.evar_map -> t -> (t, t) pcofixpoint
@@ -341,6 +341,8 @@ val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, typ
 
 val to_rel_decl : Evd.evar_map -> (t, types) Context.Rel.Declaration.pt -> (Constr.t, Constr.types) Context.Rel.Declaration.pt
 
+val of_case_invert : (Constr.t,Univ.Instance.t) case_invert -> (t,EInstance.t) case_invert
+
 (** {5 Unsafe operations} *)
 
 module Unsafe :
@@ -364,6 +366,8 @@ sig
 
   val to_instance : EInstance.t -> Univ.Instance.t
   (** Physical identity. Does not care for normalization. *)
+
+  val to_case_invert : (t,EInstance.t) case_invert -> (Constr.t,Univ.Instance.t) case_invert
 
   val eq : (t, Constr.t) eq
   (** Use for transparent cast between types. *)

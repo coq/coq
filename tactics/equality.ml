@@ -877,7 +877,7 @@ let injectable env sigma ~keep_proofs t1 t2 =
  *)
 
 let descend_then env sigma head dirn =
-  let IndType (indf,_) =
+  let IndType (indf,_) as indt =
     try find_rectype env sigma (get_type_of env sigma head)
     with Not_found ->
       user_err Pp.(str "Cannot project on an inductive type derived from a dependency.")
@@ -904,7 +904,7 @@ let descend_then env sigma head dirn =
           (List.interval 1 (Array.length mip.mind_consnames)) in
       let rci = Sorts.Relevant in (* TODO relevance *)
       let ci = make_case_info env ind rci RegularStyle in
-      Inductiveops.make_case_or_project env sigma indf ci p head (Array.of_list brl)))
+      Inductiveops.make_case_or_project env sigma indt ci p head (Array.of_list brl)))
 
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:
@@ -924,7 +924,7 @@ let descend_then env sigma head dirn =
    branch giving [special], and all the rest giving [default]. *)
 
 let build_selector env sigma dirn c ind special default =
-  let IndType(indf,_) =
+  let IndType(indf,_) as indt =
     try find_rectype env sigma ind
     with Not_found ->
        (* one can find Rel(k) in case of dependent constructors
@@ -950,7 +950,7 @@ let build_selector env sigma dirn c ind special default =
     List.map build_branch(List.interval 1 (Array.length mip.mind_consnames)) in
   let rci = Sorts.Relevant in (* TODO relevance *)
   let ci = make_case_info env ind rci RegularStyle in
-  let ans = Inductiveops.make_case_or_project env sigma indf ci p c (Array.of_list brl) in
+  let ans = Inductiveops.make_case_or_project env sigma indt ci p c (Array.of_list brl) in
   ans
 
 let build_coq_False () = pf_constr_of_global (lib_ref "core.False.type")

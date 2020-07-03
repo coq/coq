@@ -67,10 +67,10 @@ let unif env evd t1 t2=
           | _,Cast(_,_,_)->Queue.add (nt1,strip_outer_cast evd nt2) bige
           | (Prod(_,a,b),Prod(_,c,d))|(Lambda(_,a,b),Lambda(_,c,d))->
               Queue.add (a,c) bige;Queue.add (pop b,pop d) bige
-          | Case (_,pa,ca,va),Case (_,pb,cb,vb)->
-              Queue.add (pa,pb) bige;
-              Queue.add (ca,cb) bige;
-              let l=Array.length va in
+          | Case (_,pa,_,ca,va),Case (_,pb,_,cb,vb)->
+            Queue.add (pa,pb) bige;
+            Queue.add (ca,cb) bige;
+            let l=Array.length va in
                 if not (Int.equal l (Array.length vb)) then
                   raise (UFAIL (nt1,nt2))
                 else

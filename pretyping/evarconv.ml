@@ -208,7 +208,7 @@ let occur_rigidly flags env evd (evk,_) t =
       if rigid_normal_occ b' || rigid_normal_occ t' then Rigid true
       else Reducible
     | Rel _ | Var _ -> Reducible
-    | Case (_,_,c,_) ->
+    | Case (_,_,_,c,_) ->
       (match aux c with
       | Rigid b -> Rigid b
       | _ -> Reducible)
@@ -382,7 +382,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
       else None, x in
     match sk1, sk2 with
     | [], [] -> None, Success i
-    | Stack.Case (_,t1,c1)::q1, Stack.Case (_,t2,c2)::q2 ->
+    | Stack.Case (_,t1,_,c1)::q1, Stack.Case (_,t2,_,c2)::q2 ->
       (match f env i CONV t1 t2 with
       | Success i' ->
         (match ise_array2 i' (fun ii -> f env ii CONV) c1 c2 with
@@ -417,7 +417,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
   let rec ise_stack2 i sk1 sk2 =
     match sk1, sk2 with
     | [], [] -> Success i
-    | Stack.Case (_,t1,c1)::q1, Stack.Case (_,t2,c2)::q2 ->
+    | Stack.Case (_,t1,_,c1)::q1, Stack.Case (_,t2,_,c2)::q2 ->
       ise_and i [
       (fun i -> ise_stack2 i q1 q2);
       (fun i -> ise_array2 i (fun ii -> f env ii CONV) c1 c2);

@@ -49,6 +49,14 @@ type case_info =
     ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
 
+type ('constr, 'univs) case_invert =
+  | NoInvert
+  (** Normal reduction: match when the scrutinee is a constructor. *)
+
+  | CaseInvert of { univs : 'univs; args : 'constr array; }
+  (** Reduce when the indices match those of the unique constructor.
+      (SProp to non SProp only) *)
+
 (** {6 The type of constructions } *)
 
 type t
@@ -148,7 +156,7 @@ val mkRef : GlobRef.t Univ.puniverses -> constr
 
     [ac]{^ ith} element is ith constructor case presented as
     {e lambda construct_args (without params). case_term } *)
-val mkCase : case_info * constr * constr * constr array -> constr
+val mkCase : case_info * constr * (constr,Univ.Instance.t) case_invert * constr * constr array -> constr
 
 (** If [recindxs = [|i1,...in|]]
       [funnames = [|f1,.....fn|]]
@@ -232,7 +240,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
 
   | Ind       of (inductive * 'univs)                 (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Construct of (constructor * 'univs)              (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
-  | Case      of case_info * 'constr * 'constr * 'constr array
+  | Case      of case_info * 'constr * ('constr,'univs) case_invert * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of Projection.t * 'constr
@@ -339,7 +347,7 @@ Ci(...yij...) => ti | ... end] (or [let (..y1i..) := c as x in I args
 return P in t1], or [if c then t1 else t2])
 @return [(info,c,fun args x => P,[|...|fun yij => ti| ...|])]
 where [info] is pretty-printing information *)
-val destCase : constr -> case_info * constr * constr * constr array
+val destCase : constr -> case_info * constr * (constr,Univ.Instance.t) case_invert * constr * constr array
 
 (** Destructs a projection *)
 val destProj : constr -> Projection.t * constr
@@ -497,11 +505,15 @@ val fold_with_full_binders :
   (rel_declaration -> 'a -> 'a) -> ('a -> 'b -> constr -> 'b) ->
     'a -> 'b -> constr -> 'b
 
+val fold_invert : ('a -> 'b -> 'a) -> 'a -> ('b, 'c) case_invert -> 'a
+
 (** [map f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
    not specified *)
 
 val map : (constr -> constr) -> constr -> constr
+
+val map_invert : ('a -> 'a) -> ('a, 'b) case_invert -> ('a, 'b) case_invert
 
 (** [map_user_view f c] maps [f] on the immediate subterms of [c]; it
    differs from [map f c] in that the typing context and body of the
@@ -513,6 +525,9 @@ val map_user_view : (constr -> constr) -> constr -> constr
 (** Like {!map}, but also has an additional accumulator. *)
 
 val fold_map : ('a -> constr -> 'a * constr) -> 'a -> constr -> 'a * constr
+
+val fold_map_invert : ('a -> 'b -> 'a * 'b) ->
+  'a -> ('b, 'c) case_invert -> 'a * ('b, 'c) case_invert
 
 (** [map_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -528,6 +543,8 @@ val map_with_binders :
    not specified *)
 
 val iter : (constr -> unit) -> constr -> unit
+
+val iter_invert : ('a -> unit) -> ('a, 'b) case_invert -> unit
 
 (** [iter_with_binders g f n c] iters [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -558,7 +575,7 @@ val compare_head : constr constr_compare_fn -> constr constr_compare_fn
 (** Convert a global reference applied to 2 instances. The int says
    how many arguments are given (as we can only use cumulativity for
    fully applied inductives/constructors) .*)
-type 'univs instance_compare_fn = GlobRef.t -> int ->
+type 'univs instance_compare_fn = (GlobRef.t * int) option ->
   'univs -> 'univs -> bool
 
 (** [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to
@@ -604,6 +621,9 @@ val compare_head_gen_leq : Univ.Instance.t instance_compare_fn ->
   constr constr_compare_fn ->
   constr constr_compare_fn ->
   constr constr_compare_fn
+
+val eq_invert : ('a -> 'a -> bool) -> ('b -> 'b -> bool)
+  -> ('a, 'b) case_invert -> ('a, 'b) case_invert -> bool
 
 (** {6 Hashconsing} *)
 

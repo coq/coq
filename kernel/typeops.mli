@@ -94,8 +94,9 @@ val judge_of_constructor : env -> constructor puniverses -> unsafe_judgment
 
 (** {6 Type of Cases. } *)
 val judge_of_case : env -> case_info
-  -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment array
-    -> unsafe_judgment
+  -> unsafe_judgment -> (constr,Instance.t) case_invert -> unsafe_judgment
+  -> unsafe_judgment array
+  -> unsafe_judgment
 
 (** {6 Type of global references. } *)
 
@@ -128,3 +129,7 @@ val type_of_prim : env -> CPrimitives.t -> types
 
 val warn_bad_relevance_name : string
 (** Allow the checker to make this warning into an error. *)
+
+val should_invert_case : env -> case_info -> bool
+(** We have case inversion exactly when going from irrelevant nonempty
+   (ie 1 constructor) inductive to relevant type. *)

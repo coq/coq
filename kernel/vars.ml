@@ -252,6 +252,12 @@ let subst_univs_level_constr subst c =
          let u' = Univ.subst_univs_level_universe subst u in
            if u' == u then t else
              (changed := true; mkSort (Sorts.sort_of_univ u'))
+      | Case (ci,p,CaseInvert {univs;args},c,br) ->
+        if Univ.Instance.is_empty univs then Constr.map aux t
+        else
+          let univs' = f univs in
+          if univs' == univs then Constr.map aux t
+          else (changed:=true; Constr.map aux (mkCase (ci,p,CaseInvert {univs=univs';args},c,br)))
       | _ -> Constr.map aux t
     in
     let c' = aux c in
@@ -288,6 +294,10 @@ let subst_instance_constr subst c =
          let u' = Univ.subst_instance_universe subst u in
           if u' == u then t else
             (mkSort (Sorts.sort_of_univ u'))
+      | Case (ci,p,CaseInvert {univs;args},c,br) ->
+        let univs' = f univs in
+        if univs' == univs then Constr.map aux t
+        else Constr.map aux (mkCase (ci,p,CaseInvert {univs=univs';args},c,br))
       | _ -> Constr.map aux t
     in
     aux c

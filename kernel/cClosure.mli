@@ -95,9 +95,10 @@ module KeyTable : Hashtbl.S with type key = table_key
 (** [fconstr] is the type of frozen constr *)
 
 type fconstr
-
 (** [fconstr] can be accessed by using the function [fterm_of] and by
    matching on type [fterm] *)
+
+type finvert
 
 type fterm =
   | FRel of int
@@ -110,6 +111,7 @@ type fterm =
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
+  | FCaseInvert of case_info * constr * finvert * fconstr * constr array * fconstr subs
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr subs
   | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr subs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr subs
@@ -173,14 +175,21 @@ val set_relevance : Sorts.relevance -> fconstr -> unit
 type clos_infos
 type clos_tab
 val create_clos_infos :
-  ?evars:(existential->constr option) -> reds -> env -> clos_infos
+  ?univs:UGraph.t -> ?evars:(existential->constr option) -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
 val create_tab : unit -> clos_tab
 
 val info_env : clos_infos -> env
 val info_flags: clos_infos -> reds
+val info_univs : clos_infos -> UGraph.t
 val unfold_projection : clos_infos -> Projection.t -> stack_member option
+
+val push_relevance : clos_infos -> 'b Context.binder_annot -> clos_infos
+val push_relevances : clos_infos -> 'b Context.binder_annot array -> clos_infos
+val set_info_relevances : clos_infos -> Sorts.relevance Range.t -> clos_infos
+
+val info_relevances : clos_infos -> Sorts.relevance Range.t
 
 val infos_with_reds : clos_infos -> reds -> clos_infos
 
@@ -213,6 +222,9 @@ val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
 
 (** [unfold_reference] unfolds references in a [fconstr] *)
 val unfold_reference : clos_infos -> clos_tab -> table_key -> (fconstr, Util.Empty.t) constant_def
+
+(** Hook for Reduction *)
+val set_conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) -> unit
 
 (***********************************************************************
   i This is for lazy debug *)

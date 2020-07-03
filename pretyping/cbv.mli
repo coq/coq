@@ -41,7 +41,8 @@ type cbv_value =
 and cbv_stack =
   | TOP
   | APP of cbv_value array * cbv_stack
-  | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
+  | CASE of constr * constr array * (constr,Univ.Instance.t) case_invert
+            * case_info * cbv_value subs * cbv_stack
   | PROJ of Projection.t * cbv_stack
 
 val shift_value : int -> cbv_value -> cbv_value

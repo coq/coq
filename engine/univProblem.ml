@@ -150,7 +150,7 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
      [kind1,kind2], because [kind1] and [kind2] may be different,
      typically evaluating [m] and [n] in different evar maps. *)
   let cstrs = ref accu in
-  let eq_universes _ _ = UGraph.check_eq_instances univs in
+  let eq_universes _ = UGraph.check_eq_instances univs in
   let eq_sorts s1 s2 =
     if Sorts.equal s1 s2 then true
     else

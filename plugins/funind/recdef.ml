@@ -312,7 +312,7 @@ let check_not_nested env sigma forbidden e =
     | Const _ -> ()
     | Ind _ -> ()
     | Construct _ -> ()
-    | Case (_, t, e, a) ->
+    | Case (_, t, _, e, a) ->
       check_not_nested t;
       check_not_nested e;
       Array.iter check_not_nested a
@@ -374,7 +374,13 @@ type journey_info =
   ; lambdA : (Name.t * types * constr, constr) journey_info_tac
   ; casE :
          ((constr infos -> tactic) -> constr infos -> tactic)
-      -> (case_info * constr * constr * constr array, constr) journey_info_tac
+      -> ( case_info
+           * constr
+           * (constr, EInstance.t) case_invert
+           * constr
+           * constr array
+         , constr )
+         journey_info_tac
   ; otherS : (unit, constr) journey_info_tac
   ; apP : (constr * constr list, constr) journey_info_tac
   ; app_reC : (constr * constr list, constr) journey_info_tac
@@ -474,9 +480,9 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) g =
         ++ Printer.pr_leconstr_env env sigma expr_info.info
         ++ str " can not contain a recursive call to "
         ++ Id.print expr_info.f_id ) )
-  | Case (ci, t, a, l) ->
+  | Case (ci, t, iv, a, l) ->
     let continuation_tac_a =
-      jinfo.casE (travel jinfo) (ci, t, a, l) expr_info continuation_tac
+      jinfo.casE (travel jinfo) (ci, t, iv, a, l) expr_info continuation_tac
     in
     travel jinfo continuation_tac_a
       {expr_info with info = a; is_main_branch = false; is_final = false}
@@ -767,7 +773,8 @@ let mkDestructEq not_on_hyp expr g =
   in
   (g, tac, to_revert)
 
-let terminate_case next_step (ci, a, t, l) expr_info continuation_tac infos g =
+let terminate_case next_step (ci, a, iv, t, l) expr_info continuation_tac infos
+    g =
   let sigma = project g in
   let env = pf_env g in
   let f_is_present =
@@ -779,7 +786,7 @@ let terminate_case next_step (ci, a, t, l) expr_info continuation_tac infos g =
   let a' = infos.info in
   let new_info =
     { infos with
-      info = mkCase (ci, t, a', l)
+      info = mkCase (ci, t, iv, a', l)
     ; is_main_branch = expr_info.is_main_branch
     ; is_final = expr_info.is_final }
   in
@@ -916,10 +923,10 @@ let prove_terminate = travel terminate_info
 
 (* Equation proof *)
 
-let equation_case next_step (ci, a, t, l) expr_info continuation_tac infos =
+let equation_case next_step case expr_info continuation_tac infos =
   observe_tac
     (fun _ _ -> str "equation case")
-    (terminate_case next_step (ci, a, t, l) expr_info continuation_tac infos)
+    (terminate_case next_step case expr_info continuation_tac infos)
 
 let rec prove_le g =
   let sigma = project g in

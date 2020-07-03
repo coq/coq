@@ -987,7 +987,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
                   ( UnivGen.constr_of_monomorphic_global
                   @@ Coqlib.lib_ref "core.False.type" )) ->
         Proofview.V82.of_tactic tauto g
-      | Case (_, _, v, _) ->
+      | Case (_, _, _, v, _) ->
         tclTHENLIST
           [Proofview.V82.of_tactic (simplest_case v); intros_with_rewrite]
           g
@@ -1026,7 +1026,7 @@ let rec reflexivity_with_destruct_cases g =
       match
         EConstr.kind (project g) (snd (destApp (project g) (pf_concl g))).(2)
       with
-      | Case (_, _, v, _) ->
+      | Case (_, _, _, v, _) ->
         tclTHENLIST
           [ Proofview.V82.of_tactic (simplest_case v)
           ; Proofview.V82.of_tactic intros

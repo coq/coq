@@ -350,13 +350,13 @@ let build_beq_scheme mode kn =
             done;
 
           ar.(i) <- (List.fold_left (fun a decl -> mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
-                        (mkCase (ci,do_predicate rel_list nb_cstr_args,
+                        (mkCase (ci,do_predicate rel_list nb_cstr_args,NoInvert,
                                   mkVar (Id.of_string "Y") ,ar2))
                          (constrsi.(i).cs_args))
         done;
         mkNamedLambda (make_annot (Id.of_string "X") Sorts.Relevant) (mkFullInd ind (nb_ind-1+1))  (
           mkNamedLambda (make_annot (Id.of_string "Y") Sorts.Relevant) (mkFullInd ind (nb_ind-1+2))  (
-            mkCase (ci, do_predicate rel_list 0,mkVar (Id.of_string "X"),ar)))
+            mkCase (ci, do_predicate rel_list 0,NoInvert,mkVar (Id.of_string "X"),ar)))
     in (* build_beq_scheme *)
     let names = Array.make nb_ind (make_annot Anonymous Sorts.Relevant) and
         types = Array.make nb_ind mkSet and

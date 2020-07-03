@@ -407,7 +407,20 @@ let check_branch_types env (ind,u) c ct lft explft =
     | Invalid_argument _ ->
         error_number_branches env (make_judge c ct) (Array.length explft)
 
-let type_of_case env ci p pt c ct _lf lft =
+let should_invert_case env ci =
+  ci.ci_relevance == Sorts.Relevant &&
+  let mib,mip = lookup_mind_specif env ci.ci_ind in
+  mip.mind_relevance == Sorts.Irrelevant &&
+  (* NB: it's possible to have 2 ctors or arguments to 1 ctor by unsetting univ checks
+     but we don't do special reduction in such cases
+
+     XXX Someday consider more carefully what happens with letin params and arguments
+     (currently they're squashed, see indtyping)
+ *)
+  Array.length mip.mind_nf_lc = 1 &&
+  List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
+
+let type_of_case env ci p pt iv c ct _lf lft =
   let (pind, _ as indspec) =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
@@ -418,6 +431,14 @@ let type_of_case env ci p pt c ct _lf lft =
     else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
   in
   let () = check_case_info env pind rp ci in
+  let () =
+    let is_inversion = match iv with
+      | NoInvert -> false
+      | CaseInvert _ -> true (* contents already checked *)
+    in
+    if not (is_inversion = should_invert_case env ci)
+    then error_bad_invert env
+  in
   let (bty,rslty) =
     type_case_branches env indspec (make_judge p pt) c in
   let () = check_branch_types env pind c ct lft bty in
@@ -564,13 +585,22 @@ let rec execute env cstr =
     | Construct c ->
       cstr, type_of_constructor env c
 
-    | Case (ci,p,c,lf) ->
+    | Case (ci,p,iv,c,lf) ->
         let c', ct = execute env c in
+        let iv' = match iv with
+          | NoInvert -> NoInvert
+          | CaseInvert {univs;args} ->
+            let ct' = mkApp (mkIndU (ci.ci_ind,univs), args) in
+            let (ct', _) : constr * Sorts.t = execute_is_type env ct' in
+            let () = conv_leq false env ct ct' in
+            let _, args' = decompose_appvect ct' in
+            if args == args' then iv else CaseInvert {univs;args=args'}
+        in
         let p', pt = execute env p in
         let lf', lft = execute_array env lf in
-        let ci', t = type_of_case env ci p' pt c' ct lf' lft in
-        let cstr = if ci == ci' && c == c' && p == p' && lf == lf' then cstr
-          else mkCase(ci',p',c',lf')
+        let ci', t = type_of_case env ci p' pt iv' c' ct lf' lft in
+        let cstr = if ci == ci' && c == c' && p == p' && iv == iv' && lf == lf' then cstr
+          else mkCase(ci',p',iv',c',lf')
         in
         cstr, t
 
@@ -710,10 +740,10 @@ let judge_of_inductive env indu =
 let judge_of_constructor env cu =
   make_judge (mkConstructU cu) (type_of_constructor env cu)
 
-let judge_of_case env ci pj cj lfj =
+let judge_of_case env ci pj iv cj lfj =
   let lf, lft = dest_judgev lfj in
-  let ci, t = type_of_case env ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft in
-  make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val, lft)) t
+  let ci, t = type_of_case env ci pj.uj_val pj.uj_type iv cj.uj_val cj.uj_type lf lft in
+  make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, iv, cj.uj_val, lft)) t
 
 (* Building type of primitive operators and type *)
 

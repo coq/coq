@@ -265,14 +265,15 @@ let collect_meta_variables c =
   let rec collrec deep acc c = match kind c with
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
-    | Case(ci,p,c,br) ->
-        (* Hack assuming only two situations: the legacy one that branches,
-           if with Metas, are Meta, and the new one with eta-let-expanded
-           branches *)
-        let br = Array.map2 (fun n b -> try snd (Term.decompose_lam_n_decls n b) with UserError _ -> b) ci.ci_cstr_ndecls br in
-        Array.fold_left (collrec deep)
-          (Constr.fold (collrec deep) (Constr.fold (collrec deep) acc p) c)
-          br
+    | Case(ci,p,iv,c,br) ->
+      (* Hack assuming only two situations: the legacy one that branches,
+         if with Metas, are Meta, and the new one with eta-let-expanded
+         branches *)
+      let br = Array.map2 (fun n b -> try snd (Term.decompose_lam_n_decls n b) with UserError _ -> b) ci.ci_cstr_ndecls br in
+      let acc = Constr.fold (collrec deep) acc p in
+      let acc = Constr.fold_invert (collrec deep) acc iv in
+      let acc = Constr.fold (collrec deep) acc c in
+      Array.fold_left (collrec deep) acc br
     | App _ -> Constr.fold (collrec deep) acc c
     | Proj (_, c) -> collrec deep acc c
     | _ -> Constr.fold (collrec true) acc c
@@ -368,14 +369,15 @@ let rec mk_refgoals ~check env sigma goalacc conclty trm =
         let ty = EConstr.Unsafe.to_constr ty in
           (acc',ty,sigma,c)
 
-      | Case (ci,p,c,lf) ->
+      | Case (ci,p,iv,c,lf) ->
+        (* XXX Is ignoring iv OK? *)
         let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals ~check env sigma goalacc p c in
         let sigma = check_conv_leq_goal ~check env sigma trm conclty' conclty in
         let (acc'',sigma,rbranches) = treat_case ~check env sigma ci lbrty lf acc' in
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (ci,p',c',lf')
+          else mkCase (ci,p',iv,c',lf')
         in
         (acc'',conclty',sigma, ans)
 
@@ -416,13 +418,14 @@ and mk_hdgoals ~check env sigma goalacc trm =
         let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
-    | Case (ci,p,c,lf) ->
+    | Case (ci,p,iv,c,lf) ->
+        (* XXX is ignoring iv OK? *)
         let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals ~check env sigma goalacc p c in
         let (acc'',sigma,rbranches) = treat_case ~check env sigma ci lbrty lf acc' in
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (ci,p',c',lf')
+          else mkCase (ci,p',iv,c',lf')
         in
         (acc'',conclty',sigma, ans)
 

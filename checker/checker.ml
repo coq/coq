@@ -299,6 +299,7 @@ let explain_exn = function
       | UnsatisfiedConstraints _ -> str"UnsatisfiedConstraints"
       | DisallowedSProp -> str"DisallowedSProp"
       | BadRelevance -> str"BadRelevance"
+      | BadInvert -> str"BadInvert"
       | UndeclaredUniverse _ -> str"UndeclaredUniverse"))
 
   | InductiveError e ->

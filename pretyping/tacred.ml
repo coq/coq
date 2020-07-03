@@ -277,8 +277,8 @@ let compute_consteval_direct env sigma ref =
       | Fix fix when not onlyproj ->
           (try check_fix_reversibility sigma labs l fix
           with Elimconst -> NotAnElimination)
-      | Case (_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases n
-      | Case (_,_,d,_) -> srec env n labs true d
+      | Case (_,_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases n
+      | Case (_,_,_,d,_) -> srec env n labs true d
       | Proj (p, d) when isRel sigma d -> EliminationProj n
       | _ -> NotAnElimination
   in
@@ -538,7 +538,8 @@ let reduce_mind_case_use_function func env sigma mia =
             fun _ -> None in
         let cofix_def =
           contract_cofix_use_function env sigma build_cofix_name cofix in
-        mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
+        (* Is NoInvert OK here? *)
+        mkCase (mia.mci, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
 
@@ -573,7 +574,7 @@ let match_eval_ref_value env sigma constr stack =
      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
   | _ -> None
 
-let special_red_case env sigma whfun (ci, p, c, lf) =
+let special_red_case env sigma whfun (ci, p, iv, c, lf) =
   let rec redrec s =
     let (constr, cargs) = whfun s in
     match match_eval_ref env sigma constr cargs with
@@ -619,9 +620,9 @@ let reduce_proj env sigma whfun whfun' c =
           let proj_narg = Projection.npars proj + Projection.arg proj in
           List.nth cargs proj_narg
         | _ -> raise Redelimination)
-    | Case (n,p,c,brs) ->
+    | Case (n,p,iv,c,brs) ->
       let c' = redrec c in
-      let p = (n,p,c',brs) in
+      let p = (n,p,iv,c',brs) in
         (try special_red_case env sigma whfun' p
          with Redelimination -> mkCase p)
     | _ -> raise Redelimination
@@ -772,9 +773,9 @@ and whd_simpl_stack env sigma =
       | LetIn (n,b,t,c) -> redrec (applist (Vars.substl [b] c, stack))
       | App (f,cl) -> redrec (applist(f, (Array.to_list cl)@stack))
       | Cast (c,_,_) -> redrec (applist(c, stack))
-      | Case (ci,p,c,lf) ->
+      | Case (ci,p,iv,c,lf) ->
           (try
-            redrec (applist(special_red_case env sigma redrec (ci,p,c,lf), stack))
+            redrec (applist(special_red_case env sigma redrec (ci,p,iv,c,lf), stack))
           with
               Redelimination -> s')
       | Fix fix ->
@@ -867,7 +868,7 @@ let try_red_product env sigma c =
           let open Context.Rel.Declaration in
           mkProd (x, a, redrec (push_rel (LocalAssum (x, a)) env) b)
       | LetIn (x,a,b,t) -> redrec env (Vars.subst1 a t)
-      | Case (ci,p,d,lf) -> simpfun (mkCase (ci,p,redrec env d,lf))
+      | Case (ci,p,iv,d,lf) -> simpfun (mkCase (ci,p,iv,redrec env d,lf))
       | Proj (p, c) ->
         let c' =
           match EConstr.kind sigma c with
@@ -1264,10 +1265,10 @@ let one_step_reduce env sigma c =
       | App (f,cl) -> redrec (f, (Array.to_list cl)@stack)
       | LetIn (_,f,_,cl) -> (Vars.subst1 f cl,stack)
       | Cast (c,_,_) -> redrec (c,stack)
-      | Case (ci,p,c,lf) ->
+      | Case (ci,p,iv,c,lf) ->
           (try
              (special_red_case env sigma (whd_simpl_stack env sigma)
-               (ci,p,c,lf), stack)
+               (ci,p,iv,c,lf), stack)
            with Redelimination -> raise NotStepReducible)
       | Fix fix ->
           (try match reduce_fix (whd_construct_stack env) sigma fix stack with

@@ -134,11 +134,18 @@ let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
     (* Empty type: all OK *)
     | 0 -> univ_info
 
-    (* SProp primitive records are OK, if we squash and become fakerecord also OK *)
-    | 1 when isrecord -> univ_info
-
-    (* Unit and identity types must squash if SProp *)
-    | 1 -> check_univ_leq env_ar_par Univ.Universe.type0m univ_info
+    | 1 ->
+      (* SProp primitive records are OK, if we squash and become fakerecord also OK *)
+      if isrecord then univ_info
+      (* 1 constructor with no arguments also OK in SProp (to make
+         things easier on ourselves when reducing we forbid letins) *)
+      else if (Environ.typing_flags env_ar_par).allow_uip
+           && fst (splayed_lc.(0)) = []
+           && List.for_all Context.Rel.Declaration.is_local_assum params
+      then univ_info
+      (* 1 constructor with arguments must squash if SProp
+         (we could allow arguments in SProp but the reduction rule is a pain) *)
+      else check_univ_leq env_ar_par Univ.Universe.type0m univ_info
 
     (* More than 1 constructor: must squash if Prop/SProp *)
     | _ -> check_univ_leq env_ar_par Univ.Universe.type0 univ_info

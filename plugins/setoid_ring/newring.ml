@@ -77,7 +77,7 @@ let protect_red map env sigma c0 =
   let evars ev = Evarutil.safe_evar_value sigma ev in
   let c = EConstr.Unsafe.to_constr c0 in
   let tab = create_tab () in
-  let infos = create_clos_infos ~evars all env in
+  let infos = create_clos_infos ~univs:(Evd.universes sigma) ~evars all env in
   let map = lookup_map map sigma c0 in
   let rec eval n c = match Constr.kind c with
   | Prod (na, t, u) -> Constr.mkProd (na, eval n t, eval (n + 1) u)

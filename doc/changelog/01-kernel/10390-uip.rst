@@ -1,0 +1,5 @@
+- **Added:**
+  Definitional UIP, only when :flag:`Definitional UIP` is enabled. See
+  documentation of the flag for details.
+  (`#10390 <https://github.com/coq/coq/pull/10390>`_,
+  by Gaëtan Gilbert).

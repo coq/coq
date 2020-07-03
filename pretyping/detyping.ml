@@ -429,7 +429,7 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | [] -> [Id.Set.empty,[],rhs]
   | na::nal ->
     match EConstr.kind sigma c with
-    | Case (ci,p,c,cl) when
+    | Case (ci,p,iv,c,cl) when
         eq_constr sigma c (mkRel (List.index Name.equal na (fst (snd e))))
         && not (Int.equal (Array.length cl) 0)
         && (* don't contract if p dependent *)
@@ -498,40 +498,46 @@ let it_destRLambda_or_LetIn_names l c =
               | _ -> DAst.make @@ GApp (c,[a]))
   in aux l [] c
 
-let detype_case computable detype detype_eqns testdep avoid data p c bl =
-  let (indsp,st,constagsl,k) = data in
+let detype_case computable detype detype_eqns testdep avoid ci p iv c bl =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
+  let tomatch = match iv with
+    | NoInvert -> tomatch
+    | CaseInvert {univs;args} ->
+      let t = mkApp (mkIndU (ci.ci_ind,univs), args) in
+      DAst.make @@ GCast (tomatch, CastConv (detype t))
+  in
   let alias, aliastyp, pred=
     if (not !Flags.raw_print) && synth_type && computable && not (Int.equal (Array.length bl) 0)
     then
       Anonymous, None, None
     else
       let p = detype p in
-      let nl,typ = it_destRLambda_or_LetIn_names k p in
+      let nl,typ = it_destRLambda_or_LetIn_names ci.ci_pp_info.ind_tags p in
       let n,typ = match DAst.get typ with
         | GLambda (x,_,t,c) -> x, c
         | _ -> Anonymous, typ in
       let aliastyp =
         if List.for_all (Name.equal Anonymous) nl then None
-        else Some (CAst.make (indsp,nl)) in
+        else Some (CAst.make (ci.ci_ind,nl)) in
       n, aliastyp, Some typ
   in
-  let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
-  let tag =
+  let constructs = Array.init (Array.length bl) (fun i -> (ci.ci_ind,i+1)) in
+  let tag = let st = ci.ci_pp_info.style in
     try
       if !Flags.raw_print then
         RegularStyle
       else if st == LetPatternStyle then
         st
-      else if PrintingLet.active indsp then
+      else if PrintingLet.active ci.ci_ind then
         LetStyle
-      else if PrintingIf.active indsp then
+      else if PrintingIf.active ci.ci_ind then
         IfStyle
       else
         st
     with Not_found -> st
   in
+  let constagsl = ci.ci_pp_info.cstr_tags in
   match tag, aliastyp with
   | LetStyle, None ->
       let bl' = Array.map detype bl in
@@ -793,14 +799,12 @@ and detype_r d flags avoid env sigma t =
         GRef (GlobRef.IndRef ind_sp, detype_instance sigma u)
     | Construct (cstr_sp,u) ->
         GRef (GlobRef.ConstructRef cstr_sp, detype_instance sigma u)
-    | Case (ci,p,c,bl) ->
+    | Case (ci,p,iv,c,bl) ->
         let comp = computable sigma p (List.length (ci.ci_pp_info.ind_tags)) in
         detype_case comp (detype d flags avoid env sigma)
           (detype_eqns d flags avoid env sigma ci comp)
           (is_nondep_branch sigma) avoid
-          (ci.ci_ind,ci.ci_pp_info.style,
-           ci.ci_pp_info.cstr_tags,ci.ci_pp_info.ind_tags)
-          p c bl
+          ci p iv c bl
     | Fix (nvn,recdef) -> detype_fix (detype d) flags avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix (detype d) flags avoid env sigma n recdef
     | Int i -> GInt i

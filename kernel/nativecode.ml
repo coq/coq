@@ -2088,7 +2088,7 @@ let compile_deps env sigma prefix ~interactive init t =
   | Proj (p,c) ->
     let init = compile_mind_deps env prefix ~interactive init (Projection.mind p) in
     aux env lvl init c
-  | Case (ci, _p, _c, _ac) ->
+  | Case (ci, _p, _iv, _c, _ac) ->
       let mind = fst ci.ci_ind in
       let init = compile_mind_deps env prefix ~interactive init mind in
       fold_constr_with_binders succ (aux env) lvl init t

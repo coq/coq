@@ -562,7 +562,7 @@ struct
   let head_evar sigma c =
     let rec hrec c = match EConstr.kind sigma c with
       | Evar (evk,_)   -> evk
-      | Case (_,_,c,_) -> hrec c
+      | Case (_,_,_,c,_) -> hrec c
       | App (c,_)      -> hrec c
       | Cast (c,_,_)   -> hrec c
       | Proj (p, c)    -> hrec c

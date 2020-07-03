@@ -66,9 +66,9 @@ let protect_pattern_in_binder bl c ctypopt =
         | LetIn (x,b,t,c) ->
           let evd,c = aux (push_rel (LocalDef (x,b,t)) env) evd c in
           evd, mkLetIn (x,t,b,c)
-        | Case (ci,p,a,bl) ->
+        | Case (ci,p,iv,a,bl) ->
           let evd,bl = Array.fold_left_map (aux env) evd bl in
-          evd, mkCase (ci,p,a,bl)
+          evd, mkCase (ci,p,iv,a,bl)
         | Cast (c,_,_)    -> f env evd c  (* we remove the cast we had set *)
         (* This last case may happen when reaching the proof of an
            impossible case, as when pattern-matching on a vector of length 1 *)

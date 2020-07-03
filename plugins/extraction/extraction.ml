@@ -291,7 +291,7 @@ let rec extract_type env sg db j c args =
                       let reason = if lvl == TypeScheme then Ktype else Kprop in
                       Tarr (Tdummy reason, mld)))
     | Sort _ -> Tdummy Ktype (* The two logical cases. *)
-    | _ when sort_of env sg (applistc c args) == InProp -> Tdummy Kprop
+    | _ when info_of_family (sort_of env sg (applistc c args)) == Logic -> Tdummy Kprop
     | Rel n ->
         (match EConstr.lookup_rel n env with
            | LocalDef (_,t,_) ->
@@ -672,8 +672,9 @@ let rec extract_term env sg mle mlt c args =
         (* we unify it with an fresh copy of the stored type of [Rel n]. *)
         let extract_rel mlt = put_magic (mlt, Mlenv.get mle n) (MLrel n)
         in extract_app env sg mle mlt extract_rel args
-    | Case ({ci_ind=ip},_,c0,br) ->
-        extract_app env sg mle mlt (extract_case env sg mle (ip,c0,br)) args
+    | Case ({ci_ind=ip},_,iv,c0,br) ->
+      (* If invert_case then this is a match that will get erased later, but right now we don't care. *)
+      extract_app env sg mle mlt (extract_case env sg mle (ip,c0,br)) args
     | Fix ((_,i),recd) ->
         extract_app env sg mle mlt (extract_fix env sg mle i recd) args
     | CoFix (i,recd) ->
@@ -852,8 +853,8 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
   end else
     (* [c] has an inductive type, and is not a type scheme type. *)
     let t = type_of env sg c in
-    (* The only non-informative case: [c] is of sort [Prop] *)
-    if (sort_of env sg t) == InProp then
+    (* The only non-informative case: [c] is of sort [Prop]/[SProp] *)
+    if info_of_family (sort_of env sg t) == Logic then
       begin
         add_recursors env kn; (* May have passed unseen if logical ... *)
         (* Logical singleton case: *)
@@ -1016,7 +1017,7 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
   (* for replacing recursive calls [Rel ..] by the corresponding [Const]: *)
   let sub = List.rev_map EConstr.mkConst kns in
   for i = 0 to n-1 do
-    if sort_of env sg ti.(i) != InProp then
+    if info_of_family (sort_of env sg ti.(i)) != Logic then
       try
         let e,t = extract_std_constant env sg vkn.(i)
                    (EConstr.Vars.substl sub ci.(i)) ti.(i) in
@@ -1073,7 +1074,7 @@ let fake_match_projection env p =
       else
         let p = mkLambda (x, lift 1 indty, liftn 1 2 ty) in
         let branch = lift 1 (it_mkLambda_or_LetIn (mkRel (List.length ctx - (j-1))) ctx) in
-        let body = mkCase (ci, p, mkRel 1, [|branch|]) in
+        let body = mkCase (ci, p, NoInvert, mkRel 1, [|branch|]) in
         it_mkLambda_or_LetIn (mkLambda (x,indty,body)) mib.mind_params_ctxt
     | LocalDef (_,c,t) :: rem ->
       let c = liftn 1 j c in

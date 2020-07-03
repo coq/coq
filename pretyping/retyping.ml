@@ -121,7 +121,7 @@ let retype ?(polyprop=true) sigma =
     | Evar ev -> existential_type sigma ev
     | Ind (ind, u) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
     | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
-    | Case (_,p,c,lf) ->
+    | Case (_,p,_iv,c,lf) ->
         let Inductiveops.IndType(indf,realargs) =
           let t = type_of env c in
           try Inductiveops.find_rectype env sigma t
@@ -297,7 +297,7 @@ let relevance_of_term env sigma c =
       | Const (c,_) -> Relevanceops.relevance_of_constant env c
       | Ind _ -> Sorts.Relevant
       | Construct (c,_) -> Relevanceops.relevance_of_constructor env c
-      | Case (ci, _, _, _) -> ci.ci_relevance
+      | Case (ci, _, _, _, _) -> ci.ci_relevance
       | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
       | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
       | Proj (p, _) -> Relevanceops.relevance_of_projection env p

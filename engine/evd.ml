@@ -1398,6 +1398,9 @@ module MiniEConstr = struct
   let unsafe_to_rel_decl d = d
   let to_rel_decl sigma d = Context.Rel.Declaration.map_constr (to_constr sigma) d
 
+  let unsafe_to_case_invert x = x
+  let of_case_invert x = x
+
 end
 
 (** The following functions return the set of evars immediately

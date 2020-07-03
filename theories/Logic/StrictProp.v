@@ -23,9 +23,6 @@ Arguments squash {_} _.
 Inductive sEmpty : SProp :=.
 
 Inductive sUnit : SProp := stt.
-Definition sUnit_rect (P:sUnit -> Type) (v:P stt) (u:sUnit) : P u := v.
-Definition sUnit_rec (P:sUnit -> Set) (v:P stt) (u:sUnit) : P u := v.
-Definition sUnit_ind (P:sUnit -> Prop) (v:P stt) (u:sUnit) : P u := v.
 
 Set Primitive Projections.
 Record Ssig {A:Type} (P:A->SProp) := Sexists { Spr1 : A; Spr2 : P Spr1 }.

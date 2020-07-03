@@ -179,7 +179,7 @@ let rec traverse current ctx accu t =
 | Construct (((mind, _), _) as cst, _) ->
   traverse_inductive accu mind (ConstructRef cst)
 | Meta _ | Evar _ -> assert false
-| Case (_,oty,c,[||]) ->
+| Case (_,oty,_,c,[||]) ->
     (* non dependent match on an inductive with no constructors *)
     begin match Constr.(kind oty, kind c) with
     | Lambda(_,_,oty), Const (kn, _)
@@ -306,6 +306,13 @@ let traverse current t =
     considering terms out of any valid environment, so use with caution. *)
 let type_of_constant cb = cb.Declarations.const_type
 
+let uses_uip mib =
+  Array.exists (fun mip ->
+      mip.mind_relevance == Sorts.Irrelevant
+      && Array.length mip.mind_nf_lc = 1
+      && List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt)
+    mib.mind_packets
+
 let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   (* Only keep the transitive dependencies *)
   let (_, graph, ax2ty) = traverse (label_of gr) t in
@@ -362,6 +369,12 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
           ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
+      in
+      let accu =
+        if not (uses_uip mind) then accu
+        else
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (UIP m, l)) Constr.mkProp accu
       in
       accu
   in GlobRef.Map_env.fold fold graph ContextObjectMap.empty
