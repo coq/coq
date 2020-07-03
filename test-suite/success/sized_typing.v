@@ -406,6 +406,22 @@ Fixpoint even_mutual n :=
   | S n' => even_mutual n'
   end.
 
+(** Size-preservation. *)
+(* This can be assigned type nat^s -> nat^s+1 for any s
+  but the global type should be nat^ι -> nat^∞ *)
+Fixpoint add1 n :=
+  match n with
+  | O => S O
+  | S m => S (add1 m)
+  end.
+
+(* If add1 were typed as nat^ι -> nat^ι this would pass *)
+Fail Fixpoint id n :=
+  match n with
+  | O => O
+  | S m => S (id (add1 m))
+  end.
+
 (** A longer example modelling simply-typed lambda calculus with capture-avoiding substitution. *)
 
 Require Import Strings.String.

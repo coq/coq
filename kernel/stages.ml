@@ -334,6 +334,9 @@ module RecCheck =
       iter (fun var ->
         remove cstrnts var) in
 
+    (* Step 0: Add V* ⊑ α *)
+    let () = iter (fun v -> insert cstrnts' v 0 alpha) vstar in
+
     (* Step 1: Si = downward closure containing V* *)
     let si = downward cstrnts' vstar in
 
