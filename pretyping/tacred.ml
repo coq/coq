@@ -867,10 +867,10 @@ let try_red_product env sigma c =
                  (match fix_recarg fix (Array.to_list l) with
                     | None -> raise Redelimination
                     | Some (recargnum,recarg) ->
-                        let stack = Stack.append_app l Stack.empty in
                         let recarg' = redrec env recarg in
-                        let stack' = Stack.assign stack recargnum recarg' in
-                        simpfun (Stack.zip sigma (f,stack')))
+                        let l = Array.copy l in
+                        let () = Array.set l recargnum recarg' in
+                        simpfun (mkApp (f, l)))
              | _ -> simpfun (mkApp (redrec env f, l)))
       | Cast (c,_,_) -> redrec env c
       | Prod (x,a,b) ->
