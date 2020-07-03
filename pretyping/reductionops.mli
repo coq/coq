@@ -111,15 +111,11 @@ type reduction_function = env -> evar_map -> constr -> constr
 
 type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
 
-type contextual_stack_reduction_function =
+type stack_reduction_function =
     env -> evar_map -> constr -> constr * constr list
-type stack_reduction_function = contextual_stack_reduction_function
-type local_stack_reduction_function =
-    evar_map -> constr -> constr * constr list
 
 type state_reduction_function =
     env -> evar_map -> state -> state
-type local_state_reduction_function = evar_map -> state -> state
 
 val pr_state : env -> evar_map -> state -> Pp.t
 
@@ -129,11 +125,6 @@ val strong_with_flags :
   (CClosure.RedFlags.reds -> reduction_function) ->
   (CClosure.RedFlags.reds -> reduction_function)
 val strong : reduction_function -> reduction_function
-(*i
-val stack_reduction_of_reduction :
-  'a reduction_function -> 'a state_reduction_function
-i*)
-val stacklam : (state -> 'a) -> constr list -> evar_map -> constr -> constr Stack.t -> 'a
 
 val whd_state_gen :
   CClosure.RedFlags.reds -> Environ.env -> Evd.evar_map -> state -> state
@@ -166,13 +157,13 @@ val whd_allnolet :  reduction_function
 val whd_betalet : reduction_function
 
 (** Removes cast and put into applicative form *)
-val whd_nored_stack : contextual_stack_reduction_function
-val whd_beta_stack : contextual_stack_reduction_function
-val whd_betaiota_stack : contextual_stack_reduction_function
-val whd_betaiotazeta_stack : contextual_stack_reduction_function
-val whd_all_stack : contextual_stack_reduction_function
-val whd_allnolet_stack : contextual_stack_reduction_function
-val whd_betalet_stack : contextual_stack_reduction_function
+val whd_nored_stack : stack_reduction_function
+val whd_beta_stack : stack_reduction_function
+val whd_betaiota_stack : stack_reduction_function
+val whd_betaiotazeta_stack : stack_reduction_function
+val whd_all_stack : stack_reduction_function
+val whd_allnolet_stack : stack_reduction_function
+val whd_betalet_stack : stack_reduction_function
 
 val whd_nored_state : state_reduction_function
 val whd_beta_state : state_reduction_function

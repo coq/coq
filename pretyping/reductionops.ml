@@ -436,15 +436,11 @@ type state = constr * constr Stack.t
 type reduction_function = env -> evar_map -> constr -> constr
 type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
 
-type contextual_stack_reduction_function =
+type stack_reduction_function =
     env -> evar_map -> constr -> constr * constr list
-type stack_reduction_function = contextual_stack_reduction_function
-type local_stack_reduction_function =
-    evar_map -> constr -> constr * constr list
 
 type state_reduction_function =
     env -> evar_map -> state -> state
-type local_state_reduction_function = evar_map -> state -> state
 
 let pr_state env sigma (tm,sk) =
   let open Pp in
