@@ -51,6 +51,7 @@ let record_field = Entry.create "vernac:record_field"
 let of_type_with_opt_coercion = Entry.create "vernac:of_type_with_opt_coercion"
 let section_subset_expr = Entry.create "vernac:section_subset_expr"
 let scope_delimiter = Entry.create "vernac:scope_delimiter"
+let syntax_modifiers = Entry.create "vernac:syntax_modifiers"
 let only_parsing = Entry.create "vernac:only_parsing"
 
 let make_bullet s =
@@ -321,10 +322,13 @@ GRAMMAR EXTEND Gram
       | -> { None } ] ]
   ;
   decl_notation:
-    [ [ ntn = ne_lstring; ":="; c = constr; b = only_parsing;
+    [ [ ntn = ne_lstring; ":="; c = constr;
+        modl = syntax_modifiers;
         scopt = OPT [ ":"; sc = IDENT -> { sc } ] ->
       { { decl_ntn_string = ntn; decl_ntn_interp = c;
-          decl_ntn_only_parsing = b; decl_ntn_scope = scopt } } ] ]
+          decl_ntn_scope = scopt;
+          decl_ntn_modifiers = modl;
+      } } ] ]
   ;
   decl_sep:
     [ [ IDENT "and" -> { () } ] ]
@@ -1118,7 +1122,7 @@ GRAMMAR EXTEND Gram
 (* Grammar extensions *)
 
 GRAMMAR EXTEND Gram
-  GLOBAL: syntax only_parsing;
+  GLOBAL: syntax only_parsing syntax_modifiers;
 
   syntax:
    [ [ IDENT "Open"; IDENT "Scope"; sc = IDENT ->
@@ -1136,7 +1140,7 @@ GRAMMAR EXTEND Gram
        refl = LIST1 class_rawexpr -> { VernacBindScope (sc,refl) }
 
      | IDENT "Infix"; op = ne_lstring; ":="; p = constr;
-         modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l } | -> { [] } ];
+         modl = syntax_modifiers;
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
          { VernacInfix ((op,modl),p,sc) }
      | IDENT "Notation"; id = identref;
@@ -1145,20 +1149,20 @@ GRAMMAR EXTEND Gram
              (id,(idl,c),{ onlyparsing = b }) }
      | IDENT "Notation"; s = lstring; ":=";
          c = constr;
-         modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l } | -> { [] } ];
+         modl = syntax_modifiers;
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
            { VernacNotation (c,(s,modl),sc) }
      | IDENT "Format"; IDENT "Notation"; n = STRING; s = STRING; fmt = STRING ->
            { VernacNotationAddFormat (n,s,fmt) }
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
-         l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l } | -> { [] } ] ->
+         l = syntax_modifiers ->
            { let s = CAst.map (fun s -> "x '"^s^"' y") s in
            VernacSyntaxExtension (true,(s,l)) }
 
      | IDENT "Reserved"; IDENT "Notation";
          s = ne_lstring;
-         l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l } | -> { [] } ]
+         l = syntax_modifiers
          -> { VernacSyntaxExtension (false, (s,l)) }
 
      (* "Print" "Grammar" and "Declare" "Scope" should be here but are in "command" entry in order
@@ -1194,6 +1198,11 @@ GRAMMAR EXTEND Gram
         { SetItemLevel ([x],b,lev) }
       | x = IDENT; b = constr_as_binder_kind -> { SetItemLevel ([x],Some b,DefaultLevel) }
       | x = IDENT; typ = syntax_extension_type -> { SetEntryType (x,typ) }
+    ] ]
+  ;
+  syntax_modifiers:
+    [ [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l }
+      | -> { [] }
     ] ]
   ;
   syntax_extension_type:
