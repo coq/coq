@@ -4,34 +4,6 @@ open Util
 (** Helpers *)
 let (<<) f g x = f @@ g x
 
-(* Custom data structure for stage constraints *)
-(* We want [union], [union_list], and [grow] to be roughly O(1) *)
-(* A temporary solution to improve performance *)
-module Tree =
-struct
-  type 'a tree = Tree of ('a tree) list | Leaf of 'a
-  let empty = Tree []
-  let union rt1 rt2 = match rt1, rt2 with
-    | Leaf _, Leaf _ -> Tree [rt1; rt2]
-    | Tree [], _ -> rt2
-    | _, Tree [] -> rt1
-    | Tree rts, Leaf _ -> Tree (rt2 :: rts)
-    | Leaf _, Tree rts -> Tree (rt1 :: rts)
-    | _ -> Tree [rt1; rt2]
-  let union_list rts = match rts with
-    | [] -> Tree []
-    | [rt] -> rt
-    | [rt1; rt2] -> union rt1 rt2
-    | _ -> Tree rts
-  let grow a tree = match tree with
-    | Leaf _ -> Tree [Leaf a; tree]
-    | Tree ts -> Tree (Leaf a :: ts)
-  let rec fold f acc = function
-    | Leaf a -> f acc a
-    | Tree ts -> List.fold_left (fold f) acc ts
-  let iter f = fold (fun () -> f) ()
-end
-
 (** Collections of stage variables *)
 
 module SVars =
@@ -224,36 +196,41 @@ module Constraints =
 struct
   open Stage
   open Annot
-  open Tree
 
-  type t = (int * int * int) tree
+  module S = Set.Make(struct
+    module G = WeightedDigraph.Make(Int)
+    type t = G.edge
+    let compare = G.E.compare
+  end)
+
+  type t = S.t
   type 'a constrained = 'a * t
   let mkEdge var1 size var2 = (var1, size, var2)
 
   let infty = Stage.infty
 
-  let empty () = empty
-  let union = union
-  let union_list = union_list
-  let add a1 a2 tree =
+  let empty () = S.empty
+  let union = S.union
+  let union_list = List.fold_left union (empty ())
+  let add a1 a2 cstrnts =
     begin
     match a1, a2 with
     | Stage s1, Stage s2 ->
       begin
       match s1, s2 with
-      | Infty, Infty -> tree
+      | Infty, Infty -> cstrnts
       | StageVar (var1, sz1), StageVar (var2, sz2) ->
-        if var_equal var1 var2 && sz1 <= sz2 then tree
+        if var_equal var1 var2 && sz1 <= sz2 then cstrnts
         else
-          grow (mkEdge var1 (sz2 - sz1) var2) tree
+          S.add (mkEdge var1 (sz2 - sz1) var2) cstrnts
       | Infty, StageVar (var, _) ->
-        grow (mkEdge infty 0 var) tree
-      | StageVar _, Infty -> tree
+        S.add (mkEdge infty 0 var) cstrnts
+      | StageVar _, Infty -> cstrnts
       end
-    | _ -> tree
+    | _ -> cstrnts
     end
 
-  let pr set =
+  let pr cstrnts =
     let open Pp in
     let pr_edge (vfrom, wt, vto) =
       let sfrom, sto =
@@ -265,7 +242,7 @@ struct
       seq [Stage.pr sfrom; str "⊑"; Stage.pr sto] in
     let pr_graph =
       prlist_with_sep pr_comma identity @@
-      fold (fun prs edge -> pr_edge edge :: prs) [] set in
+      S.fold (fun edge prs -> pr_edge edge :: prs) cstrnts [] in
     seq [str "{"; pr_graph; str "}"]
 end
 
@@ -275,14 +252,15 @@ module RecCheck =
   struct
   open SVars
 
+  module S = Constraints.S
   module G = WeightedDigraph.Make(Int)
   type g = G.t
 
-  let to_graph set =
+  let to_graph cstrnts =
     let g = G.create () in
-    Tree.iter (G.add_edge_e g) set; g
+    S.iter (G.add_edge_e g) cstrnts; g
   let of_graph g =
-    G.fold_edges_e Tree.grow g Tree.empty
+    G.fold_edges_e S.add g S.empty
 
   (* N.B. [insert] and [remove] are mutating functions!! *)
   let insert g vfrom wt vto =
