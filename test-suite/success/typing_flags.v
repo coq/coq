@@ -45,6 +45,16 @@ Print Assumptions Box.
 Unset Guard Checking.
 Set Sized Typing.
 
+Fixpoint minus n m :=
+  match n with
+  | O => O
+  | S n' =>
+    match m with
+    | O => n
+    | S m' => minus n' m'
+    end
+  end.
+
 (* Fails with guard checking but not with sized typing *)
 Fixpoint div x y :=
   match x with
