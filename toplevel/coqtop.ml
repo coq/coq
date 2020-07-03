@@ -161,7 +161,7 @@ let init_gc () =
      * In this case, we put in place our preferred configuration.
      *)
     Gc.set { (Gc.get ()) with
-             Gc.minor_heap_size = 33554432; (* 4M *)
+             Gc.minor_heap_size = 32*1024*1024; (* 32Mwords x 8 bytes/word = 256Mb *)
              Gc.space_overhead = 120}
 
 let init_process () =
