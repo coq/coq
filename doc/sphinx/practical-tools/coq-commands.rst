@@ -81,8 +81,7 @@ loading of the resource file with the option ``-q``.
 By environment variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Load path can be specified to the |Coq| system by setting up ``$COQPATH``
-environment variable. It is a list of directories separated by
+``$COQPATH`` can be used to specify the load path. It is a list of directories separated by
 ``:`` (``;`` on Windows). |Coq| will also honor ``$XDG_DATA_HOME`` and
 ``$XDG_DATA_DIRS`` (see Section :ref:`libraries-and-filesystem`).
 
@@ -92,7 +91,7 @@ not set, they look for the commands in the executable path.
 
 .. _COQ_COLORS:
 
-The ``$COQ_COLORS`` environment variable can be used to specify the set
+``$COQ_COLORS`` can be used to specify the set
 of colors used by ``coqtop`` to highlight its output. It uses the same
 syntax as the ``$LS_COLORS`` variable from GNU’s ls, that is, a colon-separated
 list of assignments of the form :n:`name={*; attr}` where
@@ -108,6 +107,22 @@ sets the highlights for added text in diffs to underlined (the 4) with a backgro
 color (0, 0, 240) and for removed text in diffs to a red background.
 Note that if you specify ``COQ_COLORS``, the predefined attributes are ignored.
 
+.. _OCAMLRUNPARAM:
+
+``$OCAMLRUNPARAM``, described
+`here <https://caml.inria.fr/pub/docs/manual-ocaml/runtime.html#s:ocamlrun-options>`_,
+can be used to specify certain runtime and memory usage parameters.  In most cases,
+experimenting with these settings will likely not cause a significant performance difference
+and should be harmless.
+
+If the variable is not set, |Coq| uses the
+`default values <https://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#TYPEcontrol>`_,
+except that ``space_overhead`` is set to 120 and ``minor_heap_size`` is set to 32Mwords
+(256MB with 64-bit executables or 128MB with 32-bit executables).
+
+.. todo: Using the same text "here" for both of the links in the last 2 paragraphs generates
+   an incorrect warning: coq-commands.rst:4: WARNING: Duplicate explicit target name: "here".
+   The warning doesn't even have the right line number. :-(
 
 .. _command-line-options:
 
