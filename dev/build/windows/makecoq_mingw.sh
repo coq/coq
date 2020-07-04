@@ -1481,10 +1481,6 @@ function make_coq {
       logn configure ./configure -with-doc no -prefix "$PREFIXCOQ"
     fi
 
-    # The windows resource compiler binary name is hard coded
-    sed -i "s/i686-w64-mingw32-windres/$TARGET_ARCH-windres/" Makefile.build
-    sed -i "s/i686-w64-mingw32-windres/$TARGET_ARCH-windres/" Makefile.ide || true
-
     # 8.4x doesn't support parallel make
     if [[ $COQ_VERSION == 8.4* ]] ; then
       log1 make
