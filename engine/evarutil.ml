@@ -414,10 +414,8 @@ let new_pure_evar_full evd ?typeclass_candidate evi =
   let evd = Evd.declare_future_goal evk evd in
   (evd, evk)
 
-let new_pure_evar?(src=default_source) ?(filter = Filter.identity) ?(abstract_arguments = Abstraction.identity)
-    ?candidates ?naming ?typeclass_candidate ?(principal=false) sign evd typ =
-  let default_naming = IntroAnonymous in
-  let naming = Option.default default_naming naming in
+let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(abstract_arguments = Abstraction.identity)
+    ?candidates ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
   let name = match naming with
   | IntroAnonymous -> None
   | IntroIdentifier id -> Some id
