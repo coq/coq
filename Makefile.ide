@@ -296,10 +296,12 @@ $(COQIDEAPP):$(COQIDEAPP)/Contents/Resources
 # CoqIde for Windows special targets
 ###########################################################################
 
+# This is either x86_64-w64-mingw32 or i686-w64-mingw32
+TARGET_ARCH=$(shell $CC -dumpmachine)
+
 %.o: %.rc
 	$(SHOW)'WINDRES    $<'
-	$(HIDE)i686-w64-mingw32-windres -i $< -o $@
-
+	$(HIDE)$(TARGET_ARCH)-windres -i $< -o $@
 
 # For emacs:
 # Local Variables:
