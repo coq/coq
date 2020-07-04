@@ -1014,7 +1014,7 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =
        (applist (eq_elim, [t;t1;mkNamedLambda (make_annot e Sorts.Relevant) t discriminator;i;t2]))
 
 type equality = {
-  eq_data  : (coq_eq_data * EConstr.t * (EConstr.t * EConstr.t * EConstr.t));
+  eq_data  : (coq_eq_data * (EConstr.t * EConstr.t * EConstr.t));
   eq_clenv : clausenv;
 }
 
@@ -1029,7 +1029,7 @@ let apply_on_clause (f,t) clause =
      | _  -> user_err  (str "Ill-formed clause applicator.")) in
   clenv_fchain ~with_univs:false argmv f_clause clause
 
-let discr_positions env sigma { eq_data = (lbeq,eqn,(t,t1,t2)); eq_clenv = eq_clause } cpath dirn =
+let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = eq_clause } cpath dirn =
   build_coq_True () >>= fun true_0 ->
   build_coq_False () >>= fun false_0 ->
   let false_ty = Retyping.get_type_of env sigma false_0 in
@@ -1047,14 +1047,14 @@ let discr_positions env sigma { eq_data = (lbeq,eqn,(t,t1,t2)); eq_clenv = eq_cl
   in
     discriminator >>= fun discriminator ->
     discrimination_pf e (t,t1,t2) discriminator lbeq false_kind >>= fun pf ->
-    let pf_ty = mkArrow eqn Sorts.Relevant false_0 in
+    let pf_ty = mkArrow (clenv_type eq_clause) Sorts.Relevant false_0 in
     let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
     let pf = Clenv.clenv_value_cast_meta absurd_clause in
     tclTHENS (assert_after Anonymous false_0)
       [onLastHypId gen_absurdity; (Logic.refiner ~check:true EConstr.Unsafe.(to_constr pf))]
 
 let discrEq eq =
-  let { eq_data = (_, _, (_, t1, t2)); eq_clenv = eq_clause } = eq in
+  let { eq_data = (_, (_, t1, t2)); eq_clenv = eq_clause } = eq in
   let sigma = eq_clause.evd in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1076,7 +1076,7 @@ let onEquality with_evars tac (c,lbindc) =
   let eqn = clenv_type eq_clause' in
   (* FIXME evar leak *)
   let (eq,u,eq_args) = pf_apply find_this_eq_data_decompose gl eqn in
-  let eq = { eq_data = (eq,eqn,eq_args); eq_clenv = eq_clause' } in
+  let eq = { eq_data = (eq, eq_args); eq_clenv = eq_clause' } in
   tclTHEN
     (Proofview.Unsafe.tclEVARS eq_clause'.evd)
     (tac eq)
@@ -1392,7 +1392,7 @@ let simplify_args env sigma t =
     | _ -> t
 
 let inject_at_positions env sigma l2r eq posns tac =
-  let { eq_data = (eq,_,(t,t1,t2)); eq_clenv = eq_clause } = eq in
+  let { eq_data = (eq, (t,t1,t2)); eq_clenv = eq_clause } = eq in
   let e = next_ident_away eq_baseid (vars_of_env env) in
   let e_env = push_named (LocalAssum (make_annot e Sorts.Relevant,t)) env in
   let evdref = ref sigma in
@@ -1430,7 +1430,7 @@ let () = CErrors.register_handler (function
   | _ -> None)
 
 let injEqThen keep_proofs tac l2r eql =
-  let { eq_data = (eq,_,(t,t1,t2)); eq_clenv = eq_clause } = eql in
+  let { eq_data = (eq, (t,t1,t2)); eq_clenv = eq_clause } = eql in
   let sigma = eq_clause.evd in
   let env = eq_clause.env in
   match find_positions env sigma ~keep_proofs ~no_discr:true t1 t2 with
@@ -1500,7 +1500,7 @@ let injConcl flags = injClause flags None false None
 let injHyp flags clear_flag id = injClause flags None false (Some (clear_flag,ElimOnIdent CAst.(make id)))
 
 let decompEqThen keep_proofs ntac eq =
-  let { eq_data = (_,_,(_,t1,t2) as u); eq_clenv = clause } = eq in
+  let { eq_data = (_, (_,t1,t2) as u); eq_clenv = clause } = eq in
   Proofview.Goal.enter begin fun gl ->
     let sigma =  clause.evd in
     let env = Proofview.Goal.env gl in
@@ -1522,10 +1522,10 @@ let dEq ~keep_proofs with_evars =
   dEqThen ~keep_proofs with_evars (fun clear_flag c x ->
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
 
-let intro_decomp_eq tac data (c, t) =
+let intro_decomp_eq tac (eq, _, data) (c, t) =
   Proofview.Goal.enter begin fun gl ->
     let cl = pf_apply make_clenv_binding gl (c, t) NoBindings in
-    let eq = { eq_data = data; eq_clenv = cl } in
+    let eq = { eq_data = (eq, data); eq_clenv = cl } in
     decompEqThen !keep_proof_equalities_for_injection (fun _ -> tac) eq
   end
 
