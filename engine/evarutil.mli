@@ -56,8 +56,6 @@ val new_pure_evar :
   ?principal:bool ->
   named_context_val -> evar_map -> types -> evar_map * Evar.t
 
-val new_pure_evar_full : evar_map -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
-
 (** Create a new Type existential variable, as we keep track of
     them during type-checking and unification. *)
 val new_type_evar :

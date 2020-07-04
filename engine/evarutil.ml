@@ -409,11 +409,6 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
 
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
-let new_pure_evar_full evd ?typeclass_candidate evi =
-  let (evd, evk) = Evd.new_evar evd ?typeclass_candidate evi in
-  let evd = Evd.declare_future_goal evk evd in
-  (evd, evk)
-
 let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(abstract_arguments = Abstraction.identity)
     ?candidates ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
   let name = match naming with
