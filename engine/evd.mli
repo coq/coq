@@ -89,6 +89,15 @@ module Abstraction : sig
   val abstract_last : t -> t
 end
 
+module Identity :
+sig
+  type t
+  (** Identity substitutions *)
+
+  val make : econstr list -> t
+  val none : unit -> t
+end
+
 (** {6 Evar infos} *)
 
 type evar_body =
@@ -114,6 +123,9 @@ type evar_info = {
   (** Information about the evar. *)
   evar_candidates : econstr list option;
   (** List of possible solutions when known that it is a finite list *)
+  evar_identity : Identity.t;
+  (** Default evar instance, i.e. a list of Var nodes projected from the
+      filtered environment. *)
 }
 
 val make_evar : named_context_val -> etypes -> evar_info
@@ -127,6 +139,7 @@ val evar_candidates : evar_info -> constr list option
 val evar_filter : evar_info -> Filter.t
 val evar_env : env -> evar_info -> env
 val evar_filtered_env : env -> evar_info -> env
+val evar_identity_subst : evar_info -> econstr list
 
 val map_evar_body : (econstr -> econstr) -> evar_body -> evar_body
 val map_evar_info : (econstr -> econstr) -> evar_info -> evar_info
