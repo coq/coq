@@ -436,6 +436,10 @@ let clear_hyps2 env sigma ids sign t cl =
   with Evarutil.ClearDependencyError (id,err,inglobal) ->
     error_replacing_dependency env sigma id err inglobal
 
+let new_evar_from_context ?principal sign evd typ =
+  let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
+  Evarutil.new_evar_instance sign evd typ instance
+
 let internal_cut ?(check=true) replace id t =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -457,8 +461,8 @@ let internal_cut ?(check=true) replace id t =
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS sigma)
       (Refine.refine ~typecheck:false begin fun sigma ->
-        let (sigma, ev) = Evarutil.new_evar_from_context sign sigma nf_t in
-        let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true concl in
+        let (sigma, ev) = new_evar_from_context sign sigma nf_t in
+        let (sigma, ev') = new_evar_from_context sign' sigma ~principal:true concl in
         let term = mkLetIn (make_annot (Name id) r, ev, t, EConstr.Vars.subst_var id ev') in
         (sigma, term)
       end)

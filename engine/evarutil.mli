@@ -25,14 +25,6 @@ val mk_new_meta : unit -> constr
 
 (** {6 Creating a fresh evar given their type and context} *)
 
-val new_evar_from_context :
-  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list ->
-  ?naming:intro_pattern_naming_expr ->
-  ?typeclass_candidate:bool ->
-  ?principal:bool ->
-  named_context_val -> evar_map  -> types -> evar_map * EConstr.t
-
 type naming_mode =
   | KeepUserNameAndRenameExistingButSectionNames
   | KeepUserNameAndRenameExistingEvenSectionNames

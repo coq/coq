@@ -444,14 +444,6 @@ let new_evar_instance ?src ?filter ?abstract_arguments ?candidates ?naming ?type
   let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate ?principal typ in
   evd, mkEvar (newevk, instance)
 
-let new_evar_from_context ?src ?filter ?candidates ?naming ?typeclass_candidate ?principal sign evd typ =
-  let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
-  let instance =
-    match filter with
-    | None -> instance
-    | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ ?src ?filter ?candidates ?naming ?principal instance
-
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate
