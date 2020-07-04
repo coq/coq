@@ -63,21 +63,6 @@ val new_Type : ?rigid:rigid -> evar_map -> evar_map * constr
 
 val new_global : evar_map -> GlobRef.t -> evar_map * constr
 
-(** Create a fresh evar in a context different from its definition context:
-   [new_evar_instance sign evd ty inst] creates a new evar of context
-   [sign] and type [ty], [inst] is a mapping of the evar context to
-   the context where the evar should occur. This means that the terms
-   of [inst] are typed in the occurrence context and their type (seen
-   as a telescope) is [sign] *)
-val new_evar_instance :
-  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
-  ?naming:intro_pattern_naming_expr ->
-  ?typeclass_candidate:bool ->
-  ?principal:bool ->
- named_context_val -> evar_map -> types ->
-  constr list -> evar_map * constr
-
 val make_pure_subst : evar_info -> 'a list -> (Id.t * 'a) list
 
 val safe_evar_value : evar_map -> Constr.existential -> Constr.constr option

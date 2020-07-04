@@ -1411,11 +1411,10 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
               refresh_universes ~status:Evd.univ_flexible (Some true)
                 env_evar_unf evd evty
             else evd, evty in
-          let (evd, ev) = new_evar_instance sign evd evty ~filter instance in
-          let evk = fst (destEvar evd ev) in
+          let (evd, evk) = new_pure_evar sign evd evty ~filter in
           evsref := (evk,evty,inst,prefer_abstraction)::!evsref;
           fixed := Evar.Set.add evk !fixed;
-          evd, ev
+          evd, mkEvar (evk, instance)
      in
      let evd, rhs' = apply_on_subterm env_rhs evd fixed set_var test c rhs in
      if debug_ho_unification () then

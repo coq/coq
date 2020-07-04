@@ -781,7 +781,8 @@ let make_evar_clause env sigma ?len t =
         Some (ctx, args, subst), ctx, args, subst
       | Some (ctx, args, subst) -> inst, ctx, args, subst
       in
-      let (sigma, ev) = new_evar_instance ~typeclass_candidate:false ctx sigma (csubst_subst subst t1) args in
+      let (sigma, ev) = new_pure_evar ~typeclass_candidate:false ctx sigma (csubst_subst subst t1) in
+      let ev = mkEvar (ev, args) in
       let dep = not (noccurn sigma 1 t2) in
       let hole = {
         hole_evar = ev;

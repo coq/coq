@@ -1351,9 +1351,8 @@ let unsafe_intro env decl b =
     let inst = List.map (get_id %> EConstr.mkVar) (Environ.named_context env) in
     let ninst = EConstr.mkRel 1 :: inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
-    let sigma, ev =
-      Evarutil.new_evar_instance nctx sigma nb ~principal:true ninst in
-    sigma, EConstr.mkNamedLambda_or_LetIn decl ev
+    let sigma, ev = Evarutil.new_pure_evar ~principal:true nctx sigma nb in
+    sigma, EConstr.mkNamedLambda_or_LetIn decl (EConstr.mkEvar (ev, ninst))
   end
 
 let set_decl_id id = let open Context in function

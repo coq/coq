@@ -120,8 +120,8 @@ let unsafe_intro env decl b =
     let inst = List.map (NamedDecl.get_id %> mkVar) (named_context env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
-    let (sigma, ev) = new_evar_instance nctx sigma nb ~principal:true ninst in
-    (sigma, mkLambda_or_LetIn (NamedDecl.to_rel_decl decl) ev)
+    let (sigma, ev) = new_pure_evar nctx sigma nb ~principal:true in
+    (sigma, mkLambda_or_LetIn (NamedDecl.to_rel_decl decl) (mkEvar (ev, ninst)))
   end
 
 let introduction id =
@@ -340,7 +340,8 @@ let rename_hyp repl =
       let nctx = val_of_named_context nhyps in
       let instance = List.map (NamedDecl.get_id %> mkVar) hyps in
       Refine.refine ~typecheck:false begin fun sigma ->
-        Evarutil.new_evar_instance nctx sigma nconcl ~principal:true instance
+        let sigma, ev = Evarutil.new_pure_evar nctx sigma nconcl ~principal:true in
+        sigma, mkEvar (ev, instance)
       end
     end
 
@@ -438,7 +439,8 @@ let clear_hyps2 env sigma ids sign t cl =
 
 let new_evar_from_context ?principal sign evd typ =
   let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
-  Evarutil.new_evar_instance sign evd typ instance
+  let (evd, evk) = Evarutil.new_pure_evar sign evd typ in
+  (evd, mkEvar (evk, instance))
 
 let internal_cut ?(check=true) replace id t =
   Proofview.Goal.enter begin fun gl ->

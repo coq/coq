@@ -436,14 +436,6 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(abstract_a
   in
   (evd, newevk)
 
-let new_evar_instance ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate
-    ?principal sign evd typ instance =
-  let open EConstr in
-  assert (not !Flags.debug ||
-            List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate ?principal typ in
-  evd, mkEvar (newevk, instance)
-
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate
@@ -455,8 +447,9 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ' ?src ?filter ?abstract_arguments ?candidates ?naming
-    ?typeclass_candidate ?principal instance
+  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?abstract_arguments ?candidates ?naming
+    ?typeclass_candidate ?principal in
+  (evd, EConstr.mkEvar (evk, instance))
 
 let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in
