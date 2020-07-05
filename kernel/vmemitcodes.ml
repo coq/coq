@@ -75,9 +75,6 @@ let patch1 buff pos n =
     (Char.unsafe_chr (n asr 24))
 
 let patch_int buff reloc =
-  (* copy code *before* patching because of nested evaluations:
-     the code we are patching might be called (and thus "concurrently" patched)
-     and results in wrong results. Side-effects... *)
   let buff = Bytes.of_string buff in
   let iter (reloc, npos) = Array.iter (fun pos -> patch1 buff pos reloc) npos in
   let () = CArray.iter iter reloc in
@@ -102,11 +99,11 @@ type env = {
   mutable out_buffer : Bytes.t;
   mutable out_position : int;
   mutable label_table : label_definition array;
-  (* le ieme element de la table = Label_defined n signifie que l'on a
-    deja rencontrer le label i et qu'il est a l'offset n.
-                                = Label_undefined l signifie que l'on a
-    pas encore rencontrer ce label, le premier entier indique ou est l'entier
-    a patcher dans la string, le deuxieme son origine  *)
+  (* i-th table element = Label_defined n means that label i was already
+     encountered and lives at offset n
+     i-th table element = Label_undefined l means that the label was not
+     encountered yet, first integer is the location of the value to be patched
+     in the string, seconed one is its origin *)
   reloc_info : int list RelocTable.t;
 }
 
@@ -119,7 +116,7 @@ let out_word env b1 b2 b3 b4 =
       then 2 * len
       else
         if len = Sys.max_string_length
-        then invalid_arg "String.create"  (* Pas la bonne exception .... *)
+        then invalid_arg "String.create"  (* Not the right exception... *)
         else Sys.max_string_length in
     let new_buffer = Bytes.create new_len in
     Bytes.blit env.out_buffer 0 new_buffer 0 len;
@@ -178,10 +175,6 @@ let out_label_with_orig env orig lbl =
     Label_defined def ->
       out_int env ((def - orig) asr 2)
   | Label_undefined patchlist ->
-      (* spiwack: patchlist is supposed to be non-empty all the time
-         thus I commented that out. If there is no problem I suggest
-         removing it for next release (cur: 8.1) *)
-      (*if patchlist = [] then *)
         (env.label_table).(lbl) <-
           Label_undefined((env.out_position, orig) :: patchlist);
       out_int env 0

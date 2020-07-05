@@ -28,11 +28,11 @@ module RelDecl = Context.Rel.Declaration
 
 type vm_global = values array
 
-(* interpreteur *)
+(* interpreter *)
 external coq_interprete : tcode -> values -> atom array -> vm_global -> Vmvalues.vm_env -> int -> values =
   "coq_interprete_byte" "coq_interprete_ml"
 
-(* table pour les structured_constant et les annotations des switchs *)
+(* table for structured constants and switch annotations *)
 
 module HashMap (M : Hashtbl.HashedType) :
 sig
@@ -149,11 +149,11 @@ struct
 end
 
 
-(*******************)
-(* Linkage du code *)
-(*******************)
+(****************)
+(* Code linking *)
+(****************)
 
-(* Table des globaux *)
+(* Global Table *)
 
 (** [global_table] contains values of global constants, switch annotations,
     and structured constants. *)
