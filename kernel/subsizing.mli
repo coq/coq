@@ -1,8 +1,8 @@
-open Stages
+open Sized
 open Environ
 
-(** The Staging module contains functions that semantically belong
-  in Stages or Constr, but cannot because they depend on Environ. *)
+(** The Subsizing module contains functions that semantically belong
+  in Sized or Constr, but cannot because they depend on Environ. *)
 
 type variance =
   | Variant

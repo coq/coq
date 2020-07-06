@@ -29,9 +29,9 @@ open Util
 open Names
 open Univ
 open Context
-open Stages
+open Sized
 open SVars
-open Stage
+open Size
 open Annot
 open Constraints
 
@@ -816,10 +816,10 @@ let map_with_binders g f l c0 = match kind c0 with
 
 
 (*********************)
-(* Stage annotations *)
+(* Size annotations *)
 (*********************)
 
-(** fold-type functions on stage annotations of constrs *)
+(** fold-type functions on size annotations of constrs *)
 
 let rec count_annots cstr =
   match cstr with
@@ -843,11 +843,11 @@ let rec count_annots cstr =
 let rec collect_annots c =
   match c with
   | Rel (_, la) | Var (_, la) | Const (_, la) ->
-    let collect vars = function
-      | Stage (StageVar (na, _)) -> SVars.add na vars
+    let collect vars a = match sizevar_opt a with
+      | Some na -> SVars.add na vars
       | _ -> vars in
     List.fold_left collect SVars.empty (Option.default [] la)
-  | Ind (_, Stage (StageVar (na, _))) -> SVars.add na SVars.empty
+  | Ind (_, Size (SizeVar (na, _))) -> SVars.add na SVars.empty
   | _ -> fold (fun vars c -> SVars.union vars (collect_annots c)) SVars.empty c
 
 let rec any_annot f c =
@@ -918,24 +918,24 @@ let erase =
 let erase_infty =
   let f _ a =
     match a with
-    | Stage Infty -> a
+    | Size Infty -> a
     | _ -> infty in
   map_annots f (make_annots_list infty)
 
 let erase_glob vars =
   let f _ a =
     match a with
-    | Stage (StageVar (na, _))
+    | Size (SizeVar (na, _))
       when mem na vars -> Glob
-    | Stage Infty -> a
+    | Size Infty -> a
     | _ -> infty in
   map_annots f (make_annots_list infty)
 
 let erase_star vars =
   let f _ a =
     match a with
-    | Stage (StageVar (na, _))
-      when SVars.mem na vars -> Star
+    | Size (SizeVar (na, _))
+      when mem na vars -> Star
     | Empty -> a
     | _ -> Empty in
   map_annots f (make_annots_list Empty)
@@ -961,9 +961,8 @@ let annotate_glob s =
 
 let annotate_succ vars =
   let f _ a =
-    match a with
-    | Stage (StageVar (na, _))
-      when mem na vars -> hat a
+    match sizevar_opt a with
+    | Some na when mem na vars -> hat a
     | _ -> a in
   map_annots f identity
 

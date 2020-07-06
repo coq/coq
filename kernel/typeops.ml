@@ -15,13 +15,13 @@ open Univ
 open Sorts
 open Term
 open Constr
-open Stages
+open Sized
 open SVars
 open Annot
 open State
 open Constraints
 open RecCheck
-open Staging
+open Subsizing
 open Context
 open Vars
 open Declarations
@@ -112,7 +112,7 @@ let type_of_relative env n =
   with Not_found ->
     error_unbound_rel env n
 
-let stage_vars_in_relative env n =
+let size_vars_in_relative env n =
   try env |> lookup_rel n |> RelDecl.get_value |> Option.map count_annots
   with Not_found ->
     error_unbound_rel env n
@@ -123,7 +123,7 @@ let type_of_variable env id =
   with Not_found ->
     error_unbound_var env id
 
-let stage_vars_in_variable env id =
+let size_vars_in_variable env id =
   try env |> named_body id |> Option.map count_annots
   with Not_found ->
     error_unbound_var env id
@@ -173,7 +173,7 @@ let type_of_constant_in env (kn,_u as cst) =
   let cstrnts = check_hyps_inclusion env (GlobRef.ConstRef kn) cb.const_hyps in
   constant_type_in env cst, cstrnts
 
-let stage_vars_in_constant env (kn, _) =
+let size_vars_in_constant env (kn, _) =
   let flags = Environ.typing_flags env in
   if flags.Declarations.check_sized then
     let cb = lookup_constant kn env in
@@ -467,7 +467,7 @@ let type_of_projection env p c ct =
 
 (* Fixpoints. *)
 
-(* Gets the stage variables that must be set to the recursive stage and infinity, respectively *)
+(* Gets the size variables that must be set to the recursive size and infinity, respectively *)
 let get_vstar_vneq stg lar vdef =
   let lar_annots = List.map collect_annots (Array.to_list lar) in
   let vdef_annots = List.map collect_annots (Array.to_list vdef) in
@@ -477,7 +477,7 @@ let get_vstar_vneq stg lar vdef =
   let vneq = diff all_annots vstar in
   vstars, vneq
 
-(* Letting lar'' := lar' with stage annotations at star positions shifted up,
+(* Letting lar'' := lar' with size annotations at star positions shifted up,
   check Γ (names' : lar') ⊢ vdeft ≤ lar''. *)
 let check_fixpoint env (names, lar', vdef, vdeft) lar'' =
   let env1 = push_rec_types (names, lar', vdef) env in (* vdef is ignored *)
@@ -557,19 +557,19 @@ let rec execute env stg cstrnt cstr =
       stg, cstrnt, cstr, type_of_sort s
 
     | Rel (n, _) ->
-      let numvars = stage_vars_in_relative env n in
+      let numvars = size_vars_in_relative env n in
       let annots, stg = next_annots numvars stg in
       stg, cstrnt, mkRelA n annots, type_of_relative env n
 
     | Var (id, _) ->
-      let numvars = stage_vars_in_variable env id in
+      let numvars = size_vars_in_variable env id in
       let s, stg = next stg in
       let t = annotate_glob s (type_of_variable env id) in
       let annots, stg = next_annots numvars stg in
       stg, cstrnt, mkVarA id annots, t
 
     | Const (c, _) ->
-      let numvars = stage_vars_in_constant env c in
+      let numvars = size_vars_in_constant env c in
       let s, stg = next stg in
       let t, cstrnt' = type_of_constant env c in
       let t = annotate_glob s t in
@@ -680,7 +680,7 @@ and execute_recdef env stg cstrnt (names, lar, vdef) =
   let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar cstrnt_lar vdef in
   stg_vdef, cstrnt_vdef, (names', lar', vdef', vdeft)
 
-(* Try RecCheck; if failure, try removing some stage variables from vstar *)
+(* Try RecCheck; if failure, try removing some size variables from vstar *)
 and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars, _ as vars) _recursivity =
   let flags = Environ.typing_flags env in
   if not flags.check_sized then
@@ -689,25 +689,25 @@ and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars,
     let cstrnt' = check_fixpoint env recdeft lar' in
     stg, union cstrnt cstrnt'
   else begin
-  let rec try_rec_check stg (alphas, vstars, vneq) =
+  let rec try_rec_check stg (taus, vstars, vneq) =
     let vstar = SVars.union_list vstars in
     let lar'' = Array.map (annotate_succ vstar) lar' in
     let cstrnt_fix = check_fixpoint env recdeft lar'' in
     (* let cstrnt_fix_ty = _check_fixpoint_type env lar' lar'' _recursivity in *)
     let cstrnt' = union cstrnt cstrnt_fix in
 
-    let rec_check_all cstrnts (alpha, vstar) = union cstrnts (rec_check alpha vstar vneq cstrnts) in
-    try stg, List.fold_left rec_check_all cstrnt' (List.combine alphas vstars)
+    let rec_check_all cstrnts (tau, vstar) = union cstrnts (rec_check tau vstar vneq cstrnts) in
+    try stg, List.fold_left rec_check_all cstrnt' (List.combine taus vstars)
     with RecCheckFailed (cstrnt'', si_inf, si) ->
-      let rm = inter (inter si_inf si) (diff vstar (SVars.of_list alphas)) in
+      let rm = inter (inter si_inf si) (diff vstar (SVars.of_list taus)) in
       if is_empty rm then begin
         if flags.check_guarded then stg, cstrnt else
-          error_unsatisfied_stage_constraints env cstrnt'' cstr si_inf si
+          error_unsatisfied_size_constraints env cstrnt'' cstr si_inf si
       end else
         let vstars = List.map (fun vstar -> diff vstar rm) vstars in
         let vneq = SVars.union vneq rm in
         let stg = remove_pos_vars rm stg in
-        try_rec_check stg (alphas, vstars, vneq) in
+        try_rec_check stg (taus, vstars, vneq) in
   try_rec_check stg vars
   end
 
@@ -720,10 +720,10 @@ and execute_fix env stg cstrnt ((vn, i), (names, lar, vdef)) =
     execute_recdef env stg cstrnt (names, lar_star, vdef) in
 
   let stg_check, cstrnt_check =
-    let alphas = get_rec_vars env vn lar' in
+    let taus = get_rec_vars env vn lar' in
     let vstars, vneq = get_vstar_vneq stg' lar' vdef' in
     let cstr = mkFix ((vn, i), (names', lar', vdef')) in
-    execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstars, vneq) Finite in
+    execute_rec_check env stg' cstrnt' cstr recdeft (taus, vstars, vneq) Finite in
 
   let fix =
     let lar_star = Array.Smart.map (erase_star (get_pos_vars stg_check)) lar' in
@@ -740,10 +740,10 @@ and execute_cofix env stg cstrnt (i, (names, lar, vdef)) =
     execute_recdef env stg cstrnt (names, lar_star, vdef) in
 
   let stg_check, cstrnt_check =
-    let alphas = get_corec_vars env lar' in
+    let taus = get_corec_vars env lar' in
     let vstars, vneq = get_vstar_vneq stg' lar' vdef' in
     let cstr = mkCoFix (i, (names', lar', vdef')) in
-    execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstars, vneq) CoFinite in
+    execute_rec_check env stg' cstrnt' cstr recdeft (taus, vstars, vneq) CoFinite in
 
   let cofix =
     let lar_star = Array.Smart.map (erase_star (get_pos_vars stg_check)) lar' in

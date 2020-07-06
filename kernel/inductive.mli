@@ -13,7 +13,7 @@ open Constr
 open Univ
 open Declarations
 open Environ
-open Stages
+open Sized
 
 (** {6 Extracting an inductive type from a construction } *)
 

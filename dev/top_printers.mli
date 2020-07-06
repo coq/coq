@@ -39,9 +39,9 @@ val ppwf_paths : Declarations.recarg Rtree.t -> unit
 val pr_evar : Evar.t -> Pp.t
 val ppevar : Evar.t -> unit
 
-(* Stages *)
-val ppstage_state : Stages.State.t -> unit
-val ppstage_cstrnts : Stages.Constraints.t -> unit
+(* Sized typing *)
+val ppstage_state : Sized.State.t -> unit
+val ppstage_cstrnts : Sized.Constraints.t -> unit
 
 (* Multiple printers for Constr.t *)
 val ppconstr : Constr.t -> unit (* by Termops printer *)

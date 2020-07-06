@@ -13,7 +13,7 @@ open Constr
 open Declarations
 open Environ
 open Esubst
-open Stages
+open Sized
 
 (** Flags for profiling reductions. *)
 val stats : bool ref

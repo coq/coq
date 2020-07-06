@@ -9,7 +9,7 @@ Esubst
 Sorts
 Evar
 Context
-Stages
+Sized
 Constr
 Vars
 Term
@@ -26,7 +26,7 @@ Declareops
 Retroknowledge
 Conv_oracle
 Environ
-Staging
+Subsizing
 Primred
 CClosure
 Relevanceops

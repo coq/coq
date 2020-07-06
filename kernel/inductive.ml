@@ -20,8 +20,7 @@ open Environ
 open Reduction
 open Type_errors
 open Context.Rel.Declaration
-open Stages
-open Stage
+open Sized
 open Annot
 open Constraints
 
@@ -84,8 +83,8 @@ let ind_subst ?ian mind mib u =
 let constructor_instantiate ?ian mind u mib c =
   let s = ind_subst ?ian mind mib u in
   let ty = substl s (subst_instance_constr u c) in
-  match ian with
-  | Some (_, Stage (StageVar (var, _))) ->
+  match Option.bind (Option.map snd ian) sizevar_opt with
+  | Some var ->
     let args, c = Term.decompose_prod ty in
     Term.compose_prod args (annotate_succ (SVars.add var SVars.empty) c)
   | _ -> ty
@@ -1367,9 +1366,9 @@ let globify env ty_glob ty_def =
     [fix_type]: The current element of [tys]
     [arg_name]: The name of the current argument in [fix_type]
     [arg_type]: The type of the current argument in [fix_type]
-    [arg_index]: The index of the current argument inf [fix_type]
+    [arg_index]: The index of the current argument in [fix_type]
     [arg_head]: The irreducible head of [arg_type]
-    [arg_indus]: If [arg_head] is an inductive type,
+    [arg_indus]: If [arg_head] is a (co)inductive type,
       this is its name and annotation.
     [acc]: The accumulated value, starting with [init] *)
 
@@ -1485,10 +1484,14 @@ let get_rec_vars env is tys =
     let err = err env info in
     if Int.equal info.elt info.arg_index then
       match info.arg_indus with
-      | Some (_, Stage (StageVar (var, _))) ->
-        { info with acc = var :: info.acc }, info.arg_head
+      | Some (_, a) ->
+        begin
+        match sizevar_opt a with
+        | Some var ->
+          { info with acc = var :: info.acc }, info.arg_head
+        | None -> info, info.arg_head
+        end
       | None -> info, err ()
-      | _ -> info, info.arg_head
     else info, info.arg_head in
   let is = Array.to_list is in
   let tys = Array.to_list tys in
@@ -1510,8 +1513,13 @@ let get_corec_vars env tys =
   let f info =
     let err = err env info in
     match info.arg_index, info.arg_indus with
-    | -1, Some (_, Stage (StageVar (var, _))) ->
-      { info with acc = var :: info.acc }, info.arg_head
+    | -1, Some (_, a) ->
+      begin
+      match sizevar_opt a with
+      | Some var ->
+        { info with acc = var :: info.acc }, info.arg_head
+      | None -> info, info.arg_head
+      end
     | -1, None -> info, err ()
     | _ -> info, info.arg_head in
   let is = List.make (Array.length tys) (-1) in

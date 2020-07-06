@@ -33,7 +33,7 @@ open Context
 open Environ
 open Vars
 open Esubst
-open Stages
+open Sized
 
 let stats = ref false
 

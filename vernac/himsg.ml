@@ -732,20 +732,20 @@ let explain_non_linear_unification env sigma m t =
   strbrk " which would require to abstract twice on " ++
   pr_lconstr_env env sigma t ++ str "."
 
-let explain_unsatisfied_stage_constraints env sigma cstrnts cstr si_inf si =
-  strbrk "The stage annotation of the recursive type in the (co)fixpoint" ++
+let explain_unsatisfied_size_constraints env sigma cstrnts cstr si_inf si =
+  strbrk "The size annotation of the recursive type in the (co)fixpoint" ++
   fnl () ++ pr_leconstr_env env sigma cstr ++ fnl () ++
-  strbrk "could not be set to a finite stage variable."
+  strbrk "could not be set to a finite size variable."
   (*
-  strbrk "Unsatisfied stage constraints: In the (co)fixpoint" ++
+  strbrk "Unsatisfied size constraints: In the (co)fixpoint" ++
   fnl () ++ pr_leconstr_env env sigma cstr ++ pr_comma () ++ fnl () ++
   strbrk "given constraints" ++
-  spc () ++ Stages.Constraints.pr cstrnts ++ pr_comma () ++
-  str "stage variables" ++
-  spc () ++ Stages.SVars.pr si_inf ++ spc () ++
+  spc () ++ Sized.Constraints.pr cstrnts ++ pr_comma () ++
+  str "size variables" ++
+  spc () ++ Sized.SVars.pr si_inf ++ spc () ++
   str "must be set to infinity, and" ++
-  spc () ++ Stages.SVars.pr si ++ spc () ++
-  str "must be set to finite stage variables, but their intersection is not empty."
+  spc () ++ Sized.SVars.pr si ++ spc () ++
+  str "must be set to finite size variables, but their intersection is not empty."
   *)
 
 let explain_unsatisfied_constraints env sigma cst =
@@ -805,8 +805,8 @@ let explain_type_error env sigma err =
      explain_ill_typed_rec_body env sigma i lna vdefj vargs
   | WrongCaseInfo (ind,ci) ->
       explain_wrong_case_info env ind ci
-  | UnsatisfiedStageConstraints (cstrnts, cstr, si_inf, si) ->
-      explain_unsatisfied_stage_constraints env sigma cstrnts cstr si_inf si
+  | UnsatisfiedSizeConstraints (cstrnts, cstr, si_inf, si) ->
+      explain_unsatisfied_size_constraints env sigma cstrnts cstr si_inf si
   | UnsatisfiedConstraints cst ->
       explain_unsatisfied_constraints env sigma cst
   | UndeclaredUniverse l ->

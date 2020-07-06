@@ -10,7 +10,7 @@
 
 open Constr
 open Environ
-open Stages
+open Sized
 
 (***********************************************************************
   s Reduction functions *)

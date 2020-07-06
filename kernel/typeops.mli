@@ -12,7 +12,7 @@ open Names
 open Constr
 open Univ
 open Environ
-open Stages
+open Sized
 
 (** {6 Typing functions (not yet tagged as safe) }
 

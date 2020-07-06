@@ -18,6 +18,7 @@ open Libnames
 open Univ
 open Environ
 open Printer
+open Sized
 open Constr
 open Context
 open Genarg
@@ -66,8 +67,8 @@ let get_current_context () =
   [@@ocaml.warning "-3"]
 
 (* stage printers *)
-let ppstage_state state = Stages.State.pr state |> pp
-let ppstage_cstrnts cstrnts = Stages.Constraints.pr cstrnts |> pp
+let ppstage_state state = State.pr state |> pp
+let ppstage_cstrnts cstrnts = Constraints.pr cstrnts |> pp
 
 (* term printers *)
 let envpp pp = let sigma,env = get_current_context () in pp env sigma
@@ -295,7 +296,7 @@ let constr_display csr =
   | Evar (e,l) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display (Array.of_list l))^")"
   | Const ((c,u), ans) -> "Const("^(Constant.to_string c)^","^(universes_display u)^","^(annot_list_display ans)^")"
   | Ind (((sp,i),u), stg) ->
-      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^","^(Stages.Annot.show stg)^")"
+      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^","^(Annot.show stg)^")"
   | Construct (((sp,i),j),u) ->
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
@@ -345,7 +346,7 @@ let constr_display csr =
         then (" "^i) else "")) (Instance.to_array l) ""
 
   and annot_list_display ans =
-    let open Stages.Annot in
+    let open Annot in
     match ans with
     | None -> ""
     | Some [] -> "[]"
@@ -472,10 +473,10 @@ let print_pure_constr csr =
   and universes_display u =
     Array.iter (fun u -> print_space (); pp (Level.pr u)) (Instance.to_array u)
 
-  and annot_display a = print_space (); pp (Stages.Annot.pr a)
+  and annot_display a = print_space (); pp (Annot.pr a)
 
   and annot_list_display ans =
-    let open Stages.Annot in
+    let open Annot in
     print_space ();
     match ans with
     | None -> ()

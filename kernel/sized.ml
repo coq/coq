@@ -4,7 +4,7 @@ open Util
 (** Helpers *)
 let (<<) f g x = f @@ g x
 
-(** Collections of stage variables *)
+(** Collections of size variables *)
 
 module SVars =
 struct
@@ -20,15 +20,15 @@ struct
     seq [str "{"; pr_enum pr_var (elements vars); str "}"]
 end
 
-(** Stages, for sized annotations *)
+(** Sizes, for sized annotations *)
 
-module Stage =
+module Size =
 struct
-  type t = Infty | StageVar of SVars.var * int
+  type t = Infty | SizeVar of SVars.var * int
 
   let infty = -1 (* For constraint representation only!!! *)
 
-  let mk var size = StageVar (var, size)
+  let mk var size = SizeVar (var, size)
 
   let var_equal = Int.equal
 
@@ -37,7 +37,7 @@ struct
     | Infty, Infty -> 0
     | Infty, _     -> 1
     | _, Infty     -> -1
-    | StageVar (var1, sz1), StageVar (var2, sz2) ->
+    | SizeVar (var1, sz1), SizeVar (var2, sz2) ->
       let nc = Int.compare var1 var2 in
       if not (Int.equal nc 0) then nc
       else Int.compare sz1 sz2
@@ -46,7 +46,7 @@ struct
     let open Pp in
     match s with
     | Infty -> str "∞"
-    | StageVar (s, n) ->
+    | SizeVar (s, n) ->
       let pp = str "s" ++ int s in
       if Int.equal n 0 then pp else
       seq [pp; str "+"; int n]
@@ -56,24 +56,24 @@ end
 
 module Annot =
 struct
-  open Stage
+  open Size
 
   type t =
     | Empty (* Bare types with no annotations, input to inference *)
     | Star (* Marks the positions of the (co)recursive types in (co)fixpoints *)
     | Glob (* Marks the positions of the (co)recursive types in global definitions *)
-    | Stage (* Sized types *) of Stage.t
+    | Size (* Sized types *) of Size.t
 
   (* For annotating Consts, Vars, and Rels *)
   type ts = t list option
 
-  let infty = Stage Infty
+  let infty = Size Infty
 
-  let mk var size = Stage (Stage.mk var size)
+  let mk var size = Size (Size.mk var size)
 
   let hat a =
     match a with
-    | Stage (StageVar (var, sz)) -> Stage (StageVar (var, succ sz))
+    | Size (SizeVar (var, sz)) -> Size (SizeVar (var, succ sz))
     | _ -> a
 
   let compare a1 a2 =
@@ -84,9 +84,13 @@ struct
     | Star, _  -> -1 | _, Star  -> 1
     | Glob, Glob   -> 0
     | Glob, _  -> -1 | _, Glob  -> 1
-    | Stage s1, Stage s2 -> Stage.compare s1 s2
+    | Size s1, Size s2 -> Size.compare s1 s2
 
   let equal a1 a2 = Int.equal 0 @@ compare a1 a2
+
+  let sizevar_opt = function
+    | Size (SizeVar (var, _)) -> Some var
+    | _ -> None
 
   let pr a =
     let open Pp in
@@ -94,7 +98,7 @@ struct
     | Empty -> mt ()
     | Star  -> str "*"
     | Glob  -> str "ⁱ"
-    | Stage s -> Stage.pr s
+    | Size s -> Size.pr s
 
   let show a = Pp.string_of_ppcmds (pr a)
 
@@ -103,28 +107,28 @@ struct
     | Empty -> combine 1 (show a |> String.hash)
     | Star  -> combine 2 (show a |> String.hash)
     | Glob  -> combine 3 (show a |> String.hash)
-    | Stage Infty -> combine 4 (show a |> String.hash)
-    | Stage (StageVar (n, i)) -> combine3 5 (Int.hash n) (Int.hash i)
+    | Size Infty -> combine 4 (show a |> String.hash)
+    | Size (SizeVar (n, i)) -> combine3 5 (Int.hash n) (Int.hash i)
 
   let hashAns =
     Option.hash (List.fold_left (fun h a -> combine h (hash a)) 0)
 end
 
-(** Stage state, keeping track of used stage variables *)
+(** Size state, keeping track of used size variables *)
 
 module State =
 struct
   open SVars
-  open Stage
+  open Size
   open Annot
 
   type t = {
     next: var;
-    (* next stage variable to be used *)
+    (* next size variable to be used *)
     vars: SVars.t;
-    (* all used stage variables *)
+    (* all used size variables *)
     pos_vars: SVars.t;
-    (* stage variables used to replace star annotations *)
+    (* size variables used to replace star annotations *)
     stack: SVars.t list;
     (* stack of old pos_vars *)
   }
@@ -154,7 +158,7 @@ struct
 
   let next ?s:(s=Empty) state =
     match s with
-    | Empty | Stage Infty ->
+    | Empty | Size Infty ->
       mk state.next 0,
       { state with
         next = succ state.next;
@@ -186,15 +190,15 @@ struct
     seq [str"<"; stg_pp; pr_comma (); vars_pp; pr_comma (); stars_pp; str ">"]
 end
 
-(** Collections of stage constraints *)
+(** Collections of size constraints *)
 
 (* Constraints.t: A weighted, directed graph.
   Given a constraint v1+s1 ⊑ v2+s2, we add an edge
   from v1 to v2 with weight s2 - s1.
-  N.B. Infty stages are stored as (-1) *)
+  N.B. Infty sizes are stored as (-1) *)
 module Constraints =
 struct
-  open Stage
+  open Size
   open Annot
 
   module S = Set.Make(struct
@@ -207,7 +211,7 @@ struct
   type 'a constrained = 'a * t
   let mkEdge var1 size var2 = (var1, size, var2)
 
-  let infty = Stage.infty
+  let infty = Size.infty
 
   let empty () = S.empty
   let union = S.union
@@ -215,17 +219,17 @@ struct
   let add a1 a2 cstrnts =
     begin
     match a1, a2 with
-    | Stage s1, Stage s2 ->
+    | Size s1, Size s2 ->
       begin
       match s1, s2 with
       | Infty, Infty -> cstrnts
-      | StageVar (var1, sz1), StageVar (var2, sz2) ->
+      | SizeVar (var1, sz1), SizeVar (var2, sz2) ->
         if var_equal var1 var2 && sz1 <= sz2 then cstrnts
         else
           S.add (mkEdge var1 (sz2 - sz1) var2) cstrnts
-      | Infty, StageVar (var, _) ->
+      | Infty, SizeVar (var, _) ->
         S.add (mkEdge infty 0 var) cstrnts
-      | StageVar _, Infty -> cstrnts
+      | SizeVar _, Infty -> cstrnts
       end
     | _ -> cstrnts
     end
@@ -235,11 +239,11 @@ struct
     let pr_edge (vfrom, wt, vto) =
       let sfrom, sto =
         if wt >= 0
-        then StageVar (vfrom,   0), StageVar (vto, wt)
-        else StageVar (vfrom, -wt), StageVar (vto,  0) in
-      let sfrom = if Stage.var_equal vfrom infty then Infty else sfrom in
-      let sto   = if Stage.var_equal vto   infty then Infty else sto   in
-      seq [Stage.pr sfrom; str "⊑"; Stage.pr sto] in
+        then SizeVar (vfrom,   0), SizeVar (vto, wt)
+        else SizeVar (vfrom, -wt), SizeVar (vto,  0) in
+      let sfrom = if Size.var_equal vfrom infty then Infty else sfrom in
+      let sto   = if Size.var_equal vto   infty then Infty else sto   in
+      seq [Size.pr sfrom; str "⊑"; Size.pr sto] in
     let pr_graph =
       prlist_with_sep pr_comma identity @@
       S.fold (fun edge prs -> pr_edge edge :: prs) cstrnts [] in
@@ -299,12 +303,13 @@ module RecCheck =
         else
           let init_new = get_adj cstrnts s in
           closure_rec (union init_rest init_new) (add s fin) in
-    filter (not << Stage.var_equal Stage.infty) (closure_rec init empty)
+    filter (not << Size.var_equal Size.infty) (closure_rec init empty)
 
+  (* ⊓ (downward closure), ⊔ (upward closure) *)
   let downward = closure sub
   let upward = closure sup
 
-  let rec_check alpha vstar vneq cstrnts =
+  let rec_check tau vstar vneq cstrnts =
     let cstrnts' = to_graph cstrnts in
     let insert_from_set var_sub cstrnts =
       iter (fun var_sup -> insert cstrnts var_sub 0 var_sup) in
@@ -312,38 +317,30 @@ module RecCheck =
       iter (fun var ->
         remove cstrnts var) in
 
-    (* Step 0: Add V* ⊑ α *)
-    let () = iter (fun v -> insert cstrnts' v 0 alpha) vstar in
+    (** Step 1: Add V* ⊑ τ *)
+    let () = iter (fun v -> insert cstrnts' v 0 tau) vstar in
 
-    (* Step 1: Si = downward closure containing V* *)
-    let si = downward cstrnts' vstar in
+    (** Step 2: Vi = ⊓V*; add τ ⊑ Vi *)
+    let vi = downward cstrnts' vstar in
+    let () = insert_from_set tau cstrnts' vi in
 
-    (* Step 2: Add α ⊑ Si *)
-    let () = insert_from_set alpha cstrnts' si in
-
-    (* Step 3: Remove negative cycles *)
+    (** Step 3, 4: Find, remove negative cycles *)
     let rec remove_neg cstrnts =
       let v_neg = upward cstrnts (bellman_ford cstrnts) in
       let () = remove_from_set cstrnts' v_neg in
-      let () = insert_from_set Stage.infty cstrnts v_neg in
+      let () = insert_from_set Size.infty cstrnts v_neg in
       if not (is_empty v_neg) then remove_neg cstrnts in
     let () = remove_neg cstrnts' in
 
-    (* Step 4: Si⊑ = upward closure containing Si *)
-    let si_up = upward cstrnts' si in
+    (** Step 5: Add ∞ ⊑ ⊔V≠ ∩ ⊔Vi *)
+    let vi_up = upward cstrnts' vi in
+    let vneq_up = upward cstrnts' vneq in
+    let vinter = inter vneq_up vi_up in
+    let () = insert_from_set Size.infty cstrnts' vinter in
 
-    (* Step 5: S¬i = upward closure containing V≠ *)
-    let si_neq = upward cstrnts' vneq in
-
-    (* Step 6: Add ∞ ⊑ S¬i ∩ Si⊑ *)
-    let si_inter = inter si_neq si_up in
-    let () = insert_from_set Stage.infty cstrnts' si_inter in
-
-    (* Step 7: S∞ = upward closure containing {∞} *)
-    let si_inf = upward cstrnts' (singleton Stage.infty) in
-
-    (* Step 8: Check S∞ ∩ Si = ∅ *)
-    let si_null = inter si_inf si in
-    if is_empty si_null then of_graph cstrnts'
-    else raise (RecCheckFailed (cstrnts, si_inf, si))
+    (** Step 6: Check ⊔{∞} ∩ Vi = ∅ *)
+    let vinf = upward cstrnts' (singleton Size.infty) in
+    let vnull = inter vinf vi in
+    if is_empty vnull then of_graph cstrnts'
+    else raise (RecCheckFailed (cstrnts, vinf, vi))
 end

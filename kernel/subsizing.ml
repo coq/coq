@@ -1,6 +1,6 @@
 open Util
 open Declarations
-open Stages
+open Sized
 open Constraints
 open Environ
 

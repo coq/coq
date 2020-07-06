@@ -3,7 +3,7 @@
 
   Every (co)inductive type comes with an annotation, indicating whether it
   has a size, or whether it is in some special position.
-    e.g. List^α1 Nat^α2 is the annotated type of a list of nats
+    e.g. List^υ1 Nat^υ2 is the annotated type of a list of nats
 
   There are four types of annotations [Annot]:
     * Empty annotations: Before type-checking, inductive types carry no size
@@ -24,32 +24,32 @@
         e.g. Definition minus : Natⁱ -> Natⁱ
       For instance, in an implementation of division that uses minus,
       type-checking will only succeed if minus preserves size.
-    * Stage annotations: These contain size information.
+    * Size annotations: These contain size information.
 
-  There are two types of stages [Stage]:
+  There are two types of sizes [Size]:
     * Infty: A (co)inductive type with infinite size is said to be a "full"
       type, and the same type with any other size is a sub-(or super-)type
       of the full inductive (or coinductive) type.
-        e.g. ∀α Nat^α ≤ Nat^∞
-    * StageVar: A stage containing a stage variable and a successor value.
-      Normally stages are ordinals counting the constructor depth of a type,
-      but in this system (CIC^) we merely need a stage variable to be picked
+        e.g. ∀υ Nat^υ ≤ Nat^∞
+    * SizeVar: A size containing a size variable and a successor value.
+      Normally sizes are ordinals counting the constructor depth of a type,
+      but in this system (CIC^) we merely need a size variable to be picked
       out of some set of enumerables, and add on the number of hats it has.
         e.g. ∀s s ⊑ ŝ, which we also write as (s+1)
 
-  Although stage variables can be any sort of enumerable, for convenience,
-  we use the zero-inclusive naturals. Sets of stage variables [SVars] are
+  Although size variables can be any sort of enumerable, for convenience,
+  we use the zero-inclusive naturals. Sets of size variables [SVars] are
   therefore simply IntSets.
 
   We use [State] to keep track of a few things:
-    * The next stage variable that we can use;
-    * The set of all stage variables used so far; and
-    * The set of stage variables corresponding to position annotations.
+    * The next size variable that we can use;
+    * The set of all size variables used so far; and
+    * The set of size variables corresponding to position annotations.
   The latter is important during type-checking of (co)fixpoints.
 
-  Finally, we use [Constraints] to keep track of the stage constraints induced
+  Finally, we use [Constraints] to keep track of the size constraints induced
   by subtyping relations.
-    e.g. List^α1 Nat ≤ List^α2 ⟹ α1 ⊑ α2
+    e.g. List^υ1 Nat ≤ List^υ2 ⟹ υ1 ⊑ υ2
 *)
 
 module SVars :
@@ -69,20 +69,21 @@ sig
   val pr : t -> Pp.t
 end
 
-module Stage :
+module Size :
 sig
-  type t = Infty | StageVar of SVars.var * int
+  type t = Infty | SizeVar of SVars.var * int
   val compare : t -> t -> int
 end
 
 module Annot :
 sig
-  type t = Empty | Star | Glob | Stage of Stage.t
+  type t = Empty | Star | Glob | Size of Size.t
   type ts = t list option
   val infty : t
   val hat : t -> t
   val compare : t -> t -> int
   val equal : t -> t -> bool
+  val sizevar_opt : t -> SVars.var option
   val pr : t -> Pp.t
   val show : t -> string
   val hash : t -> int

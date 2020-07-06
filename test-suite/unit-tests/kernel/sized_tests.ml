@@ -1,8 +1,8 @@
 open Utest
 open Util
-open Stages
+open Sized
 open SVars
-open Stage
+open Size
 open Annot
 open Constraints
 open RecCheck
@@ -19,16 +19,16 @@ let debug = Printf.printf "%s\n"
 
 (* Testing constants *)
 
-let test_prefix = "kernel-stages_test"
+let test_prefix = "kernel-sized_test"
 
 let inf = -1
 
-let s0_0 = Stage (StageVar (0, 0))
-let s0_1 = Stage (StageVar (0, 1))
-let s2_0 = Stage (StageVar (2, 0))
-let s5_0 = Stage (StageVar (5, 0))
-let s9_0 = Stage (StageVar (9, 0))
-let s9_1 = Stage (StageVar (9, 1))
+let s0_0 = Size (SizeVar (0, 0))
+let s0_1 = Size (SizeVar (0, 1))
+let s2_0 = Size (SizeVar (2, 0))
+let s5_0 = Size (SizeVar (5, 0))
+let s9_0 = Size (SizeVar (9, 0))
+let s9_1 = Size (SizeVar (9, 1))
 
 let s0_0_and_s9_1 = (add s0_0 s9_1 (empty ()))
 let s9_0_and_s0_1 = (add s9_0 s0_1 (empty ()))
@@ -92,7 +92,7 @@ let sup1 =
   let sups = sup cstrnts 5 in
   mk_bool_test
     (test_prefix ^ "-sup1")
-    "sup returns all superstages"
+    "sup returns all supersizes"
     (mem 0 sups && mem 9 sups)
 let sup_tests = [sup1]
 
@@ -101,7 +101,7 @@ let sub1 =
   let subs = sub cstrnts 5 in
   mk_bool_test
     (test_prefix ^ "-sub1")
-    "sup returns all substages"
+    "sup returns all subsizes"
     (mem 0 subs && mem 9 subs)
 let sub_tests = [sub1]
 
@@ -152,7 +152,7 @@ let closure_tests = [upward_closure; downward_closure]
 (* RecCheck tests
   The constraints come from the Haskell cicminus implementation *)
 
-let mkStage nm sz = Stage (StageVar (nm, sz))
+let mkSize nm sz = Size (SizeVar (nm, sz))
 
 let svars_of_list lst =
   List.fold_right SVars.add lst SVars.empty
@@ -174,11 +174,11 @@ let rc_name str = rc_prefix ^ str
 
 let rec_check_plus =
   let cstrnts =
-    [ mkStage 1 0, mkStage 4 0
-    ; mkStage 2 0, mkStage 5 0
-    ; mkStage 3 0, mkStage 0 0
-    ; mkStage 4 0, mkStage 2 0
-    ; mkStage 5 1, mkStage 4 0
+    [ mkSize 1 0, mkSize 4 0
+    ; mkSize 2 0, mkSize 5 0
+    ; mkSize 3 0, mkSize 0 0
+    ; mkSize 4 0, mkSize 2 0
+    ; mkSize 5 1, mkSize 4 0
     ] in
   mk_bool_test
     (rc_name "plus")
@@ -187,14 +187,14 @@ let rec_check_plus =
 
 let rec_check_minus =
   let cstrnts =
-    [ mkStage  6 1, mkStage 13 0
-    ; mkStage  8 0, mkStage 13 0
-    ; mkStage  9 0, mkStage 6  0
-    ; mkStage 10 0, mkStage 8  1
-    ; mkStage 11 1, mkStage 10 0
-    ; mkStage 12 0, mkStage 7  0
-    ; mkStage 12 1, mkStage 7  0
-    ; mkStage 13 0, mkStage 10 0
+    [ mkSize  6 1, mkSize 13 0
+    ; mkSize  8 0, mkSize 13 0
+    ; mkSize  9 0, mkSize 6  0
+    ; mkSize 10 0, mkSize 8  1
+    ; mkSize 11 1, mkSize 10 0
+    ; mkSize 12 0, mkSize 7  0
+    ; mkSize 12 1, mkSize 7  0
+    ; mkSize 13 0, mkSize 10 0
     ] in
   mk_bool_test
     (rc_name "minus")
@@ -203,11 +203,11 @@ let rec_check_minus =
 
 let rec_check_mult =
   let cstrnts =
-    [ infty, mkStage 18 0
-    ; mkStage 15 0, mkStage 20 0
-    ; mkStage 17 0, mkStage 14 0
-    ; mkStage 18 0, mkStage 16 0
-    ; mkStage 19 1, mkStage 18 0
+    [ infty, mkSize 18 0
+    ; mkSize 15 0, mkSize 20 0
+    ; mkSize 17 0, mkSize 14 0
+    ; mkSize 18 0, mkSize 16 0
+    ; mkSize 19 1, mkSize 18 0
     ] in
   mk_bool_test
     (rc_name "mult")
@@ -216,13 +216,13 @@ let rec_check_mult =
 
 let rec_check_div =
   let cstrnts =
-    [ mkStage 23 0, mkStage 27 0
-    ; mkStage 24 0, mkStage 21 0
-    ; mkStage 24 0, mkStage 28 0
-    ; mkStage 25 0, mkStage 23 1
-    ; mkStage 26 1, mkStage 25 0
-    ; mkStage 27 1, mkStage 25 0
-    ; mkStage 28 0, mkStage 21 0
+    [ mkSize 23 0, mkSize 27 0
+    ; mkSize 24 0, mkSize 21 0
+    ; mkSize 24 0, mkSize 28 0
+    ; mkSize 25 0, mkSize 23 1
+    ; mkSize 26 1, mkSize 25 0
+    ; mkSize 27 1, mkSize 25 0
+    ; mkSize 28 0, mkSize 21 0
     ] in
   mk_bool_test
     (rc_name "div")
@@ -231,12 +231,12 @@ let rec_check_div =
 
 let rec_check_fact =
   let cstrnts =
-    [ infty, mkStage 32 0
-    ; mkStage 30 0, mkStage 35 0
-    ; mkStage 31 0, mkStage 29 0
-    ; mkStage 32 0, mkStage 30 0
-    ; mkStage 33 1, mkStage 32 0
-    ; mkStage 34 1, mkStage 33 0
+    [ infty, mkSize 32 0
+    ; mkSize 30 0, mkSize 35 0
+    ; mkSize 31 0, mkSize 29 0
+    ; mkSize 32 0, mkSize 30 0
+    ; mkSize 33 1, mkSize 32 0
+    ; mkSize 34 1, mkSize 33 0
     ] in
   mk_bool_test
     (rc_name "fact")
@@ -252,14 +252,14 @@ Fixpoint loop (n : nat) : Type :=
 *)
 let rec_check_loop =
   let cstrnts =
-    [ mkStage 5 0, mkStage 3 0
-    ; mkStage 3 0, mkStage 5 0
-    ; mkStage 4 1, mkStage 0 0
-    ; mkStage 3 0, mkStage 4 0
-    ; mkStage 2 0, mkStage 5 1
-    ; mkStage 1 0, mkStage 5 1
-    ; mkStage 1 0, mkStage 0 1
-    ; mkStage 0 1, mkStage 1 0
+    [ mkSize 5 0, mkSize 3 0
+    ; mkSize 3 0, mkSize 5 0
+    ; mkSize 4 1, mkSize 0 0
+    ; mkSize 3 0, mkSize 4 0
+    ; mkSize 2 0, mkSize 5 1
+    ; mkSize 1 0, mkSize 5 1
+    ; mkSize 1 0, mkSize 0 1
+    ; mkSize 0 1, mkSize 1 0
     ] in
   mk_bool_test
     (rc_name "loop")
