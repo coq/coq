@@ -583,6 +583,8 @@ end
     failures). *)
 module NonLogical : module type of Logic_monad.NonLogical
 
+module Logical : module type of Logic_monad.Logical
+
 (** [tclLIFT c] is a tactic which behaves exactly as [c]. *)
 val tclLIFT : 'a NonLogical.t -> 'a tactic
 

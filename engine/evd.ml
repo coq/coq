@@ -358,7 +358,7 @@ module EvMap = Evar.Map
 module EvNames :
 sig
 
-type t
+type t = Id.t EvMap.t * Evar.t Id.Map.t
 
 val empty : t
 val add_name_undefined : Id.t option -> Evar.t -> evar_info -> t -> t
@@ -462,6 +462,26 @@ type evar_map = {
   future_goals_status : goal_kind EvMap.t;
   extras : Store.t;
 }
+
+let evar_map_info map =
+  let p name size =
+    if size > 0 then
+      Printf.printf "%s size = %d\n" name size in
+  p "defn_evars" (EvMap.cardinal map.defn_evars);
+  p "undf_evars" (EvMap.cardinal map.undf_evars);
+  let (m1, m2) = map.evar_names in
+  p "evar_names1" (EvMap.cardinal m1);
+  p "evar_names2" (Id.Map.cardinal m2);
+  (* skip ustate *)
+  p "conv_pbs" (List.length map.conv_pbs);
+  p "last_mods" (Evar.Set.cardinal map.last_mods);
+  p "metas" (Metamap.cardinal map.metas);
+  (* skip evar_flags *)
+  (* skip side_effects *)
+  p "future_goals" (List.length map.future_goals);
+  (* skip principal_future_goal *)
+  p "future_goals_status" (EvMap.cardinal map.future_goals_status)
+  (* skip extras *)
 
 let get_is_maybe_typeclass, (is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t) = Hook.make ~default:(fun evd c -> false) ()
 

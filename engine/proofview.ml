@@ -222,6 +222,54 @@ module Proof = Logical
    - backtrack on previous changes of the proofview *)
 type +'a tactic = 'a Proof.t
 
+(*
+val apply  (* key *)  proofview.mli
+  :  name:Names.Id.t
+  -> poly:bool
+  -> Environ.env
+  -> 'a tactic
+  -> proofview
+  -> 'a * proofview
+       * (bool*Evar.t list*Evar.t list)
+       * Proofview_monad.Info.tree
+
+ type proofview = {  (* key *) proofview_monad.ml
+   solution : Evd.evar_map;
+   comb : goal_with_state list;
+   shelf : goal list;
+ }
+
+type evar_map = {  (* key *) evd.mli
+  (* Existential variables *)
+  defn_evars : evar_info EvMap.t;
+  undf_evars : evar_info EvMap.t;
+  evar_names : EvNames.t;
+  (** Universes *)
+  universes  : UState.t;
+  (** Conversion problems *)
+  conv_pbs   : evar_constraint list;
+  last_mods  : Evar.Set.t;
+  (** Metas *)
+  metas      : clbinding Metamap.t;
+  evar_flags : evar_flags;
+  (** Interactive proofs *)
+  effects    : side_effects;
+  future_goals : Evar.t list; (** list of newly created evars, to be
+                                  eventually turned into goals if not solved.*)
+  principal_future_goal : Evar.t option; (** if [Some e], [e] must be
+                                             contained
+                                             [future_goals]. The evar
+                                             [e] will inherit
+                                             properties (now: the
+                                             name) of the evar which
+                                             will be instantiated with
+                                             a term containing [e]. *)
+  future_goals_status : goal_kind EvMap.t;
+  extras : Store.t;
+}
+
+*)
+
 (** Applies a tactic to the current proofview. *)
 let apply ~name ~poly env t sp =
   let open Logic_monad in
@@ -233,6 +281,19 @@ let apply ~name ~poly env t sp =
     let (status, gaveup) = status in
     let status = (status, state.shelf, gaveup) in
     let state = { state with shelf = [] } in
+    (* state, aka proofview *)
+    if false then begin
+      let p name size =
+        if size > 0 then
+          Printf.printf "%s size = %d\n" name size in
+      Printf.printf "\nreachable_words =\n  %d\n  %d\n  %d\n  %d\n"
+        (Obj.reachable_words (Obj.repr r)) (Obj.reachable_words (Obj.repr state))
+        (Obj.reachable_words (Obj.repr status)) (Obj.reachable_words (Obj.repr (Trace.to_tree info)));
+      Evd.evar_map_info state.solution;
+  (*      Printf.printf "name = %s\n" (Names.Id.to_string name);      (* name of the lemma/thm being applied *)  *)
+      p "state.comb" (List.length state.comb);
+      p "state.shelf" (List.length state.shelf)
+    end;
     r, state, status, Trace.to_tree info
 
 
@@ -1182,6 +1243,7 @@ end
 (** {6 Non-logical state} *)
 
 module NonLogical = Logic_monad.NonLogical
+module Logical = Logic_monad.Logical
 
 let tclLIFT = Proof.lift
 

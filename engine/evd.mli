@@ -137,6 +137,9 @@ type evar_map
 (** Type of unification state. Essentially a bunch of state-passing data needed
     to handle incremental term construction. *)
 
+val evar_map_info : evar_map -> unit
+(** print info about the evar map *)
+
 val empty : evar_map
 (** The empty evar map. *)
 

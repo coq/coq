@@ -1112,8 +1112,21 @@ END
 {
 
 let tclOPTIMIZE_HEAP =
-  Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> Gc.compact ()))
-
+  Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+      try
+        let min = int_of_string (Sys.getenv("ENABLE_ATEXIT2")) in
+        Printf.printf "\n\n";
+        Gc.print_stat stdout;
+        Gc.compact ();
+        Gc.print_stat stdout;
+        let stats = Gc.quick_stat () in
+        if stats.compactions = 1 then begin
+(*          CObj.dump ();  print file info*)
+(*          Gc.find_root "" 0 min;  print stack info*)
+          Printexc.print_raw_backtrace stdout (Printexc.get_callstack 5000);
+          flush stdout
+        end
+      with Not_found -> ()))
 }
 
 TACTIC EXTEND optimize_heap
