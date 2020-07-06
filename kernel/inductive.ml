@@ -464,11 +464,16 @@ let eq_wf_paths = Rtree.equal Declareops.eq_recarg
 
 let inter_recarg r1 r2 = match r1, r2 with
 | Norec, Norec -> Some r1
+| Norec, _ -> None
 | Mrec i1, Mrec i2
-| Imbr i1, Imbr i2
-| Mrec i1, Imbr i2 -> if Names.eq_ind i1 i2 then Some r1 else None
-| Imbr i1, Mrec i2 -> if Names.eq_ind i1 i2 then Some r2 else None
-| _ -> None
+| Nested (NestedInd i1), Nested (NestedInd i2)
+| Mrec i1, (Nested (NestedInd i2)) -> if Names.eq_ind i1 i2 then Some r1 else None
+| Mrec _, _ -> None
+| Nested (NestedInd i1), Mrec i2 -> if Names.eq_ind i1 i2 then Some r2 else None
+| Nested (NestedInd _), _ -> None
+| Nested (NestedPrimitive c1), Nested (NestedPrimitive c2) ->
+  if Names.Constant.equal c1 c2 then Some r1 else None
+| Nested (NestedPrimitive _), _ -> None
 
 let inter_wf_paths = Rtree.inter Declareops.eq_recarg inter_recarg Norec
 
@@ -551,8 +556,8 @@ let lookup_subterms env ind =
 
 let match_inductive ind ra =
   match ra with
-    | (Mrec i | Imbr i) -> eq_ind ind i
-    | Norec -> false
+    | Mrec i | Nested (NestedInd i) -> eq_ind ind i
+    | Norec | Nested (NestedPrimitive _) -> false
 
 (* In {match c as z in ci y_s return P with |C_i x_s => t end}
    [branches_specif renv c_spec ci] returns an array of x_s specs knowing
@@ -603,7 +608,7 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
     push_rel decl env
   in
   let env = Array.fold_right push_ind mib.mind_packets env in
-  let rc = Array.mapi (fun j t -> (Imbr (mind,j),t)) (Rtree.mk_rec_calls ntypes) in
+  let rc = Array.mapi (fun j t -> (Nested (NestedInd (mind,j)),t)) (Rtree.mk_rec_calls ntypes) in
   let lra_ind = Array.rev_to_list rc in
   let ra_env = List.map (fun (r,t) -> (r,Rtree.lift ntypes t)) ra_env in
   (env, lra_ind @ ra_env)
@@ -637,6 +642,11 @@ let abstract_mind_lc ntyps npars lc =
     in
     Array.map (substl make_abs) lc
 
+let is_primitive_positive_container env c =
+  match env.retroknowledge.Retroknowledge.retro_array with
+  | Some c' when Constant.equal c c' -> true
+  | _ -> false
+
 (* [get_recargs_approx env tree ind args] builds an approximation of the recargs
 tree for ind, knowing args. The argument tree is used to know when candidate
 nested types should be traversed, pruning the tree otherwise. This code is very
@@ -657,8 +667,14 @@ let get_recargs_approx env tree ind args =
        (* When the inferred tree allows it, we consider that we have a potential
        nested inductive type *)
        begin match dest_recarg tree with
-             | Imbr kn' | Mrec kn' when eq_ind (fst ind_kn) kn' ->
-                           build_recargs_nested ienv tree (ind_kn, largs)
+             | Nested (NestedInd kn') | Mrec kn' when eq_ind (fst ind_kn) kn' ->
+               build_recargs_nested ienv tree (ind_kn, largs)
+             | _ -> mk_norec
+       end
+    | Const (c,_) when is_primitive_positive_container env c ->
+       begin match dest_recarg tree with
+             | Nested (NestedPrimitive c') when Constant.equal c c' ->
+               build_recargs_nested_primitive ienv tree (c, largs)
              | _ -> mk_norec
        end
     | _err ->
@@ -696,10 +712,20 @@ let get_recargs_approx env tree ind args =
          build_recargs_constructors ienv' trees.(j).(k) c')
         auxlcvect
       in
-      mk_paths (Imbr (mind,j)) paths
+      mk_paths (Nested (NestedInd (mind,j))) paths
     in
     let irecargs = Array.mapi mk_irecargs mib.mind_packets in
     (Rtree.mk_rec irecargs).(i)
+
+  and build_recargs_nested_primitive (env, ra_env) tree (c, largs) =
+    if eq_wf_paths tree mk_norec then tree
+    else
+    let ntypes = 1 in (* Primitive types are modelled by non-mutual inductive types *)
+    let ra_env = List.map (fun (r,t) -> (r,Rtree.lift ntypes t)) ra_env in
+    let ienv = (env, ra_env) in
+    let paths = List.map2 (build_recargs ienv) (dest_subterms tree).(0) largs in
+    let recargs = [| mk_paths (Nested (NestedPrimitive c)) [| paths |] |] in
+    (Rtree.mk_rec recargs).(0)
 
   and build_recargs_constructors ienv trees c =
     let rec recargs_constr_rec (env,_ra_env as ienv) trees lrec c =
@@ -829,8 +855,17 @@ let rec subterm_specif renv stack t =
        | Dead_code -> Dead_code
        | Not_subterm -> Not_subterm)
 
-    | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _ | Ind _
-      | Construct _ | CoFix _ | Int _ | Float _ -> Not_subterm
+    | Const c ->
+      begin try
+        let _ = Environ.constant_value_in renv.env c in Not_subterm
+      with
+        | NotEvaluableConst (IsPrimitive (_u,op)) when List.length l >= CPrimitives.arity op ->
+          primitive_specif renv op l
+        | NotEvaluableConst _ -> Not_subterm
+      end
+
+    | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Ind _
+      | Construct _ | CoFix _ | Int _ | Float _ | Array _ -> Not_subterm
 
 
       (* Other terms are not subterms *)
@@ -845,6 +880,24 @@ and stack_element_specif = function
 and extract_stack = function
    | [] -> Lazy.from_val Not_subterm , []
    | h::t -> stack_element_specif h, t
+
+and primitive_specif renv op args =
+  let open CPrimitives in
+  match op with
+  | Arrayget | Arraydefault ->
+    (* t.[i] and default t can be seend as strict subterms of t, with a
+       potentially nested rectree. *)
+    let arg = List.nth args 1 in (* the result is a strict subterm of the second argument *)
+    let subt = subterm_specif renv [] arg in
+    begin match subt with
+    | Subterm (_s, wf) ->
+      let wf_args = (dest_subterms wf).(0) in
+      spec_of_tree (List.nth wf_args 0) (* first and only parameter of `array` *)
+    | Dead_code -> Dead_code
+    | Not_subterm -> Not_subterm
+    end
+  | _ -> Not_subterm
+
 
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm x tree =
@@ -1086,6 +1139,12 @@ let check_one_fix renv recpos trees def =
         | Sort _ | Int _ | Float _ ->
           assert (List.is_empty l)
 
+        | Array (_u, t,def,ty) ->
+          assert (List.is_empty l);
+          Array.iter (check_rec_call renv []) t;
+          check_rec_call renv [] def;
+          check_rec_call renv [] ty
+
         (* l is not checked because it is considered as the meta's context *)
         | (Evar _ | Meta _) -> ()
 
@@ -1278,7 +1337,7 @@ let check_one_cofix env nbfix def deftype =
         | Evar _ ->
             List.iter (check_rec_call env alreadygrd n tree vlra) args
         | Rel _ | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _
-          | Ind _ | Fix _ | Proj _ | Int _ | Float _ ->
+          | Ind _ | Fix _ | Proj _ | Int _ | Float _ | Array _ ->
            raise (CoFixGuardError (env,NotGuardedForm t)) in
 
   let ((mind, _),_) = codomain_is_coind env deftype in

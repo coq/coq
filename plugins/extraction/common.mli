@@ -30,6 +30,7 @@ val pp_apply2 : Pp.t -> bool -> Pp.t list -> Pp.t
 
 val pp_tuple_light : (bool -> 'a -> Pp.t) -> 'a list -> Pp.t
 val pp_tuple : ('a -> Pp.t) -> 'a list -> Pp.t
+val pp_array : ('a -> Pp.t) -> 'a list -> Pp.t
 val pp_boxed_tuple : ('a -> Pp.t) -> 'a list -> Pp.t
 
 val pr_binding : Id.t list -> Pp.t

@@ -50,13 +50,8 @@ let ppqualid qid = pp(pr_qualid qid)
 let ppclindex cl = pp(Coercionops.pr_cl_index cl)
 let ppscheme k = pp (Ind_tables.pr_scheme_kind k)
 
-let prrecarg = function
-  | Declarations.Norec -> str "Norec"
-  | Declarations.Mrec (mind,i) ->
-     str "Mrec[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-  | Declarations.Imbr (mind,i) ->
-     str "Imbr[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-let ppwf_paths x = pp (Rtree.pp_tree prrecarg x)
+let prrecarg = Declareops.pp_recarg
+let ppwf_paths x = pp (Declareops.pp_wf_paths x)
 
 let get_current_context () =
   try Vernacstate.Declare.get_current_context ()
@@ -316,6 +311,7 @@ let constr_display csr =
       "Int("^(Uint63.to_string i)^")"
   | Float f ->
       "Float("^(Float64.to_string f)^")"
+  | Array (u,t,def,ty) -> "Array("^(array_display t)^","^(term_display def)^","^(term_display ty)^")@{" ^universes_display u^"\n"
 
   and array_display v =
     "[|"^
@@ -450,6 +446,16 @@ let print_pure_constr csr =
      print_string ("Int("^(Uint63.to_string i)^")")
   | Float f ->
       print_string ("Float("^(Float64.to_string f)^")")
+  | Array (u,t,def,ty) ->
+      print_string "Array(";
+      Array.iter (fun x -> box_display x; print_space()) t;
+      print_string "|";
+      box_display def;
+      print_string ":";
+      box_display ty;
+      print_string ")@{";
+      universes_display u;
+      print_string "}"
 
   and box_display c = open_hovbox 1; term_display c; close_box()
 

@@ -1095,6 +1095,9 @@ let rec extern inctx ?impargs scopes vars r =
 
   | GFloat f -> extern_float f (snd scopes)
 
+  | GArray(u,t,def,ty) ->
+    CArray(u,Array.map (extern inctx scopes vars) t, extern inctx scopes vars def, extern_typ scopes vars ty)
+
   in insert_entry_coercion coercion (CAst.make ?loc c)
 
 and extern_typ ?impargs (subentry,(_,scopes)) =
@@ -1469,6 +1472,9 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PSort Sorts.InType -> GSort (UAnonymous {rigid=true})
   | PInt i -> GInt i
   | PFloat f -> GFloat f
+  | PArray(t,def,ty) ->
+    let glob_of = glob_of_pat avoid env sigma in
+    GArray (None, Array.map glob_of t, glob_of def, glob_of ty)
 
 let extern_constr_pattern env sigma pat =
   extern true (InConstrEntrySomeLevel,(None,[])) Id.Set.empty (glob_of_pat Id.Set.empty env sigma pat)

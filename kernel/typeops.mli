@@ -114,8 +114,6 @@ val type_of_global_in_context : env -> GlobRef.t -> types * Univ.AUContext.t
 val check_hyps_inclusion : env -> ?evars:((existential->constr option) * UGraph.t) ->
   GlobRef.t -> Constr.named_context -> unit
 
-val check_primitive_type : env -> CPrimitives.op_or_type -> types -> unit
-
 (** Types for primitives *)
 
 val type_of_int : env -> types
@@ -124,8 +122,12 @@ val judge_of_int : env -> Uint63.t -> unsafe_judgment
 val type_of_float : env -> types
 val judge_of_float : env -> Float64.t -> unsafe_judgment
 
-val type_of_prim_type : env -> CPrimitives.prim_type -> types
-val type_of_prim : env -> CPrimitives.t -> types
+val type_of_array : env -> Univ.Instance.t -> types
+val judge_of_array : env -> Univ.Instance.t -> unsafe_judgment array -> unsafe_judgment -> unsafe_judgment
+
+val type_of_prim_type : env -> Univ.Instance.t -> 'a CPrimitives.prim_type -> types
+val type_of_prim : env -> Univ.Instance.t -> CPrimitives.t -> types
+val type_of_prim_or_type : env -> Univ.Instance.t -> CPrimitives.op_or_type -> types
 
 val warn_bad_relevance_name : string
 (** Allow the checker to make this warning into an error. *)

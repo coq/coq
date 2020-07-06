@@ -170,6 +170,7 @@ and nf_whd env sigma whd typ =
       mkApp(capp,args)
   | Vint64 i -> i |> Uint63.of_int64 |> mkInt
   | Vfloat64 f -> f |> Float64.of_float |> mkFloat
+  | Varray t -> nf_array env sigma t typ
   | Vatom_stk(Aid idkey, stk) ->
       constr_type_of_idkey env sigma idkey stk
   | Vatom_stk(Aind ((mi,i) as ind), stk) ->
@@ -398,6 +399,14 @@ and nf_cofix env sigma cf =
   let env = push_rec_types (names,cft,cft) env in
   let cfb = Util.Array.map2 (fun v t -> nf_val env sigma v t) vb cft in
   mkCoFix (init,(names,cft,cfb))
+
+and nf_array env sigma t typ =
+  let ty, allargs = decompose_appvect (whd_all env typ) in
+  let typ_elem = allargs.(0) in
+  let t, vdef = Parray.to_array t in
+  let t = Array.map (fun v -> nf_val env sigma v typ_elem) t in
+  let u = snd (destConst ty) in
+  mkArray(u, t, nf_val env sigma vdef typ_elem, typ_elem)
 
 let cbv_vm env sigma c t  =
   if Termops.occur_meta sigma c then

@@ -311,6 +311,11 @@ let rec pp_expr par env args =
     | MLfloat f ->
         assert (args=[]);
         str "(" ++ str (Float64.compile f) ++ str ")"
+    | MLparray(t,def) ->
+      assert (args=[]);
+      let tuple = pp_array (pp_expr true env []) (Array.to_list t) in
+      let def = pp_expr true env [] def in
+      str "(ExtrNative.of_array [|" ++ tuple ++ str "|]" ++ spc () ++ def ++ str")"
 
 
 and pp_record_proj par env typ t pv args =

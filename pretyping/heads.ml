@@ -79,7 +79,7 @@ and kind_of_head env t =
   | Proj (p,c) -> RigidHead RigidOther
 
   | Case (_,_,_,c,_) -> aux k [] c true
-  | Int _ | Float _ -> ConstructorHead
+  | Int _ | Float _ | Array _ -> ConstructorHead
   | Fix ((i,j),_) ->
       let n = i.(j) in
       try aux k [] (List.nth l n) true

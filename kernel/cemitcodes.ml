@@ -30,6 +30,7 @@ type reloc_info =
   | Reloc_const of structured_constant
   | Reloc_getglobal of Names.Constant.t
   | Reloc_proj_name of Projection.Repr.t
+  | Reloc_caml_prim of CPrimitives.t
 
 let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_annot sw1, Reloc_annot sw2 -> eq_annot_switch sw1 sw2
@@ -40,6 +41,8 @@ let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_getglobal _, _ -> false
 | Reloc_proj_name p1, Reloc_proj_name p2 -> Projection.Repr.equal p1 p2
 | Reloc_proj_name _, _ -> false
+| Reloc_caml_prim p1, Reloc_caml_prim p2 -> CPrimitives.equal p1 p2
+| Reloc_caml_prim _, _ -> false
 
 let hash_reloc_info r =
   let open Hashset.Combine in
@@ -48,6 +51,7 @@ let hash_reloc_info r =
   | Reloc_const c -> combinesmall 2 (hash_structured_constant c)
   | Reloc_getglobal c -> combinesmall 3 (Constant.hash c)
   | Reloc_proj_name p -> combinesmall 4 (Projection.Repr.hash p)
+  | Reloc_caml_prim p -> combinesmall 5 (CPrimitives.hash p)
 
 module RelocTable = Hashtbl.Make(struct
   type t = reloc_info
@@ -199,6 +203,10 @@ let slot_for_proj_name env p =
   enter env (Reloc_proj_name p);
   out_int env 0
 
+let slot_for_caml_prim env op =
+  enter env (Reloc_caml_prim op);
+  out_int env 0
+
 (* Emission of one instruction *)
 
 let nocheck_prim_op = function
@@ -252,6 +260,11 @@ let check_prim_op = function
   | Float64ldshiftexp -> opCHECKLDSHIFTEXP
   | Float64next_up    -> opCHECKNEXTUPFLOAT
   | Float64next_down  -> opCHECKNEXTDOWNFLOAT
+  | Arraymake -> opISINT_CAML_CALL2
+  | Arrayget -> opISARRAY_INT_CAML_CALL2
+  | Arrayset -> opISARRAY_INT_CAML_CALL3
+  | Arraydefault | Arraycopy | Arrayreroot | Arraylength ->
+      opISARRAY_CAML_CALL1
 
 let emit_instr env = function
   | Klabel lbl -> define_label env lbl
@@ -349,6 +362,11 @@ let emit_instr env = function
       out env (check_prim_op op);
       slot_for_getglobal env q
 
+  | Kcamlprim (op,lbl) ->
+    out env (check_prim_op op);
+    out_label env lbl;
+    slot_for_caml_prim env op
+
   | Kareint 1 -> out env opISINT
   | Kareint 2 -> out env opAREINT2;
 
@@ -415,6 +433,7 @@ let subst_reloc s ri =
   | Reloc_const sc -> Reloc_const (subst_strcst s sc)
   | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
   | Reloc_proj_name p -> Reloc_proj_name (subst_proj_repr s p)
+  | Reloc_caml_prim _ -> ri
 
 let subst_patches subst p =
   let infos = CArray.map (fun (r, pos) -> (subst_reloc subst r, pos)) p.reloc_infos in

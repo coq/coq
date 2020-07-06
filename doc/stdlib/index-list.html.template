@@ -709,4 +709,11 @@ through the <tt>Require Import</tt> command.</p>
     theories/Compat/Coq812.v
     theories/Compat/Coq813.v
   </dd>
+
+  <dt> <b>Array</b>:
+    Persistent native arrays
+  </dt>
+  <dd>
+    theories/Array/PArray.v
+  </dd>
 </dl>

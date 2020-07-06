@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Univ
+
 type t =
   | Int63head0
   | Int63tail0
@@ -51,6 +53,13 @@ type t =
   | Float64ldshiftexp
   | Float64next_up
   | Float64next_down
+  | Arraymake
+  | Arrayget
+  | Arraydefault
+  | Arrayset
+  | Arraycopy
+  | Arrayreroot
+  | Arraylength
 
 let parse = function
   | "int63_head0" -> Int63head0
@@ -95,6 +104,13 @@ let parse = function
   | "float64_ldshiftexp" -> Float64ldshiftexp
   | "float64_next_up" -> Float64next_up
   | "float64_next_down" -> Float64next_down
+  | "array_make" -> Arraymake
+  | "array_get" -> Arrayget
+  | "array_default" -> Arraydefault
+  | "array_set" -> Arrayset
+  | "array_length" -> Arraylength
+  | "array_copy" -> Arraycopy
+  | "array_reroot" -> Arrayreroot
   | _ -> raise Not_found
 
 let equal (p1 : t) (p2 : t) =
@@ -143,6 +159,13 @@ let hash = function
   | Float64eq -> 40
   | Float64lt -> 41
   | Float64le -> 42
+  | Arraymake -> 43
+  | Arrayget -> 44
+  | Arraydefault -> 45
+  | Arrayset -> 46
+  | Arraycopy -> 47
+  | Arrayreroot -> 48
+  | Arraylength -> 49
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -188,28 +211,66 @@ let to_string = function
   | Float64ldshiftexp -> "ldshiftexp"
   | Float64next_up    -> "next_up"
   | Float64next_down  -> "next_down"
+  | Arraymake -> "arraymake"
+  | Arrayget -> "arrayget"
+  | Arraydefault -> "arraydefault"
+  | Arrayset -> "arrayset"
+  | Arraycopy -> "arraycopy"
+  | Arrayreroot -> "arrayreroot"
+  | Arraylength -> "arraylength"
 
-type prim_type =
-  | PT_int63
-  | PT_float64
+type const =
+  | Arraymaxlength
 
-type 'a prim_ind =
+let const_to_string = function
+  | Arraymaxlength -> "arraymaxlength"
+
+let const_of_string = function
+  | "array_max_length" -> Arraymaxlength
+  | _ -> raise Not_found
+
+let const_univs = function
+  | Arraymaxlength -> AUContext.empty
+
+type 'a prim_type =
+  | PT_int63 : unit prim_type
+  | PT_float64 : unit prim_type
+  | PT_array : (Instance.t * ind_or_type) prim_type
+
+and 'a prim_ind =
   | PIT_bool : unit prim_ind
-  | PIT_carry : prim_type prim_ind
-  | PIT_pair : (prim_type * prim_type) prim_ind
+  | PIT_carry : ind_or_type prim_ind
+  | PIT_pair : (ind_or_type * ind_or_type) prim_ind
   | PIT_cmp : unit prim_ind
   | PIT_f_cmp : unit prim_ind
   | PIT_f_class : unit prim_ind
 
+and ind_or_type =
+  | PITT_ind : 'a prim_ind * 'a -> ind_or_type
+  | PITT_type : 'a prim_type * 'a -> ind_or_type
+  | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
+
+let one_univ =
+  AUContext.make Names.[|Name (Id.of_string "u")|] Constraint.empty
+
+let typ_univs (type a) (t : a prim_type) = match t with
+  | PT_int63 -> AUContext.empty
+  | PT_float64 -> AUContext.empty
+  | PT_array -> one_univ
+
+type prim_type_ex = PTE : 'a prim_type -> prim_type_ex
+
 type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
 
-type ind_or_type =
-  | PITT_ind : 'a prim_ind * 'a -> ind_or_type
-  | PITT_type : prim_type -> ind_or_type
-
 let types =
-  let int_ty = PITT_type PT_int63 in
-  let float_ty = PITT_type PT_float64 in
+  let int_ty = PITT_type (PT_int63, ()) in
+  let float_ty = PITT_type (PT_float64, ()) in
+  let array_ty =
+    PITT_type
+      (PT_array,
+       (Instance.of_array [|Level.var 0|],
+        PITT_param 1))
+  in
   function
   | Int63head0 | Int63tail0 -> [int_ty; int_ty]
   | Int63add | Int63sub | Int63mul
@@ -217,25 +278,144 @@ let types =
   | Int63lsr | Int63lsl
   | Int63land | Int63lor | Int63lxor -> [int_ty; int_ty; int_ty]
   | Int63addc | Int63subc | Int63addCarryC | Int63subCarryC ->
-     [int_ty; int_ty; PITT_ind (PIT_carry, PT_int63)]
+     [int_ty; int_ty; PITT_ind (PIT_carry, int_ty)]
   | Int63mulc | Int63diveucl ->
-     [int_ty; int_ty; PITT_ind (PIT_pair, (PT_int63, PT_int63))]
+     [int_ty; int_ty; PITT_ind (PIT_pair, (int_ty, int_ty))]
   | Int63eq | Int63lt | Int63le -> [int_ty; int_ty; PITT_ind (PIT_bool, ())]
   | Int63compare -> [int_ty; int_ty; PITT_ind (PIT_cmp, ())]
   | Int63div21 ->
-     [int_ty; int_ty; int_ty; PITT_ind (PIT_pair, (PT_int63, PT_int63))]
+     [int_ty; int_ty; int_ty; PITT_ind (PIT_pair, (int_ty, int_ty))]
   | Int63addMulDiv -> [int_ty; int_ty; int_ty; int_ty]
   | Float64opp | Float64abs | Float64sqrt
   | Float64next_up | Float64next_down -> [float_ty; float_ty]
   | Float64ofInt63 -> [int_ty; float_ty]
   | Float64normfr_mantissa -> [float_ty; int_ty]
-  | Float64frshiftexp -> [float_ty; PITT_ind (PIT_pair, (PT_float64, PT_int63))]
+  | Float64frshiftexp -> [float_ty; PITT_ind (PIT_pair, (float_ty, int_ty))]
   | Float64eq | Float64lt | Float64le -> [float_ty; float_ty; PITT_ind (PIT_bool, ())]
   | Float64compare -> [float_ty; float_ty; PITT_ind (PIT_f_cmp, ())]
   | Float64classify -> [float_ty; PITT_ind (PIT_f_class, ())]
   | Float64add | Float64sub | Float64mul
   | Float64div -> [float_ty; float_ty; float_ty]
   | Float64ldshiftexp -> [float_ty; int_ty; float_ty]
+  | Arraymake -> [int_ty; PITT_param 1; array_ty]
+  | Arrayget -> [array_ty; int_ty; PITT_param 1]
+  | Arraydefault -> [array_ty; PITT_param 1]
+  | Arrayset -> [array_ty; int_ty; PITT_param 1; array_ty]
+  | Arraycopy -> [array_ty; array_ty]
+  | Arrayreroot -> [array_ty; array_ty]
+  | Arraylength -> [array_ty; int_ty]
+
+let one_param =
+  (* currently if there's a parameter it's always this *)
+  let a_annot = Context.nameR (Names.Id.of_string "A") in
+  let ty = Constr.mkType (Universe.make (Level.var 0)) in
+  Context.Rel.Declaration.[LocalAssum (a_annot, ty)]
+
+let params = function
+  | Int63head0
+  | Int63tail0
+  | Int63add
+  | Int63sub
+  | Int63mul
+  | Int63div
+  | Int63mod
+  | Int63lsr
+  | Int63lsl
+  | Int63land
+  | Int63lor
+  | Int63lxor
+  | Int63addc
+  | Int63subc
+  | Int63addCarryC
+  | Int63subCarryC
+  | Int63mulc
+  | Int63diveucl
+  | Int63div21
+  | Int63addMulDiv
+  | Int63eq
+  | Int63lt
+  | Int63le
+  | Int63compare
+  | Float64opp
+  | Float64abs
+  | Float64eq
+  | Float64lt
+  | Float64le
+  | Float64compare
+  | Float64classify
+  | Float64add
+  | Float64sub
+  | Float64mul
+  | Float64div
+  | Float64sqrt
+  | Float64ofInt63
+  | Float64normfr_mantissa
+  | Float64frshiftexp
+  | Float64ldshiftexp
+  | Float64next_up
+  | Float64next_down -> []
+
+  | Arraymake
+  | Arrayget
+  | Arraydefault
+  | Arrayset
+  | Arraycopy
+  | Arrayreroot
+  | Arraylength -> one_param
+
+let nparams x = List.length (params x)
+
+let univs = function
+  | Int63head0
+  | Int63tail0
+  | Int63add
+  | Int63sub
+  | Int63mul
+  | Int63div
+  | Int63mod
+  | Int63lsr
+  | Int63lsl
+  | Int63land
+  | Int63lor
+  | Int63lxor
+  | Int63addc
+  | Int63subc
+  | Int63addCarryC
+  | Int63subCarryC
+  | Int63mulc
+  | Int63diveucl
+  | Int63div21
+  | Int63addMulDiv
+  | Int63eq
+  | Int63lt
+  | Int63le
+  | Int63compare
+  | Float64opp
+  | Float64abs
+  | Float64eq
+  | Float64lt
+  | Float64le
+  | Float64compare
+  | Float64classify
+  | Float64add
+  | Float64sub
+  | Float64mul
+  | Float64div
+  | Float64sqrt
+  | Float64ofInt63
+  | Float64normfr_mantissa
+  | Float64frshiftexp
+  | Float64ldshiftexp
+  | Float64next_up
+  | Float64next_down -> AUContext.empty
+
+  | Arraymake
+  | Arrayget
+  | Arraydefault
+  | Arrayset
+  | Arraycopy
+  | Arrayreroot
+  | Arraylength -> one_univ
 
 type arg_kind =
   | Kparam (* not needed for the evaluation of the primitive when it reduces *)
@@ -247,17 +427,21 @@ type args_red = arg_kind list
 (* Invariant only argument of type int63, float or an inductive can
    have kind Kwhnf *)
 
-let arity t = List.length (types t) - 1
+let arity t = let sign = types t in nparams t + List.length sign - 1
 
 let kind t =
-  let rec aux n = if n <= 0 then [] else Kwhnf :: aux (n - 1) in
-  aux (arity t)
+  let rec params n = if n <= 0 then [] else Kparam :: params (n - 1) in
+  let args = function PITT_type _ | PITT_ind _ -> Kwhnf | PITT_param _ -> Karg in
+  params (nparams t) @ List.map args (CList.drop_last (types t))
+
+let types t = params t, types t
 
 (** Special Entries for Register **)
 
 type op_or_type =
   | OT_op of t
-  | OT_type of prim_type
+  | OT_type : 'a prim_type -> op_or_type
+  | OT_const of const
 
 let prim_ind_to_string (type a) (p : a prim_ind) = match p with
   | PIT_bool -> "bool"
@@ -267,24 +451,40 @@ let prim_ind_to_string (type a) (p : a prim_ind) = match p with
   | PIT_f_cmp -> "f_cmp"
   | PIT_f_class -> "f_class"
 
-let prim_type_to_string = function
+let prim_type_to_string (type a) (ty : a prim_type) = match ty with
   | PT_int63 -> "int63_type"
   | PT_float64 -> "float64_type"
+  | PT_array -> "array_type"
 
 let op_or_type_to_string = function
   | OT_op op -> to_string op
   | OT_type t -> prim_type_to_string t
+  | OT_const c -> const_to_string c
 
 let prim_type_of_string = function
-  | "int63_type" -> PT_int63
-  | "float64_type" -> PT_float64
+  | "int63_type" -> PTE PT_int63
+  | "float64_type" -> PTE PT_float64
+  | "array_type" -> PTE PT_array
   | _ -> raise Not_found
 
 let op_or_type_of_string s =
-  try OT_type (prim_type_of_string s)
-  with Not_found -> OT_op (parse s)
+  match prim_type_of_string s with
+  | PTE ty -> OT_type ty
+  | exception Not_found ->
+    begin try OT_op (parse s)
+      with Not_found -> OT_const (const_of_string s)
+    end
 
 let parse_op_or_type ?loc s =
   try op_or_type_of_string s
   with Not_found ->
     CErrors.user_err ?loc Pp.(str ("Built-in #"^s^" does not exist."))
+
+let op_or_type_univs = function
+  | OT_op t -> univs t
+  | OT_type t -> typ_univs t
+  | OT_const c -> const_univs c
+
+let body_of_prim_const = function
+  | Arraymaxlength ->
+    Constr.mkInt (Parray.max_length)

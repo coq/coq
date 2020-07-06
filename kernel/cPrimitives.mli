@@ -51,6 +51,13 @@ type t =
   | Float64ldshiftexp
   | Float64next_up
   | Float64next_down
+  | Arraymake
+  | Arrayget
+  | Arraydefault
+  | Arrayset
+  | Arraycopy
+  | Arrayreroot
+  | Arraylength
 
 (** Can raise [Not_found].
     Beware that this is not exactly the reverse of [to_string] below. *)
@@ -58,8 +65,11 @@ val parse : string -> t
 
 val equal : t -> t -> bool
 
+type const =
+  | Arraymaxlength
+
 type arg_kind =
-  | Kparam (* not needed for the elavuation of the primitive*)
+  | Kparam (* not needed for the evaluation of the primitive*)
   | Kwhnf  (* need to be reduced in whnf before reducing the primitive *)
   | Karg   (* no need to be reduced in whnf *)
 
@@ -70,32 +80,49 @@ val hash : t -> int
 val to_string : t -> string
 
 val arity : t -> int
+(** Including parameters *)
+
+val nparams : t -> int
 
 val kind : t -> args_red
+(** Includes parameters *)
 
 (** Special Entries for Register **)
 
-type prim_type =
-  | PT_int63
-  | PT_float64
+type 'a prim_type =
+  | PT_int63 : unit prim_type
+  | PT_float64 : unit prim_type
+  | PT_array : (Univ.Instance.t * ind_or_type) prim_type
 
-(** Can raise [Not_found] *)
-val prim_type_of_string : string -> prim_type
-val prim_type_to_string : prim_type -> string
-
-type 'a prim_ind =
+and 'a prim_ind =
   | PIT_bool : unit prim_ind
-  | PIT_carry : prim_type prim_ind
-  | PIT_pair : (prim_type * prim_type) prim_ind
+  | PIT_carry : ind_or_type prim_ind
+  | PIT_pair : (ind_or_type * ind_or_type) prim_ind
   | PIT_cmp : unit prim_ind
   | PIT_f_cmp : unit prim_ind
   | PIT_f_class : unit prim_ind
 
+and ind_or_type =
+  | PITT_ind : 'a prim_ind * 'a -> ind_or_type
+  | PITT_type : 'a prim_type * 'a -> ind_or_type
+  | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
+
+val typ_univs : 'a prim_type -> Univ.AUContext.t
+
+type prim_type_ex = PTE : 'a prim_type -> prim_type_ex
+
 type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
+
+(** Can raise [Not_found] *)
+val prim_type_of_string : string -> prim_type_ex
+val prim_type_to_string : 'a prim_type -> string
 
 type op_or_type =
   | OT_op of t
-  | OT_type of prim_type
+  | OT_type : 'a prim_type -> op_or_type
+  | OT_const of const
+
+val op_or_type_univs : op_or_type -> Univ.AUContext.t
 
 val prim_ind_to_string : 'a prim_ind -> string
 
@@ -105,8 +132,12 @@ val op_or_type_to_string : op_or_type -> string
 
 val parse_op_or_type : ?loc:Loc.t -> string -> op_or_type
 
-type ind_or_type =
-  | PITT_ind : 'a prim_ind * 'a -> ind_or_type
-  | PITT_type : prim_type -> ind_or_type
+val univs : t -> Univ.AUContext.t
 
-val types : t -> ind_or_type list
+val types : t -> Constr.rel_context * ind_or_type list
+(** Parameters * Reduction relevant arguments and output type
+
+  XXX we could reify universes in ind_or_type (currently polymorphic types
+  like array are assumed to use universe 0). *)
+
+val body_of_prim_const : const -> Constr.t

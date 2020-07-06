@@ -617,3 +617,38 @@ the Calculus of Inductive Constructions}},
   year         = 2019,
   institution = {Chalmers and Gothenburg University},
 }
+
+@inproceedings{ConchonFilliatre07wml,
+  author = {Sylvain Conchon and Jean-Christophe Filliâtre},
+  title = {A Persistent Union-Find Data Structure},
+  booktitle = {ACM SIGPLAN Workshop on ML},
+  publisher = {ACM Press},
+  pages = {37--45},
+  year = 2007,
+  address = {Freiburg, Germany},
+  month = {October},
+  topics = {team, lri},
+  type_publi = {icolcomlec},
+  type_digiteo = {conf_isbn},
+  x-pdf = {https://www.lri.fr/~filliatr/ftp/publis/puf-wml07.pdf},
+  url = {https://www.lri.fr/~filliatr/ftp/publis/puf-wml07.pdf},
+  abstract = { The problem of disjoint sets, also known as union-find,
+  consists in maintaining a partition of a finite set within a data
+  structure. This structure provides two operations: a function find
+  returning the class of an element and a function union merging two
+  classes. An optimal and imperative solution is known since 1975.
+  However, the imperative nature of this data structure may be a
+  drawback when it is used in a backtracking algorithm. This paper
+  details the implementation of a persistent union-find data structure
+  as efficient as its imperative counterpart.  To achieve this result,
+  our solution makes heavy use of imperative features and thus it is a
+  significant example of a data structure whose side effects are
+  safely hidden behind a persistent interface.  To strengthen this
+  last claim, we also detail a formalization using the Coq proof
+  assistant which shows both the correctness of our solution and its
+  observational persistence. },
+  x-equipes = {demons PROVAL},
+  x-type = {article},
+  x-support = {actes_aux},
+  x-cle-support = {ML}
+}

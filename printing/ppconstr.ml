@@ -655,6 +655,14 @@ let tag_var = tag Tag.variable
         return (pr_prim_token p, prec_of_prim_token p)
       | CDelimiters (sc,a) ->
         return (pr_delimiters sc (pr mt (LevelLe ldelim) a), ldelim)
+      | CArray(u, t,def,ty) ->
+        let pp = ref (str " |"++ spc () ++ pr mt ltop def
+          ++ pr_opt_type_spc (pr mt) ty  ++ str " |]" ++ pr_universe_instance u) in
+        for i = Array.length t - 1 downto 1 do
+          pp :=  str ";" ++ pr mt ltop t.(i) ++ !pp
+        done;
+        pp :=  pr mt ltop t.(0) ++ !pp;
+        hov 0 (str "[|" ++ !pp), 0
     in
     let loc = constr_loc a in
     pr_with_comments ?loc

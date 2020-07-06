@@ -16,6 +16,7 @@ type reloc_info =
   | Reloc_const of structured_constant
   | Reloc_getglobal of Constant.t
   | Reloc_proj_name of Projection.Repr.t
+  | Reloc_caml_prim of CPrimitives.t
 
 type patches
 type emitcodes

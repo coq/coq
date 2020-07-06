@@ -466,6 +466,8 @@ let () = define1 "constr_kind" constr begin fun c ->
     v_blk 17 [|Value.of_uint63 n|]
   | Float f ->
     v_blk 18 [|Value.of_float f|]
+  | Array(u,t,def,ty) ->
+    v_blk 19 [|of_instance u; Value.of_array Value.of_constr t; Value.of_constr def; Value.of_constr ty|]
   end
 end
 
@@ -547,6 +549,12 @@ let () = define1 "constr_make" valexpr begin fun knd ->
   | (18, [|f|]) ->
     let f = Value.to_float f in
     EConstr.mkFloat f
+  | (19, [|u;t;def;ty|]) ->
+    let t = Value.to_array Value.to_constr t in
+    let def = Value.to_constr def in
+    let ty = Value.to_constr ty in
+    let u = to_instance u in
+    EConstr.mkArray(u,t,def,ty)
   | _ -> assert false
   in
   return (Value.of_constr c)

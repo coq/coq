@@ -128,6 +128,7 @@ and ml_ast =
   | MLmagic  of ml_ast
   | MLuint   of Uint63.t
   | MLfloat  of Float64.t
+  | MLparray of ml_ast array * ml_ast
 
 and ml_pattern =
   | Pcons   of GlobRef.t * ml_pattern list

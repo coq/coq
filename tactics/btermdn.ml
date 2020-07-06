@@ -86,7 +86,7 @@ let constr_val_discr_st sigma ts t =
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
     | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Case _ | Fix _ | CoFix _
-    | Proj _ | Int _ | Float _ -> Nothing
+    | Proj _ | Int _ | Float _ | Array _ -> Nothing
 
 let constr_pat_discr_st ts t =
   let open GlobRef in

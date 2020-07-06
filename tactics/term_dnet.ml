@@ -46,6 +46,7 @@ struct
     | DCoFix  of int * 't array * 't array
     | DInt    of Uint63.t
     | DFloat  of Float64.t
+    | DArray  of 't array * 't * 't
 
     (* special constructors only inside the left-hand side of DCtx or
        DApp. Used to encode lists of foralls/letins/apps as contexts *)
@@ -69,6 +70,7 @@ struct
           Some t' -> str ":=" ++ f t'
         | None -> str "") ++ spc() ++ str "::" ++ spc() ++ f tl
     | DNil -> str "[]"
+    | DArray _ -> str "ARRAY"
 
   (*
    * Functional iterators for the t datatype
@@ -86,6 +88,7 @@ struct
     | DCoFix(i,ta,ca) ->
         DCoFix (i,Array.map f ta,Array.map f ca)
     | DCons ((t,topt),u) -> DCons ((f t,Option.map f topt), f u)
+    | DArray (t,def,ty) -> DArray(Array.map f t, f def, f ty)
 
   let compare_ci ci1 ci2 =
     let c = ind_ord ci1.ci_ind ci2.ci_ind in
@@ -157,6 +160,17 @@ struct
 
   | DFloat _, _ -> -1 | _, DFloat _ -> 1
 
+  | DArray(t1,def1,ty1), DArray(t2,def2,ty2) ->
+    let c =  Array.compare cmp t1 t2 in
+    if c = 0 then
+      let c = cmp def1 def2 in
+      if c = 0 then
+      cmp ty1 ty2
+      else c
+    else c
+
+  | DArray _, _ -> -1 | _, DArray _ -> 1
+
   | DCons ((t1, ot1), u1), DCons ((t2, ot2), u2) ->
      let c = cmp t1 t2 in
      if Int.equal c 0 then
@@ -178,6 +192,7 @@ struct
         Array.fold_left f (Array.fold_left f acc ta) ca
     | DCoFix(i,ta,ca) ->
         Array.fold_left f (Array.fold_left f acc ta) ca
+    | DArray(t,def,ty) -> f (f (Array.fold_left f acc t) def) ty
     | DCons ((t,topt),u) -> f (Option.fold_left f (f acc t) topt) u
 
   let choose f = function
@@ -189,6 +204,7 @@ struct
     | DFix (ia,i,ta,ca) -> f ta.(0)
     | DCoFix (i,ta,ca) -> f ta.(0)
     | DCons ((t,topt),u) -> f u
+    | DArray(t,def,ty) -> f t.(0)
 
   let dummy_cmp () () = 0
 
@@ -208,10 +224,12 @@ struct
             Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
         | DCoFix(i,ta1,ca1), DCoFix(_,ta2,ca2) ->
             Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
+              | DArray(t1,def1,ty1), DArray(t2,def2,ty2) ->
+            f (f (Array.fold_left2 f acc t1 t2) def1 def2) ty1 ty2
         | DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
             f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
         | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
-           | DFix _ | DCoFix _ | DCons _ | DInt _ | DFloat _), _ -> assert false
+           | DFix _ | DCoFix _ | DCons _ | DInt _ | DFloat _| DArray _), _ -> assert false
 
   let map2 (f:'a -> 'b -> 'c) (c1:'a t) (c2:'b t) : 'c t =
     let head w = map (fun _ -> ()) w in
@@ -230,14 +248,16 @@ struct
             DFix (ia,i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
         | DCoFix (i,ta1,ca1), DCoFix (_,ta2,ca2) ->
             DCoFix (i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
+              | DArray(t1,def1,ty1), DArray(t2,def2,ty2) ->
+                DArray(Array.map2 f t1 t2, f def1 def2, f ty1 ty2)
         | DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
             DCons ((f t1 t2,Option.lift2 f topt1 topt2), f u1 u2)
         | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
-           | DFix _ | DCoFix _ | DCons _ | DInt _ | DFloat _), _ -> assert false
+           | DFix _ | DCoFix _ | DCons _ | DInt _ | DFloat _ | DArray _), _ -> assert false
 
   let terminal = function
     | (DRel | DSort | DNil | DRef _ | DInt _ | DFloat _) -> true
-    | DLambda _ | DApp _ | DCase _ | DFix _ | DCoFix _ | DCtx _ | DCons _ ->
+    | DLambda _ | DApp _ | DCase _ | DFix _ | DCoFix _ | DCtx _ | DCons _ | DArray _ ->
       false
 
   let compare t1 t2 = compare dummy_cmp t1 t2
@@ -332,6 +352,8 @@ struct
         Term (DApp (Term (DRef (ConstRef (Projection.constant p))), pat_of_constr c))
     | Int i -> Term (DInt i)
     | Float f -> Term (DFloat f)
+    | Array (_u,t,def,ty) ->
+      Term (DArray (Array.map pat_of_constr t, pat_of_constr def, pat_of_constr ty))
 
     and ctx_of_constr ctx c = match Constr.kind c with
     | Prod (_,t,c)   -> ctx_of_constr (Term(DCons((pat_of_constr t,None),ctx))) c

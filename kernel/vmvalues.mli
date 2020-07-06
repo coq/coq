@@ -129,6 +129,7 @@ type whd =
   | Vconstr_block of vblock
   | Vint64 of int64
   | Vfloat64 of float
+  | Varray of values Parray.t
   | Vatom_stk of atom * stack
   | Vuniv_level of Univ.Level.t
 
@@ -150,6 +151,7 @@ val val_of_atom : atom -> values
 val val_of_int : int -> structured_values
 val val_of_block : tag -> structured_values array -> structured_values
 val val_of_uint : Uint63.t -> structured_values
+val val_of_parray : structured_values Parray.t -> structured_values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 external val_of_proj_name : Projection.Repr.t -> values = "%identity"
@@ -199,3 +201,12 @@ val bfield : vblock -> int -> values
 
 val check_switch : vswitch -> vswitch -> bool
 val branch_arg : int -> tag * int -> values
+
+(** Primitives implemented in OCaml, seen as values (to be used as globals) *)
+val parray_make : values
+val parray_get : values
+val parray_get_default : values
+val parray_set : values
+val parray_copy : values
+val parray_reroot : values
+val parray_length : values

@@ -112,7 +112,7 @@ INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output output-coqtop \
   output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
-  coqdoc ssr primitive/uint63 primitive/float ltac2
+  coqdoc ssr $(wildcard primitive/*) ltac2
 
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)

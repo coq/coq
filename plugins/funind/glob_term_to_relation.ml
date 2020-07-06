@@ -568,6 +568,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     | GProd _ -> user_err Pp.(str "Cannot apply a type")
     | GInt _ -> user_err Pp.(str "Cannot apply an integer")
     | GFloat _ -> user_err Pp.(str "Cannot apply a float")
+    | GArray _ -> user_err Pp.(str "Cannot apply an array")
     (* end of the application treatement *) )
   | GLambda (n, _, t, b) ->
     (* we first compute the list of constructor
@@ -672,6 +673,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     build_entry_lc env sigma funnames avoid match_expr
   | GRec _ -> user_err Pp.(str "Not handled GRec")
   | GCast (b, _) -> build_entry_lc env sigma funnames avoid b
+  | GArray _ -> user_err Pp.(str "Not handled GArray")
 
 and build_entry_lc_from_case env sigma funname make_discr (el : tomatch_tuples)
     (brl : Glob_term.cases_clauses) avoid : glob_constr build_entry_return =
@@ -1196,7 +1198,7 @@ let rec compute_cst_params relnames params gt =
            discrimination ones *)
       | GSort _ -> params
       | GHole _ -> params
-      | GIf _ | GRec _ | GCast _ ->
+      | GIf _ | GRec _ | GCast _ | GArray _ ->
         CErrors.user_err ~hdr:"compute_cst_params" (str "Not handled case"))
     gt
 

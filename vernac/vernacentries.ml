@@ -2221,10 +2221,10 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
     VtNoProof(fun () ->
         unsupported_attributes atts;
         vernac_register qid r)
-  | VernacPrimitive (id, prim, typopt) ->
+  | VernacPrimitive ((id, udecl), prim, typopt) ->
     VtDefault(fun () ->
         unsupported_attributes atts;
-        ComPrimitive.do_primitive id prim typopt)
+        ComPrimitive.do_primitive id udecl prim typopt)
   | VernacComments l ->
     VtDefault(fun () ->
         unsupported_attributes atts;

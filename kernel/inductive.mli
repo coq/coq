@@ -105,6 +105,13 @@ val check_case_info : env -> pinductive -> Sorts.relevance -> case_info -> unit
 
 (** {6 Guard conditions for fix and cofix-points. } *)
 
+(** [is_primitive_positive_container env c] tells if the constant [c] is
+    registered as a primitive type that can be seen as a container where the
+    occurrences of its parameters are positive, in which case the positivity and
+    guard conditions are extended to allow inductive types to nest their subterms
+    in these containers. *)
+val is_primitive_positive_container : env -> Constant.t -> bool
+
 (** When [chk] is false, the guard condition is not actually
     checked. *)
 val check_fix : env -> fixpoint -> unit

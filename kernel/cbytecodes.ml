@@ -61,6 +61,7 @@ type instruction =
   | Kensurestackcapacity of int
   | Kbranch of Label.t                  (* jump to label *)
   | Kprim of CPrimitives.t * pconstant option
+  | Kcamlprim of CPrimitives.t * Label.t
   | Kareint of int
 
 and bytecodes = instruction list
@@ -146,6 +147,10 @@ let rec pp_instr i =
 
   | Kprim (op, id) -> str (CPrimitives.to_string op) ++ str " " ++
         (match id with Some (id,_u) -> Constant.print id | None -> str "")
+
+  | Kcamlprim (op, lbl) ->
+    str "camlcall " ++ str (CPrimitives.to_string op) ++ spc () ++
+    pp_lbl lbl
 
   | Kareint n -> str "areint " ++ int n
 

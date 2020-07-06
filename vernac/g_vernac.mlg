@@ -234,7 +234,7 @@ GRAMMAR EXTEND Gram
           { VernacRegister(g, RegisterCoqlib quid) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
-      | IDENT "Primitive"; id = identref; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
+      | IDENT "Primitive"; id = ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }

@@ -516,6 +516,18 @@ let rec get_alias env kn =
         | BCalias kn' -> get_alias env kn'
         | _ -> kn)
 
+(* Some primitives are not implemented natively by the VM, but calling OCaml
+   code instead *)
+let is_caml_prim = let open CPrimitives in function
+  | Arraymake
+  | Arrayget
+  | Arraydefault
+  | Arrayset
+  | Arraycopy
+  | Arrayreroot
+  | Arraylength -> true
+  | _ -> false
+
 (* sz is the size of the local stack *)
 let rec compile_lam env cenv lam sz cont =
   set_max_stack_size sz;
@@ -774,6 +786,27 @@ let rec compile_lam env cenv lam sz cont =
     let arity = Array.length args in
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
     comp_args (compile_lam env) cenv args sz cont
+
+  | Lprim (Some (kn,u), op, args) when is_caml_prim op ->
+    let arity = CPrimitives.arity op in
+    let nparams = CPrimitives.nparams op in
+    let nargs = arity - nparams in
+    assert (arity = Array.length args && arity <= 4);
+    let (jump, cont) = make_branch cont in
+    let lbl_default = Label.create () in
+    let default =
+      let cont = [Kgetglobal kn; Kapply (arity + Univ.Instance.length u); jump] in
+      let cont =
+        if Univ.Instance.is_empty u then cont
+        else comp_args compile_universe cenv (Univ.Instance.to_array u) (sz + arity) (Kpush::cont)
+      in
+      Klabel lbl_default ::
+      Kpush ::
+      if Int.equal nparams 0 then cont
+      else comp_args (compile_lam env) cenv (Array.sub args 0 nparams) (sz + nargs) (Kpush::cont)
+    in
+    fun_code := [Ksequence(default, !fun_code)];
+    comp_args (compile_lam env) cenv (Array.sub args nparams nargs) sz (Kcamlprim (op, lbl_default) :: cont)
 
   | Lprim (kn, op, args) ->
     comp_args (compile_lam env) cenv args sz (Kprim(op, kn)::cont)

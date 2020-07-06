@@ -33,6 +33,9 @@
 #define IS_EVALUATED_COFIX(v) (Is_accu(v) && Is_block(Field(v,1)) && (Tag_val(Field(v,1)) == ATOM_COFIXEVALUATED_TAG))
 #define Is_double(v) (Tag_val(v) == Double_tag)
 
+/* coq array */
+#define Is_coq_array(v) (Is_block(v) && (Wosize_val(v) == 1))
+
 /* coq values for primitive operations */
 #define coq_tag_C1 2
 #define coq_tag_C0 1

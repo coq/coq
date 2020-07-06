@@ -138,6 +138,13 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let le = Esubst.subs_liftn n e in
     let variances = infer_vect infos variances (Array.map (mk_clos le) cl) in
     infer_stack infos variances stk
+  | FArray (u,elemsdef,ty) ->
+    let variances = infer_generic_instance_eq variances u in
+    let variances = infer_fterm CONV infos variances ty [] in
+    let elems, def = Parray.to_array elemsdef in
+    let variances = infer_fterm CONV infos variances def [] in
+    let variances = infer_vect infos variances elems in
+    infer_stack infos variances stk
 
   | FCaseInvert (_,p,_,_,br,e) ->
     let infer c variances = infer_fterm CONV infos variances (mk_clos e c) [] in

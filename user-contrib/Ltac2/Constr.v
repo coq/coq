@@ -47,6 +47,7 @@ Ltac2 Type kind := [
 | Proj (projection, constr)
 | Uint63 (uint63)
 | Float (float)
+| Array (instance, constr array, constr, constr)
 ].
 
 Ltac2 @ external kind : constr -> kind := "ltac2" "constr_kind".

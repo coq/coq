@@ -225,7 +225,7 @@ val type_in_type_constant : Constant.t -> env -> bool
 type const_evaluation_result =
   | NoBody
   | Opaque
-  | IsPrimitive of CPrimitives.t
+  | IsPrimitive of Univ.Instance.t * CPrimitives.t
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_type : env -> Constant.t puniverses -> types constrained

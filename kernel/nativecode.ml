@@ -259,6 +259,7 @@ type primitive =
   | Mk_proj
   | Is_int
   | Is_float
+  | Is_parray
   | Cast_accu
   | Upd_cofix
   | Force_cofix
@@ -285,7 +286,8 @@ type primitive =
   | MLmagic
   | MLarrayget
   | Mk_empty_instance
-  | Coq_primitive of CPrimitives.t * (prefix * pconstant) option
+  | MLparray_of_array
+  | Coq_primitive of CPrimitives.t * bool (* check for accu *)
 
 let eq_primitive p1 p2 =
   match p1, p2 with
@@ -346,15 +348,15 @@ let primitive_hash = function
   | MLsub -> 31
   | MLmul -> 32
   | MLmagic -> 33
-  | Coq_primitive (prim, None) -> combinesmall 34 (CPrimitives.hash prim)
-  | Coq_primitive (prim, Some (prefix,(kn,_))) ->
-     combinesmall 35 (combine3 (String.hash prefix) (Constant.hash kn) (CPrimitives.hash prim))
-  | Mk_proj -> 36
-  | MLarrayget -> 37
-  | Mk_empty_instance -> 38
-  | Mk_float -> 39
-  | Is_float -> 40
+  | Coq_primitive (prim, b) -> combinesmall 34 (combine (CPrimitives.hash prim) (Hashtbl.hash b))
+  | Mk_proj -> 35
+  | MLarrayget -> 36
+  | Mk_empty_instance -> 37
+  | Mk_float -> 38
+  | Is_float -> 39
+  | Is_parray -> 41
   | MLnot -> 41
+  | MLparray_of_array -> 42
 
 type mllambda =
   | MLlocal        of lname
@@ -971,11 +973,14 @@ type prim_aux =
 
 let add_check cond targs args =
   let aux cond t a =
-    match a with
-    | PAml(MLint _) -> cond
-    | PAml ml ->
+    match t, a with
+    | CPrimitives.(PITT_type (PT_int63, _)), PAml(MLapp(MLprimitive Mk_uint, _)) -> cond
+    | CPrimitives.(PITT_type (PT_array, _)), PAml(MLapp(MLprimitive MLparray_of_array, _)) -> cond
+    | CPrimitives.(PITT_type (PT_array, _)), PAml(MLapp (MLglobal (Ginternal "get_value"),_)) -> cond
+    | CPrimitives.(PITT_type (prim_ty, _)), PAml ml ->
        (* FIXME: use explicit equality function *)
-       if List.mem (t, ml) cond then cond else (t, ml)::cond
+       let c = (CPrimitives.PTE prim_ty, ml) in
+       if List.mem c cond then cond else c::cond
     | _ -> cond
   in
   Array.fold_left2 aux cond targs args
@@ -985,13 +990,15 @@ let extract_prim ml_of l =
   let cond = ref [] in
   let type_args p =
     let rec aux = function [] | [_] -> [] | h :: t -> h :: aux t in
-    Array.of_list (aux (CPrimitives.types p)) in
+    let params, sign = CPrimitives.types p in
+    List.length params, Array.of_list (aux sign) in
   let rec aux l =
     match l with
     | Lprim(prefix,kn,p,args) ->
-      let targs = type_args p in
+      let nparams, targs = type_args p in
       let args = Array.map aux args in
-      cond := add_check !cond targs args;
+      let checked_args = Array.init (Array.length args - nparams) (fun i -> args.(i+nparams)) in
+      cond := add_check !cond targs checked_args;
       PAprim(prefix,kn,p,args)
     | Lrel _ | Lvar _ | Luint _ | Lval _ | Lconst _ -> PAml (ml_of l)
     | _ ->
@@ -1006,65 +1013,6 @@ let cast_to_int v =
   | MLint _ -> v
   | _ -> MLapp(MLprimitive Val_to_int, [|v|])
 
-let compile_prim decl cond paux =
-
-  let rec opt_prim_aux paux =
-    match paux with
-    | PAprim(_prefix, _kn, op, args) ->
-      let args = Array.map opt_prim_aux args in
-      app_prim (Coq_primitive(op,None)) args
-    | PAml ml -> ml
-
-  and naive_prim_aux paux =
-    match paux with
-    | PAprim(prefix, kn, op, args) ->
-      app_prim (Coq_primitive(op, Some (prefix,kn))) (Array.map naive_prim_aux args)
-    | PAml ml -> ml
-  in
-
-  let compile_cond cond paux =
-    match cond with
-    | [] -> opt_prim_aux paux
-    | [CPrimitives.(PITT_type PT_int63), c1] ->
-      MLif(app_prim Is_int [|c1|], opt_prim_aux paux, naive_prim_aux paux)
-    | _ ->
-      let ci, cf =
-        let is_int =
-          function CPrimitives.(PITT_type PT_int63), _ -> true | _ -> false in
-        List.partition is_int cond in
-      let condi =
-        let cond =
-          List.fold_left
-            (fun ml (_, c) -> app_prim MLland [| ml; cast_to_int c|])
-            (MLint 0) ci in
-        app_prim MLmagic [|cond|] in
-      let condf = match cf with
-        | [] -> MLint 0
-        | [_, c1] -> app_prim Is_float [|c1|]
-        | (_, c1) :: condf ->
-           List.fold_left
-             (fun ml (_, c) -> app_prim MLand [| ml; app_prim Is_float [|c|]|])
-             (app_prim Is_float [|c1|]) condf in
-      match ci, cf with
-      | [], [] -> opt_prim_aux paux
-      | _ :: _, [] ->
-         MLif(condi, naive_prim_aux paux, opt_prim_aux paux)
-      | [], _ :: _ ->
-         MLif(condf, opt_prim_aux paux, naive_prim_aux paux)
-      | _ :: _, _ :: _ ->
-         let cond = app_prim MLand [|condf; app_prim MLnot [|condi|]|] in
-         MLif(cond, opt_prim_aux paux, naive_prim_aux paux) in
-
-  let add_decl decl body =
-    List.fold_left (fun body (x,d) -> MLlet(x,d,body)) body decl in
-
-  (* The optimizations done for checking if integer values are closed are valid
-     only on 64-bit architectures. So on 32-bit architectures, we fall back to less optimized checks. *)
-  if max_int = 1073741823 (* 32-bits *) then
-    add_decl decl (naive_prim_aux paux)
-  else
-    add_decl decl (compile_cond cond paux)
-
 let ml_of_instance instance u =
   let ml_of_level l =
     match Univ.Level.var_index l with
@@ -1077,6 +1025,73 @@ let ml_of_instance instance u =
   if Array.is_empty u then [||]
   else let u = Array.map ml_of_level u in
        [|MLapp (MLprimitive MLmagic, [|MLarray u|])|]
+
+let compile_prim env decl cond paux =
+
+  let rec opt_prim_aux paux =
+    match paux with
+    | PAprim(_prefix, _kn, op, args) ->
+      let n = CPrimitives.nparams op in
+      let args = Array.map opt_prim_aux (Array.sub args n (Array.length args - n)) in
+      app_prim (Coq_primitive(op, false)) args
+    | PAml ml -> ml
+
+  and naive_prim_aux paux =
+    match paux with
+    | PAprim(prefix, (kn,u), op, args) ->
+      let uarg = ml_of_instance env.env_univ u in
+      let prim_const = mkMLapp (MLglobal (Gconstant(prefix,kn))) uarg in
+      let prim = mkMLapp (MLprimitive(Coq_primitive(op, true))) [|prim_const|] in
+      mkMLapp prim (Array.map naive_prim_aux args)
+    | PAml ml -> ml
+  in
+
+  let compile_cond cond paux =
+    match cond with
+    | [] -> opt_prim_aux paux
+    | [CPrimitives.(PTE PT_int63), c1] ->
+      MLif(app_prim Is_int [|c1|], opt_prim_aux paux, naive_prim_aux paux)
+    | _ ->
+      let ci, co =
+        let is_int =
+          function CPrimitives.(PTE PT_int63), _ -> true | _ -> false in
+        List.partition is_int cond in
+      let condi =
+        let cond =
+          List.fold_left
+            (fun ml (_, c) -> app_prim MLland [| ml; cast_to_int c|])
+            (MLint 0) ci in
+        app_prim MLmagic [|cond|] in
+      let condo = match co with
+        | [] -> MLint 0
+        | (CPrimitives.PTE ty, c1) :: condo ->
+          let check = match ty with
+          | CPrimitives.PT_float64 -> Is_float
+          | CPrimitives.PT_array -> Is_parray
+          | CPrimitives.PT_int63 -> assert false
+          in
+           List.fold_left
+             (fun ml (_, c) -> app_prim MLand [| ml; app_prim check [|c|]|])
+             (app_prim check [|c1|]) condo in
+      match ci, co with
+      | [], [] -> opt_prim_aux paux
+      | _ :: _, [] ->
+         MLif(condi, naive_prim_aux paux, opt_prim_aux paux)
+      | [], _ :: _ ->
+         MLif(condo, opt_prim_aux paux, naive_prim_aux paux)
+      | _ :: _, _ :: _ ->
+         let cond = app_prim MLand [|condo; app_prim MLnot [|condi|]|] in
+         MLif(cond, opt_prim_aux paux, naive_prim_aux paux) in
+
+  let add_decl decl body =
+    List.fold_left (fun body (x,d) -> MLlet(x,d,body)) body decl in
+
+  (* The optimizations done for checking if integer values are closed are valid
+     only on 64-bit architectures. So on 32-bit architectures, we fall back to less optimized checks. *)
+  if max_int = 1073741823 (* 32-bits *) then
+    add_decl decl (naive_prim_aux paux)
+  else
+    add_decl decl (compile_cond cond paux)
 
  let rec ml_of_lam env l t =
   match t with
@@ -1118,7 +1133,7 @@ let ml_of_instance instance u =
   | Lproj (prefix, ind, i) -> MLglobal(Gproj (prefix, ind, i))
   | Lprim _ ->
     let decl,cond,paux = extract_prim (ml_of_lam env l) t in
-    compile_prim decl cond paux
+    compile_prim env decl cond paux
   | Lcase (annot,p,a,bs) ->
       (* let predicate_uid fv_pred = compilation of p
          let rec case_uid fv a_uid =
@@ -1333,6 +1348,9 @@ let ml_of_instance instance u =
      MLconstruct(prefix,cn,tag,args)
   | Luint i -> MLapp(MLprimitive Mk_uint, [|MLuint i|])
   | Lfloat f -> MLapp(MLprimitive Mk_float, [|MLfloat f|])
+  | Lparray (t,def) ->
+    let def = ml_of_lam env l def in
+    MLapp(MLprimitive MLparray_of_array, [| MLarray (Array.map (ml_of_lam env l) t); def |])
   | Lval v ->
       let i = push_symbol (SymbValue v) in get_value_code i
   | Lsort s ->
@@ -1777,6 +1795,7 @@ let pp_mllam fmt l =
     | Mk_proj -> Format.fprintf fmt "mk_proj_accu"
     | Is_int -> Format.fprintf fmt "is_int"
     | Is_float -> Format.fprintf fmt "is_float"
+    | Is_parray -> Format.fprintf fmt "is_parray"
     | Cast_accu -> Format.fprintf fmt "cast_accu"
     | Upd_cofix -> Format.fprintf fmt "upd_cofix"
     | Force_cofix -> Format.fprintf fmt "force_cofix"
@@ -1803,11 +1822,10 @@ let pp_mllam fmt l =
     | MLmagic -> Format.fprintf fmt "Obj.magic"
     | MLarrayget -> Format.fprintf fmt "Array.get"
     | Mk_empty_instance -> Format.fprintf fmt "Univ.Instance.empty"
-    | Coq_primitive (op,None) ->
+    | MLparray_of_array -> Format.fprintf fmt "parray_of_array"
+    | Coq_primitive (op, false) ->
        Format.fprintf fmt "no_check_%s" (CPrimitives.to_string op)
-    | Coq_primitive (op, Some (prefix,(c,_))) ->
-        Format.fprintf fmt "%s %a" (CPrimitives.to_string op)
-                       pp_mllam (MLglobal (Gconstant (prefix,c)))
+    | Coq_primitive (op, true) -> Format.fprintf fmt "%s" (CPrimitives.to_string op)
   in
   Format.fprintf fmt "@[%a@]" pp_mllam l
 

@@ -353,6 +353,10 @@ module AUContext :
 sig
   type t
 
+  val make : Names.Name.t array -> Constraint.t -> t
+  (** Build an abstract context. Constraints may be between universe
+     variables. *)
+
   val repr : t -> UContext.t
   (** [repr ctx] is [(Var(0), ... Var(n-1) |= cstr] where [n] is the length of
       the context and [cstr] the abstracted Constraint.t. *)

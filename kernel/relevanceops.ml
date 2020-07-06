@@ -54,7 +54,7 @@ let rec relevance_of_fterm env extra lft f =
       | FRel n -> Range.get extra (Esubst.reloc_rel n lft - 1)
       | FAtom c -> relevance_of_term_extra env extra lft (Esubst.subs_id 0) c
       | FFlex key -> relevance_of_flex env key
-      | FInt _ | FFloat _ -> Sorts.Relevant
+      | FInt _ | FFloat _ | FArray _ -> Sorts.Relevant
       | FInd _ | FProd _ -> Sorts.Relevant (* types are always relevant *)
       | FConstruct (c,_) -> relevance_of_constructor env c
       | FApp (f, _) -> relevance_of_fterm env extra lft f
@@ -102,6 +102,7 @@ and relevance_of_term_extra env extra lft subs c =
   | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
   | Proj (p, _) -> relevance_of_projection env p
   | Int _ | Float _ -> Sorts.Relevant
+  | Array _ -> Sorts.Relevant
 
   | Meta _ | Evar _ -> Sorts.Relevant (* let's assume metas and evars are relevant for now *)
 

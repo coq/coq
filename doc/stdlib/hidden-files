@@ -15,6 +15,7 @@ theories/extraction/ExtrOcamlBigIntConv.v
 theories/extraction/ExtrOcamlChar.v
 theories/extraction/ExtrOCamlInt63.v
 theories/extraction/ExtrOCamlFloats.v
+theories/extraction/ExtrOCamlPArray.v
 theories/extraction/ExtrOcamlIntConv.v
 theories/extraction/ExtrOcamlNatBigInt.v
 theories/extraction/ExtrOcamlNatInt.v

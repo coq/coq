@@ -438,7 +438,7 @@ type nonrec vernac_expr =
   | VernacSearch of searchable * Goal_select.t option * search_restriction
   | VernacLocate of locatable
   | VernacRegister of qualid * register_kind
-  | VernacPrimitive of lident * CPrimitives.op_or_type * constr_expr option
+  | VernacPrimitive of ident_decl * CPrimitives.op_or_type * constr_expr option
   | VernacComments of comment list
 
   (* Proof management *)

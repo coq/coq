@@ -17,6 +17,8 @@ let ppripos (ri,pos) =
     print_string ("getglob "^(Constant.to_string kn)^"\n")
   | Reloc_proj_name p ->
     print_string ("proj "^(Projection.Repr.to_string p)^"\n")
+  | Reloc_caml_prim op ->
+    print_string ("caml primitive "^CPrimitives.to_string op)
   );
    print_flush ()
 
@@ -85,6 +87,7 @@ and ppwhd whd =
   | Vconstr_block b -> ppvblock b
   | Vint64 i -> printf "int64(%LiL)" i
   | Vfloat64 f -> printf "float64(%.17g)" f
+  | Varray t -> ppvarray t
   | Vatom_stk(a,s) ->
       open_hbox();ppatom a;close_box();
       print_string"@";ppstack s
@@ -98,6 +101,20 @@ and ppvblock b =
     print_string ",";ppvalues (bfield b i)
   done;
   print_string")";
+  close_box()
+
+and ppvarray t =
+  let length = Parray.length_int t in
+  open_hbox();
+  print_string "[|";
+  for i = 0 to length - 2 do
+    ppvalues (Parray.get t (Uint63.of_int i));
+    print_string "; "
+  done;
+  ppvalues (Parray.get t (Uint63.of_int (length - 1)));
+  print_string " | ";
+  ppvalues (Parray.default t);
+  print_string " |]";
   close_box()
 
 and ppvalues v =

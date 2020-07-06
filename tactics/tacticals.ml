@@ -417,7 +417,7 @@ let compute_constructor_signatures ~rec_flag ((_,k as ity),u) =
     | RelDecl.LocalAssum _ :: c, recarg::rest ->
         let rest = analrec c rest in
         begin match Declareops.dest_recarg recarg with
-        | Norec | Imbr _  -> true :: rest
+        | Norec | Nested _  -> true :: rest
         | Mrec (_,j)  ->
             if rec_flag && Int.equal j k then true :: true :: rest
             else true :: rest

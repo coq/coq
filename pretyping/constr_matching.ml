@@ -406,10 +406,16 @@ let matches_core env sigma allow_bound_rels
       | PEvar (c1,args1), Evar (c2,args2) when Evar.equal c1 c2 ->
          List.fold_left2 (sorec ctx env) subst args1 args2
       | PInt i1, Int i2 when Uint63.equal i1 i2 -> subst
+
       | PFloat f1, Float f2 when Float64.equal f1 f2 -> subst
+
+      | PArray(pt,pdef,pty), Array(_u,t,def,ty)
+             when Array.length pt = Array.length t ->
+         sorec ctx env (sorec ctx env (Array.fold_left2 (sorec ctx env) subst pt t) pdef def) pty ty
+
       | (PRef _ | PVar _ | PRel _ | PApp _ | PProj _ | PLambda _
          | PProd _ | PLetIn _ | PSort _ | PIf _ | PCase _
-         | PFix _ | PCoFix _| PEvar _ | PInt _ | PFloat _), _ -> raise PatternMatchingFailure
+         | PFix _ | PCoFix _| PEvar _ | PInt _ | PFloat _ | PArray _), _ -> raise PatternMatchingFailure
 
   in
   sorec [] env ((Id.Map.empty,Id.Set.empty), Id.Map.empty) pat c
@@ -527,6 +533,13 @@ let sub_match ?(closed=true) env sigma pat c =
       aux env term mk_ctx next
     with Retyping.RetypeError _ -> next ()
     end
+  | Array(u, t, def, ty) ->
+    let next_mk_ctx = function
+    | def :: ty :: l -> mk_ctx (mkArray(u, Array.of_list l, def, ty))
+    | _ -> assert false
+    in
+    let sub = (env,def) :: (env,ty) :: subargs env t in
+    try_aux sub next_mk_ctx next
   | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|Int _|Float _ ->
     next ()
   in

@@ -213,9 +213,20 @@ let type_of_apply env func funt argsv argstv =
   apply_rec 0 (inject funt)
 
 (* Type of primitive constructs *)
-let type_of_prim_type _env = function
-  | CPrimitives.PT_int63 -> Constr.mkSet
-  | CPrimitives.PT_float64 -> Constr.mkSet
+let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match prim with
+  | CPrimitives.PT_int63 ->
+    assert (Univ.Instance.is_empty u);
+    Constr.mkSet
+  | CPrimitives.PT_float64 ->
+    assert (Univ.Instance.is_empty u);
+    Constr.mkSet
+  | CPrimitives.PT_array ->
+    begin match Univ.Instance.to_array u with
+    | [|u|] ->
+      let ty = Constr.mkType (Univ.Universe.make u) in
+      Constr.mkProd(Context.anonR, ty , ty)
+    | _ -> anomaly Pp.(str"universe instance for array type should have length 1")
+    end
 
 let type_of_int env =
   match env.retroknowledge.Retroknowledge.retro_int63 with
@@ -228,71 +239,11 @@ let type_of_float env =
   | None -> raise
         (Invalid_argument "Typeops.type_of_float: float64 not_defined")
 
-let type_of_prim env t =
-  let int_ty () = type_of_int env in
-  let float_ty () = type_of_float env in
-  let bool_ty () =
-    match env.retroknowledge.Retroknowledge.retro_bool with
-    | Some ((ind,_),_) -> Constr.mkInd ind
-    | None -> CErrors.user_err Pp.(str"The type bool must be registered before this primitive.")
-  in
-  let compare_ty () =
-    match env.retroknowledge.Retroknowledge.retro_cmp with
-    | Some ((ind,_),_,_) -> Constr.mkInd ind
-    | None -> CErrors.user_err Pp.(str"The type compare must be registered before this primitive.")
-  in
-  let f_compare_ty () =
-    match env.retroknowledge.Retroknowledge.retro_f_cmp with
-    | Some ((ind,_),_,_,_) -> Constr.mkInd ind
-    | None -> CErrors.user_err Pp.(str"The type float_comparison must be registered before this primitive.")
-  in
-  let f_class_ty () =
-    match env.retroknowledge.Retroknowledge.retro_f_class with
-    | Some ((ind,_),_,_,_,_,_,_,_,_) -> Constr.mkInd ind
-    | None -> CErrors.user_err Pp.(str"The type float_class must be registered before this primitive.")
-  in
-  let pair_ty fst_ty snd_ty =
-    match env.retroknowledge.Retroknowledge.retro_pair with
-    | Some (ind,_) -> Constr.mkApp(Constr.mkInd ind, [|fst_ty;snd_ty|])
-    | None -> CErrors.user_err Pp.(str"The type pair must be registered before this primitive.")
-  in
-  let carry_ty int_ty =
-    match env.retroknowledge.Retroknowledge.retro_carry with
-    | Some ((ind,_),_) -> Constr.mkApp(Constr.mkInd ind, [|int_ty|])
-    | None -> CErrors.user_err Pp.(str"The type carry must be registered before this primitive.")
-  in
-  let open CPrimitives in
-  let tr_prim_type = function
-    | PT_int63 -> int_ty ()
-    | PT_float64 -> float_ty () in
-  let tr_ind (type t) (i : t prim_ind) (a : t) = match i, a with
-    | PIT_bool, () -> bool_ty ()
-    | PIT_carry, t -> carry_ty (tr_prim_type t)
-    | PIT_pair, (t1, t2) -> pair_ty (tr_prim_type t1) (tr_prim_type t2)
-    | PIT_cmp, () -> compare_ty ()
-    | PIT_f_cmp, () -> f_compare_ty ()
-    | PIT_f_class, () -> f_class_ty () in
-  let tr_type = function
-    | PITT_ind (i, a) -> tr_ind i a
-    | PITT_type t -> tr_prim_type t in
-  let rec nary_op = function
-    | [] -> assert false
-    | [ret_ty] -> tr_type ret_ty
-    | arg_ty :: r ->
-       let arg_ty = tr_type arg_ty in
-       Constr.mkProd(Context.nameR (Id.of_string "x"), arg_ty, nary_op r) in
-  nary_op (types t)
-
-let type_of_prim_or_type env = let open CPrimitives in
-  function
-  | OT_type t -> type_of_prim_type env t
-  | OT_op op -> type_of_prim env op
-
-let judge_of_int env i =
-  make_judge (Constr.mkInt i) (type_of_int env)
-
-let judge_of_float env f =
-  make_judge (Constr.mkFloat f) (type_of_float env)
+let type_of_array env u =
+  assert (Univ.Instance.length u = 1);
+  match env.retroknowledge.Retroknowledge.retro_array with
+  | Some c -> mkConstU (c,u)
+  | None -> CErrors.user_err Pp.(str"The type array must be registered before this construction can be typechecked.")
 
 (* Type of product *)
 
@@ -353,6 +304,18 @@ let check_cast env c ct k expected_type =
       Nativeconv.native_conv CUMUL sigma env ct expected_type
   with NotConvertible ->
     error_actual_type env (make_judge c ct) expected_type
+
+let judge_of_int env i =
+  make_judge (Constr.mkInt i) (type_of_int env)
+
+let judge_of_float env f =
+  make_judge (Constr.mkFloat f) (type_of_float env)
+
+let judge_of_array env u tj defj =
+  let def = defj.uj_val in
+  let ty = defj.uj_type in
+  Array.iter (fun j -> check_cast env j.uj_val j.uj_type DEFAULTcast ty) tj;
+  make_judge (mkArray(u, Array.map j_val tj, def, ty)) (mkApp (type_of_array env u, [|ty|]))
 
 (* Inductive types. *)
 
@@ -621,6 +584,23 @@ let rec execute env cstr =
     (* Primitive types *)
     | Int _ -> cstr, type_of_int env
     | Float _ -> cstr, type_of_float env
+    | Array(u,t,def,ty) ->
+      (* ty : Type@{u} and all of t,def : ty *)
+      let ulev = match Univ.Instance.to_array u with
+        | [|u|] -> u
+        | _ -> assert false
+      in
+      let ty',tyty = execute env ty in
+      check_cast env ty' tyty DEFAULTcast (mkType (Universe.make ulev));
+      let def', def_ty = execute env def in
+      check_cast env def' def_ty DEFAULTcast ty';
+      let ta = type_of_array env u in
+      let t' = Array.Smart.map (fun x ->
+        let x', xt = execute env x in
+        check_cast env x' xt DEFAULTcast ty';
+        x') t in
+      let cstr = if def'==def && t'==t && ty'==ty then cstr else mkArray(u, t',def',ty') in
+      cstr, mkApp(ta, [|ty'|])
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
@@ -747,7 +727,77 @@ let judge_of_case env ci pj iv cj lfj =
 
 (* Building type of primitive operators and type *)
 
-let check_primitive_type env op_t t =
-  let inft = type_of_prim_or_type env op_t in
-  try default_conv ~l2r:false CUMUL env inft t
-  with NotConvertible -> error_incorrect_primitive env (make_judge op_t inft) t
+let type_of_prim_const env _u c =
+  let int_ty () = type_of_int env in
+  match c with
+  | CPrimitives.Arraymaxlength ->
+    int_ty ()
+
+let type_of_prim env u t =
+  let int_ty () = type_of_int env in
+  let float_ty () = type_of_float env in
+  let array_ty u a = mkApp(type_of_array env u, [|a|]) in
+  let bool_ty () =
+    match env.retroknowledge.Retroknowledge.retro_bool with
+    | Some ((ind,_),_) -> Constr.mkInd ind
+    | None -> CErrors.user_err Pp.(str"The type bool must be registered before this primitive.")
+  in
+  let compare_ty () =
+    match env.retroknowledge.Retroknowledge.retro_cmp with
+    | Some ((ind,_),_,_) -> Constr.mkInd ind
+    | None -> CErrors.user_err Pp.(str"The type compare must be registered before this primitive.")
+  in
+  let f_compare_ty () =
+    match env.retroknowledge.Retroknowledge.retro_f_cmp with
+    | Some ((ind,_),_,_,_) -> Constr.mkInd ind
+    | None -> CErrors.user_err Pp.(str"The type float_comparison must be registered before this primitive.")
+  in
+  let f_class_ty () =
+    match env.retroknowledge.Retroknowledge.retro_f_class with
+    | Some ((ind,_),_,_,_,_,_,_,_,_) -> Constr.mkInd ind
+    | None -> CErrors.user_err Pp.(str"The type float_class must be registered before this primitive.")
+  in
+  let pair_ty fst_ty snd_ty =
+    match env.retroknowledge.Retroknowledge.retro_pair with
+    | Some (ind,_) -> Constr.mkApp(Constr.mkInd ind, [|fst_ty;snd_ty|])
+    | None -> CErrors.user_err Pp.(str"The type pair must be registered before this primitive.")
+  in
+  let carry_ty int_ty =
+    match env.retroknowledge.Retroknowledge.retro_carry with
+    | Some ((ind,_),_) -> Constr.mkApp(Constr.mkInd ind, [|int_ty|])
+    | None -> CErrors.user_err Pp.(str"The type carry must be registered before this primitive.")
+  in
+  let open CPrimitives in
+  let tr_prim_type (tr_type : ind_or_type -> constr) (type a) (ty : a prim_type) (t : a) = match ty with
+    | PT_int63 -> int_ty t
+    | PT_float64 -> float_ty t
+    | PT_array -> array_ty (fst t) (tr_type (snd t))
+  in
+  let tr_ind (tr_type : ind_or_type -> constr) (type t) (i : t prim_ind) (a : t) = match i, a with
+    | PIT_bool, () -> bool_ty ()
+    | PIT_carry, t -> carry_ty (tr_type t)
+    | PIT_pair, (t1, t2) -> pair_ty (tr_type t1) (tr_type t2)
+    | PIT_cmp, () -> compare_ty ()
+    | PIT_f_cmp, () -> f_compare_ty ()
+    | PIT_f_class, () -> f_class_ty ()
+  in
+  let rec tr_type n = function
+    | PITT_ind (i, a) -> tr_ind (tr_type n) i a
+    | PITT_type (ty,t) -> tr_prim_type (tr_type n) ty t
+    | PITT_param i -> Constr.mkRel (n+i)
+  in
+  let rec nary_op n = function
+    | [] -> assert false
+    | [ret_ty] -> tr_type n ret_ty
+    | arg_ty :: r ->
+      Constr.mkProd(Context.nameR (Id.of_string "x"), tr_type n arg_ty, nary_op (n+1) r)
+  in
+  let params, sign = types t in
+  assert (AUContext.size (univs t) = Instance.length u);
+  Vars.subst_instance_constr u (Term.it_mkProd_or_LetIn (nary_op 0 sign) params)
+
+let type_of_prim_or_type env u = let open CPrimitives in
+  function
+  | OT_type t -> type_of_prim_type env u t
+  | OT_op op -> type_of_prim env u op
+  | OT_const c -> type_of_prim_const env u c

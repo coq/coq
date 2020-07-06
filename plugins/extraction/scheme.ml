@@ -133,6 +133,8 @@ let rec pp_expr env args =
       paren (str "Prelude.error \"EXTRACTION OF UINT NOT IMPLEMENTED\"")
     | MLfloat _ ->
       paren (str "Prelude.error \"EXTRACTION OF FLOAT NOT IMPLEMENTED\"")
+    | MLparray _ ->
+            paren (str "Prelude.error \"EXTRACTION OF PARRAY NOT IMPLEMENTED\"")
 
 and pp_cons_args env = function
   | MLcons (_,r,args) when is_coinductive r ->

@@ -207,7 +207,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
               | ra::rest ->
                   (match dest_recarg ra with
                     | Mrec (_,j) when is_rec -> (depPvect.(j),rest)
-                    | Imbr _  -> (None,rest)
+                    | Nested _  -> (None,rest)
                     | _ -> (None, rest))
           in
           (match optionpos with
@@ -280,7 +280,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
         let optionpos =
           match dest_recarg recarg with
             | Norec   -> None
-            | Imbr _  -> None
+            | Nested _  -> None
             | Mrec (_,i)  -> fvect.(i)
         in
         (match optionpos with
