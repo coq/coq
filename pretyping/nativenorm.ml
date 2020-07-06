@@ -317,13 +317,12 @@ and nf_atom_type env sigma atom =
   | Avar id ->
       mkVar id, Typeops.type_of_variable env id
   | Acase(ans,accu,p,bs) ->
-      let () = if Typeops.should_invert_case env ans.asw_ci then
-          (* TODO implement case inversion readback (properly reducing
-             it is a problem for the kernel) *)
-          CErrors.user_err Pp.(str "Native compute readback of case inversion not implemented.")
-      in
       let a,ta = nf_accu_type env sigma accu in
       let ((mind,_),u as ind),allargs = find_rectype_a env ta in
+      let iv = if Typeops.should_invert_case env ans.asw_ci then
+          CaseInvert {univs=u; args=allargs}
+        else NoInvert
+      in
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
       let nparams = mib.mind_nparams in
       let params,realargs = Array.chop nparams allargs in
@@ -343,7 +342,7 @@ and nf_atom_type env sigma atom =
       in
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type p realargs a in
-      mkCase(ans.asw_ci, p, NoInvert, a, branchs), tcase
+      mkCase(ans.asw_ci, p, iv, a, branchs), tcase
   | Afix(tt,ft,rp,s) ->
       let tt = Array.map (fun t -> nf_type_sort env sigma t) tt in
       let tt = Array.map fst tt and rt = Array.map snd tt in
