@@ -50,9 +50,10 @@ type mutual_inductive_entry = {
   mind_entry_inds : one_inductive_entry list;
   mind_entry_universes : universes_entry;
   mind_entry_template : bool; (* Use template polymorphism *)
-  mind_entry_cumulative : bool;
-  (* universe constraints and the constraints for subtyping of
-     inductive types in the block. *)
+  mind_entry_variance : Univ.Variance.t option array option;
+  (* [None] if non-cumulative, otherwise associates each universe of
+     the entry to [None] if to be inferred or [Some v] if to be
+     checked. *)
   mind_entry_private : bool option;
 }
 

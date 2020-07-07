@@ -568,7 +568,7 @@ let declare_structure ~cumulative finite ~ubind ~univs paramimpls params templat
       mind_entry_private = None;
       mind_entry_universes = univs;
       mind_entry_template = template;
-      mind_entry_cumulative = poly && cumulative;
+      mind_entry_variance = ComInductive.variance_of_entry ~cumulative univs;
     }
   in
   let impls = List.map (fun _ -> paramimpls, []) record_data in

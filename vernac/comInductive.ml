@@ -367,6 +367,12 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = List.fold_right (fun (_,ctypes) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
+let variance_of_entry ~cumulative = function
+  | Monomorphic_entry _ -> None
+  | Polymorphic_entry (nas,_) ->
+    Some (Array.map (fun _ -> None) nas)
+(* TODO syntax to have non-None elements *)
+
 let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
@@ -429,7 +435,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames
       mind_entry_private = if private_ind then Some false else None;
       mind_entry_universes = uctx;
       mind_entry_template = is_template;
-      mind_entry_cumulative = poly && cumulative;
+      mind_entry_variance = variance_of_entry ~cumulative uctx;
     }
   in
   mind_ent, Evd.universe_binders sigma
