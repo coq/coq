@@ -52,42 +52,58 @@
     e.g. List^υ1 Nat ≤ List^υ2 ⟹ υ1 ⊑ υ2
 *)
 
+module SVar :
+sig
+  type t
+  val equal : t -> t -> bool
+  val succ : t -> t
+  val skip : int -> t -> t
+end
+
 module SVars :
 sig
   type t
-  type var = int
   val empty : t
   val is_empty : t -> bool
-  val add : var -> t -> t
-  val mem : var -> t -> bool
-  val of_list : var list -> t
+  val add : SVar.t -> t -> t
+  val mem : SVar.t -> t -> bool
+  val of_list : SVar.t list -> t
   val union : t -> t -> t
   val union_list : t list -> t
   val inter : t -> t -> t
   val diff : t -> t -> t
-  val fold : (var -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold : (SVar.t -> 'a -> 'a) -> t -> 'a -> 'a
   val pr : t -> Pp.t
 end
 
 module Size :
 sig
-  type t = Infty | SizeVar of SVars.var * int
+  type t = Infty | SizeVar of SVar.t * int
   val compare : t -> t -> int
 end
 
 module Annot :
 sig
   type t = Empty | Star | Glob | Size of Size.t
-  type ts = t list option
   val infty : t
   val hat : t -> t
   val compare : t -> t -> int
   val equal : t -> t -> bool
-  val sizevar_opt : t -> SVars.var option
+  val sizevar_opt : t -> SVar.t option
   val pr : t -> Pp.t
   val show : t -> string
   val hash : t -> int
-  val hashAns : ts -> int
+end
+
+module Annots :
+sig
+  type t = Assum | Bare of int | Limit of int | Sized of SVar.t * int
+  val vars : t -> SVars.t
+  val mk : t -> Annot.t list
+  val length : t -> int
+  val pr : t -> Pp.t
+  val show : t -> string
+  val hash : t -> int
 end
 
 module State :
@@ -100,7 +116,7 @@ sig
   val get_pos_vars : t -> SVars.t
   val remove_pos_vars : SVars.t -> t -> t
   val next : ?s:Annot.t -> t -> Annot.t * t
-  val next_annots : int option -> t -> Annot.t list option * t
+  val next_annots : int option -> t -> Annots.t * t
   val pr : t -> Pp.t
 end
 
@@ -122,9 +138,9 @@ sig
   val to_graph : Constraints.t -> g
   val of_graph : g -> Constraints.t
 
-  val contains : g -> SVars.var -> SVars.var -> bool
-  val sup : g -> SVars.var -> SVars.t
-  val sub : g -> SVars.var -> SVars.t
+  val contains : g -> SVar.t -> SVar.t -> bool
+  val sup : g -> SVar.t -> SVars.t
+  val sub : g -> SVar.t -> SVars.t
   val bellman_ford : g -> SVars.t
 
   exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
@@ -132,5 +148,5 @@ sig
   val downward : g -> SVars.t -> SVars.t
   val upward   : g -> SVars.t -> SVars.t
 
-  val rec_check : SVars.var -> SVars.t -> SVars.t -> Constraints.t -> Constraints.t
+  val rec_check : SVar.t -> SVars.t -> SVars.t -> Constraints.t -> Constraints.t
 end

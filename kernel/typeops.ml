@@ -544,7 +544,7 @@ let check_binder_annot s x =
 
 (* The typing machine. *)
     (* ATTENTION : faudra faire le typage du contexte des Const,
-    Ind et Constructsi un jour cela devient des constructions
+    Ind et Construct si un jour cela devient des constructions
     arbitraires et non plus des variables *)
 let rec execute env stg cstrnt cstr =
   let open Context.Rel.Declaration in
@@ -602,7 +602,7 @@ let rec execute env stg cstrnt cstr =
       let name' = check_binder_annot s name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
       let stg2, cstrnt2, c2', c2t = execute env1 stg1 cstrnt1 c2 in
-      let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name', erase c1',c2') in
+      let cstr = if name == name' && c1 == erase c1' && c2 == c2' then cstr else mkLambda(name', erase c1',c2') in
       stg2, cstrnt2, cstr, type_of_abstraction env name' c1' c2t
 
     | Prod (name,c1,c2) ->
@@ -620,7 +620,7 @@ let rec execute env stg cstrnt cstr =
       let cstrnt' = check_cast env c1' c1t DEFAULTcast c2' in
       let env1 = push_rel (LocalDef (name',c1',c2')) env in
       let stg3, cstrnt3, c3', c3t = execute env1 stg2 (union cstrnt2 cstrnt') c3 in
-      let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
+      let cstr = if name == name' && c1 == c1' && c2 == erase c2' && c3 == c3' then cstr
         else mkLetIn(name',c1',erase c2',c3')
       in
       stg3, cstrnt3, cstr, subst1 c1 c3t
@@ -629,7 +629,7 @@ let rec execute env stg cstrnt cstr =
       let stgc, cstrntc, c', ct = execute env stg cstrnt c in
       let stgt, cstrntt, t', _ts = execute_is_type env stgc cstrntc t in
       let cstrnt' = check_cast env c' ct k t' in
-      let cstr = if c == c' && t == t' then cstr else mkCast(c',k,erase t') in
+      let cstr = if c == c' && t == erase t' then cstr else mkCast(c',k,erase t') in
       stgt, union cstrntt cstrnt', cstr, t'
 
     (* Inductive types *)
@@ -648,7 +648,7 @@ let rec execute env stg cstrnt cstr =
       let stgp, cstrntp, p', pt = execute env stgc cstrntc p in
       let stglf, cstrntlf, lf', lft = execute_array env stgp cstrntp lf in
       let stg, ci', t, cstrntci = type_of_case env stglf ci p' pt c' ct lf' lft in
-      let cstr = if ci == ci' && c == c' && p == p' && lf == lf' then cstr
+      let cstr = if ci == ci' && c == c' && p == erase p' && lf == lf' then cstr
         else mkCase (ci', erase p', c', lf')
       in
       stg, union cstrntlf cstrntci, cstr, t

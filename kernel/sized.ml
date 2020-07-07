@@ -4,13 +4,26 @@ open Util
 (** Helpers *)
 let (<<) f g x = f @@ g x
 
+(** Size variables *)
+
+module SVar =
+struct
+  type t = int
+  let equal = Int.equal
+  let succ = succ
+  let skip = (+)
+  let infty = -1 (* For constraint representation only!!! *)
+  let is_infty = equal infty
+  let pr var =
+    let open Pp in
+    str "s" ++ int var
+end
+
 (** Collections of size variables *)
 
 module SVars =
 struct
   include Int.Set
-
-  type var = elt
 
   let union_list = List.fold_left union empty
 
@@ -24,13 +37,9 @@ end
 
 module Size =
 struct
-  type t = Infty | SizeVar of SVars.var * int
-
-  let infty = -1 (* For constraint representation only!!! *)
+  type t = Infty | SizeVar of SVar.t * int
 
   let mk var size = SizeVar (var, size)
-
-  let var_equal = Int.equal
 
   let compare s1 s2 =
     match s1, s2 with
@@ -47,9 +56,8 @@ struct
     match s with
     | Infty -> str "∞"
     | SizeVar (s, n) ->
-      let pp = str "s" ++ int s in
-      if Int.equal n 0 then pp else
-      seq [pp; str "+"; int n]
+      if Int.equal n 0 then SVar.pr s else
+      seq [SVar.pr s; str "+"; int n]
 end
 
 (** Annotations, attached to (co)inductive types *)
@@ -63,9 +71,6 @@ struct
     | Star (* Marks the positions of the (co)recursive types in (co)fixpoints *)
     | Glob (* Marks the positions of the (co)recursive types in global definitions *)
     | Size (* Sized types *) of Size.t
-
-  (* For annotating Consts, Vars, and Rels *)
-  type ts = t list option
 
   let infty = Size Infty
 
@@ -109,9 +114,52 @@ struct
     | Glob  -> combine 3 (show a |> String.hash)
     | Size Infty -> combine 4 (show a |> String.hash)
     | Size (SizeVar (n, i)) -> combine3 5 (Int.hash n) (Int.hash i)
+end
 
-  let hashAns =
-    Option.hash (List.fold_left (fun h a -> combine h (hash a)) 0)
+(* (Fake) vectors of annotations, attached to Consts/Vals/Rels *)
+module Annots =
+struct
+  open Annot
+
+  (* If bound to a definition body, [int] gives the number of annotations in the body *)
+  type t =
+    | Assum (* Assumption and not bound to a body, or the body needs no annots *)
+    | Bare of int (* Bare term bound to a definition *)
+    | Limit of int (* Limit term bound to a definition *)
+    | Sized of SVar.t * int (* Sized term bound to a definition starting with given svar *)
+
+  let vars = function
+    | Assum | Bare _ | Limit _ -> SVars.empty
+    | Sized (svar, n) -> List.interval svar (svar + n - 1)
+      |> SVars.of_list
+
+  let mk = function
+    | Assum -> []
+    | Bare n -> List.make n Empty
+    | Limit n -> List.make n infty
+    | Sized (svar, n) -> List.interval svar (svar + n - 1)
+      |> List.map (fun var -> mk var 0)
+
+  let length = function
+    | Assum -> 0
+    | Bare n | Limit n | Sized (_, n) -> n
+
+  let pr ans =
+    let open Pp in
+    match ans with
+    | Assum -> mt ()
+    | Bare n -> seq [str "{Empty;"; int n; str "}"]
+    | Limit n -> seq [str "{Infty;"; int n; str "}"]
+    | Sized (svar, n) -> seq [str "{SVar:"; SVar.pr svar; str ";"; int n; str "}"]
+
+  let show a = Pp.string_of_ppcmds (pr a)
+
+  let hash ans =
+    match ans with
+    | Assum -> combine 1 (String.hash "Assum")
+    | Bare n -> combine 2 (Int.hash n)
+    | Limit n -> combine 3 (Int.hash n)
+    | Sized (svar, n) -> combine3 4 (Int.hash svar) (Int.hash n)
 end
 
 (** Size state, keeping track of used size variables *)
@@ -121,9 +169,10 @@ struct
   open SVars
   open Size
   open Annot
+  open Annots
 
   type t = {
-    next: var;
+    next: SVar.t;
     (* next size variable to be used *)
     vars: SVars.t;
     (* all used size variables *)
@@ -159,12 +208,12 @@ struct
   let next ?s:(s=Empty) state =
     match s with
     | Empty | Size Infty ->
-      mk state.next 0,
+      Annot.mk state.next 0,
       { state with
         next = succ state.next;
         vars = add state.next state.vars }
     | Star ->
-      mk state.next 0,
+      Annot.mk state.next 0,
       { state with
         next = succ state.next;
         vars = add state.next state.vars;
@@ -173,18 +222,18 @@ struct
 
   let next_annots on state =
     match on with
-    | None -> None, state
-    | Some n ->
+    | Some n when n > 0 ->
       let next_vars = List.interval state.next (state.next + n - 1) in
-      let annots = List.map (fun n -> mk n 0) next_vars in
+      let annots = Sized (state.next, n) in
       let state = { state with
         next = state.next + n;
         vars = union state.vars (of_list next_vars) } in
-      Some annots, state
+      annots, state
+    | _ -> Assum, state
 
   let pr state =
     let open Pp in
-    let stg_pp = int state.next in
+    let stg_pp = SVar.pr state.next in
     let vars_pp = SVars.pr state.vars in
     let stars_pp = SVars.pr state.pos_vars in
     seq [str"<"; stg_pp; pr_comma (); vars_pp; pr_comma (); stars_pp; str ">"]
@@ -211,8 +260,6 @@ struct
   type 'a constrained = 'a * t
   let mkEdge var1 size var2 = (var1, size, var2)
 
-  let infty = Size.infty
-
   let empty () = S.empty
   let union = S.union
   let union_list = List.fold_left union (empty ())
@@ -224,11 +271,10 @@ struct
       match s1, s2 with
       | Infty, Infty -> cstrnts
       | SizeVar (var1, sz1), SizeVar (var2, sz2) ->
-        if var_equal var1 var2 && sz1 <= sz2 then cstrnts
-        else
-          S.add (mkEdge var1 (sz2 - sz1) var2) cstrnts
+        if SVar.equal var1 var2 && sz1 <= sz2 then cstrnts
+        else S.add (mkEdge var1 (sz2 - sz1) var2) cstrnts
       | Infty, SizeVar (var, _) ->
-        S.add (mkEdge infty 0 var) cstrnts
+        S.add (mkEdge SVar.infty 0 var) cstrnts
       | SizeVar _, Infty -> cstrnts
       end
     | _ -> cstrnts
@@ -241,8 +287,8 @@ struct
         if wt >= 0
         then SizeVar (vfrom,   0), SizeVar (vto, wt)
         else SizeVar (vfrom, -wt), SizeVar (vto,  0) in
-      let sfrom = if Size.var_equal vfrom infty then Infty else sfrom in
-      let sto   = if Size.var_equal vto   infty then Infty else sto   in
+      let sfrom = if SVar.is_infty vfrom then Infty else sfrom in
+      let sto   = if SVar.is_infty vto   then Infty else sto   in
       seq [Size.pr sfrom; str "⊑"; Size.pr sto] in
     let pr_graph =
       prlist_with_sep pr_comma identity @@
@@ -303,7 +349,7 @@ module RecCheck =
         else
           let init_new = get_adj cstrnts s in
           closure_rec (union init_rest init_new) (add s fin) in
-    filter (not << Size.var_equal Size.infty) (closure_rec init empty)
+    filter (not << SVar.is_infty) (closure_rec init empty)
 
   (* ⊓ (downward closure), ⊔ (upward closure) *)
   let downward = closure sub
@@ -328,7 +374,7 @@ module RecCheck =
     let rec remove_neg cstrnts =
       let v_neg = upward cstrnts (bellman_ford cstrnts) in
       let () = remove_from_set cstrnts' v_neg in
-      let () = insert_from_set Size.infty cstrnts v_neg in
+      let () = insert_from_set SVar.infty cstrnts v_neg in
       if not (is_empty v_neg) then remove_neg cstrnts in
     let () = remove_neg cstrnts' in
 
@@ -336,10 +382,10 @@ module RecCheck =
     let vi_up = upward cstrnts' vi in
     let vneq_up = upward cstrnts' vneq in
     let vinter = inter vneq_up vi_up in
-    let () = insert_from_set Size.infty cstrnts' vinter in
+    let () = insert_from_set SVar.infty cstrnts' vinter in
 
     (** Step 6: Check ⊔{∞} ∩ Vi = ∅ *)
-    let vinf = upward cstrnts' (singleton Size.infty) in
+    let vinf = upward cstrnts' (singleton SVar.infty) in
     let vnull = inter vinf vi in
     if is_empty vnull then of_graph cstrnts'
     else raise (RecCheckFailed (cstrnts, vinf, vi))

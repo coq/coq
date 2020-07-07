@@ -113,9 +113,9 @@ val check_cofix : env -> cofixpoint -> unit
 
 val globify : env -> types -> types -> types
 val get_rec_inds : env -> int array -> types array -> inductive list
-val get_rec_vars : env -> int array -> types array -> SVars.var list
+val get_rec_vars : env -> int array -> types array -> SVar.t list
 val get_corec_inds : env -> types array -> inductive list
-val get_corec_vars : env -> types array -> SVars.var list
+val get_corec_vars : env -> types array -> SVar.t list
 val set_stars : env -> inductive list -> types array -> types array
 
 (** {6 Support for sort-polymorphic inductive types } *)

@@ -34,6 +34,8 @@ open Environ
 open Vars
 open Esubst
 open Sized
+open Annot
+open Annots
 
 let stats = ref false
 
@@ -336,7 +338,7 @@ type fconstr = {
 and fterm =
   | FRel of int
   | FAtom of constr (* Metas and Sorts *)
-  | FFlex of table_key * Annot.t list option
+  | FFlex of table_key * Annots.t
   | FInd of pinductive * Annot.t
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
@@ -518,7 +520,7 @@ let mk_clos_vect env v = match v with
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
 
-let ref_value_cache ({ i_cache = cache; _ }) tab ref oannots =
+let ref_value_cache ({ i_cache = cache; _ }) tab ref ans =
   try
     KeyTable.find tab ref
   with Not_found ->
@@ -540,9 +542,9 @@ let ref_value_cache ({ i_cache = cache; _ }) tab ref oannots =
           | VarKey id -> assoc_defined id cache.i_env
           | ConstKey cst -> constant_value_in cache.i_env cst
         in
-        let body = match oannots with
-        | Some annots -> annotate_fresh annots body
-        | None -> body in
+        let body = match ans with
+          | Sized (svar, _) -> annotate_fresh svar body
+          | Assum | Bare _ | Limit _ -> erase_infty body in
         Def (inject body)
       with
       | NotEvaluableConst (IsPrimitive op) (* Const *) -> Primitive op
@@ -677,7 +679,7 @@ let rec zip m stk =
         zip (update ~share:true rf m.mark m.term) s
     | Zprimitive(_op,c,rargs,kargs)::s ->
       let args = List.rev_append rargs (m::List.map snd kargs) in
-      let f = {mark = mark Red Unknown;term = FFlex (ConstKey c, None)} in
+      let f = {mark = mark Red Unknown;term = FFlex (ConstKey c, Assum)} in
       zip {mark=mark (neutr (Mark.red_state m.mark)) KnownR; term = FApp (f, Array.of_list args)} s
 
 let fapp_stack (m,stk) = zip m stk
@@ -794,7 +796,7 @@ let get_native_args op c stk =
     | Zupdate(m) :: s ->
       strip_rec rnargs (update ~share:true m h.mark h.term) depth  kargs s
     | (Zprimitive _ | ZcaseT _ | Zproj _ | Zfix _) :: _ | [] -> assert false
-  in strip_rec [] {mark = mark Red Unknown;term = FFlex(ConstKey c, None)} 0 kargs stk
+  in strip_rec [] {mark = mark Red Unknown;term = FFlex(ConstKey c, Assum)} 0 kargs stk
 
 let get_native_args1 op c stk =
   match get_native_args op c stk with
@@ -994,7 +996,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_int63 with
       | Some c ->
         defined_int := true;
-        fint := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c), None) }
+        fint := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c), Assum) }
       | None -> defined_int := false
 
     let defined_float = ref false
@@ -1004,7 +1006,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_float64 with
       | Some c ->
         defined_float := true;
-        ffloat := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c), None) }
+        ffloat := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c), Assum) }
       | None -> defined_float := false
 
     let defined_bool = ref false
@@ -1055,7 +1057,7 @@ module FNativeEntries =
         fLt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cLt) };
         fGt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cGt) };
         let (icmp, _) = cEq in
-        fcmp := { mark = mark Norm KnownR; term = FInd ((Univ.in_punivs icmp), Annot.Empty) }
+        fcmp := { mark = mark Norm KnownR; term = FInd ((Univ.in_punivs icmp), Empty) }
       | None -> defined_cmp := false
 
     let defined_f_cmp = ref false
@@ -1320,7 +1322,7 @@ let rec knr info tab m stk =
            begin match FredNative.red_prim (info_env info) () op args with
              | Some m -> kni info tab m s
              | None ->
-               let f = {mark = mark Whnf KnownR; term = FFlex (ConstKey c, None)} in
+               let f = {mark = mark Whnf KnownR; term = FFlex (ConstKey c, Assum)} in
                let m = {mark = mark Whnf KnownR; term = FApp(f,args)} in
                (m,s)
            end

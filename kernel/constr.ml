@@ -33,6 +33,7 @@ open Sized
 open SVars
 open Size
 open Annot
+open Annots
 open Constraints
 
 type existential_key = Evar.t
@@ -91,8 +92,8 @@ type pconstructor = constructor puniverses
 (* [Var] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
-  | Rel       of int * Annot.ts
-  | Var       of Id.t * Annot.ts
+  | Rel       of int * Annots.t
+  | Var       of Id.t * Annots.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of 'sort
@@ -101,7 +102,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Lambda    of Name.t binder_annot * 'types * 'constr
   | LetIn     of Name.t binder_annot * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of (Constant.t * 'univs) * Annot.ts
+  | Const     of (Constant.t * 'univs) * Annots.t
   | Ind       of (inductive * 'univs) * Annot.t
   | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
@@ -129,11 +130,11 @@ type cofixpoint = (constr, types) pcofixpoint
 
 (* Constructs a de Bruijn index with number n *)
 let rels =
-  let mkRel n = Rel (n, None) in
+  let mkRel n = Rel (n, Assum) in
   [|mkRel  1;mkRel  2;mkRel  3;mkRel  4;mkRel  5;mkRel  6;mkRel  7;mkRel  8;
     mkRel  9;mkRel 10;mkRel 11;mkRel 12;mkRel 13;mkRel 14;mkRel 15;mkRel 16|]
 
-let mkRel n = if 0<n && n<=16 then rels.(n-1) else Rel (n, None)
+let mkRel n = if 0<n && n<=16 then rels.(n-1) else Rel (n, Assum)
 let mkRelA n ans = Rel (n, ans)
 
 (* Construct a type *)
@@ -176,8 +177,8 @@ let map_puniverses f (x,u) = (f x, u)
 let in_punivs a = (a, Univ.Instance.empty)
 
 (* Constructs a constant *)
-let mkConst c = Const ((in_punivs c), None)
-let mkConstU c = Const (c, None)
+let mkConst c = Const ((in_punivs c), Assum)
+let mkConstU c = Const (c, Assum)
 let mkConstUA c ans = Const (c, ans)
 
 (* Constructs an applied projection *)
@@ -240,7 +241,7 @@ let mkCoFix cofix= CoFix cofix
 let mkMeta  n =  Meta n
 
 (* Constructs a Variable named id *)
-let mkVar id = Var (id, None)
+let mkVar id = Var (id, Assum)
 let mkVarA id ans = Var (id, ans)
 
 let mkRef (gr,u) = let open GlobRef in match gr with
@@ -823,14 +824,14 @@ let map_with_binders g f l c0 = match kind c0 with
 
 let rec count_annots cstr =
   match cstr with
-  | Rel (_, la) -> List.length (Option.default [] la)
-  | Var (_, la) -> List.length (Option.default [] la)
+  | Rel (_, ans) -> Annots.length ans
+  | Var (_, ans) -> Annots.length ans
   | Cast (c, _, _)
   | Lambda (_, _, c) ->
     count_annots c
   | LetIn (_, b, _, c) ->
     count_annots b + count_annots c
-  | Const (_, la) -> List.length (Option.default [] la)
+  | Const (_, ans) -> Annots.length ans
   | Ind _ -> 1
   | Case (_, _, c, lf) ->
     Array.fold_left (fun count c -> count + count_annots c) (count_annots c) lf
@@ -842,12 +843,8 @@ let rec count_annots cstr =
 
 let rec collect_annots c =
   match c with
-  | Rel (_, la) | Var (_, la) | Const (_, la) ->
-    let collect vars a = match sizevar_opt a with
-      | Some na -> SVars.add na vars
-      | _ -> vars in
-    List.fold_left collect SVars.empty (Option.default [] la)
-  | Ind (_, Size (SizeVar (na, _))) -> SVars.add na SVars.empty
+  | Rel (_, ans) | Var (_, ans) | Const (_, ans) -> vars ans
+  | Ind (_, Size (SizeVar (svar, _))) -> SVars.add svar SVars.empty
   | _ -> fold (fun vars c -> SVars.union vars (collect_annots c)) SVars.empty c
 
 let rec any_annot f c =
@@ -859,16 +856,16 @@ let rec any_annot f c =
 
 let rec map_annots
   (f : pinductive -> Annot.t -> Annot.t)
-  (g : Annot.t list -> Annot.t list) cstr =
+  (g : Annots.t -> Annots.t) cstr =
   match cstr with
-  | Rel (n, Some la) ->
-    let la' = g la in
-    if la == la' then cstr else
-    mkRelA n (Some la')
-  | Var (n, Some la) ->
-    let la' = g la in
-    if la == la' then cstr else
-    mkVarA n (Some la')
+  | Rel (n, ans) ->
+    let ans' = g ans in
+    if ans == ans' then cstr else
+    mkRelA n ans'
+  | Var (n, ans) ->
+    let ans' = g ans in
+    if ans == ans' then cstr else
+    mkVarA n ans'
   | Cast (c, k, t) ->
     let c' = map_annots f g c in
     if c == c' then cstr else
@@ -882,10 +879,10 @@ let rec map_annots
     let c' = map_annots f g c in
     if b == b' && c == c' then cstr else
     mkLetIn (n, b', t, c')
-  | Const (c, Some la) ->
-    let la' = g la in
-    if la == la' then cstr else
-    mkConstUA c (Some la')
+  | Const (c, ans) ->
+    let ans' = g ans in
+    if ans == ans' then cstr else
+    mkConstUA c ans'
   | Ind (iu, a) ->
     let a' = f iu a in
     if a' == a then cstr else
@@ -905,51 +902,67 @@ let rec map_annots
     mkCoFix (ln, (nl, tl, bl'))
   | _ -> map (map_annots f g) cstr
 
-let make_annots_list annot la =
-  List.make (List.length la) annot
-
 let erase =
   let f _ a =
     match a with
     | Empty -> a
     | _ -> Empty in
-  map_annots f (make_annots_list Empty)
+  let g ans =
+    match ans with
+    | Limit n | Sized (_, n) -> Bare n
+    | _ -> ans in
+  map_annots f g
 
 let erase_infty =
   let f _ a =
     match a with
     | Size Infty -> a
     | _ -> infty in
-  map_annots f (make_annots_list infty)
+  let g ans =
+    match ans with
+    | Bare n | Sized (_, n) -> Limit n
+    | _ -> ans in
+  map_annots f g
 
 let erase_glob vars =
   let f _ a =
     match a with
-    | Size (SizeVar (na, _))
-      when mem na vars -> Glob
+    | Size (SizeVar (svar, _))
+      when mem svar vars -> Glob
     | Size Infty -> a
     | _ -> infty in
-  map_annots f (make_annots_list infty)
+  let g ans =
+    match ans with
+    | Bare n | Sized (_, n) -> Limit n
+    | _ -> ans in
+  map_annots f g
 
 let erase_star vars =
   let f _ a =
     match a with
-    | Size (SizeVar (na, _))
-      when mem na vars -> Star
+    | Size (SizeVar (svar, _))
+      when mem svar vars -> Star
     | Empty -> a
     | _ -> Empty in
-  map_annots f (make_annots_list Empty)
+  let g ans =
+    match ans with
+    | Limit n | Sized (_, n) -> Bare n
+    | _ -> ans in
+  map_annots f g
 
-let annotate_fresh annots =
-  let annots_ref = ref annots in
+let annotate_fresh svar =
+  let svar_ref = ref svar in
   let f _ _ =
-    let annots = !annots_ref in
-    annots_ref := List.tl annots;
-    List.hd annots in
-  let g la =
-    let annots = !annots_ref in
-    let la, annots = List.chop (List.length la) annots in
-    annots_ref := annots; la in
+    let svar = !svar_ref in
+    svar_ref := SVar.succ svar;
+    Size (SizeVar (svar, 0)) in
+  let g ans =
+    match ans with
+    | Assum -> ans
+    | Bare n | Limit n | Sized (_, n) ->
+      let svar = !svar_ref in
+      svar_ref := SVar.skip n svar;
+      Sized (svar, n) in
   map_annots f g
 
 let annotate_glob s =
@@ -1015,19 +1028,16 @@ type 'univs instance_compare_fn = GlobRef.t -> int ->
 type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
 
 let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_annot eq leq nargs t1 t2 =
-  (* If either const/var/rel has None, their body is opaque,
-    so there's no real way of creating stage annotation constraints.
-    If they both have the same annotations, we can proceed as usual.
-    Otherwise, we return false, so that we proceed to clos_gen_conv instead,
-    where their bodies will have the annotations substituted in,
-    and we properly create stage annotation constraints, which would be
-    covariant for inductive types and contravariant for coinductive. *)
+  (* If either const/var/rel has an Assum annotation, either it's an assumption, or it's an opaque definition,
+    so there's no real way of creating size constraints. If they're both the same kind of annotation,
+    then we ensure that the lengths are the same, and that the starting size variable is the same as well
+    for Sized annotations. Otherwise, we return false, so that we proceed to clos_gen_conv instead,
+    where their bodies will have the annotations substituted in, and size constraints will properly be created.
+    However, this doesn't really make sense if one of them is Bare while the other is Limit or Sized... *)
   let eq_annots ans1 ans2 = match ans1, ans2 with
-    | None, _ -> true
-    | _, None -> true
-    | Some ans1, Some ans2
-      when Int.equal (List.length ans1) (List.length ans2) ->
-      List.for_all (fun (a1, a2) -> Annot.equal a1 a2) @@ List.combine ans1 ans2
+    | Assum, _ | _, Assum -> true
+    | Bare n, Bare m | Limit n, Limit m -> Int.equal n m
+    | Sized (svar1, n), Sized (svar2, m) -> SVar.equal svar1 svar2 && Int.equal n m
     | _, _ -> false in
   match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
@@ -1391,7 +1401,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
   let rec hash_term t =
     match t with
       | Var (i, ans) ->
-        (Var ((sh_id i), ans), combinesmall 1 (combine (Id.hash i) (Annot.hashAns ans)))
+        (Var ((sh_id i), ans), combinesmall 1 (combine (Id.hash i) (Annots.hash ans)))
       | Sort s ->
         (Sort (sh_sort s), combinesmall 2 (Sorts.hash s))
       | Cast (c, k, t) ->
@@ -1421,7 +1431,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Const ((c,u), ans) ->
         let c' = sh_con c in
         let u', hu = sh_instance u in
-        (Const ((c', u'), ans), combinesmall 9 (combine3 (Constant.SyntacticOrd.hash c) hu (Annot.hashAns ans)))
+        (Const ((c', u'), ans), combinesmall 9 (combine3 (Constant.SyntacticOrd.hash c) hu (Annots.hash ans)))
       | Ind ((ind,u), stg) ->
         let u', hu = sh_instance u in
         (Ind ((sh_ind ind, u'), stg),
@@ -1455,7 +1465,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Meta n ->
         (t, combinesmall 15 n)
       | Rel (n, ans) ->
-        (t, combinesmall 16 (combine n (Annot.hashAns ans)))
+        (t, combinesmall 16 (combine n (Annots.hash ans)))
       | Proj (p,c) ->
         let c, hc = sh_rec c in
         let p' = Projection.hcons p in
@@ -1632,17 +1642,6 @@ let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
            cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
 
-let debug_print_annots ans =
-  let open Pp in
-  let open Annot in
-  match ans with
-  | None -> mt ()
-  | Some [] -> str "[]"
-  | Some ans ->
-    str "[" ++
-      List.fold_left (fun s annot -> s ++ str ";" ++ pr annot) (pr @@ List.hd ans) (List.tl ans) ++
-    str "]"
-
 let pr_puniverses p u =
   if Univ.Instance.is_empty u then p
   else Pp.(p ++ str"(*" ++ Univ.Instance.pr Univ.Level.pr u ++ str"*)")
@@ -1650,9 +1649,9 @@ let pr_puniverses p u =
 let rec debug_print c =
   let open Pp in
   match kind c with
-  | Rel (n, ans) -> str "#"++int n ++debug_print_annots ans
+  | Rel (n, ans) -> str "#"++int n ++ Annots.pr ans
   | Meta n -> str "Meta(" ++ int n ++ str ")"
-  | Var (id, ans) -> Id.print id ++ debug_print_annots ans
+  | Var (id, ans) -> Id.print id ++ Annots.pr ans
   | Sort s -> Sorts.debug_print s
   | Cast (c,_, t) -> hov 1
       (str"(" ++ debug_print c ++ cut() ++
@@ -1678,7 +1677,7 @@ let rec debug_print c =
        prlist_with_sep spc debug_print l ++str"}")
   | Const ((c,u), ans) -> str"Cst(" ++
       pr_puniverses (Constant.debug_print c) u ++
-      debug_print_annots ans ++ str ")"
+      Annots.pr ans ++ str ")"
   | Ind (((sp,i),u), stg) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str"," ++ Annot.pr stg ++ str")"
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"

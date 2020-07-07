@@ -11,6 +11,9 @@
 open CErrors
 open Util
 open Names
+open Sized
+open Annot
+open Annots
 open Constr
 open Context
 
@@ -52,8 +55,8 @@ let mkSProp = of_kind (Sort (ESorts.make Sorts.sprop))
 let mkProp = of_kind (Sort (ESorts.make Sorts.prop))
 let mkSet = of_kind (Sort (ESorts.make Sorts.set))
 let mkType u = of_kind (Sort (ESorts.make (Sorts.sort_of_univ u)))
-let mkRel n = of_kind (Rel (n, None))
-let mkVar id = of_kind (Var (id, None))
+let mkRel n = of_kind (Rel (n, Assum))
+let mkVar id = of_kind (Var (id, Assum))
 let mkMeta n = of_kind (Meta n)
 let mkEvar e = of_kind (Evar e)
 let mkSort s = of_kind (Sort (ESorts.make s))
@@ -62,10 +65,10 @@ let mkProd (na, t, u) = of_kind (Prod (na, t, u))
 let mkLambda (na, t, c) = of_kind (Lambda (na, t, c))
 let mkLetIn (na, b, t, c) = of_kind (LetIn (na, b, t, c))
 let mkApp (f, arg) = of_kind (App (f, arg))
-let mkConstU pc = of_kind (Const (pc, None))
-let mkConst c = of_kind (Const ((in_punivs c), None))
-let mkIndU pi = of_kind (Ind (pi, Sized.Annot.Empty))
-let mkInd i = of_kind (Ind ((in_punivs i), Sized.Annot.Empty))
+let mkConstU pc = of_kind (Const (pc, Assum))
+let mkConst c = of_kind (Const ((in_punivs c), Assum))
+let mkIndU pi = of_kind (Ind (pi, Empty))
+let mkInd i = of_kind (Ind ((in_punivs i), Empty))
 let mkConstructU pc = of_kind (Construct pc)
 let mkConstruct c = of_kind (Construct (in_punivs c))
 let mkConstructUi ((ind,u),i) = of_kind (Construct ((ind,i),u))

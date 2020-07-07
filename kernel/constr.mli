@@ -70,11 +70,11 @@ type types = constr
 
 (** Constructs a de Bruijn index (DB indices begin at 1) *)
 val mkRel : int -> constr
-val mkRelA : int -> Annot.t list option -> constr
+val mkRelA : int -> Annots.t -> constr
 
 (** Constructs a Variable *)
 val mkVar : Id.t -> constr
-val mkVarA : Id.t -> Annot.t list option -> constr
+val mkVarA : Id.t -> Annots.t -> constr
 
 (** Constructs a machine integer *)
 val mkInt : Uint63.t -> constr
@@ -123,7 +123,7 @@ val map_puniverses : ('a -> 'b) -> 'a Univ.puniverses -> 'b Univ.puniverses
 (** Constructs a Constant.t *)
 val mkConst : Constant.t -> constr
 val mkConstU : pconstant -> constr
-val mkConstUA : pconstant -> Annot.t list option -> constr
+val mkConstUA : pconstant -> Annots.t -> constr
 
 (** Constructs a projection application *)
 val mkProj : (Projection.t * constr) -> constr
@@ -213,8 +213,8 @@ val mkCoFix : cofixpoint -> constr
 type 'constr pexistential = Evar.t * 'constr list
 
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
-  | Rel       of int * Annot.t list option                    (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
-  | Var       of Id.t * Annot.t list option                   (** Gallina-variable that was introduced by Vernacular-command that extends
+  | Rel       of int * Annots.t                               (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
+  | Var       of Id.t * Annots.t                              (** Gallina-variable that was introduced by Vernacular-command that extends
                                                                   the local context of the currently open section
                                                                   (i.e. [Variable] or [Let]). *)
   | Meta      of metavariable
@@ -228,7 +228,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
                                                                                 The {!mkApp} constructor also enforces the following invariant:
                                                                                 - [F] itself is not {!App}
                                                                                 - and [[|P1;..;Pn|]] is not empty. *)
-  | Const     of (Constant.t * 'univs) * Annot.t list option  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
+  | Const     of (Constant.t * 'univs) * Annots.t             (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
                                                                   (i.e. [Parameter], or [Axiom], or [Definition], or [Theorem] etc.) *)
   | Ind       of (inductive * 'univs) * Annot.t               (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Construct of (constructor * 'univs)                       (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
@@ -563,10 +563,9 @@ val erase_glob : SVars.t -> constr -> constr
 
 val erase_star : SVars.t -> constr -> constr
 
-(** [annotate_fresh annots] puts the annotations in [annots] in every annotatable slot
-   as found by [count_annots] *)
+(** [annotate_fresh svar c] annotates [c] with size variables starting from [svar] *)
 
-val annotate_fresh : Annot.t list -> constr -> constr
+val annotate_fresh : SVar.t -> constr -> constr
 
 (** [annotate_glob s c] replaces all Glob annotations in [c] with [s] *)
 
