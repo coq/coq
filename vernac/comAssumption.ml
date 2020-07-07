@@ -268,11 +268,14 @@ let context ~poly l =
       in
       let b = Option.map (EConstr.to_constr sigma) b in
       let t = EConstr.to_constr sigma t in
-      let test x = match x.CAst.v with
-        | Some (Name id',_) -> Id.equal name id'
-        | _ -> false
+      let impl = let open Glob_term in
+      let search x = match x.CAst.v with
+        | Some (Name id',max) when Id.equal name id' ->
+          Some (if max then MaxImplicit else NonMaxImplicit)
+        | _ -> None
+        in
+        try CList.find_map search impls with Not_found -> Explicit
       in
-      let impl = Glob_term.(if List.exists test impls then MaxImplicit else Explicit) in (* ??? *)
       name,b,t,impl)
       ctx
   in
