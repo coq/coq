@@ -15,8 +15,11 @@ open Libnames
 
 (** [constr_expr] is the abstract syntax tree produced by the parser *)
 type universe_decl_expr = (lident list, Glob_term.glob_constraint list) UState.gen_universe_decl
+type cumul_univ_decl_expr =
+  ((lident * Univ.Variance.t option) list, Glob_term.glob_constraint list) UState.gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
+type cumul_ident_decl = lident * cumul_univ_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
 type notation_with_optional_scope = LastLonelyNotation | NotationInScope of string

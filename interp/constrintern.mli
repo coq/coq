@@ -204,3 +204,8 @@ val interp_univ_decl : Environ.env -> universe_decl_expr ->
 
 val interp_univ_decl_opt : Environ.env -> universe_decl_expr option ->
                        Evd.evar_map * UState.universe_decl
+
+val interp_cumul_univ_decl_opt : Environ.env -> cumul_univ_decl_expr option ->
+  Evd.evar_map * UState.universe_decl * Entries.variance_entry
+(** BEWARE the variance entry needs to be adjusted by
+   [ComInductive.variance_of_entry] if the instance is extensible. *)
