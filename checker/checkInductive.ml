@@ -69,6 +69,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   in
   let mind_entry_template = Array.exists check_template mb.mind_packets in
   let () = if mind_entry_template then assert (Array.for_all check_template mb.mind_packets) in
+  let mind_entry_variance = Option.map (Array.map (fun v -> Some v)) mb.mind_variance in
   {
     mind_entry_record;
     mind_entry_finite = mb.mind_finite;
@@ -76,7 +77,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     mind_entry_inds;
     mind_entry_universes;
     mind_entry_template;
-    mind_entry_cumulative= Option.has_some mb.mind_variance;
+    mind_entry_variance;
     mind_entry_private = mb.mind_private;
   }
 

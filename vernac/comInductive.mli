@@ -86,3 +86,6 @@ val maybe_unify_params_in : Environ.env -> Evd.evar_map -> ninds:int -> nparams:
 (** [nparams] is the number of parameters which aren't treated as
     uniform, ie the length of params (including letins) where the env
     is [uniform params, inductives, params, binders]. *)
+
+val variance_of_entry : cumulative:bool -> Entries.universes_entry
+  -> Univ.Variance.t option array option
