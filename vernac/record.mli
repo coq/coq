@@ -24,7 +24,7 @@ module Ast : sig
 end
 
 val definition_structure
-  :  universe_decl_expr option
+  :  cumul_univ_decl_expr option
   -> inductive_kind
   -> template:bool option
   -> cumulative:bool

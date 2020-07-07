@@ -2644,13 +2644,34 @@ let interp_univ_decl env decl =
   let binders : lident list = decl.univdecl_instance in
   let evd = Evd.from_env ~binders env in
   let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
-  let decl = { univdecl_instance = binders;
+  let decl = {
+    univdecl_instance = binders;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
     univdecl_constraints = cstrs;
-    univdecl_extensible_constraints = decl.univdecl_extensible_constraints }
+    univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
+  }
   in evd, decl
+
+let interp_cumul_univ_decl env decl =
+  let open UState in
+  let binders = List.map fst decl.univdecl_instance in
+  let variances = Array.map_of_list snd decl.univdecl_instance in
+  let evd = Evd.from_ctx (UState.from_env ~binders env) in
+  let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
+  let decl = {
+    univdecl_instance = binders;
+    univdecl_extensible_instance = decl.univdecl_extensible_instance;
+    univdecl_constraints = cstrs;
+    univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
+  }
+  in
+  evd, decl, variances
 
 let interp_univ_decl_opt env l =
   match l with
   | None -> Evd.from_env env, UState.default_univ_decl
   | Some decl -> interp_univ_decl env decl
+
+let interp_cumul_univ_decl_opt env = function
+  | None -> Evd.from_env env, UState.default_univ_decl, [| |]
+  | Some decl -> interp_cumul_univ_decl env decl
