@@ -175,5 +175,4 @@ Instance Op_is_even : UnOp is_even :=
 Add Zify UnOp Op_is_even.
 
 
-
-Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations.
+Ltac Zify.zify_convert_to_euclidean_division_equations_flag ::= constr:(true).
