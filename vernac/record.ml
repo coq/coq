@@ -388,23 +388,26 @@ let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name f
 open Typeclasses
 
 let load_structure i (_, structure) =
-  Recordops.register_structure (Global.env()) structure
+  Recordops.register_structure structure
 
 let cache_structure o =
   load_structure 1 o
 
-let subst_structure (subst, (id, kl, projs as obj)) =
+let subst_structure (subst, obj) =
   Recordops.subst_structure subst obj
 
 let discharge_structure (_, x) = Some x
 
-let inStruc : Recordops.struc_tuple -> obj =
+let rebuild_structure s = Recordops.rebuild_structure (Global.env()) s
+
+let inStruc : Recordops.struc_typ -> obj =
   declare_object {(default_object "STRUCTURE") with
     cache_function = cache_structure;
     load_function = load_structure;
     subst_function = subst_structure;
     classify_function = (fun x -> Substitute x);
-    discharge_function = discharge_structure }
+    discharge_function = discharge_structure;
+    rebuild_function = rebuild_structure; }
 
 let declare_structure_entry o =
   Lib.add_anonymous_leaf (inStruc o)
@@ -497,7 +500,15 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
     let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers fieldimpls fields in
     let build = GlobRef.ConstructRef cstr in
     let () = if is_coe then ComCoercion.try_add_new_coercion build ~local:false ~poly in
-    let () = declare_structure_entry (cstr, List.rev kinds, List.rev sp_projs) in
+    let npars = Inductiveops.inductive_nparams (Global.env()) rsp in
+    let struc = {
+      Recordops.s_CONST = cstr;
+      s_PROJ = List.rev sp_projs;
+      s_PROJKIND = List.rev kinds;
+      s_EXPECTEDPARAM = npars;
+    }
+    in
+    let () = declare_structure_entry struc in
     rsp
   in
   List.mapi map record_data
