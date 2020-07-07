@@ -29,14 +29,17 @@ let warn_implicits_in_term =
 
 let check_imps ~impsty ~impsbody =
   let rec aux impsty impsbody =
-  match impsty, impsbody with
-  | a1 :: impsty, a2 :: impsbody ->
-    (match a1.CAst.v, a2.CAst.v with
-    | None , None -> aux impsty impsbody
-    | Some _ , Some _ -> aux impsty impsbody
-    | _, _ -> warn_implicits_in_term ?loc:a2.CAst.loc ())
-  | _ :: _, [] | [], _ :: _ -> (* Information only on one side *) ()
-  | [], [] -> () in
+    match impsty, impsbody with
+    | a1 :: impsty, a2 :: impsbody ->
+      let () = match a1.CAst.v, a2.CAst.v with
+        | None , None | Some _, None -> ()
+        | Some (_,b1) , Some (_,b2) ->
+          if not ((b1:bool) = b2) then warn_implicits_in_term ?loc:a2.CAst.loc ()
+        | None, Some _ -> warn_implicits_in_term ?loc:a2.CAst.loc ()
+      in
+      aux impsty impsbody
+    | _ :: _, [] | [], _ :: _ -> (* Information only on one side *) ()
+    | [], [] -> () in
   aux impsty impsbody
 
 let protect_pattern_in_binder bl c ctypopt =
