@@ -29,8 +29,6 @@ val declare_projections :
   Constr.rel_context ->
     Recordops.proj_kind list * Constant.t option list
 
-val declare_structure_entry : Recordops.struc_tuple -> unit
-
 val definition_structure
   :  universe_decl_expr option
   -> inductive_kind
@@ -46,3 +44,6 @@ val definition_structure
   -> GlobRef.t list
 
 val declare_existing_class : GlobRef.t -> unit
+
+(** Used by elpi *)
+val declare_structure_entry : Recordops.struc_typ -> unit

@@ -54,34 +54,29 @@ let structure_table =
 let projection_table =
   Summary.ref (Cmap.empty : struc_typ Cmap.t) ~name:"record-projs"
 
-(* TODO: could be unify struc_typ and struc_tuple ? *)
-
-type struc_tuple =
-    constructor * proj_kind list * Constant.t option list
-
-let register_structure env (id,kl,projs) =
-  let open Declarations in
-  let ind = fst id in
-  let mib, mip = Inductive.lookup_mind_specif env ind in
-  let n = mib.mind_nparams in
-  let struc =
-    { s_CONST = id; s_EXPECTEDPARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
+let register_structure ({ s_CONST = (ind,_); s_PROJ = projs; } as struc) =
   structure_table := Indmap.add ind struc !structure_table;
   projection_table :=
     List.fold_right (Option.fold_right (fun proj -> Cmap.add proj struc))
       projs !projection_table
 
-let subst_structure subst (id, kl, projs as obj) =
+let subst_structure subst struc =
   let projs' =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
    List.Smart.map
      (Option.Smart.map (subst_constant subst))
-    projs
+    struc.s_PROJ
   in
-  let id' = Globnames.subst_constructor subst id in
-  if projs' == projs && id' == id then obj else
-    (id',kl,projs')
+  let id' = Globnames.subst_constructor subst struc.s_CONST in
+  if projs' == struc.s_PROJ && id' == struc.s_CONST
+  then struc
+  else { struc with s_CONST = id'; s_PROJ = projs' }
+
+let rebuild_structure env struc =
+  let mib = Environ.lookup_mind (fst (fst struc.s_CONST)) env in
+  let npars = mib.Declarations.mind_nparams in
+  { struc with s_EXPECTEDPARAM = npars }
 
 let lookup_structure indsp = Indmap.find indsp !structure_table
 
