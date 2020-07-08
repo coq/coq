@@ -54,7 +54,7 @@
 
 module SVar :
 sig
-  type t
+  type t = int (* Need to expose type for testing *)
   val equal : t -> t -> bool
   val succ : t -> t
   val skip : int -> t -> t

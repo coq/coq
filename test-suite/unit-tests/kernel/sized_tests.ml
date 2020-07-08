@@ -9,14 +9,6 @@ open RecCheck
 
 let log_out_ch = open_log_out_ch __FILE__
 
-(** Helpers for debugging *)
-
-let str_tuple (a, b, c) = "(" ^ string_of_int a ^ "," ^ string_of_int b ^ "," ^ string_of_int c ^ ")"
-let str_list_tuple lst = "[;" ^ List.fold_right (fun tup str -> str_tuple tup ^ ";" ^ str) lst "]"
-let str_int_set set = "{," ^ SVars.fold (fun i str -> string_of_int i ^ "," ^ str) set "}"
-
-let debug = Printf.printf "%s\n"
-
 (* Testing constants *)
 
 let test_prefix = "kernel-sized_test"
