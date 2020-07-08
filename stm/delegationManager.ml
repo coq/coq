@@ -18,7 +18,6 @@ type link = {
   read_from:  Lwt_io.input_channel;
 }
 
-(* TODO: move promises in the non-marshalable part to be shure *)
 type ('a,'b) corresponding = { on_worker : 'b; on_master : 'a }
 
 module M = Map.Make(Stateid)
