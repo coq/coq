@@ -2068,6 +2068,14 @@ let save ~pm ~proof ~opaque ~idopt =
   let proof_info = process_idopt_for_save ~idopt proof.pinfo in
   finalize_proof ~pm proof_obj proof_info
 
+let save_regular ~proof ~opaque ~idopt =
+  let open Proof_ending in
+  match CEphemeron.default proof.pinfo.Proof_info.proof_ending Regular with
+  | Regular ->
+    let (_, grs) : Obls_.State.t * _ = save ~pm:Obls_.State.empty ~proof ~opaque ~idopt in
+    grs
+  | _ -> CErrors.anomaly Pp.(str "save_regular: unexpected proof ending")
+
 (***********************************************************************)
 (* Special case to close a lemma without forcing a proof               *)
 (***********************************************************************)

@@ -214,6 +214,13 @@ module Proof : sig
     -> idopt:Names.lident option
     -> OblState.t * GlobRef.t list
 
+  (** For proofs known to have [Regular] ending, no need to touch program state. *)
+  val save_regular
+    : proof:t
+    -> opaque:Vernacexpr.opacity_flag
+    -> idopt:Names.lident option
+    -> GlobRef.t list
+
   (** Admit a proof *)
   val save_admitted : pm:OblState.t -> proof:t -> OblState.t
 
