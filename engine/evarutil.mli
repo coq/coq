@@ -25,14 +25,6 @@ val mk_new_meta : unit -> constr
 
 (** {6 Creating a fresh evar given their type and context} *)
 
-val new_evar_from_context :
-  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list ->
-  ?naming:intro_pattern_naming_expr ->
-  ?typeclass_candidate:bool ->
-  ?principal:bool ->
-  named_context_val -> evar_map  -> types -> evar_map * EConstr.t
-
 type naming_mode =
   | KeepUserNameAndRenameExistingButSectionNames
   | KeepUserNameAndRenameExistingEvenSectionNames
@@ -56,8 +48,6 @@ val new_pure_evar :
   ?principal:bool ->
   named_context_val -> evar_map -> types -> evar_map * Evar.t
 
-val new_pure_evar_full : evar_map -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
-
 (** Create a new Type existential variable, as we keep track of
     them during type-checking and unification. *)
 val new_type_evar :
@@ -72,21 +62,6 @@ val new_Type : ?rigid:rigid -> evar_map -> evar_map * constr
 (** Polymorphic constants *)
 
 val new_global : evar_map -> GlobRef.t -> evar_map * constr
-
-(** Create a fresh evar in a context different from its definition context:
-   [new_evar_instance sign evd ty inst] creates a new evar of context
-   [sign] and type [ty], [inst] is a mapping of the evar context to
-   the context where the evar should occur. This means that the terms
-   of [inst] are typed in the occurrence context and their type (seen
-   as a telescope) is [sign] *)
-val new_evar_instance :
-  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
-  ?naming:intro_pattern_naming_expr ->
-  ?typeclass_candidate:bool ->
-  ?principal:bool ->
- named_context_val -> evar_map -> types ->
-  constr list -> evar_map * constr
 
 val make_pure_subst : evar_info -> 'a list -> (Id.t * 'a) list
 

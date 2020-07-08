@@ -409,15 +409,8 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
 
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
-let new_pure_evar_full evd ?typeclass_candidate evi =
-  let (evd, evk) = Evd.new_evar evd ?typeclass_candidate evi in
-  let evd = Evd.declare_future_goal evk evd in
-  (evd, evk)
-
-let new_pure_evar?(src=default_source) ?(filter = Filter.identity) ?(abstract_arguments = Abstraction.identity)
-    ?candidates ?naming ?typeclass_candidate ?(principal=false) sign evd typ =
-  let default_naming = IntroAnonymous in
-  let naming = Option.default default_naming naming in
+let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(abstract_arguments = Abstraction.identity)
+    ?candidates ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
   let name = match naming with
   | IntroAnonymous -> None
   | IntroIdentifier id -> Some id
@@ -443,22 +436,6 @@ let new_pure_evar?(src=default_source) ?(filter = Filter.identity) ?(abstract_ar
   in
   (evd, newevk)
 
-let new_evar_instance ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate
-    ?principal sign evd typ instance =
-  let open EConstr in
-  assert (not !Flags.debug ||
-            List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate ?principal typ in
-  evd, mkEvar (newevk, instance)
-
-let new_evar_from_context ?src ?filter ?candidates ?naming ?typeclass_candidate ?principal sign evd typ =
-  let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
-  let instance =
-    match filter with
-    | None -> instance
-    | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ ?src ?filter ?candidates ?naming ?principal instance
-
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate
@@ -470,8 +447,9 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ' ?src ?filter ?abstract_arguments ?candidates ?naming
-    ?typeclass_candidate ?principal instance
+  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?abstract_arguments ?candidates ?naming
+    ?typeclass_candidate ?principal in
+  (evd, EConstr.mkEvar (evk, instance))
 
 let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in

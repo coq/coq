@@ -698,10 +698,9 @@ let make_projectable_subst aliases sigma evi args =
  *)
 
 let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_sign sign filter inst_in_env =
-  let (evd, evar_in_env) = new_evar_instance sign evd ty_t_in_sign ~filter ~src inst_in_env in
+  let (evd, evk) = new_pure_evar sign evd ty_t_in_sign ~filter ~src in
   let t_in_env = whd_evar evd t_in_env in
-  let (evk, _) = destEvar evd evar_in_env in
-  let evd = define_fun env evd None (destEvar evd evar_in_env) t_in_env in
+  let evd = define_fun env evd None (evk, inst_in_env) t_in_env in
   let ctxt = named_context_of_val sign in
   let inst_in_sign = inst_of_vars (Filter.filter_list filter ctxt) in
   let evar_in_sign = mkEvar (evk, inst_in_sign) in
@@ -770,9 +769,9 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
     define_evar_from_virtual_equation define_fun env evd src ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
   let (evd, ev2_in_sign) =
-    new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 ~src inst2_in_sign in
-  let ev2_in_env = (fst (destEvar evd ev2_in_sign), inst2_in_env) in
-  (evd, ev2_in_sign, ev2_in_env)
+    new_pure_evar sign2 evd ev2ty_in_sign ~filter:filter2 ~src in
+  let ev2_in_env = (ev2_in_sign, inst2_in_env) in
+  (evd, mkEvar (ev2_in_sign, inst2_in_sign), ev2_in_env)
 
 let restrict_upon_filter evd evk p args =
   let oldfullfilter = evar_filter (Evd.find_undefined evd evk) in
