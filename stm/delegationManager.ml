@@ -7,7 +7,9 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
+
 open Lwt.Infix
+open Lwt_err.Infix
 
 let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
@@ -30,8 +32,6 @@ type 'a remote_mapping = {
 
 let marshalable_remote_mapping { it } = M.bindings it |> List.map (fun (id,_) -> id)
 
-let ids_of_mapping x = x
-
 let empty_remote_mapping ~progress_hook = {
   it = M.empty;
   progress_hook;
@@ -41,12 +41,16 @@ let empty_remote_mapping ~progress_hook = {
 let new_manager : 'a remote_mapping -> link -> unit = fun remote_mapping link ->
   log @@ "[M] installing manager";
   let rec main () =
-    Lwt_io.read_value link.read_from >>= fun (i,v) ->
-    let resolver = M.find i remote_mapping.it in
-    log @@ "[M] Manager fulfilling " ^ Stateid.to_string i;
-    Lwt.wakeup_later resolver.on_master v;
-    remote_mapping.progress_hook () >>= fun () ->
-    main ()
+    Lwt_io.read_value link.read_from >?= function
+      | Result.Error e ->
+        log @@ "[M] Worker died: " ^ Printexc.to_string e;
+        Lwt.return ()
+      | Result.Ok (i,v) ->
+        let resolver = M.find i remote_mapping.it in
+        log @@ "[M] Manager fulfilling " ^ Stateid.to_string i;
+        Lwt.wakeup_later resolver.on_master v;
+        remote_mapping.progress_hook () >>= fun () ->
+        main ()
   in
     Lwt.async_exception_hook := (fun x ->
       log @@ "[M] Manager terminated " ^ Printexc.to_string x); (* HACK *)
@@ -63,7 +67,7 @@ let new_worker : 'a remote_mapping -> link -> unit = fun remote_mapping link ->
     Lwt.async @@ (fun () -> on_worker >>= fun v ->
       Lwt_mutex.with_lock m (fun () ->
         log @@ "[W] Remote fulfilling of " ^ Stateid.to_string i;
-        Lwt_io.write_value link.write_to (i,v) >>= fun () ->
+        Lwt_io.write_value link.write_to (i,v) >!= fun () ->
         Lwt_io.flush_all ())
     )
   ) remote_mapping.it
@@ -112,7 +116,7 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
   listen chan 1;
   let address = getsockname chan in
   log @@ "[M] Forking...";
-  Lwt_io.flush_all () >>= fun () ->
+  Lwt_io.flush_all () >!= fun () ->
   let pid = Lwt_unix.fork () in
   if pid = 0 then
     close chan >>= fun () ->
@@ -132,7 +136,7 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
           log @@ "[M] Forked worker does not connect back";
           Lwt.return (Master, []) (* TODO, error *)
       | Some (worker, _worker_addr) -> (* TODO: timeout *)
-          close chan >>= fun () ->
+          close chan >!= fun () ->
           log @@ "[M] Forked pid " ^ string_of_int pid;
           let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input worker in
           let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output worker in
@@ -144,7 +148,7 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
 let create_process_worker procname remote_mapping job =
   let open Lwt_unix in
   let chan = socket PF_INET SOCK_STREAM 0 in
-  bind chan (ADDR_INET (Unix.inet_addr_loopback,0)) >>= fun () ->
+  bind chan (ADDR_INET (Unix.inet_addr_loopback,0)) >!= fun () ->
   listen chan 1;
   let port = match getsockname chan with
     | ADDR_INET(_,port) -> port
@@ -164,9 +168,9 @@ let create_process_worker procname remote_mapping job =
       let link = { write_to; read_from } in
       new_manager remote_mapping link;
       log @@ "[M] sending mapping";
-      Lwt_io.write_value write_to (marshalable_remote_mapping remote_mapping) >>= fun () ->
+      Lwt_io.write_value write_to (marshalable_remote_mapping remote_mapping) >!= fun () ->
       log @@ "[M] sending job";
-      Lwt_io.write_value write_to job >>= fun () ->
+      Lwt_io.write_value write_to job >!= fun () ->
       Lwt.return (wait_process proc)
 
 let new_process_worker remote_mapping link =
@@ -208,12 +212,12 @@ let setup_plumbing port =
   let chan = socket PF_INET SOCK_STREAM 0 in
   let address = ADDR_INET (Unix.inet_addr_loopback,port) in
   log @@ "[PW] connecting to " ^ string_of_int port;
-  connect chan address >>= fun () ->
+  connect chan address >!= fun () ->
   let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input chan in
   let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output chan in
   let link = { read_from; write_to } in
-  Lwt_io.read_value link.read_from >>= fun (ids : sentence_id list) ->
-  Lwt_io.read_value link.read_from >>= fun (job : 'job) ->
+  Lwt_io.read_value link.read_from >!= fun (ids : sentence_id list) ->
+  Lwt_io.read_value link.read_from >!= fun (job : 'job) ->
   Lwt.return (ids, link, job)
 
 type ('a,'b) coqtop_extra_args_fn = opts:'b -> string list -> 'a * string list

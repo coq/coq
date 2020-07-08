@@ -15,8 +15,8 @@ open Document
 open DocumentManager
 open Printer
 open Lwt.Infix
+open Lwt_err.Infix
 
-module NamedDecl = Context.Named.Declaration
 module CompactedDecl = Context.Compacted.Declaration
 
 let init_state : Vernacstate.t option ref = ref None
@@ -29,16 +29,16 @@ let states : (string, DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
-let string_field name obj = Yojson.Basic.to_string (List.assoc name obj)
+(*let string_field name obj = Yojson.Basic.to_string (List.assoc name obj)*)
 
 let read_request ic : Yojson.Basic.t Lwt.t =
-  Lwt_io.read_line ic >>= fun header ->
+  Lwt_io.read_line ic >!= fun header ->
   let scan_header = Scanf.Scanning.from_string header in
   Scanf.bscanf scan_header "Content-Length: %d" (fun size ->
       let buf = Bytes.create size in
       (* Discard a second newline *)
-      Lwt_io.read_line ic >>= fun _ ->
-      Lwt_io.read_into_exactly ic buf 0 size >>= fun () ->
+      Lwt_io.read_line ic >!= fun _ ->
+      Lwt_io.read_into_exactly ic buf 0 size >!= fun () ->
       Lwt.return @@ Bytes.to_string buf
     ) >>= fun obj_str ->
   log @@ "received: " ^ obj_str;
@@ -49,7 +49,7 @@ let output_json obj : unit Lwt.t =
   let size = String.length msg in
   let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
   (*log @@ "replied: " ^ msg;*)
-  Lwt_io.write Lwt_io.stdout s
+  Lwt_io.write Lwt_io.stdout s >!= fun () -> Lwt.return ()
 
 let mk_notification ~event ~params = `Assoc ["jsonrpc", `String "2.0"; "method", `String event; "params", params]
 let mk_response ~id ~result = `Assoc ["jsonrpc", `String "2.0"; "id", `Int id; "result", result]
@@ -314,7 +314,7 @@ let dispatch_method ~id method_name params : events Lwt.t =
   | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; Lwt.return []
 
 let lsp () = [
-  read_request Lwt_io.stdin >>= fun req ->
+  read_request Lwt_io.stdin >!= fun req ->
   log "[T] UI req ready";
   Lwt.return @@ LspManager (Request req)
 ]
