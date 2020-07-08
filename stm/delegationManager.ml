@@ -18,9 +18,14 @@ type sentence_id = Stateid.t
 type link = {
   write_to :  Lwt_io.output_channel;
   read_from:  Lwt_io.input_channel;
+  pid : int option;
 }
 
-type ('a,'b) corresponding = { on_worker : 'b; on_master : 'a }
+let kill_link { pid } () = match pid with
+  | Some pid -> Unix.kill pid 9
+  | None -> ()
+
+type ('a,'b) corresponding = { on_worker : 'b; on_master : 'a; cancel : 'b }
 
 module M = Map.Make(Stateid)
 
@@ -54,6 +59,7 @@ let new_manager : 'a remote_mapping -> link -> unit = fun remote_mapping link ->
   in
     Lwt.async_exception_hook := (fun x ->
       log @@ "[M] Manager terminated " ^ Printexc.to_string x); (* HACK *)
+    M.iter (fun _ { cancel } -> Lwt.on_cancel cancel (kill_link link)) remote_mapping.it;
     Lwt.async @@ main
 ;;
 
@@ -79,7 +85,7 @@ let lwt_remotely_wait r id =
   (* task = cancellable promise *)
   let master, on_master = Lwt.task () in
   let on_worker, worker = Lwt.task () in
-  let m = M.add id { on_master; on_worker } m in
+  let m = M.add id { on_master; on_worker; cancel = master } m in
   { r with it = m }, (master, worker)
 ;;
 
@@ -125,7 +131,7 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
     connect chan address >>= fun () ->
     let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input chan in
     let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output chan in
-    let link = { write_to; read_from } in
+    let link = { write_to; read_from; pid = None } in
     new_worker remote_mapping link;
     Lwt.return (Worker, [])
   else
@@ -140,7 +146,7 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
           log @@ "[M] Forked pid " ^ string_of_int pid;
           let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input worker in
           let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output worker in
-          let link = { write_to; read_from } in
+          let link = { write_to; read_from; pid = Some pid } in
           new_manager remote_mapping link;
           Lwt.return (Master, wait_worker pid)
 ;;
@@ -165,7 +171,7 @@ let create_process_worker procname remote_mapping job =
       close chan >>= fun () ->
       let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input worker in
       let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output worker in
-      let link = { write_to; read_from } in
+      let link = { write_to; read_from; pid = Some proc#pid } in
       new_manager remote_mapping link;
       log @@ "[M] sending mapping";
       Lwt_io.write_value write_to (marshalable_remote_mapping remote_mapping) >!= fun () ->
@@ -215,7 +221,7 @@ let setup_plumbing port =
   connect chan address >!= fun () ->
   let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input chan in
   let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output chan in
-  let link = { read_from; write_to } in
+  let link = { read_from; write_to; pid = None } in
   Lwt_io.read_value link.read_from >!= fun (ids : sentence_id list) ->
   Lwt_io.read_value link.read_from >!= fun (job : 'job) ->
   Lwt.return (ids, link, job)

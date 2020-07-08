@@ -280,7 +280,7 @@ let invalidate1 of_sentence id =
     let p,_ = SM.find id of_sentence in
     match Lwt.state p with
     | Lwt.Sleep ->
-        Lwt.cancel p; (* TODO: hook worker killing or job dequeue, eg Lwt.on_cancel  *)
+        Lwt.cancel p;
         SM.remove id of_sentence
     | _ -> SM.remove id of_sentence
   with Not_found -> of_sentence
