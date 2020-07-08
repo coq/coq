@@ -24,9 +24,8 @@ type state
 type progress_hook = state option -> unit Lwt.t
 
 
-
 val observe : progress_hook -> document -> sentence_id -> state ->
-  (state * 'a DelegationManager.events) Lwt.t
+  (state * DelegationManager.events) Lwt.t
 val query : sentence_id -> state -> ast -> state
 
 val invalidate : schedule -> sentence_id -> state -> state Lwt.t

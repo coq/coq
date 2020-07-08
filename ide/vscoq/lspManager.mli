@@ -9,11 +9,9 @@
 (************************************************************************)
 
 type event
-type 'a events =
-  ([> `LspManager of event
-   |  `DelegationManager of DelegationManager.event ] as 'a) Lwt.t list
+type events = event Lwt.t list
 
-val lsp : unit -> 'a events
-val handle_event : event -> 'a events Lwt.t
+val lsp : unit -> events
+val handle_event : event -> events Lwt.t
 
 val init : unit -> unit

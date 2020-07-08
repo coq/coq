@@ -84,7 +84,7 @@ type role = Master | Worker
 type event =
  | WorkerStart : 'a remote_mapping * 'job * ('job -> unit Lwt.t) * string -> event
  | WorkerEnd of (int * Unix.process_status)
-type 'a events = ([> `DelegationManager of event ] as 'a) Lwt.t list
+type events = event Lwt.t list
 
 
 let pool = Lwt_condition.create ()
@@ -95,17 +95,17 @@ let wait_worker pid = [
   Lwt_unix.wait () >>= fun x ->
   decr pool_occupants; Lwt_condition.signal pool ();
   log @@ "[T] vacation request ready";
-  Lwt.return @@ `DelegationManager (WorkerEnd x)
+  Lwt.return @@ WorkerEnd x
 ]
 
 let wait_process proc = [
   proc#close >>= fun x ->
   decr pool_occupants; Lwt_condition.signal pool ();
   log @@ "[T] vacation request ready";
-  Lwt.return @@ `DelegationManager (WorkerEnd (0,x))
+  Lwt.return @@ WorkerEnd (0,x)
 ]
 
-let fork_worker : 'a remote_mapping -> (role * 'b events) Lwt.t = fun remote_mapping ->
+let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mapping ->
   let open Lwt_unix in
   let chan = socket PF_INET SOCK_STREAM 0 in
   bind chan (ADDR_INET (Unix.inet_addr_loopback,0)) >>= fun () ->
@@ -196,7 +196,7 @@ let worker_available ~job ~fork_action ~process_action = [
   end
   >>= fun () ->
   job () >>= fun (mapping, job) ->
-  Lwt.return @@ `DelegationManager (WorkerStart (mapping,job,fork_action,process_action))
+  Lwt.return @@ WorkerStart (mapping,job,fork_action,process_action)
 ]
 ;;
 

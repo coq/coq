@@ -21,9 +21,9 @@ val lwt_remotely_wait : 'a remote_mapping -> sentence_id -> 'a remote_mapping * 
 
 (* Event for the main loop *)
 type event
-type 'a events = ([> `DelegationManager of event ] as 'a) Lwt.t list
+type events = event Lwt.t list
 
-val handle_event : event -> 'a events Lwt.t
+val handle_event : event -> events Lwt.t
 
 (* When a worker is available [job] is called and when it returns the
    event becomes ready; in turn the event triggers the action.
@@ -39,7 +39,7 @@ val worker_available :
   job:(unit -> ('a remote_mapping * 'job) Lwt.t) ->
   fork_action:('job  -> unit Lwt.t) ->
   process_action:string ->
-  'c events
+  events
 
 (* for worker toplevels *)
 type link

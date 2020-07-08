@@ -16,16 +16,11 @@ let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 let loop run_mode ~opts:_ state =
   LspManager.init ();
   let open Lwt.Infix in
-  let rec loop (events : 'a LspManager.events) =
-    let open Yojson.Basic.Util in
+  let rec loop (events : LspManager.events) =
     log @@ "[T] looking for next step";
     Lwt_io.flush_all () >>= fun () ->
     Lwt.nchoose_split events >>= fun (ready, remaining) ->
-      let perform acc = function
-      | `DelegationManager e ->
-          DelegationManager.handle_event e >>= fun more_events ->
-          Lwt.return @@ acc @ more_events
-      | `LspManager e ->
+      let perform acc e =
           LspManager.handle_event e >>= fun more_events ->
           Lwt.return @@ acc @ more_events
      in
