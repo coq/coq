@@ -22,32 +22,41 @@ let vernac_require_open_lemma ~stack f =
   | None ->
     CErrors.user_err (Pp.str "Command not supported (No proof-editing in progress)")
 
-let interp_typed_vernac c ~stack =
+let interp_typed_vernac c ~pm ~stack =
   let open Vernacextend in
   match c with
-  | VtDefault f -> f (); stack
+  | VtDefault f -> f (); stack, pm
   | VtNoProof f ->
     if Option.has_some stack then
       CErrors.user_err (Pp.str "Command not supported (Open proofs remain)");
     let () = f () in
-    stack
+    stack, pm
   | VtCloseProof f ->
     vernac_require_open_lemma ~stack (fun stack ->
         let lemma, stack = Vernacstate.LemmaStack.pop stack in
-        f ~lemma;
-        stack)
+        let pm = f ~lemma ~pm in
+        stack, pm)
   | VtOpenProof f ->
-    Some (Vernacstate.LemmaStack.push stack (f ()))
+    Some (Vernacstate.LemmaStack.push stack (f ())), pm
   | VtModifyProof f ->
-    Option.map (Vernacstate.LemmaStack.map_top ~f:(fun pstate -> f ~pstate)) stack
+    Option.map (Vernacstate.LemmaStack.map_top ~f:(fun pstate -> f ~pstate)) stack, pm
   | VtReadProofOpt f ->
     let pstate = Option.map (Vernacstate.LemmaStack.with_top ~f:(fun x -> x)) stack in
     f ~pstate;
-    stack
+    stack, pm
   | VtReadProof f ->
     vernac_require_open_lemma ~stack
       (Vernacstate.LemmaStack.with_top ~f:(fun pstate -> f ~pstate));
-    stack
+    stack, pm
+  | VtReadProgram f -> f ~pm; stack, pm
+  | VtModifyProgram f ->
+    let pm = f ~pm in stack, pm
+  | VtDeclareProgram f ->
+    let lemma = f ~pm in
+    Some (Vernacstate.LemmaStack.push stack lemma), pm
+  | VtOpenProofProgram f ->
+    let pm, lemma = f ~pm in
+    Some (Vernacstate.LemmaStack.push stack lemma), pm
 
 (* Default proof mode, to be set at the beginning of proofs for
    programs that cannot be statically classified. *)
@@ -123,11 +132,11 @@ let mk_time_header =
   fun vernac -> Lazy.from_fun (fun () -> pr_time_header vernac)
 
 let interp_control_flag ~time_header (f : control_flag) ~st
-    (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option) =
+    (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option * Declare.OblState.t) =
   match f with
   | ControlFail ->
     with_fail ~st (fun () -> fn ~st);
-    st.Vernacstate.lemmas
+    st.Vernacstate.lemmas, st.Vernacstate.program
   | ControlTimeout timeout ->
     vernac_timeout ~timeout (fun () -> fn ~st) ()
   | ControlTime batch ->
@@ -142,6 +151,7 @@ let interp_control_flag ~time_header (f : control_flag) ~st
  * loc is the Loc.t of the vernacular command being interpreted. *)
 let rec interp_expr ~atts ~st c =
   let stack = st.Vernacstate.lemmas in
+  let program = st.Vernacstate.program in
   vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
 
@@ -163,7 +173,7 @@ let rec interp_expr ~atts ~st c =
     vernac_load ~verbosely fname
   | v ->
     let fv = Vernacentries.translate_vernac ~atts v in
-    interp_typed_vernac ~stack fv
+    interp_typed_vernac ~pm:program ~stack fv
 
 and vernac_load ~verbosely fname =
   (* Note that no proof should be open here, so the state here is just token for now *)
@@ -180,19 +190,19 @@ and vernac_load ~verbosely fname =
   let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing
       (Pcoq.Entry.parse (Pvernac.main_entry proof_mode))
   in
-  let rec load_loop ~stack =
+  let rec load_loop ~pm ~stack =
     let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
     match parse_sentence proof_mode input with
-    | None -> stack
+    | None -> stack, pm
     | Some stm ->
-      let stack = v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack }) stm in
-      (load_loop [@ocaml.tailcall]) ~stack
+      let stack, pm = v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack; program = pm }) stm in
+      (load_loop [@ocaml.tailcall]) ~stack ~pm
   in
-  let stack = load_loop ~stack:st.Vernacstate.lemmas in
+  let stack, pm = load_loop ~pm:st.Vernacstate.program ~stack:st.Vernacstate.lemmas in
   (* If Load left a proof open, we fail too. *)
   if Option.has_some stack then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
-  stack
+  stack, pm
 
 and interp_control ~st ({ CAst.v = cmd } as vernac) =
   let time_header = mk_time_header vernac in
@@ -200,9 +210,9 @@ and interp_control ~st ({ CAst.v = cmd } as vernac) =
     cmd.control
     (fun ~st ->
        let before_univs = Global.universes () in
-       let pstack = interp_expr ~atts:cmd.attrs ~st cmd.expr in
-       if before_univs == Global.universes () then pstack
-       else Option.map (Vernacstate.LemmaStack.map_top ~f:Declare.Proof.update_global_env) pstack)
+       let pstack, pm = interp_expr ~atts:cmd.attrs ~st cmd.expr in
+       if before_univs == Global.universes () then pstack, pm
+       else Option.map (Vernacstate.LemmaStack.map_top ~f:Declare.Proof.update_global_env) pstack, pm)
     ~st
 
 (* XXX: This won't properly set the proof mode, as of today, it is
@@ -213,17 +223,18 @@ and interp_control ~st ({ CAst.v = cmd } as vernac) =
 *)
 
 (* Interpreting a possibly delayed proof *)
-let interp_qed_delayed ~proof ~pinfo ~st pe : Vernacstate.LemmaStack.t option =
+let interp_qed_delayed ~proof ~pinfo ~st pe : Vernacstate.LemmaStack.t option * Declare.OblState.t =
   let stack = st.Vernacstate.lemmas in
+  let pm = st.Vernacstate.program in
   let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
-  let () = match pe with
+  let pm = match pe with
     | Admitted ->
-      Declare.Proof.save_lemma_admitted_delayed ~proof ~pinfo
+      Declare.Proof.save_lemma_admitted_delayed ~pm ~proof ~pinfo
     | Proved (_,idopt) ->
-      let _ : _ list = Declare.Proof.save_lemma_proved_delayed ~proof ~pinfo ~idopt in
-      ()
+      let pm, _ = Declare.Proof.save_lemma_proved_delayed ~pm ~proof ~pinfo ~idopt in
+      pm
   in
-  stack
+  stack, pm
 
 let interp_qed_delayed_control ~proof ~pinfo ~st ~control { CAst.loc; v=pe } =
   let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe }) in

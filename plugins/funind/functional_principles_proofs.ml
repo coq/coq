@@ -864,7 +864,8 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num
     Declare.Proof.by (Proofview.V82.tactic prove_replacement) lemma
   in
   let (_ : _ list) =
-    Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent ~idopt:None
+    Declare.Proof.save_regular ~proof:lemma ~opaque:Vernacexpr.Transparent
+      ~idopt:None
   in
   evd
 

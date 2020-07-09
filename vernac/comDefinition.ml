@@ -125,14 +125,14 @@ let do_definition ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
     Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
   in ()
 
-let do_definition_program ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
+let do_definition_program ?hook ~pm ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
   let program_mode = true in
   let (body, types), evd, udecl, impargs =
     interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
   let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
-  let _ : Declare.Obls.progress =
+  let pm, _ =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
     let info = Declare.Info.make ~udecl ~scope ~poly ~kind ?hook () in
-    Declare.Obls.add_definition ~cinfo ~info ~term ~uctx obls
-  in ()
+    Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx obls
+  in pm

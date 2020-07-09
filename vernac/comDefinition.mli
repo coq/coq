@@ -29,6 +29,7 @@ val do_definition
 
 val do_definition_program
   :  ?hook:Declare.Hook.t
+  -> pm:Declare.OblState.t
   -> name:Id.t
   -> scope:Locality.locality
   -> poly:bool
@@ -38,4 +39,4 @@ val do_definition_program
   -> red_expr option
   -> constr_expr
   -> constr_expr option
-  -> unit
+  -> Declare.OblState.t

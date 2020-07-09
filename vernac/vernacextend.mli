@@ -73,11 +73,15 @@ and proof_block_name = string (** open type of delimiters *)
 type typed_vernac =
   | VtDefault of (unit -> unit)
   | VtNoProof of (unit -> unit)
-  | VtCloseProof of (lemma:Declare.Proof.t -> unit)
+  | VtCloseProof of (lemma:Declare.Proof.t -> pm:Declare.OblState.t -> Declare.OblState.t)
   | VtOpenProof of (unit -> Declare.Proof.t)
   | VtModifyProof of (pstate:Declare.Proof.t -> Declare.Proof.t)
   | VtReadProofOpt of (pstate:Declare.Proof.t option -> unit)
   | VtReadProof of (pstate:Declare.Proof.t -> unit)
+  | VtReadProgram of (pm:Declare.OblState.t -> unit)
+  | VtModifyProgram of (pm:Declare.OblState.t -> Declare.OblState.t)
+  | VtDeclareProgram of (pm:Declare.OblState.t -> Declare.Proof.t)
+  | VtOpenProofProgram of (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t)
 
 type vernac_command = atts:Attributes.vernac_flags -> typed_vernac
 

@@ -80,14 +80,14 @@ GRAMMAR EXTEND Gram
 
 open Declare.Obls
 
-let obligation obl tac = with_tac (fun t -> obligation obl t) tac
-let next_obligation obl tac = with_tac (fun t -> next_obligation obl t) tac
+let obligation ~pm obl tac = with_tac (fun t -> obligation ~pm obl t) tac
+let next_obligation ~pm obl tac = with_tac (fun t -> next_obligation ~pm obl t) tac
 
 let classify_obbl _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpacity,[]))
 
 }
 
-VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl } STATE open_proof
+VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl } STATE declare_program
 | [ "Obligation" integer(num) "of" ident(name) ":" lglob(t) withtac(tac) ] ->
     { obligation (num, Some name, Some t) tac }
 | [ "Obligation" integer(num) "of" ident(name) withtac(tac) ] ->
@@ -101,14 +101,14 @@ VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl } STATE open_pro
 | [ "Next" "Obligation" withtac(tac) ] -> { next_obligation None tac }
 END
 
-VERNAC COMMAND EXTEND Solve_Obligation CLASSIFIED AS SIDEFF
+VERNAC COMMAND EXTEND Solve_Obligation CLASSIFIED AS SIDEFF STATE program
 | [ "Solve" "Obligation" integer(num) "of" ident(name) "with" tactic(t) ] ->
     { try_solve_obligation num (Some name) (Some (Tacinterp.interp t)) }
 | [ "Solve" "Obligation" integer(num) "with" tactic(t) ] ->
     { try_solve_obligation num None (Some (Tacinterp.interp t)) }
 END
 
-VERNAC COMMAND EXTEND Solve_Obligations CLASSIFIED AS SIDEFF
+VERNAC COMMAND EXTEND Solve_Obligations CLASSIFIED AS SIDEFF STATE program
 | [ "Solve" "Obligations" "of" ident(name) "with" tactic(t) ] ->
     { try_solve_obligations (Some name) (Some (Tacinterp.interp t)) }
 | [ "Solve" "Obligations" "with" tactic(t) ] ->
@@ -117,14 +117,14 @@ VERNAC COMMAND EXTEND Solve_Obligations CLASSIFIED AS SIDEFF
     { try_solve_obligations None None }
 END
 
-VERNAC COMMAND EXTEND Solve_All_Obligations CLASSIFIED AS SIDEFF
+VERNAC COMMAND EXTEND Solve_All_Obligations CLASSIFIED AS SIDEFF STATE program
 | [ "Solve" "All" "Obligations" "with" tactic(t) ] ->
     { solve_all_obligations (Some (Tacinterp.interp t)) }
 | [ "Solve" "All" "Obligations" ] ->
     { solve_all_obligations None }
 END
 
-VERNAC COMMAND EXTEND Admit_Obligations CLASSIFIED AS SIDEFF
+VERNAC COMMAND EXTEND Admit_Obligations CLASSIFIED AS SIDEFF STATE program
 | [ "Admit" "Obligations" "of" ident(name) ] -> { admit_obligations (Some name) }
 | [ "Admit" "Obligations" ] -> { admit_obligations None }
 END
@@ -148,14 +148,14 @@ VERNAC COMMAND EXTEND Show_Solver CLASSIFIED AS QUERY
     Feedback.msg_notice (str"Program obligation tactic is " ++ print_default_tactic ()) }
 END
 
-VERNAC COMMAND EXTEND Show_Obligations CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND Show_Obligations CLASSIFIED AS QUERY STATE read_program
 | [ "Obligations" "of" ident(name) ] -> { show_obligations (Some name) }
 | [ "Obligations" ] -> { show_obligations None }
 END
 
-VERNAC COMMAND EXTEND Show_Preterm CLASSIFIED AS QUERY
-| [ "Preterm" "of" ident(name) ] -> { Feedback.msg_notice (show_term (Some name)) }
-| [ "Preterm" ] -> { Feedback.msg_notice (show_term None) }
+VERNAC COMMAND EXTEND Show_Preterm CLASSIFIED AS QUERY STATE read_program
+| [ "Preterm" "of" ident(name) ] -> { fun ~pm -> Feedback.msg_notice (show_term ~pm (Some name)) }
+| [ "Preterm" ] -> { fun ~pm -> Feedback.msg_notice (show_term ~pm None) }
 END
 
 {

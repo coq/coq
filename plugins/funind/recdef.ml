@@ -59,7 +59,8 @@ let declare_fun name kind ?univs value =
 
 let defined lemma =
   let (_ : _ list) =
-    Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent ~idopt:None
+    Declare.Proof.save_regular ~proof:lemma ~opaque:Vernacexpr.Transparent
+      ~idopt:None
   in
   ()
 
@@ -1503,7 +1504,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     in
     let lemma = build_proof env (Evd.from_env env) start_tac end_tac in
     let (_ : _ list) =
-      Declare.Proof.save ~proof:lemma ~opaque:opacity ~idopt:None
+      Declare.Proof.save_regular ~proof:lemma ~opaque:opacity ~idopt:None
     in
     ()
   in
@@ -1662,7 +1663,11 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   in
   let _ =
     Flags.silently
-      (fun () -> Declare.Proof.save ~proof:lemma ~opaque:opacity ~idopt:None)
+      (fun () ->
+        let (_ : _ list) =
+          Declare.Proof.save_regular ~proof:lemma ~opaque:opacity ~idopt:None
+        in
+        ())
       ()
   in
   ()

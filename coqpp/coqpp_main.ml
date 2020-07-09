@@ -339,6 +339,10 @@ let understand_state = function
   | "proof" -> "VtModifyProof", false
   | "proof_opt_query" -> "VtReadProofOpt", false
   | "proof_query" -> "VtReadProof", false
+  | "read_program" -> "VtReadProgram", false
+  | "program" -> "VtModifyProgram", false
+  | "declare_program" -> "VtDeclareProgram", false
+  | "program_interactive" -> "VtOpenProofProgram", false
   | s -> fatal ("unsupported state specifier: " ^ s)
 
 let print_body_state state fmt r =
