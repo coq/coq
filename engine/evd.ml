@@ -145,6 +145,7 @@ sig
   val make : econstr list -> t
   val none : unit -> t
   val repr : named_context_val -> Filter.t -> t -> econstr list
+  val is_identity : econstr list -> t -> bool
 end =
 struct
   type t = econstr list option ref
@@ -155,6 +156,9 @@ struct
     let fsign = Filter.filter_list filter (named_context_of_val sign) in
     List.map (NamedDecl.get_id %> mkVar) fsign
   | Some s -> s
+  let is_identity l s = match !s with
+  | None -> false
+  | Some s -> s == l
 end
 
 (* The kinds of existential variables are now defined in [Evar_kinds] *)
@@ -281,7 +285,9 @@ let evar_instance_array test_id info args =
     instrec filter (evar_context info) args
 
 let make_evar_instance_array info args =
-  evar_instance_array (NamedDecl.get_id %> isVarId) info args
+  if Identity.is_identity args info.evar_identity then []
+  else
+    evar_instance_array (NamedDecl.get_id %> isVarId) info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
