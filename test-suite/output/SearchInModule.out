@@ -1,0 +1,82 @@
+Nat.lcm_diag: forall n : nat, Nat.lcm n n = n
+Nat.divide_lcm_r: forall a b : nat, Nat.divide b (Nat.lcm a b)
+Nat.divide_lcm_l: forall a b : nat, Nat.divide a (Nat.lcm a b)
+Nat.lcm_0_l: forall n : nat, Nat.lcm 0 n = 0
+Nat.lcm_0_r: forall n : nat, Nat.lcm n 0 = 0
+Nat.lcm_comm: forall a b : nat, Nat.lcm a b = Nat.lcm b a
+Nat.lcm_1_r: forall n : nat, Nat.lcm n 1 = n
+Nat.lcm_1_l: forall n : nat, Nat.lcm 1 n = n
+Nat.divide_lcm_eq_r: forall n m : nat, Nat.divide n m -> Nat.lcm n m = m
+Nat.lcm_least:
+  forall a b c : nat,
+  Nat.divide a c -> Nat.divide b c -> Nat.divide (Nat.lcm a b) c
+Nat.lcm_assoc:
+  forall n m p : nat, Nat.lcm n (Nat.lcm m p) = Nat.lcm (Nat.lcm n m) p
+Nat.divide_lcm_iff: forall n m : nat, Nat.divide n m <-> Nat.lcm n m = m
+Nat.lcm_mul_mono_r:
+  forall n m p : nat, Nat.lcm (n * p) (m * p) = Nat.lcm n m * p
+Nat.lcm_mul_mono_l:
+  forall n m p : nat, Nat.lcm (p * n) (p * m) = p * Nat.lcm n m
+Nat.lcm_divide_iff:
+  forall n m p : nat,
+  Nat.divide (Nat.lcm n m) p <-> Nat.divide n p /\ Nat.divide m p
+Nat.lcm_wd:
+  Morphisms.Proper (Morphisms.respectful eq (Morphisms.respectful eq eq))
+    Nat.lcm
+Nat.lcm_eq_0: forall n m : nat, Nat.lcm n m = 0 <-> n = 0 \/ m = 0
+Nat.lcm_unique_alt:
+  forall n m p : nat,
+  0 <= p ->
+  (forall q : nat, Nat.divide p q <-> Nat.divide n q /\ Nat.divide m q) ->
+  Nat.lcm n m = p
+Nat.lcm_unique:
+  forall n m p : nat,
+  0 <= p ->
+  Nat.divide n p ->
+  Nat.divide m p ->
+  (forall q : nat, Nat.divide n q -> Nat.divide m q -> Nat.divide p q) ->
+  Nat.lcm n m = p
+Nat.gcd_1_lcm_mul:
+  forall n m : nat,
+  n <> 0 -> m <> 0 -> Nat.gcd n m = 1 <-> Nat.lcm n m = n * m
+Nat.lcm_diag: forall n : nat, Nat.lcm n n = n
+Nat.divide_lcm_r: forall a b : nat, Nat.divide b (Nat.lcm a b)
+Nat.divide_lcm_l: forall a b : nat, Nat.divide a (Nat.lcm a b)
+Nat.lcm_0_l: forall n : nat, Nat.lcm 0 n = 0
+Nat.lcm_0_r: forall n : nat, Nat.lcm n 0 = 0
+Nat.lcm_comm: forall a b : nat, Nat.lcm a b = Nat.lcm b a
+Nat.lcm_1_r: forall n : nat, Nat.lcm n 1 = n
+Nat.lcm_1_l: forall n : nat, Nat.lcm 1 n = n
+Nat.divide_lcm_eq_r: forall n m : nat, Nat.divide n m -> Nat.lcm n m = m
+Nat.lcm_least:
+  forall a b c : nat,
+  Nat.divide a c -> Nat.divide b c -> Nat.divide (Nat.lcm a b) c
+Nat.lcm_assoc:
+  forall n m p : nat, Nat.lcm n (Nat.lcm m p) = Nat.lcm (Nat.lcm n m) p
+Nat.divide_lcm_iff: forall n m : nat, Nat.divide n m <-> Nat.lcm n m = m
+Nat.lcm_mul_mono_r:
+  forall n m p : nat, Nat.lcm (n * p) (m * p) = Nat.lcm n m * p
+Nat.lcm_mul_mono_l:
+  forall n m p : nat, Nat.lcm (p * n) (p * m) = p * Nat.lcm n m
+Nat.lcm_divide_iff:
+  forall n m p : nat,
+  Nat.divide (Nat.lcm n m) p <-> Nat.divide n p /\ Nat.divide m p
+Nat.lcm_wd:
+  Morphisms.Proper (Morphisms.respectful eq (Morphisms.respectful eq eq))
+    Nat.lcm
+Nat.lcm_eq_0: forall n m : nat, Nat.lcm n m = 0 <-> n = 0 \/ m = 0
+Nat.lcm_unique_alt:
+  forall n m p : nat,
+  0 <= p ->
+  (forall q : nat, Nat.divide p q <-> Nat.divide n q /\ Nat.divide m q) ->
+  Nat.lcm n m = p
+Nat.lcm_unique:
+  forall n m p : nat,
+  0 <= p ->
+  Nat.divide n p ->
+  Nat.divide m p ->
+  (forall q : nat, Nat.divide n q -> Nat.divide m q -> Nat.divide p q) ->
+  Nat.lcm n m = p
+Nat.gcd_1_lcm_mul:
+  forall n m : nat,
+  n <> 0 -> m <> 0 -> Nat.gcd n m = 1 <-> Nat.lcm n m = n * m
