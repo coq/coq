@@ -128,6 +128,7 @@ val prim_ind_to_string : 'a prim_ind -> string
 
 (** Can raise [Not_found] *)
 val op_or_type_of_string : string -> op_or_type
+
 val op_or_type_to_string : op_or_type -> string
 
 val parse_op_or_type : ?loc:Loc.t -> string -> op_or_type

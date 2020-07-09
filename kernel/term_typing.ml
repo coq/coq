@@ -88,7 +88,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
       univs, typ
 
     | Some (typ,Monomorphic_entry uctx) ->
-      assert (AUContext.is_empty auctx);
+      assert (AUContext.is_empty auctx); (* ensured by ComPrimitive *)
       let env = push_context_set ~strict:true uctx env in
       let u = Instance.empty in
       let typ =
@@ -99,12 +99,14 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
       Monomorphic uctx, typ
 
     | Some (typ,Polymorphic_entry (unames,uctx)) ->
-      assert (not (AUContext.is_empty auctx));
-      (* push_context will check that the universes aren't repeated in the instance
-         so comparing the sizes works *)
-      assert (AUContext.size auctx = UContext.size uctx);
-      (* No polymorphic primitive uses constraints currently *)
-      assert (Constraint.is_empty (UContext.constraints uctx));
+      assert (not (AUContext.is_empty auctx)); (* ensured by ComPrimitive *)
+      (* [push_context] will check that the universes aren't repeated in
+         the instance so comparing the sizes works. No polymorphic
+         primitive uses constraints currently. *)
+      if not (AUContext.size auctx = UContext.size uctx
+              && Constraint.is_empty (UContext.constraints uctx))
+      then CErrors.user_err Pp.(str "Incorrect universes for primitive " ++
+                                str (op_or_type_to_string p));
       let env = push_context ~strict:false uctx env in
       (* Now we know that uctx matches the auctx *)
       let typ = (Typeops.infer_type env typ).utj_val in

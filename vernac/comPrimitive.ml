@@ -38,7 +38,13 @@ let do_primitive id udecl prim typopt =
       Constrintern.(interp_type_evars_impls ~impls:empty_internalization_env)
         env evd typ
     in
-    let evd = Evarconv.unify_delay env evd typ expected_typ in
+    let evd = try Evarconv.unify_delay env evd typ expected_typ
+      with Evarconv.UnableToUnify (evd,e) as exn ->
+        let _, info = Exninfo.capture exn in
+        Exninfo.iraise (Pretype_errors.(
+            PretypeError (env,evd,CannotUnify (typ,expected_typ,Some e)),info))
+    in
+    Pretyping.check_evars_are_solved ~program_mode:false env evd;
     let evd = Evd.minimize_universes evd in
     let uvars = EConstr.universes_of_constr evd typ in
     let evd = Evd.restrict_universe_context evd uvars in
