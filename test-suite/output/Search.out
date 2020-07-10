@@ -455,3 +455,6 @@ PreOrder_Reflexive:
 reflexive_eq_dom_reflexive:
   forall {A B : Type} {R' : Relation_Definitions.relation B},
   Reflexive R' -> Reflexive (eq ==> R')%signature
+B.b: B.a
+A.b: A.a
+F.L: F.P 0
