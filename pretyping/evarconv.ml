@@ -1334,6 +1334,12 @@ let thin_evars env sigma sign c =
   let c' = applyrec (env,0) c in
   (!sigma, c')
 
+exception NotFoundInstance of exn
+let () = CErrors.register_handler (function
+    | NotFoundInstance e ->
+      Some Pp.(str "Failed to instantiate evar: " ++ CErrors.print e)
+    | _ -> None)
+
 let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   try
   let evi = Evd.find_undefined evd evk in
@@ -1479,7 +1485,9 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                           List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
                  instantiate_evar evar_unify flags env_rhs evd ev vid
                | _ -> evd)
-           with e -> user_err (Pp.str "Cannot find an instance")
+           with e when CErrors.noncritical e ->
+             let e, info = Exninfo.capture e in
+             Exninfo.iraise (NotFoundInstance e, info)
          else
            ((if debug_ho_unification () then
                let evi = Evd.find evd evk in
