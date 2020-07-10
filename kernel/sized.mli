@@ -126,7 +126,6 @@ sig
   type 'a constrained = 'a * t
   val empty : unit -> t
   val union : t -> t -> t
-  val union_list : t list -> t
   val add : Annot.t -> Annot.t -> t -> t
   val pr : t -> Pp.t
 end

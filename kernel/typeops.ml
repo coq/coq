@@ -491,7 +491,7 @@ let check_fixpoint env (names, lar', vdef, vdeft) lar'' =
 (* Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'',
   check Γ ⊢ Δ' ≤ Δ''; Γ ⊢ U' ≤ U'' for inductive, and
   check Γ ⊢ Δ'' ≤ Δ'; Γ ⊢ U'' ≤ U' for coinductive *)
-let _check_fixpoint_type env lar' lar'' recursivity =
+let check_fixpoint_type env lar' lar'' recursivity =
   let unzip_prod_assums arr =
     let decls, body = List.split @@ Array.to_list @@
       Array.map Term.decompose_prod_assum arr in
@@ -681,7 +681,7 @@ and execute_recdef env stg cstrnt (names, lar, vdef) =
   stg_vdef, cstrnt_vdef, (names', lar', vdef', vdeft)
 
 (* Try RecCheck; if failure, try removing some size variables from vstar *)
-and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars, _ as vars) _recursivity =
+and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars, _ as vars) recursivity =
   let flags = Environ.typing_flags env in
   if not flags.check_sized then
     let vstar = SVars.union_list vstars in
@@ -693,8 +693,8 @@ and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars,
     let vstar = SVars.union_list vstars in
     let lar'' = Array.map (annotate_succ vstar) lar' in
     let cstrnt_fix = check_fixpoint env recdeft lar'' in
-    (* let cstrnt_fix_ty = _check_fixpoint_type env lar' lar'' _recursivity in *)
-    let cstrnt' = union cstrnt cstrnt_fix in
+    let cstrnt_fix_ty = check_fixpoint_type env lar' lar'' recursivity in
+    let cstrnt' = union (union cstrnt cstrnt_fix) cstrnt_fix_ty in
 
     let rec_check_all cstrnts (tau, vstar) = union cstrnts (rec_check tau vstar vneq cstrnts) in
     try stg, List.fold_left rec_check_all cstrnt' (List.combine taus vstars)

@@ -262,7 +262,6 @@ struct
 
   let empty () = S.empty
   let union = S.union
-  let union_list = List.fold_left union (empty ())
   let add a1 a2 cstrnts =
     begin
     match a1, a2 with
