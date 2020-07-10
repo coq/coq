@@ -182,7 +182,7 @@ let open_in ~file =
     let version = input_int32 ch in
     let () =
       if not (Int32.equal magic magic_number) then
-        let e = { filename = file; actual = version; expected = magic_number } in
+        let e = { filename = file; actual = magic; expected = magic_number } in
         raise (Bad_magic_number e)
     in
     let () =
