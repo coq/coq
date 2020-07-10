@@ -395,3 +395,17 @@
 : "${coqtail_CI_REF:=master}"
 : "${coqtail_CI_GITURL:=https://github.com/whonore/Coqtail}"
 : "${coqtail_CI_ARCHIVEURL:=${coqtail_CI_GITURL}/archive}"
+
+########################################################################
+# ITree
+########################################################################
+: "${itree_CI_REF:=master}"
+: "${itree_CI_GITURL:=https://github.com/DeepSpec/InteractionTrees}"
+: "${itree_CI_ARCHIVEURL:=${sf_CI_GITURL}/archive}"
+
+########################################################################
+# PACO
+########################################################################
+: "${paco_CI_REF:=master}"
+: "${paco_CI_GITURL:=https://github.com/snu-sf/paco}"
+: "${paco_CI_ARCHIVEURL:=${sf_CI_GITURL}/archive}"

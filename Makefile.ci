@@ -38,10 +38,12 @@ CI_TARGETS= \
     ci-coqhammer \
     ci-hott \
     ci-iris \
+    ci-itree \
     ci-math_classes \
     ci-mathcomp \
     ci-metacoq \
     ci-mtac2 \
+    ci-paco \
     ci-paramcoq \
     ci-perennial \
     ci-quickchick \
@@ -77,6 +79,8 @@ ci-mtac2: ci-unicoq
 
 ci-fiat_crypto: ci-coqprime ci-rewriter
 ci-fiat_crypto_ocaml: ci-fiat_crypto
+
+ci-itree: ci-ext_lib ci-paco ci-mathcomp
 
 ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io
