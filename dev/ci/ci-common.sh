@@ -37,17 +37,19 @@ export PATH="$COQBIN:$PATH"
 # Coq's tools need an ending slash :S, we should fix them.
 export COQBIN="$COQBIN/"
 
-ls "$COQBIN"
+ls -l "$COQBIN"
 
 # Where we download and build external developments
 CI_BUILD_DIR="$PWD/_build_ci"
 
+ls -l "$CI_BUILD_DIR" || true
+
+set +x
 for overlay in "${ci_dir}"/user-overlays/*.sh; do
     # shellcheck source=/dev/null
     . "${overlay}"
 done
 
-set +x
 # shellcheck source=ci-basic-overlay.sh
 . "${ci_dir}/ci-basic-overlay.sh"
 set -x
@@ -84,7 +86,7 @@ git_download()
       COMMIT="$REF"
     fi
     wget "$ARCHIVEURL/$COMMIT.tar.gz"
-    tar xvfz "$COMMIT.tar.gz" --strip-components=1
+    tar xfz "$COMMIT.tar.gz" --strip-components=1
     rm -f "$COMMIT.tar.gz"
   fi
 }
