@@ -293,7 +293,12 @@ let key_compare k1 k2 = match k1, k2 with
 module KeyOrd = struct type t = key let compare = key_compare end
 module KeyMap = Map.Make(KeyOrd)
 
-type notation_rule = interp_rule * interpretation * int option
+type notation_applicative_status =
+  | AppBoundedNotation of int
+  | AppUnboundedNotation
+  | NotAppNotation
+
+type notation_rule = interp_rule * interpretation * notation_applicative_status
 
 let keymap_add key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in
@@ -329,13 +334,14 @@ let cases_pattern_key c = match DAst.get c with
   | _ -> Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
-  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
+  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), AppBoundedNotation (List.length args)
   | NList (_,_,NApp (NRef ref,args),_,_)
   | NBinderList (_,_,NApp (NRef ref,args),_,_) ->
-      RefKey (canonical_gr ref), Some (List.length args)
-  | NRef ref -> RefKey(canonical_gr ref), None
-  | NApp (_,args) -> Oth, Some (List.length args)
-  | _ -> Oth, None
+      RefKey (canonical_gr ref), AppBoundedNotation (List.length args)
+  | NRef ref -> RefKey(canonical_gr ref), NotAppNotation
+  | NApp (_,args) -> Oth, AppBoundedNotation (List.length args)
+  | NList (_,_,NApp (NVar x,_),_,_) when x = Notation_ops.ldots_var -> Oth, AppUnboundedNotation
+  | _ -> Oth, NotAppNotation
 
 (** Dealing with precedences *)
 

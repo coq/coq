@@ -239,7 +239,12 @@ val declare_uninterpretation : interp_rule -> interpretation -> unit
 val interp_notation : ?loc:Loc.t -> notation -> subscopes ->
       interpretation * (notation_location * scope_name option)
 
-type notation_rule = interp_rule * interpretation * int option
+type notation_applicative_status =
+  | AppBoundedNotation of int
+  | AppUnboundedNotation
+  | NotAppNotation
+
+type notation_rule = interp_rule * interpretation * notation_applicative_status
 
 (** Return the possible notations for a given term *)
 val uninterp_notations : 'a glob_constr_g -> notation_rule list
