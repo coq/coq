@@ -95,6 +95,32 @@ Section funext.
     := eq_refl.
 End funext.
 
+(* test reductions on inverted cases *)
+
+(* first check production of correct blocked cases *)
+Definition lazy_seq_rect := Eval lazy in seq_rect.
+Definition vseq_rect := Eval vm_compute in seq_rect.
+Definition native_seq_rect := Eval native_compute in seq_rect.
+Definition cbv_seq_rect := Eval cbv in seq_rect.
+
+(* check it reduces according to indices *)
+Ltac reset := match goal with H : _ |- _ => change (match H with srefl _ => False end) end.
+Ltac check := match goal with |- False => idtac end.
+Lemma foo (H:seq 0 0) : False.
+Proof.
+  reset.
+  Fail check. (* check that "reset" and "check" actually do something *)
+
+  lazy; check; reset.
+
+  (* TODO *)
+  vm_compute. Fail check.
+  native_compute. Fail check.
+  cbv. Fail check.
+  cbn. Fail check.
+  simpl. Fail check.
+Abort.
+
 (* check that extraction doesn't fall apart on matches with special reduction *)
 Require Extraction.
 
