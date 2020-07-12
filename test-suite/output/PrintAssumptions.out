@@ -7,7 +7,7 @@ bli : Type
 Axioms:
 bli : Type
 Axioms:
-@seq relies on definitional UIP.
+seq relies on definitional UIP.
 Axioms:
 extensionality
   : forall (P Q : Type) (f g : P -> Q), (forall x : P, f x = g x) -> f = g
