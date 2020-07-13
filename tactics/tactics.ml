@@ -117,7 +117,7 @@ let unsafe_intro env decl b =
   Refine.refine ~typecheck:false begin fun sigma ->
     let ctx = named_context_val env in
     let nctx = push_named_context_val decl ctx in
-    let inst = List.map (NamedDecl.get_id %> mkVar) (named_context env) in
+    let inst = identity_subst_val (named_context_val env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
     let (sigma, ev) = new_pure_evar nctx sigma nb ~principal:true in
@@ -338,7 +338,7 @@ let rename_hyp repl =
       let nhyps = List.map map hyps in
       let nconcl = subst concl in
       let nctx = val_of_named_context nhyps in
-      let instance = List.map (NamedDecl.get_id %> mkVar) hyps in
+      let instance = EConstr.identity_subst_val (Environ.named_context_val env) in
       Refine.refine ~typecheck:false begin fun sigma ->
         let sigma, ev = Evarutil.new_pure_evar nctx sigma nconcl ~principal:true in
         sigma, mkEvar (ev, instance)
@@ -2783,7 +2783,7 @@ let pose_tac na c =
       let id = make_annot id Sorts.Relevant in
       let nhyps = EConstr.push_named_context_val (NamedDecl.LocalDef (id, c, t)) hyps in
       let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma concl in
-      let inst = List.map (fun d -> mkVar (get_id d)) (named_context env) in
+      let inst = EConstr.identity_subst_val hyps in
       let body = mkEvar (ev, mkRel 1 :: inst) in
       (sigma, mkLetIn (map_annot Name.mk_name id, c, t, body))
     end

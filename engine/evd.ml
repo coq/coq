@@ -152,9 +152,7 @@ struct
   let make s = ref (Some s)
   let none () = ref None
   let repr sign filter s = match !s with
-  | None ->
-    let fsign = Filter.filter_list filter (named_context_of_val sign) in
-    List.map (NamedDecl.get_id %> mkVar) fsign
+  | None -> Filter.filter_list filter sign.env_named_var
   | Some s -> s
   let is_identity l s = match !s with
   | None -> false
@@ -810,8 +808,7 @@ let declare_restricted_evar evar_flags evk evk' =
 let restrict evk filter ?candidates ?src evd =
   let evk' = new_untyped_evar () in
   let evar_info = EvMap.find evk evd.undf_evars in
-  let ctxt = Filter.filter_list filter (evar_context evar_info) in
-  let id_inst = List.map (NamedDecl.get_id %> mkVar) ctxt in
+  let id_inst = Filter.filter_list filter evar_info.evar_hyps.env_named_var in
   let evar_info' =
     { evar_info with evar_filter = filter;
       evar_candidates = candidates;

@@ -386,14 +386,12 @@ let push_rel_decl_to_named_context
 
 let push_rel_context_to_named_context ?hypnaming env sigma typ =
   (* compute the instances relative to the named context and rel_context *)
-  let open Context.Named.Declaration in
   let open EConstr in
-  let ids = List.map get_id (named_context env) in
-  let inst_vars = List.map mkVar ids in
+  let inst_vars = EConstr.identity_subst_val (named_context_val env) in
   if List.is_empty (Environ.rel_context env) then
     (named_context_val env, typ, inst_vars, empty_csubst)
   else
-    let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
+    let avoid = Environ.ids_of_named_context_val (named_context_val env) in
     let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
     (* move the rel context to a named context and extend the named instance *)
     (* with vars of the rel context *)

@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Util
 open Pp
 
 module NamedDecl = Context.Named.Declaration
@@ -58,8 +57,7 @@ module V82 = struct
        goals are restored to their initial value after the evar is
        created. *)
     let prev_future_goals = Evd.save_future_goals evars in
-    let ctxt = Environ.named_context_of_val hyps in
-    let inst = List.map (NamedDecl.get_id %> EConstr.mkVar) ctxt in
+    let inst = EConstr.identity_subst_val hyps in
     let (evars, evk) =
       Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false ~identity:inst hyps evars concl
     in

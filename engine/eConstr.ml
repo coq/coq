@@ -743,6 +743,9 @@ let match_named_context_val :
   match unsafe_eq with
   | Refl -> match_named_context_val
 
+let identity_subst_val : named_context_val -> t list =
+  match unsafe_eq with Refl -> fun ctx -> ctx.env_named_var
+
 let fresh_global ?loc ?rigid ?names env sigma reference =
   let (evd,t) = Evd.fresh_global ?loc ?rigid ?names env sigma reference in
   evd, t

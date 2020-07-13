@@ -1352,7 +1352,7 @@ let unsafe_intro env decl b =
   Refine.refine ~typecheck:false begin fun sigma ->
     let ctx = Environ.named_context_val env in
     let nctx = EConstr.push_named_context_val decl ctx in
-    let inst = List.map (get_id %> EConstr.mkVar) (Environ.named_context env) in
+    let inst = EConstr.identity_subst_val (Environ.named_context_val env) in
     let ninst = EConstr.mkRel 1 :: inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
     let sigma, ev = Evarutil.new_pure_evar ~principal:true nctx sigma nb in
