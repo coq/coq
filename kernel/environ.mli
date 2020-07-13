@@ -69,6 +69,7 @@ type stratification = {
 type named_context_val = private {
   env_named_ctx : Constr.named_context;
   env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
+  env_named_var : Constr.t list;
 }
 
 type rel_context_val = private {
