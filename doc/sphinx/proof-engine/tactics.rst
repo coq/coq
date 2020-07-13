@@ -4162,7 +4162,7 @@ Hint locality
 Hints provided by the ``Hint`` commands are erased when closing a section.
 Conversely, all hints of a module ``A`` that are not defined inside a
 section (and not defined with option ``Local``) become available when the
-module ``A`` is imported (using e.g. ``Require Import A.``).
+module ``A`` is required (using e.g. ``Require A.``).
 
 As of today, hints only have a binary behavior regarding locality, as
 described above: either they disappear at the end of a section scope,
