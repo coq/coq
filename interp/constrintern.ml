@@ -2092,9 +2092,13 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           assert (Option.is_empty isproj);
           let c = intern_notation intern env ntnvars loc ntn ntnargs in
           find_appl_head_data c, args
-        | _ -> assert (Option.is_empty isproj); (intern_no_implicit env f,[],[]), args in
-      apply_impargs c env impargs args_scopes
-        args loc
+        | _ ->
+           assert (Option.is_empty isproj);
+           let f = intern_no_implicit env f in
+           let f, _, args_scopes = find_appl_head_data f in
+           (f,[],args_scopes), args
+      in
+      apply_impargs c env impargs args_scopes args loc
 
     | CRecord fs ->
        let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in

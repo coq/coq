@@ -26,3 +26,15 @@ Definition c := ε : U.
 Goal True.
 assert (nat * nat).
 Abort.
+
+(* Check propagation of scopes in indirect applications to references *)
+
+Module PropagateIndirect.
+Notation "0" := true : bool_scope.
+
+Axiom f : bool -> bool -> nat.
+Check (@f 0) 0.
+
+Record R := { p : bool -> nat }.
+Check fun r => r.(@p) 0.
+End PropagateIndirect.
