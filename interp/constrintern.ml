@@ -1442,9 +1442,9 @@ let chop_params_pattern loc ind args with_letin =
     | PatVar _ | PatCstr(_,_,_) -> error_parameter_not_implicit ?loc:c.CAst.loc) params;
   args
 
-let find_constructor loc ref =
+let find_constructor_head ?loc ref =
   let open GlobRef in
-  let (ind,_ as cstr) = match ref with
+  match ref with
   | ConstructRef cstr -> cstr
   | IndRef _ ->
     let error = str "There is an inductive name deep in a \"in\" clause." in
@@ -1452,8 +1452,12 @@ let find_constructor loc ref =
   | ConstRef _ | VarRef _ ->
     let error = str "This reference is not a constructor." in
     user_err ?loc ~hdr:"find_constructor" error
-  in
-  cstr
+
+let find_inductive_head ?loc ref =
+  let open GlobRef in
+  match ref with
+  | IndRef ind -> ind
+  | _ -> error_bad_inductive_type ?loc ()
 
 let find_pattern_variable qid =
   if qualid_is_ident qid then qualid_basename qid
@@ -1824,7 +1828,7 @@ let rec intern_pat genv ntnvars aliases pat =
       let aliases' = merge_aliases aliases id in
       intern_pat genv ntnvars aliases' p
     | RCPatCstr (head, pl) ->
-      let c = find_constructor loc head in
+      let c = find_constructor_head ?loc head in
       intern_cstr_with_all_args loc c true [] pl
     | RCPatAtom (Some ({loc;v=id},scopes)) ->
       let aliases = merge_aliases aliases (make ?loc @@ Name id) in
@@ -1874,11 +1878,11 @@ let intern_ind_pattern genv ntnvars env pat =
   let loc = no_not.CAst.loc in
   match DAst.get no_not with
     | RCPatCstr (head, pl) ->
-      let c = (function GlobRef.IndRef ind -> ind | _ -> error_bad_inductive_type ?loc ()) head in
+      let ind = find_inductive_head ?loc head in
       let idslpl = List.map (intern_pat genv ntnvars empty_alias) pl in
       (true,
        match product_of_cases_patterns empty_alias idslpl with
-       | ids,[asubst,pl] -> (c,ids,asubst,chop_params_pattern loc c pl true)
+       | ids,[asubst,pl] -> (ind,ids,asubst,chop_params_pattern loc ind pl true)
        | _ -> error_bad_inductive_type ?loc ())
     | x -> error_bad_inductive_type ?loc ()
 
