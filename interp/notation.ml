@@ -2035,12 +2035,12 @@ type symbol =
   | Break of int
 
 let rec symbol_eq s1 s2 = match s1, s2 with
-| Terminal s1, Terminal s2 -> String.equal s1 s2
-| NonTerminal id1, NonTerminal id2 -> Id.equal id1 id2
-| SProdList (id1, l1), SProdList (id2, l2) ->
-  Id.equal id1 id2 && List.equal symbol_eq l1 l2
-| Break i1, Break i2 -> Int.equal i1 i2
-| _ -> false
+  | Terminal s1, Terminal s2 -> String.equal s1 s2
+  | NonTerminal id1, NonTerminal id2 -> Id.equal id1 id2
+  | SProdList (id1, l1), SProdList (id2, l2) ->
+    Id.equal id1 id2 && List.equal symbol_eq l1 l2
+  | Break i1, Break i2 -> Int.equal i1 i2
+  | _ -> false
 
 let rec string_of_symbol = function
   | NonTerminal _ -> ["_"]
