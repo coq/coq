@@ -271,9 +271,9 @@ let pr_reference_or_constr pr_c = function
   | HintsConstr c -> pr_c c
 
 let pr_hint_mode = let open Hints in function
-    | ModeInput -> str"+"
-    | ModeNoHeadEvar -> str"!"
-    | ModeOutput -> str"-"
+  | ModeInput -> str"+"
+  | ModeNoHeadEvar -> str"!"
+  | ModeOutput -> str"-"
 
 let pr_hint_info pr_pat { Typeclasses.hint_priority = pri; hint_pattern = pat } =
   pr_opt (fun x -> str"|" ++ int x) pri ++
