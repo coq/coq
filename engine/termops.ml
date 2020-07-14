@@ -969,13 +969,13 @@ let collapse_appl sigma c = match EConstr.kind sigma c with
 
 let prefix_application sigma eq_fun (k,c) by_c t =
   let open EConstr in
-  let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
-  match EConstr.kind sigma c', EConstr.kind sigma t' with
+  let t' = collapse_appl sigma t in
+  match EConstr.kind sigma c, EConstr.kind sigma t' with
     | App (f1,cl1), App (f2,cl2) ->
         let l1 = Array.length cl1
         and l2 = Array.length cl2 in
         if l1 <= l2
-           && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
+           && eq_fun sigma (k, c) (mkApp (f2, Array.sub cl2 0 l1)) then
           Some (mkApp ((Vars.lift k by_c), Array.sub cl2 l1 (l2 - l1)))
         else
           None
@@ -986,17 +986,29 @@ let prefix_application sigma eq_fun (k,c) by_c t =
    term [c1] in a term [t]; works if [c1] and [c2] have rels *)
 
 let replace_term_gen sigma eq_fun c by_c in_t =
-  let rec substrec (k,c as kc) t =
-    match prefix_application sigma eq_fun kc by_c t with
+  let c' = collapse_appl sigma c in
+  let rec substrec k t =
+    match prefix_application sigma eq_fun (k, c') by_c t with
       | Some x -> x
       | None ->
-    (if eq_fun sigma c t then (EConstr.Vars.lift k by_c) else
-      EConstr.map_with_binders sigma (fun (k,c) -> (k+1,EConstr.Vars.lift 1 c))
-        substrec kc t)
+    (if eq_fun sigma (k, c) t then (EConstr.Vars.lift k by_c) else
+      EConstr.map_with_binders sigma succ substrec k t)
   in
-  substrec (0,c) in_t
+  substrec 0 in_t
 
-let replace_term sigma c byc t = replace_term_gen sigma EConstr.eq_constr c byc t
+let replace_term sigma c byc t =
+  let cache = ref Int.Map.empty in
+  let eq sigma (k, c) t =
+    let c' =
+      try Int.Map.find k !cache
+      with Not_found ->
+        let c' = EConstr.Vars.lift k c in
+        let () = cache := Int.Map.add k c' !cache in
+        c'
+    in
+    EConstr.eq_constr sigma c' t
+  in
+  replace_term_gen sigma eq c byc t
 
 (* Recognizing occurrences of a given subterm in a term: [subst_term c t]
    substitutes [(Rel 1)] for all occurrences of term [c] in a term [t];

@@ -129,12 +129,12 @@ val pop : constr -> constr
 (** [subst_term_gen eq d c] replaces [d] by [Rel 1] in [c] using [eq]
    as equality *)
 val subst_term_gen : Evd.evar_map ->
-  (Evd.evar_map -> constr -> constr -> bool) -> constr -> constr -> constr
+  (Evd.evar_map -> (int * constr) -> constr -> bool) -> constr -> constr -> constr
 
 (** [replace_term_gen eq d e c] replaces [d] by [e] in [c] using [eq]
    as equality *)
 val replace_term_gen :
-  Evd.evar_map -> (Evd.evar_map -> constr -> constr -> bool) ->
+  Evd.evar_map -> (Evd.evar_map -> (int * constr) -> constr -> bool) ->
     constr -> constr -> constr -> constr
 
 (** [subst_term d c] replaces [d] by [Rel 1] in [c] *)

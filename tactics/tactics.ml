@@ -2881,7 +2881,18 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let open Context.Rel.Declaration in
   let decls,cl = decompose_prod_n_assum sigma i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
-  let newdecls,_ = decompose_prod_n_assum sigma i (subst_term_gen sigma EConstr.eq_constr_nounivs c dummy_prod) in
+  let cache = ref Int.Map.empty in
+  let eq sigma (k, c) t =
+    let c' =
+      try Int.Map.find k !cache
+      with Not_found ->
+        let c' = EConstr.Vars.lift k c in
+        let () = cache := Int.Map.add k c' !cache in
+        c'
+    in
+    EConstr.eq_constr_nounivs sigma c' t
+  in
+  let newdecls,_ = decompose_prod_n_assum sigma i (subst_term_gen sigma eq c dummy_prod) in
   let cl',sigma' = subst_closed_term_occ env sigma (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
   let na = generalized_name env sigma c t ids cl' na in
   let r = Retyping.relevance_of_type env sigma t in
