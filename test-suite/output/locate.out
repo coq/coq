@@ -1,2 +1,11 @@
-Notation "b1 && b2" := (if b1 then b2 else false) (default interpretation)
-Notation "x && y" := (andb x y) : bool_scope
+Notation
+"b1 && b2" := if b1 then b2 else false (default interpretation)
+"x && y" := andb x y : bool_scope
+Notation
+"'U' t" := S t (default interpretation)
+Notation
+"'_' t" := S t (default interpretation)
+Notation
+"( x , y , .. , z )" := pair .. (pair x y) .. z : core_scope (default interpretation)
+Notation
+"( x , y , .. , z )" := pair .. (pair x y) .. z : core_scope (default interpretation)

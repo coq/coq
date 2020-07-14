@@ -2202,6 +2202,14 @@ let rec raw_analyze_notation_tokens = function
   | WhiteSpace n :: sl ->
       Break n :: raw_analyze_notation_tokens sl
 
+let rec raw_analyze_anonymous_notation_tokens = function
+  | []    -> []
+  | String ".." :: sl -> NonTerminal Notation_ops.ldots_var :: raw_analyze_anonymous_notation_tokens sl
+  | String "_" :: sl -> NonTerminal (Id.of_string "dummy") :: raw_analyze_anonymous_notation_tokens sl
+  | String s :: sl ->
+      Terminal (String.drop_simple_quotes s) :: raw_analyze_anonymous_notation_tokens sl
+  | WhiteSpace n :: sl -> raw_analyze_anonymous_notation_tokens sl
+
 (* Interpret notations with a recursive component *)
 
 let out_nt = function NonTerminal x -> x | _ -> assert false
@@ -2257,20 +2265,28 @@ let decompose_raw_notation ntn =
   let vars = get_notation_vars l in
   recvars, vars, l
 
-let possible_notations ntn =
+let interpret_notation_string ntn =
   (* We collect the possible interpretations of a notation string depending on whether it is
     in "x 'U' y" or "_ U _" format *)
   let toks = split_notation_string ntn in
-  if List.exists (function String "_" -> true | _ -> false) toks then
-    (* Only "_ U _" format *)
-    [ntn]
-  else
-    let _,ntn' = make_notation_key None (raw_analyze_notation_tokens toks) in
-    if String.equal ntn ntn' then (* Only symbols *) [ntn] else [ntn;ntn']
+  let toks =
+    if
+      List.exists (function String "_" -> true | _ -> false) toks ||
+      List.for_all (function String id -> Id.is_valid id | _ -> false) toks
+    then
+      (* Only "_ U _" format *)
+      raw_analyze_anonymous_notation_tokens toks
+    else
+      (* Includes the case of only a subset of tokens or an "x 'U' y"-style format *)
+      raw_analyze_notation_tokens toks
+  in
+  let _,toks = interp_list_parser [] toks in
+  let _,ntn' = make_notation_key None toks in
+  ntn'
 
 let browse_notation strict ntn map =
-  let ntns = possible_notations ntn in
-  let find (from,ntn' as fullntn') ntn =
+  let ntn = interpret_notation_string ntn in
+  let find (from,ntn' as fullntn') =
     if String.contains ntn ' ' then String.equal ntn ntn'
     else
       let _,toks = decompose_notation_key fullntn' in
@@ -2283,7 +2299,7 @@ let browse_notation strict ntn map =
     String.Map.fold
       (fun scope_name sc ->
         NotationMap.fold (fun ntn data l ->
-          if List.exists (find ntn) ntns
+          if find ntn
           then List.map (fun d -> (ntn,scope_name,d)) (extract_notation_data data) @ l
           else l) sc.notations)
       map [] in
