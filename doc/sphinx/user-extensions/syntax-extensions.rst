@@ -603,7 +603,7 @@ Here is the basic example of a notation using a binder:
 .. coqtop:: in
 
    Notation "'sigma' x : A , B" := (sigT (fun x : A => B))
-     (at level 200, x ident, A at level 200, right associativity).
+     (at level 200, x name, A at level 200, right associativity).
 
 The binding variables in the right-hand side that occur as a parameter
 of the notation (here :g:`x`) dynamically bind all the occurrences
@@ -616,8 +616,9 @@ application of the notation:
 
    Check sigma z : nat, z = 0.
 
-Note the :n:`@syntax_modifier x ident` in the declaration of the
-notation. It tells to parse :g:`x` as a single identifier.
+Note the :n:`@syntax_modifier x name` in the declaration of the
+notation. It tells to parse :g:`x` as a single identifier (or as the
+unnamed variable :g:`_`).
 
 Binders bound in the notation and parsed as patterns
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -655,7 +656,7 @@ variable. Here is an example showing the difference:
    Notation "'subset_bis' ' p , P" := (sig (fun p => P))
      (at level 200, p strict pattern).
    Notation "'subset_bis' p , P " := (sig (fun p => P))
-     (at level 200, p ident).
+     (at level 200, p name).
 
 .. coqtop:: all
 
@@ -675,18 +676,19 @@ the following:
 .. coqdoc::
 
    Notation "{ x : A | P }" := (sig (fun x : A => P))
-       (at level 0, x at level 99 as ident).
+       (at level 0, x at level 99 as name).
 
 This is so because the grammar also contains rules starting with :g:`{}` and
 followed by a term, such as the rule for the notation :g:`{ A } + { B }` for the
 constant :g:`sumbool` (see :ref:`specification`).
 
-Then, in the rule, ``x ident`` is replaced by ``x at level 99 as ident`` meaning
+Then, in the rule, ``x name`` is replaced by ``x at level 99 as name`` meaning
 that ``x`` is parsed as a term at level 99 (as done in the notation for
-:g:`sumbool`), but that this term has actually to be an identifier.
+:g:`sumbool`), but that this term has actually to be a name, i.e. an
+identifier or :g:`_`.
 
 The notation :g:`{ x | P }` is already defined in the standard
-library with the ``as ident`` :n:`@syntax_modifier`. We cannot redefine it but
+library with the ``as name`` :n:`@syntax_modifier`. We cannot redefine it but
 one can define an alternative notation, say :g:`{ p such that P }`,
 using instead ``as pattern``.
 
@@ -702,12 +704,12 @@ Then, the following works:
    Check {(x,y) such that x+y=0}.
 
 To enforce that the pattern should not be used for printing when it
-is just an identifier, one could have said
+is just a name, one could have said
 ``p at level 99 as strict pattern``.
 
-Note also that in the absence of a ``as ident``, ``as strict pattern`` or
+Note also that in the absence of a ``as name``, ``as strict pattern`` or
 ``as pattern`` :n:`@syntax_modifier`\s, the default is to consider sub-expressions occurring
-in binding position and parsed as terms to be ``as ident``.
+in binding position and parsed as terms to be ``as name``.
 
 Binders bound in the notation and parsed as general binders
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -768,7 +770,7 @@ binding position. Here is an example:
 
    Definition force n (P:nat -> Prop) := forall n', n' >= n -> P n'.
    Notation "▢_ n P" := (force n (fun n => P))
-     (at level 0, n ident, P at level 9, format "▢_ n  P").
+     (at level 0, n name, P at level 9, format "▢_ n  P").
 
 .. coqtop:: all
 
@@ -946,15 +948,30 @@ position of :g:`x`:
      (at level 10, f global, a1, an at level 9).
 
 In addition to ``global``, one can restrict the syntax of a
-sub-expression by using the entry names ``ident`` or ``pattern``
+sub-expression by using the entry names ``ident``, ``name`` or ``pattern``
 already seen in :ref:`NotationsWithBinders`, even when the
 corresponding expression is not used as a binder in the right-hand
 side. E.g.:
+
+   .. todo: these two Set Warnings and the note should be removed when
+      ident is reactivated with its literal meaning.
+
+.. coqtop:: none
+
+   Set Warnings "-deprecated-ident-entry".
 
 .. coqtop:: in
 
    Notation "'apply_id' f a1 .. an" := (.. (f a1) .. an)
      (at level 10, f ident, a1, an at level 9).
+
+.. coqtop:: none
+
+   Set Warnings "+deprecated-ident-entry".
+
+.. note:: As of version 8.13, the entry ``ident`` is a deprecated
+          alias for ``name``. In the future, it is planned to strictly
+          parse an identifier (excluding :g:`_`).
 
 .. _custom-entries:
 
@@ -1113,6 +1130,31 @@ gives a way to let any arbitrary expression which is not handled by the
 custom entry ``expr`` be parsed or printed by the main grammar of term
 up to the insertion of a pair of curly brackets.
 
+Another special situation is when parsing global references or
+identifiers. To indicate that a custom entry should parse identifiers,
+use the following form:
+
+.. coqtop:: none
+
+   Reset Initial.
+   Declare Custom Entry expr.
+
+.. coqtop:: in
+
+   Notation "x" := x (in custom expr at level 0, x ident).
+
+Similarly, to indicate that a custom entry should parse global references
+(i.e. qualified or non qualified identifiers), use the following form:
+
+.. coqtop:: none
+
+   Reset Initial.
+   Declare Custom Entry expr.
+
+.. coqtop:: in
+
+   Notation "x" := x (in custom expr at level 0, x global).
+
 .. cmd:: Print Custom Grammar @ident
    :name: Print Custom Grammar
 
@@ -1142,6 +1184,7 @@ Here are the syntax elements used by the various notation commands.
       | only printing
       | format @string {? @string }
       explicit_subentry ::= ident
+      | name
       | global
       | bigint
       | strict pattern {? at level @natural }
@@ -1151,6 +1194,7 @@ Here are the syntax elements used by the various notation commands.
       | custom @ident {? at @level } {? @binder_interp }
       | pattern {? at level @natural }
       binder_interp ::= as ident
+      | as name
       | as pattern
       | as strict pattern
       level ::= level @natural
@@ -1188,6 +1232,27 @@ Here are the syntax elements used by the various notation commands.
              due to legacy notation in the Coq standard library.
              It can be turned on with the ``-w disj-pattern-notation`` flag.
 
+.. note::
+
+   As of version 8.13, the entry ``ident`` is a deprecated alias for
+   ``name``. In the future, it is planned to strictly parse an
+   identifier (to the exclusion of :g:`_`). If the intent was to use
+   ``ident`` as an identifier (excluding :g:`_`), just silence the warning with
+   :n:`Set Warnings "-deprecated-ident-entry"` and it should automatically
+   get its intended meaning in version 8.15.
+
+   Similarly, ``as ident`` is a deprecated alias for ``as name``, which
+   will only accept an identifier in the future.  If the
+   intent was to use ``as ident`` as an identifier
+   (excluding :g:`_`), just silence the warning with
+   :n:`Set Warnings "-deprecated-as-ident-kind"`.
+
+   However, this deprecation does not apply to custom entries, where it
+   already denotes an identifier, as expected.
+
+   .. todo: the note above should be removed at the end of deprecation
+      phase of ident
+   ..
 .. _Scopes:
 
 Notation scopes
