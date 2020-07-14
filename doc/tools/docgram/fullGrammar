@@ -1420,6 +1420,7 @@ syntax_modifiers: [
 
 explicit_subentry: [
 | "ident"
+| "name"
 | "global"
 | "bigint"
 | "binder"
@@ -1440,6 +1441,7 @@ at_level_opt: [
 
 binder_interp: [
 | "as" "ident"
+| "as" "name"
 | "as" "pattern"
 | "as" "strict" "pattern"
 ]
