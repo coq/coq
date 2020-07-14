@@ -9,3 +9,7 @@ Notation
 "( x , y , .. , z )" := pair .. (pair x y) .. z : core_scope (default interpretation)
 Notation
 "( x , y , .. , z )" := pair .. (pair x y) .. z : core_scope (default interpretation)
+Notation
+"( x , y , .. , z )" := pair .. (pair x y) .. z : core_scope (default interpretation)
+Notation
+"( x , y , .. , z )" := pair .. (pair x y) .. z : core_scope (default interpretation)

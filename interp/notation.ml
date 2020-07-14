@@ -2284,10 +2284,32 @@ let interpret_notation_string ntn =
   let _,ntn' = make_notation_key None toks in
   ntn'
 
+(* Tell if a non-recursive notation is an instance of a recursive one *)
+let is_approximation ntn ntn' =
+  let rec aux toks1 toks2 = match (toks1, toks2) with
+    | Terminal s1 :: toks1, Terminal s2 :: toks2 -> String.equal s1 s2 && aux toks1 toks2
+    | NonTerminal _ :: toks1, NonTerminal _ :: toks2 -> aux toks1 toks2
+    | SProdList (_,l1) :: toks1, SProdList (_, l2) :: toks2 -> aux l1 l2 && aux toks1 toks2
+    | NonTerminal _ :: toks1, SProdList (_,l2) :: toks2 -> aux' toks1 l2 l2 toks2 || aux toks1 toks2
+    | [], [] -> true
+    | (Break _ :: _, _) | (_, Break _ :: _) -> assert false
+    | (Terminal _ | NonTerminal _ | SProdList _) :: _, _ -> false
+    | [], _ -> false
+  and aux' toks1 l2 l2full toks2 = match (toks1, l2) with
+    | Terminal s1 :: toks1, Terminal s2 :: l2 when String.equal s1 s2 -> aux' toks1 l2 l2full toks2
+    | NonTerminal _ :: toks1, [] -> aux' toks1 l2full l2full toks2 || aux toks1 toks2
+    | _ -> false
+  in
+  let _,toks = interp_list_parser [] (raw_analyze_anonymous_notation_tokens (split_notation_string ntn)) in
+  let _,toks' = interp_list_parser [] (raw_analyze_anonymous_notation_tokens (split_notation_string ntn')) in
+  aux toks toks'
+
 let browse_notation strict ntn map =
   let ntn = interpret_notation_string ntn in
   let find (from,ntn' as fullntn') =
-    if String.contains ntn ' ' then String.equal ntn ntn'
+    if String.contains ntn ' ' then
+      if String.string_contains ~where:ntn' ~what:".." then is_approximation ntn ntn'
+      else String.equal ntn ntn'
     else
       let _,toks = decompose_notation_key fullntn' in
       let get_terminals = function Terminal ntn -> Some ntn | _ -> None in

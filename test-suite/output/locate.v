@@ -19,4 +19,8 @@ Locate "( t , u , .. , v )".
 (* Was working though *)
 Locate "( _ , _ , .. , _ )".
 
+(* We also support this *)
+Locate "( t , u )".
+Locate "( t , u , v )".
+
 End N.
