@@ -194,52 +194,6 @@ let parse_format ({CAst.loc;v=str} : lstring) =
 (***********************)
 (* Analyzing notations *)
 
-(* Interpret notations with a recursive component *)
-
-let out_nt = function NonTerminal x -> x | _ -> assert false
-
-let msg_expected_form_of_recursive_notation =
-  "In the notation, the special symbol \"..\" must occur in\na configuration of the form \"x symbs .. symbs y\"."
-
-let rec find_pattern nt xl = function
-  | Break n as x :: l, Break n' :: l' when Int.equal n n' ->
-      find_pattern nt (x::xl) (l,l')
-  | Terminal s as x :: l, Terminal s' :: l' when String.equal s s' ->
-      find_pattern nt (x::xl) (l,l')
-  | [], NonTerminal x' :: l' ->
-      (out_nt nt,x',List.rev xl),l'
-  | _, Break s :: _ | Break s :: _, _ ->
-      user_err Pp.(str ("A break occurs on one side of \"..\" but not on the other side."))
-  | _, Terminal s :: _ | Terminal s :: _, _ ->
-      user_err ~hdr:"Metasyntax.find_pattern"
-        (str "The token \"" ++ str s ++ str "\" occurs on one side of \"..\" but not on the other side.")
-  | _, [] ->
-      user_err Pp.(str msg_expected_form_of_recursive_notation)
-  | ((SProdList _ | NonTerminal _) :: _), _ | _, (SProdList _ :: _) ->
-      anomaly (Pp.str "Only Terminal or Break expected on left, non-SProdList on right.")
-
-let rec interp_list_parser hd = function
-  | [] -> [], List.rev hd
-  | NonTerminal id :: tl when Id.equal id ldots_var ->
-      if List.is_empty hd then user_err Pp.(str msg_expected_form_of_recursive_notation);
-      let hd = List.rev hd in
-      let ((x,y,sl),tl') = find_pattern (List.hd hd) [] (List.tl hd,tl) in
-      let xyl,tl'' = interp_list_parser [] tl' in
-      (* We remember each pair of variable denoting a recursive part to *)
-      (* remove the second copy of it afterwards *)
-      (x,y)::xyl, SProdList (x,sl) :: tl''
-  | (Terminal _ | Break _) as s :: tl ->
-      if List.is_empty hd then
-        let yl,tl' = interp_list_parser [] tl in
-        yl, s :: tl'
-      else
-        interp_list_parser (s::hd) tl
-  | NonTerminal _ as x :: tl ->
-      let xyl,tl' = interp_list_parser [x] tl in
-      xyl, List.rev_append hd tl'
-  | SProdList _ :: _ -> anomaly (Pp.str "Unexpected SProdList in interp_list_parser.")
-
-
 (* Find non-terminal tokens of notation *)
 
 (* To protect alphabetic tokens and quotes from being seen as variables *)
@@ -256,24 +210,16 @@ let is_numeral_in_constr entry symbs =
   | _ ->
       false
 
-let rec get_notation_vars onlyprint = function
-  | [] -> []
-  | NonTerminal id :: sl ->
-      let vars = get_notation_vars onlyprint sl in
-      if Id.equal id ldots_var then vars else
-        (* don't check for nonlinearity if printing only, see Bug 5526 *)
-        if not onlyprint && Id.List.mem id vars then
-          user_err ~hdr:"Metasyntax.get_notation_vars"
-            (str "Variable " ++ Id.print id ++ str " occurs more than once.")
-        else id::vars
-  | (Terminal _ | Break _) :: sl -> get_notation_vars onlyprint sl
-  | SProdList _ :: _ -> assert false
-
-let analyze_notation_tokens ~onlyprint ntn =
-  let l = decompose_raw_notation ntn in
-  let vars = get_notation_vars onlyprint l in
-  let recvars,l = interp_list_parser [] l in
-  recvars, List.subtract Id.equal vars (List.map snd recvars), l
+let analyze_notation_tokens ~onlyprint df =
+  let (recvars,mainvars,symbols as res) = decompose_raw_notation df in
+    (* don't check for nonlinearity if printing only, see Bug 5526 *)
+  (if not onlyprint then
+    match List.duplicates Id.equal (mainvars @ List.map snd recvars) with
+    | id :: _ ->
+        user_err ~hdr:"Metasyntax.get_notation_vars"
+          (str "Variable " ++ Id.print id ++ str " occurs more than once.")
+    | _ -> ());
+  res
 
 let error_not_same_scope x y =
   user_err ~hdr:"Metasyntax.error_not_name_scope"

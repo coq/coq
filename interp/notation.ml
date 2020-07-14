@@ -2202,7 +2202,60 @@ let rec raw_analyze_notation_tokens = function
   | WhiteSpace n :: sl ->
       Break n :: raw_analyze_notation_tokens sl
 
-let decompose_raw_notation ntn = raw_analyze_notation_tokens (split_notation_string ntn)
+(* Interpret notations with a recursive component *)
+
+let out_nt = function NonTerminal x -> x | _ -> assert false
+
+let msg_expected_form_of_recursive_notation =
+  "In the notation, the special symbol \"..\" must occur in\na configuration of the form \"x symbs .. symbs y\"."
+
+let rec find_pattern nt xl = function
+  | Break n as x :: l, Break n' :: l' when Int.equal n n' ->
+      find_pattern nt (x::xl) (l,l')
+  | Terminal s as x :: l, Terminal s' :: l' when String.equal s s' ->
+      find_pattern nt (x::xl) (l,l')
+  | [], NonTerminal x' :: l' ->
+      (out_nt nt,x',List.rev xl),l'
+  | _, Break s :: _ | Break s :: _, _ ->
+      user_err Pp.(str ("A break occurs on one side of \"..\" but not on the other side."))
+  | _, Terminal s :: _ | Terminal s :: _, _ ->
+      user_err ~hdr:"Metasyntax.find_pattern"
+        (str "The token \"" ++ str s ++ str "\" occurs on one side of \"..\" but not on the other side.")
+  | _, [] ->
+      user_err Pp.(str msg_expected_form_of_recursive_notation)
+  | ((SProdList _ | NonTerminal _) :: _), _ | _, (SProdList _ :: _) ->
+      anomaly (Pp.str "Only Terminal or Break expected on left, non-SProdList on right.")
+
+let rec interp_list_parser hd = function
+  | [] -> [], List.rev hd
+  | NonTerminal id :: tl when Id.equal id Notation_ops.ldots_var ->
+      if List.is_empty hd then user_err Pp.(str msg_expected_form_of_recursive_notation);
+      let hd = List.rev hd in
+      let ((x,y,sl),tl') = find_pattern (List.hd hd) [] (List.tl hd,tl) in
+      let xyl,tl'' = interp_list_parser [] tl' in
+      (* We remember each pair of variable denoting a recursive part to *)
+      (* remove the second copy of it afterwards *)
+      (x,y)::xyl, SProdList (x,sl) :: tl''
+  | (Terminal _ | Break _) as s :: tl ->
+      if List.is_empty hd then
+        let yl,tl' = interp_list_parser [] tl in
+        yl, s :: tl'
+      else
+        interp_list_parser (s::hd) tl
+  | NonTerminal _ as x :: tl ->
+      let xyl,tl' = interp_list_parser [x] tl in
+      xyl, List.rev_append hd tl'
+  | SProdList _ :: _ -> anomaly (Pp.str "Unexpected SProdList in interp_list_parser.")
+
+let get_notation_vars l =
+  List.map_filter (function NonTerminal id | SProdList (id,_) -> Some id | _ -> None) l
+
+let decompose_raw_notation ntn =
+  let l = split_notation_string ntn in
+  let l = raw_analyze_notation_tokens l in
+  let recvars,l = interp_list_parser [] l in
+  let vars = get_notation_vars l in
+  recvars, vars, l
 
 let possible_notations ntn =
   (* We collect the possible interpretations of a notation string depending on whether it is
