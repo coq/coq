@@ -73,7 +73,7 @@
 ########################################################################
 # HoTT
 ########################################################################
-: "${hott_CI_REF:=fe02e95f60d8dae5b3a15840c3625c64b5f96eaf}"
+: "${hott_CI_REF:=1f6ce1c1baedfaa7f170f32aebea7b83054a5fc4}"
 : "${hott_CI_GITURL:=https://github.com/HoTT/HoTT}"
 : "${hott_CI_ARCHIVEURL:=${hott_CI_GITURL}/archive}"
 
