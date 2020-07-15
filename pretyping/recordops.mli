@@ -27,13 +27,12 @@ type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;
   s_PROJKIND : proj_kind list;
-  s_PROJ : Constant.t option list }
+  s_PROJ : Constant.t option list;
+}
 
-type struc_tuple =
-    constructor * proj_kind list * Constant.t option list
-
-val register_structure : Environ.env -> struc_tuple -> unit
-val subst_structure : Mod_subst.substitution -> struc_tuple -> struc_tuple
+val register_structure : struc_typ -> unit
+val subst_structure : Mod_subst.substitution -> struc_typ -> struc_typ
+val rebuild_structure : Environ.env -> struc_typ -> struc_typ
 
 (** [lookup_structure isp] returns the struc_typ associated to the
    inductive path [isp] if it corresponds to a structure, otherwise
