@@ -208,9 +208,13 @@ module Internal : sig
 
   val shrink_entry : EConstr.named_context -> 'a proof_entry -> 'a proof_entry * Constr.constr list
 
-  type constant_obj
+  (* Liboject exports *)
+  module Constant : sig
+    type t
+    val tag : t Libobject.Dyn.tag
+    val kind : t -> Decls.logical_kind
+  end
 
-  val objConstant : constant_obj Libobject.Dyn.tag
   val objVariable : unit Libobject.Dyn.tag
 
 end

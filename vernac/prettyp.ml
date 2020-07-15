@@ -690,7 +690,7 @@ let gallina_print_leaf_entry env sigma with_values ((sp, kn),lobj) =
              constraints *)
           (try Some(print_named_decl env sigma (basename sp)) with Not_found -> None)
       end @@
-      DynHandle.add Declare.Internal.objConstant begin fun _ ->
+      DynHandle.add Declare.Internal.Constant.tag begin fun _ ->
           Some (print_constant with_values sep (Constant.make1 kn) None)
       end @@
       DynHandle.add DeclareInd.Internal.objInductive begin fun _ ->
@@ -798,7 +798,7 @@ let print_full_pure_context env sigma =
   let rec prec = function
   | ((_,kn),Lib.Leaf AtomicObject lobj)::rest ->
     let handler =
-      DynHandleF.add Declare.Internal.objConstant begin fun _ ->
+      DynHandleF.add Declare.Internal.Constant.tag begin fun _ ->
           let con = Global.constant_of_delta_kn kn in
           let cb = Global.lookup_constant con in
           let typ = cb.const_type in

@@ -666,10 +666,13 @@ module Internal = struct
     ; proof_entry_type = Some typ
     }, args
 
-  type nonrec constant_obj = constant_obj
+  module Constant = struct
+    type t = constant_obj
+    let tag = objConstant
+    let kind obj = obj.cst_kind
+  end
 
   let objVariable = objVariable
-  let objConstant = objConstant
 
 end
 (*** Proof Global Environment ***)
