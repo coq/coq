@@ -735,6 +735,7 @@ library:ci-fiat_crypto:
   dependencies:
   - build:edge+flambda
   - library:ci-coqprime
+  - plugin:ci-bignums
   - plugin:ci-rewriter
 
 # We cannot use flambda due to
@@ -745,9 +746,15 @@ library:ci-fiat_crypto_ocaml:
   stage: stage-5
   needs:
   - build:edge+flambda
+  - library:ci-coqprime
+  - plugin:ci-bignums
+  - plugin:ci-rewriter
   - library:ci-fiat_crypto
   dependencies:
   - build:edge+flambda
+  - library:ci-coqprime
+  - plugin:ci-bignums
+  - plugin:ci-rewriter
   - library:ci-fiat_crypto
 
 library:ci-flocq:
