@@ -28,7 +28,7 @@ esac
 printf "Fixes? (space separated list of bug numbers)\n"
 read -r fixes_list
 
-fixes_string="$(echo $fixes_list | sed 's/ /~  and /g; s,\([0-9]\+\),`#\1 <https://github.com/coq/coq/issues/\1>`_,g' | tr '~' '\n')"
+fixes_string="$(echo $fixes_list | sed 's/ /~  and /g; s,\([0-9][0-9]*\),`#\1 <https://github.com/coq/coq/issues/\1>`_,g' | tr '~' '\n')"
 if [ ! -z "$fixes_string" ]; then fixes_string="$(printf '\n  fixes %s,' "$fixes_string")"; fi
 
 # shellcheck disable=SC2016
