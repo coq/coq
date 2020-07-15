@@ -290,3 +290,11 @@ Check V tt.
 Check fun x : nat => V x.
 
 End O.
+
+Module Bug12691.
+
+Notation "x :=: y" := True (at level 70, no associativity, only parsing).
+Notation "x :=: y" := (x = y).
+Check (0 :=: 0).
+
+End Bug12691.
