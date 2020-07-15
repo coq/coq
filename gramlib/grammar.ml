@@ -1548,12 +1548,21 @@ module Parsable = struct
       Stream.Failure ->
       let loc = get_loc () in
       restore ();
-      Ploc.raise loc (Stream.Error ("illegal begin of " ^ entry.ename))
+      Loc.raise ~loc (Stream.Error ("illegal begin of " ^ entry.ename))
     | Stream.Error _ as exc ->
-      let loc = get_loc () in restore (); Ploc.raise loc exc
+      let loc = get_loc () in restore ();
+      Loc.raise ~loc exc
     | exc ->
+      let exc,info = Exninfo.capture exc in
       let loc = Stream.count cs, Stream.count cs + 1 in
-      restore (); Ploc.raise (Ploc.make_unlined loc) exc
+      restore ();
+      (* If the original exn had a loc, keep it *)
+      let info =
+        match Loc.get_loc info with
+        | Some _ -> info
+        | None -> Loc.add_loc info (Ploc.make_unlined loc)
+      in
+      Exninfo.iraise (exc,info)
 
   let parse_parsable e p =
     L.State.set !(p.lexer_state);
@@ -1561,11 +1570,10 @@ module Parsable = struct
       let c = parse_parsable e p in
       p.lexer_state := L.State.get ();
       c
-    with Ploc.Exc (loc,e) ->
+    with exn ->
+      let exn,info = Exninfo.capture exn in
       L.State.drop ();
-      let loc' = Loc.get_loc (Exninfo.info e) in
-      let loc = match loc' with None -> loc | Some loc -> loc in
-      Loc.raise ~loc e
+      Exninfo.iraise (exn,info)
 
   let make ?loc cs =
     let lexer_state = ref (L.State.init ()) in
