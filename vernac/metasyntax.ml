@@ -1579,9 +1579,12 @@ let warn_irrelevant_format =
 
 let make_printing_rules reserved (sd : SynData.syn_data) = let open SynData in
   let custom,level,_ = sd.level in
-  let pp_rule = make_pp_rule level sd.pp_syntax_data sd.format in
-  if sd.only_parsing then (if sd.format <> None then warn_irrelevant_format (); None)
-  else Some {
+  let format =
+    if sd.only_parsing && sd.format <> None then (warn_irrelevant_format (); None)
+    else sd.format in
+  let pp_rule = make_pp_rule level sd.pp_syntax_data format in
+  (* We produce a generic rule even if this precise notation is only parsing *)
+  Some {
     synext_reserved = reserved;
     synext_unparsing = (pp_rule,level);
     synext_extra  = sd.extra;

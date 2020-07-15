@@ -119,3 +119,7 @@ fun x : nat => V x
      : forall x : nat, nat * (?T -> ?T)
 where
 ?T : [x : nat  x0 : ?T |- Type] (x0 cannot be used)
+File "stdin", line 297, characters 0-30:
+Warning: Notation "_ :=: _" was already used. [notation-overridden,parsing]
+0 :=: 0
+     : Prop
