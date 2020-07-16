@@ -485,6 +485,15 @@ doc:stdlib:dune:
   extends: .dune-ci-template
   variables:
     DUNE_TARGET: stdlib-html
+  script:
+    # Warning: will rebuild Coq, need to fix Dune to know about glob files.
+    # c.f. https://github.com/coq/coq/issues/12699
+    - rm -rf _build
+    - set -e
+    - echo 'start:coq.test'
+    - make -f Makefile.dune "$DUNE_TARGET"
+    - echo 'end:coq.test'
+    - set +e
   artifacts:
     paths:
       - _build/log
