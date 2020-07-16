@@ -1620,3 +1620,9 @@ let connect_hint_clenv h gl =
       let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
       { clenv with evd = evd ; env = Proofview.Goal.env gl }, c
   in clenv, c
+
+let hint_res_pf ?with_evars ?with_classes ?flags h =
+  Proofview.Goal.enter begin fun gl ->
+    let clenv, _ = connect_hint_clenv h gl in
+    Clenv.res_pf ?with_evars ?with_classes ?flags clenv
+  end

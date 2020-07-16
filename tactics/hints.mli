@@ -242,6 +242,9 @@ val wrap_hint_warning_fun : env -> evar_map ->
 val connect_hint_clenv
   : hint -> Proofview.Goal.t -> clausenv * constr
 
+val hint_res_pf : ?with_evars:bool -> ?with_classes:bool ->
+  ?flags:Unification.unify_flags -> hint -> unit Proofview.tactic
+
 (** Printing  hints *)
 
 val pr_searchtable : env -> evar_map -> Pp.t

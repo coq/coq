@@ -170,10 +170,7 @@ let e_give_exact flags h =
 
 let unify_resolve ~with_evars flags h diff = match diff with
 | None ->
-  Proofview.Goal.enter begin fun gls ->
-  let clenv', _ = connect_hint_clenv h gls in
-  Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv'
-  end
+  Hints.hint_res_pf ~with_evars ~with_classes:false ~flags h
 | Some (diff, ty) ->
   let () = assert (not h.hint_poly) in
   Proofview.Goal.enter begin fun gl ->
