@@ -143,24 +143,17 @@ let auto_unif_flags ?(allowed_evars = AllowAll) st =
     resolve_evars = false
 }
 
-let refresh_undefined_univs clenv =
-  match EConstr.kind clenv.evd clenv.templval.rebus with
-  | Var _ -> clenv.evd, Univ.empty_level_subst
-  | App (f, args) when isVar clenv.evd f -> clenv.evd, Univ.empty_level_subst
-  | _ -> Evd.refresh_undefined_universes clenv.evd
-
 let e_give_exact flags h =
-  let { hint_term = c; hint_clnv = clenv } = h in
+  let { hint_term = c; hint_uctx = ctx } = h in
   let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
   let sigma = project gl in
   let c, sigma =
     if h.hint_poly then
-      (* Should we really refresh all universes when we have the local ones at hand? *)
-      let evd, subst = refresh_undefined_univs clenv in
-      let evd = evars_reset_evd ~with_conv_pbs:true sigma evd in
+      let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
+      let evd = Evd.merge_context_set Evd.univ_flexible sigma ctx in
       let c = Vars.subst_univs_level_constr subst c in
-        c, evd
+      c, evd
     else c, sigma
   in
   let (sigma, t1) = Typing.type_of (pf_env gl) sigma c in
