@@ -643,8 +643,6 @@ val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
 
 val fix_undefined_variables : evar_map -> evar_map
 
-val refresh_undefined_universes : evar_map -> evar_map * Univ.universe_level_subst
-
 (** Universe minimization *)
 val minimize_universes : evar_map -> evar_map
 
