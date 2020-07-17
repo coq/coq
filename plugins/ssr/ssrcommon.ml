@@ -302,6 +302,11 @@ let mk_ast_closure_term a t = {
 }
 
 let glob_ast_closure_term (ist : Genintern.glob_sign) t =
+  let ist = {
+    ast_ltacvars = ist.Genintern.ltacvars;
+    ast_intern_sign = ist.Genintern.intern_sign;
+    ast_extra = ist.Genintern.extra;
+  } in
   { t with glob_env = Some ist }
 let subst_ast_closure_term (_s : Mod_subst.substitution) t =
   (* _s makes sense only for glob constr *)
