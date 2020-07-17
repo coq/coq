@@ -19,7 +19,6 @@ open Tacticals
 open Tacmach
 open Evd
 open Tactics
-open Clenv
 open Auto
 open Genredexpr
 open Tactypes
@@ -84,10 +83,10 @@ let hintmap_of sigma secvars concl =
 
 let e_exact flags h =
   Proofview.Goal.enter begin fun gl ->
-    let clenv', c = connect_hint_clenv h gl in
-    Tacticals.New.tclTHEN
-    (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
-    (e_give_exact c)
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let sigma, c = Hints.fresh_hint env sigma h in
+    Proofview.Unsafe.tclEVARS sigma <*> e_give_exact c
   end
 
 let rec e_trivial_fail_db db_list local_db =

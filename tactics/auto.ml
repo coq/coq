@@ -15,7 +15,6 @@ open Termops
 open Environ
 open Genredexpr
 open Tactics
-open Clenv
 open Locus
 open Proofview.Notations
 open Hints
@@ -78,10 +77,10 @@ let unify_resolve_gen = function
 
 let exact h =
   Proofview.Goal.enter begin fun gl ->
-    let clenv', c = connect_hint_clenv h gl in
-    Tacticals.New.tclTHEN
-    (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
-    (exact_check c)
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let sigma, c = Hints.fresh_hint env sigma h in
+    Proofview.Unsafe.tclEVARS sigma <*> exact_check c
   end
 
 (* Util *)

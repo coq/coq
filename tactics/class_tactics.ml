@@ -144,18 +144,11 @@ let auto_unif_flags ?(allowed_evars = AllowAll) st =
 }
 
 let e_give_exact flags h =
-  let { hint_term = c; hint_uctx = ctx } = h in
   let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let sigma = project gl in
-  let c, sigma =
-    if h.hint_poly then
-      let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
-      let evd = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-      let c = Vars.subst_univs_level_constr subst c in
-      c, evd
-    else c, sigma
-  in
+  let sigma, c = Hints.fresh_hint env sigma h in
   let (sigma, t1) = Typing.type_of (pf_env gl) sigma c in
   Proofview.Unsafe.tclEVARS sigma <*>
   Clenv.unify ~flags t1 <*> exact_no_check c
@@ -179,28 +172,21 @@ let unify_resolve ~with_evars flags h diff = match diff with
 let unify_resolve_refine flags h diff =
   let len = match diff with None -> None | Some (diff, _) -> Some diff in
   Proofview.Goal.enter begin fun gls ->
-  let { hint_term = c; hint_type = t; hint_uctx = ctx } = h in
   let open Clenv in
   let env = Proofview.Goal.env gls in
   let concl = Proofview.Goal.concl gls in
   Refine.refine ~typecheck:false begin fun sigma ->
-      let sigma, term, ty =
-        if h.hint_poly then
-          let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
-          let map c = Vars.subst_univs_level_constr subst c in
-          let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-          sigma, map c, map t
-        else
-          let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-          sigma, c, t
-      in
-      let sigma', cl = Clenv.make_evar_clause env sigma ?len ty in
-      let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
-      let sigma' =
-        Evarconv.(unify_leq_delay
-                    ~flags:(default_flags_of flags.core_unify_flags.modulo_delta)
-                              env sigma' cl.cl_concl concl)
-      in (sigma', term) end
+    let sigma, term = Hints.fresh_hint env sigma h in
+    let ty = Retyping.get_type_of env sigma term in
+    let sigma, cl = Clenv.make_evar_clause env sigma ?len ty in
+    let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
+    let sigma =
+      Evarconv.(unify_leq_delay
+                  ~flags:(default_flags_of flags.core_unify_flags.modulo_delta)
+                            env sigma cl.cl_concl concl)
+    in
+    (sigma, term)
+    end
   end
 
 let unify_resolve_refine flags h diff =
