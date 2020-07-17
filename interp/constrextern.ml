@@ -858,10 +858,17 @@ let extern_possible_prim_token (custom,scopes) r =
       insert_entry_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
 
 let filter_enough_applied nargs l =
+  (* This is to ensure that notations for coercions are used only when
+     the coercion is fully applied; not explicitly done yet, but we
+     could also expect that the notation is exactly talking about the
+     coercion *)
   match nargs with
   | None -> l
   | Some nargs ->
-  List.filter (fun (keyrule,pat,n as _rule) -> match n with Some n -> n > nargs | None -> false) l
+  List.filter (fun (keyrule,pat,n as _rule) ->
+      match n with
+      | AppBoundedNotation n -> n > nargs
+      | AppUnboundedNotation | NotAppNotation -> false) l
 
 (* Helper function for safe and optimal printing of primitive tokens  *)
 (* such as those for Int63                                            *)
@@ -1247,7 +1254,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
             [], [] in
         (* Adjust to the number of arguments expected by the notation *)
         let (t,args,argsscopes,argsimpls) = match n with
-          | Some n when nallargs >= n ->
+          | AppBoundedNotation n when nallargs >= n ->
               let args1, args2 = List.chop n args in
               let args2scopes = try List.skipn n argsscopes with Failure _ -> [] in
               let args2impls =
@@ -1257,12 +1264,13 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
                   []
                 else try List.skipn n argsimpls with Failure _ -> [] in
               DAst.make @@ GApp (f,args1), args2, args2scopes, args2impls
-          | None ->
+          | AppUnboundedNotation -> t, [], [], []
+          | NotAppNotation ->
             begin match DAst.get f with
             | GRef (ref,us) -> f, args, argsscopes, argsimpls
             | _ -> t, [], [], []
             end
-          | _ -> raise No_match in
+          | AppBoundedNotation _ -> raise No_match in
         (* Try matching ... *)
         let terms,termlists,binders,binderlists =
           match_notation_constr !print_universes t pat in
