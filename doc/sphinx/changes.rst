@@ -64,11 +64,11 @@ Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
 
-Previously, most components of Coq had a single principal maintainer
-in charge.  This was changed in 8.12 (`#11295
-<https://github.com/coq/coq/pull/11295>`_) so that every component has
-now a dedicated team of maintainers (in charge of reviewing and
-merging incoming pull requests).  This gave us a chance to
+Previously, most components of Coq had a single principal maintainer.
+This was changed in 8.12 (`#11295
+<https://github.com/coq/coq/pull/11295>`_) so that every component now has
+a team of maintainers, who are in charge of reviewing and
+merging incoming pull requests.  This gave us a chance to
 significantly expand the pool of maintainters and provide faster
 feedback to contributors.  Special thanks to all our maintainers!
 
