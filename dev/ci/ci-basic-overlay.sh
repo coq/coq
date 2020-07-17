@@ -320,12 +320,9 @@
 ########################################################################
 # quickchick
 ########################################################################
-# There is no Coq 8.12-specific branch yet.  This is the latest commit
-# on master and the only one that's compatible with Coq 8.12.
-# Compared to the latest release (1.3.1), the new commits are only
-# infrastructure changes and compatibility fixes.  Check whether a new
-# tag or branch exists for Coq 8.12.0.
-: "${quickchick_CI_REF:=2d430e638124af66a343bec51243d1adc182a8cf}"
+# There is not yet a Coq 8.12-specific tag but there is already a
+# branch.
+: "${quickchick_CI_REF:=8.12}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
