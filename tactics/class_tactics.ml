@@ -160,11 +160,10 @@ let unify_resolve ~with_evars flags h diff = match diff with
 | Some (diff, ty) ->
   let () = assert (not h.hint_poly) in
   Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
-  let clenv = mk_clenv_from_n gl (Some diff) (h.hint_term, ty) in
-  let evd = Evd.evars_reset_evd ~with_conv_pbs:true ~with_univs:false sigma clenv.evd in
-  let evd = Evd.merge_context_set Evd.univ_flexible evd h.hint_uctx in
-  let clenv = { clenv with evd = evd ; env = Proofview.Goal.env gl } in
+  let sigma, c = Hints.fresh_hint env sigma h in
+  let clenv = mk_clenv_from_env env sigma (Some diff) (c, ty) in
   Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv
   end
 
