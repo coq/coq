@@ -150,7 +150,15 @@ let is_tac_in_term ?extra_scope { annotation; body; glob_env; interp_env } =
     let sigma = sigma goal in
     let ist = Ssrcommon.option_assert_get glob_env (Pp.str"not a term") in
     (* We use the env of the goal, not the global one *)
-    let ist = { ist with Genintern.genv } in
+    let ist =
+      let open Genintern in
+      {
+        ltacvars = ist.ast_ltacvars;
+        extra = ist.ast_extra;
+        intern_sign = ist.ast_intern_sign;
+        genv;
+      }
+    in
     (* We open extra_scope *)
     let body =
       match extra_scope with

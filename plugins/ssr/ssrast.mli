@@ -51,13 +51,19 @@ type ssrterm = ssrtermkind * Genintern.glob_constr_and_expr
 
 (* NEW ssr term *)
 
+type ast_glob_env = {
+  ast_ltacvars : Id.Set.t;
+  ast_extra : Genintern.Store.t;
+  ast_intern_sign : Genintern.intern_variable_status;
+}
+
 (* These terms are raw but closed with the intenalization/interpretation
  * context.  It is up to the tactic receiving it to decide if such contexts
  * are useful or not, and eventually manipulate the term before turning it
  * into a constr *)
 type ast_closure_term = {
   body : Constrexpr.constr_expr;
-  glob_env : Genintern.glob_sign option; (* for Tacintern.intern_constr *)
+  glob_env : ast_glob_env option; (* for Tacintern.intern_constr *)
   interp_env :  Geninterp.interp_sign option; (* for Tacinterp.interp_open_constr_with_bindings *)
   annotation : [ `None | `Parens | `DoubleParens | `At ];
 }
