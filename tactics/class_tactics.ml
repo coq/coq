@@ -236,7 +236,7 @@ let with_prods nprods h f =
             f gl (h, diff)
       with e when CErrors.noncritical e ->
         let e, info = Exninfo.capture e in
-        Tacticals.New.tclZEROMSG ~info (CErrors.print e) end
+        Proofview.tclZERO ~info e end
   else Proofview.Goal.enter
          begin fun gl ->
          if Int.equal nprods 0 then f gl (h, None)

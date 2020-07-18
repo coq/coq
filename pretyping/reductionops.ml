@@ -1085,12 +1085,25 @@ let pb_equal = function
   | Reduction.CUMUL -> Reduction.CONV
   | Reduction.CONV -> Reduction.CONV
 
+(* NOTE: We absorb anomalies happening in the conversion tactic, which
+   is a bit ugly. This is mostly due to efficiency both in tactics and
+   in the conversion machinery itself. It is not uncommon for a tactic
+   to send some ill-typed term to the engine.
+
+   We would usually say that a tactic that converts ill-typed terms is
+   buggy, but fixing the tactic could have a very large runtime cost
+   *)
+exception AnomalyInConversion of exn
+
+let _ = CErrors.register_handler (function
+    | AnomalyInConversion e ->
+      Some Pp.(str "Conversion test raised an anomaly:" ++
+               spc () ++ CErrors.print e)
+    | _ -> None)
+
 let report_anomaly (e, info) =
   let e =
-    if is_anomaly e then
-      let msg = Pp.(str "Conversion test raised an anomaly:" ++
-                    spc () ++ CErrors.print e) in
-      UserError (None, msg)
+    if is_anomaly e then AnomalyInConversion e
     else e
   in
   Exninfo.iraise (e, info)

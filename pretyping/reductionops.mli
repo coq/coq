@@ -283,3 +283,5 @@ val whd_betaiota_deltazeta_for_iota_state :
 (** {6 Meta-related reduction functions } *)
 val meta_instance : env -> evar_map -> constr freelisted -> constr
 val nf_meta       : env -> evar_map -> constr -> constr
+
+exception AnomalyInConversion of exn

@@ -1331,10 +1331,8 @@ let pr_vernac_attributes =
   | flags ->  str "#[" ++ pr_vernac_flags flags ++ str "]" ++ cut ()
 
 let pr_vernac ({v = {control; attrs; expr}} as v) =
-  try
-    tag_vernac v
-      (pr_vernac_control control ++
-       pr_vernac_attributes attrs ++
-       pr_vernac_expr expr ++
-       sep_end expr)
-  with e -> CErrors.print e
+  tag_vernac v
+    (pr_vernac_control control ++
+     pr_vernac_attributes attrs ++
+     pr_vernac_expr expr ++
+     sep_end expr)
