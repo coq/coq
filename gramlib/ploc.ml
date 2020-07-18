@@ -16,10 +16,3 @@ let dummy =
 
 let sub loc sh len = {loc with bp = loc.bp + sh; ep = loc.bp + sh + len}
 let after loc sh len = {loc with bp = loc.ep + sh; ep = loc.ep + sh + len}
-
-exception Exc of Loc.t * exn
-
-let raise loc exc =
-  match exc with
-    Exc (_, _) -> raise exc
-  | _ -> raise (Exc (loc, exc))
