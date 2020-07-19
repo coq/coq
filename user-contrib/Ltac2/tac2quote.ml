@@ -88,7 +88,8 @@ let inj_wit ?loc wit x =
 let of_variable {loc;v=id} =
   let qid = Libnames.qualid_of_ident ?loc id in
   if Tac2env.is_constructor qid then
-    CErrors.user_err ?loc (str "Invalid identifier")
+    CErrors.user_err ?loc (str "Invalid identifier" ++ spc () ++ Id.print id ++
+      spc () ++ str "classifying as an Ltac2 constructor")
   else CAst.make ?loc @@ CTacRef (RelId qid)
 
 let of_anti f = function
@@ -229,15 +230,19 @@ let pattern_vars pat =
   let rec aux () accu pat = match pat.CAst.v with
   | Constrexpr.CPatVar id
   | Constrexpr.CEvar (id, []) ->
-    let () = check_pattern_id ?loc:pat.CAst.loc id in
-    Id.Set.add id accu
+    let loc = pat.CAst.loc in
+    let () = check_pattern_id ?loc id in
+    Id.Map.add id loc accu
   | _ ->
     Constrexpr_ops.fold_constr_expr_with_binders (fun _ () -> ()) aux () accu pat
   in
-  aux () Id.Set.empty pat
+  aux () Id.Map.empty pat
 
 let abstract_vars loc ?typ vars tac =
-  let get_name = function Name id -> Some id | Anonymous -> None in
+  let get_name na = match na.CAst.v with
+  | Name id -> Some (CAst.make ?loc:na.CAst.loc id)
+  | Anonymous -> None
+  in
   let def = try Some (List.find_map get_name vars) with Not_found -> None in
   let na, tac = match def with
   | None -> (Anonymous, tac)
@@ -245,18 +250,18 @@ let abstract_vars loc ?typ vars tac =
       (* Trick: in order not to shadow a variable nor to choose an arbitrary
          name, we reuse one which is going to be shadowed by the matched
          variables anyways. *)
-      let build_bindings (n, accu) na = match na with
+      let build_bindings (n, accu) { CAst.loc; CAst.v = na } = match na with
       | Anonymous -> (n + 1, accu)
       | Name _ ->
         let get = global_ref ?loc (kername array_prefix "get")  in
-        let args = [of_variable CAst.(make ?loc id0); of_int CAst.(make ?loc n)] in
+        let args = [of_variable id0; of_int CAst.(make ?loc n)] in
         let e = CAst.make ?loc @@ CTacApp (get, args) in
         let accu = (CAst.make ?loc @@ CPatVar na, e) :: accu in
         (n + 1, accu)
       in
       let (_, bnd) = List.fold_left build_bindings (0, []) vars in
       let tac = CAst.make ?loc @@ CTacLet (false, bnd, tac) in
-      (Name id0, tac)
+      (Name id0.CAst.v, tac)
   in
   let pat = CAst.make ?loc @@ CPatVar na in
   let pat = match typ with
@@ -281,7 +286,7 @@ let of_conversion {loc;v=c} = match c with
   let pat = of_option ?loc of_pattern (Some pat) in
   let c = of_constr c in
   (* Order is critical here *)
-  let vars = List.map (fun id -> Name id) (Id.Set.elements vars) in
+  let vars = List.map (fun (id, loc) -> CAst.make ?loc (Name id)) (Id.Map.bindings vars) in
   let c = abstract_vars loc vars c in
   of_tuple [pat; c]
 
@@ -406,8 +411,8 @@ let of_constr_matching {loc;v=m} =
     in
     let vars = pattern_vars pat in
     (* Order of elements is crucial here! *)
-    let vars = Id.Set.elements vars in
-    let vars = List.map (fun id -> Name id) vars in
+    let vars = Id.Map.bindings vars in
+    let vars = List.map (fun (id, loc) -> CAst.make ?loc (Name id)) vars in
     (* Annotate the bound array variable with constr type *)
     let typ =
       let t_constr = coq_core "constr" in
@@ -428,11 +433,11 @@ let of_goal_matching {loc;v=gm} =
   let mk_pat {loc;v=p} = match p with
   | QConstrMatchPattern pat ->
     let knd = constructor ?loc (pattern_core "MatchPattern") [] in
-    (Anonymous, pat, knd)
+    (CAst.make ?loc Anonymous, pat, knd)
   | QConstrMatchContext (id, pat) ->
     let na = extract_name ?loc id in
     let knd = constructor ?loc (pattern_core "MatchContext") [] in
-    (na, pat, knd)
+    (CAst.make ?loc na, pat, knd)
   in
   let mk_gpat {loc;v=p} =
     let concl_pat = p.q_goal_match_concl in
@@ -442,23 +447,22 @@ let of_goal_matching {loc;v=gm} =
     let map accu (na, pat) =
       let (ctx, pat, knd) = mk_pat pat in
       let vars = pattern_vars pat in
-      (Id.Set.union vars accu, (na, ctx, pat, knd))
+      (Id.Map.fold Id.Map.add vars accu, (na, ctx, pat, knd))
     in
     let (vars, hyps_pats) = List.fold_left_map map vars hyps_pats in
     let map (_, _, pat, knd) = of_tuple [knd; of_pattern pat] in
     let concl = of_tuple [concl_knd; of_pattern concl_pat] in
     let r = of_tuple [of_list ?loc map hyps_pats; concl] in
-    let hyps = List.map (fun ({CAst.v=na}, _, _, _) -> na) hyps_pats in
-    let map (_, na, _, _) = na in
-    let hctx = List.map map hyps_pats in
+    let hyps = List.map (fun (na, _, _, _) -> na) hyps_pats in
+    let hctx = List.map (fun (_, na, _, _) -> na) hyps_pats in
     (* Order of elements is crucial here! *)
-    let vars = Id.Set.elements vars in
-    let subst = List.map (fun id -> Name id) vars in
+    let vars = Id.Map.bindings vars in
+    let subst = List.map (fun (id, loc) -> CAst.make ?loc (Name id)) vars in
     (r, hyps, hctx, subst, concl_ctx)
   in
   let map {loc;v=(pat, tac)} =
     let (pat, hyps, hctx, subst, cctx) = mk_gpat pat in
-    let tac = CAst.make ?loc @@ CTacFun ([CAst.make ?loc @@ CPatVar cctx], tac) in
+    let tac = CAst.make ?loc @@ CTacFun ([CAst.make ?loc @@ CPatVar cctx.CAst.v], tac) in
     let tac = abstract_vars loc subst tac in
     let tac = abstract_vars loc hctx tac in
     let tac = abstract_vars loc hyps tac in
