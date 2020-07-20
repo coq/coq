@@ -11,10 +11,11 @@ Inductive types
    .. insertprodn inductive_definition constructor
 
    .. prodn::
-      inductive_definition ::= {? > } @ident_decl {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
+      inductive_definition ::= {? > } @cumul_ident_decl {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
       constructors_or_record ::= {? %| } {+| @constructor }
       | {? @ident } %{ {*; @record_field } {? ; } %}
       constructor ::= @ident {* @binder } {? @of_type }
+      cumul_ident_decl ::=  @ident {? @cumul_univ_decl }
 
    This command defines one or more
    inductive types and its constructors.  Coq generates destructors
