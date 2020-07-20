@@ -17,6 +17,7 @@ CI_TARGETS= \
     ci-color \
     ci-compcert \
     ci-coq_dpdgraph \
+    ci-coqtail \
     ci-coquelicot \
     ci-corn \
     ci-cross_crypto \
