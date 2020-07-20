@@ -184,7 +184,7 @@ stream][Zulip-dev] of our Zulip chat.
 
 Finally, we strongly encourage authors of plugins to submit their
 plugins to join Coq's continuous integration (CI) early on.  Indeed,
-the Coq API gets continously reworked, so this is the best way of
+the Coq API gets continuously reworked, so this is the best way of
 ensuring your plugin stays compatible with new Coq versions, as this
 means Coq developers will fix your plugin for you.  Learn more about
 this in the [CI README (user part)][CI-README-users].
