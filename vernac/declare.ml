@@ -1152,13 +1152,6 @@ let declare_mutual_definition ~pm l =
       Some (List.map3 compute_possible_guardness_evidences wfl fixdefs fixtypes)
     | IsCoFixpoint -> None
   in
-  (* In the future we will pack all this in a proper record *)
-  (* XXX: info refactoring *)
-  let _kind =
-    if fixkind != IsCoFixpoint then Decls.(IsDefinition Fixpoint)
-    else Decls.(IsDefinition CoFixpoint)
-  in
-  let scope = first.prg_info.Info.scope in
   (* Declare the recursive definitions *)
   let kns =
     declare_mutually_recursive_core ~info:first.prg_info ~ntns:first.prg_notations
@@ -1167,6 +1160,7 @@ let declare_mutual_definition ~pm l =
   in
   (* Only for the first constant *)
   let dref = List.hd kns in
+  let scope = first.prg_info.Info.scope in
   let s_hook = {Hook.S.uctx = first.prg_uctx; obls; scope; dref} in
   Hook.call ?hook:first.prg_info.Info.hook s_hook;
   (* XXX: We call the obligation hook here, by consistency with the
@@ -1503,7 +1497,7 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
   in
   match cinfo with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
-  | { CInfo.name; typ; impargs; _} :: thms ->
+  | { CInfo.name; typ; _} :: thms ->
     let pinfo = Proof_info.make ~cinfo ~info ~compute_guard () in
     (* start_lemma has the responsibility to add (name, impargs, typ)
        to thms, once Info.t is more refined this won't be necessary *)
