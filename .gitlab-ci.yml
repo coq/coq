@@ -481,6 +481,8 @@ doc:refman-pdf:dune:
       - _build/log
       - _build/default/doc/refman-pdf
 
+# currently bugged: dune cleans up the glob files so no links
+# see #12699
 doc:stdlib:dune:
   extends: .dune-ci-template
   variables:
@@ -501,11 +503,11 @@ doc:refman:deploy:
   dependencies:
     - doc:ml-api:odoc
     - doc:refman:dune
-    - doc:stdlib:dune
+    - build:base
   needs:
     - doc:ml-api:odoc
     - doc:refman:dune
-    - doc:stdlib:dune
+    - build:base
   script:
     - echo "$DOCUMENTATION_DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - git clone git@github.com:coq/doc.git _deploy
@@ -515,7 +517,7 @@ doc:refman:deploy:
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
     - cp -rv _build/default/_doc/_html _deploy/$CI_COMMIT_REF_NAME/api
     - cp -rv _build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman
-    - cp -rv _build/default/doc/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - cp -rv _install_ci/share/doc/coq/html/stdlib _deploy/$CI_COMMIT_REF_NAME/stdlib
     - cd _deploy/$CI_COMMIT_REF_NAME/
     - git add api refman stdlib
     - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
