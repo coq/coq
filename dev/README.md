@@ -22,14 +22,12 @@
 | [`dev/doc/changes.md`](doc/changes.md) | (partial) Per-version summary of the evolution of Coq ML source |
 | [`dev/doc/style.txt`](doc/style.txt) | A few style recommendations for writing Coq ML files |
 | [`dev/doc/debugging.md`](doc/debugging.md) | Help for debugging or profiling |
-| [`dev/doc/universes.txt`](doc/universes.txt) |  Help for debugging universes |
-| [`dev/doc/extensions.txt`](doc/extensions.txt) | Some help about TACTIC EXTEND |
-| [`dev/doc/perf-analysis`](doc/perf-analysis)|  Analysis of perfs measured on the compilation of user contribs |
+| [`dev/doc/universes.md`](doc/universes.md) |  Help for debugging universes |
 | [`dev/doc/econstr.md`](doc/econstr.md) | Describes `Econstr`, implementation of treatment of `evar` in the engine |
 | [`dev/doc/primproj.md`](doc/primproj.md) | Describes primitive projections |
+| [`dev/doc/parsing.md`](doc/parsing.md) | Grammar and parsing overview |
 | [`dev/doc/proof-engine.md`](doc/proof-engine.md) | Tutorial on new proof engine |
 | [`dev/doc/xml-protocol.md`](doc/xml-protocol.md) | XML protocol that coqtop and IDEs use to communicate |
-| [`dev/doc/MERGING.md`](doc/MERGING.md) |  How pull requests should be merged into `master` |
 | [`dev/doc/release-process.md`](doc/release-process.md) | Process of creating a new Coq release |
 
 
