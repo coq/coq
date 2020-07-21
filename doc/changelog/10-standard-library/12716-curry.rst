@@ -1,0 +1,4 @@
+- **Deprecated:**
+  ``prod_curry`` and ``prod_uncurry``, in favor of ``uncurry`` and ``curry``
+  (`#12716 <https://github.com/coq/coq/pull/12716>`_,
+  by Yishuai Li).
