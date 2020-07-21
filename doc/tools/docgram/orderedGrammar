@@ -434,6 +434,10 @@ univ_decl: [
 | "@{" LIST0 ident OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
 ]
 
+cumul_univ_decl: [
+| "@{" LIST0 ( OPT [ "=" | "+" | "*" ] ident ) OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+]
+
 univ_constraint: [
 | universe_name [ "<" | "=" | "<=" ] universe_name
 ]
@@ -695,7 +699,7 @@ field_def: [
 ]
 
 inductive_definition: [
-| OPT ">" ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] OPT ( ":=" OPT constructors_or_record ) OPT decl_notations
+| OPT ">" cumul_ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] OPT ( ":=" OPT constructors_or_record ) OPT decl_notations
 ]
 
 constructors_or_record: [
@@ -705,6 +709,10 @@ constructors_or_record: [
 
 constructor: [
 | ident LIST0 binder OPT of_type
+]
+
+cumul_ident_decl: [
+| ident OPT cumul_univ_decl
 ]
 
 filtered_import: [
