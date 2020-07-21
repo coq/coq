@@ -425,16 +425,98 @@ Displaying information about notations
      (corresponding to :token:`ltac_expr` in the documentation).
    - `vernac` - for :token:`command`\s
 
-   The first three of these give the precedence and associativity for each construct.
-   For example, these lines printed by `Print Grammar tactic` indicates that the `try` construct
-   is at level 3 and right-associative.  `SELF` represents the `tactic_expr` nonterminal
-   at level 5 (the top level)::
+   This command doesn't display all nonterminals of the grammar.  For example,
+   productions shown by `Print Grammar tactic` refer to nonterminals `tactic_then_locality`
+   and `tactic_then_gen` which are not shown and can't be printed.
 
+   The prefixes `tactic:`, `prim:`, `constr:` appearing in the output are meant to identify
+   what part of the grammar a nonterminal is from.  If you examine nonterminal definitions
+   in the source code, they are identified only by the name following the colon.
+
+   Most of the grammar in the documentation was updated in 8.12 to make it accurate and
+   readable.  This was done using a new developer tool that extracts the grammar from the
+   source code, edits it and inserts it into the documentation files.  While the
+   edited grammar is equivalent to the original, for readability some nonterminals
+   have been renamed and others have been eliminated by substituting the nonterminal
+   definition where the nonterminal was referenced.  This command shows the original grammar,
+   so it won't exactly match the documentation.
+
+   The |Coq| parser is based on Camlp5.  The documentation for
+   `Extensible grammars <http://camlp5.github.io/doc/htmlc/grammars.html>`_ is the
+   most relevant but it assumes considerable knowledge.  Here are the essentials:
+
+   Productions can contain the following elements:
+
+   - nonterminal names - identifiers in the form `[a-zA-Z0-9_]*`
+   - `"…"` - a literal string that becomes a keyword and cannot be used as an :token:`ident`.
+     The string doesn't have to be a valid identifier; frequently the string will contain only
+     punctuation characters.
+   - `IDENT "…"` - a literal string that has the form of an :token:`ident`
+   - `OPT element` - optionally include `element` (e.g. a nonterminal, IDENT "…" or "…")
+   - `LIST1 element` - a list of one or more `element`\s
+   - `LIST0 element` - an optional list of `element`\s
+   - `LIST1 element SEP sep` - a list of `element`\s separated by `sep`
+   - `LIST0 element SEP sep` - an optional list of `element`\s separated by `sep`
+   - `[ elements1 | elements2 | … ]` - alternatives (either `elements1` or `elements2` or …)
+
+   Nonterminals can have multiple **levels** to specify precedence and associativity
+   of its productions.  This feature of grammars makes it simple to parse input
+   such as `1+2*3` in the usual way as `1+(2*3)`.  However, most nonterminals have a single level.
+
+   For example, this output from `Print Grammar tactic` shows the first 3 levels for
+   `tactic_expr`, designated as "5", "4" and "3".  Level 3 is right-associative,
+   which applies to the productions within it, such as the `try` construct::
+
+     Entry tactic:tactic_expr is
+     [ "5" RIGHTA
+       [ tactic:binder_tactic ]
+     | "4" LEFTA
+       [ SELF; ";"; tactic:binder_tactic
+       | SELF; ";"; SELF
+       | SELF; ";"; tactic_then_locality; tactic_then_gen; "]" ]
      | "3" RIGHTA
        [ IDENT "try"; SELF
+       :
 
-   Note that the productions printed by this command are represented in the form used by
-   |Coq|'s parser (coqpp), which differs from how productions are shown in the documentation.
+   The interpretation of `SELF` depends on its position in the production and the
+   associativity of the level:
+
+   - At the beginning of a production, `SELF` means the next level.  In the
+     fragment shown above, the next level for `try` is "2".  (This is defined by the order
+     of appearance in the grammar or output; the levels could just as well be
+     named "foo" and "bar".)
+   - In the middle of a production, `SELF` means the top level ("5" in the fragment)
+   - At the end of a production, `SELF` means the next level within
+     `LEFTA` levels and the current level within `RIGHTA` levels.
+
+   `NEXT` always means the next level. `nonterminal LEVEL "…"` is a reference to the specified level
+   for `nonterminal`.
+
+   `Associativity <http://camlp5.github.io/doc/htmlc/grammars.html#b:Associativity>`_
+   explains `SELF` and `NEXT` in somewhat more detail.
+
+   The output for `Print Grammar constr` includes :cmd:`Notation` definitions,
+   which are dynamically added to the grammar at run time.
+   For example, in the definition for `operconstr`, the production on the second line shown
+   here is defined by a :cmd:`Reserved Notation` command in `Notations.v`::
+
+     | "50" LEFTA
+       [ SELF; "||"; NEXT
+
+   Similarly, `Print Grammar tactic` includes :cmd:`Tactic Notation`\s, such as :tacn:`dintuition`.
+
+   The file
+   `doc/tools/docgram/fullGrammar <http://github.com/coq/coq/blob/master/doc/tools/docgram/fullGrammar>`_
+   in the source tree extracts the full grammar for
+   |Coq| (not including notations and tactic notations defined in `*.v` files nor some optionally-loaded plugins)
+   in a single file with minor changes to handle nonterminals using multiple levels (described in
+   `doc/tools/docgram/README.md <http://github.com/coq/coq/blob/master/doc/tools/docgram/README.md>`_).
+   This is complete and much easier to read than the grammar source files.
+   `doc/tools/docgram/orderedGrammar <http://github.com/coq/coq/blob/master/doc/tools/docgram/orderedGrammar>`_
+   has the edited grammar that's used in the documentation.
+
+   Developer documentation for parsing is in
+   `dev/doc/parsing.md <http://github.com/coq/coq/blob/master/dev/doc/parsing.md>`_.
 
 .. _locating-notations:
 
@@ -872,7 +954,7 @@ where ``x`` is any expression parsed in entry
 the given rule) and ``y`` is any expression parsed in entry ``expr``
 at level strictly less than ``2``.
 
-Rules associated to an entry can refer different sub-entries. The
+Rules associated with an entry can refer different sub-entries. The
 grammar entry name ``constr`` can be used to refer to the main grammar
 of term as in the rule
 
@@ -958,7 +1040,7 @@ up to the insertion of a pair of curly brackets.
 .. cmd:: Print Custom Grammar @ident
    :name: Print Custom Grammar
 
-   This displays the state of the grammar for terms associated to
+   This displays the state of the grammar for terms associated with
    the custom entry :token:`ident`.
 
 .. _NotationSyntax:
