@@ -9,6 +9,8 @@ type variance =
   | Bivariant (* always bivariant (add constraints in both directions *)
 
 let add_constraint_from_ind env variance cstrnts (ind, _) a1 a2 =
+  let check_sized = (Environ.typing_flags env).check_sized in
+  if not check_sized then cstrnts else
   let recursivity = (lookup_mind ind env).mind_finite in
   match variance, recursivity with
   | Bivariant, _ | _, BiFinite ->
