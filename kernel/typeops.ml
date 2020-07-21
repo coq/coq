@@ -468,10 +468,11 @@ let type_of_projection env p c ct =
 (* Fixpoints. *)
 
 (* Gets the size variables that must be set to the recursive size and infinity, respectively *)
-let get_vstar_vneq stg lar vdef =
+let get_vstar_vneq old_stg stg lar vdef =
+  let old_annots = get_vars old_stg in
   let lar_annots = List.map collect_annots (Array.to_list lar) in
   let vdef_annots = List.map collect_annots (Array.to_list vdef) in
-  let all_annots = SVars.union_list (lar_annots @ vdef_annots) in
+  let all_annots = SVars.union_list (old_annots :: lar_annots @ vdef_annots) in
   let vstar = get_pos_vars stg in
   let vstars = List.map (inter vstar) lar_annots in
   let vneq = diff all_annots vstar in
@@ -721,7 +722,7 @@ and execute_fix env stg cstrnt ((vn, i), (names, lar, vdef)) =
 
   let stg_check, cstrnt_check =
     let taus = get_rec_vars env vn lar' in
-    let vstars, vneq = get_vstar_vneq stg' lar' vdef' in
+    let vstars, vneq = get_vstar_vneq stg stg' lar' vdef' in
     let cstr = mkFix ((vn, i), (names', lar', vdef')) in
     execute_rec_check env stg' cstrnt' cstr recdeft (taus, vstars, vneq) Finite in
 
@@ -741,7 +742,7 @@ and execute_cofix env stg cstrnt (i, (names, lar, vdef)) =
 
   let stg_check, cstrnt_check =
     let taus = get_corec_vars env lar' in
-    let vstars, vneq = get_vstar_vneq stg' lar' vdef' in
+    let vstars, vneq = get_vstar_vneq stg stg' lar' vdef' in
     let cstr = mkCoFix (i, (names', lar', vdef')) in
     execute_rec_check env stg' cstrnt' cstr recdeft (taus, vstars, vneq) CoFinite in
 
