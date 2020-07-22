@@ -82,8 +82,12 @@ type symbols = symbol array
 
 let empty_symbols = [| |]
 
-
-let accumulate_tag = 0
+module Accumulators = Ephemeron.K1.Make(struct
+    type t = Obj.t
+    let equal = (==)
+    let hash = Hashtbl.hash
+  end)
+let accumulators = Accumulators.create 10
 
 (** Unique pointer used to drive the accumulator function *)
 let ret_accu = Obj.repr (ref ())
@@ -96,14 +100,12 @@ let mk_accu (a : atom) : t =
     else
       let data = { data with acc_arg = x :: data.acc_arg } in
       let ans = Obj.repr (accumulate data) in
-      let () = Obj.set_tag ans accumulate_tag [@ocaml.warning "-3"] in
+      Accumulators.add accumulators ans ();
       ans
   in
   let acc = { acc_atm = a; acc_arg = [] } in
   let ans = Obj.repr (accumulate acc) in
-  (** FIXME: use another representation for accumulators, this causes naked
-      pointers. *)
-  let () = Obj.set_tag ans accumulate_tag [@ocaml.warning "-3"] in
+  Accumulators.add accumulators ans ();
   (Obj.obj ans : t)
 
 let get_accu (k : accumulator) =
@@ -253,15 +255,16 @@ let kind_of_value (v:t) =
   else if Obj.tag o == Obj.double_tag then Vfloat64 (Obj.magic v)
   else
     let tag = Obj.tag o in
-    if Int.equal tag accumulate_tag then
-      if Int.equal (Obj.size o) 1 then Varray (Obj.magic v)
-      else Vaccu (Obj.magic v)
+    if Int.equal tag 0 then Varray (Obj.magic v)
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
     else if (tag < Obj.lazy_tag) then Vblock (Obj.magic v)
       else
         (* assert (tag = Obj.closure_tag || tag = Obj.infix_tag);
            or ??? what is 1002*)
+      if Accumulators.mem accumulators o then
+        Vaccu (Obj.magic v)
+      else
         Vfun v
 
 (** Support for machine integers *)
