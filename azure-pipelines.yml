@@ -64,7 +64,8 @@ jobs:
       set -e
       brew update
       (cd $(brew --repository)/Library/Taps/homebrew/homebrew-core/ && git fetch --shallow-since=${HBCORE_DATE} && git checkout ${HBCORE_REF})
-      brew install gnu-time opam pkg-config gtksourceview3 adwaita-icon-theme
+      brew install gnu-time opam pkg-config gtksourceview3 adwaita-icon-theme || true
+      # || true: workaround #12657, see also #12672 and commit message for this line
       pip3 install macpack
     displayName: 'Install system dependencies'
     env:
