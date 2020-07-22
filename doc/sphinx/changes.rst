@@ -14,9 +14,9 @@ Version 8.12
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
-|Coq| version 8.12 integrates many quality-of-life improvements,
+|Coq| version 8.12 integrates many usability improvements,
 in particular with respect to notations, scopes and implicit arguments,
-along with many bug-fixes and major improvements to the reference manual.
+along with many bug fixes and major improvements to the reference manual.
 The main changes include:
 
 - New :ref:`binder notation<812Implicit>` for non-maximal implicit arguments using :g:`[ ]`
@@ -64,6 +64,23 @@ Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
 
+Previously, most components of Coq had a single principal maintainer.
+This was changed in 8.12 (`#11295
+<https://github.com/coq/coq/pull/11295>`_) so that every component now has
+a team of maintainers, who are in charge of reviewing and
+merging incoming pull requests.  This gave us a chance to
+significantly expand the pool of maintainters and provide faster
+feedback to contributors.  Special thanks to all our maintainers!
+
+Our current 31 maintainers are Yves Bertot, Frédéric Besson, Tej
+Chajed, Cyril Cohen, Pierre Corbineau, Pierre Courtieu, Maxime Dénès,
+Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert,
+Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin,
+Vincent Laporte, Assia Mahboubi, Kenji Maillard, Guillaume Melquiond,
+Pierre-Marie Pédrot, Clément Pit-Claudel, Kazuhiko Sakaguchi, Vincent
+Semeria, Michael Soegtrop, Arnaud Spiwack, Matthieu Sozeau, Enrico
+Tassi, Laurent Théry, Anton Trunov, Li-yao Xia, Théo Zimmermann
+
 The 59 contributors to this version are Abhishek Anand, Yves Bertot, Frédéric
 Besson, Lasse Blaauwbroek, Simon Boulier, Quentin Carbonneaux, Tej Chajed,
 Arthur Charguéraud, Cyril Cohen, Pierre Courtieu, Matthew Dempsky, Maxime Dénès,
@@ -72,8 +89,8 @@ Jesús Gallego Arias, Paolo G. Giarrusso, Gaëtan Gilbert, Jason Gross, Samuel
 Gruetter, Attila Gáspár, Hugo Herbelin, Jan-Oliver Kaiser, Robbert Krebbers,
 Vincent Laporte, Olivier Laurent, Xavier Leroy, Thomas Letan, Yishuai Li,
 Kenji Maillard, Erik Martin-Dorel, Guillaume Melquiond, Ike Mulder,
-Guillaume Munch-Maccagnoni, Antonio Nikishaev, Karl Palmskog, Clément
-Pit-Claudel, Pierre-Marie Pédrot, Ramkumar Ramachandra, Lars Rasmusson, Daniel
+Guillaume Munch-Maccagnoni, Antonio Nikishaev, Karl Palmskog, Pierre-Marie
+Pédrot, Clément Pit-Claudel, Ramkumar Ramachandra, Lars Rasmusson, Daniel
 de Rauglaudre, Talia Ringer, Pierre Roux, Kazuhiko Sakaguchi, Vincent Semeria,
 @scinart, Kartik Singhal, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi,
 Laurent Théry, Ralf Treinen, Anton Trunov, Bernhard M. Wiedemann, Li-yao Xia,
