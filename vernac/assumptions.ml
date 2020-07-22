@@ -328,8 +328,8 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       let accu =
         if cb.const_typing_flags.check_sized then accu
         else
-          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (Sized obj, l)) Constr.mkProp accu
+          let _l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          (* ContextObjectMap.add (Axiom (Sized obj, l)) Constr.mkProp *) accu
       in
       let accu =
         if cb.const_typing_flags.check_universes then accu
@@ -366,8 +366,8 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       let accu =
         if mind.mind_typing_flags.check_sized then accu
         else
-          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (Sized obj, l)) Constr.mkProp accu
+          let _l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          (* ContextObjectMap.add (Axiom (Sized obj, l)) Constr.mkProp *) accu
       in
       let accu =
         if mind.mind_typing_flags.check_universes then accu
