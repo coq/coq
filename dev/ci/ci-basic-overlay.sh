@@ -380,3 +380,10 @@
 : "${sf_CI_REF:=master}"
 : "${sf_CI_GITURL:=https://github.com/DeepSpec/sf}"
 : "${sf_CI_ARCHIVEURL:=${sf_CI_GITURL}/archive}"
+
+########################################################################
+# Coqtail
+########################################################################
+: "${coqtail_CI_REF:=master}"
+: "${coqtail_CI_GITURL:=https://github.com/whonore/Coqtail}"
+: "${coqtail_CI_ARCHIVEURL:=${coqtail_CI_GITURL}/archive}"
