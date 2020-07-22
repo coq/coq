@@ -221,6 +221,14 @@ let rec fill_arg_scopes args subscopes (entry,(_,scopes) as all) =
   | a :: args, [] ->
     (a, (entry, ([], scopes))) :: fill_arg_scopes args [] all
 
+let update_with_subscope (entry,(scopt,scl)) scopes =
+  let entry = match entry with
+  | InConstrEntrySomeRelativeLevel -> InConstrEntrySomeRelativeLevel
+  | InCustomEntryRelativeLevel (custom,(lev,side)) ->
+     let lev = if !print_parentheses && side <> None then LevelLe 0 (* min level *) else lev in
+     InCustomEntryRelativeLevel (custom,(lev,side)) in
+  entry,(scopt,scl@scopes)
+
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
 
@@ -357,7 +365,7 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
     match availability_of_entry_coercion custom InConstrEntrySomeLevel with
     | None -> raise No_match
     | Some coercion ->
-      let allscopes = (InConstrEntrySomeLevel,scopes) in
+      let allscopes = (InConstrEntrySomeRelativeLevel,scopes) in
       let pat = match pat with
         | PatVar (Name id) -> CAst.make ?loc (CPatAtom (Some (qualid_of_ident ?loc id)))
         | PatVar (Anonymous) -> CAst.make ?loc (CPatAtom None)
@@ -383,17 +391,15 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
       insert_pat_coercion coercion pat
 
 and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop,more_args))
-    (custom, (tmp_scope, scopes) as allscopes) vars =
-  function
+    (custom, (tmp_scope, scopes) as allscopes) vars rule =
+  match rule with
     | NotationRule (_,ntn as specific_ntn) ->
       begin
-        let notation_entry_level = match (fst ntn) with
+        let entry = match fst ntn with
           | InConstrEntry -> InConstrEntrySomeLevel
-          | InCustomEntry s ->
-            let (_,level,_) = Notation.level_of_notation ntn in
-            InCustomEntryLevel (s, level)
+          | InCustomEntry s -> InCustomEntryLevel (s, pi2 (Notation.level_of_notation ntn))
         in
-        match availability_of_entry_coercion custom notation_entry_level with
+        match availability_of_entry_coercion custom entry with
         | None -> raise No_match
         | Some coercion ->
         match availability_of_notation specific_ntn (tmp_scope,scopes) with
@@ -403,13 +409,14 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop
           | Some (scopt,key) ->
             let scopes' = Option.List.cons scopt scopes in
             let l =
-              List.map (fun (c,(subentry,(scopt,scl))) ->
-                extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes')) vars c)
+              List.map (fun (c,subscope) ->
+                let scopes = update_with_subscope subscope scopes' in
+                extern_cases_pattern_in_scope scopes vars c)
                 subst in
             let ll =
-              List.map (fun (c,(subentry,(scopt,scl))) ->
-                let subscope = (subentry,(scopt,scl@scopes')) in
-                List.map (extern_cases_pattern_in_scope subscope vars) c)
+              List.map (fun (c,subscope) ->
+                let scopes = update_with_subscope subscope scopes' in
+                List.map (extern_cases_pattern_in_scope scopes vars) c)
                 substlist in
             let subscopes = find_arguments_scope gr in
             let more_args_scopes = try List.skipn nb_to_drop subscopes with Failure _ -> [] in
@@ -495,7 +502,7 @@ let extern_ind_pattern_in_scope (custom,scopes as allscopes) vars ind args =
            |None           -> CAst.make @@ CPatCstr (c, Some args, [])
 
 let extern_cases_pattern vars p =
-  extern_cases_pattern_in_scope (InConstrEntrySomeLevel,([],[])) vars p
+  extern_cases_pattern_in_scope (InConstrEntrySomeRelativeLevel,([],[])) vars p
 
 (**********************************************************************)
 (* Externalising applications *)
@@ -895,7 +902,7 @@ let rec extern inctx ?impargs scopes vars r =
   | None -> raise No_match
   | Some coercion ->
 
-  let scopes = (InConstrEntrySomeLevel, snd scopes) in
+  let scopes = (InConstrEntrySomeRelativeLevel, snd scopes) in
   let c = match c with
 
   (* The remaining cases are only for the constr entry *)
@@ -1240,28 +1247,29 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
               | Some (scopt,key) ->
                   let scopes' = Option.List.cons scopt (snd scopes) in
                   let l =
-                    List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
-                      extern (* assuming no overloading: *) true
-                        (subentry,(scopt,scl@scopes')) (vars,uvars) c)
+                    List.map (fun ((vars,c),subscope) ->
+                      let scopes = update_with_subscope subscope scopes' in
+                      extern (* assuming no overloading: *) true scopes (vars,uvars) c)
                       terms
                   in
                   let ll =
-                    List.map (fun ((vars,l),(subentry,(scopt,scl))) ->
-                      List.map (extern true (subentry,(scopt,scl@scopes')) (vars,uvars)) l)
+                    List.map (fun ((vars,l),subscope) ->
+                      let scopes = update_with_subscope subscope scopes' in
+                      List.map (extern true scopes (vars,uvars)) l)
                       termlists
                   in
                   let bl =
-                    List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
+                    List.map (fun ((vars,bl),subscope) ->
+                      let scopes = update_with_subscope subscope scopes' in
                         (mkCPatOr (List.map
-                                     (extern_cases_pattern_in_scope
-                                        (subentry,(scopt,scl@scopes')) vars)
-                                     bl)),
+                                     (extern_cases_pattern_in_scope scopes vars) bl)),
                         Explicit)
                       binders
                   in
                   let bll =
-                    List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
-                      pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) (vars,uvars) bl))
+                    List.map (fun ((vars,bl),subscope) ->
+                      let scopes = update_with_subscope subscope scopes' in
+                      pi3 (extern_local_binder scopes (vars,uvars) bl))
                       binderlists
                   in
                   let c = make_notation loc specific_ntn (l,ll,bl,bll) in
@@ -1300,10 +1308,10 @@ and extern_applied_proj inctx scopes vars (cst,us) params c extraargs =
   extern_projection inctx (f,us) nparams args imps
 
 let extern_glob_constr vars c =
-  extern false (InConstrEntrySomeLevel,([],[])) vars c
+  extern false (InConstrEntrySomeRelativeLevel,([],[])) vars c
 
 let extern_glob_type ?impargs vars c =
-  extern_typ ?impargs (InConstrEntrySomeLevel,([],[])) vars c
+  extern_typ ?impargs (InConstrEntrySomeRelativeLevel,([],[])) vars c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -1312,7 +1320,7 @@ let extern_constr ?(inctx=false) ?scope env sigma t =
   let r = Detyping.detype Detyping.Later Id.Set.empty env sigma t in
   let vars = extern_env env sigma in
   let scope = Option.cata (fun x -> [x]) [] scope in
-  extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
+  extern inctx (InConstrEntrySomeRelativeLevel,(scope,[])) vars r
 
 let extern_constr_in_scope ?inctx scope env sigma t =
   extern_constr ?inctx ~scope env sigma t
@@ -1338,7 +1346,7 @@ let extern_closed_glob ?(goal_concl_style=false) ?(inctx=false) ?scope env sigma
   in
   let vars = extern_env env sigma in
   let scope = Option.cata (fun x -> [x]) [] scope in
-  extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
+  extern inctx (InConstrEntrySomeRelativeLevel,(scope,[])) vars r
 
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
@@ -1480,7 +1488,7 @@ and glob_of_pat_under_context avoid env sigma (nas, pat) =
   (Array.rev_of_list nas, pat)
 
 let extern_constr_pattern env sigma pat =
-  extern true (InConstrEntrySomeLevel,([],[]))
+  extern true (InConstrEntrySomeRelativeLevel,([],[]))
     (* XXX no vars? *)
     (Id.Set.empty, Evd.universe_binders sigma)
     (glob_of_pat Id.Set.empty env sigma pat)
@@ -1489,4 +1497,4 @@ let extern_rel_context where env sigma sign =
   let a = detype_rel_context Detyping.Later where Id.Set.empty (names_of_rel_context env,env) sigma sign in
   let vars = extern_env env sigma in
   let a = List.map (extended_glob_local_binder_of_decl) a in
-  pi3 (extern_local_binder (InConstrEntrySomeLevel,([],[])) vars a)
+  pi3 (extern_local_binder (InConstrEntrySomeRelativeLevel,([],[])) vars a)

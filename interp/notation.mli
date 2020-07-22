@@ -22,14 +22,6 @@ val notation_cat : Libobject.category
 val pr_notation : notation -> Pp.t
 (** Printing *)
 
-val notation_entry_eq : notation_entry -> notation_entry -> bool
-(** Equality on [notation_entry]. *)
-
-val notation_with_optional_scope_eq : notation_with_optional_scope -> notation_with_optional_scope -> bool
-
-val notation_eq : notation -> notation -> bool
-(** Equality on [notation]. *)
-
 module NotationSet : Set.S with type elt = notation
 module NotationMap : CMap.ExtS with type key = notation and module Set := NotationSet
 module SpecificNotationSet : Set.S with type elt = specific_notation
@@ -252,7 +244,7 @@ val availability_of_prim_token :
 (** {6 Declare and interpret back and forth a notation } *)
 
 type entry_coercion_kind =
-  | IsEntryCoercion of notation_entry_level
+  | IsEntryCoercion of notation_entry_level * notation_entry_relative_level
   | IsEntryGlobal of string * int
   | IsEntryIdent of string * int
 
@@ -360,14 +352,14 @@ val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
 val make_notation_entry_level : notation_entry -> entry_level -> notation_entry_level
 
 type entry_coercion = (notation_with_optional_scope * notation) list
-val declare_entry_coercion : specific_notation -> entry_level option -> notation_entry_level -> unit
-val availability_of_entry_coercion : notation_entry_level -> notation_entry_level -> entry_coercion option
+val declare_entry_coercion : specific_notation -> notation_entry_level -> notation_entry_relative_level -> unit
+val availability_of_entry_coercion : notation_entry_relative_level -> notation_entry_level -> entry_coercion option
 
 val declare_custom_entry_has_global : string -> int -> unit
 val declare_custom_entry_has_ident : string -> int -> unit
 
-val entry_has_global : notation_entry_level -> bool
-val entry_has_ident : notation_entry_level -> bool
+val entry_has_global : notation_entry_relative_level -> bool
+val entry_has_ident : notation_entry_relative_level -> bool
 
 (** Dealing with precedences *)
 
@@ -376,6 +368,8 @@ type level = notation_entry * entry_level * entry_relative_level list
 
 val level_eq : level -> level -> bool
 val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
+
+val notation_entry_relative_entry_level_lt : notation_entry_relative_level -> notation_entry_level -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 

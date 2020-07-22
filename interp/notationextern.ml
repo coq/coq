@@ -20,10 +20,28 @@ open Notation_term
 open Glob_term
 (*i*)
 
+let notation_with_optional_scope_eq inscope1 inscope2 = match (inscope1,inscope2) with
+ | LastLonelyNotation, LastLonelyNotation -> true
+ | NotationInScope s1, NotationInScope s2 -> String.equal s1 s2
+ | (LastLonelyNotation | NotationInScope _), _ -> false
+
+let notation_entry_eq s1 s2 = match (s1,s2) with
+| InConstrEntry, InConstrEntry -> true
+| InCustomEntry s1, InCustomEntry s2 -> String.equal s1 s2
+| (InConstrEntry | InCustomEntry _), _ -> false
+
 let notation_entry_level_eq s1 s2 = match (s1,s2) with
 | InConstrEntrySomeLevel, InConstrEntrySomeLevel -> true
 | InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
 | (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
+
+let notation_entry_relative_level_eq s1 s2 = match (s1,s2) with
+| InConstrEntrySomeRelativeLevel, InConstrEntrySomeRelativeLevel -> true
+| InCustomEntryRelativeLevel (s1,n1), InCustomEntryRelativeLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
+| (InConstrEntrySomeRelativeLevel | InCustomEntryRelativeLevel _), _ -> false
+
+let notation_eq (from1,ntn1) (from2,ntn2) =
+  notation_entry_eq from1 from2 && String.equal ntn1 ntn2
 
 let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
@@ -48,7 +66,7 @@ let ntpe_eq t1 t2 = match t1, t2 with
 | (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList _), _ -> false
 
 let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
-  notation_entry_level_eq entry1 entry2 &&
+  notation_entry_relative_level_eq entry1 entry2 &&
   pair_eq (List.equal String.equal) (List.equal String.equal) sc1 sc2 &&
   ntpe_eq tp1 tp2
 

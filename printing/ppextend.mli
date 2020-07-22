@@ -32,9 +32,9 @@ type pattern_quote_style = QuotedPattern | NotQuotedPattern
 
 (** Declare and look for the printing rule for symbolic notations *)
 type unparsing =
-  | UnpMetaVar of entry_relative_level * Extend.side option
+  | UnpMetaVar of entry_relative_level * side option
   | UnpBinderMetaVar of entry_relative_level * pattern_quote_style
-  | UnpListMetaVar of entry_relative_level * unparsing list * Extend.side option
+  | UnpListMetaVar of entry_relative_level * unparsing list * side option
   | UnpBinderListMetaVar of
       bool (* true if open binder *) *
       bool (* true if printed with a quote *) *
