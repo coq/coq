@@ -80,6 +80,12 @@ NIL : list nat
      : Z * Z * (Z * Z) * (Z * Z) * (Z * bool * (Z * bool) * (Z * bool))
 fun f : Z -> Z -> Z -> Z => {|f; 0; 1; 2|} : Z
      : (Z -> Z -> Z -> Z) -> Z
+{|fun x : Z => x + x; 0|}
+     : Z
+{|op; 0; 1|}
+     : Z
+false = 0
+     : Prop
 Init.Nat.add
      : nat -> nat -> nat
 S

@@ -216,12 +216,31 @@ Check [|0*(1,2,3);(4,5,6)*false|].
 
 (**********************************************************************)
 (* Test recursive notations involving applications                    *)
-(* Caveat: does not work for applied constant because constants are   *)
-(* classified as notations for the particular constant while this     *)
-(* generic application notation is classified as generic              *)
+
+Module Application.
 
 Notation "{| f ; x ; .. ; y |}" := ( .. (f x) .. y).
+
+(* Application to a variable *)
+
 Check fun f => {| f; 0; 1; 2 |} : Z.
+
+(* Application to a fun *)
+
+Check {| (fun x => x+x); 0 |}.
+
+(* Application to a reference *)
+
+Axiom op : Z -> Z -> Z.
+Check {| op; 0; 1 |}.
+
+(* Interaction with coercion *)
+
+Axiom c : Z -> bool.
+Coercion c : Z >-> bool.
+Check false = {| c; 0 |}.
+
+End Application.
 
 (**********************************************************************)
 (* Check printing of notations from other modules *)
