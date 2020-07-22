@@ -6,4 +6,6 @@ ci_dir="$(dirname "$0")"
 git_download compcert
 
 ( cd "${CI_BUILD_DIR}/compcert" && \
-  ./configure -ignore-coq-version x86_32-linux && make && make check-proof )
+      ./configure -ignore-coq-version x86_32-linux && \
+      make && \
+      make check-proof COQCHK='"$(COQBIN)coqchk" -silent -o $(COQINCLUDES)')
