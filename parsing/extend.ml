@@ -10,10 +10,8 @@
 
 (** Entry keys for constr notations *)
 
-type side = Left | Right
-
 type production_position =
-  | BorderProd of side * Gramlib.Gramext.g_assoc option
+  | BorderProd of Constrexpr.side * Gramlib.Gramext.g_assoc option
   | InternalProd
 
 type production_level =

@@ -35,3 +35,7 @@ Arguments mult_n_Sm (n m)%nat_scope
      : list nat
 {0 = 1} + {2 <= (4 + 5)}
      : Set
+forall x y z : nat, [(x + y) + z] = [x + y + z]
+     : Prop
+forall x y z : nat, [(x + y) + z] = [x + (y + z)]
+     : Prop

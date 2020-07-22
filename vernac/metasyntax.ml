@@ -1120,21 +1120,17 @@ let make_interpretation_type isrec isonlybinding default_if_binding = function
      else NtnTypeBinder NtnParsedAsBinder
 
 let subentry_of_constr_prod_entry from_level = function
-  (* Specific 8.2 approximation *)
-  | ETConstr (InCustomEntry s,_,x) ->
-    let n = match fst (precedence_of_position_and_level from_level x) with
-     | LevelLt n -> n-1
-     | LevelLe n -> n
-     | LevelSome -> max_int in
-    InCustomEntryLevel (s,n)
+  | ETConstr (InCustomEntry s,_,(_,y)) as x ->
+     let side = match y with BorderProd (side,_) -> Some side | _ -> None in
+     InCustomSubentryLevel (s,(precedence_of_entry_type from_level x,side))
   (* level and use of parentheses for coercion is hard-wired for "constr";
      we don't remember the level *)
-  | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeLevel
-  | _ -> InConstrEntrySomeLevel
+  | ETConstr (InConstrEntry,_,_) -> InConstrSubentrySomeLevel
+  | _ -> InConstrSubentrySomeLevel
 
 let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
-   recvars level allvars typs =
+   recvars allvars (from,level,_) typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
     Option.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
@@ -1150,7 +1146,7 @@ let make_interpretation_vars
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
   Id.Map.mapi (fun x (isonlybinding, sc) ->
     let typ = Id.List.assoc x typs in
-    ((subentry_of_constr_prod_entry level typ,sc),
+    ((subentry_of_constr_prod_entry (from,level) typ,sc),
      make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding default_if_binding typ)) mainvars
 
 let check_rule_productivity l =
@@ -1182,10 +1178,10 @@ let is_coercion level typs =
   | Some (custom,n,_), [_,e] ->
      (match e, custom with
      | ETConstr _, _ ->
-         let customkey = make_notation_entry_level custom n in
-         let subentry = subentry_of_constr_prod_entry n e in
-         if notation_entry_level_eq subentry customkey then None
-         else Some (IsEntryCoercion subentry)
+         let entry = make_notation_entry_level custom n in
+         let subentry = subentry_of_constr_prod_entry (custom,n) e in
+         if notation_subentry_entry_level_lt subentry entry then None
+         else Some (IsEntryCoercion (entry,subentry))
      | ETGlobal, InCustomEntry s -> Some (IsEntryGlobal (s,n))
      | ETIdent, InCustomEntry s -> Some (IsEntryIdent (s,n))
      | _ -> None)
@@ -1634,8 +1630,8 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
     ninterp_rec_vars = to_map recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
-  let plevel = match level with Some (from,level,l) -> level | None (* numeral: irrelevant )*) -> 0 in
-  let interp = make_interpretation_vars recvars plevel acvars i_typs in
+  let plevel = match level with Some (from,level,l) -> (from,level,l) | None (* numeral: irrelevant )*) -> (InConstrEntry,0,[]) in
+  let interp = make_interpretation_vars recvars acvars plevel i_typs in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
   let also_in_cases_pattern = has_no_binders_type vars in
@@ -1849,7 +1845,8 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) modl =
       interp_notation_constr env nenv c
   in
   let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
-  let interp = make_interpretation_vars ~default_if_binding:AsNameOrPattern [] 0 acvars (List.map in_pat vars) in
+  let level = (InConstrEntry,0,[]) in
+  let interp = make_interpretation_vars ~default_if_binding:AsNameOrPattern [] acvars level (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = only_parsing || fst (printability None [] false reversibility pat) in
