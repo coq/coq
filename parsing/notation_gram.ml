@@ -9,13 +9,6 @@
 (************************************************************************)
 
 open Names
-open Extend
-open Constrexpr
-
-(** Dealing with precedences *)
-
-type level = notation_entry * entry_level * entry_relative_level list * constr_entry_key list
-  (* first argument is InCustomEntry s for custom entries *)
 
 type grammar_constr_prod_item =
   | GramConstrTerminal of string Tok.p
@@ -28,10 +21,11 @@ type grammar_constr_prod_item =
 (** Grammar rules for a notation *)
 
 type one_notation_grammar = {
-  notgram_level : level;
+  notgram_level : Notation.level;
   notgram_assoc : Gramlib.Gramext.g_assoc option;
   notgram_notation : Constrexpr.notation;
   notgram_prods : grammar_constr_prod_item list list;
+  notgram_typs : Extend.constr_entry_key list;
 }
 
 type notation_grammar = one_notation_grammar list
