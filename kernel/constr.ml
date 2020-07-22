@@ -1033,9 +1033,12 @@ let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_an
     then we ensure that the lengths are the same, and that the starting size variable is the same as well
     for Sized annotations. Otherwise, we return false, so that we proceed to clos_gen_conv instead,
     where their bodies will have the annotations substituted in, and size constraints will properly be created.
-    However, this doesn't really make sense if one of them is Bare while the other is Limit or Sized... *)
+    Comparisons with Bare are only checked for length; these could come from tactics, Pretyping, etc.;
+    Terms will eventually be properly type checked by the kernel, so we allow them for now. *)
   let eq_annots ans1 ans2 = match ans1, ans2 with
     | Assum, _ | _, Assum -> true
+    | Bare n, Limit m | Bare n, Sized (_, m)
+    | Limit n, Bare m | Sized (_, n), Bare m
     | Bare n, Bare m | Limit n, Limit m -> Int.equal n m
     | Sized (svar1, n), Sized (svar2, m) -> SVar.equal svar1 svar2 && Int.equal n m
     | _, _ -> false in

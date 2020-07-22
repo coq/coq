@@ -531,7 +531,7 @@ let ref_value_cache ({ i_cache = cache; _ }) tab ref ans =
           | RelKey n ->
             let open! Context.Rel.Declaration in
             let i = n - 1 in
-            let (d, _) =
+            let (d, _, _) =
               try Range.get cache.i_env.env_rel_context.env_rel_map i
               with Invalid_argument _ -> raise Not_found
             in

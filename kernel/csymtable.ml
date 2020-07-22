@@ -127,7 +127,7 @@ let slot_for_proj_name key =
     n
 
 let rec slot_for_getglobal env kn =
-  let (cb,(_,rk)) = lookup_constant_key kn env in
+  let (cb,(_,rk),_) = lookup_constant_key kn env in
   try key rk
   with NotEvaluated ->
 (*    Pp.msgnl(str"not yet evaluated");*)

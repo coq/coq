@@ -220,9 +220,10 @@ struct
         pos_vars = add state.next state.pos_vars }
     | _ -> (s, state)
 
-  let next_annots on state =
+  let next_annots check_sized on state =
     match on with
     | Some n when n > 0 ->
+      if not check_sized then Limit n, state else
       let next_vars = List.interval state.next (state.next + n - 1) in
       let annots = Sized (state.next, n) in
       let state = { state with

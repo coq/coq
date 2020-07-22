@@ -42,7 +42,7 @@ type link_info =
 
 type key = int CEphemeron.key option ref
 
-type constant_key = Opaqueproof.opaque constant_body * (link_info ref * key)
+type constant_key = Opaqueproof.opaque constant_body * (link_info ref * key) * int option
 
 type mind_key = mutual_inductive_body * link_info ref
 
@@ -68,12 +68,12 @@ type stratification = {
 
 type named_context_val = private {
   env_named_ctx : Constr.named_context;
-  env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
+  env_named_map : (Constr.named_declaration * lazy_val * int option) Id.Map.t;
 }
 
 type rel_context_val = private {
   env_rel_ctx : Constr.rel_context;
-  env_rel_map : (Constr.rel_declaration * lazy_val) Range.t;
+  env_rel_map : (Constr.rel_declaration * lazy_val * int option) Range.t;
 }
 
 type env = private {
@@ -132,6 +132,7 @@ val push_rec_types   : rec_declaration -> env -> env
    raises [Not_found] if the index points out of the context *)
 val lookup_rel    : int -> env -> Constr.rel_declaration
 val lookup_rel_val : int -> env -> lazy_val
+val lookup_rel_annots : int -> env -> int option
 val evaluable_rel : int -> env -> bool
 val env_of_rel     : int -> env -> env
 
@@ -166,6 +167,7 @@ val push_named_context_val  :
 
 val lookup_named     : variable -> env -> Constr.named_declaration
 val lookup_named_val : variable -> env -> lazy_val
+val lookup_named_annots : variable -> env -> int option
 val lookup_named_ctxt : variable -> named_context_val -> Constr.named_declaration
 val evaluable_named  : variable -> env -> bool
 val named_type : variable -> env -> types
@@ -206,6 +208,7 @@ val lookup_constant_key :  Constant.t -> env -> constant_key
 (** Looks up in the context of global constant names
    raises an anomaly if the required path is not found *)
 val lookup_constant    : Constant.t -> env -> Opaqueproof.opaque constant_body
+val lookup_constant_annots : Constant.t -> env -> int option
 val evaluable_constant : Constant.t -> env -> bool
 
 val mem_constant : Constant.t -> env -> bool

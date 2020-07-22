@@ -113,7 +113,7 @@ let type_of_relative env n =
     error_unbound_rel env n
 
 let size_vars_in_relative env n =
-  try env |> lookup_rel n |> RelDecl.get_value |> Option.map count_annots
+  try lookup_rel_annots n env
   with Not_found ->
     error_unbound_rel env n
 
@@ -124,7 +124,7 @@ let type_of_variable env id =
     error_unbound_var env id
 
 let size_vars_in_variable env id =
-  try env |> named_body id |> Option.map count_annots
+  try lookup_named_annots id env
   with Not_found ->
     error_unbound_var env id
 
@@ -174,13 +174,7 @@ let type_of_constant_in env (kn,_u as cst) =
   constant_type_in env cst, cstrnts
 
 let size_vars_in_constant env (kn, _) =
-  let flags = Environ.typing_flags env in
-  if flags.Declarations.check_sized then
-    let cb = lookup_constant kn env in
-    match cb.const_body with
-    | Def c -> Some (count_annots @@ Mod_subst.force_constr c)
-    | _ -> None
-  else None
+  lookup_constant_annots kn env
 
 (* Type of a lambda-abstraction. *)
 
@@ -558,23 +552,26 @@ let rec execute env stg cstrnt cstr =
       stg, cstrnt, cstr, type_of_sort s
 
     | Rel (n, _) ->
+      let check_sized = (Environ.typing_flags env).check_sized in
       let numvars = size_vars_in_relative env n in
-      let annots, stg = next_annots numvars stg in
+      let annots, stg = next_annots check_sized numvars stg in
       stg, cstrnt, mkRelA n annots, type_of_relative env n
 
     | Var (id, _) ->
+      let check_sized = (Environ.typing_flags env).check_sized in
       let numvars = size_vars_in_variable env id in
       let s, stg = next stg in
       let t = annotate_glob s (type_of_variable env id) in
-      let annots, stg = next_annots numvars stg in
+      let annots, stg = next_annots check_sized numvars stg in
       stg, cstrnt, mkVarA id annots, t
 
     | Const (c, _) ->
+      let check_sized = (Environ.typing_flags env).check_sized in
       let numvars = size_vars_in_constant env c in
       let s, stg = next stg in
       let t, cstrnt' = type_of_constant env c in
       let t = annotate_glob s t in
-      let annots, stg = next_annots numvars stg in
+      let annots, stg = next_annots check_sized numvars stg in
       stg, union cstrnt cstrnt', mkConstUA c annots, t
 
     | Proj (p, c) ->

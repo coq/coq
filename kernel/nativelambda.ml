@@ -113,7 +113,7 @@ let get_mind_prefix env mind =
    | LinkedInteractive s -> s
 
 let get_const_prefix env c =
-   let _,(nameref,_) = lookup_constant_key c env in
+   let _,(nameref,_),_ = lookup_constant_key c env in
    match !nameref with
    | NotLinked -> ""
    | Linked s -> s

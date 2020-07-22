@@ -2066,7 +2066,7 @@ let compile_deps env sigma prefix ~interactive init t =
   | Ind (((mind,_),_u), _) -> compile_mind_deps env prefix ~interactive init mind
   | Const (c, _) ->
     let c,_u = get_alias env c in
-    let cb,(nameref,_) = lookup_constant_key c env in
+    let cb,(nameref,_),_ = lookup_constant_key c env in
     let (_, (_, const_updates)) = init in
     if is_code_loaded ~interactive nameref
     || (Cmap_env.mem c const_updates)

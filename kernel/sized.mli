@@ -116,7 +116,7 @@ sig
   val get_pos_vars : t -> SVars.t
   val remove_pos_vars : SVars.t -> t -> t
   val next : ?s:Annot.t -> t -> Annot.t * t
-  val next_annots : int option -> t -> Annots.t * t
+  val next_annots : bool -> int option -> t -> Annots.t * t
   val pr : t -> Pp.t
 end
 

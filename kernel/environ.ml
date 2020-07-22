@@ -46,7 +46,7 @@ type link_info =
   | LinkedInteractive of string
   | NotLinked
 
-type constant_key = Opaqueproof.opaque constant_body * (link_info ref * key)
+type constant_key = Opaqueproof.opaque constant_body * (link_info ref * key) * int option
 
 type mind_key = mutual_inductive_body * link_info ref
 
@@ -84,14 +84,18 @@ let force_lazy_val vk = match !vk with
 let dummy_lazy_val () = ref VKnone
 let build_lazy_val vk key = vk := VKvalue (CEphemeron.create key)
 
+(* [int option] is None if declaration is an assumption
+  and Some n if it is a definition, where n is the number
+  of size annotations in the body of the definition. *)
+
 type named_context_val = {
   env_named_ctx : Constr.named_context;
-  env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
+  env_named_map : (Constr.named_declaration * lazy_val * int option) Id.Map.t;
 }
 
 type rel_context_val = {
   env_rel_ctx : Constr.rel_context;
-  env_rel_map : (Constr.rel_declaration * lazy_val) Range.t;
+  env_rel_map : (Constr.rel_declaration * lazy_val * int option) Range.t;
 }
 
 type env = {
@@ -140,15 +144,16 @@ let empty_env = {
 
 (* Rel context *)
 
-let push_rel_context_val d ctx = {
+let push_rel_context_val d ctx =
+  let annots = Option.map count_annots @@ get_value d in {
   env_rel_ctx = Context.Rel.add d ctx.env_rel_ctx;
-  env_rel_map = Range.cons (d, ref VKnone) ctx.env_rel_map;
+  env_rel_map = Range.cons (d, ref VKnone, annots) ctx.env_rel_map;
 }
 
 let match_rel_context_val ctx = match ctx.env_rel_ctx with
 | [] -> None
 | decl :: rem ->
-  let (_, lval) = Range.hd ctx.env_rel_map in
+  let (_, lval, _) = Range.hd ctx.env_rel_map in
   let ctx = { env_rel_ctx = rem; env_rel_map = Range.tl ctx.env_rel_map } in
   Some (decl, lval, ctx)
 
@@ -158,11 +163,21 @@ let push_rel d env =
       env_nb_rel = env.env_nb_rel + 1 }
 
 let lookup_rel n env =
-  try fst (Range.get env.env_rel_context.env_rel_map (n - 1))
+  try
+    let (decl, _, _) = (Range.get env.env_rel_context.env_rel_map (n - 1)) in
+    decl
   with Invalid_argument _ -> raise Not_found
 
 let lookup_rel_val n env =
-  try snd (Range.get env.env_rel_context.env_rel_map (n - 1))
+  try
+    let (_, lval, _) = (Range.get env.env_rel_context.env_rel_map (n - 1)) in
+    lval
+  with Invalid_argument _ -> raise Not_found
+
+let lookup_rel_annots n env =
+  try
+    let (_, _, ans) = (Range.get env.env_rel_context.env_rel_map (n - 1)) in
+    ans
   with Invalid_argument _ -> raise Not_found
 
 let rel_skipn n ctx = {
@@ -179,10 +194,11 @@ let env_of_rel n env =
 (* Named context *)
 
 let push_named_context_val_val d rval ctxt =
+  let annots = Option.map count_annots @@ Context.Named.Declaration.get_value d in
 (*   assert (not (Id.Map.mem (NamedDecl.get_id d) ctxt.env_named_map)); *)
   {
     env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
-    env_named_map = Id.Map.add (NamedDecl.get_id d) (d, rval) ctxt.env_named_map;
+    env_named_map = Id.Map.add (NamedDecl.get_id d) (d, rval, annots) ctxt.env_named_map;
   }
 
 let push_named_context_val d ctxt =
@@ -191,7 +207,7 @@ let push_named_context_val d ctxt =
 let match_named_context_val c = match c.env_named_ctx with
 | [] -> None
 | decl :: ctx ->
-  let (_, v) = Id.Map.find (NamedDecl.get_id decl) c.env_named_map in
+  let (_, v, _) = Id.Map.find (NamedDecl.get_id decl) c.env_named_map in
   let map = Id.Map.remove (NamedDecl.get_id decl) c.env_named_map in
   let cval = { env_named_ctx = ctx; env_named_map = map } in
   Some (decl, v, cval)
@@ -202,7 +218,7 @@ let map_named_val f ctxt =
     let d' = f d in
     let accu =
       if d == d' then accu
-      else Id.Map.modify (get_id d) (fun _ (_, v) -> (d', v)) accu
+      else Id.Map.modify (get_id d) (fun _ (_, v, ans) -> (d', v, ans)) accu
     in
     (accu, d')
   in
@@ -214,16 +230,19 @@ let push_named d env =
   {env with env_named_context = push_named_context_val d env.env_named_context}
 
 let lookup_named id env =
-  fst (Id.Map.find id env.env_named_context.env_named_map)
+  let (decl, _, _) = (Id.Map.find id env.env_named_context.env_named_map) in decl
 
 let lookup_named_val id env =
-  snd(Id.Map.find id env.env_named_context.env_named_map)
+  let (_, cval, _) = (Id.Map.find id env.env_named_context.env_named_map) in cval
+
+let lookup_named_annots id env =
+  let (_, _, ans) = (Id.Map.find id env.env_named_context.env_named_map) in ans
 
 let lookup_named_ctxt id ctxt =
-  fst (Id.Map.find id ctxt.env_named_map)
+  let (decl, _, _) = (Id.Map.find id ctxt.env_named_map) in decl
 
 let fold_constants f env acc =
-  Cmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.Globals.constants acc
+  Cmap_env.fold (fun c (body,_, _) acc -> f c body acc) env.env_globals.Globals.constants acc
 
 let fold_inductives f env acc =
   Mindmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.Globals.inductives acc
@@ -234,7 +253,10 @@ let lookup_constant_key kn env =
   Cmap_env.get kn env.env_globals.Globals.constants
 
 let lookup_constant kn env =
-  fst (lookup_constant_key kn env)
+  let (body, _, _) = (lookup_constant_key kn env) in body
+
+let lookup_constant_annots kn env =
+  let (_, _, ans) = (lookup_constant_key kn env) in ans
 
 let mem_constant kn env = Cmap_env.mem kn env.env_globals.Globals.constants
 
@@ -483,8 +505,11 @@ let sprop_allowed env = env.env_stratification.env_sprop_allowed
 let no_link_info = NotLinked
 
 let add_constant_key kn cb linkinfo env =
+  let annots = match cb.const_body with
+    | Def l_body -> Some (count_annots @@ Mod_subst.force_constr l_body)
+    | _ -> None in
   let new_constants =
-    Cmap_env.add kn (cb,(ref linkinfo, ref None)) env.env_globals.Globals.constants in
+    Cmap_env.add kn (cb, (ref linkinfo, ref None), annots) env.env_globals.Globals.constants in
   let new_globals =
     { env.env_globals with
         Globals.constants = new_constants } in
