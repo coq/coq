@@ -5,62 +5,71 @@ open Retroknowledge
 open Environ
 open CErrors
 
-let add_retroknowledge env action =
+type _ action_kind =
+  | IncompatTypes : _ prim_type -> Constant.t action_kind
+  | IncompatInd : _ prim_ind -> inductive action_kind
+
+type exn += IncompatibleDeclarations : 'a action_kind * 'a * 'a -> exn
+
+let check_same_types typ c1 c2 =
+  if not (Constant.equal c1 c2)
+  then raise (IncompatibleDeclarations (IncompatTypes typ, c1, c2))
+
+let check_same_inds ind i1 i2 =
+  if not (eq_ind i1 i2)
+  then raise (IncompatibleDeclarations (IncompatInd ind, i1, i2))
+
+let add_retroknowledge retro action =
   match action with
-  | Register_type(PT_int63,c) ->
-    let retro = env.retroknowledge in
-    let retro =
-      match retro.retro_int63 with
-      | None -> { retro with retro_int63 = Some c }
-      | Some c' -> assert (Constant.equal c c'); retro in
-    set_retroknowledge env retro
-  | Register_type(PT_float64,c) ->
-    let retro = env.retroknowledge in
-    let retro =
-      match retro.retro_float64 with
-      | None -> { retro with retro_float64 = Some c }
-      | Some c' -> assert (Constant.equal c c'); retro in
-    set_retroknowledge env retro
-  | Register_type(PT_array,c) ->
-    let retro = env.retroknowledge in
-    let retro =
-      match retro.retro_array with
-      | None -> { retro with retro_array = Some c }
-      | Some c' -> assert (Constant.equal c c'); retro in
-    set_retroknowledge env retro
+  | Register_type(typ,c) ->
+    begin match typ with
+      | PT_int63 ->
+        (match retro.retro_int63 with
+         | None -> { retro with retro_int63 = Some c }
+         | Some c' -> check_same_types typ c c'; retro)
+
+      | PT_float64 ->
+        (match retro.retro_float64 with
+         | None -> { retro with retro_float64 = Some c }
+         | Some c' -> check_same_types typ c c'; retro)
+
+      | PT_array ->
+        (match retro.retro_array with
+         | None -> { retro with retro_array = Some c }
+         | Some c' -> check_same_types typ c c'; retro)
+    end
+
   | Register_ind(pit,ind) ->
-    let retro = env.retroknowledge in
-    let retro =
-      match pit with
+    begin match pit with
       | PIT_bool ->
         let r =
           match retro.retro_bool with
           | None -> ((ind,1), (ind,2))
-          | Some (((ind',_),_) as t) -> assert (eq_ind ind ind'); t in
+          | Some (((ind',_),_) as t) -> check_same_inds pit ind ind'; t in
         { retro with retro_bool = Some r }
       | PIT_carry ->
         let r =
           match retro.retro_carry with
           | None -> ((ind,1), (ind,2))
-          | Some (((ind',_),_) as t) -> assert (eq_ind ind ind'); t in
+          | Some (((ind',_),_) as t) -> check_same_inds pit ind ind'; t in
         { retro with retro_carry = Some r }
       | PIT_pair ->
         let r =
           match retro.retro_pair with
           | None -> (ind,1)
-          | Some ((ind',_) as t) -> assert (eq_ind ind ind'); t in
+          | Some ((ind',_) as t) -> check_same_inds pit ind ind'; t in
         { retro with retro_pair = Some r }
       | PIT_cmp ->
         let r =
           match retro.retro_cmp with
           | None -> ((ind,1), (ind,2), (ind,3))
-          | Some (((ind',_),_,_) as t) -> assert (eq_ind ind ind'); t in
+          | Some (((ind',_),_,_) as t) -> check_same_inds pit ind ind'; t in
         { retro with retro_cmp = Some r }
       | PIT_f_cmp ->
         let r =
           match retro.retro_f_cmp with
           | None -> ((ind,1), (ind,2), (ind,3), (ind,4))
-          | Some (((ind',_),_,_,_) as t) -> assert (eq_ind ind ind'); t in
+          | Some (((ind',_),_,_,_) as t) -> check_same_inds pit ind ind'; t in
         { retro with retro_f_cmp = Some r }
       | PIT_f_class ->
         let r =
@@ -69,10 +78,12 @@ let add_retroknowledge env action =
                      (ind,5), (ind,6), (ind,7), (ind,8),
                      (ind,9))
           | Some (((ind',_),_,_,_,_,_,_,_,_) as t) ->
-             assert (eq_ind ind ind'); t in
+            check_same_inds pit ind ind'; t in
         { retro with retro_f_class = Some r }
-    in
-    set_retroknowledge env retro
+    end
+
+let add_retroknowledge env action =
+  set_retroknowledge env (add_retroknowledge env.retroknowledge action)
 
 let get_int_type env =
   match env.retroknowledge.retro_int63 with

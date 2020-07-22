@@ -1252,6 +1252,29 @@ let explain_inductive_error = function
     error_large_non_prop_inductive_not_in_type ()
   | MissingConstraints csts -> error_inductive_missing_constraints csts
 
+(* Primitive errors *)
+
+let explain_incompatible_prim_declarations (type a) (act:a Primred.action_kind) (x:a) (y:a) =
+  let open Primred in
+  let env = Global.env() in
+  (* The newer constant/inductive (either coming from Primitive or a
+     Require) may be absent from the nametab as the error got raised
+     while adding it to the safe_env. In that case we can't use
+     nametab printing.
+
+     There are still cases where the constant/inductive is added
+     separately from its retroknowledge (using Register), so we still
+     try nametab based printing. *)
+  match act with
+  | IncompatTypes typ ->
+    let px = try pr_constant env x with Not_found -> Constant.print x in
+    str "Cannot declare " ++ px ++ str " as primitive " ++ str (CPrimitives.prim_type_to_string typ) ++
+    str ": " ++ pr_constant env y ++ str " is already declared."
+  | IncompatInd ind ->
+    let px = try pr_inductive env x with Not_found -> MutInd.print (fst x) in
+    str "Cannot declare " ++ px ++ str " as primitive " ++ str (CPrimitives.prim_ind_to_string ind) ++
+    str ": " ++ pr_inductive env y ++ str " is already declared."
+
 (* Recursion schemes errors *)
 
 let explain_recursion_scheme_error env = function
@@ -1386,6 +1409,8 @@ let rec vernac_interp_error_handler = function
     explain_typeclass_error env sigma te
   | InductiveError e ->
     explain_inductive_error e
+  | Primred.IncompatibleDeclarations (act,x,y) ->
+    explain_incompatible_prim_declarations act x y
   | Modops.ModuleTypingError e ->
     explain_module_error e
   | Modintern.ModuleInternalizationError e ->
