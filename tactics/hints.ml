@@ -810,10 +810,23 @@ let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
            db = None; secvars;
            code = with_uid (Give_exact (c, cty, ctx, poly)); })
 
+let reduce_to_prod env sigma ty = match EConstr.kind sigma ty with
+| Prod (_, _, _) -> Some ty
+| _ ->
+  let open CClosure in
+  let evars ev = Evarutil.safe_evar_value sigma ev in
+  let ts = Conv_oracle.get_transp_state (Environ.oracle env) in
+  let flgs = CClosure.RedFlags.red_add_transparent CClosure.all ts in
+  let infos = CClosure.create_clos_infos ~univs:(Evd.universes sigma) ~evars flgs env in
+  let hd, stk = whd_stack infos (create_tab ()) (inject (EConstr.Unsafe.to_constr ty)) [] in
+  match fterm_of hd with
+  | FProd _ -> Some (EConstr.of_constr (term_of_process hd stk))
+  | _ -> None
+
 let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (c, cty, ctx) =
-  let cty = if hnf then hnf_constr env sigma cty else cty in
-  match EConstr.kind sigma cty with
-  | Prod _ ->
+  let cty = if hnf then reduce_to_prod env sigma cty else if isProd sigma cty then Some cty else None in
+  match cty with
+  | Some cty ->
     let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
     let ce = mk_clenv_from_env env sigma' None (c,cty) in
     let c' = clenv_type (* ~reduce:false *) ce in
@@ -853,7 +866,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (
          db = None; secvars;
          code = with_uid (ERes_pf(c,cty,ctx,poly)); })
     end
-  | _ -> failwith "make_apply_entry"
+  | None -> failwith "make_apply_entry"
 
 (* flags is (e,h,v) with e=true if eapply and h=true if hnf and v=true if verbose
    c is a constr
