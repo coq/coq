@@ -211,6 +211,7 @@ type 'vcs state_info = { (* TODO: Make this record private to VCS *)
   mutable n_reached : int;      (* debug cache: how many times was computed *)
   mutable n_goals : int;        (* open goals: indentation *)
   mutable state : cached_state; (* state value *)
+  mutable time_spent : float option; (* time spent to compute that command *)
   mutable proof_mode : Pvernac.proof_mode option;
   mutable vcs_backup : 'vcs option * backup option;
 }
@@ -218,6 +219,7 @@ let default_info proof_mode =
   {
     n_reached = 0; n_goals = 0;
     state = EmptyState;
+    time_spent = None;
     proof_mode;
     vcs_backup = (None,None);
   }
@@ -359,6 +361,8 @@ module VCS : sig
   val goals : id -> int -> unit
   val set_state : id -> cached_state -> unit
   val get_state : id -> cached_state
+  val set_timing : id -> float -> unit
+  val get_timing : id -> float option
   val set_parsing_state : id -> Vernacstate.Parser.t -> unit
   val get_parsing_state : id -> Vernacstate.Parser.t option
   val get_proof_mode : id -> Pvernac.proof_mode option
@@ -573,6 +577,14 @@ end = struct (* {{{ *)
     | _ -> "branch")
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind
+
+  let get_timing id =
+    Option.cata (fun info -> info.time_spent) None (get_info !vcs id)
+
+  let set_timing id spent =
+    let info = get_info !vcs id in
+    Option.iter (fun info -> info.time_spent <- Some spent) info
+
   let get_info id =
     match get_info !vcs id with
     | Some x -> x
@@ -806,6 +818,8 @@ let state_of_id ~doc id =
     | EmptyState | ParsingState _ -> `Valid None
   with VCS.Expired -> `Expired
 
+let timing_of_id ~doc id = VCS.get_timing id
+
 (****** A cache: fills in the nodes of the VCS document with their value ******)
 module State : sig
 
@@ -872,6 +886,9 @@ end = struct (* {{{ *)
     | `ProofOnly of Stateid.t * proof_part ]
 
   let proof_part_of_frozen st = Vernacstate.Stm.pstate st
+
+  let set_timing id spent =
+    VCS.set_timing id spent
 
   let cache_state ~marshallable id =
     VCS.set_state id (FullState (Vernacstate.freeze_interp_state ~marshallable))
@@ -967,7 +984,11 @@ end = struct (* {{{ *)
     try
       stm_prerr_endline (fun () -> "defining "^str_id^" (cache="^
         if cache then "Y)" else "N)");
+      let wall_before = Unix.gettimeofday () in
       f ();
+      let wall_after = Unix.gettimeofday () in
+      let time_f = wall_after -. wall_before in
+      set_timing id time_f;
       if cache then cache_state ~marshallable:false id;
       stm_prerr_endline (fun () -> "setting cur id to "^str_id);
       cur_id := id;

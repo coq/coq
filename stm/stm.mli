@@ -309,6 +309,8 @@ val get_doc : Feedback.doc_id -> doc
 val state_of_id : doc:doc ->
   Stateid.t -> [ `Valid of Vernacstate.t option | `Expired | `Error of exn ]
 
+val timing_of_id : doc:doc -> Stateid.t -> float option
+
 (* Queries for backward compatibility *)
 val current_proof_depth : doc:doc -> int
 val get_all_proof_names : doc:doc -> Id.t list
