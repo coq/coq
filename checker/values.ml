@@ -117,8 +117,6 @@ let v_binder_annot x = v_tuple "binder_annot" [|x;v_relevance|]
 
 let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
 
-let v_annots annot = Opt (List annot)
-
 let v_boollist = List v_bool
 
 let v_caseinfo =
@@ -136,8 +134,8 @@ let v_uint63 =
 
 let rec v_constr =
   Sum ("constr",0,[|
-    [|Int;v_annots Any|]; (* Rel *)
-    [|v_id;v_annots Any|]; (* Var *)
+    [|Int;Any|]; (* Rel *)
+    [|v_id;Any|]; (* Var *)
     [|Fail "Meta"|]; (* Meta *)
     [|Fail "Evar"|]; (* Evar *)
     [|v_sort|]; (* Sort *)
@@ -146,7 +144,7 @@ let rec v_constr =
     [|v_binder_annot v_name;v_constr;v_constr|]; (* Lambda *)
     [|v_binder_annot v_name;v_constr;v_constr;v_constr|]; (* LetIn *)
     [|v_constr;Array v_constr|]; (* App *)
-    [|v_puniverses v_cst; v_annots Any|]; (* Const *)
+    [|v_puniverses v_cst;Any|]; (* Const *)
     [|v_puniverses v_ind;Any|]; (* Ind *)
     [|v_puniverses v_cons|]; (* Construct *)
     [|v_caseinfo;v_constr;v_constr;Array v_constr|]; (* Case *)
