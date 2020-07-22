@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download metacoq
 
-( cd "${CI_BUILD_DIR}/metacoq" && ./configure.sh local && make ci-local && make install )
+( cd "${CI_BUILD_DIR}/metacoq" && ./configure.sh local && make .merlin && make ci-local && make install )
