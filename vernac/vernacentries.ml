@@ -348,12 +348,12 @@ let dump_universes_gen prl g s =
 let universe_subgraph ?loc g univ =
   let open Univ in
   let sigma = Evd.from_env (Global.env()) in
-  let univs_of q =
+  let univ_of q =
     let q =  Glob_term.(GType q) in
     (* this function has a nice error message for not found univs *)
-    LSet.singleton (Pretyping.interp_known_glob_level ?loc sigma q)
+    Pretyping.interp_known_glob_level ?loc sigma q
   in
-  let univs = List.fold_left (fun univs q -> LSet.union univs (univs_of q)) LSet.empty g in
+  let univs = List.fold_left (fun univs q -> LSet.add (univ_of q) univs) LSet.empty g in
   let csts = UGraph.constraints_for ~kept:(LSet.add Level.prop (LSet.add Level.set univs)) univ in
   let univ = LSet.fold UGraph.add_universe_unconstrained univs UGraph.initial_universes in
   UGraph.merge_constraints csts univ
