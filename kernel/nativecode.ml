@@ -1668,13 +1668,22 @@ let pp_mllam fmt l =
     | MLif(t,l1,l2) ->
         Format.fprintf fmt "@[(if %a then@\n  %a@\nelse@\n  %a)@]"
           pp_mllam t pp_mllam l1 pp_mllam l2
+    | MLmatch (_annot, c, accu_br, [||]) ->
+      (* special case for empty types *)
+      Format.fprintf fmt
+        "@[begin match Obj.magic (%a) with@\n| _ ->@\n  %a@\nend@]"
+        pp_mllam c pp_mllam accu_br
     | MLmatch (annot, c, accu_br, br) ->
       let ind = annot.asw_ind in
       let prefix = annot.asw_prefix in
       let accu = string_of_accu_construct prefix ind in
+      let na = fresh_lname Anonymous in
       Format.fprintf fmt
-        "@[begin match Obj.magic (%a) with@\n| %s _ ->@\n  %a@\n%aend@]"
-        pp_mllam c accu pp_mllam accu_br (pp_branches prefix ind) br
+        "@[begin match Obj.magic (%a) with@\n\
+        | %a when Nativevalues.is_closure (%a) ->@\n  %a@\n\
+        | %s _ -> assert false@\n\
+        %aend@]"
+        pp_mllam c pp_lname na pp_lname na pp_mllam accu_br accu (pp_branches prefix ind) br
 
     | MLconstruct(prefix,ind,tag,args) ->
         Format.fprintf fmt "@[(Obj.magic (%s%a) : Nativevalues.t)@]"
@@ -1696,11 +1705,10 @@ let pp_mllam fmt l =
          pp_mllam fmt arr.(len-1)
        end;
        Format.fprintf fmt "|]@]"
-    | MLisaccu (prefix, ind, c) ->
-        let accu = string_of_accu_construct prefix ind in
+    | MLisaccu (_prefix, _ind, c) ->
+      (* Only applied to inductive accumulators, it cannot be confused with an arbitrary closure *)
         Format.fprintf fmt
-          "@[begin match Obj.magic (%a) with@\n| %s _ ->@\n  true@\n| _ ->@\n  false@\nend@]"
-        pp_mllam c accu
+          "@[(Nativevalues.is_closure (%a))@]" pp_mllam c
 
   and pp_letrec fmt defs =
     let len = Array.length defs in

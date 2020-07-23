@@ -82,29 +82,33 @@ type symbols = symbol array
 
 let empty_symbols = [| |]
 
-
-let accumulate_tag = 0
-
 (** Unique pointer used to drive the accumulator function *)
 let ret_accu = Obj.repr (ref ())
 
 type accu_val = { mutable acc_atm : atom; acc_arg : Obj.t list }
 
+external register_accu : t -> unit = "coq_native_register_accu" [@@noalloc]
+external is_accu : t -> bool = "coq_native_is_accu" [@@noalloc]
+external is_closure : 'a -> bool = "coq_native_is_clos" [@@noalloc]
+
+(** TODO: do this more efficiently in C? *)
+(* Dummy wrapper to ensure the closure is not inlined by the compiler *)
+type accfun = { accfun : Obj.t -> Obj.t }
+
+let rec accumulate data = { accfun = fun x ->
+  if x == ret_accu then Obj.repr data
+  else
+    let data = { data with acc_arg = x :: data.acc_arg } in
+    Obj.repr (accumulate data).accfun
+}
+
 let mk_accu (a : atom) : t =
-  let rec accumulate data x =
-    if x == ret_accu then Obj.repr data
-    else
-      let data = { data with acc_arg = x :: data.acc_arg } in
-      let ans = Obj.repr (accumulate data) in
-      let () = Obj.set_tag ans accumulate_tag [@ocaml.warning "-3"] in
-      ans
-  in
   let acc = { acc_atm = a; acc_arg = [] } in
-  let ans = Obj.repr (accumulate acc) in
-  (** FIXME: use another representation for accumulators, this causes naked
-      pointers. *)
-  let () = Obj.set_tag ans accumulate_tag [@ocaml.warning "-3"] in
-  (Obj.obj ans : t)
+  let ans : t = Obj.magic (accumulate acc).accfun in
+  (* This will only have an effect if accumulators are not registered yet *)
+  let () = register_accu ans in
+  let () = assert (is_accu ans) in
+  ans
 
 let get_accu (k : accumulator) =
   (Obj.magic k : Obj.t -> accu_val) ret_accu
@@ -247,15 +251,16 @@ type kind_of_value =
   | Varray of t Parray.t
   | Vblock of block
 
+let array_tag = 0
+
 let kind_of_value (v:t) =
   let o = Obj.repr v in
   if Obj.is_int o then Vconst (Obj.magic v)
   else if Obj.tag o == Obj.double_tag then Vfloat64 (Obj.magic v)
   else
     let tag = Obj.tag o in
-    if Int.equal tag accumulate_tag then
-      if Int.equal (Obj.size o) 1 then Varray (Obj.magic v)
-      else Vaccu (Obj.magic v)
+    if is_accu v then Vaccu (Obj.magic v)
+    else if Int.equal tag array_tag then Varray (Obj.magic v)
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
     else if (tag < Obj.lazy_tag) then Vblock (Obj.magic v)

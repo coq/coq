@@ -96,3 +96,26 @@ value coq_tcode_array(value tcodes) {
   }
   CAMLreturn(res);
 }
+
+/* Low-level representation of accumulators for native compilation */
+
+static code_t coq_accumulator_code;
+static int coq_accumulator_init = 0;
+
+value coq_native_register_accu(value v) {
+  if (coq_accumulator_init == 0) {
+    coq_accumulator_init = 1;
+    coq_accumulator_code = Code_val(v);
+  }
+  return Val_unit;
+}
+
+value coq_native_is_clos(value v) {
+  if (Is_block(v) && Tag_val(v) == Closure_tag) return Val_true;
+  return Val_false;
+}
+
+value coq_native_is_accu(value v) {
+  if (Is_block(v) && Tag_val(v) == Closure_tag && Code_val(v) == coq_accumulator_code) return Val_true;
+  return Val_false;
+}

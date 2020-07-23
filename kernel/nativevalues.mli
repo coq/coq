@@ -116,6 +116,8 @@ val accu_nargs : accumulator -> int
 val cast_accu : t -> accumulator
 [@@ocaml.inline always]
 
+val is_closure : 'a -> bool
+
 (* Functions over block: i.e constructors *)
 
 type block
