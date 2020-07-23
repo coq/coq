@@ -152,7 +152,10 @@ struct
   let make s = ref (Some s)
   let none () = ref None
   let repr sign filter s = match !s with
-  | None -> Filter.filter_list filter sign.env_named_var
+  | None ->
+    let ans = Filter.filter_list filter sign.env_named_var in
+    let () = s := Some ans in
+    ans
   | Some s -> s
   let is_identity l s = match !s with
   | None -> false
