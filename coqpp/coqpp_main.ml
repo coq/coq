@@ -87,6 +87,7 @@ sig
 
 val print_extrule : Format.formatter -> (symb list * string option list * code) -> unit
 val print_ast : Format.formatter -> grammar_ext -> unit
+val print_assoc_opt : Format.formatter -> assoc option -> unit
 
 end =
 struct
@@ -132,6 +133,8 @@ let print_assoc fmt = function
 | LeftA -> fprintf fmt "Gramlib.Gramext.LeftA"
 | RightA -> fprintf fmt "Gramlib.Gramext.RightA"
 | NonA -> fprintf fmt "Gramlib.Gramext.NonA"
+
+let print_assoc_opt fmt = print_opt fmt print_assoc
 
 let is_token s = match string_split s with
 | [s] -> is_uident s
@@ -586,6 +589,7 @@ let print_ast fmt arg =
   let pr fmt () =
     fprintf fmt "Tacentries.argument_extend ~name:%a @[{@\n\
       Tacentries.arg_parsing = %a;@\n\
+      Tacentries.arg_assoc = %a;@\n\
       Tacentries.arg_tag = @[%a@];@\n\
       Tacentries.arg_intern = @[%a@];@\n\
       Tacentries.arg_subst = @[%a@];@\n\
@@ -593,6 +597,7 @@ let print_ast fmt arg =
       Tacentries.arg_printer = @[((fun env sigma -> %a), (fun env sigma -> %a), (fun env sigma -> %a))@];@\n}@]"
       print_string name
       VernacArgumentExt.print_rules (name, arg.argext_rules)
+      GramExt.print_assoc_opt arg.argext_assoc
       pr_tag arg.argext_type
       intern () subst () interp () print_code rpr print_code gpr print_code tpr
   in

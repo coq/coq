@@ -127,6 +127,10 @@ rule extend = parse
 | "LEFTA" { LEFTA }
 | "RIGHTA" { RIGHTA }
 | "NONA" { NONA }
+| "LEFT" { LEFT }
+| "RIGHT" { RIGHT }
+| "NO" { NO }
+| "ASSOCIATIVITY" { ASSOCIATIVITY }
 (** Standard *)
 | ident { IDENT (Lexing.lexeme lexbuf) }
 | qualid { QUALID (Lexing.lexeme lexbuf) }

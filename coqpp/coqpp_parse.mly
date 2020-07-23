@@ -71,7 +71,7 @@ let no_code = { code = ""; loc = { loc_start=Lexing.dummy_pos; loc_end=Lexing.du
 %token COMMAND CLASSIFIED STATE PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
 %token BANGBRACKET HASHBRACKET LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL STAR
 %token LPAREN RPAREN COLON SEMICOLON
-%token GLOBAL FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
+%token GLOBAL FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA LEFT RIGHT NO ASSOCIATIVITY
 %token EOF
 
 %type <Coqpp_ast.t> file
@@ -113,6 +113,7 @@ grammar_extend:
 
 argument_extend:
 | ARGUMENT EXTEND IDENT
+    associativity_opt
     typed_opt
     printed_opt
     interpreted_opt
@@ -124,14 +125,15 @@ argument_extend:
   END
   { ArgumentExt {
     argext_name = $3;
-    argext_rules = $11;
-    argext_rprinter = $9;
-    argext_gprinter = $10;
-    argext_tprinter = $5;
-    argext_interp = $6;
-    argext_glob = $7;
-    argext_subst = $8;
-    argext_type = $4;
+    argext_assoc = $4;
+    argext_rules = $12;
+    argext_rprinter = $10;
+    argext_gprinter = $11;
+    argext_tprinter = $6;
+    argext_interp = $7;
+    argext_glob = $8;
+    argext_subst = $9;
+    argext_type = $5;
   } }
 | VERNAC ARGUMENT EXTEND IDENT printed_opt tactic_rules END
   { VernacArgumentExt {
@@ -174,6 +176,13 @@ substituted_opt:
 typed_opt:
 | { None }
 | TYPED AS argtype { Some $3 }
+;
+
+associativity_opt:
+| { None }
+| RIGHT ASSOCIATIVITY { Some RightA }
+| LEFT ASSOCIATIVITY { Some LeftA }
+| NO ASSOCIATIVITY { Some NonA }
 ;
 
 argtype:

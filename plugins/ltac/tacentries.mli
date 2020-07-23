@@ -147,6 +147,7 @@ type ('b, 'c) argument_interp =
 
 type ('a, 'b, 'c) tactic_argument = {
   arg_parsing : 'a Vernacextend.argument_rule;
+  arg_assoc : Gramlib.Gramext.g_assoc option;
   arg_tag : 'c Geninterp.Val.tag option;
   arg_intern : ('a, 'b) argument_intern;
   arg_subst : 'b argument_subst;
