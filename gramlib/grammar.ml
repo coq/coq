@@ -1414,10 +1414,9 @@ let rec start_parser_of_levels entry clevn =
                  (* this code should be there but is commented to preserve
                     compatibility with previous versions... with this code,
                     the grammar entry e: [[ "x"; a = e | "y" ]] should fail
-                    because it should be: e: [RIGHTA[ "x"; a = e | "y" ]]...
-                 if levn > clevn then match strm with parser []
+                    because it should be: e: [RIGHTA[ "x"; a = e | "y" ]]... *)
+                 if levn > clevn then raise Stream.Failure
                  else
-                 *)
                  let (strm__ : _ Stream.t) = strm in
                  let bp = Stream.count strm__ in
                  let act = p2 strm__ in
