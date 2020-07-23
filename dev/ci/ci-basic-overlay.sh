@@ -275,9 +275,9 @@
 ########################################################################
 # Equations
 ########################################################################
-# Released on 2020-06-19 and compatible with Coq 8.12
-: "${equations_CI_REF:=v8.12+bp12523}"
-: "${equations_CI_GITURL:=https://github.com/ejgallego/Coq-Equations}"
+# Hash of the 8.12 branch suited for 8.12.0
+: "${equations_CI_REF:=990b264fa1622be1550db08dae87a6aa48851e23}"
+: "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
 
 ########################################################################
