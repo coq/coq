@@ -71,12 +71,12 @@ GRAMMAR EXTEND Gram
     [ [ s = FIELD -> { Id.of_string s } ] ]
   ;
   fields:
-    [ [ id = field; f = fields -> { let (l,id') = f in (l@[id],id') }
+    [ RIGHTA [ id = field; f = fields -> { let (l,id') = f in (l@[id],id') }
       | id = field -> { ([],id) }
       ] ]
   ;
   fullyqualid:
-    [ [ id = ident; f=fields -> { let (l,id') = f in CAst.make ~loc @@ id::List.rev (id'::l) }
+    [ RIGHTA [ id = ident; f=fields -> { let (l,id') = f in CAst.make ~loc @@ id::List.rev (id'::l) }
       | id = ident -> { CAst.make ~loc [id] }
       ] ]
   ;

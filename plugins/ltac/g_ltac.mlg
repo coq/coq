@@ -85,7 +85,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tactic_then_gen:
-    [ [ ta = tactic_expr; "|"; tg = tactic_then_gen -> { let (first,last) = tg in (ta::first, last) }
+    [ RIGHTA [ ta = tactic_expr; "|"; tg = tactic_then_gen -> { let (first,last) = tg in (ta::first, last) }
       | ta = tactic_expr; ".."; l = tactic_then_last -> { ([], Some (ta, l)) }
       | ".."; l = tactic_then_last -> { ([], Some (TacId [], l)) }
       | ta = tactic_expr -> { ([ta], None) }

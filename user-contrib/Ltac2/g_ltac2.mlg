@@ -312,7 +312,7 @@ GRAMMAR EXTEND Gram
       | c = Prim.ident; "("; args = LIST0 tac2type SEP ","; ")"-> { (c, args) } ] ]
   ;
   tac2rec_fields:
-    [ [ f = tac2rec_field; ";"; l = tac2rec_fields -> { f :: l }
+    [ RIGHTA [ f = tac2rec_field; ";"; l = tac2rec_fields -> { f :: l }
       | f = tac2rec_field; ";" -> { [f] }
       | f = tac2rec_field -> { [f] }
       | -> { [] } ] ]
@@ -321,7 +321,7 @@ GRAMMAR EXTEND Gram
     [ [ mut = mut_flag; id = Prim.ident; ":"; t = tac2type -> { (id, mut, t) } ] ]
   ;
   tac2rec_fieldexprs:
-    [ [ f = tac2rec_fieldexpr; ";"; l = tac2rec_fieldexprs -> { f :: l }
+    [ RIGHTA [ f = tac2rec_fieldexpr; ";"; l = tac2rec_fieldexprs -> { f :: l }
       | f = tac2rec_fieldexpr; ";" -> { [f] }
       | f = tac2rec_fieldexpr-> { [f] }
       | -> { [] } ] ]
@@ -659,7 +659,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tactic_then_gen:
-    [ [ ta = tac2expr; "|"; tg = tactic_then_gen -> { let (first,last) = tg in (Some ta :: first, last) }
+    [ RIGHTA [ ta = tac2expr; "|"; tg = tactic_then_gen -> { let (first,last) = tg in (Some ta :: first, last) }
       | ta = tac2expr; ".."; l = tactic_then_last -> { ([], Some (Some ta, l)) }
       | ".."; l = tactic_then_last -> { ([], Some (None, l)) }
       | ta = tac2expr -> { ([Some ta], None) }
