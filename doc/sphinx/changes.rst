@@ -1126,6 +1126,84 @@ Infrastructure and dependencies
   (`#11245 <https://github.com/coq/coq/pull/11245>`_,
   by Emilio Jesus Gallego Arias).
 
+Changes in 8.12.0
+~~~~~~~~~~~~~~~~~~~~~
+
+.. contents::
+   :local:
+
+**Notations**
+
+- **Added:**
+  Simultaneous definition of terms and notations now support custom entries.
+  Fixes `#11121 <https://github.com/coq/coq/pull/11121>`_.
+  (`#12523 <https://github.com/coq/coq/pull/11523>`_, by Maxime Dénès).
+- **Fixed:**
+  Printing bug with notations for n-ary applications used with applied references.
+  (`#12683 <https://github.com/coq/coq/pull/12683>`_,
+  fixes `#12682 <https://github.com/coq/coq/pull/12682>`_,
+  by Hugo Herbelin).
+
+**Tactics**
+
+- **Fixed:**
+  :tacn:`typeclasses eauto` (and discriminated hint bases) now correctly
+  classify local variables as being unfoldable
+  (`#12572 <https://github.com/coq/coq/pull/12572>`_,
+  fixes `#12571 <https://github.com/coq/coq/issues/12571>`_,
+  by Pierre-Marie Pédrot).
+
+**Tactic language**
+
+- **Fixed:**
+  Excluding occurrences was causing an anomaly in tactics
+  (e.g., :g:`pattern _ at L` where :g:`L` is :g:`-2`).
+  (`#12541 <https://github.com/coq/coq/pull/12541>`_,
+  fixes `#12228 <https://github.com/coq/coq/issues/12228>`_,
+  by Pierre Roux).
+- **Fixed:**
+  Parsing of multi-parameters Ltac2 types
+  (`#12594 <https://github.com/coq/coq/pull/12594>`_,
+  fixes `#12595 <https://github.com/coq/coq/issues/12595>`_,
+  by Pierre-Marie Pédrot).
+
+**SSReflect**
+
+- **Fixed:**
+  Do not store the full environment inside ssr ast_closure_term
+  (`#12708 <https://github.com/coq/coq/pull/12708>`_,
+  fixes `#12707 <https://github.com/coq/coq/issues/12707>`_,
+  by Pierre-Marie Pédrot).
+
+**Commands and options**
+
+- **Fixed:**
+  Properly report the mismatched magic number of vo files
+  (`#12677 <https://github.com/coq/coq/pull/12677>`_,
+  fixes `#12513 <https://github.com/coq/coq/issues/12513>`_,
+  by Pierre-Marie Pédrot).
+- **Changed:**
+  Arbitrary hints have been undeprecated, and their definition
+  now triggers a standard warning instead
+  (`#12678 <https://github.com/coq/coq/pull/12678>`_,
+  fixes `#11970 <https://github.com/coq/coq/issues/11970>`_,
+  by Pierre-Marie Pédrot).
+
+**CoqIDE**
+
+- **Fixed:** CoqIDE no longer exits when trying to open a file whose name is not a valid identifier
+  (`#12562 <https://github.com/coq/coq/pull/12562>`_,
+  fixes `#10988 <https://github.com/coq/coq/issues/10988>`_,
+  by Vincent Laporte).
+
+**Infrastructure and dependencies**
+
+- **Fixed:**
+  Running ``make`` in ``test-suite/`` twice (or more) in a row will no longer
+  rebuild the ``modules/`` tests on subsequent runs, if they have not been
+  modified in the meantime (`#12583 <https://github.com/coq/coq/pull/12583>`_,
+  fixes `#12582 <https://github.com/coq/coq/issues/12582>`_, by Jason Gross).
+
 Version 8.11
 ------------
 
