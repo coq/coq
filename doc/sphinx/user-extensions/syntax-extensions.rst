@@ -1786,13 +1786,13 @@ Tactic notations allow customizing the syntax of tactics.
 
       * - ``reference``
         - :token:`qualid`
-        - a global reference of term
-        - :tacn:`unfold`
+        - a qualified identifier
+        - name of an |Ltac|-defined tactic
 
       * - ``smart_global``
         - :token:`reference`
         - a global reference of term
-        - :tacn:`with_strategy`
+        - :tacn:`unfold`, :tacn:`with_strategy`
 
       * - ``constr``
         - :token:`term`
