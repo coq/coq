@@ -170,3 +170,6 @@ type ('a, 'b, 'c) tactic_argument = {
 
 val argument_extend : name:string -> ('a, 'b, 'c) tactic_argument ->
   ('a, 'b, 'c) Genarg.genarg_type * 'a Pcoq.Entry.t
+
+val argument_extend_extra_rules : 'a Pcoq.Entry.t -> Gramlib.Gramext.g_assoc option ->
+  'a Pcoq.Production.t list -> unit
