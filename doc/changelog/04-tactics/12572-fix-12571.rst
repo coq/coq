@@ -1,6 +1,0 @@
-- **Fixed:**
-  typeclasses eauto (and discriminated hint bases) now correctly
-  classify local variables as being unfoldable
-  (`#12572 <https://github.com/coq/coq/pull/12572>`_,
-  fixes `#12571 <https://github.com/coq/coq/issues/12571>`_,
-  by Pierre-Marie Pédrot).
