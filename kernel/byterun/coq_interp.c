@@ -1187,7 +1187,7 @@ value coq_interprete
             if (sz == 0) accu = Atom(0);
             else {
               Alloc_small(accu, sz, Default_tag);
-              if (Field(*sp, 2) == Val_true) {
+              if (Is_tailrec_switch(*sp)) {
                 for (i = 0; i < sz; i++) Field(accu, i) = sp[i+2];
               }else{
                 for (i = 0; i < sz; i++) Field(accu, i) = sp[i+5];

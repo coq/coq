@@ -761,7 +761,7 @@ let rec compile_lam env cenv lam sz cont =
       done;
 
       let annot =
-        {ci = ci; rtbl = rtbl; tailcall = is_tailcall;
+        {rtbl = rtbl; tailcall = is_tailcall;
          max_stack_size = !max_stack_size - sz}
       in
 
