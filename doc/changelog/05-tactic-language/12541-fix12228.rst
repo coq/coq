@@ -1,6 +1,0 @@
-- **Fixed:**
-  Excluding occurrences was causing an anomaly in tactics
-  (e.g., :g:`pattern _ at L` where :g:`L` is :g:`-2`).
-  (`#12541 <https://github.com/coq/coq/pull/12541>`_,
-  fixes `#12228 <https://github.com/coq/coq/issues/12228>`_,
-  by Pierre Roux).
