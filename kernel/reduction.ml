@@ -230,6 +230,8 @@ let sort_cmp_universes env pb s0 s1 (u, check) =
 let convert_instances ~flex u u' (s, check) =
   (check.compare_instances ~flex u u' s, check)
 
+exception MustExpand
+
 let get_cumulativity_constraints cv_pb variance u u' =
   match cv_pb with
   | CONV ->
@@ -247,7 +249,8 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
   | Some variances ->
     let num_param_arity = inductive_cumulativity_arguments (mind,ind) in
     if not (Int.equal num_param_arity nargs) then
-      cmp_instances u1 u2 s
+      (* shortcut, not sure if worth doing, could use perf data *)
+      if Univ.Instance.equal u1 u2 then s else raise MustExpand
     else
       cmp_cumul cv_pb variances u1 u2 s
 
@@ -265,7 +268,7 @@ let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u
   | Some _ ->
     let num_cnstr_args = constructor_cumulativity_arguments (mind,ind,cns) in
     if not (Int.equal num_cnstr_args nargs) then
-      cmp_instances u1 u2 s
+      if Univ.Instance.equal u1 u2 then s else raise MustExpand
     else
       (** By invariant, both constructors have a common supertype,
           so they are convertible _at that type_. *)
@@ -332,6 +335,28 @@ let skip_pattern infos n c1 c2 =
 let is_irrelevant infos lft c =
   let env = info_env infos.cnv_inf in
   try Relevanceops.relevance_of_fterm env infos.relevances lft c == Sorts.Irrelevant with _ -> false
+
+let identity_of_ctx (ctx:Constr.rel_context) =
+  Context.Rel.to_extended_vect mkRel 0 ctx
+
+(* ind -> fun args => ind args *)
+let eta_expand_ind env (ind,u as pind) =
+  let mib = Environ.lookup_mind (fst ind) env in
+  let mip = mib.mind_packets.(snd ind) in
+  let ctx = Vars.subst_instance_context u mip.mind_arity_ctxt in
+  let args = identity_of_ctx ctx in
+  let c = mkApp (mkIndU pind, args) in
+  let c = Term.it_mkLambda_or_LetIn c ctx in
+  inject c
+
+let eta_expand_constructor env ((ind,ctor),u as pctor) =
+  let mib = Environ.lookup_mind (fst ind) env in
+  let mip = mib.mind_packets.(snd ind) in
+  let ctx = Vars.subst_instance_context u (fst mip.mind_nf_lc.(ctor-1)) in
+  let args = identity_of_ctx ctx in
+  let c = mkApp (mkConstructU pctor, args) in
+  let c = Term.it_mkLambda_or_LetIn c ctx in
+  inject c
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
@@ -542,7 +567,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        end
 
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
-    | (FInd (ind1,u1), FInd (ind2,u2)) ->
+    | (FInd (ind1,u1 as pind1), FInd (ind2,u2 as pind2)) ->
       if eq_ind ind1 ind2 then
         if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
@@ -553,11 +578,16 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           if not (Int.equal nargs (CClosure.stack_args_size v2))
           then raise NotConvertible
           else
-            let cuniv = convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv in
-            convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+            match convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv with
+            | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+            | exception MustExpand ->
+              let env = info_env infos.cnv_inf in
+              let hd1 = eta_expand_ind env pind1 in
+              let hd2 = eta_expand_ind env pind2 in
+              eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
       else raise NotConvertible
 
-    | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
+    | (FConstruct ((ind1,j1),u1 as pctor1), FConstruct ((ind2,j2),u2 as pctor2)) ->
       if Int.equal j1 j2 && eq_ind ind1 ind2 then
         if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
@@ -568,8 +598,13 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           if not (Int.equal nargs (CClosure.stack_args_size v2))
           then raise NotConvertible
           else
-            let cuniv = convert_constructors (mind, snd ind1, j1) nargs u1 u2 cuniv in
-            convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+            match convert_constructors (mind, snd ind1, j1) nargs u1 u2 cuniv with
+            | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+            | exception MustExpand ->
+              let env = info_env infos.cnv_inf in
+              let hd1 = eta_expand_constructor env pctor1 in
+              let hd2 = eta_expand_constructor env pctor2 in
+              eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
       else raise NotConvertible
 
     (* Eta expansion of records *)
