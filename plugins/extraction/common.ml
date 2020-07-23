@@ -603,6 +603,7 @@ let pp_global k r =
       | JSON -> dottify (List.map unquote rls)
       | Haskell -> if modular () then pp_haskell_gen k mp rls else s
       | Ocaml -> pp_ocaml_gen k mp rls (Some l)
+      | Scala -> unquote s
 
 (* The next function is used only in Ocaml extraction...*)
 
