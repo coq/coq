@@ -64,11 +64,11 @@ let project_hint ~poly pri l2r r =
   (info, false, true, Hints.PathAny, Hints.IsGlobRef (Names.GlobRef.ConstRef c))
 
 let warn_deprecated_hint_constr =
-  CWarnings.create ~name:"deprecated-hint-constr" ~category:"deprecated"
+  CWarnings.create ~name:"fragile-hint-constr" ~category:"automation"
     (fun () ->
       Pp.strbrk
-        "Declaring arbitrary terms as hints is deprecated; declare a global \
-         reference instead")
+        "Declaring arbitrary terms as hints is fragile; it is recommended to \
+         declare a toplevel constant instead")
 
 let interp_hints ~poly h =
   let env = Global.env () in
