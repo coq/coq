@@ -153,6 +153,6 @@ type node =
 | VernacExt of vernac_ext
 | VernacArgumentExt of vernac_argument_ext
 | TacticExt of tactic_ext
-| ArgumentExt of argument_ext
+| ArgumentExt of argument_ext list
 
 type t = node list

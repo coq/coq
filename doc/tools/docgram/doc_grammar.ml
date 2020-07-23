@@ -643,9 +643,10 @@ let read_mlg g is_edit ast file level_renames symdef_map =
     | TacticExt tactic_ext ->
       add_prods "simple_tactic"
         (List.map (fun r -> cvt_ext r.tac_toks) tactic_ext.tacext_rules)
-    | ArgumentExt argument_ext ->
+    | ArgumentExt argument_exts ->
+      List.iter (fun argument_ext ->
       add_prods argument_ext.argext_name
-        (List.map (fun r -> cvt_ext r.tac_toks) argument_ext.argext_rules)
+        (List.map (fun r -> cvt_ext r.tac_toks) argument_ext.argext_rules)) argument_exts
     | _ -> ()
   in
 

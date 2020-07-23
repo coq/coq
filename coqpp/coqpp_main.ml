@@ -449,6 +449,8 @@ end
 module VernacArgumentExt :
 sig
 
+val parse_rule : string -> tactic_rule -> symb list * string option list * code
+
 val print_ast : Format.formatter -> vernac_argument_ext -> unit
 val print_rules : Format.formatter -> string * tactic_rule list -> unit
 
@@ -508,7 +510,7 @@ let print_ast fmt arg =
     fprintf fmt "Vernacextend.vernac_argument_extend ~name:%a @[{@\n\
       Vernacextend.arg_parsing = %a;@\n\
       Vernacextend.arg_printer = fun env sigma -> %a;@\n}@]"
-      print_string name print_rules (name, arg.vernacargext_rules)
+      print_string ("tactic:" ^ name) print_rules (name, arg.vernacargext_rules)
       print_printer arg.vernacargext_printer
   in
   fprintf fmt "let (wit_%s, %s) = @[%a@]@\nlet _ = (wit_%s, %s)@\n"
@@ -519,7 +521,7 @@ end
 module ArgumentExt :
 sig
 
-val print_ast : Format.formatter -> argument_ext -> unit
+val print_asts : Format.formatter -> argument_ext list -> unit
 
 end =
 struct
@@ -543,6 +545,16 @@ let rec print_wit fmt = function
   fprintf fmt "Genarg.ListArg @[(%a)@]" print_wit arg
 | OptArgType arg ->
   fprintf fmt "Genarg.OptArg @[(%a)@]" print_wit arg
+
+let print_truncated_rules fmt (name, rules) =
+  match rules with
+  | [([SymbEntry (e, None)], [Some s], { code = c } )] when String.trim c = s ->
+    (* This is a horrible hack to work around limitations of camlp5 regarding
+       factorization of parsing rules. It allows to recognize rules of the
+       form [ entry(x) ] -> [ x ] so as not to generate a proxy entry and
+       reuse the same entry directly. *)
+    fprintf fmt "@[Vernacextend.Arg_alias (%s)@]" e
+  | _ -> fprintf fmt "Vernacextend.Arg_rules []"
 
 let print_ast fmt arg =
   let name = arg.argext_name in
@@ -586,23 +598,37 @@ let print_ast fmt arg =
   | Some f -> f
   | None -> default_printer
   in
+  (* Rules are reversed. *)
+  let rules = List.rev arg.argext_rules in
+  let rules = List.map (fun r -> VernacArgumentExt.parse_rule name r) rules in
   let pr fmt () =
     fprintf fmt "Tacentries.argument_extend ~name:%a @[{@\n\
       Tacentries.arg_parsing = %a;@\n\
-      Tacentries.arg_assoc = %a;@\n\
       Tacentries.arg_tag = @[%a@];@\n\
       Tacentries.arg_intern = @[%a@];@\n\
       Tacentries.arg_subst = @[%a@];@\n\
       Tacentries.arg_interp = @[%a@];@\n\
       Tacentries.arg_printer = @[((fun env sigma -> %a), (fun env sigma -> %a), (fun env sigma -> %a))@];@\n}@]"
       print_string name
-      VernacArgumentExt.print_rules (name, arg.argext_rules)
-      GramExt.print_assoc_opt arg.argext_assoc
+      print_truncated_rules (name, rules)
       pr_tag arg.argext_type
       intern () subst () interp () print_code rpr print_code gpr print_code tpr
   in
   fprintf fmt "let (wit_%s, %s) = @[%a@]@\nlet _ = (wit_%s, %s)@\n"
-    name name pr () name name
+    name name pr () name name;
+  rules
+
+let print_non_truncated_rules fmt arg rules =
+  match rules with
+  | [([SymbEntry (e, None)], [Some s], { code = c } )] when String.trim c = s -> ()
+  | _ ->
+  let pr fmt = print_list fmt (fun fmt r -> fprintf fmt "(%a)" GramExt.print_extrule r) in
+  fprintf fmt "let _ = Tacentries.argument_extend_extra_rules %s (%a) @[@\n%a@]\n"
+    arg.argext_name GramExt.print_assoc_opt arg.argext_assoc pr rules
+
+let print_asts fmt args =
+  let rules = List.map (print_ast fmt) args in
+  List.iter2 (print_non_truncated_rules fmt) args rules
 
 end
 
@@ -618,7 +644,7 @@ let pr_ast fmt = function
 | VernacExt vernac -> fprintf fmt "%a@\n" VernacExt.print_ast vernac
 | VernacArgumentExt arg -> fprintf fmt "%a@\n" VernacArgumentExt.print_ast arg
 | TacticExt tac -> fprintf fmt "%a@\n" TacticExt.print_ast tac
-| ArgumentExt arg -> fprintf fmt "%a@\n" ArgumentExt.print_ast arg
+| ArgumentExt args -> fprintf fmt "%a@\n" ArgumentExt.print_asts args
 
 let () =
   let () =

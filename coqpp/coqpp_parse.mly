@@ -66,7 +66,7 @@ let no_code = { code = ""; loc = { loc_start=Lexing.dummy_pos; loc_end=Lexing.du
 %token <string> IDENT QUALID
 %token <string> STRING
 %token <int> INT
-%token VERNAC TACTIC GRAMMAR DOC_GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED ARGUMENT
+%token VERNAC TACTIC GRAMMAR DOC_GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED ARGUMENT WITH
 %token RAW_PRINTED GLOB_PRINTED
 %token COMMAND CLASSIFIED STATE PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
 %token BANGBRACKET HASHBRACKET LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL STAR
@@ -111,8 +111,8 @@ grammar_extend:
   { GramExt { gramext_name = $3; gramext_globals = $4; gramext_entries = $5 } }
 ;
 
-argument_extend:
-| ARGUMENT EXTEND IDENT
+argument_extend_body:
+| IDENT
     associativity_opt
     typed_opt
     printed_opt
@@ -122,19 +122,27 @@ argument_extend:
     raw_printed_opt
     glob_printed_opt
     tactic_rules
-  END
-  { ArgumentExt {
-    argext_name = $3;
-    argext_assoc = $4;
-    argext_rules = $12;
-    argext_rprinter = $10;
-    argext_gprinter = $11;
-    argext_tprinter = $6;
-    argext_interp = $7;
-    argext_glob = $8;
-    argext_subst = $9;
-    argext_type = $5;
+  { {
+    argext_name = $1;
+    argext_assoc = $2;
+    argext_rules = $10;
+    argext_rprinter = $8;
+    argext_gprinter = $9;
+    argext_tprinter = $4;
+    argext_interp = $5;
+    argext_glob = $6;
+    argext_subst = $7;
+    argext_type = $3;
   } }
+;
+
+argument_extend_body_list:
+| argument_extend_body WITH argument_extend_body_list { $1 :: $3 }
+| argument_extend_body { [$1] }
+;
+
+argument_extend:
+| ARGUMENT EXTEND argument_extend_body_list END { ArgumentExt $3 }
 | VERNAC ARGUMENT EXTEND IDENT printed_opt tactic_rules END
   { VernacArgumentExt {
     vernacargext_name = $4;

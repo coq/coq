@@ -815,7 +815,6 @@ type ('b, 'c) argument_interp =
 
 type ('a, 'b, 'c) tactic_argument = {
   arg_parsing : 'a Vernacextend.argument_rule;
-  arg_assoc : Gramlib.Gramext.g_assoc option;
   arg_tag : 'c Val.tag option;
   arg_intern : ('a, 'b) argument_intern;
   arg_subst : 'b argument_subst;
@@ -871,7 +870,6 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
     e
   | Vernacextend.Arg_rules rules ->
     let e = Pcoq.create_generic_entry Pcoq.utactic name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e {pos=None; data=[(None, arg.arg_assoc, rules)]} in
     e
   in
   let (rpr, gpr, tpr) = arg.arg_printer in
@@ -881,3 +879,6 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
     (entry, None)
   in
   (wit, entry)
+
+let argument_extend_extra_rules e assoc rules =
+  Pcoq.grammar_extend e {pos=None; data=[(None, assoc, rules)]}

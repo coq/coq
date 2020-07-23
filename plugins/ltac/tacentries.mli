@@ -147,7 +147,6 @@ type ('b, 'c) argument_interp =
 
 type ('a, 'b, 'c) tactic_argument = {
   arg_parsing : 'a Vernacextend.argument_rule;
-  arg_assoc : Gramlib.Gramext.g_assoc option;
   arg_tag : 'c Geninterp.Val.tag option;
   arg_intern : ('a, 'b) argument_intern;
   arg_subst : 'b argument_subst;
@@ -157,3 +156,6 @@ type ('a, 'b, 'c) tactic_argument = {
 
 val argument_extend : name:string -> ('a, 'b, 'c) tactic_argument ->
   ('a, 'b, 'c) Genarg.genarg_type * 'a Pcoq.Entry.t
+
+val argument_extend_extra_rules : 'a Pcoq.Entry.t -> Gramlib.Gramext.g_assoc option ->
+  'a Pcoq.Production.t list -> unit
