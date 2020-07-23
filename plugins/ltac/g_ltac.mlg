@@ -84,7 +84,8 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   for_each_goal:
-    [ [ ta = ltac_expr; "|"; tg = for_each_goal -> { let (first,last) = tg in (ta::first, last) }
+    [ RIGHTA
+      [ ta = ltac_expr; "|"; tg = for_each_goal -> { let (first,last) = tg in (ta::first, last) }
       | ta = ltac_expr; ".."; l = tactic_then_last -> { ([], Some (ta, l)) }
       | ".."; l = tactic_then_last -> { ([], Some (CAst.make ~loc (TacId []), l)) }
       | ta = ltac_expr -> { ([ta], None) }

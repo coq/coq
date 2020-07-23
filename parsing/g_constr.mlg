@@ -180,7 +180,7 @@ GRAMMAR EXTEND Gram
         args = LIST0 (term LEVEL "9"); ")" ->
         { CAst.make ~loc @@ CProj(true, (f,i), List.map (fun a -> (a,None)) args, c) }
       | c = term; "%"; key = IDENT -> { CAst.make ~loc @@ CDelimiters (key,c) } ]
-    | "0"
+    | "0" RIGHTA
       [ c = atomic_constr -> { c }
       | c = term_match -> { c }
       | id = ident; f = Prim.fields; i = univ_annot ->
@@ -372,7 +372,7 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CPatCstr (r, Some lp, []) } ]
     | "1" LEFTA
       [ c = pattern; "%"; key = IDENT -> { CAst.make ~loc @@ CPatDelimiters (key,c) } ]
-    | "0"
+    | "0" RIGHTA
       [ r = Prim.reference                -> { CAst.make ~loc @@ CPatAtom (Some r) }
       | "{|"; pat = record_patterns; bar_cbrace -> { CAst.make ~loc @@ CPatRecord pat }
       | "_" -> { CAst.make ~loc @@ CPatAtom None }

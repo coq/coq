@@ -68,7 +68,8 @@ GRAMMAR EXTEND Gram
     [ [ s = FIELD -> { Id.of_string s } ] ]
   ;
   fields:
-    [ [ id = field; f = fields -> { let (l,id') = f in (l@[id],id') }
+    [ RIGHTA
+      [ id = field; f = fields -> { let (l,id') = f in (l@[id],id') }
       | id = field -> { ([],id) }
       ] ]
   ;
