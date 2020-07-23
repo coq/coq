@@ -92,8 +92,8 @@ let pr_glob_strategy env sigma prc prlc _ (s : glob_strategy) =
 
 }
 
-ARGUMENT EXTEND rewstrategy
-    LEFT ASSOCIATIVITY
+ARGUMENT EXTEND rewstrategy0
+    RIGHT ASSOCIATIVITY
     PRINTED BY { pr_strategy }
 
     INTERPRETED BY { interp_strategy }
@@ -105,28 +105,42 @@ ARGUMENT EXTEND rewstrategy
 
   | [ glob(c) ] -> { StratConstr (c, true) }
   | [ "<-" constr(c) ] -> { StratConstr (c, false) }
-  | [ "subterms" rewstrategy(h) ] -> { StratUnary (Subterms, h) }
-  | [ "subterm" rewstrategy(h) ] -> { StratUnary (Subterm, h) }
-  | [ "innermost" rewstrategy(h) ] -> { StratUnary(Innermost, h) }
-  | [ "outermost" rewstrategy(h) ] -> { StratUnary(Outermost, h) }
-  | [ "bottomup" rewstrategy(h) ] -> { StratUnary(Bottomup, h) }
-  | [ "topdown" rewstrategy(h) ] -> { StratUnary(Topdown, h) }
   | [ "id" ] -> { StratId }
   | [ "fail" ] -> { StratFail }
   | [ "refl" ] -> { StratRefl }
-  | [ "progress" rewstrategy(h) ] -> { StratUnary (Progress, h) }
-  | [ "try" rewstrategy(h) ] -> { StratUnary (Try, h) }
-  | [ "any" rewstrategy(h) ] -> { StratUnary (Any, h) }
-  | [ "repeat" rewstrategy(h) ] -> { StratUnary (Repeat, h) }
-  | [ rewstrategy(h) ";" rewstrategy(h') ] -> { StratBinary (Compose, h, h') }
-  | [ "(" rewstrategy(h) ")" ] -> { h }
-  | [ "choice" rewstrategy(h) rewstrategy(h') ] -> { StratBinary (Choice, h, h') }
+  | [ "subterms" rewstrategy0(h) ] -> { StratUnary (Subterms, h) }
+  | [ "subterm" rewstrategy0(h) ] -> { StratUnary (Subterm, h) }
+  | [ "innermost" rewstrategy0(h) ] -> { StratUnary(Innermost, h) }
+  | [ "outermost" rewstrategy0(h) ] -> { StratUnary(Outermost, h) }
+  | [ "bottomup" rewstrategy0(h) ] -> { StratUnary(Bottomup, h) }
+  | [ "topdown" rewstrategy0(h) ] -> { StratUnary(Topdown, h) }
+  | [ "progress" rewstrategy0(h) ] -> { StratUnary (Progress, h) }
+  | [ "try" rewstrategy0(h) ] -> { StratUnary (Try, h) }
+  | [ "any" rewstrategy0(h) ] -> { StratUnary (Any, h) }
+  | [ "repeat" rewstrategy0(h) ] -> { StratUnary (Repeat, h) }
+  | [ "choice" rewstrategy0(h) rewstrategy0(h') ] -> { StratBinary (Choice, h, h') }
   | [ "old_hints" preident(h) ] -> { StratHints (true, h) }
   | [ "hints" preident(h) ] -> { StratHints (false, h) }
   | [ "terms" constr_list(h) ] -> { StratTerms h }
   | [ "eval" red_expr(r) ] -> { StratEval r }
   | [ "fold" constr(c) ] -> { StratFold c }
+  | [ "(" rewstrategy(h) ")" ] -> { h }
+
+WITH rewstrategy
+    RIGHT ASSOCIATIVITY
+    PRINTED BY { pr_strategy }
+
+    INTERPRETED BY { interp_strategy }
+    GLOBALIZED BY { glob_strategy }
+    SUBSTITUTED BY { subst_strategy }
+
+    RAW_PRINTED BY { pr_raw_strategy env sigma }
+    GLOB_PRINTED BY { pr_glob_strategy env sigma }
+
+  | [ rewstrategy0(h) ";" rewstrategy(h') ] -> { StratBinary (Compose, h, h') }
+  | [ rewstrategy0(h) ] -> { h }
 END
+
 
 (* By default the strategy for "rewrite_db" is top-down *)
 
