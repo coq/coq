@@ -546,7 +546,7 @@ let pr_ssrbwdview _ _ _ = pr_view
 
 }
 
-ARGUMENT EXTEND ssrbwdview TYPED AS ssrterm list
+ARGUMENT EXTEND ssrbwdview RIGHT ASSOCIATIVITY TYPED AS ssrterm list
    PRINTED BY { pr_ssrbwdview }
 END
 
@@ -569,7 +569,7 @@ let pr_ssrfwdview _ _ _ = pr_view2
 
 }
 
-ARGUMENT EXTEND ssrfwdview TYPED AS ast_closure_term list
+ARGUMENT EXTEND ssrfwdview RIGHT ASSOCIATIVITY TYPED AS ast_closure_term list
    PRINTED BY { pr_ssrfwdview }
 END
 
@@ -790,7 +790,7 @@ ARGUMENT EXTEND ssripats TYPED AS ssripat PRINTED BY { pr_ssripats }
   | [ ] -> { [] }
 END
 
-ARGUMENT EXTEND ssriorpat TYPED AS ssripat list PRINTED BY { pr_ssriorpat }
+ARGUMENT EXTEND ssriorpat RIGHT ASSOCIATIVITY TYPED AS ssripat list PRINTED BY { pr_ssriorpat }
 | [ ssripats(pats) "|" ssriorpat(orpat) ] -> { pats :: orpat }
 | [ ssripats(pats) "|-" ">" ssriorpat(orpat) ] -> { pats :: pushIPatRewrite orpat }
 | [ ssripats(pats) "|-" ssriorpat(orpat) ] -> { pats :: pushIPatNoop orpat }
@@ -1022,7 +1022,7 @@ let pr_ssrortacs env sigma _ _ = pr_ortacs env sigma
 
 }
 
-ARGUMENT EXTEND ssrortacs TYPED AS tactic option list PRINTED BY { pr_ssrortacs env sigma }
+ARGUMENT EXTEND ssrortacs RIGHT ASSOCIATIVITY TYPED AS tactic option list PRINTED BY { pr_ssrortacs env sigma }
 | [ ssrtacarg(tac) "|" ssrortacs(tacs) ] -> { Some tac :: tacs }
 | [ ssrtacarg(tac) "|" ] -> { [Some tac; None] }
 | [ ssrtacarg(tac) ] -> { [Some tac] }
@@ -1131,6 +1131,7 @@ let pr_ssrclausehyps _ _ _ = pr_clausehyps
 }
 
 ARGUMENT EXTEND ssrclausehyps
+RIGHT ASSOCIATIVITY
 TYPED AS ssrwgen list PRINTED BY { pr_ssrclausehyps }
 | [ ssrwgen(hyp) "," ssrclausehyps(hyps) ] -> { hyp :: hyps }
 | [ ssrwgen(hyp) ssrclausehyps(hyps) ] -> { hyp :: hyps }
@@ -1914,7 +1915,8 @@ let cons_dep (gensl, clr) =
 
 }
 
-ARGUMENT EXTEND ssrdgens_tl TYPED AS (ssrgen list list * ssrclear)
+ARGUMENT EXTEND ssrdgens_tl RIGHT ASSOCIATIVITY
+                            TYPED AS (ssrgen list list * ssrclear)
                             PRINTED BY { pr_ssrdgens }
 | [ "{" ne_ssrhyp_list(clr) "}" cpattern(dt) ssrdgens_tl(dgens) ] ->
   { cons_gen (mkclr clr, dt) dgens }

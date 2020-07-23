@@ -219,6 +219,7 @@ let glob_hints_path ist = Hints.glob_hints_path
 }
 
 ARGUMENT EXTEND hints_path
+RIGHT ASSOCIATIVITY
 PRINTED BY { pr_hints_path }
 
 GLOBALIZED BY { glob_hints_path }

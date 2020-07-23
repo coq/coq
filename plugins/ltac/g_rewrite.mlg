@@ -93,6 +93,7 @@ let pr_glob_strategy env sigma prc prlc _ (s : glob_strategy) =
 }
 
 ARGUMENT EXTEND rewstrategy
+    LEFT ASSOCIATIVITY
     PRINTED BY { pr_strategy }
 
     INTERPRETED BY { interp_strategy }
