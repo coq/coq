@@ -136,6 +136,7 @@ type argument_type =
 
 type argument_ext = {
   argext_name : string;
+  argext_assoc : assoc option;
   argext_rules : tactic_rule list;
   argext_type : argument_type option;
   argext_interp : (string option * code) option;

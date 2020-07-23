@@ -908,7 +908,7 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
     e
   | Vernacextend.Arg_rules rules ->
     let e = Pcoq.create_generic_entry2 name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules])) in
+    register_grammars_by_name name [AnyEntry e];
     e
   in
   let (rpr, gpr, tpr) = arg.arg_printer in
@@ -918,3 +918,6 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
     (entry, None)
   in
   (wit, entry)
+
+let argument_extend_extra_rules e assoc rules =
+  Pcoq.grammar_extend e (Pcoq.Fresh (Gramlib.Gramext.First, [(None, assoc, rules)]))
