@@ -1,8 +1,17 @@
 (library
  (name stm)
- (synopsis "Coq's Document Manager and Proof Checking Scheduler")
+ (synopsis "Coq's State Transaction Machine")
  (public_name coq.stm)
  (wrapped false)
+ (modules asyncTaskQueue coqworkmgrApi dag proofBlockDelimiter spawned stm vcs vio_checking workerPool tQueue)
+ (libraries vernac))
+
+(library
+ (name dm)
+ (synopsis "Coq's Document Manager and Proof Checking Scheduler")
+ (public_name coq.dm)
+ (wrapped false)
+ (modules delegationManager documentManager document executionManager lwt_err scheduler)
  (libraries vernac lwt.unix))
 
 (env

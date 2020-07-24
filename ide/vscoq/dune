@@ -10,7 +10,7 @@
  (public_name vscoqtop.opt)
  (package vscoq-server)
  (modules vscoqtop lspManager)
- (libraries coq.toplevel yojson lwt.unix)
+ (libraries coq.dm coq.toplevel yojson lwt.unix)
  (modes native byte)
  (link_flags -linkall))
 
@@ -19,7 +19,7 @@
  (public_name vscoqtop_worker.opt)
  (package vscoq-server)
  (modules vscoqtop_worker)
- (libraries coq.toplevel lwt.unix)
+ (libraries coq.dm coq.toplevel lwt.unix)
  (link_flags -linkall))
 
 ; (install
