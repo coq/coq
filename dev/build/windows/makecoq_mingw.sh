@@ -1835,43 +1835,16 @@ function make_addon_compcert {
 
 # Princeton VST
 
-function install_addon_vst {
-    VSTDEST="$PREFIXCOQ/lib/coq/user-contrib/VST"
-
-    # Install VST .v, .vo, .c and .h files
-    install_rec compcert '*.v' "$VSTDEST/compcert/"
-    install_rec compcert '*.vo' "$VSTDEST/compcert/"
-    install_glob "msl" '*.v' "$VSTDEST/msl/"
-    install_glob "msl" '*.vo' "$VSTDEST/msl/"
-    install_glob "sepcomp" '*.v' "$VSTDEST/sepcomp/"
-    install_glob "sepcomp" '*.vo' "$VSTDEST/sepcomp/"
-    install_glob "floyd" '*.v' "$VSTDEST/floyd/"
-    install_glob "floyd" '*.vo' "$VSTDEST/floyd/"
-    install_glob "progs" '*.v' "$VSTDEST/progs/"
-    install_glob "progs" '*.c' "$VSTDEST/progs/"
-    install_glob "progs" '*.h' "$VSTDEST/progs/"
-    install_glob "veric" '*.v' "$VSTDEST/veric/"
-    install_glob "veric" '*.vo' "$VSTDEST/veric/"
-
-    # Install VST documentation files
-    install_glob "." 'LICENSE' "$VSTDEST"
-    install_glob "." '*.md' "$VSTDEST"
-    install_glob "compcert" '*' "$VSTDEST/compcert"
-    install_glob "doc" '*.pdf' "$VSTDEST/doc"
-
-    # Install VST _CoqProject files
-    install_glob "." '_CoqProject*' "$VSTDEST"
-    install_glob "." '_CoqProject-export' "$VSTDEST/progs"
-}
-
 function make_addon_vst {
-  installer_addon_dependency vst
+  installer_addon_dependency_beg vst
+  make_addon_compcert
+  installer_addon_dependency_end
   if build_prep_overlay vst_platform vst; then
     installer_addon_section vst "VST" "ATTENTION: SOME INCLUDED COMPCERT PARTS ARE NOT OPEN SOURCE! Verified Software Toolchain for verifying C code" "off"
     # log1 coq_set_timeouts_1000
     # The usage of the shell variable ARCH in VST collides with the usage in this shellscript
     logn make env -u ARCH make IGNORECOQVERSION=true $MAKE_OPT
-    log1 install_addon_vst
+    logn install env -u ARCH make install
     build_post
   fi
 }
