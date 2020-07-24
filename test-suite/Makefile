@@ -771,8 +771,6 @@ coq-makefile/%.log : coq-makefile/%/run.sh
 
 # coqdoc
 
-coqdoc: $(patsubst %.sh,%.log,$(wildcard coqdoc/*.sh))
-
 $(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
