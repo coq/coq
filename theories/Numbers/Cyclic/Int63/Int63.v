@@ -222,9 +222,9 @@ Definition wB := (2 ^ (Z.of_nat size))%Z.
 
 Module Import Int63NotationsInternalD.
 Notation "n ?= m" := (compare n m) (at level 70, no associativity) : int63_scope.
-Notation "'φ' x" := (to_Z x) (at level 0) : int63_scope.
+Notation "'φ' x" := (to_Z x) (at level 0, right associativity) : int63_scope.
 Notation "'Φ' x" :=
-   (zn2z_to_Z wB to_Z x) (at level 0) : int63_scope.
+   (zn2z_to_Z wB to_Z x) (at level 0, right associativity) : int63_scope.
 End Int63NotationsInternalD.
 
 Lemma to_Z_rec_bounded size : forall x, (0 <= to_Z_rec size x < 2 ^ Z.of_nat size)%Z.
