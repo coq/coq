@@ -55,7 +55,7 @@ IF DEFINED HTTP_PROXY (
 )
 
 REM see -cygrepo in ReadMe.txt
-SET CYGWIN_REPOSITORY=http://mirror.easyname.at/cygwin
+SET CYGWIN_REPOSITORY=https://mirrors.kernel.org/sourceware/cygwin
 
 REM see -cygcache in ReadMe.txt
 SET CYGWIN_LOCAL_CACHE_WFMT=%BATCHDIR%cygwin_cache
