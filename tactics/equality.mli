@@ -91,6 +91,7 @@ val discr_tac    : evars_flag ->
   constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 
 (* Below, if flag is [None], it takes the value from the dynamic value of the option *)
+exception NothingToInject
 val inj          : inj_flags option -> intro_patterns option -> evars_flag ->
   clear_flag -> constr with_bindings -> unit Proofview.tactic
 val injClause    : inj_flags option -> intro_patterns option -> evars_flag ->

@@ -1416,6 +1416,11 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
          (if l2r then List.rev injectors else injectors)))
       (tac (List.length injectors)))
 
+exception NothingToInject
+let () = CErrors.register_handler (function
+  | NothingToInject -> Some (Pp.str "Nothing to inject.")
+  | _ -> None)
+
 let injEqThen keep_proofs tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   let env = eq_clause.env in
@@ -1429,7 +1434,7 @@ let injEqThen keep_proofs tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
             " You can try to use option Set Keep Proof Equalities." in
      tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
   | Inr [([],_,_)] ->
-     tclZEROMSG (str"Nothing to inject.")
+     Proofview.tclZERO NothingToInject
   | Inr posns ->
       inject_at_positions env sigma l2r u eq_clause posns
         (tac (clenv_value eq_clause))

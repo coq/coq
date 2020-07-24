@@ -2227,9 +2227,6 @@ and an explanation of the underlying technique.
       then :n:`injection @ident` first introduces the hypothesis in the local
       context using :n:`intros until @ident`.
 
-   .. exn:: Not a projectable equality but a discriminable one.
-      :undocumented:
-
    .. exn:: Nothing to do, it is an equality between convertible terms.
       :undocumented:
 
@@ -2237,7 +2234,8 @@ and an explanation of the underlying technique.
       :undocumented:
 
    .. exn:: Nothing to inject.
-      :undocumented:
+
+      This error is given when one side of the equality is not a constructor.
 
    .. tacv:: injection @num
 
