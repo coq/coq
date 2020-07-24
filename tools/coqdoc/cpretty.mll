@@ -728,7 +728,7 @@ and doc_bol = parse
           else
             Output.section lev (fun () -> ignore (doc None (from_string s)));
 	    if eol then doc_bol lexbuf else doc None lexbuf }
-  | (space_nl* as s) ('-'+ as line)
+  | ((space_nl* nl)? as s) (space* '-'+ as line)
       { let nl_count = count_newlines s in
         match check_start_list line with
           | Neither -> backtrack_past_newline lexbuf; Lexing.new_line lexbuf; doc None lexbuf
