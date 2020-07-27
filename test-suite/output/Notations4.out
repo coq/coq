@@ -123,3 +123,5 @@ File "stdin", line 297, characters 0-30:
 Warning: Notation "_ :=: _" was already used. [notation-overridden,parsing]
 0 :=: 0
      : Prop
+fun x : nat => <{ x; (S x) }>
+     : nat -> nat
