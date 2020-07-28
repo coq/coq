@@ -117,8 +117,7 @@ end
    normalized w.r.t. the passed [evar_map] [sigma]. Universes should
    be handled properly, including minimization and restriction. Note
    that [sigma] is checked for unresolved evars, thus you should be
-   careful not to submit open terms or evar maps with stale,
-   unresolved existentials *)
+   careful not to submit open terms *)
 val declare_definition
   :  info:Info.t
   -> cinfo:EConstr.t option CInfo.t
