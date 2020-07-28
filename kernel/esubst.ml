@@ -154,3 +154,36 @@ let subs_id n =
   else push_vars n empty
 
 let subs_shft (n, s) = write n s
+
+let rec pop n i e =
+  if Int.equal n 0 then i, e
+  else match e with
+  | ELID -> i, e
+  | ELLFT (k, e) ->
+    if k <= n then pop (n - k) i e
+    else i, ELLFT (k - n, e)
+  | ELSHFT (e, k) -> pop n (i + k) e
+
+let apply mk e = function
+| Var i -> Var (reloc_rel i e)
+| Arg v -> Arg (mk e v)
+
+let rec tree_map mk e = function
+| Leaf (w, x) ->
+  let (n, e) = pop w 0 e in
+  Leaf (w + n, apply mk e x), e
+| Node (w, x, t1, t2, _) ->
+  let (n, e) = pop w 0 e in
+  let x = apply mk e x in
+  let t1, e = tree_map mk e t1 in
+  let t2, e = tree_map mk e t2 in
+  Node (w + n, x, t1, t2, mul (eval t1) (eval t2)), e
+
+let rec lift_subst mk e s = match s with
+| Nil w ->
+  let (n, _) = pop w 0 e in
+  Nil (w + n)
+| Cons (h, t, rem) ->
+  let t, e = tree_map mk e t in
+  let rem = lift_subst mk e rem in
+  Cons (h, t, rem)
