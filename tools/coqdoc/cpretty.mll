@@ -504,9 +504,9 @@ rule coq_bol = parse
       { Lexing.new_line lexbuf; begin_show (); coq_bol lexbuf }
   | space* end_show nl
       { Lexing.new_line lexbuf; end_show (); coq_bol lexbuf }
-  | space* begin_details nl
-      { Lexing.new_line lexbuf;
-        let s = details_body lexbuf in
+  | space* begin_details (* At this point, the comment remains open,
+                            and will be closed by [details_body] *)
+      { let s = details_body lexbuf in
         Output.end_coq (); begin_details s; Output.start_coq (); coq_bol lexbuf }
   | space* end_details nl
       { Lexing.new_line lexbuf;
