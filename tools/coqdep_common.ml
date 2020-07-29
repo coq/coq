@@ -162,6 +162,11 @@ let warning_module_notfound f s =
   coqdep_warning "in file %s, library %s is required and has not been found in the loadpath!"
     f (String.concat "." s)
 
+let warning_multiple_paths_match f s lppath suffix =
+  let logpath = (String.concat "." s) in
+  coqdep_warning "in file %s, library %s is required and has not been found in the loadpath! the library's logical path's largest matching prefix (%s) matches multiple physical directories %s"
+    f logpath (String.sub logpath 0 (String.length logpath - String.length (String.concat "." suffix))) (String.concat "," lppath)
+
 let warning_declare f s =
   coqdep_warning "in file %s, declared ML module %s has not been found!" f s
 
@@ -212,7 +217,7 @@ let register_dir_logpath,find_dir_logpath,find_physpath =
     Hashtbl.add tbl (absolute_dir physdir) logpath ;
     Hashtbl.add tbl_rev logpath (absolute_dir physdir) in
   let fndl physdir = Hashtbl.find tbl (absolute_dir physdir) in
-  let fndp logpath = Hashtbl.find_opt tbl_rev logpath in
+  let fndp logpath = Hashtbl.find_all tbl_rev logpath in
   reg,fndl,fndp
 
 let file_name s = function
@@ -286,28 +291,26 @@ let string_of_dependency_list suffix_for_require deps =
   String.concat " " (List.map string_of_dep deps)
 
 (**
-    phys_path_best_match prefix logpath = Some (p,s) ->
-    [p] is the physical path corresponding to the largest matching prefix of logpath (logical path)
-    [s] is the unmatched suffix of the logical path
+    phys_path_best_match [] logpath = Some (p,s) ->
+    [p] is a list of physical path matching the largest prefix of logpath (logical path) that matches a physical paths.
+    [s] is the unmatched suffix of the logical path. if [p] is empty, then this [s] can be any list.
 *)
-let rec phys_path_best_match (prefix: string list) (logpath: string list) :  (string * string list) option =
+let rec phys_path_best_match (prefix: string list) (logpath: string list) :  (string list * string list) =
   match logpath with
-  | [] -> (match find_physpath prefix with
-          | None -> None
-          | Some p -> Some (p,[]))
+  | [] -> (find_physpath prefix, [])
   | h::tl -> match phys_path_best_match (prefix@[h]) tl with
-             | None -> (match find_physpath prefix with
-                        | None -> None
-                        | Some p -> Some (p,h::tl))
-              | Some p -> Some p
+             | ([], _) -> (match find_physpath prefix with
+                        | [] -> ([],[])
+                        | pp -> (pp,h::tl))
+              | p -> p
 
 let fconcatl (ls: string list) : string =
     List.fold_left Filename.concat "" ls
 
-let phys_path (logpath: string list) : string option =
-  match (phys_path_best_match [] logpath) with
-  | None -> None
-  | Some (ppath, suffix) -> Some (fconcatl (ppath::suffix))
+(* let phys_path (logpath: string list) : string option =
+ *   match (phys_path_best_match [] logpath) with
+ *   | None -> None
+ *   | Some (ppath, suffix) -> Some (fconcatl (ppath::suffix)) *)
 
 let rec find_dependencies basename =
   let verbose = true in (* for past/future use? *)
@@ -350,9 +353,10 @@ let rec find_dependencies basename =
                       | Some pth -> pth @ str
                       in
                   (if !option_compute_missing then
-                    (match (phys_path str) with
-                    | Some estimated_path -> add_dep (DepRequire estimated_path)
-                    | None -> warning_module_notfound f str)
+                    (match (phys_path_best_match [] str) with
+                    | ([ppath], suffix) -> add_dep (DepRequire (fconcatl (ppath::suffix)))
+                    | ([],_) -> warning_module_notfound f str
+                    | (lppath, suffix) -> warning_multiple_paths_match f str suffix lppath)
                   else warning_module_notfound f str)
               end) strl
         | Declare sl ->
