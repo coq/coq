@@ -1,0 +1,4 @@
+File "stdin", line 2, characters 21-25:
+Error:
+The term "true" has type "bool" while it is expected to have type "nat".
+

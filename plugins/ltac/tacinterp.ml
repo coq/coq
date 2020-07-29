@@ -162,27 +162,45 @@ let catching_error call_trace fail (e, info) =
     fail located_exc
   end
 
-let update_loc ?loc (e, info) =
-  (e, Option.cata (Loc.add_loc info) info loc)
+let update_loc loc use_finer (e, info as e') =
+  match loc with
+  | Some loc ->
+    if use_finer then
+      (* ensure loc if there is none *)
+      match Loc.get_loc info with
+      | None -> (e, Loc.add_loc info loc)
+      | _ -> (e, info)
+    else
+      (* override loc (because loc refers to inside of Ltac functions) *)
+      (e, Loc.add_loc info loc)
+  | None -> e'
 
-let catch_error ?loc call_trace f x =
+let catch_error_with_trace_loc loc use_finer call_trace f x =
   try f x
   with e when CErrors.noncritical e ->
     let e = Exninfo.capture e in
-    let e = update_loc ?loc e in
+    let e = update_loc loc use_finer e in
     catching_error call_trace Exninfo.iraise e
 
-let catch_error_loc ?loc tac =
+let catch_error_loc loc use_finer tac =
   Proofview.tclOR tac (fun exn ->
-      let (e, info) = update_loc ?loc exn in
+      let (e, info) = update_loc loc use_finer exn in
       Proofview.tclZERO ~info e)
 
-let wrap_error ?loc tac k =
-  if is_traced () then Proofview.tclORELSE tac k
-  else catch_error_loc ?loc tac
+let wrap_error tac k =
+  if is_traced () then Proofview.tclORELSE tac k else tac
 
-let catch_error_tac ?loc call_trace tac =
-  wrap_error ?loc
+let wrap_error_loc loc use_finer tac k =
+  if is_traced () then Proofview.tclORELSE tac k
+  else catch_error_loc loc use_finer tac
+
+let catch_error_tac call_trace tac =
+  wrap_error
+    tac
+    (catching_error call_trace (fun (e, info) -> Proofview.tclZERO ~info e))
+
+let catch_error_tac_loc loc use_finer call_trace tac =
+  wrap_error_loc loc use_finer
     tac
     (catching_error call_trace (fun (e, info) -> Proofview.tclZERO ~info e))
 
@@ -554,7 +572,7 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   let loc = loc_of_glob_constr term in
   let trace = push_trace (loc,LtacConstrInterp (term,vars)) ist in
   let (evd,c) =
-    catch_error ?loc trace (understand_ltac flags env sigma vars kind) term
+    catch_error_with_trace_loc loc true trace (understand_ltac flags env sigma vars kind) term
   in
   (* spiwack: to avoid unnecessary modifications of tacinterp, as this
      function already use effect, I call [run] hoping it doesn't mess
@@ -1079,7 +1097,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let call = LtacAtomCall t in
       let trace = push_trace(loc,call) ist in
       Profile_ltac.do_profile "eval_tactic:2" trace
-        (catch_error_tac ?loc trace (interp_atomic ist t))
+        (catch_error_tac_loc loc true trace (interp_atomic ist t))
   | TacFun _ | TacLetIn _ | TacMatchGoal _ | TacMatch _ -> interp_tactic ist tac
   | TacId [] -> Proofview.tclLIFT (db_breakpoint (curr_debug ist) [])
   | TacId s ->
@@ -1173,7 +1191,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         ; poly
         ; extra = TacStore.set ist.extra f_trace trace } in
         val_interp ist alias.Tacenv.alias_body >>= fun v ->
-        Ftactic.lift (catch_error_loc ?loc (tactic_of_value ist v))
+        Ftactic.lift (catch_error_loc loc false (tactic_of_value ist v))
       in
       let tac =
         Ftactic.with_env interp_vars >>= fun (env, lr) ->
@@ -1202,7 +1220,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
       let tac args =
         let name _ _ = Pptactic.pr_extend (fun v -> print_top_val () v) 0 opn args in
-        Proofview.Trace.name_tactic name (catch_error_tac ?loc trace (tac args ist))
+        Proofview.Trace.name_tactic name (catch_error_tac_loc loc false trace (tac args ist))
       in
       Ftactic.run args tac
 
@@ -1305,7 +1323,7 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
                 ; extra = TacStore.set ist.extra f_trace []
                 } in
               Profile_ltac.do_profile "interp_app" trace ~count_call:false
-                (catch_error_tac ?loc trace (val_interp ist body)) >>= fun v ->
+                (catch_error_tac_loc loc false trace (val_interp ist body)) >>= fun v ->
               Ftactic.return (name_vfun (push_appl appl largs) v)
             end
             begin fun (e, info) ->
