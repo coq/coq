@@ -128,7 +128,8 @@ type 'a equation =
       rhs          : 'a rhs;
       alias_stack  : Name.t list;
       eqn_loc      : Loc.t option;
-      used         : bool ref }
+      used         : int ref;
+      catch_all_vars : Id.t CAst.t list ref }
 
 type 'a matrix = 'a equation list
 
@@ -543,11 +544,34 @@ let check_all_variables env sigma typ mat =
            error_bad_pattern ?loc env sigma cstr_sp typ)
     mat
 
-let check_unused_pattern env eqn =
-  if not !(eqn.used) then
-    raise_pattern_matching_error ?loc:eqn.eqn_loc (env, Evd.empty, UnusedClause eqn.patterns)
+let set_pattern_catch_all_var ?loc eqn = function
+  | Name id when not (Id.Set.mem id eqn.rhs.rhs_vars) ->
+    eqn.catch_all_vars := CAst.make ?loc id :: !(eqn.catch_all_vars)
+  | _ -> ()
 
-let set_used_pattern eqn = eqn.used := true
+let warn_named_multi_catch_all =
+  CWarnings.create ~name:"unused-pattern-matching-variable" ~category:"pattern-matching"
+         (fun id ->
+          strbrk "Unused variable " ++ Id.print id ++ strbrk " catches more than one case.")
+
+let wildcard_id = Id.of_string "wildcard'"
+
+let is_wildcard id =
+  Id.equal (Id.of_string (Nameops.atompart_of_id id)) wildcard_id
+
+let check_unused_pattern env eqn =
+  match !(eqn.used) with
+  | 0 -> raise_pattern_matching_error ?loc:eqn.eqn_loc (env, Evd.empty, UnusedClause eqn.patterns)
+  | 1 -> ()
+  | _ ->
+    let warn {CAst.v = id; loc} =
+      (* Convention: Names starting with `_` and derivatives of Program's
+         "wildcard'" internal name deactivate the warning *)
+      if (Id.to_string id).[0] <> '_' && not (is_wildcard id)
+      then warn_named_multi_catch_all ?loc id in
+    List.iter warn !(eqn.catch_all_vars)
+
+let set_used_pattern eqn = eqn.used := !(eqn.used) + 1
 
 let extract_rhs pb =
   match pb.mat with
@@ -1017,7 +1041,8 @@ let add_assert_false_case pb tomatch =
               it = None };
       alias_stack = Anonymous::aliasnames;
       eqn_loc = None;
-      used = ref false } ]
+      used = ref 0;
+      catch_all_vars = ref [] } ]
 
 let adjust_impossible_cases sigma pb pred tomatch submat =
   match submat with
@@ -1235,6 +1260,7 @@ let group_equations pb ind current cstrs mat =
                  let args = make_anonymous_patvars cstrs.(i-1).cs_nargs in
                  brs.(i-1) <- (args, name, rest) :: brs.(i-1)
                done;
+               set_pattern_catch_all_var ?loc:pat.CAst.loc eqn name;
                if !only_default == None then only_default := Some true
            | PatCstr (((_,i)),args,name) ->
                (* This is a regular clause *)
@@ -1602,7 +1628,8 @@ let matx_of_eqns env eqns =
     { patterns = initial_lpat;
       alias_stack = [];
       eqn_loc = loc;
-      used = ref false;
+      used = ref 0;
+      catch_all_vars = ref [];
       rhs = rhs }
   in List.map build_eqn eqns
 
@@ -1859,7 +1886,8 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
     { patterns = patl;
       alias_stack = [];
       eqn_loc = None;
-      used = ref false;
+      used = ref 0;
+      catch_all_vars = ref [];
       rhs = { rhs_env = pb_env;
               (* we assume all vars are used; in practice we discard dependent
                  vars so that the field rhs_vars is normally not used *)
@@ -1879,7 +1907,8 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
       [ { patterns = List.map (fun _ -> DAst.make @@ PatVar Anonymous) patl;
           alias_stack = [];
           eqn_loc = None;
-          used = ref false;
+          used = ref 0;
+          catch_all_vars = ref [];
           rhs = { rhs_env = pb_env;
                   rhs_vars = Id.Set.empty;
                   avoid_ids = avoid0;
@@ -2149,7 +2178,7 @@ let constr_of_pat env sigma arsign pat avoid =
         let name, avoid = match name with
             Name n -> name, avoid
           | Anonymous ->
-              let previd, id = prime avoid (Name (Id.of_string "wildcard")) in
+              let id = next_ident_away wildcard_id avoid in
                 Name id, Id.Set.add id avoid
         in
         let r = Sorts.Relevant in (* TODO relevance *)

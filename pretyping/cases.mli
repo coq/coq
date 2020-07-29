@@ -68,7 +68,8 @@ type 'a equation =
       rhs          : 'a rhs;
       alias_stack  : Name.t list;
       eqn_loc      : Loc.t option;
-      used         : bool ref }
+      used         : int ref;
+      catch_all_vars : Id.t CAst.t list ref }
 
 type 'a matrix = 'a equation list
 
