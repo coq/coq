@@ -299,10 +299,8 @@ let rec phys_path_best_match (prefix: string list) (logpath: string list) :  (st
   match logpath with
   | [] -> (find_physpath prefix, [])
   | h::tl -> match phys_path_best_match (prefix@[h]) tl with
-             | ([], _) -> (match find_physpath prefix with
-                        | [] -> ([],[])
-                        | pp -> (pp,h::tl))
-              | p -> p
+             | ([], _) -> (find_physpath prefix, h::tl)
+             | p -> p
 
 let fconcatl (ls: string list) : string =
     List.fold_left Filename.concat "" ls
