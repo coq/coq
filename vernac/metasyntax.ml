@@ -665,15 +665,28 @@ let expand_list_rule s typ tkl x n p ll =
        aux (i+1) (main :: tks @ hds) ll in
   aux 0 [] ll
 
-let is_constr_typ typ x etyps =
+let production_level_eq lev1 lev2 =
+  match lev1, lev2 with
+  | NextLevel, NextLevel -> true
+  | NumLevel n1, NumLevel n2 -> Int.equal n1 n2
+  | DefaultLevel, DefaultLevel -> true
+  | (NextLevel | NumLevel _| DefaultLevel), _ -> false
+
+let is_constr_typ (s,lev) x etyps =
   match List.assoc x etyps with
-  | ETConstr (_,_,typ') -> typ = typ'
+  (* TODO: factorize these rules with the ones computing the effective
+     sublevel sent to camlp5, so as to include the case of
+     DefaultLevel which are valid *)
+  | ETConstr (s',_,(lev',InternalProd | (NumLevel _ | NextLevel as lev'), _)) ->
+    Notation.notation_entry_eq s s' && production_level_eq lev lev'
   | _ -> false
 
 let include_possible_similar_trailing_pattern typ etyps sl l =
   let rec aux n = function
   | Terminal s :: sl, Terminal s'::l' when s = s' -> aux n (sl,l')
   | [], NonTerminal x ::l' when is_constr_typ typ x etyps -> try_aux n l'
+  | Break _ :: sl, l -> aux n (sl,l)
+  | sl, Break _ :: l -> aux n (sl,l)
   | _ -> raise Exit
   and try_aux n l =
     try aux (n+1) (sl,l)
@@ -704,8 +717,8 @@ let make_production etyps symbols =
             | Break _ -> []
             | _ -> anomaly (Pp.str "Found a non terminal token in recursive notation separator.")) sl) in
         match List.assoc x etyps with
-        | ETConstr (s,_,typ) ->
-            let p,l' = include_possible_similar_trailing_pattern typ etyps sl l in
+        | ETConstr (s,_,(lev,_ as typ)) ->
+            let p,l' = include_possible_similar_trailing_pattern (s,lev) etyps sl l in
             expand_list_rule s typ tkl x 1 p (aux l')
         | ETBinder o ->
             check_open_binder o sl x;
