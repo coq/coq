@@ -13,13 +13,13 @@ Existential variables
    | ?[ ?@ident ]
    | ?@ident {? @%{ {+; @ident := @term } %} }
 
-|Coq| terms can include existential variables which represents unknown
-subterms to eventually be replaced by actual subterms.
+|Coq| terms can include existential variables that represent unknown
+subterms that are eventually replaced with actual subterms.
 
-Existential variables are generated in place of unsolvable implicit
+Existential variables are generated in place of unsolved implicit
 arguments or “_” placeholders when using commands such as ``Check`` (see
 Section :ref:`requests-to-the-environment`) or when using tactics such as
-:tacn:`refine`, as well as in place of unsolvable instances when using
+:tacn:`refine`, as well as in place of unsolved instances when using
 tactics such that :tacn:`eapply`. An existential
 variable is defined in a context, which is the context of variables of
 the placeholder which generated the existential variable, and a type,
@@ -43,19 +43,15 @@ existential variable is represented by “?” followed by an identifier.
    Check identity _ (fun x => _).
 
 In the general case, when an existential variable :n:`?@ident` appears
-outside of its context of definition, its instance, written under the
-form :n:`{ {*; @ident := @term} }` is appending to its name, indicating
+outside its context of definition, its instance, written in the
+form :n:`{ {*; @ident := @term} }`, is appended to its name, indicating
 how the variables of its defining context are instantiated.
-The variables of the context of the existential variables which are
-instantiated by themselves are not written, unless the :flag:`Printing Existential Instances` flag
-is on (see Section :ref:`explicit-display-existentials`), and this is why an
-existential variable used in the same context as its context of definition is written with no instance.
+Only the variables that are defined in another context are displayed:
+this is why an existential variable used in the same context as its
+context of definition is written with no instance.
+This behaviour may be changed: see :ref:`explicit-display-existentials`.
 
 .. coqtop:: all
-
-   Check (fun x y => _) 0 1.
-
-   Set Printing Existential Instances.
 
    Check (fun x y => _) 0 1.
 
@@ -87,6 +83,14 @@ Explicit displaying of existential instances for pretty-printing
    This flag (off by default) activates the full display of how the
    context of an existential variable is instantiated at each of the
    occurrences of the existential variable.
+
+.. coqtop:: all
+
+   Check (fun x y => _) 0 1.
+
+   Set Printing Existential Instances.
+
+   Check (fun x y => _) 0 1.
 
 .. _tactics-in-terms:
 
