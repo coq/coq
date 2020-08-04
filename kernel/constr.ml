@@ -850,7 +850,9 @@ let map_with_binders g f l c0 = match kind c0 with
 let rec exliftn el c =
   let open Esubst in
   match kind c with
-  | Rel i -> mkRel(reloc_rel i el)
+  | Rel i ->
+    let j = reloc_rel i el in
+    if Int.equal i j then c else mkRel j
   | _ -> map_with_binders el_lift exliftn el c
 
 (* Lifting the binding depth across k bindings *)
