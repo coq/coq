@@ -967,15 +967,17 @@ let collapse_appl sigma c = match EConstr.kind sigma c with
 
 (* First utilities for avoiding telescope computation for subst_term *)
 
-let prefix_application sigma eq_fun (k,c) by_c t =
+let prefix_application sigma eq_fun k arity by_c t =
   let open EConstr in
-  let t' = collapse_appl sigma t in
-  match EConstr.kind sigma c, EConstr.kind sigma t' with
-    | App (f1,cl1), App (f2,cl2) ->
-        let l1 = Array.length cl1
-        and l2 = Array.length cl2 in
+  if Int.equal arity 0 then None
+  else
+    let t' = collapse_appl sigma t in
+    match EConstr.kind sigma t' with
+    | App (f2,cl2) ->
+      let l1 = arity in
+      let l2 = Array.length cl2 in
         if l1 <= l2
-           && eq_fun sigma (k, c) (mkApp (f2, Array.sub cl2 0 l1)) then
+           && eq_fun sigma k (mkApp (f2, Array.sub cl2 0 l1)) then
           Some (mkApp ((Vars.lift k by_c), Array.sub cl2 l1 (l2 - l1)))
         else
           None
@@ -986,19 +988,22 @@ let prefix_application sigma eq_fun (k,c) by_c t =
    term [c1] in a term [t]; works if [c1] and [c2] have rels *)
 
 let replace_term_gen sigma eq_fun c by_c in_t =
-  let c' = collapse_appl sigma c in
+  let arity = match EConstr.kind sigma c with
+  | App (_, args) -> Array.length args
+  | _ -> 0
+  in
   let rec substrec k t =
-    match prefix_application sigma eq_fun (k, c') by_c t with
+    match prefix_application sigma eq_fun k arity by_c t with
       | Some x -> x
       | None ->
-    (if eq_fun sigma (k, c) t then (EConstr.Vars.lift k by_c) else
+    (if eq_fun sigma k t then (EConstr.Vars.lift k by_c) else
       EConstr.map_with_binders sigma succ substrec k t)
   in
   substrec 0 in_t
 
 let replace_term sigma c byc t =
   let cache = ref Int.Map.empty in
-  let eq sigma (k, c) t =
+  let eq sigma k t =
     let c' =
       try Int.Map.find k !cache
       with Not_found ->

@@ -2882,7 +2882,7 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let decls,cl = decompose_prod_n_assum sigma i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let cache = ref Int.Map.empty in
-  let eq sigma (k, c) t =
+  let eq sigma k t =
     let c' =
       try Int.Map.find k !cache
       with Not_found ->
