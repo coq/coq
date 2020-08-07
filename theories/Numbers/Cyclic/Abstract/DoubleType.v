@@ -54,7 +54,7 @@ Arguments W0 {znz}.
     (if depth = n).
 *)
 
-Fixpoint word (w:Type) (n:nat) : Type :=
+Fixpoint word (w:Set) (n:nat) : Set :=
  match n with
  | O => w
  | S n => zn2z (word w n)

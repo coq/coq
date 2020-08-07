@@ -99,7 +99,7 @@ Module ZnZ.
     lxor        : t -> t -> t }.
  
  Section Specs.
- Context {t : Type}{ops : Ops t}.
+ Context {t : Set}{ops : Ops t}.
 
  Notation "[| x |]" := (to_Z x)  (at level 0, x at level 99).
 
@@ -221,7 +221,7 @@ Module ZnZ.
 
  Section WW.
 
- Context {t : Type}{ops : Ops t}{specs : Specs ops}.
+ Context {t : Set}{ops : Ops t}{specs : Specs ops}.
 
  Let wB := base digits.
 
@@ -284,7 +284,7 @@ Module ZnZ.
 
  Section Of_Z.
 
- Context {t : Type}{ops : Ops t}{specs : Specs ops}.
+ Context {t : Set}{ops : Ops t}{specs : Specs ops}.
 
  Notation "[| x |]" := (to_Z x)  (at level 0, x at level 99).
 
@@ -325,7 +325,7 @@ End ZnZ.
 (** A modular specification grouping the earlier records. *)
 
 Module Type CyclicType.
- Parameter t : Type.
+ Parameter t : Set.
  Declare Instance ops : ZnZ.Ops t.
  Declare Instance specs : ZnZ.Specs ops.
 End CyclicType.
