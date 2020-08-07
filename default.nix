@@ -43,7 +43,7 @@ stdenv.mkDerivation rec {
     hostname
     python3 time # coq-makefile timing tools
   ]
-  ++ (with ocamlPackages; [ ocaml findlib num ])
+  ++ (with ocamlPackages; [ ocaml findlib ])
   ++ optionals buildIde [
     ocamlPackages.lablgtk3-sourceview3
     glib gnome3.defaultIconTheme wrapGAppsHook
@@ -68,6 +68,12 @@ stdenv.mkDerivation rec {
     ++ [ graphviz ] # Useful for STM debugging
     ++ [ dune_2 ] # Maybe the next build system
   );
+
+  # Since #12604, ocamlfind looks for num when building plugins
+  # This follows a similar change in the nixpkgs repo (cf. NixOS/nixpkgs#94230)
+  propagatedBuildInputs = [
+    ocamlPackages.num
+  ];
 
   src =
     if shell then null
