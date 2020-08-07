@@ -522,6 +522,18 @@ Proof.
   repeat red; eauto using Permutation_NoDup.
 Qed.
 
+Lemma Permutation_repeat x n l :
+  Permutation l (repeat x n) -> l = repeat x n.
+Proof.
+  revert n; induction l as [|y l IHl] ; simpl; intros n HP; auto.
+  - now apply Permutation_nil in HP; inversion HP.
+  - assert (y = x) as Heq by (now apply repeat_spec with n, (Permutation_in _ HP); left); subst.
+    destruct n; simpl; simpl in HP.
+    + symmetry in HP; apply Permutation_nil in HP; inversion HP.
+    + f_equal; apply IHl.
+      now apply Permutation_cons_inv with x.
+Qed.
+
 End Permutation_properties.
 
 Section Permutation_map.
