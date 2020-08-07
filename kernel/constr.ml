@@ -820,37 +820,73 @@ let map_with_binders g f l c0 = match kind c0 with
 (* Size annotations *)
 (*********************)
 
+(** Mutation is used in uses of map_annots and fold_annots,
+  and it's VERY important that the two traverse the annotations
+  in the same order (left-to-right). *)
+
 (** fold-type functions on size annotations of constrs *)
 
-let rec count_annots cstr =
+let rec fold_annots
+  (f : pinductive -> Annot.t -> 'acc -> 'acc)
+  (g : Annots.t -> 'acc ->'acc)
+  (acc : 'acc) cstr =
   match cstr with
-  | Rel (_, ans) -> Annots.length ans
-  | Var (_, ans) -> Annots.length ans
-  | Cast (c, _, _)
-  | Lambda (_, _, c) ->
-    count_annots c
+  | Rel (_, ans) -> g ans acc
+  | Var (_, ans) -> g ans acc
+  | Cast (c, _, _) -> fold_annots f g acc c
+  | Lambda (_, _, c) -> fold_annots f g acc c
   | LetIn (_, b, _, c) ->
-    count_annots b + count_annots c
-  | Const (_, ans) -> Annots.length ans
-  | Ind _ -> 1
+    let acc = fold_annots f g acc b in
+    fold_annots f g acc c
+  | Const (_, ans) -> g ans acc
+  | Ind (iu, a) -> f iu a acc
   | Case (_, _, c, lf) ->
-    Array.fold_left (fun count c -> count + count_annots c) (count_annots c) lf
-  | Fix (_, (_, _, bl))
+    let acc = fold_annots f g acc c in
+    Array.fold_left (fold_annots f g) acc lf
+  | Fix (_, (_, _, bl)) ->
+    Array.fold_left (fold_annots f g) acc bl
   | CoFix (_, (_, _, bl)) ->
-    Array.fold_left (fun count c -> count + count_annots c) 0 bl
-  | _ ->
-    fold (fun count c -> count + count_annots c) 0 cstr
+    Array.fold_left (fold_annots f g) acc bl
+  | _ -> fold (fold_annots f g) acc cstr
 
-let rec collect_annots c =
-  match c with
-  | Rel (_, ans) | Var (_, ans) | Const (_, ans) -> vars ans
-  | Ind (_, Size (SizeVar (svar, _))) -> SVars.add svar SVars.empty
-  | _ -> fold (fun vars c -> SVars.union vars (collect_annots c)) SVars.empty c
+let count_annots =
+  let f _ _ acc = succ acc in
+  let g ans acc = acc + Annots.length ans in
+  fold_annots f g 0
 
-let rec any_annot f c =
-  match c with
-  | Ind (_, a) -> f a
-  | _ -> fold (fun acc c -> acc || any_annot f c) false c
+let collect_annots =
+  let f _ a acc =
+    match a with
+    | Size (SizeVar (svar, _)) -> SVars.add svar acc
+    | _ -> acc in
+  let g ans acc = SVars.union (vars ans) acc in
+  fold_annots f g SVars.empty
+
+let any_annot p =
+  let f _ a acc = acc || p a in
+  let g _ acc = acc in
+  fold_annots f g false
+
+let get_smap annots =
+  match annots with
+  | Sized (svar, _) ->
+    let svar_ref = ref svar in
+    let f _ a acc =
+      match a with
+      | Size (SizeVar (svar_from, _)) ->
+        let svar_to = !svar_ref in
+        let () = svar_ref := SVar.succ svar in
+        SMap.set svar_from svar_to acc
+      | _ -> acc in
+    let g ans acc =
+      match ans with
+      | Sized (svar_from, _) ->
+        let svar_to = !svar_ref in
+        let () = svar_ref := SVar.succ svar in
+        SMap.set svar_from svar_to acc
+      | _ -> acc in
+    fold_annots f g SMap.empty
+  | _ -> const SMap.empty
 
 (** map-type functions on stage annotations of constrs *)
 
@@ -952,10 +988,13 @@ let erase_star vars =
 
 let annotate_fresh svar =
   let svar_ref = ref svar in
-  let f _ _ =
+  let f _ a =
+    let size = match a with
+      | Size (SizeVar (_, size)) -> size
+      | _ -> 0 in
     let svar = !svar_ref in
     svar_ref := SVar.succ svar;
-    Size (SizeVar (svar, 0)) in
+    Size (SizeVar (svar, size)) in
   let g ans =
     match ans with
     | Assum -> ans
@@ -978,6 +1017,23 @@ let annotate_succ vars =
     | Some na when mem na vars -> hat a
     | _ -> a in
   map_annots f identity
+
+let subst_smap smap =
+  let f _ a =
+    match a with
+    | Size (SizeVar (svar_old, size)) ->
+      let svar_new = SMap.get svar_old smap in
+      if svar_new == svar_old then a else
+      Size (SizeVar (svar_new, size))
+    | _ -> a in
+  let g ans =
+    match ans with
+    | Sized (svar_old, n) ->
+      let svar_new = SMap.get svar_old smap in
+      if svar_new == svar_old then ans else
+      Sized (svar_new, n)
+    | _ -> ans in
+  map_annots f g
 
 (*********************)
 (*      Lifting      *)

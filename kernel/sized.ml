@@ -10,6 +10,7 @@ module SVar =
 struct
   type t = int
   let equal = Int.equal
+  let compare = Int.compare
   let succ = succ
   let skip = (+)
   let infty = -1 (* For constraint representation only!!! *)
@@ -31,6 +32,20 @@ struct
     let open Pp in
     let pr_var v = str "s" ++ int v in
     seq [str "{"; pr_enum pr_var (elements vars); str "}"]
+end
+
+(** Size variable substitution maps *)
+
+module SMap =
+struct
+  module M = Map.Make(SVar)
+  type t = SVar.t M.t
+  let empty = M.empty
+  let set = M.add
+  let get var smap =
+    match M.find_opt var smap with
+    | Some var -> var
+    | None -> var
 end
 
 (** Sizes, for sized annotations *)
@@ -279,6 +294,9 @@ struct
       end
     | _ -> cstrnts
     end
+
+  let map smap =
+    S.map (fun (var1, size, var2) -> (SMap.get var1 smap, size, SMap.get var2 smap))
 
   let pr cstrnts =
     let open Pp in

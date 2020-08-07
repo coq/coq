@@ -117,6 +117,13 @@ let size_vars_in_relative env n =
   with Not_found ->
     error_unbound_rel env n
 
+let smap_of_relative env annots n =
+  try
+    env |> lookup_rel n |> RelDecl.get_value |>
+    Option.cata (get_smap annots) SMap.empty
+  with Not_found ->
+    error_unbound_rel env n
+
 (* Type of variables *)
 let type_of_variable env id =
   try named_type id env
@@ -125,6 +132,13 @@ let type_of_variable env id =
 
 let size_vars_in_variable env id =
   try lookup_named_annots id env
+  with Not_found ->
+    error_unbound_var env id
+
+let smap_of_variable env annots id =
+  try
+    env |> lookup_named id |> NamedDecl.get_value |>
+    Option.cata (get_smap annots) SMap.empty
   with Not_found ->
     error_unbound_var env id
 
@@ -555,7 +569,9 @@ let rec execute env stg cstrnt cstr =
       let check_sized = (Environ.typing_flags env).check_sized in
       let numvars = size_vars_in_relative env n in
       let annots, stg = next_annots check_sized numvars stg in
-      stg, cstrnt, mkRelA n annots, type_of_relative env n
+      let smap = smap_of_relative env annots n in
+      let cstrnt = union cstrnt (Constraints.map smap cstrnt) in
+      stg, cstrnt, mkRelA n annots, subst_smap smap (type_of_relative env n)
 
     | Var (id, _) ->
       let check_sized = (Environ.typing_flags env).check_sized in
@@ -563,7 +579,9 @@ let rec execute env stg cstrnt cstr =
       let s, stg = next stg in
       let t = annotate_glob s (type_of_variable env id) in
       let annots, stg = next_annots check_sized numvars stg in
-      stg, cstrnt, mkVarA id annots, t
+      let smap = smap_of_variable env annots id in
+      let cstrnt = union cstrnt (Constraints.map smap cstrnt) in
+      stg, cstrnt, mkVarA id annots, subst_smap smap t
 
     | Const (c, _) ->
       let check_sized = (Environ.typing_flags env).check_sized in

@@ -76,6 +76,14 @@ sig
   val pr : t -> Pp.t
 end
 
+module SMap :
+sig
+  type t
+  val empty : t
+  val set : SVar.t -> SVar.t -> t -> t
+  val get : SVar.t -> t -> SVar.t
+end
+
 module Size :
 sig
   type t = Infty | SizeVar of SVar.t * int
@@ -127,6 +135,7 @@ sig
   val empty : unit -> t
   val union : t -> t -> t
   val add : Annot.t -> Annot.t -> t -> t
+  val map : SMap.t -> t -> t
   val pr : t -> Pp.t
 end
 

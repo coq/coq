@@ -563,6 +563,12 @@ val erase_glob : SVars.t -> constr -> constr
 
 val erase_star : SVars.t -> constr -> constr
 
+(** [get_smap annots c] if [annots] is Sized, this creates a map
+  from [annots]'s size variables to those in [c]
+  in the same way [annotate_fresh] uses [svar]  *)
+
+val get_smap : Annots.t -> constr -> SMap.t
+
 (** [annotate_fresh svar c] annotates [c] with size variables starting from [svar] *)
 
 val annotate_fresh : SVar.t -> constr -> constr
@@ -575,6 +581,10 @@ val annotate_glob : Annot.t -> constr -> constr
    if the stage variables are in [vars] *)
 
 val annotate_succ : SVars.t -> constr -> constr
+
+(** [subst_smap smap c] applies the size substitution map [smap] to [c] *)
+
+val subst_smap : SMap.t -> constr -> constr
 
 (** [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
