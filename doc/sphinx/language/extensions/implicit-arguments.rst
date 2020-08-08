@@ -70,7 +70,7 @@ is said *contextual* if it can be inferred only from the knowledge of
 the type of the context of the current expression. For instance, the
 only argument of::
 
-  nil : forall A:Set, list A`
+  nil : forall A:Set, list A
 
 is contextual. Similarly, both arguments of a term of type::
 
@@ -539,7 +539,7 @@ with free variables into a closed statement where these variables are
 quantified explicitly.  Use the :cmd:`Generalizable` command to designate
 which variables should be generalized.
 
-It is activated for a binder by prefixing a \`, and for terms by
+It is activated within a binder by prefixing it with \`, and for terms by
 surrounding it with \`{ }, or \`[ ] or \`( ).
 
 Terms surrounded by \`{ } introduce their free variables as maximally
