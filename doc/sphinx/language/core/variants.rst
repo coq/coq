@@ -57,6 +57,11 @@ Private (matching) inductive types
 Definition by cases: match
 --------------------------
 
+Objects of inductive types can be destructured by a case-analysis
+construction called *pattern matching* expression. A pattern matching
+expression is used to analyze the structure of an inductive object and
+to apply specific treatments accordingly.
+
 .. insertprodn term_match pattern0
 
 .. prodn::
@@ -77,10 +82,12 @@ Definition by cases: match
    | @numeral
    | @string
 
-Objects of inductive types can be destructured by a case-analysis
-construction called *pattern matching* expression. A pattern matching
-expression is used to analyze the structure of an inductive object and
-to apply specific treatments accordingly.
+Note that the :n:`@pattern ::= @pattern10 : @term` production
+is not supported in :n:`match` patterns.  Trying to use it will give this error:
+
+.. exn:: Casts are not supported in this pattern.
+   :undocumented:
+
 
 This paragraph describes the basic form of pattern matching. See
 Section :ref:`Mult-match` and Chapter :ref:`extendedpatternmatching` for the description
