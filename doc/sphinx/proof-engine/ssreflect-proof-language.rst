@@ -2280,7 +2280,7 @@ to the others.
 Iteration
 ~~~~~~~~~
 
-.. tacn:: do {? @num } {| @tactic | [ {+| @tactic } ] }
+.. tacn:: do {? @mult } {| @tactic | [ {+| @tactic } ] }
    :name: do (ssreflect)
 
    This tactical offers an accurate control on the repetition of tactics.
