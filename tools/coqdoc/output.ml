@@ -838,7 +838,7 @@ module Html = struct
       printf "<a id=\"%s_%c\"></a><h2>%s %s</h2>\n" idx c (display_letter c) cat;
       List.iter
         (fun (id,(text,link,t)) ->
-           let id' = prepare_entry id t in
+           let id' = escaped (prepare_entry id t) in
            printf "<a href=\"%s\">%s</a> %s<br/>\n" link id' text) l;
       printf "<br/><br/>"
     end
