@@ -368,8 +368,8 @@ a :token:`decl_notations` clause after the definition of the (co)inductive type 
 (co)recursive term (or after the definition of each of them in case of mutual
 definitions). The exact syntax is given by :n:`@decl_notation` for inductive,
 co-inductive, recursive and corecursive definitions and in :ref:`record-types`
-for records. Note that only syntax modifiers that do not require to add or
-change a parsing rule are accepted.
+for records. Note that only syntax modifiers that do not require adding or
+changing a parsing rule are accepted.
 
    .. insertprodn decl_notations decl_notation
 
@@ -1877,12 +1877,12 @@ Tactic notations allow customizing the syntax of tactics.
         - :tacn:`unfold`, :tacn:`with_strategy`
 
       * - ``constr``
-        - :token:`term`
+        - :token:`one_term`
         - a term
         - :tacn:`exact`
 
       * - ``uconstr``
-        - :token:`term`
+        - :token:`one_term`
         - an untyped term
         - :tacn:`refine`
 

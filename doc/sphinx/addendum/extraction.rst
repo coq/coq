@@ -99,10 +99,18 @@ Extraction Options
 Setting the target language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Extraction Language {| OCaml | Haskell | Scheme | JSON }
+.. cmd:: Extraction Language @language
    :name: Extraction Language
 
-   The ability to fix target language is the first and more important
+   .. insertprodn language language
+
+   .. prodn::
+      language ::= OCaml
+      | Haskell
+      | Scheme
+      | JSON
+
+   The ability to fix target language is the first and most important
    of the extraction options. Default is ``OCaml``.
 
    The JSON output is mostly for development or debugging:
@@ -215,14 +223,15 @@ code elimination performed during extraction, in a way which
 is independent but complementary to the main elimination
 principles of extraction (logical parts and types).
 
-.. cmd:: Extraction Implicit @qualid [ {+ @ident } ]
+.. cmd:: Extraction Implicit @qualid [ {* {| @ident | @int } } ]
 
-   This experimental command allows declaring some arguments of
-   :token:`qualid` as implicit, i.e. useless in extracted code and hence to
-   be removed by extraction. Here :token:`qualid` can be any function or
-   inductive constructor, and the given :token:`ident` are the names of
-   the concerned arguments. In fact, an argument can also be referred
-   by a number indicating its position, starting from 1.
+   Declares some arguments of
+   :token:`qualid` as implicit, meaning that they are useless in extracted code.
+   The extracted code will omit these arguments.
+   Here :token:`qualid` can be
+   any function or inductive constructor, and the :token:`ident`\s are
+   the names of the useless arguments.  Arguments can can also be
+   identified positionally by :token:`int`\s starting from 1.
 
 When an actual extraction takes place, an error is normally raised if the
 :cmd:`Extraction Implicit` declarations cannot be honored, that is
@@ -254,12 +263,24 @@ a closed term, and of course the system cannot guess the program which
 realizes an axiom.  Therefore, it is possible to tell the system
 what ML term corresponds to a given axiom. 
 
-.. cmd:: Extract Constant @qualid => @string
+.. cmd:: Extract Constant @qualid {* @string__tv } => {| @ident | @string }
 
    Give an ML extraction for the given constant.
-   The :token:`string` may be an identifier or a quoted string.
 
-.. cmd:: Extract Inlined Constant @qualid => @string
+   :n:`@string__tv`
+     If the type scheme axiom is an arity (a sequence of products followed
+     by a sort), then some type
+     variables have to be given (as quoted strings).
+
+     The number of type variables is checked by the system. For example:
+
+     .. coqtop:: in
+
+        Axiom Y : Set -> Set -> Set.
+        Extract Constant Y "'a" "'b" => " 'a * 'b ".
+
+
+.. cmd:: Extract Inlined Constant @qualid => {| @ident | @string }
 
    Same as the previous one, except that the given ML terms will
    be inlined everywhere instead of being declared via a ``let``.
@@ -282,20 +303,6 @@ what ML term corresponds to a given axiom.
    Extract Constant X => "int".
    Extract Constant x => "0".
 
-Notice that in the case of type scheme axiom (i.e. whose type is an
-arity, that is a sequence of product finished by a sort), then some type
-variables have to be given (as quoted strings). The syntax is then:
-
-.. cmdv:: Extract Constant @qualid {+ @string } => @string
-   :undocumented:
-
-The number of type variables is checked by the system. For example:
-
-.. coqtop:: in
-
-   Axiom Y : Set -> Set -> Set.
-   Extract Constant Y "'a" "'b" => " 'a * 'b ".
-
 Realizing an axiom via :cmd:`Extract Constant` is only useful in the
 case of an informative axiom (of sort ``Type`` or ``Set``). A logical axiom
 has no computational content and hence will not appear in extracted
@@ -316,36 +323,35 @@ The system also provides a mechanism to specify ML terms for inductive
 types and constructors. For instance, the user may want to use the ML
 native boolean type instead of the |Coq| one. The syntax is the following:
 
-.. cmd:: Extract Inductive @qualid => @string__1 [ {+ @string } ]
+.. cmd:: Extract Inductive @qualid => {| @ident | @string } [ {* {| @ident | @string } } ] {? @string__match }
 
    Give an ML extraction for the given inductive type. You must specify
-   extractions for the type itself (:n:`@string__1`) and all its
-   constructors (all the :n:`@string` between square brackets). In this form,
+   extractions for the type itself (the initial :n:`{| @ident | @string }`) and all its
+   constructors (the :n:`[ {* {| @ident | @string } } ]`). In this form,
    the ML extraction must be an ML inductive datatype, and the native
    pattern matching of the language will be used.
 
-   When :n:`@string__1` matches the name of the type of characters or strings
+   When the initial :n:`{| @ident | @string }` matches the name of the type of characters or strings
    (``char`` and ``string`` for OCaml, ``Prelude.Char`` and ``Prelude.String``
    for Haskell), extraction of literals is handled in a specialized way, so as
    to generate literals in the target language. This feature requires the type
    designated by :n:`@qualid` to be registered as the standard char or string type,
    using the :cmd:`Register` command.
 
-.. cmdv:: Extract Inductive @qualid => @string [ {+ @string } ] @string
-
-   Same as before, with a final extra :token:`string` that indicates how to
-   perform pattern matching over this inductive type. In this form,
-   the ML extraction could be an arbitrary type.
-   For an inductive type with :math:`k` constructors, the function used to
-   emulate the pattern matching should expect :math:`k+1` arguments, first the :math:`k`
-   branches in functional form, and then the inductive element to
-   destruct. For instance, the match branch ``| S n => foo`` gives the
-   functional form ``(fun n -> foo)``. Note that a constructor with no
-   arguments is considered to have one unit argument, in order to block
-   early evaluation of the branch: ``| O => bar`` leads to the functional
-   form ``(fun () -> bar)``. For instance, when extracting :g:`nat`
-   into |OCaml| ``int``, the code to be provided has type:
-   ``(unit->'a)->(int->'a)->int->'a``.
+   :n:`@string__match`
+     Indicates how to
+     perform pattern matching over this inductive type. In this form,
+     the ML extraction could be an arbitrary type.
+     For an inductive type with :math:`k` constructors, the function used to
+     emulate the pattern matching should expect :math:`k+1` arguments, first the :math:`k`
+     branches in functional form, and then the inductive element to
+     destruct. For instance, the match branch ``| S n => foo`` gives the
+     functional form ``(fun n -> foo)``. Note that a constructor with no
+     arguments is considered to have one unit argument, in order to block
+     early evaluation of the branch: ``| O => bar`` leads to the functional
+     form ``(fun () -> bar)``. For instance, when extracting :g:`nat`
+     into |OCaml| ``int``, the code to be provided has type:
+     ``(unit->'a)->(int->'a)->int->'a``.
 
 .. caution:: As for :cmd:`Extract Constant`, this command should be used with care:
 

@@ -29,6 +29,7 @@ Private (matching) inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. attr:: private(matching)
+   :name: private(matching); Private
 
    This attribute can be used to forbid the use of the :g:`match`
    construct on objects of this inductive type outside of the module

@@ -141,8 +141,8 @@ has type :n:`@type`.
       of_type ::= {| : | :> | :>> } @type
 
    These commands bind one or more :n:`@ident`\(s) to specified :n:`@type`\(s) as their specifications in
-   the global context. The fact asserted by the :n:`@type` (or, equivalently, the existence
-   of an object of this type) is accepted as a postulate.
+   the global context. The fact asserted by :n:`@type` (or, equivalently, the existence
+   of an object of this type) is accepted as a postulate.  They accept the :attr:`program` attribute.
 
    :cmd:`Axiom`, :cmd:`Conjecture`, :cmd:`Parameter` and their plural forms
    are equivalent.  They can take the :attr:`local` :term:`attribute`,
@@ -154,6 +154,10 @@ has type :n:`@type`.
    :n:`@ident`\s defined are only accessible within the section.  When the current section
    is closed, the :n:`@ident`\(s) become undefined and every object depending on them will be explicitly
    parameterized (i.e., the variables are *discharged*).  See Section :ref:`section-mechanism`.
+
+   :n:`:>`
+     If specified, :token:`ident_decl` is automatically
+     declared as a coercion to the class of its type.  See :ref:`coercions`.
 
    The :n:`Inline` clause is only relevant inside functors.  See :cmd:`Module`.
 

@@ -103,7 +103,7 @@ RENAME: [
 | Constr.lconstr lconstr
 | Constr.lconstr_pattern cpattern
 | G_vernac.query_command query_command
-| G_vernac.section_subset_expr section_subset_expr
+| G_vernac.section_subset_expr section_var_expr
 | Prim.ident ident
 | Prim.reference reference
 | Pvernac.Vernac_.main_entry vernac_control
@@ -541,7 +541,13 @@ evar_instance: [
 
 (* No constructor syntax, OPT [ "|" binders ] is not supported for Record *)
 record_definition: [
-| opt_coercion ident_decl binders OPT [ ":" type ] OPT [ identref ] "{" record_fields "}"  decl_notations
+| opt_coercion ident_decl binders OPT [ ":" sort ] OPT ( ":=" OPT [ identref ] "{" record_fields "}" )
+]
+
+(* No mutual recursion, no inductive classes, type must be a sort *)
+(* constructor is optional but "Class record_definition" covers that case *)
+singleton_class_definition: [
+| opt_coercion ident_decl binders OPT [ ":" sort ] ":=" constructor
 ]
 
 (* No record syntax, opt_coercion not supported for Variant, := ... required *)
@@ -558,7 +564,8 @@ gallina: [
 |   "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
 |   "Variant" variant_definition LIST0 ( "with" variant_definition )
 |   [ "Record" | "Structure" ] record_definition LIST0 ( "with" record_definition )
-|   "Class" inductive_definition LIST0 ( "with" inductive_definition )
+|   "Class" record_definition
+|   "Class" singleton_class_definition
 | REPLACE "Fixpoint" LIST1 rec_definition SEP "with"
 | WITH "Fixpoint" rec_definition LIST0 ( "with" rec_definition )
 | REPLACE "Let" "Fixpoint" LIST1 rec_definition SEP "with"
@@ -709,6 +716,10 @@ gallina_ext: [
 | REPLACE "Coercion" by_notation ":" class_rawexpr ">->" class_rawexpr
 | WITH "Coercion" smart_global ":" class_rawexpr ">->" class_rawexpr
 
+(* semantically restricted per https://github.com/coq/coq/pull/12936#discussion_r492705820 *)
+| REPLACE "Coercion" global OPT univ_decl def_body
+| WITH "Coercion" ident OPT univ_decl def_body
+
 | REPLACE "Include" "Type" module_type_inl LIST0 ext_module_type
 | WITH "Include" "Type" LIST1 module_type_inl SEP "<+"
 
@@ -721,7 +732,7 @@ gallina_ext: [
 | REPLACE "Export" "Unset" option_table
 | WITH "Unset" option_table
 | REPLACE "Instance" instance_name ":" operconstr200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
-| WITH "Instance" instance_name ":" operconstr200 hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
+| WITH "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
 
 | REPLACE "From" global "Require" export_token LIST1 global
 | WITH "From" dirpath "Require" export_token LIST1 global
@@ -1105,6 +1116,13 @@ simple_tactic: [
 | DELETE "transparent_abstract" tactic3
 | REPLACE "transparent_abstract" tactic3 "using" ident
 | WITH "transparent_abstract" tactic_expr3 OPT ( "using" ident )
+| REPLACE "typeclasses" "eauto" "bfs" OPT int_or_var "with" LIST1 preident
+| WITH "typeclasses" "eauto" OPT "bfs" OPT int_or_var OPT ( "with" LIST1 preident )
+| DELETE "typeclasses" "eauto" OPT int_or_var "with" LIST1 preident
+| DELETE "typeclasses" "eauto" OPT int_or_var
+(* in Tactic Notation: *)
+| "setoid_replace" constr "with" constr OPT ( "using" "relation" constr ) OPT ( "in" hyp )
+       OPT ( "at" LIST1 int_or_var ) OPT ( "by" tactic_expr3 )
 ]
 
 (* todo: don't use DELETENT for this *)
@@ -1134,6 +1152,19 @@ printable: [
 | DELETE "Term" smart_global OPT univ_name_list  (* readded in commands *)
 
 | INSERTALL "Print"
+]
+
+add_zify: [
+| [ "InjTyp" | "BinOp" | "UnOp" | "CstOp" | "BinRel" | "UnOpSpec" | "BinOpSpec" ]  TAG Micromega
+| [ "PropOp" | "PropBinOp" | "PropUOp" | "Saturate" ]TAG Micromega
+]
+
+scheme_kind: [
+| DELETE "Induction" "for" smart_global "Sort" sort_family
+| DELETE "Minimality" "for" smart_global "Sort" sort_family
+| DELETE "Elimination" "for" smart_global "Sort" sort_family
+| DELETE "Case" "for" smart_global "Sort" sort_family
+| [ "Induction" | "Minimality" | "Elimination" | "Case" ] "for" smart_global "Sort" sort_family
 ]
 
 command: [
@@ -1208,7 +1239,7 @@ command: [
 | WITH "Next" "Obligation" OPT ( "of" ident ) withtac
 | DELETE "Next" "Obligation" withtac
 | REPLACE "Obligation" int "of" ident ":" lglob withtac
-| WITH "Obligation" int OPT ( "of" ident ) OPT ( ":" lglob withtac )
+| WITH "Obligation" int OPT ( "of" ident ) OPT ( ":" type withtac )
 | DELETE "Obligation" int "of" ident withtac
 | DELETE "Obligation" int ":" lglob withtac
 | DELETE "Obligation" int withtac
@@ -1238,13 +1269,13 @@ command: [
 | REPLACE "Solve" "All" "Obligations" "with" tactic
 | WITH "Solve" "All" "Obligations" OPT ( "with" tactic )
 | DELETE "Solve" "All" "Obligations"
+| DELETE "Solve" "Obligations" "of" ident "with" tactic
+| DELETE "Solve" "Obligations" "with" tactic
+| DELETE "Solve" "Obligations"
+| "Solve" "Obligations" OPT ( "of" ident ) OPT ( "with" tactic )
 | REPLACE "Solve" "Obligation" int "of" ident "with" tactic
 | WITH "Solve" "Obligation" int OPT ( "of" ident ) "with" tactic
-| DELETE "Solve" "Obligations"
 | DELETE "Solve" "Obligation" int "with" tactic
-| REPLACE "Solve" "Obligations" "of" ident "with" tactic
-| WITH "Solve" "Obligations" OPT ( OPT ( "of" ident ) "with" tactic )
-| DELETE "Solve" "Obligations" "with" tactic
 | DELETE "Undo"
 | DELETE "Undo" natural
 | REPLACE "Undo" "To" natural
@@ -1273,6 +1304,8 @@ command: [
 | WITH "String" "Notation" reference reference reference ":" scope_name
 
 | DELETE "Ltac2" ltac2_entry      (* was split up *)
+| REPLACE "Goal" lconstr
+| WITH "Goal" type
 ]
 
 option_setting: [
@@ -1400,7 +1433,7 @@ type_cstr: [
 
 inductive_definition: [
 | REPLACE opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
-| WITH opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] opt_constructors_or_fields decl_notations
+| WITH    opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" type ]    opt_constructors_or_fields decl_notations
 ]
 
 (* note that constructor -> identref constructor_type *)
@@ -1623,7 +1656,7 @@ eauto_search_strategy: [
 constr_body: [
 | DELETE ":=" lconstr
 | REPLACE ":" lconstr ":=" lconstr
-| WITH OPT ( ":" lconstr ) ":=" lconstr
+| WITH OPT ( ":" type ) ":=" lconstr
 ]
 
 opt_hintbases: [
@@ -1775,7 +1808,14 @@ tactic_mode: [
 | ltac_info tactic
 | MOVETO command ltac_info tactic
 | DELETE command
+| REPLACE OPT toplevel_selector "{"
+(* semantically restricted *)
+| WITH OPT ( [ natural | "[" ident "]" ] ":" ) "{"
+| MOVETO simple_tactic OPT ( [ natural | "[" ident "]" ] ":" ) "{"
+| DELETE simple_tactic
 ]
+
+tactic_mode: [ | DELETENT ]
 
 sexpr: [
 | REPLACE syn_node      (* Ltac2 plugin *)
@@ -1872,14 +1912,14 @@ ltac_defined_tactics: [
 tactic_notation_tactics: [
 | "assert_fails" tactic_expr3
 | "assert_succeeds" tactic_expr3
-| "field" OPT ( "[" LIST1 operconstr200 "]" )
-| "field_simplify" OPT ( "[" LIST1 operconstr200 "]" ) LIST1 operconstr200 OPT ( "in" ident )
-| "field_simplify_eq" OPT ( "[" LIST1 operconstr200 "]" ) OPT ( "in" ident )
+| "field" OPT ( "[" LIST1 constr "]" )
+| "field_simplify" OPT ( "[" LIST1 constr "]" ) LIST1 constr OPT ( "in" ident )
+| "field_simplify_eq" OPT ( "[" LIST1 constr "]" ) OPT ( "in" ident )
 | "intuition" OPT tactic_expr5
-| "nsatz" OPT ( "with" "radicalmax" ":=" operconstr200 "strategy" ":=" operconstr200 "parameters" ":=" operconstr200 "variables" ":=" operconstr200 )
-| "psatz" operconstr200 OPT int_or_var
-| "ring" OPT ( "[" LIST1 operconstr200 "]" )
-| "ring_simplify" OPT ( "[" LIST1 operconstr200 "]" ) LIST1 operconstr200 OPT ( "in" ident )  (* todo: ident was "hyp", worth keeping? *)
+| "nsatz" OPT ( "with" "radicalmax" ":=" constr "strategy" ":=" constr "parameters" ":=" constr "variables" ":=" constr )
+| "psatz" constr OPT int_or_var
+| "ring" OPT ( "[" LIST1 constr "]" )
+| "ring_simplify" OPT ( "[" LIST1 constr "]" ) LIST1 constr OPT ( "in" ident )  (* todo: ident was "hyp", worth keeping? *)
 ]
 
 (* defined in OCaml outside of mlgs *)
@@ -2200,6 +2240,36 @@ ltac2_induction_clause: [
 | WITH ltac2_destruction_arg OPT ltac2_as_or_and_ipat OPT ltac2_eqn_ipat OPT ltac2_clause  TAG Ltac2
 ]
 
+starredidentref: [
+| EDIT identref ADD_OPT "*"
+| EDIT "Type" ADD_OPT "*"
+| "All"
+]
+
+ssexpr0: [
+| DELETE "(" LIST0 starredidentref ")"
+| DELETE "(" LIST0 starredidentref ")" "*"
+| DELETE "(" ssexpr35 ")"
+| DELETE "(" ssexpr35 ")" "*"
+| "(" section_subset_expr ")" OPT "*"
+]
+
+ssexpr35: [
+| EDIT ADD_OPT "-" ssexpr50
+]
+
+simple_binding: [
+| REPLACE "(" ident ":=" lconstr ")"
+| WITH "(" [ ident | natural ] ":=" lconstr ")"
+| DELETE "(" natural ":=" lconstr ")"
+]
+
+
+subprf: [
+| MOVEALLBUT simple_tactic
+| "{" (* should be removed.  See https://github.com/coq/coq/issues/12004 *)
+]
+
 SPLICE: [
 | clause
 | noedit_mode
@@ -2215,6 +2285,7 @@ SPLICE: [
 | var
 | identref
 | pattern_ident
+| pattern_identref
 | constr_eval  (* splices as multiple prods *)
 | tactic_then_last  (* todo: dependency on c.edit_mlg edit?? really useful? *)
 | ltac2_tactic_then_last
@@ -2294,7 +2365,7 @@ SPLICE: [
 | decorated_vernac
 | ext_module_expr
 | ext_module_type
-| pattern_identref
+| pattern_ident
 | test
 | binder_constr
 | atomic_constr
@@ -2389,6 +2460,13 @@ SPLICE: [
 | G_LTAC2_input_fun
 | ltac2_simple_intropattern_closed
 | ltac2_with_bindings
+| int_or_id
+| fun_ind_using
+| with_names
+| eauto_search_strategy_name
+| constr_with_bindings
+| simple_binding
+| ssexpr35 (* strange in mlg, ssexpr50 is after this *)
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2413,7 +2491,10 @@ RENAME: [
 | pattern100 pattern
 | match_constr term_match
 (*| impl_ident_tail impl_ident*)
-| ssexpr35 ssexpr (* strange in mlg, ssexpr50 is after this *)
+| ssexpr50 section_var_expr50
+| ssexpr0 section_var_expr0
+| section_subset_expr section_var_expr
+| fun_scheme_arg func_scheme_def
 
 | tactic_then_gen for_each_goal
 | ltac2_tactic_then_gen ltac2_for_each_goal
@@ -2423,7 +2504,7 @@ RENAME: [
 | BULLET bullet
 | fix_decl fix_body
 | cofix_decl cofix_body
-(* todo: it's confusing that Constr.constr and constr are different things *)
+(* todo: it's confusing that Constr.constr and constr mean different things *)
 | constr one_term
 | appl_arg arg
 | rec_definition fix_definition
@@ -2462,6 +2543,7 @@ RENAME: [
 | tac2expr1 ltac2_expr1
 | tac2expr0 ltac2_expr0
 | gmatch_list goal_match_list
+| starredidentref starred_ident_ref
 ]
 
 simple_tactic: [

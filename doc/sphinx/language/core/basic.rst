@@ -311,10 +311,10 @@ rest of the |Coq| manual: :term:`terms <term>` and :term:`types
      boldface label "Command:".  Commands are listed in the
      :ref:`command_index`.  Example:
 
-     .. cmd:: Comments {* @string }
+     .. cmd:: Comments {* {| @one_term | @string | @num } }
 
-        This command prints "Comments ok" and does not change anything
-        to the state of the document.
+        Prints "Comments ok" and does not change
+        the state of the document.
 
    tactic
 
