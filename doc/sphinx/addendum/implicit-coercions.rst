@@ -125,10 +125,16 @@ term consists of the successive application of its coercions.
 Declaring Coercions
 -------------------------
 
-.. cmd:: Coercion @qualid : @class >-> @class
+.. cmd:: Coercion @reference : @class >-> @class
+         Coercion @ident {? @univ_decl } @def_body
 
-  Declares the construction denoted by :token:`qualid` as a coercion between
-  the two given classes.
+   :name: Coercion; _
+
+  The first form declares the construction denoted by :token:`reference` as a coercion between
+  the two given classes.  The second form defines :token:`ident`
+  just like :cmd:`Definition` :n:`@ident {? @univ_decl } @def_body`
+  and then declares :token:`ident` as a coercion between it source and its target.
+  Both forms support the :attr:`local` attribute, which makes the coercion local to the current section.
 
   .. exn:: @qualid not declared.
      :undocumented:
@@ -174,21 +180,6 @@ Declaring Coercions
      circular. When a new circular coercion path is not convertible with the
      identity function, it will be reported as ambiguous.
 
-  .. cmdv:: Local Coercion @qualid : @class >-> @class
-
-     Declares the construction denoted by :token:`qualid` as a coercion local to
-     the current section.
-
-  .. cmdv:: Coercion @ident := @term {? @type }
-
-     This defines :token:`ident` just like :n:`Definition @ident := term {? @type }`,
-     and then declares :token:`ident` as a coercion between it source and its target.
-
-  .. cmdv:: Local Coercion @ident := @term {? @type }
-
-     This defines :token:`ident` just like :n:`Let @ident := @term  {? @type }`,
-     and then declares :token:`ident` as a coercion between it source and its target.
-
 Some objects can be declared as coercions when they are defined.
 This applies to :ref:`assumptions<gallina-assumptions>` and
 constructors of :ref:`inductive types and record fields<gallina-inductive-definitions>`.
@@ -205,12 +196,10 @@ Use :n:`:>` instead of :n:`:` before the
    function with type :g:`forall (x₁:T₁)..(xₙ:Tₙ)(y:C x₁..xₙ),D t₁..tₘ`,
    and we declare it as an identity coercion between ``C`` and ``D``.
 
+   This command supports the :attr:`local` attribute, which makes the coercion local to the current section.
+
    .. exn:: @class must be a transparent constant.
       :undocumented:
-
-   .. cmdv:: Local Identity Coercion @ident : @ident >-> @ident
-
-      Same as :cmd:`Identity Coercion` but locally to the current section.
 
    .. cmd:: SubClass @ident_decl @def_body
       :name: SubClass
@@ -223,9 +212,7 @@ Use :n:`:>` instead of :n:`:` before the
       :n:`Definition @ident := @type.`
       :n:`Identity Coercion Id_@ident_@ident' : @ident >-> @ident'`.
 
-   .. cmdv:: Local SubClass @ident_decl @def_body
-
-      Same as before but locally to the current section.
+      This command supports the :attr:`local` attribute, which makes the coercion local to the current section.
 
 
 Displaying Available Coercions
@@ -268,24 +255,15 @@ Classes as Records
 
 .. index:: :> (coercion)
 
-We allow the definition of *Structures with Inheritance* (or classes as records)
-by extending the existing :cmd:`Record` macro. Its new syntax is:
+*Structures with Inheritance* may be defined using the :cmd:`Record` command.
 
-.. cmdv:: {| Record | Structure } {? >} @ident {* @binder } : @sort := {? @ident} { {+; @ident :{? >} @term } }
+Use `>` before the record name to declare the constructor name as
+a coercion from the class of the last field type to the record name
+(this may fail if the uniform inheritance condition is not
+satisfied).  See :token:`record_definition`.
 
-   The first identifier :token:`ident` is the name of the defined record and
-   :token:`sort` is its type. The optional identifier after ``:=`` is the name
-   of the constructor (it will be :n:`Build_@ident` if not given).
-   The other identifiers are the names of the fields, and :token:`term`
-   are their respective types. If ``:>`` is used instead of ``:`` in
-   the declaration of a field, then the name of this field is automatically
-   declared as a coercion from the record name to the class of this
-   field type. Note that the fields always verify the uniform
-   inheritance condition. If the optional ``>`` is given before the
-   record name, then the constructor name is automatically declared as
-   a coercion from the class of the last field type to the record name
-   (this may fail if the uniform inheritance condition is not
-   satisfied).
+Use `:>` in the field type to declare the field as a coercion from the record name
+to the class of the field type.  See :token:`of_type`.
 
 Coercions and Sections
 ----------------------

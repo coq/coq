@@ -361,7 +361,11 @@ syntax: :n:`let fix @ident {* @binder } := @term in` stands for
 
 Some options of :n:`@fixannot` are only supported in specific constructs.  :n:`fix` and :n:`let fix`
 only support the :n:`struct` option, while :n:`wf` and :n:`measure` are only supported in
-commands such as :cmd:`Function` and :cmd:`Program Fixpoint`.
+commands such as :cmd:`Fixpoint` (with the :attr:`program` attribute) and :cmd:`Function`.
+
+.. todo explanation of struct: see text above at the Fixpoint command, also
+   see https://github.com/coq/coq/pull/12936#discussion_r510716268 and above.
+   Consider whether to move the grammar for fixannot elsewhere
 
 .. _Fixpoint:
 
@@ -379,7 +383,7 @@ constructions.
    .. prodn::
       fix_definition ::= @ident_decl {* @binder } {? @fixannot } {? : @type } {? := @term } {? @decl_notations }
 
-   This command allows defining functions by pattern matching over inductive
+   Allows defining functions by pattern matching over inductive
    objects using a fixed point construction. The meaning of this declaration is
    to define :n:`@ident` as a recursive function with arguments specified by
    the :n:`@binder`\s such that :n:`@ident` applied to arguments
@@ -387,6 +391,8 @@ constructions.
    equivalent to the expression :n:`@term`. The type of :n:`@ident` is
    consequently :n:`forall {* @binder }, @type` and its value is equivalent
    to :n:`fun {* @binder } => @term`.
+
+   This command accepts the :attr:`program` attribute.
 
    To be accepted, a :cmd:`Fixpoint` definition has to satisfy syntactical
    constraints on a special argument called the decreasing argument. They
@@ -399,7 +405,7 @@ constructions.
    that satisfies the decreasing condition.
 
    :cmd:`Fixpoint` without the :attr:`program` attribute does not support the
-   :n:`wf` or :n:`measure` clauses of :n:`@fixannot`.
+   :n:`wf` or :n:`measure` clauses of :n:`@fixannot`. See :ref:`program_fixpoint`.
 
    The :n:`with` clause allows simultaneously defining several mutual fixpoints.
    It is especially useful when defining functions over mutually defined

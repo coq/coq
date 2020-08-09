@@ -1727,6 +1727,7 @@ let open_temp_bin file =
 
 let match_cmd_regex = Str.regexp "[a-zA-Z0-9_ ]+"
 let match_subscripts = Str.regexp "__[a-zA-Z0-9]+"
+let remove_subscrs str = Str.global_replace match_subscripts "" str
 
 let find_longest_match prods str =
   let get_pfx str = String.trim (if Str.string_match match_cmd_regex str 0 then Str.matched_string str else "") in
@@ -1740,7 +1741,6 @@ let find_longest_match prods str =
     in
     aux 0
   in
-  let remove_subscrs str = Str.global_replace match_subscripts "" str in
 
   let slen = String.length str in
   let str_pfx = get_pfx str in
@@ -1895,25 +1895,15 @@ let process_rst g file args seen tac_prods cmd_prods =
 (*    "doc/sphinx/proof-engine/ssreflect-proof-language.rst"]*)
 (*  in*)
 
-  let cmd_replace_files = [
-    "doc/sphinx/language/core/records.rst";
-    "doc/sphinx/language/core/sections.rst";
-    "doc/sphinx/language/extensions/implicit-arguments.rst";
-    "doc/sphinx/language/extensions/arguments-command.rst";
-    "doc/sphinx/language/gallina-extensions.rst";
-    "doc/sphinx/language/gallina-specification-language.rst";
-    "doc/sphinx/language/using/libraries/funind.rst";
-    "doc/sphinx/proof-engine/ltac.rst";
-    "doc/sphinx/proof-engine/ltac2.rst";
-    "doc/sphinx/proof-engine/vernacular-commands.rst";
-    "doc/sphinx/user-extensions/syntax-extensions.rst";
-    "doc/sphinx/proof-engine/vernacular-commands.rst"
+  let cmd_exclude_files = [
+    "doc/sphinx/proof-engine/ssreflect-proof-language.rst";
+    "doc/sphinx/proof-engine/tactics.rst"
   ]
   in
 
   let save_n_get_more direc pfx first_rhs seen_map prods =
     let replace rhs prods =
-      if StringSet.is_empty prods || not (List.mem file cmd_replace_files) then
+      if StringSet.is_empty prods || (List.mem file cmd_exclude_files) then
         rhs (* no change *)
       else
         let mtch, multi, best = find_longest_match prods rhs in
@@ -1942,7 +1932,7 @@ let process_rst g file args seen tac_prods cmd_prods =
 
     fprintf new_rst "%s%s\n" pfx (replace first_rhs prods);
 
-    map := NTMap.add first_rhs (file, !linenum) !map;
+    map := NTMap.add (remove_subscrs first_rhs) (file, !linenum) !map;
     while
       let nextline = getline() in
       ignore (Str.string_match contin_regex nextline 0);

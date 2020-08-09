@@ -87,7 +87,7 @@ Section :ref:`typing-rules`.
    computation on :n:`@term`.
 
    These commands also support the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`program` and
+   :attr:`universes(monomorphic)`, :attr:`program` (see :ref:`program_definition`) and
    :attr:`canonical` attributes.
 
    If :n:`@term` is omitted, :n:`@type` is required and |Coq| enters proof editing mode.
@@ -139,6 +139,8 @@ Chapter :ref:`Tactics`. The basic assertion command is:
    :n:`@type` under the assumptions represented by :n:`@binder`\s is given and
    validated, the proof is generalized into a proof of :n:`forall {* @binder }, @type` and
    the theorem is bound to the name :n:`@ident` in the environment.
+
+   These commands accept the :attr:`program` attribute.  See :ref:`program_lemma`.
 
    Forms using the :n:`with` clause are useful for theorems that are proved by simultaneous induction
    over a mutually inductive assumption, or that assert mutually dependent

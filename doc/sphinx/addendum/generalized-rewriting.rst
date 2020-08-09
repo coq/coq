@@ -170,10 +170,17 @@ compatibility constraints.
 Adding new relations and morphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd::  Add Parametric Relation {* @binder } : (A t1 ... tn) (Aeq t′1 ... t′m) {? reflexivity proved by @term} {? symmetry proved by @term} {? transitivity proved by @term} as @ident
+.. cmd::  Add Parametric Relation {* @binder } : @one_term__A @one_term__Aeq {? reflexivity proved by @one_term } {? symmetry proved by @one_term } {? transitivity proved by @one_term } as @ident
 
-   This command declares a parametric relation :g:`Aeq: forall (y1 : β1 ... ym : βm)`,
-   :g:`relation (A t1 ... tn)` over :g:`(A : αi -> ... αn -> Type)`.
+   Declares a parametric relation of :n:`@one_term__A`, which is a `Type`, say `T`, with
+   :n:`@one_term__Aeq`, which is a relation on `T`, i.e. of type `(T -> T -> Prop)`.
+   Thus, if :n:`@one_term__A` is
+   :n:`A: forall α__1 … α__n, Type` then :n:`@one_term__Aeq` is
+   :n:`Aeq: forall α__1 … α__n, (A α__1 … α__n) -> (A α__1 … α__n) -> Prop`,
+   or equivalently, :n:`Aeq: forall α__1 … α__n, relation (A α__1 … α__n)`.
+
+   :n:`@one_term__A` and :n:`@one_term__Aeq` must be typeable under the context
+   :token:`binder`\s.  In practice, the :token:`binder`\s usually correspond to the :n:`α`\s
 
    The final :token:`ident` gives a unique name to the morphism and it is used
    by the command to generate fresh names for automatically provided
@@ -189,16 +196,16 @@ Adding new relations and morphisms
    To use this command, you need to first import the module ``Setoid`` using
    the command ``Require Import Setoid``.
 
-.. cmd:: Add Relation
+.. cmd:: Add Relation @one_term @one_term {? reflexivity proved by @one_term } {? symmetry proved by @one_term } {? transitivity proved by @one_term } as @ident
 
-   In case the carrier and relations are not parametric, one can use this command
+   If the carrier and relations are not parametric, use this command
    instead, whose syntax is the same except there is no local context.
 
    The proofs of reflexivity, symmetry and transitivity can be omitted if
    the relation is not an equivalence relation. The proofs must be
    instances of the corresponding relation definitions: e.g. the proof of
    reflexivity must have a type convertible to
-   :g:`reflexive (A t1 ... tn) (Aeq t′ 1 …t′ n)`.
+   :g:`reflexive (A t1 … tn) (Aeq t′ 1 … t′ n)`.
    Each proof may refer to the introduced variables as well.
 
 .. example:: Parametric relation
@@ -219,10 +226,10 @@ replace terms with related ones only in contexts that are syntactic
 compositions of parametric morphism instances declared with the
 following command.
 
-.. cmd:: Add Parametric Morphism {* @binder } : (@ident {+ @term__1}) with signature @term__2 as @ident
+.. cmd:: Add Parametric Morphism {* @binder } : @one_term with signature @term as @ident
 
-   This command declares a parametric morphism :n:`@ident {+ @term__1}` of
-   signature :n:`@term__2`.  The final identifier :token:`ident` gives a unique
+   Declares a parametric morphism :n:`@one_term` of
+   signature :n:`@term`.  The final identifier :token:`ident` gives a unique
    name to the morphism and it is used as the base name of the typeclass
    instance definition and as the name of the lemma that proves the
    well-definedness of the morphism. The parameters of the morphism as well as
@@ -525,12 +532,13 @@ counterparts when the relation involved is not Leibniz equality.
 Notice, however, that using the prefixed tactics it is possible to
 pass additional arguments such as ``using relation``.
 
-.. tacv:: setoid_reflexivity
-          setoid_symmetry {? in @ident}
-          setoid_transitivity
-          setoid_rewrite {? @orientation} @term {? at @occurrences} {? in @ident}
-          setoid_replace @term with @term {? using relation @term} {? in @ident} {? by @ltac_expr3}
-   :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_rewrite; setoid_replace
+.. tacn:: setoid_reflexivity
+          setoid_symmetry {? in @ident }
+          setoid_transitivity @one_term
+          setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } {? at @occurrences } {? in @ident }
+          setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } in @ident at @occurrences
+          setoid_replace @one_term with @one_term {? using relation @one_term } {? in @ident } {? at {+ @int_or_var } } {? by @ltac_expr3 }
+   :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_rewrite; _; setoid_replace
 
    The ``using relation`` arguments cannot be passed to the unprefixed form.
    The latter argument tells the tactic what parametric relation should
@@ -553,34 +561,35 @@ system up to user defined equalities.
 Printing relations and morphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Print Instances
+Use the :cmd:`Print Instances` command with the class names ``Reflexive``, ``Symmetric``
+or ``Transitive`` to print registered reflexive, symmetric or transitive relations and
+with the class name ``Proper`` to print morphisms.
 
-   This command can be used to show the list of currently
-   registered ``Reflexive`` (using ``Print Instances Reflexive``), ``Symmetric``
-   or ``Transitive`` relations, Equivalences, PreOrders, PERs, and Morphisms
-   (implemented as ``Proper`` instances). When the rewriting tactics refuse
-   to replace a term in a context because the latter is not a composition
-   of morphisms, the :cmd:`Print Instances` command can be useful to understand
-   what additional morphisms should be registered.
+When rewriting tactics refuse
+to replace a term in a context because the latter is not a composition
+of morphisms, this command can be useful to understand
+what additional morphisms should be registered.
 
 .. _deprecated_syntax_for_generalized_rewriting:
 
 Deprecated syntax and backward incompatibilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Add Setoid @qualid__1 @qualid__2 @qualid__3 as @ident
+.. cmd:: Add Setoid @one_term__carrier @one_term__congruence @one_term__proofs as @ident
 
    This command for declaring setoids and morphisms is also accepted due
    to backward compatibility reasons.
 
-   Here :n:`@qualid__2` is a congruence relation without parameters, :n:`@qualid__1` is its carrier
-   and :n:`@qualid__3` is an object of type (:n:`Setoid_Theory @qualid__1 @qualid__2`) (i.e. a record
+   Here :n:`@one_term__congruence` is a congruence relation without parameters,
+   :n:`@one_term__carrier` is its carrier and :n:`@one_term__proofs` is an object
+   of type (:n:`Setoid_Theory @one_term__carrier @one_term__congruence`) (i.e. a record
    packing together the reflexivity, symmetry and transitivity lemmas).
    Notice that the syntax is not completely backward compatible since the
    identifier was not required.
 
-.. cmd:: Add Morphism @ident : @ident
-   :name: Add Morphism
+.. cmd:: Add Morphism @one_term : @ident
+         Add Morphism @one_term with signature @term as @ident
+   :name: Add Morphism; _
 
    This command is restricted to the declaration of morphisms
    without parameters. It is not fully backward compatible since the
@@ -590,11 +599,10 @@ Deprecated syntax and backward incompatibilities
    bi-implication in place of a simple implication. In practice, porting
    an old development to the new semantics is usually quite simple.
 
-.. cmd:: Declare Morphism @ident : @ident
+.. cmd:: Declare Morphism @one_term : @ident
    :name: Declare Morphism
 
-   This commands is to be used in a module type to declare a parameter that
-   is a morphism.
+   Declares a parameter in a module type that is a morphism.
 
 Notice that several limitations of the old implementation have been
 lifted. In particular, it is now possible to declare several relations
