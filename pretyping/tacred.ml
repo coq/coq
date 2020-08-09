@@ -538,7 +538,7 @@ let fix_recarg ((recindices,bodynum),_) stack =
   with Failure _ ->
     None
 
-type sconstr = { sterm : EConstr.t; ssubst : sconstr Esubst.subs }
+type sconstr = { mutable sterm : EConstr.t; mutable ssubst : sconstr Esubst.subs }
 
 let reduce_projection env sigma p ~npars (recarg'hd,stack') stack =
   (match EConstr.kind sigma recarg'hd with
@@ -558,7 +558,10 @@ let rec expand subst c = match Constr.kind c with
 | _ -> Constr.map_with_binders Esubst.subs_lift expand subst c
 
 let of_sconstr (c : sconstr) : EConstr.t =
-  EConstr.of_constr (expand c.ssubst (EConstr.Unsafe.to_constr c.sterm))
+  let r = EConstr.of_constr (expand c.ssubst (EConstr.Unsafe.to_constr c.sterm)) in
+  let () = c.sterm <- r in
+  let () = c.ssubst <- Esubst.subs_id 0 in
+  r
 
 let rec push_app sigma (hd, subst, stk as p) = match EConstr.kind sigma hd with
 | Rel n ->
