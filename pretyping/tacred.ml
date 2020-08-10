@@ -549,16 +549,20 @@ let reduce_projection env sigma p ~npars (recarg'hd,stack') stack =
 
 let to_sconstr c = { sterm = c; ssubst = Esubst.subs_id 0 }
 
-let rec expand subst c = match Constr.kind c with
+let rec expand0 subst c = match Constr.kind c with
 | Rel n ->
   begin match Esubst.expand_rel n subst with
-  | Inl (k, v) -> expand (Esubst.subs_shft (k, v.ssubst)) (EConstr.Unsafe.to_constr v.sterm)
+  | Inl (k, v) -> EConstr.Unsafe.to_constr (expand (Esubst.subs_shft (k, v.ssubst)) v.sterm)
   | Inr (n, _) -> Constr.mkRel n
   end
-| _ -> Constr.map_with_binders Esubst.subs_lift expand subst c
+| _ -> Constr.map_with_binders Esubst.subs_lift expand0 subst c
+
+and expand subst c =
+  if Esubst.is_subs_id subst then c
+  else EConstr.of_constr (expand0 subst (EConstr.Unsafe.to_constr c))
 
 let of_sconstr (c : sconstr) : EConstr.t =
-  let r = EConstr.of_constr (expand c.ssubst (EConstr.Unsafe.to_constr c.sterm)) in
+  let r = expand c.ssubst c.sterm in
   let () = c.sterm <- r in
   let () = c.ssubst <- Esubst.subs_id 0 in
   r
