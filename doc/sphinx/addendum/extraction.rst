@@ -99,11 +99,14 @@ Extraction Options
 Setting the target language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Extraction Language {| OCaml | Haskell | Scheme }
+.. cmd:: Extraction Language {| OCaml | Haskell | Scheme | JSON }
    :name: Extraction Language
 
    The ability to fix target language is the first and more important
    of the extraction options. Default is ``OCaml``.
+
+   The JSON output is mostly for development or debugging:
+   it contains the raw ML term produced as an intermediary target.
 
 
 Inlining and optimizations
