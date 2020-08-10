@@ -1020,10 +1020,11 @@ let lia (can_enum : bool) (prfdepth : int) sys =
           p)
       sys
   end;
+  let bnd1 = bound_monomials sys in
   let sys = subst sys in
-  let bnd = bound_monomials sys in
+  let bnd2 = bound_monomials sys in
   (* To deal with non-linear monomials *)
-  let sys = bnd @ saturate_by_linear_equalities sys @ sys in
+  let sys = bnd1 @ bnd2 @ saturate_by_linear_equalities sys @ sys in
   let sys' = List.map (fun ((p, o), prf) -> (cstr_of_poly (p, o), prf)) sys in
   xlia (List.map fst sys) can_enum reduction_equations sys'
 
