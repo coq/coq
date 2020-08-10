@@ -485,17 +485,22 @@ let revtoptac n0 =
   Logic.refiner ~check:true EConstr.Unsafe.(to_constr (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|])))
   end
 
-let equality_inj l b id c =
-  Proofview.V82.tactic begin fun gl ->
-  let msg = ref "" in
-  try Proofview.V82.of_tactic (Equality.inj None l b None c) gl
-  with
-    | CErrors.UserError (_,s)
-  when msg := Pp.string_of_ppcmds s;
-       !msg = "Not a projectable equality but a discriminable one." ||
-       !msg = "Nothing to inject." ->
-    Feedback.msg_warning (Pp.str !msg);
-    discharge_hyp (id, (id, "")) gl
+let nothing_to_inject =
+   CWarnings.create ~name:"spurious-ssr-injection" ~category:"ssr"
+     (fun (sigma, env, ty) ->
+         Pp.(str "SSReflect: cannot obtain new equations out of" ++ fnl() ++
+             str"  " ++ Printer.pr_econstr_env env sigma ty ++ fnl() ++
+             str "Did you write an extra [] in the intro pattern?"))
+
+let equality_inj l b id c = Proofview.Goal.enter begin fun gl ->
+  Proofview.tclORELSE (Equality.inj None l b None c)
+    (function
+    | (Equality.NothingToInject,_) ->
+        let open Proofview.Notations in
+        Ssrcommon.tacTYPEOF (EConstr.mkVar id) >>= fun ty ->
+        nothing_to_inject (Proofview.Goal.sigma gl, Proofview.Goal.env gl, ty);
+        Proofview.V82.tactic (discharge_hyp (id, (id, "")))
+    | (e,info) -> Proofview.tclZERO ~info e)
   end
 
 let injectidl2rtac id c =
