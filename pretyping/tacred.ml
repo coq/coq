@@ -633,7 +633,7 @@ let whd_nothing_for_iota env sigma (c, stk) =
       | x -> s
   in
   let (c, subst, stk) = whrec (c, Esubst.subs_id 0, stk) in
-  (of_sconstr { sterm = c; ssubst = subst }, stk)
+  (expand subst c, stk)
 
 (* [red_elim_const] contracts iota/fix/cofix redexes hidden behind
    constants by keeping the name of the constants in the recursive calls;
@@ -757,7 +757,7 @@ and whd_simpl_stack env sigma s =
           with
               Redelimination -> s')
       | Fix fix ->
-        let x = of_sconstr { sterm = x; ssubst = subst } in
+        let x = expand subst x in
         let fix = EConstr.destFix sigma x in
           (try match reduce_fix env sigma fix stack with
             | Reduced (hd, stk) -> redrec (hd, Esubst.subs_id 0, stk)
@@ -795,14 +795,14 @@ and whd_simpl_stack env sigma s =
           (try
              let (hd, stk), nocase = red_elim_const env sigma ref u stack in
              let hd, subst, _ as s'' = redrec (hd, Esubst.subs_id 0, stk) in
-             let hd = of_sconstr { sterm = hd; ssubst = subst } in
+             let hd = expand subst hd in
                if nocase && is_case sigma hd then raise Redelimination
                else s''
            with Redelimination -> s')
         | None -> s'
   in
   let (c, subst, stk) = redrec s in
-  (of_sconstr { sterm = c; ssubst = subst }, stk)
+  (expand subst c, stk)
 
 and reduce_fix env sigma fix stack =
   match fix_recarg fix stack with
@@ -886,8 +886,8 @@ and special_red_case env sigma (ci, p, iv, c, lf) subst : EConstr.t =
       | Some gvalue ->
         if reducible_mind_case sigma gvalue then
           let cargs = List.map of_sconstr cargs in
-          let p = of_sconstr { sterm = p; ssubst = subst } in
-          let lf = Array.map (fun c -> of_sconstr { sterm = c; ssubst = subst }) lf in
+          let p = expand subst p in
+          let lf = Array.map (fun c -> expand subst c) lf in
           reduce_mind_case_use_function constr env sigma
           {mP=p; mconstr=gvalue; mcargs=cargs;
            mci=ci; mlf=lf}
@@ -896,8 +896,8 @@ and special_red_case env sigma (ci, p, iv, c, lf) subst : EConstr.t =
     | None ->
       if reducible_mind_case sigma constr then
         let cargs = List.map of_sconstr cargs in
-        let p = of_sconstr { sterm = p; ssubst = subst } in
-        let lf = Array.map (fun c -> of_sconstr { sterm = c; ssubst = subst }) lf in
+        let p = expand subst p in
+        let lf = Array.map (fun c -> expand subst c) lf in
         reduce_mind_case sigma
           {mP=p; mconstr=constr; mcargs=cargs;
           mci=ci; mlf=lf}
