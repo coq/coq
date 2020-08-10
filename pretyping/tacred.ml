@@ -721,7 +721,7 @@ and reduce_params env sigma stack l =
       if len <= i then raise Redelimination
       else
         let arg = List.nth stack i in
-        let arg, stk = whd_construct_stack env sigma arg in
+        let arg, stk = whd_construct_stack env sigma (arg.sterm, arg.ssubst, []) in
           match EConstr.kind sigma arg with
           | Construct _ ->
             let stk = List.map of_sconstr stk in
@@ -778,12 +778,12 @@ and whd_simpl_stack env sigma s =
                     if idx < 0 then None else Some idx) recargs in
                 let stack = reduce_params env sigma stack l' in
                 (match reduce_projection env sigma p ~npars
-                         (whd_construct_stack env sigma { sterm = c; ssubst = subst }) stack
+                         (whd_construct_stack env sigma (c, subst, [])) stack
                  with
                  | Reduced (hd, stk) -> redrec (hd.sterm, hd.ssubst, stk)
                  | NotReducible -> s')
               | _ ->
-                match reduce_projection env sigma p ~npars (whd_construct_stack env sigma { sterm = c; ssubst = subst }) stack with
+                match reduce_projection env sigma p ~npars (whd_construct_stack env sigma (c, subst, [])) stack with
                 | Reduced (hd, stk) -> redrec (hd.sterm, hd.ssubst, stk)
                             | NotReducible -> s')
                  else s'
@@ -808,7 +808,7 @@ and reduce_fix env sigma fix stack =
   match fix_recarg fix stack with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
-        let (hd, stk) = whd_construct_stack env sigma recarg in
+        let (hd, stk) = whd_construct_stack env sigma (recarg.sterm, recarg.ssubst, []) in
         let stk = List.map of_sconstr stk in
         let stack' = List.assign stack recargnum (to_sconstr (applist (hd, stk))) in
         (match EConstr.kind sigma hd with
@@ -825,7 +825,7 @@ and reduce_fix_use_function env sigma f fix stack =
             (* The recarg cannot be a local def, no worry about the right env *)
             (c, [])
           else
-            whd_construct_stack env sigma recarg in
+            whd_construct_stack env sigma (recarg.sterm, recarg.ssubst, []) in
         let stk = List.map of_sconstr stk in
         let stack' = List.assign stack recargnum (to_sconstr (applist (hd, stk))) in
         (match EConstr.kind sigma hd with
@@ -862,7 +862,7 @@ and reduce_proj env sigma c =
     match EConstr.kind sigma s with
     | Proj (proj, c) ->
       let c' = try redrec c with Redelimination -> to_sconstr c in
-      let constr, cargs =  whd_construct_stack env sigma c' in
+      let constr, cargs =  whd_construct_stack env sigma (c'.sterm, c'.ssubst, []) in
         (match EConstr.kind sigma constr with
         | Construct _ ->
           let proj_narg = Projection.npars proj + Projection.arg proj in
@@ -909,15 +909,14 @@ and special_red_case env sigma (ci, p, iv, c, lf) subst : EConstr.t =
 (* reduce until finding an applied constructor or fail *)
 
 and whd_construct_stack env sigma s =
-  let (constr, cargs as s') = whd_simpl_stack env sigma (s.sterm, s.ssubst, []) in
+  let (constr, cargs as s') = whd_simpl_stack env sigma s in
   if reducible_mind_case sigma constr then s'
   else match match_eval_ref env sigma constr cargs with
   | Some (ref, u) ->
     (match reference_opt_value env sigma ref u with
     | None -> raise Redelimination
     | Some gvalue ->
-      let cargs = List.map of_sconstr cargs in
-      whd_construct_stack env sigma (to_sconstr (applist(gvalue, cargs))))
+      whd_construct_stack env sigma (gvalue, Esubst.subs_id 0, cargs))
   | _ -> raise Redelimination
 
 (************************************************************************)
