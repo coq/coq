@@ -677,7 +677,7 @@ let rec red_elim_const env sigma ref u largs =
     | EliminationCases n when nargs >= n ->
         let c = reference_value env sigma ref u in
         let c', lrest = whd_nothing_for_iota env sigma (c, largs) in
-        (special_red_case env sigma (EConstr.destCase sigma c'), lrest), nocase
+        (special_red_case env sigma (EConstr.destCase sigma c') (Esubst.subs_id 0), lrest), nocase
     | EliminationProj n when nargs >= n ->
         let c = reference_value env sigma ref u in
         let c', lrest = whd_nothing_for_iota env sigma (c, largs) in
@@ -750,10 +750,9 @@ and whd_simpl_stack env sigma s =
       | App (f,cl) -> assert false (* see push_app above *)
       | Cast (c,_,_) -> redrec (c, subst, stack)
       | Case _ ->
-        let x = of_sconstr { sterm = x; ssubst = subst } in
         let (ci,p,iv,c,lf) = EConstr.destCase sigma x in
           (try
-            let c = special_red_case env sigma (ci,p,iv,c,lf) in
+            let c = special_red_case env sigma (ci,p,iv,c,lf) subst in
             redrec (c, Esubst.subs_id 0, stack)
           with
               Redelimination -> s')
@@ -872,12 +871,12 @@ and reduce_proj env sigma c =
     | Case (n,p,iv,c,brs) ->
       let c' = of_sconstr @@ redrec c in
       let p = (n,p,iv,c',brs) in
-        to_sconstr @@ (try special_red_case env sigma p
+        to_sconstr @@ (try special_red_case env sigma p (Esubst.subs_id 0)
          with Redelimination -> mkCase p)
     | _ -> raise Redelimination
   in of_sconstr @@ redrec c
 
-and special_red_case env sigma (ci, p, iv, c, lf) : EConstr.t =
+and special_red_case env sigma (ci, p, iv, c, lf) subst : EConstr.t =
   let rec redrec s =
     let (constr, cargs) = whd_simpl_stack env sigma s in
     match match_eval_ref env sigma constr cargs with
@@ -887,6 +886,8 @@ and special_red_case env sigma (ci, p, iv, c, lf) : EConstr.t =
       | Some gvalue ->
         if reducible_mind_case sigma gvalue then
           let cargs = List.map of_sconstr cargs in
+          let p = of_sconstr { sterm = p; ssubst = subst } in
+          let lf = Array.map (fun c -> of_sconstr { sterm = c; ssubst = subst }) lf in
           reduce_mind_case_use_function constr env sigma
           {mP=p; mconstr=gvalue; mcargs=cargs;
            mci=ci; mlf=lf}
@@ -895,13 +896,15 @@ and special_red_case env sigma (ci, p, iv, c, lf) : EConstr.t =
     | None ->
       if reducible_mind_case sigma constr then
         let cargs = List.map of_sconstr cargs in
+        let p = of_sconstr { sterm = p; ssubst = subst } in
+        let lf = Array.map (fun c -> of_sconstr { sterm = c; ssubst = subst }) lf in
         reduce_mind_case sigma
           {mP=p; mconstr=constr; mcargs=cargs;
           mci=ci; mlf=lf}
       else
         raise Redelimination
   in
-  redrec (push_app sigma (c, Esubst.subs_id 0, []))
+  redrec (push_app sigma (c, subst, []))
 
 (* reduce until finding an applied constructor or fail *)
 
@@ -1348,7 +1351,7 @@ let one_step_reduce env sigma c =
       | Cast (c,_,_) -> redrec (c,stack)
       | Case (ci,p,iv,c,lf) ->
           (try
-             (special_red_case env sigma (ci,p,iv,c,lf), stack)
+             (special_red_case env sigma (ci,p,iv,c,lf) (Esubst.subs_id 0), stack)
            with Redelimination -> raise NotStepReducible)
       | Fix fix ->
         let stack = List.map to_sconstr stack in
