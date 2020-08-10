@@ -695,11 +695,11 @@ let rec red_elim_const env sigma ref u largs =
           if evaluable_reference_eq sigma ref refgoal then
             (c,args)
           else
+            let args = List.map of_sconstr args in
             let c', lrest = whd_betalet_stack env sigma (applist(c,args)) in
+            let lrest = List.map to_sconstr lrest in
             descend (destEvalRefU sigma c') lrest in
-        let largs = List.map of_sconstr largs in
         let (c, midargs) = descend (ref,u) largs in
-        let midargs = List.map to_sconstr midargs in
         let d, lrest = whd_nothing_for_iota env sigma (c, midargs) in
         let f = refinfos, u, midargs in
         (match reduce_fix_use_function env sigma f (destFix sigma d) lrest with
