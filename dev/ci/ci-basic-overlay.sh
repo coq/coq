@@ -283,14 +283,13 @@
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-# There is no 8.12-compatible tag yet but there is an 8.12-specific
-# branch.
-: "${elpi_CI_REF:=coq-v8.12}"
+# Released on 2020-07-29 and compatible with Coq 8.12.
+: "${elpi_CI_REF:=v1.5.1}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
-# Released on 2020-06-03 and compatible with Coq 8.12.
-: "${elpi_hb_CI_REF:=v0.9.1}"
+# Released on 2020-08-08 and compatible with Coq 8.12.
+: "${elpi_hb_CI_REF:=v0.10.0}"
 : "${elpi_hb_CI_GITURL:=https://github.com/math-comp/hierarchy-builder}"
 : "${elpi_hb_CI_ARCHIVEURL:=${elpi_hb_CI_GITURL}/archive}"
 
