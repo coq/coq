@@ -41,11 +41,11 @@ let current_fixpoints = ref ([] : Constant.t list)
    in order to display the location of the issue. *)
 
 let type_of env sg c =
-  let polyprop = (lang() == Haskell) in
+  let polyprop = (lang() = Haskell) in
   Retyping.get_type_of ~polyprop env sg (strip_outer_cast sg c)
 
 let sort_of env sg c =
-  let polyprop = (lang() == Haskell) in
+  let polyprop = (lang() = Haskell) in
   Retyping.get_sort_family_of ~polyprop env sg (strip_outer_cast sg c)
 
 (*S Generation of flags and signatures. *)
@@ -288,10 +288,10 @@ let rec extract_type env sg db j c args =
                (match expand env mld with
                   | Tdummy d -> Tdummy d
                   | _ ->
-                      let reason = if lvl == TypeScheme then Ktype else Kprop in
+                      let reason = if lvl = TypeScheme then Ktype else Kprop in
                       Tarr (Tdummy reason, mld)))
     | Sort _ -> Tdummy Ktype (* The two logical cases. *)
-    | _ when info_of_family (sort_of env sg (applistc c args)) == Logic -> Tdummy Kprop
+    | _ when info_of_family (sort_of env sg (applistc c args)) = Logic -> Tdummy Kprop
     | Rel n ->
         (match EConstr.lookup_rel n env with
            | LocalDef (_,t,_) ->
@@ -360,7 +360,7 @@ let rec extract_type env sg db j c args =
 and extract_type_app env sg db (r,s) args =
   let ml_args =
     List.fold_right
-      (fun (b,c) a -> if b == Keep then
+      (fun (b,c) a -> if b = Keep then
          let p = List.length (fst (splay_prod env sg (type_of env sg c))) in
          let db = iterate (fun l -> 0 :: l) p db in
          (extract_type_scheme env sg db c p) :: a
@@ -414,7 +414,7 @@ and extract_really_ind env kn mib =
        When at toplevel of the monolithic case, we cannot do much
        (cf Vector and bug #2570) *)
     let equiv =
-      if lang () != Ocaml ||
+      if lang () <> Ocaml ||
          (not (modular ()) && at_toplevel (MutInd.modpath kn)) ||
          KerName.equal (MutInd.canonical kn) (MutInd.user kn)
       then
@@ -482,7 +482,7 @@ and extract_really_ind env kn mib =
         let ip = (kn, 0) in
         let r = GlobRef.IndRef ip in
         if is_custom r then raise (I Standard);
-        if mib.mind_finite == CoFinite then raise (I Coinductive);
+        if mib.mind_finite = CoFinite then raise (I Coinductive);
         if not (Int.equal mib.mind_ntypes 1) then raise (I Standard);
         let p,u = packets.(0) in
         if p.ip_logical then raise (I Standard);
@@ -493,7 +493,7 @@ and extract_really_ind env kn mib =
             Int.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
         then raise (I Singleton);
         if List.is_empty l then raise (I Standard);
-        if mib.mind_record == Declarations.NotRecord then raise (I Standard);
+        if mib.mind_record = Declarations.NotRecord then raise (I Standard);
         (* Now we're sure it's a record. *)
         (* First, we find its field names. *)
         let rec names_prod t = match Constr.kind t with
@@ -517,7 +517,7 @@ and extract_really_ind env kn mib =
           | {binder_name=Name id}::l, typ::typs ->
               let knp = Constant.make2 mp (Label.of_id id) in
               (* Is it safe to use [id] for projections [foo.id] ? *)
-              if List.for_all ((==) Keep) (type2signature env typ)
+              if List.for_all ((=) Keep) (type2signature env typ)
               then projs := Cset.add knp !projs;
               Some (GlobRef.ConstRef knp) :: (select_fields (i+1) l typs)
           | _ -> assert false
@@ -741,7 +741,7 @@ and extract_cst_app env sg mle mlt kn args =
   (* Can we instantiate types variables for this constant ? *)
   (* In Ocaml, inside the definition of this constant, the answer is no. *)
   let instantiated =
-    if lang () == Ocaml && List.mem_f Constant.equal kn !current_fixpoints
+    if lang () = Ocaml && List.mem_f Constant.equal kn !current_fixpoints
     then var2var' (snd schema)
     else instantiation schema
   in
@@ -767,7 +767,7 @@ and extract_cst_app env sg mle mlt kn args =
      (except when [Kill Ktype] everywhere). So a [MLdummy] is left
      accordingly. *)
   let optdummy = match sign_kind s_full with
-    | UnsafeLogicalSig when lang () != Haskell -> [MLdummy Kprop]
+    | UnsafeLogicalSig when lang () <> Haskell -> [MLdummy Kprop]
     | _ -> []
   in
   (* Different situations depending of the number of arguments: *)
@@ -820,7 +820,7 @@ and extract_cons_app env sg mle mlt (((kn,i) as ip,j) as cp) args =
   let magic1 = needs_magic (type_cons, type_recomp (metas, a)) in
   let magic2 = needs_magic (a, mlt) in
   let head mla =
-    if mi.ind_kind == Singleton then
+    if mi.ind_kind = Singleton then
       put_magic_if magic1 (List.hd mla) (* assert (List.length mla = 1) *)
     else
       let typeargs = match snd (type_decomp type_cons) with
@@ -860,7 +860,7 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
     (* [c] has an inductive type, and is not a type scheme type. *)
     let t = type_of env sg c in
     (* The only non-informative case: [c] is of sort [Prop]/[SProp] *)
-    if info_of_family (sort_of env sg t) == Logic then
+    if info_of_family (sort_of env sg t) = Logic then
       begin
         add_recursors env kn; (* May have passed unseen if logical ... *)
         (* Logical singleton case: *)
@@ -893,7 +893,7 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
         let ids,e = case_expunge s e in
         (List.rev ids, Pusual r, e)
       in
-      if mi.ind_kind == Singleton then
+      if mi.ind_kind = Singleton then
         begin
           (* Informative singleton case: *)
           (* [match c with C i -> t] becomes [let i = c' in t'] *)
@@ -969,8 +969,8 @@ let extract_std_constant env sg kn body typ =
     if n <= m then decompose_lam_n sg n body
     else
       let s,s' = List.chop m s in
-      if List.for_all ((==) Keep) s' &&
-        (lang () == Haskell || sign_kind s != UnsafeLogicalSig)
+      if List.for_all ((=) Keep) s' &&
+        (lang () = Haskell || sign_kind s <> UnsafeLogicalSig)
       then decompose_lam_n sg m body
       else decomp_lams_eta_n n m env sg body typ
   in
@@ -979,8 +979,8 @@ let extract_std_constant env sg kn body typ =
     let n = List.length rels in
     let s,s' = List.chop n s in
     let k = sign_kind s in
-    let empty_s = (k == EmptySig || k == SafeLogicalSig) in
-    if lang () == Ocaml && empty_s && not (gentypvar_ok sg c)
+    let empty_s = (k = EmptySig || k = SafeLogicalSig) in
+    if lang () = Ocaml && empty_s && not (gentypvar_ok sg c)
       && not (List.is_empty s') && not (Int.equal (type_maxvar t) 0)
     then decomp_lams_eta_n (n+1) n env sg body typ
     else rels,c
@@ -1023,7 +1023,7 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
   (* for replacing recursive calls [Rel ..] by the corresponding [Const]: *)
   let sub = List.rev_map EConstr.mkConst kns in
   for i = 0 to n-1 do
-    if info_of_family (sort_of env sg ti.(i)) != Logic then
+    if info_of_family (sort_of env sg ti.(i)) <> Logic then
       try
         let e,t = extract_std_constant env sg vkn.(i)
                    (EConstr.Vars.substl sub ci.(i)) ti.(i) in

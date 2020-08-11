@@ -21,7 +21,7 @@ open Mlutil
 let ascii_of_id id =
   let s = Id.to_string id in
   for i = 0 to String.length s - 2 do
-    if s.[i] == '_' && s.[i+1] == '_' then warning_id s
+    if s.[i] = '_' && s.[i+1] = '_' then warning_id s
   done;
   Unicode.ascii_of_ident s
 
@@ -87,7 +87,7 @@ let begins_with s prefix =
 
 let begins_with_CoqXX s =
   let n = String.length s in
-  n >= 4 && s.[0] == 'C' && s.[1] == 'o' && s.[2] == 'q' &&
+  n >= 4 && s.[0] = 'C' && s.[1] = 'o' && s.[2] = 'q' &&
   let i = ref 3 in
   try while !i < n do
     match s.[!i] with
@@ -98,8 +98,8 @@ let begins_with_CoqXX s =
   with Not_found -> false
 
 let unquote s =
-  if lang () != Scheme then s
-  else String.map (fun c -> if c == '\'' then '~' else c) s
+  if lang () <> Scheme then s
+  else String.map (fun c -> if c = '\'' then '~' else c) s
 
 let rec qualify delim = function
   | [] -> assert false
@@ -119,7 +119,7 @@ let lowercase_id id = Id.of_string (String.uncapitalize_ascii (ascii_of_id id))
 let uppercase_id id =
   let s = ascii_of_id id in
   assert (not (String.is_empty s));
-  if s.[0] == '_' then Id.of_string ("Coq_"^s)
+  if s.[0] = '_' then Id.of_string ("Coq_"^s)
   else Id.of_string (String.capitalize_ascii s)
 
 type kind = Term | Type | Cons | Mod
@@ -136,7 +136,7 @@ end
 module KMap = Map.Make(KOrd)
 
 let upperkind = function
-  | Type -> lang () == Haskell
+  | Type -> lang () = Haskell
   | Term -> false
   | Cons | Mod -> true
 
@@ -287,7 +287,7 @@ let pop_visible, push_visible, get_visible =
       | v :: vl ->
           vis := vl;
           (* we save the 1st-level-content of MPfile for later use *)
-          if get_phase () == Impl && modular () && is_modfile v.mp
+          if get_phase () = Impl && modular () && is_modfile v.mp
           then add_mpfiles_content v.mp v.content
   and push mp mps =
     vis := { mp = mp; params = mps; content = KMap.empty } :: !vis
@@ -328,7 +328,7 @@ type reset_kind = AllButExternal | Everything
 
 let reset_renaming_tables flag =
   do_cleanup ();
-  if flag == Everything then clear_mpfiles_content ()
+  if flag = Everything then clear_mpfiles_content ()
 
 (*S Renaming functions *)
 
@@ -355,7 +355,7 @@ let modfstlev_rename =
     try
       let n = get_index id in
       add_index id (n+1);
-      let s = if n == 0 then "" else string_of_int (n-1) in
+      let s = if n = 0 then "" else string_of_int (n-1) in
       "Coq"^s^"_"^(ascii_of_id id)
     with Not_found ->
       let s = ascii_of_id id in
@@ -381,7 +381,7 @@ let rec mp_renaming_fun mp = match mp with
       else let i,_,_ = MBId.repr mbid in [s^"__"^string_of_int i]
   | MPfile _ ->
       assert (modular ()); (* see [at_toplevel] above *)
-      assert (get_phase () == Pre);
+      assert (get_phase () = Pre);
       let current_mpfile = (List.last (get_visible ())).mp in
       if not (ModPath.equal mp current_mpfile) then mpfiles_add mp;
       [string_of_modfile mp]
@@ -400,7 +400,7 @@ and mp_renaming =
 let ref_renaming_fun (k,r) =
   let mp = modpath_of_r r in
   let l = mp_renaming mp in
-  let l = if lang () != Ocaml && not (modular ()) then [""] else l in
+  let l = if lang () <> Ocaml && not (modular ()) then [""] else l in
   let s =
     let idg = safe_basename_of_global r in
     match l with
@@ -509,7 +509,7 @@ let opened_libraries () =
 
 let pp_duplicate k' prefix mp rls olab =
   let rls', lbl =
-    if k' != Mod then
+    if k' <> Mod then
       (* Here rls=[s], the ref to print is <prefix>.<s>, and olab<>None *)
       rls, Option.get olab
     else
@@ -519,7 +519,7 @@ let pp_duplicate k' prefix mp rls olab =
   match get_duplicate prefix lbl with
   | Some ren -> dottify (ren :: rls')
   | None ->
-     assert (get_phase () == Pre); (* otherwise it's too late *)
+     assert (get_phase () = Pre); (* otherwise it's too late *)
      add_duplicate prefix lbl; dottify rls
 
 let fstlev_ks k = function
@@ -532,7 +532,7 @@ let fstlev_ks k = function
 
 let pp_ocaml_local k prefix mp rls olab =
   (* what is the largest prefix of [mp] that belongs to [visible]? *)
-  assert (k != Mod || not (ModPath.equal mp prefix)); (* mp as whole module isn't in itself *)
+  assert (k <> Mod || not (ModPath.equal mp prefix)); (* mp as whole module isn't in itself *)
   let rls' = List.skipn (mp_length prefix) rls in
   let k's = fstlev_ks k rls' in
   (* Reference r / module path mp is of the form [<prefix>.s.<...>]. *)
@@ -544,7 +544,7 @@ let pp_ocaml_local k prefix mp rls olab =
 
 let pp_ocaml_bound base rls =
   (* clash with a MPbound will be detected and fixed by renaming this MPbound *)
-  if get_phase () == Pre then ignore (visible_clash base (Mod,List.hd rls));
+  if get_phase () = Pre then ignore (visible_clash base (Mod,List.hd rls));
   dottify rls
 
 (* [pp_ocaml_extern] : [mp] isn't local, it is defined in another [MPfile]. *)

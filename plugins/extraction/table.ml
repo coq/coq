@@ -156,7 +156,7 @@ let is_coinductive r =
     | IndRef (kn,_) -> kn
     | _ -> assert false
   in
-  try Mindmap_env.find kn !inductive_kinds == Coinductive
+  try Mindmap_env.find kn !inductive_kinds = Coinductive
   with Not_found -> false
 
 let is_coinductive_type = function

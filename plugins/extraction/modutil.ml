@@ -115,13 +115,13 @@ let ind_iter_references do_term do_cons do_type kn ind =
   let cons_iter cp l = do_cons (GlobRef.ConstructRef cp); List.iter type_iter l in
   let packet_iter ip p =
     do_type (GlobRef.IndRef ip);
-    if lang () == Ocaml then
+    if lang () = Ocaml then
       (match ind.ind_equiv with
          | Miniml.Equiv kne -> do_type (GlobRef.IndRef (MutInd.make1 kne, snd ip));
          | _ -> ());
     Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types
   in
-  if lang () == Ocaml then record_iter_references do_term ind.ind_kind;
+  if lang () = Ocaml then record_iter_references do_term ind.ind_kind;
     Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
 
 let decl_iter_references do_term do_cons do_type =
@@ -218,7 +218,7 @@ let is_modular = function
 
 let rec search_structure l m = function
   | [] -> raise Not_found
-  | (lab,d)::_ when Label.equal lab l && (is_modular d : bool) == m -> d
+  | (lab,d)::_ when Label.equal lab l && (is_modular d = m) -> d
   | _::fields -> search_structure l m fields
 
 let get_decl_in_structure r struc =

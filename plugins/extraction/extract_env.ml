@@ -144,7 +144,7 @@ let factor_fix env sg l cb msb =
          function
            | (l,SFBconst cb') ->
               let check' = check_fix env sg cb' (j+1) in
-              if not ((fst check : bool) == (fst check') &&
+              if not ((fst check = fst check') &&
                         prec_declaration_equal sg (snd check) (snd check'))
                then raise Impossible;
                labels.(j+1) <- l;
@@ -328,7 +328,7 @@ let rec extract_structure env mp reso ~all = function
 
 and extract_mexpr env mp = function
   | MEwith _ -> assert false (* no 'with' syntax for modules *)
-  | me when lang () != Ocaml || Table.is_extrcompute () ->
+  | me when lang () <> Ocaml || Table.is_extrcompute () ->
       (* In Haskell/Scheme, we expand everything.
          For now, we also extract everything, dead code will be removed later
          (see [Modutil.optimize_struct]. *)
@@ -429,7 +429,7 @@ let mono_filename f =
           else f
         in
         let id =
-          if lang () != Haskell then default_id
+          if lang () <> Haskell then default_id
           else
             try Id.of_string (Filename.basename f)
             with UserError _ ->
@@ -499,9 +499,9 @@ let print_structure_to_file (fn,si,mo) dry struc =
   let unsafe_needs = {
     mldummy = struct_ast_search Mlutil.isMLdummy struc;
     tdummy = struct_type_search Mlutil.isTdummy struc;
-    tunknown = struct_type_search ((==) Tunknown) struc;
+    tunknown = struct_type_search ((=) Tunknown) struc;
     magic =
-      if lang () != Haskell then false
+      if lang () <> Haskell then false
       else struct_ast_search (function MLmagic _ -> true | _ -> false) struc }
   in
   (* First, a dry run, for computing objects to rename or duplicate *)
@@ -563,7 +563,7 @@ let init ?(compute=false) ?(inner=false) modular library =
   set_library library;
   set_extrcompute compute;
   reset ();
-  if modular && lang () == Scheme then error_scheme ()
+  if modular && lang () = Scheme then error_scheme ()
 
 let warns () =
   warning_opaques (access_opaque ());
@@ -716,7 +716,7 @@ let remove f =
   if Sys.file_exists f then Sys.remove f
 
 let extract_and_compile l =
-  if lang () != Ocaml then
+  if lang () <> Ocaml then
     CErrors.user_err (Pp.str "This command only works with OCaml extraction");
   let f = Filename.temp_file "testextraction" ".ml" in
   let () = full_extraction (Some f) l in

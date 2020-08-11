@@ -62,7 +62,7 @@ let rec eq_ml_type t1 t2 = match t1, t2 with
 | Tvar i1, Tvar i2 -> Int.equal i1 i2
 | Tvar' i1, Tvar' i2 -> Int.equal i1 i2
 | Tmeta m1, Tmeta m2 -> eq_ml_meta m1 m2
-| Tdummy k1, Tdummy k2 -> k1 == k2
+| Tdummy k1, Tdummy k2 -> k1 == k2 (* FIXME: Why is the physical equality useful here? *)
 | Tunknown, Tunknown -> true
 | Taxiom, Taxiom -> true
 | (Tarr _ | Tglob _ | Tvar _ | Tvar' _ | Tmeta _ | Tdummy _ | Tunknown | Taxiom), _
@@ -129,7 +129,7 @@ let rec mgu = function
   | Taxiom, Taxiom -> ()
   | _ -> raise Impossible
 
-let skip_typing () = lang () == Scheme || is_extrcompute ()
+let skip_typing () = lang () = Scheme || is_extrcompute ()
 
 let needs_magic p =
   if skip_typing () then false
@@ -140,7 +140,7 @@ let put_magic_if b a = if b then MLmagic a else a
 let put_magic p a = if needs_magic p then MLmagic a else a
 
 let generalizable a =
-  lang () != Ocaml ||
+  lang () <> Ocaml ||
     match a with
       | MLapp _ -> false
       | _ -> true (* TODO, this is just an approximation for the moment *)
@@ -353,7 +353,7 @@ let type_expunge_from_sign env s t =
     | _ -> assert false
   in
   let t = expunge (sign_no_final_keeps s) t in
-  if lang () != Haskell && sign_kind s == UnsafeLogicalSig then
+  if lang () <> Haskell && sign_kind s = UnsafeLogicalSig then
     Tarr (Tdummy Kprop, t)
   else t
 
@@ -394,7 +394,7 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
 | MLfix (i1, id1, t1), MLfix (i2, id2, t2) ->
   Int.equal i1 i2 && Array.equal Id.equal id1 id2 && Array.equal eq_ml_ast t1 t2
 | MLexn e1, MLexn e2 -> String.equal e1 e2
-| MLdummy k1, MLdummy k2 -> k1 == k2
+| MLdummy k1, MLdummy k2 -> k1 == k2 (* FIXME: Why is the physical equality useful here? *)
 | MLaxiom, MLaxiom -> true
 | MLmagic t1, MLmagic t2 -> eq_ml_ast t1 t2
 | MLuint i1, MLuint i2 -> Uint63.equal i1 i2
@@ -959,7 +959,7 @@ let rec merge_ids ids ids' = match ids,ids' with
   | [],l -> l
   | l,[] -> l
   | i::ids, i'::ids' ->
-      (if i == Dummy then i' else i) :: (merge_ids ids ids')
+      (if i = Dummy then i' else i) :: (merge_ids ids ids')
 
 let is_exn = function MLexn _ -> true | _ -> false
 
@@ -1089,7 +1089,7 @@ let rec simpl o = function
   | MLmagic(MLcase(typ,e,br)) ->
      let br' = Array.map (fun (ids,p,c) -> (ids,p,MLmagic c)) br in
      simpl o (MLcase(typ,e,br'))
-  | MLmagic(MLdummy _ as e) when lang () == Haskell -> e
+  | MLmagic(MLdummy _ as e) when lang () = Haskell -> e
   | MLmagic(MLexn _ as e) -> e
   | MLlam _ as e ->
      (match atomic_eta_red e with
@@ -1146,7 +1146,7 @@ and simpl_case o typ br e =
       simpl o (named_lams ids (MLcase (typ, ast_lift n e, br)))
     else
       (* Can we merge several branches as the same constant or function ? *)
-      if lang() == Scheme || is_custom_match br
+      if lang() = Scheme || is_custom_match br
       then MLcase (typ, e, br)
       else match factor_branches o typ br with
         | Some (f,ints) when Int.equal (Int.Set.cardinal ints) (Array.length br) ->
@@ -1187,7 +1187,7 @@ let is_impl_kill = function Kill (Kimplicit _) -> true | _ -> false
 
 let kill_some_lams bl (ids,c) =
   let n = List.length bl in
-  let n' = List.fold_left (fun n b -> if b == Keep then (n+1) else n) 0 bl in
+  let n' = List.fold_left (fun n b -> if b = Keep then (n+1) else n) 0 bl in
   if Int.equal n n' then ids,c
   else if Int.equal n' 0 && not (List.exists is_impl_kill bl)
   then [],ast_lift (-n) c
@@ -1266,8 +1266,8 @@ let term_expunge s (ids,c) =
   if List.is_empty s then c
   else
     let ids,c = kill_some_lams (List.rev s) (ids,c) in
-    if List.is_empty ids && lang () != Haskell &&
-       sign_kind s == UnsafeLogicalSig
+    if List.is_empty ids && lang () <> Haskell &&
+       sign_kind s = UnsafeLogicalSig
     then MLlam (Dummy, ast_lift 1 c)
     else named_lams ids c
 
@@ -1563,7 +1563,7 @@ let inline r t =
   not (to_keep r) (* The user DOES want to keep it *)
   && not (is_inline_custom r)
   && (to_inline r (* The user DOES want to inline it *)
-     || (lang () != Haskell &&
+     || (lang () <> Haskell &&
          (is_projection r || is_recursor r ||
           manual_inline r || inline_test r t)))
 

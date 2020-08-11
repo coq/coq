@@ -42,7 +42,7 @@ let preamble _ comment _ usf =
   (if usf.mldummy then str "(define __ (lambda (_) __))\n\n" else mt ())
 
 let pr_id id =
-  str @@ String.map (fun c -> if c == '\'' then '~' else c) (Id.to_string id)
+  str @@ String.map (fun c -> if c = '\'' then '~' else c) (Id.to_string id)
 
 let paren = pp_par true
 

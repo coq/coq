@@ -127,13 +127,13 @@ let is_infix r =
    let len = String.length s in
    len >= 3 &&
    (* parenthesized *)
-   (s.[0] == '(' && s.[len-1] == ')' &&
+   (s.[0] = '(' && s.[len-1] = ')' &&
       let inparens = String.trim (String.sub s 1 (len - 2)) in
       let inparens_len = String.length inparens in
       (* either, begins with infix symbol, any remainder is all operator chars *)
       (List.mem inparens.[0] infix_symbols && substring_all_opchars inparens 1 inparens_len) ||
       (* or, starts with #, at least one more char, all are operator chars *)
-      (inparens.[0] == '#' && inparens_len >= 2 && substring_all_opchars inparens 1 inparens_len) ||
+      (inparens.[0] = '#' && inparens_len >= 2 && substring_all_opchars inparens 1 inparens_len) ||
       (* or, is an OCaml built-in infix *)
       (List.mem inparens builtin_infixes)))
 
@@ -583,7 +583,7 @@ let pp_decl = function
             pp_string_parameters ids, str " =" ++ spc () ++ str s
           with Not_found ->
             pp_parameters l,
-            if t == Taxiom then str " (* AXIOM TO BE REALIZED *)"
+            if t = Taxiom then str " (* AXIOM TO BE REALIZED *)"
             else str " =" ++ spc () ++ pp_type false l t
         in
         hov 2 (str "type " ++ ids ++ name ++ def)
@@ -705,7 +705,7 @@ let rec pp_structure_elem = function
   | (l,SEmodule m) ->
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
-        if Common.get_phase () == Pre then
+        if Common.get_phase () = Pre then
           str ": " ++ pp_module_type [] m.ml_mod_type
         else mt ()
       in

@@ -322,7 +322,7 @@ let rec pp_ind first kn i ind =
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
-  | Dind (kn,i) when i.ind_kind == Singleton ->
+  | Dind (kn,i) when i.ind_kind = Singleton ->
       pp_singleton kn i.ind_packets.(0) ++ fnl ()
   | Dind (kn,i) -> hov 0 (pp_ind true kn 0 i)
   | Dtype (r, l, t) ->
@@ -335,7 +335,7 @@ let pp_decl = function
             prlist (fun id -> str (id^" ")) ids ++ str "=" ++ spc () ++ str s
           with Not_found ->
             prlist (fun id -> Id.print id ++ str " ") l ++
-            if t == Taxiom then str "= () -- AXIOM TO BE REALIZED" ++ fnl ()
+            if t = Taxiom then str "= () -- AXIOM TO BE REALIZED" ++ fnl ()
             else str "=" ++ spc () ++ pp_type false l t
         in
         hov 2 (str "type " ++ pp_global Type r ++ spc () ++ st) ++ fnl2 ()
