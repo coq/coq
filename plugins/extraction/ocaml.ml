@@ -697,11 +697,35 @@ let is_short = function MEident _ | MEapply _ -> true | _ -> false
 
 let rec pp_structure_elem = function
   | (l,SEdecl d) ->
-     (match Common.get_duplicate (top_visible_mp ()) l with
-      | None -> pp_decl d
-      | Some ren ->
-         hov 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
-         fnl () ++ str "end" ++ fnl () ++ str ("include "^ren))
+    let duplicates =
+      match Common.get_duplicate (top_visible_mp ()) l with
+      | None -> []
+      | Some ren -> [ren] in
+    (* Records may have shadowed fields, and they also need to be double-checked for duplicates. *)
+    let duplicates =
+      match d with
+      | Dind (_, i) ->
+        (match i.ind_kind with
+         | Record fields ->
+           List.fold_left (fun duplicates -> function
+            | None -> duplicates
+            | Some r ->
+              let mp, lbl = Table.repr_of_r r in
+              match Common.get_duplicate (top_visible_mp ()) lbl with
+              | None -> duplicates
+              | Some ren -> ren :: duplicates) duplicates fields
+         | _ -> duplicates)
+      | _ -> duplicates in
+     (match duplicates with
+      | [] -> pp_decl d
+      | ren0 :: rens ->
+         let rec aux acc = function
+           | [] -> acc
+           | ren :: rens ->
+             aux (acc ++ fnl () ++ str ("module "^ren^" = "^ren0)) rens in
+         aux (hov 1 (str ("module "^ren0^" = struct") ++ fnl () ++ pp_decl d)
+              ++ fnl () ++ str "end"
+              ++ fnl () ++ str ("include "^ren0)) rens)
   | (l,SEmodule m) ->
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
