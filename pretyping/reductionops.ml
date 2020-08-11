@@ -507,10 +507,7 @@ let contract_cofix sigma (bodynum,(names,types,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
-    if Int.equal bodynum ind then mkCoFix (ind,typedbodies)
-    else
-      let bd = mkCoFix (ind,typedbodies) in
-      bd
+    mkCoFix (ind,typedbodies)
   in
   let closure = List.init nbodies make_Fi in
   substl closure bodies.(bodynum)
@@ -530,10 +527,7 @@ let contract_fix sigma ((recindices,bodynum),(names,types,bodies as typedbodies)
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
-      if Int.equal bodynum ind then mkFix ((recindices,ind),typedbodies)
-      else
-        let bd = mkFix ((recindices,ind),typedbodies) in
-        bd
+      mkFix ((recindices,ind),typedbodies)
     in
     let closure = List.init nbodies make_Fi in
     substl closure bodies.(bodynum)
