@@ -458,6 +458,25 @@ let contract_cofix_use_function env sigma f
   substl_checking_arity env (List.rev subbodies)
     sigma (nf_beta env sigma bodies.(bodynum))
 
+type 'a miota_args = {
+  mP      : constr;     (** the result type *)
+  mconstr : constr;     (** the constructor *)
+  mci     : case_info;  (** special info to re-build pattern *)
+  mcargs  : 'a list;    (** the constructor's arguments *)
+  mlf     : 'a array }  (** the branch code vector *)
+
+let reduce_mind_case sigma mia =
+  match EConstr.kind sigma mia.mconstr with
+    | Construct ((ind_sp,i),u) ->
+(*      let ncargs = (fst mia.mci).(i-1) in*)
+        let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
+        applist (mia.mlf.(i-1),real_cargs)
+    | CoFix cofix ->
+        let cofix_def = contract_cofix sigma cofix in
+        (* XXX Is NoInvert OK here? *)
+        mkCase (mia.mci, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
+    | _ -> assert false
+
 let reduce_mind_case_use_function func env sigma mia =
   match EConstr.kind sigma mia.mconstr with
     | Construct ((ind_sp,i),u) ->

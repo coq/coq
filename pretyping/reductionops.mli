@@ -217,22 +217,14 @@ val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
 (** Raises [Invalid_argument] *)
 
-
-type 'a miota_args = {
-  mP      : constr;     (** the result type *)
-  mconstr : constr;     (** the constructor *)
-  mci     : case_info;  (** special info to re-build pattern *)
-  mcargs  : 'a list;    (** the constructor's arguments *)
-  mlf     : 'a array }  (** the branch code vector *)
-
 val reducible_mind_case : evar_map -> constr -> bool
-val reduce_mind_case : evar_map -> constr miota_args -> constr
 
 val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 
 val contract_fix : evar_map -> fixpoint -> constr
+val contract_cofix : evar_map -> cofixpoint -> constr
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
 val is_transparent : Environ.env -> Constant.t tableKey -> bool
