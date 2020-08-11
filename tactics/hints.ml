@@ -237,10 +237,38 @@ let pri_order t1 t2 = pri_order_int t1 t2 <= 0
 type stored_data = int * full_hint
     (* First component is the index of insertion in the table, to keep most recent first semantics. *)
 
-module Bounded_net = Btermdn.Make(struct
-                                    type t = stored_data
-                                    let compare = pri_order_int
-                                  end)
+module Bounded_net :
+sig
+  type t
+  val empty : t
+  val add : TransparentState.t option -> t -> Pattern.constr_pattern -> stored_data -> t
+  val lookup : Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> stored_data list
+end =
+struct
+  module Data = struct type t = stored_data let compare = pri_order_int end
+  module Bnet = Btermdn.Make(Data)
+
+  type diff = TransparentState.t option * Pattern.constr_pattern * stored_data
+  type data = Bnet of Bnet.t | Diff of diff * data ref
+  type t = data ref
+
+  let empty = ref (Bnet Bnet.empty)
+
+  let add st net p v = ref (Diff ((st, p, v), net))
+
+  let rec force net = match !net with
+  | Bnet dn -> dn
+  | Diff ((st, p, v), rem) ->
+    let dn = force rem in
+    let p = Bnet.pattern st p in
+    let dn = Bnet.add dn p v in
+    let () = net := (Bnet dn) in
+    dn
+
+  let lookup sigma st net p =
+    let dn = force net in
+    Bnet.lookup sigma st dn p
+end
 
 type search_entry = {
   sentry_nopat : stored_data list;
@@ -263,18 +291,17 @@ let add_tac pat t se =
   | None ->
     if List.exists (eq_pri_auto_tactic t) se.sentry_nopat then se
     else { se with sentry_nopat = List.insert pri_order t se.sentry_nopat }
-  | Some pat ->
+  | Some (st, pat) ->
     if List.exists (eq_pri_auto_tactic t) se.sentry_pat then se
     else { se with
         sentry_pat = List.insert pri_order t se.sentry_pat;
-        sentry_bnet = Bounded_net.add se.sentry_bnet pat t; }
+        sentry_bnet = Bounded_net.add st se.sentry_bnet pat t; }
 
 let rebuild_dn st se =
   let dn' =
     List.fold_left
       (fun dn (id, t) ->
-        let pat = Bounded_net.pattern (Some st) (Option.get t.pat) in
-        Bounded_net.add dn pat (id, t))
+        Bounded_net.add (Some st) dn (Option.get t.pat) (id, t))
       Bounded_net.empty se.sentry_pat
   in
   { se with sentry_bnet = dn' }
@@ -650,7 +677,7 @@ struct
           if not db.use_dn && is_exact v.code.obj then None
           else
             let dnst = if db.use_dn then Some db.hintdb_state else None in
-            Option.map (fun p -> Bounded_net.pattern dnst p) v.pat
+            Option.map (fun p -> (dnst, p)) v.pat
         in
           let oval = find gr db in
             { db with hintdb_map = GlobRef.Map.add gr (add_tac pat idv oval) db.hintdb_map }
