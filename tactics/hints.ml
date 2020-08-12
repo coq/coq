@@ -1608,13 +1608,12 @@ let connect_hint_clenv h gl =
     let emap c = Vars.subst_univs_level_constr subst c in
     let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
     (* Only metas are mentioning the old universes. *)
-    let clenv = {
+    {
       templval = Evd.map_fl emap clenv.templval;
       templtyp = Evd.map_fl emap clenv.templtyp;
       evd = Evd.map_metas emap evd;
       env = Proofview.Goal.env gl;
-    } in
-    clenv
+    }
   else
     let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
     { clenv with evd = evd ; env = Proofview.Goal.env gl }
