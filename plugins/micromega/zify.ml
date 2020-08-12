@@ -1270,9 +1270,14 @@ let do_let tac (h : Constr.named_declaration) =
         let env = Tacmach.New.pf_env gl in
         let evd = Tacmach.New.project gl in
         try
-          ignore (get_injection env evd (EConstr.of_constr ty));
-          tac id.Context.binder_name (EConstr.of_constr t)
-            (EConstr.of_constr ty)
+          let x = id.Context.binder_name in
+          ignore
+            (let eq = Lazy.force eq in
+             find_option
+               (match_operator env evd eq
+                  [|EConstr.of_constr ty; EConstr.mkVar x; EConstr.of_constr t|])
+               (HConstr.find_all eq !table_cache));
+          tac x (EConstr.of_constr t) (EConstr.of_constr ty)
         with Not_found -> Tacticals.New.tclIDTAC)
 
 let iter_let_aux tac =
