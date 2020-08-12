@@ -403,7 +403,7 @@
 ########################################################################
 # perennial
 ########################################################################
-: "${perennial_CI_REF:=60aadeb94ad8f5a8f5ac7d9a0a123cc344307f3f}"
+: "${perennial_CI_REF:=ead7472decef66b22563b8e513864a3897a2ab5c}"
 : "${perennial_CI_GITURL:=https://github.com/mit-pdos/perennial}"
 : "${perennial_CI_ARCHIVEURL:=${perennial_CI_GITURL}/archive}"
 
