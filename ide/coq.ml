@@ -544,6 +544,7 @@ struct
   let coercions = BoolOpt ["Printing"; "Coercions"]
   let raw_matching = BoolOpt ["Printing"; "Matching"]
   let notations = BoolOpt ["Printing"; "Notations"]
+  let parentheses = BoolOpt ["Printing"; "Parentheses"]
   let all_basic = BoolOpt ["Printing"; "All"]
   let existential = BoolOpt ["Printing"; "Existential"; "Instances"]
   let universes = BoolOpt ["Printing"; "Universes"]
@@ -558,7 +559,7 @@ struct
     { opts = [raw_matching]; init = true;
       label = "Display raw _matching expressions" };
     { opts = [notations]; init = true; label = "Display _notations" };
-    { opts = [notations]; init = true; label = "Display _parentheses" };
+    { opts = [parentheses]; init = true; label = "Display _parentheses" };
     { opts = [all_basic]; init = false;
       label = "Display _all basic low-level contents" };
     { opts = [existential]; init = false;
