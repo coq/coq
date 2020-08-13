@@ -154,8 +154,6 @@ val abstract_undefined_variables : t -> t
 
 val fix_undefined_variables : t -> t
 
-val refresh_undefined_univ_variables : t -> t * Univ.universe_level_subst
-
 (** Universe minimization *)
 val minimize : t -> t
 

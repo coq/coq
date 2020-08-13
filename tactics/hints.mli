@@ -39,7 +39,7 @@ type 'a hint_ast =
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Genarg.glob_generic_argument       (* Hint Extern *)
 
-type hint = {
+type hint = private {
   hint_term : constr;
   hint_type : types;
   hint_uctx : Univ.ContextSet.t;
@@ -238,6 +238,11 @@ val wrap_hint_warning : 'a Proofview.tactic -> 'a Proofview.tactic
 val wrap_hint_warning_fun : env -> evar_map ->
   (evar_map -> 'a * evar_map) -> 'a * evar_map
 (** Variant of the above for non-tactics *)
+
+val fresh_hint : env -> evar_map -> hint -> evar_map * constr
+
+val hint_res_pf : ?with_evars:bool -> ?with_classes:bool ->
+  ?flags:Unification.unify_flags -> hint -> unit Proofview.tactic
 
 (** Printing  hints *)
 

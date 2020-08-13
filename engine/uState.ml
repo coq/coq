@@ -718,35 +718,6 @@ let fix_undefined_variables uctx =
   { uctx with univ_variables = vars';
     univ_algebraic = algs' }
 
-let refresh_undefined_univ_variables uctx =
-  let subst, ctx' = UnivGen.fresh_universe_context_set_instance uctx.local in
-  let subst_fn u = subst_univs_level_level subst u in
-  let alg = LSet.fold (fun u acc -> LSet.add (subst_fn u) acc)
-    uctx.univ_algebraic LSet.empty
-  in
-  let vars =
-    LMap.fold
-      (fun u v acc ->
-        LMap.add (subst_fn u)
-          (Option.map (subst_univs_level_universe subst) v) acc)
-      uctx.univ_variables LMap.empty
-  in
-  let weak = UPairSet.fold (fun (u,v) acc -> UPairSet.add (subst_fn u, subst_fn v) acc) uctx.weak_constraints UPairSet.empty in
-  let lbound = uctx.universes_lbound in
-  let declare g = LSet.fold (fun u g -> UGraph.add_universe u ~lbound ~strict:false g)
-      (ContextSet.levels ctx') g in
-  let initial = declare uctx.initial_universes in
-  let univs = declare UGraph.initial_universes in
-  let uctx' = {names = uctx.names;
-               local = ctx';
-               seff_univs = uctx.seff_univs;
-               univ_variables = vars; univ_algebraic = alg;
-               universes = univs;
-               universes_lbound = lbound;
-               initial_universes = initial;
-               weak_constraints = weak; } in
-    uctx', subst
-
 let minimize uctx =
   let open UnivMinim in
   let lbound = uctx.universes_lbound in

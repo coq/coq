@@ -987,11 +987,6 @@ let check_constraints evd csts =
 let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }
 
-let refresh_undefined_universes evd =
-  let uctx', subst = UState.refresh_undefined_univ_variables evd.universes in
-  let evd' = cmap (subst_univs_level_constr subst) {evd with universes = uctx'} in
-    evd', subst
-
 let nf_univ_variables evd =
   let subst, uctx' = UState.normalize_variables evd.universes in
   let evd' = {evd with universes = uctx'} in

@@ -45,9 +45,6 @@ val mk_clenv_from_n :
   Proofview.Goal.t -> int option -> EConstr.constr * EConstr.types -> clausenv
 val mk_clenv_from_env : env -> evar_map -> int option -> EConstr.constr * EConstr.types -> clausenv
 
-(** Refresh the universes in a clenv *)
-val refresh_undefined_univs : clausenv -> clausenv * Univ.universe_level_subst
-
 (** {6 linking of clenvs } *)
 
 val clenv_fchain :
