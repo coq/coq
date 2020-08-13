@@ -27,9 +27,11 @@ Register float_class as kernel.ind_f_class.
 Primitive float := #float64_type.
 
 (** ** Syntax support *)
+Module Import PrimFloatNotationsInternalA.
 Declare Scope float_scope.
 Delimit Scope float_scope with float.
 Bind Scope float_scope with float.
+End PrimFloatNotationsInternalA.
 
 Declare ML Module "float_syntax_plugin".
 
@@ -41,31 +43,34 @@ Primitive abs := #float64_abs.
 Primitive sqrt := #float64_sqrt.
 
 Primitive opp := #float64_opp.
-Notation "- x" := (opp x) : float_scope.
 
 Primitive eqb := #float64_eq.
-Notation "x == y" := (eqb x y) (at level 70, no associativity) : float_scope.
 
 Primitive ltb := #float64_lt.
-Notation "x < y" := (ltb x y) (at level 70, no associativity) : float_scope.
 
 Primitive leb := #float64_le.
-Notation "x <= y" := (leb x y) (at level 70, no associativity) : float_scope.
 
 Primitive compare := #float64_compare.
-Notation "x ?= y" := (compare x y) (at level 70, no associativity) : float_scope.
 
 Primitive mul := #float64_mul.
-Notation "x * y" := (mul x y) : float_scope.
 
 Primitive add := #float64_add.
-Notation "x + y" := (add x y) : float_scope.
 
 Primitive sub := #float64_sub.
-Notation "x - y" := (sub x y) : float_scope.
 
 Primitive div := #float64_div.
+
+Module Import PrimFloatNotationsInternalB.
+Notation "- x" := (opp x) : float_scope.
+Notation "x =? y" := (eqb x y) (at level 70, no associativity) : float_scope.
+Notation "x <? y" := (ltb x y) (at level 70, no associativity) : float_scope.
+Notation "x <=? y" := (leb x y) (at level 70, no associativity) : float_scope.
+Notation "x ?= y" := (compare x y) (at level 70, no associativity) : float_scope.
+Notation "x * y" := (mul x y) : float_scope.
+Notation "x + y" := (add x y) : float_scope.
+Notation "x - y" := (sub x y) : float_scope.
 Notation "x / y" := (div x y) : float_scope.
+End PrimFloatNotationsInternalB.
 
 (** ** Conversions *)
 
@@ -114,15 +119,27 @@ Definition neg_zero := Eval compute in (-zero)%float.
 Definition two := Eval compute in (of_int63 2).
 
 (** ** Predicates and helper functions *)
-Definition is_nan f := negb (f == f)%float.
+Definition is_nan f := negb (f =? f)%float.
 
-Definition is_zero f := (f == zero)%float. (* note: 0 == -0 with floats *)
+Definition is_zero f := (f =? zero)%float. (* note: 0 =? -0 with floats *)
 
-Definition is_infinity f := (abs f == infinity)%float.
+Definition is_infinity f := (abs f =? infinity)%float.
 
 Definition is_finite (x : float) := negb (is_nan x || is_infinity x).
 
 (** [get_sign]: return [true] for [-] sign, [false] for [+] sign. *)
 Definition get_sign f :=
   let f := if is_zero f then (one / f)%float else f in
-  (f < zero)%float.
+  (f <? zero)%float.
+
+Module Export PrimFloatNotations.
+  Local Open Scope float_scope.
+  #[deprecated(since="8.13",note="use infix <? instead")]
+   Notation "x < y" := (x <? y) (at level 70, no associativity) : float_scope.
+  #[deprecated(since="8.13",note="use infix <=? instead")]
+   Notation "x <= y" := (x <=? y) (at level 70, no associativity) : float_scope.
+  #[deprecated(since="8.13",note="use infix =? instead")]
+   Notation "x == y" := (x =? y) (at level 70, no associativity) : float_scope.
+  Export PrimFloatNotationsInternalA.
+  Export PrimFloatNotationsInternalB.
+End PrimFloatNotations.
