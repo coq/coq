@@ -3157,6 +3157,44 @@ Section Repeat.
     - f_equal; apply IHn.
   Qed.
 
+  Lemma repeat_app x n m :
+    repeat x (n + m) = repeat x n ++ repeat x m.
+  Proof.
+    induction n as [|n IHn]; simpl; auto.
+    now rewrite IHn.
+  Qed.
+
+  Lemma repeat_eq_app x n l1 l2 :
+    repeat x n = l1 ++ l2 -> repeat x (length l1) = l1 /\ repeat x (length l2) = l2.
+  Proof.
+    revert n; induction l1 as [|a l1 IHl1]; simpl; intros n Hr; subst.
+    - repeat split; now rewrite repeat_length.
+    - destruct n; inversion Hr as [ [Heq Hr0] ]; subst.
+      now apply IHl1 in Hr0 as [-> ->].
+  Qed.
+
+  Lemma repeat_eq_cons x y n l :
+    repeat x n = y :: l -> x = y /\ repeat x (pred n) = l.
+  Proof.
+    intros Hr.
+    destruct n; inversion_clear Hr; auto.
+  Qed.
+
+  Lemma repeat_eq_elt x y n l1 l2 :
+    repeat x n = l1 ++ y :: l2 -> x = y /\ repeat x (length l1) = l1 /\ repeat x (length l2) = l2.
+  Proof.
+    intros Hr; apply repeat_eq_app in Hr as [Hr1 Hr2]; subst.
+    apply repeat_eq_cons in Hr2; intuition.
+  Qed.
+
+  Lemma Forall_eq_repeat x l :
+    Forall (eq x) l -> l = repeat x (length l).
+  Proof.
+    induction l as [|a l IHl]; simpl; intros HF; auto.
+    inversion_clear HF as [ | ? ? ? HF']; subst.
+    now rewrite (IHl HF') at 1.
+  Qed.
+
 End Repeat.
 
 Lemma repeat_to_concat A n (a:A) :
