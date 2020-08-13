@@ -499,13 +499,6 @@ let beta_applist sigma (c,l) =
 
 (* Iota reduction tools *)
 
-type 'a miota_args = {
-  mP      : constr;     (* the result type *)
-  mconstr : constr;     (* the constructor *)
-  mci     : case_info;  (* special info to re-build pattern *)
-  mcargs  : 'a list;    (* the constructor's arguments *)
-  mlf     : 'a array }  (* the branch code vector *)
-
 let reducible_mind_case sigma c = match EConstr.kind sigma c with
   | Construct _ | CoFix _ -> true
   | _  -> false
@@ -514,10 +507,7 @@ let contract_cofix sigma (bodynum,(names,types,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
-    if Int.equal bodynum ind then mkCoFix (ind,typedbodies)
-    else
-      let bd = mkCoFix (ind,typedbodies) in
-      bd
+    mkCoFix (ind,typedbodies)
   in
   let closure = List.init nbodies make_Fi in
   substl closure bodies.(bodynum)
@@ -530,18 +520,6 @@ let reduce_and_refold_cofix recfun env sigma cofix sk =
     (fun _ (t,sk') -> recfun (t,sk'))
     [] sigma raw_answer sk
 
-let reduce_mind_case sigma mia =
-  match EConstr.kind sigma mia.mconstr with
-    | Construct ((ind_sp,i),u) ->
-(*      let ncargs = (fst mia.mci).(i-1) in*)
-        let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
-        applist (mia.mlf.(i-1),real_cargs)
-    | CoFix cofix ->
-        let cofix_def = contract_cofix sigma cofix in
-        (* XXX Is NoInvert OK here? *)
-        mkCase (mia.mci, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
-    | _ -> assert false
-
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
@@ -549,10 +527,7 @@ let contract_fix sigma ((recindices,bodynum),(names,types,bodies as typedbodies)
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
-      if Int.equal bodynum ind then mkFix ((recindices,ind),typedbodies)
-      else
-        let bd = mkFix ((recindices,ind),typedbodies) in
-        bd
+      mkFix ((recindices,ind),typedbodies)
     in
     let closure = List.init nbodies make_Fi in
     substl closure bodies.(bodynum)
