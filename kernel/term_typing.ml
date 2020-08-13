@@ -127,16 +127,14 @@ let infer_declaration env (dcl : constant_entry) =
         let sbst = Univ.make_instance_subst sbst in
         env, sbst, Polymorphic auctx
       in
-      let j = Typeops.infer env body in
-      let typ = match typ with
-        | None ->
-          Vars.subst_univs_level_constr usubst j.uj_type
+      let j = match typ with
+        | None -> Typeops.infer env body
         | Some t ->
-           let tj = Typeops.infer_type env t in
-           let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
-           Vars.subst_univs_level_constr usubst tj.utj_val
+          let j = Typeops.infer env body in
+          let tj = Typeops.infer_type env t in
+          Typeops.judge_of_cast env j DEFAULTcast tj
       in
-      let typ = Inductive.globify env j.uj_type typ in
+      let typ = Vars.subst_univs_level_constr usubst j.uj_type in
       let def = Vars.subst_univs_level_constr usubst j.uj_val in
       let def = Def (Mod_subst.from_val def) in
         feedback_completion_typecheck feedback_id;

@@ -1385,8 +1385,7 @@ type ('a, 'b) fold_fix_type_info = {
 }
 
 let fold_map2_fix_type env f is tys init =
-  let check_sized = (Environ.typing_flags env).check_sized in
-  if not check_sized || List.is_empty tys then init, tys else
+  if List.is_empty tys then init, tys else
   let info = {
     elt = List.hd is;
     fix_type = List.hd tys;
@@ -1452,8 +1451,8 @@ let fold_map2_fix_type env f is tys init =
     [get_rec_vars]: Collects the annotations of the recursive inductive types
     [get_corec_inds]: Collects the coinductive types in the corecursive position
     [get_corec_vars]: Collects the annotations of the corecursive coinductive types
-    [set_rec_stars]: Sets the annotations in recursive positions to [Star]
-    [set_corec_stars]: Sets the annotations in corecursive positions to [Star]
+    [set_rec_stars]: Sets the annotations the recursive argument and return positions to [Star]
+    [set_corec_stars]: Sets the annotations in the argument and return corecursive positions to [Star]
   As an example, if our fixpoint type is (n: nat^s0) (b: bool^s1) {struct n} : nat^s2,
     [get_rec_inds] returns [[nat]]
     [get_rec_vars] returns [[s0]]
@@ -1526,7 +1525,21 @@ let get_corec_vars env tys =
   let tys = Array.to_list tys in
   fst @@ fold_map2_fix_type env f is tys []
 
-let set_stars env inds tys =
+let set_rec_stars env inds is tys =
+  let f info =
+    match info.arg_index, info.arg_indus with
+    | -1, Some ((ind, _ as iu), _)
+      when Names.eq_ind ind (fst info.elt) ->
+      info, mkIndUS iu Star
+    | i, Some ((ind, _ as iu), _)
+      when Names.eq_ind ind (fst info.elt) && Int.equal i (snd info.elt) ->
+      info, mkIndUS iu Star
+    | _ -> info, info.arg_head in
+  let is = Array.to_list is in
+  let tys = Array.to_list tys in
+  Array.of_list @@ snd @@ fold_map2_fix_type env f (List.combine inds is) tys ()
+
+let set_corec_stars env inds tys =
   let f info =
     match info.arg_indus with
     | Some ((ind, _ as iu), _)

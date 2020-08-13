@@ -498,8 +498,8 @@ let check_fixpoint env (names, lar', vdef, vdeft) lar'' =
     error_ill_typed_rec_body env1 i names (make_judgev vdef vdeft) lar''
 
 (* Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'',
-  check Γ ⊢ Δ' ≤ Δ''; Γ ⊢ U' ≤ U'' for inductive, and
-  check Γ ⊢ Δ'' ≤ Δ'; Γ ⊢ U'' ≤ U' for coinductive *)
+  check Γ ⊢ U' ≤ U'' for inductive, and
+  check Γ ⊢ Δ'' ≤ Δ' for coinductive *)
 let check_fixpoint_type env lar' lar'' recursivity =
   let unzip_prod_assums arr =
     let decls, body = List.split @@ Array.to_list @@
@@ -508,15 +508,10 @@ let check_fixpoint_type env lar' lar'' recursivity =
     Array.of_list tys, Array.of_list body in
   let delta', u' = unzip_prod_assums lar' in
   let delta'', u'' = unzip_prod_assums lar'' in
-  let cstrnt_delta = match recursivity with
-    | Finite -> conv_leq_vecti env delta' delta''
-    | CoFinite -> conv_leq_vecti env delta'' delta'
-    | _ -> assert false in
-  let cstrnt_u = match recursivity with
-    | Finite -> conv_leq_vecti env u' u''
-    | CoFinite -> conv_leq_vecti env u'' u'
-    | _ -> assert false in
-  union cstrnt_delta cstrnt_u
+  match recursivity with
+  | Finite -> conv_leq_vecti env u' u''
+  | CoFinite -> conv_leq_vecti env delta'' delta'
+  | _ -> assert false
 
 (* Global references *)
 
@@ -588,9 +583,8 @@ let rec execute env stg cstrnt cstr =
       let numvars = size_vars_in_constant env c in
       let s, stg = next stg in
       let t, cstrnt' = type_of_constant env c in
-      let t = annotate_glob s t in
       let annots, stg = next_annots check_sized numvars stg in
-      stg, union cstrnt cstrnt', mkConstUA c annots, t
+      stg, union cstrnt cstrnt', mkConstUA c annots, annotate_glob s t
 
     | Proj (p, c) ->
       let stg, cstrnt, c', ct = execute env stg cstrnt c in
@@ -732,7 +726,7 @@ and execute_fix env stg cstrnt ((vn, i), (names, lar, vdef)) =
   let _ = execute_array env stg cstrnt lar in (* check termination of lar so we can reduce *)
 
   let stg', cstrnt', (names', lar', vdef', _ as recdeft) =
-    let lar_star = set_stars env (get_rec_inds env vn lar) lar in
+    let lar_star = set_rec_stars env (get_rec_inds env vn lar) vn lar in
     execute_recdef env stg cstrnt (names, lar_star, vdef) in
 
   let stg_check, cstrnt_check =
@@ -752,7 +746,7 @@ and execute_cofix env stg cstrnt (i, (names, lar, vdef)) =
   let _ = execute_array env stg cstrnt lar in (* check termination of lar so we can reduce *)
 
   let stg', cstrnt', (names', lar', vdef', _ as recdeft) =
-    let lar_star = set_stars env (get_corec_inds env lar) lar in
+    let lar_star = set_corec_stars env (get_corec_inds env lar) lar in
     execute_recdef env stg cstrnt (names, lar_star, vdef) in
 
   let stg_check, cstrnt_check =
@@ -886,7 +880,8 @@ let judge_of_apply env funj argjv =
 let judge_of_cast env cj k tj =
   let _ = check_cast env cj.uj_val cj.uj_type k tj.utj_val in
   let c = match k with | REVERTcast -> cj.uj_val | _ -> mkCast (cj.uj_val, k, tj.utj_val) in
-  make_judge c tj.utj_val
+  let t = globify env cj.uj_type tj.utj_val in
+  make_judge c t
 
 let judge_of_inductive env indu =
   let t, _ = type_of_inductive env indu in
