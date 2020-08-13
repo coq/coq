@@ -272,11 +272,17 @@ Proof with auto.
   - destruct H; subst...
 Qed.
 
-Definition prod_uncurry (A B C:Type) (f:A * B -> C)
+Definition curry {A B C:Type} (f:A * B -> C)
   (x:A) (y:B) : C := f (x,y).
 
-Definition prod_curry (A B C:Type) (f:A -> B -> C)
+Definition uncurry {A B C:Type} (f:A -> B -> C)
   (p:A * B) : C := match p with (x, y) => f x y end.
+
+#[deprecated(since = "8.13", note = "Use curry instead.")]
+Definition prod_uncurry (A B C:Type) : (A * B -> C) -> A -> B -> C := curry.
+
+#[deprecated(since = "8.13", note = "Use uncurry instead.")]
+Definition prod_curry (A B C:Type) : (A -> B -> C) -> A * B -> C := uncurry.
 
 Import EqNotations.
 
