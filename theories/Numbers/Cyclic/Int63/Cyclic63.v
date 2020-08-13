@@ -48,7 +48,7 @@ Definition mulc_WW x y :=
 Notation "n '*c' m" := (mulc_WW n m) (at level 40, no associativity) : int63_scope.
 
 Definition pos_mod p x :=
-  if p <= digits then
+  if p <=? digits then
     let p := digits - p in
     (x << p) >> p
   else x.

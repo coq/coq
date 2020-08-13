@@ -45,19 +45,19 @@ Local Open Scope array_scope.
 Primitive max_length := #array_max_length.
 
 (** Axioms *)
-Axiom get_out_of_bounds : forall A (t:array A) i, (i < length t) = false -> t.[i] = default t.
+Axiom get_out_of_bounds : forall A (t:array A) i, (i <? length t) = false -> t.[i] = default t.
 
-Axiom get_set_same : forall A t i (a:A), (i < length t) = true -> t.[i<-a].[i] = a.
+Axiom get_set_same : forall A t i (a:A), (i <? length t) = true -> t.[i<-a].[i] = a.
 Axiom get_set_other : forall A t i j (a:A), i <> j -> t.[i<-a].[j] = t.[j].
 Axiom default_set : forall A t i (a:A), default t.[i<-a] = default t.
 
 
 Axiom get_make : forall A (a:A) size i, (make size a).[i] = a.
 
-Axiom leb_length : forall A (t:array A), length t <= max_length = true.
+Axiom leb_length : forall A (t:array A), length t <=? max_length = true.
 
 Axiom length_make : forall A size (a:A),
-  length (make size a) = if size <= max_length then size else max_length.
+  length (make size a) = if size <=? max_length then size else max_length.
 Axiom length_set : forall A t i (a:A),
   length t.[i<-a] = length t.
 
@@ -69,7 +69,7 @@ Axiom length_reroot : forall A (t:array A), length (reroot t) = length t.
 
 Axiom array_ext : forall A (t1 t2:array A),
   length t1 = length t2 ->
-  (forall i, i < length t1 = true -> t1.[i] = t2.[i]) ->
+  (forall i, i <? length t1 = true -> t1.[i] = t2.[i]) ->
   default t1 = default t2 ->
   t1 = t2.
 
@@ -77,7 +77,7 @@ Axiom array_ext : forall A (t1 t2:array A),
 
 Lemma default_copy A (t:array A) : default (copy t) = default t.
 Proof.
-  assert (irr_lt : length t < length t = false).
+  assert (irr_lt : length t <? length t = false).
     destruct (Int63.ltbP (length t) (length t)); try reflexivity.
     exfalso; eapply BinInt.Z.lt_irrefl; eassumption.
   assert (get_copy := get_copy A t (length t)).
@@ -87,7 +87,7 @@ Qed.
 
 Lemma default_make A (a : A) size : default (make size a) = a.
 Proof.
-  assert (irr_lt : length (make size a) < length (make size a) = false).
+  assert (irr_lt : length (make size a) <? length (make size a) = false).
     destruct (Int63.ltbP (length (make size a)) (length (make size a))); try reflexivity.
     exfalso; eapply BinInt.Z.lt_irrefl; eassumption.
   assert (get_make := get_make A a size (length (make size a))).
@@ -96,7 +96,7 @@ Qed.
 
 Lemma default_reroot A (t:array A) : default (reroot t) = default t.
 Proof.
-  assert (irr_lt : length t < length t = false).
+  assert (irr_lt : length t <? length t = false).
     destruct (Int63.ltbP (length t) (length t)); try reflexivity.
     exfalso; eapply BinInt.Z.lt_irrefl; eassumption.
   assert (get_reroot := get_reroot A t (length t)).
@@ -107,16 +107,16 @@ Qed.
 Lemma get_set_same_default A (t : array A) (i : int) :
   t.[i <- default t].[i] = default t.
 Proof.
- case_eq (i < length t); intros.
+ case_eq (i <? length t); intros.
    rewrite get_set_same; trivial.
  rewrite get_out_of_bounds, default_set; trivial.
  rewrite length_set; trivial.
 Qed.
 
 Lemma get_not_default_lt A (t:array A) x :
- t.[x] <> default t -> (x < length t) = true.
+ t.[x] <> default t -> (x <? length t) = true.
 Proof.
  intros Hd.
- case_eq (x < length t); intros Heq; [trivial | ].
+ case_eq (x <? length t); intros Heq; [trivial | ].
  elim Hd; rewrite get_out_of_bounds; trivial.
 Qed.
