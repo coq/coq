@@ -38,6 +38,8 @@ struct
 
   type  t = Trie.t
 
+  type pattern = (Y.t * int) option list
+
   let empty = Trie.empty
 
 (* [path_of dna pat] returns the list of nodes of the pattern [pat] read in
@@ -89,11 +91,13 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
     in
     List.flatten (List.map (fun (tm,b) -> ZSet.elements (Trie.get tm)) (lookrec t tm))
 
-  let add tm dna (pat,inf) =
-    let p = path_of dna pat in Trie.add p (ZSet.singleton inf) tm
+  let pattern dna pat = path_of dna pat
 
-  let rmv tm dna (pat,inf) =
-    let p = path_of dna pat in Trie.remove p (ZSet.singleton inf) tm
+  let add tm p inf =
+    Trie.add p (ZSet.singleton inf) tm
+
+  let rmv tm p inf =
+    Trie.remove p (ZSet.singleton inf) tm
 
   let app f tm = Trie.iter (fun _ p -> ZSet.iter f p) tm
 

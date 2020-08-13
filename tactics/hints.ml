@@ -258,7 +258,7 @@ let empty_se = {
 
 let eq_pri_auto_tactic (_, x) (_, y) = KerName.equal x.code.uid y.code.uid
 
-let add_tac pat t st se =
+let add_tac pat t se =
   match pat with
   | None ->
     if List.exists (eq_pri_auto_tactic t) se.sentry_nopat then se
@@ -267,12 +267,14 @@ let add_tac pat t st se =
     if List.exists (eq_pri_auto_tactic t) se.sentry_pat then se
     else { se with
         sentry_pat = List.insert pri_order t se.sentry_pat;
-        sentry_bnet = Bounded_net.add st se.sentry_bnet (pat, t); }
+        sentry_bnet = Bounded_net.add se.sentry_bnet pat t; }
 
 let rebuild_dn st se =
   let dn' =
     List.fold_left
-      (fun dn (id, t) -> Bounded_net.add (Some st) dn (Option.get t.pat, (id, t)))
+      (fun dn (id, t) ->
+        let pat = Bounded_net.pattern (Some st) (Option.get t.pat) in
+        Bounded_net.add dn pat (id, t))
       Bounded_net.empty se.sentry_pat
   in
   { se with sentry_bnet = dn' }
@@ -636,8 +638,6 @@ struct
           is_unfold v.code.obj then None else Some gr
       | None -> None
     in
-    let dnst = if db.use_dn then Some db.hintdb_state else None in
-    let pat = if not db.use_dn && is_exact v.code.obj then None else v.pat in
       match k with
       | None ->
           let is_present (_, (_, v')) = KerName.equal v.code.uid v'.code.uid in
@@ -646,8 +646,14 @@ struct
             { db with hintdb_nopat = (gr,idv) :: db.hintdb_nopat }
           else db
       | Some gr ->
+        let pat =
+          if not db.use_dn && is_exact v.code.obj then None
+          else
+            let dnst = if db.use_dn then Some db.hintdb_state else None in
+            Option.map (fun p -> Bounded_net.pattern dnst p) v.pat
+        in
           let oval = find gr db in
-            { db with hintdb_map = GlobRef.Map.add gr (add_tac pat idv dnst oval) db.hintdb_map }
+            { db with hintdb_map = GlobRef.Map.add gr (add_tac pat idv oval) db.hintdb_map }
 
   let rebuild_db st' db =
     let db' =
