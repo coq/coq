@@ -293,7 +293,7 @@ let meta_reducible_instance env evd b =
             | None -> mkProj (p,c))
     | _ -> EConstr.map evd irec u
   in
-  if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
+  if Metamap.is_empty metas then (* nf_betaiota? *) b.rebus
   else irec b.rebus
 
 let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
