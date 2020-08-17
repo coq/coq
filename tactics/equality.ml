@@ -1649,7 +1649,7 @@ let cutSubstClause l2r eqn cls =
 
 let warn_deprecated_cutrewrite =
   CWarnings.create ~name:"deprecated-cutrewrite" ~category:"deprecated"
-    (fun () -> strbrk"\"cutrewrite\" is deprecated. See documentation for proposed replacement.")
+    (fun () -> strbrk"\"cutrewrite\" is deprecated. Use \"replace\" instead.")
 
 let cutRewriteClause l2r eqn cls =
   warn_deprecated_cutrewrite ();
