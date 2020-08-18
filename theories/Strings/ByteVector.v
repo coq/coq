@@ -42,7 +42,7 @@ Fixpoint to_Bvector {n : nat} (v : ByteVector n) : Bvector (n * 8) :=
 Fixpoint of_Bvector {n : nat} : Bvector (n * 8) -> ByteVector n :=
   match n with
   | 0 => fun _ => []
-  | S n' =>
+  | S _ =>
     fun v =>
       let (b0, v1) := uncons v in
       let (b1, v2) := uncons v1 in

@@ -1122,8 +1122,8 @@ Definition simpl_cone (e:Psatz) : Psatz :=
                     end
     | PsatzMulE t1 t2 =>
       match t1 , t2 with
-        | PsatzZ      , x        => PsatzZ
-        |    x     , PsatzZ      => PsatzZ
+        | PsatzZ      , _        => PsatzZ
+        |    _     , PsatzZ      => PsatzZ
         | PsatzC c ,  PsatzC c' => PsatzC (ctimes c c')
         | PsatzC p1 , PsatzMulE (PsatzC p2)  x => PsatzMulE (PsatzC (ctimes p1 p2)) x
         | PsatzC p1 , PsatzMulE x (PsatzC p2)  => PsatzMulE (PsatzC (ctimes p1 p2)) x
