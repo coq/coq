@@ -17,11 +17,11 @@
 open Util
 open Names
 open Vmvalues
-open Cemitcodes
-open Cbytecodes
+open Vmemitcodes
+open Vmbytecodes
 open Declarations
 open Environ
-open Cbytegen
+open Vmbytegen
 
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
@@ -155,7 +155,7 @@ let rec slot_for_getglobal env kn =
       match cb.const_body_code with
       | None -> set_global (val_of_constant kn)
       | Some code ->
-         match Cemitcodes.force code with
+         match Vmemitcodes.force code with
          | BCdefined(code,pl,fv) ->
            let v = eval_to_patch env (code,pl,fv) in
            set_global v

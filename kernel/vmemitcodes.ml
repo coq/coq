@@ -14,8 +14,8 @@
 
 open Names
 open Vmvalues
-open Cbytecodes
-open Copcodes
+open Vmbytecodes
+open Vmopcodes
 open Mod_subst
 open CPrimitives
 
@@ -350,7 +350,7 @@ let emit_instr env = function
   | Ksetfield n ->
       if n <= 1 then out env (opSETFIELD0+n)
       else (out env opSETFIELD;out_int env n)
-  | Ksequence _ -> invalid_arg "Cemitcodes.emit_instr"
+  | Ksequence _ -> invalid_arg "Vmemitcodes.emit_instr"
   | Kproj p -> out env opPROJ; out_int env (Projection.Repr.arg p); slot_for_proj_name env p
   | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
   | Kbranch lbl -> out env opBRANCH; out_label env lbl

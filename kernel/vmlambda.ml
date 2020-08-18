@@ -559,8 +559,8 @@ let rec get_alias env kn =
   match tps with
   | None -> kn
   | Some tps ->
-    (match Cemitcodes.force tps with
-     | Cemitcodes.BCalias kn' -> get_alias env kn'
+    (match Vmemitcodes.force tps with
+     | Vmemitcodes.BCalias kn' -> get_alias env kn'
      | _ -> kn)
 
 (* Compilation of primitive *)
@@ -681,7 +681,7 @@ open Renv
 
 let rec lambda_of_constr env c =
   match Constr.kind c with
-  | Meta _ -> raise (Invalid_argument "Cbytegen.lambda_of_constr: Meta")
+  | Meta _ -> raise (Invalid_argument "Vmbytegen.lambda_of_constr: Meta")
   | Evar (evk, args) ->
     let args = Array.map_of_list (fun c -> lambda_of_constr env c) args in
     Levar (evk, args)

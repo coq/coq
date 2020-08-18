@@ -116,7 +116,7 @@ let subst_const_body sub cb =
         const_body = body';
         const_type = type';
         const_body_code =
-          Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
+          Option.map (Vmemitcodes.subst_to_patch_subst sub) cb.const_body_code;
         const_universes = cb.const_universes;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;

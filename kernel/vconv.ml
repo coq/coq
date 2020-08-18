@@ -4,7 +4,7 @@ open Environ
 open Reduction
 open Vm
 open Vmvalues
-open Csymtable
+open Vmsymtable
 
 (* Test la structure des piles *)
 

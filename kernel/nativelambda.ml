@@ -395,8 +395,8 @@ let rec get_alias env (kn, u as p) =
     match tps with
     | None -> p
     | Some tps ->
-       match Cemitcodes.force tps with
-       | Cemitcodes.BCalias kn' -> get_alias env (kn', u)
+       match Vmemitcodes.force tps with
+       | Vmemitcodes.BCalias kn' -> get_alias env (kn', u)
        | _ -> p
 
 let prim env kn p args =

@@ -15,9 +15,9 @@
 open Util
 open Names
 open Vmvalues
-open Cbytecodes
-open Cemitcodes
-open Clambda
+open Vmbytecodes
+open Vmemitcodes
+open Vmlambda
 open Constr
 open Declarations
 open Environ
@@ -116,7 +116,7 @@ end
 
 module FvMap = Map.Make(Fv_elem)
 
-(*spiwack: both type have been moved from Cbytegen because I needed then
+(*spiwack: both type have been moved from Vmbytegen because I needed then
   for the retroknowledge *)
 type vm_env = {
     size : int;              (* longueur de la liste [n] *)
@@ -512,7 +512,7 @@ let rec get_alias env kn =
     match tps with
     | None -> kn
     | Some tps ->
-       (match Cemitcodes.force tps with
+       (match Vmemitcodes.force tps with
         | BCalias kn' -> get_alias env kn'
         | _ -> kn)
 

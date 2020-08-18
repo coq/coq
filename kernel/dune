@@ -11,7 +11,7 @@
   (modules genOpcodeFiles))
 
 (rule
- (targets copcodes.ml)
+ (targets vmopcodes.ml)
  (action (with-stdout-to %{targets} (run ./genOpcodeFiles.exe copml))))
 
 (rule

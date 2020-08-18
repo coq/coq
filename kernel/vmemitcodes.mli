@@ -9,7 +9,7 @@
 (************************************************************************)
 open Names
 open Vmvalues
-open Cbytecodes
+open Vmbytecodes
 
 type reloc_info =
   | Reloc_annot of annot_switch

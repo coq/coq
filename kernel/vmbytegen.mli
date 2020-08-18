@@ -8,8 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Cbytecodes
-open Cemitcodes
+open Vmbytecodes
+open Vmemitcodes
 open Constr
 open Declarations
 open Environ

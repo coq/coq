@@ -11,7 +11,7 @@
 (** List of opcodes.
 
     It is used to generate the [coq_instruct.h], [coq_jumptbl.h] and
-    [copcodes.ml] files.
+    [vmopcodes.ml] files.
 
     If adding an instruction, DON'T FORGET TO UPDATE coq_fix_code.c
     with the arity of the instruction and maybe coq_tcode_of_code.
@@ -196,7 +196,7 @@ let pp_coq_instruct_h fmt =
 let pp_coq_jumptbl_h fmt =
   pp_with_commas fmt (fun fmt -> Format.fprintf fmt "&&coq_lbl_%s")
 
-let pp_copcodes_ml fmt =
+let pp_vmopcodes_ml fmt =
   pp_header true fmt;
   Array.iteri (fun n s ->
       Format.fprintf fmt "let op%s = %d@.@." s n
@@ -210,7 +210,7 @@ let main () =
   match Sys.argv.(1) with
   | "enum" -> pp_coq_instruct_h Format.std_formatter
   | "jump" -> pp_coq_jumptbl_h Format.std_formatter
-  | "copml" -> pp_copcodes_ml Format.std_formatter
+  | "copml" -> pp_vmopcodes_ml Format.std_formatter
   | _ -> usage ()
   | exception Invalid_argument _ -> usage ()
 

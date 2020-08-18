@@ -415,7 +415,7 @@ let cbv_vm env sigma c t  =
   (* This evar-normalizes terms beforehand *)
   let c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
-  let v = Csymtable.val_of_constr env c in
+  let v = Vmsymtable.val_of_constr env c in
   EConstr.of_constr (nf_val env sigma v t)
 
 let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =

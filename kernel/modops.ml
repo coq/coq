@@ -328,7 +328,7 @@ let strengthen_const mp_from l cb resolver =
     let u = Univ.make_abstract_instance (Declareops.constant_polymorphic_context cb) in
       { cb with
         const_body = Def (Mod_subst.from_val (mkConstU (con,u)));
-        const_body_code = Some (Cemitcodes.from_val (Cbytegen.compile_alias con)) }
+        const_body_code = Some (Vmemitcodes.from_val (Vmbytegen.compile_alias con)) }
 
 let rec strengthen_mod mp_from mp_to mb =
   if mp_in_delta mb.mod_mp mb.mod_delta then mb
