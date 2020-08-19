@@ -1927,11 +1927,11 @@ let default_ist () =
 let eval_tactic t =
   Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
   Proofview.tclLIFT db_initialize <*>
-  interp_tactic (default_ist ()) t
+  eval_tactic_ist (default_ist ()) t
 
 let eval_tactic_ist ist t =
   Proofview.tclLIFT db_initialize <*>
-  interp_tactic ist t
+  eval_tactic_ist ist t
 
 (** FFI *)
 
@@ -1977,7 +1977,7 @@ let interp_tac_gen lfun avoid_ids debug t =
   let extra = TacStore.set extra f_avoid_ids avoid_ids in
   let ist = { lfun; poly; extra } in
   let ltacvars = Id.Map.domain lfun in
-  interp_tactic ist
+  eval_tactic_ist ist
     (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars } t)
   end
 
@@ -2094,7 +2094,7 @@ let () =
   register_interp0 wit_tactic interp
 
 let () =
-  let interp ist tac = interp_tactic ist tac >>= fun () -> Ftactic.return () in
+  let interp ist tac = eval_tactic_ist ist tac >>= fun () -> Ftactic.return () in
   register_interp0 wit_ltac interp
 
 let () =
@@ -2121,7 +2121,7 @@ let _ =
   let eval lfun poly env sigma ty tac =
     let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
     let ist = { lfun; poly; extra; } in
-    let tac = interp_tactic ist tac in
+    let tac = eval_tactic_ist ist tac in
     (* EJGA: We should also pass the proof name if desired, for now
        poly seems like enough to get reasonable behavior in practice
      *)
