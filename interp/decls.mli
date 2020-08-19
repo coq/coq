@@ -63,6 +63,7 @@ type logical_kind =
 type variable_data = {
   opaque:bool;
   kind:logical_kind;
+  goal_visibility:bool;
 }
 
 val add_variable_data : variable -> variable_data -> unit
@@ -76,3 +77,6 @@ val variable_opacity : variable -> bool
 
 (* Used in declare, very dubious *)
 val variable_exists : variable -> bool
+
+(* Used in declare*)
+val variable_goal_visibility : variable -> bool

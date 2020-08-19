@@ -62,6 +62,7 @@ type logical_kind =
 type variable_data = {
   opaque:bool;
   kind:logical_kind;
+  goal_visibility:bool;
 }
 
 let vartab =
@@ -72,6 +73,7 @@ let add_variable_data id o = vartab := Id.Map.add id (o,secpath()) !vartab
 
 let variable_opacity id = let {opaque},_ = Id.Map.find id !vartab in opaque
 let variable_kind id = let {kind},_ = Id.Map.find id !vartab in kind
+let variable_goal_visibility id = let {goal_visibility},_ = Id.Map.find id !vartab in goal_visibility
 
 let variable_secpath id =
   let _, dir = Id.Map.find id !vartab in

@@ -400,7 +400,7 @@ let objVariable : unit Libobject.Dyn.tag =
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
-let declare_variable_core ~name ~kind d =
+let declare_variable_core ~name ~kind ?(goal_visibility=true) d =
   (* Variables are distinguished by only short names *)
   if Decls.variable_exists name then
     raise (DeclareUniv.AlreadyDeclared (None, name));
@@ -432,7 +432,7 @@ let declare_variable_core ~name ~kind d =
       Glob_term.Explicit, de.proof_entry_opaque
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
-  Decls.(add_variable_data name {opaque;kind});
+  Decls.(add_variable_data name {opaque;kind;goal_visibility});
   ignore(Lib.add_leaf name (inVariable ()) : Libobject.object_name);
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
@@ -1404,8 +1404,10 @@ let initialize_named_context_for_proof () =
   List.fold_right
     (fun d signv ->
       let id = NamedDecl.get_id d in
-      let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
-      Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
+      if Decls.variable_goal_visibility id then
+        let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
+        Environ.push_named_context_val d signv
+      else signv) sign Environ.empty_named_context_val
 
 let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof ()) sigma =
   (* In ?sign, we remove the bodies of variables in the named context
