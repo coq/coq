@@ -21,12 +21,7 @@ type production_level =
   | NumLevel of int
   | DefaultLevel (** Interpreted differently at the border or inside a rule *)
 
-let production_level_eq lev1 lev2 =
-  match lev1, lev2 with
-  | NextLevel, NextLevel -> true
-  | NumLevel n1, NumLevel n2 -> Int.equal n1 n2
-  | DefaultLevel, DefaultLevel -> true
-  | (NextLevel | NumLevel _| DefaultLevel), _ -> false
+val production_level_eq : production_level -> production_level -> bool
 
 (** User-level types used to tell how to parse or interpret of the non-terminal *)
 

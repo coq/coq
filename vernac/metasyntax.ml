@@ -665,13 +665,6 @@ let expand_list_rule s typ tkl x n p ll =
        aux (i+1) (main :: tks @ hds) ll in
   aux 0 [] ll
 
-let production_level_eq lev1 lev2 =
-  match lev1, lev2 with
-  | NextLevel, NextLevel -> true
-  | NumLevel n1, NumLevel n2 -> Int.equal n1 n2
-  | DefaultLevel, DefaultLevel -> true
-  | (NextLevel | NumLevel _| DefaultLevel), _ -> false
-
 let is_constr_typ (s,lev) x etyps =
   match List.assoc x etyps with
   (* TODO: factorize these rules with the ones computing the effective
