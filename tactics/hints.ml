@@ -42,21 +42,22 @@ type debug = Debug | Info | Off
 
 exception Bound
 
-let head_constr_bound sigma t =
-  let t = strip_outer_cast sigma t in
-  let _,ccl = decompose_prod_assum sigma t in
-  let hd,args = decompose_app sigma ccl in
-  let open GlobRef in
-  match EConstr.kind sigma hd with
-  | Const (c, _) -> ConstRef c
-  | Ind (i, _) -> IndRef i
-  | Construct (c, _) -> ConstructRef c
-  | Var id -> VarRef id
-  | Proj (p, _) -> ConstRef (Projection.constant p)
-  | _ -> raise Bound
+let rec head_bound sigma t = match EConstr.kind sigma t with
+| Prod (_, _, b)  -> head_bound sigma b
+| LetIn (_, _, _, b) -> head_bound sigma b
+| App (c, _) -> head_bound sigma c
+| Case (_, _, _, c, _) -> head_bound sigma c
+| Ind (ind, _) -> GlobRef.IndRef ind
+| Const (c, _) -> GlobRef.ConstRef c
+| Construct (c, _) -> GlobRef.ConstructRef c
+| Var id -> GlobRef.VarRef id
+| Proj (p, _) -> GlobRef.ConstRef (Projection.constant p)
+| Cast (c, _, _) -> head_bound sigma c
+| Evar _ | Rel _ | Meta _ | Sort _ | Fix _ | Lambda _
+| CoFix _ | Int _ | Float _ | Array _ -> raise Bound
 
 let head_constr sigma c =
-  try head_constr_bound sigma c
+  try head_bound sigma c
   with Bound -> user_err (Pp.str "Head identifier must be a constant, section variable, \
                                   (co)inductive type, (co)inductive type constructor, or projection.")
 
@@ -105,7 +106,7 @@ type 'a hint_ast =
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of Genarg.glob_generic_argument (* Hint Extern *)
+  | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument (* Hint Extern *)
 
 
 type 'a hints_path_atom_gen =
@@ -349,8 +350,7 @@ let instantiate_hint env sigma p =
     | Res_pf_THEN_trivial_fail c ->
       Res_pf_THEN_trivial_fail (mk_clenv c)
     | Give_exact c -> Give_exact (mk_clenv c)
-    | Unfold_nth e -> Unfold_nth e
-    | Extern t -> Extern t
+    | (Unfold_nth _ | Extern _) as h -> h
   in
   { p with code = { p.code with obj = code } }
 
@@ -802,12 +802,6 @@ let rec nb_hyp sigma c = match EConstr.kind sigma c with
 
 (* adding and removing tactics in the search table *)
 
-let try_head_pattern c =
-  try head_pattern_bound c
-  with BoundPattern ->
-    user_err (Pp.str "Head pattern or sub-pattern must be a global constant, a section variable, \
-                      an if, case, or let expression, an application, or a projection.")
-
 let with_uid c = { obj = c; uid = fresh_key () }
 
 let secvars_of_idset s =
@@ -828,15 +822,15 @@ let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
     match EConstr.kind sigma cty with
     | Prod _ -> failwith "make_exact_entry"
     | _ ->
-        let pat = Patternops.pattern_of_constr env sigma (EConstr.to_constr ~abort_on_undefined_evars:false sigma cty) in
         let hd =
-          try head_pattern_bound pat
-          with BoundPattern -> failwith "make_exact_entry"
+          try head_bound sigma cty
+          with Bound -> failwith "make_exact_entry"
         in
         let pri = match info.hint_priority with None -> 0 | Some p -> p in
         let pat = match info.hint_pattern with
         | Some pat -> snd pat
-        | None -> pat
+        | None ->
+          Patternops.pattern_of_constr env sigma (EConstr.to_constr ~abort_on_undefined_evars:false sigma cty)
         in
         (Some hd,
          { pri; pat = Some pat; name;
@@ -850,16 +844,17 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (
     let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
     let ce = mk_clenv_from_env env sigma' None (c,cty) in
     let c' = clenv_type (* ~reduce:false *) ce in
-    let pat = Patternops.pattern_of_constr env ce.evd (EConstr.to_constr ~abort_on_undefined_evars:false sigma c') in
     let hd =
-      try head_pattern_bound pat
-      with BoundPattern -> failwith "make_apply_entry" in
+      try head_bound ce.evd c'
+      with Bound -> failwith "make_apply_entry" in
     let miss = clenv_missing ce in
     let nmiss = List.length miss in
     let secvars = secvars_of_constr env sigma c in
     let pri = match info.hint_priority with None -> nb_hyp sigma' cty + nmiss | Some p -> p in
     let pat = match info.hint_pattern with
-      | Some p -> snd p | None -> pat
+    | Some p -> snd p
+    | None ->
+      Patternops.pattern_of_constr env ce.evd (EConstr.to_constr ~abort_on_undefined_evars:false sigma c')
     in
     if Int.equal nmiss 0 then
       (Some hd,
@@ -962,14 +957,21 @@ let make_unfold eref =
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
-  let hdconstr = Option.map try_head_pattern pat in
+  let hdconstr = match pat with
+  | None -> None
+  | Some c ->
+    try Some (head_pattern_bound c)
+    with BoundPattern ->
+      user_err (Pp.str "Head pattern or sub-pattern must be a global constant, a section variable, \
+                        an if, case, or let expression, an application, or a projection.")
+  in
   (hdconstr,
    { pri = pri;
      pat = pat;
      name = PathAny;
      db = None;
      secvars = Id.Pred.empty; (* Approximation *)
-     code = with_uid (Extern tacast) })
+     code = with_uid (Extern (pat, tacast)) })
 
 let make_mode ref m =
   let open Term in
@@ -1103,7 +1105,7 @@ let subst_autohint (subst, obj) =
     match t with
     | None -> gr'
     | Some t ->
-      (try head_constr_bound Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)
+      (try head_bound Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)
        with Bound -> gr')
   in
   let subst_mps subst c = EConstr.of_constr (subst_mps subst (EConstr.Unsafe.to_constr c)) in
@@ -1133,9 +1135,10 @@ let subst_autohint (subst, obj) =
       | Unfold_nth ref ->
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code.obj else Unfold_nth ref'
-      | Extern tac ->
+      | Extern (pat, tac) ->
+          let pat' = Option.Smart.map (subst_pattern env sigma subst) data.pat in
           let tac' = Genintern.generic_substitute subst tac in
-          if tac==tac' then data.code.obj else Extern tac'
+          if pat==pat' && tac==tac' then data.code.obj else Extern (pat', tac')
     in
     let name' = subst_path_atom subst data.name in
     let uid' = subst_kn subst data.code.uid in
@@ -1415,7 +1418,7 @@ let pr_hint env sigma h = match h.obj with
       (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
-  | Extern tac ->
+  | Extern (_, tac) ->
     str "(*external*) " ++ Pputils.pr_glb_generic env sigma tac
 
 let pr_id_hint env sigma (id, v) =

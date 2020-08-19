@@ -359,7 +359,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
          Tacticals.New.tclTHEN fst snd
       | Unfold_nth c ->
          Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
-      | Extern tacast -> conclPattern concl p tacast
+      | Extern (p, tacast) -> conclPattern concl p tacast
       in
       let tac = FullHint.run h tac in
       let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
