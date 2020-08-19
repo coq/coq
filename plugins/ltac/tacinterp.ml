@@ -182,7 +182,7 @@ let catch_error_with_trace_loc loc use_finer call_trace f x =
     catching_error call_trace Exninfo.iraise e
 
 let catch_error_loc loc use_finer tac =
-  Proofview.tclOR tac (fun exn ->
+  Proofview.tclORELSE tac (fun exn ->
       let (e, info) = update_loc loc use_finer exn in
       Proofview.tclZERO ~info e)
 
@@ -1163,7 +1163,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
   | TacFirst l -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)
   | TacSolve l -> Tacticals.New.tclSOLVE (List.map (interp_tactic ist) l)
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
-  | TacArg a -> interp_tactic ist (TacArg a)
+  | TacArg a -> Ftactic.run (val_interp ist tac) (fun v -> catch_error_loc a.CAst.loc false (tactic_of_value ist v))
   | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
   | TacAlias {loc; v=(s,l)} ->
@@ -1243,7 +1243,7 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
       let ist = { lfun = Id.Map.empty; poly; extra } in
       let appl = GlbAppl[r,[]] in
       Profile_ltac.do_profile "interp_ltac_reference" trace ~count_call:false
-        (val_interp ~appl ist (Tacenv.interp_ltac r))
+        (catch_error_tac_loc loc false trace (val_interp ~appl ist (Tacenv.interp_ltac r)))
 
 and interp_tacarg ist arg : Val.t Ftactic.t =
   match arg with
