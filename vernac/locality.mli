@@ -11,7 +11,8 @@
 (** * Managing locality *)
 
 type import_status = ImportDefaultBehavior | ImportNeedQualified
-type locality = Discharge | Global of import_status
+type goal_visibility = bool
+type locality = Discharge of goal_visibility | Global of import_status
 
 (** * Positioning locality for commands supporting discharging and export
     outside of modules *)

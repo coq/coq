@@ -11,7 +11,8 @@
 (** * Managing locality *)
 
 type import_status = ImportDefaultBehavior | ImportNeedQualified
-type locality = Discharge | Global of import_status
+type goal_visibility = bool
+type locality = Discharge of goal_visibility | Global of import_status
 
 let importability_of_bool = function
   | true -> ImportNeedQualified
@@ -45,7 +46,7 @@ let enforce_locality_exp locality_flag discharge =
      (* If a Let/Variable is defined outside a section, then we consider it as a local definition *)
      warn_local_declaration ();
      Global ImportNeedQualified
-  | None, DoDischarge -> Discharge
+  | None, DoDischarge -> Discharge true
   | Some true, DoDischarge -> CErrors.user_err Pp.(str "Local not allowed in this case")
   | Some false, DoDischarge -> CErrors.user_err Pp.(str "Global not allowed in this case")
 

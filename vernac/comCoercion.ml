@@ -356,7 +356,7 @@ let try_add_new_coercion_with_source ref ~local ~poly ~source =
 let add_coercion_hook poly { Declare.Hook.S.scope; dref; _ } =
   let open Locality in
   let local = match scope with
-  | Discharge -> assert false (* Local Coercion in section behaves like Local Definition *)
+  | Discharge _ -> assert false (* Local Coercion in section behaves like Local Definition *)
   | Global ImportNeedQualified -> true
   | Global ImportDefaultBehavior -> false
   in
@@ -369,7 +369,7 @@ let add_coercion_hook ~poly = Declare.Hook.make (add_coercion_hook poly)
 let add_subclass_hook ~poly { Declare.Hook.S.scope; dref; _ } =
   let open Locality in
   let stre = match scope with
-  | Discharge -> assert false (* Local Subclass in section behaves like Local Definition *)
+  | Discharge _ -> assert false (* Local Subclass in section behaves like Local Definition *)
   | Global ImportNeedQualified -> true
   | Global ImportDefaultBehavior -> false
   in

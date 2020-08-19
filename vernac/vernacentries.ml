@@ -463,10 +463,12 @@ let vernac_custom_entry ~module_local s =
 (***********)
 (* Gallina *)
 
+let is_not_discharge = function Locality.Discharge _ -> false | _ -> true
+
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
   if Nametab.exists_cci (Lib.make_path id) || Termops.is_section_variable id ||
-     locality <> Locality.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
+     is_not_discharge locality && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
@@ -565,7 +567,7 @@ let vernac_definition_name lid local =
     | { v = Name.Name n; loc } -> CAst.make ?loc n in
   let () =
     match local with
-    | Discharge -> Dumpglob.dump_definition lid true "var"
+    | Discharge _ -> Dumpglob.dump_definition lid true "var"
     | Global _ -> Dumpglob.dump_definition lid false "def"
   in
   lid
@@ -632,7 +634,7 @@ let vernac_assumption ~atts discharge kind l nl =
       List.iter (fun (lid, _) ->
           match scope with
             | Global _ -> Dumpglob.dump_definition lid false "ax"
-            | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
+            | Discharge _ -> Dumpglob.dump_definition lid true "var") idl) l;
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l
 
 let is_polymorphic_inductive_cumulativity =

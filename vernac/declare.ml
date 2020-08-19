@@ -437,8 +437,8 @@ let declare_variable_core ~name ~kind ?(goal_visibility=true) d =
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
 
-let declare_variable ~name ~kind ~typ ~impl =
-  declare_variable_core ~name ~kind (SectionLocalAssum { typ; impl })
+let declare_variable ~name ~kind ?goal_visibility ~typ ~impl =
+  declare_variable_core ~name ~kind ?goal_visibility (SectionLocalAssum { typ; impl })
 
 (* Declaration messages *)
 
@@ -561,8 +561,8 @@ let declare_entry_core ~name ~scope ~kind ?hook ~obls ~impargs ~uctx entry =
   in
   let ubind = UState.universe_binders uctx in
   let dref = match scope with
-  | Locality.Discharge ->
-    let () = declare_variable_core ~name ~kind (SectionLocalDef entry) in
+  | Locality.Discharge goal_visibility ->
+    let () = declare_variable_core ~name ~kind ~goal_visibility (SectionLocalDef entry) in
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
   | Locality.Global local ->
@@ -628,7 +628,7 @@ let warn_let_as_axiom =
 
 let declare_assumption ~name ~scope ~hook ~impargs ~uctx pe =
   let local = match scope with
-    | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
+    | Locality.Discharge _ -> warn_let_as_axiom name; Locality.ImportNeedQualified
     | Locality.Global local -> local
   in
   let kind = Decls.(IsAssumption Conjectural) in

@@ -26,6 +26,7 @@ val do_assumptions
 val declare_variable
   : coercion_flag
   -> kind:Decls.assumption_object_kind
+  -> ?goal_visibility:bool
   -> Constr.types
   -> Impargs.manual_implicits
   -> Glob_term.binding_kind

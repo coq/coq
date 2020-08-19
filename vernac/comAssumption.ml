@@ -22,9 +22,9 @@ open Entries
 module RelDecl = Context.Rel.Declaration
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
-let declare_variable is_coe ~kind typ imps impl {CAst.v=name} =
+let declare_variable is_coe ~kind ?(goal_visibility=true) typ imps impl {CAst.v=name} =
   let kind = Decls.IsAssumption kind in
-  let () = Declare.declare_variable ~name ~kind ~typ ~impl in
+  let () = Declare.declare_variable ~name ~kind ~goal_visibility ~typ ~impl in
   let () = Declare.assumption_message name in
   let r = GlobRef.VarRef name in
   let () = maybe_declare_manual_implicits true r imps in
@@ -87,7 +87,7 @@ let context_set_of_entry = function
 
 let declare_assumptions ~poly ~scope ~kind univs nl l =
   let () = match scope with
-    | Locality.Discharge ->
+    | Locality.Discharge _ ->
       (* declare universes separately for variables *)
       DeclareUctx.declare_universe_context ~poly (context_set_of_entry (fst univs))
     | Locality.Global _ -> ()
@@ -98,8 +98,8 @@ let declare_assumptions ~poly ~scope ~kind univs nl l =
       let univs,subst' =
         List.fold_left_map (fun univs id ->
             let refu = match scope with
-              | Locality.Discharge ->
-                declare_variable is_coe ~kind typ imps Glob_term.Explicit id;
+              | Locality.Discharge goal_visibility ->
+                declare_variable is_coe ~kind ~goal_visibility typ imps Glob_term.Explicit id;
                 GlobRef.VarRef id.CAst.v, Univ.Instance.empty
               | Locality.Global local ->
                 declare_axiom is_coe ~local ~poly ~kind typ univs imps nl id
@@ -129,7 +129,7 @@ let process_assumptions_udecls ~scope l =
     | (_, ([], _))::_ | [] -> assert false
   in
   let () = match scope, udecl with
-    | Locality.Discharge, Some _ ->
+    | Locality.Discharge _, Some _ ->
       let loc = first_id.CAst.loc in
       let msg = Pp.str "Section variables cannot be polymorphic." in
       user_err ?loc  msg
@@ -205,7 +205,7 @@ let context_insection sigma ~poly ctx =
         let uctx = Evd.evar_universe_context sigma in
         let kind = Decls.(IsDefinition Definition) in
         let _ : GlobRef.t =
-          Declare.declare_entry ~name ~scope:Locality.Discharge
+          Declare.declare_entry ~name ~scope:(Locality.Discharge true)
             ~kind ~impargs:[] ~uctx entry
         in
         ()
