@@ -465,7 +465,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
       Tactics.apply_type ~typecheck:true cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], Tacticals.New.tclTHENLIST (itacs @ rwtacs), sigma0
   in
   let cvtac' =
-    Proofview.tclOR cvtac begin function
+    Proofview.tclORELSE cvtac begin function
     | (PRtype_error e, _) ->
       let error = Option.cata (fun (env, sigma, te) ->
           Pp.(fnl () ++ str "Type error was: " ++ Himsg.explain_pretype_error env sigma te))

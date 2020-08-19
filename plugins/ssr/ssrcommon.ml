@@ -1047,7 +1047,7 @@ let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
   let uct = Evd.evar_universe_context (fst oc) in
   let n, oc = abs_evars_pirrel env sigma (fst oc, EConstr.to_constr ~abort_on_undefined_evars:false (fst oc) (snd oc)) in
   Proofview.Unsafe.tclEVARS (Evd.set_universe_context sigma uct) <*>
-  Proofview.tclOR (applyn ~with_evars ~first_goes_last ~with_shelve:true ?beta n (EConstr.of_constr oc))
+  Proofview.tclORELSE (applyn ~with_evars ~first_goes_last ~with_shelve:true ?beta n (EConstr.of_constr oc))
     (fun _ -> Proofview.tclZERO dependent_apply_error)
   end
 
