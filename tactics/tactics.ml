@@ -117,7 +117,7 @@ let unsafe_intro env decl b =
   Refine.refine ~typecheck:false begin fun sigma ->
     let ctx = named_context_val env in
     let nctx = push_named_context_val decl ctx in
-    let inst = List.map (NamedDecl.get_id %> mkVar) (named_context env) in
+    let inst = identity_subst_val (named_context_val env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
     let (sigma, ev) = new_pure_evar nctx sigma nb ~principal:true in
@@ -338,7 +338,7 @@ let rename_hyp repl =
       let nhyps = List.map map hyps in
       let nconcl = subst concl in
       let nctx = val_of_named_context nhyps in
-      let instance = List.map (NamedDecl.get_id %> mkVar) hyps in
+      let instance = EConstr.identity_subst_val (Environ.named_context_val env) in
       Refine.refine ~typecheck:false begin fun sigma ->
         let sigma, ev = Evarutil.new_pure_evar nctx sigma nconcl ~principal:true in
         sigma, mkEvar (ev, instance)
@@ -437,11 +437,6 @@ let clear_hyps2 env sigma ids sign t cl =
   with Evarutil.ClearDependencyError (id,err,inglobal) ->
     error_replacing_dependency env sigma id err inglobal
 
-let new_evar_from_context ?principal sign evd typ =
-  let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
-  let (evd, evk) = Evarutil.new_pure_evar sign evd typ in
-  (evd, mkEvar (evk, instance))
-
 let internal_cut ?(check=true) replace id t =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -449,22 +444,22 @@ let internal_cut ?(check=true) replace id t =
     let concl = Proofview.Goal.concl gl in
     let sign = named_context_val env in
     let r = Retyping.relevance_of_type env sigma t in
-    let sign',t,concl,sigma =
+    let env',t,concl,sigma =
       if replace then
         let nexthyp = get_next_hyp_position env sigma id (named_context_of_val sign) in
         let sigma,sign',t,concl = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
         let sign' = insert_decl_in_named_context env sigma (LocalAssum (make_annot id r,t)) nexthyp sign' in
-        sign',t,concl,sigma
+        Environ.reset_with_named_context sign' env,t,concl,sigma
       else
         (if check && mem_named_context_val id sign then
            user_err (str "Variable " ++ Id.print id ++ str " is already declared.");
-         push_named_context_val (LocalAssum (make_annot id r,t)) sign,t,concl,sigma) in
+         push_named (LocalAssum (make_annot id r,t)) env,t,concl,sigma) in
     let nf_t = nf_betaiota env sigma t in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS sigma)
       (Refine.refine ~typecheck:false begin fun sigma ->
-        let (sigma, ev) = new_evar_from_context sign sigma nf_t in
-        let (sigma, ev') = new_evar_from_context sign' sigma ~principal:true concl in
+        let (sigma, ev) = Evarutil.new_evar env sigma nf_t in
+        let (sigma, ev') = Evarutil.new_evar ~principal:true env' sigma concl in
         let term = mkLetIn (make_annot (Name id) r, ev, t, EConstr.Vars.subst_var id ev') in
         (sigma, term)
       end)
@@ -2788,7 +2783,7 @@ let pose_tac na c =
       let id = make_annot id Sorts.Relevant in
       let nhyps = EConstr.push_named_context_val (NamedDecl.LocalDef (id, c, t)) hyps in
       let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma concl in
-      let inst = List.map (fun d -> mkVar (get_id d)) (named_context env) in
+      let inst = EConstr.identity_subst_val hyps in
       let body = mkEvar (ev, mkRel 1 :: inst) in
       (sigma, mkLetIn (map_annot Name.mk_name id, c, t, body))
     end

@@ -33,8 +33,6 @@ type t = {
   (** For locating indices *)
   renamed_env : env;
   (** For name management *)
-  renamed_vars : EConstr.t list Lazy.t;
-  (** Identity instance of named_context of renamed_env, to maximize sharing *)
   extra : ext_named_context Lazy.t;
   (** Delay the computation of the evar extended environment *)
   lvar : ltac_var_map;
@@ -45,11 +43,9 @@ let make ~hypnaming env sigma lvar =
     let avoid = Environ.ids_of_named_context_val (Environ.named_context_val env) in
     Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ~hypnaming sigma d acc)
       (rel_context env) ~init:(empty_csubst, avoid, named_context_val env) in
-  let open Context.Named.Declaration in
   {
     static_env = env;
     renamed_env = env;
-    renamed_vars = lazy (List.map (get_id %> mkVar) (named_context env));
     extra = lazy (get_extra env sigma);
     lvar = lvar;
   }
@@ -76,7 +72,6 @@ let push_rel ~hypnaming sigma d env =
   let env = {
     static_env = push_rel d env.static_env;
     renamed_env = push_rel d' env.renamed_env;
-    renamed_vars = env.renamed_vars;
     extra = lazy (push_rel_decl_to_named_context ~hypnaming:hypnaming sigma d' (Lazy.force env.extra));
     lvar = env.lvar;
     } in
@@ -89,7 +84,6 @@ let push_rel_context ~hypnaming ?(force_names=false) sigma ctx env =
   let env = {
     static_env = push_rel_context ctx env.static_env;
     renamed_env = push_rel_context ctx' env.renamed_env;
-    renamed_vars = env.renamed_vars;
     extra = lazy (List.fold_right (fun d acc -> push_rel_decl_to_named_context ~hypnaming:hypnaming sigma d acc) ctx' (Lazy.force env.extra));
     lvar = env.lvar;
     } in
@@ -102,7 +96,7 @@ let push_rec_types ~hypnaming sigma (lna,typarray) env =
   Array.map get_annot ctx, env
 
 let new_evar env sigma ?src ?naming typ =
-  let lazy inst_vars = env.renamed_vars in
+  let inst_vars = EConstr.identity_subst_val (named_context_val env.renamed_env) in
   let rec rel_list n accu =
     if n <= 0 then accu
     else rel_list (n - 1) (mkRel n :: accu)

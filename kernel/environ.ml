@@ -87,6 +87,7 @@ let build_lazy_val vk key = vk := VKvalue (CEphemeron.create key)
 type named_context_val = {
   env_named_ctx : Constr.named_context;
   env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
+  env_named_var : Constr.t list;
 }
 
 type rel_context_val = {
@@ -109,6 +110,7 @@ type env = {
 let empty_named_context_val = {
   env_named_ctx = [];
   env_named_map = Id.Map.empty;
+  env_named_var = [];
 }
 
 let empty_rel_context_val = {
@@ -183,6 +185,7 @@ let push_named_context_val_val d rval ctxt =
   {
     env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
     env_named_map = Id.Map.add (NamedDecl.get_id d) (d, rval) ctxt.env_named_map;
+    env_named_var = mkVar (NamedDecl.get_id d) :: ctxt.env_named_var;
   }
 
 let push_named_context_val d ctxt =
@@ -193,7 +196,7 @@ let match_named_context_val c = match c.env_named_ctx with
 | decl :: ctx ->
   let (_, v) = Id.Map.find (NamedDecl.get_id decl) c.env_named_map in
   let map = Id.Map.remove (NamedDecl.get_id decl) c.env_named_map in
-  let cval = { env_named_ctx = ctx; env_named_map = map } in
+  let cval = { env_named_ctx = ctx; env_named_map = map; env_named_var = List.tl c.env_named_var } in
   Some (decl, v, cval)
 
 let map_named_val f ctxt =
@@ -208,7 +211,7 @@ let map_named_val f ctxt =
   in
   let map, ctx = List.fold_left_map fold ctxt.env_named_map ctxt.env_named_ctx in
   if map == ctxt.env_named_map then ctxt
-  else { env_named_ctx = ctx; env_named_map = map }
+  else { env_named_ctx = ctx; env_named_map = map; env_named_var = ctxt.env_named_var }
 
 let push_named d env =
   {env with env_named_context = push_named_context_val d env.env_named_context}

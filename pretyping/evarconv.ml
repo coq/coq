@@ -1352,9 +1352,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
     (Feedback.msg_debug Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs);
      Feedback.msg_debug Pp.(str"env evars: " ++ Termops.Internal.print_env env_evar));
   let args = List.map (nf_evar evd) args in
-  let vars = List.map NamedDecl.get_id ctxt in
-  let argsubst = List.map2 (fun id c -> (id, c)) vars args in
-  let instance = List.map mkVar vars in
+  let argsubst = List.map2 (fun decl c -> (NamedDecl.get_id decl, c)) ctxt args in
+  let instance = evar_identity_subst evi in
   let rhs = nf_evar evd rhs in
   if not (noccur_evar env_rhs evd evk rhs) then raise (TypingFailed evd);
   (* Ensure that any progress made by Typing.e_solve_evars will not contradict

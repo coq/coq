@@ -386,14 +386,12 @@ let push_rel_decl_to_named_context
 
 let push_rel_context_to_named_context ?hypnaming env sigma typ =
   (* compute the instances relative to the named context and rel_context *)
-  let open Context.Named.Declaration in
   let open EConstr in
-  let ids = List.map get_id (named_context env) in
-  let inst_vars = List.map mkVar ids in
+  let inst_vars = EConstr.identity_subst_val (named_context_val env) in
   if List.is_empty (Environ.rel_context env) then
     (named_context_val env, typ, inst_vars, empty_csubst)
   else
-    let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
+    let avoid = Environ.ids_of_named_context_val (named_context_val env) in
     let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
     (* move the rel context to a named context and extend the named instance *)
     (* with vars of the rel context *)
@@ -409,8 +407,9 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
 
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
-let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(abstract_arguments = Abstraction.identity)
-    ?candidates ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
+let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
+  ?(abstract_arguments = Abstraction.identity) ?candidates
+  ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
   let name = match naming with
   | IntroAnonymous -> None
   | IntroIdentifier id -> Some id
@@ -419,6 +418,10 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(abstract_a
     let id = Namegen.next_ident_away_from id has_name in
     Some id
   in
+  let identity = match identity with
+  | None -> Identity.none ()
+  | Some inst -> Identity.make inst
+  in
   let evi = {
     evar_hyps = sign;
     evar_concl = typ;
@@ -426,7 +429,9 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(abstract_a
     evar_filter = filter;
     evar_abstract_arguments = abstract_arguments;
     evar_source = src;
-    evar_candidates = candidates }
+    evar_candidates = candidates;
+    evar_identity = identity;
+  }
   in
   let typeclass_candidate = if principal then Some false else typeclass_candidate in
   let (evd, newevk) = Evd.new_evar evd ?name ?typeclass_candidate evi in
@@ -447,7 +452,8 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?abstract_arguments ?candidates ?naming
+  let identity = if Int.equal (Environ.nb_rel env) 0 then Some instance else None in
+  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?identity ?abstract_arguments ?candidates ?naming
     ?typeclass_candidate ?principal in
   (evd, EConstr.mkEvar (evk, instance))
 

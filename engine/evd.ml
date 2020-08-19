@@ -139,6 +139,29 @@ module Abstraction = struct
   let abstract_last l = Abstract :: l
 end
 
+module Identity :
+sig
+  type t
+  val make : econstr list -> t
+  val none : unit -> t
+  val repr : named_context_val -> Filter.t -> t -> econstr list
+  val is_identity : econstr list -> t -> bool
+end =
+struct
+  type t = econstr list option ref
+  let make s = ref (Some s)
+  let none () = ref None
+  let repr sign filter s = match !s with
+  | None ->
+    let ans = Filter.filter_list filter sign.env_named_var in
+    let () = s := Some ans in
+    ans
+  | Some s -> s
+  let is_identity l s = match !s with
+  | None -> false
+  | Some s -> s == l
+end
+
 (* The kinds of existential variables are now defined in [Evar_kinds] *)
 
 (* The type of mappings for existential variables *)
@@ -158,7 +181,9 @@ type evar_info = {
   evar_filter : Filter.t;
   evar_abstract_arguments : Abstraction.t;
   evar_source : Evar_kinds.t Loc.located;
-  evar_candidates : constr list option; (* if not None, list of allowed instances *)}
+  evar_candidates : constr list option; (* if not None, list of allowed instances *)
+  evar_identity : Identity.t;
+}
 
 let make_evar hyps ccl = {
   evar_concl = ccl;
@@ -167,7 +192,9 @@ let make_evar hyps ccl = {
   evar_filter = Filter.identity;
   evar_abstract_arguments = Abstraction.identity;
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;
-  evar_candidates = None; }
+  evar_candidates = None;
+  evar_identity = Identity.none ();
+}
 
 let instance_mismatch () =
   anomaly (Pp.str "Signature and its instance do not match.")
@@ -216,6 +243,9 @@ let evar_filtered_env env evi = match Filter.repr (evar_filter evi) with
   in
   make_env filter (evar_context evi)
 
+let evar_identity_subst evi =
+  Identity.repr evi.evar_hyps evi.evar_filter evi.evar_identity
+
 let map_evar_body f = function
   | Evar_empty -> Evar_empty
   | Evar_defined d -> Evar_defined (f d)
@@ -256,7 +286,9 @@ let evar_instance_array test_id info args =
     instrec filter (evar_context info) args
 
 let make_evar_instance_array info args =
-  evar_instance_array (NamedDecl.get_id %> isVarId) info args
+  if Identity.is_identity args info.evar_identity then []
+  else
+    evar_instance_array (NamedDecl.get_id %> isVarId) info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
@@ -779,16 +811,17 @@ let declare_restricted_evar evar_flags evk evk' =
 let restrict evk filter ?candidates ?src evd =
   let evk' = new_untyped_evar () in
   let evar_info = EvMap.find evk evd.undf_evars in
+  let id_inst = Filter.filter_list filter evar_info.evar_hyps.env_named_var in
   let evar_info' =
     { evar_info with evar_filter = filter;
       evar_candidates = candidates;
-      evar_source = (match src with None -> evar_info.evar_source | Some src -> src) } in
+      evar_source = (match src with None -> evar_info.evar_source | Some src -> src);
+      evar_identity = Identity.make id_inst;
+    } in
   let last_mods = match evd.conv_pbs with
   | [] ->  evd.last_mods
   | _ -> Evar.Set.add evk evd.last_mods in
   let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
-  let ctxt = Filter.filter_list filter (evar_context evar_info) in
-  let id_inst = List.map (NamedDecl.get_id %> mkVar) ctxt in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   let evar_flags = declare_restricted_evar evd.evar_flags evk evk' in

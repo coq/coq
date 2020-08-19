@@ -326,6 +326,8 @@ val map_rel_context_in_env :
 val match_named_context_val :
   named_context_val -> (named_declaration * lazy_val * named_context_val) option
 
+val identity_subst_val : named_context_val -> t list
+
 (* XXX Missing Sigma proxy *)
 val fresh_global :
   ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->

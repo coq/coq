@@ -216,9 +216,6 @@ type 'a update =
 | UpdateWith of 'a
 | NoUpdate
 
-open Context.Named.Declaration
-let inst_of_vars sign = List.map (get_id %> mkVar) sign
-
 let restrict_evar_key evd evk filter candidates =
   match filter, candidates with
   | None, NoUpdate -> evd, evk
@@ -701,8 +698,7 @@ let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_si
   let (evd, evk) = new_pure_evar sign evd ty_t_in_sign ~filter ~src in
   let t_in_env = whd_evar evd t_in_env in
   let evd = define_fun env evd None (evk, inst_in_env) t_in_env in
-  let ctxt = named_context_of_val sign in
-  let inst_in_sign = inst_of_vars (Filter.filter_list filter ctxt) in
+  let inst_in_sign = evar_identity_subst (Evd.find evd evk) in
   let evar_in_sign = mkEvar (evk, inst_in_sign) in
   (evd,whd_evar evd evar_in_sign)
 
@@ -735,9 +731,8 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let sign1 = evar_hyps evi1 in
   let filter1 = evar_filter evi1 in
   let src = subterm_source evk1 evi1.evar_source in
-  let ids1 = List.map get_id (named_context_of_val sign1) in
   let avoid = Environ.ids_of_named_context_val sign1 in
-  let inst_in_sign = List.map mkVar (Filter.filter_list filter1 ids1) in
+  let inst_in_sign = evar_identity_subst evi1 in
   let open Context.Rel.Declaration in
   let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =
     List.fold_right (fun d (sign,filter,inst_in_env,inst_in_sign,env,evd,avoid) ->
