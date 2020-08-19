@@ -1084,7 +1084,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
   | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
 
 
-and eval_tactic ist tac : unit Proofview.tactic = match tac with
+and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
   | TacAtom {loc;v=t} ->
       let call = LtacAtomCall t in
       let trace = push_trace(loc,call) ist in
@@ -1359,7 +1359,7 @@ and tactic_of_value ist vle =
         lfun = lfun;
         poly;
         extra = TacStore.set ist.extra f_trace []; } in
-      let tac = name_if_glob appl (eval_tactic ist t) in
+      let tac = name_if_glob appl (eval_tactic_ist ist t) in
       Profile_ltac.do_profile "tactic_of_value" trace (catch_error_tac trace tac)
   | VFun (appl,_,vmap,vars,_) ->
      let tactic_nm =
@@ -1446,7 +1446,7 @@ and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
         ; poly
         ; extra = TacStore.set ist.extra f_trace trace
         } in
-      let tac = eval_tactic ist t in
+      let tac = eval_tactic_ist ist t in
       let dummy = VFun (appl,extract_trace ist, Id.Map.empty, [], TacId []) in
       catch_error_tac trace (tac <*> Ftactic.return (of_tacvalue dummy))
   | _ -> Ftactic.return v
