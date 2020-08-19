@@ -84,8 +84,6 @@ Argument lists should agree on the names they provide.
 The command has indeed failed with message:
 Sequences of implicit arguments must be of different lengths.
 The command has indeed failed with message:
-Some argument names are duplicated: F
-The command has indeed failed with message:
 Argument number 3 is a trailing implicit, so it can't be declared non
 maximal. Please use { } instead of [ ].
 The command has indeed failed with message:

@@ -190,7 +190,7 @@ Record Monad {m : Type -> Type} := {
 
 Print Visibility.
 Print unit.
-Arguments unit {m m0 α}.
+Arguments unit {m _ α}.
 Arguments Monad : clear implicits.
 Notation "'return' t" := (unit t).
 
