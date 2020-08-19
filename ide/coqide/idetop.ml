@@ -34,8 +34,19 @@ let init_signal_handler () =
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let pr_error s = pr_with_pid s
+
+(* matching strings will not be printed *)
+let debug_filter_regex = Str.regexp "SetOptions"
+let debug_filter s =
+  try
+    let _ = Str.search_forward debug_filter_regex s 0 in
+    Printf.eprintf "Filtered out message\n";
+    false
+  with
+  Not_found -> true
+
 let pr_debug s =
-  if !Flags.debug then pr_with_pid s
+  if !Flags.debug && debug_filter s then pr_with_pid s
 let pr_debug_call q =
   if !Flags.debug then pr_with_pid ("<-- " ^ Xmlprotocol.pr_call q)
 let pr_debug_answer q r =
@@ -209,6 +220,7 @@ let process_goal sigma g =
   { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 
 let process_goal_diffs diff_goal_map oldp nsigma ng =
+  Printexc.print_raw_backtrace stderr (Printexc.get_callstack 50);
   let open Evd in
   let og_s = match oldp with
     | Some oldp ->
@@ -236,7 +248,7 @@ let goals () =
     if Proof_diffs.show_diffs () then begin
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
       let diff_goal_map = Proof_diffs.make_goal_map oldp newp in
-      Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
+      Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))  (* HERE *)
     end else
       Some (export_pre_goals Proof.(data newp) process_goal)
   with Vernacstate.Declare.NoCurrentProof -> None
@@ -367,7 +379,23 @@ let export_option_state s = {
   Interface.opt_value = export_option_value s.Goptions.opt_value;
 }
 
-let get_options () =
+let proof_diffs diff_type =
+(*  let open Vernac.State in*)
+  begin
+    try
+      let doc = Stm.get_doc 0 in
+      let oproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
+      ()
+    with
+    | Proof.NoSuchGoal _
+    | Option.IsNone ->
+      Printf.printf "No goals to show\n";
+  (*    CErrors.user_err (str "No goals to show.");*)
+  end;
+  "proof_diffs"
+
+
+let get_options diff_type =
   let table = Goptions.get_tables () in
   let fold key state accu = (key, export_option_state state) :: accu in
   Goptions.OptionMap.fold fold table []
@@ -455,6 +483,7 @@ let eval_call c =
     Interface.hints = interruptible hints;
     Interface.status = interruptible status;
     Interface.search = interruptible search;
+    Interface.proof_diffs = interruptible proof_diffs;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;
@@ -518,7 +547,10 @@ let loop run_mode ~opts:_ state =
   while not !quit do
     try
       let xml_query = Xml_parser.parse xml_ic in
-(*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
+      if !Flags.debug then
+        let s = Xml_printer.to_string_fmt xml_query in
+        if debug_filter s then
+          pr_with_pid s;
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
       let r  = eval_call q in

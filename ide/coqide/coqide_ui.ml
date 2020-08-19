@@ -65,6 +65,7 @@ let init () =
 \n    <menuitem name='Prefs' action='Preferences' />\
 \n  </menu>\
 \n  <menu name='View' action='View'>\
+\n    <menuitem action='SHOW PROOF DIFFS' />\
 \n    <menuitem action='Previous tab' />\
 \n    <menuitem action='Next tab' />\
 \n    <separator/>\

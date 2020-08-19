@@ -747,6 +747,9 @@ let coq_icon () =
   let dir = List.find chk (Minilib.coqide_data_dirs ()) in
   Filename.concat dir name
 
+let show_proof_diffs = cb_on_current_term (fun t -> Printf.eprintf "***show_proof_diffs\n%!"(*; t.script#comment ()*))
+
+
 let about _ =
   let dialog = GWindow.about_dialog () in
   let _ = dialog#connect#response ~callback:(fun _ -> dialog#destroy ()) in
@@ -1057,6 +1060,8 @@ let build_ui () =
 
   menu view_menu [
     item "View" ~label:"_View";
+    item "SHOW PROOF DIFFS" ~label:"_Show proof diffs" ~accel:"<CTRL>S"
+      ~callback:MiscMenu.show_proof_diffs;
     item "Previous tab" ~label:"_Previous tab" ~accel:"<Alt>Left"
       ~stock:`GO_BACK
       ~callback:(fun _ -> notebook#previous_page ());

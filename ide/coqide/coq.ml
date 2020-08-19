@@ -296,6 +296,7 @@ let handle_feedback feedback_processor xml =
 
 let handle_final_answer handle xml =
   let () = Minilib.log "Handling coqtop answer" in
+  Printf.eprintf "Answer:\n%s\n" (Xml_printer.to_string_fmt xml);
   let ccb = match handle.waiting_for with
     | None -> raise (AnswerWithoutRequest (Xml_printer.to_string_fmt xml))
     | Some c -> c in

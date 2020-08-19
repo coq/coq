@@ -278,6 +278,7 @@ module ReifType : sig
   val state_id_t     : state_id val_t
   val route_id_t     : route_id val_t
   val search_cst_t   : search_constraint val_t
+  val proof_diffs_t  : string val_t
 
   val of_value_type : 'a val_t -> 'a -> xml
   val to_value_type : 'a val_t -> xml -> 'a
@@ -314,6 +315,7 @@ end = struct
     | State_id : state_id val_t
     | Route_id : route_id val_t
     | Search_cst : search_constraint val_t
+    | ProofDiffs_dt : string val_t
 
   type value_type = Value_type : 'a val_t -> value_type
 
@@ -340,6 +342,7 @@ end = struct
   let state_id_t     = State_id
   let route_id_t     = Route_id
   let search_cst_t   = Search_cst
+  let proof_diffs_t  = ProofDiffs_dt
 
   let of_value_type (ty : 'a val_t) : 'a -> xml =
     let rec convert : type a. a val_t -> a -> xml = function
@@ -362,6 +365,7 @@ end = struct
       | State_id      -> of_stateid
       | Route_id      -> of_routeid
       | Search_cst    -> of_search_cst
+      | ProofDiffs_dt -> of_string (* TBD *)
     in
       convert ty
 
@@ -386,6 +390,7 @@ end = struct
       | State_id      -> to_stateid
       | Route_id      -> to_routeid
       | Search_cst    -> to_search_cst
+      | ProofDiffs_dt -> to_string (* todo *)
     in
       convert ty
 
@@ -453,6 +458,7 @@ end = struct
   | Option_state  -> pr_option_state
   | Option_value  -> pr_option_value
   | Search_cst    -> pr_search_cst
+  | ProofDiffs_dt -> pr_string  (* TODO *)
   | Coq_info      -> pr_coq_info
   | Goals         -> pr_goal
   | Evar          -> pr_evar
@@ -477,6 +483,7 @@ end = struct
   | Option_state  -> assert(true : option_state exists); "Interface.option_state"
   | Option_value  -> assert(true : option_value exists); "Interface.option_value"
   | Search_cst    -> assert(true : search_constraint exists); "Interface.search_constraint"
+  | ProofDiffs_dt -> "string"
   | Coq_info      -> assert(true : coq_info exists); "Interface.coq_info"
   | Goals         -> assert(true : goals exists); "Interface.goals"
   | Evar          -> assert(true : evar exists); "Interface.evar"
@@ -526,6 +533,7 @@ let evars_sty_t : evars_sty val_t = unit_t
 let hints_sty_t : hints_sty val_t = unit_t
 let status_sty_t : status_sty val_t = bool_t
 let search_sty_t : search_sty val_t = list_t (pair_t search_cst_t bool_t)
+let proof_diffs_sty_t : proof_diffs_sty val_t = proof_diffs_t  (* todo *)
 let get_options_sty_t : get_options_sty val_t = unit_t
 let set_options_sty_t : set_options_sty val_t =
   list_t (pair_t (list_t string_t) option_value_t)
@@ -551,6 +559,7 @@ let hints_rty_t : hints_rty val_t =
   option_t (pair_t (list_t hint) hint)
 let status_rty_t : status_rty val_t = state_t
 let search_rty_t : search_rty val_t = list_t (coq_object_t string_t)
+let proof_diffs_rty_t : proof_diffs_rty val_t = string_t
 let get_options_rty_t : get_options_rty val_t =
   list_t (pair_t (list_t string_t) option_state_t)
 let set_options_rty_t : set_options_rty val_t = unit_t
@@ -585,6 +594,7 @@ let calls = [|
   "StopWorker", ($)stop_worker_sty_t, ($)stop_worker_rty_t;
   "PrintAst",   ($)print_ast_sty_t,   ($)print_ast_rty_t;
   "Annotate",   ($)annotate_sty_t,    ($)annotate_rty_t;
+  "ProofDiffs", ($)proof_diffs_sty_t, ($)proof_diffs_rty_t;
 |]
 
 type 'a call =
@@ -596,6 +606,7 @@ type 'a call =
   | Hints      : hints_sty -> hints_rty call
   | Status     : status_sty -> status_rty call
   | Search     : search_sty -> search_rty call
+  | ProofDiffs : proof_diffs_sty -> proof_diffs_rty call
   | GetOptions : get_options_sty -> get_options_rty call
   | SetOptions : set_options_sty -> set_options_rty call
   | MkCases    : mkcases_sty -> mkcases_rty call
@@ -610,6 +621,7 @@ type 'a call =
   | PrintAst   : print_ast_sty -> print_ast_rty call
   | Annotate   : annotate_sty -> annotate_rty call
 
+(* the order of the entries must match the order in "calls" above *)
 let id_of_call : type a. a call -> int = function
   | Add _        -> 0
   | Edit_at _    -> 1
@@ -630,6 +642,7 @@ let id_of_call : type a. a call -> int = function
   | StopWorker _ -> 16
   | PrintAst _   -> 17
   | Annotate _   -> 18
+  | ProofDiffs _ -> 19
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -647,6 +660,7 @@ let get_options x : get_options_rty call = GetOptions x
 let set_options x : set_options_rty call = SetOptions x
 let mkcases x     : mkcases_rty call     = MkCases x
 let search x      : search_rty call      = Search x
+let proof_diffs x : proof_diffs_rty call = ProofDiffs x
 let quit x        : quit_rty call        = Quit x
 let init x        : init_rty call        = Init x
 let wait x        : wait_rty call        = Wait x
@@ -667,6 +681,7 @@ let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
     | Hints x      -> mkGood (handler.hints x)
     | Status x     -> mkGood (handler.status x)
     | Search x     -> mkGood (handler.search x)
+    | ProofDiffs x -> mkGood (handler.proof_diffs x)
     | GetOptions x -> mkGood (handler.get_options x)
     | SetOptions x -> mkGood (handler.set_options x)
     | MkCases x    -> mkGood (handler.mkcases x)
@@ -692,6 +707,7 @@ let of_answer : type a. a call -> a value -> xml = function
   | Hints _      -> of_value (of_value_type hints_rty_t      )
   | Status _     -> of_value (of_value_type status_rty_t     )
   | Search _     -> of_value (of_value_type search_rty_t     )
+  | ProofDiffs _ -> of_value (of_value_type proof_diffs_rty_t)
   | GetOptions _ -> of_value (of_value_type get_options_rty_t)
   | SetOptions _ -> of_value (of_value_type set_options_rty_t)
   | MkCases _    -> of_value (of_value_type mkcases_rty_t    )
@@ -716,6 +732,7 @@ let to_answer : type a. a call -> xml -> a value = function
   | Hints _      -> to_value (to_value_type hints_rty_t      )
   | Status _     -> to_value (to_value_type status_rty_t     )
   | Search _     -> to_value (to_value_type search_rty_t     )
+  | ProofDiffs _ -> to_value (to_value_type proof_diffs_rty_t)
   | GetOptions _ -> to_value (to_value_type get_options_rty_t)
   | SetOptions _ -> to_value (to_value_type set_options_rty_t)
   | MkCases _    -> to_value (to_value_type mkcases_rty_t    )
@@ -739,6 +756,7 @@ let of_call : type a. a call -> xml = fun q ->
   | Hints x      -> mkCall (of_value_type hints_sty_t       x)
   | Status x     -> mkCall (of_value_type status_sty_t      x)
   | Search x     -> mkCall (of_value_type search_sty_t      x)
+  | ProofDiffs x -> mkCall (of_value_type proof_diffs_sty_t x)
   | GetOptions x -> mkCall (of_value_type get_options_sty_t x)
   | SetOptions x -> mkCall (of_value_type set_options_sty_t x)
   | MkCases x    -> mkCall (of_value_type mkcases_sty_t     x)
@@ -763,6 +781,7 @@ let to_call : xml -> unknown_call =
     | "Hints"      -> Unknown (Hints      (mkCallArg hints_sty_t       a))
     | "Status"     -> Unknown (Status     (mkCallArg status_sty_t      a))
     | "Search"     -> Unknown (Search     (mkCallArg search_sty_t      a))
+    | "ProofDiffs" -> Unknown (ProofDiffs (mkCallArg proof_diffs_sty_t a))
     | "GetOptions" -> Unknown (GetOptions (mkCallArg get_options_sty_t a))
     | "SetOptions" -> Unknown (SetOptions (mkCallArg set_options_sty_t a))
     | "MkCases"    -> Unknown (MkCases    (mkCallArg mkcases_sty_t     a))
@@ -794,6 +813,7 @@ let pr_full_value : type a. a call -> a value -> string = fun call value -> matc
   | Hints _      -> pr_value_gen (print hints_rty_t      ) value
   | Status _     -> pr_value_gen (print status_rty_t     ) value
   | Search _     -> pr_value_gen (print search_rty_t     ) value
+  | ProofDiffs _ -> pr_value_gen (print proof_diffs_rty_t) value
   | GetOptions _ -> pr_value_gen (print get_options_rty_t) value
   | SetOptions _ -> pr_value_gen (print set_options_rty_t) value
   | MkCases _    -> pr_value_gen (print mkcases_rty_t    ) value
@@ -816,6 +836,7 @@ let pr_call : type a. a call -> string = fun call ->
     | Hints x      -> return hints_sty_t x
     | Status x     -> return status_sty_t x
     | Search x     -> return search_sty_t x
+    | ProofDiffs x -> return proof_diffs_sty_t x
     | GetOptions x -> return get_options_sty_t x
     | SetOptions x -> return set_options_sty_t x
     | MkCases x    -> return mkcases_sty_t x

@@ -187,6 +187,10 @@ type status_rty = status
 type search_sty = search_flags
 type search_rty = string coq_object list
 
+(** Display "Show Proof" output diffed with the previous proof state *)
+type proof_diffs_sty = string
+type proof_diffs_rty = string (* a pp string in XML form *)
+
 (** Retrieve the list of options of the current toplevel *)
 type get_options_sty = unit
 type get_options_rty = (option_name * option_state) list
@@ -245,6 +249,7 @@ type handler = {
   hints       : hints_sty       -> hints_rty;
   status      : status_sty      -> status_rty;
   search      : search_sty      -> search_rty;
+  proof_diffs : proof_diffs_sty -> proof_diffs_rty; (* diffs of "Show Proof" *)
   get_options : get_options_sty -> get_options_rty;
   set_options : set_options_sty -> set_options_rty;
   mkcases     : mkcases_sty     -> mkcases_rty;
