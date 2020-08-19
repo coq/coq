@@ -198,7 +198,6 @@ summary:
 	  $(call summary_dir, "Coqdoc tests", coqdoc); \
 	  $(call summary_dir, "tools/ tests", tools); \
 	  $(call summary_dir, "Unit tests", unit-tests); \
-	  $(call summary_dir, "Machine arithmetic tests", arithmetic); \
 	  $(call summary_dir, "Ltac2 tests", ltac2); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
