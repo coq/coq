@@ -556,11 +556,17 @@ let list_id l = List.fold_left ( fun a decl -> let s' =
               Id.of_string (s'^"_lb"))
             ::a
     ) [] l
+
+let avoid_of_list_id list_id =
+  List.fold_left (fun avoid (s,seq,sbl,slb) ->
+      List.fold_left (fun avoid id -> Id.Set.add id avoid)
+        avoid [s;seq;sbl;slb])
+    Id.Set.empty list_id
+
 (*
   build the right eq_I A B.. N eq_A .. eq_N
 *)
-let eqI ind l =
-  let list_id = list_id l in
+let eqI ind list_id =
   let eA = Array.of_list((List.map (fun (s,_,_,_) -> mkVar s) list_id)@
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
   and e = match lookup_scheme beq_scheme_kind ind with
@@ -568,7 +574,7 @@ let eqI ind l =
   | None ->
     user_err ~hdr:"AutoIndDecl.eqI"
       (str "The boolean equality on " ++ Printer.pr_inductive (Global.env ()) ind ++ str " is needed.");
-  in (if Array.equal Constr.equal eA [||] then e else mkApp(e,eA))
+  in mkApp(e,eA)
 
 (**********************************************************************)
 (* Boolean->Leibniz *)
@@ -576,12 +582,12 @@ let eqI ind l =
 open Namegen
 
 let compute_bl_goal ind lnamesparrec nparrec =
-  let eqI = eqI ind lnamesparrec in
   let list_id = list_id lnamesparrec in
-  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> Id.Set.add id l)) (List.map RelDecl.get_name lnamesparrec) Id.Set.empty in
+  let eqI = eqI ind list_id in
+  let avoid = avoid_of_list_id list_id in
+  let x = next_ident_away (Id.of_string "x") avoid in
+  let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
   let create_input c =
-    let x = next_ident_away (Id.of_string "x") avoid and
-        y = next_ident_away (Id.of_string "y") avoid in
       let bl_typ = List.map (fun (s,seq,_,_) ->
         mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
             mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
@@ -607,88 +613,74 @@ let compute_bl_goal ind lnamesparrec nparrec =
         in
         mkNamedProd x (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
-      let n = next_ident_away (Id.of_string "x") avoid and
-          m = next_ident_away (Id.of_string "y") avoid in
       let u = Univ.Instance.empty in
      create_input (
-        mkNamedProd (make_annot n Sorts.Relevant) (mkFullInd (ind,u) nparrec) (
-          mkNamedProd (make_annot m Sorts.Relevant) (mkFullInd (ind,u) (nparrec+1)) (
+        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd (ind,u) nparrec) (
+          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd (ind,u) (nparrec+1)) (
             mkArrow
-              (mkApp(eq (),[|bb ();mkApp(eqI,[|mkVar n;mkVar m|]);tt ()|]))
+              (mkApp(eq (),[|bb ();mkApp(eqI,[|mkVar x;mkVar y|]);tt ()|]))
               Sorts.Relevant
-              (mkApp(eq (),[|mkFullInd (ind,u) (nparrec+3);mkVar n;mkVar m|]))
+              (mkApp(eq (),[|mkFullInd (ind,u) (nparrec+3);mkVar x;mkVar y|]))
         )))
 
 let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
-  let avoid = ref [] in
-      let first_intros =
-        ( List.map (fun (s,_,_,_) -> s ) list_id ) @
-        ( List.map (fun (_,seq,_,_ ) -> seq) list_id ) @
-        ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
-      in
-      let fresh_id s gl =
-          let fresh = fresh_id_in_env (Id.Set.of_list !avoid) s (Proofview.Goal.env gl) in
-          avoid := fresh::(!avoid); fresh
-      in
-      Proofview.Goal.enter begin fun gl ->
-      let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
-      let freshn = fresh_id (Id.of_string "x") gl in
-      let freshm = fresh_id (Id.of_string "y") gl in
-      let freshz = fresh_id (Id.of_string "Z") gl in
-  (* try with *)
-      Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
-                     intro_using freshn ;
-                     induct_on (EConstr.mkVar freshn);
-                     intro_using freshm;
-                     destruct_on (EConstr.mkVar freshm);
-                     intro_using freshz;
-                     intros;
-                     Tacticals.New.tclTRY (
-                      Tacticals.New.tclORELSE reflexivity my_discr_tac
-                     );
-                     simpl_in_hyp (freshz,Locus.InHyp);
-(*
+  let first_intros =
+    ( List.map (fun (s,_,_,_) -> s ) list_id )
+    @ ( List.map (fun (_,seq,_,_ ) -> seq) list_id )
+    @ ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
+  in
+  intros_using_then first_intros begin fun fresh_first_intros ->
+    Tacticals.New.tclTHENLIST [
+        intro_using_then (Id.of_string "x") (fun freshn -> induct_on (EConstr.mkVar freshn));
+        intro_using_then (Id.of_string "y") (fun freshm -> destruct_on (EConstr.mkVar freshm));
+        intro_using_then (Id.of_string "Z") begin fun freshz ->
+          Tacticals.New.tclTHENLIST [
+              intros;
+              Tacticals.New.tclTRY (
+                  Tacticals.New.tclORELSE reflexivity my_discr_tac
+                );
+              simpl_in_hyp (freshz,Locus.InHyp);
+              (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
-*)
-                    Tacticals.New.tclREPEAT (
-                      Tacticals.New.tclTHENLIST [
-                         Simple.apply_in freshz (EConstr.of_constr (andb_prop()));
-                         Proofview.Goal.enter begin fun gl ->
-                           let fresht = fresh_id (Id.of_string "Z") gl in
-                            destruct_on_as (EConstr.mkVar freshz)
-                                  (IntroOrPattern [[CAst.make @@ IntroNaming (IntroIdentifier fresht);
-                                    CAst.make @@ IntroNaming (IntroIdentifier freshz)]])
-                         end
-                        ]);
-(*
+               *)
+              Tacticals.New.tclREPEAT (
+                  Tacticals.New.tclTHENLIST [
+                      Simple.apply_in freshz (EConstr.of_constr (andb_prop()));
+                      destruct_on_as (EConstr.mkVar freshz)
+                        (IntroOrPattern [[CAst.make @@ IntroNaming (IntroFresh (Id.of_string "Z"));
+                                          CAst.make @@ IntroNaming (IntroIdentifier freshz)]])
+                ]);
+              (*
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
-*)
-                      Proofview.Goal.enter begin fun gl ->
-                        let concl = Proofview.Goal.concl gl in
-                        let sigma = Tacmach.New.project gl in
-                        match EConstr.kind sigma concl with
-                        | App (c,ca) -> (
-                          match EConstr.kind sigma c with
-                          | Ind (indeq, u) ->
-                              if GlobRef.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
-                              then
-                                Tacticals.New.tclTHEN
-                                  (do_replace_bl bl_scheme_key ind
-                                     (!avoid)
-                                     nparrec (ca.(2))
-                                     (ca.(1)))
-                                  Auto.default_auto
-                              else
-                                Tacticals.New.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
-                          | _ -> Tacticals.New.tclZEROMSG (str" Failure while solving Boolean->Leibniz.")
-                        )
-                        | _ -> Tacticals.New.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
-                      end
+               *)
+              Proofview.Goal.enter begin fun gl ->
+                let concl = Proofview.Goal.concl gl in
+                let sigma = Tacmach.New.project gl in
+                match EConstr.kind sigma concl with
+                | App (c,ca) -> (
+                  match EConstr.kind sigma c with
+                  | Ind (indeq, u) ->
+                     if GlobRef.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
+                     then
+                       Tacticals.New.tclTHEN
+                         (do_replace_bl bl_scheme_key ind
+                            (List.rev fresh_first_intros)
+                            nparrec (ca.(2))
+                            (ca.(1)))
+                         Auto.default_auto
+                     else
+                       Tacticals.New.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
+                  | _ -> Tacticals.New.tclZEROMSG (str" Failure while solving Boolean->Leibniz.")
+                )
+                | _ -> Tacticals.New.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
+                end
 
-                    ]
-      end
+            ]
+          end
+      ]
+    end
 
 let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
@@ -729,11 +721,11 @@ let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
 let compute_lb_goal ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let eq = eq () and tt = tt () and bb = bb () in
-  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> Id.Set.add id l)) (List.map RelDecl.get_name lnamesparrec) Id.Set.empty in
-  let eqI = eqI ind lnamesparrec in
+  let avoid = avoid_of_list_id list_id in
+  let eqI = eqI ind list_id in
+  let x = next_ident_away (Id.of_string "x") avoid in
+  let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
     let create_input c =
-      let x = next_ident_away (Id.of_string "x") avoid and
-          y = next_ident_away (Id.of_string "y") avoid in
       let lb_typ = List.map (fun (s,seq,_,_) ->
         mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
             mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
@@ -760,73 +752,62 @@ let compute_lb_goal ind lnamesparrec nparrec =
           in
           mkNamedProd x (RelDecl.get_type decl)  a) eq_input lnamesparrec
     in
-      let n = next_ident_away (Id.of_string "x") avoid and
-          m = next_ident_away (Id.of_string "y") avoid in
       let u = Univ.Instance.empty in
       create_input (
-        mkNamedProd (make_annot n Sorts.Relevant) (mkFullInd (ind,u) nparrec) (
-          mkNamedProd (make_annot m Sorts.Relevant) (mkFullInd (ind,u) (nparrec+1)) (
+        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd (ind,u) nparrec) (
+          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd (ind,u) (nparrec+1)) (
             mkArrow
-              (mkApp(eq,[|mkFullInd (ind,u) (nparrec+2);mkVar n;mkVar m|]))
+              (mkApp(eq,[|mkFullInd (ind,u) (nparrec+2);mkVar x;mkVar y|]))
               Sorts.Relevant
-              (mkApp(eq,[|bb;mkApp(eqI,[|mkVar n;mkVar m|]);tt|]))
+              (mkApp(eq,[|bb;mkApp(eqI,[|mkVar x;mkVar y|]);tt|]))
         )))
 
 let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
-    let avoid = ref [] in
-      let first_intros =
-        ( List.map (fun (s,_,_,_) -> s ) list_id ) @
-        ( List.map (fun (_,seq,_,_) -> seq) list_id ) @
-        ( List.map (fun (_,_,_,slb) -> slb) list_id )
-      in
-      let fresh_id s gl =
-          let fresh = fresh_id_in_env (Id.Set.of_list !avoid) s (Proofview.Goal.env gl) in
-          avoid := fresh::(!avoid); fresh
-      in
-      Proofview.Goal.enter begin fun gl ->
-      let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
-      let freshn = fresh_id (Id.of_string "x") gl in
-      let freshm = fresh_id (Id.of_string "y") gl in
-      let freshz = fresh_id (Id.of_string "Z") gl in
-  (* try with *)
-      Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
-                     intro_using freshn ;
-                     induct_on (EConstr.mkVar freshn);
-                     intro_using freshm;
-                     destruct_on (EConstr.mkVar freshm);
-                     intro_using freshz;
-                     intros;
-                     Tacticals.New.tclTRY (
-                      Tacticals.New.tclORELSE reflexivity my_discr_tac
-                     );
-                     my_inj_tac freshz;
-                     intros; simpl_in_concl;
-                     Auto.default_auto;
-                     Tacticals.New.tclREPEAT (
-                      Tacticals.New.tclTHENLIST [apply (EConstr.of_constr (andb_true_intro()));
-                                  simplest_split ;Auto.default_auto ]
-                      );
-                      Proofview.Goal.enter begin fun gls ->
-                        let concl = Proofview.Goal.concl gls in
-                        let sigma = Tacmach.New.project gl in
-                        (* assume the goal to be eq (eq_type ...) = true *)
-                        match EConstr.kind sigma concl with
-                        | App(c,ca) -> (match (EConstr.kind sigma ca.(1)) with
-                          | App(c',ca') ->
-                              let n = Array.length ca' in
-                              do_replace_lb mode lb_scheme_key
-                                (!avoid)
-                                nparrec
-                                ca'.(n-2) ca'.(n-1)
-                          | _ ->
-                              Tacticals.New.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
-                        )
-                        | _ ->
-                            Tacticals.New.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
-                      end
-                    ]
-      end
+  let first_intros =
+    ( List.map (fun (s,_,_,_) -> s ) list_id )
+    @ ( List.map (fun (_,seq,_,_) -> seq) list_id )
+    @ ( List.map (fun (_,_,_,slb) -> slb) list_id )
+  in
+  intros_using_then first_intros begin fun fresh_first_intros ->
+    Tacticals.New.tclTHENLIST [
+        intro_using_then (Id.of_string "x") (fun freshn -> induct_on (EConstr.mkVar freshn));
+        intro_using_then (Id.of_string "y") (fun freshm -> destruct_on (EConstr.mkVar freshm));
+        intro_using_then (Id.of_string "Z") begin fun freshz ->
+          Tacticals.New.tclTHENLIST [
+              intros;
+              Tacticals.New.tclTRY (
+                  Tacticals.New.tclORELSE reflexivity my_discr_tac
+                );
+              my_inj_tac freshz;
+              intros; simpl_in_concl;
+              Auto.default_auto;
+              Tacticals.New.tclREPEAT (
+                  Tacticals.New.tclTHENLIST [apply (EConstr.of_constr (andb_true_intro()));
+                                             simplest_split ;Auto.default_auto ]
+                );
+              Proofview.Goal.enter begin fun gls ->
+                let concl = Proofview.Goal.concl gls in
+                let sigma = Tacmach.New.project gls in
+                (* assume the goal to be eq (eq_type ...) = true *)
+                match EConstr.kind sigma concl with
+                | App(c,ca) -> (match (EConstr.kind sigma ca.(1)) with
+                                | App(c',ca') ->
+                                   let n = Array.length ca' in
+                                   do_replace_lb mode lb_scheme_key
+                                     (List.rev fresh_first_intros)
+                                     nparrec
+                                     ca'.(n-2) ca'.(n-1)
+                                | _ ->
+                                   Tacticals.New.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                               )
+                | _ ->
+                   Tacticals.New.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                end
+            ]
+          end
+      ]
+    end
 
 let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 
@@ -868,10 +849,10 @@ let compute_dec_goal ind lnamesparrec nparrec =
   check_not_is_defined ();
   let eq = eq () and tt = tt () and bb = bb () in
   let list_id = list_id lnamesparrec in
-  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> Id.Set.add id l)) (List.map RelDecl.get_name lnamesparrec) Id.Set.empty in
+  let avoid = avoid_of_list_id list_id in
+  let x = next_ident_away (Id.of_string "x") avoid in
+  let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
     let create_input c =
-      let x = next_ident_away (Id.of_string "x") avoid and
-          y = next_ident_away (Id.of_string "y") avoid in
       let lb_typ = List.map (fun (s,seq,_,_) ->
         mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
             mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
@@ -912,12 +893,10 @@ let compute_dec_goal ind lnamesparrec nparrec =
           in
           mkNamedProd x (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
-      let n = next_ident_away (Id.of_string "x") avoid and
-          m = next_ident_away (Id.of_string "y") avoid in
-        let eqnm = mkApp(eq,[|mkFullInd ind (2*nparrec+2);mkVar n;mkVar m|]) in
+        let eqnm = mkApp(eq,[|mkFullInd ind (2*nparrec+2);mkVar x;mkVar y|]) in
         create_input (
-          mkNamedProd (make_annot n Sorts.Relevant) (mkFullInd ind (2*nparrec)) (
-            mkNamedProd (make_annot m Sorts.Relevant) (mkFullInd ind (2*nparrec+1)) (
+          mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd ind (2*nparrec)) (
+            mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd ind (2*nparrec+1)) (
               mkApp(sumbool(),[|eqnm;mkApp (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.not.type",[|eqnm|])|])
           )
         )
@@ -925,83 +904,89 @@ let compute_dec_goal ind lnamesparrec nparrec =
 
 let compute_dec_tact ind lnamesparrec nparrec =
   let eq = eq () and tt = tt ()
-  and ff = ff () and bb = bb () in
+      and ff = ff () and bb = bb () in
   let list_id = list_id lnamesparrec in
   find_scheme beq_scheme_kind ind >>= fun _ ->
-  let eqI = eqI ind lnamesparrec in
-  let avoid = ref [] in
+  let _non_fresh_eqI = eqI ind list_id in
   let eqtrue x = mkApp(eq,[|bb;x;tt|]) in
   let eqfalse x = mkApp(eq,[|bb;x;ff|]) in
   let first_intros =
-      ( List.map (fun (s,_,_,_) -> s ) list_id ) @
-      ( List.map (fun (_,seq,_,_) -> seq) list_id ) @
-      ( List.map (fun (_,_,sbl,_) -> sbl) list_id ) @
-      ( List.map (fun (_,_,_,slb) -> slb) list_id )
+    ( List.map (fun (s,_,_,_) -> s ) list_id )
+    @ ( List.map (fun (_,seq,_,_) -> seq) list_id )
+    @ ( List.map (fun (_,_,sbl,_) -> sbl) list_id )
+    @ ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
-  let fresh_id s gl =
-      let fresh = fresh_id_in_env (Id.Set.of_list !avoid) s (Proofview.Goal.env gl) in
-      avoid := fresh::(!avoid); fresh
-  in
-  Proofview.Goal.enter begin fun gl ->
-  let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
-  let freshn = fresh_id (Id.of_string "x") gl in
-  let freshm = fresh_id (Id.of_string "y") gl in
-  let freshH = fresh_id (Id.of_string "H") gl in
-  let eqbnm = mkApp(eqI,[|mkVar freshn;mkVar freshm|]) in
-  let arfresh = Array.of_list fresh_first_intros in
-  let xargs = Array.sub arfresh 0 (2*nparrec) in
-  find_scheme bl_scheme_kind ind >>= fun c ->
-  let blI = mkConst c in
-  find_scheme lb_scheme_kind ind >>= fun c ->
-  let lbI = mkConst c in
-  Tacticals.New.tclTHENLIST [
-        intros_using fresh_first_intros;
-        intros_using [freshn;freshm];
-        (*we do this so we don't have to prove the same goal twice *)
-        assert_by (Name freshH) (EConstr.of_constr (
-          mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
-        ))
-          (Tacticals.New.tclTHEN (destruct_on (EConstr.of_constr eqbnm)) Auto.default_auto);
-
+  let fresh_id s gl = fresh_id_in_env (Id.Set.empty) s (Proofview.Goal.env gl) in
+  intros_using_then first_intros begin fun fresh_first_intros ->
+    let eqI =
+      let a = Array.of_list fresh_first_intros in
+      let n = List.length list_id in
+      assert (Int.equal (Array.length a) (4 * n));
+      let fresh_list_id =
+        List.init n (fun i -> (Array.get a i, Array.get a (i+n),
+                               Array.get a (i+2*n), Array.get a (i+3*n))) in
+      eqI ind fresh_list_id
+    in
+    intro_using_then (Id.of_string "x") begin fun freshn ->
+      intro_using_then (Id.of_string "y") begin fun freshm ->
         Proofview.Goal.enter begin fun gl ->
-          let freshH2 = fresh_id (Id.of_string "H") gl in
-          Tacticals.New.tclTHENS (destruct_on_using (EConstr.mkVar freshH) freshH2) [
-            (* left *)
-            Tacticals.New.tclTHENLIST [
-              simplest_left;
-              apply (EConstr.of_constr (mkApp(blI,Array.map mkVar xargs)));
-              Auto.default_auto
-            ]
-            ;
+          let freshH = fresh_id (Id.of_string "H") gl in
+          let eqbnm = mkApp(eqI,[|mkVar freshn;mkVar freshm|]) in
+          let arfresh = Array.of_list fresh_first_intros in
+          let xargs = Array.sub arfresh 0 (2*nparrec) in
+          find_scheme bl_scheme_kind ind >>= fun c ->
+          let blI = mkConst c in
+          find_scheme lb_scheme_kind ind >>= fun c ->
+          let lbI = mkConst c in
+          Tacticals.New.tclTHENLIST [
+              (*we do this so we don't have to prove the same goal twice *)
+              assert_by (Name freshH) (EConstr.of_constr (
+                                           mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
+                ))
+                (Tacticals.New.tclTHEN (destruct_on (EConstr.of_constr eqbnm)) Auto.default_auto);
 
-            (*right *)
-            Proofview.Goal.enter begin fun gl ->
-            let freshH3 = fresh_id (Id.of_string "H") gl in
-            Tacticals.New.tclTHENLIST [
-              simplest_right ;
-              unfold_constr (Coqlib.lib_ref "core.not.type");
-              intro;
-              Equality.subst_all ();
-              assert_by (Name freshH3)
-                (EConstr.of_constr (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|])))
-                (Tacticals.New.tclTHENLIST [
-                  apply (EConstr.of_constr (mkApp(lbI,Array.map mkVar xargs)));
-                  Auto.default_auto
-                ]);
-              Equality.general_rewrite_bindings_in true
-                              Locus.AllOccurrences true false
-                              (List.hd !avoid)
-                              ((EConstr.mkVar (List.hd (List.tl !avoid))),
-                                NoBindings
-                              )
-                              true;
-              my_discr_tac
+              Proofview.Goal.enter begin fun gl ->
+                let freshH2 = fresh_id (Id.of_string "H") gl in
+                Tacticals.New.tclTHENS (destruct_on_using (EConstr.mkVar freshH) freshH2) [
+                    (* left *)
+                    Tacticals.New.tclTHENLIST [
+                        simplest_left;
+                        apply (EConstr.of_constr (mkApp(blI,Array.map mkVar xargs)));
+                        Auto.default_auto
+                      ]
+                  ;
+
+                    (*right *)
+                    Proofview.Goal.enter begin fun gl ->
+                      let freshH3 = fresh_id (Id.of_string "H") gl in
+                      Tacticals.New.tclTHENLIST [
+                          simplest_right ;
+                          unfold_constr (Coqlib.lib_ref "core.not.type");
+                          intro;
+                          Equality.subst_all ();
+                          assert_by (Name freshH3)
+                            (EConstr.of_constr (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|])))
+                            (Tacticals.New.tclTHENLIST [
+                                 apply (EConstr.of_constr (mkApp(lbI,Array.map mkVar xargs)));
+                                 Auto.default_auto
+                            ]);
+                          Equality.general_rewrite_bindings_in true
+                            Locus.AllOccurrences true false
+                            freshH3
+                            ((EConstr.mkVar freshH2),
+                             NoBindings
+                            )
+                            true;
+                          my_discr_tac
+                        ]
+                      end
+                  ]
+                end
             ]
-            end
-          ]
+          end
         end
-  ]
-  end
+      end
+    end
 
 let make_eq_decidability mode mind =
   let mib = Global.lookup_mind mind in
