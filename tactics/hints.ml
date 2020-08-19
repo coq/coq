@@ -249,25 +249,25 @@ struct
   module Data = struct type t = stored_data let compare = pri_order_int end
   module Bnet = Btermdn.Make(Data)
 
-  type diff = TransparentState.t option * Pattern.constr_pattern * stored_data
+  type diff = Pattern.constr_pattern * stored_data
   type data = Bnet of Bnet.t | Diff of diff * data ref
   type t = data ref
 
   let empty = ref (Bnet Bnet.empty)
 
-  let add st net p v = ref (Diff ((st, p, v), net))
+  let add _st net p v = ref (Diff ((p, v), net))
 
-  let rec force env net = match !net with
+  let rec force env st net = match !net with
   | Bnet dn -> dn
-  | Diff ((st, p, v), rem) ->
-    let dn = force env rem in
+  | Diff ((p, v), rem) ->
+    let dn = force env st rem in
     let p = Bnet.pattern env st p in
     let dn = Bnet.add dn p v in
     let () = net := (Bnet dn) in
     dn
 
   let lookup env sigma st net p =
-    let dn = force env net in
+    let dn = force env st net in
     Bnet.lookup env sigma st dn p
 end
 
