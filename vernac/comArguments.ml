@@ -213,14 +213,6 @@ let vernac_arguments ~section_local reference args more_implicits flags =
     in CErrors.user_err ~hdr:"vernac_declare_arguments" msg
   end;
 
-  let duplicate_names =
-    List.duplicates Name.equal (List.filter ((!=) Anonymous) names)
-  in
-  if not (List.is_empty duplicate_names) then begin
-    CErrors.user_err Pp.(strbrk "Some argument names are duplicated: " ++
-                         prlist_with_sep pr_comma Name.print duplicate_names)
-  end;
-
   let implicits =
     List.map (fun { name; implicit_status = i } -> (name,i)) args
   in
