@@ -75,6 +75,12 @@ sig
     MapS with type 'a key = 'a tag and type 'a value = 'a Value.t
   (** Map from type tags to values parameterized by the tag type *)
 
+  module HMap (V1 : ValueS)(V2 : ValueS) :
+    sig
+      type map = { map : 'a. 'a tag -> 'a V1.t -> 'a V2.t }
+      val map : map -> Map(V1).t -> Map(V2).t
+    end
+
   module Easy : sig
     (* To create a dynamic type on the fly *)
     val make_dyn_tag : string -> ('a -> t) * (t -> 'a) * 'a tag

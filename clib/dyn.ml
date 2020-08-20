@@ -49,6 +49,13 @@ sig
 
   module Map(Value : ValueS) :
     MapS with type 'a key = 'a tag and type 'a value = 'a Value.t
+
+  module HMap (V1 : ValueS)(V2 : ValueS) :
+    sig
+      type map = { map : 'a. 'a tag -> 'a V1.t -> 'a V2.t }
+      val map : map -> Map(V1).t -> Map(V2).t
+    end
+
 end
 
 module type S =
@@ -132,6 +139,16 @@ module Self : PreS = struct
     let iter f m = Int.Map.iter (fun k v -> f (Any (k, v))) m
     let fold f m accu = Int.Map.fold (fun k v accu -> f (Any (k, v)) accu) m accu
   end
+
+  module HMap (V1 : ValueS) (V2 : ValueS) =
+  struct
+    type map = { map : 'a. 'a tag -> 'a V1.t -> 'a V2.t }
+
+    let map (f : map) (m : Map(V1).t) : Map(V2).t =
+      Int.Map.mapi f.map m
+
+  end
+
 end
 include Self
 
