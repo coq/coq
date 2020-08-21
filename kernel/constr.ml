@@ -817,37 +817,145 @@ let map_with_binders g f l c0 = match kind c0 with
 
 
 (*********************)
-(* Size annotations *)
+(* Size annotations  *)
 (*********************)
 
-(** Mutation is used in uses of map_annots and fold_annots,
-  and it's VERY important that the two traverse the annotations
-  in the same order (left-to-right). *)
+let rec erase_fully cstr =
+  let f _ a =
+    match a with
+    | Empty -> a
+    | _ -> Empty in
+  let g ans =
+    match ans with
+    | Limit n -> Bare n
+    | Sized sizes -> Bare (Array.length sizes)
+    | _ -> ans in
+  match cstr with
+  | Rel (n, ans) ->
+    let ans' = g ans in
+    if ans == ans' then cstr else
+    mkRelA n ans'
+  | Var (n, ans) ->
+    let ans' = g ans in
+    if ans == ans' then cstr else
+    mkVarA n ans'
+  | Cast (c, k, t) ->
+    let c' = erase_fully c in
+    let t' = erase_fully t in
+    if c == c' then cstr else
+    mkCast (c', k, t')
+  | Lambda (n, t, c) ->
+    let t' = erase_fully t in
+    let c' = erase_fully c in
+    if t == t' && c == c' then cstr else
+    mkLambda (n, t', c')
+  | LetIn (n, b, t, c) ->
+    let b' = erase_fully b in
+    let t' = erase_fully t in
+    let c' = erase_fully c in
+    if b == b' && t == t' && c == c' then cstr else
+    mkLetIn (n, b', t', c')
+  | Const (c, ans) ->
+    let ans' = g ans in
+    if ans == ans' then cstr else
+    mkConstUA c ans'
+  | Ind (iu, a) ->
+    let a' = f iu a in
+    if a' == a then cstr else
+    mkIndUS iu a'
+  | Case (ci, p, c, lf) ->
+    let p' = erase_fully p in
+    let c' = erase_fully c in
+    let lf' = Array.Smart.map erase_fully lf in
+    if p == p' && c == c' && lf == lf' then cstr else
+    mkCase (ci, p', c', lf')
+  | Fix (ln, (nl, tl, bl)) ->
+    let tl' = Array.Smart.map erase_fully tl in
+    let bl' = Array.Smart.map erase_fully bl in
+    if tl == tl' && bl == bl' then cstr else
+    mkFix (ln, (nl, tl', bl'))
+  | CoFix (ln, (nl, tl, bl)) ->
+    let tl' = Array.Smart.map erase_fully tl in
+    let bl' = Array.Smart.map erase_fully bl in
+    if tl == tl' && bl == bl' then cstr else
+    mkCoFix (ln, (nl, tl', bl'))
+  | _ -> map erase_fully cstr
+
+let rec foldmap_annots
+  (f : pinductive -> 'acc -> Annot.t -> 'acc * Annot.t)
+  (g : 'acc -> Annots.t -> 'acc * Annots.t)
+  (acc : 'acc) cstr =
+  match cstr with
+  | Rel (n, ans) ->
+    let acc, ans' = g acc ans in
+    if ans == ans' then acc, cstr else
+    acc, mkRelA n ans'
+  | Var (n, ans) ->
+    let acc, ans' = g acc ans in
+    if ans == ans' then acc, cstr else
+    acc, mkVarA n ans'
+  | Cast (c, k, t) ->
+    let acc, c' = foldmap_annots f g acc c in
+    if c == c' then acc, cstr else
+    acc, mkCast (c', k, t)
+  | Lambda (n, t, c) ->
+    let acc, c' = foldmap_annots f g acc c in
+    if c == c' then acc, cstr else
+    acc, mkLambda (n, t, c')
+  | LetIn (n, b, t, c) ->
+    let accb, b' = foldmap_annots f g acc b in
+    let accc, c' = foldmap_annots f g accb c in
+    if b == b' && c == c' then accc, cstr else
+    accc, mkLetIn (n, b', t, c')
+  | Const (c, ans) ->
+    let acc, ans' = g acc ans in
+    if ans == ans' then acc, cstr else
+    acc, mkConstUA c ans'
+  | Ind (iu, a) ->
+    let acc, a' = f iu acc a in
+    if a' == a then acc, cstr else
+    acc, mkIndUS iu a'
+  | Case (ci, p, c, lf) ->
+    let accc, c' = foldmap_annots f g acc c in
+    let acclf, lf' = Array.Smart.fold_left_map (foldmap_annots f g) accc lf in
+    if c == c' && lf == lf' then acclf, cstr else
+    acclf, mkCase (ci, p, c', lf')
+  | Fix (ln, (nl, tl, bl)) ->
+    let acc, bl' = Array.Smart.fold_left_map (foldmap_annots f g) acc bl in
+    if bl == bl' then acc, cstr else
+    acc, mkFix (ln, (nl, tl, bl'))
+  | CoFix (ln, (nl, tl, bl)) ->
+    let acc, bl' = Array.Smart.fold_left_map (foldmap_annots f g) acc bl in
+    if bl == bl' then acc, cstr else
+    acc, mkCoFix (ln, (nl, tl, bl'))
+  | _ -> fold_map (foldmap_annots f g) acc cstr
+
+(** foldmap-type functions on size annotations of constrs *)
+
+let annotate_fresh sizes cstr =
+  let f _ sizes a =
+    match a with
+    | Size sof ->
+      let sby = Array.hd sizes in
+      Array.tl sizes, Size (Size.subst sof sby)
+    | _ -> sizes, a in
+  let g sizes ans =
+    match ans with
+    | Sized sizes' ->
+      let sizes_hd, sizes_tl = Array.chop (Array.length sizes') sizes in
+      sizes_tl, Sized (Array.map2 Size.subst sizes' sizes_hd)
+    | _ -> sizes, ans in
+  snd @@ foldmap_annots f g sizes cstr
 
 (** fold-type functions on size annotations of constrs *)
 
-let rec fold_annots
+let fold_annots
   (f : pinductive -> Annot.t -> 'acc -> 'acc)
   (g : Annots.t -> 'acc ->'acc)
   (acc : 'acc) cstr =
-  match cstr with
-  | Rel (_, ans) -> g ans acc
-  | Var (_, ans) -> g ans acc
-  | Cast (c, _, _) -> fold_annots f g acc c
-  | Lambda (_, _, c) -> fold_annots f g acc c
-  | LetIn (_, b, _, c) ->
-    let acc = fold_annots f g acc b in
-    fold_annots f g acc c
-  | Const (_, ans) -> g ans acc
-  | Ind (iu, a) -> f iu a acc
-  | Case (_, _, c, lf) ->
-    let acc = fold_annots f g acc c in
-    Array.fold_left (fold_annots f g) acc lf
-  | Fix (_, (_, _, bl)) ->
-    Array.fold_left (fold_annots f g) acc bl
-  | CoFix (_, (_, _, bl)) ->
-    Array.fold_left (fold_annots f g) acc bl
-  | _ -> fold (fold_annots f g) acc cstr
+  let f iu acc a = f iu a acc, a in
+  let g acc ans = g ans acc, ans in
+  fst @@ foldmap_annots f g acc cstr
 
 let count_annots =
   let f _ _ acc = succ acc in
@@ -862,81 +970,39 @@ let collect_annots =
   let g ans acc = SVars.union (vars ans) acc in
   fold_annots f g SVars.empty
 
-let any_annot p =
-  let f _ a acc = acc || p a in
-  let g _ acc = acc in
-  fold_annots f g false
-
-let get_smap annots =
+let add_smap annots smap cstr =
   match annots with
-  | Sized (svar, _) ->
-    let svar_ref = ref svar in
-    let f _ a acc =
+  | Sized sizes ->
+    let f _ a (sizes, smap) =
       match a with
       | Size (SizeVar (svar_from, _)) ->
-        let svar_to = !svar_ref in
-        let () = svar_ref := SVar.succ svar in
-        SMap.set svar_from svar_to acc
-      | _ -> acc in
-    let g ans acc =
+        let sto = Array.hd sizes in
+        Array.tl sizes, SMap.add svar_from sto smap
+      | _ -> sizes, smap in
+    let g ans (sizes, smap) =
       match ans with
-      | Sized (svar_from, _) ->
-        let svar_to = !svar_ref in
-        let () = svar_ref := SVar.succ svar in
-        SMap.set svar_from svar_to acc
-      | _ -> acc in
-    fold_annots f g SMap.empty
-  | _ -> const SMap.empty
+      | Sized sizes' ->
+        let sizes_hd, sizes_tl = Array.chop (Array.length sizes') sizes in
+        let h smap sfrom sto =
+          match sfrom with
+          | SizeVar (svar_from, _) ->
+            SMap.add svar_from sto smap
+          | _ -> smap in
+        sizes_tl, Array.fold_left2 h smap sizes' sizes_hd
+      | _ -> sizes, smap in
+    snd @@ fold_annots f g (sizes, smap) cstr
+  | _ -> smap
 
-(** map-type functions on stage annotations of constrs *)
+let get_smap annots = add_smap annots SMap.empty
 
-let rec map_annots
+(** map-type functions on size annotations of constrs *)
+
+let map_annots
   (f : pinductive -> Annot.t -> Annot.t)
   (g : Annots.t -> Annots.t) cstr =
-  match cstr with
-  | Rel (n, ans) ->
-    let ans' = g ans in
-    if ans == ans' then cstr else
-    mkRelA n ans'
-  | Var (n, ans) ->
-    let ans' = g ans in
-    if ans == ans' then cstr else
-    mkVarA n ans'
-  | Cast (c, k, t) ->
-    let c' = map_annots f g c in
-    if c == c' then cstr else
-    mkCast (c', k, t)
-  | Lambda (n, t, c) ->
-    let c' = map_annots f g c in
-    if c == c' then cstr else
-    mkLambda (n, t, c')
-  | LetIn (n, b, t, c) ->
-    let b' = map_annots f g b in
-    let c' = map_annots f g c in
-    if b == b' && c == c' then cstr else
-    mkLetIn (n, b', t, c')
-  | Const (c, ans) ->
-    let ans' = g ans in
-    if ans == ans' then cstr else
-    mkConstUA c ans'
-  | Ind (iu, a) ->
-    let a' = f iu a in
-    if a' == a then cstr else
-    mkIndUS iu a'
-  | Case (ci, p, c, lf) ->
-    let c' = map_annots f g c in
-    let lf' = Array.Smart.map (map_annots f g) lf in
-    if c == c' && lf == lf' then cstr else
-    mkCase (ci, p, c', lf')
-  | Fix (ln, (nl, tl, bl)) ->
-    let bl' = Array.Smart.map (map_annots f g) bl in
-    if bl == bl' then cstr else
-    mkFix (ln, (nl, tl, bl'))
-  | CoFix (ln, (nl, tl, bl)) ->
-    let bl' = Array.Smart.map (map_annots f g) bl in
-    if bl == bl' then cstr else
-    mkCoFix (ln, (nl, tl, bl'))
-  | _ -> map (map_annots f g) cstr
+  let f iu acc a = acc, f iu a in
+  let g acc ans = acc, g ans in
+  snd @@ foldmap_annots f g () cstr
 
 let erase =
   let f _ a =
@@ -945,7 +1011,8 @@ let erase =
     | _ -> Empty in
   let g ans =
     match ans with
-    | Limit n | Sized (_, n) -> Bare n
+    | Limit n -> Bare n
+    | Sized sizes -> Bare (Array.length sizes)
     | _ -> ans in
   map_annots f g
 
@@ -956,20 +1023,8 @@ let erase_infty =
     | _ -> infty in
   let g ans =
     match ans with
-    | Bare n | Sized (_, n) -> Limit n
-    | _ -> ans in
-  map_annots f g
-
-let erase_glob vars =
-  let f _ a =
-    match a with
-    | Size (SizeVar (svar, _))
-      when mem svar vars -> Glob
-    | Size Infty -> a
-    | _ -> infty in
-  let g ans =
-    match ans with
-    | Bare n | Sized (_, n) -> Limit n
+    | Bare n -> Limit n
+    | Sized sizes -> Limit (Array.length sizes)
     | _ -> ans in
   map_annots f g
 
@@ -982,34 +1037,10 @@ let erase_star vars =
     | _ -> Empty in
   let g ans =
     match ans with
-    | Limit n | Sized (_, n) -> Bare n
+    | Limit n -> Bare n
+    | Sized sizes -> Bare (Array.length sizes)
     | _ -> ans in
   map_annots f g
-
-let annotate_fresh svar =
-  let svar_ref = ref svar in
-  let f _ a =
-    let size = match a with
-      | Size (SizeVar (_, size)) -> size
-      | _ -> 0 in
-    let svar = !svar_ref in
-    svar_ref := SVar.succ svar;
-    Size (SizeVar (svar, size)) in
-  let g ans =
-    match ans with
-    | Assum -> ans
-    | Bare n | Limit n | Sized (_, n) ->
-      let svar = !svar_ref in
-      svar_ref := SVar.skip n svar;
-      Sized (svar, n) in
-  map_annots f g
-
-let annotate_glob s =
-  let f _ a =
-    match a with
-    | Glob -> s
-    | _ -> a in
-  map_annots f identity
 
 let annotate_succ vars =
   let f _ a =
@@ -1021,17 +1052,11 @@ let annotate_succ vars =
 let subst_smap smap =
   let f _ a =
     match a with
-    | Size (SizeVar (svar_old, size)) ->
-      let svar_new = SMap.get svar_old smap in
-      if svar_new == svar_old then a else
-      Size (SizeVar (svar_new, size))
+    | Size s -> Size (SMap.subst smap s)
     | _ -> a in
   let g ans =
     match ans with
-    | Sized (svar_old, n) ->
-      let svar_new = SMap.get svar_old smap in
-      if svar_new == svar_old then ans else
-      Sized (svar_new, n)
+    | Sized sizes -> Sized (Array.map (SMap.subst smap) sizes)
     | _ -> ans in
   map_annots f g
 
@@ -1093,10 +1118,10 @@ let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_an
     Terms will eventually be properly type checked by the kernel, so we allow them for now. *)
   let eq_annots ans1 ans2 = match ans1, ans2 with
     | Assum, _ | _, Assum -> true
-    | Bare n, Limit m | Bare n, Sized (_, m)
-    | Limit n, Bare m | Sized (_, n), Bare m
-    | Bare n, Bare m | Limit n, Limit m -> Int.equal n m
-    | Sized (svar1, n), Sized (svar2, m) -> SVar.equal svar1 svar2 && Int.equal n m
+    | Bare n, Limit m | Limit n, Bare m
+    | Bare n, Bare m  | Limit n, Limit m -> Int.equal n m
+    | Bare n, Sized sizes | Sized sizes, Bare n -> Int.equal n (Array.length sizes)
+    | Sized sizes1, Sized sizes2 -> Array.equal Size.equal sizes1 sizes2
     | _, _ -> false in
   match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)

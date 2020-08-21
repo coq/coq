@@ -129,10 +129,7 @@ let infer_declaration env (dcl : constant_entry) =
       in
       let j = match typ with
         | None -> Typeops.infer env body
-        | Some t ->
-          let j = Typeops.infer env body in
-          let tj = Typeops.infer_type env t in
-          Typeops.judge_of_cast env j DEFAULTcast tj
+        | Some t -> Typeops.check env body t
       in
       let typ = Vars.subst_univs_level_constr usubst j.uj_type in
       let def = Vars.subst_univs_level_constr usubst j.uj_val in
@@ -262,9 +259,8 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let uctx = Univ.ContextSet.union uctx uctx' in
   let env = push_context_set uctx env in
   let body,env,ectx = skip_trusted_seff valid_signatures body env in
-  let j = Typeops.infer env body in
+  let j = Typeops.check env body tyj.utj_val in
   let j = unzip ectx j in
-  let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
   let c = j.uj_val in
   let () = check_section_variables env declared tyj.utj_val body in
   feedback_completion_typecheck feedback_id;
@@ -277,8 +273,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
       on the rest of the graph (up to transitivity). *)
   let env = push_subgraph ctx env in
   let private_univs = on_snd (Univ.subst_univs_level_constraints usubst) ctx in
-  let j = Typeops.infer env body in
-  let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
+  let j = Typeops.check env body tj.utj_val in
   let () = check_section_variables env declared tj.utj_val body in
   let def = Vars.subst_univs_level_constr usubst j.uj_val in
   let () = feedback_completion_typecheck feedback_id in

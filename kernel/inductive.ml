@@ -1328,34 +1328,6 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 
 let whd = whd_all
 
-(* Add [Glob] annotations to [ty_def] where they appear in [ty_glob] *)
-let globify env ty_glob ty_def =
-  let ctxt_glob, body_glob = Term.decompose_prod_assum ty_glob in
-  let ctxt_def, body_def = Term.decompose_prod_assum ty_def in
-  let len_glob, len_def = List.length ctxt_glob, List.length ctxt_def in
-  let rec globify_type (env_glob, env_def as env2) type_glob type_def =
-    match kind (whd env_glob type_glob), kind (whd env_def type_def) with
-    | Ind (_, Glob), Ind (iu, _) -> mkIndUS iu Glob
-    | App (c_glob, _), App (c_def, args) ->
-      let c_def' = globify_type env2 c_glob c_def in
-      if c_def == c_def' then type_def
-      else mkApp (c_def', args)
-    | _, _ -> type_def in
-  let globify_decls (env_glob, env_def as env2) decl_glob decl_def =
-    let env2' = push_rel decl_glob env_glob, push_rel decl_def env_def in
-    match decl_glob, decl_def with
-    | LocalAssum (_, ty_glob), LocalAssum (_, ty_def) ->
-      let ty_def' = globify_type env2 ty_glob ty_def in
-      if ty_def == ty_def' then env2', decl_def
-      else env2', set_type ty_def' decl_def
-    | _, _ -> env2', decl_def in
-  let check_sized = (Environ.typing_flags env).check_sized in
-  if check_sized && any_annot ((=) Glob) ty_glob && Int.equal len_glob len_def then
-    let env2, ctxt_def = List.fold_left2_map globify_decls (env, env) ctxt_glob ctxt_def in
-    let body_def = globify_type env2 body_glob body_def in
-    Term.it_mkProd_or_LetIn body_def ctxt_def
-  else ty_def
-
 (* [fold_map2_fix_type env f is tys init] folds over the arguments
   of each fixpoint type in [tys], along with the elements of [is]
   for each fixpoint type, with initial element [init] and applying

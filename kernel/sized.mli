@@ -18,12 +18,6 @@
       any arguments that have size at least that of the return type.
         e.g. cofix zip : Stream* Nat° -> Stream* Nat° -> Stream* Nat° := ...
       We also call these position annotations.
-    * Glob annotations: These appear only in the types of global declarations,
-      similar to star annotations, and help indicate functions that preserve
-      the size of the types of their arguments.
-        e.g. Definition minus : Natⁱ -> Natⁱ
-      For instance, in an implementation of division that uses minus,
-      type-checking will only succeed if minus preserves size.
     * Size annotations: These contain size information.
 
   There are two types of sizes [Size]:
@@ -55,6 +49,7 @@
 module SVar :
 sig
   type t = int (* Need to expose type for testing *)
+  val infty : t
   val equal : t -> t -> bool
   val succ : t -> t
   val skip : int -> t -> t
@@ -76,23 +71,17 @@ sig
   val pr : t -> Pp.t
 end
 
-module SMap :
-sig
-  type t
-  val empty : t
-  val set : SVar.t -> SVar.t -> t -> t
-  val get : SVar.t -> t -> SVar.t
-end
-
 module Size :
 sig
   type t = Infty | SizeVar of SVar.t * int
   val compare : t -> t -> int
+  val equal : t -> t -> bool
+  val subst : t -> t -> t
 end
 
 module Annot :
 sig
-  type t = Empty | Star | Glob | Size of Size.t
+  type t = Empty | Star | Size of Size.t
   val infty : t
   val hat : t -> t
   val compare : t -> t -> int
@@ -105,9 +94,8 @@ end
 
 module Annots :
 sig
-  type t = Assum | Bare of int | Limit of int | Sized of SVar.t * int
+  type t = Assum | Bare of int | Limit of int | Sized of Size.t array
   val vars : t -> SVars.t
-  val mk : t -> Annot.t list
   val length : t -> int
   val pr : t -> Pp.t
   val show : t -> string
@@ -125,6 +113,16 @@ sig
   val remove_pos_vars : SVars.t -> t -> t
   val next : ?s:Annot.t -> t -> Annot.t * t
   val next_annots : bool -> int option -> t -> Annots.t * t
+  val pr : t -> Pp.t
+end
+
+module SMap :
+sig
+  type t
+  val empty : t
+  val add : SVar.t -> Size.t -> t -> t
+  val get : SVar.t -> t -> Size.t
+  val subst : t -> Size.t -> Size.t
   val pr : t -> Pp.t
 end
 
@@ -149,7 +147,7 @@ sig
   val contains : g -> SVar.t -> SVar.t -> bool
   val sup : g -> SVar.t -> SVars.t
   val sub : g -> SVar.t -> SVars.t
-  val bellman_ford : g -> SVars.t
+  val find_negative_cycle_vars : g -> SVars.t
 
   exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
 
@@ -157,4 +155,5 @@ sig
   val upward   : g -> SVars.t -> SVars.t
 
   val rec_check : SVar.t -> SVars.t -> SVars.t -> Constraints.t -> Constraints.t
+  val solve : Constraints.t -> State.t -> State.t * SMap.t
 end

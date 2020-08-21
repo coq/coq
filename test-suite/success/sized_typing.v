@@ -27,13 +27,13 @@ Fixpoint minus n m :=
     end
   end.
 
-Fixpoint div x y :=
+Fixpoint div x y {struct x} :=
   match x with
   | O => O
   | S x' => S (div (minus x' y) y)
   end.
 
-Fixpoint mult x y :=
+Fixpoint mult x y {struct x} :=
   match x with
   | O => O
   | S x' => plus y (mult x' y)
@@ -284,20 +284,22 @@ Definition const3 :=
 
 (** Definitions that illustrate size-preservation. *)
 
-(* [Definition] itself does not preserve size of types. *)
-Definition id1 (x: nat) := x.
-Fail Fixpoint f (n: nat) :=
-  match n with
-  | O => O
-  | S n' => f (id1 n')
-  end.
-
 (* [Fixpoint] does preserve size of types. *)
-Fixpoint id2 (x: nat) := x.
+Set Warnings "-non-recursive".
+Fixpoint id1 (x: nat) := x.
+Set Warnings "+non-recursive".
 Fixpoint g (n: nat) :=
   match n with
   | O => O
-  | S n' => g (id2 n')
+  | S n' => g (id1 n')
+  end.
+
+(* [Definition] now also preserves size of types. *)
+Definition id2 (x: nat) := x.
+Fixpoint f (n: nat) :=
+  match n with
+  | O => O
+  | S n' => f (id2 n')
   end.
 
 (* [Definition] defining a fixpoint also preserves size. *)
@@ -312,7 +314,7 @@ Fixpoint h (n: nat) :=
 Section localSize.
 Let id1 (x: nat) := x.
 Let id2 := fix id' (x: nat) := x.
-Fail Fixpoint j (n: nat) :=
+Fixpoint j (n: nat) :=
   match n with
   | O => O
   | S n' => j (id1 n')
@@ -385,6 +387,17 @@ Fail Fixpoint id n :=
   match n with
   | O => O
   | S m => S (id (add1 m))
+  end.
+
+(** Functional induction examples.
+  This used to be broken because [Typeops.check] would return a Cast
+  instead of the regular typing judgement. *)
+Require Import FunInd.
+
+Function plus (m n : nat) {struct n} : nat :=
+  match n with
+  | 0 => m
+  | S p => S (plus m p)
   end.
 
 (** A longer example modelling simply-typed lambda calculus with capture-avoiding substitution. *)

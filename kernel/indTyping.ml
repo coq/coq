@@ -103,7 +103,7 @@ let check_indices_matter env_params info indices =
 (* env_ar contains the inductives before the current ones in the block, and no parameters *)
 let check_arity ~template env_params env_ar ind =
   let {utj_val=arity;utj_type=_} = Typeops.infer_type env_params ind.mind_entry_arity in
-  let arity = erase_infty arity in (* CIC^_ clause I5: inductive types have infty annotation *)
+  let arity = erase_infty arity in (* CIC^_ clause I5: inductive types have infty annotations *)
   let indices, ind_sort = Reduction.dest_arity env_params arity in
   let ind_min_univ = if template then Some Universe.type0m else None in
   let univ_info = {
@@ -130,7 +130,7 @@ let check_constructor_univs env_ar_par info (args,_) =
 
 let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
   let lc = Array.map_of_list (fun c -> (Typeops.infer_type env_ar_par c).utj_val) lc in
-  let lc = Array.Smart.map erase_infty lc in (* CIC^_ clause I5: inductive types have infty annotation *)
+  let lc = Array.Smart.map erase_infty lc in (* CIC^_ clause I5: inductive types have infty annotations *)
   let splayed_lc = Array.map (Reduction.dest_prod_assum env_ar_par) lc in
   let univ_info = match Array.length lc with
     (* Empty type: all OK *)
@@ -332,7 +332,10 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   in
 
   (* Params *)
-  let env_params, params = Typeops.check_context env_univs mie.mind_entry_params in
+  let env_params, params =
+    let env_params, params = Typeops.check_context env_univs mie.mind_entry_params in
+    let params = Context.Rel.map erase_infty params in (* CIC^_ clause I5: inductive types have infty annotations *)
+    env_params, params in
 
   (* Arities *)
   let env_ar, data = List.fold_left_map (check_arity ~template:has_template_poly env_params) env_univs mie.mind_entry_inds in

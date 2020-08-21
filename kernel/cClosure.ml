@@ -543,7 +543,7 @@ let ref_value_cache ({ i_cache = cache; _ }) tab ref ans =
           | ConstKey cst -> constant_value_in cache.i_env cst
         in
         let body = match ans with
-          | Sized (svar, _) -> annotate_fresh svar body
+          | Sized sizes -> annotate_fresh sizes body
           | Assum | Bare _ | Limit _ -> erase_infty body in
         Def (inject body)
       with

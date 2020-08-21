@@ -255,14 +255,17 @@ let judge_of_type u =
     { uj_val = EConstr.mkType u;
       uj_type = EConstr.mkType uu }
 
+let type_of_relative env v =
+  EConstr.of_constr (type_of_relative env v)
+
 let judge_of_relative env v =
-  Environ.on_judgment EConstr.of_constr (judge_of_relative env v)
+  make_judge (EConstr.mkRel v) (type_of_relative env v)
 
 let type_of_variable env id =
   EConstr.of_constr (type_of_variable env id)
 
 let judge_of_variable env id =
-  Environ.on_judgment EConstr.of_constr (judge_of_variable env id)
+  make_judge (EConstr.mkVar id) (type_of_variable env id)
 
 let judge_of_projection env sigma p cj =
   let pty = lookup_projection p env in
@@ -324,10 +327,10 @@ let type_of_constructor env sigma ((ind,_ as ctor),u) =
   sigma, (EConstr.of_constr (rename_type ty (GR.ConstructRef ctor)))
 
 let judge_of_int env v =
-  Environ.on_judgment EConstr.of_constr (judge_of_int env v)
+  make_judge (mkInt v) (EConstr.of_constr @@ type_of_int env)
 
 let judge_of_float env v =
-  Environ.on_judgment EConstr.of_constr (judge_of_float env v)
+  make_judge (mkFloat v) (EConstr.of_constr @@ type_of_float env)
 
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)

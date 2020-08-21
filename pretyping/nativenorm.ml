@@ -381,10 +381,8 @@ and nf_atom_type env sigma atom =
      mkMeta mv, ty
   | Aproj(p,c) ->
       let c,tc = nf_accu_type env sigma c in
-      let cj = make_judge c tc in
       let p = get_proj env p in
-      let uj = Typeops.judge_of_projection env p cj in
-      uj.uj_val, uj.uj_type
+      mkProj (p, c), Typeops.type_of_projection env p c tc
 
 
 and  nf_predicate env sigma ind mip params v pT =

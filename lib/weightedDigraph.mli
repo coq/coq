@@ -13,8 +13,8 @@ module Make : functor(V: COMPARABLE) -> sig
     type t = vertex * int * vertex
     val compare : t -> t -> int
   end
-
   type edge = E.t
+
   val nb_vertex : t -> int
   val mem_vertex : t -> vertex -> bool
   val mem_edge_e : t -> edge -> bool
@@ -27,5 +27,7 @@ module Make : functor(V: COMPARABLE) -> sig
   val iter_edges_e : (edge -> unit) -> t -> unit
   val succ : t -> vertex -> vertex list
   val pred : t -> vertex -> vertex list
-  val bellman_ford : t -> edge list
+  val all_shortest_paths : t -> vertex -> (vertex * int) list
+  val find_negative_cycle : t -> edge list
+  val components : t -> vertex list array
 end

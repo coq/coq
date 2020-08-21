@@ -515,6 +515,7 @@ end
 
 module MakeComp(G: G) = struct
   module H = Hashtbl.Make(G.V)
+  module UF = Unionfind.Make(Set.Make(G.V))(Map.Make(G.V))
 
   type action =
     | Finish of G.V.t * int
@@ -580,6 +581,31 @@ module MakeComp(G: G) = struct
 
   let scc_list g =
     let a = scc_array g in
+    Array.fold_right (fun l acc -> l :: acc) a []
+
+  let components g =
+    let vertices = ref [] in
+    G.iter_vertex (fun v -> vertices := v :: !vertices) g;
+    let uf = UF.create () in
+    let () = List.iter (fun v -> UF.add v uf) !vertices in
+    let visit u v = UF.union u v uf in
+    G.iter_edges visit g;
+    let count = ref 0 in
+    let comp = H.create 5003 in
+    let visit v =
+      let v = UF.find v uf in
+      if not (H.mem comp v) then begin H.add comp v !count; incr count end in
+    G.iter_vertex visit g;
+    !count, (fun v -> H.find comp (UF.find v uf))
+
+  let components_array g =
+    let n,f = components g in
+    let t = Array.make n [] in
+    G.iter_vertex (fun v -> let i = f v in t.(i) <- v :: t.(i)) g;
+    t
+
+  let components_list g =
+    let a = components_array g in
     Array.fold_right (fun l acc -> l :: acc) a []
 end
 
@@ -678,7 +704,15 @@ module Generic(G: I with type E.label = int) = struct
   end
 
   module BF = BellmanFord(G)(W)
-  let bellman_ford = BF.find_negative_cycle
+
+  (* There's a bunch of module-related problems when trying to return this
+    as a hashtable or as a map, so we return a list. Simple and easy. *)
+  let all_shortest_paths g v =
+    let hashtbl = BF.all_shortest_paths g v in
+    BF.H.fold (fun key value lst -> (key, value) :: lst) hashtbl []
+
+  let find_negative_cycle = BF.find_negative_cycle
+  let components = BF.Comp.components_array
 end
 
 module Int = struct

@@ -538,24 +538,18 @@ val count_annots : constr -> int
 
 val collect_annots : constr -> SVars.t
 
-(** [any_annot f c] returns true iff the predicate [f] returns [true]
-   on any annotation in [c] *)
-
-val any_annot : (Annot.t -> bool) -> constr -> bool
-
 (** [erase c] erases all stage annotations in [c] to Empty *)
 
 val erase : constr -> constr
 
+(** [erase_fully c] erases all stage annotations in [c] to Empty,
+  including the ones in declared types in lambdas, lets, and cases *)
+
+val erase_fully : constr -> constr
+
 (** [erase_infty ind s c] erases all inductive types [ind] in [c] to Infty *)
 
 val erase_infty : constr -> constr
-
-(** [erase_glob vars c] erases all stage annotations in [c]
-   to Glob if they are in [vars], and
-   to Infty if they are not in [vars] *)
-
-val erase_glob : SVars.t -> constr -> constr
 
 (** [erase_star vars c] erases all stage annotations in [c]
    to Star if they are in [vars], and
@@ -569,13 +563,15 @@ val erase_star : SVars.t -> constr -> constr
 
 val get_smap : Annots.t -> constr -> SMap.t
 
-(** [annotate_fresh svar c] annotates [c] with size variables starting from [svar] *)
+(** [add_smap annots c smap] does the same thing as [get_smap],
+  except it does not add a mapping to [smap] if the source var
+  is already in [smap] *)
 
-val annotate_fresh : SVar.t -> constr -> constr
+val add_smap : Annots.t -> SMap.t -> constr -> SMap.t
 
-(** [annotate_glob s c] replaces all Glob annotations in [c] with [s] *)
+(** [annotate_fresh sizes c] annotates [c] with size variables [sizes] *)
 
-val annotate_glob : Annot.t -> constr -> constr
+val annotate_fresh : Size.t array -> constr -> constr
 
 (** [annotate_succ vars c] calls [succ_annot] on all the stage annotations in [c]
    if the stage variables are in [vars] *)

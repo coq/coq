@@ -34,20 +34,6 @@ struct
     seq [str "{"; pr_enum pr_var (elements vars); str "}"]
 end
 
-(** Size variable substitution maps *)
-
-module SMap =
-struct
-  module M = Map.Make(SVar)
-  type t = SVar.t M.t
-  let empty = M.empty
-  let set = M.add
-  let get var smap =
-    match M.find_opt var smap with
-    | Some var -> var
-    | None -> var
-end
-
 (** Sizes, for sized annotations *)
 
 module Size =
@@ -66,6 +52,19 @@ struct
       if not (Int.equal nc 0) then nc
       else Int.compare sz1 sz2
 
+  let equal s1 s2 = Int.equal 0 @@ compare s1 s2
+
+  (* Substitute the size variable of [sof] by size expression [sby] *)
+  let subst sof sby =
+    if sof == sby || equal sof sby then sof else
+    match sof with
+    | Infty -> sof
+    | SizeVar (_, size) ->
+      if Int.equal size 0 then sby else
+      match sby with
+      | Infty -> sby
+      | SizeVar (svar, size') -> SizeVar (svar, size + size')
+
   let pr s =
     let open Pp in
     match s with
@@ -73,6 +72,13 @@ struct
     | SizeVar (s, n) ->
       if Int.equal n 0 then SVar.pr s else
       seq [SVar.pr s; str "+"; int n]
+
+  let show a = Pp.string_of_ppcmds (pr a)
+
+  let hash a =
+    match a with
+    | Infty -> combine 1 (show a |> String.hash)
+    | SizeVar (n, i) -> combine3 2 (Int.hash n) (Int.hash i)
 end
 
 (** Annotations, attached to (co)inductive types *)
@@ -84,8 +90,7 @@ struct
   type t =
     | Empty (* Bare types with no annotations, input to inference *)
     | Star (* Marks the positions of the (co)recursive types in (co)fixpoints *)
-    | Glob (* Marks the positions of the (co)recursive types in global definitions *)
-    | Size (* Sized types *) of Size.t
+    | Size of Size.t (* Sized types *)
 
   let infty = Size Infty
 
@@ -102,8 +107,6 @@ struct
     | Empty, _ -> -1 | _, Empty -> 1
     | Star, Star   -> 0
     | Star, _  -> -1 | _, Star  -> 1
-    | Glob, Glob   -> 0
-    | Glob, _  -> -1 | _, Glob  -> 1
     | Size s1, Size s2 -> Size.compare s1 s2
 
   let equal a1 a2 = Int.equal 0 @@ compare a1 a2
@@ -117,7 +120,6 @@ struct
     match a with
     | Empty -> mt ()
     | Star  -> str "*"
-    | Glob  -> str "ⁱ"
     | Size s -> Size.pr s
 
   let show a = Pp.string_of_ppcmds (pr a)
@@ -126,38 +128,38 @@ struct
     match a with
     | Empty -> combine 1 (show a |> String.hash)
     | Star  -> combine 2 (show a |> String.hash)
-    | Glob  -> combine 3 (show a |> String.hash)
-    | Size Infty -> combine 4 (show a |> String.hash)
-    | Size (SizeVar (n, i)) -> combine3 5 (Int.hash n) (Int.hash i)
+    | Size s -> combine 3 (Size.hash s)
 end
 
 (* (Fake) vectors of annotations, attached to Consts/Vals/Rels *)
 module Annots =
 struct
-  open Annot
+  open Size
 
   (* If bound to a definition body, [int] gives the number of annotations in the body *)
   type t =
     | Assum (* Assumption and not bound to a body, or the body needs no annots *)
     | Bare of int (* Bare term bound to a definition *)
     | Limit of int (* Limit term bound to a definition *)
-    | Sized of SVar.t * int (* Sized term bound to a definition starting with given svar *)
+    | Sized of Size.t array (* Sized term bound to a definition starting with given svar *)
 
   let vars = function
     | Assum | Bare _ | Limit _ -> SVars.empty
-    | Sized (svar, n) -> List.interval svar (svar + n - 1)
-      |> SVars.of_list
+    | Sized sizes ->
+      let f svars = function
+      | Infty -> svars
+      | SizeVar (svar, _) -> SVars.add svar svars in
+      Array.fold_left f SVars.empty sizes
 
-  let mk = function
-    | Assum -> []
-    | Bare n -> List.make n Empty
-    | Limit n -> List.make n infty
-    | Sized (svar, n) -> List.interval svar (svar + n - 1)
-      |> List.map (fun var -> mk var 0)
+  let mk svar n = List.interval svar (svar + n - 1)
+    |> List.map (fun var -> Size.mk var 0)
+    |> Array.of_list
+    |> (fun sizes -> Sized sizes)
 
   let length = function
     | Assum -> 0
-    | Bare n | Limit n | Sized (_, n) -> n
+    | Bare n | Limit n -> n
+    | Sized sizes -> Array.length sizes
 
   let pr ans =
     let open Pp in
@@ -165,7 +167,7 @@ struct
     | Assum -> mt ()
     | Bare n -> seq [str "{Empty;"; int n; str "}"]
     | Limit n -> seq [str "{Infty;"; int n; str "}"]
-    | Sized (svar, n) -> seq [str "{SVar:"; SVar.pr svar; str ";"; int n; str "}"]
+    | Sized sizes -> seq [str "{SVar:"; prvect_with_sep pr_comma Size.pr sizes; str "}"]
 
   let show a = Pp.string_of_ppcmds (pr a)
 
@@ -174,7 +176,7 @@ struct
     | Assum -> combine 1 (String.hash "Assum")
     | Bare n -> combine 2 (Int.hash n)
     | Limit n -> combine 3 (Int.hash n)
-    | Sized (svar, n) -> combine3 4 (Int.hash svar) (Int.hash n)
+    | Sized sizes -> combine 4 (Array.fold_left (fun acc t -> combine acc (Size.hash t)) 0 sizes)
 end
 
 (** Size state, keeping track of used size variables *)
@@ -240,7 +242,7 @@ struct
     | Some n when n > 0 ->
       if not check_sized then Limit n, state else
       let next_vars = List.interval state.next (state.next + n - 1) in
-      let annots = Sized (state.next, n) in
+      let annots = Annots.mk state.next n in
       let state = { state with
         next = state.next + n;
         vars = union state.vars (of_list next_vars) } in
@@ -253,6 +255,42 @@ struct
     let vars_pp = SVars.pr state.vars in
     let stars_pp = SVars.pr state.pos_vars in
     seq [str"<"; stg_pp; pr_comma (); vars_pp; pr_comma (); stars_pp; str ">"]
+end
+
+(** Size variable substitution maps from size variables to sizes *)
+
+module SMap =
+struct
+  open Size
+
+  module M = Map.Make(SVar)
+  type t = Size.t M.t
+
+  let empty = M.empty
+  let get var smap =
+    match M.find_opt var smap with
+    | Some s -> s
+    | None -> mk var 0
+  let add key s smap =
+    match M.find_opt key smap with
+    | Some _ -> smap
+    | None -> M.add key s smap
+
+  let subst smap sof =
+    match sof with
+    | Infty -> sof
+    | SizeVar (svar, size) ->
+      let sby = get svar smap in
+      if sof == sby || Size.equal sof sby then sof else
+      if Int.equal size 0 then sby else
+      match sby with
+      | Infty -> sby
+      | SizeVar (svar', size') -> SizeVar (svar', size + size')
+
+  let pr smap =
+    let open Pp in
+    let pr_map (v, s) = SVar.pr v ++ str " ↦ " ++ Size.pr s in
+    seq [str "{"; pr_enum pr_map (M.bindings smap); str "}"]
 end
 
 (** Collections of size constraints *)
@@ -296,7 +334,18 @@ struct
     end
 
   let map smap =
-    S.map (fun (var1, size, var2) -> (SMap.get var1 smap, size, SMap.get var2 smap))
+    let f (var1, size, var2) cstrnts =
+      let s1 = SMap.get var1 smap in
+      let s2 = SMap.get var2 smap in
+      match s1, s2 with
+      | Infty, Infty -> cstrnts
+      | SizeVar (var1, sz1), SizeVar (var2, sz2) ->
+        if SVar.equal var1 var2 && sz1 <= sz2 + size then cstrnts
+        else S.add (mkEdge var1 (size + sz2 - sz1) var2) cstrnts
+      | Infty, SizeVar (var, _) ->
+        S.add (mkEdge SVar.infty 0 var) cstrnts
+      | SizeVar _, Infty -> cstrnts in
+    S.fold f (empty ())
 
   let pr cstrnts =
     let open Pp in
@@ -347,8 +396,8 @@ module RecCheck =
     then SVars.of_list @@ G.pred g s
     else SVars.empty
 
-  let bellman_ford g =
-    let edges = G.bellman_ford g in
+  let find_negative_cycle_vars g =
+    let edges = G.find_negative_cycle g in
     List.fold_left (fun vars (vfrom, _, vto) ->
       SVars.add vfrom @@ SVars.add vto vars) SVars.empty edges
 
@@ -373,13 +422,21 @@ module RecCheck =
   let downward = closure sub
   let upward = closure sup
 
+  let insert_from_set var_sub cstrnts =
+    iter (fun var_sup -> insert cstrnts var_sub 0 var_sup)
+  let remove_from_set cstrnts =
+    iter (fun var ->
+      remove cstrnts var)
+
+  let rec remove_neg cstrnts vneg =
+    let vneg' = upward cstrnts (find_negative_cycle_vars cstrnts) in
+    let () = remove_from_set cstrnts vneg' in
+    let () = insert_from_set SVar.infty cstrnts vneg' in
+    if not (is_empty vneg') then remove_neg cstrnts (union vneg vneg') else vneg
+  let remove_neg cstrnts = remove_neg cstrnts empty
+
   let rec_check tau vstar vneq cstrnts =
     let cstrnts' = to_graph cstrnts in
-    let insert_from_set var_sub cstrnts =
-      iter (fun var_sup -> insert cstrnts var_sub 0 var_sup) in
-    let remove_from_set cstrnts =
-      iter (fun var ->
-        remove cstrnts var) in
 
     (** Step 1: Add V* ⊑ τ *)
     let () = iter (fun v -> insert cstrnts' v 0 tau) vstar in
@@ -389,12 +446,7 @@ module RecCheck =
     let () = insert_from_set tau cstrnts' vi in
 
     (** Step 3, 4: Find, remove negative cycles *)
-    let rec remove_neg cstrnts =
-      let v_neg = upward cstrnts (bellman_ford cstrnts) in
-      let () = remove_from_set cstrnts' v_neg in
-      let () = insert_from_set SVar.infty cstrnts v_neg in
-      if not (is_empty v_neg) then remove_neg cstrnts in
-    let () = remove_neg cstrnts' in
+    let () = ignore @@ remove_neg cstrnts' in
 
     (** Step 5: Add ∞ ⊑ ⊔V≠ ∩ ⊔Vi *)
     let vi_up = upward cstrnts' vi in
@@ -407,4 +459,36 @@ module RecCheck =
     let vnull = inter vinf vi in
     if is_empty vnull then of_graph cstrnts'
     else raise (RecCheckFailed (cstrnts, vinf, vi))
+
+  let solve cstrnts state =
+    let cstrnts = to_graph cstrnts in
+
+    (* Remove all size variables that must be mapped to infty
+      and map them to infty in the substitution map *)
+    let vneg = remove_neg cstrnts in
+    let vinf = upward cstrnts (singleton SVar.infty) in
+    let () = iter (fun var -> remove cstrnts var) vinf in
+    let smap = SVars.fold (fun var smap -> SMap.add var Size.Infty smap) (union vneg vinf) SMap.empty in
+
+    (* Find a valid substitution map for a given connected component *)
+    let solve (state, smap) component =
+      let open State in
+      let base = state.next in
+      let state = { state with next = succ state.next } in
+
+      (* The shortest path of weight w from vfrom to all vtos is the constraint {vfrom ⊑ vto + w}.
+        Therefore, we want to map each vto to (vfrom - w). However, hats are never negative,
+        so we add to each the maximum weight wmax: [vto ↦ vfrom + wmax - w].
+        This has the added bonus of guaranteeing a "minimal" solution in that
+        no annotation can have a fewer number of hats than (wmax - w). *)
+      let () = List.iter (fun vto -> insert cstrnts base 0 vto) component in
+      let shortest_paths = G.all_shortest_paths cstrnts base in
+      let wmax = List.fold_left (fun i vj -> max i (snd vj)) min_int shortest_paths in
+      let smap = List.fold_left (fun smap (var, w) -> SMap.add var (Size.mk base (wmax - w)) smap) smap shortest_paths in
+    state, smap in
+
+    (* Get all the connected components of the graph
+      and deal with them one at a time *)
+    let components = G.components cstrnts in
+    Array.fold_left solve (state, smap) components
 end

@@ -190,6 +190,12 @@ let type_of_constant_in env (kn,_u as cst) =
 let size_vars_in_constant env (kn, _) =
   lookup_constant_annots kn env
 
+let smap_of_constant env annots (kn, _) =
+  let cb = lookup_constant kn env in
+  match cb.const_body with
+  | Def c -> get_smap annots (Mod_subst.force_constr c)
+  | _ -> SMap.empty
+
 (* Type of a lambda-abstraction. *)
 
 (* [judge_of_abstraction env name var j] implements the rule
@@ -325,12 +331,6 @@ let type_of_prim_or_type env = let open CPrimitives in
   function
   | OT_type t -> type_of_prim_type env t
   | OT_op op -> type_of_prim env op
-
-let judge_of_int env i =
-  make_judge (Constr.mkInt i) (type_of_int env)
-
-let judge_of_float env f =
-  make_judge (Constr.mkFloat f) (type_of_float env)
 
 (* Type of product *)
 
@@ -571,20 +571,20 @@ let rec execute env stg cstrnt cstr =
     | Var (id, _) ->
       let check_sized = (Environ.typing_flags env).check_sized in
       let numvars = size_vars_in_variable env id in
-      let s, stg = next stg in
-      let t = annotate_glob s (type_of_variable env id) in
       let annots, stg = next_annots check_sized numvars stg in
       let smap = smap_of_variable env annots id in
       let cstrnt = union cstrnt (Constraints.map smap cstrnt) in
-      stg, cstrnt, mkVarA id annots, subst_smap smap t
+      stg, cstrnt, mkVarA id annots, subst_smap smap (type_of_variable env id)
 
     | Const (c, _) ->
       let check_sized = (Environ.typing_flags env).check_sized in
       let numvars = size_vars_in_constant env c in
-      let s, stg = next stg in
       let t, cstrnt' = type_of_constant env c in
-      let annots, stg = next_annots check_sized numvars stg in
-      stg, union cstrnt cstrnt', mkConstUA c annots, annotate_glob s t
+      let annotsc, stgc = next_annots check_sized numvars stg in
+      let annotst, stgt = next_annots check_sized (Some (count_annots t)) stgc in
+      let smapc = smap_of_constant env annotsc c in
+      let smapt = add_smap annotst smapc t in
+      stgt, union cstrnt cstrnt', mkConstUA c annotsc, subst_smap smapt t
 
     | Proj (p, c) ->
       let stg, cstrnt, c', ct = execute env stg cstrnt c in
@@ -780,11 +780,9 @@ let check_wellformed_universes env c =
     error_undeclared_universe env u
 
 let infer env constr =
-  let () = check_wellformed_universes env constr in
-  let stg, _, constr_sized, t_sized = execute env State.init (empty ()) constr in
-  let constr = erase_infty constr_sized in
-  let t = erase_glob (get_pos_vars stg) t_sized in
-  make_judge constr t
+  let stg, cstrnt, constr, t = execute env State.init (empty ()) (erase_fully constr) in
+  let _, smap = solve cstrnt stg in
+  make_judge (subst_smap smap constr) (subst_smap smap t)
 
 let infer =
   if Flags.profile then
@@ -792,7 +790,7 @@ let infer =
       CProfile.profile2 infer_key (fun b c -> infer b c)
   else (fun b c -> infer b c)
 
-let infer_fix env fix =
+let infer_fix env (vni, (names, lar, vdef)) =
   (** NB: This doesn't work. The Rel context might have Evar and Meta.
   let open Rel.Declaration in
   let infer_rel _ rd (env, stg, cstrnt) =
@@ -808,21 +806,37 @@ let infer_fix env fix =
   let env, stg, cstrnt = fold_rel_context infer_rel env ~init:(env', State.init, empty ()) in
   ignore @@ execute_fix env stg cstrnt fix
   **)
-  ignore @@ execute_fix env State.init (empty ()) fix
+  ignore @@ execute_fix env State.init (empty ()) (vni, (names, Array.Smart.map erase_fully lar, vdef))
 
-let assumption_of_judgment env {uj_val=c; uj_type=t} =
+let assumption_of_judgment env { uj_val = c; uj_type = t } =
   infer_assumption env c t
 
-let type_judgment env {uj_val=c; uj_type=t} =
+let type_judgment env { uj_val = c; uj_type = t } =
   let s = check_type env c t in
-  {utj_val = c; utj_type = s }
+  { utj_val = c; utj_type = s }
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let stg, _, constr_sized, t = execute env State.init (empty ()) constr in
-  let constr = erase_glob (get_pos_vars stg) constr_sized in
+  let stg, cstrnt, constr, t = execute env State.init (empty ()) (erase_fully constr) in
   let s = check_type env constr t in
-  {utj_val = constr; utj_type = s}
+  let _, smap = solve cstrnt stg in
+  { utj_val = (subst_smap smap constr); utj_type = s }
+
+(* SZ TODO: Is there a connotational difference between using [check_cast] and [conv_leq]? *)
+let check_with_type env constr types =
+  let () = check_wellformed_universes env types in
+  let stgc, cstrntc, c, ct = execute env State.init (empty ()) (erase_fully constr) in
+  let stgt, cstrntt, t, tt = execute env stgc cstrntc (erase_fully types) in
+  let s = check_type env t tt in
+  let cstrnt = union cstrntt @@ check_cast env c ct DEFAULTcast t in
+  let _, smap = solve cstrnt stgt in
+  let jc = make_judge (subst_smap smap c) (subst_smap smap ct) in
+  let jt = { utj_val = (subst_smap smap t); utj_type = s } in
+  jc, jt
+
+let check env constr types =
+  let jc, jt = check_with_type env constr types in
+  make_judge jc.uj_val jt.utj_val
 
 (* Typing of several terms. *)
 
@@ -835,70 +849,15 @@ let check_context env rels =
         let x = check_binder_annot jty.utj_type x in
         push_rel d env, LocalAssum (x,jty.utj_val) :: rels
       | LocalDef (x,bd,ty) ->
-        let j1 = infer env bd in
-        let jty = infer_type env ty in
+        let j1, jty = check_with_type env bd ty in
         let _ = conv_leq false env j1.uj_type ty in
         let x = check_binder_annot jty.utj_type x in
         push_rel d env, LocalDef (x,j1.uj_val,jty.utj_val) :: rels)
     rels ~init:(env,[])
 
-let judge_of_prop = make_judge mkProp type1
-let judge_of_set = make_judge mkSet type1
-let judge_of_type u = make_judge (mkType u) (type_of_type u)
-
-let judge_of_relative env k = make_judge (mkRel k) (type_of_relative env k)
-
-let judge_of_variable env x = make_judge (mkVar x) (type_of_variable env x)
-
-let judge_of_constant env cst =
-  let t, _ = type_of_constant env cst in
-  make_judge (mkConstU cst) t
-
-let judge_of_projection env p cj =
-  make_judge (mkProj (p,cj.uj_val)) (type_of_projection env p cj.uj_val cj.uj_type)
-
-let dest_judgev v =
-  Array.map j_val v, Array.map j_type v
-
-let judge_of_apply env funj argjv =
-  let args, argtys = dest_judgev argjv in
-  let t, _ = type_of_apply env funj.uj_val funj.uj_type args argtys in
-  make_judge (mkApp (funj.uj_val, args)) t
-
-(* let judge_of_abstraction env x varj bodyj = *)
-(*   make_judge (mkLambda (x, varj.utj_val, bodyj.uj_val)) *)
-(*              (type_of_abstraction env x varj.utj_val bodyj.uj_type) *)
-
-(* let judge_of_product env x varj outj = *)
-(*   make_judge (mkProd (x, varj.utj_val, outj.utj_val)) *)
-(*              (mkSort (sort_of_product env varj.utj_type outj.utj_type)) *)
-
-(* let judge_of_letin env name defj typj j = *)
-(*   make_judge (mkLetIn (name, defj.uj_val, typj.utj_val, j.uj_val)) *)
-(*              (subst1 defj.uj_val j.uj_type) *)
-
-let judge_of_cast env cj k tj =
-  let _ = check_cast env cj.uj_val cj.uj_type k tj.utj_val in
-  let c = match k with | REVERTcast -> cj.uj_val | _ -> mkCast (cj.uj_val, k, tj.utj_val) in
-  let t = globify env cj.uj_type tj.utj_val in
-  make_judge c t
-
-let judge_of_inductive env indu =
-  let t, _ = type_of_inductive env indu in
-  make_judge (mkIndU indu) t
-
-let judge_of_constructor env cu =
-  let t, _ = type_of_constructor env infty cu in
-  make_judge (mkConstructU cu) t
-
-let judge_of_case env ci pj cj lfj =
-  let lf, lft = dest_judgev lfj in
-  let _, ci, t, _ = type_of_case env init ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft in
-  make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val, lft)) t
-
 (* Building type of primitive operators and type *)
 
 let check_primitive_type env op_t t =
   let inft = type_of_prim_or_type env op_t in
-  try default_conv ~l2r:false CUMUL env inft t
+  try conv_leq false env inft t
   with NotConvertible -> error_incorrect_primitive env (make_judge op_t inft) t

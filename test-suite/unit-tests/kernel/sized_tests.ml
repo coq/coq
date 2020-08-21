@@ -13,6 +13,8 @@ let log_out_ch = open_log_out_ch __FILE__
 
 let test_prefix = "kernel-sized_test"
 
+let bellman_ford = find_negative_cycle_vars
+
 let inf = -1
 
 let s0_0 = Size (SizeVar (0, 0))
