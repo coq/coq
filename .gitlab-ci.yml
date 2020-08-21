@@ -19,7 +19,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2020-05-24-V1"
+  CACHEKEY: "bionic_coq-V2020-07-21-V38"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -481,6 +481,8 @@ doc:refman-pdf:dune:
       - _build/log
       - _build/default/doc/refman-pdf
 
+# currently bugged: dune cleans up the glob files so no links
+# see #12699
 doc:stdlib:dune:
   extends: .dune-ci-template
   variables:
@@ -501,11 +503,11 @@ doc:refman:deploy:
   dependencies:
     - doc:ml-api:odoc
     - doc:refman:dune
-    - doc:stdlib:dune
+    - build:base
   needs:
     - doc:ml-api:odoc
     - doc:refman:dune
-    - doc:stdlib:dune
+    - build:base
   script:
     - echo "$DOCUMENTATION_DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - git clone git@github.com:coq/doc.git _deploy
@@ -515,7 +517,7 @@ doc:refman:deploy:
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
     - cp -rv _build/default/_doc/_html _deploy/$CI_COMMIT_REF_NAME/api
     - cp -rv _build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman
-    - cp -rv _build/default/doc/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - cp -rv _install_ci/share/doc/coq/html/stdlib _deploy/$CI_COMMIT_REF_NAME/stdlib
     - cd _deploy/$CI_COMMIT_REF_NAME/
     - git add api refman stdlib
     - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
@@ -610,10 +612,15 @@ test-suite:edge:dune:dev:
     expire_in: 2 week
   allow_failure: true
 
-test-suite:4.11+trunk+dune:
+test-suite:4.11+dune:
   extends: .test-suite:ocaml+beta+dune-template
   variables:
-    OCAMLVER: 4.11.0+trunk
+    OCAMLVER: 4.11.0
+
+# test-suite:4.11+trunk+dune:
+#   extends: .test-suite:ocaml+beta+dune-template
+#   variables:
+#     OCAMLVER: 4.11.0+trunk
 
 # Pending on https://github.com/ocaml/dune/pull/3585
 # test-suite:4.12+trunk+dune:
@@ -724,6 +731,9 @@ library:ci-coqprime:
   - build:edge+flambda
   - plugin:ci-bignums
 
+library:ci-coqtail:
+  extends: .ci-template
+
 library:ci-coquelicot:
   extends: .ci-template
 
@@ -751,6 +761,7 @@ library:ci-fiat_crypto:
   dependencies:
   - build:edge+flambda
   - library:ci-coqprime
+  - plugin:ci-bignums
   - plugin:ci-rewriter
 
 library:ci-fiat_crypto_legacy:
@@ -765,9 +776,15 @@ library:ci-fiat_crypto_ocaml:
   stage: stage-5
   needs:
   - build:edge+flambda
+  - library:ci-coqprime
+  - plugin:ci-bignums
+  - plugin:ci-rewriter
   - library:ci-fiat_crypto
   dependencies:
   - build:edge+flambda
+  - library:ci-coqprime
+  - plugin:ci-bignums
+  - plugin:ci-rewriter
   - library:ci-fiat_crypto
 
 library:ci-flocq:
