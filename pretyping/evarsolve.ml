@@ -227,8 +227,7 @@ let recheck_applications unify flags env evdref t =
             (match unify flags TypeUnification env !evdref Reduction.CUMUL argsty.(i) dom with
              | Success evd -> evdref := evd;
                              aux (succ i) (subst1 args.(i) codom)
-             | UnifFailure (evd, reason) ->
-                Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), dom))
+             | UnifFailure (evd, reason) -> raise (IllTypedInstance (env, ty, argsty.(i))))
          | _ -> raise (IllTypedInstance (env, ty, argsty.(i)))
        else ()
      in aux 0 fty
