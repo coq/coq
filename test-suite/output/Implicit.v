@@ -61,3 +61,13 @@ Coercion some_nat := @Some nat.
 Check fix f x := match x with 0 => None | n => some_nat n end.
 
 End MatchBranchesInContext.
+
+Module LetInContext.
+
+Set Implicit Arguments.
+Set Contextual Implicit.
+Axiom False_rect : forall A:Type, False -> A.
+Check fun x:False => let y:= False_rect (A:=bool) x in y. (* will not be in context: explicitation *)
+Check fun x:False => let y:= False_rect (A:=True) x in y. (* will be in context: no explicitation *)
+
+End LetInContext.

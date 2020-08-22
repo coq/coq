@@ -1000,7 +1000,7 @@ let rec extern inctx ?impargs scopes vars r =
              mkFlattenedCApp (head,args))
 
   | GLetIn (na,b,t,c) ->
-      CLetIn (make ?loc na,sub_extern false scopes vars b,
+      CLetIn (make ?loc na,sub_extern (Option.has_some t) scopes vars b,
               Option.map (extern_typ scopes vars) t,
               extern inctx ?impargs scopes (add_vname vars na) c)
 
