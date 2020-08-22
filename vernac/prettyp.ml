@@ -75,12 +75,12 @@ let print_ref reduce ref udecl =
   let inst = Univ.make_abstract_instance univs in
   let bl = Printer.universe_binders_with_opt_names (Environ.universes_of_global env ref) udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
-  let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
-      let ctx,ccl = Reductionops.splay_prod_assum env sigma typ
-      in EConstr.it_mkProd_or_LetIn ccl ctx
+      let ctx,ccl = Reductionops.splay_prod_assum env sigma (EConstr.of_constr typ)
+      in EConstr.to_constr sigma (EConstr.it_mkProd_or_LetIn ccl ctx)
     else typ in
+  let typ = Arguments_renaming.rename_type typ ref in
   let impargs = select_stronger_impargs (implicits_of_global ref) in
   let impargs = List.map binding_kind_of_status impargs in
   let variance = let open GlobRef in match ref with
@@ -95,7 +95,7 @@ let print_ref reduce ref udecl =
     else mt ()
   in
   let priv = None in (* We deliberately don't print private univs in About. *)
-  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma ~impargs typ ++
+  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_ltype_env env sigma ~impargs typ ++
          Printer.pr_abstract_universe_ctx sigma ?variance univs ?priv)
 
 (********************************)
