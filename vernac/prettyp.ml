@@ -268,8 +268,10 @@ let dummy = {
   notation_scope = None;
 }
 
-let is_dummy {Vernacexpr.implicit_status; name; recarg_like; notation_scope} =
-  name = Anonymous && not recarg_like && notation_scope = None && implicit_status = Glob_term.Explicit
+let is_dummy = function
+  | Vernacexpr.(RealArg {implicit_status; name; recarg_like; notation_scope}) ->
+    name = Anonymous && not recarg_like && notation_scope = None && implicit_status = Glob_term.Explicit
+  | _ -> false
 
 let rec main_implicits i renames recargs scopes impls =
   if renames = [] && recargs = [] && scopes = [] && impls = [] then []
@@ -292,9 +294,7 @@ let rec main_implicits i renames recargs scopes impls =
     let tl = function [] -> [] | _::tl -> tl in
     (* recargs is special -> tl handled above *)
     let rest = main_implicits (i+1) (tl renames) recargs (tl scopes) (tl impls) in
-    if is_dummy status && rest = []
-    then [] (* we may have a trail of dummies due to eg "clear scopes" *)
-    else status :: rest
+    status :: rest
 
 let rec insert_fake_args volatile bidi impls =
   let open Vernacexpr in
@@ -336,7 +336,7 @@ let print_arguments ref =
   let moreimpls = List.map (fun (_,i) -> List.map implicit_kind_of_status i) moreimpls in
   let bidi = Pretyping.get_bidirectionality_hint ref in
   let impls = insert_fake_args nargs_for_red bidi impls in
-  if impls = [] && moreimpls = [] && flags = [] then []
+  if List.for_all is_dummy impls && moreimpls = [] && flags = [] then []
   else
     let open Constrexpr in
     let open Vernacexpr in
