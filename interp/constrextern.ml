@@ -636,10 +636,10 @@ exception Expl
 (* If the removal of implicit arguments is not possible, raise [Expl] *)
 (* [inctx] tells if the term is in a context which will enforce the external type *)
 (* [n] is the total number of arguments block to which the [args] belong *)
-let adjust_implicit_arguments inctx n q args impl =
-  let rec exprec q = function
+let adjust_implicit_arguments inctx n args impl =
+  let rec exprec = function
     | a::args, imp::impl when is_status_implicit imp ->
-        let tail = exprec (q+1) (args,impl) in
+        let tail = exprec (args,impl) in
         let visible =
           !Flags.raw_print ||
           (!print_implicits && !print_implicits_explicit_args) ||
@@ -652,13 +652,13 @@ let adjust_implicit_arguments inctx n q args impl =
           (Lazy.force a,Some (make @@ ExplByName (name_of_implicit imp))) :: tail
         else
           tail
-    | a::args, _::impl -> (Lazy.force a,None) :: exprec (q+1) (args,impl)
+    | a::args, _::impl -> (Lazy.force a,None) :: exprec (args,impl)
     | args, [] -> List.map (fun a -> (Lazy.force a,None)) args (*In case of polymorphism*)
     | [], (imp :: _) when is_status_implicit imp && maximal_insertion_of imp ->
       (* The non-explicit application cannot be parsed back with the same type *)
       raise Expl
     | [], _ -> []
-  in exprec q (args,impl)
+  in exprec (args,impl)
 
 let extern_projection (cf,f) args impl =
   let ip = is_projection (List.length args) cf in
@@ -750,14 +750,14 @@ let extern_applied_ref inctx impl (cf,f) us args =
     match extern_projection (cf,f) args impl with
     (* Try a [t.(f args1) args2] projection-style notation *)
     | Some (i,(args1,impl1),(args2,impl2)) ->
-      let args1 = adjust_implicit_arguments inctx n 1 args1 impl1 in
-      let args2 = adjust_implicit_arguments inctx n (i+1) args2 impl2 in
+      let args1 = adjust_implicit_arguments inctx n args1 impl1 in
+      let args2 = adjust_implicit_arguments inctx n args2 impl2 in
       let ip = Some (List.length args1) in
       CApp ((ip,f),args1@args2)
       (* A normal application node with each individual implicit
          arguments either dropped or made explicit *)
     | None ->
-      let args = adjust_implicit_arguments inctx n 1 args impl in
+      let args = adjust_implicit_arguments inctx n args impl in
       if args = [] then ref else CApp ((None, f), args)
   with Expl ->
   (* A [@f args] node *)
@@ -768,7 +768,7 @@ let extern_applied_ref inctx impl (cf,f) us args =
 let extern_applied_syntactic_definition n extraimpl (cf,f) syndefargs extraargs =
   try
     let syndefargs = List.map (fun a -> (a,None)) syndefargs in
-    let extraargs = adjust_implicit_arguments false n (n-List.length extraargs+1) extraargs extraimpl in
+    let extraargs = adjust_implicit_arguments false n extraargs extraimpl in
     let args = syndefargs @ extraargs in
     if args = [] then cf else CApp ((None, CAst.make cf), args)
   with Expl ->
@@ -789,7 +789,7 @@ let extern_applied_notation n impl f args =
     f.CAst.v
   else
   try
-    let args = adjust_implicit_arguments false n (n-List.length args+1) args impl in
+    let args = adjust_implicit_arguments false n args impl in
     mkFlattenedCApp (f,args)
   with Expl -> raise No_match
 
