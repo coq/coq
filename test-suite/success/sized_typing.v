@@ -27,13 +27,13 @@ Fixpoint minus n m :=
     end
   end.
 
-Fixpoint div x y {struct x} :=
+Fixpoint div x y :=
   match x with
   | O => O
   | S x' => S (div (minus x' y) y)
   end.
 
-Fixpoint mult x y {struct x} :=
+Fixpoint mult x y :=
   match x with
   | O => O
   | S x' => plus y (mult x' y)
@@ -394,10 +394,10 @@ Fail Fixpoint id n :=
   instead of the regular typing judgement. *)
 Require Import FunInd.
 
-Function plus (m n : nat) {struct n} : nat :=
+Function plus' (m n : nat) {struct n} : nat :=
   match n with
   | 0 => m
-  | S p => S (plus m p)
+  | S p => S (plus' m p)
   end.
 
 (** A longer example modelling simply-typed lambda calculus with capture-avoiding substitution. *)

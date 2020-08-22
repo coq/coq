@@ -663,9 +663,25 @@ let rec execute env stg cstrnt cstr =
       in
       stg, union cstrntlf cstrntci, cstr, t
 
-    | Fix fix -> execute_fix env stg cstrnt fix
+    | Fix ((_, i as vni), recdeft as fix) ->
+      let flags = Environ.typing_flags env in
+      if not flags.check_sized then
+        let stg', cstrnt', (names', lar', vdef', _ as recdeft') = execute_recdef env stg cstrnt recdeft in
+        let cstrnt'' = check_fixpoint env recdeft' lar' in
+        let fix = (vni, (names', lar', vdef')) in
+        check_fix env fix; stg', union cstrnt' cstrnt'', mkFix fix, lar'.(i)
+      else
+        execute_fix env stg cstrnt fix
 
-    | CoFix cofix -> execute_cofix env stg cstrnt cofix
+    | CoFix (i, recdeft as cofix) ->
+      let flags = Environ.typing_flags env in
+      if not flags.check_sized then
+        let stg', cstrnt', (names', lar', vdef', _ as recdeft') = execute_recdef env stg cstrnt recdeft in
+        let cstrnt'' = check_fixpoint env recdeft' lar' in
+        let cofix = (i, (names', lar', vdef')) in
+        check_cofix env cofix; stg', union cstrnt' cstrnt'', mkCoFix cofix, lar'.(i)
+      else
+        execute_cofix env stg cstrnt cofix
 
     (* Primitive types *)
     | Int _ -> stg, empty (), cstr, type_of_int env
@@ -691,14 +707,7 @@ and execute_recdef env stg cstrnt (names, lar, vdef) =
   stg_vdef, cstrnt_vdef, (names', lar', vdef', vdeft)
 
 (* Try RecCheck; if failure, try removing some size variables from vstar *)
-and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars, _ as vars) recursivity =
-  let flags = Environ.typing_flags env in
-  if not flags.check_sized then
-    let vstar = SVars.union_list vstars in
-    let stg = remove_pos_vars vstar stg in
-    let cstrnt' = check_fixpoint env recdeft lar' in
-    stg, union cstrnt cstrnt'
-  else begin
+and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) vars recursivity =
   let rec try_rec_check stg (taus, vstars, vneq) =
     let vstar = SVars.union_list vstars in
     let lar'' = Array.map (annotate_succ vstar) lar' in
@@ -711,7 +720,7 @@ and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars,
     with RecCheckFailed (cstrnt'', si_inf, si) ->
       let rm = inter (inter si_inf si) (diff vstar (SVars.of_list taus)) in
       if is_empty rm then begin
-        if flags.check_guarded then stg, cstrnt else
+        if (typing_flags env).check_guarded then stg, cstrnt else
           error_unsatisfied_size_constraints env cstrnt'' cstr si_inf si
       end else
         let vstars = List.map (fun vstar -> diff vstar rm) vstars in
@@ -719,7 +728,6 @@ and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) (_, vstars,
         let stg = remove_pos_vars rm stg in
         try_rec_check stg (taus, vstars, vneq) in
   try_rec_check stg vars
-  end
 
 and execute_fix env stg cstrnt ((vn, i), (names, lar, vdef)) =
   let stg = State.push stg in
