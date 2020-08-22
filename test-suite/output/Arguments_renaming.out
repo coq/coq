@@ -87,6 +87,9 @@ The command has indeed failed with message:
 Argument number 3 is a trailing implicit, so it can't be declared non
 maximal. Please use { } instead of [ ].
 The command has indeed failed with message:
+Argument z is a trailing implicit, so it can't be declared non maximal.
+Please use { } instead of [ ].
+The command has indeed failed with message:
 Extra arguments: y.
 The command has indeed failed with message:
 Flag "rename" expected to rename A into R.

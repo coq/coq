@@ -159,7 +159,7 @@ let declare_one_prenex_implicit locality f =
   | [] ->
     errorstrm (str "Expected some implicits for " ++ pr_qualid f)
   | impls ->
-    Impargs.set_implicits locality fref [impls]
+    Impargs.set_implicits locality fref [List.map (fun imp -> (Anonymous,imp)) impls]
 
 }
 

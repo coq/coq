@@ -218,9 +218,8 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   in
   let implicits = implicits :: more_implicits in
 
-  let implicits = List.map (List.map snd) implicits in
   let implicits_specified = match implicits with
-    | [l] -> List.exists (function Glob_term.Explicit -> false | _ -> true) l
+    | [l] -> List.exists (function _, Glob_term.Explicit -> false | _ -> true) l
     | _ -> true in
 
   if implicits_specified && clear_implicits_flag then
