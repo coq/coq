@@ -85,8 +85,7 @@ Section Well_founded.
 
   Scheme Acc_inv_dep := Induction for Acc Sort Prop.
 
-  Lemma Fix_F_eq :
-   forall (x:A) (r:Acc x),
+  Lemma Fix_F_eq (x:A) (r:Acc x) :
      F (fun (y:A) (p:R y x) => Fix_F (x:=y) (Acc_inv r p)) = Fix_F (x:=x) r.
   Proof.
    destruct r using Acc_inv_dep; auto.
@@ -104,7 +103,7 @@ Section Well_founded.
 
   Lemma Fix_F_inv : forall (x:A) (r s:Acc x), Fix_F r = Fix_F s.
   Proof.
-   intro x; induction (Rwf x); intros.
+   intro x; induction (Rwf x); intros r s.
    rewrite <- (Fix_F_eq r); rewrite <- (Fix_F_eq s); intros.
    apply F_ext; auto.
   Qed.
