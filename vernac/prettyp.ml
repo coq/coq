@@ -320,11 +320,7 @@ let print_arguments ref =
     | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
     | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
   in
-  let flags, renames = match Arguments_renaming.arguments_names ref with
-    | exception Not_found -> flags, []
-    | [] -> flags, []
-    | renames -> `Rename::flags, renames
-  in
+  let renames = try Arguments_renaming.arguments_names ref with Not_found -> [] in
   let scopes = Notation.find_arguments_scope ref in
   let flags = if needs_extra_scopes ref scopes then `ExtraScopes::flags else flags in
   let impls = Impargs.extract_impargs_data (Impargs.implicits_of_global ref) in

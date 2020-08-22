@@ -23,11 +23,11 @@ Expands to: Constructor Coq.Init.Logic.eq_refl
 Inductive myEq (B : Type) (x : A) : A -> Prop :=  myrefl : B -> myEq B x x
 
 Arguments myEq _%type_scope _ _
-Arguments myrefl {C}%type_scope x _ : rename
+Arguments myrefl {C}%type_scope x _
 myrefl : forall {C : Type} (x : A), C -> myEq C x x
 
 myrefl is not universe polymorphic
-Arguments myrefl {C}%type_scope x _ : rename
+Arguments myrefl {C}%type_scope x _
 Expands to: Constructor Arguments_renaming.Test1.myrefl
 myplus = 
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
@@ -37,11 +37,11 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
+Arguments myplus {Z}%type_scope !t (!n m)%nat_scope
 myplus : forall {Z : Type}, Z -> nat -> nat -> nat
 
 myplus is not universe polymorphic
-Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
+Arguments myplus {Z}%type_scope !t (!n m)%nat_scope
 The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor
 myplus is transparent
@@ -52,11 +52,11 @@ Inductive myEq (A B : Type) (x : A) : A -> Prop :=
     myrefl : B -> myEq A B x x
 
 Arguments myEq (_ _)%type_scope _ _
-Arguments myrefl A%type_scope {C}%type_scope x _ : rename
+Arguments myrefl A%type_scope {C}%type_scope x _
 myrefl : forall (A : Type) {C : Type} (x : A), C -> myEq A C x x
 
 myrefl is not universe polymorphic
-Arguments myrefl A%type_scope {C}%type_scope x _ : rename
+Arguments myrefl A%type_scope {C}%type_scope x _
 Expands to: Constructor Arguments_renaming.myrefl
 myrefl
      : forall (A C : Type) (x : A), C -> myEq A C x x
@@ -68,11 +68,11 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
+Arguments myplus {Z}%type_scope !t (!n m)%nat_scope
 myplus : forall {Z : Type}, Z -> nat -> nat -> nat
 
 myplus is not universe polymorphic
-Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
+Arguments myplus {Z}%type_scope !t (!n m)%nat_scope
 The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor
 myplus is transparent
