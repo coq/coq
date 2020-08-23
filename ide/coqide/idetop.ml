@@ -367,6 +367,17 @@ let export_option_state s = {
   Interface.opt_value = export_option_value s.Goptions.opt_value;
 }
 
+exception NotSupported of string
+
+let proof_diff (diff_opt, sid) =
+  let diff_opt = Proof_diffs.string_to_diffs diff_opt in
+  let doc = get_doc () in
+  match Stm.get_proof ~doc sid with
+  | None -> CErrors.user_err (Pp.str "No proofs to diff.")
+  | Some proof ->
+      let old = Stm.get_prev_proof ~doc sid in
+      Proof_diffs.diff_proofs ~diff_opt ?old proof
+
 let get_options () =
   let table = Goptions.get_tables () in
   let fold key state accu = (key, export_option_state state) :: accu in
@@ -455,6 +466,7 @@ let eval_call c =
     Interface.hints = interruptible hints;
     Interface.status = interruptible status;
     Interface.search = interruptible search;
+    Interface.proof_diff = interruptible proof_diff;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;
@@ -479,6 +491,8 @@ let print_xml =
   let m = Mutex.create () in
   fun oc xml ->
     Mutex.lock m;
+    if !Flags.xml_debug then
+      Printf.printf "SENT --> %s\n%!" (Xml_printer.to_string_fmt xml);
     try Control.protect_sigalrm (Xml_printer.print oc) xml; Mutex.unlock m
     with e -> let e = Exninfo.capture e in Mutex.unlock m; Exninfo.iraise e
 
@@ -507,7 +521,7 @@ let loop run_mode ~opts:_ state =
   set_doc state.doc;
   init_signal_handler ();
   catch_break := false;
-  let in_ch, out_ch = Spawned.get_channels ()                        in
+  let in_ch, out_ch = Spawned.get_channels () in
   let xml_oc        = Xml_printer.make (Xml_printer.TChannel out_ch) in
   let in_lb         = Lexing.from_function (fun s len ->
                       CThread.thread_friendly_read in_ch s ~off:0 ~len) in
@@ -518,7 +532,8 @@ let loop run_mode ~opts:_ state =
   while not !quit do
     try
       let xml_query = Xml_parser.parse xml_ic in
-(*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
+      if !Flags.xml_debug then
+        pr_with_pid (Xml_printer.to_string_fmt xml_query);
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
       let r  = eval_call q in

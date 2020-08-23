@@ -142,6 +142,7 @@ object
   method handle_reset_initial : unit task
   method raw_coq_query :
     route_id:int -> next:(query_rty value -> unit task) -> string -> unit task
+  method proof_diff : GText.mark -> next:(Pp.t value -> unit task) -> unit task
   method show_goals : unit task
   method backtrack_last_phrase : unit task
   method initialize : unit task
@@ -360,6 +361,27 @@ object(self)
     let action = log "raw_coq_query starting now" in
     let query = Coq.query (route_id,(phrase,sid)) in
     Coq.bind (Coq.seq action query) next
+
+  method proof_diff where ~next : unit Coq.task =
+    (* todo: would be nice to ignore comments, too *)
+    let rec back iter =
+      if iter#is_start then iter
+      else
+        let c = iter#char in
+        if Glib.Unichar.isspace c || c = 0 then back (iter#backward_char)
+        else if c = int_of_char '.' then iter#backward_char
+        else iter in
+
+    let where = back (buffer#get_iter_at_mark where) in
+    let until _ start stop =
+      (buffer#get_iter_at_mark stop)#compare where >= 0 &&
+      (buffer#get_iter_at_mark start)#compare where <= 0 in
+    let state_id = fst @@ self#find_id until in
+      let diff_opt = Interface.(match Coq.PrintOpt.(get diff) with
+        | StringValue diffs -> diffs
+        | _ -> "off") in
+      let proof_diff = Coq.proof_diff (diff_opt, state_id) in
+      Coq.bind proof_diff next
 
   method private still_valid { edit_id = id } =
     try ignore(Doc.find_id document (fun _ { edit_id = id1 } -> id = id1)); true

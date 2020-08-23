@@ -136,7 +136,7 @@ module Parser = struct (* {{{ *)
     match g with
     | Item (s,_) -> Printf.sprintf "%s" (clean s)
     | Opt g -> Printf.sprintf "[%s]" (print g)
-    | Alt gs -> Printf.sprintf "( %s )" (String.concat " | " (List.map print gs))
+    | Alt gs -> Printf.sprintf "( %s )" (String.concat "\n| " (List.map print gs))
     | Seq gs -> String.concat " " (List.map print gs)
 
   let rec print_toklist = function
@@ -253,6 +253,9 @@ let eval_print l coq =
       after_edit_at (to_id, need_unfocus) (base_eval_call (edit_at to_id) coq)
   | [ Tok(_,"QUERY"); Top []; Tok(_,phrase) ] ->
       eval_call (query (0,(phrase,tip_id()))) coq
+  | [ Tok(_,"PDIFF"); Tok(_,id) ] ->
+      let to_id, _ = get_id id in
+      eval_call (proof_diff ("on",to_id)) coq
   | [ Tok(_,"QUERY"); Top [Tok(_,id)]; Tok(_,phrase) ] ->
       let to_id, _ = get_id id in
       eval_call (query (0,(phrase, to_id))) coq
@@ -282,6 +285,7 @@ let grammar =
     ; Seq [Item (eat_rex "FAILADD"); Item eat_phrase]
     ; Seq [Item (eat_rex "EDIT_AT"); Item eat_id]
     ; Seq [Item (eat_rex "QUERY"); Opt (Item eat_id); Item eat_phrase]
+    ; Seq [Item (eat_rex "PDIFF");  Item eat_id ]
     ; Seq [Item (eat_rex "WAIT")]
     ; Seq [Item (eat_rex "JOIN")]
     ; Seq [Item (eat_rex "GOALS")]
@@ -295,12 +299,11 @@ let grammar =
 let read_command inc = Parser.parse grammar inc
 
 let usage () =
-  error (Printf.sprintf
-    "A fake coqide process talking to a coqtop -toploop coqidetop.\n\
-     Usage: %s (file|-) [<coqtop>]\n\
-     Input syntax is the following:\n%s\n"
-     (Filename.basename Sys.argv.(0))
-     (Parser.print grammar))
+  prerr_endline (Printf.sprintf "Usage: %s ( file | - ) [ \"<coqtop arguments>\" ]\n\
+    Input syntax is:\n%s\n"
+    (Filename.basename Sys.argv.(0))
+    (Parser.print grammar));
+  exit 1
 
 module Coqide = Spawn.Sync ()
 
@@ -308,14 +311,15 @@ let main =
   if Sys.os_type = "Unix" then Sys.set_signal Sys.sigpipe
     (Sys.Signal_handle
        (fun _ -> prerr_endline "Broken Pipe (coqtop died ?)"; exit 1));
-  let def_args = ["--xml_format=Ppcmds"] in
   let idetop_name = System.get_toplevel_path "coqidetop" in
-  let coqtop_args, input_file = match Sys.argv with
-    | [| _; f |] -> Array.of_list def_args, f
-    | [| _; f; ct |] ->
-        let ct = Str.split (Str.regexp " ") ct in
-        Array.of_list (def_args @ ct), f
+  let input_file, args  = match Sys.argv with
+    | [| _; f |] -> f, []
+    | [| _; f; args |] ->
+        let args = Str.split (Str.regexp " ") args in
+        f, args
     | _ -> usage () in
+  let def_coqtop_args = ["--xml_format=Ppcmds"] in
+  let coqtop_args = Array.of_list(def_coqtop_args @ args) in
   let inc = if input_file = "-" then stdin else open_in input_file in
   prerr_endline ("Running: "^idetop_name^" "^
                    (String.concat " " (Array.to_list coqtop_args)));

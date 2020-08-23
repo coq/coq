@@ -89,6 +89,7 @@ let init () =
 \n    <menuitem action='Unset diff' />\
 \n    <menuitem action='Set diff' />\
 \n    <menuitem action='Set removed diff' />\
+\n    <menuitem action='Show Proof Diffs' />\
 \n  </menu>\
 \n  <menu action='Navigation'>\
 \n    <menuitem action='Forward' />\

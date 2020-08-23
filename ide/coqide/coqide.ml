@@ -747,6 +747,24 @@ let coq_icon () =
   let dir = List.find chk (Minilib.coqide_data_dirs ()) in
   Filename.concat dir name
 
+let show_proof_diff where sn =
+  sn.messages#default_route#clear;
+  Coq.try_grab sn.coqtop (sn.coqops#proof_diff where
+    ~next:(function
+        | Interface.Fail (_, _, err) ->
+            let err = if (Pp.string_of_ppcmds err) <> "No proofs to diff." then err else
+              Pp.str "Put the cursor over proven lines for \"Show Proof\" diffs"
+            in
+            let err = Ideutils.validate err in
+            sn.messages#default_route#add err;
+            Coq.return ()
+        | Interface.Good diff ->
+            sn.messages#default_route#add diff;
+            Coq.return ()))
+  ignore
+
+let show_proof_diffs _ = cb_on_current_term (show_proof_diff `INSERT) ()
+
 let about _ =
   let dialog = GWindow.about_dialog () in
   let _ = dialog#connect#response ~callback:(fun _ -> dialog#destroy ()) in
@@ -1103,6 +1121,8 @@ let build_ui () =
         radio "Set diff" 1 ~label:"Show diffs: only _added";
         radio "Set removed diff" 2 ~label:"Show diffs: added and _removed";
       ];
+    item "Show Proof Diffs" ~label:"_Show Proof (with diffs, if set)" ~accel:(modifier_for_display#get ^ "S")
+      ~callback:MiscMenu.show_proof_diffs;
   ];
   toggle_items view_menu Coq.PrintOpt.bool_items;
 
@@ -1352,6 +1372,11 @@ let main files =
     this default coqtop path *)
 
 let read_coqide_args argv =
+  let set_debug () =
+    Minilib.debug := true;
+    Flags.debug := true;
+    Exninfo.record_backtrace true
+  in
   let rec filter_coqtop coqtop project_files bindings_files out = function
     |"-unicode-bindings" :: sfilenames :: args ->
       let filenames = Str.split (Str.regexp ",") sfilenames in
@@ -1371,10 +1396,12 @@ let read_coqide_args argv =
     |"-coqtop" :: [] ->
       output_string stderr "Error: missing argument after -coqtop"; exit 1
     |"-debug"::args ->
-      Minilib.debug := true;
-      Flags.debug := true;
-      Exninfo.record_backtrace true;
+      set_debug ();
       filter_coqtop coqtop project_files bindings_files ("-debug"::out) args
+    |"-xml-debug"::args ->
+      set_debug ();
+      Flags.xml_debug := true;
+      filter_coqtop coqtop project_files bindings_files ("-xml-debug"::out) args
     |"-coqtop-flags" :: flags :: args->
       Coq.ideslave_coqtop_flags := Some flags;
       filter_coqtop coqtop project_files bindings_files out args

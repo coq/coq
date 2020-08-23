@@ -20,7 +20,7 @@ type vernac_toplevel =
   | VernacQuit
   | VernacControl of vernac_control
   | VernacShowGoal of { gid : int; sid: int }
-  | VernacShowProofDiffs of bool
+  | VernacShowProofDiffs of Proof_diffs.diffOpt
 
 module Toplevel_ : sig
   val vernac_toplevel : vernac_toplevel option Entry.t
@@ -52,7 +52,8 @@ GRAMMAR EXTEND Gram
       | test_show_goal; IDENT "Show"; IDENT "Goal"; gid = natural; IDENT "at"; sid = natural; "." ->
           { Some (VernacShowGoal {gid; sid}) }
       | IDENT "Show"; IDENT "Proof"; IDENT "Diffs"; removed = OPT [ IDENT "removed" -> { () } ]; "." ->
-        { Some (VernacShowProofDiffs (removed <> None)) }
+        { Some (VernacShowProofDiffs
+          (if removed = None then Proof_diffs.DiffOn else Proof_diffs.DiffRemoved)) }
       | cmd = Pvernac.Vernac_.main_entry ->
               { match cmd with
               | None -> None

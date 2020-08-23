@@ -508,6 +508,7 @@ let parse_args ~help ~init arglist : t * string list =
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> set_query oval PrintConfig
     |"-debug" -> Coqinit.set_debug (); oval
+    |"-xml-debug" -> Flags.xml_debug := true; Coqinit.set_debug (); oval
     |"-diffs" ->
       add_set_option oval Proof_diffs.opt_name @@ Stm.OptionSet (Some (next ()))
     |"-stm-debug" -> Stm.stm_debug := true; oval

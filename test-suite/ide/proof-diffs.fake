@@ -1,0 +1,10 @@
+ADD { Goal True /\ False /\ True = False. }
+ADD { split. }
+GOALS
+ADD here { split. }
+GOALS
+PDIFF here
+ADD there { auto. }
+GOALS
+PDIFF there
+ADD { Admitted. }
