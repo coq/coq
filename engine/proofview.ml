@@ -1032,6 +1032,9 @@ module Unsafe = struct
   let mark_as_unresolvables p evs =
     { p with solution = mark_in_evm ~goal:false p.solution evs }
 
+  let update_sigma_env pv env =
+    { pv with solution = Evd.update_sigma_env pv.solution env }
+
 end
 
 module UnsafeRepr = Proof.Unsafe

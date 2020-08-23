@@ -78,6 +78,9 @@ val partial_proof : t -> EConstr.constr list
 
 val compact : t -> t
 
+(** [update_sigma_env] lifts [Evd.update_sigma_env] to the proof *)
+val update_sigma_env : t -> Environ.env -> t
+
 (* Returns the proofs (with their type) of the initial goals.
     Raises [UnfinishedProof] is some goals remain to be considered.
     Raises [HasShelvedGoals] if some goals are left on the shelf.

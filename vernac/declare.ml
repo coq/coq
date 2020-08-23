@@ -1735,11 +1735,7 @@ let return_proof ps =
   List.map (fun (((_ub, body),eff),_) -> (body,eff)) p, uctx
 
 let update_global_env =
-  map ~f:(fun p ->
-      let { Proof.sigma } = Proof.data p in
-      let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
-      let p, (status,info), _ = Proof.run_tactic (Global.env ()) tac p in
-      p)
+  map ~f:(fun p -> Proof.update_sigma_env p (Global.env ()))
 
 let next = let n = ref 0 in fun () -> incr n; !n
 

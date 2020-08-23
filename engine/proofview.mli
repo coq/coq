@@ -503,6 +503,9 @@ module Unsafe : sig
   val undefined : Evd.evar_map -> Proofview_monad.goal_with_state list ->
     Proofview_monad.goal_with_state list
 
+  (** [update_sigma_env] lifts [Evd.update_sigma_env] to the proofview *)
+  val update_sigma_env : proofview -> Environ.env -> proofview
+
 end
 
 (** This module gives access to the innards of the monad. Its use is
