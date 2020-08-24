@@ -23,6 +23,7 @@
 /dev/ci/             @coq/ci-maintainers
 /.travis.yml         @coq/ci-maintainers
 /.gitlab-ci.yml      @coq/ci-maintainers
+/.github/workflows   @coq/ci-maintainers
 /azure-pipelines.yml @coq/ci-maintainers
 /Makefile.ci         @coq/ci-maintainers
 
