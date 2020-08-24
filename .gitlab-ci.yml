@@ -956,5 +956,6 @@ bench:
     name: "$CI_JOB_NAME"
     paths:
       - _bench/html/**/*.v.html
+      - _bench/logs
     when: always
     expire_in: 1 year
