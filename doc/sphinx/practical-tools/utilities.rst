@@ -89,10 +89,11 @@ invoking ``coq_makefile`` is the following one:
 Such command generates the following files:
 
 CoqMakefile
-  is a generic makefile for ``GNU Make`` that provides
-  targets to build the project (both ``.v`` and ``.ml*`` files), to install it
-  system-wide in the ``coq-contrib`` directory (i.e. where |Coq| is installed)
-  as well as to invoke coqdoc to generate HTML documentation.
+  is a makefile for ``GNU Make`` with targets to build the project
+  (e.g. generate .vo or .html files from .v or compile .ml* files)
+  and install it in the ``user-contrib`` directory where the |Coq|
+  library is installed. Run ``make`` with the ``-f CoqMakefile``
+  option to use ``CoqMakefile``.
 
 CoqMakefile.conf
   contains make variables assignments that reflect
