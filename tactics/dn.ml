@@ -73,21 +73,19 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
       | Some (_, m) ->
         skip_arg (pred n + m) (Trie.next tm lbl)
       in
-      List.flatten (List.map map labels)
+      List.map_append map labels
 
   let lookup tm dna t =
     let rec lookrec t tm =
       match dna t with
         | Nothing -> tm_of tm None
         | Label(lbl,v) ->
-            tm_of tm None@
-              (List.fold_left
-                 (fun l c ->
-                List.flatten(List.map (fun tm -> lookrec c tm) l))
-                 (tm_of tm (Some(lbl,List.length v))) v)
+          let fold accu c = List.map_append (fun tm -> lookrec c tm) accu in
+            tm_of tm None @
+              (List.fold_left fold (tm_of tm (Some (lbl, List.length v))) v)
         | Everything -> skip_arg 1 tm
     in
-    List.flatten (List.map (fun tm -> ZSet.elements (Trie.get tm)) (lookrec t tm))
+    List.map_append (fun tm -> ZSet.elements (Trie.get tm)) (lookrec t tm)
 
   let pattern dna pat = path_of dna pat
 
