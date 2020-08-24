@@ -20,7 +20,7 @@ Require Import Coq.Program.Tactics.
 Require Export Coq.Classes.CRelationClasses.
 
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
-Local Obligation Tactic := simpl_crelation.
+Local Obligation Tactic := try solve [ simpl_crelation ].
 
 Set Universe Polymorphism.
 
@@ -268,6 +268,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros A R H B R' H0 x y z X X0 x0 y0 X1.
     assert(R x0 x0).
     - transitivity y0... symmetry...
     - transitivity (y x0)...
@@ -284,6 +285,7 @@ Section GenericInstances.
   
   Next Obligation.
   Proof.
+    intros A B C RA RB RC f mor x y X x0 y0 X0.
     apply mor ; auto.
   Qed.
 
@@ -297,6 +299,7 @@ Section GenericInstances.
   
   Next Obligation.
   Proof with auto.
+    intros A R H x y X x0 y0 X0 X1.
     transitivity x...
     transitivity x0...
   Qed.
@@ -309,6 +312,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros A R H x x0 y X X0.
     transitivity y...
   Qed.
 
@@ -318,6 +322,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros A R H x x0 y X X0.
     transitivity x0...
   Qed.
 
@@ -327,6 +332,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros A R H x x0 y X X0.
     transitivity y... symmetry...
   Qed.
 
@@ -335,6 +341,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros A R H x x0 y X X0.
     transitivity x0... symmetry...
   Qed.
 
@@ -343,6 +350,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros A R H x x0 y X.
     split.
     - intros ; transitivity x0...
     - intros.
@@ -358,6 +366,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros A R H x y X y0 y1 e X0; destruct e.
     transitivity y...
   Qed.
 
@@ -368,6 +377,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros A R H x y X x0 y0 X0.
     split ; intros.
     - transitivity x0... transitivity x... symmetry...
 
