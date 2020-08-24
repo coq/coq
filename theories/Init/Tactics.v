@@ -135,8 +135,8 @@ lazymatch T with
    rename H2 into H; find_equiv H |
    clear H]
 | forall x : ?t, _ =>
-  let a := fresh "a" with
-      H1 := fresh "H" in
+  let a := fresh "a" in
+  let H1 := fresh "H" in
     evar (a : t); pose proof (H a) as H1; unfold a in H1;
     clear a; clear H; rename H1 into H; find_equiv H
 | ?A <-> ?B => idtac
