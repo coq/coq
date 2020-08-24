@@ -40,16 +40,17 @@ check_variable "coq_pr_number"
 check_variable "coq_pr_comment_id"
 check_variable "new_ocaml_switch"
 check_variable "new_coq_repository"
-check_variable "new_coq_commit"
 check_variable "new_coq_opam_archive_git_uri"
 check_variable "new_coq_opam_archive_git_branch"
 check_variable "old_ocaml_switch"
 check_variable "old_coq_repository"
-old_coq_commit="609152467f4d717713b7ea700f5155fc9f341cd7"
 check_variable "old_coq_opam_archive_git_uri"
 check_variable "old_coq_opam_archive_git_branch"
 check_variable "num_of_iterations"
 check_variable "coq_opam_packages"
+
+new_coq_commit=$(git rev-parse HEAD^2)
+old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
 
 if which jq > /dev/null; then
     :
