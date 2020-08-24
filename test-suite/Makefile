@@ -222,7 +222,7 @@ report: summary.log
 # printed for all opened bugs (still active or seems to be closed).
 # For closed bugs that behave as expected, no message is printed
 
-# All files are assumed to have <# of the bug>.v as a name
+# All files are assumed to have bug_<# of the bug>.v as a name
 
 # Opened bugs that should not fail
 $(addsuffix .log,$(wildcard bugs/opened/*.v)): %.v.log: %.v
