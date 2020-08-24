@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download coqtail
 
-( cd "${CI_BUILD_DIR}/coqtail" && PYTHONPATH=python python3 -m pytest tests/test_coqtop.py )
+( cd "${CI_BUILD_DIR}/coqtail" && PYTHONPATH=python python3 -m pytest tests/coq )
