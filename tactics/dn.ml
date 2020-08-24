@@ -62,10 +62,10 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
       pathrec []
 
   let tm_of tm lbl =
-    try [Trie.next tm lbl, true] with Not_found -> []
+    try [Trie.next tm lbl] with Not_found -> []
 
   let rec skip_arg n tm =
-    if Int.equal n 0 then [tm, true]
+    if Int.equal n 0 then [tm]
     else
       let labels = Trie.labels tm in
       let map lbl = match lbl with
@@ -83,13 +83,11 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
             tm_of tm None@
               (List.fold_left
                  (fun l c ->
-                List.flatten(List.map (fun (tm, b) ->
-                                         if b then lookrec c tm
-                                         else [tm,b]) l))
+                List.flatten(List.map (fun tm -> lookrec c tm) l))
                  (tm_of tm (Some(lbl,List.length v))) v)
         | Everything -> skip_arg 1 tm
     in
-    List.flatten (List.map (fun (tm,b) -> ZSet.elements (Trie.get tm)) (lookrec t tm))
+    List.flatten (List.map (fun tm -> ZSet.elements (Trie.get tm)) (lookrec t tm))
 
   let pattern dna pat = path_of dna pat
 
