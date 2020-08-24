@@ -33,7 +33,7 @@ Defined.
 
 Definition Seq_trans A Aeq (s : Setoid_Theory A Aeq) : forall x y z:A, Aeq x y -> Aeq y z -> Aeq x z.
 Proof.
-  unfold Setoid_Theory in s. intros ; transitivity y ; assumption.
+  unfold Setoid_Theory in s. intros x y z H0 H1 ; transitivity y ; assumption.
 Defined.
 
 (** Some tactics for manipulating Setoid Theory not officially
