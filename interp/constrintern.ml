@@ -1724,8 +1724,7 @@ let drop_notations_pattern looked_for genv =
          the domains of lambdas in the encoding of match in constr.
          This check is here and not in the parser because it would require
          duplicating the levels of the [pattern] rule. *)
-      CErrors.user_err ?loc ~hdr:"drop_notations_pattern"
-                            (Pp.strbrk "Casts are not supported in this pattern.")
+      CErrors.user_err ?loc (Pp.strbrk "Casts are not supported in this pattern.")
   and in_pat_sc scopes x = in_pat false (x,snd scopes)
   and in_not top loc scopes (subst,substlist as fullsubst) args = function
     | NVar id ->
