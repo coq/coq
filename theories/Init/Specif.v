@@ -765,7 +765,7 @@ Section Dependent_choice_lemmas.
     exists f.
     split.
     - reflexivity.
-    - induction n; simpl; apply proj2_sig.
+    - intro n; induction n; simpl; apply proj2_sig.
   Defined.
 
 End Dependent_choice_lemmas.

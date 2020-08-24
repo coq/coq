@@ -523,41 +523,28 @@ Section equality_dep.
   Variable f : forall x, B x.
   Variables x y : A.
 
-  Theorem f_equal_dep : forall (H: x = y), rew H in f x = f y.
+  Theorem f_equal_dep (H: x = y) : rew H in f x = f y.
   Proof.
     destruct H; reflexivity.
   Defined.
 
 End equality_dep.
 
-Section equality_dep2.
-
-  Variable A A' : Type.
-  Variable B : A -> Type.
-  Variable B' : A' -> Type.
-  Variable f : A -> A'.
-  Variable g : forall a:A, B a -> B' (f a).
-  Variables x y : A.
-
-  Lemma f_equal_dep2 : forall {A A' B B'} (f : A -> A') (g : forall a:A, B a -> B' (f a))
-  {x1 x2 : A} {y1 : B x1} {y2 : B x2} (H : x1 = x2),
+Lemma f_equal_dep2 {A A' B B'} (f : A -> A') (g : forall a:A, B a -> B' (f a))
+  {x1 x2 : A} {y1 : B x1} {y2 : B x2} (H : x1 = x2) :
   rew H in y1 = y2 -> rew f_equal f H in g x1 y1 = g x2 y2.
-  Proof.
-    destruct H, 1. reflexivity.
-  Defined.
-
-End equality_dep2.
-
-Lemma rew_opp_r : forall A (P:A->Type) (x y:A) (H:x=y) (a:P y), rew H in rew <- H in a = a.
 Proof.
-intros.
+  destruct H, 1. reflexivity.
+Defined.
+
+Lemma rew_opp_r A (P:A->Type) (x y:A) (H:x=y) (a:P y) : rew H in rew <- H in a = a.
+Proof.
 destruct H.
 reflexivity.
 Defined.
 
-Lemma rew_opp_l : forall A (P:A->Type) (x y:A) (H:x=y) (a:P x), rew <- H in rew H in a = a.
+Lemma rew_opp_l A (P:A->Type) (x y:A) (H:x=y) (a:P x) : rew <- H in rew H in a = a.
 Proof.
-intros.
 destruct H.
 reflexivity.
 Defined.
@@ -597,7 +584,7 @@ Proof.
   destruct 1; destruct 1; destruct 1; destruct 1; destruct 1; reflexivity.
 Qed.
 
-Theorem f_equal_compose : forall A B C (a b:A) (f:A->B) (g:B->C) (e:a=b),
+Theorem f_equal_compose A B C (a b:A) (f:A->B) (g:B->C) (e:a=b) :
   f_equal g (f_equal f e) = f_equal (fun a => g (f a)) e.
 Proof.
   destruct e. reflexivity.
@@ -605,68 +592,69 @@ Defined.
 
 (** The groupoid structure of equality *)
 
-Theorem eq_trans_refl_l : forall A (x y:A) (e:x=y), eq_trans eq_refl e = e.
+Theorem eq_trans_refl_l A (x y:A) (e:x=y) : eq_trans eq_refl e = e.
 Proof.
   destruct e. reflexivity.
 Defined.
 
-Theorem eq_trans_refl_r : forall A (x y:A) (e:x=y), eq_trans e eq_refl = e.
+Theorem eq_trans_refl_r A (x y:A) (e:x=y) : eq_trans e eq_refl = e.
 Proof.
   destruct e. reflexivity.
 Defined.
 
-Theorem eq_sym_involutive : forall A (x y:A) (e:x=y), eq_sym (eq_sym e) = e.
+Theorem eq_sym_involutive A (x y:A) (e:x=y) : eq_sym (eq_sym e) = e.
 Proof.
   destruct e; reflexivity.
 Defined.
 
-Theorem eq_trans_sym_inv_l : forall A (x y:A) (e:x=y), eq_trans (eq_sym e) e = eq_refl.
+Theorem eq_trans_sym_inv_l A (x y:A) (e:x=y) : eq_trans (eq_sym e) e = eq_refl.
 Proof.
   destruct e; reflexivity.
 Defined.
 
-Theorem eq_trans_sym_inv_r : forall A (x y:A) (e:x=y), eq_trans e (eq_sym e) = eq_refl.
+Theorem eq_trans_sym_inv_r A (x y:A) (e:x=y) : eq_trans e (eq_sym e) = eq_refl.
 Proof.
   destruct e; reflexivity.
 Defined.
 
-Theorem eq_trans_assoc : forall A (x y z t:A) (e:x=y) (e':y=z) (e'':z=t),
+Theorem eq_trans_assoc A (x y z t:A) (e:x=y) (e':y=z) (e'':z=t) :
   eq_trans e (eq_trans e' e'') = eq_trans (eq_trans e e') e''.
 Proof.
   destruct e''; reflexivity.
 Defined.
 
-Theorem rew_map : forall A B (P:B->Type) (f:A->B) x1 x2 (H:x1=x2) (y:P (f x1)),
+Theorem rew_map A B (P:B->Type) (f:A->B) x1 x2 (H:x1=x2) (y:P (f x1)) :
   rew [fun x => P (f x)] H in y = rew f_equal f H in y.
 Proof.
   destruct H; reflexivity.
 Defined.
 
-Theorem eq_trans_map : forall {A B} {x1 x2 x3:A} {y1:B x1} {y2:B x2} {y3:B x3},
-  forall (H1:x1=x2) (H2:x2=x3) (H1': rew H1 in y1 = y2) (H2': rew H2 in y2 = y3),
+Theorem eq_trans_map {A B} {x1 x2 x3:A} {y1:B x1} {y2:B x2} {y3:B x3}
+  (H1:x1=x2) (H2:x2=x3) (H1': rew H1 in y1 = y2) (H2': rew H2 in y2 = y3) :
   rew eq_trans H1 H2 in y1 = y3.
 Proof.
-  intros. destruct H2. exact (eq_trans H1' H2').
+  destruct H2. exact (eq_trans H1' H2').
 Defined.
 
-Lemma map_subst : forall {A} {P Q:A->Type} (f : forall x, P x -> Q x) {x y} (H:x=y) (z:P x),
+Lemma map_subst {A} {P Q:A->Type} (f : forall x, P x -> Q x) {x y} (H:x=y) (z:P x) :
   rew H in f x z = f y (rew H in z).
 Proof.
   destruct H. reflexivity.
 Defined.
 
-Lemma map_subst_map : forall {A B} {P:A->Type} {Q:B->Type} (f:A->B) (g : forall x, P x -> Q (f x)),
-  forall {x y} (H:x=y) (z:P x), rew f_equal f H in g x z = g y (rew H in z).
+Lemma map_subst_map {A B} {P:A->Type} {Q:B->Type} (f:A->B) (g : forall x, P x -> Q (f x))
+  {x y} (H:x=y) (z:P x) :
+  rew f_equal f H in g x z = g y (rew H in z).
 Proof.
   destruct H. reflexivity.
 Defined.
 
-Lemma rew_swap : forall A (P:A->Type) x1 x2 (H:x1=x2) (y1:P x1) (y2:P x2), rew H in y1 = y2 -> y1 = rew <- H in y2.
+Lemma rew_swap A (P:A->Type) x1 x2 (H:x1=x2) (y1:P x1) (y2:P x2) : rew H in y1 = y2 -> y1 = rew <- H in y2.
 Proof.
   destruct H. trivial.
 Defined.
 
-Lemma rew_compose : forall A (P:A->Type) x1 x2 x3 (H1:x1=x2) (H2:x2=x3) (y:P x1),
+Lemma rew_compose A (P:A->Type) x1 x2 x3 (H1:x1=x2) (H2:x2=x3) (y:P x1) :
   rew H2 in rew H1 in y = rew (eq_trans H1 H2) in y.
 Proof.
   destruct H2. reflexivity.
@@ -674,9 +662,8 @@ Defined.
 
 (** Extra properties of equality *)
 
-Theorem eq_id_comm_l : forall A (f:A->A) (Hf:forall a, a = f a), forall a, f_equal f (Hf a) = Hf (f a).
+Theorem eq_id_comm_l A (f:A->A) (Hf:forall a, a = f a) a : f_equal f (Hf a) = Hf (f a).
 Proof.
-  intros.
   unfold f_equal.
   rewrite <- (eq_trans_sym_inv_l (Hf a)).
   destruct (Hf a) at 1 2.
@@ -684,9 +671,8 @@ Proof.
   reflexivity.
 Defined.
 
-Theorem eq_id_comm_r : forall A (f:A->A) (Hf:forall a, f a = a), forall a, f_equal f (Hf a) = Hf (f a).
+Theorem eq_id_comm_r A (f:A->A) (Hf:forall a, f a = a) a : f_equal f (Hf a) = Hf (f a).
 Proof.
-  intros.
   unfold f_equal.
   rewrite <- (eq_trans_sym_inv_l (Hf (f (f a)))).
   set (Hfsymf := fun a => eq_sym (Hf a)).
@@ -700,36 +686,36 @@ Proof.
   reflexivity.
 Defined.
 
-Lemma eq_refl_map_distr : forall A B x (f:A->B), f_equal f (eq_refl x) = eq_refl (f x).
+Lemma eq_refl_map_distr A B x (f:A->B) : f_equal f (eq_refl x) = eq_refl (f x).
 Proof.
   reflexivity.
 Qed.
 
-Lemma eq_trans_map_distr : forall A B x y z (f:A->B) (e:x=y) (e':y=z), f_equal f (eq_trans e e') = eq_trans (f_equal f e) (f_equal f e').
+Lemma eq_trans_map_distr A B x y z (f:A->B) (e:x=y) (e':y=z) : f_equal f (eq_trans e e') = eq_trans (f_equal f e) (f_equal f e').
 Proof.
 destruct e'.
 reflexivity.
 Defined.
 
-Lemma eq_sym_map_distr : forall A B (x y:A) (f:A->B) (e:x=y), eq_sym (f_equal f e) = f_equal f (eq_sym e).
+Lemma eq_sym_map_distr A B (x y:A) (f:A->B) (e:x=y) : eq_sym (f_equal f e) = f_equal f (eq_sym e).
 Proof.
 destruct e.
 reflexivity.
 Defined.
 
-Lemma eq_trans_sym_distr : forall A (x y z:A) (e:x=y) (e':y=z), eq_sym (eq_trans e e') = eq_trans (eq_sym e') (eq_sym e).
+Lemma eq_trans_sym_distr A (x y z:A) (e:x=y) (e':y=z) : eq_sym (eq_trans e e') = eq_trans (eq_sym e') (eq_sym e).
 Proof.
 destruct e, e'.
 reflexivity.
 Defined.
 
-Lemma eq_trans_rew_distr : forall A (P:A -> Type) (x y z:A) (e:x=y) (e':y=z) (k:P x),
+Lemma eq_trans_rew_distr A (P:A -> Type) (x y z:A) (e:x=y) (e':y=z) (k:P x) :
     rew (eq_trans e e') in k = rew e' in rew e in k.
 Proof.
   destruct e, e'; reflexivity.
 Qed.
 
-Lemma rew_const : forall A P (x y:A) (e:x=y) (k:P),
+Lemma rew_const A P (x y:A) (e:x=y) (k:P) :
     rew [fun _ => P] e in k = k.
 Proof.
   destruct e; reflexivity.
@@ -797,9 +783,9 @@ Lemma forall_exists_coincide_unique_domain :
   -> (exists! x, P x).
 Proof.
   intros A P H.
-  destruct H with (Q:=P) as ((x & Hx & _),_); [trivial|].
+  destruct (H P) as ((x & Hx & _),_); [trivial|].
   exists x. split; [trivial|].
-  destruct H with (Q:=fun x'=>x=x') as (_,Huniq).
+  destruct (H (fun x'=>x=x')) as (_,Huniq).
   apply Huniq. exists x; auto.
 Qed.
 

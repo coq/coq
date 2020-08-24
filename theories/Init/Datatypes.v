@@ -79,7 +79,7 @@ Register negb as core.bool.negb.
 
 (** Basic properties of [andb] *)
 
-Lemma andb_prop : forall a b:bool, andb a b = true -> a = true /\ b = true.
+Lemma andb_prop (a b:bool) : andb a b = true -> a = true /\ b = true.
 Proof.
   destruct a, b; repeat split; assumption.
 Qed.
@@ -87,8 +87,8 @@ Hint Resolve andb_prop: bool.
 
 Register andb_prop as core.bool.andb_prop.
 
-Lemma andb_true_intro :
-  forall b1 b2:bool, b1 = true /\ b2 = true -> andb b1 b2 = true.
+Lemma andb_true_intro (b1 b2:bool) :
+  b1 = true /\ b2 = true -> andb b1 b2 = true.
 Proof.
   destruct b1; destruct b2; simpl; intros [? ?]; assumption.
 Qed.
@@ -245,25 +245,22 @@ End projections.
 
 Hint Resolve pair inl inr: core.
 
-Lemma surjective_pairing :
-  forall (A B:Type) (p:A * B), p = (fst p, snd p).
+Lemma surjective_pairing (A B:Type) (p:A * B) : p = (fst p, snd p).
 Proof.
   destruct p; reflexivity.
 Qed.
 
-Lemma injective_projections :
-  forall (A B:Type) (p1 p2:A * B),
+Lemma injective_projections (A B:Type) (p1 p2:A * B) :
     fst p1 = fst p2 -> snd p1 = snd p2 -> p1 = p2.
 Proof.
   destruct p1; destruct p2; simpl; intros Hfst Hsnd.
   rewrite Hfst; rewrite Hsnd; reflexivity.
 Qed.
 
-Lemma pair_equal_spec :
-  forall (A B : Type) (a1 a2 : A) (b1 b2 : B),
+Lemma pair_equal_spec (A B : Type) (a1 a2 : A) (b1 b2 : B) :
     (a1, b1) = (a2, b2) <-> a1 = a2 /\ b1 = b2.
 Proof with auto.
-  split; intros.
+  split; intro H.
   - split.
     + replace a1 with (fst (a1, b1)); replace a2 with (fst (a2, b2))...
       rewrite H...
@@ -286,7 +283,7 @@ Definition prod_curry (A B C:Type) : (A -> B -> C) -> A * B -> C := uncurry.
 
 Import EqNotations.
 
-Lemma rew_pair : forall A (P Q : A->Type) x1 x2 (y1:P x1) (y2:Q x1) (H:x1=x2),
+Lemma rew_pair A (P Q : A->Type) x1 x2 (y1:P x1) (y2:Q x1) (H:x1=x2) :
   (rew H in y1, rew H in y2) = rew [fun x => (P x * Q x)%type] H in (y1,y2).
 Proof.
   destruct H. reflexivity.
@@ -347,7 +344,7 @@ Register Eq as core.comparison.Eq.
 Register Lt as core.comparison.Lt.
 Register Gt as core.comparison.Gt.
 
-Lemma comparison_eq_stable : forall c c' : comparison, ~~ c = c' -> c = c'.
+Lemma comparison_eq_stable (c c' : comparison) : ~~ c = c' -> c = c'.
 Proof.
   destruct c, c'; intro H; reflexivity || destruct H; discriminate.
 Qed.
@@ -359,12 +356,12 @@ Definition CompOpp (r:comparison) :=
     | Gt => Lt
   end.
 
-Lemma CompOpp_involutive : forall c, CompOpp (CompOpp c) = c.
+Lemma CompOpp_involutive c : CompOpp (CompOpp c) = c.
 Proof.
   destruct c; reflexivity.
 Qed.
 
-Lemma CompOpp_inj : forall c c', CompOpp c = CompOpp c' -> c = c'.
+Lemma CompOpp_inj c c' : CompOpp c = CompOpp c' -> c = c'.
 Proof.
   destruct c; destruct c'; auto; discriminate.
 Qed.
@@ -405,7 +402,7 @@ Register CompEqT as core.CompareSpecT.CompEqT.
 Register CompLtT as core.CompareSpecT.CompLtT.
 Register CompGtT as core.CompareSpecT.CompGtT.
 
-Lemma CompareSpec2Type : forall Peq Plt Pgt c,
+Lemma CompareSpec2Type Peq Plt Pgt c :
  CompareSpec Peq Plt Pgt c -> CompareSpecT Peq Plt Pgt c.
 Proof.
  destruct c; intros H; constructor; inversion_clear H; auto.
