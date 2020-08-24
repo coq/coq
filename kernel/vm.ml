@@ -95,7 +95,7 @@ let reduce_fix k vf =
   (* computing types *)
   let fc_typ = fix_types fb in
   let ndef = Array.length fc_typ in
-  let et = offset_closure_fix fb (2*(ndef - 1)) in
+  let et = fix_env fb in
   let ftyp =
     Array.map
       (fun c -> interprete c crazy_val et 0) fc_typ in

@@ -270,12 +270,12 @@ let emit_instr env = function
   | Kacc n ->
       if n < 8 then out env(opACC0 + n) else (out env opACC; out_int env n)
   | Kenvacc n ->
-      if n >= 1 && n <= 4
-      then out env(opENVACC1 + n - 1)
+      if n >= 0 && n <= 3
+      then out env(opENVACC0 + n)
       else (out env opENVACC; out_int env n)
   | Koffsetclosure ofs ->
-      if Int.equal ofs (-2) || Int.equal ofs 0 || Int.equal ofs 2
-      then out env (opOFFSETCLOSURE0 + ofs / 2)
+      if Int.equal ofs 0 || Int.equal ofs 1
+      then out env (opOFFSETCLOSURE0 + ofs)
       else (out env opOFFSETCLOSURE; out_int env ofs)
   | Kpush ->
       out env opPUSH
@@ -385,13 +385,13 @@ let rec emit env insns remaining = match insns with
       if n < 8 then out env(opPUSHACC0 + n) else (out env opPUSHACC; out_int env n);
       emit env c remaining
   | Kpush :: Kenvacc n :: c ->
-      if n >= 1 && n <= 4
-      then out env(opPUSHENVACC1 + n - 1)
+      if n >= 0 && n <= 3
+      then out env(opPUSHENVACC0 + n)
       else (out env opPUSHENVACC; out_int env n);
       emit env c remaining
   | Kpush :: Koffsetclosure ofs :: c ->
-      if Int.equal ofs (-2) || Int.equal ofs 0 || Int.equal ofs 2
-      then out env(opPUSHOFFSETCLOSURE0 + ofs / 2)
+      if Int.equal ofs 0 || Int.equal ofs 1
+      then out env(opPUSHOFFSETCLOSURE0 + ofs)
       else (out env opPUSHOFFSETCLOSURE; out_int env ofs);
       emit env c remaining
   | Kpush :: Kgetglobal id :: c ->

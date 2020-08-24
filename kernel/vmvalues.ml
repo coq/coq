@@ -166,7 +166,6 @@ let cofix_upd_val v = (Obj.magic v : values)
 type vm_env
 type vm_global
 let fun_env v = (Obj.magic v : vm_env)
-let fix_env v = (Obj.magic v : vm_env)
 let cofix_env v = (Obj.magic v : vm_env)
 let cofix_upd_env v = (Obj.magic v : vm_env)
 type vstack = values array
@@ -207,13 +206,13 @@ type vswitch = {
 (*             dom : values, codom : vfun                                 *)
 (*                                                                        *)
 (* + Functions have two representations :                                 *)
-(*   - unapplied fun :  vf = Ct_[ C | fv1 | ... | fvn]                    *)
+(*   - unapplied fun :  vf = Ct_[ C | envofs=2 | fv1 | ... | fvn]         *)
 (*                                       C:tcode, fvi : values            *)
 (*     Remark : a function and its environment is the same value.         *)
-(*   - partially applied fun : Ct_[Restart:C| vf | arg1 | ... argn]       *)
+(*   - partially applied fun : Ct_[ Restart::C | envofs=2 | vf | arg1 | ... | argn] *)
 (*                                                                        *)
 (* + Fixpoints :                                                          *)
-(*   -        Ct_[C1|Infix_t|C2|...|Infix_t|Cn|fv1|...|fvn]               *)
+(*   - Ct_[C1|envofs1=3*n-1 | Infix_t|C2|envofs2 | ... | Infix_t|Cn|envofsn=2 | fv1|...|fvn] *)
 (*     One single block to represent all of the fixpoints, each fixpoint  *)
 (*     is the pointer to the field holding the pointer to its code, and   *)
 (*     the infix tag is used to know where the block starts.              *)
@@ -291,10 +290,10 @@ type whd =
   | Vuniv_level of Univ.Level.t
 
 (* Functions over arguments *)
-let nargs : arguments -> int = fun args -> (Obj.size (Obj.repr args)) - 2
+let nargs : arguments -> int = fun args -> Obj.size (Obj.repr args) - 3
 let arg args i =
   if  0 <= i && i < (nargs args) then
-    val_of_obj (Obj.field (Obj.repr args) (i+2))
+    val_of_obj (Obj.field (Obj.repr args) (i + 3))
   else invalid_arg
                 ("Vm.arg size = "^(string_of_int (nargs args))^
                  " acces "^(string_of_int i))
@@ -356,7 +355,7 @@ let rec whd_accu a stk =
   | i when Int.equal i fix_app_tag ->
       let fa = Obj.field at 1 in
       let zfix  =
-        Zfix (Obj.obj (Obj.field fa 1), Obj.obj fa) in
+        Zfix (Obj.obj (Obj.field fa 2), Obj.obj fa) in
       whd_accu (Obj.field at 0) (zfix :: stk)
   | i when Int.equal i switch_tag ->
       let zswitch = Zswitch (Obj.obj (Obj.field at 1)) in
@@ -408,7 +407,7 @@ let whd_val : values -> whd =
           (match kind_of_closure o with
            | 0 -> Vfun(Obj.obj o)
            | 1 -> Vfix(Obj.obj o, None)
-           | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
+           | 2 -> Vfix(Obj.obj (Obj.field o 2), Some (Obj.obj o))
            | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
            | _ -> CErrors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work."))
         else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
@@ -516,29 +515,23 @@ external closure_arity : vfun -> int = "coq_closure_arity"
 
 (* Functions over fixpoint *)
 
-external offset : Obj.t -> int = "coq_offset"
-external offset_closure : Obj.t -> int -> Obj.t = "coq_offset_closure"
-external offset_closure_fix : vfix -> int -> vm_env = "coq_offset_closure"
+external current_fix : vfix -> int = "coq_current_fix"
+external shift_fix : vfix -> int -> vfix = "coq_shift_fix"
+external last_fix : vfix -> vfix = "coq_last_fix"
 external tcode_array : tcode_array -> tcode array = "coq_tcode_array"
 
-let first o = (offset_closure o (offset o))
-let first_fix (v:vfix) = (Obj.magic (first (Obj.repr v)) : vfix)
+let first_fix o = shift_fix o (- current_fix o)
+let fix_env v = (Obj.magic (last_fix v) : vm_env)
 
 let last o = (Obj.field o (Obj.size o - 1))
 let fix_types (v:vfix) = tcode_array (Obj.magic (last (Obj.repr v)) : tcode_array)
 let cofix_types (v:vcofix) = tcode_array (Obj.magic (last (Obj.repr v)) : tcode_array)
 
-let current_fix vf = - (offset (Obj.repr vf) / 2)
-
-let unsafe_fb_code fb i =
-  let off = (2 * i) * (Sys.word_size / 8) in
-  Obj.obj (Obj.add_offset (Obj.repr fb) (Int32.of_int off))
-
-let unsafe_rec_arg fb i = int_tcode (unsafe_fb_code fb i) 1
+let unsafe_rec_arg fb i = int_tcode (Obj.magic (shift_fix fb i)) 1
 
 let rec_args vf =
-  let fb = first (Obj.repr vf) in
-  let size = Obj.size (last fb) in
+  let fb = first_fix vf in
+  let size = Obj.size (last (Obj.repr fb)) in
   Array.init size (unsafe_rec_arg fb)
 
 exception FALSE
@@ -547,10 +540,10 @@ let check_fix f1 f2 =
   let i1, i2 = current_fix f1, current_fix f2 in
   (* Checking starting point *)
   if i1 = i2 then
-    let fb1,fb2 = first (Obj.repr f1), first (Obj.repr f2) in
-    let n = Obj.size (last fb1) in
+    let fb1,fb2 = first_fix f1, first_fix f2 in
+    let n = Obj.size (last (Obj.repr fb1)) in
     (* Checking number of definitions *)
-    if n = Obj.size (last fb2) then
+    if n = Obj.size (last (Obj.repr fb2)) then
       (* Checking recursive arguments *)
       try
         for i = 0 to n - 1 do
@@ -593,21 +586,23 @@ let relaccu_code i =
 
 let mk_fix_body k ndef fb =
   let e = Obj.dup (Obj.repr fb) in
+  let env = Obj.repr (fix_env (Obj.obj e)) in
   for i = 0 to ndef - 1 do
-    set_bytecode_field e (2 * i) (relaccu_code (k + i))
+    set_bytecode_field e (3 * i) (relaccu_code (k + i))
   done;
   let fix_body i =
-    let c = offset_tcode (unsafe_fb_code fb i) 2 in
-    let res = Obj.new_block Obj.closure_tag 2 in
+    let c = offset_tcode (Obj.magic (shift_fix fb i)) 2 in
+    let res = Obj.new_block Obj.closure_tag 3 in
     set_bytecode_field res 0 c;
-    Obj.set_field res 1 (offset_closure e (2*i));
+    Obj.set_field res 1 (Obj.repr 2);
+    Obj.set_field res 2 env;
     ((Obj.obj res) : vfun)  in
   Array.init ndef fix_body
 
 (* Functions over vcofix *)
 
 let get_fcofix vcf i =
-  match whd_val (Obj.obj (Obj.field (Obj.repr vcf) (i+1))) with
+  match whd_val (Obj.obj (Obj.field (Obj.repr vcf) (i+2))) with
   | Vcofix(vcfi, _, _) -> vcfi
   | _ -> assert false
 
@@ -628,7 +623,7 @@ let check_cofix vcf1 vcf2 =
 let mk_cofix_body apply_varray k ndef vcf =
   let e = Obj.dup (Obj.repr vcf) in
   for i = 0 to ndef - 1 do
-    Obj.set_field e (i+1) (Obj.repr (val_of_rel (k+i)))
+    Obj.set_field e (i+2) (Obj.repr (val_of_rel (k+i)))
   done;
 
   let cofix_body i =

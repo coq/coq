@@ -383,37 +383,49 @@ value coq_interprete
       }
       /* Access in heap-allocated environment */
 
+      Instruct(ENVACC0){
+        print_instr("ENVACC0");
+        accu = Field(coq_env, 2);
+        Next;
+      }
       Instruct(ENVACC1){
         print_instr("ENVACC1");
-        accu = Field(coq_env, 1); Next;
+        accu = Field(coq_env, 3);
+        Next;
       }
       Instruct(ENVACC2){
         print_instr("ENVACC2");
-        accu = Field(coq_env, 2); Next;
+        accu = Field(coq_env, 4);
+        Next;
       }
       Instruct(ENVACC3){
         print_instr("ENVACC3");
-        accu = Field(coq_env, 3); Next;
+        accu = Field(coq_env, 5);
+        Next;
       }
-      Instruct(ENVACC4){
-        print_instr("ENVACC4");
-        accu = Field(coq_env, 4); Next;
+      Instruct(PUSHENVACC0){
+        print_instr("PUSHENVACC0");
+        *--sp = accu;
+        accu = Field(coq_env, 2);
+        Next;
       }
       Instruct(PUSHENVACC1){
         print_instr("PUSHENVACC1");
-        *--sp = accu; accu = Field(coq_env, 1); Next;
+        *--sp = accu;
+        accu = Field(coq_env, 3);
+        Next;
       }
       Instruct(PUSHENVACC2){
         print_instr("PUSHENVACC2");
-        *--sp = accu; accu = Field(coq_env, 2); Next;
+        *--sp = accu;
+        accu = Field(coq_env, 4);
+        Next;
       }
       Instruct(PUSHENVACC3){
         print_instr("PUSHENVACC3");
-        *--sp = accu; accu = Field(coq_env, 3); Next;
-      }
-      Instruct(PUSHENVACC4){
-        print_instr("PUSHENVACC4");
-        *--sp = accu; accu = Field(coq_env, 4); Next;
+        *--sp = accu;
+        accu = Field(coq_env, 5);
+        Next;
       }
       Instruct(PUSHENVACC){
         print_instr("PUSHENVACC");
@@ -423,7 +435,7 @@ value coq_interprete
       Instruct(ENVACC){
         print_instr("ENVACC");
         print_int(*pc);
-        accu = Field(coq_env, *pc++);
+        accu = Field(coq_env, 2 + *pc++);
         Next;
       }
       /* Function application */
@@ -598,7 +610,6 @@ value coq_interprete
         sp[0] = arg1;
         sp[1] = arg2;
         pc = Code_val(accu);
-        print_lint(accu);
         coq_env = accu;
         coq_extra_args += 1;
         goto check_stack;
@@ -643,13 +654,13 @@ value coq_interprete
       }
 
       Instruct(RESTART) {
-        int num_args = Wosize_val(coq_env) - 2;
+        int num_args = Wosize_val(coq_env) - 3;
         int i;
         print_instr("RESTART");
         CHECK_STACK(num_args);
         sp -= num_args;
-        for (i = 0; i < num_args; i++) sp[i] = Field(coq_env, i + 2);
-        coq_env = Field(coq_env, 1);
+        for (i = 0; i < num_args; i++) sp[i] = Field(coq_env, i + 3);
+        coq_env = Field(coq_env, 2);
         coq_extra_args += num_args;
         Next;
       }
@@ -663,9 +674,10 @@ value coq_interprete
         } else {
           mlsize_t num_args, i;
           num_args = 1 + coq_extra_args; /* arg1 + extra args */
-          Alloc_small(accu, num_args + 2, Closure_tag);
-          Field(accu, 1) = coq_env;
-          for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
+          Alloc_small(accu, num_args + 3, Closure_tag);
+          Field(accu, 1) = Val_int(2);
+          Field(accu, 2) = coq_env;
+          for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
           Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
           sp += num_args;
           pc = (code_t)(sp[0]);
@@ -680,16 +692,18 @@ value coq_interprete
         int rec_pos = *pc++; /* commence a zero */
         print_instr("GRABREC");
         if (rec_pos <= coq_extra_args && !Is_accu(sp[rec_pos])) {
-          pc++;/* On saute le Restart */
+          pc++; /* Skip the next RESTART, then point coq_env at the free variables. */
+          coq_env = coq_env + (Int_val(Field(coq_env, 1)) - 2) * sizeof(value);
         } else {
           if (coq_extra_args < rec_pos) {
             /* Partial application */
             mlsize_t num_args, i;
             num_args = 1 + coq_extra_args; /* arg1 + extra args */
-            Alloc_small(accu, num_args + 2, Closure_tag);
-            Field(accu, 1) = coq_env;
-            for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
-            Code_val(accu) = pc - 3;
+            Alloc_small(accu, num_args + 3, Closure_tag);
+            Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
+            Field(accu, 1) = Val_int(2);
+            Field(accu, 2) = coq_env;
+            for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
             sp += num_args;
             pc = (code_t)(sp[0]);
             coq_env = sp[1];
@@ -699,10 +713,11 @@ value coq_interprete
             /* The recursif argument is an accumulator */
             mlsize_t num_args, i;
             /* Construction of fixpoint applied to its [rec_pos-1] first arguments */
-            Alloc_small(accu, rec_pos + 2, Closure_tag);
-            Field(accu, 1) = coq_env; // We store the fixpoint in the first field
-            for (i = 0; i < rec_pos; i++) Field(accu, i + 2) = sp[i]; // Storing args
-            Code_val(accu) = pc;
+            Alloc_small(accu, rec_pos + 3, Closure_tag);
+            Code_val(accu) = pc; /* Point to the next RESTART instr. */
+            Field(accu, 1) = Val_int(2);
+            Field(accu, 2) = coq_env; // We store the fixpoint in the first field
+            for (i = 0; i < rec_pos; i++) Field(accu, i + 3) = sp[i]; // Storing args
             sp += rec_pos;
             *--sp = accu;
               /* Construction of the atom */
@@ -732,12 +747,13 @@ value coq_interprete
         print_instr("CLOSURE");
         print_int(nvars);
         if (nvars > 0) *--sp = accu;
-        Alloc_small(accu, 1 + nvars, Closure_tag);
+        Alloc_small(accu, 2 + nvars, Closure_tag);
+        Field(accu, 1) = Val_int(2);
         Code_val(accu) = pc + *pc;
         pc++;
         for (i = 0; i < nvars; i++) {
           print_lint(sp[i]);
-          Field(accu, i + 1) = sp[i];
+          Field(accu, i + 2) = sp[i];
         }
         sp += nvars;
         Next;
@@ -758,24 +774,19 @@ value coq_interprete
         }
         pc += nfuncs;
         *--sp=accu;
-        Alloc_small(accu, nfuncs * 2 + nvars, Closure_tag);
-        Field(accu, nfuncs * 2 + nvars - 1) = *sp++;
-        /* On remplie la partie pour les variables libres */
-        p = &Field(accu, nfuncs * 2 - 1);
-        for (i = 0; i < nvars; i++) {
-          *p++ = *sp++;
-        }
+        Alloc_small(accu, nfuncs * 3 + nvars, Closure_tag);
+        Field(accu, nfuncs * 3 + nvars - 1) = *sp++;
         p = &Field(accu, 0);
-        *p = (value) (pc + pc[0]);
-        p++;
+        *p++ = (value) (pc + pc[0]);
+        *p++ = Val_int(nfuncs * 3 - 1);
         for (i = 1; i < nfuncs; i++) {
-          *p = Make_header(i * 2, Infix_tag, Caml_white);
-          p++;                                /* color irrelevant. */
-          *p = (value) (pc + pc[i]);
-          p++;
+          *p++ = Make_header(i * 3, Infix_tag, Caml_white); /* color irrelevant. */
+          *p++ = (value) (pc + pc[i]);
+          *p++ = Val_int((nfuncs - i) * 3 - 1);
         }
+        for (i = 0; i < nvars; i++) *p++ = *sp++;
         pc += nfuncs;
-        accu = accu + 2 * start * sizeof(value);
+        accu = accu + start * 3 * sizeof(value);
         Next;
       }
 
@@ -805,14 +816,15 @@ value coq_interprete
         /* creation des fonction cofix */
 
         p = sp;
-        size = nfunc + nvars + 2;
+        size = nfunc + nvars + 3;
         for (i=0; i < nfunc; i++) {
 
           Alloc_small(accu, size, Closure_tag);
           Code_val(accu) = pc+pc[i];
-          for (j = 0; j < nfunc; j++) Field(accu, j+1) = p[j];
+          Field(accu, 1) = Val_int(2);
+          for (j = 0; j < nfunc; ++j) Field(accu, j + 2) = p[j];
           Field(accu, size - 1) = p[nfunc];
-          for (j = nfunc+1; j <= nfunc+nvars; j++) Field(accu, j) = p[j];
+          for (j = nfunc + 1; j <= nfunc + nvars; ++j) Field(accu, j + 1) = p[j];
           *--sp = accu;
           /* creation du block contenant le cofix */
 
@@ -837,15 +849,8 @@ value coq_interprete
       } /* fallthrough */
       Instruct(OFFSETCLOSURE) {
         print_instr("OFFSETCLOSURE");
-        accu = coq_env + *pc++ * sizeof(value); Next;
-      }
-      Instruct(PUSHOFFSETCLOSUREM2) {
-        print_instr("PUSHOFFSETCLOSUREM2");
-        *--sp = accu;
-      } /* fallthrough */
-      Instruct(OFFSETCLOSUREM2) {
-        print_instr("OFFSETCLOSUREM2");
-        accu = coq_env - 2 * sizeof(value); Next;
+        accu = coq_env - *pc++ * 3 * sizeof(value);
+        Next;
       }
       Instruct(PUSHOFFSETCLOSURE0) {
         print_instr("PUSHOFFSETCLOSURE0");
@@ -853,15 +858,17 @@ value coq_interprete
       }/* fallthrough */
       Instruct(OFFSETCLOSURE0) {
         print_instr("OFFSETCLOSURE0");
-        accu = coq_env; Next;
+        accu = coq_env;
+        Next;
       }
-      Instruct(PUSHOFFSETCLOSURE2){
-        print_instr("PUSHOFFSETCLOSURE2");
+      Instruct(PUSHOFFSETCLOSURE1){
+        print_instr("PUSHOFFSETCLOSURE1");
         *--sp = accu; /* fallthrough */
       }
-      Instruct(OFFSETCLOSURE2) {
-        print_instr("OFFSETCLOSURE2");
-        accu = coq_env + 2 * sizeof(value); Next;
+      Instruct(OFFSETCLOSURE1) {
+        print_instr("OFFSETCLOSURE1");
+        accu = coq_env - 3 * sizeof(value);
+        Next;
       }
 
 /* Access to global variables */
@@ -1875,11 +1882,11 @@ value coq_push_val(value v) {
 value coq_push_arguments(value args) {
   int nargs,i;
   value * sp = coq_sp;
-  nargs = Wosize_val(args) - 2;
+  nargs = Wosize_val(args) - 3;
   CHECK_STACK(nargs);
   coq_sp -= nargs;
   print_instr("push_args");print_int(nargs);
-  for(i = 0; i < nargs; i++) coq_sp[i] = Field(args, i+2);
+  for (i = 0; i < nargs; i++) coq_sp[i] = Field(args, i + 3);
   return Val_unit;
 }
 

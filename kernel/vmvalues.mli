@@ -181,7 +181,6 @@ val rec_args : vfix -> int array
 val first_fix : vfix -> vfix
 val fix_types : vfix -> tcode array
 val cofix_types : vcofix -> tcode array
-external offset_closure_fix : vfix -> int -> vm_env = "coq_offset_closure"
 val mk_fix_body : int -> int -> vfix -> vfun array
 
 (** CoFix *)
