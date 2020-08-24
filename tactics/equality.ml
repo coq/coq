@@ -1134,6 +1134,7 @@ let make_tuple env sigma (rterm,rty) lind =
   assert (not (noccurn sigma lind rty));
   let sigdata = find_sigma_data env (get_sort_of env sigma rty) in
   let sigma, a = type_of ~refresh:true env sigma (mkRel lind) in
+  let a = simpl env sigma a in
   let na = Context.Rel.Declaration.get_annot (lookup_rel lind env) in
   (* We move [lind] to [1] and lift other rels > [lind] by 1 *)
   let rty = lift (1-lind) (liftn lind (lind+1) rty) in
