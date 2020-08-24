@@ -517,6 +517,20 @@ package "plugins" (
     plugin(native)  = "string_notation_plugin.cmxs"
   )
 
+  package "numeral_notation" (
+    description = "Coq numeral notation plugin"
+    version 	= "8.13"
+
+    requires    = ""
+    directory 	= "numeral_notation"
+
+    archive(byte)    = "numeral_notation_plugin.cmo"
+    archive(native)  = "numeral_notation_plugin.cmx"
+
+    plugin(byte)    = "numeral_notation_plugin.cmo"
+    plugin(native)  = "numeral_notation_plugin.cmxs"
+  )
+
   package "derive" (
 
     description = "Coq derive plugin"
