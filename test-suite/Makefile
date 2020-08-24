@@ -500,8 +500,8 @@ $(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 
 .PHONY: approve-output
-approve-output: output output-coqtop
-	$(HIDE)for f in output/*.out.real; do \
+approve-output: output output-coqtop output-coqchk
+	$(HIDE)for f in $(wildcard $(addsuffix /*.out.real,$^)); do \
 	  mv "$$f" "$${f%.real}"; \
 	  echo "Updated $${f%.real}!"; \
 	done
