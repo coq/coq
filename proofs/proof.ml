@@ -370,8 +370,8 @@ let run_tactic env tac pr =
     (* Already solved goals are not to be counted as shelved. Nor are
       they to be marked as unresolvable. *)
     let retrieved, sigma = Evd.pop_future_goals sigma in
-    let retrieved = Evd.filter_future_goals (Evd.is_undefined sigma) retrieved in
-    let retrieved = List.rev_append retrieved.Evd.future_shelf (List.rev retrieved.Evd.future_comb) in
+    let retrieved = Evd.FutureGoals.filter (Evd.is_undefined sigma) retrieved in
+    let retrieved = List.rev_append retrieved.Evd.FutureGoals.shelf (List.rev retrieved.Evd.FutureGoals.comb) in
     let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT (result,retrieved)

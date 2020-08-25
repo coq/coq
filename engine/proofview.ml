@@ -759,7 +759,7 @@ let with_shelf tac =
   (* and thus considered as to shelve, as in Proof.run_tactic *)
   let fgl, sigma = Evd.pop_future_goals sigma in
   (* Ensure we mark and return only unsolved goals *)
-  let gls' = CList.rev_append fgl.Evd.future_shelf (CList.rev_append fgl.Evd.future_comb gls) in
+  let gls' = CList.rev_append fgl.Evd.FutureGoals.shelf (CList.rev_append fgl.Evd.FutureGoals.comb gls) in
   let gls' = undefined_evars sigma gls' in
   let sigma = mark_in_evm ~goal:false sigma gls' in
   let npv = { npv with shelf; solution = sigma } in

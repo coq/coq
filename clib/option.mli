@@ -46,6 +46,9 @@ val make : 'a -> 'a option
 (** [bind x f] is [f y] if [x] is [Some y] and [None] otherwise *)
 val bind : 'a option -> ('a -> 'b option) -> 'b option
 
+(** [filter f x] is [x] if [x] [Some y] and [f y] is true, [None] otherwise *)
+val filter : ('a -> bool) -> 'a option -> 'a option
+
 (** [init b x] returns [Some x] if [b] is [true] and [None] otherwise. *)
 val init : bool -> 'a -> 'a option
 

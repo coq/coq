@@ -356,43 +356,36 @@ val declare_principal_goal : ?shelve:bool -> Evar.t -> evar_map -> evar_map
     it principal. Only one existential variable can be made principal, an
     error is raised otherwise. For internal uses only. *)
 
-val future_goals : evar_map -> Evar.t list
-(** Retrieves the list of future goals. Used by the [refine] primitive
-    of the tactic engine. *)
+module FutureGoals : sig
 
-val principal_future_goal : evar_map -> Evar.t option
-(** Retrieves the name of the principal existential variable if there
-    is one. Used by the [refine] primitive of the tactic engine. *)
+  type t = private {
+    comb : Evar.t list;
+    shelf : Evar.t list;
+    principal : Evar.t option; (** if [Some e], [e] must be
+                                   contained in
+                                   [future_comb]. The evar
+                                   [e] will inherit
+                                   properties (now: the
+                                   name) of the evar which
+                                   will be instantiated with
+                                   a term containing [e]. *)
+  }
 
-type future_goals = {
-  future_comb : Evar.t list;
-  future_shelf : Evar.t list;
-  future_principal : Evar.t option; (** if [Some e], [e] must be
-                                        contained in
-                                        [future_comb]. The evar
-                                        [e] will inherit
-                                        properties (now: the
-                                        name) of the evar which
-                                        will be instantiated with
-                                        a term containing [e]. *)
-}
+  val map_filter : (Evar.t -> Evar.t option) -> t -> t
+  (** Applies a function on the future goals *)
+
+  val filter : (Evar.t -> bool) -> t -> t
+  (** Applies a filter on the future goals *)
+
+end
 
 val push_future_goals : evar_map -> evar_map
 
-val pop_future_goals : evar_map -> future_goals * evar_map
+val pop_future_goals : evar_map -> FutureGoals.t * evar_map
 
 val fold_future_goals : (evar_map -> Evar.t -> evar_map) -> evar_map -> evar_map
+
 (** Fold future goals *)
-
-val map_filter_future_goals : (Evar.t -> Evar.t option) -> future_goals -> future_goals
-(** Applies a function on the future goals *)
-
-val filter_future_goals : (Evar.t -> bool) -> future_goals -> future_goals
-(** Applies a filter on the future goals *)
-
-val dispatch_future_goals : evar_map -> Evar.t list * Evar.t list * Evar.t option
-(** Returns the future_goals dispatched into regular, shelved, given_up
-   goals; last argument is the goal tagged as principal if any *)
 
 val shelve_on_future_goals : Evar.t list -> evar_map -> evar_map
 (** Push goals on the shelve of future goals *)

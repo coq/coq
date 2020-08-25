@@ -464,18 +464,132 @@ type side_effects = {
   seff_roles : side_effect_role Cmap.t;
 }
 
-type future_goals = {
-  future_comb : Evar.t list;
-  future_shelf : Evar.t list;
-  future_principal : Evar.t option; (** if [Some e], [e] must be
-                                        contained in
-                                        [future_comb]. The evar
-                                        [e] will inherit
-                                        properties (now: the
-                                        name) of the evar which
-                                        will be instantiated with
-                                        a term containing [e]. *)
-}
+module FutureGoals : sig
+
+  type t = private {
+    comb : Evar.t list;
+    shelf : Evar.t list;
+    principal : Evar.t option; (** if [Some e], [e] must be
+                                   contained in
+                                   [comb]. The evar
+                                   [e] will inherit
+                                   properties (now: the
+                                   name) of the evar which
+                                   will be instantiated with
+                                   a term containing [e]. *)
+  }
+
+  val map_filter : (Evar.t -> Evar.t option) -> t -> t
+  (** Applies a function on the future goals *)
+
+  val filter : (Evar.t -> bool) -> t -> t
+  (** Applies a filter on the future goals *)
+
+  type stack
+
+  val empty_stack : stack
+
+  val push : stack -> stack
+  val pop : stack -> t * stack
+
+  val add : shelve:bool -> principal:bool -> Evar.t -> stack -> stack
+  val remove : Evar.t -> stack -> stack
+
+  val fold : ('a -> Evar.t -> 'a) -> 'a -> stack -> 'a
+
+  val put_shelf : Evar.t list -> stack -> stack
+
+end = struct
+
+  type t = {
+    comb : Evar.t list;
+    shelf : Evar.t list;
+    principal : Evar.t option; (** if [Some e], [e] must be
+                                   contained in
+                                   [comb]. The evar
+                                   [e] will inherit
+                                   properties (now: the
+                                   name) of the evar which
+                                   will be instantiated with
+                                   a term containing [e]. *)
+  }
+
+  type stack = t list
+
+  let set f = function
+  | [] -> anomaly Pp.(str"future_goals stack should not be empty")
+  | hd :: tl ->
+    f hd :: tl
+
+  let add ~shelve ~principal evk stack =
+    let add fgl =
+      let (comb,shelf) =
+        if shelve then (fgl.comb,evk::fgl.shelf)
+        else (evk::fgl.comb,fgl.shelf)
+      in
+      let principal =
+        if principal then
+          match fgl.principal with
+          | Some _ -> CErrors.user_err Pp.(str "Only one main subgoal per instantiation.")
+          | None -> Some evk
+        else fgl.principal
+      in
+      { comb; shelf; principal }
+    in
+    set add stack
+
+  let remove e stack =
+    let remove fgl =
+      let filter e' = not (Evar.equal e e') in
+      let principal = Option.filter filter fgl.principal in
+      let comb = List.filter filter fgl.comb in
+      let shelf = List.filter filter fgl.shelf in
+      { principal; comb; shelf }
+    in
+    List.map remove stack
+
+  let empty = {
+    principal = None;
+    comb = [];
+    shelf = [];
+  }
+
+  let empty_stack = [empty]
+
+  let push stack = empty :: stack
+
+  let pop stack =
+    match stack with
+    | [] -> anomaly Pp.(str"future_goals stack should not be empty")
+    | hd :: tl ->
+      hd, tl
+
+  let fold f acc stack =
+    let future_goals = List.hd stack in
+    let future_goals = future_goals.comb @ future_goals.shelf in
+    List.fold_left f acc future_goals
+
+  let filter f fgl =
+    let comb = List.filter f fgl.comb in
+    let shelf = List.filter f fgl.shelf in
+    let principal = Option.filter f fgl.principal in
+    { comb; shelf; principal }
+
+  let map_filter f fgl =
+    let comb = List.map_filter f fgl.comb in
+    let shelf = List.map_filter f fgl.shelf in
+    let principal = Option.bind fgl.principal f in
+    { comb; shelf; principal }
+
+  let put_shelf shelved stack =
+    match stack with
+    | [] -> anomaly Pp.(str"future_goals stack should not be empty")
+    | hd :: tl ->
+      let shelf = shelved @ hd.shelf in
+      { hd with shelf } :: tl
+
+end
+
 
 type evar_map = {
   (* Existential variables *)
@@ -492,8 +606,8 @@ type evar_map = {
   evar_flags : evar_flags;
   (** Interactive proofs *)
   effects    : side_effects;
-  future_goals : future_goals list; (** list of newly created evars, to be
-                                         eventually turned into goals if not solved.*)
+  future_goals : FutureGoals.stack; (** list of newly created evars, to be
+                                        eventually turned into goals if not solved.*)
   given_up : Evar.Set.t;
   extras : Store.t;
 }
@@ -593,17 +707,7 @@ let new_evar evd ?name ?typeclass_candidate evi =
 let remove d e =
   let undf_evars = EvMap.remove e d.undf_evars in
   let defn_evars = EvMap.remove e d.defn_evars in
-  let remove_future fgl =
-    let future_principal = match fgl.future_principal with
-    | None -> None
-    | Some e' -> if Evar.equal e e' then None else fgl.future_principal
-    in
-    let filter e' = not (Evar.equal e e') in
-    let future_comb = List.filter filter fgl.future_comb in
-    let future_shelf = List.filter filter fgl.future_shelf in
-    { future_principal; future_comb; future_shelf }
-  in
-  let future_goals = List.map remove_future d.future_goals in
+  let future_goals = FutureGoals.remove e d.future_goals in
   let evar_flags = remove_evar_flags e d.evar_flags in
   { d with undf_evars; defn_evars; future_goals;
            evar_flags }
@@ -721,12 +825,6 @@ let empty_side_effects = {
   seff_roles = Cmap.empty;
 }
 
-let empty_future_goals = {
-  future_principal = None;
-  future_comb = [];
-  future_shelf = [];
-}
-
 let empty = {
   defn_evars = EvMap.empty;
   undf_evars = EvMap.empty;
@@ -737,7 +835,7 @@ let empty = {
   metas      = Metamap.empty;
   effects    = empty_side_effects;
   evar_names = EvNames.empty; (* id<->key for undefined evars *)
-  future_goals = [empty_future_goals];
+  future_goals = FutureGoals.empty_stack;
   given_up = Evar.Set.empty;
   extras = Store.empty;
 }
@@ -1074,94 +1172,30 @@ let drop_side_effects evd =
 let eval_side_effects evd = evd.effects
 
 (* Future goals *)
-let set_future_goals f = function
-  | [] -> anomaly Pp.(str"future_goals stack should not be empty")
-  | hd :: tl ->
-    f hd :: tl
-
 let declare_future_goal ?(shelve=false) evk evd =
-  let add_goal fgl =
-    let (future_comb,future_shelf) =
-      if shelve then (fgl.future_comb,evk::fgl.future_shelf)
-      else (evk::fgl.future_comb,fgl.future_shelf)
-    in
-    { fgl with future_comb; future_shelf }
-  in
-  let future_goals = set_future_goals add_goal evd.future_goals in
+  let future_goals = FutureGoals.add ~shelve ~principal:false evk evd.future_goals in
   { evd with future_goals }
 
 let declare_principal_goal ?(shelve=false) evk evd =
-  let add_goal fgl =
-    let (future_comb,future_shelf) =
-      if shelve then (fgl.future_comb,evk::fgl.future_shelf)
-      else (evk::fgl.future_comb,fgl.future_shelf)
-    in
-    let future_principal = Some evk in
-    { future_comb; future_shelf; future_principal }
-  in
-  match (List.hd evd.future_goals).future_principal with
-  | None ->
-    let future_goals = set_future_goals add_goal evd.future_goals in
-    { evd with
-      future_goals;
-    }
-  | Some _ -> CErrors.user_err Pp.(str "Only one main subgoal per instantiation.")
+  let future_goals = FutureGoals.add ~shelve ~principal:true evk evd.future_goals in
+  { evd with future_goals }
 
 let push_future_goals evd =
-  { evd with future_goals = empty_future_goals :: evd.future_goals }
+  { evd with future_goals = FutureGoals.push evd.future_goals }
 
 let pop_future_goals evd =
-  match evd.future_goals with
-  | [] -> anomaly Pp.(str"future_goals stack should not be empty")
-  | hd :: tl ->
-    hd, { evd with future_goals = tl }
-
-let future_goals evd =
-  let future_goals = List.hd evd.future_goals in
-  future_goals.future_shelf @ future_goals.future_comb
-
-let principal_future_goal evd =
-  (List.hd evd.future_goals).future_principal
+  let hd, future_goals = FutureGoals.pop evd.future_goals in
+  hd, { evd with future_goals }
 
 let fold_future_goals f sigma =
-  let future_goals = List.hd sigma.future_goals in
-  let future_goals = future_goals.future_comb @ future_goals.future_shelf in
-  List.fold_left f sigma future_goals
-
-let map_filter_future_goals f future_goals =
-  (* Note: map is now a superset of filtered evs, but its size should
-    not be too big, so that's probably ok not to update it *)
-  let future_comb = List.map_filter f future_goals.future_comb in
-  let future_shelf = List.map_filter f future_goals.future_shelf in
-  let future_principal = Option.bind future_goals.future_principal f in
-  { future_comb; future_shelf; future_principal }
-
-let filter_future_goals f future_goals =
-  let future_comb = List.filter f future_goals.future_comb in
-  let future_shelf = List.filter f future_goals.future_shelf in
-  let future_principal = Option.bind future_goals.future_principal (fun a -> if f a then Some a else None) in
-  { future_comb; future_shelf; future_principal }
-
-let dispatch_future_goals_gen distinguish_shelf evd =
-  let future_goals = List.hd evd.future_goals in
-  (* Note: this reverses the order of initial list on purpose *)
-  (List.rev future_goals.future_comb,
-   List.rev future_goals.future_shelf,
-   future_goals.future_principal)
-
-let dispatch_future_goals =
-  dispatch_future_goals_gen true
+  FutureGoals.fold f sigma sigma.future_goals
 
 let shelve_on_future_goals shelved evd =
-  let shelve_future future_goals =
-    let future_shelf = shelved @ future_goals.future_shelf in
-    { future_goals with future_shelf }
-  in
-  { evd with future_goals = set_future_goals shelve_future evd.future_goals }
+  let future_goals = FutureGoals.put_shelf shelved evd.future_goals in
+  { evd with future_goals }
 
 let remove_future_goal evd evk =
-  let f evk' = not (Evar.equal evk evk') in
-  { evd with future_goals = set_future_goals (filter_future_goals f) evd.future_goals }
+  { evd with future_goals = FutureGoals.remove evk evd.future_goals }
 
 let give_up ev evd =
   { evd with given_up = Evar.Set.add ev evd.given_up }

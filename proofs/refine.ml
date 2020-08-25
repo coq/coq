@@ -74,14 +74,14 @@ let generic_refine ~typecheck f gl =
   (* Restore the [future goals] state. *)
   let future_goals, sigma = Evd.pop_future_goals sigma in
   (* Select the goals *)
-  let future_goals = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) future_goals in
+  let future_goals = Evd.FutureGoals.map_filter (Proofview.Unsafe.advance sigma) future_goals in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with
   | None ->
     (* Nothing to do, the goal has been solved by side-effect *)
     sigma
   | Some self ->
-    match future_goals.Evd.future_principal with
+    match future_goals.Evd.FutureGoals.principal with
     | None -> Evd.define self c sigma
     | Some evk ->
         let id = Evd.evar_ident self sigma in
@@ -91,16 +91,16 @@ let generic_refine ~typecheck f gl =
         | Some id -> Evd.rename evk id sigma
   in
   (* Mark goals *)
-  let sigma = Proofview.Unsafe.mark_as_goals sigma future_goals.Evd.future_comb in
-  let sigma = Proofview.Unsafe.mark_unresolvables sigma future_goals.Evd.future_shelf in
-  let comb = CList.rev_map (fun x -> Proofview.goal_with_state x state) future_goals.Evd.future_comb in
+  let sigma = Proofview.Unsafe.mark_as_goals sigma future_goals.Evd.FutureGoals.comb in
+  let sigma = Proofview.Unsafe.mark_unresolvables sigma future_goals.Evd.FutureGoals.shelf in
+  let comb = CList.rev_map (fun x -> Proofview.goal_with_state x state) future_goals.Evd.FutureGoals.comb in
   let trace env sigma = Pp.(hov 2 (str"simple refine"++spc()++
                                    Termops.Internal.print_constr_env env sigma c)) in
   Proofview.Trace.name_tactic trace (Proofview.tclUNIT v) >>= fun v ->
   Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
-  Proofview.Unsafe.tclPUTSHELF @@ List.rev future_goals.Evd.future_shelf <*>
+  Proofview.Unsafe.tclPUTSHELF @@ List.rev future_goals.Evd.FutureGoals.shelf <*>
   Proofview.tclUNIT v
   end
 
