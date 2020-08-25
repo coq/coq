@@ -345,17 +345,21 @@ let dump_universes_gen prl g s =
     close ();
     Exninfo.iraise reraise
 
-let universe_subgraph ?loc g univ =
+let universe_subgraph ?loc kept univ =
   let open Univ in
   let sigma = Evd.from_env (Global.env()) in
-  let univs_of q =
+  let parse q =
     let q =  Glob_term.(GType q) in
     (* this function has a nice error message for not found univs *)
-    LSet.singleton (Pretyping.interp_known_glob_level ?loc sigma q)
+    Pretyping.interp_known_glob_level ?loc sigma q
   in
-  let univs = List.fold_left (fun univs q -> LSet.union univs (univs_of q)) LSet.empty g in
-  let csts = UGraph.constraints_for ~kept:(LSet.add Level.prop (LSet.add Level.set univs)) univ in
-  let univ = LSet.fold UGraph.add_universe_unconstrained univs UGraph.initial_universes in
+  let kept = List.fold_left (fun kept q -> LSet.add (parse q) kept) LSet.empty kept in
+  let csts = UGraph.constraints_for ~kept univ in
+  let add u newgraph =
+    let strict = UGraph.check_constraint univ (Level.set,Lt,u) in
+    UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict newgraph
+  in
+  let univ = LSet.fold add kept UGraph.initial_universes in
   UGraph.merge_constraints csts univ
 
 let print_universes ?loc ~sort ~subgraph dst =
