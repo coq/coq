@@ -1590,7 +1590,7 @@ and Slaves : sig
   val finish_task :
     string ->
     Library.seg_univ -> Library.seg_proofs ->
-    int tasks -> int -> Library.seg_univ
+    int tasks -> int -> Library.seg_proofs * Library.seg_univ
 
   val cancel_worker : WorkerPool.worker_id -> unit
 
@@ -1684,8 +1684,8 @@ end = struct (* {{{ *)
       else Printf.sprintf ", bucket %d" bucket in
     match check_task_aux bucket_name name l i with
     | `ERROR -> exit 1
-    | `ERROR_ADMITTED -> cst, false
-    | `OK_ADMITTED -> cst, false
+    | `ERROR_ADMITTED -> p, (cst, false)
+    | `OK_ADMITTED -> p, (cst, false)
     | `OK name ->
         let con = Nametab.locate_constant (Libnames.qualid_of_ident name) in
         let c = Global.lookup_constant con in
@@ -1706,10 +1706,9 @@ end = struct (* {{{ *)
           assert (Univ.ContextSet.is_empty uctx)
         in
         let pr = Constr.hcons pr in
-        let dummy = p.(bucket) in
-        let () = assert (Option.is_empty dummy) in
-        p.(bucket) <- Some (pr, priv);
-        Univ.ContextSet.union cst uc, false
+        let () = assert (not @@ Int.Map.mem bucket p) in
+        let p = Int.Map.add bucket (pr, priv) p in
+        p, (Univ.ContextSet.union cst uc, false)
 
   let check_task name l i =
     match check_task_aux "" name l i with
@@ -2780,13 +2779,14 @@ let info_tasks (tasks,_) = Slaves.info_tasks tasks
 
 let finish_tasks name u p (t,rcbackup as tasks) =
   RemoteCounter.restore rcbackup;
-  let finish_task u (_,_,i) =
+  let finish_task (p, u) (_,_,i) =
     let vcs = VCS.backup () in
-    let u = State.purify (Slaves.finish_task name u p t) i in
+    let p, u = State.purify (Slaves.finish_task name u p t) i in
     VCS.restore vcs;
-    u in
+    p, u
+  in
   try
-    let a, _ = List.fold_left finish_task u (info_tasks tasks) in
+    let p, (a, _) = List.fold_left finish_task (p, u) (info_tasks tasks) in
     (a,true), p
   with e ->
     let e = Exninfo.capture e in

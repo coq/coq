@@ -226,7 +226,7 @@ type seg_sum = summary_disk
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t * bool
-type seg_proofs = Opaqueproof.opaque_proofterm option array
+type seg_proofs = Opaqueproof.opaque_proofterm Int.Map.t
 
 let mk_library sd md digests univs =
   {
@@ -394,17 +394,24 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
 
 let load_library_todo f =
   let ch = raw_intern_library f in
-  let _segments = ObjFile.segments ch in
+  let segments = ObjFile.segments ch in
   let (s0 : seg_sum), _ = ObjFile.marshal_in_segment ch ~segment:"summary" in
   let (s1 : seg_lib), _ = ObjFile.marshal_in_segment ch ~segment:"library" in
   let (s2 : seg_univ option), _ = ObjFile.marshal_in_segment ch ~segment:"universes" in
   let tasks, _ = ObjFile.marshal_in_segment ch ~segment:"tasks" in
+  let fold name seg accu = match get_opaque_segment name with
+  | None -> accu
+  | Some i ->
+    let pf, _ = ObjFile.marshal_in_segment ch ~segment:name in
+    Int.Map.add i pf accu
+  in
+  let proofs = CString.Map.fold fold segments Int.Map.empty in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:s0.md_ocaml ~file:f;
   if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
   if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
   if snd (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
-  s0, s1, Option.get s2, Option.get tasks, assert false (* FIXME *)
+  s0, s1, Option.get s2, Option.get tasks, proofs
 
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
@@ -446,13 +453,11 @@ let save_library_base f sum lib univs tasks (proofs : opaques) =
     ObjFile.marshal_out_segment ch ~segment:"tasks" (tasks  : 'tasks option);
     let () = match proofs with
     | OpaqueDirect proofs ->
-      let iter i = function
-      | None -> ()
-      | Some (proof : Opaqueproof.opaque_proofterm) ->
+      let iter i proof =
         let segment = Printf.sprintf "opaques/%i" i in
         ObjFile.marshal_out_segment ch ~segment proof
       in
-      Array.iteri iter proofs
+      Int.Map.iter iter proofs
     | OpaqueAncient proofs ->
       let iter i = function
       | None -> ()

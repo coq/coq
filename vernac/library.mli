@@ -34,7 +34,7 @@ type seg_sum
 type seg_lib
 type seg_univ = (* all_cst, finished? *)
   Univ.ContextSet.t * bool
-type seg_proofs = Opaqueproof.opaque_proofterm option array
+type seg_proofs = Opaqueproof.opaque_proofterm Int.Map.t
 
 (** End the compilation of a library and save it to a ".vo" file,
     a ".vio" file, or a ".vos" file, depending on the todo_proofs
