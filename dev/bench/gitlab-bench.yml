@@ -28,7 +28,10 @@ bench:
     paths:
       - _bench/html/**/*.v.html
       - _bench/logs
-      - _bench/opam.NEW
-      - _bench/opam.OLD
+      - _bench/files.listing
+      - _bench/opam.NEW/**/*.log
+      - _bench/opam.NEW/**/*.timing
+      - _bench/opam.OLD/**/*.log
+      - _bench/opam.OLD/**/*.timing
     when: always
     expire_in: 1 year
