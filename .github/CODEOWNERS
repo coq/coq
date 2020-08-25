@@ -34,6 +34,8 @@
 # Trick to avoid getting review requests
 # each time someone adds an overlay
 
+/dev/bench/            @coq/bench-maintainers
+
 ########## Documentation ##########
 
 /README.md             @coq/doc-maintainers
