@@ -261,6 +261,10 @@ let implicit_kind_of_status = function
   | None -> Anonymous, Glob_term.Explicit
   | Some (pos,_,(maximal,_)) -> implicit_name_of_pos pos, if maximal then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
+let extra_implicit_kind_of_status imp =
+  let _,imp = implicit_kind_of_status imp in
+  (Anonymous, imp)
+
 let dummy = {
   Vernacexpr.implicit_status = Glob_term.Explicit;
   name = Anonymous;
@@ -329,7 +333,7 @@ let print_arguments ref =
     | [] -> assert false
   in
   let impls = main_implicits 0 renames recargs scopes impls in
-  let moreimpls = List.map (fun (_,i) -> List.map implicit_kind_of_status i) moreimpls in
+  let moreimpls = List.map (fun (_,i) -> List.map extra_implicit_kind_of_status i) moreimpls in
   let bidi = Pretyping.get_bidirectionality_hint ref in
   let impls = insert_fake_args nargs_for_red bidi impls in
   if List.for_all is_dummy impls && moreimpls = [] && flags = [] then []

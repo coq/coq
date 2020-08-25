@@ -14,11 +14,11 @@ Argument A is implicit
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 Arguments eq {A}%type_scope _ _
-Arguments eq_refl {A}%type_scope {x}, [A] _
+Arguments eq_refl {A}%type_scope {x}, [_] _
 eq_refl : forall {A : Type} {x : A}, x = x
 
 eq_refl is not universe polymorphic
-Arguments eq_refl {A}%type_scope {x}, [A] _
+Arguments eq_refl {A}%type_scope {x}, [_] _
 Expands to: Constructor Coq.Init.Logic.eq_refl
 eq_refl : forall {A : Type} {x : A}, x = x
 
@@ -81,7 +81,7 @@ Expands to: Notation Coq.Init.Logic.sym_eq
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 Arguments eq {A}%type_scope _ _
-Arguments eq_refl {A}%type_scope {x}, {A} _
+Arguments eq_refl {A}%type_scope {x}, {_} _
 n:nat
 
 Hypothesis of the goal context.
