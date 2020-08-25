@@ -12,6 +12,9 @@ r='\033[0m'          # reset (all attributes off)
 b='\033[1m'          # bold
 u='\033[4m'          # underline
 nl=$'\n'
+bt='`'               # backtick
+start_code_block='```'
+end_code_block='```'
 
 number_of_processors=$(cat /proc/cpuinfo | grep '^processor *' | wc -l)
 
@@ -36,6 +39,7 @@ echo $PWD
 #check_variable "BUILD_URL"
 #check_variable "JOB_NAME"
 #check_variable "JENKINS_URL"
+check_variable "CI_JOB_URL"
 check_variable "coq_pr_number"
 check_variable "coq_pr_comment_id"
 check_variable "new_ocaml_switch"
@@ -70,8 +74,9 @@ else
     exit 1
 fi
 
-mkdir -p "_bench"
-working_dir="$PWD/_bench"
+bench_dirname="_bench"
+mkdir -p "${bench_dirname}"
+working_dir="$PWD/${bench_dirname}"
 
 log_dir=$working_dir/logs
 mkdir "$log_dir"
@@ -188,21 +193,30 @@ function coqbot_update_comment() {
 
     if [ ! -z "${coq_pr_number}" ]; then
         comment_text=""
+        artifact_text=""
 
         if [ -z "${is_done}" ]; then
             comment_text="in progress, "
+            artifact_text="eventually "
         else
             comment_text=""
+            artifact_text=""
         fi
-        comment_text="Benchmarking ${comment_text}log available [here](${BUILD_URL}/console), workspace available [here](${JENKINS_URL}/view/benchmarking/job/${JOB_NAME}/ws/${BUILD_ID})"
+        comment_text="Benchmarking ${comment_text}log available [here](${CI_JOB_URL}) ([raw log here](${CI_JOB_URL}/raw)), artifacts ${artifact_text}available for [download](${CI_JOB_URL}/artifacts/download) and [browsing](${CI_JOB_URL}/artifacts/browse)"
 
         if [ ! -z "${comment_body}" ]; then
-            comment_text="${comment_text}${nl}"'```'"${nl}${comment_body}${nl}"'```'
+            comment_text="${comment_text}${nl}${start_code_block}${nl}${comment_body}${nl}${end_code_block}"
         fi
 
         if [ ! -z "${uninstallable_packages}" ]; then
             comment_text="${comment_text}${nl}The following packages failed to install: ${uninstallable_packages}"
         fi
+
+        comment_text="${comment_text}${nl}${nl}<details><summary>Old Coq version ${old_coq_commit}</summary>"
+        comment_text="${comment_text}${nl}${nl}${start_code_block}${nl}$(git log -n 1 "${old_coq_commit}")${nl}${end_code_block}${nl}</details>"
+        comment_text="${comment_text}${nl}${nl}<details><summary>New Coq version ${new_coq_commit}</summary>"
+        comment_text="${comment_text}${nl}${nl}${start_code_block}${nl}$(git log -n 1 "${new_coq_commit}")${nl}${end_code_block}${nl}</details>"
+        comment_text="${comment_text}${nl}${nl}[Diff: ${bt}${old_coq_commit}..${new_coq_commit}${bt}](https://github.com/coq/coq/compare/${old_coq_commit}..${new_coq_commit})"
 
         # if there's a comment id, we update the comment while we're
         # in progress; otherwise, we wait until the end to post a new
@@ -472,7 +486,7 @@ done
 #
 # The next script processes all these files and prints results in a table.
 
-echo "INFO: workspace = https://ci.inria.fr/coq/view/benchmarking/job/$JOB_NAME/ws/$BUILD_ID"
+echo "INFO: workspace = ${CI_JOB_URL}/artifacts/browse/${bench_dirname}"
 
 # Print the final results.
 if [ -z "$installable_coq_opam_packages" ]; then
@@ -486,7 +500,7 @@ else
     rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
     echo "${rendered_results}"
 
-    echo "INFO: per line timing: https://ci.inria.fr/coq/job/$JOB_NAME/ws/$BUILD_ID/html/"
+    echo "INFO: per line timing: ${CI_JOB_URL}/artifacts/browse/${bench_dirname}/html/"
 
     cd "$coq_dir"
     echo INFO: Old Coq version
