@@ -521,7 +521,7 @@ package "plugins" (
     description = "Coq numeral notation plugin"
     version 	= "8.13"
 
-    requires    = ""
+    requires    = "coq.vernac"
     directory 	= "numeral_notation"
 
     archive(byte)    = "numeral_notation_plugin.cmo"
