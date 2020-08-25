@@ -184,7 +184,7 @@ let register_loaded_library m =
 (** Delayed / available tables of opaque terms *)
 
 let opaque_tables =
-  ref (DPmap.empty : (Constr.t * unit Opaqueproof.delayed_universes) delayed Int.Map.t DPmap.t)
+  ref (DPmap.empty : Opaqueproof.opaque_proofterm delayed Int.Map.t DPmap.t)
 
 let get_opaque_segment name = match CString.split_on_char '/' name with
 | ["opaques"; n] ->
@@ -226,7 +226,7 @@ type seg_sum = summary_disk
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t * bool
-type seg_proofs = Opaqueproof.opaque_proofterm array
+type seg_proofs = Opaqueproof.opaque_proofterm option array
 
 let mk_library sd md digests univs =
   {
@@ -435,7 +435,7 @@ let error_recursively_dependent_library dir =
 
 type opaques =
 | OpaqueDirect of seg_proofs
-| OpaqueAncient of (Constr.t * unit Opaqueproof.delayed_universes) Ancient.t option array
+| OpaqueAncient of Opaqueproof.opaque_proofterm Ancient.t option array
 
 let save_library_base f sum lib univs tasks (proofs : opaques) =
   let ch = raw_extern_library f in
@@ -448,7 +448,7 @@ let save_library_base f sum lib univs tasks (proofs : opaques) =
     | OpaqueDirect proofs ->
       let iter i = function
       | None -> ()
-      | Some (proof : Constr.t * unit Opaqueproof.delayed_universes) ->
+      | Some (proof : Opaqueproof.opaque_proofterm) ->
         let segment = Printf.sprintf "opaques/%i" i in
         ObjFile.marshal_out_segment ch ~segment proof
       in

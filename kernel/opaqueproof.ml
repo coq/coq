@@ -24,10 +24,10 @@ type 'a delayed_universes =
 | PrivateMonomorphic of 'a
 | PrivatePolymorphic of int * Univ.ContextSet.t
 
-type opaque_proofterm = (Constr.t * unit delayed_universes) option
+type opaque_proofterm = (Constr.t * unit delayed_universes)
 
 type indirect_accessor = {
-  access_proof : DirPath.t -> int -> opaque_proofterm;
+  access_proof : DirPath.t -> int -> opaque_proofterm option;
   access_discharge : cooking_info list -> (Constr.t * unit delayed_universes) -> (Constr.t * unit delayed_universes);
 }
 

@@ -39,12 +39,12 @@ type cooking_info = {
   modlist : work_list;
   abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
 
-type opaque_proofterm = (Constr.t * unit delayed_universes) option
+type opaque_proofterm = (Constr.t * unit delayed_universes)
 
 type indirect_accessor = {
-  access_proof : DirPath.t -> int -> opaque_proofterm;
+  access_proof : DirPath.t -> int -> opaque_proofterm option;
   access_discharge : cooking_info list ->
-    (Constr.t * unit delayed_universes) -> (Constr.t * unit delayed_universes);
+    opaque_proofterm -> opaque_proofterm;
 }
 (** Opaque terms are indexed by their library
     dirpath and an integer index. The two functions above activate
@@ -53,7 +53,7 @@ type indirect_accessor = {
 
 (** From a [opaque] back to a [constr]. This might use the
     indirect opaque accessor given as an argument. *)
-val force_proof : indirect_accessor -> opaquetab -> opaque -> constr * unit delayed_universes
+val force_proof : indirect_accessor -> opaquetab -> opaque -> opaque_proofterm
 val force_constraints : indirect_accessor -> opaquetab -> opaque -> Univ.ContextSet.t
 
 val subst_opaque : substitution -> opaque -> opaque
@@ -64,5 +64,5 @@ val discharge_opaque :
 val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit
 
 val dump : ?except:Future.UUIDSet.t -> opaquetab ->
-  (Constr.t * unit delayed_universes) Ancient.t option array *
+  opaque_proofterm Ancient.t option array *
   int Future.UUIDMap.t
