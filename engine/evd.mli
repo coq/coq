@@ -660,7 +660,8 @@ val fix_undefined_variables : evar_map -> evar_map
 (** Universe minimization *)
 val minimize_universes : evar_map -> evar_map
 
-val update_sigma_env : evar_map -> env -> evar_map
+(** Lift [UState.update_sigma_univs] *)
+val update_sigma_univs : UGraph.t -> evar_map -> evar_map
 
 (** Polymorphic universes *)
 

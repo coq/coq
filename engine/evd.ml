@@ -1160,8 +1160,8 @@ let universe_binders evd = UState.universe_binders evd.universes
 
 let universes evd = UState.ugraph evd.universes
 
-let update_sigma_env evd env =
-  { evd with universes = UState.update_sigma_env evd.universes env }
+let update_sigma_univs ugraph evd =
+  { evd with universes = UState.update_sigma_univs evd.universes ugraph }
 
 exception UniversesDiffer = UState.UniversesDiffer
 

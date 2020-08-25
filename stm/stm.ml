@@ -142,10 +142,6 @@ let may_pierce_opaque = function
   | VernacExtend (("ExtractionInductive",_), _) -> true
   | _ -> false
 
-let update_global_env () =
-  if PG_compat.there_are_pending_proofs () then
-    PG_compat.update_global_env ()
-
 module Vcs_ = Vcs.Make(Stateid.Self)
 type future_proof = Declare.Proof.closed_proof_output Future.computation
 
@@ -2336,7 +2332,9 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
   let inject_non_pstate (s,l) =
-    Summary.unfreeze_summaries ~partial:true s; Lib.unfreeze l; update_global_env ()
+    Summary.unfreeze_summaries ~partial:true s; Lib.unfreeze l;
+    if PG_compat.there_are_pending_proofs () then
+      PG_compat.update_sigma_univs (Global.universes ())
   in
 
   let rec pure_cherry_pick_non_pstate safe_id id =
