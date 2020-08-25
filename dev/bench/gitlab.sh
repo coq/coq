@@ -52,15 +52,6 @@ check_variable "coq_opam_packages"
 new_coq_commit=$(git rev-parse HEAD^2)
 old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
 
-if which jq > /dev/null; then
-    :
-else
-    echo > /dev/stderr
-    echo "ERROR: \"jq\" program is not available." > /dev/stderr
-    echo > /dev/stderr
-    exit 1
-fi
-
 if echo "$num_of_iterations" | grep '^[1-9][0-9]*$' 2> /dev/null > /dev/null; then
     :
 else
@@ -75,39 +66,6 @@ working_dir="$PWD/_bench"
 
 log_dir=$working_dir/logs
 mkdir "$log_dir"
-
-if [ ! -z "${coq_pr_number}" ]; then
-    github_response="$(curl "https://api.github.com/repos/coq/coq/pulls/${coq_pr_number}")"
-    new_coq_repository="$(echo "${github_response}" | jq -r '.head.repo.clone_url')"
-    new_coq_commit="$(echo "${github_response}" | jq -r '.head.sha')"
-    old_coq_repository="$(echo "${github_response}" | jq -r '.base.repo.clone_url')"
-    old_coq_commit="$(echo "${github_response}" | jq -r '.base.sha')"
-    coq_pr_title="$(echo "${github_response}" | jq -r '.title')"
-    # for coqbot parsing purposes, coq_pr_number and coq_pr_comment_id must not have newlines
-    coq_pr_number="$(echo "${coq_pr_number}" | tr -d '\n' | tr -d '\r')"
-    coq_pr_comment_id="$(echo "${coq_pr_comment_id}" | tr -d '\n' | tr -d '\r')"
-
-    for val in "${new_coq_repository}" "${new_coq_commit}" "${old_coq_repository}" "${old_coq_commit}" "${coq_pr_title}"; do
-        if [ -z "$val" ] || [ "val" == "null" ]; then
-            echo 'ERROR: Invalid Response:' > /dev/stderr
-            echo "${github_response}" > /dev/stderr
-            echo "Info:" > /dev/stderr
-            curl -i "https://api.github.com/repos/coq/coq/pulls/${coq_pr_number}" > /dev/stderr
-            exit 1
-        fi
-    done
-
-    if [ -z "$BENCH_DEBUG" ]; then # if it's non-empty, this'll get
-                                   # printed later anyway.  But we
-                                   # want to see it always if we're
-                                   # automatically computing values
-        echo "DEBUG: new_coq_repository = $new_coq_repository"
-        echo "DEBUG: new_coq_commit = $new_coq_commit"
-        echo "DEBUG: old_coq_repository = $old_coq_repository"
-        echo "DEBUG: old_coq_commit = $old_coq_commit"
-    fi
-
-fi
 
 if [ ! -z "$BENCH_DEBUG" ]
 then
