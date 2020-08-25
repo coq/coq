@@ -116,7 +116,7 @@ Qed.
 
 Theorem div_small: forall a b, 0<=a<b -> a/b == 0.
 Proof.
-intros. symmetry.
+intros a b ?. symmetry.
 apply div_unique with a; intuition; try order.
 now nzsimpl.
 Qed.
@@ -149,7 +149,7 @@ Qed.
 
 Lemma mod_1_r: forall a, 0<=a -> a mod 1 == 0.
 Proof.
-intros. symmetry.
+intros a ?. symmetry.
 apply mod_unique with a; try split; try order; try apply lt_0_1.
 now nzsimpl.
 Qed.
@@ -173,7 +173,7 @@ Qed.
 
 Lemma mod_mul : forall a b, 0<=a -> 0<b -> (a*b) mod b == 0.
 Proof.
-intros; symmetry.
+intros a b ? ?; symmetry.
 apply mod_unique with a; try split; try order.
 - apply mul_nonneg_nonneg; order.
 - nzsimpl; apply mul_comm.
@@ -186,7 +186,7 @@ Qed.
 
 Theorem mod_le: forall a b, 0<=a -> 0<b -> a mod b <= a.
 Proof.
-intros. destruct (le_gt_cases b a).
+intros a b ? ?. destruct (le_gt_cases b a).
 - apply le_trans with b; auto.
   apply lt_le_incl. destruct (mod_bound_pos a b); auto.
 - rewrite lt_eq_cases; right.
@@ -198,7 +198,7 @@ Qed.
 
 Lemma div_pos: forall a b, 0<=a -> 0<b -> 0 <= a/b.
 Proof.
-intros.
+intros a b ? ?.
 rewrite (mul_le_mono_pos_l _ _ b); auto; nzsimpl.
 rewrite (add_le_mono_r _ _ (a mod b)).
 rewrite <- div_mod by order.
@@ -247,7 +247,7 @@ Qed.
 
 Lemma div_lt : forall a b, 0<a -> 1<b -> a/b < a.
 Proof.
-intros.
+intros a b ? ?.
 assert (0 < b) by (apply lt_trans with 1; auto using lt_0_1).
 destruct (lt_ge_cases a b).
 - rewrite div_small; try split; order.
@@ -284,7 +284,7 @@ Qed.
 
 Lemma mul_div_le : forall a b, 0<=a -> 0<b -> b*(a/b) <= a.
 Proof.
-intros.
+intros a b ? ?.
 rewrite (add_le_mono_r _ _ (a mod b)), <- div_mod by order.
 rewrite <- (add_0_r a) at 1.
 rewrite <- add_le_mono_l. destruct (mod_bound_pos a b); order.
@@ -292,7 +292,7 @@ Qed.
 
 Lemma mul_succ_div_gt : forall a b, 0<=a -> 0<b -> a < b*(S (a/b)).
 Proof.
-intros.
+intros a b ? ?.
 rewrite (div_mod a b) at 1 by order.
 rewrite (mul_succ_r).
 rewrite <- add_lt_mono_l.
@@ -304,7 +304,7 @@ Qed.
 
 Lemma div_exact : forall a b, 0<=a -> 0<b -> (a == b*(a/b) <-> a mod b == 0).
 Proof.
-intros. rewrite (div_mod a b) at 1 by order.
+intros a b ? ?. rewrite (div_mod a b) at 1 by order.
 rewrite <- (add_0_r (b*(a/b))) at 2.
 apply add_cancel_l.
 Qed.
@@ -314,7 +314,7 @@ Qed.
 Theorem div_lt_upper_bound:
   forall a b q, 0<=a -> 0<b -> a < b*q -> a/b < q.
 Proof.
-intros.
+intros a b q ? ? ?.
 rewrite (mul_lt_mono_pos_l b) by order.
 apply le_lt_trans with a; auto.
 apply mul_div_le; auto.
@@ -323,7 +323,7 @@ Qed.
 Theorem div_le_upper_bound:
   forall a b q, 0<=a -> 0<b -> a <= b*q -> a/b <= q.
 Proof.
-intros.
+intros a b q ? ? ?.
 rewrite (mul_le_mono_pos_l _ _ b) by order.
 apply le_trans with a; auto.
 apply mul_div_le; auto.
@@ -362,7 +362,7 @@ Qed.
 Lemma mod_add : forall a b c, 0<=a -> 0<=a+b*c -> 0<c ->
  (a + b * c) mod c == a mod c.
 Proof.
- intros.
+ intros a b c ? ? ?.
  symmetry.
  apply mod_unique with (a/c+b); auto.
  - apply mod_bound_pos; auto.
@@ -373,7 +373,7 @@ Qed.
 Lemma div_add : forall a b c, 0<=a -> 0<=a+b*c -> 0<c ->
  (a + b * c) / c == a / c + b.
 Proof.
- intros.
+ intros a b c ? ? ?.
  apply (mul_cancel_l _ _ c); try order.
  apply (add_cancel_r _ _ ((a+b*c) mod c)).
  rewrite <- div_mod, mod_add by order.
@@ -393,7 +393,7 @@ Qed.
 Lemma div_mul_cancel_r : forall a b c, 0<=a -> 0<b -> 0<c ->
  (a*c)/(b*c) == a/b.
 Proof.
- intros.
+ intros a b c ? ? ?.
  symmetry.
  apply div_unique with ((a mod b)*c).
  - apply mul_nonneg_nonneg; order.
@@ -409,13 +409,13 @@ Qed.
 Lemma div_mul_cancel_l : forall a b c, 0<=a -> 0<b -> 0<c ->
  (c*a)/(c*b) == a/b.
 Proof.
- intros. rewrite !(mul_comm c); apply div_mul_cancel_r; auto.
+ intros a b c ? ? ?. rewrite !(mul_comm c); apply div_mul_cancel_r; auto.
 Qed.
 
 Lemma mul_mod_distr_l: forall a b c, 0<=a -> 0<b -> 0<c ->
   (c*a) mod (c*b) == c * (a mod b).
 Proof.
- intros.
+ intros a b c ? ? ?.
  rewrite <- (add_cancel_l _ _ ((c*b)* ((c*a)/(c*b)))).
  rewrite <- div_mod.
  - rewrite div_mul_cancel_l; auto.
@@ -427,7 +427,7 @@ Qed.
 Lemma mul_mod_distr_r: forall a b c, 0<=a -> 0<b -> 0<c ->
   (a*c) mod (b*c) == (a mod b) * c.
 Proof.
- intros. rewrite !(mul_comm _ c); now rewrite mul_mod_distr_l.
+ intros a b c ? ? ?. rewrite !(mul_comm _ c); now rewrite mul_mod_distr_l.
 Qed.
 
 (** Operations modulo. *)
@@ -435,7 +435,7 @@ Qed.
 Theorem mod_mod: forall a n, 0<=a -> 0<n ->
  (a mod n) mod n == a mod n.
 Proof.
- intros. destruct (mod_bound_pos a n); auto. now rewrite mod_small_iff.
+ intros a n ? ?. destruct (mod_bound_pos a n); auto. now rewrite mod_small_iff.
 Qed.
 
 Lemma mul_mod_idemp_l : forall a b n, 0<=a -> 0<=b -> 0<n ->
@@ -454,13 +454,14 @@ Qed.
 Lemma mul_mod_idemp_r : forall a b n, 0<=a -> 0<=b -> 0<n ->
  (a*(b mod n)) mod n == (a*b) mod n.
 Proof.
- intros. rewrite !(mul_comm a). apply mul_mod_idemp_l; auto.
+ intros a b n ? ? ?. rewrite !(mul_comm a). apply mul_mod_idemp_l; auto.
 Qed.
 
 Theorem mul_mod: forall a b n, 0<=a -> 0<=b -> 0<n ->
  (a * b) mod n == ((a mod n) * (b mod n)) mod n.
 Proof.
-  intros. rewrite mul_mod_idemp_l, mul_mod_idemp_r; trivial. - reflexivity.
+  intros a b n ? ? ?. rewrite mul_mod_idemp_l, mul_mod_idemp_r; trivial.
+  - reflexivity.
   - now destruct (mod_bound_pos b n).
 Qed.
 
@@ -478,13 +479,14 @@ Qed.
 Lemma add_mod_idemp_r : forall a b n, 0<=a -> 0<=b -> 0<n ->
  (a+(b mod n)) mod n == (a+b) mod n.
 Proof.
- intros. rewrite !(add_comm a). apply add_mod_idemp_l; auto.
+ intros a b n ? ? ?. rewrite !(add_comm a). apply add_mod_idemp_l; auto.
 Qed.
 
 Theorem add_mod: forall a b n, 0<=a -> 0<=b -> 0<n ->
  (a+b) mod n == (a mod n + b mod n) mod n.
 Proof.
-  intros. rewrite add_mod_idemp_l, add_mod_idemp_r; trivial. - reflexivity.
+  intros a b n ? ? ?. rewrite add_mod_idemp_l, add_mod_idemp_r; trivial.
+  - reflexivity.
   - now destruct (mod_bound_pos b n).
 Qed.
 
@@ -525,7 +527,7 @@ Qed.
 Theorem div_mul_le:
  forall a b c, 0<=a -> 0<b -> 0<=c -> c*(a/b) <= (c*a)/b.
 Proof.
- intros.
+ intros a b c ? ? ?.
  apply div_le_lower_bound; auto.
  - apply mul_nonneg_nonneg; auto.
  - rewrite mul_assoc, (mul_comm b c), <- mul_assoc.
@@ -538,7 +540,7 @@ Qed.
 Lemma mod_divides : forall a b, 0<=a -> 0<b ->
  (a mod b == 0 <-> exists c, a == b*c).
 Proof.
- split.
+ intros a b ? ?; split.
  - intros. exists (a/b). rewrite div_exact; auto.
  - intros (c,Hc). rewrite Hc, mul_comm. apply mod_mul; auto.
    rewrite (mul_le_mono_pos_l _ _ b); auto. nzsimpl. order.
