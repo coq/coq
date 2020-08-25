@@ -83,7 +83,7 @@ Tactic Notation "nzinduct" ident(n) :=
   induction_maker n ltac:(apply bi_induction).
 
 Tactic Notation "nzinduct" ident(n) constr(u) :=
-  induction_maker n ltac:(apply central_induction with (z := u)).
+  induction_maker n ltac:(apply (fun A A_wd => central_induction A A_wd u)).
 
 End NZBaseProp.
 

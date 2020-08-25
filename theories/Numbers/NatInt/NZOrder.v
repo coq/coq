@@ -65,7 +65,7 @@ Qed.
 
 Theorem le_succ_l : forall n m, S n <= m <-> n < m.
 Proof.
-intro n; nzinduct m n.
+intros n m; nzinduct m n.
 - split; intro H. + false_hyp H nle_succ_diag_l. + false_hyp H lt_irrefl.
 - intro m.
   rewrite (lt_eq_cases (S n) (S m)), !lt_succ_r, (lt_eq_cases n m), succ_inj_wd.
@@ -362,7 +362,7 @@ induction does not go through, so we need to use strong
 Lemma lt_exists_pred_strong :
   forall z n m, z < m -> m <= n -> exists k, m == S k /\ z <= k.
 Proof.
-intro z; nzinduct n z.
+intros z n; nzinduct n z.
 - order.
 - intro n; split; intros IH m H1 H2.
   + apply le_succ_r in H2. destruct H2 as [H2 | H2].
@@ -373,7 +373,7 @@ Qed.
 Theorem lt_exists_pred :
   forall z n, z < n -> exists k, n == S k /\ z <= k.
 Proof.
-intros z n H; apply lt_exists_pred_strong with (z := z) (n := n).
+intros z n H; apply (lt_exists_pred_strong z n).
 - assumption. - apply le_refl.
 Qed.
 
@@ -428,12 +428,12 @@ Qed.
 
 Lemma A'A_right : (forall n, A' n) -> forall n, z <= n -> A n.
 Proof.
-intros H1 n H2. apply H1 with (n := S n); [assumption | apply lt_succ_diag_r].
+intros H1 n H2. apply (H1 (S n)); [assumption | apply lt_succ_diag_r].
 Qed.
 
 Theorem strong_right_induction: right_step' -> forall n, z <= n -> A n.
 Proof.
-intro RS'; apply A'A_right; unfold A'; nzinduct n z;
+intro RS'; apply A'A_right; unfold A'; intro n; nzinduct n z;
 [apply rbase | apply rs'_rs''; apply RS'].
 Qed.
 
@@ -504,7 +504,7 @@ Qed.
 
 Theorem strong_left_induction: left_step' -> forall n, n <= z -> A n.
 Proof.
-intro LS'; apply A'A_left; unfold A'; nzinduct n (S z);
+intro LS'; apply A'A_left; unfold A'; intro n; nzinduct n (S z);
 [apply lbase | apply ls'_ls''; apply LS'].
 Qed.
 
@@ -629,8 +629,7 @@ Qed.
 Theorem lt_wf : well_founded Rlt.
 Proof.
 unfold well_founded.
-apply strong_right_induction' with (z := z).
-- auto with typeclass_instances.
+apply (strong_right_induction' _ _ z).
 - intros n H; constructor; intros y [H1 H2].
   apply nle_gt in H2. elim H2. now apply le_trans with z.
 - intros n H1 H2; constructor; intros m [H3 H4]. now apply H2.
@@ -639,8 +638,7 @@ Qed.
 Theorem gt_wf : well_founded Rgt.
 Proof.
 unfold well_founded.
-apply strong_left_induction' with (z := z).
-- auto with typeclass_instances.
+apply (strong_left_induction' _ _ z).
 - intros n H; constructor; intros y [H1 H2].
   apply nle_gt in H2.
   + elim H2.
