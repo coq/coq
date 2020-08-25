@@ -34,6 +34,12 @@ Nsatz: tactics for proving equalities in integral domains
 
    You can load the ``Nsatz`` module with the command ``Require Import Nsatz``.
 
+   Alternatively, if you prefer not to transitively depend on the
+   files declaring the axioms used to define the real numbers, you can
+   ``Require Import NsatzTactic`` instead; this will still allow
+   :tacn:`nsatz` to solve goals defined about :math:`\mathbb{Z}`,
+   :math:`\mathbb{Q}` and any user-registered rings.
+
 More about `nsatz`
 ---------------------
 
@@ -85,4 +91,4 @@ performed using :ref:`typeclasses`.
      then `lvar` is replaced by all the variables which are not in
      `parameters`.
 
-See the file `Nsatz.v` for many examples, especially in geometry.
+See the test-suite file `Nsatz.v <https://github.com/coq/coq/blob/master/test-suite/success/Nsatz.v>`_ for many examples, especially in geometry.
