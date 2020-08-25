@@ -507,7 +507,7 @@ package "plugins" (
     description = "Coq string_notation plugin"
     version     = "8.13"
 
-    requires    = ""
+    requires    = "coq.vernac"
     directory   = "syntax"
 
     archive(byte)    = "string_notation_plugin.cmo"
