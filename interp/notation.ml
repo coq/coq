@@ -1429,7 +1429,7 @@ let declare_entry_coercion (scope,(entry,key)) lev entry' =
   let toaddright =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
         List.fold_right (fun ((lev'',lev'''),path) l ->
-        if entry' = entry'' && level_ord lev' lev'' && entry <> entry'''
+        if entry' = entry'' && level_ord lev'' lev' && entry <> entry'''
         then ((entry,entry'''),((lev,lev'''),path@[(scope,(entry,key))]))::l else l) paths l)
       !entry_coercion_map [] in
   entry_coercion_map :=

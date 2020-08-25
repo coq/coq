@@ -298,3 +298,18 @@ Notation "x :=: y" := (x = y).
 Check (0 :=: 0).
 
 End Bug12691.
+
+Module CoercionEntryTransitivity.
+
+Declare Custom Entry com.
+Declare Custom Entry com_top.
+Notation "<{ e }>" := e (at level 0, e custom com_top at level 99).
+Notation "x ; y" :=
+         (x + y)
+           (in custom com_top at level 90, x custom com at level 90, right associativity).
+Notation "x" := x (in custom com at level 0, x constr at level 0).
+Notation "x" := x (in custom com_top at level 90, x custom com at level 90).
+
+Check fun x => <{ x ; (S x) }>.
+
+End CoercionEntryTransitivity.
