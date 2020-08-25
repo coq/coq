@@ -74,7 +74,7 @@ Proof.
 intros z Base Step; revert Base; pattern z; apply bi_induction.
 - solve_proper.
 - intro; now apply bi_induction.
-- intro; pose proof (Step n); tauto.
+- intro n; pose proof (Step n); tauto.
 Qed.
 
 End CentralInduction.
