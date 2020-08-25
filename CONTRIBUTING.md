@@ -791,10 +791,12 @@ organization, because of a limitation of GitHub).
 
 #### Additional notes for pull request reviewers and assignees ####
 
-- NEVER USE GITHUB'S MERGE BUTTON.  Instead, we provide a script
-  [`dev/tools/merge-pr.sh`][merge-pr] which you should use to merge a
-  PR (requires having configured gpg with git).  In the future, we
-  will also support merging through a command to **@coqbot**.
+- NEVER USE GITHUB'S MERGE BUTTON.  Instead, you should either:
+  - run the [`dev/tools/merge-pr.sh`][merge-pr] script (requires
+    having configured gpg with git);
+  - or post a comment containing "@coqbot: merge now" (this is
+    especially convenient for developers who do not have a GPG key and
+    for when you do not have access to a console).
 
 - PR authors or co-authors cannot review, self-assign, or merge the PR
   they contributed to.  However, reviewers may push small fixes to the
