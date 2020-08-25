@@ -629,9 +629,9 @@ Module TOMaxEqDec_to_Compare
   if eq_dec x y then Eq
   else if eq_dec (M.max x y) y then Lt else Gt.
 
- Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
+ Lemma compare_spec x y : CompSpec eq lt x y (compare x y).
  Proof.
- intros; unfold compare; repeat destruct eq_dec; auto; constructor.
+ unfold compare; repeat destruct eq_dec; auto; constructor.
  - destruct (lt_total x y); auto.
    absurd (x==y); auto. transitivity (max x y); auto.
    symmetry. apply max_l. rewrite le_lteq; intuition.
