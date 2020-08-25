@@ -546,6 +546,38 @@ Proof. by move/contra=> notb_notc /notb_notc/negbTE. Qed.
 Lemma contraFF (c b : bool) : (c -> b) -> b = false -> c = false.
 Proof. by move/contraFN=> bF_notc /bF_notc/negbTE. Qed.
 
+(* additional contra lemmas involving [P,Q : Prop] *)
+Lemma contra_not (P Q : Prop) : (Q -> P) -> (~ P -> ~ Q). Proof. by auto. Qed.
+
+Lemma contraPnot (P Q : Prop) : (Q -> ~ P) -> (P -> ~ Q). Proof. by auto. Qed.
+
+Lemma contraTnot (b : bool) (P : Prop) : (P -> ~~ b) -> (b -> ~ P).
+Proof. by case: b; auto. Qed.
+
+Lemma contraNnot (P : Prop) (b : bool) : (P -> b) -> (~~ b -> ~ P).
+Proof. rewrite -{1}[b]negbK; exact: contraTnot. Qed.
+
+Lemma contraPT (P : Prop) (b : bool) : (~~ b -> ~ P) -> P -> b.
+Proof. by case: b => //= /(_ isT) nP /nP. Qed.
+
+Lemma contra_notT (P : Prop) (b : bool) : (~~ b -> P) -> ~ P -> b.
+Proof. by case: b => //= /(_ isT) HP /(_ HP). Qed.
+
+Lemma contra_notN (P : Prop) (b : bool) : (b -> P) -> ~ P -> ~~ b.
+Proof. rewrite -{1}[b]negbK; exact: contra_notT. Qed.
+
+Lemma contraPN (P : Prop) (b : bool) : (b -> ~ P) -> (P -> ~~ b).
+Proof. by case: b => //=; move/(_ isT) => HP /HP. Qed.
+
+Lemma contraFnot (P : Prop) (b : bool) : (P -> b) -> b = false -> ~ P.
+Proof. by case: b => //; auto. Qed.
+
+Lemma contraPF (P : Prop) (b : bool) : (b -> ~ P) -> P -> b = false.
+Proof. by case: b => // /(_ isT). Qed.
+
+Lemma contra_notF (P : Prop) (b : bool) : (b -> P) -> ~ P -> b = false.
+Proof. by case: b => // /(_ isT). Qed.
+
 (**
  Coercion of sum-style datatypes into bool, which makes it possible
  to use ssr's boolean if rather than Coq's "generic" if.             **)
@@ -1310,10 +1342,6 @@ Definition SimplRel {T} (r : rel T) : simpl_rel T := fun x => SimplPred (r x).
 Definition relU {T} (r1 r2 : rel T) := SimplRel (xrelU r1 r2).
 Definition relpre {aT rT} (f : aT -> rT) (r : rel rT) := SimplRel (xrelpre f r).
 
-(* Required to avoid an incompatible format warning with coq-8.12 *)
-Reserved Notation "[ 'rel' x y : T | E ]" (at level 0, x ident, y ident,
-  format "'[hv' [ 'rel'  x  y  :  T  | '/ '  E ] ']'").
-
 Notation "[ 'rel' x y | E ]" := (SimplRel (fun x y => E%B))
   (only parsing) : fun_scope.
 Notation "[ 'rel' x y : T | E ]" :=
@@ -1989,8 +2017,6 @@ Variables (aT rT : predArgType) (f : aT -> rT) (g : rT -> aT).
 Variables (aD : {pred aT}) (rD : {pred rT}).
 Variable (aP : pred aT) (rP : pred rT) (aR : rel aT) (rR : rel rT).
 
-Notation rD := [pred x | g x \in aD].
-
 Lemma monoW_in :
     {in aD &, {mono f : x y / aR x y >-> rR x y}} ->
   {in aD &, {homo f : x y / aR x y >-> rR x y}}.
@@ -2045,7 +2071,6 @@ Arguments homo_mono_in {aT rT f g aD rD aR rR}.
 Arguments monoLR_in {aT rT f g aD rD aR rR}.
 Arguments monoRL_in {aT rT f g aD rD aR rR}.
 Arguments can_mono_in {aT rT f g aD rD aR rR}.
-
 
 Section HomoMonoMorphismFlip.
 Variables (aT rT : Type) (aR : rel aT) (rR : rel rT) (f : aT -> rT).
@@ -2137,40 +2162,3 @@ End inj_can_sym_in_on.
 Arguments inj_can_sym_in_on {aT rT aD rD f g}.
 Arguments inj_can_sym_on {aT rT aD f g}.
 Arguments inj_can_sym_in {aT rT rD f g}.
-
-(* additional contra lemmas involving [P,Q : Prop] *)
-
-Section Contra.
-Implicit Types (P Q : Prop) (b : bool).
-
-Lemma contra_not P Q : (Q -> P) -> (~ P -> ~ Q). Proof. by auto. Qed.
-
-Lemma contraPnot P Q : (Q -> ~ P) -> (P -> ~ Q). Proof. by auto. Qed.
-
-Lemma contraTnot b P : (P -> ~~ b) -> (b -> ~ P).
-Proof. by case: b; auto. Qed.
-
-Lemma contraNnot P b : (P -> b) -> (~~ b -> ~ P).
-Proof. rewrite -{1}[b]negbK; exact: contraTnot. Qed.
-
-Lemma contraPT P b : (~~ b -> ~ P) -> P -> b.
-Proof. by case: b => //= /(_ isT) nP /nP. Qed.
-
-Lemma contra_notT P b : (~~ b -> P) -> ~ P -> b.
-Proof. by case: b => //= /(_ isT) HP /(_ HP). Qed.
-
-Lemma contra_notN P b : (b -> P) -> ~ P -> ~~ b.
-Proof. rewrite -{1}[b]negbK; exact: contra_notT. Qed.
-
-Lemma contraPN P b : (b -> ~ P) -> (P -> ~~ b).
-Proof. by case: b => //=; move/(_ isT) => HP /HP. Qed.
-
-Lemma contraFnot P b : (P -> b) -> b = false -> ~ P.
-Proof. by case: b => //; auto. Qed.
-
-Lemma contraPF P b : (b -> ~ P) -> P -> b = false.
-Proof. by case: b => // /(_ isT). Qed.
-
-Lemma contra_notF P b : (b -> P) -> ~ P -> b = false.
-Proof. by case: b => // /(_ isT). Qed.
-End Contra.
