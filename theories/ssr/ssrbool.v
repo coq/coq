@@ -1310,7 +1310,12 @@ Definition SimplRel {T} (r : rel T) : simpl_rel T := fun x => SimplPred (r x).
 Definition relU {T} (r1 r2 : rel T) := SimplRel (xrelU r1 r2).
 Definition relpre {aT rT} (f : aT -> rT) (r : rel rT) := SimplRel (xrelpre f r).
 
-Notation "[ 'rel' x y | E ]" := (SimplRel (fun x y => E%B)) : fun_scope.
+(* Required to avoid an incompatible format warning with coq-8.12 *)
+Reserved Notation "[ 'rel' x y : T | E ]" (at level 0, x ident, y ident,
+  format "'[hv' [ 'rel'  x  y  :  T  | '/ '  E ] ']'").
+
+Notation "[ 'rel' x y | E ]" := (SimplRel (fun x y => E%B))
+  (only parsing) : fun_scope.
 Notation "[ 'rel' x y : T | E ]" :=
   (SimplRel (fun x y : T => E%B)) (only parsing) : fun_scope.
 
