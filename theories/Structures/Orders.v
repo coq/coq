@@ -165,7 +165,7 @@ End OT_to_Full.
 
 Module OTF_LtIsTotal (Import O:OrderedTypeFull') <: LtIsTotal O.
  Lemma lt_total : forall x y, x<y \/ x==y \/ y<x.
- Proof. intros; destruct (compare_spec x y); auto. Qed.
+ Proof. intros x y; destruct (compare_spec x y); auto. Qed.
 End OTF_LtIsTotal.
 
 Module OTF_to_TotalOrder (O:OrderedTypeFull) <: TotalOrder
@@ -250,7 +250,7 @@ Module OTF_to_TTLB (Import O : OrderedTypeFull') <: TotalTransitiveLeBool.
 
  Lemma leb_le : forall x y, leb x y <-> x <= y.
  Proof.
- intros. unfold leb. rewrite le_lteq.
+ intros x y. unfold leb. rewrite le_lteq.
  destruct (compare_spec x y) as [EQ|LT|GT]; split; auto.
  - discriminate.
  - intros LE. elim (StrictOrder_Irreflexive x).
@@ -261,7 +261,7 @@ Module OTF_to_TTLB (Import O : OrderedTypeFull') <: TotalTransitiveLeBool.
 
  Lemma leb_total : forall x y, leb x y \/ leb y x.
  Proof.
- intros. rewrite 2 leb_le. rewrite 2 le_lteq.
+ intros x y. rewrite 2 leb_le. rewrite 2 le_lteq.
  destruct (compare_spec x y); intuition.
  Qed.
 
@@ -302,7 +302,7 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
 
  Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
  Proof.
- intros. unfold compare.
+ intros x y. unfold compare.
  case_eq (x <=? y).
  - case_eq (y <=? x).
    + constructor. split; auto.
@@ -352,7 +352,7 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
 
  Definition le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
  Proof.
- intros.
+ intros x y.
  unfold lt, eq, le.
  split; [ | intuition ].
  intros LE.
