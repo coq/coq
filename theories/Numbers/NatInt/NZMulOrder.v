@@ -46,7 +46,7 @@ Qed.
 
 Theorem mul_lt_mono_neg_l : forall p n m, p < 0 -> (n < m <-> p * m < p * n).
 Proof.
-nzord_induct p.
+intro p; nzord_induct p.
 - order.
 - intros p Hp _ n m Hp'. apply lt_succ_l in Hp'. order.
 - intros p Hp IH n m _. apply le_succ_l in Hp.
@@ -196,7 +196,7 @@ Qed.
 
 Theorem mul_nonneg_nonneg : forall n m, 0 <= n -> 0 <= m -> 0 <= n*m.
 Proof.
-intros. rewrite <- (mul_0_l m). apply mul_le_mono_nonneg; order.
+intros n m Hn Hm. rewrite <- (mul_0_l m). apply mul_le_mono_nonneg; order.
 Qed.
 
 Theorem mul_pos_cancel_l : forall n m, 0 < n -> (0 < n*m <-> 0 < m).
@@ -343,7 +343,7 @@ Qed.
 
 Lemma square_nonneg : forall a, 0 <= a * a.
 Proof.
- intros. rewrite <- (mul_0_r a). destruct (le_gt_cases a 0).
+ intro a. rewrite <- (mul_0_r a). destruct (le_gt_cases a 0).
  - now apply mul_le_mono_nonpos_l.
  - apply mul_le_mono_nonneg_l; order.
 Qed.
@@ -391,7 +391,7 @@ Qed.
 Lemma quadmul_le_squareadd : forall a b, 0<=a -> 0<=b ->
  2*2*a*b <= (a+b)*(a+b).
 Proof.
- intros.
+ intros a b Ha Hb.
  nzsimpl'.
  rewrite !mul_add_distr_l, !mul_add_distr_r.
  rewrite (add_comm _ (b*b)), add_assoc.
