@@ -81,12 +81,12 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
          (EConstr.push_rel d env, sigma, impl :: uimpls, d::params, impls))
       (env, sigma, [], [], impls_env) nots l
   in
-  let _, sigma = Context.Rel.fold_outside ~init:(env,sigma) (fun f (env,sigma) ->
+  let _, _, sigma = Context.Rel.fold_outside ~init:(env,0,sigma) (fun f (env,k,sigma) ->
       let sigma = RelDecl.fold_constr (fun c sigma ->
-          ComInductive.maybe_unify_params_in env sigma ~ninds ~nparams c)
+          ComInductive.maybe_unify_params_in env sigma ~ninds ~nparams ~binders:k c)
           f sigma
       in
-      EConstr.push_rel f env, sigma)
+      EConstr.push_rel f env, k+1, sigma)
       newfs
   in
   sigma, (impls, newfs)
