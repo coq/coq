@@ -34,8 +34,6 @@ let crazy_val = (val_of_obj (Obj.repr 0))
 
 type tag = int
 
-let accu_tag = 0
-
 let type_atom_tag = 2
 let max_atom_tag = 2
 let proj_tag = 3
@@ -225,8 +223,7 @@ type vswitch = {
 (* + Cofixpoints : see cbytegen.ml                                        *)
 (*                                                                        *)
 (* + vblock's encode (non constant) constructors as in Ocaml, but         *)
-(*   starting from 0 up. tag 0 ( = accu_tag) is reserved for              *)
-(*   accumulators.                                                        *)
+(*   starting from 0 up.                                                  *)
 (*                                                                        *)
 (* + vm_env is the type of the machine environments (i.e. a function or   *)
 (*   a fixpoint)                                                          *)
@@ -391,29 +388,28 @@ external accumulate : unit -> tcode = "accumulate_code"
 external set_bytecode_field : Obj.t -> int -> tcode -> unit = "coq_set_bytecode_field"
 let accumulate = accumulate ()
 
-let whd_val : values -> whd =
-  fun v ->
-    let o = Obj.repr v in
-    if Obj.is_int o then Vconstr_const (Obj.obj o)
+let whd_val (v: values) =
+  let o = Obj.repr v in
+  if Obj.is_int o then Vconstr_const (Obj.obj o)
+  else
+    let tag = Obj.tag o in
+    if Int.equal tag 0 then
+      if Int.equal (Obj.size o) 1 then
+        Varray (Obj.obj o)
+      else Vprod (Obj.obj o)
+    else if Int.equal tag Obj.closure_tag && is_accumulate (fun_code o) then
+      whd_accu o []
+    else if Int.equal tag Obj.closure_tag || Int.equal tag Obj.infix_tag then
+      (match kind_of_closure o with
+       | 0 -> Vfun(Obj.obj o)
+       | 1 -> Vfix(Obj.obj o, None)
+       | 2 -> Vfix(Obj.obj (Obj.field o 2), Some (Obj.obj o))
+       | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
+       | _ -> CErrors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work."))
+    else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
+    else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
     else
-      let tag = Obj.tag o in
-      if tag = accu_tag then
-        if Int.equal (Obj.size o) 1 then
-          Varray(Obj.obj o)
-        else if is_accumulate (fun_code o) then whd_accu o []
-        else Vprod(Obj.obj o)
-      else
-        if tag = Obj.closure_tag || tag = Obj.infix_tag then
-          (match kind_of_closure o with
-           | 0 -> Vfun(Obj.obj o)
-           | 1 -> Vfix(Obj.obj o, None)
-           | 2 -> Vfix(Obj.obj (Obj.field o 2), Some (Obj.obj o))
-           | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
-           | _ -> CErrors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work."))
-        else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
-        else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
-        else
-           Vconstr_block(Obj.obj o)
+      Vconstr_block (Obj.obj o)
 
 (**********************************************)
 (* Constructors *******************************)
@@ -421,7 +417,7 @@ let whd_val : values -> whd =
 
 let obj_of_atom : atom -> Obj.t =
   fun a ->
-    let res = Obj.new_block accu_tag 3 in
+    let res = Obj.new_block Obj.closure_tag 3 in
     set_bytecode_field res 0 accumulate;
     Obj.set_field res 1 (Obj.repr 2);
     Obj.set_field res 2 (Obj.repr a);
@@ -632,10 +628,7 @@ let mk_cofix_body apply_varray k ndef vcf =
     let c = Obj.field (Obj.repr vcfi) 0 in
     Obj.set_field e 0 c;
     let atom = Obj.new_block cofix_tag 1 in
-    let self = Obj.new_block accu_tag 3 in
-    set_bytecode_field self 0 accumulate;
-    Obj.set_field self 1 (Obj.repr 2);
-    Obj.set_field self 2 (Obj.repr atom);
+    let self = obj_of_atom (Obj.obj atom) in
     apply_varray (Obj.obj e) [|Obj.obj self|] in
   Array.init ndef cofix_body
 

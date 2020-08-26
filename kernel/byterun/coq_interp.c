@@ -193,6 +193,8 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #endif
 #endif
 
+#define Is_accu(v) (Is_block(v) && Tag_val(v) == Closure_tag && Code_val(v) == accumulate)
+
 #define CheckPrimArgs(cond, apply_lbl) do{         \
     if (cond) pc++;                                \
     else{                                          \
@@ -726,7 +728,7 @@ value coq_interprete
             accu = block;
             /* Construction of the accumulator */
             num_args = coq_extra_args - rec_pos;
-            Alloc_small(block, 3 + num_args, Accu_tag);
+            Alloc_small(block, 3 + num_args, Closure_tag);
             Code_val(block) = accumulate;
             Field(block, 1) = Val_int(2);
             Field(block, 2) = accu;
@@ -808,7 +810,7 @@ value coq_interprete
 
         /* Creation des blocks accumulate */
         for(i=0; i < nfunc; i++) {
-          Alloc_small(accu, 3, Accu_tag);
+          Alloc_small(accu, 3, Closure_tag);
           Code_val(accu) = accumulate;
           Field(accu, 1) = Val_int(2);
           Field(accu, 2) = Val_int(1);
@@ -957,6 +959,7 @@ value coq_interprete
         print_int(sizes & 0xFFFFFF);
         if (Is_block(accu)) {
           long index = Tag_val(accu);
+          if (index == Closure_tag) index = 0;
           print_instr("block");
           print_lint(index);
           pc += pc[(sizes & 0xFFFFFF) + index];
@@ -1062,7 +1065,7 @@ value coq_interprete
               Field(accu, 0) = Field(coq_global_data, *pc++);
               Field(accu, 1) = *sp++;
               /* Create accumulator */
-              Alloc_small(block, 3, Accu_tag);
+              Alloc_small(block, 3, Closure_tag);
               Code_val(block) = accumulate;
               Field(block, 1) = Val_int(2);
               Field(block, 2) = accu;
@@ -1126,7 +1129,7 @@ value coq_interprete
         mlsize_t i, size;
         print_instr("ACCUMULATE");
         size = Wosize_val(coq_env);
-        Alloc_small(accu, size + coq_extra_args + 1, Accu_tag);
+        Alloc_small(accu, size + coq_extra_args + 1, Closure_tag);
         for(i = 0; i < size; i++) Field(accu, i) = Field(coq_env, i);
         for(i = size; i <= coq_extra_args + size; i++)
           Field(accu, i) = *sp++;
@@ -1220,7 +1223,7 @@ value coq_interprete
             Field(block, 1) = accu;
             accu = block;
             /* We create the accumulator */
-            Alloc_small(block, 3, Accu_tag);
+            Alloc_small(block, 3, Closure_tag);
             Code_val(block) = accumulate;
             Field(block, 1) = Val_int(2);
             Field(block, 2) = accu;
@@ -1235,7 +1238,7 @@ value coq_interprete
       Instruct(MAKEACCU) {
         int i;
         print_instr("MAKEACCU");
-        Alloc_small(accu, coq_extra_args + 4, Accu_tag);
+        Alloc_small(accu, coq_extra_args + 4, Closure_tag);
         Code_val(accu) = accumulate;
         Field(accu, 1) = Val_int(2);
         Field(accu, 2) = Field(coq_atom_tbl, *pc);
