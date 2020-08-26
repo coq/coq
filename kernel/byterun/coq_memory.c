@@ -65,9 +65,10 @@ static void coq_scan_roots(scanning_action action)
   register value * i;
   /* Scan the stack */
   for (i = coq_sp; i < coq_stack_high; i++) {
+    if (!Is_block(*i)) continue;
 #ifdef NO_NAKED_POINTERS
     /* The VM stack may contain C-allocated bytecode */
-    if (Is_block(*i) && !Is_in_heap_or_young(*i)) continue;
+    if (!Is_in_heap_or_young(*i)) continue;
 #endif
     (*action) (*i, i);
   };

@@ -113,7 +113,7 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define Setup_for_gc { sp -= 2; sp[0] = accu; sp[1] = coq_env; coq_sp = sp; }
 #define Restore_after_gc { accu = sp[0]; coq_env = sp[1]; sp += 2; }
 #define Setup_for_caml_call { *--sp = coq_env; coq_sp = sp; }
-#define Restore_after_caml_call { sp = coq_sp; coq_env = *sp++; }
+#define Restore_after_caml_call coq_env = *sp++;
 
 /* Register optimization.
    Some compilers underestimate the use of the local variables representing
