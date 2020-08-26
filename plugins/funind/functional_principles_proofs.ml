@@ -483,7 +483,10 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos g =
         (Proofview.V82.of_tactic
            (intro_avoiding (Id.Set.of_list dyn_infos.rec_hyps)))
     ; (* Then the equation itself *)
-      Proofview.V82.of_tactic (intro_using heq_id)
+      Proofview.V82.of_tactic
+        (intro_using_then heq_id
+           (* we get the fresh name with onLastHypId *)
+           (fun _ -> Proofview.tclUNIT ()))
     ; onLastHypId (fun heq_id ->
           tclTHENLIST
             [ (* Then the new hypothesis *)
@@ -1113,16 +1116,18 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
   in
   let first_tac : tactic =
     (* every operations until fix creations *)
+    (* names are already refreshed *)
     tclTHENLIST
       [ observe_tac "introducing params"
           (Proofview.V82.of_tactic
-             (intros_using (List.rev_map id_of_decl princ_info.params)))
+             (intros_mustbe_force (List.rev_map id_of_decl princ_info.params)))
       ; observe_tac "introducing predictes"
           (Proofview.V82.of_tactic
-             (intros_using (List.rev_map id_of_decl princ_info.predicates)))
+             (intros_mustbe_force
+                (List.rev_map id_of_decl princ_info.predicates)))
       ; observe_tac "introducing branches"
           (Proofview.V82.of_tactic
-             (intros_using (List.rev_map id_of_decl princ_info.branches)))
+             (intros_mustbe_force (List.rev_map id_of_decl princ_info.branches)))
       ; observe_tac "building fixes" mk_fixes ]
   in
   let intros_after_fixes : tactic =

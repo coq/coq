@@ -1055,6 +1055,9 @@ let rec clear_zero p = function
       let tac,t = clear_zero (P_APP 2 :: p) r in tac,Oplus(f,t)
   | t -> [],t
 
+open Proofview
+open Proofview.Notations
+
 let replay_history tactic_normalisation =
   let aux  = Id.of_string "auxiliary" in
   let aux1 = Id.of_string "auxiliary_1" in
@@ -1085,8 +1088,8 @@ let replay_history tactic_normalisation =
                 mk_integer k;
                 mkVar id1; mkVar id2 |])];
             mk_then tac;
-            (intros_using [aux]);
-            resolve_id aux;
+            intro_using_then aux (fun aux ->
+            resolve_id aux);
             reflexivity
           ]
       | CONTRADICTION (e1,e2) :: l ->
@@ -1128,24 +1131,25 @@ let replay_history tactic_normalisation =
           tclTHENS
             (cut state_eg)
             [ tclTHENS
-                (tclTHENLIST [
-                  (intros_using [aux]);
-                  (generalize_tac
-                    [mkApp (Lazy.force coq_OMEGA1,
-                      [| eq1; rhs; mkVar aux; mkVar id |])]);
-                  (clear [aux;id]);
-                  (intros_using [id]);
-                  (cut (mk_gt kk dd)) ])
+                (intro_using_then aux (fun aux ->
+                     tclTHENLIST [
+                       (generalize_tac
+                          [mkApp (Lazy.force coq_OMEGA1,
+                                  [| eq1; rhs; mkVar aux; mkVar id |])]);
+                       (clear [aux;id]);
+                       (intro_mustbe_force id);
+                       (cut (mk_gt kk dd)) ]))
                 [ tclTHENS
                     (cut (mk_gt kk izero))
-                    [ tclTHENLIST [
-                        (intros_using [aux1; aux2]);
+                    [ intro_using_then aux1 (fun aux1 ->
+                      intro_using_then aux2 (fun aux2 ->
+                      tclTHENLIST [
                         (generalize_tac
                           [mkApp (Lazy.force coq_Zmult_le_approx,
                             [| kk;eq2;dd;mkVar aux1;mkVar aux2; mkVar id |])]);
                         (clear [aux1;aux2;id]);
-                        (intros_using [id]);
-                        (loop l) ];
+                        (intro_mustbe_force id);
+                        (loop l) ]));
                       tclTHENLIST [
                         (unfold sp_Zgt);
                         simpl_in_concl;
@@ -1166,21 +1170,24 @@ let replay_history tactic_normalisation =
           tclTHENS
             (cut (mk_gt dd izero))
             [ tclTHENS (cut (mk_gt kk dd))
-                [tclTHENLIST [
-                  (intros_using [aux2;aux1]);
-                  (generalize_tac
-                    [mkApp (Lazy.force coq_OMEGA4,
-                      [| dd;kk;eq2;mkVar aux1; mkVar aux2 |])]);
-                  (clear [aux1;aux2]);
-                  unfold sp_not;
-                  (intros_using [aux]);
-                  resolve_id aux;
-                  mk_then tac;
-                  assumption ] ;
-                 tclTHENLIST [
-                   unfold sp_Zgt;
-                   simpl_in_concl;
-                   reflexivity ] ];
+                [ intro_using_then aux2 (fun aux2 ->
+                  intro_using_then aux1 (fun aux1 ->
+                  tclTHENLIST [
+                    (generalize_tac
+                       [mkApp (Lazy.force coq_OMEGA4,
+                               [| dd;kk;eq2;mkVar aux1; mkVar aux2 |])]);
+                    (clear [aux1;aux2]);
+                    unfold sp_not;
+                    intro_using_then aux (fun aux ->
+                    tclTHENLIST [
+                      resolve_id aux;
+                      mk_then tac;
+                      assumption
+                    ])])) ;
+                  tclTHENLIST [
+                    unfold sp_Zgt;
+                    simpl_in_concl;
+                    reflexivity ] ];
               tclTHENLIST [
                 unfold sp_Zgt;
                 simpl_in_concl;
@@ -1196,29 +1203,30 @@ let replay_history tactic_normalisation =
             let tac = scalar_norm [P_APP 3] e2.body in
             tclTHENS
               (cut state_eq)
-              [tclTHENLIST [
-                (intros_using [aux1]);
-                (generalize_tac
-                  [mkApp (Lazy.force coq_OMEGA18,
-                    [| eq1;eq2;kk;mkVar aux1; mkVar id |])]);
-                (clear [aux1;id]);
-                (intros_using [id]);
-                (loop l) ];
-               tclTHEN (mk_then tac) reflexivity ]
+              [ intro_using_then aux1 (fun aux1 ->
+                tclTHENLIST [
+                  (generalize_tac
+                     [mkApp (Lazy.force coq_OMEGA18,
+                             [| eq1;eq2;kk;mkVar aux1; mkVar id |])]);
+                  (clear [aux1;id]);
+                  (intro_mustbe_force id);
+                  (loop l) ]);
+                tclTHEN (mk_then tac) reflexivity ]
           else
             let tac = scalar_norm [P_APP 3] e2.body in
             tclTHENS (cut state_eq)
               [
                 tclTHENS
                  (cut (mk_gt kk izero))
-                 [tclTHENLIST [
-                   (intros_using [aux2;aux1]);
-                   (generalize_tac
+                 [ intro_using_then aux2 (fun aux2 ->
+                   intro_using_then aux1 (fun aux1 ->
+                   tclTHENLIST [
+                     (generalize_tac
                      [mkApp (Lazy.force coq_OMEGA3,
                        [| eq1; eq2; kk; mkVar aux2; mkVar aux1;mkVar id|])]);
                    (clear [aux1;aux2;id]);
-                   (intros_using [id]);
-                   (loop l) ];
+                   (intro_mustbe_force id);
+                   (loop l) ]));
                   tclTHENLIST [
                     unfold sp_Zgt;
                     simpl_in_concl;
@@ -1238,13 +1246,13 @@ let replay_history tactic_normalisation =
           in
           tclTHENS
             (cut (mk_eq eq1 (mk_inv eq2)))
-            [tclTHENLIST [
-              (intros_using [aux]);
-              (generalize_tac [mkApp (Lazy.force coq_OMEGA8,
-                [| eq1;eq2;mkVar id1;mkVar id2; mkVar aux|])]);
-              (clear [id1;id2;aux]);
-              (intros_using [id]);
-              (loop l) ];
+            [ intro_using_then aux (fun aux ->
+             tclTHENLIST [
+               (generalize_tac
+                  [mkApp (Lazy.force coq_OMEGA8, [| eq1;eq2;mkVar id1;mkVar id2; mkVar aux|])]);
+               (clear [id1;id2;aux]);
+               (intro_mustbe_force id);
+               (loop l) ]);
             tclTHEN (mk_then tac) reflexivity]
 
       | STATE {st_new_eq=e;st_def=def;st_orig=orig;st_coef=m;st_var=v} :: l ->
@@ -1271,18 +1279,19 @@ let replay_history tactic_normalisation =
               orig.body m ({c= negone;v= v}::def.body) in
           tclTHENS
             (cut theorem)
-            [tclTHENLIST [
-              (intros_using [aux]);
-              (elim_id aux);
-              (clear [aux]);
-              (intros_using [vid; aux]);
-              (generalize_tac
+            [ tclTHENLIST [ intro_using_then aux (fun aux ->
+                (elim_id aux) <*>
+                (clear [aux]));
+              intro_using_then vid (fun vid ->
+              intro_using_then aux (fun aux ->
+              tclTHENLIST [
+                (generalize_tac
                 [mkApp (Lazy.force coq_OMEGA9,
                   [| mkVar vid;eq2;eq1;mm; mkVar id2;mkVar aux |])]);
               mk_then tac;
               (clear [aux]);
-              (intros_using [id]);
-              (loop l) ];
+              (intro_mustbe_force id);
+              (loop l) ]))];
             tclTHEN (exists_tac eq1) reflexivity ]
       | SPLIT_INEQ(e,(e1,act1),(e2,act2)) :: l ->
           let id1 = new_identifier ()
@@ -1294,8 +1303,8 @@ let replay_history tactic_normalisation =
           let eq = val_of(decompile e) in
           tclTHENS
             (simplest_elim (applist (Lazy.force coq_OMEGA19, [eq; mkVar id])))
-            [tclTHENLIST [ mk_then tac1; (intros_using [id1]); (loop act1) ];
-             tclTHENLIST [ mk_then tac2; (intros_using [id2]); (loop act2) ]]
+            [tclTHENLIST [ mk_then tac1; (intro_mustbe_force id1); (loop act1) ];
+             tclTHENLIST [ mk_then tac2; (intro_mustbe_force id2); (loop act2) ]]
       | SUM(e3,(k1,e1),(k2,e2)) :: l ->
           let id = new_identifier () in
           tag_hypothesis id e3;
@@ -1318,7 +1327,7 @@ let replay_history tactic_normalisation =
               (generalize_tac
                 [mkApp (tac_thm, [| eq1; eq2; kk; mkVar id1; mkVar id2 |])]);
               mk_then tac;
-              (intros_using [id]);
+              (intro_mustbe_force id);
               (loop l)
             ]
           else
@@ -1329,25 +1338,26 @@ let replay_history tactic_normalisation =
             tclTHENS (cut (mk_gt kk1 izero))
               [tclTHENS
                  (cut (mk_gt kk2 izero))
-                 [tclTHENLIST [
-                   (intros_using [aux2;aux1]);
-                   (generalize_tac
-                     [mkApp (Lazy.force coq_OMEGA7, [|
-                       eq1;eq2;kk1;kk2;
-                       mkVar aux1;mkVar aux2;
-                       mkVar id1;mkVar id2 |])]);
-                   (clear [aux1;aux2]);
-                   mk_then tac;
-                   (intros_using [id]);
-                   (loop l) ];
-                 tclTHENLIST [
-                   unfold sp_Zgt;
-                   simpl_in_concl;
-                   reflexivity ] ];
-              tclTHENLIST [
-                unfold sp_Zgt;
-                simpl_in_concl;
-                reflexivity ] ]
+                 [ intro_using_then aux2 (fun aux2 ->
+                   intro_using_then aux1 (fun aux1 ->
+                    tclTHENLIST [
+                      (generalize_tac
+                         [mkApp (Lazy.force coq_OMEGA7, [|
+                              eq1;eq2;kk1;kk2;
+                              mkVar aux1;mkVar aux2;
+                              mkVar id1;mkVar id2 |])]);
+                      (clear [aux1;aux2]);
+                      mk_then tac;
+                      (intro_mustbe_force id);
+                      (loop l) ]));
+                   tclTHENLIST [
+                     unfold sp_Zgt;
+                     simpl_in_concl;
+                     reflexivity ] ];
+               tclTHENLIST [
+                 unfold sp_Zgt;
+                 simpl_in_concl;
+                 reflexivity ] ]
       | CONSTANT_NOT_NUL(e,k) :: l ->
           tclTHEN ((generalize_tac [mkVar (hyp_of_tag e)])) Equality.discrConcl
       | CONSTANT_NUL(e) :: l ->
@@ -1358,9 +1368,8 @@ let replay_history tactic_normalisation =
             unfold sp_Zle;
             simpl_in_concl;
             unfold sp_not;
-            (intros_using [aux]);
-            resolve_id aux;
-            reflexivity
+            intro_using_then aux (fun aux ->
+            resolve_id aux <*> reflexivity)
           ]
       | _ -> Proofview.tclUNIT ()
   in
@@ -1382,7 +1391,7 @@ let normalize_equation sigma id flag theorem pos t t1 t2 (tactic,defs) =
   in
   if not (List.is_empty tac) then
     let id' = new_identifier () in
-    ((id',(tclTHENLIST [ shift_left; mk_then tac; (intros_using [id']) ]))
+    ((id',(tclTHENLIST [ shift_left; mk_then tac; (intro_mustbe_force id') ]))
           :: tactic,
      compile id' flag t' :: defs)
   else
@@ -1423,10 +1432,7 @@ let destructure_omega env sigma tac_def (id,c) =
 
 let reintroduce id =
   (* [id] cannot be cleared if dependent: protect it by a try *)
-  tclTHEN (tclTRY (clear [id])) (intro_using id)
-
-
-open Proofview.Notations
+  tclTHEN (tclTRY (clear [id])) (intro_using_then id (fun _ -> tclUNIT()))
 
 let coq_omega =
   Proofview.Goal.enter begin fun gl ->
@@ -1444,10 +1450,10 @@ let coq_omega =
            tag_hypothesis id i;
            (tclTHENLIST [
              (simplest_elim (applist (Lazy.force coq_intro_Z, [t])));
-             (intros_using [v; id]);
+             (intros_mustbe_force [v; id]);
              (elim_id id);
              (clear [id]);
-             (intros_using [th;id]);
+             (intros_mustbe_force [th;id]);
              tac ]),
            {kind = INEQ;
             body = [{v=intern_id v; c=one}];
@@ -1455,7 +1461,7 @@ let coq_omega =
          else
            (tclTHENLIST [
              (simplest_elim (applist (Lazy.force coq_new_var, [t])));
-             (intros_using [v;th]);
+             (intros_mustbe_force [v;th]);
              tac ]),
            sys)
       (Proofview.tclUNIT (),[]) (dump_tables ())
@@ -1508,7 +1514,7 @@ let nat_inject =
           tclTHENS
             (tclTHEN
                (simplest_elim (applist (Lazy.force coq_le_gt_dec, [t2;t1])))
-               (intros_using [id]))
+               (intro_mustbe_force id))
             [
               tclTHENLIST [
                 (clever_rewrite_gen p
@@ -1703,7 +1709,7 @@ let onClearedName2 id tac =
     (tclTRY (clear [id]))
     (Proofview.Goal.enter begin fun gl ->
      let id1 = fresh_id Id.Set.empty (add_suffix id "_left") gl in
-     let id2 = fresh_id Id.Set.empty (add_suffix id "_right") gl in
+     let id2 = fresh_id (Id.Set.singleton id1) (add_suffix id "_right") gl in
       tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
     end)
 

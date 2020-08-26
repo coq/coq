@@ -414,7 +414,8 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
   observe_tclTHENLIST
     (fun _ _ -> str "treat_case1")
     [ h_intros (List.rev rev_ids)
-    ; Proofview.V82.of_tactic (intro_using teq_id)
+    ; Proofview.V82.of_tactic
+        (intro_using_then teq_id (fun _ -> Proofview.tclUNIT ()))
     ; onLastHypId (fun heq ->
           observe_tclTHENLIST
             (fun _ _ -> str "treat_case2")
@@ -601,7 +602,11 @@ let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds g =
                        (Proofview.V82.of_tactic (simplest_case (mkVar id)))
                        [ observe_tclTHENLIST
                            (fun _ _ -> str "")
-                           [ Proofview.V82.of_tactic (intro_using h_id)
+                           [ Proofview.V82.of_tactic
+                               (intro_using_then h_id
+                                  (* We don't care about the refreshed name,
+                                     accessed only through auto? *)
+                                  (fun _ -> Proofview.tclUNIT ()))
                            ; Proofview.V82.of_tactic
                                (simplest_elim
                                   (mkApp (delayed_force lt_n_O, [|s_max|])))
@@ -865,7 +870,10 @@ let terminate_app_rec (f, args) expr_info continuation_tac _ g =
             (simplest_elim (mkApp (mkVar expr_info.ih, Array.of_list args))))
          [ observe_tclTHENLIST
              (fun _ _ -> str "terminate_app_rec2")
-             [ Proofview.V82.of_tactic (intro_using rec_res_id)
+             [ Proofview.V82.of_tactic
+                 (intro_using_then rec_res_id
+                    (* refreshed name gotten from onNthHypId *)
+                    (fun _ -> Proofview.tclUNIT ()))
              ; Proofview.V82.of_tactic intro
              ; onNthHypId 1 (fun v_bound ->
                    onNthHypId 2 (fun v ->

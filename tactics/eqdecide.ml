@@ -150,12 +150,12 @@ let injHyp id =
 let diseqCase hyps eqonleft =
   let diseq  = Id.of_string "diseq" in
   let absurd = Id.of_string "absurd" in
-  (tclTHEN (intro_using diseq)
-  (tclTHEN (choose_noteq eqonleft)
+  (intro_using_then diseq (fun diseq ->
+  tclTHEN (choose_noteq eqonleft)
   (tclTHEN (rewrite_and_clear (List.rev hyps))
   (tclTHEN  (red_in_concl)
-  (tclTHEN  (intro_using absurd)
-  (tclTHEN  (Simple.apply (mkVar diseq))
+  (intro_using_then absurd (fun absurd ->
+  tclTHEN  (Simple.apply (mkVar diseq))
   (tclTHEN  (injHyp absurd)
             (full_trivial []))))))))
 

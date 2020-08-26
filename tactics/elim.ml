@@ -82,10 +82,10 @@ let general_decompose recognizer c =
   Proofview.Goal.enter begin fun gl ->
   let typc = pf_get_type_of gl c in
   tclTHENS (cut typc)
-    [ tclTHEN (intro_using tmphyp_name)
-         (onLastHypId
-            (ifOnHyp recognizer (general_decompose_aux recognizer)
-              (fun id -> clear [id])));
+    [ intro_using_then tmphyp_name (fun id ->
+          ifOnHyp recognizer (general_decompose_aux recognizer)
+            (fun id -> clear [id])
+            id);
        exact_no_check c ]
   end
 
