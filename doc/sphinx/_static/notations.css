@@ -192,7 +192,8 @@
 
 .prodn-cell-nonterminal,
 .prodn-cell-op,
-.prodn-cell-production
+.prodn-cell-production,
+.prodn-cell-tag
 {
     display: table-cell;
 }
@@ -204,6 +205,17 @@
 .prodn-cell-op {
     padding-right: 0.90em;
     font-weight: normal;
+}
+
+.prodn-cell-production {
+    width: 99%;
+}
+
+.prodn-cell-tag {
+    text-align: right;
+    font-weight: normal;
+    font-size: 75%;
+    font-family: "Lato","proxima-nova","Helvetica Neue",Arial,sans-serif;
 }
 
 .prodn-table .notation > .repeat-wrapper {

@@ -1122,12 +1122,14 @@ Pattern matching on terms: match
    then the :token:`ltac_expr` can't use `S` to refer to the constructor of `nat`
    without qualifying the constructor as `Datatypes.S`.
 
-   .. todo below: is matching non-linear unification?  is it the same or different
-      from unification elsewhere in Coq?
+   .. todo how does this differ from the 1-2 other unification routines elsewhere in Coq?
+      Does it use constr_eq or eq_constr_nounivs?
 
    Matching is non-linear: if a
    metavariable occurs more than once, each occurrence must match the same
-   expression.  Matching is first-order except on variables of the form :n:`@?@ident`
+   expression.  Expressions match if they are syntactically equal or are
+   :term:`α-convertible <alpha-convertible>`.
+   Matching is first-order except on variables of the form :n:`@?@ident`
    that occur in the head position of an application. For these variables,
    matching is second-order and returns a functional term.
 
@@ -1305,20 +1307,20 @@ Pattern matching on terms: match
 
    .. example:: Multiple matches for a "context" pattern.
 
-      Internally "x <> y" is represented as "(not x y)", which produces the
+      Internally "x <> y" is represented as "(~ (x = y))", which produces the
       first match.
 
       .. coqtop:: in reset
 
          Ltac f t := match t with
-                    | context [ (not ?t) ] => idtac "?t = " t; fail
+                    | context [ (~ ?t) ] => idtac "?t = " t; fail
                     | _ => idtac
                     end.
          Goal True.
 
       .. coqtop:: all
 
-         f ((not True) <> (not False)).
+         f ((~ True) <> (~ False)).
 
 .. _ltac-match-goal:
 
@@ -1344,6 +1346,13 @@ Pattern matching on goals and hypotheses: match goal
    more subpatterns to match hypotheses followed by a subpattern to match the conclusion.  Except for the
    differences noted below, this works the same as the corresponding :n:`@match_key @ltac_expr` construct
    (see :tacn:`match`).  Each current goal is processed independently.
+
+   Matching is non-linear: if a
+   metavariable occurs more than once, each occurrence must match the same
+   expression.  Within a single term, expressions match if they are syntactically equal or
+   :term:`α-convertible <alpha-convertible>`.  When a metavariable is used across
+   multiple hypotheses or across a hypothesis and the current goal, the expressions match if
+   they are :term:`convertible`.
 
    :n:`{*, @match_hyp }`
       Patterns to match with hypotheses.  Each pattern must match a distinct hypothesis in order
@@ -1381,7 +1390,7 @@ Pattern matching on goals and hypotheses: match goal
            :cmd:`Import` `ListNotations`) must be parenthesized or, for the fourth form,
            use double brackets: `[ [ ?l ] ]`.
 
-         :n:`@term__binder`\s in the form `[?x ; ?y]` for a list is not parsed correctly.  The workaround is
+         :n:`@term__binder`\s in the form `[?x ; ?y]` for a list are not parsed correctly.  The workaround is
          to add parentheses or to use the underlying term instead of the notation, i.e. `(cons ?x ?y)`.
 
       If there are multiple :token:`match_hyp`\s in a branch, there may be multiple ways to match them to hypotheses.

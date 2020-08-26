@@ -79,7 +79,7 @@
 \newcssclass{prodn-table}{%
   \begin{savenotes}
   \sphinxattablestart
-  \begin{tabulary}{\linewidth}[t]{lLL}
+  \begin{tabulary}{\linewidth}[t]{lLLL}
   #1
   \end{tabulary}
   \par
@@ -89,4 +89,5 @@
 \newcssclass{prodn-target}{\raisebox{\dimexpr \nscriptsize \relax}{#1}}
 \newcssclass{prodn-cell-nonterminal}{#1 &}
 \newcssclass{prodn-cell-op}{#1 &}
-\newcssclass{prodn-cell-production}{#1\\}
+\newcssclass{prodn-cell-production}{#1 &}
+\newcssclass{prodn-cell-tag}{#1\\}

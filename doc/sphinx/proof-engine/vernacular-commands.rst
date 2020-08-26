@@ -1265,9 +1265,9 @@ Inlining hints for the fast reduction machines
 Registering primitive operations
 ````````````````````````````````
 
-.. cmd:: Primitive @ident {? : @term } := #@ident__prim
+.. cmd:: Primitive @ident_decl {? : @term } := #@ident
 
-   Makes the primitive type or primitive operator :n:`#@ident__prim` defined in OCaml
+   Makes the primitive type or primitive operator :n:`#@ident` defined in OCaml
    accessible in |Coq| commands and tactics.
    For internal use by implementors of |Coq|'s standard library or standard library
    replacements.  No space is allowed after the `#`.  Invalid values give a syntax
