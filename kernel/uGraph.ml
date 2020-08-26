@@ -142,6 +142,12 @@ let enforce_leq_alg u v g =
   | Inl x -> x
   | Inr e -> raise e
 
+let enforce_leq_alg u v g =
+  match Universe.is_sprop u, Universe.is_sprop v with
+  | true, true -> Constraint.empty, g
+  | true, false | false, true -> raise (UniverseInconsistency (Le, u, v, None))
+  | false, false -> enforce_leq_alg u v g
+
 (* sanity check wrapper *)
 let enforce_leq_alg u v g =
   let _,g as cg = enforce_leq_alg u v g in
