@@ -74,23 +74,23 @@ open Environ
 (*                      ^                                                 *)
 (* The [ai] blocks are functions that accumulate their arguments:         *)
 (*           ai arg1  argp --->                                           *)
-(*    ai' = [A_t | accumulate | [Cfx_t | fcofixi] | arg1 | ... | argp ]   *)
+(*    ai' = [A_t | accumulate | envofs | [Cfx_t | fcofixi] | arg1 | ... | argp ] *)
 (* If such a block is matched against, we have to force evaluation,       *)
 (* function [fcofixi] is then applied to [ai'] [arg1] ... [argp]          *)
 (* (note that [ai'] is a pointer to the closure, passed as argument)      *)
 (* Once evaluation is completed [ai'] is updated with the result:         *)
 (*  ai' <--                                                               *)
-(*   [A_t | accumulate | [Cfxe_t |fcofixi|result] | arg1 | ... | argp ]   *)
+(*   [A_t | accumulate | envofs | [Cfxe_t |fcofixi|result] | arg1 | ... | argp ] *)
 (* This representation is nice because the application of the cofix is    *)
 (* evaluated only once (it simulates a lazy evaluation)                   *)
 (* Moreover, when cofix don't have arguments, it is possible to create    *)
 (* a cycle, e.g.:                                                         *)
 (*   cofix one := cons 1 one                                              *)
-(*   a1 = [A_t | accumulate | [Cfx_t|fcofix1] ]                           *)
+(*   a1 = [A_t | accumulate | envofs | [Cfx_t|fcofix1] ]                  *)
 (*   fcofix1 = [clos_t | code | envofs | a1]                              *)
 (* The result of evaluating [a1] is [cons_t | 1 | a1].                    *)
 (* When [a1] is updated :                                                 *)
-(*  a1 = [A_t | accumulate | [Cfxe_t | fcofix1 | [cons_t | 1 | a1]] ]     *)
+(*  a1 = [A_t | accumulate | envofs | [Cfxe_t | fcofix1 | [cons_t | 1 | a1]] ] *)
 (* The cycle is created ...                                               *)
 (*                                                                        *)
 (* In Cfxe_t accumulators, we need to store [fcofixi] for testing         *)
@@ -394,16 +394,16 @@ let add_grabrec rec_arg arity lbl cont =
 let cont_cofix arity =
     (* accu = res                                                         *)
     (* stk  = ai::args::ra::...                                           *)
-    (* ai   = [At|accumulate|[Cfx_t|fcofix]|args]                         *)
+    (* ai   = [At|accumulate|envofs|[Cfx_t|fcofix]|args]                  *)
   [ Kpush;
     Kpush;        (*                 stk = res::res::ai::args::ra::...    *)
     Kacc 2;
-    Kfield 1;
+    Kfield 2;
     Kfield 0;
     Kmakeblock(2, cofix_evaluated_tag);
     Kpush;        (*  stk = [Cfxe_t|fcofix|res]::res::ai::args::ra::...*)
     Kacc 2;
-    Ksetfield 1;  (*   ai = [At|accumulate|[Cfxe_t|fcofix|res]|args]      *)
+    Ksetfield 2;  (*   ai = [At|accumulate|envofs|[Cfxe_t|fcofix|res]|args] *)
                   (*  stk = res::ai::args::ra::...                        *)
     Kacc 0;       (* accu = res                                           *)
     Kreturn (arity+2) ]

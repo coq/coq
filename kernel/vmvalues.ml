@@ -231,7 +231,7 @@ type vswitch = {
 (* + vm_env is the type of the machine environments (i.e. a function or   *)
 (*   a fixpoint)                                                          *)
 (*                                                                        *)
-(* + Accumulators : At_[accumulate| accu | arg1 | ... | argn ]            *)
+(* + Accumulators : At_[accumulate | envofs=2 | accu | arg1 | ... | argn ] *)
 (*   - representation of [accu] : tag_[....]                              *)
 (*     -- tag <= 3 : encoding atom type (sorts, free vars, etc.)          *)
 (*     -- 10_[accu|proj name] : a projection blocked by an accu           *)
@@ -328,9 +328,9 @@ let uni_lvl_val (v : values) : Univ.Level.t =
 
 let rec whd_accu a stk =
   let stk =
-    if Int.equal (Obj.size a) 2 then stk
+    if Int.equal (Obj.size a) 3 then stk
     else Zapp (Obj.obj a) :: stk in
-  let at = Obj.field a 1 in
+  let at = Obj.field a 2 in
   match Obj.tag at with
   | i when Int.equal i type_atom_tag ->
      begin match stk with
@@ -421,9 +421,10 @@ let whd_val : values -> whd =
 
 let obj_of_atom : atom -> Obj.t =
   fun a ->
-    let res = Obj.new_block accu_tag 2 in
+    let res = Obj.new_block accu_tag 3 in
     set_bytecode_field res 0 accumulate;
-    Obj.set_field res 1 (Obj.repr a);
+    Obj.set_field res 1 (Obj.repr 2);
+    Obj.set_field res 2 (Obj.repr a);
     res
 
 (* obj_of_str_const : structured_constant -> Obj.t *)
@@ -631,9 +632,10 @@ let mk_cofix_body apply_varray k ndef vcf =
     let c = Obj.field (Obj.repr vcfi) 0 in
     Obj.set_field e 0 c;
     let atom = Obj.new_block cofix_tag 1 in
-    let self = Obj.new_block accu_tag 2 in
+    let self = Obj.new_block accu_tag 3 in
     set_bytecode_field self 0 accumulate;
-    Obj.set_field self 1 (Obj.repr atom);
+    Obj.set_field self 1 (Obj.repr 2);
+    Obj.set_field self 2 (Obj.repr atom);
     apply_varray (Obj.obj e) [|Obj.obj self|] in
   Array.init ndef cofix_body
 

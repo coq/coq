@@ -712,26 +712,26 @@ value coq_interprete
           } else {
             /* The recursif argument is an accumulator */
             mlsize_t num_args, i;
+            value block;
             /* Construction of fixpoint applied to its [rec_pos-1] first arguments */
             Alloc_small(accu, rec_pos + 3, Closure_tag);
             Code_val(accu) = pc; /* Point to the next RESTART instr. */
             Field(accu, 1) = Val_int(2);
             Field(accu, 2) = coq_env; // We store the fixpoint in the first field
-            for (i = 0; i < rec_pos; i++) Field(accu, i + 3) = sp[i]; // Storing args
-            sp += rec_pos;
-            *--sp = accu;
-              /* Construction of the atom */
-            Alloc_small(accu, 2, ATOM_FIX_TAG);
-            Field(accu,1) = sp[0];
-            Field(accu,0)  = sp[1];
-            sp++; sp[0] = accu;
-              /* Construction of the accumulator */
+            for (i = 0; i < rec_pos; i++) Field(accu, i + 3) = *sp++; // Storing args
+            /* Construction of the atom */
+            Alloc_small(block, 2, ATOM_FIX_TAG);
+            Field(block, 0) = *sp++;
+            Field(block, 1) = accu;
+            accu = block;
+            /* Construction of the accumulator */
             num_args = coq_extra_args - rec_pos;
-            Alloc_small(accu, 2+num_args, Accu_tag);
-            Code_val(accu) = accumulate;
-            Field(accu,1) = sp[0]; sp++;
-            for (i = 0; i < num_args;i++)Field(accu, i + 2) = sp[i];
-            sp += num_args;
+            Alloc_small(block, 3 + num_args, Accu_tag);
+            Code_val(block) = accumulate;
+            Field(block, 1) = Val_int(2);
+            Field(block, 2) = accu;
+            for (i = 0; i < num_args; i++) Field(block, i + 3) = *sp++;
+            accu = block;
             pc = (code_t)(sp[0]);
             coq_env = sp[1];
             coq_extra_args = Long_val(sp[2]);
@@ -808,9 +808,10 @@ value coq_interprete
 
         /* Creation des blocks accumulate */
         for(i=0; i < nfunc; i++) {
-          Alloc_small(accu, 2, Accu_tag);
+          Alloc_small(accu, 3, Accu_tag);
           Code_val(accu) = accumulate;
-          Field(accu,1) = Val_int(1);
+          Field(accu, 1) = Val_int(2);
+          Field(accu, 2) = Val_int(1);
           *--sp=accu;
         }
         /* creation des fonction cofix */
@@ -818,22 +819,17 @@ value coq_interprete
         p = sp;
         size = nfunc + nvars + 3;
         for (i=0; i < nfunc; i++) {
-
+          value block;
           Alloc_small(accu, size, Closure_tag);
           Code_val(accu) = pc+pc[i];
           Field(accu, 1) = Val_int(2);
           for (j = 0; j < nfunc; ++j) Field(accu, j + 2) = p[j];
           Field(accu, size - 1) = p[nfunc];
           for (j = nfunc + 1; j <= nfunc + nvars; ++j) Field(accu, j + 1) = p[j];
-          *--sp = accu;
-          /* creation du block contenant le cofix */
-
-          Alloc_small(accu,1, ATOM_COFIX_TAG);
-          Field(accu, 0) = sp[0];
-          *sp = accu;
-          /* mise a jour du block accumulate */
-          caml_modify(&Field(p[i], 1),*sp);
-          sp++;
+          Alloc_small(block, 1, ATOM_COFIX_TAG);
+          Field(block, 0) = accu;
+          /* update the accumulate block */
+          caml_modify(&Field(p[i], 2), block);
         }
         pc += nfunc;
         accu = p[start];
@@ -1028,7 +1024,7 @@ value coq_interprete
         print_instr("PROJ");
         if (Is_accu (accu)) {
           *--sp = accu; // Save matched block on stack
-          accu = Field(accu, 1); // Save atom to accu register
+          accu = Field(accu, 2); // Save atom to accu register
           switch (Tag_val(accu)) {
           case ATOM_COFIX_TAG: // We are forcing a cofix
             {
@@ -1040,11 +1036,11 @@ value coq_interprete
               coq_env = Field(accu, 0); // Pointer to suspension
               accu = sp[2]; // Save accumulator to accu register
               sp[2] = Val_long(coq_extra_args); // Push number of args for return
-              nargs = Wosize_val(accu) - 2; // Number of args = size of accumulator - 1 (accumulator code) - 1 (atom)
+              nargs = Wosize_val(accu) - 3; // Number of args = size of accumulator - 2 (accumulator closure) - 1 (atom)
               // Push arguments to stack
               CHECK_STACK(nargs + 1);
               sp -= nargs;
-              for (i = 0; i < nargs; ++i) sp[i] = Field(accu, i + 2);
+              for (i = 0; i < nargs; ++i) sp[i] = Field(accu, i + 3);
               *--sp = accu; // Last argument is the pointer to the suspension
               coq_extra_args = nargs;
               pc = Code_val(coq_env); // Trigger evaluation
@@ -1066,9 +1062,10 @@ value coq_interprete
               Field(accu, 0) = Field(coq_global_data, *pc++);
               Field(accu, 1) = *sp++;
               /* Create accumulator */
-              Alloc_small(block, 2, Accu_tag);
+              Alloc_small(block, 3, Accu_tag);
               Code_val(block) = accumulate;
-              Field(block, 1) = accu;
+              Field(block, 1) = Val_int(2);
+              Field(block, 2) = accu;
               accu = block;
             }
           }
@@ -1142,7 +1139,7 @@ value coq_interprete
       Instruct(MAKESWITCHBLOCK) {
         print_instr("MAKESWITCHBLOCK");
         *--sp = accu; // Save matched block on stack
-        accu = Field(accu,1); // Save atom to accu register
+        accu = Field(accu, 2); // Save atom to accu register
         switch (Tag_val(accu)) {
         case ATOM_COFIX_TAG: // We are forcing a cofix
           {
@@ -1156,11 +1153,11 @@ value coq_interprete
             coq_env = Field(accu,0); // Pointer to suspension
             accu = sp[2]; // Save accumulator to accu register
             sp[2] = Val_long(coq_extra_args); // Push number of args for return
-            nargs = Wosize_val(accu) - 2; // Number of args = size of accumulator - 1 (accumulator code) - 1 (atom)
+            nargs = Wosize_val(accu) - 3; // Number of args = size of accumulator - 2 (accumulator closure) - 1 (atom)
             // Push arguments to stack
             CHECK_STACK(nargs+1);
             sp -= nargs;
-            for (i = 0; i < nargs; i++) sp[i] = Field(accu, i + 2);
+            for (i = 0; i < nargs; i++) sp[i] = Field(accu, i + 3);
             *--sp = accu; // Leftmost argument is the pointer to the suspension
             print_lint(nargs);
             coq_extra_args = nargs;
@@ -1181,6 +1178,7 @@ value coq_interprete
             mlsize_t sz;
             int i, annot;
             code_t typlbl,swlbl;
+            value block;
             print_instr("MAKESWITCHBLOCK");
 
             typlbl = (code_t)pc + *pc;
@@ -1207,24 +1205,26 @@ value coq_interprete
             *--sp = accu;
             Alloc_small(accu, 1, Abstract_tag);
             Code_val(accu) = swlbl;
-            *--sp = accu;
             /* We create the switch zipper */
-            Alloc_small(accu, 5, Default_tag);
-            Field(accu, 0) = sp[1];
-            Field(accu, 1) = sp[0];
-            Field(accu, 2) = sp[3];
-            Field(accu, 3) = sp[2];
-            Field(accu, 4) = coq_env;
+            Alloc_small(block, 5, Default_tag);
+            Field(block, 0) = sp[0];
+            Field(block, 1) = accu;
+            Field(block, 2) = sp[2];
+            Field(block, 3) = sp[1];
+            Field(block, 4) = coq_env;
             sp += 3;
-            sp[0] = accu;
+            accu = block;
             /* We create the atom */
-            Alloc_small(accu, 2, ATOM_SWITCH_TAG);
-            Field(accu, 0) = sp[1]; Field(accu, 1) = sp[0];
-            sp++;sp[0] = accu;
+            Alloc_small(block, 2, ATOM_SWITCH_TAG);
+            Field(block, 0) = *sp++;
+            Field(block, 1) = accu;
+            accu = block;
             /* We create the accumulator */
-            Alloc_small(accu, 2, Accu_tag);
-            Code_val(accu) = accumulate;
-            Field(accu,1) = *sp++;
+            Alloc_small(block, 3, Accu_tag);
+            Code_val(block) = accumulate;
+            Field(block, 1) = Val_int(2);
+            Field(block, 2) = accu;
+            accu = block;
           }
         }
         Next;
@@ -1235,10 +1235,11 @@ value coq_interprete
       Instruct(MAKEACCU) {
         int i;
         print_instr("MAKEACCU");
-        Alloc_small(accu, coq_extra_args + 3, Accu_tag);
+        Alloc_small(accu, coq_extra_args + 4, Accu_tag);
         Code_val(accu) = accumulate;
-        Field(accu,1) = Field(coq_atom_tbl, *pc);
-        for(i = 2; i < coq_extra_args + 3; i++) Field(accu, i) = *sp++;
+        Field(accu, 1) = Val_int(2);
+        Field(accu, 2) = Field(coq_atom_tbl, *pc);
+        for (i = 2; i < coq_extra_args + 3; i++) Field(accu, i + 1) = *sp++;
         pc = (code_t)(sp[0]);
         coq_env = sp[1];
         coq_extra_args = Long_val(sp[2]);
