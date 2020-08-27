@@ -546,6 +546,38 @@ Proof. by move/contra=> notb_notc /notb_notc/negbTE. Qed.
 Lemma contraFF (c b : bool) : (c -> b) -> b = false -> c = false.
 Proof. by move/contraFN=> bF_notc /bF_notc/negbTE. Qed.
 
+(* additional contra lemmas involving [P,Q : Prop] *)
+Lemma contra_not (P Q : Prop) : (Q -> P) -> (~ P -> ~ Q). Proof. by auto. Qed.
+
+Lemma contraPnot (P Q : Prop) : (Q -> ~ P) -> (P -> ~ Q). Proof. by auto. Qed.
+
+Lemma contraTnot (b : bool) (P : Prop) : (P -> ~~ b) -> (b -> ~ P).
+Proof. by case: b; auto. Qed.
+
+Lemma contraNnot (P : Prop) (b : bool) : (P -> b) -> (~~ b -> ~ P).
+Proof. rewrite -{1}[b]negbK; exact: contraTnot. Qed.
+
+Lemma contraPT (P : Prop) (b : bool) : (~~ b -> ~ P) -> P -> b.
+Proof. by case: b => //= /(_ isT) nP /nP. Qed.
+
+Lemma contra_notT (P : Prop) (b : bool) : (~~ b -> P) -> ~ P -> b.
+Proof. by case: b => //= /(_ isT) HP /(_ HP). Qed.
+
+Lemma contra_notN (P : Prop) (b : bool) : (b -> P) -> ~ P -> ~~ b.
+Proof. rewrite -{1}[b]negbK; exact: contra_notT. Qed.
+
+Lemma contraPN (P : Prop) (b : bool) : (b -> ~ P) -> (P -> ~~ b).
+Proof. by case: b => //=; move/(_ isT) => HP /HP. Qed.
+
+Lemma contraFnot (P : Prop) (b : bool) : (P -> b) -> b = false -> ~ P.
+Proof. by case: b => //; auto. Qed.
+
+Lemma contraPF (P : Prop) (b : bool) : (b -> ~ P) -> P -> b = false.
+Proof. by case: b => // /(_ isT). Qed.
+
+Lemma contra_notF (P : Prop) (b : bool) : (b -> P) -> ~ P -> b = false.
+Proof. by case: b => // /(_ isT). Qed.
+
 (**
  Coercion of sum-style datatypes into bool, which makes it possible
  to use ssr's boolean if rather than Coq's "generic" if.             **)
@@ -1310,7 +1342,8 @@ Definition SimplRel {T} (r : rel T) : simpl_rel T := fun x => SimplPred (r x).
 Definition relU {T} (r1 r2 : rel T) := SimplRel (xrelU r1 r2).
 Definition relpre {aT rT} (f : aT -> rT) (r : rel rT) := SimplRel (xrelpre f r).
 
-Notation "[ 'rel' x y | E ]" := (SimplRel (fun x y => E%B)) : fun_scope.
+Notation "[ 'rel' x y | E ]" := (SimplRel (fun x y => E%B))
+  (only parsing) : fun_scope.
 Notation "[ 'rel' x y : T | E ]" :=
   (SimplRel (fun x y : T => E%B)) (only parsing) : fun_scope.
 
@@ -1980,11 +2013,9 @@ End MonoHomoMorphismTheory.
 
 Section MonoHomoMorphismTheory_in.
 
-Variables (aT rT sT : predArgType) (f : aT -> rT) (g : rT -> aT).
-Variable (aD : {pred aT}).
+Variables (aT rT : predArgType) (f : aT -> rT) (g : rT -> aT).
+Variables (aD : {pred aT}) (rD : {pred rT}).
 Variable (aP : pred aT) (rP : pred rT) (aR : rel aT) (rR : rel rT).
-
-Notation rD := [pred x | g x \in aD].
 
 Lemma monoW_in :
     {in aD &, {mono f : x y / aR x y >-> rR x y}} ->
@@ -1996,17 +2027,18 @@ Lemma mono2W_in :
   {in aD, {homo f : x / aP x >-> rP x}}.
 Proof. by move=> hf x hx ax; rewrite hf. Qed.
 
-Hypothesis fgK_on : {on aD, cancel g & f}.
+Hypothesis fgK : {in rD, {on aD, cancel g & f}}.
+Hypothesis mem_g : {homo g : x / x \in rD >-> x \in aD}.
 
 Lemma homoRL_in :
     {in aD &, {homo f : x y / aR x y >-> rR x y}} ->
   {in rD & aD, forall x y, aR (g x) y -> rR x (f y)}.
-Proof. by move=> Hf x y hx hy /Hf; rewrite fgK_on //; apply. Qed.
+Proof. by move=> Hf x y hx hy /Hf; rewrite fgK ?mem_g// ?inE; apply. Qed.
 
 Lemma homoLR_in :
     {in aD &, {homo f : x y / aR x y >-> rR x y}} ->
   {in aD & rD, forall x y, aR x (g y) -> rR (f x) y}.
-Proof. by move=> Hf x y hx hy /Hf; rewrite fgK_on //; apply. Qed.
+Proof. by move=> Hf x y hx hy /Hf; rewrite fgK ?mem_g// ?inE; apply. Qed.
 
 Lemma homo_mono_in :
     {in aD &, {homo f : x y / aR x y >-> rR x y}} ->
@@ -2014,22 +2046,119 @@ Lemma homo_mono_in :
   {in rD &, {mono g : x y / rR x y >-> aR x y}}.
 Proof.
 move=> mf mg x y hx hy; case: (boolP (rR _ _))=> [/mg //|]; first exact.
-by apply: contraNF=> /mf; rewrite !fgK_on //; apply.
+by apply: contraNF=> /mf; rewrite !fgK ?mem_g//; apply.
 Qed.
 
 Lemma monoLR_in :
     {in aD &, {mono f : x y / aR x y >-> rR x y}} ->
   {in aD & rD, forall x y, rR (f x) y = aR x (g y)}.
-Proof. by move=> mf x y hx hy; rewrite -{1}[y]fgK_on // mf. Qed.
+Proof. by move=> mf x y hx hy; rewrite -{1}[y]fgK ?mem_g// mf ?mem_g. Qed.
 
 Lemma monoRL_in :
     {in aD &, {mono f : x y / aR x y >-> rR x y}} ->
   {in rD & aD, forall x y, rR x (f y) = aR (g x) y}.
-Proof. by move=> mf x y hx hy; rewrite -{1}[x]fgK_on // mf. Qed.
+Proof. by move=> mf x y hx hy; rewrite -{1}[x]fgK ?mem_g// mf ?mem_g. Qed.
 
 Lemma can_mono_in :
     {in aD &, {mono f : x y / aR x y >-> rR x y}} ->
   {in rD &, {mono g : x y / rR x y >-> aR x y}}.
-Proof. by move=> mf x y hx hy /=; rewrite -mf // !fgK_on. Qed.
+Proof. by move=> mf x y hx hy; rewrite -mf ?mem_g// !fgK ?mem_g. Qed.
 
 End MonoHomoMorphismTheory_in.
+Arguments homoRL_in {aT rT f g aD rD aR rR}.
+Arguments homoLR_in {aT rT f g aD rD aR rR}.
+Arguments homo_mono_in {aT rT f g aD rD aR rR}.
+Arguments monoLR_in {aT rT f g aD rD aR rR}.
+Arguments monoRL_in {aT rT f g aD rD aR rR}.
+Arguments can_mono_in {aT rT f g aD rD aR rR}.
+
+Section HomoMonoMorphismFlip.
+Variables (aT rT : Type) (aR : rel aT) (rR : rel rT) (f : aT -> rT).
+Variable (aD aD' : {pred aT}).
+
+Lemma homo_sym : {homo f : x y / aR x y >-> rR x y} ->
+  {homo f : y x / aR x y >-> rR x y}.
+Proof. by move=> fR y x; apply: fR. Qed.
+
+Lemma mono_sym : {mono f : x y / aR x y >-> rR x y} ->
+  {mono f : y x / aR x y >-> rR x y}.
+Proof. by move=> fR y x; apply: fR. Qed.
+
+Lemma homo_sym_in : {in aD &, {homo f : x y / aR x y >-> rR x y}} ->
+  {in aD &, {homo f : y x / aR x y >-> rR x y}}.
+Proof. by move=> fR y x yD xD; apply: fR. Qed.
+
+Lemma mono_sym_in : {in aD &, {mono f : x y / aR x y >-> rR x y}} ->
+  {in aD &, {mono f : y x / aR x y >-> rR x y}}.
+Proof. by move=> fR y x yD xD; apply: fR. Qed.
+
+Lemma homo_sym_in11 : {in aD & aD', {homo f : x y / aR x y >-> rR x y}} ->
+  {in aD' & aD, {homo f : y x / aR x y >-> rR x y}}.
+Proof. by move=> fR y x yD xD; apply: fR. Qed.
+
+Lemma mono_sym_in11 : {in aD & aD', {mono f : x y / aR x y >-> rR x y}} ->
+  {in aD' & aD, {mono f : y x / aR x y >-> rR x y}}.
+Proof. by move=> fR y x yD xD; apply: fR. Qed.
+
+End HomoMonoMorphismFlip.
+Arguments homo_sym {aT rT} [aR rR f].
+Arguments mono_sym {aT rT} [aR rR f].
+Arguments homo_sym_in {aT rT} [aR rR f aD].
+Arguments mono_sym_in {aT rT} [aR rR f aD].
+Arguments homo_sym_in11 {aT rT} [aR rR f aD aD'].
+Arguments mono_sym_in11 {aT rT} [aR rR f aD aD'].
+
+Section CancelOn.
+
+Variables (aT rT : predArgType) (aD : {pred aT}) (rD : {pred rT}).
+Variables (f : aT -> rT) (g : rT -> aT).
+
+Lemma onW_can : cancel g f -> {on aD, cancel g & f}.
+Proof. by move=> fgK x xaD; apply: fgK. Qed.
+
+Lemma onW_can_in : {in rD, cancel g f} -> {in rD, {on aD, cancel g & f}}.
+Proof. by move=> fgK x xrD xaD; apply: fgK. Qed.
+
+Lemma in_onW_can : cancel g f -> {in rD, {on aD, cancel g & f}}.
+Proof. by move=> fgK x xrD xaD; apply: fgK. Qed.
+
+Lemma onS_can : (forall x, g x \in aD) -> {on aD, cancel g & f} -> cancel g f.
+Proof. by move=> mem_g fgK x; apply: fgK. Qed.
+
+Lemma onS_can_in : {homo g : x / x \in rD >-> x \in aD} ->
+  {in rD, {on aD, cancel g & f}} -> {in rD, cancel g f}.
+Proof. by move=> mem_g fgK x x_rD; apply/fgK/mem_g. Qed.
+
+Lemma in_onS_can : (forall x, g x \in aD) ->
+  {in rT, {on aD, cancel g & f}} -> cancel g f.
+Proof. by move=> mem_g fgK x; apply/fgK. Qed.
+
+End CancelOn.
+Arguments onW_can {aT rT} aD {f g}.
+Arguments onW_can_in {aT rT} aD {rD f g}.
+Arguments in_onW_can {aT rT} aD rD {f g}.
+Arguments onS_can {aT rT} aD {f g}.
+Arguments onS_can_in {aT rT} aD {rD f g}.
+Arguments in_onS_can {aT rT} aD {f g}.
+
+Section inj_can_sym_in_on.
+Variables (aT rT : predArgType) (aD : {pred aT}) (rD : {pred rT}).
+Variables (f : aT -> rT) (g : rT -> aT).
+
+Lemma inj_can_sym_in_on :
+    {homo f : x / x \in aD >-> x \in rD} -> {in aD, {on rD, cancel f & g}} ->
+  {in rD &, {on aD &, injective g}} -> {in rD, {on aD, cancel g & f}}.
+Proof. by move=> fD fK gI x x_rD gx_aD; apply: gI; rewrite ?inE ?fK ?fD. Qed.
+
+Lemma inj_can_sym_on : {in aD, cancel f g} ->
+  {on aD &, injective g} -> {on aD, cancel g & f}.
+Proof. by move=> fK gI x gx_aD; apply: gI; rewrite ?inE ?fK. Qed.
+
+Lemma inj_can_sym_in : {homo f \o g : x / x \in rD} -> {on rD, cancel f & g} ->
+  {in rD &, injective g} ->  {in rD, cancel g f}.
+Proof. by move=> fgD fK gI x x_rD; apply: gI; rewrite ?fK ?fgD. Qed.
+
+End inj_can_sym_in_on.
+Arguments inj_can_sym_in_on {aT rT aD rD f g}.
+Arguments inj_can_sym_on {aT rT aD f g}.
+Arguments inj_can_sym_in {aT rT rD f g}.
