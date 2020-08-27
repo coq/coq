@@ -82,13 +82,13 @@ let protect_pattern_in_binder bl c ctypopt =
     (bl, c, ctypopt, fun f env evd c -> f env evd c)
 
 let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
-  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
+  let flags = Pretyping.{ partial_flags with program_mode } in
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
   let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let (bl, c, ctypopt, apply_under_binders) = protect_pattern_in_binder bl c ctypopt in
   (* Build the parameters *)
-  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode env evd bl in
+  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~flags env evd bl in
   (* Build the type *)
   let evd, tyopt = Option.fold_left_map
       (interp_type_evars_impls ~flags ~impls env_bl)
@@ -98,13 +98,22 @@ let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
   let evd, c, imps, tyopt =
     match tyopt with
     | None ->
-      let evd, (c, impsbody) = interp_constr_evars_impls ~program_mode ~impls env_bl evd c in
+      let evd, (c, impsbody) =
+        interp_constr_evars_impls_gen ~flags ~impls env_bl evd Pretyping.WithoutTypeConstraint c
+      in
       evd, c, imps1@impsbody, None
     | Some (ty, impsty) ->
-      let evd, (c, impsbody) = interp_casted_constr_evars_impls ~program_mode ~impls env_bl evd c ty in
+      let evd, (c, impsbody) =
+        interp_constr_evars_impls_gen ~flags ~impls env_bl evd (Pretyping.OfType ty) c
+      in
       check_imps ~impsty ~impsbody;
       evd, c, imps1@impsty, Some ty
   in
+  (* solve typeclasses / heuristics *)
+  (* even with program_mode=false we don't fail here as we don't want
+     to fail if there are unused evars *)
+  let solve_flags = Pretyping.{all_no_fail_flags with program_mode} in
+  let evd = Pretyping.solve_remaining_evars solve_flags env evd in
   (* Do the reduction *)
   let evd, c = apply_under_binders (red_constant_body red_option) env_bl evd c in
 

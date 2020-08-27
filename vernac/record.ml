@@ -60,14 +60,20 @@ let () =
       optwrite = (fun b -> typeclasses_unique := b); }
 
 let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
+  let flags = Pretyping.partial_flags in
   let _, sigma, impls, newfs, _ =
     List.fold_left2
       (fun (env, sigma, uimpls, params, impls) no ({CAst.loc;v=i}, b, t) ->
-         let sigma, (t', impl) = interp_type_evars_impls env sigma ~impls t in
+         let sigma, (t', impl) =
+           interp_type_evars_impls ~flags env sigma ~impls t
+         in
          let r = Retyping.relevance_of_type env sigma t' in
          let sigma, b' =
-           Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
-                         interp_casted_constr_evars_impls ~program_mode:false env sigma ~impls x t') (sigma,None) b in
+           Option.cata (fun x ->
+               on_snd (fun x -> Some (fst x)) @@
+               interp_constr_evars_impls_gen ~flags env sigma ~impls (Pretyping.OfType t') x)
+             (sigma,None) b
+         in
          let impls =
            match i with
            | Anonymous -> impls
@@ -136,14 +142,18 @@ let typecheck_params_and_fields def poly pl ps records =
            | CLocalPattern {CAst.loc} ->
               Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters")) ps
   in
-  let sigma, (impls_env, ((env1,newps), imps)) = interp_context_evars ~program_mode:false env0 sigma ps in
+  let sigma, (impls_env, ((env1,newps), imps)) =
+    interp_context_evars ~flags:Pretyping.partial_flags env0 sigma ps
+  in
   let fold (sigma, template) (_, t, _, _) = match t with
     | Some t ->
        let env = EConstr.push_rel_context newps env0 in
        let poly =
          match t with
          | { CAst.v = CSort (Glob_term.UAnonymous {rigid=true}) } -> true | _ -> false in
-       let sigma, s = interp_type_evars ~program_mode:false env sigma ~impls:empty_internalization_env t in
+       let sigma, s =
+         interp_constr_evars_gen ~flags:Pretyping.partial_flags env sigma Pretyping.IsType t
+       in
        let sred = Reductionops.whd_allnolet env sigma s in
          (match EConstr.kind sigma sred with
          | Sort s' ->
@@ -180,7 +190,8 @@ let typecheck_params_and_fields def poly pl ps records =
   in
   let (sigma, data) = List.fold_left2_map fold sigma records arities in
   let sigma =
-    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
+    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma
+  in
   let fold sigma (typ, sort) (_, newfs) =
     let _, univ = compute_constructor_level sigma env_ar newfs in
     let univ = if Sorts.is_sprop sort then univ else Univ.Universe.sup univ Univ.type0m_univ in

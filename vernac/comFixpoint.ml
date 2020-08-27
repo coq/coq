@@ -108,15 +108,20 @@ let interp_fix_context ~program_mode ~cofix env sigma fix =
     if not cofix
     then Constrexpr_ops.split_at_annot fix.Vernacexpr.binders fix.Vernacexpr.rec_order
     else [], fix.Vernacexpr.binders in
-  let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma before in
-  let sigma, (impl_env', ((env'', ctx'), imps')) =
-    interp_context_evars ~program_mode ~impl_env env' sigma after
+  let sigma, (impl_env, ((env', ctx), imps)) =
+    interp_context_evars ~flags:Pretyping.{partial_flags with program_mode} env sigma before
   in
-  let annot = Option.map (fun _ -> List.length (Termops.assums_of_rel_context ctx)) fix.Vernacexpr.rec_order in
+  let sigma, (impl_env', ((env'', ctx'), imps')) =
+    interp_context_evars ~flags:Pretyping.{partial_flags with program_mode} env' sigma after ~impl_env
+  in
+  let annot = if Option.has_some fix.Vernacexpr.rec_order
+    then Some (List.length (Termops.assums_of_rel_context ctx))
+    else None
+  in
   sigma, ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 
 let interp_fix_ccl ~program_mode sigma impls (env,_) fix =
-  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
+  let flags = Pretyping.{ partial_flags with program_mode } in
   let sigma, (c, impl) = interp_type_evars_impls ~flags ~impls env sigma fix.Vernacexpr.rtype in
   let r = Retyping.relevance_of_type env sigma c in
   sigma, (c, r, impl)
@@ -125,7 +130,10 @@ let interp_fix_body ~program_mode env_rec sigma impls (_,ctx) fix ccl =
   let open EConstr in
   Option.cata (fun body ->
     let env = push_rel_context ctx env_rec in
-    let sigma, body = interp_casted_constr_evars ~program_mode env sigma ~impls body ccl in
+    let sigma, body =
+      interp_constr_evars_gen ~flags:Pretyping.{partial_flags with program_mode}
+        env sigma ~impls (Pretyping.OfType ccl) body
+    in
     sigma, Some (it_mkLambda_or_LetIn body ctx)) (sigma, None) fix.Vernacexpr.body_def
 
 let build_fix_type (_,ctx) ccl = EConstr.it_mkProd_or_LetIn ccl ctx
@@ -220,8 +228,14 @@ let interp_recursive ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen lis
         sigma fixctximpenvs fixctxs fixl fixccls)
       () in
 
-  (* Instantiate evars and check all are resolved *)
-  let sigma = Evarconv.solve_unif_constraints_with_heuristics env_rec sigma in
+  (* Instantiate evars and check all are resolved (if non program) *)
+  let sigma =
+    let solve_flags = if program_mode
+      then Pretyping.{all_no_fail_flags with program_mode}
+      else Pretyping.all_and_fail_flags
+    in
+    Pretyping.solve_remaining_evars solve_flags env sigma
+  in
   let sigma = Evd.minimize_universes sigma in
   let fixctxs = List.map (fun (_,ctx) -> ctx) fixctxs in
 
@@ -235,7 +249,6 @@ let check_recursive isfix env evd (fixnames,_,fixdefs,_) =
   end
 
 let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
-  Pretyping.check_evars_are_solved ~program_mode:false env evd;
   let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr evd) c) fixdefs in
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
   Evd.evar_universe_context evd, (fixnames,fixrs,fixdefs,fixtypes)

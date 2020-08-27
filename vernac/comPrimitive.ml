@@ -36,6 +36,7 @@ let do_primitive id udecl prim typopt =
     let expected_typ = EConstr.of_constr @@ Typeops.type_of_prim_or_type env u prim in
     let evd, (typ,impls) =
       Constrintern.(interp_type_evars_impls ~impls:empty_internalization_env)
+        ~flags:Pretyping.partial_flags
         env evd typ
     in
     let evd = try Evarconv.unify_delay env evd typ expected_typ
@@ -44,7 +45,9 @@ let do_primitive id udecl prim typopt =
         Exninfo.iraise (Pretype_errors.(
             PretypeError (env,evd,CannotUnify (typ,expected_typ,Some e)),info))
     in
-    Pretyping.check_evars_are_solved ~program_mode:false env evd;
+    let evd =
+      Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env evd
+    in
     let evd = Evd.minimize_universes evd in
     let uvars = EConstr.universes_of_constr evd typ in
     let evd = Evd.restrict_universe_context evd uvars in

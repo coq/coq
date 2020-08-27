@@ -114,19 +114,26 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly r measure notation =
   let open Vars in
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
+  let flags = Pretyping.{partial_flags with program_mode=true} in
   let env = Global.env() in
   let sigma, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
-  let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
+  let sigma, (_, ((env', binders_rel), impls)) =
+    interp_context_evars ~flags env sigma bl
+  in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
-  let sigma, top_arity = interp_type_evars ~program_mode:true top_env sigma arityc in
+  let sigma, top_arity =
+    interp_constr_evars_gen ~flags top_env sigma Pretyping.IsType arityc
+  in
   let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
   let sigma, argtyp, letbinders, make = telescope env sigma binders_rel in
   let argname = Id.of_string "recarg" in
   let arg = LocalAssum (make_annot (Name argname) Sorts.Relevant, argtyp) in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
-  let sigma, (rel, _) = interp_constr_evars_impls ~program_mode:true env sigma r in
+  let sigma, (rel, _) =
+    interp_constr_evars_impls_gen ~flags env sigma Pretyping.WithoutTypeConstraint r
+  in
   let relty = Retyping.get_type_of env sigma rel in
   let relargty =
     let error () =
@@ -142,7 +149,9 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly r measure notation =
           | _, _ -> error ()
       with e when CErrors.noncritical e -> error ()
   in
-  let sigma, measure = interp_casted_constr_evars ~program_mode:true binders_env sigma measure relargty in
+  let sigma, measure =
+    interp_constr_evars_gen ~flags binders_env sigma (Pretyping.OfType relargty) measure
+  in
   let sigma, wf_rel, wf_rel_fun, measure_fn =
     let measure_body, measure =
       it_mkLambda_or_LetIn measure letbinders,
@@ -203,8 +212,12 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly r measure notation =
         (Constrintern.extend_internalization_data interning_data
            (Some (ExplByName (Id.of_string "recproof"), Impargs.Manual, (true, false)))
            None) in
-    interp_casted_constr_evars ~program_mode:true (push_rel_context ctx env) sigma
-      ~impls:newimpls body (lift 1 top_arity)
+    interp_constr_evars_gen ~flags (push_rel_context ctx env) sigma
+      ~impls:newimpls (Pretyping.OfType (lift 1 top_arity)) body
+  in
+  (* all terms interned, run TC and heuristics now *)
+  let sigma =
+    Pretyping.solve_remaining_evars Pretyping.{all_no_fail_flags with program_mode=true} env sigma
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
   let prop = mkLambda (make_annot (Name argname) Sorts.Relevant, argtyp, top_arity_let) in

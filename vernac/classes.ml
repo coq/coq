@@ -518,7 +518,8 @@ let interp_instance_context ~program_mode env ctx ~generalize pl tclass =
     if generalize then CAst.make @@ CGeneralization (Glob_term.MaxImplicit, Some AbsPi, tclass)
     else tclass
   in
-  let sigma, (impls, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma ctx in
+  let flags = Pretyping.{all_no_fail_flags with program_mode} in
+  let sigma, (impls, ((env', ctx), imps)) = interp_context_evars ~flags env sigma ctx in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let sigma, (c', imps') = interp_type_evars_impls ~flags ~impls env' sigma tclass in
   let imps = imps @ imps' in

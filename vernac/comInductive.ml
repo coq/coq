@@ -438,9 +438,9 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames
 let interp_params env udecl uparamsl paramsl =
   let sigma, udecl = interp_univ_decl_opt env udecl in
   let sigma, (uimpls, ((env_uparams, ctx_uparams), useruimpls)) =
-    interp_context_evars ~program_mode:false env sigma uparamsl in
+    interp_context_evars ~flags:Pretyping.partial_flags env sigma uparamsl in
   let sigma, (impls, ((env_params, ctx_params), userimpls)) =
-    interp_context_evars ~program_mode:false ~impl_env:uimpls env_uparams sigma paramsl
+    interp_context_evars ~flags:Pretyping.partial_flags ~impl_env:uimpls env_uparams sigma paramsl
   in
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   let assums = List.filter is_local_assum ctx_params in

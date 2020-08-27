@@ -2430,39 +2430,41 @@ let interp_open_constr ?(expected_type=WithoutTypeConstraint) env sigma c =
 
 (* Not all evars expected to be resolved and computation of implicit args *)
 
-let interp_constr_evars_gen_impls ?(flags=Pretyping.all_no_fail_flags) env sigma
+let interp_constr_evars_impls_gen ~flags env sigma
     ?(impls=empty_internalization_env) expected_type c =
   let c = intern_gen expected_type ~impls env sigma c in
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:(expected_type == IsType) c in
   let sigma, c = understand_tcc ~flags env sigma ~expected_type c in
   sigma, (c, imps)
 
-let interp_constr_evars_impls ?(program_mode=false) env sigma ?(impls=empty_internalization_env) c =
+let interp_constr_evars_impls ?(program_mode=false) env sigma ?impls c =
   let flags = { Pretyping.all_no_fail_flags with program_mode } in
-  interp_constr_evars_gen_impls ~flags env sigma ~impls WithoutTypeConstraint c
+  interp_constr_evars_impls_gen ~flags env sigma ?impls WithoutTypeConstraint c
 
-let interp_casted_constr_evars_impls ?(program_mode=false) env evdref ?(impls=empty_internalization_env) c typ =
+let interp_casted_constr_evars_impls ?(program_mode=false) env evdref ?impls c typ =
   let flags = { Pretyping.all_no_fail_flags with program_mode } in
-  interp_constr_evars_gen_impls ~flags env evdref ~impls (OfType typ) c
+  interp_constr_evars_impls_gen ~flags env evdref ?impls (OfType typ) c
 
-let interp_type_evars_impls ?(flags=Pretyping.all_no_fail_flags) env sigma ?(impls=empty_internalization_env) c =
-  interp_constr_evars_gen_impls ~flags env sigma ~impls IsType c
+let interp_type_evars_impls ~flags env sigma ?impls c =
+  interp_constr_evars_impls_gen ~flags env sigma ?impls IsType c
 
 (* Not all evars expected to be resolved, with side-effect on evars *)
 
-let interp_constr_evars_gen ?(program_mode=false) env sigma ?(impls=empty_internalization_env) expected_type c =
+let interp_constr_evars_gen ~flags env sigma ?(impls=empty_internalization_env) expected_type c =
   let c = intern_gen expected_type ~impls env sigma c in
-  let flags = { Pretyping.all_no_fail_flags with program_mode } in
   understand_tcc ~flags env sigma ~expected_type c
 
-let interp_constr_evars ?program_mode env evdref ?(impls=empty_internalization_env) c =
-  interp_constr_evars_gen ?program_mode env evdref WithoutTypeConstraint ~impls c
+let interp_constr_evars ?(program_mode=false) env evdref ?(impls=empty_internalization_env) c =
+  let flags = { all_no_fail_flags with program_mode } in
+  interp_constr_evars_gen ~flags env evdref WithoutTypeConstraint ~impls c
 
-let interp_casted_constr_evars ?program_mode env sigma ?(impls=empty_internalization_env) c typ =
-  interp_constr_evars_gen ?program_mode env sigma ~impls (OfType typ) c
+let interp_casted_constr_evars ?(program_mode=false) env sigma ?(impls=empty_internalization_env) c typ =
+  let flags = { all_no_fail_flags with program_mode } in
+  interp_constr_evars_gen ~flags env sigma ~impls (OfType typ) c
 
-let interp_type_evars ?program_mode env sigma ?(impls=empty_internalization_env) c =
-  interp_constr_evars_gen ?program_mode env sigma IsType ~impls c
+let interp_type_evars ?(program_mode=false) env sigma ?(impls=empty_internalization_env) c =
+  let flags = { all_no_fail_flags with program_mode } in
+  interp_constr_evars_gen ~flags env sigma IsType ~impls c
 
 (* Miscellaneous *)
 
@@ -2502,16 +2504,6 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
 
 (* Interpret binders and contexts  *)
 
-let interp_binder env sigma na t =
-  let t = intern_gen IsType env sigma t in
-  let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in
-  understand ~expected_type:IsType env sigma t'
-
-let interp_binder_evars env sigma na t =
-  let t = intern_gen IsType env sigma t in
-  let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in
-  understand_tcc env sigma ~expected_type:IsType t'
-
 let my_intern_constr env lvar acc c =
   internalize env acc false lvar c
 
@@ -2530,9 +2522,8 @@ let intern_context env impl_env binders =
               binder_block_names = Some (Some AbsPi,ids)}, []) binders in
   (lenv.impls, List.map glob_local_binder_of_extended bl)
 
-let interp_glob_context_evars ?(program_mode=false) env sigma bl =
+let interp_glob_context_evars ~flags env sigma bl =
   let open EConstr in
-  let flags = { Pretyping.all_no_fail_flags with program_mode } in
   let env, sigma, par, impls =
     List.fold_left
       (fun (env,sigma,params,impls) (na, k, b, t) ->
@@ -2561,7 +2552,7 @@ let interp_glob_context_evars ?(program_mode=false) env sigma bl =
   in
   sigma, ((env, par), List.rev impls)
 
-let interp_context_evars ?program_mode ?(impl_env=empty_internalization_env) env sigma params =
+let interp_context_evars ~flags ?(impl_env=empty_internalization_env) env sigma params =
   let int_env,bl = intern_context env impl_env params in
-  let sigma, x = interp_glob_context_evars ?program_mode env sigma bl in
+  let sigma, x = interp_glob_context_evars ~flags env sigma bl in
   sigma, (int_env, x)

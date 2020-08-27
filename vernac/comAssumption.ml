@@ -254,7 +254,10 @@ let context_nosection sigma ~poly ctx =
 let context ~poly l =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let sigma, (_, ((_env, ctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
+  let sigma, (_, ((_env, ctx), impls)) =
+    interp_context_evars ~flags:Pretyping.partial_flags env sigma l
+  in
+  let sigma = Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env sigma in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = Evd.minimize_universes sigma in
   let ce t = Pretyping.check_evars env sigma t in
