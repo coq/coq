@@ -154,7 +154,7 @@ plugins/ssr/ssrvernac.ml
 kernel/byterun/coq_instruct.h
 kernel/byterun/coq_jumptbl.h
 kernel/genOpcodeFiles.exe
-kernel/copcodes.ml
+kernel/vmopcodes.ml
 kernel/uint63.ml
 ide/coqide/default.bindings
 ide/coqide/default_bindings_src.exe
