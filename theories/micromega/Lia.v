@@ -20,7 +20,10 @@ Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
 Ltac zchecker :=
-  intros ?__wit ?__varmap ?__ff ;
+  let __wit := fresh "__wit" in
+  let __varmap := fresh "__varmap" in
+  let __ff := fresh "__ff" in
+  intros __wit __varmap __ff ;
   exact (ZTautoChecker_sound __ff __wit
                                 (@eq_refl bool true <: @eq bool (ZTautoChecker __ff __wit) true)
                                 (@find Z Z0 __varmap)).
