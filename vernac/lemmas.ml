@@ -188,7 +188,8 @@ module MutualEntry : sig
   val declare_variable
     : info:Info.t
     -> uctx:UState.t
-    -> Entries.parameter_entry
+    -> sec_vars:Id.Set.t option
+    -> univs:Entries.universes_entry
     -> Names.GlobRef.t list
 
   val declare_mutdef
@@ -253,10 +254,11 @@ end = struct
     in
     List.map_i (declare_mutdef ~info ~uctx pe) 0 info.Info.thms
 
-  let declare_variable ~info ~uctx pe =
+  let declare_variable ~info ~uctx ~sec_vars ~univs =
     let { Info.scope; hook } = info in
     List.map_i (
       fun i { Declare.Recthm.name; typ; impargs } ->
+        let pe = (sec_vars, (typ, univs), None) in
         Declare.declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
     ) 0 info.Info.thms
 
@@ -286,8 +288,8 @@ let compute_proof_using_for_admitted proof typ pproofs =
       Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
     | _ -> None
 
-let finish_admitted ~info ~uctx pe =
-  let _r : Names.GlobRef.t list = MutualEntry.declare_variable ~info ~uctx pe in
+let finish_admitted ~info ~uctx ~sec_vars ~univs =
+  let _r : Names.GlobRef.t list = MutualEntry.declare_variable ~info ~uctx ~sec_vars ~univs in
   ()
 
 let save_lemma_admitted ~(lemma : t) : unit =
@@ -303,7 +305,7 @@ let save_lemma_admitted ~(lemma : t) : unit =
   let sec_vars = compute_proof_using_for_admitted lemma.proof typ pproofs in
   let uctx = Declare.Proof.get_initial_euctx lemma.proof in
   let univs = UState.check_univ_decl ~poly uctx udecl in
-  finish_admitted ~info:lemma.info ~uctx (sec_vars, (typ, univs), None)
+  finish_admitted ~info:lemma.info ~uctx ~sec_vars ~univs
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
@@ -419,12 +421,9 @@ let save_lemma_admitted_delayed ~proof ~info =
   let poly = match proof_entry_universes with
     | Entries.Monomorphic_entry _ -> false
     | Entries.Polymorphic_entry (_, _) -> true in
-  let typ = match proof_entry_type with
-    | None -> CErrors.user_err Pp.(str "Admitted requires an explicit statement");
-    | Some typ -> typ in
-  let ctx = UState.univ_entry ~poly uctx in
+  let univs = UState.univ_entry ~poly uctx in
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-  finish_admitted ~uctx ~info (sec_vars, (typ, ctx), None)
+  finish_admitted ~uctx ~info ~sec_vars ~univs
 
 let save_lemma_proved_delayed ~proof ~info ~idopt =
   (* vio2vo calls this but with invalid info, we have to workaround
