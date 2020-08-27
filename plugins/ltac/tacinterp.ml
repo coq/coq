@@ -2125,8 +2125,7 @@ let _ =
     (* EJGA: We should also pass the proof name if desired, for now
        poly seems like enough to get reasonable behavior in practice
      *)
-    let name, poly = Id.of_string "ltac_gen", poly in
-    let name, poly = Id.of_string "ltac_gen", poly in
+    let name = Id.of_string "ltac_gen" in
     let (c, sigma) = Proof.refine_by_tactic ~name ~poly env sigma ty tac in
     (EConstr.of_constr c, sigma)
   in
