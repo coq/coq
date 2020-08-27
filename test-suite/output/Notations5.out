@@ -146,8 +146,10 @@ v
      : forall (B : Type) (b : B), 0 = 0 /\ b = b
 @v 0
      : forall (B : Type) (b : B), 0 = 0 /\ b = b
-v 0 (B:=bool)
+v 0
      : forall b : bool, 0 = 0 /\ b = b
+     = ?n@{x:=v 0 (B:=bool)}
+     : nat
 v
      : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
 v 0
@@ -166,8 +168,10 @@ v
      : forall (B : Type) (b : B), 0 = 0 /\ b = b
 @v 0
      : forall (B : Type) (b : B), 0 = 0 /\ b = b
-v 0 (B:=bool)
+v 0
      : forall b : bool, 0 = 0 /\ b = b
+     = ?n@{x:=v 0 (B:=bool)}
+     : nat
 ##
      : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
 where
@@ -192,10 +196,12 @@ where
      : 0 = 0 /\ true = true
 ## 0 0 true
      : 0 = 0 /\ true = true
-## 0 0 (B:=bool)
+## 0 0
      : forall b : bool, 0 = 0 /\ b = b
-## 0 0 (B:=bool)
+## 0 0
      : forall b : bool, 0 = 0 /\ b = b
+     = ?n@{x:=## 0 0 (B:=bool)}
+     : nat
 ## ?A
      : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
 where
@@ -230,10 +236,12 @@ where
      : forall b : ?B, 0 = 0 /\ b = b
 where
 ?B : [ |- Type]
-## 0 0 (B:=bool)
+## 0 0
      : forall b : bool, 0 = 0 /\ b = b
-## 0 0 (B:=bool)
+## 0 0
      : forall b : bool, 0 = 0 /\ b = b
+     = ?n@{x:=## 0 0 (B:=bool)}
+     : nat
 ## 0 0 true
      : 0 = 0 /\ true = true
 ## 0 0 true
@@ -246,10 +254,12 @@ where
      : forall b : ?B, 0 = 0 /\ b = b
 where
 ?B : [ |- Type]
-## 0 0 (B:=bool)
+## 0 0
      : forall b : bool, 0 = 0 /\ b = b
-## 0 0 (B:=bool)
+## 0 0
      : forall b : bool, 0 = 0 /\ b = b
+     = ?n@{x:=## 0 0 (B:=bool)}
+     : nat
 ## 0 0 true
      : 0 = 0 /\ true = true
 ## 0 0 true

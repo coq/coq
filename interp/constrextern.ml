@@ -636,10 +636,10 @@ exception Expl
 (* If the removal of implicit arguments is not possible, raise [Expl] *)
 (* [inctx] tells if the term is in a context which will enforce the external type *)
 (* [n] is the total number of arguments block to which the [args] belong *)
-let adjust_implicit_arguments inctx n q args impl =
-  let rec exprec q = function
+let adjust_implicit_arguments inctx n args impl =
+  let rec exprec = function
     | a::args, imp::impl when is_status_implicit imp ->
-        let tail = exprec (q+1) (args,impl) in
+        let tail = exprec (args,impl) in
         let visible =
           !Flags.raw_print ||
           (!print_implicits && !print_implicits_explicit_args) ||
@@ -652,13 +652,13 @@ let adjust_implicit_arguments inctx n q args impl =
           (Lazy.force a,Some (make @@ ExplByName (name_of_implicit imp))) :: tail
         else
           tail
-    | a::args, _::impl -> (Lazy.force a,None) :: exprec (q+1) (args,impl)
+    | a::args, _::impl -> (Lazy.force a,None) :: exprec (args,impl)
     | args, [] -> List.map (fun a -> (Lazy.force a,None)) args (*In case of polymorphism*)
     | [], (imp :: _) when is_status_implicit imp && maximal_insertion_of imp ->
       (* The non-explicit application cannot be parsed back with the same type *)
       raise Expl
     | [], _ -> []
-  in exprec q (args,impl)
+  in exprec (args,impl)
 
 let extern_projection (cf,f) args impl =
   let ip = is_projection (List.length args) cf in
@@ -750,14 +750,14 @@ let extern_applied_ref inctx impl (cf,f) us args =
     match extern_projection (cf,f) args impl with
     (* Try a [t.(f args1) args2] projection-style notation *)
     | Some (i,(args1,impl1),(args2,impl2)) ->
-      let args1 = adjust_implicit_arguments inctx n 1 args1 impl1 in
-      let args2 = adjust_implicit_arguments inctx n (i+1) args2 impl2 in
+      let args1 = adjust_implicit_arguments inctx n args1 impl1 in
+      let args2 = adjust_implicit_arguments inctx n args2 impl2 in
       let ip = Some (List.length args1) in
       CApp ((ip,f),args1@args2)
       (* A normal application node with each individual implicit
          arguments either dropped or made explicit *)
     | None ->
-      let args = adjust_implicit_arguments inctx n 1 args impl in
+      let args = adjust_implicit_arguments inctx n args impl in
       if args = [] then ref else CApp ((None, f), args)
   with Expl ->
   (* A [@f args] node *)
@@ -765,10 +765,10 @@ let extern_applied_ref inctx impl (cf,f) us args =
     let isproj = if !print_projections then isproj else None in
     CAppExpl ((isproj,f,us), args)
 
-let extern_applied_syntactic_definition n extraimpl (cf,f) syndefargs extraargs =
+let extern_applied_syntactic_definition inctx n extraimpl (cf,f) syndefargs extraargs =
   try
     let syndefargs = List.map (fun a -> (a,None)) syndefargs in
-    let extraargs = adjust_implicit_arguments false n (n-List.length extraargs+1) extraargs extraimpl in
+    let extraargs = adjust_implicit_arguments inctx n extraargs extraimpl in
     let args = syndefargs @ extraargs in
     if args = [] then cf else CApp ((None, CAst.make cf), args)
   with Expl ->
@@ -784,12 +784,12 @@ let mkFlattenedCApp (head,args) =
   | _ ->
     CApp ((None, head), args)
 
-let extern_applied_notation n impl f args =
+let extern_applied_notation inctx n impl f args =
   if List.is_empty args then
     f.CAst.v
   else
   try
-    let args = adjust_implicit_arguments false n (n-List.length args+1) args impl in
+    let args = adjust_implicit_arguments inctx n args impl in
     mkFlattenedCApp (f,args)
   with Expl -> raise No_match
 
@@ -940,11 +940,11 @@ let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
 let rec extern inctx ?impargs scopes vars r =
   match remove_one_coercion inctx (flatten_application r) with
   | Some (nargs,inctx,r') ->
-    (try extern_notations scopes vars (Some nargs) r
+    (try extern_notations inctx scopes vars (Some nargs) r
      with No_match -> extern inctx scopes vars r')
   | None ->
 
-  try extern_notations scopes vars None r
+  try extern_notations inctx scopes vars None r
   with No_match ->
 
   let loc = r.CAst.loc in
@@ -1000,7 +1000,7 @@ let rec extern inctx ?impargs scopes vars r =
              mkFlattenedCApp (head,args))
 
   | GLetIn (na,b,t,c) ->
-      CLetIn (make ?loc na,sub_extern false scopes vars b,
+      CLetIn (make ?loc na,sub_extern (Option.has_some t) scopes vars b,
               Option.map (extern_typ scopes vars) t,
               extern inctx ?impargs scopes (add_vname vars na) c)
 
@@ -1197,7 +1197,7 @@ and extern_local_binder scopes vars = function
         extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l in
       (assums,na::ids,
        CLocalDef(CAst.make na, extern false scopes vars bd,
-                   Option.map (extern false scopes vars) ty) :: l)
+                   Option.map (extern_typ scopes vars) ty) :: l)
 
     | GLocalAssum (na,bk,ty) ->
       let implicit_type = is_reserved_type na ty in
@@ -1225,14 +1225,14 @@ and extern_eqn inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
   let pll = List.map (List.map (extern_cases_pattern_in_scope scopes vars)) pll in
   make ?loc (pll,extern inctx scopes vars c)
 
-and extern_notations scopes vars nargs t =
+and extern_notations inctx scopes vars nargs t =
   if !Flags.raw_print || !print_no_symbol then raise No_match;
   try extern_possible_prim_token scopes t
   with No_match ->
   let t = flatten_application t in
-  extern_notation scopes vars t (filter_enough_applied nargs (uninterp_notations t))
+  extern_notation inctx scopes vars t (filter_enough_applied nargs (uninterp_notations t))
 
-and extern_notation (custom,scopes as allscopes) vars t rules =
+and extern_notation inctx (custom,scopes as allscopes) vars t rules =
   match rules with
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
@@ -1313,7 +1313,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
                   let c = insert_entry_coercion coercion (insert_delimiters c key) in
                   let args = fill_arg_scopes args argsscopes allscopes in
                   let args = extern_args (extern true) vars args in
-                  CAst.make ?loc @@ extern_applied_notation nallargs argsimpls c args)
+                  CAst.make ?loc @@ extern_applied_notation inctx nallargs argsimpls c args)
           | SynDefRule kn ->
               let l =
                 List.map (fun (c,(subentry,(scopt,scl))) ->
@@ -1323,13 +1323,13 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
               let a = CRef (cf,None) in
               let args = fill_arg_scopes args argsscopes allscopes in
               let args = extern_args (extern true) vars args in
-              let c = CAst.make ?loc @@ extern_applied_syntactic_definition nallargs argsimpls (a,cf) l args in
+              let c = CAst.make ?loc @@ extern_applied_syntactic_definition inctx nallargs argsimpls (a,cf) l args in
               if isCRef_no_univ c.CAst.v && entry_has_global custom then c
              else match availability_of_entry_coercion custom InConstrEntrySomeLevel with
              | None -> raise No_match
              | Some coercion -> insert_entry_coercion coercion c
       with
-          No_match -> extern_notation allscopes vars t rules
+          No_match -> extern_notation inctx allscopes vars t rules
 
 let extern_glob_constr vars c =
   extern false (InConstrEntrySomeLevel,(None,[])) vars c
