@@ -100,26 +100,27 @@ let mk_mtb mp sign delta =
     mod_delta = delta;
     mod_retroknowledge = ModTypeRK; }
 
-let collect_constants_without_body sign mp =
+let rec collect_constants_without_body sign mp accu =
   let collect_sf s lab = function
   | SFBconst cb ->
      let c = Constant.make2 mp lab in
      if Declareops.constant_has_body cb then s else Cset.add c s
-  | SFBmind _ | SFBmodule _ | SFBmodtype _ -> s in
+  | SFBmodule msb -> collect_constants_without_body msb.mod_type (MPdot(mp,lab)) s
+  | SFBmind _ | SFBmodtype _ -> s in
   match sign with
   | MoreFunctor _ -> Cset.empty  (* currently ignored *)
   | NoFunctor struc ->
-     List.fold_left (fun s (lab,mb) -> collect_sf s lab mb) Cset.empty struc
+     List.fold_left (fun s (lab,mb) -> collect_sf s lab mb) accu struc
 
-let rec check_module env opac mp mb =
+let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let env = Modops.add_retroknowledge mb.mod_retroknowledge env in
   let sign, opac =
-    check_signature env opac mb.mod_type mb.mod_mp mb.mod_delta Cset.empty
+    check_signature env opac mb.mod_type mb.mod_mp mb.mod_delta opacify
   in
   let optsign, opac = match mb.mod_expr with
     |Struct sign_struct ->
-      let opacify = collect_constants_without_body sign mb.mod_mp in
+      let opacify = collect_constants_without_body sign mb.mod_mp opacify in
       let sign, opac = check_signature env opac sign_struct mb.mod_mp mb.mod_delta opacify in
       Some (sign, mb.mod_delta), opac
     |Algebraic me -> Some (check_mexpression env opac me mb.mod_mp mb.mod_delta), opac
@@ -152,7 +153,7 @@ and check_structure_field env opac mp lab res opacify = function
       let kn = Mod_subst.mind_of_delta_kn res kn in
       CheckInductive.check_inductive env kn mib, opac
   | SFBmodule msb ->
-      let opac = check_module env opac (MPdot(mp,lab)) msb in
+      let opac = check_module env opac (MPdot(mp,lab)) msb opacify in
       Modops.add_module msb env, opac
   | SFBmodtype mty ->
       check_module_type env mty;
@@ -194,3 +195,5 @@ and check_signature env opac sign mp_mse res opacify = match sign with
         check_structure_field env opac mp_mse lab res opacify mb) (env, opac) struc
       in
       NoFunctor struc, opac
+
+let check_module env opac mp mb = check_module env opac mp mb Cset.empty
