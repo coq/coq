@@ -62,6 +62,12 @@ type inference_flags = {
   polymorphic : bool;
 }
 
+(** For typechecking multiple terms separately, avoid calling
+    typeclasses/heuristics until all are done.
+    Using these flags means you must use [solve_remaining_evars] afterwards.
+*)
+val partial_flags : inference_flags
+
 val default_inference_flags : bool -> inference_flags
 
 val no_classes_no_fail_inference_flags : inference_flags

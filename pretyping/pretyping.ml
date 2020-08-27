@@ -198,6 +198,8 @@ type inference_flags = {
   expand_evars : bool;
   program_mode : bool;
   polymorphic : bool;
+  (* [polymorphic] is only used by Tacinterp.interp_constr_gen and
+     type_uconstr, we need a better way to pass it around. *)
 }
 
 (* Compute the set of still-undefined initial evars up to restriction
@@ -1345,6 +1347,15 @@ let ise_pretype_gen flags env sigma lvar kind c =
       sigma, tj.utj_val, mkSort tj.utj_type
   in
   process_inference_flags flags !!env sigma (sigma',c',c'_ty)
+
+let partial_flags = {
+  use_typeclasses = UseTCForConv;
+  solve_unification_constraints = false;
+  fail_evar = false;
+  expand_evars = true; (* questionable, TODO bench *)
+  program_mode = false;
+  polymorphic = false;
+}
 
 let default_inference_flags fail = {
   use_typeclasses = UseTC;
