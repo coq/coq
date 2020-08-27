@@ -55,6 +55,8 @@ let make x = Some x
 (** [bind x f] is [f y] if [x] is [Some y] and [None] otherwise *)
 let bind x f = match x with Some y -> f y | None -> None
 
+let filter f x = bind x (fun v -> if f v then x else None)
+
 (** [init b x] returns [Some x] if [b] is [true] and [None] otherwise. *)
 let init b x =
   if b then

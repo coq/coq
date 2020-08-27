@@ -115,8 +115,6 @@ type t =
      list is empty when the proof is fully unfocused. *)
   ; shelf : Goal.goal list
   (** List of goals that have been shelved. *)
-  ; given_up : Goal.goal list
-  (** List of goals that have been given up *)
   ; name : Names.Id.t
   (** the name of the theorem whose proof is being constructed *)
   ; poly : bool
@@ -138,8 +136,7 @@ let proof p =
     map_minus_one (fun (_,_,c) -> Proofview.focus_context c) p.focus_stack
   in
   let shelf = p.shelf in
-  let given_up = p.given_up in
-  (goals,stack,shelf,given_up,sigma)
+  (goals,stack,shelf,sigma)
 
 let rec unroll_focus pv = function
   | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
@@ -156,7 +153,9 @@ let is_done p =
 let has_unresolved_evar p =
   Proofview.V82.has_unresolved_evar p.proofview
 let has_shelved_goals p = not (CList.is_empty (p.shelf))
-let has_given_up_goals p = not (CList.is_empty (p.given_up))
+let has_given_up_goals p =
+  let (_goals,sigma) = Proofview.proofview p.proofview in
+  Evd.has_given_up sigma
 
 let is_complete p =
   is_done p && not (has_unresolved_evar p) &&
@@ -292,7 +291,6 @@ let start ~name ~poly sigma goals =
     ; entry
     ; focus_stack = []
     ; shelf = []
-    ; given_up = []
     ; name
     ; poly
   } in
@@ -305,7 +303,6 @@ let dependent_start ~name ~poly goals =
     ; entry
     ; focus_stack = []
     ; shelf = []
-    ; given_up = []
     ; name
     ; poly
   } in
@@ -366,33 +363,29 @@ let update_sigma_env p env =
 
 let run_tactic env tac pr =
   let open Proofview.Notations in
-  let sp = pr.proofview in
   let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
   let tac =
     tac >>= fun result ->
     Proofview.tclEVARMAP >>= fun sigma ->
     (* Already solved goals are not to be counted as shelved. Nor are
       they to be marked as unresolvable. *)
-    let retrieved = Evd.filter_future_goals (Evd.is_undefined sigma) (Evd.save_future_goals sigma) in
-    let retrieved,retrieved_given_up = Evd.extract_given_up_future_goals retrieved in
-    (* Check that retrieved given up is empty *)
-    if not (List.is_empty retrieved_given_up) then
-      CErrors.anomaly Pp.(str "Evars generated outside of proof engine (e.g. V82, clear, ...) are not supposed to be explicitly given up.");
+    let retrieved, sigma = Evd.pop_future_goals sigma in
+    let retrieved = Evd.FutureGoals.filter (Evd.is_undefined sigma) retrieved in
+    let retrieved = List.rev_append retrieved.Evd.FutureGoals.shelf (List.rev retrieved.Evd.FutureGoals.comb) in
     let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT (result,retrieved)
   in
-  let { name; poly } = pr in
-  let ((result,retrieved),proofview,(status,to_shelve,give_up),info_trace) =
-    Proofview.apply ~name ~poly env tac sp
+  let { name; poly; proofview } = pr in
+  let proofview = Proofview.Unsafe.push_future_goals proofview in
+  let ((result,retrieved),proofview,(status,to_shelve),info_trace) =
+    Proofview.apply ~name ~poly env tac proofview
   in
   let sigma = Proofview.return proofview in
   let to_shelve = undef sigma to_shelve in
   let shelf = (undef sigma pr.shelf)@retrieved@to_shelve in
   let proofview = Proofview.Unsafe.mark_as_unresolvables proofview to_shelve in
-  let given_up = pr.given_up@give_up in
-  let proofview = Proofview.Unsafe.reset_future_goals proofview in
-  { pr with proofview ; shelf ; given_up },(status,info_trace),result
+  { pr with proofview ; shelf },(status,info_trace),result
 
 (*** Commands ***)
 
@@ -457,11 +450,11 @@ end
 let all_goals p =
   let add gs set =
     List.fold_left (fun s g -> Goal.Set.add g s) set gs in
-  let (goals,stack,shelf,given_up,_) = proof p in
+  let (goals,stack,shelf,sigma) = proof p in
     let set = add goals Goal.Set.empty in
     let set = List.fold_left (fun s gs -> let (g1, g2) = gs in add g1 (add g2 set)) set stack in
     let set = add shelf set in
-    let set = add given_up set in
+    let set = Goal.Set.union (Evd.given_up sigma) set in
     let { Evd.it = bgoals ; sigma = bsigma } = V82.background_subgoals p in
     add bgoals set
 
@@ -476,15 +469,13 @@ type data =
   (** A representation of the focus stack *)
   ; shelf : Evar.t list
   (** A representation of the shelf  *)
-  ; given_up : Evar.t list
-  (** A representation of the given up goals  *)
   ; name : Names.Id.t
   (** The name of the theorem whose proof is being constructed *)
   ; poly : bool
   (** Locality, polymorphism, and "kind" [Coercion, Definition, etc...] *)
   }
 
-let data { proofview; focus_stack; entry; shelf; given_up; name; poly } =
+let data { proofview; focus_stack; entry; shelf; name; poly } =
   let goals, sigma = Proofview.proofview proofview in
   (* spiwack: beware, the bottom of the stack is used by [Proof]
      internally, and should not be exposed. *)
@@ -495,10 +486,10 @@ let data { proofview; focus_stack; entry; shelf; given_up; name; poly } =
   in
   let stack =
     map_minus_one (fun (_,_,c) -> Proofview.focus_context c) focus_stack in
-  { sigma; goals; entry; stack; shelf; given_up; name; poly }
+  { sigma; goals; entry; stack; shelf; name; poly }
 
 let pr_proof p =
-  let { goals=fg_goals; stack=bg_goals; shelf; given_up; _ } = data p in
+  let { goals=fg_goals; stack=bg_goals; shelf; sigma } = data p in
   Pp.(
     let pr_goal_list = prlist_with_sep spc Goal.pr_goal in
     let rec aux acc = function
@@ -509,7 +500,7 @@ let pr_proof p =
     str "[" ++ str "focus structure: " ++
                aux (pr_goal_list fg_goals) bg_goals ++ str ";" ++ spc () ++
     str "shelved: " ++ pr_goal_list shelf ++ str ";" ++ spc () ++
-    str "given up: " ++ pr_goal_list given_up ++
+    str "given up: " ++ pr_goal_list (Evar.Set.elements @@ Evd.given_up sigma) ++
     str "]"
   )
 
@@ -578,7 +569,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let eff = Evd.eval_side_effects sigma in
   let sigma = Evd.drop_side_effects sigma in
   (* Save the existing goals *)
-  let prev_future_goals = Evd.save_future_goals sigma in
+  let sigma = Evd.push_future_goals sigma in
   (* Start a proof *)
   let prf = start ~name ~poly sigma [env, ty] in
   let (prf, _, ()) =
@@ -589,7 +580,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
       Exninfo.iraise (e, info)
   in
   (* Plug back the retrieved sigma *)
-  let { goals; stack; shelf; given_up; sigma; entry } = data prf in
+  let { goals; stack; shelf; sigma; entry } = data prf in
   assert (stack = []);
   let ans = match Proofview.initial_goals entry with
   | [c, _] -> c
@@ -602,14 +593,12 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let sigma = Evd.drop_side_effects sigma in
   let sigma = Evd.emit_side_effects eff sigma in
   (* Restore former goals *)
-  let sigma = Evd.restore_future_goals sigma prev_future_goals in
+  let _goals, sigma = Evd.pop_future_goals sigma in
   (* Push remaining goals as future_goals which is the only way we
      have to inform the caller that there are goals to collect while
      not being encapsulated in the monad *)
   (* Goals produced by tactic "shelve" *)
-  let sigma = List.fold_right (Evd.declare_future_goal ~tag:Evd.ToShelve) shelf sigma in
-  (* Goals produced by tactic "give_up" *)
-  let sigma = List.fold_right (Evd.declare_future_goal ~tag:Evd.ToGiveUp) given_up sigma in
+  let sigma = List.fold_right (Evd.declare_future_goal ~shelve:true) shelf sigma in
   (* Other goals *)
   let sigma = List.fold_right Evd.declare_future_goal goals sigma in
   (* Get rid of the fresh side-effects by internalizing them in the term

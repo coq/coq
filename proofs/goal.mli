@@ -65,4 +65,4 @@ module V82 : sig
 
 end
 
-module Set : sig include Set.S with type elt = goal end
+module Set = Evar.Set

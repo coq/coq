@@ -45,8 +45,6 @@ type data =
   (** A representation of the focus stack *)
   ; shelf : Evar.t list
   (** A representation of the shelf  *)
-  ; given_up : Evar.t list
-  (** A representation of the given up goals  *)
   ; name : Names.Id.t
   (** The name of the theorem whose proof is being constructed *)
   ; poly : bool;

@@ -780,17 +780,18 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
      straightforward, but seriously, [Proof.proof] should return
      [evar_info]-s instead. *)
   let p = proof in
-  let Proof.{goals; stack; shelf; given_up; sigma} = Proof.data p in
+  let Proof.{goals; stack; shelf; sigma} = Proof.data p in
+  let given_up = Evd.given_up sigma in
   let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
   let seeds = Proof.V82.top_evars p in
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
           begin match bgoals,shelf,given_up with
-          | [] , [] , [] -> pr_subgoals None sigma ~seeds ~shelf ~stack ~unfocused:[] ~goals
+          | [] , [] , g when Evar.Set.is_empty g -> pr_subgoals None sigma ~seeds ~shelf ~stack ~unfocused:[] ~goals
           | [] , [] , _ ->
              Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
              fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:given_up
+            ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:(Evar.Set.elements given_up)
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
             Feedback.msg_info (str "All the remaining goals are on the shelf.");

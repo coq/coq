@@ -71,18 +71,9 @@ Goal forall (T : Type) (O0 : T -> OPred) (O1 : T -> PointedOPred)
     refine (P _ _)
   end.
   Undo.
-  Fail lazymatch goal with
+  lazymatch goal with
   | |- ?R (?f ?a ?b) (?f ?a' ?b') =>
     let P := constr:(fun H H' => Morphisms.proper_prf a a' H b b' H') in
     set(p:=P)
-  end. (* Toplevel input, characters 15-182:
-Error: Cannot infer an instance of type
-"PointedOPred" for the variable p in environment:
-T : Type
-O0 : T -> OPred
-O1 : T -> PointedOPred
-tr : T -> T
-O2 : PointedOPred
-x0 : T
-H : forall x0 : T, catOP (O0 x0) (O1 (tr x0)) |-- O1 x0 *)
+  end.
 Abort.
