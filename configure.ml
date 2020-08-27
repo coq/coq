@@ -64,8 +64,7 @@ let rec waitpid_non_intr pid =
 (** Below, we'd better read all lines on a channel before closing it,
     otherwise a SIGPIPE could be encountered by the sub-process *)
 
-let read_lines_and_close fd =
-  let cin = Unix.in_channel_of_descr fd in
+let read_lines_and_close cin =
   let lines = ref [] in
   begin
     try
@@ -77,6 +76,9 @@ let read_lines_and_close fd =
   close_in cin;
   let lines = List.rev !lines in
   try List.hd lines, lines with Failure _ -> "", []
+
+let read_lines_and_close_fd fd =
+  read_lines_and_close (Unix.in_channel_of_descr fd)
 
 (** Run some unix command and read the first line of its output.
     We avoid Unix.open_process and its non-fully-portable /bin/sh,
@@ -109,8 +111,8 @@ let run ?(fatal=true) ?(err=StdErr) prog args =
     let pid = Unix.create_process prog argv Unix.stdin out_w fd_err in
     let () = Unix.close out_w in
     let () = Unix.close nul_w in
-    let line, all = read_lines_and_close out_r in
-    let _ = read_lines_and_close nul_r in
+    let line, all = read_lines_and_close_fd out_r in
+    let _ = read_lines_and_close_fd nul_r in
     let () = check_exit_code (waitpid_non_intr pid) in
     line, all
   with
@@ -1108,11 +1110,16 @@ let write_configml f =
   pr "\nlet core_src_dirs = [\n%s]\n" core_src_dirs;
   pr "\nlet plugins_dirs = [\n";
 
-  let plugins =
-    try Sys.readdir "plugins"
-    with _ -> [||]
+  let plugins = match open_in "config/plugin_list" with
+    | exception Sys_error _ ->
+      let plugins =
+        try Sys.readdir "plugins"
+        with _ -> [||]
+      in
+      Array.sort compare plugins;
+      plugins
+    | ch -> Array.of_list (snd (read_lines_and_close ch))
   in
-  Array.sort compare plugins;
   Array.iter
     (fun f ->
       let f' = "plugins/"^f in
