@@ -341,7 +341,9 @@ let print_arguments ref =
     let open Constrexpr in
     let open Vernacexpr in
     [Ppvernac.pr_vernac_expr
-       (VernacArguments (CAst.make (AN qid), impls, moreimpls, flags))]
+       (VernacArguments (CAst.make (AN qid), impls, moreimpls, flags)) ++
+     (if renames = [] then mt () else
+      fnl () ++ str "  (where some original arguments have been renamed)")]
 
 let print_name_infos ref =
   let type_info_for_implicit =
