@@ -60,7 +60,7 @@ let set_strategy_one ref l  =
   Global.set_strategy k l;
   match k,l with
       ConstKey sp, Conv_oracle.Opaque ->
-        Csymtable.set_opaque_const sp
+        Vmsymtable.set_opaque_const sp
     | ConstKey sp, _ ->
         let cb = Global.lookup_constant sp in
         (match cb.const_body with
@@ -69,7 +69,7 @@ let set_strategy_one ref l  =
               (str "Cannot make" ++ spc () ++
                  Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef sp) ++
                  spc () ++ str "transparent because it was declared opaque.");
-          | _ -> Csymtable.set_transparent_const sp)
+          | _ -> Vmsymtable.set_transparent_const sp)
     | _ -> ()
 
 let cache_strategy (_,str) =

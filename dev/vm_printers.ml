@@ -1,7 +1,7 @@
 open Format
 open Term
 open Names
-open Cemitcodes
+open Vmemitcodes
 open Vmvalues
 
 let ppripos (ri,pos) =
