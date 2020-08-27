@@ -19,7 +19,8 @@ type 'a summary_declaration = {
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 
-module DynMap = Dyn.Map(struct type 'a t = 'a summary_declaration end)
+module Decl = struct type 'a t = 'a summary_declaration end
+module DynMap = Dyn.Map(Decl)
 
 type ml_modules = (string * string option) list
 
@@ -46,7 +47,8 @@ let declare_summary_tag sumname decl =
 let declare_summary sumname decl =
   ignore(declare_summary_tag sumname decl)
 
-module Frozen = Dyn.Map(struct type 'a t = 'a end)
+module ID = struct type 'a t = 'a end
+module Frozen = Dyn.Map(ID)
 
 type frozen = {
   summaries : Frozen.t;
@@ -57,9 +59,11 @@ type frozen = {
 
 let empty_frozen = { summaries = Frozen.empty; ml_module = None }
 
+module HMap = Dyn.HMap(Decl)(ID)
+
 let freeze_summaries ~marshallable : frozen =
-  let fold (DynMap.Any (tag, decl)) accu = Frozen.add tag (decl.freeze_function ~marshallable) accu in
-  { summaries = DynMap.fold fold !sum_map Frozen.empty;
+  let map = { HMap.map = fun tag decl -> decl.freeze_function ~marshallable } in
+  { summaries = HMap.map map !sum_map;
     ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod;
   }
 
