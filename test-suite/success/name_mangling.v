@@ -69,7 +69,7 @@ Abort.
 
 (* Example from Jason *)
 
-Goal False -> False.
+Lemma lem1 : False -> False.
 intro H.
 (* Name H' is from Ltac here, so it preserves the privacy *)
 (* But abstract messes everything up *)
@@ -109,7 +109,7 @@ Goal forall b : False, b = b.
 Fail destruct b0.
 Abort.
 
-Goal forall b : False, b = b.
+Lemma lem2 : forall b : False, b = b.
 now destruct b.
 Qed.
 End foo.
