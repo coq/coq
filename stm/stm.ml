@@ -1922,7 +1922,8 @@ end = struct (* {{{ *)
                     str" solves the goal and leaves no unresolved existential variables. The following" ++
                     str" existentials remain unsolved: " ++ prlist (Termops.pr_existential_key sigma) (Evar.Set.elements evars))
        end) ()
-    with e when CErrors.noncritical e -> RespError (CErrors.print e)
+    with e when CErrors.noncritical e ->
+      RespError (CErrors.print e ++ spc() ++ str "(for subgoal "++int (fst r_ast) ++ str ")")
 
   let name_of_task { t_name } = t_name
   let name_of_request { r_name } = r_name

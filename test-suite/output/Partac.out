@@ -1,0 +1,6 @@
+The command has indeed failed with message:
+The term "false" has type "bool" while it is expected to have type "nat".
+(for subgoal 1)
+The command has indeed failed with message:
+The term "0" has type "nat" while it is expected to have type "bool".
+(for subgoal 2)
