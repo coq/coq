@@ -478,11 +478,16 @@ let revtoptac n0 =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let concl = Proofview.Goal.concl gl in
+  let env = Proofview.Goal.env gl in
   let n = nb_prod sigma concl - n0 in
   let dc, cl = EConstr.decompose_prod_n_assum sigma n concl in
-  let dc' = dc @ [Context.Rel.Declaration.LocalAssum(make_annot (Name rev_id) Sorts.Relevant, EConstr.it_mkProd_or_LetIn cl (List.rev dc))] in
-  let f = EConstr.it_mkLambda_or_LetIn (mkEtaApp (EConstr.mkRel (n + 1)) (-n) 1) dc' in
-  Logic.refiner ~check:true EConstr.Unsafe.(to_constr (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|])))
+  let ty = EConstr.it_mkProd_or_LetIn cl (List.rev dc) in
+  let dc' = dc @ [Context.Rel.Declaration.LocalAssum(make_annot (Name rev_id) Sorts.Relevant, ty)] in
+  Refine.refine ~typecheck:true begin fun sigma ->
+    let f = EConstr.it_mkLambda_or_LetIn (mkEtaApp (EConstr.mkRel (n + 1)) (-n) 1) dc' in
+    let sigma, ev = Evarutil.new_evar env sigma ty in
+    sigma, (EConstr.mkApp (f, [|ev|]))
+  end
   end
 
 let nothing_to_inject =

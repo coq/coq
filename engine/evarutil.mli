@@ -21,7 +21,6 @@ open EConstr
 
 (** [new_meta] is a generator of unique meta variables *)
 val new_meta : unit -> metavariable
-val mk_new_meta : unit -> constr
 
 (** {6 Creating a fresh evar given their type and context} *)
 

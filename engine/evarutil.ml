@@ -183,8 +183,6 @@ let meta_ctr, meta_counter_summary_tag =
 
 let new_meta () = incr meta_ctr; !meta_ctr
 
-let mk_new_meta () = EConstr.mkMeta(new_meta())
-
 (* The list of non-instantiated existential declarations (order is important) *)
 
 let non_instantiated sigma =
