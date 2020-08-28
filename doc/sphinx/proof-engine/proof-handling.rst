@@ -156,6 +156,10 @@ list of assertion commands is given in :ref:`Assertions`. The command
    ``T``, then the commands ``Proof using a`` and ``Proof using T a``
    are equivalent.
 
+   The set of declared variables always includes the variables used by
+   the statement. In other words ``Proof using e`` is equivalent to
+   ``Proof using Type + e`` for any declaration expression ``e``.
+
    .. cmdv:: Proof using {+ @ident } with @tactic
 
       Combines in a single line :cmd:`Proof with` and :cmd:`Proof using`.
