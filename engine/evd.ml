@@ -499,6 +499,8 @@ module FutureGoals : sig
 
   val put_shelf : Evar.t list -> stack -> stack
 
+  val pr_stack : stack -> Pp.t
+
 end = struct
 
   type t = {
@@ -587,6 +589,15 @@ end = struct
     | hd :: tl ->
       let shelf = shelved @ hd.shelf in
       { hd with shelf } :: tl
+
+  let pr_stack stack =
+    let open Pp in
+    let pr_future_goals fgl =
+      prlist_with_sep spc Evar.print fgl.comb ++
+        pr_opt (fun ev -> str"(principal: " ++ Evar.print ev ++ str")") fgl.principal
+    in
+    if List.is_empty stack then str"(empty stack)"
+    else prlist_with_sep (fun () -> str"||") pr_future_goals stack
 
 end
 
@@ -1196,6 +1207,9 @@ let shelve_on_future_goals shelved evd =
 
 let remove_future_goal evd evk =
   { evd with future_goals = FutureGoals.remove evk evd.future_goals }
+
+let pr_future_goals_stack evd =
+  FutureGoals.pr_stack evd.future_goals
 
 let give_up ev evd =
   { evd with given_up = Evar.Set.add ev evd.given_up }

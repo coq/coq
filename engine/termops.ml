@@ -301,8 +301,10 @@ let pr_evar_map_gen with_univs pr_evars env sigma =
     if List.is_empty (Evd.meta_list sigma) then mt ()
     else
       str "METAS:" ++ brk (0, 1) ++ pr_meta_map env sigma
+  and future_goals =
+    str "FUTURE GOALS STACK:" ++ brk (0, 1) ++ Evd.pr_future_goals_stack sigma ++ fnl ()
   in
-  evs ++ svs ++ cstrs ++ typeclasses ++ obligations ++ metas
+  evs ++ svs ++ cstrs ++ typeclasses ++ obligations ++ metas ++ future_goals
 
 let pr_evar_list env sigma l =
   let open Evd in
