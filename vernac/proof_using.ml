@@ -41,28 +41,27 @@ let set_of_type env ty =
 let full_set env =
   List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
-let rec process_expr env e ty =
+let process_expr env e v_ty =
   let rec aux = function
     | SsEmpty -> Id.Set.empty
-    | SsType -> set_of_type env ty
-    | SsSingl { CAst.v = id } -> set_of_id env id
+    | SsType -> v_ty
+    | SsSingl { CAst.v = id } -> set_of_id id
     | SsUnion(e1,e2) -> Id.Set.union (aux e1) (aux e2)
     | SsSubstr(e1,e2) -> Id.Set.diff (aux e1) (aux e2)
     | SsCompl e -> Id.Set.diff (full_set env) (aux e)
     | SsFwdClose e -> close_fwd env (aux e)
+  and set_of_id id =
+    if Id.to_string id = "All" then
+      full_set env
+    else if CList.mem_assoc_f Id.equal id !known_names then
+      aux (CList.assoc_f Id.equal id !known_names)
+    else Id.Set.singleton id
   in
-    aux e
-
-and set_of_id env id =
-  if Id.to_string id = "All" then
-    List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
-  else if CList.mem_assoc_f Id.equal id !known_names then
-    process_expr env (CList.assoc_f Id.equal id !known_names) []
-  else Id.Set.singleton id
+  aux e
 
 let process_expr env e ty =
   let v_ty = set_of_type env ty in
-  let s = Id.Set.union v_ty (process_expr env e ty) in
+  let s = Id.Set.union v_ty (process_expr env e v_ty) in
   Id.Set.elements s
 
 let name_set id expr = known_names := (id,expr) :: !known_names
