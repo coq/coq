@@ -661,13 +661,25 @@ let vars_of_global env gr =
   | ConstructRef cstr -> lookup_constructor_variables cstr env
 
 let global_vars_set env constr =
-  let rec filtrec acc c =
-    match destRef c with
-    | gr, _ ->
-      Id.Set.union (vars_of_global env gr) acc
-    | exception DestKO -> Constr.fold filtrec acc c
+  let rec filtrec (constseen, indseen, vars as accu) c =
+    match Constr.kind c with
+    | Var id -> (constseen, indseen, Id.Set.add id vars)
+    | Const (kn, _) ->
+      if Cset.mem kn constseen then accu
+      else
+        let constseen = Cset.add kn constseen in
+        let vars = Id.Set.union (lookup_constant_variables kn env) vars in
+        (constseen, indseen, vars)
+    | Ind (ind, _) | Construct ((ind, _), _) ->
+      if Indset.mem ind indseen then accu
+      else
+        let indseen = Indset.add ind indseen in
+        let vars = Id.Set.union (lookup_inductive_variables ind env) vars in
+        (constseen, indseen, vars)
+    | _ -> Constr.fold filtrec accu c
   in
-  filtrec Id.Set.empty constr
+  let (_, _, vars) = filtrec (Cset.empty, Indset.empty, Id.Set.empty) constr in
+  vars
 
 
 (* [keep_hyps env ids] keeps the part of the section context of [env] which
