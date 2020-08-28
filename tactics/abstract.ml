@@ -78,7 +78,10 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
               | None ->  Proofview.Goal.concl gl
               | Some ty -> ty in
   let concl = it_mkNamedProd_or_LetIn concl sign in
-  let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
+  let solve_tac = tclCOMPLETE
+      (Tactics.intros_mustbe_force (List.rev_map NamedDecl.get_id sign) <*>
+       tac)
+  in
   let effs, sigma, lem, args, safe =
     !declare_abstract ~name ~poly ~sign ~secsign ~kind ~opaque ~solve_tac sigma concl in
   let solve =
