@@ -26,7 +26,7 @@ module type Coef = sig
   val pgcd : t -> t -> t
 
   val hash : t -> int
-  val of_num : Num.num -> t
+  val of_num : Q.t -> t
   val to_string : t -> string
 end
 
@@ -35,7 +35,7 @@ module type S = sig
   type variable = int
   type t = Pint of coef | Prec of variable * t array
 
-  val of_num : Num.num -> t
+  val of_num : Q.t -> t
   val x : variable -> t
   val monome : variable -> int -> t
   val is_constantP : t -> bool

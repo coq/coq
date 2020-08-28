@@ -65,8 +65,8 @@ sig
 
   val classify : t -> num_class
 
-  val of_bigint : num_class -> Bigint.bigint -> t
-  val to_bigint : t -> Bigint.bigint
+  val of_bigint : num_class -> Z.t -> t
+  val to_bigint : t -> Z.t
 end
 
 (** {6 Unsigned decimal numerals } *)
@@ -131,8 +131,8 @@ sig
   val to_string : t -> string
     (** Returns a string in the syntax of OCaml's float_of_string *)
 
-  val of_bigint : num_class -> Bigint.bigint -> t
-  val to_bigint : t -> Bigint.bigint option
+  val of_bigint : num_class -> Z.t -> t
+  val to_bigint : t -> Z.t option
     (** Convert from and to bigint when the denotation of a bigint *)
 
   val of_int_frac_and_exponent : SignedNat.t -> UnsignedNat.t option -> SignedNat.t option -> t
@@ -140,8 +140,8 @@ sig
     (** n, p and q such that the number is n.p*10^q or n.p*2^q
         pre/postcondition: classify n = classify p, classify q = CDec *)
 
-  val of_bigint_and_exponent : Bigint.bigint -> Bigint.bigint exp -> t
-  val to_bigint_and_exponent : t -> Bigint.bigint * Bigint.bigint exp
+  val of_bigint_and_exponent : Z.t -> Z.t exp -> t
+  val to_bigint_and_exponent : t -> Z.t * Z.t exp
     (** n and p such that the number is n*10^p or n*2^p *)
 
   val classify : t -> num_class

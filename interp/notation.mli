@@ -101,7 +101,7 @@ val register_rawnumeral_interpretation :
   ?allow_overwrite:bool -> prim_token_uid -> rawnum prim_token_interpretation -> unit
 
 val register_bignumeral_interpretation :
-  ?allow_overwrite:bool -> prim_token_uid -> Bigint.bigint prim_token_interpretation -> unit
+  ?allow_overwrite:bool -> prim_token_uid -> Z.t prim_token_interpretation -> unit
 
 val register_string_interpretation :
   ?allow_overwrite:bool -> prim_token_uid -> string prim_token_interpretation -> unit
@@ -196,8 +196,8 @@ val enable_prim_token_interpretation : prim_token_infos -> unit
 *)
 
 val declare_numeral_interpreter : ?local:bool -> scope_name -> required_module ->
-  Bigint.bigint prim_token_interpreter ->
-  glob_constr list * Bigint.bigint prim_token_uninterpreter * bool -> unit
+  Z.t prim_token_interpreter ->
+  glob_constr list * Z.t prim_token_uninterpreter * bool -> unit
 val declare_string_interpreter : ?local:bool -> scope_name -> required_module ->
   string prim_token_interpreter ->
   glob_constr list * string prim_token_uninterpreter * bool -> unit
@@ -349,4 +349,4 @@ val level_of_notation : notation -> level
 val with_notation_protection : ('a -> 'b) -> 'a -> 'b
 
 (** Conversion from bigint to int63 *)
-val int63_of_pos_bigint : Bigint.bigint -> Uint63.t
+val int63_of_pos_bigint : Z.t -> Uint63.t

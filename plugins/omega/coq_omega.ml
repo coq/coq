@@ -32,7 +32,22 @@ open Tactypes
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
-module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
+
+module ZOmega = struct
+  type bigint = Z.t
+  let equal = Z.equal
+  let less_than = Z.lt
+  let add = Z.add
+  let sub = Z.sub
+  let mult = Z.mul
+  let euclid = Z.div_rem
+  let neg = Z.neg
+  let zero = Z.zero
+  let one = Z.one
+  let to_string = Z.to_string
+end
+
+module OmegaSolver = Omega.MakeOmegaSolver (ZOmega)
 open OmegaSolver
 
 (* Added by JCF, 09/03/98 *)
@@ -719,7 +734,7 @@ let rec shuffle p (t1,t2) =
           Oplus(l2,t')
         else [],Oplus(t1,t2)
     | Oz t1,Oz t2 ->
-        [focused_simpl p], Oz(Bigint.add t1 t2)
+        [focused_simpl p], Oz(Z.add t1 t2)
     | t1,t2 ->
         if weight t1 < weight t2 then
           [clever_rewrite p [[P_APP 1];[P_APP 2]]
@@ -741,7 +756,7 @@ let shuffle_mult p_init k1 e1 k2 e2 =
                               [P_APP 2; P_APP 2]]
               (Lazy.force coq_fast_OMEGA10)
           in
-          if Bigint.add (Bigint.mult k1 c1) (Bigint.mult k2 c2) =? zero then
+          if Z.add (Z.mul k1 c1) (Z.mul k2 c2) =? zero then
             let tac' =
               clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
                 (Lazy.force coq_fast_Zred_factor5) in
@@ -798,7 +813,7 @@ let shuffle_mult_right p_init e1 k2 e2 =
                [P_APP 2; P_APP 2]]
               (Lazy.force coq_fast_OMEGA15)
           in
-          if Bigint.add c1 (Bigint.mult k2 c2) =? zero then
+          if Z.add c1 (Z.mul k2 c2) =? zero then
             let tac' =
               clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
                 (Lazy.force coq_fast_Zred_factor5)
@@ -1004,7 +1019,7 @@ let reduce_factor p = function
   | Otimes(Oatom v,c) ->
       let rec compute = function
         | Oz n -> n
-        | Oplus(t1,t2) -> Bigint.add (compute t1) (compute t2)
+        | Oplus(t1,t2) -> Z.add (compute t1) (compute t2)
         | _ -> CErrors.user_err Pp.(str "condense.1")
       in
       [focused_simpl (P_APP 2 :: p)], Otimes(Oatom v,Oz(compute c))
@@ -1160,7 +1175,7 @@ let replay_history tactic_normalisation =
 
       | NOT_EXACT_DIVIDE (e1,k) :: l ->
           let c = floor_div e1.constant k in
-          let d = Bigint.sub e1.constant (Bigint.mult c k) in
+          let d = Z.sub e1.constant (Z.mul c k) in
           let e2 =  {id=e1.id; kind=EQUA;constant = c;
                      body = map_eq_linear (fun c -> c / k) e1.body } in
           let eq2 = val_of(decompile e2) in

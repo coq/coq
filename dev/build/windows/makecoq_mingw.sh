@@ -1006,6 +1006,7 @@ function make_ocaml_tools {
 
 function make_ocaml_libs {
   make_num
+  make_zarith
   make_findlib
   make_lablgtk
 }
@@ -1019,6 +1020,16 @@ function make_num {
     # log2 make test
     log2 make install
     log2 make clean
+    build_post
+  fi
+}
+
+function make_zarith {
+  make_ocaml
+  if build_prep https://github.com/ocaml/Zarith/archive release-1.9.1 tar.gz 1 zarith-1.9.1; then
+    logn configure ./configure
+    log1 make
+    log2 make install
     build_post
   fi
 }

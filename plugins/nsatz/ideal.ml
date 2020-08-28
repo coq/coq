@@ -153,8 +153,8 @@ end
 module Make (P:Polynom.S) = struct
 
   type coef = P.t
-  let coef0 = P.of_num (Num.Int 0)
-  let coef1 = P.of_num (Num.Int 1)
+  let coef0 = P.of_num Q.zero
+  let coef1 = P.of_num Q.one
   let string_of_coef c = "["^(P.to_string c)^"]"
 
 (***********************************************************************
@@ -305,7 +305,7 @@ let mult_t_pol a m p =
   let map (b, m') = (P.multP a b, mult_mon m m') in
   CList.map map p
 
-let coef_of_int x = P.of_num (Num.Int x)
+let coef_of_int x = P.of_num (Q.of_int x)
 
 (* variable i *)
 let gen d i =

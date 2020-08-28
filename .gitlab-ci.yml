@@ -19,7 +19,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2020-08-18-V29"
+  CACHEKEY: "bionic_coq-V2020-08-28-V92"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -600,7 +600,7 @@ test-suite:edge:dune:dev:
     - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
     - opam update
     - opam install ocaml-variants=$OCAMLVER
-    - opam install dune num
+    - opam install dune num zarith
     - eval $(opam env)
     - export COQ_UNIT_TEST=noop
     - make -f Makefile.dune test-suite

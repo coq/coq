@@ -80,7 +80,6 @@ let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
 let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
-let ppbigint n = pp (str (Bigint.to_string n));;
 let ppnumtokunsigned n = pp (NumTok.Unsigned.print n)
 let ppnumtokunsignednat n = pp (NumTok.UnsignedNat.print n)
 

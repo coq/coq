@@ -11,7 +11,6 @@
 open Util
 open Names
 open Glob_term
-open Bigint
 
 (* Poor's man DECLARE PLUGIN *)
 let __coq_plugin_name = "r_syntax_plugin"
@@ -47,10 +46,10 @@ let pos_of_bignat ?loc x =
   let ref_xH = DAst.make @@ GRef (glob_xH, None) in
   let ref_xO = DAst.make @@ GRef (glob_xO, None) in
   let rec pos_of x =
-    match div2_with_rest x with
-      | (q,false) -> DAst.make @@ GApp (ref_xO,[pos_of q])
-      | (q,true) when not (Bigint.equal q zero) -> DAst.make @@ GApp (ref_xI,[pos_of q])
-      | (q,true) -> ref_xH
+    match Z.(div_rem x (of_int 2)) with
+      | (q,rem) when rem = Z.zero -> DAst.make @@ GApp (ref_xO,[pos_of q])
+      | (q,_) when not Z.(equal q zero) -> DAst.make @@ GApp (ref_xI,[pos_of q])
+      | (q,_) -> ref_xH
   in
   pos_of x
 
@@ -59,9 +58,9 @@ let pos_of_bignat ?loc x =
 (**********************************************************************)
 
 let rec bignat_of_pos c = match DAst.get c with
-  | GApp (r, [a]) when is_gr r glob_xO -> mult_2(bignat_of_pos a)
-  | GApp (r, [a]) when is_gr r glob_xI -> add_1(mult_2(bignat_of_pos a))
-  | GRef (a, _) when GlobRef.equal a glob_xH -> Bigint.one
+  | GApp (r, [a]) when is_gr r glob_xO -> Z.mul Z.(of_int 2) (bignat_of_pos a)
+  | GApp (r, [a]) when is_gr r glob_xI -> Z.add Z.one Z.(mul (of_int 2) (bignat_of_pos a))
+  | GRef (a, _) when GlobRef.equal a glob_xH -> Z.one
   | _ -> raise Non_closed_number
 
 (**********************************************************************)
@@ -77,9 +76,9 @@ let glob_POS = GlobRef.ConstructRef path_of_POS
 let glob_NEG = GlobRef.ConstructRef path_of_NEG
 
 let z_of_int ?loc n =
-  if not (Bigint.equal n zero) then
+  if not Z.(equal n zero) then
     let sgn, n =
-      if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
+      if Z.(leq zero n) then glob_POS, n else glob_NEG, Z.neg n in
     DAst.make @@ GApp(DAst.make @@ GRef (sgn,None), [pos_of_bignat ?loc n])
   else
     DAst.make @@ GRef (glob_ZERO, None)
@@ -90,8 +89,8 @@ let z_of_int ?loc n =
 
 let bigint_of_z c = match DAst.get c with
   | GApp (r,[a]) when is_gr r glob_POS -> bignat_of_pos a
-  | GApp (r,[a]) when is_gr r glob_NEG -> Bigint.neg (bignat_of_pos a)
-  | GRef (a, _) when GlobRef.equal a glob_ZERO -> Bigint.zero
+  | GApp (r,[a]) when is_gr r glob_NEG -> Z.neg (bignat_of_pos a)
+  | GRef (a, _) when GlobRef.equal a glob_ZERO -> Z.zero
   | _ -> raise Non_closed_number
 
 (**********************************************************************)
@@ -122,13 +121,13 @@ let r_of_rawnum ?loc n =
   let rdiv r r' =
     DAst.make @@ GApp (DAst.make @@ GRef(glob_Rdiv,None), [r; r']) in
   let pow p e =
-    let p = z_of_int ?loc (Bigint.of_int p) in
+    let p = z_of_int ?loc (Z.of_int p) in
     let e = pos_of_bignat e in
     DAst.make @@ GApp (DAst.make @@ GRef(glob_pow_pos,None), [p; e]) in
   let n =
     izr (z_of_int ?loc n) in
-  if Bigint.is_strictly_pos e then rmult n (izr (pow p e))
-  else if Bigint.is_strictly_neg e then rdiv n (izr (pow p (neg e)))
+  if Int.equal (Z.sign e) 1 then rmult n (izr (pow p e))
+  else if Int.equal (Z.sign e) (-1) then rdiv n (izr (pow p (Z.neg e)))
   else n  (* e = 0 *)
 
 (**********************************************************************)
@@ -141,24 +140,24 @@ let rawnum_of_r c =
     (* choose between 123e-2 and 1.23, this is purely heuristic
        and doesn't play any soundness role *)
     let choose_exponent =
-      if Bigint.is_strictly_pos e then
+      if Int.equal (Z.sign e) 1 then
         true  (* don't print 12 * 10^2 as 1200 to distinguish them *)
       else
-        let i = Bigint.to_string i in
+        let i = Z.to_string i in
         let li = if i.[0] = '-' then String.length i - 1 else String.length i in
-        let e = Bigint.neg e in
-        let le = String.length (Bigint.to_string e) in
-        Bigint.(less_than (add (of_int li) (of_int le)) e) in
+        let e = Z.neg e in
+        let le = String.length (Z.to_string e) in
+        Z.(lt (add (of_int li) (of_int le)) e) in
     (* print 123 * 10^-2 as 123e-2 *)
     let numTok_exponent () =
       NumTok.Signed.of_bigint_and_exponent i (NumTok.EDec e) in
     (* print 123 * 10^-2 as 1.23, precondition e < 0 *)
     let numTok_dot () =
       let s, i =
-        if Bigint.is_pos_or_zero i then NumTok.SPlus, Bigint.to_string i
-        else NumTok.SMinus, Bigint.(to_string (neg i)) in
+        if Z.sign i >= 0 then NumTok.SPlus, Z.to_string i
+        else NumTok.SMinus, Z.(to_string (neg i)) in
       let ni = String.length i in
-      let e = - (Bigint.to_int e) in
+      let e = - (Z.to_int e) in
       assert (e > 0);
       let i, f =
         if e < ni then String.sub i 0 (ni - e), String.sub i (ni - e) e
@@ -178,12 +177,12 @@ let rawnum_of_r c =
         begin match DAst.get r with
         | GApp (p, [t; e]) when is_gr p glob_pow_pos ->
            let t = bigint_of_z t in
-           if not (Bigint.(equal t (of_int 10))) then
+           if not (Z.(equal t (of_int 10))) then
              raise Non_closed_number
            else
              let i = bigint_of_z l in
              let e = bignat_of_pos e in
-             let e = if is_gr md glob_Rdiv then neg e else e in
+             let e = if is_gr md glob_Rdiv then Z.neg e else e in
              numTok_of_int_exp i e
         | _ -> raise Non_closed_number
         end

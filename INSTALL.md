@@ -12,6 +12,8 @@ To compile Coq yourself, you need:
 - The [num](https://github.com/ocaml/num) library; note that it is
   included in the OCaml distribution for OCaml versions < 4.06.0
 
+- The [ZArith library](https://github.com/ocaml/Zarith) >= 1.8
+
 - The [findlib](http://projects.camlcity.org/projects/findlib.html) library (version >= 1.8.0)
 
 - GNU Make (version >= 3.81)
