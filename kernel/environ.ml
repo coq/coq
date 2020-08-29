@@ -660,7 +660,7 @@ let vars_of_global env gr =
   | IndRef ind -> lookup_inductive_variables ind env
   | ConstructRef cstr -> lookup_constructor_variables cstr env
 
-let global_vars_set env constr =
+let global_vars_set_rec accu env c =
   let rec filtrec (constseen, indseen, vars as accu) c =
     match Constr.kind c with
     | Var id -> (constseen, indseen, Id.Set.add id vars)
@@ -678,9 +678,10 @@ let global_vars_set env constr =
         (constseen, indseen, vars)
     | _ -> Constr.fold filtrec accu c
   in
-  let (_, _, vars) = filtrec (Cset.empty, Indset.empty, Id.Set.empty) constr in
-  vars
+  filtrec accu c
 
+let global_vars_set env c =
+  pi3 @@ global_vars_set_rec (Cset.empty, Indset.empty, Id.Set.empty) env c
 
 (* [keep_hyps env ids] keeps the part of the section context of [env] which
    contains the variables of the set [ids], and recursively the variables
@@ -688,18 +689,14 @@ let global_vars_set env constr =
 
 let really_needed env needed =
   let open! Context.Named.Declaration in
-  Context.Named.fold_inside
-    (fun need decl ->
+  pi3 @@ Context.Named.fold_inside
+    (fun (_, _, need as accu) decl ->
       if Id.Set.mem (get_id decl) need then
-        let globc =
-          match decl with
-            | LocalAssum _ -> Id.Set.empty
-            | LocalDef (_,c,_) -> global_vars_set env c in
-        Id.Set.union
-          (global_vars_set env (get_type decl))
-          (Id.Set.union globc need)
-      else need)
-    ~init:needed
+        match decl with
+          | LocalAssum (_, t) -> global_vars_set_rec accu env t
+          | LocalDef (_, c ,t) -> global_vars_set_rec (global_vars_set_rec accu env c) env t
+      else accu)
+    ~init:(Cset.empty, Indset.empty, needed)
     (named_context env)
 
 let keep_hyps env needed =
