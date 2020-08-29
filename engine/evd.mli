@@ -392,6 +392,8 @@ val shelve_on_future_goals : Evar.t list -> evar_map -> evar_map
 
 val remove_future_goal : evar_map -> Evar.t -> evar_map
 
+val pr_future_goals_stack : evar_map -> Pp.t
+
 val give_up : Evar.t -> evar_map -> evar_map
 
 val given_up : evar_map -> Evar.Set.t
