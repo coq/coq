@@ -4397,7 +4397,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     let branchletsigns =
       let f (_,is_not_let,_,_) = is_not_let in
       Array.map (fun (_,l) -> List.map f l) indsign in
-    let names = compute_induction_names branchletsigns names in
+    let names = compute_induction_names true branchletsigns names in
     Array.iter (check_name_unicity env toclear []) names;
     let tac =
     (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)

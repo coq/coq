@@ -10,10 +10,36 @@
 
 open Names
 open EConstr
-open Tacticals
 open Tactypes
 
 (** Eliminations tactics. *)
+
+type branch_args = private {
+  ity        : Constr.pinductive;  (** the type we were eliminating on *)
+  branchnum  : int;         (** the branch number *)
+  nassums    : int;         (** number of assumptions/letin to be introduced *)
+  branchsign : bool list;   (** the signature of the branch.
+                                true=assumption, false=let-in *)
+  branchnames : intro_patterns}
+
+type branch_assumptions = private {
+  ba        : branch_args;       (** the branch args *)
+  assums    : named_context}   (** the list of assumptions introduced *)
+
+val elimination_then :
+  (branch_args -> unit Proofview.tactic) ->
+  constr -> unit Proofview.tactic
+
+val case_then_using :
+  or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
+  constr option -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
+
+val case_nodep_then_using :
+  or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
+  constr option -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
+
+val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
+val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
 
 val introCaseAssumsThen : Tactics.evars_flag ->
   (intro_patterns -> branch_assumptions -> unit Proofview.tactic) ->
