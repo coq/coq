@@ -1,7 +1,6 @@
-(* -*- coq-prog-args: ("-mangle-names" "_") -*- *)
+Set Mangle Names.
 
 (* Check that refine policy of redefining previous names make these names private *)
-(* abstract can change names in the environment! See bug #3146 *)
 
 Goal True -> True.
 intro.
@@ -58,7 +57,7 @@ Abort.
 
 Goal False -> False.
 intro H.
-Fail abstract exact H.
+abstract exact H.
 Abort.
 
 (* Variant *)
@@ -70,12 +69,11 @@ Abort.
 
 (* Example from Jason *)
 
-Goal False -> False.
+Lemma lem1 : False -> False.
 intro H.
 (* Name H' is from Ltac here, so it preserves the privacy *)
 (* But abstract messes everything up *)
-Fail let H' := H in abstract exact H'.
-let H' := H in exact H'.
+let H' := H in abstract exact H'.
 Qed.
 
 (* Variant *)
@@ -111,7 +109,7 @@ Goal forall b : False, b = b.
 Fail destruct b0.
 Abort.
 
-Goal forall b : False, b = b.
+Lemma lem2 : forall b : False, b = b.
 now destruct b.
 Qed.
 End foo.

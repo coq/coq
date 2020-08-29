@@ -60,33 +60,39 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   in
   let name = name_op_to_name ~name_op ~name suffix in
   Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  let current_sign = Global.named_context_val ()
-  and global_sign = Proofview.Goal.hyps gl in
-  let sign,secsign =
-    List.fold_right
-      (fun d (s1,s2) ->
-        let id = NamedDecl.get_id d in
-        if mem_named_context_val id current_sign &&
-          interpretable_as_section_decl env sigma (lookup_named_val id current_sign) d
-        then (s1,push_named_context_val d s2)
-        else (Context.Named.add d s1,s2))
-      global_sign (Context.Named.empty, Environ.empty_named_context_val) in
-  let name = Namegen.next_global_ident_away name (pf_ids_set_of_hyps gl) in
-  let concl = match goal_type with
-              | None ->  Proofview.Goal.concl gl
-              | Some ty -> ty in
-  let concl = it_mkNamedProd_or_LetIn concl sign in
-  let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
-  let effs, sigma, lem, args, safe =
-    !declare_abstract ~name ~poly ~sign ~secsign ~kind ~opaque ~solve_tac sigma concl in
-  let solve =
-    Proofview.tclEFFECTS effs <*>
-    tacK lem args
-  in
-  let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let section_sign = Global.named_context_val () in
+    let goal_sign = Proofview.Goal.hyps gl in
+    let sign,secsign =
+      List.fold_right
+        (fun d (s1,s2) ->
+           let id = NamedDecl.get_id d in
+           if mem_named_context_val id section_sign &&
+              interpretable_as_section_decl env sigma (lookup_named_val id section_sign) d
+           then (s1,push_named_context_val d s2)
+           else (Context.Named.add d s1,s2))
+        goal_sign (Context.Named.empty, Environ.empty_named_context_val)
+    in
+    let name = Namegen.next_global_ident_away name (pf_ids_set_of_hyps gl) in
+    let concl = match goal_type with
+      | None ->  Proofview.Goal.concl gl
+      | Some ty -> ty
+    in
+    let concl = it_mkNamedProd_or_LetIn concl sign in
+    let solve_tac = tclCOMPLETE
+        (Tactics.intros_mustbe_force (List.rev_map NamedDecl.get_id sign) <*>
+         tac)
+    in
+    let effs, sigma, lem, args, safe =
+      !declare_abstract ~name ~poly ~sign ~secsign ~kind ~opaque ~solve_tac sigma concl
+    in
+    let solve =
+      Proofview.tclEFFECTS effs <*>
+      tacK lem args
+    in
+    let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
   end
 
 let abstract_subproof ~opaque tac =
