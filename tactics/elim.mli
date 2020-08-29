@@ -14,13 +14,7 @@ open Tactypes
 
 (** Eliminations tactics. *)
 
-type branch_args = private {
-  ity        : Constr.pinductive;  (** the type we were eliminating on *)
-  branchnum  : int;         (** the branch number *)
-  nassums    : int;         (** number of assumptions/letin to be introduced *)
-  branchsign : bool list;   (** the signature of the branch.
-                                true=assumption, false=let-in *)
-  branchnames : intro_patterns}
+type branch_args
 
 val case_then_using :
   or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
