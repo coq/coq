@@ -96,19 +96,10 @@ let gl_make_elim ind = begin fun gl ->
   (sigma, c)
 end
 
-let gl_make_case_dep (ind, u) = begin fun gl ->
+let gl_make_case dep (ind, u) = begin fun gl ->
   let sigma = project gl in
   let u = EInstance.kind (project gl) u in
-  let (sigma, r) = Indrec.build_case_analysis_scheme (pf_env gl) sigma (ind, u) true
-    (elimination_sort_of_goal gl)
-  in
-  (sigma, EConstr.of_constr r)
-end
-
-let gl_make_case_nodep (ind, u) = begin fun gl ->
-  let sigma = project gl in
-  let u = EInstance.kind sigma u in
-  let (sigma, r) = Indrec.build_case_analysis_scheme (pf_env gl) sigma (ind, u) false
+  let (sigma, r) = Indrec.build_case_analysis_scheme (pf_env gl) sigma (ind, u) dep
     (elimination_sort_of_goal gl)
   in
   (sigma, EConstr.of_constr r)
@@ -126,12 +117,6 @@ let elim_on_ba tac ba =
   tac branches
   end
 
-let case_on_ba tac ba =
-  Proofview.Goal.enter begin fun gl ->
-  let branches = make_elim_branch_assumptions ba (Proofview.Goal.hyps gl) in
-  tac branches
-  end
-
 let elimination_then tac c =
   let open Declarations in
   Proofview.Goal.enter begin fun gl ->
@@ -139,16 +124,10 @@ let elimination_then tac c =
   let isrec,mkelim =
     match (Global.lookup_mind (fst (fst ind))).mind_record with
     | NotRecord -> true,gl_make_elim
-    | FakeRecord | PrimRecord _ -> false,gl_make_case_dep
+    | FakeRecord | PrimRecord _ -> false,gl_make_case true
   in
   general_elim_then_using mkelim isrec None tac None ind (c, t)
   end
-
-let case_then_using =
-  general_elim_then_using gl_make_case_dep false
-
-let case_nodep_then_using =
-  general_elim_then_using gl_make_case_nodep false
 
 (* Supposed to be called without as clause *)
 let introElimAssumsThen tac ba =
@@ -165,11 +144,12 @@ let introCaseAssumsThen with_evars tac ba =
     else (ba.branchnames, []), List.make (n1-n2) false in
   let introCaseAssums =
     tclTHEN (intro_patterns with_evars l1) (intros_clearing l3) in
-  (tclTHEN introCaseAssums (case_on_ba (tac l2) ba))
+  (tclTHEN introCaseAssums (elim_on_ba (tac l2) ba))
 
 let case_tac dep names tac elim ind c =
-  let case_tac = if dep then case_then_using else case_nodep_then_using in
-  case_tac names (introCaseAssumsThen false (* ApplyOn not supported by inversion *) tac) (Some elim) ind c
+  let mkcase = gl_make_case dep in
+  let tac = introCaseAssumsThen false (* ApplyOn not supported by inversion *) tac in
+  general_elim_then_using mkcase false names tac (Some elim) ind c
 
 (* The following tactic Decompose repeatedly applies the
    elimination(s) rule(s) of the types satisfying the predicate
