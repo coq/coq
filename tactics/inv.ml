@@ -474,13 +474,12 @@ let raw_inversion inv_kind id status names =
     let (elim_predicate, args) =
       make_inv_predicate env evdref indf realargs id status concl in
     let sigma = !evdref in
-    let (cut_concl,case_tac) =
-      if status != NoDep && (local_occur_var sigma id concl) then
-        Reductionops.beta_applist sigma (elim_predicate, realargs@[c]),
-        case_then_using
+    let dep = status != NoDep && (local_occur_var sigma id concl) in
+    let cut_concl =
+      if dep then
+        Reductionops.beta_applist sigma (elim_predicate, realargs@[c])
       else
-        Reductionops.beta_applist sigma (elim_predicate, realargs),
-        case_nodep_then_using
+        Reductionops.beta_applist sigma (elim_predicate, realargs)
     in
     let refined id =
       let prf = mkApp (mkVar id, args) in
@@ -491,10 +490,7 @@ let raw_inversion inv_kind id status names =
     tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (tclTHENS
         (assert_before Anonymous cut_concl)
-        [case_tac names
-            (introCaseAssumsThen false (* ApplyOn not supported by inversion *)
-               (rewrite_equations_tac as_mode inv_kind id neqns))
-            (Some elim_predicate) ind (c,t);
+        [case_tac dep names (rewrite_equations_tac as_mode inv_kind id neqns) elim_predicate ind (c,t);
         onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
   end
 

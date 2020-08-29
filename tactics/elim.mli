@@ -14,19 +14,9 @@ open Tactypes
 
 (** Eliminations tactics. *)
 
-type branch_args
-
-val case_then_using :
-  or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
-  constr option -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
-
-val case_nodep_then_using :
-  or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
-  constr option -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
-
-val introCaseAssumsThen : Tactics.evars_flag ->
+val case_tac : bool -> or_and_intro_pattern option ->
   (intro_patterns -> named_context -> unit Proofview.tactic) ->
-    branch_args -> unit Proofview.tactic
+  constr -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
 
 val h_decompose       : inductive list -> constr -> unit Proofview.tactic
 val h_decompose_or    : constr -> unit Proofview.tactic

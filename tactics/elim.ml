@@ -167,6 +167,10 @@ let introCaseAssumsThen with_evars tac ba =
     tclTHEN (intro_patterns with_evars l1) (intros_clearing l3) in
   (tclTHEN introCaseAssums (case_on_ba (tac l2) ba))
 
+let case_tac dep names tac elim ind c =
+  let case_tac = if dep then case_then_using else case_nodep_then_using in
+  case_tac names (introCaseAssumsThen false (* ApplyOn not supported by inversion *) tac) (Some elim) ind c
+
 (* The following tactic Decompose repeatedly applies the
    elimination(s) rule(s) of the types satisfying the predicate
    ``recognizer'' onto a certain hypothesis. For example :
