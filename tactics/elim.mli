@@ -22,10 +22,6 @@ type branch_args = private {
                                 true=assumption, false=let-in *)
   branchnames : intro_patterns}
 
-type branch_assumptions = private {
-  ba        : branch_args;       (** the branch args *)
-  assums    : named_context}   (** the list of assumptions introduced *)
-
 val case_then_using :
   or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
   constr option -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
@@ -35,7 +31,7 @@ val case_nodep_then_using :
   constr option -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
 
 val introCaseAssumsThen : Tactics.evars_flag ->
-  (intro_patterns -> branch_assumptions -> unit Proofview.tactic) ->
+  (intro_patterns -> named_context -> unit Proofview.tactic) ->
     branch_args -> unit Proofview.tactic
 
 val h_decompose       : inductive list -> constr -> unit Proofview.tactic

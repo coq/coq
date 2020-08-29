@@ -30,10 +30,6 @@ type branch_args = {
                                true=assumption, false=let-in *)
   branchnames : Tactypes.intro_patterns}
 
-type branch_assumptions = {
-  ba        : branch_args;       (* the branch args *)
-  assums    : named_context}   (* the list of assumptions introduced *)
-
 module NamedDecl = Context.Named.Declaration
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
@@ -122,7 +118,7 @@ let make_elim_branch_assumptions ba hyps =
   let assums =
     try List.rev (List.firstn ba.nassums hyps)
     with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions.") in
-  { ba = ba; assums = assums }
+  assums
 
 let elim_on_ba tac ba =
   Proofview.Goal.enter begin fun gl ->
@@ -201,7 +197,7 @@ and general_decompose_aux recognizer id =
        (fun bas ->
           tclTHEN (clear [id])
             (tclMAP (general_decompose_on_hyp recognizer)
-               (ids_of_named_context bas.assums))))
+               (ids_of_named_context bas))))
     id
 
 (* We should add a COMPLETE to be sure that the created hypothesis
@@ -269,7 +265,7 @@ let induction_trailer abs_i abs_j bargs =
           let idty = pf_get_type_of gl (mkVar id) in
           let fvty = global_vars (pf_env gl) (project gl) idty in
           let possible_bring_hyps =
-            (List.tl (nLastDecls gl (abs_j - abs_i))) @ bargs.assums
+            (List.tl (nLastDecls gl (abs_j - abs_i))) @ bargs
           in
           let (hyps,_) =
             List.fold_left

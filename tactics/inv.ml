@@ -409,7 +409,7 @@ let nLastDecls i tac =
 
 let rewrite_equations as_mode othin neqns names ba =
   Proofview.Goal.enter begin fun gl ->
-  let (depids,nodepids) = split_dep_and_nodep ba.Elim.assums gl in
+  let (depids,nodepids) = split_dep_and_nodep ba gl in
   let first_eq = ref Logic.MoveLast in
   let avoid = if as_mode then Id.Set.of_list (List.map NamedDecl.get_id nodepids) else Id.Set.empty in
   match othin with
