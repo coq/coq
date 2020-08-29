@@ -691,16 +691,16 @@ let operating_system =
 (** Zarith and num libraries *)
 
 let check_for_numlib () =
-  if caml_version_nums >= [4;6;0] then
+  (if caml_version_nums >= [4;6;0] then
     let numlib,_ = tryrun camlexec.find ["query";"num"] in
     match numlib with
     | ""  ->
       die "Num library not installed, required for OCaml 4.06 or later"
-    | _   -> cprintf "You have the Num library installed. Good!";
+    | _   -> cprintf "You have the Num library installed. Good!");
   let zarith,_ = tryrun camlexec.find ["query";"zarith"] in
   match zarith with
   | ""  ->
-     die "Zarith library not installed, required"
+    die "Zarith library not installed, required"
   | _   -> cprintf "You have the Zarith library installed. Good!"
 
 let numlib =
