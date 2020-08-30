@@ -355,12 +355,7 @@ let emit_instr env = function
     out_label env lbl;
     slot_for_caml_prim env op
 
-  | Kareint 1 -> out env opISINT
-  | Kareint 2 -> out env opAREINT2;
-
   | Kstop -> out env opSTOP
-
-  | Kareint _ -> assert false
 
 (* Emission of a current list and remaining lists of instructions. Include some peephole optimization. *)
 
