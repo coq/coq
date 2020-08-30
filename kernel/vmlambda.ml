@@ -19,8 +19,7 @@ type lambda =
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of pconstant
-  | Lprim         of pconstant option * CPrimitives.t * lambda array
-        (* No check if None *)
+  | Lprim         of pconstant * CPrimitives.t * lambda array
   | Lcase         of case_info * reloc_table * lambda * lambda * lam_branches
   | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * int) * fix_decl
@@ -148,15 +147,10 @@ let rec pp_lam lam =
   | Lval _ -> str "values"
   | Lsort s -> pp_sort s
   | Lind ((mind,i), _) -> MutInd.print mind ++ str"#" ++ int i
-  | Lprim(Some (kn,_u),_op,args) ->
+  | Lprim ((kn,_u),_op,args) ->
      hov 1
          (str "(PRIM " ++ pr_con kn ++  spc() ++
             prlist_with_sep spc pp_lam  (Array.to_list args) ++
-            str")")
-  | Lprim(None,op,args) ->
-     hov 1
-         (str "(PRIM_NC " ++ str (CPrimitives.to_string op) ++  spc() ++
-            prlist_with_sep spc pp_lam (Array.to_list args) ++
             str")")
   | Lproj(p,arg) ->
     hov 1
@@ -566,7 +560,7 @@ let rec get_alias env kn =
 (* Compilation of primitive *)
 
 let prim kn p args =
-  Lprim(Some kn, p, args)
+  Lprim (kn, p, args)
 
 let expand_prim kn op arity =
   (* primitives are always Relevant *)

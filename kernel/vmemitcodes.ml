@@ -208,14 +208,6 @@ let slot_for_caml_prim env op =
 
 (* Emission of one instruction *)
 
-let nocheck_prim_op = function
-  | Int63add -> opADDINT63
-  | Int63sub -> opSUBINT63
-  | Int63lt  -> opLTINT63
-  | Int63le  -> opLEINT63
-  | _ -> assert false
-
-
 let check_prim_op = function
   | Int63head0     -> opCHECKHEAD0INT63
   | Int63tail0     -> opCHECKTAIL0INT63
@@ -354,10 +346,7 @@ let emit_instr env = function
   | Kproj p -> out env opPROJ; out_int env (Projection.Repr.arg p); slot_for_proj_name env p
   | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
   | Kbranch lbl -> out env opBRANCH; out_label env lbl
-  | Kprim (op,None) ->
-      out env (nocheck_prim_op op)
-
-  | Kprim(op,Some (q,_u)) ->
+  | Kprim (op, (q,_u)) ->
       out env (check_prim_op op);
       slot_for_getglobal env q
 

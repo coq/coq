@@ -12,8 +12,7 @@ type lambda =
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of pconstant
-  | Lprim         of pconstant option * CPrimitives.t * lambda array
-        (* No check if None *)
+  | Lprim         of pconstant * CPrimitives.t * lambda array
   | Lcase         of case_info * reloc_table * lambda * lambda * lam_branches
   | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * int) * fix_decl

@@ -770,7 +770,7 @@ let rec compile_lam env cenv lam sz cont =
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
     comp_args (compile_lam env) cenv args sz cont
 
-  | Lprim (Some (kn,u), op, args) when is_caml_prim op ->
+  | Lprim ((kn,u), op, args) when is_caml_prim op ->
     let arity = CPrimitives.arity op in
     let nparams = CPrimitives.nparams op in
     let nargs = arity - nparams in

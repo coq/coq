@@ -1271,11 +1271,8 @@ value coq_interprete
       Instruct(CHECKADDINT63){
         print_instr("CHECKADDINT63");
         CheckInt2();
-      }
-      Instruct(ADDINT63) {
         /* Adds the integer in the accumulator with
            the one ontop of the stack (which is poped)*/
-        print_instr("ADDINT63");
         Uint63_add(accu, *sp++);
         Next;
       }
@@ -1309,9 +1306,6 @@ value coq_interprete
       Instruct (CHECKSUBINT63) {
         print_instr("CHECKSUBINT63");
         CheckInt2();
-      }
-      Instruct (SUBINT63) {
-        print_instr("SUBINT63");
         /* returns the subtraction */
         Uint63_sub(accu, *sp++);
         Next;
@@ -1517,9 +1511,6 @@ value coq_interprete
      Instruct (CHECKLTINT63) {
         print_instr("CHECKLTINT63");
         CheckInt2();
-     }
-     Instruct (LTINT63) {
-       print_instr("LTINT63");
        int b;
        Uint63_lt(b,accu,*sp++);
        accu = b ? coq_true : coq_false;
@@ -1529,9 +1520,6 @@ value coq_interprete
      Instruct (CHECKLEINT63) {
        print_instr("CHECKLEINT63");
        CheckInt2();
-     }
-     Instruct (LEINT63) {
-       print_instr("LEINT63");
        int b;
        Uint63_leq(b,accu,*sp++);
        accu = b ? coq_true : coq_false;
@@ -1608,9 +1596,6 @@ value coq_interprete
       Instruct (CHECKLTFLOAT) {
         print_instr("CHECKLTFLOAT");
         CheckFloat2();
-      }
-      Instruct (LTFLOAT) {
-        print_instr("LTFLOAT");
         accu = coq_flt(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
         Next;
       }
@@ -1618,9 +1603,6 @@ value coq_interprete
       Instruct (CHECKLEFLOAT) {
         print_instr("CHECKLEFLOAT");
         CheckFloat2();
-      }
-      Instruct (LEFLOAT) {
-        print_instr("LEFLOAT");
         accu = coq_fle(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
         Next;
       }
