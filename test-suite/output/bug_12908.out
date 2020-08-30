@@ -1,0 +1,2 @@
+forall m n : nat, m * n = (2 * m * n)%nat
+     : Prop
