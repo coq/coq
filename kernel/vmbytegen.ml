@@ -315,12 +315,10 @@ let pos_evar evk r =
 (* non-terminating instruction (branch, raise, return, appterm)          *)
 (* in front of it.                                                       *)
 
-let discard_dead_code cont = cont
-(*function
-    [] -> []
+let rec discard_dead_code = function
+  | [] -> []
   | (Klabel _ | Krestart ) :: _ as cont -> cont
   | _ :: cont -> discard_dead_code cont
-*)
 
 (* Return a label to the beginning of the given continuation.            *)
 (*   If the sequence starts with a branch, use the target of that branch *)
@@ -700,6 +698,7 @@ let rec compile_lam env cenv lam sz cont =
         | _ -> assert false
       in
 
+      let cont = discard_dead_code cont in
       let c = ref cont in
       (* Perform the extra match if needed (too many block constructors) *)
       if neblock <> 0 then begin
