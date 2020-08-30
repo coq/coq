@@ -21,7 +21,6 @@ type lambda =
   | Lconst        of pconstant
   | Lprim         of pconstant * CPrimitives.t * lambda array
   | Lcase         of case_info * reloc_table * lambda * lambda * lam_branches
-  | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int
@@ -111,10 +110,6 @@ let rec pp_lam lam =
                   pp_names ids ++ str " => " ++ pp_lam c)
                (Array.to_list branches.nonconstant_branches)))
          ++ cut() ++ str "end")
-  | Lif (t, bt, bf) ->
-      v 0 (str "(if " ++ pp_lam t ++
-             cut () ++ str "then " ++ pp_lam bt ++
-             cut() ++ str "else " ++ pp_lam bf ++ str ")")
   | Lfix((t,i),(lna,tl,bl)) ->
     let fixl = Array.mapi (fun i id -> (id,t.(i),tl.(i),bl.(i))) lna in
     hov 1
@@ -231,11 +226,6 @@ let map_lam_with_binders g f n lam =
     in
     if t == t' && a == a' && branches == branches' then lam else
       Lcase(ci,rtbl,t',a',branches')
-  | Lif(t,bt,bf) ->
-      let t' = f n t in
-      let bt' = f n bt in
-      let bf' = f n bf in
-      if t == t' && bt == bt' && bf == bf' then lam else Lif(t',bt',bf')
   | Lfix(init,(ids,ltypes,lbodies)) ->
     let ltypes' = Array.Smart.map (f n) ltypes in
     let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
@@ -306,28 +296,6 @@ let can_subst lam =
   | Lval _ | Lsort _ | Lind _ -> true
   | _ -> false
 
-
-let can_merge_if bt bf =
-  match bt, bf with
-  | Llam(_idst,_), Llam(_idsf,_) -> true
-  | _ -> false
-
-let merge_if t bt bf =
-  let (idst,bodyt) = decompose_Llam bt in
-  let (idsf,bodyf) = decompose_Llam bf in
-  let nt = Array.length idst in
-  let nf = Array.length idsf in
-  let common,idst,idsf =
-    if nt = nf then idst, [||], [||]
-    else
-      if nt < nf then idst,[||], Array.sub idsf nt (nf - nt)
-      else idsf, Array.sub idst nf (nt - nf), [||] in
-  Llam(common,
-       Lif(lam_lift (Array.length common) t,
-           mkLlam idst bodyt,
-           mkLlam idsf bodyf))
-
-
 let rec simplify subst lam =
   match lam with
   | Lrel(id,i) -> lam_subst_rel lam id i subst
@@ -346,14 +314,6 @@ let rec simplify subst lam =
       | lam' -> lam'
       end
 
-  | Lif(t,bt,bf) ->
-      let t' = simplify subst t in
-      let bt' = simplify subst bt in
-      let bf' = simplify subst bf in
-      if can_merge_if bt' bf' then merge_if t' bt' bf'
-      else
-        if t == t' && bt == bt' && bf == bf' then lam
-        else Lif(t',bt',bf')
   | _ -> map_lam_with_binders liftn simplify subst lam
 
 and simplify_app substf f substa args =
@@ -436,9 +396,6 @@ let rec occurrence k kind lam =
     in
     Array.iter on_b branches.nonconstant_branches;
     !r
-  | Lif (t, bt, bf) ->
-      let kind = occurrence k kind t in
-      kind && occurrence k kind bt && occurrence k kind bf
   | Lfix(_,(ids,ltypes,lbodies))
   | Lcofix(_,(ids,ltypes,lbodies)) ->
     let kind = occurrence_args k kind ltypes in

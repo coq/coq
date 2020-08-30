@@ -657,18 +657,6 @@ let rec compile_lam env cenv lam sz cont =
       compile_fv cenv fv.fv_rev sz
         (Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
 
-  | Lif(t, bt, bf) ->
-      let branch, cont = make_branch cont in
-      let lbl_true =  Label.create() in
-      let lbl_false = Label.create() in
-      compile_lam env cenv t sz
-        (Kswitch([|lbl_true;lbl_false|],[||]) ::
-         Klabel lbl_false ::
-         compile_lam env cenv bf sz
-           (branch ::
-            Klabel lbl_true ::
-            compile_lam env cenv bt sz cont))
-
   | Lcase(ci,rtbl,t,a,branches) ->
       let ind = ci.ci_ind in
       let mib = lookup_mind (fst ind) env in
