@@ -60,7 +60,7 @@ type instruction =
   | Kproj of Projection.Repr.t
   | Kensurestackcapacity of int
   | Kbranch of Label.t                  (* jump to label *)
-  | Kprim of CPrimitives.t * pconstant option
+  | Kprim of CPrimitives.t * pconstant
   | Kcamlprim of CPrimitives.t * Label.t
   | Kareint of int
 
@@ -146,7 +146,7 @@ let rec pp_instr i =
   | Kensurestackcapacity size -> str "growstack " ++ int size
 
   | Kprim (op, id) -> str (CPrimitives.to_string op) ++ str " " ++
-        (match id with Some (id,_u) -> Constant.print id | None -> str "")
+        (Constant.print (fst id))
 
   | Kcamlprim (op, lbl) ->
     str "camlcall " ++ str (CPrimitives.to_string op) ++ spc () ++
