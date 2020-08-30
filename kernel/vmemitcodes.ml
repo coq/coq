@@ -390,8 +390,8 @@ let rec emit env insns remaining = match insns with
       emit env c remaining
   | Kpop n :: Kjump :: c ->
       out env opRETURN; out_int env n; emit env c remaining
-  | Ksequence(c1,c2)::c ->
-      emit env c1 (c2::c::remaining)
+  | Ksequence c1 :: c ->
+      emit env c1 (c :: remaining)
   (* Default case *)
   | instr :: c ->
       emit_instr env instr; emit env c remaining
