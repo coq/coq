@@ -58,6 +58,31 @@ let notation_with_optional_scope_eq inscope1 inscope2 = match (inscope1,inscope2
 let notation_eq (from1,ntn1) (from2,ntn2) =
   notation_entry_eq from1 from2 && String.equal ntn1 ntn2
 
+let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
+
+let notation_binder_source_eq s1 s2 = match s1, s2 with
+| NtnParsedAsIdent,  NtnParsedAsIdent -> true
+| NtnParsedAsPattern b1, NtnParsedAsPattern b2 -> b1 = b2
+| NtnBinderParsedAsConstr bk1, NtnBinderParsedAsConstr bk2 -> bk1 = bk2
+| (NtnParsedAsIdent | NtnParsedAsPattern _ | NtnBinderParsedAsConstr _), _ -> false
+
+let ntpe_eq t1 t2 = match t1, t2 with
+| NtnTypeConstr, NtnTypeConstr -> true
+| NtnTypeBinder s1, NtnTypeBinder s2 -> notation_binder_source_eq s1 s2
+| NtnTypeConstrList, NtnTypeConstrList -> true
+| NtnTypeBinderList, NtnTypeBinderList -> true
+| (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList), _ -> false
+
+let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
+  notation_entry_level_eq entry1 entry2 &&
+  pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
+  ntpe_eq tp1 tp2
+
+let interpretation_eq (vars1, t1 as x1) (vars2, t2 as x2) =
+  x1 == x2 ||
+  List.equal var_attributes_eq vars1 vars2 &&
+  Notation_ops.eq_notation_constr (List.map fst vars1, List.map fst vars2) t1 t2
+
 let pr_notation (from,ntn) = qstring ntn ++ match from with InConstrEntry -> mt () | InCustomEntry s -> str " in custom " ++ str s
 
 module NotationOrd =
@@ -1561,29 +1586,6 @@ let uninterp_prim_token_cases_pattern c local_scopes =
 
 (* Miscellaneous *)
 
-let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
-
-let notation_binder_source_eq s1 s2 = match s1, s2 with
-| NtnParsedAsIdent,  NtnParsedAsIdent -> true
-| NtnParsedAsPattern b1, NtnParsedAsPattern b2 -> b1 = b2
-| NtnBinderParsedAsConstr bk1, NtnBinderParsedAsConstr bk2 -> bk1 = bk2
-| (NtnParsedAsIdent | NtnParsedAsPattern _ | NtnBinderParsedAsConstr _), _ -> false
-
-let ntpe_eq t1 t2 = match t1, t2 with
-| NtnTypeConstr, NtnTypeConstr -> true
-| NtnTypeBinder s1, NtnTypeBinder s2 -> notation_binder_source_eq s1 s2
-| NtnTypeConstrList, NtnTypeConstrList -> true
-| NtnTypeBinderList, NtnTypeBinderList -> true
-| (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList), _ -> false
-
-let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
-  notation_entry_level_eq entry1 entry2 &&
-  pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
-  ntpe_eq tp1 tp2
-
-let interpretation_eq (vars1, t1) (vars2, t2) =
-  List.equal var_attributes_eq vars1 vars2 &&
-  Notation_ops.eq_notation_constr (List.map fst vars1, List.map fst vars2) t1 t2
 
 let exists_notation_in_scope scopt ntn onlyprint r =
   let scope = match scopt with Some s -> s | None -> default_scope in
