@@ -115,8 +115,21 @@ type notation_data = {
   not_deprecation : Deprecation.t option;
 }
 
+type activation = bool
+
+type extra_printing_notation_data =
+  (activation * notation_data) list
+
+type parsing_notation_data =
+  | NoParsingData
+  | OnlyParsingData of activation * notation_data
+  | ParsingAndPrintingData of
+      activation (* for parsing*) *
+      activation (* for printing *) *
+      notation_data (* common data for both *)
+
 type scope = {
-  notations: notation_data NotationMap.t;
+  notations: (parsing_notation_data * extra_printing_notation_data) NotationMap.t;
   delimiters: delimiters option
 }
 
@@ -325,9 +338,18 @@ type notation_applicative_status =
 
 type notation_rule = interp_rule * interpretation * notation_applicative_status
 
+let notation_rule_eq (rule1,pat1,s1 as x1) (rule2,pat2,s2 as x2) =
+  x1 == x2 || (rule1 = rule2 && interpretation_eq pat1 pat2 && s1 = s2)
+
 let keymap_add key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in
+  (* In case of re-import, no need to keep the previous copy *)
+  let old = try List.remove_first (notation_rule_eq interp) old with Not_found -> old in
   KeyMap.add key (interp :: old) map
+
+let keymap_remove key interp map =
+  let old = try KeyMap.find key map with Not_found -> [] in
+  KeyMap.add key (List.remove_first (notation_rule_eq interp) old) map
 
 let keymap_find key map =
   try KeyMap.find key map
@@ -1250,39 +1272,89 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
 
 (* The mapping between notations and their interpretation *)
 
+let pr_optional_scope = function
+  | LastLonelyNotation -> mt ()
+  | NotationInScope scope -> spc () ++ strbrk "in scope" ++ spc () ++ str scope
+
 let warn_notation_overridden =
   CWarnings.create ~name:"notation-overridden" ~category:"parsing"
-                   (fun (ntn,which_scope) ->
+                   (fun (scope,ntn) ->
                     str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
-                    ++ strbrk "was already used" ++ which_scope ++ str ".")
+                    ++ strbrk "was already used" ++ pr_optional_scope scope ++ str ".")
 
-let declare_notation_interpretation ntn scopt pat df ~onlyprint deprecation =
-  let scope = match scopt with Some s -> s | None -> default_scope in
-  let sc = find_scope scope in
-  if not onlyprint then begin
-    let () =
-      if NotationMap.mem ntn sc.notations then
-      let which_scope = match scopt with
-      | None -> mt ()
-      | Some _ -> spc () ++ strbrk "in scope" ++ spc () ++ str scope in
-      warn_notation_overridden (ntn,which_scope)
-    in
-    let notdata = {
-      not_interp = pat;
-      not_location = df;
-      not_deprecation = deprecation;
-    } in
-    let sc = { sc with notations = NotationMap.add ntn notdata sc.notations } in
-    scope_map := String.Map.add scope sc !scope_map
-  end;
-  begin match scopt with
-  | None -> scope_stack := LonelyNotationItem ntn :: !scope_stack
-  | Some _ -> ()
-  end
+let warn_deprecation_overridden =
+  CWarnings.create ~name:"notation-overridden" ~category:"parsing"
+                 (fun ((scope,ntn),old,now) ->
+                  match old, now with
+                  | None, None -> assert false
+                  | None, Some _ ->
+                    (str "Notation" ++ spc () ++ pr_notation ntn ++ pr_optional_scope scope ++ spc ()
+                    ++ strbrk "is now marked as deprecated" ++ str ".")
+                  | Some _, None ->
+                    (str "Cancelling previous deprecation of notation" ++ spc () ++
+                     pr_notation ntn ++ pr_optional_scope scope ++ str ".")
+                  | Some _, Some _ ->
+                    (str "Amending deprecation of notation" ++ spc () ++
+                     pr_notation ntn ++ pr_optional_scope scope ++ str "."))
+
+type notation_use =
+  | OnlyPrinting
+  | OnlyParsing
+  | ParsingAndPrinting
+
+let warn_override_if_needed (scopt,ntn) overridden data old_data =
+  if overridden then warn_notation_overridden (scopt,ntn)
+  else
+    if data.not_deprecation <> old_data.not_deprecation then
+      warn_deprecation_overridden ((scopt,ntn),old_data.not_deprecation,data.not_deprecation)
+
+let check_parsing_override (scopt,ntn) data = function
+  | OnlyParsingData (_,old_data) ->
+    let overridden = not (interpretation_eq data.not_interp old_data.not_interp) in
+    warn_override_if_needed (scopt,ntn) overridden data old_data;
+    None, not overridden
+  | ParsingAndPrintingData (_,on_printing,old_data) ->
+    let overridden = not (interpretation_eq data.not_interp old_data.not_interp) in
+    warn_override_if_needed (scopt,ntn) overridden data old_data;
+    (if on_printing then Some old_data.not_interp else None), not overridden
+  | NoParsingData -> None, false
+
+let check_printing_override (scopt,ntn) data parsingdata printingdata =
+  let parsing_update = match parsingdata with
+  | OnlyParsingData _ | NoParsingData -> parsingdata
+  | ParsingAndPrintingData (_,on_printing,old_data) ->
+    let overridden = not (interpretation_eq data.not_interp old_data.not_interp) in
+    warn_override_if_needed (scopt,ntn) overridden data old_data;
+    if overridden then NoParsingData else parsingdata in
+  let exists = List.exists (fun (on_printing,old_data) ->
+    let exists = interpretation_eq data.not_interp old_data.not_interp in
+    if exists && data.not_deprecation <> old_data.not_deprecation then
+      warn_deprecation_overridden ((scopt,ntn),old_data.not_deprecation,data.not_deprecation);
+    exists) printingdata in
+  parsing_update, exists
+
+let remove_uninterpretation rule (metas,c as pat) =
+  let (key,n) = notation_constr_key c in
+  notations_key_table := keymap_remove key (rule,pat,n) !notations_key_table
 
 let declare_uninterpretation rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
   notations_key_table := keymap_add key (rule,pat,n) !notations_key_table
+
+let update_notation_data (scopt,ntn) use data table =
+  let (parsingdata,printingdata) =
+    try NotationMap.find ntn table with Not_found -> (NoParsingData, []) in
+  match use with
+  | OnlyParsing ->
+    let printing_update, exists = check_parsing_override (scopt,ntn) data parsingdata in
+    NotationMap.add ntn (OnlyParsingData (true,data), printingdata) table, printing_update, exists
+  | ParsingAndPrinting ->
+    let printing_update, exists = check_parsing_override (scopt,ntn) data parsingdata in
+    NotationMap.add ntn (ParsingAndPrintingData (true,true,data), printingdata) table, printing_update, exists
+  | OnlyPrinting ->
+    let parsingdata, exists = check_printing_override (scopt,ntn) data parsingdata printingdata in
+    let printingdata = if exists then printingdata else (true,data) :: printingdata in
+    NotationMap.add ntn (parsingdata, printingdata) table, None, exists
 
 let rec find_interpretation ntn find = function
   | [] -> raise Not_found
@@ -1298,7 +1370,9 @@ let rec find_interpretation ntn find = function
       find_interpretation ntn find scopes
 
 let find_notation ntn sc =
-  NotationMap.find ntn (find_scope sc).notations
+  match fst (NotationMap.find ntn (find_scope sc).notations) with
+  | OnlyParsingData (true,data) | ParsingAndPrintingData (true,_,data) -> data
+  | _ -> raise Not_found
 
 let notation_of_prim_token = function
   | Constrexpr.Numeral (SPlus,n) -> InConstrEntry, NumTok.Unsigned.sprint n
@@ -1383,10 +1457,37 @@ let uninterp_cases_pattern_notations c =
 let uninterp_ind_pattern_notations ind =
   keymap_find (RefKey (canonical_gr (GlobRef.IndRef ind))) !notations_key_table
 
+let has_active_parsing_rule_in_scope ntn sc =
+  try
+    match NotationMap.find ntn (String.Map.find sc !scope_map).notations with
+    | OnlyParsingData (active,_),_ | ParsingAndPrintingData (active,_,_),_ -> active
+    | _ -> false
+  with Not_found -> false
+
+let is_printing_active_in_scope (scope,ntn) pat =
+  let sc = match scope with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
+  let is_active extra =
+    try
+      let (_,(active,_)) = List.extract_first (fun (active,d) -> interpretation_eq d.not_interp pat) extra in
+      active
+    with Not_found -> false in
+  try
+    match NotationMap.find ntn (String.Map.find sc !scope_map).notations with
+    | ParsingAndPrintingData (_,active,d), extra ->
+       if interpretation_eq d.not_interp pat then active
+       else is_active extra
+    | _, extra -> is_active extra
+  with Not_found -> false
+
+let is_printing_inactive_rule rule pat =
+  match rule with
+  | NotationRule (scope,ntn) ->
+    not (is_printing_active_in_scope (scope,ntn) pat)
+  | SynDefRule kn ->
+    try let _ = Nametab.path_of_syndef kn in false with Not_found -> true
+
 let availability_of_notation (ntn_scope,ntn) scopes =
-  let f scope =
-    NotationMap.mem ntn (String.Map.find scope !scope_map).notations in
-  find_without_delimiters f (ntn_scope,Some ntn) (make_current_scopes scopes)
+  find_without_delimiters (has_active_parsing_rule_in_scope ntn) (ntn_scope,Some ntn) (make_current_scopes scopes)
 
 (* We support coercions from a custom entry at some level to an entry
    at some level (possibly the same), and from and to the constr entry. E.g.:
@@ -1509,6 +1610,49 @@ let entry_has_ident = function
   | InCustomEntryLevel (s,n) ->
      try String.Map.find s !entry_has_ident_map <= n with Not_found -> false
 
+type entry_coercion_kind =
+  | IsEntryCoercion of notation_entry_level
+  | IsEntryGlobal of string * int
+  | IsEntryIdent of string * int
+
+let declare_notation (scopt,ntn) pat df ~use coe deprecation =
+  (* Register the interpretation *)
+  let scope = match scopt with NotationInScope s -> s | LastLonelyNotation -> default_scope in
+  let sc = find_scope scope in
+  let notdata = {
+    not_interp = pat;
+    not_location = df;
+    not_deprecation = deprecation;
+  } in
+  let notation_update,printing_update, exists = update_notation_data (scopt,ntn) use notdata sc.notations in
+  if not exists then
+    let sc = { sc with notations = notation_update } in
+    scope_map := String.Map.add scope sc !scope_map;
+  (* Update the uninterpretation cache *)
+  begin match printing_update with
+  | Some pat -> remove_uninterpretation (NotationRule (scopt,ntn)) pat
+  | None -> ()
+  end;
+  if not exists && use <> OnlyParsing then declare_uninterpretation (NotationRule (scopt,ntn)) pat;
+  (* Register visibility of lonely notations *)
+  if not exists then begin match scopt with
+  | LastLonelyNotation -> scope_stack := LonelyNotationItem ntn :: !scope_stack
+  | NotationInScope _ -> ()
+  end;
+  (* Declare a possible coercion *)
+  if not exists then begin match coe with
+   | Some (IsEntryCoercion entry) ->
+     let (_,level,_) = level_of_notation ntn in
+     let level = match fst ntn with
+       | InConstrEntry -> None
+       | InCustomEntry _ -> Some level
+     in
+     declare_entry_coercion (scopt,ntn) level entry
+   | Some (IsEntryGlobal (entry,n)) -> declare_custom_entry_has_global entry n
+   | Some (IsEntryIdent (entry,n)) -> declare_custom_entry_has_ident entry n
+   | None -> ()
+  end
+
 let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
     try
@@ -1585,15 +1729,6 @@ let uninterp_prim_token_cases_pattern c local_scopes =
   | na,c -> let (sc,n) = uninterp_prim_token c local_scopes in (na,sc,n)
 
 (* Miscellaneous *)
-
-
-let exists_notation_in_scope scopt ntn onlyprint r =
-  let scope = match scopt with Some s -> s | None -> default_scope in
-  try
-    let sc = String.Map.find scope !scope_map in
-    let n = NotationMap.find ntn sc.notations in
-    interpretation_eq n.not_interp r
-  with Not_found -> false
 
 let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
 
@@ -1848,38 +1983,63 @@ let pr_scope_classes sc =
   | _ :: ll ->
     let opt_s = match ll with [] -> mt () | _ -> str "es" in
     hov 0 (str "Bound to class" ++ opt_s ++
-      spc() ++ prlist_with_sep spc pr_scope_class l) ++ fnl()
+      spc() ++ prlist_with_sep spc pr_scope_class l)
 
 let pr_notation_info prglob ntn c =
   str "\"" ++ str ntn ++ str "\" := " ++
   prglob (Notation_ops.glob_constr_of_notation_constr c)
 
-let pr_named_scope prglob scope sc =
+let pr_notation_status on_parsing on_printing =
+  let deactivated b = if b then [] else ["deactivated"] in
+  let l = match on_parsing, on_printing with
+  | Some on, None -> "only parsing" :: deactivated on
+  | None, Some on -> "only printing" :: deactivated on
+  | Some false, Some false -> ["deactivated"]
+  | Some true, Some false -> ["deactivated for printing"]
+  | Some false, Some true -> ["deactivated for parsing"]
+  | Some true, Some true -> []
+  | None, None -> assert false in
+  match l with
+  | [] -> mt ()
+  | l -> str "(" ++ prlist_with_sep pr_comma str l ++ str ")"
+
+let pr_non_empty spc pp =
+  if pp = mt () then mt () else spc ++ pp
+
+let pr_notation_data prglob (on_parsing,on_printing,{ not_interp  = (_, r); not_location = (_, df) }) =
+  hov 0 (pr_notation_info prglob df r ++ pr_non_empty (spc ()) (pr_notation_status on_parsing on_printing))
+
+let extract_notation_data (main,extra) =
+  let main = match main with
+  | NoParsingData -> []
+  | ParsingAndPrintingData (on_parsing, on_printing, d) ->
+    [Some on_parsing, Some on_printing, d]
+  | OnlyParsingData (on_parsing, d) ->
+    [Some on_parsing, None, d] in
+  let extra = List.map (fun (on_printing, d) -> (None, Some on_printing, d)) extra in
+  main @ extra
+
+let pr_named_scope prglob (scope,sc) =
  (if String.equal scope default_scope then
    match NotationMap.cardinal sc.notations with
      | 0 -> str "No lonely notation"
      | n -> str "Lonely notation" ++ (if Int.equal n 1 then mt() else str"s")
   else
     str "Scope " ++ str scope ++ fnl () ++ pr_delimiters_info sc.delimiters)
-  ++ fnl ()
-  ++ pr_scope_classes scope
-  ++ NotationMap.fold
-       (fun ntn { not_interp  = (_, r); not_location = (_, df) } strm ->
-         pr_notation_info prglob df r ++ fnl () ++ strm)
-       sc.notations (mt ())
+  ++ pr_non_empty (fnl ()) (pr_scope_classes scope)
+  ++ prlist (fun a -> fnl () ++ pr_notation_data prglob a)
+       (NotationMap.fold (fun ntn data l -> extract_notation_data data @ l) sc.notations [])
 
-let pr_scope prglob scope = pr_named_scope prglob scope (find_scope scope)
+let pr_scope prglob scope = pr_named_scope prglob (scope, find_scope scope)
 
 let pr_scopes prglob =
- String.Map.fold
-   (fun scope sc strm -> pr_named_scope prglob scope sc ++ fnl () ++ strm)
-   !scope_map (mt ())
+ let l = String.Map.bindings !scope_map in
+ prlist_with_sep (fun () -> fnl () ++ fnl ()) (pr_named_scope prglob) l
 
 let rec find_default ntn = function
   | [] -> None
   | OpenScopeItem scope :: scopes ->
-    if NotationMap.mem ntn (find_scope scope).notations then
-      Some scope
+    if has_active_parsing_rule_in_scope ntn scope then Some scope
     else find_default ntn scopes
   | LonelyNotationItem ntn' :: scopes ->
     if notation_eq ntn ntn' then Some default_scope
@@ -1887,12 +2047,12 @@ let rec find_default ntn = function
 
 let factorize_entries = function
   | [] -> []
-  | (ntn,c)::l ->
+  | (ntn,sc',c)::l ->
       let (ntn,l_of_ntn,rest) =
         List.fold_left
-          (fun (a',l,rest) (a,c) ->
-            if notation_eq a a' then (a',c::l,rest) else (a,[c],(a',l)::rest))
-          (ntn,[c],[]) l in
+          (fun (a',l,rest) (a,sc,c) ->
+            if notation_eq a a' then (a',(sc,c)::l,rest) else (a,[sc,c],(a',l)::rest))
+          (ntn,[sc',c],[]) l in
       (ntn,l_of_ntn)::rest
 
 type symbol_token = WhiteSpace of int | String of string
@@ -1963,16 +2123,18 @@ let browse_notation strict ntn map =
   let l =
     String.Map.fold
       (fun scope_name sc ->
-        NotationMap.fold (fun ntn { not_interp  = (_, r); not_location = df } l ->
-          if List.exists (find ntn) ntns then (ntn,(scope_name,r,df))::l else l) sc.notations)
+        NotationMap.fold (fun ntn data l ->
+          if List.exists (find ntn) ntns
+          then List.map (fun d -> (ntn,scope_name,d)) (extract_notation_data data) @ l
+          else l) sc.notations)
       map [] in
-  List.sort (fun x y -> String.compare (snd (fst x)) (snd (fst y))) l
+  List.sort (fun x y -> String.compare (snd (pi1 x)) (snd (pi1 y))) l
 
-let global_reference_of_notation ~head test (ntn,(sc,c,_)) =
+let global_reference_of_notation ~head test (ntn,sc,(on_parsing,on_printing,{not_interp = (_,c)})) =
   match c with
-  | NRef ref when test ref -> Some (ntn,sc,ref)
+  | NRef ref when test ref -> Some (on_parsing,on_printing,ntn,sc,ref)
   | NApp (NRef ref, l) when head || List.for_all isNVar_or_NHole l && test ref ->
-      Some (ntn,sc,ref)
+      Some (on_parsing,on_printing,ntn,sc,ref)
   | _ -> None
 
 let error_ambiguous_notation ?loc _ntn =
@@ -1992,17 +2154,17 @@ let interp_notation_as_global_reference ?loc ~head test ntn sc =
   let ntns = browse_notation true ntn scopes in
   let refs = List.map (global_reference_of_notation ~head test) ntns in
   match Option.List.flatten refs with
-  | [_,_,ref] -> ref
+  | [Some true,_ (* why not if the only one? *),_,_,ref] -> ref
   | [] -> error_notation_not_reference ?loc ntn
   | refs ->
-      let f (ntn,sc,ref) =
+      let f (on_parsing,_,ntn,sc,ref) =
         let def = find_default ntn !scope_stack in
         match def with
         | None -> false
-        | Some sc' -> String.equal sc sc'
+        | Some sc' -> on_parsing = Some true && String.equal sc sc'
       in
       match List.filter f refs with
-      | [_,_,ref] -> ref
+      | [_,_,_,_,ref] -> ref
       | [] -> error_notation_not_reference ?loc ntn
       | _ -> error_ambiguous_notation ?loc ntn
 
@@ -2016,20 +2178,21 @@ let locate_notation prglob ntn scope =
     prlist_with_sep fnl (fun (ntn,l) ->
       let scope = find_default ntn scopes in
       prlist_with_sep fnl
-        (fun (sc,r,(_,df)) ->
+        (fun (sc,(on_parsing,on_printing,{ not_interp  = (_, r); not_location = (_, df) })) ->
           hov 0 (
             pr_notation_info prglob df r ++
             (if String.equal sc default_scope then mt ()
              else (spc () ++ str ": " ++ str sc)) ++
             (if Option.equal String.equal (Some sc) scope
-             then spc () ++ str "(default interpretation)" else mt ())))
+             then spc () ++ str "(default interpretation)" else mt ()) ++
+            pr_non_empty (spc ()) (pr_notation_status on_parsing on_printing)))
         l) ntns
 
 let collect_notation_in_scope scope sc known =
   assert (not (String.equal scope default_scope));
   NotationMap.fold
-    (fun ntn { not_interp  = (_, r); not_location = (_, df) } (l,known as acc) ->
-      if List.mem_f notation_eq ntn known then acc else ((df,r)::l,ntn::known))
+    (fun ntn d (l,known as acc) ->
+      if List.mem_f notation_eq ntn known then acc else (extract_notation_data d @ l,ntn::known))
     sc.notations ([],known)
 
 let collect_notations stack =
@@ -2045,13 +2208,13 @@ let collect_notations stack =
           if List.mem_f notation_eq ntn knownntn then (all,knownntn)
           else
           try
-            let { not_interp  = (_, r); not_location = (_, df) } =
-              NotationMap.find ntn (find_scope default_scope).notations in
+            let datas = extract_notation_data
+              (NotationMap.find ntn (find_scope default_scope).notations) in
             let all' = match all with
               | (s,lonelyntn)::rest when String.equal s default_scope ->
-                  (s,(df,r)::lonelyntn)::rest
+                  (s,datas@lonelyntn)::rest
               | _ ->
-                  (default_scope,[df,r])::all in
+                  (default_scope,datas)::all in
             (all',ntn::knownntn)
           with Not_found -> (* e.g. if only printing *) (all,knownntn))
     ([],[]) stack)
@@ -2059,7 +2222,7 @@ let collect_notations stack =
 let pr_visible_in_scope prglob (scope,ntns) =
   let strm =
     List.fold_right
-      (fun (df,r) strm -> pr_notation_info prglob df r ++ fnl () ++ strm)
+      (fun d strm -> pr_notation_data prglob d ++ fnl () ++ strm)
       ntns (mt ()) in
   (if String.equal scope default_scope then
      str "Lonely notation" ++ (match ntns with [_] -> mt () | _ -> str "s")
@@ -2068,9 +2231,7 @@ let pr_visible_in_scope prglob (scope,ntns) =
   ++ fnl () ++ strm
 
 let pr_scope_stack prglob stack =
-  List.fold_left
-    (fun strm scntns -> strm ++ pr_visible_in_scope prglob scntns ++ fnl ())
-    (mt ()) (collect_notations stack)
+  prlist_with_sep fnl (pr_visible_in_scope prglob) (collect_notations stack)
 
 let pr_visibility prglob = function
   | Some scope -> pr_scope_stack prglob (push_scope scope !scope_stack)

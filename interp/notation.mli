@@ -229,11 +229,23 @@ type interp_rule =
   | NotationRule of specific_notation
   | SynDefRule of KerName.t
 
-val declare_notation_interpretation : notation -> scope_name option ->
-  interpretation -> notation_location -> onlyprint:bool ->
-  Deprecation.t option -> unit
+type notation_use =
+  | OnlyPrinting
+  | OnlyParsing
+  | ParsingAndPrinting
 
 val declare_uninterpretation : interp_rule -> interpretation -> unit
+
+type entry_coercion_kind =
+  | IsEntryCoercion of notation_entry_level
+  | IsEntryGlobal of string * int
+  | IsEntryIdent of string * int
+
+val declare_notation : notation_with_optional_scope * notation ->
+  interpretation -> notation_location -> use:notation_use ->
+  entry_coercion_kind option ->
+  Deprecation.t option -> unit
+
 
 (** Return the interpretation bound to a notation *)
 val interp_notation : ?loc:Loc.t -> notation -> subscopes ->
@@ -257,15 +269,13 @@ val uninterp_ind_pattern_notations : inductive -> notation_rule list
 val availability_of_notation : specific_notation -> subscopes ->
   (scope_name option * delimiters option) option
 
+val is_printing_inactive_rule : interp_rule -> interpretation -> bool
+
 (** {6 Miscellaneous} *)
 
 (** If head is true, also allows applied global references. *)
 val interp_notation_as_global_reference : ?loc:Loc.t -> head:bool -> (GlobRef.t -> bool) ->
       notation_key -> delimiters option -> GlobRef.t
-
-(** Checks for already existing notations *)
-val exists_notation_in_scope : scope_name option -> notation ->
-      bool -> interpretation -> bool
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :

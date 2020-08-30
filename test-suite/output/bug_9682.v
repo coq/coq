@@ -16,3 +16,13 @@ Notation "'mmatch' x 'in' T 'as' y 'return' 'M' p 'with' ls 'end'" :=
     (at level 200, ls at level 91, p at level 10, only printing,
      format "'[  ' mmatch  '/' x ']'  '/' '[  ' in  '/' T ']'  '/' '[  ' as  '/' y ']'  '/' '[  ' return  M  p ']'  with  '//' '[' ls ']'  '//' end"
      ).
+(* Check use of "mmatch" *)
+Check (mmatch 1 + 2 + 3 + 4 + 5 + 6 in nat as x return M (x = x) with | 1 end).
+
+(* 2nd example *)
+Notation "#" := I (at level 0, only parsing).
+Notation "#" := I (at level 0, only printing).
+Check #.
+Notation "##" := I (at level 0, only printing).
+Notation "##" := I (at level 0, only parsing).
+Check ##.

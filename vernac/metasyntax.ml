@@ -1165,11 +1165,6 @@ let warn_non_reversible_notation =
              str " not occur in the right-hand side." ++ spc() ++
              strbrk "The notation will not be used for printing as it is not reversible.")
 
-type entry_coercion_kind =
-  | IsEntryCoercion of notation_entry_level
-  | IsEntryGlobal of string * int
-  | IsEntryIdent of string * int
-
 let is_coercion level typs =
   match level, typs with
   | Some (custom,n,_), [e] ->
@@ -1442,36 +1437,21 @@ let open_notation i (_, nobj) =
     let scope = nobj.notobj_scope in
     let (ntn, df) = nobj.notobj_notation in
     let pat = nobj.notobj_interp in
-    let onlyprint = nobj.notobj_onlyprint  in
     let deprecation = nobj.notobj_deprecation in
-    let specific = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
-    let specific_ntn = (specific,ntn) in
-    let fresh = not (Notation.exists_notation_in_scope scope ntn onlyprint pat) in
-    if fresh then begin
-      (* Declare the interpretation *)
-      let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint deprecation in
-      (* Declare the uninterpretation *)
-      if not nobj.notobj_onlyparse then
-        Notation.declare_uninterpretation (NotationRule specific_ntn) pat;
-      (* Declare a possible coercion *)
-      (match nobj.notobj_coercion with
-      | Some (IsEntryCoercion entry) ->
-        let (_,level,_) = Notation.level_of_notation ntn in
-        let level = match fst ntn with
-          | InConstrEntry -> None
-          | InCustomEntry _ -> Some level
-        in
-        Notation.declare_entry_coercion specific_ntn level entry
-      | Some (IsEntryGlobal (entry,n)) -> Notation.declare_custom_entry_has_global entry n
-      | Some (IsEntryIdent (entry,n)) -> Notation.declare_custom_entry_has_ident entry n
-      | None -> ())
-      end;
+    let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
+    let use = match nobj.notobj_onlyparse, nobj.notobj_onlyprint with
+      | false, false -> ParsingAndPrinting
+      | true, false -> OnlyParsing
+      | false, true -> OnlyPrinting
+      | true, true -> assert false in
+    (* Declare the notation *)
+    Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion deprecation;
     (* Declare specific format if any *)
     match nobj.notobj_specific_pp_rules with
     | Some pp_sy ->
-      if specific_format_to_declare specific_ntn pp_sy then
+      if specific_format_to_declare (scope,ntn) pp_sy then
         Ppextend.declare_specific_notation_printing_rules
-          specific_ntn ~extra:pp_sy.synext_extra pp_sy.synext_unparsing
+          (scope,ntn) ~extra:pp_sy.synext_extra pp_sy.synext_unparsing
     | None -> ()
   end
 
