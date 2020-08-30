@@ -1511,6 +1511,82 @@ let is_printing_inactive_rule rule pat =
 let availability_of_notation (ntn_scope,ntn) scopes =
   find_without_delimiters (has_active_parsing_rule_in_scope ntn) (ntn_scope,Some ntn) (make_current_scopes scopes)
 
+let show_scope scopt =
+  match scopt with
+  | LastLonelyNotation -> str ""
+  | NotationInScope sc -> spc () ++ str "in scope" ++ spc () ++ str sc
+
+let find_notation_err ntn inscope =
+  let sc = match inscope with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
+  try
+    let scope = find_scope sc in
+    NotationMap.find ntn scope.notations, scope
+  with Not_found -> user_err
+                        (pr_notation ntn ++ spc () ++ str "does not exist"
+                         ++ (match inscope with
+                             | LastLonelyNotation -> spc () ++ str "in the empty scope."
+                             | NotationInScope _ -> show_scope inscope ++ str "."))
+
+let toggle (inscope,ntn) b1 b2 =
+  if b1 && b2 then
+    Feedback.msg_warning
+      (str "Notation" ++ spc () ++ pr_notation ntn ++ spc () ++
+       str "is already active" ++ show_scope inscope ++ str ".");
+  if not b1 && not b2 then
+    Feedback.msg_warning
+      (str "Notation" ++ spc () ++ pr_notation ntn ++ spc () ++
+       str "is already inactive" ++ show_scope inscope ++ str ".");
+  not b1
+
+let toggle_main_notation ~on (inscope,ntn) ~use test main =
+  match main, use with
+  | OnlyParsingData (is_on,d), OnlyPrinting when test d ->
+    user_err (strbrk "Unexpected only printing for an only parsing notation.")
+  | OnlyParsingData (is_on,d), (OnlyParsing | ParsingAndPrinting) when test d ->
+    OnlyParsingData (toggle (inscope,ntn) is_on on,d)
+  | ParsingAndPrintingData (is_parsing_on,is_printing_on,d), _ when test d ->
+     let is_parsing_on = match use with
+       | OnlyPrinting -> is_parsing_on
+       | OnlyParsing | ParsingAndPrinting -> toggle (inscope,ntn) is_parsing_on on in
+     let is_printing_on = match use with
+       | OnlyParsing -> is_printing_on
+       | OnlyPrinting | ParsingAndPrinting -> toggle (inscope,ntn) is_printing_on on in
+     ParsingAndPrintingData (is_parsing_on,is_printing_on,d)
+  | (NoParsingData | OnlyParsingData _ | ParsingAndPrintingData _), _ -> main
+
+let toggle_extra_only_printing_notation ~on (inscope,ntn) ~use (is_on,d) =
+  match use with
+  | OnlyParsing ->
+    user_err (strbrk "Unexpected only parsing for an only printing notation.")
+  | OnlyPrinting | ParsingAndPrinting ->
+    (toggle (inscope,ntn) is_on on,d)
+
+let toggle_selected_interpretation ~on (inscope,ntn) ~use main extra pat =
+  let found = ref false in
+  let test d = if interpretation_eq pat d.not_interp then (found:=true; true) else false in
+  let extra =
+    List.map (fun (_,d as x) ->
+        if test d then toggle_extra_only_printing_notation ~on (inscope,ntn) ~use x
+        else x) extra in
+  let main = toggle_main_notation ~on (inscope,ntn) ~use test main in
+  if not !found then
+    user_err (strbrk "No such notation with this interpretation.");
+  (main,extra)
+
+let toggle_notation ~on (inscope,ntn) ~use pat_opt =
+  let (main,extra),scope = find_notation_err ntn inscope in
+  let (main,extra) =
+    match pat_opt with
+    | Some pat -> toggle_selected_interpretation ~on (inscope,ntn) ~use main extra pat
+    | None ->
+      if List.length extra + (if main = NoParsingData then 0 else 1) > 1 then
+        user_err (strbrk "More than one interpretation bound to this notation, interpretation should be given explicitly.");
+      (toggle_main_notation ~on (inscope,ntn) ~use (fun _ -> true) main,
+       List.map (toggle_extra_only_printing_notation ~on (inscope,ntn) ~use) extra) in
+  let sc = match inscope with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
+  let newsc = {scope with notations = NotationMap.add ntn (main,extra) scope.notations } in
+  scope_map := String.Map.add sc newsc !scope_map
+
 (* We support coercions from a custom entry at some level to an entry
    at some level (possibly the same), and from and to the constr entry. E.g.:
 

@@ -351,6 +351,7 @@ type nonrec vernac_expr =
       infix_flag * constr_expr * (lstring * syntax_modifier CAst.t list) *
       scope_name option
   | VernacDeclareCustomEntry of string
+  | VernacToggleNotation of bool * Notationextern.notation_use * qualid Notationextern.interp_rule_gen
 
   (* Gallina *)
   | VernacDefinition of (discharge * Decls.definition_object_kind) * name_decl * definition_expr

@@ -406,3 +406,21 @@ Module AppliedPatternsPrinting.
   End H.
 
 End AppliedPatternsPrinting.
+
+Module Activation.
+
+Deactivate Notation "_ + _" : nat_scope.
+Check Nat.add 0 0.
+Fail Check 0 + 0.
+
+Deactivate Notation "_ + _" : type_scope.
+Fail Check 0 + 0.
+
+Notation f x := (Some x).
+
+Deactivate Notation f.
+
+Check Some 0.
+Fail Check f 0.
+
+End Activation.

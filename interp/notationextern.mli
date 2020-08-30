@@ -23,9 +23,11 @@ val notation_entry_level_eq : notation_entry_level -> notation_entry_level -> bo
 (** Equality on [notation_entry_level]. *)
 
 (** Binds a notation in a given scope to an interpretation *)
-type interp_rule =
-  | NotationRule of specific_notation
-  | AbbrevRule of KerName.t
+type 'a interp_rule_gen =
+  | NotationRule of Constrexpr.specific_notation
+  | AbbrevRule of 'a
+
+type interp_rule = KerName.t interp_rule_gen
 
 val remove_uninterpretation : interp_rule -> interpretation -> unit
 val declare_uninterpretation : ?also_in_cases_pattern:bool -> interp_rule -> interpretation -> unit

@@ -267,6 +267,8 @@ val availability_of_notation : specific_notation -> subscopes ->
   (scope_name option * delimiters option) option
 
 val is_printing_inactive_rule : Notationextern.interp_rule -> interpretation -> bool
+val toggle_notation : on:bool -> notation_with_optional_scope * notation ->
+  use:notation_use -> interpretation option -> unit
 
 (** {6 Miscellaneous} *)
 

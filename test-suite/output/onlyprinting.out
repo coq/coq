@@ -1,2 +1,37 @@
 0:-) 0
      : nat
+1 +_a 2
+     : nat
+1 +_b 2
+     : nat
+1 +_b 2
+     : nat
+1 +_c 2
+     : nat
+1 +_c 2
+     : nat
+Scope nat_scope
+Delimiting key is nat
+Bound to class nat
+"x >= y" := (ge x y)
+"x > y" := (gt x y)
+"x <= y <= z" := (and (le x y) (le y z))
+"x <= y < z" := (and (le x y) (lt y z))
+"n <= m" := (le n m)
+"x < y <= z" := (and (lt x y) (le y z))
+"x < y < z" := (and (lt x y) (lt y z))
+"x < y" := (lt x y)
+"x - y" := (Nat.sub x y)
+"x +_c y" := (Nat.add x y) (only printing)
+"x +_b y" := (Nat.add x y)
+"x +_a y" := (Nat.add x y)
+"x + y" := (Nat.add x y)
+"x * y" := (Nat.mul x y)
+1 +_b 2
+     : nat
+1 +_a 2
+     : nat
+1 + 2
+     : nat
+1 +_c 2
+     : nat

@@ -780,6 +780,28 @@ let pr_vernac_expr v =
     return (
       keyword "Declare Custom Entry " ++ str s
     )
+  | VernacToggleNotation (b,use,s) ->
+    let in_custom = function
+      | InConstrEntry -> []
+      | InCustomEntry s -> ["in custom " ^ s] in
+    let in_use = function
+      | Notationextern.ParsingAndPrinting -> []
+      | Notationextern.OnlyParsing -> ["only parsing"]
+      | Notationextern.OnlyPrinting -> ["only printing"] in
+    let pr_flags = function
+      | [] -> mt ()
+      | l -> str "(" ++ prlist_with_sep pr_comma str l ++ str ")" in
+    let pp = match s with
+    | Notationextern.NotationRule (sc,(custom,s)) ->
+       let pr_opt_scope = function
+         | NotationInScope s -> spc () ++ str ": " ++ str s
+         | LastLonelyNotation -> mt () in
+       quote (str s) ++ pr_flags (in_custom custom @ in_use use) ++ pr_opt_scope sc
+    | Notationextern.AbbrevRule qid -> pr_qualid qid ++ pr_flags (in_use use) in
+    let s = if b then "Activate" else "Deactivate" in
+    return (
+      keyword (s ^ "Notation ") ++ pp
+    )
 
   (* Gallina *)
   | VernacDefinition ((discharge,kind),id,b) -> (* A verifier... *)

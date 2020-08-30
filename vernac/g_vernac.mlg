@@ -1232,9 +1232,40 @@ GRAMMAR EXTEND Gram
      | IDENT "Reserved"; IDENT "Notation"; s = ne_lstring; l = syntax_modifiers ->
            { VernacReservedNotation (false,(s,l)) }
 
+     | IDENT "Deactivate"; IDENT "Notation"; d = toggle_notation
+         -> { let use, rule = (match fst d with None -> Notationextern.ParsingAndPrinting | Some b -> b), snd d in
+              VernacToggleNotation (false,use,rule) }
+
+     | IDENT "Activate"; IDENT "Notation"; d = toggle_notation
+         -> { let use, rule = (match fst d with None -> Notationextern.ParsingAndPrinting | Some b -> b), snd d in
+              VernacToggleNotation (true,use,rule) }
+
      (* "Print" "Grammar" and "Declare" "Scope" should be here but are in "command" entry in order
         to factorize with other "Print"-based or "Declare"-based vernac entries *)
   ] ]
+  ;
+  toggle_notation:
+    [ [ s = ne_string; flags = toggle_flags; sc = opt_scope ->
+        { fst flags, Notationextern.NotationRule (sc,(snd flags,s)) }
+      | qid = global; use = OPT [ "("; use = notation_use; ")" -> { use } ] ->
+        { use, Notationextern.AbbrevRule qid } ] ]
+  ;
+  toggle_flags:
+    [ [ "("; "in"; IDENT "custom"; x = IDENT; use = OPT notation_use; ")" -> { (use, InCustomEntry x) }
+      | "("; use = notation_use; ")" -> { (Some use, InConstrEntry) }
+      | -> { (None, InConstrEntry) } ] ]
+  ;
+  notation_use:
+    [ [ IDENT "only"; IDENT "parsing" -> { Notationextern.OnlyParsing }
+      | IDENT "only"; IDENT "printing" -> { Notationextern.OnlyPrinting } ] ]
+  ;
+  in_custom:
+    [ [ "("; "in"; IDENT "custom"; x = IDENT; ")" -> { InCustomEntry x }
+      | -> { InConstrEntry } ] ]
+  ;
+  opt_scope:
+    [ [ ":"; sc = IDENT -> { NotationInScope sc }
+      | -> { LastLonelyNotation } ] ]
   ;
   level:
     [ [ IDENT "level"; n = natural -> { NumLevel n }

@@ -54,9 +54,11 @@ let interpretation_eq (vars1, t1 as x1) (vars2, t2 as x2) =
 
 (* Uninterpretation tables *)
 
-type interp_rule =
-  | NotationRule of specific_notation
-  | AbbrevRule of KerName.t
+type 'a interp_rule_gen =
+  | NotationRule of Constrexpr.specific_notation
+  | AbbrevRule of 'a
+
+type interp_rule = KerName.t interp_rule_gen
 
 (* We define keys for glob_constr and aconstr to split the syntax entries
    according to the key of the pattern (adapted from Chet Murthy by HH) *)

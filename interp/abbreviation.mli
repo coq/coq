@@ -22,4 +22,6 @@ val search_abbreviation : ?loc:Loc.t -> abbreviation -> interpretation
 val search_filtered_abbreviation : ?loc:Loc.t ->
   (interpretation -> 'a option) -> abbreviation -> 'a option
 
-val import_abbreviation : int -> Libnames.full_path -> abbreviation -> unit
+val import_abbreviation : int -> Libnames.full_path -> KerName.t -> unit
+
+val activate_abbreviation : on:bool -> abbreviation -> unit

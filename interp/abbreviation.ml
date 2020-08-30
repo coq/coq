@@ -32,6 +32,16 @@ let abbrev_table =
 let add_abbreviation kn abbrev =
   abbrev_table := KNmap.add kn abbrev !abbrev_table
 
+let activate_abbreviation ~on kn =
+  let sp = Nametab.path_of_abbreviation kn in
+  if on then
+    begin
+      Nametab.push_abbreviation (Nametab.Until 1) sp kn;
+      Nametab.push_abbreviation (Nametab.Exactly 1) sp kn
+    end
+  else
+    Nametab.remove_abbreviation sp kn
+
 let load_abbreviation i ((sp,kn),(_local,abbrev)) =
   if Nametab.exists_cci sp then
     user_err

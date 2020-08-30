@@ -1908,6 +1908,41 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
   Abbreviation.declare_abbreviation ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
+(* Activating/deactivating notations                                  *)
+
+let load_notation_toggle _ _ = ()
+
+let open_notation_toggle _ (local,(on,use,pat,rule)) =
+  match rule with
+  | NotationRule ntn -> toggle_notation ~on ntn ~use pat
+  | AbbrevRule kn -> Abbreviation.activate_abbreviation ~on kn
+
+let cache_notation_toggle o =
+  load_notation_toggle 1 o;
+  open_notation_toggle 1 o
+
+let subst_notation_toggle (subst,x) = x (* TODO: pat *)
+
+let classify_notation_toggle (local,_) =
+  if local then Dispose else Substitute
+
+let inNotationActivation : locality_flag * (bool * notation_use * interpretation option * Notationextern.interp_rule) -> obj =
+  declare_object {(default_object "NOTATION-TOGGLE") with
+      cache_function = cache_notation_toggle;
+      open_function = simple_open open_notation_toggle;
+      load_function = load_notation_toggle;
+      subst_function = subst_notation_toggle;
+      classify_function = classify_notation_toggle}
+
+let interpret_notation_rule = function
+  | NotationRule (sc,(custom,ntn)) -> NotationRule (sc,(custom,interpret_notation_string ntn))
+  | AbbrevRule _ as x -> x
+
+let declare_notation_toggle local ~on ~use s =
+  let s = interpret_notation_rule s in
+  Lib.add_leaf (inNotationActivation (local,(on,use,None,s)))
+
+(**********************************************************************)
 (* Declaration of custom entry                                        *)
 
 let warn_custom_entry =

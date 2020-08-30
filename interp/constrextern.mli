@@ -95,12 +95,5 @@ val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b
 val toggle_scope_printing :
   scope:Notation_term.scope_name -> activate:bool -> unit
 
-val toggle_notation_printing
-  : ?scope:Notation_term.scope_name
-  -> notation:Constrexpr.notation
-  -> activate:bool
-  -> unit
-  -> unit
-
 (** Probably shouldn't be used *)
 val empty_extern_env : extern_env

@@ -131,43 +131,6 @@ let _show_inactive_notations () =
        | AbbrevRule kn -> Feedback.msg_notice (str (string_of_qualid (Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn))))
       !inactive_notations_table
 
-let deactivate_notation nr =
-  match nr with
-  | AbbrevRule kn ->
-     (* shouldn't we check whether it is well defined? *)
-     inactive_notations_table := IRuleSet.add nr !inactive_notations_table
-  | NotationRule (inscope, ntn) ->
-     let scopt = match inscope with NotationInScope sc -> [sc] | LastLonelyNotation -> [] in
-     match availability_of_notation (inscope, ntn) (scopt, []) with
-     | None -> user_err
-                        (pr_notation ntn ++ spc () ++ str "does not exist"
-                         ++ (match inscope with
-                             | LastLonelyNotation -> spc () ++ str "in the empty scope."
-                             | NotationInScope _ -> show_scope inscope ++ str "."))
-     | Some _ ->
-        if IRuleSet.mem nr !inactive_notations_table then
-          Feedback.msg_warning
-            (str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
-             ++ str "is already inactive" ++ show_scope inscope ++ str ".")
-        else inactive_notations_table := IRuleSet.add nr !inactive_notations_table
-
-let reactivate_notation nr =
-  try
-    inactive_notations_table :=
-      IRuleSet.remove nr !inactive_notations_table
-  with Not_found ->
-    match nr with
-    | NotationRule (inscope, ntn) ->
-       Feedback.msg_warning (str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
-                             ++ str "is already active" ++ show_scope inscope ++
-  str ".")
-    | AbbrevRule kn ->
-       let s = string_of_qualid (Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn) in
-       Feedback.msg_warning
-         (str "Notation" ++ spc () ++ str s
-          ++ spc () ++ str "is already active.")
-
-
 let deactivate_scope sc =
   ignore (find_scope sc); (* ensures that the scope exists *)
   if CString.Set.mem sc !inactive_scopes_table
@@ -184,28 +147,12 @@ let reactivate_scope sc =
     Feedback.msg_warning (str "Notation Scope" ++ spc () ++ str sc ++ spc ()
                           ++ str "is already active.")
 
-let is_inactive_rule nr =
-  IRuleSet.mem nr !inactive_notations_table ||
-  match nr with
-    | NotationRule (NotationInScope sc, ntn) -> CString.Set.mem sc !inactive_scopes_table
-    | NotationRule (LastLonelyNotation, ntn) -> false
-    | AbbrevRule _ -> false
-
 (* args: notation, scope, activate/deactivate *)
 let toggle_scope_printing ~scope ~activate =
   if activate then
     reactivate_scope scope
   else
     deactivate_scope scope
-
-let toggle_notation_printing ?scope ~notation ~activate () =
-  let inscope = match scope with
-  | None -> LastLonelyNotation
-  | Some sc -> NotationInScope sc in
-  if activate then
-    reactivate_notation (NotationRule (inscope, notation))
-  else
-    deactivate_notation (NotationRule (inscope, notation))
 
 (* This governs printing of projections using the dot notation symbols *)
 let print_projections = ref false
@@ -571,7 +518,7 @@ and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
-      if is_inactive_rule keyrule || is_printing_inactive_rule keyrule pat then raise No_match;
+      if is_printing_inactive_rule keyrule pat then raise No_match;
       let loc = t.loc in
       match DAst.get t with
         | PatCstr (cstr,args,na) ->
@@ -588,7 +535,7 @@ let rec extern_notation_ind_pattern allscopes vars ind args = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
-      if is_inactive_rule keyrule || is_printing_inactive_rule keyrule pat then raise No_match;
+      if is_printing_inactive_rule keyrule pat then raise No_match;
       apply_notation_to_pattern (GlobRef.IndRef ind)
         (match_notation_constr_ind_pattern ind args pat) allscopes vars keyrule
     with
@@ -1298,7 +1245,7 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
   | (keyrule,pat,n as _rule)::rules ->
       let loc = Glob_ops.loc_of_glob_constr t in
       try
-        if is_inactive_rule keyrule || is_printing_inactive_rule keyrule pat then raise No_match;
+        if is_printing_inactive_rule keyrule pat then raise No_match;
         let f,args =
           match DAst.get t with
           | GApp (f,args) -> f,args
