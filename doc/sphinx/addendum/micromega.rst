@@ -159,7 +159,7 @@ High level view of `lia`
 Over :math:`\mathbb{R}`, *positivstellensatz* refutations are a complete proof
 principle [#mayfail]_. However, this is not the case over :math:`\mathbb{Z}`. Actually,
 *positivstellensatz* refutations are not even sufficient to decide
-linear *integer* arithmetic. The canonical example is :math:`2 * x = 1 -> \mathtt{False}`
+linear *integer* arithmetic. The canonical example is :math:`2 * x = 1 \to \mathtt{False}`
 which is a theorem of :math:`\mathbb{Z}` but not a theorem of :math:`{\mathbb{R}}`. To remedy this
 weakness, the :tacn:`lia` tactic is using recursively a combination of:
 
