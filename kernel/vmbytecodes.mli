@@ -54,7 +54,7 @@ type instruction =
   | Kfield of int                       (** accu = accu[n] *)
   | Ksetfield of int                    (** accu[n] = sp[0] ; sp = pop sp *)
   | Kstop
-  | Ksequence of bytecodes * bytecodes
+  | Ksequence of bytecodes
   | Kproj of Projection.Repr.t
   | Kensurestackcapacity of int
 

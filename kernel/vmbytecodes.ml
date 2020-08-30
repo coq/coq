@@ -56,7 +56,7 @@ type instruction =
   | Kfield of int
   | Ksetfield of int
   | Kstop
-  | Ksequence of bytecodes * bytecodes
+  | Ksequence of bytecodes
   | Kproj of Projection.Repr.t
   | Kensurestackcapacity of int
   | Kbranch of Label.t                  (* jump to label *)
@@ -157,7 +157,7 @@ and pp_bytecodes c =
   | Klabel lbl :: c ->
         str "L" ++ int lbl ++ str ":" ++ fnl () ++
         pp_bytecodes c
-  | Ksequence (l1, l2) :: c ->
-      pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
+  | Ksequence l :: c ->
+      pp_bytecodes l ++  pp_bytecodes c
   | i :: c ->
       pp_instr i ++ fnl () ++ pp_bytecodes c
