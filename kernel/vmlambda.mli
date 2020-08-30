@@ -14,7 +14,6 @@ type lambda =
   | Lconst        of pconstant
   | Lprim         of pconstant * CPrimitives.t * lambda array
   | Lcase         of case_info * reloc_table * lambda * lambda * lam_branches
-  | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int
