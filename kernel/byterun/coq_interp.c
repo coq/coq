@@ -1558,20 +1558,6 @@ value coq_interprete
         Next;
       }
 
-      Instruct (ISINT){
-        print_instr("ISINT");
-        accu = (Is_uint63(accu)) ? coq_true : coq_false;
-        Next;
-      }
-
-      Instruct (AREINT2){
-        print_instr("AREINT2");
-        accu = (Is_uint63(accu) && Is_uint63(sp[0])) ? coq_true : coq_false;
-        sp++;
-        Next;
-      }
-
-
       Instruct (CHECKOPPFLOAT) {
         print_instr("CHECKOPPFLOAT");
         CheckFloat1();

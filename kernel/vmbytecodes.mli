@@ -61,7 +61,6 @@ type instruction =
   | Kbranch of Label.t                  (** jump to label, is it needed ? *)
   | Kprim of CPrimitives.t * pconstant
   | Kcamlprim of CPrimitives.t * Label.t
-  | Kareint of int
 
 and bytecodes = instruction list
 

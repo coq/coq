@@ -62,7 +62,6 @@ type instruction =
   | Kbranch of Label.t                  (* jump to label *)
   | Kprim of CPrimitives.t * pconstant
   | Kcamlprim of CPrimitives.t * Label.t
-  | Kareint of int
 
 and bytecodes = instruction list
 
@@ -151,8 +150,6 @@ let rec pp_instr i =
   | Kcamlprim (op, lbl) ->
     str "camlcall " ++ str (CPrimitives.to_string op) ++ spc () ++
     pp_lbl lbl
-
-  | Kareint n -> str "areint " ++ int n
 
 and pp_bytecodes c =
   match c with
