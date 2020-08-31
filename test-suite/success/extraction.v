@@ -640,3 +640,22 @@ Require Import ZArith.
 Extraction Language OCaml.
 Recursive Extraction Z_modulo_2 Zdiv_eucl_exist.
 Extraction TestCompile Z_modulo_2 Zdiv_eucl_exist.
+
+Require Import ExtrOcamlZBigInt.
+Recursive Extraction   N.pred N.sub N.div N.modulo N.compare
+           Z.add Z.mul Z.compare Z.of_N Z.abs_N Z.div Z.modulo
+           Pos.add Pos.pred Pos.sub Pos.mul Pos.compare.
+Extraction TestCompile N.pred N.sub N.div N.modulo N.compare
+           Z.add Z.mul Z.compare Z.of_N Z.abs_N Z.div Z.modulo
+           Pos.add Pos.pred Pos.sub Pos.mul Pos.compare.
+
+Require Import ExtrOcamlBigIntConv.
+Recursive Extraction   bigint_of_z z_of_bigint nat_of_bigint.
+Extraction TestCompile bigint_of_z z_of_bigint nat_of_bigint.
+
+Require Import Euclid ExtrOcamlNatBigInt.
+Definition test n m (H:m>0) :=
+  let (q,r,_,_) := eucl_dev m H n in
+  Nat.compare n (q*m+r).
+Recursive Extraction   test fact pred minus max min Div2.div2.
+Extraction TestCompile test fact pred minus max min Div2.div2.

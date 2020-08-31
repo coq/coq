@@ -10,12 +10,13 @@
 
 (** Extraction to OCaml: conversion from/to [Z.t] *)
 
-(** NB: The extracted code should be linked with [zarith.cm(x)a] and with
-    the [big.ml] wrapper. The latter can be found in the sources of Coq. *)
+(** NB: The extracted code depends on [zarith] package. *)
 
 Require Coq.extraction.Extraction.
 
 Require Import Arith ZArith.
+
+Extraction Blacklist Z Big_int_Z.
 
 Parameter bigint : Type.
 Parameter bigint_zero : bigint.
@@ -23,11 +24,11 @@ Parameter bigint_succ : bigint -> bigint.
 Parameter bigint_opp : bigint -> bigint.
 Parameter bigint_twice : bigint -> bigint.
 
-Extract Inlined Constant bigint => "Big.big_int".
-Extract Inlined Constant bigint_zero => "Big.zero".
-Extract Inlined Constant bigint_succ => "Big.succ".
-Extract Inlined Constant bigint_opp => "Big.opp".
-Extract Inlined Constant bigint_twice => "Big.double".
+Extract Inlined Constant bigint => "Big_int_Z.big_int".
+Extract Inlined Constant bigint_zero => "Big_int_Z.zero_big_int".
+Extract Inlined Constant bigint_succ => "Big_int_Z.succ_big_int".
+Extract Inlined Constant bigint_opp => "Big_int_Z.minus_big_int".
+Extract Inlined Constant bigint_twice => "(Big_int_Z.mult_int_big_int 2)".
 
 Definition bigint_of_nat : nat -> bigint :=
  (fix loop acc n :=
@@ -61,18 +62,35 @@ Definition bigint_of_n n :=
     non-positive inputs. *)
 
 Parameter bigint_natlike_rec : forall A, A -> (A->A) -> bigint -> A.
-Extract Constant bigint_natlike_rec => "Big.nat_rec".
+Extract Constant bigint_natlike_rec =>
+  "fun fO fS ->
+     let rec loop acc n =
+       if Big_int_Z.sign_big_int n <= 0 then acc
+       else loop (fS acc) (Big_int_Z.pred_big_int n)
+     in loop fO".
 
 Definition nat_of_bigint : bigint -> nat := bigint_natlike_rec _ O S.
 
 Parameter bigint_poslike_rec : forall A, (A->A) -> (A->A) -> A -> bigint -> A.
-Extract Constant bigint_poslike_rec => "Big.positive_rec".
+Extract Constant bigint_poslike_rec =>
+  "fun f2p1 f2p f1 ->
+     let rec loop n =
+       if Big_int_Z.le_big_int n Big_int_Z.unit_big_int then f1
+       else
+         let (q,r) = Big_int_Z.quomod_big_int n (Big_int_Z.big_int_of_int 2) in
+         if Big_int_Z.eq_big_int r Big_int_Z.zero_big_int then f2p (loop q)
+         else f2p1 (loop q)
+     in loop".
 
 Definition pos_of_bigint : bigint -> positive := bigint_poslike_rec _ xI xO xH.
 
 Parameter bigint_zlike_case :
  forall A, A -> (bigint->A) -> (bigint->A) -> bigint -> A.
-Extract Constant bigint_zlike_case => "Big.z_rec".
+Extract Constant bigint_zlike_case =>
+  "fun fO fp fn z ->
+     let s = Big_int_Z.sign_big_int z in
+     if s = 0 then fO else if s > 0 then fp z
+     else fn (Big_int_Z.minus_big_int z)".
 
 Definition z_of_bigint : bigint -> Z :=
  bigint_zlike_case _ Z0 (fun i => Zpos (pos_of_bigint i))
