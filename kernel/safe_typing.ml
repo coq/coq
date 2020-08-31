@@ -936,12 +936,14 @@ let add_private_constant l decl senv : (Constant.t * private_constants) * safe_e
       | DefinitionEff ce ->
         Term_typing.translate_constant senv.env kn (Entries.DefinitionEntry ce)
     in
-  let senv, dcb = match cb.const_body with
-  | Def _ as const_body -> senv, { cb with const_body }
-  | OpaqueDef c ->
-    let local = empty_private cb.const_universes in
-    let senv, o = push_opaque_proof (Future.from_val (c, local)) senv in
-    senv, { cb with const_body = OpaqueDef o }
+  let dcb = match cb.const_body with
+  | Def _ as const_body -> { cb with const_body }
+  | OpaqueDef _ ->
+    (* We drop the body, to save the definition of an opaque and thus its
+       hashconsing. It does not matter since this only happens inside a proof,
+       and depending of the opaque status of the latter, this proof term will be
+       either inlined or reexported. *)
+    { cb with const_body = Undef None }
   | Undef _ | Primitive _ -> assert false
   in
   let senv = add_constant_aux senv (kn, dcb) in
