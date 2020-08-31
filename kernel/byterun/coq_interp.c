@@ -193,7 +193,9 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #endif
 #endif
 
-#define Is_accu(v) (Is_block(v) && Tag_val(v) == Closure_tag && Code_val(v) == accumulate)
+/* We should also check "Code_val(v) == accumulate" to be sure,
+   but Is_accu is only used in places where closures cannot occur. */
+#define Is_accu(v) (Is_block(v) && Tag_val(v) == Closure_tag)
 
 #define CheckPrimArgs(cond, apply_lbl) do{         \
     if (cond) pc++;                                \
