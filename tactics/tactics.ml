@@ -3317,7 +3317,7 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
         Proofview.Goal.enter begin fun gl ->
         let (recpat,names) = match names with
           | [{CAst.loc;v=IntroNaming (IntroIdentifier id)} as pat] ->
-              let id' = next_ident_away (add_prefix "IH" id) avoid in
+              let id' = new_fresh_id avoid (add_prefix "IH" id) gl in
               (pat, [CAst.make @@ IntroNaming (IntroIdentifier id')])
           | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
