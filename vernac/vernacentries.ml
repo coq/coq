@@ -112,7 +112,8 @@ let show_proof ~pstate =
 
 let show_top_evars ~proof =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
-  let Proof.{goals;shelf;sigma} = Proof.data proof in
+  let Proof.{goals; sigma} = Proof.data proof in
+  let shelf = Evd.shelf sigma in
   let given_up = Evar.Set.elements @@ Evd.given_up sigma in
   pr_evars_int sigma ~shelf ~given_up 1 (Evd.undefined_map sigma)
 

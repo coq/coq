@@ -780,7 +780,8 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
      straightforward, but seriously, [Proof.proof] should return
      [evar_info]-s instead. *)
   let p = proof in
-  let Proof.{goals; stack; shelf; sigma} = Proof.data p in
+  let Proof.{goals; stack; sigma} = Proof.data p in
+  let shelf = Evd.shelf sigma in
   let given_up = Evd.given_up sigma in
   let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
   let seeds = Proof.V82.top_evars p in
