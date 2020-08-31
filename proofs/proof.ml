@@ -216,7 +216,6 @@ let focus_id cond inf id pr =
         if CList.mem_f Evar.equal ev (Evd.shelf evar_map) then
           (* goal is on the shelf, put it in focus *)
           let proofview = Proofview.unshelve [ev] pr.proofview in
-          let proofview = Proofview.global_unshelve [ev] proofview in
           let pr = { pr with proofview } in
           let (focused_goals, _) = Proofview.proofview pr.proofview in
           let i =
@@ -370,6 +369,7 @@ let run_tactic env tac pr =
     let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
     let to_shelve, sigma = Evd.pop_shelf sigma in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+    Proofview.Unsafe.tclNEWSHELVED (retrieved@to_shelve) <*>
     Proofview.tclUNIT (result,retrieved,to_shelve)
   in
   let { name; poly; proofview } = pr in
@@ -380,12 +380,7 @@ let run_tactic env tac pr =
   let sigma = Proofview.return proofview in
   let to_shelve = undef sigma to_shelve in
   let proofview = Proofview.Unsafe.mark_as_unresolvables proofview to_shelve in
-  let modify = function
-    | [] -> CErrors.anomaly Pp.(str"shelf stack should not be empty")
-    | hd :: q ->
-      (hd@retrieved@to_shelve) :: q
-  in
-  let proofview = Proofview.modify_global_shelf (fun shelf -> modify (List.map (undef sigma) shelf)) proofview in
+  let proofview = Proofview.filter_shelf (Evd.is_undefined sigma) proofview in
   { pr with proofview },(status,info_trace),result
 
 (*** Commands ***)
@@ -396,7 +391,6 @@ let unshelve p =
   let sigma = Proofview.return p.proofview in
   let shelf = Evd.shelf sigma in
   let proofview = Proofview.unshelve shelf p.proofview in
-  let proofview = Proofview.modify_global_shelf (CList.map (fun _ -> [])) proofview in
   { p with proofview }
 
 (*** Compatibility layer with <=v8.2 ***)
@@ -443,10 +437,10 @@ module V82 = struct
     end in
     let { name; poly } = pr in
     let ((), proofview, _, _) = Proofview.apply ~name ~poly env tac pr.proofview in
-    let proofview = Proofview.modify_global_shelf
-      (List.map @@ List.filter begin fun g ->
+    let proofview = Proofview.filter_shelf
+      begin fun g ->
         Evd.is_undefined (Proofview.return proofview) g
-      end) proofview
+      end proofview
     in
     { pr with proofview }
 

@@ -397,9 +397,11 @@ val push_shelf : evar_map -> evar_map
 
 val pop_shelf : evar_map -> Evar.t list * evar_map
 
+val filter_shelf : (Evar.t -> bool) -> evar_map -> evar_map
+
 val give_up : Evar.t -> evar_map -> evar_map
 
-val modify_shelf : evar_map -> (Evar.t list list -> Evar.t list list) -> evar_map
+val shelve : evar_map -> Evar.t list -> evar_map
 
 val unshelve : evar_map -> Evar.t list -> evar_map
 
@@ -407,7 +409,7 @@ val given_up : evar_map -> Evar.Set.t
 
 val shelf : evar_map -> Evar.t list
 
-val shelf_stack : evar_map -> Evar.t list list
+val pr_shelf : evar_map -> Pp.t
 
 (** {5 Sort variables}
 

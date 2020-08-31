@@ -619,11 +619,8 @@ let shelve =
   Comb.get >>= fun initial ->
   Comb.set [] >>
   InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"shelve")) >>
-  let modify = function
-    | [] -> CErrors.anomaly Pp.(str"Shelf stack should not be empty")
-    | hd :: q -> (hd @ CList.map drop_state initial) :: q
-  in
-  Pv.modify (fun pv -> { pv with solution = Evd.modify_shelf pv.solution modify })
+  let initial = CList.map drop_state initial in
+  Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution initial })
 
 let shelve_goals l =
   let open Proof in
@@ -631,11 +628,7 @@ let shelve_goals l =
   let comb = CList.filter (fun g -> not (CList.mem (drop_state g) l)) initial in
   Comb.set comb >>
   InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"shelve_goals")) >>
-  let modify = function
-    | [] -> CErrors.anomaly Pp.(str"Shelf stack should not be empty")
-    | hd :: q -> (hd @ l) :: q
-  in
-  Pv.modify (fun pv -> { pv with solution = Evd.modify_shelf pv.solution modify })
+  Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution l })
 
 (** [depends_on sigma src tgt] checks whether the goal [src] appears
     as an existential variable in the definition of the goal [tgt] in
@@ -702,11 +695,7 @@ let shelve_unifiable_informative =
   Comb.set n >>
   InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"shelve_unifiable")) >>
   let u = CList.map drop_state u in
-  let modify = function
-    | [] -> CErrors.anomaly Pp.(str"Shelf stack should not be empty")
-    | hd :: q -> (hd @ u) :: q
-  in
-  Pv.modify (fun pv -> { pv with solution = Evd.modify_shelf pv.solution modify }) >>
+  Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution u }) >>
   tclUNIT u
 
 let shelve_unifiable =
@@ -726,19 +715,17 @@ let guard_no_unifiable =
       let l = CList.map (fun id -> Names.Name id) l in
       tclUNIT (Some l)
 
-(** [unshelve l p] adds all the goals in [l] at the end of the focused
-    goals of p *)
+(** [unshelve l p] moves all the goals in [l] from the shelf and put them at
+    the end of the focused goals of p, if they are still undefined after [advance] *)
 let unshelve l p =
+  let solution = Evd.unshelve p.solution l in
   let l = List.map with_empty_state l in
   (* advance the goals in case of clear *)
   let l = undefined p.solution l in
-  { p with comb = p.comb@l }
+  { comb = p.comb@l; solution }
 
-let modify_global_shelf f p =
-  { p with solution = Evd.modify_shelf p.solution f }
-
-let global_unshelve l p =
-  { p with solution = Evd.unshelve p.solution l }
+let filter_shelf f pv =
+  { pv with solution = Evd.filter_shelf f pv.solution }
 
 let mark_in_evm ~goal evd evars =
   let evd =
@@ -1017,6 +1004,12 @@ module Unsafe = struct
     Pv.modify begin fun step ->
       let gls = undefined step.solution gls in
       { step with comb = step.comb @ gls }
+    end
+
+  let tclNEWSHELVED gls =
+    Pv.modify begin fun step ->
+      let gls = undefined_evars step.solution gls in
+      { step with solution = Evd.shelve step.solution gls }
     end
 
   let tclSETENV = Env.set

@@ -1203,8 +1203,14 @@ let pop_shelf evd =
   | hd :: tl ->
     hd, { evd with shelf = tl }
 
-let modify_shelf evd f =
-  { evd with shelf = f evd.shelf }
+let filter_shelf f evd =
+  { evd with shelf = List.map (List.filter f) evd.shelf }
+
+let shelve evd l =
+  match evd.shelf with
+  | [] -> anomaly Pp.(str"shelf stack should not be empty")
+  | hd :: tl ->
+    { evd with shelf = (hd@l) :: tl }
 
 let unshelve evd l =
   { evd with shelf = List.map (List.filter (fun ev -> not (CList.mem_f Evar.equal ev l))) evd.shelf }
@@ -1213,7 +1219,10 @@ let given_up evd = evd.given_up
 
 let shelf evd = List.flatten evd.shelf
 
-let shelf_stack evd = evd.shelf
+let pr_shelf evd =
+  let open Pp in
+  if List.is_empty evd.shelf then str"(empty stack)"
+  else prlist_with_sep (fun () -> str"||") (prlist_with_sep spc Evar.print) evd.shelf
 
 (**********************************************************)
 (* Accessing metas *)

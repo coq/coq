@@ -931,12 +931,14 @@ module Search = struct
            top_sort evm goals
          else Evar.Set.elements goals
        in
-       let tac = tac <*> Proofview.Unsafe.tclGETGOALS >>=
+       let goalsl = List.map Proofview_monad.with_empty_state goalsl in
+       let tac =
+         Proofview.Unsafe.tclNEWGOALS goalsl <*>
+         tac <*> Proofview.Unsafe.tclGETGOALS >>=
          fun stuck -> Proofview.shelve_goals (List.map Proofview_monad.drop_state stuck) in
        let evm = Evd.set_typeclass_evars evm Evar.Set.empty in
        let evm = Evd.push_future_goals evm in
        let _, pv = Proofview.init evm [] in
-       let pv = Proofview.unshelve goalsl pv in
        try
          (* Instance may try to call this before a proof is set up!
             Thus, give_me_the_proof will fail. Beware! *)
@@ -949,8 +951,9 @@ module Search = struct
          in
          let finish pv' =
            let evm' = Proofview.return pv' in
+           let shelf = Evd.shelf evm' in
              assert(Evd.fold_undefined (fun ev _ acc ->
-                     let okev = Evd.mem evm ev || List.mem ev (Evd.shelf evm') in
+                     let okev = Evd.mem evm ev || List.mem ev shelf in
                      if not okev then
                        Feedback.msg_debug
                          (str "leaking evar " ++ int (Evar.repr ev) ++
