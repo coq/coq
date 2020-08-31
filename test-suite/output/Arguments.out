@@ -43,7 +43,7 @@ forall {D1 C1 : Type},
 (D1 -> C1) -> forall D2 C2 : Type, (D2 -> C2) -> D1 * D2 -> C1 * C2
 
 pf is not universe polymorphic
-Arguments pf {D1}%foo_scope {C1}%type_scope _ [D2 C2] : simpl never
+Arguments pf {D1}%foo_scope {C1}%type_scope _ [D2 C2] _ _ : simpl never
 The reduction tactics never unfold pf
 pf is transparent
 Expands to: Constant Arguments.pf

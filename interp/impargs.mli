@@ -117,7 +117,7 @@ val maybe_declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
 (** [set_implicits local ref l]
    Manual declaration of implicit arguments.
   `l` is a list of possible sequences of implicit statuses. *)
-val set_implicits : bool -> GlobRef.t -> Glob_term.binding_kind list list -> unit
+val set_implicits : bool -> GlobRef.t -> (Name.t * Glob_term.binding_kind) list list -> unit
 
 val implicits_of_global : GlobRef.t -> implicits_list list
 

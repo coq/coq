@@ -5,24 +5,24 @@ Record PWrap (A : Type@{u}) : Type@{u} := pwrap { punwrap : A }
 
 PWrap has primitive projections with eta conversion.
 Arguments PWrap _%type_scope
-Arguments pwrap _%type_scope
+Arguments pwrap _%type_scope _
 punwrap@{u} = 
 fun (A : Type@{u}) (p : PWrap@{u} A) => punwrap _ p
      : forall A : Type@{u}, PWrap@{u} A -> A
 (* u |=  *)
 
-Arguments punwrap _%type_scope
+Arguments punwrap _%type_scope _
 Record RWrap (A : Type@{u}) : Type@{u} := rwrap { runwrap : A }
 (* u |=  *)
 
 Arguments RWrap _%type_scope
-Arguments rwrap _%type_scope
+Arguments rwrap _%type_scope _
 runwrap@{u} = 
 fun (A : Type@{u}) (r : RWrap@{u} A) => let (runwrap) := r in runwrap
      : forall A : Type@{u}, RWrap@{u} A -> A
 (* u |=  *)
 
-Arguments runwrap _%type_scope
+Arguments runwrap _%type_scope _
 Wrap@{u} = fun A : Type@{u} => A
      : Type@{u} -> Type@{u}
 (* u |=  *)
@@ -87,12 +87,12 @@ Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
 
 PWrap has primitive projections with eta conversion.
 Arguments PWrap _%type_scope
-Arguments pwrap _%type_scope
+Arguments pwrap _%type_scope _
 punwrap@{K} : forall A : Type@{K}, PWrap@{K} A -> A
 (* K |=  *)
 
 punwrap is universe polymorphic
-Arguments punwrap _%type_scope
+Arguments punwrap _%type_scope _
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
 The command has indeed failed with message:

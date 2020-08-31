@@ -75,12 +75,12 @@ let print_ref reduce ref udecl =
   let inst = Univ.make_abstract_instance univs in
   let bl = Printer.universe_binders_with_opt_names (Environ.universes_of_global env ref) udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
-  let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
-      let ctx,ccl = Reductionops.splay_prod_assum env sigma typ
-      in EConstr.it_mkProd_or_LetIn ccl ctx
+      let ctx,ccl = Reductionops.splay_prod_assum env sigma (EConstr.of_constr typ)
+      in EConstr.to_constr sigma (EConstr.it_mkProd_or_LetIn ccl ctx)
     else typ in
+  let typ = Arguments_renaming.rename_type typ ref in
   let impargs = select_stronger_impargs (implicits_of_global ref) in
   let impargs = List.map binding_kind_of_status impargs in
   let variance = let open GlobRef in match ref with
@@ -95,7 +95,7 @@ let print_ref reduce ref udecl =
     else mt ()
   in
   let priv = None in (* We deliberately don't print private univs in About. *)
-  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma ~impargs typ ++
+  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_ltype_env env sigma ~impargs typ ++
          Printer.pr_abstract_universe_ctx sigma ?variance univs ?priv)
 
 (********************************)
@@ -261,6 +261,10 @@ let implicit_kind_of_status = function
   | None -> Anonymous, Glob_term.Explicit
   | Some (pos,_,(maximal,_)) -> implicit_name_of_pos pos, if maximal then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
+let extra_implicit_kind_of_status imp =
+  let _,imp = implicit_kind_of_status imp in
+  (Anonymous, imp)
+
 let dummy = {
   Vernacexpr.implicit_status = Glob_term.Explicit;
   name = Anonymous;
@@ -268,8 +272,10 @@ let dummy = {
   notation_scope = None;
 }
 
-let is_dummy {Vernacexpr.implicit_status; name; recarg_like; notation_scope} =
-  name = Anonymous && not recarg_like && notation_scope = None && implicit_status = Glob_term.Explicit
+let is_dummy = function
+  | Vernacexpr.(RealArg {implicit_status; name; recarg_like; notation_scope}) ->
+    name = Anonymous && not recarg_like && notation_scope = None && implicit_status = Glob_term.Explicit
+  | _ -> false
 
 let rec main_implicits i renames recargs scopes impls =
   if renames = [] && recargs = [] && scopes = [] && impls = [] then []
@@ -292,9 +298,7 @@ let rec main_implicits i renames recargs scopes impls =
     let tl = function [] -> [] | _::tl -> tl in
     (* recargs is special -> tl handled above *)
     let rest = main_implicits (i+1) (tl renames) recargs (tl scopes) (tl impls) in
-    if is_dummy status && rest = []
-    then [] (* we may have a trail of dummies due to eg "clear scopes" *)
-    else status :: rest
+    status :: rest
 
 let rec insert_fake_args volatile bidi impls =
   let open Vernacexpr in
@@ -320,11 +324,7 @@ let print_arguments ref =
     | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
     | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
   in
-  let flags, renames = match Arguments_renaming.arguments_names ref with
-    | exception Not_found -> flags, []
-    | [] -> flags, []
-    | renames -> `Rename::flags, renames
-  in
+  let renames = try Arguments_renaming.arguments_names ref with Not_found -> [] in
   let scopes = Notation.find_arguments_scope ref in
   let flags = if needs_extra_scopes ref scopes then `ExtraScopes::flags else flags in
   let impls = Impargs.extract_impargs_data (Impargs.implicits_of_global ref) in
@@ -333,15 +333,17 @@ let print_arguments ref =
     | [] -> assert false
   in
   let impls = main_implicits 0 renames recargs scopes impls in
-  let moreimpls = List.map (fun (_,i) -> List.map implicit_kind_of_status i) moreimpls in
+  let moreimpls = List.map (fun (_,i) -> List.map extra_implicit_kind_of_status i) moreimpls in
   let bidi = Pretyping.get_bidirectionality_hint ref in
   let impls = insert_fake_args nargs_for_red bidi impls in
-  if impls = [] && moreimpls = [] && flags = [] then []
+  if List.for_all is_dummy impls && moreimpls = [] && flags = [] then []
   else
     let open Constrexpr in
     let open Vernacexpr in
     [Ppvernac.pr_vernac_expr
-       (VernacArguments (CAst.make (AN qid), impls, moreimpls, flags))]
+       (VernacArguments (CAst.make (AN qid), impls, moreimpls, flags)) ++
+     (if renames = [] then mt () else
+      fnl () ++ str "  (where some original arguments have been renamed)")]
 
 let print_name_infos ref =
   let type_info_for_implicit =

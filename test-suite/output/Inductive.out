@@ -7,7 +7,7 @@ l : list' A
 Unable to unify "list' (A * A)%type" with "list' A".
 Inductive foo (A : Type) (x : A) (y : A := x) : Prop :=  Foo : foo A x
 
-Arguments foo _%type_scope
-Arguments Foo _%type_scope
+Arguments foo _%type_scope _
+Arguments Foo _%type_scope _
 myprod unit bool
      : Set

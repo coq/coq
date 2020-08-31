@@ -667,10 +667,12 @@ let explicit_kind i = function
 
 let compute_implicit_statuses autoimps l =
   let rec aux i = function
-    | _ :: autoimps, Explicit :: manualimps -> None :: aux (i+1) (autoimps, manualimps)
-    | na :: autoimps, MaxImplicit :: manualimps ->
+    | _ :: autoimps, (_, Explicit) :: manualimps -> None :: aux (i+1) (autoimps, manualimps)
+    | na :: autoimps, (Anonymous, MaxImplicit) :: manualimps
+    | _ :: autoimps, (na, MaxImplicit) :: manualimps ->
        Some (explicit_kind i na, Manual, (true, true)) :: aux (i+1) (autoimps, manualimps)
-    | na :: autoimps, NonMaxImplicit :: manualimps ->
+    | na :: autoimps, (Anonymous, NonMaxImplicit) :: manualimps
+    | _ :: autoimps, (na, NonMaxImplicit) :: manualimps ->
        let imps' = aux (i+1) (autoimps, manualimps) in
        let max = set_maximality Error na i imps' false in
        Some (explicit_kind i na, Manual, (max, true)) :: imps'
@@ -693,7 +695,7 @@ let set_implicits local ref l =
        check_rigidity (is_rigid env sigma t);
        (* Sort by number of implicits, decreasing *)
        let is_implicit = function
-         | Explicit -> false
+         | _, Explicit -> false
          | _ -> true in
        let l = List.map (fun imps -> (imps,List.count is_implicit imps)) l in
        let l = List.sort (fun (_,n1) (_,n2) -> n2 - n1) l in
