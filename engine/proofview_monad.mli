@@ -83,7 +83,6 @@ val map_goal_with_state : (goal -> goal) -> goal_with_state -> goal_with_state
 type proofview = {
   solution : Evd.evar_map;
   comb : goal_with_state list;
-  shelf : goal list;
 }
 
 (** {6 Instantiation of the logic monad} *)
@@ -136,10 +135,6 @@ module Env : State with type t := Environ.env
 
 (** Lens to the tactic status ([true] if safe, [false] if unsafe) *)
 module Status : Writer with type t := bool
-
-(** Lens to the list of goals which have been shelved during the
-    execution of the tactic. *)
-module Shelf : State with type t = goal list
 
 (** Lens and utilities pertaining to the info trace *)
 module InfoL : sig

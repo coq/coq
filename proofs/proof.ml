@@ -24,8 +24,6 @@
      the focus kind is actually stored inside the condition). To unfocus, one
      needs to know the focus kind, and the condition (for instance "no condition" or
      the proof under focused must be complete) must be met.
-   - Shelf: A list of goals which have been put aside during the proof. They can be
-     retrieved with the [Unshelve] command, or solved by side effects
    - Given up goals: as long as there is a given up goal, the proof is not completed.
      Given up goals cannot be retrieved, the user must go back where the tactic
      [give_up] was run and solve the goal there.
@@ -113,8 +111,6 @@ type t =
   (** History of the focusings, provides information on how to unfocus
      the proof and the extra information stored while focusing.  The
      list is empty when the proof is fully unfocused. *)
-  ; shelf : Goal.goal list
-  (** List of goals that have been shelved. *)
   ; name : Names.Id.t
   (** the name of the theorem whose proof is being constructed *)
   ; poly : bool
@@ -135,8 +131,7 @@ let proof p =
   let stack =
     map_minus_one (fun (_,_,c) -> Proofview.focus_context c) p.focus_stack
   in
-  let shelf = p.shelf in
-  (goals,stack,shelf,sigma)
+  (goals,stack,sigma)
 
 let rec unroll_focus pv = function
   | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
@@ -152,7 +147,9 @@ let is_done p =
 (* spiwack: for compatibility with <= 8.2 proof engine *)
 let has_unresolved_evar p =
   Proofview.V82.has_unresolved_evar p.proofview
-let has_shelved_goals p = not (CList.is_empty (p.shelf))
+let has_shelved_goals p =
+  let (_goals,sigma) = Proofview.proofview p.proofview in
+  Evd.has_shelved sigma
 let has_given_up_goals p =
   let (_goals,sigma) = Proofview.proofview p.proofview in
   Evd.has_given_up sigma
@@ -216,13 +213,11 @@ let focus_id cond inf id pr =
         (* goal is already under focus *)
         _focus cond (Obj.repr inf) i i pr
      | None ->
-        if CList.mem_f Evar.equal ev pr.shelf then
+        if CList.mem_f Evar.equal ev (Evd.shelf evar_map) then
           (* goal is on the shelf, put it in focus *)
           let proofview = Proofview.unshelve [ev] pr.proofview in
-          let shelf =
-            CList.filter (fun ev' -> Evar.equal ev ev' |> not) pr.shelf
-          in
-          let pr = { pr with proofview; shelf } in
+          let proofview = Proofview.global_unshelve [ev] proofview in
+          let pr = { pr with proofview } in
           let (focused_goals, _) = Proofview.proofview pr.proofview in
           let i =
             (* Now we know that this will succeed *)
@@ -290,7 +285,6 @@ let start ~name ~poly sigma goals =
     { proofview
     ; entry
     ; focus_stack = []
-    ; shelf = []
     ; name
     ; poly
   } in
@@ -302,7 +296,6 @@ let dependent_start ~name ~poly goals =
     { proofview
     ; entry
     ; focus_stack = []
-    ; shelf = []
     ; name
     ; poly
   } in
@@ -365,34 +358,46 @@ let run_tactic env tac pr =
   let open Proofview.Notations in
   let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
   let tac =
+    Proofview.tclEVARMAP >>= fun sigma ->
+    Proofview.Unsafe.tclEVARS (Evd.push_shelf sigma) >>= fun () ->
     tac >>= fun result ->
     Proofview.tclEVARMAP >>= fun sigma ->
     (* Already solved goals are not to be counted as shelved. Nor are
       they to be marked as unresolvable. *)
     let retrieved, sigma = Evd.pop_future_goals sigma in
     let retrieved = Evd.FutureGoals.filter (Evd.is_undefined sigma) retrieved in
-    let retrieved = List.rev_append retrieved.Evd.FutureGoals.shelf (List.rev retrieved.Evd.FutureGoals.comb) in
+    let retrieved = List.rev retrieved.Evd.FutureGoals.comb in
     let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
+    let to_shelve, sigma = Evd.pop_shelf sigma in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-    Proofview.tclUNIT (result,retrieved)
+    Proofview.tclUNIT (result,retrieved,to_shelve)
   in
   let { name; poly; proofview } = pr in
   let proofview = Proofview.Unsafe.push_future_goals proofview in
-  let ((result,retrieved),proofview,(status,to_shelve),info_trace) =
+  let ((result,retrieved,to_shelve),proofview,status,info_trace) =
     Proofview.apply ~name ~poly env tac proofview
   in
   let sigma = Proofview.return proofview in
   let to_shelve = undef sigma to_shelve in
-  let shelf = (undef sigma pr.shelf)@retrieved@to_shelve in
   let proofview = Proofview.Unsafe.mark_as_unresolvables proofview to_shelve in
-  { pr with proofview ; shelf },(status,info_trace),result
+  let modify = function
+    | [] -> CErrors.anomaly Pp.(str"shelf stack should not be empty")
+    | hd :: q ->
+      (hd@retrieved@to_shelve) :: q
+  in
+  let proofview = Proofview.modify_global_shelf (fun shelf -> modify (List.map (undef sigma) shelf)) proofview in
+  { pr with proofview },(status,info_trace),result
 
 (*** Commands ***)
 
 (* Remove all the goals from the shelf and adds them at the end of the
    focused goals. *)
 let unshelve p =
-  { p with proofview = Proofview.unshelve (p.shelf) (p.proofview) ; shelf = [] }
+  let sigma = Proofview.return p.proofview in
+  let shelf = Evd.shelf sigma in
+  let proofview = Proofview.unshelve shelf p.proofview in
+  let proofview = Proofview.modify_global_shelf (CList.map (fun _ -> [])) proofview in
+  { p with proofview }
 
 (*** Compatibility layer with <=v8.2 ***)
 module V82 = struct
@@ -438,22 +443,22 @@ module V82 = struct
     end in
     let { name; poly } = pr in
     let ((), proofview, _, _) = Proofview.apply ~name ~poly env tac pr.proofview in
-    let shelf =
-      List.filter begin fun g ->
+    let proofview = Proofview.modify_global_shelf
+      (List.map @@ List.filter begin fun g ->
         Evd.is_undefined (Proofview.return proofview) g
-      end pr.shelf
+      end) proofview
     in
-    { pr with proofview ; shelf }
+    { pr with proofview }
 
 end
 
 let all_goals p =
   let add gs set =
     List.fold_left (fun s g -> Goal.Set.add g s) set gs in
-  let (goals,stack,shelf,sigma) = proof p in
+  let (goals,stack,sigma) = proof p in
     let set = add goals Goal.Set.empty in
     let set = List.fold_left (fun s gs -> let (g1, g2) = gs in add g1 (add g2 set)) set stack in
-    let set = add shelf set in
+    let set = add (Evd.shelf sigma) set in
     let set = Goal.Set.union (Evd.given_up sigma) set in
     let { Evd.it = bgoals ; sigma = bsigma } = V82.background_subgoals p in
     add bgoals set
@@ -467,15 +472,13 @@ type data =
   (** Entry for the proofview *)
   ; stack : (Evar.t list * Evar.t list) list
   (** A representation of the focus stack *)
-  ; shelf : Evar.t list
-  (** A representation of the shelf  *)
   ; name : Names.Id.t
   (** The name of the theorem whose proof is being constructed *)
   ; poly : bool
   (** Locality, polymorphism, and "kind" [Coercion, Definition, etc...] *)
   }
 
-let data { proofview; focus_stack; entry; shelf; name; poly } =
+let data { proofview; focus_stack; entry; name; poly } =
   let goals, sigma = Proofview.proofview proofview in
   (* spiwack: beware, the bottom of the stack is used by [Proof]
      internally, and should not be exposed. *)
@@ -486,10 +489,10 @@ let data { proofview; focus_stack; entry; shelf; name; poly } =
   in
   let stack =
     map_minus_one (fun (_,_,c) -> Proofview.focus_context c) focus_stack in
-  { sigma; goals; entry; stack; shelf; name; poly }
+  { sigma; goals; entry; stack; name; poly }
 
 let pr_proof p =
-  let { goals=fg_goals; stack=bg_goals; shelf; sigma } = data p in
+  let { goals=fg_goals; stack=bg_goals; sigma } = data p in
   Pp.(
     let pr_goal_list = prlist_with_sep spc Goal.pr_goal in
     let rec aux acc = function
@@ -499,7 +502,7 @@ let pr_proof p =
               pr_goal_list after) stack in
     str "[" ++ str "focus structure: " ++
                aux (pr_goal_list fg_goals) bg_goals ++ str ";" ++ spc () ++
-    str "shelved: " ++ pr_goal_list shelf ++ str ";" ++ spc () ++
+    str "shelved: " ++ pr_goal_list (Evd.shelf sigma) ++ str ";" ++ spc () ++
     str "given up: " ++ pr_goal_list (Evar.Set.elements @@ Evd.given_up sigma) ++
     str "]"
   )
@@ -580,7 +583,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
       Exninfo.iraise (e, info)
   in
   (* Plug back the retrieved sigma *)
-  let { goals; stack; shelf; sigma; entry } = data prf in
+  let { goals; stack; sigma; entry } = data prf in
   assert (stack = []);
   let ans = match Proofview.initial_goals entry with
   | [c, _] -> c
@@ -597,9 +600,6 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   (* Push remaining goals as future_goals which is the only way we
      have to inform the caller that there are goals to collect while
      not being encapsulated in the monad *)
-  (* Goals produced by tactic "shelve" *)
-  let sigma = List.fold_right (Evd.declare_future_goal ~shelve:true) shelf sigma in
-  (* Other goals *)
   let sigma = List.fold_right Evd.declare_future_goal goals sigma in
   (* Get rid of the fresh side-effects by internalizing them in the term
      itself. Note that this is unsound, because the tactic may have solved

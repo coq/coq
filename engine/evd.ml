@@ -468,7 +468,6 @@ module FutureGoals : sig
 
   type t = private {
     comb : Evar.t list;
-    shelf : Evar.t list;
     principal : Evar.t option; (** if [Some e], [e] must be
                                    contained in
                                    [comb]. The evar
@@ -492,12 +491,10 @@ module FutureGoals : sig
   val push : stack -> stack
   val pop : stack -> t * stack
 
-  val add : shelve:bool -> principal:bool -> Evar.t -> stack -> stack
+  val add : principal:bool -> Evar.t -> stack -> stack
   val remove : Evar.t -> stack -> stack
 
   val fold : ('a -> Evar.t -> 'a) -> 'a -> stack -> 'a
-
-  val put_shelf : Evar.t list -> stack -> stack
 
   val pr_stack : stack -> Pp.t
 
@@ -505,7 +502,6 @@ end = struct
 
   type t = {
     comb : Evar.t list;
-    shelf : Evar.t list;
     principal : Evar.t option; (** if [Some e], [e] must be
                                    contained in
                                    [comb]. The evar
@@ -523,12 +519,9 @@ end = struct
   | hd :: tl ->
     f hd :: tl
 
-  let add ~shelve ~principal evk stack =
+  let add ~principal evk stack =
     let add fgl =
-      let (comb,shelf) =
-        if shelve then (fgl.comb,evk::fgl.shelf)
-        else (evk::fgl.comb,fgl.shelf)
-      in
+      let comb = evk :: fgl.comb in
       let principal =
         if principal then
           match fgl.principal with
@@ -536,7 +529,7 @@ end = struct
           | None -> Some evk
         else fgl.principal
       in
-      { comb; shelf; principal }
+      { comb; principal }
     in
     set add stack
 
@@ -545,15 +538,13 @@ end = struct
       let filter e' = not (Evar.equal e e') in
       let principal = Option.filter filter fgl.principal in
       let comb = List.filter filter fgl.comb in
-      let shelf = List.filter filter fgl.shelf in
-      { principal; comb; shelf }
+      { principal; comb }
     in
     List.map remove stack
 
   let empty = {
     principal = None;
     comb = [];
-    shelf = [];
   }
 
   let empty_stack = [empty]
@@ -568,27 +559,17 @@ end = struct
 
   let fold f acc stack =
     let future_goals = List.hd stack in
-    let future_goals = future_goals.comb @ future_goals.shelf in
-    List.fold_left f acc future_goals
+    List.fold_left f acc future_goals.comb
 
   let filter f fgl =
     let comb = List.filter f fgl.comb in
-    let shelf = List.filter f fgl.shelf in
     let principal = Option.filter f fgl.principal in
-    { comb; shelf; principal }
+    { comb; principal }
 
   let map_filter f fgl =
     let comb = List.map_filter f fgl.comb in
-    let shelf = List.map_filter f fgl.shelf in
     let principal = Option.bind fgl.principal f in
-    { comb; shelf; principal }
-
-  let put_shelf shelved stack =
-    match stack with
-    | [] -> anomaly Pp.(str"future_goals stack should not be empty")
-    | hd :: tl ->
-      let shelf = shelved @ hd.shelf in
-      { hd with shelf } :: tl
+    { comb; principal }
 
   let pr_stack stack =
     let open Pp in
@@ -600,7 +581,6 @@ end = struct
     else prlist_with_sep (fun () -> str"||") pr_future_goals stack
 
 end
-
 
 type evar_map = {
   (* Existential variables *)
@@ -620,6 +600,7 @@ type evar_map = {
   future_goals : FutureGoals.stack; (** list of newly created evars, to be
                                         eventually turned into goals if not solved.*)
   given_up : Evar.Set.t;
+  shelf : Evar.t list list;
   extras : Store.t;
 }
 
@@ -848,6 +829,7 @@ let empty = {
   evar_names = EvNames.empty; (* id<->key for undefined evars *)
   future_goals = FutureGoals.empty_stack;
   given_up = Evar.Set.empty;
+  shelf = [[]];
   extras = Store.empty;
 }
 
@@ -858,6 +840,8 @@ let from_ctx ctx = { empty with universes = ctx }
 let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
 
 let has_given_up evd = not (Evar.Set.is_empty evd.given_up)
+
+let has_shelved evd = not (List.for_all List.is_empty evd.shelf)
 
 let evars_reset_evd ?(with_conv_pbs=false) ?(with_univs=true) evd d =
   let conv_pbs = if with_conv_pbs then evd.conv_pbs else d.conv_pbs in
@@ -1183,12 +1167,12 @@ let drop_side_effects evd =
 let eval_side_effects evd = evd.effects
 
 (* Future goals *)
-let declare_future_goal ?(shelve=false) evk evd =
-  let future_goals = FutureGoals.add ~shelve ~principal:false evk evd.future_goals in
+let declare_future_goal evk evd =
+  let future_goals = FutureGoals.add ~principal:false evk evd.future_goals in
   { evd with future_goals }
 
-let declare_principal_goal ?(shelve=false) evk evd =
-  let future_goals = FutureGoals.add ~shelve ~principal:true evk evd.future_goals in
+let declare_principal_goal evk evd =
+  let future_goals = FutureGoals.add ~principal:true evk evd.future_goals in
   { evd with future_goals }
 
 let push_future_goals evd =
@@ -1201,10 +1185,6 @@ let pop_future_goals evd =
 let fold_future_goals f sigma =
   FutureGoals.fold f sigma sigma.future_goals
 
-let shelve_on_future_goals shelved evd =
-  let future_goals = FutureGoals.put_shelf shelved evd.future_goals in
-  { evd with future_goals }
-
 let remove_future_goal evd evk =
   { evd with future_goals = FutureGoals.remove evk evd.future_goals }
 
@@ -1214,7 +1194,26 @@ let pr_future_goals_stack evd =
 let give_up ev evd =
   { evd with given_up = Evar.Set.add ev evd.given_up }
 
+let push_shelf evd =
+  { evd with shelf = [] :: evd.shelf }
+
+let pop_shelf evd =
+  match evd.shelf with
+  | [] -> anomaly Pp.(str"shelf stack should not be empty")
+  | hd :: tl ->
+    hd, { evd with shelf = tl }
+
+let modify_shelf evd f =
+  { evd with shelf = f evd.shelf }
+
+let unshelve evd l =
+  { evd with shelf = List.map (List.filter (fun ev -> not (CList.mem_f Evar.equal ev l))) evd.shelf }
+
 let given_up evd = evd.given_up
+
+let shelf evd = List.flatten evd.shelf
+
+let shelf_stack evd = evd.shelf
 
 (**********************************************************)
 (* Accessing metas *)
@@ -1233,6 +1232,7 @@ let set_metas evd metas = {
   evar_names = evd.evar_names;
   future_goals = evd.future_goals;
   given_up = evd.given_up;
+  shelf = evd.shelf;
   extras = evd.extras;
 }
 

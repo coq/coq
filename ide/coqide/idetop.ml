@@ -220,11 +220,11 @@ let process_goal_diffs diff_goal_map oldp nsigma ng =
   let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
   { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp; Interface.goal_id = Goal.uid ng }
 
-let export_pre_goals Proof.{ sigma; goals; stack; shelf } process =
+let export_pre_goals Proof.{ sigma; goals; stack } process =
   let process = List.map (process sigma) in
   { Interface.fg_goals       = process goals
   ; Interface.bg_goals       = List.(map (fun (lg,rg) -> process lg, process rg)) stack
-  ; Interface.shelved_goals  = process shelf
+  ; Interface.shelved_goals  = process @@ Evd.shelf sigma
   ; Interface.given_up_goals = process (Evar.Set.elements @@ Evd.given_up sigma)
   }
 

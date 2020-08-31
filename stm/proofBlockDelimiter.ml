@@ -51,8 +51,8 @@ let is_focused_goal_simple ~doc id =
   | `Valid (Some { Vernacstate.lemmas }) ->
     Option.cata (Vernacstate.LemmaStack.with_top ~f:(fun proof ->
         let proof = Declare.Proof.get proof in
-        let Proof.{ goals=focused; stack=r1; shelf=r2; sigma } = Proof.data proof in
-        let rest = List.(flatten (map (fun (x,y) -> x @ y) r1)) @ r2 @ (Evar.Set.elements @@ Evd.given_up sigma) in
+        let Proof.{ goals=focused; stack=r1; sigma } = Proof.data proof in
+        let rest = List.(flatten (map (fun (x,y) -> x @ y) r1)) @ (Evd.shelf sigma) @ (Evar.Set.elements @@ Evd.given_up sigma) in
         if List.for_all (fun x -> simple_goal sigma x rest) focused
         then `Simple focused
         else `Not)) `Not lemmas

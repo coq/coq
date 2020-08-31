@@ -92,7 +92,9 @@ let generic_refine ~typecheck f gl =
   in
   (* Mark goals *)
   let sigma = Proofview.Unsafe.mark_as_goals sigma future_goals.Evd.FutureGoals.comb in
+  (* FIXME
   let sigma = Proofview.Unsafe.mark_unresolvables sigma future_goals.Evd.FutureGoals.shelf in
+*)
   let comb = CList.rev_map (fun x -> Proofview.goal_with_state x state) future_goals.Evd.FutureGoals.comb in
   let trace env sigma = Pp.(hov 2 (str"simple refine"++spc()++
                                    Termops.Internal.print_constr_env env sigma c)) in
@@ -100,7 +102,6 @@ let generic_refine ~typecheck f gl =
   Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
-  Proofview.Unsafe.tclPUTSHELF @@ List.rev future_goals.Evd.FutureGoals.shelf <*>
   Proofview.tclUNIT v
   end
 
