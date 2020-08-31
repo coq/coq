@@ -73,9 +73,10 @@ void init_arity () {
     arity[CHECKNEXTUPFLOAT]=arity[CHECKNEXTDOWNFLOAT]=1;
   /* instruction with two operands */
   arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=
-  arity[ISARRAY_CAML_CALL1]=arity[ISINT_CAML_CALL2]=
-  arity[ISARRAY_INT_CAML_CALL2]=arity[ISARRAY_INT_CAML_CALL3]=
-  arity[PROJ]=2;
+    arity[CHECKCAMLCALL1]=arity[CHECKCAMLCALL2_1]=
+    arity[CHECKCAMLCALL2]=arity[CHECKCAMLCALL3_1]=
+    arity[PROJ]=
+    2;
   /* instruction with four operands */
   arity[MAKESWITCHBLOCK]=4;
   /* instruction with arbitrary operands */
