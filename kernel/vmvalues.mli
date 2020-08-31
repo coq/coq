@@ -204,5 +204,4 @@ val parray_get : values
 val parray_get_default : values
 val parray_set : values
 val parray_copy : values
-val parray_reroot : values
 val parray_length : values

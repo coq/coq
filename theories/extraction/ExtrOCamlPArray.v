@@ -23,4 +23,3 @@ Extract Constant PArray.default => "Parray.default".
 Extract Constant PArray.set => "Parray.set".
 Extract Constant PArray.length => "Parray.length".
 Extract Constant PArray.copy => "Parray.copy".
-Extract Constant PArray.reroot => "Parray.reroot".

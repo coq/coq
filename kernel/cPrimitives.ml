@@ -58,7 +58,6 @@ type t =
   | Arraydefault
   | Arrayset
   | Arraycopy
-  | Arrayreroot
   | Arraylength
 
 let parse = function
@@ -110,7 +109,6 @@ let parse = function
   | "array_set" -> Arrayset
   | "array_length" -> Arraylength
   | "array_copy" -> Arraycopy
-  | "array_reroot" -> Arrayreroot
   | _ -> raise Not_found
 
 let equal (p1 : t) (p2 : t) =
@@ -164,8 +162,7 @@ let hash = function
   | Arraydefault -> 45
   | Arrayset -> 46
   | Arraycopy -> 47
-  | Arrayreroot -> 48
-  | Arraylength -> 49
+  | Arraylength -> 48
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -216,7 +213,6 @@ let to_string = function
   | Arraydefault -> "arraydefault"
   | Arrayset -> "arrayset"
   | Arraycopy -> "arraycopy"
-  | Arrayreroot -> "arrayreroot"
   | Arraylength -> "arraylength"
 
 type const =
@@ -302,7 +298,6 @@ let types =
   | Arraydefault -> [array_ty; PITT_param 1]
   | Arrayset -> [array_ty; int_ty; PITT_param 1; array_ty]
   | Arraycopy -> [array_ty; array_ty]
-  | Arrayreroot -> [array_ty; array_ty]
   | Arraylength -> [array_ty; int_ty]
 
 let one_param =
@@ -360,7 +355,6 @@ let params = function
   | Arraydefault
   | Arrayset
   | Arraycopy
-  | Arrayreroot
   | Arraylength -> one_param
 
 let nparams x = List.length (params x)
@@ -414,7 +408,6 @@ let univs = function
   | Arraydefault
   | Arrayset
   | Arraycopy
-  | Arrayreroot
   | Arraylength -> one_univ
 
 type arg_kind =

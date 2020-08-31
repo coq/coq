@@ -56,7 +56,6 @@ type t =
   | Arraydefault
   | Arrayset
   | Arraycopy
-  | Arrayreroot
   | Arraylength
 
 (** Can raise [Not_found].

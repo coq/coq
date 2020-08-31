@@ -19,7 +19,6 @@ val default : 'a t -> 'a
 val make    : Uint63.t -> 'a -> 'a t
 val init    : Uint63.t -> (int -> 'a) -> 'a -> 'a t
 val copy    : 'a t -> 'a t
-val reroot  : 'a t -> 'a t
 
 val map : ('a -> 'b) -> 'a t -> 'b t
 

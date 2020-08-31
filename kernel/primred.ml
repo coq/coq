@@ -365,11 +365,6 @@ struct
       let t = get_parray evd args 1 in
       let t' = Parray.copy t in
       E.mkArray env u t' ty
-    | Arrayreroot ->
-      let ar = E.get args 1 in
-      let t = E.get_parray evd ar in
-      let _ = Parray.reroot t in
-      ar
     | Arraylength ->
       let t = get_parray evd args 1 in
       E.mkInt env (Parray.length t)

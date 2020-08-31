@@ -700,5 +700,4 @@ let parray_get = Obj.magic Parray.get
 let parray_get_default = Obj.magic Parray.default
 let parray_set = Obj.magic Parray.set
 let parray_copy = Obj.magic Parray.copy
-let parray_reroot = Obj.magic Parray.reroot
 let parray_length = Obj.magic Parray.length
