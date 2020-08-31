@@ -251,11 +251,11 @@ let check_prim_op = function
   | Float64ldshiftexp -> opCHECKLDSHIFTEXP
   | Float64next_up    -> opCHECKNEXTUPFLOAT
   | Float64next_down  -> opCHECKNEXTDOWNFLOAT
-  | Arraymake -> opISINT_CAML_CALL2
-  | Arrayget -> opISARRAY_INT_CAML_CALL2
-  | Arrayset -> opISARRAY_INT_CAML_CALL3
+  | Arraymake -> opCHECKCAMLCALL2_1
+  | Arrayget -> opCHECKCAMLCALL2
+  | Arrayset -> opCHECKCAMLCALL3_1
   | Arraydefault | Arraycopy | Arraylength ->
-      opISARRAY_CAML_CALL1
+      opCHECKCAMLCALL1
 
 let emit_instr env = function
   | Klabel lbl -> define_label env lbl

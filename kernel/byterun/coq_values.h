@@ -30,9 +30,6 @@
 #define Is_double(v) (Tag_val(v) == Double_tag)
 #define Is_tailrec_switch(v) (Field(v,1) == Val_true)
 
-/* coq array */
-#define Is_coq_array(v) (Is_block(v) && (Wosize_val(v) == 1))
-
 /* coq values for primitive operations */
 #define coq_tag_C1 2
 #define coq_tag_C0 1

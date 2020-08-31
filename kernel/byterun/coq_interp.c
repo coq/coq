@@ -1754,11 +1754,11 @@ value coq_interprete
         Next;
       }
 
-
-      Instruct(ISINT_CAML_CALL2) {
+      Instruct(CHECKCAMLCALL2_1) {
+        // arity-2 callback, the last argument can be an accumulator
         value arg;
-        print_instr("ISINT_CAML_CALL2");
-        if (Is_uint63(accu)) {
+        print_instr("CHECKCAMLCALL2_1");
+        if (!Is_accu(accu)) {
           pc++;
           print_int(*pc);
           arg = sp[0];
@@ -1771,47 +1771,50 @@ value coq_interprete
         Next;
       }
 
-      Instruct(ISARRAY_CAML_CALL1) {
-        print_instr("ISARRAY_CAML_CALL1");
-              if (Is_coq_array(accu)) {
-                pc++;
-                Setup_for_caml_call;
-                print_int(*pc);
-                accu = caml_callback(Field(coq_global_data, *pc),accu);
-                Restore_after_caml_call;
-                pc++;
-              }
-              else pc += *pc;
-              Next;
+      Instruct(CHECKCAMLCALL1) {
+        // arity-1 callback, no argument can be an accumulator
+        print_instr("CHECKCAMLCALL1");
+        if (!Is_accu(accu)) {
+          pc++;
+          Setup_for_caml_call;
+          print_int(*pc);
+          accu = caml_callback(Field(coq_global_data, *pc), accu);
+          Restore_after_caml_call;
+          pc++;
+        }
+        else pc += *pc;
+        Next;
       }
 
-      Instruct(ISARRAY_INT_CAML_CALL2) {
+      Instruct(CHECKCAMLCALL2) {
+        // arity-2 callback, no argument can be an accumulator
         value arg;
-        print_instr("ISARRAY_INT_CAML_CALL2");
-          if (Is_coq_array(accu) && Is_uint63(sp[0])) {
-            pc++;
-            arg = sp[0];
-            Setup_for_caml_call;
-            print_int(*pc);
-            accu = caml_callback2(Field(coq_global_data, *pc), accu, arg);
-            Restore_after_caml_call;
-            sp += 1;
-            pc++;
-          } else pc += *pc;
-          Next;
+        print_instr("CHECKCAMLCALL2");
+        if (!Is_accu(accu) && !Is_accu(sp[0])) {
+          pc++;
+          arg = sp[0];
+          Setup_for_caml_call;
+          print_int(*pc);
+          accu = caml_callback2(Field(coq_global_data, *pc), accu, arg);
+          Restore_after_caml_call;
+          sp += 1;
+          pc++;
+        } else pc += *pc;
+        Next;
       }
 
-      Instruct(ISARRAY_INT_CAML_CALL3) {
+      Instruct(CHECKCAMLCALL3_1) {
+        // arity-3 callback, the last argument can be an accumulator
         value arg1;
         value arg2;
-        print_instr("ISARRAY_INT_CAML_CALL3");
-        if (Is_coq_array(accu) && Is_uint63(sp[0])) {
+        print_instr("CHECKCAMLCALL3_1");
+        if (!Is_accu(accu) && !Is_accu(sp[0])) {
           pc++;
           arg1 = sp[0];
           arg2 = sp[1];
           Setup_for_caml_call;
           print_int(*pc);
-          accu = caml_callback3(Field(coq_global_data, *pc),accu, arg1, arg2);
+          accu = caml_callback3(Field(coq_global_data, *pc), accu, arg1, arg2);
           Restore_after_caml_call;
           sp += 2;
           pc++;
