@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open CErrors
 open Util
 open Names
 open Constr
@@ -48,7 +47,7 @@ let general_elim_then_using mk_elim
   let indmv =
     match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
     | Meta mv -> mv
-    | _         -> anomaly (str"elimination.")
+    | _         -> CErrors.anomaly (str"elimination.")
   in
   let pmv =
     let p, _ = decompose_app elimclause.evd elimclause.templtyp.Evd.rebus in
@@ -60,7 +59,7 @@ let general_elim_then_using mk_elim
           | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env (pf_env gl) sigma elim
           | _ -> mt ()
         in
-        user_err ~hdr:"Tacticals.general_elim_then_using"
+        CErrors.user_err ~hdr:"Tacticals.general_elim_then_using"
           (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
   in
   let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
@@ -108,7 +107,7 @@ end
 let make_elim_branch_assumptions ba hyps =
   let assums =
     try List.rev (List.firstn ba.nassums hyps)
-    with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions.") in
+    with Failure _ -> CErrors.anomaly (Pp.str "make_elim_branch_assumptions.") in
   assums
 
 let elim_on_ba tac ba =
