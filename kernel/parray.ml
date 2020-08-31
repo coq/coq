@@ -27,45 +27,52 @@ and 'a kind =
 let unsafe_of_array t def = ref (Array (t,def))
 let of_array t def = unsafe_of_array (Array.copy t) def
 
-let rec length_int p =
-  match !p with
-  | Array (t,_) -> Array.length t
-  | Updated (_, _, p) -> length_int p
+let rec rerootk t k =
+  match !t with
+  | Array (a, _) -> k a
+  | Updated (i, v, p) ->
+      let k' a =
+        let v' = Array.unsafe_get a i in
+        Array.unsafe_set a i v;
+        t := !p; (* i.e., Array (a, def) *)
+        p := Updated (i, v', t);
+        k a in
+      rerootk p k'
+
+let reroot t = rerootk t (fun a -> a)
+
+let length_int p =
+  Array.length (reroot p)
 
 let length p = Uint63.of_int @@ length_int p
 
-let rec get p n =
-  match !p with
-  | Array (t,def) ->
-      let l = Array.length t in
-      if Uint63.le Uint63.zero n && Uint63.lt n (Uint63.of_int l) then
-        Array.unsafe_get t (length_to_int n)
-      else def
-  | Updated (k,e,p) ->
-     if Uint63.equal n (Uint63.of_int k) then e
-     else get p n
+let get p n =
+  let t = reroot p in
+  let l = Array.length t in
+  if Uint63.le Uint63.zero n && Uint63.lt n (Uint63.of_int l) then
+    Array.unsafe_get t (length_to_int n)
+  else
+    match !p with
+    | Array (_, def) -> def
+    | Updated _ -> assert false
 
 let set p n e =
-  let kind = !p in
-  match kind with
-  | Array (t,_) ->
-      let l = Uint63.of_int @@ Array.length t in
-      if Uint63.le Uint63.zero n && Uint63.lt n l then
-        let res = ref kind in
-        let n = length_to_int n in
-        p := Updated (n, Array.unsafe_get t n, res);
-        Array.unsafe_set t n e;
-        res
-      else p
-  | Updated _ ->
-      if Uint63.le Uint63.zero n && Uint63.lt n (length p) then
-        ref (Updated((length_to_int n), e, p))
-      else p
+  let a = reroot p in
+  let l = Uint63.of_int (Array.length a) in
+  if Uint63.le Uint63.zero n && Uint63.lt n l then
+    let i = length_to_int n in
+    let v' = Array.unsafe_get a i in
+    Array.unsafe_set a i e;
+    let t = ref !p in (* i.e., Array (a, def) *)
+    p := Updated (i, v', t);
+    t
+  else p
 
-let rec default p =
+let default p =
+  let _ = reroot p in
   match !p with
   | Array (_,def) -> def
-  | Updated (_,_,p) -> default p
+  | Updated _ -> assert false
 
 let make n def =
   ref (Array (Array.make (trunc_size n) def, def))
@@ -75,33 +82,19 @@ let init n f def =
   let t = Array.init n f in
   ref (Array (t, def))
 
-let rec to_array p =
+let to_array p =
+  let _ = reroot p in
   match !p with
   | Array (t,def) -> Array.copy t, def
-  | Updated (n,e,p) ->
-      let (t,_) as r = to_array p in
-      Array.unsafe_set t n e; r
+  | Updated _ -> assert false
 
 let copy p =
   let (t,def) = to_array p in
   ref (Array (t,def))
 
-let rec rerootk t k =
-  match !t with
-  | Array _ -> k ()
-  | Updated (i, v, t') ->
-      let k' () =
-        begin match !t' with
-        | Array (a,_def) as n ->
-            let v' = a.(i) in
-            Array.unsafe_set a i v;
-            t := n;
-            t' := Updated (i, v', t)
-        | Updated _ -> assert false
-        end; k() in
-      rerootk t' k'
-
-let reroot t = rerootk t (fun () -> t)
+let reroot t =
+  let _ = reroot t in
+  t
 
 let map f p =
   let p = reroot p in
