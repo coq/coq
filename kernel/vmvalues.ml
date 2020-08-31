@@ -381,7 +381,15 @@ let rec whd_accu a stk =
     CErrors.anomaly
       Pp.(strbrk "Failed to parse VM value. Tag = " ++ int tg ++ str ".")
 
-external kind_of_closure : Obj.t -> int = "coq_kind_of_closure"
+[@@@warning "-37"]
+type vm_closure_kind =
+  | VCfun (** closure, or fixpoint applied past the recursive argument *)
+  | VCfix (** unapplied fixpoint *)
+  | VCfix_partial (** partially applied fixpoint, but not sufficiently for recursion *)
+  | VCaccu (** accumulator *)
+[@@@warning "+37"]
+
+external kind_of_closure : Obj.t -> vm_closure_kind = "coq_kind_of_closure"
 external is_accumulate : tcode -> bool = "coq_is_accumulate_code"
 external int_tcode : tcode -> int -> int = "coq_int_tcode"
 external accumulate : unit -> tcode = "accumulate_code"
@@ -400,12 +408,11 @@ let whd_val (v: values) =
     else if Int.equal tag Obj.closure_tag && is_accumulate (fun_code o) then
       whd_accu o []
     else if Int.equal tag Obj.closure_tag || Int.equal tag Obj.infix_tag then
-      (match kind_of_closure o with
-       | 0 -> Vfun(Obj.obj o)
-       | 1 -> Vfix(Obj.obj o, None)
-       | 2 -> Vfix(Obj.obj (Obj.field o 2), Some (Obj.obj o))
-       | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
-       | _ -> CErrors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work."))
+      match kind_of_closure o with
+      | VCfun -> Vfun (Obj.obj o)
+      | VCfix -> Vfix (Obj.obj o, None)
+      | VCfix_partial -> Vfix (Obj.obj (Obj.field o 2), Some (Obj.obj o))
+      | VCaccu -> Vatom_stk (Aid (RelKey (int_tcode (fun_code o) 1)), [])
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
     else
