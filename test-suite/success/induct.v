@@ -159,6 +159,8 @@ Abort.
 (* This was failing in 8.5 and before because of a bug in the order of
    hypotheses *)
 
+Set Warnings "-deprecated".
+
 Inductive I2 : Type :=
   C2 : forall x:nat, x=x -> I2.
 Goal forall a b:I2, a = b.
