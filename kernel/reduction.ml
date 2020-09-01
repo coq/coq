@@ -68,31 +68,40 @@ let compare_stack_shape stk1 stk2 =
   in
   compare_rec 0 stk1 stk2
 
-type lft_fconstr = lift * fconstr
+type lstk =
+| Zlapp of (fconstr array * int) list
+| Zlproj of Projection.Repr.t
+| Zlcase of case_info * constr * constr array * fconstr subs
+| Zlfix of fconstr * stack
+| Zlprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
 
-type lft_constr_stack_elt =
-    Zlapp of (lift * fconstr) array
-  | Zlproj of Projection.Repr.t * lift
-  | Zlfix of (lift * fconstr) * lft_constr_stack
-  | Zlcase of case_info * lift * constr * constr array * fconstr subs
-  | Zlprimitive of
-     CPrimitives.t * pconstant * lft_fconstr list * lft_fconstr next_native_args
-and lft_constr_stack = lft_constr_stack_elt list
+let rec zlshift n = function
+| [] -> n, []
+| Zshift k :: rem -> zlshift (n + k) rem
+| Zupdate _ :: rem -> zlshift n rem
+| (Zapp _ | Zproj _ | ZcaseT _ | Zfix _ | Zprimitive _) :: _ as rem -> n, rem
 
-let rec zlapp v = function
-    Zlapp v2 :: s -> zlapp (Array.append v v2) s
-  | s -> Zlapp v :: s
+let rec zlapp m accu v stk =
+  let (n, stk) = zlshift 0 stk in
+  let m = m + n in
+  let accu = (v, n) :: accu in
+  match stk with
+  | [] | (Zproj _ | ZcaseT _ | Zfix _ | Zprimitive _) :: _ -> m, accu, stk
+  | Zapp w :: stk -> zlapp m accu w stk
+  | (Zshift _ | Zupdate _) :: _ -> assert false
 
-(** Hand-unrolling of the map function to bypass the call to the generic array
-    allocation. Type annotation is required to tell OCaml that the array does
-    not contain floats. *)
-let map_lift (l : lift) (v : fconstr array) = match v with
-| [||] -> assert false
-| [|c0|] -> [|(l, c0)|]
-| [|c0; c1|] -> [|(l, c0); (l, c1)|]
-| [|c0; c1; c2|] -> [|(l, c0); (l, c1); (l, c2)|]
-| [|c0; c1; c2; c3|] -> [|(l, c0); (l, c1); (l, c2); (l, c3)|]
-| v -> Array.Fun1.map (fun l t -> (l, t)) l v
+let zlview n stk =
+  let (n, stk) = zlshift n stk in
+  match stk with
+  | [] -> n, None
+  | Zproj r :: rem -> n, Some (Zlproj r, rem)
+  | Zapp v :: rem ->
+    let n, args, rem = zlapp n [] v rem in
+    n, Some (Zlapp args, rem)
+  | ZcaseT (ci, p, br, e) :: rem -> n, Some (Zlcase (ci, p, br, e), rem)
+  | Zfix (fx, arg) :: rem -> n, Some (Zlfix (fx, arg), rem)
+  | Zprimitive (op, c, rargs, nargs) :: rem -> n, Some (Zlprimitive (op, c, rargs, nargs), rem)
+  | (Zshift _ | Zupdate _) :: _ -> assert false
 
 (****************************************************************************)
 (*                   Reduction Functions                                    *)
@@ -675,56 +684,71 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         | FProd _ | FEvar _ | FInt _ | FFloat _ | FArray _), _ -> raise NotConvertible
 
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
-  let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
-  let rec cmp_rec pstk1 pstk2 cuniv =
-    match (pstk1,pstk2) with
-      | (z1::s1, z2::s2) ->
-          let cu1 = cmp_rec s1 s2 cuniv in
-          (match (z1,z2) with
-            | (Zlapp a1,Zlapp a2) ->
-               Array.fold_right2 f a1 a2 cu1
-            | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
-              if not (Projection.Repr.equal c1 c2) then
-                raise NotConvertible
-              else cu1
-            | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
-                let cu2 = f fx1 fx2 cu1 in
-                cmp_rec a1 a2 cu2
-            | (Zlcase(ci1,l1,p1,br1,e1),Zlcase(ci2,l2,p2,br2,e2)) ->
-                if not (eq_ind ci1.ci_ind ci2.ci_ind) then
-                  raise NotConvertible;
-                let cu2 = f (l1, mk_clos e1 p1) (l2, mk_clos e2 p2) cu1 in
-                convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cu2
-            | (Zlprimitive(op1,_,rargs1,kargs1),Zlprimitive(op2,_,rargs2,kargs2)) ->
-              if not (CPrimitives.equal op1 op2) then raise NotConvertible else
-                let cu2 = List.fold_right2 f rargs1 rargs2 cu1 in
-                let fk (_,a1) (_,a2) cu = f a1 a2 cu in
-                List.fold_right2 fk kargs1 kargs2 cu2
-            | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _), _) -> assert false)
-      | _ -> cuniv in
-  if compare_stack_shape stk1 stk2 then
-    let rec pure_rec lfts stk =
-      match stk with
-          [] -> (lfts,[])
-        | zi::s ->
-          let (l, pstk) as lpstk = pure_rec lfts s in
-            (match zi with
-                Zupdate _  -> lpstk
-              | Zshift n -> (el_shft n l, pstk)
-              | Zapp a ->
-                  (l,zlapp (map_lift l a) pstk)
-              | Zproj p ->
-                  (l, Zlproj (p,l)::pstk)
-              | Zfix(fx,a) ->
-                  let (lfx,pa) = pure_rec l a in
-                  (l, Zlfix((lfx,fx),pa)::pstk)
-              | ZcaseT(ci,p,br,e) ->
-                  (l,Zlcase(ci,l,p,br,e)::pstk)
-              | Zprimitive(op,c,rargs,kargs) ->
-                  (l,Zlprimitive(op,c,List.map (fun t -> (l,t)) rargs,
-                              List.map (fun (k,t) -> (k,(l,t))) kargs)::pstk))
+  let rec cmp_rec l1 v1 l2 v2 cuniv =
+    let (n1, v1) = zlview 0 v1 in
+    let (n2, v2) = zlview 0 v2 in
+    match v1, v2 with
+    | None, None ->
+      (el_shft n1 l1, el_shft n2 l2, cuniv)
+    | Some (z1, s1), Some (z2, s2) ->
+      let l1, l2, cuniv = cmp_rec l1 s1 l2 s2 cuniv in
+      let cuniv = match z1, z2 with
+      | Zlapp a1, Zlapp a2 ->
+        cmp_app 0 l1 a1 l2 a2 cuniv
+      | Zlproj p1, Zlproj p2 ->
+        if not (Projection.Repr.equal p1 p2) then
+          raise NotConvertible
+        else cuniv
+      | Zlfix (fx1, a1), Zlfix (fx2, a2) ->
+        let cuniv = ccnv CONV l2r infos l1 l2 fx1 fx2 cuniv in
+        let (_, _, cuniv) = cmp_rec l1 a1 l2 a2 cuniv in
+        cuniv
+      | Zlcase (ci1, p1, br1, e1), Zlcase (ci2, p2, br2, e2) ->
+        if not (eq_ind ci1.ci_ind ci2.ci_ind) then
+          raise NotConvertible;
+        let cuniv = ccnv CONV l2r infos l1 l2 (mk_clos e1 p1) (mk_clos e2 p2) cuniv in
+        convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cuniv
+      | Zlprimitive (op1, _, r1, k1), Zlprimitive (op2, _, r2, k2) ->
+        if not (CPrimitives.equal op1 op2) then
+          raise NotConvertible
+        else
+          let f t1 t2 cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
+          let cuniv = List.fold_right2 f r1 r2 cuniv in
+          let fk (_, a1) (_, a2) cu = f a1 a2 cu in
+          List.fold_right2 fk k1 k2 cuniv
+      | (Zlapp _ | Zlproj _ | Zlfix _ | Zlcase _ | Zlprimitive _), _ ->
+        assert false
+      in
+      (el_shft n1 l1, el_shft n2 l2, cuniv)
+    | (Some _, None) | (None, Some _) ->
+      assert false
+  (* Right-to-left comparison of applications *)
+  and cmp_app off l1 a1 l2 a2 cuniv = match a1, a2 with
+  | [], [] -> cuniv
+  | (v1, n1) :: a1, (v2, n2) :: a2 ->
+    (* off counts the number of values to skip on the end of the array,
+       positive if from v1, negative if from v2 *)
+    let p1 = Array.length v1 in
+    let p2 = Array.length v2 in
+    let () = assert (0 < p1 && 0 < p2) in
+    let len1, len2 = if off < 0 then p1, p2 + off else p1 - off, p2 in
+    let l1 = el_shft n1 l1 in
+    let l2 = el_shft n2 l2 in
+    let rec fold i1 i2 cuniv =
+      if i1 < 0 || i2 < 0 then cuniv
+      else
+        let cuniv = ccnv CONV l2r infos l1 l2 v1.(i1) v2.(i2) cuniv in
+        fold (pred i1) (pred i2) cuniv
     in
-    cmp_rec (snd (pure_rec lft1 stk1)) (snd (pure_rec lft2 stk2)) cuniv
+    let cuniv = fold (len1 - 1) (len2 - 1) cuniv in
+    if len1 < len2 then cmp_app (len2 - len1 - p2) l1 a1 l2 ((v2, 0) :: a2) cuniv
+    else if len1 > len2 then cmp_app (p1 - len1 + len2) l1 ((v1, 0) :: a1) l2 a2 cuniv
+    else cmp_app 0 l1 a1 l2 a2 cuniv
+  | _ -> assert false
+  in
+  if compare_stack_shape stk1 stk2 then
+    let (_, _, cuniv) = cmp_rec lft1 stk1 lft2 stk2 cuniv in
+    cuniv
   else raise NotConvertible
 
 and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
