@@ -367,9 +367,11 @@ let run_tactic env tac pr =
     let retrieved = Evd.FutureGoals.filter (Evd.is_undefined sigma) retrieved in
     let retrieved = List.rev retrieved.Evd.FutureGoals.comb in
     let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
+    let retrieved = CList.map Proofview_monad.with_empty_state retrieved in
     let to_shelve, sigma = Evd.pop_shelf sigma in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-    Proofview.Unsafe.tclNEWSHELVED (retrieved@to_shelve) <*>
+    Proofview.Unsafe.tclNEWGOALS retrieved <*>
+    Proofview.Unsafe.tclNEWSHELVED to_shelve <*>
     Proofview.tclUNIT (result,retrieved,to_shelve)
   in
   let { name; poly; proofview } = pr in
