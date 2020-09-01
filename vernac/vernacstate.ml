@@ -80,7 +80,7 @@ module LemmaStack = struct
 
   type t = Declare.Proof.t * Declare.Proof.t list
 
-  let map f (pf, pfl) = (f pf, List.map f pfl)
+  let map ~f (pf, pfl) = (f pf, List.map f pfl)
   let map_top ~f (pf, pfl) = (f pf, pfl)
 
   let pop (ps, p) = match p with
@@ -96,7 +96,7 @@ module LemmaStack = struct
 
   let get_all_proof_names (pf : t) =
     let prj x = Declare.Proof.get x in
-    let (pn, pns) = map Proof.(function pf -> (data (prj pf)).name) pf in
+    let (pn, pns) = map ~f:Proof.(function pf -> (data (prj pf)).name) pf in
     pn :: pns
 
   let copy_info src tgt =
@@ -218,7 +218,7 @@ module Declare_ = struct
                   Declare.Proof.info pt)
 
   let discard_all () = s_lemmas := None
-  let update_global_env () = dd (Declare.Proof.update_global_env)
+  let update_sigma_univs ugraph = dd (Declare.Proof.update_sigma_univs ugraph)
 
   let get_current_context () = cc Declare.Proof.get_current_context
 

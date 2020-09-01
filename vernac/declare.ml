@@ -1734,8 +1734,8 @@ let return_proof ps =
   let p, uctx = prepare_proof ~unsafe_typ:false ps in
   List.map (fun (((_ub, body),eff),_) -> (body,eff)) p, uctx
 
-let update_global_env =
-  map ~f:(fun p -> Proof.update_sigma_env p (Global.env ()))
+let update_sigma_univs ugraph p =
+  map ~f:(Proof.update_sigma_univs ugraph) p
 
 let next = let n = ref 0 in fun () -> incr n; !n
 
@@ -2251,7 +2251,7 @@ let rec solve_obligation prg num tac =
   let scope = Locality.Global Locality.ImportNeedQualified in
   let kind = kind_of_obligation (snd obl.obl_status) in
   let evd = Evd.from_ctx (Internal.get_uctx prg) in
-  let evd = Evd.update_sigma_env evd (Global.env ()) in
+  let evd = Evd.update_sigma_univs (Global.universes ()) evd in
   let auto ~pm n oblset tac = auto_solve_obligations ~pm n ~oblset tac in
   let proof_ending =
     let name = Internal.get_name prg in
@@ -2292,7 +2292,7 @@ and solve_obligation_by_tac prg obls i tac =
             | None -> !default_tactic
         in
         let uctx = Internal.get_uctx prg in
-        let uctx = UState.update_sigma_env uctx (Global.env ()) in
+        let uctx = UState.update_sigma_univs uctx (Global.universes ()) in
         let poly = Internal.get_poly prg in
         match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac ~poly ~uctx with
         | None -> None

@@ -568,8 +568,8 @@ let emit_side_effects eff u =
   let u = demote_seff_univs (fst uctx) u in
   merge_seff u uctx
 
-let update_sigma_env uctx env =
-  let univs = UGraph.set_cumulative_sprop (elaboration_sprop_cumul()) (Environ.universes env) in
+let update_sigma_univs uctx ugraph =
+  let univs = UGraph.set_cumulative_sprop (elaboration_sprop_cumul()) ugraph in
   let eunivs =
     { uctx with
       initial_universes = univs;

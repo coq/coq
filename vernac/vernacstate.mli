@@ -40,6 +40,7 @@ module LemmaStack : sig
   val pop : t -> Declare.Proof.t * t option
   val push : t option -> Declare.Proof.t -> t
 
+  val map : f:(Declare.Proof.t -> Declare.Proof.t) -> t -> t
   val map_top : f:(Declare.Proof.t -> Declare.Proof.t) -> t -> t
   val with_top : t -> f:(Declare.Proof.t -> 'a ) -> 'a
 
@@ -112,7 +113,7 @@ module Declare : sig
   val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> closed_proof
 
   val discard_all : unit -> unit
-  val update_global_env : unit -> unit
+  val update_sigma_univs : UGraph.t -> unit
 
   val get_current_context : unit -> Evd.evar_map * Environ.env
 

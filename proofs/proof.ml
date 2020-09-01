@@ -353,8 +353,8 @@ let compact p =
   let entry, proofview = Proofview.compact p.entry p.proofview in
   { p with proofview; entry }
 
-let update_sigma_env p env =
-  let proofview = Proofview.Unsafe.update_sigma_env p.proofview env in
+let update_sigma_univs ugraph p =
+  let proofview = Proofview.Unsafe.update_sigma_univs ugraph p.proofview in
   { p with proofview }
 
 (*** Function manipulation proof extra informations ***)

@@ -246,10 +246,10 @@ module Proof : sig
 
   val compact : t -> t
 
-  (** Update the proofs global environment after a side-effecting command
-      (e.g. a sublemma definition) has been run inside it. Assumes
-      there_are_pending_proofs. *)
-  val update_global_env : t -> t
+  (** Update the proof's universe information typically after a
+      side-effecting command (e.g. a sublemma definition) has been run
+      inside it. *)
+  val update_sigma_univs : UGraph.t -> t -> t
 
   val get_open_goals : t -> int
 
