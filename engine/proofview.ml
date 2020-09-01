@@ -69,13 +69,13 @@ let dependent_init =
   let src = Loc.tag @@ Evar_kinds.GoalEvar in
   (* Main routine *)
   let rec aux = function
-  | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }
+  | TNil sigma -> [], { solution = sigma; comb = [] }
   | TCons (env, sigma, typ, t) ->
     let (sigma, econstr) = Evarutil.new_evar env sigma ~src ~typeclass_candidate:false typ in
     let (gl, _) = EConstr.destEvar sigma econstr in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let entry = (econstr, typ) :: ret in
-    entry, { solution = sol; comb = with_empty_state gl :: comb; shelf = [] }
+    entry, { solution = sol; comb = with_empty_state gl :: comb }
   in
   fun t ->
     let t = map_telescope_evd Evd.push_future_goals t in
@@ -235,8 +235,6 @@ let apply ~name ~poly env t sp =
   match ans with
   | Nil (e, info) -> Exninfo.iraise (TacticFailure e, info)
   | Cons ((r, (state, _), status, info), _) ->
-    let status = (status, state.shelf) in
-    let state = { state with shelf = [] } in
     r, state, status, Trace.to_tree info
 
 
@@ -621,7 +619,8 @@ let shelve =
   Comb.get >>= fun initial ->
   Comb.set [] >>
   InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"shelve")) >>
-  Shelf.modify (fun gls -> gls @ CList.map drop_state initial)
+  let initial = CList.map drop_state initial in
+  Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution initial })
 
 let shelve_goals l =
   let open Proof in
@@ -629,7 +628,7 @@ let shelve_goals l =
   let comb = CList.filter (fun g -> not (CList.mem (drop_state g) l)) initial in
   Comb.set comb >>
   InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"shelve_goals")) >>
-  Shelf.modify (fun gls -> gls @ l)
+  Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution l })
 
 (** [depends_on sigma src tgt] checks whether the goal [src] appears
     as an existential variable in the definition of the goal [tgt] in
@@ -696,7 +695,7 @@ let shelve_unifiable_informative =
   Comb.set n >>
   InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"shelve_unifiable")) >>
   let u = CList.map drop_state u in
-  Shelf.modify (fun gls -> gls @ u) >>
+  Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution u }) >>
   tclUNIT u
 
 let shelve_unifiable =
@@ -716,13 +715,17 @@ let guard_no_unifiable =
       let l = CList.map (fun id -> Names.Name id) l in
       tclUNIT (Some l)
 
-(** [unshelve l p] adds all the goals in [l] at the end of the focused
-    goals of p *)
+(** [unshelve l p] moves all the goals in [l] from the shelf and put them at
+    the end of the focused goals of p, if they are still undefined after [advance] *)
 let unshelve l p =
+  let solution = Evd.unshelve p.solution l in
   let l = List.map with_empty_state l in
   (* advance the goals in case of clear *)
   let l = undefined p.solution l in
-  { p with comb = p.comb@l }
+  { comb = p.comb@l; solution }
+
+let filter_shelf f pv =
+  { pv with solution = Evd.filter_shelf f pv.solution }
 
 let mark_in_evm ~goal evd evars =
   let evd =
@@ -750,19 +753,20 @@ let mark_in_evm ~goal evd evars =
 let with_shelf tac =
   let open Proof in
   Pv.get >>= fun pv ->
-  let { shelf; solution } = pv in
-  Pv.set { pv with shelf = []; solution = Evd.push_future_goals solution } >>
+  let { solution } = pv in
+  Pv.set { pv with solution = Evd.push_shelf @@ Evd.push_future_goals solution } >>
   tac >>= fun ans ->
   Pv.get >>= fun npv ->
-  let { shelf = gls; solution = sigma } = npv in
+  let { solution = sigma } = npv in
+  let gls, sigma = Evd.pop_shelf sigma in
   (* The pending future goals are necessarily coming from V82.tactic *)
   (* and thus considered as to shelve, as in Proof.run_tactic *)
   let fgl, sigma = Evd.pop_future_goals sigma in
   (* Ensure we mark and return only unsolved goals *)
-  let gls' = CList.rev_append fgl.Evd.FutureGoals.shelf (CList.rev_append fgl.Evd.FutureGoals.comb gls) in
+  let gls' = CList.rev_append fgl.Evd.FutureGoals.comb gls in
   let gls' = undefined_evars sigma gls' in
   let sigma = mark_in_evm ~goal:false sigma gls' in
-  let npv = { npv with shelf; solution = sigma } in
+  let npv = { npv with solution = sigma } in
   Pv.set npv >> tclUNIT (gls', ans)
 
 (** [goodmod p m] computes the representative of [p] modulo [m] in the
@@ -993,6 +997,8 @@ let tclProofInfo =
 
 module Unsafe = struct
 
+  let (>>=) = tclBIND
+
   let tclEVARS evd =
     Pv.modify (fun ps -> { ps with solution = evd })
 
@@ -1002,21 +1008,22 @@ module Unsafe = struct
       { step with comb = step.comb @ gls }
     end
 
+  let tclNEWSHELVED gls =
+    Pv.modify begin fun step ->
+      let gls = undefined_evars step.solution gls in
+      { step with solution = Evd.shelve step.solution gls }
+    end
+
+  let tclGETSHELF = tclEVARMAP >>= fun sigma -> tclUNIT @@ Evd.shelf sigma
+
   let tclSETENV = Env.set
 
   let tclGETGOALS = Comb.get
 
   let tclSETGOALS = Comb.set
 
-  let tclGETSHELF = Shelf.get
-
-  let tclSETSHELF = Shelf.set
-
-  let tclPUTSHELF to_shelve =
-    tclBIND tclGETSHELF (fun shelf -> tclSETSHELF (to_shelve@shelf))
-
   let tclEVARSADVANCE evd =
-    Pv.modify (fun ps -> { ps with solution = evd; comb = undefined evd ps.comb })
+    Pv.modify (fun ps -> { solution = evd; comb = undefined evd ps.comb })
 
   let tclEVARUNIVCONTEXT ctx =
     Pv.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
@@ -1226,7 +1233,7 @@ module V82 = struct
       let sgs = CList.flatten goalss in
       let sgs = undefined evd sgs in
       InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"<unknown>")) >>
-      Pv.set { ps with solution = evd; comb = sgs; }
+      Pv.set { solution = evd; comb = sgs; }
     with e when catchable_exception e ->
       let (e, info) = Exninfo.capture e in
       tclZERO ~info e
@@ -1266,7 +1273,7 @@ module V82 = struct
   let of_tactic t gls =
     try
       let env = Global.env () in
-      let init = { shelf = []; solution = gls.Evd.sigma ; comb = [with_empty_state gls.Evd.it] } in
+      let init = { solution = gls.Evd.sigma ; comb = [with_empty_state gls.Evd.it] } in
       let name, poly = Names.Id.of_string "legacy_pe", false in
       let (_,final,_,_) = apply ~name ~poly (goal_env env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = CList.map drop_state final.comb }

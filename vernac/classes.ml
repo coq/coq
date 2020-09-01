@@ -359,7 +359,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl id
      consequence, we use the low-level primitives to code
      the refinement manually.*)
   let future_goals, sigma = Evd.pop_future_goals sigma in
-  let gls = List.rev_append future_goals.Evd.FutureGoals.shelf (List.rev future_goals.Evd.FutureGoals.comb) in
+  let gls = List.rev future_goals.Evd.FutureGoals.comb in
   let sigma = Evd.push_future_goals sigma in
   let kind = Decls.(IsDefinition Instance) in
   let hook = Declare.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global ?hook dref)) in

@@ -162,7 +162,7 @@ val apply
   -> 'a tactic
   -> proofview
   -> 'a * proofview
-       * (bool*Evar.t list)
+       * bool
        * Proofview_monad.Info.tree
 
 (** {7 Monadic primitives} *)
@@ -331,16 +331,15 @@ val unifiable : Evd.evar_map -> Evar.t -> Evar.t list -> bool
     considered). *)
 val shelve_unifiable : unit tactic
 
-(** Idem but also returns the list of shelved variables *)
-val shelve_unifiable_informative : Evar.t list tactic
-
 (** [guard_no_unifiable] returns the list of unifiable goals if some
     goals are unifiable (see {!shelve_unifiable}) in the current focus. *)
 val guard_no_unifiable : Names.Name.t list option tactic
 
-(** [unshelve l p] adds all the goals in [l] at the end of the focused
-    goals of p *)
+(** [unshelve l p] moves all the goals in [l] from the shelf and put them at
+    the end of the focused goals of p, if they are still undefined after [advance] *)
 val unshelve : Evar.t list -> proofview -> proofview
+
+val filter_shelf : (Evar.t -> bool) -> proofview -> proofview
 
 (** [depends_on g1 g2 sigma] checks if g1 occurs in the type/ctx of g2 *)
 val depends_on : Evd.evar_map -> Evar.t -> Evar.t -> bool
@@ -454,6 +453,10 @@ module Unsafe : sig
       goal is already solved, it is not added. *)
   val tclNEWGOALS : Proofview_monad.goal_with_state list -> unit tactic
 
+  (** [tclNEWSHELVED gls] adds the goals [gls] to the shelf. If a
+      goal is already solved, it is not added. *)
+  val tclNEWSHELVED : Evar.t list -> unit tactic
+
   (** [tclSETGOALS gls] sets goals [gls] as the goals being under focus. If a
       goal is already solved, it is not set. *)
   val tclSETGOALS : Proofview_monad.goal_with_state list -> unit tactic
@@ -461,14 +464,8 @@ module Unsafe : sig
   (** [tclGETGOALS] returns the list of goals under focus. *)
   val tclGETGOALS : Proofview_monad.goal_with_state list tactic
 
-  (** [tclSETSHELF gls] sets goals [gls] as the current shelf. *)
-  val tclSETSHELF : Evar.t list -> unit tactic
-
   (** [tclGETSHELF] returns the list of goals on the shelf. *)
   val tclGETSHELF : Evar.t list tactic
-
-  (** [tclPUTSHELF] appends goals to the shelf. *)
-  val tclPUTSHELF : Evar.t list -> unit tactic
 
   (** Sets the evar universe context. *)
   val tclEVARUNIVCONTEXT : UState.t -> unit tactic

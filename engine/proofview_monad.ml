@@ -166,7 +166,6 @@ let map_goal_with_state f (g, s) = (f g, s)
 type proofview = {
   solution : Evd.evar_map;
   comb : goal_with_state list;
-  shelf : goal list;
 }
 
 (** {6 Instantiation of the logic monad} *)
@@ -236,14 +235,6 @@ end
 
 module Status : Writer with type t := bool = struct
   let put s = Logical.put s
-end
-
-module Shelf : State with type t = goal list = struct
-    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
-  type t = goal list
-  let get = Logical.map (fun {shelf} -> shelf) Pv.get
-  let set c = Pv.modify (fun pv -> { pv with shelf = c })
-  let modify f = Pv.modify (fun pv -> { pv with shelf = f pv.shelf })
 end
 
 (** Lens and utilities pertaining to the info trace *)

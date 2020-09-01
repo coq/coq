@@ -171,6 +171,10 @@ val has_given_up : evar_map -> bool
 (** [has_given_up sigma] is [true] if and only if
     there are given up evars in [sigma]. *)
 
+val has_shelved : evar_map -> bool
+(** [has_shelved sigma] is [true] if and only if
+    there are shelved evars in [sigma]. *)
+
 val new_evar : evar_map ->
   ?name:Id.t -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
 (** Creates a fresh evar mapping to the given information. *)
@@ -347,11 +351,11 @@ val drop_side_effects : evar_map -> evar_map
 
 (** {5 Future goals} *)
 
-val declare_future_goal : ?shelve:bool -> Evar.t -> evar_map -> evar_map
+val declare_future_goal : Evar.t -> evar_map -> evar_map
 (** Adds an existential variable to the list of future goals. For
     internal uses only. *)
 
-val declare_principal_goal : ?shelve:bool -> Evar.t -> evar_map -> evar_map
+val declare_principal_goal : Evar.t -> evar_map -> evar_map
 (** Adds an existential variable to the list of future goals and make
     it principal. Only one existential variable can be made principal, an
     error is raised otherwise. For internal uses only. *)
@@ -360,7 +364,6 @@ module FutureGoals : sig
 
   type t = private {
     comb : Evar.t list;
-    shelf : Evar.t list;
     principal : Evar.t option; (** if [Some e], [e] must be
                                    contained in
                                    [future_comb]. The evar
@@ -385,18 +388,28 @@ val pop_future_goals : evar_map -> FutureGoals.t * evar_map
 
 val fold_future_goals : (evar_map -> Evar.t -> evar_map) -> evar_map -> evar_map
 
-(** Fold future goals *)
-
-val shelve_on_future_goals : Evar.t list -> evar_map -> evar_map
-(** Push goals on the shelve of future goals *)
 
 val remove_future_goal : evar_map -> Evar.t -> evar_map
 
 val pr_future_goals_stack : evar_map -> Pp.t
 
+val push_shelf : evar_map -> evar_map
+
+val pop_shelf : evar_map -> Evar.t list * evar_map
+
+val filter_shelf : (Evar.t -> bool) -> evar_map -> evar_map
+
 val give_up : Evar.t -> evar_map -> evar_map
 
+val shelve : evar_map -> Evar.t list -> evar_map
+
+val unshelve : evar_map -> Evar.t list -> evar_map
+
 val given_up : evar_map -> Evar.Set.t
+
+val shelf : evar_map -> Evar.t list
+
+val pr_shelf : evar_map -> Pp.t
 
 (** {5 Sort variables}
 

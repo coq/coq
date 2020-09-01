@@ -43,8 +43,6 @@ type data =
   (** Entry for the proofview *)
   ; stack : (Evar.t list * Evar.t list) list
   (** A representation of the focus stack *)
-  ; shelf : Evar.t list
-  (** A representation of the shelf  *)
   ; name : Names.Id.t
   (** The name of the theorem whose proof is being constructed *)
   ; poly : bool;

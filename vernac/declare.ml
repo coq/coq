@@ -1553,11 +1553,11 @@ let set_used_variables ps l =
   ctx, { ps with section_vars = Some (Context.Named.to_vars ctx) }
 
 let get_open_goals ps =
-  let Proof.{ goals; stack; shelf } = Proof.data ps.proof in
+  let Proof.{ goals; stack; sigma } = Proof.data ps.proof in
   List.length goals +
   List.fold_left (+) 0
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
-  List.length shelf
+  List.length (Evd.shelf sigma)
 
 type proof_object =
   { name : Names.Id.t

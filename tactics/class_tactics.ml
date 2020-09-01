@@ -931,12 +931,14 @@ module Search = struct
            top_sort evm goals
          else Evar.Set.elements goals
        in
-       let tac = tac <*> Proofview.Unsafe.tclGETGOALS >>=
+       let goalsl = List.map Proofview_monad.with_empty_state goalsl in
+       let tac =
+         Proofview.Unsafe.tclNEWGOALS goalsl <*>
+         tac <*> Proofview.Unsafe.tclGETGOALS >>=
          fun stuck -> Proofview.shelve_goals (List.map Proofview_monad.drop_state stuck) in
        let evm = Evd.set_typeclass_evars evm Evar.Set.empty in
        let evm = Evd.push_future_goals evm in
        let _, pv = Proofview.init evm [] in
-       let pv = Proofview.unshelve goalsl pv in
        try
          (* Instance may try to call this before a proof is set up!
             Thus, give_me_the_proof will fail. Beware! *)
@@ -947,17 +949,17 @@ module Search = struct
             * with | Proof_global.NoCurrentProof -> *)
            Id.of_string "instance", false
          in
-         let finish pv' shelved =
+         let finish pv' =
            let evm' = Proofview.return pv' in
+           let shelf = Evd.shelf evm' in
              assert(Evd.fold_undefined (fun ev _ acc ->
-                     let okev = Evd.mem evm ev || List.mem ev shelved in
+                     let okev = Evd.mem evm ev || List.mem ev shelf in
                      if not okev then
                        Feedback.msg_debug
                          (str "leaking evar " ++ int (Evar.repr ev) ++
                             spc () ++ pr_ev evm' ev);
                      acc && okev) evm' true);
            let _, evm' = Evd.pop_future_goals evm' in
-           let evm' = Evd.shelve_on_future_goals shelved evm' in
            let nongoals' =
              Evar.Set.fold (fun ev acc -> match Evarutil.advance evm' ev with
                  | Some ev' -> Evar.Set.add ev acc
@@ -968,8 +970,8 @@ module Search = struct
            let evm' = Evd.set_typeclass_evars evm' nongoals' in
              Some evm'
         in
-        let (), pv', (unsafe, shelved), _ = Proofview.apply ~name ~poly env tac pv in
-        if Proofview.finished pv' then finish pv' shelved
+        let (), pv', unsafe, _ = Proofview.apply ~name ~poly env tac pv in
+        if Proofview.finished pv' then finish pv'
         else raise Not_found
        with Logic_monad.TacticFailure _ -> raise Not_found
 
