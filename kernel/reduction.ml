@@ -94,29 +94,6 @@ let map_lift (l : lift) (v : fconstr array) = match v with
 | [|c0; c1; c2; c3|] -> [|(l, c0); (l, c1); (l, c2); (l, c3)|]
 | v -> Array.Fun1.map (fun l t -> (l, t)) l v
 
-let pure_stack lfts stk =
-  let rec pure_rec lfts stk =
-    match stk with
-        [] -> (lfts,[])
-      | zi::s ->
-          (match (zi,pure_rec lfts s) with
-              (Zupdate _,lpstk)  -> lpstk
-            | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
-            | (Zapp a, (l,pstk)) ->
-                (l,zlapp (map_lift l a) pstk)
-            | (Zproj p, (l,pstk)) ->
-                (l, Zlproj (p,l)::pstk)
-            | (Zfix(fx,a),(l,pstk)) ->
-                let (lfx,pa) = pure_rec l a in
-                (l, Zlfix((lfx,fx),pa)::pstk)
-            | (ZcaseT(ci,p,br,e),(l,pstk)) ->
-                (l,Zlcase(ci,l,p,br,e)::pstk)
-            | (Zprimitive(op,c,rargs,kargs),(l,pstk)) ->
-                (l,Zlprimitive(op,c,List.map (fun t -> (l,t)) rargs,
-                            List.map (fun (k,t) -> (k,(l,t))) kargs)::pstk))
-  in
-  snd (pure_rec lfts stk)
-
 (****************************************************************************)
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
@@ -726,7 +703,28 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
             | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _), _) -> assert false)
       | _ -> cuniv in
   if compare_stack_shape stk1 stk2 then
-    cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
+    let rec pure_rec lfts stk =
+      match stk with
+          [] -> (lfts,[])
+        | zi::s ->
+          let (l, pstk) as lpstk = pure_rec lfts s in
+            (match zi with
+                Zupdate _  -> lpstk
+              | Zshift n -> (el_shft n l, pstk)
+              | Zapp a ->
+                  (l,zlapp (map_lift l a) pstk)
+              | Zproj p ->
+                  (l, Zlproj (p,l)::pstk)
+              | Zfix(fx,a) ->
+                  let (lfx,pa) = pure_rec l a in
+                  (l, Zlfix((lfx,fx),pa)::pstk)
+              | ZcaseT(ci,p,br,e) ->
+                  (l,Zlcase(ci,l,p,br,e)::pstk)
+              | Zprimitive(op,c,rargs,kargs) ->
+                  (l,Zlprimitive(op,c,List.map (fun t -> (l,t)) rargs,
+                              List.map (fun (k,t) -> (k,(l,t))) kargs)::pstk))
+    in
+    cmp_rec (snd (pure_rec lft1 stk1)) (snd (pure_rec lft2 stk2)) cuniv
   else raise NotConvertible
 
 and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
