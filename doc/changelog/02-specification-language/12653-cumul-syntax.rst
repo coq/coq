@@ -1,4 +1,5 @@
-- **Added:** Syntax for specifying the variance of cumulative
-  polymorphic inductives (:ref:`cumulative`) instead of letting it be
-  inferred (`#12653 <https://github.com/coq/coq/pull/12653>`_, by
-  Gaëtan Gilbert).
+- **Added:** Commands :cmd:`Inductive`, :cmd:`Record` and synonyms now
+  support syntax `Inductive foo@{=i +j *k l}` to specify variance
+  information for their universes (in :ref:`Cumulative <cumulative>`
+  mode) (`#12653 <https://github.com/coq/coq/pull/12653>`_, by Gaëtan
+  Gilbert).
