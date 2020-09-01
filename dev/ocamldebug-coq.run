@@ -34,4 +34,5 @@ exec $OCAMLDEBUG \
     -I $COQTOP/plugins/subtac     -I $COQTOP/plugins/syntax \
     -I $COQTOP/plugins/xml        -I $COQTOP/plugins/ltac \
     -I $COQTOP/ide \
+    $(ocamlfind query -recursive -i-format zarith) \
     "$@"
