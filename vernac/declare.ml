@@ -2014,7 +2014,7 @@ let finish_derived ~f ~name ~entries =
   let lemma_def = Internal.map_entry_body lemma_def ~f:(fun ((b,ctx),fx) -> (substf b, ctx), fx) in
   let lemma_def = DefinitionEntry lemma_def in
   let ct = declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
-  [GlobRef.ConstRef ct]
+  [GlobRef.ConstRef f_kn; GlobRef.ConstRef ct]
 
 let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
 
