@@ -1015,7 +1015,9 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =
 
 type equality = {
   eq_data  : (coq_eq_data * (EConstr.t * EConstr.t * EConstr.t));
+  (* equality data + A : Type, t1 : A, t2 : A *)
   eq_clenv : clausenv;
+  (* clause [M : R A t1 t2] where [R] is the equality from above *)
 }
 
 let eq_baseid = Id.of_string "e"
