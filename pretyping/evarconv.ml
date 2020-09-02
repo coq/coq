@@ -40,7 +40,7 @@ let default_transparent_state env = TransparentState.full
 let default_flags_of ?(subterm_ts=TransparentState.empty) ts =
   { modulo_betaiota = true;
     open_ts = ts; closed_ts = ts; subterm_ts;
-    frozen_evars = Evar.Set.empty; with_cs = true;
+    allowed_evars = AllowAll; with_cs = true;
     allow_K_at_toplevel = true }
 
 let default_flags env =
@@ -118,8 +118,6 @@ type flex_kind_of_term =
   | MaybeFlexible of EConstr.t (* reducible but not necessarily reduced *)
   | Flexible of EConstr.existential
 
-let is_frozen flags (evk, _) = Evar.Set.mem evk flags.frozen_evars
-
 let flex_kind_of_term flags env evd c sk =
   match EConstr.kind evd c with
     | LetIn _ | Rel _ | Const _ | Var _ | Proj _ ->
@@ -128,8 +126,7 @@ let flex_kind_of_term flags env evd c sk =
        if flags.modulo_betaiota then MaybeFlexible c
        else Rigid
     | Evar ev ->
-       if is_frozen flags ev then Rigid
-       else Flexible ev
+       if is_evar_allowed flags (fst ev) then Flexible ev else Rigid
     | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ | Int _ | Float _ | Array _ -> Rigid
     | Meta _ -> Rigid
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied *)
@@ -192,11 +189,11 @@ let occur_rigidly flags env evd (evk,_) t =
           | Rigid _ as res -> res
           | Normal b -> Reducible
           | Reducible -> Reducible)
-    | Evar (evk',l as ev) ->
+    | Evar (evk',l) ->
       if Evar.equal evk evk' then Rigid true
-      else if is_frozen flags ev then
-        Rigid (List.exists (fun x -> rigid_normal_occ (aux x)) l)
-      else Reducible
+      else if is_evar_allowed flags evk' then
+        Reducible
+        else Rigid (List.exists (fun x -> rigid_normal_occ (aux x)) l)
     | Cast (p, _, _) -> aux p
     | Lambda (na, t, b) -> aux b
     | LetIn (na, _, _, b) -> aux b
@@ -458,7 +455,7 @@ let conv_fun f flags on_types =
   let typefn env evd pbty term1 term2 =
     let flags = { (default_flags env) with
       with_cs = flags.with_cs;
-      frozen_evars = flags.frozen_evars }
+      allowed_evars = flags.allowed_evars }
     in f flags env evd pbty term1 term2
   in
   let termfn env evd pbty term1 term2 =
@@ -500,7 +497,7 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
             (whd_nored_state env evd (term2,Stack.empty))
         in
           begin match EConstr.kind evd term1, EConstr.kind evd term2 with
-          | Evar ev, _ when Evd.is_undefined evd (fst ev) && not (is_frozen flags ev) ->
+          | Evar ev, _ when Evd.is_undefined evd (fst ev) && is_evar_allowed flags (fst ev) ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
               (position_problem true pbty,ev,term2) with
               | UnifFailure (_,(OccurCheck _ | NotClean _)) ->
@@ -511,7 +508,7 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
                      Miller patterns *)
                 default ()
               | x -> x)
-          | _, Evar ev when Evd.is_undefined evd (fst ev) && not (is_frozen flags ev) ->
+          | _, Evar ev when Evd.is_undefined evd (fst ev) && is_evar_allowed flags (fst ev) ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
               (position_problem false pbty,ev,term1) with
               | UnifFailure (_, (OccurCheck _ | NotClean _)) ->
@@ -1206,14 +1203,14 @@ type occurrences_selection =
 
 let default_occurrence_selection = Unspecified Abstraction.Imitate
 
-let default_occurrence_test ~frozen_evars ts _ origsigma _ env sigma _ c pat =
-  let flags = { (default_flags_of ~subterm_ts:ts ts) with frozen_evars } in
+let default_occurrence_test ~allowed_evars ts _ origsigma _ env sigma _ c pat =
+  let flags = { (default_flags_of ~subterm_ts:ts ts) with allowed_evars } in
   match evar_conv_x flags env sigma CONV c pat with
   | Success sigma -> true, sigma
   | UnifFailure _ -> false, sigma
 
-let default_occurrences_selection ?(frozen_evars=Evar.Set.empty) ts n =
-  (default_occurrence_test ~frozen_evars ts,
+let default_occurrences_selection ?(allowed_evars=AllowAll) ts n =
+  (default_occurrence_test ~allowed_evars ts,
    List.init n (fun _ -> default_occurrence_selection))
 
 let apply_on_subterm env evd fixedref f test c t =
@@ -1554,7 +1551,7 @@ let second_order_matching_with_args flags env evd with_ho pbty ev l t =
   if with_ho then
     let evd,ev = evar_absorb_arguments env evd ev (Array.to_list l) in
     let argoccs = default_evar_selection flags evd ev in
-    let test = default_occurrence_test ~frozen_evars:flags.frozen_evars flags.subterm_ts in
+    let test = default_occurrence_test ~allowed_evars:flags.allowed_evars flags.subterm_ts in
     let evd, b =
       try second_order_matching flags env evd ev (test,argoccs) t
       with PretypeError (_, _, NoOccurrenceFound _) -> evd, false
@@ -1582,8 +1579,8 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
                                 Termops.Internal.print_constr_env env evd t2 ++ cut ())) in
   let app_empty = Array.is_empty l1 && Array.is_empty l2 in
   match EConstr.kind evd term1, EConstr.kind evd term2 with
-  | Evar (evk1,args1 as ev1), (Rel _|Var _) when app_empty
-      && not (is_frozen flags ev1)
+  | Evar (evk1,args1), (Rel _|Var _) when app_empty
+      && is_evar_allowed flags evk1
       && List.for_all (fun a -> EConstr.eq_constr evd a term2 || isEvar evd a)
         (remove_instance_local_defs evd evk1 args1) ->
       (* The typical kind of constraint coming from pattern-matching return
@@ -1593,8 +1590,8 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
       | None ->
          let reason = ProblemBeyondCapabilities in
          UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
-  | (Rel _|Var _), Evar (evk2,args2 as ev2) when app_empty
-    && not (is_frozen flags ev2)
+  | (Rel _|Var _), Evar (evk2,args2) when app_empty
+    && is_evar_allowed flags evk2
     && List.for_all (fun a -> EConstr.eq_constr evd a term1 || isEvar evd a)
         (remove_instance_local_defs evd evk2 args2) ->
       (* The typical kind of constraint coming from pattern-matching return
@@ -1620,24 +1617,24 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
                  (evar_define evar_unify flags ~choose:true)
                  evar_unify flags env evd
                  (position_problem true pbty) ev1 ev2)
-  | Evar ev1,_ when not (is_frozen flags ev1) && Array.length l1 <= Array.length l2 ->
+  | Evar ev1,_ when is_evar_allowed flags (fst ev1) && Array.length l1 <= Array.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
       (* and otherwise second-order matching *)
       ise_try evd
         [(fun evd -> first_order_unification flags env evd (ev1,l1) appr2);
          (fun evd ->
            second_order_matching_with_args flags env evd with_ho pbty ev1 l1 t2)]
-  | _,Evar ev2 when not (is_frozen flags ev2) && Array.length l2 <= Array.length l1 ->
+  | _,Evar ev2 when is_evar_allowed flags (fst ev2) && Array.length l2 <= Array.length l1 ->
       (* On "u u1 .. u(n+p) = ?n t1 .. tn", try first-order unification *)
       (* and otherwise second-order matching *)
       ise_try evd
         [(fun evd -> first_order_unification flags env evd (ev2,l2) appr1);
          (fun evd ->
            second_order_matching_with_args flags env evd with_ho pbty ev2 l2 t1)]
-  | Evar ev1,_ when not (is_frozen flags ev1) ->
+  | Evar ev1,_ when is_evar_allowed flags (fst ev1) ->
       (* Try second-order pattern-matching *)
       second_order_matching_with_args flags env evd with_ho pbty ev1 l1 t2
-  | _,Evar ev2 when not (is_frozen flags ev2) ->
+  | _,Evar ev2 when is_evar_allowed flags (fst ev2) ->
       (* Try second-order pattern-matching *)
       second_order_matching_with_args flags env evd with_ho pbty ev2 l2 t1
   | _ ->

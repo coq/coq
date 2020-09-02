@@ -252,10 +252,6 @@ let unify_r2l x = x
 let sort_eqns = unify_r2l
 *)
 
-type allowed_evars =
-| AllowAll
-| AllowFun of (Evar.t -> bool)
-
 type core_unify_flags = {
   modulo_conv_on_closed_terms : TransparentState.t option;
     (* What this flag controls was activated with all constants transparent, *)

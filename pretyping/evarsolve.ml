@@ -25,14 +25,23 @@ open Reductionops
 open Evarutil
 open Pretype_errors
 
+type allowed_evars =
+| AllowAll
+| AllowFun of (Evar.t -> bool)
+
 type unify_flags = {
   modulo_betaiota: bool;
   open_ts : TransparentState.t;
   closed_ts : TransparentState.t;
   subterm_ts : TransparentState.t;
-  frozen_evars : Evar.Set.t;
+  allowed_evars : allowed_evars;
   allow_K_at_toplevel : bool;
-  with_cs : bool }
+  with_cs : bool
+}
+
+let is_evar_allowed flags evk = match flags.allowed_evars with
+| AllowAll -> true
+| AllowFun f -> f evk
 
 type unification_kind =
   | TypeUnification
@@ -1307,24 +1316,24 @@ let preferred_orientation evd evk1 evk2 =
 
 let solve_evar_evar_aux force f unify flags env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env evd in
-  let frozen_ev1 = Evar.Set.mem evk1 flags.frozen_evars in
-  let frozen_ev2 = Evar.Set.mem evk2 flags.frozen_evars in
+  let allowed_ev1 = is_evar_allowed flags evk1 in
+  let allowed_ev2 = is_evar_allowed flags evk2 in
   if preferred_orientation evd evk1 evk2 then
-    try if not frozen_ev1 then
+    try if allowed_ev1 then
         solve_evar_evar_l2r force f unify flags env evd aliases (opp_problem pbty) ev2 ev1
       else raise (CannotProject (evd,ev2))
     with CannotProject (evd,ev2) ->
-      try if not frozen_ev2 then
+      try if allowed_ev2 then
           solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 ev2
         else raise (CannotProject (evd,ev1))
       with CannotProject (evd,ev1) ->
         add_conv_oriented_pb ~tail:true (pbty,env,mkEvar ev1,mkEvar ev2) evd
   else
-    try if not frozen_ev2 then
+    try if allowed_ev2 then
         solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 ev2
       else raise (CannotProject (evd,ev1))
     with CannotProject (evd,ev1) ->
-    try if not frozen_ev1 then
+    try if allowed_ev1 then
         solve_evar_evar_l2r force f unify flags env evd aliases (opp_problem pbty) ev2 ev1
       else raise (CannotProject (evd,ev2))
     with CannotProject (evd,ev2) ->
@@ -1390,15 +1399,15 @@ let solve_refl ?(can_drop=false) unify flags env evd pbty evk argsv1 argsv2 =
   let candidates = filter_candidates evd evk untypedfilter NoUpdate in
   let filter = closure_of_filter evd evk untypedfilter in
   let evd',ev1 = restrict_applied_evar evd (evk,argsv1) filter candidates in
-  let frozen = Evar.Set.mem evk flags.frozen_evars in
-  if Evar.equal (fst ev1) evk && (frozen || can_drop) then
+  let allowed = is_evar_allowed flags evk in
+  if Evar.equal (fst ev1) evk && (not allowed || can_drop) then
     (* No refinement needed *) evd'
   else
     (* either progress, or not allowed to drop, e.g. to preserve possibly *)
     (* informative equations such as ?e[x:=?y]=?e[x:=?y'] where we don't know *)
     (* if e can depend on x until ?y is not resolved, or, conversely, we *)
     (* don't know if ?y has to be unified with ?y, until e is resolved *)
-  if frozen then
+  if not allowed then
     (* We cannot prune a frozen evar *)
     add_conv_oriented_pb (pbty,env,mkEvar (evk, argsv1),mkEvar (evk,argsv2)) evd
   else
@@ -1455,7 +1464,11 @@ let occur_evar_upto_types sigma n c =
 let instantiate_evar unify flags env evd evk body =
   (* Check instance freezing the evar to be defined, as
      checking could involve the same evar definition problem again otherwise *)
-  let flags = { flags with frozen_evars = Evar.Set.add evk flags.frozen_evars } in
+  let allowed = match flags.allowed_evars with
+    | AllowAll -> fun evk' -> not (Evar.equal evk evk')
+    | AllowFun f -> fun evk' -> not (Evar.equal evk evk') && f evk'
+  in
+  let flags = { flags with allowed_evars = AllowFun allowed } in
   let evd' = check_evar_instance unify flags env evd evk body in
   Evd.define evk body evd'
 

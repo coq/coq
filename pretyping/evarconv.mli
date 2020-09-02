@@ -105,11 +105,11 @@ val default_occurrence_selection : occurrence_selection
 type occurrences_selection =
   occurrence_match_test * occurrence_selection list
 
-val default_occurrence_test : frozen_evars:Evar.Set.t -> TransparentState.t -> occurrence_match_test
+val default_occurrence_test : allowed_evars:Evarsolve.allowed_evars -> TransparentState.t -> occurrence_match_test
 
 (** [default_occurrence_selection n]
     Gives the default test and occurrences for [n] arguments *)
-val default_occurrences_selection : ?frozen_evars:Evar.Set.t (* By default, none *) ->
+val default_occurrences_selection : ?allowed_evars:Evarsolve.allowed_evars (* By default, all *) ->
   TransparentState.t -> int -> occurrences_selection
 
 val second_order_matching : unify_flags -> env -> evar_map ->

@@ -105,7 +105,7 @@ let rewrite_core_unif_flags = {
   check_applied_meta_types = true;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
-  allowed_evars = AllowAll;
+  allowed_evars = Evarsolve.AllowAll;
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
   modulo_eta = true;
@@ -130,7 +130,7 @@ let freeze_initial_evars sigma flags clause =
     if Evar.Map.mem evk initial then false
     else Evar.Set.mem evk (Lazy.force newevars)
   in
-  let allowed_evars = AllowFun allowed in
+  let allowed_evars = Evarsolve.AllowFun allowed in
   {flags with
     core_unify_flags = {flags.core_unify_flags with allowed_evars};
     merge_unify_flags = {flags.merge_unify_flags with allowed_evars};
@@ -187,7 +187,7 @@ let rewrite_conv_closed_core_unif_flags = {
 
   use_meta_bound_pattern_unification = true;
 
-  allowed_evars = AllowAll;
+  allowed_evars = Evarsolve.AllowAll;
 
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
@@ -221,7 +221,7 @@ let rewrite_keyed_core_unif_flags = {
 
   use_meta_bound_pattern_unification = true;
 
-  allowed_evars = AllowAll;
+  allowed_evars = Evarsolve.AllowAll;
 
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = true;

@@ -134,7 +134,7 @@ let auto_core_unif_flags st allowed_evars = {
   modulo_eta = false;
 }
 
-let auto_unif_flags ?(allowed_evars = AllowAll) st =
+let auto_unif_flags ?(allowed_evars = Evarsolve.AllowAll) st =
   let fl = auto_core_unif_flags st allowed_evars in
   { core_unify_flags = fl;
     merge_unify_flags = fl;
@@ -307,10 +307,10 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
          if cl.cl_strict then
           let undefined = lazy (Evarutil.undefined_evars_of_term sigma concl) in
           let allowed evk = not (Evar.Set.mem evk (Lazy.force undefined)) in
-          AllowFun allowed
-         else AllowAll
-      | _ -> AllowAll
-    with e when CErrors.noncritical e -> AllowAll
+          Evarsolve.AllowFun allowed
+         else Evarsolve.AllowAll
+      | _ -> Evarsolve.AllowAll
+    with e when CErrors.noncritical e -> Evarsolve.AllowAll
   in
   let tac_of_hint =
     fun (flags, h) ->

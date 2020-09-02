@@ -16,6 +16,10 @@ type alias
 
 val of_alias : alias -> EConstr.t
 
+type allowed_evars =
+| AllowAll
+| AllowFun of (Evar.t -> bool)
+
 type unify_flags = {
   modulo_betaiota : bool;
   (* Enable beta-iota reductions during unification *)
@@ -26,8 +30,8 @@ type unify_flags = {
   subterm_ts : TransparentState.t;
   (* Enable delta reduction according to subterm_ts for selection of subterms during higher-order
      unifications. *)
-  frozen_evars : Evar.Set.t;
-  (* Frozen evars are treated like rigid variables during unification: they can not be instantiated. *)
+  allowed_evars : allowed_evars;
+  (* Disallowed evars are treated like rigid variables during unification: they can not be instantiated. *)
   allow_K_at_toplevel : bool;
   (* During higher-order unifications, allow to produce K-redexes: i.e. to produce
      an abstraction for an unused argument *)
@@ -40,6 +44,8 @@ type unification_result =
   | UnifFailure of evar_map * Pretype_errors.unification_error
 
 val is_success : unification_result -> bool
+
+val is_evar_allowed : unify_flags -> Evar.t -> bool
 
 (** Replace the vars and rels that are aliases to other vars and rels by
    their representative that is most ancient in the context *)
