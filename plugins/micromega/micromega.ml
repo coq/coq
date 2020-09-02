@@ -1384,11 +1384,13 @@ let rxcnf_or unsat deduce rXCNF polarity k e1 e2 =
 let rxcnf_impl unsat deduce rXCNF polarity k e1 e2 =
   let e3,t1 = rXCNF (negb polarity) k e1 in
   if polarity
-  then if is_cnf_ff e3
-       then rXCNF polarity k e2
-       else let e4,t2 = rXCNF polarity k e2 in
-            let f',t' = ror_cnf_opt unsat deduce e3 e4 in
-            f',(rev_append t1 (rev_append t2 t'))
+  then if is_cnf_tt e3
+       then e3,t1
+       else if is_cnf_ff e3
+            then rXCNF polarity k e2
+            else let e4,t2 = rXCNF polarity k e2 in
+                 let f',t' = ror_cnf_opt unsat deduce e3 e4 in
+                 f',(rev_append t1 (rev_append t2 t'))
   else let e4,t2 = rXCNF polarity k e2 in
        (and_cnf_opt e3 e4),(rev_append t1 t2)
 
