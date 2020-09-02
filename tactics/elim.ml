@@ -113,7 +113,7 @@ let elim_on_ba tac ba =
 let elimination_then tac id =
   let open Declarations in
   Proofview.Goal.enter begin fun gl ->
-  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_get_type_of gl (mkVar id)) in
+  let (ind,t) = pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl (mkVar id)) in
   let isrec,mkelim =
     match (Global.lookup_mind (fst (fst ind))).mind_record with
     | NotRecord -> true, Elim
@@ -178,7 +178,6 @@ and general_decompose_aux recognizer id =
 
 (* Best strategies but loss of compatibility *)
 let tmphyp_name = Id.of_string "_TmpHyp"
-let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
   Proofview.Goal.enter begin fun gl ->
@@ -195,11 +194,8 @@ let head_in indl t gl =
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   try
-    let ity,_ =
-      if !up_to_delta
-      then find_mrectype env sigma t
-      else extract_mrectype sigma t
-    in List.exists (fun i -> eq_ind (fst i) (fst ity)) indl
+    let ity,_ = extract_mrectype sigma t in
+    List.exists (fun i -> eq_ind (fst i) (fst ity)) indl
   with Not_found -> false
 
 let decompose_these c l =
