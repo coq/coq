@@ -1049,9 +1049,8 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = eq_clause
   in
     discriminator >>= fun discriminator ->
     discrimination_pf e (t,t1,t2) discriminator lbeq false_kind >>= fun pf ->
-    let pf_ty = mkArrow (clenv_type eq_clause) Sorts.Relevant false_0 in
-    let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
-    let pf = Clenv.clenv_value_cast_meta absurd_clause in
+    (* pf : eq t t1 t2 -> False *)
+    let pf = EConstr.mkApp (pf, [|clenv_value eq_clause|]) in
     tclTHENS (assert_after Anonymous false_0)
       [onLastHypId gen_absurdity; (Logic.refiner ~check:true EConstr.Unsafe.(to_constr pf))]
 
