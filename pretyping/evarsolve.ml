@@ -25,23 +25,46 @@ open Reductionops
 open Evarutil
 open Pretype_errors
 
-type allowed_evars =
-| AllowAll
-| AllowFun of (Evar.t -> bool)
+module AllowedEvars = struct
+
+  type t =
+  | AllowAll
+  | AllowFun of (Evar.t -> bool)
+
+  let mem allowed evk =
+    match allowed with
+    | AllowAll -> true
+    | AllowFun f -> f evk
+
+  let remove evk allowed =
+    let allowed = match allowed with
+      | AllowAll -> fun evk' -> not (Evar.equal evk evk')
+      | AllowFun f -> fun evk' -> not (Evar.equal evk evk') && f evk'
+    in
+    AllowFun allowed
+
+  let all = AllowAll
+
+  let except evars =
+    AllowFun (fun evk -> not (Evar.Set.mem evk evars))
+
+  let from_pred f =
+    AllowFun f
+
+end
 
 type unify_flags = {
   modulo_betaiota: bool;
   open_ts : TransparentState.t;
   closed_ts : TransparentState.t;
   subterm_ts : TransparentState.t;
-  allowed_evars : allowed_evars;
+  allowed_evars : AllowedEvars.t;
   allow_K_at_toplevel : bool;
   with_cs : bool
 }
 
-let is_evar_allowed flags evk = match flags.allowed_evars with
-| AllowAll -> true
-| AllowFun f -> f evk
+let is_evar_allowed flags evk =
+  AllowedEvars.mem flags.allowed_evars evk
 
 type unification_kind =
   | TypeUnification
@@ -1464,11 +1487,8 @@ let occur_evar_upto_types sigma n c =
 let instantiate_evar unify flags env evd evk body =
   (* Check instance freezing the evar to be defined, as
      checking could involve the same evar definition problem again otherwise *)
-  let allowed = match flags.allowed_evars with
-    | AllowAll -> fun evk' -> not (Evar.equal evk evk')
-    | AllowFun f -> fun evk' -> not (Evar.equal evk evk') && f evk'
-  in
-  let flags = { flags with allowed_evars = AllowFun allowed } in
+  let allowed_evars = AllowedEvars.remove evk flags.allowed_evars in
+  let flags = { flags with allowed_evars } in
   let evd' = check_evar_instance unify flags env evd evk body in
   Evd.define evk body evd'
 

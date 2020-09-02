@@ -16,9 +16,17 @@ type alias
 
 val of_alias : alias -> EConstr.t
 
-type allowed_evars =
-| AllowAll
-| AllowFun of (Evar.t -> bool)
+module AllowedEvars : sig
+
+  type t
+
+  val all : t
+  val mem : t -> Evar.t -> bool
+  val remove : Evar.t -> t -> t
+  val except : Evar.Set.t -> t
+  val from_pred : (Evar.t -> bool) -> t
+
+end
 
 type unify_flags = {
   modulo_betaiota : bool;
@@ -30,7 +38,7 @@ type unify_flags = {
   subterm_ts : TransparentState.t;
   (* Enable delta reduction according to subterm_ts for selection of subterms during higher-order
      unifications. *)
-  allowed_evars : allowed_evars;
+  allowed_evars : AllowedEvars.t;
   (* Disallowed evars are treated like rigid variables during unification: they can not be instantiated. *)
   allow_K_at_toplevel : bool;
   (* During higher-order unifications, allow to produce K-redexes: i.e. to produce

@@ -40,7 +40,7 @@ let default_transparent_state env = TransparentState.full
 let default_flags_of ?(subterm_ts=TransparentState.empty) ts =
   { modulo_betaiota = true;
     open_ts = ts; closed_ts = ts; subterm_ts;
-    allowed_evars = AllowAll; with_cs = true;
+    allowed_evars = AllowedEvars.all; with_cs = true;
     allow_K_at_toplevel = true }
 
 let default_flags env =
@@ -1209,7 +1209,7 @@ let default_occurrence_test ~allowed_evars ts _ origsigma _ env sigma _ c pat =
   | Success sigma -> true, sigma
   | UnifFailure _ -> false, sigma
 
-let default_occurrences_selection ?(allowed_evars=AllowAll) ts n =
+let default_occurrences_selection ?(allowed_evars=AllowedEvars.all) ts n =
   (default_occurrence_test ~allowed_evars ts,
    List.init n (fun _ -> default_occurrence_selection))
 
