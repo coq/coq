@@ -1,0 +1,4 @@
+- **Added:**
+  Coq is now tested against OCaml 4.11.1
+  (`#12972 <https://github.com/coq/coq/pull/12972>`_,
+  by Emilio Jesus Gallego Arias).
