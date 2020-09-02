@@ -84,7 +84,7 @@ jobs:
       opam list
     displayName: 'Install OCaml dependencies'
     env:
-      COMPILER: "4.10.0"
+      COMPILER: "4.11.1"
       FINDLIB_VER: ".1.8.1"
       OPAMYES: "true"
 
