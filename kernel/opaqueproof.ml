@@ -54,6 +54,7 @@ let not_here () =
 
 let create dp cu tab =
   let map (c, u) =
+    let c = Constr.hcons c in
     let u, ctx = match u with
     | PrivateMonomorphic u -> PrivateMonomorphic (), Some u
     | PrivatePolymorphic (n, u) -> PrivatePolymorphic (n, u), None
