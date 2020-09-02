@@ -94,6 +94,9 @@ let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
       (interp_type_evars_impls ~flags ~impls env_bl)
       evd ctypopt
   in
+  (* solve typeclasses / heuristics before checking the body *)
+  let solve_flags = Pretyping.{all_no_fail_flags with program_mode} in
+  let evd = Pretyping.solve_remaining_evars solve_flags env evd in
   (* Build the body, and merge implicits from parameters and from type/body *)
   let evd, c, imps, tyopt =
     match tyopt with
