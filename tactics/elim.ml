@@ -34,14 +34,14 @@ module NamedDecl = Context.Named.Declaration
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
 let general_elim_then_using mk_elim
-    rec_flag allnames tac predicate ind (c, t) =
+    rec_flag allnames tac predicate ind (id, t) =
   let open Pp in
   Proofview.Goal.enter begin fun gl ->
   let sigma, elim = mk_elim ind gl in
   let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
   (Proofview.Goal.enter begin fun gl ->
-  let indclause = mk_clenv_from gl (c, t) in
+  let indclause = mk_clenv_from gl (mkVar id, t) in
   (* applying elimination_scheme just a little modified *)
   let elimclause = mk_clenv_from gl (elim,Tacmach.New.pf_get_type_of gl elim)  in
   let indmv =
@@ -116,16 +116,16 @@ let elim_on_ba tac ba =
   tac branches
   end
 
-let elimination_then tac c =
+let elimination_then tac id =
   let open Declarations in
   Proofview.Goal.enter begin fun gl ->
-  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_get_type_of gl c) in
+  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_get_type_of gl (mkVar id)) in
   let isrec,mkelim =
     match (Global.lookup_mind (fst (fst ind))).mind_record with
     | NotRecord -> true,gl_make_elim
     | FakeRecord | PrimRecord _ -> false,gl_make_case true
   in
-  general_elim_then_using mkelim isrec None tac None ind (c, t)
+  general_elim_then_using mkelim isrec None tac None ind (id, t)
   end
 
 (* Supposed to be called without as clause *)
@@ -168,14 +168,11 @@ Another example :
    Qed.
 *)
 
-let elimHypThen tac id =
-  elimination_then tac (mkVar id)
-
 let rec general_decompose_on_hyp recognizer =
   ifOnHyp recognizer (general_decompose_aux recognizer) (fun _ -> Proofview.tclUNIT())
 
 and general_decompose_aux recognizer id =
-  elimHypThen
+  elimination_then
     (introElimAssumsThen
        (fun bas ->
           tclTHEN (clear [id])
@@ -236,9 +233,6 @@ let h_decompose_and = decompose_and
 
 (* The tactic Double performs a double induction *)
 
-let simple_elimination c =
-  elimination_then (fun _ -> tclIDTAC) c
-
 let induction_trailer abs_i abs_j bargs =
   tclTHEN
     (tclDO (abs_j - abs_i) intro)
@@ -261,7 +255,7 @@ let induction_trailer abs_i abs_j bargs =
           in
           let ids = List.rev (ids_of_named_context hyps) in
           (tclTHENLIST
-            [revert ids; simple_elimination (mkVar id)])
+            [revert ids; elimination_then (fun _ -> tclIDTAC) id])
           end
           ))
 
@@ -279,7 +273,7 @@ let double_ind h1 h2 =
      (onLastHypId
         (fun id ->
            elimination_then
-             (introElimAssumsThen (induction_trailer abs_i abs_j)) (mkVar id))))
+             (introElimAssumsThen (induction_trailer abs_i abs_j)) id)))
   end
 
 let h_double_induction = double_ind

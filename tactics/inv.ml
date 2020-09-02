@@ -490,7 +490,7 @@ let raw_inversion inv_kind id status names =
     tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (tclTHENS
         (assert_before Anonymous cut_concl)
-        [case_tac dep names (rewrite_equations_tac as_mode inv_kind id neqns) elim_predicate ind (c,t);
+        [case_tac dep names (rewrite_equations_tac as_mode inv_kind id neqns) elim_predicate ind (id, t);
         onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
   end
 
