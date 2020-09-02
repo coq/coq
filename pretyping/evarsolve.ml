@@ -29,27 +29,24 @@ module AllowedEvars = struct
 
   type t =
   | AllowAll
-  | AllowFun of (Evar.t -> bool)
+  | AllowFun of (Evar.t -> bool) * Evar.Set.t
 
   let mem allowed evk =
     match allowed with
     | AllowAll -> true
-    | AllowFun f -> f evk
+    | AllowFun (f,except) -> f evk && not (Evar.Set.mem evk except)
 
-  let remove evk allowed =
-    let allowed = match allowed with
-      | AllowAll -> fun evk' -> not (Evar.equal evk evk')
-      | AllowFun f -> fun evk' -> not (Evar.equal evk evk') && f evk'
-    in
-    AllowFun allowed
+  let remove evk = function
+    | AllowAll -> AllowFun ((fun _ -> true), Evar.Set.singleton evk)
+    | AllowFun (f,except) -> AllowFun (f, Evar.Set.add evk except)
 
   let all = AllowAll
 
   let except evars =
-    AllowFun (fun evk -> not (Evar.Set.mem evk evars))
+    AllowFun ((fun _ -> true), evars)
 
   let from_pred f =
-    AllowFun f
+    AllowFun (f, Evar.Set.empty)
 
 end
 

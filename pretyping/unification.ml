@@ -417,7 +417,7 @@ let default_no_delta_unify_flags ts =
 
 let allow_new_evars sigma =
   let undefined = Evd.undefined_map sigma in
-  AllowedEvars.except @@ Evar.Map.domain undefined
+  AllowedEvars.from_pred (fun evk -> not (Evar.Map.mem evk undefined))
 
 (* Default flags for looking for subterms in elimination tactics *)
 (* Not used in practice at the current date, to the exception of *)
