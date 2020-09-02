@@ -37,7 +37,7 @@ CI_TARGETS= \
     ci-geocoq \
     ci-coqhammer \
     ci-hott \
-    ci-lambda_rust \
+    ci-iris \
     ci-math_classes \
     ci-mathcomp \
     ci-metacoq \

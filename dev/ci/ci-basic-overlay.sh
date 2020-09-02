@@ -62,9 +62,17 @@
 : "${iris_CI_GITURL:=https://gitlab.mpi-sws.org/iris/iris}"
 : "${iris_CI_ARCHIVEURL:=${iris_CI_GITURL}/-/archive}"
 
-: "${lambda_rust_CI_REF:=master}"
-: "${lambda_rust_CI_GITURL:=https://gitlab.mpi-sws.org/iris/lambda-rust}"
-: "${lambda_rust_CI_ARCHIVEURL:=${lambda_rust_CI_GITURL}/-/archive}"
+: "${autosubst_CI_REF:=coq86-devel}"
+: "${autosubst_CI_GITURL:=https://github.com/RalfJung/autosubst}"
+: "${autosubst_CI_ARCHIVEURL:=${autosubst_CI_GITURL}/archive}"
+
+: "${iris_string_ident_CI_REF:=master}"
+: "${iris_string_ident_CI_GITURL:=https://gitlab.mpi-sws.org/iris/string-ident}"
+: "${iris_string_ident_CI_ARCHIVEURL:=${iris_string_ident_CI_GITURL}/-/archive}"
+
+: "${iris_examples_CI_REF:=master}"
+: "${iris_examples_CI_GITURL:=https://gitlab.mpi-sws.org/iris/examples}"
+: "${iris_examples_CI_ARCHIVEURL:=${iris_examples_CI_GITURL}/-/archive}"
 
 ########################################################################
 # HoTT

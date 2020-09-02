@@ -3,13 +3,13 @@
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-install_ssreflect
-
-# Setup lambda_rust first
-git_download lambda_rust
+# Setup iris_examples and separate dependencies first
+git_download autosubst
+git_download iris_string_ident
+git_download iris_examples
 
 # Extract required version of Iris (avoiding "+" which does not work on MacOS :( *)
-iris_CI_REF=$(grep -F coq-iris < "${CI_BUILD_DIR}/lambda_rust/opam" | sed 's/.*"dev\.[0-9][0-9.-]*\.\([0-9a-z][0-9a-z]*\)".*/\1/')
+iris_CI_REF=$(grep -F coq-iris < "${CI_BUILD_DIR}/iris_examples/opam" | sed 's/.*"dev\.[0-9][0-9.-]*\.\([0-9a-z][0-9a-z]*\)".*/\1/')
 
 # Setup Iris
 git_download iris
@@ -26,5 +26,11 @@ git_download stdpp
 # Build and validate Iris
 ( cd "${CI_BUILD_DIR}/iris" && make && make validate && make install )
 
-# Build lambda_rust
-( cd "${CI_BUILD_DIR}/lambda_rust" && make && make install )
+# Build autosubst
+( cd "${CI_BUILD_DIR}/autosubst" && make && make install )
+
+# Build iris-string-ident
+( cd "${CI_BUILD_DIR}/iris_string_ident" && make && make install )
+
+# Build Iris examples
+( cd "${CI_BUILD_DIR}/iris_examples" && make && make install )
