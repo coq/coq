@@ -463,7 +463,7 @@ let raw_inversion inv_kind id status names =
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
-    let (ind, t) =
+    let ((ind, u), t) =
       try pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl c)
       with UserError _ ->
         let msg = str "The type of " ++ Id.print id ++ str " is not inductive." in
@@ -487,10 +487,11 @@ let raw_inversion inv_kind id status names =
     in
     let neqns = List.length realargs in
     let as_mode = names != None in
+    let (_, args) = decompose_app_vect sigma t in
     tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (tclTHENS
         (assert_before Anonymous cut_concl)
-        [case_tac dep names (rewrite_equations_tac as_mode inv_kind id neqns) elim_predicate ind (id, t);
+        [case_tac dep names (rewrite_equations_tac as_mode inv_kind id neqns) elim_predicate (ind, u, args) id;
         onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
   end
 
