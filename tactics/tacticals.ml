@@ -14,10 +14,8 @@ open Util
 open Names
 open Constr
 open EConstr
-open Termops
 open Declarations
 open Tacmach
-open Clenv
 open Tactypes
 
 module RelDecl = Context.Rel.Declaration
@@ -335,18 +333,6 @@ let ifOnHyp pred tac1 tac2 id gl =
   used to keep track of some information about the ``branches'' of
   the elimination. *)
 
-type branch_args = {
-  ity        : pinductive;   (* the type we were eliminating on *)
-  branchnum  : int;         (* the branch number *)
-  nassums    : int;         (* number of assumptions/letin to be introduced *)
-  branchsign : bool list;   (* the signature of the branch.
-                               true=assumption, false=let-in *)
-  branchnames : intro_patterns}
-
-type branch_assumptions = {
-  ba        : branch_args;       (* the branch args *)
-  assums    : named_context}   (* the list of assumptions introduced *)
-
 let fix_empty_or_and_pattern nv l =
   (* 1- The syntax does not distinguish between "[ ]" for one clause with no
      names and "[ ]" for no clause at all *)
@@ -401,14 +387,12 @@ let get_and_check_or_and_pattern_gen ?loc check_and names branchsigns =
 
 let get_and_check_or_and_pattern ?loc = get_and_check_or_and_pattern_gen ?loc true
 
-let compute_induction_names_gen check_and branchletsigns = function
+let compute_induction_names check_and branchletsigns = function
   | None ->
       Array.make (Array.length branchletsigns) []
   | Some {CAst.loc;v=names} ->
       let names = fix_empty_or_and_pattern (Array.length branchletsigns) names in
       get_and_check_or_and_pattern_gen check_and ?loc names branchletsigns
-
-let compute_induction_names = compute_induction_names_gen true
 
 (* Compute the let-in signature of case analysis or standard induction scheme *)
 let compute_constructor_signatures ~rec_flag ((_,k as ity),u) =
@@ -844,60 +828,6 @@ module New = struct
     tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
     end
 
-  (* Find the right elimination suffix corresponding to the sort of the goal *)
-  (* c should be of type A1->.. An->B with B an inductive definition *)
-  let general_elim_then_using mk_elim
-      rec_flag allnames tac predicate ind (c, t) =
-    Proofview.Goal.enter begin fun gl ->
-    let sigma, elim = mk_elim ind gl in
-    let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Proofview.Goal.enter begin fun gl ->
-    let indclause = mk_clenv_from gl (c, t) in
-    (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from gl (elim,Tacmach.New.pf_get_type_of gl elim)  in
-    let indmv =
-      match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
-      | Meta mv -> mv
-      | _         -> anomaly (str"elimination.")
-    in
-    let pmv =
-      let p, _ = decompose_app elimclause.evd elimclause.templtyp.Evd.rebus in
-      match EConstr.kind elimclause.evd p with
-      | Meta p -> p
-      | _ ->
-          let name_elim =
-            match EConstr.kind sigma elim with
-            | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env (pf_env gl) sigma elim
-            | _ -> mt ()
-          in
-          user_err ~hdr:"Tacticals.general_elim_then_using"
-            (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
-    in
-    let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
-    let branchsigns = compute_constructor_signatures ~rec_flag ind in
-    let brnames = compute_induction_names_gen false branchsigns allnames in
-    let flags = Unification.elim_flags () in
-    let elimclause' =
-      match predicate with
-      | None   -> elimclause'
-      | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
-    in
-    let after_tac i =
-      let ba = { branchsign = branchsigns.(i);
-                 branchnames = brnames.(i);
-                 nassums = List.length branchsigns.(i);
-                 branchnum = i+1;
-                 ity = ind; }
-      in
-      tac ba
-    in
-    let branchtacs = List.init (Array.length branchsigns) after_tac in
-    Proofview.tclTHEN
-      (Clenv.res_pf ~flags elimclause')
-      (Proofview.tclEXTEND [] tclIDTAC branchtacs)
-    end) end
-
   let elimination_sort_of_goal gl =
     (* Retyping will expand evars anyway. *)
     let c = Proofview.Goal.concl gl in
@@ -911,68 +841,6 @@ module New = struct
   let elimination_sort_of_clause id gl = match id with
   | None -> elimination_sort_of_goal gl
   | Some id -> elimination_sort_of_hyp id gl
-
-  (* computing the case/elim combinators *)
-
-  let gl_make_elim ind = begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let gr = Indrec.lookup_eliminator env (fst ind) (elimination_sort_of_goal gl) in
-    let (sigma, c) = pf_apply Evd.fresh_global gl gr in
-    (sigma, c)
-  end
-
-  let gl_make_case_dep (ind, u) = begin fun gl ->
-    let sigma = project gl in
-    let u = EInstance.kind (project gl) u in
-    let (sigma, r) = Indrec.build_case_analysis_scheme (pf_env gl) sigma (ind, u) true
-      (elimination_sort_of_goal gl)
-    in
-    (sigma, EConstr.of_constr r)
-  end
-
-  let gl_make_case_nodep (ind, u) = begin fun gl ->
-    let sigma = project gl in
-    let u = EInstance.kind sigma u in
-    let (sigma, r) = Indrec.build_case_analysis_scheme (pf_env gl) sigma (ind, u) false
-      (elimination_sort_of_goal gl)
-    in
-    (sigma, EConstr.of_constr r)
-  end
-
-  let make_elim_branch_assumptions ba hyps =
-    let assums =
-      try List.rev (List.firstn ba.nassums hyps)
-      with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions.") in
-    { ba = ba; assums = assums }
-
-  let elim_on_ba tac ba =
-    Proofview.Goal.enter begin fun gl ->
-    let branches = make_elim_branch_assumptions ba (Proofview.Goal.hyps gl) in
-    tac branches
-    end
-
-  let case_on_ba tac ba =
-    Proofview.Goal.enter begin fun gl ->
-    let branches = make_elim_branch_assumptions ba (Proofview.Goal.hyps gl) in
-    tac branches
-    end
-
-  let elimination_then tac c =
-    Proofview.Goal.enter begin fun gl ->
-    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_get_type_of gl c) in
-    let isrec,mkelim =
-      match (Global.lookup_mind (fst (fst ind))).mind_record with
-      | NotRecord -> true,gl_make_elim
-      | FakeRecord | PrimRecord _ -> false,gl_make_case_dep
-    in
-    general_elim_then_using mkelim isrec None tac None ind (c, t)
-    end
-
-  let case_then_using =
-    general_elim_then_using gl_make_case_dep false
-
-  let case_nodep_then_using =
-    general_elim_then_using gl_make_case_nodep false
 
   let pf_constr_of_global ref =
     Proofview.tclEVARMAP >>= fun sigma ->

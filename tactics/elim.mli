@@ -10,14 +10,13 @@
 
 open Names
 open EConstr
-open Tacticals
 open Tactypes
 
 (** Eliminations tactics. *)
 
-val introCaseAssumsThen : Tactics.evars_flag ->
-  (intro_patterns -> branch_assumptions -> unit Proofview.tactic) ->
-    branch_args -> unit Proofview.tactic
+val case_tac : bool -> or_and_intro_pattern option ->
+  (intro_patterns -> named_context -> unit Proofview.tactic) ->
+  constr -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
 
 val h_decompose       : inductive list -> constr -> unit Proofview.tactic
 val h_decompose_or    : constr -> unit Proofview.tactic
