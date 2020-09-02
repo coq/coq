@@ -85,7 +85,7 @@ let is_reserved_type na t =
   | Name id ->
     try
       let pat = Reserve.find_reserved_type id in
-      let _ = match_notation_constr false t Id.Set.empty ([],pat) in
+      let _ = match_notation_constr ~print_univ:false t ~vars:Id.Set.empty ([],pat) in
       true
     with Not_found | No_match -> false
 
@@ -1273,7 +1273,7 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
           | AppBoundedNotation _ -> raise No_match in
         (* Try matching ... *)
         let terms,termlists,binders,binderlists =
-          match_notation_constr !print_universes t vars pat in
+          match_notation_constr ~print_univ:(!print_universes) t ~vars pat in
         (* Try availability of interpretation ... *)
         match keyrule with
           | NotationRule (_,ntn as specific_ntn) ->

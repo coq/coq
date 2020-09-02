@@ -1380,9 +1380,9 @@ and match_disjunctive_equations u alp metas sigma {CAst.v=(ids,disjpatl1,rhs1)} 
       (alp,sigma) disjpatl1 disjpatl2 in
   match_in u alp metas sigma rhs1 rhs2
 
-let match_notation_constr u c vars (metas,pat) =
+let match_notation_constr ~print_univ c ~vars (metas,pat) =
   let terms,termlists,binders,binderlists =
-    match_ false u (vars,([],[])) metas ([],[],[],[]) c pat in
+    match_ false print_univ (vars,([],[])) metas ([],[],[],[]) c pat in
   (* Turning substitution based on binding/constr distinction into a
      substitution based on entry productions *)
   List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders',binderlists') ->
