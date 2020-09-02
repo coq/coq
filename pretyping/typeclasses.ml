@@ -68,6 +68,7 @@ type typeclass = {
 }
 
 type typeclasses = typeclass GlobRef.Map.t
+(* Invariant: for any pair (gr, tc) in the map, gr and tc.cl_impl are equal *)
 
 type instance = {
   is_class: GlobRef.t;
@@ -268,7 +269,7 @@ let instances env sigma r =
   let cl = class_info env sigma r in instances_of cl
 
 let is_class gr =
-  GlobRef.Map.exists (fun _ v -> GlobRef.equal v.cl_impl gr) !classes
+  GlobRef.Map.mem gr !classes
 
 open Evar_kinds
 type evar_filter = Evar.t -> Evar_kinds.t Lazy.t -> bool
