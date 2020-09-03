@@ -180,7 +180,7 @@ are a way to take into account the discreteness of :math:`\mathbb{Z}` by roundin
    Let :math:`p` be an integer and :math:`c` a rational constant. Then
    :math:`p \ge c \rightarrow p \ge \lceil{c}\rceil`.
 
-For instance, from 2 x = 1 we can deduce
+For instance, from :math:`2 x = 1` we can deduce
 
 + :math:`x \ge 1/2` whose cut plane is :math:`x \ge \lceil{1/2}\rceil = 1`;
 + :math:`x \le 1/2` whose cut plane is :math:`x \le \lfloor{1/2}\rfloor = 0`.
