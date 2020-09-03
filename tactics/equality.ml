@@ -1394,19 +1394,12 @@ let inject_at_positions env sigma l2r eq posns tac =
       let sigma, (injbody,resty) = build_injector e_env !evdref t1' (mkVar e) cpath in
       let injfun = mkNamedLambda (make_annot e Sorts.Relevant) t injbody in
       let sigma,congr = Evd.fresh_global env sigma eq.congr in
-      let pf = applist(congr,[t;resty;injfun;t1;t2]) in
+      (* pf : eq t t1 t2 -> eq resty (injfun t1) (injfun t2) *)
+      let pf = mkApp (congr,[|t; resty; injfun; t1; t2|]) in
       let sigma, pf_typ = Typing.type_of env sigma pf in
-      let inj_clause =
-        let sigma = eq_clause.evd in
-        let f_clause = mk_clenv_from_env eq_clause.env sigma None (pf, pf_typ) in
-        let argmv =
-          (match EConstr.kind sigma (last_arg f_clause.evd f_clause.templval.Evd.rebus) with
-          | Meta mv -> mv
-          | _  -> user_err  (str "Ill-formed clause applicator.")) in
-        clenv_fchain ~with_univs:false argmv f_clause eq_clause
-      in
-      let pf = Clenv.clenv_value_cast_meta inj_clause in
-      let ty = simplify_args env sigma (clenv_type inj_clause) in
+      let pf_typ = Vars.subst1 mkProp (pi3 @@ destProd sigma pf_typ) in
+      let pf = mkApp (pf, [| Clenv.clenv_value eq_clause |]) in
+      let ty = simplify_args env sigma pf_typ in
         evdref := sigma;
         Some (pf, ty)
     with Failure _ -> None
