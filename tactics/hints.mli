@@ -42,9 +42,8 @@ type 'a hint_ast =
 type hint = private {
   hint_term : constr;
   hint_type : types;
-  hint_uctx : Univ.ContextSet.t;
+  hint_uctx : Univ.ContextSet.t option;
   hint_clnv : clausenv;
-  hint_poly : bool;
 }
 
 type 'a hints_path_atom_gen =
@@ -170,11 +169,11 @@ type hnf = bool
 
 type hint_term =
   | IsGlobRef of GlobRef.t
-  | IsConstr of constr * Univ.ContextSet.t [@ocaml.deprecated "Declare a hint constant instead"]
+  | IsConstr of constr * Univ.ContextSet.t option [@ocaml.deprecated "Declare a hint constant instead"]
 
 type hints_entry =
-  | HintsResolveEntry of (hint_info * bool * hnf * hints_path_atom * hint_term) list
-  | HintsImmediateEntry of (hints_path_atom * bool * hint_term) list
+  | HintsResolveEntry of (hint_info * hnf * hints_path_atom * hint_term) list
+  | HintsImmediateEntry of (hints_path_atom * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
@@ -211,7 +210,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> hint_info -> check:bool -> poly:bool -> ?name:hints_path_atom ->
+  env -> evar_map -> hint_info -> check:bool -> ?name:hints_path_atom ->
   hint_term -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].

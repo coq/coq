@@ -129,22 +129,20 @@ type hints_path = GlobRef.t hints_path_gen
 
 type hint_term =
   | IsGlobRef of GlobRef.t
-  | IsConstr of constr * Univ.ContextSet.t
+  | IsConstr of constr * Univ.ContextSet.t option (* None if monomorphic *)
 
 type 'a with_uid = {
   obj : 'a;
   uid : KerName.t;
 }
 
-type raw_hint = constr * types * Univ.ContextSet.t * bool (* poly *)
+type raw_hint = constr * types * Univ.ContextSet.t option
 
 type hint = {
   hint_term : constr;
   hint_type : types;
-  hint_uctx : Univ.ContextSet.t;
+  hint_uctx : Univ.ContextSet.t option; (* None if monomorphic *)
   hint_clnv : clausenv;
-  hint_poly : bool;
-  (** Is the hint polymorpic and hence should be refreshed at each application *)
 }
 
 type 'a with_metadata =
@@ -334,15 +332,19 @@ let strip_params env sigma c =
     | _ -> c)
   | _ -> c
 
+let merge_context_set_opt sigma ctx = match ctx with
+| None -> sigma
+| Some ctx -> Evd.merge_context_set Evd.univ_flexible sigma ctx
+
 let instantiate_hint env sigma p =
-  let mk_clenv (c, cty, ctx, poly) =
-    let sigma = Evd.merge_context_set univ_flexible sigma ctx in
+  let mk_clenv (c, cty, ctx) =
+    let sigma = merge_context_set_opt sigma ctx in
     let cl = mk_clenv_from_env env sigma None (c,cty) in
     let cl = {cl with templval =
           { cl.templval with rebus = strip_params env sigma cl.templval.rebus };
         env = empty_env}
     in
-    { hint_term = c; hint_type = cty; hint_uctx = ctx; hint_clnv = cl; hint_poly = poly }
+    { hint_term = c; hint_type = cty; hint_uctx = ctx; hint_clnv = cl; }
   in
   let code = match p.code.obj with
     | Res_pf c -> Res_pf (mk_clenv c)
@@ -816,7 +818,7 @@ let secvars_of_constr env sigma c =
 let secvars_of_global env gr =
   secvars_of_idset (vars_of_global env gr)
 
-let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
+let make_exact_entry env sigma info ?(name=PathAny) (c, cty, ctx) =
   let secvars = secvars_of_constr env sigma c in
   let cty = strip_outer_cast sigma cty in
     match EConstr.kind sigma cty with
@@ -835,13 +837,13 @@ let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
         (Some hd,
          { pri; pat = Some pat; name;
            db = None; secvars;
-           code = with_uid (Give_exact (c, cty, ctx, poly)); })
+           code = with_uid (Give_exact (c, cty, ctx)); })
 
-let make_apply_entry env sigma hnf info ~poly ?(name=PathAny) (c, cty, ctx) =
+let make_apply_entry env sigma hnf info ?(name=PathAny) (c, cty, ctx) =
   let cty = if hnf then hnf_constr env sigma cty else cty in
   match EConstr.kind sigma cty with
   | Prod _ ->
-    let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
+    let sigma' = merge_context_set_opt sigma ctx in
     let ce = mk_clenv_from_env env sigma' None (c,cty) in
     let c' = clenv_type (* ~reduce:false *) ce in
     let hd =
@@ -861,49 +863,27 @@ let make_apply_entry env sigma hnf info ~poly ?(name=PathAny) (c, cty, ctx) =
        { pri; pat = Some pat; name;
          db = None;
          secvars;
-         code = with_uid (Res_pf(c,cty,ctx,poly)); })
+         code = with_uid (Res_pf(c,cty,ctx)); })
     else
       (Some hd,
        { pri; pat = Some pat; name;
          db = None; secvars;
-         code = with_uid (ERes_pf(c,cty,ctx,poly)); })
+         code = with_uid (ERes_pf(c,cty,ctx)); })
   | _ -> failwith "make_apply_entry"
 
 (* flags is (e,h,v) with e=true if eapply and h=true if hnf and v=true if verbose
    c is a constr
    cty is the type of constr *)
 
-let pr_hint_term env sigma ctx = function
-  | IsGlobRef gr -> pr_global gr
-  | IsConstr (c, ctx) ->
-     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-     pr_econstr_env env sigma c
+let fresh_global_or_constr env sigma cr = match cr with
+| IsGlobRef gr ->
+  let (c, ctx) = UnivGen.fresh_global_instance env gr in
+  let ctx = if Environ.is_polymorphic env gr then Some ctx else None in
+  (EConstr.of_constr c, ctx)
+| IsConstr (c, ctx) -> (c, ctx)
 
-let warn_polymorphic_hint =
-  CWarnings.create ~name:"polymorphic-hint" ~category:"automation"
-         (fun hint -> strbrk"Using polymorphic hint " ++ hint ++
-                        str" monomorphically" ++
-                        strbrk" use Polymorphic Hint to use it polymorphically.")
-
-let fresh_global_or_constr env sigma poly cr =
-  let isgr, (c, ctx) =
-    match cr with
-    | IsGlobRef gr ->
-      let (c, ctx) = UnivGen.fresh_global_instance env gr in
-       true, (EConstr.of_constr c, ctx)
-    | IsConstr (c, ctx) -> false, (c, ctx)
-  in
-    if poly then (c, ctx)
-    else if Univ.ContextSet.is_empty ctx then (c, ctx)
-    else begin
-      if isgr then
-        warn_polymorphic_hint (pr_hint_term env sigma ctx cr);
-      DeclareUctx.declare_universe_context ~poly:false ctx;
-      (c, Univ.ContextSet.empty)
-    end
-
-let make_resolves env sigma (eapply, hnf) info ~check ~poly ?name cr =
-  let c, ctx = fresh_global_or_constr env sigma poly cr in
+let make_resolves env sigma (eapply, hnf) info ~check ?name cr =
+  let c, ctx = fresh_global_or_constr env sigma cr in
   let cty = Retyping.get_type_of env sigma c in
   let try_apply f =
     try
@@ -914,8 +894,8 @@ let make_resolves env sigma (eapply, hnf) info ~check ~poly ?name cr =
     with Failure _ -> None
   in
   let ents = List.map_filter try_apply
-                             [make_exact_entry env sigma info ~poly ?name;
-                              make_apply_entry env sigma hnf info ~poly ?name]
+                             [make_exact_entry env sigma info ?name;
+                              make_apply_entry env sigma hnf info ?name]
   in
   if check && List.is_empty ents then
     user_err ~hdr:"Hint"
@@ -929,9 +909,9 @@ let make_resolve_hyp env sigma decl =
   let hname = NamedDecl.get_id decl in
   let c = mkVar hname in
   try
-    [make_apply_entry env sigma true empty_hint_info ~poly:false
+    [make_apply_entry env sigma true empty_hint_info
        ~name:(PathHints [GlobRef.VarRef hname])
-       (c, NamedDecl.get_type decl, Univ.ContextSet.empty)]
+       (c, NamedDecl.get_type decl, None)]
   with
     | Failure _ -> []
     | e when noncritical e -> anomaly (Pp.str "make_resolve_hyp.")
@@ -977,9 +957,9 @@ let make_mode ref m =
            str" arguments while the mode declares " ++ int (Array.length m'))
     else m'
 
-let make_trivial env sigma poly ?(name=PathAny) r =
-  let c,ctx = fresh_global_or_constr env sigma poly r in
-  let sigma = Evd.merge_context_set univ_flexible sigma ctx in
+let make_trivial env sigma ?(name=PathAny) r =
+  let c,ctx = fresh_global_or_constr env sigma r in
+  let sigma = merge_context_set_opt sigma ctx in
   let t = hnf_constr env sigma (Retyping.get_type_of env sigma c) in
   let hd = head_constr sigma t in
   let ce = mk_clenv_from_env env sigma None (c,t) in
@@ -989,7 +969,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
      name = name;
      db = None;
      secvars = secvars_of_constr env sigma c;
-     code= with_uid (Res_pf_THEN_trivial_fail(c,t,ctx,poly)) })
+     code= with_uid (Res_pf_THEN_trivial_fail(c,t,ctx)) })
 
 
 
@@ -1102,10 +1082,10 @@ let subst_autohint (subst, obj) =
        with Bound -> gr')
   in
   let subst_mps subst c = EConstr.of_constr (subst_mps subst (EConstr.Unsafe.to_constr c)) in
-  let subst_aux ((c, t, ctx, poly) as h) =
+  let subst_aux ((c, t, ctx) as h) =
     let c' = subst_mps subst c in
     let t' = subst_mps subst t in
-    if c==c' && t'==t then h else (c', t', ctx, poly)
+    if c==c' && t'==t then h else (c', t', ctx)
   in
   let subst_hint (k,data as hint) =
     let k' = Option.Smart.map subst_key k in
@@ -1214,13 +1194,13 @@ let add_resolves env sigma clist ~local ~superglobal dbnames =
   List.iter
     (fun dbname ->
       let r =
-        List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
+        List.flatten (List.map (fun (pri, hnf, path, gr) ->
           make_resolves env sigma (true, hnf)
-            pri ~check:true ~poly ~name:path gr) clist)
+            pri ~check:true ~name:path gr) clist)
       in
       let check (_, hint) = match hint.code.obj with
-      | ERes_pf (c, cty, ctx, _) ->
-        let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
+      | ERes_pf (c, cty, ctx) ->
+        let sigma' = merge_context_set_opt sigma ctx in
         let ce = mk_clenv_from_env env sigma' None (c,cty) in
         let miss = clenv_missing ce in
         let nmiss = List.length miss in
@@ -1288,7 +1268,7 @@ let add_externs info tacast ~local ~superglobal dbnames =
 let add_trivials env sigma l ~local ~superglobal dbnames =
   List.iter
     (fun dbname ->
-      let l = List.map (fun (name, poly, c) -> make_trivial env sigma poly ~name c) l in
+      let l = List.map (fun (name, c) -> make_trivial env sigma ~name c) l in
       let hint = make_hint ~local dbname (AddHints { superglobal; hints = l }) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
@@ -1298,8 +1278,8 @@ type hnf = bool
 type nonrec hint_info = hint_info
 
 type hints_entry =
-  | HintsResolveEntry of (hint_info * bool * hnf * hints_path_atom * hint_term) list
-  | HintsImmediateEntry of (hints_path_atom * bool * hint_term) list
+  | HintsResolveEntry of (hint_info * hnf * hints_path_atom * hint_term) list
+  | HintsImmediateEntry of (hints_path_atom * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
@@ -1372,24 +1352,21 @@ let expand_constructor_hints env sigma lems =
     match EConstr.kind sigma lem with
     | Ind (ind,u) ->
         List.init (nconstructors env ind)
-                  (fun i ->
-                   let ctx = Univ.ContextSet.diff (Evd.universe_context_set evd)
-                                                  (Evd.universe_context_set sigma) in
-                   not (Univ.ContextSet.is_empty ctx),
-                   IsConstr (mkConstructU ((ind,i+1),u),ctx))
+                  (fun i -> IsGlobRef (GlobRef.ConstructRef ((ind,i+1))))
     | _ ->
       let (c, ctx) = prepare_hint false env sigma (evd,lem) in
-      [not (Univ.ContextSet.is_empty ctx), IsConstr (c, ctx)]) lems
+      let ctx = if Univ.ContextSet.is_empty ctx then None else Some ctx in
+      [IsConstr (c, ctx)]) lems
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
 let constructor_hints env sigma eapply lems =
   let lems = expand_constructor_hints env sigma lems in
-  List.map_append (fun (poly, lem) ->
-      make_resolves env sigma (eapply, true) empty_hint_info ~check:true ~poly lem) lems
+  List.map_append (fun lem ->
+      make_resolves env sigma (eapply, true) empty_hint_info ~check:true lem) lems
 
-let make_resolves env sigma info ~check ~poly ?name hint =
-  make_resolves env sigma (true, false) info ~check ~poly ?name hint
+let make_resolves env sigma info ~check ?name hint =
+  make_resolves env sigma (true, false) info ~check ?name hint
 
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
@@ -1650,7 +1627,8 @@ let connect_hint_clenv h gl =
   let sigma = Tacmach.New.project gl in
   let evd = Evd.evars_reset_evd ~with_conv_pbs:true ~with_univs:false sigma clenv.evd in
   (* Still, we need to update the universes *)
-  if h.hint_poly then
+  match h.hint_uctx with
+  | Some ctx ->
     (* Refresh the instance of the hint *)
     let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
     let emap c = Vars.subst_univs_level_constr subst c in
@@ -1662,19 +1640,17 @@ let connect_hint_clenv h gl =
       evd = Evd.map_metas emap evd;
       env = Proofview.Goal.env gl;
     }
-  else
-    let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
+  | None ->
     { clenv with evd = evd ; env = Proofview.Goal.env gl }
 
 let fresh_hint env sigma h =
   let { hint_term = c; hint_uctx = ctx } = h in
-  if h.hint_poly then
+  match h.hint_uctx with
+  | None -> sigma, c
+  | Some ctx ->
     (* Refresh the instance of the hint *)
     let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
     let c = Vars.subst_univs_level_constr subst c in
-    let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-    sigma, c
-  else
     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
     sigma, c
 
