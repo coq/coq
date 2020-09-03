@@ -80,9 +80,11 @@ Lemma of_hex_uint_iter_D0 d n :
   Z.of_hex_uint (app d (Nat.iter n D0 Nil))
   = Nat.iter n (Z.mul 0x10) (Z.of_hex_uint d).
 Proof.
-  unfold Z.of_hex_uint.
-  unfold app; rewrite <-rev_revapp.
-  rewrite Unsigned.of_lu_rev, Unsigned.of_lu_revapp.
+  rewrite <-(rev_rev (app _ _)), <-(of_list_to_list (rev (app _ _))).
+  rewrite rev_spec, app_spec, List.rev_app_distr.
+  rewrite <-!rev_spec, <-app_spec, of_list_to_list.
+  unfold Z.of_hex_uint; rewrite Unsigned.of_lu_rev.
+  unfold app; rewrite Unsigned.of_lu_revapp, !rev_rev.
   rewrite <-!Unsigned.of_lu_rev, !rev_rev.
   assert (H' : Pos.of_hex_uint (Nat.iter n D0 Nil) = 0%N).
   { now induction n; [|rewrite Unsigned.nat_iter_S]. }
@@ -140,3 +142,22 @@ Qed.
 Lemma double_to_hex_int n :
   double (Z.to_hex_int n) = Z.to_hex_int (Z.double n).
 Proof. now rewrite <-(of_to n), <-of_hex_int_double, !to_of, double_norm. Qed.
+
+Lemma nztail_to_hex_uint_pow16 n :
+  Hexadecimal.nztail (Pos.to_hex_uint (Nat.iter n (Pos.mul 16) 1%positive))
+  = (D1 Nil, n).
+Proof.
+  case n as [|n]; [now simpl|].
+  rewrite <-(Nat2Pos.id (S n)); [|now simpl].
+  generalize (Pos.of_nat (S n)); clear n; intro p.
+  induction (Pos.to_nat p); [now simpl|].
+  rewrite Unsigned.nat_iter_S.
+  unfold Pos.to_hex_uint.
+  change (Pos.to_little_hex_uint _)
+    with (Unsigned.to_lu (16 * N.pos (Nat.iter n (Pos.mul 16) 1%positive))).
+  rewrite Unsigned.to_lhex_tenfold.
+  revert IHn; unfold Pos.to_hex_uint.
+  unfold Hexadecimal.nztail; rewrite !rev_rev; simpl.
+  set (f'' := _ (Pos.to_little_hex_uint _)).
+  now case f''; intros r n' H; inversion H.
+Qed.

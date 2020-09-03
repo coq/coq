@@ -79,9 +79,11 @@ Qed.
 Lemma of_uint_iter_D0 d n :
   Z.of_uint (app d (Nat.iter n D0 Nil)) = Nat.iter n (Z.mul 10) (Z.of_uint d).
 Proof.
-  unfold Z.of_uint.
-  unfold app; rewrite <-rev_revapp.
-  rewrite Unsigned.of_lu_rev, Unsigned.of_lu_revapp.
+  rewrite <-(rev_rev (app _ _)), <-(of_list_to_list (rev (app _ _))).
+  rewrite rev_spec, app_spec, List.rev_app_distr.
+  rewrite <-!rev_spec, <-app_spec, of_list_to_list.
+  unfold Z.of_uint; rewrite Unsigned.of_lu_rev.
+  unfold app; rewrite Unsigned.of_lu_revapp, !rev_rev.
   rewrite <-!Unsigned.of_lu_rev, !rev_rev.
   assert (H' : Pos.of_uint (Nat.iter n D0 Nil) = 0%N).
   { now induction n; [|rewrite Unsigned.nat_iter_S]. }
@@ -99,4 +101,23 @@ Proof.
   - now rewrite of_uint_iter_D0.
   - rewrite of_uint_iter_D0; induction n; [now simpl|].
     rewrite !Unsigned.nat_iter_S, <-IHn; ring.
+Qed.
+
+Lemma nztail_to_uint_pow10 n :
+  Decimal.nztail (Pos.to_uint (Nat.iter n (Pos.mul 10) 1%positive))
+  = (D1 Nil, n).
+Proof.
+  case n as [|n]; [now simpl|].
+  rewrite <-(Nat2Pos.id (S n)); [|now simpl].
+  generalize (Pos.of_nat (S n)); clear n; intro p.
+  induction (Pos.to_nat p); [now simpl|].
+  rewrite Unsigned.nat_iter_S.
+  unfold Pos.to_uint.
+  change (Pos.to_little_uint _)
+    with (Unsigned.to_lu (10 * N.pos (Nat.iter n (Pos.mul 10) 1%positive))).
+  rewrite Unsigned.to_ldec_tenfold.
+  revert IHn; unfold Pos.to_uint.
+  unfold Decimal.nztail; rewrite !rev_rev; simpl.
+  set (f'' := _ (Pos.to_little_uint _)).
+  now case f''; intros r n' H; inversion H.
 Qed.
