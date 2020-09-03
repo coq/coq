@@ -686,8 +686,8 @@ command: [
 | "Print" "Rings"      (* ring plugin *)
 | "Add" "Field" ident ":" constr OPT field_mods      (* ring plugin *)
 | "Print" "Fields"      (* ring plugin *)
-| "Number" "Notation" reference reference reference ":" ident number_modifier
-| "Numeral" "Notation" reference reference reference ":" ident number_modifier
+| "Number" "Notation" reference OPT number_via reference reference ":" ident number_modifier
+| "Numeral" "Notation" reference OPT number_via reference reference ":" ident number_modifier
 | "String" "Notation" reference reference reference ":" ident
 | "Ltac2" ltac2_entry      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr6      (* Ltac2 plugin *)
@@ -2553,6 +2553,14 @@ number_modifier: [
 |
 | "(" "warning" "after" bignat ")"
 | "(" "abstract" "after" bignat ")"
+]
+
+number_using: [
+| reference reference
+]
+
+number_via: [
+| "via" reference "using" "(" LIST1 number_using SEP "," ")"
 ]
 
 tac2pat1: [

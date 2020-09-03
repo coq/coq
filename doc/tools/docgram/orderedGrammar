@@ -884,8 +884,8 @@ command: [
 | "Print" "Rings"      (* ring plugin *)
 | "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* ring plugin *)
 | "Print" "Fields"      (* ring plugin *)
-| "Number" "Notation" qualid qualid qualid ":" scope_name OPT number_modifier
-| "Numeral" "Notation" qualid qualid qualid ":" scope_name OPT number_modifier
+| "Number" "Notation" qualid OPT number_via qualid qualid ":" scope_name OPT number_modifier
+| "Numeral" "Notation" qualid OPT number_via qualid qualid ":" scope_name OPT number_modifier
 | "Hint" "Cut" "[" hints_path "]" OPT ( ":" LIST1 ident )
 | "Typeclasses" "Transparent" LIST1 qualid
 | "Typeclasses" "Opaque" LIST1 qualid
@@ -910,7 +910,7 @@ command: [
 | "Derive" "Dependent" "Inversion_clear" ident "with" one_term "Sort" sort_family
 | "Declare" "Left" "Step" one_term
 | "Declare" "Right" "Step" one_term
-| "Numeral" "Notation" qualid qualid qualid ":" scope_name OPT number_modifier
+| "Numeral" "Notation" qualid OPT number_via qualid qualid ":" scope_name OPT number_modifier
 | "String" "Notation" qualid qualid qualid ":" scope_name
 | "SubClass" ident_decl def_body
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
@@ -1273,6 +1273,14 @@ field_mod: [
 number_modifier: [
 | "(" "warning" "after" bignat ")"
 | "(" "abstract" "after" bignat ")"
+]
+
+number_using: [
+| qualid qualid
+]
+
+number_via: [
+| "via" qualid "using" "(" LIST1 number_using SEP "," ")"
 ]
 
 hints_path: [

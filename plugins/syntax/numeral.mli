@@ -14,6 +14,13 @@ open Notation
 
 (** * Number notation *)
 
+type number_string_via = qualid * (qualid * qualid) list
+type number_option =
+  | After of numnot_option
+  | Via of number_string_via
+
 val vernac_number_notation : locality_flag ->
-                             qualid -> qualid -> qualid ->
-                             Notation_term.scope_name -> numnot_option -> unit
+                             qualid ->
+                             qualid -> qualid ->
+                             number_option list ->
+                             Notation_term.scope_name -> unit
