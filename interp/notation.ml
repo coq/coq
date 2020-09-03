@@ -552,8 +552,10 @@ type 'target conversion_kind = 'target * option_kind
    are translated acording to [args] where [ToPostCopy] means that the
    argument is kept unchanged and [ToPostAs k] means that the
    argument is recursively translated according to [l_k].
+   [ToPostHole] introduces an additional implicit argument hole
+   (in the reverse translation, the corresponding argument is removed).
    When [n] is null, no translation is performed. *)
-type to_post_arg = ToPostCopy | ToPostAs of int
+type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole
 type ('target, 'warning) prim_token_notation_obj =
   { to_kind : 'target conversion_kind;
     to_ty : GlobRef.t;
@@ -625,8 +627,9 @@ let rec constr_of_glob to_post post env sigma g = match DAst.get g with
       | None -> constr_of_globref false env sigma r
       | Some (r, _, a) ->
          (* [g] is not a GApp so check that [post]
-            does not expect any argument (i.e., a = []) *)
-         if a <> [] then raise NotAValidPrimToken;
+            does not expect any actual argument
+            (i.e., [a] contains only ToPostHole since they mean "ignore arg") *)
+         if List.exists ((<>) ToPostHole) a then raise NotAValidPrimToken;
          constr_of_globref true env sigma r
       end
   | Glob_term.GApp (gc, gcl) ->
@@ -650,6 +653,7 @@ let rec constr_of_glob to_post post env sigma g = match DAst.get g with
               let sigma,c = constr_of_glob to_post to_post.(i) env sigma gc in
               let sigma,cl = aux sigma a gcl in
               sigma, c :: cl
+           | ToPostHole :: post, _ :: gcl -> aux sigma post gcl
            | [], _ :: _ | _ :: _, [] -> raise NotAValidPrimToken
          in
          let sigma,cl = aux sigma a gcl in
@@ -695,15 +699,19 @@ let rec postprocess token_kind ?loc ty to_post post g =
        List.find_opt (fun (r',_,_) -> GlobRef.equal r r') post
     | _ -> None in
   match o with None -> g | Some (_, r, a) ->
-  let rec f a gl = match a, gl with
+  let rec f n a gl = match a, gl with
     | [], [] -> []
-    | ToPostCopy :: a, g :: gl -> g :: f a gl
+    | ToPostHole :: a, gl ->
+       let e = Evar_kinds.ImplicitArg (r, (n, None), true) in
+       let h = DAst.make ?loc (Glob_term.GHole (e, Namegen.IntroAnonymous, None)) in
+       h :: f (n+1) a gl
+    | ToPostCopy :: a, g :: gl -> g :: f (n+1) a gl
     | ToPostAs c :: a, g :: gl ->
-       postprocess token_kind ?loc ty to_post to_post.(c) g :: f a gl
+       postprocess token_kind ?loc ty to_post to_post.(c) g :: f (n+1) a gl
     | [], _::_ | _::_, [] ->
        no_such_prim_token token_kind ?loc ty
   in
-  let gl = f a gl in
+  let gl = f 1 a gl in
   let g = DAst.make ?loc (Glob_term.GRef (r, None)) in
   DAst.make ?loc (Glob_term.GApp (g, gl))
 
