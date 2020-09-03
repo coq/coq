@@ -18,78 +18,84 @@ Require Import Decimal DecimalFacts DecimalPos DecimalN DecimalZ QArith.
 Lemma of_to (q:IQ) : forall d, to_decimal q = Some d -> of_decimal d = q.
 Admitted.
 
-(* normalize without fractional part, for instance norme 12.3e-1 is 123e-2 *)
-Definition dnorme (d:decimal) : decimal :=
-  let '(i, f, e) :=
-    match d with
-    | Decimal i f => (i, f, Pos Nil)
-    | DecimalExp i f e => (i, f, e)
+Definition dnorm (d:decimal) : decimal :=
+  let norm_i i f :=
+    match i with
+    | Pos i => Pos (unorm i)
+    | Neg i => match nzhead (app i f) with Nil => Pos zero | _ => Neg (unorm i) end
     end in
-  let i := norm (app_int i f) in
-  let e := norm (Z.to_int (Z.of_int e - Z.of_nat (nb_digits f))) in
-  match e with
-  | Pos zero => Decimal i Nil
-  | _ => DecimalExp i Nil e
-  end.
-
-(* normalize without exponent part, for instance norme 12.3e-1 is 1.23 *)
-Definition dnormf (d:decimal) : decimal :=
-  match dnorme d with
-  | Decimal i _ => Decimal i Nil
-  | DecimalExp i _ e =>
-    match Z.of_int e with
-    | Z0 => Decimal i Nil
-    | Zpos e => Decimal (norm (app_int i (Pos.iter D0 Nil e))) Nil
-    | Zneg e =>
-      let ne := Pos.to_nat e in
-      let ai := match i with Pos d | Neg d => d end in
-      let ni := nb_digits ai in
-      if ne <? ni then
-        Decimal (del_tail_int ne i) (del_head (ni - ne) ai)
-      else
-        let z := match i with Pos _ => Pos zero | Neg _ => Neg zero end in
-        Decimal z (Nat.iter (ne - ni) D0 ai)
+  match d with
+  | Decimal i f => Decimal (norm_i i f) f
+  | DecimalExp i f e =>
+    match norm e with
+    | Pos zero => Decimal (norm_i i f) f
+    | e => DecimalExp (norm_i i f) f e
     end
   end.
 
-Lemma dnorme_spec d :
-  match dnorme d with
-  | Decimal i Nil => i = norm i
-  | DecimalExp i Nil e => i = norm i /\ e = norm e /\ e <> Pos zero
-  | _ => False
+Lemma dnorm_spec_i d :
+  let (i, f) :=
+    match d with Decimal i f => (i, f) | DecimalExp i f _ => (i, f) end in
+  let i' := match dnorm d with Decimal i _ => i | DecimalExp i _ _ => i end in
+  match i with
+  | Pos i => i' = Pos (unorm i)
+  | Neg i =>
+    (i' = Neg (unorm i) /\ (nzhead i <> Nil \/ nzhead f <> Nil))
+    \/ (i' = Pos zero /\ (nzhead i = Nil /\ nzhead f = Nil))
   end.
 Admitted.
 
-Lemma dnormf_spec d :
-  match dnormf d with
-  | Decimal i f => i = Neg zero \/ i = norm i
-  | _ => False
+Lemma dnorm_spec_f d :
+  let f := match d with Decimal _ f => f | DecimalExp _ f _ => f end in
+  let f' := match dnorm d with Decimal _ f => f | DecimalExp _ f _ => f end in
+  f' = f.
+Admitted.
+
+Lemma dnorm_spec_e d :
+  match d, dnorm d with
+    | Decimal _ _, Decimal _ _ => True
+    | DecimalExp _ _ e, Decimal _ _ => norm e = Pos zero
+    | DecimalExp _ _ e, DecimalExp _ _ e' => e' = norm e /\ e' <> Pos zero
+    | Decimal _ _, DecimalExp _ _ _ => False
   end.
 Admitted.
 
-Lemma dnorme_invol d : dnorme (dnorme d) = dnorme d.
+Lemma dnorm_invol d : dnorm (dnorm d) = dnorm d.
 Admitted.
 
-Lemma dnormf_invol d : dnormf (dnormf d) = dnormf d.
-Admitted.
-
-Lemma to_of (d:decimal) :
-  to_decimal (of_decimal d) = Some (dnorme d)
-  \/ to_decimal (of_decimal d) = Some (dnormf d).
+Lemma to_of (d:decimal) : to_decimal (of_decimal d) = Some (dnorm d).
 Admitted.
 
 (** Some consequences *)
 
 Lemma to_decimal_inj q q' :
   to_decimal q <> None -> to_decimal q = to_decimal q' -> q = q'.
-Admitted.
+Proof.
+intros Hnone EQ.
+generalize (of_to q) (of_to q').
+rewrite <-EQ.
+revert Hnone; case to_decimal; [|now simpl].
+now intros d _ H1 H2; rewrite <-(H1 d eq_refl), <-(H2 d eq_refl).
+Qed.
 
-Lemma to_decimal_surj d :
-  exists q, to_decimal q = Some (dnorme d) \/ to_decimal q = Some (dnormf d).
-Admitted.
+Lemma to_decimal_surj d : exists q, to_decimal q = Some (dnorm d).
+Proof.
+  exists (of_decimal d). apply to_of.
+Qed.
 
-Lemma of_decimal_dnorme d : of_decimal (dnorme d) = of_decimal d.
-Admitted.
+Lemma of_decimal_dnorm d : of_decimal (dnorm d) = of_decimal d.
+Proof. now apply to_decimal_inj; rewrite !to_of; [|rewrite dnorm_invol]. Qed.
 
-Lemma of_decimal_dnormf d : of_decimal (dnormf d) = of_decimal d.
-Admitted.
+Lemma of_inj d d' : of_decimal d = of_decimal d' -> dnorm d = dnorm d'.
+Proof.
+intro H.
+apply (@f_equal _ _ (fun x => match x with Some x => x | _ => d end)
+                (Some (dnorm d)) (Some (dnorm d'))).
+now rewrite <- !to_of, H.
+Qed.
+
+Lemma of_iff d d' : of_decimal d = of_decimal d' <-> dnorm d = dnorm d'.
+Proof.
+split. apply of_inj. intros E. rewrite <- of_decimal_dnorm, E.
+apply of_decimal_dnorm.
+Qed.
