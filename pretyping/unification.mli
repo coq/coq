@@ -13,10 +13,6 @@ open EConstr
 open Environ
 open Evd
 
-type allowed_evars =
-| AllowAll
-| AllowFun of (Evar.t -> bool)
-
 type core_unify_flags = {
   modulo_conv_on_closed_terms : TransparentState.t option;
   use_metas_eagerly_in_conv_on_closed_terms : bool;
@@ -26,7 +22,7 @@ type core_unify_flags = {
   check_applied_meta_types : bool;
   use_pattern_unification : bool;
   use_meta_bound_pattern_unification : bool;
-  allowed_evars : allowed_evars;
+  allowed_evars : Evarsolve.AllowedEvars.t;
   restrict_conv_on_strict_subterms : bool;
   modulo_betaiota : bool;
   modulo_eta : bool;

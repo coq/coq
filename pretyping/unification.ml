@@ -252,10 +252,6 @@ let unify_r2l x = x
 let sort_eqns = unify_r2l
 *)
 
-type allowed_evars =
-| AllowAll
-| AllowFun of (Evar.t -> bool)
-
 type core_unify_flags = {
   modulo_conv_on_closed_terms : TransparentState.t option;
     (* What this flag controls was activated with all constants transparent, *)
@@ -289,7 +285,7 @@ type core_unify_flags = {
     (* This allowed for instance to unify "forall x:?A, ?B x" with "A' -> B'" *)
     (* when ?B is a Meta. *)
 
-  allowed_evars : allowed_evars;
+  allowed_evars : AllowedEvars.t;
     (* Evars that are allowed to be instantiated *)
     (* Useful e.g. for autorewrite *)
 
@@ -341,7 +337,7 @@ let default_core_unify_flags () =
   check_applied_meta_types = true;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
-  allowed_evars = AllowAll;
+  allowed_evars = AllowedEvars.all;
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = true;
   modulo_eta = true;
@@ -421,7 +417,7 @@ let default_no_delta_unify_flags ts =
 
 let allow_new_evars sigma =
   let undefined = Evd.undefined_map sigma in
-  AllowFun (fun evk -> not (Evar.Map.mem evk undefined))
+  AllowedEvars.from_pred (fun evk -> not (Evar.Map.mem evk undefined))
 
 (* Default flags for looking for subterms in elimination tactics *)
 (* Not used in practice at the current date, to the exception of *)
@@ -604,9 +600,8 @@ let do_reduce ts (env, nb) sigma c =
   Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state
                   ts env sigma (c, Stack.empty))
 
-let is_evar_allowed flags evk = match flags.allowed_evars with
-| AllowAll -> true
-| AllowFun f -> f evk
+let is_evar_allowed flags evk =
+  AllowedEvars.mem flags.allowed_evars evk
 
 let isAllowedEvar sigma flags c = match EConstr.kind sigma c with
   | Evar (evk,_) -> is_evar_allowed flags evk
