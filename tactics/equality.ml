@@ -1022,15 +1022,6 @@ type equality = {
 
 let eq_baseid = Id.of_string "e"
 
-let apply_on_clause (f,t) clause =
-  let sigma =  clause.evd in
-  let f_clause = mk_clenv_from_env clause.env sigma None (f,t) in
-  let argmv =
-    (match EConstr.kind sigma (last_arg f_clause.evd f_clause.templval.Evd.rebus) with
-     | Meta mv -> mv
-     | _  -> user_err  (str "Ill-formed clause applicator.")) in
-  clenv_fchain ~with_univs:false argmv f_clause clause
-
 let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = eq_clause } cpath dirn =
   build_coq_True () >>= fun true_0 ->
   build_coq_False () >>= fun false_0 ->
@@ -1405,7 +1396,15 @@ let inject_at_positions env sigma l2r eq posns tac =
       let sigma,congr = Evd.fresh_global env sigma eq.congr in
       let pf = applist(congr,[t;resty;injfun;t1;t2]) in
       let sigma, pf_typ = Typing.type_of env sigma pf in
-      let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
+      let inj_clause =
+        let sigma = eq_clause.evd in
+        let f_clause = mk_clenv_from_env eq_clause.env sigma None (pf, pf_typ) in
+        let argmv =
+          (match EConstr.kind sigma (last_arg f_clause.evd f_clause.templval.Evd.rebus) with
+          | Meta mv -> mv
+          | _  -> user_err  (str "Ill-formed clause applicator.")) in
+        clenv_fchain ~with_univs:false argmv f_clause eq_clause
+      in
       let pf = Clenv.clenv_value_cast_meta inj_clause in
       let ty = simplify_args env sigma (clenv_type inj_clause) in
         evdref := sigma;
