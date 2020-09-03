@@ -19,12 +19,22 @@ val of_alias : alias -> EConstr.t
 module AllowedEvars : sig
 
   type t
+  (** Represents the set of evars that can be defined by the pretyper *)
 
   val all : t
+  (** All evars can be defined *)
+
   val mem : t -> Evar.t -> bool
-  val remove : Evar.t -> t -> t
-  val except : Evar.Set.t -> t
+  (** [mem allowed evk] is true iff evk can be defined *)
+
   val from_pred : (Evar.t -> bool) -> t
+  (** [from_pred p] means evars satisfying p can be defined *)
+
+  val except : Evar.Set.t -> t
+  (** [except evars] means all evars can be defined except the ones in [evars] *)
+
+  val remove : Evar.t -> t -> t
+  (** [remove evk allowed] removes [evk] from the set of evars allowed by [allowed] *)
 
 end
 
