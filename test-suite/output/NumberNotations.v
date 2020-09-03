@@ -626,6 +626,66 @@ Number Notation foo'' foo''_of_uint foo''_to_uint (via foo'' mapping [bar'' => b
 
 End Test23.
 
+(* Test the via ... mapping ... option with implicit arguments *)
+Require Vector.
+Module Test24.
+
+Import Vector.
+
+Inductive I :=
+| I1 : I
+| IS : I -> I.
+
+Definition of_uint (x : Number.uint) : I :=
+  let fix f n :=
+      match n with
+      | O => I1
+      | S n => IS (f n)
+      end in
+  f (Nat.of_num_uint x).
+
+Definition to_uint (x : I) : Number.uint :=
+  let fix f i :=
+      match i with
+      | I1 => O
+      | IS n => S (f n)
+      end in
+  Nat.to_num_uint (f x).
+
+Local Open Scope type_scope.
+
+(* ignoring implicit arguments doesn't work *)
+Number Notation Fin.t of_uint to_uint (via I
+  mapping [Fin.F1 => I1, Fin.FS => IS])
+  : type_scope.
+
+Fail Check 1.
+
+Number Notation Fin.t of_uint to_uint (via I
+  mapping [[Fin.F1] => I1, [Fin.FS] => IS])
+  : type_scope.
+
+Check Fin.F1.
+Check Fin.FS Fin.F1.
+Check Fin.FS (Fin.FS Fin.F1).
+Check Fin.FS (Fin.FS (Fin.FS Fin.F1)).
+Check Fin.F1 : Fin.t 3.
+Check Fin.FS Fin.F1 : Fin.t 3.
+Check Fin.FS (Fin.FS Fin.F1) : Fin.t 3.
+Fail Check Fin.FS (Fin.FS (Fin.FS Fin.F1)) : Fin.t 3.
+Set Printing All.
+Check 0.
+Check 1.
+Check 2.
+Check 3.
+Check 0 : Fin.t 3.
+Check 1 : Fin.t 3.
+Check 2 : Fin.t 3.
+Fail Check 3 : Fin.t 3.
+Unset Printing All.
+
+End Test24.
+
 (* Test the via ... mapping ... option with let-binders, beta-redexes, delta-redexes, etc *)
 Module Test26.
 
@@ -672,3 +732,116 @@ Check 2.
 Check 3.
 Unset Printing All.
 End Test26.
+
+(* Test the via ... mapping ... option with implicit arguments with let binders, etc *)
+Module Test27.
+
+Module Fin.
+Inductive t0 (x:=O) :=
+with
+  t (x:=O) : forall y : nat, let z := y in Set :=
+| F1 (y:=O) {n} : match y with O => t (S n) | _ => Empty_set end
+| FS (y:=x) {n} (v:=n+y) (m:=n) : id (match y with O => id (t n) | _ => Empty_set end -> (fun x => x) t (S m))
+with t' (x:=O) := .
+End Fin.
+
+Inductive I (dummy:=O) :=
+| I1 : I
+| IS : let x := I in id x -> I.
+
+Definition of_uint (x : Number.uint) : I :=
+  let fix f n :=
+      match n with
+      | O => I1
+      | S n => IS (f n)
+      end in
+  f (Nat.of_num_uint x).
+
+Definition to_uint (x : I) : Number.uint :=
+  let fix f i :=
+      match i with
+      | I1 => O
+      | IS n => S (f n)
+      end in
+  Nat.to_num_uint (f x).
+
+Local Open Scope type_scope.
+
+Number Notation Fin.t of_uint to_uint (via I
+  mapping [[Fin.F1] => I1, [Fin.FS] => IS])
+  : type_scope.
+
+Check Fin.F1.
+Check Fin.FS Fin.F1.
+Check Fin.FS (Fin.FS Fin.F1).
+Check Fin.FS (Fin.FS (Fin.FS Fin.F1)).
+Check Fin.F1 : Fin.t 3.
+Check Fin.FS Fin.F1 : Fin.t 3.
+Check Fin.FS (Fin.FS Fin.F1) : Fin.t 3.
+Fail Check Fin.FS (Fin.FS (Fin.FS Fin.F1)) : Fin.t 3.
+Set Printing All.
+Check 0.
+Check 1.
+Check 2.
+Check 3.
+Check 0 : Fin.t 3.
+Check 1 : Fin.t 3.
+Check 2 : Fin.t 3.
+Fail Check 3 : Fin.t 3.
+Unset Printing All.
+
+End Test27.
+
+Module Test28.
+Module Fin.
+Inductive t : nat -> Set :=
+| F1 {n : (nat : Set)} : (t (S n) : Set)
+| FS {n : (nat : Set)} : (t n : Set) -> (t (S n) : Set).
+End Fin.
+
+Inductive I :=
+| I1 : I
+| IS : I -> I.
+
+Definition of_uint (x : Number.uint) : I :=
+  let fix f n :=
+      match n with
+      | O => I1
+      | S n => IS (f n)
+      end in
+  f (Nat.of_num_uint x).
+
+Definition to_uint (x : I) : Number.uint :=
+  let fix f i :=
+      match i with
+      | I1 => O
+      | IS n => S (f n)
+      end in
+  Nat.to_num_uint (f x).
+
+Local Open Scope type_scope.
+
+Number Notation Fin.t of_uint to_uint (via I
+  mapping [[Fin.F1] => I1, [Fin.FS] => IS])
+  : type_scope.
+
+Check Fin.F1.
+Check Fin.FS Fin.F1.
+Check Fin.FS (Fin.FS Fin.F1).
+Check Fin.FS (Fin.FS (Fin.FS Fin.F1)).
+Check Fin.F1 : Fin.t 3.
+Check Fin.FS Fin.F1 : Fin.t 3.
+Check Fin.FS (Fin.FS Fin.F1) : Fin.t 3.
+Fail Check Fin.FS (Fin.FS (Fin.FS Fin.F1)) : Fin.t 3.
+Set Printing All.
+Check 0.
+Check 1.
+Check 2.
+Check 3.
+Check 0 : Fin.t 3.
+Check 1 : Fin.t 3.
+Check 2 : Fin.t 3.
+Fail Check 3 : Fin.t 3.
+Unset Printing All.
+
+End Test28.

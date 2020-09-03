@@ -276,6 +276,71 @@ This might yield ill typed terms when using the notation.
 [via-type-mismatch,numbers]
 The command has indeed failed with message:
 'via' and 'abstract' cannot be used together.
+File "stdin", line 659, characters 21-23:
+Warning: Type of I1 seems incompatible with the type of Fin.F1.
+Expected type is: (nat -> I) instead of I.
+This might yield ill typed terms when using the notation.
+[via-type-mismatch,numbers]
+File "stdin", line 659, characters 35-37:
+Warning: Type of IS seems incompatible with the type of Fin.FS.
+Expected type is: (nat -> I -> I) instead of (I -> I).
+This might yield ill typed terms when using the notation.
+[via-type-mismatch,numbers]
+The command has indeed failed with message:
+The term "0" has type "forall n : nat, Fin.t (S n)"
+while it is expected to have type "nat".
+0
+     : Fin.t (S ?n)
+where
+?n : [ |- nat]
+1
+     : Fin.t (S (S ?n))
+where
+?n : [ |- nat]
+2
+     : Fin.t (S (S (S ?n)))
+where
+?n : [ |- nat]
+3
+     : Fin.t (S (S (S (S ?n))))
+where
+?n : [ |- nat]
+0 : Fin.t 3
+     : Fin.t 3
+1 : Fin.t 3
+     : Fin.t 3
+2 : Fin.t 3
+     : Fin.t 3
+The command has indeed failed with message:
+The term "3" has type "Fin.t (S (S (S (S ?n))))"
+while it is expected to have type "Fin.t 3".
+@Fin.F1 ?n
+     : Fin.t (S ?n)
+where
+?n : [ |- nat]
+@Fin.FS (S ?n) (@Fin.F1 ?n)
+     : Fin.t (S (S ?n))
+where
+?n : [ |- nat]
+@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n))
+     : Fin.t (S (S (S ?n)))
+where
+?n : [ |- nat]
+@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))
+     : Fin.t (S (S (S (S ?n))))
+where
+?n : [ |- nat]
+@Fin.F1 (S (S O)) : Fin.t (S (S (S O)))
+     : Fin.t (S (S (S O)))
+@Fin.FS (S (S O)) (@Fin.F1 (S O)) : Fin.t (S (S (S O)))
+     : Fin.t (S (S (S O)))
+@Fin.FS (S (S O)) (@Fin.FS (S O) (@Fin.F1 O)) : Fin.t (S (S (S O)))
+     : Fin.t (S (S (S O)))
+The command has indeed failed with message:
+The term
+ "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
+has type "Fin.t (S (S (S (S ?n))))" while it is expected to have type
+ "Fin.t (S (S (S O)))".
 0
      : Set
 1
@@ -292,3 +357,107 @@ sum unit unit
      : Set
 sum unit (sum unit unit)
      : Set
+0
+     : Fin.t (S ?n)
+where
+?n : [ |- nat]
+1
+     : Fin.t (S (S ?n))
+where
+?n : [ |- nat]
+2
+     : Fin.t (S (S (S ?n)))
+where
+?n : [ |- nat]
+3
+     : Fin.t (S (S (S (S ?n))))
+where
+?n : [ |- nat]
+0 : Fin.t 3
+     : Fin.t 3
+1 : Fin.t 3
+     : Fin.t 3
+2 : Fin.t 3
+     : Fin.t 3
+The command has indeed failed with message:
+The term "3" has type "Fin.t (S (S (S (S ?n))))"
+while it is expected to have type "Fin.t 3".
+@Fin.F1 ?n
+     : Fin.t (S ?n)
+where
+?n : [ |- nat]
+@Fin.FS (S ?n) (@Fin.F1 ?n)
+     : Fin.t (S (S ?n))
+where
+?n : [ |- nat]
+@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n))
+     : Fin.t (S (S (S ?n)))
+where
+?n : [ |- nat]
+@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))
+     : Fin.t (S (S (S (S ?n))))
+where
+?n : [ |- nat]
+@Fin.F1 (S (S O)) : Fin.t (S (S (S O)))
+     : Fin.t (S (S (S O)))
+@Fin.FS (S (S O)) (@Fin.F1 (S O)) : Fin.t (S (S (S O)))
+     : Fin.t (S (S (S O)))
+@Fin.FS (S (S O)) (@Fin.FS (S O) (@Fin.F1 O)) : Fin.t (S (S (S O)))
+     : Fin.t (S (S (S O)))
+The command has indeed failed with message:
+The term
+ "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
+has type "Fin.t (S (S (S (S ?n))))" while it is expected to have type
+ "Fin.t (S (S (S O)))".
+0
+     : Fin.t (S ?n)
+where
+?n : [ |- nat : Set]
+1
+     : Fin.t (S (S ?n))
+where
+?n : [ |- nat : Set]
+2
+     : Fin.t (S (S (S ?n)))
+where
+?n : [ |- nat : Set]
+3
+     : Fin.t (S (S (S (S ?n))))
+where
+?n : [ |- nat : Set]
+0 : Fin.t 3
+     : Fin.t 3
+1 : Fin.t 3
+     : Fin.t 3
+2 : Fin.t 3
+     : Fin.t 3
+The command has indeed failed with message:
+The term "3" has type "Fin.t (S (S (S (S ?n))))"
+while it is expected to have type "Fin.t 3".
+@Fin.F1 ?n
+     : Fin.t (S ?n)
+where
+?n : [ |- nat : Set]
+@Fin.FS (S ?n) (@Fin.F1 ?n)
+     : Fin.t (S (S ?n))
+where
+?n : [ |- nat : Set]
+@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n))
+     : Fin.t (S (S (S ?n)))
+where
+?n : [ |- nat : Set]
+@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))
+     : Fin.t (S (S (S (S ?n))))
+where
+?n : [ |- nat : Set]
+@Fin.F1 (S (S O)) : Fin.t (S (S (S O)))
+     : Fin.t (S (S (S O)))
+@Fin.FS (S (S O)) (@Fin.F1 (S O)) : Fin.t (S (S (S O)))
+     : Fin.t (S (S (S O)))
+@Fin.FS (S (S O)) (@Fin.FS (S O) (@Fin.F1 O)) : Fin.t (S (S (S O)))
+     : Fin.t (S (S (S O)))
+The command has indeed failed with message:
+The term
+ "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
+has type "Fin.t (S (S (S (S ?n))))" while it is expected to have type
+ "Fin.t (S (S (S O)))".
