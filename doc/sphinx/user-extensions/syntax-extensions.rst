@@ -1553,14 +1553,16 @@ numbers (see :ref:`datatypes`).
 Number notations
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Number Notation @qualid__type @qualid__parse @qualid__print : @scope_name {? @number_modifier }
+.. cmd:: Number Notation @qualid__type @qualid__parse @qualid__print {? ( {+, @number_modifier } ) } : @scope_name
    :name: Number Notation
 
-   .. insertprodn number_modifier number_modifier
+   .. insertprodn number_modifier number_via
 
    .. prodn::
-      number_modifier ::= ( warning after @bignat )
-      | ( abstract after @bignat )
+      number_modifier ::= warning after @bignat
+      | abstract after @bignat
+      | @number_via
+      number_via ::= via @qualid mapping [ {+, @qualid => @qualid } ]
 
    This command allows the user to customize the way number literals
    are parsed and printed.
@@ -1606,7 +1608,38 @@ Number notations
          function application, constructors, inductive type families,
          sorts, and primitive integers) will be considered for printing.
 
-      :n:`( warning after @bignat )`
+      :n:`via @qualid__ind mapping [ {+, @qualid__constant => @qualid__constructor } ]`
+         When using this option, :n:`@qualid__type` no
+         longer needs to be an inductive type and is instead mapped to the
+         inductive type :n:`@qualid__ind` according to the provided
+         list of pairs, whose first component :n:`@qualid__constant` is a
+         constant of type :n:`@qualid__type`
+         (or a function of type :n:`{* _ -> } @qualid__type`) and the second a
+         constructor of type :n:`@qualid__ind`. The type
+         :n:`@qualid__type` is then replaced by :n:`@qualid__ind` in the
+         above parser and printer types.
+
+         .. note::
+            To use a :token:`sort` as the target type :n:`@qualid__type`, use an :ref:`abbreviation <Abbreviations>`
+            as in the :ref:`example below <example-number-notation-non-inductive>`.
+
+         .. exn:: @qualid was already mapped to @qualid and cannot be remapped to @qualid
+
+            Duplicates are not allowed in the :n:`mapping` list.
+
+         .. exn:: Missing mapping for constructor @qualid
+
+            A mapping should be provided for :n:`@qualid` in the :n:`mapping` list.
+
+         .. warn:: @type was already mapped to @type, mapping it also to @type might yield ill typed terms when using the notation.
+
+            Two pairs in the :n:`mapping` list associate types that might be incompatible.
+
+         .. warn:: Type of @qualid seems incompatible with the type of @qualid. Expected type is: @type instead of @type. This might yield ill typed terms when using the notation.
+
+            A mapping given in the :n:`mapping` list associates a constant with a seemingly incompatible constructor.
+
+      :n:`warning after @bignat`
          displays a warning message about a possible stack
          overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@bignat`.
 
@@ -1616,7 +1649,7 @@ Number notations
             with :n:`(warning after @bignat)`, this warning is emitted when
             parsing a number greater than or equal to :token:`bignat`.
 
-      :n:`( abstract after @bignat )`
+      :n:`abstract after @bignat`
          returns :n:`(@qualid__parse m)` when parsing a literal
          :n:`m` that's greater than :n:`@bignat` rather than reducing it to a normal form.
          Here :g:`m` will be a
@@ -1642,6 +1675,12 @@ Number notations
             As noted above, the :n:`(abstract after @natural)` directive has no
             effect when :n:`@qualid__parse` lands in an :g:`option` type.
 
+         .. exn:: 'via' and 'abstract' cannot be used together.
+
+            With the :n:`abstract after` option, the parser function
+            :n:`@qualid__parse` does not reduce large numbers to a normal form,
+            which prevents doing the translation given in the :n:`mapping` list.
+
    .. exn:: Cannot interpret this number as a value of type @type
 
      The number notation registered for :token:`type` does not support
@@ -1664,7 +1703,7 @@ Number notations
    .. exn:: Unexpected term @term while parsing a number notation.
 
      Parsing functions must always return ground terms, made up of
-     applications of constructors, inductive types, and primitive
+     function application, constructors, inductive type families, sorts and primitive
      integers.  Parsing functions may not return terms containing
      axioms, bare (co)fixpoints, lambdas, etc.
 
@@ -1674,6 +1713,67 @@ Number notations
      return a concrete :g:`Some` or :g:`None` when applied to a
      concrete number expressed as a (hexa)decimal.  They may not return
      opaque constants.
+
+   .. exn:: Multiple 'via' options.
+
+     At most one :g:`via` option can be given.
+
+   .. exn:: Multiple 'warning after' or 'abstract after' options.
+
+     At most one :g:`warning after` or :g:`abstract after` option can be given.
+
+   .. _example-number-notation-non-inductive:
+
+   .. example:: Number Notation for a non inductive type
+
+      The following example encodes the terms in the form :g:`sum unit ( ... (sum unit unit) ... )`
+      as the number of units in the term. For instance :g:`sum unit (sum unit unit)`
+      is encoded as :g:`3` while :g:`unit` is :g:`1` and :g:`0` stands for :g:`Empty_set`.
+      The inductive :g:`I` will be used as :n:`@qualid__ind`.
+
+      .. coqtop:: in
+
+         Inductive I := Iempty : I | Iunit : I | Isum : I -> I -> I.
+
+      We then define :n:`@qualid__parse` and :n:`@qualid__print`
+
+      .. coqtop:: in
+
+         Definition of_uint (x : Number.uint) : I :=
+           let fix f n := match n with
+             | O => Iempty | S O => Iunit
+             | S n => Isum Iunit (f n) end in
+           f (Nat.of_num_uint x).
+
+         Definition to_uint (x : I) : Number.uint :=
+           let fix f i := match i with
+             | Iempty => O | Iunit => 1
+             | Isum i1 i2 => f i1 + f i2 end in
+           Nat.to_num_uint (f x).
+
+         Inductive sum (A : Set) (B : Set) : Set := pair : A -> B -> sum A B.
+
+      the number notation itself
+
+      .. coqtop:: in
+
+         Notation nSet := Set (only parsing).
+         Number Notation nSet of_uint to_uint (via I
+           mapping [Empty_set => Iempty, unit => Iunit, sum => Isum]) : type_scope.
+
+      and check the printer
+
+      .. coqtop:: all
+
+         Local Open Scope type_scope.
+         Check sum unit (sum unit unit).
+
+      and the parser
+
+      .. coqtop:: all
+
+         Set Printing All.
+         Check 3.
 
 .. _string-notations:
 
@@ -1746,7 +1846,7 @@ The following errors apply to both string and number notations:
    .. exn:: @type is not an inductive type.
 
      String and number notations can only be declared for inductive types with no
-     arguments.
+     arguments. Declare numeral notations for non-inductive types using :n:`@number_via`.
 
    .. exn:: Cannot interpret in @scope_name because @qualid could not be found in the current environment.
 

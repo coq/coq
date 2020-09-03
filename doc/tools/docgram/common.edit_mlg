@@ -1285,10 +1285,10 @@ command: [
 | WITH "Declare" "Scope" scope_name
 
 (* odd that these are in command while other notation-related ones are in syntax *)
-| REPLACE "Number" "Notation" reference OPT number_via reference reference ":" ident number_modifier
-| WITH "Number" "Notation" reference OPT number_via reference reference ":" scope_name number_modifier
-| REPLACE "Numeral" "Notation" reference OPT number_via reference reference ":" ident number_modifier
-| WITH "Numeral" "Notation" reference OPT number_via reference reference ":" scope_name number_modifier
+| REPLACE "Number" "Notation" reference reference reference OPT number_options ":" ident
+| WITH "Number" "Notation" reference reference reference OPT number_options ":" scope_name
+| REPLACE "Numeral" "Notation" reference reference reference ":" ident deprecated_number_modifier
+| WITH "Numeral" "Notation" reference reference reference ":" scope_name deprecated_number_modifier
 | REPLACE "String" "Notation" reference reference reference ":" ident
 | WITH "String" "Notation" reference reference reference ":" scope_name
 
@@ -1356,10 +1356,6 @@ explicit_subentry: [
 | REPLACE "pattern" "at" "level" natural
 | WITH "pattern" OPT ( "at" "level" natural )
 | DELETE "constr"    (* covered by another prod *)
-]
-
-number_modifier: [
-| OPTINREF
 ]
 
 binder_tactic: [
@@ -2464,6 +2460,8 @@ SPLICE: [
 | constr_with_bindings
 | simple_binding
 | ssexpr35 (* strange in mlg, ssexpr50 is after this *)
+| number_mapping
+| number_options
 ] (* end SPLICE *)
 
 RENAME: [
