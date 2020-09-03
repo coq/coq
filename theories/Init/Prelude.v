@@ -30,8 +30,6 @@ Require Export Coq.Init.Tauto.
 *)
 Declare ML Module "cc_plugin".
 Declare ML Module "ground_plugin".
-Declare ML Module "numeral_notation_plugin".
-Declare ML Module "string_notation_plugin".
 
 (* Parsing / printing of hexadecimal numbers *)
 Arguments Nat.of_hex_uint d%hex_uint_scope.

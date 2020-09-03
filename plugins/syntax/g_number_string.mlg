@@ -8,12 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-DECLARE PLUGIN "numeral_notation_plugin"
+DECLARE PLUGIN "number_string_notation_plugin"
 
 {
 
 open Notation
-open Numeral
+open Number
+open String_notation
 open Pp
 open Names
 open Stdarg
@@ -92,4 +93,10 @@ VERNAC COMMAND EXTEND NumberNotation CLASSIFIED AS SIDEFF
 
     { warn_deprecated_numeral_notation ();
       vernac_number_notation (Locality.make_module_locality locality) ty f g [After o] (Id.to_string sc) }
+END
+
+VERNAC COMMAND EXTEND StringNotation CLASSIFIED AS SIDEFF
+  | #[ locality = Attributes.locality; ] [ "String" "Notation" reference(ty) reference(f) reference(g) ":"
+      ident(sc) ] ->
+    { vernac_string_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) }
 END

@@ -14,8 +14,7 @@
    coq.plugins.cc
    coq.plugins.firstorder
 
-   coq.plugins.numeral_notation
-   coq.plugins.string_notation
+   coq.plugins.number_string_notation
    coq.plugins.int63_syntax
    coq.plugins.float_syntax
 
