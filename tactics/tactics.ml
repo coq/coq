@@ -2330,7 +2330,7 @@ let intro_decomp_eq ?loc l thin tac id =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let sigma, t = Typing.type_of env sigma c in
-  let _,t = reduce_to_quantified_ind env sigma t in
+  let _,t = reduce_to_atomic_ind env sigma t in
   match my_find_eq_data_decompose env sigma t with
   | Some (eq,u,eq_args) ->
     !intro_decomp_eq_function
