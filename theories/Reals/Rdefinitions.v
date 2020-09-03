@@ -284,6 +284,12 @@ Definition of_number (n : Number.number) : IR :=
   | Number.Hex h => of_hexadecimal h
   end.
 
+Definition IQmake_to_decimal num den :=
+  match den with
+  | 1%positive => None  (* this should be encoded as IRZ *)
+  | _ => IQmake_to_decimal num den
+  end.
+
 Definition to_decimal (n : IR) : option Decimal.decimal :=
   match n with
   | IRZ z =>
@@ -317,6 +323,12 @@ Definition to_decimal (n : IR) : option Decimal.decimal :=
     | _ => None
     end
   | _ => None
+  end.
+
+Definition IQmake_to_hexadecimal num den :=
+  match den with
+  | 1%positive => None  (* this should be encoded as IRZ *)
+  | _ => IQmake_to_hexadecimal num den
   end.
 
 Definition to_hexadecimal (n : IR) : option Hexadecimal.hexadecimal :=
