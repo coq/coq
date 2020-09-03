@@ -1608,6 +1608,12 @@ Number notations
          function application, constructors, inductive type families,
          sorts, and primitive integers) will be considered for printing.
 
+         .. note::
+            Number notations for parameterized inductive types can be
+            added by declaring an :ref:`abbreviation <Abbreviations>`
+            for the inductive which instantiates all parameters. See
+            example below.
+
       :n:`via @qualid__ind mapping [ {+, @qualid__constant => @qualid__constructor } ]`
          When using this option, :n:`@qualid__type` no
          longer needs to be an inductive type and is instead mapped to the
@@ -1847,6 +1853,24 @@ Number notations
 
          Check 2 : Fin.t 2.
 
+   .. example:: Number Notation with a parameterized inductive type
+
+      .. coqtop:: in reset
+
+         Definition of_uint u : list unit :=
+           let fix f n := match n with O => nil | S n => cons tt (f n) end in
+           f (Nat.of_num_uint u).
+         Definition to_uint (l : list unit) := Nat.to_num_uint (length l).
+
+      The parameter :g:`unit` for the parameterized inductive type
+      :g:`list` is given through an :ref:`abbreviation
+      <Abbreviations>`.
+
+      .. coqtop:: in
+
+         Notation list_unit := (list unit) (only parsing).
+         Number Notation list_unit of_uint to_uint : nat_scope.
+
 .. _string-notations:
 
 String notations
@@ -1917,8 +1941,8 @@ The following errors apply to both string and number notations:
 
    .. exn:: @type is not an inductive type.
 
-     String and number notations can only be declared for inductive types with no
-     arguments. Declare numeral notations for non-inductive types using :n:`@number_via`.
+     String and number notations can only be declared for inductive types.
+     Declare number notations for non-inductive types using :n:`@number_via`.
 
    .. exn:: Cannot interpret in @scope_name because @qualid could not be found in the current environment.
 

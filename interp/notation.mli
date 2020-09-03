@@ -166,8 +166,10 @@ type 'target conversion_kind = 'target * option_kind
    argument is recursively translated according to [l_k].
    [ToPostHole] introduces an additional implicit argument hole
    (in the reverse translation, the corresponding argument is removed).
+   [ToPostCheck r] behaves as [ToPostCopy] except in the reverse
+   translation which fails if the copied term is not [r].
    When [n] is null, no translation is performed. *)
-type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole
+type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole | ToPostCheck of GlobRef.t
 type ('target, 'warning) prim_token_notation_obj =
   { to_kind : 'target conversion_kind;
     to_ty : GlobRef.t;

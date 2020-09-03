@@ -686,6 +686,133 @@ Unset Printing All.
 
 End Test24.
 
+(* Test number notations for parameterized inductives *)
+Module Test25.
+
+Definition of_uint (u : Number.uint) : list unit :=
+  let fix f n :=
+    match n with
+    | O => nil
+    | S n => cons tt (f n)
+    end in
+  f (Nat.of_num_uint u).
+
+Definition to_uint (l : list unit) : Number.uint :=
+  let fix f n :=
+    match n with
+    | nil => O
+    | cons tt l => S (f l)
+    end in
+  Nat.to_num_uint (f l).
+
+Notation listunit := (list unit) (only parsing).
+Number Notation listunit of_uint to_uint : nat_scope.
+
+Check 0.
+Check 1.
+Check 2.
+
+Check cons tt (cons tt nil).
+Check cons O (cons O nil).  (* printer not called on list nat *)
+
+(* inductive with multiple parameters that are not the first
+   parameters and not in the same order for each constructor *)
+Inductive Ip : Type -> Type -> Type :=
+| Ip0 : forall T T', nat -> Ip T T'
+| Ip1 : forall T' T, nat -> Ip T T'
+| Ip2 : forall T, nat -> forall T', Ip T T'
+| Ip3 : nat -> forall T T', Ip T T'.
+
+Definition Ip_of_uint (u : Number.uint) : option (Ip nat bool) :=
+  let f n :=
+    match n with
+    | O => Some (Ip0 nat bool O)
+    | S O => Some (Ip1 bool nat (S O))
+    | S (S O) => Some (Ip2 nat (S (S O)) bool)
+    | S (S (S O)) => Some (Ip3 (S (S (S O))) nat bool)
+    | _ => None
+    end in
+  f (Nat.of_num_uint u).
+
+Definition Ip_to_uint (l : Ip nat bool) : Number.uint :=
+  let f n :=
+    match n with
+    | Ip0 _ _ n => n
+    | Ip1 _ _ n => n
+    | Ip2 _ n _ => n
+    | Ip3 n _ _ => n
+    end in
+  Nat.to_num_uint (f l).
+
+Notation Ip_nat_bool := (Ip nat bool) (only parsing).
+Number Notation Ip_nat_bool Ip_of_uint Ip_to_uint : nat_scope.
+
+Check 0.
+Check 1.
+Check 2.
+Check 3.
+Check Ip0 nat bool (S O).
+Check Ip1 bool nat (S O).
+Check Ip2 nat (S O) bool.
+Check Ip3 (S O) nat bool.
+Check Ip0 nat nat (S O).  (* not printed *)
+Check Ip0 bool bool (S O).  (* not printed *)
+Check Ip1 nat nat (S O).  (* not printed *)
+Check Ip3 (S O) nat nat.  (* not printed *)
+Set Printing All.
+Check 0.
+Check 1.
+Check 2.
+Check 3.
+Unset Printing All.
+
+Notation eqO := (eq _ O) (only parsing).
+Definition eqO_of_uint (x : Number.uint) : eqO := eq_refl O.
+Definition eqO_to_uint (x : O = O) : Number.uint :=
+  match x with
+  | eq_refl _ => Nat.to_num_uint O
+  end.
+Number Notation eqO eqO_of_uint eqO_to_uint : nat_scope.
+
+Check 42.
+Check eq_refl (S O).  (* doesn't match eq _ O, printer not called *)
+
+Notation eq_ := (eq _ _) (only parsing).
+Number Notation eq_ eqO_of_uint eqO_to_uint : nat_scope.
+
+Check eq_refl (S O).  (* matches eq _ _, printer called *)
+
+Inductive extra_list : Type -> Type :=
+| nil (n : nat) (v : Type) : extra_list v
+| cons (n : nat) (t : Type) (x : t) : extra_list t -> extra_list t.
+
+Definition extra_list_unit_of_uint (x : Number.uint) : extra_list unit :=
+  let fix f n :=
+      match n with
+      | O => nil O unit
+      | S n => cons O unit tt (f n)
+      end in
+  f (Nat.of_num_uint x).
+
+Definition extra_list_unit_to_uint (x : extra_list unit) : Number.uint :=
+  let fix f T (x : extra_list T) :=
+      match x with
+      | nil _ _ => O
+      | cons _ T _ x => S (f T x)
+      end in
+  Nat.to_num_uint (f unit x).
+
+Notation extra_list_unit := (extra_list unit).
+Number Notation extra_list_unit
+        extra_list_unit_of_uint extra_list_unit_to_uint : nat_scope.
+
+Check 2.
+Set Printing All.
+Check 2.
+Unset Printing All.
+
+End Test25.
+
 (* Test the via ... mapping ... option with let-binders, beta-redexes, delta-redexes, etc *)
 Module Test26.
 

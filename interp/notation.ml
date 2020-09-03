@@ -554,8 +554,10 @@ type 'target conversion_kind = 'target * option_kind
    argument is recursively translated according to [l_k].
    [ToPostHole] introduces an additional implicit argument hole
    (in the reverse translation, the corresponding argument is removed).
+   [ToPostCheck r] behaves as [ToPostCopy] except in the reverse
+   translation which fails if the copied term is not [r].
    When [n] is null, no translation is performed. *)
-type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole
+type to_post_arg = ToPostCopy | ToPostAs of int | ToPostHole | ToPostCheck of GlobRef.t
 type ('target, 'warning) prim_token_notation_obj =
   { to_kind : 'target conversion_kind;
     to_ty : GlobRef.t;
@@ -620,11 +622,11 @@ let constr_of_globref allow_constant env sigma = function
      sigma,mkConstU c
   | _ -> raise NotAValidPrimToken
 
-let rec constr_of_glob to_post post env sigma g = match DAst.get g with
+let rec constr_of_glob allow_constant to_post post env sigma g = match DAst.get g with
   | Glob_term.GRef (r, _) ->
       let o = List.find_opt (fun (_,r',_) -> GlobRef.equal r r') post in
       begin match o with
-      | None -> constr_of_globref false env sigma r
+      | None -> constr_of_globref allow_constant env sigma r
       | Some (r, _, a) ->
          (* [g] is not a GApp so check that [post]
             does not expect any actual argument
@@ -638,19 +640,26 @@ let rec constr_of_glob to_post post env sigma g = match DAst.get g with
         | _ -> None in
       begin match o with
       | None ->
-         let sigma,c = constr_of_glob to_post post env sigma gc in
-         let sigma,cl = List.fold_left_map (constr_of_glob to_post post env) sigma gcl in
+         let sigma,c = constr_of_glob allow_constant to_post post env sigma gc in
+         let sigma,cl = List.fold_left_map (constr_of_glob allow_constant to_post post env) sigma gcl in
          sigma,mkApp (c, Array.of_list cl)
       | Some (r, _, a) ->
          let sigma,c = constr_of_globref true env sigma r in
          let rec aux sigma a gcl = match a, gcl with
            | [], [] -> sigma,[]
            | ToPostCopy :: a, gc :: gcl ->
-              let sigma,c = constr_of_glob [||] [] env sigma gc in
+              let sigma,c = constr_of_glob allow_constant [||] [] env sigma gc in
+              let sigma,cl = aux sigma a gcl in
+              sigma, c :: cl
+           | ToPostCheck r :: a, gc :: gcl ->
+              let () = match DAst.get gc with
+                | Glob_term.GRef (r', _) when GlobRef.equal r r' -> ()
+                | _ -> raise NotAValidPrimToken in
+              let sigma,c = constr_of_glob true [||] [] env sigma gc in
               let sigma,cl = aux sigma a gcl in
               sigma, c :: cl
            | ToPostAs i :: a, gc :: gcl ->
-              let sigma,c = constr_of_glob to_post to_post.(i) env sigma gc in
+              let sigma,c = constr_of_glob allow_constant to_post to_post.(i) env sigma gc in
               let sigma,cl = aux sigma a gcl in
               sigma, c :: cl
            | ToPostHole :: post, _ :: gcl -> aux sigma post gcl
@@ -668,7 +677,7 @@ let rec constr_of_glob to_post post env sigma g = match DAst.get g with
 
 let constr_of_glob to_post env sigma (Glob_term.AnyGlobConstr g) =
   let post = match to_post with [||] -> [] | _ -> to_post.(0) in
-  constr_of_glob to_post post env sigma g
+  constr_of_glob false to_post post env sigma g
 
 let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | App (c, ca) ->
@@ -705,7 +714,7 @@ let rec postprocess token_kind ?loc ty to_post post g =
        let e = Evar_kinds.ImplicitArg (r, (n, None), true) in
        let h = DAst.make ?loc (Glob_term.GHole (e, Namegen.IntroAnonymous, None)) in
        h :: f (n+1) a gl
-    | ToPostCopy :: a, g :: gl -> g :: f (n+1) a gl
+    | (ToPostCopy | ToPostCheck _) :: a, g :: gl -> g :: f (n+1) a gl
     | ToPostAs c :: a, g :: gl ->
        postprocess token_kind ?loc ty to_post to_post.(c) g :: f (n+1) a gl
     | [], _::_ | _::_, [] ->
