@@ -31,8 +31,13 @@ let warn_deprecated_numeral_notation =
     (fun () ->
       strbrk "Numeral Notation is deprecated, please use Number Notation instead.")
 
-let pr_number_mapping (n, n') =
-  Libnames.pr_qualid n ++ spc () ++ str "=>" ++ spc () ++ Libnames.pr_qualid n'
+let pr_number_mapping (b, n, n') =
+  if b then
+    str "[" ++ Libnames.pr_qualid n ++ str "]" ++ spc () ++ str "=>" ++ spc ()
+    ++ Libnames.pr_qualid n'
+  else
+    Libnames.pr_qualid n ++ spc () ++ str "=>" ++ spc ()
+    ++ Libnames.pr_qualid n'
 
 let pr_number_via (n, l) =
   str "via " ++ Libnames.pr_qualid n ++ str " mapping ["
@@ -56,7 +61,8 @@ END
 
 VERNAC ARGUMENT EXTEND number_mapping
   PRINTED BY { pr_number_mapping }
-| [ reference(n) "=>" reference(n') ] -> { n, n' }
+| [ reference(n) "=>" reference(n') ] -> { false, n, n' }
+| [ "[" reference(n) "]" "=>" reference(n') ] -> { true, n, n' }
 END
 
 VERNAC ARGUMENT EXTEND number_via

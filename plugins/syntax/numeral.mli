@@ -14,7 +14,7 @@ open Notation
 
 (** * Number notation *)
 
-type number_string_via = qualid * (qualid * qualid) list
+type number_string_via = qualid * (bool * qualid * qualid) list
 type number_option =
   | After of numnot_option
   | Via of number_string_via

@@ -1562,7 +1562,7 @@ Number notations
       number_modifier ::= warning after @bignat
       | abstract after @bignat
       | @number_via
-      number_via ::= via @qualid mapping [ {+, @qualid => @qualid } ]
+      number_via ::= via @qualid mapping [ {+, {| @qualid => @qualid | [ @qualid ] => @qualid } } ]
 
    This command allows the user to customize the way number literals
    are parsed and printed.
@@ -1618,6 +1618,26 @@ Number notations
          constructor of type :n:`@qualid__ind`. The type
          :n:`@qualid__type` is then replaced by :n:`@qualid__ind` in the
          above parser and printer types.
+
+         When :n:`@qualid__constant` is surrounded by square brackets,
+         all the implicit arguments of :n:`@qualid__constant` (whether maximally inserted or not) are ignored
+         when translating to :n:`@qualid__constructor` (i.e., before
+         applying :n:`@qualid__print`) and replaced with implicit
+         argument holes :g:`_` when translating from
+         :n:`@qualid__constructor` to :n:`@qualid__constant` (after
+         :n:`@qualid__parse`). See below for an :ref:`example <example-number-notation-implicit-args>`.
+
+         .. note::
+            The implicit status of the arguments is considered
+            only at notation declaration time, any further
+            modification of this status has no impact
+            on the previously declared notations.
+
+         .. note::
+            In case of multiple implicit options (for instance
+            :g:`Arguments eq_refl {A}%type_scope {x}, [_] _`), an
+            argument is considered implicit when it is implicit in any of the
+            options.
 
          .. note::
             To use a :token:`sort` as the target type :n:`@qualid__type`, use an :ref:`abbreviation <Abbreviations>`
@@ -1774,6 +1794,58 @@ Number notations
 
          Set Printing All.
          Check 3.
+
+   .. _example-number-notation-implicit-args:
+
+   .. example:: Number Notation with implicit arguments
+
+      The following example parses and prints natural numbers between
+      :g:`0` and :g:`n-1` as terms of type :g:`Fin.t n`.
+
+      .. coqtop:: all reset
+
+         Require Import Vector.
+         Print Fin.t.
+
+      Note the implicit arguments of :g:`Fin.F1` and :g:`Fin.FS`,
+      which won't appear in the corresponding inductive type.
+
+      .. coqtop:: in
+
+         Inductive I := I1 : I | IS : I -> I.
+
+         Definition of_uint (x : Number.uint) : I :=
+           let fix f n := match n with O => I1 | S n => IS (f n) end in
+           f (Nat.of_num_uint x).
+
+         Definition to_uint (x : I) : Number.uint :=
+           let fix f i := match i with I1 => O | IS n => S (f n) end in
+           Nat.to_num_uint (f x).
+
+         Declare Scope fin_scope.
+         Delimit Scope fin_scope with fin.
+         Local Open Scope fin_scope.
+         Number Notation Fin.t of_uint to_uint (via I
+           mapping [[Fin.F1] => I1, [Fin.FS] => IS]) : fin_scope.
+
+      Now :g:`2` is parsed as :g:`Fin.FS (Fin.FS Fin.F1)`, that is
+      :g:`@Fin.FS _ (@Fin.FS _ (@Fin.F1 _))`.
+
+      .. coqtop:: all
+
+         Check 2.
+
+      which can be of type :g:`Fin.t 3` (numbers :g:`0`, :g:`1` and :g:`2`)
+
+      .. coqtop:: all
+
+         Check 2 : Fin.t 3.
+
+      but cannot be of type :g:`Fin.t 2` (only :g:`0` and :g:`1`)
+
+      .. coqtop:: all fail
+
+         Check 2 : Fin.t 2.
 
 .. _string-notations:
 

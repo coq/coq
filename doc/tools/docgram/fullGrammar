@@ -2557,6 +2557,7 @@ deprecated_number_modifier: [
 
 number_mapping: [
 | reference "=>" reference
+| "[" reference "]" "=>" reference
 ]
 
 number_via: [

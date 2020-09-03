@@ -1282,7 +1282,7 @@ number_modifier: [
 ]
 
 number_via: [
-| "via" qualid "mapping" "[" LIST1 ( qualid "=>" qualid ) SEP "," "]"
+| "via" qualid "mapping" "[" LIST1 [ qualid "=>" qualid | "[" qualid "]" "=>" qualid ] SEP "," "]"
 ]
 
 hints_path: [
