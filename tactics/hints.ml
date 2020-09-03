@@ -837,7 +837,7 @@ let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
            db = None; secvars;
            code = with_uid (Give_exact (c, cty, ctx, poly)); })
 
-let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (c, cty, ctx) =
+let make_apply_entry env sigma hnf info ~poly ?(name=PathAny) (c, cty, ctx) =
   let cty = if hnf then hnf_constr env sigma cty else cty in
   match EConstr.kind sigma cty with
   | Prod _ ->
@@ -862,25 +862,11 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (
          db = None;
          secvars;
          code = with_uid (Res_pf(c,cty,ctx,poly)); })
-    else begin
-      if not eapply then failwith "make_apply_entry";
-      if verbose then begin
-        let variables = str (CString.plural nmiss "variable") in
-        Feedback.msg_info (
-          strbrk "The hint " ++
-          pr_leconstr_env env sigma' c ++
-          strbrk " will only be used by eauto, because applying " ++
-          pr_leconstr_env env sigma' c ++
-          strbrk " would leave " ++ variables ++ Pp.spc () ++
-          Pp.prlist_with_sep Pp.pr_comma Name.print (List.map (Evd.meta_name ce.evd) miss) ++
-          strbrk " as unresolved existential " ++ variables ++ str "."
-        )
-      end;
+    else
       (Some hd,
        { pri; pat = Some pat; name;
          db = None; secvars;
          code = with_uid (ERes_pf(c,cty,ctx,poly)); })
-    end
   | _ -> failwith "make_apply_entry"
 
 (* flags is (e,h,v) with e=true if eapply and h=true if hnf and v=true if verbose
@@ -916,19 +902,25 @@ let fresh_global_or_constr env sigma poly cr =
       (c, Univ.ContextSet.empty)
     end
 
-let make_resolves env sigma flags info ~check ~poly ?name cr =
+let make_resolves env sigma (eapply, hnf) info ~check ~poly ?name cr =
   let c, ctx = fresh_global_or_constr env sigma poly cr in
   let cty = Retyping.get_type_of env sigma c in
   let try_apply f =
-    try Some (f (c, cty, ctx)) with Failure _ -> None in
+    try
+      let (_, hint) as ans = f (c, cty, ctx) in
+      match hint.code.obj with
+      | ERes_pf _ -> if not eapply then None else Some ans
+      | _ -> Some ans
+    with Failure _ -> None
+  in
   let ents = List.map_filter try_apply
                              [make_exact_entry env sigma info ~poly ?name;
-                              make_apply_entry env sigma flags info ~poly ?name]
+                              make_apply_entry env sigma hnf info ~poly ?name]
   in
   if check && List.is_empty ents then
     user_err ~hdr:"Hint"
       (pr_leconstr_env env sigma c ++ spc() ++
-        (if pi1 flags then str"cannot be used as a hint."
+        (if eapply then str"cannot be used as a hint."
         else str "can be used as a hint only for eauto."));
   ents
 
@@ -937,7 +929,7 @@ let make_resolve_hyp env sigma decl =
   let hname = NamedDecl.get_id decl in
   let c = mkVar hname in
   try
-    [make_apply_entry env sigma (true, true, false) empty_hint_info ~poly:false
+    [make_apply_entry env sigma true empty_hint_info ~poly:false
        ~name:(PathHints [GlobRef.VarRef hname])
        (c, NamedDecl.get_type decl, Univ.ContextSet.empty)]
   with
@@ -1223,9 +1215,28 @@ let add_resolves env sigma clist ~local ~superglobal dbnames =
     (fun dbname ->
       let r =
         List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
-          make_resolves env sigma (true,hnf,not !Flags.quiet)
+          make_resolves env sigma (true, hnf)
             pri ~check:true ~poly ~name:path gr) clist)
       in
+      let check (_, hint) = match hint.code.obj with
+      | ERes_pf (c, cty, ctx, _) ->
+        let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
+        let ce = mk_clenv_from_env env sigma' None (c,cty) in
+        let miss = clenv_missing ce in
+        let nmiss = List.length miss in
+        let variables = str (CString.plural nmiss "variable") in
+        Feedback.msg_info (
+          strbrk "The hint " ++
+          pr_leconstr_env env sigma' c ++
+          strbrk " will only be used by eauto, because applying " ++
+          pr_leconstr_env env sigma' c ++
+          strbrk " would leave " ++ variables ++ Pp.spc () ++
+          Pp.prlist_with_sep Pp.pr_comma Name.print (List.map (Evd.meta_name ce.evd) miss) ++
+          strbrk " as unresolved existential " ++ variables ++ str "."
+        )
+      | _ -> ()
+      in
+      let () = if not !Flags.quiet then List.iter check r in
       let hint = make_hint ~local dbname (AddHints { superglobal; hints = r }) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
@@ -1375,10 +1386,10 @@ let expand_constructor_hints env sigma lems =
 let constructor_hints env sigma eapply lems =
   let lems = expand_constructor_hints env sigma lems in
   List.map_append (fun (poly, lem) ->
-      make_resolves env sigma (eapply,true,false) empty_hint_info ~check:true ~poly lem) lems
+      make_resolves env sigma (eapply, true) empty_hint_info ~check:true ~poly lem) lems
 
 let make_resolves env sigma info ~check ~poly ?name hint =
-  make_resolves env sigma (true, false, false) info ~check ~poly ?name hint
+  make_resolves env sigma (true, false) info ~check ~poly ?name hint
 
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
