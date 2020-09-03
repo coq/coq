@@ -43,6 +43,7 @@ let _ =
        let id_int63 = Nametab.locate q_id_int63 in
        let o = { to_kind = Int63, Direct;
                  to_ty = id_int63;
+                 to_post = [||];
                  of_kind = Int63, Direct;
                  of_ty = id_int63;
                  ty_name = q_int63;

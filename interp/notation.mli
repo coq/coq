@@ -154,9 +154,22 @@ type string_target_kind =
 type option_kind = Option | Direct
 type 'target conversion_kind = 'target * option_kind
 
+(** A postprocessing translation [to_post] can be done after execution
+   of the [to_ty] interpreter. The reverse translation is performed
+   before the [of_ty] uninterpreter.
+
+   [to_post] is an array of [n] lists [l_i] of tuples [(f, t,
+   args)]. When the head symbol of the translated term matches one of
+   the [f] in the list [l_0] it is replaced by [t] and its arguments
+   are translated acording to [args] where [ToPostCopy] means that the
+   argument is kept unchanged and [ToPostAs k] means that the
+   argument is recursively translated according to [l_k].
+   When [n] is null, no translation is performed. *)
+type to_post_arg = ToPostCopy | ToPostAs of int
 type ('target, 'warning) prim_token_notation_obj =
   { to_kind : 'target conversion_kind;
     to_ty : GlobRef.t;
+    to_post : ((GlobRef.t * GlobRef.t * to_post_arg list) list) array;
     of_kind : 'target conversion_kind;
     of_ty : GlobRef.t;
     ty_name : Libnames.qualid; (* for warnings / error messages *)

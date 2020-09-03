@@ -82,6 +82,7 @@ let vernac_string_notation local ty f g scope =
   in
   let o = { to_kind = to_kind;
             to_ty = to_ty;
+            to_post = [||];
             of_kind = of_kind;
             of_ty = of_ty;
             ty_name = ty;

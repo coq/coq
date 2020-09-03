@@ -542,9 +542,22 @@ type string_target_kind =
 type option_kind = Option | Direct
 type 'target conversion_kind = 'target * option_kind
 
+(** A postprocessing translation [to_post] can be done after execution
+   of the [to_ty] interpreter. The reverse translation is performed
+   before the [of_ty] uninterpreter.
+
+   [to_post] is an array of [n] lists [l_i] of tuples [(f, t,
+   args)]. When the head symbol of the translated term matches one of
+   the [f] in the list [l_0] it is replaced by [t] and its arguments
+   are translated acording to [args] where [ToPostCopy] means that the
+   argument is kept unchanged and [ToPostAs k] means that the
+   argument is recursively translated according to [l_k].
+   When [n] is null, no translation is performed. *)
+type to_post_arg = ToPostCopy | ToPostAs of int
 type ('target, 'warning) prim_token_notation_obj =
   { to_kind : 'target conversion_kind;
     to_ty : GlobRef.t;
+    to_post : ((GlobRef.t * GlobRef.t * to_post_arg list) list) array;
     of_kind : 'target conversion_kind;
     of_ty : GlobRef.t;
     ty_name : Libnames.qualid; (* for warnings / error messages *)
@@ -593,23 +606,65 @@ exception NotAValidPrimToken
     what it means for a term to be ground / to be able to be
     considered for parsing. *)
 
-let rec constr_of_glob env sigma g = match DAst.get g with
-  | Glob_term.GRef (GlobRef.ConstructRef c, _) ->
-      let sigma,c = Evd.fresh_constructor_instance env sigma c in
-      sigma,mkConstructU c
-  | Glob_term.GRef (GlobRef.IndRef c, _) ->
-      let sigma,c = Evd.fresh_inductive_instance env sigma c in
-      sigma,mkIndU c
+let constr_of_globref allow_constant env sigma = function
+  | GlobRef.ConstructRef c ->
+     let sigma,c = Evd.fresh_constructor_instance env sigma c in
+     sigma,mkConstructU c
+  | GlobRef.IndRef c ->
+     let sigma,c = Evd.fresh_inductive_instance env sigma c in
+     sigma,mkIndU c
+  | GlobRef.ConstRef c when allow_constant ->
+     let sigma,c = Evd.fresh_constant_instance env sigma c in
+     sigma,mkConstU c
+  | _ -> raise NotAValidPrimToken
+
+let rec constr_of_glob to_post post env sigma g = match DAst.get g with
+  | Glob_term.GRef (r, _) ->
+      let o = List.find_opt (fun (_,r',_) -> GlobRef.equal r r') post in
+      begin match o with
+      | None -> constr_of_globref false env sigma r
+      | Some (r, _, a) ->
+         (* [g] is not a GApp so check that [post]
+            does not expect any argument (i.e., a = []) *)
+         if a <> [] then raise NotAValidPrimToken;
+         constr_of_globref true env sigma r
+      end
   | Glob_term.GApp (gc, gcl) ->
-      let sigma,c = constr_of_glob env sigma gc in
-      let sigma,cl = List.fold_left_map (constr_of_glob env) sigma gcl in
-      sigma,mkApp (c, Array.of_list cl)
+      let o = match DAst.get gc with
+        | Glob_term.GRef (r, _) -> List.find_opt (fun (_,r',_) -> GlobRef.equal r r') post
+        | _ -> None in
+      begin match o with
+      | None ->
+         let sigma,c = constr_of_glob to_post post env sigma gc in
+         let sigma,cl = List.fold_left_map (constr_of_glob to_post post env) sigma gcl in
+         sigma,mkApp (c, Array.of_list cl)
+      | Some (r, _, a) ->
+         let sigma,c = constr_of_globref true env sigma r in
+         let rec aux sigma a gcl = match a, gcl with
+           | [], [] -> sigma,[]
+           | ToPostCopy :: a, gc :: gcl ->
+              let sigma,c = constr_of_glob [||] [] env sigma gc in
+              let sigma,cl = aux sigma a gcl in
+              sigma, c :: cl
+           | ToPostAs i :: a, gc :: gcl ->
+              let sigma,c = constr_of_glob to_post to_post.(i) env sigma gc in
+              let sigma,cl = aux sigma a gcl in
+              sigma, c :: cl
+           | [], _ :: _ | _ :: _, [] -> raise NotAValidPrimToken
+         in
+         let sigma,cl = aux sigma a gcl in
+         sigma,mkApp (c, Array.of_list cl)
+      end
   | Glob_term.GInt i -> sigma, mkInt i
   | Glob_term.GSort gs ->
       let sigma,c = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family gs) in
       sigma,mkSort c
   | _ ->
       raise NotAValidPrimToken
+
+let constr_of_glob to_post env sigma (Glob_term.AnyGlobConstr g) =
+  let post = match to_post with [||] -> [] | _ -> to_post.(0) in
+  constr_of_glob to_post post env sigma g
 
 let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | App (c, ca) ->
@@ -632,9 +687,34 @@ let no_such_prim_token uninterpreted_token_kind ?loc ty =
    (str ("Cannot interpret this "^uninterpreted_token_kind^" as a value of type ") ++
     pr_qualid ty)
 
-let interp_option uninterpreted_token_kind token_kind ty ?loc env sigma c =
+let rec postprocess token_kind ?loc ty to_post post g =
+  let g', gl = match DAst.get g with Glob_term.GApp (g, gl) -> g, gl | _ -> g, [] in
+  let o =
+    match DAst.get g' with
+    | Glob_term.GRef (r, None) ->
+       List.find_opt (fun (r',_,_) -> GlobRef.equal r r') post
+    | _ -> None in
+  match o with None -> g | Some (_, r, a) ->
+  let rec f a gl = match a, gl with
+    | [], [] -> []
+    | ToPostCopy :: a, g :: gl -> g :: f a gl
+    | ToPostAs c :: a, g :: gl ->
+       postprocess token_kind ?loc ty to_post to_post.(c) g :: f a gl
+    | [], _::_ | _::_, [] ->
+       no_such_prim_token token_kind ?loc ty
+  in
+  let gl = f a gl in
+  let g = DAst.make ?loc (Glob_term.GRef (r, None)) in
+  DAst.make ?loc (Glob_term.GApp (g, gl))
+
+let glob_of_constr token_kind ty ?loc env sigma to_post c =
+  let g = glob_of_constr token_kind ?loc env sigma c in
+  match to_post with [||] -> g | _ ->
+    postprocess token_kind ?loc ty to_post to_post.(0) g
+
+let interp_option uninterpreted_token_kind token_kind ty ?loc env sigma to_post c =
   match Constr.kind c with
-  | App (_Some, [| _; c |]) -> glob_of_constr token_kind ?loc env sigma c
+  | App (_Some, [| _; c |]) -> glob_of_constr token_kind ty ?loc env sigma to_post c
   | App (_None, [| _ |]) -> no_such_prim_token uninterpreted_token_kind ?loc ty
   | x -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedNonOptionTerm c))
 
@@ -643,13 +723,13 @@ let uninterp_option c =
   | App (_Some, [| _; x |]) -> x
   | _ -> raise NotAValidPrimToken
 
-let uninterp to_raw o (Glob_term.AnyGlobConstr n) =
+let uninterp to_raw o n =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma,of_ty = Evd.fresh_global env sigma o.of_ty in
   let of_ty = EConstr.Unsafe.to_constr of_ty in
   try
-    let sigma,n = constr_of_glob env sigma n in
+    let sigma,n = constr_of_glob o.to_post env sigma n in
     let c = eval_constr_app env sigma of_ty n in
     let c = if snd o.of_kind == Direct then c else uninterp_option c in
     Some (to_raw (fst o.of_kind, c))
@@ -959,12 +1039,13 @@ let interp o ?loc n =
   match o.warning, snd o.to_kind with
   | Abstract threshold, Direct when NumTok.Signed.is_bigger_int_than n threshold ->
      warn_abstract_large_num (o.ty_name,o.to_ty);
-     glob_of_constr "number" ?loc env sigma (mkApp (to_ty,[|c|]))
+     assert (Array.length o.to_post = 0);
+     glob_of_constr "number" o.ty_name ?loc env sigma o.to_post (mkApp (to_ty,[|c|]))
   | _ ->
      let res = eval_constr_app env sigma to_ty c in
      match snd o.to_kind with
-     | Direct -> glob_of_constr "number" ?loc env sigma res
-     | Option -> interp_option "number" "number" o.ty_name ?loc env sigma res
+     | Direct -> glob_of_constr "number" o.ty_name ?loc env sigma o.to_post res
+     | Option -> interp_option "number" "number" o.ty_name ?loc env sigma o.to_post res
 
 let uninterp o n =
   PrimTokenNotation.uninterp
@@ -1068,8 +1149,8 @@ let interp o ?loc n =
   let to_ty = EConstr.Unsafe.to_constr to_ty in
   let res = eval_constr_app env sigma to_ty c in
   match snd o.to_kind with
-  | Direct -> glob_of_constr "string" ?loc env sigma res
-  | Option -> interp_option "string" "string" o.ty_name ?loc env sigma res
+  | Direct -> glob_of_constr "string" o.ty_name ?loc env sigma o.to_post res
+  | Option -> interp_option "string" "string" o.ty_name ?loc env sigma o.to_post res
 
 let uninterp o n =
   PrimTokenNotation.uninterp

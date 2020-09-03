@@ -199,7 +199,7 @@ let vernac_number_notation local ty f g scope opts =
    | _, ((DecimalInt _ | DecimalUInt _ | Decimal _), _) ->
       warn_deprecated_decimal ()
    | _ -> ());
-  let o = { to_kind; to_ty; of_kind; of_ty;
+  let o = { to_kind; to_ty; to_post = [||]; of_kind; of_ty;
             ty_name = ty;
             warning = opts }
   in
