@@ -137,10 +137,19 @@ Numbers
   into an OCaml integer (63-bit integers on most architectures).
   :n:`@bigint` and :n:`@bignat` have no range limitation.
 
+  The :ref:`standard library <thecoqlibrary>` provides some
+  :ref:`interpretations <notation-scopes>` for :n:`@number`. The
+  :cmd:`Number Notation` mechanism offers the user
+  a way to define custom parsers and printers for :n:`@number`.
+
 Strings
   Strings begin and end with ``"`` (double quote).  Use ``""`` to represent
   a double quote character within a string.  In the grammar, strings are
   identified with :production:`string`.
+
+  The :cmd:`String Notation` mechanism offers the
+  user a way to define custom parsers and printers for
+  :token:`string`.
 
 Keywords
   The following character sequences are keywords defined in the main Coq grammar

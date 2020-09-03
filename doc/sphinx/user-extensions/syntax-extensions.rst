@@ -1293,6 +1293,8 @@ recognized to be a ``Funclass`` instance, i.e., of type :g:`forall x:A, B` or
 :g:`A -> B`.
 
 
+.. _notation-scopes:
+
 Notation scopes used in the standard library of Coq
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1538,7 +1540,7 @@ numbers (see :ref:`datatypes`).
 Number notations
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Number Notation @qualid @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
+.. cmd:: Number Notation @qualid__type @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
    :name: Number Notation
 
    .. insertprodn numeral_modifier numeral_modifier
@@ -1550,32 +1552,32 @@ Number notations
    This command allows the user to customize the way numeral literals
    are parsed and printed.
 
-      :n:`@qualid`
+      :n:`@qualid__type`
          the name of an inductive type,
          while :n:`@qualid__parse` and :n:`@qualid__print` should be the names of the
          parsing and printing functions, respectively.  The parsing function
          :n:`@qualid__parse` should have one of the following types:
 
-            * :n:`Numeral.int -> @qualid`
-            * :n:`Numeral.int -> option @qualid`
-            * :n:`Numeral.uint -> @qualid`
-            * :n:`Numeral.uint -> option @qualid`
-            * :n:`Z -> @qualid`
-            * :n:`Z -> option @qualid`
-            * :n:`Numeral.numeral -> @qualid`
-            * :n:`Numeral.numeral -> option @qualid`
+            * :n:`Numeral.int -> @qualid__type`
+            * :n:`Numeral.int -> option @qualid__type`
+            * :n:`Numeral.uint -> @qualid__type`
+            * :n:`Numeral.uint -> option @qualid__type`
+            * :n:`Z -> @qualid__type`
+            * :n:`Z -> option @qualid__type`
+            * :n:`Numeral.numeral -> @qualid__type`
+            * :n:`Numeral.numeral -> option @qualid__type`
 
          And the printing function :n:`@qualid__print` should have one of the
          following types:
 
-            * :n:`@qualid -> Numeral.int`
-            * :n:`@qualid -> option Numeral.int`
-            * :n:`@qualid -> Numeral.uint`
-            * :n:`@qualid -> option Numeral.uint`
-            * :n:`@qualid -> Z`
-            * :n:`@qualid -> option Z`
-            * :n:`@qualid -> Numeral.numeral`
-            * :n:`@qualid -> option Numeral.numeral`
+            * :n:`@qualid__type -> Numeral.int`
+            * :n:`@qualid__type -> option Numeral.int`
+            * :n:`@qualid__type -> Numeral.uint`
+            * :n:`@qualid__type -> option Numeral.uint`
+            * :n:`@qualid__type -> Z`
+            * :n:`@qualid__type -> option Z`
+            * :n:`@qualid__type -> Numeral.numeral`
+            * :n:`@qualid__type -> option Numeral.numeral`
 
          .. deprecated:: 8.12
             Numeral notations on :g:`Decimal.uint`, :g:`Decimal.int` and
@@ -1605,7 +1607,7 @@ Number notations
          returns :n:`(@qualid__parse m)` when parsing a literal
          :n:`m` that's greater than :n:`@bignat` rather than reducing it to a normal form.
          Here :g:`m` will be a
-         :g:`Numeral.int` or :g:`Numeral.uint` or :g:`Z`, depending on the
+         :g:`Numeral.int`, :g:`Numeral.uint`, :g:`Z` or :g:`Numeral.numeral`, depending on the
          type of the parsing function :n:`@qualid__parse`. This allows for a
          more compact representation of literals in types such as :g:`nat`,
          and limits parse failures due to stack overflow.  Note that a
@@ -1659,6 +1661,8 @@ Number notations
      return a concrete :g:`Some` or :g:`None` when applied to a
      concrete number expressed as a (hexa)decimal.  They may not return
      opaque constants.
+
+.. _string-notations:
 
 String notations
 ~~~~~~~~~~~~~~~~
