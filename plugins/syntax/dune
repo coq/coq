@@ -13,13 +13,6 @@
  (libraries coq.vernac))
 
 (library
- (name r_syntax_plugin)
- (public_name coq.plugins.r_syntax)
- (synopsis "Coq syntax plugin: reals")
- (modules r_syntax)
- (libraries coq.vernac))
-
-(library
  (name int63_syntax_plugin)
  (public_name coq.plugins.int63_syntax)
  (synopsis "Coq syntax plugin: int63")

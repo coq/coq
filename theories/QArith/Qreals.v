@@ -13,8 +13,6 @@ Require Export QArith_base.
 
 (** Injection of rational numbers into real numbers. *)
 
-Definition Q2R (x : Q) : R := (IZR (Qnum x) * / IZR (QDen x))%R.
-
 Lemma IZR_nz : forall p : positive, IZR (Zpos p) <> 0%R.
 Proof.
 intros.

@@ -17,7 +17,6 @@
    coq.plugins.numeral_notation
    coq.plugins.string_notation
    coq.plugins.int63_syntax
-   coq.plugins.r_syntax
    coq.plugins.float_syntax
 
    coq.plugins.btauto

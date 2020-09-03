@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Raxioms Rfunctions Qreals.
+Require Import Raxioms Rfunctions.
 
 (*****************************************************************)
 (**           Register names for use in plugins                  *)
@@ -31,4 +31,4 @@ Register IZR as reals.R.IZR.
 Register Rabs as reals.R.Rabs.
 Register powerRZ as reals.R.powerRZ.
 Register pow as reals.R.pow.
-Register Qreals.Q2R as reals.R.Q2R.
+Register Q2R as reals.R.Q2R.

@@ -22,11 +22,12 @@ Require Import ConstructiveRcomplete.
 Require Import ClassicalDedekindReals.
 
 
-(* Declare primitive numeral notations for Scope R_scope *)
+(* Declare primitive number notations for Scope R_scope *)
+Declare Scope hex_R_scope.
 Declare Scope R_scope.
-Declare ML Module "r_syntax_plugin".
 
 (* Declare Scope R_scope with Key R *)
+Delimit Scope hex_R_scope with xR.
 Delimit Scope R_scope with R.
 
 Local Open Scope R_scope.
@@ -224,3 +225,153 @@ Proof.
   - (* x = n-1 *) exact n.
   - exact (Z.pred n).
 Defined.
+
+(** Injection of rational numbers into real numbers. *)
+
+Definition Q2R (x : Q) : R := (IZR (Qnum x) * / IZR (QDen x))%R.
+
+(**********************************************************)
+(** *    Number notation for constants                    *)
+(**********************************************************)
+
+Inductive IR :=
+  | IRZ : IZ -> IR
+  | IRQ : Q -> IR
+  | IRmult : IR -> IR -> IR
+  | IRdiv : IR -> IR -> IR.
+
+Definition of_decimal (d : Decimal.decimal) : IR :=
+  let '(i, f, e) :=
+    match d with
+    | Decimal.Decimal i f => (i, f, Decimal.Pos Decimal.Nil)
+    | Decimal.DecimalExp i f e => (i, f, e)
+    end in
+  let zq := match f with
+    | Decimal.Nil => IRZ (IZ_of_Z (Z.of_int i))
+    | _ =>
+      let num := Z.of_int (Decimal.app_int i f) in
+      let den := Nat.iter (Decimal.nb_digits f) (Pos.mul 10) 1%positive in
+      IRQ (Qmake num den) end in
+  let e := Z.of_int e in
+  match e with
+  | Z0 => zq
+  | Zpos e => IRmult zq (IRZ (IZpow_pos 10 e))
+  | Zneg e => IRdiv zq (IRZ (IZpow_pos 10 e))
+  end.
+
+Definition of_hexadecimal (d : Hexadecimal.hexadecimal) : IR :=
+  let '(i, f, e) :=
+    match d with
+    | Hexadecimal.Hexadecimal i f => (i, f, Decimal.Pos Decimal.Nil)
+    | Hexadecimal.HexadecimalExp i f e => (i, f, e)
+    end in
+  let zq := match f with
+    | Hexadecimal.Nil => IRZ (IZ_of_Z (Z.of_hex_int i))
+    | _ =>
+      let num := Z.of_hex_int (Hexadecimal.app_int i f) in
+      let den := Nat.iter (Hexadecimal.nb_digits f) (Pos.mul 16) 1%positive in
+      IRQ (Qmake num den) end in
+  let e := Z.of_int e in
+  match e with
+  | Z0 => zq
+  | Zpos e => IRmult zq (IRZ (IZpow_pos 2 e))
+  | Zneg e => IRdiv zq (IRZ (IZpow_pos 2 e))
+  end.
+
+Definition of_number (n : Number.number) : IR :=
+  match n with
+  | Number.Dec d => of_decimal d
+  | Number.Hex h => of_hexadecimal h
+  end.
+
+Definition to_decimal (n : IR) : option Decimal.decimal :=
+  match n with
+  | IRZ z =>
+    match IZ_to_Z z with
+    | Some z => Some (Decimal.Decimal (Z.to_int z) Decimal.Nil)
+    | None => None
+    end
+  | IRQ (Qmake num den) => IQmake_to_decimal num den
+  | IRmult (IRZ z) (IRZ (IZpow_pos 10 e)) =>
+    match IZ_to_Z z with
+    | Some z =>
+      Some (Decimal.DecimalExp (Z.to_int z) Decimal.Nil (Pos.to_int e))
+    | None => None
+    end
+  | IRmult (IRQ (Qmake num den)) (IRZ (IZpow_pos 10 e)) =>
+    match IQmake_to_decimal num den with
+    | Some (Decimal.Decimal i f) =>
+      Some (Decimal.DecimalExp i f (Pos.to_int e))
+    | _ => None
+    end
+  | IRdiv (IRZ z) (IRZ (IZpow_pos 10 e)) =>
+    match IZ_to_Z z with
+    | Some z =>
+      Some (Decimal.DecimalExp (Z.to_int z) Decimal.Nil (Decimal.Neg (Pos.to_uint e)))
+    | None => None
+    end
+  | IRdiv (IRQ (Qmake num den)) (IRZ (IZpow_pos 10 e)) =>
+    match IQmake_to_decimal num den with
+    | Some (Decimal.Decimal i f) =>
+      Some (Decimal.DecimalExp i f (Decimal.Neg (Pos.to_uint e)))
+    | _ => None
+    end
+  | _ => None
+  end.
+
+Definition to_hexadecimal (n : IR) : option Hexadecimal.hexadecimal :=
+  match n with
+  | IRZ z =>
+    match IZ_to_Z z with
+    | Some z => Some (Hexadecimal.Hexadecimal (Z.to_hex_int z) Hexadecimal.Nil)
+    | None => None
+    end
+  | IRQ (Qmake num den) => IQmake_to_hexadecimal num den
+  | IRmult (IRZ z) (IRZ (IZpow_pos 2 e)) =>
+    match IZ_to_Z z with
+    | Some z =>
+      Some (Hexadecimal.HexadecimalExp (Z.to_hex_int z) Hexadecimal.Nil (Pos.to_int e))
+    | None => None
+    end
+  | IRmult (IRQ (Qmake num den)) (IRZ (IZpow_pos 2 e)) =>
+    match IQmake_to_hexadecimal num den with
+    | Some (Hexadecimal.Hexadecimal i f) =>
+      Some (Hexadecimal.HexadecimalExp i f (Pos.to_int e))
+    | _ => None
+    end
+  | IRdiv (IRZ z) (IRZ (IZpow_pos 2 e)) =>
+    match IZ_to_Z z with
+    | Some z =>
+      Some (Hexadecimal.HexadecimalExp (Z.to_hex_int z) Hexadecimal.Nil (Decimal.Neg (Pos.to_uint e)))
+    | None => None
+    end
+  | IRdiv (IRQ (Qmake num den)) (IRZ (IZpow_pos 2 e)) =>
+    match IQmake_to_hexadecimal num den with
+    | Some (Hexadecimal.Hexadecimal i f) =>
+      Some (Hexadecimal.HexadecimalExp i f (Decimal.Neg (Pos.to_uint e)))
+    | _ => None
+    end
+  | _ => None
+  end.
+
+Definition to_number q :=
+  match to_decimal q with
+  | None => None
+  | Some q => Some (Number.Dec q)
+  end.
+
+Definition to_hex_number q :=
+  match to_hexadecimal q with
+  | None => None
+  | Some q => Some (Number.Hex q)
+  end.
+
+Number Notation R of_number to_hex_number (via IR
+  mapping [IZR => IRZ, Q2R => IRQ, Rmult => IRmult, Rdiv => IRdiv,
+           Z.pow_pos => IZpow_pos, Z0 => IZ0, Zpos => IZpos, Zneg => IZneg])
+  : hex_R_scope.
+
+Number Notation R of_number to_number (via IR
+  mapping [IZR => IRZ, Q2R => IRQ, Rmult => IRmult, Rdiv => IRdiv,
+           Z.pow_pos => IZpow_pos, Z0 => IZ0, Zpos => IZpos, Zneg => IZneg])
+  : R_scope.
