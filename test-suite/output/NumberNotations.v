@@ -83,7 +83,7 @@ Module Test4.
 
   Polymorphic Definition pto_punits := pto_punit_all@{Set}.
   Polymorphic Definition pof_punits := pof_punit@{Set}.
-  Number Notation punit pto_punits pof_punits : ppps (abstract after 1).
+  Number Notation punit pto_punits pof_punits (abstract after 1) : ppps.
   Delimit Scope ppps with ppps.
   Universe u.
   Constraint Set < u.
@@ -121,7 +121,7 @@ Module Test6.
   End Scopes.
   Module Export Notations.
     Export Scopes.
-    Number Notation wnat of_uint to_uint : wnat_scope (abstract after 5000).
+    Number Notation wnat of_uint to_uint (abstract after 5000) : wnat_scope.
   End Notations.
   Set Printing Coercions.
   Check let v := 0%wnat in v : wnat.
@@ -200,12 +200,12 @@ Module Test10.
   Declare Scope unit2_scope.
   Delimit Scope unit_scope with unit.
   Delimit Scope unit2_scope with unit2.
-  Number Notation unit of_uint to_uint : unit_scope (abstract after 1).
+  Number Notation unit of_uint to_uint (abstract after 1) : unit_scope.
   Local Set Warnings Append "+abstract-large-number-no-op".
   (* Check that there is actually a warning here *)
-  Fail Number Notation unit of_uint to_uint : unit2_scope (abstract after 1).
+  Fail Number Notation unit of_uint to_uint (abstract after 1) : unit2_scope.
   (* Check that there is no warning here *)
-  Number Notation unit of_any_uint to_uint : unit2_scope (abstract after 1).
+  Number Notation unit of_any_uint to_uint (abstract after 1) : unit2_scope.
 End Test10.
 
 Module Test12.
@@ -487,3 +487,188 @@ Check (-0)%Z.
 *)
 
 End Test22.
+
+(* Test the via ... mapping ... option *)
+Module Test23.
+
+Inductive sum (A : Set) (B : Set) : Set := pair : A -> B -> sum A B.
+
+Inductive I :=
+| Iempty : I
+| Iunit : I
+| Isum : I -> I -> I.
+
+Definition of_uint (x : Number.uint) : I :=
+  let fix f n :=
+      match n with
+      | O => Iempty
+      | S O => Iunit
+      | S n => Isum Iunit (f n)
+      end in
+  f (Nat.of_num_uint x).
+
+Definition to_uint (x : I) : Number.uint :=
+  let fix f i :=
+      match i with
+      | Iempty => O
+      | Iunit => 1
+      | Isum i1 i2 => f i1 + f i2
+      end in
+  Nat.to_num_uint (f x).
+
+Notation nSet := (Set) (only parsing).  (* needed as a reference is expected in Number Notation and Set is syntactically not a reference *)
+Number Notation nSet of_uint to_uint (via I
+  mapping [Empty_set => Iempty, unit => Iunit, sum => Isum])
+  : type_scope.
+
+Local Open Scope type_scope.
+
+Check Empty_set.
+Check unit.
+Check sum unit unit.
+Check sum unit (sum unit unit).
+Set Printing All.
+Check 0.
+Check 1.
+Check 2.
+Check 3.
+Unset Printing All.
+
+(* Test error messages *)
+
+(* missing constructor *)
+Fail Number Notation nSet of_uint to_uint (via I
+  mapping [Empty_set => Iempty, unit => Iunit])
+  : type_scope.
+
+(* duplicate constructor *)
+Fail Number Notation nSet of_uint to_uint (via I
+  mapping [Empty_set => Iempty, unit => Iunit, sum => Isum, unit => Iunit])
+  : type_scope.
+
+(* not an inductive *)
+Fail Number Notation nSet of_uint to_uint (via add
+  mapping [Empty_set => Iempty, unit => Iunit, sum => Isum])
+  : type_scope.
+
+(* not a constructor *)
+Fail Number Notation nSet of_uint to_uint (via I
+  mapping [Empty_set => Iempty, unit => add, sum => Isum])
+  : type_scope.
+
+(* put constructors of the wrong inductive ~~> missing constructors *)
+Fail Number Notation nSet of_uint to_uint (via I
+  mapping [Empty_set => O, unit => S])
+  : type_scope.
+
+(* Test warnings *)
+
+(* wrong type *)
+Inductive I' :=
+| I'empty : I'
+| I'unit : I'
+| I'sum : I -> I' -> I'.
+Definition of_uint' (x : Number.uint) : I' := I'empty.
+Definition to_uint' (x : I') : Number.uint := Number.UIntDec Decimal.Nil.
+Number Notation nSet of_uint' to_uint' (via I'
+  mapping [Empty_set => I'empty, unit => I'unit, sum => I'sum])
+  : type_scope.
+
+(* wrong type mapping *)
+Number Notation nSet of_uint to_uint (via I
+  mapping [Empty_set => Iempty, O => Iunit, sum => Isum])
+  : type_scope.
+
+(* incompatibility with abstract (but warning is fine) *)
+Fail Number Notation nSet of_uint to_uint (via I
+  mapping [Empty_set => Iempty, unit => Iunit, sum => Isum],
+  abstract after 12)
+  : type_scope.
+Number Notation nSet of_uint to_uint (via I
+  mapping [Empty_set => Iempty, unit => Iunit, sum => Isum],
+  warning after 12)
+  : type_scope.
+
+(* Test reduction of types when building the notation *)
+
+Inductive foo := bar : match (true <: bool) with true => nat -> foo | false => True end.
+
+Definition foo_of_uint (x : Number.uint) : foo := bar (Nat.of_num_uint x).
+Definition foo_to_uint (x : foo) : Number.uint :=
+  match x with
+  | bar x => Nat.to_num_uint x
+  end.
+
+Number Notation foo foo_of_uint foo_to_uint (via foo mapping [bar => bar])
+  : type_scope.
+
+Inductive foo' := bar' : let n := nat in n -> foo'.
+
+Definition foo'_of_uint (x : Number.uint) : foo' := bar' (Nat.of_num_uint x).
+Definition foo'_to_uint (x : foo') : Number.uint :=
+  match x with
+  | bar' x => Nat.to_num_uint x
+  end.
+
+Number Notation foo' foo'_of_uint foo'_to_uint (via foo' mapping [bar' => bar'])
+  : type_scope.
+
+Inductive foo'' := bar'' : (nat <: Type) -> (foo'' <: Type).
+
+Definition foo''_of_uint (x : Number.uint) : foo'' := bar'' (Nat.of_num_uint x).
+Definition foo''_to_uint (x : foo'') : Number.uint :=
+  match x with
+  | bar'' x => Nat.to_num_uint x
+  end.
+
+Number Notation foo'' foo''_of_uint foo''_to_uint (via foo'' mapping [bar'' => bar''])
+  : type_scope.
+
+End Test23.
+
+(* Test the via ... mapping ... option with let-binders, beta-redexes, delta-redexes, etc *)
+Module Test26.
+
+Inductive sum (A : Set) (B : Set) : Set := pair : A -> B -> sum A B.
+
+Inductive I (dummy:=O) :=
+| Iempty : let v := I in id v
+| Iunit : (fun x => x) I
+| Isum : let v := I in (fun A B => A -> B) (let v' := v in v') (forall x : match O with O => I | _ => Empty_set end, let dummy2 := x in I).
+
+Definition of_uint (x : (fun x => let v := I in x) Number.uint) : (fun x => let v := I in x) I :=
+  let fix f n :=
+      match n with
+      | O => Iempty
+      | S O => Iunit
+      | S n => Isum Iunit (f n)
+      end in
+  f (Nat.of_num_uint x).
+
+Definition to_uint (x : (fun x => let v := x in v) I) : match O with O => Number.uint | _ => Empty_set end :=
+  let fix f i :=
+      match i with
+      | Iempty => O
+      | Iunit => 1
+      | Isum i1 i2 => f i1 + f i2
+      end in
+  Nat.to_num_uint (f x).
+
+Notation nSet := (Set) (only parsing).  (* needed as a reference is expected in Number Notation and Set is syntactically not a reference *)
+Number Notation nSet of_uint to_uint (via I
+  mapping [Empty_set => Iempty, unit => Iunit, sum => Isum])
+  : type_scope.
+
+Local Open Scope type_scope.
+
+Check Empty_set.
+Check unit.
+Check sum unit unit.
+Check sum unit (sum unit unit).
+Set Printing All.
+Check 0.
+Check 1.
+Check 2.
+Check 3.
+Unset Printing All.
+End Test26.
