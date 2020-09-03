@@ -18,6 +18,9 @@ Require Export Morphisms Setoid Bool.
 
 Record Q : Set := Qmake {Qnum : Z; Qden : positive}.
 
+Declare Scope hex_Q_scope.
+Delimit Scope hex_Q_scope with xQ.
+
 Declare Scope Q_scope.
 Delimit Scope Q_scope with Q.
 Bind Scope Q_scope with Q.
@@ -32,104 +35,6 @@ Ltac simpl_mult := rewrite ?Pos2Z.inj_mul.
 (** [a#b] denotes the fraction [a] over [b]. *)
 
 Notation "a # b" := (Qmake a b) (at level 55, no associativity) : Q_scope.
-
-Definition of_decimal (d:Decimal.decimal) : Q :=
-  let '(i, f, e) :=
-    match d with
-    | Decimal.Decimal i f => (i, f, Decimal.Pos Decimal.Nil)
-    | Decimal.DecimalExp i f e => (i, f, e)
-    end in
-  let num := Z.of_int (Decimal.app_int i f) in
-  let e := Z.sub (Z.of_int e) (Z.of_nat (Decimal.nb_digits f)) in
-  match e with
-  | Z0 => Qmake num 1
-  | Zpos e => Qmake (Pos.iter (Z.mul 10) num e) 1
-  | Zneg e => Qmake num (Pos.iter (Pos.mul 10) 1%positive e)
-  end.
-
-Definition to_decimal (q:Q) : option Decimal.decimal :=
-  (* choose between 123e-2 and 1.23, this is purely heuristic
-     and doesn't play any soundness role *)
-  let choose_exponent i ne :=
-    let i := match i with Decimal.Pos i | Decimal.Neg i => i end in
-    let li := Decimal.nb_digits i in
-    let le := Decimal.nb_digits (Nat.to_uint ne) in
-    Nat.ltb (Nat.add li le) ne in
-  (* print 123 / 100 as 123e-2 *)
-  let decimal_exponent i ne :=
-      let e := Z.to_int (Z.opp (Z.of_nat ne)) in
-      Decimal.DecimalExp i Decimal.Nil e in
-  (* print 123 / 100 as 1.23 *)
-  let decimal_dot i ne :=
-    let ai := match i with Decimal.Pos i | Decimal.Neg i => i end in
-    let ni := Decimal.nb_digits ai in
-    if Nat.ltb ne ni then
-      let i := Decimal.del_tail_int ne i in
-      let f := Decimal.del_head (Nat.sub ni ne) ai in
-      Decimal.Decimal i f
-    else
-      let z := match i with
-        | Decimal.Pos _ => Decimal.Pos (Decimal.zero)
-        | Decimal.Neg _ => Decimal.Neg (Decimal.zero) end in
-      Decimal.Decimal z (Nat.iter (Nat.sub ne ni) Decimal.D0 ai) in
-  let num := Z.to_int (Qnum q) in
-  let (den, e_den) := Decimal.nztail (Pos.to_uint (Qden q)) in
-  match den with
-  | Decimal.D1 Decimal.Nil =>
-    match e_den with
-    | O => Some (Decimal.Decimal num Decimal.Nil)
-    | ne =>
-      if choose_exponent num ne then Some (decimal_exponent num ne)
-      else Some (decimal_dot num ne)
-    end
-  | _ => None
-  end.
-
-Definition of_hexadecimal (d:Hexadecimal.hexadecimal) : Q :=
-  let '(i, f, e) :=
-    match d with
-    | Hexadecimal.Hexadecimal i f => (i, f, Decimal.Pos Decimal.Nil)
-    | Hexadecimal.HexadecimalExp i f e => (i, f, e)
-    end in
-  let num := Z.of_hex_int (Hexadecimal.app_int i f) in
-  let e := Z.sub (Z.of_int e) (Z.mul 4 (Z.of_nat (Hexadecimal.nb_digits f))) in
-  match e with
-  | Z0 => Qmake num 1
-  | Zpos e => Qmake (Pos.iter (Z.mul 2) num e) 1
-  | Zneg e => Qmake num (Pos.iter (Pos.mul 2) 1%positive e)
-  end.
-
-Definition to_hexadecimal (q:Q) : option Hexadecimal.hexadecimal :=
-  let mk_exp i e :=
-    Hexadecimal.HexadecimalExp i Hexadecimal.Nil (Z.to_int (Z.opp e)) in
-  let num := Z.to_hex_int (Qnum q) in
-  let (den, e_den) := Hexadecimal.nztail (Pos.to_hex_uint (Qden q)) in
-  let e := Z.of_nat e_den in
-  match den with
-  | Hexadecimal.D1 Hexadecimal.Nil =>
-    match e_den with
-    | O => Some (Hexadecimal.Hexadecimal num Hexadecimal.Nil)
-    | _ => Some (mk_exp num (4 * e)%Z)
-    end
-  | Hexadecimal.D2 Hexadecimal.Nil => Some (mk_exp num (1 + 4 * e)%Z)
-  | Hexadecimal.D4 Hexadecimal.Nil => Some (mk_exp num (2 + 4 * e)%Z)
-  | Hexadecimal.D8 Hexadecimal.Nil => Some (mk_exp num (3 + 4 * e)%Z)
-  | _ => None
-  end.
-
-Definition of_numeral (d:Number.number) : option Q :=
-  match d with
-  | Number.Dec d => Some (of_decimal d)
-  | Number.Hex d => Some (of_hexadecimal d)
-  end.
-
-Definition to_numeral (q:Q) : option Number.number :=
-  match to_decimal q with
-  | None => None
-  | Some q => Some (Number.Dec q)
-  end.
-
-Number Notation Q of_numeral to_numeral : Q_scope.
 
 Definition inject_Z (x : Z) := Qmake x 1.
 Arguments inject_Z x%Z.
@@ -316,7 +221,7 @@ Definition Qminus (x y : Q) := Qplus x (Qopp y).
 
 Definition Qinv (x : Q) :=
   match Qnum x with
-  | Z0 => 0
+  | Z0 => 0#1
   | Zpos p => (QDen x)#p
   | Zneg p => (Zneg (Qden x))#p
   end.
@@ -334,6 +239,188 @@ Register Qplus  as rat.Q.Qplus.
 Register Qminus as rat.Q.Qminus.
 Register Qopp   as rat.Q.Qopp.
 Register Qmult  as rat.Q.Qmult.
+
+(** Number notation for constants *)
+
+Inductive IZ :=
+  | IZpow_pos : Z -> positive -> IZ
+  | IZ0 : IZ
+  | IZpos : positive -> IZ
+  | IZneg : positive -> IZ.
+
+Inductive IQ :=
+  | IQmake : IZ -> positive -> IQ
+  | IQmult : IQ -> IQ -> IQ
+  | IQdiv : IQ -> IQ -> IQ.
+
+Definition IZ_of_Z z :=
+  match z with
+  | Z0 => IZ0
+  | Zpos e => IZpos e
+  | Zneg e => IZneg e
+  end.
+
+Definition IZ_to_Z z :=
+  match z with
+  | IZ0 => Some Z0
+  | IZpos e => Some (Zpos e)
+  | IZneg e => Some (Zneg e)
+  | IZpow_pos _ _ => None
+  end.
+
+Definition of_decimal (d:Decimal.decimal) : IQ :=
+  let '(i, f, e) :=
+    match d with
+    | Decimal.Decimal i f => (i, f, Decimal.Pos Decimal.Nil)
+    | Decimal.DecimalExp i f e => (i, f, e)
+    end in
+  let num := Z.of_int (Decimal.app_int i f) in
+  let den := Nat.iter (Decimal.nb_digits f) (Pos.mul 10) 1%positive in
+  let q := IQmake (IZ_of_Z num) den in
+  let e := Z.of_int e in
+  match e with
+  | Z0 => q
+  | Zpos e => IQmult q (IQmake (IZpow_pos 10 e) 1)
+  | Zneg e => IQdiv q (IQmake (IZpow_pos 10 e) 1)
+  end.
+
+Definition IQmake_to_decimal num den :=
+  let num := Z.to_int num in
+  let (den, e_den) := Decimal.nztail (Pos.to_uint den) in
+  match den with
+  | Decimal.D1 Decimal.Nil =>
+    match e_den with
+    | O => Some (Decimal.Decimal num Decimal.Nil)
+    | ne =>
+      let ai := Decimal.abs num in
+      let ni := Decimal.nb_digits ai in
+      if Nat.ltb ne ni then
+        let i := Decimal.del_tail_int ne num in
+        let f := Decimal.del_head (Nat.sub ni ne) ai in
+        Some (Decimal.Decimal i f)
+      else
+        let z := match num with
+          | Decimal.Pos _ => Decimal.Pos (Decimal.zero)
+          | Decimal.Neg _ => Decimal.Neg (Decimal.zero) end in
+        Some (Decimal.Decimal z (Nat.iter (Nat.sub ne ni) Decimal.D0 ai))
+    end
+  | _ => None
+  end.
+
+Definition IQmake_to_decimal' num den :=
+  match IZ_to_Z num with
+  | None => None
+  | Some num => IQmake_to_decimal num den
+  end.
+
+Definition to_decimal (n : IQ) : option Decimal.decimal :=
+  match n with
+  | IQmake num den => IQmake_to_decimal' num den
+  | IQmult (IQmake num den) (IQmake (IZpow_pos 10 e) 1) =>
+    match IQmake_to_decimal' num den with
+    | Some (Decimal.Decimal i f) =>
+      Some (Decimal.DecimalExp i f (Pos.to_int e))
+    | _ => None
+    end
+  | IQdiv (IQmake num den) (IQmake (IZpow_pos 10 e) 1) =>
+    match IQmake_to_decimal' num den with
+    | Some (Decimal.Decimal i f) =>
+      Some (Decimal.DecimalExp i f (Decimal.Neg (Pos.to_uint e)))
+    | _ => None
+    end
+  | _ => None
+  end.
+
+Definition of_hexadecimal (d:Hexadecimal.hexadecimal) : IQ :=
+  let '(i, f, e) :=
+    match d with
+    | Hexadecimal.Hexadecimal i f => (i, f, Decimal.Pos Decimal.Nil)
+    | Hexadecimal.HexadecimalExp i f e => (i, f, e)
+    end in
+  let num := Z.of_hex_int (Hexadecimal.app_int i f) in
+  let den := Nat.iter (Hexadecimal.nb_digits f) (Pos.mul 16) 1%positive in
+  let q := IQmake (IZ_of_Z num) den in
+  let e := Z.of_int e in
+  match e with
+  | Z0 => q
+  | Zpos e => IQmult q (IQmake (IZpow_pos 2 e) 1)
+  | Zneg e => IQdiv q (IQmake (IZpow_pos 2 e) 1)
+  end.
+
+Definition IQmake_to_hexadecimal num den :=
+  let num := Z.to_hex_int num in
+  let (den, e_den) := Hexadecimal.nztail (Pos.to_hex_uint den) in
+  match den with
+  | Hexadecimal.D1 Hexadecimal.Nil =>
+    match e_den with
+    | O => Some (Hexadecimal.Hexadecimal num Hexadecimal.Nil)
+    | ne =>
+      let ai := Hexadecimal.abs num in
+      let ni := Hexadecimal.nb_digits ai in
+      if Nat.ltb ne ni then
+        let i := Hexadecimal.del_tail_int ne num in
+        let f := Hexadecimal.del_head (Nat.sub ni ne) ai in
+        Some (Hexadecimal.Hexadecimal i f)
+      else
+        let z := match num with
+          | Hexadecimal.Pos _ => Hexadecimal.Pos (Hexadecimal.zero)
+          | Hexadecimal.Neg _ => Hexadecimal.Neg (Hexadecimal.zero) end in
+        Some (Hexadecimal.Hexadecimal z (Nat.iter (Nat.sub ne ni) Hexadecimal.D0 ai))
+    end
+  | _ => None
+  end.
+
+Definition IQmake_to_hexadecimal' num den :=
+  match IZ_to_Z num with
+  | None => None
+  | Some num => IQmake_to_hexadecimal num den
+  end.
+
+Definition to_hexadecimal (n : IQ) : option Hexadecimal.hexadecimal :=
+  match n with
+  | IQmake num den => IQmake_to_hexadecimal' num den
+  | IQmult (IQmake num den) (IQmake (IZpow_pos 2 e) 1) =>
+    match IQmake_to_hexadecimal' num den with
+    | Some (Hexadecimal.Hexadecimal i f) =>
+      Some (Hexadecimal.HexadecimalExp i f (Pos.to_int e))
+    | _ => None
+    end
+  | IQdiv (IQmake num den) (IQmake (IZpow_pos 2 e) 1) =>
+    match IQmake_to_hexadecimal' num den with
+    | Some (Hexadecimal.Hexadecimal i f) =>
+      Some (Hexadecimal.HexadecimalExp i f (Decimal.Neg (Pos.to_uint e)))
+    | _ => None
+    end
+  | _ => None
+  end.
+
+Definition of_number (n : Number.number) : IQ :=
+  match n with
+  | Number.Dec d => of_decimal d
+  | Number.Hex h => of_hexadecimal h
+  end.
+
+Definition to_number (q:IQ) : option Number.number :=
+  match to_decimal q with
+  | None => None
+  | Some q => Some (Number.Dec q)
+  end.
+
+Definition to_hex_number q :=
+  match to_hexadecimal q with
+  | None => None
+  | Some q => Some (Number.Hex q)
+  end.
+
+Number Notation Q of_number to_hex_number (via IQ
+  mapping [Qmake => IQmake, Qmult => IQmult, Qdiv => IQdiv,
+           Z.pow_pos => IZpow_pos, Z0 => IZ0, Zpos => IZpos, Zneg => IZneg])
+  : hex_Q_scope.
+
+Number Notation Q of_number to_number (via IQ
+  mapping [Qmake => IQmake, Qmult => IQmult, Qdiv => IQdiv,
+           Z.pow_pos => IZpow_pos, Z0 => IZ0, Zpos => IZpos, Zneg => IZneg])
+  : Q_scope.
 
 (** A light notation for [Zpos] *)
 

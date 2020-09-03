@@ -16,7 +16,7 @@
 Require Import Decimal DecimalFacts DecimalPos DecimalN DecimalZ.
 Require Import Hexadecimal HexadecimalFacts HexadecimalPos HexadecimalN HexadecimalZ QArith.
 
-Lemma of_to (q:Q) : forall d, to_hexadecimal q = Some d -> of_hexadecimal d = q.
+Lemma of_to (q:IQ) : forall d, to_hexadecimal q = Some d -> of_hexadecimal d = q.
 Admitted.
 
 (* normalize without fractional part, for instance norme 0x1.2p-1 is 0x12e-5 *)

@@ -118,6 +118,12 @@ Definition opp (d:int) :=
   | Neg d => Pos d
   end.
 
+Definition abs (d:int) : uint :=
+  match d with
+  | Pos d => d
+  | Neg d => d
+  end.
+
 (** For conversions with binary numbers, it is easier to operate
     on little-endian numbers. *)
 

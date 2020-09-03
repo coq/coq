@@ -15,7 +15,7 @@
 
 Require Import Decimal DecimalFacts DecimalPos DecimalN DecimalZ QArith.
 
-Lemma of_to (q:Q) : forall d, to_decimal q = Some d -> of_decimal d = q.
+Lemma of_to (q:IQ) : forall d, to_decimal q = Some d -> of_decimal d = q.
 Admitted.
 
 (* normalize without fractional part, for instance norme 12.3e-1 is 123e-2 *)
