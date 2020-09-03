@@ -688,7 +688,7 @@ command: [
 | "Print" "Fields"      (* ring plugin *)
 | "Number" "Notation" reference reference reference OPT number_options ":" ident
 | "Numeral" "Notation" reference reference reference ":" ident deprecated_number_modifier
-| "String" "Notation" reference reference reference ":" ident
+| "String" "Notation" reference reference reference OPT string_option ":" ident
 | "Ltac2" ltac2_entry      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr6      (* Ltac2 plugin *)
 | "Print" "Ltac2" reference      (* Ltac2 plugin *)
@@ -2555,23 +2555,27 @@ deprecated_number_modifier: [
 | "(" "abstract" "after" bignat ")"
 ]
 
-number_mapping: [
+number_string_mapping: [
 | reference "=>" reference
 | "[" reference "]" "=>" reference
 ]
 
-number_via: [
-| "via" reference "mapping" "[" LIST1 number_mapping SEP "," "]"
+number_string_via: [
+| "via" reference "mapping" "[" LIST1 number_string_mapping SEP "," "]"
 ]
 
 number_modifier: [
 | "warning" "after" bignat
 | "abstract" "after" bignat
-| number_via
+| number_string_via
 ]
 
 number_options: [
 | "(" LIST1 number_modifier SEP "," ")"
+]
+
+string_option: [
+| "(" number_string_via ")"
 ]
 
 tac2pat1: [

@@ -50,3 +50,48 @@ Local Close Scope byte_scope.
 Local Open Scope char_scope.
 Compute List.map Ascii.ascii_of_nat (List.seq 0 256).
 Local Close Scope char_scope.
+
+(* Test numeral notations for parameterized inductives *)
+Module Test2.
+
+Notation string := (list Byte.byte).
+Definition id_string := @id string.
+
+String Notation string id_string id_string : list_scope.
+
+Check "abc"%list.
+
+End Test2.
+
+(* Test the via ... using ... option *)
+Module Test3.
+
+Inductive I :=
+| IO : I
+| IS : I -> I.
+
+Definition of_byte (x : Byte.byte) : I :=
+  let fix f n :=
+      match n with
+      | O => IO
+      | S n => IS (f n)
+      end in
+  f (Byte.to_nat x).
+
+Definition to_byte (x : I) : option Byte.byte :=
+  let fix f i :=
+      match i with
+      | IO => O
+      | IS i => S (f i)
+      end in
+  Byte.of_nat (f x).
+
+String Notation nat of_byte to_byte (via I mapping [O => IO, S => IS]) : nat_scope.
+
+Check "000".
+Check "001".
+Check "002".
+Check "255".
+Fail Check "256".
+
+End Test3.

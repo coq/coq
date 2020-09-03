@@ -14,5 +14,7 @@ open Vernacexpr
 (** * String notation *)
 
 val vernac_string_notation : locality_flag ->
-                             qualid -> qualid -> qualid ->
+                             qualid ->
+                             qualid -> qualid ->
+                             Number.number_string_via option ->
                              Notation_term.scope_name -> unit

@@ -910,7 +910,7 @@ command: [
 | "Declare" "Right" "Step" one_term
 | "Number" "Notation" qualid qualid qualid OPT ( "(" LIST1 number_modifier SEP "," ")" ) ":" scope_name
 | "Numeral" "Notation" qualid qualid qualid ":" scope_name deprecated_number_modifier
-| "String" "Notation" qualid qualid qualid ":" scope_name
+| "String" "Notation" qualid qualid qualid OPT ( "(" number_string_via ")" ) ":" scope_name
 | "SubClass" ident_decl def_body
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
 | assumption_token OPT ( "Inline" OPT ( "(" natural ")" ) ) [ LIST1 ( "(" assumpt ")" ) | assumpt ]
@@ -1278,10 +1278,10 @@ deprecated_number_modifier: [
 number_modifier: [
 | "warning" "after" bignat
 | "abstract" "after" bignat
-| number_via
+| number_string_via
 ]
 
-number_via: [
+number_string_via: [
 | "via" qualid "mapping" "[" LIST1 [ qualid "=>" qualid | "[" qualid "]" "=>" qualid ] SEP "," "]"
 ]
 

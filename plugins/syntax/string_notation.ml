@@ -14,14 +14,9 @@ open Libnames
 open Constrexpr
 open Constrexpr_ops
 open Notation
+open Number
 
 (** * String notation *)
-
-let get_constructors ind =
-  let mib,oib = Global.lookup_inductive ind in
-  let mc = oib.Declarations.mind_consnames in
-  Array.to_list
-    (Array.mapi (fun j c -> GlobRef.ConstructRef (ind, j + 1)) mc)
 
 let qualid_of_ref n =
   n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
@@ -45,7 +40,7 @@ let type_error_of g ty =
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
      str " to Byte.byte or (option Byte.byte) or (list Byte.byte) or (option (list Byte.byte)).")
 
-let vernac_string_notation local ty f g scope =
+let vernac_string_notation local ty f g via scope =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let app x y = mkAppC (x,[y]) in
@@ -55,14 +50,16 @@ let vernac_string_notation local ty f g scope =
   let coption = cref (q_option ()) in
   let opt r = app coption r in
   let clist_byte = app clist cbyte in
-  let tyc = Smartlocate.global_inductive_with_alias ty in
+  let ty_name = ty in
+  let ty, via =
+    match via with None -> ty, via | Some (ty', a) -> ty', Some (ty, a) in
+  let tyc, params = locate_global_inductive (via = None) ty in
   let to_ty = Smartlocate.global_with_alias f in
   let of_ty = Smartlocate.global_with_alias g in
   let cty = cref ty in
   let arrow x y =
     mkProdC ([CAst.make Anonymous],Default Glob_term.Explicit, x, y)
   in
-  let constructors = get_constructors tyc in
   (* Check the type of f *)
   let to_kind =
     if has_type env sigma f (arrow clist_byte cty) then ListByte, Direct
@@ -79,12 +76,10 @@ let vernac_string_notation local ty f g scope =
     else if has_type env sigma g (arrow cty (opt cbyte)) then Byte, Option
     else type_error_of g ty
   in
-  let o = { to_kind = to_kind;
-            to_ty = to_ty;
-            to_post = [||];
-            of_kind = of_kind;
-            of_ty = of_ty;
-            ty_name = ty;
+  let to_post, pt_refs = match via with
+    | None -> elaborate_to_post_params env sigma tyc params
+    | Some (ty, l) -> elaborate_to_post_via env sigma ty tyc l in
+  let o = { to_kind; to_ty; to_post; of_kind; of_ty; ty_name;
             warning = () }
   in
   let i =
@@ -92,7 +87,7 @@ let vernac_string_notation local ty f g scope =
          pt_scope = scope;
          pt_interp_info = StringNotation o;
          pt_required = Nametab.path_of_global (GlobRef.IndRef tyc),[];
-         pt_refs = constructors;
+         pt_refs;
          pt_in_match = true }
   in
   enable_prim_token_interpretation i

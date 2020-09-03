@@ -1289,8 +1289,8 @@ command: [
 | WITH "Number" "Notation" reference reference reference OPT number_options ":" scope_name
 | REPLACE "Numeral" "Notation" reference reference reference ":" ident deprecated_number_modifier
 | WITH "Numeral" "Notation" reference reference reference ":" scope_name deprecated_number_modifier
-| REPLACE "String" "Notation" reference reference reference ":" ident
-| WITH "String" "Notation" reference reference reference ":" scope_name
+| REPLACE "String" "Notation" reference reference reference OPT string_option ":" ident
+| WITH "String" "Notation" reference reference reference OPT string_option ":" scope_name
 
 | DELETE "Ltac2" ltac2_entry      (* was split up *)
 | DELETE "Add" "Zify" "InjTyp" constr      (* micromega plugin *)
@@ -2460,8 +2460,9 @@ SPLICE: [
 | constr_with_bindings
 | simple_binding
 | ssexpr35 (* strange in mlg, ssexpr50 is after this *)
-| number_mapping
+| number_string_mapping
 | number_options
+| string_option
 ] (* end SPLICE *)
 
 RENAME: [

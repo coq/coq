@@ -1107,11 +1107,12 @@ let coqbyte_of_string ?loc byte s =
   let p =
     if Int.equal (String.length s) 1 then int_of_char s.[0]
     else
-      if Int.equal (String.length s) 3 && is_digit s.[0] && is_digit s.[1] && is_digit s.[2]
-      then int_of_string s
-      else
+      let n =
+        if Int.equal (String.length s) 3 && is_digit s.[0] && is_digit s.[1] && is_digit s.[2]
+        then int_of_string s else 256 in
+      if n < 256 then n else
        user_err ?loc ~hdr:"coqbyte_of_string"
-         (str "Expects a single character or a three-digits ascii code.") in
+         (str "Expects a single character or a three-digit ASCII code.") in
   coqbyte_of_char_code byte p
 
 let coqbyte_of_char byte c = coqbyte_of_char_code byte (Char.code c)
