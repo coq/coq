@@ -803,7 +803,7 @@ library:ci-geocoq:
 library:ci-hott:
   extends: .ci-template
 
-library:ci-lambda_rust:
+library:ci-iris:
   extends: .ci-template-flambda
 
 library:ci-math_classes:
