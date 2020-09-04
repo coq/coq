@@ -618,9 +618,6 @@ let clenv_cast_meta clenv =
   in
   crec
 
-let clenv_value_cast_meta clenv =
-    clenv_cast_meta clenv (clenv_value clenv)
-
 let clenv_pose_dependent_evars ?(with_evars=false) clenv =
   let dep_mvs = clenv_dependent clenv in
   let env, sigma = clenv.env, clenv.evd in
