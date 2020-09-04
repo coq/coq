@@ -114,6 +114,15 @@ else
     exit 1
 fi
 
+if which du > /dev/null; then
+    :
+else
+    echo > /dev/stderr
+    echo "ERROR: \"du\" program is not available." > /dev/stderr
+    echo > /dev/stderr
+    exit 1
+fi
+
 if [ ! -e "$working_dir" ]; then
     echo > /dev/stderr
     echo "ERROR: \"$working_dir\" does not exist." > /dev/stderr
@@ -429,6 +438,11 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         fi
     done
 done
+
+# Since we do not upload all files, store a list of the files
+# available so that if we at some point want to tweak which files we
+# upload, we'll know which ones are available for upload
+du -ha "$working_dir" > "$working_dir/files.listing"
 
 # The following directories in $working_dir are no longer used:
 #
