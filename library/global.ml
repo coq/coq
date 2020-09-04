@@ -106,6 +106,8 @@ let set_allow_sprop b = globalize0 (Safe_typing.set_allow_sprop b)
 let sprop_allowed () = Environ.sprop_allowed (env())
 let export_private_constants cd = globalize (Safe_typing.export_private_constants cd)
 let add_constant id d = globalize (Safe_typing.add_constant (i2l id) d)
+let add_trusted_constant id ~opaque ~universes ~typ ~body =
+  globalize (Safe_typing.add_trusted_constant (i2l id) ~opaque ~universes ~typ ~body)
 let add_private_constant id d = globalize (Safe_typing.add_private_constant (i2l id) d)
 let add_mind id mie = globalize (Safe_typing.add_mind (i2l id) mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)

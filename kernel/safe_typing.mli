@@ -95,6 +95,15 @@ val export_private_constants :
 val add_constant :
   Label.t -> global_declaration -> Constant.t safe_transformer
 
+(** Unsafe: does no typechecking. The body must have universes pre-abstracted. *)
+val add_trusted_constant
+  : Label.t ->
+  opaque:bool ->
+  universes:Declarations.universes ->
+  typ:Constr.types ->
+  body:Constr.constr ->
+  Constant.t safe_transformer
+
 (** Similar to add_constant but also returns a certificate *)
 val add_private_constant :
   Label.t -> side_effect_declaration -> (Constant.t * private_constants) safe_transformer

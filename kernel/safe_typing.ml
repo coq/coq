@@ -927,6 +927,35 @@ let add_constant l decl senv =
   in
   kn, senv
 
+let add_trusted_constant l ~opaque ~universes ~typ ~body senv =
+  if sections_are_opened senv then
+    CErrors.anomaly Pp.(str "add_trusted_constant not allowed in sections");
+  let kn = Constant.make2 senv.modpath l in
+  let relevance = Relevanceops.relevance_of_term senv.env body in
+  let senv, body = if opaque
+    then senv, Def (Mod_subst.from_val body)
+    else
+      let dunivs = empty_private universes in
+      let senv, o = push_opaque_proof (Future.from_val (body,dunivs)) senv in
+      senv, OpaqueDef o
+  in
+  let tps = Option.map Vmemitcodes.from_val
+      (Vmbytegen.compile_constant_body ~fail_on_error:false senv.env universes body)
+  in
+  let cb = {
+    const_hyps = [];
+    const_body = body;
+    const_type = typ;
+    const_relevance = relevance;
+    const_body_code = tps;
+    const_universes = universes;
+    const_inline_code = false;
+    const_typing_flags = (Environ.typing_flags senv.env);
+  }
+  in
+  let senv = add_constant_aux senv (kn,cb) in
+  kn, senv
+
 let add_private_constant l decl senv : (Constant.t * private_constants) * safe_environment =
   let kn = Constant.make2 senv.modpath l in
     let cb =

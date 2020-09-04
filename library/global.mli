@@ -53,8 +53,18 @@ val export_private_constants :
 
 val add_constant :
   Id.t -> Safe_typing.global_declaration -> Constant.t
+
+val add_trusted_constant
+  : Id.t ->
+  opaque:bool ->
+  universes:Declarations.universes ->
+  typ:Constr.types ->
+  body:Constr.constr ->
+  Constant.t
+
 val add_private_constant :
   Id.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
+
 val add_mind :
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 
