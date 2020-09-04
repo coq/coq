@@ -612,42 +612,10 @@ test-suite:edge:dune:dev:
     expire_in: 2 week
   allow_failure: true
 
-.test-suite:ocaml+dune-template:
-  stage: stage-1
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
-  interruptible: true
-  dependencies: []
-  script:
-    - opam switch create $OCAMLVER --empty
-    - eval $(opam env)
-    - opam update
-    - opam install ocaml-base-compiler=$OCAMLVER
-    - opam install dune num
-    - eval $(opam env)
-    - export COQ_UNIT_TEST=noop
-    - make -f Makefile.dune test-suite
+test-suite:4.11+trunk+dune:
+  extends: .test-suite:ocaml+beta+dune-template
   variables:
-    OPAM_SWITCH: base
-  artifacts:
-    name: "$CI_JOB_NAME.logs"
-    when: always
-    paths:
-      - _build/log
-      - _build/default/test-suite/logs
-    expire_in: 2 week
-  allow_failure: true
-
-test-suite:4.11+dune:
-  extends: .test-suite:ocaml+dune-template
-  variables:
-    OCAMLVER: 4.11.0
-
-# test-suite:4.11+trunk+dune:
-#   extends: .test-suite:ocaml+beta+dune-template
-#   variables:
-#     OCAMLVER: 4.11.0+trunk
+    OCAMLVER: 4.11.2+trunk
 
 # Pending on https://github.com/ocaml/dune/pull/3585
 # test-suite:4.12+trunk+dune:
