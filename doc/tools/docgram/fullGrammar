@@ -440,8 +440,8 @@ natural: [
 ]
 
 bigint: [
-| NUMBER
-| test_minus_nat "-" NUMBER
+| bignat
+| test_minus_nat "-" bignat
 ]
 
 bignat: [

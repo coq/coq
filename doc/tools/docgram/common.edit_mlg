@@ -780,8 +780,9 @@ numeral: [
 ]
 
 bigint: [
-| DELETE NUMBER
-| num
+| DELETE bignat
+| REPLACE test_minus_nat "-" bignat
+| WITH OPT "-" bignat
 ]
 
 first_letter: [

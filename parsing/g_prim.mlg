@@ -23,12 +23,11 @@ let my_int_of_string ?loc s =
   with Failure _ ->
     CErrors.user_err ?loc (Pp.str "This number is too large.")
 
-let my_to_nat_string ?loc ispos s =
+let my_to_nat_string ?loc s =
   match NumTok.Unsigned.to_nat s with
   | Some n -> n
   | None ->
-    let pos = if ispos then "a natural" else "an integer" in
-    CErrors.user_err ?loc Pp.(str "This number is not " ++ str pos ++ str " number.")
+    CErrors.user_err ?loc Pp.(str "This number is not an integer.")
 
 let test_pipe_closedcurly =
   let open Pcoq.Lookahead in
@@ -127,12 +126,12 @@ GRAMMAR EXTEND Gram
     [ [ i = bignat -> { my_int_of_string ~loc i } ] ]
   ;
   bigint:
-    [ [ i = NUMBER -> { my_to_nat_string true ~loc i }
-      | test_minus_nat; "-"; i = NUMBER -> { "-" ^ my_to_nat_string ~loc false i } ] ]
+    [ [ i = bignat -> { i }
+      | test_minus_nat; "-"; i = bignat -> { "-" ^ i } ] ]
   ;
   bignat:
-    [ [ i = NUMBER -> { my_to_nat_string ~loc true i } ] ]
- ;
+    [ [ i = NUMBER -> { my_to_nat_string ~loc i } ] ]
+  ;
   bar_cbrace:
     [ [ test_pipe_closedcurly; "|"; "}" -> { () } ] ]
   ;
