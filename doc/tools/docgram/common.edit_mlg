@@ -770,7 +770,7 @@ int: [
 | OPT "-" natural
 ]
 
-numeral: [
+number: [
 | OPT "-" decnat OPT ( "." LIST1 [ digit | "_" ] ) OPT ( [ "e" | "E" ] OPT [ "+" | "-" ] decnat )
 | OPT "-" hexnat OPT ( "." LIST1 [ hexdigit | "_" ] ) OPT ( [ "p" | "P" ] OPT [ "+" | "-" ] decnat )
 ]
@@ -795,7 +795,7 @@ ident: [
 ]
 
 NUMBER: [
-| numeral
+| number
 ]
 
 (* todo: QUOTATION only used in a test suite .mlg files, is it documented/useful? *)

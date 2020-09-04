@@ -93,7 +93,7 @@ term_explicit: [
 ]
 
 primitive_notations: [
-| numeral
+| number
 | string
 ]
 
@@ -129,7 +129,7 @@ type: [
 | term
 ]
 
-numeral: [
+number: [
 | OPT "-" decnat OPT ( "." LIST1 [ digit | "_" ] ) OPT ( [ "e" | "E" ] OPT [ "+" | "-" ] decnat )
 | OPT "-" hexnat OPT ( "." LIST1 [ hexdigit | "_" ] ) OPT ( [ "p" | "P" ] OPT [ "+" | "-" ] decnat )
 ]
@@ -429,7 +429,7 @@ pattern0: [
 | "{|" LIST0 ( qualid ":=" pattern ) "|}"
 | "_"
 | "(" LIST1 pattern SEP "|" ")"
-| numeral
+| number
 | string
 ]
 
@@ -1291,8 +1291,8 @@ field_mod: [
 ]
 
 numeral_modifier: [
-| "(" "warning" "after" numeral ")"
-| "(" "abstract" "after" numeral ")"
+| "(" "warning" "after" number ")"
+| "(" "abstract" "after" number ")"
 ]
 
 hints_path: [

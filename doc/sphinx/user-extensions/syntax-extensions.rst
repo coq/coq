@@ -1124,7 +1124,7 @@ refer to different definitions depending on which notation scopes
 are currently open.  For instance, the infix symbol ``+`` can be
 used to refer to distinct definitions of the addition operator,
 such as for natural numbers, integers or reals.
-Notation scopes can include an interpretation for numerals and
+Notation scopes can include an interpretation for numbers and
 strings with the :cmd:`Numeral Notation` and :cmd:`String Notation` commands.
 
    .. insertprodn scope scope_key
@@ -1311,31 +1311,31 @@ Scopes` or :cmd:`Print Scope`.
 
 ``nat_scope``
   This scope includes the standard arithmetical operators and relations on type
-  nat. Positive integer numerals in this scope are mapped to their canonical
+  nat. Positive integer numbers in this scope are mapped to their canonical
   representent built from :g:`O` and :g:`S`. The scope is delimited by the key
   ``nat``, and bound to the type :g:`nat` (see above).
 
 ``N_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`N` (binary natural numbers). It is delimited by the key ``N`` and comes
-  with an interpretation for numerals as closed terms of type :g:`N`.
+  with an interpretation for numbers as closed terms of type :g:`N`.
 
 ``Z_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`Z` (binary integer numbers). It is delimited by the key ``Z`` and comes
-  with an interpretation for numerals as closed terms of type :g:`Z`.
+  with an interpretation for numbers as closed terms of type :g:`Z`.
 
 ``positive_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`positive` (binary strictly positive numbers). It is delimited by
-  key ``positive`` and comes with an interpretation for numerals as closed
+  key ``positive`` and comes with an interpretation for numbers as closed
   terms of type :g:`positive`.
 
 ``Q_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`Q` (rational numbers defined as fractions of an integer and a
   strictly positive integer modulo the equality of the numerator-
-  denominator cross-product) and comes with an interpretation for numerals
+  denominator cross-product) and comes with an interpretation for numbers
   as closed terms of type :g:`Q`.
 
 ``Qc_scope``
@@ -1346,7 +1346,7 @@ Scopes` or :cmd:`Print Scope`.
 ``R_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`R` (axiomatic real numbers). It is delimited by the key ``R`` and comes
-  with an interpretation for numerals using the :g:`IZR` morphism from binary
+  with an interpretation for numbers using the :g:`IZR` morphism from binary
   integer numbers to :g:`R` and :g:`Z.pow_pos` for potential exponent parts.
 
 ``bool_scope``
@@ -1514,18 +1514,18 @@ Abbreviations
 
 .. extracted from Gallina chapter
 
-Numerals and strings
---------------------
+Numbers and strings
+-------------------
 
 .. insertprodn primitive_notations primitive_notations
 
 .. prodn::
-   primitive_notations ::= @numeral
+   primitive_notations ::= @number
    | @string
 
-Numerals and strings have no predefined semantics in the calculus. They are
+Numbers and strings have no predefined semantics in the calculus. They are
 merely notations that can be bound to objects through the notation mechanism.
-Initially, numerals are bound to Peano’s representation of natural
+Initially, numbers are bound to Peano’s representation of natural
 numbers (see :ref:`datatypes`).
 
 .. note::
@@ -1544,8 +1544,8 @@ Numeral notations
    .. insertprodn numeral_modifier numeral_modifier
 
    .. prodn::
-      numeral_modifier ::= ( warning after @numeral )
-      | ( abstract after @numeral )
+      numeral_modifier ::= ( warning after @number )
+      | ( abstract after @number )
 
    This command allows the user to customize the way numeral literals
    are parsed and printed.
@@ -1591,35 +1591,35 @@ Numeral notations
          function application, constructors, inductive type families,
          sorts, and primitive integers) will be considered for printing.
 
-      :n:`( warning after @numeral )`
+      :n:`( warning after @number )`
          displays a warning message about a possible stack
-         overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@numeral`.
+         overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@number`.
 
          .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
 
             When a :cmd:`Numeral Notation` is registered in the current scope
-            with :n:`(warning after @numeral)`, this warning is emitted when
-            parsing a numeral greater than or equal to :token:`numeral`.
+            with :n:`(warning after @number)`, this warning is emitted when
+            parsing a number greater than or equal to :token:`number`.
 
-      :n:`( abstract after @numeral )`
+      :n:`( abstract after @number )`
          returns :n:`(@qualid__parse m)` when parsing a literal
-         :n:`m` that's greater than :n:`@numeral` rather than reducing it to a normal form.
+         :n:`m` that's greater than :n:`@number` rather than reducing it to a normal form.
          Here :g:`m` will be a
          :g:`Numeral.int` or :g:`Numeral.uint` or :g:`Z`, depending on the
          type of the parsing function :n:`@qualid__parse`. This allows for a
          more compact representation of literals in types such as :g:`nat`,
          and limits parse failures due to stack overflow.  Note that a
-         warning will be emitted when an integer larger than :token:`numeral`
-         is parsed.  Note that :n:`(abstract after @numeral)` has no effect
+         warning will be emitted when an integer larger than :token:`number`
+         is parsed.  Note that :n:`(abstract after @number)` has no effect
          when :n:`@qualid__parse` lands in an :g:`option` type.
 
          .. warn:: To avoid stack overflow, large numbers in @type are interpreted as applications of @qualid__parse.
 
             When a :cmd:`Numeral Notation` is registered in the current scope
-            with :n:`(abstract after @numeral)`, this warning is emitted when
-            parsing a numeral greater than or equal to :token:`numeral`.
+            with :n:`(abstract after @number)`, this warning is emitted when
+            parsing a number greater than or equal to :token:`number`.
             Typically, this indicates that the fully computed representation
-            of numerals can be so large that non-tail-recursive OCaml
+            of numbers can be so large that non-tail-recursive OCaml
             functions run out of stack space when trying to walk them.
 
          .. warn:: The 'abstract after' directive has no effect when the parsing function (@qualid__parse) targets an option type.
@@ -1630,9 +1630,9 @@ Numeral notations
    .. exn:: Cannot interpret this number as a value of type @type
 
      The numeral notation registered for :token:`type` does not support
-     the given numeral.  This error is given when the interpretation
+     the given number.  This error is given when the interpretation
      function returns :g:`None`, or if the interpretation is registered
-     only for integers or non-negative integers, and the given numeral
+     only for integers or non-negative integers, and the given number
      has a fractional or exponent part or is negative.
 
 
@@ -1657,7 +1657,7 @@ Numeral notations
 
      Parsing functions expected to return an :g:`option` must always
      return a concrete :g:`Some` or :g:`None` when applied to a
-     concrete numeral expressed as a (hexa)decimal.  They may not return
+     concrete number expressed as a (hexa)decimal.  They may not return
      opaque constants.
 
 String notations

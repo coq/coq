@@ -119,10 +119,10 @@ Numerals
   integer.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
-  .. insertprodn numeral hexdigit
+  .. insertprodn number hexdigit
 
   .. prodn::
-     numeral ::= {? - } @decnat {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnat }
+     number ::= {? - } @decnat {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnat }
      | {? - } @hexnat {? . {+ {| @hexdigit | _ } } } {? {| p | P } {? {| + | - } } @decnat }
      int ::= {? - } @natural
      natural ::= {| @decnat | @hexnat }

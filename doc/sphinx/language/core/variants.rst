@@ -79,7 +79,7 @@ to apply specific treatments accordingly.
    | %{%| {* @qualid := @pattern } %|%}
    | _
    | ( {+| @pattern } )
-   | @numeral
+   | @number
    | @string
 
 Note that the :n:`@pattern ::= @pattern10 : @term` production
