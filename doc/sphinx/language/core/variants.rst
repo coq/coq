@@ -22,7 +22,7 @@ Variants
    :attr:`universes(noncumulative)` and :attr:`private(matching)`
    attributes.
 
-   .. exn:: The @num th argument of @ident must be @ident in @type.
+   .. exn:: The @natural th argument of @ident must be @ident in @type.
       :undocumented:
 
 Private (matching) inductive types

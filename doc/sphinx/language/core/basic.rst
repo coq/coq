@@ -115,20 +115,20 @@ Numerals
   Numerals are sequences of digits with an optional fractional part
   and exponent, optionally preceded by a minus sign. Hexadecimal numerals
   start with ``0x`` or ``0X``. :n:`@int` is an integer;
-  a numeral without fractional nor exponent parts. :n:`@num` is a non-negative
+  a numeral without fractional nor exponent parts. :n:`@natural` is a non-negative
   integer.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
   .. insertprodn numeral hexdigit
 
   .. prodn::
-     numeral ::= {? - } @decnum {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnum }
-     | {? - } @hexnum {? . {+ {| @hexdigit | _ } } } {? {| p | P } {? {| + | - } } @decnum }
-     int ::= {? - } @num
-     num ::= {| @decnum | @hexnum }
-     decnum ::= @digit {* {| @digit | _ } }
+     numeral ::= {? - } @decnat {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnat }
+     | {? - } @hexnat {? . {+ {| @hexdigit | _ } } } {? {| p | P } {? {| + | - } } @decnat }
+     int ::= {? - } @natural
+     natural ::= {| @decnat | @hexnat }
+     decnat ::= @digit {* {| @digit | _ } }
      digit ::= 0 .. 9
-     hexnum ::= {| 0x | 0X } @hexdigit {* {| @hexdigit | _ } }
+     hexnat ::= {| 0x | 0X } @hexdigit {* {| @hexdigit | _ } }
      hexdigit ::= {| 0 .. 9 | a .. f | A .. F }
 
   .. todo PR need some code fixes for hex, see PR 11948
@@ -292,7 +292,7 @@ rest of the |Coq| manual: :term:`terms <term>` and :term:`types
      .. prodn::
         document ::= {* @sentence }
         sentence ::= {? @attributes } @command .
-        | {? @attributes } {? @num : } @query_command .
+        | {? @attributes } {? @natural : } @query_command .
         | {? @attributes } {? @toplevel_selector : } @ltac_expr {| . | ... }
         | @control_command
 

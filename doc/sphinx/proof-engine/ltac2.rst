@@ -1294,7 +1294,7 @@ workarounds through Ltac1 (described below).
 
 Two examples of syntax differences:
 
-- There is no notation defined that's equivalent to :n:`intros until {| @ident | @num }`.  There is,
+- There is no notation defined that's equivalent to :n:`intros until {| @ident | @natural }`.  There is,
   however, already an ``intros_until`` tactic function defined ``Std.v``, so it may be possible for a user
   to add the necessary notation.
 - The built-in `simpl` tactic in Ltac1 supports the use of scope keys in delta flags, e.g. :n:`simpl ["+"%nat]`
@@ -1555,7 +1555,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
 .. insertprodn 	ltac2_destruction_arg ltac2_constr_with_bindings
 
 .. prodn::
-   ltac2_destruction_arg ::= @num
+   ltac2_destruction_arg ::= @natural
    | @lident
    | @ltac2_constr_with_bindings
    ltac2_constr_with_bindings ::= @term {? with @ltac2_bindings }
@@ -1568,7 +1568,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
    | {+ @term }
    ltac2_simple_binding ::= ( @qhyp := @term )
    qhyp ::= $ @ident
-   | @num
+   | @natural
    | @lident
 
 .. insertprodn ltac2_strategy_flag ltac2_delta_flag
@@ -1606,7 +1606,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
 .. prodn::
    q_occurrences ::= {? @ltac2_occs }
    ltac2_occs ::= at @ltac2_occs_nums
-   ltac2_occs_nums ::= {? - } {+ {| @num  | $ @ident } }
+   ltac2_occs_nums ::= {? - } {+ {| @natural  | $ @ident } }
    ltac2_concl_occ ::= * {? @ltac2_occs }
    ltac2_hypident_occ ::= @ltac2_hypident {? @ltac2_occs }
    ltac2_hypident ::= @ident_or_anti
@@ -1630,7 +1630,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
 
 .. prodn::
    ltac2_oriented_rewriter ::= {| -> | <- } @ltac2_rewriter
-   ltac2_rewriter ::= {? @num } {? {| ? | ! } } @ltac2_constr_with_bindings
+   ltac2_rewriter ::= {? @natural } {? {| ? | ! } } @ltac2_constr_with_bindings
 
 .. insertprodn ltac2_for_each_goal ltac2_goal_tactics
 

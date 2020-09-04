@@ -19,7 +19,7 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
 
    .. prodn::
       record_definition ::= {? > } @ident_decl {* @binder } {? : @type } {? @ident } %{ {*; @record_field } %} {? @decl_notations }
-      record_field ::= {* #[ {*, @attribute } ] } @name {? @field_body } {? %| @num } {? @decl_notations }
+      record_field ::= {* #[ {*, @attribute } ] } @name {? @field_body } {? %| @natural } {? @decl_notations }
       field_body ::= {* @binder } @of_type
       | {* @binder } @of_type := @term
       | {* @binder } := @term

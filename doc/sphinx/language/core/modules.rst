@@ -67,7 +67,7 @@ together, as well as a means of massive abstraction.
       module_binder ::= ( {? {| Import | Export } } {+ @ident } : @module_type_inl )
       module_type_inl ::= ! @module_type
       | @module_type {? @functor_app_annot }
-      functor_app_annot ::= [ inline at level @num ]
+      functor_app_annot ::= [ inline at level @natural ]
       | [ no inline ]
       module_type ::= @qualid
       | ( @module_type )

@@ -243,16 +243,16 @@ Tactics
       Function.
 
 
-   .. tacv:: functional inversion @num
+   .. tacv:: functional inversion @natural
 
-      This does the same thing as :n:`intros until @num` followed by
+      This does the same thing as :n:`intros until @natural` followed by
       :n:`functional inversion @ident` where :token:`ident` is the
       identifier for the last introduced hypothesis.
 
    .. tacv:: functional inversion @ident @qualid
-             functional inversion @num @qualid
+             functional inversion @natural @qualid
 
-      If the hypothesis :token:`ident` (or :token:`num`) has a type of the form
+      If the hypothesis :token:`ident` (or :token:`natural`) has a type of the form
       :n:`@qualid__1 {+ @term__i } = @qualid__2 {+ @term__j }` where
       :n:`@qualid__1` and :n:`@qualid__2` are valid candidates to
       functional inversion, this variant allows choosing which :token:`qualid`

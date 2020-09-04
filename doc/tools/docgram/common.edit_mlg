@@ -749,7 +749,7 @@ digit: [
 | "0" ".." "9"
 ]
 
-decnum: [
+decnat: [
 | digit LIST0 [ digit | "_" ]
 ]
 
@@ -757,26 +757,22 @@ hexdigit: [
 | [ "0" ".." "9" | "a" ".." "f" | "A" ".." "F" ]
 ]
 
-hexnum: [
+hexnat: [
 | [ "0x" | "0X" ] hexdigit LIST0 [ hexdigit | "_" ]
 ]
 
-num: [
-| [ decnum | hexnum ]
-]
-
-natural: [ | DELETENT ]
 natural: [
-| num  (* todo: or should it be "nat"? *)
+| REPLACE bignat
+| WITH [ decnat | hexnat ]
 ]
 
 int: [
-| OPT "-" num
+| OPT "-" natural
 ]
 
 numeral: [
-| OPT "-" decnum OPT ( "." LIST1 [ digit | "_" ] ) OPT ( [ "e" | "E" ] OPT [ "+" | "-" ] decnum )
-| OPT "-" hexnum OPT ( "." LIST1 [ hexdigit | "_" ] ) OPT ( [ "p" | "P" ] OPT [ "+" | "-" ] decnum )
+| OPT "-" decnat OPT ( "." LIST1 [ digit | "_" ] ) OPT ( [ "e" | "E" ] OPT [ "+" | "-" ] decnat )
+| OPT "-" hexnat OPT ( "." LIST1 [ hexdigit | "_" ] ) OPT ( [ "p" | "P" ] OPT [ "+" | "-" ] decnat )
 ]
 
 bigint: [
@@ -1841,7 +1837,7 @@ query_command: [ ] (* re-add as a placeholder *)
 
 sentence: [
 | OPT attributes command "."
-| OPT attributes OPT ( num ":" ) query_command "."
+| OPT attributes OPT ( natural ":" ) query_command "."
 | OPT attributes OPT ( toplevel_selector ":" ) tactic_expr5 [ "." | "..." ]
 | control_command
 ]
@@ -2053,8 +2049,8 @@ tac2rec_fields: [
 
 (* todo: weird productions, ints only after an initial "-"??:
   occs_nums: [
-  | LIST1 [ num | ident ]
-  | "-" [ num | ident ] LIST0 int_or_var
+  | LIST1 [ natural | ident ]
+  | "-" [ natural | ident ] LIST0 int_or_var
 *)
 ltac2_occs_nums: [
 | DELETE LIST1 nat_or_anti      (* Ltac2 plugin *)
@@ -2160,7 +2156,7 @@ RENAME: [
 | Prim.string string
 | Prim.integer int
 | Prim.qualid qualid
-| Prim.natural num
+| Prim.natural natural
 ]
 
 gmatch_list: [
@@ -2210,7 +2206,6 @@ SPLICE: [
 | match_context_list
 | IDENT
 | LEFTQMARK
-| natural
 | NUMBER
 | STRING
 | hyp

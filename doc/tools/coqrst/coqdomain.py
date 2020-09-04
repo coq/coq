@@ -351,7 +351,7 @@ class TacticObject(NotationObject):
 
     Example::
 
-       .. tacn:: do @num @expr
+       .. tacn:: do @natural @expr
 
           :token:`expr` is evaluated to ``v`` which must be a tactic value. …
     """
@@ -401,7 +401,7 @@ class OptionObject(NotationObject):
 
     Example::
 
-       .. opt:: Hyps Limit @num
+       .. opt:: Hyps Limit @natural
           :name Hyps Limit
 
           Controls the maximum number of hypotheses displayed in goals after
@@ -452,7 +452,7 @@ class ProductionObject(CoqObject):
 
     Example::
 
-        .. prodn:: occ_switch ::= { {? {| + | - } } {* @num } }
+        .. prodn:: occ_switch ::= { {? {| + | - } } {* @natural } }
         term += let: @pattern := @term in @term
         | second_production
 

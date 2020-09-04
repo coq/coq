@@ -931,7 +931,7 @@ of patterns have. The lower level is 0 and this is the level used by
 default to put rules delimited with tokens on both ends. The level is
 left to be inferred by Coq when using :n:`in custom @ident`. The
 level is otherwise given explicitly by using the syntax
-:n:`in custom @ident at level @num`, where :n:`@num` refers to the level.
+:n:`in custom @ident at level @natural`, where :n:`@natural` refers to the level.
 
 Levels are cumulative: a notation at level ``n`` of which the left end
 is a term shall use rules at level less than ``n`` to parse this
@@ -1053,8 +1053,8 @@ Here are the syntax elements used by the various notation commands.
    .. insertprodn syntax_modifier level
 
    .. prodn::
-      syntax_modifier ::= at level @num
-      | in custom @ident {? at level @num }
+      syntax_modifier ::= at level @natural
+      | in custom @ident {? at level @natural }
       | {+, @ident } at @level
       | @ident at @level {? @binder_interp }
       | @ident @explicit_subentry
@@ -1068,16 +1068,16 @@ Here are the syntax elements used by the various notation commands.
       explicit_subentry ::= ident
       | global
       | bigint
-      | strict pattern {? at level @num }
+      | strict pattern {? at level @natural }
       | binder
       | closed binder
       | constr {? at @level } {? @binder_interp }
       | custom @ident {? at @level } {? @binder_interp }
-      | pattern {? at level @num }
+      | pattern {? at level @natural }
       binder_interp ::= as ident
       | as pattern
       | as strict pattern
-      level ::= level @num
+      level ::= level @natural
       | next level
 
 .. note:: No typing of the denoted expression is performed at definition
@@ -1530,7 +1530,7 @@ numbers (see :ref:`datatypes`).
 
 .. note::
 
-   Negative integers are not at the same level as :n:`@num`, for this
+   Negative integers are not at the same level as :n:`@natural`, for this
    would make precedence unnatural.
 
 .. _numeral-notations:
@@ -1624,7 +1624,7 @@ Numeral notations
 
          .. warn:: The 'abstract after' directive has no effect when the parsing function (@qualid__parse) targets an option type.
 
-            As noted above, the :n:`(abstract after @num)` directive has no
+            As noted above, the :n:`(abstract after @natural)` directive has no
             effect when :n:`@qualid__parse` lands in an :g:`option` type.
 
    .. exn:: Cannot interpret this number as a value of type @type
@@ -1776,7 +1776,7 @@ Tactic notations allow customizing the syntax of tactics.
    can you run into problems if you shadow another tactic or tactic notation?
    If so, how to avoid ambiguity?
 
-.. cmd:: Tactic Notation {? ( at level @num ) } {+ @ltac_production_item } := @ltac_expr
+.. cmd:: Tactic Notation {? ( at level @natural ) } {+ @ltac_production_item } := @ltac_expr
 
    .. insertprodn ltac_production_item ltac_production_item
 
@@ -1789,7 +1789,7 @@ Tactic notations allow customizing the syntax of tactics.
    This command supports the :attr:`local` attribute, which limits the notation to the
    current module.
 
-      :token:`num`
+      :token:`natural`
          The parsing precedence to assign to the notation.  This information is particularly
          relevant for notations for tacticals.  Levels can be in the range 0 .. 5 (default is 5).
 

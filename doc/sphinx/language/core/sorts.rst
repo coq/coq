@@ -20,7 +20,7 @@ Sorts
    | Type @%{ @universe %}
    universe ::= max ( {+, @universe_expr } )
    | @universe_expr
-   universe_expr ::= @universe_name {? + @num }
+   universe_expr ::= @universe_name {? + @natural }
 
 The types of types are called :gdef:`sorts <sort>`.
 

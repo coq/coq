@@ -259,9 +259,9 @@ Name a set of section hypotheses for ``Proof using``
 
 
 
-.. cmd:: Existential @num := @term
+.. cmd:: Existential @natural := @term
 
-   This command instantiates an existential variable. :token:`num` is an index in
+   This command instantiates an existential variable. :token:`natural` is an index in
    the list of uninstantiated existential variables displayed by :cmd:`Show Existentials`.
 
    This command is intended to be used to instantiate existential
@@ -313,9 +313,9 @@ Navigation in the proof tree
    This command cancels the effect of the last command. Thus, it
    backtracks one step.
 
-.. cmdv:: Undo @num
+.. cmdv:: Undo @natural
 
-   Repeats Undo :token:`num` times.
+   Repeats Undo :token:`natural` times.
 
 .. cmdv:: Restart
    :name: Restart
@@ -336,9 +336,9 @@ Navigation in the proof tree
 
       Prefer the use of bullets or focusing brackets (see below).
 
-.. cmdv:: Focus @num
+.. cmdv:: Focus @natural
 
-   This focuses the attention on the :token:`num` th subgoal to prove.
+   This focuses the attention on the :token:`natural` th subgoal to prove.
 
    .. deprecated:: 8.8
 
@@ -373,9 +373,9 @@ Navigation in the proof tree
    together with a suggestion about the right bullet or ``}`` to unfocus it
    or focus the next one.
 
-   .. cmdv:: @num: %{
+   .. cmdv:: @natural: %{
 
-      This focuses on the :token:`num`\-th subgoal to prove.
+      This focuses on the :token:`natural`\-th subgoal to prove.
 
    .. cmdv:: [@ident]: %{
 
@@ -439,7 +439,7 @@ Navigation in the proof tree
 
       You are trying to use ``}`` but the current subproof has not been fully solved.
 
-   .. exn:: No such goal (@num).
+   .. exn:: No such goal (@natural).
       :undocumented:
 
    .. exn:: No such goal (@ident).
@@ -559,9 +559,9 @@ Requesting information
    .. exn:: No focused proof.
       :undocumented:
 
-   .. cmdv:: Show @num
+   .. cmdv:: Show @natural
 
-      Displays only the :token:`num`\-th subgoal.
+      Displays only the :token:`natural`\-th subgoal.
 
       .. exn:: No such goal.
          :undocumented:
@@ -649,7 +649,7 @@ Requesting information
       its normalized form at the current stage of the proof, useful for
       debugging universe inconsistencies.
 
-   .. cmdv:: Show Goal @num at @num
+   .. cmdv:: Show Goal @natural at @natural
       :name: Show Goal
 
       This command is only available in coqtop.  Displays a goal at a
@@ -838,7 +838,7 @@ Controlling the effect of proof editing commands
 ------------------------------------------------
 
 
-.. opt:: Hyps Limit @num
+.. opt:: Hyps Limit @natural
    :name: Hyps Limit
 
    This option controls the maximum number of hypotheses displayed in goals
