@@ -220,7 +220,7 @@ val make_resolves :
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
 val make_resolve_hyp :
-  env -> evar_map -> named_declaration -> hint_entry list
+  env -> evar_map -> with_evars:bool -> named_declaration -> hint_entry list
 
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;

@@ -92,7 +92,7 @@ let e_exact flags h =
 let rec e_trivial_fail_db db_list local_db =
   let next = Proofview.Goal.enter begin fun gl ->
     let d = Tacmach.New.pf_last_hyp gl in
-    let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Tacmach.New.project gl) d in
+    let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Tacmach.New.project gl) ~with_evars:true d in
     e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) (Tacmach.New.project gl) hintl local_db)
   end in
   Proofview.Goal.enter begin fun gl ->
@@ -237,7 +237,7 @@ module SearchProblem = struct
       in
       let intro_tac =
         let mkdb db gl =
-          let hintl = make_resolve_hyp (pf_env gl) (project gl) (pf_last_hyp gl) in
+          let hintl = make_resolve_hyp (pf_env gl) (project gl) ~with_evars:true (pf_last_hyp gl) in
           Hint_db.add_list (pf_env gl) (project gl) hintl db
         in
         let l = filter_tactics mkdb s.tacres [Tactics.intro, (-1), lazy (str "intro")] in

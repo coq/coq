@@ -276,7 +276,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let d = pf_last_hyp gl in
-    let hintl = make_resolve_hyp env sigma d in
+    let hintl = make_resolve_hyp env sigma ~with_evars:true d in
     let hints = Hint_db.add_list env sigma hintl local_db in
       e_trivial_fail_db only_classes db_list hints secvars
       end

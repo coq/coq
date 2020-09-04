@@ -925,13 +925,18 @@ let make_resolves env sigma (eapply, hnf) info ~check ~poly ?name cr =
   ents
 
 (* used to add an hypothesis to the local hint database *)
-let make_resolve_hyp env sigma decl =
+let make_resolve_hyp env sigma ~with_evars decl =
   let hname = NamedDecl.get_id decl in
   let c = mkVar hname in
   try
-    [make_apply_entry env sigma true empty_hint_info ~poly:false
+    let h =
+      make_apply_entry env sigma true empty_hint_info ~poly:false
        ~name:(PathHints [GlobRef.VarRef hname])
-       (c, NamedDecl.get_type decl, Univ.ContextSet.empty)]
+       (c, NamedDecl.get_type decl, Univ.ContextSet.empty)
+    in
+    match (snd h).code.obj with
+    | ERes_pf _ -> if not with_evars then [] else [h]
+    | _ -> [h]
   with
     | Failure _ -> []
     | e when noncritical e -> anomaly (Pp.str "make_resolve_hyp.")
@@ -1399,7 +1404,7 @@ let make_local_hint_db env sigma ts eapply lems =
     | None -> Hint_db.transparent_state (searchtable_map "core")
     | Some ts -> ts
   in
-  let hintlist = List.map_append (make_resolve_hyp env sigma) sign in
+  let hintlist = List.map_append (make_resolve_hyp env sigma ~with_evars:eapply) sign in
   Hint_db.empty ts false
   |> Hint_db.add_list env sigma hintlist
   |> Hint_db.add_list env sigma (constructor_hints env sigma eapply lems)
