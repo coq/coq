@@ -258,7 +258,7 @@ GRAMMAR EXTEND Gram
   atomic_constr:
     [ [ g = global; i = univ_instance -> { CAst.make ~loc @@ CRef (g,i) }
       | s = sort   -> { CAst.make ~loc @@  CSort s }
-      | n = NUMERAL-> { CAst.make ~loc @@ CPrim (Numeral (NumTok.SPlus,n)) }
+      | n = NUMBER-> { CAst.make ~loc @@ CPrim (Numeral (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPrim (String s) }
       | "_"      -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) }
       | "?"; "["; id = ident; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id, None) }
@@ -370,7 +370,7 @@ GRAMMAR EXTEND Gram
           | _ -> p }
       | "("; p = pattern LEVEL "200"; "|" ; pl = LIST1 pattern LEVEL "200" SEP "|"; ")" ->
         { CAst.make ~loc @@ CPatOr (p::pl) }
-      | n = NUMERAL-> { CAst.make ~loc @@ CPatPrim (Numeral (NumTok.SPlus,n)) }
+      | n = NUMBER-> { CAst.make ~loc @@ CPatPrim (Numeral (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPatPrim (String s) } ] ]
   ;
   fixannot:

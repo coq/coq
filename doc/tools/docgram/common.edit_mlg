@@ -300,7 +300,7 @@ term_let: [
 
 atomic_constr: [
 | MOVETO qualid_annotated global univ_instance
-| MOVETO primitive_notations NUMERAL
+| MOVETO primitive_notations NUMBER
 | MOVETO primitive_notations string
 | MOVETO term_evar "_"
 | REPLACE "?" "[" ident "]"
@@ -780,7 +780,7 @@ numeral: [
 ]
 
 bigint: [
-| DELETE NUMERAL
+| DELETE NUMBER
 | num
 ]
 
@@ -797,7 +797,7 @@ ident: [
 | first_letter LIST0 subsequent_letter
 ]
 
-NUMERAL: [
+NUMBER: [
 | numeral
 ]
 
@@ -2210,7 +2210,7 @@ SPLICE: [
 | IDENT
 | LEFTQMARK
 | natural
-| NUMERAL
+| NUMBER
 | STRING
 | hyp
 | var

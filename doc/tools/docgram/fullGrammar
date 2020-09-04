@@ -162,7 +162,7 @@ appl_arg: [
 atomic_constr: [
 | global univ_instance
 | sort
-| NUMERAL
+| NUMBER
 | string
 | "_"
 | "?" "[" ident "]"
@@ -283,7 +283,7 @@ pattern0: [
 | "_"
 | "(" pattern200 ")"
 | "(" pattern200 "|" LIST1 pattern200 SEP "|" ")"
-| NUMERAL
+| NUMBER
 | string
 ]
 
@@ -440,12 +440,12 @@ natural: [
 ]
 
 bigint: [
-| NUMERAL
-| test_minus_nat "-" NUMERAL
+| NUMBER
+| test_minus_nat "-" NUMBER
 ]
 
 bignat: [
-| NUMERAL
+| NUMBER
 ]
 
 bar_cbrace: [
