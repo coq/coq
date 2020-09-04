@@ -269,7 +269,7 @@ Section power_div_with_rest.
    set (Inv := fun t => let
      '(q, r, d) := t in
      x = q * d + r /\ 0 <= r < d).
-   apply (Pos.iter_invariant _ _ _ Inv); [|rewrite Z.mul_1_r, Z.add_0_r; repeat split; auto; discriminate].
+   apply (Pos.iter_invariant _ _ _ Inv); (unfold Inv); [|rewrite Z.mul_1_r, Z.add_0_r; repeat split; auto; discriminate].
    intros ((q,r),d) (H,(H1',H2')). unfold Zdiv_rest_aux.
    assert (H1 : 0 < d) by now apply Z.le_lt_trans with (1 := H1').
    assert (H2 : 0 <= d + r) by now apply Z.add_nonneg_nonneg; auto; apply Z.lt_le_incl.
