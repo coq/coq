@@ -1427,12 +1427,12 @@ let check_parsing_override (scopt,ntn) data = function
   | OnlyParsingData (_,old_data) ->
     let overridden = not (interpretation_eq data.not_interp old_data.not_interp) in
     warn_override_if_needed (scopt,ntn) overridden data old_data;
-    None, not overridden
+    None
   | ParsingAndPrintingData (_,on_printing,old_data) ->
     let overridden = not (interpretation_eq data.not_interp old_data.not_interp) in
     warn_override_if_needed (scopt,ntn) overridden data old_data;
-    (if on_printing then Some old_data.not_interp else None), not overridden
-  | NoParsingData -> None, false
+    if on_printing then Some old_data.not_interp else None
+  | NoParsingData -> None
 
 let check_printing_override (scopt,ntn) data parsingdata printingdata =
   let parsing_update = match parsingdata with
@@ -1461,15 +1461,15 @@ let update_notation_data (scopt,ntn) use data table =
     try NotationMap.find ntn table with Not_found -> (NoParsingData, []) in
   match use with
   | OnlyParsing ->
-    let printing_update, exists = check_parsing_override (scopt,ntn) data parsingdata in
-    NotationMap.add ntn (OnlyParsingData (true,data), printingdata) table, printing_update, exists
+    let printing_update = check_parsing_override (scopt,ntn) data parsingdata in
+    NotationMap.add ntn (OnlyParsingData (true,data), printingdata) table, printing_update
   | ParsingAndPrinting ->
-    let printing_update, exists = check_parsing_override (scopt,ntn) data parsingdata in
-    NotationMap.add ntn (ParsingAndPrintingData (true,true,data), printingdata) table, printing_update, exists
+    let printing_update = check_parsing_override (scopt,ntn) data parsingdata in
+    NotationMap.add ntn (ParsingAndPrintingData (true,true,data), printingdata) table, printing_update
   | OnlyPrinting ->
     let parsingdata, exists = check_printing_override (scopt,ntn) data parsingdata printingdata in
     let printingdata = if exists then printingdata else (true,data) :: printingdata in
-    NotationMap.add ntn (parsingdata, printingdata) table, None, exists
+    NotationMap.add ntn (parsingdata, printingdata) table, None
 
 let rec find_interpretation ntn find = function
   | [] -> raise Not_found
@@ -1742,23 +1742,22 @@ let declare_notation (scopt,ntn) pat df ~use ~also_in_cases_pattern coe deprecat
     not_location = df;
     not_deprecation = deprecation;
   } in
-  let notation_update,printing_update, exists = update_notation_data (scopt,ntn) use notdata sc.notations in
-  if not exists then
-    let sc = { sc with notations = notation_update } in
-    scope_map := String.Map.add scope sc !scope_map;
+  let notation_update,printing_update = update_notation_data (scopt,ntn) use notdata sc.notations in
+  let sc = { sc with notations = notation_update } in
+  scope_map := String.Map.add scope sc !scope_map;
   (* Update the uninterpretation cache *)
   begin match printing_update with
   | Some pat -> remove_uninterpretation (NotationRule (scopt,ntn)) also_in_cases_pattern pat
   | None -> ()
   end;
-  if not exists && use <> OnlyParsing then declare_uninterpretation ~also_in_cases_pattern (NotationRule (scopt,ntn)) pat;
+  if use <> OnlyParsing then declare_uninterpretation ~also_in_cases_pattern (NotationRule (scopt,ntn)) pat;
   (* Register visibility of lonely notations *)
-  if not exists then begin match scopt with
+  begin match scopt with
   | LastLonelyNotation -> scope_stack := LonelyNotationItem ntn :: !scope_stack
   | NotationInScope _ -> ()
   end;
   (* Declare a possible coercion *)
-  if not exists then begin match coe with
+  begin match coe with
    | Some (IsEntryCoercion entry) ->
      let (_,level,_) = level_of_notation ntn in
      let level = match fst ntn with
