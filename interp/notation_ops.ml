@@ -27,30 +27,38 @@ open Notation_term
 (* helper for NVar, NVar case in eq_notation_constr *)
 let get_var_ndx id vs = try Some (List.index Id.equal id vs) with Not_found -> None
 
+let eq_id (vars1,vars2) id1 id2 =
+  match (get_var_ndx id1 vars1, get_var_ndx id2 vars2) with
+  | Some n, Some m -> Int.equal n m
+  | None  , None   -> Id.equal id1 id2
+  | _              -> false
+
+let eq_name vars na1 na2 =
+  match na1, na2 with
+  | Name id1, Name id2 -> eq_id vars id1 id2
+  | Anonymous, Anonymous -> true
+  | (Name _ | Anonymous), _ -> false
+
 let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 =
 (vars1 == vars2 && t1 == t2) ||
 match t1, t2 with
 | NRef gr1, NRef gr2 -> GlobRef.equal gr1 gr2
-| NVar id1, NVar id2 -> (
-   match (get_var_ndx id1 vars1,get_var_ndx id2 vars2) with
-   | Some n,Some m -> Int.equal n m
-   | None  ,None   -> Id.equal id1 id2
-   | _             -> false)
+| NVar id1, NVar id2 -> eq_id vars id1 id2
 | NApp (t1, a1), NApp (t2, a2) ->
   (eq_notation_constr vars) t1 t2 && List.equal (eq_notation_constr vars) a1 a2
 | NHole (_, _, _), NHole (_, _, _) -> true (* FIXME? *)
-| NList (i1, j1, t1, u1, b1), NList (i2, j2, t2, u2, b2) ->
-  Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
+| NList (i1, _j1, t1, u1, b1), NList (i2, _j2, t2, u2, b2) ->
+  eq_id vars i1 i2 && (eq_notation_constr vars) t1 t2 &&
   (eq_notation_constr vars) u1 u2 && b1 == b2
 | NLambda (na1, t1, u1), NLambda (na2, t2, u2) ->
-  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
+  eq_name vars na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
 | NProd (na1, t1, u1), NProd (na2, t2, u2) ->
-  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
-| NBinderList (i1, j1, t1, u1, b1), NBinderList (i2, j2, t2, u2, b2) ->
-  Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
+  eq_name vars na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
+| NBinderList (i1, _j1, t1, u1, b1), NBinderList (i2, _j2, t2, u2, b2) ->
+  eq_id vars i1 i2 && (eq_notation_constr vars) t1 t2 &&
   (eq_notation_constr vars) u1 u2 && b1 == b2
 | NLetIn (na1, b1, t1, u1), NLetIn (na2, b2, t2, u2) ->
-  Name.equal na1 na2 && eq_notation_constr vars b1 b2 &&
+  eq_name vars na1 na2 && eq_notation_constr vars b1 b2 &&
   Option.equal (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
 | NCases (_, o1, r1, p1), NCases (_, o2, r2, p2) -> (* FIXME? *)
   let eqpat (p1, t1) (p2, t2) =
@@ -58,31 +66,31 @@ match t1, t2 with
     (eq_notation_constr vars) t1 t2
   in
   let eqf (t1, (na1, o1)) (t2, (na2, o2)) =
-    let eq (i1, n1) (i2, n2) = Ind.CanOrd.equal i1 i2 && List.equal Name.equal n1 n2 in
-    (eq_notation_constr vars) t1 t2 && Name.equal na1 na2 && Option.equal eq o1 o2
+    let eq (i1, n1) (i2, n2) = Ind.CanOrd.equal i1 i2 && List.equal (eq_name vars) n1 n2 in
+    (eq_notation_constr vars) t1 t2 && eq_name vars na1 na2 && Option.equal eq o1 o2
   in
   Option.equal (eq_notation_constr vars) o1 o2 &&
   List.equal eqf r1 r2 &&
   List.equal eqpat p1 p2
 | NLetTuple (nas1, (na1, o1), t1, u1), NLetTuple (nas2, (na2, o2), t2, u2) ->
-  List.equal Name.equal nas1 nas2 &&
-  Name.equal na1 na2 &&
+  List.equal (eq_name vars) nas1 nas2 &&
+  eq_name vars na1 na2 &&
   Option.equal (eq_notation_constr vars) o1 o2 &&
   (eq_notation_constr vars) t1 t2 &&
   (eq_notation_constr vars) u1 u2
 | NIf (t1, (na1, o1), u1, r1), NIf (t2, (na2, o2), u2, r2) ->
   (eq_notation_constr vars) t1 t2 &&
-  Name.equal na1 na2 &&
+  eq_name vars na1 na2 &&
   Option.equal (eq_notation_constr vars) o1 o2 &&
   (eq_notation_constr vars) u1 u2 &&
   (eq_notation_constr vars) r1 r2
 | NRec (_, ids1, ts1, us1, rs1), NRec (_, ids2, ts2, us2, rs2) -> (* FIXME? *)
   let eq (na1, o1, t1) (na2, o2, t2) =
-    Name.equal na1 na2 &&
+    eq_name vars na1 na2 &&
     Option.equal (eq_notation_constr vars) o1 o2 &&
     (eq_notation_constr vars) t1 t2
   in
-  Array.equal Id.equal ids1 ids2 &&
+  Array.equal (eq_id vars) ids1 ids2 &&
   Array.equal (List.equal eq) ts1 ts2 &&
   Array.equal (eq_notation_constr vars) us1 us2 &&
   Array.equal (eq_notation_constr vars) rs1 rs2
