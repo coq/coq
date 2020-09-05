@@ -345,11 +345,23 @@ let also_cases_notation_rule_eq (also_cases1,rule1) (also_cases2,rule2) =
   (* No need in principle to compare also_cases as it is inferred *)
   also_cases1 = also_cases2 && notation_rule_eq rule1 rule2
 
+let adjust_application c1 c2 =
+  match c1, c2 with
+  | NApp (t1, a1), (NList (_,_,NApp (_, a2),_,_) | NApp (_, a2)) when List.length a1 >= List.length a2 ->
+      NApp (t1, List.firstn (List.length a2) a1)
+  | NApp (t1, a1), _ ->
+      t1
+  | _ -> c1
+
+let strictly_finer_interpretation_than (_,(_,(vars1,c1),_)) (_,(_,(vars2,c2),_)) =
+  let c1 = adjust_application c1 c2 in
+  Notation_ops.strictly_finer_notation_constr (List.map fst vars1, List.map fst vars2) c1 c2
+
 let keymap_add key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in
-  (* In case of re-import, no need to keep the previous copy *)
-  let old = try List.remove_first (also_cases_notation_rule_eq interp) old with Not_found -> old in
-  KeyMap.add key (interp :: old) map
+  (* strictly finer interpretation are kept in front *)
+  let strictly_finer, rest = List.partition (fun c -> strictly_finer_interpretation_than c interp) old in
+  KeyMap.add key (strictly_finer @ interp :: rest) map
 
 let keymap_remove key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in

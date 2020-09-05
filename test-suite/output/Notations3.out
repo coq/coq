@@ -120,14 +120,14 @@ where
 letpair x [1] = {0};
 return (1, 2, 3, 4)
      : nat * nat * nat * nat
-{{ 1 | 1 // 1 }}
-     : nat
-!!! _ _ : nat, True
-     : (nat -> Prop) * ((nat -> Prop) * Prop)
 ((*1).2).3
      : nat
 *(1.2)
      : nat
+{{ 1 | 1 // 1 }}
+     : nat
+!!! _ _ : nat, True
+     : (nat -> Prop) * ((nat -> Prop) * Prop)
 ! '{{x, y}}, x.y = 0
      : Prop
 exists x : nat,

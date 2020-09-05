@@ -181,6 +181,13 @@ Notation "'letpair' x [1] = { a } ; 'return' ( b0 , b1 , .. , b2 )" :=
   (let x:=a in ( .. (b0,b1) .., b2)).
 Check letpair x [1] = {0}; return (1,2,3,4).
 
+(* Allow level for leftmost nonterminal when printing-only, BZ#5739 *)
+
+Notation "* x" := (id x) (only printing, at level 15, format "* x").
+Notation "x . y" := (x + y) (only printing, at level 20, x at level 14, left associativity, format "x . y").
+Check (((id 1) + 2) + 3).
+Check (id (1 + 2)).
+
 (* Test spacing in #5569 *)
 
 Notation "{ { xL | xR // xcut } }" := (xL+xR+xcut)
@@ -190,13 +197,6 @@ Check 1+1+1.
 (* Test presence of notation variables in the recursive parts (introduced in dfdaf4de) *)
 Notation "!!! x .. y , b" := ((fun x => b), .. ((fun y => b), True) ..) (at level 200, x binder).
 Check !!! (x y:nat), True.
-
-(* Allow level for leftmost nonterminal when printing-only, BZ#5739 *)
-
-Notation "* x" := (id x) (only printing, at level 15, format "* x").
-Notation "x . y" := (x + y) (only printing, at level 20, x at level 14, left associativity, format "x . y").
-Check (((id 1) + 2) + 3).
-Check (id (1 + 2)).
 
 (* Test contraction of "forall x, let 'pat := x in ..." into "forall 'pat, ..." *)
 (* for isolated "forall" (was not working already in 8.6) *)
