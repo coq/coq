@@ -832,7 +832,7 @@ let pr_goal_selector ~toplevel s =
             ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) h
           )
         | TacChange (check,op,c,h) ->
-          let name = if check then "change_no_check" else "change" in
+          let name = if check then "change" else "change_no_check" in
           hov 1 (
             primitive name ++ brk (1,1)
             ++ (
