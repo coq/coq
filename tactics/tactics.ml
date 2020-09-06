@@ -3603,7 +3603,6 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
 (* [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = {
-  elimc: constr with_bindings option;
   elimt: types;
   params: rel_context;      (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;               (* number of parameters *)
@@ -4082,7 +4081,7 @@ let exchange_hd_app sigma subst_hd t =
      predicates are cited in the conclusion.
 
    - finish to fill in the elim_scheme: indarg/farg/args and finally indref. *)
-let decompose_elim_scheme sigma ?elimc elimt =
+let decompose_elim_scheme sigma elimt =
   let params_preds,branches,args,concl =
     decompose_paramspred_branch_args sigma elimt in
 
@@ -4092,7 +4091,7 @@ let decompose_elim_scheme sigma ?elimc elimt =
   let predicates,params = List.chop (List.length params_preds - nparams) params_preds in
   let farg_in_concl = isApp sigma ccl && isApp sigma (last_arg sigma ccl) in
   {
-    elimc; elimt; concl; params; nparams;
+    elimt; concl; params; nparams;
     predicates; npredicates = List.length predicates;
     branches; nbranches = List.length branches;
     farg_in_concl; args; nargs = List.length args
@@ -4121,12 +4120,19 @@ let compute_elim_metadata sigma scheme =
        else
          { indarg_in_concl = false; indarg = None; indref = None}
 
-let compute_scheme_signature evd (scheme,scheme_data) names_info ind_type_guess =
+let compute_elim_type sigma ind_guess scheme =
+  match (compute_elim_metadata sigma scheme).indref with
+  | Some t -> t (* Do we need to do some weak checke that it matches ind_guess? *)
+  | None ->
+    try fst (EConstr.destRef sigma ind_guess)
+    with Not_found -> error "Cannot find the induction type."
+
+let compute_scheme_signature evd (scheme,ext_scheme) names_info ind_type_guess =
   let open Context.Rel.Declaration in
   let f,l = decompose_app evd scheme.concl in
   (* Vérifier que les arguments de Qi sont bien les xi. *)
   let cond, check_concl =
-    match scheme_data.indarg with
+    match ext_scheme.indarg with
       | None -> (* Non standard scheme *)
           let cond hd = EConstr.eq_constr evd hd ind_type_guess && not scheme.farg_in_concl
           in (cond, fun _ _ -> ())
@@ -4168,7 +4174,7 @@ let compute_scheme_signature evd (scheme,scheme_data) names_info ind_type_guess 
            let n = List.fold_left
              (fun n (b,_,_) -> if b == RecArg then n+1 else n) 0 lchck_brch in
            let recvarname, hyprecname, avoid =
-             make_up_names n scheme_data.indref names_info in
+             make_up_names n ext_scheme.indref names_info in
            let namesign =
              List.map (fun (b,is_assum,dep) ->
                (b,is_assum,dep,if b == IndArg then hyprecname else recvarname))
@@ -4187,10 +4193,6 @@ let compute_scheme_signature evd (scheme,scheme_data) names_info ind_type_guess 
    extra final argument of the form (f x y ...) in the conclusion. In
    the non standard case, naming of generated hypos is slightly
    different. *)
-let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
-  let scheme = decompose_elim_scheme evd ~elimc:elimc elimt in
-  let ext_scheme = compute_elim_metadata evd scheme in
-    evd, (compute_scheme_signature evd (scheme,ext_scheme) names_info ind_type_guess, scheme)
 
 let guess_elim isrec dep s hyp0 gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
@@ -4223,43 +4225,29 @@ let given_elim hyp0 (elimc,lbind as e) gl =
   let sigma, elimt = Tacmach.New.pf_type_of gl elimc in
   sigma, (e, elimt), ind_type_guess
 
-type scheme_signature =
-    (Id.Set.t * (elim_arg_kind * bool * bool * Id.t) list) array
-
 type eliminator_source =
-  | ElimUsing of (eliminator * EConstr.types) * scheme_signature
+  | ElimUsing of EConstr.t with_bindings * elim_scheme * Id.t * EConstr.types
   | ElimOver of bool * Id.t
 
 let find_induction_type isrec elim hyp0 gl =
-  let sigma, indref, nparams, elim =
-    match elim with
-    | None ->
-       let sort = Tacticals.New.elimination_sort_of_goal gl in
-       let sigma', (elimc,elimt),_ = guess_elim isrec false sort hyp0 gl in
-       let scheme = decompose_elim_scheme sigma' ~elimc elimt in
-       let ext_scheme = compute_elim_metadata sigma' scheme in
-       (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
-          needs no update to sigma at this point. *)
-       Tacmach.New.project gl, ext_scheme.indref, scheme.nparams, ElimOver (isrec,hyp0)
-    | Some e ->
-        let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
-        let scheme = decompose_elim_scheme sigma ~elimc elimt in
-        let ext_scheme = compute_elim_metadata sigma scheme in
-        if Option.is_empty ext_scheme.indarg then error "Cannot find induction type";
-        let indsign = compute_scheme_signature sigma (scheme,ext_scheme) hyp0 ind_guess in
-        let elim = ({ elimindex = Some(-1); elimbody = elimc },elimt) in
-        sigma, ext_scheme.indref, scheme.nparams, ElimUsing (elim,indsign)
-  in
-  match indref with
-  | None -> error_ind_scheme ""
-  | Some ref -> sigma, (ref, nparams, elim)
-
-let get_elim_signature elim hyp0 gl =
-  compute_elim_signature (given_elim hyp0 elim gl) hyp0
+  match elim with
+  | None ->
+    let sort = Tacticals.New.elimination_sort_of_goal gl in
+    let sigma', (elimc,elimt),ind_guess = guess_elim isrec false sort hyp0 gl in
+    let scheme = decompose_elim_scheme sigma' elimt in
+    let indref = compute_elim_type sigma' ind_guess scheme in
+    (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
+       needs no update to sigma at this point; nparams is ok though *)
+    Tacmach.New.project gl, (indref, scheme.nparams, ElimOver (isrec,hyp0))
+  | Some e ->
+    let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
+    let scheme = decompose_elim_scheme sigma elimt in
+    let indref = compute_elim_type sigma ind_guess scheme in
+    sigma, (indref, scheme.nparams, ElimUsing (elimc,scheme,hyp0,ind_guess))
 
 let is_functional_induction elimc gl =
   let sigma = Tacmach.New.project gl in
-  let scheme = decompose_elim_scheme sigma ~elimc (Tacmach.New.pf_get_type_of gl (fst elimc)) in
+  let scheme = decompose_elim_scheme sigma (Tacmach.New.pf_get_type_of gl (fst elimc)) in
   (* The test is not safe: with non-functional induction on non-standard
      induction scheme, this may fail *)
   scheme.farg_in_concl
@@ -4269,12 +4257,19 @@ let is_functional_induction elimc gl =
 
 let get_eliminator elim dep s gl =
   match elim with
-  | ElimUsing (elim,indsign) ->
-      Tacmach.New.project gl, (* bugged, should be computed *) true, elim, indsign
+  | ElimUsing (elimc,scheme,id,ind_guess) ->
+    let sigma = Tacmach.New.project gl in
+    let ext_scheme = compute_elim_metadata sigma scheme in
+    let indsign = compute_scheme_signature sigma (scheme,ext_scheme) id ind_guess in
+    let elim = ({ elimindex = Some(-1); elimbody = elimc }, scheme.elimt) in
+    sigma, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc,elimt),_ as elims = guess_elim isrec dep s id gl in
-      let _, (l, s) = compute_elim_signature elims id in
-      evd, isrec, ({ elimindex = None; elimbody = elimc }, elimt), l
+    let sigma, (elimc, elimt), ind_guess  = guess_elim isrec dep s id gl in
+    let scheme = decompose_elim_scheme sigma elimt in
+    let ext_scheme = compute_elim_metadata sigma scheme in
+    let indsign = compute_scheme_signature sigma (scheme,ext_scheme) id ind_guess in
+    let elim = ({ elimindex = None; elimbody = elimc }, elimt) in
+    sigma, isrec, elim, indsign
 
 (* Instantiate all meta variables of elimclause using lid, some elts
    of lid are parameters (first ones), the other are
@@ -4395,7 +4390,8 @@ let msg_not_right_number_induction_arguments scheme =
    by hand before calling induction_tac *)
 let induction_without_atomization isrec with_evars elim names lid =
   Proofview.Goal.enter begin fun gl ->
-  let sigma, (indsign,scheme) = get_elim_signature elim (List.hd lid) gl in
+  let sigma,(elimc,elimt),ind_type_guess = given_elim (List.hd lid) elim gl in
+  let scheme = decompose_elim_scheme sigma elimt in
   let nargs_indarg_farg =
     scheme.nargs + (if scheme.farg_in_concl then 1 else 0) in
   if not (Int.equal (List.length lid) (scheme.nparams + nargs_indarg_farg))
@@ -4424,7 +4420,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     (* FIXME: Tester ca avec un principe dependant et non-dependant *)
     induction_tac with_evars params realindvars elim;
   ] in
-  let elim = ElimUsing (({ elimindex = Some (-1); elimbody = Option.get scheme.elimc }, scheme.elimt), indsign) in
+  let elim = ElimUsing (elimc,scheme,List.hd lid,ind_type_guess) in
   apply_induction_in_context with_evars None [] elim indvars names induct_tac
   end
 
@@ -4500,7 +4496,7 @@ let check_enough_applied env sigma elim =
       let t,_ = decompose_app sigma (whd_all env sigma u) in isInd sigma t
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (fst elimc) in
-      let scheme = decompose_elim_scheme sigma ~elimc elimt in
+      let scheme = decompose_elim_scheme sigma elimt in
       match (compute_elim_metadata sigma scheme).indref with
       | None ->
          (* in the absence of information, do not assume it may be
