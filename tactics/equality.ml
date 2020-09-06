@@ -1022,15 +1022,6 @@ type equality = {
 
 let eq_baseid = Id.of_string "e"
 
-let apply_on_clause (f,t) clause =
-  let sigma =  clause.evd in
-  let f_clause = mk_clenv_from_env clause.env sigma None (f,t) in
-  let argmv =
-    (match EConstr.kind sigma (last_arg f_clause.evd f_clause.templval.Evd.rebus) with
-     | Meta mv -> mv
-     | _  -> user_err  (str "Ill-formed clause applicator.")) in
-  clenv_fchain ~with_univs:false argmv f_clause clause
-
 let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = eq_clause } cpath dirn =
   build_coq_True () >>= fun true_0 ->
   build_coq_False () >>= fun false_0 ->
@@ -1049,9 +1040,8 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_clenv = eq_clause
   in
     discriminator >>= fun discriminator ->
     discrimination_pf e (t,t1,t2) discriminator lbeq false_kind >>= fun pf ->
-    let pf_ty = mkArrow (clenv_type eq_clause) Sorts.Relevant false_0 in
-    let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
-    let pf = Clenv.clenv_value_cast_meta absurd_clause in
+    (* pf : eq t t1 t2 -> False *)
+    let pf = EConstr.mkApp (pf, [|clenv_value eq_clause|]) in
     tclTHENS (assert_after Anonymous false_0)
       [onLastHypId gen_absurdity; (Logic.refiner ~check:true EConstr.Unsafe.(to_constr pf))]
 
@@ -1404,11 +1394,12 @@ let inject_at_positions env sigma l2r eq posns tac =
       let sigma, (injbody,resty) = build_injector e_env !evdref t1' (mkVar e) cpath in
       let injfun = mkNamedLambda (make_annot e Sorts.Relevant) t injbody in
       let sigma,congr = Evd.fresh_global env sigma eq.congr in
-      let pf = applist(congr,[t;resty;injfun;t1;t2]) in
+      (* pf : eq t t1 t2 -> eq resty (injfun t1) (injfun t2) *)
+      let pf = mkApp (congr,[|t; resty; injfun; t1; t2|]) in
       let sigma, pf_typ = Typing.type_of env sigma pf in
-      let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
-      let pf = Clenv.clenv_value_cast_meta inj_clause in
-      let ty = simplify_args env sigma (clenv_type inj_clause) in
+      let pf_typ = Vars.subst1 mkProp (pi3 @@ destProd sigma pf_typ) in
+      let pf = mkApp (pf, [| Clenv.clenv_value eq_clause |]) in
+      let ty = simplify_args env sigma pf_typ in
         evdref := sigma;
         Some (pf, ty)
     with Failure _ -> None
