@@ -206,3 +206,19 @@ Undo.
 destruct 1 as [? IHv].
 exact IHv. (* Check that the name is granted *)
 Qed.
+
+(* Testing a partially applied explicit scheme *)
+
+Goal forall n m, n<=m -> n=m.
+intros.
+destruct H using (le_ind n).
+Abort.
+
+(* Check induction on several arguments *)
+
+Require Import Arith.
+
+Goal forall n m, n+m=0.
+intros.
+induction n, m using lt_wf_double_ind.
+Abort.
