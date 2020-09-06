@@ -265,7 +265,6 @@ val apply_delayed_in :
 type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
-  indref: GlobRef.t option;
   params: rel_context;      (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;               (** number of parameters *)
   predicates: rel_context;  (** (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
@@ -274,15 +273,21 @@ type elim_scheme = {
   nbranches: int;             (** Number of branches *)
   args: rel_context;        (** (xni, Ti_ni) ... (x1, Ti_1) *)
   nargs: int;                 (** number of arguments *)
-  indarg: types option;     (** Some (H,I prm1..prmp x1...xni)
-                                                 if HI is in premisses, None otherwise *)
   concl: types;               (** Qi x1...xni HI (f...), HI and (f...)
                                   are optional and mutually exclusive *)
-  indarg_in_concl: bool;      (** true if HI appears at the end of conclusion *)
   farg_in_concl: bool;        (** true if (f...) appears at the end of conclusion *)
 }
 
-val compute_elim_sig : evar_map -> ?elimc:constr with_bindings -> types -> elim_scheme
+type elim_metadata = {
+  indarg: types option;     (** Some (H,I prm1..prmp x1...xni)
+                                                 if HI is in premisses, None otherwise *)
+  indref: GlobRef.t option;
+  indarg_in_concl: bool;      (** true if HI appears at the end of conclusion *)
+}
+
+val decompose_elim_scheme : evar_map -> ?elimc:constr with_bindings -> types -> elim_scheme
+
+val compute_elim_metadata : evar_map -> elim_scheme -> elim_metadata
 
 (** elim principle with the index of its inductive arg *)
 type eliminator = {

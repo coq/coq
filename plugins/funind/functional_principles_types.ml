@@ -34,7 +34,8 @@ let pop t = Vars.lift (-1) t
 *)
 let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let princ_type = EConstr.of_constr princ_type in
-  let princ_type_info = compute_elim_sig Evd.empty princ_type (* FIXME *) in
+  let princ_type_info = decompose_elim_scheme Evd.empty princ_type (* FIXME *) in
+  let ext_princ_type_info = compute_elim_metadata Evd.empty princ_type_info in
   let env = Global.env () in
   let env_with_params = EConstr.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in
@@ -64,7 +65,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       decompose_prod_assum (EConstr.Unsafe.to_constr (RelDecl.get_type decl))
     in
     let real_args =
-      if princ_type_info.indarg_in_concl then List.tl args else args
+      if ext_princ_type_info.indarg_in_concl then List.tl args else args
     in
     Context.Named.Declaration.LocalAssum
       ( map_annot Nameops.Name.get_id (Context.Rel.Declaration.get_annot decl)
@@ -78,7 +79,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   let rel_as_kn =
     fst
-      ( match princ_type_info.indref with
+      ( match ext_princ_type_info.indref with
       | Some (GlobRef.IndRef ind) -> ind
       | _ -> user_err Pp.(str "Not a valid predicate") )
   in
@@ -90,9 +91,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let pre_princ =
     let open EConstr in
     it_mkProd_or_LetIn
-      (it_mkProd_or_LetIn
-         (Option.fold_right (fun t u -> mkProd (anonR,t,u)) princ_type_info.indarg princ_type_info.concl)
-         princ_type_info.args)
+      (it_mkProd_or_LetIn princ_type_info.concl princ_type_info.args)
       princ_type_info.branches
   in
   let pre_princ = EConstr.Unsafe.to_constr pre_princ in
@@ -240,7 +239,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   (*   observe (str "Computing new principe from " ++ pr_lconstr_env  env_with_params_and_predicates pre_princ); *)
   let pre_res, _ =
-    compute_new_princ_type princ_type_info.indarg_in_concl
+    compute_new_princ_type ext_princ_type_info.indarg_in_concl
       env_with_params_and_predicates pre_princ
   in
   let pre_res =

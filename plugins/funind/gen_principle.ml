@@ -197,7 +197,7 @@ let build_functional_principle (sigma : Evd.evar_map) old_princ_type sorts funs
     _i proof_tac hook =
   (* First we get the type of the old graph principle *)
   let mutr_nparams =
-    (Tactics.compute_elim_sig sigma (EConstr.of_constr old_princ_type))
+    (Tactics.decompose_elim_scheme sigma (EConstr.of_constr old_princ_type))
       .Tactics.nparams
   in
   let new_principle_type =
@@ -226,7 +226,7 @@ let build_functional_principle (sigma : Evd.evar_map) old_princ_type sorts funs
 let change_property_sort evd toSort princ princName =
   let open Context.Rel.Declaration in
   let princ = EConstr.of_constr princ in
-  let princ_info = Tactics.compute_elim_sig evd princ in
+  let princ_info = Tactics.decompose_elim_scheme evd princ in
   let change_sort_in_predicate decl =
     LocalAssum
       ( get_annot decl
@@ -612,7 +612,7 @@ let prove_fun_correct evd graphs_constr schemes lemmas_types_infos i :
     (* and the principle to use in this lemma in $\zeta$ normal form *)
     let f_principle, princ_type = schemes.(i) in
     let princ_type = Reductionops.nf_zeta (Global.env ()) evd princ_type in
-    let princ_infos = Tactics.compute_elim_sig evd princ_type in
+    let princ_infos = Tactics.decompose_elim_scheme evd princ_type in
     (* The number of args of the function is then easily computable *)
     let nb_fun_args = Termops.nb_prod (project g) (pf_concl g) - 2 in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
@@ -1107,7 +1107,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i :
         (EConstr.of_constr schemes.(i))
     in
     let g, princ_type = tac_type_of g graph_principle in
-    let princ_infos = Tactics.compute_elim_sig (project g) princ_type in
+    let princ_infos = Tactics.decompose_elim_scheme (project g) princ_type in
     (* Then we get the number of argument of the function
        and compute a fresh name for each of them
     *)

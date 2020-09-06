@@ -3605,7 +3605,6 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
 type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
-  indref: GlobRef.t option;
   params: rel_context;      (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;               (* number of parameters *)
   predicates: rel_context;  (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
@@ -3614,12 +3613,16 @@ type elim_scheme = {
   nbranches: int;             (* Number of branches *)
   args: rel_context;        (* (xni, Ti_ni) ... (x1, Ti_1) *)
   nargs: int;                 (* number of arguments *)
-  indarg: types option;     (* Some (I prm1..prmp x1...xni)
-                                               if HI is in premisses, None otherwise *)
   concl: types;             (* Qi x1...xni HI (f...), HI and (f...)
                                are optional and mutually exclusive *)
-  indarg_in_concl: bool;      (* true if HI appears at the end of conclusion *)
   farg_in_concl: bool;        (* true if (f...) appears at the end of conclusion *)
+}
+
+type elim_metadata = {
+  indarg: types option;     (* Some (I prm1..prmp x1...xni)
+                                               if HI is in premisses, None otherwise *)
+  indref: GlobRef.t option;
+  indarg_in_concl: bool;      (* true if HI appears at the end of conclusion *)
 }
 
 let make_base n id =
@@ -4079,39 +4082,32 @@ let exchange_hd_app sigma subst_hd t =
      predicates are cited in the conclusion.
 
    - finish to fill in the elim_scheme: indarg/farg/args and finally indref. *)
-let compute_elim_sig sigma ?elimc elimt =
-  let open Context.Rel.Declaration in
-  let params_preds,branches,args_indargs,concl =
+let decompose_elim_scheme sigma ?elimc elimt =
+  let params_preds,branches,args,concl =
     decompose_paramspred_branch_args sigma elimt in
 
   let ccl = exchange_hd_app sigma (mkVar (Id.of_string "__QI_DUMMY__")) concl in
-  let concl_with_args = it_mkProd_or_LetIn ccl args_indargs in
+  let concl_with_args = it_mkProd_or_LetIn ccl args in
   let nparams = Int.Set.cardinal (free_rels sigma concl_with_args) in
   let predicates,params = List.chop (List.length params_preds - nparams) params_preds in
   let farg_in_concl = isApp sigma ccl && isApp sigma (last_arg sigma ccl) in
-
-  (* A first approximation, further analysis will tweak it *)
-  let make_res ~indarg_in_concl ~args ~indref ~indarg = {
-    (* This fields are ok: *)
+  {
     elimc; elimt; concl; params; nparams;
     predicates; npredicates = List.length predicates;
     branches; nbranches = List.length branches;
-    farg_in_concl; indarg_in_concl;
-    args; nargs = List.length args;
-    indref; indarg
-  } in
+    farg_in_concl; args; nargs = List.length args
+  }
+
+let compute_elim_metadata sigma scheme =
   (* First see if (f x...) is in the conclusion. *)
-  if farg_in_concl then
-    make_res
-      ~indarg_in_concl:false ~args:args_indargs
-      ~indarg:None ~indref:None
+  if scheme.farg_in_concl then
+    { indarg_in_concl = false; indarg = None; indref = None}
   else
-    match args_indargs with
+    let open Context.Rel.Declaration in
+    match scheme.args with
     | [] ->
         (* If no args_indargs then no indarg *)
-       make_res
-         ~indarg_in_concl:false ~args:args_indargs
-         ~indarg:None ~indref:None
+        { indarg_in_concl = false; indarg = None; indref = None}
     | LocalDef (hiname,_,hi)::_ ->
         error_ind_scheme ""
     | LocalAssum (hiname,hi)::args ->
@@ -4119,21 +4115,18 @@ let compute_elim_sig sigma ?elimc elimt =
        let hi_ind, hi_args = decompose_app sigma hi in
        let hi_is_ref = isRef sigma hi_ind in
        let hi_nargs = List.length hi_args in
-       if hi_is_ref && Int.equal hi_nargs (nparams + List.length args) then
-         make_res
-           ~indarg_in_concl:(occur_rel sigma 1 ccl) ~args:args
-           ~indarg:(Some hi) ~indref:(Some (fst (destRef sigma hi_ind)))
+       if hi_is_ref && Int.equal hi_nargs (scheme.nparams + List.length args) then
+         { indarg_in_concl = occur_rel sigma 1 scheme.concl;
+           indarg = Some hi; indref = Some (fst (destRef sigma hi_ind)) }
        else
-         make_res
-           ~indarg_in_concl:false ~args:args_indargs
-           ~indarg:None ~indref:None
+         { indarg_in_concl = false; indarg = None; indref = None}
 
-let compute_scheme_signature evd scheme names_info ind_type_guess =
+let compute_scheme_signature evd (scheme,scheme_data) names_info ind_type_guess =
   let open Context.Rel.Declaration in
   let f,l = decompose_app evd scheme.concl in
   (* Vérifier que les arguments de Qi sont bien les xi. *)
   let cond, check_concl =
-    match scheme.indarg with
+    match scheme_data.indarg with
       | None -> (* Non standard scheme *)
           let cond hd = EConstr.eq_constr evd hd ind_type_guess && not scheme.farg_in_concl
           in (cond, fun _ _ -> ())
@@ -4142,11 +4135,11 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
           let cond hd = EConstr.eq_constr evd hd indhd in
           let check_concl is_pred p =
             (* Check again conclusion *)
-            let ccl_arg_ok = is_pred (p + scheme.nargs + 1) f == IndArg in
+            let ccl_arg_ok = is_pred (p + scheme.nargs) f == IndArg in
             let ind_is_ok =
               List.equal (fun c1 c2 -> EConstr.eq_constr evd c1 c2)
-                (List.lastn scheme.nargs indargs)
-                (Context.Rel.to_extended_list mkRel 0 scheme.args) in
+                (List.lastn (scheme.nargs - 1) indargs)
+                (Context.Rel.to_extended_list mkRel 0 (List.tl scheme.args)) in
             if not (ccl_arg_ok && ind_is_ok) then
               error_ind_scheme "the conclusion of"
           in (cond, check_concl)
@@ -4175,7 +4168,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
            let n = List.fold_left
              (fun n (b,_,_) -> if b == RecArg then n+1 else n) 0 lchck_brch in
            let recvarname, hyprecname, avoid =
-             make_up_names n scheme.indref names_info in
+             make_up_names n scheme_data.indref names_info in
            let namesign =
              List.map (fun (b,is_assum,dep) ->
                (b,is_assum,dep,if b == IndArg then hyprecname else recvarname))
@@ -4195,8 +4188,9 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
    the non standard case, naming of generated hypos is slightly
    different. *)
 let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
-  let scheme = compute_elim_sig evd ~elimc:elimc elimt in
-    evd, (compute_scheme_signature evd scheme names_info ind_type_guess, scheme)
+  let scheme = decompose_elim_scheme evd ~elimc:elimc elimt in
+  let ext_scheme = compute_elim_metadata evd scheme in
+    evd, (compute_scheme_signature evd (scheme,ext_scheme) names_info ind_type_guess, scheme)
 
 let guess_elim isrec dep s hyp0 gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
@@ -4242,17 +4236,19 @@ let find_induction_type isrec elim hyp0 gl =
     | None ->
        let sort = Tacticals.New.elimination_sort_of_goal gl in
        let sigma', (elimc,elimt),_ = guess_elim isrec false sort hyp0 gl in
-       let scheme = compute_elim_sig sigma' ~elimc elimt in
+       let scheme = decompose_elim_scheme sigma' ~elimc elimt in
+       let ext_scheme = compute_elim_metadata sigma' scheme in
        (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
           needs no update to sigma at this point. *)
-       Tacmach.New.project gl, scheme.indref, scheme.nparams, ElimOver (isrec,hyp0)
+       Tacmach.New.project gl, ext_scheme.indref, scheme.nparams, ElimOver (isrec,hyp0)
     | Some e ->
         let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
-        let scheme = compute_elim_sig sigma ~elimc elimt in
-        if Option.is_empty scheme.indarg then error "Cannot find induction type";
-        let indsign = compute_scheme_signature sigma scheme hyp0 ind_guess in
+        let scheme = decompose_elim_scheme sigma ~elimc elimt in
+        let ext_scheme = compute_elim_metadata sigma scheme in
+        if Option.is_empty ext_scheme.indarg then error "Cannot find induction type";
+        let indsign = compute_scheme_signature sigma (scheme,ext_scheme) hyp0 ind_guess in
         let elim = ({ elimindex = Some(-1); elimbody = elimc },elimt) in
-        sigma, scheme.indref, scheme.nparams, ElimUsing (elim,indsign)
+        sigma, ext_scheme.indref, scheme.nparams, ElimUsing (elim,indsign)
   in
   match indref with
   | None -> error_ind_scheme ""
@@ -4263,10 +4259,10 @@ let get_elim_signature elim hyp0 gl =
 
 let is_functional_induction elimc gl =
   let sigma = Tacmach.New.project gl in
-  let scheme = compute_elim_sig sigma ~elimc (Tacmach.New.pf_get_type_of gl (fst elimc)) in
+  let scheme = decompose_elim_scheme sigma ~elimc (Tacmach.New.pf_get_type_of gl (fst elimc)) in
   (* The test is not safe: with non-functional induction on non-standard
      induction scheme, this may fail *)
-  Option.is_empty scheme.indarg
+  scheme.farg_in_concl
 
 (* Wait the last moment to guess the eliminator so as to know if we
    need a dependent one or not *)
@@ -4504,8 +4500,8 @@ let check_enough_applied env sigma elim =
       let t,_ = decompose_app sigma (whd_all env sigma u) in isInd sigma t
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (fst elimc) in
-      let scheme = compute_elim_sig sigma ~elimc elimt in
-      match scheme.indref with
+      let scheme = decompose_elim_scheme sigma ~elimc elimt in
+      match (compute_elim_metadata sigma scheme).indref with
       | None ->
          (* in the absence of information, do not assume it may be
             partially applied *)
