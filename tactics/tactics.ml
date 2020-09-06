@@ -4245,12 +4245,12 @@ let find_induction_type isrec elim hyp0 gl =
     let indref = compute_elim_type sigma ind_guess scheme in
     sigma, (indref, scheme.nparams, ElimUsing (elimc,scheme,hyp0,ind_guess))
 
-let is_functional_induction elimc gl =
+let is_scheme_without_inductive_argument elimc gl =
   let sigma = Tacmach.New.project gl in
   let scheme = decompose_elim_scheme sigma (Tacmach.New.pf_get_type_of gl (fst elimc)) in
   (* The test is not safe: with non-functional induction on non-standard
      induction scheme, this may fail *)
-  scheme.farg_in_concl
+  scheme.args = [] || scheme.farg_in_concl
 
 (* Wait the last moment to guess the eliminator so as to know if we
    need a dependent one or not *)
@@ -4680,7 +4680,7 @@ let induction_destruct isrec with_evars (lc,elim) =
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     match elim with
-    | Some elim when is_functional_induction elim gl ->
+    | Some elim when is_scheme_without_inductive_argument elim gl ->
       (* Standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
       if not (Option.is_empty cls) then error "'in' clause not supported here.";
