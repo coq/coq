@@ -91,8 +91,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     let open EConstr in
     it_mkProd_or_LetIn
       (it_mkProd_or_LetIn
-         (Option.fold_right mkProd_or_LetIn princ_type_info.indarg
-            princ_type_info.concl)
+         (Option.fold_right (fun t u -> mkProd (anonR,t,u)) princ_type_info.indarg princ_type_info.concl)
          princ_type_info.args)
       princ_type_info.branches
   in

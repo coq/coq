@@ -3614,32 +3614,13 @@ type elim_scheme = {
   nbranches: int;             (* Number of branches *)
   args: rel_context;        (* (xni, Ti_ni) ... (x1, Ti_1) *)
   nargs: int;                 (* number of arguments *)
-  indarg: rel_declaration option; (* Some (H,I prm1..prmp x1...xni)
+  indarg: types option;     (* Some (I prm1..prmp x1...xni)
                                                if HI is in premisses, None otherwise *)
-  concl: types;               (* Qi x1...xni HI (f...), HI and (f...)
-                                 are optional and mutually exclusive *)
+  concl: types;             (* Qi x1...xni HI (f...), HI and (f...)
+                               are optional and mutually exclusive *)
   indarg_in_concl: bool;      (* true if HI appears at the end of conclusion *)
   farg_in_concl: bool;        (* true if (f...) appears at the end of conclusion *)
 }
-
-let empty_scheme =
-  {
-    elimc = None;
-    elimt = mkProp;
-    indref = None;
-    params = [];
-    nparams = 0;
-    predicates = [];
-    npredicates = 0;
-    branches = [];
-    nbranches = 0;
-    args = [];
-    nargs = 0;
-    indarg = None;
-    concl = mkProp;
-    indarg_in_concl = false;
-    farg_in_concl = false;
-  }
 
 let make_base n id =
   if Int.equal n 0 || Int.equal n 1 then id
@@ -4100,70 +4081,52 @@ let exchange_hd_app sigma subst_hd t =
    - finish to fill in the elim_scheme: indarg/farg/args and finally indref. *)
 let compute_elim_sig sigma ?elimc elimt =
   let open Context.Rel.Declaration in
-  let params_preds,branches,args_indargs,conclusion =
+  let params_preds,branches,args_indargs,concl =
     decompose_paramspred_branch_args sigma elimt in
 
-  let ccl = exchange_hd_app sigma (mkVar (Id.of_string "__QI_DUMMY__")) conclusion in
+  let ccl = exchange_hd_app sigma (mkVar (Id.of_string "__QI_DUMMY__")) concl in
   let concl_with_args = it_mkProd_or_LetIn ccl args_indargs in
   let nparams = Int.Set.cardinal (free_rels sigma concl_with_args) in
-  let preds,params = List.chop (List.length params_preds - nparams) params_preds in
+  let predicates,params = List.chop (List.length params_preds - nparams) params_preds in
+  let farg_in_concl = isApp sigma ccl && isApp sigma (last_arg sigma ccl) in
 
   (* A first approximation, further analysis will tweak it *)
-  let res = ref { empty_scheme with
+  let make_res ~indarg_in_concl ~args ~indref ~indarg = {
     (* This fields are ok: *)
-    elimc = elimc; elimt = elimt; concl = conclusion;
-    predicates = preds; npredicates = List.length preds;
-    branches = branches; nbranches = List.length branches;
-    farg_in_concl = isApp sigma ccl && isApp sigma (last_arg sigma ccl);
-    params = params; nparams = nparams;
-    (* all other fields are unsure at this point. Including these:*)
-    args = args_indargs; nargs = List.length args_indargs; } in
-  try
-    (* Order of tests below is important. Each of them exits if successful. *)
-    (* 1- First see if (f x...) is in the conclusion. *)
-    if !res.farg_in_concl
-    then begin
-      res := { !res with
-        indarg = None;
-        indarg_in_concl = false; farg_in_concl = true };
-      raise Exit
-    end;
-    (* 2- If no args_indargs (=!res.nargs at this point) then no indarg *)
-    if Int.equal !res.nargs 0 then raise Exit;
-    (* 3- Look at last arg: is it the indarg? *)
-    ignore (
-      match List.hd args_indargs with
-        | LocalDef (hiname,_,hi) -> error_ind_scheme ""
-        | LocalAssum (hiname,hi) ->
-            let hi_ind, hi_args = decompose_app sigma hi in
-            let hi_is_ind = (* hi est d'un type globalisable *)
-              match EConstr.kind sigma hi_ind with
-                | Ind (mind,_)  -> true
-                | Var _ -> true
-                | Const _ -> true
-                | Construct _ -> true
-                | _ -> false in
-            let hi_args_enough = (* hi a le bon nbre d'arguments *)
-              Int.equal (List.length hi_args) (List.length params + !res.nargs -1) in
-            (* FIXME: Ces deux tests ne sont pas suffisants. *)
-            if not (hi_is_ind && hi_args_enough) then raise Exit (* No indarg *)
-            else (* Last arg is the indarg *)
-              res := {!res with
-                indarg = Some (List.hd !res.args);
-                indarg_in_concl = occur_rel sigma 1 ccl;
-                args = List.tl !res.args; nargs = !res.nargs - 1;
-              };
-            raise Exit);
-    raise Exit(* exit anyway *)
-  with Exit -> (* Ending by computing indref: *)
-    match !res.indarg with
-      | None -> !res (* No indref *)
-      | Some (LocalDef _) -> error_ind_scheme ""
-      | Some (LocalAssum (_,ind)) ->
-          let indhd,indargs = decompose_app sigma ind in
-          try {!res with indref = Some (fst (destRef sigma indhd)) }
-          with DestKO ->
-            error "Cannot find the inductive type of the inductive scheme."
+    elimc; elimt; concl; params; nparams;
+    predicates; npredicates = List.length predicates;
+    branches; nbranches = List.length branches;
+    farg_in_concl; indarg_in_concl;
+    args; nargs = List.length args;
+    indref; indarg
+  } in
+  (* First see if (f x...) is in the conclusion. *)
+  if farg_in_concl then
+    make_res
+      ~indarg_in_concl:false ~args:args_indargs
+      ~indarg:None ~indref:None
+  else
+    match args_indargs with
+    | [] ->
+        (* If no args_indargs then no indarg *)
+       make_res
+         ~indarg_in_concl:false ~args:args_indargs
+         ~indarg:None ~indref:None
+    | LocalDef (hiname,_,hi)::_ ->
+        error_ind_scheme ""
+    | LocalAssum (hiname,hi)::args ->
+        (* Look at last arg: is it the indarg? *)
+       let hi_ind, hi_args = decompose_app sigma hi in
+       let hi_is_ref = isRef sigma hi_ind in
+       let hi_nargs = List.length hi_args in
+       if hi_is_ref && Int.equal hi_nargs (nparams + List.length args) then
+         make_res
+           ~indarg_in_concl:(occur_rel sigma 1 ccl) ~args:args
+           ~indarg:(Some hi) ~indref:(Some (fst (destRef sigma hi_ind)))
+       else
+         make_res
+           ~indarg_in_concl:false ~args:args_indargs
+           ~indarg:None ~indref:None
 
 let compute_scheme_signature evd scheme names_info ind_type_guess =
   let open Context.Rel.Declaration in
@@ -4171,12 +4134,10 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   (* Vérifier que les arguments de Qi sont bien les xi. *)
   let cond, check_concl =
     match scheme.indarg with
-      | Some (LocalDef _) ->
-          error "Strange letin, cannot recognize an induction scheme."
       | None -> (* Non standard scheme *)
           let cond hd = EConstr.eq_constr evd hd ind_type_guess && not scheme.farg_in_concl
           in (cond, fun _ _ -> ())
-      | Some (LocalAssum (_,ind)) -> (* Standard scheme from an inductive type *)
+      | Some ind -> (* Standard scheme from an inductive type *)
           let indhd,indargs = decompose_app evd ind in
           let cond hd = EConstr.eq_constr evd hd indhd in
           let check_concl is_pred p =

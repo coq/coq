@@ -274,7 +274,7 @@ type elim_scheme = {
   nbranches: int;             (** Number of branches *)
   args: rel_context;        (** (xni, Ti_ni) ... (x1, Ti_1) *)
   nargs: int;                 (** number of arguments *)
-  indarg: rel_declaration option;  (** Some (H,I prm1..prmp x1...xni)
+  indarg: types option;     (** Some (H,I prm1..prmp x1...xni)
                                                  if HI is in premisses, None otherwise *)
   concl: types;               (** Qi x1...xni HI (f...), HI and (f...)
                                   are optional and mutually exclusive *)
