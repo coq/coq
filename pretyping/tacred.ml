@@ -1253,17 +1253,14 @@ let check_privacy env ind =
 (* put t as t'=(x1:A1)..(xn:An)B with B an inductive definition of name name
    return name, B and t' *)
 
-let reduce_to_ind_gen allow_product env sigma t =
+let reduce_to_quantified_ind env sigma c =
   let rec elimrec env t l =
     let t = hnf_constr env sigma t in
     match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
       | Ind (ind, _ as indu) -> check_privacy env ind; (indu, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
           let open Context.Rel.Declaration in
-          if allow_product then
-            elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
-          else
-            user_err Pp.(str"Not an inductive definition.")
+          elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
       | _ ->
           (* Last chance: we allow to bypass the Opaque flag (as it
              was partially the case between V5.10 and V8.1 *)
@@ -1272,10 +1269,21 @@ let reduce_to_ind_gen allow_product env sigma t =
             | Ind (ind, _ as indu) -> check_privacy env ind; (indu, it_mkProd_or_LetIn t' l)
             | _ -> user_err Pp.(str"Not an inductive product.")
   in
-  elimrec env t []
+  elimrec env c []
 
-let reduce_to_quantified_ind env sigma c = reduce_to_ind_gen true env sigma c
-let reduce_to_atomic_ind env sigma c = reduce_to_ind_gen false env sigma c
+let reduce_to_atomic_ind env sigma t =
+  let t = hnf_constr env sigma t in
+  match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
+    | Ind (ind, _ as indu) -> check_privacy env ind; (indu, t)
+    | Prod (n,ty,t') ->
+      user_err  (Pp.str"Not an inductive definition.")
+    | _ ->
+        (* Last chance: we allow to bypass the Opaque flag (as it
+            was partially the case between V5.10 and V8.1 *)
+        let t' = whd_all env sigma t in
+        match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
+          | Ind (ind, _ as indu) -> check_privacy env ind; (indu, t')
+          | _ -> user_err  (Pp.str"Not an inductive product.")
 
 let find_hnf_rectype env sigma t =
   let ind,t = reduce_to_atomic_ind env sigma t in
@@ -1325,7 +1333,9 @@ let error_cannot_recognize ref =
 
 let reduce_to_ref_gen allow_product env sigma ref t =
   if Globnames.isIndRef ref then
-    let ((mind,u),t) = reduce_to_ind_gen allow_product env sigma t in
+    let ((mind,u),t) =
+      if allow_product then reduce_to_quantified_ind env sigma t
+      else reduce_to_atomic_ind env sigma t in
     begin match ref with
     | GlobRef.IndRef mind' when Ind.CanOrd.equal mind mind' -> t
     | _ -> error_cannot_recognize ref
