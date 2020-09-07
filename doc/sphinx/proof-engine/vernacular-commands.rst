@@ -1028,7 +1028,7 @@ described first.
 
    .. prodn::
       strategy_level ::= opaque
-      | @int
+      | @integer
       | expand
       | transparent
       strategy_level_or_var ::= @strategy_level
@@ -1052,7 +1052,7 @@ described first.
 
     + ``opaque`` : level of opaque constants. They cannot be expanded by
       tactics (behaves like +∞, see next item).
-    + :n:`@int` : levels indexed by an integer. Level 0 corresponds to the
+    + :n:`@integer` : levels indexed by an integer. Level 0 corresponds to the
       default behavior, which corresponds to transparent constants. This
       level can also be referred to as ``transparent``. Negative levels
       correspond to constants to be expanded before normal transparent

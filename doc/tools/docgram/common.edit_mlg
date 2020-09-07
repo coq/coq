@@ -736,11 +736,6 @@ export_token: [
 ]
 
 (* lexer stuff *)
-integer: [ | DELETENT ]
-RENAME: [
-| integer int (* todo: review uses in .mlg files, some should be "natural" *)
-]
-
 LEFTQMARK: [
 | "?"
 ]
@@ -766,8 +761,9 @@ natural: [
 | WITH [ decnat | hexnat ]
 ]
 
-int: [
-| OPT "-" natural
+integer: [
+| REPLACE bigint
+| WITH OPT "-" natural
 ]
 
 number: [
@@ -1091,13 +1087,13 @@ simple_tactic: [
 | WITH "subst" OPT ( LIST1 var )
 | DELETE "subst"
 | DELETE "congruence"
-| DELETE "congruence" int
+| DELETE "congruence" integer
 | DELETE "congruence" "with" LIST1 constr
-| REPLACE "congruence" int "with" LIST1 constr
-| WITH "congruence" OPT int OPT ( "with" LIST1 constr )
+| REPLACE "congruence" integer "with" LIST1 constr
+| WITH "congruence" OPT integer OPT ( "with" LIST1 constr )
 | DELETE "show" "ltac" "profile"
-| REPLACE "show" "ltac" "profile" "cutoff" int
-| WITH "show" "ltac" "profile" OPT [ "cutoff" int | string ]
+| REPLACE "show" "ltac" "profile" "cutoff" integer
+| WITH "show" "ltac" "profile" OPT [ "cutoff" integer | string ]
 | DELETE "show" "ltac" "profile" string
 (* perversely, the mlg uses "tactic3" instead of "tactic_expr3" *)
 | DELETE "transparent_abstract" tactic3
@@ -1205,11 +1201,11 @@ command: [
 | REPLACE "Next" "Obligation" "of" ident withtac
 | WITH "Next" "Obligation" OPT ( "of" ident ) withtac
 | DELETE "Next" "Obligation" withtac
-| REPLACE "Obligation" int "of" ident ":" lglob withtac
-| WITH "Obligation" int OPT ( "of" ident ) OPT ( ":" lglob withtac )
-| DELETE "Obligation" int "of" ident withtac
-| DELETE "Obligation" int ":" lglob withtac
-| DELETE "Obligation" int withtac
+| REPLACE "Obligation" integer "of" ident ":" lglob withtac
+| WITH "Obligation" integer OPT ( "of" ident ) OPT ( ":" lglob withtac )
+| DELETE "Obligation" integer "of" ident withtac
+| DELETE "Obligation" integer ":" lglob withtac
+| DELETE "Obligation" integer withtac
 | REPLACE "Obligations" "of" ident
 | WITH "Obligations" OPT ( "of" ident )
 | DELETE "Obligations"
@@ -1229,17 +1225,17 @@ command: [
 | DELETE "Show" ident
 | "Show" OPT [ ident | natural ]
 | DELETE "Show" "Ltac" "Profile"
-| REPLACE "Show" "Ltac" "Profile" "CutOff" int
-| WITH "Show" "Ltac" "Profile" OPT [ "CutOff" int | string ]
+| REPLACE "Show" "Ltac" "Profile" "CutOff" integer
+| WITH "Show" "Ltac" "Profile" OPT [ "CutOff" integer | string ]
 | DELETE "Show" "Ltac" "Profile" string
 | DELETE "Show" "Proof"  (* combined with Show Proof Diffs in vernac_toplevel *)
 | REPLACE "Solve" "All" "Obligations" "with" tactic
 | WITH "Solve" "All" "Obligations" OPT ( "with" tactic )
 | DELETE "Solve" "All" "Obligations"
-| REPLACE "Solve" "Obligation" int "of" ident "with" tactic
-| WITH "Solve" "Obligation" int OPT ( "of" ident ) "with" tactic
+| REPLACE "Solve" "Obligation" integer "of" ident "with" tactic
+| WITH "Solve" "Obligation" integer OPT ( "of" ident ) "with" tactic
 | DELETE "Solve" "Obligations"
-| DELETE "Solve" "Obligation" int "with" tactic
+| DELETE "Solve" "Obligation" integer "with" tactic
 | REPLACE "Solve" "Obligations" "of" ident "with" tactic
 | WITH "Solve" "Obligations" OPT ( OPT ( "of" ident ) "with" tactic )
 | DELETE "Solve" "Obligations" "with" tactic
@@ -2154,7 +2150,7 @@ tac2expr5: [
 
 RENAME: [
 | Prim.string string
-| Prim.integer int
+| Prim.integer integer
 | Prim.qualid qualid
 | Prim.natural natural
 ]

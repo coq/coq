@@ -598,7 +598,7 @@ command: [
 | "Hint" "Cut" "[" hints_path "]" opthints
 | "Typeclasses" "Transparent" LIST0 reference
 | "Typeclasses" "Opaque" LIST0 reference
-| "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT int
+| "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT integer
 | "Proof" "with" Pltac.tactic OPT [ "using" G_vernac.section_subset_expr ]
 | "Proof" "using" G_vernac.section_subset_expr OPT [ "with" Pltac.tactic ]
 | "Tactic" "Notation" OPT ltac_tactic_level LIST1 ltac_production_item ":=" tactic
@@ -652,7 +652,7 @@ command: [
 | "Print" "Rewrite" "HintDb" preident
 | "Reset" "Ltac" "Profile"
 | "Show" "Ltac" "Profile"
-| "Show" "Ltac" "Profile" "CutOff" int
+| "Show" "Ltac" "Profile" "CutOff" integer
 | "Show" "Ltac" "Profile" string
 | "Show" "Lia" "Profile"      (* micromega plugin *)
 | "Add" "Zify" "InjTyp" constr      (* micromega plugin *)
@@ -1715,7 +1715,7 @@ simple_tactic: [
 | "stop" "ltac" "profiling"
 | "reset" "ltac" "profile"
 | "show" "ltac" "profile"
-| "show" "ltac" "profile" "cutoff" int
+| "show" "ltac" "profile" "cutoff" integer
 | "show" "ltac" "profile" string
 | "restart_timer" OPT string
 | "finish_timing" OPT string

@@ -1887,7 +1887,7 @@ Tactic notations allow customizing the syntax of tactics.
         - :tacn:`refine`
 
       * - ``integer``
-        - :token:`int`
+        - :token:`integer`
         - an integer
         -
 

@@ -283,7 +283,7 @@ There is dedicated syntax for list and array literals.
    | [ {*; @ltac2_expr5 } ]
    | %{ {? {+ @tac2rec_fieldexpr } {? ; } } %}
    | @ltac2_tactic_atom
-   ltac2_tactic_atom ::= @int
+   ltac2_tactic_atom ::= @integer
    | @string
    | @qualid
    | @ @ident
@@ -1159,7 +1159,7 @@ Match on values
 Notations
 ---------
 
-.. cmd:: Ltac2 Notation {+ @ltac2_scope } {? : @int } := @ltac2_expr
+.. cmd:: Ltac2 Notation {+ @ltac2_scope } {? : @integer } := @ltac2_expr
    :name: Ltac2 Notation
 
    .. todo seems like name maybe should use lident rather than ident, considering:
@@ -1177,7 +1177,7 @@ Notations
 
    :cmd:`Ltac2 Notation` provides a way to extend the syntax of Ltac2 tactics.  The left-hand
    side (before the `:=`) defines the syntax to recognize and gives formal parameter
-   names for the syntactic values.  :n:`@int` is the level of the notation.
+   names for the syntactic values.  :n:`@integer` is the level of the notation.
    When the notation is used, the values are substituted
    into the right-hand side.  The right-hand side is typechecked when the notation is used,
    not when it is defined.  In the following example, `x` is the formal parameter name and
@@ -1333,7 +1333,7 @@ Syntactic classes are described with a form of S-expression:
 
    .. prodn::
       ltac2_scope ::= @string
-      | @int
+      | @integer
       | @name
       | @name ( {+, @ltac2_scope } )
 
@@ -1384,14 +1384,14 @@ table further down lists the classes that that are handled plainly.
   :n:`terminal(@string)`
     Accepts the specified string whether it's a keyword or not, returning a value of `()`.
 
-  :n:`tactic {? (@int) }`
-    Parses an :token:`ltac2_expr`.  If :token:`int` is specified, the construct
-    parses a :n:`ltac2_expr@int`, for example `tactic(5)` parses :token:`ltac2_expr5`.
+  :n:`tactic {? (@integer) }`
+    Parses an :token:`ltac2_expr`.  If :token:`integer` is specified, the construct
+    parses a :n:`ltac2_expr@integer`, for example `tactic(5)` parses :token:`ltac2_expr5`.
     `tactic(6)` parses :token:`ltac2_expr`.
-    :token:`int` must be in the range `0 .. 6`.
+    :token:`integer` must be in the range `0 .. 6`.
 
-    You can also use `tactic` to accept an :token:`int` or a :token:`string`, but there's
-    no syntactic class that accepts *only* an :token:`int` or a :token:`string`.
+    You can also use `tactic` to accept an :token:`integer` or a :token:`string`, but there's
+    no syntactic class that accepts *only* an :token:`integer` or a :token:`string`.
 
     .. todo this doesn't work as expected: "::" is in ltac2_expr1
        Ltac2 Notation "ex4" x(tactic(0)) := x.

@@ -74,7 +74,7 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    ltac_expr0 ::= ( @ltac_expr )
    | [> @for_each_goal ]
    | @tactic_atom
-   tactic_atom ::= @int
+   tactic_atom ::= @integer
    | @qualid
    | ()
 
@@ -188,7 +188,7 @@ examining the part at the end under "Entry tactic:tactic_arg".
         -
 
       * - ``integer``
-        - :token:`int`
+        - :token:`integer`
         - an integer
         -
 
@@ -876,7 +876,7 @@ Print/identity tactic: idtac
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-.. tacn:: idtac {* {| @ident | @string | @int } }
+.. tacn:: idtac {* {| @ident | @string | @integer } }
    :name: idtac
 
    Leaves the proof unchanged and prints the given tokens. Strings and integers are printed
@@ -888,7 +888,7 @@ Print/identity tactic: idtac
 Failing
 ~~~~~~~
 
-.. tacn:: {| fail | gfail } {? @int_or_var } {* {| @ident | @string | @int } }
+.. tacn:: {| fail | gfail } {? @int_or_var } {* {| @ident | @string | @integer } }
    :name: fail; gfail
 
    :tacn:`fail` is the always-failing tactic: it does not solve any
@@ -919,7 +919,7 @@ Failing
       the call to :tacn:`fail` :n:`@natural` is not enclosed in a :n:`+` construct,
       respecting the algebraic identity.
 
-   :n:`{* {| @ident | @string | @int } }`
+   :n:`{* {| @ident | @string | @integer } }`
       The given tokens are used for printing the failure message.  If :token:`ident`
       is an |Ltac| variable, its contents are printed; if not, it is an error.
 
@@ -2302,11 +2302,11 @@ performance issue.
 
    This flag enables and disables the profiler.
 
-.. cmd:: Show Ltac Profile {? {| CutOff @int | @string } }
+.. cmd:: Show Ltac Profile {? {| CutOff @integer | @string } }
 
    Prints the profile.
 
-   :n:`CutOff @int`
+   :n:`CutOff @integer`
       By default, tactics that account for less than 2% of the total time are not displayed.
       `CutOff` lets you specify a different percentage.
 
@@ -2373,7 +2373,7 @@ performance issue.
    Equivalent to the :cmd:`Reset Ltac Profile` command, which allows
    resetting the profile from tactic scripts for benchmarking purposes.
 
-.. tacn:: show ltac profile {? {| cutoff @int | @string } }
+.. tacn:: show ltac profile {? {| cutoff @integer | @string } }
    :name: show ltac profile
 
    Equivalent to the :cmd:`Show Ltac Profile` command,

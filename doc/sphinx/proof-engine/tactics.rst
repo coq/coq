@@ -1734,7 +1734,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       followed by destruct applied to the last introduced hypothesis.
 
      .. note::
-        For destruction of a numeral, use syntax :n:`destruct (@natural)` (not
+        For destruction of a number, use syntax :n:`destruct (@natural)` (not
         very interesting anyway).
 
    .. tacv:: destruct @pattern
@@ -1866,7 +1866,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
      introduced hypothesis.
 
      .. note::
-        For simple induction on a numeral, use syntax induction (num)
+        For simple induction on a number, use syntax induction (number)
         (not very interesting anyway).
 
    + In case term is a hypothesis :n:`@ident` of the context, and :n:`@ident`
@@ -2992,7 +2992,7 @@ Performing computations
    | @one_term {? at @occs_nums }
    occs_nums ::= {+ {| @natural | @ident } }
    | - {| @natural | @ident } {* @int_or_var }
-   int_or_var ::= @int
+   int_or_var ::= @integer
    | @ident
    unfold_occ ::= @reference {? at @occs_nums }
    pattern_occ ::= @one_term {? at @occs_nums }
@@ -4737,12 +4737,12 @@ Non-logical tactics
 ------------------------
 
 
-.. tacn:: cycle @int
+.. tacn:: cycle @integer
    :name: cycle
 
-   Reorders the selected goals so that the first :n:`@int` goals appear after the
+   Reorders the selected goals so that the first :n:`@integer` goals appear after the
    other selected goals.
-   If :n:`@int` is negative, it puts the last :n:`@int` goals at the
+   If :n:`@integer` is negative, it puts the last :n:`@integer` goals at the
    beginning of the list.
    The tactic is only useful with a goal selector, most commonly `all:`.
    Note that other selectors reorder goals; `1,3: cycle 1` is not equivalent
@@ -4761,11 +4761,11 @@ Non-logical tactics
       all: cycle 2.
       all: cycle -3.
 
-.. tacn:: swap @int @int
+.. tacn:: swap @integer @integer
    :name: swap
 
    Exchanges the position of the specified goals.
-   Negative values for :n:`@int` indicate counting goals
+   Negative values for :n:`@integer` indicate counting goals
    backward from the end of the list of selected goals. Goals are indexed from 1.
    The tactic is only useful with a goal selector, most commonly `all:`.
    Note that other selectors reorder goals; `1,3: swap 1 3` is not equivalent

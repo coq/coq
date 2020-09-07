@@ -111,11 +111,11 @@ Identifiers
   symbols and non-breaking space. :production:`unicode_id_part`
   non-exhaustively includes symbols for prime letters and subscripts.
 
-Numerals
-  Numerals are sequences of digits with an optional fractional part
+Numbers
+  Numbers are sequences of digits with an optional fractional part
   and exponent, optionally preceded by a minus sign. Hexadecimal numerals
   start with ``0x`` or ``0X``. :n:`@int` is an integer;
-  a numeral without fractional nor exponent parts. :n:`@natural` is a non-negative
+  a number without fractional nor exponent parts. :n:`@natural` is a non-negative
   integer.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
@@ -124,7 +124,7 @@ Numerals
   .. prodn::
      number ::= {? - } @decnat {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnat }
      | {? - } @hexnat {? . {+ {| @hexdigit | _ } } } {? {| p | P } {? {| + | - } } @decnat }
-     int ::= {? - } @natural
+     integer ::= {? - } @natural
      natural ::= {| @decnat | @hexnat }
      decnat ::= @digit {* {| @digit | _ } }
      digit ::= 0 .. 9
@@ -434,7 +434,7 @@ gray boxes after the labels "Flag", "Option" and "Table".  In the pdf,
 they appear after a boldface label.  They are listed in the
 :ref:`options_index`.
 
-.. cmd:: Set @setting_name {? {| @int | @string } }
+.. cmd:: Set @setting_name {? {| @integer | @string } }
    :name: Set
 
    If :n:`@setting_name` is a flag, no value may be provided; the flag

@@ -5573,7 +5573,7 @@ Natural number
 
 .. prodn:: nat_or_ident ::= {| @natural | @ident }
 
-where :token:`ident` is an Ltac variable denoting a standard |Coq| numeral
+where :token:`ident` is an Ltac variable denoting a standard |Coq| number
 (should not be the name of a tactic which can be followed by a
 bracket ``[``, like ``do``, ``have``,…)
 
