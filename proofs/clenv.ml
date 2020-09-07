@@ -713,12 +713,6 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
   | NoBindings ->
       mk_clenv_from_env env sigma n (c,t)
 
-let make_clenv_binding_env_apply env sigma n =
-  make_clenv_binding_gen true n env sigma
-
-let make_clenv_binding_env env sigma =
-  make_clenv_binding_gen false None env sigma
-
 let make_clenv_binding_apply env sigma n = make_clenv_binding_gen true n env sigma
 let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 

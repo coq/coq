@@ -75,16 +75,9 @@ val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 (** the arity of the lemma is fixed
    the optional int tells how many prods of the lemma have to be used
    use all of them if None *)
-val make_clenv_binding_env_apply :
-  env -> evar_map -> int option -> EConstr.constr * EConstr.constr -> constr bindings ->
-   clausenv
-
 val make_clenv_binding_apply :
   env -> evar_map -> int option -> EConstr.constr * EConstr.constr -> constr bindings ->
    clausenv
-
-val make_clenv_binding_env :
-  env -> evar_map -> EConstr.constr * EConstr.constr -> constr bindings -> clausenv
 
 val make_clenv_binding :
   env -> evar_map -> EConstr.constr * EConstr.constr -> constr bindings -> clausenv
