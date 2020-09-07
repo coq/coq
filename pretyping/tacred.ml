@@ -1272,18 +1272,13 @@ let reduce_to_quantified_ind env sigma c =
   elimrec env c []
 
 let reduce_to_atomic_ind env sigma t =
-  let t = hnf_constr env sigma t in
+  (* We allow to bypass the Opaque flag (as it was partially the case between
+     V5.10 and V8.1 *)
+  let t = whd_all env sigma t in
   match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
     | Ind (ind, _ as indu) -> check_privacy env ind; (indu, t)
-    | Prod (n,ty,t') ->
-      user_err  (Pp.str"Not an inductive definition.")
     | _ ->
-        (* Last chance: we allow to bypass the Opaque flag (as it
-            was partially the case between V5.10 and V8.1 *)
-        let t' = whd_all env sigma t in
-        match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
-          | Ind (ind, _ as indu) -> check_privacy env ind; (indu, t')
-          | _ -> user_err  (Pp.str"Not an inductive product.")
+      user_err  (Pp.str"Not an inductive definition.")
 
 let find_hnf_rectype env sigma t =
   let ind,t = reduce_to_atomic_ind env sigma t in
