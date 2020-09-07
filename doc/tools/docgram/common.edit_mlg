@@ -202,10 +202,6 @@ for_each_goal: [
 | OPT ( goal_tactics "|" ) OPT ltac_expr5 ".." OPT ( "|" goal_tactics )
 ]
 
-tactic_then_last: [
-| OPTINREF
-]
-
 ltac2_tactic_then_last: [
 | REPLACE "|" LIST0 ( OPT ltac2_expr6 ) SEP "|"      (* Ltac2 plugin *)
 | WITH LIST0 (  "|" OPT ltac2_expr6 )  TAG Ltac2
@@ -220,10 +216,6 @@ ltac2_for_each_goal: [ | DELETENT ]
 ltac2_for_each_goal: [
 | ltac2_goal_tactics  TAG Ltac2
 | OPT ( ltac2_goal_tactics "|" ) OPT ltac2_expr6 ".." OPT ( "|" ltac2_goal_tactics )  TAG Ltac2
-]
-
-ltac2_tactic_then_last: [
-| OPTINREF
 ]
 
 reference: [ | DELETENT ]
@@ -530,14 +522,6 @@ eqn: [
 | WITH LIST1 [ LIST1 pattern100 SEP "," ] SEP "|" "=>" lconstr
 ]
 
-universe_increment: [
-| OPTINREF
-]
-
-evar_instance: [
-| OPTINREF
-]
-
 (* No constructor syntax, OPT [ "|" binders ] is not supported for Record *)
 record_definition: [
 | opt_coercion ident_decl binders OPT [ ":" sort ] OPT ( ":=" OPT [ identref ] "{" record_fields "}" )
@@ -632,14 +616,6 @@ def_body: [
 | WITH LIST0 binder ":" type
 ]
 
-reduce: [
-| OPTINREF
-]
-
-occs: [
-| OPTINREF
-]
-
 delta_flag: [
 | REPLACE "-" "[" LIST1 smart_global "]"
 | WITH OPT "-" "[" LIST1 smart_global "]"
@@ -653,7 +629,6 @@ ltac2_delta_flag: [
 
 ltac2_branches: [
 | EDIT ADD_OPT "|" LIST1 branch SEP "|"      (* Ltac2 plugin *)
-| OPTINREF
 ]
 
 strategy_flag: [
@@ -662,7 +637,6 @@ strategy_flag: [
 (*| REPLACE LIST1 red_flags
 | WITH LIST1 red_flag*)
 | (* empty *)
-| OPTINREF
 ]
 
 filtered_import: [
@@ -671,20 +645,14 @@ filtered_import: [
 | DELETE global
 ]
 
-functor_app_annot: [
-| OPTINREF
-]
-
 is_module_expr: [
 | REPLACE ":=" module_expr_inl LIST0 ext_module_expr
 | WITH ":=" LIST1 module_expr_inl SEP "<+"
-| OPTINREF
 ]
 
 is_module_type: [
 | REPLACE ":=" module_type_inl LIST0 ext_module_type
 | WITH ":=" LIST1 module_type_inl SEP "<+"
-| OPTINREF
 ]
 
 gallina_ext: [
@@ -727,10 +695,6 @@ gallina_ext: [
 
 | REPLACE "From" global "Require" export_token LIST1 global
 | WITH "From" dirpath "Require" export_token LIST1 global
-]
-
-export_token: [
-| OPTINREF
 ]
 
 (* lexer stuff *)
@@ -1319,10 +1283,6 @@ command: [
 | WITH "Goal" type
 ]
 
-option_setting: [
-| OPTINREF
-]
-
 syntax: [
 | REPLACE "Open" "Scope" IDENT
 | WITH "Open" "Scope" scope
@@ -1435,7 +1395,6 @@ cofix_definition: [
 type_cstr: [
 | REPLACE ":" lconstr
 | WITH ":" type
-| OPTINREF
 ]
 
 inductive_definition: [
@@ -1458,10 +1417,6 @@ record_binder: [
 | REPLACE name field_body
 | WITH name OPT field_body
 | DELETE name
-]
-
-at_level_opt: [
-| OPTINREF
 ]
 
 query_command: [
@@ -1498,10 +1453,6 @@ vernac_toplevel: [
 | DELETE vernac_control
 ]
 
-in_or_out_modules: [
-| OPTINREF
-]
-
 vernac_control: [
 (* replacing vernac_control with command is cheating a little;
    they can't refer to the vernac_toplevel commands.
@@ -1517,90 +1468,8 @@ vernac_control: [
 | DELETE decorated_vernac
 ]
 
-orient: [
-| OPTINREF
-]
-
-in_hyp_as: [
-| OPTINREF
-]
-
-as_name: [
-| OPTINREF
-]
-
-hloc: [
-| OPTINREF
-]
-
-as_or_and_ipat: [
-| OPTINREF
-]
-
-hintbases: [
-| OPTINREF
-]
-
-as_ipat: [
-| OPTINREF
-]
-
-auto_using: [
-| OPTINREF
-]
-
-with_bindings: [
-| OPTINREF
-]
-
-eqn_ipat: [
-| OPTINREF
-]
-
-withtac: [
-| OPTINREF
-]
-
 of_module_type: [
 | (* empty *)
-| OPTINREF
-]
-
-
-clause_dft_all: [
-| OPTINREF
-]
-
-opt_clause: [
-| OPTINREF
-]
-
-with_names: [
-| OPTINREF
-]
-
-in_hyp_list: [
-| OPTINREF
-]
-
-struct_annot: [
-| OPTINREF
-]
-
-firstorder_using: [
-| OPTINREF
-]
-
-fun_ind_using: [
-| OPTINREF
-]
-
-by_arg_tac: [
-| OPTINREF
-]
-
-by_tactic: [
-| OPTINREF
 ]
 
 rewriter: [
@@ -1647,41 +1516,16 @@ record_declaration: [
 
 fields_def: [ | DELETENT ]
 
-hint_info: [
-| OPTINREF
-]
-
-debug: [
-| OPTINREF
-]
-
-eauto_search_strategy: [
-| OPTINREF
-]
-
-
 constr_body: [
 | DELETE ":=" lconstr
 | REPLACE ":" lconstr ":=" lconstr
 | WITH OPT ( ":" type ) ":=" lconstr
 ]
 
-opt_hintbases: [
-| OPTINREF
-]
-
-opthints: [
-| OPTINREF
-]
-
 scheme: [
 | DELETE scheme_kind
 | REPLACE identref ":=" scheme_kind
 | WITH OPT ( identref ":=" ) scheme_kind
-]
-
-instance_name: [
-| OPTINREF
 ]
 
 simple_reserv: [
@@ -1702,22 +1546,9 @@ ltac2_in_clause: [
 | DELETE LIST0 ltac2_hypident_occ SEP ","      (* Ltac2 plugin *)
 ]
 
-concl_occ: [
-| OPTINREF
-]
-
-opt_coercion: [
-| OPTINREF
-]
-
-opt_constructors_or_fields: [
-| OPTINREF
-]
-
 decl_notations: [
 | REPLACE "where" LIST1 decl_notation SEP decl_sep
 | WITH "where" decl_notation LIST0 (decl_sep decl_notation )
-| OPTINREF
 ]
 
 module_expr: [
@@ -1776,15 +1607,6 @@ by_notation: [
 decl_notation: [
 | REPLACE ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 | WITH ne_lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
-]
-
-syntax_modifiers: [
-| OPTINREF
-]
-
-
-only_parsing: [
-| OPTINREF
 ]
 
 ltac_production_item: [
@@ -2024,10 +1846,6 @@ DELETE: [
 | test_ltac1_env
 ]
 
-mut_flag: [
-| OPTINREF
-]
-
 rec_flag: [
 | OPTINREF
 ]
@@ -2081,7 +1899,6 @@ tac2rec_fieldexprs: [
 | DELETE tac2rec_fieldexpr ";"
 | DELETE tac2rec_fieldexpr
 | LIST1 tac2rec_fieldexpr OPT ";"
-| OPTINREF
 ]
 
 tac2rec_fields: [
@@ -2089,7 +1906,6 @@ tac2rec_fields: [
 | DELETE tac2rec_field ";"
 | DELETE tac2rec_field
 | LIST1 tac2rec_field SEP ";" OPT ";" TAG Ltac2
-| OPTINREF
 ]
 
 (* todo: weird productions, ints only after an initial "-"??:
@@ -2101,46 +1917,6 @@ ltac2_occs_nums: [
 | DELETE LIST1 nat_or_anti      (* Ltac2 plugin *)
 | REPLACE "-" nat_or_anti LIST0 nat_or_anti      (* Ltac2 plugin *)
 | WITH OPT "-" LIST1 nat_or_anti TAG Ltac2
-]
-
-syn_level: [
-| OPTINREF
-]
-
-ltac2_delta_flag: [
-| OPTINREF
-]
-
-ltac2_occs: [
-| OPTINREF
-]
-
-ltac2_concl_occ: [
-| OPTINREF
-]
-
-ltac2_with_bindings: [
-| OPTINREF
-]
-
-ltac2_as_or_and_ipat: [
-| OPTINREF
-]
-
-ltac2_eqn_ipat: [
-| OPTINREF
-]
-
-ltac2_as_name: [
-| OPTINREF
-]
-
-ltac2_as_ipat: [
-| OPTINREF
-]
-
-ltac2_by_tactic: [
-| OPTINREF
 ]
 
 ltac2_entry: [
@@ -2177,14 +1953,9 @@ SPLICE: [
 | tac2def_ext
 | tac2def_syn
 | tac2def_mut
-| mut_flag
 | rec_flag
 | locident
-| syn_level
-| tac2rec_fieldexprs
-| tac2type_body
 | tac2alg_constructors
-| tac2rec_fields
 | ltac2_binder
 | branch
 | anti
@@ -2233,8 +2004,8 @@ q_clause: [
 ]
 
 ltac2_induction_clause: [
-| REPLACE ltac2_destruction_arg OPT ltac2_as_or_and_ipat OPT ltac2_eqn_ipat OPT clause      (* Ltac2 plugin *)
-| WITH ltac2_destruction_arg OPT ltac2_as_or_and_ipat OPT ltac2_eqn_ipat OPT ltac2_clause  TAG Ltac2
+| REPLACE ltac2_destruction_arg ltac2_as_or_and_ipat ltac2_eqn_ipat OPT clause      (* Ltac2 plugin *)
+| WITH ltac2_destruction_arg ltac2_as_or_and_ipat ltac2_eqn_ipat OPT ltac2_clause  TAG Ltac2
 ]
 
 starredidentref: [
@@ -2464,6 +2235,11 @@ SPLICE: [
 | number_string_mapping
 | number_options
 | string_option
+| tac2type_body
+| tac2rec_fields
+| mut_flag
+| tac2rec_fieldexprs
+| syn_level
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2498,11 +2274,6 @@ RENAME: [
 simple_tactic: [
 (* due to renaming of tactic_value; Use LIST1 for function application *)
 | qualid LIST1 tactic_arg
-]
-
-(* todo: doesn't work if up above... maybe because 'clause' doesn't exist? *)
-clause_dft_concl: [
-| OPTINREF
 ]
 
 SPLICE: [
