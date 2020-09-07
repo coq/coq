@@ -70,7 +70,7 @@ let noccur_with_meta n m term =
            | Constr.Cast (c,_,_) when isMeta c -> ()
            | Constr.Meta _ -> ()
            | _ -> Constr.iter_with_binders succ occur_rec n c)
-    | Constr.Evar (_, _) -> ()
+    | Constr.Evar _ -> ()
     | _ -> Constr.iter_with_binders succ occur_rec n c
   in
   try (occur_rec n term; true) with LocalOccur -> false

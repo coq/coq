@@ -47,8 +47,8 @@ let inductive_type_knowing_parameters env sigma (ind,u) jl =
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
     | Sort s -> sigma, {utj_val = j.uj_val; utj_type = ESorts.kind sigma s }
-    | Evar ev ->
-        let (sigma,s) = Evardefine.define_evar_as_sort env sigma ev in
+    | Evar (evk, a , _) ->
+        let (sigma,s) = Evardefine.define_evar_as_sort env sigma (evk, a) in
         sigma, { utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_a_type env sigma j
 
@@ -70,8 +70,8 @@ let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
        let sigma, (c1,c2) =
          match EConstr.kind sigma (whd_all env sigma typ) with
          | Prod (_,c1,c2) -> sigma, (c1,c2)
-         | Evar ev ->
-             let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
+         | Evar (evk, a, _) ->
+             let (sigma,t) = Evardefine.define_evar_as_product env sigma (evk, a) in
              let (_,c1,c2) = destProd sigma t in
              sigma, (c1,c2)
          | _ ->
@@ -95,8 +95,8 @@ let judge_of_apply env sigma funj argjv =
        let sigma, (c1,c2) =
          match EConstr.kind sigma (whd_all env sigma typ) with
          | Prod (_,c1,c2) -> sigma, (c1,c2)
-         | Evar ev ->
-             let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
+         | Evar (evk, a, _) ->
+             let (sigma,t) = Evardefine.define_evar_as_product env sigma (evk, a) in
              let (_,c1,c2) = destProd sigma t in
              sigma, (c1,c2)
          | _ ->
@@ -143,7 +143,7 @@ let is_correct_arity env sigma c pj ind specif params =
         if not (List.mem_f Sorts.family_equal (Sorts.family s) allowed_sorts)
         then error ()
         else sigma, s
-    | Evar (ev,_), [] ->
+    | Evar (ev,_,_), [] ->
         let sigma, s = Evd.fresh_sort_in_family sigma (max_sort allowed_sorts) in
         let sigma = Evd.define ev (mkSort s) sigma in
         sigma, s
@@ -357,8 +357,8 @@ let rec execute env sigma cstr =
     | Meta n ->
         sigma, { uj_val = cstr; uj_type = meta_type env sigma n }
 
-    | Evar ev ->
-        let ty = EConstr.existential_type sigma ev in
+    | Evar (evk, a, _) ->
+        let ty = EConstr.existential_type sigma (evk, a) in
         let sigma, jty = execute env sigma ty in
         let sigma, jty = assumption_of_judgment env sigma jty in
         sigma, { uj_val = cstr; uj_type = jty }

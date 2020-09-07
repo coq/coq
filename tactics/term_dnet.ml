@@ -326,7 +326,7 @@ struct
     | Ind (i,u)      -> Term (DRef (IndRef i))
     | Construct (c,u)-> Term (DRef (ConstructRef c))
     | Meta _         -> assert false
-    | Evar (i,_)     ->
+    | Evar (i,_,_)     ->
       let meta =
         try Evar.Map.find i !metas
         with Not_found ->

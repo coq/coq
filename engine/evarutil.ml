@@ -52,8 +52,8 @@ exception Uninstantiated_evar of Evar.t
 
 let rec flush_and_check_evars sigma c =
   match kind c with
-  | Evar (evk,_ as ev) ->
-      (match existential_opt_value0 sigma ev with
+  | Evar (evk,a,_) ->
+      (match existential_opt_value0 sigma (evk, a) with
        | None -> raise (Uninstantiated_evar evk)
        | Some c -> flush_and_check_evars sigma c)
   | _ -> Constr.map (flush_and_check_evars sigma) c
@@ -143,7 +143,7 @@ let head_evar sigma c =
   (* FIXME: this breaks if using evar-insensitive code *)
   let c = EConstr.Unsafe.to_constr c in
   let rec hrec c = match kind c with
-    | Evar (evk,_)   -> evk
+    | Evar (evk,_,_)   -> evk
     | Case (_,_,_,c,_) -> hrec c
     | App (c,_)      -> hrec c
     | Cast (c,_,_)   -> hrec c
@@ -537,7 +537,8 @@ let rec check_and_clear_in_constr env evdref err ids global c =
         in
         c
 
-      | Evar (evk,l as ev) ->
+      | Evar (evk,l,_) ->
+          let ev = (evk, l) in
           if Evd.is_defined !evdref evk then
             (* If evk is already defined we replace it by its definition *)
             let nc = Evd.existential_value !evdref (EConstr.of_existential ev) in
@@ -722,7 +723,7 @@ let reachable_from_evars sigma evars =
 let undefined_evars_of_term evd t =
   let rec evrec acc c =
     match EConstr.kind evd c with
-      | Evar (n, l) ->
+      | Evar (n, l, _) ->
         let acc = Evar.Set.add n acc in
         List.fold_left evrec acc l
       | _ -> EConstr.fold evd evrec acc c
@@ -801,8 +802,8 @@ let filtered_undefined_evars_of_evar_info ?cache sigma evi =
 let occur_evar_upto sigma n c =
   let c = EConstr.Unsafe.to_constr c in
   let rec occur_rec c = match kind c with
-    | Evar (sp,_) when Evar.equal sp n -> raise Occur
-    | Evar e -> Option.iter occur_rec (existential_opt_value0 sigma e)
+    | Evar (sp,_,_) when Evar.equal sp n -> raise Occur
+    | Evar (evk, a, _) -> Option.iter occur_rec (existential_opt_value0 sigma (evk, a))
     | _ -> Constr.iter occur_rec c
   in
   try occur_rec c; false with Occur -> true

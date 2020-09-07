@@ -385,7 +385,7 @@ let () = define1 "constr_kind" constr begin fun c ->
     v_blk 1 [|Value.of_ident id|]
   | Meta n ->
     v_blk 2 [|Value.of_int n|]
-  | Evar (evk, args) ->
+  | Evar (evk, args, _) ->
     v_blk 3 [|
       Value.of_int (Evar.repr evk);
       Value.of_array Value.of_constr (Array.of_list args);

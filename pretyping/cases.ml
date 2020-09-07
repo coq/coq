@@ -1027,7 +1027,7 @@ let adjust_impossible_cases sigma pb pred tomatch submat =
        evar. See e.g. first definition of test for bug #3388. *)
     let pred = EConstr.Unsafe.to_constr pred in
     begin match Constr.kind pred with
-    | Evar (evk,_) when snd (evar_source evk sigma) == Evar_kinds.ImpossibleCase ->
+    | Evar (evk,_,_) when snd (evar_source evk sigma) == Evar_kinds.ImpossibleCase ->
         let sigma =
           if not (Evd.is_defined sigma evk) then
             let sigma, default = use_unit_judge pb.env sigma in
@@ -1688,7 +1688,7 @@ let rec list_assoc_in_triple x = function
 let abstract_tycon ?loc env sigma subst tycon extenv t =
   let t = nf_betaiota !!env sigma t in (* it helps in some cases to remove K-redex*)
   let src = match EConstr.kind sigma t with
-    | Evar (evk,_) -> (Loc.tag ?loc @@ Evar_kinds.SubEvar (None,evk))
+    | Evar (evk, _, _) -> (Loc.tag ?loc @@ Evar_kinds.SubEvar (None,evk))
     | _ -> (Loc.tag ?loc @@ Evar_kinds.CasesType true) in
   let subst0,t0 = adjust_to_extended_env_and_remove_deps env extenv sigma subst t in
   (* We traverse the type T of the original problem Xi looking for subterms
@@ -1703,7 +1703,8 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
     let sigma = !evdref in
     match EConstr.kind sigma t with
     | Rel n when is_local_def (lookup_rel n !!env) -> t
-    | Evar ev ->
+    | Evar (evk, a, _) ->
+        let ev = evk, a in
         let ty = get_type_of !!env sigma t in
         let sigma, ty = refresh_universes (Some false) !!env sigma ty in
         let inst =

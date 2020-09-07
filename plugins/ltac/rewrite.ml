@@ -613,7 +613,7 @@ let solve_remaining_by env sigma holes by =
     let map h =
       if h.Clenv.hole_deps then None
       else match EConstr.kind sigma h.Clenv.hole_evar with
-      | Evar (evk, _) ->
+      | Evar (evk, _, _) ->
         Some evk
       | _ -> None
     in

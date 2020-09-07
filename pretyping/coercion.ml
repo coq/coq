@@ -253,7 +253,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
                let remove_head sigma a c =
                  match EConstr.kind sigma c with
                  | Lambda (n, t, t') -> sigma, (c, t')
-                 | Evar (k, args) ->
+                 | Evar (k, args, _) ->
                    let (sigma, t) = Evardefine.define_evar_as_lambda env sigma (k,args) in
                    let (n, dom, rng) = destLambda sigma t in
                    let sigma =
@@ -446,8 +446,8 @@ let inh_app_fun_core ~program_mode env sigma j =
   let t = whd_all env sigma j.uj_type in
     match EConstr.kind sigma t with
     | Prod _ -> (sigma,j,IdCoe)
-    | Evar ev ->
-        let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
+    | Evar (evk, a, _) ->
+        let (sigma,t) = Evardefine.define_evar_as_product env sigma (evk, a) in
           (sigma,{ uj_val = j.uj_val; uj_type = t },IdCoe)
     | _ ->
         try let t,p =
@@ -493,8 +493,8 @@ let inh_coerce_to_sort ?loc env sigma j =
   let typ = whd_all env sigma j.uj_type in
     match EConstr.kind sigma typ with
     | Sort s -> (sigma,{ utj_val = j.uj_val; utj_type = ESorts.kind sigma s })
-    | Evar ev ->
-        let (sigma,s) = Evardefine.define_evar_as_sort env sigma ev in
+    | Evar (evk, a, _) ->
+        let (sigma,s) = Evardefine.define_evar_as_sort env sigma (evk, a) in
           (sigma,{ utj_val = j.uj_val; utj_type = s })
     | _ ->
         inh_tosort_force ?loc env sigma j

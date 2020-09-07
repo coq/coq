@@ -217,7 +217,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   let sigma = Evd.minimize_universes sigma in
   let rec fill_holes c =
     match EConstr.kind sigma c with
-    | Evar (e,args) ->
+    | Evar (e,args,_) ->
         let h = next_ident_away (Id.of_string "H") !avoid in
         let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
         avoid := Id.Set.add h !avoid;

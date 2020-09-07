@@ -564,7 +564,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       | LocalDef (_,body,_) ->
         whrec (if refold then Cst_stack.add_cst (mkVar id) cst_l else cst_l) (body, stack)
       | _ -> fold ())
-    | Evar ev -> fold ()
+    | Evar _ -> fold ()
     | Meta ev ->
       (match safe_meta_value sigma ev with
       | Some body -> whrec cst_l (body, stack)

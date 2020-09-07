@@ -17,5 +17,11 @@ let equal = Int.equal
 let hash = Int.hash
 let print x = Pp.(str "?X" ++ int x)
 
+module Cache =
+struct
+  type t = unit
+  let none = ()
+end
+
 module Set = Int.Set
 module Map = Int.Map

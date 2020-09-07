@@ -725,7 +725,7 @@ let rec whd_state_gen flags env sigma =
       | LocalDef (_,body,_) ->
         whrec (body, stack)
       | _ -> fold ())
-    | Evar ev -> fold ()
+    | Evar _ -> fold ()
     | Meta ev ->
       (match safe_meta_value sigma ev with
       | Some body -> whrec (body, stack)
@@ -886,7 +886,7 @@ let local_whd_state_gen flags _env sigma =
       |None -> s
       |Some (bef,arg,s') -> whrec (arg, Stack.Fix(f,bef)::s'))
 
-    | Evar ev -> s
+    | Evar _ -> s
     | Meta ev ->
       (match safe_meta_value sigma ev with
         Some c -> whrec (c,stack)

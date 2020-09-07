@@ -282,7 +282,7 @@ let constr_display csr =
       "LetIn("^(name_display na)^","^(term_display b)^","
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
-  | Evar (e,l) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display (Array.of_list l))^")"
+  | Evar (e,l,_) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display (Array.of_list l))^")"
   | Const (c,u) -> "Const("^(Constant.to_string c)^","^(universes_display u)^")"
   | Ind ((sp,i),u) ->
       "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^")"
@@ -378,7 +378,7 @@ let print_pure_constr csr =
       box_display c;
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string ")"
-  | Evar (e,l) -> print_string "Evar#"; print_int (Evar.repr e); print_string "{";
+  | Evar (e,l,_) -> print_string "Evar#"; print_int (Evar.repr e); print_string "{";
       List.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
   | Const (c,u) -> print_string "Cons(";

@@ -35,5 +35,11 @@ val hash : t -> int
 val print : t -> Pp.t
 (** Printing representation *)
 
+module Cache :
+sig
+  type t
+  val none : t
+end
+
 module Set : Set.S with type elt = t
 module Map : CMap.ExtS with type key = t and module Set := Set

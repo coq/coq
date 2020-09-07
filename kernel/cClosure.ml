@@ -1304,7 +1304,7 @@ and knht info e t stk =
       { mark = mark Whnf KnownR; term = FProd (n, mk_clos e t, c, e) }, stk
     | LetIn (n,b,t,c) ->
       { mark = mark Red Unknown; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
-    | Evar ev -> { mark = mark Red Unknown; term = FEvar (ev, e) }, stk
+    | Evar (evk, a, _) -> { mark = mark Red Unknown; term = FEvar ((evk, a), e) }, stk
     | Array(u,t,def,ty) ->
       let len = Array.length t in
       let ty = mk_clos e ty in

@@ -55,7 +55,7 @@ let mkType u = of_kind (Sort (ESorts.make (Sorts.sort_of_univ u)))
 let mkRel n = of_kind (Rel n)
 let mkVar id = of_kind (Var id)
 let mkMeta n = of_kind (Meta n)
-let mkEvar e = of_kind (Evar e)
+let mkEvar (e, l) = of_kind (Evar (e, l, Evar.Cache.none))
 let mkSort s = of_kind (Sort (ESorts.make s))
 let mkCast (b, k, t) = of_kind (Cast (b, k, t))
 let mkProd (na, t, u) = of_kind (Prod (na, t, u))
@@ -147,7 +147,7 @@ let destInd sigma c = match kind sigma c with
 | _ -> raise DestKO
 
 let destEvar sigma c = match kind sigma c with
-| Evar p -> p
+| Evar (evk, a, _) -> (evk, a)
 | _ -> raise DestKO
 
 let destMeta sigma c = match kind sigma c with
@@ -356,7 +356,7 @@ let iter_with_full_binders sigma g f n c =
   | Lambda (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
   | LetIn (na,b,t,c) -> f n b; f n t; f (g (LocalDef (na, b, t)) n) c
   | App (c,l) -> f n c; Array.Fun1.iter f n l
-  | Evar (_,l) -> List.iter (fun c -> f n c) l
+  | Evar (_,l,_) -> List.iter (fun c -> f n c) l
   | Case (_,p,iv,c,bl) -> f n p; iter_invert (f n) iv; f n c; Array.Fun1.iter f n bl
   | Proj (p,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
@@ -557,7 +557,7 @@ let universes_of_constr sigma c =
       else
         let u = Sorts.univ_of_sort sort in
         LSet.fold LSet.add (Universe.levels u) s
-    | Evar (k, args) ->
+    | Evar (k, args, _) ->
       let concl = Evd.evar_concl (Evd.find sigma k) in
       fold sigma aux (aux s concl) c
     | Array (u,_,_,_) ->

@@ -125,8 +125,8 @@ let flex_kind_of_term flags env evd c sk =
     | Lambda _ when not (Option.is_empty (Stack.decomp sk)) ->
        if flags.modulo_betaiota then MaybeFlexible c
        else Rigid
-    | Evar ev ->
-       if is_evar_allowed flags (fst ev) then Flexible ev else Rigid
+    | Evar (evk, a, _) ->
+       if is_evar_allowed flags evk then Flexible (evk, a) else Rigid
     | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ | Int _ | Float _ | Array _ -> Rigid
     | Meta _ -> Rigid
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied *)
@@ -189,7 +189,7 @@ let occur_rigidly flags env evd (evk,_) t =
           | Rigid _ as res -> res
           | Normal b -> Reducible
           | Reducible -> Reducible)
-    | Evar (evk',l) ->
+    | Evar (evk',l,_) ->
       if Evar.equal evk evk' then Rigid true
       else if is_evar_allowed flags evk' then
         Reducible
@@ -497,9 +497,9 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
             (whd_nored_state env evd (term2,Stack.empty))
         in
           begin match EConstr.kind evd term1, EConstr.kind evd term2 with
-          | Evar ev, _ when Evd.is_undefined evd (fst ev) && is_evar_allowed flags (fst ev) ->
+          | Evar (evk, a, _), _ when Evd.is_undefined evd evk && is_evar_allowed flags evk ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
-              (position_problem true pbty,ev,term2) with
+              (position_problem true pbty, (evk, a), term2) with
               | UnifFailure (_,(OccurCheck _ | NotClean _)) ->
                 (* Eta-expansion might apply *)
                 (* OccurCheck: eta-expansion could solve
@@ -508,9 +508,9 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
                      Miller patterns *)
                 default ()
               | x -> x)
-          | _, Evar ev when Evd.is_undefined evd (fst ev) && is_evar_allowed flags (fst ev) ->
+          | _, Evar (evk, a, _) when Evd.is_undefined evd evk && is_evar_allowed flags evk ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
-              (position_problem false pbty,ev,term1) with
+              (position_problem false pbty, (evk, a), term1) with
               | UnifFailure (_, (OccurCheck _ | NotClean _)) ->
                 (* OccurCheck: eta-expansion could solve
                      ?X = {| foo := ?X.(foo) |}
@@ -1020,7 +1020,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         | Array _, Array _ ->
           rigids env evd sk1 term1 sk2 term2
 
-        | Evar (sp1,al1), Evar (sp2,al2) -> (* Frozen evars *)
+        | Evar (sp1,al1,_), Evar (sp2,al2,_) -> (* Frozen evars *)
           if Evar.equal sp1 sp2 then
             match ise_stack2 false env evd (evar_conv_x flags) sk1 sk2 with
             |None, Success i' ->
@@ -1220,7 +1220,7 @@ let apply_on_subterm env evd fixedref f test c t =
   let rec applyrec (env,(k,c) as acc) t =
     if Evar.Set.exists (fun fixed -> occur_evar !evdref fixed t) !fixedref then
       match EConstr.kind !evdref t with
-      | Evar (ev, args) when Evar.Set.mem ev !fixedref -> t
+      | Evar (ev, args, _) when Evar.Set.mem ev !fixedref -> t
       | _ -> map_constr_with_binders_left_to_right !evdref
               (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
               applyrec acc t
@@ -1313,7 +1313,7 @@ let thin_evars env sigma sign c =
   let ctx = set_of_evctx sign in
   let rec applyrec (env,acc) t =
     match kind !sigma t with
-    | Evar (ev, args) ->
+    | Evar (ev, args, _) ->
        let evi = Evd.find_undefined !sigma ev in
        let filter = List.map (fun c -> Id.Set.subset (collect_vars !sigma c) ctx) args in
        let filter = Filter.make filter in
@@ -1579,7 +1579,7 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
                                 Termops.Internal.print_constr_env env evd t2 ++ cut ())) in
   let app_empty = Array.is_empty l1 && Array.is_empty l2 in
   match EConstr.kind evd term1, EConstr.kind evd term2 with
-  | Evar (evk1,args1), (Rel _|Var _) when app_empty
+  | Evar (evk1,args1, _), (Rel _|Var _) when app_empty
       && is_evar_allowed flags evk1
       && List.for_all (fun a -> EConstr.eq_constr evd a term2 || isEvar evd a)
         (remove_instance_local_defs evd evk1 args1) ->
@@ -1590,7 +1590,7 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
       | None ->
          let reason = ProblemBeyondCapabilities in
          UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
-  | (Rel _|Var _), Evar (evk2,args2) when app_empty
+  | (Rel _|Var _), Evar (evk2,args2, _) when app_empty
     && is_evar_allowed flags evk2
     && List.for_all (fun a -> EConstr.eq_constr evd a term1 || isEvar evd a)
         (remove_instance_local_defs evd evk2 args2) ->
@@ -1601,7 +1601,7 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
       | None ->
          let reason = ProblemBeyondCapabilities in
          UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
-  | Evar (evk1,args1), Evar (evk2,args2) when Evar.equal evk1 evk2 ->
+  | Evar (evk1,args1,_), Evar (evk2,args2,_) when Evar.equal evk1 evk2 ->
      let f flags ontype env evd pbty x y =
        let reds =
          match ontype with
@@ -1611,32 +1611,32 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
      in
       Success (solve_refl ~can_drop:true f flags env evd
                  (position_problem true pbty) evk1 args1 args2)
-  | Evar ev1, Evar ev2 when app_empty ->
+  | Evar (evk1, a1, _), Evar (evk2, a2, _) when app_empty ->
     (* solve_evar_evar handles the cases ev1 and/or ev2 are frozen *)
       Success (solve_evar_evar ~force:true
                  (evar_define evar_unify flags ~choose:true)
                  evar_unify flags env evd
-                 (position_problem true pbty) ev1 ev2)
-  | Evar ev1,_ when is_evar_allowed flags (fst ev1) && Array.length l1 <= Array.length l2 ->
+                 (position_problem true pbty) (evk1, a1) (evk2, a2))
+  | Evar (evk1, a1, _),_ when is_evar_allowed flags evk1 && Array.length l1 <= Array.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
       (* and otherwise second-order matching *)
       ise_try evd
-        [(fun evd -> first_order_unification flags env evd (ev1,l1) appr2);
+        [(fun evd -> first_order_unification flags env evd ((evk1, a1),l1) appr2);
          (fun evd ->
-           second_order_matching_with_args flags env evd with_ho pbty ev1 l1 t2)]
-  | _,Evar ev2 when is_evar_allowed flags (fst ev2) && Array.length l2 <= Array.length l1 ->
+           second_order_matching_with_args flags env evd with_ho pbty (evk1, a1) l1 t2)]
+  | _,Evar (evk2, a2, _) when is_evar_allowed flags evk2 && Array.length l2 <= Array.length l1 ->
       (* On "u u1 .. u(n+p) = ?n t1 .. tn", try first-order unification *)
       (* and otherwise second-order matching *)
       ise_try evd
-        [(fun evd -> first_order_unification flags env evd (ev2,l2) appr1);
+        [(fun evd -> first_order_unification flags env evd ((evk2, a2), l2) appr1);
          (fun evd ->
-           second_order_matching_with_args flags env evd with_ho pbty ev2 l2 t1)]
-  | Evar ev1,_ when is_evar_allowed flags (fst ev1) ->
+           second_order_matching_with_args flags env evd with_ho pbty (evk2, a2) l2 t1)]
+  | Evar (evk1, a1, _),_ when is_evar_allowed flags evk1 ->
       (* Try second-order pattern-matching *)
-      second_order_matching_with_args flags env evd with_ho pbty ev1 l1 t2
-  | _,Evar ev2 when is_evar_allowed flags (fst ev2) ->
+      second_order_matching_with_args flags env evd with_ho pbty (evk1, a1) l1 t2
+  | _,Evar (evk2, a2, _) when is_evar_allowed flags evk2 ->
       (* Try second-order pattern-matching *)
-      second_order_matching_with_args flags env evd with_ho pbty ev2 l2 t1
+      second_order_matching_with_args flags env evd with_ho pbty (evk2, a2) l2 t1
   | _ ->
       (* Some head evar have been instantiated, or unknown kind of problem *)
       evar_conv_x flags env evd pbty t1 t2

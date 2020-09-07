@@ -73,7 +73,7 @@ let occur_meta_or_undefined_evar evd c =
   let c = EConstr.Unsafe.to_constr c in
   let rec occrec c = match Constr.kind c with
     | Meta _ -> raise Occur
-    | Evar (ev,args) ->
+    | Evar (ev,args, _) ->
         (match evar_body (Evd.find evd ev) with
         | Evar_defined c ->
             occrec (EConstr.Unsafe.to_constr c); List.iter occrec args
@@ -224,10 +224,10 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst : subst0) 
           else
             let l = List.map of_alias l in
             error_cannot_unify_local env sigma (applist (f, l),c,c)
-    | Evar ev ->
+    | Evar (evk, a, _) ->
         let env' = pop_rel_context nb env in
         let sigma,c = pose_all_metas_as_evars env' sigma c in
-        sigma,metasubst,(env,ev,solve_pattern_eqn env sigma l c)::evarsubst
+        sigma,metasubst,(env,(evk, a),solve_pattern_eqn env sigma l c)::evarsubst
     | _ -> assert false
 
 let push d (env,n) = (push_rel_assum d env,n+1)
@@ -604,7 +604,7 @@ let is_evar_allowed flags evk =
   AllowedEvars.mem flags.allowed_evars evk
 
 let isAllowedEvar sigma flags c = match EConstr.kind sigma c with
-  | Evar (evk,_) -> is_evar_allowed flags evk
+  | Evar (evk,_,_) -> is_evar_allowed flags evk
   | _ -> false
 
 
@@ -617,7 +617,7 @@ let subst_defined_metas_evars sigma (bl,el) c =
     | Meta i ->
       let select (j,_,_) = Int.equal i j in
       substrec (EConstr.Unsafe.to_constr (pi2 (List.find select bl)))
-    | Evar (evk,args) ->
+    | Evar (evk, args, _) ->
       let eq c1 c2 = Constr.equal c1 (EConstr.Unsafe.to_constr c2) in
       let select (_,(evk',args'),_) = Evar.equal evk evk' && List.for_all2 eq args args' in
       (try substrec (EConstr.Unsafe.to_constr (pi3 (List.find select el)))
@@ -751,28 +751,28 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
               (sigma,(k,lift (-nb) cM,fst (extract_instance_status pb))::metasubst,
               evarsubst)
             else error_cannot_unify_local curenv sigma (m,n,cM)
-        | Evar (evk,_ as ev), Evar (evk',_)
+        | Evar (evk,a,_), Evar (evk',_,_)
             when is_evar_allowed flags evk
               && Evar.equal evk evk' ->
             begin match constr_cmp cv_pb env sigma flags cM cN with
             | Some sigma ->
               sigma, metasubst, evarsubst
             | None ->
-              sigma,metasubst,((curenv,ev,cN)::evarsubst)
+              sigma,metasubst,((curenv,(evk, a),cN)::evarsubst)
             end
-        | Evar (evk,_ as ev), _
+        | Evar (evk, a, _), _
             when is_evar_allowed flags evk
               && not (occur_evar sigma evk cN) ->
             let cmvars = free_rels sigma cM and cnvars = free_rels sigma cN in
               if Int.Set.subset cnvars cmvars then
-                sigma,metasubst,((curenv,ev,cN)::evarsubst)
+                sigma,metasubst,((curenv,(evk, a),cN)::evarsubst)
               else error_cannot_unify_local curenv sigma (m,n,cN)
-        | _, Evar (evk,_ as ev)
+        | _, Evar (evk, a, _)
             when is_evar_allowed flags evk
               && not (occur_evar sigma evk cM) ->
             let cmvars = free_rels sigma cM and cnvars = free_rels sigma cN in
               if Int.Set.subset cmvars cnvars then
-                sigma,metasubst,((curenv,ev,cM)::evarsubst)
+                sigma,metasubst,((curenv,(evk, a),cM)::evarsubst)
               else error_cannot_unify_local curenv sigma (m,n,cN)
         | Sort s1, Sort s2 ->
             (try

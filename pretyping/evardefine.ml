@@ -133,7 +133,7 @@ let define_pure_evar_as_lambda env evd evk =
   let typ = Reductionops.whd_all evenv evd (evar_concl evi) in
   let evd1,(na,dom,rng) = match EConstr.kind evd typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
-  | Evar ev' -> let evd,typ = define_evar_as_product env evd ev' in evd,destProd evd typ
+  | Evar (evk', a', _)  -> let evd,typ = define_evar_as_product env evd (evk', a') in evd,destProd evd typ
   | _ -> error_not_product env evd typ in
   let avoid = Environ.ids_of_named_context_val evi.evar_hyps in
   let id =
@@ -196,8 +196,8 @@ let split_tycon ?loc env evd tycon =
     let evd, c = presplit env evd c in
     let evd, na, dom, rng = match EConstr.kind evd c with
       | Prod (na,dom,rng) -> evd, na, dom, rng
-      | Evar ev ->
-        let (evd,prod) = define_evar_as_product env evd ev in
+      | Evar (evk, a, _) ->
+        let (evd,prod) = define_evar_as_product env evd (evk, a) in
         let (na,dom,rng) = destProd evd prod in
         let anon = {na with binder_name = Anonymous} in
         evd, anon, dom, rng
@@ -237,8 +237,8 @@ let split_as_array env sigma0 = function
     let sigma, c = presplit env sigma0 c in
     match EConstr.kind sigma c with
     | App (h,[|ty|]) when is_array_const env sigma h -> sigma, Some ty
-    | Evar ev ->
-      let sigma = define_pure_evar_as_array env sigma (fst ev) in
+    | Evar (evk, _, _) ->
+      let sigma = define_pure_evar_as_array env sigma evk in
       let ty = match EConstr.kind sigma c with
         | App (_,[|ty|]) -> ty
         | _ -> assert false

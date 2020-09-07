@@ -291,7 +291,7 @@ let check_extra_evars_are_solved env current_sigma frozen = match frozen with
 let check_evars env ?initial sigma c =
   let rec proc_rec c =
     match EConstr.kind sigma c with
-    | Evar (evk, _) ->
+    | Evar (evk, _, _) ->
       (match initial with
        | Some initial when Evd.mem initial evk -> ()
        | _ ->
@@ -340,7 +340,7 @@ let process_inference_flags flags env initial (sigma,c,cty) =
 
 let adjust_evar_source sigma na c =
   match na, kind sigma c with
-  | Name id, Evar (evk,args) ->
+  | Name id, Evar (evk,args,_) ->
      let evi = Evd.find sigma evk in
      begin match evi.evar_source with
      | loc, Evar_kinds.QuestionMark {
@@ -1210,8 +1210,8 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
                match EConstr.kind sigma (whd_all !!env sigma t) with
                | Sort s ->
                  sigma, ESorts.kind sigma s
-               | Evar ev when is_Type sigma (existential_type sigma ev) ->
-                 define_evar_as_sort !!env sigma ev
+               | Evar (evk, a, _) when is_Type sigma (existential_type sigma (evk, a)) ->
+                 define_evar_as_sort !!env sigma (evk, a)
                | _ -> anomaly (Pp.str "Found a type constraint which is not a type.")
            in
            (* Correction of bug #5315 : we need to define an evar for *all* holes *)

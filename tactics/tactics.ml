@@ -1020,8 +1020,8 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
     | LetIn (name,b,t,u) when not dep_flag || not (noccurn sigma 1 u) ->
         let name = find_name false (LocalDef (name,b,t)) name_flag gl in
         build_intro_tac name move_flag tac
-    | Evar ev when force_flag ->
-        let sigma, t = Evardefine.define_evar_as_product env sigma ev in
+    | Evar (evk, a, _) when force_flag ->
+        let sigma, t = Evardefine.define_evar_as_product env sigma (evk, a) in
         Tacticals.New.tclTHEN
           (Proofview.Unsafe.tclEVARS sigma)
           (intro_then_gen name_flag move_flag force_flag dep_flag tac)
@@ -1359,7 +1359,7 @@ let check_unresolved_evars_of_metas sigma clenv =
   List.iter (fun (mv,b) -> match b with
   | Clval (_,(c,_),_) ->
     (match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
-    | Evar (evk,_) when Evd.is_undefined clenv.evd evk
+    | Evar (evk, _, _) when Evd.is_undefined clenv.evd evk
                      && not (Evd.mem sigma evk) ->
       error_uninstantiated_metas (mkMeta mv) clenv
     | _ -> ())

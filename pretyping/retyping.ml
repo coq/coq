@@ -118,7 +118,7 @@ let retype ?(polyprop=true) sigma =
         lift n ty
     | Var id -> type_of_var env id
     | Const (cst, u) -> EConstr.of_constr (rename_type_of_constant env (cst, EInstance.kind sigma u))
-    | Evar ev -> existential_type sigma ev
+    | Evar (evk, a, _) -> existential_type sigma (evk, a)
     | Ind (ind, u) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
     | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
     | Case (_,p,_iv,c,lf) ->

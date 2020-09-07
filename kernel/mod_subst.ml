@@ -405,7 +405,7 @@ let rec map_kn f f' c =
           let l' = Array.Smart.map func l in
             if (ct'== ct && l'==l) then c
             else mkApp (ct',l')
-      | Evar (e,l) ->
+      | Evar (e,l,_) ->
           let l' = List.Smart.map func l in
             if (l'==l) then c
             else mkEvar (e,l')

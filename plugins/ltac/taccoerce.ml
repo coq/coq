@@ -193,7 +193,7 @@ let id_of_name = function
        match EConstr.kind sigma c with
        | Var id -> id
        | Meta m -> id_of_name (Evd.meta_name sigma m)
-       | Evar (kn,_) ->
+       | Evar (kn,_,_) ->
         begin match Evd.evar_ident kn sigma with
         | None -> fail ()
         | Some id -> id

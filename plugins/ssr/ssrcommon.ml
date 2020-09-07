@@ -543,7 +543,7 @@ let abs_evars2 env sigma0 rigid (sigma, c0) =
     let t = Context.Named.fold_inside abs_dc ~init:concl dc in
     nf_evar sigma t in
   let rec put evlist c = match Constr.kind c with
-  | Evar (k, a) ->
+  | Evar (k, a, _) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k || List.mem k rigid then evlist else
     let n = max 0 (List.length a - nenv) in
     let t = abs_evar n k in (k, (n, t)) :: put evlist t
@@ -554,7 +554,7 @@ let abs_evars2 env sigma0 rigid (sigma, c0) =
     | [] -> 0, 0
     | (k', (n, _)) :: evl -> if k = k' then i, n else lookup k (i + 1) evl in
   let rec get i c = match Constr.kind c with
-  | Evar (ev, a) ->
+  | Evar (ev, a, _) ->
     let j, n = lookup ev i evlist in
     if j = 0 then Constr.map (get i) c else if n = 0 then mkRel j else
     let a = Array.of_list a in
@@ -609,7 +609,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     let t = Context.Named.fold_inside abs_dc ~init:concl dc in
     nf_evar sigma0 (nf_evar sigma t) in
   let rec put evlist c = match Constr.kind c with
-  | Evar (k, a) ->
+  | Evar (k, a, _) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k then evlist else
     let n = max 0 (List.length a - nenv) in
     let k_ty =
@@ -646,7 +646,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     | [] -> 0, 0
     | (k', (n,_,_)) :: evl -> if k = k' then i,n else lookup k (i + 1) evl in
   let rec get evlist i c = match Constr.kind c with
-  | Evar (ev, a) ->
+  | Evar (ev, a, _) ->
     let j, n = lookup ev i evlist in
     if j = 0 then Constr.map (get evlist i) c else if n = 0 then mkRel j else
     let a = Array.of_list a in

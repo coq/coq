@@ -906,10 +906,10 @@ let extract_all_conv_pbs evd =
 
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
   match kind (fst (decompose_app t1)) with
-  | Evar (evk1,_) -> fst (evar_source evk1 evd)
+  | Evar (evk1,_,_) -> fst (evar_source evk1 evd)
   | _ ->
   match kind (fst (decompose_app t2)) with
-  | Evar (evk2,_) -> fst (evar_source evk2 evd)
+  | Evar (evk2,_,_) -> fst (evar_source evk2 evd)
   | _             -> None
 
 (**********************************************************)
@@ -1318,7 +1318,7 @@ let evar_source_of_meta mv evd =
 
 let use_meta_source evd mv v =
   match Constr.kind v with
-  | Evar (evk,_) ->
+  | Evar (evk,_,_) ->
     let f = function
     | None -> None
     | Some evi as x ->
@@ -1478,8 +1478,8 @@ module MiniEConstr = struct
 
   let rec whd_evar sigma c =
     match Constr.kind c with
-    | Evar ev ->
-      begin match safe_evar_value sigma ev with
+    | Evar (ev, a, _) ->
+      begin match safe_evar_value sigma (ev, a) with
         | Some c -> whd_evar sigma c
         | None -> c
       end
@@ -1545,7 +1545,7 @@ let evars_of_term evd c =
   let rec evrec acc c =
     let c = MiniEConstr.whd_evar evd c in
     match kind c with
-    | Evar (n, l) -> Evar.Set.add n (List.fold_left evrec acc l)
+    | Evar (n, l, _) -> Evar.Set.add n (List.fold_left evrec acc l)
     | _ -> Constr.fold evrec acc c
   in
   evrec Evar.Set.empty c
@@ -1553,7 +1553,7 @@ let evars_of_term evd c =
 let evar_nodes_of_term c =
   let rec evrec acc c =
     match kind c with
-    | Evar (n, l) -> Evar.Set.add n (List.fold_left evrec acc l)
+    | Evar (n, l, _) -> Evar.Set.add n (List.fold_left evrec acc l)
     | _ -> Constr.fold evrec acc c
   in
   evrec Evar.Set.empty c

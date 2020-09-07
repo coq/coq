@@ -56,7 +56,7 @@ let subst_evar_constr evm evs n idf t =
   let evar_info id = CList.assoc_f Evar.equal id evs in
   let rec substrec (depth, fixrels) c =
     match EConstr.kind evm c with
-    | Constr.Evar (k, args) ->
+    | Constr.Evar (k, args, _) ->
       let {ev_name = id, idstr; ev_hyps = hyps; ev_chop = chop} =
         try evar_info k
         with Not_found ->

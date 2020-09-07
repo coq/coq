@@ -639,7 +639,7 @@ let map_constr_with_binders_left_to_right sigma g f l c =
     let b' = f l b in
       if b' == b then c
       else mkProj (p, b')
-  | Evar (e,al) ->
+  | Evar (e,al,_) ->
     let al' = List.map_left (f l) al in
       if List.for_all2 (==) al' al then c
       else mkEvar (e, al')
@@ -717,7 +717,7 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
   | Proj (p,c) ->
       let c' = f l c in
         if c' == c then cstr else mkProj (p, c')
-  | Evar (e,al) ->
+  | Evar (e,al, _) ->
       let al' = List.map (f l) al in
       if List.for_all2 (==) al al' then cstr else mkEvar (e, al')
   | Case (ci,p,iv,c,bl) when userview ->
@@ -814,7 +814,7 @@ let occur_metavariable sigma m c =
 
 let occur_evar sigma n c =
   let rec occur_rec c = match EConstr.kind sigma c with
-    | Evar (sp,_) when Evar.equal sp n -> raise Occur
+    | Evar (sp,_,_) when Evar.equal sp n -> raise Occur
     | _ -> EConstr.iter sigma occur_rec c
   in
   try occur_rec c; false with Occur -> true
@@ -1196,8 +1196,8 @@ let filtering sigma env cv_pb c1 c2 =
       | Prod (n,t1,c1), Prod (_,t2,c2) ->
           aux env cv_pb t1 t2;
           aux (RelDecl.LocalAssum (n,t1) :: env) cv_pb c1 c2
-      | _, Evar (ev,_) -> define cv_pb env ev c1
-      | Evar (ev,_), _ -> define cv_pb env ev c2
+      | _, Evar (ev, _, _) -> define cv_pb env ev c1
+      | Evar (ev, _, _), _ -> define cv_pb env ev c2
       | _ ->
           if compare_constr_univ sigma
           (fun pb c1 c2 -> aux env pb c1 c2; true) cv_pb c1 c2 then ()

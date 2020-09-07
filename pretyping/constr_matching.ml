@@ -403,7 +403,7 @@ let matches_core env sigma allow_bound_rels
           let subst = Array.fold_left4 (match_under_common_fix_binders sorec sigma binding_vars ctx ctx' env env') subst tl1 tl2 bl1 bl2 in
           Array.fold_left2 (fun subst na1 na2 -> add_binders na1 na2 binding_vars subst) subst lna1 lna2
 
-      | PEvar (c1,args1), Evar (c2,args2) when Evar.equal c1 c2 ->
+      | PEvar (c1,args1), Evar (c2,args2,_) when Evar.equal c1 c2 ->
          List.fold_left2 (sorec ctx env) subst args1 args2
       | PInt i1, Int i2 when Uint63.equal i1 i2 -> subst
 

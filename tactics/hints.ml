@@ -590,7 +590,7 @@ struct
 
   let head_evar sigma c =
     let rec hrec c = match EConstr.kind sigma c with
-      | Evar (evk,_)   -> evk
+      | Evar (evk,_,_)   -> evk
       | Case (_,_,_,c,_) -> hrec c
       | App (c,_)      -> hrec c
       | Cast (c,_,_)   -> hrec c
@@ -1321,9 +1321,9 @@ let prepare_hint check env init (sigma,c) =
   let vars = ref (collect_vars sigma c) in
   let subst = ref [] in
   let rec find_next_evar c = match EConstr.kind sigma c with
-    | Evar (evk,args as ev) ->
+    | Evar (evk,args, _) ->
       (* We skip the test whether args is the identity or not *)
-      let t = Evarutil.nf_evar sigma (existential_type sigma ev) in
+      let t = Evarutil.nf_evar sigma (existential_type sigma (evk, args)) in
       let t = List.fold_right (fun (e,id) c -> replace_term sigma e id c) !subst t in
       if not (closed0 sigma c) then
         user_err Pp.(str "Hints with holes dependent on a bound variable not supported.");

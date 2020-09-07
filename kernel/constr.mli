@@ -226,7 +226,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
                                                           (i.e. [Variable] or [Let]). *)
 
   | Meta      of metavariable
-  | Evar      of 'constr pexistential
+  | Evar      of Evar.t * 'constr list * Evar.Cache.t
   | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
   | Prod      of Name.t Context.binder_annot * 'types * 'types             (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)

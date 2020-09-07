@@ -99,7 +99,7 @@ type conversion_check = unify_flags -> unification_kind ->
 
 let normalize_evar evd ev =
   match EConstr.kind evd (mkEvar ev) with
-  | Evar (evk,args) -> (evk,args)
+  | Evar (evk,args,_) -> (evk,args)
   | _ -> assert false
 
 let get_polymorphic_positions env sigma f =
@@ -164,7 +164,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
        let args' = Array.map (refresh_term_evars ~onevars ~top:false) args in
        if f' == f && args' == args then t
        else mkApp (f', args')
-    | Evar (ev, a) when onevars ->
+    | Evar (ev, a, _) when onevars ->
       let evi = Evd.find !evdref ev in
       let ty = evi.evar_concl in
       let ty' = refresh ~onlyalg univ_flexible ~direction:true ty in
@@ -291,10 +291,10 @@ let noccur_evar env evd evk c =
   let cache = ref Int.Set.empty (* cache for let-ins *) in
   let rec occur_rec check_types (k, env as acc) c =
   match EConstr.kind evd c with
-  | Evar (evk',args' as ev') ->
+  | Evar (evk',args', _) ->
     if Evar.equal evk evk' then raise Occur
     else (if check_types then
-            occur_rec false acc (existential_type evd ev');
+            occur_rec false acc (existential_type evd (evk', args'));
           List.iter (occur_rec check_types acc) args')
   | Rel i when i > k ->
      if not (Int.Set.mem (i-k) !cache) then
@@ -634,7 +634,7 @@ let is_unification_pattern_pure_evar env evd (evk,args) t =
 let is_unification_pattern (env,nb) evd f l t =
   match EConstr.kind evd f with
   | Meta m -> is_unification_pattern_meta env evd nb m l t
-  | Evar ev -> is_unification_pattern_evar env evd ev l t
+  | Evar (evk, a, _) -> is_unification_pattern_evar env evd (evk, a) l t
   | _ -> None
 
 (* From a unification problem "?X l = c", build "\x1...xn.(term1 l2)"
@@ -1253,7 +1253,7 @@ let rec is_constrainable_in top env evd k (ev,(fv_rels,fv_ids) as g) t =
       Array.for_all (is_constrainable_in false env evd k g) params
   | Ind _ -> Array.for_all (is_constrainable_in false env evd k g) args
   | Prod (na,t1,t2) -> is_constrainable_in false env evd k g t1 && is_constrainable_in false env evd k g t2
-  | Evar (ev',_) -> top || not (Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
+  | Evar (ev',_,_) -> top || not (Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
   | Sort _ -> true
@@ -1469,14 +1469,14 @@ let occur_evar_upto_types sigma n c =
   let seen = ref Evar.Set.empty in
   (* FIXME: Is that supposed to be evar-insensitive? *)
   let rec occur_rec c = match Constr.kind c with
-    | Evar (sp,_) when Evar.equal sp n -> raise Occur
-    | Evar (sp,args as e) ->
+    | Evar (sp,_,_) when Evar.equal sp n -> raise Occur
+    | Evar (sp,args,_) ->
        if Evar.Set.mem sp !seen then
          List.iter occur_rec args
        else (
          seen := Evar.Set.add sp !seen;
-         Option.iter occur_rec (existential_opt_value0 sigma e);
-         occur_rec (Evd.existential_type0 sigma e))
+         Option.iter occur_rec (existential_opt_value0 sigma (sp, args));
+         occur_rec (Evd.existential_type0 sigma (sp, args)))
     | _ -> Constr.iter occur_rec c
   in
   try occur_rec c; false with Occur -> true
@@ -1586,13 +1586,13 @@ let rec invert_definition unify flags choose imitate_defs
             imitate envk (EConstr.of_constr b))
     | LetIn (na,b,u,c) ->
         imitate envk (subst1 b c)
-    | Evar (evk',args' as ev') ->
+    | Evar (evk',args',_) ->
         if Evar.equal evk evk' then raise (OccurCheckIn (evd,rhs));
         (* Evar/Evar problem (but left evar is virtual) *)
         let aliases = lift_aliases k aliases in
         (try
           let ev = (evk,List.map (lift k) argsv) in
-          let evd,body = project_evar_on_evar false unify flags env' !evdref aliases k None ev' ev in
+          let evd,body = project_evar_on_evar false unify flags env' !evdref aliases k None (evk', args') ev in
           evdref := evd;
           body
         with
@@ -1692,13 +1692,13 @@ let rec invert_definition unify flags choose imitate_defs
 
 and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (evk,argsv as ev) rhs =
   match EConstr.kind evd rhs with
-  | Evar (evk2,argsv2 as ev2) ->
+  | Evar (evk2,argsv2,_) ->
       if Evar.equal evk evk2 then
         solve_refl ~can_drop:choose
           (test_success unify) flags env evd pbty evk argsv argsv2
       else
         solve_evar_evar ~force:choose
-          (evar_define unify flags) unify flags env evd pbty ev ev2
+          (evar_define unify flags) unify flags env evd pbty ev (evk2, argsv2)
   | _ ->
   try solve_candidates unify flags env evd ev rhs
   with NoCandidates ->
@@ -1724,7 +1724,7 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
         (* last chance: rhs actually reduces to ev *)
         let c = whd_all env evd rhs in
         match EConstr.kind evd c with
-        | Evar (evk',argsv2) when Evar.equal evk evk' ->
+        | Evar (evk',argsv2,_) when Evar.equal evk evk' ->
             solve_refl (fun flags _b env sigma pb c c' -> is_fconv pb env sigma c c') flags
                        env evd pbty evk argsv argsv2
         | _ ->

@@ -106,7 +106,7 @@ let destEvalRefU sigma c = match EConstr.kind sigma c with
   | Const (cst,u) ->  EvalConst cst, u
   | Var id  -> (EvalVar id, EInstance.empty)
   | Rel n -> (EvalRel n, EInstance.empty)
-  | Evar ev -> (EvalEvar ev, EInstance.empty)
+  | Evar (evk, a, _) -> (EvalEvar (evk, a), EInstance.empty)
   | _ -> anomaly (Pp.str "Not an unfoldable reference.")
 
 let unsafe_reference_opt_value env sigma eval =
@@ -403,7 +403,7 @@ let solve_arity_problem env sigma fxminargs c =
     let c' = whd_betaiotazeta env sigma c in
     let (h,rcargs) = decompose_app_vect sigma c' in
     match EConstr.kind sigma h with
-        Evar(i,_) when Evar.Map.mem i fxminargs && not (Evd.is_defined !evm i) ->
+        Evar(i, _, _) when Evar.Map.mem i fxminargs && not (Evd.is_defined !evm i) ->
           let minargs = Evar.Map.find i fxminargs in
           if Array.length rcargs < minargs then
             if strict then set_fix i
@@ -431,7 +431,7 @@ let substl_checking_arity env subst sigma c =
   (* we propagate the constraints: solved problems are substituted;
      the other ones are replaced by the function symbol *)
   let rec nf_fix c = match EConstr.kind sigma c with
-  | Evar (i,[fx;f]) when Evar.Map.mem i minargs ->
+  | Evar (i,[fx;f],_) when Evar.Map.mem i minargs ->
     (* FIXME: find a less hackish way of doing this *)
     begin match EConstr.kind sigma' c with
     | Evar _ -> f
@@ -520,7 +520,7 @@ let match_eval_ref env sigma constr stack =
      if is_evaluable env (EvalConstRef sp) then Some (EvalConst sp, u) else None
   | Var id when is_evaluable env (EvalVarRef id) -> Some (EvalVar id, EInstance.empty)
   | Rel i -> Some (EvalRel i, EInstance.empty)
-  | Evar ev -> Some (EvalEvar ev, EInstance.empty)
+  | Evar (evk, a, _) -> Some (EvalEvar (evk, a), EInstance.empty)
   | _ -> None
 
 let match_eval_ref_value env sigma constr stack =
@@ -584,7 +584,7 @@ let whd_nothing_for_iota env sigma s =
           (match lookup_named id env with
              | LocalDef (_,body,_) -> whrec (body, stack)
              | _ -> s)
-      | Evar ev -> s
+      | Evar _ -> s
       | Meta ev ->
         (try whrec (Evd.meta_value sigma ev, stack)
         with Not_found -> s)

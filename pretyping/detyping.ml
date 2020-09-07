@@ -769,7 +769,7 @@ and detype_r d flags avoid env sigma t =
           with Retyping.RetypeError _ -> noparams ()
         else noparams ()
 
-    | Evar (evk,cl) ->
+    | Evar (evk,cl,_) ->
         let open Context.Named.Declaration in
         let bound_to_itself_or_letin decl c =
           match decl with

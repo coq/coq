@@ -131,7 +131,7 @@ open Proofview.Notations
 let rec eq_constr_mod_evars sigma x y =
   let open EConstr in
   match EConstr.kind sigma x, EConstr.kind sigma y with
-  | Evar (e1, l1), Evar (e2, l2) when not (Evar.equal e1 e2) -> true
+  | Evar (e1, l1, _), Evar (e2, l2, _) when not (Evar.equal e1 e2) -> true
   | _, _ -> compare_constr sigma (fun x y -> eq_constr_mod_evars sigma x y) x y
 
 let progress_evars t =
