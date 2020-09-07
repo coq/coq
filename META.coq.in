@@ -507,7 +507,7 @@ package "plugins" (
     description = "Coq string_notation plugin"
     version     = "8.12"
 
-    requires    = ""
+    requires    = "coq.vernac"
     directory   = "syntax"
 
     archive(byte)    = "string_notation_plugin.cmo"
@@ -515,6 +515,20 @@ package "plugins" (
 
     plugin(byte)    = "string_notation_plugin.cmo"
     plugin(native)  = "string_notation_plugin.cmxs"
+  )
+
+  package "numeral_notation" (
+    description = "Coq numeral notation plugin"
+    version 	= "8.13"
+
+    requires    = "coq.vernac"
+    directory 	= "numeral_notation"
+
+    archive(byte)    = "numeral_notation_plugin.cmo"
+    archive(native)  = "numeral_notation_plugin.cmx"
+
+    plugin(byte)    = "numeral_notation_plugin.cmo"
+    plugin(native)  = "numeral_notation_plugin.cmxs"
   )
 
   package "derive" (
