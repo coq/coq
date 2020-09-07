@@ -179,6 +179,8 @@ grammar with its productions and removing the non-terminal. Each should appear
 as a separate production.  (Doesn't work recursively; splicing for both
 `A: [ | B ]` and `B: [ | C ]` must be done in separate SPLICE operations.)
 
+`OPTINREF` - applies the local `OPTINREF` edit to every nonterminal
+
 `EXPAND` - expands LIST0, LIST1, LIST* ... SEP and OPT constructs into
 new non-terminals
 

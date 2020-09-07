@@ -1190,6 +1190,15 @@ let edit_all_prods g op eprods =
   | "DELETE" -> do_it op eprods 1; true
   | "SPLICE" -> do_it op eprods 1; true
   | "MERGE" -> do_it op eprods 2; true
+  | "OPTINREF" ->
+      List.iter (fun nt ->
+        let prods = NTMap.find nt !g.map in
+        if has_match [] prods then begin
+          let prods' = remove_prod [] prods nt in
+          g_update_prods g nt prods';
+          global_repl g [(Snterm nt)] [(Sopt (Snterm nt))]
+        end)
+      !g.order; true
   | "EXPAND" ->
     if List.length eprods > 1 || List.length (List.hd eprods) <> 0 then
       error "'EXPAND:' expects a single empty production\n";
@@ -2007,10 +2016,13 @@ let report_omitted_prods g seen label split =
         (if first = "" then nt else first), nt, n + 1, total + 1)
     ("", "", 0, 0) !g.order in
   maybe_warn first last n;
-(*    List.iter (fun nt ->
-        if not (NTMap.mem nt seen || (List.mem nt included)) then
-          warn "%s %s not included in .rst files\n" "Nonterminal" nt)
-      !g.order;*)
+  (*
+  Printf.printf "\n";
+  NTMap.iter (fun nt _ ->
+      if not (NTMap.mem nt seen || (List.mem nt included)) then
+        warn "%s %s not included in .rst files\n" "Nonterminal" nt)
+    !g.map;
+  *)
   if total <> 0 then
     Printf.eprintf "TOTAL %ss not included = %d\n" label total
 
