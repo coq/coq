@@ -114,9 +114,9 @@ Identifiers
 Numbers
   Numbers are sequences of digits with an optional fractional part
   and exponent, optionally preceded by a minus sign. Hexadecimal numerals
-  start with ``0x`` or ``0X``. :n:`@int` is an integer;
-  a number without fractional nor exponent parts. :n:`@natural` is a non-negative
-  integer.  Underscores embedded in the digits are ignored, for example
+  start with ``0x`` or ``0X``. :n:`@bigint` are integers;
+  numbers without fractional nor exponent parts. :n:`@bignat` are non-negative
+  integers.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
   .. insertprodn number hexdigit
@@ -125,13 +125,17 @@ Numbers
      number ::= {? - } @decnat {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnat }
      | {? - } @hexnat {? . {+ {| @hexdigit | _ } } } {? {| p | P } {? {| + | - } } @decnat }
      integer ::= {? - } @natural
-     natural ::= {| @decnat | @hexnat }
+     natural ::= @bignat
+     bigint ::= {? - } @bignat
+     bignat ::= {| @decnat | @hexnat }
      decnat ::= @digit {* {| @digit | _ } }
      digit ::= 0 .. 9
      hexnat ::= {| 0x | 0X } @hexdigit {* {| @hexdigit | _ } }
      hexdigit ::= {| 0 .. 9 | a .. f | A .. F }
 
-  .. todo PR need some code fixes for hex, see PR 11948
+  :n:`@integer` and :n:`@natural` are limited to the range that fits
+  into an OCaml integer (63-bit integers on most architectures).
+  :n:`@bigint` and :n:`@bignat` have no range limitation.
 
 Strings
   Strings begin and end with ``"`` (double quote).  Use ``""`` to represent

@@ -139,6 +139,14 @@ integer: [
 ]
 
 natural: [
+| bignat
+]
+
+bigint: [
+| OPT "-" bignat
+]
+
+bignat: [
 | [ decnat | hexnat ]
 ]
 
@@ -1291,8 +1299,8 @@ field_mod: [
 ]
 
 numeral_modifier: [
-| "(" "warning" "after" number ")"
-| "(" "abstract" "after" number ")"
+| "(" "warning" "after" bignat ")"
+| "(" "abstract" "after" bignat ")"
 ]
 
 hints_path: [

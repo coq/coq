@@ -1544,8 +1544,8 @@ Numeral notations
    .. insertprodn numeral_modifier numeral_modifier
 
    .. prodn::
-      numeral_modifier ::= ( warning after @number )
-      | ( abstract after @number )
+      numeral_modifier ::= ( warning after @bignat )
+      | ( abstract after @bignat )
 
    This command allows the user to customize the way numeral literals
    are parsed and printed.
@@ -1591,33 +1591,33 @@ Numeral notations
          function application, constructors, inductive type families,
          sorts, and primitive integers) will be considered for printing.
 
-      :n:`( warning after @number )`
+      :n:`( warning after @bignat )`
          displays a warning message about a possible stack
-         overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@number`.
+         overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@bignat`.
 
          .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
 
             When a :cmd:`Numeral Notation` is registered in the current scope
-            with :n:`(warning after @number)`, this warning is emitted when
-            parsing a number greater than or equal to :token:`number`.
+            with :n:`(warning after @bignat)`, this warning is emitted when
+            parsing a number greater than or equal to :token:`bignat`.
 
-      :n:`( abstract after @number )`
+      :n:`( abstract after @bignat )`
          returns :n:`(@qualid__parse m)` when parsing a literal
-         :n:`m` that's greater than :n:`@number` rather than reducing it to a normal form.
+         :n:`m` that's greater than :n:`@bignat` rather than reducing it to a normal form.
          Here :g:`m` will be a
          :g:`Numeral.int` or :g:`Numeral.uint` or :g:`Z`, depending on the
          type of the parsing function :n:`@qualid__parse`. This allows for a
          more compact representation of literals in types such as :g:`nat`,
          and limits parse failures due to stack overflow.  Note that a
-         warning will be emitted when an integer larger than :token:`number`
-         is parsed.  Note that :n:`(abstract after @number)` has no effect
+         warning will be emitted when an integer larger than :token:`bignat`
+         is parsed.  Note that :n:`(abstract after @bignat)` has no effect
          when :n:`@qualid__parse` lands in an :g:`option` type.
 
          .. warn:: To avoid stack overflow, large numbers in @type are interpreted as applications of @qualid__parse.
 
             When a :cmd:`Numeral Notation` is registered in the current scope
-            with :n:`(abstract after @number)`, this warning is emitted when
-            parsing a number greater than or equal to :token:`number`.
+            with :n:`(abstract after @bignat)`, this warning is emitted when
+            parsing a number greater than or equal to :token:`bignat`.
             Typically, this indicates that the fully computed representation
             of numbers can be so large that non-tail-recursive OCaml
             functions run out of stack space when trying to walk them.

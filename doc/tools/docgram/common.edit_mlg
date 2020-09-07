@@ -756,8 +756,8 @@ hexnat: [
 | [ "0x" | "0X" ] hexdigit LIST0 [ hexdigit | "_" ]
 ]
 
-natural: [
-| REPLACE bignat
+bignat: [
+| REPLACE NUMBER
 | WITH [ decnat | hexnat ]
 ]
 
@@ -2197,7 +2197,6 @@ ltac2_induction_clause: [
 SPLICE: [
 | clause
 | noedit_mode
-| bigint
 | match_list
 | match_context_list
 | IDENT
@@ -2360,7 +2359,6 @@ SPLICE: [
 | search_queries
 | locatable
 | scope_delimiter
-| bignat
 | one_import_filter_name
 | search_where
 | message_token
