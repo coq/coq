@@ -38,7 +38,28 @@ val print : t -> Pp.t
 module Cache :
 sig
   type t
+  (** This is essentially an integer that indicates the length of the prefix of
+      an evar instance that is not known to be the identity instance. That is,
+      [Constr.Evar (evk, l, n)] is well-formed iff [l = a @ id] where
+      [length a = n] and [id] is a suffix of [evk]'s identity instance.*)
+
   val none : t
+  (** Unknown integer. *)
+
+  val make : int -> t
+
+  val length : t -> int option
+
+  module List :
+  sig
+    val map : t -> ('a -> 'a) -> 'a list -> t * 'a list
+    val map_prefix : t -> ('a -> 'a) -> 'a list -> 'a list
+    val iter_prefix : t -> ('a -> unit) -> 'a list -> unit
+    val prefix : t -> 'a list -> 'a list
+  end
+  (** This module offers functions similar to the generic list module, except
+      that they only consider the non-trivial prefix of the argument. *)
+
 end
 
 module Set : Set.S with type elt = t

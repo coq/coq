@@ -72,6 +72,7 @@ type case_info =
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type 'constr pexistential = existential_key * 'constr list
+type 'constr pcexistential = existential_key * 'constr list * Evar.Cache.t
 type ('constr, 'types) prec_declaration =
     Name.t binder_annot array * 'types array * 'constr array
 type ('constr, 'types) pfixpoint =
@@ -116,6 +117,7 @@ type t = (t, t, Sorts.t, Instance.t) kind_of_term
 type constr = t
 
 type existential = existential_key * constr list
+type cexistential = existential_key * constr list * Evar.Cache.t
 
 type types = constr
 
@@ -182,6 +184,7 @@ let mkProj (p,c) = Proj (p,c)
 
 (* Constructs an existential variable *)
 let mkEvar (e, inst) = Evar (e, inst, Evar.Cache.none)
+let mkEvarC (e, inst, c) = Evar (e, inst, c)
 
 (* Constructs the ith (co)inductive type of the block named kn *)
 let mkInd m = Ind (in_punivs m)
@@ -411,6 +414,10 @@ let destConst c = match kind c with
 (* Destructs an existential variable *)
 let destEvar c = match kind c with
   | Evar (kn, a, _c) -> kn, a
+  | _ -> raise DestKO
+
+let destEvarC c = match kind c with
+  | Evar (kn, a, c) -> kn, a, c
   | _ -> raise DestKO
 
 (* Destructs a (co)inductive type named kn *)

@@ -20,6 +20,7 @@ type t = Evd.econstr
 type types = t
 type constr = t
 type existential = t pexistential
+type cexistential = t pcexistential
 type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
@@ -110,6 +111,7 @@ val mkRel : int -> t
 val mkVar : Id.t -> t
 val mkMeta : metavariable -> t
 val mkEvar : t pexistential -> t
+val mkEvarC : t pcexistential -> t
 val mkSort : Sorts.t -> t
 val mkSProp : t
 val mkProp : t

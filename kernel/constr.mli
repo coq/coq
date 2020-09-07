@@ -97,6 +97,9 @@ val mkMeta : metavariable -> constr
 type existential = Evar.t * constr list
 val mkEvar : existential -> constr
 
+type cexistential = Evar.t * constr list * Evar.Cache.t
+val mkEvarC : cexistential -> constr
+
 (** Construct a sort *)
 val mkSort : Sorts.t -> types
 val mkSProp : types
@@ -217,6 +220,7 @@ val mkCoFix : cofixpoint -> constr
 (** [constr list] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type 'constr pexistential = Evar.t * 'constr list
+type 'constr pcexistential = Evar.t * 'constr list * Evar.Cache.t
 
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Rel       of int                                  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
@@ -339,6 +343,7 @@ val destConst : constr -> Constant.t Univ.puniverses
 
 (** Destructs an existential variable *)
 val destEvar : constr -> existential
+val destEvarC : constr -> cexistential
 
 (** Destructs a (co)inductive type *)
 val destInd : constr -> inductive Univ.puniverses

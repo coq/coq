@@ -35,6 +35,7 @@ include (Evd.MiniEConstr : module type of Evd.MiniEConstr
 type types = t
 type constr = t
 type existential = t pexistential
+type cexistential = t pcexistential
 type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
@@ -56,6 +57,7 @@ let mkRel n = of_kind (Rel n)
 let mkVar id = of_kind (Var id)
 let mkMeta n = of_kind (Meta n)
 let mkEvar (e, l) = of_kind (Evar (e, l, Evar.Cache.none))
+let mkEvarC (e, l, c) = of_kind (Evar (e, l, c))
 let mkSort s = of_kind (Sort (ESorts.make s))
 let mkCast (b, k, t) = of_kind (Cast (b, k, t))
 let mkProd (na, t, u) = of_kind (Prod (na, t, u))
