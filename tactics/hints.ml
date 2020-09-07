@@ -816,6 +816,9 @@ let secvars_of_constr env sigma c =
 let secvars_of_global env gr =
   secvars_of_idset (vars_of_global env gr)
 
+let reduce_hint env sigma c =
+  Reductionops.((nf_betaiota env sigma (whd_all env sigma c)))
+
 let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
   let secvars = secvars_of_constr env sigma c in
   let cty = strip_outer_cast sigma cty in
@@ -838,7 +841,7 @@ let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
            code = with_uid (Give_exact (c, cty, ctx, poly)); })
 
 let make_apply_entry env sigma hnf info ~poly ?(name=PathAny) (c, cty, ctx) =
-  let cty = if hnf then hnf_constr env sigma cty else cty in
+  let cty = if hnf then reduce_hint env sigma cty else cty in
   match EConstr.kind sigma cty with
   | Prod _ ->
     let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
@@ -980,7 +983,7 @@ let make_mode ref m =
 let make_trivial env sigma poly ?(name=PathAny) r =
   let c,ctx = fresh_global_or_constr env sigma poly r in
   let sigma = Evd.merge_context_set univ_flexible sigma ctx in
-  let t = hnf_constr env sigma (Retyping.get_type_of env sigma c) in
+  let t = reduce_hint env sigma (Retyping.get_type_of env sigma c) in
   let hd = head_constr sigma t in
   let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd,
