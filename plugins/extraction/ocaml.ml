@@ -99,6 +99,8 @@ let str_global k r =
 
 let pp_global k r = str (str_global k r)
 
+let pp_global_name k r = str (Common.pp_global k r)
+
 let pp_modname mp = str (Common.pp_module mp)
 
 (* grammar from OCaml 4.06 manual, "Prefix and infix symbols" *)
@@ -446,7 +448,7 @@ let pp_val e typ =
 
 let pp_Dfix (rv,c,t) =
   let names = Array.map
-    (fun r -> if is_inline_custom r then mt () else pp_global Term r) rv
+    (fun r -> if is_inline_custom r then mt () else pp_global_name Term r) rv
   in
   let rec pp init i =
     if i >= Array.length rv then mt ()
@@ -499,7 +501,7 @@ let pp_logical_ind packet =
   fnl ()
 
 let pp_singleton kn packet =
-  let name = pp_global Type (GlobRef.IndRef (kn,0)) in
+  let name = pp_global_name Type (GlobRef.IndRef (kn,0)) in
   let l = rename_tvars keywords packet.ip_vars in
   hov 2 (str "type " ++ pp_parameters l ++ name ++ str " =" ++ spc () ++
          pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
@@ -508,7 +510,7 @@ let pp_singleton kn packet =
 
 let pp_record kn fields ip_equiv packet =
   let ind = GlobRef.IndRef (kn,0) in
-  let name = pp_global Type ind in
+  let name = pp_global_name Type ind in
   let fieldnames = pp_fields ind fields in
   let l = List.combine fieldnames packet.ip_types.(0) in
   let pl = rename_tvars keywords packet.ip_vars in
@@ -530,7 +532,7 @@ let pp_ind co kn ind =
   let nextkwd = fnl () ++ str "and " in
   let names =
     Array.mapi (fun i p -> if p.ip_logical then mt () else
-                  pp_global Type (GlobRef.IndRef (kn,i)))
+                  pp_global_name Type (GlobRef.IndRef (kn,i)))
       ind.ind_packets
   in
   let cnames =
@@ -570,7 +572,7 @@ let pp_decl = function
     | Dterm (r,_,_) when is_inline_custom r -> mt ()
     | Dind (kn,i) -> pp_mind kn i
     | Dtype (r, l, t) ->
-        let name = pp_global Type r in
+        let name = pp_global_name Type r in
         let l = rename_tvars keywords l in
         let ids, def =
           try
@@ -587,7 +589,7 @@ let pp_decl = function
           if is_custom r then str (" = " ^ find_custom r)
           else pp_function (empty_env ()) a
         in
-        let name = pp_global Term r in
+        let name = pp_global_name Term r in
         pp_val name t ++ hov 0 (str "let " ++ name ++ def ++ mt ())
     | Dfix (rv,defs,typs) ->
         pp_Dfix (rv,defs,typs)
@@ -598,10 +600,10 @@ let pp_spec = function
   | Sind (kn,i) -> pp_mind kn i
   | Sval (r,t) ->
       let def = pp_type false [] t in
-      let name = pp_global Term r in
+      let name = pp_global_name Term r in
       hov 2 (str "val " ++ name ++ str " :" ++ spc () ++ def)
   | Stype (r,vl,ot) ->
-      let name = pp_global Type r in
+      let name = pp_global_name Type r in
       let l = rename_tvars keywords vl in
       let ids, def =
         try
