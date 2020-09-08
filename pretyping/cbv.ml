@@ -381,6 +381,10 @@ and apply_env env t =
   | _ ->
     map_with_binders subs_lift apply_env env t
 
+let rec strip_app = function
+  | APP (args,st) -> APP (args,strip_app st)
+  | s -> TOP
+
 (* The main recursive functions
  *
  * Go under applications and cases/projections (pushed in the stack),
@@ -426,7 +430,7 @@ let rec norm_head info env t stack =
 
   | Const sp ->
     Reductionops.reduction_effect_hook info.env info.sigma
-      (fst sp) (lazy (reify_stack t stack));
+      (fst sp) (lazy (reify_stack t (strip_app stack)));
     norm_head_ref 0 info env stack (ConstKey sp) t
 
   | LetIn (_, b, _, c) ->
