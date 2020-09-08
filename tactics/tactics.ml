@@ -3378,7 +3378,7 @@ let expand_projections env sigma c =
 
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
-let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
+let atomize_param_of_ind_then ((indref,deppos),nparams,_) hyp0 tac =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
@@ -3391,21 +3391,22 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   let params = List.firstn nparams argl in
   let params' = List.map (expand_projections env' sigma) params in
   (* le gl est important pour ne pas préévaluer *)
-  let rec atomize_one i args args' avoid =
-    if Int.equal i nparams then
-      let t = applist (hd, params@args) in
+  let rec atomize_one i args args' indvars =
+    if Int.equal i 0 then
+      let t = applist (hd, args) in
       Tacticals.New.tclTHEN
         (change_in_hyp ~check:false None (make_change_arg t) (hyp0,InHypTypeOnly))
-        (tac avoid)
+        (tac indvars)
     else
       let c = List.nth argl (i-1) in
       match EConstr.kind sigma c with
         | Var id when not (List.exists (fun c -> occur_var env sigma id c) args') &&
-                      not (List.exists (fun c -> occur_var env sigma id c) params') ->
+                      not (List.exists (fun c -> occur_var env sigma id c) params') &&
+                      List.mem i deppos ->
             (* Based on the knowledge given by the user, all
                constraints on the variable are generalizable in the
                current environment so that it is clearable after destruction *)
-            atomize_one (i-1) (c::args) (c::args') (Id.Set.add id avoid)
+            atomize_one (i-1) (c::args) (c::args') (Id.Set.add id indvars)
         | _ ->
            let c' = expand_projections env' sigma c in
             let dependent t = dependent sigma c t in
@@ -3417,7 +3418,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
                  follow the (old) discipline of not generalizing over
                  this term, since we don't try to invert the
                  constraint anyway. *)
-              atomize_one (i-1) (c::args) (c'::args') avoid
+              atomize_one (i-1) (c::args) (c'::args') indvars
             else
             (* We reason blindly on the term and do as if it were
                generalizable, ignoring the constraints coming from
@@ -3428,10 +3429,10 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
               let type_of = Tacmach.New.pf_get_type_of gl in
               id_of_name_using_hdchar env sigma (type_of c) Anonymous
             in
-            let x = fresh_id_in_env avoid id env in
+            let x = fresh_id_in_env indvars id env in
             Tacticals.New.tclTHEN
               (letin_tac None (Name x) c None allHypsAndConcl)
-              (atomize_one (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid))
+              (atomize_one (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x indvars))
   in
   atomize_one (List.length argl) [] [] Id.Set.empty
   end
@@ -3622,6 +3623,7 @@ type elim_metadata = {
                                                if HI is in premisses, None otherwise *)
   indref: GlobRef.t option;
   indarg_in_concl: bool;      (* true if HI appears at the end of conclusion *)
+  deppos: int list;
 }
 
 let make_base n id =
@@ -4100,32 +4102,44 @@ let decompose_elim_scheme sigma elimt =
 let compute_elim_metadata sigma scheme =
   (* First see if (f x...) is in the conclusion. *)
   if scheme.farg_in_concl then
-    { indarg_in_concl = false; indarg = None; indref = None}
+    { indarg_in_concl = false; indarg = None; indref = None; deppos = []}
   else
     let open Context.Rel.Declaration in
-    match scheme.args with
-    | [] ->
-        (* If no args_indargs then no indarg *)
-        { indarg_in_concl = false; indarg = None; indref = None}
-    | LocalDef (hiname,_,hi)::_ ->
-        error_ind_scheme ""
+    let rec aux k = function
+    | [] -> { indarg_in_concl = false; indarg = None; indref = None; deppos = []}
+    | LocalDef (hiname,_,hi)::args -> aux (k+1) args
     | LocalAssum (hiname,hi)::args ->
         (* Look at last arg: is it the indarg? *)
        let hi_ind, hi_args = decompose_app sigma hi in
        let hi_is_ref = isRef sigma hi_ind in
        let hi_nargs = List.length hi_args in
        if hi_is_ref && Int.equal hi_nargs (scheme.nparams + List.length args) then
+         let f i l c = if dependent sigma (lift k c) scheme.concl then i::l else l in
+         let deppos = List.fold_left_i f 1 [] hi_args in
          { indarg_in_concl = occur_rel sigma 1 scheme.concl;
-           indarg = Some hi; indref = Some (fst (destRef sigma hi_ind)) }
+           indarg = Some hi; indref = Some (fst (destRef sigma hi_ind)); deppos }
        else
-         { indarg_in_concl = false; indarg = None; indref = None}
+         { indarg_in_concl = false; indarg = None; indref = None; deppos = []} in
+    aux 1 scheme.args
 
 let compute_elim_type sigma ind_guess scheme =
-  match (compute_elim_metadata sigma scheme).indref with
-  | Some t -> t (* Do we need to do some weak checke that it matches ind_guess? *)
-  | None ->
-    try fst (EConstr.destRef sigma ind_guess)
-    with Not_found -> error "Cannot find the induction type."
+  match compute_elim_metadata sigma scheme with
+  | {indref = Some t; deppos} ->
+    (t,deppos) (* Do we need to do some weak check that it matches ind_guess? *)
+  | {indref = None} ->
+    let t =
+      try fst (EConstr.destRef sigma ind_guess)
+      with Not_found -> error "Cannot find the induction type." in
+    let open Context.Rel.Declaration in
+    let rec aux k = function
+    | [] -> []
+    | LocalDef _::args -> aux (k+1) args
+    | LocalAssum (_,hi)::args ->
+      let _, hi_args = decompose_app sigma hi in
+      let f i l c = if dependent sigma (lift k c) scheme.concl then i::l else l in
+      List.fold_left_i f 1 [] hi_args in
+    let deppos = aux 1 scheme.args in
+    t, deppos
 
 let compute_scheme_signature evd (scheme,ext_scheme) names_info ind_type_guess =
   let open Context.Rel.Declaration in

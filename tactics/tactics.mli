@@ -282,6 +282,7 @@ type elim_metadata = {
                                                  if HI is in premisses, None otherwise *)
   indref: GlobRef.t option;
   indarg_in_concl: bool;      (** true if HI appears at the end of conclusion *)
+  deppos: int list;
 }
 
 val decompose_elim_scheme : evar_map -> types -> elim_scheme
