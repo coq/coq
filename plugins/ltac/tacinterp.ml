@@ -183,7 +183,7 @@ let catch_error_with_trace_loc loc use_finer call_trace f x =
     catching_error call_trace Exninfo.iraise e
 
 let catch_error_loc loc use_finer tac =
-  Proofview.tclOR tac (fun exn ->
+  Proofview.tclORELSE tac (fun exn ->
       let (e, info) = update_loc loc use_finer exn in
       Proofview.tclZERO ~info e)
 
@@ -1092,7 +1092,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
   | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
 
 
-and eval_tactic ist tac : unit Proofview.tactic = match tac with
+and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
   | TacAtom {loc;v=t} ->
       let call = LtacAtomCall t in
       let trace = push_trace(loc,call) ist in
@@ -1171,10 +1171,10 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacFirst l -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)
   | TacSolve l -> Tacticals.New.tclSOLVE (List.map (interp_tactic ist) l)
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
-  | TacArg a -> interp_tactic ist (TacArg a)
+  | TacArg a -> Ftactic.run (val_interp ist tac) (fun v -> catch_error_loc a.CAst.loc false (tactic_of_value ist v))
   | TacInfo tac ->
       warn_deprecated_info ();
-      eval_tactic ist tac
+      eval_tactic_ist ist tac
   | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
   | TacAlias {loc; v=(s,l)} ->
@@ -1254,7 +1254,7 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
       let ist = { lfun = Id.Map.empty; poly; extra } in
       let appl = GlbAppl[r,[]] in
       Profile_ltac.do_profile "interp_ltac_reference" trace ~count_call:false
-        (val_interp ~appl ist (Tacenv.interp_ltac r))
+        (catch_error_tac_loc loc false trace (val_interp ~appl ist (Tacenv.interp_ltac r)))
 
 and interp_tacarg ist arg : Val.t Ftactic.t =
   match arg with
@@ -1370,7 +1370,7 @@ and tactic_of_value ist vle =
         lfun = lfun;
         poly;
         extra = TacStore.set ist.extra f_trace []; } in
-      let tac = name_if_glob appl (eval_tactic ist t) in
+      let tac = name_if_glob appl (eval_tactic_ist ist t) in
       Profile_ltac.do_profile "tactic_of_value" trace (catch_error_tac trace tac)
   | VFun (appl,_,vmap,vars,_) ->
      let tactic_nm =
@@ -1457,7 +1457,7 @@ and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
         ; poly
         ; extra = TacStore.set ist.extra f_trace trace
         } in
-      let tac = eval_tactic ist t in
+      let tac = eval_tactic_ist ist t in
       let dummy = VFun (appl,extract_trace ist, Id.Map.empty, [], TacId []) in
       catch_error_tac trace (tac <*> Ftactic.return (of_tacvalue dummy))
   | _ -> Ftactic.return v
@@ -1937,11 +1937,11 @@ let default_ist () =
 let eval_tactic t =
   Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
   Proofview.tclLIFT db_initialize <*>
-  interp_tactic (default_ist ()) t
+  eval_tactic_ist (default_ist ()) t
 
 let eval_tactic_ist ist t =
   Proofview.tclLIFT db_initialize <*>
-  interp_tactic ist t
+  eval_tactic_ist ist t
 
 (** FFI *)
 
@@ -1987,7 +1987,7 @@ let interp_tac_gen lfun avoid_ids debug t =
   let extra = TacStore.set extra f_avoid_ids avoid_ids in
   let ist = { lfun; poly; extra } in
   let ltacvars = Id.Map.domain lfun in
-  interp_tactic ist
+  eval_tactic_ist ist
     (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars } t)
   end
 
@@ -2104,7 +2104,7 @@ let () =
   register_interp0 wit_tactic interp
 
 let () =
-  let interp ist tac = interp_tactic ist tac >>= fun () -> Ftactic.return () in
+  let interp ist tac = eval_tactic_ist ist tac >>= fun () -> Ftactic.return () in
   register_interp0 wit_ltac interp
 
 let () =
@@ -2131,7 +2131,7 @@ let _ =
   let eval lfun poly env sigma ty tac =
     let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
     let ist = { lfun; poly; extra; } in
-    let tac = interp_tactic ist tac in
+    let tac = eval_tactic_ist ist tac in
     (* EJGA: We should also pass the proof name if desired, for now
        poly seems like enough to get reasonable behavior in practice
      *)
