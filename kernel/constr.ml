@@ -695,10 +695,10 @@ let map_gen userview f c = match kind c with
       let t' = f t in
       if t' == t then c
       else mkProj (p, t')
-  | Evar (e,l,_) ->
-      let l' = List.Smart.map f l in
+  | Evar (e,l,n) ->
+      let n, l' = Evar.Cache.List.map n f l in
       if l'==l then c
-      else mkEvar (e, l')
+      else mkEvarC (e, l', n)
   | Case (ci,p,iv,b,bl) when userview ->
       let b' = f b in
       let iv' = map_invert f iv in

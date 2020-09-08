@@ -755,15 +755,15 @@ let make_evar_clause env sigma ?len t =
     | Cast (t, _, _) -> clrec (sigma, holes) inst n t
     | Prod (na, t1, t2) ->
       (* Share the evar instances as we are living in the same context *)
-      let inst, ctx, args, subst = match inst with
+      let inst, ctx, args, subst, cache = match inst with
       | None ->
         (* Dummy type *)
-        let ctx, _, args, subst = push_rel_context_to_named_context env sigma mkProp in
-        Some (ctx, args, subst), ctx, args, subst
-      | Some (ctx, args, subst) -> inst, ctx, args, subst
+        let ctx, _, args, subst, cache = push_rel_context_to_named_context env sigma mkProp in
+        Some (ctx, args, subst, cache), ctx, args, subst, cache
+      | Some (ctx, args, subst, cache) -> inst, ctx, args, subst, cache
       in
       let (sigma, ev) = new_pure_evar ~typeclass_candidate:false ctx sigma (csubst_subst subst t1) in
-      let ev = mkEvar (ev, args) in
+      let ev = mkEvarC (ev, args, cache) in
       let dep = not (noccurn sigma 1 t2) in
       let hole = {
         hole_evar = ev;

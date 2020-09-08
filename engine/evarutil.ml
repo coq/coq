@@ -387,7 +387,7 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
   let open EConstr in
   let inst_vars = EConstr.identity_subst_val (named_context_val env) in
   if List.is_empty (Environ.rel_context env) then
-    (named_context_val env, typ, inst_vars, empty_csubst)
+    (named_context_val env, typ, inst_vars, empty_csubst, Evar.Cache.make 0)
   else
     let avoid = Environ.ids_of_named_context_val (named_context_val env) in
     let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
@@ -397,7 +397,7 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
     let (subst, _, env) =
       Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ?hypnaming sigma d acc)
         (rel_context env) ~init:(empty_csubst, avoid, named_context_val env) in
-    (env, csubst_subst subst typ, inst_rels@inst_vars, subst)
+    (env, csubst_subst subst typ, inst_rels@inst_vars, subst, Evar.Cache.none)
 
 (*------------------------------------*
  * Entry points to define new evars   *
@@ -443,7 +443,7 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
 (* Converting the env into the sign of the evar to define *)
 let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate
     ?principal ?hypnaming env evd typ =
-  let sign,typ',instance,subst = push_rel_context_to_named_context ?hypnaming env evd typ in
+  let sign,typ',instance,subst,cache = push_rel_context_to_named_context ?hypnaming env evd typ in
   let map c = csubst_subst subst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
   let instance =
@@ -453,7 +453,7 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
   let identity = if Int.equal (Environ.nb_rel env) 0 then Some instance else None in
   let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?identity ?abstract_arguments ?candidates ?naming
     ?typeclass_candidate ?principal in
-  (evd, EConstr.mkEvar (evk, instance))
+  (evd, EConstr.mkEvarC (evk, instance, cache))
 
 let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in
