@@ -4737,12 +4737,12 @@ Non-logical tactics
 ------------------------
 
 
-.. tacn:: cycle @num
+.. tacn:: cycle @int
    :name: cycle
 
-   Reorders the selected goals so that the first :n:`@num` goals appear after the
+   Reorders the selected goals so that the first :n:`@int` goals appear after the
    other selected goals.
-   If :n:`@num` is negative, it puts the last :n:`@num` goals at the
+   If :n:`@int` is negative, it puts the last :n:`@int` goals at the
    beginning of the list.
    The tactic is only useful with a goal selector, most commonly `all:`.
    Note that other selectors reorder goals; `1,3: cycle 1` is not equivalent
@@ -4761,11 +4761,11 @@ Non-logical tactics
       all: cycle 2.
       all: cycle -3.
 
-.. tacn:: swap @num @num
+.. tacn:: swap @int @int
    :name: swap
 
    Exchanges the position of the specified goals.
-   Negative values for :n:`@num` indicate counting goals
+   Negative values for :n:`@int` indicate counting goals
    backward from the end of the list of selected goals. Goals are indexed from 1.
    The tactic is only useful with a goal selector, most commonly `all:`.
    Note that other selectors reorder goals; `1,3: swap 1 3` is not equivalent
