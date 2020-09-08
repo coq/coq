@@ -1011,13 +1011,31 @@ let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
     Exninfo.iraise exn
 
 (* Preparing proof entries *)
+let error_unresolved_evars env sigma t evars =
+  let pr_unresolved_evar e =
+    hov 2 (str"- " ++ Printer.pr_existential_key sigma e ++  str ": " ++
+      Himsg.explain_pretype_error env sigma
+        (Pretype_errors.UnsolvableImplicit (e,None)))
+  in
+  CErrors.user_err (hov 0 begin
+    str "The following term contains unresolved implicit arguments:"++ fnl () ++
+    str "  " ++ Printer.pr_econstr_env env sigma t ++ fnl () ++
+    str "More precisely: " ++ fnl () ++
+    v 0 (prlist_with_sep cut pr_unresolved_evar (Evar.Set.elements evars))
+  end)
+
+let check_evars_are_solved env sigma t =
+  let t = EConstr.of_constr t in
+  let evars = Evarutil.undefined_evars_of_term sigma t in
+  if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
 let prepare_definition ?opaque ?inline ?fix_exn ~poly ~udecl ~types ~body sigma =
   let env = Global.env () in
-  Pretyping.check_evars_are_solved ~program_mode:false env sigma;
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:true
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
       sigma (fun nf -> nf body, Option.map nf types)
   in
+  Option.iter (check_evars_are_solved env sigma) types;
+  check_evars_are_solved env sigma body;
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   let entry = definition_entry ?fix_exn ?opaque ?inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
