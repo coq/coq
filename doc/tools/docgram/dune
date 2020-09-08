@@ -12,7 +12,7 @@
    (glob_files %{project_root}/parsing/*.mlg)
    (glob_files %{project_root}/toplevel/*.mlg)
    (glob_files %{project_root}/vernac/*.mlg)
-   ; All plugins except SSReflect and Ltac2 for now (mimicking what is done in Makefile.doc)
+   ; All plugins except SSReflect for now (mimicking what is done in Makefile.doc)
    (glob_files %{project_root}/plugins/btauto/*.mlg)
    (glob_files %{project_root}/plugins/cc/*.mlg)
    (glob_files %{project_root}/plugins/derive/*.mlg)
@@ -26,6 +26,7 @@
    (glob_files %{project_root}/plugins/rtauto/*.mlg)
    (glob_files %{project_root}/plugins/setoid_ring/*.mlg)
    (glob_files %{project_root}/plugins/syntax/*.mlg)
+   (glob_files %{project_root}/user-contrib/Ltac2/*.mlg)
    ; Sphinx files
    (glob_files %{project_root}/doc/sphinx/language/*.rst)
    (glob_files %{project_root}/doc/sphinx/proof-engine/*.rst)
