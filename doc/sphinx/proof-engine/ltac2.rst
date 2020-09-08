@@ -1159,7 +1159,7 @@ Match on values
 Notations
 ---------
 
-.. cmd:: Ltac2 Notation {+ @ltac2_scope } {? : @integer } := @ltac2_expr
+.. cmd:: Ltac2 Notation {+ @ltac2_scope } {? : @natural } := @ltac2_expr
    :name: Ltac2 Notation
 
    .. todo seems like name maybe should use lident rather than ident, considering:

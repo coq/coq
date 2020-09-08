@@ -606,14 +606,14 @@ command: [
 | "Locate" "Ltac" reference
 | "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | "Print" "Ltac" "Signatures"
-| "Obligation" integer "of" ident ":" lglob withtac
-| "Obligation" integer "of" ident withtac
-| "Obligation" integer ":" lglob withtac
-| "Obligation" integer withtac
+| "Obligation" natural "of" ident ":" lglob withtac
+| "Obligation" natural "of" ident withtac
+| "Obligation" natural ":" lglob withtac
+| "Obligation" natural withtac
 | "Next" "Obligation" "of" ident withtac
 | "Next" "Obligation" withtac
-| "Solve" "Obligation" integer "of" ident "with" tactic
-| "Solve" "Obligation" integer "with" tactic
+| "Solve" "Obligation" natural "of" ident "with" tactic
+| "Solve" "Obligation" natural "with" tactic
 | "Solve" "Obligations" "of" ident "with" tactic
 | "Solve" "Obligations" "with" tactic
 | "Solve" "Obligations"
@@ -2099,7 +2099,7 @@ match_list: [
 message_token: [
 | identref
 | STRING
-| integer
+| natural
 ]
 
 ltac_def_kind: [
@@ -2811,7 +2811,7 @@ sexpr: [
 
 syn_level: [
 |      (* Ltac2 plugin *)
-| ":" Prim.integer      (* Ltac2 plugin *)
+| ":" Prim.natural      (* Ltac2 plugin *)
 ]
 
 tac2def_syn: [

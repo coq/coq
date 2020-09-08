@@ -835,9 +835,9 @@ command: [
 | "Comments" LIST0 [ one_term | string | natural ]
 | "Declare" "Instance" ident_decl LIST0 binder ":" term OPT hint_info
 | "Declare" "Scope" scope_name
-| "Obligation" integer OPT ( "of" ident ) OPT ( ":" term OPT ( "with" ltac_expr ) )
+| "Obligation" natural OPT ( "of" ident ) OPT ( ":" term OPT ( "with" ltac_expr ) )
 | "Next" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
-| "Solve" "Obligation" integer OPT ( "of" ident ) "with" ltac_expr
+| "Solve" "Obligation" natural OPT ( "of" ident ) "with" ltac_expr
 | "Solve" "Obligations" OPT ( OPT ( "of" ident ) "with" ltac_expr )
 | "Solve" "All" "Obligations" OPT ( "with" ltac_expr )
 | "Admit" "Obligations" OPT ( "of" ident )
@@ -996,7 +996,7 @@ command: [
 | "Ltac2" OPT "mutable" OPT "rec" tac2def_body LIST0 ( "with" tac2def_body )
 | "Ltac2" "Type" OPT "rec" tac2typ_def LIST0 ( "with" tac2typ_def )
 | "Ltac2" "@" "external" ident ":" ltac2_type ":=" string string
-| "Ltac2" "Notation" LIST1 ltac2_scope OPT ( ":" integer ) ":=" ltac2_expr
+| "Ltac2" "Notation" LIST1 ltac2_scope OPT ( ":" natural ) ":=" ltac2_expr
 | "Ltac2" "Set" qualid OPT [ "as" ident ] ":=" ltac2_expr
 | "Ltac2" "Notation" [ string | lident ] ":=" ltac2_expr      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr      (* Ltac2 plugin *)
@@ -1425,8 +1425,8 @@ simple_tactic: [
 | "tryif" ltac_expr "then" ltac_expr "else" ltac_expr2
 | "first" "[" LIST0 ltac_expr SEP "|" "]"
 | "solve" "[" LIST0 ltac_expr SEP "|" "]"
-| "idtac" LIST0 [ ident | string | integer ]
-| [ "fail" | "gfail" ] OPT int_or_var LIST0 [ ident | string | integer ]
+| "idtac" LIST0 [ ident | string | natural ]
+| [ "fail" | "gfail" ] OPT int_or_var LIST0 [ ident | string | natural ]
 | "fun" LIST1 name "=>" ltac_expr
 | "eval" red_expr "in" term
 | "context" ident "[" term "]"

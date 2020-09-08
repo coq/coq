@@ -371,7 +371,7 @@ GRAMMAR EXTEND Gram
   ;
   syn_level:
     [ [ -> { None }
-      | ":"; n = Prim.integer -> { Some n }
+      | ":"; n = Prim.natural -> { Some n }
     ] ]
   ;
   tac2def_syn:

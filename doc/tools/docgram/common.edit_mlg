@@ -1201,11 +1201,11 @@ command: [
 | REPLACE "Next" "Obligation" "of" ident withtac
 | WITH "Next" "Obligation" OPT ( "of" ident ) withtac
 | DELETE "Next" "Obligation" withtac
-| REPLACE "Obligation" integer "of" ident ":" lglob withtac
-| WITH "Obligation" integer OPT ( "of" ident ) OPT ( ":" lglob withtac )
-| DELETE "Obligation" integer "of" ident withtac
-| DELETE "Obligation" integer ":" lglob withtac
-| DELETE "Obligation" integer withtac
+| REPLACE "Obligation" natural "of" ident ":" lglob withtac
+| WITH "Obligation" natural OPT ( "of" ident ) OPT ( ":" lglob withtac )
+| DELETE "Obligation" natural "of" ident withtac
+| DELETE "Obligation" natural ":" lglob withtac
+| DELETE "Obligation" natural withtac
 | REPLACE "Obligations" "of" ident
 | WITH "Obligations" OPT ( "of" ident )
 | DELETE "Obligations"
@@ -1232,10 +1232,10 @@ command: [
 | REPLACE "Solve" "All" "Obligations" "with" tactic
 | WITH "Solve" "All" "Obligations" OPT ( "with" tactic )
 | DELETE "Solve" "All" "Obligations"
-| REPLACE "Solve" "Obligation" integer "of" ident "with" tactic
-| WITH "Solve" "Obligation" integer OPT ( "of" ident ) "with" tactic
+| REPLACE "Solve" "Obligation" natural "of" ident "with" tactic
+| WITH "Solve" "Obligation" natural OPT ( "of" ident ) "with" tactic
 | DELETE "Solve" "Obligations"
-| DELETE "Solve" "Obligation" integer "with" tactic
+| DELETE "Solve" "Obligation" natural "with" tactic
 | REPLACE "Solve" "Obligations" "of" ident "with" tactic
 | WITH "Solve" "Obligations" OPT ( OPT ( "of" ident ) "with" tactic )
 | DELETE "Solve" "Obligations" "with" tactic

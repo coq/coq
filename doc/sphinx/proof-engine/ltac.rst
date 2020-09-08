@@ -876,7 +876,7 @@ Print/identity tactic: idtac
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-.. tacn:: idtac {* {| @ident | @string | @integer } }
+.. tacn:: idtac {* {| @ident | @string | @natural } }
    :name: idtac
 
    Leaves the proof unchanged and prints the given tokens. Strings and integers are printed
