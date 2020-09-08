@@ -876,10 +876,10 @@ Here is a summary of the error messages corresponding to each
 situation:
 
 .. exn:: The constructor @ident expects @num arguments.
+         The variable ident is bound several times in pattern term
+         Found a constructor of inductive type term while a constructor of term is expected
 
-   The variable ident is bound several times in pattern termFound a constructor
-   of inductive type term while a constructor of term is expectedPatterns are
-   incorrect (because constructors are not applied to the correct number of the
+   Patterns are incorrect (because constructors are not applied to the correct number of
    arguments, because they are not linear or they are wrongly typed).
 
 .. exn:: Non exhaustive pattern matching.
