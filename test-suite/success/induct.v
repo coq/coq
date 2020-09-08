@@ -196,3 +196,13 @@ Goal forall m n:nat, n=m.
 double induction m n.
 Abort.
 
+(* Mentioned as part of bug #12944 *)
+
+Inductive test : Set := cons : forall (IHv : nat) (v : test), test.
+
+Goal test -> test.
+induction 1 as [? IHv].
+Undo.
+destruct 1 as [? IHv].
+exact IHv. (* Check that the name is granted *)
+Qed.

@@ -3248,13 +3248,10 @@ let rec consume_pattern avoid na isdep gl = let open CAst in function
   | {loc;v=IntroForthcoming true}::names when not isdep ->
       consume_pattern avoid na isdep gl names
   | {loc;v=IntroForthcoming _}::names as fullpat ->
-      let avoid = Id.Set.union avoid (explicit_intro_names names) in
       (CAst.make ?loc @@ intropattern_of_name gl avoid na, fullpat)
   | {loc;v=IntroNaming IntroAnonymous}::names ->
-      let avoid = Id.Set.union avoid (explicit_intro_names names) in
       (CAst.make ?loc @@ intropattern_of_name gl avoid na, names)
   | {loc;v=IntroNaming (IntroFresh id')}::names ->
-      let avoid = Id.Set.union avoid (explicit_intro_names names) in
       (CAst.make ?loc @@ IntroNaming (IntroIdentifier (new_fresh_id avoid id' gl)), names)
   | pat::names -> (pat,names)
 
@@ -3312,7 +3309,7 @@ let get_recarg_dest (recargdests,tophyp) =
 *)
 
 let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
-  let avoid = Id.Set.union avoid avoid' in
+  let avoid = Id.Set.union avoid' (Id.Set.union avoid (explicit_intro_names names)) in
   let rec peel_tac ra dests names thin =
     match ra with
     | (RecArg,_,deprec,recvarname) ::
@@ -3320,7 +3317,7 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
         Proofview.Goal.enter begin fun gl ->
         let (recpat,names) = match names with
           | [{CAst.loc;v=IntroNaming (IntroIdentifier id)} as pat] ->
-              let id' = next_ident_away (add_prefix "IH" id) avoid in
+              let id' = new_fresh_id avoid (add_prefix "IH" id) gl in
               (pat, [CAst.make @@ IntroNaming (IntroIdentifier id')])
           | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
