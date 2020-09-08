@@ -138,6 +138,13 @@ let cata f a = function
   | Some c -> f c
   | None -> a
 
+let exists f = function
+  | Some c -> f c
+  | None -> false
+
+let for_all f = function
+  | Some c -> f c
+  | None -> false
 
 (** {6 More Specific operations} ***)
 
