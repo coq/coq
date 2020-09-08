@@ -375,8 +375,14 @@ behavior.)
       | !
       | par
 
-   Applies :token:`ltac_expr` to the selected goals.  It can only be used at the top
-   level of a tactic expression; it cannot be used within a tactic expression.
+   Reorders the goals and applies :token:`ltac_expr` to the selected goals.  It can
+   only be used at the top level of a tactic expression; it cannot be used within a
+   tactic expression.  The selected goals are reordered so they appear after the
+   lowest-numbered selected goal, ordered by goal number.  :ref:`Example
+   <reordering_goals_ex>`.  If the selector applies
+   to a single goal or to all goals, the reordering will not be apparent.  The order of
+   the goals in the :token:`selector` is irrelevant.  (This may not be what you expect;
+   see `#8481 <https://github.com/coq/coq/issues/8481>`_.)
 
    .. todo why shouldn't "all" and "!" be accepted anywhere a @selector is accepted?
       It would be simpler to explain.
@@ -429,6 +435,19 @@ Selectors can also be used nested within a tactic expression with the
 .. exn:: No such goal.
    :name: No such goal. (Goal selector)
    :undocumented:
+
+.. _reordering_goals_ex:
+
+.. example:: Selector reordering goals
+
+   .. coqtop:: reset in
+
+      Goal 1=0 /\ 2=0 /\ 3=0.
+
+   .. coqtop:: all
+
+      repeat split.
+      1,3: idtac.
 
 .. TODO change error message index entry
 

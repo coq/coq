@@ -54,7 +54,7 @@ Invocation of tactics
 ~~~~~~~~~~~~~~~~~~~~~
 
 A tactic is applied as an ordinary command. It may be preceded by a
-goal selector (see Section :ref:`ltac-semantics`). If no selector is
+goal selector (see Section :ref:`goal-selectors`). If no selector is
 specified, the default selector is used.
 
 .. _tactic_invocation_grammar:
@@ -4753,9 +4753,13 @@ Non-logical tactics
 .. tacn:: cycle @num
    :name: cycle
 
-   This tactic puts the :n:`@num` first goals at the end of the list of goals.
-   If :n:`@num` is negative, it will put the last :math:`|num|` goals at the
+   Reorders the selected goals so that the first :n:`@num` goals appear after the
+   other selected goals.
+   If :n:`@num` is negative, it puts the last :n:`@num` goals at the
    beginning of the list.
+   The tactic is only useful with a goal selector, most commonly `all:`.
+   Note that other selectors reorder goals; `1,3: cycle 1` is not equivalent
+   to `all: cycle 1`.  See :tacn:`… : … (goal selector)`.
 
 .. example::
 
@@ -4773,10 +4777,12 @@ Non-logical tactics
 .. tacn:: swap @num @num
    :name: swap
 
-   This tactic switches the position of the goals of indices :n:`@num` and
-   :n:`@num`.  Negative values for:n:`@num` indicate counting goals
-   backward from the end of the focused goal list. Goals are indexed from 1,
-   there is no goal with position 0.
+   Exchanges the position of the specified goals.
+   Negative values for :n:`@num` indicate counting goals
+   backward from the end of the list of selected goals. Goals are indexed from 1.
+   The tactic is only useful with a goal selector, most commonly `all:`.
+   Note that other selectors reorder goals; `1,3: swap 1 3` is not equivalent
+   to `all: swap 1 3`.  See :tacn:`… : … (goal selector)`.
 
 .. example::
 
@@ -4790,7 +4796,9 @@ Non-logical tactics
 .. tacn:: revgoals
    :name: revgoals
 
-   This tactics reverses the list of the focused goals.
+   Reverses the order of the selected goals.  The tactic is only useful with a goal
+   selector, most commonly `all :`.   Note that other selectors reorder goals;
+   `1,3: revgoals` is not equivalent to `all: revgoals`.  See :tacn:`… : … (goal selector)`.
 
    .. example::
 
