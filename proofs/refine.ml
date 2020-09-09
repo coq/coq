@@ -75,6 +75,8 @@ let generic_refine ~typecheck f gl =
   let future_goals, sigma = Evd.pop_future_goals sigma in
   (* Select the goals *)
   let future_goals = Evd.FutureGoals.map_filter (Proofview.Unsafe.advance sigma) future_goals in
+  let shelf = Evd.shelf sigma in
+  let future_goals = Evd.FutureGoals.filter (fun ev -> not @@ List.mem ev shelf) future_goals in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with
   | None ->

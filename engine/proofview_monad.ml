@@ -202,6 +202,11 @@ module type State = sig
   val modify : (t->t) -> unit Logical.t
 end
 
+module type Reader = sig
+  type t
+  val get : t Logical.t
+end
+
 module type Writer = sig
   type t
   val put : t -> unit Logical.t

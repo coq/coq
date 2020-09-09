@@ -247,6 +247,7 @@ let interp_fixpoint ?(check_recursivity=true) ~cofix l :
     (EConstr.rel_context * Impargs.manual_implicits * int option) list) =
   let (env,_,pl,evd),fix,info = interp_recursive ~program_mode:false ~cofix l in
   if check_recursivity then check_recursive true env evd fix;
+  let evd = Pretyping.(solve_remaining_evars all_no_fail_flags env evd) in
   let uctx,fix = ground_fixpoint env evd fix in
   (fix,pl,uctx,info)
 

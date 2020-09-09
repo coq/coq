@@ -453,7 +453,7 @@ end
 
 type evar_flags =
   { obligation_evars : Evar.Set.t;
-    restricted_evars : Evar.t Evar.Map.t;
+    aliased_evars : Evar.t Evar.Map.t;
     typeclass_evars : Evar.Set.t }
 
 type side_effect_role =
@@ -631,7 +631,7 @@ let add_with_name ?name ?(typeclass_candidate = true) d e i = match i.evar_body 
     associated to an evar, so we prevent registering its typeclass status. *)
 let add d e i = add_with_name ~typeclass_candidate:false d e i
 
-(*** Evar flags: typeclasses, restricted or obligation flag *)
+(*** Evar flags: typeclasses, aliased or obligation flag *)
 
 let get_typeclass_evars evd = evd.evar_flags.typeclass_evars
 
@@ -659,29 +659,28 @@ let is_obligation_evar evd evk =
 let inherit_evar_flags evar_flags evk evk' =
   let evk_typeclass = Evar.Set.mem evk evar_flags.typeclass_evars in
   let evk_obligation = Evar.Set.mem evk evar_flags.obligation_evars in
-  if not (evk_obligation || evk_typeclass) then evar_flags
-  else
-    let typeclass_evars =
-      if evk_typeclass then
-        let typeclass_evars = Evar.Set.remove evk evar_flags.typeclass_evars in
-        Evar.Set.add evk' typeclass_evars
-      else evar_flags.typeclass_evars
-    in
-    let obligation_evars =
-      if evk_obligation then
-        let obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars in
-        Evar.Set.add evk' obligation_evars
-      else evar_flags.obligation_evars
-    in
-    { evar_flags with obligation_evars; typeclass_evars }
+  let aliased_evars = Evar.Map.add evk evk' evar_flags.aliased_evars in
+  let typeclass_evars =
+    if evk_typeclass then
+      let typeclass_evars = Evar.Set.remove evk evar_flags.typeclass_evars in
+      Evar.Set.add evk' typeclass_evars
+    else evar_flags.typeclass_evars
+  in
+  let obligation_evars =
+    if evk_obligation then
+      let obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars in
+      Evar.Set.add evk' obligation_evars
+    else evar_flags.obligation_evars
+  in
+  { obligation_evars; aliased_evars; typeclass_evars }
 
 (** Removal: in all other cases of definition *)
 
 let remove_evar_flags evk evar_flags =
   { typeclass_evars = Evar.Set.remove evk evar_flags.typeclass_evars;
     obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars;
-    (* Restriction information is kept. *)
-    restricted_evars = evar_flags.restricted_evars }
+    (* Aliasing information is kept. *)
+    aliased_evars = evar_flags.aliased_evars }
 
 (** New evars *)
 
@@ -809,7 +808,7 @@ let create_evar_defs sigma = { sigma with
 
 let empty_evar_flags =
   { obligation_evars = Evar.Set.empty;
-    restricted_evars = Evar.Map.empty;
+    aliased_evars = Evar.Map.empty;
     typeclass_evars = Evar.Set.empty }
 
 let empty_side_effects = {
@@ -872,70 +871,11 @@ let evar_source evk d = (find d evk).evar_source
 let evar_ident evk evd = EvNames.ident evk evd.evar_names
 let evar_key id evd = EvNames.key id evd.evar_names
 
-let define_aux def undef evk body =
-  let oldinfo =
-    try EvMap.find evk undef
-    with Not_found ->
-      if EvMap.mem evk def then
-        anomaly ~label:"Evd.define" (Pp.str "cannot define an evar twice.")
-      else
-        anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
-  in
-  let () = assert (oldinfo.evar_body == Evar_empty) in
-  let newinfo = { oldinfo with evar_body = Evar_defined body } in
-  EvMap.add evk newinfo def, EvMap.remove evk undef
+let get_aliased_evars evd = evd.evar_flags.aliased_evars
 
-(* define the existential of section path sp as the constr body *)
-let define_gen evk body evd evar_flags =
-  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
-  let last_mods = match evd.conv_pbs with
-  | [] ->  evd.last_mods
-  | _ -> Evar.Set.add evk evd.last_mods
-  in
-  let evar_names = EvNames.remove_name_defined evk evd.evar_names in
-  { evd with defn_evars; undf_evars; last_mods; evar_names; evar_flags }
-
-(** By default, the obligation and evar tag of the evar is removed *)
-let define evk body evd =
-  let evar_flags = remove_evar_flags evk evd.evar_flags in
-  define_gen evk body evd evar_flags
-
-(** In case of an evar-evar solution, the flags are inherited *)
-let define_with_evar evk body evd =
-  let evk' = fst (destEvar body) in
-  let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
-  define_gen evk body evd evar_flags
-
-let is_restricted_evar evd evk =
-  try Some (Evar.Map.find evk evd.evar_flags.restricted_evars)
+let is_aliased_evar evd evk =
+  try Some (Evar.Map.find evk evd.evar_flags.aliased_evars)
   with Not_found -> None
-
-let declare_restricted_evar evar_flags evk evk' =
-  { evar_flags with restricted_evars = Evar.Map.add evk evk' evar_flags.restricted_evars }
-
-(* In case of restriction, we declare the restriction and inherit the obligation
-   and typeclass flags. *)
-
-let restrict evk filter ?candidates ?src evd =
-  let evk' = new_untyped_evar () in
-  let evar_info = EvMap.find evk evd.undf_evars in
-  let id_inst = Filter.filter_list filter evar_info.evar_hyps.env_named_var in
-  let evar_info' =
-    { evar_info with evar_filter = filter;
-      evar_candidates = candidates;
-      evar_source = (match src with None -> evar_info.evar_source | Some src -> src);
-      evar_identity = Identity.make id_inst;
-    } in
-  let last_mods = match evd.conv_pbs with
-  | [] ->  evd.last_mods
-  | _ -> Evar.Set.add evk evd.last_mods in
-  let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
-  let body = mkEvar(evk',id_inst) in
-  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
-  let evar_flags = declare_restricted_evar evd.evar_flags evk evk' in
-  let evar_flags = inherit_evar_flags evar_flags evk evk' in
-  { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
-    defn_evars; last_mods; evar_names; evar_flags }, evk'
 
 let downcast evk ccl evd =
   let evar_info = EvMap.find evk evd.undf_evars in
@@ -1223,6 +1163,73 @@ let pr_shelf evd =
   let open Pp in
   if List.is_empty evd.shelf then str"(empty stack)"
   else prlist_with_sep (fun () -> str"||") (prlist_with_sep spc Evar.print) evd.shelf
+
+let define_aux def undef evk body =
+  let oldinfo =
+    try EvMap.find evk undef
+    with Not_found ->
+      if EvMap.mem evk def then
+        anomaly ~label:"Evd.define" (Pp.str "cannot define an evar twice.")
+      else
+        anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
+  in
+  let () = assert (oldinfo.evar_body == Evar_empty) in
+  let newinfo = { oldinfo with evar_body = Evar_defined body } in
+  EvMap.add evk newinfo def, EvMap.remove evk undef
+
+(* define the existential of section path sp as the constr body *)
+let define_gen evk body evd evar_flags =
+  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
+  let last_mods = match evd.conv_pbs with
+  | [] ->  evd.last_mods
+  | _ -> Evar.Set.add evk evd.last_mods
+  in
+  let evar_names = EvNames.remove_name_defined evk evd.evar_names in
+  { evd with defn_evars; undf_evars; last_mods; evar_names; evar_flags }
+
+(** By default, the obligation and evar tag of the evar is removed *)
+let define evk body evd =
+  let evar_flags = remove_evar_flags evk evd.evar_flags in
+  define_gen evk body evd evar_flags
+
+(** In case of an evar-evar solution, the flags are inherited *)
+let define_with_evar evk body evd =
+  let evk' = fst (destEvar body) in
+  let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
+  let evd = unshelve evd [evk] in
+  let future_goals = FutureGoals.remove evk evd.future_goals in
+  let evd = { evd with future_goals } in
+  define_gen evk body evd evar_flags
+
+(* In case of restriction, we declare the aliasing and inherit the obligation
+   and typeclass flags. *)
+
+let restrict evk filter ?candidates ?src evd =
+  let evk' = new_untyped_evar () in
+  let evar_info = EvMap.find evk evd.undf_evars in
+  let id_inst = Filter.filter_list filter evar_info.evar_hyps.env_named_var in
+  let evar_info' =
+    { evar_info with evar_filter = filter;
+      evar_candidates = candidates;
+      evar_source = (match src with None -> evar_info.evar_source | Some src -> src);
+      evar_identity = Identity.make id_inst;
+    } in
+  let last_mods = match evd.conv_pbs with
+  | [] ->  evd.last_mods
+  | _ -> Evar.Set.add evk evd.last_mods in
+  let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
+  let body = mkEvar(evk',id_inst) in
+  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
+  let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
+  let evd = { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
+    defn_evars; last_mods; evar_names; evar_flags }
+  in
+  (* Mark new evar as future goal, removing previous one,
+    circumventing Proofview.advance but making Proof.run_tactic catch these. *)
+  let evd = unshelve evd [evk] in
+  let evd = remove_future_goal evd evk in
+  let evd = declare_future_goal evk' evd in
+  (evd, evk')
 
 (**********************************************************)
 (* Accessing metas *)

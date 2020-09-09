@@ -516,12 +516,7 @@ let restrict_evar evd evk filter ?src candidates =
   let candidates = Option.map (filter_effective_candidates evd evar_info filter) candidates in
   match candidates with
   | Some [] -> raise (ClearDependencyError (*FIXME*)(Id.of_string "blah", (NoCandidatesLeft evk), None))
-  | _ ->
-     let evd, evk' = Evd.restrict evk filter ?candidates ?src evd in
-     (* Mark new evar as future goal, removing previous one,
-        circumventing Proofview.advance but making Proof.run_tactic catch these. *)
-     let evd = Evd.remove_future_goal evd evk in
-     (Evd.declare_future_goal evk' evd, evk')
+  | _ -> Evd.restrict evk filter ?candidates ?src evd
 
 let rec check_and_clear_in_constr env evdref err ids global c =
   (* returns a new constr where all the evars have been 'cleaned'
@@ -703,9 +698,21 @@ let rec advance sigma evk =
   match evi.evar_body with
   | Evar_empty -> Some evk
   | Evar_defined v ->
-      match is_restricted_evar sigma evk with
+      match is_aliased_evar sigma evk with
       | Some evk -> advance sigma evk
       | None -> None
+
+let reachable_from_evars sigma evars =
+  let aliased = Evd.get_aliased_evars sigma in
+  let rec search evk visited =
+    if Evar.Set.mem evk visited then visited
+    else
+      let visited = Evar.Set.add evk visited in
+      match Evar.Map.find evk aliased with
+      | evk' -> search evk' visited
+      | exception Not_found -> visited
+  in
+  Evar.Set.fold (fun evk visited -> search evk visited) evars Evar.Set.empty
 
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
