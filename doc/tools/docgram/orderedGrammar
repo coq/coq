@@ -896,6 +896,7 @@ command: [
 | "Print" "Rings"      (* setoid_ring plugin *)
 | "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* setoid_ring plugin *)
 | "Print" "Fields"      (* setoid_ring plugin *)
+| "Number" "Notation" qualid qualid qualid ":" ident OPT numeral_modifier
 | "Hint" "Cut" "[" hints_path "]" OPT ( ":" LIST1 ident )
 | "Typeclasses" "Transparent" LIST0 qualid
 | "Typeclasses" "Opaque" LIST0 qualid
@@ -1614,7 +1615,7 @@ simple_tactic: [
 | "change_no_check" conversion OPT clause_dft_concl
 | "btauto"
 | "rtauto"
-| "congruence" OPT integer OPT ( "with" LIST1 one_term )
+| "congruence" OPT natural OPT ( "with" LIST1 one_term )
 | "f_equal"
 | "firstorder" OPT ltac_expr firstorder_rhs
 | "gintuition" OPT ltac_expr

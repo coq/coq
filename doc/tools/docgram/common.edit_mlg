@@ -1087,10 +1087,10 @@ simple_tactic: [
 | WITH "subst" OPT ( LIST1 var )
 | DELETE "subst"
 | DELETE "congruence"
-| DELETE "congruence" integer
+| DELETE "congruence" natural
 | DELETE "congruence" "with" LIST1 constr
-| REPLACE "congruence" integer "with" LIST1 constr
-| WITH "congruence" OPT integer OPT ( "with" LIST1 constr )
+| REPLACE "congruence" natural "with" LIST1 constr
+| WITH "congruence" OPT natural OPT ( "with" LIST1 constr )
 | DELETE "show" "ltac" "profile"
 | REPLACE "show" "ltac" "profile" "cutoff" integer
 | WITH "show" "ltac" "profile" OPT [ "cutoff" integer | string ]

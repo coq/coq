@@ -689,6 +689,7 @@ command: [
 | "Print" "Rings"      (* setoid_ring plugin *)
 | "Add" "Field" ident ":" constr OPT field_mods      (* setoid_ring plugin *)
 | "Print" "Fields"      (* setoid_ring plugin *)
+| "Number" "Notation" reference reference reference ":" ident numnotoption
 | "Numeral" "Notation" reference reference reference ":" ident numnotoption
 | "String" "Notation" reference reference reference ":" ident
 | "Ltac2" ltac2_entry      (* Ltac2 plugin *)
@@ -1435,9 +1436,9 @@ constr_as_binder_kind: [
 simple_tactic: [
 | "btauto"
 | "congruence"
-| "congruence" integer
+| "congruence" natural
 | "congruence" "with" LIST1 constr
-| "congruence" integer "with" LIST1 constr
+| "congruence" natural "with" LIST1 constr
 | "f_equal"
 | "firstorder" OPT tactic firstorder_using
 | "firstorder" OPT tactic "with" LIST1 preident

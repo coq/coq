@@ -500,6 +500,7 @@ let with_grammar_rule_protection f x =
 
 let () =
   let open Stdarg in
+  Grammar.register0 wit_nat (Prim.natural);
   Grammar.register0 wit_int (Prim.integer);
   Grammar.register0 wit_string (Prim.string);
   Grammar.register0 wit_pre_ident (Prim.preident);
