@@ -43,7 +43,8 @@ LGROUP: '{+' | '{*' | '{?';
 LBRACE: '{';
 RBRACE: '}';
 // todo: need a cleaner way to escape the 3-character strings here
-ESCAPED: '%{' | '%}' | '%|' | '`%{' | '@%{';
+ESCAPED: '%{' | '%}' | '%|' | '`%{' | '@%{' |
+  '%|-' | '%|->' | '%||' | '%|||' | '%||||';  // for SSR
 PIPE: '|';
 ATOM: '@' | '_' | ~[@_{}| ]+;
 ID: '@' ('_'? [a-zA-Z0-9])+;
