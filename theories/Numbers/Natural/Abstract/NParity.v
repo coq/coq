@@ -16,19 +16,19 @@ Module Type NParityProp (Import N : NAxiomsSig')(Import NP : NSubProp N).
 
 Include NZParityProp N N NP.
 
-Lemma odd_pred : forall n, n~=0 -> odd (P n) = even n.
+Lemma odd_pred n : n~=0 -> odd (P n) = even n.
 Proof.
  intros. rewrite <- (succ_pred n) at 2 by trivial.
  symmetry. apply even_succ.
 Qed.
 
-Lemma even_pred : forall n, n~=0 -> even (P n) = odd n.
+Lemma even_pred n : n~=0 -> even (P n) = odd n.
 Proof.
  intros. rewrite <- (succ_pred n) at 2 by trivial.
  symmetry. apply odd_succ.
 Qed.
 
-Lemma even_sub : forall n m, m<=n -> even (n-m) = Bool.eqb (even n) (even m).
+Lemma even_sub n m : m<=n -> even (n-m) = Bool.eqb (even n) (even m).
 Proof.
  intros.
  case_eq (even n); case_eq (even m);
@@ -56,7 +56,7 @@ Proof.
   rewrite add_1_r in Hm,Hn. order.
 Qed.
 
-Lemma odd_sub : forall n m, m<=n -> odd (n-m) = xorb (odd n) (odd m).
+Lemma odd_sub n m : m<=n -> odd (n-m) = xorb (odd n) (odd m).
 Proof.
  intros. rewrite <- !negb_even. rewrite even_sub by trivial.
  now destruct (even n), (even m).
