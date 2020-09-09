@@ -17,21 +17,21 @@ Include NMulOrderProp N.
 
 Theorem sub_0_l : forall n, 0 - n == 0.
 Proof.
-induct n.
+intro n; induct n.
 apply sub_0_r.
 intros n IH; rewrite sub_succ_r; rewrite IH. now apply pred_0.
 Qed.
 
 Theorem sub_succ : forall n m, S n - S m == n - m.
 Proof.
-intro n; induct m.
+intros n m; induct m.
 rewrite sub_succ_r. do 2 rewrite sub_0_r. now rewrite pred_succ.
 intros m IH. rewrite sub_succ_r. rewrite IH. now rewrite sub_succ_r.
 Qed.
 
 Theorem sub_diag : forall n, n - n == 0.
 Proof.
-induct n. apply sub_0_r. intros n IH; rewrite sub_succ; now rewrite IH.
+intro n; induct n. apply sub_0_r. intros n IH; rewrite sub_succ; now rewrite IH.
 Qed.
 
 Theorem sub_gt : forall n m, n > m -> n - m ~= 0.
@@ -96,7 +96,7 @@ Qed.
 
 Theorem sub_add_distr : forall n m p, n - (m + p) == (n - m) - p.
 Proof.
-intros n m; induct p.
+intros n m p; induct p.
 rewrite add_0_r; now rewrite sub_0_r.
 intros p IH. rewrite add_succ_r; do 2 rewrite sub_succ_r. now rewrite IH.
 Qed.
@@ -113,7 +113,7 @@ Qed.
 
 Theorem le_sub_l : forall n m, n - m <= n.
 Proof.
-intro n; induct m.
+intros n m; induct m.
 rewrite sub_0_r; now apply eq_le_incl.
 intros m IH. rewrite sub_succ_r.
 apply le_trans with (n - m); [apply le_pred_l | assumption].
@@ -121,7 +121,7 @@ Qed.
 
 Theorem sub_0_le : forall n m, n - m == 0 <-> n <= m.
 Proof.
-double_induct n m.
+intros n m; double_induct n m.
 intro m; split; intro; [apply le_0_l | apply sub_0_l].
 intro m; rewrite sub_0_r; split; intro H;
 [false_hyp H neq_succ_0 | false_hyp H nle_succ_0].
@@ -130,7 +130,7 @@ Qed.
 
 Theorem sub_add_le : forall n m, n <= n - m + m.
 Proof.
-intros.
+intros n m.
 destruct (le_ge_cases n m) as [LE|GE].
 rewrite <- sub_0_le in LE. rewrite LE; nzsimpl.
 now rewrite <- sub_0_le.
@@ -216,12 +216,13 @@ Qed.
 
 Lemma sub_le_mono_r : forall n m p, n <= m -> n-p <= m-p.
 Proof.
- intros. rewrite le_sub_le_add_r. transitivity m. assumption. apply sub_add_le.
+ intros n m p. rewrite le_sub_le_add_r.
+ transitivity m. assumption. apply sub_add_le.
 Qed.
 
 Lemma sub_le_mono_l : forall n m p, n <= m -> p-m <= p-n.
 Proof.
- intros. rewrite le_sub_le_add_r.
+ intros n m p. rewrite le_sub_le_add_r.
  transitivity (p-n+n); [ apply sub_add_le | now apply add_le_mono_l].
 Qed.
 
@@ -264,14 +265,14 @@ Definition lt_alt n m := exists p, S p + n == m.
 
 Lemma le_equiv : forall n m, le_alt n m <-> n <= m.
 Proof.
-split.
+intros n m; split.
 intros (p,H). rewrite <- H, add_comm. apply le_add_r.
 intro H. exists (m-n). now apply sub_add.
 Qed.
 
 Lemma lt_equiv : forall n m, lt_alt n m <-> n < m.
 Proof.
-split.
+intros n m; split.
 intros (p,H). rewrite <- H, add_succ_l, lt_succ_r, add_comm. apply le_add_r.
 intro H. exists (m-S n). rewrite add_succ_l, <- add_succ_r.
 apply sub_add. now rewrite le_succ_l.
