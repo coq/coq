@@ -190,7 +190,7 @@ Qed.
 
 Lemma bit0_odd : forall a, a.[0] = odd a.
 Proof.
- intros. symmetry.
+ intros a. symmetry.
  destruct (exists_div2 a) as (a' & b & EQ).
  rewrite EQ, testbit_0_r, add_comm, odd_add_mul_2.
  destruct b; simpl; apply odd_1 || apply odd_0.
@@ -272,14 +272,14 @@ Qed.
 
 Lemma mul_pow2_bits_high : forall a n m, n<=m -> (a*2^n).[m] = a.[m-n].
 Proof.
- intros.
+ intros a n m ?.
  rewrite <- (sub_add n m) at 1 by order'.
  now rewrite mul_pow2_bits_add.
 Qed.
 
 Lemma mul_pow2_bits_low : forall a n m, m<n -> (a*2^n).[m] = false.
 Proof.
- intros. apply testbit_false.
+ intros a n m H. apply testbit_false.
  rewrite <- (sub_add m n) by order'. rewrite pow_add_r, mul_assoc.
  rewrite div_mul by order_nz.
  rewrite <- (succ_pred (n-m)). rewrite pow_succ_r.
@@ -370,7 +370,10 @@ Qed.
 
 Hint Rewrite lxor_spec lor_spec land_spec ldiff_spec bits_0 : bitwise.
 
-Ltac bitwise := apply bits_inj; intros ?m; autorewrite with bitwise.
+Tactic Notation "bitwise" "as" simple_intropattern(m)
+  := apply bits_inj; intros m; autorewrite with bitwise.
+
+Ltac bitwise := bitwise as ?m.
 
 (** The streams of bits that correspond to a natural numbers are
   exactly the ones that are always 0 after some point *)
@@ -418,7 +421,7 @@ Qed.
 
 Lemma shiftl_mul_pow2 : forall a n, a << n == a * 2^n.
 Proof.
- intros. bitwise.
+ intros a n. bitwise as m.
  destruct (le_gt_cases n m) as [H|H].
  now rewrite shiftl_spec_high', mul_pow2_bits_high.
  now rewrite shiftl_spec_low, mul_pow2_bits_low.
@@ -455,7 +458,7 @@ Qed.
 Lemma shiftr_shiftl_l : forall a n m, m<=n ->
  (a << n) >> m == a << (n-m).
 Proof.
- intros.
+ intros a n m ?.
  rewrite shiftr_div_pow2, !shiftl_mul_pow2.
  rewrite <- (sub_add m n) at 1 by trivial.
  now rewrite pow_add_r, mul_assoc, div_mul by order_nz.
@@ -464,7 +467,7 @@ Qed.
 Lemma shiftr_shiftl_r : forall a n m, n<=m ->
  (a << n) >> m == a >> (m-n).
 Proof.
- intros.
+ intros a n m ?.
  rewrite !shiftr_div_pow2, shiftl_mul_pow2.
  rewrite <- (sub_add n m) at 1 by trivial.
  rewrite pow_add_r, (mul_comm (2^(m-n))).
@@ -630,7 +633,7 @@ Qed.
 
 Lemma lor_eq_0_l : forall a b, lor a b == 0 -> a == 0.
 Proof.
- intros a b H. bitwise.
+ intros a b H. bitwise as m.
  apply (orb_false_iff a.[m] b.[m]).
  now rewrite <- lor_spec, H, bits_0.
 Qed.
@@ -638,7 +641,7 @@ Qed.
 Lemma lor_eq_0_iff : forall a b, lor a b == 0 <-> a == 0 /\ b == 0.
 Proof.
  intros a b. split.
- split. now apply lor_eq_0_l in H.
+ intro H; split. now apply lor_eq_0_l in H.
  rewrite lor_comm in H. now apply lor_eq_0_l in H.
  intros (EQ,EQ'). now rewrite EQ, lor_0_l.
 Qed.
@@ -751,13 +754,13 @@ Proof. unfold clearbit. solve_proper. Qed.
 
 Lemma pow2_bits_true : forall n, (2^n).[n] = true.
 Proof.
- intros. rewrite <- (mul_1_l (2^n)). rewrite <- (add_0_l n) at 2.
+ intros n. rewrite <- (mul_1_l (2^n)). rewrite <- (add_0_l n) at 2.
  now rewrite mul_pow2_bits_add, bit0_odd, odd_1.
 Qed.
 
 Lemma pow2_bits_false : forall n m, n~=m -> (2^n).[m] = false.
 Proof.
- intros.
+ intros n m ?.
  rewrite <- (mul_1_l (2^n)).
  destruct (le_gt_cases n m).
  rewrite mul_pow2_bits_high; trivial.
@@ -768,7 +771,7 @@ Qed.
 
 Lemma pow2_bits_eqb : forall n m, (2^n).[m] = eqb n m.
 Proof.
- intros. apply eq_true_iff_eq. rewrite eqb_eq. split.
+ intros n m. apply eq_true_iff_eq. rewrite eqb_eq. split.
  destruct (eq_decidable n m) as [H|H]. trivial.
  now rewrite (pow2_bits_false _ _ H).
  intros EQ. rewrite EQ. apply pow2_bits_true.
@@ -813,7 +816,7 @@ Qed.
 
 Lemma clearbit_eq : forall a n, (clearbit a n).[n] = false.
 Proof.
- intros. rewrite clearbit_eqb, (proj2 (eqb_eq _ _) (eq_refl n)).
+ intros a n. rewrite clearbit_eqb, (proj2 (eqb_eq _ _) (eq_refl n)).
  apply andb_false_r.
 Qed.
 
@@ -830,7 +833,7 @@ Qed.
 Lemma shiftl_lxor : forall a b n,
  (lxor a b) << n == lxor (a << n) (b << n).
 Proof.
- intros. bitwise.
+ intros a b n. bitwise as m.
  destruct (le_gt_cases n m).
  now rewrite !shiftl_spec_high', lxor_spec.
  now rewrite !shiftl_spec_low.
@@ -845,7 +848,7 @@ Qed.
 Lemma shiftl_land : forall a b n,
  (land a b) << n == land (a << n) (b << n).
 Proof.
- intros. bitwise.
+ intros a b n. bitwise as m.
  destruct (le_gt_cases n m).
  now rewrite !shiftl_spec_high', land_spec.
  now rewrite !shiftl_spec_low.
@@ -860,7 +863,7 @@ Qed.
 Lemma shiftl_lor : forall a b n,
  (lor a b) << n == lor (a << n) (b << n).
 Proof.
- intros. bitwise.
+ intros a b n. bitwise as m.
  destruct (le_gt_cases n m).
  now rewrite !shiftl_spec_high', lor_spec.
  now rewrite !shiftl_spec_low.
@@ -875,7 +878,7 @@ Qed.
 Lemma shiftl_ldiff : forall a b n,
  (ldiff a b) << n == ldiff (a << n) (b << n).
 Proof.
- intros. bitwise.
+ intros a b n. bitwise as m.
  destruct (le_gt_cases n m).
  now rewrite !shiftl_spec_high', ldiff_spec.
  now rewrite !shiftl_spec_low.
@@ -944,7 +947,7 @@ Qed.
 
 Lemma ones_spec_high : forall n m, n<=m -> (ones n).[m] = false.
 Proof.
- intros.
+ intros n m ?.
  destruct (eq_0_gt_0_cases n) as [EQ|LT]; rewrite ones_equiv.
  now rewrite EQ, pow_0_r, one_succ, pred_succ, bits_0.
  apply bits_above_log2.
@@ -973,7 +976,7 @@ Qed.
 
 Lemma lnot_involutive : forall a n, lnot (lnot a n) n == a.
 Proof.
- intros a n. bitwise.
+ intros a n. bitwise as m.
  destruct (le_gt_cases n m).
  now rewrite 2 lnot_spec_high.
  now rewrite 2 lnot_spec_low, negb_involutive.
@@ -994,7 +997,7 @@ Qed.
 Lemma lor_ones_low : forall a n, log2 a < n ->
  lor a (ones n) == ones n.
 Proof.
- intros a n H. bitwise. destruct (le_gt_cases n m).
+ intros a n H. bitwise as m. destruct (le_gt_cases n m).
  rewrite ones_spec_high, bits_above_log2; trivial.
  now apply lt_le_trans with n.
  now rewrite ones_spec_low, orb_true_r.
@@ -1002,7 +1005,7 @@ Qed.
 
 Lemma land_ones : forall a n, land a (ones n) == a mod 2^n.
 Proof.
- intros a n. bitwise. destruct (le_gt_cases n m).
+ intros a n. bitwise as m. destruct (le_gt_cases n m).
  now rewrite ones_spec_high, mod_pow2_bits_high, andb_false_r.
  now rewrite ones_spec_low, mod_pow2_bits_low, andb_true_r.
 Qed.
@@ -1017,7 +1020,7 @@ Qed.
 Lemma ldiff_ones_r : forall a n,
  ldiff a (ones n) == (a >> n) << n.
 Proof.
- intros a n. bitwise. destruct (le_gt_cases n m).
+ intros a n. bitwise as m. destruct (le_gt_cases n m).
  rewrite ones_spec_high, shiftl_spec_high', shiftr_spec'; trivial.
  rewrite sub_add; trivial. apply andb_true_r.
  now rewrite ones_spec_low, shiftl_spec_low, andb_false_r.
@@ -1026,7 +1029,7 @@ Qed.
 Lemma ldiff_ones_r_low : forall a n, log2 a < n ->
  ldiff a (ones n) == 0.
 Proof.
- intros a n H. bitwise. destruct (le_gt_cases n m).
+ intros a n H. bitwise as m. destruct (le_gt_cases n m).
  rewrite ones_spec_high, bits_above_log2; trivial.
  now apply lt_le_trans with n.
  now rewrite ones_spec_low, andb_false_r.
@@ -1035,7 +1038,7 @@ Qed.
 Lemma ldiff_ones_l_low : forall a n, log2 a < n ->
  ldiff (ones n) a == lnot a n.
 Proof.
- intros a n H. bitwise. destruct (le_gt_cases n m).
+ intros a n H. bitwise as m. destruct (le_gt_cases n m).
  rewrite ones_spec_high, lnot_spec_high, bits_above_log2; trivial.
  now apply lt_le_trans with n.
  now rewrite ones_spec_low, lnot_spec_low.
@@ -1044,7 +1047,7 @@ Qed.
 Lemma lor_lnot_diag : forall a n,
  lor a (lnot a n) == lor a (ones n).
 Proof.
- intros a n. bitwise.
+ intros a n. bitwise as m.
  destruct (le_gt_cases n m).
  rewrite lnot_spec_high, ones_spec_high; trivial. now destruct a.[m].
  rewrite lnot_spec_low, ones_spec_low; trivial. now destruct a.[m].
@@ -1059,7 +1062,7 @@ Qed.
 Lemma land_lnot_diag : forall a n,
  land a (lnot a n) == ldiff a (ones n).
 Proof.
- intros a n. bitwise.
+ intros a n. bitwise as m.
  destruct (le_gt_cases n m).
  rewrite lnot_spec_high, ones_spec_high; trivial. now destruct a.[m].
  rewrite lnot_spec_low, ones_spec_low; trivial. now destruct a.[m].
@@ -1074,7 +1077,7 @@ Qed.
 Lemma lnot_lor_low : forall a b n, log2 a < n -> log2 b < n ->
  lnot (lor a b) n == land (lnot a n) (lnot b n).
 Proof.
- intros a b n Ha Hb. bitwise. destruct (le_gt_cases n m).
+ intros a b n Ha Hb. bitwise as m. destruct (le_gt_cases n m).
  rewrite !lnot_spec_high, lor_spec, !bits_above_log2; trivial.
  now apply lt_le_trans with n.
  now apply lt_le_trans with n.
@@ -1084,7 +1087,7 @@ Qed.
 Lemma lnot_land_low : forall a b n, log2 a < n -> log2 b < n ->
  lnot (land a b) n == lor (lnot a n) (lnot b n).
 Proof.
- intros a b n Ha Hb. bitwise. destruct (le_gt_cases n m).
+ intros a b n Ha Hb. bitwise as m. destruct (le_gt_cases n m).
  rewrite !lnot_spec_high, land_spec, !bits_above_log2; trivial.
  now apply lt_le_trans with n.
  now apply lt_le_trans with n.
@@ -1094,7 +1097,7 @@ Qed.
 Lemma ldiff_land_low : forall a b n, log2 a < n ->
  ldiff a b == land a (lnot b n).
 Proof.
- intros a b n Ha. bitwise. destruct (le_gt_cases n m).
+ intros a b n Ha. bitwise as m. destruct (le_gt_cases n m).
  rewrite (bits_above_log2 a m). trivial.
  now apply lt_le_trans with n.
  rewrite !lnot_spec_low; trivial.
@@ -1103,7 +1106,7 @@ Qed.
 Lemma lnot_ldiff_low : forall a b n, log2 a < n -> log2 b < n ->
  lnot (ldiff a b) n == lor (lnot a n) b.
 Proof.
- intros a b n Ha Hb. bitwise. destruct (le_gt_cases n m).
+ intros a b n Ha Hb. bitwise as m. destruct (le_gt_cases n m).
  rewrite !lnot_spec_high, ldiff_spec, !bits_above_log2; trivial.
  now apply lt_le_trans with n.
  now apply lt_le_trans with n.
@@ -1113,7 +1116,7 @@ Qed.
 Lemma lxor_lnot_lnot : forall a b n,
  lxor (lnot a n) (lnot b n) == lxor a b.
 Proof.
- intros a b n. bitwise. destruct (le_gt_cases n m).
+ intros a b n. bitwise as m. destruct (le_gt_cases n m).
  rewrite !lnot_spec_high; trivial.
  rewrite !lnot_spec_low, xorb_negb_negb; trivial.
 Qed.
@@ -1121,7 +1124,7 @@ Qed.
 Lemma lnot_lxor_l : forall a b n,
  lnot (lxor a b) n == lxor (lnot a n) b.
 Proof.
- intros a b n. bitwise. destruct (le_gt_cases n m).
+ intros a b n. bitwise as m. destruct (le_gt_cases n m).
  rewrite !lnot_spec_high, lxor_spec; trivial.
  rewrite !lnot_spec_low, lxor_spec, negb_xorb_l; trivial.
 Qed.
@@ -1129,7 +1132,7 @@ Qed.
 Lemma lnot_lxor_r : forall a b n,
  lnot (lxor a b) n == lxor a (lnot b n).
 Proof.
- intros a b n. bitwise. destruct (le_gt_cases n m).
+ intros a b n. bitwise as m. destruct (le_gt_cases n m).
  rewrite !lnot_spec_high, lxor_spec; trivial.
  rewrite !lnot_spec_low, lxor_spec, negb_xorb_r; trivial.
 Qed.
@@ -1137,7 +1140,7 @@ Qed.
 Lemma lxor_lor : forall a b, land a b == 0 ->
  lxor a b == lor a b.
 Proof.
- intros a b H. bitwise.
+ intros a b H. bitwise as m.
  assert (a.[m] && b.[m] = false)
    by now rewrite <- land_spec, H, bits_0.
  now destruct a.[m], b.[m].
@@ -1264,7 +1267,7 @@ Qed.
 Lemma add_carry_div2 : forall a b (c0:bool),
  (a + b + c0)/2 == a/2 + b/2 + nextcarry a.[0] b.[0] c0.
 Proof.
- intros.
+ intros a b c0.
  rewrite <- add3_bits_div2.
  rewrite (add_comm ((a/2)+_)).
  rewrite <- div_add by order'.
@@ -1312,7 +1315,7 @@ Proof.
  apply div_lt_upper_bound; trivial. order'. now rewrite <- pow_succ_r'.
  exists (c0 + 2*c). repeat split.
  (* - add *)
- bitwise.
+ bitwise as m.
  destruct (zero_or_succ m) as [EQ|[m' EQ]]; rewrite EQ; clear EQ.
  now rewrite add_b2n_double_bit0, add3_bit0, b2n_bit0.
  rewrite <- !div2_bits, <- 2 lxor_spec.
@@ -1320,7 +1323,7 @@ Proof.
  rewrite add_b2n_double_div2, <- IH1. apply add_carry_div2.
  (* - carry *)
  rewrite add_b2n_double_div2.
- bitwise.
+ bitwise as m.
  destruct (zero_or_succ m) as [EQ|[m' EQ]]; rewrite EQ; clear EQ.
  now rewrite add_b2n_double_bit0.
  rewrite <- !div2_bits, IH2. autorewrite with bitwise.
@@ -1356,7 +1359,7 @@ Proof.
  symmetry in H. now apply lor_eq_0_l in H.
  intros EQ. rewrite EQ, lor_0_l in H.
  apply bits_inj_0.
- induct n. trivial.
+ intro n; induct n. trivial.
  intros n IH.
  rewrite <- div2_bits, H.
  autorewrite with bitwise.
@@ -1381,7 +1384,7 @@ Lemma ldiff_le : forall a b, ldiff a b == 0 -> a <= b.
 Proof.
  cut (forall n a b, a < 2^n -> ldiff a b == 0 -> a <= b).
  intros H a b. apply (H a), pow_gt_lin_r; order'.
- induct n.
+ intro n; induct n.
  intros a b Ha _. rewrite pow_0_r, one_succ, lt_succ_r in Ha.
  assert (Ha' : a == 0) by (generalize (le_0_l a); order').
  rewrite Ha'. apply le_0_l.
@@ -1410,7 +1413,7 @@ Proof.
  rewrite sub_add.
  symmetry.
  rewrite add_nocarry_lxor.
- bitwise.
+ bitwise as m.
  apply bits_inj_iff in H. specialize (H m).
  rewrite ldiff_spec, bits_0 in H.
  now destruct a.[m], b.[m].
@@ -1454,7 +1457,7 @@ Lemma add_nocarry_mod_lt_pow2 : forall a b n, land a b == 0 ->
 Proof.
  intros a b n H.
  apply add_nocarry_lt_pow2.
- bitwise.
+ bitwise as m.
  destruct (le_gt_cases n m).
  now rewrite mod_pow2_bits_high.
  now rewrite !mod_pow2_bits_low, <- land_spec, H, bits_0.
