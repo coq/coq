@@ -169,7 +169,7 @@ Qed.
 Lemma lcm_divide_iff : forall n m p,
   (lcm n m | p) <-> (n | p) /\ (m | p).
 Proof.
- intros. split. split.
+ intros n m p. split. split.
  transitivity (lcm n m); trivial using divide_lcm_l.
  transitivity (lcm n m); trivial using divide_lcm_r.
  intros (H,H'). now apply lcm_least.
