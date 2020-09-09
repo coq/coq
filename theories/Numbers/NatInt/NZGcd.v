@@ -147,7 +147,7 @@ Qed.
 Lemma mul_divide_cancel_r : forall n m p, p ~= 0 ->
  ((n * p | m * p) <-> (n | m)).
 Proof.
- intros. rewrite 2 (mul_comm _ p). now apply mul_divide_cancel_l.
+ intros n m p ?. rewrite 2 (mul_comm _ p). now apply mul_divide_cancel_l.
 Qed.
 
 Lemma divide_add_r : forall n m p, (n | m) -> (n | p) -> (n | m + p).
@@ -215,7 +215,7 @@ Qed.
 Lemma gcd_divide_iff : forall n m p,
   (p | gcd n m) <-> (p | n) /\ (p | m).
 Proof.
-  intros. split. - split.
+  intros n m p. split. - split.
                    + transitivity (gcd n m); trivial using gcd_divide_l.
                    + transitivity (gcd n m); trivial using gcd_divide_r.
   - intros (H,H'). now apply gcd_greatest.
@@ -273,18 +273,18 @@ Qed.
 
 Lemma gcd_eq_0_l : forall n m, gcd n m == 0 -> n == 0.
 Proof.
- intros.
+ intros n m H.
  generalize (gcd_divide_l n m). rewrite H. apply divide_0_l.
 Qed.
 
 Lemma gcd_eq_0_r : forall n m, gcd n m == 0 -> m == 0.
 Proof.
- intros. apply gcd_eq_0_l with n. now rewrite gcd_comm.
+ intros n m ?. apply gcd_eq_0_l with n. now rewrite gcd_comm.
 Qed.
 
 Lemma gcd_eq_0 : forall n m, gcd n m == 0 <-> n == 0 /\ m == 0.
 Proof.
-  intros. split.
+  intros n m. split.
   - split.
     + now apply gcd_eq_0_l with m.
     + now apply gcd_eq_0_r with n.

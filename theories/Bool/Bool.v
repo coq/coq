@@ -258,7 +258,7 @@ Qed.
 Lemma orb_true_elim :
   forall b1 b2:bool, b1 || b2 = true -> {b1 = true} + {b2 = true}.
 Proof.
-  destruct b1; simpl; auto.
+  intro b1; destruct b1; simpl; auto.
 Defined.
 
 Lemma orb_prop : forall a b:bool, a || b = true -> a = true \/ b = true.
@@ -424,7 +424,7 @@ Notation andb_true_b := andb_true_l (only parsing).
 Lemma andb_false_elim :
   forall b1 b2:bool, b1 && b2 = false -> {b1 = false} + {b2 = false}.
 Proof.
-  destruct b1; simpl; auto.
+  intro b1; destruct b1; simpl; auto.
 Defined.
 Hint Resolve andb_false_elim: bool.
 
@@ -681,17 +681,17 @@ Qed.
 
 Lemma negb_xorb_l : forall b b', negb (xorb b b') = xorb (negb b) b'.
 Proof.
- destruct b,b'; trivial.
+  intros b b'; destruct b,b'; trivial.
 Qed.
 
 Lemma negb_xorb_r : forall b b', negb (xorb b b') = xorb b (negb b').
 Proof.
- destruct b,b'; trivial.
+  intros b b'; destruct b,b'; trivial.
 Qed.
 
 Lemma xorb_negb_negb : forall b b', xorb (negb b) (negb b') = xorb b b'.
 Proof.
- destruct b,b'; trivial.
+  intros b b'; destruct b,b'; trivial.
 Qed.
 
 (** Lemmas about the [b = true] embedding of [bool] to [Prop] *)

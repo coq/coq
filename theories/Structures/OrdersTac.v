@@ -100,9 +100,9 @@ Definition interp_ord o :=
  match o with OEQ => O.eq | OLT => O.lt | OLE => O.le end.
 Local Notation "#" := interp_ord.
 
-Lemma trans : forall o o' x y z, #o x y -> #o' y z -> #(o+o') x z.
+Lemma trans o o' x y z : #o x y -> #o' y z -> #(o+o') x z.
 Proof.
-destruct o, o'; simpl; intros x y z;
+destruct o, o'; simpl;
 rewrite ?P.le_lteq; intuition auto;
 subst_eqns; eauto using (StrictOrder_Transitive x y z) with *.
 Qed.

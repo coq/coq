@@ -21,7 +21,7 @@ Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Classes.RelationClasses.
 
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
-Local Obligation Tactic := simpl_relation.
+Local Obligation Tactic := try solve [ simpl_relation ].
 
 (** * Morphisms.
 
@@ -201,12 +201,12 @@ Section Relations.
 
   Global Instance pointwise_subrelation `(sub : subrelation B R R') :
     subrelation (pointwise_relation R) (pointwise_relation R') | 4.
-  Proof. reduce. unfold pointwise_relation in *. apply sub. apply H. Qed.
+  Proof. intros x y H a. unfold pointwise_relation in *. apply sub. apply H. Qed.
   
   (** For dependent function types. *)
   Lemma forall_subrelation (R S : forall x : A, relation (P x)) :
     (forall a, subrelation (R a) (S a)) -> subrelation (forall_relation R) (forall_relation S).
-  Proof. reduce. apply H. apply H0. Qed.
+  Proof. intros H x y H0 a. apply H. apply H0. Qed.
 End Relations.
 
 Typeclasses Opaque respectful pointwise_relation forall_relation.
@@ -259,6 +259,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros R H R' H0 x y z H1 H2 x0 y0 H3.
     assert(R x0 x0).
     - transitivity y0... symmetry...
     - transitivity (y x0)...
@@ -272,6 +273,7 @@ Section GenericInstances.
   
   Next Obligation.
   Proof.
+    intros RA R mR x y H x0 y0 H0.
     unfold complement.
     pose (mR x y H x0 y0 H0).
     intuition.
@@ -285,7 +287,7 @@ Section GenericInstances.
   
   Next Obligation.
   Proof.
-    apply mor ; auto.
+    intros RA RB RC f mor x y H x0 y0 H0; apply mor ; auto.
   Qed.
 
 
@@ -298,6 +300,7 @@ Section GenericInstances.
   
   Next Obligation.
   Proof with auto.
+    intros R H x y H0 x0 y0 H1 H2.
     transitivity x...
     transitivity x0...
   Qed.
@@ -310,6 +313,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros R H x x0 y H0 H1.
     transitivity y...
   Qed.
 
@@ -319,6 +323,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros R H x x0 y H0 H1.
     transitivity x0...
   Qed.
 
@@ -328,6 +333,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros R H x x0 y H0 H1.
     transitivity y... symmetry...
   Qed.
 
@@ -336,6 +342,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros R H x x0 y H0 H1.
     transitivity x0... symmetry...
   Qed.
 
@@ -344,6 +351,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros R H x x0 y H0.
     split.
     - intros ; transitivity x0...
     - intros.
@@ -359,6 +367,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros R H x y H0 y0 y1 e H2; destruct e.
     transitivity y...
   Qed.
 
@@ -369,6 +378,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
+    intros R H x y H0 x0 y0 H1.
     split ; intros.
     - transitivity x0... transitivity x... symmetry...
 
@@ -383,7 +393,7 @@ Section GenericInstances.
 
   Next Obligation.
   Proof.
-    simpl_relation.
+    intros RA RB RC x y H x0 y0 H0 x1 y1 H1.
     unfold compose. apply H. apply H0. apply H1.
   Qed.
 
@@ -400,9 +410,9 @@ Section GenericInstances.
     Proper (relation_equivalence ++> relation_equivalence ++> relation_equivalence) 
            (@respectful A B).
   Proof.
-    reduce.
+    intros x y H x0 y0 H0 x1 x2.
     unfold respectful, relation_equivalence, predicate_equivalence in * ; simpl in *.
-    split ; intros.
+    split ; intros H1 x3 y1 H2.
     
     - rewrite <- H0.
       apply H1.
@@ -512,9 +522,9 @@ Ltac partial_application_tactic :=
 
 Instance proper_proper : Proper (relation_equivalence ==> eq ==> iff) (@Proper A).
 Proof.
-  simpl_relation.
+  intros A x y H y0 y1 e; destruct e.
   reduce in H.
-  split ; red ; intros.
+  split ; red ; intros H0.
   - setoid_rewrite <- H.
     apply H0.
   - setoid_rewrite H.
@@ -555,8 +565,7 @@ Section Normalize.
 
   Lemma proper_normalizes_proper `(Normalizes R0 R1, Proper A R1 m) : Proper R0 m.
   Proof.
-    red in H, H0.
-    rewrite H.
+    rewrite normalizes.
     assumption.
   Qed.
 
@@ -571,10 +580,11 @@ Lemma flip_arrow {A : Type} {B : Type}
       `(NA : Normalizes A R (flip R'''), NB : Normalizes B R' (flip R'')) :
   Normalizes (A -> B) (R ==> R') (flip (R''' ==> R'')%signature).
 Proof. 
-  unfold Normalizes in *. intros.
+  unfold Normalizes in *.
   unfold relation_equivalence in *. 
   unfold predicate_equivalence in *. simpl in *.
-  unfold respectful. unfold flip in *. firstorder.
+  unfold respectful. unfold flip in *.
+  intros x x0; split; intros H x1 y H0.
   - apply NB. apply H. apply NA. apply H0.
   - apply NB. apply H. apply NA. apply H0.
 Qed.

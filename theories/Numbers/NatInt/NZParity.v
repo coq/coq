@@ -47,7 +47,7 @@ Qed.
 
 Lemma Even_or_Odd : forall x, Even x \/ Odd x.
 Proof.
- nzinduct x.
+ intro x; nzinduct x.
  - left. exists 0. now nzsimpl.
  - intros x.
    split; intros [(y,H)|(y,H)].
@@ -86,7 +86,7 @@ Qed.
 
 Lemma orb_even_odd : forall n, orb (even n) (odd n) = true.
 Proof.
- intros.
+ intros n.
  destruct (Even_or_Odd n) as [H|H].
  - rewrite <- even_spec in H. now rewrite H.
  - rewrite <- odd_spec in H. now rewrite H, orb_true_r.
@@ -94,7 +94,7 @@ Qed.
 
 Lemma negb_odd : forall n, negb (odd n) = even n.
 Proof.
- intros.
+ intros n.
  generalize (Even_or_Odd n) (Even_Odd_False n).
  rewrite <- even_spec, <- odd_spec.
  destruct (odd n), (even n) ; simpl; intuition.
@@ -188,7 +188,7 @@ Qed.
 
 Lemma even_add : forall n m, even (n+m) = Bool.eqb (even n) (even m).
 Proof.
- intros.
+ intros n m.
  case_eq (even n); case_eq (even m);
   rewrite <- ?negb_true_iff, ?negb_even, ?odd_spec, ?even_spec;
   intros (m',Hm) (n',Hn).
@@ -200,7 +200,7 @@ Qed.
 
 Lemma odd_add : forall n m, odd (n+m) = xorb (odd n) (odd m).
 Proof.
- intros. rewrite <- !negb_even. rewrite even_add.
+ intros n m. rewrite <- !negb_even. rewrite even_add.
  now destruct (even n), (even m).
 Qed.
 
@@ -208,7 +208,7 @@ Qed.
 
 Lemma even_mul : forall n m, even (mul n m) = even n || even m.
 Proof.
- intros.
+ intros n m.
  case_eq (even n); simpl; rewrite ?even_spec.
  - intros (n',Hn). exists (n'*m). now rewrite Hn, mul_assoc.
  - case_eq (even m); simpl; rewrite ?even_spec.
@@ -222,7 +222,7 @@ Qed.
 
 Lemma odd_mul : forall n m, odd (mul n m) = odd n && odd m.
 Proof.
- intros. rewrite <- !negb_even. rewrite even_mul.
+ intros n m. rewrite <- !negb_even. rewrite even_mul.
  now destruct (even n), (even m).
 Qed.
 

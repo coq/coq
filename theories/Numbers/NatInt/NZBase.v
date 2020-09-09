@@ -74,7 +74,7 @@ Proof.
 intros z Base Step; revert Base; pattern z; apply bi_induction.
 - solve_proper.
 - intro; now apply bi_induction.
-- intro; pose proof (Step n); tauto.
+- intro n; pose proof (Step n); tauto.
 Qed.
 
 End CentralInduction.
@@ -83,7 +83,7 @@ Tactic Notation "nzinduct" ident(n) :=
   induction_maker n ltac:(apply bi_induction).
 
 Tactic Notation "nzinduct" ident(n) constr(u) :=
-  induction_maker n ltac:(apply central_induction with (z := u)).
+  induction_maker n ltac:(apply (fun A A_wd => central_induction A A_wd u)).
 
 End NZBaseProp.
 

@@ -58,7 +58,7 @@ Qed.
 
 Lemma sqrt_nonneg : forall a, 0<=√a.
 Proof.
- intros. destruct (lt_ge_cases a 0) as [Ha|Ha].
+ intros a. destruct (lt_ge_cases a 0) as [Ha|Ha].
  - now rewrite (sqrt_neg _ Ha).
  - apply sqrt_spec_nonneg. destruct (sqrt_spec a Ha). order.
 Qed.
@@ -429,7 +429,7 @@ Qed.
 
 Lemma sqrt_up_nonneg : forall a, 0<=√°a.
 Proof.
- intros. destruct (le_gt_cases a 0) as [Ha|Ha].
+ intros a. destruct (le_gt_cases a 0) as [Ha|Ha].
  - now rewrite sqrt_up_eqn0.
  - rewrite sqrt_up_eqn; trivial. apply le_le_succ_r, sqrt_nonneg.
 Qed.
@@ -527,7 +527,7 @@ Lemma sqrt_sqrt_up_exact :
  forall a, 0<=a -> (√a == √°a <-> exists b, 0<=b /\ a == b²).
 Proof.
  intros a Ha.
- split. - intros. exists √a.
+ split. - intros H. exists √a.
           split. + apply sqrt_nonneg.
           + generalize (sqrt_sqrt_up_spec a Ha). rewrite <-H. destruct 1; order.
  - intros (b & Hb & Hb'). rewrite Hb'.

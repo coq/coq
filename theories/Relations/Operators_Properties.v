@@ -54,8 +54,7 @@ Section Properties.
     Lemma clos_rt_idempotent : inclusion (R*)* R*.
     Proof.
       red.
-      induction 1; auto with sets.
-      intros.
+      induction 1 as [x y H|x|x y z H IH H0 IH0]; auto with sets.
       apply rt_trans with y; auto with sets.
     Qed.
 
@@ -70,7 +69,7 @@ Section Properties.
       inclusion (clos_refl_trans R) (clos_refl_sym_trans R).
     Proof.
       red.
-      induction 1; auto with sets.
+      induction 1 as [x y H|x|x y z H IH H0 IH0]; auto with sets.
       apply rst_trans with y; auto with sets.
     Qed.
 
@@ -90,7 +89,7 @@ Section Properties.
       clos_trans R x z.
     Proof.
       induction 1 as [b d H1|b|a b d H1 H2 IH1 IH2]; auto.
-      intro H. apply t_trans with (y:=d); auto.
+      intro H. apply (t_trans _ _ _ d); auto.
       constructor. auto.
     Qed.
 
@@ -111,7 +110,7 @@ Section Properties.
       (clos_refl_sym_trans R).
     Proof.
       red.
-      induction 1; auto with sets.
+      induction 1 as [x y H|x|x y H IH|x y z H IH H0 IH0]; auto with sets.
       apply rst_trans with y; auto with sets.
     Qed.
 
@@ -128,7 +127,7 @@ Section Properties.
 
     Lemma clos_t1n_trans : forall x y, clos_trans_1n R x y -> clos_trans R x y.
     Proof.
-     induction 1.
+     induction 1 as [x y H|x y z H H0 IH0].
      - left; assumption.
      - right with y; auto.
        left; auto.
@@ -136,9 +135,10 @@ Section Properties.
 
     Lemma clos_trans_t1n : forall x y, clos_trans R x y -> clos_trans_1n R x y.
     Proof.
-      induction 1.
+      induction 1 as [x y H|x y z H IHclos_trans1 H0 IHclos_trans2].
       - left; assumption.
-      - generalize IHclos_trans2; clear IHclos_trans2; induction IHclos_trans1.
+      - generalize IHclos_trans2; clear IHclos_trans2.
+        induction IHclos_trans1 as [x y H1|x y z0 H1 ? IHIHclos_trans1].
         + right with y; auto.
         + right with y; auto.
       eapply IHIHclos_trans1; auto.
@@ -157,7 +157,7 @@ Section Properties.
 
     Lemma clos_tn1_trans : forall x y, clos_trans_n1 R x y -> clos_trans R x y.
     Proof.
-      induction 1.
+      induction 1 as [y H|y z H H0 ?].
       - left; assumption.
       - right with y; auto.
         left; assumption.
@@ -165,13 +165,13 @@ Section Properties.
 
     Lemma clos_trans_tn1 :  forall x y, clos_trans R x y -> clos_trans_n1 R x y.
     Proof.
-      induction 1.
+      induction 1 as [x y H|x y z H IHclos_trans1 H0 IHclos_trans2].
       - left; assumption.
       - elim IHclos_trans2.
         + intro y0; right with y.
           *  auto.
           * auto.
-        + intros.
+        + intro y0; intros.
           right with y0; auto.
     Qed.
 
@@ -201,7 +201,7 @@ Section Properties.
     Lemma clos_rt1n_rt : forall x y,
         clos_refl_trans_1n R x y -> clos_refl_trans R x y.
     Proof.
-      induction 1.
+      induction 1 as [|x y z].
       - constructor 2.
       - constructor 3 with y; auto.
         constructor 1; auto.
@@ -210,14 +210,14 @@ Section Properties.
     Lemma clos_rt_rt1n : forall x y,
         clos_refl_trans R x y -> clos_refl_trans_1n R x y.
     Proof.
-      induction 1.
+      induction 1 as [| |x y z H IHclos_refl_trans1 H0 IHclos_refl_trans2].
       - apply clos_rt1n_step; assumption.
       - left.
       - generalize IHclos_refl_trans2; clear IHclos_refl_trans2;
-          induction IHclos_refl_trans1; auto.
+          induction IHclos_refl_trans1 as [|x y z0 H1 ? IH]; auto.
 
         right with y; auto.
-        eapply IHIHclos_refl_trans1; auto.
+        eapply IH; auto.
         apply clos_rt1n_rt; auto.
     Qed.
 
@@ -235,7 +235,7 @@ Section Properties.
     Lemma clos_rtn1_rt : forall x y,
         clos_refl_trans_n1 R x y -> clos_refl_trans R x y.
     Proof.
-      induction 1.
+      induction 1 as [|y z].
       - constructor 2.
       - constructor 3 with y; auto.
         constructor 1; assumption.
@@ -244,11 +244,11 @@ Section Properties.
     Lemma clos_rt_rtn1 :  forall x y,
         clos_refl_trans R x y -> clos_refl_trans_n1 R x y.
     Proof.
-      induction 1.
+      induction 1 as [| |x y z H1 IH1 H2 IH2].
       - apply clos_rtn1_step; auto.
       - left.
-      - elim IHclos_refl_trans2; auto.
-        intros.
+      - elim IH2; auto.
+        intro y0; intros.
         right with y0; auto.
     Qed.
 
@@ -267,16 +267,16 @@ Section Properties.
 	(forall y z:A, clos_refl_trans R x y -> P y -> R y z -> P z) ->
 	forall z:A, clos_refl_trans R x z -> P z.
     Proof.
-      intros.
+      intros x P H H0 z H1.
       revert H H0.
-      induction H1; intros; auto with sets.
-      - apply H1 with x; auto with sets.
+      induction H1 as [x| |x y z H1 IH1 H2 IH2]; intros HP HIS; auto with sets.
+      - apply HIS with x; auto with sets.
 
-      - apply IHclos_refl_trans2.
-        + apply IHclos_refl_trans1; auto with sets.
+      - apply IH2.
+        + apply IH1; auto with sets.
 
-        + intros.
-          apply H0 with y0; auto with sets.
+        + intro y0; intros;
+          apply HIS with y0; auto with sets.
           apply rt_trans with y; auto with sets.
     Qed.
 
@@ -286,7 +286,7 @@ Section Properties.
       P z ->
       (forall x y, R x y -> clos_refl_trans_1n R y z -> P y -> P x) ->
       forall x, clos_refl_trans_1n R x z -> P x.
-      induction 3; auto.
+      intros P z H H0 x; induction 1 as [|x y z]; auto.
       apply H0 with y; auto.
     Qed.
 
@@ -309,7 +309,7 @@ Section Properties.
     Lemma clos_rst1n_rst  : forall x y,
       clos_refl_sym_trans_1n R x y -> clos_refl_sym_trans R x y.
     Proof.
-      induction 1.
+      induction 1 as [|x y z H].
       - constructor 2.
       - constructor 4 with y; auto.
         case H;[constructor 1|constructor 3; constructor 1]; auto.
@@ -317,7 +317,7 @@ Section Properties.
 
     Lemma clos_rst1n_trans : forall x y z, clos_refl_sym_trans_1n R x y ->
         clos_refl_sym_trans_1n R y z -> clos_refl_sym_trans_1n R x z.
-      induction 1.
+      induction 1 as [|x y z0].
       - auto.
       - intros; right with y; eauto.
     Qed.
@@ -335,7 +335,7 @@ Section Properties.
 
     Lemma clos_rst_rst1n  : forall x y,
       clos_refl_sym_trans R x y -> clos_refl_sym_trans_1n R x y.
-      induction 1.
+      induction 1 as [x y| | |].
       - constructor 2 with y; auto.
         constructor 1.
       - constructor 1.
@@ -357,7 +357,7 @@ Section Properties.
     Lemma clos_rstn1_rst : forall x y,
       clos_refl_sym_trans_n1 R x y -> clos_refl_sym_trans R x y.
     Proof.
-      induction 1.
+      induction 1 as [|y z H].
       - constructor 2.
       - constructor 4 with y; auto.
         case H;[constructor 1|constructor 3; constructor 1]; auto.
@@ -367,10 +367,9 @@ Section Properties.
       clos_refl_sym_trans_n1 R y z -> clos_refl_sym_trans_n1 R x z.
     Proof.
       intros x y z H1 H2.
-      induction H2.
+      induction H2 as [|y0 z].
       - auto.
-      - intros.
-        right with y0; eauto.
+      - right with y0; eauto.
     Qed.
 
     Lemma clos_rstn1_sym : forall x y, clos_refl_sym_trans_n1 R x y ->
@@ -387,7 +386,7 @@ Section Properties.
     Lemma clos_rst_rstn1 : forall x y,
       clos_refl_sym_trans R x y -> clos_refl_sym_trans_n1 R x y.
     Proof.
-      induction 1.
+      induction 1 as [x| | |].
       - constructor 2 with x; auto.
         constructor 1.
       - constructor 1.

@@ -17,7 +17,7 @@ Include NZAddProp NZ NZBase.
 
 Theorem mul_0_r : forall n, n * 0 == 0.
 Proof.
-nzinduct n; intros; now nzsimpl.
+intro n; nzinduct n; intros; now nzsimpl.
 Qed.
 
 Theorem mul_succ_r : forall n m, n * (S m) == n * m + n.

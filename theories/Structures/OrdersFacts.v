@@ -102,10 +102,10 @@ Module OrderedTypeFullFacts (Import O:OrderedTypeFull').
  Proof. iorder. Qed.
 
  Lemma le_or_gt : forall x y, x<=y \/ y<x.
- Proof. intros. rewrite le_lteq; destruct (O.compare_spec x y); auto. Qed.
+ Proof. intros x y. rewrite le_lteq; destruct (O.compare_spec x y); auto. Qed.
 
  Lemma lt_or_ge : forall x y, x<y \/ y<=x.
- Proof. intros. rewrite le_lteq; destruct (O.compare_spec x y); iorder. Qed.
+ Proof. intros x y. rewrite le_lteq; destruct (O.compare_spec x y); iorder. Qed.
 
  Lemma eq_is_le_ge : forall x y, x==y <-> x<=y /\ y<=x.
  Proof. iorder. Qed.
@@ -175,11 +175,11 @@ Module OrderedTypeFacts (Import O: OrderedType').
 
   Definition eqb x y : bool := if eq_dec x y then true else false.
 
-  Lemma if_eq_dec : forall x y (B:Type)(b b':B),
+  Lemma if_eq_dec x y (B:Type)(b b':B) :
     (if eq_dec x y then b else b') =
     (match compare x y with Eq => b | _ => b' end).
   Proof.
-  intros; destruct eq_dec; elim_compare x y; auto; order.
+  destruct eq_dec; elim_compare x y; auto; order.
   Qed.
 
   Lemma eqb_alt :
@@ -257,7 +257,7 @@ Definition compare := flip O.compare.
 
 Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
 Proof.
-intros; unfold compare, eq, lt, flip.
+intros x y; unfold compare, eq, lt, flip.
 destruct (O.compare_spec y x); auto with relations.
 Qed.
 

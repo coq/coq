@@ -238,7 +238,7 @@ Qed.
 Lemma pow_le_mono : forall a b c d, 0<a<=c -> b<=d ->
  a^b <= c^d.
 Proof.
- intros. transitivity (a^d).
+ intros a b c d ? ?. transitivity (a^d).
  - apply pow_le_mono_r; intuition order.
  - apply pow_le_mono_l; intuition order.
 Qed.

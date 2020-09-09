@@ -319,7 +319,7 @@ Section Binary.
     split; red; unfold relation_equivalence, iffT.
     - firstorder.
     - firstorder.
-    - intros. specialize (X x0 y0). specialize (X0 x0 y0). firstorder.
+    - intros x y z X X0 x0 y0. specialize (X x0 y0). specialize (X0 x0 y0). firstorder.
   Qed.
     
   Global Instance relation_implication_preorder : PreOrder (@subrelation A).
@@ -346,7 +346,7 @@ Section Binary.
   Lemma PartialOrder_inverse `(PartialOrder eqA R) : PartialOrder eqA (flip R).
   Proof.
     unfold flip; constructor; unfold flip.
-    - intros. apply H. apply symmetry. apply X.
+    - intros X. apply H. apply symmetry. apply X.
     - unfold relation_conjunction. intros [H1 H2]. apply H. constructor; assumption.
   Qed.
 End Binary.

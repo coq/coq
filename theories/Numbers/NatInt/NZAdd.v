@@ -22,7 +22,7 @@ Ltac nzsimpl' := autorewrite with nz nz'.
 
 Theorem add_0_r : forall n, n + 0 == n.
 Proof.
-  nzinduct n.
+  intro n; nzinduct n.
   - now nzsimpl.
   - intro. nzsimpl. now rewrite succ_inj_wd.
 Qed.
