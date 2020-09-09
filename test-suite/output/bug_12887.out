@@ -1,0 +1,10 @@
+The command has indeed failed with message:
+Cannot infer this placeholder of type "Type" in
+environment:
+Functor : (Type -> Type) -> Type
+F : Type -> Type
+fmap : forall A B : Type, (A -> B) -> F A -> F B
+The command has indeed failed with message:
+Cannot infer an existential variable of type "nat" in
+environment:
+R : nat -> Type

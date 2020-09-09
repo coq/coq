@@ -451,7 +451,7 @@ let interp_params env udecl uparamsl paramsl =
    do the unification.
    [env_ar_par] is [uparams; inds; params]
  *)
-let maybe_unify_params_in env_ar_par sigma ~ninds ~nparams c =
+let maybe_unify_params_in env_ar_par sigma ~ninds ~nparams ~binders:k c =
   let is_ind sigma k c = match EConstr.kind sigma c with
     | Constr.Rel n ->
       (* env is [uparams; inds; params; k other things] *)
@@ -462,14 +462,18 @@ let maybe_unify_params_in env_ar_par sigma ~ninds ~nparams c =
     | Constr.App (h,args) when is_ind sigma k h ->
       Array.fold_left_i (fun i sigma arg ->
           if i >= nparams || not (EConstr.isEvar sigma arg) then sigma
-          else Evarconv.unify_delay env sigma arg (EConstr.mkRel (k+nparams-i)))
+          else begin try Evarconv.unify_delay env sigma arg (EConstr.mkRel (k+nparams-i))
+            with Evarconv.UnableToUnify _ ->
+              (* ignore errors, we will get a "Cannot infer ..." error instead *)
+              sigma
+          end)
         sigma args
     | _ -> Termops.fold_constr_with_full_binders
              sigma
              (fun d (env,k) -> EConstr.push_rel d env, k+1)
              aux envk sigma c
   in
-  aux (env_ar_par,0) sigma c
+  aux (env_ar_par,k) sigma c
 
 let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) notations ~cumulative ~poly ~private_ind finite =
   check_all_names_different indl;
@@ -527,7 +531,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let sigma =
     List.fold_left (fun sigma (_,ctyps,_) ->
         List.fold_left (fun sigma ctyp ->
-            maybe_unify_params_in env_ar_params sigma ~ninds ~nparams ctyp)
+            maybe_unify_params_in env_ar_params sigma ~ninds ~nparams ~binders:0 ctyp)
           sigma ctyps)
       sigma constructors
   in
