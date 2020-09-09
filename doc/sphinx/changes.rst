@@ -2009,7 +2009,7 @@ reference manual. Here are the most important user-visible changes:
     inductive types
     (`#8965 <https://github.com/coq/coq/pull/8965>`_, by Jason Gross).
 
-  - Experimental: :ref:`Numeral Notations <numeral-notations>` now parse decimal
+  - Experimental: :ref:`Number Notations <number-notations>` now parse decimal
     constants such as ``1.02e+01`` or ``10.2``. Parsers added for :g:`Q` and :g:`R`.
     In the rare case when such numeral notations were used
     in a development along with :g:`Q` or :g:`R`, they may have to be removed or
@@ -2281,7 +2281,7 @@ Other changes in 8.10+beta1
     parentheses on abbreviations shortening a strict prefix of an
     application, by Hugo Herbelin).
 
-  - :cmd:`Numeral Notation` now support inductive types in the input to
+  - :cmd:`Number Notation` now support inductive types in the input to
     printing functions (e.g., numeral notations can be defined for terms
     containing things like :g:`@cons nat O O`), and parsing functions now
     fully normalize terms including parameters of constructors (so that,
@@ -2782,7 +2782,7 @@ changes:
     next version of |Coq|, see the next subsection for a script to
     ease porting, by Jason Gross and Jean-Christophe Léchenet.
 
-  - Added the :cmd:`Numeral Notation` command for registering decimal
+  - Added the :cmd:`Number Notation` command for registering decimal
     numeral notations for custom types, by Daniel de Rauglaudre, Pierre
     Letouzey and Jason Gross.
 

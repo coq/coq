@@ -18,8 +18,8 @@ Definition as_signed (bw : Z) (v : Z) :=
   (((2 ^ (bw - 1) + v) mod (2 ^ bw)) - 2 ^ (bw - 1))%Z.
 
 Definition sto_Z (v : sint) := as_signed 31 (to_Z (unwraps v)).
-Numeral Notation uint uof_Z uto_Z : uint_scope.
-Numeral Notation sint sof_Z sto_Z : sint_scope.
+Number Notation uint uof_Z uto_Z : uint_scope.
+Number Notation sint sof_Z sto_Z : sint_scope.
 Open Scope uint_scope.
 Compute uof_Z 0.
 Compute uof_Z 1.

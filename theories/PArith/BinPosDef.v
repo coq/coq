@@ -697,9 +697,9 @@ Definition to_hex_int p := Hexadecimal.Pos (to_hex_uint p).
 
 Definition to_num_int n := Numeral.IntDec (to_int n).
 
-Numeral Notation positive of_num_int to_num_uint : positive_scope.
+Number Notation positive of_num_int to_num_uint : positive_scope.
 
 End Pos.
 
 (** Re-export the notation for those who just [Import BinPosDef] *)
-Numeral Notation positive Pos.of_num_int Pos.to_num_uint : positive_scope.
+Number Notation positive Pos.of_num_int Pos.to_num_uint : positive_scope.

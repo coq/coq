@@ -24,6 +24,11 @@ let pr_numnot_option = function
   | Warning n -> str "(warning after " ++ NumTok.UnsignedNat.print n ++ str ")"
   | Abstract n -> str "(abstract after " ++ NumTok.UnsignedNat.print n ++ str ")"
 
+let warn_deprecated_numeral_notation =
+  CWarnings.create ~name:"numeral-notation" ~category:"deprecated"
+    (fun () ->
+      strbrk "Numeral Notation is deprecated, please use Number Notation instead.")
+
 }
 
 VERNAC ARGUMENT EXTEND numnotoption
@@ -34,8 +39,13 @@ VERNAC ARGUMENT EXTEND numnotoption
 END
 
 VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
-  | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
+  | #[ locality = Attributes.locality; ] [ "Number" "Notation" reference(ty) reference(f) reference(g) ":"
       ident(sc) numnotoption(o) ] ->
 
     { vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
+  | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
+      ident(sc) numnotoption(o) ] ->
+
+    { warn_deprecated_numeral_notation ();
+      vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
 END

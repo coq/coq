@@ -21,7 +21,7 @@ Local Set Universe Polymorphism.
 Delimit Scope punit_scope with punit.
 Delimit Scope pcunit_scope with pcunit.
 Delimit Scope int_scope with int.
-Numeral Notation Decimal.int Decimal.int_of_int Decimal.int_of_int : int_scope.
+Number Notation Decimal.int Decimal.int_of_int Decimal.int_of_int : int_scope.
 Module A.
   NonCumulative Inductive punit@{u} : Type@{u} := ptt.
   Cumulative Inductive pcunit@{u} : Type@{u} := pctt.
@@ -31,10 +31,10 @@ Module A.
     := fun v => match v with 0%int => Some pctt | _ => None end.
   Definition of_punit : punit -> Decimal.uint := fun _ => Nat.to_uint 0.
   Definition of_pcunit : pcunit -> Decimal.uint := fun _ => Nat.to_uint 0.
-  Numeral Notation punit to_punit of_punit : punit_scope.
+  Number Notation punit to_punit of_punit : punit_scope.
   Check let v := 0%punit in v : punit.
   Back 2.
-  Numeral Notation pcunit to_pcunit of_pcunit : punit_scope.
+  Number Notation pcunit to_pcunit of_pcunit : punit_scope.
   Check let v := 0%punit in v : pcunit.
 End A.
 Reset A.
@@ -44,7 +44,7 @@ Module A.
   Definition to_punit : Decimal.int -> option punit
     := fun v => match v with 0%int => Some ptt | _ => None end.
   Definition of_punit : punit -> Decimal.uint := fun _ => Nat.to_uint 0.
-  Numeral Notation punit to_punit of_punit : punit_scope.
+  Number Notation punit to_punit of_punit : punit_scope.
   Check let v := 0%punit in v : punit.
 End A.
 Local Set Universe Polymorphism.
@@ -52,7 +52,7 @@ Inductive punit@{u} : Type@{u} := ptt.
 Definition to_punit : Decimal.int -> option punit
   := fun v => match v with 0%int => Some ptt | _ => None end.
 Definition of_punit : punit -> Decimal.uint := fun _ => Nat.to_uint 0.
-Numeral Notation punit to_punit of_punit : punit_scope.
+Number Notation punit to_punit of_punit : punit_scope.
 Check let v := 0%punit in v : punit.
 Back 6. (* check backtracking of registering universe polymorphic constants *)
 Local Unset Universe Polymorphism.
@@ -60,5 +60,5 @@ Inductive punit : Set := ptt.
 Definition to_punit : Decimal.int -> option punit
   := fun v => match v with 0%int => Some ptt | _ => None end.
 Definition of_punit : punit -> Decimal.uint := fun _ => Nat.to_uint 0.
-Numeral Notation punit to_punit of_punit : punit_scope.
+Number Notation punit to_punit of_punit : punit_scope.
 Check let v := 0%punit in v : punit.

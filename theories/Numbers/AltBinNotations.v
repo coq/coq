@@ -8,12 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * Alternative Binary Numeral Notations *)
+(** * Alternative Binary Number Notations *)
 
 (** Faster but less safe parsers and printers of [positive], [N], [Z]. *)
 
 (** By default, literals in types [positive], [N], [Z] are parsed and
-    printed via the [Numeral Notation] command, by conversion from/to
+    printed via the [Number Notation] command, by conversion from/to
     the [Decimal.int] representation. When working with numbers with
     thousands of digits and more, conversion from/to [Decimal.int] can
     become significantly slow. If that becomes a problem for your
@@ -43,7 +43,7 @@ Definition pos_of_z z :=
 
 Definition pos_to_z p := Zpos p.
 
-Numeral Notation positive pos_of_z pos_to_z : positive_scope.
+Number Notation positive pos_of_z pos_to_z : positive_scope.
 
 (** [N] *)
 
@@ -60,10 +60,10 @@ Definition n_to_z n :=
     | Npos p => Zpos p
   end.
 
-Numeral Notation N n_of_z n_to_z : N_scope.
+Number Notation N n_of_z n_to_z : N_scope.
 
 (** [Z] *)
 
 Definition z_of_z (z:Z) := z.
 
-Numeral Notation Z z_of_z z_of_z : Z_scope.
+Number Notation Z z_of_z z_of_z : Z_scope.

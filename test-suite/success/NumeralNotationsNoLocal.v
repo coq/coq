@@ -5,7 +5,7 @@ Delimit Scope unit11_scope with unit11.
 Goal True.
   evar (to_uint : unit11 -> Decimal.uint).
   evar (of_uint : Decimal.uint -> unit11).
-  Fail Numeral Notation unit11 of_uint to_uint : uint11_scope.
+  Fail Number Notation unit11 of_uint to_uint : uint11_scope.
   exact I.
   Unshelve.
   all: solve [ constructor ].

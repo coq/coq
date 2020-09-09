@@ -12,7 +12,7 @@
 
 (** These numbers coded in base 16 will be used for parsing and printing
     other Coq numeral datatypes in an human-readable way.
-    See the [Numeral Notation] command.
+    See the [Number Notation] command.
     We represent numbers in base 16 as lists of hexadecimal digits,
     in big-endian order (most significant digit comes first). *)
 

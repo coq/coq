@@ -1125,7 +1125,7 @@ are currently open.  For instance, the infix symbol ``+`` can be
 used to refer to distinct definitions of the addition operator,
 such as for natural numbers, integers or reals.
 Notation scopes can include an interpretation for numbers and
-strings with the :cmd:`Numeral Notation` and :cmd:`String Notation` commands.
+strings with the :cmd:`Number Notation` and :cmd:`String Notation` commands.
 
    .. insertprodn scope scope_key
 
@@ -1533,13 +1533,13 @@ numbers (see :ref:`datatypes`).
    Negative integers are not at the same level as :n:`@natural`, for this
    would make precedence unnatural.
 
-.. _numeral-notations:
+.. _number-notations:
 
-Numeral notations
-~~~~~~~~~~~~~~~~~
+Number notations
+~~~~~~~~~~~~~~~~
 
-.. cmd:: Numeral Notation @qualid @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
-   :name: Numeral Notation
+.. cmd:: Number Notation @qualid @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
+   :name: Number Notation
 
    .. insertprodn numeral_modifier numeral_modifier
 
@@ -1597,7 +1597,7 @@ Numeral notations
 
          .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
 
-            When a :cmd:`Numeral Notation` is registered in the current scope
+            When a :cmd:`Number Notation` is registered in the current scope
             with :n:`(warning after @bignat)`, this warning is emitted when
             parsing a number greater than or equal to :token:`bignat`.
 
@@ -1615,7 +1615,7 @@ Numeral notations
 
          .. warn:: To avoid stack overflow, large numbers in @type are interpreted as applications of @qualid__parse.
 
-            When a :cmd:`Numeral Notation` is registered in the current scope
+            When a :cmd:`Number Notation` is registered in the current scope
             with :n:`(abstract after @bignat)`, this warning is emitted when
             parsing a number greater than or equal to :token:`bignat`.
             Typically, this indicates that the fully computed representation
@@ -1638,12 +1638,12 @@ Numeral notations
 
    .. exn:: @qualid__parse should go from Numeral.int to @type or (option @type). Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
 
-     The parsing function given to the :cmd:`Numeral Notation`
+     The parsing function given to the :cmd:`Number Notation`
      vernacular is not of the right type.
 
    .. exn:: @qualid__print should go from @type to Numeral.int or (option Numeral.int).  Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
 
-     The printing function given to the :cmd:`Numeral Notation`
+     The printing function given to the :cmd:`Number Notation`
      vernacular is not of the right type.
 
    .. exn:: Unexpected term @term while parsing a numeral notation.
@@ -1745,19 +1745,19 @@ The following errors apply to both string and numeral notations:
 
    .. exn:: Syntax error: [prim:reference] expected after 'Notation' (in [vernac:command]).
 
-     The type passed to :cmd:`String Notation` or :cmd:`Numeral Notation` must be a single qualified
+     The type passed to :cmd:`String Notation` or :cmd:`Number Notation` must be a single qualified
      identifier.
 
    .. exn:: Syntax error: [prim:reference] expected after [prim:reference] (in [vernac:command]).
 
-     Both functions passed to :cmd:`String Notation` or :cmd:`Numeral Notation` must be single qualified
+     Both functions passed to :cmd:`String Notation` or :cmd:`Number Notation` must be single qualified
      identifiers.
 
      .. todo: generally we don't document syntax errors.  Is this a good execption?
 
    .. exn:: @qualid is bound to a notation that does not denote a reference.
 
-     Identifiers passed to :cmd:`String Notation` or :cmd:`Numeral Notation` must be global
+     Identifiers passed to :cmd:`String Notation` or :cmd:`Number Notation` must be global
      references, or notations which evaluate to single qualified identifiers.
 
      .. todo note on "single qualified identifiers" https://github.com/coq/coq/pull/11718#discussion_r415076703
