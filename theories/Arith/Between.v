@@ -110,7 +110,7 @@ Section Between.
   Lemma between_in_int :
     forall k l, between k l -> forall r, in_int k l r -> P r.
   Proof.
-    induction 1; intros.
+    intro k; induction 1 as [|l]; intros r ?.
     - absurd (k < k). { auto with arith. }
       eapply in_int_lt; eassumption.
     - destruct (in_int_p_Sq k l r) as [| ->]; auto with arith.
@@ -125,7 +125,7 @@ Section Between.
   Lemma exists_in_int :
     forall k l, exists_between k l -> exists2 m : nat, in_int k l m & Q m.
   Proof.
-    induction 1 as [* ? (p, ?, ?)|].
+    induction 1 as [* ? (p, ?, ?)|l].
     - exists p; auto with arith.
     - exists l; auto with arith.
   Qed.
@@ -154,7 +154,7 @@ Section Between.
       between k l ->
       (forall n:nat, in_int k l n -> P n -> ~ Q n) -> ~ exists_between k l.
   Proof.
-    induction 1; red; intros.
+    intro k; induction 1 as [|l]; red; intros.
     - absurd (k < k); auto with arith.
     - absurd (Q l). { auto with arith. }
       destruct (exists_in_int k (S l)) as (l',[],?).
