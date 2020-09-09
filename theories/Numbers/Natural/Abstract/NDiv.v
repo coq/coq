@@ -39,15 +39,15 @@ Qed.
 Theorem div_mod_unique :
  forall b q1 q2 r1 r2, r1<b -> r2<b ->
   b*q1+r1 == b*q2+r2 -> q1 == q2 /\ r1 == r2.
-Proof. intros. apply div_mod_unique with b; auto'. Qed.
+Proof. intros b q1 q2 r1 r2 ? ? ?. apply div_mod_unique with b; auto'. Qed.
 
 Theorem div_unique:
  forall a b q r, r<b -> a == b*q + r -> q == a/b.
-Proof. intros; apply div_unique with r; auto'. Qed.
+Proof. intros a b q r ? ?; apply div_unique with r; auto'. Qed.
 
 Theorem mod_unique:
  forall a b q r, r<b -> a == b*q + r -> r == a mod b.
-Proof. intros. apply mod_unique with q; auto'. Qed.
+Proof. intros a b q r ? ?. apply mod_unique with q; auto'. Qed.
 
 Theorem div_unique_exact: forall a b q, b~=0 -> a == b*q -> q == a/b.
 Proof. intros. apply div_unique_exact; auto'. Qed.
