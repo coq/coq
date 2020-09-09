@@ -156,7 +156,7 @@ Fixpoint tail_plus n m : nat :=
 
 Lemma plus_tail_plus : forall n m, n + m = tail_plus n m.
 Proof.
-induction n as [| n IHn]; simpl; auto.
+intro n; induction n as [| n IHn]; simpl; auto.
 intro m; rewrite <- IHn; simpl; auto.
 Qed.
 
