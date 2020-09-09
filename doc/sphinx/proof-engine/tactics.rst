@@ -2819,6 +2819,13 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
       only in the conclusion of the goal. The clause argument must not contain
       any ``type of`` nor ``value of``.
 
+   .. tacv:: cutrewrite {? {| <- | -> } } (@term__1 = @term__2) {? in @ident }
+      :name: cutrewrite
+
+      .. deprecated:: 8.5
+
+         Use :tacn:`replace` instead.
+
 .. tacn:: subst @ident
    :name: subst
 

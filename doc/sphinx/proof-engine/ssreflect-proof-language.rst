@@ -3110,7 +3110,7 @@ An :token:`r_item` can be:
     + A list of terms ``(t1 ,…,tn)``, each ``ti`` having a type above.
       The tactic: ``rewrite r_prefix (t1 ,…,tn ).``
       is equivalent to: ``do [rewrite r_prefix t1 | … | rewrite r_prefix tn ].``
-    + An anonymous rewrite lemma ``(_ : term)``, where term has a type as above.
+    + An anonymous rewrite lemma ``(_ : term)``, where term has a type as above.  tactic: ``rewrite (_ : term)`` is in fact synonym of: ``cutrewrite (term).``.
 
   .. example::
 

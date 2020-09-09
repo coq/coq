@@ -1651,6 +1651,17 @@ let cutSubstClause l2r eqn cls =
     | None ->    cutSubstInConcl l2r eqn
     | Some id -> cutSubstInHyp l2r eqn id
 
+let warn_deprecated_cutrewrite =
+  CWarnings.create ~name:"deprecated-cutrewrite" ~category:"deprecated"
+    (fun () -> strbrk"\"cutrewrite\" is deprecated. Use \"replace\" instead.")
+
+let cutRewriteClause l2r eqn cls =
+  warn_deprecated_cutrewrite ();
+  try_rewrite (cutSubstClause l2r eqn cls)
+
+let cutRewriteInHyp l2r eqn id = cutRewriteClause l2r eqn (Some id)
+let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
+
 let substClause l2r c cls =
   Proofview.Goal.enter begin fun gl ->
   let eq = pf_apply get_type_of gl c in

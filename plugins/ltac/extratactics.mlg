@@ -43,7 +43,7 @@ DECLARE PLUGIN "ltac_plugin"
 
 (**********************************************************************)
 (* replace, discriminate, injection, simplify_eq                      *)
-(* dependent rewrite                                                  *)
+(* cutrewrite, dependent rewrite                                      *)
 
 let with_delayed_uconstr ist c tac =
   let flags = {
@@ -201,6 +201,12 @@ TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> { rewriteInConcl b c }
 | [ "dependent" "rewrite" orient(b) constr(c) "in" hyp(id) ]
     -> { rewriteInHyp b c id }
+END
+
+TACTIC EXTEND cut_rewrite
+| [ "cutrewrite" orient(b) constr(eqn) ] -> { cutRewriteInConcl b eqn }
+| [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
+    -> { cutRewriteInHyp b eqn id }
 END
 
 (**********************************************************************)

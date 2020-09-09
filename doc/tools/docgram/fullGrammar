@@ -1535,6 +1535,8 @@ simple_tactic: [
 | "simple" "injection" destruction_arg
 | "dependent" "rewrite" orient constr
 | "dependent" "rewrite" orient constr "in" hyp
+| "cutrewrite" orient constr
+| "cutrewrite" orient constr "in" hyp
 | "decompose" "sum" constr
 | "decompose" "record" constr
 | "absurd" constr

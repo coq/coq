@@ -1445,6 +1445,7 @@ simple_tactic: [
 | "einjection" OPT destruction_arg OPT ( "as" LIST0 simple_intropattern )
 | "simple" "injection" OPT destruction_arg
 | "dependent" "rewrite" OPT [ "->" | "<-" ] one_term OPT ( "in" ident )
+| "cutrewrite" OPT [ "->" | "<-" ] one_term OPT ( "in" ident )
 | "decompose" "sum" one_term
 | "decompose" "record" one_term
 | "absurd" one_term

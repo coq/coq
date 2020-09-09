@@ -1033,6 +1033,9 @@ simple_tactic: [
 | DELETE "unify" constr constr
 | REPLACE "unify" constr constr "with" preident
 | WITH "unify" constr constr OPT ( "with" preident )
+| DELETE "cutrewrite" orient constr
+| REPLACE "cutrewrite" orient constr "in" hyp
+| WITH "cutrewrite" orient constr OPT ( "in" hyp )
 | DELETE "destauto"
 | REPLACE "destauto" "in" hyp
 | WITH "destauto" OPT ( "in" hyp )
