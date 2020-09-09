@@ -190,6 +190,7 @@ let system_list sys =
 
 let add (v1, c1) (v2, c2) =
   assert (c1 <>/ Q.zero && c2 <>/ Q.zero);
+  (* XXX Can use Q.inv now *)
   let res = mul_add (Q.one // c1) v1 (Q.one // c2) v2 in
   (res, count res)
 
