@@ -158,7 +158,7 @@ Fixpoint mult_acc (s:nat) m n : nat :=
 
 Lemma mult_acc_aux : forall n m p, m + n * p = mult_acc m p n.
 Proof.
-  induction n as [| n IHn]; simpl; auto.
+  intro n; induction n as [| n IHn]; simpl; auto.
   intros. rewrite Nat.add_assoc, IHn. f_equal.
   rewrite Nat.add_comm. apply plus_tail_plus.
 Qed.
