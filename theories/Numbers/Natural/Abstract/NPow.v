@@ -55,7 +55,7 @@ Proof. wrap pow_mul_r. Qed.
 (** Power and nullity *)
 
 Lemma pow_eq_0 : forall a b, b~=0 -> a^b == 0 -> a == 0.
-Proof. intros. apply (pow_eq_0 a b); trivial. auto'. Qed.
+Proof. intros a b ? ?. apply (pow_eq_0 a b); trivial. auto'. Qed.
 
 Lemma pow_nonzero : forall a b, a~=0 -> a^b ~= 0.
 Proof. wrap pow_nonzero. Qed.
