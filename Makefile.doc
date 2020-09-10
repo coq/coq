@@ -223,7 +223,7 @@ install-doc-stdlib-html:
 	$(MKDIR) $(FULLDOCDIR)/html/stdlib
 	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib
 
-install-doc-printable: 
+install-doc-printable:
 	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/stdlib/Library.ps $(FULLDOCDIR)/ps
@@ -250,7 +250,8 @@ $(DOC_GRAM): $(DOC_GRAMCMO) coqpp/coqpp_parser.mli coqpp/coqpp_parser.ml doc/too
 PLUGIN_MLGS := $(wildcard plugins/*/*.mlg)
 OMITTED_PLUGIN_MLGS := plugins/ssr/ssrparser.mlg plugins/ssr/ssrvernac.mlg plugins/ssrmatching/g_ssrmatching.mlg \
 	plugins/ssrsearch/g_search.mlg
-DOC_MLGS := $(wildcard */*.mlg) $(sort $(filter-out $(OMITTED_PLUGIN_MLGS), $(PLUGIN_MLGS)))
+DOC_MLGS := $(wildcard */*.mlg) $(sort $(filter-out $(OMITTED_PLUGIN_MLGS), $(PLUGIN_MLGS))) \
+	user-contrib/Ltac2/g_ltac2.mlg
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
 DOC_RSTS := $(wildcard doc/sphinx/*/*.rst) $(wildcard doc/sphinx/*/*/*.rst)
 

@@ -2990,9 +2990,9 @@ Performing computations
    | pattern {+, @pattern_occ }
    | @ident
    delta_flag ::= {? - } [ {+ @reference } ]
-   strategy_flag ::= {+ @red_flags }
+   strategy_flag ::= {+ @red_flag }
    | @delta_flag
-   red_flags ::= beta
+   red_flag ::= beta
    | iota
    | match
    | fix

@@ -187,6 +187,16 @@ nitpick_ignore = [ ('token', token) for token in [
     'collection',
     'modpath',
     'tactic',
+    'destruction_arg',
+    'bindings',
+    'induction_clause',
+    'conversion',
+    'where',
+    'oriented_rewriter',
+    'hintbases',
+    'bindings_with_parameters',
+    'destruction_arg',
+    'clause_dft_concl'
 ]]
 
 # -- Options for HTML output ----------------------------------------------

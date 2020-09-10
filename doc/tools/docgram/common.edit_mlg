@@ -12,19 +12,98 @@
 
 DOC_GRAMMAR
 
+(* first, fixup symbols duplicated across files *)
+lglob: [
+| lconstr
+| DELETE EXTRAARGS_lconstr
+]
+
+hint: [
+| "Extern" natural OPT constr_pattern "=>" tactic
+]
+
+(* todo: does ARGUMENT EXTEND make the symbol global? It is in both extraargs and extratactics *)
+strategy_level_or_var: [
+| DELETE EXTRAARGS_strategy_level
+| strategy_level
+]
+
+operconstr0: [
+| "ltac" ":" "(" tactic_expr5 ")"
+]
+
+EXTRAARGS_natural: [ | DELETENT ]
+EXTRAARGS_lconstr:  [ | DELETENT ]
+EXTRAARGS_strategy_level: [ | DELETENT ]
+G_LTAC_hint: [ | DELETENT ]
+G_LTAC_operconstr0: [ | DELETENT ]
+
+G_REWRITE_binders: [
+| DELETE Pcoq.Constr.binders
+| binders
+]
+
+G_TACTIC_in_clause: [
+| in_clause
+| MOVEALLBUT in_clause
+| in_clause
+]
+
+SPLICE: [
+| G_REWRITE_binders
+| G_TACTIC_in_clause
+]
+
+RENAME: [
+| G_LTAC2_delta_flag ltac2_delta_flag
+| G_LTAC2_strategy_flag ltac2_strategy_flag
+| G_LTAC2_binder ltac2_binder
+| G_LTAC2_branches ltac2_branches
+| G_LTAC2_let_clause ltac2_let_clause
+| G_LTAC2_tactic_atom ltac2_tactic_atom
+| G_LTAC2_rewriter ltac2_rewriter
+| G_LTAC2_constr_with_bindings ltac2_constr_with_bindings
+| G_LTAC2_match_rule ltac2_match_rule
+| G_LTAC2_match_pattern ltac2_match_pattern
+| G_LTAC2_intropatterns ltac2_intropatterns
+| G_LTAC2_simple_intropattern ltac2_simple_intropattern
+| G_LTAC2_simple_intropattern_closed ltac2_simple_intropattern_closed
+| G_LTAC2_or_and_intropattern ltac2_or_and_intropattern
+| G_LTAC2_equality_intropattern ltac2_equality_intropattern
+| G_LTAC2_naming_intropattern ltac2_naming_intropattern
+| G_LTAC2_destruction_arg ltac2_destruction_arg
+| G_LTAC2_with_bindings ltac2_with_bindings
+| G_LTAC2_bindings ltac2_bindings
+| G_LTAC2_simple_binding ltac2_simple_binding
+| G_LTAC2_in_clause ltac2_in_clause
+| G_LTAC2_occs ltac2_occs
+| G_LTAC2_occs_nums ltac2_occs_nums
+| G_LTAC2_concl_occ ltac2_concl_occ
+| G_LTAC2_hypident_occ ltac2_hypident_occ
+| G_LTAC2_hypident ltac2_hypident
+| G_LTAC2_induction_clause ltac2_induction_clause
+| G_LTAC2_as_or_and_ipat ltac2_as_or_and_ipat
+| G_LTAC2_eqn_ipat ltac2_eqn_ipat
+| G_LTAC2_conversion ltac2_conversion
+| G_LTAC2_oriented_rewriter ltac2_oriented_rewriter
+| G_LTAC2_tactic_then_gen ltac2_tactic_then_gen
+| G_LTAC2_tactic_then_last ltac2_tactic_then_last
+| G_LTAC2_as_name ltac2_as_name
+| G_LTAC2_as_ipat ltac2_as_ipat
+| G_LTAC2_by_tactic ltac2_by_tactic
+| G_LTAC2_match_list ltac2_match_list
+]
+
 (* renames to eliminate qualified names
    put other renames at the end *)
 RENAME: [
   (* map missing names for rhs *)
 | Constr.constr term
-| Constr.constr_pattern constr_pattern
 | Constr.global global
 | Constr.lconstr lconstr
 | Constr.lconstr_pattern cpattern
 | G_vernac.query_command query_command
 | G_vernac.section_subset_expr section_subset_expr
-| Pltac.tactic tactic
-| Pltac.tactic_expr tactic_expr5
 | Prim.ident ident
 | Prim.reference reference
 | Pvernac.Vernac_.main_entry vernac_control
@@ -125,6 +204,26 @@ tactic_then_last: [
 | OPTINREF
 ]
 
+ltac2_tactic_then_last: [
+| REPLACE "|" LIST0 ( OPT tac2expr6 ) SEP "|"      (* Ltac2 plugin *)
+| WITH LIST0 (  "|" OPT tac2expr6 )  TAG Ltac2
+]
+
+ltac2_goal_tactics: [
+| LIST0 ( OPT tac2expr6 ) SEP "|"  TAG Ltac2
+]
+
+ltac2_tactic_then_gen: [ | DELETENT ]
+
+ltac2_tactic_then_gen: [
+| ltac2_goal_tactics  TAG Ltac2
+| OPT ( ltac2_goal_tactics "|" ) OPT tac2expr6 ".." OPT ( "|" ltac2_goal_tactics )  TAG Ltac2
+]
+
+ltac2_tactic_then_last: [
+| OPTINREF
+]
+
 reference: [ | DELETENT ]
 
 reference: [
@@ -154,15 +253,6 @@ dirpath: [
 | REPLACE ident LIST0 field
 | WITH LIST0 ( ident "." ) ident
 ]
-
-binders: [
-| DELETE Pcoq.Constr.binders  (* todo: not sure why there are 2 "binders:" *)
-]
-
-lconstr: [
-| DELETE l_constr
-]
-
 
 let_type_cstr: [
 | DELETE OPT [ ":" lconstr ]
@@ -551,9 +641,28 @@ delta_flag: [
 | OPTINREF
 ]
 
+ltac2_delta_flag: [
+| EDIT ADD_OPT "-" "[" refglobals "]"      (* Ltac2 plugin *)
+]
+
+ltac2_branches: [
+| EDIT ADD_OPT "|" LIST1 branch SEP "|"      (* Ltac2 plugin *)
+| OPTINREF
+]
+
+RENAME: [
+| red_flag ltac2_red_flag
+| red_flags red_flag
+]
+
+RENAME: [
+]
+
 strategy_flag: [
 | REPLACE OPT delta_flag
 | WITH delta_flag
+(*| REPLACE LIST1 red_flags
+| WITH LIST1 red_flag*)
 | (* empty *)
 | OPTINREF
 ]
@@ -841,7 +950,7 @@ simple_tactic: [
 | DELETE "autorewrite" "with" LIST1 preident clause "using" tactic
 | DELETE "autorewrite" "*" "with" LIST1 preident clause
 | REPLACE "autorewrite" "*" "with" LIST1 preident clause "using" tactic
-| WITH "autorewrite" OPT "*" "with" LIST1 preident clause_dft_concl OPT ( "using" tactic )
+| WITH "autorewrite" OPT "*" "with" LIST1 preident clause OPT ( "using" tactic )
 | DELETE "cofix" ident
 | REPLACE "cofix" ident "with" LIST1 cofixdecl
 | WITH "cofix" ident OPT ( "with" LIST1 cofixdecl )
@@ -900,7 +1009,7 @@ simple_tactic: [
 | DELETE "replace" "->" uconstr clause
 | DELETE "replace" "<-" uconstr clause
 | DELETE "replace" uconstr clause
-| "replace" orient uconstr clause_dft_concl   (* todo: fix 'clause' *)
+| "replace" orient uconstr clause
 | REPLACE "rewrite" "*" orient uconstr "in" hyp "at" occurrences by_arg_tac
 | WITH "rewrite" "*" orient uconstr OPT ( "in" hyp ) OPT ( "at" occurrences by_arg_tac )
 | DELETE "rewrite" "*" orient uconstr "in" hyp by_arg_tac
@@ -1163,6 +1272,7 @@ command: [
 | REPLACE "String" "Notation" reference reference reference ":" ident
 | WITH "String" "Notation" reference reference reference ":" scope_name
 
+| DELETE "Ltac2" ltac2_entry      (* was split up *)
 ]
 
 option_setting: [
@@ -1180,14 +1290,10 @@ syntax: [
 | WITH "Undelimit" "Scope" scope_name
 | REPLACE "Bind" "Scope" IDENT; "with" LIST1 class_rawexpr
 | WITH "Bind" "Scope" scope_name; "with" LIST1 class_rawexpr
-| REPLACE "Infix" ne_lstring ":=" constr [ "(" LIST1 syntax_modifier SEP "," ")" | ]   OPT [ ":" IDENT ]
-| WITH    "Infix" ne_lstring ":=" constr OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" scope_name ]
-| REPLACE "Notation" lstring ":=" constr [ "(" LIST1 syntax_modifier SEP "," ")" | ]   OPT [ ":" IDENT ]
-| WITH    "Notation" lstring ":=" constr OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" scope_name ]
-| REPLACE "Reserved" "Infix" ne_lstring [ "(" LIST1 syntax_modifier SEP "," ")" | ]
-| WITH    "Reserved" "Infix" ne_lstring OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
-| REPLACE "Reserved" "Notation" ne_lstring [ "(" LIST1 syntax_modifier SEP "," ")" | ]
-| WITH    "Reserved" "Notation" ne_lstring OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
+| REPLACE "Infix" ne_lstring ":=" constr syntax_modifiers   OPT [ ":" IDENT ]
+| WITH    "Infix" ne_lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
+| REPLACE "Notation" lstring ":=" constr syntax_modifiers   OPT [ ":" IDENT ]
+| WITH    "Notation" lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
 ]
 
 syntax_modifier: [
@@ -1458,8 +1564,33 @@ by_tactic: [
 ]
 
 rewriter: [
-| REPLACE [ "?" | LEFTQMARK ] constr_with_bindings_arg
-| WITH "?" constr_with_bindings_arg
+| DELETE "!" constr_with_bindings_arg
+| DELETE [ "?" | LEFTQMARK ] constr_with_bindings_arg
+| DELETE natural "!" constr_with_bindings_arg
+| DELETE natural [ "?" | LEFTQMARK ] constr_with_bindings_arg
+| DELETE natural constr_with_bindings_arg
+| DELETE constr_with_bindings_arg
+| OPT natural OPT [ "?" | "!" ] constr_with_bindings_arg
+]
+
+ltac2_rewriter: [
+| DELETE "!" ltac2_constr_with_bindings      (* Ltac2 plugin *)
+| DELETE [ "?" | LEFTQMARK ] ltac2_constr_with_bindings
+| DELETE lnatural "!" ltac2_constr_with_bindings      (* Ltac2 plugin *)
+| DELETE lnatural [ "?" | LEFTQMARK ] ltac2_constr_with_bindings
+| DELETE lnatural ltac2_constr_with_bindings      (* Ltac2 plugin *)
+| DELETE ltac2_constr_with_bindings      (* Ltac2 plugin *)
+| OPT natural OPT [ "?" | "!" ] ltac2_constr_with_bindings
+]
+
+tac2expr0: [
+| DELETE "(" ")"
+]
+
+tac2type_body: [
+| REPLACE ":=" tac2typ_knd      (* Ltac2 plugin *)
+| WITH [ ":=" | "::=" ] tac2typ_knd TAG Ltac2
+| DELETE "::=" tac2typ_knd      (* Ltac2 plugin *)
 ]
 
 intropattern_or_list_or: [
@@ -1523,6 +1654,12 @@ in_clause: [
 | REPLACE LIST0 hypident_occ SEP "," "|-" concl_occ
 | WITH LIST0 hypident_occ SEP "," OPT ( "|-" concl_occ )
 | DELETE LIST0 hypident_occ SEP ","
+]
+
+ltac2_in_clause: [
+| REPLACE LIST0 ltac2_hypident_occ SEP "," "|-" ltac2_concl_occ      (* Ltac2 plugin *)
+| WITH LIST0 ltac2_hypident_occ SEP "," OPT ( "|-" ltac2_concl_occ )  TAG Ltac2
+| DELETE LIST0 ltac2_hypident_occ SEP ","      (* Ltac2 plugin *)
 ]
 
 concl_occ: [
@@ -1597,8 +1734,12 @@ by_notation: [
 ]
 
 decl_notation: [
-| REPLACE ne_lstring ":=" constr only_parsing OPT [ ":" IDENT ]
-| WITH ne_lstring ":=" constr only_parsing OPT [ ":" scope_name ]
+| REPLACE ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
+| WITH ne_lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
+]
+
+syntax_modifiers: [
+| OPTINREF
 ]
 
 
@@ -1635,6 +1776,15 @@ tactic_mode: [
 | MOVETO command ltac_info tactic
 | DELETE command
 ]
+
+sexpr: [
+| REPLACE syn_node      (* Ltac2 plugin *)
+| WITH name TAG Ltac2
+| REPLACE syn_node "(" LIST1 sexpr SEP "," ")"      (* Ltac2 plugin *)
+| WITH name "(" LIST1 sexpr SEP "," ")" TAG Ltac2
+]
+
+syn_node: [ | DELETENT ]
 
 RENAME: [
 | toplevel_selector toplevel_selector_temp
@@ -1754,9 +1904,24 @@ tactic_value: [
 | [ value_tactic | syn_value ]
 ]
 
+
+(* defined in Ltac2/Notations.v *)
+
+ltac2_match_key: [
+| "lazy_match!"
+| "match!"
+| "multi_match!"
+]
+
+ltac2_constructs: [
+| ltac2_match_key tac2expr6 "with" ltac2_match_list "end"
+| ltac2_match_key OPT "reverse" "goal" "with" gmatch_list "end"
+]
+
 simple_tactic: [
 | ltac_builtins
 | ltac_constructs
+| ltac2_constructs
 | ltac_defined_tactics
 | tactic_notation_tactics
 ]
@@ -1765,6 +1930,24 @@ tacdef_body: [
 | REPLACE global LIST1 input_fun ltac_def_kind tactic_expr5
 | WITH global LIST0 input_fun ltac_def_kind tactic_expr5
 | DELETE global ltac_def_kind tactic_expr5
+]
+
+tac2def_typ: [
+| REPLACE "Type" rec_flag LIST1 tac2typ_def SEP "with"      (* Ltac2 plugin *)
+| WITH "Type" rec_flag tac2typ_def LIST0 ( "with" tac2typ_def ) TAG Ltac2
+]
+
+tac2def_val: [
+| REPLACE mut_flag rec_flag LIST1 tac2def_body SEP "with"      (* Ltac2 plugin *)
+| WITH mut_flag rec_flag tac2def_body LIST0 ( "with" tac2def_body ) TAG Ltac1
+]
+
+tac2alg_constructors: [
+| REPLACE "|" LIST1 tac2alg_constructor SEP "|"      (* Ltac2 plugin *)
+| WITH OPT "|" LIST1 tac2alg_constructor SEP "|" TAG Ltac2
+| DELETE LIST0 tac2alg_constructor SEP "|"      (* Ltac2 plugin *)
+| (* empty *)
+| OPTINREF
 ]
 
 SPLICE: [
@@ -1792,7 +1975,233 @@ logical_kind: [
 | [ "Field" | "Method" ]
 ]
 
+(* ltac2 *)
+
+DELETE: [
+| test_ltac1_env
+]
+
+mut_flag: [
+| OPTINREF
+]
+
+rec_flag: [
+| OPTINREF
+]
+
+ltac2_orient: [ | DELETENT ]
+
+ltac2_orient: [
+| orient
+]
+
 SPLICE: [
+| ltac2_orient
+]
+
+tac2typ_prm: [
+| OPTINREF
+]
+
+tac2type_body: [
+| OPTINREF
+]
+
+atomic_tac2pat: [
+| OPTINREF
+]
+
+tac2expr0: [
+(*
+| DELETE "(" ")" (* covered by "()" prodn *)
+| REPLACE "{" [  | LIST1 tac2rec_fieldexpr OPT ";" ] "}"
+| WITH "{" OPT ( LIST1 tac2rec_fieldexpr OPT ";" ) "}"
+*)
+]
+
+(* todo: should
+| tac2pat1 "," LIST0 tac2pat1 SEP ","
+use LIST1? *)
+
+SPLICE: [
+| tac2expr4
+]
+
+tac2expr3: [
+| REPLACE tac2expr2 "," LIST1 tac2expr2 SEP ","      (* Ltac2 plugin *)
+| WITH LIST1 tac2expr2 SEP "," TAG Ltac2
+| DELETE tac2expr2      (* Ltac2 plugin *)
+]
+
+tac2rec_fieldexprs: [
+| DELETE tac2rec_fieldexpr ";" tac2rec_fieldexprs
+| DELETE tac2rec_fieldexpr ";"
+| DELETE tac2rec_fieldexpr
+| LIST1 tac2rec_fieldexpr OPT ";"
+| OPTINREF
+]
+
+tac2rec_fields: [
+| DELETE tac2rec_field ";" tac2rec_fields
+| DELETE tac2rec_field ";"
+| DELETE tac2rec_field
+| LIST1 tac2rec_field SEP ";" OPT ";" TAG Ltac2
+| OPTINREF
+]
+
+(* todo: weird productions, ints only after an initial "-"??:
+  occs_nums: [
+  | LIST1 [ num | ident ]
+  | "-" [ num | ident ] LIST0 int_or_var
+*)
+ltac2_occs_nums: [
+| DELETE LIST1 nat_or_anti      (* Ltac2 plugin *)
+| REPLACE "-" nat_or_anti LIST0 nat_or_anti      (* Ltac2 plugin *)
+| WITH OPT "-" LIST1 nat_or_anti TAG Ltac2
+]
+
+syn_level: [
+| OPTINREF
+]
+
+ltac2_delta_flag: [
+| OPTINREF
+]
+
+ltac2_occs: [
+| OPTINREF
+]
+
+ltac2_concl_occ: [
+| OPTINREF
+]
+
+ltac2_with_bindings: [
+| OPTINREF
+]
+
+ltac2_as_or_and_ipat: [
+| OPTINREF
+]
+
+ltac2_eqn_ipat: [
+| OPTINREF
+]
+
+ltac2_as_name: [
+| OPTINREF
+]
+
+ltac2_as_ipat: [
+| OPTINREF
+]
+
+ltac2_by_tactic: [
+| OPTINREF
+]
+
+ltac2_entry: [
+| REPLACE tac2def_typ      (* Ltac2 plugin *)
+| WITH "Ltac2" tac2def_typ
+| REPLACE tac2def_syn      (* Ltac2 plugin *)
+| WITH "Ltac2" tac2def_syn
+| REPLACE tac2def_mut      (* Ltac2 plugin *)
+| WITH "Ltac2" tac2def_mut
+| REPLACE tac2def_val     (* Ltac2 plugin *)
+| WITH "Ltac2" tac2def_val
+| REPLACE tac2def_ext     (* Ltac2 plugin *)
+| WITH "Ltac2" tac2def_ext
+| "Ltac2" "Notation" [ string | lident ] ":=" tac2expr6 TAG Ltac2  (* variant *)
+| MOVEALLBUT command
+(* todo: MOVEALLBUT should ignore tag on "but" prodns *)
+]
+
+ltac2_match_list: [
+| EDIT ADD_OPT "|" LIST1 ltac2_match_rule SEP "|"      (* Ltac2 plugin *)
+]
+
+ltac2_or_and_intropattern: [
+| DELETE "(" ltac2_simple_intropattern ")"      (* Ltac2 plugin *)
+| REPLACE "(" ltac2_simple_intropattern "," LIST1 ltac2_simple_intropattern SEP "," ")"      (* Ltac2 plugin *)
+| WITH "(" LIST1 ltac2_simple_intropattern SEP "," ")" TAG Ltac2
+| REPLACE "(" ltac2_simple_intropattern "&" LIST1 ltac2_simple_intropattern SEP "&" ")"      (* Ltac2 plugin *)
+| WITH "(" LIST1 ltac2_simple_intropattern SEP "&" ")" TAG Ltac2
+]
+
+SPLICE: [
+| tac2def_val
+| tac2def_typ
+| tac2def_ext
+| tac2def_syn
+| tac2def_mut
+| mut_flag
+| rec_flag
+| locident
+| syn_level
+| tac2rec_fieldexprs
+| tac2type_body
+| tac2alg_constructors
+| tac2rec_fields
+| ltac2_binder
+| branch
+| anti
+]
+
+tac2expr5: [
+| REPLACE "let" OPT "rec" LIST1 ltac2_let_clause SEP "with" "in" tac2expr6      (* Ltac2 plugin *)
+| WITH "let" OPT "rec" ltac2_let_clause LIST0 ( "with" ltac2_let_clause ) "in" tac2expr6 TAG Ltac2
+| MOVETO simple_tactic "match" tac2expr5 "with" OPT ltac2_branches "end"      (* Ltac2 plugin *)
+| DELETE simple_tactic
+]
+
+RENAME: [
+| Prim.string string
+| Prim.integer int
+| Prim.qualid qualid
+| Prim.natural num
+]
+
+gmatch_list: [
+| EDIT ADD_OPT "|" LIST1 gmatch_rule SEP "|"      (* Ltac2 plugin *)
+]
+
+ltac2_quotations: [
+
+]
+
+ltac2_tactic_atom: [
+| MOVETO ltac2_quotations "constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "open_constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "ident" ":" "(" lident ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "pattern" ":" "(" cpattern ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "reference" ":" "(" globref ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "ltac1" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "ltac1val" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
+]
+
+(* non-Ltac2 "clause" is really clause_dft_concl + there is an ltac2 "clause" *)
+ltac2_clause: [ ]
+
+clause: [
+| MOVEALLBUT ltac2_clause
+]
+
+clause: [
+| clause_dft_concl
+]
+
+q_clause: [
+| REPLACE clause
+| WITH ltac2_clause  TAG Ltac2
+]
+
+ltac2_induction_clause: [
+| REPLACE ltac2_destruction_arg OPT ltac2_as_or_and_ipat OPT ltac2_eqn_ipat OPT clause      (* Ltac2 plugin *)
+| WITH ltac2_destruction_arg OPT ltac2_as_or_and_ipat OPT ltac2_eqn_ipat OPT ltac2_clause  TAG Ltac2
+]
+
+SPLICE: [
+| clause
 | noedit_mode
 | bigint
 | match_list
@@ -1808,6 +2217,7 @@ SPLICE: [
 | pattern_ident
 | constr_eval  (* splices as multiple prods *)
 | tactic_then_last  (* todo: dependency on c.edit_mlg edit?? really useful? *)
+| ltac2_tactic_then_last
 | Prim.name
 | ltac_selector
 | Constr.ident
@@ -1962,7 +2372,6 @@ SPLICE: [
 | search_where
 | message_token
 | input_fun
-| tactic_then_last
 | ltac_use_default
 | toplevel_selector_temp
 | comment
@@ -1970,14 +2379,23 @@ SPLICE: [
 | match_context_rule
 | match_rule
 | by_notation
+| lnatural
+| nat_or_anti
+| globref
+| let_binder
+| refglobals (* Ltac2 *)
+| syntax_modifiers
+| ltac2_expr
+| G_LTAC2_input_fun
+| ltac2_simple_intropattern_closed
+| ltac2_with_bindings
 ] (* end SPLICE *)
 
 RENAME: [
-| clause clause_dft_concl
-
 | tactic3 ltac_expr3  (* todo: can't figure out how this gets mapped by coqpp *)
 | tactic1 ltac_expr1  (* todo: can't figure out how this gets mapped by coqpp *)
 | tactic0 ltac_expr0  (* todo: can't figure out how this gets mapped by coqpp *)
+| ltac1_expr ltac_expr
 | tactic_expr5 ltac_expr
 | tactic_expr4 ltac_expr4
 | tactic_expr3 ltac_expr3
@@ -1998,6 +2416,7 @@ RENAME: [
 | ssexpr35 ssexpr (* strange in mlg, ssexpr50 is after this *)
 
 | tactic_then_gen for_each_goal
+| ltac2_tactic_then_gen ltac2_for_each_goal
 | selector_body selector
 | match_hyps match_hyp
 
@@ -2029,6 +2448,20 @@ RENAME: [
 | numnotoption numeral_modifier
 | tactic_arg_compat tactic_arg
 | lconstr_pattern cpattern
+| Pltac.tactic ltac_expr
+| sexpr ltac2_scope
+| tac2type5 ltac2_type
+| tac2type2 ltac2_type2
+| tac2type1 ltac2_type1
+| tac2type0 ltac2_type0
+| typ_param ltac2_typevar
+| tac2expr6 ltac2_expr
+| tac2expr5 ltac2_expr5
+| tac2expr3 ltac2_expr3
+| tac2expr2 ltac2_expr2
+| tac2expr1 ltac2_expr1
+| tac2expr0 ltac2_expr0
+| gmatch_list goal_match_list
 ]
 
 simple_tactic: [
@@ -2050,6 +2483,7 @@ SPLICE: [
 | command_entry
 | ltac_builtins
 | ltac_constructs
+| ltac2_constructs
 | ltac_defined_tactics
 | tactic_notation_tactics
 ]
@@ -2064,12 +2498,47 @@ NOTINRSTS: [
 | simple_tactic
 | REACHABLE
 | NOTINRSTS
+| l1_tactic
+| l2_tactic
+| l3_tactic
+| binder_tactic
+| value_tactic
+| ltac2_entry
+(* ltac2 syntactic classes *)
+| q_intropatterns
+| q_intropattern
+| q_ident
+| q_destruction_arg
+| q_with_bindings
+| q_bindings
+| q_strategy_flag
+| q_reference
+| q_clause
+| q_occurrences
+| q_induction_clause
+| q_conversion
+| q_rewriting
+| q_dispatch
+| q_hintdb
+| q_move_location
+| q_pose
+| q_assert
+| q_constr_matching
+| q_goal_matching
+
+(* todo: figure these out
+(*Warning: editedGrammar: Undefined symbol 'ltac1_expr' *)
+| dangling_pattern_extension_rule
+| vernac_aux
+| subprf
+| tactic_mode
+| tac2expr_in_env (* no refs *)
+| tac2mode (* no refs *)
+| ltac_use_default (* from tac2mode *)
+| tacticals
+*)
 ]
 
 REACHABLE: [
 | NOTINRSTS
-]
-
-strategy_level: [
-| DELETE strategy_level0
 ]
