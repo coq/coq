@@ -2,8 +2,8 @@ Installing From Sources
 =======================
 
 This document presents instructions to install this branch of Coq.
-For more general installation instructions and information about know
-build system issue, please consult the wiki page: 
+For more general installation instructions and information about known
+build system issues, please consult the wiki page: 
 
   https://github.com/coq/coq/wiki#coq-installation
 
