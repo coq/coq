@@ -72,7 +72,7 @@ stdenv.mkDerivation rec {
   # Since #12604, ocamlfind looks for num when building plugins
   # This follows a similar change in the nixpkgs repo (cf. NixOS/nixpkgs#94230)
   # Same for zarith which is needed since its introduction as a dependency of Coq
-  propagatedBuildInputs = with ocamlPackages; [ num zarith ];
+  propagatedBuildInputs = with ocamlPackages; [ zarith ];
 
   src =
     if shell then null

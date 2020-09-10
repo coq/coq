@@ -80,7 +80,7 @@ jobs:
       opam switch set ocaml-base-compiler.$COMPILER
       eval $(opam env)
       opam update
-      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 zarith.1.10
+      opam install -j "$NJOBS" ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 zarith.1.10
       opam list
     displayName: 'Install OCaml dependencies'
     env:
