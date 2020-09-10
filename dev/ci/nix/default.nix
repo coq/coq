@@ -114,6 +114,7 @@ let projects = {
   mtac2 = callPackage ./mtac2.nix {};
   oddorder = callPackage ./oddorder.nix {};
   quickchick = callPackage ./quickchick.nix {};
+  simple-io = callPackage ./simple-io.nix {};
   verdi-raft = callPackage ./verdi-raft.nix {};
   VST = callPackage ./VST.nix {};
 }; in
