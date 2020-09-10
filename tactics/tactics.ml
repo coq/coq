@@ -724,7 +724,9 @@ type hyp_conversion =
 | StableHypConv (** Does not introduce new dependencies on variables *)
 | LocalHypConv (** Same as above plus no dependence on the named environment *)
 
-let e_change_in_hyps ~check ~reorder f args =
+let e_change_in_hyps ~check ~reorder f args = match args with
+| [] -> Proofview.tclUNIT ()
+| _ :: _ ->
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
