@@ -769,7 +769,7 @@ and detype_r d flags avoid env sigma t =
           with Retyping.RetypeError _ -> noparams ()
         else noparams ()
 
-    | Evar (evk,cl,_) ->
+    | Evar (evk,cl,cache) ->
         let open Context.Named.Declaration in
         let bound_to_itself_or_letin decl c =
           match decl with
@@ -785,9 +785,9 @@ and detype_r d flags avoid env sigma t =
           | None -> Termops.evar_suggested_name evk sigma
           | Some id -> id
           in
-          let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
+          let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl cache in
           let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel n -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
-          let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
+          let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl cache in
           id,l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)),

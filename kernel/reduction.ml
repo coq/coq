@@ -189,7 +189,7 @@ type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 (* functions of this type can be called from outside the kernel *)
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
-  ?evars:((existential->constr option) * UGraph.t) ->
+  ?evars:((cexistential->constr option) * UGraph.t) ->
   'a -> 'a -> unit
 
 exception NotConvertible
@@ -390,7 +390,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
                then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
                else raise NotConvertible
            | _ -> raise NotConvertible)
-    | (FEvar ((ev1,args1),env1), FEvar ((ev2,args2),env2)) ->
+    | (FEvar ((ev1,args1,_),env1), FEvar ((ev2,args2,_),env2)) ->
         if Evar.equal ev1 ev2 then
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in

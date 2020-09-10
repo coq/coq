@@ -1210,7 +1210,7 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
                match EConstr.kind sigma (whd_all !!env sigma t) with
                | Sort s ->
                  sigma, ESorts.kind sigma s
-               | Evar (evk, a, _) when is_Type sigma (existential_type sigma (evk, a)) ->
+               | Evar (evk, a, cache) when is_Type sigma (existential_type sigma (evk, a, cache)) ->
                  define_evar_as_sort !!env sigma (evk, a)
                | _ -> anomaly (Pp.str "Found a type constraint which is not a type.")
            in

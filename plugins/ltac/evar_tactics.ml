@@ -44,7 +44,7 @@ let instantiate_evar evk (ist,rawc) =
 let evar_list sigma c =
   let rec evrec acc c =
     match EConstr.kind sigma c with
-    | Evar (evk, a, _) -> (evk, a) :: acc
+    | Evar (evk, a, c) -> (evk, a, c) :: acc
     | _ -> EConstr.fold sigma evrec acc c in
   evrec [] c
 
@@ -72,7 +72,7 @@ let instantiate_tac n c ido =
   if List.length evl < n then
     user_err Pp.(str "Not enough uninstantiated existential variables.");
   if n <= 0 then user_err Pp.(str "Incorrect existential variable index.");
-  let evk,_ = List.nth evl (n-1) in
+  let evk,_,_ = List.nth evl (n-1) in
   instantiate_evar evk c
   end
 
@@ -114,5 +114,5 @@ let hget_evar n =
   let ev = List.nth evl (n-1) in
   let ev_type = EConstr.existential_type sigma ev in
   let r = Retyping.relevance_of_type (Proofview.Goal.env gl) sigma ev_type in
-  Tactics.change_concl (mkLetIn (make_annot Name.Anonymous r,mkEvar ev,ev_type,concl))
+  Tactics.change_concl (mkLetIn (make_annot Name.Anonymous r,mkEvarC ev,ev_type,concl))
   end

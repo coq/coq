@@ -130,9 +130,9 @@ let nf_evars_and_universes_opt_subst f subst =
   let lsubst = level_subst_of subst in
   let rec aux c =
     match kind c with
-    | Evar (evk, args, _) ->
+    | Evar (evk, args, cache) ->
       let args' = List.Smart.map aux args in
-      (match try f (evk, args') with Not_found -> None with
+      (match try f (evk, args', cache) with Not_found -> None with
       | None -> if args == args' then c else mkEvar (evk, args')
       | Some c -> aux c)
     | Const pu ->

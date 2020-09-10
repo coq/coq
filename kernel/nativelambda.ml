@@ -60,7 +60,7 @@ and lam_branches =
 and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
 type evars =
-    { evars_val : existential -> constr option;
+    { evars_val : cexistential -> constr option;
       evars_metas : metavariable -> types }
 
 (*s Constructors *)
@@ -487,8 +487,8 @@ let rec lambda_of_constr cache env sigma c =
      let ty = meta_type sigma mv in
      Lmeta (mv, lambda_of_constr cache env sigma ty)
 
-  | Evar (evk,args,_) ->
-     (match evar_value sigma (evk, args) with
+  | Evar (evk, args, ch) ->
+     (match evar_value sigma (evk, args, ch) with
      | None ->
         let args = Array.map_of_list (fun c -> lambda_of_constr cache env sigma c) args in
         Levar(evk, args)

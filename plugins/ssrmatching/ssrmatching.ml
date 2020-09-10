@@ -257,8 +257,8 @@ let nf_open_term sigma0 ise c =
   let c = EConstr.Unsafe.to_constr c in
   let s = ise and s' = ref sigma0 in
   let rec nf c' = match kind c' with
-  | Evar (k, a, _) ->
-    begin try nf (existential_value0 s (k, a)) with _ ->
+  | Evar (k, a, che) ->
+    begin try nf (existential_value0 s (k, a, che)) with _ ->
     let a' = List.map nf a in
     if not (Evd.mem !s' k) then
       s' := Evd.add !s' k (Evarutil.nf_evar_info s (Evd.find s k));
@@ -384,8 +384,8 @@ let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
   let sigma = ref ise0 in
   let nenv = env_size env + if hack then 1 else 0 in
   let rec put c = match kind c with
-  | Evar (k, a, _) ->
-    let ev = (k, a) in
+  | Evar (k, a, che) ->
+    let ev = (k, a, che) in
     begin try put (existential_value0 !sigma ev)
     with NotInstantiatedEvar ->
     if Evd.mem sigma0 k then map put c else
@@ -482,8 +482,8 @@ let splay_app ise =
   let rec loop c a = match kind c with
   | App (f, a') -> loop f (Array.append a' a)
   | Cast (c', _, _) -> loop c' a
-  | Evar (evk, v, _) ->
-    (try loop (existential_value0 ise (evk, v)) a with _ -> c, a)
+  | Evar (evk, v, che) ->
+    (try loop (existential_value0 ise (evk, v, che)) a with _ -> c, a)
   | _ -> c, a in
   fun c -> match kind c with
   | App (f, a) -> loop f a

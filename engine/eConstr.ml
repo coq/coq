@@ -723,8 +723,8 @@ let named_context e = cast_named_context (sym unsafe_eq) (named_context e)
 let val_of_named_context e = val_of_named_context (cast_named_context unsafe_eq e)
 let named_context_of_val e = cast_named_context (sym unsafe_eq) (named_context_of_val e)
 
-let of_existential : Constr.existential -> existential =
-  let gen : type a b. (a,b) eq -> 'c * b list -> 'c * a list = fun Refl x -> x in
+let of_existential : Constr.cexistential -> cexistential =
+  let gen : type a b. (a,b) eq -> 'c * b list * _ -> 'c * a list * _ = fun Refl x -> x in
   gen unsafe_eq
 
 let lookup_rel i e = cast_rel_decl (sym unsafe_eq) (lookup_rel i e)

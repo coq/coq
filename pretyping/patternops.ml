@@ -190,14 +190,14 @@ let pattern_of_constr env sigma t =
     | Construct (sp,u) -> PRef (canonical_gr (GlobRef.ConstructRef sp))
     | Proj (p, c) ->
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
-    | Evar (evk,ctxt,_) ->
+    | Evar (evk,ctxt,che) ->
       (match snd (Evd.evar_source evk sigma) with
       | Evar_kinds.MatchingVar (Evar_kinds.FirstOrderPatVar id) ->
         PMeta (Some id)
       | Evar_kinds.GoalEvar | Evar_kinds.VarInstance _ ->
         (* These are the two evar kinds used for existing goals *)
         (* see Proofview.mark_in_evm *)
-         if Evd.is_defined sigma evk then pattern_of_constr env (Evd.existential_value0 sigma (evk, ctxt))
+         if Evd.is_defined sigma evk then pattern_of_constr env (Evd.existential_value0 sigma (evk, ctxt, che))
          else PEvar (evk,List.map (pattern_of_constr env) ctxt)
       | Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar ido) -> assert false
       | _ ->

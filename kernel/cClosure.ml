@@ -347,7 +347,7 @@ and fterm =
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr subs
   | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr subs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr subs
-  | FEvar of existential * fconstr subs
+  | FEvar of cexistential * fconstr subs
   | FInt of Uint63.t
   | FFloat of Float64.t
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
@@ -377,7 +377,7 @@ let update ~share v1 mark t =
 
 type infos_cache = {
   i_env : env;
-  i_sigma : existential -> constr option;
+  i_sigma : cexistential -> constr option;
   i_share : bool;
   i_univs : UGraph.t;
 }
@@ -627,9 +627,10 @@ let rec to_constr lfts v =
         mkLetIn (n, to_constr lfts b,
                     to_constr lfts t,
                     subst_constr subs f)
-    | FEvar ((ev,args),env) ->
+    | FEvar ((ev,args,cache),env) ->
       let subs = comp_subs lfts env in
-        mkEvar(ev, List.map (fun a -> subst_constr subs a) args)
+      let cache, args = Evar.Cache.List.map cache (fun a -> subst_constr subs a) args in
+        mkEvarC(ev, args, cache)
     | FLIFT (k,a) -> to_constr (el_shft k lfts) a
 
     | FInt i ->
@@ -1304,7 +1305,7 @@ and knht info e t stk =
       { mark = mark Whnf KnownR; term = FProd (n, mk_clos e t, c, e) }, stk
     | LetIn (n,b,t,c) ->
       { mark = mark Red Unknown; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
-    | Evar (evk, a, _) -> { mark = mark Red Unknown; term = FEvar ((evk, a), e) }, stk
+    | Evar (evk, a, c) -> { mark = mark Red Unknown; term = FEvar ((evk, a, c), e) }, stk
     | Array(u,t,def,ty) ->
       let len = Array.length t in
       let ty = mk_clos e ty in
@@ -1506,7 +1507,7 @@ and norm_head info tab m =
             Array.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
           let infobd = push_relevances info na in
           mkFix(n,(na, CArray.map (kl info tab) ftys, CArray.map (kl infobd tab) fbds))
-      | FEvar((i,args),env) ->
+      | FEvar((i,args,_),env) ->
           mkEvar(i, List.map (fun a -> kl info tab (mk_clos env a)) args)
       | FProj (p,c) ->
           mkProj (p, kl info tab c)

@@ -1386,7 +1386,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PVar id  -> GVar id
   | PEvar (evk,l) ->
       let test decl = function PVar id' -> Id.equal (NamedDecl.get_id decl) id' | _ -> false in
-      let l = Evd.evar_instance_array test (Evd.find sigma evk) l in
+      let l = Evd.evar_instance_array test (Evd.find sigma evk) l Evar.Cache.none in
       let id = match Evd.evar_ident evk sigma with
       | None -> Id.of_string "__"
       | Some id -> id

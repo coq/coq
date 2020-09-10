@@ -115,7 +115,7 @@ type fterm =
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr subs
   | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr subs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr subs
-  | FEvar of existential * fconstr subs
+  | FEvar of cexistential * fconstr subs
   | FInt of Uint63.t
   | FFloat of Float64.t
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
@@ -176,7 +176,7 @@ val set_relevance : Sorts.relevance -> fconstr -> unit
 type clos_infos
 type clos_tab
 val create_clos_infos :
-  ?univs:UGraph.t -> ?evars:(existential->constr option) -> reds -> env -> clos_infos
+  ?univs:UGraph.t -> ?evars:(cexistential->constr option) -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
 val create_tab : unit -> clos_tab

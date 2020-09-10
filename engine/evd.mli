@@ -251,26 +251,26 @@ val is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t
 
 exception NotInstantiatedEvar
 
-val existential_value : evar_map -> econstr pexistential -> econstr
+val existential_value : evar_map -> econstr pcexistential -> econstr
 (** [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
     no body and [Not_found] if it does not exist in [sigma] *)
 
-val existential_value0 : evar_map -> existential -> constr
+val existential_value0 : evar_map -> cexistential -> constr
 
-val existential_type : evar_map -> econstr pexistential -> etypes
+val existential_type : evar_map -> econstr pcexistential -> etypes
 
-val existential_type0 : evar_map -> existential -> types
+val existential_type0 : evar_map -> cexistential -> types
 
-val existential_opt_value : evar_map -> econstr pexistential -> econstr option
+val existential_opt_value : evar_map -> econstr pcexistential -> econstr option
 (** Same as {!existential_value} but returns an option instead of raising an
     exception. *)
 
-val existential_opt_value0 : evar_map -> existential -> constr option
+val existential_opt_value0 : evar_map -> cexistential -> constr option
 
 val evar_instance_array : (Constr.named_declaration -> 'a -> bool) -> evar_info ->
-  'a list -> (Id.t * 'a) list
+  'a list -> Evar.Cache.t -> (Id.t * 'a) list
 
-val instantiate_evar_array : evar_info -> econstr -> econstr list -> econstr
+val instantiate_evar_array : evar_info -> econstr -> econstr list -> Evar.Cache.t -> econstr
 
 val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
   evar_map ->  evar_map -> evar_map

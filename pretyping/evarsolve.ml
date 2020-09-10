@@ -291,10 +291,10 @@ let noccur_evar env evd evk c =
   let cache = ref Int.Set.empty (* cache for let-ins *) in
   let rec occur_rec check_types (k, env as acc) c =
   match EConstr.kind evd c with
-  | Evar (evk',args', _) ->
+  | Evar (evk',args', cache) ->
     if Evar.equal evk evk' then raise Occur
     else (if check_types then
-            occur_rec false acc (existential_type evd (evk', args'));
+            occur_rec false acc (existential_type evd (evk', args', cache));
           List.iter (occur_rec check_types acc) args')
   | Rel i when i > k ->
      if not (Int.Set.mem (i-k) !cache) then
@@ -1194,7 +1194,7 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
  *)
 
 let filter_compatible_candidates unify flags env evd evi args rhs c =
-  let c' = instantiate_evar_array evi c args in
+  let c' = instantiate_evar_array evi c args Evar.Cache.none in
   match unify flags TermUnification env evd Reduction.CONV rhs c' with
   | Success evd -> Some (c,evd)
   | UnifFailure _ -> None
@@ -1214,7 +1214,7 @@ let restrict_candidates unify flags env evd filter1 (evk1,argsv1) (evk2,argsv2) 
   | Some l1, Some l2 ->
       let l1 = filter_effective_candidates evd evi1 filter1 l1 in
       let l1' = List.filter (fun c1 ->
-        let c1' = instantiate_evar_array evi1 c1 argsv1 in
+        let c1' = instantiate_evar_array evi1 c1 argsv1 Evar.Cache.none in
         let filter c2 =
           let compatibility = filter_compatible_candidates unify flags env evd evi2 argsv2 c1' c2 in
           match compatibility with
@@ -1470,13 +1470,13 @@ let occur_evar_upto_types sigma n c =
   (* FIXME: Is that supposed to be evar-insensitive? *)
   let rec occur_rec c = match Constr.kind c with
     | Evar (sp,_,_) when Evar.equal sp n -> raise Occur
-    | Evar (sp,args,_) ->
+    | Evar (sp,args,che) ->
        if Evar.Set.mem sp !seen then
          List.iter occur_rec args
        else (
          seen := Evar.Set.add sp !seen;
-         Option.iter occur_rec (existential_opt_value0 sigma (sp, args));
-         occur_rec (Evd.existential_type0 sigma (sp, args)))
+         Option.iter occur_rec (existential_opt_value0 sigma (sp, args, che));
+         occur_rec (Evd.existential_type0 sigma (sp, args, che)))
     | _ -> Constr.iter occur_rec c
   in
   try occur_rec c; false with Occur -> true
@@ -1549,7 +1549,7 @@ let rec invert_definition unify flags choose imitate_defs
           (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
           let ty = find_solution_type (evar_filtered_env env evi) sols in
-          let ty' = instantiate_evar_array evi ty argsv in
+          let ty' = instantiate_evar_array evi ty argsv Evar.Cache.none in
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define unify flags ~choose) env !evdref 0 ev ty' in
           let ts = expansions_of_var evd aliases t in

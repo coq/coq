@@ -357,8 +357,8 @@ let rec execute env sigma cstr =
     | Meta n ->
         sigma, { uj_val = cstr; uj_type = meta_type env sigma n }
 
-    | Evar (evk, a, _) ->
-        let ty = EConstr.existential_type sigma (evk, a) in
+    | Evar (evk, a, c) ->
+        let ty = EConstr.existential_type sigma (evk, a, c) in
         let sigma, jty = execute env sigma ty in
         let sigma, jty = assumption_of_judgment env sigma jty in
         sigma, { uj_val = cstr; uj_type = jty }

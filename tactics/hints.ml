@@ -1321,9 +1321,9 @@ let prepare_hint check env init (sigma,c) =
   let vars = ref (collect_vars sigma c) in
   let subst = ref [] in
   let rec find_next_evar c = match EConstr.kind sigma c with
-    | Evar (evk,args, _) ->
+    | Evar (evk,args, cache) ->
       (* We skip the test whether args is the identity or not *)
-      let t = Evarutil.nf_evar sigma (existential_type sigma (evk, args)) in
+      let t = Evarutil.nf_evar sigma (existential_type sigma (evk, args, cache)) in
       let t = List.fold_right (fun (e,id) c -> replace_term sigma e id c) !subst t in
       if not (closed0 sigma c) then
         user_err Pp.(str "Hints with holes dependent on a bound variable not supported.");

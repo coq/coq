@@ -234,7 +234,7 @@ val decompose_prod : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list
 val decompose_prod_assum : Evd.evar_map -> t -> rel_context * t
 val decompose_prod_n_assum : Evd.evar_map -> int -> t -> rel_context * t
 
-val existential_type : Evd.evar_map -> existential -> types
+val existential_type : Evd.evar_map -> cexistential -> types
 val whd_evar : Evd.evar_map -> constr -> constr
 
 (** {6 Equality} *)
@@ -340,7 +340,7 @@ val is_global : Evd.evar_map -> GlobRef.t -> t -> bool
 
 (** {5 Extra} *)
 
-val of_existential : Constr.existential -> existential
+val of_existential : Constr.cexistential -> cexistential
 val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt -> (t, types) Context.Named.Declaration.pt
 val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, types) Context.Rel.Declaration.pt
 

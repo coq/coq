@@ -97,7 +97,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
       | Meta _ -> infer_stack infos variances stk
       | _ -> assert false
     end
-  | FEvar ((_,args),e) ->
+  | FEvar ((_,args,_),e) ->
     let variances = infer_stack infos variances stk in
     infer_list infos variances (List.map (mk_clos e) args)
   | FRel _ -> infer_stack infos variances stk

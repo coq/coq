@@ -262,7 +262,7 @@ exception NotInstantiatedEvar
 
 (* Note: let-in contributes to the instance *)
 
-let evar_instance_array test_id info args =
+let evar_instance_array test_id info args cache =
   let rec instrec filter ctxt args = match filter, ctxt, args with
   | [], [], [] -> []
   | false :: filter, _ :: ctxt, args ->
@@ -285,13 +285,13 @@ let evar_instance_array test_id info args =
   | Some filter ->
     instrec filter (evar_context info) args
 
-let make_evar_instance_array info args =
+let make_evar_instance_array info args cache =
   if Identity.is_identity args info.evar_identity then []
   else
-    evar_instance_array (NamedDecl.get_id %> isVarId) info args
+    evar_instance_array (NamedDecl.get_id %> isVarId) info args cache
 
-let instantiate_evar_array info c args =
-  let inst = make_evar_instance_array info args in
+let instantiate_evar_array info c args cache =
+  let inst = make_evar_instance_array info args cache in
   match inst with
   | [] -> c
   | _ -> replace_vars inst c
@@ -755,12 +755,12 @@ let is_defined d e = EvMap.mem e d.defn_evars
 
 let is_undefined d e = EvMap.mem e d.undf_evars
 
-let existential_opt_value d (n, args) =
+let existential_opt_value d (n, args, cache) =
   match EvMap.find_opt n d.defn_evars with
   | None -> None
   | Some info ->
     match evar_body info with
-    | Evar_defined c -> Some (instantiate_evar_array info c args)
+    | Evar_defined c -> Some (instantiate_evar_array info c args cache)
     | Evar_empty -> None (* impossible but w/e *)
 
 let existential_value d ev = match existential_opt_value d ev with
@@ -771,12 +771,12 @@ let existential_value0 = existential_value
 
 let existential_opt_value0 = existential_opt_value
 
-let existential_type d (n, args) =
+let existential_type d (n, args, cache) =
   let info =
     try find d n
     with Not_found ->
       anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared.") in
-  instantiate_evar_array info info.evar_concl args
+  instantiate_evar_array info info.evar_concl args cache
 
 let existential_type0 = existential_type
 
@@ -1478,21 +1478,21 @@ module MiniEConstr = struct
 
   let rec whd_evar sigma c =
     match Constr.kind c with
-    | Evar (ev, a, _) ->
-      begin match safe_evar_value sigma (ev, a) with
+    | Evar (ev, a, cache) ->
+      begin match safe_evar_value sigma (ev, a, cache) with
         | Some c -> whd_evar sigma c
         | None -> c
       end
     | App (f, args) when isEvar f ->
       (* Enforce smart constructor invariant on applications *)
-      let ev = destEvar f in
+      let ev = destEvarC f in
       begin match safe_evar_value sigma ev with
         | None -> c
         | Some f -> whd_evar sigma (mkApp (f, args))
       end
     | Cast (c0, k, t) when isEvar c0 ->
       (* Enforce smart constructor invariant on casts. *)
-      let ev = destEvar c0 in
+      let ev = destEvarC c0 in
       begin match safe_evar_value sigma ev with
         | None -> c
         | Some c -> whd_evar sigma (mkCast (c, k, t))

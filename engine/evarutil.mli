@@ -74,7 +74,7 @@ val new_global : evar_map -> GlobRef.t -> evar_map * constr
 
 val make_pure_subst : evar_info -> 'a list -> (Id.t * 'a) list
 
-val safe_evar_value : evar_map -> Constr.existential -> Constr.constr option
+val safe_evar_value : evar_map -> Constr.cexistential -> Constr.constr option
 
 (** {6 Evars/Metas switching...} *)
 

@@ -52,8 +52,8 @@ exception Uninstantiated_evar of Evar.t
 
 let rec flush_and_check_evars sigma c =
   match kind c with
-  | Evar (evk,a,_) ->
-      (match existential_opt_value0 sigma (evk, a) with
+  | Evar (evk,a,cache) ->
+      (match existential_opt_value0 sigma (evk, a, cache) with
        | None -> raise (Uninstantiated_evar evk)
        | Some c -> flush_and_check_evars sigma c)
   | _ -> Constr.map (flush_and_check_evars sigma) c
@@ -537,11 +537,12 @@ let rec check_and_clear_in_constr env evdref err ids global c =
         in
         c
 
-      | Evar (evk,l,_) ->
+      | Evar (evk,l,cache) ->
           let ev = (evk, l) in
+          let evc = (evk, l, cache) in
           if Evd.is_defined !evdref evk then
             (* If evk is already defined we replace it by its definition *)
-            let nc = Evd.existential_value !evdref (EConstr.of_existential ev) in
+            let nc = Evd.existential_value !evdref (EConstr.of_existential evc) in
             let nc = EConstr.Unsafe.to_constr nc in
               (check_and_clear_in_constr env evdref err ids global nc)
           else
@@ -592,7 +593,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
               let candidates = Option.map (List.map EConstr.of_constr) candidates in
               let (evd,_) = restrict_evar evd evk filter candidates in
               evdref := evd;
-              Evd.existential_value0 !evdref ev
+              Evd.existential_value0 !evdref evc
 
       | _ -> Constr.map (check_and_clear_in_constr env evdref err ids global) c
 
@@ -803,7 +804,7 @@ let occur_evar_upto sigma n c =
   let c = EConstr.Unsafe.to_constr c in
   let rec occur_rec c = match kind c with
     | Evar (sp,_,_) when Evar.equal sp n -> raise Occur
-    | Evar (evk, a, _) -> Option.iter occur_rec (existential_opt_value0 sigma (evk, a))
+    | Evar (evk, a, cache) -> Option.iter occur_rec (existential_opt_value0 sigma (evk, a, cache))
     | _ -> Constr.iter occur_rec c
   in
   try occur_rec c; false with Occur -> true
