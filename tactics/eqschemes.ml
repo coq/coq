@@ -68,7 +68,9 @@ module RelDecl = Context.Rel.Declaration
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
 let default_id_of_sort = function InSProp | InProp | InSet -> hid | InType -> xid
-let fresh env id = next_global_ident_away id Id.Set.empty
+let fresh env id avoid =
+  let freshid = next_global_ident_away id avoid in
+  freshid, Id.Set.add freshid avoid
 let with_context_set ctx (b, ctx') =
   (b, Univ.ContextSet.union ctx ctx')
 
@@ -204,7 +206,7 @@ let build_sym_scheme env ind =
   let cstr n =
     mkApp (mkConstructUi(indu,1),Context.Rel.to_extended_vect mkRel n mib.mind_params_ctxt) in
   let inds = snd (mind_arity mip) in
-  let varH = fresh env (default_id_of_sort inds) in
+  let varH,_ = fresh env (default_id_of_sort inds) Id.Set.empty in
   let applied_ind = build_dependent_inductive indu specif in
   let indr = Sorts.relevance_of_sort_family inds in
   let realsign_ind =
@@ -262,7 +264,7 @@ let build_sym_involutive_scheme env ind =
   let cstr n = mkApp (mkConstructUi (indu,1),Context.Rel.to_extended_vect mkRel n paramsctxt) in
   let inds = snd (mind_arity mip) in
   let indr = Sorts.relevance_of_sort_family inds in
-  let varH = fresh env (default_id_of_sort inds) in
+  let varH,_ = fresh env (default_id_of_sort inds) Id.Set.empty in
   let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_C =
     mkApp
@@ -378,9 +380,9 @@ let build_l2r_rew_scheme dep env ind kind =
                     rel_vect p nrealargs]) in
   let inds = snd (mind_arity mip) in
   let indr = Sorts.relevance_of_sort_family inds in
-  let varH = fresh env (default_id_of_sort inds) in
-  let varHC = fresh env (Id.of_string "HC") in
-  let varP = fresh env (Id.of_string "P") in
+  let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
+  let varHC,avoid = fresh env (Id.of_string "HC") avoid in
+  let varP,_ = fresh env (Id.of_string "P") avoid in
   let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_P =
     mkApp (mkIndU indu, Array.concat
@@ -493,9 +495,9 @@ let build_l2r_forward_rew_scheme dep env ind kind =
                     rel_vect p nrealargs]) in
   let inds = snd (mind_arity mip) in
   let indr = Sorts.relevance_of_sort_family inds in
-  let varH = fresh env (default_id_of_sort inds) in
-  let varHC = fresh env (Id.of_string "HC") in
-  let varP = fresh env (Id.of_string "P") in
+  let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
+  let varHC,avoid = fresh env (Id.of_string "HC") avoid in
+  let varP,_ = fresh env (Id.of_string "P") avoid in
   let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_P =
     mkApp (mkIndU indu, Array.concat
@@ -587,9 +589,9 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let constrargs_cstr = constrargs@[cstr 0] in
   let inds = snd (mind_arity mip) in
   let indr = Sorts.relevance_of_sort_family inds in
-  let varH = fresh env (default_id_of_sort inds) in
-  let varHC = fresh env (Id.of_string "HC") in
-  let varP = fresh env (Id.of_string "P") in
+  let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
+  let varHC,avoid = fresh env (Id.of_string "HC") avoid in
+  let varP,_ = fresh env (Id.of_string "P") avoid in
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
     name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
@@ -799,9 +801,9 @@ let build_congr env (eq,refl,ctx) ind =
   if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments";
   let b = List.nth constrargs (i + mib.mind_nparams - 1) in
-  let varB = fresh env (Id.of_string "B") in
-  let varH = fresh env (Id.of_string "H") in
-  let varf = fresh env (Id.of_string "f") in
+  let varB,avoid = fresh env (Id.of_string "B") Id.Set.empty in
+  let varH,avoid = fresh env (Id.of_string "H") avoid in
+  let varf,avoid = fresh env (Id.of_string "f") avoid in
   let rci = Sorts.Relevant in (* TODO relevance *)
   let ci = make_case_info (Global.env()) ind rci RegularStyle in
   let uni, ctx = Univ.extend_in_context_set (UnivGen.new_global_univ ()) ctx in
