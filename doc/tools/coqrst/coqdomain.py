@@ -1169,7 +1169,7 @@ class StdGlossaryIndex(Index):
         return content, False
 
 def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, content=[]):
-    """A grammar production not included in a ``productionlist`` directive.
+    """A grammar production not included in a ``prodn`` directive.
 
     Useful to informally introduce a production, as part of running text.
 
@@ -1177,10 +1177,8 @@ def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, conte
 
        :production:`string` indicates a quoted string.
 
-    You're not likely to use this role very commonly; instead, use a
-    `production list
-    <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_
-    and reference its tokens using ``:token:`…```.
+    You're not likely to use this role very commonly; instead, use a ``prodn``
+    directive and reference its tokens using ``:token:`…```.
     """
     #pylint: disable=dangerous-default-value, unused-argument
     env = inliner.document.settings.env

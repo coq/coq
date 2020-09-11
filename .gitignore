@@ -113,7 +113,6 @@ doc/stdlib/FullLibrary.coqdoc.tex
 doc/stdlib/html/
 doc/stdlib/index-body.html
 doc/stdlib/index-list.html
-doc/tools/docgram/productionlistGrammar
 doc/tools/docgram/editedGrammar
 doc/tools/docgram/prodnGrammar
 doc/unreleased.rst
