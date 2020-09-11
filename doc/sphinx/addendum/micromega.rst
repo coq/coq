@@ -61,18 +61,25 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
 
 The tactics solve propositional formulas parameterized by atomic
 arithmetic expressions interpreted over a domain :math:`D \in \{\mathbb{Z},\mathbb{Q},\mathbb{R}\}`.
-The syntax of the formulas is the following:
+The syntax for formulas over :math:`\mathbb{Z}` is:
 
- .. productionlist:: F
-   F : A ∣ P ∣ True ∣ False ∣ F ∧ F ∣ F ∨ F ∣ F ↔ F ∣ F → F ∣ ¬ F
-   A : p = p ∣ p > p ∣ p < p ∣ p ≥ p ∣ p ≤ p
-   p : c ∣ x ∣ −p ∣ p − p ∣ p + p ∣ p × p ∣ p ^ n
+   .. note the following is not an insertprodn
 
-where :math:`c` is a numeric constant, :math:`x \in D` is a numeric variable, the
-operators :math:`−, +, ×` are respectively subtraction, addition, and product;
-:math:`p ^ n` is exponentiation by a constant :math:`n`, :math:`P` is an arbitrary proposition.
-For :math:`\mathbb{Q}`, equality is not Leibniz equality ``=`` but the equality of
-rationals ``==``.
+   .. prodn::
+      F ::= {| @A | P | True | False | @F /\\ @F | @F \\/ @F | @F <-> @F | @F -> @F | ~ @F }
+      A ::= {| @p = @p | @p > @p | @p < @p | @p >= @p | @p <= @p }
+      p ::= {| c | x | −@p | @p − @p | @p + @p | @p * @p | @p ^ n }
+
+where
+
+  - :n:`P` is an arbitrary proposition
+  - :n:`c` is a numeric constant of :math:`D`
+  - :n:`x` :math:`\in D` is a numeric variable
+  - :n:`−`, :n:`+` and :n:`*` are respectively subtraction, addition and product
+  - :n:`p ^ n` is exponentiation by a constant :math:`n`
+
+For :math:`\mathbb{Q}`, use the equality of rationals ``==`` rather than
+Leibniz equality ``=``.
 
 For :math:`\mathbb{Z}` (resp. :math:`\mathbb{Q}`), :math:`c` ranges over integer constants (resp. rational
 constants). For :math:`\mathbb{R}`, the tactic recognizes as real constants the
