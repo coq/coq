@@ -356,12 +356,8 @@ module Make (Point:Point) = struct
 
   let get_new_edges g to_merge =
     (* Computing edge sets. *)
-    let to_merge_lvl =
-      List.fold_left (fun acc u -> PMap.add u.canon u acc)
-        PMap.empty to_merge
-    in
     let ltle =
-      let fold _ n acc =
+      let fold acc n =
         let fold u strict acc =
           if strict then PMap.add u strict acc
           else if PMap.mem u acc then acc
@@ -369,26 +365,25 @@ module Make (Point:Point) = struct
         in
         PMap.fold fold n.ltle acc
       in
-      PMap.fold fold to_merge_lvl PMap.empty
+      List.fold_left fold PMap.empty to_merge
     in
     let ltle, _ = clean_ltle g ltle in
-    let ltle =
-      PMap.merge (fun _ a strict ->
-          match a, strict with
-          | Some _, Some true ->
-            (* There is a lt edge inside the new component. This is a
-                "bad cycle". *)
-            raise CycleDetected
-          | Some _, Some false -> None
-          | _, _ -> strict
-        ) to_merge_lvl ltle
+    let fold accu a =
+      match PMap.find a.canon ltle with
+      | true ->
+        (* There is a lt edge inside the new component. This is a
+            "bad cycle". *)
+        raise CycleDetected
+      | false -> PMap.remove a.canon accu
+      | exception Not_found -> accu
     in
+    let ltle = List.fold_left fold ltle to_merge in
     let gtge =
-      PMap.fold (fun _ n acc -> PSet.union acc n.gtge)
-        to_merge_lvl PSet.empty
+      List.fold_left (fun acc n -> PSet.union acc n.gtge)
+        PSet.empty to_merge
     in
     let gtge, _ = clean_gtge g gtge in
-    let gtge = PSet.diff gtge (PMap.domain to_merge_lvl) in
+    let gtge = List.fold_left (fun acc n -> PSet.remove n.canon acc) gtge to_merge in
     (ltle, gtge)
 
 
