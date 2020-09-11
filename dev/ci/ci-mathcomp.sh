@@ -6,7 +6,7 @@ ci_dir="$(dirname "$0")"
 
 git_download mathcomp
 
-( cd "${CI_BUILD_DIR}/mathcomp/mathcomp" && make && make install )
+( cd "${CI_BUILD_DIR}/mathcomp/mathcomp" && make && make test-suite && make install )
 
 git_download fourcolor
 
