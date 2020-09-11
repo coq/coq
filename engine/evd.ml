@@ -263,27 +263,35 @@ exception NotInstantiatedEvar
 (* Note: let-in contributes to the instance *)
 
 let evar_instance_array test_id info args cache =
-  let rec instrec filter ctxt args = match filter, ctxt, args with
-  | [], [], [] -> []
-  | false :: filter, _ :: ctxt, args ->
-    instrec filter ctxt args
-  | true :: filter, d :: ctxt, c :: args ->
-    if test_id d c then instrec filter ctxt args
-    else (NamedDecl.get_id d, c) :: instrec filter ctxt args
-  | _ -> instance_mismatch ()
+  (* Do not try to substitute instance arguments known to be an identity prefix *)
+  let n = match Evar.Cache.length cache with None -> -1 | Some n -> n in
+  let rec instrec n filter ctxt args =
+    if Int.equal n 0 then []
+    else match filter, ctxt, args with
+    | [], [], [] -> []
+    | false :: filter, _ :: ctxt, args ->
+      instrec n filter ctxt args
+    | true :: filter, d :: ctxt, c :: args ->
+      let n = pred n in
+      if test_id d c then instrec n filter ctxt args
+      else (NamedDecl.get_id d, c) :: instrec n filter ctxt args
+    | _ -> instance_mismatch ()
   in
   match Filter.repr (evar_filter info) with
   | None ->
-    let rec instance ctxt args = match ctxt, args with
-    | [], [] -> []
-    | d :: ctxt, c :: args ->
-      if test_id d c then instance ctxt args
-      else (NamedDecl.get_id d, c) :: instance ctxt args
-    | _ -> instance_mismatch ()
+    let rec instance n ctxt args =
+      if Int.equal n 0 then []
+      else match ctxt, args with
+      | [], [] -> []
+      | d :: ctxt, c :: args ->
+        let n = pred n in
+        if test_id d c then instance n ctxt args
+        else (NamedDecl.get_id d, c) :: instance n ctxt args
+      | _ -> instance_mismatch ()
     in
-    instance (evar_context info) args
+    instance n (evar_context info) args
   | Some filter ->
-    instrec filter (evar_context info) args
+    instrec n filter (evar_context info) args
 
 let make_evar_instance_array info args cache =
   if Identity.is_identity args info.evar_identity then []
