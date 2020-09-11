@@ -59,9 +59,9 @@ specified, the default selector is used.
 
 .. _tactic_invocation_grammar:
 
-  .. productionlist:: sentence
-     tactic_invocation : `toplevel_selector` : `tactic`.
-                       : `tactic`.
+  .. prodn::
+     tactic_invocation ::= @toplevel_selector : @tactic.
+     | @tactic.
 
 .. todo: fully describe selectors.  At the moment, ltac has a fairly complete description
 
@@ -98,11 +98,11 @@ The general form of a term with a bindings list is
 
 .. _bindings_list_grammar:
 
-  .. productionlist:: bindings_list
-     ref           : `ident`
-                   : `num`
-     bindings_list : (`ref` := `term`) ... (`ref` := `term`)
-                   : `term` ... `term`
+  .. prodn::
+     ref ::= @ident
+     | @num
+     bindings_list ::= {+ (@ref := @term) }
+     | {+ @term }
 
 + In a bindings list of the form :n:`{+ (@ref:= @term)}`, :n:`@ref` is either an
   :n:`@ident` or a :n:`@num`. The references are determined according to the type of
@@ -137,30 +137,28 @@ introduced by tactics.  They also let you split an introduced hypothesis into
 multiple hypotheses or subgoals.  Common tactics that accept intro patterns
 include :tacn:`assert`, :tacn:`intros` and :tacn:`destruct`.
 
-.. productionlist::        coq
-   intropattern_list       : `intropattern` ... `intropattern`
-                           : `empty`
-   empty                   :
-   intropattern            : *
-                           : **
-                           : `simple_intropattern`
-   simple_intropattern     : `simple_intropattern_closed` [ % `term` ... % `term` ]
-   simple_intropattern_closed : `naming_intropattern`
-                              : _
-                              : `or_and_intropattern`
-                              : `rewriting_intropattern`
-                              : `injection_intropattern`
-   naming_intropattern     : `ident`
-                           : ?
-                           : ?`ident`
-   or_and_intropattern     : [ `intropattern_list` | ... | `intropattern_list` ]
-                           : ( `simple_intropattern` , ... , `simple_intropattern` )
-                           : ( `simple_intropattern` & ... & `simple_intropattern` )
-   rewriting_intropattern  : ->
-                           : <-
-   injection_intropattern  : [= `intropattern_list` ]
-   or_and_intropattern_loc : `or_and_intropattern`
-                           : `ident`
+.. prodn::
+   intropattern_list ::= {* @intropattern }
+   intropattern ::= *
+   | **
+   | @simple_intropattern
+   simple_intropattern ::= @simple_intropattern_closed {* % @term0 }
+   simple_intropattern_closed ::= @naming_intropattern
+   | _
+   | @or_and_intropattern
+   | @rewriting_intropattern
+   | @injection_intropattern
+   naming_intropattern ::= @ident
+   | ?
+   | ?@ident
+   or_and_intropattern ::= [ {*| @intropattern_list } ]
+   | ( {*, @simple_intropattern } )
+   | ( {*& @simple_intropattern } )
+   rewriting_intropattern ::= ->
+   | <-
+   injection_intropattern ::= [= @intropattern_list ]
+   or_and_intropattern_loc ::= @or_and_intropattern
+   | ident
 
 Note that the intro pattern syntax varies between tactics.
 Most tactics use :n:`@simple_intropattern` in the grammar.
@@ -480,13 +478,13 @@ Occurrence sets and occurrence clauses
 An occurrence clause is a modifier to some tactics that obeys the
 following syntax:
 
-  .. productionlist:: coq
-     occurrence_clause : in `goal_occurrences`
-     goal_occurrences : [`ident` [`at_occurrences`], ... , `ident` [`at_occurrences`] [|- [* [`at_occurrences`]]]]
-                      : * |- [* [`at_occurrences`]]
-                      : *
-     at_occurrences : at `occurrences`
-     occurrences     : [-] `num` ... `num`
+  .. prodn::
+     occurrence_clause ::= in @goal_occurrences
+     goal_occurrences ::= {*, @ident {? @at_occurrences } } {? |- {? * {? @at_occurrences } } }
+     | * |- {? * {? @at_occurrences } }
+     | *
+     at_occurrences ::= at @occurrences
+     occurrences ::= {? - } {* @num }
 
 The role of an occurrence clause is to select a set of occurrences of a term
 in a goal. In the first case, the :n:`@ident {? at {* num}}` parts indicate
@@ -3975,15 +3973,15 @@ automatically created.
       the following. Beware, there is no operator precedence during parsing, one can
       check with :cmd:`Print HintDb` to verify the current cut expression:
 
-      .. productionlist:: regexp
-          regexp : `ident`          (hint or instance identifier)
-                 : _             (any hint)
-                 : `regexp` | `regexp` (disjunction)
-                 : `regexp` `regexp`   (sequence)
-                 : `regexp` *       (Kleene star)
-                 : emp           (empty)
-                 : eps           (epsilon)
-                 : ( `regexp` )
+      .. prodn::
+         regexp ::= @ident   (hint or instance identifier)
+         | _   (any hint)
+         | @regexp | @regexp   (disjunction)
+         | @regexp @regexp   (sequence)
+         | @regexp *   (Kleene star)
+         | emp   (empty)
+         | eps   (epsilon)
+         | ( @regexp )
 
       The `emp` regexp does not match any search path while `eps`
       matches the empty path. During proof search, the path of
@@ -4672,17 +4670,15 @@ Automating
    tautologies. It solves goals of the form :g:`t = u` where `t` and `u` are
    constructed over the following grammar:
 
-   .. _btauto_grammar:
-
-   .. productionlist:: sentence
-      btauto_term : `ident`
-                  : true
-                  : false
-                  : orb `btauto_term` `btauto_term`
-                  : andb `btauto_term` `btauto_term`
-                  : xorb `btauto_term` `btauto_term`
-                  : negb `btauto_term`
-                  : if `btauto_term` then `btauto_term` else `btauto_term`
+   .. prodn::
+      btauto_term ::= @ident
+      | true
+      | false
+      | orb @btauto_term @btauto_term
+      | andb @btauto_term @btauto_term
+      | xorb @btauto_term @btauto_term
+      | negb @btauto_term
+      | if @btauto_term then @btauto_term else @btauto_term
 
    Whenever the formula supplied is not a tautology, it also provides a
    counter-example.

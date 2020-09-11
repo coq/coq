@@ -196,12 +196,9 @@ Program Definition
 Program Fixpoint
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Program Fixpoint @ident {* @binder } {? {@order}} : @type := @term
+.. cmd:: Program Fixpoint @fix_definition {* with @fix_definition }
 
-   The optional order annotation follows the grammar:
-
-   .. productionlist:: orderannot
-      order      : measure `term` [ `term` ] | wf `term` `ident`
+   The optional :n:`@fixannot` annotation can be one of:
 
    + :g:`measure f R` where :g:`f` is a value of type :g:`X` computed on
      any subset of the arguments and the optional term
