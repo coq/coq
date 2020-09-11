@@ -141,7 +141,7 @@ run: $(SUBSYSTEMS)
 bugs: $(BUGS)
 
 clean:
-	rm -f trace .nia.cache .lia.cache output/MExtraction.out
+	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
 	rm -f vos/Makefile vos/Makefile.conf
 	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>'
 	$(HIDE)find . \( \

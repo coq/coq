@@ -54,3 +54,4 @@ S plugins/**
 B plugins/**
 
 PKG threads.posix
+PKG zarith
