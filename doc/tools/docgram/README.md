@@ -2,7 +2,6 @@
 
 `doc_grammar` extracts Coq's grammar from `.mlg` files, edits it and inserts it
 into `.rst` files.  The tool inserts `prodn` directives for  grammar productions.
-(`productionlist` are gradually being replaced by `prodn` in the manual.)
 It also updates `tacn` and `cmd` directives when they can be unambiguously matched to
 productions of the grammar (in practice, that's probably almost always).
 `tacv` and `cmdv` directives are not updated because matching them appears to require

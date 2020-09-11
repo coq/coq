@@ -1,0 +1,5 @@
+- **Fixed:**
+  The reference manual can now build with Sphinx 3
+  (`#13011 <https://github.com/coq/coq/pull/13011>`_,
+  fixes `#12332 <https://github.com/coq/coq/issues/12332>`_,
+  by Théo Zimmermann and Jim Fehrle).
