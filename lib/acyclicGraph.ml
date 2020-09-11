@@ -359,13 +359,16 @@ module Make (Point:Point) = struct
     let ltle =
       let fold acc n =
         let fold u strict acc =
-          if strict then PMap.add u strict acc
-          else if PMap.mem u acc then acc
-          else PMap.add u false acc
+          match PMap.find u acc with
+          | true -> acc
+          | false -> if strict then PMap.add u true acc else acc
+          | exception Not_found -> PMap.add u strict acc
         in
         PMap.fold fold n.ltle acc
       in
-      List.fold_left fold PMap.empty to_merge
+      match to_merge with
+      | [] -> assert false
+      | hd :: tl -> List.fold_left fold hd.ltle tl
     in
     let ltle, _ = clean_ltle g ltle in
     let fold accu a =
