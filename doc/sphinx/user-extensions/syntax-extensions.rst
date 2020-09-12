@@ -931,7 +931,7 @@ of patterns have. The lower level is 0 and this is the level used by
 default to put rules delimited with tokens on both ends. The level is
 left to be inferred by Coq when using :n:`in custom @ident`. The
 level is otherwise given explicitly by using the syntax
-:n:`in custom @ident at level @num`, where :n:`@num` refers to the level.
+:n:`in custom @ident at level @natural`, where :n:`@natural` refers to the level.
 
 Levels are cumulative: a notation at level ``n`` of which the left end
 is a term shall use rules at level less than ``n`` to parse this
@@ -1053,8 +1053,8 @@ Here are the syntax elements used by the various notation commands.
    .. insertprodn syntax_modifier level
 
    .. prodn::
-      syntax_modifier ::= at level @num
-      | in custom @ident {? at level @num }
+      syntax_modifier ::= at level @natural
+      | in custom @ident {? at level @natural }
       | {+, @ident } at @level
       | @ident at @level {? @binder_interp }
       | @ident @explicit_subentry
@@ -1068,16 +1068,16 @@ Here are the syntax elements used by the various notation commands.
       explicit_subentry ::= ident
       | global
       | bigint
-      | strict pattern {? at level @num }
+      | strict pattern {? at level @natural }
       | binder
       | closed binder
       | constr {? at @level } {? @binder_interp }
       | custom @ident {? at @level } {? @binder_interp }
-      | pattern {? at level @num }
+      | pattern {? at level @natural }
       binder_interp ::= as ident
       | as pattern
       | as strict pattern
-      level ::= level @num
+      level ::= level @natural
       | next level
 
 .. note:: No typing of the denoted expression is performed at definition
@@ -1124,8 +1124,8 @@ refer to different definitions depending on which notation scopes
 are currently open.  For instance, the infix symbol ``+`` can be
 used to refer to distinct definitions of the addition operator,
 such as for natural numbers, integers or reals.
-Notation scopes can include an interpretation for numerals and
-strings with the :cmd:`Numeral Notation` and :cmd:`String Notation` commands.
+Notation scopes can include an interpretation for numbers and
+strings with the :cmd:`Number Notation` and :cmd:`String Notation` commands.
 
    .. insertprodn scope scope_key
 
@@ -1293,6 +1293,8 @@ recognized to be a ``Funclass`` instance, i.e., of type :g:`forall x:A, B` or
 :g:`A -> B`.
 
 
+.. _notation-scopes:
+
 Notation scopes used in the standard library of Coq
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1311,31 +1313,31 @@ Scopes` or :cmd:`Print Scope`.
 
 ``nat_scope``
   This scope includes the standard arithmetical operators and relations on type
-  nat. Positive integer numerals in this scope are mapped to their canonical
+  nat. Positive integer numbers in this scope are mapped to their canonical
   representent built from :g:`O` and :g:`S`. The scope is delimited by the key
   ``nat``, and bound to the type :g:`nat` (see above).
 
 ``N_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`N` (binary natural numbers). It is delimited by the key ``N`` and comes
-  with an interpretation for numerals as closed terms of type :g:`N`.
+  with an interpretation for numbers as closed terms of type :g:`N`.
 
 ``Z_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`Z` (binary integer numbers). It is delimited by the key ``Z`` and comes
-  with an interpretation for numerals as closed terms of type :g:`Z`.
+  with an interpretation for numbers as closed terms of type :g:`Z`.
 
 ``positive_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`positive` (binary strictly positive numbers). It is delimited by
-  key ``positive`` and comes with an interpretation for numerals as closed
+  key ``positive`` and comes with an interpretation for numbers as closed
   terms of type :g:`positive`.
 
 ``Q_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`Q` (rational numbers defined as fractions of an integer and a
   strictly positive integer modulo the equality of the numerator-
-  denominator cross-product) and comes with an interpretation for numerals
+  denominator cross-product) and comes with an interpretation for numbers
   as closed terms of type :g:`Q`.
 
 ``Qc_scope``
@@ -1346,7 +1348,7 @@ Scopes` or :cmd:`Print Scope`.
 ``R_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`R` (axiomatic real numbers). It is delimited by the key ``R`` and comes
-  with an interpretation for numerals using the :g:`IZR` morphism from binary
+  with an interpretation for numbers using the :g:`IZR` morphism from binary
   integer numbers to :g:`R` and :g:`Z.pow_pos` for potential exponent parts.
 
 ``bool_scope``
@@ -1514,68 +1516,68 @@ Abbreviations
 
 .. extracted from Gallina chapter
 
-Numerals and strings
---------------------
+Numbers and strings
+-------------------
 
 .. insertprodn primitive_notations primitive_notations
 
 .. prodn::
-   primitive_notations ::= @numeral
+   primitive_notations ::= @number
    | @string
 
-Numerals and strings have no predefined semantics in the calculus. They are
+Numbers and strings have no predefined semantics in the calculus. They are
 merely notations that can be bound to objects through the notation mechanism.
-Initially, numerals are bound to Peano’s representation of natural
+Initially, numbers are bound to Peano’s representation of natural
 numbers (see :ref:`datatypes`).
 
 .. note::
 
-   Negative integers are not at the same level as :n:`@num`, for this
+   Negative integers are not at the same level as :n:`@natural`, for this
    would make precedence unnatural.
 
-.. _numeral-notations:
+.. _number-notations:
 
-Numeral notations
-~~~~~~~~~~~~~~~~~
+Number notations
+~~~~~~~~~~~~~~~~
 
-.. cmd:: Numeral Notation @qualid @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
-   :name: Numeral Notation
+.. cmd:: Number Notation @qualid__type @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
+   :name: Number Notation
 
    .. insertprodn numeral_modifier numeral_modifier
 
    .. prodn::
-      numeral_modifier ::= ( warning after @numeral )
-      | ( abstract after @numeral )
+      numeral_modifier ::= ( warning after @bignat )
+      | ( abstract after @bignat )
 
    This command allows the user to customize the way numeral literals
    are parsed and printed.
 
-      :n:`@qualid`
+      :n:`@qualid__type`
          the name of an inductive type,
          while :n:`@qualid__parse` and :n:`@qualid__print` should be the names of the
          parsing and printing functions, respectively.  The parsing function
          :n:`@qualid__parse` should have one of the following types:
 
-            * :n:`Numeral.int -> @qualid`
-            * :n:`Numeral.int -> option @qualid`
-            * :n:`Numeral.uint -> @qualid`
-            * :n:`Numeral.uint -> option @qualid`
-            * :n:`Z -> @qualid`
-            * :n:`Z -> option @qualid`
-            * :n:`Numeral.numeral -> @qualid`
-            * :n:`Numeral.numeral -> option @qualid`
+            * :n:`Numeral.int -> @qualid__type`
+            * :n:`Numeral.int -> option @qualid__type`
+            * :n:`Numeral.uint -> @qualid__type`
+            * :n:`Numeral.uint -> option @qualid__type`
+            * :n:`Z -> @qualid__type`
+            * :n:`Z -> option @qualid__type`
+            * :n:`Numeral.numeral -> @qualid__type`
+            * :n:`Numeral.numeral -> option @qualid__type`
 
          And the printing function :n:`@qualid__print` should have one of the
          following types:
 
-            * :n:`@qualid -> Numeral.int`
-            * :n:`@qualid -> option Numeral.int`
-            * :n:`@qualid -> Numeral.uint`
-            * :n:`@qualid -> option Numeral.uint`
-            * :n:`@qualid -> Z`
-            * :n:`@qualid -> option Z`
-            * :n:`@qualid -> Numeral.numeral`
-            * :n:`@qualid -> option Numeral.numeral`
+            * :n:`@qualid__type -> Numeral.int`
+            * :n:`@qualid__type -> option Numeral.int`
+            * :n:`@qualid__type -> Numeral.uint`
+            * :n:`@qualid__type -> option Numeral.uint`
+            * :n:`@qualid__type -> Z`
+            * :n:`@qualid__type -> option Z`
+            * :n:`@qualid__type -> Numeral.numeral`
+            * :n:`@qualid__type -> option Numeral.numeral`
 
          .. deprecated:: 8.12
             Numeral notations on :g:`Decimal.uint`, :g:`Decimal.int` and
@@ -1591,59 +1593,59 @@ Numeral notations
          function application, constructors, inductive type families,
          sorts, and primitive integers) will be considered for printing.
 
-      :n:`( warning after @numeral )`
+      :n:`( warning after @bignat )`
          displays a warning message about a possible stack
-         overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@numeral`.
+         overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@bignat`.
 
          .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
 
-            When a :cmd:`Numeral Notation` is registered in the current scope
-            with :n:`(warning after @numeral)`, this warning is emitted when
-            parsing a numeral greater than or equal to :token:`numeral`.
+            When a :cmd:`Number Notation` is registered in the current scope
+            with :n:`(warning after @bignat)`, this warning is emitted when
+            parsing a number greater than or equal to :token:`bignat`.
 
-      :n:`( abstract after @numeral )`
+      :n:`( abstract after @bignat )`
          returns :n:`(@qualid__parse m)` when parsing a literal
-         :n:`m` that's greater than :n:`@numeral` rather than reducing it to a normal form.
+         :n:`m` that's greater than :n:`@bignat` rather than reducing it to a normal form.
          Here :g:`m` will be a
-         :g:`Numeral.int` or :g:`Numeral.uint` or :g:`Z`, depending on the
+         :g:`Numeral.int`, :g:`Numeral.uint`, :g:`Z` or :g:`Numeral.numeral`, depending on the
          type of the parsing function :n:`@qualid__parse`. This allows for a
          more compact representation of literals in types such as :g:`nat`,
          and limits parse failures due to stack overflow.  Note that a
-         warning will be emitted when an integer larger than :token:`numeral`
-         is parsed.  Note that :n:`(abstract after @numeral)` has no effect
+         warning will be emitted when an integer larger than :token:`bignat`
+         is parsed.  Note that :n:`(abstract after @bignat)` has no effect
          when :n:`@qualid__parse` lands in an :g:`option` type.
 
          .. warn:: To avoid stack overflow, large numbers in @type are interpreted as applications of @qualid__parse.
 
-            When a :cmd:`Numeral Notation` is registered in the current scope
-            with :n:`(abstract after @numeral)`, this warning is emitted when
-            parsing a numeral greater than or equal to :token:`numeral`.
+            When a :cmd:`Number Notation` is registered in the current scope
+            with :n:`(abstract after @bignat)`, this warning is emitted when
+            parsing a number greater than or equal to :token:`bignat`.
             Typically, this indicates that the fully computed representation
-            of numerals can be so large that non-tail-recursive OCaml
+            of numbers can be so large that non-tail-recursive OCaml
             functions run out of stack space when trying to walk them.
 
          .. warn:: The 'abstract after' directive has no effect when the parsing function (@qualid__parse) targets an option type.
 
-            As noted above, the :n:`(abstract after @num)` directive has no
+            As noted above, the :n:`(abstract after @natural)` directive has no
             effect when :n:`@qualid__parse` lands in an :g:`option` type.
 
    .. exn:: Cannot interpret this number as a value of type @type
 
      The numeral notation registered for :token:`type` does not support
-     the given numeral.  This error is given when the interpretation
+     the given number.  This error is given when the interpretation
      function returns :g:`None`, or if the interpretation is registered
-     only for integers or non-negative integers, and the given numeral
+     only for integers or non-negative integers, and the given number
      has a fractional or exponent part or is negative.
 
 
    .. exn:: @qualid__parse should go from Numeral.int to @type or (option @type). Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
 
-     The parsing function given to the :cmd:`Numeral Notation`
+     The parsing function given to the :cmd:`Number Notation`
      vernacular is not of the right type.
 
    .. exn:: @qualid__print should go from @type to Numeral.int or (option Numeral.int).  Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
 
-     The printing function given to the :cmd:`Numeral Notation`
+     The printing function given to the :cmd:`Number Notation`
      vernacular is not of the right type.
 
    .. exn:: Unexpected term @term while parsing a numeral notation.
@@ -1657,8 +1659,10 @@ Numeral notations
 
      Parsing functions expected to return an :g:`option` must always
      return a concrete :g:`Some` or :g:`None` when applied to a
-     concrete numeral expressed as a (hexa)decimal.  They may not return
+     concrete number expressed as a (hexa)decimal.  They may not return
      opaque constants.
+
+.. _string-notations:
 
 String notations
 ~~~~~~~~~~~~~~~~
@@ -1745,19 +1749,19 @@ The following errors apply to both string and numeral notations:
 
    .. exn:: Syntax error: [prim:reference] expected after 'Notation' (in [vernac:command]).
 
-     The type passed to :cmd:`String Notation` or :cmd:`Numeral Notation` must be a single qualified
+     The type passed to :cmd:`String Notation` or :cmd:`Number Notation` must be a single qualified
      identifier.
 
    .. exn:: Syntax error: [prim:reference] expected after [prim:reference] (in [vernac:command]).
 
-     Both functions passed to :cmd:`String Notation` or :cmd:`Numeral Notation` must be single qualified
+     Both functions passed to :cmd:`String Notation` or :cmd:`Number Notation` must be single qualified
      identifiers.
 
      .. todo: generally we don't document syntax errors.  Is this a good execption?
 
    .. exn:: @qualid is bound to a notation that does not denote a reference.
 
-     Identifiers passed to :cmd:`String Notation` or :cmd:`Numeral Notation` must be global
+     Identifiers passed to :cmd:`String Notation` or :cmd:`Number Notation` must be global
      references, or notations which evaluate to single qualified identifiers.
 
      .. todo note on "single qualified identifiers" https://github.com/coq/coq/pull/11718#discussion_r415076703
@@ -1776,7 +1780,7 @@ Tactic notations allow customizing the syntax of tactics.
    can you run into problems if you shadow another tactic or tactic notation?
    If so, how to avoid ambiguity?
 
-.. cmd:: Tactic Notation {? ( at level @num ) } {+ @ltac_production_item } := @ltac_expr
+.. cmd:: Tactic Notation {? ( at level @natural ) } {+ @ltac_production_item } := @ltac_expr
 
    .. insertprodn ltac_production_item ltac_production_item
 
@@ -1789,7 +1793,7 @@ Tactic notations allow customizing the syntax of tactics.
    This command supports the :attr:`local` attribute, which limits the notation to the
    current module.
 
-      :token:`num`
+      :token:`natural`
          The parsing precedence to assign to the notation.  This information is particularly
          relevant for notations for tacticals.  Levels can be in the range 0 .. 5 (default is 5).
 
@@ -1887,7 +1891,7 @@ Tactic notations allow customizing the syntax of tactics.
         - :tacn:`refine`
 
       * - ``integer``
-        - :token:`int`
+        - :token:`integer`
         - an integer
         -
 

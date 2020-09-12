@@ -32,7 +32,7 @@ Displaying
    .. exn:: @qualid not a defined object.
       :undocumented:
 
-   .. exn:: Universe instance should have length @num.
+   .. exn:: Universe instance should have length @natural.
       :undocumented:
 
    .. exn:: This object does not support universe names.
@@ -44,9 +44,9 @@ Displaying
    This command displays information about the current state of the
    environment, including sections and modules.
 
-.. cmd:: Inspect @num
+.. cmd:: Inspect @natural
 
-   This command displays the :n:`@num` last objects of the
+   This command displays the :n:`@natural` last objects of the
    current environment, including sections and modules.
 
 .. cmd:: Print Section @qualid
@@ -60,7 +60,7 @@ Query commands
 --------------
 
 Unlike other commands, :production:`query_command`\s may be prefixed with
-a goal selector (:n:`@num:`) to specify which goal context it applies to.
+a goal selector (:n:`@natural:`) to specify which goal context it applies to.
 If no selector is provided,
 the command applies to the current goal.  If no proof is open, then the command only applies
 to accessible objects.  (see Section :ref:`invocation-of-tactics`).
@@ -757,10 +757,10 @@ interactively, they cannot be part of a vernacular file loaded via
    of the interactive session.
 
 
-.. cmd:: Back {? @num }
+.. cmd:: Back {? @natural }
 
-   Undoes all the effects of the last :n:`@num @sentence`\s.  If
-   :n:`@num` is not specified, the command undoes one sentence.
+   Undoes all the effects of the last :n:`@natural @sentence`\s.  If
+   :n:`@natural` is not specified, the command undoes one sentence.
    Sentences read from a `.v` file via a :cmd:`Load` are considered a
    single sentence.  While :cmd:`Back` can undo tactics and commands executed
    within proof mode, once you exit proof mode, such as with :cmd:`Qed`, all
@@ -772,14 +772,14 @@ interactively, they cannot be part of a vernacular file loaded via
 
       The user wants to undo more commands than available in the history.
 
-.. cmd:: BackTo @num
+.. cmd:: BackTo @natural
 
-   This command brings back the system to the state labeled :n:`@num`,
+   This command brings back the system to the state labeled :n:`@natural`,
    forgetting the effect of all commands executed after this state. The
    state label is an integer which grows after each successful command.
    It is displayed in the prompt when in -emacs mode. Just as :cmd:`Back` (see
    above), the :cmd:`BackTo` command now handles proof states. For that, it may
-   have to undo some extra commands and end on a state :n:`@num′ ≤ @num` if
+   have to undo some extra commands and end on a state :n:`@natural′ ≤ @natural` if
    necessary.
 
 .. _quitting-and-debugging:
@@ -834,16 +834,16 @@ Quitting and debugging
    output to the file ":n:`@string`.out".
 
 
-.. cmd:: Timeout @num @sentence
+.. cmd:: Timeout @natural @sentence
 
    Executes :n:`@sentence`. If the operation
-   has not terminated after :n:`@num` seconds, then it is interrupted and an error message is
+   has not terminated after :n:`@natural` seconds, then it is interrupted and an error message is
    displayed.
 
-   .. opt:: Default Timeout @num
+   .. opt:: Default Timeout @natural
       :name: Default Timeout
 
-      If set, each :n:`@sentence` is treated as if it was prefixed with :cmd:`Timeout` :n:`@num`,
+      If set, each :n:`@sentence` is treated as if it was prefixed with :cmd:`Timeout` :n:`@natural`,
       except for :cmd:`Timeout` commands themselves.  If unset,
       no timeout is applied.
 
@@ -890,14 +890,14 @@ Controlling display
    interpreted from left to right, so in case of an overlap, the flags on the
    right have higher priority, meaning that `A,-A` is equivalent to `-A`.
 
-.. opt:: Printing Width @num
+.. opt:: Printing Width @natural
    :name: Printing Width
 
    This command sets which left-aligned part of the width of the screen is used
    for display. At the time of writing this documentation, the default value
    is 78.
 
-.. opt:: Printing Depth @num
+.. opt:: Printing Depth @natural
    :name: Printing Depth
 
    This option controls the nesting depth of the formatter used for pretty-
@@ -1028,7 +1028,7 @@ described first.
 
    .. prodn::
       strategy_level ::= opaque
-      | @int
+      | @integer
       | expand
       | transparent
       strategy_level_or_var ::= @strategy_level
@@ -1052,7 +1052,7 @@ described first.
 
     + ``opaque`` : level of opaque constants. They cannot be expanded by
       tactics (behaves like +∞, see next item).
-    + :n:`@int` : levels indexed by an integer. Level 0 corresponds to the
+    + :n:`@integer` : levels indexed by an integer. Level 0 corresponds to the
       default behavior, which corresponds to transparent constants. This
       level can also be referred to as ``transparent``. Negative levels
       correspond to constants to be expanded before normal transparent

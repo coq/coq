@@ -2028,6 +2028,9 @@ let () =
   declare_uniform wit_int
 
 let () =
+  declare_uniform wit_nat
+
+let () =
   declare_uniform wit_bool
 
 let () =

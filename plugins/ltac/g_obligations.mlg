@@ -88,13 +88,13 @@ let classify_obbl _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpacity,[]))
 }
 
 VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl } STATE declare_program
-| [ "Obligation" integer(num) "of" ident(name) ":" lglob(t) withtac(tac) ] ->
+| [ "Obligation" natural(num) "of" ident(name) ":" lglob(t) withtac(tac) ] ->
     { obligation (num, Some name, Some t) tac }
-| [ "Obligation" integer(num) "of" ident(name) withtac(tac) ] ->
+| [ "Obligation" natural(num) "of" ident(name) withtac(tac) ] ->
     { obligation (num, Some name, None) tac }
-| [ "Obligation" integer(num) ":" lglob(t) withtac(tac) ] ->
+| [ "Obligation" natural(num) ":" lglob(t) withtac(tac) ] ->
     { obligation (num, None, Some t) tac }
-| [ "Obligation" integer(num) withtac(tac) ] ->
+| [ "Obligation" natural(num) withtac(tac) ] ->
     { obligation (num, None, None) tac }
 | [ "Next" "Obligation" "of" ident(name) withtac(tac) ] ->
     { next_obligation (Some name) tac }
@@ -102,9 +102,9 @@ VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl } STATE declare_
 END
 
 VERNAC COMMAND EXTEND Solve_Obligation CLASSIFIED AS SIDEFF STATE program
-| [ "Solve" "Obligation" integer(num) "of" ident(name) "with" tactic(t) ] ->
+| [ "Solve" "Obligation" natural(num) "of" ident(name) "with" tactic(t) ] ->
     { try_solve_obligation num (Some name) (Some (Tacinterp.interp t)) }
-| [ "Solve" "Obligation" integer(num) "with" tactic(t) ] ->
+| [ "Solve" "Obligation" natural(num) "with" tactic(t) ] ->
     { try_solve_obligation num None (Some (Tacinterp.interp t)) }
 END
 

@@ -27,7 +27,7 @@ Register int as num.num_int.type.
 Register numeral as num.numeral.type.
 
 (** Pseudo-conversion functions used when declaring
-    Numeral Notations on [uint] and [int]. *)
+    Number Notations on [uint] and [int]. *)
 
 Definition uint_of_uint (i:uint) := i.
 Definition int_of_int (i:int) := i.

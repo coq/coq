@@ -64,7 +64,7 @@ struct
   | _ -> None
 
   let lk_nat tok n strm = match stream_nth n strm with
-  | Tok.NUMERAL p when NumTok.Unsigned.is_nat p -> Some (n + 1)
+  | Tok.NUMBER p when NumTok.Unsigned.is_nat p -> Some (n + 1)
   | _ -> None
 
   let rec lk_list lk_elem n strm =
@@ -500,6 +500,7 @@ let with_grammar_rule_protection f x =
 
 let () =
   let open Stdarg in
+  Grammar.register0 wit_nat (Prim.natural);
   Grammar.register0 wit_int (Prim.integer);
   Grammar.register0 wit_string (Prim.string);
   Grammar.register0 wit_pre_ident (Prim.preident);

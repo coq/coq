@@ -219,20 +219,20 @@ let test_ssrslashnum b1 b2 _ strm =
   match Util.stream_nth 0 strm with
   | Tok.KEYWORD "/" ->
       (match Util.stream_nth 1 strm with
-      | Tok.NUMERAL _ when b1 ->
+      | Tok.NUMBER _ when b1 ->
          (match Util.stream_nth 2 strm with
          | Tok.KEYWORD "=" | Tok.KEYWORD "/=" when not b2 -> ()
          | Tok.KEYWORD "/" ->
              if not b2 then () else begin
                match Util.stream_nth 3 strm with
-               | Tok.NUMERAL _ -> ()
+               | Tok.NUMBER _ -> ()
                | _ -> raise Stream.Failure
              end
          | _ -> raise Stream.Failure)
       | Tok.KEYWORD "/" when not b1 ->
          (match Util.stream_nth 2 strm with
          | Tok.KEYWORD "=" when not b2 -> ()
-         | Tok.NUMERAL _ when b2 ->
+         | Tok.NUMBER _ when b2 ->
            (match Util.stream_nth 3 strm with
            | Tok.KEYWORD "=" -> ()
            | _ -> raise Stream.Failure)
@@ -243,7 +243,7 @@ let test_ssrslashnum b1 b2 _ strm =
   | Tok.KEYWORD "//" when not b1 ->
          (match Util.stream_nth 1 strm with
          | Tok.KEYWORD "=" when not b2 -> ()
-         | Tok.NUMERAL _ when b2 ->
+         | Tok.NUMBER _ when b2 ->
            (match Util.stream_nth 2 strm with
            | Tok.KEYWORD "=" -> ()
            | _ -> raise Stream.Failure)

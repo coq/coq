@@ -429,11 +429,11 @@ Additional settings
 
    Provides a comment that is included at the beginning of the output files.
 
-.. opt:: Extraction Flag @num
+.. opt:: Extraction Flag @natural
    :name: Extraction Flag
 
    Controls which optimizations are used during extraction, providing a finer-grained
-   control than :flag:`Extraction Optimize`.  The bits of :token:`num` are used as a bit mask.
+   control than :flag:`Extraction Optimize`.  The bits of :token:`natural` are used as a bit mask.
    Keeping an option off keeps the extracted ML more similar to the Coq term.
    Values are:
 

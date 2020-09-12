@@ -300,7 +300,7 @@ term_let: [
 
 atomic_constr: [
 | MOVETO qualid_annotated global univ_instance
-| MOVETO primitive_notations NUMERAL
+| MOVETO primitive_notations NUMBER
 | MOVETO primitive_notations string
 | MOVETO term_evar "_"
 | REPLACE "?" "[" ident "]"
@@ -736,11 +736,6 @@ export_token: [
 ]
 
 (* lexer stuff *)
-integer: [ | DELETENT ]
-RENAME: [
-| integer int (* todo: review uses in .mlg files, some should be "natural" *)
-]
-
 LEFTQMARK: [
 | "?"
 ]
@@ -749,7 +744,7 @@ digit: [
 | "0" ".." "9"
 ]
 
-decnum: [
+decnat: [
 | digit LIST0 [ digit | "_" ]
 ]
 
@@ -757,31 +752,29 @@ hexdigit: [
 | [ "0" ".." "9" | "a" ".." "f" | "A" ".." "F" ]
 ]
 
-hexnum: [
+hexnat: [
 | [ "0x" | "0X" ] hexdigit LIST0 [ hexdigit | "_" ]
 ]
 
-num: [
-| [ decnum | hexnum ]
+bignat: [
+| REPLACE NUMBER
+| WITH [ decnat | hexnat ]
 ]
 
-natural: [ | DELETENT ]
-natural: [
-| num  (* todo: or should it be "nat"? *)
+integer: [
+| REPLACE bigint
+| WITH OPT "-" natural
 ]
 
-int: [
-| OPT "-" num
-]
-
-numeral: [
-| OPT "-" decnum OPT ( "." LIST1 [ digit | "_" ] ) OPT ( [ "e" | "E" ] OPT [ "+" | "-" ] decnum )
-| OPT "-" hexnum OPT ( "." LIST1 [ hexdigit | "_" ] ) OPT ( [ "p" | "P" ] OPT [ "+" | "-" ] decnum )
+number: [
+| OPT "-" decnat OPT ( "." LIST1 [ digit | "_" ] ) OPT ( [ "e" | "E" ] OPT [ "+" | "-" ] decnat )
+| OPT "-" hexnat OPT ( "." LIST1 [ hexdigit | "_" ] ) OPT ( [ "p" | "P" ] OPT [ "+" | "-" ] decnat )
 ]
 
 bigint: [
-| DELETE NUMERAL
-| num
+| DELETE bignat
+| REPLACE test_minus_nat "-" bignat
+| WITH OPT "-" bignat
 ]
 
 first_letter: [
@@ -797,8 +790,8 @@ ident: [
 | first_letter LIST0 subsequent_letter
 ]
 
-NUMERAL: [
-| numeral
+NUMBER: [
+| number
 ]
 
 (* todo: QUOTATION only used in a test suite .mlg files, is it documented/useful? *)
@@ -1094,13 +1087,13 @@ simple_tactic: [
 | WITH "subst" OPT ( LIST1 var )
 | DELETE "subst"
 | DELETE "congruence"
-| DELETE "congruence" int
+| DELETE "congruence" natural
 | DELETE "congruence" "with" LIST1 constr
-| REPLACE "congruence" int "with" LIST1 constr
-| WITH "congruence" OPT int OPT ( "with" LIST1 constr )
+| REPLACE "congruence" natural "with" LIST1 constr
+| WITH "congruence" OPT natural OPT ( "with" LIST1 constr )
 | DELETE "show" "ltac" "profile"
-| REPLACE "show" "ltac" "profile" "cutoff" int
-| WITH "show" "ltac" "profile" OPT [ "cutoff" int | string ]
+| REPLACE "show" "ltac" "profile" "cutoff" integer
+| WITH "show" "ltac" "profile" OPT [ "cutoff" integer | string ]
 | DELETE "show" "ltac" "profile" string
 (* perversely, the mlg uses "tactic3" instead of "tactic_expr3" *)
 | DELETE "transparent_abstract" tactic3
@@ -1208,11 +1201,11 @@ command: [
 | REPLACE "Next" "Obligation" "of" ident withtac
 | WITH "Next" "Obligation" OPT ( "of" ident ) withtac
 | DELETE "Next" "Obligation" withtac
-| REPLACE "Obligation" int "of" ident ":" lglob withtac
-| WITH "Obligation" int OPT ( "of" ident ) OPT ( ":" lglob withtac )
-| DELETE "Obligation" int "of" ident withtac
-| DELETE "Obligation" int ":" lglob withtac
-| DELETE "Obligation" int withtac
+| REPLACE "Obligation" natural "of" ident ":" lglob withtac
+| WITH "Obligation" natural OPT ( "of" ident ) OPT ( ":" lglob withtac )
+| DELETE "Obligation" natural "of" ident withtac
+| DELETE "Obligation" natural ":" lglob withtac
+| DELETE "Obligation" natural withtac
 | REPLACE "Obligations" "of" ident
 | WITH "Obligations" OPT ( "of" ident )
 | DELETE "Obligations"
@@ -1232,17 +1225,17 @@ command: [
 | DELETE "Show" ident
 | "Show" OPT [ ident | natural ]
 | DELETE "Show" "Ltac" "Profile"
-| REPLACE "Show" "Ltac" "Profile" "CutOff" int
-| WITH "Show" "Ltac" "Profile" OPT [ "CutOff" int | string ]
+| REPLACE "Show" "Ltac" "Profile" "CutOff" integer
+| WITH "Show" "Ltac" "Profile" OPT [ "CutOff" integer | string ]
 | DELETE "Show" "Ltac" "Profile" string
 | DELETE "Show" "Proof"  (* combined with Show Proof Diffs in vernac_toplevel *)
 | REPLACE "Solve" "All" "Obligations" "with" tactic
 | WITH "Solve" "All" "Obligations" OPT ( "with" tactic )
 | DELETE "Solve" "All" "Obligations"
-| REPLACE "Solve" "Obligation" int "of" ident "with" tactic
-| WITH "Solve" "Obligation" int OPT ( "of" ident ) "with" tactic
+| REPLACE "Solve" "Obligation" natural "of" ident "with" tactic
+| WITH "Solve" "Obligation" natural OPT ( "of" ident ) "with" tactic
 | DELETE "Solve" "Obligations"
-| DELETE "Solve" "Obligation" int "with" tactic
+| DELETE "Solve" "Obligation" natural "with" tactic
 | REPLACE "Solve" "Obligations" "of" ident "with" tactic
 | WITH "Solve" "Obligations" OPT ( OPT ( "of" ident ) "with" tactic )
 | DELETE "Solve" "Obligations" "with" tactic
@@ -1840,7 +1833,7 @@ query_command: [ ] (* re-add as a placeholder *)
 
 sentence: [
 | OPT attributes command "."
-| OPT attributes OPT ( num ":" ) query_command "."
+| OPT attributes OPT ( natural ":" ) query_command "."
 | OPT attributes OPT ( toplevel_selector ":" ) tactic_expr5 [ "." | "..." ]
 | control_command
 ]
@@ -2052,8 +2045,8 @@ tac2rec_fields: [
 
 (* todo: weird productions, ints only after an initial "-"??:
   occs_nums: [
-  | LIST1 [ num | ident ]
-  | "-" [ num | ident ] LIST0 int_or_var
+  | LIST1 [ natural | ident ]
+  | "-" [ natural | ident ] LIST0 int_or_var
 *)
 ltac2_occs_nums: [
 | DELETE LIST1 nat_or_anti      (* Ltac2 plugin *)
@@ -2157,9 +2150,9 @@ tac2expr5: [
 
 RENAME: [
 | Prim.string string
-| Prim.integer int
+| Prim.integer integer
 | Prim.qualid qualid
-| Prim.natural num
+| Prim.natural natural
 ]
 
 gmatch_list: [
@@ -2204,13 +2197,11 @@ ltac2_induction_clause: [
 SPLICE: [
 | clause
 | noedit_mode
-| bigint
 | match_list
 | match_context_list
 | IDENT
 | LEFTQMARK
-| natural
-| NUMERAL
+| NUMBER
 | STRING
 | hyp
 | var
@@ -2368,7 +2359,6 @@ SPLICE: [
 | search_queries
 | locatable
 | scope_delimiter
-| bignat
 | one_import_filter_name
 | search_where
 | message_token

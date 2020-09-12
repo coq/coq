@@ -162,7 +162,7 @@ appl_arg: [
 atomic_constr: [
 | global univ_instance
 | sort
-| NUMERAL
+| NUMBER
 | string
 | "_"
 | "?" "[" ident "]"
@@ -283,7 +283,7 @@ pattern0: [
 | "_"
 | "(" pattern200 ")"
 | "(" pattern200 "|" LIST1 pattern200 SEP "|" ")"
-| NUMERAL
+| NUMBER
 | string
 ]
 
@@ -440,12 +440,12 @@ natural: [
 ]
 
 bigint: [
-| NUMERAL
-| test_minus_nat "-" NUMERAL
+| bignat
+| test_minus_nat "-" bignat
 ]
 
 bignat: [
-| NUMERAL
+| NUMBER
 ]
 
 bar_cbrace: [
@@ -598,7 +598,7 @@ command: [
 | "Hint" "Cut" "[" hints_path "]" opthints
 | "Typeclasses" "Transparent" LIST0 reference
 | "Typeclasses" "Opaque" LIST0 reference
-| "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT int
+| "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT integer
 | "Proof" "with" Pltac.tactic OPT [ "using" G_vernac.section_subset_expr ]
 | "Proof" "using" G_vernac.section_subset_expr OPT [ "with" Pltac.tactic ]
 | "Tactic" "Notation" OPT ltac_tactic_level LIST1 ltac_production_item ":=" tactic
@@ -606,14 +606,14 @@ command: [
 | "Locate" "Ltac" reference
 | "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | "Print" "Ltac" "Signatures"
-| "Obligation" integer "of" ident ":" lglob withtac
-| "Obligation" integer "of" ident withtac
-| "Obligation" integer ":" lglob withtac
-| "Obligation" integer withtac
+| "Obligation" natural "of" ident ":" lglob withtac
+| "Obligation" natural "of" ident withtac
+| "Obligation" natural ":" lglob withtac
+| "Obligation" natural withtac
 | "Next" "Obligation" "of" ident withtac
 | "Next" "Obligation" withtac
-| "Solve" "Obligation" integer "of" ident "with" tactic
-| "Solve" "Obligation" integer "with" tactic
+| "Solve" "Obligation" natural "of" ident "with" tactic
+| "Solve" "Obligation" natural "with" tactic
 | "Solve" "Obligations" "of" ident "with" tactic
 | "Solve" "Obligations" "with" tactic
 | "Solve" "Obligations"
@@ -652,7 +652,7 @@ command: [
 | "Print" "Rewrite" "HintDb" preident
 | "Reset" "Ltac" "Profile"
 | "Show" "Ltac" "Profile"
-| "Show" "Ltac" "Profile" "CutOff" int
+| "Show" "Ltac" "Profile" "CutOff" integer
 | "Show" "Ltac" "Profile" string
 | "Show" "Lia" "Profile"      (* micromega plugin *)
 | "Add" "Zify" "InjTyp" constr      (* micromega plugin *)
@@ -689,6 +689,7 @@ command: [
 | "Print" "Rings"      (* setoid_ring plugin *)
 | "Add" "Field" ident ":" constr OPT field_mods      (* setoid_ring plugin *)
 | "Print" "Fields"      (* setoid_ring plugin *)
+| "Number" "Notation" reference reference reference ":" ident numnotoption
 | "Numeral" "Notation" reference reference reference ":" ident numnotoption
 | "String" "Notation" reference reference reference ":" ident
 | "Ltac2" ltac2_entry      (* Ltac2 plugin *)
@@ -1435,9 +1436,9 @@ constr_as_binder_kind: [
 simple_tactic: [
 | "btauto"
 | "congruence"
-| "congruence" integer
+| "congruence" natural
 | "congruence" "with" LIST1 constr
-| "congruence" integer "with" LIST1 constr
+| "congruence" natural "with" LIST1 constr
 | "f_equal"
 | "firstorder" OPT tactic firstorder_using
 | "firstorder" OPT tactic "with" LIST1 preident
@@ -1715,7 +1716,7 @@ simple_tactic: [
 | "stop" "ltac" "profiling"
 | "reset" "ltac" "profile"
 | "show" "ltac" "profile"
-| "show" "ltac" "profile" "cutoff" int
+| "show" "ltac" "profile" "cutoff" integer
 | "show" "ltac" "profile" string
 | "restart_timer" OPT string
 | "finish_timing" OPT string
@@ -2099,7 +2100,7 @@ match_list: [
 message_token: [
 | identref
 | STRING
-| integer
+| natural
 ]
 
 ltac_def_kind: [
@@ -2811,7 +2812,7 @@ sexpr: [
 
 syn_level: [
 |      (* Ltac2 plugin *)
-| ":" Prim.integer      (* Ltac2 plugin *)
+| ":" Prim.natural      (* Ltac2 plugin *)
 ]
 
 tac2def_syn: [

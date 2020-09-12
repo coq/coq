@@ -93,7 +93,7 @@ term_explicit: [
 ]
 
 primitive_notations: [
-| numeral
+| number
 | string
 ]
 
@@ -129,20 +129,28 @@ type: [
 | term
 ]
 
-numeral: [
-| OPT "-" decnum OPT ( "." LIST1 [ digit | "_" ] ) OPT ( [ "e" | "E" ] OPT [ "+" | "-" ] decnum )
-| OPT "-" hexnum OPT ( "." LIST1 [ hexdigit | "_" ] ) OPT ( [ "p" | "P" ] OPT [ "+" | "-" ] decnum )
+number: [
+| OPT "-" decnat OPT ( "." LIST1 [ digit | "_" ] ) OPT ( [ "e" | "E" ] OPT [ "+" | "-" ] decnat )
+| OPT "-" hexnat OPT ( "." LIST1 [ hexdigit | "_" ] ) OPT ( [ "p" | "P" ] OPT [ "+" | "-" ] decnat )
 ]
 
-int: [
-| OPT "-" num
+integer: [
+| OPT "-" natural
 ]
 
-num: [
-| [ decnum | hexnum ]
+natural: [
+| bignat
 ]
 
-decnum: [
+bigint: [
+| OPT "-" bignat
+]
+
+bignat: [
+| [ decnat | hexnat ]
+]
+
+decnat: [
 | digit LIST0 [ digit | "_" ]
 ]
 
@@ -150,7 +158,7 @@ digit: [
 | "0" ".." "9"
 ]
 
-hexnum: [
+hexnat: [
 | [ "0x" | "0X" ] hexdigit LIST0 [ hexdigit | "_" ]
 ]
 
@@ -230,7 +238,7 @@ nonterminal: [
 
 sentence: [
 | OPT attributes command "."
-| OPT attributes OPT ( num ":" ) query_command "."
+| OPT attributes OPT ( natural ":" ) query_command "."
 | OPT attributes OPT ( toplevel_selector ":" ) ltac_expr [ "." | "..." ]
 | control_command
 ]
@@ -277,7 +285,7 @@ universe: [
 ]
 
 universe_expr: [
-| universe_name OPT ( "+" num )
+| universe_name OPT ( "+" natural )
 ]
 
 universe_name: [
@@ -429,7 +437,7 @@ pattern0: [
 | "{|" LIST0 ( qualid ":=" pattern ) "|}"
 | "_"
 | "(" LIST1 pattern SEP "|" ")"
-| numeral
+| number
 | string
 ]
 
@@ -509,12 +517,12 @@ ref_or_pattern_occ: [
 ]
 
 occs_nums: [
-| LIST1 [ num | ident ]
-| "-" [ num | ident ] LIST0 int_or_var
+| LIST1 [ natural | ident ]
+| "-" [ natural | ident ] LIST0 int_or_var
 ]
 
 int_or_var: [
-| int
+| integer
 | ident
 ]
 
@@ -535,7 +543,7 @@ record_definition: [
 ]
 
 record_field: [
-| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) name OPT field_body OPT [ "|" num ] OPT decl_notations
+| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) name OPT field_body OPT [ "|" natural ] OPT decl_notations
 ]
 
 field_body: [
@@ -589,7 +597,7 @@ sort_family: [
 ]
 
 hint_info: [
-| "|" OPT num OPT one_term
+| "|" OPT natural OPT one_term
 ]
 
 module_binder: [
@@ -602,7 +610,7 @@ module_type_inl: [
 ]
 
 functor_app_annot: [
-| "[" "inline" "at" "level" num "]"
+| "[" "inline" "at" "level" natural "]"
 | "[" "no" "inline" "]"
 ]
 
@@ -686,7 +694,7 @@ scope_key: [
 
 strategy_level: [
 | "opaque"
-| int
+| integer
 | "expand"
 | "transparent"
 ]
@@ -714,7 +722,7 @@ command: [
 | "Locate" reference
 | "Locate" "Term" reference
 | "Locate" "Module" qualid
-| "Info" num ltac_expr
+| "Info" natural ltac_expr
 | "Locate" "Ltac" qualid
 | "Locate" "Library" qualid
 | "Locate" "File" string
@@ -762,7 +770,7 @@ command: [
 | "Print" "Module" "Type" qualid
 | "Print" "Module" qualid
 | "Print" "Namespace" dirpath
-| "Inspect" num
+| "Inspect" natural
 | "Add" "ML" "Path" string
 | OPT "Export" "Set" setting_name
 | "Print" "Table" setting_name
@@ -773,7 +781,7 @@ command: [
 | "Restore" "State" [ ident | string ]
 | "Reset" "Initial"
 | "Reset" ident
-| "Back" OPT num
+| "Back" OPT natural
 | "Debug" [ "On" | "Off" ]
 | "Declare" "Reduction" ident ":=" red_expr
 | "Declare" "Custom" "Entry" ident
@@ -802,17 +810,17 @@ command: [
 | "Proof" "Mode" string
 | "Proof" term
 | "Abort" OPT [ "All" | ident ]
-| "Existential" num OPT ( ":" term ) ":=" term
+| "Existential" natural OPT ( ":" term ) ":=" term
 | "Admitted"
 | "Qed"
 | "Save" ident
 | "Defined" OPT ident
 | "Restart"
-| "Undo" OPT ( OPT "To" num )
-| "Focus" OPT num
+| "Undo" OPT ( OPT "To" natural )
+| "Focus" OPT natural
 | "Unfocus"
 | "Unfocused"
-| "Show" OPT [ ident | num ]
+| "Show" OPT [ ident | natural ]
 | "Show" "Existentials"
 | "Show" "Universes"
 | "Show" "Conjectures"
@@ -824,12 +832,12 @@ command: [
 | "Create" "HintDb" ident OPT "discriminated"
 | "Remove" "Hints" LIST1 qualid OPT ( ":" LIST1 ident )
 | "Hint" hint OPT ( ":" LIST1 ident )
-| "Comments" LIST0 [ one_term | string | num ]
+| "Comments" LIST0 [ one_term | string | natural ]
 | "Declare" "Instance" ident_decl LIST0 binder ":" term OPT hint_info
 | "Declare" "Scope" scope_name
-| "Obligation" int OPT ( "of" ident ) OPT ( ":" term OPT ( "with" ltac_expr ) )
+| "Obligation" natural OPT ( "of" ident ) OPT ( ":" term OPT ( "with" ltac_expr ) )
 | "Next" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
-| "Solve" "Obligation" int OPT ( "of" ident ) "with" ltac_expr
+| "Solve" "Obligation" natural OPT ( "of" ident ) "with" ltac_expr
 | "Solve" "Obligations" OPT ( OPT ( "of" ident ) "with" ltac_expr )
 | "Solve" "All" "Obligations" OPT ( "with" ltac_expr )
 | "Admit" "Obligations" OPT ( "of" ident )
@@ -852,7 +860,7 @@ command: [
 | "Optimize" "Proof"
 | "Optimize" "Heap"
 | "Reset" "Ltac" "Profile"
-| "Show" "Ltac" "Profile" OPT [ "CutOff" int | string ]
+| "Show" "Ltac" "Profile" OPT [ "CutOff" integer | string ]
 | "Show" "Lia" "Profile"      (* micromega plugin *)
 | "Add" "Zify" "InjTyp" one_term      (* micromega plugin *)
 | "Add" "Zify" "BinOp" one_term      (* micromega plugin *)
@@ -888,13 +896,14 @@ command: [
 | "Print" "Rings"      (* setoid_ring plugin *)
 | "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* setoid_ring plugin *)
 | "Print" "Fields"      (* setoid_ring plugin *)
+| "Number" "Notation" qualid qualid qualid ":" ident OPT numeral_modifier
 | "Hint" "Cut" "[" hints_path "]" OPT ( ":" LIST1 ident )
 | "Typeclasses" "Transparent" LIST0 qualid
 | "Typeclasses" "Opaque" LIST0 qualid
-| "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" eauto_search_strategy_name ")" ) OPT int
+| "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" eauto_search_strategy_name ")" ) OPT integer
 | "Proof" "with" ltac_expr OPT [ "using" section_subset_expr ]
 | "Proof" "using" section_subset_expr OPT [ "with" ltac_expr ]
-| "Tactic" "Notation" OPT ( "(" "at" "level" num ")" ) LIST1 ltac_production_item ":=" ltac_expr
+| "Tactic" "Notation" OPT ( "(" "at" "level" natural ")" ) LIST1 ltac_production_item ":=" ltac_expr
 | "Print" "Rewrite" "HintDb" ident
 | "Print" "Ltac" qualid
 | "Ltac" tacdef_body LIST0 ( "with" tacdef_body )
@@ -916,7 +925,7 @@ command: [
 | "String" "Notation" qualid qualid qualid ":" scope_name
 | "SubClass" ident_decl def_body
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
-| assumption_token OPT ( "Inline" OPT ( "(" num ")" ) ) [ LIST1 ( "(" assumpt ")" ) | assumpt ]
+| assumption_token OPT ( "Inline" OPT ( "(" natural ")" ) ) [ LIST1 ( "(" assumpt ")" ) | assumpt ]
 | [ "Definition" | "Example" ] ident_decl def_body
 | "Let" ident_decl def_body
 | "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
@@ -959,12 +968,12 @@ command: [
 | "Context" LIST1 binder
 | "Instance" OPT ( ident_decl LIST0 binder ) ":" term OPT hint_info OPT [ ":=" "{" LIST0 field_def "}" | ":=" term ]
 | "Existing" "Instance" qualid OPT hint_info
-| "Existing" "Instances" LIST1 qualid OPT [ "|" num ]
+| "Existing" "Instances" LIST1 qualid OPT [ "|" natural ]
 | "Existing" "Class" qualid
 | "Arguments" reference LIST0 arg_specs LIST0 [ "," LIST0 implicits_alt ] OPT [ ":" LIST1 args_modifier SEP "," ]
 | "Implicit" [ "Type" | "Types" ] reserv_list
 | "Generalizable" [ [ "Variable" | "Variables" ] LIST1 ident | "All" "Variables" | "No" "Variables" ]
-| "Set" setting_name OPT [ int | string ]
+| "Set" setting_name OPT [ integer | string ]
 | "Unset" setting_name
 | "Open" "Scope" scope
 | "Close" "Scope" scope
@@ -988,19 +997,19 @@ command: [
 | "Ltac2" OPT "mutable" OPT "rec" tac2def_body LIST0 ( "with" tac2def_body )
 | "Ltac2" "Type" OPT "rec" tac2typ_def LIST0 ( "with" tac2typ_def )
 | "Ltac2" "@" "external" ident ":" ltac2_type ":=" string string
-| "Ltac2" "Notation" LIST1 ltac2_scope OPT ( ":" int ) ":=" ltac2_expr
+| "Ltac2" "Notation" LIST1 ltac2_scope OPT ( ":" natural ) ":=" ltac2_expr
 | "Ltac2" "Set" qualid OPT [ "as" ident ] ":=" ltac2_expr
 | "Ltac2" "Notation" [ string | lident ] ":=" ltac2_expr      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr      (* Ltac2 plugin *)
 | "Print" "Ltac2" qualid      (* Ltac2 plugin *)
 | "Time" sentence
 | "Redirect" string sentence
-| "Timeout" num sentence
+| "Timeout" natural sentence
 | "Fail" sentence
 | "Drop"
 | "Quit"
-| "BackTo" num
-| "Show" "Goal" num "at" num
+| "BackTo" natural
+| "Show" "Goal" natural "at" natural
 ]
 
 section_subset_expr: [
@@ -1067,8 +1076,8 @@ univ_name_list: [
 
 hint: [
 | "Resolve" LIST1 [ qualid | one_term ] OPT hint_info
-| "Resolve" "->" LIST1 qualid OPT num
-| "Resolve" "<-" LIST1 qualid OPT num
+| "Resolve" "->" LIST1 qualid OPT natural
+| "Resolve" "<-" LIST1 qualid OPT natural
 | "Immediate" LIST1 [ qualid | one_term ]
 | "Variables" "Transparent"
 | "Variables" "Opaque"
@@ -1079,7 +1088,7 @@ hint: [
 | "Mode" qualid LIST1 [ "+" | "!" | "-" ]
 | "Unfold" LIST1 qualid
 | "Constructors" LIST1 qualid
-| "Extern" num OPT one_term "=>" ltac_expr
+| "Extern" natural OPT one_term "=>" ltac_expr
 ]
 
 tacdef_body: [
@@ -1127,7 +1136,7 @@ lident: [
 ]
 
 destruction_arg: [
-| num
+| natural
 | constr_with_bindings
 | constr_with_bindings_arg
 ]
@@ -1221,7 +1230,7 @@ q_destruction_arg: [
 ]
 
 ltac2_destruction_arg: [
-| num      (* Ltac2 plugin *)
+| natural      (* Ltac2 plugin *)
 | lident      (* Ltac2 plugin *)
 | ltac2_constr_with_bindings      (* Ltac2 plugin *)
 ]
@@ -1249,13 +1258,13 @@ ltac2_simple_binding: [
 
 qhyp: [
 | "$" ident      (* Ltac2 plugin *)
-| num      (* Ltac2 plugin *)
+| natural      (* Ltac2 plugin *)
 | lident      (* Ltac2 plugin *)
 ]
 
 int_or_id: [
 | ident
-| int      (* extraction plugin *)
+| integer      (* extraction plugin *)
 ]
 
 language: [
@@ -1291,8 +1300,8 @@ field_mod: [
 ]
 
 numeral_modifier: [
-| "(" "warning" "after" numeral ")"
-| "(" "abstract" "after" numeral ")"
+| "(" "warning" "after" bignat ")"
+| "(" "abstract" "after" bignat ")"
 ]
 
 hints_path: [
@@ -1318,8 +1327,8 @@ class: [
 ]
 
 syntax_modifier: [
-| "at" "level" num
-| "in" "custom" ident OPT ( "at" "level" num )
+| "at" "level" natural
+| "in" "custom" ident OPT ( "at" "level" natural )
 | LIST1 ident SEP "," "at" level
 | ident "at" level OPT binder_interp
 | ident explicit_subentry
@@ -1336,12 +1345,12 @@ explicit_subentry: [
 | "ident"
 | "global"
 | "bigint"
-| "strict" "pattern" OPT ( "at" "level" num )
+| "strict" "pattern" OPT ( "at" "level" natural )
 | "binder"
 | "closed" "binder"
 | "constr" OPT ( "at" level ) OPT binder_interp
 | "custom" ident OPT ( "at" level ) OPT binder_interp
-| "pattern" OPT ( "at" "level" num )
+| "pattern" OPT ( "at" "level" natural )
 ]
 
 binder_interp: [
@@ -1351,7 +1360,7 @@ binder_interp: [
 ]
 
 level: [
-| "level" num
+| "level" natural
 | "next" "level"
 ]
 
@@ -1388,14 +1397,14 @@ simple_tactic: [
 | "esplit" OPT ( "with" bindings )
 | "exists" OPT ( LIST1 bindings SEP "," )
 | "eexists" OPT ( LIST1 bindings SEP "," )
-| "intros" "until" [ ident | num ]
+| "intros" "until" [ ident | natural ]
 | "intro" OPT ident OPT where
 | "move" ident OPT where
 | "rename" LIST1 ( ident "into" ident ) SEP ","
 | "revert" LIST1 ident
-| "simple" "induction" [ ident | num ]
-| "simple" "destruct" [ ident | num ]
-| "double" "induction" [ ident | num ] [ ident | num ]
+| "simple" "induction" [ ident | natural ]
+| "simple" "destruct" [ ident | natural ]
+| "double" "induction" [ ident | natural ] [ ident | natural ]
 | "admit"
 | "clear" LIST0 ident
 | "clear" "-" LIST1 ident
@@ -1417,8 +1426,8 @@ simple_tactic: [
 | "tryif" ltac_expr "then" ltac_expr "else" ltac_expr2
 | "first" "[" LIST0 ltac_expr SEP "|" "]"
 | "solve" "[" LIST0 ltac_expr SEP "|" "]"
-| "idtac" LIST0 [ ident | string | int ]
-| [ "fail" | "gfail" ] OPT int_or_var LIST0 [ ident | string | int ]
+| "idtac" LIST0 [ ident | string | natural ]
+| [ "fail" | "gfail" ] OPT int_or_var LIST0 [ ident | string | natural ]
 | "fun" LIST1 name "=>" ltac_expr
 | "eval" red_expr "in" term
 | "context" ident "[" term "]"
@@ -1462,7 +1471,7 @@ simple_tactic: [
 | "evar" "(" ident ":" term ")"
 | "evar" one_term
 | "instantiate" "(" ident ":=" term ")"
-| "instantiate" "(" int ":=" term ")" OPT hloc
+| "instantiate" "(" integer ":=" term ")" OPT hloc
 | "instantiate"
 | "stepl" one_term OPT ( "by" ltac_expr )
 | "stepr" one_term OPT ( "by" ltac_expr )
@@ -1501,7 +1510,7 @@ simple_tactic: [
 | "start" "ltac" "profiling"
 | "stop" "ltac" "profiling"
 | "reset" "ltac" "profile"
-| "show" "ltac" "profile" OPT [ "cutoff" int | string ]
+| "show" "ltac" "profile" OPT [ "cutoff" integer | string ]
 | "restart_timer" OPT string
 | "finish_timing" OPT ( "(" string ")" ) OPT string
 | "eassumption"
@@ -1551,7 +1560,7 @@ simple_tactic: [
 | "eelim" constr_with_bindings_arg OPT ( "using" constr_with_bindings )
 | "case" induction_clause_list
 | "ecase" induction_clause_list
-| "fix" ident num OPT ( "with" LIST1 fixdecl )
+| "fix" ident natural OPT ( "with" LIST1 fixdecl )
 | "cofix" ident OPT ( "with" LIST1 cofixdecl )
 | "pose" bindings_with_parameters
 | "pose" one_term OPT as_name
@@ -1585,11 +1594,11 @@ simple_tactic: [
 | "edestruct" induction_clause_list
 | "rewrite" LIST1 oriented_rewriter SEP "," OPT clause_dft_concl OPT ( "by" ltac_expr3 )
 | "erewrite" LIST1 oriented_rewriter SEP "," OPT clause_dft_concl OPT ( "by" ltac_expr3 )
-| "dependent" [ "simple" "inversion" | "inversion" | "inversion_clear" ] [ ident | num ] OPT as_or_and_ipat OPT [ "with" one_term ]
-| "simple" "inversion" [ ident | num ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
-| "inversion" [ ident | num ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
-| "inversion_clear" [ ident | num ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
-| "inversion" [ ident | num ] "using" one_term OPT ( "in" LIST1 ident )
+| "dependent" [ "simple" "inversion" | "inversion" | "inversion_clear" ] [ ident | natural ] OPT as_or_and_ipat OPT [ "with" one_term ]
+| "simple" "inversion" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
+| "inversion" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
+| "inversion_clear" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
+| "inversion" [ ident | natural ] "using" one_term OPT ( "in" LIST1 ident )
 | "red" OPT clause_dft_concl
 | "hnf" OPT clause_dft_concl
 | "simpl" OPT delta_flag OPT ref_or_pattern_occ OPT clause_dft_concl
@@ -1606,11 +1615,11 @@ simple_tactic: [
 | "change_no_check" conversion OPT clause_dft_concl
 | "btauto"
 | "rtauto"
-| "congruence" OPT int OPT ( "with" LIST1 one_term )
+| "congruence" OPT natural OPT ( "with" LIST1 one_term )
 | "f_equal"
 | "firstorder" OPT ltac_expr firstorder_rhs
 | "gintuition" OPT ltac_expr
-| "functional" "inversion" [ ident | num ] OPT qualid      (* funind plugin *)
+| "functional" "inversion" [ ident | natural ] OPT qualid      (* funind plugin *)
 | "functional" "induction" term OPT fun_ind_using OPT with_names      (* funind plugin *)
 | "soft" "functional" "induction" LIST1 one_term OPT fun_ind_using OPT with_names      (* funind plugin *)
 | "psatz_Z" OPT int_or_var ltac_expr
@@ -1698,7 +1707,7 @@ as_name: [
 ]
 
 rewriter: [
-| OPT num OPT [ "?" | "!" ] constr_with_bindings_arg
+| OPT natural OPT [ "?" | "!" ] constr_with_bindings_arg
 ]
 
 oriented_rewriter: [
@@ -1758,7 +1767,7 @@ simple_intropattern_closed: [
 
 simple_binding: [
 | "(" ident ":=" term ")"
-| "(" num ":=" term ")"
+| "(" natural ":=" term ")"
 ]
 
 bindings: [
@@ -1807,7 +1816,7 @@ ltac2_occs: [
 ]
 
 ltac2_occs_nums: [
-| OPT "-" LIST1 [ num      (* Ltac2 plugin *) | "$" ident ]      (* Ltac2 plugin *)
+| OPT "-" LIST1 [ natural      (* Ltac2 plugin *) | "$" ident ]      (* Ltac2 plugin *)
 ]
 
 ltac2_concl_occ: [
@@ -1858,7 +1867,7 @@ ltac2_oriented_rewriter: [
 ]
 
 ltac2_rewriter: [
-| OPT num OPT [ "?" | "!" ] ltac2_constr_with_bindings
+| OPT natural OPT [ "?" | "!" ] ltac2_constr_with_bindings
 ]
 
 q_dispatch: [
@@ -2035,7 +2044,7 @@ tac2rec_field: [
 
 ltac2_scope: [
 | string      (* Ltac2 plugin *)
-| int      (* Ltac2 plugin *)
+| integer      (* Ltac2 plugin *)
 | name      (* Ltac2 plugin *)
 | name "(" LIST1 ltac2_scope SEP "," ")"      (* Ltac2 plugin *)
 ]
@@ -2085,7 +2094,7 @@ ltac2_expr0: [
 ]
 
 ltac2_tactic_atom: [
-| int      (* Ltac2 plugin *)
+| integer      (* Ltac2 plugin *)
 | string      (* Ltac2 plugin *)
 | qualid      (* Ltac2 plugin *)
 | "@" ident      (* Ltac2 plugin *)
@@ -2201,7 +2210,7 @@ with_names: [
 ]
 
 occurrences: [
-| LIST1 int
+| LIST1 integer
 | ident
 ]
 
@@ -2296,7 +2305,7 @@ ltac_expr0: [
 ]
 
 tactic_atom: [
-| int
+| integer
 | qualid
 | "()"
 ]
@@ -2328,8 +2337,8 @@ selector: [
 ]
 
 range_selector: [
-| num "-" num
-| num
+| natural "-" natural
+| natural
 ]
 
 match_key: [

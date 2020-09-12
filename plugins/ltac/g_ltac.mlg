@@ -271,7 +271,7 @@ GRAMMAR EXTEND Gram
   message_token:
     [ [ id = identref -> { MsgIdent id }
       | s = STRING -> { MsgString s }
-      | n = integer -> { MsgInt n } ] ]
+      | n = natural -> { MsgInt n } ] ]
   ;
 
   ltac_def_kind:

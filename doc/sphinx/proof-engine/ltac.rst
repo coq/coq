@@ -74,7 +74,7 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    ltac_expr0 ::= ( @ltac_expr )
    | [> @for_each_goal ]
    | @tactic_atom
-   tactic_atom ::= @int
+   tactic_atom ::= @integer
    | @qualid
    | ()
 
@@ -188,7 +188,7 @@ examining the part at the end under "Entry tactic:tactic_arg".
         -
 
       * - ``integer``
-        - :token:`int`
+        - :token:`integer`
         - an integer
         -
 
@@ -397,7 +397,7 @@ behavior.)
    `par`
       Applies :n:`@ltac_expr` to all focused goals in parallel.
       The number of workers can be controlled via the command line option
-      :n:`-async-proofs-tac-j @num` to specify the desired number of workers.
+      :n:`-async-proofs-tac-j @natural` to specify the desired number of workers.
       Limitations: ``par:`` only works on goals that don't contain existential
       variables.  :n:`@ltac_expr` must either solve the goal completely or do
       nothing (i.e. it cannot make some progress).
@@ -412,8 +412,8 @@ Selectors can also be used nested within a tactic expression with the
    .. prodn::
       selector ::= {+, @range_selector }
       | [ @ident ]
-      range_selector ::= @num - @num
-      | @num
+      range_selector ::= @natural - @natural
+      | @natural
 
    Applies :token:`ltac_expr3` to the selected goals.
 
@@ -426,10 +426,10 @@ Selectors can also be used nested within a tactic expression with the
       Limits the application of :token:`ltac_expr3` to the goal previously named :token:`ident`
       by the user (see :ref:`existential-variables`).
 
-   :n:`@num__1 - @num__2`
-      Selects the goals :n:`@num__1` through :n:`@num__2`, inclusive.
+   :n:`@natural__1 - @natural__2`
+      Selects the goals :n:`@natural__1` through :n:`@natural__2`, inclusive.
 
-   :n:`@num`
+   :n:`@natural`
       Selects a single goal.
 
 .. exn:: No such goal.
@@ -876,7 +876,7 @@ Print/identity tactic: idtac
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-.. tacn:: idtac {* {| @ident | @string | @int } }
+.. tacn:: idtac {* {| @ident | @string | @natural } }
    :name: idtac
 
    Leaves the proof unchanged and prints the given tokens. Strings and integers are printed
@@ -888,7 +888,7 @@ Print/identity tactic: idtac
 Failing
 ~~~~~~~
 
-.. tacn:: {| fail | gfail } {? @int_or_var } {* {| @ident | @string | @int } }
+.. tacn:: {| fail | gfail } {? @int_or_var } {* {| @ident | @string | @integer } }
    :name: fail; gfail
 
    :tacn:`fail` is the always-failing tactic: it does not solve any
@@ -916,17 +916,17 @@ Failing
       (backtracking). If nonzero, the current :tacn:`match goal` block, :tacn:`try`,
       :tacn:`repeat`, or branching command is aborted and the level is decremented. In
       the case of :n:`+`, a nonzero level skips the first backtrack point, even if
-      the call to :tacn:`fail` :n:`@num` is not enclosed in a :n:`+` construct,
+      the call to :tacn:`fail` :n:`@natural` is not enclosed in a :n:`+` construct,
       respecting the algebraic identity.
 
-   :n:`{* {| @ident | @string | @int } }`
+   :n:`{* {| @ident | @string | @integer } }`
       The given tokens are used for printing the failure message.  If :token:`ident`
       is an |Ltac| variable, its contents are printed; if not, it is an error.
 
    .. exn:: Tactic failure.
       :undocumented:
 
-   .. exn:: Tactic failure (level @num).
+   .. exn:: Tactic failure (level @natural).
       :undocumented:
 
    .. exn:: No such goal.
@@ -976,7 +976,7 @@ amount of time:
    :name: timeout
 
    :n:`@ltac_expr3` is evaluated to ``v`` which must be a tactic value. The tactic value
-   ``v`` is applied normally, except that it is interrupted after :n:`@num` seconds
+   ``v`` is applied normally, except that it is interrupted after :n:`@natural` seconds
    if it is still running. In this case the outcome is a failure.
 
    :tacn:`timeout` is an :token:`l3_tactic`.
@@ -1675,8 +1675,8 @@ Proving a subgoal as a separate lemma: abstract
 
    Does a :tacn:`solve` :n:`[ @ltac_expr2 ]` and saves the subproof as an auxiliary lemma.
    if :n:`@ident__name` is specified, the lemma is saved with that name; otherwise
-   the lemma is saved with the name :n:`@ident`\ `_subproof`\ :n:`{? @num }` where
-   :token:`ident` is the name of the current goal (e.g. the theorem name) and :token:`num`
+   the lemma is saved with the name :n:`@ident`\ `_subproof`\ :n:`{? @natural }` where
+   :token:`ident` is the name of the current goal (e.g. the theorem name) and :token:`natural`
    is chosen to get a fresh name.  If the proof is closed with :cmd:`Qed`, the auxiliary lemma
    is inlined in the final proof term.
 
@@ -1709,7 +1709,7 @@ Proving a subgoal as a separate lemma: abstract
 .. tacn:: transparent_abstract @ltac_expr3 {? using @ident }
 
    Like :tacn:`abstract`, but save the subproof in a transparent lemma with a name in
-   the form :n:`@ident`\ :n:`_subterm`\ :n:`{? @num }`.
+   the form :n:`@ident`\ :n:`_subterm`\ :n:`{? @natural }`.
 
    .. warning::
 
@@ -2197,7 +2197,7 @@ Backtraces
 Tracing execution
 ~~~~~~~~~~~~~~~~~
 
-.. cmd:: Info @num @ltac_expr
+.. cmd:: Info @natural @ltac_expr
 
    Applies :token:`ltac_expr` and prints a trace of the tactics that were successfully
    applied, discarding branches that failed.
@@ -2205,7 +2205,7 @@ Tracing execution
 
    This command is valid only in proof mode.  It accepts :ref:`goal-selectors`.
 
-   The number :n:`@num` is the unfolding level of tactics in the trace. At level
+   The number :n:`@natural` is the unfolding level of tactics in the trace. At level
    0, the trace contains a sequence of tactics in the actual script, at level 1,
    the trace will be the concatenation of the traces of these tactics, etc…
 
@@ -2237,12 +2237,12 @@ Tracing execution
    position in the script. In particular, the calls to idtac in branches which failed are
    not printed.
 
-   .. opt:: Info Level @num
+   .. opt:: Info Level @natural
       :name: Info Level
 
       This option is an alternative to the :cmd:`Info` command.
 
-      This will automatically print the same trace as :n:`Info @num` at each
+      This will automatically print the same trace as :n:`Info @natural` at each
       tactic call. The unfolding level can be overridden by a call to the
       :cmd:`Info` command.
 
@@ -2302,11 +2302,11 @@ performance issue.
 
    This flag enables and disables the profiler.
 
-.. cmd:: Show Ltac Profile {? {| CutOff @int | @string } }
+.. cmd:: Show Ltac Profile {? {| CutOff @integer | @string } }
 
    Prints the profile.
 
-   :n:`CutOff @int`
+   :n:`CutOff @integer`
       By default, tactics that account for less than 2% of the total time are not displayed.
       `CutOff` lets you specify a different percentage.
 
@@ -2373,7 +2373,7 @@ performance issue.
    Equivalent to the :cmd:`Reset Ltac Profile` command, which allows
    resetting the profile from tactic scripts for benchmarking purposes.
 
-.. tacn:: show ltac profile {? {| cutoff @int | @string } }
+.. tacn:: show ltac profile {? {| cutoff @integer | @string } }
    :name: show ltac profile
 
    Equivalent to the :cmd:`Show Ltac Profile` command,

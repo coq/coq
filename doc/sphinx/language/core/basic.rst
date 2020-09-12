@@ -111,32 +111,45 @@ Identifiers
   symbols and non-breaking space. :production:`unicode_id_part`
   non-exhaustively includes symbols for prime letters and subscripts.
 
-Numerals
-  Numerals are sequences of digits with an optional fractional part
+Numbers
+  Numbers are sequences of digits with an optional fractional part
   and exponent, optionally preceded by a minus sign. Hexadecimal numerals
-  start with ``0x`` or ``0X``. :n:`@int` is an integer;
-  a numeral without fractional nor exponent parts. :n:`@num` is a non-negative
-  integer.  Underscores embedded in the digits are ignored, for example
+  start with ``0x`` or ``0X``. :n:`@bigint` are integers;
+  numbers without fractional nor exponent parts. :n:`@bignat` are non-negative
+  integers.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
-  .. insertprodn numeral hexdigit
+  .. insertprodn number hexdigit
 
   .. prodn::
-     numeral ::= {? - } @decnum {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnum }
-     | {? - } @hexnum {? . {+ {| @hexdigit | _ } } } {? {| p | P } {? {| + | - } } @decnum }
-     int ::= {? - } @num
-     num ::= {| @decnum | @hexnum }
-     decnum ::= @digit {* {| @digit | _ } }
+     number ::= {? - } @decnat {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnat }
+     | {? - } @hexnat {? . {+ {| @hexdigit | _ } } } {? {| p | P } {? {| + | - } } @decnat }
+     integer ::= {? - } @natural
+     natural ::= @bignat
+     bigint ::= {? - } @bignat
+     bignat ::= {| @decnat | @hexnat }
+     decnat ::= @digit {* {| @digit | _ } }
      digit ::= 0 .. 9
-     hexnum ::= {| 0x | 0X } @hexdigit {* {| @hexdigit | _ } }
+     hexnat ::= {| 0x | 0X } @hexdigit {* {| @hexdigit | _ } }
      hexdigit ::= {| 0 .. 9 | a .. f | A .. F }
 
-  .. todo PR need some code fixes for hex, see PR 11948
+  :n:`@integer` and :n:`@natural` are limited to the range that fits
+  into an OCaml integer (63-bit integers on most architectures).
+  :n:`@bigint` and :n:`@bignat` have no range limitation.
+
+  The :ref:`standard library <thecoqlibrary>` provides some
+  :ref:`interpretations <notation-scopes>` for :n:`@number`. The
+  :cmd:`Number Notation` mechanism offers the user
+  a way to define custom parsers and printers for :n:`@number`.
 
 Strings
   Strings begin and end with ``"`` (double quote).  Use ``""`` to represent
   a double quote character within a string.  In the grammar, strings are
   identified with :production:`string`.
+
+  The :cmd:`String Notation` mechanism offers the
+  user a way to define custom parsers and printers for
+  :token:`string`.
 
 Keywords
   The following character sequences are keywords defined in the main Coq grammar
@@ -292,7 +305,7 @@ rest of the |Coq| manual: :term:`terms <term>` and :term:`types
      .. prodn::
         document ::= {* @sentence }
         sentence ::= {? @attributes } @command .
-        | {? @attributes } {? @num : } @query_command .
+        | {? @attributes } {? @natural : } @query_command .
         | {? @attributes } {? @toplevel_selector : } @ltac_expr {| . | ... }
         | @control_command
 
@@ -434,7 +447,7 @@ gray boxes after the labels "Flag", "Option" and "Table".  In the pdf,
 they appear after a boldface label.  They are listed in the
 :ref:`options_index`.
 
-.. cmd:: Set @setting_name {? {| @int | @string } }
+.. cmd:: Set @setting_name {? {| @integer | @string } }
    :name: Set
 
    If :n:`@setting_name` is a flag, no value may be provided; the flag

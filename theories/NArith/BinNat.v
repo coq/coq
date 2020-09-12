@@ -1007,7 +1007,7 @@ Bind Scope N_scope with N.t N.
 
 (** Exportation of notations *)
 
-Numeral Notation N N.of_num_uint N.to_num_uint : N_scope.
+Number Notation N N.of_num_uint N.to_num_uint : N_scope.
 
 Infix "+" := N.add : N_scope.
 Infix "-" := N.sub : N_scope.

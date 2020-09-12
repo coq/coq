@@ -668,9 +668,9 @@ Definition lxor a b :=
    | neg a, neg b => of_N (N.lxor (Pos.pred_N a) (Pos.pred_N b))
  end.
 
-Numeral Notation Z of_num_int to_num_int : Z_scope.
+Number Notation Z of_num_int to_num_int : Z_scope.
 
 End Z.
 
 (** Re-export the notation for those who just [Import BinIntDef] *)
-Numeral Notation Z Z.of_num_int Z.to_num_int : Z_scope.
+Number Notation Z Z.of_num_int Z.to_num_int : Z_scope.

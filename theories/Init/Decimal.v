@@ -12,7 +12,7 @@
 
 (** These numbers coded in base 10 will be used for parsing and printing
     other Coq numeral datatypes in an human-readable way.
-    See the [Numeral Notation] command.
+    See the [Number Notation] command.
     We represent numbers in base 10 as lists of decimal digits,
     in big-endian order (most significant digit comes first). *)
 
@@ -245,7 +245,7 @@ with succ_double d :=
 End Little.
 
 (** Pseudo-conversion functions used when declaring
-    Numeral Notations on [uint] and [int]. *)
+    Number Notations on [uint] and [int]. *)
 
 Definition uint_of_uint (i:uint) := i.
 Definition int_of_int (i:int) := i.

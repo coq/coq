@@ -330,7 +330,7 @@ Summary of the commands
 
          This command has no effect when used on a typeclass.
 
-.. cmd:: Instance @ident {* @binder } : @term__0 {+ @term} {? | @num} := { {*; @field_def} }
+.. cmd:: Instance @ident {* @binder } : @term__0 {+ @term} {? | @natural} := { {*; @field_def} }
 
    This command is used to declare a typeclass instance named
    :token:`ident` of the class :n:`@term__0` with parameters :token:`term` and
@@ -340,7 +340,7 @@ Summary of the commands
    An arbitrary context of :token:`binders` can be put after the name of the
    instance and before the colon to declare a parameterized instance. An
    optional priority can be declared, 0 being the highest priority as for
-   :tacn:`auto` hints. If the priority :token:`num` is not specified, it defaults to the number
+   :tacn:`auto` hints. If the priority :token:`natural` is not specified, it defaults to the number
    of non-dependent binders of the instance.
 
    This command supports the :attr:`global` attribute that can be
@@ -362,7 +362,7 @@ Summary of the commands
       to fill them.  It works exactly as if no body had been given and
       the :tacn:`refine` tactic has been used first.
 
-   .. cmdv:: Instance @ident {* @binder } : forall {* @binder }, @term__0 {+ @term} {? | @num } := @term
+   .. cmdv:: Instance @ident {* @binder } : forall {* @binder }, @term__0 {+ @term} {? | @natural } := @term
 
       This syntax is used for declaration of singleton class instances or
       for directly giving an explicit term of type :n:`forall {* @binder }, @term__0
@@ -381,11 +381,11 @@ Summary of the commands
 Besides the :cmd:`Class` and :cmd:`Instance` vernacular commands, there are a
 few other commands related to typeclasses.
 
-.. cmd:: Existing Instance {+ @ident} {? | @num}
+.. cmd:: Existing Instance {+ @ident} {? | @natural}
 
    This command adds an arbitrary list of constants whose type ends with
    an applied typeclass to the instance database with an optional
-   priority :token:`num`.  It can be used for redeclaring instances at the end of
+   priority :token:`natural`.  It can be used for redeclaring instances at the end of
    sections, or declaring structure projections as instances. This is
    equivalent to ``Hint Resolve ident : typeclass_instances``, except it
    registers instances for :cmd:`Print Instances`.
@@ -446,10 +446,10 @@ few other commands related to typeclasses.
    + When considering local hypotheses, we use the union of all the modes
      declared in the given databases.
 
-   .. tacv:: typeclasses eauto @num
+   .. tacv:: typeclasses eauto @natural
 
       .. warning::
-         The semantics for the limit :n:`@num`
+         The semantics for the limit :n:`@natural`
          is different than for auto. By default, if no limit is given, the
          search is unbounded. Contrary to :tacn:`auto`, introduction steps are
          counted, which might result in larger limits being necessary when
@@ -581,7 +581,7 @@ Settings
    Otherwise, the search strategy is depth-first search.  The default is off.
    :cmd:`Typeclasses eauto` is another way to set this flag.
 
-.. opt:: Typeclasses Depth @num
+.. opt:: Typeclasses Depth @natural
    :name: Typeclasses Depth
 
    Sets the maximum proof search depth.  The default is unbounded.
@@ -593,7 +593,7 @@ Settings
    also sets :opt:`Typeclasses Debug Verbosity` to 1.  :cmd:`Typeclasses eauto`
    is another way to set this flag.
 
-.. opt:: Typeclasses Debug Verbosity @num
+.. opt:: Typeclasses Debug Verbosity @natural
    :name: Typeclasses Debug Verbosity
 
    Determines how much information is shown for typeclass resolution steps during search.
@@ -604,7 +604,7 @@ Settings
 Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Typeclasses eauto := {? debug} {? {| (dfs) | (bfs) } } @num
+.. cmd:: Typeclasses eauto := {? debug} {? {| (dfs) | (bfs) } } @natural
    :name: Typeclasses eauto
 
    This command allows more global customization of the typeclass
@@ -618,5 +618,5 @@ Typeclasses eauto `:=`
      search (the default) or breadth-first search. The search strategy
      can also be set with :flag:`Typeclasses Iterative Deepening`.
 
-   + :token:`num` This sets the depth limit of the search. The depth
+   + :token:`natural` This sets the depth limit of the search. The depth
      limit can also be set with :opt:`Typeclasses Depth`.

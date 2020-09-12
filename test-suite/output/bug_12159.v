@@ -6,8 +6,8 @@ Definition to_unit (v : Numeral.uint) : option unit
   := match Nat.of_num_uint v with O => Some tt | _ => None end.
 Definition of_unit (v : unit) : Numeral.uint := Nat.to_num_uint 0.
 Definition of_unit' (v : unit) : Numeral.uint := Nat.to_num_uint 1.
-Numeral Notation unit to_unit of_unit : A.
-Numeral Notation unit to_unit of_unit' : B.
+Number Notation unit to_unit of_unit : A.
+Number Notation unit to_unit of_unit' : B.
 Definition f x : unit := x.
 Check f tt.
 Arguments f x%A.

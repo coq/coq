@@ -129,7 +129,7 @@ Definition to_numeral (q:Q) : option Numeral.numeral :=
   | Some q => Some (Numeral.Dec q)
   end.
 
-Numeral Notation Q of_numeral to_numeral : Q_scope.
+Number Notation Q of_numeral to_numeral : Q_scope.
 
 Definition inject_Z (x : Z) := Qmake x 1.
 Arguments inject_Z x%Z.

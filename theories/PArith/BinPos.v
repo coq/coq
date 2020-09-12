@@ -1886,7 +1886,7 @@ Bind Scope positive_scope with Pos.t positive.
 
 (** Exportation of notations *)
 
-Numeral Notation positive Pos.of_num_int Pos.to_num_uint : positive_scope.
+Number Notation positive Pos.of_num_int Pos.to_num_uint : positive_scope.
 
 Infix "+" := Pos.add : positive_scope.
 Infix "-" := Pos.sub : positive_scope.

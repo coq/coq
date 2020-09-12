@@ -100,12 +100,12 @@ The general form of a term with a bindings list is
 
   .. prodn::
      ref ::= @ident
-     | @num
+     | @natural
      bindings_list ::= {+ (@ref := @term) }
      | {+ @term }
 
 + In a bindings list of the form :n:`{+ (@ref:= @term)}`, :n:`@ref` is either an
-  :n:`@ident` or a :n:`@num`. The references are determined according to the type of
+  :n:`@ident` or a :n:`@natural`. The references are determined according to the type of
   :n:`@term`. If :n:`@ref` is an identifier, this identifier has to be bound in the
   type of :n:`@term` and the binding provides the tactic with an instance for the
   parameter of this name. If :n:`@ref` is a number ``n``, it refers to
@@ -484,7 +484,7 @@ following syntax:
      | * |- {? * {? @at_occurrences } }
      | *
      at_occurrences ::= at @occurrences
-     occurrences ::= {? - } {* @num }
+     occurrences ::= {? - } {* @natural }
 
 The role of an occurrence clause is to select a set of occurrences of a term
 in a goal. In the first case, the :n:`@ident {? at {* num}}` parts indicate
@@ -921,11 +921,11 @@ Applying theorems
       This summarizes the different syntactic variants of :n:`apply @term in @ident`
       and :n:`eapply @term in @ident`.
 
-.. tacn:: constructor @num
+.. tacn:: constructor @natural
    :name: constructor
 
    This tactic applies to a goal such that its conclusion is an inductive
-   type (say :g:`I`). The argument :token:`num` must be less or equal to the
+   type (say :g:`I`). The argument :token:`natural` must be less or equal to the
    numbers of constructor(s) of :g:`I`. Let :n:`c__i` be the i-th
    constructor of :g:`I`, then :g:`constructor i` is equivalent to
    :n:`intros; apply c__i`.
@@ -942,7 +942,7 @@ Applying theorems
       :g:`constructor n` where ``n`` is the number of constructors of the head
       of the goal.
 
-   .. tacv:: constructor @num with @bindings_list
+   .. tacv:: constructor @natural with @bindings_list
 
       Let ``c`` be the i-th constructor of :g:`I`, then
       :n:`constructor i with @bindings_list` is equivalent to
@@ -1073,9 +1073,9 @@ Managing the local context
       .. exn:: No such hypothesis in current goal.
          :undocumented:
 
-   .. tacv:: intros until @num
+   .. tacv:: intros until @natural
 
-      This repeats :tacn:`intro` until the :token:`num`\-th non-dependent
+      This repeats :tacn:`intro` until the :token:`natural`\-th non-dependent
       product.
 
       .. example::
@@ -1091,7 +1091,7 @@ Managing the local context
 
       .. exn:: No such hypothesis in current goal.
 
-         This happens when :token:`num` is 0 or is greater than the number of
+         This happens when :token:`natural` is 0 or is greater than the number of
          non-dependent products of the goal.
 
    .. tacv:: intro {? @ident__1 } after @ident__2
@@ -1576,7 +1576,7 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
    This is equivalent to :n:`generalize @term; ... ; generalize @term`.
    Note that the sequence of term :sub:`i` 's are processed from n to 1.
 
-.. tacv:: generalize @term at {+ @num}
+.. tacv:: generalize @term at {+ @natural}
 
    This is equivalent to :n:`generalize @term` but it generalizes only over the
    specified occurrences of :n:`@term` (counting from left to right on the
@@ -1587,7 +1587,7 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
    This is equivalent to :n:`generalize @term` but it uses :n:`@ident` to name
    the generalized hypothesis.
 
-.. tacv:: generalize {+, @term at {+ @num} as @ident}
+.. tacv:: generalize {+, @term at {+ @natural} as @ident}
 
    This is the most general form of :n:`generalize` that combines the previous
    behaviors.
@@ -1619,16 +1619,16 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
              name the variable in the current goal and in the context of the
              existential variable. This can lead to surprising behaviors.
 
-.. tacv:: instantiate (@num := @term)
+.. tacv:: instantiate (@natural := @term)
 
    This variant allows to refer to an existential variable which was not named
-   by the user. The :n:`@num` argument is the position of the existential variable
+   by the user. The :n:`@natural` argument is the position of the existential variable
    from right to left in the goal. Because this variant is not robust to slight
    changes in the goal, its use is strongly discouraged.
 
-.. tacv:: instantiate ( @num := @term ) in @ident
-          instantiate ( @num := @term ) in ( value of @ident )
-          instantiate ( @num := @term ) in ( type of @ident )
+.. tacv:: instantiate ( @natural := @term ) in @ident
+          instantiate ( @natural := @term ) in ( value of @ident )
+          instantiate ( @natural := @term ) in ( type of @ident )
 
    These allow to refer respectively to existential variables occurring in a
    hypothesis or in the body or the type of a local definition.
@@ -1728,13 +1728,13 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       of :tacn:`destruct`, it is erased (to avoid erasure, use parentheses, as
       in :n:`destruct (@ident)`).
 
-   .. tacv:: destruct @num
+   .. tacv:: destruct @natural
 
-      :n:`destruct @num` behaves as :n:`intros until @num`
+      :n:`destruct @natural` behaves as :n:`intros until @natural`
       followed by destruct applied to the last introduced hypothesis.
 
      .. note::
-        For destruction of a numeral, use syntax :n:`destruct (@num)` (not
+        For destruction of a number, use syntax :n:`destruct (@natural)` (not
         very interesting anyway).
 
    .. tacv:: destruct @pattern
@@ -1827,10 +1827,10 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    This tactic behaves as :n:`intros until @ident; case @ident` when :n:`@ident`
    is a quantified variable of the goal.
 
-.. tacv:: simple destruct @num
+.. tacv:: simple destruct @natural
 
-   This tactic behaves as :n:`intros until @num; case @ident` where :n:`@ident`
-   is the name given by :n:`intros until @num` to the :n:`@num` -th
+   This tactic behaves as :n:`intros until @natural; case @ident` where :n:`@ident`
+   is the name given by :n:`intros until @natural` to the :n:`@natural` -th
    non-dependent premise of the goal.
 
 .. tacv:: case_eq @term
@@ -1861,12 +1861,12 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
      @ident; induction @ident`. If :n:`@ident` is not anymore dependent in the
      goal after application of :n:`induction`, it is erased (to avoid erasure,
      use parentheses, as in :n:`induction (@ident)`).
-   + If :n:`@term` is a :n:`@num`, then :n:`induction @num` behaves as
-     :n:`intros until @num` followed by :n:`induction` applied to the last
+   + If :n:`@term` is a :n:`@natural`, then :n:`induction @natural` behaves as
+     :n:`intros until @natural` followed by :n:`induction` applied to the last
      introduced hypothesis.
 
      .. note::
-        For simple induction on a numeral, use syntax induction (num)
+        For simple induction on a number, use syntax induction (number)
         (not very interesting anyway).
 
    + In case term is a hypothesis :n:`@ident` of the context, and :n:`@ident`
@@ -2024,10 +2024,10 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    This tactic behaves as :n:`intros until @ident; elim @ident` when
    :n:`@ident` is a quantified variable of the goal.
 
-.. tacv:: simple induction @num
+.. tacv:: simple induction @natural
 
-   This tactic behaves as :n:`intros until @num; elim @ident` where :n:`@ident`
-   is the name given by :n:`intros until @num` to the :n:`@num`-th non-dependent
+   This tactic behaves as :n:`intros until @natural; elim @ident` where :n:`@ident`
+   is the name given by :n:`intros until @natural` to the :n:`@natural`-th non-dependent
    premise of the goal.
 
 .. tacn:: double induction @ident @ident
@@ -2037,7 +2037,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    :n:`induction @ident; induction @ident` (or
    :n:`induction @ident ; destruct @ident` depending on the exact needs).
 
-.. tacv:: double induction @num__1 @num__2
+.. tacv:: double induction @natural__1 @natural__2
 
    This tactic is deprecated and should be replaced by
    :n:`induction num1; induction num3` where :n:`num3` is the result
@@ -2146,9 +2146,9 @@ and an explanation of the underlying technique.
 .. exn:: Not a discriminable equality.
    :undocumented:
 
-.. tacv:: discriminate @num
+.. tacv:: discriminate @natural
 
-   This does the same thing as :n:`intros until @num` followed by
+   This does the same thing as :n:`intros until @natural` followed by
    :n:`discriminate @ident` where :n:`@ident` is the identifier for the last
    introduced hypothesis.
 
@@ -2157,12 +2157,12 @@ and an explanation of the underlying technique.
    This does the same thing as :n:`discriminate @term` but using the given
    bindings to instantiate parameters or hypotheses of :n:`@term`.
 
-.. tacv:: ediscriminate @num
+.. tacv:: ediscriminate @natural
           ediscriminate @term {? with @bindings_list}
    :name: ediscriminate; _
 
    This works the same as :tacn:`discriminate` but if the type of :token:`term`, or the
-   type of the hypothesis referred to by :token:`num`, has uninstantiated
+   type of the hypothesis referred to by :token:`natural`, has uninstantiated
    parameters, these parameters are left as existential variables.
 
 .. tacv:: discriminate
@@ -2235,9 +2235,9 @@ and an explanation of the underlying technique.
 
       This error is given when one side of the equality is not a constructor.
 
-   .. tacv:: injection @num
+   .. tacv:: injection @natural
 
-      This does the same thing as :n:`intros until @num` followed by
+      This does the same thing as :n:`intros until @natural` followed by
       :n:`injection @ident` where :n:`@ident` is the identifier for the last
       introduced hypothesis.
 
@@ -2246,12 +2246,12 @@ and an explanation of the underlying technique.
       This does the same as :n:`injection @term` but using the given bindings to
       instantiate parameters or hypotheses of :n:`@term`.
 
-   .. tacv:: einjection @num
+   .. tacv:: einjection @natural
              einjection @term {? with @bindings_list}
       :name: einjection; _
 
       This works the same as :n:`injection` but if the type of :n:`@term`, or the
-      type of the hypothesis referred to by :n:`@num`, has uninstantiated
+      type of the hypothesis referred to by :n:`@natural`, has uninstantiated
       parameters, these parameters are left as existential variables.
 
    .. tacv:: injection
@@ -2263,10 +2263,10 @@ and an explanation of the underlying technique.
          :undocumented:
 
    .. tacv:: injection @term {? with @bindings_list} as {+ @simple_intropattern}
-             injection @num as {+ @simple_intropattern}
+             injection @natural as {+ @simple_intropattern}
              injection as {+ @simple_intropattern}
              einjection @term {? with @bindings_list} as {+ @simple_intropattern}
-             einjection @num as {+ @simple_intropattern}
+             einjection @natural as {+ @simple_intropattern}
              einjection as {+ @simple_intropattern}
 
       These variants apply :n:`intros {+ @simple_intropattern}` after the call to
@@ -2278,10 +2278,10 @@ and an explanation of the underlying technique.
       corresponds to a hypothesis.
 
    .. tacv:: injection @term {? with @bindings_list} as @injection_intropattern
-             injection @num as @injection_intropattern
+             injection @natural as @injection_intropattern
              injection as @injection_intropattern
              einjection @term {? with @bindings_list} as @injection_intropattern
-             einjection @num as @injection_intropattern
+             einjection @natural as @injection_intropattern
              einjection as @injection_intropattern
 
       These are equivalent to the previous variants but using instead the
@@ -2330,9 +2330,9 @@ and an explanation of the underlying technique.
    :g:`Prop`). This behavior can be turned off by using the
    :flag:`Keep Proof Equalities` setting.
 
-.. tacv:: inversion @num
+.. tacv:: inversion @natural
 
-   This does the same thing as :n:`intros until @num` then :n:`inversion @ident`
+   This does the same thing as :n:`intros until @natural` then :n:`inversion @ident`
    where :n:`@ident` is the identifier for the last introduced hypothesis.
 
 .. tacv:: inversion_clear @ident
@@ -2375,9 +2375,9 @@ and an explanation of the underlying technique.
          Goal forall l:list nat, contains0 (1 :: l) -> contains0 l.
          intros l H; inversion H as [ | l' p Hl' [Heqp Heql'] ].
 
-.. tacv:: inversion @num as @or_and_intropattern_loc
+.. tacv:: inversion @natural as @or_and_intropattern_loc
 
-   This allows naming the hypotheses introduced by :n:`inversion @num` in the
+   This allows naming the hypotheses introduced by :n:`inversion @natural` in the
    context.
 
 .. tacv:: inversion_clear @ident as @or_and_intropattern_loc
@@ -2625,7 +2625,7 @@ and an explanation of the underlying technique.
 
 .. seealso:: :tacn:`functional inversion`
 
-.. tacn:: fix @ident @num
+.. tacn:: fix @ident @natural
    :name: fix
 
    This tactic is a primitive tactic to start a proof by induction. In
@@ -2633,11 +2633,11 @@ and an explanation of the underlying technique.
    as the ones described in :tacn:`induction`.
 
    In the syntax of the tactic, the identifier :n:`@ident` is the name given to
-   the induction hypothesis. The natural number :n:`@num` tells on which
+   the induction hypothesis. The natural number :n:`@natural` tells on which
    premise of the current goal the induction acts, starting from 1,
    counting both dependent and non dependent products, but skipping local
    definitions. Especially, the current lemma must be composed of at
-   least :n:`@num` products.
+   least :n:`@natural` products.
 
    Like in a fix expression, the induction hypotheses have to be used on
    structurally smaller arguments. The verification that inductive proof
@@ -2646,7 +2646,7 @@ and an explanation of the underlying technique.
    is correct at some time of the interactive development of a proof, use
    the command ``Guarded`` (see Section :ref:`requestinginformation`).
 
-.. tacv:: fix @ident @num with {+ (@ident {+ @binder} [{struct @ident}] : @type)}
+.. tacv:: fix @ident @natural with {+ (@ident {+ @binder} [{struct @ident}] : @type)}
 
    This starts a proof by mutual induction. The statements to be simultaneously
    proved are respectively :g:`forall binder ... binder, type`.
@@ -2756,11 +2756,11 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
 
    + `?` : the tactic :n:`rewrite ?@term` performs the rewrite of :token:`term` as many
      times as possible (perhaps zero time). This form never fails.
-   + :n:`@num?` : works similarly, except that it will do at most :token:`num` rewrites.
+   + :n:`@natural?` : works similarly, except that it will do at most :token:`natural` rewrites.
    + `!` : works as `?`, except that at least one rewrite should succeed, otherwise
      the tactic fails.
-   + :n:`@num!` (or simply :n:`@num`) : precisely :token:`num` rewrites of :token:`term` will be done,
-     leading to failure if these :token:`num` rewrites are not possible.
+   + :n:`@natural!` (or simply :n:`@natural`) : precisely :token:`natural` rewrites of :token:`term` will be done,
+     leading to failure if these :token:`natural` rewrites are not possible.
 
    .. tacv:: erewrite @term
       :name: erewrite
@@ -2937,15 +2937,15 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
       This replaces the occurrences of :n:`@term` by :n:`@term’` in the current goal.
       The term :n:`@term` and :n:`@term’` must be convertible.
 
-   .. tacv:: change @term at {+ @num} with @term’
+   .. tacv:: change @term at {+ @natural} with @term’
 
-      This replaces the occurrences numbered :n:`{+ @num}` of :n:`@term` by :n:`@term’`
+      This replaces the occurrences numbered :n:`{+ @natural}` of :n:`@term` by :n:`@term’`
       in the current goal. The terms :n:`@term` and :n:`@term’` must be convertible.
 
       .. exn:: Too few occurrences.
          :undocumented:
 
-   .. tacv:: change @term {? {? at {+ @num}} with @term} in @ident
+   .. tacv:: change @term {? {? at {+ @natural}} with @term} in @ident
 
       This applies the :tacn:`change` tactic not to the goal but to the hypothesis :n:`@ident`.
 
@@ -2990,9 +2990,9 @@ Performing computations
    | delta {? @delta_flag }
    ref_or_pattern_occ ::= @reference {? at @occs_nums }
    | @one_term {? at @occs_nums }
-   occs_nums ::= {+ {| @num | @ident } }
-   | - {| @num | @ident } {* @int_or_var }
-   int_or_var ::= @int
+   occs_nums ::= {+ {| @natural | @ident } }
+   | - {| @natural | @ident } {* @int_or_var }
+   int_or_var ::= @integer
    | @ident
    unfold_occ ::= @reference {? at @occs_nums }
    pattern_occ ::= @one_term {? at @occs_nums }
@@ -3228,9 +3228,9 @@ the conversion in hypotheses :n:`{+ @ident}`.
    This applies :tacn:`simpl` only to the subterms matching
    :n:`@pattern` in the current goal.
 
-.. tacv:: simpl @pattern at {+ @num}
+.. tacv:: simpl @pattern at {+ @natural}
 
-   This applies :tacn:`simpl` only to the :n:`{+ @num}` occurrences of the subterms
+   This applies :tacn:`simpl` only to the :n:`{+ @natural}` occurrences of the subterms
    matching :n:`@pattern` in the current goal.
 
    .. exn:: Too few occurrences.
@@ -3243,10 +3243,10 @@ the conversion in hypotheses :n:`{+ @ident}`.
    is the unfoldable constant :n:`@qualid` (the constant can be referred to by
    its notation using :n:`@string` if such a notation exists).
 
-.. tacv:: simpl @qualid at {+ @num}
-          simpl @string at {+ @num}
+.. tacv:: simpl @qualid at {+ @natural}
+          simpl @string at {+ @natural}
 
-   This applies :tacn:`simpl` only to the :n:`{+ @num}` applicative subterms whose
+   This applies :tacn:`simpl` only to the :n:`{+ @natural}` applicative subterms whose
    head occurrence is :n:`@qualid` (or :n:`@string`).
 
 .. flag:: Debug RAKAM
@@ -3374,14 +3374,14 @@ the conversion in hypotheses :n:`{+ @ident}`.
    :g:`(fun x:A =>` :math:`\varphi`:g:`(x)) t`. This tactic can be used, for
    instance, when the tactic ``apply`` fails on matching.
 
-.. tacv:: pattern @term at {+ @num}
+.. tacv:: pattern @term at {+ @natural}
 
-   Only the occurrences :n:`{+ @num}` of :n:`@term` are considered for
+   Only the occurrences :n:`{+ @natural}` of :n:`@term` are considered for
    :math:`\beta`-expansion. Occurrences are located from left to right.
 
-.. tacv:: pattern @term at - {+ @num}
+.. tacv:: pattern @term at - {+ @natural}
 
-   All occurrences except the occurrences of indexes :n:`{+ @num }`
+   All occurrences except the occurrences of indexes :n:`{+ @natural }`
    of :n:`@term` are considered for :math:`\beta`-expansion. Occurrences are located from
    left to right.
 
@@ -3394,12 +3394,12 @@ the conversion in hypotheses :n:`{+ @ident}`.
    If :g:`t`:sub:`i` occurs in one of the generated types :g:`A`:sub:`j` these
    occurrences will also be considered and possibly abstracted.
 
-.. tacv:: pattern {+, @term at {+ @num}}
+.. tacv:: pattern {+, @term at {+ @natural}}
 
-   This behaves as above but processing only the occurrences :n:`{+ @num}` of
+   This behaves as above but processing only the occurrences :n:`{+ @natural}` of
    :n:`@term` starting from :n:`@term`.
 
-.. tacv:: pattern {+, @term {? at {? -} {+, @num}}}
+.. tacv:: pattern {+, @term {? at {? -} {+, @natural}}}
 
    This is the most general syntax that combines the different variants.
 
@@ -3556,9 +3556,9 @@ Automation
       :tacn:`simple apply` so it is expected that sometimes :tacn:`auto` will
       fail even if applying manually one of the hints would succeed.
 
-   .. tacv:: auto @num
+   .. tacv:: auto @natural
 
-      Forces the search depth to be :token:`num`. The maximal search depth
+      Forces the search depth to be :token:`natural`. The maximal search depth
       is 5 by default.
 
    .. tacv:: auto with {+ @ident}
@@ -3609,7 +3609,7 @@ Automation
       Behaves like :tacn:`auto` but shows the tactics it tries to solve the goal,
       including failing paths.
 
-   .. tacv:: {? info_}auto {? @num} {? using {+ @qualid}} {? with {+ @ident}}
+   .. tacv:: {? info_}auto {? @natural} {? using {+ @qualid}} {? with {+ @ident}}
 
       This is the most general form, combining the various options.
 
@@ -3664,7 +3664,7 @@ Automation
       Note that ``ex_intro`` should be declared as a hint.
 
 
-   .. tacv:: {? info_}eauto {? @num} {? using {+ @qualid}} {? with {+ @ident}}
+   .. tacv:: {? info_}eauto {? @natural} {? using {+ @qualid}} {? with {+ @ident}}
 
       The various options for :tacn:`eauto` are the same as for :tacn:`auto`.
 
@@ -3827,12 +3827,12 @@ automatically created.
 
       .. deprecated:: 8.10
 
-   .. cmdv:: Hint Resolve @qualid {? | {? @num} {? @pattern}} : @ident
+   .. cmdv:: Hint Resolve @qualid {? | {? @natural} {? @pattern}} : @ident
       :name: Hint Resolve
 
       This command adds :n:`simple apply @qualid` to the hint list with the head
       symbol of the type of :n:`@qualid`. The cost of that hint is the number of
-      subgoals generated by :n:`simple apply @qualid` or :n:`@num` if specified. The
+      subgoals generated by :n:`simple apply @qualid` or :n:`@natural` if specified. The
       associated :n:`@pattern` is inferred from the conclusion of the type of
       :n:`@qualid` or the given :n:`@pattern` if specified. In case the inferred type
       of :n:`@qualid` does not start with a product the tactic added in the hint list
@@ -3930,7 +3930,7 @@ automatically created.
       overwriting the existing settings of opacity. It is advised
       to use this just after a :cmd:`Create HintDb` command.
 
-   .. cmdv:: Hint Extern @num {? @pattern} => @tactic : @ident
+   .. cmdv:: Hint Extern @natural {? @pattern} => @tactic : @ident
       :name: Hint Extern
 
       This hint type is to extend :tacn:`auto` with tactics other than :tacn:`apply` and
@@ -4359,7 +4359,7 @@ some incompatibilities.
 
   This combines the effects of the different variants of :tacn:`firstorder`.
 
-.. opt:: Firstorder Depth @num
+.. opt:: Firstorder Depth @natural
    :name: Firstorder Depth
 
    This option controls the proof-search depth bound.
@@ -4396,10 +4396,10 @@ some incompatibilities.
       congruence.
       Qed.
 
-.. tacv:: congruence @num
+.. tacv:: congruence @natural
 
-  Tries to add at most :token:`num` instances of hypotheses stating quantified equalities
-  to the problem in order to solve it. A bigger value of :token:`num` does not make
+  Tries to add at most :token:`natural` instances of hypotheses stating quantified equalities
+  to the problem in order to solve it. A bigger value of :token:`natural` does not make
   success slower, only failure. You might consider adding some lemmas as
   hypotheses using assert in order for :tacn:`congruence` to use them.
 
@@ -4598,9 +4598,9 @@ symbol :g:`=`.
    then :n:`simplify_eq @ident` first introduces the hypothesis in the local
    context using :n:`intros until @ident`.
 
-.. tacv:: simplify_eq @num
+.. tacv:: simplify_eq @natural
 
-   This does the same thing as :n:`intros until @num` then
+   This does the same thing as :n:`intros until @natural` then
    :n:`simplify_eq @ident` where :n:`@ident` is the identifier for the last
    introduced hypothesis.
 
@@ -4609,12 +4609,12 @@ symbol :g:`=`.
    This does the same as :n:`simplify_eq @term` but using the given bindings to
    instantiate parameters or hypotheses of :n:`@term`.
 
-.. tacv:: esimplify_eq @num
+.. tacv:: esimplify_eq @natural
           esimplify_eq @term {? with @bindings_list}
    :name: esimplify_eq; _
 
    This works the same as :tacn:`simplify_eq` but if the type of :n:`@term`, or the
-   type of the hypothesis referred to by :n:`@num`, has uninstantiated
+   type of the hypothesis referred to by :n:`@natural`, has uninstantiated
    parameters, these parameters are left as existential variables.
 
 .. tacv:: simplify_eq
@@ -4737,12 +4737,12 @@ Non-logical tactics
 ------------------------
 
 
-.. tacn:: cycle @num
+.. tacn:: cycle @integer
    :name: cycle
 
-   Reorders the selected goals so that the first :n:`@num` goals appear after the
+   Reorders the selected goals so that the first :n:`@integer` goals appear after the
    other selected goals.
-   If :n:`@num` is negative, it puts the last :n:`@num` goals at the
+   If :n:`@integer` is negative, it puts the last :n:`@integer` goals at the
    beginning of the list.
    The tactic is only useful with a goal selector, most commonly `all:`.
    Note that other selectors reorder goals; `1,3: cycle 1` is not equivalent
@@ -4761,11 +4761,11 @@ Non-logical tactics
       all: cycle 2.
       all: cycle -3.
 
-.. tacn:: swap @num @num
+.. tacn:: swap @integer @integer
    :name: swap
 
    Exchanges the position of the specified goals.
-   Negative values for :n:`@num` indicate counting goals
+   Negative values for :n:`@integer` indicate counting goals
    backward from the end of the list of selected goals. Goals are indexed from 1.
    The tactic is only useful with a goal selector, most commonly `all:`.
    Note that other selectors reorder goals; `1,3: swap 1 3` is not equivalent
@@ -4913,10 +4913,10 @@ Performance-oriented tactic variants
    .. tacv:: change_no_check @term with @term’
       :undocumented:
 
-   .. tacv:: change_no_check @term at {+ @num} with @term’
+   .. tacv:: change_no_check @term at {+ @natural} with @term’
       :undocumented:
 
-   .. tacv:: change_no_check @term {? {? at {+ @num}} with @term} in @ident
+   .. tacv:: change_no_check @term {? {? at {+ @natural}} with @term} in @ident
 
       .. example::
 

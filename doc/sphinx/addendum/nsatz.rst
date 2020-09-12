@@ -64,7 +64,7 @@ Buchberger algorithm.
 This computation is done after a step of *reification*, which is
 performed using :ref:`typeclasses`.
 
-.. tacv:: nsatz with radicalmax:=@num%N strategy:=@num%Z parameters:=[{*, @ident}] variables:=[{*, @ident}]
+.. tacv:: nsatz with radicalmax:=@natural%N strategy:=@natural%Z parameters:=[{*, @ident}] variables:=[{*, @ident}]
 
    Most complete syntax for `nsatz`.
 

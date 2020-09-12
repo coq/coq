@@ -879,7 +879,7 @@ generated expression and the original.
 Here is a summary of the error messages corresponding to each
 situation:
 
-.. exn:: The constructor @ident expects @num arguments.
+.. exn:: The constructor @ident expects @natural arguments.
          The variable ident is bound several times in pattern term
          Found a constructor of inductive type term while a constructor of term is expected
 
@@ -890,8 +890,8 @@ situation:
 
    The pattern matching is not exhaustive.
 
-.. exn:: The elimination predicate term should be of arity @num (for non \
-         dependent case) or @num (for dependent case).
+.. exn:: The elimination predicate term should be of arity @natural (for non \
+         dependent case) or @natural (for dependent case).
 
    The elimination predicate provided to match has not the expected arity.
 

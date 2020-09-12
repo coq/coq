@@ -15,10 +15,10 @@ Coq objects
 
 Our Coq domain define multiple `objects`_.  Each object has a *signature* (think *type signature*), followed by an optional body (a description of that object).  The following example defines two objects: a variant of the ``simpl`` tactic, and an error that it may raise::
 
-   .. tacv:: simpl @pattern at {+ @num}
+   .. tacv:: simpl @pattern at {+ @natural}
       :name: simpl_at
 
-      This applies ``simpl`` only to the :n:`{+ @num}` occurrences of the subterms
+      This applies ``simpl`` only to the :n:`{+ @natural}` occurrences of the subterms
       matching :n:`@pattern` in the current goal.
 
       .. exn:: Too few occurrences
@@ -46,10 +46,10 @@ Most objects should have a body (i.e. a block of indented text following the sig
 Notations
 ---------
 
-The signatures of most objects can be written using a succinct DSL for Coq notations (think regular expressions written with a Lispy syntax).  A typical signature might look like ``Hint Extern @num {? @pattern} => @tactic``, which means that the ``Hint Extern`` command takes a number (``num``), followed by an optional pattern, and a mandatory tactic.  The language has the following constructs (the full grammar is in `TacticNotations.g </doc/tools/coqrst/notations/TacticNotations.g>`_):
+The signatures of most objects can be written using a succinct DSL for Coq notations (think regular expressions written with a Lispy syntax).  A typical signature might look like ``Hint Extern @natural {? @pattern} => @tactic``, which means that the ``Hint Extern`` command takes a number (``natural``), followed by an optional pattern, and a mandatory tactic.  The language has the following constructs (the full grammar is in `TacticNotations.g </doc/tools/coqrst/notations/TacticNotations.g>`_):
 
 ``@…``
-  A placeholder (``@ident``, ``@num``, ``@tactic``\ …)
+  A placeholder (``@ident``, ``@natural``, ``@tactic``\ …)
 
 ``{? …}``
   an optional block
@@ -80,9 +80,9 @@ As an exercise, what do the following patterns mean?
 
 .. code::
 
-   pattern {+, @term {? at {+ @num}}}
-   generalize {+, @term at {+ @num} as @ident}
-   fix @ident @num with {+ (@ident {+ @binder} {? {struct @ident'}} : @type)}
+   pattern {+, @term {? at {+ @natural}}}
+   generalize {+, @term at {+ @natural} as @ident}
+   fix @ident @natural with {+ (@ident {+ @binder} {? {struct @ident'}} : @type)}
 
 Objects
 -------
@@ -141,7 +141,7 @@ Here is the list of all objects of the Coq domain (The symbol :black_nib: indica
 ``.. opt::`` :black_nib: A Coq option (a setting with non-boolean value, e.g. a string or numeric value).
     Example::
 
-       .. opt:: Hyps Limit @num
+       .. opt:: Hyps Limit @natural
           :name Hyps Limit
 
           Controls the maximum number of hypotheses displayed in goals after
@@ -157,7 +157,7 @@ Here is the list of all objects of the Coq domain (The symbol :black_nib: indica
 
     Example::
 
-        .. prodn:: occ_switch ::= { {? {| + | - } } {* @num } }
+        .. prodn:: occ_switch ::= { {? {| + | - } } {* @natural } }
         term += let: @pattern := @term in @term
         | second_production
 
@@ -178,7 +178,7 @@ Here is the list of all objects of the Coq domain (The symbol :black_nib: indica
 ``.. tacn::`` :black_nib: A tactic, or a tactic notation.
     Example::
 
-       .. tacn:: do @num @expr
+       .. tacn:: do @natural @expr
 
           :token:`expr` is evaluated to ``v`` which must be a tactic value. …
 
