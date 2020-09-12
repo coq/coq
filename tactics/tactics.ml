@@ -1054,12 +1054,15 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
           end
   end
 
-let intro_gen n m f d = intro_then_gen n m f d (fun _ -> Proofview.tclUNIT ())
+let drop_intro_name (_ : Id.t) = Proofview.tclUNIT ()
+
+let intro_gen n m f d = intro_then_gen n m f d drop_intro_name
 let intro_mustbe_force id = intro_gen (NamingMustBe (CAst.make id)) MoveLast true false
-let intro_using id = intro_gen (NamingBasedOn (id, Id.Set.empty)) MoveLast false false
+let intro_using_then id = intro_then_gen (NamingBasedOn (id, Id.Set.empty)) MoveLast false false
+let intro_using id = intro_using_then id drop_intro_name
 
 let intro_then = intro_then_gen (NamingAvoid Id.Set.empty) MoveLast false false
-let intro = intro_gen (NamingAvoid Id.Set.empty) MoveLast false false
+let intro = intro_then drop_intro_name
 let introf = intro_gen (NamingAvoid Id.Set.empty) MoveLast true false
 let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
 
@@ -1074,6 +1077,11 @@ let intro_move idopt hto = intro_move_avoid idopt Id.Set.empty hto
 let rec intros_using = function
   | []     -> Proofview.tclUNIT()
   | str::l -> Tacticals.New.tclTHEN (intro_using str) (intros_using l)
+
+let rec intros_using_then_helper tac acc = function
+  | []     -> tac (List.rev acc)
+  | str::l -> intro_using_then str (fun str' -> intros_using_then_helper tac (str'::acc) l)
+let intros_using_then l tac = intros_using_then_helper tac [] l
 
 let intros = Tacticals.New.tclREPEAT intro
 
