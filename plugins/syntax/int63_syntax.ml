@@ -50,7 +50,7 @@ let _ =
        enable_prim_token_interpretation
          { pt_local = false;
            pt_scope = int63_scope;
-           pt_interp_info = NumeralNotation o;
+           pt_interp_info = NumberNotation o;
            pt_required = (int63_path, int63_module);
            pt_refs = [];
            pt_in_match = false })

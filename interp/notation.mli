@@ -74,7 +74,7 @@ val find_delimiters_scope : ?loc:Loc.t -> delimiters -> scope_name
 
 (** {6 Declare and uses back and forth an interpretation of primitive token } *)
 
-(** A numeral interpreter is the pair of an interpreter for **(hexa)decimal**
+(** A number interpreter is the pair of an interpreter for **(hexa)decimal**
    numbers in terms and an optional interpreter in pattern, if
    non integer or negative numbers are not supported, the interpreter
    must fail with an appropriate error message *)
@@ -84,7 +84,7 @@ type required_module = full_path * string list
 type rawnum = NumTok.Signed.t
 
 (** The unique id string below will be used to refer to a particular
-    registered interpreter/uninterpreter of numeral or string notation.
+    registered interpreter/uninterpreter of number or string notation.
     Using the same uid for different (un)interpreters will fail.
     If at most one interpretation of prim token is used per scope,
     then the scope name could be used as unique id. *)
@@ -106,7 +106,7 @@ val register_bignumeral_interpretation :
 val register_string_interpretation :
   ?allow_overwrite:bool -> prim_token_uid -> string prim_token_interpretation -> unit
 
-(** * Numeral notation *)
+(** * Number notation *)
 
 type prim_token_notation_error =
   | UnexpectedTerm of Constr.t
@@ -131,21 +131,21 @@ type z_pos_ty =
   { z_ty : Names.inductive;
     pos_ty : Names.inductive }
 
-type numeral_ty =
+type number_ty =
   { int : int_ty;
     decimal : Names.inductive;
     hexadecimal : Names.inductive;
-    numeral : Names.inductive }
+    number : Names.inductive }
 
 type target_kind =
-  | Int of int_ty (* Coq.Init.Numeral.int + uint *)
-  | UInt of int_ty (* Coq.Init.Numeral.uint *)
+  | Int of int_ty (* Coq.Init.Number.int + uint *)
+  | UInt of int_ty (* Coq.Init.Number.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
   | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
-  | Numeral of numeral_ty (* Coq.Init.Numeral.numeral + uint + int *)
+  | Number of number_ty (* Coq.Init.Number.number + uint + int *)
   | DecimalInt of int_ty (* Coq.Init.Decimal.int + uint (deprecated) *)
   | DecimalUInt of int_ty (* Coq.Init.Decimal.uint (deprecated) *)
-  | Decimal of numeral_ty (* Coq.Init.Decimal.Decimal + uint + int (deprecated) *)
+  | Decimal of number_ty (* Coq.Init.Decimal.Decimal + uint + int (deprecated) *)
 
 type string_target_kind =
   | ListByte
@@ -162,18 +162,18 @@ type ('target, 'warning) prim_token_notation_obj =
     ty_name : Libnames.qualid; (* for warnings / error messages *)
     warning : 'warning }
 
-type numeral_notation_obj = (target_kind, numnot_option) prim_token_notation_obj
+type number_notation_obj = (target_kind, numnot_option) prim_token_notation_obj
 type string_notation_obj = (string_target_kind, unit) prim_token_notation_obj
 
 type prim_token_interp_info =
     Uid of prim_token_uid
-  | NumeralNotation of numeral_notation_obj
+  | NumberNotation of number_notation_obj
   | StringNotation of string_notation_obj
 
 type prim_token_infos = {
   pt_local : bool; (** Is this interpretation local? *)
   pt_scope : scope_name; (** Concerned scope *)
-  pt_interp_info : prim_token_interp_info; (** Unique id "pointing" to (un)interp functions, OR a numeral notation object describing (un)interp functions *)
+  pt_interp_info : prim_token_interp_info; (** Unique id "pointing" to (un)interp functions, OR a number notation object describing (un)interp functions *)
   pt_required : required_module; (** Module that should be loaded first *)
   pt_refs : GlobRef.t list; (** Entry points during uninterpretation *)
   pt_in_match : bool (** Is this prim token legal in match patterns ? *)

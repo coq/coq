@@ -357,18 +357,18 @@ let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 let make_notation_gen loc ntn mknot mkprim destprim l bl =
   match snd ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
-    | "- _", [Some (Numeral p)] when not (NumTok.Signed.is_zero p) ->
+    | "- _", [Some (Number p)] when not (NumTok.Signed.is_zero p) ->
         assert (bl=[]);
         mknot (loc,ntn,([mknot (loc,(InConstrEntry,"( _ )"),l,[])]),[])
     | _ ->
         match decompose_notation_key ntn, l with
         | (InConstrEntry,[Terminal "-"; Terminal x]), [] ->
            begin match NumTok.Unsigned.parse_string x with
-           | Some n -> mkprim (loc, Numeral (NumTok.SMinus,n))
+           | Some n -> mkprim (loc, Number (NumTok.SMinus,n))
            | None -> mknot (loc,ntn,l,bl) end
         | (InConstrEntry,[Terminal x]), [] ->
            begin match NumTok.Unsigned.parse_string x with
-           | Some n -> mkprim (loc, Numeral (NumTok.SPlus,n))
+           | Some n -> mkprim (loc, Number (NumTok.SPlus,n))
            | None -> mknot (loc,ntn,l,bl) end
         | _ -> mknot (loc,ntn,l,bl)
 
@@ -915,7 +915,7 @@ let extern_float f scopes =
       let hex = !Flags.raw_print || not (get_printing_float ()) in
       if hex then Float64.to_hex_string f else Float64.to_string f in
     let n = NumTok.Signed.of_string s in
-    extern_prim_token_delimiter_if_required (Numeral n)
+    extern_prim_token_delimiter_if_required (Number n)
       "float" "float_scope" scopes
 
 (**********************************************************************)
@@ -1097,7 +1097,7 @@ let rec extern inctx ?impargs scopes vars r =
 
   | GInt i ->
      extern_prim_token_delimiter_if_required
-       (Numeral (NumTok.Signed.of_int_string (Uint63.to_string i)))
+       (Number (NumTok.Signed.of_int_string (Uint63.to_string i)))
        "int63" "int63_scope" (snd scopes)
 
   | GFloat f -> extern_float f (snd scopes)

@@ -77,8 +77,8 @@ let tag_var = tag Tag.variable
     | LevelSome -> true
 
   let prec_of_prim_token = function
-    | Numeral (NumTok.SPlus,_) -> lposint
-    | Numeral (NumTok.SMinus,_) -> lnegint
+    | Number (NumTok.SPlus,_) -> lposint
+    | Number (NumTok.SMinus,_) -> lnegint
     | String _ -> latom
 
   let print_hunks n pr pr_patt pr_binders (terms, termlists, binders, binderlists) unps =
@@ -222,7 +222,7 @@ let tag_var = tag Tag.variable
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,4)) (pr ltop) t
 
   let pr_prim_token = function
-    | Numeral n -> NumTok.Signed.print n
+    | Number n -> NumTok.Signed.print n
     | String s -> qs s
 
   let pr_evar pr id l =

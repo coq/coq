@@ -408,8 +408,8 @@ match e with
 | TTClosedBinderList _ -> { subst with binderlists = List.flatten v :: subst.binderlists }
 | TTBigint ->
   begin match forpat with
-  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (NumTok.Signed.of_int_string v)))
-  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Numeral (NumTok.Signed.of_int_string v)))
+  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Number (NumTok.Signed.of_int_string v)))
+  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Number (NumTok.Signed.of_int_string v)))
   end
 | TTReference ->
   begin match forpat with

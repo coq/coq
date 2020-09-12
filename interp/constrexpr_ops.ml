@@ -44,13 +44,13 @@ let names_of_local_binders bl =
 (**********************************************************************)
 (* Functions on constr_expr *)
 
-(* Note: redundant Numeral representations, such as -0 and +0 (and others),
+(* Note: redundant Number representations, such as -0 and +0 (and others),
    are considered different here. *)
 
 let prim_token_eq t1 t2 = match t1, t2 with
-| Numeral n1, Numeral n2 -> NumTok.Signed.equal n1 n2
+| Number n1, Number n2 -> NumTok.Signed.equal n1 n2
 | String s1, String s2 -> String.equal s1 s2
-| (Numeral _ | String _), _ -> false
+| (Number _ | String _), _ -> false
 
 let explicitation_eq ex1 ex2 = match ex1, ex2 with
 | ExplByPos (i1, id1), ExplByPos (i2, id2) ->

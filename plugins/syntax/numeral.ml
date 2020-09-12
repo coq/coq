@@ -90,7 +90,7 @@ let locate_number () =
         int = int_ty;
         decimal = unsafe_locate_ind q_dec;
         hexadecimal = unsafe_locate_ind q_hex;
-        numeral = unsafe_locate_ind q_num;
+        number = unsafe_locate_ind q_num;
       } in
     Some (int_ty, mkRefC q_int, mkRefC q_uint, mkRefC q_dint, mkRefC q_duint,
           num_ty, mkRefC q_num, mkRefC q_dec)
@@ -151,8 +151,8 @@ let vernac_number_notation local ty f g scope opts =
     | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma f (arrow cint (opt cty)) -> Int int_ty, Option
     | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma f (arrow cuint cty) -> UInt int_ty, Direct
     | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma f (arrow cuint (opt cty)) -> UInt int_ty, Option
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum cty) -> Numeral num_ty, Direct
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum (opt cty)) -> Numeral num_ty, Option
+    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum cty) -> Number num_ty, Direct
+    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum (opt cty)) -> Number num_ty, Option
     | Some (int_ty, _, _, cint, _, _, _, _) when has_type env sigma f (arrow cint cty) -> DecimalInt int_ty, Direct
     | Some (int_ty, _, _, cint, _, _, _, _) when has_type env sigma f (arrow cint (opt cty)) -> DecimalInt int_ty, Option
     | Some (int_ty, _, _, _, cuint, _, _, _) when has_type env sigma f (arrow cuint cty) -> DecimalUInt int_ty, Direct
@@ -176,8 +176,8 @@ let vernac_number_notation local ty f g scope opts =
     | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma g (arrow cty (opt cint)) -> Int int_ty, Option
     | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma g (arrow cty cuint) -> UInt int_ty, Direct
     | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma g (arrow cty (opt cuint)) -> UInt int_ty, Option
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty cnum) -> Numeral num_ty, Direct
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty (opt cnum)) -> Numeral num_ty, Option
+    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty cnum) -> Number num_ty, Direct
+    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty (opt cnum)) -> Number num_ty, Option
     | Some (int_ty, _, _, cint, _, _, _, _) when has_type env sigma g (arrow cty cint) -> DecimalInt int_ty, Direct
     | Some (int_ty, _, _, cint, _, _, _, _) when has_type env sigma g (arrow cty (opt cint)) -> DecimalInt int_ty, Option
     | Some (int_ty, _, _, _, cuint, _, _, _) when has_type env sigma g (arrow cty cuint) -> DecimalUInt int_ty, Direct
@@ -209,7 +209,7 @@ let vernac_number_notation local ty f g scope opts =
   let i =
        { pt_local = local;
          pt_scope = scope;
-         pt_interp_info = NumeralNotation o;
+         pt_interp_info = NumberNotation o;
          pt_required = Nametab.path_of_global (GlobRef.IndRef tyc),[];
          pt_refs = constructors;
          pt_in_match = true }

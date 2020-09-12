@@ -32,7 +32,7 @@ open NumTok
     fail if a number has no interpretation in the scope (e.g. there is
     no interpretation for negative numbers in [nat]); interpreters both for
     terms and patterns can be set; these interpreters are in permanent table
-    [numeral_interpreter_tab]
+    [number_interpreter_tab]
   - a set of ML printers for expressions denoting numbers parsable in
     this scope
   - a set of interpretations for infix (more generally distfix) notations
@@ -446,13 +446,13 @@ module InnerPrimToken = struct
 
   let do_interp ?loc interp primtok =
     match primtok, interp with
-    | Numeral n, RawNumInterp interp -> interp ?loc n
-    | Numeral n, BigNumInterp interp ->
+    | Number n, RawNumInterp interp -> interp ?loc n
+    | Number n, BigNumInterp interp ->
       (match NumTok.Signed.to_bigint n with
        | Some n -> interp ?loc n
        | None -> raise Not_found)
     | String s, StringInterp interp -> interp ?loc s
-    | (Numeral _ | String _),
+    | (Number _ | String _),
       (RawNumInterp _ | BigNumInterp _ | StringInterp _) -> raise Not_found
 
   type uninterpreter =
@@ -466,16 +466,16 @@ module InnerPrimToken = struct
     | StringUninterp f, StringUninterp f' -> f == f'
     | _ -> false
 
-  let mkNumeral n =
-    Numeral (NumTok.Signed.of_bigint CDec n)
+  let mkNumber n =
+    Number (NumTok.Signed.of_bigint CDec n)
 
   let mkString = function
     | None -> None
     | Some s -> if Unicode.is_utf8 s then Some (String s) else None
 
   let do_uninterp uninterp g = match uninterp with
-    | RawNumUninterp u -> Option.map (fun (s,n) -> Numeral (s,n)) (u g)
-    | BigNumUninterp u -> Option.map mkNumeral (u g)
+    | RawNumUninterp u -> Option.map (fun (s,n) -> Number (s,n)) (u g)
+    | BigNumUninterp u -> Option.map mkNumber (u g)
     | StringUninterp u -> mkString (u g)
 
 end
@@ -495,7 +495,7 @@ let prim_token_uninterpreters =
   (Hashtbl.create 7 : (prim_token_uid, InnerPrimToken.uninterpreter) Hashtbl.t)
 
 (*******************************************************)
-(* Numeral notation interpretation                     *)
+(* Number notation interpretation                      *)
 type prim_token_notation_error =
   | UnexpectedTerm of Constr.t
   | UnexpectedNonOptionTerm of Constr.t
@@ -519,21 +519,21 @@ type z_pos_ty =
   { z_ty : Names.inductive;
     pos_ty : Names.inductive }
 
-type numeral_ty =
+type number_ty =
   { int : int_ty;
     decimal : Names.inductive;
     hexadecimal : Names.inductive;
-    numeral : Names.inductive }
+    number : Names.inductive }
 
 type target_kind =
-  | Int of int_ty (* Coq.Init.Numeral.int + uint *)
-  | UInt of int_ty (* Coq.Init.Numeral.uint *)
+  | Int of int_ty (* Coq.Init.Number.int + uint *)
+  | UInt of int_ty (* Coq.Init.Number.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
   | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
-  | Numeral of numeral_ty (* Coq.Init.Numeral.numeral + uint + int *)
+  | Number of number_ty (* Coq.Init.Number.number + uint + int *)
   | DecimalInt of int_ty (* Coq.Init.Decimal.int + uint (deprecated) *)
   | DecimalUInt of int_ty (* Coq.Init.Decimal.uint (deprecated) *)
-  | Decimal of numeral_ty (* Coq.Init.Decimal.Decimal + uint + int (deprecated) *)
+  | Decimal of number_ty (* Coq.Init.Decimal.Decimal + uint + int (deprecated) *)
 
 type string_target_kind =
   | ListByte
@@ -550,11 +550,11 @@ type ('target, 'warning) prim_token_notation_obj =
     ty_name : Libnames.qualid; (* for warnings / error messages *)
     warning : 'warning }
 
-type numeral_notation_obj = (target_kind, numnot_option) prim_token_notation_obj
+type number_notation_obj = (target_kind, numnot_option) prim_token_notation_obj
 type string_notation_obj = (string_target_kind, unit) prim_token_notation_obj
 
 module PrimTokenNotation = struct
-(** * Code shared between Numeral notation and String notation *)
+(** * Code shared between Number notation and String notation *)
 (** Reduction
 
     The constr [c] below isn't necessarily well-typed, since we
@@ -588,7 +588,7 @@ exception NotAValidPrimToken
     to [constr] for the subset that concerns us.
 
     Note that if you update [constr_of_glob], you should update the
-    corresponding numeral notation *and* string notation doc in
+    corresponding number notation *and* string notation doc in
     doc/sphinx/user-extensions/syntax-extensions.rst that describes
     what it means for a term to be ground / to be able to be
     considered for parsing. *)
@@ -670,8 +670,8 @@ let rec int63_of_pos_bigint i =
       (Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo))
     else Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo)
 
-module Numeral = struct
-(** * Numeral notation *)
+module Numbers = struct
+(** * Number notation *)
 open PrimTokenNotation
 
 let warn_large_num =
@@ -727,7 +727,7 @@ let coqint_of_rawnum inds c (sign,n) =
   let pos_neg = match sign with SPlus -> 1 | SMinus -> 2 in
   mkApp (mkConstruct (ind, pos_neg), [|uint|])
 
-let coqnumeral_of_rawnum inds c n =
+let coqnumber_of_rawnum inds c n =
   let ind = match c with CDec -> inds.decimal | CHex -> inds.hexadecimal in
   let i, f, e = NumTok.Signed.to_int_frac_and_exponent n in
   let i = coqint_of_rawnum inds.int c i in
@@ -744,14 +744,14 @@ let mkDecHex ind c n = match c with
 
 exception NonDecimal
 
-let decimal_coqnumeral_of_rawnum inds n =
+let decimal_coqnumber_of_rawnum inds n =
   if NumTok.Signed.classify n <> CDec then raise NonDecimal;
-  coqnumeral_of_rawnum inds CDec n
+  coqnumber_of_rawnum inds CDec n
 
-let coqnumeral_of_rawnum inds n =
+let coqnumber_of_rawnum inds n =
   let c = NumTok.Signed.classify n in
-  let n = coqnumeral_of_rawnum inds c n in
-  mkDecHex inds.numeral c n
+  let n = coqnumber_of_rawnum inds c n in
+  mkDecHex inds.number c n
 
 let decimal_coquint_of_rawnum inds n =
   if NumTok.UnsignedNat.classify n <> CDec then raise NonDecimal;
@@ -801,7 +801,7 @@ let rawnum_of_coqint cl c =
       | _ -> raise NotAValidPrimToken)
   | _ -> raise NotAValidPrimToken
 
-let rawnum_of_coqnumeral cl c =
+let rawnum_of_coqnumber cl c =
   let of_ife i f e =
     let n = rawnum_of_coqint cl i in
     let f = try Some (rawnum_of_coquint cl f) with NotAValidPrimToken -> None in
@@ -820,12 +820,12 @@ let destDecHex c = match Constr.kind c with
       | _ -> raise NotAValidPrimToken)
   | _ -> raise NotAValidPrimToken
 
-let decimal_rawnum_of_coqnumeral c =
-  rawnum_of_coqnumeral CDec c
+let decimal_rawnum_of_coqnumber c =
+  rawnum_of_coqnumber CDec c
 
-let rawnum_of_coqnumeral c =
+let rawnum_of_coqnumber c =
   let cl, c = destDecHex c in
-  rawnum_of_coqnumeral cl c
+  rawnum_of_coqnumber cl c
 
 let decimal_rawnum_of_coquint c =
   rawnum_of_coquint CDec c
@@ -947,9 +947,9 @@ let interp o ?loc n =
        interp_int63 ?loc (NumTok.SignedNat.to_bigint n)
     | (Int _ | UInt _ | DecimalInt _ | DecimalUInt _ | Z _ | Int63), _ ->
        no_such_prim_token "number" ?loc o.ty_name
-    | Numeral numeral_ty, _ -> coqnumeral_of_rawnum numeral_ty n
-    | Decimal numeral_ty, _ ->
-       (try decimal_coqnumeral_of_rawnum numeral_ty n
+    | Number number_ty, _ -> coqnumber_of_rawnum number_ty n
+    | Decimal number_ty, _ ->
+       (try decimal_coqnumber_of_rawnum number_ty n
         with NonDecimal -> no_such_prim_token "number" ?loc o.ty_name)
   in
   let env = Global.env () in
@@ -959,12 +959,12 @@ let interp o ?loc n =
   match o.warning, snd o.to_kind with
   | Abstract threshold, Direct when NumTok.Signed.is_bigger_int_than n threshold ->
      warn_abstract_large_num (o.ty_name,o.to_ty);
-     glob_of_constr "numeral" ?loc env sigma (mkApp (to_ty,[|c|]))
+     glob_of_constr "number" ?loc env sigma (mkApp (to_ty,[|c|]))
   | _ ->
      let res = eval_constr_app env sigma to_ty c in
      match snd o.to_kind with
-     | Direct -> glob_of_constr "numeral" ?loc env sigma res
-     | Option -> interp_option "number" "numeral" o.ty_name ?loc env sigma res
+     | Direct -> glob_of_constr "number" ?loc env sigma res
+     | Option -> interp_option "number" "number" o.ty_name ?loc env sigma res
 
 let uninterp o n =
   PrimTokenNotation.uninterp
@@ -973,10 +973,10 @@ let uninterp o n =
       | (UInt _, c) -> NumTok.Signed.of_nat (rawnum_of_coquint c)
       | (Z _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_z c)
       | (Int63, c) -> NumTok.Signed.of_bigint CDec (bigint_of_int63 c)
-      | (Numeral _, c) -> rawnum_of_coqnumeral c
+      | (Number _, c) -> rawnum_of_coqnumber c
       | (DecimalInt _, c) -> NumTok.Signed.of_int (decimal_rawnum_of_coqint c)
       | (DecimalUInt _, c) -> NumTok.Signed.of_nat (decimal_rawnum_of_coquint c)
-      | (Decimal _, c) -> decimal_rawnum_of_coqnumeral c
+      | (Decimal _, c) -> decimal_rawnum_of_coqnumber c
     end o n
 end
 
@@ -1081,21 +1081,21 @@ end
 
 (* A [prim_token_infos], which is synchronized with the document
    state, either contains a unique id pointing to an unsynchronized
-   prim token function, or a numeral notation object describing how to
+   prim token function, or a number notation object describing how to
    interpret and uninterpret.  We provide [prim_token_infos] because
    we expect plugins to provide their own interpretation functions,
-   rather than going through numeral notations, which are available as
+   rather than going through number notations, which are available as
    a vernacular. *)
 
 type prim_token_interp_info =
     Uid of prim_token_uid
-  | NumeralNotation of numeral_notation_obj
+  | NumberNotation of number_notation_obj
   | StringNotation of string_notation_obj
 
 type prim_token_infos = {
   pt_local : bool; (** Is this interpretation local? *)
   pt_scope : scope_name; (** Concerned scope *)
-  pt_interp_info : prim_token_interp_info; (** Unique id "pointing" to (un)interp functions, OR a numeral notation object describing (un)interp functions *)
+  pt_interp_info : prim_token_interp_info; (** Unique id "pointing" to (un)interp functions, OR a number notation object describing (un)interp functions *)
   pt_required : required_module; (** Module that should be loaded first *)
   pt_refs : GlobRef.t list; (** Entry points during uninterpretation *)
   pt_in_match : bool (** Is this prim token legal in match patterns ? *)
@@ -1119,7 +1119,7 @@ let hashtbl_check_and_set allow_overwrite uid f h eq =
    | _ ->
       user_err ~hdr:"prim_token_interpreter"
        (str "Unique identifier " ++ str uid ++
-        str " already used to register a numeral or string (un)interpreter.")
+        str " already used to register a number or string (un)interpreter.")
 
 let register_gen_interpretation allow_overwrite uid (interp, uninterp) =
   hashtbl_check_and_set
@@ -1220,7 +1220,7 @@ let check_required_module ?loc sc (sp,d) =
         (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++
          str (List.last d) ++ str ".")
 
-(* Look if some notation or numeral printer in [scope] can be used in
+(* Look if some notation or number printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
 
 let find_with_delimiters = function
@@ -1237,7 +1237,7 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
       | NotationInScope scope' when String.equal scope scope' ->
         Some (None,None)
       | _ ->
-        (* If the most recently open scope has a notation/numeral printer
+        (* If the most recently open scope has a notation/number printer
            but not the expected one then we need delimiters *)
         if find scope then
           find_with_delimiters ntn_scope
@@ -1375,8 +1375,8 @@ let find_notation ntn sc =
   | _ -> raise Not_found
 
 let notation_of_prim_token = function
-  | Constrexpr.Numeral (SPlus,n) -> InConstrEntry, NumTok.Unsigned.sprint n
-  | Constrexpr.Numeral (SMinus,n) -> InConstrEntry, "- "^NumTok.Unsigned.sprint n
+  | Constrexpr.Number (SPlus,n) -> InConstrEntry, NumTok.Unsigned.sprint n
+  | Constrexpr.Number (SMinus,n) -> InConstrEntry, "- "^NumTok.Unsigned.sprint n
   | String _ -> raise Not_found
 
 let find_prim_token check_allowed ?loc p sc =
@@ -1394,7 +1394,7 @@ let find_prim_token check_allowed ?loc p sc =
   check_required_module ?loc sc spdir;
   let interp = match info with
     | Uid uid -> Hashtbl.find prim_token_interpreters uid
-    | NumeralNotation o -> InnerPrimToken.RawNumInterp (Numeral.interp o)
+    | NumberNotation o -> InnerPrimToken.RawNumInterp (Numbers.interp o)
     | StringNotation o -> InnerPrimToken.StringInterp (Strings.interp o)
   in
   let pat = InnerPrimToken.do_interp ?loc interp p in
@@ -1411,8 +1411,8 @@ let interp_prim_token_gen ?loc g p local_scopes =
     let _, info = Exninfo.capture exn in
     user_err ?loc ~info ~hdr:"interp_prim_token"
     ((match p with
-      | Numeral _ ->
-         str "No interpretation for numeral " ++ pr_notation (notation_of_prim_token p)
+      | Number _ ->
+         str "No interpretation for number " ++ pr_notation (notation_of_prim_token p)
       | String s -> str "No interpretation for string " ++ qs s) ++ str ".")
 
 let interp_prim_token ?loc =
@@ -1659,14 +1659,14 @@ let availability_of_prim_token n printer_scope local_scopes =
       let uid = snd (String.Map.find scope !prim_token_interp_infos) in
       let open InnerPrimToken in
       match n, uid with
-      | Constrexpr.Numeral _, NumeralNotation _ -> true
-      | _, NumeralNotation _ -> false
+      | Constrexpr.Number _, NumberNotation _ -> true
+      | _, NumberNotation _ -> false
       | String _, StringNotation _ -> true
       | _, StringNotation _ -> false
       | _, Uid uid ->
         let interp = Hashtbl.find prim_token_interpreters uid in
         match n, interp with
-        | Constrexpr.Numeral _, (RawNumInterp _ | BigNumInterp _) -> true
+        | Constrexpr.Number _, (RawNumInterp _ | BigNumInterp _) -> true
         | String _, StringInterp _ -> true
         | _ -> false
     with Not_found -> false
@@ -1681,7 +1681,7 @@ let rec find_uninterpretation need_delim def find = function
         def
   | OpenScopeItem scope :: scopes ->
       (try find need_delim scope
-       with Not_found -> find_uninterpretation need_delim def find scopes)  (* TODO: here we should also update the need_delim list with all regular notations in scope [scope] that could shadow a numeral notation *)
+       with Not_found -> find_uninterpretation need_delim def find scopes)  (* TODO: here we should also update the need_delim list with all regular notations in scope [scope] that could shadow a number notation *)
   | LonelyNotationItem ntn::scopes ->
       find_uninterpretation (ntn::need_delim) def find scopes
 
@@ -1693,7 +1693,7 @@ let uninterp_prim_token c local_scopes =
        try
          let uninterp = match info with
            | Uid uid -> Hashtbl.find prim_token_uninterpreters uid
-           | NumeralNotation o -> InnerPrimToken.RawNumUninterp (Numeral.uninterp o)
+           | NumberNotation o -> InnerPrimToken.RawNumUninterp (Numbers.uninterp o)
            | StringNotation o -> InnerPrimToken.StringUninterp (Strings.uninterp o)
          in
          match InnerPrimToken.do_uninterp uninterp (AnyGlobConstr c) with

@@ -49,8 +49,8 @@ val check_keyword : string -> unit
 (** When string is not an ident, returns a keyword. *)
 val terminal : string -> string Tok.p
 
-(** Precondition: the input is a numeral (c.f. [NumTok.t]) *)
-val terminal_numeral : string -> NumTok.Unsigned.t Tok.p
+(** Precondition: the input is a number (c.f. [NumTok.t]) *)
+val terminal_number : string -> NumTok.Unsigned.t Tok.p
 
 (** The lexer of Coq: *)
 

@@ -823,7 +823,7 @@ let token_text : type c. c Tok.p -> string = function
   | PKEYWORD t -> "'" ^ t ^ "'"
   | PIDENT None -> "identifier"
   | PIDENT (Some t) -> "'" ^ t ^ "'"
-  | PNUMBER None -> "numeral"
+  | PNUMBER None -> "number"
   | PNUMBER (Some n) -> "'" ^ NumTok.Unsigned.sprint n ^ "'"
   | PSTRING None -> "string"
   | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
@@ -916,7 +916,7 @@ let terminal s =
   if is_ident_not_keyword s then PIDENT (Some s)
   else PKEYWORD s
 
-(* Precondition: the input is a numeral (c.f. [NumTok.t]) *)
-let terminal_numeral s = match NumTok.Unsigned.parse_string s with
+(* Precondition: the input is a number (c.f. [NumTok.t]) *)
+let terminal_number s = match NumTok.Unsigned.parse_string s with
   | Some n -> PNUMBER (Some n)
-  | None -> failwith "numeral token expected."
+  | None -> failwith "number token expected."

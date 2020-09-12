@@ -8,20 +8,20 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Numerals in different forms: signed or unsigned, possibly with
+(** Numbers in different forms: signed or unsigned, possibly with
     fractional part and exponent.
 
-    Numerals are represented using raw strings of (hexa)decimal
+    Numbers are represented using raw strings of (hexa)decimal
     literals and a separate sign flag.
 
     Note that this representation is not unique, due to possible
     multiple leading or trailing zeros, and -0 = +0, for instances.
-    The reason to keep the numeral exactly as it was parsed is that
-    specific notations can be declared for specific numerals
+    The reason to keep the number exactly as it was parsed is that
+    specific notations can be declared for specific numbers
     (e.g. [Notation "0" := False], or [Notation "00" := (nil,nil)], or
     [Notation "2e1" := ...]). Those notations override the generic
-    interpretation as numeral. So, one has to record the form of the
-    numeral which exactly matches the notation. *)
+    interpretation as number. So, one has to record the form of the
+    number which exactly matches the notation. *)
 
 type sign = SPlus | SMinus
 
@@ -44,7 +44,7 @@ sig
 
   val sprint : t -> string
   val print : t -> Pp.t
-    (** [sprint] and [print] returns the numeral as it was parsed, for printing *)
+    (** [sprint] and [print] returns the number as it was parsed, for printing *)
 
   val classify : t -> num_class
 
@@ -69,7 +69,7 @@ sig
   val to_bigint : t -> Z.t
 end
 
-(** {6 Unsigned decimal numerals } *)
+(** {6 Unsigned decimal numbers } *)
 
 module Unsigned :
 sig
@@ -80,12 +80,12 @@ sig
 
   val sprint : t -> string
   val print : t -> Pp.t
-    (** [sprint] and [print] returns the numeral as it was parsed, for printing *)
+    (** [sprint] and [print] returns the number as it was parsed, for printing *)
 
   val parse : char Stream.t -> t
-    (** Parse a positive Coq numeral.
+    (** Parse a positive Coq number.
         Precondition: the first char on the stream is already known to be a digit (\[0-9\]).
-        Precondition: at least two extra chars after the numeral to parse.
+        Precondition: at least two extra chars after the number to parse.
 
         The recognized syntax is:
         - integer part: \[0-9\]\[0-9_\]*
@@ -97,13 +97,13 @@ sig
         - exponent part: empty or \[pP\]\[+-\]?\[0-9\]\[0-9_\]* *)
 
   val parse_string : string -> t option
-    (** Parse the string as a non negative Coq numeral, if possible *)
+    (** Parse the string as a non negative Coq number, if possible *)
 
   val classify : t -> num_class
 
 end
 
-(** {6 Signed decimal numerals } *)
+(** {6 Signed decimal numbers } *)
 
 module Signed :
 sig
@@ -117,10 +117,10 @@ sig
 
   val sprint : t -> string
   val print : t -> Pp.t
-    (** [sprint] and [print] returns the numeral as it was parsed, for printing *)
+    (** [sprint] and [print] returns the number as it was parsed, for printing *)
 
   val parse_string : string -> t option
-    (** Parse the string as a signed Coq numeral, if possible *)
+    (** Parse the string as a signed Coq number, if possible *)
 
   val of_int_string : string -> t
     (** Convert from a string in the syntax of OCaml's int/int64 *)

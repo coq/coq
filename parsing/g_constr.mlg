@@ -173,10 +173,10 @@ GRAMMAR EXTEND Gram
       [ c = atomic_constr -> { c }
       | c = term_match -> { c }
       | "("; c = term LEVEL "200"; ")" ->
-        { (* Preserve parentheses around numerals so that constrintern does not
-             collapse -(3) into the numeral -3. *)
+        { (* Preserve parentheses around numbers so that constrintern does not
+             collapse -(3) into the number -3. *)
           (match c.CAst.v with
-            | CPrim (Numeral (NumTok.SPlus,n)) ->
+            | CPrim (Number (NumTok.SPlus,n)) ->
                 CAst.make ~loc @@ CNotation(None,(InConstrEntry,"( _ )"),([c],[],[],[]))
             | _ -> c) }
       | "{|"; c = record_declaration; bar_cbrace -> { c }
@@ -258,7 +258,7 @@ GRAMMAR EXTEND Gram
   atomic_constr:
     [ [ g = global; i = univ_annot -> { CAst.make ~loc @@ CRef (g,i) }
       | s = sort   -> { CAst.make ~loc @@  CSort s }
-      | n = NUMBER-> { CAst.make ~loc @@ CPrim (Numeral (NumTok.SPlus,n)) }
+      | n = NUMBER-> { CAst.make ~loc @@ CPrim (Number (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPrim (String s) }
       | "_"      -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) }
       | "?"; "["; id = identref; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id.CAst.v, None) }
@@ -362,15 +362,15 @@ GRAMMAR EXTEND Gram
       | "{|"; pat = record_patterns; bar_cbrace -> { CAst.make ~loc @@ CPatRecord pat }
       | "_" -> { CAst.make ~loc @@ CPatAtom None }
       | "("; p = pattern LEVEL "200"; ")" ->
-        { (* Preserve parentheses around numerals so that constrintern does not
-             collapse -(3) into the numeral -3. *)
+        { (* Preserve parentheses around numbers so that constrintern does not
+             collapse -(3) into the number -3. *)
           match p.CAst.v with
-          | CPatPrim (Numeral (NumTok.SPlus,n)) ->
+          | CPatPrim (Number (NumTok.SPlus,n)) ->
               CAst.make ~loc @@ CPatNotation(None,(InConstrEntry,"( _ )"),([p],[]),[])
           | _ -> p }
       | "("; p = pattern LEVEL "200"; "|" ; pl = LIST1 pattern LEVEL "200" SEP "|"; ")" ->
         { CAst.make ~loc @@ CPatOr (p::pl) }
-      | n = NUMBER-> { CAst.make ~loc @@ CPatPrim (Numeral (NumTok.SPlus,n)) }
+      | n = NUMBER-> { CAst.make ~loc @@ CPatPrim (Number (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPatPrim (String s) } ] ]
   ;
   fixannot:
