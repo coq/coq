@@ -67,6 +67,7 @@ val intro_replacing      : Id.t -> unit Proofview.tactic
 val intro_using          : Id.t -> unit Proofview.tactic
 val intro_using_then     : Id.t -> (Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
 val intro_mustbe_force   : Id.t -> unit Proofview.tactic
+val intros_mustbe_force  : Id.t list -> unit Proofview.tactic
 val intro_then           : (Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
 val intros_using         : Id.t list -> unit Proofview.tactic
 val intros_using_then    : Id.t list -> (Id.t list -> unit Proofview.tactic) -> unit Proofview.tactic

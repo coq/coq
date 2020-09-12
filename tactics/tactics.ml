@@ -1078,6 +1078,10 @@ let rec intros_using = function
   | []     -> Proofview.tclUNIT()
   | str::l -> Tacticals.New.tclTHEN (intro_using str) (intros_using l)
 
+let rec intros_mustbe_force = function
+  | []     -> Proofview.tclUNIT()
+  | str::l -> Tacticals.New.tclTHEN (intro_mustbe_force str) (intros_mustbe_force l)
+
 let rec intros_using_then_helper tac acc = function
   | []     -> tac (List.rev acc)
   | str::l -> intro_using_then str (fun str' -> intros_using_then_helper tac (str'::acc) l)
