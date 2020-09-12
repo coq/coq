@@ -1285,10 +1285,10 @@ command: [
 | WITH "Declare" "Scope" scope_name
 
 (* odd that these are in command while other notation-related ones are in syntax *)
-| REPLACE "Numeral" "Notation" reference reference reference ":" ident numeral_modifier
-| WITH "Numeral" "Notation" reference reference reference ":" scope_name numeral_modifier
-| REPLACE "Number" "Notation" reference reference reference ":" ident numeral_modifier
-| WITH "Number" "Notation" reference reference reference ":" scope_name numeral_modifier
+| REPLACE "Numeral" "Notation" reference reference reference ":" ident number_modifier
+| WITH "Numeral" "Notation" reference reference reference ":" scope_name number_modifier
+| REPLACE "Number" "Notation" reference reference reference ":" ident number_modifier
+| WITH "Number" "Notation" reference reference reference ":" scope_name number_modifier
 | REPLACE "String" "Notation" reference reference reference ":" ident
 | WITH "String" "Notation" reference reference reference ":" scope_name
 
@@ -1358,7 +1358,7 @@ explicit_subentry: [
 | DELETE "constr"    (* covered by another prod *)
 ]
 
-numeral_modifier: [
+number_modifier: [
 | OPTINREF
 ]
 

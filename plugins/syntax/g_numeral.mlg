@@ -19,7 +19,7 @@ open Names
 open Stdarg
 open Pcoq.Prim
 
-let pr_numnot_option = function
+let pr_number_modifier = function
   | Nop -> mt ()
   | Warning n -> str "(warning after " ++ NumTok.UnsignedNat.print n ++ str ")"
   | Abstract n -> str "(abstract after " ++ NumTok.UnsignedNat.print n ++ str ")"
@@ -31,21 +31,21 @@ let warn_deprecated_numeral_notation =
 
 }
 
-VERNAC ARGUMENT EXTEND numeral_modifier
-  PRINTED BY { pr_numnot_option }
+VERNAC ARGUMENT EXTEND number_modifier
+  PRINTED BY { pr_number_modifier }
 | [ ] -> { Nop }
 | [ "(" "warning" "after" bignat(waft) ")" ] -> { Warning (NumTok.UnsignedNat.of_string waft) }
 | [ "(" "abstract" "after" bignat(n) ")" ] -> { Abstract (NumTok.UnsignedNat.of_string n) }
 END
 
-VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
+VERNAC COMMAND EXTEND NumberNotation CLASSIFIED AS SIDEFF
   | #[ locality = Attributes.locality; ] [ "Number" "Notation" reference(ty) reference(f) reference(g) ":"
-      ident(sc) numeral_modifier(o) ] ->
+      ident(sc) number_modifier(o) ] ->
 
-    { vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
+    { vernac_number_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
   | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
-      ident(sc) numeral_modifier(o) ] ->
+      ident(sc) number_modifier(o) ] ->
 
     { warn_deprecated_numeral_notation ();
-      vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
+      vernac_number_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
 END

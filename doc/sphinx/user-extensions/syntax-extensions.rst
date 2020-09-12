@@ -1553,16 +1553,16 @@ numbers (see :ref:`datatypes`).
 Number notations
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Number Notation @qualid__type @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
+.. cmd:: Number Notation @qualid__type @qualid__parse @qualid__print : @scope_name {? @number_modifier }
    :name: Number Notation
 
-   .. insertprodn numeral_modifier numeral_modifier
+   .. insertprodn number_modifier number_modifier
 
    .. prodn::
-      numeral_modifier ::= ( warning after @bignat )
+      number_modifier ::= ( warning after @bignat )
       | ( abstract after @bignat )
 
-   This command allows the user to customize the way numeral literals
+   This command allows the user to customize the way number literals
    are parsed and printed.
 
       :n:`@qualid__type`

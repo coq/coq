@@ -12,8 +12,8 @@ open Libnames
 open Vernacexpr
 open Notation
 
-(** * Numeral notation *)
+(** * Number notation *)
 
-val vernac_numeral_notation : locality_flag ->
-                              qualid -> qualid -> qualid ->
-                              Notation_term.scope_name -> numnot_option -> unit
+val vernac_number_notation : locality_flag ->
+                             qualid -> qualid -> qualid ->
+                             Notation_term.scope_name -> numnot_option -> unit

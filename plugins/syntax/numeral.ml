@@ -16,7 +16,7 @@ open Constrexpr
 open Constrexpr_ops
 open Notation
 
-(** * Numeral notation *)
+(** * Number notation *)
 
 let warn_abstract_large_num_no_op =
   CWarnings.create ~name:"abstract-large-number-no-op" ~category:"numbers"
@@ -55,7 +55,7 @@ let locate_z () =
     }, mkRefC q_z)
   else None
 
-let locate_numeral () =
+let locate_number () =
   let dint = "num.int.type" in
   let duint = "num.uint.type" in
   let dec = "num.decimal.type" in
@@ -111,27 +111,27 @@ let has_type env sigma f ty =
 
 let type_error_to f ty =
   CErrors.user_err
-    (pr_qualid f ++ str " should go from Numeral.int to " ++
+    (pr_qualid f ++ str " should go from Number.int to " ++
      pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ")." ++
-     fnl () ++ str "Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).")
+     fnl () ++ str "Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).")
 
 let type_error_of g ty =
   CErrors.user_err
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
-     str " to Numeral.int or (option Numeral.int)." ++ fnl () ++
-     str "Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).")
+     str " to Number.int or (option Number.int)." ++ fnl () ++
+     str "Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).")
 
 let warn_deprecated_decimal =
   CWarnings.create ~name:"decimal-numeral-notation" ~category:"deprecated"
     (fun () ->
-      strbrk "Deprecated Numeral Notation for Decimal.uint, \
-              Decimal.int or Decimal.decimal. Use Numeral.uint, \
-              Numeral.int or Numeral.numeral respectively.")
+      strbrk "Deprecated Number Notation for Decimal.uint, \
+              Decimal.int or Decimal.decimal. Use Number.uint, \
+              Number.int or Number.number respectively.")
 
-let vernac_numeral_notation local ty f g scope opts =
+let vernac_number_notation local ty f g scope opts =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let num_ty = locate_numeral () in
+  let num_ty = locate_number () in
   let z_pos_ty = locate_z () in
   let int63_ty = locate_int63 () in
   let tyc = Smartlocate.global_inductive_with_alias ty in
