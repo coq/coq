@@ -346,17 +346,15 @@ In addition to the objects and directives above, the ``coqrst`` Sphinx plugin de
     creates a link to that.  When referring to a placeholder that happens to be
     a grammar production, ``:token:`…``` is typically preferable to ``:n:`@…```.
 
-``:production:`` A grammar production not included in a ``productionlist`` directive.
+``:production:`` A grammar production not included in a ``prodn`` directive.
     Useful to informally introduce a production, as part of running text.
 
     Example::
 
        :production:`string` indicates a quoted string.
 
-    You're not likely to use this role very commonly; instead, use a
-    `production list
-    <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_
-    and reference its tokens using ``:token:`…```.
+    You're not likely to use this role very commonly; instead, use a ``prodn``
+    directive and reference its tokens using ``:token:`…```.
 
 ``:gdef:`` Marks the definition of a glossary term inline in the text.  Matching :term:`XXX`
     constructs will link to it.  Use the form :gdef:`text <term>` to display "text"
