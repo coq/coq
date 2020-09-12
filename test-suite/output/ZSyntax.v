@@ -18,7 +18,7 @@ Require Import Arith.
 Check (0 + Z.of_nat 11)%Z.
 
 (* Check hexadecimal printing *)
-Definition to_num_int n := Numeral.IntHex (Z.to_hex_int n).
+Definition to_num_int n := Number.IntHex (Z.to_hex_int n).
 Number Notation Z Z.of_num_int to_num_int : Z_scope.
 Check 42%Z.
 Check (-42)%Z.

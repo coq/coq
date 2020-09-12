@@ -1571,32 +1571,32 @@ Number notations
          parsing and printing functions, respectively.  The parsing function
          :n:`@qualid__parse` should have one of the following types:
 
-            * :n:`Numeral.int -> @qualid__type`
-            * :n:`Numeral.int -> option @qualid__type`
-            * :n:`Numeral.uint -> @qualid__type`
-            * :n:`Numeral.uint -> option @qualid__type`
+            * :n:`Number.int -> @qualid__type`
+            * :n:`Number.int -> option @qualid__type`
+            * :n:`Number.uint -> @qualid__type`
+            * :n:`Number.uint -> option @qualid__type`
             * :n:`Z -> @qualid__type`
             * :n:`Z -> option @qualid__type`
-            * :n:`Numeral.numeral -> @qualid__type`
-            * :n:`Numeral.numeral -> option @qualid__type`
+            * :n:`Number.number -> @qualid__type`
+            * :n:`Number.number -> option @qualid__type`
 
          And the printing function :n:`@qualid__print` should have one of the
          following types:
 
-            * :n:`@qualid__type -> Numeral.int`
-            * :n:`@qualid__type -> option Numeral.int`
-            * :n:`@qualid__type -> Numeral.uint`
-            * :n:`@qualid__type -> option Numeral.uint`
+            * :n:`@qualid__type -> Number.int`
+            * :n:`@qualid__type -> option Number.int`
+            * :n:`@qualid__type -> Number.uint`
+            * :n:`@qualid__type -> option Number.uint`
             * :n:`@qualid__type -> Z`
             * :n:`@qualid__type -> option Z`
-            * :n:`@qualid__type -> Numeral.numeral`
-            * :n:`@qualid__type -> option Numeral.numeral`
+            * :n:`@qualid__type -> Number.number`
+            * :n:`@qualid__type -> option Number.number`
 
          .. deprecated:: 8.12
-            Numeral notations on :g:`Decimal.uint`, :g:`Decimal.int` and
-            :g:`Decimal.decimal` are replaced respectively by numeral
-            notations on :g:`Numeral.uint`, :g:`Numeral.int` and
-            :g:`Numeral.numeral`.
+            Number notations on :g:`Decimal.uint`, :g:`Decimal.int` and
+            :g:`Decimal.decimal` are replaced respectively by number
+            notations on :g:`Number.uint`, :g:`Number.int` and
+            :g:`Number.number`.
 
          When parsing, the application of the parsing function
          :n:`@qualid__parse` to the number will be fully reduced, and universes
@@ -1620,7 +1620,7 @@ Number notations
          returns :n:`(@qualid__parse m)` when parsing a literal
          :n:`m` that's greater than :n:`@bignat` rather than reducing it to a normal form.
          Here :g:`m` will be a
-         :g:`Numeral.int`, :g:`Numeral.uint`, :g:`Z` or :g:`Numeral.numeral`, depending on the
+         :g:`Number.int`, :g:`Number.uint`, :g:`Z` or :g:`Number.number`, depending on the
          type of the parsing function :n:`@qualid__parse`. This allows for a
          more compact representation of literals in types such as :g:`nat`,
          and limits parse failures due to stack overflow.  Note that a
@@ -1644,31 +1644,31 @@ Number notations
 
    .. exn:: Cannot interpret this number as a value of type @type
 
-     The numeral notation registered for :token:`type` does not support
+     The number notation registered for :token:`type` does not support
      the given number.  This error is given when the interpretation
      function returns :g:`None`, or if the interpretation is registered
      only for integers or non-negative integers, and the given number
      has a fractional or exponent part or is negative.
 
 
-   .. exn:: @qualid__parse should go from Numeral.int to @type or (option @type). Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
+   .. exn:: @qualid__parse should go from Number.int to @type or (option @type). Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).
 
      The parsing function given to the :cmd:`Number Notation`
      vernacular is not of the right type.
 
-   .. exn:: @qualid__print should go from @type to Numeral.int or (option Numeral.int).  Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
+   .. exn:: @qualid__print should go from @type to Number.int or (option Number.int).  Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).
 
      The printing function given to the :cmd:`Number Notation`
      vernacular is not of the right type.
 
-   .. exn:: Unexpected term @term while parsing a numeral notation.
+   .. exn:: Unexpected term @term while parsing a number notation.
 
      Parsing functions must always return ground terms, made up of
      applications of constructors, inductive types, and primitive
      integers.  Parsing functions may not return terms containing
      axioms, bare (co)fixpoints, lambdas, etc.
 
-   .. exn:: Unexpected non-option term @term while parsing a numeral notation.
+   .. exn:: Unexpected non-option term @term while parsing a number notation.
 
      Parsing functions expected to return an :g:`option` must always
      return a concrete :g:`Some` or :g:`None` when applied to a
@@ -1741,16 +1741,16 @@ String notations
      concrete string expressed as a decimal.  They may not return
      opaque constants.
 
-The following errors apply to both string and numeral notations:
+The following errors apply to both string and number notations:
 
    .. exn:: @type is not an inductive type.
 
-     String and numeral notations can only be declared for inductive types with no
+     String and number notations can only be declared for inductive types with no
      arguments.
 
    .. exn:: Cannot interpret in @scope_name because @qualid could not be found in the current environment.
 
-     The inductive type used to register the string or numeral notation is no
+     The inductive type used to register the string or number notation is no
      longer available in the environment.  Most likely, this is because
      the notation was declared inside a functor for an
      inductive type inside the functor.  This use case is not currently

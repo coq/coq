@@ -64,7 +64,7 @@ let locate_numeral () =
   let hex = "num.hexadecimal.type" in
   let int = "num.num_int.type" in
   let uint = "num.num_uint.type" in
-  let num = "num.numeral.type" in
+  let num = "num.number.type" in
   if Coqlib.has_ref dint && Coqlib.has_ref duint && Coqlib.has_ref dec
      && Coqlib.has_ref hint && Coqlib.has_ref huint && Coqlib.has_ref hex
      && Coqlib.has_ref int && Coqlib.has_ref uint && Coqlib.has_ref num

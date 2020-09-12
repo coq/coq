@@ -5,17 +5,17 @@ Declare Scope opaque_scope.
 (* https://github.com/coq/coq/pull/8064#discussion_r202497516 *)
 Module Test1.
   Axiom hold : forall {A B C}, A -> B -> C.
-  Definition opaque3 (x : Numeral.int) : Numeral.int := hold x (fix f (x : nat) : nat := match x with O => O | S n => S (f n) end).
-  Number Notation Numeral.int opaque3 opaque3 : opaque_scope.
+  Definition opaque3 (x : Number.int) : Number.int := hold x (fix f (x : nat) : nat := match x with O => O | S n => S (f n) end).
+  Number Notation Number.int opaque3 opaque3 : opaque_scope.
   Delimit Scope opaque_scope with opaque.
   Fail Check 1%opaque.
 End Test1.
 
 (* https://github.com/coq/coq/pull/8064#discussion_r202497990 *)
 Module Test2.
-  Axiom opaque4 : option Numeral.int.
-  Definition opaque6 (x : Numeral.int) : option Numeral.int := opaque4.
-  Number Notation Numeral.int opaque6 opaque6 : opaque_scope.
+  Axiom opaque4 : option Number.int.
+  Definition opaque6 (x : Number.int) : option Number.int := opaque4.
+  Number Notation Number.int opaque6 opaque6 : opaque_scope.
   Delimit Scope opaque_scope with opaque.
   Open Scope opaque_scope.
   Fail Check 1%opaque.
@@ -24,8 +24,8 @@ End Test2.
 Declare Scope silly_scope.
 
 Module Test3.
-  Inductive silly := SILLY (v : Numeral.uint) (f : forall A, A -> A).
-  Definition to_silly (v : Numeral.uint) := SILLY v (fun _ x => x).
+  Inductive silly := SILLY (v : Number.uint) (f : forall A, A -> A).
+  Definition to_silly (v : Number.uint) := SILLY v (fun _ x => x).
   Definition of_silly (v : silly) := match v with SILLY v _ => v end.
   Number Notation silly to_silly of_silly : silly_scope.
   Delimit Scope silly_scope with silly.
@@ -45,15 +45,15 @@ Module Test4.
   Declare Scope upp.
   Declare Scope ppps.
   Polymorphic NonCumulative Inductive punit := ptt.
-  Polymorphic Definition pto_punit (v : Numeral.uint) : option punit := match Nat.of_num_uint v with O => Some ptt | _ => None end.
-  Polymorphic Definition pto_punit_all (v : Numeral.uint) : punit := ptt.
-  Polymorphic Definition pof_punit (v : punit) : Numeral.uint := Nat.to_num_uint 0.
-  Definition to_punit (v : Numeral.uint) : option punit := match Nat.of_num_uint v with O => Some ptt | _ => None end.
-  Definition of_punit (v : punit) : Numeral.uint := Nat.to_num_uint 0.
-  Polymorphic Definition pto_unit (v : Numeral.uint) : option unit := match Nat.of_num_uint v with O => Some tt | _ => None end.
-  Polymorphic Definition pof_unit (v : unit) : Numeral.uint := Nat.to_num_uint 0.
-  Definition to_unit (v : Numeral.uint) : option unit := match Nat.of_num_uint v with O => Some tt | _ => None end.
-  Definition of_unit (v : unit) : Numeral.uint := Nat.to_num_uint 0.
+  Polymorphic Definition pto_punit (v : Number.uint) : option punit := match Nat.of_num_uint v with O => Some ptt | _ => None end.
+  Polymorphic Definition pto_punit_all (v : Number.uint) : punit := ptt.
+  Polymorphic Definition pof_punit (v : punit) : Number.uint := Nat.to_num_uint 0.
+  Definition to_punit (v : Number.uint) : option punit := match Nat.of_num_uint v with O => Some ptt | _ => None end.
+  Definition of_punit (v : punit) : Number.uint := Nat.to_num_uint 0.
+  Polymorphic Definition pto_unit (v : Number.uint) : option unit := match Nat.of_num_uint v with O => Some tt | _ => None end.
+  Polymorphic Definition pof_unit (v : unit) : Number.uint := Nat.to_num_uint 0.
+  Definition to_unit (v : Number.uint) : option unit := match Nat.of_num_uint v with O => Some tt | _ => None end.
+  Definition of_unit (v : unit) : Number.uint := Nat.to_num_uint 0.
   Number Notation punit to_punit of_punit : pto.
   Number Notation punit pto_punit of_punit : ppo.
   Number Notation punit to_punit pof_punit : ptp.
@@ -96,7 +96,7 @@ Module Test5.
 End Test5.
 
 Module Test6.
-  (* Check that numeral notations on enormous terms don't take forever to print/parse *)
+  (* Check that number notations on enormous terms don't take forever to print/parse *)
   (* Ackerman definition from https://stackoverflow.com/a/10303475/377022 *)
   Fixpoint ack (n m : nat) : nat :=
     match n with
@@ -113,8 +113,8 @@ Module Test6.
 
   Local Set Primitive Projections.
   Record > wnat := wrap { unwrap :> nat }.
-  Definition to_uint (x : wnat) : Numeral.uint := Nat.to_num_uint x.
-  Definition of_uint (x : Numeral.uint) : wnat := Nat.of_num_uint x.
+  Definition to_uint (x : wnat) : Number.uint := Nat.to_num_uint x.
+  Definition of_uint (x : Number.uint) : wnat := Nat.of_num_uint x.
   Module Export Scopes.
     Declare Scope wnat_scope.
     Delimit Scope wnat_scope with wnat.
@@ -138,7 +138,7 @@ End Test6_2.
 
 Module Test7.
   Local Set Primitive Projections.
-  Record wuint := wrap { unwrap : Numeral.uint }.
+  Record wuint := wrap { unwrap : Number.uint }.
   Declare Scope wuint_scope.
   Delimit Scope wuint_scope with wuint.
   Number Notation wuint wrap unwrap : wuint_scope.
@@ -148,7 +148,7 @@ End Test7.
 
 Module Test8.
   Local Set Primitive Projections.
-  Record wuint := wrap { unwrap : Numeral.uint }.
+  Record wuint := wrap { unwrap : Number.uint }.
   Declare Scope wuint8_scope.
   Declare Scope wuint8'_scope.
   Delimit Scope wuint8_scope with wuint8.
@@ -177,7 +177,7 @@ Module Test9.
   Delimit Scope wuint9'_scope with wuint9'.
   Section with_let.
     Local Set Primitive Projections.
-    Record wuint := wrap { unwrap : Numeral.uint }.
+    Record wuint := wrap { unwrap : Number.uint }.
     Let wrap' := wrap.
     Let unwrap' := unwrap.
     Local Notation wrap'' := wrap.
@@ -194,8 +194,8 @@ End Test9.
 Module Test10.
   (* Test that it is only a warning to add abstract after to an optional parsing function *)
   Definition to_uint (v : unit) := Nat.to_num_uint 0.
-  Definition of_uint (v : Numeral.uint) := match Nat.of_num_uint v with O => Some tt | _ => None end.
-  Definition of_any_uint (v : Numeral.uint) := tt.
+  Definition of_uint (v : Number.uint) := match Nat.of_num_uint v with O => Some tt | _ => None end.
+  Definition of_any_uint (v : Number.uint) := tt.
   Declare Scope unit_scope.
   Declare Scope unit2_scope.
   Delimit Scope unit_scope with unit.
@@ -209,11 +209,11 @@ Module Test10.
 End Test10.
 
 Module Test12.
-  (* Test for numeral notations on context variables *)
+  (* Test for number notations on context variables *)
   Declare Scope test12_scope.
   Delimit Scope test12_scope with test12.
   Section test12.
-    Context (to_uint : unit -> Numeral.uint) (of_uint : Numeral.uint -> unit).
+    Context (to_uint : unit -> Number.uint) (of_uint : Number.uint -> unit).
 
     Number Notation unit of_uint to_uint : test12_scope.
     Check let v := 1%test12 in v : unit.
@@ -221,15 +221,15 @@ Module Test12.
 End Test12.
 
 Module Test13.
-  (* Test for numeral notations on notations which do not denote references *)
+  (* Test for number notations on notations which do not denote references *)
   Declare Scope test13_scope.
   Declare Scope test13'_scope.
   Declare Scope test13''_scope.
   Delimit Scope test13_scope with test13.
   Delimit Scope test13'_scope with test13'.
   Delimit Scope test13''_scope with test13''.
-  Definition to_uint (x y : unit) : Numeral.uint := Nat.to_num_uint O.
-  Definition of_uint (x : Numeral.uint) : unit := tt.
+  Definition to_uint (x y : unit) : Number.uint := Nat.to_num_uint O.
+  Definition of_uint (x : Number.uint) : unit := tt.
   Definition to_uint_good := to_uint tt.
   Notation to_uint' := (to_uint tt).
   Notation to_uint'' := (to_uint _).
@@ -242,7 +242,7 @@ Module Test13.
 End Test13.
 
 Module Test14.
-  (* Test that numeral notations follow [Import], not [Require], and
+  (* Test that number notations follow [Import], not [Require], and
      also test that [Local Number Notation]s do not escape modules
      nor sections. *)
   Declare Scope test14_scope.
@@ -254,8 +254,8 @@ Module Test14.
   Delimit Scope test14''_scope with test14''.
   Delimit Scope test14'''_scope with test14'''.
   Module Inner.
-    Definition to_uint (x : unit) : Numeral.uint := Nat.to_num_uint O.
-    Definition of_uint (x : Numeral.uint) : unit := tt.
+    Definition to_uint (x : unit) : Number.uint := Nat.to_num_uint O.
+    Definition of_uint (x : Number.uint) : unit := tt.
     Local Number Notation unit of_uint to_uint : test14_scope.
     Global Number Notation unit of_uint to_uint : test14'_scope.
     Check let v := 0%test14 in v : unit.
@@ -267,8 +267,8 @@ Module Test14.
   Fail Check let v := 0%test14 in v : unit.
   Check let v := 0%test14' in v : unit.
   Section InnerSection.
-    Definition to_uint (x : unit) : Numeral.uint := Nat.to_num_uint O.
-    Definition of_uint (x : Numeral.uint) : unit := tt.
+    Definition to_uint (x : unit) : Number.uint := Nat.to_num_uint O.
+    Definition of_uint (x : Number.uint) : unit := tt.
     Local Number Notation unit of_uint to_uint : test14''_scope.
     Fail Global Number Notation unit of_uint to_uint : test14'''_scope.
     Check let v := 0%test14'' in v : unit.
@@ -283,8 +283,8 @@ Module Test15.
   Declare Scope test15_scope.
   Delimit Scope test15_scope with test15.
   Module Inner.
-    Definition to_uint (x : unit) : Numeral.uint := Nat.to_num_uint O.
-    Definition of_uint (x : Numeral.uint) : unit := tt.
+    Definition to_uint (x : unit) : Number.uint := Nat.to_num_uint O.
+    Definition of_uint (x : Number.uint) : unit := tt.
     Number Notation unit of_uint to_uint : test15_scope.
     Check let v := 0%test15 in v : unit.
   End Inner.
@@ -306,8 +306,8 @@ Module Test16.
   End A.
   Module F (a : A).
     Inductive Foo := foo (_ : a.T).
-    Definition to_uint (x : Foo) : Numeral.uint := Nat.to_num_uint O.
-    Definition of_uint (x : Numeral.uint) : Foo := foo a.t.
+    Definition to_uint (x : Foo) : Number.uint := Nat.to_num_uint O.
+    Definition of_uint (x : Number.uint) : Foo := foo a.t.
     Global Number Notation Foo of_uint to_uint : test16_scope.
     Check let v := 0%test16 in v : Foo.
   End F.
@@ -352,8 +352,8 @@ Module Test18.
   Definition Q_of_nat (x : nat) : Q := {| num := x ; den := 1 ; reduced := transparentify (nat_eq_dec _ _) (gcd_good _) |}.
   Definition nat_of_Q (x : Q) : option nat
     := if Nat.eqb x.(den) 1 then Some (x.(num)) else None.
-  Definition Q_of_uint (x : Numeral.uint) : Q := Q_of_nat (Nat.of_num_uint x).
-  Definition uint_of_Q (x : Q) : option Numeral.uint
+  Definition Q_of_uint (x : Number.uint) : Q := Q_of_nat (Nat.of_num_uint x).
+  Definition uint_of_Q (x : Q) : option Number.uint
     := option_map Nat.to_num_uint (nat_of_Q x).
 
   Number Notation Q Q_of_uint uint_of_Q : Q_scope.
@@ -411,7 +411,7 @@ Module Test20.
 
   Record > ty := { t : Type ; kt : known_type t }.
 
-  Definition ty_of_uint (x : Numeral.uint) : option ty
+  Definition ty_of_uint (x : Number.uint) : option ty
     := match Nat.of_num_uint x with
        | 0 => @Some ty zero
        | 1 => @Some ty one
@@ -421,7 +421,7 @@ Module Test20.
        | 5 => @Some ty type
        | _ => None
        end.
-  Definition uint_of_ty (x : ty) : Numeral.uint
+  Definition uint_of_ty (x : ty) : Number.uint
     := Nat.to_num_uint match kt x with
                    | prop => 3
                    | set => 4

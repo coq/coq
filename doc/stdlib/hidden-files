@@ -1,3 +1,4 @@
+theories/Init/Numeral.v
 theories/btauto/Algebra.v
 theories/btauto/Btauto.v
 theories/btauto/Reflect.v

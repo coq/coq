@@ -22,7 +22,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Init/Nat.v
     theories/Init/Decimal.v
     theories/Init/Hexadecimal.v
-    theories/Init/Numeral.v
+    theories/Init/Number.v
     theories/Init/Peano.v
     theories/Init/Specif.v
     theories/Init/Tactics.v

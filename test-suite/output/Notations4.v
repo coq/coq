@@ -124,7 +124,7 @@ Check r 2 3.
 End I.
 
 Require Import Coq.Numbers.Cyclic.Int63.Int63.
-Module NumeralNotations.
+Module NumberNotations.
   Module Test17.
     (** Test int63 *)
     Declare Scope test17_scope.
@@ -134,7 +134,7 @@ Module NumeralNotations.
     Number Notation myint63 of_int to_int : test17_scope.
     Check let v := 0%test17 in v : myint63.
   End Test17.
-End NumeralNotations.
+End NumberNotations.
 
 Module K.
 

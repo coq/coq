@@ -17,6 +17,7 @@ Require Coq.Init.Byte.
 Require Coq.Init.Decimal.
 Require Coq.Init.Hexadecimal.
 Require Coq.Init.Numeral.
+Require Coq.Init.Number.
 Require Coq.Init.Nat.
 Require Export Peano.
 Require Export Coq.Init.Wf.
@@ -35,17 +36,17 @@ Declare ML Module "string_notation_plugin".
 (* Parsing / printing of hexadecimal numbers *)
 Arguments Nat.of_hex_uint d%hex_uint_scope.
 Arguments Nat.of_hex_int d%hex_int_scope.
-Number Notation Numeral.uint Numeral.uint_of_uint Numeral.uint_of_uint
+Number Notation Number.uint Number.uint_of_uint Number.uint_of_uint
   : hex_uint_scope.
-Number Notation Numeral.int Numeral.int_of_int Numeral.int_of_int
+Number Notation Number.int Number.int_of_int Number.int_of_int
   : hex_int_scope.
 
 (* Parsing / printing of decimal numbers *)
 Arguments Nat.of_uint d%dec_uint_scope.
 Arguments Nat.of_int d%dec_int_scope.
-Number Notation Numeral.uint Numeral.uint_of_uint Numeral.uint_of_uint
+Number Notation Number.uint Number.uint_of_uint Number.uint_of_uint
   : dec_uint_scope.
-Number Notation Numeral.int Numeral.int_of_int Numeral.int_of_int
+Number Notation Number.int Number.int_of_int Number.int_of_int
   : dec_int_scope.
 
 (* Parsing / printing of [nat] numbers *)

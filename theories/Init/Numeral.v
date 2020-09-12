@@ -8,26 +8,47 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * Decimal or Hexadecimal numbers *)
+(** * Deprecated: use Number.v instead *)
 
-Require Import Decimal Hexadecimal.
+Require Import Decimal Hexadecimal Number.
 
-Variant uint := UIntDec (u:Decimal.uint) | UIntHex (u:Hexadecimal.uint).
+#[deprecated(since="8.13",note="Use Number.uint instead.")]
+Notation uint := uint (only parsing).
+#[deprecated(since="8.13",note="Use Number.UintDec instead.")]
+Notation UIntDec := UIntDec (only parsing).
+#[deprecated(since="8.13",note="Use Number.UintHex instead.")]
+Notation UIntHex := UIntHex (only parsing).
 
-Variant int := IntDec (i:Decimal.int) | IntHex (i:Hexadecimal.int).
+#[deprecated(since="8.13",note="Use Number.int instead.")]
+Notation int := int (only parsing).
+#[deprecated(since="8.13",note="Use Number.IntDec instead.")]
+Notation IntDec := IntDec (only parsing).
+#[deprecated(since="8.13",note="Use Number.IntHex instead.")]
+Notation IntHex := IntHex (only parsing).
 
-Variant numeral := Dec (d:Decimal.decimal) | Hex (h:Hexadecimal.hexadecimal).
+#[deprecated(since="8.13",note="Use Number.numeral instead.")]
+Notation numeral := number (only parsing).
+#[deprecated(since="8.13",note="Use Number.Dec instead.")]
+Notation Dec := Dec (only parsing).
+#[deprecated(since="8.13",note="Use Number.Hex instead.")]
+Notation Hex := Hex (only parsing).
 
-Scheme Equality for uint.
-Scheme Equality for int.
-Scheme Equality for numeral.
+#[deprecated(since="8.13",note="Use Number.uint_beq instead.")]
+Notation uint_beq := uint_beq (only parsing).
+#[deprecated(since="8.13",note="Use Number.uint_eq_dec instead.")]
+Notation uint_eq_dec := uint_eq_dec (only parsing).
+#[deprecated(since="8.13",note="Use Number.int_beq instead.")]
+Notation int_beq := int_beq (only parsing).
+#[deprecated(since="8.13",note="Use Number.int_eq_dec instead.")]
+Notation int_eq_dec := int_eq_dec (only parsing).
+#[deprecated(since="8.13",note="Use Number.numeral_beq instead.")]
+Notation numeral_beq := number_beq (only parsing).
+#[deprecated(since="8.13",note="Use Number.numeral_eq_dec instead.")]
+Notation numeral_eq_dec := number_eq_dec (only parsing).
 
-Register uint as num.num_uint.type.
-Register int as num.num_int.type.
-Register numeral as num.numeral.type.
+Register number as num.numeral.type.
 
-(** Pseudo-conversion functions used when declaring
-    Number Notations on [uint] and [int]. *)
-
-Definition uint_of_uint (i:uint) := i.
-Definition int_of_int (i:int) := i.
+#[deprecated(since="8.13",note="Use Number.uint_of_uint instead.")]
+Notation uint_of_uint := uint_of_uint (only parsing).
+#[deprecated(since="8.13",note="Use Number.int_of_int instead.")]
+Notation int_of_int := int_of_int (only parsing).

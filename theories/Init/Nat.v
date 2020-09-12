@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import Notations Logic Datatypes.
-Require Decimal Hexadecimal Numeral.
+Require Decimal Hexadecimal Number.
 Local Open Scope nat_scope.
 
 (**********************************************************************)
@@ -212,10 +212,10 @@ Fixpoint of_hex_uint_acc (d:Hexadecimal.uint)(acc:nat) :=
 
 Definition of_hex_uint (d:Hexadecimal.uint) := of_hex_uint_acc d O.
 
-Definition of_num_uint (d:Numeral.uint) :=
+Definition of_num_uint (d:Number.uint) :=
   match d with
-  | Numeral.UIntDec d => of_uint d
-  | Numeral.UIntHex d => of_hex_uint d
+  | Number.UIntDec d => of_uint d
+  | Number.UIntHex d => of_hex_uint d
   end.
 
 Fixpoint to_little_uint n acc :=
@@ -236,9 +236,9 @@ Fixpoint to_little_hex_uint n acc :=
 Definition to_hex_uint n :=
   Hexadecimal.rev (to_little_hex_uint n Hexadecimal.zero).
 
-Definition to_num_uint n := Numeral.UIntDec (to_uint n).
+Definition to_num_uint n := Number.UIntDec (to_uint n).
 
-Definition to_num_hex_uint n := Numeral.UIntHex (to_hex_uint n).
+Definition to_num_hex_uint n := Number.UIntHex (to_hex_uint n).
 
 Definition of_int (d:Decimal.int) : option nat :=
   match Decimal.norm d with
@@ -252,17 +252,17 @@ Definition of_hex_int (d:Hexadecimal.int) : option nat :=
     | _ => None
   end.
 
-Definition of_num_int (d:Numeral.int) : option nat :=
+Definition of_num_int (d:Number.int) : option nat :=
   match d with
-  | Numeral.IntDec d => of_int d
-  | Numeral.IntHex d => of_hex_int d
+  | Number.IntDec d => of_int d
+  | Number.IntHex d => of_hex_int d
   end.
 
 Definition to_int n := Decimal.Pos (to_uint n).
 
 Definition to_hex_int n := Hexadecimal.Pos (to_hex_uint n).
 
-Definition to_num_int n := Numeral.IntDec (to_int n).
+Definition to_num_int n := Number.IntDec (to_int n).
 
 (** ** Euclidean division *)
 

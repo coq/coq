@@ -117,16 +117,16 @@ Definition to_hexadecimal (q:Q) : option Hexadecimal.hexadecimal :=
   | _ => None
   end.
 
-Definition of_numeral (d:Numeral.numeral) : option Q :=
+Definition of_numeral (d:Number.number) : option Q :=
   match d with
-  | Numeral.Dec d => Some (of_decimal d)
-  | Numeral.Hex d => Some (of_hexadecimal d)
+  | Number.Dec d => Some (of_decimal d)
+  | Number.Hex d => Some (of_hexadecimal d)
   end.
 
-Definition to_numeral (q:Q) : option Numeral.numeral :=
+Definition to_numeral (q:Q) : option Number.number :=
   match to_decimal q with
   | None => None
-  | Some q => Some (Numeral.Dec q)
+  | Some q => Some (Number.Dec q)
   end.
 
 Number Notation Q of_numeral to_numeral : Q_scope.
