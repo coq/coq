@@ -70,7 +70,7 @@ Coq 8.6 introduced a mechanism for error resilience: in interactive
 mode Coq is able to completely check a document containing errors
 instead of bailing out at the first failure.
 
-Two kind of errors are supported: errors occurring in vernacular
+Two kind of errors are supported: errors occurring in
 commands and errors occurring in proofs.
 
 To properly recover from a failing tactic, Coq needs to recognize the
@@ -89,8 +89,8 @@ kind of proof blocks, and an ML API to add new ones.
 Caveats
 ````````
 
-When a vernacular command fails the subsequent error messages may be
-bogus, i.e. caused by the first error. Error resilience for vernacular
+When a command fails the subsequent error messages may be
+bogus, i.e. caused by the first error. Error resilience for
 commands can be switched off by passing ``-async-proofs-command-error-resilience off``
 to CoqIDE.
 

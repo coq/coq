@@ -348,7 +348,7 @@ class VernacVariantObject(VernacObject):
        .. cmd:: Axiom @ident : @term.
 
           This command links :token:`term` to the name :token:`term` as its specification in
-          the global context. The fact asserted by :token:`term` is thus assumed as a
+          the global environment. The fact asserted by :token:`term` is thus assumed as a
           postulate.
 
           .. cmdv:: Parameter @ident : @term.

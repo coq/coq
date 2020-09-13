@@ -335,7 +335,7 @@ Creating Hints
       .. exn:: @qualid cannot be used as a hint
 
          The head symbol of the type of :n:`@qualid` is a bound variable
-         such that this tactic cannot be associated to a constant.
+         such that this tactic cannot be associated with a constant.
 
    .. cmd:: Hint Immediate {+ {| @qualid | @one_term } } {? : {+ @ident } }
 

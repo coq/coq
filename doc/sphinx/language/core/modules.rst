@@ -283,7 +283,6 @@ are now available through the dot notation.
          Check A.B.U.
 
 .. cmd:: Export {+ @filtered_import }
-   :name: Export
 
    Similar to :cmd:`Import`, except that when the module containing this command
    is imported, the :n:`{+ @qualid }` are imported as well.
@@ -465,7 +464,7 @@ We also need additional typing judgments:
 
 + :math:`\WFT{E}{S}`, denoting that a structure :math:`S` is well-formed,
 + :math:`\WTM{E}{p}{S}`, denoting that the module pointed by :math:`p` has type :math:`S` in
-  environment :math:`E`.
+  the global environment :math:`E`.
 + :math:`\WEV{E}{S}{\ovl{S}}`, denoting that a structure :math:`S` is evaluated to a
   structure :math:`S` in weak head normal form.
 + :math:`\WS{E}{S_1}{S_2}` , denoting that a structure :math:`S_1` is a subtype of a
@@ -965,7 +964,7 @@ names.
 
 A logical prefix Lib can be associated with a physical path using
 the command line option ``-Q`` `path` ``Lib``. All subfolders of path are
-recursively associated to the logical path ``Lib`` extended with the
+recursively associated with the logical path ``Lib`` extended with the
 corresponding suffix coming from the physical path. For instance, the
 folder ``path/fOO/Bar`` maps to ``Lib.fOO.Bar``. Subdirectories corresponding
 to invalid Coq identifiers are skipped, and, by convention,
@@ -973,7 +972,7 @@ subdirectories named ``CVS`` or ``_darcs`` are skipped too.
 
 Thanks to this mechanism, ``.vo`` files are made available through the
 logical name of the folder they are in, extended with their own
-basename. For example, the name associated to the file
+basename. For example, the name associated with the file
 ``path/fOO/Bar/File.vo`` is ``Lib.fOO.Bar.File``. The same caveat applies for
 invalid identifiers. When compiling a source file, the ``.vo`` file stores
 its logical name, so that an error is issued if it is loaded with the

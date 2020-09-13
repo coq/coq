@@ -101,7 +101,7 @@ and it can be applied to any expression of type :math:`\nat`, say :math:`t`, to 
 object :math:`P~t` of type :math:`\Prop`, namely a proposition.
 
 Furthermore :g:`forall x:nat, P x` will represent the type of functions
-which associate to each natural number :math:`n` an object of type :math:`(P~n)` and
+which associate with each natural number :math:`n` an object of type :math:`(P~n)` and
 consequently represent the type of proofs of the formula “:math:`∀ x.~P(x)`”.
 
 
@@ -111,51 +111,49 @@ Typing rules
 ----------------
 
 As objects of type theory, terms are subjected to *type discipline*.
-The well typing of a term depends on a global environment and a local
-context.
-
+The well typing of a term depends on a local context and a global environment.
 
 .. _Local-context:
 
 **Local context.**
-A *local context* is an ordered list of *local declarations* of names
-which we call *variables*. The declaration of some variable :math:`x` is
-either a *local assumption*, written :math:`x:T` (:math:`T` is a type) or a *local
-definition*, written :math:`x:=t:T`. We use brackets to write local contexts.
-A typical example is :math:`[x:T;~y:=u:U;~z:V]`. Notice that the variables
+A :term:`local context` is an ordered list of declarations of *variables*.
+The declaration of a variable :math:`x` is
+either an *assumption*, written :math:`x:T` (where :math:`T` is a type) or a
+*definition*, written :math:`x:=t:T`. Local contexts are written in brackets,
+for example :math:`[x:T;~y:=u:U;~z:V]`. The variables
 declared in a local context must be distinct. If :math:`Γ` is a local context
-that declares some :math:`x`, we
-write :math:`x ∈ Γ`. By writing :math:`(x:T) ∈ Γ` we mean that either :math:`x:T` is an
-assumption in :math:`Γ` or that there exists some :math:`t` such that :math:`x:=t:T` is a
-definition in :math:`Γ`. If :math:`Γ` defines some :math:`x:=t:T`, we also write :math:`(x:=t:T) ∈ Γ`.
+that declares :math:`x`, we
+write :math:`x ∈ Γ`. Writing :math:`(x:T) ∈ Γ` means there is an assumption
+or a definition giving the type :math:`T` to :math:`x` in :math:`Γ`.
+If :math:`Γ` defines :math:`x:=t:T`, we also write :math:`(x:=t:T) ∈ Γ`.
 For the rest of the chapter, :math:`Γ::(y:T)` denotes the local context :math:`Γ`
 enriched with the local assumption :math:`y:T`. Similarly, :math:`Γ::(y:=t:T)` denotes
 the local context :math:`Γ` enriched with the local definition :math:`(y:=t:T)`. The
-notation :math:`[]` denotes the empty local context. By :math:`Γ_1 ; Γ_2` we mean
+notation :math:`[]` denotes the empty local context. Writing :math:`Γ_1 ; Γ_2` means
 concatenation of the local context :math:`Γ_1` and the local context :math:`Γ_2`.
-
 
 .. _Global-environment:
 
 **Global environment.**
-A *global environment* is an ordered list of *global declarations*.
-Global declarations are either *global assumptions* or *global
-definitions*, but also declarations of inductive objects. Inductive
-objects themselves declare both inductive or coinductive types and
-constructors (see Section :ref:`inductive-definitions`).
+A :term:`global environment` is an ordered list of *declarations*.
+Global declarations are either *assumptions*, *definitions*
+or declarations of inductive objects. Inductive
+objects declare both constructors and inductive or
+coinductive types (see Section :ref:`inductive-definitions`).
 
-A *global assumption* will be represented in the global environment as
-:math:`(c:T)` which assumes the name :math:`c` to be of some type :math:`T`. A *global
-definition* will be represented in the global environment as :math:`c:=t:T`
-which defines the name :math:`c` to have value :math:`t` and type :math:`T`. We shall call
+In the global environment,
+*assumptions* are written as
+:math:`(c:T)`, indicating that :math:`c` is of the type :math:`T`. *Definitions*
+are written as :math:`c:=t:T`, indicating that :math:`c` has the value :math:`t`
+and type :math:`T`. We shall call
 such names *constants*. For the rest of the chapter, the :math:`E;~c:T` denotes
-the global environment :math:`E` enriched with the global assumption :math:`c:T`.
+the global environment :math:`E` enriched with the assumption :math:`c:T`.
 Similarly, :math:`E;~c:=t:T` denotes the global environment :math:`E` enriched with the
-global definition :math:`(c:=t:T)`.
+definition :math:`(c:=t:T)`.
 
 The rules for inductive definitions (see Section
 :ref:`inductive-definitions`) have to be considered as assumption
-rules to which the following definitions apply: if the name :math:`c`
+rules in which the following definitions apply: if the name :math:`c`
 is declared in :math:`E`, we write :math:`c ∈ E` and if :math:`c:T` or
 :math:`c:=t:T` is declared in :math:`E`, we write :math:`(c : T) ∈ E`.
 
@@ -315,7 +313,7 @@ following rules.
 .. note::
    We may have :math:`\letin{x}{t:T}{u}` well-typed without having
    :math:`((λ x:T.~u)~t)` well-typed (where :math:`T` is a type of
-   :math:`t`). This is because the value :math:`t` associated to
+   :math:`t`). This is because the value :math:`t` associated with
    :math:`x` may be used in a conversion rule
    (see Section :ref:`Conversion-rules`).
 

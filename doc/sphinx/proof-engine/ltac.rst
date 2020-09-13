@@ -284,6 +284,8 @@ A sequence is an expression of the following form:
 .. tacn:: @ltac_expr3__1 ; {| @ltac_expr3__2 | @binder_tactic }
    :name: ltac-seq
 
+   .. todo: can't use "… ; …" as the name because of the semicolon
+
    The expression :n:`@ltac_expr3__1` is evaluated to :n:`v__1`, which must be
    a tactic value. The tactic :n:`v__1` is applied to the current goals,
    possibly producing more goals. Then the right-hand side is evaluated to
@@ -481,7 +483,6 @@ Do loop
 ~~~~~~~
 
 .. tacn:: do @nat_or_var @ltac_expr3
-   :name: do
 
    The do loop repeats a tactic :token:`nat_or_var` times:
 
@@ -497,7 +498,6 @@ Repeat loop
 ~~~~~~~~~~~
 
 .. tacn:: repeat @ltac_expr3
-   :name: repeat
 
    The repeat loop repeats a tactic until it fails.
 
@@ -515,7 +515,6 @@ Catching errors: try
 We can catch the tactic errors with:
 
 .. tacn:: try @ltac_expr3
-   :name: try
 
    :n:`@ltac_expr` is evaluated to ``v`` which must be a tactic value. The tactic
    value ``v`` is applied to each focused goal independently. If the application of
@@ -531,7 +530,6 @@ Detecting progress
 We can check if a tactic made progress with:
 
 .. tacn:: progress @ltac_expr3
-   :name: progress
 
    :n:`@ltac_expr` is evaluated to ``v`` which must be a tactic value. The tactic value ``v``
    is applied to each focused subgoal independently. If the application of ``v``
@@ -641,7 +639,6 @@ First tactic to succeed
 In some cases backtracking may be too expensive.
 
 .. tacn:: first [ {*| @ltac_expr } ]
-   :name: first
 
    For each focused goal, independently apply the first :token:`ltac_expr` that succeeds.
    The :n:`@ltac_expr`\s must evaluate to tactic values.
@@ -701,7 +698,6 @@ Selects and applies the first tactic that solves each goal (i.e. leaves no subgo
 in a series of alternative tactics:
 
 .. tacn:: solve [ {*| @ltac_expr__i } ]
-   :name: solve
 
    For each current subgoal: evaluates and applies each :n:`@ltac_expr` in order
    until one is found that solves the subgoal.
@@ -743,7 +739,6 @@ Conditional branching: tryif
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tacn:: tryif @ltac_expr__test then @ltac_expr__then else @ltac_expr2__else
-   :name: tryif
 
    For each focused goal, independently: Evaluate and apply :n:`@ltac_expr__test`.
    If :n:`@ltac_expr__test` succeeds at least once, evaluate and apply :n:`@ltac_expr__then`
@@ -772,7 +767,6 @@ Another way of restricting backtracking is to restrict a tactic to a
 single success:
 
 .. tacn:: once @ltac_expr3
-   :name: once
 
    :n:`@ltac_expr3` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied but only its first success is used. If ``v`` fails,
@@ -788,7 +782,6 @@ Coq provides an experimental way to check that a tactic has *exactly
 one* success:
 
 .. tacn:: exactly_once @ltac_expr3
-   :name: exactly_once
 
    :n:`@ltac_expr3` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied if it has at most one success. If ``v`` fails,
@@ -816,7 +809,6 @@ Checking for failure: assert_fails
 Coq defines an |Ltac| tactic in `Init.Tactics` to check that a tactic *fails*:
 
 .. tacn:: assert_fails @ltac_expr3
-   :name: assert_fails
 
    If :n:`@ltac_expr3` fails, the proof state is unchanged and no message is printed.
    If :n:`@ltac_expr3` unexpectedly has at least one success, the tactic performs
@@ -863,7 +855,6 @@ Coq defines an |Ltac| tactic in `Init.Tactics` to check that a tactic has *at le
 success:
 
 .. tacn:: assert_succeeds @ltac_expr3
-   :name: assert_succeeds
 
    If :n:`@ltac_expr3` has at least one success, the proof state is unchanged and
    no message is printed.  If :n:`@ltac_expr3` fails, the tactic performs
@@ -877,7 +868,6 @@ Print/identity tactic: idtac
 
 
 .. tacn:: idtac {* {| @ident | @string | @natural } }
-   :name: idtac
 
    Leaves the proof unchanged and prints the given tokens. :token:`String<string>`\s
    and :token:`natural`\s are printed
@@ -974,7 +964,6 @@ We can force a tactic to stop if it has not finished after a certain
 amount of time:
 
 .. tacn:: timeout @nat_or_var @ltac_expr3
-   :name: timeout
 
    :n:`@ltac_expr3` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied normally, except that it is interrupted after :n:`@nat_or_var` seconds
@@ -998,7 +987,6 @@ Timing a tactic
 A tactic execution can be timed:
 
 .. tacn:: time {? @string } @ltac_expr3
-   :name: time
 
    evaluates :n:`@ltac_expr3` and displays the running time of the tactic expression, whether it
    fails or succeeds. In case of several successes, the time for each successive
@@ -1015,7 +1003,6 @@ Tactic expressions that produce terms can be timed with the experimental
 tactic
 
 .. tacn:: time_constr @ltac_expr
-   :name: time_constr
 
    which evaluates :n:`@ltac_expr ()` and displays the time the tactic expression
    evaluated, assuming successful evaluation. Time is in seconds and is
@@ -1026,12 +1013,10 @@ tactic
    implemented using the following internal tactics:
 
 .. tacn:: restart_timer {? @string }
-   :name: restart_timer
 
    Reset a timer
 
 .. tacn:: finish_timing {? ( @string ) } {? @string }
-   :name: finish_timing
 
    Display an optionally named timer. The parenthesized string argument
    is also optional, and determines the label associated with the timer
@@ -1362,7 +1347,7 @@ Pattern matching on goals and hypotheses: match goal
 
    :tacn:`lazymatch goal`, :tacn:`match goal` and :tacn:`multimatch goal` are :token:`l1_tactic`\s.
 
-   Use this form to match hypotheses and/or goals in the proof context.  These patterns have zero or
+   Use this form to match hypotheses and/or goals in the local context.  These patterns have zero or
    more subpatterns to match hypotheses followed by a subpattern to match the conclusion.  Except for the
    differences noted below, this works the same as the corresponding :n:`@match_key @ltac_expr` construct
    (see :tacn:`match`).  Each current goal is processed independently.
@@ -1533,7 +1518,7 @@ expression returns an identifier:
    .. todo you can't have a :tacn: with the same name as a :gdef: for now,
       eg `fresh` can't be both
 
-   Returns a fresh identifier name (i.e. one that is not already used in the context
+   Returns a fresh identifier name (i.e. one that is not already used in the local context
    and not previously returned by :tacn:`fresh` in the current :token:`ltac_expr`).
    The fresh identifier is formed by concatenating the final :token:`ident` of each :token:`qualid`
    (dropping any qualified components) and each specified :token:`string`.
@@ -1541,11 +1526,11 @@ expression returns an identifier:
    If no arguments are given, the name is a fresh derivative of the name ``H``.
 
    .. note:: We recommend generating the fresh identifier immediately before
-      adding it in the proof context.  Using :tacn:`fresh` in a local function
+      adding it to the local context.  Using :tacn:`fresh` in a local function
       may not work as you expect:
 
-      Successive :tacn:`fresh`\es give distinct names even if the names haven't
-      yet been added to the proof context:
+      Successive calls to :tacn:`fresh` give distinct names even if the names haven't
+      yet been added to the local context:
 
       .. coqtop:: reset none
 
@@ -1635,7 +1620,6 @@ Testing boolean expressions: guard
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tacn:: guard @int_or_var @comparison @int_or_var
-   :name: guard
 
    .. insertprodn int_or_var comparison
 
@@ -1734,7 +1718,6 @@ Defining |Ltac| symbols
 .. index:: ::=
 
 .. cmd:: Ltac @tacdef_body {* with @tacdef_body }
-   :name: Ltac
 
    .. insertprodn tacdef_body tacdef_body
 
@@ -2248,7 +2231,6 @@ Tracing execution
    not printed.
 
    .. opt:: Info Level @natural
-      :name: Info Level
 
       This option is an alternative to the :cmd:`Info` command.
 
@@ -2269,17 +2251,17 @@ The debugger stops, prompting for a command which can be one of the
 following:
 
 +-----------------+-----------------------------------------------+
-| simple newline: | go to the next step                           |
+| newline         | go to the next step                           |
 +-----------------+-----------------------------------------------+
-| h:              | get help                                      |
+| h               | get help                                      |
 +-----------------+-----------------------------------------------+
-| x:              | exit current evaluation                       |
+| r n             | advance n steps further                       |
 +-----------------+-----------------------------------------------+
-| s:              | continue current evaluation without stopping  |
+| r string        | advance up to the next call to “idtac string” |
 +-----------------+-----------------------------------------------+
-| r n:            | advance n steps further                       |
+| s               | continue current evaluation without stopping  |
 +-----------------+-----------------------------------------------+
-| r string:       | advance up to the next call to “idtac string” |
+| x               | exit current evaluation                       |
 +-----------------+-----------------------------------------------+
 
 .. exn:: Debug mode not available in the IDE
@@ -2366,25 +2348,21 @@ performance issue.
    Unset Ltac Profiling.
 
 .. tacn:: start ltac profiling
-   :name: start ltac profiling
 
    This tactic behaves like :tacn:`idtac` but enables the profiler.
 
 .. tacn:: stop ltac profiling
-   :name: stop ltac profiling
 
    Similarly to :tacn:`start ltac profiling`, this tactic behaves like
    :tacn:`idtac`. Together, they allow you to exclude parts of a proof script
    from profiling.
 
 .. tacn:: reset ltac profile
-   :name: reset ltac profile
 
    Equivalent to the :cmd:`Reset Ltac Profile` command, which allows
    resetting the profile from tactic scripts for benchmarking purposes.
 
 .. tacn:: show ltac profile {? {| cutoff @integer | @string } }
-   :name: show ltac profile
 
    Equivalent to the :cmd:`Show Ltac Profile` command,
    which allows displaying the profile from tactic scripts for
@@ -2410,11 +2388,10 @@ Run-time optimization tactic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tacn:: optimize_heap
-   :name: optimize_heap
 
    This tactic behaves like :tacn:`idtac`, except that running it compacts the
-   heap in the OCaml run-time system. It is analogous to the Vernacular
-   command :cmd:`Optimize Heap`.
+   heap in the OCaml run-time system. It is analogous to the
+   :cmd:`Optimize Heap` command.
 
 .. tacn:: infoH @ltac_expr3
 

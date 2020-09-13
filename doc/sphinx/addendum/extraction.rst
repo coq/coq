@@ -100,7 +100,6 @@ Setting the target language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. cmd:: Extraction Language @language
-   :name: Extraction Language
 
    .. insertprodn language language
 
@@ -431,12 +430,10 @@ Additional settings
 ~~~~~~~~~~~~~~~~~~~
 
 .. opt:: Extraction File Comment @string
-   :name: Extraction File Comment
 
    Provides a comment that is included at the beginning of the output files.
 
 .. opt:: Extraction Flag @natural
-   :name: Extraction Flag
 
    Controls which optimizations are used during extraction, providing a finer-grained
    control than :flag:`Extraction Optimize`.  The bits of :token:`natural` are used as a bit mask.

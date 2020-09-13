@@ -1247,11 +1247,7 @@ lident: [
 
 destruction_arg: [
 | natural
-| constr_with_bindings_arg
-]
-
-constr_with_bindings_arg: [
-| OPT ">" one_term OPT ( "with" bindings )      (* SSR plugin *)
+| one_term_with_bindings
 ]
 
 occurrences: [
@@ -1691,7 +1687,7 @@ simple_tactic: [
 | "absurd" one_term
 | "contradiction" OPT ( one_term OPT ( "with" bindings ) )
 | "autorewrite" OPT "*" "with" LIST1 ident OPT occurrences OPT ( "using" ltac_expr )
-| "rewrite" "*" OPT [ "->" | "<-" ] one_term OPT ( "in" ident ) OPT ( "at" rewrite_occs OPT ( "by" ltac_expr3 ) )
+| "rewrite" "*" OPT [ "->" | "<-" ] one_term OPT ( "in" ident ) OPT ( "at" rewrite_occs ) OPT ( "by" ltac_expr3 )
 | "rewrite" "*" OPT [ "->" | "<-" ] one_term "at" rewrite_occs "in" ident OPT ( "by" ltac_expr3 )
 | "refine" one_term
 | "simple" "refine" one_term
@@ -1783,12 +1779,12 @@ simple_tactic: [
 | "eintros" LIST0 intropattern
 | "decide" "equality"
 | "compare" one_term one_term
-| "apply" LIST1 constr_with_bindings_arg SEP "," OPT in_hyp_as
-| "eapply" LIST1 constr_with_bindings_arg SEP "," OPT in_hyp_as
-| "simple" "apply" LIST1 constr_with_bindings_arg SEP "," OPT in_hyp_as
-| "simple" "eapply" LIST1 constr_with_bindings_arg SEP "," OPT in_hyp_as
-| "elim" constr_with_bindings_arg OPT ( "using" one_term OPT ( "with" bindings ) )
-| "eelim" constr_with_bindings_arg OPT ( "using" one_term OPT ( "with" bindings ) )
+| "apply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
+| "eapply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
+| "simple" "apply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
+| "simple" "eapply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
+| "elim" one_term_with_bindings OPT ( "using" one_term OPT ( "with" bindings ) )
+| "eelim" one_term_with_bindings OPT ( "using" one_term OPT ( "with" bindings ) )
 | "case" induction_clause_list
 | "ecase" induction_clause_list
 | "fix" ident natural OPT ( "with" LIST1 fixdecl )
@@ -1842,8 +1838,8 @@ simple_tactic: [
 | "unfold" LIST1 reference_occs SEP "," OPT occurrences
 | "fold" LIST1 one_term OPT occurrences
 | "pattern" LIST1 pattern_occs SEP "," OPT occurrences
-| "change" conversion OPT occurrences
-| "change_no_check" conversion OPT occurrences
+| "change" OPT ( one_term OPT ( "at" occs_nums ) "with" ) one_term OPT occurrences
+| "change_no_check" OPT ( one_term OPT ( "at" occs_nums ) "with" ) one_term OPT occurrences
 | "btauto"
 | "rtauto"
 | "congruence" OPT natural OPT ( "with" LIST1 one_term )
@@ -1922,6 +1918,7 @@ simple_tactic: [
 | "lia"
 | "lra"
 | "nia"
+| "now_show" one_term
 | "nra"
 | "over"      (* SSR plugin *)
 | "split_Rabs"
@@ -1977,11 +1974,11 @@ as_name: [
 ]
 
 oriented_rewriter: [
-| OPT [ "->" | "<-" ] rewriter
+| OPT [ "->" | "<-" ] OPT natural OPT [ "?" | "!" ] one_term_with_bindings
 ]
 
-rewriter: [
-| OPT natural OPT [ "?" | "!" ] constr_with_bindings_arg
+one_term_with_bindings: [
+| OPT ">" one_term OPT ( "with" bindings )
 ]
 
 induction_clause_list: [
@@ -2452,12 +2449,6 @@ struct_annot: [
 
 cofixdecl: [
 | "(" ident LIST0 simple_binder ":" term ")"
-]
-
-conversion: [
-| one_term
-| one_term "with" one_term
-| one_term "at" occs_nums "with" one_term
 ]
 
 func_scheme_def: [

@@ -328,7 +328,7 @@ Cumulativity Weak Constraints
 Global and local universes
 ---------------------------
 
-Each universe is declared in a global or local environment before it
+Each universe is declared in a global or local context before it
 can be used. To ensure compatibility, every *global* universe is set
 to be strictly greater than :g:`Set` when it is introduced, while every
 *local* (i.e. polymorphically quantified) universe is introduced as
@@ -617,7 +617,7 @@ definitions in the section sharing a common variable will both get
 parameterized by the universes produced by the variable declaration.
 This is in contrast to a “mononorphic” variable which introduces
 global universes and constraints, making the two definitions depend on
-the *same* global universes associated to the variable.
+the *same* global universes associated with the variable.
 
 It is possible to mix universe polymorphism and monomorphism in
 sections, except in the following ways:

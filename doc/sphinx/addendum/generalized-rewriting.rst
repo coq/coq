@@ -101,7 +101,7 @@ morphisms, that are required to be simultaneously monotone on every
 argument.
 
 Morphisms can also be contravariant in one or more of their arguments.
-A morphism is contravariant on an argument associated to the relation
+A morphism is contravariant on an argument associated with the relation
 instance :math:`R` if it is covariant on the same argument when the inverse
 relation :math:`R^{−1}` (``inverse R`` in Coq) is considered. The special arrow ``-->``
 is used in signatures for contravariant morphisms.
@@ -336,7 +336,7 @@ respective relation instances.
    in the previous example). Applying ``union_compat`` by hand we are left with the
    goal ``eq_set (union S S) (union S S)``.
 
-When the relations associated to some arguments are not reflexive, the
+When the relations associated with some arguments are not reflexive, the
 tactic cannot automatically prove the reflexivity goals, that are left
 to the user.
 
@@ -477,8 +477,8 @@ documentation on :ref:`typeclasses` and the theories files in Classes
 for further explanations.
 
 One can inform the rewrite tactic about morphisms and relations just
-by using the typeclass mechanism to declare them using Instance and
-Context vernacular commands. Any object of type Proper (the type of
+by using the typeclass mechanism to declare them using the :cmd:`Instance` and
+:cmd:`Context` commands. Any object of type Proper (the type of
 morphism declarations) in the local context will also be automatically
 used by the rewriting tactic to solve constraints.
 
@@ -553,7 +553,7 @@ pass additional arguments such as ``using relation``.
    be used to replace the first tactic argument with the second one. If
    omitted, it defaults to the ``DefaultRelation`` instance on the type of
    the objects. By default, it means the most recent ``Equivalence`` instance
-   in the environment, but it can be customized by declaring
+   in the global environment, but it can be customized by declaring
    new ``DefaultRelation`` instances. As Leibniz equality is a declared
    equivalence, it will fall back to it if no other relation is declared
    on a given type.
@@ -608,7 +608,6 @@ Deprecated syntax and backward incompatibilities
    an old development to the new semantics is usually quite simple.
 
 .. cmd:: Declare Morphism @one_term : @ident
-   :name: Declare Morphism
 
    Declares a parameter in a module type that is a morphism.
 
@@ -686,7 +685,7 @@ Note that when one does rewriting with a lemma under a binder using
 variable, as the semantics are different from rewrite where the lemma
 is first matched on the whole term. With the new :tacn:`setoid_rewrite`,
 matching is done on each subterm separately and in its local
-environment, and all matches are rewritten *simultaneously* by
+context, and all matches are rewritten *simultaneously* by
 default. The semantics of the previous :tacn:`setoid_rewrite` implementation
 can almost be recovered using the ``at 1`` modifier.
 

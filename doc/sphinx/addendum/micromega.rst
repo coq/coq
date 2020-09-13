@@ -140,7 +140,6 @@ and checked to be :math:`-1`.
 -------------------------------------------------------------------
 
 .. tacn:: lra
-   :name: lra
 
    This tactic is searching for *linear* refutations. As a result, this tactic explores a subset of the *Cone*
    defined as
@@ -154,7 +153,6 @@ and checked to be :math:`-1`.
 ---------------------------------------------
 
 .. tacn:: lia
-   :name: lia
 
    This tactic solves linear goals over :g:`Z` by searching for *linear* refutations and cutting planes.
    :tacn:`lia` provides support for :g:`Z`, :g:`nat`, :g:`positive` and :g:`N` by pre-processing via the :tacn:`zify` tactic.
@@ -220,7 +218,6 @@ a proof.
 --------------------------------------------------
 
 .. tacn:: nra
-   :name: nra
 
    This tactic is an *experimental* proof procedure for non-linear
    arithmetic. The tactic performs a limited amount of non-linear
@@ -241,7 +238,6 @@ proof by abstracting monomials by variables.
 ----------------------------------------------------------
 
 .. tacn:: nia
-   :name: nia
 
    This tactic is a proof procedure for non-linear integer arithmetic.
    It performs a pre-processing similar to :tacn:`nra`. The obtained goal is
@@ -251,7 +247,6 @@ proof by abstracting monomials by variables.
 ----------------------------------------------------
 
 .. tacn:: psatz @one_term {? @nat_or_var }
-   :name: psatz
 
    This tactic explores the *Cone* by increasing degrees – hence the
    depth parameter :token:`nat_or_var`. In theory, such a proof search is complete – if the
@@ -281,7 +276,6 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 ------------------------------------------
 
 .. tacn:: zify
-   :name: zify
 
    This tactic is internally called by :tacn:`lia` to support additional types, e.g., :g:`nat`, :g:`positive` and :g:`N`.
    Additional support is provided by the following modules:

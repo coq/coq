@@ -47,7 +47,7 @@ refer the interested reader to :cite:`Coq85`.
 ι-reduction
 ~~~~~~~~~~~
 
-A specific conversion rule is associated to the inductive objects in
+A specific conversion rule is associated with the inductive objects in
 the global environment. We shall give later on (see Section
 :ref:`Well-formed-inductive-definitions`) the precise rules but it
 just says that a destructor applied to an object built from a
@@ -159,7 +159,8 @@ relation :math:`t` reduces to :math:`u` in the global environment
 reductions β, δ, ι or ζ.
 
 We say that two terms :math:`t_1` and :math:`t_2` are
-*βδιζη-convertible*, or simply :gdef:`convertible`, or *equivalent*, in the
+*βδιζη-convertible*, or simply :gdef:`convertible`, or
+:term:`definitionally equal <definitional equality>`, in the
 global environment :math:`E` and local context :math:`Γ` iff there
 exist terms :math:`u_1` and :math:`u_2` such that :math:`E[Γ] ⊢ t_1 \triangleright
 … \triangleright u_1` and :math:`E[Γ] ⊢ t_2 \triangleright … \triangleright u_2` and either :math:`u_1` and
