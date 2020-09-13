@@ -46,9 +46,8 @@ Section EqdepDec.
   Let comp (x y y':A) (eq1:x = y) (eq2:x = y') : y = y' :=
     eq_ind _ (fun a => a = y') eq2 _ eq1.
 
-  Remark trans_sym_eq : forall (x y:A) (u:x = y), comp u u = eq_refl y.
+  Remark trans_sym_eq (x y:A) (u:x = y) : comp u u = eq_refl y.
   Proof.
-    intros.
     case u; trivial.
   Qed.
 
@@ -62,8 +61,7 @@ Section EqdepDec.
       | or_intror neqxy => False_ind _ (neqxy u)
     end.
 
-  Let nu_constant : forall (y:A) (u v:x = y), nu u = nu v.
-    intros.
+  Let nu_constant (y:A) (u v:x = y) : nu u = nu v.
     unfold nu.
     destruct (eq_dec y) as [Heq|Hneq].
     - reflexivity.
@@ -75,27 +73,23 @@ Section EqdepDec.
   Let nu_inv (y:A) (v:x = y) : x = y := comp (nu (eq_refl x)) v.
 
 
-  Remark nu_left_inv_on : forall (y:A) (u:x = y), nu_inv (nu u) = u.
+  Remark nu_left_inv_on (y:A) (u:x = y) : nu_inv (nu u) = u.
   Proof.
-    intros.
     case u; unfold nu_inv.
     apply trans_sym_eq.
   Qed.
 
 
-  Theorem eq_proofs_unicity_on : forall (y:A) (p1 p2:x = y), p1 = p2.
+  Theorem eq_proofs_unicity_on (y:A) (p1 p2:x = y) : p1 = p2.
   Proof.
-    intros.
-    elim nu_left_inv_on with (u := p1).
-    elim nu_left_inv_on with (u := p2).
+    elim (nu_left_inv_on p1).
+    elim (nu_left_inv_on p2).
     elim nu_constant with y p1 p2.
     reflexivity.
   Qed.
 
-  Theorem K_dec_on :
-    forall P:x = x -> Prop, P (eq_refl x) -> forall p:x = x, P p.
+  Theorem K_dec_on (P:x = x -> Prop) (H:P (eq_refl x)) (p:x = x) : P p.
   Proof.
-    intros.
     elim eq_proofs_unicity_on with x (eq_refl x) p.
     trivial.
   Qed.
@@ -112,11 +106,10 @@ Section EqdepDec.
     end.
 
 
-  Theorem inj_right_pair_on :
-    forall (P:A -> Prop) (y y':P x),
-      ex_intro P x y = ex_intro P x y' -> y = y'.
+  Theorem inj_right_pair_on (P:A -> Prop) (y y':P x) :
+    ex_intro P x y = ex_intro P x y' -> y = y'.
   Proof.
-    intros.
+    intros H.
     cut (proj (ex_intro P x y) y = proj (ex_intro P x y') y).
     - simpl.
       destruct (eq_dec x) as [Heq|Hneq].
@@ -156,14 +149,11 @@ Proof (@inj_right_pair_on A x (eq_dec x)).
 Require Import EqdepFacts.
 
 (** We deduce axiom [K] for (decidable) types *)
-Theorem K_dec_type :
-  forall A:Type,
-    (forall x y:A, {x = y} + {x <> y}) ->
-    forall (x:A) (P:x = x -> Prop), P (eq_refl x) -> forall p:x = x, P p.
+Theorem K_dec_type (A:Type) (eq_dec:forall x y:A, {x = y} + {x <> y}) (x:A)
+  (P:x = x -> Prop) (H:P (eq_refl x)) (p:x = x) : P p.
 Proof.
-  intros A eq_dec x P H p.
-  elim p using K_dec; intros.
-  - case (eq_dec x0 y); [left|right]; assumption.
+  elim p using K_dec.
+  - intros x0 y; case (eq_dec x0 y); [left|right]; assumption.
   - trivial.
 Qed.
 
@@ -259,7 +249,7 @@ Module DecidableEqDep (M:DecidableType).
       ex_intro P x p = ex_intro P x q -> p = q.
   Proof.
     intros.
-    apply inj_right_pair with (A:=U).
+    apply inj_right_pair.
     - intros x0 y0; case (eq_dec x0 y0); [left|right]; assumption.
     - assumption.
   Qed.
@@ -377,7 +367,7 @@ Defined.
 
 Lemma UIP_refl_nat (n:nat) (x : n = n) : x = eq_refl.
 Proof.
-  induction n.
+  induction n as [|n IHn].
   - change (match 0 as n return 0=n -> Prop with
             | 0 => fun x => x = eq_refl
             | _ => fun _ => True
