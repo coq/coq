@@ -188,10 +188,8 @@ nitpick_ignore = [ ('token', token) for token in [
     'conversion',
     'where',
     'oriented_rewriter',
-    'hintbases',
     'bindings_with_parameters',
-    'destruction_arg',
-    'clause_dft_concl'
+    'destruction_arg'
 ]]
 
 # -- Options for HTML output ----------------------------------------------

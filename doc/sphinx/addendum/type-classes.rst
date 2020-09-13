@@ -335,12 +335,6 @@ Summary of the commands
 
 .. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_def } %} | := @term } }
 
-   .. insertprodn hint_info one_pattern
-
-   .. prodn::
-      hint_info ::= %| {? @natural } {? @one_pattern }
-      one_pattern ::= @one_term
-
    Declares a typeclass instance named
    :token:`ident_decl` of the class :n:`@type` with the specified parameters and with
    fields defined by :token:`field_def`, where each field must be a declared field of
@@ -503,7 +497,7 @@ Typeclasses Transparent, Typeclasses Opaque
 
    It is useful when some constants prevent some unifications and make
    resolution fail. It is also useful to declare constants which
-   should never be unfolded during proof-search, like fixpoints or
+   should never be unfolded during proof search, like fixpoints or
    anything which does not look like an abbreviation. This can
    additionally speed up proof search as the typeclass map can be
    indexed by such rigid constants (see
@@ -555,7 +549,7 @@ Settings
       This can be expensive as it requires rebuilding hint
       clauses dynamically, and does not benefit from the invertibility
       status of the product introduction rule, resulting in potentially more
-      expensive proof-search (i.e. more useless backtracking).
+      expensive proof search (i.e. more useless backtracking).
 
 .. flag:: Typeclass Resolution For Conversion
 

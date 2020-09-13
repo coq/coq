@@ -551,7 +551,7 @@ Flags, options and attributes
   ``Private`` (`#11665 <https://github.com/coq/coq/pull/11665>`_, by
   Théo Zimmermann).
 - **Added:**
-  The :cmd:`Hint` commands now accept the :attr:`export` locality as
+  The :ref:`Hint <creating_hints>` commands now accept the :attr:`export` locality as
   an attribute, allowing to make import-scoped hints
   (`#11812 <https://github.com/coq/coq/pull/11812>`_,
   by Pierre-Marie Pédrot).
@@ -3170,7 +3170,7 @@ Vernacular Commands
   `Inductive list (A : Type) := nil : list | cons : A -> list -> list.`
 - New `Set Hint Variables/Constants Opaque/Transparent` commands for setting
   globally the opacity flag of variables and constants in hint databases,
-  overwriting the opacity set of the hint database.
+  overriding the opacity setting of the hint database.
 - Added generic syntax for "attributes", as in:
   `#[local] Lemma foo : bar.`
 - Added the `Numeral Notation` command for registering decimal numeral
@@ -4045,7 +4045,7 @@ constraints can now be left floating around and be seen by the user
 thanks to a new option. The Keyed Unification mode has been improved by
 Matthieu Sozeau.
 
-The typeclass resolution engine and associated proof-search tactic have
+The typeclass resolution engine and associated proof search tactic have
 been reimplemented on top of the proof-engine monad, providing better
 integration in tactics, and new options have been introduced to control
 it, by Matthieu Sozeau with help from Théo Zimmermann.
@@ -5140,7 +5140,7 @@ Program
 - Hints costs are now correctly taken into account (potential source of
   incompatibilities).
 - Documented the Hint Cut command that allows control of the
-  proof-search during typeclass resolution (see reference manual).
+  proof search during typeclass resolution (see reference manual).
 
 API
 
@@ -5776,7 +5776,7 @@ Libraries
   comes first. By default, the power function now takes two BigN.
 
 - Creation of Vector, an independent library for lists indexed by their length.
-  Vectors' names overwrite lists' one so you should not "Import" the library.
+  Vectors' names override lists' one so you should not "Import" the library.
   All old names changed: function names follow the ocaml ones and, for example,
   Vcons becomes Vector.cons. You can get [..;..;..]-style notations by importing
   Vector.VectorNotations.
@@ -6830,7 +6830,7 @@ Tactics
 - Tactic "remember" now supports an "in" clause to remember only selected
   occurrences of a term.
 
-- Tactic "pose proof" supports name overwriting in case of specialization of an
+- Tactic "pose proof" supports name overriding in case of specialization of an
   hypothesis.
 
 - Semi-decision tactic "jp" for first-order intuitionistic logic moved to user
