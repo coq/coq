@@ -300,7 +300,7 @@ Conventions about unused pattern-matching variables
 
 Pattern-matching variables that are not used on the right-hand side of ``=>`` are
 considered the sign of a potential error. For instance, it could
-result from an undetected mispelled constant constructor. By default,
+result from an undetected misspelled constant constructor. By default,
 a warning is issued in such situations.
 
 .. warn:: Unused variable @ident catches more than one case.
@@ -366,7 +366,7 @@ only simple patterns remain. The original nesting of the ``match`` expressions
 is recovered at printing time. An easy way to see the result
 of the expansion is to toggle off the nesting performed at printing
 (use here :flag:`Printing Matching`), then by printing the term with :cmd:`Print`
-if the term is a constant, or using the command :cmd:`Check`.
+if the term is a :term:`constant`, or using the command :cmd:`Check`.
 
 The extended ``match`` still accepts an optional *elimination predicate*
 given after the keyword ``return``. Given a pattern matching expression,

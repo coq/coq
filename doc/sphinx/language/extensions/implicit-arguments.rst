@@ -238,7 +238,7 @@ Here is an example:
 
    This is triggered when setting an argument implicit in an
    expression which does not correspond to the type of an assumption
-   or to the body of a definition. Here is an example:
+   or to the :term:`body` of a definition. Here is an example:
 
    .. coqtop:: all warn
 
@@ -448,7 +448,7 @@ function.
 
    Turning this flag on (it is off by default) deactivates the use of implicit arguments.
 
-   In this case, all arguments of constants, inductive types,
+   In this case, all arguments of :term:`constants <constant>`, inductive types,
    constructors, etc, including the arguments declared as implicit, have
    to be given as if no arguments were implicit. By symmetry, this also
    affects printing.

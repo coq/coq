@@ -147,7 +147,7 @@ Options
 
 .. flag:: Omega UseLocalDefs
 
-   This flag (on by default) allows :tacn:`omega` to use the bodies of local
+   This flag (on by default) allows :tacn:`omega` to use the :term:`bodies <body>` of local
    variables.
 
 .. flag:: Omega System

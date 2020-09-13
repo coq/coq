@@ -190,7 +190,7 @@ Use :n:`:>` instead of :n:`:` before the
 .. cmd:: Identity Coercion @ident : @class >-> @class
 
    If ``C`` is the source `class` and ``D`` the destination, we check
-   that ``C`` is a constant with a body of the form
+   that ``C`` is a :term:`constant` with a :term:`body` of the form
    :g:`fun (x₁:T₁)..(xₙ:Tₙ) => D t₁..tₘ` where `m` is the
    number of parameters of ``D``.  Then we define an identity
    function with type :g:`forall (x₁:T₁)..(xₙ:Tₙ)(y:C x₁..xₙ),D t₁..tₘ`,

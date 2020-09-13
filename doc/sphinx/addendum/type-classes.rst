@@ -315,7 +315,7 @@ Summary of the commands
    inside records, and the trivial projection of an instance of such a
    class is convertible to the instance itself. This can be useful to
    make instances of existing objects easily and to reduce proof size by
-   not inserting useless projections. The class constant itself is
+   not inserting useless projections. The class :term:`constant` itself is
    declared rigid during resolution so that the class abstraction is
    maintained.
 
@@ -326,7 +326,7 @@ Summary of the commands
 
    .. cmd:: Existing Class @qualid
 
-      This variant declares a class from a previously declared constant or
+      This variant declares a class from a previously declared :term:`constant` or
       inductive definition. No methods or instances are defined.
 
       .. warn:: @ident is already declared as a typeclass
@@ -363,7 +363,7 @@ Summary of the commands
 
       This attribute can be used to leave holes or not provide all
       fields in the definition of an instance and open the tactic mode
-      to fill them.  It works exactly as if no body had been given and
+      to fill them.  It works exactly as if no :term:`body` had been given and
       the :tacn:`refine` tactic has been used first.
 
    .. cmd:: Declare Instance @ident_decl {* @binder } : @term {? @hint_info }
@@ -377,7 +377,7 @@ Summary of the commands
    .. cmd:: Existing Instance @qualid {? @hint_info }
             Existing Instances {+ @qualid } {? %| @natural }
 
-      Adds a constant whose type ends with
+      Adds a :term:`constant` whose type ends with
       an applied typeclass to the instance database with an optional
       priority :token:`natural`.  It can be used for redeclaring instances at the end of
       sections, or declaring structure projections as instances. This is
@@ -418,7 +418,7 @@ Summary of the commands
      unifier. When considering local hypotheses, we use the transparent
      state of the first hint database given. Using an empty database
      (created with :cmd:`Create HintDb` for example) with unfoldable variables and
-     constants as the first argument of ``typeclasses eauto`` hence makes
+     :term:`constants <constant>` as the first argument of ``typeclasses eauto`` hence makes
      resolution with the local hypotheses use full conversion during
      unification.
 
@@ -494,7 +494,7 @@ Typeclasses Transparent, Typeclasses Opaque
    Make :token:`qualid` opaque for typeclass search.
    A shortcut for :cmd:`Hint Opaque` :n:`{+ @qualid } : typeclass_instances`.
 
-   It is useful when some constants prevent some unifications and make
+   It is useful when some :term:`constants <constant>` prevent some unifications and make
    resolution fail. It is also useful to declare constants which
    should never be unfolded during proof search, like fixpoints or
    anything which does not look like an abbreviation. This can
@@ -502,7 +502,7 @@ Typeclasses Transparent, Typeclasses Opaque
    indexed by such rigid constants (see
    :ref:`thehintsdatabasesforautoandeauto`).
 
-By default, all constants and local variables are considered transparent. One
+By default, all :term:`constants <constant>` and local variables are considered transparent. One
 should take care not to make opaque any constant that is used to abbreviate a
 type, like:
 
@@ -531,7 +531,7 @@ Settings
    *unify* the goal with the conclusion of the hint. This can drastically
    improve performance by calling unification less often, matching
    syntactic patterns being very quick. This also provides more control
-   on the triggering of instances. For example, forcing a constant to
+   on the triggering of instances. For example, forcing a :term:`constant` to
    explicitly appear in the pattern will make it never apply on a goal
    where there is a hole in that place.
 

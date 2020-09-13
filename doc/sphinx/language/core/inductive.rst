@@ -25,7 +25,7 @@ Inductive types
    respectively correspond to elimination principles on :g:`Type`, :g:`Prop`,
    :g:`Set` and :g:`SProp`.  The type of the destructors
    expresses structural induction/recursion principles over objects of
-   type :n:`@ident`.  The constant :n:`@ident`\ ``_ind`` is always
+   type :n:`@ident`.  The :term:`constant` :n:`@ident`\ ``_ind`` is always
    generated, whereas :n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_rect``
    may be impossible to derive (for example, when :n:`@ident` is a
    proposition).
@@ -415,7 +415,7 @@ constructions.
 
    If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
-   In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
+   In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
 
    This command accepts the :attr:`using` attribute.

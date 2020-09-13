@@ -479,6 +479,7 @@ one or more of its hypotheses.
    .. prodn::
       occurrences ::= at @occs_nums
       | in @goal_occurrences
+      simple_occurrences ::= @occurrences
       occs_nums ::= {? - } {+ @nat_or_var }
       nat_or_var ::= {| @natural | @ident }
       goal_occurrences ::= {+, @hyp_occs } {? %|- {? @concl_occs } }
@@ -495,6 +496,10 @@ one or more of its hypotheses.
      The first form of :token:`occurrences` selects occurrences in
      the conclusion of the goal.  The second form can select occurrences
      in the goal conclusion and in one or more hypotheses.
+
+   :n:`@simple_occurrences`
+     A semantically restricted form of :n:`@occurrences` that doesn't allow the
+     `at` clause anywhere within it.
 
    :n:`{? - } {+ @nat_or_var }`
      Selects the specified occurrences within a single goal or hypothesis.

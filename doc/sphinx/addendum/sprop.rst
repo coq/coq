@@ -44,7 +44,7 @@ are convertible:
    exact Hx.
    Qed.
 
-Since we have definitional :ref:`eta-expansion` for
+Since we have definitional :ref:`eta-expansion-sect` for
 functions, the property of being a type of definitionally irrelevant
 values is impredicative, and so is :math:`\SProp`:
 

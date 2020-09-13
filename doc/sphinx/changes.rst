@@ -1933,7 +1933,7 @@ Changes in 8.12.1
 **Kernel**
 
 - **Fixed:** Incompleteness of conversion checking on problems
-  involving :ref:`eta-expansion` and :ref:`cumulative universe
+  involving :ref:`eta-expansion-sect` and :ref:`cumulative universe
   polymorphic inductive types <cumulative>` (`#12738
   <https://github.com/coq/coq/pull/12738>`_, fixes `#7015
   <https://github.com/coq/coq/issues/7015>`_, by Gaëtan Gilbert).
@@ -5089,7 +5089,7 @@ Coq version 8.5 contains the result of five specific long-term projects:
    Matthieu Sozeau.
 
 -  An implementation of primitive projections with
-   :math:`\eta`\-conversion bringing significant performance improvements
+   η-conversion bringing significant performance improvements
    when using records by Matthieu Sozeau.
 
 The full integration of the proof engine, by Arnaud Spiwack and
@@ -5140,10 +5140,10 @@ messages in case of inconsistencies and allowing higher-level algorithms
 like unification to be entirely type safe. The internal representation
 of universes has been modified but this is invisible to the user.
 
-The underlying logic has been extended with :math:`\eta`\-conversion for
+The underlying logic has been extended with η-conversion for
 records defined with primitive projections by Matthieu Sozeau. This
-additional form of :math:`\eta`\-conversion is justified using the same
-principle than the previously added :math:`\eta`\-conversion for function
+additional form of η-conversion is justified using the same
+principle than the previously added η-conversion for function
 types, based on formulations of the Calculus of Inductive Constructions
 with typed equality. Primitive projections, which do not carry the
 parameters of the record and are rigid names (not defined as a
@@ -6160,9 +6160,9 @@ contributed many various refinements of CoqIDE.
 Coq 8.4 also comes with a bunch of various smaller-scale changes
 and improvements regarding the different components of the system.
 
-The underlying logic has been extended with :math:`\eta`-conversion
+The underlying logic has been extended with η-conversion
 thanks to Hugo Herbelin, Stéphane Glondu and Benjamin Grégoire. The
-addition of :math:`\eta`-conversion is justified by the confidence that
+addition of η-conversion is justified by the confidence that
 the formulation of the Calculus of Inductive Constructions based on
 typed equality (such as the one considered in Lee and Werner to build a
 set-theoretic model of CIC :cite:`LeeWerner11`) is
@@ -6171,7 +6171,7 @@ applicable to the concrete implementation of Coq.
 The underlying logic benefited also from a refinement of the guard
 condition for fixpoints by Pierre Boutillier, the point being that it is
 safe to propagate the information about structurally smaller arguments
-through :math:`\beta`-redexes that are blocked by the “match”
+through β-redexes that are blocked by the “match”
 construction (blocked commutative cuts).
 
 Relying on the added permissiveness of the guard condition, Hugo

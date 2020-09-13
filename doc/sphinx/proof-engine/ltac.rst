@@ -1564,9 +1564,9 @@ Computing in a term: eval
 
 Evaluation of a term can be performed with:
 
-.. tacn:: eval @red_expr in @term
+:n:`eval @red_expr in @term`
 
-   :tacn:`eval` is a :token:`value_tactic`.
+See :tacn:`eval`.  :tacn:`eval` is a :token:`value_tactic`.
 
 Getting the type of a term
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -226,10 +226,10 @@ Automatic declaration of implicit arguments
       Print Implicit nil.
 
 The computation of implicit arguments takes account of the unfolding
-of constants. For instance, the variable ``p`` below has type
+of :term:`constants <constant>`. For instance, the variable ``p`` below has type
 ``(Transitivity R)`` which is reducible to
 ``forall x,y:U, R x y -> forall z:U, R y z -> R x z``. As the variables ``x``, ``y`` and ``z``
-appear strictly in the body of the type, they are implicit.
+appear strictly in the :term:`body` of the type, they are implicit.
 
 .. coqtop:: all
 
@@ -318,7 +318,7 @@ Binding arguments to a scope
 Effects of :cmd:`Arguments` on unfolding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-+ `simpl never` indicates that a constant should never be unfolded by :tacn:`cbn`,
++ `simpl never` indicates that a :term:`constant` should never be unfolded by :tacn:`cbn`,
   :tacn:`simpl` or :tacn:`hnf`:
 
   .. example::
@@ -330,7 +330,7 @@ Effects of :cmd:`Arguments` on unfolding
   After that command an expression like :g:`(minus (S x) y)` is left
   untouched by the tactics :tacn:`cbn` and :tacn:`simpl`.
 
-+ A constant can be marked to be unfolded only if it's applied to at least
++ A :term:`constant` can be marked to be unfolded only if it's applied to at least
   the arguments appearing before the `/` in a :cmd:`Arguments` command.
 
   .. example::
@@ -343,7 +343,7 @@ Effects of :cmd:`Arguments` on unfolding
 
   After that command the expression :g:`(f \o g)` is left untouched by
   :tacn:`simpl` while :g:`((f \o g) t)` is reduced to :g:`(f (g t))`.
-  The same mechanism can be used to make a constant volatile, i.e.
+  The same mechanism can be used to make a :term:`constant` volatile, i.e.
   always unfolded.
 
   .. example::
@@ -353,7 +353,7 @@ Effects of :cmd:`Arguments` on unfolding
         Definition volatile := fun x : nat => x.
         Arguments volatile / x.
 
-+ A constant can be marked to be unfolded only if an entire set of
++ A :term:`constant` can be marked to be unfolded only if an entire set of
   arguments evaluates to a constructor. The ``!`` symbol can be used to mark
   such arguments.
 
@@ -366,7 +366,7 @@ Effects of :cmd:`Arguments` on unfolding
   After that command, the expression :g:`(minus (S x) y)` is left untouched
   by :tacn:`simpl`, while :g:`(minus (S x) (S y))` is reduced to :g:`(minus x y)`.
 
-+ `simpl nomatch` indicates that a constant should not be unfolded if it would expose
++ `simpl nomatch` indicates that a :term:`constant` should not be unfolded if it would expose
   a `match` construct in the head position.  This affects the :tacn:`cbn`,
   :tacn:`simpl` and :tacn:`hnf` tactics.
 
@@ -379,10 +379,10 @@ Effects of :cmd:`Arguments` on unfolding
   In this case, :g:`(minus (S (S x)) (S y))` is simplified to :g:`(minus (S x) y)`
   even if an extra simplification is possible.
 
-  In detail: the tactic :tacn:`simpl` first applies :math:`\beta`:math:`\iota`-reduction. Then, it
-  expands transparent constants and tries to reduce further using :math:`\beta`:math:`\iota`-reduction.
-  But, when no :math:`\iota` rule is applied after unfolding then
-  :math:`\delta`-reductions are not applied. For instance trying to use :tacn:`simpl` on
+  In detail: the tactic :tacn:`simpl` first applies βι-reduction. Then, it
+  expands transparent :term:`constants <constant>` and tries to reduce further using βι-reduction.
+  But, when no ι rule is applied after unfolding then
+  δ-reductions are not applied. For instance trying to use :tacn:`simpl` on
   :g:`(plus n O) = n` changes nothing.
 
 

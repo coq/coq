@@ -29,7 +29,7 @@ Generating ML Code
 .. note::
 
   In the following, a qualified identifier :token:`qualid`
-  can be used to refer to any kind of Coq global "object" : constant,
+  can be used to refer to any kind of Coq global "object" : :term:`constant`,
   inductive type, inductive constructor or module name.
 
 The next two commands are meant to be used for rapid preview of
@@ -128,7 +128,7 @@ wants to generate an OCaml program. The optimizations can be split in two
 groups: the type-preserving ones (essentially constant inlining and
 reductions) and the non type-preserving ones (some function
 abstractions of dummy types are removed when it is deemed safe in order
-to have more elegant types). Therefore some constants may not appear in the
+to have more elegant types). Therefore some :term:`constants <constant>` may not appear in the
 resulting monolithic OCaml program. In the case of modular extraction,
 even if some inlining is done, the inlined constants are nevertheless
 printed, to ensure session-independent programs.
@@ -166,15 +166,15 @@ and commands:
 
 .. flag:: Extraction AutoInline
 
-   Default is on. The extraction mechanism inlines the bodies of
-   some defined constants, according to some heuristics
+   Default is on. The extraction mechanism inlines the :term:`bodies <body>` of
+   some defined :term:`constants <constant>`, according to some heuristics
    like size of bodies, uselessness of some arguments, etc.
    Those heuristics are not always perfect; if you want to disable
    this feature, turn this flag off.
 
 .. cmd:: Extraction Inline {+ @qualid }
 
-   In addition to the automatic inline feature, the constants
+   In addition to the automatic inline feature, the :term:`constants <constant>`
    mentioned by this command will always be inlined during extraction.
 
 .. cmd:: Extraction NoInline {+ @qualid }
@@ -194,24 +194,24 @@ and commands:
 
 **Inlining and printing of a constant declaration:**
 
-The user can explicitly ask for a constant to be extracted by two means:
+The user can explicitly ask for a :term:`constant` to be extracted by two means:
 
   * by mentioning it on the extraction command line
 
-  * by extracting the whole Coq module of this constant.
+  * by extracting the whole Coq module of this :term:`constant`.
 
-In both cases, the declaration of this constant will be present in the
-produced file. But this same constant may or may not be inlined in
+In both cases, the declaration of this :term:`constant` will be present in the
+produced file. But this same :term:`constant` may or may not be inlined in
 the following terms, depending on the automatic/custom inlining mechanism.  
 
-For the constants non-explicitly required but needed for dependency
+For the :term:`constants <constant>` non-explicitly required but needed for dependency
 reasons, there are two cases: 
 
   * If an inlining decision is taken, whether automatically or not,
-    all occurrences of this constant are replaced by its extracted body,
-    and this constant is not declared in the generated file.
+    all occurrences of this :term:`constant` are replaced by its extracted :term:`body`,
+    and this :term:`constant` is not declared in the generated file.
 
-  * If no inlining decision is taken, the constant is normally
+  * If no inlining decision is taken, the :term:`constant` is normally
     declared in the produced file. 
 
 Extra elimination of useless arguments
@@ -264,7 +264,7 @@ what ML term corresponds to a given axiom.
 
 .. cmd:: Extract Constant @qualid {* @string__tv } => {| @ident | @string }
 
-   Give an ML extraction for the given constant.
+   Give an ML extraction for the given :term:`constant`.
 
    :n:`@string__tv`
      If the type scheme axiom is an arity (a sequence of products followed

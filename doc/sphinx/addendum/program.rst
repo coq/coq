@@ -149,7 +149,7 @@ when reasoning with equality on the subset types themselves.
 
 The next two commands are similar to their standard counterparts
 :cmd:`Definition` and :cmd:`Fixpoint`
-in that they define constants. However, they may require the user to
+in that they define :term:`constants <constant>`. However, they may require the user to
 prove some goals to construct the final definitions.
 
 
@@ -173,7 +173,7 @@ term :n:`@term__0`, checking that the type of :n:`@term__0` is coercible to
 set of obligations generated during the interpretation of :n:`@term__0`
 and the aforementioned coercion derivation are solved.
 
-.. seealso:: Sections :ref:`vernac-controlling-the-reduction-strategies`, :tacn:`unfold`
+.. seealso:: Sections :ref:`controlling-the-reduction-strategies`, :tacn:`unfold`
 
 .. _program_fixpoint:
 

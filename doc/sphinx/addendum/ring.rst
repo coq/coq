@@ -1,4 +1,4 @@
-.. |bdi| replace:: :math:`\beta\delta\iota`
+.. |bdi| replace:: βδι
 .. |ra| replace:: :math:`\rightarrow_{\beta\delta\iota}`
 .. |la| replace:: :math:`\leftarrow_{\beta\delta\iota}`
 .. |eq| replace:: `=`:sub:`(by the main correctness theorem)`

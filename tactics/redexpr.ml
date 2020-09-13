@@ -271,11 +271,14 @@ let reduction_of_red_expr env r =
 let error_illegal_clause () =
   CErrors.user_err Pp.(str "\"at\" clause not supported in presence of an occurrence clause.")
 
+let error_multiple_patterns () =
+  CErrors.user_err Pp.(str "\"at\" clause in occurences not supported with multiple patterns or references.")
+
 let error_illegal_non_atomic_clause () =
   CErrors.user_err Pp.(str "\"at\" clause not supported in presence of a non atomic \"in\" clause.")
 
-let error_occurrences_not_unsupported () =
-  CErrors.user_err Pp.(str "Occurrences not supported for this reduction tactic.")
+let error_at_in_occurrences_not_supported () =
+  CErrors.user_err Pp.(str "\"at\" clause not supported for this reduction tactic.")
 
 let bind_red_expr_occurrences occs nbcl redexp =
   let open Locus in
@@ -292,14 +295,14 @@ let bind_red_expr_occurrences occs nbcl redexp =
   else
     match redexp with
     | Unfold (_::_::_) ->
-        error_illegal_clause ()
+        error_multiple_patterns ()
     | Unfold [(occl,c)] ->
         if occl != AllOccurrences then
           error_illegal_clause ()
         else
           Unfold [(occs,c)]
     | Pattern (_::_::_) ->
-        error_illegal_clause ()
+        error_multiple_patterns ()
     | Pattern [(occl,c)] ->
         if occl != AllOccurrences then
           error_illegal_clause ()
@@ -322,7 +325,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
           CbvNative (Some (occs,c))
     | Red _ | Hnf | Cbv _ | Lazy _ | Cbn _
     | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None ->
-        error_occurrences_not_unsupported ()
+        error_at_in_occurrences_not_supported ()
     | Unfold [] | Pattern [] ->
         assert false
 

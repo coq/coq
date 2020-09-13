@@ -1,11 +1,13 @@
 .. _Conversion-rules:
 
 Conversion rules
---------------------
+----------------
 
-In |Cic|, there is an internal reduction mechanism. In particular, it
-can decide if two programs are *intentionally* equal (one says
-:term:`convertible`). Convertibility is described in this section.
+Coq has conversion rules that can be used to determine if two
+terms are equal by definition, or :term:`convertible`.
+Conversion rules consist of reduction rules and expansion rules.
+See :ref:`applyingconversionrules`,
+which describes tactics that apply these conversion rules.
 
 α-conversion
 ~~~~~~~~~~~~
@@ -14,56 +16,44 @@ Two terms are :gdef:`α-convertible <alpha-convertible>` if they are syntactical
 equal ignoring differences in the names of variables bound within the expression.
 For example `forall x, x + 0 = x` is α-convertible with `forall y, y + 0 = y`.
 
-.. _beta-reduction:
-
 β-reduction
 ~~~~~~~~~~~
 
-We want to be able to identify some terms as we can identify the
-application of a function to a given argument with its result. For
-instance the identity function over a given type :math:`T` can be written
-:math:`λx:T.~x`. In any global environment :math:`E` and local context
-:math:`Γ`, we want to identify any object :math:`a` (of type
-:math:`T`) with the application :math:`((λ x:T.~x)~a)`.  We define for
-this a *reduction* (or a *conversion*) rule we call :math:`β`:
+:gdef:`β-reduction <beta-reduction>` reduces a :gdef:`beta-redex`, which is
+a term in the form `(fun x => t) u`.  (Beta-redex
+is short for "beta-reducible expression", a term from lambda calculus.
+See `Beta reduction <https://en.wikipedia.org/wiki/Beta_normal_form#Beta_reduction>`_
+for more background.)
 
-.. math::
+Formally, in any :term:`global environment` :math:`E` and :term:`local context`
+:math:`Γ`, the beta-reduction rule is:
 
-        E[Γ] ⊢ ((λx:T.~t)~u)~\triangleright_β~\subst{t}{x}{u}
+.. inference:: Beta
+
+   --------------
+   E[Γ] ⊢ ((λx:T.~t)~u)~\triangleright_β~\subst{t}{x}{u}
 
 We say that :math:`\subst{t}{x}{u}` is the *β-contraction* of
 :math:`((λx:T.~t)~u)` and, conversely, that :math:`((λ x:T.~t)~u)` is the
 *β-expansion* of :math:`\subst{t}{x}{u}`.
 
-According to β-reduction, terms of the *Calculus of Inductive
-Constructions* enjoy some fundamental properties such as confluence,
+.. todo: :term:`Calculus of Inductive Constructions` fails to build in CI for some reason :-()
+
+Terms of the *Calculus of Inductive Constructions*
+enjoy some fundamental properties such as confluence,
 strong normalization, subject reduction. These results are
 theoretically of great importance but we will not detail them here and
 refer the interested reader to :cite:`Coq85`.
 
-
-.. _iota-reduction:
-
-ι-reduction
-~~~~~~~~~~~
-
-A specific conversion rule is associated with the inductive objects in
-the global environment. We shall give later on (see Section
-:ref:`Well-formed-inductive-definitions`) the precise rules but it
-just says that a destructor applied to an object built from a
-constructor behaves as expected. This reduction is called ι-reduction
-and is more precisely studied in :cite:`Moh93,Wer94`.
-
-
-.. _delta-reduction:
+.. _delta-reduction-sect:
 
 δ-reduction
 ~~~~~~~~~~~
 
-We may have variables defined in local contexts or constants defined
-in the global environment. It is legal to identify such a reference
-with its value, that is to expand (or unfold) it into its value. This
-reduction is called δ-reduction and shows as follows.
+:gdef:`δ-reduction <delta-reduction>` replaces variables defined in
+:term:`local contexts <local context>`
+or :term:`constants <constant>` defined in the :term:`global environment` with their values.
+:gdef:`Unfolding <unfold>` means to replace a constant by its definition. Formally, this is:
 
 .. inference:: Delta-Local
 
@@ -79,16 +69,29 @@ reduction is called δ-reduction and shows as follows.
    --------------
    E[Γ] ⊢ c~\triangleright_δ~t
 
+:term:`Delta-reduction <delta-reduction>` only unfolds :term:`constants <constant>` that are
+marked :gdef:`transparent`.  :gdef:`Opaque <opaque>` is the opposite of
+transparent; :term:`delta-reduction` doesn't unfold opaque constants.
 
-.. _zeta-reduction:
+ι-reduction
+~~~~~~~~~~~
+
+A specific conversion rule is associated with the inductive objects in
+the global environment. We shall give later on (see Section
+:ref:`Well-formed-inductive-definitions`) the precise rules but it
+just says that a destructor applied to an object built from a
+constructor behaves as expected. This reduction is called
+:gdef:`ι-reduction <iota-reduction>`
+and is more precisely studied in :cite:`Moh93,Wer94`.
 
 ζ-reduction
 ~~~~~~~~~~~
 
-Coq allows also to remove local definitions occurring in terms by
-replacing the defined variable by its value. The declaration being
-destroyed, this reduction differs from δ-reduction. It is called
-ζ-reduction and shows as follows.
+:gdef:`ζ-reduction <zeta-reduction>` removes :ref:`let-in definitions <let-in>`
+in terms by
+replacing the defined variable by its value. One way this reduction differs from
+δ-reduction is that the declaration is removed from the term entirely.
+Formally, this is:
 
 .. inference:: Zeta
 
@@ -99,12 +102,12 @@ destroyed, this reduction differs from δ-reduction. It is called
    E[Γ] ⊢ \letin{x}{u:U}{t}~\triangleright_ζ~\subst{t}{x}{u}
 
 
-.. _eta-expansion:
+.. _eta-expansion-sect:
 
 η-expansion
 ~~~~~~~~~~~
 
-Another important concept is η-expansion. It is legal to identify any
+Another important concept is :gdef:`η-expansion <eta-expansion>`. It is legal to identify any
 term :math:`t` of functional type :math:`∀ x:T,~U` with its so-called η-expansion
 
 .. math::
