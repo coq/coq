@@ -34,10 +34,12 @@ under its expanded form (see :flag:`Printing Matching`).
 Pattern-matching on boolean values: the if expression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. insertprodn term_if term_if
+.. insertprodn term_if ssr_dpat
 
 .. prodn::
    term_if ::= if @term {? {? as @name } return @term100 } then @term else @term
+   | if @term {| is | isn't } @ssr_dpat then @term else @term   SSR
+   ssr_dpat ::= @pattern {? {? in @pattern } return @term100 }   SSR
 
 For inductive types with exactly two constructors and for pattern matching
 expressions that do not depend on the arguments of the constructors, it is possible

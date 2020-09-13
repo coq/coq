@@ -1647,7 +1647,7 @@ Changes in 8.11+beta1
   .. _811SSRUnderOver:
 
 - **Added:**
-  Generalize tactics :tacn:`under` and :tacn:`over` for any registered
+  Generalize tactics :tacn:`under (ssreflect)` and `over` for any registered
   relation. More precisely, assume the given context lemma has type
   `forall f1 f2, .. -> (forall i, R1 (f1 i) (f2 i)) -> R2 f1 f2`.  The
   first step performed by :tacn:`under` (since |Coq| 8.10) amounts to
@@ -1661,14 +1661,14 @@ Changes in 8.11+beta1
   (convenience) step was only performed when `R1` was Leibniz' `eq` or
   `iff`. Now, it is also performed for any relation `R1` which has a
   ``RewriteRelation`` instance (a `RelationClasses.Reflexive` instance
-  being also needed so :tacn:`over` can discharge the ``'Under[ _ ]``
+  being also needed so `over` can discharge the ``'Under[ _ ]``
   goal by instantiating the hidden evar.)
   This feature generalizing support for setoid-like relations is
   enabled as soon as we do both ``Require Import ssreflect.`` and
   ``Require Setoid.`` Finally, a rewrite rule ``UnderE`` has been
   added if one wants to "unprotect" the evar, and instantiate it
   manually with another rule than reflexivity (i.e., without using the
-  :tacn:`over` tactic nor the ``over`` rewrite rule). See also Section
+  `over` tactic nor the ``over`` rewrite rule). See also Section
   :ref:`under_ssr` (`#10022 <https://github.com/coq/coq/pull/10022>`_,
   by Erik Martin-Dorel, with suggestions and review by Enrico Tassi
   and Cyril Cohen).
@@ -2150,10 +2150,10 @@ reference manual. Here are the most important user-visible changes:
       with help from Maxime Dénès,
       ideas coming from various users).
 
-  - New tactic :tacn:`under` to rewrite under binders, given an
+  - New tactic :tacn:`under (ssreflect)` to rewrite under binders, given an
     extensionality lemma:
 
-    - interactive mode: :n:`under @term`, associated terminator: :tacn:`over`
+    - interactive mode: :n:`under @term`, associated terminator: `over`
     - one-liner mode: :n:`under @term do [@tactic | ...]`
 
     It can take occurrence switches, contextual patterns, and intro patterns:

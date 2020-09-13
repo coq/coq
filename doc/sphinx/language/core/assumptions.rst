@@ -20,6 +20,7 @@ Binders
    | @generalizing_binder
    | ( @name : @type %| @term )
    | ' @pattern0
+   | {| of | & } @term10   SSR
 
 Various constructions such as :g:`fun`, :g:`forall`, :g:`fix` and :g:`cofix`
 *bind* variables. A binding is represented by an identifier. If the binding

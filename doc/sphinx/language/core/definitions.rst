@@ -16,6 +16,8 @@ Let-in definitions
    | let ( {*, @name } ) {? {? as @name } return @term100 } := @term in @term
    | let ' @pattern := @term {? return @term100 } in @term
    | let ' @pattern in @pattern := @term return @term100 in @term
+   | let : @pattern := @term in @term   SSR
+   | let : @pattern {? in @pattern } := @term return @term100 in @term   SSR
 
 :n:`let @ident := @term in @term’`
 denotes the local binding of :n:`@term` to the variable

@@ -242,6 +242,7 @@ rest of the |Coq| manual: :term:`terms <term>` and :term:`types
         | @term_generalizing
         | [| {*; @term } %| @term {? : @type } |] {? @univ_annot }
         | @term_ltac
+        | ltac : ( @ltac_expr )
         | ( @term )
         qualid_annotated ::= @qualid {? @univ_annot }
 

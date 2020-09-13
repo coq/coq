@@ -56,11 +56,24 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    ltac_expr ::= {| @ltac_expr4 | @binder_tactic }
    ltac_expr4 ::= @ltac_expr3 ; {| @ltac_expr3 | @binder_tactic }
    | @ltac_expr3 ; [ @for_each_goal ]
+   | @ltac_expr ; first @ssr_first_else   SSR
+   | @ltac_expr ; first @ssrseqarg   SSR
+   | @ltac_expr ; last @ssrseqarg   SSR
    | @ltac_expr3
+   ssr_first_else ::= @ssr_first {? @ssrorelse }   SSR
+   ssr_first ::= [ {*| @ltac_expr } ] {* @ssrintros }   SSR
+   ssrorelse ::= %|| @ltac_expr2   SSR
+   ssrseqarg ::= @ssrseqidx [ @ssrortacs ] {? @ssrorelse }   SSR
+   | {? @ssrseqidx } @ssrswap   SSR
+   | @ltac_expr3   SSR
+   ssrswap ::= first   SSR
+   | last   SSR
+   ssrseqidx ::= @ident   SSR
+   | @natural   SSR
    ltac_expr3 ::= @l3_tactic
    | @ltac_expr2
    ltac_expr2 ::= @ltac_expr1 + {| @ltac_expr2 | @binder_tactic }
-   | @ltac_expr1 || {| @ltac_expr2 | @binder_tactic }
+   | @ltac_expr1 %|| {| @ltac_expr2 | @binder_tactic }
    | @l2_tactic
    | @ltac_expr1
    ltac_expr1 ::= @tactic_value
@@ -71,7 +84,7 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    tactic_arg ::= @tactic_value
    | @term
    | ()
-   ltac_expr0 ::= ( @ltac_expr )
+   ltac_expr0 ::= ( @ltac_expr )   SSR
    | [> @for_each_goal ]
    | @tactic_atom
    tactic_atom ::= @integer
@@ -1124,7 +1137,8 @@ Pattern matching on terms: match
       | multimatch
       match_pattern ::= @cpattern
       | context {? @ident } [ @cpattern ]
-      cpattern ::= @term
+      cpattern ::= {? Qed } @one_term   SSR
+      | @term
 
    :tacn:`lazymatch`, :tacn:`match` and :tacn:`multimatch` are :token:`ltac_expr1`\s.
 
@@ -1353,8 +1367,8 @@ Pattern matching on goals and hypotheses: match goal
    .. insertprodn goal_pattern match_hyp
 
    .. prodn::
-      goal_pattern ::= {*, @match_hyp } |- @match_pattern
-      | [ {*, @match_hyp } |- @match_pattern ]
+      goal_pattern ::= {*, @match_hyp } %|- @match_pattern
+      | [ {*, @match_hyp } %|- @match_pattern ]
       | _
       match_hyp ::= @name : @match_pattern
       | @name := @match_pattern

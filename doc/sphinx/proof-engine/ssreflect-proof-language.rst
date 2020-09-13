@@ -50,7 +50,7 @@ explicit operation performed by ``:``.
 Beside the difference of bookkeeping model, this chapter includes
 specific tactics which have no explicit counterpart in Chapter :ref:`tactics`
 such as tactics to mix forward steps and generalizations as
-:tacn:`generally have` or :tacn:`without loss`.
+:tacn:`generally have<generally have (ssreflect)>` or :tacn:`without loss<without loss (ssreflect)>`.
 
 |SSR| adopts the point of view that rewriting, definition
 expansion and partial evaluation participate all to a same concept of
@@ -118,8 +118,9 @@ compatible with the rest of |Coq|, up to a few discrepancies:
 + New keywords (``is``) might clash with variable, constant, tactic or
   tactical names, or with quasi-keywords in tactic or vernacular
   notations.
-+ New tactic(al)s names (:tacn:`last`, :tacn:`done`, :tacn:`have`, :tacn:`suffices`,
-  :tacn:`suff`, :tacn:`without loss`, :tacn:`wlog`, :tacn:`congr`, :tacn:`unlock`)
++ New tactic(al)s names (:tacn:`last<last (ssreflect)>`, :tacn:`done<done (ssreflect)>`, :tacn:`have<have (ssreflect)>`, :tacn:`suffices<suffices (ssreflect)>`,
+  :tacn:`suff<suff (ssreflect)>`, :tacn:`without loss<without loss (ssreflect)>`, :tacn:`wlog<wlog (ssreflect)>`,
+  :tacn:`congr<congr (ssreflect)>`, :tacn:`unlock<unlock (ssreflect)>`)
   might clash with user tactic names.
 + Identifiers with both leading and trailing ``_``, such as ``_x_``, are
   reserved by |SSR| and cannot appear in scripts.
@@ -195,8 +196,7 @@ Pattern assignment
 The |SSR| extension provides the following construct for
 irrefutable pattern matching, that is, destructuring assignment:
 
-.. prodn::
-   term += let: @pattern := @term in @term
+.. todo .. prodn:: term += let: @pattern := @term in @term
 
 Note the colon ``:`` after the ``let`` keyword, which avoids any ambiguity
 with a function definition or |Coq|’s basic destructuring let. The let:
@@ -242,8 +242,7 @@ The ``let:`` construct is just (more legible) notation for the primitive
 The |SSR| destructuring assignment supports all the dependent
 match annotations; the full syntax is
 
-.. prodn::
-   term += let: @pattern {? as @ident} {? in @pattern} := @term {? return @term} in @term
+.. todo .. prodn:: term += let: @pattern {? as @ident} {? in @pattern} := @term {? return @term} in @term
 
 where the second :token:`pattern` and the second :token:`term` are *types*.
 
@@ -262,8 +261,7 @@ Pattern conditional
 The following construct can be used for a refutable pattern matching,
 that is, pattern testing:
 
-.. prodn::
-   term += if @term is @pattern then @term else @term
+.. todo .. prodn:: term += if @term is @pattern then @term else @term
 
 Although this construct is not strictly ML (it does exist in variants
 such as the pattern calculus or the ρ-calculus), it turns out to be
@@ -333,8 +331,7 @@ Like ``let:`` above, the ``if-is-then-else``
 construct supports
 the dependent match annotations:
 
-.. prodn::
-   term += if @term is @pattern as @ident in @pattern return @term then @term else @term
+.. todo .. prodn:: term += if @term is @pattern as @ident in @pattern return @term then @term else @term
 
 As in ``let:`` the variable :token:`ident` (and those in the type pattern)
 are bound in the second :token:`term`; :token:`ident` is also bound in the
@@ -344,8 +341,7 @@ variables in the first :token:`pattern` are bound only in the third
 
 Another variant allows to treat the ``else`` case first:
 
-.. prodn::
-   term += if @term isn't @pattern then @term else @term
+.. todo .. prodn:: term += if @term isn't @pattern then @term else @term
 
 Note that :token:`pattern` eventually binds variables in the third
 :token:`term` and not in the second :token:`term`.
@@ -423,11 +419,11 @@ an improvement over :g:`all null s`.
 
 The syntax of the new declaration is
 
-.. cmd:: Prenex Implicits {+ @ident__i}
+.. cmd:: Prenex Implicits {+ @qualid__i }
 
-   This command checks that each :n:`@ident__i` is the name of a functional
+   This command checks that each :n:`@qualid__i` is the name of a functional
    constant, whose implicit arguments are prenex, i.e., the first
-   :math:`n_i > 0` arguments of :n:`@ident__i` are implicit; then it assigns
+   :math:`n_i > 0` arguments of :n:`@qualid__i` are implicit; then it assigns
    ``Maximal Implicit`` status to these arguments.
 
    As these prenex implicit arguments are ubiquitous and have often large
@@ -454,8 +450,7 @@ the latter can be replaced by the open syntax ``of term`` or
 ``(_ : term)`` expression. This feature almost behaves as the
 following extension of the binder syntax:
 
-.. prodn::
-   binder += {| & @term | of @term }
+.. todo .. prodn:: binder += {| & @term | of @term }
 
 Caveat: ``& T`` and ``of T`` abbreviations have to appear at the end
 of a binder list. For instance, the usual two-constructor polymorphic
@@ -497,8 +492,17 @@ inferred from the whole context of the goal (see for example section
 Definitions
 ~~~~~~~~~~~
 
-.. tacn:: pose
-   :name: pose (ssreflect)
+.. tacn:: pose fix @ssrbvar {* @ssrbinder } {? %{ struct @ident %} } @ssrfwd
+          pose cofix @ssrbvar {* @ssrbinder } @ssrfwd
+          pose @ident {* @ssrbinder } @ssrfwd
+   :name: pose (ssreflect); _; _
+
+   .. insertprodn ssrfwd ssrsetfwd
+
+   .. prodn::
+      ssrfwd ::= {? : @term } := @term
+      ssrsetfwd ::= {? : @term } := %{ @clear_switch %} @cpattern
+      | {? : @term } := @lcpattern
 
    This tactic allows to add a defined constant to a proof context.
    |SSR| generalizes this tactic in several ways. In particular, the
@@ -600,7 +604,7 @@ resemble ML-like definitions of polymorphic functions.
 Abbreviations
 ~~~~~~~~~~~~~
 
-.. tacn:: set @ident {? : @term } := {? @occ_switch } @term
+.. tacn:: set @ident @ssrsetfwd {? @ssrclauses }
    :name: set (ssreflect)
 
    The |SSR| ``set`` tactic performs abbreviations: it introduces a
@@ -609,15 +613,12 @@ Abbreviations
 
    |SSR| extends the :tacn:`set` tactic by supplying:
 
-   + an open syntax, similarly to the :tacn:`pose (ssreflect)` tactic;
+   + an open syntax, similar to the :tacn:`pose <pose (ssreflect)>` tactic;
    + a more aggressive matching algorithm;
    + an improved interpretation of wildcards, taking advantage of the
      matching algorithm;
    + an improved occurrence selection mechanism allowing to abstract only
      selected occurrences of a term.
-
-.. prodn::
-   occ_switch ::= { {? {| + | - } } {* @natural } }
 
 where:
 
@@ -898,7 +899,7 @@ context of a goal thanks to the ``in`` tactical.
 
 .. tacv:: set @ident := @term in {+ @ident}
 
-   This variant of :tacn:`set (ssreflect)` introduces a defined constant
+   This variant of :tacn:`set <set (ssreflect)>` introduces a defined constant
    called :token:`ident` in the context, and folds it in
    the context entries mentioned on the right hand side of ``in``.
    The body of :token:`ident` is the first subterm matching these context
@@ -1188,8 +1189,9 @@ context manipulations and the main backward chaining tool.
 The move tactic.
 ````````````````
 
-.. tacn:: move
-   :name: move
+.. tacn:: move {? {? @ssrarg } {| -> | <- } }
+          move @ssrarg {? @ssrclauses }
+   :name: move (ssreflect); _
 
    This tactic, in its defective form, behaves like the :tacn:`hnf` tactic.
 
@@ -1201,7 +1203,7 @@ The move tactic.
          Goal not False.
          move.
 
-   More precisely, the :tacn:`move` tactic inspects the goal and does nothing
+   More precisely, the :tacn:`move<move (ssreflect)>` tactic inspects the goal and does nothing
    (:tacn:`idtac`) if an introduction step is possible, i.e. if the goal is a
    product or a ``let … in``, and performs :tacn:`hnf` otherwise.
 
@@ -1216,7 +1218,7 @@ The move tactic.
 The case tactic
 ```````````````
 
-.. tacn:: case
+.. tacn:: case {? @ssrarg {? @ssrclauses } }
    :name: case (ssreflect)
 
    This tactic performs *primitive case analysis* on (co)inductive
@@ -1256,8 +1258,26 @@ The case tactic
 The elim tactic
 ```````````````
 
-.. tacn:: elim
+.. tacn:: elim {? @ssrarg {? @ssrclauses } }
    :name: elim (ssreflect)
+
+   .. insertprodn ssrarg ssreqpat
+
+   .. prodn::
+      ssrarg ::= @ssrfwdview {? @ssreqid } @ssrdgens {? @ssrintros }
+      | @ssrfwdview {? @ssrclear } {? @ssrintros }
+      | {? @ssreqid } @ssrdgens {? @ssrintros }
+      | @ssrclear {? @ssrintros }
+      | @ssrintros
+      ssreqid ::= @ssreqpat
+      ssreqpat ::= @ident
+      | _
+      | ?
+      | +
+      | @ssrdocc ->
+      | @ssrdocc <-
+      | ->
+      | <-
 
    This tactic performs inductive elimination on inductive types. In its
    defective form, the tactic performs inductive elimination on a goal whose
@@ -1283,8 +1303,25 @@ The elim tactic
 The apply tactic
 ````````````````
 
-.. tacn:: apply {? @term }
-   :name: apply (ssreflect)
+.. tacn:: apply {? @ssrapplyarg }
+          exact @one_term
+   :name: apply (ssreflect); exact (ssreflect)
+
+   .. insertprodn ssrapplyarg ssrbwdview
+
+   .. prodn::
+      ssrapplyarg ::= @ssrclear {? @ssrintros }
+      | @ssrintros
+      | {? @ssrbwdview } : @ssragen {? @ssragens } {? @ssrintros }
+      | @ssrbwdview {? @ssrclear } {? @ssrintros }
+      ssragen ::= %{ {+ @ident } %} @term
+      | @term
+      ssragens ::= %{ {+ @ident } %} @term {? @ssragens }
+      | %{ {+ @ident } %}
+      | @term {? @ssragens }
+      ssrintros ::= => @ssripats
+      ssrbwdview ::= / @term
+      | / @term @ssrbwdview
 
    This is the main backward chaining tactic of the proof system.
    It takes as argument any :token:`term` and applies it to the goal.
@@ -1300,7 +1337,7 @@ The apply tactic
    this use of the :tacn:`refine` tactic implies that the tactic tries to match
    the goal up to expansion of constants and evaluation of subterms.
 
-:tacn:`apply (ssreflect)` has a special behavior on goals containing
+:tacn:`apply <apply (ssreflect)>` has a special behavior on goals containing
 existential metavariables of sort :g:`Prop`.
 
 .. example::
@@ -1350,11 +1387,6 @@ The general syntax of the discharging tactical ``:`` is:
 .. tacn:: @tactic {? @ident } : {+ @d_item } {? @clear_switch }
    :name: … : … (ssreflect)
    :undocumented:
-
-.. prodn::
-   d_item ::= {? {| @occ_switch | @clear_switch } } @term
-.. prodn::
-   clear_switch ::= { {+ @ident } }
 
 with the following requirements:
 
@@ -1511,7 +1543,7 @@ side of an equation.
 The abstract tactic
 ```````````````````
 
-.. tacn:: abstract: {+ @d_item}
+.. tacn:: abstract @ssrdgens
    :name: abstract (ssreflect)
 
    This tactic assigns an abstract constant previously introduced with the
@@ -1564,23 +1596,29 @@ All these operations are performed by the introduction tactical ``=>``,
 whose general syntax is
 
 .. tacn:: @tactic => {+ @i_item }
-   :name: =>
+   :name: => (ssreflect)
    :undocumented:
 
-.. prodn::
-   i_item ::= {| @i_pattern | @s_item | @clear_switch | @i_view | @i_block }
+  .. insertprodn i_item i_item
 
-.. prodn::
-   s_item ::= {| /= | // | //= }
-
-.. prodn::
-   i_view ::= {? %{%} } {| /@term | /ltac:( @tactic ) }
-
-.. prodn::
-   i_pattern ::= {| @ident | > | _ | ? | * | + | {? @occ_switch } {| -> | <- } | [ {?| @i_item } ] | - | [: {+ @ident } ] }
-
-.. prodn::
-   i_block ::= {| [^ @ident ] | [^~ {| @ident | @natural } ] }
+  .. prodn::
+     i_item ::= _
+     | *
+     | >
+     | @ident
+     | ?
+     | +
+     | ++
+     | @s_item
+     | @ssrdocc {? {| -> | <- } }
+     | -
+     | -/=
+     | -//
+     | -//=
+     | -/ @integer {| /= | / | / @integer = }
+     | @ssrfwdview
+     | [: {* @ident } ]
+     | @ssrcpat
 
 The ``=>`` tactical first executes :token:`tactic`, then the :token:`i_item`\s,
 left to right. An :token:`s_item` specifies a
@@ -1596,7 +1634,7 @@ Simplification items
 An :token:`s_item` can simplify the set of subgoals or the subgoals themselves:
 
 + ``//`` removes all the “trivial” subgoals that can be resolved by the
-  |SSR| tactic :tacn:`done` described in :ref:`terminators_ssr`, i.e.,
+  |SSR| tactic :tacn:`done<done (ssreflect)>` described in :ref:`terminators_ssr`, i.e.,
   it executes ``try done``.
 + ``/=`` simplifies the goal by performing partial evaluation, as per the
   tactic :tacn:`simpl` [#5]_.
@@ -2107,9 +2145,17 @@ like :tacn:`discriminate`, :tacn:`contradiction` or :tacn:`assumption`.
 In fact, |SSR| provides a generic tactical which turns any tactic
 into a closing one (similar to :tacn:`now`). Its general syntax is:
 
-.. tacn:: by @tactic
-   :name: by
+.. tacn:: by @ssrhintarg
+   :name: by (ssreflect)
    :undocumented:
+
+   .. insertprodn ssrhintarg ssrortacs
+
+   .. prodn::
+      ssrhintarg ::= [ {? @ssrortacs } ]
+      | @ltac_expr
+      ssrortacs ::= {? @ltac_expr } %| {? @ssrortacs }
+      | @ltac_expr
 
 The Ltac expression :n:`by [@tactic | @tactic | …]` is equivalent to
 :n:`do [done | by @tactic | by @tactic | …]`, which corresponds to the
@@ -2124,14 +2170,14 @@ with a ``by``, like in:
    by apply/eqP; rewrite -dvdn1.
 
 .. tacn:: done
-   :name: done
+   :name: done (ssreflect)
 
-   The :tacn:`by` tactical is implemented using the user-defined, and extensible
-   :tacn:`done` tactic. This :tacn:`done` tactic tries to solve the current goal by some
+   The :tacn:`by<by (ssreflect)>` tactical is implemented using the user-defined, and extensible
+   :tacn:`done<done (ssreflect)>` tactic. This :tacn:`done<done (ssreflect)>` tactic tries to solve the current goal by some
    trivial means and fails if it doesn’t succeed. Indeed, the tactic
    expression :n:`by @tactic` is equivalent to :n:`@tactic; done`.
 
-   Conversely, the tactic ``by [ ]`` is equivalent to :tacn:`done`.
+   Conversely, the tactic ``by [ ]`` is equivalent to :tacn:`done<done (ssreflect)>`.
 
    The default implementation of the done tactic, in the ``ssreflect.v``
    file, is:
@@ -2209,8 +2255,8 @@ Selectors
 ~~~~~~~~~
 
 .. tacn:: last
-          first
-   :name: last; first (ssreflect)
+          first [ {*| @ltac_expr } ]
+   :name: last (ssreflect); first (ssreflect)
 
    When composing tactics, the two tacticals ``first`` and ``last`` let the user
    restrict the application of a tactic to only one of the subgoals
@@ -2233,23 +2279,8 @@ tactics to *permute* the subgoals generated by a tactic.
 .. tacv:: last first
           first last
    :name: last first; first last
+   :undocumented:
 
-   These two equivalent tactics invert the order of the subgoals in focus.
-
-   .. tacv:: last @natural first
-
-      If :token:`natural`\'s value is :math:`k`,
-      this tactic rotates the :math:`n` subgoals :math:`G_1` , …, :math:`G_n`
-      in focus. Subgoal :math:`G_{n + 1 − k}` becomes the first, and the
-      circular order of subgoals remains unchanged.
-
-   .. tacn:: first @natural last
-      :name: first (ssreflect)
-
-      If :token:`natural`\'s value is :math:`k`,
-      this tactic rotates the :math:`n` subgoals :math:`G_1` , …, :math:`G_n`
-      in focus. Subgoal :math:`G_{k + 1 \bmod n}` becomes the first, and the circular order
-      of subgoals remains unchanged.
 
 Finally, the tactics ``last`` and ``first`` combine with the branching syntax
 of Ltac: if the tactic generates n subgoals on a given goal,
@@ -2292,8 +2323,16 @@ to the others.
 Iteration
 ~~~~~~~~~
 
-.. tacn:: do {? @mult } {| @tactic | [ {+| @tactic } ] }
-   :name: do (ssreflect)
+.. tacn:: do @int_or_var @ltac_expr3
+          do {? @int_or_var } @ssrmmod {| @ltac_expr3 | [ @ssrortacs ]  } {? @ssrclauses }
+   :name: do (ssreflect); _
+
+   .. insertprodn ssrmmod ssrmmod
+
+   .. prodn::
+      ssrmmod ::= !
+      | ?
+      | ?
 
    This tactical offers an accurate control on the repetition of tactics.
    :token:`mult` is a *multiplier*.
@@ -2318,8 +2357,10 @@ tactic should be repeated on the current subgoal.
 
 There are four kinds of multipliers:
 
+.. insertprodn mult mult
+
 .. prodn::
-   mult ::= {| @natural ! | ! | @natural ? | ? }
+   mult ::= {? @natural } @ssrmmod
 
 Their meaning is:
 
@@ -2363,7 +2404,7 @@ In sections :ref:`basic_localization_ssr` and :ref:`bookkeeping_ssr`, we have
 already presented the *localization* tactical in, whose general syntax is:
 
 .. tacn:: @tactic in {+ @ident} {? * }
-   :name: in
+   :name: in (ssreflect)
    :undocumented:
 
 where :token:`ident` is a name in the
@@ -2441,8 +2482,39 @@ intermediate statement.
 The have tactic.
 ````````````````
 
-.. tacn:: have : @term
-   :name: have
+.. tacn:: have @ssrhpats_wtransp {* @ssrbinder } @ssrhavefwd
+   :name: have (ssreflect)
+
+   .. insertprodn ssrhpats_wtransp ssrhavefwd
+
+   .. prodn::
+      ssrhpats_wtransp ::= {? @ssripats }
+      | {? @ssripats } @ {? @ssripats }
+      ssripats ::= {+ @i_item }
+      s_item ::= //=
+      | /=
+      | / @natural {| / {? @natural = } | = | /= }
+      | // {? @natural = }
+      | //
+      ssrdocc ::= %{ @clear_switch %}
+      | %{ {* @ident } %}
+      clear_switch ::= {| @natural | + | - } {* @natural }
+      ssrfwdview ::= {+ / @one_term }
+      ssrcpat ::= [ @hat ]
+      | [ @ssriorpat ]
+      | [= @ssriorpat ]
+      hat ::= ^ @ident
+      | ^~ @ident
+      | ^~ @natural
+      ssriorpat ::= @ssripats {? {| %| | %|- | %|-> | %|| | %||| | %|||| } @ssriorpat }
+      ssrbinder ::= @ssrbvar
+      | ( {+ @ssrbvar } : @term )
+      | ( @ssrbvar {? : @term } {? := @term } )
+      | {| of | & } @term10
+      ssrbvar ::= @ident
+      | _
+      ssrhavefwd ::= : @term {? by @ssrhintarg }
+      | : @term := {? @term }
 
    This is the main |SSR| forward reasoning tactic. It can
    be used in two modes: one starts a new (sub)proof for an intermediate
@@ -2457,7 +2529,7 @@ The have tactic.
    redex, and introduces the lemma under a fresh name, automatically
    chosen.
 
-Like in the case of the :n:`pose (ssreflect)` tactic (see section :ref:`definitions_ssr`), the types of
+Like in the case of the :tacn:`pose <pose (ssreflect)>` tactic (see section :ref:`definitions_ssr`), the types of
 the holes are abstracted in term.
 
 .. example::
@@ -2511,7 +2583,9 @@ tactic:
 The behavior of the defective have tactic makes it possible to
 generalize it in the following general construction:
 
-.. tacn:: have {* @i_item } {? @i_pattern } {? {| @s_item | {+ @ssr_binder } } } {? : @term } {? {| := @term | by @tactic } }
+.. tacn:: have {| suff | suffices } {? @ssripats } @ssrhavefwd
+          {| gen | generally } have {? @ssrclear } {? {| @ident | _ } , } {? @ssripats } @ssrwlogfwd {? by @ssrhintarg }
+   :name: have suffices (ssreflect); generally have (ssreflect)
    :undocumented:
 
 Open syntax is supported for both :token:`term`. For the description
@@ -2650,7 +2724,7 @@ The :token:`i_item` and :token:`s_item` can be used to interpret the asserted
 hypothesis with views (see section :ref:`views_and_reflection_ssr`) or simplify the resulting
 goals.
 
-The :tacn:`have` tactic also supports a ``suff`` modifier which allows for
+The :tacn:`have<have (ssreflect)>` tactic also supports a ``suff`` modifier which allows for
 asserting that a given statement implies the current goal without
 copying the goal itself.
 
@@ -2670,7 +2744,7 @@ compatible with the presence of a list of binders.
 Generating let in context entries with have
 ```````````````````````````````````````````
 
-Since |SSR| 1.5 the :tacn:`have` tactic supports a “transparent” modifier
+Since |SSR| 1.5 the :tacn:`have<have (ssreflect)>` tactic supports a “transparent” modifier
 to generate let in context entries: the ``@`` symbol in front of the
 context entry name.
 
@@ -2844,16 +2918,20 @@ painful to perform by
 hand, because the statement ``wlog_statement`` is tedious to write by hand,
 and sometimes even to read.
 
-|SSR| implements this kind of reasoning step through the :tacn:`without loss`
-tactic, whose short name is :tacn:`wlog`. It offers support to describe
+|SSR| implements this kind of reasoning step through the :tacn:`without loss<without loss (ssreflect)>`
+tactic, whose short name is :tacn:`wlog<wlog (ssreflect)>`. It offers support to describe
 the shape of the cut statements, by providing the simplifying
 hypothesis and by pointing at the elements of the initial goals which
 should be generalized. The general syntax of without loss is:
 
-.. tacn:: wlog {? suff } {? @clear_switch } {? @i_item } : {* @ident } / @term
-          without loss {? suff } {? @clear_switch } {? @i_item } : {* @ident } / @term
-   :name: wlog; without loss
+.. tacn:: {| wlog | without loss } {? {| suff | suffices } } {? @ssripats } @ssrwlogfwd {? by @ssrhintarg }
+   :name: wlog (ssreflect); without loss (ssreflect)
    :undocumented:
+
+   .. insertprodn ssrwlogfwd ssrwlogfwd
+
+   .. prodn::
+      ssrwlogfwd ::= : {* @gen_item } / @term
 
 where each :token:`ident` is a constant in the context
 of the goal. Open syntax is supported for :token:`term`.
@@ -2881,9 +2959,9 @@ In the second subgoal, the tactic:
    move=> clear_switch i_item.
 
 is performed if at least one of these optional switches is present in
-the :tacn:`wlog` tactic.
+the :tacn:`wlog<wlog (ssreflect)>` tactic.
 
-The :tacn:`wlog` tactic is specially useful when a symmetry argument
+The :tacn:`wlog<wlog (ssreflect)>` tactic is specially useful when a symmetry argument
 simplifies a proof. Here is an example showing the beginning of the
 proof that quotient and reminder of natural number euclidean division
 are unique.
@@ -3026,26 +3104,28 @@ The main features of the rewrite tactic are:
 
 The general form of an |SSR| rewrite tactic is:
 
-.. tacn:: rewrite {+ @rstep }
+.. tacn:: rewrite {+ @r_prefix } {? @ssrclauses }
    :name: rewrite (ssreflect)
    :undocumented:
 
+   .. insertprodn r_prefix r_pattern
+
+   .. prodn::
+      r_prefix ::= - {? @mult } {? @ssrrwocc } {? @ssrpattern_squarep } @r_item
+      | @mult {? @ssrrwocc } {? @ssrpattern_squarep } @r_item
+      | -/ @term
+      | {? {? %{ {+ @ident } %} } @ssrpattern_squarep } @r_item
+      | %{ {+ @ident } %} {? @r_item }
+      | %{ {? @clear_switch } %} {? @ssrpattern_squarep } @r_item
+      ssrrwocc ::= %{ {* @ident } %}
+      | %{ @clear_switch %}
+      r_item ::= {| {? / } @term | @s_item }
+      ssrpattern_squarep ::= [ @r_pattern ]
+      r_pattern ::= {? {? {? {? @term } in } @term } in } @term
+      | @term as @term in @term
+
 The combination of a rewrite tactic with the ``in`` tactical (see section
 :ref:`localization_ssr`) performs rewriting in both the context and the goal.
-
-A rewrite step :token:`rstep` has the general form:
-
-.. prodn::
-   rstep ::= {? @r_prefix } @r_item
-
-.. prodn::
-   r_prefix ::= {? - } {? @mult } {? {| @occ_switch | @clear_switch } } {? [ @r_pattern ] }
-
-.. prodn::
-   r_pattern ::= {| @term | in {? @ident in } @term | {| @term in | @term as } @ident in @term }
-
-.. prodn::
-   r_item ::= {| {? / } @term | @s_item }
 
 An :token:`r_prefix` contains annotations to qualify where and how the rewrite
 operation should be performed:
@@ -3173,36 +3253,30 @@ the improved syntax for the control of rewriting.
 This may be a source of incompatibilities between the two rewrite
 tactics.
 
-In a rewrite tactic of the form:
-
-.. coqdoc::
-
-   rewrite occ_switch [term1]term2.
-
-``term1`` is the explicit rewrite redex and ``term2`` is the rewrite rule.
+In a rewrite tactic in the form ":n:`rewrite @occ_switch [@term__1] @term__2",
+:n:`@term__1` is the explicit rewrite redex and :n:`@term__2` is the rewrite rule.
 This execution of this tactic unfolds as follows:
 
-
-+ First ``term1`` and ``term2`` are βι normalized. Then ``term2``
++ First :n:`@term__1` and :n:`@term__2` are βι normalized. Then :n:`@term__2`
   is put in head
   normal form if the Leibniz equality constructor ``eq`` is not the head
   symbol. This may involve ζ reductions.
 + Then, the matching algorithm (see section :ref:`abbreviations_ssr`)
   determines the
   first subterm of the goal matching the rewrite pattern. The rewrite
-  pattern is given by ``term1``, if an explicit redex pattern switch is
-  provided, or by the type of ``term2`` otherwise. However, matching skips
+  pattern is given by :n:`@term__1`, if an explicit redex pattern switch is
+  provided, or by the type of :n:`@term__2` otherwise. However, matching skips
   over matches that would lead to trivial rewrites. All the occurrences
   of this subterm in the goal are candidates for rewriting.
 + Then only the occurrences coded by :token:`occ_switch` (see again section
   :ref:`abbreviations_ssr`) are finally selected for rewriting.
-+ The left hand side of ``term2`` is unified with the subterm found by
++ The left hand side of :n:`@term__2` is unified with the subterm found by
   the matching algorithm, and if this succeeds, all the selected
-  occurrences in the goal are replaced by the right hand side of ``term2``.
+  occurrences in the goal are replaced by the right hand side of :n:`@term__2`.
 + Finally the goal is βι normalized.
 
 
-In the case ``term2`` is a list of terms, the first top-down (in the
+If `:n:`@term__2` is a list of terms, the first top-down (in the
 goal) left-to-right (in the list) matching rule gets selected.
 
 
@@ -3707,7 +3781,7 @@ complete terms, as shown by the simple example below.
       rewrite (@eq_map _ (fun _ : nat => 0)).
         by move=> m; rewrite subnn.
 
-   The :tacn:`under` tactic lets one perform the same operation in a more
+   The :tacn:`under<under (ssreflect)>` tactic lets one perform the same operation in a more
    convenient way:
 
    .. coqtop:: all abort
@@ -3719,10 +3793,16 @@ complete terms, as shown by the simple example below.
 The under tactic
 ````````````````
 
-The convenience :tacn:`under` tactic supports the following syntax:
+The convenience :tacn:`under<under (ssreflect)>` tactic supports the following syntax:
 
-.. tacn:: under {? @r_prefix } @term {? => {+ @i_item}} {? do {| @tactic | [ {*| @tactic } ] } }
-   :name: under
+.. tacn:: under @r_prefix {? @ssrintros } {? do @ssrhint3arg }
+   :name: under (ssreflect)
+
+   .. insertprodn ssrhint3arg ssrhint3arg
+
+   .. prodn::
+      ssrhint3arg ::= [ {? @ssrortacs } ]
+      | @ltac_expr3
 
    Operate under the context proved to be extensional by
    lemma :token:`term`.
@@ -3765,23 +3845,23 @@ involves the following steps:
    but creating evars (see :tacn:`evar`). If :n:`term` is prefixed by
    a pattern or an occurrence selector, then the modifiers are honoured.
 
-2. As a n-branches intro pattern is provided :tacn:`under` checks that
+2. As a n-branches intro pattern is provided :tacn:`under<under (ssreflect)>` checks that
    n+1 subgoals have been created. The last one is the main subgoal,
    while the other ones correspond to premises of the rewrite rule (such as
    ``forall n, F1 n = F2 n`` for ``eq_map``).
 
-3. If so :tacn:`under` puts these n goals in head normal form (using
-   the defective form of the tactic :tacn:`move`), then executes
+3. If so :tacn:`under<under (ssreflect)>` puts these n goals in head normal form (using
+   the defective form of the tactic :tacn:`move<move (ssreflect)>`), then executes
    the corresponding intro pattern :n:`@i_pattern__i` in each goal.
 
-4. Then :tacn:`under` checks that the first n subgoals
+4. Then :tacn:`under<under (ssreflect)>` checks that the first n subgoals
    are (quantified) Leibniz equalities, double implications or
    registered relations (w.r.t. Class ``RewriteRelation``) between a
    term and an evar, e.g. ``m - m = ?F2 m`` in the running example.
    (This support for setoid-like relations is enabled as soon as we do
    both ``Require Import ssreflect.`` and ``Require Setoid.``)
 
-5. If so :tacn:`under` protects these n goals against an
+5. If so :tacn:`under<under (ssreflect)>` protects these n goals against an
    accidental instantiation of the evar.
    These protected goals are displayed using the ``'Under[ … ]``
    notation (e.g. ``'Under[ m - m ]`` in the running example).
@@ -3790,8 +3870,10 @@ involves the following steps:
    proved equivalent to the desired expression
    by using a regular :tacn:`rewrite` tactic.
 
+   .. todo PR: no more `over` tactic
+
 7. Interactive editing of the first n goals has to be signalled by
-   using the :tacn:`over` tactic or rewrite rule (see below), which
+   using the `over` tactic or rewrite rule (see below), which
    requires that the underlying relation is reflexive. (The running
    example deals with Leibniz equality, but ``PreOrder`` relations are
    also supported, for example.)
@@ -3804,21 +3886,6 @@ involves the following steps:
 
 The over tactic
 +++++++++++++++
-
-Two equivalent facilities (a terminator and a lemma) are provided to
-close intermediate subgoals generated by :tacn:`under` (i.e. goals
-displayed as ``'Under[ … ]``):
-
-.. tacn:: over
-   :name: over
-
-   This terminator tactic allows one to close goals of the form
-   ``'Under[ … ]``.
-
-.. tacv:: by rewrite over
-
-   This is a variant of :tacn:`over` in order to close ``'Under[ … ]``
-   goals, relying on the ``over`` rewrite rule.
 
 Note that a rewrite rule ``UnderE`` is available as well, if one wants
 to "unprotect" the evar, without closing the goal automatically (e.g.,
@@ -3841,10 +3908,10 @@ Notes:
 
 + The ``beta-iota`` reduction here is useful to get rid of the beta
   redexes that could be introduced after the substitution of the evars
-  by the :tacn:`under` tactic.
+  by the :tacn:`under<under (ssreflect)>` tactic.
 
 + Note that the provided tactics can as well
-  involve other :tacn:`under` tactics. See below for a typical example
+  involve other :tacn:`under<under (ssreflect)>` tactics. See below for a typical example
   involving the `bigop` theory from the Mathematical Components library.
 
 + If there is only one tactic, the brackets can be omitted, e.g.:
@@ -3856,7 +3923,7 @@ Notes:
   E.g., the Ltac expression:
   :n:`under @term do [ @tactic__1 | … | @tactic__n ]` is equivalent to:
   :n:`under @term => [ * | … | * ] do [ @tactic__1 | … | @tactic__n ]`
-  (and it can be noted here that the :tacn:`under` tactic performs a
+  (and it can be noted here that the :tacn:`under<under (ssreflect)>` tactic performs a
   ``move.`` before processing the intro patterns ``=> [ * | … | * ]``).
 
 .. example::
@@ -4008,8 +4075,21 @@ definition.
       rewrite /=.
       unlock lid.
 
-.. tacn:: unlock {? @occ_switch } @ident
-   :name: unlock
+.. tacn:: unlock {* {? %{ @clear_switch %} } @term } {? @ssrclauses }
+   :name: unlock (ssreflect)
+
+   .. insertprodn ssrclauses lcpattern
+
+   .. prodn::
+      ssrclauses ::= in @ssrclausehyps {? %|- } {? * }
+      | in {| * | * %|- | %|- * }
+      ssrclausehyps ::= @gen_item {? {? , } @ssrclausehyps }
+      gen_item ::= @ssrclear
+      | {? @ } @ident
+      | ( @ident {? := @lcpattern } )
+      | (@ @ident := @lcpattern )
+      ssrclear ::= %{ {+ @ident } %}
+      lcpattern ::= {? Qed } @term
 
    This tactic unfolds such definitions while removing “locks”, i.e. it
    replaces the occurrence(s) of :token:`ident` coded by the
@@ -4086,8 +4166,19 @@ will generally fail to perform congruence simplification, even on
 rather simple cases. We therefore provide a more robust alternative in
 which the function is supplied:
 
-.. tacn:: congr {? @natural } @term
-   :name: congr
+.. tacn:: congr {? @natural } @one_term {? @ssrdgens }
+   :name: congr (ssreflect)
+
+   .. insertprodn ssrdgens ssrdgens_tl
+
+   .. prodn::
+      ssrdgens ::= : @ssrgen {? @ssrdgens_tl }
+      ssrgen ::= {? @ssrdocc } @cpattern
+      ssrdgens_tl ::= %{ {+ @ident } %} @cpattern {? @ssrdgens_tl }
+      | %{ {+ @ident } %}
+      | %{ @clear_switch %} @cpattern {? @ssrdgens_tl }
+      | / {? @ssrdgens_tl }
+      | @cpattern {? @ssrdgens_tl }
 
    This tactic:
 
@@ -5392,8 +5483,14 @@ In this context, the identity view can be used when no view has to be applied:
 Declaring new Hint Views
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Hint View for move / @ident {? | @natural }
-         Hint View for apply / @ident {? | @natural }
+.. cmd:: Hint View {? @ssrviewpos } {+ @one_term {? %| @natural } }
+
+   .. insertprodn ssrviewpos ssrviewpos
+
+   .. prodn::
+      ssrviewpos ::= for move /
+      | for apply /
+      | for apply //
 
    This command can be used to extend the database of hints for the view
    mechanism.
@@ -5474,7 +5571,7 @@ equivalences are indeed taken into account, otherwise only single
 |SSR| searching tool
 --------------------
 
-.. cmd:: Search {? @pattern }  {* {? - } {| @string | @pattern } {? % @ident} } {? in {+ {? - } @qualid } }
+.. cmd:: Search {? {+ - {| @string {? % @ident } | @one_term } } } {? in {+ {? - } @qualid } }
    :name: Search (ssreflect)
 
    .. versionchanged:: 8.12
@@ -5550,125 +5647,24 @@ equivalences are indeed taken into account, otherwise only single
        statement, including hypotheses, features a ``=1`` and whose name
        contains the string ``bij``.
 
-Synopsis and Index
-------------------
-
-Parameters
-~~~~~~~~~~
-
-|SSR| tactics
-
-.. prodn::
-   d_tactic ::= {| elim | case | congr | apply | exact | move }
-
-Notation scope
-
-.. prodn:: key ::= @ident
-
-Module name
-
-.. prodn:: modname ::= @qualid
-
-Natural number
-
-.. prodn:: nat_or_ident ::= {| @natural | @ident }
-
-where :token:`ident` is an Ltac variable denoting a standard |Coq| number
-(should not be the name of a tactic which can be followed by a
-bracket ``[``, like ``do``, ``have``,…)
-
-Items and switches
-~~~~~~~~~~~~~~~~~~
-
-.. prodn:: ssr_binder ::= {| @ident | ( @ident {? : @term } ) }
-
-binder see :ref:`abbreviations_ssr`.
-
-.. prodn:: clear_switch ::= { {+ @ident } }
-
-clear switch see :ref:`discharge_ssr`
-
-.. prodn:: c_pattern ::= {? {| @term in | @term as } } @ident in @term
-
-context pattern see :ref:`contextual_patterns_ssr`
-
-.. prodn:: d_item ::= {? {| @occ_switch | @clear_switch } } {? {| @term | ( @c_pattern ) } }
-
-discharge item see :ref:`discharge_ssr`
-
-.. prodn:: gen_item ::= {| {? @ } @ident | ( @ident ) | ( {? @ } @ident := @c_pattern ) }
-
-generalization item see :ref:`structure_ssr`
-
-.. prodn:: i_pattern ::= {| @ident | > | _ | ? | * | + | {? @occ_switch } {| -> | <- } | [ {?| @i_item } ] | - | [: {+ @ident } ] }
-
-intro pattern :ref:`introduction_ssr`
-
-.. prodn:: i_item ::= {| @clear_switch | @s_item | @i_pattern | @i_view | @i_block }
-
-view :ref:`introduction_ssr`
-
-.. prodn::
-   i_view ::= {? %{%} } {| /@term | /ltac:( @tactic ) }
-
-intro block :ref:`introduction_ssr`
-
-.. prodn::
-   i_block ::= {| [^ @ident ] | [^~ {| @ident | @natural } ] }
-
-intro item  see :ref:`introduction_ssr`
-
-.. prodn:: int_mult ::= {? @natural } @mult_mark
-
-multiplier  see :ref:`iteration_ssr`
-
-.. prodn:: occ_switch ::= { {? {| + | - } } {* @natural } }
-
-occur. switch see :ref:`occurrence_selection_ssr`
-
-.. prodn:: mult ::= {? @natural } @mult_mark
-
-multiplier see :ref:`iteration_ssr`
-
-.. prodn:: mult_mark ::= {| ? | ! }
-
-multiplier mark see :ref:`iteration_ssr`
-
-.. prodn:: r_item ::= {| {? / } @term | @s_item }
-
-rewrite item see :ref:`rewriting_ssr`
-
-.. prodn:: r_prefix ::= {? - } {? @int_mult } {? {| @occ_switch | @clear_switch } } {? [ @r_pattern ] }
-
-rewrite prefix see :ref:`rewriting_ssr`
-
-.. prodn:: r_pattern ::= {| @term | @c_pattern | in {? @ident in } @term }
-
-rewrite pattern see :ref:`rewriting_ssr`
-
-.. prodn:: r_step ::= {? @r_prefix } @r_item
-
-rewrite step see :ref:`rewriting_ssr`
-
-.. prodn:: s_item ::= {| /= | // | //= }
-
-simplify switch see :ref:`introduction_ssr`
 
 Tactics
 ~~~~~~~
 
+.. tacn:: clear @natural
+   :name: clear (ssreflect)
+   :undocumented:
+
+.. tacn: ssrinstancesofruleL2R @term
+   :name: ssrinstancesofruleL2R (ssreflect)
+   :undocumented:
+
+.. tacn: ssrinstancesofruleR2L @term
+   :name: ssrinstancesofruleL2R (ssreflect)
+   :undocumented:
+
 *Note*: ``without loss`` and ``suffices`` are synonyms for ``wlog`` and ``suff``
 respectively.
-
-.. tacn:: move
-
-   :tacn:`idtac` or :tacn:`hnf` (see  :ref:`bookkeeping_ssr`)
-
-.. tacn:: apply
-          exact
-   :name: apply (ssreflect); exact (ssreflect)
-
-   application (see :ref:`the_defective_tactics_ssr`)
 
 .. tacv:: abstract: {+ @d_item}
 
@@ -5686,33 +5682,19 @@ respectively.
 
    rewrite (see :ref:`rewriting_ssr`)
 
-.. tacn:: under {? @r_prefix } @term {? => {+ @i_item}} {? do {| @tactic | [ {*| @tactic } ] } }
-
-   under (see :ref:`under_ssr`)
-
-.. tacn:: over
-
-   over (see :ref:`over_ssr`)
-
-.. tacn:: have {* @i_item } {? @i_pattern } {? {| @s_item | {+ @ssr_binder } } } {? : @term } := @term
-          have {* @i_item } {? @i_pattern } {? {| @s_item | {+ @ssr_binder } } } : @term {? by @tactic }
-          have suff {? @clear_switch } {? @i_pattern } {? : @term } := @term
-          have suff {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
-          gen have {? @ident , } {? @i_pattern } : {+ @gen_item } / @term {? by @tactic }
-          generally have {? @ident , } {? @i_pattern } : {+ @gen_item } / @term {? by @tactic }
-   :name: _; _; _; _; _; generally have
-
    forward chaining (see :ref:`structure_ssr`)
 
-.. tacn:: wlog {? suff } {? @i_item } : {* {| @gen_item | @clear_switch } } / @term
 
    specializing (see :ref:`structure_ssr`)
 
-.. tacn:: suff {* @i_item } {? @i_pattern } {+ @ssr_binder } : @term {? by @tactic }
-          suffices {* @i_item } {? @i_pattern } {+ @ssr_binder } : @term {? by @tactic }
-          suff {? have } {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
-          suffices {? have } {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
-   :name: suff; suffices; _; _
+.. tacn:: {| suff | suffices } {? have {? @ssripats } } @ssrhavefwd
+          {| suff | suffices } @ssrsufffwd
+   :name: suff (ssreflect); suffices (ssreflect)
+
+   .. insertprodn ssrsufffwd ssrsufffwd
+
+   .. prodn::
+      ssrsufffwd ::= {? @ssripats } {* @ssrbinder } : @term {? by @ssrhintarg }
 
    backchaining (see :ref:`structure_ssr`)
 
@@ -5720,7 +5702,7 @@ respectively.
 
    local definition (see :ref:`definitions_ssr`)
 
-.. tacv:: pose @ident {+ @ssr_binder } := @term
+.. tacv:: pose @ident {+ @ssrbinder } := @term
 
    local function definition
 
@@ -5732,76 +5714,7 @@ respectively.
 
    local cofix definition
 
-.. tacn:: set @ident {? : @term } := {? @occ_switch } {| @term | ( @c_pattern) }
-   :name: set (ssreflect)
-
    abbreviation (see :ref:`abbreviations_ssr`)
-
-.. tacn:: unlock {* {? @r_prefix } @ident }
-
-   unlock (see :ref:`locking_ssr`)
-
-.. tacn:: congr {? @natural } @term
-
-   congruence (see :ref:`congruence_ssr`)
-
-
-Tacticals
-~~~~~~~~~
-
-.. prodn:: tactic += @d_tactic {? @ident } : {+ @d_item } {? @clear_switch }
-
-discharge :ref:`discharge_ssr`
-
-.. prodn:: tactic += @tactic => {+ @i_item }
-
-introduction see :ref:`introduction_ssr`
-
-.. prodn:: tactic += @tactic in {+ {| @gen_item | @clear_switch } } {? * }
-
-localization see :ref:`localization_ssr`
-
-.. prodn:: tactic += do {? @mult } {| @tactic | [ {+| @tactic } ] }
-
-iteration  see :ref:`iteration_ssr`
-
-.. prodn:: tactic += @tactic ; {| first | last } {? @natural } {| @tactic | [ {+| @tactic } ] }
-
-selector  see :ref:`selectors_ssr`
-
-.. prodn:: tactic += @tactic ; {| first | last } {? @natural }
-
-rotation see :ref:`selectors_ssr`
-
-.. prodn:: tactic += by {| @tactic | [ {*| @tactic } ] }
-
-closing see :ref:`terminators_ssr`
-
-Commands
-~~~~~~~~
-
-.. cmd:: Hint View for {| move | apply } / @ident {? | @natural }
-
-   view hint declaration (see :ref:`declaring_new_hints_ssr`)
-
-.. cmd:: Hint View for apply // @ident {? @natural }
-
-   right hand side double , view hint declaration (see :ref:`declaring_new_hints_ssr`)
-
-.. cmd:: Prenex Implicits {+ @ident }
-
-   prenex implicits declaration (see :ref:`parametric_polymorphism_ssr`)
-
-Settings
-~~~~~~~~
-
-.. flag:: Debug Ssreflect
-
-   *Developer only.* Print debug information on reflect.
-
-.. flag:: Debug SsrMatching
-
-   *Developer only.* Print debug information on SSR matching.
 
 .. rubric:: Footnotes
 

@@ -12,12 +12,14 @@ open Coqpp_parser
 open Coqpp_ast
 
 let exit_code = ref 0
+let error_count = ref 00
 let show_warn = ref true
 
 let fprintf = Printf.fprintf
 
 let error s =
   exit_code := 1;
+  incr error_count;
   Printf.eprintf "Error: ";
   Printf.eprintf s
 
@@ -359,10 +361,9 @@ and prod_to_prodn prod = String.concat " " (prod_to_prodn_r prod)
 let get_tag file prod =
   List.fold_left (fun rv sym ->
       match sym with
-        (* todo: temporarily limited to Ltac2 tags in prodn when not in ltac2.rst *)
-      | Sedit2 ("TAG", s2)
-        when (s2 = "Ltac2" || s2 = "not Ltac2") &&
-            file <> "doc/sphinx/proof-engine/ltac2.rst" -> "   " ^ s2
+        (* todo: only Ltac2 and SSR for now, outside of their main chapters *)
+      | Sedit2 ("TAG", "Ltac2") when file <> "doc/sphinx/proof-engine/ltac2.rst" -> "   Ltac2"
+      | Sedit2 ("TAG", "SSR") when file <> "doc/sphinx/proof-engine/ssreflect-proof-language.rst" -> "   SSR"
       | _ -> rv
     ) "" prod
 
@@ -559,6 +560,10 @@ let level_regex = Str.regexp "[a-zA-Z0-9_]*$"
 let get_plugin_name file =
   if file = "user-contrib/Ltac2/g_ltac2.mlg" then
     "Ltac2"
+  (* todo: would be better if g_search.mlg has an "ssr" prefix *)
+  else if List.mem file ["plugins/ssr/ssrparser.mlg"; "plugins/ssr/ssrvernac.mlg";
+      "plugins/ssrmatching/g_ssrmatching.mlg"; "plugins/ssrsearch/g_search.mlg"] then
+    "SSR"
   else if Str.string_match plugin_regex file 0 then
     Str.matched_group 1 file
   else
@@ -568,12 +573,12 @@ let read_mlg g is_edit ast file level_renames symdef_map =
   let res = ref [] in
   let locals = ref StringSet.empty in
   let dup_renames = ref StringMap.empty in
-  let add_prods nt prods =
+  let add_prods nt prods gramext_globals =
     if not is_edit then
-      if NTMap.mem nt !g.map && nt <> "command" && nt <> "simple_tactic" then begin
+      if NTMap.mem nt !g.map && not (List.mem nt gramext_globals) && nt <> "command" && nt <> "simple_tactic" then begin
         let new_name = String.uppercase_ascii (Filename.remove_extension (Filename.basename file)) ^ "_" ^ nt in
         dup_renames := StringMap.add nt new_name !dup_renames;
-        Printf.printf "** dup sym %s -> %s in %s\n" nt new_name file
+        if false then Printf.printf "** dup local sym %s -> %s in %s\n" nt new_name file
       end;
       add_symdef nt file symdef_map;
     let plugin = get_plugin_name file in
@@ -594,11 +599,12 @@ let read_mlg g is_edit ast file level_renames symdef_map =
         | Some s -> s
         | None -> ""
       in
+      let gramext_globals = ref grammar_ext.gramext_globals in
       List.iter (fun ent ->
           let len = List.length ent.gentry_rules in
           List.iteri (fun i rule ->
               let nt = ent.gentry_name in
-              if not (List.mem nt grammar_ext.gramext_globals) then
+              if not (List.mem nt !gramext_globals) then
                 locals := StringSet.add nt !locals;
               let level = (get_label rule.grule_label) in
               let level = if level <> "" then level else
@@ -629,8 +635,11 @@ let read_mlg g is_edit ast file level_renames symdef_map =
                 if cur_level <> nt && i+1 < len then
                   edited @ [[Snterm next_level]]
                 else
-                  edited in
-              add_prods cur_level prods_to_add)
+                  edited
+              in
+              if cur_level <> nt && List.mem nt !gramext_globals then
+                gramext_globals := cur_level :: !gramext_globals;
+              add_prods cur_level prods_to_add !gramext_globals)
             ent.gentry_rules
         ) grammar_ext.gramext_entries
 
@@ -640,16 +649,16 @@ let read_mlg g is_edit ast file level_renames symdef_map =
       | Some c -> String.trim c.code
       in
       add_prods node
-        (List.map (fun r -> cvt_ext r.vernac_toks) vernac_ext.vernacext_rules)
+        (List.map (fun r -> cvt_ext r.vernac_toks) vernac_ext.vernacext_rules) []
     | VernacArgumentExt vernac_argument_ext ->
       add_prods vernac_argument_ext.vernacargext_name
-        (List.map (fun r -> cvt_ext r.tac_toks) vernac_argument_ext.vernacargext_rules)
+        (List.map (fun r -> cvt_ext r.tac_toks) vernac_argument_ext.vernacargext_rules) []
     | TacticExt tactic_ext ->
       add_prods "simple_tactic"
-        (List.map (fun r -> cvt_ext r.tac_toks) tactic_ext.tacext_rules)
+        (List.map (fun r -> cvt_ext r.tac_toks) tactic_ext.tacext_rules) []
     | ArgumentExt argument_ext ->
       add_prods argument_ext.argext_name
-        (List.map (fun r -> cvt_ext r.tac_toks) argument_ext.argext_rules)
+        (List.map (fun r -> cvt_ext r.tac_toks) argument_ext.argext_rules) []
     | _ -> ()
   in
 
@@ -1909,7 +1918,6 @@ let process_rst g file args seen tac_prods cmd_prods =
 (*  in*)
 
   let cmd_exclude_files = [
-    "doc/sphinx/proof-engine/ssreflect-proof-language.rst";
     "doc/sphinx/proof-engine/tactics.rst"
   ]
   in
@@ -2021,13 +2029,11 @@ let report_omitted_prods g seen label split =
         (if first = "" then nt else first), nt, n + 1, total + 1)
     ("", "", 0, 0) !g.order in
   maybe_warn first last n;
-  (*
-  Printf.printf "\n";
+  Printf.printf "\n\n";
   NTMap.iter (fun nt _ ->
       if not (NTMap.mem nt seen || (List.mem nt included)) then
         warn "%s %s not included in .rst files\n" "Nonterminal" nt)
     !g.map;
-  *)
   if total <> 0 then
     Printf.eprintf "TOTAL %ss not included = %d\n" label total
 
@@ -2090,7 +2096,7 @@ let process_grammar args =
       print_in_order out g `MLG !g.order StringSet.empty;
       close_out out;
       finish_with_file (dir "orderedGrammar") args;
-      check_singletons g;
+(*      check_singletons g*)
 (*      print_dominated g*)
 
       let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
@@ -2185,5 +2191,7 @@ let () =
     if !exit_code = 0 then begin
       process_grammar args
     end;
+    if !error_count > 0 then
+      Printf.eprintf "%d error(s)\n" !error_count;
     exit !exit_code
   (*with _ -> Printexc.print_backtrace stdout; exit 1*)

@@ -191,7 +191,23 @@ nitpick_ignore = [ ('token', token) for token in [
     'hintbases',
     'bindings_with_parameters',
     'destruction_arg',
-    'clause_dft_concl'
+    'clause_dft_concl',
+    'induction_clause_list',
+    'constr_with_bindings_arg',
+    'in_hyp_as',
+    'as_or_and_ipat',
+    'eqn_ipat',
+    'in_clause',
+
+    # SSR temps
+    'occ_switch',
+    'd_item',
+    'i_pattern',
+    'i_view',
+    'i_block',
+    'c_pattern',  # maybe cpattern?
+    'r_step'
+
 ]]
 
 # -- Options for HTML output ----------------------------------------------
