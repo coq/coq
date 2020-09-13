@@ -1003,7 +1003,7 @@ simple_tactic: [
 | DELETE "replace" uconstr clause
 | "replace" orient uconstr clause
 | REPLACE "rewrite" "*" orient uconstr "in" hyp "at" occurrences by_arg_tac
-| WITH "rewrite" "*" orient uconstr OPT ( "in" hyp ) OPT ( "at" occurrences by_arg_tac )
+| WITH "rewrite" "*" orient uconstr OPT ( "in" hyp ) OPT ( "at" occurrences ) by_arg_tac
 | DELETE "rewrite" "*" orient uconstr "in" hyp by_arg_tac
 | DELETE "rewrite" "*" orient uconstr "at" occurrences by_arg_tac
 | DELETE "rewrite" "*" orient uconstr by_arg_tac
@@ -1814,6 +1814,7 @@ ltac_defined_tactics: [
 | "lia"
 | "lra"
 | "nia"
+| "now_show" constr
 | "nra"
 | "over"  TAG SSR
 | "split_Rabs"
@@ -2373,7 +2374,7 @@ ssrapplyarg: [
 ]
 
 constr_with_bindings_arg: [
-| EDIT ADD_OPT ">" constr_with_bindings      TAG SSR
+| EDIT ADD_OPT ">" constr_with_bindings
 ]
 
 destruction_arg: [
@@ -2467,6 +2468,15 @@ occs_nums: [
 
 variance_identref: [
 | EDIT ADD_OPT variance identref
+]
+
+conversion: [
+| DELETE constr
+| DELETE constr "with" constr
+| PRINT
+| REPLACE constr "at" occs_nums "with" constr
+| WITH OPT ( constr OPT ( "at" occs_nums ) "with" ) constr
+| PRINT
 ]
 
 SPLICE: [
@@ -2694,6 +2704,8 @@ SPLICE: [
 | cumul_ident_decl
 | variance
 | variance_identref
+| rewriter
+| conversion
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2751,6 +2763,7 @@ RENAME: [
 | pattern_occ pattern_occs
 | hypident_occ hyp_occs
 | concl_occ concl_occs
+| constr_with_bindings_arg one_term_with_bindings
 ]
 
 simple_tactic: [

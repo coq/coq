@@ -34,9 +34,9 @@ Coq material inside documentation.
 
 Coq material is quoted between the delimiters ``[`` and ``]``. Square brackets
 may be nested, the inner ones being understood as being part of the
-quoted code (thus you can quote a term like ``fun x => u`` by writing  ``[fun
-x => u]``). Inside quotations, the code is pretty-printed in the same
-way as it is in code parts.
+quoted code (thus you can quote a term like ``let id := fun [T : Type] (x : t) => x in id 0``
+by writing  ``[let id := fun [T : Type] (x : t) => x in id 0]``).
+Inside quotations, the code is pretty-printed the same way as in code parts.
 
 Preformatted vernacular is enclosed by ``[[`` and ``]]``. The former must be
 followed by a newline and the latter must follow a newline.

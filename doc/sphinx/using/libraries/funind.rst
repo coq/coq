@@ -170,7 +170,6 @@ Tactics
 -------
 
 .. tacn:: functional induction @term {? using @one_term {? with @bindings } } {? as @simple_intropattern }
-   :name: functional induction
 
    Performs case analysis and induction following the definition of a function
    :token:`qualid`, which must be fully applied to its arguments as part of
@@ -221,7 +220,6 @@ Tactics
       :undocumented:
 
 .. tacn:: functional inversion {| @ident | @natural } {? @qualid }
-   :name: functional inversion
 
    Performs inversion on hypothesis
    :n:`@ident` of the form :n:`@qualid {+ @term} = @term` or

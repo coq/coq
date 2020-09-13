@@ -161,7 +161,7 @@ Program Definition
 A :cmd:`Definition` command with the :attr:`program` attribute types
 the value term in Russell and generates proof
 obligations. Once solved using the commands shown below, it binds the
-final Coq term to the name :n:`@ident` in the environment.
+final Coq term to the name :n:`@ident` in the global environment.
 
 :n:`Program Definition @ident : @type := @term`
 
@@ -268,7 +268,6 @@ obligations (e.g. when defining mutually recursive blocks). The
 optional tactic is replaced by the default one if not specified.
 
 .. cmd:: Obligation Tactic := @ltac_expr
-   :name: Obligation Tactic
 
    Sets the default obligation solving tactic applied to all obligations
    automatically, whether to solve them or when starting to prove one,

@@ -5,6 +5,9 @@
 Existential variables
 ---------------------
 
+:gdef:`Existential variables <existential variable>` represent as yet unknown
+values.
+
 .. insertprodn term_evar term_evar
 
 .. prodn::

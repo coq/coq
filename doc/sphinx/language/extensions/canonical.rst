@@ -199,8 +199,8 @@ but also that the infix relation was bound to the ``nat_eq`` relation.
 This relation is selected whenever ``==`` is used on terms of type nat.
 This can be read in the line declaring the canonical structure
 ``nat_EQty``, where the first argument to ``Pack`` is the key and its second
-argument a group of canonical values associated to the key. In this
-case we associate to nat only one canonical value (since its class,
+argument a group of canonical values associated with the key. In this
+case we associate with nat only one canonical value (since its class,
 ``nat_EQcl`` has just one member). The use of the projection ``op`` requires
 its argument to be in the class ``EQ``, and uses such a member (function)
 to actually compare its arguments.
@@ -530,7 +530,7 @@ instances of the ``LEQ`` class.
 
 The object ``Pack`` takes a type ``T`` (the key) and a mixin ``m``. It infers all
 the other pieces of the class ``LEQ`` and declares them as canonical
-values associated to the ``T`` key. All in all, the only new piece of
+values associated with the ``T`` key. All in all, the only new piece of
 information we add in the ``LEQ`` class is the mixin, all the rest is
 already canonical for ``T`` and hence can be inferred by Coq.
 

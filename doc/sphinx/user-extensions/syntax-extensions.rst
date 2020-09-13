@@ -1073,7 +1073,7 @@ main grammar, or from another custom entry as is the case in
    Notation "[ e ]" := e (e custom expr at level 2).
 
 to indicate that ``e`` has to be parsed at level ``2`` of the grammar
-associated to the custom entry ``expr``. The level can be omitted, as in
+associated with the custom entry ``expr``. The level can be omitted, as in
 
 .. coqdoc::
 
@@ -1159,7 +1159,6 @@ Similarly, to indicate that a custom entry should parse global references
    Notation "x" := x (in custom expr at level 0, x global).
 
 .. cmd:: Print Custom Grammar @ident
-   :name: Print Custom Grammar
 
    This displays the state of the grammar for terms associated with
    the custom entry :token:`ident`.
@@ -1551,7 +1550,6 @@ Displaying information about scopes
    Use the :cmd:`Print Visibility` command to display the current notation scope stack.
 
 .. cmd:: Print Scope @scope_name
-   :name: Print Scope
 
    Displays all notations defined in the notation scope :n:`@scope_name`.
    It also displays the delimiting key and the class to which the
@@ -1685,7 +1683,6 @@ Number notations
 ~~~~~~~~~~~~~~~~
 
 .. cmd:: Number Notation @qualid__type @qualid__parse @qualid__print {? ( {+, @number_modifier } ) } : @scope_name
-   :name: Number Notation
 
    .. insertprodn number_modifier number_string_via
 
@@ -1841,12 +1838,12 @@ Number notations
    .. exn:: @qualid__parse should go from Number.int to @type or (option @type). Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).
 
      The parsing function given to the :cmd:`Number Notation`
-     vernacular is not of the right type.
+     command is not of the right type.
 
    .. exn:: @qualid__print should go from @type to Number.int or (option Number.int).  Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).
 
      The printing function given to the :cmd:`Number Notation`
-     vernacular is not of the right type.
+     command is not of the right type.
 
    .. exn:: Unexpected term @term while parsing a number notation.
 
@@ -1876,7 +1873,6 @@ String notations
 ~~~~~~~~~~~~~~~~
 
 .. cmd:: String Notation @qualid__type @qualid__parse @qualid__print {? ( @number_string_via ) } : @scope_name
-   :name: String Notation
 
    Allows the user to customize how strings are parsed and printed.
 
@@ -1919,12 +1915,12 @@ String notations
    .. exn:: @qualid__parse should go from Byte.byte or (list Byte.byte) to @type or (option @type).
 
      The parsing function given to the :cmd:`String Notation`
-     vernacular is not of the right type.
+     command is not of the right type.
 
    .. exn:: @qualid__print should go from @type to Byte.byte or (option Byte.byte) or (list Byte.byte) or (option (list Byte.byte)).
 
      The printing function given to the :cmd:`String Notation`
-     vernacular is not of the right type.
+     command is not of the right type.
 
    .. exn:: Unexpected term @term while parsing a string notation.
 

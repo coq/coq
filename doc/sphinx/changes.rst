@@ -943,7 +943,7 @@ Notations
   by Hugo Herbelin).
 - **Fixed:**
   Different interpretations in different scopes of the same notation
-  string can now be associated to different printing formats (`#10832
+  string can now be associated with different printing formats (`#10832
   <https://github.com/coq/coq/pull/10832>`_, by Hugo Herbelin,
   fixes `#6092 <https://github.com/coq/coq/issues/6092>`_
   and `#7766 <https://github.com/coq/coq/issues/7766>`_).
@@ -2222,7 +2222,7 @@ Changes in 8.11+beta1
   documentation. (`#10441 <https://github.com/coq/coq/pull/10441>`_,
   by Pierre-Marie Pédrot)
 - **Added:**
-  The :cmd:`Section` vernacular command now accepts the "universes" attribute. In
+  The :cmd:`Section` command now accepts the "universes" attribute. In
   addition to setting the section universe polymorphism, it also locally sets
   the universe polymorphic option inside the section.
   (`#10441 <https://github.com/coq/coq/pull/10441>`_, by Pierre-Marie Pédrot)
@@ -3221,7 +3221,7 @@ Other changes in 8.10+beta1
     New `relpre R f` definition for the preimage of a relation R under f
     (`#9995 <https://github.com/coq/coq/pull/9995>`_, by Georges Gonthier).
 
-- Vernacular commands:
+- Commands:
 
   - Binders for an :cmd:`Instance` now act more like binders for a :cmd:`Theorem`.
     Names may not be repeated, and may not overlap with section variable names
@@ -3553,7 +3553,7 @@ Changes in 8.10.2
 
 **Notations**
 
-- Fixed an 8.10 regression related to the printing of coercions associated to notations
+- Fixed an 8.10 regression related to the printing of coercions associated with notations
   (`#11090 <https://github.com/coq/coq/pull/11090>`_,
   fixes `#11033 <https://github.com/coq/coq/issues/11033>`_, by Hugo Herbelin).
 
@@ -3794,7 +3794,7 @@ Focusing
 
 - Focusing bracket `{` now supports named goal selectors,
   e.g. `[x]: {` will focus on a goal (existential variable) named `x`.
-  As usual, unfocus with `}` once the sub-goal is fully solved.
+  As usual, unfocus with `}` once the subgoal is fully solved.
 
 Specification language
 
@@ -3859,7 +3859,7 @@ Tools
   please open an issue. We can help set up external maintenance as part
   of Proof-General, or independently as part of coq-community.
 
-Vernacular Commands
+Commands
 
 - Removed deprecated commands `Arguments Scope` and `Implicit Arguments`
   (not the option). Use the `Arguments` command instead.
@@ -4130,11 +4130,11 @@ Tactics
 Focusing
 
 - Focusing bracket `{` now supports single-numbered goal selector,
-  e.g. `2: {` will focus on the second sub-goal. As usual, unfocus
-  with `}` once the sub-goal is fully solved.
+  e.g. `2: {` will focus on the second subgoal. As usual, unfocus
+  with `}` once the subgoal is fully solved.
   The `Focus` and `Unfocus` commands are now deprecated.
 
-Vernacular Commands
+Commands
 
 - Proofs ending in "Qed exporting ident, .., ident" are not supported
   anymore. Constants generated during `abstract` are kept private to the
@@ -4508,7 +4508,7 @@ Gallina
 
 - Now supporting all kinds of binders, including 'pat, in syntax of record fields.
 
-Vernacular Commands
+Commands
 
 - Goals context can be printed in a more compact way when `Set
   Printing Compact Contexts` is activated.
@@ -5340,7 +5340,7 @@ Logic
   the dependent one. To recover the old behavior, explicitly define your
   inductive types in Set.
 
-Vernacular commands
+Commands
 
 - A command "Variant" allows to define non-recursive variant types.
 - The command "Record foo ..." does not generate induction principles
@@ -5797,7 +5797,7 @@ API
 Details of changes in 8.5beta3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Vernacular commands
+Commands
 
 - New command "Redirect" to redirect the output of a command to a file.
 - New command "Undelimit Scope" to remove the delimiter of a scope.
@@ -6176,7 +6176,7 @@ Regarding decision tactics, Loïc Pottier maintained nsatz, moving in
 particular to a typeclass based reification of goals while Frédéric
 Besson maintained Micromega, adding in particular support for division.
 
-Regarding vernacular commands, Stéphane Glondu provided new commands to
+Regarding commands, Stéphane Glondu provided new commands to
 analyze the structure of type universes.
 
 Regarding libraries, a new library about lists of a given length (called
@@ -6373,7 +6373,7 @@ Tactics
   constructor. Last one can mark a constant so that it is unfolded only if the
   simplified term does not expose a match in head position.
 
-Vernacular commands
+Commands
 
 - It is now mandatory to have a space (or tabulation or newline or end-of-file)
   after a "." ending a sentence.
@@ -6563,7 +6563,7 @@ Tools
 Details of changes in 8.4beta2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Vernacular commands
+Commands
 
 - Commands "Back" and "BackTo" are now handling the proof states. They may
   perform some extra steps of backtrack to avoid states where the proof
@@ -6612,7 +6612,7 @@ CoqIDE
 Details of changes in 8.4
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Vernacular commands
+Commands
 
 - The "Reset" command is now supported again in files given to coqc or Load.
 - "Show Script" now indents again the displayed scripts. It can also work
@@ -6916,7 +6916,7 @@ Type classes
   anonymous instances, declarations giving terms, better handling of
   sections and [Context].
 
-Vernacular commands
+Commands
 
 - New command "Timeout <n> <command>." interprets a command and a timeout
   interrupts the execution after <n> seconds.
@@ -7089,7 +7089,7 @@ implement a new resolution-based version of the tactics dedicated to
 rewriting on arbitrary transitive relations.
 
 Another major improvement of Coq 8.2 is the evolution of the arithmetic
-libraries and of the tools associated to them. Benjamin Grégoire and
+libraries and of the tools associated with them. Benjamin Grégoire and
 Laurent Théry contributed a modular library for building arbitrarily
 large integers from bounded integers while Evgeny Makarov contributed a
 modular library of abstract natural and integer arithmetic together
@@ -7197,7 +7197,7 @@ Language
   of easily fixed incompatibility in case of manual definition of a recursor
   in a recursive singleton inductive type].
 
-Vernacular commands
+Commands
 
 - Added option Global to "Arguments Scope" for section surviving.
 - Added option "Unset Elimination Schemes" to deactivate the automatic
@@ -7797,7 +7797,7 @@ Syntax
 - Support for primitive interpretation of string literals
 - Extended support for Unicode ranges
 
-Vernacular commands
+Commands
 
 - Added "Print Ltac qualid" to print a user defined tactic.
 - Added "Print Rewrite HintDb" to print the content of a DB used by
@@ -7975,7 +7975,7 @@ Libraries
 - Acc in Wf.v and clos_refl_trans in Relation_Operators.v now rely on
   the allowance for recursively non uniform parameters (possible
   source of incompatibilities: explicit pattern-matching on these
-  types may require to remove the occurrence associated to their
+  types may require to remove the occurrence associated with their
   recursively non uniform parameter).
 - Coq.List.In_dec has been set transparent (this may exceptionally break
   proof scripts, set it locally opaque for compatibility).
@@ -8194,7 +8194,7 @@ Syntax for arithmetic
 - Locate applied to a simple string (e.g. "+") searches for all
   notations containing this string
 
-Vernacular commands
+Commands
 
 - "Declare ML Module" now allows to import .cma files. This avoids to use a
   bunch of "Declare ML Module" statements when using several ML files.
@@ -8355,7 +8355,7 @@ New concrete syntax
 
 - A completely new syntax for terms
 - A more uniform syntax for tactics and the tactic language
-- A few syntactic changes for vernacular commands
+- A few syntactic changes for commands
 - A smart automatic translator translating V8.0 files in old syntax to
   files valid for V8.0
 
@@ -8426,7 +8426,7 @@ Known problems of the automatic translation
 Details of changes in 8.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Vernacular commands
+Commands
 
 - New option "Set Printing All" to deactivate all high-level forms of
   printing (implicit arguments, coercions, destructing let,

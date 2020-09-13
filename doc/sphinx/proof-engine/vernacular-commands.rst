@@ -1,7 +1,7 @@
 .. _vernacularcommands:
 
-Vernacular commands
-=============================
+Commands
+========
 
 .. _displaying:
 
@@ -60,7 +60,7 @@ Query commands
 --------------
 
 Unlike other commands, :production:`query_command`\s may be prefixed with
-a goal selector (:n:`@natural:`) to specify which goal context it applies to.
+a goal selector (:n:`@natural:`) to specify which goals it applies to.
 If no selector is provided,
 the command applies to the current goal.  If no proof is open, then the command only applies
 to accessible objects.  (see Section :ref:`invocation-of-tactics`).
@@ -382,7 +382,6 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
          SearchRewrite (_ + _ + _).
 
 .. table:: Search Blacklist @string
-   :name: Search Blacklist
 
    Specifies a set of strings used to exclude lemmas from the results of :cmd:`Search`,
    :cmd:`SearchHead`, :cmd:`SearchPattern` and :cmd:`SearchRewrite` queries.  A lemma whose
@@ -668,8 +667,8 @@ Loadpath
 ------------
 
 Loadpaths are preferably managed using Coq command line options (see
-Section :ref:`libraries-and-filesystem`) but there remain vernacular commands to manage them
-for practical purposes. Such commands are only meant to be issued in
+Section :ref:`libraries-and-filesystem`), but there are also commands
+to manage them within Coq. These commands are only meant to be issued in
 the toplevel, and using them in source files is discouraged.
 
 
@@ -740,7 +739,7 @@ Backtracking
 ------------
 
 The backtracking commands described in this section can only be used
-interactively, they cannot be part of a vernacular file loaded via
+interactively, they cannot be part of a Coq file loaded via
 ``Load`` or compiled by ``coqc``.
 
 
@@ -844,7 +843,6 @@ Quitting and debugging
    displayed.
 
    .. opt:: Default Timeout @natural
-      :name: Default Timeout
 
       If set, each :n:`@sentence` is treated as if it was prefixed with :cmd:`Timeout` :n:`@natural`,
       except for :cmd:`Timeout` commands themselves.  If unset,
@@ -883,7 +881,6 @@ Controlling display
    This flag controls the normal displaying.
 
 .. opt:: Warnings "{+, {? {| - | + } } @ident }"
-   :name: Warnings
 
    This option configures the display of warnings. It is experimental, and
    expects, between quotes, a comma-separated list of warning names or
@@ -894,14 +891,12 @@ Controlling display
    right have higher priority, meaning that `A,-A` is equivalent to `-A`.
 
 .. opt:: Printing Width @natural
-   :name: Printing Width
 
    This command sets which left-aligned part of the width of the screen is used
    for display. At the time of writing this documentation, the default value
    is 78.
 
 .. opt:: Printing Depth @natural
-   :name: Printing Depth
 
    This option controls the nesting depth of the formatter used for pretty-
    printing. Beyond this depth, display of subterms is replaced by dots. At the
