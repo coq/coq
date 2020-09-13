@@ -32,14 +32,14 @@ Qed.
 
 Theorem inj_add p q : to_nat (p + q) = to_nat p + to_nat q.
 Proof.
- revert q. induction p using peano_ind; intros q.
+ revert q. induction p as [|p IHp] using peano_ind; intros q.
  now rewrite add_1_l, inj_succ.
  now rewrite add_succ_l, !inj_succ, IHp.
 Qed.
 
 Theorem inj_mul p q : to_nat (p * q) = to_nat p * to_nat q.
 Proof.
- revert q. induction p using peano_ind; simpl; intros; trivial.
+ revert q. induction p as [|p IHp] using peano_ind; simpl; intros; trivial.
  now rewrite mul_succ_l, inj_add, IHp, inj_succ.
 Qed.
 
@@ -62,9 +62,9 @@ Qed.
 
 (** [Pos.to_nat] maps to the strictly positive subset of [nat] *)
 
-Lemma is_succ : forall p, exists n, to_nat p = S n.
+Lemma is_succ p : exists n, to_nat p = S n.
 Proof.
- induction p using peano_ind.
+ induction p as [|p IHp] using peano_ind.
  now exists 0.
  destruct IHp as (n,Hn). exists (S n). now rewrite inj_succ, Hn.
 Qed.
@@ -82,7 +82,7 @@ Qed.
 
 Theorem id p : of_nat (to_nat p) = p.
 Proof.
- induction p using peano_ind. trivial.
+ induction p as [|p IHp] using peano_ind. trivial.
  rewrite inj_succ. rewrite <- IHp at 2.
  now destruct (is_succ p) as (n,->).
 Qed.
@@ -149,7 +149,7 @@ Qed.
 Theorem inj_sub_max p q :
  to_nat (p - q) = Nat.max 1 (to_nat p - to_nat q).
 Proof.
- destruct (ltb_spec q p).
+ destruct (ltb_spec q p) as [H|H].
  - (* q < p *)
    rewrite <- inj_sub by trivial.
    now destruct (is_succ (p - q)) as (m,->).
@@ -192,11 +192,10 @@ Proof.
  - now apply Nat.max_l, Nat.lt_le_incl.
 Qed.
 
-Theorem inj_iter :
-  forall p {A} (f:A->A) (x:A),
+Theorem inj_iter p {A} (f:A->A) (x:A) :
     Pos.iter f x p = nat_rect _ x (fun _ => f) (to_nat p).
 Proof.
- induction p using peano_ind.
+ induction p as [|p IHp] using peano_ind.
  - trivial.
  - intros. rewrite inj_succ, iter_succ. 
   simpl. f_equal. apply IHp.
@@ -443,7 +442,7 @@ Section ObsoletePmultNat.
 Lemma Pmult_nat_mult : forall p n,
  Pmult_nat p n = Pos.to_nat p * n.
 Proof.
- induction p; intros n; unfold Pos.to_nat; simpl.
+ intro p; induction p as [p IHp|p IHp|]; intros n; unfold Pos.to_nat; simpl.
  f_equal. rewrite 2 IHp. rewrite <- Nat.mul_assoc.
   f_equal. simpl. now rewrite Nat.add_0_r.
  rewrite 2 IHp. rewrite <- Nat.mul_assoc.
@@ -482,7 +481,7 @@ Qed.
 
 Lemma le_Pmult_nat : forall p n, n <= Pmult_nat p n.
 Proof.
- intros. rewrite Pmult_nat_mult.
+ intros p n. rewrite Pmult_nat_mult.
  apply Nat.le_trans with (1*n). now rewrite Nat.mul_1_l.
  apply Nat.mul_le_mono_r. apply Pos2Nat.is_pos.
 Qed.
