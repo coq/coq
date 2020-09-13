@@ -27,8 +27,8 @@ Definition gtof (a b:A) := f b > f a.
 Theorem well_founded_ltof : well_founded ltof.
 Proof.
   assert (H : forall n (a:A), f a < n -> Acc ltof a).
-  { induction n.
-    - intros; absurd (f a < 0); auto with arith.
+  { intro n; induction n as [|n IHn].
+    - intros a Ha; absurd (f a < 0); auto with arith.
     - intros a Ha. apply Acc_intro. unfold ltof at 1. intros b Hb.
       apply IHn. apply Nat.lt_le_trans with (f a); auto with arith. }
   intros a. apply (H (S (f a))). auto with arith.
@@ -69,8 +69,8 @@ Theorem induction_ltof1 :
 Proof.
   intros P F.
   assert (H : forall n (a:A), f a < n -> P a).
-  { induction n.
-    - intros; absurd (f a < 0); auto with arith.
+  { intro n; induction n as [|n IHn].
+    - intros a Ha; absurd (f a < 0); auto with arith.
     - intros a Ha. apply F. unfold ltof. intros b Hb.
       apply IHn. apply Nat.lt_le_trans with (f a); auto with arith. }
   intros a. apply (H (S (f a))). auto with arith.
@@ -107,8 +107,8 @@ Hypothesis H_compat : forall x y:A, R x y -> f x < f y.
 Theorem well_founded_lt_compat : well_founded R.
 Proof.
   assert (H : forall n (a:A), f a < n -> Acc R a).
-  { induction n.
-    - intros; absurd (f a < 0); auto with arith.
+  { intro n; induction n as [|n IHn].
+    - intros a Ha; absurd (f a < 0); auto with arith.
     - intros a Ha. apply Acc_intro. intros b Hb.
       apply IHn. apply Nat.lt_le_trans with (f a); auto with arith. }
   intros a. apply (H (S (f a))). auto with arith.
@@ -212,26 +212,26 @@ Section LT_WF_REL.
   Remark acc_lt_rel : forall x:A, (exists n, F x n) -> Acc R x.
   Proof.
     intros x [n fxn]; generalize dependent x.
-    pattern n; apply lt_wf_ind; intros.
-    constructor; intros.
+    pattern n; apply lt_wf_ind; intros n0 H x fxn.
+    constructor; intros y H0.
     destruct (F_compat y x) as (x0,H1,H2); trivial.
     apply (H x0); auto.
   Qed.
 
   Theorem well_founded_inv_lt_rel_compat : well_founded R.
   Proof.
-    constructor; intros.
-    case (F_compat y a); trivial; intros.
+    intro a; constructor; intros y H.
+    case (F_compat y a); trivial; intros x **.
     apply acc_lt_rel; trivial.
     exists x; trivial.
   Qed.
 
 End LT_WF_REL.
 
-Lemma well_founded_inv_rel_inv_lt_rel :
-  forall (A:Set) (F:A -> nat -> Prop), well_founded (inv_lt_rel A F).
+Lemma well_founded_inv_rel_inv_lt_rel (A:Set) (F:A -> nat -> Prop) :
+  well_founded (inv_lt_rel A F).
 Proof.
-  intros; apply (well_founded_inv_lt_rel_compat A (inv_lt_rel A F) F); trivial.
+  apply (well_founded_inv_lt_rel_compat A (inv_lt_rel A F) F); trivial.
 Qed.
 
 (** A constructive proof that any non empty decidable subset of
@@ -253,8 +253,8 @@ Proof.
   intros P Pdec (n0,HPn0).
   assert
     (forall n, (exists n', n'<n /\ P n' /\ forall n'', P n'' -> n'<=n'')
-               \/ (forall n', P n' -> n<=n')).
-  { induction n.
+               \/ (forall n', P n' -> n<=n')) as H.
+  { intro n; induction n as [|n IHn].
     - right. intros. apply Nat.le_0_l.
     - destruct IHn as [(n' & IH1 & IH2)|IH].
       + left. exists n'; auto with arith.
