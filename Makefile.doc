@@ -248,8 +248,7 @@ $(DOC_GRAM): $(DOC_GRAMCMO) coqpp/coqpp_parser.mli coqpp/coqpp_parser.ml doc/too
 
 # user-contrib/*/*.mlg omitted for now (e.g. ltac2)
 PLUGIN_MLGS := $(wildcard plugins/*/*.mlg)
-OMITTED_PLUGIN_MLGS := plugins/ssr/ssrparser.mlg plugins/ssr/ssrvernac.mlg plugins/ssrmatching/g_ssrmatching.mlg \
-	plugins/ssrsearch/g_search.mlg
+OMITTED_PLUGIN_MLGS :=
 DOC_MLGS := $(wildcard */*.mlg) $(sort $(filter-out $(OMITTED_PLUGIN_MLGS), $(PLUGIN_MLGS))) \
 	user-contrib/Ltac2/g_ltac2.mlg
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
