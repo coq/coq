@@ -145,7 +145,7 @@ Qed.
 Lemma succ_inj p q : succ p = succ q -> p = q.
 Proof.
   revert q.
-  induction p; intros [q|q| ] H; simpl in H; destr_eq H; f_equal; auto.
+  induction p as [p|p|]; intros [q|q| ] H; simpl in H; destr_eq H; f_equal; auto.
   elim (succ_not_1 p); auto.
   elim (succ_not_1 q); auto.
 Qed.
@@ -177,14 +177,14 @@ Qed.
 
 Theorem add_carry_spec p q : add_carry p q = succ (p + q).
 Proof.
-  revert q. induction p; destruct q; simpl; now f_equal.
+  revert q. induction p; intro q; destruct q; simpl; now f_equal.
 Qed.
 
 (** ** Commutativity *)
 
 Theorem add_comm p q : p + q = q + p.
 Proof.
-  revert q. induction p; destruct q; simpl; f_equal; trivial.
+  revert q. induction p; intro q; destruct q; simpl; f_equal; trivial.
   rewrite 2 add_carry_spec; now f_equal.
 Qed.
 
@@ -193,7 +193,7 @@ Qed.
 Theorem add_succ_r p q : p + succ q = succ (p + q).
 Proof.
   revert q.
-  induction p; destruct q; simpl; f_equal;
+  induction p; intro q; destruct q; simpl; f_equal;
    auto using add_1_r; rewrite add_carry_spec; auto.
 Qed.
 
@@ -247,13 +247,13 @@ Qed.
 Lemma add_carry_reg_r p q r :
   add_carry p r = add_carry q r -> p = q.
 Proof.
- intros H. apply add_reg_r with (r:=r); now apply add_carry_add.
+ intros H. apply (add_reg_r _ _ r); now apply add_carry_add.
 Qed.
 
 Lemma add_carry_reg_l p q r :
   add_carry p q = add_carry p r -> q = r.
 Proof.
-  intros H; apply add_reg_r with (r:=p);
+  intros H; apply (add_reg_r _ _ p);
   rewrite (add_comm r), (add_comm q); now apply add_carry_add.
 Qed.
 
@@ -288,7 +288,7 @@ Qed.
 Lemma add_xO_pred_double p q :
   pred_double (p + q) = p~0 + pred_double q.
 Proof.
-  revert q. induction p as [p IHp| p IHp| ]; destruct q; simpl;
+  revert q. induction p as [p IHp| p IHp| ]; intro q; destruct q; simpl;
    rewrite ?add_carry_spec, ?pred_double_succ, ?add_xI_pred_double;
    try reflexivity.
   rewrite IHp; auto.
@@ -323,7 +323,7 @@ Theorem peano_rect_succ (P:positive->Type) (a:P 1)
   (f:forall p, P p -> P (succ p)) (p:positive) :
   peano_rect P a f (succ p) = f _ (peano_rect P a f p).
 Proof.
- revert P a f. induction p; trivial.
+ revert P a f. induction p as [p IHp|p IHp|]; trivial.
  intros. simpl. now rewrite IHp.
 Qed.
 
@@ -393,17 +393,17 @@ Qed.
 
 Theorem PeanoViewUnique : forall p (q q':PeanoView p), q = q'.
 Proof.
-  intros.
+  intros p q q'.
   induction q as [ | p q IHq ].
   apply eq_dep_eq_positive.
-  cut (1=1). pattern 1 at 1 2 5, q'. destruct q'. trivial.
+  cut (1=1). pattern 1 at 1 2 5, q'. destruct q' as [|p ?]. trivial.
   destruct p; intros; discriminate.
   trivial.
   apply eq_dep_eq_positive.
-  cut (succ p=succ p). pattern (succ p) at 1 2 5, q'. destruct q'.
+  cut (succ p=succ p). pattern (succ p) at 1 2 5, q'. destruct q' as [|? q'].
   intro. destruct p; discriminate.
-  intro. apply succ_inj in H.
-  generalize q'. rewrite H. intro.
+  intro H. apply succ_inj in H.
+  generalize q'. rewrite H. intro q'0.
   rewrite (IHq q'0).
   trivial.
   trivial.
@@ -412,7 +412,7 @@ Qed.
 Lemma peano_equiv (P:positive->Type) (a:P 1) (f:forall p, P p -> P (succ p)) p :
    PeanoView_iter P a f p (peanoView p) = peano_rect P a f p.
 Proof.
-  revert P a f. induction p using peano_rect.
+  revert P a f. induction p as [|p IHp] using peano_rect.
   trivial.
   intros; simpl. rewrite peano_rect_succ.
   rewrite (PeanoViewUnique _ (peanoView (succ p)) (PeanoSucc _ (peanoView p))).
@@ -575,11 +575,11 @@ Qed.
 
 (** ** Properties of [iter] *)
 
-Lemma iter_swap_gen : forall A B (f:A->B)(g:A->A)(h:B->B),
+Lemma iter_swap_gen A B (f:A->B)(g:A->A)(h:B->B) :
  (forall a, f (g a) = h (f a)) -> forall p a,
  f (iter g a p) = iter h (f a) p.
 Proof.
- induction p; simpl; intros; now rewrite ?H, ?IHp.
+ intros H p; induction p as [p IHp|p IHp|]; simpl; intros; now rewrite ?H, ?IHp.
 Qed.
 
 Theorem iter_swap :
@@ -593,7 +593,7 @@ Theorem iter_succ :
   forall p (A:Type) (f:A -> A) (x:A),
     iter f x (succ p) = f (iter f x p).
 Proof.
- induction p as [p IHp|p IHp|]; intros; simpl; trivial.
+ intro p; induction p as [p IHp|p IHp|]; intros; simpl; trivial.
  now rewrite !IHp, iter_swap.
 Qed.
 
@@ -608,18 +608,17 @@ Theorem iter_add :
   forall p q (A:Type) (f:A -> A) (x:A),
     iter f x (p+q) = iter f (iter f x q) p.
 Proof.
- induction p using peano_ind; intros.
+ intro p; induction p as [|p IHp] using peano_ind; intros.
  now rewrite add_1_l, iter_succ.
  now rewrite add_succ_l, !iter_succ, IHp.
 Qed.
 
-Theorem iter_ind :
-  forall (A:Type) (f:A -> A) (a:A) (P:positive -> A -> Prop),
+Theorem iter_ind (A:Type) (f:A -> A) (a:A) (P:positive -> A -> Prop) :
     P 1 (f a) ->
     (forall p a', P p a' -> P (succ p) (f a')) ->
     forall p, P p (iter f a p).
 Proof.
- induction p using peano_ind; trivial.
+ intros ? ? p; induction p as [|p IHp] using peano_ind; trivial.
  rewrite iter_succ; auto.
 Qed.
 
@@ -628,7 +627,7 @@ Theorem iter_invariant :
     (forall x:A, Inv x -> Inv (f x)) ->
     forall x:A, Inv x -> Inv (iter f x p).
 Proof.
- intros; apply iter_ind with (P := fun _ => Inv); auto.
+ intros; apply iter_ind; auto.
 Qed.
 
 (** ** Properties of power *)
@@ -647,7 +646,7 @@ Qed.
 
 Lemma square_spec p : square p = p * p.
 Proof.
- induction p.
+ induction p as [p IHp|p IHp|].
  - rewrite square_xI. simpl. now rewrite IHp.
  - rewrite square_xO. simpl. now rewrite IHp.
  - trivial.
@@ -658,13 +657,14 @@ Qed.
 Lemma sub_mask_succ_r p q :
   sub_mask p (succ q) = sub_mask_carry p q.
 Proof.
- revert q. induction p; destruct q; simpl; f_equal; trivial; now destruct p.
+ revert q. induction p as [p ?|p ?|]; intro q; destruct q;
+ simpl; f_equal; trivial; now destruct p.
 Qed.
 
 Theorem sub_mask_carry_spec p q :
   sub_mask_carry p q = pred_mask (sub_mask p q).
 Proof.
-  revert q. induction p as [p IHp|p IHp| ]; destruct q; simpl;
+  revert q. induction p as [p IHp|p IHp|]; intro q; destruct q as [q|q|]; simpl;
    try reflexivity; rewrite ?IHp;
    destruct (sub_mask p q) as [|[r|r| ]|] || destruct p; auto.
 Qed.
@@ -676,16 +676,17 @@ Inductive SubMaskSpec (p q : positive) : mask -> Prop :=
 
 Theorem sub_mask_spec p q : SubMaskSpec p q (sub_mask p q).
 Proof.
- revert q. induction p; destruct q; simpl; try constructor; trivial.
+ revert q. induction p as [p IHp|p IHp|]; intro q; destruct q as [q|q|];
+ simpl; try constructor; trivial.
  (* p~1 q~1 *)
- destruct (IHp q); subst; try now constructor.
+ destruct (IHp q) as [|r|r]; subst; try now constructor.
   now apply SubIsNeg with r~0.
  (* p~1 q~0 *)
- destruct (IHp q); subst; try now constructor.
+ destruct (IHp q) as [|r|r]; subst; try now constructor.
   apply SubIsNeg with (pred_double r). symmetry. apply add_xI_pred_double.
  (* p~0 q~1 *)
  rewrite sub_mask_carry_spec.
- destruct (IHp q); subst; try constructor.
+ destruct (IHp q) as [|r|r]; subst; try constructor.
   now apply SubIsNeg with 1.
   destruct r; simpl; try constructor; simpl.
    now rewrite add_carry_spec, <- add_succ_r.
@@ -693,7 +694,7 @@ Proof.
    now rewrite add_1_r.
   now apply SubIsNeg with r~1.
  (* p~0 q~0 *)
- destruct (IHp q); subst; try now constructor.
+ destruct (IHp q) as [|r|r]; subst; try now constructor.
   now apply SubIsNeg with r~0.
  (* p~0 1 *)
  now rewrite add_1_l, succ_pred_double.
@@ -707,7 +708,7 @@ Theorem sub_mask_nul_iff p q : sub_mask p q = IsNul <-> p = q.
 Proof.
  split.
  now case sub_mask_spec.
- intros <-. induction p; simpl; now rewrite ?IHp.
+ intros <-. induction p as [p IHp|p IHp|]; simpl; now rewrite ?IHp.
 Qed.
 
 Theorem sub_mask_diag p : sub_mask p p = IsNul.
@@ -752,7 +753,8 @@ Qed.
 
 Theorem eqb_eq p q : (p =? q) = true <-> p=q.
 Proof.
- revert q. induction p; destruct q; simpl; rewrite ?IHp; split; congruence.
+ revert q. induction p as [p IHp|p IHp|]; intro q; destruct q;
+ simpl; rewrite ?IHp; split; congruence.
 Qed.
 
 Theorem ltb_lt p q : (p <? q) = true <-> p < q.
@@ -786,7 +788,7 @@ Lemma compare_cont_spec p q c :
 Proof.
   unfold compare.
   revert q c.
-  induction p; destruct q; simpl; trivial.
+  induction p as [p IHp|p IHp|]; intro q; destruct q as [q|q|]; simpl; trivial.
   intros c.
   rewrite 2 IHp. now destruct (compare_cont Eq p q).
   intros c.
@@ -1026,7 +1028,8 @@ Qed.
 Lemma compare_succ_succ p q : (succ p ?= succ q) = (p ?= q).
 Proof.
  revert q.
- induction p; destruct q; simpl; simpl_compare; trivial;
+ induction p as [p|p|]; intro q; destruct q as [q|q|];
+ simpl; simpl_compare; trivial;
   apply compare_succ_l || apply compare_succ_r ||
   (now destruct p) || (now destruct q).
 Qed.
@@ -1159,7 +1162,7 @@ Qed.
 
 Lemma add_compare_mono_l p q r : (p+q ?= p+r) = (q ?= r).
 Proof.
- revert p q r. induction p using peano_ind; intros q r.
+ revert q r. induction p using peano_ind; intros q r.
  rewrite 2 add_1_l. apply compare_succ_succ.
  now rewrite 2 add_succ_l, compare_succ_succ.
 Qed.
@@ -1214,7 +1217,7 @@ Qed.
 
 Lemma mul_compare_mono_l p q r : (p*q ?= p*r) = (q ?= r).
 Proof.
- revert q r. induction p; simpl; trivial.
+ revert q r. induction p as [p IHp|p IHp|]; simpl; trivial.
  intros q r. specialize (IHp q r).
  destruct (compare_spec q r).
  subst. apply compare_refl.
@@ -1265,7 +1268,7 @@ Qed.
 
 Lemma lt_add_r p q : p < p+q.
 Proof.
- induction q using peano_ind.
+ induction q as [|q] using peano_ind.
  rewrite add_1_r. apply lt_succ_diag_r.
  apply lt_trans with (p+q); auto.
  apply add_lt_mono_l, lt_succ_diag_r.
@@ -1476,10 +1479,11 @@ Qed.
 
 Lemma size_nat_monotone p q : p<q -> (size_nat p <= size_nat q)%nat.
 Proof.
-  assert (le0 : forall n, (0<=n)%nat) by (induction n; auto).
+  assert (le0 : forall n, (0<=n)%nat) by (intro n; induction n; auto).
   assert (leS : forall n m, (n<=m -> S n <= S m)%nat) by (induction 1; auto).
   revert q.
-  induction p; destruct q; simpl; intros; auto; easy || apply leS;
+  induction p as [p IHp|p IHp|]; intro q; destruct q as [q|q|];
+   simpl; intros H; auto; easy || apply leS;
    red in H; simpl_compare_in H.
   apply IHp. red. now destruct (p?=q).
   destruct (compare_spec p q); subst; now auto.
@@ -1487,13 +1491,13 @@ Qed.
 
 Lemma size_gt p : p < 2^(size p).
 Proof.
- induction p; simpl; try rewrite pow_succ_r; try easy.
+ induction p as [p IHp|p IHp|]; simpl; try rewrite pow_succ_r; try easy.
  apply le_succ_l in IHp. now apply le_succ_l.
 Qed.
 
 Lemma size_le p : 2^(size p) <= p~0.
 Proof.
- induction p; simpl; try rewrite pow_succ_r; try easy.
+ induction p as [p IHp|p IHp|]; simpl; try rewrite pow_succ_r; try easy.
  apply mul_le_mono_l.
  apply le_lteq; left. rewrite xI_succ_xO. apply lt_succ_r, IHp.
 Qed.
@@ -1612,7 +1616,7 @@ Lemma iter_op_succ : forall A (op:A->A->A),
  forall p a,
  iter_op op (succ p) a = op a (iter_op op p a).
 Proof.
- induction p; simpl; intros; trivial.
+ intros A op H p; induction p as [p IHp|p IHp|]; simpl; intros; trivial.
  rewrite H. apply IHp.
 Qed.
 
@@ -1620,7 +1624,7 @@ Qed.
 
 Lemma of_nat_succ (n:nat) : of_succ_nat n = of_nat (S n).
 Proof.
- induction n. trivial. simpl. f_equal. now rewrite IHn.
+ induction n as [|n IHn]. trivial. simpl. f_equal. now rewrite IHn.
 Qed.
 
 Lemma pred_of_succ_nat (n:nat) : pred (of_succ_nat n) = of_nat n.
@@ -1671,7 +1675,7 @@ Qed.
 Lemma sqrtrem_spec p : SqrtSpec (sqrtrem p) p.
 Proof.
 revert p. fix sqrtrem_spec 1.
- destruct p; try destruct p; try (constructor; easy);
+ intro p; destruct p as [p|p|]; try destruct p; try (constructor; easy);
   apply sqrtrem_step_spec; auto.
 Qed.
 
@@ -1688,7 +1692,7 @@ Proof.
  split.
  apply lt_le_incl, lt_add_r.
  rewrite <- add_1_l, mul_add_distr_r, !mul_add_distr_l, !mul_1_r, !mul_1_l.
- rewrite add_assoc, (add_comm _ r). apply add_lt_mono_r.
+ rewrite add_assoc, (add_comm _ _). apply add_lt_mono_r.
  now rewrite <- add_assoc, add_diag, add_1_l, lt_succ_r.
 Qed.
 
@@ -1710,7 +1714,7 @@ Lemma divide_xO_xI p q r : (p | q~0) -> (p | r~1) -> (p | q).
 Proof.
  intros (s,Hs) (t,Ht).
  destruct p.
- destruct s; try easy. simpl in Hs. destr_eq Hs. now exists s.
+ destruct s as [s|s|]; try easy. simpl in Hs. destr_eq Hs. now exists s.
  rewrite mul_xO_r in Ht; discriminate.
  exists q; now rewrite mul_1_r.
 Qed.
@@ -1738,9 +1742,9 @@ Qed.
 Lemma ggcdn_gcdn : forall n a b,
   fst (ggcdn n a b) = gcdn n a b.
 Proof.
- induction n.
+ intro n; induction n as [|n IHn].
  simpl; auto.
- destruct a, b; simpl; auto; try case compare_spec; simpl; trivial;
+ intros a b; destruct a, b; simpl; auto; try case compare_spec; simpl; trivial;
   rewrite <- IHn; destruct ggcdn as (g,(u,v)); simpl; auto.
 Qed.
 
@@ -1760,9 +1764,10 @@ Lemma ggcdn_correct_divisors : forall n a b,
   let '(g,(aa,bb)) := ggcdn n a b in
   a = g*aa /\ b = g*bb.
 Proof.
- induction n.
+ intro n; induction n as [|n IHn].
  simpl; auto.
- destruct a, b; simpl; auto; try case compare_spec; try destr_pggcdn IHn.
+ intros a b; destruct a, b;
+  simpl; auto; try case compare_spec; try destr_pggcdn IHn.
  (* Eq *)
  intros ->. now rewrite mul_comm.
  (* Lt *)
@@ -1809,9 +1814,9 @@ Qed.
 Lemma gcdn_greatest : forall n a b, (size_nat a + size_nat b <= n)%nat ->
  forall p, (p|a) -> (p|b) -> (p|gcdn n a b).
 Proof.
- induction n.
+ intro n; induction n as [|n IHn]; intros a b.
  destruct a, b; simpl; inversion 1.
- destruct a, b; simpl; try case compare_spec; simpl; auto.
+ destruct a as [a|a|], b as [b|b|]; simpl; try case compare_spec; simpl; auto.
  (* Lt *)
  intros LT LE p Hp1 Hp2. apply IHn; clear IHn; trivial.
  apply le_S_n in LE. eapply Le.le_trans; [|eapply LE].
@@ -1839,7 +1844,7 @@ Proof.
  apply divide_xO_xI with b; trivial.
  (* a~0 b~0 *)
  intros LE p Hp1 Hp2.
- destruct p.
+ destruct p as [p|p|].
  change (gcdn n a b)~0 with (2*(gcdn n a b)).
  apply divide_mul_r.
  apply IHn; clear IHn.
@@ -1865,7 +1870,7 @@ Lemma ggcd_greatest : forall a b,
  let (aa,bb) := snd (ggcd a b) in
  forall p, (p|aa) -> (p|bb) -> p=1.
 Proof.
- intros. generalize (gcd_greatest a b) (ggcd_correct_divisors a b).
+ intros a b **. generalize (gcd_greatest a b) (ggcd_correct_divisors a b).
  rewrite <- ggcd_gcd. destruct ggcd as (g,(aa,bb)); simpl.
  intros H (EQa,EQb) p Hp1 Hp2; subst.
  assert (H' : (g*p | g)).
@@ -2126,7 +2131,7 @@ Qed.
 
 Lemma Dcompare : forall r:comparison, r = Eq \/ r = Lt \/ r = Gt.
 Proof.
-  destruct r; auto.
+  intro r; destruct r; auto.
 Qed.
 
 (** Incompatibilities :
