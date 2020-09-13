@@ -1826,6 +1826,7 @@ document: [
 
 (* add in ltac and Tactic Notation tactics that appear in the doc: *)
 ltac_defined_tactics: [
+| "case_eq" induction_clause_list
 | "classical_left"
 | "classical_right"
 | "contradict" ident
@@ -1839,6 +1840,7 @@ ltac_defined_tactics: [
 | "now_show" constr
 | "nra"
 | "over"  TAG SSR
+| "rapply" constr
 | "split_Rabs"
 | "split_Rmult"
 | "tauto"
@@ -1850,6 +1852,7 @@ ltac_defined_tactics: [
 tactic_notation_tactics: [
 | "assert_fails" ltac_expr3
 | "assert_succeeds" ltac_expr3
+| "dependent" "induction" ident OPT ( [ "generalizing" | "in" ] LIST1 hyp )  OPT ( "using" constr )
 | "dintuition" OPT ltac_expr5
 | "dtauto"
 | "field" OPT ( "[" LIST1 constr "]" )
@@ -1859,6 +1862,7 @@ tactic_notation_tactics: [
 | "now" ltac_expr5
 | "nsatz" OPT ( "with" "radicalmax" ":=" constr "strategy" ":=" constr "parameters" ":=" constr "variables" ":=" constr )
 | "psatz" constr OPT nat_or_var
+| "revert" "dependent" hyp
 | "ring" OPT ( "[" LIST1 constr "]" )
 | "ring_simplify" OPT ( "[" LIST1 constr "]" ) LIST1 constr OPT ( "in" ident )  (* todo: ident was "hyp", worth keeping? *)
 ]

@@ -5664,7 +5664,7 @@ Tactics
 *Note*: ``without loss`` and ``suffices`` are synonyms for ``wlog`` and ``suff``
 respectively.
 
-.. tacn:: move
+.. tacv:: move
 
    :tacn:`idtac` or :tacn:`hnf` (see  :ref:`bookkeeping_ssr`)
 
