@@ -241,12 +241,12 @@ notation is the insertion of spaces at some places of the notation.
 This is performed by adding extra spaces between the symbols and
 parameters: each extra space (other than the single space needed to
 separate the components) is interpreted as a space to be inserted by
-the printer. Here is an example showing how to add spaces around the
-bar of the notation.
+the printer. Here is an example showing how to add spaces next to the
+curly braces.
 
 .. coqtop:: in
 
-   Notation "{{ x : A | P }}" := (sig (fun x : A => P)) (at level 0, x at level 99).
+   Notation "{{  x : A | P  }}" := (sig (fun x : A => P)) (at level 0, x at level 99).
 
 .. coqtop:: all
 
