@@ -224,6 +224,10 @@ module New : sig
   val onLastHyp        : (constr -> unit tactic) -> unit tactic
   val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
 
+  val onNLastHypsId    : int -> (Id.t list -> unit tactic) -> unit tactic
+  val onNLastHyps      : int -> (constr list -> unit tactic) -> unit tactic
+  val onNLastDecls     : int -> (named_context -> unit tactic) -> unit tactic
+
   val onHyps      : (Proofview.Goal.t -> named_context) ->
                     (named_context -> unit tactic) -> unit tactic
   val afterHyp    : Id.t -> (named_context -> unit tactic) -> unit tactic
@@ -232,9 +236,14 @@ module New : sig
   val tryAllHypsAndConcl  : (Id.t option -> unit tactic) -> unit tactic
   val onClause   : (Id.t option -> unit tactic) -> clause -> unit tactic
 
+  val onAllHyps           : (Id.t -> unit tactic) -> unit tactic
+  val onAllHypsAndConcl   : (Id.t option -> unit tactic) -> unit tactic
+
   val elimination_sort_of_goal : Proofview.Goal.t -> Sorts.family
   val elimination_sort_of_hyp  : Id.t -> Proofview.Goal.t -> Sorts.family
   val elimination_sort_of_clause : Id.t option -> Proofview.Goal.t -> Sorts.family
 
   val pf_constr_of_global : GlobRef.t -> constr Proofview.tactic
+
+  val tclTYPEOFTHEN : ?refresh:bool -> constr -> (evar_map -> types -> unit Proofview.tactic) -> unit Proofview.tactic
 end
