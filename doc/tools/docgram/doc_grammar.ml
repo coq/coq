@@ -527,28 +527,28 @@ let rec edit_SELF nt cur_level next_level right_assoc inner prod =
   prod
 
 
-let autoloaded_mlgs = [ (* in the order they are loaded by Coq *)
+let autoloaded_mlgs = [ (* productions from other mlgs are marked with TAGs *)
  "parsing/g_constr.mlg";
  "parsing/g_prim.mlg";
- "vernac/g_vernac.mlg";
- "vernac/g_proofs.mlg";
- "toplevel/g_toplevel.mlg";
- "plugins/ltac/extraargs.mlg";
- "plugins/ltac/g_obligations.mlg";
- "plugins/ltac/coretactics.mlg";
- "plugins/ltac/extratactics.mlg";
- "plugins/ltac/profile_ltac_tactics.mlg";
- "plugins/ltac/g_auto.mlg";
- "plugins/ltac/g_class.mlg";
- "plugins/ltac/g_rewrite.mlg";
- "plugins/ltac/g_eqdecide.mlg";
- "plugins/ltac/g_tactic.mlg";
- "plugins/ltac/g_ltac.mlg";
  "plugins/btauto/g_btauto.mlg";
- "plugins/rtauto/g_rtauto.mlg";
  "plugins/cc/g_congruence.mlg";
  "plugins/firstorder/g_ground.mlg";
+ "plugins/ltac/coretactics.mlg";
+ "plugins/ltac/extraargs.mlg";
+ "plugins/ltac/extratactics.mlg";
+ "plugins/ltac/g_auto.mlg";
+ "plugins/ltac/g_class.mlg";
+ "plugins/ltac/g_eqdecide.mlg";
+ "plugins/ltac/g_ltac.mlg";
+ "plugins/ltac/g_obligations.mlg";
+ "plugins/ltac/g_rewrite.mlg";
+ "plugins/ltac/g_tactic.mlg";
+ "plugins/ltac/profile_ltac_tactics.mlg";
+ "plugins/rtauto/g_rtauto.mlg";
  "plugins/syntax/g_number_string.mlg";
+ "toplevel/g_toplevel.mlg";
+ "vernac/g_proofs.mlg";
+ "vernac/g_vernac.mlg";
 ]
 
 
@@ -1726,7 +1726,6 @@ let process_rst g file args seen tac_prods cmd_prods =
 
   let cmd_exclude_files = [
     "doc/sphinx/proof-engine/ssreflect-proof-language.rst";
-    "doc/sphinx/proofs/automatic-tactics/auto.rst";
     "doc/sphinx/proofs/writing-proofs/rewriting.rst";
     "doc/sphinx/proofs/writing-proofs/proof-mode.rst";
     "doc/sphinx/proof-engine/tactics.rst";

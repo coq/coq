@@ -1136,7 +1136,7 @@ Controlling the locality of commands
    Some commands support an :attr:`export` attribute.  The effect of
    the attribute is to make the effect of the command available when
    the module containing it is imported.  It is supported in
-   particular by the :cmd:`Hint`, :cmd:`Set` and :cmd:`Unset`
+   particular by the :ref:`Hint <creating_hints>`, :cmd:`Set` and :cmd:`Unset`
    commands.
 
 .. _controlling-typing-flags:
