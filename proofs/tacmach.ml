@@ -99,7 +99,7 @@ let db_pr_goal sigma g =
                    str" "  ++ pc) ++ fnl ()
 
 let pr_gls gls =
-  hov 0 (pr_evar_map (Some 2) (pf_env gls) (sig_sig gls) ++ fnl () ++ db_pr_goal (project gls) (sig_it gls))
+  hov 0 (pr_evar_map (Some 2) (pf_env gls) (project gls) ++ fnl () ++ db_pr_goal (project gls) (sig_it gls))
 
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New = struct
@@ -182,6 +182,9 @@ module New = struct
   (* deprecated *)
   let pf_unsafe_type_of gl t =
     pf_apply (unsafe_type_of[@warning "-3"]) gl t
+
+  let pr_gls gl =
+    hov 0 (pr_evar_map (Some 2) (pf_env gl) (project gl) ++ fnl () ++ db_pr_goal (project gl) (Proofview.Goal.goal gl))
 
 end
 

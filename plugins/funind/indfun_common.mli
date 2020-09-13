@@ -90,7 +90,7 @@ exception Defining_principle of exn
 exception ToShow of exn
 
 val is_strict_tcc : unit -> bool
-val h_intros : Names.Id.t list -> Tacmach.tactic
+val h_intros : Names.Id.t list -> unit Proofview.tactic
 val h_id : Names.Id.t
 val hrec_id : Names.Id.t
 val acc_inv_id : EConstr.constr Util.delayed
@@ -102,7 +102,7 @@ val well_founded : EConstr.constr Util.delayed
 val evaluable_of_global_reference :
   GlobRef.t -> Names.evaluable_global_reference
 
-val list_rewrite : bool -> (EConstr.constr * bool) list -> Tacmach.tactic
+val list_rewrite : bool -> (EConstr.constr * bool) list -> unit Proofview.tactic
 
 val decompose_lam_n :
      Evd.evar_map
