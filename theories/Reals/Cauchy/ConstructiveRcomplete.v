@@ -516,11 +516,11 @@ Proof.
     destruct (le_lt_dec i' j').
     - apply (CReal_le_trans _ _ _ (imaj i' j' (le_refl _) l)).
       apply inject_Q_le; unfold Qle, Qnum, Qden; ring_simplify.
-      apply Pos2Z_pos_is_pos.
+      apply (Pos2Z_pos_is_pos (2 ^ (CReal_from_cauchy_cm i))).
     - apply le_S, le_S_n in l.
       apply (CReal_le_trans _ _ _ (jmaj i' j' l (le_refl _))).
       apply inject_Q_le; unfold Qle, Qnum, Qden; ring_simplify.
-      apply Pos2Z_pos_is_pos.
+      apply (Pos2Z_pos_is_pos (2 ^ (CReal_from_cauchy_cm j))).
     }
   clear imaj jmaj.
   unfold CReal_abs, CReal_abs_seq in Hxij.

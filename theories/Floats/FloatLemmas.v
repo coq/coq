@@ -55,7 +55,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
   intro H'.
   destruct H' as (H1,H2).
   apply Zeq_bool_eq in H1.
-  apply Z.max_case_strong.
+  apply (Z.max_case_strong (Z.min e (emax - emin)) ((emin - emax) - 1)).
   apply Z.min_case_strong.
   - reflexivity.
   - intros He _.

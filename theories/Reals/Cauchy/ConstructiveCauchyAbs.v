@@ -33,7 +33,7 @@ Qed.
 Local Lemma Qabs_involutive: forall q : Q,
   (Qabs (Qabs q) == Qabs q)%Q.
 Proof.
-  intros q; apply Qabs_case; intros Hcase.
+  intros q. apply (Qabs_case (Qabs q)); intros Hcase.
   - reflexivity.
   - pose proof Qabs_nonneg q as Habspos.
     pose proof Qle_antisym _ _ Hcase Habspos as Heq0.
