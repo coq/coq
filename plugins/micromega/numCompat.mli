@@ -25,8 +25,15 @@ module type ZArith = sig
   val power_int : t -> int -> t
   val quomod : t -> t -> t * t
   val ppcm : t -> t -> t
+
+  (** [gcd x y] Greatest Common Divisor. Must always return a
+     positive number *)
   val gcd : t -> t -> t
+
+  (** [lcm x y] Least Common Multiplier. Must always return a
+     positive number *)
   val lcm : t -> t -> t
+
   val to_string : t -> string
 end
 

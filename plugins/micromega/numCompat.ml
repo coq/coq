@@ -31,6 +31,8 @@ module type ZArith = sig
 end
 
 module Z = struct
+  (* Beware this only works fine in ZArith >= 1.10 due to
+     https://github.com/ocaml/Zarith/issues/58 *)
   include Z
 
   (* Constants *)
@@ -39,13 +41,8 @@ module Z = struct
   let power_int = Big_int_Z.power_big_int_positive_int
   let quomod = Big_int_Z.quomod_big_int
 
-  (* Workaround https://github.com/ocaml/Zarith/issues/58 , remove
-     the abs when zarith 1.9.2 is released *)
-  let gcd x y = Z.abs (Z.gcd x y)
-
-  (* zarith fails with division by zero if x && y == 0 *)
-  let lcm x y =
-    if Z.equal x zero && Z.equal y zero then zero else Z.abs (Z.lcm x y)
+  (* zarith fails with division by zero if x == 0 && y == 0 *)
+  let lcm x y = if Z.equal x zero && Z.equal y zero then zero else Z.lcm x y
 
   let ppcm x y =
     let g = gcd x y in
@@ -144,7 +141,7 @@ module Q : QArith with module Z = Z = struct
   let ceiling q : t = Z.cdiv (Q.num q) (Q.den q) |> Q.of_bigint
   let half = Q.make Z.one Z.two
 
-  (* Num round is to the nearest *)
+  (* We imitate Num's round which is to the nearest *)
   let round q = floor (Q.add half q)
 
   (* XXX: review / improve *)

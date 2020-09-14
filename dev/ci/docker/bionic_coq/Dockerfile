@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2020-09-07-V22"
+# CACHEKEY: "bionic_coq-V2020-09-16-V38"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -43,7 +43,7 @@ ENV COMPILER="4.05.0"
 # Common OPAM packages, num to be removed once the migration to
 # micromega is complete, `num` also does not have a version number as
 # the right version to install varies with the compiler version.
-ENV BASE_OPAM="num zarith.1.9.1 ocamlfind.1.8.1 ounit2.2.2.3 odoc.1.5.1" \
+ENV BASE_OPAM="num zarith.1.10 ocamlfind.1.8.1 ounit2.2.2.3 odoc.1.5.1" \
     CI_OPAM="menhir.20190626 ocamlgraph.1.8.8" \
     BASE_ONLY_OPAM="elpi.1.11.0"
 
@@ -59,7 +59,7 @@ RUN opam init -a --disable-sandboxing --compiler="$COMPILER" default https://opa
 
 # base+32bit switch, note the zarith hack
 RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
-        i386 env CC='gcc -m32' opam install zarith.1.9.1 && \
+        i386 env CC='gcc -m32' opam install zarith.1.10 && \
         opam install $BASE_OPAM
 
 # EDGE switch
