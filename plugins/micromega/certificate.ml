@@ -354,7 +354,7 @@ let is_linear_for v pc =
  *)
 
 let is_linear_substitution sys ((p, o), prf) =
-  let pred v = v =/ Q.one || v =/ Q.neg_one in
+  let pred v = v =/ Q.one || v =/ Q.minus_one in
   match o with
   | Eq -> (
     match
@@ -761,7 +761,7 @@ let reduce_unary psys =
   let is_unary_equation (cstr, prf) =
     if cstr.op == Eq then
       Vect.find
-        (fun v n -> if n =/ Q.one || n =/ Q.neg_one then Some v else None)
+        (fun v n -> if n =/ Q.one || n =/ Q.minus_one then Some v else None)
         cstr.coeffs
     else None
   in

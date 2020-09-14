@@ -61,7 +61,7 @@ module type QArith = sig
   val one : t
   val two : t
   val ten : t
-  val neg_one : t
+  val minus_one : t
 
   module Notations : sig
     val ( // ) : t -> t -> t
@@ -120,7 +120,6 @@ module Q : QArith with module Z = Z = struct
 
   let two = Q.(of_int 2)
   let ten = Q.(of_int 10)
-  let neg_one = Q.(neg one)
 
   module Notations = struct
     let ( // ) = Q.div

@@ -247,8 +247,8 @@ let solve_column (c : var) (r : var) (e : Vect.t) : Vect.t =
   let a = Vect.get c e in
   if a =/ Q.zero then failwith "Cannot solve column"
   else
-    let a' = Q.neg_one // a in
-    Vect.mul a' (Vect.set r Q.neg_one (Vect.set c Q.zero e))
+    let a' = Q.minus_one // a in
+    Vect.mul a' (Vect.set r Q.minus_one (Vect.set c Q.zero e))
 
 (** [pivot_row r c e]
     @param c is such that c = e
@@ -364,7 +364,8 @@ let push_real (opt : bool) (nw : var) (v : Vect.t) (rst : Restricted.t)
       if n >=/ Q.zero then Sat (t', None)
       else
         let v' = safe_find "push_real" nw t' in
-        Unsat (Vect.set nw Q.one (Vect.set 0 Q.zero (Vect.mul Q.neg_one v'))) )
+        Unsat (Vect.set nw Q.one (Vect.set 0 Q.zero (Vect.mul Q.minus_one v')))
+    )
 
 (** One complication is that equalities needs some pre-processing.
  *)
@@ -399,7 +400,7 @@ let eliminate_equalities (vr0 : var) (l : Polynomial.cstr list) =
         elim (idx + 1) (vr + 1) (IMap.add vr (idx, true) vm) l ((vr, v) :: acc)
       | Eq ->
         let v1 = Vect.set 0 (Q.neg c.cst) c.coeffs in
-        let v2 = Vect.mul Q.neg_one v1 in
+        let v2 = Vect.mul Q.minus_one v1 in
         let vm = IMap.add vr (idx, true) (IMap.add (vr + 1) (idx, false) vm) in
         elim (idx + 1) (vr + 2) vm l ((vr, v1) :: (vr + 1, v2) :: acc)
       | Gt -> raise Strict )

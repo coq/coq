@@ -156,7 +156,7 @@ let pp_mon o (m, i) =
   if Monomial.is_const m then
     if Q.zero =/ i then () else Printf.fprintf o "%s" (Q.to_string i)
   else if Q.one =/ i then Monomial.pp o m
-  else if Q.neg_one =/ i then Printf.fprintf o "-%a" Monomial.pp m
+  else if Q.minus_one =/ i then Printf.fprintf o "-%a" Monomial.pp m
   else if Q.zero =/ i then ()
   else Printf.fprintf o "%s*%a" (Q.to_string i) Monomial.pp m
 
@@ -912,7 +912,7 @@ module WithProof = struct
       else
         match o with
         | Eq ->
-          Some ((Vect.set 0 Q.neg_one Vect.null, Eq), ProofFormat.Gcd (g, prf))
+          Some ((Vect.set 0 Q.minus_one Vect.null, Eq), ProofFormat.Gcd (g, prf))
         | Gt -> failwith "cutting_plane ignore strict constraints"
         | Ge ->
           (* This is a non-trivial common divisor *)
@@ -999,7 +999,7 @@ module WithProof = struct
     | Some (c, p) -> Some (c, ProofFormat.simplify_prf_rule p)
 
   let is_substitution strict ((p, o), prf) =
-    let pred v = if strict then v =/ Q.one || v =/ Q.neg_one else true in
+    let pred v = if strict then v =/ Q.one || v =/ Q.minus_one else true in
     match o with Eq -> LinPoly.search_linear pred p | _ -> None
 
   let subst1 sys0 =

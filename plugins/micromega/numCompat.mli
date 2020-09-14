@@ -47,7 +47,9 @@ module type QArith = sig
   val one : t
   val two : t
   val ten : t
-  val neg_one : t
+
+  (** -1 constant  *)
+  val minus_one : t
 
   module Notations : sig
     val ( // ) : t -> t -> t

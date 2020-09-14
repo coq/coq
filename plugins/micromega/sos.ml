@@ -576,7 +576,7 @@ let eliminate_all_equations one =
       else
         let v = choose_variable eq in
         let a = apply eq v in
-        let eq' = equation_cmul (Q.neg_one // a) (undefine v eq) in
+        let eq' = equation_cmul (Q.minus_one // a) (undefine v eq) in
         let elim e =
           let b = tryapplyd e v Q.zero in
           if b =/ Q.zero then e
@@ -814,7 +814,7 @@ let bmatrix_add = combine ( +/ ) (fun x -> x =/ Q.zero)
 let bmatrix_cmul c bm =
   if c =/ Q.zero then undefined else mapf (fun x -> c */ x) bm
 
-let bmatrix_neg = bmatrix_cmul Q.neg_one
+let bmatrix_neg = bmatrix_cmul Q.minus_one
 
 (* ------------------------------------------------------------------------- *)
 (* Smash a block matrix into components.                                     *)
@@ -943,7 +943,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
     List.fold_right
       (fun k -> List.nth pvs (k - 1) |-> element vec k)
       (1 -- dim vec)
-      ((0, 0, 0) |=> Q.neg_one)
+      ((0, 0, 0) |=> Q.minus_one)
   in
   let finalassigs =
     foldl (fun a v e -> (v |-> equation_eval newassigs e) a) newassigs allassig
@@ -1166,7 +1166,7 @@ let sumofsquares_general_symmetry tool pol =
       match cls with
       | [] -> raise Sanity
       | [h] -> acc
-      | h :: t -> List.map (fun k -> (k |-> Q.neg_one) (h |=> Q.one)) t @ acc
+      | h :: t -> List.map (fun k -> (k |-> Q.minus_one) (h |=> Q.one)) t @ acc
     in
     List.fold_right mk_eq eqvcls []
   in

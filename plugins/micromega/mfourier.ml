@@ -570,7 +570,7 @@ module Fourier = struct
     (* We add a dummy (fresh) variable for vector *)
     let fresh = List.fold_left (fun fr c -> max fr (Vect.fresh c.coeffs)) 0 l in
     let cstr =
-      {coeffs = Vect.set fresh Q.neg_one vect; op = Eq; cst = Q.zero}
+      {coeffs = Vect.set fresh Q.minus_one vect; op = Eq; cst = Q.zero}
     in
     match solve fresh choose_equality_var choose_variable (cstr :: l) with
     | Inr prf -> None (* This is an unsatisfiability proof *)
