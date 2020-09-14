@@ -176,15 +176,10 @@ subsequent_letter: [
 ]
 
 ssrarg: [
-| ssrfwdview OPT ssreqid ssrdgens OPT ssrintros      (* SSR plugin *)
+| OPT ssrfwdview OPT ssreqpat ssrdgens OPT ssrintros
 | ssrfwdview OPT ssrclear OPT ssrintros      (* SSR plugin *)
-| OPT ssreqid ssrdgens OPT ssrintros      (* SSR plugin *)
 | ssrclear OPT ssrintros      (* SSR plugin *)
 | ssrintros      (* SSR plugin *)
-]
-
-ssreqid: [
-| ssreqpat      (* SSR plugin *)
 ]
 
 ssreqpat: [
@@ -206,8 +201,7 @@ ssrapplyarg: [
 ]
 
 ssragen: [
-| "{" LIST1 ident "}" term      (* SSR plugin *)
-| term      (* SSR plugin *)
+| OPT ( "{" LIST1 ident "}" ) term      (* SSR plugin *)
 ]
 
 ssragens: [
@@ -1914,6 +1908,9 @@ simple_tactic: [
 | [ "gen" | "generally" ] "have" OPT ssrclear OPT ( [ ident | "_" ] "," ) OPT ssripats ssrwlogfwd OPT ( "by" ssrhintarg )      (* SSR plugin *)
 | "under" r_prefix OPT ssrintros OPT ( "do" ssrhint3arg )      (* SSR plugin *)
 | "ssrinstancesoftpat" cpattern      (* SSR plugin *)
+| ltac_expr ";" "first" ssr_first_else      (* SSR plugin *)
+| ltac_expr ";" "first" ssrseqarg      (* SSR plugin *)
+| ltac_expr ";" "last" ssrseqarg      (* SSR plugin *)
 | match_key OPT "reverse" "goal" "with" OPT "|" LIST1 ( goal_pattern "=>" ltac_expr ) SEP "|" "end"
 | match_key ltac_expr "with" OPT "|" LIST1 ( match_pattern "=>" ltac_expr ) SEP "|" "end"
 | "classical_left"
@@ -1927,6 +1924,7 @@ simple_tactic: [
 | "lra"
 | "nia"
 | "nra"
+| "over"      (* SSR plugin *)
 | "split_Rabs"
 | "split_Rmult"
 | "tauto"
@@ -2524,38 +2522,8 @@ ltac_expr: [
 ltac_expr4: [
 | ltac_expr3 ";" [ ltac_expr3 | binder_tactic ]
 | ltac_expr3 ";" "[" for_each_goal "]"
-| ltac_expr ";" "first" ssr_first_else      (* SSR plugin *)
-| ltac_expr ";" "first" ssrseqarg      (* SSR plugin *)
-| ltac_expr ";" "last" ssrseqarg      (* SSR plugin *)
 | ltac_expr3
-]
-
-ssr_first_else: [
-| ssr_first OPT ssrorelse      (* SSR plugin *)
-]
-
-ssr_first: [
-| "[" LIST0 ltac_expr SEP "|" "]" LIST0 ssrintros      (* SSR plugin *)
-]
-
-ssrorelse: [
-| "||" ltac_expr2      (* SSR plugin *)
-]
-
-ssrseqarg: [
-| ssrseqidx "[" ssrortacs "]" OPT ssrorelse      (* SSR plugin *)
-| OPT ssrseqidx ssrswap      (* SSR plugin *)
-| ltac_expr3      (* SSR plugin *)
-]
-
-ssrswap: [
-| "first"      (* SSR plugin *)
-| "last"      (* SSR plugin *)
-]
-
-ssrseqidx: [
-| ident      (* SSR plugin *)
-| natural      (* SSR plugin *)
+| simple_tactic
 ]
 
 ltac_expr3: [
@@ -2597,6 +2565,34 @@ tactic_atom: [
 | integer
 | qualid
 | "()"
+]
+
+ssrseqarg: [
+| ssrseqidx "[" ssrortacs "]" OPT ssrorelse      (* SSR plugin *)
+| OPT ssrseqidx ssrswap      (* SSR plugin *)
+| ltac_expr3      (* SSR plugin *)
+]
+
+ssrseqidx: [
+| ident      (* SSR plugin *)
+| natural      (* SSR plugin *)
+]
+
+ssrorelse: [
+| "||" ltac_expr2      (* SSR plugin *)
+]
+
+ssrswap: [
+| "first"      (* SSR plugin *)
+| "last"      (* SSR plugin *)
+]
+
+ssr_first_else: [
+| ssr_first OPT ssrorelse      (* SSR plugin *)
+]
+
+ssr_first: [
+| "[" LIST0 ltac_expr SEP "|" "]" LIST0 ssrintros      (* SSR plugin *)
 ]
 
 let_clause: [

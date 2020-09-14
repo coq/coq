@@ -813,6 +813,9 @@ ltac_expr4: [
 | REPLACE ltac_expr3 ";" binder_tactic
 | WITH ltac_expr3 ";" [ ltac_expr3 | binder_tactic ]
 | DELETE ltac_expr3 ";" ltac_expr3
+| MOVETO simple_tactic ltac_expr5 ";" "first" ssr_first_else      TAG SSR
+| MOVETO simple_tactic ltac_expr5 ";" "first" ssrseqarg      TAG SSR
+| MOVETO simple_tactic ltac_expr5 ";" "last" ssrseqarg      TAG SSR
 ]
 
 l3_tactic: [ ]
@@ -1777,6 +1780,7 @@ ltac_defined_tactics: [
 | "lra"
 | "nia"
 | "nra"
+| "over"  TAG SSR
 | "split_Rabs"
 | "split_Rmult"
 | "tauto"
@@ -2110,7 +2114,7 @@ ssrsetfwd: [
 | DELETE ":=" lcpattern      (* SSR plugin *)
 ]
 
-OPTINREF: [ ]
+OPTINREF: [ ]  (* todo: move just before splice (though seems to be in an infinite loop there :-( *)
 
 ssrortacs: [
 | EDIT ssrtacarg "|" ADD_OPT ssrortacs      (* ssr plugin *)
@@ -2360,6 +2364,16 @@ cpattern: [
 | EDIT ADD_OPT "Qed" constr      TAG SSR
 ]
 
+ssrarg: [
+| EDIT ADD_OPT ssrfwdview OPT ssreqid ssrdgens OPT ssrintros      (* SSR plugin *)
+]
+
+ssragen: [
+| REPLACE "{" LIST1 ssrhyp "}" ssrterm      (* SSR plugin *)
+| WITH OPT ( "{" LIST1 ssrhyp "}" ) ssrterm      TAG SSR
+| DELETE ssrterm      (* SSR plugin *)
+]
+
 SPLICE: [
 | clause
 | noedit_mode
@@ -2445,6 +2459,7 @@ SPLICE: [
 | ssr_dthen
 | ssr_else
 | ssr_rtype
+| ssreqid
 | preident
 | lpar_id_coloneq
 | binders

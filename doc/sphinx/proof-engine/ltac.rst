@@ -56,20 +56,8 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    ltac_expr ::= {| @ltac_expr4 | @binder_tactic }
    ltac_expr4 ::= @ltac_expr3 ; {| @ltac_expr3 | @binder_tactic }
    | @ltac_expr3 ; [ @for_each_goal ]
-   | @ltac_expr ; first @ssr_first_else   SSR
-   | @ltac_expr ; first @ssrseqarg   SSR
-   | @ltac_expr ; last @ssrseqarg   SSR
    | @ltac_expr3
-   ssr_first_else ::= @ssr_first {? @ssrorelse }   SSR
-   ssr_first ::= [ {*| @ltac_expr } ] {* @ssrintros }   SSR
-   ssrorelse ::= %|| @ltac_expr2   SSR
-   ssrseqarg ::= @ssrseqidx [ @ssrortacs ] {? @ssrorelse }   SSR
-   | {? @ssrseqidx } @ssrswap   SSR
-   | @ltac_expr3   SSR
-   ssrswap ::= first   SSR
-   | last   SSR
-   ssrseqidx ::= @ident   SSR
-   | @natural   SSR
+   | @simple_tactic
    ltac_expr3 ::= @l3_tactic
    | @ltac_expr2
    ltac_expr2 ::= @ltac_expr1 + {| @ltac_expr2 | @binder_tactic }
@@ -113,6 +101,7 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    are documented as tactics.  Tactics are grouped as follows:
 
    - :production:`binder_tactic`\s are: :tacn:`fun` and :tacn:`let`
+   - :production:`l4_tactic`\s are :tacn:`first (ssreflect)` and :tacn:`last (ssreflect)`.
    - :production:`l3_tactic`\s include |Ltac| tactics: :tacn:`try`,
      :tacn:`do`, :tacn:`repeat`, :tacn:`timeout`, :tacn:`time`, :tacn:`progress`, :tacn:`once`,
      :tacn:`exactly_once`, :tacn:`only` and :tacn:`abstract`
