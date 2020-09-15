@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-v8.12-V2020-09-07-V1"
+# CACHEKEY: "bionic_coq-v8.12-V2020-09-15-V1"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -37,7 +37,7 @@ ENV COMPILER="4.05.0"
 # Common OPAM packages.
 # `num` does not have a version number as the right version to install varies
 # with the compiler version.
-ENV BASE_OPAM="num ocamlfind.1.8.1 ounit2.2.2.3 odoc.1.5.0" \
+ENV BASE_OPAM="num ocamlfind.1.8.1 ounit2.2.2.3 odoc.1.5.1" \
     CI_OPAM="menhir.20190626 ocamlgraph.1.8.8" \
     BASE_ONLY_OPAM="elpi.1.11.0"
 
@@ -56,8 +56,8 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
     opam install $BASE_OPAM
 
 # EDGE switch
-ENV COMPILER_EDGE="4.10.0" \
-    BASE_OPAM_EDGE="dune.2.5.0 dune-release.1.3.3 ocamlformat.0.14.0"
+ENV COMPILER_EDGE="4.11.1" \
+    BASE_OPAM_EDGE="dune.2.5.1 dune-release.1.3.3 ocamlformat.0.15.0"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
