@@ -195,7 +195,7 @@ let intern_non_tactic_reference strict ist qid =
   if qualid_is_ident qid && not strict then
     let id = qualid_basename qid in
     let ipat = in_gen (glbwit wit_intro_pattern) (make ?loc:qid.CAst.loc @@ IntroNaming (IntroIdentifier id)) in
-    TacGeneric ipat
+    TacGeneric (None,ipat)
   else
     (* Reference not found *)
     let _, info = Exninfo.capture exn in
@@ -713,9 +713,9 @@ and intern_tacarg strict onlytac ist = function
   | TacPretype c -> TacPretype (intern_constr ist c)
   | TacNumgoals -> TacNumgoals
   | Tacexp t -> Tacexp (intern_tactic onlytac ist t)
-  | TacGeneric arg ->
+  | TacGeneric (isquot,arg) ->
     let arg = intern_genarg ist arg in
-    TacGeneric arg
+    TacGeneric (isquot,arg)
 
 (* Reads the rules of a Match Context or a Match *)
 and intern_match_rule onlytac ist ?(as_type=false) = function

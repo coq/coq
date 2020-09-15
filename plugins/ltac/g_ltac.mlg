@@ -180,7 +180,7 @@ GRAMMAR EXTEND Gram
     [ [ a = tactic_arg -> { a }
       | c = Constr.constr -> { (match c with { CAst.v = CRef (r,None) } -> Reference r | c -> ConstrMayEval (ConstrTerm c)) }
       (* Unambiguous entries: tolerated w/o "ltac:" modifier *)
-      | "()" -> { TacGeneric (genarg_of_unit ()) } ] ]
+      | "()" -> { TacGeneric (None, genarg_of_unit ()) } ] ]
   ;
   (* Can be used as argument and at toplevel in tactic expressions. *)
   tactic_arg:
@@ -209,9 +209,9 @@ GRAMMAR EXTEND Gram
       | c = Constr.constr -> { ConstrTerm c } ] ]
   ;
   tactic_atom:
-    [ [ n = integer -> { TacGeneric (genarg_of_int n) }
+    [ [ n = integer -> { TacGeneric (None, genarg_of_int n) }
       | r = reference -> { TacCall (CAst.make ~loc (r,[])) }
-      | "()" -> { TacGeneric (genarg_of_unit ()) } ] ]
+      | "()" -> { TacGeneric (None, genarg_of_unit ()) } ] ]
   ;
   match_key:
     [ [ "match" -> { Once }

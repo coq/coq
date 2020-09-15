@@ -1,5 +1,9 @@
 ## Changes between Coq 8.12 and Coq 8.13
 
+- Tactic language: TacGeneric now takes an argument to tell if it
+  comes from a notation. Use `None` if not and `Some foo` to tell to
+  print such TacGeneric surrounded with `foo:( )`.
+
 ## Changes between Coq 8.11 and Coq 8.12
 
 ### Code formatting

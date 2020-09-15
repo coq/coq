@@ -4,7 +4,7 @@ Ltac t2 := let x := string:("my tactic") in
            x
 Ltac t3 := idtacstr "my tactic"
 Ltac t4 x := match x with
-             | ?A => (A, A)
+             | ?A => constr:((A, A))
              end
 The command has indeed failed with message:
 idnat is bound to a notation that does not denote a reference.

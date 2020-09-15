@@ -338,8 +338,8 @@ let string_of_genarg_arg (ArgumentType arg) =
   | Extend.Uentryl (_, l) -> prtac LevelSome arg
   | _ ->
     match arg with
-    | TacGeneric arg ->
-      let pr l arg = prtac l (TacGeneric arg) in
+    | TacGeneric (isquot,arg) ->
+      let pr l arg = prtac l (TacGeneric (isquot,arg)) in
       pr_any_arg pr symb arg
     | _ -> str "ltac:(" ++ prtac LevelSome arg ++ str ")"
 
@@ -571,7 +571,7 @@ let pr_goal_selector ~toplevel s =
 
   let pr_let_clause k pr_gen pr_arg (na,(bl,t)) =
     let pr = function
-      | TacGeneric arg ->
+      | TacGeneric (_,arg) ->
          let name = string_of_genarg_arg (genarg_tag arg) in
          if name = "unit" || name = "int" then
            (* Hard-wired parsing rules *)
@@ -1049,8 +1049,9 @@ let pr_goal_selector ~toplevel s =
               pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c, leval
             | TacArg { CAst.v=TacFreshId l } ->
               primitive "fresh" ++ pr_fresh_ids l, latom
-            | TacArg { CAst.v=TacGeneric arg } ->
-              pr.pr_generic env sigma arg, latom
+            | TacArg { CAst.v=TacGeneric (isquot,arg) } ->
+              let p = pr.pr_generic env sigma arg in
+              (match isquot with Some name -> str name ++ str ":(" ++ p ++ str ")" | None -> p), latom
             | TacArg { CAst.v=TacCall {CAst.v=(f,[])} } ->
               pr.pr_reference f, latom
             | TacArg { CAst.v=TacCall {CAst.loc; v=(f,l)} } ->

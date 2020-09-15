@@ -174,7 +174,7 @@ let add_tactic_entry (kn, ml, tg) state =
       if Genarg.has_type arg wit && not ml then
         Tacexp (Genarg.out_gen wit arg)
       else
-        TacGeneric arg
+        TacGeneric (None, arg)
     in
     let l = List.map map l in
     (TacAlias (CAst.make ~loc (kn,l)):raw_tactic_expr)
@@ -349,7 +349,7 @@ let extend_atomic_tactic name entries =
     | TacNonTerm (_, (symb, _)) ->
       let EntryName (typ, e) = prod_item_of_symbol 0 symb in
       let Genarg.Rawwit wit = typ in
-      let inj x = TacArg (CAst.make @@ TacGeneric (Genarg.in_gen typ x)) in
+      let inj x = TacArg (CAst.make @@ TacGeneric (None, Genarg.in_gen typ x)) in
       let default = epsilon_value inj e in
       match default with
       | None -> raise NonEmptyArgument
@@ -780,7 +780,7 @@ let ml_val_tactic_extend ~plugin ~name ~local ?deprecation sign tac =
   let ml_tactic_name = { mltac_tactic = name; mltac_plugin = plugin } in
   let len = ml_sig_len sign in
   let vars = List.init len (fun i -> Id.of_string (Printf.sprintf "arg%i" i)) in
-  let body = TacGeneric (in_tacval { tacval_tac = ml_tactic_name;  tacval_var = vars }) in
+  let body = TacGeneric (None, in_tacval { tacval_tac = ml_tactic_name;  tacval_var = vars }) in
   let vars = List.map (fun id -> Name id) vars in
   let body = Tacexpr.TacFun (vars, Tacexpr.TacArg (CAst.make body)) in
   let id = Names.Id.of_string name in
@@ -876,7 +876,7 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
   let (rpr, gpr, tpr) = arg.arg_printer in
   let () = Pptactic.declare_extra_genarg_pprule wit rpr gpr tpr in
   let () = create_ltac_quotation name
-    (fun (loc, v) -> Tacexpr.TacGeneric (Genarg.in_gen (Genarg.rawwit wit) v))
+    (fun (loc, v) -> Tacexpr.TacGeneric (Some name,Genarg.in_gen (Genarg.rawwit wit) v))
     (entry, None)
   in
   (wit, entry)
