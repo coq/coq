@@ -34,5 +34,5 @@ val shift_locs : state -> int -> int -> state
 val executed_ids : state -> sentence_id list
 val is_executed : state -> sentence_id -> bool
 
-val get_parsing_state_after : state -> sentence_id -> Vernacstate.Parser.state option
+val get_parsing_state_after : state -> sentence_id -> Vernacstate.Parser.t option
 val get_proofview : state -> sentence_id -> Proof.data option

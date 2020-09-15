@@ -63,14 +63,14 @@ let string_of_parsed_ast = function
 type pre_sentence = {
   start : int;
   stop : int;
-  parsing_state : Vernacstate.Parser.state; (* st used to parse this sentence *)
+  parsing_state : Vernacstate.Parser.t; (* st used to parse this sentence *)
   ast : parsed_ast;
 }
 
 type sentence = {
   start : int;
   stop : int;
-  parsing_state : Vernacstate.Parser.state; (* st used to parse this sentence *)
+  parsing_state : Vernacstate.Parser.t; (* st used to parse this sentence *)
   scheduler_state_before : Scheduler.state;
   scheduler_state_after : Scheduler.state;
   ast : parsed_ast;
@@ -192,7 +192,7 @@ module ParsedDoc : sig
   val make_diagnostic : RawDoc.t -> t -> sentence_id -> Loc.t option -> string -> severity -> diagnostic
   val parse_errors : RawDoc.t -> t -> diagnostic list
 
-  val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Parser.state -> Scheduler.state -> t * Scheduler.state
+  val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Parser.t -> Scheduler.state -> t * Scheduler.state
   val remove_sentence : t -> sentence_id -> t
   val remove_sentences_after : t -> int -> t * Stateid.Set.t
   val sentences_before : t -> int -> sentence list
@@ -205,8 +205,8 @@ module ParsedDoc : sig
   val next_sentence : t -> sentence_id -> sentence option
 
   val pos_at_end : t -> int
-  val state_at_end : t -> ExecutionManager.state -> (int * Vernacstate.Parser.state * Scheduler.state) option
-  val state_at_pos : t -> ExecutionManager.state -> int -> (int * Vernacstate.Parser.state * Scheduler.state) option
+  val state_at_end : t -> ExecutionManager.state -> (int * Vernacstate.Parser.t * Scheduler.state) option
+  val state_at_pos : t -> ExecutionManager.state -> int -> (int * Vernacstate.Parser.t * Scheduler.state) option
 
   val patch_sentence : t -> Scheduler.state -> sentence_id -> pre_sentence -> t * Scheduler.state
 
