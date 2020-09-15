@@ -1107,8 +1107,14 @@ let make_interpretation_type isrec isonlybinding default_if_binding = function
      if isrec then NtnTypeBinderList
      else anomaly Pp.(str "Type binder is only for use in recursive notations for binders.")
 
-let subentry_of_constr_prod_entry = function
-  | ETConstr (InCustomEntry s,_,(NumLevel n,_)) -> InCustomEntryLevel (s,n)
+let subentry_of_constr_prod_entry from_level = function
+  (* Specific 8.2 approximation *)
+  | ETConstr (InCustomEntry s,_,x) ->
+    let n = match fst (precedence_of_position_and_level from_level x) with
+     | LevelLt n -> n-1
+     | LevelLe n -> n
+     | LevelSome -> max_int in
+    InCustomEntryLevel (s,n)
   (* level and use of parentheses for coercion is hard-wired for "constr";
      we don't remember the level *)
   | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeLevel
@@ -1116,7 +1122,7 @@ let subentry_of_constr_prod_entry = function
 
 let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsIdent)
-   recvars allvars typs =
+   recvars level allvars typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
     Option.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
@@ -1132,7 +1138,7 @@ let make_interpretation_vars
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
   Id.Map.mapi (fun x (isonlybinding, sc) ->
     let typ = Id.List.assoc x typs in
-    ((subentry_of_constr_prod_entry typ,sc),
+    ((subentry_of_constr_prod_entry level typ,sc),
      make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding default_if_binding typ)) mainvars
 
 let check_rule_productivity l =
@@ -1170,7 +1176,7 @@ let is_coercion level typs =
      (match e, custom with
      | ETConstr _, _ ->
          let customkey = make_notation_entry_level custom n in
-         let subentry = subentry_of_constr_prod_entry e in
+         let subentry = subentry_of_constr_prod_entry n e in
          if notation_entry_level_eq subentry customkey then None
          else Some (IsEntryCoercion subentry)
      | ETGlobal, InCustomEntry s -> Some (IsEntryGlobal (s,n))
@@ -1616,7 +1622,7 @@ let add_notation_in_scope ~local deprecation df env c mods scope =
     ninterp_rec_vars = to_map sd.recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env nenv c in
-  let interp = make_interpretation_vars sd.recvars acvars (fst sd.pa_syntax_data) in
+  let interp = make_interpretation_vars sd.recvars (pi2 sd.level) acvars (fst sd.pa_syntax_data) in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse,coe = printability (Some sd.level) sd.subentries sd.only_parsing reversibility ac in
   let notation, location = sd.info in
@@ -1663,7 +1669,8 @@ let add_notation_interpretation_core ~local df env ?(impls=empty_internalization
     ninterp_rec_vars = to_map recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
-  let interp = make_interpretation_vars recvars acvars (List.combine mainvars i_typs) in
+  let plevel = match level with Some (from,level,l) -> level | None (* numeral: irrelevant )*) -> 0 in
+  let interp = make_interpretation_vars recvars plevel acvars (List.combine mainvars i_typs) in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse,coe = printability level i_typs onlyparse reversibility ac in
   let notation = {
@@ -1847,8 +1854,8 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
       } in
       interp_notation_constr env nenv c
   in
-  let in_pat id = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,0))) in
-  let interp = make_interpretation_vars ~default_if_binding:AsIdentOrPattern [] acvars (List.map in_pat vars) in
+  let in_pat id = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
+  let interp = make_interpretation_vars ~default_if_binding:AsIdentOrPattern [] 0 acvars (List.map in_pat vars) in
   let vars = List.map (fun x -> (x, Id.Map.find x interp)) vars in
   let onlyparsing = onlyparsing || fst (printability None [] false reversibility pat) in
   Syntax_def.declare_syntactic_definition ~local deprecation ident ~onlyparsing (vars,pat)
