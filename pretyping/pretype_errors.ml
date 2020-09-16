@@ -20,6 +20,7 @@ type unification_error =
   | NotSameHead
   | NoCanonicalStructure
   | ConversionFailed of env * constr * constr (* Non convertible closed terms *)
+  | IncompatibleInstances of env * existential * constr * constr
   | MetaOccurInBody of Evar.t
   | InstanceNotSameType of Evar.t * env * types * types
   | UnifUnivInconsistency of Univ.univ_inconsistency

@@ -1196,8 +1196,8 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
 let filter_compatible_candidates unify flags env evd evi args rhs c =
   let c' = instantiate_evar_array evi c args in
   match unify flags TermUnification env evd Reduction.CONV rhs c' with
-  | Success evd -> Some (c,evd)
-  | UnifFailure _ -> None
+  | Success evd -> Inl (c,evd)
+  | UnifFailure _ -> Inr c'
 
 (* [restrict_candidates ... filter ev1 ev2] restricts the candidates
    of ev1, removing those not compatible with the filter, as well as
@@ -1218,8 +1218,8 @@ let restrict_candidates unify flags env evd filter1 (evk1,argsv1) (evk2,argsv2) 
         let filter c2 =
           let compatibility = filter_compatible_candidates unify flags env evd evi2 argsv2 c1' c2 in
           match compatibility with
-          | None -> false
-          | Some _ -> true
+          | Inl _ -> true
+          | Inr _ -> false
         in
         let filtered = List.filter filter l2 in
         match filtered with [] -> false | _ -> true) l1 in
@@ -1440,29 +1440,33 @@ let solve_refl ?(can_drop=false) unify flags env evd pbty evk argsv1 argsv2 =
    in advance, we check which of them apply *)
 
 exception NoCandidates
-exception IncompatibleCandidates
+exception IncompatibleCandidates of EConstr.t
 
 let solve_candidates unify flags env evd (evk,argsv) rhs =
   let evi = Evd.find evd evk in
   match evi.evar_candidates with
   | None -> raise NoCandidates
   | Some l ->
-      let l' =
-        List.map_filter
-          (fun c -> filter_compatible_candidates unify flags env evd evi argsv rhs c) l in
-      match l' with
-      | [] -> raise IncompatibleCandidates
-      | [c,evd] ->
+      let rec aux = function
+        | [] -> [], []
+        | c::l ->
+           let compatl, disjointl = aux l in
+           match filter_compatible_candidates unify flags env evd evi argsv rhs c with
+           | Inl c -> c::compatl, disjointl
+           | Inr c -> compatl, c::disjointl in
+      match aux l with
+      | [], c::_ -> raise (IncompatibleCandidates c)
+      | [c,evd], _ ->
           (* solve_candidates might have been called recursively in the mean *)
           (* time and the evar been solved by the filtering process *)
          if Evd.is_undefined evd evk then
            let evd' = Evd.define evk c evd in
              check_evar_instance unify flags env evd' evk c
          else evd
-      | l when List.length l < List.length l' ->
+      | l, _::_  (* At least one discarded candidate *) ->
           let candidates = List.map fst l in
           restrict_evar evd evk None (UpdateWith candidates)
-      | l -> evd
+      | l, [] -> evd
 
 let occur_evar_upto_types sigma n c =
   let c = EConstr.Unsafe.to_constr c in
@@ -1794,6 +1798,6 @@ let solve_simple_eqn unify flags ?(choose=false) ?(imitate_defs=true)
         UnifFailure (evd,MetaOccurInBody evk1)
     | IllTypedInstance (env,t,u) ->
         UnifFailure (evd,InstanceNotSameType (evk1,env,t,u))
-    | IncompatibleCandidates ->
-        UnifFailure (evd,ConversionFailed (env,mkEvar ev1,t2))
+    | IncompatibleCandidates t ->
+        UnifFailure (evd,IncompatibleInstances (env,ev1,t,t2))
 
