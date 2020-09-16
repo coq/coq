@@ -43,7 +43,7 @@ stdenv.mkDerivation rec {
     hostname
     python3 time # coq-makefile timing tools
   ]
-  ++ (with ocamlPackages; [ ocaml findlib num zarith ])
+  ++ (with ocamlPackages; [ ocaml findlib ])
   ++ optionals buildIde [
     ocamlPackages.lablgtk3-sourceview3
     glib gnome3.defaultIconTheme wrapGAppsHook
@@ -71,9 +71,8 @@ stdenv.mkDerivation rec {
 
   # Since #12604, ocamlfind looks for num when building plugins
   # This follows a similar change in the nixpkgs repo (cf. NixOS/nixpkgs#94230)
-  propagatedBuildInputs = [
-    ocamlPackages.num
-  ];
+  # Same for zarith which is needed since its introduction as a dependency of Coq
+  propagatedBuildInputs = with ocamlPackages; [ num zarith ];
 
   src =
     if shell then null
