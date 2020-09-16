@@ -52,7 +52,7 @@ let pp_var_num pp_var o {var = v; coe = n} =
   if Int.equal v 0 then
     if Q.zero =/ n then () else Printf.fprintf o "%s" (Q.to_string n)
   else if Q.one =/ n then pp_var o v
-  else if Q.neg_one =/ n then Printf.fprintf o "-%a" pp_var v
+  else if Q.minus_one =/ n then Printf.fprintf o "-%a" pp_var v
   else if Q.zero =/ n then ()
   else Printf.fprintf o "%s*%a" (Q.to_string n) pp_var v
 
@@ -60,7 +60,7 @@ let pp_var_num_smt pp_var o {var = v; coe = n} =
   if Int.equal v 0 then
     if Q.zero =/ n then () else Printf.fprintf o "%s" (Q.to_string n)
   else if Q.one =/ n then pp_var o v
-  else if Q.neg_one =/ n then Printf.fprintf o "(- %a)" pp_var v
+  else if Q.minus_one =/ n then Printf.fprintf o "(- %a)" pp_var v
   else if Q.zero =/ n then ()
   else Printf.fprintf o "(* %s %a)" (Q.to_string n) pp_var v
 

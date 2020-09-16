@@ -1026,7 +1026,7 @@ function make_num {
 
 function make_zarith {
   make_ocaml
-  if build_prep https://github.com/ocaml/Zarith/archive release-1.9.1 tar.gz 1 zarith-1.9.1; then
+  if build_prep https://github.com/ocaml/Zarith/archive release-1.10 tar.gz 1 zarith-1.10; then
     logn configure ./configure
     log1 make
     log2 make install

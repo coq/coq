@@ -2141,6 +2141,7 @@ let really_call_csdpcert :
     List.fold_left Filename.concat (Envars.coqlib ())
       ["plugins"; "micromega"; "csdpcert" ^ Coq_config.exec_extension]
   in
+  let cmdname = if Sys.file_exists cmdname then cmdname else "csdpcert" in
   match (command cmdname [|cmdname|] (provername, poly) : csdp_certificate) with
   | F str ->
     if debug then Printf.fprintf stdout "really_call_csdpcert : %s\n" str;

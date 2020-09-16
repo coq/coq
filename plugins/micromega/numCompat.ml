@@ -31,37 +31,24 @@ module type ZArith = sig
 end
 
 module Z = struct
-  type t = Big_int.big_int
+  (* Beware this only works fine in ZArith >= 1.10 due to
+     https://github.com/ocaml/Zarith/issues/58 *)
+  include Z
 
-  open Big_int
+  (* Constants *)
+  let two = Z.of_int 2
+  let ten = Z.of_int 10
+  let power_int = Big_int_Z.power_big_int_positive_int
+  let quomod = Big_int_Z.quomod_big_int
 
-  let zero = zero_big_int
-  let one = unit_big_int
-  let two = big_int_of_int 2
-  let add = Big_int.add_big_int
-  let sub = Big_int.sub_big_int
-  let mul = Big_int.mult_big_int
-  let div = Big_int.div_big_int
-  let neg = Big_int.minus_big_int
-  let sign = Big_int.sign_big_int
-  let equal = eq_big_int
-  let compare = compare_big_int
-  let power_int = power_big_int_positive_int
-  let quomod = quomod_big_int
+  (* zarith fails with division by zero if x == 0 && y == 0 *)
+  let lcm x y = if Z.equal x zero && Z.equal y zero then zero else Z.lcm x y
 
   let ppcm x y =
-    let g = gcd_big_int x y in
-    let x' = div_big_int x g in
-    let y' = div_big_int y g in
-    mult_big_int g (mult_big_int x' y')
-
-  let gcd = gcd_big_int
-
-  let lcm x y =
-    if eq_big_int x zero && eq_big_int y zero then zero
-    else abs_big_int (div_big_int (mult_big_int x y) (gcd x y))
-
-  let to_string = string_of_big_int
+    let g = gcd x y in
+    let x' = Z.div x g in
+    let y' = Z.div y g in
+    Z.mul g (Z.mul x' y')
 end
 
 module type QArith = sig
@@ -74,7 +61,7 @@ module type QArith = sig
   val one : t
   val two : t
   val ten : t
-  val neg_one : t
+  val minus_one : t
 
   module Notations : sig
     val ( // ) : t -> t -> t
@@ -119,56 +106,64 @@ end
 module Q : QArith with module Z = Z = struct
   module Z = Z
 
-  type t = Num.num
+  let pow_check_exp x y =
+    let z_res =
+      if y = 0 then Z.one
+      else if y > 0 then Z.pow x y
+      else (* s < 0 *)
+        Z.pow x (abs y)
+    in
+    let z_res = Q.of_bigint z_res in
+    if 0 <= y then z_res else Q.inv z_res
 
-  open Num
+  include Q
 
-  let of_int x = Int x
-  let zero = Int 0
-  let one = Int 1
-  let two = Int 2
-  let ten = Int 10
-  let neg_one = Int (-1)
+  let two = Q.(of_int 2)
+  let ten = Q.(of_int 10)
 
   module Notations = struct
-    let ( // ) = div_num
-    let ( +/ ) = add_num
-    let ( -/ ) = sub_num
-    let ( */ ) = mult_num
-    let ( =/ ) = eq_num
-    let ( <>/ ) = ( <>/ )
-    let ( >/ ) = ( >/ )
-    let ( >=/ ) = ( >=/ )
-    let ( </ ) = ( </ )
-    let ( <=/ ) = ( <=/ )
+    let ( // ) = Q.div
+    let ( +/ ) = Q.add
+    let ( -/ ) = Q.sub
+    let ( */ ) = Q.mul
+    let ( =/ ) = Q.equal
+    let ( <>/ ) x y = not (Q.equal x y)
+    let ( >/ ) = Q.gt
+    let ( >=/ ) = Q.geq
+    let ( </ ) = Q.lt
+    let ( <=/ ) = Q.leq
   end
 
-  let compare = compare_num
-  let make x y = Big_int x // Big_int y
+  (* XXX: review / improve *)
+  let floorZ q : Z.t = Z.fdiv (num q) (den q)
+  let floor q : t = floorZ q |> Q.of_bigint
+  let ceiling q : t = Z.cdiv (Q.num q) (Q.den q) |> Q.of_bigint
+  let half = Q.make Z.one Z.two
 
-  let numdom r =
-    let r' = Ratio.normalize_ratio (ratio_of_num r) in
-    (Ratio.numerator_ratio r', Ratio.denominator_ratio r')
+  (* We imitate Num's round which is to the nearest *)
+  let round q = floor (Q.add half q)
 
-  let num x = numdom x |> fst
-  let den x = numdom x |> snd
-  let of_bigint x = Big_int x
-  let to_bigint = big_int_of_num
-  let neg = minus_num
+  (* XXX: review / improve *)
+  let quo x y =
+    let s = sign y in
+    let res = floor (x / abs y) in
+    if Int.equal s (-1) then neg res else res
 
-  (* let inv =  *)
-  let max = max_num
-  let min = min_num
-  let sign = sign_num
-  let abs = abs_num
-  let mod_ = mod_num
-  let floor = floor_num
-  let ceiling = ceiling_num
-  let round = round_num
-  let pow2 n = power_num two (Int n)
-  let pow10 n = power_num ten (Int n)
-  let power x = power_num (Int x)
-  let to_string = string_of_num
-  let of_string = num_of_string
-  let to_float = float_of_num
+  let mod_ x y = x - (y * quo x y)
+
+  (* XXX: review / improve *)
+  (* Note that Z.pow doesn't support negative exponents *)
+
+  let pow2 y = pow_check_exp Z.two y
+  let pow10 y = pow_check_exp Z.ten y
+
+  let power (x : int) (y : t) : t =
+    let y =
+      try Q.to_int y
+      with Z.Overflow ->
+        (* XXX: make doesn't link Pp / CErrors for csdpcert, that could be fixed *)
+        raise (Invalid_argument "[micromega] overflow in exponentiation")
+      (* CErrors.user_err (Pp.str "[micromega] overflow in exponentiation") *)
+    in
+    pow_check_exp (Z.of_int x) y
 end
