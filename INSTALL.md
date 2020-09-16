@@ -32,11 +32,11 @@ To compile Coq yourself, you need:
   (version >= 3.0.beta8), and the corresponding GTK 3.x libraries, as
   of today (gtk+3 >= 3.18 and gtksourceview3 >= 3.18)
 
-The IEEE-754 compliance is required by primitive floating-point
-numbers (`Require Import Floats`). Common sources of incompatibility
-are checked at configure time, preventing compilation. In the,
-unlikely, event an incompatibility remains undetected, using Floats
-would enable to prove False on this architecture.
+Primitive floating-point numbers require IEEE-754 compliance
+(`Require Import Floats`). Common sources of incompatibility
+are checked at configure time, preventing compilation. In the
+unlikely event an incompatibility remains undetected, using `Floats`
+would enable proving `False` on this architecture.
 
 Note that OCaml dependencies (`zarith` and `lablgtk3-sourceview3` at
 this moment) must be properly registered with `findlib/ocamlfind`
