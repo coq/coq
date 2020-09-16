@@ -569,14 +569,18 @@ let caml_version_nums =
          "Is it installed properly?")
 
 let check_caml_version () =
-  if caml_version_nums >= [4;5;0] then
+  if caml_version_nums >= [4;5;0] && caml_version_nums < [4;12;0] then
     cprintf "You have OCaml %s. Good!" caml_version
   else
     let () = cprintf "Your version of OCaml is %s." caml_version in
     if !prefs.force_caml_version then
-      warn "Your version of OCaml is outdated."
+      if caml_version_nums >= [4;12;0] then
+        warn ("This version of Coq should be considered incompatible with OCaml 4.12.\n \
+               See https://github.com/coq/coq/issues/12636")
+      else
+        warn "Your version of OCaml is outdated."
     else
-      die "You need OCaml 4.05.0 or later."
+      die "You need a version of OCaml between 4.05 and 4.11."
 
 let _ = check_caml_version ()
 
