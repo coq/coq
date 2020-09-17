@@ -325,6 +325,8 @@ build:base+async:
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     COQUSERFLAGS: "-async-proofs on"
+  after_script:
+    - dmesg
   timeout: 100m
   allow_failure: true # See https://github.com/coq/coq/issues/9658
   only:
@@ -336,6 +338,8 @@ build:quick:
   variables:
     COQ_EXTRA_CONF: "-native-compiler no"
     QUICK: "1"
+  after_script:
+    - dmesg
   timeout: 100m
   allow_failure: true # See https://github.com/coq/coq/issues/9637
   only:
