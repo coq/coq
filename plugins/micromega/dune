@@ -4,7 +4,7 @@
  ; be careful not to link the executable to the plugin!
  (modules (:standard \ csdpcert g_zify zify))
  (synopsis "Coq's micromega plugin")
- (libraries num coq.plugins.ltac))
+ (libraries coq.plugins.ltac))
 
 (executable
  (name csdpcert)

@@ -223,7 +223,7 @@ package "toplevel" (
   description = "Coq Toplevel"
   version     = "8.13"
 
-  requires    = "num, coq.stm"
+  requires    = "coq.stm"
   directory   = "toplevel"
 
   archive(byte)    = "toplevel.cma"
@@ -327,7 +327,7 @@ package "plugins" (
     description = "Coq micromega plugin"
     version     = "8.13"
 
-    requires    = "num, coq.plugins.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "micromega"
 
     archive(byte)    = "micromega_plugin.cmo"

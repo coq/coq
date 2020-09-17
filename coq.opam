@@ -24,7 +24,6 @@ depends: [
   "ocaml"     { >= "4.05.0" }
   "dune"      { >= "2.5.0"  }
   "ocamlfind" { build }
-  "num"
   "zarith"    { >= "1.10" }
 ]
 
