@@ -53,8 +53,8 @@ check_variable "old_coq_opam_archive_git_branch"
 check_variable "num_of_iterations"
 check_variable "coq_opam_packages"
 
-new_coq_commit=$(git rev-parse HEAD^2)
-old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
+new_coq_commit=5fe1802b1d3bada51dc35f5ed0adf714222ac93f
+old_coq_commit=5fe1802b1d3bada51dc35f5ed0adf714222ac93f
 
 if echo "$num_of_iterations" | grep '^[1-9][0-9]*$' 2> /dev/null > /dev/null; then
     :
