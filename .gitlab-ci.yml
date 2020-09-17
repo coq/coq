@@ -242,6 +242,11 @@ before_script:
     - make -f Makefile.ci -j "$NJOBS" "${CI_JOB_NAME#*:}"
     - echo 'end:coq.test'
     - set +e
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build_ci
+    when: always
   needs:
     - build:base
   dependencies:
@@ -683,10 +688,6 @@ library:ci-bbv:
 
 library:ci-bedrock2:
   extends: .ci-template-flambda
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - _build_ci
   variables:
     NJOBS: "1"
 
@@ -712,10 +713,6 @@ library:ci-coq_tools:
 library:ci-coqprime:
   stage: stage-3
   extends: .ci-template-flambda
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - _build_ci
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
@@ -741,10 +738,6 @@ library:ci-fcsl_pcm:
 library:ci-fiat_crypto:
   extends: .ci-template-flambda
   stage: stage-4
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - _build_ci
   needs:
   - build:edge+flambda
   - library:ci-coqprime
@@ -781,10 +774,6 @@ library:ci-fiat_crypto_ocaml:
 
 library:ci-flocq:
   extends: .ci-template-flambda
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - _build_ci
 
 library:ci-corn:
   extends: .ci-template-flambda
@@ -809,10 +798,6 @@ library:ci-iris:
 library:ci-math_classes:
   extends: .ci-template-flambda
   stage: stage-3
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - _build_ci
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
@@ -855,10 +840,6 @@ plugin:ci-aac_tactics:
 
 plugin:ci-bignums:
   extends: .ci-template-flambda
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - _build_ci
 
 plugin:ci-coq_dpdgraph:
   extends: .ci-template
@@ -871,10 +852,6 @@ plugin:ci-elpi:
 
 plugin:ci-equations:
   extends: .ci-template
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - _build_ci
 
 plugin:ci-fiat_parsers:
   extends: .ci-template
@@ -920,7 +897,3 @@ plugin:ci-relation_algebra:
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - _build_ci
