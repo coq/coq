@@ -3,7 +3,7 @@ Installing From Sources
 
 This document presents instructions to install this branch of Coq.
 For more general installation instructions and information about known
-build system issues, please consult the wiki page: 
+build system issues, please consult the wiki page:
 
   https://github.com/coq/coq/wiki#coq-installation
 
@@ -55,7 +55,7 @@ the corresponding packages.
 
     $ opam switch create coq 4.11.1+flambda
     $ eval $(opam env)
-    $ opam install num ocamlfind lablgtk3-sourceview3
+    $ opam install num ocamlfind lablgtk3-sourceview3 zarith
 
 should get you a reasonable OCaml environment to compile Coq. See the
 OPAM documentation for more help.
