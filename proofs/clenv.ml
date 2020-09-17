@@ -923,16 +923,21 @@ let clenv_recompute_deps env sigma ~hyps_only clause =
 
 let solve_evar_clause env sigma ~hyps_only clause b =
   match b with
-| NoBindings -> sigma, clause
+| NoBindings -> sigma, [], clause
 | ImplicitBindings largs ->
   let clause = if hyps_only then clenv_recompute_deps env sigma ~hyps_only clause else clause in
   let evs, holes' = List.partition (fun h -> h.hole_deps) clause.cl_holes in
   let len = List.length evs in
   if Int.equal len (List.length largs) then
-    let fold sigma ev arg = define_with_type env sigma ev.hole_evar arg None in
-    let sigma = List.fold_left2 fold sigma evs largs in
+    let define_if_known_type (sigma,delayed) ev arg =
+      if EConstr.isEvar sigma ev.hole_type then
+        (sigma, (ev,arg) :: delayed)
+      else
+        (define_with_type env sigma ev.hole_evar arg None, delayed)
+    in
+    let sigma, delayed = List.fold_left2 define_if_known_type (sigma,[]) evs largs in
     let clause = { clause with cl_holes = holes' } in
-    sigma, clenv_advance sigma clause
+    sigma, delayed, clenv_advance sigma clause
   else
     error_not_right_number_missing_arguments len
 | ExplicitBindings lbind ->
@@ -945,7 +950,7 @@ let solve_evar_clause env sigma ~hyps_only clause b =
   in
   let sigma, holes = List.fold_left fold (sigma,clause.cl_holes) lbind in
   let clause = { clause with cl_holes = holes } in
-  sigma, clenv_advance sigma clause
+  sigma, [], clenv_advance sigma clause
 
 let make_clenv_from_env env sigma ?len ?occs (c, t) =
   make_evar_clause env sigma ?len ?occs (strip_outer_cast sigma c) t
@@ -1270,37 +1275,29 @@ let clenv_unify_concl_tac flags clenv =
         CannotUnify (concl, clenv_concl clenv, Some reason))) in
     Ftactic.lift (Proofview.tclZERO ex) end
 
+let apply_delayed_bindings env delayed sigma =
+  List.fold_right (fun (ev,arg) sigma -> define_with_type env sigma ev.hole_evar arg None) delayed sigma
+
 let clenv_refine_bindings
     ?(with_evars=false) ?(with_classes=true) ?(shelve_subgoals=true)
-    ?(flags=dft ()) ~hyps_only ~delay_bindings b ?origsigma clenv =
+    ?(flags=dft ()) ~hyps_only b ?origsigma clenv =
   let open Proofview in
   let open Proofview.Notations in
   let flags = flags_of flags in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
-    let sigma, clenv, bindings =
-      if delay_bindings then
-        sigma, clenv, Some (None, false, b)
-      else
-        try let sigma, clenv = solve_evar_clause env sigma ~hyps_only clenv b in
-            sigma, clenv, None
-        with e -> sigma, clenv, Some (Some e, hyps_only, b)
+    let sigma, delayed, clenv =
+      solve_evar_clause env sigma ~hyps_only clenv b
     in
     let tac = clenv_unify_concl_tac flags clenv in
     (Unsafe.tclEVARS sigma) <*>
     (Ftactic.run tac
       (fun (sigma, clenv) ->
-        try let sigma, clenv =
-          match bindings with
-          | Some (exn, hyps_only, b) ->
-             (* Hack to make [exists 0] on [Σ x : nat, True] work, we
-                use implicit bindings for a hole that's not dependent
-                after unification, but reuse the typing information. *)
-             solve_evar_clause env sigma ~hyps_only clenv b
-          | None -> sigma, clenv_recompute_deps env sigma ~hyps_only:false clenv
-        in
-        clenv_refine_gen ~with_evars ~with_classes ~shelve_subgoals ?origsigma
+        try
+          let clenv = clenv_recompute_deps env sigma ~hyps_only:false clenv in
+          let sigma = apply_delayed_bindings env delayed sigma in
+          clenv_refine_gen ~with_evars ~with_classes ~shelve_subgoals ?origsigma
                          flags (sigma, clenv)
         with e when Pretype_errors.precatchable_exception e -> Proofview.tclZERO e))
   end

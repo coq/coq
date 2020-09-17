@@ -507,7 +507,8 @@ let decompose_applied_relation env sigma (c,l) =
   let ctype = Retyping.get_type_of env sigma c in
   let find_rel ty =
     let sigma, cl = Clenv.make_evar_clause env sigma c ty in
-    let sigma, cl = Clenv.solve_evar_clause env sigma ~hyps_only:true cl l in
+    let sigma, delayed, cl = Clenv.solve_evar_clause env sigma ~hyps_only:true cl l in
+    let sigma = Clenv.apply_delayed_bindings env delayed sigma in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
     let (equiv, c1, c2) = decompose_app_rel env sigma t in
     let ty1 = Retyping.get_type_of env sigma c1 in
