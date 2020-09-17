@@ -9,7 +9,7 @@
 (************************************************************************)
 open Document
 
-(** The state manager holds the view that Coq has of the currently open
+(** The document manager holds the view that Coq has of the currently open
     states. It makes it easy for IDEs to handle text edits, navigate
     and get feedback. Note that it does not require IDEs to parse vernacular
     sentences. *)
@@ -49,9 +49,8 @@ val interpret_to_end : ?progress_hook:progress_hook -> state -> (state * proof_d
     and returns the proofview from the resulting state. *)
 
 val reset : Vernacstate.t -> state -> state
-(*
 val executed_ranges : state -> Range.t list
-*)
+
 (** parsed_ranges [doc] returns the ranges corresponding to the sentences
     that have been executed in [doc]. *)
 
@@ -65,8 +64,6 @@ type diagnostic = {
   severity : severity;
 }
 
-(*
 val diagnostics : state -> diagnostic list
-*)
 (** diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)

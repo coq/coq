@@ -88,7 +88,7 @@ let publish_diagnostics uri doc : unit Lwt.t =
       "message", `String d.message;
     ]
   in
-  let diagnostics = [] in (* List.map mk_diagnostic @@ DocumentManager.diagnostics doc in *)
+  let diagnostics = List.map mk_diagnostic @@ DocumentManager.diagnostics doc in
   let params = `Assoc [
     "uri", `String uri;
     "diagnostics", `List diagnostics;
@@ -97,7 +97,7 @@ let publish_diagnostics uri doc : unit Lwt.t =
   output_json @@ mk_notification ~event:"textDocument/publishDiagnostics" ~params
 
 let send_highlights uri doc : unit Lwt.t =
-  let executed_ranges = [] in (* List.map mk_range @@ DocumentManager.executed_ranges doc in *)
+  let executed_ranges = List.map mk_range @@ DocumentManager.executed_ranges doc in
   let params = `Assoc [
     "uri", `String uri;
     "stateErrorRange", `List [];

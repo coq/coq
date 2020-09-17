@@ -32,26 +32,34 @@ type state = {
 
 type progress_hook = state -> unit Lwt.t
 
+let executed_ranges doc execution_state executed_loc =
+  let valid_ids = List.map (fun s -> s.id) @@ Document.sentences_before doc executed_loc in
+  let executed_ids = List.filter (ExecutionManager.is_executed execution_state) valid_ids in
+  List.map (Document.range_of_id doc) executed_ids
 
-(*
-let executed_ranges doc =
-  match doc.executed_loc with
+let executed_ranges st =
+  match st.executed_loc with
   | None -> []
   | Some loc ->
-    ParsedDoc.executed_ranges doc.raw_doc doc.parsed_doc doc.execution_state loc
-    *)
+    executed_ranges st.document st.execution_state loc
 
-(*
-let diagnostics doc =
-  let exec_errors = ExecutionManager.errors doc.execution_state in
-  log @@ "exec errors in diags: " ^ string_of_int (List.length exec_errors);
-  let mk_exec_diag (id,oloc,message) =
-    ParsedDoc.make_diagnostic doc.raw_doc doc.parsed_doc id oloc message Error
+let make_diagnostic doc id oloc message severity =
+  let range =
+    match oloc with
+    | None -> range_of_id doc id
+    | Some loc ->
+      Document.range_of_loc doc loc
   in
-  let exec_diags = List.map mk_exec_diag exec_errors in
-  ParsedDoc.parse_errors doc.raw_doc doc.parsed_doc @ exec_diags
-  *)
+  { range; message; severity }
 
+let diagnostics st =
+  let parse_errors = Document.parse_errors st.document in
+  let exec_errors = ExecutionManager.errors st.execution_state in
+  log @@ "exec errors in diags: " ^ string_of_int (List.length exec_errors);
+  let mk_diag (id,oloc,message) =
+    make_diagnostic st.document id oloc message Error
+  in
+  List.map mk_diag @@ parse_errors @ exec_errors
 
 let init vernac_state document =
   let execution_state = ExecutionManager.init vernac_state in

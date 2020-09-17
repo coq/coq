@@ -182,9 +182,8 @@ module ParsedDoc : sig
 (*
   val make_diagnostic : RawDoc.t -> t -> sentence_id -> Loc.t option -> string -> severity -> diagnostic
   *)
-  (*
-  val parse_errors : RawDoc.t -> t -> diagnostic list
-  *)
+
+  val parse_errors : RawDoc.t -> t -> (Stateid.t * Loc.t option * string) list
 
   val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Parser.t -> Scheduler.state -> t * Scheduler.state
   val remove_sentence : t -> sentence_id -> t
@@ -212,6 +211,8 @@ module ParsedDoc : sig
   val diff : sentence list -> pre_sentence list -> diff list
 
   val string_of_diff : diff -> string
+
+  val range_of_id : RawDoc.t -> t -> Stateid.t -> Range.t
 
 end = struct
 
@@ -250,27 +251,14 @@ end = struct
       parsed.sentences_by_id
       []
 
-(*
-  let make_diagnostic raw parsed id oloc message severity =
-    let range =
-      match oloc with
-      | None -> range_of_id raw parsed id
-      | Some loc ->
-        RawDoc.range_of_loc raw loc
-    in
-    { range; message; severity }
-    *)
-
-(*
   let parse_errors raw parsed =
     let collect_error id sentence acc =
       match sentence.ast with
       | ParseError (oloc, message) ->
-        make_diagnostic raw parsed id oloc message Error :: acc
+        (id, oloc, message) :: acc
       | ValidAst _ -> acc
     in
     SM.fold collect_error parsed.sentences_by_id []
-    *)
 
   let add_sentence parsed start stop ast parsing_state scheduler_state_before =
     let id = Stateid.fresh () in
@@ -399,13 +387,6 @@ end = struct
   let next_sentence parsed id =
     let current = SM.find id parsed.sentences_by_id in
     Option.map snd @@ LM.find_first_opt (fun stop -> stop > current.stop) parsed.sentences_by_end
-
-(*
-  let executed_ranges raw parsed execution_state executed_loc =
-    let valid_ids = List.map (fun s -> s.id) @@ sentences_before parsed executed_loc in
-    let executed_ids = List.filter (ExecutionManager.is_executed execution_state) valid_ids in
-    List.map (range_of_id raw parsed) executed_ids
-    *)
 
   let patch_sentence parsed scheduler_state_before id ({ ast; start; stop } : pre_sentence) =
     log @@ "Patching sentence " ^ Stateid.to_string id;
@@ -632,3 +613,8 @@ let schedule doc = ParsedDoc.schedule doc.parsed_doc
 let position_of_loc doc = RawDoc.position_of_loc doc.raw_doc
 let loc_of_position doc = RawDoc.loc_of_position doc.raw_doc
 let end_loc doc = RawDoc.end_loc doc.raw_doc
+
+let range_of_id doc id = ParsedDoc.range_of_id doc.raw_doc doc.parsed_doc id
+let range_of_loc doc loc = RawDoc.range_of_loc doc.raw_doc loc
+let parse_errors doc = ParsedDoc.parse_errors doc.raw_doc doc.parsed_doc
+let sentences_before doc loc = ParsedDoc.sentences_before doc.parsed_doc loc

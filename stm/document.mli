@@ -75,3 +75,8 @@ val position_of_loc : document -> int -> Position.t
 val loc_of_position : document -> Position.t -> int
 
 val end_loc : document -> int
+
+val range_of_id : document -> Stateid.t -> Range.t
+val range_of_loc : document -> Loc.t -> Range.t
+val parse_errors : document -> (Stateid.t * Loc.t option * string) list
+val sentences_before : document -> int -> sentence list
