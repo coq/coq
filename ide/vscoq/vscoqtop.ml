@@ -11,6 +11,7 @@
 (** This toplevel implements an LSP-based server language for VsCode,
     used by the VsCoq extension. *)
 
+open Document
 open DocumentManager
 open Printer
 
@@ -23,7 +24,7 @@ let get_init_state () =
   | Some st -> st
   | None -> CErrors.anomaly Pp.(str "Initial state not available")
 
-let documents : (string, document) Hashtbl.t = Hashtbl.create 39
+let states : (string, DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let log msg = Format.eprintf "@[%s@]@\n%!" msg
 
@@ -65,18 +66,18 @@ let parse_loc json =
   let open Yojson.Basic.Util in
   let line = json |> member "line" |> to_int in
   let char = json |> member "character" |> to_int in
-  DocumentManager.{ line ; char }
+  Position.{ line ; char }
 
-let mk_loc loc =
+let mk_loc Position.{ line; char } =
   `Assoc [
-    "line", `Int loc.line;
-    "character", `Int loc.char;
+    "line", `Int line;
+    "character", `Int char;
   ]
 
-let mk_range range =
+let mk_range Range.{ start; stop } =
   `Assoc [
-    "start", mk_loc range.range_start;
-    "end", mk_loc range.range_end;
+    "start", mk_loc start;
+    "end", mk_loc stop;
   ]
 
 let publish_diagnostics uri doc : unit Lwt.t =
@@ -87,7 +88,7 @@ let publish_diagnostics uri doc : unit Lwt.t =
       "message", `String d.message;
     ]
   in
-  let diagnostics = List.map mk_diagnostic @@ DocumentManager.diagnostics doc in
+  let diagnostics = [] in (* List.map mk_diagnostic @@ DocumentManager.diagnostics doc in *)
   let params = `Assoc [
     "uri", `String uri;
     "diagnostics", `List diagnostics;
@@ -96,7 +97,7 @@ let publish_diagnostics uri doc : unit Lwt.t =
   output_json @@ mk_notification ~event:"textDocument/publishDiagnostics" ~params
 
 let send_highlights uri doc : unit Lwt.t =
-  let executed_ranges = List.map mk_range @@ DocumentManager.executed_ranges doc in
+  let executed_ranges = [] in (* List.map mk_range @@ DocumentManager.executed_ranges doc in *)
   let params = `Assoc [
     "uri", `String uri;
     "stateErrorRange", `List [];
@@ -115,11 +116,11 @@ let textDocumentDidOpen params : unit Lwt.t =
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let text = textDocument |> member "text" |> to_string in
-  let document = create_document (get_init_state ()) text in
-  Hashtbl.add documents uri document;
-  send_highlights uri document <&>
-  publish_diagnostics uri document
-
+  let doc = Document.create_document text in
+  let st = DocumentManager.init (get_init_state ()) doc in
+  Hashtbl.add states uri st;
+  send_highlights uri st <&>
+  publish_diagnostics uri st
 
 let textDocumentDidChange params : unit Lwt.t =
   let open Yojson.Basic.Util in
@@ -130,27 +131,27 @@ let textDocumentDidChange params : unit Lwt.t =
   let read_edit edit =
     let text = edit |> member "text" |> to_string in
     let range = edit |> member "range" in
-    let range_start = range |> member "start" |> parse_loc in
-    let range_end = range |> member "end" |> parse_loc in
-    DocumentManager.({ range_start; range_end }, text)
+    let start = range |> member "start" |> parse_loc in
+    let stop = range |> member "end" |> parse_loc in
+    DocumentManager.(Range.{ start; stop }, text)
   in
   let textEdits = List.map read_edit contentChanges in
-  let document = Hashtbl.find documents uri in
-  let new_doc = DocumentManager.apply_text_edits document textEdits in
-  Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc <&>
-  publish_diagnostics uri new_doc
+  let st = Hashtbl.find states uri in
+  let st = DocumentManager.apply_text_edits st textEdits in
+  Hashtbl.replace states uri st;
+  send_highlights uri st <&>
+  publish_diagnostics uri st
 
 let textDocumentDidSave params : unit Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
-  let document = Hashtbl.find documents uri in
-  let new_doc = DocumentManager.validate_document document in
-  Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc <&>
-  publish_diagnostics uri new_doc
+  let st = Hashtbl.find states uri in
+  let st = DocumentManager.validate_document st in
+  Hashtbl.replace states uri st;
+  send_highlights uri st <&>
+  publish_diagnostics uri st
 
 let mk_goal sigma g =
   let env = Goal.V82.env sigma g in
@@ -186,10 +187,10 @@ let mk_goal sigma g =
     "goal", `String (Pp.string_of_ppcmds ccl)
   ]
 
-let mk_proofview loc Proof.{ goals; shelf; given_up; sigma } =
+let mk_proofview loc Proof.{ goals; sigma } =
   let goals = List.map (mk_goal sigma) goals in
-  let shelved = List.map (mk_goal sigma) shelf in
-  let given_up = List.map (mk_goal sigma) given_up in
+  let shelved = List.map (mk_goal sigma) (Evd.shelf sigma) in
+  let given_up = List.map (mk_goal sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
   `Assoc [
     "type", `String "proof-view";
     "goals", `List goals;
@@ -208,12 +209,12 @@ let coqtopInterpretToPoint ~id params : unit Lwt.t =
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let loc = params |> member "location" |> parse_loc in
-  let document = Hashtbl.find documents uri in
+  let st = Hashtbl.find states uri in
   let progress_hook = progress_hook uri in
-  DocumentManager.interpret_to_position ~progress_hook document loc >>= fun (new_doc, proof) ->
-  Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc <&>
-  publish_diagnostics uri new_doc <&>
+  DocumentManager.interpret_to_position ~progress_hook st loc >>= fun (st, proof) ->
+  Hashtbl.replace states uri st;
+  send_highlights uri st <&>
+  publish_diagnostics uri st <&>
   match proof with
   | None -> Lwt.return ()
   | Some (proofview, pos) ->
@@ -224,11 +225,11 @@ let coqtopStepBackward ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
-  let document = Hashtbl.find documents uri in
-  DocumentManager.interpret_to_previous document >>= fun (new_doc, proof) ->
-  Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc <&>
-  publish_diagnostics uri new_doc <&>
+  let st = Hashtbl.find states uri in
+  DocumentManager.interpret_to_previous st >>= fun (st, proof) ->
+  Hashtbl.replace states uri st;
+  send_highlights uri st <&>
+  publish_diagnostics uri st <&>
   match proof with
   | None -> Lwt.return ()
   | Some (proofview, pos) ->
@@ -239,11 +240,11 @@ let coqtopStepForward ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
-  let document = Hashtbl.find documents uri in
-  DocumentManager.interpret_to_next document >>= fun (new_doc, proof) ->
-  Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc <&>
-  publish_diagnostics uri new_doc <&>
+  let st = Hashtbl.find states uri in
+  DocumentManager.interpret_to_next st >>= fun (st, proof) ->
+  Hashtbl.replace states uri st;
+  send_highlights uri st <&>
+  publish_diagnostics uri st <&>
   match proof with
   | None -> Lwt.return ()
   | Some (proofview, pos) ->
@@ -254,22 +255,22 @@ let coqtopResetCoq ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
-  let document = Hashtbl.find documents uri in
-  let new_doc = DocumentManager.reset (get_init_state ()) document in
-  Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc <&>
-  publish_diagnostics uri new_doc
+  let st = Hashtbl.find states uri in
+  let st = DocumentManager.reset (get_init_state ()) st in
+  Hashtbl.replace states uri st;
+  send_highlights uri st <&>
+  publish_diagnostics uri st
 
 let coqtopInterpretToEnd ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
-  let document = Hashtbl.find documents uri in
+  let st = Hashtbl.find states uri in
   let progress_hook = progress_hook uri in
-  DocumentManager.interpret_to_end ~progress_hook document >>= fun (new_doc, proof) ->
-  Hashtbl.replace documents uri new_doc;
-  send_highlights uri new_doc <&>
-  publish_diagnostics uri new_doc <&>
+  DocumentManager.interpret_to_end ~progress_hook st >>= fun (st, proof) ->
+  Hashtbl.replace states uri st;
+  send_highlights uri st <&>
+  publish_diagnostics uri st <&>
   match proof with
   | None -> Lwt.return ()
   | Some (proofview, pos) ->

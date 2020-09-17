@@ -7,80 +7,66 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
+open Document
 
-(** The document manager holds the view that Coq has of the currently open
-    documents. It makes it easy for IDEs to handle text edits, navigate
+(** The state manager holds the view that Coq has of the currently open
+    states. It makes it easy for IDEs to handle text edits, navigate
     and get feedback. Note that it does not require IDEs to parse vernacular
     sentences. *)
 
-type document
+type state
 
-val create_document : Vernacstate.t -> string -> document
-(** [create_document st text] creates a fresh document with initial state
-    [st] and content defined by [text]. *)
+val init : Vernacstate.t -> document -> state
+(** [init st doc] initializes the document manager with initial vernac state
+    [st] and document [doc]. *)
 
-type position =
-  { line : int;
-    char : int;
-  }
+type proof_data = (Proof.data * Position.t) option
 
-type range =
-  { range_start : position;
-    range_end : position;
-  }
+type progress_hook = state -> unit Lwt.t
 
-type text_edit = range * string
+val apply_text_edits : state -> text_edit list -> state
 
-type proof_data = (Proof.data * position) option
-
-type progress_hook = document -> unit Lwt.t
-
-val apply_text_edits : document -> text_edit list -> document
-(** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The
-    new text is not parsed or executed. *)
-
-val validate_document : document -> document
+val validate_document : state -> state
 (** [validate_document doc] reparses the text of [doc] and invalidates the
     states impacted by the diff with the previously validated content. If the
-    text of [doc] has not changed since the last call to [validate_document], it
+    text of [doc] has not changed since the last call to [validate_state], it
     has no effect. *)
 
-val interpret_to_position : ?progress_hook:progress_hook -> document -> position -> (document * proof_data) Lwt.t
+val interpret_to_position : ?progress_hook:progress_hook -> state -> Position.t -> (state * proof_data) Lwt.t
 (** [interpret_to_position doc pos] navigates to the last sentence ending
     before or at [pos] and returns the proofview from the resulting state. *)
 
-val interpret_to_previous : document -> (document * proof_data) Lwt.t
+val interpret_to_previous : state -> (state * proof_data) Lwt.t
 (** [interpret_to_previous doc] navigates to the previous sentence in [doc]
     and returns the proofview from the resulting state. *)
 
-val interpret_to_next : document -> (document * proof_data) Lwt.t
+val interpret_to_next : state -> (state * proof_data) Lwt.t
 (** [interpret_to_next doc] navigates to the next sentence in [doc]
     and returns the proofview from the resulting state. *)
 
-val interpret_to_end : ?progress_hook:progress_hook -> document -> (document * proof_data) Lwt.t
+val interpret_to_end : ?progress_hook:progress_hook -> state -> (state * proof_data) Lwt.t
 (** [interpret_to_next doc] navigates to the last sentence in [doc]
     and returns the proofview from the resulting state. *)
 
-val parsed_ranges : document -> range list
-(** parsed_ranges [doc] returns the ranges corresponding to the sentences
-    that have been parsed in [doc]. *)
-
-val executed_ranges : document -> range list
+val reset : Vernacstate.t -> state -> state
+(*
+val executed_ranges : state -> Range.t list
+*)
 (** parsed_ranges [doc] returns the ranges corresponding to the sentences
     that have been executed in [doc]. *)
-
-val reset : Vernacstate.t -> document -> document
 
 type severity =
   | Warning
   | Error
 
 type diagnostic = {
-  range : range;
+  range : Range.t;
   message : string;
   severity : severity;
 }
 
-val diagnostics : document -> diagnostic list
+(*
+val diagnostics : state -> diagnostic list
+*)
 (** diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)

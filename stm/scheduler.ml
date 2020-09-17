@@ -13,6 +13,15 @@ type ast = Vernacexpr.vernac_control
 
 let log msg = Format.eprintf "@[%s@]@\n%!" msg
 
+type vernac_classification =
+  ParsingEffect | StateEffect
+
+let classify_vernac ast =
+  let open Vernacextend in
+  match Vernac_classifier.classify_vernac ast with
+  | VtSideff (_, VtNow) -> ParsingEffect
+  | _ -> StateEffect
+
 module SM = Map.Make (Stateid)
 
 (* TODO should we remove ASTs from here? *)

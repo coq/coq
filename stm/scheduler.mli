@@ -20,6 +20,11 @@ val initial_state : state
 type sentence_id = Stateid.t
 type ast = Vernacexpr.vernac_control
 
+type vernac_classification =
+  ParsingEffect | StateEffect
+
+val classify_vernac : ast -> vernac_classification
+
 type task =
   | Skip of sentence_id
   | Exec of sentence_id * ast
