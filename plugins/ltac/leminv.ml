@@ -228,14 +228,15 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   let c = fill_holes pfterm in
   (* warning: side-effect on ownSign *)
   let invProof = it_mkNamedLambda_or_LetIn c !ownSign in
-  let p = EConstr.to_constr sigma invProof in
-  p, sigma
+  invProof, sigma
 
 let add_inversion_lemma ~poly name env sigma t sort dep inv_op =
   let invProof, sigma = inversion_scheme ~name ~poly env sigma t sort dep inv_op in
-  let univs = Evd.univ_entry ~poly sigma in
-  let entry = Declare.definition_entry ~univs invProof in
-  let _ : Names.Constant.t = Declare.declare_constant ~name ~kind:Decls.(IsProof Lemma) (Declare.DefinitionEntry entry) in
+  let cinfo = Declare.CInfo.make ~name ~typ:None () in
+  let info = Declare.Info.make ~poly ~kind:Decls.(IsProof Lemma) () in
+  let _ : Names.GlobRef.t =
+    Declare.declare_definition ~cinfo ~info ~opaque:false ~body:invProof sigma
+  in
   ()
 
 (* inv_op = Inv (derives de complete inv. lemma)
@@ -246,11 +247,7 @@ let add_inversion_lemma_exn ~poly na com comsort bool tac =
   let sigma = Evd.from_env env in
   let sigma, c = Constrintern.interp_type_evars ~program_mode:false env sigma com in
   let sigma, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid sigma comsort in
-  try
-    add_inversion_lemma ~poly na env sigma c sort bool tac
-  with
-    |   UserError (Some "Case analysis",s) -> (* Reference to Indrec *)
-          user_err ~hdr:"Inv needs Nodep Prop Set" s
+  add_inversion_lemma ~poly na env sigma c sort bool tac
 
 (* ================================= *)
 (* Applying a given inversion lemma  *)
