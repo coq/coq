@@ -1646,7 +1646,7 @@ let query_command_selector ?loc = function
   | _ -> user_err ?loc ~hdr:"query_command_selector"
       (str "Query commands only support the single numbered goal selector.")
 
-let vernac_check_may_eval ~pstate ~atts redexp glopt rc =
+let vernac_check_may_eval ~pstate redexp glopt rc =
   let glopt = query_command_selector glopt in
   let sigma, env = get_current_context_of_args ~pstate glopt in
   let sigma, c = Constrintern.interp_open_constr ~expected_type:Pretyping.UnknownIfTermOrType env sigma rc in
@@ -1746,7 +1746,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let sigma, env = get_current_or_global_context ~pstate in
     Prettyp.print_about env sigma ref_or_by_not udecl
 
-let vernac_print ~pstate ~atts =
+let vernac_print ~pstate =
   let sigma, env = get_current_or_global_context ~pstate in
   function
   | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
@@ -2207,8 +2207,9 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
         vernac_print_option key)
   | VernacCheckMayEval (r,g,c) ->
     VtReadProofOpt(fun ~pstate ->
+        unsupported_attributes atts;
         Feedback.msg_notice @@
-        vernac_check_may_eval ~pstate ~atts r g c)
+        vernac_check_may_eval ~pstate r g c)
   | VernacDeclareReduction (s,r) ->
     VtDefault(fun () ->
         with_locality ~atts vernac_declare_reduction s r)
@@ -2218,13 +2219,15 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
         Feedback.msg_notice @@ vernac_global_check c)
   | VernacPrint p ->
     VtReadProofOpt(fun ~pstate ->
-        Feedback.msg_notice @@ vernac_print ~pstate ~atts p)
+        unsupported_attributes atts;
+        Feedback.msg_notice @@ vernac_print ~pstate p)
   | VernacSearch (s,g,r) ->
     VtReadProofOpt(
         unsupported_attributes atts;
         vernac_search ~atts s g r)
-  | VernacLocate l -> unsupported_attributes atts;
+  | VernacLocate l ->
     VtReadProofOpt(fun ~pstate ->
+        unsupported_attributes atts;
         Feedback.msg_notice @@ vernac_locate ~pstate l)
   | VernacRegister (qid, r) ->
     VtNoProof(fun () ->
