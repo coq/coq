@@ -78,25 +78,12 @@ Section sequence.
   Lemma growing_prop :
     forall n m:nat, Un_growing -> (n >= m)%nat -> Un n >= Un m.
   Proof.
-    double induction n m; intros.
-    unfold Rge; right; trivial.
-    exfalso; unfold ge in H1; generalize (le_Sn_O n0); intro; auto.
-    cut (n0 >= 0)%nat.
-    generalize H0; intros; unfold Un_growing in H0;
-      apply
-        (Rge_trans (Un (S n0)) (Un n0) (Un 0) (Rle_ge (Un n0) (Un (S n0)) (H0 n0))
-          (H 0%nat H2 H3)).
-    elim n0; auto.
-    elim (lt_eq_lt_dec n1 n0); intro y.
-    elim y; clear y; intro y.
-    unfold ge in H2; generalize (le_not_lt n0 n1 (le_S_n n0 n1 H2)); intro;
-      exfalso; auto.
-    rewrite y; unfold Rge; right; trivial.
-    unfold ge in H0; generalize (H0 (S n0) H1 (lt_le_S n0 n1 y)); intro;
-      unfold Un_growing in H1;
-        apply
-          (Rge_trans (Un (S n1)) (Un n1) (Un (S n0))
-            (Rle_ge (Un n1) (Un (S n1)) (H1 n1)) H3).
+    intros * Hgrowing Hle.
+    induction Hle as [|p].
+    - apply Rge_refl.
+    - apply Rge_trans with (Un p).
+      + apply Rle_ge, Hgrowing.
+      + apply IHHle.
   Qed.
 
 (*********)
