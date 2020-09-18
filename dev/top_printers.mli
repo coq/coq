@@ -65,6 +65,9 @@ val ppidmap : (Names.Id.Map.key -> 'a -> Pp.t) -> 'a Names.Id.Map.t -> unit
 val pridmapgen : 'a Names.Id.Map.t -> Pp.t
 val ppidmapgen : 'a Names.Id.Map.t -> unit
 
+val printmapgen : 'a Int.Map.t -> Pp.t
+val ppintmapgen : 'a Int.Map.t -> unit
+
 val prididmap : Names.Id.t Names.Id.Map.t -> Pp.t
 val ppididmap : Names.Id.t Names.Id.Map.t -> unit
 
