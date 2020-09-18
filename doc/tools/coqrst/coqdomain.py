@@ -1424,11 +1424,11 @@ def setup(app):
     app.connect('doctree-resolved', CoqtopBlocksTransform.merge_consecutive_coqtop_blocks)
 
     # Add extra styles
-    app.add_stylesheet("ansi.css")
-    app.add_stylesheet("coqdoc.css")
-    app.add_javascript("notations.js")
-    app.add_stylesheet("notations.css")
-    app.add_stylesheet("pre-text.css")
+    app.add_css_file("ansi.css")
+    app.add_css_file("coqdoc.css")
+    app.add_js_file("notations.js")
+    app.add_css_file("notations.css")
+    app.add_css_file("pre-text.css")
 
     # Tell Sphinx about extra settings
     app.add_config_value("report_undocumented_coq_objects", None, 'env')
