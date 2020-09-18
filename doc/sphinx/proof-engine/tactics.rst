@@ -737,7 +737,7 @@ Applying theorems
          .. coqtop:: all
 
             Definition id (x : nat) := x.
-            Parameter H : forall y, id y = y.
+            Parameter H : forall x y, id x = y.
             Goal O = O.
             Fail simple apply H.
 
