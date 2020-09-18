@@ -38,6 +38,4 @@ sig
   val lookup : t -> 'term lookup_fun -> 'term
     -> Z.t list
 
-  val app : (Z.t -> unit) -> t -> unit
-
 end

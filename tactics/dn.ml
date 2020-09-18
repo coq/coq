@@ -95,7 +95,5 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
   let rmv tm p inf =
     Trie.remove p (ZSet.singleton inf) tm
 
-  let app f tm = Trie.iter (fun _ p -> ZSet.iter f p) tm
-
 end
 
