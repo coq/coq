@@ -326,12 +326,17 @@ build:base+async:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     COQUSERFLAGS: "-async-proofs on"
   after_script:
-    - dmesg
+    - dmesg > dmesg.txt
   timeout: 100m
   allow_failure: true # See https://github.com/coq/coq/issues/9658
   only:
     variables:
       - $UNRELIABLE =~ /enabled/
+  artifacts:
+    name: "$CI_JOB_NAME"
+    when: on_failure
+    paths:
+    - dmesg.txt
 
 build:quick:
   extends: .build-template
@@ -339,12 +344,17 @@ build:quick:
     COQ_EXTRA_CONF: "-native-compiler no"
     QUICK: "1"
   after_script:
-    - dmesg
+    - dmesg > dmesg.txt
   timeout: 100m
   allow_failure: true # See https://github.com/coq/coq/issues/9637
   only:
     variables:
       - $UNRELIABLE =~ /enabled/
+  artifacts:
+    name: "$CI_JOB_NAME"
+    when: on_failure
+    paths:
+    - dmesg.txt
 
 windows64:
   extends: .windows-template
