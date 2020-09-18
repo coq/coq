@@ -13,8 +13,8 @@
 open Ltac_plugin
 open Pp
 open Util
-open Newring_ast
-open Newring
+open Ring_ast
+open Ring
 open Stdarg
 open Tacarg
 open Pcoq.Constr
@@ -22,7 +22,7 @@ open Pltac
 
 }
 
-DECLARE PLUGIN "newring_plugin"
+DECLARE PLUGIN "ring_plugin"
 
 TACTIC EXTEND protect_fv
 | [ "protect_fv" string(map) "in" ident(id) ] ->

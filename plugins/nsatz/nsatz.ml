@@ -127,14 +127,14 @@ let mul = function
 
 let gen_constant n = lazy (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref n))
 
-let tpexpr  = gen_constant "plugins.setoid_ring.pexpr"
-let ttconst = gen_constant "plugins.setoid_ring.const"
-let ttvar = gen_constant "plugins.setoid_ring.var"
-let ttadd = gen_constant "plugins.setoid_ring.add"
-let ttsub = gen_constant "plugins.setoid_ring.sub"
-let ttmul = gen_constant "plugins.setoid_ring.mul"
-let ttopp = gen_constant "plugins.setoid_ring.opp"
-let ttpow = gen_constant "plugins.setoid_ring.pow"
+let tpexpr  = gen_constant "plugins.ring.pexpr"
+let ttconst = gen_constant "plugins.ring.const"
+let ttvar = gen_constant "plugins.ring.var"
+let ttadd = gen_constant "plugins.ring.add"
+let ttsub = gen_constant "plugins.ring.sub"
+let ttmul = gen_constant "plugins.ring.mul"
+let ttopp = gen_constant "plugins.ring.opp"
+let ttpow = gen_constant "plugins.ring.pow"
 
 let tlist = gen_constant "core.list.type"
 let lnil = gen_constant "core.list.nil"

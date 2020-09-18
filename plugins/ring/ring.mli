@@ -11,7 +11,7 @@
 open Names
 open EConstr
 open Constrexpr
-open Newring_ast
+open Ring_ast
 
 val protect_tac_in : string -> Id.t -> unit Proofview.tactic
 

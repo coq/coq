@@ -154,7 +154,7 @@ LTACVO:=$(filter theories/ltac/%, $(THEORIESVO))
 
 omega: $(OMEGAVO) $(OMEGACMO)
 micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
-setoid_ring: $(RINGVO) $(RINGCMO)
+ring: $(RINGVO) $(RINGCMO)
 nsatz: $(NSATZVO) $(NSATZCMO)
 extraction: $(EXTRACTIONCMO) $(EXTRACTIONVO)
 funind: $(FUNINDCMO) $(FUNINDVO)
@@ -163,7 +163,7 @@ rtauto: $(RTAUTOVO) $(RTAUTOCMO)
 btauto: $(BTAUTOVO) $(BTAUTOCMO)
 ltac: $(LTACVO) $(LTACCMO)
 
-.PHONY: omega micromega setoid_ring nsatz extraction
+.PHONY: omega micromega ring nsatz extraction
 .PHONY: funind cc rtauto btauto ltac
 
 # For emacs:

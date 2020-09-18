@@ -46,7 +46,7 @@ plugins/omega
   developed by Pierre Crégut (France Telecom R&D, 1996)
 plugins/rtauto
   developed by Pierre Corbineau (LRI, 2005)
-plugins/setoid_ring
+plugins/ring
   developed by Benjamin Grégoire (INRIA-Everest, 2005-2006),
   Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006)
   and Bruno Barras (INRIA LogiCal, 2005-2006),

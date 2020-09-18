@@ -103,7 +103,7 @@ CORESRCDIRS:=\
 
 PLUGINDIRS:=\
   omega		micromega \
-  setoid_ring 	extraction \
+  ring 	extraction \
   cc 		funind 		firstorder 	derive \
   rtauto 	nsatz           syntax          btauto \
   ssrmatching	ltac		ssr             ssrsearch
@@ -140,7 +140,7 @@ CORECMA:=config/config.cma clib/clib.cma lib/lib.cma kernel/kernel.cma library/l
 
 OMEGACMO:=plugins/omega/omega_plugin.cmo
 MICROMEGACMO:=plugins/micromega/micromega_plugin.cmo
-RINGCMO:=plugins/setoid_ring/newring_plugin.cmo
+RINGCMO:=plugins/ring/ring_plugin.cmo
 NSATZCMO:=plugins/nsatz/nsatz_plugin.cmo
 EXTRACTIONCMO:=plugins/extraction/extraction_plugin.cmo
 FUNINDCMO:=plugins/funind/recdef_plugin.cmo
