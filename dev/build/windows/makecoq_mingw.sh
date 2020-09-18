@@ -1839,7 +1839,7 @@ function make_addon_vst {
   installer_addon_dependency_beg vst
   make_addon_compcert
   installer_addon_dependency_end
-  if build_prep_overlay vst_platform vst; then
+  if build_prep_overlay vst; then
     installer_addon_section vst "VST" "ATTENTION: SOME INCLUDED COMPCERT PARTS ARE NOT OPEN SOURCE! Verified Software Toolchain for verifying C code" "off"
     # log1 coq_set_timeouts_1000
     # The usage of the shell variable ARCH in VST collides with the usage in this shellscript
