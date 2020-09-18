@@ -732,12 +732,13 @@ Applying theorems
       does not succeed because it would require the conversion of ``id ?foo`` and
       :g:`O`.
 
+      .. _simple_apply_ex:
       .. example::
 
          .. coqtop:: all
 
             Definition id (x : nat) := x.
-            Parameter H : forall y, id y = y.
+            Parameter H : forall x y, id x = y.
             Goal O = O.
             Fail simple apply H.
 
@@ -907,13 +908,8 @@ Applying theorems
    .. tacv:: simple apply @term in @ident
 
       This behaves like :tacn:`apply … in` but it reasons modulo conversion
-      only on subterms that contain no variables to instantiate. For instance,
-      if :g:`id := fun x:nat => x` and :g:`H: forall y, id y = y -> True` and
-      :g:`H0 : O = O` then :g:`simple apply H in H0` does not succeed because it
-      would require the conversion of :g:`id ?x` and :g:`O` where :g:`?x` is
-      an existential variable to instantiate.
-      Tactic :n:`simple apply @term in @ident` does not
-      either traverse tuples as :n:`apply @term in @ident` does.
+      only on subterms that contain no variables to instantiate and does not
+      traverse tuples. See :ref:`the corresponding example <simple_apply_ex>`.
 
    .. tacv:: {? simple} apply {+, @term {? with @bindings_list}} in @ident {? as @simple_intropattern}
              {? simple} eapply {+, @term {? with @bindings_list}} in @ident {? as @simple_intropattern}
