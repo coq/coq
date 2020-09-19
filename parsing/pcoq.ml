@@ -199,6 +199,13 @@ let parse_string f ?loc x =
   let strm = Stream.of_string x in
   Entry.parse f (Parsable.make ?loc strm)
 
+let no_space =
+  let run strm =
+    let n = LStream.count strm in
+    let _ = LStream.peek_nth n strm in
+    if Lookahead.contiguous (n-1) n strm then () else Lookahead.err () in
+  Entry.(of_parser "no_space" { parser_fun = run })
+
 module GrammarObj =
 struct
   type ('r, _, _) obj = 'r Entry.t

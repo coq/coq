@@ -120,6 +120,10 @@ end
 (** Parse a string *)
 
 val parse_string : 'a Entry.t -> ?loc:Loc.t -> string -> 'a
+
+(** Ensure that the two surrounding tokens are contiguous *)
+val no_space : unit Entry.t
+
 val eoi_entry : 'a Entry.t -> 'a Entry.t
 
 val create_generic_entry2 : string ->
