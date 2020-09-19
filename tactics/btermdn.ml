@@ -186,7 +186,5 @@ struct
         (fun dn t ->
              Dn.lookup dn (bounded_constr_val_discr_st env sigma st) (t,!dnet_depth))
 
-  let app f dn = Dn.app f dn
-
 end
 

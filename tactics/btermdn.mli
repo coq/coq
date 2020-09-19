@@ -38,7 +38,6 @@ sig
   val rmv : t -> pattern -> Z.t -> t
 
   val lookup : Environ.env -> Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> Z.t list
-  val app : (Z.t -> unit) -> t -> unit
 end
 
 val dnet_depth : int ref
