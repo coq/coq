@@ -12,8 +12,6 @@
     lower API. It's not clear whether this is a temporary API or if this is
     meant to stay. *)
 
-open Names
-
 (** Introduction patterns *)
 
 type 'constr intro_pattern_expr =
@@ -32,7 +30,7 @@ and 'constr or_and_intro_pattern_expr =
 
 (** Bindings *)
 
-type quantified_hypothesis = AnonHyp of int | NamedHyp of Id.t
+type quantified_hypothesis = Namegen.quantified_hypothesis
 
 type 'a explicit_bindings = (quantified_hypothesis * 'a) CAst.t list
 

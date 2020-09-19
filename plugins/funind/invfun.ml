@@ -16,6 +16,7 @@ open Tacmach.New
 open Tactics
 open Tacticals.New
 open Indfun_common
+open Namegen
 
 (***********************************************)
 
@@ -101,7 +102,7 @@ let functional_inversion kn hid fconst f_correct =
               [applist (f_correct, Array.to_list f_args @ [res; mkVar hid])]
           ; clear [hid]
           ; Simple.intro hid
-          ; Inv.inv Inv.FullInversion None (Tactypes.NamedHyp hid)
+          ; Inv.inv Inv.FullInversion None (NamedHyp hid)
           ; Proofview.Goal.enter (fun gl ->
                 let new_ids =
                   List.filter

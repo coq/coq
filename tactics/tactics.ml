@@ -39,9 +39,9 @@ open Pretype_errors
 open Unification
 open Locus
 open Locusops
-open Tactypes
 open Proofview.Notations
 open Context.Named.Declaration
+open Tactypes
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration

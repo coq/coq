@@ -125,3 +125,5 @@ val rename_bound_vars_as_displayed :
 val compute_displayed_name_in_gen :
   (evar_map -> int -> 'a -> bool) ->
   evar_map -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
+
+type quantified_hypothesis = AnonHyp of int | NamedHyp of Id.t

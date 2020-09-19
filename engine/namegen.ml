@@ -474,3 +474,5 @@ let rename_bound_vars_as_displayed sigma avoid env c =
     | _ -> c
   in
   rename avoid env c
+
+type quantified_hypothesis = AnonHyp of int | NamedHyp of Id.t

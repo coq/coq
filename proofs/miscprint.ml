@@ -10,6 +10,7 @@
 
 open Pp
 open Names
+open Namegen
 open Tactypes
 
 (** Printing of [intro_pattern] *)
