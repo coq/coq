@@ -1015,6 +1015,10 @@ command: [
 | "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* ring plugin *)
 | "Print" "Fields"      (* ring plugin *)
 | "Hint" "Cut" "[" hints_path "]" OPT ( ":" LIST1 ident )
+| "Prenex" "Implicits" LIST1 qualid      (* SSR plugin *)
+| "Print" "Hint" "View" OPT ssrviewpos      (* SSR plugin *)
+| "Hint" "View" OPT ssrviewpos LIST1 ( one_term OPT ( "|" natural ) )      (* SSR plugin *)
+| "Search" OPT LIST1 ( "-" [ string OPT ( "%" ident ) | one_term ] ) OPT ( "in" LIST1 ( OPT "-" qualid ) )      (* SSR plugin *)
 | "Typeclasses" "Transparent" LIST1 qualid
 | "Typeclasses" "Opaque" LIST1 qualid
 | "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" [ "bfs" | "dfs" ] ")" ) OPT natural
@@ -1248,13 +1252,11 @@ lident: [
 
 destruction_arg: [
 | natural
-| one_term OPT ( "with" bindings )
 | constr_with_bindings_arg
 ]
 
 constr_with_bindings_arg: [
-| ">" one_term OPT ( "with" bindings )
-| one_term OPT ( "with" bindings )
+| OPT ">" one_term OPT ( "with" bindings )      (* SSR plugin *)
 ]
 
 clause_dft_concl: [
@@ -1878,8 +1880,8 @@ simple_tactic: [
 | "protect_fv" string OPT ( "in" ident )
 | "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
 | "field_lookup" ltac_expr "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
-| "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* setoid_ring plugin *)
-| "field_lookup" ltac_expr "[" LIST0 one_term "]" LIST1 one_term      (* setoid_ring plugin *)
+| "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
+| "field_lookup" ltac_expr "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
 | "by" ssrhintarg      (* SSR plugin *)
 | "clear" natural      (* SSR plugin *)
 | "move" OPT ( OPT ssrarg [ "->" | "<-" ] )      (* SSR plugin *)

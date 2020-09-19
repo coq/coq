@@ -1650,7 +1650,7 @@ Changes in 8.11+beta1
   Generalize tactics :tacn:`under (ssreflect)` and `over` for any registered
   relation. More precisely, assume the given context lemma has type
   `forall f1 f2, .. -> (forall i, R1 (f1 i) (f2 i)) -> R2 f1 f2`.  The
-  first step performed by :tacn:`under` (since |Coq| 8.10) amounts to
+  first step performed by :tacn:`under (ssreflect)` (since |Coq| 8.10) amounts to
   calling the tactic :tacn:`rewrite <rewrite (ssreflect)>`, which
   itself relies on :tacn:`setoid_rewrite` if need be. So this step was
   already compatible with a double implication or setoid equality for
