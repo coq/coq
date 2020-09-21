@@ -94,11 +94,13 @@ let pridmap pr l =
   prset' pr (Id.Map.fold (fun a b l -> (a,b)::l) l [])
 let ppidmap pr l = pp (pridmap pr l)
 
-let pridmapgen l =
-  let dom = Id.Set.elements (Id.Map.domain l) in
+let prmapgen pr dom =
   if dom = [] then str "[]" else
-  str "[domain= " ++ hov 0 (prlist_with_sep spc Id.print dom) ++ str "]"
+  str "[domain= " ++ hov 0 (prlist_with_sep spc pr dom) ++ str "]"
+let pridmapgen l = prmapgen Id.print (Id.Set.elements (Id.Map.domain l))
 let ppidmapgen l = pp (pridmapgen l)
+let printmapgen l = prmapgen int (Int.Set.elements (Int.Map.domain l))
+let ppintmapgen l = pp (printmapgen l)
 
 let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
   hov 0
