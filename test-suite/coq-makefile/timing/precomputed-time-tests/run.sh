@@ -13,3 +13,4 @@ export COQLIB
 ./004-per-file-fuzz/run.sh
 ./005-correct-diff-sorting-order-mem/run.sh
 ./006-zero-before/run.sh
+./007-no-output-sync/run.sh
