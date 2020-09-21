@@ -101,7 +101,12 @@ def add_output_file_name(parser): return add_file_name_gen(parser, 'OUTPUT_', 'f
 
 
 def reformat_time_string(time):
-    seconds, milliseconds = time.split('.')
+    try:
+        seconds, milliseconds = time.split('.')
+    except ValueError:
+        print('WARNING: Invalid time string: not the right number of dots (.); expected one: %s' % repr(time), file=sys.stderr)
+        seconds, milliseconds = (time + '.').split('.')[:2]
+        if seconds == '': seconds = 0
     seconds = int(seconds)
     minutes, seconds = divmod(seconds, 60)
     return '%dm%02d.%ss' % (minutes, seconds, milliseconds)
