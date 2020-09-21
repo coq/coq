@@ -20,11 +20,11 @@ Definition Typeᶠ : TYPE := {|
   rel := fun _ A => (forall ω : Ω, A ω) -> Type;
                           |}.
 Set Printing Universes.
-Fail Definition Typeᵇ : El Typeᶠ :=
+Definition Typeᵇ : El Typeᶠ :=
   mkPack _ _ (fun w => Type) (fun w A => (forall ω, A ω) -> Type).
 
-Definition Typeᵇ : El Typeᶠ :=
-  mkPack _ (fun _ (A : Ω -> Type) => (forall ω : Ω, A ω) -> _) (fun w => Type) (fun w A => (forall ω, A ω) -> Type).
+(* Definition Typeᵇ : El Typeᶠ := *)
+(*   mkPack _ (fun _ (A : Ω -> Type) => (forall ω : Ω, A ω) -> _) (fun w => Type) (fun w A => (forall ω, A ω) -> Type). *)
 
 (** Bidirectional typechecking helps here *)
 Require Import Program.Tactics.
