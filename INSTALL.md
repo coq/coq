@@ -29,7 +29,7 @@ To compile Coq yourself, you need:
 
 - for CoqIDE, the
   [lablgtk3-sourceview3](https://github.com/garrigue/lablgtk) library
-  (version >= 3.0.beta8), and the corresponding GTK 3.x libraries, as
+  (version >= 3.1.0), and the corresponding GTK 3.x libraries, as
   of today (gtk+3 >= 3.18 and gtksourceview3 >= 3.18)
 
 Primitive floating-point numbers require IEEE-754 compliance
