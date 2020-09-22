@@ -98,14 +98,14 @@ module ExtRefOrdered = struct
   let equal x y =
     x == y ||
     match x, y with
-    | TrueGlobal rx, TrueGlobal ry -> GlobRef.Ordered_env.equal rx ry
+    | TrueGlobal rx, TrueGlobal ry -> GlobRef.UserOrd.equal rx ry
     | SynDef knx, SynDef kny -> KerName.equal knx kny
     | (TrueGlobal _ | SynDef _), _ -> false
 
   let compare x y =
     if x == y then 0
     else match x, y with
-      | TrueGlobal rx, TrueGlobal ry -> GlobRef.Ordered_env.compare rx ry
+      | TrueGlobal rx, TrueGlobal ry -> GlobRef.UserOrd.compare rx ry
       | SynDef knx, SynDef kny -> KerName.compare knx kny
       | TrueGlobal _, SynDef _ -> -1
       | SynDef _, TrueGlobal _ -> 1
@@ -113,7 +113,7 @@ module ExtRefOrdered = struct
   open Hashset.Combine
 
   let hash = function
-  | TrueGlobal gr -> combinesmall 1 (GlobRef.Ordered_env.hash gr)
+  | TrueGlobal gr -> combinesmall 1 (GlobRef.UserOrd.hash gr)
   | SynDef kn -> combinesmall 2 (KerName.hash kn)
 
 end

@@ -34,7 +34,7 @@ module KeyOrdered = struct
 
   let hash gr =
     match gr with
-    | KGlob gr -> 9 + GlobRef.Ordered.hash gr
+    | KGlob gr -> 9 + GlobRef.CanOrd.hash gr
     | KLam -> 0
     | KLet -> 1
     | KProd -> 2
@@ -49,14 +49,14 @@ module KeyOrdered = struct
 
   let compare gr1 gr2 =
     match gr1, gr2 with
-    | KGlob gr1, KGlob gr2 -> GlobRef.Ordered.compare gr1 gr2
+    | KGlob gr1, KGlob gr2 -> GlobRef.CanOrd.compare gr1 gr2
     | _, KGlob _ -> -1
     | KGlob _, _ -> 1
     | k, k' -> Int.compare (hash k) (hash k')
 
   let equal k1 k2 =
     match k1, k2 with
-    | KGlob gr1, KGlob gr2 -> GlobRef.Ordered.equal gr1 gr2
+    | KGlob gr1, KGlob gr2 -> GlobRef.CanOrd.equal gr1 gr2
     | _, KGlob _ -> false
     | KGlob _, _ -> false
     | k, k' -> k == k'

@@ -991,7 +991,7 @@ module GlobRef = struct
 
   (* By default, [global_reference] are ordered on their canonical part *)
 
-  module Ordered = struct
+  module CanOrd = struct
     open Constant.CanOrd
     type t = GlobRefInternal.t
     let compare gr1 gr2 =
@@ -1000,7 +1000,7 @@ module GlobRef = struct
     let hash gr = GlobRefInternal.global_hash_gen hash ind_hash constructor_hash gr
   end
 
-  module Ordered_env = struct
+  module UserOrd = struct
     open Constant.UserOrd
     type t = GlobRefInternal.t
     let compare gr1 gr2 =
@@ -1010,12 +1010,12 @@ module GlobRef = struct
     let hash gr = GlobRefInternal.global_hash_gen hash ind_user_hash constructor_user_hash gr
   end
 
-  module Map = HMap.Make(Ordered)
+  module Map = HMap.Make(CanOrd)
   module Set = Map.Set
 
   (* Alternative sets and maps indexed by the user part of the kernel names *)
 
-  module Map_env = HMap.Make(Ordered_env)
+  module Map_env = HMap.Make(UserOrd)
   module Set_env = Map_env.Set
 
 end

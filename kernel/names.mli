@@ -667,14 +667,14 @@ module GlobRef : sig
 
   val equal : t -> t -> bool
 
-  module Ordered : sig
+  module CanOrd : sig
     type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
   end
 
-  module Ordered_env : sig
+  module UserOrd : sig
     type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
