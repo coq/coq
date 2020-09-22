@@ -79,6 +79,7 @@ before_script:
       - config/coq_config.py
       - config/coq_config.ml
       - test-suite/misc/universes/all_stdlib.v
+      - dmesg.txt
     expire_in: 1 week
   script:
     - set -e
@@ -338,10 +339,7 @@ build:base+async:
     variables:
       - $UNRELIABLE =~ /enabled/
   artifacts:
-    name: "$CI_JOB_NAME"
-    when: on_failure
-    paths:
-    - dmesg.txt
+    when: always
 
 build:quick:
   extends: .build-template
@@ -356,10 +354,7 @@ build:quick:
     variables:
       - $UNRELIABLE =~ /enabled/
   artifacts:
-    name: "$CI_JOB_NAME"
-    when: on_failure
-    paths:
-    - dmesg.txt
+    when: always
 
 windows64:
   extends: .windows-template
