@@ -832,3 +832,36 @@ let set_retroknowledge env r = { env with retroknowledge = r }
 let set_native_symbols env native_symbols = { env with native_symbols }
 let add_native_symbols dir syms env =
   { env with native_symbols = DPmap.add dir syms env.native_symbols }
+
+module QConstant =
+struct
+  type t = Constant.t
+  let equal _env c1 c2 = Constant.CanOrd.equal c1 c2
+  let compare _env c1 c2 = Constant.CanOrd.compare c1 c2
+  let hash _env c = Constant.CanOrd.hash c
+  let canonical _env c = (Constant.canonical c)
+end
+
+module QMutInd =
+struct
+  type t = MutInd.t
+  let equal _env c1 c2 = MutInd.CanOrd.equal c1 c2
+  let compare _env c1 c2 = MutInd.CanOrd.compare c1 c2
+  let hash _env c = MutInd.CanOrd.hash c
+  let canonical _env c = (MutInd.canonical c)
+end
+
+module QProjection =
+struct
+  type t = Projection.t
+  let equal _env c1 c2 = Projection.CanOrd.equal c1 c2
+  let compare _env c1 c2 = Projection.CanOrd.compare c1 c2
+  let hash _env c = Projection.CanOrd.hash c
+  module Repr =
+  struct
+    type t = Projection.Repr.t
+    let equal _env c1 c2 = Projection.Repr.CanOrd.equal c1 c2
+    let compare _env c1 c2 = Projection.Repr.CanOrd.compare c1 c2
+    let hash _env c = Projection.Repr.CanOrd.hash c
+  end
+end

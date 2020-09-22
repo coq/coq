@@ -284,6 +284,41 @@ val template_polymorphic_ind : inductive -> env -> bool
 val template_polymorphic_variables : inductive -> env -> Univ.Level.t list
 val template_polymorphic_pind : pinductive -> env -> bool
 
+(** {6 Name quotients} *)
+
+module QConstant :
+sig
+  type t = Constant.t
+  val equal : env -> t -> t -> bool
+  val compare : env -> t -> t -> int
+  val hash : env -> t -> int
+  val canonical : env -> t -> KerName.t
+end
+
+module QMutInd :
+sig
+  type t = MutInd.t
+  val equal : env -> t -> t -> bool
+  val compare : env -> t -> t -> int
+  val hash : env -> t -> int
+  val canonical : env -> t -> KerName.t
+end
+
+module QProjection :
+sig
+  type t = Projection.t
+  val equal : env -> t -> t -> bool
+  val compare : env -> t -> t -> int
+  val hash : env -> t -> int
+  module Repr :
+  sig
+    type t = Projection.Repr.t
+    val equal : env -> t -> t -> bool
+    val compare : env -> t -> t -> int
+    val hash : env -> t -> int
+  end
+end
+
 (** {5 Modules } *)
 
 val add_modtype : module_type_body -> env -> env
