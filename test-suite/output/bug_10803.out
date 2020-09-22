@@ -1,0 +1,10 @@
+a !
+     : Foo
+where
+?y : [ |- nat]
+a !
+     : Foo
+a
+     : Foo -> Foo
+a !
+     : Foo

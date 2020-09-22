@@ -187,7 +187,7 @@ let apply_cases_pattern ?loc (ids_disjpat,id) c =
 let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_status_fun) e nc =
   let lt x = DAst.make ?loc x in lt @@ match nc with
   | NVar id -> GVar id
-  | NApp (a,args) -> let e = h.no e in GApp (f e a, List.map (f e) args)
+  | NApp (a,args) -> let e = h.no e in DAst.get (mkGApp (f e a) (List.map (f e) args))
   | NList (x,y,iter,tail,swap) ->
       let t = f e tail in let it = f e iter in
       let innerl = (ldots_var,t)::(if swap then [y, lt @@ GVar x] else []) in
