@@ -667,6 +667,7 @@ and intern_tactic_seq onlytac ist tac =
   | TacArg a -> ist.ltacvars, intern_tactic_as_arg loc onlytac ist a
   | TacSelect (sel, tac) ->
       ist.ltacvars, CAst.make ?loc (TacSelect (sel, intern_pure_tactic ist tac))
+  | TacResolveTC id -> ist.ltacvars, CAst.make ?loc (TacResolveTC id)
 
   (* For extensions *)
   | TacAlias (s,l) ->

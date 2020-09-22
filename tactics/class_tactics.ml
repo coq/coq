@@ -1322,3 +1322,15 @@ let autoapply c i =
       let sigma = Typeclasses.make_unresolvables
           (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.evar_source (Evd.find_undefined sigma ev))))) sigma in
       Proofview.Unsafe.tclEVARS sigma) end
+
+let resolve_tc c =
+  let open Proofview.Notations in
+  Proofview.tclENV >>= fun env ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let depth = get_typeclasses_depth () in
+  let unique = get_typeclasses_unique_solutions () in
+  let evars = Evarutil.undefined_evars_of_term sigma c in
+  let filter = (fun ev _ -> Evar.Set.mem ev evars) in
+  let fail = true in
+  let sigma = resolve_all_evars depth unique env (initial_select_evars filter) sigma fail in
+  Proofview.Unsafe.tclEVARS sigma

@@ -408,6 +408,16 @@ let interp_int_or_var_as_list ist = function
 let interp_int_or_var_list ist l =
   List.flatten (List.map (interp_int_or_var_as_list ist) l)
 
+let interp_resolve_tc ist {CAst.v=id; loc} =
+    let c = try Names.Id.Map.find id ist.Geninterp.lfun
+      with Not_found -> CErrors.user_err ?loc Pp.(Id.print id ++ str " not bound.")
+    in
+    let c = match Taccoerce.Value.to_constr c with
+      | Some c -> c
+      | None -> Loc.raise ?loc (Taccoerce.CannotCoerceTo "a term")
+    in
+    Class_tactics.resolve_tc c
+
 (* Interprets a bound variable (especially an existing hypothesis) *)
 let interp_hyp ist env sigma ({loc;v=id} as locid) =
   (* Look first in lfun for a value coercible to a variable *)
@@ -1199,6 +1209,8 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
   | TacComplete tac -> Tacticals.tclCOMPLETE (interp_tactic ist tac)
   | TacArg _ -> Ftactic.run (val_interp (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
   | TacSelect (sel, tac) -> Goal_select.tclSELECT sel (interp_tactic ist tac)
+  | TacResolveTC id -> interp_resolve_tc ist id
+
   (* For extensions *)
   | TacAlias (s,l) ->
       let alias = Tacenv.interp_alias s in

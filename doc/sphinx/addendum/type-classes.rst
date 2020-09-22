@@ -518,6 +518,17 @@ Command summary
    subgoals created by the lemma application, rather than doing typeclass
    resolution locally at the hint application time.
 
+.. tacn:: resolve_tc @ident
+
+   The tactic `resolve_tc` resolves the existential variables
+   appearing in the term bound to :n:`@ident` whose types are
+   typeclasses. It fails if any of them cannot be resolved.
+
+   This tactic works even when no goals are focused, so for instance
+   `let c := open_constr:(something) in exact c; resolve_tc c` will
+   solve the typeclass holes in `something` which remain after the
+   unification done by :tacn:`exact`.
+
 .. _TypeclassesTransparent:
 
 Typeclasses Transparent, Typeclasses Opaque
