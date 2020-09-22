@@ -5,4 +5,6 @@ ci_dir="$(dirname "$0")"
 
 git_download vst
 
+export COMPCERT=bundled
+
 ( cd "${CI_BUILD_DIR}/vst" && make IGNORECOQVERSION=true )

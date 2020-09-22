@@ -179,19 +179,9 @@
 ########################################################################
 # VST
 ########################################################################
-# This commit sets the version number to 2.6
-# M.Soegtrop discussed with A.Appel via email to use this commit for 8.12.beta
-: "${vst_CI_REF:=766971b60f705e7e8b890e533518bdc79a9a60b5}"
+: "${vst_CI_REF:=v2.6}"
 : "${vst_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${vst_CI_ARCHIVEURL:=${vst_CI_GITURL}/archive}"
-
-# This is a platform friendly variant using platform supplied compcert and Flocq
-# This is used by the Windows Installer (and the Coq platform)
-# This includes one extra commit relative to the above:
-# 45239bb5 MSoegtrop Changed build and CI system to use opam / coq-platform supplied CompCert
-: "${vst_platform_CI_REF:=release-v2.6}"
-: "${vst_platform_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
-: "${vst_platform_CI_ARCHIVEURL:=${vst_platform_CI_GITURL}/archive}"
 
 ########################################################################
 # cross-crypto
