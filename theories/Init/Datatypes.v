@@ -326,7 +326,7 @@ Register cons as core.list.cons.
 
 Local Open Scope list_scope.
 
-Definition length (A : Type) : list A -> nat :=
+Definition length {A : Type} : list A -> nat :=
   fix length l :=
   match l with
    | nil => O

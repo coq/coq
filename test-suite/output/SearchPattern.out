@@ -59,7 +59,7 @@ Nat.of_hex_uint_acc: Hexadecimal.uint -> nat -> nat
 Nat.of_uint_acc: Decimal.uint -> nat -> nat
 Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
 Nat.log2_iter: nat -> nat -> nat -> nat -> nat
-length: forall [A : Type], list A -> nat
+length: forall {A : Type}, list A -> nat
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
 Nat.div2: nat -> nat
 Nat.sqrt: nat -> nat

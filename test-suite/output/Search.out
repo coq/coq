@@ -404,7 +404,7 @@ Nat.lxor: nat -> nat -> nat
 Nat.of_hex_uint: Hexadecimal.uint -> nat
 Nat.of_uint: Decimal.uint -> nat
 Nat.of_num_uint: Number.uint -> nat
-length: forall [A : Type], list A -> nat
+length: forall {A : Type}, list A -> nat
 plus_n_O: forall n : nat, n = n + 0
 plus_O_n: forall n : nat, 0 + n = n
 plus_n_Sm: forall n m : nat, S (n + m) = n + S m
