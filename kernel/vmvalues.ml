@@ -250,7 +250,7 @@ type id_key =
 | EvarKey of Evar.t
 
 let eq_id_key (k1 : id_key) (k2 : id_key) = match k1, k2 with
-| ConstKey c1, ConstKey c2 -> Constant.equal c1 c2
+| ConstKey c1, ConstKey c2 -> Constant.CanOrd.equal c1 c2
 | VarKey id1, VarKey id2 -> Id.equal id1 id2
 | RelKey n1, RelKey n2 -> Int.equal n1 n2
 | EvarKey evk1, EvarKey evk2 -> Evar.equal evk1 evk2
@@ -469,7 +469,7 @@ struct
   let equal = eq_id_key
   open Hashset.Combine
   let hash : t -> tag = function
-  | ConstKey c -> combinesmall 1 (Constant.hash c)
+  | ConstKey c -> combinesmall 1 (Constant.CanOrd.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
   | RelKey i -> combinesmall 3 (Int.hash i)
   | EvarKey evk -> combinesmall 4 (Evar.hash evk)

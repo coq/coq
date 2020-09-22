@@ -83,7 +83,7 @@ and conv_atom env pb lvl a1 a2 cu =
        if eq_ind ind1 ind2 then convert_instances ~flex:false u1 u2 cu
        else raise NotConvertible
     | Aconstant (c1,u1), Aconstant (c2,u2) ->
-       if Constant.equal c1 c2 then convert_instances ~flex:true u1 u2 cu
+       if Constant.CanOrd.equal c1 c2 then convert_instances ~flex:true u1 u2 cu
        else raise NotConvertible
     | Asort s1, Asort s2 ->
         sort_cmp_universes env pb s1 s2 cu

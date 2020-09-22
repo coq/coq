@@ -341,27 +341,30 @@ sig
   (** Comparisons *)
 
   module CanOrd : sig
+    type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
   end
 
   module UserOrd : sig
+    type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
   end
 
   module SyntacticOrd : sig
+    type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
   end
 
-  val equal : t -> t -> bool
+  val equal : t -> t -> bool [@@ocaml.deprecated "Use QConstant.equal"]
   (** Default comparison, alias for [CanOrd.equal] *)
 
-  val hash : t -> int
+  val hash : t -> int [@@ocaml.deprecated "Use QConstant.hash"]
   (** Hashing function *)
 
   val change_label : t -> Label.t -> t
@@ -431,27 +434,30 @@ sig
   (** Comparisons *)
 
   module CanOrd : sig
+    type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
   end
 
   module UserOrd : sig
+    type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
   end
 
   module SyntacticOrd : sig
+    type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
   end
 
-  val equal : t -> t -> bool
-  (** Default comparison, alias for [CanOrd.equal] *)
+  val equal : t -> t -> bool [@@ocaml.deprecated "Use QMutInd.equal"]
+ (** Default comparison, alias for [CanOrd.equal] *)
 
-  val hash : t -> int
+  val hash : t -> int [@@ocaml.deprecated "Use QMutInd.hash"]
 
   (** Displaying *)
 

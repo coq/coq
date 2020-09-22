@@ -27,12 +27,13 @@ open Indfun_common
 *)
 let revert_graph kn post_tac hid =
   Proofview.Goal.enter (fun gl ->
+      let env = Proofview.Goal.env gl in
       let sigma = project gl in
       let typ = pf_get_hyp_typ hid gl in
       match EConstr.kind sigma typ with
       | App (i, args) when isInd sigma i ->
         let ((kn', num) as ind'), u = destInd sigma i in
-        if MutInd.equal kn kn' then
+        if Environ.QMutInd.equal env kn kn' then
           (* We have generated a graph hypothesis so that we must change it if we can *)
           let info =
             match find_Function_of_graph ind' with

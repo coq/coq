@@ -353,7 +353,7 @@ let isRef c = match kind c with
 let isRefX x c =
   let open GlobRef in
   match x, kind c with
-  | ConstRef c, Const (c', _) -> Constant.equal c c'
+  | ConstRef c, Const (c', _) -> Constant.CanOrd.equal c c'
   | IndRef i, Ind (i', _) -> eq_ind i i'
   | ConstructRef i, Construct (i', _) -> eq_constructor i i'
   | VarRef id, Var id' -> Id.equal id id'
@@ -954,7 +954,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && List.equal (eq 0) l1 l2
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
-    Constant.equal c1 c2 && leq_universes (Some (GlobRef.ConstRef c1, nargs)) u1 u2
+    Constant.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstRef c1, nargs)) u1 u2
   | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && leq_universes (Some (GlobRef.IndRef c1, nargs)) u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
     eq_constructor c1 c2 && leq_universes (Some (GlobRef.ConstructRef c1, nargs)) u1 u2
@@ -1442,7 +1442,7 @@ let rec hash t =
     | Evar (e,l) ->
       combinesmall 8 (combine (Evar.hash e) (hash_term_list l))
     | Const (c,u) ->
-      combinesmall 9 (combine (Constant.hash c) (Instance.hash u))
+      combinesmall 9 (combine (Constant.CanOrd.hash c) (Instance.hash u))
     | Ind (ind,u) ->
       combinesmall 10 (combine (ind_hash ind) (Instance.hash u))
     | Construct (c,u) ->

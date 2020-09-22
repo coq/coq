@@ -529,6 +529,7 @@ module KerPair = struct
   end
 
   module SyntacticOrd = struct
+    type t = kernel_pair
     let compare x y = match x, y with
       | Same knx, Same kny -> KerName.compare knx kny
       | Dual (knux,kncx), Dual (knuy,kncy) ->

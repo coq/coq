@@ -472,7 +472,7 @@ let inter_recarg r1 r2 = match r1, r2 with
 | Nested (NestedInd i1), Mrec i2 -> if Names.eq_ind i1 i2 then Some r2 else None
 | Nested (NestedInd _), _ -> None
 | Nested (NestedPrimitive c1), Nested (NestedPrimitive c2) ->
-  if Names.Constant.equal c1 c2 then Some r1 else None
+  if Names.Constant.CanOrd.equal c1 c2 then Some r1 else None
 | Nested (NestedPrimitive _), _ -> None
 
 let inter_wf_paths = Rtree.inter Declareops.eq_recarg inter_recarg Norec
@@ -644,7 +644,7 @@ let abstract_mind_lc ntyps npars lc =
 
 let is_primitive_positive_container env c =
   match env.retroknowledge.Retroknowledge.retro_array with
-  | Some c' when Constant.equal c c' -> true
+  | Some c' when QConstant.equal env c c' -> true
   | _ -> false
 
 (* [get_recargs_approx env tree ind args] builds an approximation of the recargs
@@ -673,7 +673,7 @@ let get_recargs_approx env tree ind args =
        end
     | Const (c,_) when is_primitive_positive_container env c ->
        begin match dest_recarg tree with
-             | Nested (NestedPrimitive c') when Constant.equal c c' ->
+             | Nested (NestedPrimitive c') when QConstant.equal env c c' ->
                build_recargs_nested_primitive ienv tree (c, largs)
              | _ -> mk_norec
        end

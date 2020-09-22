@@ -67,7 +67,7 @@ let eq_gname gn1 gn2 =
   | Gind (s1, ind1), Gind (s2, ind2) ->
      String.equal s1 s2 && eq_ind ind1 ind2
   | Gconstant (s1, c1), Gconstant (s2, c2) ->
-      String.equal s1 s2 && Constant.equal c1 c2
+      String.equal s1 s2 && Constant.CanOrd.equal c1 c2
   | Gproj (s1, ind1, i1), Gproj (s2, ind2, i2) ->
     String.equal s1 s2 && eq_ind ind1 ind2 && Int.equal i1 i2
   | Gcase (None, i1), Gcase (None, i2) -> Int.equal i1 i2
@@ -98,7 +98,7 @@ let gname_hash gn = match gn with
 | Gind (s, ind) ->
    combinesmall 1 (combine (String.hash s) (ind_hash ind))
 | Gconstant (s, c) ->
-   combinesmall 2 (combine (String.hash s) (Constant.hash c))
+   combinesmall 2 (combine (String.hash s) (Constant.CanOrd.hash c))
 | Gcase (l, i) -> combinesmall 3 (combine (Option.hash Label.hash l) (Int.hash i))
 | Gpred (l, i) -> combinesmall 4 (combine (Option.hash Label.hash l) (Int.hash i))
 | Gfixtype (l, i) -> combinesmall 5 (combine (Option.hash Label.hash l) (Int.hash i))
@@ -148,7 +148,7 @@ let eq_symbol sy1 sy2 =
   | SymbValue v1, SymbValue v2 -> (=) v1 v2 (** FIXME: how is this even valid? *)
   | SymbSort s1, SymbSort s2 -> Sorts.equal s1 s2
   | SymbName n1, SymbName n2 -> Name.equal n1 n2
-  | SymbConst kn1, SymbConst kn2 -> Constant.equal kn1 kn2
+  | SymbConst kn1, SymbConst kn2 -> Constant.CanOrd.equal kn1 kn2
   | SymbMatch sw1, SymbMatch sw2 -> eq_annot_sw sw1 sw2
   | SymbInd ind1, SymbInd ind2 -> eq_ind ind1 ind2
   | SymbMeta m1, SymbMeta m2 -> Int.equal m1 m2
@@ -162,7 +162,7 @@ let hash_symbol symb =
   | SymbValue v -> combinesmall 1 (Hashtbl.hash v) (** FIXME *)
   | SymbSort s -> combinesmall 2 (Sorts.hash s)
   | SymbName name -> combinesmall 3 (Name.hash name)
-  | SymbConst c -> combinesmall 4 (Constant.hash c)
+  | SymbConst c -> combinesmall 4 (Constant.CanOrd.hash c)
   | SymbMatch sw -> combinesmall 5 (hash_annot_sw sw)
   | SymbInd ind -> combinesmall 6 (ind_hash ind)
   | SymbMeta m -> combinesmall 7 m

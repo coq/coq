@@ -584,7 +584,7 @@ let build_mutual_induction_scheme env sigma ?(force_mutual=false) = function
         (List.map
            (function ((mind',u'),dep',s') ->
               let (sp',_) = mind' in
-              if MutInd.equal sp sp' then
+              if QMutInd.equal env sp sp' then
                 let (mibi',mipi') = lookup_mind_specif env mind' in
                 ((mind',u'),mibi',mipi',dep',s')
               else

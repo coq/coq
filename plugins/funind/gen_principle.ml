@@ -1316,9 +1316,9 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
   let prop_sort = Sorts.InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
+    let eq c1 c2 = Environ.QConstant.equal env c1 c2 in
     List.map
-      (function
-        | cst -> List.assoc_f Constant.equal (fst cst) this_block_funs_indexes)
+      (function cst -> List.assoc_f eq (fst cst) this_block_funs_indexes)
       funs
   in
   let ind_list =
@@ -2228,7 +2228,8 @@ let build_case_scheme fa =
   let prop_sort = Sorts.InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
-    List.assoc_f Constant.equal funs this_block_funs_indexes
+    let eq c1 c2 = Environ.QConstant.equal env c1 c2 in
+    List.assoc_f eq funs this_block_funs_indexes
   in
   let ind, sf =
     let ind = (first_fun_kn, funs_indexes) in

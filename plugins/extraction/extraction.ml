@@ -741,7 +741,7 @@ and extract_cst_app env sg mle mlt kn args =
   (* Can we instantiate types variables for this constant ? *)
   (* In Ocaml, inside the definition of this constant, the answer is no. *)
   let instantiated =
-    if lang () == Ocaml && List.mem_f Constant.equal kn !current_fixpoints
+    if lang () == Ocaml && List.mem_f Constant.CanOrd.equal kn !current_fixpoints
     then var2var' (snd schema)
     else instantiation schema
   in

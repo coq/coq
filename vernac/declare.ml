@@ -162,7 +162,7 @@ let cache_constant ((sp,kn), obj) =
     then Constant.make1 kn
     else CErrors.anomaly Pp.(str"Missing constant " ++ Id.print(Libnames.basename sp) ++ str".")
   in
-  assert (Constant.equal kn' (Constant.make1 kn));
+  assert (Environ.QConstant.equal (Global.env ()) kn' (Constant.make1 kn));
   Nametab.push (Nametab.Until 1) sp (GlobRef.ConstRef (Constant.make1 kn));
   Dumpglob.add_constant_kind (Constant.make1 kn) obj.cst_kind
 

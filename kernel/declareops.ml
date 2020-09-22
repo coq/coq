@@ -159,7 +159,7 @@ let hcons_const_body cb =
 let eq_nested_type t1 t2 = match t1, t2 with
 | NestedInd ind1, NestedInd ind2 -> Names.eq_ind ind1 ind2
 | NestedInd _, _ -> false
-| NestedPrimitive c1, NestedPrimitive c2 -> Names.Constant.equal c1 c2
+| NestedPrimitive c1, NestedPrimitive c2 -> Names.Constant.CanOrd.equal c1 c2
 | NestedPrimitive _, _ -> false
 
 let eq_recarg r1 r2 = match r1, r2 with

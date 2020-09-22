@@ -566,7 +566,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     in
     let compare_heads evd =
       match EConstr.kind evd term, EConstr.kind evd term' with
-      | Const (c, u), Const (c', u') when Constant.equal c c' ->
+      | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
         let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
         check_strict evd u u'
       | Const _, Const _ -> UnifFailure (evd, NotSameHead)
@@ -844,7 +844,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             ise_try evd [f1; f2]
 
         (* Catch the p.c ~= p c' cases *)
-        | Proj (p,c), Const (p',u) when Constant.equal (Projection.constant p) p' ->
+        | Proj (p,c), Const (p',u) when QConstant.equal env (Projection.constant p) p' ->
           let res =
             try Some (destApp evd (Retyping.expand_projection env evd p c []))
             with Retyping.RetypeError _ -> None
@@ -855,7 +855,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                 appr2
             | None -> UnifFailure (evd,NotSameHead))
 
-        | Const (p,u), Proj (p',c') when Constant.equal p (Projection.constant p') ->
+        | Const (p,u), Proj (p',c') when QConstant.equal env p (Projection.constant p') ->
           let res =
             try Some (destApp evd (Retyping.expand_projection env evd p' c' []))
             with Retyping.RetypeError _ -> None

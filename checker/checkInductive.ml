@@ -104,7 +104,7 @@ let check_kelim k1 k2 = Sorts.family_leq k1 k2
 let eq_nested_types ty1 ty2 = match ty1, ty2 with
 | NestedInd ind1, NestedInd ind2 -> eq_ind_chk ind1 ind2
 | NestedInd _, _ -> false
-| NestedPrimitive c1, NestedPrimitive c2 -> Names.Constant.equal c1 c2
+| NestedPrimitive c1, NestedPrimitive c2 -> Names.Constant.CanOrd.equal c1 c2
 | NestedPrimitive _, _ -> false
 
 let eq_recarg a1 a2 = match a1, a2 with

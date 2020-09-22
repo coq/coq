@@ -283,7 +283,7 @@ let convert_constructors ctor nargs u1 u2 (s, check) =
 let conv_table_key infos k1 k2 cuniv =
   if k1 == k2 then cuniv else
   match k1, k2 with
-  | ConstKey (cst, u), ConstKey (cst', u') when Constant.equal cst cst' ->
+  | ConstKey (cst, u), ConstKey (cst', u') when Constant.CanOrd.equal cst cst' ->
     if Univ.Instance.equal u u' then cuniv
     else
       let flex = evaluable_constant cst (info_env infos)

@@ -12,7 +12,7 @@ type _ action_kind =
 type exn += IncompatibleDeclarations : 'a action_kind * 'a * 'a -> exn
 
 let check_same_types typ c1 c2 =
-  if not (Constant.equal c1 c2)
+  if not (Constant.CanOrd.equal c1 c2)
   then raise (IncompatibleDeclarations (IncompatTypes typ, c1, c2))
 
 let check_same_inds ind i1 i2 =
