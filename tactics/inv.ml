@@ -116,7 +116,11 @@ let make_inv_predicate env evd indf realargs id status concl =
   (* Now, we can recurse down this list, for each ai,(mkRel k) whether to
      push <Ai>(mkRel k)=ai (when   Ai is closed).
    In any case, we carry along the rest of pairs *)
-  let eqdata = Coqlib.build_coq_eq_data () in
+  let eqdata =
+    try Coqlib.build_coq_eq_data ()
+    with UserError _ ->
+    try Coqlib.build_coq_identity_data ()
+    with UserError _ -> user_err (str "No registered equality.") in
   let rec build_concl eqns args n = function
     | [] -> it_mkProd concl eqns, Array.rev_of_list args
     | ai :: restlist ->
@@ -351,8 +355,12 @@ let remember_first_eq id x = if !x == Logic.MoveLast then x := Logic.MoveAfter i
 let dest_nf_eq env sigma t = match EConstr.kind sigma t with
 | App (r, [| t; x; y |]) ->
   let open Reductionops in
-  let eq = Coqlib.lib_ref "core.eq.type" in
-  if isRefX sigma eq r then
+  let is_global_exists gr c =
+    Coqlib.has_ref gr && isRefX sigma (Coqlib.lib_ref gr) c
+  in
+  let is_eq = is_global_exists "core.eq.type" r in
+  let is_identity = is_global_exists "core.identity.type" r in
+  if is_eq || is_identity then
     (t, whd_all env sigma x, whd_all env sigma y)
   else user_err Pp.(str "Not an equality.")
 | _ ->
