@@ -787,6 +787,8 @@ struct
       Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
 
     module SyntacticOrd = struct
+      type nonrec t = t
+
       let compare a b =
         let c = ind_syntactic_ord a.proj_ind b.proj_ind in
         if c == 0 then Int.compare a.proj_arg b.proj_arg
@@ -799,6 +801,8 @@ struct
         Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
     end
     module CanOrd = struct
+      type nonrec t = t
+
       let compare a b =
         let c = ind_ord a.proj_ind b.proj_ind in
         if c == 0 then Int.compare a.proj_arg b.proj_arg
@@ -811,6 +815,8 @@ struct
         Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
     end
     module UserOrd = struct
+      type nonrec t = t
+
       let compare a b =
         let c = ind_user_ord a.proj_ind b.proj_ind in
         if c == 0 then Int.compare a.proj_arg b.proj_arg
@@ -877,6 +883,7 @@ struct
   let hash (c, b) = (if b then 0 else 1) + Repr.hash c
 
   module SyntacticOrd = struct
+    type nonrec t = t
     let compare (c, b) (c', b') =
       if b = b' then Repr.SyntacticOrd.compare c c' else -1
     let equal (c, b as x) (c', b' as x') =
@@ -884,6 +891,7 @@ struct
     let hash (c, b) = (if b then 0 else 1) + Repr.SyntacticOrd.hash c
   end
   module CanOrd = struct
+    type nonrec t = t
     let compare (c, b) (c', b') =
       if b = b' then Repr.CanOrd.compare c c' else -1
     let equal (c, b as x) (c', b' as x') =

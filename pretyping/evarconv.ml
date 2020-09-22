@@ -387,7 +387,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
         | UnifFailure _ as x -> fail x)
       | UnifFailure _ as x -> fail x)
     | Stack.Proj (p1)::q1, Stack.Proj (p2)::q2 ->
-       if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
+       if QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
        then ise_stack2 true i q1 q2
        else fail (UnifFailure (i, NotSameHead))
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1,
@@ -429,7 +429,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
           (fun i -> ise_stack2 i a1 a2)]
       else UnifFailure (i,NotSameHead)
     | Stack.Proj (p1)::q1, Stack.Proj (p2)::q2 ->
-       if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
+       if QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
        then ise_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->

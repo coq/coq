@@ -565,16 +565,19 @@ module Projection : sig
     val make : inductive -> proj_npars:int -> proj_arg:int -> Label.t -> t
 
     module SyntacticOrd : sig
+      type nonrec t = t
       val compare : t -> t -> int
       val equal : t -> t -> bool
       val hash : t -> int
     end
     module CanOrd : sig
+      type nonrec t = t
       val compare : t -> t -> int
       val equal : t -> t -> bool
       val hash : t -> int
     end
     module UserOrd : sig
+      type nonrec t = t
       val compare : t -> t -> int
       val equal : t -> t -> bool
       val hash : t -> int
@@ -589,9 +592,9 @@ module Projection : sig
     val arg : t -> int
     val label : t -> Label.t
 
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val compare : t -> t -> int
+    val equal : t -> t -> bool [@@ocaml.deprecated "Use QProjection.equal"]
+    val hash : t -> int [@@ocaml.deprecated "Use QProjection.hash"]
+    val compare : t -> t -> int [@@ocaml.deprecated "Use QProjection.compare"]
 
     val map : (MutInd.t -> MutInd.t) -> t -> t
     val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t
@@ -609,11 +612,13 @@ module Projection : sig
   val repr : t -> Repr.t
 
   module SyntacticOrd : sig
+    type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
   end
   module CanOrd : sig
+    type nonrec t = t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int

@@ -441,7 +441,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         | Some s2 ->
           eqappr cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
         | None ->
-          if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
+          if Projection.Repr.CanOrd.equal (Projection.repr p1) (Projection.repr p2)
              && compare_stack_shape v1 v2 then
             let el1 = el_stack lft1 v1 in
             let el2 = el_stack lft2 v2 in
@@ -704,7 +704,7 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
             | (Zlapp a1,Zlapp a2) ->
                Array.fold_right2 f a1 a2 cu1
             | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
-              if not (Projection.Repr.equal c1 c2) then
+              if not (Projection.Repr.CanOrd.equal c1 c2) then
                 raise NotConvertible
               else cu1
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->

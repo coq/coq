@@ -38,7 +38,7 @@ let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_const _, _ -> false
 | Reloc_getglobal c1, Reloc_getglobal c2 -> Constant.CanOrd.equal c1 c2
 | Reloc_getglobal _, _ -> false
-| Reloc_proj_name p1, Reloc_proj_name p2 -> Projection.Repr.equal p1 p2
+| Reloc_proj_name p1, Reloc_proj_name p2 -> Projection.Repr.CanOrd.equal p1 p2
 | Reloc_proj_name _, _ -> false
 | Reloc_caml_prim p1, Reloc_caml_prim p2 -> CPrimitives.equal p1 p2
 | Reloc_caml_prim _, _ -> false
@@ -49,7 +49,7 @@ let hash_reloc_info r =
   | Reloc_annot sw -> combinesmall 1 (hash_annot_switch sw)
   | Reloc_const c -> combinesmall 2 (hash_structured_constant c)
   | Reloc_getglobal c -> combinesmall 3 (Constant.CanOrd.hash c)
-  | Reloc_proj_name p -> combinesmall 4 (Projection.Repr.hash p)
+  | Reloc_proj_name p -> combinesmall 4 (Projection.Repr.CanOrd.hash p)
   | Reloc_caml_prim p -> combinesmall 5 (CPrimitives.hash p)
 
 module RelocTable = Hashtbl.Make(struct

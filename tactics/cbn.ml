@@ -239,7 +239,7 @@ struct
       | Case (_,t1,_,a1,_) :: s1, Case (_,t2,_,a2,_) :: s2 ->
         f t1 t2 && CArray.equal (fun x y -> f x y) a1 a2 && equal_rec s1 s2
       | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
-        Projection.Repr.equal (Projection.repr p) (Projection.repr p2)
+        Projection.Repr.CanOrd.equal (Projection.repr p) (Projection.repr p2)
         && equal_rec s1 s2
       | Fix (f1,s1,_) :: s1', Fix (f2,s2,_) :: s2' ->
         f_fix f1 f2
