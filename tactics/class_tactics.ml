@@ -158,7 +158,7 @@ let unify_resolve ~with_evars flags h diff = match diff with
 | None ->
   Hints.hint_res_pf ~with_evars ~with_classes:false ~flags h
 | Some (diff, ty) ->
-  let () = assert (not h.hint_poly) in
+  let () = assert (Option.is_empty h.hint_uctx) in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
@@ -203,11 +203,10 @@ let unify_resolve_refine flags h diff =
 let with_prods nprods h f =
   if get_typeclasses_limit_intros () then
     Proofview.Goal.enter begin fun gl ->
-      let { hint_term = c; hint_poly = poly } = h in
-      if poly || Int.equal nprods 0 then f None
+      if Option.has_some h.hint_uctx || Int.equal nprods 0 then f None
       else
         let sigma = Tacmach.New.project gl in
-        let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
+        let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma h.hint_term in
         let diff = nb_prod sigma ty - nprods in
         if (>=) diff 0 then f (Some (diff, ty))
         else Tacticals.New.tclZEROMSG (str"Not enough premisses")
@@ -489,12 +488,12 @@ let make_resolve_hyp env sigma st only_classes pri decl =
           let hints = build_subclasses ~check:false env sigma id empty_hint_info in
             (List.map_append
              (fun (path,info,c) ->
-              let h = IsConstr (EConstr.of_constr c,Univ.ContextSet.empty) [@ocaml.warning "-3"] in
-              make_resolves env sigma ~name:(PathHints path) info ~check:true ~poly:false h)
+              let h = IsConstr (EConstr.of_constr c, None) [@ocaml.warning "-3"] in
+              make_resolves env sigma ~name:(PathHints path) info ~check:true h)
                hints)
         else []
       in
-        (hints @ make_resolves env sigma pri ~name ~check:false ~poly:false (IsGlobRef id))
+        (hints @ make_resolves env sigma pri ~name ~check:false (IsGlobRef id))
     else []
 
 let make_hints g (modes,st) only_classes sign =

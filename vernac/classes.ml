@@ -41,11 +41,11 @@ let classes_transparent_state () =
 let () =
   Hook.set Typeclasses.classes_transparent_state_hook classes_transparent_state
 
-let add_instance_hint inst path ~locality info poly =
+let add_instance_hint inst path ~locality info =
      Flags.silently (fun () ->
        Hints.add_hints ~locality [typeclasses_db]
           (Hints.HintsResolveEntry
-             [info, poly, false, Hints.PathHints path, inst])) ()
+             [info, false, Hints.PathHints path, inst])) ()
 
 let is_local_for_hint i =
   match i.is_global with
@@ -56,14 +56,13 @@ let is_local_for_hint i =
                         itself *)
 
 let add_instance_base inst =
-  let poly = Global.is_polymorphic inst.is_impl in
   let locality = if is_local_for_hint inst then Goptions.OptLocal else Goptions.OptGlobal in
   add_instance_hint (Hints.IsGlobRef inst.is_impl) [inst.is_impl] ~locality
-    inst.is_info poly;
+    inst.is_info;
   List.iter (fun (path, pri, c) ->
-    let h = Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty) [@ocaml.warning "-3"] in
+    let h = Hints.IsConstr (EConstr.of_constr c, None) [@ocaml.warning "-3"] in
     add_instance_hint h path
-                ~locality pri poly)
+                ~locality pri)
     (build_subclasses ~check:(not (isVarRef inst.is_impl))
        (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_info)
 
