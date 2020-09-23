@@ -320,9 +320,45 @@ end
 module type QNameS =
 sig
   type t
+  (** A type of reference that implements an implicit quotient by containing
+      two different names. The first one is the user name, i.e. what the user
+      sees when printing. The second one is the canonical name, which is the
+      actual absolute name of the reference.
+
+      This mechanism is fundamentally tied to the module system of Coq. Functor
+      application and module inclusion are the typical ways to introduce names
+      where the canonical and user components differ. In particular, the two
+      components should be undistinguishable from the point of view of typing,
+      i.e. from a "kernel" ground. This aliasing only makes sense inside an
+      environment, but at this point this notion is not even defined so, this
+      dual name trick is fragile. One has to ensure many invariants when
+      creating such names, but the kernel is quite lenient when it comes to
+      checking that these invariants hold. (Read: there are soundness bugs
+      lurking in the module system.)
+
+      One could enforce the invariants by splitting the names and storing that
+      information in the environment instead, but unfortunately, this wreaks
+      havoc in the upper layers. The latter are infamously not stable by
+      syntactic equality, in particular they might observe the difference
+      between canonical and user names if not packed together.
+
+      For this reason, it is discouraged to use the canonical-accessing API
+      in the upper layers, notably the [CanOrd] module below. Instead, one
+      should use their quotiented versions defined in the [Environ] module.
+      Eventually all uses to [CanOrd] outside of the kernel should be removed.
+
+      CAVEAT: name sets and maps are still exposing a canonical-accessing API
+      surreptitiously. *)
+
   module CanOrd : EqType with type t = t
+  (** Equality functions over the canonical name. Their use should be
+      restricted to the kernel. *)
+
   module UserOrd : EqType with type t = t
+  (** Equality functions over the user name. *)
+
   module SyntacticOrd : EqType with type t = t
+  (** Equality functions using both names, for low-level uses. *)
 end
 
 (** {6 Constant Names } *)
