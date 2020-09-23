@@ -525,7 +525,7 @@ let init () =
 let mp_of_global = let open GlobRef in function
   | VarRef id -> !lib_state.path_prefix.Nametab.obj_mp
   | ConstRef cst -> Names.Constant.modpath cst
-  | IndRef ind -> Names.ind_modpath ind
+  | IndRef ind -> Names.Ind.modpath ind
   | ConstructRef constr -> Names.constr_modpath constr
 
 let rec dp_of_mp = function

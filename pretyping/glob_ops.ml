@@ -109,7 +109,7 @@ let matching_var_kind_eq k1 k2 = match k1, k2 with
 
 let tomatch_tuple_eq f (c1, p1) (c2, p2) =
   let eqp {CAst.v=(i1, na1)} {CAst.v=(i2, na2)} =
-    eq_ind i1 i2 && List.equal Name.equal na1 na2
+    Ind.CanOrd.equal i1 i2 && List.equal Name.equal na1 na2
   in
   let eq_pred (n1, o1) (n2, o2) = Name.equal n1 n2 && Option.equal eqp o1 o2 in
   f c1 c2 && eq_pred p1 p2

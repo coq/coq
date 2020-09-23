@@ -1324,7 +1324,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
   if isIndRef ref then
     let ((mind,u),t) = reduce_to_ind_gen allow_product env sigma t in
     begin match ref with
-    | GlobRef.IndRef mind' when eq_ind mind mind' -> t
+    | GlobRef.IndRef mind' when Ind.CanOrd.equal mind mind' -> t
     | _ -> error_cannot_recognize ref
     end
   else

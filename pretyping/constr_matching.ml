@@ -245,7 +245,7 @@ let matches_core env sigma allow_bound_rels
     match ref, EConstr.kind sigma c with
     | VarRef id, Var id' -> Names.Id.equal id id'
     | ConstRef c, Const (c',_) -> Environ.QConstant.equal env c c'
-    | IndRef i, Ind (i', _) -> Names.eq_ind i i'
+    | IndRef i, Ind (i', _) -> Names.Ind.CanOrd.equal i i'
     | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
     | _, _ -> false
   in
@@ -374,7 +374,7 @@ let matches_core env sigma allow_bound_rels
           | Some ind1 ->
             (* ppedrot: Something spooky going here. The comparison used to be
                the generic one, so I may have broken something. *)
-            if not (eq_ind ind1 ci2.ci_ind) then raise PatternMatchingFailure
+            if not (Ind.CanOrd.equal ind1 ci2.ci_ind) then raise PatternMatchingFailure
           in
           let () =
             if not ci1.cip_extensible && not (Int.equal (List.length br1) n2)

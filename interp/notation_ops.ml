@@ -58,7 +58,7 @@ match t1, t2 with
     (eq_notation_constr vars) t1 t2
   in
   let eqf (t1, (na1, o1)) (t2, (na2, o2)) =
-    let eq (i1, n1) (i2, n2) = eq_ind i1 i2 && List.equal Name.equal n1 n2 in
+    let eq (i1, n1) (i2, n2) = Ind.CanOrd.equal i1 i2 && List.equal Name.equal n1 n2 in
     (eq_notation_constr vars) t1 t2 && Name.equal na1 na2 && Option.equal eq o1 o2
   in
   Option.equal (eq_notation_constr vars) o1 o2 &&
@@ -1418,10 +1418,10 @@ and match_cases_pattern_no_more_args metas sigma a1 a2 =
 
 let match_ind_pattern metas sigma ind pats a2 =
   match a2 with
-  | NRef (GlobRef.IndRef r2) when eq_ind ind r2 ->
+  | NRef (GlobRef.IndRef r2) when Ind.CanOrd.equal ind r2 ->
       sigma,(false,0,pats)
   | NApp (NRef (GlobRef.IndRef r2),l2)
-      when eq_ind ind r2 ->
+      when Ind.CanOrd.equal ind r2 ->
       let le2 = List.length l2 in
       if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length pats
       then

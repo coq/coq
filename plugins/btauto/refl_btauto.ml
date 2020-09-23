@@ -115,7 +115,7 @@ module Bool = struct
     | Case (info, r, _iv, arg, pats) ->
       let is_bool =
         let i = info.ci_ind in
-        Names.eq_ind i (Lazy.force ind)
+        Names.Ind.CanOrd.equal i (Lazy.force ind)
       in
       if is_bool then
         Ifb ((aux arg), (aux pats.(0)), (aux pats.(1)))

@@ -157,7 +157,7 @@ let hcons_const_body cb =
 
 (** {6 Inductive types } *)
 let eq_nested_type t1 t2 = match t1, t2 with
-| NestedInd ind1, NestedInd ind2 -> Names.eq_ind ind1 ind2
+| NestedInd ind1, NestedInd ind2 -> Names.Ind.CanOrd.equal ind1 ind2
 | NestedInd _, _ -> false
 | NestedPrimitive c1, NestedPrimitive c2 -> Names.Constant.CanOrd.equal c1 c2
 | NestedPrimitive _, _ -> false
@@ -165,7 +165,7 @@ let eq_nested_type t1 t2 = match t1, t2 with
 let eq_recarg r1 r2 = match r1, r2 with
 | Norec, Norec -> true
 | Norec, _ -> false
-| Mrec i1, Mrec i2 -> Names.eq_ind i1 i2
+| Mrec i1, Mrec i2 -> Names.Ind.CanOrd.equal i1 i2
 | Mrec _, _ -> false
 | Nested ty1, Nested ty2 -> eq_nested_type ty1 ty2
 | Nested _, _ -> false

@@ -65,11 +65,11 @@ type gname =
 let eq_gname gn1 gn2 =
   match gn1, gn2 with
   | Gind (s1, ind1), Gind (s2, ind2) ->
-     String.equal s1 s2 && eq_ind ind1 ind2
+     String.equal s1 s2 && Ind.CanOrd.equal ind1 ind2
   | Gconstant (s1, c1), Gconstant (s2, c2) ->
       String.equal s1 s2 && Constant.CanOrd.equal c1 c2
   | Gproj (s1, ind1, i1), Gproj (s2, ind2, i2) ->
-    String.equal s1 s2 && eq_ind ind1 ind2 && Int.equal i1 i2
+    String.equal s1 s2 && Ind.CanOrd.equal ind1 ind2 && Int.equal i1 i2
   | Gcase (None, i1), Gcase (None, i2) -> Int.equal i1 i2
   | Gcase (Some l1, i1), Gcase (Some l2, i2) -> Int.equal i1 i2 && Label.equal l1 l2
   | Gpred (None, i1), Gpred (None, i2) -> Int.equal i1 i2
@@ -96,7 +96,7 @@ open Hashset.Combine
 
 let gname_hash gn = match gn with
 | Gind (s, ind) ->
-   combinesmall 1 (combine (String.hash s) (ind_hash ind))
+   combinesmall 1 (combine (String.hash s) (Ind.CanOrd.hash ind))
 | Gconstant (s, c) ->
    combinesmall 2 (combine (String.hash s) (Constant.CanOrd.hash c))
 | Gcase (l, i) -> combinesmall 3 (combine (Option.hash Label.hash l) (Int.hash i))
@@ -107,7 +107,7 @@ let gname_hash gn = match gn with
 | Ginternal s -> combinesmall 8 (String.hash s)
 | Grel i -> combinesmall 9 (Int.hash i)
 | Gnamed id -> combinesmall 10 (Id.hash id)
-| Gproj (s, p, i) -> combinesmall 11 (combine (String.hash s) (combine (ind_hash p) i))
+| Gproj (s, p, i) -> combinesmall 11 (combine (String.hash s) (combine (Ind.CanOrd.hash p) i))
 
 let case_ctr = ref (-1)
 
@@ -150,11 +150,11 @@ let eq_symbol sy1 sy2 =
   | SymbName n1, SymbName n2 -> Name.equal n1 n2
   | SymbConst kn1, SymbConst kn2 -> Constant.CanOrd.equal kn1 kn2
   | SymbMatch sw1, SymbMatch sw2 -> eq_annot_sw sw1 sw2
-  | SymbInd ind1, SymbInd ind2 -> eq_ind ind1 ind2
+  | SymbInd ind1, SymbInd ind2 -> Ind.CanOrd.equal ind1 ind2
   | SymbMeta m1, SymbMeta m2 -> Int.equal m1 m2
   | SymbEvar evk1, SymbEvar evk2 -> Evar.equal evk1 evk2
   | SymbLevel l1, SymbLevel l2 -> Univ.Level.equal l1 l2
-  | SymbProj (i1, k1), SymbProj (i2, k2) -> eq_ind i1 i2 && Int.equal k1 k2
+  | SymbProj (i1, k1), SymbProj (i2, k2) -> Ind.CanOrd.equal i1 i2 && Int.equal k1 k2
   | _, _ -> false
 
 let hash_symbol symb =
@@ -164,11 +164,11 @@ let hash_symbol symb =
   | SymbName name -> combinesmall 3 (Name.hash name)
   | SymbConst c -> combinesmall 4 (Constant.CanOrd.hash c)
   | SymbMatch sw -> combinesmall 5 (hash_annot_sw sw)
-  | SymbInd ind -> combinesmall 6 (ind_hash ind)
+  | SymbInd ind -> combinesmall 6 (Ind.CanOrd.hash ind)
   | SymbMeta m -> combinesmall 7 m
   | SymbEvar evk -> combinesmall 8 (Evar.hash evk)
   | SymbLevel l -> combinesmall 9 (Univ.Level.hash l)
-  | SymbProj (i, k) -> combinesmall 10 (combine (ind_hash i) k)
+  | SymbProj (i, k) -> combinesmall 10 (combine (Ind.CanOrd.hash i) k)
 
 module HashedTypeSymbol = struct
   type t = symbol
@@ -438,7 +438,7 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
       eq_mllam_branches gn1 gn2 n env1 env2 br1 br2
   | MLconstruct (pf1, ind1, tag1, args1), MLconstruct (pf2, ind2, tag2, args2) ->
       String.equal pf1 pf2 &&
-      eq_ind ind1 ind2 &&
+      Ind.CanOrd.equal ind1 ind2 &&
       Int.equal tag1 tag2 &&
       Array.equal (eq_mllambda gn1 gn2 n env1 env2) args1 args2
   | MLint i1, MLint i2 ->
@@ -457,7 +457,7 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
       Array.equal (eq_mllambda gn1 gn2 n env1 env2) arr1 arr2
 
   | MLisaccu (s1, ind1, ml1), MLisaccu (s2, ind2, ml2) ->
-    String.equal s1 s2 && eq_ind ind1 ind2 &&
+    String.equal s1 s2 && Ind.CanOrd.equal ind1 ind2 &&
     eq_mllambda gn1 gn2 n env1 env2 ml1 ml2
   | (MLlocal _ | MLglobal _ | MLprimitive _ | MLlam _ | MLletrec _ | MLlet _ |
     MLapp _ | MLif _ | MLmatch _ | MLconstruct _ | MLint _ | MLuint _ |
@@ -527,7 +527,7 @@ let rec hash_mllambda gn n env t =
       combinesmall 9 (hash_mllam_branches gn n env (combine3 hannot hc haccu) br)
   | MLconstruct (pf, ind, tag, args) ->
       let hpf = String.hash pf in
-      let hcs = ind_hash ind in
+      let hcs = Ind.CanOrd.hash ind in
       let htag = Int.hash tag in
       combinesmall 10 (hash_mllambda_array gn n env (combine3 hpf hcs htag) args)
   | MLint i ->
@@ -545,7 +545,7 @@ let rec hash_mllambda gn n env t =
   | MLarray arr ->
       combinesmall 15 (hash_mllambda_array gn n env 1 arr)
   | MLisaccu (s, ind, c) ->
-      combinesmall 16 (combine (String.hash s) (combine (ind_hash ind) (hash_mllambda gn n env c)))
+      combinesmall 16 (combine (String.hash s) (combine (Ind.CanOrd.hash ind) (hash_mllambda gn n env c)))
   | MLfloat f ->
       combinesmall 17 (Float64.hash f)
 
@@ -689,7 +689,7 @@ let eq_global g1 g2 =
       eq_mllambda gn1 gn2 (Array.length lns1) env1 env2 t1 t2
   | Gopen s1, Gopen s2 -> String.equal s1 s2
   | Gtype (ind1, arr1), Gtype (ind2, arr2) ->
-    eq_ind ind1 ind2 &&
+    Ind.CanOrd.equal ind1 ind2 &&
     Array.equal (fun (tag1,ar1) (tag2,ar2) -> Int.equal tag1 tag2 && Int.equal ar1 ar2) arr1 arr2
   | Gcomment s1, Gcomment s2 -> String.equal s1 s2
   | _, _ -> false
@@ -720,7 +720,7 @@ let hash_global g =
     let hash_aux acc (tag,ar) =
       combine3 acc (Int.hash tag) (Int.hash ar)
     in
-    combinesmall 6 (combine (ind_hash ind) (Array.fold_left hash_aux 0 arr))
+    combinesmall 6 (combine (Ind.CanOrd.hash ind) (Array.fold_left hash_aux 0 arr))
   | Gcomment s -> combinesmall 7 (String.hash s)
 
 let global_stack = ref ([] : global list)

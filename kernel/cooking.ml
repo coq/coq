@@ -38,13 +38,13 @@ struct
   type t = my_global_reference
   let equal gr1 gr2 = match gr1, gr2 with
   | ConstRef c1, ConstRef c2 -> Constant.SyntacticOrd.equal c1 c2
-  | IndRef i1, IndRef i2 -> eq_syntactic_ind i1 i2
+  | IndRef i1, IndRef i2 -> Ind.SyntacticOrd.equal i1 i2
   | ConstructRef c1, ConstructRef c2 -> eq_syntactic_constructor c1 c2
   | _ -> false
   open Hashset.Combine
   let hash = function
   | ConstRef c -> combinesmall 1 (Constant.SyntacticOrd.hash c)
-  | IndRef i -> combinesmall 2 (ind_syntactic_hash i)
+  | IndRef i -> combinesmall 2 (Ind.SyntacticOrd.hash i)
   | ConstructRef c -> combinesmall 3 (constructor_syntactic_hash c)
 end
 

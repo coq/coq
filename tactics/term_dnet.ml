@@ -91,7 +91,7 @@ struct
     | DArray (t,def,ty) -> DArray(Array.map f t, f def, f ty)
 
   let compare_ci ci1 ci2 =
-    let c = ind_ord ci1.ci_ind ci2.ci_ind in
+    let c = Ind.CanOrd.compare ci1.ci_ind ci2.ci_ind in
     if c = 0 then
       let c = Int.compare ci1.ci_npar ci2.ci_npar in
       if c = 0 then

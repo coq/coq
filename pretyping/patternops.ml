@@ -23,7 +23,7 @@ open Environ
 
 let case_info_pattern_eq i1 i2 =
   i1.cip_style == i2.cip_style &&
-  Option.equal eq_ind i1.cip_ind i2.cip_ind &&
+  Option.equal Ind.CanOrd.equal i1.cip_ind i2.cip_ind &&
   Option.equal (List.equal (==)) i1.cip_ind_tags i2.cip_ind_tags &&
   i1.cip_extensible == i2.cip_extensible
 
@@ -547,7 +547,7 @@ and pats_of_glob_branches loc metas vars ind brs =
         true, [] (* ends with _ => _ *)
       | PatCstr((indsp,j),lv,_), _, _ ->
         let () = match ind with
-        | Some sp when eq_ind sp indsp -> ()
+        | Some sp when Ind.CanOrd.equal sp indsp -> ()
         | _ ->
           err ?loc (Pp.str "All constructors must be in the same inductive type.")
         in

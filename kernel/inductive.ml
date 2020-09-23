@@ -404,7 +404,7 @@ let type_case_branches env (pind,largs) pj c =
 let check_case_info env (indsp,u) r ci =
   let (mib,mip as spec) = lookup_mind_specif env indsp in
   if
-    not (eq_ind indsp ci.ci_ind) ||
+    not (Ind.CanOrd.equal indsp ci.ci_ind) ||
     not (Int.equal mib.mind_nparams ci.ci_npar) ||
     not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
     not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
@@ -467,9 +467,9 @@ let inter_recarg r1 r2 = match r1, r2 with
 | Norec, _ -> None
 | Mrec i1, Mrec i2
 | Nested (NestedInd i1), Nested (NestedInd i2)
-| Mrec i1, (Nested (NestedInd i2)) -> if Names.eq_ind i1 i2 then Some r1 else None
+| Mrec i1, (Nested (NestedInd i2)) -> if Names.Ind.CanOrd.equal i1 i2 then Some r1 else None
 | Mrec _, _ -> None
-| Nested (NestedInd i1), Mrec i2 -> if Names.eq_ind i1 i2 then Some r2 else None
+| Nested (NestedInd i1), Mrec i2 -> if Names.Ind.CanOrd.equal i1 i2 then Some r2 else None
 | Nested (NestedInd _), _ -> None
 | Nested (NestedPrimitive c1), Nested (NestedPrimitive c2) ->
   if Names.Constant.CanOrd.equal c1 c2 then Some r1 else None
@@ -556,7 +556,7 @@ let lookup_subterms env ind =
 
 let match_inductive ind ra =
   match ra with
-    | Mrec i | Nested (NestedInd i) -> eq_ind ind i
+    | Mrec i | Nested (NestedInd i) -> Ind.CanOrd.equal ind i
     | Norec | Nested (NestedPrimitive _) -> false
 
 (* In {match c as z in ci y_s return P with |C_i x_s => t end}
@@ -667,7 +667,7 @@ let get_recargs_approx env tree ind args =
        (* When the inferred tree allows it, we consider that we have a potential
        nested inductive type *)
        begin match dest_recarg tree with
-             | Nested (NestedInd kn') | Mrec kn' when eq_ind (fst ind_kn) kn' ->
+             | Nested (NestedInd kn') | Mrec kn' when Ind.CanOrd.equal (fst ind_kn) kn' ->
                build_recargs_nested ienv tree (ind_kn, largs)
              | _ -> mk_norec
        end

@@ -96,7 +96,7 @@ let hash_structured_values (v : structured_values) =
 let eq_structured_constant c1 c2 = match c1, c2 with
 | Const_sort s1, Const_sort s2 -> Sorts.equal s1 s2
 | Const_sort _, _ -> false
-| Const_ind i1, Const_ind i2 -> eq_ind i1 i2
+| Const_ind i1, Const_ind i2 -> Ind.CanOrd.equal i1 i2
 | Const_ind _, _ -> false
 | Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
 | Const_b0 _, _ -> false
@@ -113,7 +113,7 @@ let hash_structured_constant c =
   let open Hashset.Combine in
   match c with
   | Const_sort s -> combinesmall 1 (Sorts.hash s)
-  | Const_ind i -> combinesmall 2 (ind_hash i)
+  | Const_ind i -> combinesmall 2 (Ind.CanOrd.hash i)
   | Const_b0 t -> combinesmall 3 (Int.hash t)
   | Const_univ_level l -> combinesmall 4 (Univ.Level.hash l)
   | Const_val v -> combinesmall 5 (hash_structured_values v)

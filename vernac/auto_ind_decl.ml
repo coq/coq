@@ -496,7 +496,7 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
           let u,v = try destruct_ind env sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
-          in if eq_ind (fst u) ind
+          in if Ind.CanOrd.equal (fst u) ind
              then Tacticals.New.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
                find_scheme bl_scheme_key (fst u) (*FIXME*) >>= fun c ->

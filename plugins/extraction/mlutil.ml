@@ -685,7 +685,7 @@ let is_regular_match br =
         | _ -> raise Impossible
       in
       let is_ref i tr = match get_r tr with
-      | GlobRef.ConstructRef (ind', j) -> eq_ind ind ind' && Int.equal j (i + 1)
+      | GlobRef.ConstructRef (ind', j) -> Ind.CanOrd.equal ind ind' && Int.equal j (i + 1)
       | _ -> false
       in
       Array.for_all_i is_ref 0 br

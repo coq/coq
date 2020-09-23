@@ -16,7 +16,7 @@ let check_same_types typ c1 c2 =
   then raise (IncompatibleDeclarations (IncompatTypes typ, c1, c2))
 
 let check_same_inds ind i1 i2 =
-  if not (eq_ind i1 i2)
+  if not (Ind.CanOrd.equal i1 i2)
   then raise (IncompatibleDeclarations (IncompatInd ind, i1, i2))
 
 let add_retroknowledge retro action =

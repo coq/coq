@@ -568,7 +568,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
     | (FInd (ind1,u1 as pind1), FInd (ind2,u2 as pind2)) ->
-      if eq_ind ind1 ind2 then
+      if Ind.CanOrd.equal ind1 ind2 then
         if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
@@ -588,7 +588,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1 as pctor1), FConstruct ((ind2,j2),u2 as pctor2)) ->
-      if Int.equal j1 j2 && eq_ind ind1 ind2 then
+      if Int.equal j1 j2 && Ind.CanOrd.equal ind1 ind2 then
         if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
@@ -669,7 +669,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else raise NotConvertible
 
     | FCaseInvert (ci1,p1,_,_,br1,e1), FCaseInvert (ci2,p2,_,_,br2,e2) ->
-      (if not (eq_ind ci1.ci_ind ci2.ci_ind) then raise NotConvertible);
+      (if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then raise NotConvertible);
       let el1 = el_stack lft1 v1 and el2 = el_stack lft2 v2 in
       let ccnv = ccnv CONV l2r infos el1 el2 in
       let cuniv = ccnv (mk_clos e1 p1) (mk_clos e2 p2) cuniv in
@@ -711,7 +711,7 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
                 let cu2 = f fx1 fx2 cu1 in
                 cmp_rec a1 a2 cu2
             | (Zlcase(ci1,l1,p1,br1,e1),Zlcase(ci2,l2,p2,br2,e2)) ->
-                if not (eq_ind ci1.ci_ind ci2.ci_ind) then
+                if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then
                   raise NotConvertible;
                 let cu2 = f (l1, mk_clos e1 p1) (l2, mk_clos e2 p2) cu1 in
                 convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cu2

@@ -128,7 +128,7 @@ let isRefX sigma x c =
   let open GlobRef in
   match x, kind sigma c with
   | ConstRef c, Const (c', _) -> Constant.CanOrd.equal c c'
-  | IndRef i, Ind (i', _) -> eq_ind i i'
+  | IndRef i, Ind (i', _) -> Ind.CanOrd.equal i i'
   | ConstructRef i, Construct (i', _) -> eq_constructor i i'
   | VarRef id, Var id' -> Id.equal id id'
   | _ -> false

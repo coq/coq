@@ -600,18 +600,63 @@ module Mindmap = HMap.Make(MutInd.CanOrd)
 module Mindset = Mindmap.Set
 module Mindmap_env = HMap.Make(MutInd.UserOrd)
 
+module Ind =
+struct
+  (** Designation of a (particular) inductive type. *)
+  type t = MutInd.t      (* the name of the inductive type *)
+        * int           (* the position of this inductive type
+                                    within the block of mutually-recursive inductive types.
+                                    BEWARE: indexing starts from 0. *)
+  let modpath (mind, _) = MutInd.modpath mind
+
+  module CanOrd =
+  struct
+    type nonrec t = t
+    let equal (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.CanOrd.equal m1 m2
+    let compare (m1, i1) (m2, i2) =
+      let c = Int.compare i1 i2 in
+      if Int.equal c 0 then MutInd.CanOrd.compare m1 m2 else c
+    let hash (m, i) =
+      Hashset.Combine.combine (MutInd.CanOrd.hash m) (Int.hash i)
+  end
+
+  module UserOrd =
+  struct
+    type nonrec t = t
+    let equal (m1, i1) (m2, i2) =
+      Int.equal i1 i2 && MutInd.UserOrd.equal m1 m2
+    let compare (m1, i1) (m2, i2) =
+      let c = Int.compare i1 i2 in
+      if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
+    let hash (m, i) =
+      Hashset.Combine.combine (MutInd.UserOrd.hash m) (Int.hash i)
+  end
+
+  module SyntacticOrd =
+  struct
+    type nonrec t = t
+    let equal (m1, i1) (m2, i2) =
+      Int.equal i1 i2 && MutInd.SyntacticOrd.equal m1 m2
+
+    let compare (m1, i1) (m2, i2) =
+      let c = Int.compare i1 i2 in
+      if Int.equal c 0 then MutInd.SyntacticOrd.compare m1 m2 else c
+
+    let hash (m, i) =
+      Hashset.Combine.combine (MutInd.SyntacticOrd.hash m) (Int.hash i)
+  end
+
+end
+
 (** Designation of a (particular) inductive type. *)
-type inductive = MutInd.t      (* the name of the inductive type *)
-               * int           (* the position of this inductive type
-                                  within the block of mutually-recursive inductive types.
-                                  BEWARE: indexing starts from 0. *)
+type inductive = Ind.t
 
 (** Designation of a (particular) constructor of a (particular) inductive type. *)
 type constructor = inductive   (* designates the inductive type *)
                  * int         (* the index of the constructor
                                   BEWARE: indexing starts from 1. *)
 
-let ind_modpath (mind,_) = MutInd.modpath mind
+let ind_modpath = Ind.modpath
 let constr_modpath (ind,_) = ind_modpath ind
 
 let ith_mutual_inductive (mind, _) i = (mind, i)
@@ -619,28 +664,17 @@ let ith_constructor_of_inductive ind i = (ind, i)
 let inductive_of_constructor (ind, _i) = ind
 let index_of_constructor (_ind, i) = i
 
-let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.equal m1 m2
-let eq_user_ind (m1, i1) (m2, i2) =
-  Int.equal i1 i2 && MutInd.UserOrd.equal m1 m2
-let eq_syntactic_ind (m1, i1) (m2, i2) =
-  Int.equal i1 i2 && MutInd.SyntacticOrd.equal m1 m2
+let eq_ind = Ind.CanOrd.equal
+let eq_user_ind = Ind.UserOrd.equal
+let eq_syntactic_ind = Ind.SyntacticOrd.equal
 
-let ind_ord (m1, i1) (m2, i2) =
-  let c = Int.compare i1 i2 in
-  if Int.equal c 0 then MutInd.CanOrd.compare m1 m2 else c
-let ind_user_ord (m1, i1) (m2, i2) =
-  let c = Int.compare i1 i2 in
-  if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
-let ind_syntactic_ord (m1, i1) (m2, i2) =
-  let c = Int.compare i1 i2 in
-  if Int.equal c 0 then MutInd.SyntacticOrd.compare m1 m2 else c
+let ind_ord = Ind.CanOrd.compare
+let ind_user_ord = Ind.UserOrd.compare
+let ind_syntactic_ord = Ind.SyntacticOrd.compare
 
-let ind_hash (m, i) =
-  Hashset.Combine.combine (MutInd.hash m) (Int.hash i)
-let ind_user_hash (m, i) =
-  Hashset.Combine.combine (MutInd.UserOrd.hash m) (Int.hash i)
-let ind_syntactic_hash (m, i) =
-  Hashset.Combine.combine (MutInd.SyntacticOrd.hash m) (Int.hash i)
+let ind_hash = Ind.CanOrd.hash
+let ind_user_hash = Ind.UserOrd.hash
+let ind_syntactic_hash = Ind.SyntacticOrd.hash
 
 let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
 let eq_user_constructor (ind1, j1) (ind2, j2) =
@@ -665,20 +699,10 @@ let constructor_user_hash (ind, i) =
 let constructor_syntactic_hash (ind, i) =
   Hashset.Combine.combine (ind_syntactic_hash ind) (Int.hash i)
 
-module InductiveOrdered = struct
-  type t = inductive
-  let compare = ind_ord
-end
-
-module InductiveOrdered_env = struct
-  type t = inductive
-  let compare = ind_user_ord
-end
-
-module Indset = Set.Make(InductiveOrdered)
-module Indset_env = Set.Make(InductiveOrdered_env)
-module Indmap = Map.Make(InductiveOrdered)
-module Indmap_env = Map.Make(InductiveOrdered_env)
+module Indset = Set.Make(Ind.CanOrd)
+module Indset_env = Set.Make(Ind.UserOrd)
+module Indmap = Map.Make(Ind.CanOrd)
+module Indmap_env = Map.Make(Ind.UserOrd)
 
 module ConstructorOrdered = struct
   type t = constructor

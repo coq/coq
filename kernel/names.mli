@@ -479,11 +479,39 @@ module Mindset : CSig.SetS with type elt = MutInd.t
 module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
 module Mindmap_env : CMap.ExtS with type key = MutInd.t
 
-(** Designation of a (particular) inductive type. *)
-type inductive = MutInd.t      (* the name of the inductive type *)
-               * int           (* the position of this inductive type
-                                  within the block of mutually-recursive inductive types.
-                                  BEWARE: indexing starts from 0. *)
+module Ind :
+sig
+  (** Designation of a (particular) inductive type. *)
+  type t = MutInd.t      (* the name of the inductive type *)
+         * int           (* the position of this inductive type
+                                    within the block of mutually-recursive inductive types.
+                                    BEWARE: indexing starts from 0. *)
+  val modpath : t -> ModPath.t
+
+  module CanOrd : sig
+    type nonrec t = t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
+  module UserOrd : sig
+    type nonrec t = t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
+  module SyntacticOrd : sig
+    type nonrec t = t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
+end
+
+type inductive = Ind.t
 
 (** Designation of a (particular) constructor of a (particular) inductive type. *)
 type constructor = inductive   (* designates the inductive type *)
@@ -500,6 +528,8 @@ module Indmap_env : CMap.ExtS with type key = inductive and module Set := Indset
 module Constrmap_env : CMap.ExtS with type key = constructor and module Set := Constrset_env
 
 val ind_modpath : inductive -> ModPath.t
+[@@ocaml.deprecated "Use the Ind module"]
+
 val constr_modpath : constructor -> ModPath.t
 
 val ith_mutual_inductive : inductive -> int -> inductive
@@ -507,14 +537,23 @@ val ith_constructor_of_inductive : inductive -> int -> constructor
 val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
 val eq_ind : inductive -> inductive -> bool
+[@@ocaml.deprecated "Use the Ind module"]
 val eq_user_ind : inductive -> inductive -> bool
+[@@ocaml.deprecated "Use the Ind module"]
 val eq_syntactic_ind : inductive -> inductive -> bool
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_ord : inductive -> inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_hash : inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_user_ord : inductive -> inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_user_hash : inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_syntactic_ord : inductive -> inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_syntactic_hash : inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val eq_constructor : constructor -> constructor -> bool
 val eq_user_constructor : constructor -> constructor -> bool
 val eq_syntactic_constructor : constructor -> constructor -> bool
