@@ -1,0 +1,14 @@
+gargs:( (!) )
+     : list nat
+gargs:( (!, !, !) )
+     : list nat
+OnlyGargs[ (!) ]
+     : list nat
+gargs999:( (!) )
+     : list nat
+gargs999:( (!, !, !) )
+     : list nat
+OnlyGargs[ (!) ]
+     : list nat
+OnlyGargs999[ (!) ]
+     : list nat
