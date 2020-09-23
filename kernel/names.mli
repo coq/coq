@@ -307,6 +307,24 @@ module KNset  : CSig.SetS with type elt = KerName.t
 module KNpred : Predicate.S with type elt = KerName.t
 module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
 
+(** {6 Signature for quotiented names} *)
+
+module type EqType =
+sig
+  type t
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
+  val hash : t -> int
+end
+
+module type QNameS =
+sig
+  type t
+  module CanOrd : EqType with type t = t
+  module UserOrd : EqType with type t = t
+  module SyntacticOrd : EqType with type t = t
+end
+
 (** {6 Constant Names } *)
 
 module Constant:
@@ -340,26 +358,7 @@ sig
 
   (** Comparisons *)
 
-  module CanOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module UserOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module SyntacticOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
   val equal : t -> t -> bool [@@ocaml.deprecated "Use QConstant.equal"]
   (** Default comparison, alias for [CanOrd.equal] *)
@@ -433,26 +432,7 @@ sig
 
   (** Comparisons *)
 
-  module CanOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module UserOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module SyntacticOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
   val equal : t -> t -> bool [@@ocaml.deprecated "Use QMutInd.equal"]
  (** Default comparison, alias for [CanOrd.equal] *)
@@ -488,26 +468,7 @@ sig
                                     BEWARE: indexing starts from 0. *)
   val modpath : t -> ModPath.t
 
-  module CanOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module UserOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module SyntacticOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
 end
 
@@ -522,26 +483,7 @@ sig
 
   val modpath : t -> ModPath.t
 
-  module CanOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module UserOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module SyntacticOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
 end
 
@@ -642,24 +584,7 @@ module Projection : sig
 
     val make : inductive -> proj_npars:int -> proj_arg:int -> Label.t -> t
 
-    module SyntacticOrd : sig
-      type nonrec t = t
-      val compare : t -> t -> int
-      val equal : t -> t -> bool
-      val hash : t -> int
-    end
-    module CanOrd : sig
-      type nonrec t = t
-      val compare : t -> t -> int
-      val equal : t -> t -> bool
-      val hash : t -> int
-    end
-    module UserOrd : sig
-      type nonrec t = t
-      val compare : t -> t -> int
-      val equal : t -> t -> bool
-      val hash : t -> int
-    end
+    include QNameS with type t := t
 
     val constant : t -> Constant.t
     (** Don't use this if you don't have to. *)
@@ -689,18 +614,7 @@ module Projection : sig
   val make : Repr.t -> bool -> t
   val repr : t -> Repr.t
 
-  module SyntacticOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-  module CanOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
   val constant : t -> Constant.t
   val mind : t -> MutInd.t
@@ -745,19 +659,7 @@ module GlobRef : sig
 
   val equal : t -> t -> bool
 
-  module CanOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module UserOrd : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
   module Set_env : CSig.SetS with type elt = t
   module Map_env : Map.ExtS

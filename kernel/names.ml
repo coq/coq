@@ -447,6 +447,22 @@ module KNset = KNmap.Set
 
 (** {6 Kernel pairs } *)
 
+module type EqType =
+sig
+  type t
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
+  val hash : t -> int
+end
+
+module type QNameS =
+sig
+  type t
+  module CanOrd : EqType with type t = t
+  module UserOrd : EqType with type t = t
+  module SyntacticOrd : EqType with type t = t
+end
+
 (** For constant and inductive names, we use a kernel name couple (kn1,kn2)
    where kn1 corresponds to the name used at toplevel (i.e. what the user see)
    and kn2 corresponds to the canonical kernel name i.e. in the environment
@@ -945,6 +961,14 @@ struct
       x == x' || b = b' && Repr.CanOrd.equal c c'
     let hash (c, b) = (if b then 0 else 1) + Repr.CanOrd.hash c
   end
+  module UserOrd = struct
+    type nonrec t = t
+    let compare (c, b) (c', b') =
+      if b = b' then Repr.UserOrd.compare c c' else -1
+    let equal (c, b as x) (c', b' as x') =
+      x == x' || b = b' && Repr.UserOrd.equal c c'
+    let hash (c, b) = (if b then 0 else 1) + Repr.UserOrd.hash c
+  end
 
   module Self_Hashcons =
     struct
@@ -1039,22 +1063,27 @@ module GlobRef = struct
   (* By default, [global_reference] are ordered on their canonical part *)
 
   module CanOrd = struct
-    open Constant.CanOrd
     type t = GlobRefInternal.t
     let compare gr1 gr2 =
-      GlobRefInternal.global_ord_gen compare ind_ord constructor_ord gr1 gr2
-    let equal gr1 gr2 = GlobRefInternal.global_eq_gen equal eq_ind eq_constructor gr1 gr2
-    let hash gr = GlobRefInternal.global_hash_gen hash ind_hash constructor_hash gr
+      GlobRefInternal.global_ord_gen Constant.CanOrd.compare Ind.CanOrd.compare Construct.CanOrd.compare gr1 gr2
+    let equal gr1 gr2 = GlobRefInternal.global_eq_gen Constant.CanOrd.equal Ind.CanOrd.equal Construct.CanOrd.equal gr1 gr2
+    let hash gr = GlobRefInternal.global_hash_gen Constant.CanOrd.hash Ind.CanOrd.hash Construct.CanOrd.hash gr
   end
 
   module UserOrd = struct
-    open Constant.UserOrd
     type t = GlobRefInternal.t
     let compare gr1 gr2 =
-      GlobRefInternal.global_ord_gen compare ind_user_ord constructor_user_ord gr1 gr2
-    let equal gr1 gr2 =
-      GlobRefInternal.global_eq_gen equal eq_user_ind eq_user_constructor gr1 gr2
-    let hash gr = GlobRefInternal.global_hash_gen hash ind_user_hash constructor_user_hash gr
+      GlobRefInternal.global_ord_gen Constant.UserOrd.compare Ind.UserOrd.compare Construct.UserOrd.compare gr1 gr2
+    let equal gr1 gr2 = GlobRefInternal.global_eq_gen Constant.UserOrd.equal Ind.UserOrd.equal Construct.UserOrd.equal gr1 gr2
+    let hash gr = GlobRefInternal.global_hash_gen Constant.UserOrd.hash Ind.UserOrd.hash Construct.UserOrd.hash gr
+  end
+
+  module SyntacticOrd = struct
+    type t = GlobRefInternal.t
+    let compare gr1 gr2 =
+      GlobRefInternal.global_ord_gen Constant.SyntacticOrd.compare Ind.SyntacticOrd.compare Construct.SyntacticOrd.compare gr1 gr2
+    let equal gr1 gr2 = GlobRefInternal.global_eq_gen Constant.SyntacticOrd.equal Ind.SyntacticOrd.equal Construct.SyntacticOrd.equal gr1 gr2
+    let hash gr = GlobRefInternal.global_hash_gen Constant.SyntacticOrd.hash Ind.SyntacticOrd.hash Construct.SyntacticOrd.hash gr
   end
 
   module Map = HMap.Make(CanOrd)
