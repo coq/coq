@@ -286,38 +286,29 @@ val template_polymorphic_pind : pinductive -> env -> bool
 
 (** {6 Name quotients} *)
 
-module QConstant :
+module type QNameS =
 sig
-  type t = Constant.t
+  type t
   val equal : env -> t -> t -> bool
   val compare : env -> t -> t -> int
   val hash : env -> t -> int
-  val canonical : env -> t -> KerName.t
 end
 
-module QMutInd :
-sig
-  type t = MutInd.t
-  val equal : env -> t -> t -> bool
-  val compare : env -> t -> t -> int
-  val hash : env -> t -> int
-  val canonical : env -> t -> KerName.t
-end
+module QConstant : QNameS with type t = Constant.t
+
+module QMutInd : QNameS with type t = MutInd.t
+
+module QInd : QNameS with type t = Ind.t
+
+module QConstruct : QNameS with type t = Construct.t
 
 module QProjection :
 sig
-  type t = Projection.t
-  val equal : env -> t -> t -> bool
-  val compare : env -> t -> t -> int
-  val hash : env -> t -> int
-  module Repr :
-  sig
-    type t = Projection.Repr.t
-    val equal : env -> t -> t -> bool
-    val compare : env -> t -> t -> int
-    val hash : env -> t -> int
-  end
+  include QNameS with type t = Projection.t
+  module Repr : QNameS with type t = Projection.Repr.t
 end
+
+module QGlobRef : QNameS with type t = GlobRef.t
 
 (** {5 Modules } *)
 
