@@ -1362,7 +1362,7 @@ let () =
 
 let () =
   let e = Tac2entries.Pltac.tac2expr_in_env in
-  let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (in_gen (rawwit wit_ltac2) v) in
+  let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (Some "ltac2", in_gen (rawwit wit_ltac2) v) in
   Ltac_plugin.Tacentries.create_ltac_quotation "ltac2" inject (e, None)
 
 (* Ltac1 runtime representation of Ltac2 closure quotations *)

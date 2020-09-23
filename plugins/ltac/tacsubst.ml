@@ -237,7 +237,7 @@ and subst_tacarg subst = function
   | TacPretype c -> TacPretype (subst_glob_constr subst c)
   | TacNumgoals -> TacNumgoals
   | Tacexp t -> Tacexp (subst_tactic subst t)
-  | TacGeneric arg -> TacGeneric (subst_genarg subst arg)
+  | TacGeneric (isquot,arg) -> TacGeneric (isquot,subst_genarg subst arg)
 
 (* Reads the rules of a Match Context or a Match *)
 and subst_match_rule subst = function

@@ -1682,7 +1682,7 @@ let set_pr_ssrtac name prec afmt = (* FIXME *) () (*
 let ssrtac_expr ?loc name args = TacML (CAst.make ?loc (ssrtac_entry name, args))
 
 let tclintros_expr ?loc tac ipats =
-  let args = [Tacexpr.TacGeneric (in_gen (rawwit wit_ssrintrosarg) (tac, ipats))] in
+  let args = [Tacexpr.TacGeneric (None, in_gen (rawwit wit_ssrintrosarg) (tac, ipats))] in
   ssrtac_expr ?loc "tclintros" args
 
 }
@@ -1777,7 +1777,7 @@ let _ = set_pr_ssrtac "tcldo" 3 [ArgSep "do "; ArgSsr "doarg"]
 
 let ssrdotac_expr ?loc n m tac clauses =
   let arg = ((n, m), tac), clauses in
-  ssrtac_expr ?loc "tcldo" [Tacexpr.TacGeneric (in_gen (rawwit wit_ssrdoarg) arg)]
+  ssrtac_expr ?loc "tcldo" [Tacexpr.TacGeneric (None, in_gen (rawwit wit_ssrdoarg) arg)]
 
 }
 
@@ -1828,7 +1828,7 @@ let tclseq_expr ?loc tac dir arg =
   let arg1 = in_gen (rawwit wit_ssrtclarg) tac in
   let arg2 = in_gen (rawwit wit_ssrseqdir) dir in
   let arg3 = in_gen (rawwit wit_ssrseqarg) (check_seqtacarg dir arg) in
-  ssrtac_expr ?loc "tclseq" (List.map (fun x -> Tacexpr.TacGeneric x) [arg1; arg2; arg3])
+  ssrtac_expr ?loc "tclseq" (List.map (fun x -> Tacexpr.TacGeneric (None, x)) [arg1; arg2; arg3])
 
 }
 
@@ -2451,7 +2451,7 @@ GRAMMAR EXTEND Gram
   tactic_expr: LEVEL "3"
     [ RIGHTA [ IDENT "abstract"; gens = ssrdgens ->
                { ssrtac_expr ~loc "abstract"
-                [Tacexpr.TacGeneric (Genarg.in_gen (Genarg.rawwit wit_ssrdgens) gens)] } ]];
+                [Tacexpr.TacGeneric (None, Genarg.in_gen (Genarg.rawwit wit_ssrdgens) gens)] } ]];
 END
 TACTIC EXTEND ssrabstract
 | [ "abstract" ssrdgens(gens) ] -> {
