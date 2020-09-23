@@ -7,25 +7,7 @@ set -e
 
 dev/tools/check-overlays.sh
 
-# Can we check and fix formatting?
-# NB: we will ignore errors from ocamlformat as it fails when
-# encountering OCaml syntax errors
-ocamlformat=$(command -v ocamlformat || echo true)
-if [ "$ocamlformat" = true ]
-then
-    1>&2 echo "Warning: ocamlformat is not in path. Cannot check formatting."
-fi
-
-# Verify that the version of ocamlformat matches the one in .ocamlformat
-# The following command will print an error message if that's not the case
-# (and will print nothing if the versions match)
-if ! echo "let () = ()" | "$ocamlformat" --impl - > /dev/null
-then
-    1>&2 echo "Warning: Cannot check formatting."
-    ocamlformat=true
-fi
-
-1>&2 echo "Auto fixing whitespace and formatting issues..."
+1>&2 echo "Auto fixing whitespace issues..."
 
 # We fix whitespace in the index and in the working tree
 # separately to preserve non-added changes.
@@ -52,7 +34,6 @@ if [ -s "$index" ]; then
     git apply --cached --whitespace=fix "$index"
     git apply --whitespace=fix "$index" 2>/dev/null # no need to repeat yourself
     git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
-    { git diff --cached --name-only -z | grep -E '.*\.mli?$' -z | xargs -0 "$ocamlformat" -i || true; } 2> /dev/null
     git add -u
     1>&2 echo #newline
 fi
@@ -68,12 +49,11 @@ if [ -s "$tree" ]; then
     1>&2 echo "Fixing unstaged changes..."
     git apply --whitespace=fix "$tree"
     git diff --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
-    { git diff --name-only -z | grep -E '.*\.mli?$' -z | xargs -0 "$ocamlformat" -i || true; } 2> /dev/null
     1>&2 echo #newline
 fi
 
 if [ -s "$index" ] && ! [ -s "$fixed_index" ]; then
-    1>&2 echo "Fixing whitespace and formatting issues cancelled all changes."
+    1>&2 echo "Fixing whitespace issues cancelled all changes."
     exit 1
 fi
 
@@ -84,7 +64,7 @@ if ! git diff-index --check --cached HEAD; then
     1>&2 echo "(Consider whether the number of errors decreases after each run.)"
     exit 1
 fi
-1>&2 echo "Whitespace and formatting pass complete."
+1>&2 echo "Whitespace pass complete."
 
 # clean up temporary files
 rm "$index" "$tree" "$fixed_index"
