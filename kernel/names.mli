@@ -662,14 +662,18 @@ module Projection : sig
   val unfold : t -> t
 
   val equal : t -> t -> bool
+  [@@ocaml.deprecated "Use QProjection.equal"]
   val hash : t -> int
+  [@@ocaml.deprecated "Use QProjection.hash"]
   val hcons : t -> t
   (** Hashconsing of projections. *)
 
   val repr_equal : t -> t -> bool
+  [@@ocaml.deprecated "Use an explicit projection of Repr"]
   (** Ignoring the unfolding boolean. *)
 
   val compare : t -> t -> int
+  [@@ocaml.deprecated "Use QProjection.compare"]
 
   val map : (MutInd.t -> MutInd.t) -> t -> t
   val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t

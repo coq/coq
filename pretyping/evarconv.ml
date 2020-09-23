@@ -831,7 +831,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         in
         ise_try evd [f1; f2]
 
-        | Proj (p, c), Proj (p', c') when Projection.repr_equal p p' ->
+        | Proj (p, c), Proj (p', c') when QProjection.Repr.equal env (Projection.repr p) (Projection.repr p') ->
           let f1 i =
             ise_and i
             [(fun i -> evar_conv_x flags env i CONV c c');

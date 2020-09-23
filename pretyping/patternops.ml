@@ -59,7 +59,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PCoFix (i1,f1), PCoFix (i2,f2) ->
   Int.equal i1 i2 && rec_declaration_eq f1 f2
 | PProj (p1, t1), PProj (p2, t2) ->
-   Projection.equal p1 p2 && constr_pattern_eq t1 t2
+   Projection.CanOrd.equal p1 p2 && constr_pattern_eq t1 t2
 | PInt i1, PInt i2 ->
    Uint63.equal i1 i2
 | PFloat f1, PFloat f2 ->

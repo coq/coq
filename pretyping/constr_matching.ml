@@ -311,7 +311,7 @@ let matches_core env sigma allow_bound_rels
             || Projection.unfolded pr ->
           raise PatternMatchingFailure
         | PProj (pr1,c1), Proj (pr,c) ->
-          if Projection.equal pr1 pr then
+          if Environ.QProjection.equal env pr1 pr then
             try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c) arg1 arg2
             with Invalid_argument _ -> raise PatternMatchingFailure
           else raise PatternMatchingFailure
@@ -332,7 +332,7 @@ let matches_core env sigma allow_bound_rels
                sorec ctx env subst p term
          with Retyping.RetypeError _ -> raise PatternMatchingFailure)
 
-      | PProj (p1,c1), Proj (p2,c2) when Projection.equal p1 p2 ->
+      | PProj (p1,c1), Proj (p2,c2) when Environ.QProjection.equal env p1 p2 ->
           sorec ctx env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
