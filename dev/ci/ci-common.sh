@@ -95,9 +95,9 @@ make()
     if [ -z "${MAKEFLAGS+x}" ] && [ -n "${NJOBS}" ];
     then
         # Not submake and parallel make requested
-        command make -j "$NJOBS" "$@"
+        command make --output-sync -j "$NJOBS" "$@"
     else
-        command make "$@"
+        command make --output-sync "$@"
     fi
 }
 
