@@ -4,6 +4,12 @@
   comes from a notation. Use `None` if not and `Some foo` to tell to
   print such TacGeneric surrounded with `foo:( )`.
 
+### Code formatting
+
+- The automatic code formatting tool `ocamlformat` has been disabled and its
+  git hook removed. If desired, automatic formatting can be achieved by calling
+  the `fmt` target of the dune build system.
+
 ## Changes between Coq 8.11 and Coq 8.12
 
 ### Code formatting
