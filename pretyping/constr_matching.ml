@@ -246,7 +246,7 @@ let matches_core env sigma allow_bound_rels
     | VarRef id, Var id' -> Names.Id.equal id id'
     | ConstRef c, Const (c',_) -> Environ.QConstant.equal env c c'
     | IndRef i, Ind (i', _) -> Names.Ind.CanOrd.equal i i'
-    | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
+    | ConstructRef c, Construct (c',u) -> Names.Construct.CanOrd.equal c c'
     | _, _ -> false
   in
   let rec sorec ctx env subst p t =

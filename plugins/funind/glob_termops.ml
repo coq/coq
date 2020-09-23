@@ -444,7 +444,8 @@ let rec are_unifiable_aux = function
     match (DAst.get l, DAst.get r) with
     | PatVar _, _ | _, PatVar _ -> are_unifiable_aux eqs
     | PatCstr (constructor1, cpl1, _), PatCstr (constructor2, cpl2, _) ->
-      if not (eq_constructor constructor2 constructor1) then raise NotUnifiable
+      if not (Construct.CanOrd.equal constructor2 constructor1) then
+        raise NotUnifiable
       else
         let eqs' =
           try List.combine cpl1 cpl2 @ eqs
@@ -464,7 +465,8 @@ let rec eq_cases_pattern_aux = function
     match (DAst.get l, DAst.get r) with
     | PatVar _, PatVar _ -> eq_cases_pattern_aux eqs
     | PatCstr (constructor1, cpl1, _), PatCstr (constructor2, cpl2, _) ->
-      if not (eq_constructor constructor2 constructor1) then raise NotUnifiable
+      if not (Construct.CanOrd.equal constructor2 constructor1) then
+        raise NotUnifiable
       else
         let eqs' =
           try List.combine cpl1 cpl2 @ eqs

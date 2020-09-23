@@ -433,8 +433,8 @@ module Cache =
     module ConstrHash =
     struct
       type t = constructor
-      let equal = eq_constructor
-      let hash = constructor_hash
+      let equal = Construct.CanOrd.equal
+      let hash = Construct.CanOrd.hash
     end
 
     module ConstrTable = Hashtbl.Make(ConstrHash)

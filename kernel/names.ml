@@ -648,16 +648,60 @@ struct
 
 end
 
+module Construct =
+struct
+  (** Designation of a (particular) constructor of a (particular) inductive type. *)
+  type t = Ind.t (* designates the inductive type *)
+         * int   (* the index of the constructor
+                                    BEWARE: indexing starts from 1. *)
+
+  let modpath (ind, _) = Ind.modpath ind
+
+  module CanOrd =
+  struct
+    type nonrec t = t
+    let equal (ind1, j1) (ind2, j2) = Int.equal j1 j2 && Ind.CanOrd.equal ind1 ind2
+    let compare (ind1, j1) (ind2, j2) =
+      let c = Int.compare j1 j2 in
+      if Int.equal c 0 then Ind.CanOrd.compare ind1 ind2 else c
+    let hash (ind, i) =
+      Hashset.Combine.combine (Ind.CanOrd.hash ind) (Int.hash i)
+  end
+
+  module UserOrd =
+  struct
+    type nonrec t = t
+    let equal (ind1, j1) (ind2, j2) =
+      Int.equal j1 j2 && Ind.UserOrd.equal ind1 ind2
+    let compare (ind1, j1) (ind2, j2) =
+      let c = Int.compare j1 j2 in
+      if Int.equal c 0 then Ind.UserOrd.compare ind1 ind2 else c
+    let hash (ind, i) =
+      Hashset.Combine.combine (Ind.UserOrd.hash ind) (Int.hash i)
+  end
+
+  module SyntacticOrd =
+  struct
+    type nonrec t = t
+    let equal (ind1, j1) (ind2, j2) =
+      Int.equal j1 j2 && Ind.SyntacticOrd.equal ind1 ind2
+    let compare (ind1, j1) (ind2, j2) =
+      let c = Int.compare j1 j2 in
+      if Int.equal c 0 then Ind.SyntacticOrd.compare ind1 ind2 else c
+    let hash (ind, i) =
+      Hashset.Combine.combine (Ind.SyntacticOrd.hash ind) (Int.hash i)
+  end
+
+end
+
 (** Designation of a (particular) inductive type. *)
 type inductive = Ind.t
 
 (** Designation of a (particular) constructor of a (particular) inductive type. *)
-type constructor = inductive   (* designates the inductive type *)
-                 * int         (* the index of the constructor
-                                  BEWARE: indexing starts from 1. *)
+type constructor = Construct.t
 
 let ind_modpath = Ind.modpath
-let constr_modpath (ind,_) = ind_modpath ind
+let constr_modpath = Construct.modpath
 
 let ith_mutual_inductive (mind, _) i = (mind, i)
 let ith_constructor_of_inductive ind i = (ind, i)
@@ -676,48 +720,27 @@ let ind_hash = Ind.CanOrd.hash
 let ind_user_hash = Ind.UserOrd.hash
 let ind_syntactic_hash = Ind.SyntacticOrd.hash
 
-let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
-let eq_user_constructor (ind1, j1) (ind2, j2) =
-  Int.equal j1 j2 && eq_user_ind ind1 ind2
-let eq_syntactic_constructor (ind1, j1) (ind2, j2) =
-  Int.equal j1 j2 && eq_syntactic_ind ind1 ind2
+let eq_constructor = Construct.CanOrd.equal
+let eq_user_constructor = Construct.UserOrd.equal
+let eq_syntactic_constructor = Construct.SyntacticOrd.equal
 
-let constructor_ord (ind1, j1) (ind2, j2) =
-  let c = Int.compare j1 j2 in
-  if Int.equal c 0 then ind_ord ind1 ind2 else c
-let constructor_user_ord (ind1, j1) (ind2, j2) =
-  let c = Int.compare j1 j2 in
-  if Int.equal c 0 then ind_user_ord ind1 ind2 else c
-let constructor_syntactic_ord (ind1, j1) (ind2, j2) =
-  let c = Int.compare j1 j2 in
-  if Int.equal c 0 then ind_syntactic_ord ind1 ind2 else c
+let constructor_ord = Construct.CanOrd.compare
+let constructor_user_ord = Construct.UserOrd.compare
+let constructor_syntactic_ord = Construct.SyntacticOrd.compare
 
-let constructor_hash (ind, i) =
-  Hashset.Combine.combine (ind_hash ind) (Int.hash i)
-let constructor_user_hash (ind, i) =
-  Hashset.Combine.combine (ind_user_hash ind) (Int.hash i)
-let constructor_syntactic_hash (ind, i) =
-  Hashset.Combine.combine (ind_syntactic_hash ind) (Int.hash i)
+let constructor_hash = Construct.CanOrd.hash
+let constructor_user_hash = Construct.UserOrd.hash
+let constructor_syntactic_hash = Construct.SyntacticOrd.hash
 
 module Indset = Set.Make(Ind.CanOrd)
 module Indset_env = Set.Make(Ind.UserOrd)
 module Indmap = Map.Make(Ind.CanOrd)
 module Indmap_env = Map.Make(Ind.UserOrd)
 
-module ConstructorOrdered = struct
-  type t = constructor
-  let compare = constructor_ord
-end
-
-module ConstructorOrdered_env = struct
-  type t = constructor
-  let compare = constructor_user_ord
-end
-
-module Constrset = Set.Make(ConstructorOrdered)
-module Constrset_env = Set.Make(ConstructorOrdered_env)
-module Constrmap = Map.Make(ConstructorOrdered)
-module Constrmap_env = Map.Make(ConstructorOrdered_env)
+module Constrset = Set.Make(Construct.CanOrd)
+module Constrset_env = Set.Make(Construct.UserOrd)
+module Constrmap = Map.Make(Construct.CanOrd)
+module Constrmap_env = Map.Make(Construct.UserOrd)
 
 (** {6 Hash-consing of name objects } *)
 

@@ -91,7 +91,7 @@ let case_style_eq s1 s2 = let open Constr in match s1, s2 with
 let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
   | PatVar na1, PatVar na2 -> Name.equal na1 na2
   | PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
-    eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
+    Construct.CanOrd.equal c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
       Name.equal na1 na2
   | (PatVar _ | PatCstr _), _ -> false
 

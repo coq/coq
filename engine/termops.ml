@@ -1147,7 +1147,7 @@ let compare_constr_univ sigma f cv_pb t1 t2 =
         f Reduction.CONV t1 t2 && f cv_pb c1 c2
     | Const (c, u), Const (c', u') -> Constant.CanOrd.equal c c'
     | Ind (i, _), Ind (i', _) -> Ind.CanOrd.equal i i'
-    | Construct (i, _), Construct (i', _) -> eq_constructor i i'
+    | Construct (i, _), Construct (i', _) -> Construct.CanOrd.equal i i'
     | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
 
 let constr_cmp sigma cv_pb t1 t2 =

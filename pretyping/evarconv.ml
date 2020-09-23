@@ -589,7 +589,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           end
       | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
       | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
-        when Names.eq_constructor cons cons' ->
+        when Names.Construct.CanOrd.equal cons cons' ->
         if EInstance.is_empty u && EInstance.is_empty u' then Success evd
         else
           let u = EInstance.kind evd u and u' = EInstance.kind evd u' in

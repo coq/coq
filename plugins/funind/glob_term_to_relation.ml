@@ -332,7 +332,7 @@ let add_pat_variables sigma pat typ env : Environ.env =
       let constructors = Inductiveops.get_constructors env indf in
       let constructor : Inductiveops.constructor_summary =
         List.find
-          (fun cs -> eq_constructor c (fst cs.Inductiveops.cs_cstr))
+          (fun cs -> Construct.CanOrd.equal c (fst cs.Inductiveops.cs_cstr))
           (Array.to_list constructors)
       in
       let cs_args_types : types list =
@@ -402,7 +402,8 @@ let rec pattern_to_term_and_type env typ =
       let constructors = Inductiveops.get_constructors env indf in
       let constructor =
         List.find
-          (fun cs -> eq_constructor (fst cs.Inductiveops.cs_cstr) constr)
+          (fun cs ->
+            Construct.CanOrd.equal (fst cs.Inductiveops.cs_cstr) constr)
           (Array.to_list constructors)
       in
       let cs_args_types : types list =

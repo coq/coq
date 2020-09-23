@@ -513,10 +513,39 @@ end
 
 type inductive = Ind.t
 
-(** Designation of a (particular) constructor of a (particular) inductive type. *)
-type constructor = inductive   (* designates the inductive type *)
-                 * int         (* the index of the constructor
-                                  BEWARE: indexing starts from 1. *)
+module Construct :
+sig
+  (** Designation of a (particular) constructor of a (particular) inductive type. *)
+  type t = Ind.t   (* designates the inductive type *)
+         * int     (* the index of the constructor
+                                    BEWARE: indexing starts from 1. *)
+
+  val modpath : t -> ModPath.t
+
+  module CanOrd : sig
+    type nonrec t = t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
+  module UserOrd : sig
+    type nonrec t = t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
+  module SyntacticOrd : sig
+    type nonrec t = t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
+end
+
+type constructor = Construct.t
 
 module Indset : CSet.S with type elt = inductive
 module Constrset : CSet.S with type elt = constructor
@@ -531,6 +560,7 @@ val ind_modpath : inductive -> ModPath.t
 [@@ocaml.deprecated "Use the Ind module"]
 
 val constr_modpath : constructor -> ModPath.t
+[@@ocaml.deprecated "Use the Construct module"]
 
 val ith_mutual_inductive : inductive -> int -> inductive
 val ith_constructor_of_inductive : inductive -> int -> constructor
@@ -555,14 +585,23 @@ val ind_syntactic_ord : inductive -> inductive -> int
 val ind_syntactic_hash : inductive -> int
 [@@ocaml.deprecated "Use the Ind module"]
 val eq_constructor : constructor -> constructor -> bool
+[@@ocaml.deprecated "Use the Construct module"]
 val eq_user_constructor : constructor -> constructor -> bool
+[@@ocaml.deprecated "Use the Construct module"]
 val eq_syntactic_constructor : constructor -> constructor -> bool
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_ord : constructor -> constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_hash : constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_user_ord : constructor -> constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_user_hash : constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_syntactic_ord : constructor -> constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_syntactic_hash : constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 
 (** {6 Hash-consing } *)
 
