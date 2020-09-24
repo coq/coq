@@ -12,8 +12,12 @@ Build Requirements
 
 To compile Coq yourself, you need:
 
-- [OCaml](https://ocaml.org/) (version >= 4.05.0)
-  (This version of Coq has been tested up to OCaml 4.11.1)
+- [OCaml](https://ocaml.org/) (version >= 4.05.0, < 4.12.0):
+
+  This version of Coq has been tested up to OCaml 4.11.1.  All Coq
+  versions up to and including Coq 8.12 should be considered
+  incompatible with OCaml 4.12 (see
+  [#12636](https://github.com/coq/coq/issues/12636)).
 
 - The [num](https://github.com/ocaml/num) library; note that it is
   included in the OCaml distribution for OCaml versions < 4.06.0
