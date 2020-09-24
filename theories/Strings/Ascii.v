@@ -173,6 +173,14 @@ Proof.
   apply N_ascii_bounded.
 Qed.
 
+Definition ltb (a b : ascii) : bool :=
+  (N_of_ascii a <?  N_of_ascii b)%N.
+
+Definition leb (a b : ascii) : bool :=
+  (N_of_ascii a <=? N_of_ascii b)%N.
+
+Infix "<?"  := ltb : char_scope.
+Infix "<=?" := leb : char_scope.
 
 (** * Concrete syntax *)
 
