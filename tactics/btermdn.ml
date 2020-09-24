@@ -67,6 +67,8 @@ let constr_val_discr env sigma t =
     | Const (c, _) ->
       if evaluable_constant c env then Everything
       else Label(GRLabel (ConstRef c),l)
+    | Prod (n, d, c) -> Label(ProdLabel, [d; c])
+    | Sort _ -> Label(SortLabel, [])
     | _ -> Nothing
 
 let constr_val_discr_st env sigma ts t =
@@ -104,6 +106,8 @@ let constr_pat_discr env t =
     | PRef ((ConstRef c) as ref), args ->
       if evaluable_constant c env then None
       else Some (GRLabel ref, args)
+    | PProd (_, d, c), [] -> Some (ProdLabel, [d ; c])
+    | PSort s, [] -> Some (SortLabel, [])
     | _ -> None
 
 let constr_pat_discr_st env ts t =
