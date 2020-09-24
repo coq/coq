@@ -40,7 +40,7 @@ struct
   module UGlobal = struct
     type t = DirPath.t * int
 
-    let make dp i = (DirPath.hcons dp,i)
+    let make dp i = (Hashcons.hfun DirPath.hcons dp,i)
 
     let repr x : t = x
 
@@ -108,7 +108,7 @@ struct
     | Prop as x -> x
     | Set as x -> x
     | Level (d,n) as x ->
-      let d' = Names.DirPath.hcons d in
+      let d' = Hashcons.hfun Names.DirPath.hcons d in
         if d' == d then x else Level (d',n)
     | Var _n as x -> x
 
@@ -152,17 +152,16 @@ module Level = struct
     type nonrec t = t
     type u = unit
     let eq x y = x.hash == y.hash && RawLevel.hequal x.data y.data
-    let hash x = x.hash
     let hashcons () x =
       let data' = RawLevel.hcons x.data in
-      if x.data == data' then x else { x with data = data' }
+      (if x.data == data' then x else { x with data = data' }), x.hash
   end
 
   let hcons =
     let module H = Hashcons.Make(Self) in
     Hashcons.simple_hcons H.generate H.hcons ()
 
-  let make l = hcons { hash = RawLevel.hash l; data = l }
+  let make l = Hashcons.hfun hcons { hash = RawLevel.hash l; data = l }
 
   let set = make Set
   let prop = make Prop
@@ -298,10 +297,12 @@ struct
     module ExprHash =
     struct
       type t = Level.t * int
-      type u = Level.t -> Level.t
+      type u = Level.t Hashcons.hfun
+
       let hashcons hdir (b,n as x) =
-        let b' = hdir b in
-          if b' == b then x else (b',n)
+        let b', h = hdir b in
+        let ans = if b' == b then x else (b',n) in
+        ans, n + h
       let eq l1 l2 =
         l1 == l2 ||
         match l1,l2 with
@@ -326,10 +327,10 @@ struct
         if Int.equal 0 c then  Level.compare x x'
         else c
 
-    let sprop = hcons (Level.sprop, 0)
-    let prop = hcons (Level.prop, 0)
-    let set = hcons (Level.set, 0)
-    let type1 = hcons (Level.set, 1)
+    let sprop = Hashcons.hfun hcons (Level.sprop, 0)
+    let prop = Hashcons.hfun hcons (Level.prop, 0)
+    let set = Hashcons.hfun hcons (Level.set, 0)
+    let type1 = Hashcons.hfun hcons (Level.set, 1)
 
     let is_small = function
       | (l,0) -> Level.is_small l
@@ -338,8 +339,6 @@ struct
     let equal x y = x == y ||
       (let (u,n) = x and (v,n') = y in
          Int.equal n n' && Level.equal u v)
-
-    let hash = ExprHash.hash
 
     let leq (u,n) (v,n') =
       let cmp = Level.compare u v in
@@ -623,25 +622,31 @@ module Hconstraint =
   Hashcons.Make(
     struct
       type t = univ_constraint
-      type u = universe_level -> universe_level
-      let hashcons hul (l1,k,l2) = (hul l1, k, hul l2)
+      type u = universe_level Hashcons.hfun
+      let hashcons hul (l1,k,l2) =
+        let l1, hl1 = hul l1 in
+        let l2, hl2 = hul l2 in
+        let h = Hashset.Combine.combine3 hl1 (Hashtbl.hash k) hl2 in
+        (l1, k, l2), h
       let eq (l1,k,l2) (l1',k',l2') =
         l1 == l1' && k == k' && l2 == l2'
-      let hash = Hashtbl.hash
     end)
 
 module Hconstraints =
   Hashcons.Make(
     struct
       type t = constraints
-      type u = univ_constraint -> univ_constraint
+      type u = univ_constraint Hashcons.hfun
       let hashcons huc s =
-        Constraint.fold (fun x -> Constraint.add (huc x)) s Constraint.empty
+        let fold x (accu, h) =
+          let x, hx = huc x in
+          Constraint.add x accu, Hashset.Combine.combine hx h
+        in
+        Constraint.fold fold s (Constraint.empty, 0)
       let eq s s' =
         List.for_all2eq (==)
           (Constraint.elements s)
           (Constraint.elements s')
-      let hash = Hashtbl.hash
     end)
 
 let hcons_constraint = Hashcons.simple_hcons Hconstraint.generate Hconstraint.hcons Level.hcons
@@ -806,10 +811,8 @@ module Instance : sig
     val equal : t -> t -> bool
     val length : t -> int
 
-    val hcons : t -> t
+    val hcons : t Hashcons.hfun
     val hash : t -> int
-
-    val share : t -> t * int
 
     val subst_fn : universe_level_subst_fn -> t -> t
 
@@ -824,19 +827,24 @@ struct
   module HInstancestruct =
   struct
     type nonrec t = t
-    type u = Level.t -> Level.t
+    type u = Level.t Hashcons.hfun
 
     let hashcons huniv a =
       let len = Array.length a in
-        if Int.equal len 0 then empty
+        if Int.equal len 0 then empty, 0
         else begin
+          let hash = ref 0 in
           for i = 0 to len - 1 do
             let x = Array.unsafe_get a i in
-            let x' = huniv x in
+            let x', hx = huniv x in
+            let () =
               if x == x' then ()
               else Array.unsafe_set a i x'
+            in
+            hash := Hashset.Combine.combine !hash hx
           done;
-          a
+          let h = !hash land 0x3FFFFFFF in
+          a, h
         end
 
     let eq t1 t2 =
@@ -846,27 +854,24 @@ struct
              (Int.equal i (Array.length t1)) || (t1.(i) == t2.(i) && aux (i + 1))
            in aux 0)
 
-    let hash a =
-      let accu = ref 0 in
-        for i = 0 to Array.length a - 1 do
-          let l = Array.unsafe_get a i in
-          let h = Level.hash l in
-            accu := Hashset.Combine.combine !accu h;
-        done;
-        (* [h] must be positive. *)
-        let h = !accu land 0x3FFFFFFF in
-          h
   end
 
   module HInstance = Hashcons.Make(HInstancestruct)
 
   let hcons = Hashcons.simple_hcons HInstance.generate HInstance.hcons Level.hcons
 
-  let hash = HInstancestruct.hash
+  let hash a =
+    let accu = ref 0 in
+      for i = 0 to Array.length a - 1 do
+        let l = Array.unsafe_get a i in
+        let h = Level.hash l in
+          accu := Hashset.Combine.combine !accu h;
+      done;
+      (* [h] must be positive. *)
+      let h = !accu land 0x3FFFFFFF in
+        h
 
-  let share a = (hcons a, hash a)
-
-  let empty = hcons [||]
+  let empty = Hashcons.hfun hcons [||]
 
   let is_empty x = Int.equal (Array.length x) 0
 
@@ -964,7 +969,9 @@ struct
       h 0 (Instance.pr prl ?variance univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
 
   let hcons (univs, cst) =
-    (Instance.hcons univs, hcons_constraints cst)
+    let univs, hu = Instance.hcons univs in
+    let cst, hc = hcons_constraints cst in
+    (univs, cst), Hashset.Combine.combine hu hc
 
   let instance (univs, _cst) = univs
   let constraints (_univs, cst) = cst
@@ -999,7 +1006,13 @@ struct
   let names (nas, _) = nas
 
   let hcons (univs, cst) =
-    (Array.map Names.Name.hcons univs, hcons_constraints cst)
+    let fold accu n =
+      let n, hn = Names.Name.hcons n in
+      (Hashset.Combine.combine hn accu, n)
+    in
+    let hu, u = Array.Smart.fold_left_map fold 0 univs in
+    let cst, hc = hcons_constraints cst in
+    (u, cst), Hashset.Combine.combine hu hc
 
   let empty = ([||], Constraint.empty)
 
@@ -1216,19 +1229,24 @@ module Huniverse_set =
   Hashcons.Make(
     struct
       type t = universe_set
-      type u = universe_level -> universe_level
+      type u = universe_level Hashcons.hfun
       let hashcons huc s =
-        LSet.fold (fun x -> LSet.add (huc x)) s LSet.empty
+        let fold x (accu, h) =
+          let x, hx = huc x in
+          LSet.add x accu, Hashset.Combine.combine hx h
+        in
+        LSet.fold fold s (LSet.empty, 0)
       let eq s s' =
         LSet.equal s s'
-      let hash = Hashtbl.hash
     end)
 
 let hcons_universe_set =
   Hashcons.simple_hcons Huniverse_set.generate Huniverse_set.hcons Level.hcons
 
 let hcons_universe_context_set (v, c) =
-  (hcons_universe_set v, hcons_constraints c)
+  let v, hv = hcons_universe_set v in
+  let c, hc = hcons_constraints c in
+  (v, c), Hashset.Combine.combine hv hc
 
 let hcons_univ x = Universe.hcons x
 

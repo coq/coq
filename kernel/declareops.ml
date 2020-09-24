@@ -48,11 +48,11 @@ let map_decl_arity f g = function
   | TemplateArity a -> TemplateArity (g a)
 
 let hcons_template_arity ar =
-  { template_level = Univ.hcons_univ ar.template_level; }
+  { template_level = Hashcons.hfun Univ.hcons_univ ar.template_level; }
 
 let hcons_template_universe ar =
   { template_param_levels = ar.template_param_levels;
-    template_context = Univ.hcons_universe_context_set ar.template_context }
+    template_context = Hashcons.hfun Univ.hcons_universe_context_set ar.template_context }
 
 let universes_context = function
   | Monomorphic _ -> Univ.AUContext.empty
@@ -129,7 +129,7 @@ let subst_const_body sub cb =
     themselves. But would it really bring substantial gains ? *)
 
 let hcons_rel_decl =
-  RelDecl.map_name Names.Name.hcons %> RelDecl.map_value Constr.hcons %> RelDecl.map_type Constr.hcons
+  RelDecl.map_name (Hashcons.hfun Names.Name.hcons) %> RelDecl.map_value Constr.hcons %> RelDecl.map_type Constr.hcons
 
 let hcons_rel_context l = List.Smart.map hcons_rel_decl l
 
@@ -144,9 +144,9 @@ let hcons_const_def = function
 let hcons_universes cbu =
   match cbu with
   | Monomorphic ctx ->
-    Monomorphic (Univ.hcons_universe_context_set ctx)
+    Monomorphic (Hashcons.hfun Univ.hcons_universe_context_set ctx)
   | Polymorphic ctx ->
-    Polymorphic (Univ.hcons_abstract_universe_context ctx)
+    Polymorphic (Hashcons.hfun Univ.hcons_abstract_universe_context ctx)
 
 let hcons_const_body cb =
   { cb with
@@ -328,7 +328,7 @@ let relevance_of_projection_repr mib p =
 
 let hcons_regular_ind_arity a =
   { mind_user_arity = Constr.hcons a.mind_user_arity;
-    mind_sort = Sorts.hcons a.mind_sort }
+    mind_sort = Hashcons.hfun Sorts.hcons a.mind_sort }
 
 (** Just as for constants, this hash-consing is quite partial *)
 
@@ -342,10 +342,10 @@ let hcons_mind_packet oib =
   let map (ctx, c) = Context.Rel.map Constr.hcons ctx, Constr.hcons c in
   let nf = Array.Smart.map map oib.mind_nf_lc in
   { oib with
-    mind_typename = Names.Id.hcons oib.mind_typename;
+    mind_typename = Hashcons.hfun Names.Id.hcons oib.mind_typename;
     mind_arity_ctxt = hcons_rel_context oib.mind_arity_ctxt;
     mind_arity = hcons_ind_arity oib.mind_arity;
-    mind_consnames = Array.Smart.map Names.Id.hcons oib.mind_consnames;
+    mind_consnames = Array.Smart.map (Hashcons.hfun Names.Id.hcons) oib.mind_consnames;
     mind_user_lc = user;
     mind_nf_lc = nf }
 
@@ -389,7 +389,7 @@ let rec hcons_structure_field_body sb = match sb with
 and hcons_structure_body sb =
   (** FIXME *)
   let map (l, sfb as fb) =
-    let l' = Names.Label.hcons l in
+    let l' = Hashcons.hfun Names.Label.hcons l in
     let sfb' = hcons_structure_field_body sfb in
     if l == l' && sfb == sfb' then fb else (l', sfb')
   in

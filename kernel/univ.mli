@@ -293,14 +293,11 @@ sig
   val length : t -> int
   (** Instance length *)
 
-  val hcons : t -> t
+  val hcons : t Hashcons.hfun
   (** Hash-consing. *)
 
   val hash : t -> int
   (** Hash value *)
-
-  val share : t -> t * int
-  (** Simultaneous hash-consing and hash-value computation *)
 
   val subst_fn : universe_level_subst_fn -> t -> t
   (** Substitution by a level-to-level function. *)
@@ -493,9 +490,9 @@ val pr_universe_subst : universe_subst -> Pp.t
 
 (** {6 Hash-consing } *)
 
-val hcons_univ : Universe.t -> Universe.t
-val hcons_constraints : Constraint.t -> Constraint.t
-val hcons_universe_set : LSet.t -> LSet.t
-val hcons_universe_context : UContext.t -> UContext.t
-val hcons_abstract_universe_context : AUContext.t -> AUContext.t
-val hcons_universe_context_set : ContextSet.t -> ContextSet.t
+val hcons_univ : Universe.t Hashcons.hfun
+val hcons_constraints : Constraint.t Hashcons.hfun
+val hcons_universe_set : LSet.t Hashcons.hfun
+val hcons_universe_context : UContext.t Hashcons.hfun
+val hcons_abstract_universe_context : AUContext.t Hashcons.hfun
+val hcons_universe_context_set : ContextSet.t Hashcons.hfun

@@ -10,6 +10,10 @@
 
 (* Hash consing of datastructures *)
 
+type 'a hfun = 'a -> 'a * int
+
+let hfun f x = fst (f x)
+
 (* [t] is the type of object to hash-cons
  * [u] is the type of hash-cons functions for the sub-structures
  *   of objects of type t (u usually has the form (t1->t1)*(t2->t2)*...).
@@ -26,9 +30,8 @@ module type HashconsedType =
   sig
     type t
     type u
-    val hashcons :  u -> t -> t
+    val hashcons :  u -> t hfun
     val eq : t -> t -> bool
-    val hash : t -> int
   end
 
 (** The output is a function [generate] such that [generate args] creates a
@@ -42,7 +45,7 @@ module type S =
     type u
     type table
     val generate : u -> table
-    val hcons : table -> t -> t
+    val hcons : table -> t hfun
     val stats : table -> Hashset.statistics
   end
 
@@ -65,8 +68,9 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
       (tab, u)
 
     let hcons (tab, u) x =
-      let y = X.hashcons u x in
-      Htbl.repr (X.hash y) y tab
+      let y, h = X.hashcons u x in
+      let y = Htbl.repr h y tab in
+      y, h
 
     let stats (tab, _) = Htbl.stats tab
 
@@ -99,29 +103,27 @@ let recursive_hcons h f u =
 (* Basic hashcons modules for string and obj. Integers do not need be
    hashconsed.  *)
 
-module type HashedType = sig type t val hash : t -> int end
+module type PType = sig type t end
 
 (* list *)
-module Hlist (D:HashedType) =
+module Hlist (D:PType) =
   Make(
     struct
       type t = D.t list
-      type u = (t -> t) * (D.t -> D.t)
+      type u = (t -> t * int) * (D.t -> D.t * int)
       let hashcons (hrec,hdata) = function
-        | x :: l -> hdata x :: hrec l
-        | l -> l
+        | x :: l ->
+          let (x, hx) = hdata x in
+          let (l, hl) = hrec l in
+          let h = Hashset.Combine.combine hx hl in
+          x :: l, h
+        | [] -> [], 0
       let eq l1 l2 =
         l1 == l2 ||
           match l1, l2 with
           | [], [] -> true
           | x1::l1, x2::l2 -> x1==x2 && l1==l2
           | _ -> false
-      let rec hash accu = function
-      | [] -> accu
-      | x :: l ->
-        let accu = Hashset.Combine.combine (D.hash x) accu in
-        hash accu l
-      let hash l = hash 0 l
     end)
 
 (* string *)
@@ -129,7 +131,6 @@ module Hstring = Make(
   struct
     type t = string
     type u = unit
-    let hashcons () s =(* incr accesstr;*) s
 
     let eq = String.equal
 
@@ -143,4 +144,7 @@ module Hstring = Make(
     let hash s =
       let len = String.length s in
       hash len s 0 0
+
+    let hashcons () s = s, hash s
+
   end)

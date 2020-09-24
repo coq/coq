@@ -60,8 +60,8 @@ let create dp cu tab =
   let hcons (c, u) =
     let c = Constr.hcons c in
     let u = match u with
-    | PrivateMonomorphic u -> PrivateMonomorphic (Univ.hcons_universe_context_set u)
-    | PrivatePolymorphic (n, u) -> PrivatePolymorphic (n, Univ.hcons_universe_context_set u)
+    | PrivateMonomorphic u -> PrivateMonomorphic (Hashcons.hfun Univ.hcons_universe_context_set u)
+    | PrivatePolymorphic (n, u) -> PrivatePolymorphic (n, Hashcons.hfun Univ.hcons_universe_context_set u)
     in
     (c, u)
   in

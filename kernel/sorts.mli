@@ -35,7 +35,7 @@ val is_prop : t -> bool
 val is_small : t -> bool
 val family : t -> family
 
-val hcons : t -> t
+val hcons : t Hashcons.hfun
 
 val family_compare : family -> family -> int
 val family_equal : family -> family -> bool

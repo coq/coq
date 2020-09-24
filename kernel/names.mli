@@ -71,7 +71,7 @@ sig
   module List : List.MonoS with type elt = t
   (** Operations over lists of identifiers. *)
 
-  val hcons : t -> t
+  val hcons : t Hashcons.hfun
   (** Hashconsing of identifiers. *)
 
 end
@@ -101,7 +101,7 @@ sig
   val hash : t -> int
   (** Hash over names. *)
 
-  val hcons : t -> t
+  val hcons : t Hashcons.hfun
   (** Hashconsing over names. *)
 
   val print : t -> Pp.t
@@ -152,7 +152,7 @@ sig
   val initial : t
   (** Initial "seed" of the unique identifier generator *)
 
-  val hcons : t -> t
+  val hcons : t Hashcons.hfun
   (** Hashconsing of directory paths. *)
 
   val to_string : t -> string
@@ -198,7 +198,7 @@ sig
   module Set : Set.S with type elt = t
   module Map : Map.ExtS with type key = t and module Set := Set
 
-  val hcons : t -> t
+  val hcons : t Hashcons.hfun
 
 end
 
@@ -521,10 +521,10 @@ val constructor_syntactic_hash : constructor -> int
 
 (** {6 Hash-consing } *)
 
-val hcons_con : Constant.t -> Constant.t
-val hcons_mind : MutInd.t -> MutInd.t
-val hcons_ind : inductive -> inductive
-val hcons_construct : constructor -> constructor
+val hcons_con : Constant.t Hashcons.hfun
+val hcons_mind : MutInd.t Hashcons.hfun
+val hcons_ind : inductive Hashcons.hfun
+val hcons_construct : constructor Hashcons.hfun
 
 (******)
 
@@ -624,7 +624,7 @@ module Projection : sig
 
   val equal : t -> t -> bool
   val hash : t -> int
-  val hcons : t -> t
+  val hcons : t Hashcons.hfun
   (** Hashconsing of projections. *)
 
   val repr_equal : t -> t -> bool

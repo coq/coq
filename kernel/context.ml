@@ -39,6 +39,11 @@ let eq_annot eq {binder_name=na1;binder_relevance=r1} {binder_name=na2;binder_re
 let hash_annot h {binder_name=n;binder_relevance=r} =
   Hashset.Combine.combinesmall (Sorts.relevance_hash r) (h n)
 
+let hcons_annot f {binder_name= n ; binder_relevance = r} =
+  let n, hn = f n in
+  let ans = { binder_name = n; binder_relevance = r } in
+  ans, Hashset.Combine.combinesmall (Sorts.relevance_hash r) hn
+
 let map_annot f {binder_name=na;binder_relevance} =
   {binder_name=f na;binder_relevance}
 

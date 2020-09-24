@@ -110,19 +110,17 @@ module Hsorts =
     struct
       type _t = t
       type t = _t
-      type u = Universe.t -> Universe.t
+      type u = Universe.t Hashcons.hfun
 
       let hashcons huniv = function
-        | Type u as c ->
-          let u' = huniv u in
-            if u' == u then c else Type u'
-        | s -> s
+        | Type u ->
+          let u', hu = huniv u in
+          Type u', combinesmall 2 hu
+        | (SProp | Prop | Set) as s -> s, hash s
       let eq s1 s2 = match (s1,s2) with
         | Prop, Prop | Set, Set -> true
         | (Type u1, Type u2) -> u1 == u2
         |_ -> false
-
-      let hash = hash
     end)
 
 let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons hcons_univ

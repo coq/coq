@@ -18,13 +18,7 @@ module type S = Set.S
 
 module Make(M : OrderedType)= Set.Make(M)
 
-module type HashedType =
-sig
-  type t
-  val hash : t -> int
-end
-
-module Hashcons(M : OrderedType)(H : HashedType with type t = M.t)  =
+module Hashcons(M : OrderedType) =
 struct
   module Set = Make(M)
 
@@ -40,14 +34,6 @@ struct
   | SEmpty -> accu
   | SNode (l, v, r, _) -> spine l ((v, r) :: accu)
 
-  let rec umap f s = match set_prj s with
-  | SEmpty -> set_inj SEmpty
-  | SNode (l, v, r, h) ->
-    let l' = umap f l in
-    let r' = umap f r in
-    let v' = f v in
-    set_inj (SNode (l', v', r', h))
-
   let rec eqeq s1 s2 = match s1, s2 with
   | [], [] -> true
   | (v1, r1) :: s1, (v2, r2) :: s2 ->
@@ -58,10 +44,18 @@ struct
   struct
     open Hashset.Combine
     type t = set
-    type u = M.t -> M.t
+    type u = M.t Hashcons.hfun
     let eq s1 s2 = s1 == s2 || eqeq (spine s1 []) (spine s2 [])
-    let hash s = Set.fold (fun v accu -> combine (H.hash v) accu) s 0
-    let hashcons = umap
+
+    let rec hashcons f s = match set_prj s with
+    | SEmpty -> set_inj SEmpty, 0
+    | SNode (l, v, r, h) ->
+      let l', hl = hashcons f l in
+      let r', hr = hashcons f r in
+      let v', hv = f v in
+      let h = combine3 hl hr hv in
+      set_inj (SNode (l', v', r', h)), h
+
   end
 
   include Hashcons.Make(Hashed)

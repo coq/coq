@@ -28,6 +28,7 @@ type 'a binder_annot = { binder_name : 'a; binder_relevance : Sorts.relevance }
 val eq_annot : ('a -> 'a -> bool) -> 'a binder_annot -> 'a binder_annot -> bool
 
 val hash_annot : ('a -> int) -> 'a binder_annot -> int
+val hcons_annot : 'a Hashcons.hfun -> 'a binder_annot Hashcons.hfun
 
 val map_annot : ('a -> 'b) -> 'a binder_annot -> 'b binder_annot
 

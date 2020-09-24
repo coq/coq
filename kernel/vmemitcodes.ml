@@ -485,7 +485,7 @@ let to_memory (init_code, fun_code, fv) =
   emit env fun_code [];
   (** Later uses of this string are all purely functional *)
   let code = Bytes.sub_string env.out_buffer 0 env.out_position in
-  let code = CString.hcons code in
+  let code = Hashcons.hfun CString.hcons code in
   let fold reloc npos accu = (reloc, Array.of_list npos) :: accu in
   let reloc = RelocTable.fold fold env.reloc_info [] in
   let reloc = { reloc_infos = CArray.of_list reloc } in

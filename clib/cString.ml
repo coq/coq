@@ -28,7 +28,7 @@ sig
   module Set : Set.S with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
   module List : CList.MonoS with type elt = t
-  val hcons : string -> string
+  val hcons : string Hashcons.hfun
 end
 
 include String

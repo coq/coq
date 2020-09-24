@@ -65,7 +65,7 @@ sig
   module List : CList.MonoS with type elt = t
   (** Association lists with [string] as keys *)
 
-  val hcons : string -> string
+  val hcons : string Hashcons.hfun
   (** Hashconsing on [string] *)
 
 end
