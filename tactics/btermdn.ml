@@ -67,20 +67,6 @@ let constr_val_discr env sigma t =
       else Label(GRLabel (ConstRef c),l)
     | _ -> Nothing
 
-let constr_pat_discr env t =
-  if not (Patternops.occur_meta_pattern t) then
-    None
-  else
-    let open GlobRef in
-    match decomp_pat t with
-    | PRef ((IndRef _) as ref), args
-    | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
-    | PRef ((VarRef v) as ref), args -> Some(GRLabel ref,args)
-    | PRef ((ConstRef c) as ref), args ->
-      if evaluable_constant c env then None
-      else Some (GRLabel ref, args)
-    | _ -> None
-
 let constr_val_discr_st env sigma ts t =
   let c, l = decomp sigma t in
   let open GlobRef in
@@ -103,6 +89,20 @@ let constr_val_discr_st env sigma ts t =
     | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Case _ | Fix _ | CoFix _
     | Proj _ | Int _ | Float _ | Array _ -> Nothing
 
+let constr_pat_discr env t =
+  if not (Patternops.occur_meta_pattern t) then
+    None
+  else
+    let open GlobRef in
+    match decomp_pat t with
+    | PRef ((IndRef _) as ref), args
+    | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
+    | PRef ((VarRef v) as ref), args -> Some(GRLabel ref,args)
+    | PRef ((ConstRef c) as ref), args ->
+      if evaluable_constant c env then None
+      else Some (GRLabel ref, args)
+    | _ -> None
+
 let constr_pat_discr_st env ts t =
   let open GlobRef in
   match decomp_pat t with
@@ -121,36 +121,27 @@ let constr_pat_discr_st env ts t =
   | PSort s, [] -> Some (SortLabel, [])
   | _ -> None
 
-let bounded_constr_pat_discr_st env st (t,depth) =
+let bounded_constr_pat_discr env st (t,depth) =
   if Int.equal depth 0 then
     None
   else
-    match constr_pat_discr_st env st t with
+    let ans = match st with
+    | None -> constr_pat_discr env t
+    | Some st -> constr_pat_discr_st env st t
+    in
+    match ans with
       | None -> None
       | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
-let bounded_constr_val_discr_st env sigma st (t,depth) =
+let bounded_constr_val_discr env st sigma (t,depth) =
   if Int.equal depth 0 then
     Nothing
   else
-    match constr_val_discr_st env sigma st t with
-      | Label (c,l) -> Label(c,List.map (fun c -> (c,depth-1)) l)
-      | Nothing -> Nothing
-      | Everything -> Everything
-
-let bounded_constr_pat_discr env (t,depth) =
-  if Int.equal depth 0 then
-    None
-  else
-    match constr_pat_discr env t with
-      | None -> None
-      | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
-
-let bounded_constr_val_discr env sigma (t,depth) =
-  if Int.equal depth 0 then
-    Nothing
-  else
-    match constr_val_discr env sigma t with
+    let ans = match st with
+    | None -> constr_val_discr env sigma t
+    | Some st -> constr_val_discr_st env sigma st t
+    in
+    match ans with
       | Label (c,l) -> Label(c,List.map (fun c -> (c,depth-1)) l)
       | Nothing -> Nothing
       | Everything -> Everything
@@ -170,21 +161,14 @@ struct
 
   type pattern = Dn.pattern
 
-  let pattern env st pat = match st with
-  | None -> Dn.pattern (bounded_constr_pat_discr env) (pat, !dnet_depth)
-  | Some st -> Dn.pattern (bounded_constr_pat_discr_st env st) (pat, !dnet_depth)
+  let pattern env st pat =
+    Dn.pattern (bounded_constr_pat_discr env st) (pat, !dnet_depth)
 
   let empty = Dn.empty
   let add = Dn.add
   let rmv = Dn.rmv
 
-  let lookup env sigma = function
-    | None ->
-        (fun dn t ->
-             Dn.lookup dn (bounded_constr_val_discr env sigma) (t,!dnet_depth))
-    | Some st ->
-        (fun dn t ->
-             Dn.lookup dn (bounded_constr_val_discr_st env sigma st) (t,!dnet_depth))
+  let lookup env sigma st dn t =
+    Dn.lookup dn (bounded_constr_val_discr env st sigma) (t,!dnet_depth)
 
 end
-
