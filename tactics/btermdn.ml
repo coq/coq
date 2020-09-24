@@ -81,8 +81,7 @@ let constr_val_discr_st env sigma ts t =
       else Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) -> Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
-      if List.is_empty l then
-        Label(LambdaLabel, [d; c] @ l)
+      if List.is_empty l then Label(LambdaLabel, [d; c])
       else Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
