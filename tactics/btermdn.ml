@@ -80,12 +80,12 @@ let constr_val_discr env sigma ts t =
       if evaluable_named id env ts then Everything
       else Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) ->
-      if Option.is_empty ts then Nothing else Label(ProdLabel, [d; c])
+      Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
       if Option.is_empty ts then Nothing
       else if List.is_empty l then Label(LambdaLabel, [d; c])
       else Everything
-    | Sort _ -> if Option.is_empty ts then Nothing else Label(SortLabel, [])
+    | Sort _ -> Label(SortLabel, [])
     | Evar _ -> if Option.is_empty ts then Nothing else Everything
     | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Case _ | Fix _ | CoFix _
     | Proj _ | Int _ | Float _ | Array _ -> Nothing
@@ -114,11 +114,11 @@ let constr_pat_discr env ts t =
       else Some(GRLabel (VarRef v),args)
     end
   | PProd (_, d, c), [] ->
-    if Option.is_empty ts then None else Some (ProdLabel, [d ; c])
+    Some (ProdLabel, [d ; c])
   | PLambda (_, d, c), [] ->
     if Option.is_empty ts then None else Some (LambdaLabel, [d ; c])
   | PSort s, [] ->
-    if Option.is_empty ts then None else Some (SortLabel, [])
+    Some (SortLabel, [])
   | _ -> None
 
 let bounded_constr_pat_discr env st (t,depth) =
