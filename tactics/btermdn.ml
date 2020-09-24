@@ -61,7 +61,9 @@ let constr_val_discr env sigma t =
     match EConstr.kind sigma c with
     | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
-    | Var id -> Label(GRLabel (VarRef id),l)
+    | Var id ->
+      if Environ.evaluable_named id env then Everything
+      else Label(GRLabel (VarRef id),l)
     | Const (c, _) ->
       if evaluable_constant c env then Everything
       else Label(GRLabel (ConstRef c),l)
@@ -96,7 +98,9 @@ let constr_pat_discr env t =
     match decomp_pat t with
     | PRef ((IndRef _) as ref), args
     | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
-    | PRef ((VarRef v) as ref), args -> Some(GRLabel ref,args)
+    | PRef ((VarRef v) as ref), args ->
+      if Environ.evaluable_named v env then None
+      else Some(GRLabel ref,args)
     | PRef ((ConstRef c) as ref), args ->
       if evaluable_constant c env then None
       else Some (GRLabel ref, args)
