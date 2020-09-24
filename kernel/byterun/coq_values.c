@@ -38,9 +38,9 @@ value coq_closure_arity(value clos) {
   opcode_t * c = Code_val(clos);
   if (Is_instruction(c,RESTART)) {
     c++;
-    if (Is_instruction(c,GRAB)) return Val_int(3 + c[1] - Wosize_val(clos));
+    if (Is_instruction(c,GRAB)) return Val_int(4 + c[1] - Wosize_val(clos));
     else {
-      if (Wosize_val(clos) != 2) caml_failwith("Coq Values : coq_closure_arity");
+      if (Wosize_val(clos) != 3) caml_failwith("Coq Values : coq_closure_arity");
       return Val_int(1);
     }
   }
@@ -50,13 +50,17 @@ value coq_closure_arity(value clos) {
 
 /* Fonction sur les  fix */
 
-value coq_offset(value v) {
+value coq_current_fix(value v) {
   if (Tag_val(v) == Closure_tag) return Val_int(0);
-  else return Val_long(-Wsize_bsize(Infix_offset_val(v)));
+  else return Val_long(Wsize_bsize(Infix_offset_val(v)) / 3);
 }
 
-value coq_offset_closure(value v, value offset){
-  return (value)&Field(v, Int_val(offset));
+value coq_shift_fix(value v, value offset) {
+  return v + Int_val(offset) * 3 * sizeof(value);
+}
+
+value coq_last_fix(value v) {
+  return v + (Int_val(Field(v, 1)) - 2) * sizeof(value);
 }
 
 value coq_set_bytecode_field(value v, value i, value code) {

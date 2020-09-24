@@ -28,10 +28,10 @@ open Environ
 (* The virtual machine doesn't distinguish closures and their environment *)
 
 (* Representation of function environments :                              *)
-(*        [clos_t | code | fv1 | fv2 | ... | fvn ]                        *)
+(*        [clos_t | code | envofs=2 | fv1 | fv2 | ... | fvn ]             *)
 (*                ^                                                       *)
-(*  The offset for accessing free variables is 1 (we must skip the code   *)
-(*  pointer).                                                             *)
+(*  The offset for accessing free variables is 2 (we must skip the code   *)
+(*  pointer and the environment offset).                                  *)
 (*  While compiling, free variables are stored in [in_env] in order       *)
 (*  opposite to machine representation, so we can add new free variables  *)
 (*  easily (i.e. without changing the position of previous variables)     *)
@@ -42,9 +42,9 @@ open Environ
 (* In the function body [arg1] is represented by de Bruijn [n], and       *)
 (* [argn] by de Bruijn [1]                                                *)
 
-(* Representation of environments of mutual fixpoints :                  *)
-(* [t1|C1| ... |tc|Cc| ... |t(nbr)|C(nbr)| fv1 | fv2 | .... | fvn | type] *)
-(*                ^<----------offset--------->                            *)
+(* Representation of environments of mutual fixpoints :                   *)
+(* [clos_t|C1|envofs1| ... |infix_t|Ci|envofsi| ... |infix_t|Cnbr|envofsnbr=2| fv1 | fv2 | .... | fvn | type] *)
+(*                                 ^                                      *)
 (* type = [Ct1 | .... | Ctn]                                              *)
 (* Ci is the code pointer of the i-th body                                *)
 (* At runtime, a fixpoint environment (which is the same as the fixpoint  *)
@@ -52,45 +52,45 @@ open Environ
 (* In each fixpoint body, de Bruijn [nbr] represents the first fixpoint   *)
 (* and de Bruijn [1] the last one.                                        *)
 (* Access to these variables is performed by the [Koffsetclosure n]       *)
-(* instruction that shifts the environment pointer of [n] fields.         *)
+(* instruction that shifts the environment pointer by [n] closuress.      *)
 
 (* This allows representing mutual fixpoints in just one block.           *)
 (* [Ct1 | ... | Ctn] is an array holding code pointers of the fixpoint    *)
 (* types. They are used in conversion tests (which requires that          *)
 (* fixpoint types must be convertible). Their environment is the one of   *)
 (* the last fixpoint :                                                    *)
-(* [t1|C1| ... |tc|Cc| ... |t(nbr)|C(nbr)| fv1 | fv2 | .... | fvn | type] *)
-(*                                ^                                       *)
+(* [clos_t|C1| ... |infix_t|Ci| ... |infix_t|Cnbr|envofsnbr=2| fv1 | fv2 | .... | fvn | type] *)
+(*                                          ^                             *)
 
 (* Representation of mutual cofix :                                       *)
 (*  a1 =   [A_t | accumulate | [Cfx_t | fcofix1 ] ]                       *)
 (*                ...                                                     *)
 (*  anbr = [A_t | accumulate | [Cfx_t | fcofixnbr ] ]                     *)
 (*                                                                        *)
-(*  fcofix1 = [clos_t   | code1   | a1 |...| anbr | fv1 |...| fvn | type] *)
+(*  fcofix1   = [clos_t | code1   | envofs=2 | a1 |...| anbr | fv1 |...| fvn | type] *)
 (*                      ^                                                 *)
 (*                ...                                                     *)
-(*  fcofixnbr = [clos_t | codenbr | a1 |...| anbr | fv1 |...| fvn | type] *)
+(*  fcofixnbr = [clos_t | codenbr | envofs=2 | a1 |...| anbr | fv1 |...| fvn | type] *)
 (*                      ^                                                 *)
 (* The [ai] blocks are functions that accumulate their arguments:         *)
 (*           ai arg1  argp --->                                           *)
-(*    ai' = [A_t | accumulate | [Cfx_t | fcofixi] | arg1 | ... | argp ]   *)
+(*    ai' = [A_t | accumulate | envofs | [Cfx_t | fcofixi] | arg1 | ... | argp ] *)
 (* If such a block is matched against, we have to force evaluation,       *)
 (* function [fcofixi] is then applied to [ai'] [arg1] ... [argp]          *)
 (* (note that [ai'] is a pointer to the closure, passed as argument)      *)
 (* Once evaluation is completed [ai'] is updated with the result:         *)
 (*  ai' <--                                                               *)
-(*   [A_t | accumulate | [Cfxe_t |fcofixi|result] | arg1 | ... | argp ]   *)
+(*   [A_t | accumulate | envofs | [Cfxe_t |fcofixi|result] | arg1 | ... | argp ] *)
 (* This representation is nice because the application of the cofix is    *)
 (* evaluated only once (it simulates a lazy evaluation)                   *)
 (* Moreover, when cofix don't have arguments, it is possible to create    *)
 (* a cycle, e.g.:                                                         *)
 (*   cofix one := cons 1 one                                              *)
-(*   a1 = [A_t | accumulate | [Cfx_t|fcofix1] ]                           *)
-(*   fcofix1 = [clos_t | code | a1]                                       *)
+(*   a1 = [A_t | accumulate | envofs | [Cfx_t|fcofix1] ]                  *)
+(*   fcofix1 = [clos_t | code | envofs | a1]                              *)
 (* The result of evaluating [a1] is [cons_t | 1 | a1].                    *)
 (* When [a1] is updated :                                                 *)
-(*  a1 = [A_t | accumulate | [Cfxe_t | fcofix1 | [cons_t | 1 | a1]] ]     *)
+(*  a1 = [A_t | accumulate | envofs | [Cfxe_t | fcofix1 | [cons_t | 1 | a1]] ] *)
 (* The cycle is created ...                                               *)
 (*                                                                        *)
 (* In Cfxe_t accumulators, we need to store [fcofixi] for testing         *)
@@ -131,9 +131,7 @@ type comp_env = {
                                  (* universes are always at the bottom.    *)
     nb_stack : int;              (* number of variables on the stack       *)
     in_stack : int Range.t;      (* position in the stack                  *)
-    nb_rec : int;                (* number of mutually recursive functions *)
-    pos_rec  : instruction list; (* instruction d'acces pour les variables *)
-                                 (*  de point fix ou de cofix              *)
+    pos_rec : instruction array; (* instruction to access mutually-defined functions *)
     offset : int;
     in_env : vm_env ref          (* The free variables of the expression   *)
   }
@@ -159,8 +157,7 @@ let empty_comp_env ()=
     nb_uni_stack = 0;
     nb_stack = 0;
     in_stack = Range.empty;
-    nb_rec = 0;
-    pos_rec = [];
+    pos_rec = [||];
     offset = 0;
     in_env = ref empty_fv
   }
@@ -195,9 +192,8 @@ let comp_env_fun ?(univs=0) arity =
     nb_uni_stack = univs ;
     nb_stack = arity;
     in_stack = add_param arity 0 Range.empty;
-    nb_rec = 0;
-    pos_rec = [];
-    offset = 1;
+    pos_rec = [||];
+    offset = 0;
     in_env = ref empty_fv
   }
 
@@ -207,24 +203,18 @@ let comp_env_fix_type  rfv =
     nb_uni_stack = 0;
     nb_stack = 0;
     in_stack = Range.empty;
-    nb_rec = 0;
-    pos_rec = [];
-    offset = 1;
+    pos_rec = [||];
+    offset = 0;
     in_env = rfv
   }
 
-let comp_env_fix ndef curr_pos arity rfv =
-   let prec = ref [] in
-   for i = ndef downto 1 do
-     prec := Koffsetclosure (2 * (ndef - curr_pos - i)) :: !prec
-   done;
+let comp_env_fix ndef arity rfv =
    { arity;
      nb_uni_stack = 0;
      nb_stack = arity;
      in_stack = add_param arity 0 Range.empty;
-     nb_rec = ndef;
-     pos_rec = !prec;
-     offset = 2 * (ndef - curr_pos - 1)+1;
+     pos_rec = Array.init ndef (fun i -> Koffsetclosure i);
+     offset = 0;
      in_env = rfv
    }
 
@@ -233,24 +223,18 @@ let comp_env_cofix_type ndef rfv =
     nb_uni_stack = 0;
     nb_stack = 0;
     in_stack = Range.empty;
-    nb_rec = 0;
-    pos_rec = [];
-    offset = 1+ndef;
+    pos_rec = [||];
+    offset = ndef;
     in_env = rfv
   }
 
 let comp_env_cofix ndef arity rfv =
-   let prec = ref [] in
-   for i = 1 to ndef do
-     prec := Kenvacc i :: !prec
-   done;
    { arity;
      nb_uni_stack = 0;
      nb_stack = arity;
      in_stack = add_param arity 0 Range.empty;
-     nb_rec = ndef;
-     pos_rec = !prec;
-     offset = ndef+1;
+     pos_rec = Array.init ndef (fun i -> Kenvacc (ndef - 1 - i));
+     offset = ndef;
      in_env = rfv
    }
 
@@ -283,11 +267,11 @@ let pos_rel i r sz =
     Kacc(sz - (Range.get r.in_stack (i-1)))
   else
     let i = i - r.nb_stack in
-    if i <= r.nb_rec then
-      try List.nth r.pos_rec (i-1)
-      with (Failure _|Invalid_argument _) -> assert false
+    let nb_rec = Array.length r.pos_rec in
+    if i <= nb_rec then
+      r.pos_rec.(i - 1)
     else
-      let i = i - r.nb_rec in
+      let i = i - nb_rec in
       let db = FVrel(i) in
       let env = !(r.in_env) in
       try Kenvacc(r.offset + find_at db env)
@@ -410,16 +394,16 @@ let add_grabrec rec_arg arity lbl cont =
 let cont_cofix arity =
     (* accu = res                                                         *)
     (* stk  = ai::args::ra::...                                           *)
-    (* ai   = [At|accumulate|[Cfx_t|fcofix]|args]                         *)
+    (* ai   = [At|accumulate|envofs|[Cfx_t|fcofix]|args]                  *)
   [ Kpush;
     Kpush;        (*                 stk = res::res::ai::args::ra::...    *)
     Kacc 2;
-    Kfield 1;
+    Kfield 2;
     Kfield 0;
     Kmakeblock(2, cofix_evaluated_tag);
     Kpush;        (*  stk = [Cfxe_t|fcofix|res]::res::ai::args::ra::...*)
     Kacc 2;
-    Ksetfield 1;  (*   ai = [At|accumulate|[Cfxe_t|fcofix|res]|args]      *)
+    Ksetfield 2;  (*   ai = [At|accumulate|envofs|[Cfxe_t|fcofix|res]|args] *)
                   (*  stk = res::ai::args::ra::...                        *)
     Kacc 0;       (* accu = res                                           *)
     Kreturn (arity+2) ]
@@ -627,7 +611,7 @@ let rec compile_lam env cenv lam sz cont =
       for i = 0 to ndef - 1 do
         let params,body = decompose_Llam bodies.(i) in
         let arity = Array.length params in
-        let env_body = comp_env_fix ndef i arity rfv in
+        let env_body = comp_env_fix ndef arity rfv in
         let cont1 =
           ensure_stack_capacity (compile_lam env env_body body arity) [Kreturn arity]
         in

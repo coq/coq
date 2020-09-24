@@ -33,12 +33,12 @@ void init_arity () {
   arity[ACC0]=arity[ACC1]=arity[ACC2]=arity[ACC3]=arity[ACC4]=arity[ACC5]=
     arity[ACC6]=arity[ACC7]=arity[PUSH]=arity[PUSHACC0]=arity[PUSHACC1]=
     arity[PUSHACC2]=arity[PUSHACC3]=arity[PUSHACC4]=arity[PUSHACC5]=
-    arity[PUSHACC6]=arity[PUSHACC7]=arity[ENVACC1]=arity[ENVACC2]=
-    arity[ENVACC3]=arity[ENVACC4]=arity[PUSHENVACC1]=arity[PUSHENVACC2]=
-    arity[PUSHENVACC3]=arity[PUSHENVACC4]=arity[APPLY1]=arity[APPLY2]=
-    arity[APPLY3]=arity[APPLY4]=arity[RESTART]=arity[OFFSETCLOSUREM2]=
-    arity[OFFSETCLOSURE0]=arity[OFFSETCLOSURE2]=arity[PUSHOFFSETCLOSUREM2]=
-    arity[PUSHOFFSETCLOSURE0]=arity[PUSHOFFSETCLOSURE2]=
+    arity[PUSHACC6]=arity[PUSHACC7]=
+    arity[ENVACC0]=arity[ENVACC1]=arity[ENVACC2]=arity[ENVACC3]=
+    arity[PUSHENVACC0]=arity[PUSHENVACC1]=arity[PUSHENVACC2]=arity[PUSHENVACC3]=
+    arity[APPLY1]=arity[APPLY2]=arity[APPLY3]=arity[APPLY4]=arity[RESTART]=
+    arity[OFFSETCLOSURE0]=arity[OFFSETCLOSURE1]=
+    arity[PUSHOFFSETCLOSURE0]=arity[PUSHOFFSETCLOSURE1]=
     arity[GETFIELD0]=arity[GETFIELD1]=arity[SETFIELD0]=arity[SETFIELD1]=
     arity[CONST0]=arity[CONST1]=arity[CONST2]=arity[CONST3]=
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
