@@ -1,0 +1,25 @@
+diff --git a/runtime/caml/misc.h b/runtime/caml/misc.h
+index 6aa98516b..8184c2797 100644
+--- a/runtime/caml/misc.h
++++ b/runtime/caml/misc.h
+@@ -327,7 +327,6 @@ extern void caml_set_fields (intnat v, uintnat, uintnat);
+ 
+ #if defined(_WIN32) && !defined(_UCRT)
+ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
+-#define snprintf caml_snprintf
+ #endif
+ 
+ #ifdef CAML_INSTR
+@@ -336,6 +335,12 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
+ #include <time.h>
+ #include <stdio.h>
+ 
++/* snprintf emulation for Win32 - do define after stdio.h, in case snprintf is defined */
++
++#if defined(_WIN32) && !defined(_UCRT)
++#define snprintf caml_snprintf
++#endif
++
+ extern intnat caml_stat_minor_collections;
+ extern intnat caml_instr_starttime, caml_instr_stoptime;
+ 
