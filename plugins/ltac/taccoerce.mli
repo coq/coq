@@ -104,7 +104,7 @@ type appl =
        (** For calls to global constants, some may alias other. *)
 
 type tacvalue =
-  | VFun of appl*Tacexpr.ltac_trace * Val.t Id.Map.t *
+  | VFun of appl *Tacexpr.ltac_trace * Loc.t option * Val.t Id.Map.t *
       Name.t list * Tacexpr.glob_tactic_expr
   | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
 
