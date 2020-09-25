@@ -70,7 +70,8 @@ let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc 
   log @@ "[DM] Interpreting to loc " ^ string_of_int loc;
   let rec make_progress state =
     let open Lwt.Infix in
-    let invalid_ids, document = validate_document state.document in
+    let parsing_state_hook = ExecutionManager.get_parsing_state_after state.execution_state in
+    let invalid_ids, document = validate_document ~parsing_state_hook state.document in
     Lwt_list.fold_left_s (fun st id ->
         ExecutionManager.invalidate (Document.schedule state.document) id st) state.execution_state (Stateid.Set.elements invalid_ids) >>= fun execution_state ->
     let state = { state with document; execution_state } in
@@ -127,5 +128,6 @@ let apply_text_edits state edits =
   { state with document = apply_text_edits state.document edits }
 
 let validate_document state =
-  let invalid_ids, document = validate_document state.document in
+  let parsing_state_hook = ExecutionManager.get_parsing_state_after state.execution_state in
+  let invalid_ids, document = validate_document ~parsing_state_hook state.document in
   { state with document }

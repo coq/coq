@@ -14,6 +14,8 @@ open Scheduler
 
 type document
 
+type parsing_state_hook = sentence_id -> Vernacstate.Parser.t option
+
 val create_document : string -> document
 (** [create_document text] creates a fresh document with content defined by
     [text]. *)
@@ -48,7 +50,7 @@ val parsed_ranges : document -> Range.t list
 (** parsed_ranges [doc] returns the ranges corresponding to the sentences
     that have been parsed in [doc]. *)
 
-val validate_document : document -> Stateid.Set.t * document
+val validate_document : parsing_state_hook:parsing_state_hook -> document -> Stateid.Set.t * document
 
 type parsed_ast =
   | ValidAst of ast * Tok.t list
