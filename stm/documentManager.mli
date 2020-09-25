@@ -67,3 +67,5 @@ type diagnostic = {
 val diagnostics : state -> diagnostic list
 (** diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)
+
+val handle_feedback : Stateid.t -> Feedback.feedback_content -> state -> state

@@ -15,6 +15,7 @@ let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
 let loop run_mode ~opts:_ state =
   LspManager.init ();
+  let _feeder_id = Feedback.add_feeder LspManager.handle_feedback in
   let open Lwt.Infix in
   let rec loop (events : LspManager.events) =
     log @@ "[T] looking for next step";

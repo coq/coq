@@ -59,7 +59,8 @@ type execution_status =
 let success vernac_st = Success (Some vernac_st)
 let error loc msg vernac_st = Error ((loc,msg),(Some vernac_st))
 
-let interp_ast vernac_st ast =
+let interp_ast ~doc_id ~state_id vernac_st ast =
+  Feedback.set_id_for_feedback doc_id state_id;
   try
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
     let vernac_st = Vernacinterp.interp ~st:vernac_st ast in (* TODO set status to "Delegated" *)
@@ -86,9 +87,11 @@ type ast = Vernacexpr.vernac_control
 
 module SM = Map.Make (Stateid)
 
+type feedback_message = Feedback.level * Loc.t option * Pp.t
+
 type state = {
   initial : Vernacstate.t;
-  of_sentence : (execution_status Lwt.t * execution_status Lwt.u) SM.t;
+  of_sentence : ((execution_status Lwt.t * execution_status Lwt.u) * feedback_message list) SM.t;
 }
 
 type progress_hook = state option -> unit Lwt.t
@@ -100,7 +103,7 @@ let init_master vernac_state = {
 
 let find_fulfilled_opt x m =
   try
-    let p, _ = SM.find x m in
+    let (p,_), _ = SM.find x m in
     match Lwt.state p with
     | Lwt.Return v -> Some v
     | Lwt.Fail exn -> assert false
@@ -121,7 +124,7 @@ module Queue = MakeQueue(Jobs)
 
 let add_remote_promise (st, remote_mapping) id =
   let remote_mapping, pr = DelegationManager.lwt_remotely_wait remote_mapping id in
-  ({ st with of_sentence = SM.add id pr st.of_sentence }, remote_mapping)
+  ({ st with of_sentence = SM.add id (pr,[]) st.of_sentence }, remote_mapping)
 
 let remotize doc (st,remote_mapping) id =
   match Document.get_sentence doc id with
@@ -136,18 +139,18 @@ let remotize doc (st,remote_mapping) id =
 let prepare_task ~progress_hook doc st task : state * prepared_task =
   match task with
   | Skip id ->
-     { st with of_sentence = SM.add id (Lwt.task ()) st.of_sentence }, PSkip id
+     { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PSkip id
   | Exec(id,ast) ->
-     { st with of_sentence = SM.add id (Lwt.task ()) st.of_sentence }, PExec(id,ast)
+     { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PExec(id,ast)
   | OpaqueProof (id,ids) ->
      let remote_mapping = DelegationManager.empty_remote_mapping ~progress_hook:(fun () -> progress_hook None) in
      let (st,remote_mapping), jobs = CList.fold_left_map (remotize doc) (st,remote_mapping) ids in
-     { st with of_sentence = SM.add id (Lwt.task ()) st.of_sentence }, PDelegate(id, remote_mapping, jobs)
+     { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PDelegate(id, remote_mapping, jobs)
   | _ -> CErrors.anomaly Pp.(str "task not supported yet")
 
 let update st id v =
   match SM.find id st.of_sentence with
-  | (_,r) -> Lwt.wakeup r v
+  | ((_,r),_) -> Lwt.wakeup r v
   | exception Not_found -> CErrors.anomaly Pp.(str "No state for " ++ Stateid.print id)
 
 let id_of_prepared_task = function
@@ -157,13 +160,13 @@ let id_of_prepared_task = function
 
 type job = prepared_task list * Vernacstate.t * sentence_id
 
-let rec worker_main st ((job , vs, _state_id) : job) =
+let rec worker_main ~doc_id st ((job , vs, _state_id) : job) =
   (* signalling progress is automtically done by the resolution of remote
      promises *)
-  Lwt_list.fold_left_s (execute st) (vs,[],false) job >>= fun _ ->
+  Lwt_list.fold_left_s (execute ~doc_id st) (vs,[],false) job >>= fun _ ->
   Lwt.return ()
 
-and execute st (vs,events,interrupted) task =
+and execute ~doc_id st (vs,events,interrupted) task =
   if interrupted then begin
     update st (id_of_prepared_task task) (Error ((None,"interrupted"),None));
     Lwt.return (vs,events,true)
@@ -174,17 +177,17 @@ and execute st (vs,events,interrupted) task =
           update st id (Success (Some vs));
           Lwt.return (vs,events,false)
       | PExec (id,ast) ->
-          let vs, v = interp_ast vs ast in
+          let vs, v = interp_ast ~doc_id ~state_id:id vs ast in
           update st id v;
           Lwt.return (vs,events,false)
       | PDelegate (id, mapping, job) ->
           Queue.enqueue (mapping,(job,vs,id));
           let ast = CAst.make @@ Vernacexpr.{ expr = VernacEndProof Admitted; attrs = []; control = [] } in
-          let vs, v = interp_ast vs ast in
+          let vs, v = interp_ast ~doc_id ~state_id:id vs ast in
           update st id v;
           let e =
             DelegationManager.worker_available ~job:Queue.dequeue
-              ~fork_action:(worker_main st)
+              ~fork_action:(worker_main st ~doc_id)
               ~process_action:"vscoqtop_worker.opt" in
           Lwt.return (vs,events @ e,false)
     with Sys.Break ->
@@ -219,7 +222,8 @@ let observe progress_hook doc id st : (state * DelegationManager.events) Lwt.t =
     fulfilling of delegated jobs *)
   let progress_hook () = progress_hook (Some st) in
   let execute_w_progress x t =
-    execute st x t >>= fun x ->
+    let doc_id = Document.id_of_doc doc in
+    execute ~doc_id st x t >>= fun x ->
     progress_hook () >>= fun () ->
     Lwt.return x in
   Lwt_list.fold_left_s execute_w_progress (vs,[],false) tasks >>= fun (_,events,_) ->
@@ -240,25 +244,31 @@ let get_fulfilled_opt x =
   | _ -> None
 
 let errors st =
-  List.fold_left (fun acc (id, (p,_)) ->
+  List.fold_left (fun acc (id, ((p,_),_)) ->
     match get_fulfilled_opt p with
     | Some (Error ((loc,e),_st)) -> (id,loc,e) :: acc
     | _ -> acc)
     [] @@ SM.bindings st.of_sentence
 
+let warning_of_feedback id (lvl,loc,msg) = (id,loc, Pp.string_of_ppcmds msg)
+
+let warnings st =
+  List.fold_left (fun acc (id, (_,l)) -> List.map (warning_of_feedback id) l @ acc) [] @@ SM.bindings st.of_sentence
+
 let shift_locs st pos offset =
-  let shift_error (p,r as orig) = match get_fulfilled_opt p with
+  (* FIXME shift loc in feedback *)
+  let shift_error ((p,fb),r as orig) = match get_fulfilled_opt p with
   | Some (Error ((Some loc,e),st)) ->
     let (start,stop) = Loc.unloc loc in
-    if start >= pos then (Lwt.return @@ Error ((Some (Loc.shift_loc offset offset loc),e),st)),r
-    else if stop >= pos then (Lwt.return @@ Error ((Some (Loc.shift_loc 0 offset loc),e),st)),r
+    if start >= pos then (Lwt.return @@ Error ((Some (Loc.shift_loc offset offset loc),e),st), fb),r
+    else if stop >= pos then (Lwt.return @@ Error ((Some (Loc.shift_loc 0 offset loc),e),st), fb),r
     else orig
   | _ -> orig
   in
   { st with of_sentence = SM.map shift_error st.of_sentence }
 
 let executed_ids st =
-  SM.fold (fun id (p,_) acc ->
+  SM.fold (fun id ((p,_),_) acc ->
     match get_fulfilled_opt p with
     | Some (Success _ | Error _) -> id :: acc
     | _ -> acc) st.of_sentence []
@@ -277,7 +287,7 @@ let query id st ast = assert false
 
 let invalidate1 of_sentence id =
   try
-    let p,_ = SM.find id of_sentence in
+    let (p,_),_ = SM.find id of_sentence in
     match Lwt.state p with
     | Lwt.Sleep ->
         Lwt.cancel p;
@@ -314,3 +324,14 @@ let get_proofview st id =
       let open Declare in
       let open Vernacstate in
       st |> LemmaStack.with_top ~f:Proof.get |> data |> Option.make
+
+let handle_feedback state_id contents st =
+  match contents with
+  | Feedback.Message(lvl,loc,msg) ->
+    begin match SM.find_opt state_id st.of_sentence with
+    | None -> log @@ "Received feedback on non-existing state id " ^ Stateid.to_string state_id; st
+    | Some (p,l) ->
+      let of_sentence = SM.add state_id (p, (lvl,loc,msg) :: l) st.of_sentence in
+      { st with of_sentence }
+    end
+  | _ -> st

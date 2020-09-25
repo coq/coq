@@ -432,11 +432,14 @@ let string_of_diff = function
 end
 
 type document = {
+  id : int;
   parsed_loc : int;
   raw_doc : RawDoc.t;
   parsed_doc : ParsedDoc.t;
   more_to_parse : bool;
 }
+
+let id_of_doc doc = doc.id
 
 type parsing_state_hook = sentence_id -> Vernacstate.Parser.t option
 
@@ -574,10 +577,11 @@ let validate_document ~parsing_state_hook ({ parsed_loc; raw_doc; parsed_doc } a
     let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
     invalid_ids, { document with parsed_doc; more_to_parse; parsed_loc }
 
-let create_document text =
+let create_document ~id text =
   let raw_doc = RawDoc.create text in
   snd @@ validate_document ~parsing_state_hook:(fun _ -> None)
-    { parsed_loc = -1;
+    { id;
+      parsed_loc = -1;
       raw_doc;
       parsed_doc = ParsedDoc.empty;
       more_to_parse = true;

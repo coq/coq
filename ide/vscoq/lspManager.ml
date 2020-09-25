@@ -26,6 +26,11 @@ let get_init_state () =
   | None -> CErrors.anomaly Pp.(str "Initial state not available")
 
 let states : (string, DocumentManager.state) Hashtbl.t = Hashtbl.create 39
+let doc_ids : (int, string) Hashtbl.t = Hashtbl.create 39
+
+let fresh_doc_id =
+  let doc_id = ref (-1) in
+  fun () -> incr doc_id; !doc_id
 
 let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
@@ -118,7 +123,9 @@ let textDocumentDidOpen params : unit Lwt.t =
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let text = textDocument |> member "text" |> to_string in
-  let doc = Document.create_document text in
+  let id = fresh_doc_id () in
+  let doc = Document.create_document ~id text in
+  Hashtbl.add doc_ids id uri;
   let st = DocumentManager.init (get_init_state ()) doc in
   Hashtbl.add states uri st;
   send_highlights uri st >>= fun () ->
@@ -333,6 +340,15 @@ let handle_event = function
   | LspManager e -> handle_lsp_event e
   | DelegationManager e ->
       DelegationManager.handle_event e >>= inject_dm_events
+
+let handle_feedback feedback =
+  let Feedback.{ doc_id; span_id; contents } = feedback in
+  match Hashtbl.find_opt doc_ids doc_id with
+  | None -> log @@ "[T] ignoring feedback with doc_id = " ^ (string_of_int doc_id)
+  | Some uri ->
+    let st = Hashtbl.find states uri in
+    let st = DocumentManager.handle_feedback span_id contents st in
+    Hashtbl.replace states uri st
 
 let init () =
   init_state := Some (Vernacstate.freeze_interp_state ~marshallable:false)

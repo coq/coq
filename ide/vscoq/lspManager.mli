@@ -7,11 +7,11 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-
 type event
 type events = event Lwt.t list
 
 val lsp : unit -> events
 val handle_event : event -> events Lwt.t
+val handle_feedback : Feedback.feedback -> unit
 
 val init : unit -> unit

@@ -57,10 +57,13 @@ let make_diagnostic doc id oloc message severity =
 let diagnostics st =
   let parse_errors = Document.parse_errors st.document in
   let exec_errors = ExecutionManager.errors st.execution_state in
-  let mk_diag (id,oloc,message) =
-    make_diagnostic st.document id oloc message Error
+  let warnings = ExecutionManager.warnings st.execution_state in
+  let mk_diag severity (id,oloc,message) =
+    make_diagnostic st.document id oloc message severity
   in
-  List.map mk_diag @@ parse_errors @ exec_errors
+  List.map (mk_diag Error) parse_errors @
+    List.map (mk_diag Error) exec_errors @
+    List.map (mk_diag Warning) warnings
 
 let init vernac_state document =
   let execution_state = ExecutionManager.init_master vernac_state in
@@ -131,3 +134,19 @@ let validate_document state =
   let parsing_state_hook = ExecutionManager.get_parsing_state_after state.execution_state in
   let invalid_ids, document = validate_document ~parsing_state_hook state.document in
   { state with document }
+
+let handle_feedback state_id contents state =
+  let open Feedback in
+  match contents with
+  | Message(level,loc,pp) ->
+    let execution_state = ExecutionManager.handle_feedback state_id contents state.execution_state in
+    { state with execution_state}
+  | AddedAxiom -> state
+  (* These 4 constructors are used to store the mappings for name resolution *)
+  | GlobRef _ -> state
+  | GlobDef _ -> state
+  | FileDependency _ -> state
+  | FileLoaded _ -> state
+  (* Custom is used by plugins like Ltac (profiler, debugger) *)
+  | Custom(_,_,_) -> state
+  | _ -> state

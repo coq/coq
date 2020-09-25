@@ -31,6 +31,7 @@ val query : sentence_id -> state -> ast -> state
 val invalidate : schedule -> sentence_id -> state -> state Lwt.t
 
 val errors : state -> (sentence_id * Loc.t option * string) list
+val warnings : state -> (sentence_id * Loc.t option * string) list
 val shift_locs : state -> int -> int -> state
 val executed_ids : state -> sentence_id list
 val is_executed : state -> sentence_id -> bool
@@ -41,6 +42,8 @@ val get_proofview : state -> sentence_id -> Proof.data option
 
 type job
 type execution_status
-val worker_main : state -> job -> unit Lwt.t
+val worker_main : doc_id:int -> state -> job -> unit Lwt.t
 val init_worker : Vernacstate.t -> sentence_id list -> DelegationManager.link -> (execution_status DelegationManager.remote_mapping * state) Lwt.t
 val init_master : Vernacstate.t -> state
+
+val handle_feedback : Stateid.t -> Feedback.feedback_content -> state -> state

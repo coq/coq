@@ -14,9 +14,11 @@ open Scheduler
 
 type document
 
+val id_of_doc : document -> int
+
 type parsing_state_hook = sentence_id -> Vernacstate.Parser.t option
 
-val create_document : string -> document
+val create_document : id:int -> string -> document
 (** [create_document text] creates a fresh document with content defined by
     [text]. *)
 
