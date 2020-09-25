@@ -22,6 +22,7 @@ type syndef =
   { syndef_pattern : interpretation;
     syndef_onlyparsing : bool;
     syndef_deprecation : Deprecation.t option;
+    syndef_also_in_cases_pattern : bool;
   }
 
 let syntax_table =
@@ -52,7 +53,7 @@ let open_syntax_constant i ((sp,kn),(_local,syndef)) =
     if not syndef.syndef_onlyparsing then
       (* Redeclare it to be used as (short) name in case an other (distfix)
          notation was declared in between *)
-      Notation.declare_uninterpretation (Notation.SynDefRule kn) pat
+      Notation.declare_uninterpretation ~also_in_cases_pattern:syndef.syndef_also_in_cases_pattern (Notation.SynDefRule kn) pat
   end
 
 let cache_syntax_constant d =
@@ -81,11 +82,12 @@ let in_syntax_constant : (bool * syndef) -> obj =
     subst_function = subst_syntax_constant;
     classify_function = classify_syntax_constant }
 
-let declare_syntactic_definition ~local deprecation id ~onlyparsing pat =
+let declare_syntactic_definition ~local ?(also_in_cases_pattern=true) deprecation id ~onlyparsing pat =
   let syndef =
     { syndef_pattern = pat;
       syndef_onlyparsing = onlyparsing;
       syndef_deprecation = deprecation;
+      syndef_also_in_cases_pattern = also_in_cases_pattern;
     }
   in
   let _ = add_leaf id (in_syntax_constant (local,syndef)) in ()

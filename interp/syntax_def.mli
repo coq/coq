@@ -13,7 +13,7 @@ open Notation_term
 
 (** Syntactic definitions. *)
 
-val declare_syntactic_definition : local:bool -> Deprecation.t option -> Id.t ->
+val declare_syntactic_definition : local:bool -> ?also_in_cases_pattern:bool -> Deprecation.t option -> Id.t ->
   onlyparsing:bool -> interpretation -> unit
 
 val search_syntactic_definition : ?loc:Loc.t -> KerName.t -> interpretation

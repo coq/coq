@@ -341,22 +341,27 @@ type notation_rule = interp_rule * interpretation * notation_applicative_status
 let notation_rule_eq (rule1,pat1,s1 as x1) (rule2,pat2,s2 as x2) =
   x1 == x2 || (rule1 = rule2 && interpretation_eq pat1 pat2 && s1 = s2)
 
+let also_cases_notation_rule_eq (also_cases1,rule1) (also_cases2,rule2) =
+  (* No need in principle to compare also_cases as it is inferred *)
+  also_cases1 = also_cases2 && notation_rule_eq rule1 rule2
+
 let keymap_add key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in
   (* In case of re-import, no need to keep the previous copy *)
-  let old = try List.remove_first (notation_rule_eq interp) old with Not_found -> old in
+  let old = try List.remove_first (also_cases_notation_rule_eq interp) old with Not_found -> old in
   KeyMap.add key (interp :: old) map
 
 let keymap_remove key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in
-  KeyMap.add key (List.remove_first (notation_rule_eq interp) old) map
+  KeyMap.add key (List.remove_first (also_cases_notation_rule_eq interp) old) map
 
 let keymap_find key map =
   try KeyMap.find key map
   with Not_found -> []
 
 (* Scopes table : interpretation -> scope_name *)
-let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
+(* Boolean = for cases pattern also *)
+let notations_key_table = ref (KeyMap.empty : (bool * notation_rule) list KeyMap.t)
 
 let glob_prim_constr_key c = match DAst.get c with
   | GRef (ref, _) -> Some (canonical_gr ref)
@@ -1333,13 +1338,13 @@ let check_printing_override (scopt,ntn) data parsingdata printingdata =
     exists) printingdata in
   parsing_update, exists
 
-let remove_uninterpretation rule (metas,c as pat) =
+let remove_uninterpretation rule also_in_cases_pattern (metas,c as pat) =
   let (key,n) = notation_constr_key c in
-  notations_key_table := keymap_remove key (rule,pat,n) !notations_key_table
+  notations_key_table := keymap_remove key (also_in_cases_pattern,(rule,pat,n)) !notations_key_table
 
-let declare_uninterpretation rule (metas,c as pat) =
+let declare_uninterpretation ?(also_in_cases_pattern=true) rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
-  notations_key_table := keymap_add key (rule,pat,n) !notations_key_table
+  notations_key_table := keymap_add key (also_in_cases_pattern,(rule,pat,n)) !notations_key_table
 
 let update_notation_data (scopt,ntn) use data table =
   let (parsingdata,printingdata) =
@@ -1448,14 +1453,17 @@ let interp_notation ?loc ntn local_scopes =
       (str "Unknown interpretation for notation " ++ pr_notation ntn ++ str ".")
 
 let uninterp_notations c =
-  List.map_append (fun key -> keymap_find key !notations_key_table)
+  List.map_append (fun key -> List.map snd (keymap_find key !notations_key_table))
     (glob_constr_keys c)
 
+let filter_also_for_pattern =
+  List.map_filter (function (true,x) -> Some x | _ -> None)
+
 let uninterp_cases_pattern_notations c =
-  keymap_find (cases_pattern_key c) !notations_key_table
+  filter_also_for_pattern (keymap_find (cases_pattern_key c) !notations_key_table)
 
 let uninterp_ind_pattern_notations ind =
-  keymap_find (RefKey (canonical_gr (GlobRef.IndRef ind))) !notations_key_table
+  filter_also_for_pattern (keymap_find (RefKey (canonical_gr (GlobRef.IndRef ind))) !notations_key_table)
 
 let has_active_parsing_rule_in_scope ntn sc =
   try
@@ -1615,7 +1623,7 @@ type entry_coercion_kind =
   | IsEntryGlobal of string * int
   | IsEntryIdent of string * int
 
-let declare_notation (scopt,ntn) pat df ~use coe deprecation =
+let declare_notation (scopt,ntn) pat df ~use ~also_in_cases_pattern coe deprecation =
   (* Register the interpretation *)
   let scope = match scopt with NotationInScope s -> s | LastLonelyNotation -> default_scope in
   let sc = find_scope scope in
@@ -1630,10 +1638,10 @@ let declare_notation (scopt,ntn) pat df ~use coe deprecation =
     scope_map := String.Map.add scope sc !scope_map;
   (* Update the uninterpretation cache *)
   begin match printing_update with
-  | Some pat -> remove_uninterpretation (NotationRule (scopt,ntn)) pat
+  | Some pat -> remove_uninterpretation (NotationRule (scopt,ntn)) also_in_cases_pattern pat
   | None -> ()
   end;
-  if not exists && use <> OnlyParsing then declare_uninterpretation (NotationRule (scopt,ntn)) pat;
+  if not exists && use <> OnlyParsing then declare_uninterpretation ~also_in_cases_pattern (NotationRule (scopt,ntn)) pat;
   (* Register visibility of lonely notations *)
   if not exists then begin match scopt with
   | LastLonelyNotation -> scope_stack := LonelyNotationItem ntn :: !scope_stack
