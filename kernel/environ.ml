@@ -462,13 +462,21 @@ let same_flags {
 [@warning "+9"]
 
 let set_cumulative_sprop b = map_universes (UGraph.set_cumulative_sprop b)
+let set_type_in_type b = map_universes (UGraph.set_type_in_type b)
 
 let set_typing_flags c env =
   if same_flags env.env_typing_flags c then env
-  else set_cumulative_sprop c.cumulative_sprop { env with env_typing_flags = c }
+  else
+    let env = { env with env_typing_flags = c } in
+    let env = set_cumulative_sprop c.cumulative_sprop env in
+    let env = set_type_in_type (not c.check_universes) env in
+    env
 
 let set_cumulative_sprop b env =
   set_typing_flags {env.env_typing_flags with cumulative_sprop=b} env
+
+let set_type_in_type b env =
+  set_typing_flags {env.env_typing_flags with check_universes=not b} env
 
 let set_allow_sprop b env =
   { env with env_stratification =
