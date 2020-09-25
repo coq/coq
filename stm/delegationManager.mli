@@ -8,15 +8,28 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type sentence_id = Stateid.t
+type link
+(* Coqtop module not in scope *)
+type ('a,'b) coqtop_extra_args_fn = opts:'b -> string list -> 'a * string list
 (** Promises that can be resolved across process boundaries *)
 type 'a remote_mapping
+
+module type Job = sig
+  type t
+  val name : string
+  val binary_name : string
+  val pool_size : int
+end
+
+module Make (Job : Job) : sig
+
 
 (* When resolved (asynchronously) the hook is called to notify the UI *)
 val empty_remote_mapping :
   progress_hook:(unit -> unit Lwt.t) -> 'a remote_mapping
 
 (* Like Lwt.wait() but remotely resolvable *)
-type sentence_id = Stateid.t
 val lwt_remotely_wait : 'a remote_mapping -> sentence_id -> 'a remote_mapping * ('a Lwt.t * 'a Lwt.u)
 
 (* Event for the main loop *)
@@ -36,19 +49,15 @@ val handle_event : event -> events Lwt.t
    [new_process_workers] to setup remote promise fullfillment.
    See ExecutionManager.init_worker *)
 val worker_available :
-  job:(unit -> ('a remote_mapping * 'job) Lwt.t) ->
-  fork_action:('job  -> unit Lwt.t) ->
-  process_action:string ->
+  job:(unit -> ('a remote_mapping * Job.t) Lwt.t) ->
+  fork_action:(Job.t  -> unit Lwt.t) ->
   events
 
 (* for worker toplevels *)
-type link
-
-(* Coqtop module not in scope *)
-type ('a,'b) coqtop_extra_args_fn = opts:'b -> string list -> 'a * string list
-
 type options
 val parse_options : (options,'b) coqtop_extra_args_fn
 (* the sentence ids of the remote_mapping being delegated *)
-val setup_plumbing : options -> (sentence_id list * link * 'job) Lwt.t
+val setup_plumbing : options -> (sentence_id list * link * Job.t) Lwt.t
 val new_process_worker : 'a remote_mapping -> link -> unit
+
+end

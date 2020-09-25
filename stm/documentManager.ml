@@ -7,7 +7,6 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-open Scheduler
 open Document
 
 let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
@@ -69,7 +68,7 @@ let init vernac_state document =
   let execution_state = ExecutionManager.init_master vernac_state in
   { document; execution_state; executed_loc = None }
 
-let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data * DelegationManager.events) Lwt.t =
+let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data * ExecutionManager.events) Lwt.t =
   log @@ "[DM] Interpreting to loc " ^ string_of_int loc;
   let rec make_progress state =
     let open Lwt.Infix in

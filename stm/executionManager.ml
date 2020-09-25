@@ -59,28 +59,62 @@ type execution_status =
 let success vernac_st = Success (Some vernac_st)
 let error loc msg vernac_st = Error ((loc,msg),(Some vernac_st))
 
-let interp_ast ~doc_id ~state_id vernac_st ast =
-  Feedback.set_id_for_feedback doc_id state_id;
-  try
+type prepared_task =
+  | PSkip of sentence_id
+  | PExec of sentence_id * ast
+  | PDelegate of sentence_id * execution_status DelegationManager.remote_mapping * prepared_task list
+
+type job = prepared_task list * Vernacstate.t * sentence_id
+
+module ProofWorker = DelegationManager.Make(struct
+  type t = job
+  let name = "proof"
+  let binary_name = "vscoqtop_worker.opt"
+  let pool_size = 1
+end)
+
+type event = ProofWorkerEvent of ProofWorker.event (*| TacticWorkerEvent of Declare.Proof.event*)
+type events = event Lwt.t list
+
+let inject_dm_event x : event Lwt.t =
+  x >>= fun x -> Lwt.return @@ ProofWorkerEvent x
+
+let inject_dm_events l =
+  Lwt.return @@ List.map inject_dm_event l
+(*
+let inject_pm_event x : event Lwt.t =
+  x >>= fun x -> Lwt.return @@ TacticWorkerEvent x
+
+let inject_pm_events l =
+  Lwt.return @@ List.map inject_pm_event l
+*)
+
+let handle_event = function
+  | ProofWorkerEvent event -> ProofWorker.handle_event event >>= inject_dm_events
+  (*| TacticWorkerEvent event -> Declare.Proof.handle_event event >>= inject_pm_events*)
+
+let interp_ast vernac_st ast =
+    Feedback.set_id_for_feedback doc_id state_id;
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
-    let vernac_st = Vernacinterp.interp ~st:vernac_st ast in (* TODO set status to "Delegated" *)
+    let result =
+      try Ok(Vernacinterp.interp ~st:vernac_st ast,[])
+      with e when CErrors.noncritical e ->
+        let e, info = Exninfo.capture e in
+        Error (e, info) in
     Sys.(set_signal sigint Signal_ignore);
-    log @@ "[V] Executed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^
-      " (" ^ (if Option.is_empty vernac_st.Vernacstate.lemmas then "no proof" else "proof")  ^ ")";
-    vernac_st, success vernac_st
-  with
-  | Sys.Break as exn ->
-    let exn = Exninfo.capture exn in
-    Sys.(set_signal sigint Signal_ignore);
-    log @@ "[V] Interrupted executing: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
-    Exninfo.iraise exn
-  | any ->
-    let (e, info) = Exninfo.capture any in
-    Sys.(set_signal sigint Signal_ignore);
-    log @@ "[V] Failed to execute: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
-    let loc = Loc.get_loc info in
-    let msg = CErrors.iprint (e, info) in
-    vernac_st, error loc (Pp.string_of_ppcmds msg) vernac_st
+    match result with
+    | Ok (vernac_st, events) ->
+        log @@ "[V] Executed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^
+          " (" ^ (if Option.is_empty vernac_st.Vernacstate.lemmas then "no proof" else "proof")  ^ ")";
+        Lwt.return (vernac_st, success vernac_st, (*List.map inject_pm_event*) events)
+    | Error (Sys.Break, _ as exn) ->
+        log @@ "[V] Interrupted executing: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
+        Exninfo.iraise exn
+    | Error (e, info) ->
+        log @@ "[V] Failed to execute: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
+        let loc = Loc.get_loc info in
+        let msg = CErrors.iprint (e, info) in
+        Lwt.return (vernac_st, error loc (Pp.string_of_ppcmds msg) vernac_st,[])
 
 type sentence_id = Stateid.t
 type ast = Vernacexpr.vernac_control
@@ -110,11 +144,6 @@ let find_fulfilled_opt x m =
     | Lwt.Sleep -> None
   with Not_found -> None
 
-type prepared_task =
-  | PSkip of sentence_id
-  | PExec of sentence_id * ast
-  | PDelegate of sentence_id * execution_status DelegationManager.remote_mapping * prepared_task list
-
 module Jobs = struct
   type data = execution_status DelegationManager.remote_mapping * (prepared_task list * Vernacstate.t * sentence_id)
   type dependency = sentence_id
@@ -123,7 +152,7 @@ end
 module Queue = MakeQueue(Jobs)
 
 let add_remote_promise (st, remote_mapping) id =
-  let remote_mapping, pr = DelegationManager.lwt_remotely_wait remote_mapping id in
+  let remote_mapping, pr = ProofWorker.lwt_remotely_wait remote_mapping id in
   ({ st with of_sentence = SM.add id (pr,[]) st.of_sentence }, remote_mapping)
 
 let remotize doc (st,remote_mapping) id =
@@ -143,7 +172,7 @@ let prepare_task ~progress_hook doc st task : state * prepared_task =
   | Exec(id,ast) ->
      { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PExec(id,ast)
   | OpaqueProof (id,ids) ->
-     let remote_mapping = DelegationManager.empty_remote_mapping ~progress_hook:(fun () -> progress_hook None) in
+     let remote_mapping = ProofWorker.empty_remote_mapping ~progress_hook:(fun () -> progress_hook None) in
      let (st,remote_mapping), jobs = CList.fold_left_map (remotize doc) (st,remote_mapping) ids in
      { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PDelegate(id, remote_mapping, jobs)
   | _ -> CErrors.anomaly Pp.(str "task not supported yet")
@@ -158,9 +187,7 @@ let id_of_prepared_task = function
   | PExec(id, _) -> id
   | PDelegate(id, _, _) -> id
 
-type job = prepared_task list * Vernacstate.t * sentence_id
-
-let rec worker_main ~doc_id st ((job , vs, _state_id) : job) =
+let rec worker_main st ((job , vs, _state_id) : job) =
   (* signalling progress is automtically done by the resolution of remote
      promises *)
   Lwt_list.fold_left_s (execute ~doc_id st) (vs,[],false) job >>= fun _ ->
@@ -177,23 +204,22 @@ and execute ~doc_id st (vs,events,interrupted) task =
           update st id (Success (Some vs));
           Lwt.return (vs,events,false)
       | PExec (id,ast) ->
-          let vs, v = interp_ast ~doc_id ~state_id:id vs ast in
+          interp_ast vs ast >>= fun (vs, v, ev) ->
           update st id v;
-          Lwt.return (vs,events,false)
+          Lwt.return (vs,events @ ev,false)
       | PDelegate (id, mapping, job) ->
           Queue.enqueue (mapping,(job,vs,id));
           let ast = CAst.make @@ Vernacexpr.{ expr = VernacEndProof Admitted; attrs = []; control = [] } in
-          let vs, v = interp_ast ~doc_id ~state_id:id vs ast in
+          interp_ast vs ast >>= fun (vs, v, ev) ->
           update st id v;
           let e =
-            DelegationManager.worker_available ~job:Queue.dequeue
-              ~fork_action:(worker_main st ~doc_id)
-              ~process_action:"vscoqtop_worker.opt" in
-          Lwt.return (vs,events @ e,false)
+            ProofWorker.worker_available ~job:Queue.dequeue
+              ~fork_action:(worker_main st) in
+          Lwt.return (vs,events @ ev @ List.map inject_dm_event e ,false)
     with Sys.Break ->
       Lwt.return (vs,events,true)
 
-let observe progress_hook doc id st : (state * DelegationManager.events) Lwt.t =
+let observe progress_hook doc id st : (state * events) Lwt.t =
   log @@ "[M] Observe " ^ Stateid.to_string id;
   let rec build_tasks id tasks =
     begin match find_fulfilled_opt id st.of_sentence with
@@ -234,7 +260,7 @@ let observe progress_hook doc id st : (state * DelegationManager.events) Lwt.t =
    stripped state *)
 let init_worker initial_vs ids link =
   let st = init_master initial_vs in
-  let remote_mapping = DelegationManager.empty_remote_mapping ~progress_hook:Lwt.return in
+  let remote_mapping = ProofWorker.empty_remote_mapping ~progress_hook:Lwt.return in
   let st, remote_mapping = List.fold_left add_remote_promise (st, remote_mapping) ids in
   Lwt.return (remote_mapping,st)
 
@@ -335,3 +361,13 @@ let handle_feedback state_id contents st =
       { st with of_sentence }
     end
   | _ -> st
+
+module WorkerProcess = struct
+  type options = ProofWorker.options
+  let parse_options = ProofWorker.parse_options
+  let main ~st:initial_vernac_state options =
+    ProofWorker.setup_plumbing options >>= fun (mapping, link, job) ->
+    init_worker initial_vernac_state mapping link >>= fun (remote_mapping,state) ->
+    ProofWorker.new_process_worker remote_mapping link;
+    worker_main state job
+end

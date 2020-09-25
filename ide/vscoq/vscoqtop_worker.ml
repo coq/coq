@@ -17,10 +17,7 @@ let main_worker options ~opts:_ state =
   let open Lwt.Infix in
   let initial_vernac_state = Vernacstate.freeze_interp_state ~marshallable:false in
   let main () =
-    DelegationManager.setup_plumbing options >>= fun (mapping, link, job) ->
-    ExecutionManager.init_worker initial_vernac_state mapping link >>= fun (remote_mapping,state) ->
-    DelegationManager.new_process_worker remote_mapping link;
-    ExecutionManager.worker_main state job in
+    ExecutionManager.WorkerProcess.main ~st:initial_vernac_state options in
   try Lwt_main.run @@ main ()
   with exn ->
     let bt = Printexc.get_backtrace () in
@@ -42,7 +39,7 @@ let islave_init run_mode ~opts =
 
 let main () =
   let custom = Coqtop.{
-      parse_extra = DelegationManager.parse_options;
+      parse_extra = ExecutionManager.WorkerProcess.parse_options;
       help = vscoqtop_specific_usage;
       init = islave_init;
       run = main_worker;

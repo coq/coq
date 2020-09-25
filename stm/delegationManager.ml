@@ -14,6 +14,7 @@ open Lwt_err.Infix
 let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
 type sentence_id = Stateid.t
+type ('a,'b) coqtop_extra_args_fn = opts:'b -> string list -> 'a * string list
 
 type link = {
   write_to :  Lwt_io.output_channel;
@@ -28,11 +29,22 @@ let kill_link { pid } () = match pid with
 type ('a,'b) corresponding = { on_worker : 'b; on_master : 'a; cancel : 'b }
 
 module M = Map.Make(Stateid)
-
 type 'a remote_mapping = {
   it : ('a Lwt.u, 'a Lwt.t) corresponding M.t;
   progress_hook : unit -> unit Lwt.t
 }
+
+
+module type Job = sig
+  type t
+  val name : string
+  val binary_name : string
+  val pool_size : int
+end
+
+module Make (Job : Job) = struct
+
+let option_name = "-" ^ Str.global_replace (Str.regexp_string " ") "." Job.name ^ "_master_address"
 
 
 let marshalable_remote_mapping { it } = M.bindings it |> List.map (fun (id,_) -> id)
@@ -92,14 +104,14 @@ let lwt_remotely_wait r id =
 type role = Master | Worker
 
 type event =
- | WorkerStart : 'a remote_mapping * 'job * ('job -> unit Lwt.t) * string -> event
+ | WorkerStart : 'a remote_mapping * Job.t * (Job.t -> unit Lwt.t) * string -> event
  | WorkerEnd of (int * Unix.process_status)
 type events = event Lwt.t list
 
 
 let pool = Lwt_condition.create ()
 let pool_occupants = ref 0
-let pool_size = 1 (* TODO: config option *)
+let pool_size = Job.pool_size
 
 let wait_worker pid = [
   Lwt_unix.wait () >>= fun x ->
@@ -161,7 +173,7 @@ let create_process_worker procname remote_mapping job =
     | _ -> assert false in
   let proc =
     new Lwt_process.process_none
-      (procname,[|procname;"-vscoqtop_master";string_of_int port|]) in
+      (procname,[|procname;option_name;string_of_int port|]) in
   log @@ "[M] Created worker pid waiting on port " ^ string_of_int port;
   let timeout = sleep 2. >>= fun () -> Lwt.return None in
   let accept = accept chan >>= fun x -> Lwt.return @@ Some x in
@@ -198,7 +210,7 @@ let handle_event = function
         create_process_worker procname mapping job >>= fun events ->
         Lwt.return events
 
-let worker_available ~job ~fork_action ~process_action = [
+let worker_available ~job ~fork_action = [
   begin
     if !pool_occupants >= pool_size
     then Lwt_condition.wait pool
@@ -206,7 +218,7 @@ let worker_available ~job ~fork_action ~process_action = [
   end
   >>= fun () ->
   job () >>= fun (mapping, job) ->
-  Lwt.return @@ WorkerStart (mapping,job,fork_action,process_action)
+  Lwt.return @@ WorkerStart (mapping,job,fork_action,Job.binary_name)
 ]
 ;;
 
@@ -223,11 +235,12 @@ let setup_plumbing port =
   let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output chan in
   let link = { read_from; write_to; pid = None } in
   Lwt_io.read_value link.read_from >!= fun (ids : sentence_id list) ->
-  Lwt_io.read_value link.read_from >!= fun (job : 'job) ->
+  Lwt_io.read_value link.read_from >!= fun (job : Job.t) ->
   Lwt.return (ids, link, job)
 
-type ('a,'b) coqtop_extra_args_fn = opts:'b -> string list -> 'a * string list
 let parse_options ~opts extra_args =
   match extra_args with
-  [ "-vscoqtop_master"; port ] -> int_of_string port, []
+  [ o ; port ] when o = option_name -> int_of_string port, []
   | _ -> assert false (* TODO: error *)
+
+end

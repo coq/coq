@@ -214,7 +214,7 @@ let progress_hook uri doc : unit Lwt.t =
   send_highlights uri doc >>= fun () ->
   publish_diagnostics uri doc
 
-let coqtopInterpretToPoint ~id params : DelegationManager.events Lwt.t =
+let coqtopInterpretToPoint ~id params : ExecutionManager.events Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
@@ -232,7 +232,7 @@ let coqtopInterpretToPoint ~id params : DelegationManager.events Lwt.t =
     output_json @@ mk_response ~id ~result >>= fun () ->
     Lwt.return events
 
-let coqtopStepBackward ~id params : DelegationManager.events Lwt.t =
+let coqtopStepBackward ~id params : ExecutionManager.events Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
@@ -248,7 +248,7 @@ let coqtopStepBackward ~id params : DelegationManager.events Lwt.t =
     output_json @@ mk_response ~id ~result >>= fun () ->
     Lwt.return events
 
-let coqtopStepForward ~id params : DelegationManager.events Lwt.t =
+let coqtopStepForward ~id params : ExecutionManager.events Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
@@ -274,7 +274,7 @@ let coqtopResetCoq ~id params : unit Lwt.t =
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st
 
-let coqtopInterpretToEnd ~id params : DelegationManager.events Lwt.t =
+let coqtopInterpretToEnd ~id params : ExecutionManager.events Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
@@ -295,15 +295,15 @@ type lsp_event = Request of Yojson.Basic.t
 
 type event =
  | LspManager of lsp_event
- | DelegationManager of DelegationManager.event
+ | ExecutionManager of ExecutionManager.event
 
 type events = event Lwt.t list
 
-let inject_dm_event x : event Lwt.t =
-  x >>= fun x -> Lwt.return @@ DelegationManager x
+let inject_em_event x : event Lwt.t =
+  x >>= fun x -> Lwt.return @@ ExecutionManager x
 
-let inject_dm_events l =
-  Lwt.return @@ List.map inject_dm_event l
+let inject_em_events l =
+  Lwt.return @@ List.map inject_em_event l
 
 let dispatch_method ~id method_name params : events Lwt.t =
   let open Lwt.Infix in
@@ -313,11 +313,11 @@ let dispatch_method ~id method_name params : events Lwt.t =
   | "textDocument/didOpen" -> textDocumentDidOpen params >>= fun () -> Lwt.return []
   | "textDocument/didChange" -> textDocumentDidChange params >>= fun () -> Lwt.return []
   | "textDocument/didSave" -> textDocumentDidSave params >>= fun () -> Lwt.return []
-  | "coqtop/interpretToPoint" -> coqtopInterpretToPoint ~id params >>= inject_dm_events
-  | "coqtop/stepBackward" -> coqtopStepBackward ~id params  >>= inject_dm_events
-  | "coqtop/stepForward" -> coqtopStepForward ~id params  >>= inject_dm_events
+  | "coqtop/interpretToPoint" -> coqtopInterpretToPoint ~id params >>= inject_em_events
+  | "coqtop/stepBackward" -> coqtopStepBackward ~id params  >>= inject_em_events
+  | "coqtop/stepForward" -> coqtopStepForward ~id params  >>= inject_em_events
   | "coqtop/resetCoq" -> coqtopResetCoq ~id params >>= fun () -> Lwt.return []
-  | "coqtop/interpretToEnd" -> coqtopInterpretToEnd ~id params >>= inject_dm_events
+  | "coqtop/interpretToEnd" -> coqtopInterpretToEnd ~id params >>= inject_em_events
   | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; Lwt.return []
 
 let lsp () = [
@@ -338,8 +338,7 @@ let handle_lsp_event = function
 
 let handle_event = function
   | LspManager e -> handle_lsp_event e
-  | DelegationManager e ->
-      DelegationManager.handle_event e >>= inject_dm_events
+  | ExecutionManager e -> ExecutionManager.handle_event e >>= inject_em_events
 
 let handle_feedback feedback =
   let Feedback.{ doc_id; span_id; contents } = feedback in
