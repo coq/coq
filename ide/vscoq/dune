@@ -11,6 +11,7 @@
  (package vscoq-server)
  (modules vscoqtop lspManager)
  (libraries coq.toplevel yojson lwt.unix)
+ (modes native byte)
  (link_flags -linkall))
 
 (executable

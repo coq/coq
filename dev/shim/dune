@@ -50,3 +50,15 @@
     (echo "#!/usr/bin/env bash\n")
     (bash "echo \"$(pwd)/%{bin:coqide} -coqlib $(pwd)/%{project_root}\" \\$@")
     (run chmod +x %{targets})))))
+
+(rule
+ (targets vscoqtop-prelude)
+ (deps
+  %{project_root}/theories/Init/Prelude.vo
+  %{project_root}/vscoq-server.install)
+ (action
+  (with-stdout-to vscoqtop-prelude
+   (progn
+    (echo "#!/usr/bin/env bash\n")
+    (bash "echo \"$(pwd)/%{bin:vscoqtop.opt} -coqlib $(pwd)/%{project_root}\" \\$@")
+    (run chmod +x %{targets})))))
