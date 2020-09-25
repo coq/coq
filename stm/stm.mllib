@@ -6,6 +6,7 @@ WorkerPool
 Vernac_classifier
 CoqworkmgrApi
 AsyncTaskQueue
+Partac
 Stm
 ProofBlockDelimiter
 Vio_checking

@@ -15,11 +15,6 @@ open CAst
 open Vernacextend
 open Vernacexpr
 
-let string_of_parallel = function
-  | `Yes (solve,abs) ->
-       "par" ^ if solve then "solve" else "" ^ if abs then "abs" else ""
-  | `No -> ""
-
 let string_of_vernac_when = function
   | VtLater -> "Later"
   | VtNow -> "Now"
@@ -30,9 +25,8 @@ let string_of_vernac_classification = function
   | VtQed (VtKeep VtKeepAxiom) -> "Qed(admitted)"
   | VtQed (VtKeep (VtKeepOpaque | VtKeepDefined)) -> "Qed(keep)"
   | VtQed VtDrop -> "Qed(drop)"
-  | VtProofStep { parallel; proof_block_detection } ->
-      "ProofStep " ^ string_of_parallel parallel ^
-        Option.default "" proof_block_detection
+  | VtProofStep {  proof_block_detection } ->
+      "ProofStep " ^ Option.default "" proof_block_detection
   | VtQuery -> "Query"
   | VtMeta -> "Meta "
   | VtProofMode _ -> "Proof Mode"
@@ -80,12 +74,11 @@ let classify_vernac e =
     | VernacCheckGuard
     | VernacUnfocused
     | VernacSolveExistential _ ->
-        VtProofStep { parallel = `No; proof_block_detection = None }
+        VtProofStep { proof_block_detection = None }
     | VernacBullet _ ->
-        VtProofStep { parallel = `No; proof_block_detection = Some "bullet" }
+        VtProofStep { proof_block_detection = Some "bullet" }
     | VernacEndSubproof ->
-        VtProofStep { parallel = `No;
-                      proof_block_detection = Some "curly" }
+        VtProofStep { proof_block_detection = Some "curly" }
     (* StartProof *)
     | VernacDefinition ((DoDischarge,_),({v=i},_),ProveBody _) ->
       VtStartProof(Doesn'tGuaranteeOpacity, idents_of_name i)
@@ -213,7 +206,7 @@ let classify_vernac e =
       (match static_classifier ~atts:v.attrs v.expr with
          | VtQuery | VtProofStep _ | VtSideff _
          | VtMeta as x -> x
-         | VtQed _ -> VtProofStep { parallel = `No; proof_block_detection = None }
+         | VtQed _ -> VtProofStep { proof_block_detection = None }
          | VtStartProof _ | VtProofMode _ -> VtQuery)
     else
       static_classifier ~atts:v.attrs v.expr

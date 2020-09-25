@@ -355,27 +355,7 @@ GRAMMAR EXTEND Gram
 open Stdarg
 open Tacarg
 open Vernacextend
-open Goptions
 open Libnames
-
-let print_info_trace =
-  declare_intopt_option_and_ref ~depr:false ~key:["Info" ; "Level"]
-
-let vernac_solve ~pstate n info tcom b =
-  let open Goal_select in
-  let pstate, status = Declare.Proof.map_fold_endline ~f:(fun etac p ->
-      let with_end_tac = if b then Some etac else None in
-      let global = match n with SelectAll | SelectList _ -> true | _ -> false in
-      let info = Option.append info (print_info_trace ()) in
-      let (p,status) =
-        Proof.solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
-      in
-      (* in case a strict subtree was completed,
-         go back to the top of the prooftree *)
-      let p = Proof.maximal_unfocus Vernacentries.command_focus p in
-      p,status) pstate in
-  if not status then Feedback.feedback Feedback.AddedAxiom;
-  pstate
 
 let pr_ltac_selector s = Pptactic.pr_goal_selector ~toplevel:true s
 
@@ -409,34 +389,34 @@ END
 
 {
 
-let is_anonymous_abstract = function
-  | TacAbstract (_,None) -> true
-  | TacSolve [TacAbstract (_,None)] -> true
-  | _ -> false
 let rm_abstract = function
-  | TacAbstract (t,_) -> t
-  | TacSolve [TacAbstract (t,_)] -> TacSolve [t]
-  | x -> x
+  | TacAbstract (t,_) -> t, true
+  | TacSolve [TacAbstract (t,_)] -> TacSolve [t], true
+  | x -> x, false
 let is_explicit_terminator = function TacSolve _ -> true | _ -> false
 
 }
 
 VERNAC { tactic_mode } EXTEND VernacSolve STATE proof
-| [ ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
+| [ ltac_selector_opt(g) ltac_info_opt(info) tactic(t) ltac_use_default(with_end_tac) ] =>
     { classify_as_proofstep } -> {
     let g = Option.default (Goal_select.get_default_goal_selector ()) g in
-    vernac_solve g n t def
+    let global = match g with Goal_select.SelectAll | Goal_select.SelectList _ -> true | _ -> false in
+    let t = ComTactic.I (Tacinterp.hide_interp, { Tacinterp.global; ast = t; }) in
+    ComTactic.solve g ~info t ~with_end_tac
   }
-| [ "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
+END
+
+VERNAC { tactic_mode } EXTEND VernacSolveParallel STATE proof
+| [ "par" ":" ltac_info_opt(info) tactic(t) ltac_use_default(with_end_tac) ] =>
     {
-      let anon_abstracting_tac = is_anonymous_abstract t in
       let solving_tac = is_explicit_terminator t in
-      let parallel = `Yes (solving_tac,anon_abstracting_tac) in
       let pbr = if solving_tac then Some "par" else None in
-      VtProofStep{ parallel = parallel; proof_block_detection = pbr }
+      VtProofStep{ proof_block_detection = pbr }
     } -> {
-      let t = rm_abstract t in
-      vernac_solve Goal_select.SelectAll n t def
+      let t, abstract = rm_abstract t in
+      let t = ComTactic.I (Tacinterp.hide_interp, { Tacinterp.global = true; ast = t; }) in
+      ComTactic.solve_parallel ~info t ~abstract ~with_end_tac
     }
 END
 

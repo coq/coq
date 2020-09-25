@@ -46,7 +46,6 @@ type vernac_classification =
   | VtQed of vernac_qed_type
   (* A proof step *)
   | VtProofStep of {
-      parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
       proof_block_detection : proof_block_name option
     }
   (* Queries are commands assumed to be "pure", that is to say, they

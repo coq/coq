@@ -1983,16 +1983,20 @@ let interp_tac_gen lfun avoid_ids debug t =
 
 let interp t = interp_tac_gen Id.Map.empty Id.Set.empty (get_debug()) t
 
+(* MUST be marshallable! *)
+type tactic_expr = {
+  global: bool;
+  ast:  Tacexpr.raw_tactic_expr;
+}
+
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 (* [global] means that [t] should be internalized outside of goals. *)
-let hide_interp global t ot =
+let hide_interp {global;ast} =
   let hide_interp env =
     let ist = Genintern.empty_glob_sign env in
-    let te = intern_pure_tactic ist t in
+    let te = intern_pure_tactic ist ast in
     let t = eval_tactic te in
-    match ot with
-    | None -> t
-    | Some t' -> Tacticals.New.tclTHEN t t'
+    t
   in
   if global then
     Proofview.tclENV >>= fun env ->
@@ -2001,6 +2005,8 @@ let hide_interp global t ot =
     Proofview.Goal.enter begin fun gl ->
       hide_interp (Proofview.Goal.env gl)
     end
+
+let hide_interp = ComTactic.register_tactic_interpreter "ltac1" hide_interp
 
 (***************************************************************************)
 (** Register standard arguments *)
