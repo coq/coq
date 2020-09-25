@@ -356,7 +356,7 @@ module ModPath = struct
       match d1,d2 with
       | MPfile dir1, MPfile dir2 -> dir1 == dir2
       | MPbound m1, MPbound m2 -> m1 == m2
-      | MPdot (mod1,l1), MPdot (mod2,l2) -> l1 == l2 && equal mod1 mod2
+      | MPdot (mod1,l1), MPdot (mod2,l2) -> l1 == l2 && mod1 == mod2
       | _ -> false
   end
 
@@ -442,12 +442,9 @@ module KerName = struct
       let mp, hmp = hmod mp in
       let l, hl = hstr l in
       let h = combine hmp hl in
-      let h = h land 0x3FFFFFFF in
-      (* WARNING: nothing ensures statically that the hash computed by
-         hashconsing is the same as the one computed by the hash function above,
-         and actually we do not rely on it. Yet it does not hurt to check this
-         for sanity. *)
-      let () = assert (refhash < 0 || Int.equal h refhash) in
+      (* WARNING: the hash computed by hashconsing is *not* the same as the one
+         computed by the hash function above. We cannot reuse it as for the hash
+         cache below. *)
       { modpath = mp; knlabel = l; refhash; }, h
     let eq kn1 kn2 =
       kn1.modpath == kn2.modpath && kn1.knlabel == kn2.knlabel
@@ -582,10 +579,8 @@ module KerPair = struct
         | Dual (knu, knc) ->
           let knu, hu = hkn knu in
           let knc, hc = hkn knc in
-          if KerName.equal knu knc then
-            Same knc, hc
-          else
-            Dual (knu, knc), Hashset.Combine.combine hu hc
+          let () = assert (not (KerName.equal knu knc)) in
+          Dual (knu, knc), Hashset.Combine.combine hu hc
       let eq x y = (* physical comparison on subterms *)
         x == y ||
         match x,y with

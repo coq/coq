@@ -1392,8 +1392,6 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 
   and sh_rec t =
     let (y, h) = hash_term t in
-    (* [h] must be positive. *)
-    let h = h land 0x3FFFFFFF in
     (HashsetTerm.repr h y term_table, h)
 
   (* Note : During hash-cons of arrays, we modify them *in place* *)
@@ -1405,8 +1403,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       accu := combine !accu h;
       Array.unsafe_set t i x
     done;
-    (* [h] must be positive. *)
-    let h = !accu land 0x3FFFFFFF in
+    let h = !accu in
     (HashsetTermArray.repr h t term_array_table, h)
 
   and hash_list_array l =
@@ -1415,7 +1412,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       (combine accu h, c)
     in
     let h, l = List.fold_left_map fold 0 l in
-    (l, h land 0x3FFFFFFF)
+    (l, h)
 
   and hash_name_array lna =
     let h = ref 0 in
