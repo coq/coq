@@ -40,6 +40,9 @@ let wit_int_or_var =
 let wit_ident =
   make0 "ident"
 
+let wit_lident =
+  make0 ~dyn:(val_tag (topwit wit_ident)) "lident"
+
 let wit_var =
   make0 ~dyn:(val_tag (topwit wit_ident)) "var"
 
