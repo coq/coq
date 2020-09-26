@@ -65,7 +65,7 @@ type 'a with_bindings_arg = clear_flag * 'a with_bindings
 (* Type of patterns *)
 type 'a match_pattern =
   | Term of 'a
-  | Subterm of Id.t option * 'a
+  | Subterm of lident option * 'a
 
 (* Type of hypotheses for a Match Context rule *)
 type 'a match_context_hyps =
