@@ -122,7 +122,7 @@ GRAMMAR EXTEND Gram
       | IDENT "infoH"; ta = tactic_expr -> { TacShowHyps ta }
 (*To do: put Abstract in Refiner*)
       | IDENT "abstract"; tc = NEXT -> { TacAbstract (tc,None) }
-      | IDENT "abstract"; tc = NEXT; "using";  s = ident ->
+      | IDENT "abstract"; tc = NEXT; "using";  s = lident ->
         { TacAbstract (tc,Some s) }
       | sel = selector; ta = tactic_expr -> { TacSelect (sel, ta) } ]
 (*End of To do*)
