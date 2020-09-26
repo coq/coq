@@ -33,7 +33,7 @@ let () = create_generic_quotation "string" Pcoq.Prim.string Stdarg.wit_string
 
 let () = create_generic_quotation "smart_global" Pcoq.Prim.smart_global Stdarg.wit_smart_global
 
-let () = create_generic_quotation "ident" Pcoq.Prim.ident Stdarg.wit_ident
+let () = create_generic_quotation "ident" Pcoq.Prim.lident Stdarg.wit_lident
 let () = create_generic_quotation "reference" Pcoq.Prim.reference Stdarg.wit_ref
 let () = create_generic_quotation "uconstr" Pcoq.Constr.lconstr Stdarg.wit_uconstr
 let () = create_generic_quotation "constr" Pcoq.Constr.lconstr Stdarg.wit_constr
@@ -266,31 +266,34 @@ ARGUMENT EXTEND hloc
     { ConclLocation () }
   |  [ "in" "|-" "*" ] ->
     { ConclLocation () }
-| [ "in" ident(id) ] ->
-    { HypLocation ((CAst.make id),InHyp) }
-| [ "in" "(" "Type" "of" ident(id) ")" ] ->
-    { warn_deprecated_instantiate_syntax ("Type","type",id);
-      HypLocation ((CAst.make id),InHypTypeOnly) }
-| [ "in" "(" "Value" "of" ident(id) ")" ] ->
-    { warn_deprecated_instantiate_syntax ("Value","value",id);
-      HypLocation ((CAst.make id),InHypValueOnly) }
-| [ "in" "(" "type" "of" ident(id) ")" ] ->
-    { HypLocation ((CAst.make id),InHypTypeOnly) }
-| [ "in" "(" "value" "of" ident(id) ")" ] ->
-    { HypLocation ((CAst.make id),InHypValueOnly) }
+| [ "in" lident(id) ] ->
+    { HypLocation (id,InHyp) }
+| [ "in" "(" "Type" "of" lident(id) ")" ] ->
+    { warn_deprecated_instantiate_syntax ~loc ("Type","type",id.CAst.v);
+      HypLocation (id,InHypTypeOnly) }
+| [ "in" "(" "Value" "of" lident(id) ")" ] ->
+    { warn_deprecated_instantiate_syntax ~loc ("Value","value",id.CAst.v);
+      HypLocation (id,InHypValueOnly) }
+| [ "in" "(" "type" "of" lident(id) ")" ] ->
+    { HypLocation (id,InHypTypeOnly) }
+| [ "in" "(" "value" "of" lident(id) ")" ] ->
+    { HypLocation (id,InHypValueOnly) }
 
  END
 
 {
 
 let pr_rename _ _ _ (n, m) = Id.print n ++ str " into " ++ Id.print m
+let pr_loc_rename a b c (n, m) = pr_rename a b c (n.CAst.v, m.CAst.v)
 
 }
 
 ARGUMENT EXTEND rename
-  TYPED AS (ident * ident)
+  TYPED AS (lident * lident)
   PRINTED BY { pr_rename }
-| [ ident(n) "into" ident(m) ] -> { (n, m) }
+  RAW_PRINTED BY { pr_loc_rename }
+  GLOB_PRINTED BY { pr_loc_rename }
+| [ lident(n) "into" lident(m) ] -> { (n, m) }
 END
 
 (* Julien: Mise en commun des differentes version de replace with in by *)

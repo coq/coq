@@ -220,7 +220,7 @@ GRAMMAR EXTEND Gram
   ;
   input_fun:
     [ [ "_" -> { Name.Anonymous }
-      | l = ident -> { Name.Name l } ] ]
+      | l = lident -> { Name.Name l.CAst.v } ] ]
   ;
   let_clause:
     [ [ idr = lident; ":="; te = tactic_expr ->
@@ -316,7 +316,7 @@ GRAMMAR EXTEND Gram
   ;
   selector_body:
   [ [ l = range_selector_or_nth -> { l }
-    | test_bracket_ident; "["; id = ident; "]" -> { Goal_select.SelectId id } ] ]
+    | test_bracket_ident; "["; id = lident; "]" -> { Goal_select.SelectId id.CAst.v } ] ]
   ;
   selector:
     [ [ IDENT "only"; sel = selector_body; ":" -> { sel } ] ]
@@ -471,10 +471,10 @@ let pr_ltac_production_item = function
 
 VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY { pr_ltac_production_item }
 | [ string(s) ] -> { Tacentries.TacTerm s }
-| [ ident(nt) "(" ident(p) ltac_production_sep_opt(sep) ")" ] ->
-  { Tacentries.TacNonTerm (Loc.tag ~loc ((Id.to_string nt, sep), Some p)) }
-| [ ident(nt) ] ->
-  { Tacentries.TacNonTerm (Loc.tag ~loc ((Id.to_string nt, None), None)) }
+| [ preident(nt) "(" lident(p) ltac_production_sep_opt(sep) ")" ] ->
+  { Tacentries.TacNonTerm (Loc.tag ~loc ((nt, sep), Some p.CAst.v)) }
+| [ preident(nt) ] ->
+  { Tacentries.TacNonTerm (Loc.tag ~loc ((nt, None), None)) }
 END
 
 VERNAC COMMAND EXTEND VernacTacticNotation

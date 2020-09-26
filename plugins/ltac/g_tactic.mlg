@@ -282,7 +282,7 @@ GRAMMAR EXTEND Gram
   naming_intropattern:
     [ [ prefix = pattern_ident -> { IntroFresh prefix.CAst.v }
       | "?" -> { IntroAnonymous }
-      | id = ident -> { IntroIdentifier id } ] ]
+      | id = lident -> { IntroIdentifier id.CAst.v } ] ]
   ;
   intropattern:
     [ [ l = simple_intropattern -> { l }
@@ -425,20 +425,20 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   fixdecl:
-    [ [ "("; id = ident; bl=LIST0 simple_binder; ann=struct_annot;
-        ":"; ty=lconstr; ")" -> { (loc, id, bl, ann, ty) } ] ]
+    [ [ "("; id = lident; bl=LIST0 simple_binder; ann=struct_annot;
+        ":"; ty=lconstr; ")" -> { (loc, id.CAst.v, bl, ann, ty) } ] ]
   ;
   struct_annot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> { Some id }
       | -> { None } ] ]
   ;
   cofixdecl:
-    [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
-        { (loc, id, bl, None, ty) } ] ]
+    [ [ "("; id = lident; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
+        { (loc, id.CAst.v, bl, None, ty) } ] ]
   ;
   bindings_with_parameters:
-    [ [ check_for_coloneq; "(";  id = ident; bl = LIST0 simple_binder;
-        ":="; c = lconstr; ")" -> { (id, mkCLambdaN_simple bl c) } ] ]
+    [ [ check_for_coloneq; "(";  id = lident; bl = LIST0 simple_binder;
+        ":="; c = lconstr; ")" -> { (id.CAst.v, mkCLambdaN_simple bl c) } ] ]
   ;
   eliminator:
     [ [ "using"; el = constr_with_bindings -> { el } ] ]
@@ -460,7 +460,7 @@ GRAMMAR EXTEND Gram
       | -> { None } ] ]
   ;
   as_name:
-    [ [ "as"; id = ident -> { Names.Name.Name id } | -> { Names.Name.Anonymous } ] ]
+    [ [ "as"; id = lident -> { Names.Name.Name id.CAst.v } | -> { Names.Name.Anonymous } ] ]
   ;
   by_tactic:
     [ [ "by"; tac = tactic_expr LEVEL "3" -> { Some tac }
@@ -519,10 +519,10 @@ GRAMMAR EXTEND Gram
           { TacAtom (CAst.make ~loc @@ TacElim (true,cl,el)) }
       | IDENT "case"; icl = induction_clause_list -> { TacAtom (CAst.make ~loc @@ mkTacCase false icl) }
       | IDENT "ecase"; icl = induction_clause_list -> { TacAtom (CAst.make ~loc @@ mkTacCase true icl) }
-      | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
-          { TacAtom (CAst.make ~loc @@ TacMutualFix (id,n,List.map mk_fix_tac fd)) }
-      | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
-          { TacAtom (CAst.make ~loc @@ TacMutualCofix (id,List.map mk_cofix_tac fd)) }
+      | "fix"; id = lident; n = natural; "with"; fd = LIST1 fixdecl ->
+          { TacAtom (CAst.make ~loc @@ TacMutualFix (id.CAst.v,n,List.map mk_fix_tac fd)) }
+      | "cofix"; id = lident; "with"; fd = LIST1 cofixdecl ->
+          { TacAtom (CAst.make ~loc @@ TacMutualCofix (id.CAst.v,List.map mk_cofix_tac fd)) }
 
       | IDENT "pose"; bl = bindings_with_parameters ->
           { let (id,b) = bl in TacAtom (CAst.make ~loc @@ TacLetTac (false,Names.Name.Name id,b,Locusops.nowhere,true,None)) }
