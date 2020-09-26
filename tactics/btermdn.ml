@@ -62,36 +62,36 @@ let evaluable_constant c env =
   if Environ.mem_constant c env then Environ.evaluable_constant c env
   else true
 
-let constr_val_discr env sigma t =
-  let open GlobRef in
-  let c, l = decomp sigma t in
-    match EConstr.kind sigma c with
-    | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
-    | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
-    | Var id -> Label(GRLabel (VarRef id),l)
-    | Const (c, _) ->
-      if evaluable_constant c env then Everything
-      else Label(GRLabel (ConstRef c),l)
-    | _ -> Nothing
-
-let constr_val_discr_st env sigma ts t =
+let constr_val_discr env sigma ts t =
   let c, l = decomp sigma t in
   let open GlobRef in
     match EConstr.kind sigma c with
     | Const (c,u) ->
-      if evaluable_constant c env && TransparentState.is_transparent_constant ts c then Everything
-      else Label(GRLabel (ConstRef c),l)
+      begin match ts with
+      | None ->
+        if evaluable_constant c env then Everything
+        else Label(GRLabel (ConstRef c),l)
+      | Some ts ->
+        if evaluable_constant c env && TransparentState.is_transparent_constant ts c then Everything
+        else Label(GRLabel (ConstRef c),l)
+      end
     | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
     | Var id ->
-      if Environ.evaluable_named id env && TransparentState.is_transparent_variable ts id then Everything
-      else Label(GRLabel (VarRef id),l)
-    | Prod (n, d, c) -> Label(ProdLabel, [d; c])
+      begin match ts with
+      | None -> Label(GRLabel (VarRef id),l)
+      | Some ts ->
+        if Environ.evaluable_named id env && TransparentState.is_transparent_variable ts id then Everything
+        else Label(GRLabel (VarRef id),l)
+      end
+    | Prod (n, d, c) ->
+      if Option.is_empty ts then Nothing else Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
-      if List.is_empty l then Label(LambdaLabel, [d; c])
+      if Option.is_empty ts then Nothing
+      else if List.is_empty l then Label(LambdaLabel, [d; c])
       else Everything
-    | Sort _ -> Label(SortLabel, [])
-    | Evar _ -> Everything
+    | Sort _ -> if Option.is_empty ts then Nothing else Label(SortLabel, [])
+    | Evar _ -> if Option.is_empty ts then Nothing else Everything
     | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Case _ | Fix _ | CoFix _
     | Proj _ | Int _ | Float _ | Array _ -> Nothing
 
@@ -142,15 +142,10 @@ let bounded_constr_pat_discr env st (t,depth) =
 let bounded_constr_val_discr env st sigma (t,depth) =
   if Int.equal depth 0 then
     Nothing
-  else
-    let ans = match st with
-    | None -> constr_val_discr env sigma t
-    | Some st -> constr_val_discr_st env sigma st t
-    in
-    match ans with
-      | Label (c,l) -> Label(c,List.map (fun c -> (c,depth-1)) l)
-      | Nothing -> Nothing
-      | Everything -> Everything
+  else match constr_val_discr env sigma st t with
+  | Label (c,l) -> Label(c,List.map (fun c -> (c,depth-1)) l)
+  | Nothing -> Nothing
+  | Everything -> Everything
 
 module Make =
   functor (Z : Map.OrderedType) ->
