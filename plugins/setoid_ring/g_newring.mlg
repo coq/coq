@@ -82,8 +82,8 @@ VERNAC ARGUMENT EXTEND ring_mods
 END
 
 VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
-  | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods_opt(l) ] ->
-    { add_theory id t (Option.default [] l) }
+  | [ "Add" "Ring" lident(id) ":" constr(t) ring_mods_opt(l) ] ->
+    { add_theory id.CAst.v t (Option.default [] l) }
   | [ "Print" "Rings" ] => { Vernacextend.classify_as_query } -> {
     print_rings ()
   }
@@ -120,8 +120,8 @@ VERNAC ARGUMENT EXTEND field_mods
 END
 
 VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
-| [ "Add" "Field" ident(id) ":" constr(t) field_mods_opt(l) ] ->
-  { let l = match l with None -> [] | Some l -> l in add_field_theory id t l }
+| [ "Add" "Field" lident(id) ":" constr(t) field_mods_opt(l) ] ->
+  { let l = match l with None -> [] | Some l -> l in add_field_theory id.CAst.v t l }
 | [ "Print" "Fields" ] => {Vernacextend.classify_as_query} -> {
     print_fields ()
   }
