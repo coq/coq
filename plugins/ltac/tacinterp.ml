@@ -356,6 +356,9 @@ let interp_ident ist env sigma id =
   try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (env,sigma)) (make id)
   with Not_found -> id
 
+let interp_lident ist env sigma id =
+  interp_ident ist env sigma id.CAst.v
+
 (* Interprets an optional identifier, bound or fresh *)
 let interp_name ist env sigma = function
   | Anonymous -> Anonymous
@@ -1144,7 +1147,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
       Profile_ltac.do_profile "eval_tactic:TacAbstract" trace
         (catch_error_tac trace begin
       Proofview.Goal.enter begin fun gl -> Abstract.tclABSTRACT
-        (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist t)
+        (Option.map (interp_lident ist (pf_env gl) (project gl)) ido) (interp_tactic ist t)
       end end)
   | TacThen (t1,t) ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)

@@ -896,7 +896,7 @@ let pr_goal_selector ~toplevel s =
               hov 0 (
                 keyword "abstract"
                 ++ str" (" ++ pr_tac (LevelLt labstract) t ++ str")" ++ spc ()
-                ++ keyword "using" ++ spc () ++ pr_id s),
+                ++ keyword "using" ++ spc () ++ pr_lident s),
               labstract
             | TacLetIn (recflag,llc,u) ->
               let llc = List.map (fun (id,t) -> (id,extract_binders t)) llc in
