@@ -9,6 +9,8 @@
 - `Prim.pattern_ident` now takes a location; it becomes a synonymous of
   `Prim.pattern_identref` which is removed.
 
+- `Prim.identref` was a synonymous of `Prim.lident`; it is removed.
+
 ## Changes between Coq 8.11 and Coq 8.12
 
 ### Code formatting

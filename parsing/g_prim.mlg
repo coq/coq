@@ -45,7 +45,7 @@ let test_minus_nat =
 
 GRAMMAR EXTEND Gram
   GLOBAL:
-    bignat bigint natural integer identref name ident lident var preident
+    bignat bigint natural integer name ident lident var preident
     fullyqualid qualid reference dirpath ne_lstring
     ne_string string lstring pattern_ident by_notation
     smart_global bar_cbrace strategy_level;
@@ -55,16 +55,13 @@ GRAMMAR EXTEND Gram
   ident:
     [ [ s = IDENT -> { Id.of_string s } ] ]
   ;
-  pattern_ident:
-    [ [ LEFTQMARK; id = ident -> { CAst.make ~loc id } ] ]
-  ;
-  var: (* as identref, but interpret as a term identifier in ltac *)
-    [ [ id = ident -> { CAst.make ~loc id } ] ]
-  ;
   lident:
     [ [ id = ident -> { CAst.make ~loc id } ] ]
   ;
-  identref:
+  pattern_ident:
+    [ [ LEFTQMARK; id = ident -> { CAst.make ~loc id } ] ]
+  ;
+  var: (* as lident, but interpret as a term identifier in ltac *)
     [ [ id = lident -> { id } ] ]
   ;
   field:

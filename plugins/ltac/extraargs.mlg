@@ -397,5 +397,5 @@ ARGUMENT EXTEND strategy_level_or_var
     RAW_PRINTED BY { pr_loc_strategy }
     GLOB_PRINTED BY { pr_loc_strategy }
 | [ strategy_level(n) ] -> { ArgArg n }
-| [ identref(id) ] -> { ArgVar id }
+| [ lident(id) ] -> { ArgVar id }
 END
