@@ -486,7 +486,7 @@ let name_cons accu = function
 
 let opt_cons accu = function
 | None -> accu
-| Some id -> Id.Set.add id accu
+| Some {CAst.v=id} -> Id.Set.add id accu
 
 (* Reads the hypotheses of a "match goal" rule *)
 let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function

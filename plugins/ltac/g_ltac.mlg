@@ -231,7 +231,7 @@ GRAMMAR EXTEND Gram
          { (CAst.map (fun id -> Name id) idr, arg_of_expr (TacFun(args,te))) } ] ]
   ;
   match_pattern:
-    [ [ IDENT "context";  oid = OPT Constr.ident;
+    [ [ IDENT "context";  oid = OPT identref;
           "["; pc = Constr.cpattern; "]" ->
         { Subterm (oid, pc) }
       | pc = Constr.cpattern -> { Term pc } ] ]
