@@ -105,12 +105,8 @@ let constr_pat_discr env st t =
       if is_evaluable_constant c env st then None
       else Some (GRLabel ref, args)
     | PVar v, args ->
-      begin match st with
-      | None -> None
-      | Some st ->
-        if TransparentState.is_transparent_variable st v then None
-        else Some(GRLabel (VarRef v),args)
-      end
+      if is_evaluable_named v env st then None
+      else Some(GRLabel (VarRef v),args)
     | PProd (_, d, c), [] -> Some (ProdLabel, [d ; c])
     | PLambda (_, d, c), [] ->
       (* This is fishy but seems needed for backwards compat *)
