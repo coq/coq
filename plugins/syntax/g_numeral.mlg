@@ -15,7 +15,6 @@ DECLARE PLUGIN "numeral_notation_plugin"
 open Notation
 open Numeral
 open Pp
-open Names
 open Stdarg
 open Pcoq.Prim
 
@@ -40,12 +39,12 @@ END
 
 VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
   | #[ locality = Attributes.locality; ] [ "Number" "Notation" reference(ty) reference(f) reference(g) ":"
-      ident(sc) numnotoption(o) ] ->
+      preident(sc) numnotoption(o) ] ->
 
-    { vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
+    { vernac_numeral_notation (Locality.make_module_locality locality) ty f g sc o }
   | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
-      ident(sc) numnotoption(o) ] ->
+      preident(sc) numnotoption(o) ] ->
 
     { warn_deprecated_numeral_notation ();
-      vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
+      vernac_numeral_notation (Locality.make_module_locality locality) ty f g sc o }
 END

@@ -13,13 +13,12 @@ DECLARE PLUGIN "string_notation_plugin"
 {
 
 open String_notation
-open Names
 open Stdarg
 
 }
 
 VERNAC COMMAND EXTEND StringNotation CLASSIFIED AS SIDEFF
   | #[ locality = Attributes.locality; ] [ "String" "Notation" reference(ty) reference(f) reference(g) ":"
-      ident(sc) ] ->
-    { vernac_string_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) }
+      preident(sc) ] ->
+    { vernac_string_notation (Locality.make_module_locality locality) ty f g sc }
 END
