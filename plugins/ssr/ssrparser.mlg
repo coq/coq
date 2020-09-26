@@ -166,7 +166,7 @@ open Pcoq.Prim
 ARGUMENT EXTEND ssrhyp TYPED AS ssrhyprep PRINTED BY { pr_ssrhyp }
                        INTERPRETED BY { interp_hyp }
                        GLOBALIZED BY { intern_hyp }
-  | [ ident(id) ] -> { SsrHyp (Loc.tag ~loc id) }
+  | [ lident(id) ] -> { SsrHyp (Loc.tag ~loc id.CAst.v) }
 END
 
 {
@@ -178,14 +178,14 @@ let wit_ssrhoirep = add_genarg "ssrhoirep" (fun env sigma -> pr_hoi)
 
 let intern_ssrhoi ist = function
   | Hyp h -> Hyp (intern_hyp ist h)
-  | Id (SsrHyp (_, id)) as hyp ->
-    let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_ident) id) in
+  | Id (SsrHyp (loc, id)) as hyp ->
+    let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_lident) (CAst.make ?loc id)) in
     hyp
 
 let interp_ssrhoi ist gl = function
   | Hyp h -> let s, h' = interp_hyp ist gl h in s, Hyp h'
   | Id (SsrHyp (loc, id)) ->
-    let s, id' = interp_wit wit_ident ist gl id in
+    let s, id' = interp_wit wit_lident ist gl (CAst.make ?loc id) in
     s, Id (SsrHyp (loc, id'))
 
 }
@@ -193,12 +193,12 @@ let interp_ssrhoi ist gl = function
 ARGUMENT EXTEND ssrhoi_hyp TYPED AS ssrhoirep PRINTED BY { pr_ssrhoi }
                        INTERPRETED BY { interp_ssrhoi }
                        GLOBALIZED BY { intern_ssrhoi }
-  | [ ident(id) ] -> { Hyp (SsrHyp(Loc.tag ~loc id)) }
+  | [ lident(id) ] -> { Hyp (SsrHyp(Loc.tag ~loc id.CAst.v)) }
 END
 ARGUMENT EXTEND ssrhoi_id TYPED AS ssrhoirep PRINTED BY { pr_ssrhoi }
                        INTERPRETED BY { interp_ssrhoi }
                        GLOBALIZED BY { intern_ssrhoi }
-  | [ ident(id) ] -> { Id (SsrHyp(Loc.tag ~loc id)) }
+  | [ lident(id) ] -> { Id (SsrHyp(Loc.tag ~loc id.CAst.v)) }
 END
 
 (** Rewriting direction *)
@@ -781,8 +781,8 @@ ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY { pr_ssripats }
   | [ "-/" integer(n) "/" integer (m) "=" ] ->
       { [IPatNoop;IPatSimpl(SimplCut(n,m))] }
   | [ ssrfwdview(v) ] -> { [IPatView v] }
-  | [ "[" ":" ident_list(idl) "]" ] -> { [IPatAbstractVars idl] }
-  | [ "[:" ident_list(idl) "]" ] -> { [IPatAbstractVars idl] }
+  | [ "[" ":" lident_list(idl) "]" ] -> { [IPatAbstractVars (List.map (fun {CAst.v=id} -> id) idl)] }
+  | [ "[:" lident_list(idl) "]" ] -> { [IPatAbstractVars (List.map (fun {CAst.v=id} -> id) idl)] }
 END
 
 ARGUMENT EXTEND ssripats TYPED AS ssripat PRINTED BY { pr_ssripats }
@@ -836,10 +836,10 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrcpat;
   hat: [
-  [ "^"; id = ident -> { Prefix id }
-  | "^"; "~"; id = ident -> { SuffixId id }
+  [ "^"; id = lident -> { Prefix id.CAst.v }
+  | "^"; "~"; id = lident -> { SuffixId id.CAst.v }
   | "^"; "~"; n = natural -> { SuffixNum n }
-  | "^~"; id = ident -> { SuffixId id }
+  | "^~"; id = lident -> { SuffixId id.CAst.v }
   | "^~"; n = natural -> { SuffixNum n }
   ]];
   ssrcpat: [
@@ -974,12 +974,16 @@ end
 let pr_ssrfwdid id = pr_spc () ++ pr_id id
 
 let pr_ssrfwdidx _ _ _ = pr_ssrfwdid
+let pr_ssrfwdidx_loc _ _ _ id = pr_ssrfwdid id.CAst.v
 
 }
 
 (* We use a primitive parser for the head identifier of forward *)
 (* tactis to avoid syntactic conflicts with basic Coq tactics. *)
-ARGUMENT EXTEND ssrfwdid TYPED AS ident PRINTED BY { pr_ssrfwdidx }
+ARGUMENT EXTEND ssrfwdid TYPED AS lident
+PRINTED BY { pr_ssrfwdidx }
+RAW_PRINTED BY { pr_ssrfwdidx_loc }
+GLOB_PRINTED BY { pr_ssrfwdidx_loc }
 END
 
 {
@@ -994,7 +998,7 @@ let test_ssrfwdid =
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssrfwdid;
-  ssrfwdid: [[ test_ssrfwdid; id = Prim.ident -> { id } ]];
+  ssrfwdid: [[ test_ssrfwdid; id = lident -> { id } ]];
   END
 
 
@@ -1295,7 +1299,7 @@ let pr_ssrbvar env sigma prc _ _ v = prc env sigma v
 }
 
 ARGUMENT EXTEND ssrbvar TYPED AS constr PRINTED BY { pr_ssrbvar env sigma }
-| [ ident(id) ] -> { mkCVar ~loc id }
+| [ lident(id) ] -> { mkCVar ~loc id.CAst.v }
 | [ "_" ] -> { mkCHole (Some loc) }
 END
 
@@ -1379,7 +1383,8 @@ let pr_ssrstruct _ _ _ = function
 
 }
 
-ARGUMENT EXTEND ssrstruct TYPED AS ident option PRINTED BY { pr_ssrstruct }
+ARGUMENT EXTEND ssrstruct TYPED AS ident option
+PRINTED BY { pr_ssrstruct }
 | [ "{" "struct" ident(id) "}" ] -> { Some id }
 | [ ] -> { None }
 END

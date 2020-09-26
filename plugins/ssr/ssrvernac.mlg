@@ -360,10 +360,10 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: hloc;
 hloc: [
-  [ "in"; "("; "Type"; "of"; id = ident; ")" ->
-    { Tacexpr.HypLocation (CAst.make id, Locus.InHypTypeOnly) }
-  | "in"; "("; IDENT "Value"; "of"; id = ident; ")" ->
-    { Tacexpr.HypLocation (CAst.make id, Locus.InHypValueOnly) }
+  [ "in"; "("; "Type"; "of"; id = lident; ")" ->
+    { Tacexpr.HypLocation (id, Locus.InHypTypeOnly) }
+  | "in"; "("; IDENT "Value"; "of"; id = lident; ")" ->
+    { Tacexpr.HypLocation (id, Locus.InHypValueOnly) }
   ] ];
 END
 
