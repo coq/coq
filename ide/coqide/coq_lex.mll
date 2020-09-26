@@ -50,10 +50,7 @@ and comment = parse
   | utf8_extra_byte { incr utf8_adjust; comment lexbuf }
   | _ { comment lexbuf }
 
-and quotation o c n l = parse
-| eof { raise Unterminated }
-| utf8_extra_byte { incr utf8_adjust; quotation o c n l lexbuf }
-| _ {
+and quotation o c n l = parse | eof { raise Unterminated } | _ {
   let x = Lexing.lexeme lexbuf in
   if x = o then quotation_nesting o c n l 1 lexbuf
   else if x = c then
@@ -62,10 +59,7 @@ and quotation o c n l = parse
   else quotation o c n l lexbuf
 }
 
-and quotation_nesting o c n l v = parse
-| eof { raise Unterminated }
-| utf8_extra_byte { incr utf8_adjust; quotation o c n l lexbuf }
-| _ {
+and quotation_nesting o c n l v = parse | eof { raise Unterminated } | _ {
   let x = Lexing.lexeme lexbuf in
   if x = o then
     if n = v+1 then quotation o c n (l+1) lexbuf
@@ -74,10 +68,7 @@ and quotation_nesting o c n l v = parse
   else quotation o c n l lexbuf
 }
 
-and quotation_closing o c n l v = parse
-| eof { raise Unterminated }
-| utf8_extra_byte { incr utf8_adjust; quotation o c n l lexbuf }
-| _ {
+and quotation_closing o c n l v = parse | eof { raise Unterminated } | _ {
   let x = Lexing.lexeme lexbuf in
   if x = c then
     if n = v+1 then
@@ -88,10 +79,7 @@ and quotation_closing o c n l v = parse
   else quotation o c n l lexbuf
 }
 
-and quotation_start o c n = parse
-| eof { raise Unterminated }
-| utf8_extra_byte { incr utf8_adjust; quotation o c n 1 lexbuf }
-| _ {
+and quotation_start o c n = parse | eof { raise Unterminated } | _ {
   let x = Lexing.lexeme lexbuf in
   if x = o then quotation_start o c (n+1) lexbuf
   else quotation o c n 1 lexbuf
