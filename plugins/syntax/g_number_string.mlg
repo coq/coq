@@ -16,7 +16,6 @@ open Notation
 open Number
 open String_notation
 open Pp
-open Names
 open Stdarg
 open Pcoq.Prim
 
@@ -93,18 +92,18 @@ END
 
 VERNAC COMMAND EXTEND NumberNotation CLASSIFIED AS SIDEFF
   | #[ locality = Attributes.locality; ] [ "Number" "Notation" reference(ty) reference(f) reference(g) number_options_opt(nl) ":"
-      ident(sc) ] ->
+      preident(sc) ] ->
 
-    { vernac_number_notation (Locality.make_module_locality locality) ty f g (Option.default [] nl) (Id.to_string sc) }
+    { vernac_number_notation (Locality.make_module_locality locality) ty f g (Option.default [] nl) sc }
   | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
-      ident(sc) deprecated_number_modifier(o) ] ->
+      preident(sc) deprecated_number_modifier(o) ] ->
 
     { warn_deprecated_numeral_notation ();
-      vernac_number_notation (Locality.make_module_locality locality) ty f g [After o] (Id.to_string sc) }
+      vernac_number_notation (Locality.make_module_locality locality) ty f g [After o] sc }
 END
 
 VERNAC COMMAND EXTEND StringNotation CLASSIFIED AS SIDEFF
   | #[ locality = Attributes.locality; ] [ "String" "Notation" reference(ty) reference(f) reference(g) string_option_opt(o) ":"
-      ident(sc) ] ->
-    { vernac_string_notation (Locality.make_module_locality locality) ty f g o (Id.to_string sc) }
+      preident(sc) ] ->
+    { vernac_string_notation (Locality.make_module_locality locality) ty f g o sc }
 END
