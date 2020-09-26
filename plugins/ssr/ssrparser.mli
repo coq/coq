@@ -65,7 +65,7 @@ val wit_ssrhintarg :
 
 val wit_ssrexactarg : ssrapplyarg Genarg.uniform_genarg_type
 val wit_ssrcongrarg : ((int * ssrterm) * cpattern ssragens) Genarg.uniform_genarg_type
-val wit_ssrfwdid : Names.Id.t Genarg.uniform_genarg_type
+val wit_ssrfwdid : Names.lident Genarg.uniform_genarg_type
 
 val wit_ssrsetfwd :
   ((ssrfwdfmt * (cpattern * ast_closure_term option)) * ssrdocc) Genarg.uniform_genarg_type

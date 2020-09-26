@@ -166,7 +166,7 @@ open Pcoq.Prim
 ARGUMENT EXTEND ssrhyp TYPED AS ssrhyprep PRINTED BY { pr_ssrhyp }
                        INTERPRETED BY { interp_hyp }
                        GLOBALIZED BY { intern_hyp }
-  | [ ident(id) ] -> { SsrHyp (Loc.tag ~loc id) }
+  | [ identref(id) ] -> { SsrHyp (Loc.tag ~loc id.CAst.v) }
 END
 
 {
@@ -178,27 +178,27 @@ let wit_ssrhoirep = add_genarg "ssrhoirep" (fun env sigma -> pr_hoi)
 
 let intern_ssrhoi ist = function
   | Hyp h -> Hyp (intern_hyp ist h)
-  | Id (SsrHyp (_, id)) as hyp ->
-    let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_ident) id) in
+  | Id (SsrHyp (loc, id)) as hyp ->
+    let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_identref) (CAst.make ?loc id)) in
     hyp
 
 let interp_ssrhoi ist gl = function
   | Hyp h -> let s, h' = interp_hyp ist gl h in s, Hyp h'
   | Id (SsrHyp (loc, id)) ->
-    let s, id' = interp_wit wit_ident ist gl id in
-    s, Id (SsrHyp (loc, id'))
+    let s, id' = interp_wit wit_identref ist gl (CAst.make ?loc id) in
+    s, Id (SsrHyp (loc, id'.CAst.v))
 
 }
 
 ARGUMENT EXTEND ssrhoi_hyp TYPED AS ssrhoirep PRINTED BY { pr_ssrhoi }
                        INTERPRETED BY { interp_ssrhoi }
                        GLOBALIZED BY { intern_ssrhoi }
-  | [ ident(id) ] -> { Hyp (SsrHyp(Loc.tag ~loc id)) }
+  | [ identref(id) ] -> { Hyp (SsrHyp(Loc.tag ~loc id.CAst.v)) }
 END
 ARGUMENT EXTEND ssrhoi_id TYPED AS ssrhoirep PRINTED BY { pr_ssrhoi }
                        INTERPRETED BY { interp_ssrhoi }
                        GLOBALIZED BY { intern_ssrhoi }
-  | [ ident(id) ] -> { Id (SsrHyp(Loc.tag ~loc id)) }
+  | [ identref(id) ] -> { Id (SsrHyp(Loc.tag ~loc id.CAst.v)) }
 END
 
 (** Rewriting direction *)
@@ -781,8 +781,8 @@ ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY { pr_ssripats }
   | [ "-/" integer(n) "/" integer (m) "=" ] ->
       { [IPatNoop;IPatSimpl(SimplCut(n,m))] }
   | [ ssrfwdview(v) ] -> { [IPatView v] }
-  | [ "[" ":" ident_list(idl) "]" ] -> { [IPatAbstractVars idl] }
-  | [ "[:" ident_list(idl) "]" ] -> { [IPatAbstractVars idl] }
+  | [ "[" ":" identref_list(idl) "]" ] -> { [IPatAbstractVars (List.map (fun {CAst.v=id} -> id) idl)] }
+  | [ "[:" identref_list(idl) "]" ] -> { [IPatAbstractVars (List.map (fun {CAst.v=id} -> id) idl)] }
 END
 
 ARGUMENT EXTEND ssripats TYPED AS ssripat PRINTED BY { pr_ssripats }
@@ -836,10 +836,10 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrcpat;
   hat: [
-  [ "^"; id = ident -> { Prefix id }
-  | "^"; "~"; id = ident -> { SuffixId id }
+  [ "^"; id = identref -> { Prefix id.CAst.v }
+  | "^"; "~"; id = identref -> { SuffixId id.CAst.v }
   | "^"; "~"; n = natural -> { SuffixNum n }
-  | "^~"; id = ident -> { SuffixId id }
+  | "^~"; id = identref -> { SuffixId id.CAst.v }
   | "^~"; n = natural -> { SuffixNum n }
   ]];
   ssrcpat: [
@@ -973,13 +973,13 @@ end
 (** Defined identifier *)
 let pr_ssrfwdid id = pr_spc () ++ pr_id id
 
-let pr_ssrfwdidx _ _ _ = pr_ssrfwdid
+let pr_ssrfwdidx _ _ _ id = pr_ssrfwdid id.CAst.v
 
 }
 
 (* We use a primitive parser for the head identifier of forward *)
 (* tactis to avoid syntactic conflicts with basic Coq tactics. *)
-ARGUMENT EXTEND ssrfwdid TYPED AS ident PRINTED BY { pr_ssrfwdidx }
+ARGUMENT EXTEND ssrfwdid TYPED AS identref PRINTED BY { pr_ssrfwdidx }
 END
 
 {
@@ -994,7 +994,7 @@ let test_ssrfwdid =
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssrfwdid;
-  ssrfwdid: [[ test_ssrfwdid; id = Prim.ident -> { id } ]];
+  ssrfwdid: [[ test_ssrfwdid; id = identref -> { id } ]];
   END
 
 
@@ -1295,7 +1295,7 @@ let pr_ssrbvar env sigma prc _ _ v = prc env sigma v
 }
 
 ARGUMENT EXTEND ssrbvar TYPED AS constr PRINTED BY { pr_ssrbvar env sigma }
-| [ ident(id) ] -> { mkCVar ~loc id }
+| [ identref(id) ] -> { mkCVar ~loc id.CAst.v }
 | [ "_" ] -> { mkCHole (Some loc) }
 END
 
@@ -1379,7 +1379,8 @@ let pr_ssrstruct _ _ _ = function
 
 }
 
-ARGUMENT EXTEND ssrstruct TYPED AS ident option PRINTED BY { pr_ssrstruct }
+ARGUMENT EXTEND ssrstruct TYPED AS ident option
+PRINTED BY { pr_ssrstruct }
 | [ "{" "struct" ident(id) "}" ] -> { Some id }
 | [ ] -> { None }
 END
@@ -1590,7 +1591,7 @@ let ssrorelse = Entry.create "ssrorelse"
 GRAMMAR EXTEND Gram
   GLOBAL: ssrorelse ssrseqarg;
   ssrseqidx: [
-    [ test_ssrseqvar; id = Prim.ident -> { ArgVar (CAst.make ~loc id) }
+    [ test_ssrseqvar; id = identref -> { ArgVar id }
     | n = Prim.natural -> { ArgArg (check_index ~loc n) }
     ] ];
   ssrswap: [[ IDENT "first" -> { loc, true } | IDENT "last" -> { loc, false } ]];
@@ -1646,15 +1647,15 @@ let ssr_id_of_string loc s =
     else Feedback.msg_warning (str (
      "The name " ^ s ^ " fits the _xxx_ format used for anonymous variables.\n"
   ^ "Scripts with explicit references to anonymous variables are fragile."))
-    end; Id.of_string s
+    end; CAst.make ~loc (Id.of_string s)
 
 let ssr_null_entry = Pcoq.Entry.of_parser "ssr_null" (fun _ _ -> ())
 
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: Prim.ident;
-  Prim.ident: [[ s = IDENT; ssr_null_entry -> { ssr_id_of_string loc s } ]];
+  GLOBAL: Prim.identref;
+  Prim.identref: [[ s = IDENT; ssr_null_entry -> { ssr_id_of_string loc s } ]];
 END
 
 {
@@ -1965,7 +1966,7 @@ let test_ssreqid =
 GRAMMAR EXTEND Gram
   GLOBAL: ssreqid;
   ssreqpat: [
-    [ id = Prim.ident -> { IPatId id }
+    [ id = Prim.identref -> { IPatId id.CAst.v }
     | "_" -> { IPatAnon Drop }
     | "?" -> { IPatAnon (One None) }
     | "+" -> { IPatAnon Temporary }
@@ -2427,7 +2428,7 @@ END
 TACTIC EXTEND ssrpose
 | [ "pose" ssrfixfwd(ffwd) ] -> { ssrposetac ffwd }
 | [ "pose" ssrcofixfwd(ffwd) ] -> { ssrposetac ffwd }
-| [ "pose" ssrfwdid(id) ssrposefwd(fwd) ] -> { ssrposetac (id, fwd) }
+| [ "pose" ssrfwdid(id) ssrposefwd(fwd) ] -> { ssrposetac (id.CAst.v, fwd) }
 END
 
 (** The "set" tactic *)
@@ -2436,7 +2437,7 @@ END
 
 TACTIC EXTEND ssrset
 | [ "set" ssrfwdid(id) ssrsetfwd(fwd) ssrclauses(clauses) ] ->
-  { tclCLAUSES (ssrsettac id fwd) clauses }
+  { tclCLAUSES (ssrsettac id.CAst.v fwd) clauses }
 END
 
 (** The "have" tactic *)
