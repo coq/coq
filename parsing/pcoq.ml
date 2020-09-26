@@ -312,7 +312,6 @@ module Constr =
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
     let binder_constr = gec_constr "binder_constr"
-    let ident = make_gen_entry uconstr "ident"
     let global = make_gen_entry uconstr "global"
     let universe_name = make_gen_entry uconstr "universe_name"
     let universe_level = make_gen_entry uconstr "universe_level"

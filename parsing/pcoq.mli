@@ -180,7 +180,6 @@ module Constr :
     val lconstr : constr_expr Entry.t
     val binder_constr : constr_expr Entry.t
     val operconstr : constr_expr Entry.t
-    val ident : Id.t Entry.t
     val global : qualid Entry.t
     val universe_name : Glob_term.glob_sort_name Entry.t
     val universe_level : Glob_term.glob_level Entry.t
