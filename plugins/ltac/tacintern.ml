@@ -826,6 +826,10 @@ let intern_ident' ist id =
   let lf = ref Id.Set.empty in
   (ist, intern_ident lf ist id)
 
+let intern_lident ist CAst.{loc;v=id} =
+  let lf = ref Id.Set.empty in
+  (ist, CAst.make ?loc @@ intern_ident lf ist id)
+
 let intern_ltac ist tac =
   Flags.with_option strict_check (fun () -> intern_pure_tactic ist tac) ()
 
@@ -835,6 +839,7 @@ let () =
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
   Genintern.register_intern0 wit_pre_ident (fun ist c -> (ist,c));
   Genintern.register_intern0 wit_ident intern_ident';
+  Genintern.register_intern0 wit_lident intern_lident;
   Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_ltac (lift intern_ltac);
