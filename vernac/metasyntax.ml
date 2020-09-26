@@ -1233,6 +1233,9 @@ let find_precedence custom lev etyps symbols onlyprint =
             | _ ->
               user_err Pp.(str "A notation starting with an atomic expression must be at level 0.")
             end
+        | (ETPattern _ | ETBinder _), InConstrEntry when not onlyprint ->
+            (* Don't know exactly if we can make sense of this case *)
+            user_err Pp.(str "Binders or patterns not supported in leftmost position.")
         | (ETPattern _ | ETBinder _ | ETConstr _), _ ->
             (* Give a default ? *)
             if Option.is_empty lev then

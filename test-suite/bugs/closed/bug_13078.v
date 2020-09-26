@@ -6,3 +6,5 @@ Check fun x => match x with | None => None | Some tt => Some tt end.
 Notation "& x" := (Some x) (at level 0, x pattern).
 Check fun x => match x with | None => None | Some tt => Some tt end.
 End PrintingTest.
+
+Fail Notation "x &" := (Some x) (at level 0, x pattern).
