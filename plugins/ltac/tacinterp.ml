@@ -352,6 +352,9 @@ let interp_ident ist env sigma id =
   try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (env,sigma)) (make id)
   with Not_found -> id
 
+let interp_lident ist env sigma id =
+  CAst.map (interp_ident ist env sigma) id
+
 (* Interprets an optional identifier, bound or fresh *)
 let interp_name ist env sigma = function
   | Anonymous -> Anonymous
@@ -2096,6 +2099,7 @@ let () =
   register_interp0 wit_ref (lift interp_reference);
   register_interp0 wit_pre_ident (lift interp_pre_ident);
   register_interp0 wit_ident (lift interp_ident);
+  register_interp0 wit_identref (lift interp_lident);
   register_interp0 wit_hyp (lift interp_hyp);
   register_interp0 wit_intropattern (lifts interp_intro_pattern) [@warning "-3"];
   register_interp0 wit_simple_intropattern (lifts interp_intro_pattern);

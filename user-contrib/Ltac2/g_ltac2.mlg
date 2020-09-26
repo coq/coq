@@ -195,7 +195,7 @@ GRAMMAR EXTEND Gram
       | -> { false } ] ]
   ;
   ltac2_typevar:
-    [ [ "'"; id = Prim.ident -> { id } ] ]
+    [ [ "'"; id = Prim.identref -> { id.CAst.v } ] ]
   ;
   tactic_atom:
     [ [ n = Prim.integer -> { CAst.make ~loc @@ CTacAtm (AtmInt n) }
@@ -205,7 +205,7 @@ GRAMMAR EXTEND Gram
           CAst.make ~loc @@ CTacCst (RelId qid)
         else
           CAst.make ~loc @@ CTacRef (RelId qid) }
-      | "@"; id = Prim.ident -> { Tac2quote.of_ident (CAst.make ~loc id) }
+      | "@"; id = lident -> { Tac2quote.of_ident (CAst.make ~loc id.CAst.v) }
       | "&"; id = lident -> { Tac2quote.of_hyp ~loc id }
       | "'"; c = Constr.constr -> { inj_open_constr loc c }
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_constr c }
@@ -218,12 +218,12 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   ltac1_expr_in_env:
-    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = ltac_expr -> { ids, e }
+    [ [ test_ltac1_env; ids = LIST0 lident; "|-"; e = ltac_expr -> { ids, e }
       | e = ltac_expr -> { [], e }
     ] ]
   ;
   tac2expr_in_env :
-    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = ltac2_expr ->
+    [ [ test_ltac1_env; ids = LIST0 lident; "|-"; e = ltac2_expr ->
       { let check { CAst.v = id; CAst.loc = loc } =
           if Tac2env.is_constructor (Libnames.qualid_of_ident ?loc id) then
             CErrors.user_err ?loc Pp.(str "Invalid bound Ltac2 identifier " ++ Id.print id)
@@ -274,12 +274,11 @@ GRAMMAR EXTEND Gram
       | qid = Prim.qualid -> { CAst.make ~loc @@ CTypRef (RelId qid, []) }
       ]
     ];
-  locident:
-    [ [ id = Prim.ident -> { CAst.make ~loc id } ] ]
+  lident:
+    [ [ id = Prim.identref -> { id } ] ]
   ;
   binder:
-    [ [ "_" -> { CAst.make ~loc Anonymous }
-      | l = Prim.ident -> { CAst.make ~loc (Name l) } ] ]
+    [ [ na = Prim.name -> { na } ] ]
   ;
   input_fun:
     [ [ b = tac2pat LEVEL "0" -> { b } ] ]
@@ -296,7 +295,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2def_mut:
-    [ [ "Set"; qid = Prim.qualid; old = OPT [ "as"; id = locident -> { id } ]; ":="; e = ltac2_expr -> { StrMut (qid, old, e) } ] ]
+    [ [ "Set"; qid = Prim.qualid; old = OPT [ "as"; id = lident -> { id } ]; ":="; e = ltac2_expr -> { StrMut (qid, old, e) } ] ]
   ;
   tac2typ_knd:
     [ [ t = ltac2_type -> { CTydDef (Some t) }
@@ -309,8 +308,8 @@ GRAMMAR EXTEND Gram
       | cs = LIST0 tac2alg_constructor SEP "|" -> { cs } ] ]
   ;
   tac2alg_constructor:
-    [ [ c = Prim.ident -> { (c, []) }
-      | c = Prim.ident; "("; args = LIST0 ltac2_type SEP ","; ")"-> { (c, args) } ] ]
+    [ [ c = Prim.identref -> { (c.CAst.v, []) }
+      | c = Prim.identref; "("; args = LIST0 ltac2_type SEP ","; ")"-> { (c.CAst.v, args) } ] ]
   ;
   tac2rec_fields:
     [ [ f = tac2rec_field; ";"; l = tac2rec_fields -> { f :: l }
@@ -319,7 +318,7 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   tac2rec_field:
-    [ [ mut = mut_flag; id = Prim.ident; ":"; t = ltac2_type -> { (id, mut, t) } ] ]
+    [ [ mut = mut_flag; id = Prim.identref; ":"; t = ltac2_type -> { (id.CAst.v, mut, t) } ] ]
   ;
   tac2rec_fieldexprs:
     [ [ f = tac2rec_fieldexpr; ";"; l = tac2rec_fieldexprs -> { f :: l }
@@ -351,7 +350,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2def_ext:
-    [ [ "@"; IDENT "external"; id = locident; ":"; t = ltac2_type LEVEL "5"; ":=";
+    [ [ "@"; IDENT "external"; id = lident; ":"; t = ltac2_type LEVEL "5"; ":=";
         plugin = Prim.string; name = Prim.string ->
       { let ml = { mltac_plugin = plugin; mltac_tactic = name } in
         StrPrm (id, t, ml) }
@@ -359,7 +358,7 @@ GRAMMAR EXTEND Gram
   ;
   syn_node:
     [ [ "_" -> { CAst.make ~loc None }
-      | id = Prim.ident -> { CAst.make ~loc (Some id) }
+      | id = Prim.identref -> { CAst.make ~loc (Some id.CAst.v) }
     ] ]
   ;
   ltac2_scope:
@@ -382,10 +381,10 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   lident:
-    [ [ id = Prim.ident -> { CAst.make ~loc id } ] ]
+    [ [ id = Prim.identref -> { id } ] ]
   ;
   globref:
-    [ [ "&"; id = Prim.ident -> { CAst.make ~loc (QHypothesis id) }
+    [ [ "&"; id = Prim.identref -> { CAst.make ~loc (QHypothesis id.CAst.v) }
       | qid = Prim.qualid -> { CAst.make ~loc @@ QReference qid }
     ] ]
   ;
@@ -407,15 +406,15 @@ GRAMMAR EXTEND Gram
           q_destruction_arg q_reference q_with_bindings q_constr_matching
           q_goal_matching q_hintdb q_move_location q_pose q_assert;
   anti:
-    [ [ "$"; id = Prim.ident -> { QAnti (CAst.make ~loc id) } ] ]
+    [ [ "$"; id = Prim.identref -> { QAnti (CAst.make ~loc id.CAst.v) } ] ]
   ;
   ident_or_anti:
     [ [ id = lident -> { QExpr id }
-      | "$"; id = Prim.ident -> { QAnti (CAst.make ~loc id) }
+      | "$"; id = Prim.identref -> { QAnti (CAst.make ~loc id.CAst.v) }
     ] ]
   ;
   lident:
-    [ [ id = Prim.ident -> { CAst.make ~loc id } ] ]
+    [ [ id = Prim.identref -> { id } ] ]
   ;
   lnatural:
     [ [ n = Prim.natural -> { CAst.make ~loc n } ] ]
@@ -522,7 +521,7 @@ GRAMMAR EXTEND Gram
   ;
   nat_or_anti:
     [ [ n = lnatural -> { QExpr n }
-      | "$"; id = Prim.ident -> { QAnti (CAst.make ~loc id) }
+      | "$"; id = Prim.identref -> { QAnti (CAst.make ~loc id.CAst.v) }
     ] ]
   ;
   eqn_ipat:
@@ -685,9 +684,9 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   refglobal:
-    [ [ "&"; id = Prim.ident -> { QExpr (CAst.make ~loc @@ QHypothesis id) }
+    [ [ "&"; id = Prim.identref -> { QExpr (CAst.make ~loc @@ QHypothesis id.CAst.v) }
       | qid = Prim.qualid -> { QExpr (CAst.make ~loc @@ QReference qid) }
-      | "$"; id = Prim.ident -> { QAnti (CAst.make ~loc id) }
+      | "$"; id = Prim.identref -> { QAnti (CAst.make ~loc id.CAst.v) }
     ] ]
   ;
   q_reference:
@@ -721,8 +720,8 @@ GRAMMAR EXTEND Gram
     [ [ db = hintdb -> { db } ] ]
   ;
   match_pattern:
-    [ [ IDENT "context";  id = OPT Prim.ident;
-          "["; pat = Constr.cpattern; "]" -> { CAst.make ~loc @@ QConstrMatchContext (id, pat) }
+    [ [ IDENT "context";  id = OPT Prim.identref;
+          "["; pat = Constr.cpattern; "]" -> { CAst.make ~loc @@ QConstrMatchContext (Option.map (fun {CAst.v=id} -> id) id, pat) }
       | pat = Constr.cpattern -> { CAst.make ~loc @@ QConstrMatchPattern pat } ] ]
   ;
   match_rule:
@@ -817,12 +816,12 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "ltac2"; ":"; "("; tac = ltac2_expr; ")" ->
       { let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
         CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
-      | test_ampersand_ident; "&"; id = Prim.ident ->
-      { let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
+      | test_ampersand_ident; "&"; id = Prim.identref ->
+      { let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id.CAst.v) in
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
         CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
-      | test_dollar_ident; "$"; id = Prim.ident ->
-      { let id = Loc.tag ~loc id in
+      | test_dollar_ident; "$"; id = Prim.identref ->
+      { let id = Loc.tag ~loc id.CAst.v in
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_quotation) id in
         CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
     ] ]
@@ -838,9 +837,9 @@ let (++) r s = Pcoq.Rule.next r s in
 let rules = [
   Pcoq.(
     Production.make
-      (Rule.stop ++ Symbol.nterm test_dollar_ident ++ Symbol.token (PKEYWORD "$") ++ Symbol.nterm Prim.ident)
+      (Rule.stop ++ Symbol.nterm test_dollar_ident ++ Symbol.token (PKEYWORD "$") ++ Symbol.nterm Prim.identref)
     begin fun id _ _ loc ->
-      let id = Loc.tag ~loc id in
+      let id = Loc.tag ~loc id.CAst.v in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_quotation) id in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
     end
@@ -848,9 +847,9 @@ let rules = [
 
   Pcoq.(
     Production.make
-      (Rule.stop ++ Symbol.nterm test_ampersand_ident ++ Symbol.token (PKEYWORD "&") ++ Symbol.nterm Prim.ident)
+      (Rule.stop ++ Symbol.nterm test_ampersand_ident ++ Symbol.token (PKEYWORD "&") ++ Symbol.nterm Prim.identref)
     begin fun id _ _ loc ->
-      let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
+      let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id.CAst.v) in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
     end

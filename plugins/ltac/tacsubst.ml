@@ -282,6 +282,7 @@ let () =
   Genintern.register_subst0 wit_smart_global subst_global_reference;
   Genintern.register_subst0 wit_pre_ident (fun _ v -> v);
   Genintern.register_subst0 wit_ident (fun _ v -> v);
+  Genintern.register_subst0 wit_identref (fun _ v -> v);
   Genintern.register_subst0 wit_hyp (fun _ v -> v);
   Genintern.register_subst0 wit_intropattern subst_intro_pattern [@warning "-3"];
   Genintern.register_subst0 wit_simple_intropattern subst_intro_pattern;
