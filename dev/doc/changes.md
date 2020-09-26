@@ -4,6 +4,11 @@
   comes from a notation. Use `None` if not and `Some foo` to tell to
   print such TacGeneric surrounded with `foo:( )`.
 
+### Grammar entries
+
+- `Prim.pattern_ident` now takes a location; it becomes a synonymous of
+  `Prim.pattern_identref` which is removed.
+
 ## Changes between Coq 8.11 and Coq 8.12
 
 ### Code formatting

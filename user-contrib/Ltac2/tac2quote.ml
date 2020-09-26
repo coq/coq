@@ -229,7 +229,7 @@ let check_pattern_id ?loc id =
 let pattern_vars pat =
   let rec aux () accu pat = match pat.CAst.v with
   | Constrexpr.CPatVar id
-  | Constrexpr.CEvar (id, []) ->
+  | Constrexpr.CEvar ({CAst.v=id}, []) ->
     let loc = pat.CAst.loc in
     let () = check_pattern_id ?loc id in
     Id.Map.add id loc accu

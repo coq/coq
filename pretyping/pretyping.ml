@@ -493,7 +493,7 @@ type 'a pretype_fun = ?loc:Loc.t -> program_mode:bool -> poly:bool -> bool -> ty
 type pretyper = {
   pretype_ref : pretyper -> GlobRef.t * glob_level list option -> unsafe_judgment pretype_fun;
   pretype_var : pretyper -> Id.t -> unsafe_judgment pretype_fun;
-  pretype_evar : pretyper -> existential_name * (lident * glob_constr) list -> unsafe_judgment pretype_fun;
+  pretype_evar : pretyper -> existential_name CAst.t * (lident * glob_constr) list -> unsafe_judgment pretype_fun;
   pretype_patvar : pretyper -> Evar_kinds.matching_var_kind -> unsafe_judgment pretype_fun;
   pretype_app : pretyper -> glob_constr * glob_constr list -> unsafe_judgment pretype_fun;
   pretype_lambda : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
@@ -628,13 +628,13 @@ struct
     let sigma, t_id = pretype_id (fun e r t -> pretype tycon e r t) loc env sigma id in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma t_id tycon
 
-  let pretype_evar self (id, inst) ?loc ~program_mode ~poly resolve_tc tycon env sigma =
+  let pretype_evar self (CAst.{v=id;loc=locid}, inst) ?loc ~program_mode ~poly resolve_tc tycon env sigma =
       (* Ne faudrait-il pas s'assurer que hyps est bien un
          sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
       let id = interp_ltac_id env id in
       let evk =
         try Evd.evar_key id sigma
-        with Not_found -> error_evar_not_found ?loc !!env sigma id in
+        with Not_found -> error_evar_not_found ?loc:locid !!env sigma id in
       let hyps = evar_filtered_context (Evd.find sigma evk) in
       let sigma, args = pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk inst in
       let c = mkEvar (evk, args) in
