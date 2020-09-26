@@ -37,6 +37,8 @@ val wit_int_or_var : (int or_var, int or_var, int) genarg_type
 
 val wit_ident : Id.t uniform_genarg_type
 
+val wit_identref : lident uniform_genarg_type
+
 val wit_hyp : (lident, lident, Id.t) genarg_type
 
 val wit_var : (lident, lident, Id.t) genarg_type
