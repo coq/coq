@@ -94,12 +94,12 @@ END
 
 (* Modular extraction (one Coq library = one ML module) *)
 VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY
-| [ "Extraction" "Library" ident(m) ]
+| [ "Extraction" "Library" lident(m) ]
   -> { extraction_library false m }
 END
 
 VERNAC COMMAND EXTEND RecursiveExtractionLibrary CLASSIFIED AS QUERY
-| [ "Recursive" "Extraction" "Library" ident(m) ]
+| [ "Recursive" "Extraction" "Library" lident(m) ]
   -> { extraction_library true m }
 END
 
@@ -138,7 +138,7 @@ END
 
 VERNAC COMMAND EXTEND ExtractionBlacklist CLASSIFIED AS SIDEFF
 (* Force Extraction to not use some filenames *)
-| [ "Extraction" "Blacklist" ne_ident_list(l) ]
+| [ "Extraction" "Blacklist" ne_preident_list(l) ]
   -> { extraction_blacklist l }
 END
 

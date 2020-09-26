@@ -16,7 +16,7 @@ open Libnames
 val simple_extraction : qualid -> unit
 val full_extraction : string option -> qualid list -> unit
 val separate_extraction : qualid list -> unit
-val extraction_library : bool -> Id.t -> unit
+val extraction_library : bool -> lident -> unit
 
 (* For the test-suite : extraction to a temporary file + ocamlc on it *)
 

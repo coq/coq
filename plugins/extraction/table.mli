@@ -208,7 +208,7 @@ val extraction_implicit : qualid -> int_or_id list -> unit
 
 (*s Table of blacklisted filenames *)
 
-val extraction_blacklist : Id.t list -> unit
+val extraction_blacklist : string list -> unit
 val reset_extraction_blacklist : unit -> unit
 val print_extraction_blacklist : unit -> Pp.t
 

@@ -761,7 +761,7 @@ let blacklist_extraction : string list -> obj =
 (* Grammar entries. *)
 
 let extraction_blacklist l =
-  let l = List.rev_map Id.to_string l in
+  let l = List.rev l in
   Lib.add_anonymous_leaf (blacklist_extraction l)
 
 (* Printing part *)
