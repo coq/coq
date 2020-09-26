@@ -218,7 +218,7 @@ let pr_fun_scheme_arg (princ_name,fun_name,s) =
 
 VERNAC ARGUMENT EXTEND fun_scheme_arg
 PRINTED BY { pr_fun_scheme_arg }
-| [ ident(princ_name) ":=" "Induction" "for" reference(fun_name) "Sort" sort_family(s) ] -> { (princ_name,fun_name,s) }
+| [ lident(princ_name) ":=" "Induction" "for" reference(fun_name) "Sort" sort_family(s) ] -> { (princ_name.CAst.v,fun_name,s) }
 END
 
 {
