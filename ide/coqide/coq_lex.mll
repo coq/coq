@@ -50,52 +50,40 @@ and comment = parse
   | utf8_extra_byte { incr utf8_adjust; comment lexbuf }
   | _ { comment lexbuf }
 
-and quotation o c n l = parse
+and quotation n l = parse
 | eof { raise Unterminated }
-| utf8_extra_byte { incr utf8_adjust; quotation o c n l lexbuf }
-| _ {
-  let x = Lexing.lexeme lexbuf in
-  if x = o then quotation_nesting o c n l 1 lexbuf
-  else if x = c then
-    if n = 1 && l = 1 then ()
-    else quotation_closing o c n l 1 lexbuf
-  else quotation o c n l lexbuf
-}
+| utf8_extra_byte { incr utf8_adjust; quotation n l lexbuf }
+| "{" { quotation_nesting n l 1 lexbuf }
+| "}" { quotation_closing n l 1 lexbuf }
+| _ { quotation n l lexbuf }
 
-and quotation_nesting o c n l v = parse
+and quotation_nesting n l v = parse
 | eof { raise Unterminated }
-| utf8_extra_byte { incr utf8_adjust; quotation o c n l lexbuf }
-| _ {
-  let x = Lexing.lexeme lexbuf in
-  if x = o then
-    if n = v+1 then quotation o c n (l+1) lexbuf
-    else quotation_nesting o c n l (v+1) lexbuf
-  else if x = c then quotation_closing o c n l 1 lexbuf
-  else quotation o c n l lexbuf
+| utf8_extra_byte { incr utf8_adjust; quotation n l lexbuf }
+| "{" {
+  if n = v+1 then quotation n (l+1) lexbuf
+  else quotation_nesting n l (v+1) lexbuf
 }
+| "}" { quotation_closing n l 1 lexbuf }
+| _ { quotation n l lexbuf }
 
-and quotation_closing o c n l v = parse
+and quotation_closing n l v = parse
 | eof { raise Unterminated }
-| utf8_extra_byte { incr utf8_adjust; quotation o c n l lexbuf }
-| _ {
-  let x = Lexing.lexeme lexbuf in
-  if x = c then
-    if n = v+1 then
-      if l = 1 then ()
-      else quotation o c n (l-1) lexbuf
-    else quotation_closing o c n l (v+1) lexbuf
-  else if x = o then quotation_nesting o c n l 1 lexbuf
-  else quotation o c n l lexbuf
+| utf8_extra_byte { incr utf8_adjust; quotation n l lexbuf }
+| "}" {
+  if n = v+1 then
+    if l = 1 then ()
+    else quotation n (l-1) lexbuf
+  else quotation_closing n l (v+1) lexbuf
 }
+| "{" { quotation_nesting n l 1 lexbuf }
+| _ { quotation n l lexbuf }
 
-and quotation_start o c n = parse
+and quotation_start n = parse
 | eof { raise Unterminated }
-| utf8_extra_byte { incr utf8_adjust; quotation o c n 1 lexbuf }
-| _ {
-  let x = Lexing.lexeme lexbuf in
-  if x = o then quotation_start o c (n+1) lexbuf
-  else quotation o c n 1 lexbuf
-}
+| utf8_extra_byte { incr utf8_adjust; quotation n 1 lexbuf }
+| "{" { quotation_start (n+1) lexbuf }
+| _ { quotation n 1 lexbuf }
 
 (** NB : [mkiter] should be called on increasing offsets *)
 
@@ -130,16 +118,8 @@ and sentence initial stamp = parse
       if initial then stamp (utf8_lexeme_start lexbuf + String.length (Lexing.lexeme lexbuf) - 1) Tags.Script.sentence;
       sentence initial stamp lexbuf
     }
-  | ['a'-'z' 'A'-'Z'] ":{" {
-      quotation_start "{" "}" 1 lexbuf;
-      sentence false stamp lexbuf
-    }
-  | ['a'-'z' 'A'-'Z'] ":[" {
-      quotation_start "[" "]" 1 lexbuf;
-      sentence false stamp lexbuf
-    }
-  | ['a'-'z' 'A'-'Z'] ":(" {
-      quotation_start "(" ")" 1 lexbuf;
+  | ['a'-'z' 'A'-'Z'] ":{{" {
+      quotation_start 2 lexbuf;
       sentence false stamp lexbuf
     }
   | space+ {
