@@ -76,12 +76,12 @@ let instantiate_tac n c ido =
   instantiate_evar evk c
   end
 
-let instantiate_tac_by_name id c =
+let instantiate_tac_by_name CAst.{v=id;loc} c =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let evk =
     try Evd.evar_key id sigma
-    with Not_found -> user_err Pp.(str "Unknown existential variable.") in
+    with Not_found -> user_err ?loc Pp.(str "Unknown existential variable.") in
   instantiate_evar evk c
   end
 

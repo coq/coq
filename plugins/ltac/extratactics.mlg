@@ -483,7 +483,7 @@ TACTIC EXTEND evar
 END
 
 TACTIC EXTEND instantiate
-| [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->
+| [ "instantiate" "(" identref(id) ":=" lglob(c) ")" ] ->
     { Tacticals.New.tclTHEN (instantiate_tac_by_name id c) Proofview.V82.nf_evar_goals }
 | [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
     { Tacticals.New.tclTHEN (instantiate_tac i c hl) Proofview.V82.nf_evar_goals }

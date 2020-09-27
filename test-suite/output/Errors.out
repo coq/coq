@@ -6,7 +6,7 @@ The command has indeed failed with message:
 In nested Ltac calls to "f" and "apply x", last call failed.
 Unable to unify "nat" with "True".
 The command has indeed failed with message:
-Ltac call to "instantiate ( (ident) := (lglob) )" failed.
+Ltac call to "instantiate ( (identref) := (lglob) )" failed.
 Instance is not well-typed in the environment of ?x.
 The command has indeed failed with message:
 Cannot infer ?T in the partial instance "?T -> nat" found for the type of f.
