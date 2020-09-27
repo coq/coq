@@ -298,7 +298,7 @@ Summary of the commands
 .. cmd:: Class @inductive_definition {* with @inductive_definition }
 
    The :cmd:`Class` command is used to declare a typeclass with parameters
-   :token:`binders` and fields the declared record fields.
+   :n:`{* @binder }` and fields the declared record fields.
 
    Like any command declaring a record, this command supports the
    :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
@@ -337,7 +337,7 @@ Summary of the commands
    fields defined by :token:`field_def`, where each field must be a declared field of
    the class.
 
-   An arbitrary context of :token:`binders` can be put after the name of the
+   An arbitrary context of :n:`{* @binder }` can be put after the name of the
    instance and before the colon to declare a parameterized instance. An
    optional priority can be declared, 0 being the highest priority as for
    :tacn:`auto` hints. If the priority :token:`natural` is not specified, it defaults to the number

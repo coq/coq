@@ -217,7 +217,7 @@ usual implicit arguments disambiguation syntax.
 
 The syntax is also supported in internal binders. For instance, in the
 following kinds of expressions, the type of each declaration present
-in :token:`binders` can be bracketed to mark the declaration as
+in :n:`{* @binder }` can be bracketed to mark the declaration as
 implicit:
 * :n:`fun (@ident:forall {* @binder }, @type) => @term`,
 * :n:`forall (@ident:forall {* @binder }, @type), @type`,
