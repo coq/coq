@@ -151,7 +151,7 @@ let (wit_function_rec_definition_loc : Vernacexpr.fixpoint_expr Loc.located Gena
   Genarg.create_arg "function_rec_definition_loc"
 
 let function_rec_definition_loc =
-  Pcoq.create_generic_entry Pcoq.utactic "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
+  Pcoq.create_generic_entry2 "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
 
 }
 

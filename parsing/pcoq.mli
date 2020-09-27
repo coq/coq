@@ -123,23 +123,28 @@ val parse_string : 'a Entry.t -> ?loc:Loc.t -> string -> 'a
 val eoi_entry : 'a Entry.t -> 'a Entry.t
 val map_entry : ('a -> 'b) -> 'a Entry.t -> 'b Entry.t
 
-type gram_universe
+type gram_universe [@@deprecated "Deprecated in 8.13"]
+[@@@ocaml.warning "-3"]
+val get_univ : string -> gram_universe [@@deprecated "Deprecated in 8.13"]
+val create_universe : string -> gram_universe [@@deprecated "Deprecated in 8.13"]
 
-val get_univ : string -> gram_universe
-val create_universe : string -> gram_universe
+val new_entry : gram_universe -> string -> 'a Entry.t [@@deprecated "Deprecated in 8.13"]
 
-val new_entry : gram_universe -> string -> 'a Entry.t
+val uprim : gram_universe [@@deprecated "Deprecated in 8.13"]
+val uconstr : gram_universe [@@deprecated "Deprecated in 8.13"]
+val utactic : gram_universe [@@deprecated "Deprecated in 8.13"]
 
-val uprim : gram_universe
-val uconstr : gram_universe
-val utactic : gram_universe
+val create_generic_entry : gram_universe -> string ->
+  ('a, rlevel) abstract_argument_type -> 'a Entry.t
+  [@@deprecated "Deprecated in 8.13.  Use create_generic_entry2 instead."]
+[@@@ocaml.warning "+3"]
+
+val create_generic_entry2 : string ->
+  ('a, rlevel) abstract_argument_type -> 'a Entry.t
 
 
 val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Entry.t -> unit
 val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Entry.t
-
-val create_generic_entry : gram_universe -> string ->
-  ('a, rlevel) abstract_argument_type -> 'a Entry.t
 
 module Prim :
   sig

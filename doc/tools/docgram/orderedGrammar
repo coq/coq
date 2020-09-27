@@ -1268,7 +1268,6 @@ int_or_id: [
 ]
 
 language: [
-| "Ocaml"      (* extraction plugin *)
 | "OCaml"      (* extraction plugin *)
 | "Haskell"      (* extraction plugin *)
 | "Scheme"      (* extraction plugin *)
