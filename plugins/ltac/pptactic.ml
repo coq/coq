@@ -767,11 +767,11 @@ let pr_goal_selector ~toplevel s =
           hov 1 (primitive (with_evars ev "case") ++ spc () ++ pr_with_bindings_arg cb)
         | TacMutualFix (id,n,l) ->
           hov 1 (
-            primitive "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc()
+            primitive "fix" ++ spc () ++ pr_lident id ++ pr_intarg n ++ spc()
             ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_fix_tac l)
         | TacMutualCofix (id,l) ->
           hov 1 (
-            primitive "cofix" ++ spc () ++ pr_id id ++ spc()
+            primitive "cofix" ++ spc () ++ pr_lident id ++ spc()
             ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_cofix_tac l
           )
         | TacAssert (ev,b,Some tac,ipat,c) ->

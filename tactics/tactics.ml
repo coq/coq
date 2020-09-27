@@ -141,7 +141,7 @@ let introduction id =
     | _ -> raise (RefinerError (env, sigma, IntroNeedsProduct))
   end
 
-let error msg = CErrors.user_err Pp.(str msg)
+let error ?loc msg = CErrors.user_err ?loc Pp.(str msg)
 
 let convert_concl ~check ty k =
   Proofview.Goal.enter begin fun gl ->
@@ -538,7 +538,7 @@ let rec check_mutind env sigma k cl = match EConstr.kind sigma (strip_outer_cast
 | _ -> error "Not enough products."
 
 (* Refine as a fixpoint *)
-let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
+let mutual_fix {CAst.v=f;loc} n rest j = Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
@@ -553,7 +553,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
     if not (QMutInd.equal env sp sp') then
       error "Fixpoints should be on the same mutual inductive declaration.";
     if mem_named_context_val f sign then
-      user_err ~hdr:"Logic.prim_refiner"
+      user_err ?loc ~hdr:"Logic.prim_refiner"
         (str "Name " ++ Id.print f ++ str " already used in the environment");
     mk_sign (push_named_context_val (LocalAssum (make_annot f Sorts.Relevant, ar)) sign) oth
   in
@@ -587,7 +587,7 @@ let rec check_is_mutcoind env sigma cl =
       error "All methods must construct elements in coinductive types."
 
 (* Refine as a cofixpoint *)
-let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
+let mutual_cofix {CAst.v=f;loc} others j = Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
@@ -599,7 +599,7 @@ let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
   | (f, ar) :: oth ->
     let open Context.Named.Declaration in
     if mem_named_context_val f sign then
-      error "Name already used in the environment.";
+      error ?loc "Name already used in the environment.";
     mk_sign (push_named_context_val (LocalAssum (make_annot f Sorts.Relevant, ar)) sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in

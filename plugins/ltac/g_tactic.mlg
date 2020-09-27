@@ -516,9 +516,9 @@ GRAMMAR EXTEND Gram
           { TacAtom (CAst.make ~loc @@ TacElim (true,cl,el)) }
       | IDENT "case"; icl = induction_clause_list -> { TacAtom (CAst.make ~loc @@ mkTacCase false icl) }
       | IDENT "ecase"; icl = induction_clause_list -> { TacAtom (CAst.make ~loc @@ mkTacCase true icl) }
-      | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
+      | "fix"; id = identref; n = natural; "with"; fd = LIST1 fixdecl ->
           { TacAtom (CAst.make ~loc @@ TacMutualFix (id,n,List.map mk_fix_tac fd)) }
-      | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
+      | "cofix"; id = identref; "with"; fd = LIST1 cofixdecl ->
           { TacAtom (CAst.make ~loc @@ TacMutualCofix (id,List.map mk_cofix_tac fd)) }
 
       | IDENT "pose"; bl = bindings_with_parameters ->

@@ -275,13 +275,13 @@ END
 (* Fix *)
 
 TACTIC EXTEND fix
-| [ "fix" ident(id) natural(n) ] -> { Tactics.fix id n }
+| [ "fix" identref(id) natural(n) ] -> { Tactics.fix id n }
 END
 
 (* Cofix *)
 
 TACTIC EXTEND cofix
-| [ "cofix" ident(id) ] -> { Tactics.cofix id }
+| [ "cofix" identref(id) ] -> { Tactics.cofix id }
 END
 
 (* Clear *)

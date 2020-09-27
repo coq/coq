@@ -70,6 +70,9 @@ let intern_name l ist = function
   | Anonymous -> Anonymous
   | Name id -> Name (intern_ident l ist id)
 
+let intern_lident s ist id =
+  CAst.map (intern_ident s ist) id
+
 let strict_check = ref false
 
 let adjust_loc loc = if !strict_check then None else loc
@@ -534,10 +537,10 @@ let rec intern_atomic lf ist x =
   | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings_arg ist cb)
   | TacMutualFix (id,n,l) ->
       let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
-      TacMutualFix (intern_ident lf ist id, n, List.map f l)
+      TacMutualFix (intern_lident lf ist id, n, List.map f l)
   | TacMutualCofix (id,l) ->
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
-      TacMutualCofix (intern_ident lf ist id, List.map f l)
+      TacMutualCofix (intern_lident lf ist id, List.map f l)
   | TacAssert (ev,b,otac,ipat,c) ->
       TacAssert (ev,b,Option.map (Option.map (intern_pure_tactic ist)) otac,
                  Option.map (intern_intro_pattern lf ist) ipat,
@@ -826,9 +829,9 @@ let intern_ident' ist id =
   let lf = ref Id.Set.empty in
   (ist, intern_ident lf ist id)
 
-let intern_lident ist CAst.{loc;v=id} =
+let intern_lident' ist id =
   let lf = ref Id.Set.empty in
-  (ist, CAst.make ?loc @@ intern_ident lf ist id)
+  (ist, intern_lident lf ist id)
 
 let intern_ltac ist tac =
   Flags.with_option strict_check (fun () -> intern_pure_tactic ist tac) ()
@@ -839,7 +842,7 @@ let () =
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
   Genintern.register_intern0 wit_pre_ident (fun ist c -> (ist,c));
   Genintern.register_intern0 wit_ident intern_ident';
-  Genintern.register_intern0 wit_identref intern_lident;
+  Genintern.register_intern0 wit_identref intern_lident';
   Genintern.register_intern0 wit_hyp (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_ltac (lift intern_ltac);

@@ -1474,7 +1474,7 @@ let start_equations ~name ~info ~hook ~types sigma goals =
 let rec_tac_initializer finite guard thms snl =
   if finite then
     match List.map (fun { CInfo.name; typ } -> name, (EConstr.of_constr typ)) thms with
-    | (id,_)::l -> Tactics.mutual_cofix id l 0
+    | (id,_)::l -> Tactics.mutual_cofix (CAst.make id) l 0
     | _ -> assert false
   else
     (* nl is dummy: it will be recomputed at Qed-time *)
@@ -1482,7 +1482,7 @@ let rec_tac_initializer finite guard thms snl =
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
     in match List.map2 (fun { CInfo.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
-       | (id,n,_)::l -> Tactics.mutual_fix id n l 0
+       | (id,n,_)::l -> Tactics.mutual_fix (CAst.make id) n l 0
        | _ -> assert false
 
 let start_with_initialization ~info ~cinfo sigma =

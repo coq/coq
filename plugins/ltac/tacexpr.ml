@@ -111,8 +111,8 @@ type 'a gen_atomic_tactic_expr =
       ('nam * 'dtrm intro_pattern_expr CAst.t option) option
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
   | TacCase of evars_flag * 'trm with_bindings_arg
-  | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
-  | TacMutualCofix of Id.t * (Id.t * 'trm) list
+  | TacMutualFix of lident * int * (Id.t * int * 'trm) list
+  | TacMutualCofix of lident * (Id.t * 'trm) list
   | TacAssert of
       evars_flag * bool * 'tacexpr option option *
       'dtrm intro_pattern_expr CAst.t option * 'trm

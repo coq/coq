@@ -1145,9 +1145,9 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
             else
               Indfun_common.New.observe_tac ~header:(str "observation")
                 (fun _ _ -> str "h_fix " ++ int (this_fix_info.idx + 1))
-                (fix this_fix_info.name (this_fix_info.idx + 1))
+                (fix (CAst.make this_fix_info.name) (this_fix_info.idx + 1))
           else
-            Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
+            Tactics.mutual_fix (CAst.make this_fix_info.name) (this_fix_info.idx + 1)
               other_fix_infos 0
       in
       let first_tac : unit Proofview.tactic =
@@ -1543,7 +1543,7 @@ let prove_principle_for_gen (f_ref, functional_ref, eq_ref) tcc_lemma_ref is_mes
                , [|input_type; relation; mkVar rec_arg_id|] ))
             prove_rec_arg_acc
         ; revert (List.rev (acc_rec_arg_id :: args_ids))
-        ; fix fix_id (List.length args_ids + 1)
+        ; fix (CAst.make fix_id) (List.length args_ids + 1)
         ; h_intros (List.rev (acc_rec_arg_id :: args_ids))
         ; Equality.rewriteLR (mkConst eq_ref)
         ; Proofview.Goal.enter (fun gl' ->
