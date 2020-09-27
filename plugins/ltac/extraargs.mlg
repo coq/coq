@@ -266,18 +266,18 @@ ARGUMENT EXTEND hloc
     { ConclLocation () }
   |  [ "in" "|-" "*" ] ->
     { ConclLocation () }
-| [ "in" ident(id) ] ->
-    { HypLocation ((CAst.make id),InHyp) }
-| [ "in" "(" "Type" "of" ident(id) ")" ] ->
-    { warn_deprecated_instantiate_syntax ("Type","type",id);
-      HypLocation ((CAst.make id),InHypTypeOnly) }
-| [ "in" "(" "Value" "of" ident(id) ")" ] ->
-    { warn_deprecated_instantiate_syntax ("Value","value",id);
-      HypLocation ((CAst.make id),InHypValueOnly) }
-| [ "in" "(" "type" "of" ident(id) ")" ] ->
-    { HypLocation ((CAst.make id),InHypTypeOnly) }
-| [ "in" "(" "value" "of" ident(id) ")" ] ->
-    { HypLocation ((CAst.make id),InHypValueOnly) }
+| [ "in" identref(id) ] ->
+    { HypLocation (id,InHyp) }
+| [ "in" "(" "Type" "of" identref(id) ")" ] ->
+    { warn_deprecated_instantiate_syntax ~loc ("Type","type",id.CAst.v);
+      HypLocation (id,InHypTypeOnly) }
+| [ "in" "(" "Value" "of" identref(id) ")" ] ->
+    { warn_deprecated_instantiate_syntax ~loc ("Value","value",id.CAst.v);
+      HypLocation (id,InHypValueOnly) }
+| [ "in" "(" "type" "of" identref(id) ")" ] ->
+    { HypLocation (id,InHypTypeOnly) }
+| [ "in" "(" "value" "of" identref(id) ")" ] ->
+    { HypLocation (id,InHypValueOnly) }
 
  END
 
