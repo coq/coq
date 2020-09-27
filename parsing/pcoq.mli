@@ -173,7 +173,8 @@ module Prim :
     val dirpath : DirPath.t Entry.t
     val ne_string : string Entry.t
     val ne_lstring : lstring Entry.t
-    val var : lident Entry.t
+    val hyp : lident Entry.t
+    val var : lident Entry.t [@@ocaml.deprecated "Use Prim.hyp"]
     val bar_cbrace : unit Entry.t
     val strategy_level : Conv_oracle.level Entry.t
   end

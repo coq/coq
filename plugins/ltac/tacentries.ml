@@ -219,7 +219,9 @@ let interp_prod_item = function
     | None ->
       if String.Map.mem s !entry_names then String.Map.find s !entry_names
       else begin match ArgT.name s with
-      | None -> user_err Pp.(str ("Unknown entry "^s^"."))
+      | None ->
+         if s = "var" then user_err Pp.(str ("var is deprecated, use hyp.")) (* to remove in 8.14 *)
+         else user_err Pp.(str ("Unknown entry "^s^"."))
       | Some arg -> arg
       end
     | Some n ->

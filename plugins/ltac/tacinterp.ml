@@ -971,8 +971,8 @@ let interp_destruction_arg ist gl arg =
           match v with
           | {v=IntroNaming (IntroIdentifier id)} -> try_cast_id id
           | _ -> error ()
-        else if has_type v (topwit wit_var) then
-          let id = out_gen (topwit wit_var) v in
+        else if has_type v (topwit wit_hyp) then
+          let id = out_gen (topwit wit_hyp) v in
           try_cast_id id
         else if has_type v (topwit wit_int) then
           keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
@@ -1238,7 +1238,7 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
   | ArgVar {loc;v=id} ->
       let v =
         try Id.Map.find id ist.lfun
-        with Not_found -> in_gen (topwit wit_var) id
+        with Not_found -> in_gen (topwit wit_hyp) id
       in
       let open Ftactic in
       force_vrec ist v >>= begin fun v ->
@@ -1529,7 +1529,7 @@ and interp_genarg ist x : Val.t Ftactic.t =
     let open Ftactic.Notations in
     (* Ad-hoc handling of some types. *)
     let tag = genarg_tag x in
-    if argument_type_eq tag (unquote (topwit (wit_list wit_var))) then
+    if argument_type_eq tag (unquote (topwit (wit_list wit_hyp))) then
       interp_genarg_var_list ist x
     else if argument_type_eq tag (unquote (topwit (wit_list wit_constr))) then
       interp_genarg_constr_list ist x
@@ -1573,9 +1573,9 @@ and interp_genarg_var_list ist x =
   Ftactic.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let lc = Genarg.out_gen (glbwit (wit_list wit_var)) x in
+  let lc = Genarg.out_gen (glbwit (wit_list wit_hyp)) x in
   let lc = interp_hyp_list ist env sigma lc in
-  let lc = in_list (val_tag wit_var) lc in
+  let lc = in_list (val_tag wit_hyp) lc in
   Ftactic.return lc
   end
 
@@ -2096,7 +2096,7 @@ let () =
   register_interp0 wit_ref (lift interp_reference);
   register_interp0 wit_pre_ident (lift interp_pre_ident);
   register_interp0 wit_ident (lift interp_ident);
-  register_interp0 wit_var (lift interp_hyp);
+  register_interp0 wit_hyp (lift interp_hyp);
   register_interp0 wit_intropattern (lifts interp_intro_pattern) [@warning "-3"];
   register_interp0 wit_simple_intropattern (lifts interp_intro_pattern);
   register_interp0 wit_clause_dft_concl (lift interp_clause);

@@ -18,8 +18,6 @@ open Pcoq.Constr
 open Pltac
 open Hints
 
-let wit_hyp = wit_var
-
 }
 
 DECLARE PLUGIN "ltac_plugin"

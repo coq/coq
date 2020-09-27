@@ -37,7 +37,10 @@ val wit_int_or_var : (int or_var, int or_var, int) genarg_type
 
 val wit_ident : Id.t uniform_genarg_type
 
+val wit_hyp : (lident, lident, Id.t) genarg_type
+
 val wit_var : (lident, lident, Id.t) genarg_type
+[@@ocaml.deprecated "Use Stdarg.wit_hyp"]
 
 val wit_ref : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
 

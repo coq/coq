@@ -33,8 +33,6 @@ open Proofview.Notations
 open Attributes
 open Vernacextend
 
-let wit_hyp = wit_var
-
 }
 
 DECLARE PLUGIN "ltac_plugin"
@@ -450,7 +448,7 @@ END
 (* Subst                                                              *)
 
 TACTIC EXTEND subst
-| [ "subst" ne_var_list(l) ] -> { subst l }
+| [ "subst" ne_hyp_list(l) ] -> { subst l }
 | [ "subst" ] -> { subst_all () }
 END
 

@@ -155,7 +155,7 @@ let pr_ssrhyp _ _ _ = pr_hyp
 let wit_ssrhyprep = add_genarg "ssrhyprep" (fun env sigma -> pr_hyp)
 
 let intern_hyp ist (SsrHyp (loc, id) as hyp) =
-  let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_var) CAst.(make ?loc id)) in
+  let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_hyp) CAst.(make ?loc id)) in
   if not_section_id id then hyp else
   hyp_err ?loc "Can't clear section hypothesis " id
 
