@@ -290,17 +290,17 @@ let move_hyp id dest =
 
 (* Renaming hypotheses *)
 let rename_hyp repl =
-  let fold accu (src, dst) = match accu with
+  let fold accu CAst.({v=src;loc=srcloc}, {v=dst;loc=dstloc}) = match accu with
   | None -> None
   | Some (srcs, dsts) ->
-    if Id.Set.mem src srcs then None
-    else if Id.Set.mem dst dsts then None
+    if Id.Map.mem src srcs then None
+    else if Id.Map.mem dst dsts then None
     else
-      let srcs = Id.Set.add src srcs in
-      let dsts = Id.Set.add dst dsts in
+      let srcs = Id.Map.add src srcloc srcs in
+      let dsts = Id.Map.add dst dstloc dsts in
       Some (srcs, dsts)
   in
-  let init = Some (Id.Set.empty, Id.Set.empty) in
+  let init = Some (Id.Map.empty, Id.Map.empty) in
   let dom = List.fold_left fold init repl in
   match dom with
   | None ->
@@ -315,19 +315,24 @@ let rename_hyp repl =
       (* Check that we do not mess variables *)
       let fold accu decl = Id.Set.add (NamedDecl.get_id decl) accu in
       let vars = List.fold_left fold Id.Set.empty hyps in
+      let domsrc = Id.Map.domain src in
       let () =
-        if not (Id.Set.subset src vars) then
-          let hyp = Id.Set.choose (Id.Set.diff src vars) in
-          raise (RefinerError (env, sigma, NoSuchHyp hyp))
+        if not (Id.Set.subset domsrc vars) then
+          let hyp = Id.Set.choose (Id.Set.diff domsrc vars) in
+          let loc = Id.Map.find hyp src in
+          Loc.raise ?loc (RefinerError (env, sigma, NoSuchHyp hyp))
       in
-      let mods = Id.Set.diff vars src in
+      let mods = Id.Set.diff vars domsrc in
       let () =
         try
-          let elt = Id.Set.choose (Id.Set.inter dst mods) in
-          CErrors.user_err  (Id.print elt ++ str " is already used")
+          let domdst = Id.Map.domain dst in
+          let elt = Id.Set.choose (Id.Set.inter domdst mods) in
+          let loc = Id.Map.find elt dst in
+          CErrors.user_err ?loc (Id.print elt ++ str " is already used")
         with Not_found -> ()
       in
       (* All is well *)
+      let repl = List.map (fun (src, dst) -> (src.CAst.v, dst.CAst.v)) repl in
       let make_subst (src, dst) = (src, mkVar dst) in
       let subst = List.map make_subst repl in
       let subst c = Vars.replace_vars subst c in
@@ -2457,7 +2462,7 @@ let check_thin_clash_then id thin avoid tac =
     let newid = next_ident_away (add_suffix id "'") avoid in
     let thin =
       List.map CAst.(map (fun id' -> if Id.equal id id' then newid else id')) thin in
-    Tacticals.New.tclTHEN (rename_hyp [id,newid]) (tac thin)
+    Tacticals.New.tclTHEN (rename_hyp [CAst.make id,CAst.make newid]) (tac thin)
   else
     tac thin
 
@@ -3945,7 +3950,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
             if dep then
               Tacticals.New.tclTHENLIST [
                 tac;
-                 rename_hyp [(id, oldid)]; Tacticals.New.tclDO n intro;
+                 rename_hyp [(CAst.make id, CAst.make oldid)]; Tacticals.New.tclDO n intro;
                  generalize_dep ~with_let:true (mkVar oldid)]
             else Tacticals.New.tclTHENLIST [
                     tac;

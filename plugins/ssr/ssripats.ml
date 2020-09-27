@@ -290,7 +290,7 @@ let intro_clear ids =
     let _, clear_ids, ren =
       List.fold_left (fun (used_ids, clear_ids, ren) id ->
             let new_id = Ssrcommon.mk_anon_id (Id.to_string id) used_ids in
-            (new_id :: used_ids, new_id :: clear_ids, (id, new_id) :: ren))
+            (new_id :: used_ids, new_id :: clear_ids, (CAst.make id, CAst.make new_id) :: ren))
                      (Tacmach.New.pf_ids_of_hyps gl, [], []) ids
     in
     Tactics.rename_hyp ren <*>

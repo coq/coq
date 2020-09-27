@@ -87,6 +87,7 @@ let is_incompatible_eq env sigma t =
   if res then observe (str "is_incompatible_eq " ++ pr_leconstr_env env sigma t);
   res
 
+
 let pf_get_new_id id env =
   next_ident_away id (Id.Set.of_list (Termops.ids_of_named_context env))
 
@@ -101,7 +102,7 @@ let change_hyp_with_using msg hyp_id t tac =
             [ (* observe_tac "change_hyp_with_using thin" *)
               Tactics.clear [hyp_id]
             ; (* observe_tac "change_hyp_with_using rename " *)
-              rename_hyp [(prov_id, hyp_id)] ] ])
+              rename_hyp [(CAst.make prov_id, CAst.make hyp_id)] ] ])
 
 exception TOREMOVE
 
@@ -558,7 +559,7 @@ let instantiate_hyps_with_args (do_prove : Id.t list -> unit Proofview.tactic)
                tclTHENLIST
                  [ pose_proof (Name prov_hid) c
                  ; thin [hid]
-                 ; rename_hyp [(prov_hid, hid)] ])))
+                 ; rename_hyp [(CAst.make prov_hid, CAst.make hid)] ])))
       (*
           if not then we are in a mutual function block
           and this hyp is a recursive hyp on an other function.

@@ -202,7 +202,7 @@ val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 val specialize    : constr with_bindings -> intro_pattern option -> unit Proofview.tactic
 
 val move_hyp      : Id.t -> Id.t Logic.move_location -> unit Proofview.tactic
-val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic
+val rename_hyp    : (lident * lident) list -> unit Proofview.tactic
 
 val revert        : Id.t list -> unit Proofview.tactic
 

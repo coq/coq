@@ -283,14 +283,14 @@ ARGUMENT EXTEND hloc
 
 {
 
-let pr_rename _ _ _ (n, m) = Id.print n ++ str " into " ++ Id.print m
+let pr_rename _ _ _ (n, m) = Pputils.pr_lident n ++ str " into " ++ Pputils.pr_lident m
 
 }
 
 ARGUMENT EXTEND rename
-  TYPED AS (ident * ident)
+  TYPED AS (identref * identref)
   PRINTED BY { pr_rename }
-| [ ident(n) "into" ident(m) ] -> { (n, m) }
+| [ identref(n) "into" identref(m) ] -> { (n, m) }
 END
 
 (* Julien: Mise en commun des differentes version de replace with in by *)

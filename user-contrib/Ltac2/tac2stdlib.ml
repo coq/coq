@@ -494,7 +494,7 @@ let () = define_prim2 "tac_split" bool bindings begin fun ev bnd ->
 end
 
 let () = define_prim1 "tac_rename" (list (pair ident ident)) begin fun ids ->
-  Tactics.rename_hyp ids
+  Tactics.rename_hyp (List.map (fun (src,dst) -> (CAst.make src,CAst.make dst)) ids)
 end
 
 let () = define_prim1 "tac_revert" (list ident) begin fun ids ->

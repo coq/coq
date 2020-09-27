@@ -1288,7 +1288,7 @@ let trans_hyp h t0 prfp =
           tclTHEN
             (Tactics.pose_proof (Name.Name h') prf)
             (tclTRY
-               (tclTHEN (Tactics.clear [h]) (Tactics.rename_hyp [(h', h)])))))
+               (tclTHEN (Tactics.clear [h]) (Tactics.rename_hyp [(CAst.make h', CAst.make h)])))))
 
 let trans_concl prfp =
   if debug then
