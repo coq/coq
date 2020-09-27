@@ -478,7 +478,7 @@ open Evar_tactics
 (* TODO: add support for some test similar to g_constr.name_colon so that
    expressions like "evar (list A)" do not raise a syntax error *)
 TACTIC EXTEND evar
-| [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> { let_evar (Name.Name id) typ }
+| [ "evar" test_lpar_id_colon "(" identref(id) ":" lconstr(typ) ")" ] -> { let_evar (Name.Name id.CAst.v) typ }
 | [ "evar" constr(typ) ] -> { let_evar Name.Anonymous typ }
 END
 
@@ -689,8 +689,8 @@ let hResolve_auto id c t =
 }
 
 TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> { hResolve id c occ t }
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> { hResolve_auto id c t }
+| [ "hresolve_core" "(" identref(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> { hResolve id.CAst.v c occ t }
+| [ "hresolve_core" "(" identref(id) ":=" constr(c) ")" "in" constr(t) ] -> { hResolve_auto id.CAst.v c t }
 END
 
 (**
@@ -812,8 +812,8 @@ END
 TACTIC EXTEND transparent_abstract
 | [ "transparent_abstract" tactic3(t) ] -> { Proofview.Goal.enter begin fun gl ->
     Abstract.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end; }
-| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> { Proofview.Goal.enter begin fun gl ->
-    Abstract.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end; }
+| [ "transparent_abstract" tactic3(t) "using" identref(id) ] -> { Proofview.Goal.enter begin fun gl ->
+    Abstract.tclABSTRACT ~opaque:false (Some id.CAst.v) (Tacinterp.tactic_of_value ist t) end; }
 END
 
 (* ********************************************************************* *)

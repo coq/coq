@@ -282,7 +282,7 @@ GRAMMAR EXTEND Gram
   naming_intropattern:
     [ [ prefix = pattern_ident -> { IntroFresh prefix.CAst.v }
       | "?" -> { IntroAnonymous }
-      | id = ident -> { IntroIdentifier id } ] ]
+      | id = identref -> { IntroIdentifier id.CAst.v } ] ]
   ;
   intropattern:
     [ [ l = simple_intropattern -> { l }
@@ -422,20 +422,20 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   fixdecl:
-    [ [ "("; id = ident; bl=LIST0 simple_binder; ann=struct_annot;
-        ":"; ty=lconstr; ")" -> { (loc, id, bl, ann, ty) } ] ]
+    [ [ "("; id = identref; bl=LIST0 simple_binder; ann=struct_annot;
+        ":"; ty=lconstr; ")" -> { (loc, id.CAst.v, bl, ann, ty) } ] ]
   ;
   struct_annot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> { Some id }
       | -> { None } ] ]
   ;
   cofixdecl:
-    [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
-        { (loc, id, bl, None, ty) } ] ]
+    [ [ "("; id = identref; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
+        { (loc, id.CAst.v, bl, None, ty) } ] ]
   ;
   bindings_with_parameters:
-    [ [ check_for_coloneq; "(";  id = ident; bl = LIST0 simple_binder;
-        ":="; c = lconstr; ")" -> { (id, mkCLambdaN_simple bl c) } ] ]
+    [ [ check_for_coloneq; "(";  id = identref; bl = LIST0 simple_binder;
+        ":="; c = lconstr; ")" -> { (id.CAst.v, mkCLambdaN_simple bl c) } ] ]
   ;
   eliminator:
     [ [ "using"; el = constr_with_bindings -> { el } ] ]
@@ -457,7 +457,7 @@ GRAMMAR EXTEND Gram
       | -> { None } ] ]
   ;
   as_name:
-    [ [ "as"; id = ident -> { Names.Name.Name id } | -> { Names.Name.Anonymous } ] ]
+    [ [ "as"; id = identref -> { Names.Name.Name id.CAst.v } | -> { Names.Name.Anonymous } ] ]
   ;
   by_tactic:
     [ [ "by"; tac = ltac_expr LEVEL "3" -> { Some tac }
