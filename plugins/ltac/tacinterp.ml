@@ -897,14 +897,14 @@ let interp_binding_name ist env sigma = function
       (* If a name is bound, it has to be a quantified hypothesis *)
       (* user has to use other names for variables if these ones clash with *)
       (* a name intended to be used as a (non-variable) identifier *)
-      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist (Some (env,sigma)) (make id)
+      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist (Some (env,sigma)) id
       with Not_found -> NamedHyp id
 
 let interp_declared_or_quantified_hypothesis ist env sigma = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       try try_interp_ltac_var
-            (coerce_to_decl_or_quant_hyp sigma) ist (Some (env,sigma)) (make id)
+            (coerce_to_decl_or_quant_hyp sigma) ist (Some (env,sigma)) id
       with Not_found -> NamedHyp id
 
 let interp_binding ist env sigma {loc;v=(b,c)} =
@@ -978,7 +978,7 @@ let interp_destruction_arg ist gl arg =
           let id = out_gen (topwit wit_hyp) v in
           try_cast_id id
         else if has_type v (topwit wit_int) then
-          keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
+          keep,ElimOnAnonHyp (CAst.make @@ out_gen (topwit wit_int) v)
         else match Value.to_constr v with
         | None -> error ()
         | Some c -> keep,ElimOnConstr (fun env sigma -> (sigma, (c,NoBindings)))

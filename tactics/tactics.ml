@@ -1173,8 +1173,8 @@ let auto_intros_tac ids =
 (* User-level introduction tactics *)
 
 let lookup_hypothesis_as_renamed env sigma ccl = function
-  | AnonHyp n -> Detyping.lookup_index_as_renamed env sigma ccl n
-  | NamedHyp id -> Detyping.lookup_name_as_displayed env sigma ccl id
+  | AnonHyp n -> Detyping.lookup_index_as_renamed env sigma ccl n.CAst.v
+  | NamedHyp id -> Detyping.lookup_name_as_displayed env sigma ccl id.CAst.v
 
 let lookup_hypothesis_as_renamed_gen red h gl =
   let env = Proofview.Goal.env gl in
@@ -1190,29 +1190,28 @@ let lookup_hypothesis_as_renamed_gen red h gl =
   with Redelimination -> None
 
 let is_quantified_hypothesis id gl =
-  match lookup_hypothesis_as_renamed_gen false (NamedHyp id) gl with
+  match lookup_hypothesis_as_renamed_gen false (NamedHyp (CAst.make id)) gl with
     | Some _ -> true
     | None -> false
 
 let msg_quantified_hypothesis = function
-  | NamedHyp id ->
-      str "quantified hypothesis named " ++ Id.print id
-  | AnonHyp n ->
-      pr_nth n ++
-      str " non dependent hypothesis"
+  | NamedHyp {CAst.loc;v=id} ->
+      loc, (str "quantified hypothesis named " ++ Id.print id)
+  | AnonHyp {CAst.loc;v=n} ->
+      loc, (pr_nth n ++ str " non dependent hypothesis")
 
-let warn_deprecated_intros_until_0 =
-  CWarnings.create ~name:"deprecated-intros-until-0" ~category:"tactics"
-    (fun () ->
-       strbrk"\"intros until 0\" is deprecated, use \"intros *\"; instead of \"induction 0\" and \"destruct 0\" use explicitly a name.\"")
+let check_intros_until_0 = function
+  | AnonHyp {CAst.v=0;loc} -> user_err ?loc (strbrk "must be strictly positive.")
+  | _ -> ()
 
 let depth_of_quantified_hypothesis red h gl =
-  if h = AnonHyp 0 then warn_deprecated_intros_until_0 ();
+  check_intros_until_0 h;
   match lookup_hypothesis_as_renamed_gen red h gl with
     | Some depth -> depth
     | None ->
-        user_err ~hdr:"lookup_quantified_hypothesis"
-          (str "No " ++ msg_quantified_hypothesis h ++
+        let loc, msg = msg_quantified_hypothesis h in
+        user_err ?loc ~hdr:"lookup_quantified_hypothesis"
+          (str "No " ++ msg ++
           strbrk " in current goal" ++
           (if red then strbrk " even after head-reduction" else mt ()) ++
           str".")
@@ -1236,10 +1235,10 @@ let tclCHECKVAR id =
   end
 
 let try_intros_until_id_check id =
-  Tacticals.New.tclORELSE (intros_until_id id) (tclCHECKVAR id)
+  Tacticals.New.tclORELSE (intros_until_id id) (tclCHECKVAR id.CAst.v)
 
 let try_intros_until tac = function
-  | NamedHyp id -> Tacticals.New.tclTHEN (try_intros_until_id_check id) (tac id)
+  | NamedHyp id -> Tacticals.New.tclTHEN (try_intros_until_id_check id) (tac id.CAst.v)
   | AnonHyp n -> Tacticals.New.tclTHEN (intros_until_n n) (Tacticals.New.onLastHypId tac)
 
 let rec intros_move = function
@@ -1268,7 +1267,7 @@ type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use 
 type 'a core_destruction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of lident
-  | ElimOnAnonHyp of int
+  | ElimOnAnonHyp of int CAst.t
 
 type 'a destruction_arg =
   clear_flag * 'a core_destruction_arg
@@ -1288,13 +1287,13 @@ let onOpenInductionArg env sigma tac = function
              let sigma = Tacmach.New.project gl in
              tac clear_flag (sigma,(c,NoBindings))
              end))
-  | clear_flag,ElimOnIdent {CAst.v=id} ->
+  | clear_flag,ElimOnIdent id ->
       (* A quantified hypothesis *)
       Tacticals.New.tclTHEN
         (try_intros_until_id_check id)
         (Proofview.Goal.enter begin fun gl ->
          let sigma = Tacmach.New.project gl in
-         tac clear_flag (sigma,(mkVar id,NoBindings))
+         tac clear_flag (sigma,(mkVar id.CAst.v,NoBindings))
         end)
 
 let onInductionArg tac = function
@@ -1304,11 +1303,11 @@ let onInductionArg tac = function
       Tacticals.New.tclTHEN
         (intros_until_n n)
         (Tacticals.New.onLastHyp (fun c -> tac clear_flag (c,NoBindings)))
-  | clear_flag,ElimOnIdent {CAst.v=id} ->
+  | clear_flag,ElimOnIdent id ->
       (* A quantified hypothesis *)
       Tacticals.New.tclTHEN
         (try_intros_until_id_check id)
-        (tac clear_flag (mkVar id,NoBindings))
+        (tac clear_flag (mkVar id.CAst.v,NoBindings))
 
 let map_destruction_arg f sigma = function
   | clear_flag,ElimOnConstr g -> let sigma,x = f sigma g in (sigma, (clear_flag,ElimOnConstr x))
@@ -1543,7 +1542,7 @@ let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma c with
     | Var id when lbindc == NoBindings ->
-        Tacticals.New.tclTHEN (try_intros_until_id_check id)
+        Tacticals.New.tclTHEN (try_intros_until_id_check (CAst.make id))
           (general_case_analysis_in_context with_evars clear_flag cx)
     | _ ->
         general_case_analysis_in_context with_evars clear_flag cx
@@ -1597,7 +1596,7 @@ let elim with_evars clear_flag (c,lbindc as cx) elim =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma c with
     | Var id when lbindc == NoBindings ->
-        Tacticals.New.tclTHEN (try_intros_until_id_check id)
+        Tacticals.New.tclTHEN (try_intros_until_id_check (CAst.make id))
           (elim_in_context with_evars clear_flag cx elim)
     | _ ->
         elim_in_context with_evars clear_flag cx elim

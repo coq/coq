@@ -128,14 +128,14 @@ let mkTacCase with_evar = function
   | [(clear,ElimOnConstr cl),(None,None),None],None ->
       TacCase (with_evar,(clear,cl))
   (* Reinterpret numbers as a notation for terms *)
-  | [(clear,ElimOnAnonHyp n),(None,None),None],None ->
+  | [(clear,ElimOnAnonHyp {CAst.v=n;loc}),(None,None),None],None ->
       TacCase (with_evar,
-        (clear,(CAst.make @@ CPrim (mkNumeral n),
+        (clear,(CAst.make ?loc @@ CPrim (mkNumeral n),
          NoBindings)))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
   | [(clear,ElimOnIdent id),(None,None),None],None ->
-      TacCase (with_evar,(clear,(CAst.make @@ CRef (qualid_of_ident ?loc:id.CAst.loc id.CAst.v,None),NoBindings)))
+      TacCase (with_evar,(clear,(CAst.make ?loc:id.CAst.loc @@ CRef (qualid_of_ident ?loc:id.CAst.loc id.CAst.v,None),NoBindings)))
   | ic ->
       if List.exists (function ((_, ElimOnAnonHyp _),_,_) -> true | _ -> false) (fst ic)
       then
@@ -212,7 +212,7 @@ GRAMMAR EXTEND Gram
     [ [ c = constr -> { c } ] ]
   ;
   destruction_arg:
-    [ [ n = natural -> { (None,ElimOnAnonHyp n) }
+    [ [ n = natural -> { (None,ElimOnAnonHyp (CAst.make n)) }
       | test_lpar_id_rpar; c = constr_with_bindings ->
         { (Some false,destruction_arg_of_constr c) }
       | c = constr_with_bindings_arg -> { on_snd destruction_arg_of_constr c }
@@ -223,8 +223,8 @@ GRAMMAR EXTEND Gram
       | c = constr_with_bindings -> { (None,c) } ] ]
   ;
   quantified_hypothesis:
-    [ [ id = ident -> { NamedHyp id }
-      | n = natural -> { AnonHyp n } ] ]
+    [ [ id = identref -> { NamedHyp id }
+      | n = natural -> { AnonHyp (CAst.make ~loc n) } ] ]
   ;
   conversion:
     [ [ c = constr -> { (None, c) }
@@ -306,8 +306,8 @@ GRAMMAR EXTEND Gram
       | pat = naming_intropattern -> { CAst.make ~loc @@ IntroNaming pat } ] ]
   ;
   simple_binding:
-    [ [ "("; id = ident; ":="; c = lconstr; ")" -> { CAst.make ~loc (NamedHyp id, c) }
-      | "("; n = natural; ":="; c = lconstr; ")" -> { CAst.make ~loc (AnonHyp n, c) } ] ]
+    [ [ "("; id = identref; ":="; c = lconstr; ")" -> { CAst.make ~loc (NamedHyp id, c) }
+      | "("; n = natural; ":="; c = lconstr; ")" -> { CAst.make ~loc (AnonHyp (CAst.make ~loc n), c) } ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->

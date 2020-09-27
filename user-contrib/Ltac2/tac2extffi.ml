@@ -19,8 +19,8 @@ let make_to_repr f = Tac2ffi.make_repr (fun _ -> assert false) f
 (** More ML representations *)
 
 let to_qhyp v = match Value.to_block v with
-| (0, [| i |]) -> AnonHyp (Value.to_int i)
-| (1, [| id |]) -> NamedHyp (Value.to_ident id)
+| (0, [| i |]) -> AnonHyp (CAst.make @@ Value.to_int i)
+| (1, [| id |]) -> NamedHyp (CAst.make @@ Value.to_ident id)
 | _ -> assert false
 
 let qhyp = make_to_repr to_qhyp

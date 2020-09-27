@@ -20,8 +20,8 @@ type advanced_flag = bool
 type 'a thunk = (unit, 'a) Tac2ffi.fun1
 
 type quantified_hypothesis = Tactypes.quantified_hypothesis =
-| AnonHyp of int
-| NamedHyp of Id.t
+| AnonHyp of int CAst.t
+| NamedHyp of Id.t CAst.t
 
 type explicit_bindings = (quantified_hypothesis * EConstr.t) list
 

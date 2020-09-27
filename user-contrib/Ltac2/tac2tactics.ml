@@ -113,7 +113,7 @@ let mk_destruction_arg = function
   let c = c >>= fun c -> return (mk_with_bindings c) in
   Tactics.ElimOnConstr (delayed_of_tactic c)
 | ElimOnIdent id -> Tactics.ElimOnIdent CAst.(make id)
-| ElimOnAnonHyp n -> Tactics.ElimOnAnonHyp n
+| ElimOnAnonHyp n -> Tactics.ElimOnAnonHyp CAst.(make n)
 
 let mk_induction_clause (arg, eqn, as_, occ) =
   let eqn = Option.map (fun ipat -> CAst.make @@ mk_intro_pattern_naming ipat) eqn in
@@ -348,7 +348,7 @@ let on_destruction_arg tac ev arg =
       let (sigma', c) = Unification.finish_evar_resolution ~flags env sigma' (sigma, c) in
       Proofview.tclUNIT (Some sigma', Tactics.ElimOnConstr (c, lbind))
     | ElimOnIdent id -> Proofview.tclUNIT (None, Tactics.ElimOnIdent CAst.(make id))
-    | ElimOnAnonHyp n -> Proofview.tclUNIT (None, Tactics.ElimOnAnonHyp n)
+    | ElimOnAnonHyp n -> Proofview.tclUNIT (None, Tactics.ElimOnAnonHyp CAst.(make n))
     in
     arg >>= fun (sigma', arg) ->
     let arg = Some (clear, arg) in
@@ -434,12 +434,12 @@ let inversion knd arg pat ids =
     | Some (_, Tactics.ElimOnAnonHyp n) ->
       Inv.inv_clause knd pat ids (AnonHyp n)
     | Some (_, Tactics.ElimOnIdent {CAst.v=id}) ->
-      Inv.inv_clause knd pat ids (NamedHyp id)
+      Inv.inv_clause knd pat ids (NamedHyp CAst.(make id))
     | Some (_, Tactics.ElimOnConstr c) ->
       let open Tactypes in
       let anon = CAst.make @@ IntroNaming Namegen.IntroAnonymous in
       Tactics.specialize c (Some anon) >>= fun () ->
-      Tacticals.New.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp id))
+      Tacticals.New.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp CAst.(make id)))
     end
   in
   on_destruction_arg inversion true (Some (None, arg))
