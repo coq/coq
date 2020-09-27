@@ -263,7 +263,7 @@ GRAMMAR EXTEND Gram
       | "_"      -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) }
       | "?"; "["; id = identref; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id.CAst.v, None) }
       | "?"; "["; id = pattern_ident; "]"  -> { CAst.make ~loc @@  CHole (None, IntroFresh id, None) }
-      | id = pattern_ident; inst = evar_instance -> { CAst.make ~loc @@ CEvar(id,inst) } ] ]
+      | id = pattern_identref; inst = evar_instance -> { CAst.make ~loc @@ CEvar(id,inst) } ] ]
   ;
   inst:
     [ [ id = identref; ":="; c = lconstr -> { (id,c) } ] ]

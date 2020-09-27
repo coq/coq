@@ -227,7 +227,7 @@ let tag_var = tag Tag.variable
 
   let pr_evar pr id l =
     hov 0 (
-      tag_evar (str "?" ++ pr_id id) ++
+      tag_evar (str "?" ++ pr_lident id) ++
         (match l with
           | [] -> mt()
           | l ->

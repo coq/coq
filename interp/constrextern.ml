@@ -978,7 +978,7 @@ let rec extern inctx ?impargs scopes vars r =
       if !print_meta_as_hole then CHole (None, IntroAnonymous, None) else
        (match kind with
          | Evar_kinds.SecondOrderPatVar n -> CPatVar n
-         | Evar_kinds.FirstOrderPatVar n -> CEvar (n,[]))
+         | Evar_kinds.FirstOrderPatVar n -> CEvar (CAst.make n,[]))
 
   | GApp (f,args) ->
       (match DAst.get f with
@@ -1391,7 +1391,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       | None -> Id.of_string "__"
       | Some id -> id
       in
-      GEvar (id,List.map (fun (id,c) -> (CAst.make id, glob_of_pat avoid env sigma c)) l)
+      GEvar (CAst.make id,List.map (fun (id,c) -> (CAst.make id, glob_of_pat avoid env sigma c)) l)
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
         | Name id   -> id

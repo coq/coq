@@ -156,7 +156,7 @@ let rec constr_expr_eq e1 e2 =
     | CPatVar i1, CPatVar i2 ->
       Id.equal i1 i2
     | CEvar (id1, c1), CEvar (id2, c2) ->
-      Id.equal id1 id2 && List.equal instance_eq c1 c2
+      Id.equal id1.CAst.v id2.CAst.v && List.equal instance_eq c1 c2
     | CSort s1, CSort s2 ->
       Glob_ops.glob_sort_eq s1 s2
     | CCast(t1,c1), CCast(t2,c2) ->
