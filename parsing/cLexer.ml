@@ -580,15 +580,26 @@ let parse_quotation loc bp s =
       let loc = quotation loc 0 in
       Buffer.contents b, set_loc_pos loc bp (Stream.count s)
 
+let peek_string v s =
+  let l = String.length v in
+  let rec aux i =
+    if Int.equal i l then true
+    else
+      let l' = Stream.npeek (i + 1) s in
+      match List.nth l' i with
+      | c -> Char.equal c v.[i] && aux (i + 1)
+      | exception _ -> false (* EOF *) in
+  aux 0
 
 let find_keyword loc id bp s =
-  match Stream.npeek 3 s with
-  | [':'; '{'; '{'] ->
+  if peek_string ":{{" s then
+    begin
       (* "xxx:{{" always starts a sentence-gobbling quotation, whether registered or not *)
       Stream.junk s;
       let txt, loc = parse_quotation loc bp s in
       QUOTATION (id ^ ":", txt), loc
-  | _ ->
+    end
+  else
   let tt = ttree_find !token_tree id in
   match progress_further loc tt.node 0 tt s with
   | None -> raise Not_found
