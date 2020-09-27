@@ -33,8 +33,8 @@ EXTRAARGS_natural: [ | DELETENT ]
 EXTRAARGS_lconstr:  [ | DELETENT ]
 EXTRAARGS_strategy_level: [ | DELETENT ]
 
-binders: [
-| DELETE Pcoq.Constr.binders
+EXTRAARGS_binders: [
+| binders
 ]
 
 G_TACTIC_in_clause: [
@@ -44,6 +44,7 @@ G_TACTIC_in_clause: [
 ]
 
 SPLICE: [
+| EXTRAARGS_binders
 | G_TACTIC_in_clause
 ]
 

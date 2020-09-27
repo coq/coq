@@ -690,9 +690,9 @@ command: [
 | "Show" "Zify" "UnOpSpec"      (* micromega plugin *)
 | "Show" "Zify" "BinOpSpec"      (* micromega plugin *)
 | "Show" "Zify" "Spec"      (* micromega plugin *)
-| "Add" "Ring" ident ":" constr OPT ring_mods      (* ring plugin *)
+| "Add" "Ring" ident binders ":" constr OPT ring_mods      (* ring plugin *)
 | "Print" "Rings"      (* ring plugin *)
-| "Add" "Field" ident ":" constr OPT field_mods      (* ring plugin *)
+| "Add" "Field" ident binders ":" constr OPT field_mods      (* ring plugin *)
 | "Print" "Fields"      (* ring plugin *)
 | "Prenex" "Implicits" LIST1 global      (* SSR plugin *)
 | "Print" "Hint" "View" ssrviewpos      (* SSR plugin *)
@@ -1925,6 +1925,10 @@ EXTRAARGS_strategy_level: [
 strategy_level_or_var: [
 | EXTRAARGS_strategy_level
 | identref
+]
+
+EXTRAARGS_binders: [
+| Pcoq.Constr.binders
 ]
 
 comparison: [
