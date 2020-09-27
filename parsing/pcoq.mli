@@ -156,8 +156,8 @@ module Prim :
     val identref : lident Entry.t
     val univ_decl : universe_decl_expr Entry.t
     val ident_decl : ident_decl Entry.t
-    val pattern_ident : Id.t Entry.t
-    val pattern_identref : lident Entry.t
+    val pattern_ident : lident Entry.t
+    val pattern_identref : lident Entry.t [@@ocaml.deprecated "Use Prim.pattern_identref"]
     val base_ident : Id.t Entry.t
     val bignat : string Entry.t
     val natural : int Entry.t

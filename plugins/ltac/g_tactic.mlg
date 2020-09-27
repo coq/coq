@@ -280,7 +280,7 @@ GRAMMAR EXTEND Gram
       | "[="; tc = intropatterns; "]" -> { IntroInjection tc } ] ]
   ;
   naming_intropattern:
-    [ [ prefix = pattern_ident -> { IntroFresh prefix }
+    [ [ prefix = pattern_ident -> { IntroFresh prefix.CAst.v }
       | "?" -> { IntroAnonymous }
       | id = ident -> { IntroIdentifier id } ] ]
   ;

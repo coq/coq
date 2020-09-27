@@ -17,6 +17,11 @@
   was instead intended. If cancelling the breaking role of cuts in the
   box was intended, turn `h n c` into `h c`.
 
+### Grammar entries
+
+- `Prim.pattern_identref` is deprecated, use `Prim.pattern_ident`
+  which now returns a located identifier.
+
 ## Changes between Coq 8.11 and Coq 8.12
 
 ### Code formatting

@@ -286,7 +286,7 @@ module Prim =
     let univ_decl = Entry.create "univ_decl"
     let ident_decl = Entry.create "ident_decl"
     let pattern_ident = Entry.create "pattern_ident"
-    let pattern_identref = Entry.create "pattern_identref"
+    let pattern_identref = pattern_ident (* To remove in 8.14 *)
 
     (* A synonym of ident - maybe ident will be located one day *)
     let base_ident = Entry.create "base_ident"
