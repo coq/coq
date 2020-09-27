@@ -203,7 +203,7 @@ Generation of inversion principles with ``Derive`` ``Inversion``
    This command generates an inversion principle for the
    :tacn:`inversion ... using ...` tactic.  The first :token:`ident` is the name
    of the generated principle.  The second :token:`ident` should be an inductive
-   predicate, and :token:`binders` the variables occurring in the term
+   predicate, and :n:`{* @binder }` the variables occurring in the term
    :token:`term`. This command generates the inversion lemma for the sort
    :token:`sort` corresponding to the instance :n:`forall {* @binder }, @ident @term`.
    When applied, it is equivalent to having inverted the instance with the
