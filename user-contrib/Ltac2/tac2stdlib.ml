@@ -427,7 +427,7 @@ end
 
 let () = define_prim2 "tac_intro" (option ident) (option move_location) begin fun id mv ->
   let mv = Option.default Logic.MoveLast mv in
-  Tactics.intro_move id mv
+  Tactics.intro_move (Option.map CAst.make id) mv
 end
 
 (*

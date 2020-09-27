@@ -385,21 +385,26 @@ let default_id env sigma decl =
    possibly a move to do after the introduction *)
 
 type name_flag =
-  | NamingAvoid of Id.Set.t
-  | NamingBasedOn of Id.t * Id.Set.t
+  | NamingAvoid of Id.Set.t CAst.t
+  | NamingBasedOn of lident * Id.Set.t
   | NamingMustBe of lident
 
+let loc_of_name_flag = function
+  | NamingAvoid _ -> None
+  | NamingBasedOn _ -> None
+  | NamingMustBe CAst.{loc} -> loc
+
 let naming_of_name = function
-  | Anonymous -> NamingAvoid Id.Set.empty
+  | Anonymous -> NamingAvoid (CAst.make Id.Set.empty)
   | Name id -> NamingMustBe (CAst.make id)
 
 let find_name mayrepl decl naming gl = match naming with
-  | NamingAvoid idl ->
+  | NamingAvoid {CAst.v=idl} ->
       (* this case must be compatible with [find_intro_names] below. *)
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
       new_fresh_id idl (default_id env sigma decl) gl
-  | NamingBasedOn (id,idl) ->  new_fresh_id idl id gl
+  | NamingBasedOn ({CAst.v=id},idl) ->  new_fresh_id idl id gl
   | NamingMustBe {CAst.loc;v=id} ->
      (* When name is given, we allow to hide a global name *)
      let ids_of_hyps = Tacmach.New.pf_ids_set_of_hyps gl in
@@ -1046,6 +1051,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
              (intro_then_gen name_flag move_flag false dep_flag tac))
           begin function (e, info) -> match e with
             | RefinerError (env, sigma, IntroNeedsProduct) ->
+              let info = Option.fold_left Loc.add_loc info (loc_of_name_flag name_flag) in
               Tacticals.New.tclZEROMSG ~info (str "No product even after head-reduction.")
             | e -> Proofview.tclZERO ~info e
           end
@@ -1055,17 +1061,17 @@ let drop_intro_name (_ : Id.t) = Proofview.tclUNIT ()
 
 let intro_gen n m f d = intro_then_gen n m f d drop_intro_name
 let intro_mustbe_force id = intro_gen (NamingMustBe (CAst.make id)) MoveLast true false
-let intro_using_then id = intro_then_gen (NamingBasedOn (id, Id.Set.empty)) MoveLast false false
+let intro_using_then id = intro_then_gen (NamingBasedOn (CAst.make id, Id.Set.empty)) MoveLast false false
 let intro_using id = intro_using_then id drop_intro_name
 
-let intro_then = intro_then_gen (NamingAvoid Id.Set.empty) MoveLast false false
+let intro_then = intro_then_gen (NamingAvoid (CAst.make Id.Set.empty)) MoveLast false false
 let intro = intro_then drop_intro_name
-let introf = intro_gen (NamingAvoid Id.Set.empty) MoveLast true false
-let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
+let introf = intro_gen (NamingAvoid (CAst.make Id.Set.empty)) MoveLast true false
+let intro_avoiding l = intro_gen (NamingAvoid (CAst.make l)) MoveLast false false
 
 let intro_move_avoid idopt avoid hto = match idopt with
-  | None -> intro_gen (NamingAvoid avoid) hto true false
-  | Some id -> intro_gen (NamingMustBe (CAst.make id)) hto true false
+  | None -> intro_gen (NamingAvoid (CAst.make avoid)) hto true false
+  | Some id -> intro_gen (NamingMustBe id) hto true false
 
 let intro_move idopt hto = intro_move_avoid idopt Id.Set.empty hto
 
@@ -1136,7 +1142,7 @@ let intros_possibly_replacing ids =
         Tacticals.New.tclTRY (clear_for_replacing [id]))
          (if suboptimal then ids else List.rev ids))
       (Tacticals.New.tclMAP (fun (id,pos) ->
-        Tacticals.New.tclORELSE (intro_move (Some id) pos) (intro_using id))
+        Tacticals.New.tclORELSE (intro_move (Some (CAst.make id)) pos) (intro_using id))
          posl)
   end
 
@@ -1148,7 +1154,7 @@ let intros_replacing ids =
     let posl = List.map (fun id -> (id, get_next_hyp_position env sigma id hyps)) ids in
     Tacticals.New.tclTHEN
       (clear_for_replacing ids)
-      (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
+      (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some (CAst.make id)) pos) posl)
   end
 
 (* The standard for implementing Automatic Introduction *)
@@ -1157,7 +1163,7 @@ let auto_intros_tac ids =
     | Name id -> Id.Set.add id used
     | Anonymous -> used
   in
-  let avoid = NamingAvoid (List.fold_left fold Id.Set.empty ids) in
+  let avoid = NamingAvoid (CAst.make @@ List.fold_left fold Id.Set.empty ids) in
   let naming = function
     | Name id -> NamingMustBe CAst.(make id)
     | Anonymous -> avoid
@@ -1695,7 +1701,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
             | Some (p,pt) ->
               Tacticals.New.tclTHENS
                 (Proofview.tclORELSE
-                  (assert_before_gen false (NamingAvoid avoid) pt)
+                  (assert_before_gen false (NamingAvoid (CAst.make avoid)) pt)
                   (fun _ -> Proofview.tclZERO ~info err))
                 [Proofview.tclORELSE
                    (refiner ~check:true EConstr.Unsafe.(to_constr p))
@@ -2409,8 +2415,8 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
 
 let prepare_naming ?loc = function
   | IntroIdentifier id -> NamingMustBe (CAst.make ?loc id)
-  | IntroAnonymous -> NamingAvoid Id.Set.empty
-  | IntroFresh id -> NamingBasedOn (id, Id.Set.empty)
+  | IntroAnonymous -> NamingAvoid (CAst.make ?loc Id.Set.empty)
+  | IntroFresh id -> NamingBasedOn (CAst.make ?loc id, Id.Set.empty)
 
 let rec explicit_intro_names = let open CAst in function
 | {v=IntroForthcoming _} :: l -> explicit_intro_names l
@@ -2473,8 +2479,8 @@ let make_tmp_naming avoid l = function
      IntroAnonymous, but at the cost of a "renaming"; Note that in the
      case of IntroFresh, we should use check_thin_clash_then anyway to
      prevent the case of an IntroFresh precisely using the wild_id *)
-  | IntroWildcard -> NamingBasedOn (wild_id, Id.Set.union avoid (explicit_intro_names l))
-  | pat -> NamingAvoid(Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
+  | IntroWildcard -> NamingBasedOn (CAst.make wild_id, Id.Set.union avoid (explicit_intro_names l))
+  | pat -> NamingAvoid(CAst.make @@ Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
 
 let fit_bound n = function
   | None -> true
@@ -2515,7 +2521,7 @@ let rec intro_patterns_core with_evars b avoid ids thin destopt bound n tac =
   if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
   match pat with
   | IntroForthcoming onlydeps ->
-      intro_forthcoming_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
+      intro_forthcoming_then_gen (NamingAvoid (CAst.make ?loc @@ Id.Set.union avoid (explicit_intro_names l)))
           destopt onlydeps n bound
         (fun ids -> intro_patterns_core with_evars b avoid ids thin destopt bound
           (n+List.length ids) tac l)
@@ -2538,12 +2544,12 @@ and intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound n tac
         intro_then_gen (NamingMustBe CAst.(make ?loc id)) destopt true false
           (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l))
   | IntroAnonymous ->
-      intro_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
+      intro_then_gen (NamingAvoid (CAst.make ?loc (Id.Set.union avoid (explicit_intro_names l))))
         destopt true false
         (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
   | IntroFresh id ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
-      intro_then_gen (NamingBasedOn (id, Id.Set.union avoid (explicit_intro_names l)))
+      intro_then_gen (NamingBasedOn (CAst.make ?loc id, Id.Set.union avoid (explicit_intro_names l)))
         destopt true false
         (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
 
@@ -5171,7 +5177,7 @@ let with_set_strategy lvl_ql k =
 module Simple = struct
   (** Simplified version of some of the above tactics *)
 
-  let intro x = intro_move (Some x) MoveLast
+  let intro x = intro_move (Some (CAst.make x)) MoveLast
 
   let apply c =
     apply_with_bindings_gen false false [None,(CAst.make (c,NoBindings))]
