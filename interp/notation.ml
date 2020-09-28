@@ -1198,10 +1198,25 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
           find_without_delimiters find (ntn_scope,ntn) scopes
       end
   | LonelyNotationItem ntn' :: scopes ->
-      begin match ntn_scope, ntn with
-      | LastLonelyNotation, Some ntn when notation_eq ntn ntn' ->
-        Some (None, None)
+      begin match ntn with
+      | Some ntn'' when notation_eq ntn' ntn'' ->
+        begin match ntn_scope with
+        | LastLonelyNotation ->
+          (* If the first notation with same string in the visibility stack
+             is the one we want to print, then it can be used without
+             risking a collision *)
+           Some (None, None)
+        | NotationInScope _ ->
+          (* A lonely notation is liable to hide the scoped notation
+             to print, we check if the lonely notation is active to
+             know if the delimiter of the scoped notationis needed *)
+          if find default_scope then
+            find_with_delimiters ntn_scope
+          else
+            find_without_delimiters find (ntn_scope,ntn) scopes
+        end
       | _ ->
+        (* A lonely notation which does not interfere with the notation to use *)
         find_without_delimiters find (ntn_scope,ntn) scopes
       end
   | [] ->
