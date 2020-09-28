@@ -131,7 +131,8 @@ stdenv.mkDerivation {
   name = "shell-for-${project}-in-${branch}";
 
   buildInputs =
-    optional withCoq coq
+    [ python ]
+  ++  optional withCoq coq
   ++ (prj.buildInputs or [])
   ++ optionals withCoq (prj.coqBuildInputs or [])
   ;
