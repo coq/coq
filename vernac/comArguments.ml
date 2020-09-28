@@ -47,6 +47,8 @@ let inBidiHints =
                    discharge_function = discharge_bidi_hints;
                  }
 
+let add_bidi_hint gr hint =
+  Lib.add_anonymous_leaf (inBidiHints (gr,hint))
 
 let warn_arguments_assert =
   CWarnings.create ~name:"arguments-assert" ~category:"vernacular"
@@ -296,14 +298,14 @@ let vernac_arguments ~section_local reference args more_implicits flags =
     if section_local then
       Pretyping.add_bidirectionality_hint sr n
     else
-      Lib.add_anonymous_leaf (inBidiHints (sr, Some n))
+      add_bidi_hint sr (Some n)
   end;
 
   if clear_bidi_hint then begin
     if section_local then
       Pretyping.clear_bidirectionality_hint sr
     else
-      Lib.add_anonymous_leaf (inBidiHints (sr, None))
+      add_bidi_hint sr None
   end;
 
   if not (renaming_specified ||
@@ -312,3 +314,52 @@ let vernac_arguments ~section_local reference args more_implicits flags =
           red_modifiers_specified ||
           bidi_hint_specified) && (List.is_empty flags) then
     warn_arguments_assert sr
+
+(** If we decide to do reduction, use Reductionops.splay_prod instead *)
+let soft_splay_prod c =
+  let open Constr in
+  let rec aux l c = match kind c with
+    | Prod (x,t,c) -> aux ((x,t)::l) c
+    | Cast (c,_,_) -> aux l c
+    | LetIn (_,b,_,c) -> aux l (Vars.subst1 b c)
+    | _ -> l,c
+  in
+  aux [] c
+
+(** Auto bidi hints: we use bidi after the last argument which appears in the return type. *)
+let declare_auto_bidi gr =
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+  let sigma, v = Evd.fresh_global env sigma gr in
+  let t = Retyping.get_type_of env sigma v in
+  let t = EConstr.Unsafe.to_constr t in
+  let ctx, t = soft_splay_prod t in
+  if List.is_empty ctx then ()
+  else
+    let vars = Termops.free_rels sigma (EConstr.of_constr t) in
+    if Int.Set.is_empty vars then ()
+    else
+      (* The last argument has the smallest DeBruijn index. *)
+      let the_var = Int.Set.fold min vars max_int in
+      let n = (List.length ctx) - the_var + 1 in
+      add_bidi_hint gr (Some n)
+
+let should_auto_bidi = Goptions.declare_bool_option_and_ref
+    ~key:["Auto";"Bidirectionality";"Hints"]
+    ~depr:false
+    ~value:true
+
+let declare_auto_bidi gr =
+  if should_auto_bidi () then declare_auto_bidi gr
+
+let declare_constant_auto_bidi c = declare_auto_bidi (GlobRef.ConstRef c)
+
+let declare_mind_auto_bidi mind =
+  let open Declarations in
+  let open GlobRef in
+  let mib = Global.lookup_mind mind in
+  mib.mind_packets |> Array.iteri (fun i mip ->
+      (* if we start doing reduction this becomes pointless and we only do constructors *)
+      declare_auto_bidi (IndRef (mind,i));
+      mip.mind_consnames |> Array.iteri (fun j _ ->
+          declare_auto_bidi (ConstructRef ((mind,i),j+1))))

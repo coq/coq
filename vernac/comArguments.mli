@@ -15,3 +15,6 @@ val vernac_arguments
   -> (Names.Name.t * Glob_term.binding_kind) list list
   -> Vernacexpr.arguments_modifier list
   -> unit
+
+val declare_constant_auto_bidi : Names.Constant.t -> unit
+val declare_mind_auto_bidi : Names.MutInd.t -> unit
