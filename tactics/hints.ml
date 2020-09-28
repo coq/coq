@@ -1365,8 +1365,9 @@ let constructor_hints env sigma eapply lems =
   List.map_append (fun lem ->
       make_resolves env sigma (eapply, true) empty_hint_info ~check:true lem) lems
 
-let make_resolves env sigma info ~check ?name hint =
-  make_resolves env sigma (true, false) info ~check ?name hint
+let make_resolves env sigma info hint =
+  let name = PathHints [hint] in
+  make_resolves env sigma (true, false) info ~check:false ~name (IsGlobRef hint)
 
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in

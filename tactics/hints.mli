@@ -210,8 +210,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> hint_info -> check:bool -> ?name:hints_path_atom ->
-  hint_term -> hint_entry list
+  env -> evar_map -> hint_info -> GlobRef.t -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].
    used to add an hypothesis to the local hint database;
