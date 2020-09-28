@@ -210,9 +210,6 @@ type conv_pb =
 let is_cumul = function CUMUL -> true | CONV -> false
 
 type 'a universe_compare = {
-  (* used in reduction *)
-  compare_graph : 'a -> UGraph.t;
-
   (* Might raise NotConvertible *)
   compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
   compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
@@ -222,7 +219,7 @@ type 'a universe_compare = {
 
 type 'a universe_state = 'a * 'a universe_compare
 
-type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
+type ('a,'b) generic_conversion_function = env -> UGraph.t -> 'b universe_state -> 'a -> 'a -> 'b
 
 type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
 
@@ -765,9 +762,8 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
   convert_list l2r infos lft1 lft2 v1 v2 cuniv
 | _, _ -> raise NotConvertible
 
-let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
+let clos_gen_conv trans cv_pb l2r evars env graph univs t1 t2 =
   let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
-  let graph = (snd univs).compare_graph (fst univs) in
   let infos = create_clos_infos ~univs:graph ~evars reds env in
   let infos = {
     cnv_inf = infos;
@@ -815,8 +811,7 @@ let check_inductive_instances cv_pb variance u1 u2 univs =
   else raise NotConvertible
 
 let checked_universes =
-  { compare_graph = (fun x -> x);
-    compare_sorts = checked_sort_cmp_universes;
+  { compare_sorts = checked_sort_cmp_universes;
     compare_instances = check_convert_instances;
     compare_cumul_instances = check_inductive_instances; }
 
@@ -878,8 +873,7 @@ let infer_inductive_instances cv_pb variance u1 u2 (univs,csts') =
   (univs, Univ.Constraint.union csts csts')
 
 let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
-  { compare_graph = (fun (x,_) -> x);
-    compare_sorts = infer_cmp_universes;
+  { compare_sorts = infer_cmp_universes;
     compare_instances = infer_convert_instances;
     compare_cumul_instances = infer_inductive_instances; }
 
@@ -890,7 +884,7 @@ let gen_conv cv_pb l2r reds env evars univs t1 t2 =
   in
     if b then ()
     else
-      let _ = clos_gen_conv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
+      let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
         ()
 
 (* Profiling *)
@@ -905,9 +899,9 @@ let conv = gen_conv CONV
 
 let conv_leq = gen_conv CUMUL
 
-let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
+let generic_conv cv_pb ~l2r evars reds env graph univs t1 t2 =
   let (s, _) =
-    clos_gen_conv reds cv_pb l2r evars env univs t1 t2
+    clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2
   in s
 
 let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
@@ -917,8 +911,8 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
   in
     if b then cstrs
     else
-      let univs = ((univs, Univ.Constraint.empty), inferred_universes) in
-      let ((_,cstrs), _) = clos_gen_conv reds cv_pb l2r evars env univs t1 t2 in
+      let state = ((univs, Univ.Constraint.empty), inferred_universes) in
+      let ((_,cstrs), _) = clos_gen_conv reds cv_pb l2r evars env univs state t1 t2 in
         cstrs
 
 (* Profiling *)

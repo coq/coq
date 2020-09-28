@@ -150,10 +150,10 @@ let warn_no_native_compiler =
          (fun () -> strbrk "Native compiler is disabled," ++
                       strbrk " falling back to VM conversion test.")
 
-let native_conv_gen pb sigma env univs t1 t2 =
+let native_conv_gen pb sigma env graph univs t1 t2 =
   if not (typing_flags env).Declarations.enable_native_compiler then begin
     warn_no_native_compiler ();
-    Vconv.vm_conv_gen pb env univs t1 t2
+    Vconv.vm_conv_gen pb env graph univs t1 t2
   end
   else
   let ml_filename, prefix = get_ml_filename () in
@@ -176,7 +176,7 @@ let native_conv cv_pb sigma env t1 t2 =
     else Constr.eq_constr_univs univs t1 t2
   in
   if not b then
-    let univs = (univs, checked_universes) in
+    let state = (univs, checked_universes) in
     let t1 = Term.it_mkLambda_or_LetIn t1 (Environ.rel_context env) in
     let t2 = Term.it_mkLambda_or_LetIn t2 (Environ.rel_context env) in
-    let _ = native_conv_gen cv_pb sigma env univs t1 t2 in ()
+    let _ = native_conv_gen cv_pb sigma env univs state t1 t2 in ()

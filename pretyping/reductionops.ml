@@ -1138,8 +1138,7 @@ let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
 
 let sigma_univ_state =
   let open Reduction in
-  { compare_graph = Evd.universes;
-    compare_sorts = sigma_compare_sorts;
+  { compare_sorts = sigma_compare_sorts;
     compare_instances = sigma_compare_instances;
     compare_cumul_instances = sigma_check_inductive_instances; }
 
@@ -1164,9 +1163,10 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
       | None ->
         let x = EConstr.Unsafe.to_constr x in
         let y = EConstr.Unsafe.to_constr y in
+        let graph = Evd.universes sigma in
         let sigma' =
           conv_fun pb ~l2r:false sigma ts
-            env (sigma, sigma_univ_state) x y in
+            env graph (sigma, sigma_univ_state) x y in
         Some sigma'
   with
   | Reduction.NotConvertible -> None
