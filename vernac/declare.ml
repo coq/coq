@@ -217,7 +217,8 @@ let inConstant v = Libobject.Dyn.Easy.inj v objConstant
 
 let update_tables c =
   Impargs.declare_constant_implicits c;
-  Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstRef c)
+  Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstRef c);
+  ComArguments.declare_constant_auto_bidi c
 
 let register_constant kn kind local =
   let id = Label.to_id (Constant.label kn) in

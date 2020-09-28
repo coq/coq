@@ -113,6 +113,7 @@ let declare_mind ?typing_flags mie =
   let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
   Impargs.declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
+  ComArguments.declare_mind_auto_bidi mind;
   mind, isprim
 
 let is_recursive mie =
