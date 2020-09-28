@@ -469,11 +469,8 @@ GRAMMAR EXTEND Gram
     [ [ id = identref; c=constructor_type -> { c id } ] ]
   ;
   of_type_with_opt_coercion:
-    [ [ ":>>" -> { Some false }
-        | ":>"; ">" -> { Some false }
-        | ":>" -> { Some true }
-        | ":"; ">"; ">" -> { Some false }
-        | ":"; ">" -> { Some true }
+    [ [   ":>" -> { Some () }
+        | ":"; ">" -> { Some () }
         | ":" -> { None } ] ]
   ;
 END

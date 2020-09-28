@@ -58,13 +58,7 @@ let is_local_for_hint i =
 let add_instance_base inst =
   let locality = if is_local_for_hint inst then Goptions.OptLocal else Goptions.OptGlobal in
   add_instance_hint (Hints.IsGlobRef inst.is_impl) [inst.is_impl] ~locality
-    inst.is_info;
-  List.iter (fun (path, pri, c) ->
-    let h = Hints.IsConstr (EConstr.of_constr c, None) [@ocaml.warning "-3"] in
-    add_instance_hint h path
-                ~locality pri)
-    (build_subclasses ~check:(not (isVarRef inst.is_impl))
-       (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_info)
+    inst.is_info
 
 let mk_instance cl info glob impl =
   let global =

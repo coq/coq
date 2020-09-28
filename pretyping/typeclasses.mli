@@ -13,7 +13,7 @@ open Constr
 open Evd
 open Environ
 
-type direction = Forward | Backward
+type direction = Backward
 
 (* Core typeclasses hints *)
 type 'a hint_info_gen =
@@ -127,11 +127,3 @@ val classes_transparent_state : unit -> TransparentState.t
 
 val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
 val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) Hook.t
-
-(** Build the subinstances hints for a given typeclass object.
-    check tells if we should check for existence of the
-    subinstances and add only the missing ones. *)
-
-val build_subclasses : check:bool -> env -> evar_map -> GlobRef.t ->
-                       hint_info ->
-                       (GlobRef.t list * hint_info * constr) list

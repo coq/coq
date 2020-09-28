@@ -557,7 +557,7 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
       Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd fieldimpls);
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
       let sub = match List.hd coers with
-        | Some b -> Some ((if b then Backward else Forward), List.hd priorities)
+        | Some () -> Some (Backward, List.hd priorities)
         | None -> None
       in
       [cref, [Name proj_name, sub, Some proj_cst]]
@@ -568,8 +568,7 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
         params template ~kind:Decls.Method ~name:[|binder_name|] record_data
       in
        let coers = List.map2 (fun coe pri ->
-                              Option.map (fun b ->
-                              if b then Backward, pri else Forward, pri) coe)
+                              Option.map (fun () -> Backward, pri) coe)
           coers priorities
        in
       let map ind =
