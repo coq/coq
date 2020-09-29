@@ -70,7 +70,7 @@ Lemma inj_sub a a' :
   N.to_nat (a - a') = N.to_nat a - N.to_nat a'.
 Proof.
  destruct a as [|a], a' as [|a']; simpl; rewrite ?Nat.sub_0_r; trivial.
- destruct (Pos.compare_spec a a').
+ destruct (Pos.compare_spec a a') as [H|H|H].
  - subst. now rewrite Pos.sub_mask_diag, Nat.sub_diag.
  - rewrite Pos.sub_mask_neg; trivial. apply Pos2Nat.inj_lt in H.
    simpl; symmetry; apply Nat.sub_0_le. now apply Nat.lt_le_incl.
@@ -93,8 +93,8 @@ Qed.
 Lemma inj_compare a a' :
  (a ?= a')%N = (N.to_nat a ?= N.to_nat a').
 Proof.
- destruct a, a'; simpl; trivial.
- - now destruct (Pos2Nat.is_succ p) as (n,->).
+ destruct a as [|p], a' as [|p']; simpl; trivial.
+ - now destruct (Pos2Nat.is_succ p') as (n,->).
  - now destruct (Pos2Nat.is_succ p) as (n,->).
  - apply Pos2Nat.inj_compare.
 Qed.

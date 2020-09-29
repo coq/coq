@@ -42,95 +42,95 @@ Qed.
 
 (** Succ *)
 
-Lemma succ_max_distr : forall n m, S (max n m) == max (S n) (S m).
+Lemma succ_max_distr n m : S (max n m) == max (S n) (S m).
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 max_r | rewrite 2 max_l]; now rewrite <- ?succ_le_mono.
 Qed.
 
-Lemma succ_min_distr : forall n m, S (min n m) == min (S n) (S m).
+Lemma succ_min_distr n m : S (min n m) == min (S n) (S m).
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 min_l | rewrite 2 min_r]; now rewrite <- ?succ_le_mono.
 Qed.
 
 (** Add *)
 
-Lemma add_max_distr_l : forall n m p, max (p + n) (p + m) == p + max n m.
+Lemma add_max_distr_l n m p : max (p + n) (p + m) == p + max n m.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 max_r | rewrite 2 max_l]; now rewrite <- ?add_le_mono_l.
 Qed.
 
-Lemma add_max_distr_r : forall n m p, max (n + p) (m + p) == max n m + p.
+Lemma add_max_distr_r n m p : max (n + p) (m + p) == max n m + p.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 max_r | rewrite 2 max_l]; now rewrite <- ?add_le_mono_r.
 Qed.
 
-Lemma add_min_distr_l : forall n m p, min (p + n) (p + m) == p + min n m.
+Lemma add_min_distr_l n m p : min (p + n) (p + m) == p + min n m.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 min_l | rewrite 2 min_r]; now rewrite <- ?add_le_mono_l.
 Qed.
 
-Lemma add_min_distr_r : forall n m p, min (n + p) (m + p) == min n m + p.
+Lemma add_min_distr_r n m p : min (n + p) (m + p) == min n m + p.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 min_l | rewrite 2 min_r]; now rewrite <- ?add_le_mono_r.
 Qed.
 
 (** Mul *)
 
-Lemma mul_max_distr_l : forall n m p, max (p * n) (p * m) == p * max n m.
+Lemma mul_max_distr_l n m p : max (p * n) (p * m) == p * max n m.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 max_r | rewrite 2 max_l]; try order; now apply mul_le_mono_l.
 Qed.
 
-Lemma mul_max_distr_r : forall n m p, max (n * p) (m * p) == max n m * p.
+Lemma mul_max_distr_r n m p : max (n * p) (m * p) == max n m * p.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 max_r | rewrite 2 max_l]; try order; now apply mul_le_mono_r.
 Qed.
 
-Lemma mul_min_distr_l : forall n m p, min (p * n) (p * m) == p * min n m.
+Lemma mul_min_distr_l n m p : min (p * n) (p * m) == p * min n m.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 min_l | rewrite 2 min_r]; try order; now apply mul_le_mono_l.
 Qed.
 
-Lemma mul_min_distr_r : forall n m p, min (n * p) (m * p) == min n m * p.
+Lemma mul_min_distr_r n m p : min (n * p) (m * p) == min n m * p.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 min_l | rewrite 2 min_r]; try order; now apply mul_le_mono_r.
 Qed.
 
 (** Sub *)
 
-Lemma sub_max_distr_l : forall n m p, max (p - n) (p - m) == p - min n m.
+Lemma sub_max_distr_l n m p : max (p - n) (p - m) == p - min n m.
 Proof.
- intros. destruct (le_ge_cases n m).
+ destruct (le_ge_cases n m).
  rewrite min_l by trivial. apply max_l. now apply sub_le_mono_l.
  rewrite min_r by trivial. apply max_r. now apply sub_le_mono_l.
 Qed.
 
-Lemma sub_max_distr_r : forall n m p, max (n - p) (m - p) == max n m - p.
+Lemma sub_max_distr_r n m p : max (n - p) (m - p) == max n m - p.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 max_r | rewrite 2 max_l]; try order; now apply sub_le_mono_r.
 Qed.
 
-Lemma sub_min_distr_l : forall n m p, min (p - n) (p - m) == p - max n m.
+Lemma sub_min_distr_l n m p : min (p - n) (p - m) == p - max n m.
 Proof.
- intros. destruct (le_ge_cases n m).
+ destruct (le_ge_cases n m).
  rewrite max_r by trivial. apply min_r. now apply sub_le_mono_l.
  rewrite max_l by trivial. apply min_l. now apply sub_le_mono_l.
 Qed.
 
-Lemma sub_min_distr_r : forall n m p, min (n - p) (m - p) == min n m - p.
+Lemma sub_min_distr_r n m p : min (n - p) (m - p) == min n m - p.
 Proof.
- intros. destruct (le_ge_cases n m);
+ destruct (le_ge_cases n m);
   [rewrite 2 min_l | rewrite 2 min_r]; try order; now apply sub_le_mono_r.
 Qed.
 

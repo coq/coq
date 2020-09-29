@@ -34,7 +34,7 @@ Hint Resolve eq_nat_refl: arith.
 Theorem eq_nat_is_eq n m : eq_nat n m <-> n = m.
 Proof.
   split.
-  - revert m; induction n; destruct m; simpl; contradiction || auto.
+  - revert m; induction n; intro m; destruct m; simpl; contradiction || auto.
   - intros <-; apply eq_nat_refl.
 Qed.
 
@@ -53,12 +53,12 @@ Hint Immediate eq_eq_nat eq_nat_eq: arith.
 Theorem eq_nat_elim :
   forall n (P:nat -> Prop), P n -> forall m, eq_nat n m -> P m.
 Proof.
-  intros; replace m with n; auto with arith.
+  intros n P ? m ?; replace m with n; auto with arith.
 Qed.
 
 Theorem eq_nat_decide : forall n m, {eq_nat n m} + {~ eq_nat n m}.
 Proof.
-  induction n; destruct m; simpl.
+  intro n; induction n as [|n IHn]; intro m; destruct m; simpl.
   - left; trivial.
   - right; intro; trivial.
   - right; intro; trivial.
@@ -96,7 +96,7 @@ Qed.
 
 Definition beq_nat_eq : forall n m, true = (n =? m) -> n = m.
 Proof.
-  induction n; destruct m; simpl.
+  intro n; induction n as [|n IHn]; intro m; destruct m; simpl.
   - reflexivity.
   - discriminate.
   - discriminate.

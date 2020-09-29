@@ -53,7 +53,7 @@ Definition divide_gcd_iff' n m := divide_gcd_iff n m (le_0_l n).
 
 Lemma gcd_add_mult_diag_r : forall n m p, gcd n (m+p*n) == gcd n m.
 Proof.
- intros. apply gcd_unique_alt'.
+ intros n m p. apply gcd_unique_alt'.
  intros. rewrite gcd_divide_iff. split; intros (U,V); split; trivial.
  apply divide_add_r; trivial. now apply divide_mul_r.
  apply divide_add_cancel_r with (p*n); trivial.
@@ -98,11 +98,11 @@ Lemma gcd_bezout_pos_pos : forall n, 0<n -> forall m, 0<m ->
  Bezout n m (gcd n m) /\ Bezout m n (gcd n m).
 Proof.
  intros n Hn. rewrite <- le_succ_l, <- one_succ in Hn.
- pattern n. apply strong_right_induction with (z:=1); trivial.
+ pattern n. apply (fun H => strong_right_induction _ H 1); trivial.
  unfold Bezout. solve_proper.
  clear n Hn. intros n Hn IHn.
  intros m Hm. rewrite <- le_succ_l, <- one_succ in Hm.
- pattern m. apply strong_right_induction with (z:=1); trivial.
+ pattern m. apply (fun H => strong_right_induction _ H 1); trivial.
  unfold Bezout. solve_proper.
  clear m Hm. intros m Hm IHm.
  destruct (lt_trichotomy n m) as [LT|[EQ|LT]].
@@ -156,7 +156,7 @@ Qed.
 Theorem bezout_comm : forall a b g,
   b ~= 0 -> Bezout a b g -> Bezout b a g.
 Proof.
- intros * Hbz (u & v & Huv).
+ intros a b g Hbz (u & v & Huv).
  destruct (eq_0_gt_0_cases a) as [Haz| Haz].
  -rewrite Haz in Huv |-*.
   rewrite mul_0_r in Huv; symmetry in Huv.
@@ -260,7 +260,7 @@ Qed.
 Lemma gcd_mul_mono_r :
  forall n m p, gcd (n*p) (m*p) == gcd n m * p.
 Proof.
- intros. rewrite !(mul_comm _ p). apply gcd_mul_mono_l.
+ intros n m p. rewrite !(mul_comm _ p). apply gcd_mul_mono_l.
 Qed.
 
 Lemma gauss : forall n m p, (n | m * p) -> gcd n m == 1 -> (n | p).

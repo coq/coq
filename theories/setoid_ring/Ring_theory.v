@@ -53,7 +53,7 @@ Section Power.
 
  Lemma pow_pos_swap x j : pow_pos x j * x == x * pow_pos x j.
  Proof.
-  induction j; simpl; rewrite <- ?mul_assoc.
+  induction j as [j IHj|j IHj|]; simpl; rewrite <- ?mul_assoc.
   - f_equiv. now do 2 (rewrite IHj, mul_assoc).
   - now do 2 (rewrite IHj, mul_assoc).
   - reflexivity.
@@ -62,7 +62,7 @@ Section Power.
  Lemma pow_pos_succ x j :
    pow_pos x (Pos.succ j) == x * pow_pos x j.
  Proof.
-  induction j; simpl; try reflexivity.
+  induction j as [j IHj|j IHj|]; simpl; try reflexivity.
   rewrite IHj, <- mul_assoc; f_equiv.
   now rewrite mul_assoc, pow_pos_swap, mul_assoc.
  Qed.
@@ -70,7 +70,7 @@ Section Power.
  Lemma pow_pos_add x i j :
    pow_pos x (i + j) == pow_pos x i * pow_pos x j.
  Proof.
-  induction i using Pos.peano_ind.
+  induction i as [|i IHi] using Pos.peano_ind.
   - now rewrite Pos.add_1_l, pow_pos_succ.
   - now rewrite Pos.add_succ_l, !pow_pos_succ, IHi, mul_assoc.
  Qed.

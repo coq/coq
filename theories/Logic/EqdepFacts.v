@@ -104,7 +104,7 @@ Section Dependent_Equality.
   Lemma eq_dep_dep1 :
     forall (p q:U) (x:P p) (y:P q), eq_dep p x q y -> eq_dep1 p x q y.
   Proof.
-    destruct 1.
+    intros p; destruct 1.
     apply eq_dep1_intro with (eq_refl p).
     simpl; trivial.
   Qed.
@@ -120,7 +120,7 @@ Lemma eq_sigT_eq_dep :
   forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
     existT P p x = existT P q y -> eq_dep p x q y.
 Proof.
-  intros.
+  intros * H.
   dependent rewrite H.
   apply eq_dep_intro.
 Qed.
@@ -145,7 +145,7 @@ Lemma eq_sig_eq_dep :
   forall (U:Type) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
     exist P p x = exist P q y -> eq_dep p x q y.
 Proof.
-  intros.
+  intros * H.
   dependent rewrite H.
   apply eq_dep_intro.
 Qed.
@@ -168,10 +168,10 @@ Qed.
 
 Set Implicit Arguments.
 
-Lemma eq_sigT_sig_eq : forall X P (x1 x2:X) H1 H2, existT P x1 H1 = existT P x2 H2 <->
-                                                   {H:x1=x2 | rew H in H1 = H2}.
+Lemma eq_sigT_sig_eq X P (x1 x2:X) H1 H2 :
+  existT P x1 H1 = existT P x2 H2 <-> {H:x1=x2 | rew H in H1 = H2}.
 Proof.
-  intros; split; intro H.
+  split; intro H.
   - change x2 with (projT1 (existT P x2 H2)).
     change H2 with (projT2 (existT P x2 H2)) at 5.
     destruct H. simpl.
@@ -181,19 +181,17 @@ Proof.
     reflexivity.
 Defined.
 
-Lemma eq_sigT_fst :
-  forall X P (x1 x2:X) H1 H2 (H:existT P x1 H1 = existT P x2 H2), x1 = x2.
+Lemma eq_sigT_fst X P (x1 x2:X) H1 H2 (H:existT P x1 H1 = existT P x2 H2) :
+  x1 = x2.
 Proof.
-  intros.
   change x2 with (projT1 (existT P x2 H2)).
   destruct H.
   reflexivity.
 Defined.
 
-Lemma eq_sigT_snd :
-  forall X P (x1 x2:X) H1 H2 (H:existT P x1 H1 = existT P x2 H2), rew (eq_sigT_fst H) in H1 = H2.
+Lemma eq_sigT_snd X P (x1 x2:X) H1 H2 (H:existT P x1 H1 = existT P x2 H2) :
+  rew (eq_sigT_fst H) in H1 = H2.
 Proof.
-  intros.
   unfold eq_sigT_fst.
   change x2 with (projT1 (existT P x2 H2)).
   change H2 with (projT2 (existT P x2 H2)) at 3.
@@ -201,19 +199,17 @@ Proof.
   reflexivity.
 Defined.
 
-Lemma eq_sig_fst :
-  forall X P (x1 x2:X) H1 H2 (H:exist P x1 H1 = exist P x2 H2), x1 = x2.
+Lemma eq_sig_fst X P (x1 x2:X) H1 H2 (H:exist P x1 H1 = exist P x2 H2) :
+  x1 = x2.
 Proof.
-  intros.
   change x2 with (proj1_sig (exist P x2 H2)).
   destruct H.
   reflexivity.
 Defined.
 
-Lemma eq_sig_snd :
-  forall X P (x1 x2:X) H1 H2 (H:exist P x1 H1 = exist P x2 H2), rew (eq_sig_fst H) in H1 = H2.
+Lemma eq_sig_snd X P (x1 x2:X) H1 H2 (H:exist P x1 H1 = exist P x2 H2) :
+  rew (eq_sig_fst H) in H1 = H2.
 Proof.
-  intros.
   unfold eq_sig_fst, eq_ind.
   change x2 with (proj1_sig (exist P x2 H2)).
   change H2 with (proj2_sig (exist P x2 H2)) at 3.
@@ -283,7 +279,7 @@ Section Equivalences.
   Lemma eq_rect_eq_on__eq_dep_eq_on (p : U) (P : U -> Type) (x : P p) :
     Eq_rect_eq_on p P x -> Eq_dep_eq_on P p x.
   Proof.
-    intros eq_rect_eq; red; intros.
+    intros eq_rect_eq; red; intros y H.
     symmetry; apply (eq_rect_eq_on__eq_dep1_eq_on _ _ _ eq_rect_eq).
     apply eq_dep_sym in H; apply eq_dep_dep1; trivial.
   Qed.
@@ -299,7 +295,7 @@ Section Equivalences.
   Proof.
     intro eq_dep_eq; red.
     elim p1 using eq_indd.
-    intros; apply eq_dep_eq.
+    intros p2; apply eq_dep_eq.
     elim p2 using eq_indd.
     apply eq_dep_intro.
   Qed.

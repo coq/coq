@@ -33,7 +33,7 @@ Qed.
 
 Lemma fact_le n m : n <= m -> fact n <= fact m.
 Proof.
-  induction 1.
+  induction 1 as [|m ?].
   - apply le_n.
   - simpl. transitivity (fact m). trivial. apply Nat.le_add_r.
 Qed.

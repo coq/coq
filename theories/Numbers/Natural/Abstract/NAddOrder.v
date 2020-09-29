@@ -19,7 +19,7 @@ Include NOrderProp N.
 
 Theorem le_add_r : forall n m, n <= n + m.
 Proof.
-intro n; induct m.
+intros n m; induct m.
 rewrite add_0_r; now apply eq_le_incl.
 intros m IH. rewrite add_succ_r; now apply le_le_succ_r.
 Qed.

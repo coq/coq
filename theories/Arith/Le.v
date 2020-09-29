@@ -80,7 +80,7 @@ Lemma le_elim_rel :
    (forall p (q:nat), p <= q -> P p q -> P (S p) (S q)) ->
    forall n m, n <= m -> P n m.
 Proof.
-  intros P H0 HS.
+  intros P H0 HS n.
   induction n; trivial.
   intros m Le. elim Le; auto with arith.
  Qed.

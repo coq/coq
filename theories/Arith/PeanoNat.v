@@ -75,7 +75,9 @@ Theorem recursion_succ :
     Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
       forall n : nat, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 Proof.
-unfold Proper, respectful in *; induction n; simpl; auto.
+unfold Proper, respectful in *.
+intros A Aeq a f ? ? n.
+induction n; simpl; auto.
 Qed.
 
 (** ** Remaining constants not defined in Coq.Init.Nat *)
@@ -126,7 +128,7 @@ Qed.
 
 Lemma sub_succ_r n m : n - (S m) = pred (n - m).
 Proof.
-revert m. induction n; destruct m; simpl; auto. apply sub_0_r.
+revert m. induction n; intro m; destruct m; simpl; auto. apply sub_0_r.
 Qed.
 
 Lemma mul_0_l n : 0 * n = 0.
@@ -136,9 +138,9 @@ Qed.
 
 Lemma mul_succ_l n m : S n * m = n * m + m.
 Proof.
-assert (succ_r : forall x y, x+S y = S(x+y)) by now induction x.
+assert (succ_r : forall x y, x+S y = S(x+y)) by now intro x; induction x.
 assert (comm : forall x y, x+y = y+x).
-{ induction x; simpl; auto. intros; rewrite succ_r; now f_equal. }
+{ intro x; induction x; simpl; auto. intros; rewrite succ_r; now f_equal. }
 now rewrite comm.
 Qed.
 
@@ -152,7 +154,7 @@ Qed.
 Lemma eqb_eq n m : eqb n m = true <-> n = m.
 Proof.
  revert m.
- induction n; destruct m; simpl; rewrite ?IHn; split; try easy.
+ induction n as [|n IHn]; intro m; destruct m; simpl; rewrite ?IHn; split; try easy.
  - now intros ->.
  - now injection 1.
 Qed.
@@ -160,7 +162,7 @@ Qed.
 Lemma leb_le n m : (n <=? m) = true <-> n <= m.
 Proof.
  revert m.
- induction n; destruct m; simpl.
+ induction n as [|n IHn]; intro m; destruct m; simpl.
  - now split.
  - split; trivial. intros; apply Peano.le_0_n.
  - now split.
@@ -178,7 +180,7 @@ Qed.
 
 Lemma eq_dec : forall n m : nat, {n = m} + {n <> m}.
 Proof.
-  induction n; destruct m.
+  intro n; induction n as [|n IHn]; intro m; destruct m as [|m].
   - now left.
   - now right.
   - now right.
@@ -193,12 +195,14 @@ Defined.
 
 Lemma compare_eq_iff n m : (n ?= m) = Eq <-> n = m.
 Proof.
- revert m; induction n; destruct m; simpl; rewrite ?IHn; split; auto; easy.
+ revert m; induction n as [|n IHn]; intro m; destruct m;
+ simpl; rewrite ?IHn; split; auto; easy.
 Qed.
 
 Lemma compare_lt_iff n m : (n ?= m) = Lt <-> n < m.
 Proof.
- revert m; induction n; destruct m; simpl; rewrite ?IHn; split; try easy.
+ revert m; induction n as [|n IHn]; intro m; destruct m;
+ simpl; rewrite ?IHn; split; try easy.
  - intros _. apply Peano.le_n_S, Peano.le_0_n.
  - apply Peano.le_n_S.
  - apply Peano.le_S_n.
@@ -206,7 +210,7 @@ Qed.
 
 Lemma compare_le_iff n m : (n ?= m) <> Gt <-> n <= m.
 Proof.
- revert m; induction n; destruct m; simpl; rewrite ?IHn.
+ revert m; induction n as [|n IHn]; intro m; destruct m; simpl; rewrite ?IHn.
  - now split.
  - split; intros. apply Peano.le_0_n. easy.
  - split. now destruct 1. inversion 1.
@@ -215,7 +219,7 @@ Qed.
 
 Lemma compare_antisym n m : (m ?= n) = CompOpp (n ?= m).
 Proof.
- revert m; induction n; destruct m; simpl; trivial.
+ revert m; induction n; intro m; destruct m; simpl; trivial.
 Qed.
 
 Lemma compare_succ n m : (S n ?= S m) = (n ?= m).
@@ -292,7 +296,7 @@ Lemma Even_2 n : Even n <-> Even (S (S n)).
 Proof.
  split; intros (m,H).
  - exists (S m). rewrite H. simpl. now rewrite plus_n_Sm.
- - destruct m; try discriminate.
+ - destruct m as [|m]; try discriminate.
    exists m. simpl in H. rewrite <- plus_n_Sm in H. now inversion H.
 Qed.
 
@@ -305,7 +309,7 @@ Lemma Odd_2 n : Odd n <-> Odd (S (S n)).
 Proof.
  split; intros (m,H).
  - exists (S m). rewrite H. simpl. now rewrite <- (plus_n_Sm m).
- - destruct m; try discriminate.
+ - destruct m as [|m]; try discriminate.
    exists m. simpl in H. rewrite <- plus_n_Sm in H. inversion H.
    simpl. now rewrite <- !plus_n_Sm, <- !plus_n_O.
 Qed.
@@ -316,7 +320,7 @@ Import Private_Parity.
 Lemma even_spec : forall n, even n = true <-> Even n.
 Proof.
  fix even_spec 1.
-  destruct n as [|[|n]]; simpl.
+  intro n; destruct n as [|[|n]]; simpl.
   - split; [ now exists 0 | trivial ].
   - split; [ discriminate | intro H; elim (Even_1 H) ].
   - rewrite even_spec. apply Even_2.
@@ -326,7 +330,7 @@ Lemma odd_spec : forall n, odd n = true <-> Odd n.
 Proof.
  unfold odd.
  fix odd_spec 1.
-  destruct n as [|[|n]]; simpl.
+  intro n; destruct n as [|[|n]]; simpl.
   - split; [ discriminate | intro H; elim (Odd_0 H) ].
   - split; [ now exists 0 | trivial ].
   - rewrite odd_spec. apply Odd_2.
@@ -338,9 +342,9 @@ Lemma divmod_spec : forall x y q u, u <= y ->
  let (q',u') := divmod x y q u in
  x + (S y)*q + (y-u) = (S y)*q' + (y-u') /\ u' <= y.
 Proof.
- induction x.
+ intro x; induction x as [|x IHx].
  - simpl; intuition.
- - intros y q u H. destruct u; simpl divmod.
+ - intros y q u H. destruct u as [|u]; simpl divmod.
    + generalize (IHx y (S q) y (le_n y)). destruct divmod as (q',u').
      intros (EQ,LE); split; trivial.
      rewrite <- EQ, sub_0_r, sub_diag, add_0_r.
@@ -356,7 +360,7 @@ Qed.
 Lemma div_mod x y : y<>0 -> x = y*(x/y) + x mod y.
 Proof.
  intros Hy.
- destruct y; [ now elim Hy | clear Hy ].
+ destruct y as [|y]; [ now elim Hy | clear Hy ].
  unfold div, modulo.
  generalize (divmod_spec x y 0 y (le_n y)).
  destruct divmod as (q,u).
@@ -380,7 +384,7 @@ Lemma sqrt_iter_spec : forall k p q r,
  let s := sqrt_iter k p q r in
  s*s <= k + p*p + (q - r) < (S s)*(S s).
 Proof.
- induction k.
+ intro k; induction k as [|k IHk].
  - (* k = 0 *)
    simpl; intros p q r Hq Hr.
    split.
@@ -391,7 +395,7 @@ Proof.
      apply add_le_mono_l.
      rewrite <- Hq. apply le_sub_l.
  - (* k = S k' *)
-   destruct r.
+   intros p q r; destruct r as [|r].
    + (* r = 0 *)
      intros Hq _.
      replace (S k + p*p + (q-0)) with (k + (S p)*(S p) + (S (S q) - S (S q))).
@@ -427,7 +431,7 @@ Lemma log2_iter_spec : forall k p q r,
  let s := log2_iter k p q r in
  2^s <= k + q < 2^(S s).
 Proof.
- induction k.
+ intro k; induction k as [|k IHk].
  - (* k = 0 *)
    intros p q r EQ LT. simpl log2_iter. cbv zeta.
    split.
@@ -438,7 +442,7 @@ Proof.
    + rewrite EQ, add_comm. apply add_lt_mono_l.
      apply lt_succ_r, le_0_l.
  - (* k = S k' *)
-   intros p q r EQ LT. destruct r.
+   intros p q r EQ LT. destruct r as [|r].
    + (* r = 0 *)
      rewrite add_succ_r, add_0_r in EQ.
      rewrite add_succ_l, <- add_succ_r. apply IHk.
@@ -537,7 +541,7 @@ Lemma le_div2 n : div2 (S n) <= n.
 Proof.
  revert n.
  fix le_div2 1.
- destruct n; simpl; trivial. apply lt_succ_r.
+ intro n; destruct n as [|n]; simpl; trivial. apply lt_succ_r.
  destruct n; [simpl|]; trivial. now constructor.
 Qed.
 
@@ -550,7 +554,7 @@ Qed.
 
 Lemma div2_decr a n : a <= S n -> div2 a <= n.
 Proof.
- destruct a; intros H.
+ destruct a as [|a]; intros H.
  - simpl. apply le_0_l.
  - apply succ_le_mono in H.
    apply le_trans with a; [ apply le_div2 | trivial ].
@@ -563,7 +567,7 @@ Qed.
 
 Lemma testbit_0_l : forall n, testbit 0 n = false.
 Proof.
- now induction n.
+ now intro n; induction n.
 Qed.
 
 Lemma testbit_odd_0 a : testbit (2*a+1) 0 = true.
@@ -592,7 +596,7 @@ Qed.
 Lemma shiftr_specif : forall a n m,
  testbit (shiftr a n) m = testbit a (m+n).
 Proof.
- induction n; intros m. trivial.
+ intros a n; induction n as [|n IHn]; intros m. trivial.
  now rewrite add_0_r.
  now rewrite add_succ_r, <- add_succ_l, <- IHn.
 Qed.
@@ -600,7 +604,7 @@ Qed.
 Lemma shiftl_specif_high : forall a n m, n<=m ->
  testbit (shiftl a n) m = testbit a (m-n).
 Proof.
- induction n; intros m H. trivial.
+ intros a n; induction n as [|n IHn]; intros m H. trivial.
  now rewrite sub_0_r.
  destruct m. inversion H.
  simpl. apply succ_le_mono in H.
@@ -611,7 +615,7 @@ Qed.
 Lemma shiftl_spec_low : forall a n m, m<n ->
  testbit (shiftl a n) m = false.
 Proof.
- induction n; intros m H. inversion H.
+ intros a n; induction n as [|n IHn]; intros m H. inversion H.
  change (shiftl a (S n)) with (double (shiftl a n)).
  destruct m; simpl.
  unfold odd. apply negb_false_iff.
@@ -623,7 +627,7 @@ Qed.
 Lemma div2_bitwise : forall op n a b,
  div2 (bitwise op (S n) a b) = bitwise op n (div2 a) (div2 b).
 Proof.
- intros. unfold bitwise; fold bitwise.
+ intros op n a b. unfold bitwise; fold bitwise.
  destruct (op (odd a) (odd b)).
  now rewrite div2_succ_double.
  now rewrite add_0_l, div2_double.
@@ -632,7 +636,7 @@ Qed.
 Lemma odd_bitwise : forall op n a b,
  odd (bitwise op (S n) a b) = op (odd a) (odd b).
 Proof.
- intros. unfold bitwise; fold bitwise.
+ intros op n a b. unfold bitwise; fold bitwise.
  destruct (op (odd a) (odd b)).
  apply odd_spec. rewrite add_comm. eexists; eauto.
  unfold odd. apply negb_false_iff. apply even_spec.
@@ -644,7 +648,7 @@ Lemma testbit_bitwise_1 : forall op, (forall b, op false b = false) ->
  testbit (bitwise op n a b) m = op (testbit a m) (testbit b m).
 Proof.
  intros op Hop.
- induction n; intros m a b Ha.
+ intro n; induction n as [|n IHn]; intros m a b Ha.
  simpl. inversion Ha; subst. now rewrite testbit_0_l.
  destruct m.
  apply odd_bitwise.
@@ -657,7 +661,7 @@ Lemma testbit_bitwise_2 : forall op, op false false = false ->
  testbit (bitwise op n a b) m = op (testbit a m) (testbit b m).
 Proof.
  intros op Hop.
- induction n; intros m a b Ha Hb.
+ intro n; induction n as [|n IHn]; intros m a b Ha Hb.
  simpl. inversion Ha; inversion Hb; subst. now rewrite testbit_0_l.
  destruct m.
  apply odd_bitwise.
@@ -682,11 +686,11 @@ Lemma lor_spec a b n :
 Proof.
  unfold lor. apply testbit_bitwise_2.
  - trivial.
- - destruct (compare_spec a b).
+ - destruct (compare_spec a b) as [H|H|H].
    + rewrite max_l; subst; trivial.
    + apply lt_le_incl in H. now rewrite max_r.
    + apply lt_le_incl in H. now rewrite max_l.
- - destruct (compare_spec a b).
+ - destruct (compare_spec a b) as [H|H|H].
    + rewrite max_r; subst; trivial.
    + apply lt_le_incl in H. now rewrite max_r.
    + apply lt_le_incl in H. now rewrite max_l.
@@ -697,11 +701,11 @@ Lemma lxor_spec a b n :
 Proof.
  unfold lxor. apply testbit_bitwise_2.
  - trivial.
- - destruct (compare_spec a b).
+ - destruct (compare_spec a b) as [H|H|H].
    + rewrite max_l; subst; trivial.
    + apply lt_le_incl in H. now rewrite max_r.
    + apply lt_le_incl in H. now rewrite max_l.
- - destruct (compare_spec a b).
+ - destruct (compare_spec a b) as [H|H|H].
    + rewrite max_r; subst; trivial.
    + apply lt_le_incl in H. now rewrite max_r.
    + apply lt_le_incl in H. now rewrite max_l.

@@ -16,7 +16,7 @@ Implicit Types m n x y : nat.
 
 Theorem O_or_S n : {m : nat | S m = n} + {0 = n}.
 Proof.
-  induction n.
+  induction n as [|n IHn].
   - now right.
   - left; exists n; auto.
 Defined.
@@ -47,7 +47,7 @@ pose (def_n2 := eq_refl n0); transitivity (eq_ind _ _ le_mn2 _ def_n2).
   2: reflexivity.
 generalize def_n2; revert le_mn1 le_mn2.
 generalize n0 at 1 4 5 7; intros n1 le_mn1.
-destruct le_mn1; intros le_mn2; destruct le_mn2.
+destruct le_mn1 as [|? le_mn1]; intros le_mn2; destruct le_mn2 as [|? le_mn2].
 + now intros def_n0; rewrite (UIP_nat _ _ def_n0 eq_refl).
 + intros def_n0; generalize le_mn2; rewrite <-def_n0; intros le_mn0.
   now destruct (Nat.nle_succ_diag_l _ le_mn0).
