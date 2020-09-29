@@ -274,7 +274,7 @@ following rules.
 .. inference:: Prod-Type
 
    \WTEG{T}{s}
-   s \in \{\SProp, \Type{i}\}
+   s \in \{\SProp, \Type(i)\}
    \WTE{\Gamma::(x:T)}{U}{\Type(i)}
    --------------------------------
    \WTEG{∀ x:T,~U}{\Type(i)}

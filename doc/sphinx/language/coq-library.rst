@@ -677,7 +677,7 @@ fixpoint equation can be proved.
 
 .. index::
   single: Fix_F (term)
-  single: fix_eq (term)
+  single: Fix_eq (term)
   single: Fix_F_inv (term)
   single: Fix_F_eq (term)
 
@@ -696,7 +696,7 @@ fixpoint equation can be proved.
    forall (x:A) (r:Acc x),
      F x (fun (y:A) (p:R y x) => Fix_F y (Acc_inv x r y p)) = Fix_F x r.
   Lemma Fix_F_inv : forall (x:A) (r s:Acc x), Fix_F x r = Fix_F x s.
-  Lemma fix_eq : forall x:A, Fix x = F x (fun (y:A) (p:R y x) => Fix y).
+  Lemma Fix_eq : forall x:A, Fix x = F x (fun (y:A) (p:R y x) => Fix y).
   End FixPoint.
   End Well_founded.
 
