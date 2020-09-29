@@ -512,6 +512,12 @@ and progress_utf8 loc last nj n c tt cs =
 and progress_from_byte loc last nj tt cs c =
   progress_utf8 loc last nj (utf8_char_size loc cs c) c tt cs
 
+let blank_or_eof cs =
+  match Stream.peek cs with
+    | None -> true
+    | Some (' ' | '\t' | '\n' |'\r') -> true
+    | _ -> false
+
 type marker = Delimited of int * char list * char list | ImmediateAsciiIdent
 
 let peek_marker_len b e s =
@@ -542,6 +548,11 @@ let parse_quotation loc bp s =
       in
       get_buff len, set_loc_pos loc bp (Stream.count s)
   | Delimited (lenmarker, bmarker, emarker) ->
+      let dot_gobbling =
+        (* only quotations starting with two curly braces can gobble sentences *)
+        match bmarker with
+        | '{' :: '{' :: _ -> true
+        | _ -> false in
       let b = Buffer.create 80 in
       let commit1 c = Buffer.add_char b c; Stream.junk s in
       let commit l = List.iter commit1 l in
@@ -557,6 +568,10 @@ let parse_quotation loc bp s =
               commit1 '\n';
               let loc = bump_loc_line_last loc (Stream.count s) in
               quotation loc depth
+        | '.' :: _ ->
+              commit1 '.';
+              if not dot_gobbling && blank_or_eof s then raise Stream.Failure;
+              quotation loc depth
         | c :: cs ->
               commit1 c;
               quotation loc depth
@@ -565,8 +580,26 @@ let parse_quotation loc bp s =
       let loc = quotation loc 0 in
       Buffer.contents b, set_loc_pos loc bp (Stream.count s)
 
+let peek_string v s =
+  let l = String.length v in
+  let rec aux i =
+    if Int.equal i l then true
+    else
+      let l' = Stream.npeek (i + 1) s in
+      match List.nth l' i with
+      | c -> Char.equal c v.[i] && aux (i + 1)
+      | exception _ -> false (* EOF *) in
+  aux 0
 
 let find_keyword loc id bp s =
+  if peek_string ":{{" s then
+    begin
+      (* "xxx:{{" always starts a sentence-gobbling quotation, whether registered or not *)
+      Stream.junk s;
+      let txt, loc = parse_quotation loc bp s in
+      QUOTATION (id ^ ":", txt), loc
+    end
+  else
   let tt = ttree_find !token_tree id in
   match progress_further loc tt.node 0 tt s with
   | None -> raise Not_found
@@ -644,12 +677,6 @@ let parse_after_qmark ~diff_mode loc bp s =
           | Utf8Token (st, _) when Unicode.is_valid_ident_initial st -> LEFTQMARK
           | AsciiChar | Utf8Token _ | EmptyStream ->
             fst (process_chars ~diff_mode loc bp '?' s)
-
-let blank_or_eof cs =
-  match Stream.peek cs with
-    | None -> true
-    | Some (' ' | '\t' | '\n' |'\r') -> true
-    | _ -> false
 
 (* Parse a token in a char stream *)
 
