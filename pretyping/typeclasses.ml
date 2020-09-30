@@ -41,7 +41,11 @@ let get_solve_one_instance, solve_one_instance_hook = Hook.make ()
 let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm t =
   Hook.get get_solve_one_instance env evm t unique
 
-type direction = Backward
+type class_method = {
+  meth_name : Name.t;
+  meth_info : hint_info option;
+  meth_const : Constant.t option;
+}
 
 (* This module defines type-classes *)
 type typeclass = {
@@ -58,8 +62,7 @@ type typeclass = {
   cl_props : Constr.rel_context;
 
   (* The method implementations as projections. *)
-  cl_projs : (Name.t * (direction * hint_info) option
-              * Constant.t option) list;
+  cl_projs : class_method list;
 
   cl_strict : bool;
 

@@ -155,8 +155,17 @@ let subst_class (subst,cl) =
   let do_subst_context (grs,ctx) =
     List.Smart.map (Option.Smart.map do_subst_gr) grs,
     do_subst_ctx ctx in
-  let do_subst_projs projs = List.Smart.map (fun (x, y, z) ->
-    (x, y, Option.Smart.map do_subst_con z)) projs in
+  let do_subst_meth m =
+    let c = Option.Smart.map do_subst_con m.meth_const in
+    if c == m.meth_const then m
+    else
+    {
+      meth_name = m.meth_name;
+      meth_info = m.meth_info;
+      meth_const = c;
+    }
+  in
+  let do_subst_projs projs = List.Smart.map do_subst_meth projs in
   { cl_univs = cl.cl_univs;
     cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_context cl.cl_context;
@@ -241,10 +250,10 @@ let add_class cl =
 
 let add_class env sigma cl =
   add_class cl;
-  List.iter (fun (n, inst, body) ->
-      match inst with
-      | Some (Backward, info) ->
-        (match body with
+  List.iter (fun m ->
+      match m.meth_info with
+      | Some info ->
+        (match m.meth_const with
          | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
          | Some b -> declare_instance ~warn:true env sigma (Some info) false (GlobRef.ConstRef b))
       | _ -> ())
@@ -424,9 +433,9 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
              let rest' = List.filter (fun v -> not (is_id v)) rest
              in
              let {CAst.loc;v=mid} = get_id loc_mid in
-             List.iter (fun (n, _, x) ->
-                 if Name.equal n (Name mid) then
-                   Option.iter (fun x -> Dumpglob.add_glob ?loc (GlobRef.ConstRef x)) x) k.cl_projs;
+             List.iter (fun m ->
+                 if Name.equal m.meth_name (Name mid) then
+                   Option.iter (fun x -> Dumpglob.add_glob ?loc (GlobRef.ConstRef x)) m.meth_const) k.cl_projs;
              c :: props, rest'
            with Not_found ->
              ((CAst.make @@ CHole (None(* Some Evar_kinds.GoalEvar *), Namegen.IntroAnonymous, None)) :: props), rest

@@ -13,14 +13,18 @@ open Constr
 open Evd
 open Environ
 
-type direction = Backward
-
 (* Core typeclasses hints *)
 type 'a hint_info_gen =
     { hint_priority : int option;
       hint_pattern : 'a option }
 
 type hint_info = (Pattern.patvar list * Pattern.constr_pattern) hint_info_gen
+
+type class_method = {
+  meth_name : Name.t;
+  meth_info : hint_info option;
+  meth_const : Constant.t option;
+}
 
 (** This module defines type-classes *)
 type typeclass = {
@@ -39,7 +43,7 @@ type typeclass = {
   cl_props : Constr.rel_context;
   (** Context of definitions and properties on defs, will not be shared *)
 
-  cl_projs : (Name.t * (direction * hint_info) option * Constant.t option) list;
+  cl_projs : class_method list;
   (** The methods implementations of the typeclass as projections.
       Some may be undefinable due to sorting restrictions or simply undefined if
       no name is provided. The [int option option] indicates subclasses whose hint has
