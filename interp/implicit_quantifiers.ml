@@ -127,10 +127,7 @@ let combine_params avoid applied needed =
     List.partition
       (function
           (t, Some {CAst.loc;v=ExplByName id}) ->
-            let is_id (_, decl) = match RelDecl.get_name decl with
-            | Name id' -> Id.equal id id'
-            | Anonymous -> false
-            in
+            let is_id (_, decl) = Name.equal (Name id) (RelDecl.get_name decl) in
             if not (List.exists is_id needed) then
               user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
             true
@@ -147,15 +144,13 @@ let combine_params avoid applied needed =
 
       | [], [] -> List.rev ids, avoid
 
-      | app, (_, (LocalAssum ({binder_name=Name id}, _))) :: need when Id.List.mem_assoc id named ->
+      | _, (_, (LocalAssum ({binder_name=Name id}, _))) :: need when Id.List.mem_assoc id named ->
           aux (Id.List.assoc id named :: ids) avoid app need
 
-      | (x, None) :: app, (false, (LocalAssum ({binder_name=Name id}, _))) :: need ->
-          aux (x :: ids) avoid app need
+      | (x, _) :: app, (false, _) :: need -> aux (x :: ids) avoid app need
 
-      | x :: app, (false, _) :: need -> aux (fst x :: ids) avoid app need
-
-      | _, (true, decl) :: need | [], (false, decl) :: need ->
+      | _, (true, decl) :: need
+      | [], (false, decl) :: need ->
         let id' = next_name_away_from (RelDecl.get_name decl) avoid in
         let t' = CAst.make @@ CRef (qualid_of_ident id',None) in
         aux (t' :: ids) (Id.Set.add id' avoid) app need
