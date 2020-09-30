@@ -592,8 +592,8 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
     let sigma = Evd.from_env env in
     List.map (fun decl ->
       match Typeclasses.class_of_constr env sigma (EConstr.of_constr (RelDecl.get_type decl)) with
-      | Some (_, ((cl,_), _)) -> Some cl.cl_impl
-      | None -> None)
+      | Some _ -> true
+      | None -> false)
       params, params
   in
   let univs, ctx_context, fields =
@@ -634,7 +634,7 @@ let add_constant_class env sigma cst =
   let tc =
     { cl_univs = univs;
       cl_impl = GlobRef.ConstRef cst;
-      cl_context = (List.map (const None) ctx, ctx);
+      cl_context = (List.map (const false) ctx, ctx);
       cl_props = [LocalAssum (make_annot Anonymous r, t)];
       cl_projs = [];
       cl_strict = !typeclasses_strict;
@@ -656,7 +656,7 @@ let add_inductive_class env sigma ind =
     let r = Inductive.relevance_of_inductive env ind in
       { cl_univs = univs;
         cl_impl = GlobRef.IndRef ind;
-        cl_context = List.map (const None) ctx, ctx;
+        cl_context = List.map (const false) ctx, ctx;
         cl_props = [LocalAssum (make_annot Anonymous r, ty)];
         cl_projs = [];
         cl_strict = !typeclasses_strict;

@@ -150,12 +150,12 @@ let combine_params avoid applied needed =
       | app, (_, (LocalAssum ({binder_name=Name id}, _))) :: need when Id.List.mem_assoc id named ->
           aux (Id.List.assoc id named :: ids) avoid app need
 
-      | (x, None) :: app, (None, (LocalAssum ({binder_name=Name id}, _))) :: need ->
+      | (x, None) :: app, (false, (LocalAssum ({binder_name=Name id}, _))) :: need ->
           aux (x :: ids) avoid app need
 
-      | x :: app, (None, _) :: need -> aux (fst x :: ids) avoid app need
+      | x :: app, (false, _) :: need -> aux (fst x :: ids) avoid app need
 
-      | _, (Some _, decl) :: need | [], (None, decl) :: need ->
+      | _, (true, decl) :: need | [], (false, decl) :: need ->
         let id' = next_name_away_from (RelDecl.get_name decl) avoid in
         let t' = CAst.make @@ CRef (qualid_of_ident id',None) in
         aux (t' :: ids) (Id.Set.add id' avoid) app need

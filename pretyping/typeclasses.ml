@@ -56,7 +56,7 @@ type typeclass = {
   cl_impl : GlobRef.t;
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : GlobRef.t option list * Constr.rel_context;
+  cl_context : bool list * Constr.rel_context;
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : Constr.rel_context;

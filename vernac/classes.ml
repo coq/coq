@@ -152,9 +152,6 @@ let subst_class (subst,cl) =
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
   let do_subst_ctx = List.Smart.map (RelDecl.map_constr do_subst) in
-  let do_subst_context (grs,ctx) =
-    List.Smart.map (Option.Smart.map do_subst_gr) grs,
-    do_subst_ctx ctx in
   let do_subst_meth m =
     let c = Option.Smart.map do_subst_con m.meth_const in
     if c == m.meth_const then m
@@ -168,7 +165,7 @@ let subst_class (subst,cl) =
   let do_subst_projs projs = List.Smart.map do_subst_meth projs in
   { cl_univs = cl.cl_univs;
     cl_impl = do_subst_gr cl.cl_impl;
-    cl_context = do_subst_context cl.cl_context;
+    cl_context = on_snd do_subst_ctx cl.cl_context;
     cl_props = do_subst_ctx cl.cl_props;
     cl_projs = do_subst_projs cl.cl_projs;
     cl_strict = cl.cl_strict;
@@ -202,10 +199,10 @@ let discharge_class (_,cl) =
     let sigma = Evd.from_env env in
     let grs' =
       let newgrs = List.map (fun decl ->
-                             match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr env sigma with
-                             | None -> None
-                             | Some (_, ((tc,_), _)) -> Some tc.cl_impl)
-                            ctx'
+          match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr env sigma with
+          | None -> false
+          | Some _ -> true)
+          ctx'
       in
       grs @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
