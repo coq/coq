@@ -126,4 +126,5 @@ module New : sig
 
   val pf_nf_evar : Proofview.Goal.t -> constr -> constr
 
+  val pr_gls : Proofview.Goal.t -> Pp.t
 end

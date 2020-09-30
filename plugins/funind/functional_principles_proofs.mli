@@ -1,3 +1,13 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
 open Names
 
 val prove_princ_for_struct :
@@ -7,7 +17,7 @@ val prove_princ_for_struct :
   -> Constant.t array
   -> EConstr.constr array
   -> int
-  -> Tacmach.tactic
+  -> unit Proofview.tactic
 
 val prove_principle_for_gen :
      Constant.t * Constant.t * Constant.t
@@ -22,6 +32,6 @@ val prove_principle_for_gen :
   -> (* the type of the recursive argument *)
      EConstr.constr
   -> (* the wf relation used to prove the function *)
-     Tacmach.tactic
+     unit Proofview.tactic
 
 (* val is_pte  : rel_declaration -> bool  *)
