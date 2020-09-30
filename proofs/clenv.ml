@@ -923,10 +923,18 @@ let clenv_recompute_deps env sigma ~hyps_only clause =
 
 let solve_evar_clause env sigma ~hyps_only clause b =
   let define_if_known_type (sigma,delayed) ev arg =
-    if EConstr.isEvar sigma ev.hole_type then
+    let head, _ = decompose_app sigma ev.hole_type in
+    if EConstr.isEvar sigma head then
       (sigma, (ev,arg) :: delayed)
     else
-      (define_with_type env sigma ev.hole_evar arg None, delayed)
+      try
+        (define_with_type env sigma ev.hole_evar arg None, delayed)
+      with
+      | PretypeError (_,_,ActualTypeNotCoercible (_,_,
+          (NotClean _ | ConversionFailed _))) as e ->
+          raise e
+      | e when precatchable_exception e ->
+          (sigma, (ev,arg) :: delayed)
   in
   match b with
   | NoBindings -> sigma, [], clause
