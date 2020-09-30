@@ -837,7 +837,7 @@ let evar_with_name holes id =
   let hole = List.map_filter map holes in
   match hole with
   | [] -> explain_no_such_bound_variable holes id
-  | [h] -> h.hole_evar
+  | [h] -> h
   | _ ->
     user_err
       (str "Binder name \"" ++ Id.print id ++
@@ -847,12 +847,12 @@ let nth_anonymous holes n =
   let rec hole holes n =
     match holes, n with
     | h :: holes, n when h.hole_name <> Anonymous -> hole holes n
-    | h :: holes, 0 -> h.hole_evar
+    | h :: holes, 0 -> h
     | h :: holes, n -> hole holes (pred n)
     | [], _ -> user_err (str "No such binder.")
   in hole holes (pred n)
 
-let evar_of_binder holes = function
+let hole_of_binder holes = function
 | NamedHyp s -> evar_with_name holes s
 | AnonHyp n -> nth_anonymous holes n
 
@@ -922,35 +922,36 @@ let clenv_recompute_deps env sigma ~hyps_only clause =
   { clause with cl_holes = holes }
 
 let solve_evar_clause env sigma ~hyps_only clause b =
-  match b with
-| NoBindings -> sigma, [], clause
-| ImplicitBindings largs ->
-  let clause = if hyps_only then clenv_recompute_deps env sigma ~hyps_only clause else clause in
-  let evs, holes' = List.partition (fun h -> h.hole_deps) clause.cl_holes in
-  let len = List.length evs in
-  if Int.equal len (List.length largs) then
-    let define_if_known_type (sigma,delayed) ev arg =
-      if EConstr.isEvar sigma ev.hole_type then
-        (sigma, (ev,arg) :: delayed)
-      else
-        (define_with_type env sigma ev.hole_evar arg None, delayed)
-    in
-    let sigma, delayed = List.fold_left2 define_if_known_type (sigma,[]) evs largs in
-    let clause = { clause with cl_holes = holes' } in
-    sigma, delayed, clenv_advance sigma clause
-  else
-    error_not_right_number_missing_arguments len
-| ExplicitBindings lbind ->
-  let () = check_bindings lbind in
-  let fold (sigma, holes) {CAst.v=(binder, c)} =
-    let ev = evar_of_binder clause.cl_holes binder in
-    let rem ev' = EConstr.eq_constr sigma ev ev'.hole_evar in
-    let holes = List.remove_first rem holes in
-    define_with_type env sigma ev c None, holes
+  let define_if_known_type (sigma,delayed) ev arg =
+    if EConstr.isEvar sigma ev.hole_type then
+      (sigma, (ev,arg) :: delayed)
+    else
+      (define_with_type env sigma ev.hole_evar arg None, delayed)
   in
-  let sigma, holes = List.fold_left fold (sigma,clause.cl_holes) lbind in
-  let clause = { clause with cl_holes = holes } in
-  sigma, [], clenv_advance sigma clause
+  match b with
+  | NoBindings -> sigma, [], clause
+  | ImplicitBindings largs ->
+    let clause = if hyps_only then clenv_recompute_deps env sigma ~hyps_only clause else clause in
+    let evs, holes' = List.partition (fun h -> h.hole_deps) clause.cl_holes in
+    let len = List.length evs in
+    if Int.equal len (List.length largs) then
+      let sigma, delayed = List.fold_left2 define_if_known_type (sigma,[]) evs largs in
+      let clause = { clause with cl_holes = holes' } in
+      sigma, delayed, clenv_advance sigma clause
+    else
+      error_not_right_number_missing_arguments len
+  | ExplicitBindings lbind ->
+    let () = check_bindings lbind in
+    let fold (sigma, delayed, holes) {CAst.v=(binder, c)} =
+      let ev = hole_of_binder clause.cl_holes binder in
+      let rem ev' = EConstr.eq_constr sigma ev.hole_evar ev'.hole_evar in
+      let holes = List.remove_first rem holes in
+      let sigma, delayed = define_if_known_type (sigma,delayed) ev c in
+      sigma, delayed, holes
+    in
+    let sigma, delayed, holes = List.fold_left fold (sigma,[],clause.cl_holes) lbind in
+    let clause = { clause with cl_holes = holes } in
+    sigma, delayed, clenv_advance sigma clause
 
 let make_clenv_from_env env sigma ?len ?occs (c, t) =
   make_evar_clause env sigma ?len ?occs (strip_outer_cast sigma c) t
