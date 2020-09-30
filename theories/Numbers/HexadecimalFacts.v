@@ -12,10 +12,6 @@
 
 Require Import Hexadecimal Arith.
 
-Scheme Equality for uint.
-
-Scheme Equality for int.
-
 Lemma rev_revapp d d' :
   rev (revapp d d') = revapp d' d.
 Proof.
