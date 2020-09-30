@@ -1857,6 +1857,75 @@ The following errors apply to both string and number notations:
 
      .. todo note on "single qualified identifiers" https://github.com/coq/coq/pull/11718#discussion_r415076703
 
+.. example:: Number Notation for radix 3
+
+   The following example parses and prints natural numbers
+   whose digits are :g:`0`, :g:`1` or :g:`2` as terms of the following
+   inductive type encoding radix 3 numbers.
+
+   .. coqtop:: in reset
+
+      Inductive radix3 : Set :=
+        | x0 : radix3
+        | x3 : radix3 -> radix3
+        | x3p1 : radix3 -> radix3
+        | x3p2 : radix3 -> radix3.
+
+   We first define a parsing function
+
+   .. coqtop:: in
+
+      Definition of_uint_dec (u : Decimal.uint) : option radix3 :=
+        let fix f u := match u with
+          | Decimal.Nil => Some x0
+          | Decimal.D0 u => match f u with Some u => Some (x3 u) | None => None end
+          | Decimal.D1 u => match f u with Some u => Some (x3p1 u) | None => None end
+          | Decimal.D2 u => match f u with Some u => Some (x3p2 u) | None => None end
+          | _ => None end in
+        f (Decimal.rev u).
+      Definition of_uint (u : Number.uint) : option radix3 :=
+        match u with Number.UIntDec u => of_uint_dec u | Number.UIntHex _ => None end.
+
+   and a printing function
+
+   .. coqtop:: in
+
+      Definition to_uint_dec (x : radix3) : Decimal.uint :=
+        let fix f x := match x with
+          | x0 => Decimal.Nil
+          | x3 x => Decimal.D0 (f x)
+          | x3p1 x => Decimal.D1 (f x)
+          | x3p2 x => Decimal.D2 (f x) end in
+        Decimal.rev (f x).
+      Definition to_uint (x : radix3) : Number.uint := Number.UIntDec (to_uint_dec x).
+
+   before declaring the notation
+
+   .. coqtop:: in
+
+      Declare Scope radix3_scope.
+      Open Scope radix3_scope.
+      Number Notation radix3 of_uint to_uint : radix3_scope.
+
+   We can check the printer
+
+   .. coqtop:: all
+
+      Check x3p2 (x3p1 x0).
+
+   and the parser
+
+   .. coqtop:: all
+
+      Set Printing All.
+      Check 120.
+
+   Digits other than :g:`0`, :g:`1` and :g:`2` are rejected.
+
+   .. coqtop:: all fail
+
+      Check 3.
+
 .. _example-number-notation-non-inductive:
 
 .. example:: Number Notation for a non inductive type
@@ -1866,7 +1935,7 @@ The following errors apply to both string and number notations:
    is encoded as :g:`3` while :g:`unit` is :g:`1` and :g:`0` stands for :g:`Empty_set`.
    The inductive :g:`I` will be used as :n:`@qualid__ind`.
 
-   .. coqtop:: in
+   .. coqtop:: in reset
 
       Inductive I := Iempty : I | Iunit : I | Isum : I -> I -> I.
 
