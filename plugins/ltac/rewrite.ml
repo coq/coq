@@ -498,7 +498,7 @@ let rec decompose_app_rel env evd t =
 
 let decompose_app_rel env evd t =
   let (rel, t1, t2) = decompose_app_rel env evd t in
-  let ty = Retyping.get_type_of env evd rel in
+  let ty = try Retyping.get_type_of ~lax:true env evd rel with Retyping.RetypeError _ -> error_no_relation () in
   let () = if not (Reductionops.is_arity env evd ty) then error_no_relation () in
   (rel, t1, t2)
 
@@ -2144,7 +2144,7 @@ let setoid_proof ty fn fallback =
           let car = snd (List.hd (fst (Reductionops.splay_prod env sigma t))) in
             (try init_relation_classes () with _ -> raise Not_found);
             fn env sigma car rel
-        with e ->
+        with e when CErrors.noncritical e ->
           (* XXX what is the right test here as to whether e can be converted ? *)
           let e, info = Exninfo.capture e in
           Proofview.tclZERO ~info e
