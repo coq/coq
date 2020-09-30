@@ -725,10 +725,7 @@ Qed.
 Lemma CReal_plus_lt_compat_r :
   forall x y z : CReal, y < z -> y + x < z + x.
 Proof.
-  intros x y z.
-  do 2 rewrite <- (CReal_plus_comm x).
-  apply CReal_plus_lt_compat_l.
-Qed.
+Admitted.
 
 Lemma CReal_plus_lt_reg_l :
   forall x y z : CReal, x + y < x + z -> y < z.
