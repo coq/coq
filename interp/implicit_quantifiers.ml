@@ -122,12 +122,24 @@ let next_name_away_from na avoid =
   | Anonymous -> make_fresh avoid (Global.env ()) (Id.of_string "anon")
   | Name id -> make_fresh avoid (Global.env ()) id
 
+let rec is_class_arg c =
+  let open Constr in
+  match kind c with
+  | Prod (_,_,c)
+  | Cast (c,_,_)
+  | LetIn (_,_,_,c) -> is_class_arg c
+  | _ ->
+    let c, _ = decompose_appvect c in
+    match destRef c with
+    | exception DestKO -> false
+    | r, _ -> is_class r
+
 let combine_params avoid applied needed =
   let named, applied =
     List.partition
       (function
           (t, Some {CAst.loc;v=ExplByName id}) ->
-            let is_id (_, decl) = Name.equal (Name id) (RelDecl.get_name decl) in
+            let is_id decl = Name.equal (Name id) (RelDecl.get_name decl) in
             if not (List.exists is_id needed) then
               user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
             true
@@ -138,25 +150,27 @@ let combine_params avoid applied needed =
     named
   in
   let rec aux ids avoid app need =
-    match app, need with
+    match need with
+    | [] -> begin match app with
+        | [] -> List.rev ids, avoid
+        | (x, _) :: _ -> user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
+      end
 
-      | _, (_, LocalDef _) :: need -> aux ids avoid app need
+    | LocalDef _ :: need -> aux ids avoid app need
 
-      | [], [] -> List.rev ids, avoid
 
-      | _, (_, (LocalAssum ({binder_name=Name id}, _))) :: need when Id.List.mem_assoc id named ->
-          aux (Id.List.assoc id named :: ids) avoid app need
+    | LocalAssum ({binder_name=Name id}, _) :: need when Id.List.mem_assoc id named ->
+      aux (Id.List.assoc id named :: ids) avoid app need
 
-      | (x, _) :: app, (false, _) :: need -> aux (x :: ids) avoid app need
+    | decl :: need ->
+      begin match app, is_class_arg (get_type decl) with
+        | (x, _) :: app, false -> aux (x :: ids) avoid app need
 
-      | _, (true, decl) :: need
-      | [], (false, decl) :: need ->
-        let id' = next_name_away_from (RelDecl.get_name decl) avoid in
-        let t' = CAst.make @@ CRef (qualid_of_ident id',None) in
-        aux (t' :: ids) (Id.Set.add id' avoid) app need
-
-      | (x,_) :: _, [] ->
-          user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
+        | [], false | _, true ->
+          let id' = next_name_away_from (RelDecl.get_name decl) avoid in
+          let t' = CAst.make @@ CRef (qualid_of_ident id',None) in
+          aux (t' :: ids) (Id.Set.add id' avoid) app need
+      end
   in
   aux [] avoid applied needed
 
@@ -186,8 +200,7 @@ let implicit_application env ty =
     let sigma = Evd.from_env env in
     let c = class_info env sigma gr in
     let (ci, rd) = c.cl_context in
-    let pars = List.rev (List.combine ci rd) in
-    let args, avoid = combine_params avoid par pars in
+    let args, avoid = combine_params avoid par (List.rev rd) in
     CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
 
 let warn_ignoring_implicit_status =
