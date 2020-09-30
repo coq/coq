@@ -71,6 +71,9 @@ let rec contract3' env sigma a b c = function
   | ConversionFailed (env',t1,t2) ->
       let (env',t1,t2) = contract2 env' sigma t1 t2 in
       contract3 env sigma a b c, ConversionFailed (env',t1,t2)
+  | IncompatibleInstances (env',ev,t1,t2) ->
+      let (env',ev,t1,t2) = contract3 env' sigma (EConstr.mkEvar ev) t1 t2 in
+      contract3 env sigma a b c, IncompatibleInstances (env',EConstr.destEvar sigma ev,t1,t2)
   | NotSameArgSize | NotSameHead | NoCanonicalStructure
   | MetaOccurInBody _ | InstanceNotSameType _ | ProblemBeyondCapabilities
   | UnifUnivInconsistency _ as x -> contract3 env sigma a b c, x
@@ -313,6 +316,13 @@ let explain_unification_error env sigma p1 p2 = function
           let t1, t2 = pr_explicit env sigma t1 t2 in
           [str "cannot unify " ++ t1 ++ strbrk " and " ++ t2]
         else []
+     | IncompatibleInstances (env,ev,t1,t2) ->
+        let env = make_all_name_different env sigma in
+        let ev = pr_leconstr_env env sigma (EConstr.mkEvar ev) in
+        let t1 = Reductionops.nf_betaiota env sigma t1 in
+        let t2 = Reductionops.nf_betaiota env sigma t2 in
+        let t1, t2 = pr_explicit env sigma t1 t2 in
+        [ev ++ strbrk " has otherwise to unify with " ++ t1 ++ str " which is incompatible with " ++ t2]
      | MetaOccurInBody evk ->
         [str "instance for " ++ quote (pr_existential_key sigma evk) ++
         strbrk " refers to a metavariable - please report your example" ++
