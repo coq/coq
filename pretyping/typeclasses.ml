@@ -56,7 +56,7 @@ type typeclass = {
   cl_impl : GlobRef.t;
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : bool list * Constr.rel_context;
+  cl_context : Constr.rel_context;
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : Constr.rel_context;
@@ -97,7 +97,7 @@ let instances : instances ref = Summary.ref GlobRef.Map.empty ~name:"instances"
 let typeclass_univ_instance (cl, u) =
   assert (Univ.AUContext.size cl.cl_univs == Univ.Instance.length u);
   let subst_ctx c = Context.Rel.map (subst_instance_constr u) c in
-    { cl with cl_context = on_snd subst_ctx cl.cl_context;
+    { cl with cl_context = subst_ctx cl.cl_context;
       cl_props = subst_ctx cl.cl_props}
 
 let class_info env sigma c =
@@ -178,7 +178,7 @@ let remove_instance inst =
 
 
 let instance_constructor (cl,u) args =
-  let lenpars = List.count is_local_assum (snd cl.cl_context) in
+  let lenpars = List.count is_local_assum cl.cl_context in
   let open EConstr in
   let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with

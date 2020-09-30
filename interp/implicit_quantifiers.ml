@@ -199,8 +199,7 @@ let implicit_application env ty =
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let c = class_info env sigma gr in
-    let (ci, rd) = c.cl_context in
-    let args, avoid = combine_params avoid par (List.rev rd) in
+    let args, avoid = combine_params avoid par (List.rev c.cl_context) in
     CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
 
 let warn_ignoring_implicit_status =

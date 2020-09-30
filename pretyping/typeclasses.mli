@@ -36,9 +36,9 @@ type typeclass = {
   (** The class implementation: a record parameterized by the context with defs in it or a definition if
      the class is a singleton. This acts as the class' global identifier. *)
 
-  cl_context : bool list * Constr.rel_context;
-  (** Context in which the definitions are typed. Includes both typeclass parameters and superclasses.
-      The bool says whether we are at a class. *)
+  cl_context : Constr.rel_context;
+  (** Context in which the definitions are typed.
+      Includes both typeclass parameters and superclasses. *)
 
   cl_props : Constr.rel_context;
   (** Context of definitions and properties on defs, will not be shared *)
