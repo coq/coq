@@ -16,7 +16,6 @@ open Context
 open Environ
 open Names
 open Libnames
-open Nameops
 open Constrexpr
 open Constrexpr_ops
 open Constrintern
@@ -139,7 +138,7 @@ let model_conclusion env sigma ind_rel params n arity_indices =
   let sigma,model_indices =
     List.fold_right
       (fun (_,t) (sigma, subst) ->
-        let t = EConstr.Vars.substl subst (EConstr.Vars.liftn n (List.length subst + 1) (EConstr.Vars.liftn 1 (List.length params + List.length subst + 1) t)) in
+        let t = EConstr.Vars.substl subst (EConstr.Vars.liftn n (List.length subst + 1) t) in
         let sigma, c = Evarutil.new_evar env sigma t in
         sigma, c::subst)
       arity_indices (sigma, []) in
@@ -443,9 +442,8 @@ let interp_params env udecl uparamsl paramsl =
     interp_context_evars ~program_mode:false ~impl_env:uimpls env_uparams sigma paramsl
   in
   (* Names of parameters as arguments of the inductive type (defs removed) *)
-  let assums = List.filter is_local_assum ctx_params in
   sigma, env_params, (ctx_params, env_uparams, ctx_uparams,
-  List.map (RelDecl.get_name %> Name.get_id) assums, userimpls, useruimpls, impls, udecl)
+  userimpls, useruimpls, impls, udecl)
 
 (* When a hole remains for a param, pretend the param is uniform and
    do the unification.
@@ -482,11 +480,12 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   then user_err (str "Inductives with uniform parameters may not have attached notations.");
 
   let indnames = List.map (fun ind -> ind.ind_name) indl in
+  let ninds = List.length indl in
 
   (* In case of template polymorphism, we need to compute more constraints *)
   let env0 = if poly then env0 else Environ.set_universes_lbound env0 UGraph.Bound.Prop in
 
-  let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, params, userimpls, useruimpls, impls, udecl) =
+  let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, userimpls, useruimpls, impls, udecl) =
     interp_params env0 udecl uparamsl paramsl
   in
 
@@ -496,16 +495,17 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let sigma, arities = List.fold_left_map (pretype_ind_arity env_params) sigma arities in
   let arities, relevances, arityconcl, indimpls = List.split4 arities in
 
-  let lift1_ctx ctx =
+  let lift_ctx n ctx =
     let t = EConstr.it_mkProd_or_LetIn EConstr.mkProp ctx in
-    let t = EConstr.Vars.lift 1 t in
+    let t = EConstr.Vars.lift n t in
     let ctx, _ = EConstr.decompose_prod_assum sigma t in
     ctx
   in
-  let ctx_params_lifted, fullarities = CList.fold_left_map
-      (fun ctx_params c -> lift1_ctx ctx_params, EConstr.it_mkProd_or_LetIn c ctx_params)
-      ctx_params
-      arities
+  let ctx_params_lifted, fullarities =
+    lift_ctx ninds ctx_params,
+    CList.map_i
+      (fun i c -> EConstr.Vars.lift i (EConstr.it_mkProd_or_LetIn c ctx_params))
+      0 arities
   in
   let env_ar = push_types env_uparams indnames relevances fullarities in
   let env_ar_params = EConstr.push_rel_context ctx_params_lifted env_ar in
@@ -515,14 +515,15 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let impls = compute_internalization_env env_uparams sigma ~impls Inductive indnames fullarities indimpls in
   let ntn_impls = compute_internalization_env env_uparams sigma Inductive indnames fullarities indimpls in
 
-  let ninds = List.length indl in
   let (sigma, _), constructors =
     Metasyntax.with_syntax_protection (fun () ->
         (* Temporary declaration of notations and scopes *)
         List.iter (Metasyntax.set_notation_for_interpretation env_params ntn_impls) notations;
         (* Interpret the constructor types *)
         List.fold_left2_map
-          (fun (sigma, ind_rel) -> interp_cstrs env_ar_params (sigma, ind_rel) impls ctx_params)
+          (fun (sigma, ind_rel) ind arity ->
+            interp_cstrs env_ar_params (sigma, ind_rel) impls ctx_params_lifted
+              ind (EConstr.Vars.liftn ninds (Rel.length ctx_params + 1) arity))
           (sigma, ninds) indl arities)
       ()
   in
@@ -540,7 +541,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let nuparams = Context.Rel.length ctx_uparams in
   let uargs = Context.Rel.to_extended_vect EConstr.mkRel 0 ctx_uparams in
   let uparam_subst =
-    List.init (List.length indl) EConstr.(fun i -> mkApp (mkRel (i + 1 + nuparams), uargs))
+    List.init ninds EConstr.(fun i -> mkApp (mkRel (i + 1 + nuparams), uargs))
     @ List.init nuparams EConstr.(fun i -> mkRel (i + 1)) in
   let generalize_constructor c = EConstr.Unsafe.to_constr (EConstr.Vars.substnl uparam_subst nparams c) in
   let cimpls = List.map pi3 constructors in
