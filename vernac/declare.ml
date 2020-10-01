@@ -725,7 +725,6 @@ module Obligation = struct
     ; obl_tac : unit Proofview.tactic option }
 
   let set_type ~typ obl = {obl with obl_type = typ}
-  let set_body ~body obl = {obl with obl_body = Some body}
 end
 
 type obligations = {obls : Obligation.t array; remaining : int}
@@ -2464,32 +2463,25 @@ let add_mutual_definitions l ~pm ~info ?obl_hook ~uctx
   in
   pm
 
-let admit_prog ~pm prg =
-  let {obls; remaining} = Internal.get_obligations prg in
-  let obls = Array.copy obls in
-    Array.iteri
-      (fun i x ->
-        match x.obl_body with
-        | None ->
-            let x = subst_deps_obl obls x in
-            let uctx = Internal.get_uctx prg in
-            let univs = UState.univ_entry ~poly:false uctx in
-            let kn = declare_constant ~name:x.obl_name ~local:Locality.ImportNeedQualified
-              (ParameterEntry (None, (x.obl_type, univs), None)) ~kind:Decls.(IsAssumption Conjectural)
-            in
-              assumption_message x.obl_name;
-              obls.(i) <- Obligation.set_body ~body:(DefinedObl (kn, Univ.Instance.empty)) x
-        | Some _ -> ())
-      obls;
-  Obls_.update_obls ~pm prg obls 0
+let rec admit_prog ~pm prg =
+  let {obls} = Internal.get_obligations prg in
+  let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
+  let i = match Array.findi is_open obls with
+    | Some i -> i
+    | None -> CErrors.anomaly (Pp.str "Could not find a solvable obligation.")
+  in
+  let proof = solve_obligation prg i None in
+  let pm = Proof.save_admitted ~pm ~proof in
+  match ProgMap.find_opt (Internal.get_name prg) pm with
+  | Some prg -> admit_prog ~pm (CEphemeron.get prg)
+  | None -> pm
 
-(* get_any_prog *)
 let rec admit_all_obligations ~pm =
   let prg = State.first_pending pm in
   match prg with
   | None -> pm
   | Some prg ->
-    let pm, _prog = admit_prog ~pm prg in
+    let pm = admit_prog ~pm prg in
     admit_all_obligations ~pm
 
 let admit_obligations ~pm n =
@@ -2497,7 +2489,7 @@ let admit_obligations ~pm n =
   | None -> admit_all_obligations ~pm
   | Some _ ->
     let prg = get_unique_prog ~pm n in
-    let pm, _ = admit_prog ~pm prg in
+    let pm = admit_prog ~pm prg in
     pm
 
 let next_obligation ~pm n tac =
