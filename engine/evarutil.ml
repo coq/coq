@@ -135,23 +135,6 @@ let memo f =
 
 let is_ground_env = memo is_ground_env
 
-(* Return the head evar if any *)
-
-exception NoHeadEvar
-
-let head_evar sigma c =
-  (* FIXME: this breaks if using evar-insensitive code *)
-  let c = EConstr.Unsafe.to_constr c in
-  let rec hrec c = match kind c with
-    | Evar (evk,_)   -> evk
-    | Case (_, _, _, _, _, c, _) -> hrec c
-    | App (c,_)      -> hrec c
-    | Cast (c,_,_)   -> hrec c
-    | Proj (p, c)    -> hrec c
-    | _              -> raise NoHeadEvar
-  in
-  hrec c
-
 (* Expand head evar if any (currently consider only applications but I
    guess it should consider Case too) *)
 
@@ -802,7 +785,7 @@ let filtered_undefined_evars_of_evar_info ?cache sigma evi =
 let occur_evar_upto sigma n c =
   let c = EConstr.Unsafe.to_constr c in
   let rec occur_rec c = match kind c with
-    | Evar (sp,_) when Evar.equal sp n -> raise Occur
+    | Evar (sp,_) when Evd.evar_related sigma sp n -> raise Occur
     | Evar e -> Option.iter occur_rec (existential_opt_value0 sigma e)
     | _ -> Constr.iter occur_rec c
   in

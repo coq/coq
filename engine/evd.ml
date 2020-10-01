@@ -382,10 +382,156 @@ let metamap_to_list m =
 (*************************)
 (* Unification state *)
 
+module EvMap = Evar.Map
+module EvSet = Evar.Set
+
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * Environ.env * constr * constr
 
-module EvMap = Evar.Map
+module ConvPbs =
+struct
+
+(* The evar-evar problems induce a partition of the unresolved
+   evars. We represent the partition as a forest of trees whose root
+   links to itself (union-find structure). Two evars are in the same
+   class if they are in the same tree, i.e. if they link to the same
+   root. Equivalence classes made of a singleton are not in the
+   graph. *)
+
+type t = {
+    constraints : evar_constraint list;
+    equiv : Evar.t EvMap.t; (* to collect evar-evar links *)
+    last_mods : EvSet.t;
+  }
+
+let empty = {
+    constraints = [];
+    equiv = EvMap.empty;
+    last_mods = EvSet.empty;
+  }
+
+let is_empty conv_pbs = List.is_empty conv_pbs.constraints
+
+let constraints conv_pbs = conv_pbs.constraints
+
+(* The representative of an evar in the partition (in O(log n) for n
+   the number of evars involved in evar-evar problems for distincts evars) *)
+
+let rec repr evk m =
+  try
+    let evk' = EvMap.find evk m in
+    if Evar.equal evk evk' then evk else repr evk' m
+  with Not_found -> evk
+
+(* Add an edge in the graph of equivalence classes (in O(log n)) *)
+let add_link (_,_,t1,t2) m =
+  match kind t1, kind t2 with
+  | Evar (evk1,_), Evar (evk2,_) when not (Evar.equal evk1 evk2) ->
+    (try
+      let evk1 = EvMap.find evk1 m in
+      let evk1' = repr evk1 m in
+      try
+        let evk2 = EvMap.find evk2 m in
+        let evk2' = repr evk2 m in
+        if Evar.equal evk1' evk2' then
+          (* evk1 and evk2 are already related *)
+          m
+        else
+          (* evk1 and evk2 are known but unrelated, we connect them *)
+          EvMap.add evk1' evk2' m
+      with Not_found ->
+        (* evk2 is new, evk1 is already part of a link *)
+        EvMap.add evk2 evk1 m
+    with Not_found ->
+      try
+        let evk2 = EvMap.find evk2 m in
+        (* evk1 is new, evk2 is already part of a link *)
+        EvMap.add evk1 evk2 m
+      with Not_found ->
+        (* None of the evars are part of a link *)
+            EvMap.add evk1 evk2 (EvMap.add evk2 evk2 m))
+  | _ -> m
+
+(* Rebuild the equivalence classes by omitting a node (in O(n)) *)
+let remove_evar evk m =
+  try
+    let evk' = EvMap.find evk m in
+    snd (EvMap.fold (fun evk1 evk2 (new_repr,m') ->
+      if Evar.equal evk evk1 then (new_repr,m')
+      else if Evar.equal evk evk2 then
+        if Evar.equal evk evk' then
+          (* case [evk1 -> evk] and [evk] is a root *)
+          match new_repr with
+          | None -> (Some evk1, m')
+          | Some evk -> (new_repr, EvMap.add evk1 evk m')
+        else
+          (* case [evk1 -> evk -> evk'] *)
+          (new_repr, EvMap.add evk1 evk' m')
+      else
+        (* an unrelated edge *)
+        (new_repr, EvMap.add evk1 evk2 m')) m (None,EvMap.empty))
+  with Not_found -> m
+
+(* Test if two evars are related (in O(log n)) *)
+let related evk1 evk2 conv_pbs =
+  Evar.equal (repr evk1 conv_pbs.equiv) (repr evk2 conv_pbs.equiv)
+
+let add tail pb conv_pbs = {
+    constraints = if tail then conv_pbs.constraints @ [pb] else pb :: conv_pbs.constraints;
+    equiv = add_link pb conv_pbs.equiv;
+    last_mods = conv_pbs.last_mods
+  }
+
+let rec head_evar_in l c =
+  match kind c with
+  | Evar (evk,_)   -> EvSet.mem evk l
+  | Case (_, _, _, _, _, c, _) -> head_evar_in l c
+  | App (c,_)      -> head_evar_in l c
+  | Cast (c,_,_)   -> head_evar_in l c
+  | Proj (p, c)    -> head_evar_in l c
+  | _              -> false
+
+let status_changed l (pbty,_,t1,t2) =
+  head_evar_in l t1 || head_evar_in l t2
+
+(* extracts conversion problems that satisfy predicate p *)
+(* Note: conv_pbs not satisying p are stored back in reverse order *)
+let extract p conv_pbs =
+  List.fold_left
+    (fun (extracted,kept) pb ->
+      if status_changed p pb then (pb::extracted,kept)
+      else (extracted,pb::kept))
+    ([],[])
+    conv_pbs.constraints
+
+let extract_last_changed conv_pbs =
+  let (extracted,kept) = extract conv_pbs.last_mods conv_pbs in
+  (* We don't update the graph: it is the definition of an evar which
+     had removed the link in advance *)
+  let conv_pbs = { constraints = kept; equiv = conv_pbs.equiv; last_mods = EvSet.empty } in
+  conv_pbs, extracted
+
+let extract_changed evk conv_pbs =
+  let (extracted,kept) = extract (EvSet.singleton evk) conv_pbs in
+  (* We don't update the graph: it is the definition of an evar which
+     had removed the link in advance *)
+  (* Should we remove evk from last_mods? *)
+  let conv_pbs = { constraints = kept; equiv = conv_pbs.equiv; last_mods = conv_pbs.last_mods } in
+  conv_pbs, extracted
+
+let extract_all conv_pbs =
+  { constraints = []; equiv = EvMap.empty; last_mods = EvSet.empty },
+  List.rev conv_pbs.constraints
+
+let signal evk conv_pbs =
+  let last_mods =
+    match conv_pbs.constraints with
+    | [] -> conv_pbs.last_mods
+    | _ -> Evar.Set.add evk conv_pbs.last_mods
+  in
+  { conv_pbs with last_mods; equiv = remove_evar evk conv_pbs.equiv }
+
+end
 
 module EvNames :
 sig
@@ -590,8 +736,7 @@ type evar_map = {
   (** Universes *)
   universes  : UState.t;
   (** Conversion problems *)
-  conv_pbs   : evar_constraint list;
-  last_mods  : Evar.Set.t;
+  conv_pbs   : ConvPbs.t;
   (** Metas *)
   metas      : clbinding Metamap.t;
   evar_flags : evar_flags;
@@ -792,7 +937,7 @@ let add_universe_constraints d c =
 let is_empty d =
   EvMap.is_empty d.defn_evars &&
   EvMap.is_empty d.undf_evars &&
-  List.is_empty d.conv_pbs &&
+  ConvPbs.is_empty d.conv_pbs &&
   Metamap.is_empty d.metas
 
 let cmap f evd =
@@ -804,7 +949,8 @@ let cmap f evd =
 
 (* spiwack: deprecated *)
 let create_evar_defs sigma = { sigma with
-  conv_pbs=[]; last_mods=Evar.Set.empty; metas=Metamap.empty }
+  conv_pbs=ConvPbs.empty;
+  metas=Metamap.empty }
 
 let empty_evar_flags =
   { obligation_evars = Evar.Set.empty;
@@ -820,8 +966,7 @@ let empty = {
   defn_evars = EvMap.empty;
   undf_evars = EvMap.empty;
   universes  = UState.empty;
-  conv_pbs   = [];
-  last_mods  = Evar.Set.empty;
+  conv_pbs   = ConvPbs.empty;
   evar_flags = empty_evar_flags;
   metas      = Metamap.empty;
   effects    = empty_side_effects;
@@ -844,14 +989,13 @@ let has_shelved evd = not (List.for_all List.is_empty evd.shelf)
 
 let evars_reset_evd ?(with_conv_pbs=false) ?(with_univs=true) evd d =
   let conv_pbs = if with_conv_pbs then evd.conv_pbs else d.conv_pbs in
-  let last_mods = if with_conv_pbs then evd.last_mods else d.last_mods in
   let universes =
     if not with_univs then evd.universes
     else UState.union evd.universes d.universes
   in
   { evd with
     metas = d.metas;
-    last_mods; conv_pbs; universes }
+    conv_pbs; universes }
 
 let merge_universe_context evd uctx' =
   { evd with universes = UState.union evd.universes uctx' }
@@ -860,11 +1004,10 @@ let set_universe_context evd uctx' =
   { evd with universes = uctx' }
 
 (* TODO: make unique *)
-let add_conv_pb ?(tail=false) pb d =
-  if tail then {d with conv_pbs = d.conv_pbs @ [pb]}
-  else {d with conv_pbs = pb::d.conv_pbs}
+let add_conv_pb ?(tail=false) pb evd =
+  { evd with conv_pbs = ConvPbs.add tail pb evd.conv_pbs }
 
-let conv_pbs d = d.conv_pbs
+let conv_pbs d = ConvPbs.constraints d.conv_pbs
 
 let evar_source evk d = (find d evk).evar_source
 
@@ -882,27 +1025,17 @@ let downcast evk ccl evd =
   let evar_info' = { evar_info with evar_concl = ccl } in
   { evd with undf_evars = EvMap.add evk evar_info' evd.undf_evars }
 
-(* extracts conversion problems that satisfy predicate p *)
-(* Note: conv_pbs not satisying p are stored back in reverse order *)
-let extract_conv_pbs evd p =
-  let (pbs,pbs1) =
-    List.fold_left
-      (fun (pbs,pbs1) pb ->
-         if p pb then
-           (pb::pbs,pbs1)
-         else
-           (pbs,pb::pbs1))
-      ([],[])
-      evd.conv_pbs
-  in
-  {evd with conv_pbs = pbs1; last_mods = Evar.Set.empty},
-  pbs
-
-let extract_changed_conv_pbs evd p =
-  extract_conv_pbs evd (fun pb -> p evd.last_mods pb)
+let extract_changed_conv_pbs evd evk =
+  let conv_pbs, pbs = ConvPbs.extract_changed evk evd.conv_pbs in
+  { evd with conv_pbs }, pbs
 
 let extract_all_conv_pbs evd =
-  extract_conv_pbs evd (fun _ -> true)
+  let conv_pbs, pbs = ConvPbs.extract_all evd.conv_pbs in
+  { evd with conv_pbs }, pbs
+
+let extract_last_changed_conv_pbs evd =
+  let conv_pbs, pbs = ConvPbs.extract_last_changed evd.conv_pbs in
+  { evd with conv_pbs }, pbs
 
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
   match kind (fst (decompose_app t1)) with
@@ -911,6 +1044,9 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
   match kind (fst (decompose_app t2)) with
   | Evar (evk2,_) -> fst (evar_source evk2 evd)
   | _             -> None
+
+let evar_related evd evk evk' =
+  ConvPbs.related evk evk' evd.conv_pbs
 
 (**********************************************************)
 (* Sort variables *)
@@ -1183,12 +1319,9 @@ let define_aux def undef evk body =
 (* define the existential of section path sp as the constr body *)
 let define_gen evk body evd evar_flags =
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
-  let last_mods = match evd.conv_pbs with
-  | [] ->  evd.last_mods
-  | _ -> Evar.Set.add evk evd.last_mods
-  in
+  let conv_pbs = ConvPbs.signal evk evd.conv_pbs in
   let evar_names = EvNames.remove_name_defined evk evd.evar_names in
-  { evd with defn_evars; undf_evars; last_mods; evar_names; evar_flags }
+  { evd with defn_evars; undf_evars; conv_pbs; evar_names; evar_flags }
 
 (** By default, the obligation and evar tag of the evar is removed *)
 let define evk body evd =
@@ -1217,15 +1350,13 @@ let restrict evk filter ?candidates ?src evd =
       evar_source = (match src with None -> evar_info.evar_source | Some src -> src);
       evar_identity = Identity.make id_inst;
     } in
-  let last_mods = match evd.conv_pbs with
-  | [] ->  evd.last_mods
-  | _ -> Evar.Set.add evk evd.last_mods in
+  let conv_pbs = ConvPbs.signal evk evd.conv_pbs in
   let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
   let evd = { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
-    defn_evars; last_mods; evar_names; evar_flags }
+    defn_evars; conv_pbs; evar_names; evar_flags }
   in
   (* Mark new evar as future goal, removing previous one,
     circumventing Proofview.advance but making Proof.run_tactic catch these. *)
@@ -1249,7 +1380,6 @@ let set_metas evd metas = {
   undf_evars = evd.undf_evars;
   universes  = evd.universes;
   conv_pbs = evd.conv_pbs;
-  last_mods = evd.last_mods;
   evar_flags = evd.evar_flags;
   metas;
   effects = evd.effects;
