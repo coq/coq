@@ -699,34 +699,29 @@ let explain_cannot_unify_binding_type env sigma m n =
   str "which should be unifiable with" ++ brk(1,1) ++ pn ++ str "."
 
 let explain_cannot_find_well_typed_abstraction env sigma p l e =
-  let p = EConstr.to_constr sigma p in
   str "Abstracting over the " ++
   str (String.plural (List.length l) "term") ++ spc () ++
-  hov 0 (pr_enum (fun c -> pr_lconstr_env env sigma (EConstr.to_constr sigma c)) l) ++ spc () ++
-  str "leads to a term" ++ spc () ++ pr_ltype_env ~goal_concl_style:true env sigma p ++
+  hov 0 (pr_enum (fun c -> pr_leconstr_env env sigma c) l) ++ spc () ++
+  str "leads to a term" ++ spc () ++ pr_letype_env ~goal_concl_style:true env sigma p ++
   spc () ++ str "which is ill-typed." ++
   (match e with None -> mt () | Some e -> fnl () ++ str "Reason is: " ++ e)
 
 let explain_wrong_abstraction_type env sigma na abs expected result =
-  let abs = EConstr.to_constr sigma abs in
-  let expected = EConstr.to_constr sigma expected in
-  let result = EConstr.to_constr sigma result in
   let ppname = match na with Name id -> Id.print id ++ spc () | _ -> mt () in
   str "Cannot instantiate metavariable " ++ ppname ++ strbrk "of type " ++
-  pr_lconstr_env env sigma expected ++ strbrk " with abstraction " ++
-  pr_lconstr_env env sigma abs ++ strbrk " of incompatible type " ++
-  pr_lconstr_env env sigma result ++ str "."
+  pr_leconstr_env env sigma expected ++ strbrk " with abstraction " ++
+  pr_leconstr_env env sigma abs ++ strbrk " of incompatible type " ++
+  pr_leconstr_env env sigma result ++ str "."
 
 let explain_abstraction_over_meta _ m n =
   strbrk "Too complex unification problem: cannot find a solution for both " ++
   Name.print m ++ spc () ++ str "and " ++ Name.print n ++ str "."
 
 let explain_non_linear_unification env sigma m t =
-  let t = EConstr.to_constr sigma t in
   strbrk "Cannot unambiguously instantiate " ++
   Name.print m ++ str ":" ++
   strbrk " which would require to abstract twice on " ++
-  pr_lconstr_env env sigma t ++ str "."
+  pr_leconstr_env env sigma t ++ str "."
 
 let explain_unsatisfied_constraints env sigma cst =
   strbrk "Unsatisfied constraints: " ++
@@ -813,10 +808,10 @@ let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1
       explain_unification_error env sigma c1 c2 (Some e)
     in
     str "Found incompatible occurrences of the pattern" ++ str ":" ++
-    spc () ++ str "Matched term " ++ pr_lconstr_env env sigma (EConstr.to_constr sigma t2) ++
+    spc () ++ str "Matched term " ++ pr_leconstr_env env sigma t2 ++
     strbrk " at position " ++ pr_position (cl2,pos2) ++
     strbrk " is not compatible with matched term " ++
-    pr_lconstr_env env sigma (EConstr.to_constr sigma t1) ++ strbrk " at position " ++
+    pr_leconstr_env env sigma t1 ++ strbrk " at position " ++
     pr_position (cl1,pos1) ++ ppreason ++ str "."
 
 let pr_constraints printenv env sigma evars cstrs =
@@ -1297,9 +1292,8 @@ let explain_recursion_scheme_error env = function
 (* Pattern-matching errors *)
 
 let explain_bad_pattern env sigma cstr ty =
-  let ty = EConstr.to_constr sigma ty in
   let env = make_all_name_different env sigma in
-  let pt = pr_lconstr_env env sigma ty in
+  let pt = pr_leconstr_env env sigma ty in
   let pc = pr_constructor env cstr in
   str "Found the constructor " ++ pc ++ brk(1,1) ++
   str "while matching a term of type " ++ pt ++ brk(1,1) ++
@@ -1336,12 +1330,11 @@ let explain_non_exhaustive env pats =
   spc () ++ hov 0 (prlist_with_sep pr_comma pr_cases_pattern pats)
 
 let explain_cannot_infer_predicate env sigma typs =
-  let inj c = EConstr.to_constr sigma c in
-  let typs = Array.map_to_list (fun (c1, c2) -> (inj c1, inj c2)) typs in
+  let typs = Array.to_list typs in
   let env = make_all_name_different env sigma in
   let pr_branch (cstr,typ) =
-    let cstr,_ = decompose_app cstr in
-    str "For " ++ pr_lconstr_env env sigma cstr ++ str ": " ++ pr_lconstr_env env sigma typ
+    let cstr,_ = EConstr.decompose_app sigma cstr in
+    str "For " ++ pr_leconstr_env env sigma cstr ++ str ": " ++ pr_leconstr_env env sigma typ
   in
   str "Unable to unify the types found in the branches:" ++
   spc () ++ hov 0 (prlist_with_sep fnl pr_branch typs)
