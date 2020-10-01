@@ -110,7 +110,7 @@ let interp_fix_context ~program_mode ~cofix env sigma fix =
     else [], fix.Vernacexpr.binders in
   let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma before in
   let sigma, (impl_env', ((env'', ctx'), imps')) =
-    interp_context_evars ~program_mode ~impl_env ~shift:(Context.Rel.nhyps ctx) env' sigma after
+    interp_context_evars ~program_mode ~impl_env env' sigma after
   in
   let annot = Option.map (fun _ -> List.length (Termops.assums_of_rel_context ctx)) fix.Vernacexpr.rec_order in
   sigma, ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)

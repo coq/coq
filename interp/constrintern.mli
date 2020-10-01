@@ -156,7 +156,7 @@ val interp_binder_evars : env -> evar_map -> Name.t -> constr_expr -> evar_map *
 (** Interpret contexts: returns extended env and context *)
 
 val interp_context_evars :
-  ?program_mode:bool -> ?impl_env:internalization_env -> ?shift:int ->
+  ?program_mode:bool -> ?impl_env:internalization_env ->
   env -> evar_map -> local_binder_expr list ->
   evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits))
 
