@@ -133,7 +133,7 @@ follows:
    Axiom get_set_same : forall A t i (a:A), (i < length t) = true -> t.[i<-a].[i] = a.
    Axiom get_set_other : forall A t i j (a:A), i <> j -> t.[i<-a].[j] = t.[j].
 
-The complete set of such operators can be obtained looking at the :g:`PArray` module.
+The rest of these operators can be found in the :g:`PArray` module.
 
 These primitive declarations are regular axioms. As such, they must be trusted and are listed by the
 :g:`Print Assumptions` command.
@@ -150,7 +150,16 @@ extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
 can be taken from the kernel of Coq (see ``kernel/parray.ml``).
 
-Primitive arrays expose a functional interface, but they are internally
-implemented using a persistent data structure :cite:`ConchonFilliatre07wml`.
-Update and access to an element in the most recent copy of an array are
-constant time operations.
+Coq's primitive arrays are persistent data structures. Semantically, a set operation
+``t.[i <- a]`` represents a new array that has the same values as ``t``, except
+at position ``i`` where its value is ``a``. The array ``t`` still exists, can
+still be used and its values were not modified. Operationally, the implementation
+of Coq's primitive arrays is optimized so that the new array ``t.[i <- a]`` does not
+copy all of ``t``. The details are in section 2.3 of :cite:`ConchonFilliatre07wml`.
+In short, the implementation keeps one version of ``t`` as an OCaml native array and
+other versions as lists of modifications to ``t``. Accesses to the native array
+version are constant time operations. However, accesses to versions where all the cells of
+the array are modified have O(n) access time, the same as a list. The version that is kept as the native array
+changes dynamically upon each get and set call: the current list of modifications
+is applied to the native array and the lists of modifications of the other versions
+are updated so that they still represent the same values.
