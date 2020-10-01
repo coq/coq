@@ -15,15 +15,6 @@
 
 #include "coq_values.h"
 
-#define DECLARE_FREL(name, e)                                           \
-  int coq_##name(double x, double y) {                                  \
-    return e;                                                           \
-  }                                                                     \
-                                                                        \
-  value coq_##name##_byte(value x, value y) {                           \
-    return coq_##name(Double_val(x), Double_val(y));                    \
-  }
-
 #define DECLARE_FBINOP(name, e)                                         \
   double coq_##name(double x, double y) {                               \
     return e;                                                           \
@@ -42,9 +33,6 @@
     return caml_copy_double(coq_##name(Double_val(x)));                 \
   }
 
-DECLARE_FREL(feq, x == y)
-DECLARE_FREL(flt, x < y)
-DECLARE_FREL(fle, x <= y)
 DECLARE_FBINOP(fmul, x * y)
 DECLARE_FBINOP(fadd, x + y)
 DECLARE_FBINOP(fsub, x - y)
