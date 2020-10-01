@@ -2530,12 +2530,12 @@ let intern_context env impl_env binders =
               binder_block_names = Some (Some AbsPi,ids)}, []) binders in
   (lenv.impls, List.map glob_local_binder_of_extended bl)
 
-let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
+let interp_glob_context_evars ?(program_mode=false) env sigma bl =
   let open EConstr in
   let flags = { Pretyping.all_no_fail_flags with program_mode } in
-  let env, sigma, par, _, impls =
+  let env, sigma, par, impls =
     List.fold_left
-      (fun (env,sigma,params,n,impls) (na, k, b, t) ->
+      (fun (env,sigma,params,impls) (na, k, b, t) ->
        let t' =
          if Option.is_empty b then locate_if_hole ?loc:(loc_of_glob_constr t) na t
          else t
@@ -2551,16 +2551,16 @@ let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
                 | MaxImplicit -> CAst.make (Some (na,true)) :: impls
                 | Explicit -> CAst.make None :: impls
               in
-                (push_rel d env, sigma, d::params, succ n, impls)
+                (push_rel d env, sigma, d::params, impls)
           | Some b ->
               let sigma, c = understand_tcc ~flags env sigma ~expected_type:(OfType t) b in
               let r = Retyping.relevance_of_type env sigma t in
               let d = LocalDef (make_annot na r, c, t) in
-                (push_rel d env, sigma, d::params, n, impls))
-      (env,sigma,[],k+1,[]) (List.rev bl)
+                (push_rel d env, sigma, d::params, impls))
+      (env,sigma,[],[]) (List.rev bl)
   in sigma, ((env, par), List.rev impls)
 
-let interp_context_evars ?program_mode ?(impl_env=empty_internalization_env) ?(shift=0) env sigma params =
+let interp_context_evars ?program_mode ?(impl_env=empty_internalization_env) env sigma params =
   let int_env,bl = intern_context env impl_env params in
-  let sigma, x = interp_glob_context_evars ?program_mode env sigma shift bl in
+  let sigma, x = interp_glob_context_evars ?program_mode env sigma bl in
   sigma, (int_env, x)
