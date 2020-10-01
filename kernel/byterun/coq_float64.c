@@ -8,10 +8,12 @@
 /*         *     (see LICENSE file for the text of the license)         */
 /************************************************************************/
 
-#ifndef _COQ_FLOAT64_
-#define _COQ_FLOAT64_
-
 #include <math.h>
+
+#define CAML_INTERNALS
+#include <caml/alloc.h>
+
+#include "coq_values.h"
 
 #define DECLARE_FREL(name, e)                                           \
   int coq_##name(double x, double y) {                                  \
@@ -54,5 +56,3 @@ DECLARE_FUNOP(next_down, nextafter(x, -INFINITY))
 value coq_is_double(value x) {
   return Val_long(Is_double(x));
 }
-
-#endif /* _COQ_FLOAT64_ */
