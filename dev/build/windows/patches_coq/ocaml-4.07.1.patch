@@ -95,3 +95,25 @@ ORIGFOLDER= ocaml-4.07.1.orig
  ASM_CFI_SUPPORTED=false
  WITH_FRAME_POINTERS=false
  UNIX_OR_WIN32=win32
+--- a/byterun/caml/misc.h
++++ b/byterun/caml/misc.h
+@@ -415,7 +415,6 @@ extern void caml_set_fields (intnat v, unsigned long, unsigned long);
+ 
+ #if defined(_WIN32) && !defined(_UCRT)
+ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
+-#define snprintf caml_snprintf
+ #endif
+ 
+ #ifdef CAML_INSTR
+@@ -424,5 +423,11 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
+ #include <time.h>
+ #include <stdio.h>
+ 
++/* snprintf emulation for Win32 - do define after stdio.h, in case snprintf is defined */
++
++#if defined(_WIN32) && !defined(_UCRT)
++#define snprintf caml_snprintf
++#endif
++
+ extern intnat caml_stat_minor_collections;
+ extern intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
