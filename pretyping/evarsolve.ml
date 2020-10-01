@@ -292,7 +292,7 @@ let noccur_evar env evd evk c =
   let rec occur_rec check_types (k, env as acc) c =
   match EConstr.kind evd c with
   | Evar (evk',args' as ev') ->
-    if Evar.equal evk evk' then raise Occur
+    if Evd.evar_related evd evk evk' then raise Occur
     else (if check_types then
             occur_rec false acc (existential_type evd ev');
           List.iter (occur_rec check_types acc) args')
@@ -1277,7 +1277,7 @@ let rec is_constrainable_in top env evd k (evk,(fv_rels,fv_ids) as g) t =
   | Prod (na,t1,t2) -> is_constrainable_in false env evd k g t1 && is_constrainable_in false env evd k g t2
   | Evar (evk',_ as ev') ->
     (*If ev' needed, one may also try to restrict it*)
-    top || not (Evar.equal evk' evk || occur_evar evd evk (Evd.existential_type evd ev'))
+    top || not (Evd.evar_related evd evk' evk || occur_evar evd evk (Evd.existential_type evd ev'))
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
   | Sort _ -> true
@@ -1497,7 +1497,7 @@ let occur_evar_upto_types sigma n c =
   let seen = ref Evar.Set.empty in
   (* FIXME: Is that supposed to be evar-insensitive? *)
   let rec occur_rec c = match Constr.kind c with
-    | Evar (sp,_) when Evar.equal sp n -> raise Occur
+    | Evar (sp,_) when Evd.evar_related sigma sp n -> raise Occur
     | Evar (sp,args as e) ->
        if Evar.Set.mem sp !seen then
          List.iter occur_rec args
@@ -1615,7 +1615,7 @@ let rec invert_definition unify flags choose imitate_defs
     | LetIn (na,b,u,c) ->
         imitate envk (subst1 b c)
     | Evar (evk',args' as ev') ->
-        if Evar.equal evk evk' then raise (OccurCheckIn (evd,rhs));
+        if Evd.evar_related evd evk evk' then raise (OccurCheckIn (evd,rhs));
         (* At this point, we imitated a context say, C[ ], and virtually
            instantiated ?evk@{x₁..xn} with C[?evk''@{x₁..xn,y₁..yk}]
            for y₁..yk the spine of variables of C[ ], now facing the
@@ -1793,12 +1793,8 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
  * ass.
  *)
 
-let status_changed evd lev (pbty,_,t1,t2) =
-  (try Evar.Set.mem (head_evar evd t1) lev with NoHeadEvar -> false) ||
-  (try Evar.Set.mem (head_evar evd t2) lev with NoHeadEvar -> false)
-
 let reconsider_unif_constraints unify flags evd =
-  let (evd,pbs) = extract_changed_conv_pbs evd (status_changed evd) in
+  let (evd,pbs) = extract_last_changed_conv_pbs evd in
   List.fold_left
     (fun p (pbty,env,t1,t2 as x) ->
        match p with

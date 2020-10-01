@@ -536,11 +536,11 @@ type evar_constraint = conv_pb * env * econstr * econstr
 val add_conv_pb : ?tail:bool -> evar_constraint -> evar_map -> evar_map
 val conv_pbs : evar_map -> evar_constraint list
 
-val extract_changed_conv_pbs : evar_map ->
-      (Evar.Set.t -> evar_constraint -> bool) ->
-      evar_map * evar_constraint list
+val extract_changed_conv_pbs : evar_map -> Evar.t -> evar_map * evar_constraint list
+val extract_last_changed_conv_pbs : evar_map -> evar_map * evar_constraint list
 val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
 val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t option
+val evar_related : evar_map -> Evar.t -> Evar.t -> bool
 
 (** The following functions return the set of undefined evars
     contained in the object. *)

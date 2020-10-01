@@ -11,7 +11,6 @@
 open CErrors
 open Util
 open Evd
-open Evarutil
 open Evarsolve
 open Pp
 open Glob_term
@@ -23,17 +22,12 @@ open Ltac_pretype
 
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 
-let depends_on_evar sigma evk _ (pbty,_,t1,t2) =
-  try Evar.equal (head_evar sigma t1) evk
-  with NoHeadEvar ->
-  try Evar.equal (head_evar sigma t2) evk
-  with NoHeadEvar -> false
-
 let define_and_solve_constraints evk c env evd =
   if Termops.occur_evar evd evk c then
     Pretype_errors.error_occur_check env evd evk c;
   let evd = define evk c evd in
-  let (evd,pbs) = extract_changed_conv_pbs evd (depends_on_evar evd evk) in
+  (* Couldn't we use extract_last_changed_conv_pbs? *)
+  let (evd,pbs) = extract_changed_conv_pbs evd evk in
   match
     List.fold_left
       (fun p (pbty,env,t1,t2) -> match p with
