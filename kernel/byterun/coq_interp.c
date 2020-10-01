@@ -1577,21 +1577,21 @@ value coq_interprete
       Instruct (CHECKEQFLOAT) {
         print_instr("CHECKEQFLOAT");
         CheckFloat2();
-        accu = coq_feq(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
+        accu = Double_val(accu) == Double_val(*sp++) ? coq_true : coq_false;
         Next;
       }
 
       Instruct (CHECKLTFLOAT) {
         print_instr("CHECKLTFLOAT");
         CheckFloat2();
-        accu = coq_flt(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
+        accu = Double_val(accu) < Double_val(*sp++) ? coq_true : coq_false;
         Next;
       }
 
       Instruct (CHECKLEFLOAT) {
         print_instr("CHECKLEFLOAT");
         CheckFloat2();
-        accu = coq_fle(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
+        accu = Double_val(accu) <= Double_val(*sp++) ? coq_true : coq_false;
         Next;
       }
 
@@ -1644,35 +1644,35 @@ value coq_interprete
       Instruct (CHECKADDFLOAT) {
         print_instr("CHECKADDFLOAT");
         CheckFloat2();
-        Coq_copy_double(coq_fadd(Double_val(accu), Double_val(*sp++)));
+        Coq_copy_double(Double_val(accu) + Double_val(*sp++));
         Next;
       }
 
       Instruct (CHECKSUBFLOAT) {
         print_instr("CHECKSUBFLOAT");
         CheckFloat2();
-        Coq_copy_double(coq_fsub(Double_val(accu), Double_val(*sp++)));
+        Coq_copy_double(Double_val(accu) - Double_val(*sp++));
         Next;
       }
 
       Instruct (CHECKMULFLOAT) {
         print_instr("CHECKMULFLOAT");
         CheckFloat2();
-        Coq_copy_double(coq_fmul(Double_val(accu), Double_val(*sp++)));
+        Coq_copy_double(Double_val(accu) * Double_val(*sp++));
         Next;
       }
 
       Instruct (CHECKDIVFLOAT) {
         print_instr("CHECKDIVFLOAT");
         CheckFloat2();
-        Coq_copy_double(coq_fdiv(Double_val(accu), Double_val(*sp++)));
+        Coq_copy_double(Double_val(accu) / Double_val(*sp++));
         Next;
       }
 
       Instruct (CHECKSQRTFLOAT) {
         print_instr("CHECKSQRTFLOAT");
         CheckFloat1();
-        Coq_copy_double(coq_fsqrt(Double_val(accu)));
+        Coq_copy_double(sqrt(Double_val(accu)));
         Next;
       }
 
@@ -1743,14 +1743,14 @@ value coq_interprete
       Instruct (CHECKNEXTUPFLOAT) {
         print_instr("CHECKNEXTUPFLOAT");
         CheckFloat1();
-        Coq_copy_double(coq_next_up(Double_val(accu)));
+        Coq_copy_double(nextafter(Double_val(accu), INFINITY));
         Next;
       }
 
       Instruct (CHECKNEXTDOWNFLOAT) {
         print_instr("CHECKNEXTDOWNFLOAT");
         CheckFloat1();
-        Coq_copy_double(coq_next_down(Double_val(accu)));
+        Coq_copy_double(nextafter(Double_val(accu), -INFINITY));
         Next;
       }
 
