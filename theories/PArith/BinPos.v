@@ -356,6 +356,8 @@ Inductive PeanoView : positive -> Type :=
 | PeanoOne : PeanoView 1
 | PeanoSucc : forall p, PeanoView p -> PeanoView (succ p).
 
+Arguments PeanoSucc : clear bidirectionality hint.
+
 Fixpoint peanoView_xO p (q:PeanoView p) : PeanoView (p~0) :=
   match q in PeanoView x return PeanoView (x~0) with
     | PeanoOne => PeanoSucc _ PeanoOne

@@ -150,7 +150,7 @@ end.
 (** The p{^ th} element of [fin m] viewed as the p{^ th} element of
 [fin (m + n)] *)
 Fixpoint L {m} n (p : t m) : t (m + n) :=
-  match p with |F1 => F1 |FS p' => FS (L n p') end.
+  match p with |F1 => F1 |FS p' => @FS (_+_) (L n p') end.
 
 Lemma L_sanity {m} n (p : t m) : proj1_sig (to_nat (L n p)) = proj1_sig (to_nat p).
 Proof.
@@ -176,7 +176,7 @@ Defined.
 (** The p{^ th} element of [fin m] viewed as the (n + p){^ th} element of
 [fin (n + m)] *)
 Fixpoint R {m} n (p : t m) : t (n + m) :=
-  match n with |0 => p |S n' => FS (R n' p) end.
+  match n with |0 => p |S n' => @FS (_+_) (R n' p) end.
 
 Lemma R_sanity {m} n (p : t m) : proj1_sig (to_nat (R n p)) = n + proj1_sig (to_nat p).
 Proof.

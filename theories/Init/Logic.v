@@ -384,7 +384,7 @@ Arguments eq_refl {A x} , [A] x.
 
 Arguments eq_ind [A] x P _ y _.
 Arguments eq_rec [A] x P _ y _.
-Arguments eq_rect [A] x P _ y _.
+Arguments eq_rect [A] x P _ y _ : clear bidirectionality hint.
 
 Notation "x = y" := (eq x y) : type_scope.
 Notation "x <> y  :> T" := (~ x = y :>T) : type_scope.

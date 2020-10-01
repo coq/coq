@@ -1831,6 +1831,7 @@ Module OrdProperties (M:S).
    destruct (E.compare x y); intuition; try discriminate; ME.order.
   Qed.
 
+  Arguments pair : clear bidirectionality hint.
   Lemma gtb_compat : forall p, Proper (eqke==>eq) (gtb p).
   Proof.
    red; intros (x,e) (a,e') (b,e'') H; red in H; simpl in *; destruct H.
