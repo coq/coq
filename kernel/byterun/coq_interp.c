@@ -28,7 +28,6 @@
 #include "coq_fix_code.h"
 #include "coq_memory.h"
 #include "coq_values.h"
-#include "coq_float64.h"
 
 #if OCAML_VERSION < 41000
 extern void caml_minor_collection(void);
