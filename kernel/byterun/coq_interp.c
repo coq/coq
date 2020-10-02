@@ -238,6 +238,9 @@ extern intnat volatile caml_pending_signals[];
 extern void caml_process_pending_signals(void);
 #endif
 
+extern double coq_next_up(double);
+extern double coq_next_down(double);
+
 /* The interpreter itself */
 
 value coq_interprete
@@ -1742,28 +1745,28 @@ value coq_interprete
       Instruct (CHECKNEXTUPFLOAT) {
         print_instr("CHECKNEXTUPFLOAT");
         CheckFloat1();
-        Coq_copy_double(nextafter(Double_val(accu), INFINITY));
+        Coq_copy_double(coq_next_up(Double_val(accu)));
         Next;
       }
 
       Instruct (CHECKNEXTDOWNFLOAT) {
         print_instr("CHECKNEXTDOWNFLOAT");
         CheckFloat1();
-        Coq_copy_double(nextafter(Double_val(accu), -INFINITY));
+        Coq_copy_double(coq_next_down(Double_val(accu)));
         Next;
       }
 
       Instruct (CHECKNEXTUPFLOATINPLACE) {
         print_instr("CHECKNEXTUPFLOATINPLACE");
         CheckFloat1();
-        Store_double_val(accu, nextafter(Double_val(accu), INFINITY));
+        Store_double_val(accu, coq_next_up(Double_val(accu)));
         Next;
       }
 
       Instruct (CHECKNEXTDOWNFLOATINPLACE) {
         print_instr("CHECKNEXTDOWNFLOATINPLACE");
         CheckFloat1();
-        Store_double_val(accu, nextafter(Double_val(accu), -INFINITY));
+        Store_double_val(accu, coq_next_down(Double_val(accu)));
         Next;
       }
 
