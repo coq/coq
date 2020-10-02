@@ -1753,6 +1753,20 @@ value coq_interprete
         Next;
       }
 
+      Instruct (CHECKNEXTUPFLOATINPLACE) {
+        print_instr("CHECKNEXTUPFLOATINPLACE");
+        CheckFloat1();
+        Store_double_val(accu, nextafter(Double_val(accu), INFINITY));
+        Next;
+      }
+
+      Instruct (CHECKNEXTDOWNFLOATINPLACE) {
+        print_instr("CHECKNEXTDOWNFLOATINPLACE");
+        CheckFloat1();
+        Store_double_val(accu, nextafter(Double_val(accu), -INFINITY));
+        Next;
+      }
+
       Instruct(CHECKCAMLCALL2_1) {
         // arity-2 callback, the last argument can be an accumulator
         value arg;
