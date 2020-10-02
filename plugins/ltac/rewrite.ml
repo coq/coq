@@ -769,7 +769,7 @@ let get_rew_prf evars r = match r.rew_prf with
 let poly_subrelation sort =
   if sort then PropGlobal.subrelation else TypeGlobal.subrelation
 
-let resolve_subrelation env avoid car rel sort prf rel' res =
+let resolve_subrelation env car rel sort prf rel' res =
   if Termops.eq_constr (fst res.rew_evars) rel rel' then res
   else
     let evars, app = app_poly_check env res.rew_evars (poly_subrelation sort) [|car; rel; rel'|] in
@@ -779,7 +779,7 @@ let resolve_subrelation env avoid car rel sort prf rel' res =
         rew_prf = RewPrf (rel', appsub);
         rew_evars = evars }
 
-let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) evars =
+let resolve_morphism env m args args' (b,cstr) evars =
   let evars, morph_instance, proj, sigargs, m', args, args' =
     let first = match (Array.findi (fun _ b -> not (Option.is_empty b)) args') with
     | Some i -> i
@@ -843,18 +843,18 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
   let proof = applist (proj, List.rev projargs) in
   let newt = applist (m', List.rev typeargs) in
     match respars with
-        [ a, Some r ] -> evars, proof, substl subst a, substl subst r, oldt, fnewt newt
+        [ a, Some r ] -> evars, proof, substl subst a, substl subst r, newt
       | _ -> assert(false)
 
-let apply_constraint env avoid car rel prf cstr res =
+let apply_constraint env car rel prf cstr res =
   match snd cstr with
   | None -> res
-  | Some r -> resolve_subrelation env avoid car rel (fst cstr) prf r res
+  | Some r -> resolve_subrelation env car rel (fst cstr) prf r res
 
-let coerce env avoid cstr res =
+let coerce env cstr res =
   let evars, (rel, prf) = get_rew_prf res.rew_evars res in
   let res = { res with rew_evars = evars } in
-    apply_constraint env avoid res.rew_car rel prf cstr res
+    apply_constraint env res.rew_car rel prf cstr res
 
 let apply_rule unify loccs : int pure_strategy =
   let (nowhere_except_in,occs) = convert_occs loccs in
@@ -863,7 +863,7 @@ let apply_rule unify loccs : int pure_strategy =
     then List.mem occ occs
     else not (List.mem occ occs)
   in
-  { strategy = fun { state = occ ; env ; unfresh ;
+  { strategy = fun { state = occ ; env ;
                      term1 = t ; ty1 = ty ; cstr ; evars } ->
       let unif = if isEvar (goalevars evars) t then None else unify env evars t in
         match unif with
@@ -874,7 +874,7 @@ let apply_rule unify loccs : int pure_strategy =
             else if Termops.eq_constr (fst rew.rew_evars) t rew.rew_to then (occ, Identity)
             else
               let res = { rew with rew_car = ty } in
-              let res = Success (coerce env unfresh cstr res) in
+              let res = Success (coerce env cstr res) in
               (occ, res)
     }
 
@@ -1017,10 +1017,10 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
                       | None -> false
                       | Some r -> not (is_rew_cast r.rew_prf)) args'
                   then
-                    let evars', prf, car, rel, c1, c2 =
-                      resolve_morphism env unfresh t m args args' (prop, cstr') evars'
+                    let evars', prf, car, rel, c2 =
+                      resolve_morphism env m args args' (prop, cstr') evars'
                     in
-                    let res = { rew_car = ty; rew_from = c1;
+                    let res = { rew_car = ty; rew_from = t;
                                 rew_to = c2; rew_prf = RewPrf (rel, prf);
                                 rew_evars = evars' }
                     in Success res
@@ -1071,7 +1071,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
                     let res =
                       match prf with
                       | RewPrf (rel, prf) ->
-                        Success (apply_constraint env unfresh res.rew_car
+                        Success (apply_constraint env res.rew_car
                                       rel prf (prop,cstr) res)
                       | _ -> Success res
                     in state, res
@@ -1093,20 +1093,6 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
             | Success r -> Success { r with rew_to = unfold (goalevars r.rew_evars) r.rew_to }
             | Fail | Identity -> res
           in state, res
-
-      (* 		if x' = None && flags.under_lambdas then *)
-      (* 		  let lam = mkLambda (n, x, b) in *)
-      (* 		  let lam', occ = aux env lam occ None in *)
-      (* 		  let res =  *)
-      (* 		    match lam' with *)
-      (* 		    | None -> None *)
-      (* 		    | Some (prf, (car, rel, c1, c2)) -> *)
-      (* 			Some (resolve_morphism env sigma t *)
-      (* 				 ~fnewt:unfold_all *)
-      (* 				 (Lazy.force coq_all) [| x ; lam |] [| None; lam' |] *)
-      (* 				 cstr evars) *)
-      (* 		  in res, occ *)
-      (* 		else *)
 
       | Prod (n, dom, codom) ->
           let lam = mkLambda (n, dom, codom) in
@@ -1131,28 +1117,6 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
    B. Barras' idea is to have a context of relations, of length 1, with Σ for gluing
    dependent relations and using projections to get them out.
  *)
-      (* | Lambda (n, t, b) when flags.under_lambdas -> *)
-      (* 	  let n' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n in *)
-      (* 	  let n'' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n' in *)
-      (* 	  let n''' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n'' in *)
-      (* 	  let rel = new_cstr_evar cstr env (mkApp (Lazy.force coq_relation, [|t|])) in *)
-      (* 	  let env' = Environ.push_rel_context [(n'',None,lift 2 rel);(n'',None,lift 1 t);(n', None, t)] env in *)
-      (* 	  let b' = s env' avoid b (Typing.type_of env' (goalevars evars) (lift 2 b)) (unlift_cstr env (goalevars evars) cstr) evars in *)
-      (* 	    (match b' with *)
-      (* 	    | Some (Some r) -> *)
-      (* 		let prf = match r.rew_prf with *)
-      (* 		  | RewPrf (rel, prf) -> *)
-      (* 		      let rel = pointwise_or_dep_relation n' t r.rew_car rel in *)
-      (* 		      let prf = mkLambda (n', t, prf) in *)
-      (* 			RewPrf (rel, prf) *)
-      (* 		  | x -> x *)
-      (* 		in *)
-      (* 		  Some (Some { r with *)
-      (* 		    rew_prf = prf; *)
-      (* 		    rew_car = mkProd (n, t, r.rew_car); *)
-      (* 		    rew_from = mkLambda(n, t, r.rew_from); *)
-      (* 		    rew_to = mkLambda (n, t, r.rew_to) }) *)
-      (* 	    | _ -> b') *)
 
       | Lambda (n, t, b) when flags.under_lambdas ->
         let n' = map_annot (Nameops.Name.map (fun id -> Tactics.fresh_id_in_env unfresh id env)) n in
@@ -1196,7 +1160,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
           | Success r ->
             let case = mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs) in
             let res = make_leibniz_proof env case ty r in
-              state, Success (coerce env unfresh (prop,cstr) res)
+              state, Success (coerce env (prop,cstr) res)
           | Fail | Identity ->
             if Array.for_all (Int.equal 0) ci.ci_cstr_ndecls then
               let evars', eqty = app_poly_sort prop env evars coq_eq [| ty |] in
@@ -1237,7 +1201,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
         in
         let res =
           match res with
-          | Success r -> Success (coerce env unfresh (prop,cstr) r)
+          | Success r -> Success (coerce env (prop,cstr) r)
           | Fail | Identity -> res
         in state, res
       | _ -> state, Fail
