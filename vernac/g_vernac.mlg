@@ -436,12 +436,12 @@ GRAMMAR EXTEND Gram
       | l = binders; ":="; b = lconstr -> { fun id ->
          match b.CAst.v with
          | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
-             (None,DefExpr(id,mkLambdaCN ~loc l b',Some (mkProdCN ~loc l t)))
+             (NoInstance,DefExpr(id,mkLambdaCN ~loc l b',Some (mkProdCN ~loc l t)))
          | _ ->
-             (None,DefExpr(id,mkLambdaCN ~loc l b,None)) } ] ]
+             (NoInstance,DefExpr(id,mkLambdaCN ~loc l b,None)) } ] ]
   ;
   record_binder:
-    [ [ id = name -> { (None,AssumExpr(id, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) }
+    [ [ id = name -> { (NoInstance,AssumExpr(id, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) }
       | id = name; f = record_binder_body -> { f id } ] ]
   ;
   assum_list:
@@ -452,13 +452,13 @@ GRAMMAR EXTEND Gram
   ;
   simple_assum_coe:
     [ [ idl = LIST1 ident_decl; oc = of_type_with_opt_coercion; c = lconstr ->
-        { (not (Option.is_empty oc),(idl,c)) } ] ]
+        { (oc <> NoInstance,(idl,c)) } ] ]
   ;
 
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
-                    { fun l id -> (not (Option.is_empty coe),(id,mkProdCN ~loc l c)) }
+                    { fun l id -> (coe <> NoInstance,(id,mkProdCN ~loc l c)) }
             |  ->
                  { fun l id -> (false,(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
          -> { t l }
@@ -469,9 +469,9 @@ GRAMMAR EXTEND Gram
     [ [ id = identref; c=constructor_type -> { c id } ] ]
   ;
   of_type_with_opt_coercion:
-    [ [   ":>" -> { Some () }
-        | ":"; ">" -> { Some () }
-        | ":" -> { None } ] ]
+    [ [   ":>" -> { BackInstance }
+        | ":"; ">" -> { BackInstance }
+        | ":" -> { NoInstance } ] ]
   ;
 END
 

@@ -776,7 +776,7 @@ let vernac_inductive ~atts kind indl =
       | _ -> CErrors.user_err Pp.(str "Definitional classes do not support the \"|\" syntax.")
     in
     let (coe, (lid, ce)) = l in
-    let coe' = if coe then Some () else None in
+    let coe' = if coe then BackInstance else NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce),
             { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
     vernac_record ~template udecl ~cumulative (Class true) ~poly finite [id, bl, c, None, [f]]
