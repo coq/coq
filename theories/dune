@@ -23,7 +23,7 @@
    coq.plugins.btauto
    coq.plugins.rtauto
 
-   coq.plugins.setoid_ring
+   coq.plugins.ring
    coq.plugins.nsatz
    coq.plugins.omega
 

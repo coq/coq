@@ -30,7 +30,7 @@ exec $OCAMLDEBUG \
     -I $COQTOP/plugins/interface  -I $COQTOP/plugins/micromega \
     -I $COQTOP/plugins/omega      -I $COQTOP/plugins/quote \
     -I $COQTOP/plugins/ring \
-    -I $COQTOP/plugins/rtauto     -I $COQTOP/plugins/setoid_ring \
+    -I $COQTOP/plugins/rtauto \
     -I $COQTOP/plugins/subtac     -I $COQTOP/plugins/syntax \
     -I $COQTOP/plugins/xml        -I $COQTOP/plugins/ltac \
     -I $COQTOP/ide \

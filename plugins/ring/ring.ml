@@ -28,7 +28,7 @@ open Libobject
 open Printer
 open Declare
 open Entries
-open Newring_ast
+open Ring_ast
 open Proofview.Notations
 
 let error msg = CErrors.user_err Pp.(str msg)
@@ -115,7 +115,7 @@ let closed_term args _ = match args with
 
 let closed_term_ast =
   let tacname = {
-    mltac_plugin = "newring_plugin";
+    mltac_plugin = "ring_plugin";
     mltac_tactic = "closed_term";
   } in
   let () = Tacenv.register_ml_tactic tacname [|closed_term|] in
@@ -178,7 +178,7 @@ let tactic_res = ref [||]
 
 let get_res =
   let open Tacexpr in
-  let name = { mltac_plugin = "newring_plugin"; mltac_tactic = "get_res"; } in
+  let name = { mltac_plugin = "ring_plugin"; mltac_tactic = "get_res"; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let tac args ist =
     let n = Tacinterp.Value.cast (Genarg.topwit Stdarg.wit_int) (List.hd args) in
@@ -212,7 +212,7 @@ let exec_tactic env evd n f args =
 let gen_constant n = lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref n)))
 let gen_reference n = lazy (Coqlib.lib_ref n)
 
-let coq_mk_Setoid = gen_constant "plugins.setoid_ring.Build_Setoid_Theory"
+let coq_mk_Setoid = gen_constant "plugins.ring.Build_Setoid_Theory"
 let coq_None = gen_reference "core.option.None"
 let coq_Some = gen_reference "core.option.Some"
 let coq_eq = gen_constant "core.eq.type"
@@ -265,7 +265,7 @@ let znew_ring_path =
 let zltac s =
   lazy(KerName.make (ModPath.MPfile znew_ring_path) (Label.make s))
 
-let mk_cst l s = lazy (Coqlib.coq_reference "newring" l s) [@@ocaml.warning "-3"]
+let mk_cst l s = lazy (Coqlib.coq_reference "ring" l s) [@@ocaml.warning "-3"]
 let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s
 
 (* Ring theory *)

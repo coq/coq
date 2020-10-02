@@ -160,7 +160,7 @@
 /plugins/nsatz/        @coq/nsatz-maintainers
 /theories/nsatz/       @coq/nsatz-maintainers
 
-/plugins/setoid_ring/  @coq/ring-maintainers
+/plugins/ring/  @coq/ring-maintainers
 /theories/setoid_ring/ @coq/ring-maintainers
 
 /plugins/ssrmatching/  @coq/ssreflect-maintainers

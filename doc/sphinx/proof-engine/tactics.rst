@@ -4726,7 +4726,7 @@ Automating
 
 .. seealso::
 
-   File plugins/setoid_ring/RealField.v for an example of instantiation,
+   File plugins/ring/RealField.v for an example of instantiation,
    theory theories/Reals for many examples of use of field.
 
 Non-logical tactics

@@ -387,8 +387,8 @@ The syntax for adding a new ring is
       interpretation via ``Cp_phi`` (the evaluation function of power
       coefficient) is the original term, or returns ``InitialRing.NotConstant``
       if not a constant coefficient (i.e. |L_tac| is the inverse function of
-      ``Cp_phi``). See files ``plugins/setoid_ring/ZArithRing.v``
-      and ``plugins/setoid_ring/RealField.v`` for examples. By default the tactic
+      ``Cp_phi``). See files ``plugins/ring/ZArithRing.v``
+      and ``plugins/ring/RealField.v`` for examples. By default the tactic
       does not recognize power expressions as ring expressions.
 
    :n:`sign @one_term`
@@ -396,7 +396,7 @@ The syntax for adding a new ring is
       outputting its normal form, i.e writing ``x − y`` instead of ``x + (− y)``. The
       term :token:`term` is a proof that a given sign function indicates expressions
       that are signed (:token:`term` has to be a proof of ``Ring_theory.get_sign``). See
-      ``plugins/setoid_ring/InitialRing.v`` for examples of sign function.
+      ``plugins/ring/InitialRing.v`` for examples of sign function.
 
    :n:`div @one_term`
       allows :tacn:`ring` and :tacn:`ring_simplify` to use monomials with
@@ -405,7 +405,7 @@ The syntax for adding a new ring is
       euclidean division function (:n:`@one_term` has to be a proof of
       ``Ring_theory.div_theory``). For example, this function is called when
       trying to rewrite :math:`7x` by :math:`2x = z` to tell that :math:`7 = 3 \times 2 + 1`. See
-      ``plugins/setoid_ring/InitialRing.v`` for examples of div function.
+      ``plugins/ring/InitialRing.v`` for examples of div function.
 
    :n:`closed [ {+ @qualid } ]`
       to be documented
@@ -538,7 +538,7 @@ Dealing with fields
    The tactic must be loaded by ``Require Import Field``. New field
    structures can be declared to the system with the ``Add Field`` command
    (see below). The field of real numbers is defined in module ``RealField``
-   (in ``plugins/setoid_ring``). It is exported by module ``Rbase``, so
+   (in ``plugins/ring``). It is exported by module ``Rbase``, so
    that requiring ``Rbase`` or ``Reals`` is enough to use the field tactics on
    real numbers. Rational numbers in canonical form are also declared as
    a field in the module ``Qcanon``.

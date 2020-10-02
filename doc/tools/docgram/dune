@@ -24,7 +24,7 @@
    (glob_files %{project_root}/plugins/nsatz/*.mlg)
    (glob_files %{project_root}/plugins/omega/*.mlg)
    (glob_files %{project_root}/plugins/rtauto/*.mlg)
-   (glob_files %{project_root}/plugins/setoid_ring/*.mlg)
+   (glob_files %{project_root}/plugins/ring/*.mlg)
    (glob_files %{project_root}/plugins/syntax/*.mlg)
    (glob_files %{project_root}/user-contrib/Ltac2/*.mlg)
    ; Sphinx files
