@@ -181,7 +181,7 @@ end) = struct
     fun env sigma -> class_info env sigma (Lazy.force r)
 
   let proper_proj env sigma =
-    mkConst (Option.get (pi3 (List.hd (proper_class env sigma).cl_projs)))
+    mkConst (Option.get (List.hd (proper_class env sigma).cl_projs).meth_const)
 
   let proper_type env (sigma,cstrs) =
     let l = (proper_class env sigma).cl_impl in

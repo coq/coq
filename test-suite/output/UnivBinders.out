@@ -67,9 +67,9 @@ mono
 The command has indeed failed with message:
 Universe u already exists.
 bobmorane = 
-let tt := Type@{UnivBinders.33} in
-let ff := Type@{UnivBinders.35} in tt -> ff
-     : Type@{max(UnivBinders.32,UnivBinders.34)}
+let tt := Type@{UnivBinders.32} in
+let ff := Type@{UnivBinders.34} in tt -> ff
+     : Type@{max(UnivBinders.31,UnivBinders.33)}
 The command has indeed failed with message:
 Universe u already bound.
 foo@{E M N} = 

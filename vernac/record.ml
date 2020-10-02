@@ -557,10 +557,15 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
       Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd fieldimpls);
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
       let sub = match List.hd coers with
-        | Some b -> Some ((if b then Backward else Forward), List.hd priorities)
+        | Some () -> Some (List.hd priorities)
         | None -> None
       in
-      [cref, [Name proj_name, sub, Some proj_cst]]
+      let m = {
+        meth_name = Name proj_name;
+        meth_info = sub;
+        meth_const = Some proj_cst;
+      } in
+      [cref, [m]]
     | _ ->
       let record_data = [id, idbuild, univ, arity, fieldimpls, fields, false,
                          List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields] in
@@ -568,14 +573,17 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
         params template ~kind:Decls.Method ~name:[|binder_name|] record_data
       in
        let coers = List.map2 (fun coe pri ->
-                              Option.map (fun b ->
-                              if b then Backward, pri else Forward, pri) coe)
+                              Option.map (fun () -> pri) coe)
           coers priorities
        in
       let map ind =
-        let l = List.map3 (fun decl b y -> RelDecl.get_name decl, b, y)
-          (List.rev fields) coers (Recordops.lookup_projections ind)
-        in GlobRef.IndRef ind, l
+        let map decl b y = {
+          meth_name = RelDecl.get_name decl;
+          meth_info = b;
+          meth_const = y;
+        } in
+        let l = List.map3 map (List.rev fields) coers (Recordops.lookup_projections ind) in
+        GlobRef.IndRef ind, l
       in
       List.map map inds
   in

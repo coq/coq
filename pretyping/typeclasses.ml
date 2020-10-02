@@ -11,7 +11,6 @@
 (*i*)
 open Names
 open Globnames
-open Term
 open Constr
 open Vars
 open Evd
@@ -42,7 +41,11 @@ let get_solve_one_instance, solve_one_instance_hook = Hook.make ()
 let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm t =
   Hook.get get_solve_one_instance env evm t unique
 
-type direction = Forward | Backward
+type class_method = {
+  meth_name : Name.t;
+  meth_info : hint_info option;
+  meth_const : Constant.t option;
+}
 
 (* This module defines type-classes *)
 type typeclass = {
@@ -59,8 +62,7 @@ type typeclass = {
   cl_props : Constr.rel_context;
 
   (* The method implementations as projections. *)
-  cl_projs : (Name.t * (direction * hint_info) option
-              * Constant.t option) list;
+  cl_projs : class_method list;
 
   cl_strict : bool;
 
@@ -155,66 +157,6 @@ let load_class cl =
   classes := GlobRef.Map.add cl.cl_impl cl !classes
 
 (** Build the subinstances hints. *)
-
-let check_instance env sigma c =
-  try
-    let (evd, c) = resolve_one_typeclass env sigma
-      (Retyping.get_type_of env sigma c) in
-      not (Evd.has_undefined evd)
-  with e when CErrors.noncritical e -> false
-
-let build_subclasses ~check env sigma glob { hint_priority = pri } =
-  let _id = Nametab.basename_of_global glob in
-  let _next_id =
-    let i = ref (-1) in
-      (fun () -> incr i;
-        Nameops.add_suffix _id ("_subinstance_" ^ string_of_int !i))
-  in
-  let ty, ctx = Typeops.type_of_global_in_context env glob in
-  let inst, ctx = UnivGen.fresh_instance_from ctx None in
-  let ty = Vars.subst_instance_constr inst ty in
-  let ty = EConstr.of_constr ty in
-  let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
-  let rec aux pri c ty path =
-      match class_of_constr env sigma ty with
-      | None -> []
-      | Some (rels, ((tc,u), args)) ->
-        let instapp =
-          Reductionops.whd_beta env sigma (EConstr.of_constr (appvectc c (Context.Rel.to_extended_vect mkRel 0 rels)))
-        in
-        let instapp = EConstr.Unsafe.to_constr instapp in
-        let projargs = Array.of_list (args @ [instapp]) in
-        let projs = List.map_filter
-          (fun (n, b, proj) ->
-           match b with
-           | None -> None
-           | Some (Backward, _) -> None
-           | Some (Forward, info) ->
-             let proj = Option.get proj in
-             let rels = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) rels in
-             let u = EConstr.EInstance.kind sigma u in
-             let body = it_mkLambda_or_LetIn (mkApp (mkConstU (proj,u), projargs)) rels in
-               if check && check_instance env sigma (EConstr.of_constr body) then None
-               else
-                 let newpri =
-                   match pri, info.hint_priority with
-                   | Some p, Some p' -> Some (p + p')
-                   | Some p, None -> Some (p + 1)
-                   | _, _ -> None
-                 in
-                   Some (GlobRef.ConstRef proj, { info with hint_priority = newpri }, body)) tc.cl_projs
-        in
-        let declare_proj hints (cref, info, body) =
-          let path' = cref :: path in
-          let ty = Retyping.get_type_of env sigma (EConstr.of_constr body) in
-          let rest = aux pri body ty path' in
-            hints @ (path', info, body) :: rest
-        in List.fold_left declare_proj [] projs
-  in
-  let term = Constr.mkRef (glob, inst) in
-    (*FIXME subclasses should now get substituted for each particular instance of
-      the polymorphic superclass *)
-    aux pri term ty [glob]
 
 (*
  * interface functions

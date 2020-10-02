@@ -504,8 +504,7 @@ let pr_intarg n = spc () ++ int n
 
 let pr_oc = function
   | None -> str" :"
-  | Some true -> str" :>"
-  | Some false -> str" :>>"
+  | Some () -> str" :>"
 
 let pr_record_field (x, { rf_subclass = oc ; rf_priority = pri ; rf_notation = ntn }) =
   let prx = match x with
