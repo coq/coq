@@ -57,7 +57,7 @@ let is_local_for_hint i =
 
 let add_instance_base inst =
   let locality = if is_local_for_hint inst then Goptions.OptLocal else Goptions.OptGlobal in
-  add_instance_hint (Hints.IsGlobRef inst.is_impl) [inst.is_impl] ~locality
+  add_instance_hint (Hints.hint_globref inst.is_impl) [inst.is_impl] ~locality
     inst.is_info
 
 let mk_instance cl info glob impl =

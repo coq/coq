@@ -1347,6 +1347,8 @@ let add_hints ~locality dbnames h =
   | HintsExternEntry (info, tacexp) ->
       add_externs info tacexp ~local ~superglobal dbnames
 
+let hint_globref gr = IsGlobRef gr
+
 let hint_constr env sigma ~poly c =
   let c, diff = prepare_hint true env sigma c in
   let diff, uctx =

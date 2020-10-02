@@ -167,9 +167,7 @@ type hint_db = Hint_db.t
 
 type hnf = bool
 
-type hint_term =
-  | IsGlobRef of GlobRef.t
-  | IsConstr of constr * Univ.ContextSet.t option [@ocaml.deprecated "Declare a hint constant instead"]
+type hint_term
 
 type hints_entry =
   | HintsResolveEntry of (hint_info * hnf * hints_path_atom * hint_term) list
@@ -198,6 +196,8 @@ val current_db_names : unit -> String.Set.t
 val current_pure_db : unit -> hint_db list
 
 val add_hints : locality:Goptions.option_locality -> hint_db_name list -> hints_entry -> unit
+
+val hint_globref : GlobRef.t -> hint_term
 
 val hint_constr :
   env -> evar_map -> poly:bool -> evar_map * constr -> hint_term * Univ.ContextSet.t
