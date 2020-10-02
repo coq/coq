@@ -257,6 +257,15 @@ let check_prim_op = function
   | Arraydefault | Arraycopy | Arraylength ->
       opCHECKCAMLCALL1
 
+let inplace_prim_op = function
+  | Float64next_up | Float64next_down -> true
+  | _ -> false
+
+let check_prim_op_inplace = function
+  | Float64next_up   -> opCHECKNEXTUPFLOATINPLACE
+  | Float64next_down -> opCHECKNEXTDOWNFLOATINPLACE
+  | _ -> assert false
+
 let emit_instr env = function
   | Klabel lbl -> define_label env lbl
   | Kacc n ->
@@ -392,6 +401,12 @@ let rec emit env insns remaining = match insns with
       out env opRETURN; out_int env n; emit env c remaining
   | Ksequence c1 :: c ->
       emit env c1 (c :: remaining)
+  | Kprim (op1, (q1, _)) :: Kprim (op2, (q2, _)) :: c when inplace_prim_op op2 ->
+      out env (check_prim_op op1);
+      slot_for_getglobal env q1;
+      out env (check_prim_op_inplace op2);
+      slot_for_getglobal env q2;
+      emit env c remaining
   (* Default case *)
   | instr :: c ->
       emit_instr env instr; emit env c remaining
