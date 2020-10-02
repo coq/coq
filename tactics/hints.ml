@@ -1347,6 +1347,14 @@ let add_hints ~locality dbnames h =
   | HintsExternEntry (info, tacexp) ->
       add_externs info tacexp ~local ~superglobal dbnames
 
+let hint_constr env sigma ~poly c =
+  let c, diff = prepare_hint true env sigma c in
+  let diff, uctx =
+    if poly then Some diff, Univ.ContextSet.empty
+    else None, diff
+  in
+  IsConstr (c, diff), uctx
+
 let expand_constructor_hints env sigma lems =
   List.map_append (fun (evd,lem) ->
     match EConstr.kind sigma lem with

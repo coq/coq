@@ -85,14 +85,12 @@ let interp_hints ~poly h =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let f poly c =
-    let evd, c = Constrintern.interp_open_constr env sigma c in
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    let c, diff = Hints.prepare_hint true env sigma (evd, c) in
-    if poly then (Hints.IsConstr (c, Some diff) [@ocaml.warning "-3"])
-    else
-      let () = DeclareUctx.declare_universe_context ~poly:false diff in
-      (Hints.IsConstr (c, None) [@ocaml.warning "-3"])
+    let evd, c = Constrintern.interp_open_constr env sigma c in
+    let h, diff = Hints.hint_constr env sigma ~poly (evd, c) in
+    let () = DeclareUctx.declare_universe_context ~poly:false diff [@ocaml.warning "-3"] in
+    h
   in
   let fref r =
     let gr = Smartlocate.global_with_alias r in

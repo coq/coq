@@ -199,8 +199,9 @@ val current_pure_db : unit -> hint_db list
 
 val add_hints : locality:Goptions.option_locality -> hint_db_name list -> hints_entry -> unit
 
-val prepare_hint : bool (* Check no remaining evars *) ->
-  env -> evar_map -> evar_map * constr -> (constr * Univ.ContextSet.t)
+val hint_constr :
+  env -> evar_map -> poly:bool -> evar_map * constr -> hint_term * Univ.ContextSet.t
+  [@ocaml.deprecated "Declare a hint constant instead"]
 
 (** A constr which is Hint'ed will be:
    - (1) used as an Exact, if it does not start with a product
