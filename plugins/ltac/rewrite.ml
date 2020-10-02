@@ -1120,6 +1120,10 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 
       | Lambda (n, t, b) when flags.under_lambdas ->
         let n' = map_annot (Nameops.Name.map (fun id -> Tactics.fresh_id_in_env unfresh id env)) n in
+        let unfresh = match n'.binder_name with
+          | Anonymous -> unfresh
+          | Name id -> Id.Set.add id unfresh
+        in
         let open Context.Rel.Declaration in
         let env' = EConstr.push_rel (LocalAssum (n', t)) env in
         let bty = Retyping.get_type_of env' (goalevars evars) b in
