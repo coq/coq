@@ -542,11 +542,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
       |None, Success i' -> switch (evar_conv_x flags env i' pbty) termF termO
       |_, (UnifFailure _ as x) -> x
       |Some _, _ -> UnifFailure (evd,NotSameArgSize) in
-  let eta env evd onleft sk term sk' term' =
-    assert (match sk with [] -> true | _ -> false);
+  let eta_lambda env evd onleft term (term',sk') =
+    (* Reduces an equation [env |- <(fun na:c1 => c'1)|empty> = <term'|sk'>] to
+       [env, na:c1 |- c'1 = sk'[term'] (with some additional reduction) *)
     let (na,c1,c'1) = destLambda evd term in
-    let c = nf_evar evd c1 in
-    let env' = push_rel (RelDecl.LocalAssum (na,c)) env in
+    let env' = push_rel (RelDecl.LocalAssum (na,c1)) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
       flags.open_ts env' evd (c'1, Stack.empty) in
     let out2 = whd_nored_state env' evd
@@ -675,8 +675,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     let eta evd =
       match EConstr.kind evd termR with
       | Lambda _ when (* if ever problem is ill-typed: *) List.is_empty skR ->
-         eta env evd false skR termR skF termF
-      | Construct u -> eta_constructor flags env evd skR u skF termF
+         eta_lambda env evd false termR apprF
+      | Construct u -> eta_constructor flags env evd u skR apprF
       | _ -> UnifFailure (evd,NotSameHead)
     in
     match Stack.list_of_app_stack skF with
@@ -762,7 +762,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
          else
            (* We could instead try Miller unification, then
               postpone to see if other equations help, as in:
-              [Check fun a b c : unit => (eqᵣefl : _ a b = _ c a b)] *)
+              [Check fun a b c : unit => (eq_refl : _ a b = _ c a b)] *)
            UnifFailure (i,NotSameArgSize)
     | _, _ -> anomaly (Pp.str "Unexpected result from ise_stack2.")
   in
@@ -974,10 +974,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
     (* Eta-expansion *)
     | Rigid, _ when isLambda evd term1 && (* if ever ill-typed: *) List.is_empty sk1 ->
-        eta env evd true sk1 term1 sk2 term2
+        eta_lambda env evd true term1 (term2,sk2)
 
     | _, Rigid when isLambda evd term2 && (* if ever ill-typed: *) List.is_empty sk2 ->
-        eta env evd false sk2 term2 sk1 term1
+        eta_lambda env evd false term2 (term1,sk1)
 
     | Rigid, Rigid -> begin
         match EConstr.kind evd term1, EConstr.kind evd term2 with
@@ -1031,10 +1031,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           else UnifFailure (evd,NotSameHead)
 
         | Construct u, _ ->
-          eta_constructor flags env evd sk1 u sk2 term2
+          eta_constructor flags env evd u sk1 (term2,sk2)
 
         | _, Construct u ->
-          eta_constructor flags env evd sk2 u sk1 term1
+          eta_constructor flags env evd u sk2 (term1,sk1)
 
         | Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
           if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
@@ -1129,7 +1129,9 @@ and conv_record flags env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk
          (fst (decompose_app_vect i (substl ks h))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
-and eta_constructor flags env evd sk1 ((ind, i), u) sk2 term2 =
+and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
+  (* reduces an equation <Construct(ind,i)|sk1> == <term2|sk2> to the
+     equations [arg_i = Proj_i (sk2[term2])] where [sk1] is [params args] *)
   let open Declarations in
   let mib = lookup_mind (fst ind) env in
     match get_projections env ind with
