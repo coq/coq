@@ -194,6 +194,7 @@ sig
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
   val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
+  val decomp_rev : 'a t -> ('a * 'a t) option
   val compare_shape : 'a t -> 'a t -> bool
   val map : ('a -> 'a) -> 'a t -> 'a t
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
@@ -267,12 +268,10 @@ struct
     let le = Array.length v in
     if Int.equal le 0 then s else App (0,v,pred le) :: s
 
-  let decomp_node (i,l,j) sk =
-    if i < j then (l.(i), App (succ i,l,j) :: sk)
-    else (l.(i), sk)
-
-  let decomp = function
-    | App node::s -> Some (decomp_node node s)
+  let decomp_rev = function
+    | App (i,l,j) :: sk ->
+      if i < j then Some (l.(j), App (i,l,pred j) :: sk)
+      else Some (l.(j), sk)
     | _ -> None
 
   let decomp_node_last (i,l,j) sk =
@@ -356,6 +355,11 @@ struct
             if j > p then App(succ p,a,j)::s else s)
       | s -> None
     in aux n [] s
+
+  let decomp s =
+    match strip_n_app 0 s with
+    | Some (_,a,s) -> Some (a,s)
+    | None -> None
 
   let not_purely_applicative args =
     List.exists (function (Fix _ | Case _ | Proj _ ) -> true

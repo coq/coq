@@ -355,14 +355,13 @@ let rec ise_inst2 evd f l1 l2 = match l1, l2 with
 
 (* Applicative node of stack are read from the outermost to the innermost
    but are unified the other way. *)
-let rec ise_app_stack2 env f evd sk1 sk2 =
-  match sk1,sk2 with
-  | Stack.App node1 :: q1, Stack.App node2 :: q2 ->
-     let (t1,l1) = Stack.decomp_node_last node1 q1 in
-     let (t2,l2) = Stack.decomp_node_last node2 q2 in
-     begin match ise_app_stack2 env f evd l1 l2 with
-           |(_,UnifFailure _) as x -> x
-           |x,Success i' -> x,f env i' CONV t1 t2
+let rec ise_app_rev_stack2 env f evd sk1 sk2 =
+  match Stack.decomp_rev sk1, Stack.decomp_rev sk2 with
+  | Some (t1,l1), Some (t2,l2) ->
+     begin
+       match ise_app_rev_stack2 env f evd l1 l2 with
+       | (_, UnifFailure _) as x -> x
+       | x, Success i' -> x, f env i' CONV t1 t2
      end
   | _, _ -> (sk1,sk2), Success evd
 
@@ -399,7 +398,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
       else fail (UnifFailure (i,NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
        if no_app && deep then fail ((*dummy*)UnifFailure(i,NotSameHead)) else
-         begin match ise_app_stack2 env f i sk1 sk2 with
+         begin match ise_app_rev_stack2 env f i sk1 sk2 with
                |_,(UnifFailure _ as x) -> fail x
                |(l1, l2), Success i' -> ise_stack2 true i' l1 l2
          end
@@ -430,7 +429,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
        then ise_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
-         begin match ise_app_stack2 env f i sk1 sk2 with
+         begin match ise_app_rev_stack2 env f i sk1 sk2 with
                |_,(UnifFailure _ as x) -> x
                |(l1, l2), Success i' -> ise_stack2 i' l1 l2
          end

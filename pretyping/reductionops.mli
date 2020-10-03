@@ -73,6 +73,7 @@ module Stack : sig
   val decomp : 'a t -> ('a * 'a t) option
 
   val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
+  [@@ocaml.deprecated "Use decomp_rev"]
 
   val compare_shape : 'a t -> 'a t -> bool
 
@@ -92,6 +93,9 @@ module Stack : sig
 
   (** @return (the nth first elements, the (n+1)th element, the remaining stack)  *)
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
+
+  (** [decomp sk] extracts the first argument of reversed stack [sk] is there is some *)
+  val decomp_rev : 'a t -> ('a * 'a t) option
 
   val not_purely_applicative : 'a t -> bool
   val list_of_app_stack : constr t -> constr list option
