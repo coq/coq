@@ -31,18 +31,6 @@ type argument = Genarg.ArgT.any Extend.user_symbol
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
-let coincide s pat off =
-  let len = String.length pat in
-  let break = ref true in
-  let i = ref 0 in
-  while !break && !i < len do
-    let c = Char.code s.[off + !i] in
-    let d = Char.code pat.[!i] in
-    break := Int.equal c d;
-    incr i
-  done;
-  !break
-
 let atactic n =
   if n = 5 then Pcoq.Symbol.nterm Pltac.binder_tactic
   else Pcoq.Symbol.nterml Pltac.tactic_expr (string_of_int n)
@@ -70,28 +58,37 @@ let check_separator ?loc = function
 | Some _ -> user_err ?loc (str "Separator is only for arguments with suffix _list_sep.")
 
 let rec parse_user_entry ?loc s sep =
-  let l = String.length s in
-  if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
-    let entry = parse_user_entry ?loc (String.sub s 3 (l-8)) None in
+  let open CString in
+  let matches pre suf s =
+    String.length s > (String.length pre + String.length suf) &&
+      is_prefix pre s && is_suffix suf s
+  in
+  let basename pre suf s =
+    let plen = String.length pre in
+    String.sub s plen (String.length s - (plen + String.length suf))
+  in
+  let tactic_len = String.length "tactic" in
+  if matches "ne_" "_list" s then
+    let entry = parse_user_entry ?loc (basename "ne_" "_list" s) None in
     check_separator ?loc sep;
     Ulist1 entry
-  else if l > 12 && coincide s "ne_" 0 &&
-                   coincide s "_list_sep" (l-9) then
-    let entry = parse_user_entry ?loc (String.sub s 3 (l-12)) None in
+  else if matches "ne_" "_list_sep" s then
+    let entry = parse_user_entry ?loc (basename "ne_" "_list_sep" s) None in
     Ulist1sep (entry, get_separator sep)
-  else if l > 5 && coincide s "_list" (l-5) then
-    let entry = parse_user_entry ?loc (String.sub s 0 (l-5)) None in
+  else if matches "" "_list" s then
+    let entry = parse_user_entry ?loc (basename "" "_list" s) None in
     check_separator ?loc sep;
     Ulist0 entry
-  else if l > 9 && coincide s "_list_sep" (l-9) then
-    let entry = parse_user_entry ?loc (String.sub s 0 (l-9)) None in
+  else if matches "" "_list_sep" s then
+    let entry = parse_user_entry ?loc (basename "" "_list_sep" s) None in
     Ulist0sep (entry, get_separator sep)
-  else if l > 4 && coincide s "_opt" (l-4) then
-    let entry = parse_user_entry ?loc (String.sub s 0 (l-4)) None in
+  else if matches "" "_opt" s then
+    let entry = parse_user_entry ?loc (basename "" "_opt" s) None in
     check_separator ?loc sep;
     Uopt entry
-  else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
-    let n = Char.code s.[6] - 48 in
+  else if String.length s = tactic_len + 1 && is_prefix "tactic" s
+      && '5' >= s.[tactic_len] && s.[tactic_len] >= '0' then
+    let n = Char.code s.[tactic_len] - Char.code '0' in
     check_separator ?loc sep;
     Uentryl ("tactic", n)
   else
@@ -159,7 +156,7 @@ let rec prod_item_of_symbol lev = function
   EntryName (Rawwit wit, Pcoq.Symbol.nterm (genarg_grammar wit))
 | Extend.Uentryl (s, n) ->
   let ArgT.Any tag = s in
-  assert (coincide (ArgT.repr tag) "tactic" 0);
+  assert (CString.is_suffix "tactic" (ArgT.repr tag));
   get_tacentry n lev
 
 (** Tactic grammar extensions *)
