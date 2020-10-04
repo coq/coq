@@ -591,8 +591,8 @@ let alias_distinct l =
   check (Int.Set.empty, Id.Set.empty) l
 
 let get_actual_deps env evd aliases l t =
-  if occur_meta_or_existential evd t then
-    (* Probably no restrictions on allowed vars in presence of evars *)
+  if occur_meta evd t then
+    (* The instance of a meta can virtually contains any variable of the context *)
     l
   else
     (* Probably strong restrictions coming from t being evar-closed *)
