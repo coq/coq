@@ -52,7 +52,7 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
 
 let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = match goals with
   | [] -> assert false
-  | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: rem_goals ->
+  | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; Interface.goal_id = cur_id } :: rem_goals ->
       let on_hover sel_start sel_stop =
         proof#buffer#remove_tag
           ~start:proof#buffer#start_iter
@@ -68,11 +68,11 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
       let head_str = Printf.sprintf
         "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "s" else "")
       in
-      let goal_str ?(shownum=false) index total =
-        if shownum then Printf.sprintf
-                          "______________________________________(%d/%d)\n" index total
-        else Printf.sprintf
-               "______________________________________\n"
+      let goal_str ?(shownum=false) index total id =
+        let annot =
+          if CString.is_empty id then if shownum then Printf.sprintf "(%d/%d)" index total else ""
+          else Printf.sprintf "(?%s)" id in
+        Printf.sprintf "______________________________________%s\n" annot
       in
       (* Insert current goal and its hypotheses *)
       let hyps_hints, goal_hints = match hints with
@@ -103,13 +103,13 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
           [tag]
           else []
         in
-        proof#buffer#insert (goal_str ~shownum:true 1 goals_cnt);
+        proof#buffer#insert (goal_str ~shownum:true 1 goals_cnt cur_id);
         insert_xml ~tags:[Tags.Proof.goal] proof#buffer (Richpp.richpp_of_pp width cur_goal);
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
-      let fold_goal ?(shownum=false) i _ { Interface.goal_ccl = g } =
-        proof#buffer#insert (goal_str ~shownum i goals_cnt);
+      let fold_goal ?(shownum=false) i _ { Interface.goal_ccl = g; Interface.goal_id = id } =
+        proof#buffer#insert (goal_str ~shownum i goals_cnt id);
         insert_xml proof#buffer (Richpp.richpp_of_pp width g);
         proof#buffer#insert "\n"
       in
@@ -178,12 +178,16 @@ let display mode (view : #GText.view_skel) goals hints evars =
     | _, _, _, _ ->
       (* No foreground proofs, but still unfocused ones *)
       let total = List.length bg in
-      let goal_str index = Printf.sprintf
-        "______________________________________(%d/%d)\n" index total
+      let goal_str index id =
+        let annot =
+          if CString.is_empty id then Printf.sprintf "(%d/%d)" index total
+          else Printf.sprintf "(?%s)" id in
+        Printf.sprintf
+               "______________________________________%s\n" annot
       in
       view#buffer#insert "This subproof is complete, but there are some unfocused goals:\n\n";
       let iter i goal =
-        let () = view#buffer#insert (goal_str (succ i)) in
+        let () = view#buffer#insert (goal_str (succ i) goal.Interface.goal_id) in
         insert_xml view#buffer (Richpp.richpp_of_pp width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
       in
