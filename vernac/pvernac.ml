@@ -10,7 +10,9 @@
 
 open Pcoq
 
-let uvernac = create_universe "vernac"
+[@@@ocaml.warning "-3"]
+let uvernac = create_universe "vernac" [@@deprecated "Deprecated in 8.13"]
+[@@@ocaml.warning "+3"]
 
 type proof_mode = string
 
@@ -35,20 +37,18 @@ let command_entry_ref = ref None
 
 module Vernac_ =
   struct
-    let gec_vernac s = Entry.create ("vernac:" ^ s)
-
     (* The different kinds of vernacular commands *)
-    let gallina = gec_vernac "gallina"
-    let gallina_ext = gec_vernac "gallina_ext"
-    let command = gec_vernac "command"
-    let syntax = gec_vernac "syntax_command"
-    let vernac_control = gec_vernac "Vernac.vernac_control"
-    let rec_definition = gec_vernac "Vernac.rec_definition"
-    let red_expr = new_entry utactic "red_expr"
-    let hint_info = gec_vernac "hint_info"
+    let gallina = Entry.create "gallina"
+    let gallina_ext = Entry.create "gallina_ext"
+    let command = Entry.create "command"
+    let syntax = Entry.create "syntax_command"
+    let vernac_control = Entry.create "Vernac.vernac_control"
+    let rec_definition = Entry.create "Vernac.rec_definition"
+    let red_expr = Entry.create "red_expr"
+    let hint_info = Entry.create "hint_info"
     (* Main vernac entry *)
     let main_entry = Entry.create "vernac"
-    let noedit_mode = gec_vernac "noedit_command"
+    let noedit_mode = Entry.create "noedit_command"
 
     let () =
       let act_vernac v loc = Some v in

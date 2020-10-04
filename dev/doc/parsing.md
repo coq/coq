@@ -73,7 +73,7 @@ very specific to Coq (not so similar to Camlp5):
   END
   ```
 
-  Global nonterminals are declared in `pcoq.ml`, e.g. `let bignat = Entry.create "Prim.bignat"`.
+  Global nonterminals are declared in `pcoq.ml`, e.g. `let bignat = Entry.create "bignat"`.
   All the `*.mlg` files include `open Pcoq` and often its modules, e.g. `open Pcoq.Prim`.
 
   `GRAMMAR EXTEND` should be used only for large syntax additions.  To add new commands

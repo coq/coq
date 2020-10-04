@@ -202,6 +202,7 @@ let parse_string f ?loc x =
   let strm = Stream.of_string x in
   Entry.parse f (Parsable.make ?loc strm)
 
+(* universes not used by Coq build but still used by some plugins *)
 type gram_universe = string
 
 let utables : (string, unit) Hashtbl.t =
@@ -211,20 +212,17 @@ let create_universe u =
   let () = Hashtbl.add utables u () in
   u
 
-let uprim   = create_universe "prim"
-let uconstr = create_universe "constr"
-let utactic = create_universe "tactic"
+let uprim   = create_universe "prim" [@@deprecated "Deprecated in 8.13"]
+let uconstr = create_universe "constr" [@@deprecated "Deprecated in 8.13"]
+let utactic = create_universe "tactic" [@@deprecated "Deprecated in 8.13"]
 
 let get_univ u =
   if Hashtbl.mem utables u then u
   else raise Not_found
 
-let new_entry u s =
-  let ename = u ^ ":" ^ s in
-  let e = Entry.make ename in
+let new_entry _ s =
+  let e = Entry.make s in
   e
-
-let make_gen_entry u s = new_entry u s
 
 module GrammarObj =
 struct
@@ -251,52 +249,54 @@ let genarg_grammar x =
   check_compatibility x;
   Grammar.obj x
 
-let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Entry.t =
-  let e = new_entry u s in
+let create_generic_entry2 (type a) s (etyp : a raw_abstract_argument_type) : a Entry.t =
+  let e = Entry.create s in
   let Rawwit t = etyp in
   let () = Grammar.register0 t e in
   e
+
+let create_generic_entry (type a) _ s (etyp : a raw_abstract_argument_type) : a Entry.t =
+  create_generic_entry2 s etyp
 
 (* Initial grammar entries *)
 
 module Prim =
   struct
-    let gec_gen n = make_gen_entry uprim n
 
     (* Entries that can be referred via the string -> Entry.t table *)
     (* Typically for tactic or vernac extensions *)
-    let preident = gec_gen "preident"
-    let ident = gec_gen "ident"
-    let natural = gec_gen "natural"
-    let integer = gec_gen "integer"
-    let bignat = Entry.create "Prim.bignat"
-    let bigint = Entry.create "Prim.bigint"
-    let string = gec_gen "string"
-    let lstring = Entry.create "Prim.lstring"
-    let reference = make_gen_entry uprim "reference"
+    let preident = Entry.create "preident"
+    let ident = Entry.create "ident"
+    let natural = Entry.create "natural"
+    let integer = Entry.create "integer"
+    let bignat = Entry.create "bignat"
+    let bigint = Entry.create "bigint"
+    let string = Entry.create "string"
+    let lstring = Entry.create "lstring"
+    let reference = Entry.create "reference"
     let by_notation = Entry.create "by_notation"
     let smart_global = Entry.create "smart_global"
-    let strategy_level = gec_gen "strategy_level"
+    let strategy_level = Entry.create "strategy_level"
 
     (* parsed like ident but interpreted as a term *)
-    let var = gec_gen "var"
+    let var = Entry.create "var"
 
-    let name = Entry.create "Prim.name"
-    let identref = Entry.create "Prim.identref"
-    let univ_decl = Entry.create "Prim.univ_decl"
-    let ident_decl = Entry.create "Prim.ident_decl"
+    let name = Entry.create "name"
+    let identref = Entry.create "identref"
+    let univ_decl = Entry.create "univ_decl"
+    let ident_decl = Entry.create "ident_decl"
     let pattern_ident = Entry.create "pattern_ident"
     let pattern_identref = Entry.create "pattern_identref"
 
     (* A synonym of ident - maybe ident will be located one day *)
-    let base_ident = Entry.create "Prim.base_ident"
+    let base_ident = Entry.create "base_ident"
 
-    let qualid = Entry.create "Prim.qualid"
-    let fullyqualid = Entry.create "Prim.fullyqualid"
-    let dirpath = Entry.create "Prim.dirpath"
+    let qualid = Entry.create "qualid"
+    let fullyqualid = Entry.create "fullyqualid"
+    let dirpath = Entry.create "dirpath"
 
-    let ne_string = Entry.create "Prim.ne_string"
-    let ne_lstring = Entry.create "Prim.ne_lstring"
+    let ne_string = Entry.create "ne_string"
+    let ne_lstring = Entry.create "ne_lstring"
 
     let bar_cbrace = Entry.create "'|}'"
 
@@ -304,32 +304,31 @@ module Prim =
 
 module Constr =
   struct
-    let gec_constr = make_gen_entry uconstr
 
     (* Entries that can be referred via the string -> Entry.t table *)
-    let constr = gec_constr "constr"
-    let operconstr = gec_constr "operconstr"
+    let constr = Entry.create "constr"
+    let operconstr = Entry.create "operconstr"
     let constr_eoi = eoi_entry constr
-    let lconstr = gec_constr "lconstr"
-    let binder_constr = gec_constr "binder_constr"
-    let ident = make_gen_entry uconstr "ident"
-    let global = make_gen_entry uconstr "global"
-    let universe_name = make_gen_entry uconstr "universe_name"
-    let universe_level = make_gen_entry uconstr "universe_level"
-    let sort = make_gen_entry uconstr "sort"
-    let sort_family = make_gen_entry uconstr "sort_family"
-    let pattern = Entry.create "constr:pattern"
-    let constr_pattern = gec_constr "constr_pattern"
-    let lconstr_pattern = gec_constr "lconstr_pattern"
-    let closed_binder = Entry.create "constr:closed_binder"
-    let binder = Entry.create "constr:binder"
-    let binders = Entry.create "constr:binders"
-    let open_binders = Entry.create "constr:open_binders"
-    let binders_fixannot = Entry.create "constr:binders_fixannot"
-    let typeclass_constraint = Entry.create "constr:typeclass_constraint"
-    let record_declaration = Entry.create "constr:record_declaration"
-    let appl_arg = Entry.create "constr:appl_arg"
-    let type_cstr = Entry.create "constr:type_cstr"
+    let lconstr = Entry.create "lconstr"
+    let binder_constr = Entry.create "binder_constr"
+    let ident = Entry.create "ident"
+    let global = Entry.create "global"
+    let universe_name = Entry.create "universe_name"
+    let universe_level = Entry.create "universe_level"
+    let sort = Entry.create "sort"
+    let sort_family = Entry.create "sort_family"
+    let pattern = Entry.create "pattern"
+    let constr_pattern = Entry.create "constr_pattern"
+    let lconstr_pattern = Entry.create "lconstr_pattern"
+    let closed_binder = Entry.create "closed_binder"
+    let binder = Entry.create "binder"
+    let binders = Entry.create "binders"
+    let open_binders = Entry.create "open_binders"
+    let binders_fixannot = Entry.create "binders_fixannot"
+    let typeclass_constraint = Entry.create "typeclass_constraint"
+    let record_declaration = Entry.create "record_declaration"
+    let appl_arg = Entry.create "appl_arg"
+    let type_cstr = Entry.create "type_cstr"
   end
 
 module Module =

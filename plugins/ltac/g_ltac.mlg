@@ -48,14 +48,14 @@ let reference_to_id qid =
     CErrors.user_err ?loc:qid.CAst.loc
       (str "This expression should be a simple identifier.")
 
-let tactic_mode = Entry.create "vernac:tactic_command"
+let tactic_mode = Entry.create "tactic_command"
 
 let new_entry name =
   let e = Entry.create name in
   e
 
-let toplevel_selector = new_entry "vernac:toplevel_selector"
-let tacdef_body = new_entry "tactic:tacdef_body"
+let toplevel_selector = new_entry "toplevel_selector"
+let tacdef_body = new_entry "tacdef_body"
 
 (* Registers [tactic_mode] as a parser for proof editing *)
 let classic_proof_mode = Pvernac.register_proof_mode "Classic" tactic_mode

@@ -12,7 +12,9 @@ open Pcoq
 open Genredexpr
 open Vernacexpr
 
-val uvernac : gram_universe
+[@@@ocaml.warning "-3"]
+val uvernac : gram_universe [@@deprecated "Deprecated in 8.13"]
+[@@@ocaml.warning "+3"]
 
 type proof_mode
 

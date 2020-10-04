@@ -429,10 +429,6 @@ Displaying information about notations
    productions shown by `Print Grammar tactic` refer to nonterminals `tactic_then_locality`
    and `tactic_then_gen` which are not shown and can't be printed.
 
-   The prefixes `tactic:`, `prim:`, `constr:` appearing in the output are meant to identify
-   what part of the grammar a nonterminal is from.  If you examine nonterminal definitions
-   in the source code, they are identified only by the name following the colon.
-
    Most of the grammar in the documentation was updated in 8.12 to make it accurate and
    readable.  This was done using a new developer tool that extracts the grammar from the
    source code, edits it and inserts it into the documentation files.  While the
@@ -467,11 +463,11 @@ Displaying information about notations
    `tactic_expr`, designated as "5", "4" and "3".  Level 3 is right-associative,
    which applies to the productions within it, such as the `try` construct::
 
-     Entry tactic:tactic_expr is
+     Entry tactic_expr is
      [ "5" RIGHTA
-       [ tactic:binder_tactic ]
+       [ binder_tactic ]
      | "4" LEFTA
-       [ SELF; ";"; tactic:binder_tactic
+       [ SELF; ";"; binder_tactic
        | SELF; ";"; SELF
        | SELF; ";"; tactic_then_locality; tactic_then_gen; "]" ]
      | "3" RIGHTA

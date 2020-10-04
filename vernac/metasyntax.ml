@@ -85,7 +85,7 @@ let pr_grammar = function
       pr_entry Pvernac.Vernac_.gallina_ext
   | name -> pr_registered_grammar name
 
-let pr_custom_grammar name = pr_registered_grammar ("constr:"^name)
+let pr_custom_grammar name = pr_registered_grammar ("custom:"^name)
 
 (**********************************************************************)
 (* Parse a format (every terminal starting with a letter or a single
