@@ -199,9 +199,8 @@ val add_hints : locality:Goptions.option_locality -> hint_db_name list -> hints_
 
 val hint_globref : GlobRef.t -> hint_term
 
-val hint_constr :
-  env -> evar_map -> poly:bool -> evar_map * constr -> hint_term * Univ.ContextSet.t
-  [@ocaml.deprecated "Declare a hint constant instead"]
+val hint_constr : constr * Univ.ContextSet.t option -> hint_term
+[@ocaml.deprecated "Declare a hint constant instead"]
 
 (** A constr which is Hint'ed will be:
    - (1) used as an Exact, if it does not start with a product

@@ -101,10 +101,20 @@ let interp_hints ~poly h =
       let () = warn_deprecated_hint_constr () in
       let env = Global.env () in
       let sigma = Evd.from_env env in
-      let evd, c = Constrintern.interp_open_constr env sigma c in
-      let h, diff = Hints.hint_constr env sigma ~poly (evd, c) in
-      let () = DeclareUctx.declare_universe_context ~poly:false diff [@ocaml.warning "-3"] in
-      (PathAny, h)
+      let sigma, c = Constrintern.interp_open_constr env sigma c in
+      let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
+      let sigma, _ = Evd.nf_univ_variables sigma in
+      let c = Evarutil.nf_evar sigma c in
+      let c = Termops.drop_extra_implicit_args sigma c in
+      let () = Pretyping.check_evars env sigma c in
+      let diff = Evd.universe_context_set sigma in
+      let c =
+        if poly then (c, Some diff)
+        else
+          let () = DeclareUctx.declare_universe_context ~poly:false diff in
+          (c, None)
+      in
+      (PathAny, Hints.hint_constr c) [@ocaml.warning "-3"]
   in
   let fp = Constrintern.intern_constr_pattern env sigma in
   let fres (info, b, r) =

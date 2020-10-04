@@ -1349,13 +1349,7 @@ let add_hints ~locality dbnames h =
 
 let hint_globref gr = IsGlobRef gr
 
-let hint_constr env sigma ~poly c =
-  let c, diff = prepare_hint true env sigma c in
-  let diff, uctx =
-    if poly then Some diff, Univ.ContextSet.empty
-    else None, diff
-  in
-  IsConstr (c, diff), uctx
+let hint_constr (c, diff) = IsConstr (c, diff)
 
 let expand_constructor_hints env sigma lems =
   List.map_append (fun (evd,lem) ->
