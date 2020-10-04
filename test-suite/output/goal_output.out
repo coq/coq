@@ -2,7 +2,79 @@ Nat.t = nat
      : Set
 Nat.t = nat
      : Set
+2 subgoals
+  
+  ============================
+  True
+
+subgoal 2 is:
+ True
+2 subgoals, subgoal 1 (?Goal)
+  
+  ============================
+  True
+
+subgoal 2 (?Goal0) is:
+ True
 1 subgoal
   
   ============================
-  False
+  True
+1 subgoal (?Goal0)
+  
+  ============================
+  True
+1 subgoal (?Goal0)
+  
+  ============================
+  True
+
+*** Unfocused goals:
+
+subgoal 2 (?Goal1) is:
+ True
+subgoal 3 (?Goal) is:
+ True
+1 subgoal
+  
+  ============================
+  True
+
+*** Unfocused goals:
+
+subgoal 2 is:
+ True
+subgoal 3 is:
+ True
+This subproof is complete, but there are some unfocused goals.
+Focus next goal with bullet -.
+
+2 subgoals
+
+subgoal 1 is:
+ True
+subgoal 2 is:
+ True
+This subproof is complete, but there are some unfocused goals.
+Focus next goal with bullet -.
+
+2 subgoals
+
+subgoal 1 (?Goal0) is:
+ True
+subgoal 2 (?Goal) is:
+ True
+This subproof is complete, but there are some unfocused goals.
+Focus next goal with bullet -.
+
+1 subgoal
+
+subgoal 1 is:
+ True
+This subproof is complete, but there are some unfocused goals.
+Focus next goal with bullet -.
+
+1 subgoal
+
+subgoal 1 (?Goal) is:
+ True
