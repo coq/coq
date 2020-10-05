@@ -1213,12 +1213,21 @@ let default_occurrences_selection ?(allowed_evars=AllowedEvars.all) ts n =
   (default_occurrence_test ~allowed_evars ts,
    List.init n (fun _ -> default_occurrence_selection))
 
+let occur_evars sigma evs c =
+  if Evar.Set.is_empty evs then false
+  else
+    let rec occur_rec c = match EConstr.kind sigma c with
+      | Evar (sp,_) when Evar.Set.mem sp evs -> raise Occur
+      | _ -> EConstr.iter sigma occur_rec c
+    in
+    try occur_rec c; false with Occur -> true
+
 let apply_on_subterm env evd fixedref f test c t =
   let test = test env evd c in
   let prc env evd = Termops.Internal.print_constr_env env evd in
   let evdref = ref evd in
   let rec applyrec (env,(k,c) as acc) t =
-    if Evar.Set.exists (fun fixed -> occur_evar !evdref fixed t) !fixedref then
+    if occur_evars !evdref !fixedref t then
       match EConstr.kind !evdref t with
       | Evar (ev, args) when Evar.Set.mem ev !fixedref -> t
       | _ -> map_constr_with_binders_left_to_right !evdref
