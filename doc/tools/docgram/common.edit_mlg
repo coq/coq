@@ -615,7 +615,7 @@ of_type_with_opt_coercion: [
 ]
 
 of_type_with_opt_coercion: [
-| [ ":" | ":>" | ":>>" ] type
+| [ ":" | ":>" ] type
 ]
 
 attribute_value: [
