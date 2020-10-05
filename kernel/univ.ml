@@ -250,7 +250,7 @@ module LMap = struct
       ext empty
 
   let pr f m =
-    h 0 (prlist_with_sep fnl (fun (u, v) ->
+    h (prlist_with_sep fnl (fun (u, v) ->
       Level.pr u ++ f v) (bindings m))
 end
 
@@ -961,7 +961,7 @@ struct
 
   let pr prl ?variance (univs, cst as ctx) =
     if is_empty ctx then mt() else
-      h 0 (Instance.pr prl ?variance univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
+      h (Instance.pr prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraint.pr prl cst))
 
   let hcons (univs, cst) =
     (Instance.hcons univs, hcons_constraints cst)
@@ -1076,7 +1076,7 @@ struct
 
   let pr prl (univs, cst as ctx) =
     if is_empty ctx then mt() else
-      h 0 (LSet.pr prl univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
+      h (LSet.pr prl univs ++ str " |= ") ++ h (v 0 (Constraint.pr prl cst))
 
   let constraints (_univs, cst) = cst
   let levels (univs, _cst) = univs

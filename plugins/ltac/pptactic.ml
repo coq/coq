@@ -179,7 +179,7 @@ let string_of_genarg_arg (ArgumentType arg) =
     | ConstrTypeOf c ->
       hov 1 (keyword "type of" ++ spc() ++ prc env sigma c)
     | ConstrTerm c when test c ->
-      h 0 (str "(" ++ prc env sigma c ++ str ")")
+      h (str "(" ++ prc env sigma c ++ str ")")
     | ConstrTerm c ->
       prc env sigma c
 

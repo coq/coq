@@ -13,7 +13,7 @@ open Constrexpr
 (** {6 Pretty-print. } *)
 
 type ppbox =
-  | PpHB of int
+  | PpHB
   | PpHOVB of int
   | PpHVB of int
   | PpVB of int

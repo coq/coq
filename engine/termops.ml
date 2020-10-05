@@ -233,13 +233,13 @@ let pr_evar_universe_context ctx =
   if UState.is_empty ctx then mt ()
   else
     (str"UNIVERSES:"++brk(0,1)++
-       h 0 (Univ.pr_universe_context_set prl (UState.context_set ctx)) ++ fnl () ++
+       h (Univ.pr_universe_context_set prl (UState.context_set ctx)) ++ fnl () ++
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
-     h 0 (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
+     h (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++
-     h 0 (UnivSubst.pr_universe_opt_subst (UState.subst ctx)) ++ fnl() ++
+     h (UnivSubst.pr_universe_opt_subst (UState.subst ctx)) ++ fnl() ++
      str "WEAK CONSTRAINTS:"++brk(0,1)++
-     h 0 (UState.pr_weak prl ctx) ++ fnl ())
+     h (UState.pr_weak prl ctx) ++ fnl ())
 
 let print_env_short env sigma =
   let print_constr = print_kconstr in
@@ -316,14 +316,14 @@ let pr_evar_list env sigma l =
     | Some ev' -> str " (aliased to " ++ Evar.print ev' ++ str ")"
   in
   let pr (ev, evi) =
-    h 0 (Evar.print ev ++
+    h (Evar.print ev ++
       str "==" ++ pr_evar_info env sigma evi ++
       pr_alias ev ++
       (if evi.evar_body == Evar_empty
        then str " {" ++ pr_existential_key sigma ev ++ str "}"
        else mt ()))
   in
-  h 0 (prlist_with_sep fnl pr l)
+  hv 0 (prlist_with_sep fnl pr l)
 
 let to_list d =
   let open Evd in

@@ -106,14 +106,14 @@ let rec pp_instr i =
   | Kclosure(lbl, n) ->
       str "closure " ++ pp_lbl lbl ++ str ", " ++ int n
   | Kclosurerec(fv,init,lblt,lblb) ->
-      h 1 (str "closurerec " ++
+      hv 1 (str "closurerec " ++
              int fv ++ str ", " ++ int init ++
              str " types = " ++
              prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
              str " bodies = " ++
              prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kclosurecofix (fv,init,lblt,lblb) ->
-      h 1 (str "closurecofix " ++
+      hv 1 (str "closurecofix " ++
              int fv ++ str ", " ++ int init ++
              str " types = " ++
              prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
@@ -129,7 +129,7 @@ let rec pp_instr i =
       str "makeswitchblock " ++ pp_lbl lblt ++ str ", " ++
         pp_lbl lbls ++ str ", " ++ int sz
   | Kswitch(lblc,lblb) ->
-      h 1 (str "switch " ++
+      hv 1 (str "switch " ++
              prlist_with_sep spc pp_lbl (Array.to_list lblc) ++
              str " | " ++
              prlist_with_sep spc pp_lbl (Array.to_list lblb))

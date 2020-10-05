@@ -10,6 +10,13 @@
   git hook removed. If desired, automatic formatting can be achieved by calling
   the `fmt` target of the dune build system.
 
+### Pp library
+
+- `Pp.h` does not take a `int` argument anymore (the argument was
+  not used). In general, where `h n` for `n` non zero was used, `hv n`
+  was instead intended. If cancelling the breaking role of cuts in the
+  box was intended, turn `h n c` into `h c`.
+
 ## Changes between Coq 8.11 and Coq 8.12
 
 ### Code formatting

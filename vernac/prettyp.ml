@@ -216,7 +216,7 @@ let print_polymorphism ref =
       (if poly then str "universe polymorphic"
        else if template_poly then
          str "template universe polymorphic "
-         ++ h 0 (pr_template_variables template_variables)
+         ++ h (pr_template_variables template_variables)
        else str "not universe polymorphic") ]
 
 let print_type_in_type ref =

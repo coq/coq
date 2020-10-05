@@ -543,7 +543,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
         let open Pp in
         let pr c = Termops.Internal.print_constr_env env sigma c in
         Feedback.msg_debug
-             (h 0 (str "<<" ++ pr x ++
+               (h (str "<<" ++ pr x ++
                    str "|" ++ cut () ++ Cst_stack.pr env sigma cst_l ++
                    str "|" ++ cut () ++ Stack.pr pr stack ++
                    str ">>"))

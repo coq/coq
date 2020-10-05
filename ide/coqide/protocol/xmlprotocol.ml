@@ -103,14 +103,14 @@ let to_routeid = function
 let of_routeid i = Element ("route_id",["val",string_of_int i],[])
 
 let of_box (ppb : Pp.block_type) = let open Pp in match ppb with
-  | Pp_hbox   i -> constructor "ppbox" "hbox"   [of_int i]
+  | Pp_hbox     -> constructor "ppbox" "hbox"   []
   | Pp_vbox   i -> constructor "ppbox" "vbox"   [of_int i]
   | Pp_hvbox  i -> constructor "ppbox" "hvbox"  [of_int i]
   | Pp_hovbox i -> constructor "ppbox" "hovbox" [of_int i]
 
 let to_box = let open Pp in
   do_match "ppbox" (fun s args -> match s with
-      | "hbox"   -> Pp_hbox   (to_int (singleton args))
+      | "hbox"   -> empty args; Pp_hbox
       | "vbox"   -> Pp_vbox   (to_int (singleton args))
       | "hvbox"  -> Pp_hvbox  (to_int (singleton args))
       | "hovbox" -> Pp_hovbox (to_int (singleton args))

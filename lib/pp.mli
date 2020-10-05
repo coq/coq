@@ -43,7 +43,7 @@ type pp_tag = string
 type t
 
 type block_type =
-  | Pp_hbox   of int
+  | Pp_hbox
   | Pp_vbox   of int
   | Pp_hvbox  of int
   | Pp_hovbox of int
@@ -99,7 +99,7 @@ val strbrk : string -> t
 
 (** {6 Boxing commands} *)
 
-val h : int -> t -> t
+val h : t -> t
 val v : int -> t -> t
 val hv : int -> t -> t
 val hov : int -> t -> t

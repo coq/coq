@@ -17,7 +17,7 @@ open Constrexpr
 (*s Pretty-print. *)
 
 type ppbox =
-  | PpHB of int
+  | PpHB
   | PpHOVB of int
   | PpHVB of int
   | PpVB of int
@@ -27,7 +27,7 @@ type ppcut =
   | PpFnl
 
 let ppcmd_of_box = function
-  | PpHB n -> h n
+  | PpHB -> h
   | PpHOVB n -> hov n
   | PpHVB n -> hv n
   | PpVB n -> v n

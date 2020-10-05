@@ -831,7 +831,7 @@ let pr_constraints printenv env sigma evars cstrs =
         (fun (ev, evi) -> fnl () ++ pr_existential_key sigma ev ++
             str " : " ++ pr_leconstr_env env' sigma evi.evar_concl ++ fnl ()) l
       in
-      h 0 (pe ++ evs ++ pr_evar_constraints sigma cstrs)
+      h (pe ++ evs ++ pr_evar_constraints sigma cstrs)
     else
       let filter evk _ = Evar.Map.mem evk evars in
       pr_evar_map_filter ~with_univs:false filter env sigma
@@ -973,8 +973,8 @@ let explain_not_match_error = function
         (UContext.instance uctx)
         (UContext.constraints uctx)
     in
-    str "incompatible polymorphic binders: got" ++ spc () ++ h 0 (pr_auctx got) ++ spc() ++
-    str "but expected" ++ spc() ++ h 0 (pr_auctx expect) ++
+    str "incompatible polymorphic binders: got" ++ spc () ++ h (pr_auctx got) ++ spc() ++
+    str "but expected" ++ spc() ++ h (pr_auctx expect) ++
     (if not (Int.equal (AUContext.size got) (AUContext.size expect)) then mt() else
        fnl() ++ str "(incompatible constraints)")
   | IncompatibleVariance ->
