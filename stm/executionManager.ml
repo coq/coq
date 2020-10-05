@@ -93,7 +93,7 @@ let handle_event = function
   | ProofWorkerEvent event -> ProofWorker.handle_event event >>= inject_dm_events
   (*| TacticWorkerEvent event -> Declare.Proof.handle_event event >>= inject_pm_events*)
 
-let interp_ast vernac_st ast =
+let interp_ast ~doc_id ~state_id vernac_st ast =
     Feedback.set_id_for_feedback doc_id state_id;
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
     let result =
@@ -187,7 +187,7 @@ let id_of_prepared_task = function
   | PExec(id, _) -> id
   | PDelegate(id, _, _) -> id
 
-let rec worker_main st ((job , vs, _state_id) : job) =
+let rec worker_main ~doc_id st ((job , vs, _state_id) : job) =
   (* signalling progress is automtically done by the resolution of remote
      promises *)
   Lwt_list.fold_left_s (execute ~doc_id st) (vs,[],false) job >>= fun _ ->
@@ -204,17 +204,17 @@ and execute ~doc_id st (vs,events,interrupted) task =
           update st id (Success (Some vs));
           Lwt.return (vs,events,false)
       | PExec (id,ast) ->
-          interp_ast vs ast >>= fun (vs, v, ev) ->
+          interp_ast ~doc_id ~state_id:id vs ast >>= fun (vs, v, ev) ->
           update st id v;
           Lwt.return (vs,events @ ev,false)
       | PDelegate (id, mapping, job) ->
           Queue.enqueue (mapping,(job,vs,id));
           let ast = CAst.make @@ Vernacexpr.{ expr = VernacEndProof Admitted; attrs = []; control = [] } in
-          interp_ast vs ast >>= fun (vs, v, ev) ->
+          interp_ast ~doc_id ~state_id:id vs ast >>= fun (vs, v, ev) ->
           update st id v;
           let e =
             ProofWorker.worker_available ~job:Queue.dequeue
-              ~fork_action:(worker_main st) in
+              ~fork_action:(worker_main ~doc_id st) in
           Lwt.return (vs,events @ ev @ List.map inject_dm_event e ,false)
     with Sys.Break ->
       Lwt.return (vs,events,true)
@@ -365,9 +365,9 @@ let handle_feedback state_id contents st =
 module WorkerProcess = struct
   type options = ProofWorker.options
   let parse_options = ProofWorker.parse_options
-  let main ~st:initial_vernac_state options =
+  let main ~doc_id ~st:initial_vernac_state options =
     ProofWorker.setup_plumbing options >>= fun (mapping, link, job) ->
     init_worker initial_vernac_state mapping link >>= fun (remote_mapping,state) ->
     ProofWorker.new_process_worker remote_mapping link;
-    worker_main state job
+    worker_main ~doc_id state job
 end
