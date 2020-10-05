@@ -35,6 +35,11 @@ let singleton = function
   | l -> raise (Marshal_error
       ("singleton",PCData ("list of length " ^ string_of_int (List.length l))))
 
+let empty = function
+  | [] -> ()
+  | l -> raise (Marshal_error
+      ("empty",PCData ("list of length " ^ string_of_int (List.length l))))
+
 let raw_string = function
   | [] -> ""
   | [PCData s] -> s

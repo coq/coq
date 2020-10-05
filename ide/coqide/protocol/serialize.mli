@@ -16,6 +16,7 @@ val massoc: string -> (string * string) list -> string
 val constructor: string -> string -> xml list -> xml
 val do_match: string -> (string -> xml list -> 'b) -> xml -> 'b
 val singleton: 'a list -> 'a
+val empty: 'a list -> unit
 val raw_string: xml list -> string
 val of_unit: unit -> xml
 val to_unit: xml -> unit
