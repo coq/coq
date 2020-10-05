@@ -30,3 +30,43 @@ fun '{| U := T; a := a; q := p |} => (T, p, a)
      : M -> Type * True * nat
 fun '{| U := T; a := a; q := p |} => (T, p, a)
      : M -> Type * True * nat
+{| a := 0; b := 0 |}
+     : T
+fun '{| |} => 0
+     : LongModuleName.test -> nat
+     = {|
+         a :=
+           {|
+             LongModuleName.long_field_name0 := 0;
+             LongModuleName.long_field_name1 := 1;
+             LongModuleName.long_field_name2 := 2;
+             LongModuleName.long_field_name3 := 3
+           |};
+         b :=
+           fun
+             '{|
+                LongModuleName.long_field_name0 := a;
+                LongModuleName.long_field_name1 := b;
+                LongModuleName.long_field_name2 := c;
+                LongModuleName.long_field_name3 := d
+              |} => (a, b, c, d)
+       |}
+     : T
+     = {|
+         a :=
+           {|
+             long_field_name0 := 0;
+             long_field_name1 := 1;
+             long_field_name2 := 2;
+             long_field_name3 := 3
+           |};
+         b :=
+           fun
+             '{|
+                long_field_name0 := a;
+                long_field_name1 := b;
+                long_field_name2 := c;
+                long_field_name3 := d
+              |} => (a, b, c, d)
+       |}
+     : T

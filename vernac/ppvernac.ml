@@ -524,8 +524,7 @@ let pr_record_field (x, { rf_subclass = oc ; rf_priority = pri ; rf_notation = n
   prx ++ prpri ++ prlist (pr_decl_notation @@ pr_constr) ntn
 
 let pr_record_decl c fs =
-  pr_opt pr_lident c ++ (if c = None then str"{" else str" {") ++
-  hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
+  pr_opt pr_lident c ++ pr_record "{" "}" pr_record_field fs
 
 let pr_printable = function
   | PrintFullContext ->
@@ -966,7 +965,7 @@ let pr_vernac_expr v =
         str":" ++ spc () ++
         pr_constr cl ++ pr_hint_info pr_constr_pattern_expr info ++
         (match props with
-         | Some (true, { v = CRecord l}) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
+         | Some (true, { v = CRecord l}) -> spc () ++ str":=" ++ spc () ++ pr_record_body "{" "}" pr_lconstr l
          | Some (true,_) -> assert false
          | Some (false,p) -> spc () ++ str":=" ++ spc () ++ pr_constr p
          | None -> mt()))

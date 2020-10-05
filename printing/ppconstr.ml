@@ -234,6 +234,42 @@ let tag_var = tag Tag.variable
             let f (id,c) = pr_id id ++ str ":=" ++ pr ltop c in
             str"@{" ++ hov 0 (prlist_with_sep pr_semicolon f (List.rev l)) ++ str"}"))
 
+  (* Assuming "{" and "}" brackets, prints
+     - if there is enough room
+       { a; b; c }
+     - otherwise
+       {
+        a;
+        b;
+        c
+       }
+    Alternatively, replace outer hv with h to get instead:
+       { a;
+         b;
+         c }
+    Replace the inner hv with hov to respectively get instead (if enough room):
+       {
+        a; b;
+        c
+       }
+    or
+       { a; b;
+         c }
+  *)
+  let pr_record left right pr = function
+    | [] -> str left ++ str " " ++ str right
+    | l ->
+      hv 0 (
+        str left ++
+        brk (1,String.length left) ++
+        hv 0 (prlist_with_sep pr_semicolon pr l) ++
+        brk (1,0) ++
+        str right)
+
+  let pr_record_body left right pr l =
+    let pr_defined_field (id, c) = hov 2 (pr_reference id ++ str" :=" ++ pr c) in
+    pr_record left right pr_defined_field l
+
   let las = lapp
   let lpator = 0
   let lpatrec = 0
@@ -242,11 +278,7 @@ let tag_var = tag Tag.variable
   let rec pr_patt sep inh p =
     let (strm,prec) = match CAst.(p.v) with
       | CPatRecord l ->
-        let pp (c, p) =
-          pr_reference c ++ spc() ++ str ":=" ++ pr_patt spc lpattop p
-        in
-        (if l = [] then str "{| |}"
-         else str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}"), lpatrec
+        pr_record_body "{|" "|}" (pr_patt spc lpattop) l, lpatrec
 
       | CPatAlias (p, na) ->
         pr_patt mt (LevelLe las) p ++ str " as " ++ pr_lname na, las
@@ -287,6 +319,7 @@ let tag_var = tag Tag.variable
 
       | CPatDelimiters (k,p) ->
         pr_delimiters k (pr_patt mt lsimplepatt p), 1
+
       | CPatCast _ ->
         assert false
     in
@@ -464,11 +497,6 @@ let tag_var = tag Tag.variable
       pr (LevelLt lapp) a  ++
         prlist (fun a -> spc () ++ pr_expl_args pr a) l)
 
-  let pr_record_body_gen pr l =
-    spc () ++
-    prlist_with_sep pr_semicolon
-      (fun (id, c) -> pr_reference id ++ str" :=" ++ pr ltop c) l
-
   let pr_forall n = keyword "forall" ++ pr_com_at n ++ spc ()
 
   let pr_fun n = keyword "fun" ++ pr_com_at n ++ spc ()
@@ -568,10 +596,7 @@ let tag_var = tag Tag.variable
       | CApp ((None,a),l) ->
         return (pr_app (pr mt) a l, lapp)
       | CRecord l ->
-        return (
-          hv 0 (str"{|" ++ pr_record_body_gen (pr spc) l ++ str" |}"),
-          latom
-        )
+        return (pr_record_body "{|" "|}" (pr spc ltop) l, latom)
       | CCases (Constr.LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[{v=([[p]],b)}]) ->
         return (
           hv 0 (
@@ -716,8 +741,6 @@ let tag_var = tag Tag.variable
   let pr_lconstr_pattern_expr c = !term_pr.pr_lconstr_pattern_expr c
 
   let pr_cases_pattern_expr = pr_patt ltop
-
-  let pr_record_body = pr_record_body_gen pr
 
   let pr_binders env sigma = pr_undelimited_binders spc (pr_expr env sigma ltop)
 
