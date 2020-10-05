@@ -171,7 +171,7 @@ val prvecti_with_sep :
 
 val pr_enum : ('a -> t) -> 'a list -> t
 (** [pr_enum pr [a ; b ; ... ; c]] outputs
-    [pr a ++ str "," ++ pr b ++ str "," ++ ... ++ str "and" ++ pr c]. *)
+    [pr a ++ str "," ++ spc () ++ pr b ++ str "," ++ spc () ++ ... ++ str "and" ++ spc () ++ pr c]. *)
 
 val pr_sequence : ('a -> t) -> 'a list -> t
 (** Sequence of objects separated by space (unless an element is empty). *)
@@ -187,7 +187,6 @@ val pr_vertical_list : ('b -> t) -> 'b list -> t
 val pp_with          : Format.formatter -> t -> unit
 
 val string_of_ppcmds : t -> string
-
 
 (** Tag prefix to start a multi-token diff span *)
 val start_pfx : string
