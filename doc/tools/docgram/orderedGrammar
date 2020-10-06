@@ -114,7 +114,7 @@ ident_decl: [
 ]
 
 of_type: [
-| [ ":" | ":>" | ":>>" ] type
+| [ ":" | ":>" ] type
 ]
 
 qualid: [
@@ -892,10 +892,10 @@ command: [
 | "Show" "Zify" "UnOpSpec"      (* micromega plugin *)
 | "Show" "Zify" "BinOpSpec"      (* micromega plugin *)
 | "Show" "Zify" "Spec"      (* micromega plugin *)
-| "Add" "Ring" ident ":" one_term OPT ( "(" LIST1 ring_mod SEP "," ")" )      (* setoid_ring plugin *)
-| "Print" "Rings"      (* setoid_ring plugin *)
-| "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* setoid_ring plugin *)
-| "Print" "Fields"      (* setoid_ring plugin *)
+| "Add" "Ring" ident ":" one_term OPT ( "(" LIST1 ring_mod SEP "," ")" )      (* ring plugin *)
+| "Print" "Rings"      (* ring plugin *)
+| "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* ring plugin *)
+| "Print" "Fields"      (* ring plugin *)
 | "Number" "Notation" qualid qualid qualid ":" ident OPT numeral_modifier
 | "Hint" "Cut" "[" hints_path "]" OPT ( ":" LIST1 ident )
 | "Typeclasses" "Transparent" LIST0 qualid
@@ -1279,23 +1279,23 @@ fun_scheme_arg: [
 ]
 
 ring_mod: [
-| "decidable" one_term      (* setoid_ring plugin *)
-| "abstract"      (* setoid_ring plugin *)
-| "morphism" one_term      (* setoid_ring plugin *)
-| "constants" "[" ltac_expr "]"      (* setoid_ring plugin *)
-| "preprocess" "[" ltac_expr "]"      (* setoid_ring plugin *)
-| "postprocess" "[" ltac_expr "]"      (* setoid_ring plugin *)
-| "setoid" one_term one_term      (* setoid_ring plugin *)
-| "sign" one_term      (* setoid_ring plugin *)
-| "power" one_term "[" LIST1 qualid "]"      (* setoid_ring plugin *)
-| "power_tac" one_term "[" ltac_expr "]"      (* setoid_ring plugin *)
-| "div" one_term      (* setoid_ring plugin *)
-| "closed" "[" LIST1 qualid "]"      (* setoid_ring plugin *)
+| "decidable" one_term      (* ring plugin *)
+| "abstract"      (* ring plugin *)
+| "morphism" one_term      (* ring plugin *)
+| "constants" "[" ltac_expr "]"      (* ring plugin *)
+| "preprocess" "[" ltac_expr "]"      (* ring plugin *)
+| "postprocess" "[" ltac_expr "]"      (* ring plugin *)
+| "setoid" one_term one_term      (* ring plugin *)
+| "sign" one_term      (* ring plugin *)
+| "power" one_term "[" LIST1 qualid "]"      (* ring plugin *)
+| "power_tac" one_term "[" ltac_expr "]"      (* ring plugin *)
+| "div" one_term      (* ring plugin *)
+| "closed" "[" LIST1 qualid "]"      (* ring plugin *)
 ]
 
 field_mod: [
-| ring_mod      (* setoid_ring plugin *)
-| "completeness" one_term      (* setoid_ring plugin *)
+| ring_mod      (* ring plugin *)
+| "completeness" one_term      (* ring plugin *)
 ]
 
 numeral_modifier: [
@@ -1641,8 +1641,8 @@ simple_tactic: [
 | "nsatz_compute" one_term      (* nsatz plugin *)
 | "omega"      (* omega plugin *)
 | "protect_fv" string OPT ( "in" ident )
-| "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* setoid_ring plugin *)
-| "field_lookup" ltac_expr "[" LIST0 one_term "]" LIST1 one_term      (* setoid_ring plugin *)
+| "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
+| "field_lookup" ltac_expr "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
 | match_key OPT "reverse" "goal" "with" OPT "|" LIST1 ( goal_pattern "=>" ltac_expr ) SEP "|" "end"
 | match_key ltac_expr "with" OPT "|" LIST1 ( match_pattern "=>" ltac_expr ) SEP "|" "end"
 | "classical_left"

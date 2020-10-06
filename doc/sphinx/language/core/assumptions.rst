@@ -138,7 +138,7 @@ has type :n:`@type`.
       | {| Variable | Variables }
       assumpt ::= {+ @ident_decl } @of_type
       ident_decl ::= @ident {? @univ_decl }
-      of_type ::= {| : | :> | :>> } @type
+      of_type ::= {| : | :> } @type
 
    These commands bind one or more :n:`@ident`\(s) to specified :n:`@type`\(s) as their specifications in
    the global context. The fact asserted by the :n:`@type` (or, equivalently, the existence

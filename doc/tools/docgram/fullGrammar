@@ -685,10 +685,10 @@ command: [
 | "Show" "Zify" "UnOpSpec"      (* micromega plugin *)
 | "Show" "Zify" "BinOpSpec"      (* micromega plugin *)
 | "Show" "Zify" "Spec"      (* micromega plugin *)
-| "Add" "Ring" ident ":" constr OPT ring_mods      (* setoid_ring plugin *)
-| "Print" "Rings"      (* setoid_ring plugin *)
-| "Add" "Field" ident ":" constr OPT field_mods      (* setoid_ring plugin *)
-| "Print" "Fields"      (* setoid_ring plugin *)
+| "Add" "Ring" ident ":" constr OPT ring_mods      (* ring plugin *)
+| "Print" "Rings"      (* ring plugin *)
+| "Add" "Field" ident ":" constr OPT field_mods      (* ring plugin *)
+| "Print" "Fields"      (* ring plugin *)
 | "Number" "Notation" reference reference reference ":" ident numnotoption
 | "Numeral" "Notation" reference reference reference ":" ident numnotoption
 | "String" "Notation" reference reference reference ":" ident
@@ -986,10 +986,7 @@ constructor: [
 ]
 
 of_type_with_opt_coercion: [
-| ":>>"
-| ":>" ">"
 | ":>"
-| ":" ">" ">"
 | ":" ">"
 | ":"
 ]
@@ -1744,10 +1741,10 @@ simple_tactic: [
 | "nsatz_compute" constr      (* nsatz plugin *)
 | "omega"      (* omega plugin *)
 | "rtauto"
-| "protect_fv" string "in" ident      (* setoid_ring plugin *)
-| "protect_fv" string      (* setoid_ring plugin *)
-| "ring_lookup" tactic0 "[" LIST0 constr "]" LIST1 constr      (* setoid_ring plugin *)
-| "field_lookup" tactic "[" LIST0 constr "]" LIST1 constr      (* setoid_ring plugin *)
+| "protect_fv" string "in" ident      (* ring plugin *)
+| "protect_fv" string      (* ring plugin *)
+| "ring_lookup" tactic0 "[" LIST0 constr "]" LIST1 constr      (* ring plugin *)
+| "field_lookup" tactic "[" LIST0 constr "]" LIST1 constr      (* ring plugin *)
 ]
 
 mlname: [
@@ -2531,31 +2528,31 @@ induction_clause_list: [
 ]
 
 ring_mod: [
-| "decidable" constr      (* setoid_ring plugin *)
-| "abstract"      (* setoid_ring plugin *)
-| "morphism" constr      (* setoid_ring plugin *)
-| "constants" "[" tactic "]"      (* setoid_ring plugin *)
-| "closed" "[" LIST1 global "]"      (* setoid_ring plugin *)
-| "preprocess" "[" tactic "]"      (* setoid_ring plugin *)
-| "postprocess" "[" tactic "]"      (* setoid_ring plugin *)
-| "setoid" constr constr      (* setoid_ring plugin *)
-| "sign" constr      (* setoid_ring plugin *)
-| "power" constr "[" LIST1 global "]"      (* setoid_ring plugin *)
-| "power_tac" constr "[" tactic "]"      (* setoid_ring plugin *)
-| "div" constr      (* setoid_ring plugin *)
+| "decidable" constr      (* ring plugin *)
+| "abstract"      (* ring plugin *)
+| "morphism" constr      (* ring plugin *)
+| "constants" "[" tactic "]"      (* ring plugin *)
+| "closed" "[" LIST1 global "]"      (* ring plugin *)
+| "preprocess" "[" tactic "]"      (* ring plugin *)
+| "postprocess" "[" tactic "]"      (* ring plugin *)
+| "setoid" constr constr      (* ring plugin *)
+| "sign" constr      (* ring plugin *)
+| "power" constr "[" LIST1 global "]"      (* ring plugin *)
+| "power_tac" constr "[" tactic "]"      (* ring plugin *)
+| "div" constr      (* ring plugin *)
 ]
 
 ring_mods: [
-| "(" LIST1 ring_mod SEP "," ")"      (* setoid_ring plugin *)
+| "(" LIST1 ring_mod SEP "," ")"      (* ring plugin *)
 ]
 
 field_mod: [
-| ring_mod      (* setoid_ring plugin *)
-| "completeness" constr      (* setoid_ring plugin *)
+| ring_mod      (* ring plugin *)
+| "completeness" constr      (* ring plugin *)
 ]
 
 field_mods: [
-| "(" LIST1 field_mod SEP "," ")"      (* setoid_ring plugin *)
+| "(" LIST1 field_mod SEP "," ")"      (* ring plugin *)
 ]
 
 numnotoption: [
