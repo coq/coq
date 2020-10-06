@@ -107,7 +107,7 @@ GRAMMLIFILES := $(addsuffix .mli, $(GRAMFILES))
 GENGRAMMLFILES := $(GRAMMLFILES) gramlib/.pack/gramlib.ml # why is gramlib.ml not in GRAMMLFILES?
 
 GENMLGFILES:= $(MLGFILES:.mlg=.ml)
-GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES) $(GENGRAMMLFILES) ide/coqide/coqide_os_specific.ml kernel/vmopcodes.ml kernel/uint63.ml
+GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES) $(GENGRAMMLFILES) ide/coqide/coqide_os_specific.ml kernel/vmopcodes.ml kernel/uint63.ml kernel/float64.ml
 GENMLIFILES:=$(GRAMMLIFILES)
 GENHFILES:=kernel/byterun/coq_instruct.h kernel/byterun/coq_jumptbl.h
 GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) kernel/genOpcodeFiles.exe
