@@ -1243,7 +1243,7 @@ let apply_on_subterm env evd fixed f test c t =
         try test env !evdref k c t
         with e when CErrors.noncritical e -> assert false in
      if b then (if debug_ho_unification () then Feedback.msg_debug (Pp.str "succeeded");
-                let evd', fixed, t' = f !evdref !fixedref k t in
+                let evd', fixed, t' = f !evdref !fixedref t in
                 fixedref := fixed;
                 evdref := evd'; t')
      else (
@@ -1351,7 +1351,6 @@ let () = CErrors.register_handler (function
     | _ -> None)
 
 let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
-  try
   let evi = Evd.find_undefined evd evk in
   let evi = nf_evar_info evd evi in
   let env_evar_unf = evar_env env_rhs evi in
@@ -1399,11 +1398,11 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                                 prc env_rhs evd c ++ str" in " ++
                                 prc env_rhs evd rhs);
      let occ = ref 1 in
-     let set_var evd fixed k inst =
+     let set_var evd fixed inst =
        let oc = !occ in
        if debug_ho_unification () then
        (Feedback.msg_debug Pp.(str"Found one occurrence");
-        Feedback.msg_debug Pp.(str"cty: " ++ prc env_rhs evd c));
+        Feedback.msg_debug Pp.(str"c: " ++ prc env_rhs evd c));
        incr occ;
        match occs with
        | AtOccurrences occs ->
@@ -1481,17 +1480,31 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
          let vid = mkVar id in
          let candidates = [inst; vid] in
            try
+             if debug_ho_unification () then
+              Feedback.msg_debug Pp.(str"instantiating evar " ++
+                 Termops.pr_existential_key evd evk ++ spc () ++ str " abstracting " ++
+                 prc env_rhs evd inst ++ str " in the goal and " ++
+                 prc env_rhs evd c ++ str " in the predicate application " ++
+                 str" by variable " ++ Id.print id);
              let evd, ev = Evarutil.restrict_evar evd evk (Evd.evar_filter evi) (Some candidates) in
              let evi = Evd.find evd ev in
                (match evar_candidates evi with
                | Some [t] ->
                  if not (noccur_evar env_rhs evd ev (EConstr.of_constr t)) then
                    raise (TypingFailed evd);
+                 if debug_ho_unification () then
+                  Feedback.msg_debug Pp.(str"One candidate only: " ++ prc env_rhs evd (EConstr.of_constr t));
                  instantiate_evar evar_unify flags env_rhs evd ev (EConstr.of_constr t)
-               | Some l when abstract = Abstraction.Abstract &&
+                | Some l when abstract = Abstraction.Abstract &&
                           List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
-                 instantiate_evar evar_unify flags env_rhs evd ev vid
-               | _ -> evd)
+                  if debug_ho_unification () then
+                    Feedback.msg_debug Pp.(str"Multiple candidates, prefering abstraction");
+                  instantiate_evar evar_unify flags env_rhs evd ev vid
+               | _ ->
+                  (* At least inst will always be a valid candidate *)
+                  if debug_ho_unification () then
+                    Feedback.msg_debug Pp.(str"Multiple candidates and nothing to disambiguate");
+                  evd)
            with e when CErrors.noncritical e ->
              let e, info = Exninfo.capture e in
              Exninfo.iraise (NotFoundInstance e, info)
@@ -1500,9 +1513,10 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                let evi = Evd.find evd evk in
                let env = Evd.evar_env env_rhs evi in
                Feedback.msg_debug Pp.(str"evar is defined: " ++
-                 int (Evar.repr evk) ++ spc () ++
+                 int (Evar.repr evk) ++ spc () ++ str " as " ++
                  prc env evd (match evar_body evi with Evar_defined c -> c
-                   | Evar_empty -> assert false)));
+                   | Evar_empty -> assert false) ++
+                   str" inst is " ++ spc () ++ prc env_rhs evd inst));
             evd)
        in force_instantiation evd evs
      | [] -> abstract_free_holes evd l
@@ -1535,9 +1549,10 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
           let flags = default_flags_of TransparentState.full in
             Evarsolve.instantiate_evar evar_unify flags env_rhs evd evk rhs'
          with IllTypedInstance _ -> raise (TypingFailed evd)
-  in
-  let evd = abstract_free_holes evd subst in
-  evd, true
+  in abstract_free_holes evd subst
+
+let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
+  try second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs, true
   with TypingFailed evd -> evd, false
 
 let default_evar_selection flags evd (ev,args) =
