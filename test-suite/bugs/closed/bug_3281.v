@@ -1,5 +1,5 @@
-Fail Lemma foo : @eq _ nat Type.
-Fail Lemma foo : @eq Set nat Type.
+Definition a := @eq _ nat Type.
+Fail Definition b := @eq Set nat Type.
 
-Lemma foo : @eq Type nat Type. Admitted.
-Lemma foo' : @eq _ Type nat. Admitted.
+Definition c := @eq Type nat Type.
+Definition d := @eq _ Type nat.
