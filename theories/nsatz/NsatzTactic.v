@@ -428,10 +428,12 @@ end end end .
 
 Ltac nsatz_default:=
   intros;
-  try apply (@psos_r1b _ _ _ _ _ _ _ _ _ _ _);
-  match goal with |- (@equality ?r _ _ _) =>
+  match goal with
+  | [ |- ?P ?x _ ] =>
+    let car := type of x in
+    try apply (@psos_r1b car _ _ _ _ _ _ _ _ _ _);
     repeat equalities_to_goal;
-    nsatz_generic 6%N 1%Z (@nil r) (@nil r)
+    nsatz_generic 6%N 1%Z (@nil car) (@nil car)
   end.
 
 Tactic Notation "nsatz" := nsatz_default.
@@ -442,8 +444,10 @@ Tactic Notation "nsatz" "with"
  "parameters" ":=" constr(lparam)
  "variables" ":=" constr(lvar):=
   intros;
-  try apply (@psos_r1b _ _ _ _ _ _ _ _ _ _ _);
-  match goal with |- (@equality ?r _ _ _) =>
+  match goal with
+  | [ |- ?P ?x _ ] =>
+    let car := type of x in
+    try apply (@psos_r1b car _ _ _ _ _ _ _ _ _ _);
     repeat equalities_to_goal;
     nsatz_generic radicalmax info lparam lvar
   end.
