@@ -11,4 +11,4 @@ Parameter hstar : hprop -> hprop -> hprop.
 Parameter hpure : hprop.
 
 Lemma test : (forall (H:hprop), himpl (hstar H H) hpure -> True) -> True.
-Proof. intros M. eapply M. apply himpl_refl. Abort.
+Proof. intros M. eapply M. Fail apply himpl_refl. Abort.
