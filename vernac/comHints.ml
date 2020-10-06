@@ -101,13 +101,10 @@ let interp_hints ~poly h =
       let () = warn_deprecated_hint_constr () in
       let env = Global.env () in
       let sigma = Evd.from_env env in
-      let sigma, c = Constrintern.interp_open_constr env sigma c in
-      let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
-      let sigma, _ = Evd.nf_univ_variables sigma in
-      let c = Evarutil.nf_evar sigma c in
-      let c = Termops.drop_extra_implicit_args sigma c in
-      let () = Pretyping.check_evars env sigma c in
-      let diff = Evd.universe_context_set sigma in
+      let c, uctx = Constrintern.interp_constr env sigma c in
+      let subst, uctx = UState.normalize_variables uctx in
+      let c = EConstr.Vars.subst_univs_constr subst c in
+      let diff = UState.context_set uctx in
       let c =
         if poly then (c, Some diff)
         else
