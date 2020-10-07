@@ -79,8 +79,10 @@ module NamedDecl = Context.Named.Declaration
     * STRUCT (params,oldsenv) : inside a local module, with
       module parameters [params] and earlier environment [oldsenv]
     * SIG (params,oldsenv) : same for a local module type
-  - [modresolver] : delta_resolver concerning the module content
-  - [paramresolver] : delta_resolver concerning the module parameters
+  - [modresolver] : delta_resolver concerning the module content, that needs to
+    be marshalled on disk
+  - [paramresolver] : delta_resolver in scope but not part of the library per
+    se, that is from functor parameters and required libraries
   - [revstruct] : current module content, most recent declarations first
   - [modlabels] and [objlabels] : names defined in the current module,
       either for modules/modtypes or for constants/inductives.
@@ -1301,7 +1303,9 @@ let import lib cst vodigest senv =
   mp,
   { senv with
     env;
-    modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
+    (* Do NOT store the name quotient from the dependencies in the set of
+       constraints that will be marshalled on disk. *)
+    paramresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.paramresolver;
     required = DPmap.add lib.comp_name vodigest senv.required;
     loads = (mp,mb)::senv.loads;
     sections;
