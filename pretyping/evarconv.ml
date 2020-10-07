@@ -1213,12 +1213,22 @@ let default_occurrences_selection ?(allowed_evars=AllowedEvars.all) ts n =
   (default_occurrence_test ~allowed_evars ts,
    List.init n (fun _ -> default_occurrence_selection))
 
-let apply_on_subterm env evd fixedref f test c t =
+let occur_evars sigma evs c =
+  if Evar.Set.is_empty evs then false
+  else
+    let rec occur_rec c = match EConstr.kind sigma c with
+      | Evar (sp,_) when Evar.Set.mem sp evs -> raise Occur
+      | _ -> EConstr.iter sigma occur_rec c
+    in
+    try occur_rec c; false with Occur -> true
+
+let apply_on_subterm env evd fixed f test c t =
   let test = test env evd c in
   let prc env evd = Termops.Internal.print_constr_env env evd in
   let evdref = ref evd in
+  let fixedref = ref fixed in
   let rec applyrec (env,(k,c) as acc) t =
-    if Evar.Set.exists (fun fixed -> occur_evar !evdref fixed t) !fixedref then
+    if occur_evars !evdref !fixedref t then
       match EConstr.kind !evdref t with
       | Evar (ev, args) when Evar.Set.mem ev !fixedref -> t
       | _ -> map_constr_with_binders_left_to_right !evdref
@@ -1231,7 +1241,8 @@ let apply_on_subterm env evd fixedref f test c t =
         try test env !evdref k c t
         with e when CErrors.noncritical e -> assert false in
      if b then (if debug_ho_unification () then Feedback.msg_debug (Pp.str "succeeded");
-                let evd', t' = f !evdref k t in
+                let evd', fixed, t' = f !evdref !fixedref k t in
+                fixedref := fixed;
                 evdref := evd'; t')
      else (
        if debug_ho_unification () then Feedback.msg_debug (Pp.str "failed");
@@ -1240,7 +1251,7 @@ let apply_on_subterm env evd fixedref f test c t =
         applyrec acc t))
   in
   let t' = applyrec (env,(0,c)) t in
-  !evdref, t'
+  !evdref, !fixedref, t'
 
 let filter_possible_projections evd c ty ctxt args =
   (* Since args in the types will be replaced by holes, we count the
@@ -1377,8 +1388,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
     | _, _, [] -> []
     | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list.")
   in
-  let fixed = ref Evar.Set.empty in
-  let rec set_holes env_rhs evd rhs = function
+  let rec set_holes env_rhs evd fixed rhs = function
   | (id,idty,c,cty,evsref,filter,occs)::subst ->
      let c = nf_evar evd c in
      if debug_ho_unification () then
@@ -1387,7 +1397,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                                 prc env_rhs evd c ++ str" in " ++
                                 prc env_rhs evd rhs);
      let occ = ref 1 in
-     let set_var evd k inst =
+     let set_var evd fixed k inst =
        let oc = !occ in
        if debug_ho_unification () then
        (Feedback.msg_debug Pp.(str"Found one occurrence");
@@ -1395,10 +1405,10 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
        incr occ;
        match occs with
        | AtOccurrences occs ->
-          if Locusops.is_selected oc occs then evd, mkVar id.binder_name
-          else evd, inst
+          if Locusops.is_selected oc occs then evd, fixed, mkVar id.binder_name
+          else evd, fixed, inst
        | Unspecified prefer_abstraction ->
-          let evd, evty = set_holes env_rhs evd cty subst in
+          let evd, fixed, evty = set_holes env_rhs evd fixed cty subst in
           let evty = nf_evar evd evty in
           if debug_ho_unification () then
             Feedback.msg_debug Pp.(str"abstracting one occurrence " ++ prc env_rhs evd inst ++
@@ -1414,21 +1424,21 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                 env_evar_unf evd evty
             else evd, evty in
           let (evd, evk) = new_pure_evar sign evd evty ~filter in
+          let fixed = Evar.Set.add evk fixed in
           evsref := (evk,evty,inst,prefer_abstraction)::!evsref;
-          fixed := Evar.Set.add evk !fixed;
-          evd, mkEvar (evk, instance)
+          evd, fixed, mkEvar (evk, instance)
      in
-     let evd, rhs' = apply_on_subterm env_rhs evd fixed set_var test c rhs in
+     let evd, fixed, rhs' = apply_on_subterm env_rhs evd fixed set_var test c rhs in
      if debug_ho_unification () then
        Feedback.msg_debug Pp.(str"abstracted: " ++ prc env_rhs evd rhs');
      let () = check_selected_occs env_rhs evd c !occ occs in
      let env_rhs' = push_named (NamedDecl.LocalAssum (id,idty)) env_rhs in
-     set_holes env_rhs' evd rhs' subst
-  | [] -> evd, rhs in
+     set_holes env_rhs' evd fixed rhs' subst
+  | [] -> evd, fixed, rhs in
 
   let subst = make_subst (ctxt,args,argoccs) in
 
-  let evd, rhs' = set_holes env_rhs evd rhs subst in
+  let evd, _, rhs' = set_holes env_rhs evd Evar.Set.empty rhs subst in
   let rhs' = nf_evar evd rhs' in
   (* Thin evars making the term typable in env_evar *)
   let evd, rhs' = thin_evars env_evar evd ctxt rhs' in
