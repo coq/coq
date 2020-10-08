@@ -1614,7 +1614,14 @@ let add_notation_in_scope ~local deprecation df env c mods scope =
   let sd = compute_syntax_data ~local deprecation df mods in
   (* Prepare the parsing and printing rules *)
   let sy_pa_rules = make_parsing_rules sd in
-  let sy_pp_rules = make_printing_rules false sd in
+  let sy_pp_rules, gen_sy_pp_rules =
+    match sd.only_parsing, Ppextend.has_generic_notation_printing_rule (fst sd.info) with
+    | true, true -> None, None
+    | onlyparse, has_generic ->
+      let rules = make_printing_rules false sd in
+      let _ = check_reserved_format (fst sd.info) rules in
+      (if onlyparse then None else rules),
+      (if has_generic then None else (* We use the format of this notation as the default *) rules) in
   (* Prepare the interpretation *)
   let i_vars = make_internalization_vars sd.recvars sd.mainvars sd.intern_typs in
   let nenv = {
@@ -1638,10 +1645,6 @@ let add_notation_in_scope ~local deprecation df env c mods scope =
     notobj_notation = (notation, location);
     notobj_specific_pp_rules = sy_pp_rules;
   } in
-  let gen_sy_pp_rules =
-    if Ppextend.has_generic_notation_printing_rule (fst sd.info) then None
-    else sy_pp_rules (* We use the format of this notation as the default *) in
-  let _ = check_reserved_format (fst sd.info) sy_pp_rules in
   (* Ready to change the global state *)
   List.iter (fun f -> f ()) sd.msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension (local, (sy_pa_rules,gen_sy_pp_rules)));
