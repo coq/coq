@@ -106,8 +106,7 @@ type search_restriction =
 
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
-type instance_flag  = unit option
-  (* Some () = Backward instance, None = NoInstance *)
+type instance_flag  = BackInstance | NoInstance
 
 type export_flag    = bool (* true = Export;        false = Import         *)
 

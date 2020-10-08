@@ -518,7 +518,7 @@ let implicits_of_context ctx =
     (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
 let declare_class def cumulative ubinders univs id idbuild paramimpls params univ arity
-    template fieldimpls fields ?(kind=Decls.StructureComponent) coers priorities =
+    template fieldimpls fields ?(kind=Decls.StructureComponent) coers =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
     let impls = implicits_of_context params in
@@ -556,10 +556,7 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
       Impargs.declare_manual_implicits false cref paramimpls;
       Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd fieldimpls);
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
-      let sub = match List.hd coers with
-        | Some () -> Some (List.hd priorities)
-        | None -> None
-      in
+      let sub = List.hd coers in
       let m = {
         meth_name = Name proj_name;
         meth_info = sub;
@@ -572,10 +569,6 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
       let inds = declare_structure ~cumulative Declarations.BiFinite ubinders univs paramimpls
         params template ~kind:Decls.Method ~name:[|binder_name|] record_data
       in
-       let coers = List.map2 (fun coe pri ->
-                              Option.map (fun () -> pri) coe)
-          coers priorities
-       in
       let map ind =
         let map decl b y = {
           meth_name = RelDecl.get_name decl;
@@ -739,16 +732,21 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite records =
     | [r], [d] -> r, d
     | _, _ -> CErrors.user_err (str "Mutual definitional classes are not handled")
     in
-    let priorities = List.map (fun (_, { rf_priority }) -> {hint_priority = rf_priority ; hint_pattern = None}) cfs in
-    let coers = List.map (fun (_, { rf_subclass }) -> rf_subclass) cfs in
+    let coers = List.map (fun (_, { rf_subclass=coe; rf_priority=pri }) ->
+        match coe with
+        | Vernacexpr.BackInstance -> Some {hint_priority = pri ; hint_pattern = None}
+        | Vernacexpr.NoInstance -> None)
+        cfs
+    in
     declare_class def cumulative ubinders univs id.CAst.v idbuild
-      implpars params univ arity template implfs fields coers priorities
+      implpars params univ arity template implfs fields coers
   | _ ->
     let map impls = implpars @ [CAst.make None] @ impls in
     let data = List.map (fun (univ, arity, implfs, fields) -> (univ, arity, List.map map implfs, fields)) data in
     let map (univ, arity, implfs, fields) (is_coe, id, _, cfs, idbuild, _) =
       let coe = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
-          { pf_subclass = not (Option.is_empty rf_subclass);
+          { pf_subclass =
+              (match rf_subclass with Vernacexpr.BackInstance -> true | Vernacexpr.NoInstance -> false);
             pf_canonical = rf_canonical })
           cfs
       in
