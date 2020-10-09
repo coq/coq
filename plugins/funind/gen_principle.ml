@@ -1860,13 +1860,13 @@ let do_generate_principle_aux pconstants on_error register_built
 let warn_cannot_define_graph =
   CWarnings.create ~name:"funind-cannot-define-graph" ~category:"funind"
     (fun (names, error) ->
-      Pp.(strbrk "Cannot define graph(s) for " ++ h 1 names ++ error))
+      Pp.(strbrk "Cannot define graph(s) for " ++ hv 1 names ++ error))
 
 let warn_cannot_define_principle =
   CWarnings.create ~name:"funind-cannot-define-principle" ~category:"funind"
     (fun (names, error) ->
       Pp.(
-        strbrk "Cannot define induction principle(s) for " ++ h 1 names ++ error))
+        strbrk "Cannot define induction principle(s) for " ++ hv 1 names ++ error))
 
 let warning_error names e =
   let e_explain e =
@@ -1898,7 +1898,7 @@ let error_error names e =
     CErrors.user_err
       Pp.(
         str "Cannot define graph(s) for "
-        ++ h 1
+        ++ hv 1
              (prlist_with_sep (fun _ -> str "," ++ spc ()) Ppconstr.pr_id names)
         ++ e_explain e)
   | _ -> raise e

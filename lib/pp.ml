@@ -22,7 +22,7 @@
 type pp_tag = string
 
 type block_type =
-  | Pp_hbox   of int
+  | Pp_hbox
   | Pp_vbox   of int
   | Pp_hvbox  of int
   | Pp_hovbox of int
@@ -131,7 +131,7 @@ let strbrk s =
 let ismt = function | Ppcmd_empty -> true | _ -> false
 
 (* boxing commands *)
-let h   n s = Ppcmd_box(Pp_hbox n,s)
+let h     s = Ppcmd_box(Pp_hbox,s)
 let v   n s = Ppcmd_box(Pp_vbox n,s)
 let hv  n s = Ppcmd_box(Pp_hvbox n,s)
 let hov n s = Ppcmd_box(Pp_hovbox n,s)
@@ -151,7 +151,7 @@ let escape_string s =
 
 let qstring s = str "\"" ++ str (escape_string s) ++ str "\""
 let qs = qstring
-let quote s = h 0 (str "\"" ++ s ++ str "\"")
+let quote s = h (str "\"" ++ s ++ str "\"")
 
 let rec pr_com ft s =
   let (s1,os) =
@@ -181,7 +181,7 @@ let split_tag tag =
 (* pretty printing functions *)
 let pp_with ft pp =
   let cpp_open_box = function
-    | Pp_hbox n   -> Format.pp_open_hbox ft ()
+    | Pp_hbox     -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n
     | Pp_hvbox n  -> Format.pp_open_hvbox ft n
     | Pp_hovbox n -> Format.pp_open_hovbox ft n
@@ -309,12 +309,14 @@ let db_print_pp fmt pp =
   let block_type fmt btype =
     let (bt, v) =
       match btype with
-      | Pp_hbox v -> ("Pp_hbox", v)
-      | Pp_vbox v -> ("Pp_vbox", v)
-      | Pp_hvbox v -> ("Pp_hvbox", v)
-      | Pp_hovbox v -> ("Pp_hovbox", v)
+      | Pp_hbox -> ("Pp_hbox", None)
+      | Pp_vbox v -> ("Pp_vbox", Some v)
+      | Pp_hvbox v -> ("Pp_hvbox", Some v)
+      | Pp_hovbox v -> ("Pp_hovbox", Some v)
     in
-    fprintf fmt "%s %d" bt v
+    match v with
+    | None -> fprintf fmt "%s" bt
+    | Some v -> fprintf fmt "%s %d" bt v
   in
   let rec db_print_pp_r indent pp =
     let ind () = fprintf fmt "%s" (String.make (2 * indent) ' ') in

@@ -43,7 +43,7 @@ let to_search_cst = do_match "search_cst" (fun s args -> match s with
   | "type_pattern" -> Type_Pattern (to_string (singleton args))
   | "subtype_pattern" -> SubType_Pattern (to_string (singleton args))
   | "in_module" -> In_Module (to_list to_string (singleton args))
-  | "include_blacklist" -> Include_Blacklist
+  | "include_blacklist" -> empty args; Include_Blacklist
   | x -> raise (Marshal_error("search",PCData x)))
 
 let of_coq_object f ans =
@@ -103,14 +103,14 @@ let to_routeid = function
 let of_routeid i = Element ("route_id",["val",string_of_int i],[])
 
 let of_box (ppb : Pp.block_type) = let open Pp in match ppb with
-  | Pp_hbox   i -> constructor "ppbox" "hbox"   [of_int i]
+  | Pp_hbox     -> constructor "ppbox" "hbox"   []
   | Pp_vbox   i -> constructor "ppbox" "vbox"   [of_int i]
   | Pp_hvbox  i -> constructor "ppbox" "hvbox"  [of_int i]
   | Pp_hovbox i -> constructor "ppbox" "hovbox" [of_int i]
 
 let to_box = let open Pp in
   do_match "ppbox" (fun s args -> match s with
-      | "hbox"   -> Pp_hbox   (to_int (singleton args))
+      | "hbox"   -> empty args; Pp_hbox
       | "vbox"   -> Pp_vbox   (to_int (singleton args))
       | "hvbox"  -> Pp_hvbox  (to_int (singleton args))
       | "hovbox" -> Pp_hovbox (to_int (singleton args))
@@ -132,7 +132,7 @@ let rec of_pp (pp : Pp.t) = let open Pp in match Pp.repr pp with
 let rec to_pp xpp = let open Pp in
   Pp.unrepr @@
   do_match "ppdoc" (fun s args -> match s with
-    | "empty"     -> Ppcmd_empty
+    | "empty"     -> empty args; Ppcmd_empty
     | "string"    -> Ppcmd_string (to_string (singleton args))
     | "glue"      -> Ppcmd_glue (to_list to_pp (singleton args))
     | "box"       -> let (bt,s) = to_pair to_box to_pp (singleton args) in
@@ -858,11 +858,11 @@ let of_message_level = function
   | Error -> Serialize.constructor "message_level" "error" []
 let to_message_level =
   Serialize.do_match "message_level" (fun s args -> match s with
-  | "debug" -> Debug
-  | "info" -> Info
-  | "notice" -> Notice
-  | "warning" -> Warning
-  | "error" -> Error
+  | "debug" -> empty args; Debug
+  | "info" -> empty args; Info
+  | "notice" -> empty args; Notice
+  | "warning" -> empty args; Warning
+  | "error" -> empty args; Error
   | x -> raise Serialize.(Marshal_error("error level",PCData x)))
 
 let of_message lvl loc msg =

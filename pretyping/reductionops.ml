@@ -445,7 +445,7 @@ type state_reduction_function =
 let pr_state env sigma (tm,sk) =
   let open Pp in
   let pr c = Termops.Internal.print_constr_env env sigma c in
-  h 0 (pr tm ++ str "|" ++ cut () ++ Stack.pr pr sk)
+  h (pr tm ++ str "|" ++ cut () ++ Stack.pr pr sk)
 
 (*************************************)
 (*** Reduction Functions Operators ***)
@@ -705,7 +705,7 @@ let rec whd_state_gen flags env sigma =
         let open Pp in
         let pr c = Termops.Internal.print_constr_env env sigma c in
         Feedback.msg_debug
-             (h 0 (str "<<" ++ pr x ++
+               (h (str "<<" ++ pr x ++
                    str "|" ++ cut () ++ Stack.pr pr stack ++
                    str ">>"))
     in

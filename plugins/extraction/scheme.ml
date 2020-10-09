@@ -28,7 +28,7 @@ let keywords =
       "error"; "delay"; "force"; "_"; "__"]
     Id.Set.empty
 
-let pp_comment s = str";; "++h 0 s++fnl ()
+let pp_comment s = str ";; " ++ h s ++ fnl ()
 
 let pp_header_comment = function
   | None -> mt ()

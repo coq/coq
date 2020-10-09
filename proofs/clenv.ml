@@ -720,7 +720,7 @@ let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 (* Pretty-print *)
 
 let pr_clenv clenv =
-  h 0
+  h
     (str"TEMPL: " ++ Termops.Internal.print_constr_env clenv.env clenv.evd clenv.templval.rebus ++
      str" : " ++ Termops.Internal.print_constr_env clenv.env clenv.evd clenv.templtyp.rebus ++ fnl () ++
      pr_evar_map (Some 2) clenv.env clenv.evd)

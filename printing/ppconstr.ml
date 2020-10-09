@@ -467,7 +467,7 @@ let tag_var = tag Tag.variable
   let pr_record_body_gen pr l =
     spc () ++
     prlist_with_sep pr_semicolon
-      (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr ltop c)) l
+      (fun (id, c) -> pr_reference id ++ str" :=" ++ pr ltop c) l
 
   let pr_forall n = keyword "forall" ++ pr_com_at n ++ spc ()
 

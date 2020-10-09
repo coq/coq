@@ -146,7 +146,7 @@ let header =
   fnl ()
 
 let rec print_node ~filter all_total indent prefix (s, e) =
-  h 0 (
+  h (
     padr_with '-' 40 (prefix ^ s ^ " ")
     ++ padl 7 (format_ratio (e.local /. all_total))
     ++ padl 7 (format_ratio (e.total /. all_total))
@@ -212,7 +212,7 @@ let to_string ~filter ?(cutoff=0.0) node =
   in
   let filter s n = filter s && (all_total <= 0.0 || n /. all_total >= cutoff /. 100.0) in
   let msg =
-    h 0 (str "total time: " ++ padl 11 (format_sec (all_total))) ++
+    h (str "total time: " ++ padl 11 (format_sec (all_total))) ++
     fnl () ++
     fnl () ++
     header ++
