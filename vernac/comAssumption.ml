@@ -68,10 +68,11 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl {CAst.v=name
   let inst = instance_of_univ_entry univs in
   (gr,inst)
 
-let interp_assumption ~program_mode sigma env impls c =
+let interp_assumption ~program_mode env sigma impl_env bl c =
   let flags = { Pretyping.all_no_fail_flags with program_mode } in
-  let sigma, (ty, impls) = interp_type_evars_impls ~flags env sigma ~impls c in
-  sigma, (ty, impls)
+  let sigma, (impls, ((env_bl, ctx), impls1)) = interp_context_evars ~program_mode ~impl_env env sigma bl in
+  let sigma, (ty, impls2) = interp_type_evars_impls ~flags env sigma ~impls c in
+  sigma, ty, impls1@impls2
 
 (* When monomorphic the universe constraints and universe names are
    declared with the first declaration only. *)
@@ -153,7 +154,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
   in
   (* We interpret all declarations in the same evar_map, i.e. as a telescope. *)
   let (sigma,_,_),l = List.fold_left_map (fun (sigma,env,ienv) (is_coe,(idl,c)) ->
-    let sigma,(t,imps) = interp_assumption ~program_mode sigma env ienv c in
+    let sigma,t,imps = interp_assumption ~program_mode env sigma ienv [] c in
     let r = Retyping.relevance_of_type env sigma t in
     let env =
       EConstr.push_named_context (List.map (fun {CAst.v=id} -> LocalAssum (make_annot id r,t)) idl) env in

@@ -14,6 +14,17 @@ open Constrexpr
 
 (** {6 Definitions/Let} *)
 
+val interp_definition
+  :  program_mode:bool
+  -> Environ.env
+  -> Evd.evar_map
+  -> Constrintern.internalization_env
+  -> Constrexpr.local_binder_expr list
+  -> red_expr option
+  -> constr_expr
+  -> constr_expr option
+  -> Evd.evar_map * (EConstr.t * EConstr.t option) * Impargs.manual_implicits
+
 val do_definition
   :  ?hook:Declare.Hook.t
   -> name:Id.t

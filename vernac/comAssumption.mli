@@ -14,6 +14,15 @@ open Constrexpr
 
 (** {6 Parameters/Assumptions} *)
 
+val interp_assumption
+  : program_mode:bool
+  -> Environ.env
+  -> Evd.evar_map
+  -> Constrintern.internalization_env
+  -> Constrexpr.local_binder_expr list
+  -> constr_expr
+  -> Evd.evar_map * EConstr.t * Impargs.manual_implicits
+
 val do_assumptions
   :  program_mode:bool
   -> poly:bool
