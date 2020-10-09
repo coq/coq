@@ -16,7 +16,7 @@
 (** A boolean is either [true] or [false], and this is decidable *)
 
 Definition sumbool_of_bool : forall b:bool, {b = true} + {b = false}.
-  destruct b; auto.
+  intros b; destruct b; auto.
 Defined.
 
 Hint Resolve sumbool_of_bool: bool.
@@ -24,13 +24,13 @@ Hint Resolve sumbool_of_bool: bool.
 Definition bool_eq_rec :
   forall (b:bool) (P:bool -> Set),
     (b = true -> P true) -> (b = false -> P false) -> P b.
-  destruct b; auto.
+  intros b; destruct b; auto.
 Defined.
 
 Definition bool_eq_ind :
   forall (b:bool) (P:bool -> Prop),
     (b = true -> P true) -> (b = false -> P false) -> P b.
-  destruct b; auto.
+  intros b; destruct b; auto.
 Defined.
 
 
