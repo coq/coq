@@ -31,7 +31,7 @@ Lemma ind_0_1_SS :
 Proof.
   intros P H0 H1 H2.
   fix ind_0_1_SS 1.
-  destruct n as [|[|n]].
+  intros n; destruct n as [|[|n]].
   - exact H0.
   - exact H1.
   - apply H2, ind_0_1_SS.
@@ -105,17 +105,17 @@ Hint Resolve double_S: arith.
 Lemma even_odd_double n :
   (even n <-> n = double (div2 n)) /\ (odd n <-> n = S (double (div2 n))).
 Proof.
-  revert n. fix even_odd_double 1. destruct n as [|[|n]].
+  revert n. fix even_odd_double 1. intros n; destruct n as [|[|n]].
   - (* n = 0 *)
     split; split; auto with arith. inversion 1.
   - (* n = 1 *)
-    split; split; auto with arith. inversion_clear 1. inversion H0.
+    split; split; auto with arith. inversion_clear 1 as [|? H0]. inversion H0.
   - (* n = (S (S n')) *)
     destruct (even_odd_double n) as ((Ev,Ev'),(Od,Od')).
     split; split; simpl div2; rewrite ?double_S.
-    + inversion_clear 1. inversion_clear H0. auto.
+    + inversion_clear 1 as [|? H0]. inversion_clear H0. auto.
     + injection 1. auto with arith.
-    + inversion_clear 1. inversion_clear H0. auto.
+    + inversion_clear 1 as [? H0]. inversion_clear H0. auto.
     + injection 1. auto with arith.
 Qed.
 
