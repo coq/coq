@@ -195,7 +195,6 @@ val set_perspective : doc:doc -> Stateid.t list -> unit
 (** workers **************************************************************** **)
 
 module ProofTask : AsyncTaskQueue.Task
-module TacTask   : AsyncTaskQueue.Task
 module QueryTask : AsyncTaskQueue.Task
 
 (** document structure customization *************************************** **)

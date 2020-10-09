@@ -159,9 +159,9 @@ type cmd_t = {
   cids : Names.Id.t list;
   cblock : proof_block_name option;
   cqueue : [ `MainQueue
-           | `TacQueue of solving_tac * anon_abstracting_tac * AsyncTaskQueue.cancel_switch
-           | `QueryQueue of AsyncTaskQueue.cancel_switch
-           | `SkipQueue ] }
+           | `QueryQueue
+           | `SkipQueue ];
+  cancel_switch : AsyncTaskQueue.cancel_switch; }
 type fork_t = aast * Vcs_.Branch.t * opacity_guarantee * Names.Id.t list
 type qed_t = {
   qast : aast;
@@ -190,10 +190,10 @@ type step =
 type visit = { step : step; next : Stateid.t }
 
 let mkTransTac cast cblock cqueue =
-  Cmd { ctac = true; cast; cblock; cqueue; cids = []; ceff = false }
+  Cmd { ctac = true; cast; cblock; cqueue; cids = []; ceff = false; cancel_switch = ref false }
 
 let mkTransCmd cast cids ceff cqueue =
-  Cmd { ctac = false; cast; cblock = None; cqueue; cids; ceff }
+  Cmd { ctac = false; cast; cblock = None; cqueue; cids; ceff; cancel_switch = ref false }
 
 type cached_state =
   | EmptyState
@@ -742,8 +742,7 @@ end = struct (* {{{ *)
     Stateid.Set.iter (fun id ->
         match (Vcs_aux.visit old_vcs id).step with
         | `Qed ({ fproof = Some (_, cancel_switch) }, _)
-        | `Cmd { cqueue = `TacQueue (_,_,cancel_switch) }
-        | `Cmd { cqueue = `QueryQueue cancel_switch } ->
+        | `Cmd { cancel_switch } ->
              cancel_switch := true
         | _ -> ())
       erased_nodes;
@@ -1222,11 +1221,6 @@ let record_pb_time ?loc proof_name time =
     hints := Aux_file.set !hints proof_name proof_build_time
   end
 
-exception RemoteException of Pp.t
-let _ = CErrors.register_handler (function
-  | RemoteException ppcmd -> Some ppcmd
-  | _ -> None)
-
 (****************** proof structure for error recovery ************************)
 (******************************************************************************)
 
@@ -1429,7 +1423,7 @@ end = struct (* {{{ *)
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
         feedback (InProgress ~-1);
         let info = Stateid.add ~valid Exninfo.null e_error_at in
-        let e = (RemoteException e_msg, info) in
+        let e = (AsyncTaskQueue.RemoteException e_msg, info) in
         t_assign (`Exn e);
         `Stay(t_states,[States e_safe_states])
     | _ -> assert false
@@ -1440,7 +1434,7 @@ end = struct (* {{{ *)
     | Some (BuildProof { t_start = start; t_assign }) ->
         let s = "Worker dies or task expired" in
         let info = Stateid.add ~valid:start Exninfo.null start in
-        let e = (RemoteException (Pp.strbrk s), info) in
+        let e = (AsyncTaskQueue.RemoteException (Pp.strbrk s), info) in
         t_assign (`Exn e);
         execution_error start (Pp.strbrk s);
         feedback (InProgress ~-1)
@@ -1789,225 +1783,6 @@ end = struct (* {{{ *)
     reqs
 
   let reset_task_queue () = TaskQueue.clear (Option.get !queue)
-
-end (* }}} *)
-
-and TacTask : sig
-
-  type output = (Constr.constr * UState.t) option
-  type task = {
-    t_state    : Stateid.t;
-    t_state_fb : Stateid.t;
-    t_assign   : output Future.assignment -> unit;
-    t_ast      : int * aast;
-    t_goal     : Goal.goal;
-    t_kill     : unit -> unit;
-    t_name     : string }
-
-  include AsyncTaskQueue.Task with type task := task
-
-end = struct (* {{{ *)
-
-  type output = (Constr.constr * UState.t) option
-
-  let forward_feedback msg = Hooks.(call forward_feedback msg)
-
-  type task = {
-    t_state    : Stateid.t;
-    t_state_fb : Stateid.t;
-    t_assign   : output Future.assignment -> unit;
-    t_ast      : int * aast;
-    t_goal     : Goal.goal;
-    t_kill     : unit -> unit;
-    t_name     : string }
-
-  type request = {
-    r_state    : Stateid.t;
-    r_state_fb : Stateid.t;
-    r_document : VCS.vcs option;
-    r_ast      : int * aast;
-    r_goal     : Goal.goal;
-    r_name     : string }
-
-  type response =
-    | RespBuiltSubProof of (Constr.constr * UState.t)
-    | RespError of Pp.t
-    | RespNoProgress
-
-  let name = ref "tacticworker"
-  let extra_env () = [||]
-  type competence = unit
-  type worker_status = Fresh | Old of competence
-
-  let task_match _ _ = true
-
-  (* run by the master, on a thread *)
-  let request_of_task age { t_state; t_state_fb; t_ast; t_goal; t_name } =
-    try Some {
-      r_state    = t_state;
-      r_state_fb = t_state_fb;
-      r_document =
-        if age <> Fresh then None
-        else Some (VCS.slice ~block_start:t_state ~block_stop:t_state);
-      r_ast      = t_ast;
-      r_goal     = t_goal;
-      r_name     = t_name }
-    with VCS.Expired -> None
-
-  let use_response _ { t_assign; t_state; t_state_fb; t_kill } resp =
-    match resp with
-    | RespBuiltSubProof o -> t_assign (`Val (Some o)); `Stay ((),[])
-    | RespNoProgress ->
-        t_assign (`Val None);
-        t_kill ();
-        `Stay ((),[])
-    | RespError msg ->
-        let e = (RemoteException msg, Exninfo.null) in
-        t_assign (`Exn e);
-        t_kill ();
-        `Stay ((),[])
-
-  let on_marshal_error err { t_name } =
-    stm_pr_err ("Fatal marshal error: " ^ t_name );
-    flush_all (); exit 1
-
-  let on_task_cancellation_or_expiration_or_slave_death = function
-    | Some { t_kill } -> t_kill ()
-    | _ -> ()
-
-  let command_focus = Proof.new_focus_kind ()
-  let focus_cond = Proof.no_cond command_focus
-
-  let perform { r_state = id; r_state_fb; r_document = vcs; r_ast; r_goal } =
-    Option.iter VCS.restore vcs;
-    try
-      Reach.known_state ~doc:dummy_doc (* XXX should be vcs *) ~cache:false id;
-      State.purify (fun () ->
-       let Proof.{sigma=sigma0} = Proof.data (PG_compat.give_me_the_proof ()) in
-       let g = Evd.find sigma0 r_goal in
-       let is_ground c = Evarutil.is_ground_term sigma0 c in
-       if not (
-         is_ground Evd.(evar_concl g) &&
-         List.for_all (Context.Named.Declaration.for_all is_ground)
-                      Evd.(evar_context g))
-       then
-         CErrors.user_err ~hdr:"STM" Pp.(strbrk("The par: goal selector does not support goals with existential variables"))
-       else begin
-        let (i, ast) = r_ast in
-        PG_compat.map_proof (fun p -> Proof.focus focus_cond () i p);
-        (* STATE SPEC:
-         * - start : id
-         * - return: id
-         * => captures state id in a future closure, which will
-           discard execution state but for the proof + univs.
-        *)
-        let st = Vernacstate.freeze_interp_state ~marshallable:false in
-        ignore(stm_vernac_interp r_state_fb st ast);
-        let Proof.{sigma} = Proof.data (PG_compat.give_me_the_proof ()) in
-        match Evd.(evar_body (find sigma r_goal)) with
-        | Evd.Evar_empty -> RespNoProgress
-        | Evd.Evar_defined t ->
-            let t = Evarutil.nf_evar sigma t in
-            let evars = Evarutil.undefined_evars_of_term sigma t in
-            if Evar.Set.is_empty evars then
-              let t = EConstr.Unsafe.to_constr t in
-              RespBuiltSubProof (t, Evd.evar_universe_context sigma)
-            else
-              CErrors.user_err ~hdr:"STM"
-                Pp.(str"The par: selector requires a tactic that makes no progress or fully" ++
-                    str" solves the goal and leaves no unresolved existential variables. The following" ++
-                    str" existentials remain unsolved: " ++ prlist (Termops.pr_existential_key sigma) (Evar.Set.elements evars))
-       end) ()
-    with e when CErrors.noncritical e ->
-      RespError (CErrors.print e ++ spc() ++ str "(for subgoal "++int (fst r_ast) ++ str ")")
-
-  let name_of_task { t_name } = t_name
-  let name_of_request { r_name } = r_name
-
-end (* }}} *)
-
-and Partac : sig
-
-  val vernac_interp :
-    solve:bool -> abstract:bool -> cancel_switch:AsyncTaskQueue.cancel_switch ->
-    int -> CoqworkmgrApi.priority -> Stateid.t -> Stateid.t -> aast -> unit
-
-end = struct (* {{{ *)
-
-  module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask) ()
-
-  let stm_fail ~st fail f =
-    if fail then
-      Vernacinterp.with_fail ~st f
-    else
-      f ()
-
-  let vernac_interp ~solve ~abstract ~cancel_switch nworkers priority safe_id id
-    { indentation; verbose; expr = e; strlen } : unit
-  =
-    let cl, time, batch, fail =
-      let rec find ~time ~batch ~fail cl = match cl with
-        | ControlTime batch :: cl -> find ~time:true ~batch ~fail cl
-        | ControlRedirect _ :: cl -> find ~time ~batch ~fail cl
-        | ControlFail :: cl -> find ~time ~batch ~fail:true cl
-        | cl -> cl, time, batch, fail in
-      find ~time:false ~batch:false ~fail:false e.CAst.v.control in
-    let e = CAst.map (fun cmd -> { cmd with control = cl }) e in
-    let st = Vernacstate.freeze_interp_state ~marshallable:false in
-    stm_fail ~st fail (fun () ->
-    (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
-    TaskQueue.with_n_workers nworkers priority (fun queue ->
-    PG_compat.map_proof (fun p ->
-      let Proof.{goals} = Proof.data p in
-      let open TacTask in
-      let res = CList.map_i (fun i g ->
-        let f, assign =
-          Future.create_delegate
-            ~name:(Printf.sprintf "subgoal %d" i)
-            (State.exn_on id ~valid:safe_id) in
-        let t_ast = (i, { indentation; verbose; expr = e; strlen }) in
-        let t_name = Goal.uid g in
-        TaskQueue.enqueue_task queue
-          { t_state = safe_id; t_state_fb = id;
-            t_assign = assign; t_ast; t_goal = g; t_name;
-            t_kill = (fun () -> if solve then TaskQueue.cancel_all queue) }
-           ~cancel_switch;
-        g,f)
-        1 goals in
-      TaskQueue.join queue;
-      let assign_tac : unit Proofview.tactic =
-        Proofview.(Goal.enter begin fun g ->
-        let gid = Goal.goal g in
-        let f =
-          try List.assoc gid res
-          with Not_found -> CErrors.anomaly(str"Partac: wrong focus.") in
-        if not (Future.is_over f) then
-          (* One has failed and cancelled the others, but not this one *)
-          if solve then Tacticals.New.tclZEROMSG
-            (str"Interrupted by the failure of another goal")
-          else tclUNIT ()
-        else
-          let open Notations in
-          match Future.join f with
-          | Some (pt, uc) ->
-            let sigma, env = PG_compat.get_current_context () in
-            let push_state ctx =
-              Proofview.tclEVARMAP >>= fun sigma ->
-              Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma ctx)
-            in
-            stm_pperr_endline (fun () -> hov 0 (
-              str"g=" ++ int (Evar.repr gid) ++ spc () ++
-              str"t=" ++ (Printer.pr_constr_env env sigma pt) ++ spc () ++
-              str"uc=" ++ Termops.pr_evar_universe_context uc));
-            (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
-              (push_state uc <*>
-              Tactics.exact_no_check (EConstr.of_constr pt))
-          | None ->
-            if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
-        end)
-      in
-      let p,_,() = Proof.run_tactic (Global.env()) assign_tac p in
-      p))) ())
 
 end (* }}} *)
 
@@ -2361,15 +2136,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
           ), cache, true
       | `Cmd { cast = x; cqueue = `SkipQueue } -> (fun () ->
             reach view.next), cache, true
-      | `Cmd { cast = x; cqueue = `TacQueue (solve,abstract,cancel_switch); cblock } ->
-          (fun () ->
-            resilient_tactic id cblock (fun () ->
-              reach ~cache:true view.next;
-              Partac.vernac_interp ~solve ~abstract ~cancel_switch
-                !cur_opt.async_proofs_n_tacworkers
-                !cur_opt.async_proofs_worker_priority view.next id x)
-          ), cache, true
-      | `Cmd { cast = x; cqueue = `QueryQueue cancel_switch }
+      | `Cmd { cast = x; cqueue = `QueryQueue; cancel_switch }
         when async_proofs_is_master !cur_opt -> (fun () ->
             reach view.next;
             Query.vernac_interp ~cancel_switch view.next id x
@@ -2377,7 +2144,6 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
       | `Cmd { cast = x; ceff = eff; ctac = true; cblock } -> (fun () ->
             resilient_tactic id cblock (fun () ->
               reach view.next;
-              (* State resulting from reach *)
               let st = Vernacstate.freeze_interp_state ~marshallable:false in
               ignore(stm_vernac_interp id st x)
             )
@@ -2588,6 +2354,7 @@ let doc_type_module_name (std : stm_doc_type) =
 
 let init_core () =
   if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
+  if !Flags.async_proofs_worker_id = "master" then Partac.enable_par ~nworkers:!cur_opt.async_proofs_n_tacworkers;
   State.register_root_state ()
 
 let dirpath_of_file f =
@@ -2938,12 +2705,9 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
           VCS.set_parsing_state id head_parsing;
           Backtrack.record (); `Ok
 
-      | VtProofStep { parallel; proof_block_detection = cblock } ->
+      | VtProofStep { proof_block_detection = cblock } ->
           let id = VCS.new_node ~id:newtip proof_mode () in
-          let queue =
-            match parallel with
-            | `Yes(solve,abstract) -> `TacQueue (solve, abstract, ref false)
-            | `No -> `MainQueue in
+          let queue = `MainQueue in
           VCS.commit id (mkTransTac x cblock queue);
           (* Static proof block detection delayed until an error really occurs.
              If/when and UI will make something useful with this piece of info,

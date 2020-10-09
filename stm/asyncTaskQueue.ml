@@ -386,3 +386,8 @@ end
 
 module MakeQueue(T : Task) () = struct include Make(T) () end
 module MakeWorker(T : Task) () = struct include Make(T) () end
+
+exception RemoteException of Pp.t
+let _ = CErrors.register_handler (function
+  | RemoteException ppcmd -> Some ppcmd
+  | _ -> None)

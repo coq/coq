@@ -30,7 +30,6 @@ type vernac_classification =
   | VtQed of vernac_qed_type
   (* A proof step *)
   | VtProofStep of {
-      parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
       proof_block_detection : proof_block_name option
     }
   (* Queries are commands assumed to be "pure", that is to say, they
@@ -124,7 +123,7 @@ let declare_vernac_classifier name f =
 
 let classify_as_query = VtQuery
 let classify_as_sideeff = VtSideff ([], VtLater)
-let classify_as_proofstep = VtProofStep { parallel = `No; proof_block_detection = None}
+let classify_as_proofstep = VtProofStep { proof_block_detection = None}
 
 type (_, _) ty_sig =
 | TyNil : (vernac_command, vernac_classification) ty_sig

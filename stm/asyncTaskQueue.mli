@@ -220,3 +220,6 @@ module MakeWorker(T : Task) () : sig
   val main_loop : unit -> unit
 
 end
+
+(** convenience exception to marshall to master *)
+exception RemoteException of Pp.t

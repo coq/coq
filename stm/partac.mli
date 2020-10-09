@@ -8,6 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module W = AsyncTaskQueue.MakeWorker(Partac.TacTask) ()
+val enable_par : nworkers:int -> unit
 
-let () = WorkerLoop.start ~init:W.init_stdout ~loop:W.main_loop "coqtacticworker"
+module TacTask : AsyncTaskQueue.Task
