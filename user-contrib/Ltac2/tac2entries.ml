@@ -911,25 +911,19 @@ let print_ltac qid =
 
 (** Calling tactics *)
 
-let solve ~pstate default tac =
-  let pstate, status = Declare.Proof.map_fold_endline pstate ~f:(fun etac p ->
-    let with_end_tac = if default then Some etac else None in
-    let g = Goal_select.get_default_goal_selector () in
-    let (p, status) = Proof.solve g None tac ?with_end_tac p in
-    (* in case a strict subtree was completed,
-       go back to the top of the prooftree *)
-    let p = Proof.maximal_unfocus Vernacentries.command_focus p in
-    p, status)
-  in
-  if not status then Feedback.feedback Feedback.AddedAxiom;
-  pstate
-
-let call ~pstate ~default e =
+let ltac2_interp e =
   let loc = e.loc in
   let (e, t) = intern ~strict:false [] e in
   let () = check_unit ?loc t in
   let tac = Tac2interp.interp Tac2interp.empty_environment e in
-  solve ~pstate default (Proofview.tclIGNORE tac)
+  Proofview.tclIGNORE tac
+
+let ComTactic.Interpreter ltac2_interp = ComTactic.register_tactic_interpreter "ltac2" ltac2_interp
+
+let call ~pstate ~with_end_tac tac =
+  ComTactic.solve ~pstate ~with_end_tac
+    (Goal_select.get_default_goal_selector())
+    ~info:None (ltac2_interp tac)
 
 (** Primitive algebraic types than can't be defined Coq-side *)
 

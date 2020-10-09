@@ -920,10 +920,10 @@ open Vernacextend
 }
 
 VERNAC { tac2mode } EXTEND VernacLtac2
-| ![proof] [ ltac2_expr(t) ltac_use_default(default) ] =>
+| ![proof] [ ltac2_expr(t) ltac_use_default(with_end_tac) ] =>
     { classify_as_proofstep } -> {
 (*     let g = Option.default (Proof_global.get_default_goal_selector ()) g in *)
-  fun ~pstate -> Tac2entries.call ~pstate ~default t }
+  fun ~pstate -> Tac2entries.call ~pstate ~with_end_tac t }
 END
 
 GRAMMAR EXTEND Gram
