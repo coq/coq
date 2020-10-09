@@ -54,7 +54,8 @@ Infix "=?" := eqb : string_scope.
 
 Lemma eqb_spec s1 s2 : Bool.reflect (s1 = s2) (s1 =? s2)%string.
 Proof.
- revert s2. induction s1; destruct s2; try (constructor; easy); simpl.
+ revert s2. induction s1 as [|? s1 IHs1];
+  intro s2; destruct s2; try (constructor; easy); simpl.
  case Ascii.eqb_spec; simpl; [intros -> | constructor; now intros [= ]].
  case IHs1; [intros ->; now constructor | constructor; now intros [= ]].
 Qed.
@@ -117,7 +118,7 @@ intros s1; elim s1; simpl.
 intros s2; case s2; simpl; split; auto.
 intros H; generalize (H O); intros H1; inversion H1.
 intros; discriminate.
-intros a s1' Rec s2; case s2; simpl; split; auto.
+intros a s1' Rec s2; case s2 as [|? s]; simpl; split; auto.
 intros H; generalize (H O); intros H1; inversion H1.
 intros; discriminate.
 intros H; generalize (H O); simpl; intros H1; inversion H1.
@@ -249,7 +250,7 @@ intros b s2'; case (ascii_dec a b); simpl; auto.
 intros e; case (Rec s2'); intros H1 H2; split; intros H3; auto.
 rewrite e; rewrite H1; auto.
 apply H2; injection H3; auto.
-intros n; split; intros; try discriminate.
+intros n; split; intros H; try discriminate.
 case n; injection H; auto.
 Qed.
 
