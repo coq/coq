@@ -126,7 +126,7 @@ Lemma pos_sub_spec p q :
    | Gt => pos (p - q)
  end.
 Proof.
- revert q. induction p; destruct q; simpl; trivial;
+ revert q. induction p as [p IHp|p IHp|]; intros q; destruct q; simpl; trivial;
  rewrite ?Pos.compare_xI_xI, ?Pos.compare_xO_xI,
   ?Pos.compare_xI_xO, ?Pos.compare_xO_xO, IHp; simpl;
  case Pos.compare_spec; intros; simpl; trivial;
@@ -168,7 +168,7 @@ Qed.
 
 Lemma pos_sub_opp p q : - pos_sub p q = pos_sub q p.
 Proof.
- revert q; induction p; destruct q; simpl; trivial;
+ revert q; induction p as [p IHp|p IHp|]; intros q; destruct q; simpl; trivial;
  rewrite <- IHp; now destruct pos_sub.
 Qed.
 
@@ -468,13 +468,13 @@ Lemma peano_ind (P : Z -> Prop) :
   (forall x, P x -> P (pred x)) ->
   forall z, P z.
 Proof.
- intros H0 Hs Hp z; destruct z.
+ intros H0 Hs Hp z; destruct z as [|p|p].
  assumption.
- induction p using Pos.peano_ind.
+ induction p as [|p IHp] using Pos.peano_ind.
   now apply (Hs 0).
   rewrite <- Pos.add_1_r.
   now apply (Hs (pos p)).
- induction p using Pos.peano_ind.
+ induction p as [|p IHp] using Pos.peano_ind.
   now apply (Hp 0).
   rewrite <- Pos.add_1_r.
   now apply (Hp (neg p)).
@@ -486,7 +486,7 @@ Lemma bi_induction (P : Z -> Prop) :
   (forall x, P x <-> P (succ x)) ->
   forall z, P z.
 Proof.
- intros _ H0 Hs. induction z using peano_ind.
+ intros _ H0 Hs z. induction z using peano_ind.
  assumption.
  now apply -> Hs.
  apply Hs. now rewrite succ_pred.
@@ -569,7 +569,7 @@ Qed.
 Lemma sqrtrem_spec n : 0<=n ->
  let (s,r) := sqrtrem n in n = s*s + r /\ 0 <= r <= 2*s.
 Proof.
- destruct n. now repeat split.
+ destruct n as [|p|p]. now repeat split.
  generalize (Pos.sqrtrem_spec p). simpl.
  destruct 1; simpl; subst; now repeat split.
  now destruct 1.
@@ -578,7 +578,7 @@ Qed.
 Lemma sqrt_spec n : 0<=n ->
  let s := sqrt n in s*s <= n < (succ s)*(succ s).
 Proof.
- destruct n. now repeat split. unfold sqrt.
+ destruct n as [|p|p]. now repeat split. unfold sqrt.
  intros _. simpl succ. rewrite Pos.add_1_r. apply (Pos.sqrt_spec p).
  now destruct 1.
 Qed.
@@ -590,7 +590,7 @@ Qed.
 
 Lemma sqrtrem_sqrt n : fst (sqrtrem n) = sqrt n.
 Proof.
- destruct n; try reflexivity.
+ destruct n as [|p|p]; try reflexivity.
  unfold sqrtrem, sqrt, Pos.sqrt.
  destruct (Pos.sqrtrem p) as (s,r). now destruct r.
 Qed.
@@ -655,7 +655,7 @@ Lemma pos_div_eucl_eq a b : 0 < b ->
   let (q, r) := pos_div_eucl a b in pos a = q * b + r.
 Proof.
  intros Hb.
- induction a; unfold pos_div_eucl; fold pos_div_eucl.
+ induction a as [a IHa|a IHa|]; unfold pos_div_eucl; fold pos_div_eucl.
  - (* ~1 *)
    destruct pos_div_eucl as (q,r).
    change (pos a~1) with (2*(pos a)+1).
@@ -720,7 +720,7 @@ Proof.
   now rewrite Pos.add_diag.
  intros Hb.
  destruct b as [|b|b]; discriminate Hb || clear Hb.
- induction a; unfold pos_div_eucl; fold pos_div_eucl.
+ induction a as [a IHa|a IHa|]; unfold pos_div_eucl; fold pos_div_eucl.
  (* ~1 *)
  destruct pos_div_eucl as (q,r).
  simpl in IHa; destruct IHa as (Hr,Hr').
@@ -996,7 +996,7 @@ Proof.
  intros Hn Hm. unfold shiftr.
  destruct n as [ |n|n]; (now destruct Hn) || clear Hn; simpl.
  now rewrite add_0_r.
- assert (forall p, to_N (m + pos p) = (to_N m + N.pos p)%N).
+ assert (forall p, to_N (m + pos p) = (to_N m + N.pos p)%N) as H.
   destruct m; trivial; now destruct Hm.
  assert (forall p, 0 <= m + pos p).
   destruct m; easy || now destruct Hm.
@@ -1054,7 +1054,7 @@ Proof.
   subst. now rewrite N.sub_diag.
   simpl. destruct (Pos.sub_mask_pos' m n H') as (p & -> & <-).
   f_equal. now rewrite Pos.add_comm, Pos.add_sub.
- destruct a; unfold shiftl.
+ destruct a as [|p|p]; unfold shiftl.
  (* ... a = 0 *)
  replace (Pos.iter (mul 2) 0 n) with 0
   by (apply Pos.iter_invariant; intros; subst; trivial).
