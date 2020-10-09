@@ -104,7 +104,7 @@ Section ZMORPHISM.
  Lemma get_signZ_th : sign_theory Z.opp Zeq_bool get_signZ.
  Proof.
   constructor.
-  destruct c;intros;try discriminate.
+  intros c;destruct c;intros ? H;try discriminate.
   injection H as [= <-].
   simpl. unfold Zeq_bool. rewrite Z.compare_refl. trivial.
  Qed.
@@ -119,7 +119,7 @@ Section ZMORPHISM.
 
  Lemma same_gen : forall x, gen_phiPOS1 x == gen_phiPOS x.
  Proof.
-  induction x;simpl.
+  intros x;induction x as [x IHx|x IHx|];simpl.
   rewrite IHx;destruct x;simpl;norm.
   rewrite IHx;destruct x;simpl;norm.
   rrefl.
@@ -128,7 +128,7 @@ Section ZMORPHISM.
  Lemma ARgen_phiPOS_Psucc : forall x,
    gen_phiPOS1 (Pos.succ x) == 1 + (gen_phiPOS1 x).
  Proof.
-  induction x;simpl;norm.
+  intros x;induction x as [x IHx|x IHx|];simpl;norm.
   rewrite IHx;norm.
   add_push 1;rrefl.
  Qed.
@@ -136,7 +136,8 @@ Section ZMORPHISM.
  Lemma ARgen_phiPOS_add : forall x y,
    gen_phiPOS1 (x + y) == (gen_phiPOS1 x) + (gen_phiPOS1 y).
  Proof.
-  induction x;destruct y;simpl;norm.
+  intros x;induction x as [x IHx|x IHx|];
+   intros y;destruct y as [y|y|];simpl;norm.
   rewrite Pos.add_carry_spec.
   rewrite ARgen_phiPOS_Psucc.
   rewrite IHx;norm.
@@ -152,7 +153,7 @@ Section ZMORPHISM.
  Lemma ARgen_phiPOS_mult :
    forall x y, gen_phiPOS1 (x * y) == gen_phiPOS1 x * gen_phiPOS1 y.
  Proof.
-  induction x;intros;simpl;norm.
+  intros x;induction x as [x IHx|x IHx|];intros;simpl;norm.
   rewrite ARgen_phiPOS_add;simpl;rewrite IHx;norm.
   rewrite IHx;rrefl.
  Qed.
@@ -169,7 +170,7 @@ Section ZMORPHISM.
 (*morphisms are extensionally equal*)
  Lemma same_genZ : forall x, [x] == gen_phiZ1 x.
  Proof.
-  destruct x;simpl; try rewrite (same_gen ARth);rrefl.
+  intros x;destruct x;simpl; try rewrite (same_gen ARth);rrefl.
  Qed.
 
  Lemma gen_Zeqb_ok : forall x y,
@@ -198,7 +199,7 @@ Section ZMORPHISM.
  Lemma gen_phiZ_add : forall x y, [x + y] == [x] + [y].
  Proof.
   intros x y; repeat rewrite same_genZ; generalize x y;clear x y.
-  destruct x, y; simpl; norm.
+  intros x y;destruct x, y; simpl; norm.
   apply (ARgen_phiPOS_add ARth).
   apply gen_phiZ1_pos_sub.
   rewrite gen_phiZ1_pos_sub. apply (Radd_comm Rth).
@@ -301,7 +302,7 @@ Section NMORPHISM.
 
  Lemma same_genN : forall x, [x] == gen_phiN1 x.
  Proof.
-  destruct x;simpl. reflexivity.
+  intros x;destruct x;simpl. reflexivity.
   now rewrite (same_gen Rsth Reqe ARth).
  Qed.
 
@@ -421,7 +422,7 @@ Section NWORDMORPHISM.
 
  Lemma gen_phiNword0_ok : forall w, Nw_is0 w = true -> gen_phiNword w == 0.
 Proof.
-induction w; simpl; intros; auto.
+intros w; induction w as [|a w IHw]; simpl; intros; auto.
  reflexivity.
 
  destruct a.
@@ -436,17 +437,17 @@ Qed.
 
   Lemma gen_phiNword_cons : forall w n,
     gen_phiNword (n::w) == gen_phiN rO rI radd rmul n - gen_phiNword w.
-induction w.
- destruct n; simpl; norm.
+intros w; induction w.
+ intros n; destruct n; simpl; norm.
 
- intros.
+ intros n.
  destruct n; norm.
 Qed.
 
   Lemma gen_phiNword_Nwcons : forall w n,
     gen_phiNword (Nwcons n w) == gen_phiN rO rI radd rmul n - gen_phiNword w.
-destruct w; intros.
- destruct n; norm.
+intros w; destruct w; intros n0.
+ destruct n0; norm.
 
  unfold Nwcons.
  rewrite gen_phiNword_cons.
@@ -455,13 +456,13 @@ Qed.
 
  Lemma gen_phiNword_ok : forall w1 w2,
    Nweq_bool w1 w2 = true -> gen_phiNword w1 == gen_phiNword w2.
-induction w1; intros.
+intros w1; induction w1 as [|a w1 IHw1]; intros w2 H.
  simpl.
  rewrite (gen_phiNword0_ok _ H).
  reflexivity.
 
  rewrite gen_phiNword_cons.
- destruct w2.
+ destruct w2 as [|n w2].
   simpl in H.
   destruct a; try  discriminate.
   rewrite (gen_phiNword0_ok _ H).
@@ -481,7 +482,7 @@ Qed.
 
 Lemma Nwadd_ok : forall x y,
    gen_phiNword (Nwadd x y) == gen_phiNword x + gen_phiNword y.
-induction x; intros.
+intros x; induction x as [|n x IHx]; intros y.
  simpl.
  norm.
 
@@ -507,7 +508,7 @@ Qed.
 
 Lemma Nwscal_ok : forall n x,
   gen_phiNword (Nwscal n x) == gen_phiN rO rI radd rmul n * gen_phiNword x.
-induction x; intros.
+intros n x; induction x as [|a x IHx]; intros.
  norm.
 
  simpl Nwscal.
@@ -521,7 +522,7 @@ Qed.
 
 Lemma Nwmul_ok : forall x y,
    gen_phiNword (Nwmul x y) == gen_phiNword x * gen_phiNword y.
-induction x; intros.
+intros x; induction x as [|a x IHx]; intros.
  norm.
 
  destruct a.
@@ -626,7 +627,7 @@ Qed.
  Lemma Ztriv_div_th : div_theory req Z.add Z.mul zphi Z.quotrem.
  Proof.
   constructor.
-  intros; generalize (Z.quotrem_eq a b); case Z.quotrem; intros; subst.
+  intros a b; generalize (Z.quotrem_eq a b); case Z.quotrem; intros; subst.
   rewrite Z.mul_comm; rsimpl.
  Qed.
 
@@ -634,7 +635,7 @@ Qed.
 
  Lemma Ntriv_div_th : div_theory req N.add N.mul nphi N.div_eucl.
   constructor.
-  intros; generalize (N.div_eucl_spec a b); case N.div_eucl; intros; subst.
+  intros a b; generalize (N.div_eucl_spec a b); case N.div_eucl; intros; subst.
   rewrite N.mul_comm; rsimpl.
  Qed.
 
