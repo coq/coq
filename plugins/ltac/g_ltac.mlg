@@ -402,7 +402,7 @@ VERNAC { tactic_mode } EXTEND VernacSolve STATE proof
     { classify_as_proofstep } -> {
     let g = Option.default (Goal_select.get_default_goal_selector ()) g in
     let global = match g with Goal_select.SelectAll | Goal_select.SelectList _ -> true | _ -> false in
-    let t = ComTactic.I (Tacinterp.hide_interp, { Tacinterp.global; ast = t; }) in
+    let t = Tacinterp.hide_interp { Tacinterp.global; ast = t; } in
     ComTactic.solve g ~info t ~with_end_tac
   }
 END
@@ -415,7 +415,7 @@ VERNAC { tactic_mode } EXTEND VernacSolveParallel STATE proof
       VtProofStep{ proof_block_detection = pbr }
     } -> {
       let t, abstract = rm_abstract t in
-      let t = ComTactic.I (Tacinterp.hide_interp, { Tacinterp.global = true; ast = t; }) in
+      let t = Tacinterp.hide_interp { Tacinterp.global = true; ast = t; } in
       ComTactic.solve_parallel ~info t ~abstract ~with_end_tac
     }
 END
