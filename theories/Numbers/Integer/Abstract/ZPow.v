@@ -73,7 +73,7 @@ Qed.
 
 Lemma pow_even_abs : forall a b, Even b -> a^b == (abs a)^b.
 Proof.
- intros. destruct (abs_eq_or_opp a) as [EQ|EQ]; rewrite EQ.
+ intros a b ?. destruct (abs_eq_or_opp a) as [EQ|EQ]; rewrite EQ.
  reflexivity.
  symmetry. now apply pow_opp_even.
 Qed.
@@ -119,7 +119,7 @@ Qed.
 Lemma abs_pow : forall a b, abs (a^b) == (abs a)^b.
 Proof.
  intros a b.
- destruct (Even_or_Odd b).
+ destruct (Even_or_Odd b) as [H|H].
  rewrite pow_even_abs by trivial.
  apply abs_eq, pow_nonneg, abs_nonneg.
  rewrite pow_odd_abs_sgn by trivial.
