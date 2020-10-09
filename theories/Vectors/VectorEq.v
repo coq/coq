@@ -36,7 +36,7 @@ Section BEQ.
   (Hbeq: eqb v1 v2 = true), m = n.
  Proof.
    intros m n v1; revert n.
-   induction v1; destruct v2;
+   induction v1; intros ? v2; destruct v2;
      [now constructor | discriminate | discriminate | simpl].
    intros Hbeq; apply andb_prop in Hbeq; destruct Hbeq.
    f_equal; eauto.
