@@ -69,7 +69,7 @@ Proof. intros. now rewrite rem_opp_r, rem_opp_l. Qed.
 
 Lemma quot_opp_l : forall a b, b ~= 0 -> (-a)÷b == -(a÷b).
 Proof.
-intros.
+intros a b ?.
 rewrite <- (mul_cancel_l _ _ b) by trivial.
 rewrite <- (add_cancel_r _ _ ((-a) rem b)).
 now rewrite <- quot_rem, rem_opp_l, mul_opp_r, <- opp_add_distr, <- quot_rem.
@@ -77,7 +77,7 @@ Qed.
 
 Lemma quot_opp_r : forall a b, b ~= 0 -> a÷(-b) == -(a÷b).
 Proof.
-intros.
+intros a b ?.
 assert (-b ~= 0) by (now rewrite eq_opp_l, opp_0).
 rewrite <- (mul_cancel_l _ _ (-b)) by trivial.
 rewrite <- (add_cancel_r _ _ (a rem (-b))).
@@ -105,17 +105,17 @@ Qed.
 
 Theorem quot_unique:
  forall a b q r, 0<=a -> 0<=r<b -> a == b*q + r -> q == a÷b.
-Proof. intros; now apply NZQuot.div_unique with r. Qed.
+Proof. intros a b q r **; now apply NZQuot.div_unique with r. Qed.
 
 Theorem rem_unique:
  forall a b q r, 0<=a -> 0<=r<b -> a == b*q + r -> r == a rem b.
-Proof. intros; now apply NZQuot.mod_unique with q. Qed.
+Proof. intros a b q r **; now apply NZQuot.mod_unique with q. Qed.
 
 (** A division by itself returns 1 *)
 
 Lemma quot_same : forall a, a~=0 -> a÷a == 1.
 Proof.
-intros. pos_or_neg a. apply NZQuot.div_same; order.
+intros a ?. pos_or_neg a. apply NZQuot.div_same; order.
 rewrite <- quot_opp_opp by trivial. now apply NZQuot.div_same.
 Qed.
 
@@ -138,7 +138,7 @@ Proof. exact NZQuot.mod_small. Qed.
 
 Lemma quot_0_l: forall a, a~=0 -> 0÷a == 0.
 Proof.
-intros. pos_or_neg a. apply NZQuot.div_0_l; order.
+intros a ?. pos_or_neg a. apply NZQuot.div_0_l; order.
 rewrite <- quot_opp_opp, opp_0 by trivial. now apply NZQuot.div_0_l.
 Qed.
 
@@ -149,7 +149,7 @@ Qed.
 
 Lemma quot_1_r: forall a, a÷1 == a.
 Proof.
-intros. pos_or_neg a. now apply NZQuot.div_1_r.
+intros a. pos_or_neg a. now apply NZQuot.div_1_r.
 apply opp_inj. rewrite <- quot_opp_l. apply NZQuot.div_1_r; order.
 intro EQ; symmetry in EQ; revert EQ; apply lt_neq, lt_0_1.
 Qed.
@@ -168,7 +168,7 @@ Proof. exact NZQuot.mod_1_l. Qed.
 
 Lemma quot_mul : forall a b, b~=0 -> (a*b)÷b == a.
 Proof.
-intros. pos_or_neg a; pos_or_neg b. apply NZQuot.div_mul; order.
+intros a b ?. pos_or_neg a; pos_or_neg b. apply NZQuot.div_mul; order.
 rewrite <- quot_opp_opp, <- mul_opp_r by order. apply NZQuot.div_mul; order.
 rewrite <- opp_inj_wd, <- quot_opp_l, <- mul_opp_l by order.
 apply NZQuot.div_mul; order.
@@ -190,7 +190,7 @@ Qed.
 
 Lemma rem_nonneg : forall a b, b~=0 -> 0 <= a -> 0 <= a rem b.
 Proof.
- intros. pos_or_neg b. destruct (rem_bound_pos a b); order.
+ intros a b **. pos_or_neg b. destruct (rem_bound_pos a b); order.
  rewrite <- rem_opp_r; trivial.
  destruct (rem_bound_pos a (-b)); trivial.
 Qed.
@@ -309,7 +309,7 @@ Proof. exact NZQuot.div_str_pos. Qed.
 
 Lemma quot_small_iff : forall a b, b~=0 -> (a÷b==0 <-> abs a < abs b).
 Proof.
-intros. pos_or_neg a; pos_or_neg b.
+intros a b ?. pos_or_neg a; pos_or_neg b.
 rewrite NZQuot.div_small_iff; try order. rewrite 2 abs_eq; intuition; order.
 rewrite <- opp_inj_wd, opp_0, <- quot_opp_r, NZQuot.div_small_iff by order.
  rewrite (abs_eq a), (abs_neq' b); intuition; order.
@@ -321,7 +321,7 @@ Qed.
 
 Lemma rem_small_iff : forall a b, b~=0 -> (a rem b == a <-> abs a < abs b).
 Proof.
-intros. rewrite rem_eq, <- quot_small_iff by order.
+intros a b ?. rewrite rem_eq, <- quot_small_iff by order.
 rewrite sub_move_r, <- (add_0_r a) at 1. rewrite add_cancel_l.
 rewrite eq_sym_iff, eq_mul_0. tauto.
 Qed.
@@ -336,7 +336,7 @@ Proof. exact NZQuot.div_lt. Qed.
 
 Lemma quot_le_mono : forall a b c, 0<c -> a<=b -> a÷c <= b÷c.
 Proof.
-intros. pos_or_neg a. apply NZQuot.div_le_mono; auto.
+intros a b c **. pos_or_neg a. apply NZQuot.div_le_mono; auto.
 pos_or_neg b. apply le_trans with 0.
  rewrite <- opp_nonneg_nonpos, <- quot_opp_l by order.
  apply quot_pos; order.
@@ -350,7 +350,7 @@ Qed.
 
 Lemma mul_quot_le : forall a b, 0<=a -> b~=0 -> 0 <= b*(a÷b) <= a.
 Proof.
-intros. pos_or_neg b.
+intros a b **. pos_or_neg b.
 split.
 apply mul_nonneg_nonneg; [|apply quot_pos]; order.
 apply NZQuot.mul_div_le; order.
@@ -362,7 +362,7 @@ Qed.
 
 Lemma mul_quot_ge : forall a b, a<=0 -> b~=0 -> a <= b*(a÷b) <= 0.
 Proof.
-intros.
+intros a b **.
 rewrite <- opp_nonneg_nonpos, opp_le_mono, <-mul_opp_r, <-quot_opp_l by order.
 rewrite <- opp_nonneg_nonpos in *.
 destruct (mul_quot_le (-a) b); tauto.
@@ -415,7 +415,7 @@ Proof. exact NZQuot.div_lt_upper_bound. Qed.
 Theorem quot_le_upper_bound:
   forall a b q, 0<b -> a <= b*q -> a÷b <= q.
 Proof.
-intros.
+intros a b q **.
 rewrite <- (quot_mul q b) by order.
 apply quot_le_mono; trivial. now rewrite mul_comm.
 Qed.
@@ -423,7 +423,7 @@ Qed.
 Theorem quot_le_lower_bound:
   forall a b q, 0<b -> b*q <= a -> q <= a÷b.
 Proof.
-intros.
+intros a b q **.
 rewrite <- (quot_mul q b) by order.
 apply quot_le_mono; trivial. now rewrite mul_comm.
 Qed.
@@ -443,7 +443,7 @@ Lemma rem_add : forall a b c, c~=0 -> 0 <= (a+b*c)*a ->
  (a + b * c) rem c == a rem c.
 Proof.
 assert (forall a b c, c~=0 -> 0<=a -> 0<=a+b*c -> (a+b*c) rem c == a rem c).
- intros. pos_or_neg c. apply NZQuot.mod_add; order.
+ intros a b c **. pos_or_neg c. apply NZQuot.mod_add; order.
  rewrite <- (rem_opp_r a), <- (rem_opp_r (a+b*c)) by order.
  rewrite <- mul_opp_opp in *.
  apply NZQuot.mod_add; order.
@@ -457,7 +457,7 @@ Qed.
 Lemma quot_add : forall a b c, c~=0 -> 0 <= (a+b*c)*a ->
  (a + b * c) ÷ c == a ÷ c + b.
 Proof.
-intros.
+intros a b c **.
 rewrite <- (mul_cancel_l _ _ c) by trivial.
 rewrite <- (add_cancel_r _ _ ((a+b*c) rem c)).
 rewrite <- quot_rem, rem_add by trivial.
@@ -476,14 +476,14 @@ Lemma quot_mul_cancel_r : forall a b c, b~=0 -> c~=0 ->
  (a*c)÷(b*c) == a÷b.
 Proof.
 assert (Aux1 : forall a b c, 0<=a -> 0<b -> c~=0 -> (a*c)÷(b*c) == a÷b).
- intros. pos_or_neg c. apply NZQuot.div_mul_cancel_r; order.
+ intros a b c **. pos_or_neg c. apply NZQuot.div_mul_cancel_r; order.
  rewrite <- quot_opp_opp, <- 2 mul_opp_r. apply NZQuot.div_mul_cancel_r; order.
  rewrite <- neq_mul_0; intuition order.
 assert (Aux2 : forall a b c, 0<=a -> b~=0 -> c~=0 -> (a*c)÷(b*c) == a÷b).
- intros. pos_or_neg b. apply Aux1; order.
+ intros a b c **. pos_or_neg b. apply Aux1; order.
  apply opp_inj. rewrite <- 2 quot_opp_r, <- mul_opp_l; try order. apply Aux1; order.
  rewrite <- neq_mul_0; intuition order.
-intros. pos_or_neg a. apply Aux2; order.
+intros a b c **. pos_or_neg a. apply Aux2; order.
 apply opp_inj. rewrite <- 2 quot_opp_l, <- mul_opp_l; try order. apply Aux2; order.
 rewrite <- neq_mul_0; intuition order.
 Qed.
@@ -491,13 +491,13 @@ Qed.
 Lemma quot_mul_cancel_l : forall a b c, b~=0 -> c~=0 ->
  (c*a)÷(c*b) == a÷b.
 Proof.
-intros. rewrite !(mul_comm c); now apply quot_mul_cancel_r.
+intros a b c **. rewrite !(mul_comm c); now apply quot_mul_cancel_r.
 Qed.
 
 Lemma mul_rem_distr_r: forall a b c, b~=0 -> c~=0 ->
   (a*c) rem (b*c) == (a rem b) * c.
 Proof.
-intros.
+intros a b c **.
 assert (b*c ~= 0) by (rewrite <- neq_mul_0; tauto).
 rewrite ! rem_eq by trivial.
 rewrite quot_mul_cancel_r by order.
@@ -507,7 +507,7 @@ Qed.
 Lemma mul_rem_distr_l: forall a b c, b~=0 -> c~=0 ->
   (c*a) rem (c*b) == c * (a rem b).
 Proof.
-intros; rewrite !(mul_comm c); now apply mul_rem_distr_r.
+intros a b c **; rewrite !(mul_comm c); now apply mul_rem_distr_r.
 Qed.
 
 (** Operations modulo. *)
@@ -515,7 +515,7 @@ Qed.
 Theorem rem_rem: forall a n, n~=0 ->
  (a rem n) rem n == a rem n.
 Proof.
-intros. pos_or_neg a; pos_or_neg n. apply NZQuot.mod_mod; order.
+intros a n **. pos_or_neg a; pos_or_neg n. apply NZQuot.mod_mod; order.
 rewrite <- ! (rem_opp_r _ n) by trivial. apply NZQuot.mod_mod; order.
 apply opp_inj. rewrite <- !rem_opp_l by order. apply NZQuot.mod_mod; order.
 apply opp_inj. rewrite <- !rem_opp_opp by order. apply NZQuot.mod_mod; order.
@@ -526,11 +526,11 @@ Lemma mul_rem_idemp_l : forall a b n, n~=0 ->
 Proof.
 assert (Aux1 : forall a b n, 0<=a -> 0<=b -> n~=0 ->
          ((a rem n)*b) rem n == (a*b) rem n).
- intros. pos_or_neg n. apply NZQuot.mul_mod_idemp_l; order.
+ intros a b n **. pos_or_neg n. apply NZQuot.mul_mod_idemp_l; order.
  rewrite <- ! (rem_opp_r _ n) by order. apply NZQuot.mul_mod_idemp_l; order.
 assert (Aux2 : forall a b n, 0<=a -> n~=0 ->
          ((a rem n)*b) rem n == (a*b) rem n).
- intros. pos_or_neg b. now apply Aux1.
+ intros a b n **. pos_or_neg b. now apply Aux1.
  apply opp_inj. rewrite <-2 rem_opp_l, <-2 mul_opp_r by order.
   apply Aux1; order.
 intros a b n Hn. pos_or_neg a. now apply Aux2.
@@ -541,7 +541,7 @@ Qed.
 Lemma mul_rem_idemp_r : forall a b n, n~=0 ->
  (a*(b rem n)) rem n == (a*b) rem n.
 Proof.
-intros. rewrite !(mul_comm a). now apply mul_rem_idemp_l.
+intros a b n **. rewrite !(mul_comm a). now apply mul_rem_idemp_l.
 Qed.
 
 Theorem mul_rem: forall a b n, n~=0 ->
@@ -564,7 +564,7 @@ Lemma add_rem_idemp_l : forall a b n, n~=0 -> 0 <= a*b ->
 Proof.
 assert (Aux : forall a b n, 0<=a -> 0<=b -> n~=0 ->
           ((a rem n)+b) rem n == (a+b) rem n).
- intros. pos_or_neg n. apply NZQuot.add_mod_idemp_l; order.
+ intros a b n **. pos_or_neg n. apply NZQuot.add_mod_idemp_l; order.
  rewrite <- ! (rem_opp_r _ n) by order. apply NZQuot.add_mod_idemp_l; order.
 intros a b n Hn Hab. destruct (le_0_mul _ _ Hab) as [(Ha,Hb)|(Ha,Hb)].
 now apply Aux.
@@ -576,7 +576,7 @@ Qed.
 Lemma add_rem_idemp_r : forall a b n, n~=0 -> 0 <= a*b ->
  (a+(b rem n)) rem n == (a+b) rem n.
 Proof.
-intros. rewrite !(add_comm a). apply add_rem_idemp_l; trivial.
+intros a b n **. rewrite !(add_comm a). apply add_rem_idemp_l; trivial.
 now rewrite mul_comm.
 Qed.
 
@@ -598,16 +598,16 @@ Lemma quot_quot : forall a b c, b~=0 -> c~=0 ->
  (a÷b)÷c == a÷(b*c).
 Proof.
 assert (Aux1 : forall a b c, 0<=a -> 0<b -> c~=0 -> (a÷b)÷c == a÷(b*c)).
- intros. pos_or_neg c. apply NZQuot.div_div; order.
+ intros a b c **. pos_or_neg c. apply NZQuot.div_div; order.
  apply opp_inj. rewrite <- 2 quot_opp_r, <- mul_opp_r; trivial.
  apply NZQuot.div_div; order.
  rewrite <- neq_mul_0; intuition order.
 assert (Aux2 : forall a b c, 0<=a -> b~=0 -> c~=0 -> (a÷b)÷c == a÷(b*c)).
- intros. pos_or_neg b. apply Aux1; order.
+ intros a b c **. pos_or_neg b. apply Aux1; order.
  apply opp_inj. rewrite <- quot_opp_l, <- 2 quot_opp_r, <- mul_opp_l; trivial.
  apply Aux1; trivial.
  rewrite <- neq_mul_0; intuition order.
-intros. pos_or_neg a. apply Aux2; order.
+intros a b c **. pos_or_neg a. apply Aux2; order.
 apply opp_inj. rewrite <- 3 quot_opp_l; try order. apply Aux2; order.
 rewrite <- neq_mul_0. tauto.
 Qed.
