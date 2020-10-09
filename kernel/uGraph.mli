@@ -16,6 +16,15 @@ type t
 val set_cumulative_sprop : bool -> t -> t
 (** Makes the system incomplete. *)
 
+val set_type_in_type : bool -> t -> t
+
+(** When [type_in_type], functions adding constraints do not fail and
+   may instead ignore inconsistent constraints.
+
+    Checking functions such as [check_leq] always return [true].
+*)
+val type_in_type : t -> bool
+
 type 'a check_function = t -> 'a -> 'a -> bool
 
 val check_leq : Universe.t check_function
@@ -24,6 +33,9 @@ val check_eq_level : Level.t check_function
 
 (** The initial graph of universes: Prop < Set *)
 val initial_universes : t
+
+(** Initial universes, but keeping options such as type in type from the argument. *)
+val initial_universes_with : t -> t
 
 (** Check equality of instances w.r.t. a universe graph *)
 val check_eq_instances : Instance.t check_function

@@ -306,8 +306,9 @@ let normalize_context_set ~lbound g ctx us algs weak =
   let csts, partition =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
+    let g = UGraph.initial_universes_with g in
     let g = LSet.fold (fun v g -> UGraph.add_universe ~lbound ~strict:false v g)
-                           ctx UGraph.initial_universes
+                           ctx g
     in
     let add_soft u g =
       if not (Level.is_small u || LSet.mem u ctx)
