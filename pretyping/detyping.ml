@@ -884,8 +884,11 @@ and detype_binder d flags bk avoid env sigma decl c =
       let c = detype d { flags with flg_isgoal = false } avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
       let s =
+        (* It can fail if ty is an evar, or if run inside ocamldebug or the
+           OCaml toplevel since their printers don't have access to sigma/env *)
         try Retyping.get_sort_family_of (snd env) sigma ty
-        with Retyping.RetypeError _ -> InType (* eg: the type is an evar *) in
+        with Retyping.RetypeError _ -> InType
+      in
       let t = if s != InProp  && not !Flags.raw_print then None else Some (detype d { flags with flg_isgoal = false } avoid env sigma ty) in
       GLetIn (na', c, t, r)
 
