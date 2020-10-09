@@ -885,7 +885,7 @@ and detype_binder d flags bk avoid env sigma decl c =
       (* Heuristic: we display the type if in Prop *)
       let s =
         (* It can fail if ty is an evar, or if run inside ocamldebug or the
-           OCaml toplevel since their printers don't have access to sigma/env *)
+           OCaml toplevel since their printers don't have access to the proper sigma/env *)
         try Retyping.get_sort_family_of (snd env) sigma ty
         with Retyping.RetypeError _ -> InType
       in
