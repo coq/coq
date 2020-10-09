@@ -62,23 +62,33 @@ let () =
 let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
   let _, sigma, impls, newfs, _ =
     List.fold_left2
-      (fun (env, sigma, uimpls, params, impls) no ({CAst.loc;v=i}, b, t) ->
-         let sigma, (t', impl) = interp_type_evars_impls env sigma ~impls t in
-         let r = Retyping.relevance_of_type env sigma t' in
-         let sigma, b' =
-           Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
-                         interp_casted_constr_evars_impls ~program_mode:false env sigma ~impls x t') (sigma,None) b in
-         let impls =
+      (fun (env, sigma, uimpls, params, impls_env) no d ->
+         let sigma, (i, b, t), impl = match d with
+           | Vernacexpr.AssumExpr({CAst.loc;v=id},bl,t) ->
+             (* Temporary compatibility with the type-classes heuristics *)
+             (* which are applied after the interpretation of bl and *)
+             (* before the one of t otherwise (see #13166) *)
+             let t = if bl = [] then t else mkCProdN bl t in
+             let sigma, t, impl =
+               ComAssumption.interp_assumption ~program_mode:false env sigma impls_env [] t in
+             sigma, (id, None, t), impl
+           | Vernacexpr.DefExpr({CAst.loc;v=id},bl,b,t) ->
+             let sigma, (b, t), impl =
+               ComDefinition.interp_definition ~program_mode:false env sigma impls_env bl None b t in
+             let t = match t with Some t -> t | None -> Retyping.get_type_of env sigma b in
+             sigma, (id, Some b, t), impl in
+          let r = Retyping.relevance_of_type env sigma t in
+         let impls_env =
            match i with
-           | Anonymous -> impls
-           | Name id -> Id.Map.add id (compute_internalization_data env sigma id Constrintern.Method t' impl) impls
+           | Anonymous -> impls_env
+           | Name id -> Id.Map.add id (compute_internalization_data env sigma id Constrintern.Method t impl) impls_env
          in
-         let d = match b' with
-           | None -> LocalAssum (make_annot i r,t')
-           | Some b' -> LocalDef (make_annot i r,b',t')
+         let d = match b with
+           | None -> LocalAssum (make_annot i r,t)
+           | Some b -> LocalDef (make_annot i r,b,t)
          in
-         List.iter (Metasyntax.set_notation_for_interpretation env impls) no;
-         (EConstr.push_rel d env, sigma, impl :: uimpls, d::params, impls))
+         List.iter (Metasyntax.set_notation_for_interpretation env impls_env) no;
+         (EConstr.push_rel d env, sigma, impl :: uimpls, d::params, impls_env))
       (env, sigma, [], [], impls_env) nots l
   in
   let _, _, sigma = Context.Rel.fold_outside ~init:(env,0,sigma) (fun f (env,k,sigma) ->
@@ -100,14 +110,6 @@ let compute_constructor_level evars env l =
       else univ
     in (EConstr.push_rel d env, univ))
     l (env, Univ.Universe.sprop)
-
-let binder_of_decl = function
-  | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
-  | Vernacexpr.DefExpr(n,c,t) ->
-    (n,Some c, match t with Some c -> c
-                          | None   -> CAst.make ?loc:n.CAst.loc @@ CHole (None, Namegen.IntroAnonymous, None))
-
-let binders_of_decls = List.map binder_of_decl
 
 let check_anonymous_type ind =
   match ind with
@@ -176,7 +178,7 @@ let typecheck_params_and_fields def poly pl ps records =
   let ninds = List.length arities in
   let nparams = List.length newps in
   let fold sigma (_, _, nots, fs) arity =
-    interp_fields_evars env_ar sigma ~ninds ~nparams impls_env nots (binders_of_decls fs)
+    interp_fields_evars env_ar sigma ~ninds ~nparams impls_env nots fs
   in
   let (sigma, data) = List.fold_left2_map fold sigma records arities in
   let sigma =
@@ -676,8 +678,8 @@ open Vernacexpr
 
 let check_unique_names records =
   let extract_name acc (rf_decl, _) = match rf_decl with
-      Vernacexpr.AssumExpr({CAst.v=Name id},_) -> id::acc
-    | Vernacexpr.DefExpr ({CAst.v=Name id},_,_) -> id::acc
+      Vernacexpr.AssumExpr({CAst.v=Name id},_,_) -> id::acc
+    | Vernacexpr.DefExpr ({CAst.v=Name id},_,_,_) -> id::acc
     | _ -> acc in
   let allnames =
     List.fold_left (fun acc (_, id, _, cfs, _, _) ->

@@ -700,7 +700,7 @@ let vernac_record ~template udecl ~cumulative k ~poly finite records =
       if Dumpglob.dump () then
         let () = Dumpglob.dump_definition id false "rec" in
         let iter (x, _) = match x with
-        | Vernacexpr.AssumExpr ({loc;v=Name id}, _) ->
+        | Vernacexpr.(AssumExpr ({loc;v=Name id}, _, _) | DefExpr ({loc;v=Name id}, _, _, _)) ->
           Dumpglob.dump_definition (make ?loc id) false "proj"
         | _ -> ()
         in
@@ -777,7 +777,7 @@ let vernac_inductive ~atts kind indl =
     in
     let (coe, (lid, ce)) = l in
     let coe' = if coe then BackInstance else NoInstance in
-    let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce),
+    let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
     vernac_record ~template udecl ~cumulative (Class true) ~poly finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then

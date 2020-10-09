@@ -508,13 +508,15 @@ let pr_oc = function
 
 let pr_record_field (x, { rf_subclass = oc ; rf_priority = pri ; rf_notation = ntn }) =
   let prx = match x with
-    | AssumExpr (id,t) ->
+    | AssumExpr (id,binders,t) ->
       hov 1 (pr_lname id ++
+             pr_binders_arg binders ++ spc() ++
              pr_oc oc ++ spc() ++
              pr_lconstr_expr t)
-    | DefExpr(id,b,opt) -> (match opt with
+    | DefExpr(id,binders,b,opt) -> (match opt with
         | Some t ->
           hov 1 (pr_lname id ++
+                 pr_binders_arg binders ++ spc() ++
                  pr_oc oc ++ spc() ++
                  pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
         | None ->
