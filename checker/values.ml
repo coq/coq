@@ -374,7 +374,7 @@ and v_modtype =
 let v_vodigest = Sum ("module_impl",0, [| [|String|]; [|String;String|] |])
 let v_deps = Array (v_tuple "dep" [|v_dp;v_vodigest|])
 let v_compiled_lib =
-  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps;v_engagement;Any|]
+  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_engagement;Any|]
 
 (** Library objects *)
 

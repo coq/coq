@@ -328,7 +328,7 @@ let register_library m =
     m.library_name
     l.md_compiled
     l.md_objects
-    m.library_digests
+    (m.library_digests, m.library_deps)
     m.library_extra_univs;
   register_loaded_library (mk_summary m)
 

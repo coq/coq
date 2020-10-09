@@ -111,7 +111,7 @@ let () = Mod_checking.set_indirect_accessor indirect_accessor
 
 let check_one_lib admit senv (dir,m) =
   let md = m.library_compiled in
-  let dig = m.library_digest in
+  let dig = (m.library_digest, m.library_deps) in
   (* Look up if the library is to be admitted correct. We could
      also check if it carries a validation certificate (yet to
      be implemented). *)

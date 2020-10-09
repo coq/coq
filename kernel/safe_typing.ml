@@ -110,6 +110,8 @@ let digest_match ~actual ~required =
 
 type library_info = DirPath.t * vodigest
 
+type manifest = vodigest * library_info array
+
 (** Functor and funsig parameters, most recent first *)
 type module_parameters = (MBId.t * module_type_body) list
 
@@ -117,12 +119,11 @@ type compiled_library = {
   comp_name : DirPath.t;
   comp_mod : module_body;
   comp_univs : Univ.ContextSet.t;
-  comp_deps : library_info array;
   comp_enga : engagement;
   comp_natsymbs : Nativevalues.symbols
 }
 
-type reimport = compiled_library * Univ.ContextSet.t * vodigest
+type reimport = compiled_library * Univ.ContextSet.t * manifest
 
 (** Part of the safe_env at a section opening time to be backtracked *)
 type section_data = {
@@ -1268,7 +1269,6 @@ let export ?except ~output_native_objects senv dir =
     comp_name = dir;
     comp_mod = mb;
     comp_univs = senv.univ;
-    comp_deps = Array.of_list (DPmap.bindings senv.required);
     comp_enga = Environ.engagement senv.env;
     comp_natsymbs = symbols }
   in
@@ -1277,7 +1277,7 @@ let export ?except ~output_native_objects senv dir =
 (* cst are the constraints that were computed by the vi2vo step and hence are
  * not part of the [lib.comp_univs] field (but morally should be) *)
 let import lib cst vodigest senv =
-  check_required senv.required lib.comp_deps;
+  check_required senv.required (snd vodigest);
   check_engagement senv.env lib.comp_enga;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
     CErrors.user_err ~hdr:"Safe_typing.import"
@@ -1302,7 +1302,7 @@ let import lib cst vodigest senv =
   { senv with
     env;
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
-    required = DPmap.add lib.comp_name vodigest senv.required;
+    required = DPmap.add lib.comp_name (fst vodigest) senv.required;
     loads = (mp,mb)::senv.loads;
     sections;
   }

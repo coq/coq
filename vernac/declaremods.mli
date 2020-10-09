@@ -79,7 +79,8 @@ type library_objects
 
 val register_library :
   library_name ->
-  Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
+  Safe_typing.compiled_library -> library_objects ->
+  Safe_typing.manifest ->
   Univ.ContextSet.t -> unit
 
 val start_library : library_name -> unit

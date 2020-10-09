@@ -14,6 +14,8 @@ type vodigest =
   | Dvo_or_vi of Digest.t        (* The digest of the seg_lib part *)
   | Dvivo of Digest.t * Digest.t (* The digest of the seg_lib + seg_univ part *)
 
+type manifest = vodigest * (DirPath.t * vodigest) array
+
 val digest_match : actual:vodigest -> required:vodigest -> bool
 
 (** {6 Safe environments } *)
@@ -204,7 +206,7 @@ val export :
     ModPath.t * compiled_library * native_library
 
 (* Constraints are non empty iff the file is a vi2vo *)
-val import : compiled_library -> Univ.ContextSet.t -> vodigest ->
+val import : compiled_library -> Univ.ContextSet.t -> manifest ->
   ModPath.t safe_transformer
 
 (** {6 Safe typing judgments } *)
