@@ -354,7 +354,7 @@ Qed.
 
 Lemma Zle_0_nat : forall n:nat, 0 <= Z.of_nat n.
 Proof.
-  induction n; simpl; intros. apply Z.le_refl. easy.
+  intros n; induction n; simpl; intros. apply Z.le_refl. easy.
 Qed.
 
 Hint Immediate Z.eq_le_incl: zarith.
