@@ -167,7 +167,7 @@ Fixpoint take {A} {n} (p:nat) (le:p <= n) (v:t A n) : t A p :=
 Lemma trunc : forall {A} {n} (p:nat), n > p -> t A n
   -> t A (n - p).
 Proof.
-  induction p as [| p f]; intros H v.
+  intros A n p; induction p as [| p f]; intros H v.
   rewrite <- minus_n_O.
   exact v.
 
