@@ -128,28 +128,28 @@ Definition nat_of_ascii (a : ascii) : nat := N.to_nat (N_of_ascii a).
 Theorem ascii_N_embedding :
   forall a : ascii, ascii_of_N (N_of_ascii a) = a.
 Proof.
-  destruct a as [[|][|][|][|][|][|][|][|]]; vm_compute; reflexivity.
+  intro a; destruct a as [[|][|][|][|][|][|][|][|]]; vm_compute; reflexivity.
 Qed.
 
 Theorem N_ascii_embedding :
   forall n:N, (n < 256)%N -> N_of_ascii (ascii_of_N n) = n.
 Proof.
-destruct n.
+intro n; destruct n as [|p].
 reflexivity.
-do 8 (destruct p; [ | | intros; vm_compute; reflexivity ]);
+do 8 (destruct p as [p|p|]; [ | | intros; vm_compute; reflexivity ]);
  intro H; vm_compute in H; destruct p; discriminate.
 Qed.
 
 Theorem N_ascii_bounded :
   forall a : ascii, (N_of_ascii a < 256)%N.
 Proof.
-  destruct a as [[|][|][|][|][|][|][|][|]]; vm_compute; reflexivity.
+  intro a; destruct a as [[|][|][|][|][|][|][|][|]]; vm_compute; reflexivity.
 Qed.
 
 Theorem ascii_nat_embedding :
   forall a : ascii, ascii_of_nat (nat_of_ascii a) = a.
 Proof.
-  destruct a as [[|][|][|][|][|][|][|][|]]; compute; reflexivity.
+  intro a; destruct a as [[|][|][|][|][|][|][|][|]]; compute; reflexivity.
 Qed.
 
 Theorem nat_ascii_embedding :
