@@ -167,7 +167,7 @@ Qed.
 Theorem eq_mul_1 : forall n m, n * m == 1 -> n == 1 \/ n == -1.
 Proof.
 assert (F := lt_m1_0).
-zero_pos_neg n.
+intro n; zero_pos_neg n.
 (* n = 0 *)
 intros m. nzsimpl. now left.
 (* 0 < n, proving P n /\ P (-n) *)
@@ -205,7 +205,7 @@ Qed.
 
 Theorem lt_mul_r : forall n m p, 0 < n -> 1 < p -> n < m -> n < m * p.
 Proof.
-intros. stepl (n * 1) by now rewrite mul_1_r.
+intros n m p **. stepl (n * 1) by now rewrite mul_1_r.
 apply mul_lt_mono_nonneg.
 now apply lt_le_incl. assumption. apply le_0_1. assumption.
 Qed.
