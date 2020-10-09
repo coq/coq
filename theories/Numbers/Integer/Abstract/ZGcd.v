@@ -98,7 +98,7 @@ Qed.
 
 Lemma gcd_abs_l : forall n m, gcd (abs n) m == gcd n m.
 Proof.
- intros. destruct (abs_eq_or_opp n) as [H|H]; rewrite H.
+ intros n m. destruct (abs_eq_or_opp n) as [H|H]; rewrite H.
  easy. apply gcd_opp_l.
 Qed.
 
@@ -125,7 +125,7 @@ Qed.
 
 Lemma gcd_add_mult_diag_r : forall n m p, gcd n (m+p*n) == gcd n m.
 Proof.
- intros. apply gcd_unique_alt; try apply gcd_nonneg.
+ intros n m p. apply gcd_unique_alt; try apply gcd_nonneg.
  intros. rewrite gcd_divide_iff. split; intros (U,V); split; trivial.
  apply divide_add_r; trivial. now apply divide_mul_r.
  apply divide_add_cancel_r with (p*n); trivial.
@@ -164,12 +164,12 @@ Proof.
  (* First, a version restricted to natural numbers *)
  assert (aux : forall n, 0<=n -> forall m, 0<=m -> Bezout n m (gcd n m)).
   intros n Hn; pattern n.
-  apply strong_right_induction with (z:=0); trivial.
+  apply (fun H => strong_right_induction _ H 0); trivial.
   unfold Bezout. solve_proper.
   clear n Hn. intros n Hn IHn.
   apply le_lteq in Hn; destruct Hn as [Hn|Hn].
   intros m Hm; pattern m.
-  apply strong_right_induction with (z:=0); trivial.
+  apply (fun H => strong_right_induction _ H 0); trivial.
   unfold Bezout. solve_proper.
   clear m Hm. intros m Hm IHm.
   destruct (lt_trichotomy n m) as [LT|[EQ|LT]].
@@ -227,7 +227,7 @@ Qed.
 Lemma gcd_mul_mono_l_nonneg :
  forall n m p, 0<=p -> gcd (p*n) (p*m) == p * gcd n m.
 Proof.
- intros. rewrite <- (abs_eq p) at 3; trivial. apply gcd_mul_mono_l.
+ intros n m p ?. rewrite <- (abs_eq p) at 3; trivial. apply gcd_mul_mono_l.
 Qed.
 
 Lemma gcd_mul_mono_r :
@@ -239,7 +239,7 @@ Qed.
 Lemma gcd_mul_mono_r_nonneg :
  forall n m p, 0<=p -> gcd (n*p) (m*p) == gcd n m * p.
 Proof.
- intros. rewrite <- (abs_eq p) at 3; trivial. apply gcd_mul_mono_r.
+ intros n m p ?. rewrite <- (abs_eq p) at 3; trivial. apply gcd_mul_mono_r.
 Qed.
 
 Lemma gauss : forall n m p, (n | m * p) -> gcd n m == 1 -> (n | p).
