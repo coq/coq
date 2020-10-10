@@ -13,7 +13,6 @@ Require Import ZArith_base.
 Require Import Wf_nat.
 Local Open Scope Z_scope.
 
-
 (**********************************************************************)
 (** About parity *)
 
@@ -39,7 +38,7 @@ Proof. reflexivity. Qed.
 
 Lemma floor_ok : forall p:positive, floor p <= Zpos p < 2 * floor p.
 Proof.
- unfold floor. induction p as [p [IH1p IH2p]|p [IH1p IH2]|]; simpl.
+ unfold floor. intros p; induction p as [p [IH1p IH2p]|p [IH1p IH2]|]; simpl.
  - rewrite !Pos2Z.inj_xI, (Pos2Z.inj_xO (xO _)), Pos2Z.inj_xO.
    split.
    + apply Z.le_trans with (2 * Z.pos p); auto with zarith.
@@ -69,10 +68,10 @@ Proof.
   apply (Z_lt_rec Q); auto with zarith.
   subst Q; intros x H.
   split; apply HP.
-  - rewrite Z.abs_eq; auto; intros.
+  - rewrite Z.abs_eq; auto; intros m ?.
     destruct (H (Z.abs m)); auto with zarith.
     destruct (Zabs_dec m) as [-> | ->]; trivial.
-  - rewrite Z.abs_neq, Z.opp_involutive; intros.
+  - rewrite Z.abs_neq, Z.opp_involutive; [intros m ?|].
     + destruct (H (Z.abs m)); auto with zarith.
       destruct (Zabs_dec m) as [-> | ->]; trivial.
     + apply Z.opp_le_mono; rewrite Z.opp_involutive; auto.
@@ -85,15 +84,15 @@ Theorem Z_lt_abs_induction :
 Proof.
   intros P HP p.
   set (Q := fun z => 0 <= z -> P z /\ P (- z)) in *.
-  enough (Q (Z.abs p)) by
+  enough (Q (Z.abs p)) as H by
     (destruct (Zabs_dec p) as [-> | ->]; elim H; auto with zarith).
   apply (Z_lt_induction Q); auto with zarith.
-  subst Q; intros.
+  subst Q; intros ? H.
   split; apply HP.
-  - rewrite Z.abs_eq; auto; intros.
+  - rewrite Z.abs_eq; auto; intros m ?.
     elim (H (Z.abs m)); intros; auto with zarith.
     elim (Zabs_dec m); intro eq; rewrite eq; trivial.
-  - rewrite Z.abs_neq, Z.opp_involutive; intros.
+  - rewrite Z.abs_neq, Z.opp_involutive; [intros m ?|].
     + destruct (H (Z.abs m)); auto with zarith.
       destruct (Zabs_dec m) as [-> | ->]; trivial.
     + apply Z.opp_le_mono; rewrite Z.opp_involutive; auto.
@@ -136,7 +135,7 @@ Section Zlength_properties.
   Lemma Zlength_correct l : Zlength l = Z.of_nat (length l).
   Proof.
     assert (H : forall l acc, Zlength_aux acc A l = acc + Z.of_nat (length l)).
-    clear l. induction l.
+    clear l. intros l; induction l as [|? ? IHl].
     auto with zarith.
     intros. simpl length; simpl Zlength_aux.
      rewrite IHl, Nat2Z.inj_succ, Z.add_succ_comm; auto.
