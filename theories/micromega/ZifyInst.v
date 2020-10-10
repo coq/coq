@@ -139,7 +139,7 @@ Add Zify BinRel Op_pos_le.
 
 Lemma eq_pos_inj : forall (x y:positive), x = y <-> Z.pos x = Z.pos y.
 Proof.
-  intros.
+  intros x y.
   apply (iff_sym (Pos2Z.inj_iff x y)).
 Qed.
 
@@ -186,7 +186,7 @@ Add Zify UnOp Op_pos_pred.
 
 Instance Op_pos_predN : UnOp Pos.pred_N :=
   { TUOp := fun x => x - 1 ;
-    TUOpInj := ltac: (now destruct x; rewrite N.pos_pred_spec) }.
+    TUOpInj x := ltac: (now destruct x; rewrite N.pos_pred_spec) }.
 Add Zify UnOp Op_pos_predN.
 
 Instance Op_pos_of_succ_nat : UnOp Pos.of_succ_nat :=
@@ -195,7 +195,7 @@ Add Zify UnOp Op_pos_of_succ_nat.
 
 Instance Op_pos_of_nat : UnOp Pos.of_nat :=
   { TUOp := fun x => Z.max 1 x ;
-    TUOpInj := ltac: (now destruct x;
+    TUOpInj x := ltac: (now destruct x;
                         [|rewrite <- Pos.of_nat_succ, <- (Nat2Z.inj_max 1)]) }.
 Add Zify UnOp Op_pos_of_nat.
 
@@ -445,7 +445,7 @@ Add Zify UnOp Op_Z_quot2.
 
 Lemma of_nat_to_nat_eq : forall x,  Z.of_nat (Z.to_nat x) = Z.max 0 x.
 Proof.
-  destruct x.
+  intros x; destruct x.
   - reflexivity.
   - rewrite Z2Nat.id.
     reflexivity.
