@@ -49,12 +49,12 @@ Qed.
 
 Theorem Zabs_intro : forall P (n:Z), P (- n) -> P n -> P (Z.abs n).
 Proof.
- now destruct n.
+ intros P n; now destruct n.
 Qed.
 
 Definition Zabs_dec : forall x:Z, {x = Z.abs x} + {x = - Z.abs x}.
 Proof.
- destruct x; auto.
+ intros x; destruct x; auto.
 Defined.
 
 Lemma Zabs_spec x :
