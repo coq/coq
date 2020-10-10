@@ -428,6 +428,9 @@ for coq_opam_package in $sorted_coq_opam_packages; do
     new_base_path=$new_ocaml_switch/.opam-switch/build/$coq_opam_package.dev*/
     old_base_path=$old_ocaml_switch/.opam-switch/build/$coq_opam_package.dev*/
     for vo in `cd $new_opam_root/$new_base_path/; find -name '*.vo'`; do
+        if [ -e $old_opam_root/$old_base_path/$vo ]; then
+          echo "$coq_opam_package/$vo $(stat -c%s $old_opam_root/$old_base_path/$vo) $(stat -c%s $new_opam_root/$new_base_path/$vo)" >> "$log_dir/vosize.log"
+        fi
         if [ -e $old_opam_root/$old_base_path/${vo%%o}.timing -a \
                 -e $new_opam_root/$new_base_path/${vo%%o}.timing ]; then
             mkdir -p $working_dir/html/$coq_opam_package/`dirname $vo`/
