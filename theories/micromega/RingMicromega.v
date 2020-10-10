@@ -215,7 +215,7 @@ Lemma OpMult_sound :
   forall (o o' om: Op1) (x y : R),
     eval_op1 o x -> eval_op1 o' y -> OpMult o o' = Some om -> eval_op1 om (x * y).
 Proof.
-unfold eval_op1; destruct o; simpl; intros o' om x y H1 H2 H3.
+unfold eval_op1; intros o; destruct o; simpl; intros o' om x y H1 H2 H3.
 (* x == 0 *)
 inversion H3. rewrite H1. now rewrite (Rtimes_0_l sor).
 (* x ~= 0 *)
@@ -246,9 +246,9 @@ Lemma OpAdd_sound :
   forall (o o' oa : Op1) (e e' : R),
     eval_op1 o e -> eval_op1 o' e' -> OpAdd o o' = Some oa -> eval_op1 oa (e + e').
 Proof.
-unfold eval_op1; destruct o; simpl; intros o' oa e e' H1 H2 Hoa.
+unfold eval_op1; intros o; destruct o; simpl; intros o' oa e e' H1 H2 Hoa.
 (* e == 0 *)
-inversion Hoa. rewrite <- H0.
+inversion Hoa as [H0]. rewrite <- H0.
 destruct o' ; rewrite H1 ; now rewrite  (Rplus_0_l sor).
 (* e ~= 0 *)
  destruct o'.
@@ -373,8 +373,8 @@ Lemma pexpr_times_nformula_correct : forall (env: PolEnv) (e: PolC) (f f' : NFor
    eval_nformula env f'.
 Proof.
   unfold pexpr_times_nformula.
-  destruct f.
-  intros. destruct o ; inversion H0 ; try discriminate.
+  intros env e f; destruct f as [? o].
+  intros f' H H0. destruct o ; inversion H0 ; try discriminate.
   simpl in *.    unfold eval_pol in *.
   rewrite (Pmul_ok (SORsetoid sor) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon)).
@@ -388,9 +388,9 @@ Lemma nformula_times_nformula_correct : forall (env:PolEnv)
    eval_nformula env f.
 Proof.
   unfold nformula_times_nformula.
-  destruct f1 ; destruct f2.
+  intros env f1 f2; destruct f1 as [? o]; destruct f2 as [? o0].
   case_eq (OpMult o o0) ; simpl ; try discriminate.
-  intros. inversion H2 ; simpl.
+  intros o1 H ? H0 H1 H2. inversion H2 ; simpl.
   unfold eval_pol.
   destruct o1; simpl;
   rewrite (Pmul_ok (SORsetoid sor) Rops_wd
@@ -405,9 +405,9 @@ Lemma nformula_plus_nformula_correct : forall (env:PolEnv)
    eval_nformula env f.
 Proof.
   unfold nformula_plus_nformula.
-  destruct f1 ; destruct f2.
+  intros env f1 f2; destruct f1 as [? o] ; destruct f2 as [? o0].
   case_eq (OpAdd o o0) ; simpl ; try discriminate.
-  intros. inversion H2 ; simpl.
+  intros o1 H ? H0 H1 H2. inversion H2 ; simpl.
   unfold eval_pol.
   destruct o1; simpl;
   rewrite (Padd_ok (SORsetoid sor) Rops_wd
@@ -421,9 +421,10 @@ Lemma eval_Psatz_Sound :
       forall (e : Psatz) (f : NFormula), eval_Psatz l e = Some f ->
         eval_nformula env f.
 Proof.
-  induction e.
+  intros l env H e;
+   induction e as [n|?|? e IHe|e1 IHe1 e2 IHe2|e1 IHe1 e2 IHe2|c|].
   (* PsatzIn *)
-  simpl ; intros.
+  simpl ; intros f H0.
   destruct (nth_in_or_default n l (Pc cO, Equal)) as [Hin|Heq].
   (* index is in bounds *)
   apply H. congruence.
@@ -432,7 +433,7 @@ Proof.
   rewrite Heq. simpl.
   now apply  (morph0 (SORrm addon)).
   (* PsatzSquare *)
-  simpl. intros. inversion H0.
+  simpl. intros ? H0. inversion H0.
   simpl. unfold eval_pol.
   rewrite (Psquare_ok (SORsetoid sor) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon));
@@ -440,7 +441,7 @@ Proof.
   (* PsatzMulC *)
   simpl.
   intro.
-  case_eq  (eval_Psatz l e) ; simpl ; intros.
+  case_eq  (eval_Psatz l e) ; simpl ; intros ? H0; [intros H1|].
   apply IHe in H0.
   apply pexpr_times_nformula_correct with (1:=H0) (2:= H1).
   discriminate.
@@ -448,24 +449,24 @@ Proof.
   simpl ; intro.
   case_eq (eval_Psatz l e1) ; simpl ; try discriminate.
   case_eq (eval_Psatz l e2) ; simpl ; try discriminate.
-  intros.
+  intros n H0 n0 H1 ?.
   apply IHe1 in H1. apply IHe2 in H0.
   apply (nformula_times_nformula_correct env n0 n) ; assumption.
   (* PsatzAdd *)
   simpl ; intro.
   case_eq (eval_Psatz l e1) ; simpl ; try discriminate.
   case_eq (eval_Psatz l e2) ; simpl ; try discriminate.
-  intros.
+  intros n H0 n0 H1 ?.
   apply IHe1 in H1. apply IHe2 in H0.
   apply (nformula_plus_nformula_correct env n0 n) ; assumption.
   (* PsatzC *)
   simpl.
   intro. case_eq (cO [<] c).
-  intros.  inversion H1. simpl.
+  intros H0 H1.  inversion H1. simpl.
   rewrite <- (morph0 (SORrm addon)). now apply cltb_sound.
   discriminate.
   (* PsatzZ *)
-  simpl. intros. inversion H0.
+  simpl. intros ? H0. inversion H0.
   simpl.   apply  (morph0 (SORrm addon)).
 Qed.
 
@@ -484,7 +485,8 @@ Fixpoint ge_bool (n m  : nat) : bool :=
 Lemma ge_bool_cases : forall n m,
  (if ge_bool n m then n >= m else n < m)%nat.
 Proof.
-  induction n; destruct m ; simpl; auto with arith.
+  intros n; induction n as [|n IHn];
+   intros m; destruct m as [|m]; simpl; auto with arith.
   specialize (IHn m). destruct (ge_bool); auto with arith.
 Qed.
 
@@ -511,26 +513,27 @@ Fixpoint extract_hyps (l: list NFormula) (ln : list nat) : list NFormula  :=
     | nil => nil
     | n::ln => nth n l (Pc cO, Equal) :: extract_hyps l ln
   end.
-      
+
 Lemma extract_hyps_app : forall l ln1 ln2,
   extract_hyps l (ln1 ++ ln2) = (extract_hyps l ln1) ++ (extract_hyps l ln2).
 Proof.
-  induction ln1.
+  intros l ln1; induction ln1 as [|? ln1 IHln1].
   reflexivity.
   simpl.
   intros.
   rewrite IHln1. reflexivity.
 Qed.
-  
+
 Ltac inv H := inversion H ; try subst ; clear H.
 
 Lemma nhyps_of_psatz_correct :  forall (env : PolEnv) (e:Psatz)  (l : list NFormula)  (f: NFormula),
-  eval_Psatz l e = Some f -> 
+  eval_Psatz l e = Some f ->
   ((forall f', In f' (extract_hyps l (nhyps_of_psatz e)) -> eval_nformula env f') ->  eval_nformula env f).
 Proof.
-  induction e ; intros.
+  intros env e; induction e as [n|?|? e IHe|e1 IHe1 e2 IHe2|e1 IHe1 e2 IHe2|c|];
+   intros l f H H0.
   (*PsatzIn*)
-  simpl in *. 
+  simpl in *.
   apply H0. intuition congruence.
   (* PsatzSquare *)
   simpl in *.
@@ -543,15 +546,15 @@ Proof.
   (* PsatzMulC *)
   simpl in *.
   case_eq (eval_Psatz l e).
-  intros. rewrite H1 in H. simpl in H.
+  intros ? H1. rewrite H1 in H. simpl in H.
   apply pexpr_times_nformula_correct with (2:= H).
   apply IHe with (1:= H1); auto.
-  intros. rewrite H1 in H. simpl in H ; discriminate.
+  intros H1. rewrite H1 in H. simpl in H ; discriminate.
   (* PsatzMulE *)
   simpl in *.
   revert H.
   case_eq (eval_Psatz l e1).
-  case_eq (eval_Psatz l e2) ; simpl ; intros.
+  case_eq (eval_Psatz l e2) ; simpl ; intros ? H ? H1; [intros H2|].
   apply nformula_times_nformula_correct with (3:= H2).
   apply IHe1 with (1:= H1) ; auto.
   intros. apply H0. rewrite extract_hyps_app.
@@ -564,7 +567,7 @@ Proof.
   simpl in *.
   revert H.
   case_eq (eval_Psatz l e1).
-  case_eq (eval_Psatz l e2) ; simpl ; intros.
+  case_eq (eval_Psatz l e2) ; simpl ; intros ? H ? H1; [intros H2|].
   apply nformula_plus_nformula_correct with (3:= H2).
   apply IHe1 with (1:= H1) ; auto.
   intros. apply H0. rewrite extract_hyps_app.
@@ -576,16 +579,16 @@ Proof.
   (* PsatzC *)
   simpl in H.
   case_eq (cO [<] c).
-  intros.  rewrite H1 in H. inv H.
+  intros H1.  rewrite H1 in H. inv H.
   unfold eval_nformula. simpl.
   rewrite <- (morph0 (SORrm addon)). now apply cltb_sound.
-  intros. rewrite H1 in H. discriminate.
+  intros H1. rewrite H1 in H. discriminate.
   (* PsatzZ *)
   simpl in *. inv H. 
   unfold eval_nformula. simpl.
   apply  (morph0 (SORrm addon)).
 Qed.
-  
+
 
 
 
@@ -663,8 +666,8 @@ intros l cm H env.
 unfold check_normalised_formulas in H.
 revert H.
 case_eq (eval_Psatz l cm) ; [|discriminate].
-intros nf. intros.
-rewrite <- make_conj_impl. intro.
+intros nf. intros H H0.
+rewrite <- make_conj_impl. intro H1.
 assert (H1' := make_conj_in _ _ H1).
 assert (Hnf :=  @eval_Psatz_Sound  _ _  H1' _ _ H).
 destruct nf.
@@ -861,7 +864,7 @@ Proof.
   set (F := (fun (x : NFormula) (acc : list (list (NFormula * T))) =>
         if check_inconsistent x then acc else ((x, tg) :: nil) :: acc)).
   set (G := ((fun x : NFormula => eval_nformula env x -> False))).
-  induction l.
+  induction l as [|a l IHl].
   - compute.
     tauto.
   - rewrite make_conj_cons.
@@ -896,13 +899,13 @@ Definition cnf_negate {T: Type} (t: Formula C) (tg: T) : cnf NFormula T :=
 Lemma eq0_cnf : forall x,
     (0 < x -> False) /\ (0 < - x -> False) <-> x == 0.
 Proof.
-  split ; intros.
+  intros x; split ; intros H.
   +  apply (SORle_antisymm sor).
      * now rewrite (Rle_ngt sor).
      * rewrite (Rle_ngt sor).  rewrite (Rlt_lt_minus sor).
        setoid_replace (0 - x) with (-x) by ring.
        tauto.
-  + split; intro.
+  + split; intro H0.
       * rewrite (SORlt_le_neq sor) in H0.
         apply (proj2 H0).
         now rewrite H.
@@ -918,7 +921,7 @@ Proof.
   destruct f as [e o]; destruct o eqn:Op; cbn - [psub];
     repeat rewrite eval_pol_sub; fold eval_pol; repeat rewrite eval_pol_Pc;
       repeat rewrite eval_pol_opp;
-      generalize (eval_pol env e) as x; intro.
+      generalize (eval_pol env e) as x; intro x.
   - apply eq0_cnf.
   - unfold not. tauto.
   - symmetry. rewrite (Rlt_nge sor).
@@ -955,7 +958,7 @@ Proof.
   intros T env t tg.
   unfold cnf_normalise.
   rewrite normalise_sound.
-  generalize (normalise t) as f;intro.
+  generalize (normalise t) as f;intro f.
   destruct (check_inconsistent f) eqn:U.
   - destruct f as [e op].
     assert (US := check_inconsistent_sound _ _ U env).
@@ -970,7 +973,7 @@ Proof.
   intros T env t tg.
   rewrite normalise_sound.
   unfold cnf_negate.
-  generalize (normalise t) as f;intro.
+  generalize (normalise t) as f;intro f.
   destruct (check_inconsistent f) eqn:U.
   -
     destruct f as [e o].
@@ -983,9 +986,9 @@ Qed.
 
 Lemma eval_nformula_dec : forall env d, (eval_nformula env d) \/ ~ (eval_nformula env d).
 Proof.
-  intros.
-  destruct d ; simpl.
-  generalize (eval_pol env p); intros.
+  intros env d.
+  destruct d as [p o]; simpl.
+  generalize (eval_pol env p); intros r.
   destruct o ; simpl.
   apply (Req_em sor r 0).
   destruct (Req_em sor r 0) ; tauto.
@@ -1008,7 +1011,7 @@ Lemma xdenorm_correct : forall p i env,
   eval_pol (jump i env) p == eval_pexpr env (xdenorm (Pos.succ i) p).
 Proof.
   unfold eval_pol.
-  induction p.
+  intros p; induction p as [|? p IHp|p2 IHp1 ? p3 IHp2].
   simpl. reflexivity.
   (* Pinj *)
   simpl.
@@ -1037,7 +1040,7 @@ Definition denorm := xdenorm xH.
 Lemma denorm_correct : forall p env, eval_pol env p == eval_pexpr env (denorm p).
 Proof.
   unfold denorm.
-  induction p.
+  intros p; induction p as [| |? IHp1 ? ? IHp2].
   reflexivity.
   simpl.
   rewrite Pos.add_1_r.
@@ -1092,7 +1095,9 @@ Definition eval_sformula (env : PolEnv) (f : Formula S) : Prop :=
 Lemma eval_pexprSC : forall env s, eval_sexpr env s = eval_pexpr env (map_PExpr s).
 Proof.
   unfold eval_pexpr, eval_sexpr.
-  induction s ; simpl ; try (rewrite IHs1 ; rewrite IHs2) ; try reflexivity.
+  intros env s;
+   induction s as [| |? IHs1 ? IHs2|? IHs1 ? IHs2|? IHs1 ? IHs2|? IHs|? IHs ?];
+   simpl ; try (rewrite IHs1 ; rewrite IHs2) ; try reflexivity.
   apply phi_C_of_S.
   rewrite IHs. reflexivity.
   rewrite IHs. reflexivity.
@@ -1101,7 +1106,7 @@ Qed.
 (** equality might be (too) strong *)
 Lemma eval_formulaSC : forall env f, eval_sformula env f = eval_formula env (map_Formula f).
 Proof.
-  destruct f.
+  intros env f; destruct f.
   simpl.
   repeat rewrite eval_pexprSC.
   reflexivity.
