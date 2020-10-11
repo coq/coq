@@ -189,7 +189,7 @@ type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 (* functions of this type can be called from outside the kernel *)
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
-  ?evars:((existential->constr option) * UGraph.t) ->
+  ?evars:(existential->constr option) ->
   'a -> 'a -> unit
 
 exception NotConvertible
@@ -888,8 +888,8 @@ let gen_conv cv_pb l2r reds env evars univs t1 t2 =
         ()
 
 (* Profiling *)
-let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _->None), universes env) =
-  let evars, univs = evars in
+let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _->None)) =
+  let univs = Environ.universes env in
   if Flags.profile then
     let fconv_universes_key = CProfile.declare_profile "trans_fconv_universes" in
       CProfile.profile8 fconv_universes_key gen_conv cv_pb l2r reds env evars univs

@@ -31,7 +31,7 @@ exception NotConvertible
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
-  ?evars:((existential->constr option) * UGraph.t) ->
+  ?evars:(existential->constr option) ->
   'a -> 'a -> unit
 
 type conv_pb = CONV | CUMUL

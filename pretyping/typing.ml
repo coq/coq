@@ -296,7 +296,8 @@ let judge_of_letin env name defj typj j =
     uj_type = subst1 defj.uj_val j.uj_type }
 
 let check_hyps_inclusion env sigma x hyps =
-  let evars = Evarutil.safe_evar_value sigma, Evd.universes sigma in
+  let env = Environ.set_universes (Evd.universes sigma) env in
+  let evars = Evarutil.safe_evar_value sigma in
   Typeops.check_hyps_inclusion env ~evars x hyps
 
 let type_of_constant env sigma (c,u) =
