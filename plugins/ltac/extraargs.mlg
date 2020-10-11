@@ -22,27 +22,6 @@ open Taccoerce
 open Tacinterp
 open Locus
 
-(** Adding scopes for generic arguments not defined through ARGUMENT EXTEND *)
-
-let create_generic_quotation name e wit =
-  let inject (loc, v) = Tacexpr.TacGeneric (Some name, Genarg.in_gen (Genarg.rawwit wit) v) in
-  Tacentries.create_ltac_quotation name inject (e, None)
-
-let () = create_generic_quotation "integer" Pcoq.Prim.integer Stdarg.wit_int
-let () = create_generic_quotation "string" Pcoq.Prim.string Stdarg.wit_string
-
-let () = create_generic_quotation "smart_global" Pcoq.Prim.smart_global Stdarg.wit_smart_global
-
-let () = create_generic_quotation "ident" Pcoq.Prim.ident Stdarg.wit_ident
-let () = create_generic_quotation "reference" Pcoq.Prim.reference Stdarg.wit_ref
-let () = create_generic_quotation "uconstr" Pcoq.Constr.lconstr Stdarg.wit_uconstr
-let () = create_generic_quotation "constr" Pcoq.Constr.lconstr Stdarg.wit_constr
-let () = create_generic_quotation "ipattern" Pltac.simple_intropattern wit_simple_intropattern
-let () = create_generic_quotation "open_constr" Pcoq.Constr.lconstr Stdarg.wit_open_constr
-let () =
-  let inject (loc, v) = Tacexpr.Tacexp v in
-  Tacentries.create_ltac_quotation "ltac" inject (Pltac.tactic_expr, Some 5)
-
 (** Backward-compatible tactic notation entry names *)
 
 let () =

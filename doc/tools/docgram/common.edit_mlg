@@ -1876,10 +1876,16 @@ tactic_notation_tactics: [
 | "ring_simplify" OPT ( "[" LIST1 operconstr200 "]" ) LIST1 operconstr200 OPT ( "in" ident )  (* todo: ident was "hyp", worth keeping? *)
 ]
 
-(* defined in OCaml outside of mlgs *)
+syn_value: [
+]
+
 tactic_arg: [
-| "uconstr" ":" "(" operconstr200 ")"
-| MOVEALLBUT simple_tactic
+| MOVETO simple_tactic constr_eval
+| MOVETO simple_tactic "fresh" LIST0 fresh_id
+| MOVETO simple_tactic "type_term" uconstr
+| MOVETO simple_tactic "numgoals"
+| DELETE simple_tactic
+| MOVEALLBUT syn_value
 ]
 
 nonterminal: [ ]
@@ -1888,10 +1894,6 @@ value_tactic: [ ]
 
 RENAME: [
 | tactic_arg tactic_value
-]
-
-syn_value: [
-| IDENT; ":" "(" nonterminal ")"
 ]
 
 tactic_value: [

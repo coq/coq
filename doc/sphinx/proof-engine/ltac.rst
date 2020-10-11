@@ -156,61 +156,19 @@ Syntactic values
 .. insertprodn syn_value syn_value
 
 .. prodn::
-   syn_value ::= @ident : ( @nonterminal )
+   syn_value ::= ident : ( @ident )
+   | integer : ( @integer )
+   | string : ( @string )
+   | reference : ( @qualid )
+   | smart_global : ( @reference )
+   | uconstr : ( @term )
+   | constr : ( @term )
+   | ipattern : ( @simple_intropattern )
+   | open_constr : ( @term )
+   | ltac : ( @ltac_expr )
 
 Provides a way to use the syntax and semantics of a grammar nonterminal as a
-value in an :token:`ltac_expr`.  The table below describes the most useful of
-these.  You can see the others by running ":cmd:`Print Grammar` `tactic`" and
-examining the part at the end under "Entry tactic:tactic_arg".
-
-   :token:`ident`
-      name of a grammar nonterminal listed in the table
-
-   :production:`nonterminal`
-      represents syntax described by :token:`nonterminal`.
-
-   .. list-table::
-      :header-rows: 1
-
-      * -  Specified :token:`ident`
-        - Parsed as
-        - Interpreted as
-        - as in tactic
-
-      * - ``ident``
-        - :token:`ident`
-        - a user-specified name
-        - :tacn:`intro`
-
-      * - ``string``
-        - :token:`string`
-        - a string
-        -
-
-      * - ``integer``
-        - :token:`integer`
-        - an integer
-        -
-
-      * - ``reference``
-        - :token:`qualid`
-        - a qualified identifier
-        -
-
-      * - ``uconstr``
-        - :token:`term`
-        - an untyped term
-        - :tacn:`refine`
-
-      * - ``constr``
-        - :token:`term`
-        - a term
-        - :tacn:`exact`
-
-      * - ``ltac``
-        - :token:`ltac_expr`
-        - a tactic
-        -
+value in an :token:`ltac_expr`.
 
 :n:`ltac:(@ltac_expr)` can be used to indicate that the parenthesized item
 should be interpreted as a tactic and not as a term.  The constructs can also

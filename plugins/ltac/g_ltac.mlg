@@ -54,6 +54,9 @@ let new_entry name =
   let e = Entry.create name in
   e
 
+let generate_quotation name wit v =
+  Tacexpr.TacGeneric (Some name, Genarg.in_gen (Genarg.rawwit wit) v)
+
 let toplevel_selector = new_entry "toplevel_selector"
 let tacdef_body = new_entry "tacdef_body"
 
@@ -187,7 +190,28 @@ GRAMMAR EXTEND Gram
     [ [ c = constr_eval -> { ConstrMayEval c }
       | IDENT "fresh"; l = LIST0 fresh_id -> { TacFreshId l }
       | IDENT "type_term"; c=uconstr -> { TacPretype c }
-      | IDENT "numgoals" -> { TacNumgoals } ] ]
+      | IDENT "numgoals" -> { TacNumgoals }
+
+      | IDENT "integer"; ":"; "("; v = integer; ")" ->
+        { generate_quotation "integer" Stdarg.wit_int v }
+      | IDENT "string"; ":"; "("; v = string; ")" ->
+        { generate_quotation "string" Stdarg.wit_string v }
+      | IDENT "smart_global"; ":"; "("; v = smart_global; ")" ->
+        { generate_quotation "smart_global" Stdarg.wit_smart_global v }
+      | IDENT "ident"; ":"; "("; v = ident; ")" ->
+        { generate_quotation "ident" Stdarg.wit_ident v }
+      | IDENT "reference"; ":"; "("; v = reference; ")" ->
+        { generate_quotation "reference" Stdarg.wit_ref v }
+      | IDENT "uconstr"; ":"; "("; v = lconstr; ")" ->
+        { generate_quotation "uconstr" Stdarg.wit_uconstr v }
+      | IDENT "constr"; ":"; "("; v = lconstr; ")" ->
+        { generate_quotation "uconstr" Stdarg.wit_constr v }
+      | IDENT "ipattern"; ":"; "("; v = simple_intropattern; ")" ->
+        { generate_quotation "ipattern" Tacarg.wit_simple_intropattern v }
+      | IDENT "open_constr"; ":"; "("; v = lconstr; ")" ->
+        { generate_quotation "open_constr" Stdarg.wit_open_constr v }
+      | IDENT "ltac"; ":"; "("; v = tactic_expr LEVEL "5"; ")" ->
+        { Tacexpr.Tacexp v } ] ]
   ;
   (* If a qualid is given, use its short name. TODO: have the shortest
      non ambiguous name where dots are replaced by "_"? Probably too
