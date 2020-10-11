@@ -85,7 +85,7 @@ let make_labmap mp list =
 
 let check_conv_error error why cst poly f env a1 a2 =
   try
-    let cst' = f env (Environ.universes env) a1 a2 in
+    let cst' = f env a1 a2 in
       if poly then
         if Constraint.is_empty cst' then cst
         else error (IncompatiblePolymorphism (env, a1, a2))

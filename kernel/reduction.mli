@@ -46,9 +46,9 @@ type 'a universe_compare = {
 
 type 'a universe_state = 'a * 'a universe_compare
 
-type ('a,'b) generic_conversion_function = env -> UGraph.t -> 'b universe_state -> 'a -> 'a -> 'b
+type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
+type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraint.t
 
 val get_cumulativity_constraints : conv_pb -> Univ.Variance.t array ->
   Univ.Instance.t -> Univ.Instance.t -> Univ.Constraint.t

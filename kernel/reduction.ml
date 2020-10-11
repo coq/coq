@@ -219,9 +219,9 @@ type 'a universe_compare = {
 
 type 'a universe_state = 'a * 'a universe_compare
 
-type ('a,'b) generic_conversion_function = env -> UGraph.t -> 'b universe_state -> 'a -> 'a -> 'b
+type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
+type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraint.t
 
 let sort_cmp_universes env pb s0 s1 (u, check) =
   (check.compare_sorts env pb s0 s1 u, check)
@@ -899,12 +899,14 @@ let conv = gen_conv CONV
 
 let conv_leq = gen_conv CUMUL
 
-let generic_conv cv_pb ~l2r evars reds env graph univs t1 t2 =
+let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
+  let graph = Environ.universes env in
   let (s, _) =
     clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2
   in s
 
-let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
+let infer_conv_universes cv_pb l2r evars reds env t1 t2 =
+  let univs = Environ.universes env in
   let b, cstrs =
     if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2
     else Constr.eq_constr_univs_infer univs t1 t2
@@ -919,16 +921,16 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
 let infer_conv_universes =
   if Flags.profile then
     let infer_conv_universes_key = CProfile.declare_profile "infer_conv_universes" in
-      CProfile.profile8 infer_conv_universes_key infer_conv_universes
+      CProfile.profile7 infer_conv_universes_key infer_conv_universes
   else infer_conv_universes
 
 let infer_conv ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full)
-    env univs t1 t2 =
-  infer_conv_universes CONV l2r evars ts env univs t1 t2
+    env t1 t2 =
+  infer_conv_universes CONV l2r evars ts env t1 t2
 
 let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full)
-    env univs t1 t2 =
-  infer_conv_universes CUMUL l2r evars ts env univs t1 t2
+    env t1 t2 =
+  infer_conv_universes CUMUL l2r evars ts env t1 t2
 
 let default_conv cv_pb ?l2r:_ env t1 t2 =
     gen_conv cv_pb env t1 t2
