@@ -687,6 +687,17 @@ let eta_constructor_app env sigma f l1 term =
       | _ -> assert false)
   | _ -> assert false
 
+(* If the terms are irrelevant, check that they have the same type. *)
+let careful_infer_conv ~pb ~ts env sigma m n =
+  if Retyping.relevance_of_term env sigma m == Sorts.Irrelevant &&
+     Retyping.relevance_of_term env sigma n == Sorts.Irrelevant
+  then
+    let tm = Retyping.get_type_of env sigma m in
+    let tn = Retyping.get_type_of env sigma n in
+    Option.bind (infer_conv ~pb:CONV ~ts env sigma tm tn)
+      (fun sigma -> infer_conv ~pb ~ts env sigma m n)
+  else infer_conv ~pb ~ts env sigma m n
+
 let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb opt ((sigma,metasubst,evarsubst) as substn : subst0) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
@@ -1127,7 +1138,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       None
     else
       let ans = match flags.modulo_conv_on_closed_terms with
-        | Some convflags -> infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
+        | Some convflags -> careful_infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
         | _ -> constr_cmp cv_pb env sigma flags m n in
       match ans with
       | Some sigma -> ans
