@@ -1,0 +1,132 @@
+commit 652e8a892963949d6d9245c3e5cb252010b14b78
+Author: Enrico Tassi <Enrico.Tassi@Inria.fr>
+Date:   Tue Sep 15 21:50:01 2020 +0200
+
+    backport to the released version
+
+diff --git a/ppxfindcache/ppxfindcache_aux.ml b/ppxfindcache/ppxfindcache_aux.ml
+index 187236e..1e5d932 100644
+--- a/ppxfindcache/ppxfindcache_aux.ml
++++ b/ppxfindcache/ppxfindcache_aux.ml
+@@ -63,9 +63,8 @@ let common () =
+   let flag = !flag in
+   let cache x = List.mem (path_sanitize x) !cache in
+ 
+-  let sha = must @@ exec "shasum" [|"-b";file|] in
+-  let sha = String.sub sha 0 (String.length sha - 1) in
+-  let sha = Printf.sprintf "(*%s %s*)\n" sha (String.concat " " (Array.to_list flag)) in
++  let sha = Digest.file file |> Digest.to_hex in
++  let sha = Printf.sprintf "(*%s %s %s*)\n" sha file (String.concat " " (Array.to_list flag)) in
+ 
+   let cachefile =
+     let open Filename in
+diff --git a/src/.ppcache/API.ml b/src/.ppcache/API.ml
+index 5318655..19f2e0d 100644
+--- a/src/.ppcache/API.ml
++++ b/src/.ppcache/API.ml
+@@ -1,4 +1,4 @@
+-(*5ea7f0e23680dfbc5f0478a3a360ac193a940fde *src/API.ml *)
++(*64d19644c71f086d31e63690c42dfe84 src/API.ml *)
+ #1 "src/API.ml"
+ module type Runtime  = module type of Runtime_trace_off
+ let r = ref ((module Runtime_trace_off) : (module Runtime))
+diff --git a/src/.ppcache/API.mli b/src/.ppcache/API.mli
+index 02dae16..1893984 100644
+--- a/src/.ppcache/API.mli
++++ b/src/.ppcache/API.mli
+@@ -1,4 +1,4 @@
+-(*2417a3f401bc77492de0e537d65272a6bd92bf00 *src/API.mli *)
++(*bdc3c46b9662a45c5d6b274799ef95cc src/API.mli *)
+ #1 "src/API.mli"
+ [@@@ocaml.text " This module is the API for clients of the Elpi library. "]
+ [@@@ocaml.text
+diff --git a/src/.ppcache/ast.ml b/src/.ppcache/ast.ml
+index 18833f4..a0d7764 100644
+--- a/src/.ppcache/ast.ml
++++ b/src/.ppcache/ast.ml
+@@ -1,4 +1,4 @@
+-(*095a98a5f2dbe7a3c5e1d0e961068875adcf026f *src/ast.ml *)
++(*5985c493149e486491278f47254411fe src/ast.ml *)
+ #1 "src/ast.ml"
+ open Util
+ module Func =
+diff --git a/src/.ppcache/ast.mli b/src/.ppcache/ast.mli
+index cd0c61b..21d91dc 100644
+--- a/src/.ppcache/ast.mli
++++ b/src/.ppcache/ast.mli
+@@ -1,4 +1,4 @@
+-(*d1e10e659d2784c096b79ed06927f74b2b885a06 *src/ast.mli *)
++(*e0a52a0856e6cc92109645b89bfa9e88 src/ast.mli *)
+ #1 "src/ast.mli"
+ open Util
+ module Func :
+diff --git a/src/.ppcache/compiler.ml b/src/.ppcache/compiler.ml
+index b488c4b..f92a380 100644
+--- a/src/.ppcache/compiler.ml
++++ b/src/.ppcache/compiler.ml
+@@ -1,4 +1,4 @@
+-(*e09c9ff20cab458722d50e6ca14a5bb19d5a6f73 *src/compiler.ml *)
++(*999f2a943301a3ca03c0f55794abfb64 src/compiler.ml *)
+ #1 "src/compiler.ml"
+ open Util
+ module F = Ast.Func
+diff --git a/src/.ppcache/compiler.mli b/src/.ppcache/compiler.mli
+index 7391f3d..6a81f4b 100644
+--- a/src/.ppcache/compiler.mli
++++ b/src/.ppcache/compiler.mli
+@@ -1,4 +1,4 @@
+-(*d8234deab7c788c119394625649abaddbdc7ad33 *src/compiler.mli *)
++(*dbe59f4d93f12297981da288410c968b src/compiler.mli *)
+ #1 "src/compiler.mli"
+ open Util
+ open Data
+diff --git a/src/.ppcache/data.ml b/src/.ppcache/data.ml
+index 2744caa..4b20896 100644
+--- a/src/.ppcache/data.ml
++++ b/src/.ppcache/data.ml
+@@ -1,4 +1,4 @@
+-(*83d0917ef4644ac288b486b091a03067003847df *src/data.ml *)
++(*5d54139938556e83da50b268b65cc434 src/data.ml *)
+ #1 "src/data.ml"
+ module Fmt = Format
+ module F = Ast.Func
+diff --git a/src/.ppcache/runtime_trace_off.ml b/src/.ppcache/runtime_trace_off.ml
+index 8c16b48..89b2b17 100644
+--- a/src/.ppcache/runtime_trace_off.ml
++++ b/src/.ppcache/runtime_trace_off.ml
+@@ -1,4 +1,4 @@
+-(*d2284b18b7efca3e8e515d7da852773c403f167b *src/runtime_trace_off.ml --cookie elpi_trace="false"*)
++(*a6bae7446f8404ca49ee0c10fb1f7c86 src/runtime_trace_off.ml --cookie elpi_trace="false"*)
+ #1 "src/runtime_trace_off.ml"
+ module Fmt = Format
+ module F = Ast.Func
+diff --git a/src/.ppcache/runtime_trace_off.mli b/src/.ppcache/runtime_trace_off.mli
+index a87c508..2ff2370 100644
+--- a/src/.ppcache/runtime_trace_off.mli
++++ b/src/.ppcache/runtime_trace_off.mli
+@@ -1,4 +1,4 @@
+-(*b993827a8ac92ff43df1206e5aefa0956bfcd36f *src/runtime_trace_off.mli --cookie elpi_trace="false"*)
++(*a2f05b2efbb3b34e64221a6cf8ecaafd src/runtime_trace_off.mli --cookie elpi_trace="false"*)
+ #1 "src/runtime_trace_off.mli"
+ open Util
+ open Data
+diff --git a/src/.ppcache/runtime_trace_on.ml b/src/.ppcache/runtime_trace_on.ml
+index 1dd6ae0..15f1d1a 100644
+--- a/src/.ppcache/runtime_trace_on.ml
++++ b/src/.ppcache/runtime_trace_on.ml
+@@ -1,4 +1,4 @@
+-(*d2284b18b7efca3e8e515d7da852773c403f167b *src/runtime_trace_on.ml --cookie elpi_trace="true"*)
++(*a6bae7446f8404ca49ee0c10fb1f7c86 src/runtime_trace_on.ml --cookie elpi_trace="true"*)
+ #1 "src/runtime_trace_on.ml"
+ module Fmt = Format
+ module F = Ast.Func
+diff --git a/src/.ppcache/runtime_trace_on.mli b/src/.ppcache/runtime_trace_on.mli
+index a6c2f7d..bd218ad 100644
+--- a/src/.ppcache/runtime_trace_on.mli
++++ b/src/.ppcache/runtime_trace_on.mli
+@@ -1,4 +1,4 @@
+-(*b993827a8ac92ff43df1206e5aefa0956bfcd36f *src/runtime_trace_on.mli --cookie elpi_trace="true"*)
++(*a2f05b2efbb3b34e64221a6cf8ecaafd src/runtime_trace_on.mli --cookie elpi_trace="true"*)
+ #1 "src/runtime_trace_on.mli"
+ open Util
+ open Data
