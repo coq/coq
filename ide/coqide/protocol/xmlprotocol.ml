@@ -12,7 +12,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20170413"
+let protocol_version = "20200911"
 
 type msg_format = Richpp of int | Ppcmds
 let msg_format = ref (Richpp 72)
@@ -278,6 +278,7 @@ module ReifType : sig
   val state_id_t     : state_id val_t
   val route_id_t     : route_id val_t
   val search_cst_t   : search_constraint val_t
+  val pp_t           : Pp.t val_t
 
   val of_value_type : 'a val_t -> 'a -> xml
   val to_value_type : 'a val_t -> xml -> 'a
@@ -314,6 +315,7 @@ end = struct
     | State_id : state_id val_t
     | Route_id : route_id val_t
     | Search_cst : search_constraint val_t
+    | Pp : Pp.t val_t
 
   type value_type = Value_type : 'a val_t -> value_type
 
@@ -340,6 +342,7 @@ end = struct
   let state_id_t     = State_id
   let route_id_t     = Route_id
   let search_cst_t   = Search_cst
+  let pp_t           = Pp
 
   let of_value_type (ty : 'a val_t) : 'a -> xml =
     let rec convert : type a. a val_t -> a -> xml = function
@@ -362,6 +365,7 @@ end = struct
       | State_id      -> of_stateid
       | Route_id      -> of_routeid
       | Search_cst    -> of_search_cst
+      | Pp            -> of_pp
     in
       convert ty
 
@@ -386,6 +390,7 @@ end = struct
       | State_id      -> to_stateid
       | Route_id      -> to_routeid
       | Search_cst    -> to_search_cst
+      | Pp            -> to_pp
     in
       convert ty
 
@@ -443,6 +448,8 @@ end = struct
     | In_Module s -> "In_Module " ^ String.concat "." s
     | Include_Blacklist -> "Include_Blacklist"
 
+  let pr_pp = Pp.string_of_ppcmds
+
   let rec print : type a. a val_t -> a -> string = function
   | Unit          -> pr_unit
   | Bool          -> pr_bool
@@ -463,6 +470,7 @@ end = struct
   | Union (t1,t2) -> (pr_union (print t1) (print t2))
   | State_id      -> pr_state_id
   | Route_id      -> pr_int
+  | Pp            -> pr_pp
 
   (* This is to break if a rename/refactoring makes the strings below outdated *)
   type 'a exists = bool
@@ -489,6 +497,7 @@ end = struct
                      Printf.sprintf "((%s, %s) CSig.union)" (print_val_t t1) (print_val_t t2)
   | State_id      -> assert(true : Stateid.t exists); "Stateid.t"
   | Route_id      -> assert(true : route_id exists); "route_id"
+  | Pp            -> assert(true : Pp.t exists); "Pp.t"
 
   let print_type = function Value_type ty -> print_val_t ty
 
@@ -507,6 +516,8 @@ end = struct
       (pr_xml (of_pair of_bool of_int (false,3)));
     Printf.printf "%s:\n\n%s\n\n" (print_val_t (Union (Bool,Int)))
       (pr_xml (of_union of_bool of_int (Inl false)));
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t Pp)
+      (pr_xml (of_pp Pp.(hv 3 (str "foo" ++ spc () ++ str "bar") )));
     print_endline ("All other types are records represented by a node named like the OCaml\n"^
                    "type which contains a flattened n-tuple.  We provide one example.\n");
     Printf.printf "%s:\n\n%s\n\n" (print_val_t Option_state)
@@ -538,6 +549,7 @@ let interp_sty_t : interp_sty val_t = pair_t (pair_t bool_t bool_t) string_t
 let stop_worker_sty_t : stop_worker_sty val_t = string_t
 let print_ast_sty_t : print_ast_sty val_t = state_id_t
 let annotate_sty_t : annotate_sty val_t = string_t
+let proof_diff_sty_t : proof_diff_sty val_t = pair_t string_t state_id_t
 
 let add_rty_t : add_rty val_t =
   pair_t state_id_t (pair_t (union_t unit_t state_id_t) string_t)
@@ -563,6 +575,7 @@ let interp_rty_t : interp_rty val_t = pair_t state_id_t (union_t string_t string
 let stop_worker_rty_t : stop_worker_rty val_t = unit_t
 let print_ast_rty_t : print_ast_rty val_t = xml_t
 let annotate_rty_t : annotate_rty val_t = xml_t
+let proof_diff_rty_t : proof_diff_rty val_t = pp_t
 
 let ($) x = erase x
 let calls = [|
@@ -585,6 +598,7 @@ let calls = [|
   "StopWorker", ($)stop_worker_sty_t, ($)stop_worker_rty_t;
   "PrintAst",   ($)print_ast_sty_t,   ($)print_ast_rty_t;
   "Annotate",   ($)annotate_sty_t,    ($)annotate_rty_t;
+  "PDiff",      ($)proof_diff_sty_t,  ($)proof_diff_rty_t;
 |]
 
 type 'a call =
@@ -609,7 +623,9 @@ type 'a call =
   | Interp     : interp_sty -> interp_rty call
   | PrintAst   : print_ast_sty -> print_ast_rty call
   | Annotate   : annotate_sty -> annotate_rty call
+  | PDiff      : proof_diff_sty -> proof_diff_rty call
 
+(* the order of the entries must match the order in "calls" above *)
 let id_of_call : type a. a call -> int = function
   | Add _        -> 0
   | Edit_at _    -> 1
@@ -630,6 +646,7 @@ let id_of_call : type a. a call -> int = function
   | StopWorker _ -> 16
   | PrintAst _   -> 17
   | Annotate _   -> 18
+  | PDiff _     -> 19
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -652,8 +669,9 @@ let init x        : init_rty call        = Init x
 let wait x        : wait_rty call        = Wait x
 let interp x      : interp_rty call      = Interp x
 let stop_worker x : stop_worker_rty call = StopWorker x
-let print_ast   x : print_ast_rty call   = PrintAst x
-let annotate   x : annotate_rty call    = Annotate x
+let print_ast x   : print_ast_rty call   = PrintAst x
+let annotate x    : annotate_rty call    = Annotate x
+let proof_diff x  : proof_diff_rty call  = PDiff x
 
 let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
   let mkGood : type a. a -> a value = fun x -> Good x in
@@ -678,6 +696,7 @@ let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
     | StopWorker x -> mkGood (handler.stop_worker x)
     | PrintAst x   -> mkGood (handler.print_ast x)
     | Annotate x   -> mkGood (handler.annotate x)
+    | PDiff x      -> mkGood (handler.proof_diff x)
   with any ->
     let any = Exninfo.capture any in
     Fail (handler.handle_exn any)
@@ -703,6 +722,7 @@ let of_answer : type a. a call -> a value -> xml = function
   | StopWorker _ -> of_value (of_value_type stop_worker_rty_t)
   | PrintAst _   -> of_value (of_value_type print_ast_rty_t  )
   | Annotate _   -> of_value (of_value_type annotate_rty_t   )
+  | PDiff _      -> of_value (of_value_type proof_diff_rty_t )
 
 let of_answer msg_fmt =
   msg_format := msg_fmt; of_answer
@@ -727,6 +747,7 @@ let to_answer : type a. a call -> xml -> a value = function
   | StopWorker _ -> to_value (to_value_type stop_worker_rty_t)
   | PrintAst _   -> to_value (to_value_type print_ast_rty_t  )
   | Annotate _   -> to_value (to_value_type annotate_rty_t   )
+  | PDiff _      -> to_value (to_value_type proof_diff_rty_t )
 
 let of_call : type a. a call -> xml = fun q ->
   let mkCall x = constructor "call" (str_of_call q) [x] in
@@ -750,6 +771,7 @@ let of_call : type a. a call -> xml = fun q ->
   | StopWorker x -> mkCall (of_value_type stop_worker_sty_t x)
   | PrintAst x   -> mkCall (of_value_type print_ast_sty_t   x)
   | Annotate x   -> mkCall (of_value_type annotate_sty_t    x)
+  | PDiff x      -> mkCall (of_value_type proof_diff_sty_t  x)
 
 let to_call : xml -> unknown_call =
   do_match "call" (fun s a ->
@@ -774,6 +796,7 @@ let to_call : xml -> unknown_call =
     | "StopWorker" -> Unknown (StopWorker (mkCallArg stop_worker_sty_t a))
     | "PrintAst"   -> Unknown (PrintAst   (mkCallArg print_ast_sty_t   a))
     | "Annotate"   -> Unknown (Annotate   (mkCallArg annotate_sty_t    a))
+    | "PDiff"      -> Unknown (PDiff      (mkCallArg proof_diff_sty_t  a))
     | x -> raise (Marshal_error("call",PCData x)))
 
 (** Debug printing *)
@@ -805,6 +828,7 @@ let pr_full_value : type a. a call -> a value -> string = fun call value -> matc
   | StopWorker _ -> pr_value_gen (print stop_worker_rty_t) value
   | PrintAst _   -> pr_value_gen (print print_ast_rty_t  ) value
   | Annotate _   -> pr_value_gen (print annotate_rty_t   ) value
+  | PDiff _      -> pr_value_gen (print proof_diff_rty_t ) value
 let pr_call : type a. a call -> string = fun call ->
   let return what x = str_of_call call ^ " " ^ print what x in
   match call with
@@ -827,6 +851,7 @@ let pr_call : type a. a call -> string = fun call ->
     | StopWorker x -> return stop_worker_sty_t x
     | PrintAst x   -> return print_ast_sty_t x
     | Annotate x   -> return annotate_sty_t x
+    | PDiff x      -> return proof_diff_sty_t x
 
 let document to_string_fmt =
   Printf.printf "=== Available calls ===\n\n";

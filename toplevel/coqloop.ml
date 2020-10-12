@@ -371,41 +371,13 @@ let exit_on_error =
   declare_bool_option_and_ref ~depr:false ~key:["Coqtop";"Exit";"On";"Error"]
     ~value:false
 
-(* XXX: This is duplicated with Vernacentries.show_proof , at some
-   point we should consolidate the code *)
-let show_proof_diff_to_pp pstate =
-  let p = Option.get pstate in
-  let sigma, env = Proof.get_proof_context p in
-  let pprf = Proof.partial_proof p in
-  Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
-
-let show_proof_diff_cmd ~state removed =
+let show_proof_diff_cmd ~state diff_opt =
   let open Vernac.State in
-  try
-    let n_pp = show_proof_diff_to_pp state.proof in
-    if true (*Proof_diffs.show_diffs ()*) then
-      let doc = state.doc in
-      let oproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
-      try
-        let o_pp = show_proof_diff_to_pp oproof in
-        let tokenize_string = Proof_diffs.tokenize_string in
-        let show_removed = Some removed in
-        Pp_diff.diff_pp_combined ~tokenize_string ?show_removed o_pp n_pp
-      with
-      | Proof.NoSuchGoal _
-      | Option.IsNone -> n_pp
-      | Pp_diff.Diff_Failure msg -> begin
-          (* todo: print the unparsable string (if we know it) *)
-          Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
-                                   ++ str "Showing results without diff highlighting" );
-          n_pp
-        end
-    else
-      n_pp
-  with
-  | Proof.NoSuchGoal _
-  | Option.IsNone ->
-    CErrors.user_err (str "No goals to show.")
+  match state.proof with
+  | None -> CErrors.user_err (str "No proofs to diff.")
+  | Some proof ->
+      let old = Stm.get_prev_proof ~doc:state.doc state.sid in
+      Proof_diffs.diff_proofs ~diff_opt ?old proof
 
 let process_toplevel_command ~state stm =
   let open Vernac.State in
@@ -444,12 +416,12 @@ let process_toplevel_command ~state stm =
     Feedback.msg_notice (v 0 (goal ++ evars));
     state
 
-  | VernacShowProofDiffs removed ->
+  | VernacShowProofDiffs diff_opt ->
     (* We print nothing if there are no goals left *)
     if not (Proof_diffs.color_enabled ()) then
       CErrors.user_err Pp.(str "Show Proof Diffs requires setting the \"-color\" command line argument to \"on\" or \"auto\".")
     else
-      let out = show_proof_diff_cmd ~state removed in
+      let out = show_proof_diff_cmd ~state diff_opt in
       Feedback.msg_notice out;
     state
 

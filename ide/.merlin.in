@@ -1,8 +1,10 @@
 PKG unix laglgtk3 lablgtk3-sourceview3 
 
-S utils
-B utils
-S protocol
-B protocol
+S coqide/utils
+B coqide/utils
+S coqide/protocol
+B coqide/protocol
+S coqide/
+B coqide/
 
 REC

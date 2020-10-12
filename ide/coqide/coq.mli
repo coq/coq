@@ -127,6 +127,7 @@ val hints      : Interface.hints_sty      -> Interface.hints_rty query
 val mkcases    : Interface.mkcases_sty    -> Interface.mkcases_rty query
 val search     : Interface.search_sty     -> Interface.search_rty query
 val init       : Interface.init_sty       -> Interface.init_rty query
+val proof_diff : Interface.proof_diff_sty -> Interface.proof_diff_rty query
 
 val stop_worker: Interface.stop_worker_sty-> Interface.stop_worker_rty query
 
@@ -143,6 +144,10 @@ sig
   val diff_item : string descr
 
   val set : 'a t -> 'a -> unit
+
+  val get : 'a t -> Interface.option_value
+
+  val diff : string t
 
   val printing_unfocused: unit -> bool
 

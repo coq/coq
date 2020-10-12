@@ -109,7 +109,7 @@ let shorten_diff_span dtype diff_list =
 
   iter 0 len (<) 1; (* left to right *)
   iter (len-1) (-1) (>) (-1); (* right to left *)
-  if !changed then Array.to_list diffs else diff_list;;
+  if !changed then Array.to_list diffs else diff_list
 
 let has_changes diffs =
   let rec has_changes_r diffs added removed =
@@ -118,12 +118,12 @@ let has_changes diffs =
     | `Removed _ :: t -> has_changes_r t added true
     | h :: t -> has_changes_r t added removed
     | [] -> (added, removed) in
-  has_changes_r diffs false false;;
+  has_changes_r diffs false false
 
 (* get the Myers diff of 2 lists of strings *)
 let diff_strs old_strs new_strs =
   let diffs = List.rev (StringDiff.diff old_strs new_strs) in
-  shorten_diff_span `Removed (shorten_diff_span `Added diffs);;
+  shorten_diff_span `Removed (shorten_diff_span `Added diffs)
 
 (* Default string tokenizer.  Makes each character a separate strin.
 Whitespace is not ignored.  Doesn't handle UTF-8 differences well. *)
@@ -139,7 +139,7 @@ let def_tokenize_string s =
 let diff_str ?(tokenize_string=def_tokenize_string) old_str new_str =
   let old_toks = Array.of_list (tokenize_string old_str)
   and new_toks = Array.of_list (tokenize_string new_str) in
-  diff_strs old_toks new_toks;;
+  diff_strs old_toks new_toks
 
 let get_dinfo = function
   | `Common (_, _, s) -> (`Common, s)
@@ -281,14 +281,14 @@ let add_diff_tags which pp diffs  =
   skip ();
   if !diffs <> [] then
     raise (Diff_Failure "left-over diff info at end of Pp.t, should be impossible");
-  if has_added || has_removed then wrap_in_bg diff_tag rv else rv;;
+  if has_added || has_removed then wrap_in_bg diff_tag rv else rv
 
 let diff_pp ?(tokenize_string=def_tokenize_string) o_pp n_pp =
   let open Pp in
   let o_str = string_of_ppcmds o_pp in
   let n_str = string_of_ppcmds n_pp in
   let diffs = diff_str ~tokenize_string o_str n_str in
-  (add_diff_tags `Removed o_pp diffs, add_diff_tags `Added n_pp diffs);;
+  (add_diff_tags `Removed o_pp diffs, add_diff_tags `Added n_pp diffs)
 
 let diff_pp_combined ?(tokenize_string=def_tokenize_string) ?(show_removed=false) o_pp n_pp =
   let open Pp in
@@ -300,4 +300,4 @@ let diff_pp_combined ?(tokenize_string=def_tokenize_string) ?(show_removed=false
   if show_removed && has_removed then
     let removed = add_diff_tags `Removed o_pp diffs in
     (v 0 (removed ++ cut() ++ added))
-  else added;;
+  else added

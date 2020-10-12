@@ -590,11 +590,11 @@ Requesting information
       constructed. Each hole is an existential variable, which appears as a
       question mark followed by an identifier.
 
-      Experimental: Specifying “Diffs” highlights the difference between the
+      Specifying “Diffs” highlights the difference between the
       current and previous proof step.  By default, the command shows the
       output once with additions highlighted.  Including “removed” shows
       the output twice: once showing removals and once showing additions.
-      It does not examine the :opt:`Diffs` option.  See :ref:`showing_diffs`.
+      It does not examine the :opt:`Diffs` option.  See :ref:`showing_proof_diffs`.
 
    .. cmdv:: Show Conjectures
       :name: Show Conjectures
@@ -675,12 +675,9 @@ Requesting information
 Showing differences between proof steps
 ---------------------------------------
 
-
 Coq can automatically highlight the differences between successive proof steps
-and between values in some error messages.  Also, as an experimental feature,
-Coq can also highlight differences between proof steps shown in the :cmd:`Show Proof`
-command, but only, for now, when using coqtop and Proof General.
-
+and between values in some error messages.  Coq can also highlight differences
+in the proof term.
 For example, the following screenshots of CoqIDE and coqtop show the application
 of the same :tacn:`intros` tactic.  The tactic creates two new hypotheses, highlighted in green.
 The conclusion is entirely in pale green because although it’s changed, no tokens were added
@@ -826,13 +823,36 @@ the split because it has not changed.
   .. image:: ../_static/diffs-coqide-multigoal.png
      :alt: coqide with Set Diffs on with multiple goals
 
-This is how diffs may appear after applying a :tacn:`intro` tactic that results
-in compacted hypotheses:
+Diffs may appear like this after applying a :tacn:`intro` tactic that results
+in a compacted hypotheses:
 
 ..
 
   .. image:: ../_static/diffs-coqide-compacted.png
      :alt: coqide with Set Diffs on with compacted hypotheses
+
+.. _showing_proof_diffs:
+
+"Show Proof" differences
+````````````````````````
+
+To show differences in the proof term:
+
+- In coqtop and Proof General, use the :cmd:`Show Proof` `Diffs` command.
+
+- In CoqIDE, position the cursor on or just after a tactic to compare the proof term
+  after the tactic with the proof term before the tactic, then select
+  `View / Show Proof` from the menu or enter the associated key binding.
+  Differences will be shown applying the current `Show Diffs` setting
+  from the `View` menu.  If the current setting is `Don't show diffs`, diffs
+  will not be shown.
+
+  Output with the "added and removed" option looks like this:
+
+  ..
+
+    .. image:: ../_static/diffs-show-proof.png
+       :alt: coqide with Set Diffs on with compacted hypotheses
 
 Controlling the effect of proof editing commands
 ------------------------------------------------

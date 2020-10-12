@@ -25,6 +25,10 @@ val write_color_enabled : bool -> unit
 (** true indicates that color output is enabled *)
 val color_enabled : unit -> bool
 
+type diffOpt = DiffOff | DiffOn | DiffRemoved
+
+val string_to_diffs : string -> diffOpt
+
 open Evd
 open Environ
 open Constr
@@ -84,3 +88,5 @@ type hyp_info = {
 }
 
 val diff_hyps : string list list -> hyp_info CString.Map.t -> string list list -> hyp_info CString.Map.t -> Pp.t list
+
+val diff_proofs : diff_opt:diffOpt -> ?old:Proof.t -> Proof.t -> Pp.t

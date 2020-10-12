@@ -20,6 +20,7 @@ object
   method handle_reset_initial : unit task
   method raw_coq_query :
     route_id:int -> next:(query_rty value -> unit task) -> string -> unit task
+  method proof_diff : GText.mark -> next:(Pp.t value -> unit task) -> unit task
   method show_goals : unit task
   method backtrack_last_phrase : unit task
   method initialize : unit task
@@ -29,7 +30,6 @@ object
   method get_n_errors : int
   method get_errors : (int * string) list
   method get_slaves_status : int * int * string CString.Map.t
-
 
   method handle_failure : handle_exn_rty -> unit task
 
