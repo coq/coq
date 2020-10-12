@@ -1740,11 +1740,11 @@ simple_tactic: [
 | "zify_elim_let"      (* micromega plugin *)
 | "nsatz_compute" constr      (* nsatz plugin *)
 | "omega"      (* omega plugin *)
-| "rtauto"
 | "protect_fv" string "in" ident      (* ring plugin *)
 | "protect_fv" string      (* ring plugin *)
 | "ring_lookup" tactic0 "[" LIST0 constr "]" LIST1 constr      (* ring plugin *)
 | "field_lookup" tactic "[" LIST0 constr "]" LIST1 constr      (* ring plugin *)
+| "rtauto"
 ]
 
 mlname: [

@@ -13,7 +13,7 @@ Inductive types
    .. prodn::
       inductive_definition ::= {? > } @ident_decl {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
       constructors_or_record ::= {? %| } {+| @constructor }
-      | {? @ident } %{ {*; @record_field } %}
+      | {? @ident } %{ {*; @record_field } {? ; } %}
       constructor ::= @ident {* @binder } {? @of_type }
 
    This command defines one or more
