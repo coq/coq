@@ -1103,7 +1103,7 @@ let rec extern inctx ?impargs scopes vars r =
   | GFloat f -> extern_float f (snd scopes)
 
   | GArray(u,t,def,ty) ->
-    CArray(u,Array.map (extern inctx scopes vars) t, extern inctx scopes vars def, extern_typ scopes vars ty)
+    CArray(extern_universes u,Array.map (extern inctx scopes vars) t, extern inctx scopes vars def, extern_typ scopes vars ty)
 
   in insert_entry_coercion coercion (CAst.make ?loc c)
 
