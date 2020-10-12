@@ -79,6 +79,7 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
+    -> ?using:Names.Id.Set.t
     -> unit
     -> 'constr t
 
@@ -333,6 +334,7 @@ type 'a proof_entry
 
 val definition_entry
   :  ?opaque:bool
+  -> ?using:Names.Id.Set.t
   -> ?inline:bool
   -> ?types:Constr.types
   -> ?univs:Entries.universes_entry

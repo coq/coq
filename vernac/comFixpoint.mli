@@ -19,13 +19,13 @@ val do_fixpoint_interactive :
   scope:Locality.locality -> poly:bool -> fixpoint_expr list -> Declare.Proof.t
 
 val do_fixpoint :
-  scope:Locality.locality -> poly:bool -> fixpoint_expr list -> unit
+  scope:Locality.locality -> poly:bool -> ?using:Vernacexpr.section_subset_expr -> fixpoint_expr list -> unit
 
 val do_cofixpoint_interactive :
   scope:Locality.locality -> poly:bool -> cofixpoint_expr list -> Declare.Proof.t
 
 val do_cofixpoint :
-  scope:Locality.locality -> poly:bool -> cofixpoint_expr list -> unit
+  scope:Locality.locality -> poly:bool -> ?using:Vernacexpr.section_subset_expr -> cofixpoint_expr list -> unit
 
 (************************************************************************)
 (** Internal API  *)
