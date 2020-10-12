@@ -539,7 +539,7 @@ variant_definition: [
 ]
 
 record_definition: [
-| OPT ">" ident_decl LIST0 binder OPT [ ":" type ] OPT ident "{" LIST0 record_field SEP ";" "}" OPT decl_notations
+| OPT ">" ident_decl LIST0 binder OPT [ ":" type ] OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}" OPT decl_notations
 ]
 
 record_field: [
@@ -553,7 +553,7 @@ field_body: [
 ]
 
 term_record: [
-| "{|" LIST0 field_def "|}"
+| "{|" LIST0 field_def SEP ";" OPT ";" "|}"
 ]
 
 field_def: [
@@ -566,7 +566,7 @@ inductive_definition: [
 
 constructors_or_record: [
 | OPT "|" LIST1 constructor SEP "|"
-| OPT ident "{" LIST0 record_field SEP ";" "}"
+| OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}"
 ]
 
 constructor: [

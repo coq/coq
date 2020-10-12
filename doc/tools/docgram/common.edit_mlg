@@ -396,8 +396,8 @@ operconstr0: [
 (* @Zimmi48: This rule is a hack, according to Hugo, and should not be shown in the manual. *)
 | DELETE "{" binder_constr "}"
 | REPLACE "{|" record_declaration bar_cbrace
-| WITH "{|" LIST0 field_def bar_cbrace
-| MOVETO term_record "{|" LIST0 field_def bar_cbrace
+| WITH "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
+| MOVETO term_record "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
 | MOVETO term_generalizing "`{" operconstr200 "}"
 | MOVETO term_generalizing "`(" operconstr200 ")"
 | MOVETO term_ltac "ltac" ":" "(" tactic_expr5 ")"
@@ -585,7 +585,7 @@ constructor_list_or_record_decl: [
 
 record_fields: [
 | REPLACE record_field ";" record_fields
-| WITH LIST0 record_field SEP ";"
+| WITH LIST0 record_field SEP ";" OPT ";"
 | DELETE record_field
 | DELETE (* empty *)
 ]
