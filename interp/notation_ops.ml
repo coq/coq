@@ -27,7 +27,9 @@ open Notation_term
 (* helper for NVar, NVar case in eq_notation_constr *)
 let get_var_ndx id vs = try Some (List.index Id.equal id vs) with Not_found -> None
 
-let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
+let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 =
+(vars1 == vars2 && t1 == t2) ||
+match t1, t2 with
 | NRef gr1, NRef gr2 -> GlobRef.equal gr1 gr2
 | NVar id1, NVar id2 -> (
    match (get_var_ndx id1 vars1,get_var_ndx id2 vars2) with

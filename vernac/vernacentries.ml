@@ -1790,11 +1790,11 @@ let vernac_print ~pstate =
   | PrintHintDbName s -> Hints.pr_hint_db_by_name env sigma s
   | PrintHintDb -> Hints.pr_searchtable env sigma
   | PrintScopes ->
-    Notation.pr_scopes (Constrextern.without_symbols (pr_lglob_constr_env env))
+    Notation.pr_scopes (Constrextern.without_symbols (pr_glob_constr_env env))
   | PrintScope s ->
-    Notation.pr_scope (Constrextern.without_symbols (pr_lglob_constr_env env)) s
+    Notation.pr_scope (Constrextern.without_symbols (pr_glob_constr_env env)) s
   | PrintVisibility s ->
-    Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env env)) s
+    Notation.pr_visibility (Constrextern.without_symbols (pr_glob_constr_env env)) s
   | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
     print_about_hyp_globs ~pstate ref_or_by_not udecl glnumopt
   | PrintImplicit qid ->
@@ -1830,7 +1830,7 @@ let vernac_locate ~pstate = let open Constrexpr in function
   | LocateTerm {v=ByNotation (ntn, sc)} ->
     let _, env = get_current_or_global_context ~pstate in
     Notation.locate_notation
-      (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc
+      (Constrextern.without_symbols (pr_glob_constr_env env)) ntn sc
   | LocateLibrary qid -> print_located_library qid
   | LocateModule qid -> Prettyp.print_located_module qid
   | LocateOther (s, qid) -> Prettyp.print_located_other s qid

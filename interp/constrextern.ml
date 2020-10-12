@@ -551,7 +551,7 @@ and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
-      if is_inactive_rule keyrule then raise No_match;
+      if is_inactive_rule keyrule || is_printing_inactive_rule keyrule pat then raise No_match;
       let loc = t.loc in
       match DAst.get t with
         | PatCstr (cstr,args,na) ->
@@ -568,7 +568,7 @@ let rec extern_notation_ind_pattern allscopes vars ind args = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
-      if is_inactive_rule keyrule then raise No_match;
+      if is_inactive_rule keyrule || is_printing_inactive_rule keyrule pat then raise No_match;
       apply_notation_to_pattern (GlobRef.IndRef ind)
         (match_notation_constr_ind_pattern ind args pat) allscopes vars keyrule
     with
@@ -1238,7 +1238,7 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
   | (keyrule,pat,n as _rule)::rules ->
       let loc = Glob_ops.loc_of_glob_constr t in
       try
-        if is_inactive_rule keyrule then raise No_match;
+        if is_inactive_rule keyrule || is_printing_inactive_rule keyrule pat then raise No_match;
         let f,args =
           match DAst.get t with
           | GApp (f,args) -> f,args

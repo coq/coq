@@ -1,0 +1,9 @@
+mmatch 1 + 2 + 3 + 4 + 5 + 6 in nat as x
+return M (x = x) with
+| 1
+end
+     : unit
+#
+     : True
+##
+     : True

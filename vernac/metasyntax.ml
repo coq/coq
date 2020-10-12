@@ -1165,11 +1165,6 @@ let warn_non_reversible_notation =
              str " not occur in the right-hand side." ++ spc() ++
              strbrk "The notation will not be used for printing as it is not reversible.")
 
-type entry_coercion_kind =
-  | IsEntryCoercion of notation_entry_level
-  | IsEntryGlobal of string * int
-  | IsEntryIdent of string * int
-
 let is_coercion level typs =
   match level, typs with
   | Some (custom,n,_), [e] ->
@@ -1417,8 +1412,7 @@ type notation_obj = {
   notobj_scope : scope_name option;
   notobj_interp : interpretation;
   notobj_coercion : entry_coercion_kind option;
-  notobj_onlyparse : bool;
-  notobj_onlyprint : bool;
+  notobj_use : notation_use option;
   notobj_deprecation : Deprecation.t option;
   notobj_notation : notation * notation_location;
   notobj_specific_pp_rules : syntax_printing_extension option;
@@ -1442,37 +1436,19 @@ let open_notation i (_, nobj) =
     let scope = nobj.notobj_scope in
     let (ntn, df) = nobj.notobj_notation in
     let pat = nobj.notobj_interp in
-    let onlyprint = nobj.notobj_onlyprint  in
     let deprecation = nobj.notobj_deprecation in
-    let specific = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
-    let specific_ntn = (specific,ntn) in
-    let fresh = not (Notation.exists_notation_in_scope scope ntn onlyprint pat) in
-    if fresh then begin
-      (* Declare the interpretation *)
-      let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint deprecation in
-      (* Declare the uninterpretation *)
-      if not nobj.notobj_onlyparse then
-        Notation.declare_uninterpretation (NotationRule specific_ntn) pat;
-      (* Declare a possible coercion *)
-      (match nobj.notobj_coercion with
-      | Some (IsEntryCoercion entry) ->
-        let (_,level,_) = Notation.level_of_notation ntn in
-        let level = match fst ntn with
-          | InConstrEntry -> None
-          | InCustomEntry _ -> Some level
-        in
-        Notation.declare_entry_coercion specific_ntn level entry
-      | Some (IsEntryGlobal (entry,n)) -> Notation.declare_custom_entry_has_global entry n
-      | Some (IsEntryIdent (entry,n)) -> Notation.declare_custom_entry_has_ident entry n
-      | None -> ())
-      end;
+    let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
+    (* Declare the notation *)
+    (match nobj.notobj_use with
+    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion deprecation
+    | None -> ());
     (* Declare specific format if any *)
-    match nobj.notobj_specific_pp_rules with
+    (match nobj.notobj_specific_pp_rules with
     | Some pp_sy ->
-      if specific_format_to_declare specific_ntn pp_sy then
+      if specific_format_to_declare (scope,ntn) pp_sy then
         Ppextend.declare_specific_notation_printing_rules
-          specific_ntn ~extra:pp_sy.synext_extra pp_sy.synext_unparsing
-    | None -> ()
+          (scope,ntn) ~extra:pp_sy.synext_extra pp_sy.synext_unparsing
+    | None -> ())
   end
 
 let cache_notation o =
@@ -1602,6 +1578,20 @@ let make_printing_rules reserved (sd : SynData.syn_data) = let open SynData in
     synext_extra  = sd.extra;
   }
 
+let warn_unused_interpretation =
+  CWarnings.create ~name:"unused-notation" ~category:"parsing"
+         (fun b ->
+          strbrk "interpretation is used neither for printing nor for parsing, " ++
+          (if b then strbrk "the declaration could be replaced by \"Reserved Notation\"."
+          else strbrk "the declaration could be removed."))
+
+let make_use reserved onlyparse onlyprint =
+  match onlyparse, onlyprint with
+  | false, false -> Some ParsingAndPrinting
+  | true, false -> Some OnlyParsing
+  | false, true -> Some OnlyPrinting
+  | true, true -> warn_unused_interpretation reserved; None
+
 (**********************************************************************)
 (* Main functions about notations                                     *)
 
@@ -1633,14 +1623,14 @@ let add_notation_in_scope ~local deprecation df env c mods scope =
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse,coe = printability (Some sd.level) sd.subentries sd.only_parsing reversibility ac in
   let notation, location = sd.info in
+  let use = make_use true onlyparse sd.only_printing in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
     notobj_interp = (List.map_filter map i_vars, ac);
     (* Order is important here! *)
-    notobj_onlyparse = onlyparse;
+    notobj_use = use;
     notobj_coercion = coe;
-    notobj_onlyprint = sd.only_printing;
     notobj_deprecation = sd.deprecation;
     notobj_notation = (notation, location);
     notobj_specific_pp_rules = sy_pp_rules;
@@ -1676,14 +1666,14 @@ let add_notation_interpretation_core ~local df env ?(impls=empty_internalization
   let interp = make_interpretation_vars recvars plevel acvars (List.combine mainvars i_typs) in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse,coe = printability level i_typs onlyparse reversibility ac in
+  let use = make_use false onlyparse onlyprint in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
     notobj_interp = (List.map_filter map i_vars, ac);
     (* Order is important here! *)
-    notobj_onlyparse = onlyparse;
+    notobj_use = use;
     notobj_coercion = coe;
-    notobj_onlyprint = onlyprint;
     notobj_deprecation = deprecation;
     notobj_notation = df';
     notobj_specific_pp_rules = pp_sy;

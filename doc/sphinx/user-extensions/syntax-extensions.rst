@@ -57,15 +57,14 @@ to represent :g:`(and A B)`:
 Notations must be in double quotes, except when the
 abbreviation has the form of an ordinary applicative expression;
 see :ref:`Abbreviations`. The notation consists of *tokens* separated by
-spaces. Alphanumeric strings (such as ``A`` and ``B``) are the *parameters*
+spaces. Tokens which are identifiers (such as ``A``, ``x0'``, etc.) are the *parameters*
 of the notation. Each of them must occur at least once in the abbreviated term. The
 other elements of the string (such as ``/\``) are the *symbols*.
 
-Substrings enclosed in single quotes are treated as literals.  This is necessary
-for substrings that would otherwise be interpreted as :n:`@ident`\s.  Similarly,
-every symbol of at least 3 characters and starting with a simple quote
-must be quoted (then it starts by two single quotes). Here is an
-example.
+Identifiers enclosed in single quotes are treated as symbols and thus
+lose their role of parameters. In the same vein, every symbol of at
+least 3 characters and starting with a simple quote must be quoted
+(then it starts with two single quotes). Here is an example.
 
 .. coqtop:: in
 
@@ -82,7 +81,8 @@ associativity rules have to be given.
    The right-hand side of a notation is interpreted at the time the notation is
    given. In particular, disambiguation of constants, :ref:`implicit arguments
    <ImplicitArguments>` and other notations are resolved at the
-   time of the declaration of the notation.
+   time of the declaration of the notation. The right-hand side is
+   currently typed only at use time but this may change in the future.
 
 Precedences and associativity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -299,12 +299,29 @@ Notations disappear when a section is closed. No typing of the denoted
 expression is performed at definition time. Type checking is done only
 at the time of use of the notation.
 
-.. note:: Sometimes, a notation is expected only for the parser. To do
-          so, the option ``only parsing`` is allowed in the list of :n:`@syntax_modifier`\s
-          in :cmd:`Notation`. Conversely, the ``only printing`` :n:`@syntax_modifier` can be
-          used to declare that a notation should only be used for printing and
-          should not declare a parsing rule. In particular, such notations do
-          not modify the parser.
+.. note::
+
+   The default for a notation is to be used both for parsing and
+   printing. It is possible to declare a notation only for parsing by
+   adding the option ``only parsing`` to the list of
+   :n:`@syntax_modifier`\s of :cmd:`Notation`. Symmetrically, the
+   ``only printing`` :n:`@syntax_modifier` can be used to declare that
+   a notation should only be used for printing.
+
+   If a notation to be used both for parsing and printing is
+   overriden, both the parsing and printing are invalided, even if the
+   overriding rule is only parsing.
+
+   If a given notation string occurs only in ``only printing`` rules,
+   the parser is not modified at all.
+
+   To a given notation string and scope can be attached at most one
+   notation with both parsing and printing or with only
+   parsing. Contrastingly, an arbitrary number of ``only printing``
+   notations differing in their right-hand sides but only a unique
+   right-hand side can be attached to a given string and
+   scope. Obviously, expressions printed by means of such extra
+   printing rules will not be reparsed to the same form.
 
 The Infix command
 ~~~~~~~~~~~~~~~~~~
