@@ -44,6 +44,18 @@ CI_BUILD_DIR="$PWD/_build_ci"
 
 ls -l "$CI_BUILD_DIR" || true
 
+declare -A overlays
+
+overlay()
+{
+    local project=$1
+    local ov_url=$2
+    local ov_ref=$3
+
+    overlays[${project}_URL]=$ov_url
+    overlays[${project}_REF]=$ov_ref
+}
+
 set +x
 for overlay in "${ci_dir}"/user-overlays/*.sh; do
     # shellcheck source=/dev/null
@@ -64,17 +76,27 @@ git_download()
 {
   local project=$1
   local dest="$CI_BUILD_DIR/$project"
+
   local giturl_var="${project}_CI_GITURL"
   local giturl="${!giturl_var}"
   local ref_var="${project}_CI_REF"
   local ref="${!ref_var}"
 
+  local ov_url=${overlays[${project}_URL]}
+  local ov_ref=${overlays[${project}_REF]}
+
   if [ -d "$dest" ]; then
     echo "Warning: download and unpacking of $project skipped because $dest already exists."
-  elif [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
+  elif [[ $ov_url ]] || [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
     git clone "$giturl" "$dest"
     cd "$dest"
     git checkout "$ref"
+    git log -n 1
+    if [[ $ov_url ]]; then
+        git -c pull.rebase=false pull --no-ff "$ov_url" "$ov_ref"
+        git log -n 1 HEAD^2
+        git log -n 1
+    fi
   else # When possible, we download tarballs to reduce bandwidth and latency
     local archiveurl_var="${project}_CI_ARCHIVEURL"
     local archiveurl="${!archiveurl_var}"
