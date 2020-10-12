@@ -925,7 +925,32 @@ struct
         let sigma, ty' = Coercion.inh_coerce_to_prod ?loc ~program_mode !!env sigma ty in
         sigma, Some ty'
     in
-    let sigma, (name',dom,rng) = split_tycon ?loc !!env sigma tycon' in
+    let sigma,name',dom,rng =
+      match tycon' with
+      | None -> sigma,Anonymous, None, None
+      | Some ty ->
+        let sigma, ty = Evardefine.presplit !!env sigma ty in
+        match EConstr.kind sigma ty with
+        | Prod (na,dom,rng) ->
+          sigma, na.binder_name, Some dom, Some rng
+        | Evar ev ->
+          (* define_evar_as_product works badly when impredicativity
+             is possible but not known (#12623). OTOH if we know we
+             are impredicative (typically Prop) we want to keep the
+             information when typing the body. *)
+          let s = Retyping.get_sort_of !!env sigma ty in
+          if Environ.is_impredicative_sort !!env s
+             || Evd.check_leq sigma (Univ.Universe.type1) (Sorts.univ_of_sort s)
+          then
+            let sigma, prod = define_evar_as_product !!env sigma ev in
+            let na,dom,rng = destProd sigma prod in
+            sigma, na.binder_name, Some dom, Some rng
+          else
+            sigma, Anonymous, None, None
+        | _ ->
+          (* XXX no error to allow later coercion? Not sure if possible with funclass *)
+          error_not_product ?loc !!env sigma ty
+    in
     let dom_valcon = valcon_of_tycon dom in
     let sigma, j = eval_type_pretyper self ~program_mode ~poly resolve_tc dom_valcon env sigma c1 in
     let name = {binder_name=name; binder_relevance=Sorts.relevance_of_sort j.utj_type} in
@@ -934,7 +959,7 @@ struct
     let var',env' = push_rel ~hypnaming sigma var env in
     let sigma, j' = eval_pretyper self ~program_mode ~poly resolve_tc rng env' sigma c2 in
     let name = get_name var' in
-    let resj = judge_of_abstraction !!env (orelse_name name name'.binder_name) j j' in
+    let resj = judge_of_abstraction !!env (orelse_name name name') j j' in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
 
   let pretype_prod self (name, bk, c1, c2) =

@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
 open EConstr
 open Evd
 open Environ
@@ -31,10 +30,6 @@ val mk_valcon : constr -> val_constraint
 val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
   evar_map * existential
 
-val split_tycon :
-  ?loc:Loc.t -> env ->  evar_map -> type_constraint ->
-    evar_map * (Name.t Context.binder_annot * type_constraint * type_constraint)
-
 val split_as_array : env -> evar_map -> type_constraint ->
   evar_map * type_constraint
 (** If the constraint can be made to look like [array A] return [A],
@@ -51,3 +46,6 @@ val define_evar_as_sort : env -> evar_map -> existential -> evar_map * Sorts.t
 
 val pr_tycon : env -> evar_map -> type_constraint -> Pp.t
 
+(** Used for bidi heuristic when typing lambdas. Transforms an applied
+    evar to an evar with bigger context (ie ?X e to ?X'@{y=e}). *)
+val presplit : env -> evar_map -> EConstr.t -> evar_map * EConstr.t

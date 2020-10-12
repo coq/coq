@@ -175,10 +175,7 @@ let define_evar_as_sort env evd (ev,args) =
   let evd' = Evd.define ev (mkSort s) evd in
   Evd.set_leq_sort env evd' (Sorts.super s) (ESorts.kind evd' sort), s
 
-(* Propagation of constraints through application and abstraction:
-   Given a type constraint on a functional term, returns the type
-   constraint on its domain and codomain. If the input constraint is
-   an evar instantiate it with the product of 2 new evars. *)
+(* Unify with unknown array *)
 
 let rec presplit env sigma c =
   let c = Reductionops.whd_all env sigma c in
@@ -188,25 +185,6 @@ let rec presplit env sigma c =
     (* XXX could be just whd_all -> no recursion? *)
     presplit env sigma (mkApp (lam, args))
   | _ -> sigma, c
-
-let split_tycon ?loc env evd tycon =
-  match tycon with
-  | None -> evd,(make_annot Anonymous Relevant,None,None)
-  | Some c ->
-    let evd, c = presplit env evd c in
-    let evd, na, dom, rng = match EConstr.kind evd c with
-      | Prod (na,dom,rng) -> evd, na, dom, rng
-      | Evar ev ->
-        let (evd,prod) = define_evar_as_product env evd ev in
-        let (na,dom,rng) = destProd evd prod in
-        let anon = {na with binder_name = Anonymous} in
-        evd, anon, dom, rng
-      | _ ->
-        (* XXX no error to allow later coercion? Not sure if possible with funclass *)
-        error_not_product ?loc env evd c
-    in
-    evd, (na, mk_tycon dom, mk_tycon rng)
-
 
 let define_pure_evar_as_array env sigma evk =
   let evi = Evd.find_undefined sigma evk in
