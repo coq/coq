@@ -245,6 +245,8 @@ module Proof : sig
    * (w.r.t. type dependencies and let-ins covered by it) *)
   val set_used_variables : t -> Names.Id.t list -> Constr.named_context * t
 
+  (** Compacts the representation of the proof by pruning all intermediate
+      terms *)
   val compact : t -> t
 
   (** Update the proof's universe information typically after a
