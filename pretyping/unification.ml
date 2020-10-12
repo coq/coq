@@ -134,8 +134,8 @@ let abstract_list_all env evd typ c l =
     | Type_errors.TypeError (env',x) ->
         (* FIXME: plug back the typing information *)
         error_cannot_find_well_typed_abstraction env evd p l None
-    | Pretype_errors.PretypeError (env',evd,TypingError x) ->
-        error_cannot_find_well_typed_abstraction env evd p l (Some (env',x)) in
+    | Pretype_errors.PretypeError (env',evd,e) ->
+        error_cannot_find_well_typed_abstraction env evd p l (Some (env',e)) in
   evd,(p,typp)
 
 let set_occurrences_of_last_arg n =

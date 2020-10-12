@@ -866,7 +866,7 @@ let explain_unsatisfiable_constraints env sigma constr comp =
     let info = Evar.Map.find ev undef in
     explain_typeclass_resolution env sigma info k ++ fnl () ++ cstr
 
-let explain_pretype_error env sigma err =
+let rec explain_pretype_error env sigma err =
   let env = Evardefine.env_nf_betaiotaevar sigma env in
   let env = make_all_name_different env sigma in
   match err with
@@ -893,7 +893,7 @@ let explain_pretype_error env sigma err =
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type env sigma m n
   | CannotFindWellTypedAbstraction (p,l,e) ->
       explain_cannot_find_well_typed_abstraction env sigma p l
-        (Option.map (fun (env',e) -> explain_type_error env' sigma e) e)
+        (Option.map (fun (env',e) -> explain_pretype_error env' sigma e) e)
   | WrongAbstractionType (n,a,t,u) ->
       explain_wrong_abstraction_type env sigma n a t u
   | AbstractionOverMeta (m,n) -> explain_abstraction_over_meta env m n
