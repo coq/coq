@@ -29,7 +29,12 @@ module G = AcyclicGraph.Make(struct
    code (eg add_universe with a constraint vs G.add with no
    constraint) *)
 
-type t = { graph: G.t; sprop_cumulative : bool }
+type t = {
+  graph: G.t;
+  sprop_cumulative : bool;
+  type_in_type : bool;
+}
+
 type 'a check_function = t -> 'a -> 'a -> bool
 
 let g_map f g =
@@ -38,6 +43,10 @@ let g_map f g =
   else {g with graph=g'}
 
 let set_cumulative_sprop b g = {g with sprop_cumulative=b}
+
+let set_type_in_type b g = {g with type_in_type=b}
+
+let type_in_type g = g.type_in_type
 
 let check_smaller_expr g (u,n) (v,m) =
   let diff = n - m in
@@ -55,28 +64,33 @@ let real_check_leq g u v =
   Universe.for_all (fun ul -> exists_bigger g ul v) u
 
 let check_leq g u v =
+  type_in_type g ||
   Universe.equal u v || (g.sprop_cumulative && Universe.is_sprop u) ||
   (not (Universe.is_sprop u) && not (Universe.is_sprop v) &&
     (is_type0m_univ u ||
      real_check_leq g u v))
 
 let check_eq g u v =
+  type_in_type g ||
   Universe.equal u v ||
   (not (Universe.is_sprop u || Universe.is_sprop v) &&
    (real_check_leq g u v && real_check_leq g v u))
 
 let check_eq_level g u v =
   u == v ||
+  type_in_type g ||
   (not (Level.is_sprop u || Level.is_sprop v) && G.check_eq g.graph u v)
 
-let empty_universes = {graph=G.empty; sprop_cumulative=false}
+let empty_universes = {graph=G.empty; sprop_cumulative=false; type_in_type=false}
 
 let initial_universes =
   let big_rank = 1000000 in
   let g = G.empty in
   let g = G.add ~rank:big_rank Level.prop g in
   let g = G.add ~rank:big_rank Level.set g in
-  {graph=G.enforce_lt Level.prop Level.set g; sprop_cumulative=false}
+  {empty_universes with graph=G.enforce_lt Level.prop Level.set g}
+
+let initial_universes_with g = {g with graph=initial_universes.graph}
 
 let enforce_constraint (u,d,v) g =
   match d with
@@ -91,6 +105,10 @@ let enforce_constraint (u,d,v as cst) g =
   | true, Le, false when g.sprop_cumulative -> g
   | _ ->  raise (UniverseInconsistency (d,Universe.make u, Universe.make v, None))
 
+let enforce_constraint cst g =
+  if not (type_in_type g) then enforce_constraint cst g
+  else try enforce_constraint cst g with UniverseInconsistency _ -> g
+
 let merge_constraints csts g = Constraint.fold enforce_constraint csts g
 
 let check_constraint g (u,d,v) =
@@ -103,8 +121,8 @@ let check_constraint g (u,d,v as cst) =
   match Level.is_sprop u, d, Level.is_sprop v with
   | false, _, false -> check_constraint g.graph cst
   | true, (Eq|Le), true -> true
-  | true, Le, false -> g.sprop_cumulative
-  | _ -> false
+  | true, Le, false -> g.sprop_cumulative || type_in_type g
+  | _ -> type_in_type g
 
 let check_constraints csts g = Constraint.for_all (check_constraint g) csts
 
@@ -145,8 +163,10 @@ let enforce_leq_alg u v g =
 let enforce_leq_alg u v g =
   match Universe.is_sprop u, Universe.is_sprop v with
   | true, true -> Constraint.empty, g
-  | true, false | false, true -> raise (UniverseInconsistency (Le, u, v, None))
   | false, false -> enforce_leq_alg u v g
+  | left, _ ->
+    if left && g.sprop_cumulative then Constraint.empty, g
+    else raise (UniverseInconsistency (Le, u, v, None))
 
 (* sanity check wrapper *)
 let enforce_leq_alg u v g =

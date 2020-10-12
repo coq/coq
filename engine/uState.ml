@@ -276,6 +276,10 @@ let process_universe_constraints ctx cstrs =
             if not (drop_weak_constraints ()) then weak := UPairSet.add (l,r) !weak; local
           | UEq (l, r) -> equalize_universes l r local
   in
+  let unify_universes cst local =
+    if not (UGraph.type_in_type univs) then unify_universes cst local
+    else try unify_universes cst local with UniverseInconsistency _ -> local
+  in
   let local =
     UnivProblem.Set.fold unify_universes cstrs Constraint.empty
   in
