@@ -245,6 +245,10 @@ module Proof : sig
    * (w.r.t. type dependencies and let-ins covered by it) *)
   val set_used_variables : t -> Names.Id.t list -> Constr.named_context * t
 
+  (** Gets the set of variables declared to be used by the proof. None means
+      no "Proof using" or #[using] was given *)
+  val get_used_variables : t -> Id.Set.t option
+
   (** Compacts the representation of the proof by pruning all intermediate
       terms *)
   val compact : t -> t

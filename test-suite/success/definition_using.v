@@ -44,3 +44,25 @@ Check c4 : bogus -> bool.
 Check c5 : bogus -> nat -> bool.
 Check c6 : bogus -> bool.
 Check c7 : bogus -> nat -> bool.
+
+Section B.
+
+Variable a : bogus.
+Variable h : c1 a = true.
+
+#[using="a*"]
+Definition c8 : bogus := a.
+
+Collection ccc := a h.
+
+#[using="ccc"]
+Definition c9 : bogus := a.
+
+#[using="ccc - h"]
+Definition c10 : bogus := a.
+
+End B.
+
+Check c8 : forall a, c1 a = true -> bogus.
+Check c9 : forall a, c1 a = true -> bogus.
+Check c10: bogus -> bogus.
