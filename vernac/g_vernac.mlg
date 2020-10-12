@@ -687,7 +687,7 @@ GRAMMAR EXTEND Gram
           { VernacContext (List.flatten c) }
 
       | IDENT "Instance"; namesup = instance_name; ":";
-         t = operconstr LEVEL "200";
+         t = term LEVEL "200";
          info = hint_info ;
          props = [ ":="; "{"; r = record_declaration; "}" -> { Some (true,r) } |
              ":="; c = lconstr -> { Some (false,c) } | -> { None } ] ->
@@ -837,7 +837,7 @@ GRAMMAR EXTEND Gram
 
       (* Hack! Should be in grammar_ext, but camlp5 factorizes badly *)
       | IDENT "Declare"; IDENT "Instance"; id = ident_decl; bl = binders; ":";
-         t = operconstr LEVEL "200";
+         t = term LEVEL "200";
          info = hint_info ->
            { VernacDeclareInstance (id, bl, t, info) }
 

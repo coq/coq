@@ -28,7 +28,7 @@ strategy_level_or_var: [
 | strategy_level
 ]
 
-operconstr0: [
+term0: [
 | "ltac" ":" "(" tactic_expr5 ")"
 ]
 
@@ -36,7 +36,7 @@ EXTRAARGS_natural: [ | DELETENT ]
 EXTRAARGS_lconstr:  [ | DELETENT ]
 EXTRAARGS_strategy_level: [ | DELETENT ]
 G_LTAC_hint: [ | DELETENT ]
-G_LTAC_operconstr0: [ | DELETENT ]
+G_LTAC_term0: [ | DELETENT ]
 
 G_REWRITE_binders: [
 | DELETE Pcoq.Constr.binders
@@ -263,35 +263,35 @@ RENAME: [
 ]
 
 case_item: [
-| REPLACE operconstr100 OPT [ "as" name ] OPT [ "in" pattern200 ]
-| WITH operconstr100 OPT ("as" name) OPT [ "in" pattern200 ]
+| REPLACE term100 OPT [ "as" name ] OPT [ "in" pattern200 ]
+| WITH term100 OPT ("as" name) OPT [ "in" pattern200 ]
 ]
 
 binder_constr: [
-| MOVETO term_forall_or_fun "forall" open_binders "," operconstr200
-| MOVETO term_forall_or_fun "fun" open_binders "=>" operconstr200
-| MOVETO term_let "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
-| MOVETO term_if "if" operconstr200 as_return_type "then" operconstr200 "else" operconstr200
-| MOVETO term_fix "let" "fix" fix_decl "in" operconstr200
-| MOVETO term_cofix "let" "cofix" cofix_decl "in" operconstr200
-| MOVETO term_let "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" operconstr200 "in" operconstr200
-| MOVETO term_let "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
-| MOVETO term_let "let" "'" pattern200 ":=" operconstr200 case_type "in" operconstr200
-| MOVETO term_let "let" "'" pattern200 "in" pattern200 ":=" operconstr200 case_type "in" operconstr200
+| MOVETO term_forall_or_fun "forall" open_binders "," term200
+| MOVETO term_forall_or_fun "fun" open_binders "=>" term200
+| MOVETO term_let "let" name binders let_type_cstr ":=" term200 "in" term200
+| MOVETO term_if "if" term200 as_return_type "then" term200 "else" term200
+| MOVETO term_fix "let" "fix" fix_decl "in" term200
+| MOVETO term_cofix "let" "cofix" cofix_decl "in" term200
+| MOVETO term_let "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" term200 "in" term200
+| MOVETO term_let "let" "'" pattern200 ":=" term200 "in" term200
+| MOVETO term_let "let" "'" pattern200 ":=" term200 case_type "in" term200
+| MOVETO term_let "let" "'" pattern200 "in" pattern200 ":=" term200 case_type "in" term200
 | MOVETO term_fix "fix" fix_decls
 | MOVETO term_cofix "cofix" cofix_decls
 ]
 
 term_let: [
-| REPLACE "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
-| WITH "let" name let_type_cstr ":=" operconstr200 "in" operconstr200
-| "let" name LIST1 binder let_type_cstr ":=" operconstr200 "in" operconstr200
+| REPLACE "let" name binders let_type_cstr ":=" term200 "in" term200
+| WITH "let" name let_type_cstr ":=" term200 "in" term200
+| "let" name LIST1 binder let_type_cstr ":=" term200 "in" term200
 (* Don't need to document that "( )" is equivalent to "()" *)
-| REPLACE "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" operconstr200 "in" operconstr200
-| WITH "let" "(" LIST0 name SEP "," ")" as_return_type ":=" operconstr200 "in" operconstr200
-| REPLACE "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
-| WITH  "let" "'" pattern200 ":=" operconstr200 OPT case_type "in" operconstr200
-| DELETE "let" "'" pattern200 ":=" operconstr200 case_type "in" operconstr200
+| REPLACE "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" term200 "in" term200
+| WITH "let" "(" LIST0 name SEP "," ")" as_return_type ":=" term200 "in" term200
+| REPLACE "let" "'" pattern200 ":=" term200 "in" term200
+| WITH  "let" "'" pattern200 ":=" term200 OPT case_type "in" term200
+| DELETE "let" "'" pattern200 ":=" term200 case_type "in" term200
 ]
 
 atomic_constr: [
@@ -337,20 +337,20 @@ scope_delimiter: [
 ]
 
 type: [
-| operconstr200
+| term200
 ]
 
-operconstr100: [
-| REPLACE operconstr99 "<:" operconstr200
-| WITH operconstr99 "<:" type
-| MOVETO term_cast operconstr99 "<:" type
-| REPLACE operconstr99 "<<:" operconstr200
-| WITH operconstr99 "<<:" type
-| MOVETO term_cast operconstr99 "<<:" type
-| REPLACE operconstr99 ":" operconstr200
-| WITH operconstr99 ":" type
-| MOVETO term_cast operconstr99 ":" type
-| MOVETO term_cast operconstr99 ":>"
+term100: [
+| REPLACE term99 "<:" term200
+| WITH term99 "<:" type
+| MOVETO term_cast term99 "<:" type
+| REPLACE term99 "<<:" term200
+| WITH term99 "<<:" type
+| MOVETO term_cast term99 "<<:" type
+| REPLACE term99 ":" term200
+| WITH term99 ":" type
+| MOVETO term_cast term99 ":" type
+| MOVETO term_cast term99 ":>"
 ]
 
 constr: [
@@ -359,43 +359,43 @@ constr: [
 | MOVETO term_explicit "@" qualid_annotated
 ]
 
-operconstr10: [
+term10: [
 (* Separate this LIST0 in the nonempty and the empty case *)
 (* The empty case is covered by constr *)
-| REPLACE "@" global univ_instance LIST0 operconstr9
-| WITH "@" qualid_annotated LIST1 operconstr9
-| REPLACE operconstr9
+| REPLACE "@" global univ_instance LIST0 term9
+| WITH "@" qualid_annotated LIST1 term9
+| REPLACE term9
 | WITH constr
-| MOVETO term_application operconstr9 LIST1 appl_arg
-| MOVETO term_application "@" qualid_annotated LIST1 operconstr9
+| MOVETO term_application term9 LIST1 appl_arg
+| MOVETO term_application "@" qualid_annotated LIST1 term9
 (* fixme: add in as a prodn somewhere *)
 | MOVETO dangling_pattern_extension_rule "@" pattern_ident LIST1 identref
 | DELETE dangling_pattern_extension_rule
 ]
 
-operconstr9: [
+term9: [
 (* @Zimmi48: Special token .. is for use in the Notation command. (see bug_3304.v) *)
-| DELETE ".." operconstr0 ".."
+| DELETE ".." term0 ".."
 ]
 
-operconstr1: [
-| REPLACE operconstr0 ".(" global LIST0 appl_arg ")"
-| WITH    operconstr0 ".(" global LIST0 appl_arg ")" (* huh? *)
-| REPLACE operconstr0 "%" IDENT
-| WITH operconstr0 "%" scope_key
-| MOVETO term_scope operconstr0 "%" scope_key
-| MOVETO term_projection operconstr0 ".(" global LIST0 appl_arg ")"
-| MOVETO term_projection operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
+term1: [
+| REPLACE term0 ".(" global LIST0 appl_arg ")"
+| WITH    term0 ".(" global LIST0 appl_arg ")" (* huh? *)
+| REPLACE term0 "%" IDENT
+| WITH term0 "%" scope_key
+| MOVETO term_scope term0 "%" scope_key
+| MOVETO term_projection term0 ".(" global LIST0 appl_arg ")"
+| MOVETO term_projection term0 ".(" "@" global LIST0 ( term9 ) ")"
 ]
 
-operconstr0: [
+term0: [
 (* @Zimmi48: This rule is a hack, according to Hugo, and should not be shown in the manual. *)
 | DELETE "{" binder_constr "}"
 | REPLACE "{|" record_declaration bar_cbrace
 | WITH "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
 | MOVETO term_record "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
-| MOVETO term_generalizing "`{" operconstr200 "}"
-| MOVETO term_generalizing "`(" operconstr200 ")"
+| MOVETO term_generalizing "`{" term200 "}"
+| MOVETO term_generalizing "`(" term200 ")"
 | MOVETO term_ltac "ltac" ":" "(" tactic_expr5 ")"
 | REPLACE "[" "|" array_elems "|" lconstr type_cstr "|" "]" univ_instance
 | WITH "[|" array_elems "|" lconstr type_cstr "|]" univ_instance
@@ -481,11 +481,11 @@ name_colon: [
 ]
 
 typeclass_constraint: [
-| EDIT ADD_OPT "!" operconstr200
-| REPLACE "{" name "}" ":" [ "!" | ] operconstr200
-| WITH "{" name "}" ":" OPT "!"  operconstr200
-| REPLACE name ":" [ "!" | ] operconstr200
-| WITH name ":" OPT "!" operconstr200
+| EDIT ADD_OPT "!" term200
+| REPLACE "{" name "}" ":" [ "!" | ] term200
+| WITH "{" name "}" ":" OPT "!"  term200
+| REPLACE name ":" [ "!" | ] term200
+| WITH name ":" OPT "!" term200
 ]
 
 (* ?? From the grammar, Prim.name seems to be only "_" but ident is also accepted "*)
@@ -731,7 +731,7 @@ gallina_ext: [
 | WITH "Set" option_table option_setting
 | REPLACE "Export" "Unset" option_table
 | WITH "Unset" option_table
-| REPLACE "Instance" instance_name ":" operconstr200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
+| REPLACE "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
 | WITH "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
 
 | REPLACE "From" global "Require" export_token LIST1 global
@@ -1944,7 +1944,7 @@ tactic_notation_tactics: [
 
 (* defined in OCaml outside of mlgs *)
 tactic_arg: [
-| "uconstr" ":" "(" operconstr200 ")"
+| "uconstr" ":" "(" term200 ")"
 | MOVEALLBUT simple_tactic
 ]
 
@@ -2309,10 +2309,10 @@ SPLICE: [
 | ltac_selector
 | Constr.ident
 | attribute_list
-| operconstr99
-| operconstr90
-| operconstr9
-| operconstr8
+| term99
+| term90
+| term9
+| term8
 | pattern200
 | pattern99
 | pattern90
@@ -2499,11 +2499,7 @@ RENAME: [
 
 (* | nonsimple_intropattern intropattern (* ltac2 *) *)
 
-| operconstr200 term   (* historical name *)
-| operconstr100 term100
-| operconstr10 term10
-| operconstr1 term1
-| operconstr0 term0
+| term200 term
 | pattern100 pattern
 | match_constr term_match
 (*| impl_ident_tail impl_ident*)

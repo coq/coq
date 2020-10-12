@@ -185,7 +185,9 @@ module Constr :
     val constr_eoi : constr_expr Entry.t
     val lconstr : constr_expr Entry.t
     val binder_constr : constr_expr Entry.t
+    val term : constr_expr Entry.t
     val operconstr : constr_expr Entry.t
+      [@@deprecated "Deprecated in 8.13; use 'term' instead"]
     val ident : Id.t Entry.t
     val global : qualid Entry.t
     val universe_name : Glob_term.glob_sort_name Entry.t

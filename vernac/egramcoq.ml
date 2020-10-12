@@ -300,13 +300,13 @@ let interp_constr_entry_key : type r. _ -> r target -> int -> r Entry.t * int op
   match forpat with
   | ForConstr ->
     if level = 200 then Constr.binder_constr, None
-    else Constr.operconstr, Some level
+    else Constr.term, Some level
   | ForPattern -> Constr.pattern, Some level
 
 let target_entry : type s. notation_entry -> s target -> s Entry.t = function
 | InConstrEntry ->
    (function
-   | ForConstr -> Constr.operconstr
+   | ForConstr -> Constr.term
    | ForPattern -> Constr.pattern)
 | InCustomEntry s ->
    let (entry_for_constr, entry_for_patttern) = find_custom_entry s in

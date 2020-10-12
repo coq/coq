@@ -85,7 +85,7 @@ let mk_pat c (na, t) = (c, na, t)
 
 GRAMMAR EXTEND Gram
   GLOBAL: binder_constr;
-  ssr_rtype: [[ "return"; t = operconstr LEVEL "100" -> { mk_rtype t } ]];
+  ssr_rtype: [[ "return"; t = term LEVEL "100" -> { mk_rtype t } ]];
   ssr_mpat: [[ p = pattern -> { [[p]] } ]];
   ssr_dpat: [
     [ mp = ssr_mpat; "in"; t = pattern; rt = ssr_rtype -> { mp, mk_ctype mp t, rt }
@@ -96,9 +96,9 @@ GRAMMAR EXTEND Gram
   ssr_elsepat: [[ "else" -> { [[CAst.make ~loc @@ CPatAtom None]] } ]];
   ssr_else: [[ mp = ssr_elsepat; c = lconstr -> { CAst.make ~loc (mp, c) } ]];
   binder_constr: [
-    [ "if"; c = operconstr LEVEL "200"; "is"; db1 = ssr_dthen; b2 = ssr_else ->
+    [ "if"; c = term LEVEL "200"; "is"; db1 = ssr_dthen; b2 = ssr_else ->
       { let b1, ct, rt = db1 in CAst.make ~loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2]) }
-    | "if"; c = operconstr LEVEL "200";"isn't";db1 = ssr_dthen; b2 = ssr_else ->
+    | "if"; c = term LEVEL "200";"isn't";db1 = ssr_dthen; b2 = ssr_else ->
       { let b1, ct, rt = db1 in
       let b1, b2 = let open CAst in
         let {loc=l1; v=(p1, r1)}, {loc=l2; v=(p2, r2)} = b1, b2 in
@@ -119,7 +119,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: closed_binder;
   closed_binder: [
-    [ ["of" -> { () } | "&" -> { () } ]; c = operconstr LEVEL "99" ->
+    [ ["of" -> { () } | "&" -> { () } ]; c = term LEVEL "99" ->
       { [CLocalAssum ([CAst.make ~loc Anonymous], Default Explicit, c)] }
   ] ];
 END

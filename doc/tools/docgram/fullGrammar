@@ -58,67 +58,67 @@ universe: [
 ]
 
 lconstr: [
-| operconstr200
+| term200
 ]
 
 constr: [
-| operconstr8
+| term8
 | "@" global univ_instance
 ]
 
-operconstr200: [
+term200: [
 | binder_constr
-| operconstr100
+| term100
 ]
 
-operconstr100: [
-| operconstr99 "<:" operconstr200
-| operconstr99 "<<:" operconstr200
-| operconstr99 ":" operconstr200
-| operconstr99 ":>"
-| operconstr99
+term100: [
+| term99 "<:" term200
+| term99 "<<:" term200
+| term99 ":" term200
+| term99 ":>"
+| term99
 ]
 
-operconstr99: [
-| operconstr90
+term99: [
+| term90
 ]
 
-operconstr90: [
-| operconstr10
+term90: [
+| term10
 ]
 
-operconstr10: [
-| operconstr9 LIST1 appl_arg
-| "@" global univ_instance LIST0 operconstr9
-| "@" pattern_ident LIST1 identref
-| operconstr9
+term10: [
+| term9 LIST1 appl_arg
+| "@" global univ_instance LIST0 term9
+| "@" pattern_identref LIST1 identref
+| term9
 ]
 
-operconstr9: [
-| ".." operconstr0 ".."
-| operconstr8
+term9: [
+| ".." term0 ".."
+| term8
 ]
 
-operconstr8: [
-| operconstr1
+term8: [
+| term1
 ]
 
-operconstr1: [
-| operconstr0 ".(" global LIST0 appl_arg ")"
-| operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
-| operconstr0 "%" IDENT
-| operconstr0
+term1: [
+| term0 ".(" global LIST0 appl_arg ")"
+| term0 ".(" "@" global LIST0 ( term9 ) ")"
+| term0 "%" IDENT
+| term0
 ]
 
-operconstr0: [
+term0: [
 | atomic_constr
 | match_constr
-| "(" operconstr200 ")"
+| "(" term200 ")"
 | "{|" record_declaration bar_cbrace
 | "{" binder_constr "}"
-| "`{" operconstr200 "}"
+| "`{" term200 "}"
 | test_array_opening "[" "|" array_elems "|" lconstr type_cstr test_array_closing "|" "]" univ_instance
-| "`(" operconstr200 ")"
+| "`(" term200 ")"
 ]
 
 array_elems: [
@@ -140,23 +140,23 @@ field_def: [
 ]
 
 binder_constr: [
-| "forall" open_binders "," operconstr200
-| "fun" open_binders "=>" operconstr200
-| "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
-| "let" "fix" fix_decl "in" operconstr200
-| "let" "cofix" cofix_decl "in" operconstr200
-| "let" [ "(" LIST0 name SEP "," ")" | "()" ] return_type ":=" operconstr200 "in" operconstr200
-| "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
-| "let" "'" pattern200 ":=" operconstr200 case_type "in" operconstr200
-| "let" "'" pattern200 "in" pattern200 ":=" operconstr200 case_type "in" operconstr200
-| "if" operconstr200 return_type "then" operconstr200 "else" operconstr200
+| "forall" open_binders "," term200
+| "fun" open_binders "=>" term200
+| "let" name binders let_type_cstr ":=" term200 "in" term200
+| "let" "fix" fix_decl "in" term200
+| "let" "cofix" cofix_decl "in" term200
+| "let" [ "(" LIST0 name SEP "," ")" | "()" ] return_type ":=" term200 "in" term200
+| "let" "'" pattern200 ":=" term200 "in" term200
+| "let" "'" pattern200 ":=" term200 case_type "in" term200
+| "let" "'" pattern200 "in" pattern200 ":=" term200 case_type "in" term200
+| "if" term200 return_type "then" term200 "else" term200
 | "fix" fix_decls
 | "cofix" cofix_decls
 ]
 
 appl_arg: [
-| test_lpar_id_coloneq "(" identref ":=" lconstr ")"
-| operconstr9
+| test_lpar_id_coloneq "(" ident ":=" lconstr ")"
+| term9
 ]
 
 atomic_constr: [
@@ -165,13 +165,13 @@ atomic_constr: [
 | NUMBER
 | string
 | "_"
-| "?" "[" identref "]"
+| "?" "[" ident "]"
 | "?" "[" pattern_ident "]"
 | pattern_ident evar_instance
 ]
 
 inst: [
-| identref ":=" lconstr
+| ident ":=" lconstr
 ]
 
 evar_instance: [
@@ -203,11 +203,11 @@ cofix_decls: [
 ]
 
 fix_decl: [
-| identref binders_fixannot type_cstr ":=" operconstr200
+| identref binders_fixannot type_cstr ":=" term200
 ]
 
 cofix_decl: [
-| identref binders type_cstr ":=" operconstr200
+| identref binders type_cstr ":=" term200
 ]
 
 match_constr: [
@@ -215,11 +215,11 @@ match_constr: [
 ]
 
 case_item: [
-| operconstr100 OPT [ "as" name ] OPT [ "in" pattern200 ]
+| term100 OPT [ "as" name ] OPT [ "in" pattern200 ]
 ]
 
 case_type: [
-| "return" operconstr100
+| "return" term100
 ]
 
 return_type: [
@@ -253,7 +253,7 @@ pattern200: [
 ]
 
 pattern100: [
-| pattern99 ":" operconstr200
+| pattern99 ":" term200
 | pattern99
 ]
 
@@ -335,10 +335,10 @@ closed_binder: [
 ]
 
 typeclass_constraint: [
-| "!" operconstr200
-| "{" name "}" ":" [ "!" | ] operconstr200
-| test_name_colon name ":" [ "!" | ] operconstr200
-| operconstr200
+| "!" term200
+| "{" name "}" ":" [ "!" | ] term200
+| test_name_colon name ":" [ "!" | ] term200
+| term200
 ]
 
 type_cstr: [
@@ -362,12 +362,16 @@ pattern_ident: [
 | LEFTQMARK ident
 ]
 
-identref: [
+pattern_identref: [
+| pattern_ident
+]
+
+var: [
 | ident
 ]
 
-hyp: [
-| identref
+identref: [
+| ident
 ]
 
 field: [
@@ -506,7 +510,7 @@ command: [
 | "Remove" "Hints" LIST1 global opt_hintbases
 | "Hint" hint opt_hintbases
 | "Comments" LIST0 comment
-| "Declare" "Instance" ident_decl binders ":" operconstr200 hint_info
+| "Declare" "Instance" ident_decl binders ":" term200 hint_info
 | "Declare" "Scope" IDENT
 | "Pwd"
 | "Cd"
@@ -592,9 +596,9 @@ command: [
 | "Optimize" "Proof"
 | "Optimize" "Heap"
 | "Hint" "Cut" "[" hints_path "]" opthints
-| "Typeclasses" "Transparent" LIST1 reference
-| "Typeclasses" "Opaque" LIST1 reference
-| "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT natural
+| "Typeclasses" "Transparent" LIST0 reference
+| "Typeclasses" "Opaque" LIST0 reference
+| "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT integer
 | "Proof" "with" Pltac.tactic OPT [ "using" G_vernac.section_subset_expr ]
 | "Proof" "using" G_vernac.section_subset_expr OPT [ "with" Pltac.tactic ]
 | "Tactic" "Notation" OPT ltac_tactic_level LIST1 ltac_production_item ":=" tactic
@@ -611,7 +615,6 @@ command: [
 | "Solve" "Obligation" natural "of" ident "with" tactic
 | "Solve" "Obligation" natural "with" tactic
 | "Solve" "Obligations" "of" ident "with" tactic
-| "Solve" "Obligations" "of" ident
 | "Solve" "Obligations" "with" tactic
 | "Solve" "Obligations"
 | "Solve" "All" "Obligations" "with" tactic
@@ -1011,7 +1014,7 @@ gallina_ext: [
 | "Coercion" global ":" class_rawexpr ">->" class_rawexpr
 | "Coercion" by_notation ":" class_rawexpr ">->" class_rawexpr
 | "Context" LIST1 binder
-| "Instance" instance_name ":" operconstr200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
+| "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
 | "Existing" "Instance" global hint_info
 | "Existing" "Instances" LIST1 global OPT [ "|" natural ]
 | "Existing" "Class" global
@@ -1548,7 +1551,7 @@ simple_tactic: [
 | "notypeclasses" "refine" uconstr
 | "simple" "notypeclasses" "refine" uconstr
 | "solve_constraints"
-| "subst" LIST1 hyp
+| "subst" LIST1 var
 | "subst"
 | "simple" "subst"
 | "evar" test_lpar_id_colon "(" ident ":" lconstr ")"
@@ -1616,7 +1619,6 @@ simple_tactic: [
 | "convert_concl_no_check" constr
 | "typeclasses" "eauto" "bfs" OPT int_or_var "with" LIST1 preident
 | "typeclasses" "eauto" OPT int_or_var "with" LIST1 preident
-| "typeclasses" "eauto" "bfs" OPT int_or_var
 | "typeclasses" "eauto" OPT int_or_var
 | "head_of_constr" ident constr
 | "not_evar" constr
@@ -1809,7 +1811,7 @@ EXTRAARGS_natural: [
 
 occurrences: [
 | LIST1 integer
-| hyp
+| var
 ]
 
 glob: [
@@ -2147,7 +2149,7 @@ G_LTAC_hint: [
 | "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
 ]
 
-G_LTAC_operconstr0: [
+G_LTAC_term0: [
 | "ltac" ":" "(" Pltac.tactic_expr ")"
 ]
 
@@ -2327,7 +2329,7 @@ intropattern: [
 ]
 
 simple_intropattern: [
-| simple_intropattern_closed LIST0 [ "%" operconstr0 ]
+| simple_intropattern_closed LIST0 [ "%" term0 ]
 ]
 
 simple_intropattern_closed: [

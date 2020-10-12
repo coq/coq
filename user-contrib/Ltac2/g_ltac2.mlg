@@ -497,7 +497,7 @@ GRAMMAR EXTEND Gram
   ;
   simple_intropattern:
     [ [ pat = simple_intropattern_closed ->
-(*         l = LIST0 ["%"; c = operconstr LEVEL "0" -> c] -> *)
+(*         l = LIST0 ["%"; c = term LEVEL "0" -> c] -> *)
         (** TODO: handle %pat *)
         { pat }
     ] ]
@@ -812,7 +812,7 @@ END
 
 (*
 GRAMMAR EXTEND Gram
-  Pcoq.Constr.operconstr: LEVEL "0"
+  Pcoq.Constr.term: LEVEL "0"
     [ [ IDENT "ltac2"; ":"; "("; tac = tac2expr; ")" ->
       { let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
         CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
@@ -867,7 +867,7 @@ let rules = [
 ] in
 
 Hook.set Tac2entries.register_constr_quotations begin fun () ->
-  Pcoq.grammar_extend Pcoq.Constr.operconstr {pos=Some (Gramlib.Gramext.Level "0"); data=[(None, None, rules)]}
+  Pcoq.grammar_extend Pcoq.Constr.term {pos=Some (Gramlib.Gramext.Level "0"); data=[(None, None, rules)]}
 end
 
 }

@@ -1337,7 +1337,7 @@ ARGUMENT EXTEND ssrbinder TYPED AS (ssrfwdfmt * constr) PRINTED BY { pr_ssrbinde
 GRAMMAR EXTEND Gram
   GLOBAL: ssrbinder;
   ssrbinder: [
-  [  ["of" -> { () } | "&" -> { () } ]; c = operconstr LEVEL "99" -> {
+  [  ["of" -> { () } | "&" -> { () } ]; c = term LEVEL "99" -> {
      (FwdPose, [BFvar]),
      CAst.make ~loc @@ CLambdaN ([CLocalAssum ([CAst.make ~loc Anonymous],Default Glob_term.Explicit,c)],mkCHole (Some loc)) } ]
   ];

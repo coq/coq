@@ -510,7 +510,7 @@ Displaying information about notations
 
    The output for `Print Grammar constr` includes :cmd:`Notation` definitions,
    which are dynamically added to the grammar at run time.
-   For example, in the definition for `operconstr`, the production on the second line shown
+   For example, in the definition for `term`, the production on the second line shown
    here is defined by a :cmd:`Reserved Notation` command in `Notations.v`::
 
      | "50" LEFTA

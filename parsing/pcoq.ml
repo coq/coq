@@ -308,7 +308,8 @@ module Constr =
 
     (* Entries that can be referred via the string -> Entry.t table *)
     let constr = Entry.create "constr"
-    let operconstr = Entry.create "operconstr"
+    let term = Entry.create "term"
+    let operconstr = term
     let constr_eoi = eoi_entry constr
     let lconstr = Entry.create "lconstr"
     let binder_constr = Entry.create "binder_constr"
