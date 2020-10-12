@@ -62,32 +62,33 @@ set -x
 # (local build), it uses git clone to perform the download.
 git_download()
 {
-  local PROJECT=$1
-  local DEST="$CI_BUILD_DIR/$PROJECT"
-  local GITURL_VAR="${PROJECT}_CI_GITURL"
-  local GITURL="${!GITURL_VAR}"
-  local REF_VAR="${PROJECT}_CI_REF"
-  local REF="${!REF_VAR}"
+  local project=$1
+  local dest="$CI_BUILD_DIR/$project"
+  local giturl_var="${project}_CI_GITURL"
+  local giturl="${!giturl_var}"
+  local ref_var="${project}_CI_REF"
+  local ref="${!ref_var}"
 
-  if [ -d "$DEST" ]; then
-    echo "Warning: download and unpacking of $PROJECT skipped because $DEST already exists."
+  if [ -d "$dest" ]; then
+    echo "Warning: download and unpacking of $project skipped because $dest already exists."
   elif [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
-    git clone "$GITURL" "$DEST"
-    cd "$DEST"
-    git checkout "$REF"
+    git clone "$giturl" "$dest"
+    cd "$dest"
+    git checkout "$ref"
   else # When possible, we download tarballs to reduce bandwidth and latency
-    local ARCHIVEURL_VAR="${PROJECT}_CI_ARCHIVEURL"
-    local ARCHIVEURL="${!ARCHIVEURL_VAR}"
-    mkdir -p "$DEST"
-    cd "$DEST"
-    local COMMIT=$(git ls-remote "$GITURL" "refs/heads/$REF" | cut -f 1)
-    if [[ "$COMMIT" == "" ]]; then
-      # $REF must have been a tag or hash, not a branch
-      COMMIT="$REF"
+    local archiveurl_var="${project}_CI_ARCHIVEURL"
+    local archiveurl="${!archiveurl_var}"
+    mkdir -p "$dest"
+    cd "$dest"
+    local commit
+    commit=$(git ls-remote "$giturl" "refs/heads/$ref" | cut -f 1)
+    if [[ "$commit" == "" ]]; then
+      # $ref must have been a tag or hash, not a branch
+      commit="$ref"
     fi
-    wget "$ARCHIVEURL/$COMMIT.tar.gz"
-    tar xfz "$COMMIT.tar.gz" --strip-components=1
-    rm -f "$COMMIT.tar.gz"
+    wget "$archiveurl/$commit.tar.gz"
+    tar xfz "$commit.tar.gz" --strip-components=1
+    rm -f "$commit.tar.gz"
   fi
 }
 
