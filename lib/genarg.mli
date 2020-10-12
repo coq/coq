@@ -11,7 +11,7 @@
 (** Generic arguments used by the extension mechanisms of several Coq ASTs. *)
 
 (** The route of a generic argument, from parsing to evaluation.
-In the following diagram, "object" can be tactic_expr, constr, tactic_arg, etc.
+In the following diagram, "object" can be ltac_expr, constr, tactic_arg, etc.
 
 {% \begin{verbatim} %}
              parsing          in_raw                            out_raw

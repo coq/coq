@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** This module implements pretty-printers for tactic_expr syntactic
+(** This module implements pretty-printers for ltac_expr syntactic
     objects and their subcomponents. *)
 
 open Genarg

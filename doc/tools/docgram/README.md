@@ -42,7 +42,7 @@ for documentation purposes:
     First, nonterminals that use levels (`"5" RIGHTA` below) are modified, for example:
 
     ```
-    tactic_expr:
+    ltac_expr:
       [ "5" RIGHTA
         [ te = binder_tactic -> { te } ]
       [ "4"   ...

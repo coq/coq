@@ -126,12 +126,12 @@ val interp_tac_gen : value Id.Map.t -> Id.Set.t ->
 val interp : raw_tactic_expr -> unit Proofview.tactic
 
 (** Hides interpretation for pretty-print *)
-type tactic_expr = {
+type ltac_expr = {
   global: bool;
   ast:  Tacexpr.raw_tactic_expr;
 }
 
-val hide_interp : tactic_expr -> ComTactic.interpretable
+val hide_interp : ltac_expr -> ComTactic.interpretable
 
 (** Internals that can be useful for syntax extensions. *)
 

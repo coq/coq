@@ -460,7 +460,7 @@ GRAMMAR EXTEND Gram
     [ [ "as"; id = ident -> { Names.Name.Name id } | -> { Names.Name.Anonymous } ] ]
   ;
   by_tactic:
-    [ [ "by"; tac = tactic_expr LEVEL "3" -> { Some tac }
+    [ [ "by"; tac = ltac_expr LEVEL "3" -> { Some tac }
     | -> { None } ] ]
   ;
   rewriter :

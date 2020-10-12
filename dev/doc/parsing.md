@@ -210,7 +210,7 @@ command.  The first square bracket around a nonterminal definition is for groupi
 level definitions, which are separated with `|`, for example:
 
   ```
-  tactic_expr:
+  ltac_expr:
       [ "5" RIGHTA
         [ te = binder_tactic -> { te } ]
       | "4" LEFTA
@@ -220,8 +220,8 @@ level definitions, which are separated with `|`, for example:
 Grammar extensions can specify what level they are modifying, for example:
 
   ```
-  tactic_expr: LEVEL "1" [ RIGHTA
-    [ tac = tactic_expr; intros = ssrintros_ne -> { tclintros_expr ~loc tac intros }
+  ltac_expr: LEVEL "1" [ RIGHTA
+    [ tac = ltac_expr; intros = ssrintros_ne -> { tclintros_expr ~loc tac intros }
     ] ];
   ```
 

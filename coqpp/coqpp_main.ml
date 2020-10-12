@@ -469,7 +469,7 @@ let rec parse_symb self = function
 | Uentryl (e, l) ->
   assert (e = "tactic");
   if l = 5 then SymbEntry ("Pltac.binder_tactic", None)
-  else SymbEntry ("Pltac.tactic_expr", Some (string_of_int l))
+  else SymbEntry ("Pltac.ltac_expr", Some (string_of_int l))
 
 let parse_token self = function
 | ExtTerminal s -> (terminal s, None)

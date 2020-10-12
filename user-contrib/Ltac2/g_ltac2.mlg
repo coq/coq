@@ -80,7 +80,7 @@ let tac2def_syn = Entry.create "tac2def_syn"
 let tac2def_mut = Entry.create "tac2def_mut"
 let tac2mode = Entry.create "ltac2_command"
 
-let ltac1_expr = Pltac.tactic_expr
+let ltac1_expr = Pltac.ltac_expr
 let tac2expr_in_env = Tac2entries.Pltac.tac2expr_in_env
 
 let inj_wit wit loc x = CAst.make ~loc @@ CTacExt (wit, x)

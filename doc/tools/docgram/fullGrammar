@@ -1925,15 +1925,15 @@ eauto_search_strategy: [
 ]
 
 tactic_then_last: [
-| "|" LIST0 ( OPT tactic_expr5 ) SEP "|"
+| "|" LIST0 ( OPT ltac_expr5 ) SEP "|"
 |
 ]
 
 tactic_then_gen: [
-| tactic_expr5 "|" tactic_then_gen
-| tactic_expr5 ".." tactic_then_last
+| ltac_expr5 "|" tactic_then_gen
+| ltac_expr5 ".." tactic_then_last
 | ".." tactic_then_last
-| tactic_expr5
+| ltac_expr5
 | "|" tactic_then_gen
 |
 ]
@@ -1942,59 +1942,59 @@ tactic_then_locality: [
 | "[" OPT ">"
 ]
 
-tactic_expr5: [
+ltac_expr5: [
 | binder_tactic
-| tactic_expr4
+| ltac_expr4
 ]
 
-tactic_expr4: [
-| tactic_expr3 ";" binder_tactic
-| tactic_expr3 ";" tactic_expr3
-| tactic_expr3 ";" tactic_then_locality tactic_then_gen "]"
-| tactic_expr3
+ltac_expr4: [
+| ltac_expr3 ";" binder_tactic
+| ltac_expr3 ";" ltac_expr3
+| ltac_expr3 ";" tactic_then_locality tactic_then_gen "]"
+| ltac_expr3
 ]
 
-tactic_expr3: [
-| "try" tactic_expr3
-| "do" int_or_var tactic_expr3
-| "timeout" int_or_var tactic_expr3
-| "time" OPT string tactic_expr3
-| "repeat" tactic_expr3
-| "progress" tactic_expr3
-| "once" tactic_expr3
-| "exactly_once" tactic_expr3
-| "infoH" tactic_expr3
-| "abstract" tactic_expr2
-| "abstract" tactic_expr2 "using" ident
-| selector tactic_expr3
-| tactic_expr2
+ltac_expr3: [
+| "try" ltac_expr3
+| "do" int_or_var ltac_expr3
+| "timeout" int_or_var ltac_expr3
+| "time" OPT string ltac_expr3
+| "repeat" ltac_expr3
+| "progress" ltac_expr3
+| "once" ltac_expr3
+| "exactly_once" ltac_expr3
+| "infoH" ltac_expr3
+| "abstract" ltac_expr2
+| "abstract" ltac_expr2 "using" ident
+| selector ltac_expr3
+| ltac_expr2
 ]
 
-tactic_expr2: [
-| tactic_expr1 "+" binder_tactic
-| tactic_expr1 "+" tactic_expr2
-| "tryif" tactic_expr5 "then" tactic_expr5 "else" tactic_expr2
-| tactic_expr1 "||" binder_tactic
-| tactic_expr1 "||" tactic_expr2
-| tactic_expr1
+ltac_expr2: [
+| ltac_expr1 "+" binder_tactic
+| ltac_expr1 "+" ltac_expr2
+| "tryif" ltac_expr5 "then" ltac_expr5 "else" ltac_expr2
+| ltac_expr1 "||" binder_tactic
+| ltac_expr1 "||" ltac_expr2
+| ltac_expr1
 ]
 
-tactic_expr1: [
+ltac_expr1: [
 | match_key "goal" "with" match_context_list "end"
 | match_key "reverse" "goal" "with" match_context_list "end"
-| match_key tactic_expr5 "with" match_list "end"
-| "first" "[" LIST0 tactic_expr5 SEP "|" "]"
-| "solve" "[" LIST0 tactic_expr5 SEP "|" "]"
+| match_key ltac_expr5 "with" match_list "end"
+| "first" "[" LIST0 ltac_expr5 SEP "|" "]"
+| "solve" "[" LIST0 ltac_expr5 SEP "|" "]"
 | "idtac" LIST0 message_token
 | failkw [ int_or_var | ] LIST0 message_token
 | simple_tactic
 | tactic_arg
 | reference LIST0 tactic_arg_compat
-| tactic_expr0
+| ltac_expr0
 ]
 
-tactic_expr0: [
-| "(" tactic_expr5 ")"
+ltac_expr0: [
+| "(" ltac_expr5 ")"
 | "[" ">" tactic_then_gen "]"
 | tactic_atom
 ]
@@ -2005,8 +2005,8 @@ failkw: [
 ]
 
 binder_tactic: [
-| "fun" LIST1 input_fun "=>" tactic_expr5
-| "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" tactic_expr5
+| "fun" LIST1 input_fun "=>" ltac_expr5
+| "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" ltac_expr5
 ]
 
 tactic_arg_compat: [
@@ -2056,9 +2056,9 @@ input_fun: [
 ]
 
 let_clause: [
-| identref ":=" tactic_expr5
-| "_" ":=" tactic_expr5
-| identref LIST1 input_fun ":=" tactic_expr5
+| identref ":=" ltac_expr5
+| "_" ":=" ltac_expr5
+| identref LIST1 input_fun ":=" ltac_expr5
 ]
 
 match_pattern: [
@@ -2073,9 +2073,9 @@ match_hyps: [
 ]
 
 match_context_rule: [
-| LIST0 match_hyps SEP "," "|-" match_pattern "=>" tactic_expr5
-| "[" LIST0 match_hyps SEP "," "|-" match_pattern "]" "=>" tactic_expr5
-| "_" "=>" tactic_expr5
+| LIST0 match_hyps SEP "," "|-" match_pattern "=>" ltac_expr5
+| "[" LIST0 match_hyps SEP "," "|-" match_pattern "]" "=>" ltac_expr5
+| "_" "=>" ltac_expr5
 ]
 
 match_context_list: [
@@ -2084,8 +2084,8 @@ match_context_list: [
 ]
 
 match_rule: [
-| match_pattern "=>" tactic_expr5
-| "_" "=>" tactic_expr5
+| match_pattern "=>" ltac_expr5
+| "_" "=>" ltac_expr5
 ]
 
 match_list: [
@@ -2105,12 +2105,12 @@ ltac_def_kind: [
 ]
 
 tacdef_body: [
-| Constr.global LIST1 input_fun ltac_def_kind tactic_expr5
-| Constr.global ltac_def_kind tactic_expr5
+| Constr.global LIST1 input_fun ltac_def_kind ltac_expr5
+| Constr.global ltac_def_kind ltac_expr5
 ]
 
 tactic: [
-| tactic_expr5
+| ltac_expr5
 ]
 
 range_selector: [
@@ -2150,7 +2150,7 @@ G_LTAC_hint: [
 ]
 
 G_LTAC_term0: [
-| "ltac" ":" "(" Pltac.tactic_expr ")"
+| "ltac" ":" "(" Pltac.ltac_expr ")"
 ]
 
 ltac_selector: [
@@ -2502,7 +2502,7 @@ as_name: [
 ]
 
 by_tactic: [
-| "by" tactic_expr3
+| "by" ltac_expr3
 |
 ]
 

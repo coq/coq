@@ -477,10 +477,10 @@ Displaying information about notations
    such as `1+2*3` in the usual way as `1+(2*3)`.  However, most nonterminals have a single level.
 
    For example, this output from `Print Grammar tactic` shows the first 3 levels for
-   `tactic_expr`, designated as "5", "4" and "3".  Level 3 is right-associative,
+   `ltac_expr`, designated as "5", "4" and "3".  Level 3 is right-associative,
    which applies to the productions within it, such as the `try` construct::
 
-     Entry tactic_expr is
+     Entry ltac_expr is
      [ "5" RIGHTA
        [ binder_tactic ]
      | "4" LEFTA
