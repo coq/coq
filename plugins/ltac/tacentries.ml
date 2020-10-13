@@ -420,7 +420,7 @@ let create_ltac_quotation name cast (e, l) =
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
   let gram = (level, assoc, [Pcoq.Production.make rule action]) in
-  Pcoq.grammar_extend Pltac.tactic_arg {pos=None; data=[gram]}
+  Pcoq.grammar_extend Pltac.tactic_value {pos=None; data=[gram]}
 
 (** Command *)
 
@@ -558,7 +558,7 @@ let () =
     AnyEntry Pltac.ltac_expr;
     AnyEntry Pltac.binder_tactic;
     AnyEntry Pltac.simple_tactic;
-    AnyEntry Pltac.tactic_arg;
+    AnyEntry Pltac.tactic_value;
   ] in
   register_grammars_by_name "tactic" entries
 

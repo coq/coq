@@ -159,7 +159,7 @@ GRAMMAR EXTEND Gram
   GLOBAL: function_rec_definition_loc ;
 
   function_rec_definition_loc:
-    [ [ g = Vernac.rec_definition -> { Loc.tag ~loc g } ]]
+    [ [ g = Vernac.fix_definition -> { Loc.tag ~loc g } ]]
     ;
 
 END

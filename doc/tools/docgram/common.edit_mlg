@@ -86,7 +86,7 @@ RENAME: [
 | G_LTAC2_eqn_ipat ltac2_eqn_ipat
 | G_LTAC2_conversion ltac2_conversion
 | G_LTAC2_oriented_rewriter ltac2_oriented_rewriter
-| G_LTAC2_tactic_then_gen ltac2_tactic_then_gen
+| G_LTAC2_for_each_goal ltac2_for_each_goal
 | G_LTAC2_tactic_then_last ltac2_tactic_then_last
 | G_LTAC2_as_name ltac2_as_name
 | G_LTAC2_as_ipat ltac2_as_ipat
@@ -94,18 +94,22 @@ RENAME: [
 | G_LTAC2_match_list ltac2_match_list
 ]
 
-(* renames to eliminate qualified names
-   put other renames at the end *)
+(* Renames to eliminate qualified names.
+   Put other renames at the end *)
 RENAME: [
   (* map missing names for rhs *)
 | Constr.constr term
 | Constr.global global
 | Constr.lconstr lconstr
-| Constr.lconstr_pattern cpattern
+| Constr.cpattern cpattern
 | G_vernac.query_command query_command
 | G_vernac.section_subset_expr section_var_expr
 | Prim.ident ident
 | Prim.reference reference
+| Prim.string string
+| Prim.integer integer
+| Prim.qualid qualid
+| Prim.natural natural
 | Pvernac.Vernac_.main_entry vernac_control
 | Tactic.tactic tactic
 
@@ -117,7 +121,7 @@ RENAME: [
 | Prim.identref ident
 | Prim.natural natural
 *)
-| Vernac.rec_definition rec_definition
+| Vernac.fix_definition fix_definition
 (* todo: hmm, rename adds 1 prodn to closed_binder?? *)
 | Constr.closed_binder closed_binder
 ]
@@ -191,9 +195,9 @@ goal_tactics: [
 | LIST0 ( OPT ltac_expr5 ) SEP "|"
 ]
 
-tactic_then_gen: [ | DELETENT ]
+for_each_goal: [ | DELETENT ]
 
-tactic_then_gen: [
+for_each_goal: [
 | goal_tactics
 | OPT ( goal_tactics "|" ) OPT ltac_expr5 ".." OPT ( "|" goal_tactics )
 ]
@@ -211,9 +215,9 @@ ltac2_goal_tactics: [
 | LIST0 ( OPT tac2expr6 ) SEP "|"  TAG Ltac2
 ]
 
-ltac2_tactic_then_gen: [ | DELETENT ]
+ltac2_for_each_goal: [ | DELETENT ]
 
-ltac2_tactic_then_gen: [
+ltac2_for_each_goal: [
 | ltac2_goal_tactics  TAG Ltac2
 | OPT ( ltac2_goal_tactics "|" ) OPT tac2expr6 ".." OPT ( "|" ltac2_goal_tactics )  TAG Ltac2
 ]
@@ -257,11 +261,6 @@ let_type_cstr: [
 | type_cstr
 ]
 
-(* rename here because we want to use "return_type" for something else *)
-RENAME: [
-| return_type as_return_type
-]
-
 case_item: [
 | REPLACE term100 OPT [ "as" name ] OPT [ "in" pattern200 ]
 | WITH term100 OPT ("as" name) OPT [ "in" pattern200 ]
@@ -272,8 +271,8 @@ binder_constr: [
 | MOVETO term_forall_or_fun "fun" open_binders "=>" term200
 | MOVETO term_let "let" name binders let_type_cstr ":=" term200 "in" term200
 | MOVETO term_if "if" term200 as_return_type "then" term200 "else" term200
-| MOVETO term_fix "let" "fix" fix_decl "in" term200
-| MOVETO term_cofix "let" "cofix" cofix_decl "in" term200
+| MOVETO term_fix "let" "fix" fix_body "in" term200
+| MOVETO term_cofix "let" "cofix" cofix_body "in" term200
 | MOVETO term_let "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" term200 "in" term200
 | MOVETO term_let "let" "'" pattern200 ":=" term200 "in" term200
 | MOVETO term_let "let" "'" pattern200 ":=" term200 case_type "in" term200
@@ -295,7 +294,7 @@ term_let: [
 ]
 
 atomic_constr: [
-| MOVETO qualid_annotated global univ_instance
+| MOVETO qualid_annotated global univ_annot
 | MOVETO primitive_notations NUMBER
 | MOVETO primitive_notations string
 | MOVETO term_evar "_"
@@ -309,8 +308,8 @@ atomic_constr: [
 ]
 
 ltac_expr0: [
-| REPLACE "[" ">" tactic_then_gen "]"
-| WITH "[>" tactic_then_gen "]"
+| REPLACE "[" ">" for_each_goal "]"
+| WITH "[>" for_each_goal "]"
 ]
 
 (* lexer token *)
@@ -354,7 +353,7 @@ term100: [
 ]
 
 constr: [
-| REPLACE "@" global univ_instance
+| REPLACE "@" global univ_annot
 | WITH "@" qualid_annotated
 | MOVETO term_explicit "@" qualid_annotated
 ]
@@ -362,11 +361,11 @@ constr: [
 term10: [
 (* Separate this LIST0 in the nonempty and the empty case *)
 (* The empty case is covered by constr *)
-| REPLACE "@" global univ_instance LIST0 term9
+| REPLACE "@" global univ_annot LIST0 term9
 | WITH "@" qualid_annotated LIST1 term9
 | REPLACE term9
 | WITH constr
-| MOVETO term_application term9 LIST1 appl_arg
+| MOVETO term_application term9 LIST1 arg
 | MOVETO term_application "@" qualid_annotated LIST1 term9
 (* fixme: add in as a prodn somewhere *)
 | MOVETO dangling_pattern_extension_rule "@" pattern_ident LIST1 identref
@@ -379,12 +378,12 @@ term9: [
 ]
 
 term1: [
-| REPLACE term0 ".(" global LIST0 appl_arg ")"
-| WITH    term0 ".(" global LIST0 appl_arg ")" (* huh? *)
+| REPLACE term0 ".(" global LIST0 arg ")"
+| WITH    term0 ".(" global LIST0 arg ")" (* huh? *)
 | REPLACE term0 "%" IDENT
 | WITH term0 "%" scope_key
 | MOVETO term_scope term0 "%" scope_key
-| MOVETO term_projection term0 ".(" global LIST0 appl_arg ")"
+| MOVETO term_projection term0 ".(" global LIST0 arg ")"
 | MOVETO term_projection term0 ".(" "@" global LIST0 ( term9 ) ")"
 ]
 
@@ -397,20 +396,20 @@ term0: [
 | MOVETO term_generalizing "`{" term200 "}"
 | MOVETO term_generalizing "`(" term200 ")"
 | MOVETO term_ltac "ltac" ":" "(" ltac_expr5 ")"
-| REPLACE "[" "|" array_elems "|" lconstr type_cstr "|" "]" univ_instance
-| WITH "[|" array_elems "|" lconstr type_cstr "|]" univ_instance
+| REPLACE "[" "|" array_elems "|" lconstr type_cstr "|" "]" univ_annot
+| WITH "[|" array_elems "|" lconstr type_cstr "|]" univ_annot
 ]
 
 fix_decls: [
-| DELETE fix_decl
-| REPLACE fix_decl "with" LIST1 fix_decl SEP "with" "for" identref
-| WITH fix_decl OPT ( LIST1 ("with" fix_decl) "for" identref )
+| DELETE fix_body
+| REPLACE fix_body "with" LIST1 fix_body SEP "with" "for" identref
+| WITH fix_body OPT ( LIST1 ("with" fix_body) "for" identref )
 ]
 
 cofix_decls: [
-| DELETE cofix_decl
-| REPLACE cofix_decl "with" LIST1 cofix_decl SEP "with" "for" identref
-| WITH cofix_decl OPT ( LIST1 ( "with" cofix_decl ) "for" identref )
+| DELETE cofix_body
+| REPLACE cofix_body "with" LIST1 cofix_body SEP "with" "for" identref
+| WITH cofix_body OPT ( LIST1 ( "with" cofix_body ) "for" identref )
 ]
 
 fields_def: [
@@ -566,14 +565,14 @@ gallina: [
 |   [ "Record" | "Structure" ] record_definition LIST0 ( "with" record_definition )
 |   "Class" record_definition
 |   "Class" singleton_class_definition
-| REPLACE "Fixpoint" LIST1 rec_definition SEP "with"
-| WITH "Fixpoint" rec_definition LIST0 ( "with" rec_definition )
-| REPLACE "Let" "Fixpoint" LIST1 rec_definition SEP "with"
-| WITH "Let" "Fixpoint" rec_definition LIST0 ( "with" rec_definition )
-| REPLACE "CoFixpoint" LIST1 corec_definition SEP "with"
-| WITH "CoFixpoint" corec_definition LIST0 ( "with" corec_definition )
-| REPLACE "Let" "CoFixpoint" LIST1 corec_definition SEP "with"
-| WITH "Let" "CoFixpoint" corec_definition LIST0 ( "with" corec_definition )
+| REPLACE "Fixpoint" LIST1 fix_definition SEP "with"
+| WITH "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
+| REPLACE "Let" "Fixpoint" LIST1 fix_definition SEP "with"
+| WITH "Let" "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
+| REPLACE "CoFixpoint" LIST1 cofix_definition SEP "with"
+| WITH "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
+| REPLACE "Let" "CoFixpoint" LIST1 cofix_definition SEP "with"
+| WITH "Let" "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | REPLACE "Scheme" LIST1 scheme SEP "with"
 | WITH "Scheme" scheme LIST0 ( "with" scheme )
 ]
@@ -582,7 +581,7 @@ finite_token: [
 | DELETENT
 ]
 
-constructor_list_or_record_decl: [
+constructors_or_record: [
 | OPTINREF
 ]
 
@@ -604,7 +603,7 @@ inline: [
 | OPTINREF
 ]
 
-univ_instance: [
+univ_annot: [
 | OPTINREF
 ]
 
@@ -613,15 +612,15 @@ univ_decl: [
 | WITH    "@{" LIST0 identref  OPT "+"  OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
 ]
 
-of_type_with_opt_coercion: [
+of_type: [
 | DELETENT
 ]
 
-of_type_with_opt_coercion: [
+of_type: [
 | [ ":" | ":>" ] type
 ]
 
-attribute_value: [
+attr_value: [
 | OPTINREF
 ]
 
@@ -657,14 +656,6 @@ ltac2_branches: [
 | OPTINREF
 ]
 
-RENAME: [
-| red_flag ltac2_red_flag
-| red_flags red_flag
-]
-
-RENAME: [
-]
-
 strategy_flag: [
 | REPLACE OPT delta_flag
 | WITH delta_flag
@@ -697,8 +688,8 @@ is_module_type: [
 ]
 
 gallina_ext: [
-| REPLACE "Arguments" smart_global LIST0 argument_spec_block OPT [ "," LIST1 [ LIST0 more_implicits_block ] SEP "," ] OPT [ ":" LIST1 arguments_modifier SEP "," ]
-| WITH "Arguments" smart_global LIST0 argument_spec_block    LIST0 [  "," LIST0 more_implicits_block ]                OPT [ ":" LIST1 arguments_modifier SEP "," ]
+| REPLACE "Arguments" smart_global LIST0 arg_specs OPT [ "," LIST1 [ LIST0 implicits_alt ] SEP "," ] OPT [ ":" LIST1 args_modifier SEP "," ]
+| WITH "Arguments" smart_global LIST0 arg_specs    LIST0 [  "," LIST0 implicits_alt ]                OPT [ ":" LIST1 args_modifier SEP "," ]
 | REPLACE "Implicit" "Type" reserv_list
 | WITH "Implicit" [ "Type" | "Types" ] reserv_list
 | DELETE "Implicit" "Types" reserv_list
@@ -727,10 +718,10 @@ gallina_ext: [
 | WITH "Generalizable" [  [ "Variable" | "Variables" ] LIST1 identref | "All" "Variables" | "No" "Variables" ]
 
 (* don't show Export for Set, Unset *)
-| REPLACE "Export" "Set" option_table option_setting
-| WITH "Set" option_table option_setting
-| REPLACE "Export" "Unset" option_table
-| WITH "Unset" option_table
+| REPLACE "Export" "Set" setting_name option_setting
+| WITH "Set" setting_name option_setting
+| REPLACE "Export" "Unset" setting_name
+| WITH "Unset" setting_name
 | REPLACE "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
 | WITH "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
 
@@ -832,20 +823,20 @@ ltac_expr5: [
 ltac_constructs: [
 (* repeated in main ltac grammar - need to create a COPY edit *)
 | ltac_expr3 ";" [ ltac_expr3 | binder_tactic ]
-| ltac_expr3 ";" "[" tactic_then_gen "]"
+| ltac_expr3 ";" "[" for_each_goal "]"
 
 | ltac_expr1 "+" [ ltac_expr2 | binder_tactic ]
 | ltac_expr1 "||" [ ltac_expr2 | binder_tactic ]
 
-(* | qualid LIST0 tactic_arg  add later due renaming tactic_arg *)
+(* | qualid LIST0 tactic_value  add later due renaming tactic_value *)
 
-| "[>" tactic_then_gen "]"
+| "[>" for_each_goal "]"
 | toplevel_selector ltac_expr5
 ]
 
 ltac_expr4: [
-| REPLACE ltac_expr3 ";" tactic_then_gen "]"
-| WITH ltac_expr3 ";" "[" tactic_then_gen "]"
+| REPLACE ltac_expr3 ";" for_each_goal "]"
+| WITH ltac_expr3 ";" "[" for_each_goal "]"
 | REPLACE ltac_expr3 ";" binder_tactic
 | WITH ltac_expr3 ";" [ ltac_expr3 | binder_tactic ]
 | DELETE ltac_expr3 ";" ltac_expr3
@@ -885,27 +876,27 @@ ltac_expr1: [
 | MOVETO simple_tactic match_key ltac_expr5 "with" match_list "end"
 | REPLACE failkw [ int_or_var | ] LIST0 message_token
 | WITH failkw OPT int_or_var LIST0 message_token
-| REPLACE reference LIST0 tactic_arg_compat
-| WITH reference LIST1 tactic_arg_compat
+| REPLACE reference LIST0 tactic_arg
+| WITH reference LIST1 tactic_arg
 | l1_tactic
 | DELETE simple_tactic
 | MOVEALLBUT ltac_builtins
 | l1_tactic
-| tactic_arg
-| reference LIST1 tactic_arg_compat
+| tactic_value
+| reference LIST1 tactic_arg
 | ltac_expr0
 ]
 
 (* split match_context_rule *)
 goal_pattern: [
-| LIST0 match_hyps SEP "," "|-" match_pattern
-| "[" LIST0 match_hyps SEP "," "|-" match_pattern "]"
+| LIST0 match_hyp SEP "," "|-" match_pattern
+| "[" LIST0 match_hyp SEP "," "|-" match_pattern "]"
 | "_"
 ]
 
 match_context_rule: [
-| DELETE LIST0 match_hyps SEP "," "|-" match_pattern "=>" ltac_expr5
-| DELETE "[" LIST0 match_hyps SEP "," "|-" match_pattern "]" "=>" ltac_expr5
+| DELETE LIST0 match_hyp SEP "," "|-" match_pattern "=>" ltac_expr5
+| DELETE "[" LIST0 match_hyp SEP "," "|-" match_pattern "]" "=>" ltac_expr5
 | DELETE "_" "=>" ltac_expr5
 | goal_pattern "=>" ltac_expr5
 ]
@@ -923,7 +914,7 @@ match_rule: [
 | DELETE "_" "=>" ltac_expr5
 ]
 
-selector_body: [
+selector: [
 | REPLACE range_selector_or_nth  (* depends on whether range_selector_or_nth is deleted first *)
 | WITH LIST1 range_selector SEP ","
 ]
@@ -1091,7 +1082,7 @@ simple_tactic: [
 | EDIT "psatz_Q" ADD_OPT int_or_var tactic
 | EDIT "psatz_Z" ADD_OPT int_or_var tactic
 | REPLACE "subst" LIST1 hyp
-| WITH "subst" OPT ( LIST1 hyp )
+| WITH "subst" LIST0 hyp
 | DELETE "subst"
 | DELETE "congruence"
 | DELETE "congruence" natural
@@ -1106,8 +1097,8 @@ simple_tactic: [
 | DELETE "transparent_abstract" tactic3
 | REPLACE "transparent_abstract" tactic3 "using" ident
 | WITH "transparent_abstract" ltac_expr3 OPT ( "using" ident )
-| REPLACE "typeclasses" "eauto" "bfs" OPT int_or_var "with" LIST1 preident
-| WITH "typeclasses" "eauto" OPT "bfs" OPT int_or_var OPT ( "with" LIST1 preident )
+| "typeclasses" "eauto" OPT "bfs" OPT int_or_var OPT ( "with" LIST1 preident )
+| DELETE "typeclasses" "eauto" "bfs" OPT int_or_var "with" LIST1 preident
 | DELETE "typeclasses" "eauto" OPT int_or_var "with" LIST1 preident
 | DELETE "typeclasses" "eauto" "bfs" OPT int_or_var
 | DELETE "typeclasses" "eauto" OPT int_or_var
@@ -1180,16 +1171,16 @@ command: [
 | WITH "Back" OPT natural
 | REPLACE "Load" [ "Verbose" | ] [ ne_string | IDENT ]
 | WITH "Load" OPT "Verbose" [ ne_string | IDENT ]
-| DELETE "Unset" option_table
-| REPLACE "Set" option_table option_setting
-| WITH OPT "Export" "Set" option_table   (* set flag *)
-| REPLACE "Test" option_table "for" LIST1 table_value
-| WITH "Test" option_table OPT ( "for" LIST1 table_value )
-| DELETE "Test" option_table
+| DELETE "Unset" setting_name
+| REPLACE "Set" setting_name option_setting
+| WITH OPT "Export" "Set" setting_name   (* set flag *)
+| REPLACE "Test" setting_name "for" LIST1 table_value
+| WITH "Test" setting_name OPT ( "for" LIST1 table_value )
+| DELETE "Test" setting_name
 
 (* hide the fact that table names are limited to 2 IDENTs *)
 | REPLACE "Add" IDENT IDENT LIST1 table_value
-| WITH "Add" option_table LIST1 table_value
+| WITH "Add" setting_name LIST1 table_value
 | DELETE "Add" IDENT LIST1 table_value
 | DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" ident
 | DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "as" ident
@@ -1247,7 +1238,7 @@ command: [
 
 (* hide the fact that table names are limited to 2 IDENTs *)
 | REPLACE "Remove" IDENT IDENT LIST1 table_value
-| WITH "Remove" option_table LIST1 table_value
+| WITH "Remove" setting_name LIST1 table_value
 | DELETE "Remove" IDENT LIST1 table_value
 | DELETE "Restore" "State" IDENT
 | DELETE "Restore" "State" ne_string
@@ -1294,10 +1285,10 @@ command: [
 | WITH "Declare" "Scope" scope_name
 
 (* odd that these are in command while other notation-related ones are in syntax *)
-| REPLACE "Numeral" "Notation" reference reference reference ":" ident numnotoption
-| WITH "Numeral" "Notation" reference reference reference ":" scope_name numnotoption
-| REPLACE "Number" "Notation" reference reference reference ":" ident numnotoption
-| WITH "Number" "Notation" reference reference reference ":" scope_name numnotoption
+| REPLACE "Numeral" "Notation" reference reference reference ":" ident numeral_modifier
+| WITH "Numeral" "Notation" reference reference reference ":" scope_name numeral_modifier
+| REPLACE "Number" "Notation" reference reference reference ":" ident numeral_modifier
+| WITH "Number" "Notation" reference reference reference ":" scope_name numeral_modifier
 | REPLACE "String" "Notation" reference reference reference ":" ident
 | WITH "String" "Notation" reference reference reference ":" scope_name
 
@@ -1357,7 +1348,7 @@ syntax_modifier: [
 | WITH LIST1 IDENT SEP "," "at" level
 ]
 
-syntax_extension_type: [
+explicit_subentry: [
 | REPLACE "strict" "pattern" "at" "level" natural
 | WITH "strict" "pattern" OPT ( "at" "level" natural )
 | DELETE "strict" "pattern"
@@ -1367,7 +1358,7 @@ syntax_extension_type: [
 | DELETE "constr"    (* covered by another prod *)
 ]
 
-numnotoption: [
+numeral_modifier: [
 | OPTINREF
 ]
 
@@ -1377,21 +1368,21 @@ binder_tactic: [
 | MOVEALLBUT ltac_builtins
 ]
 
-record_binder_body: [
-| REPLACE binders of_type_with_opt_coercion lconstr
-| WITH binders of_type_with_opt_coercion
-| REPLACE binders of_type_with_opt_coercion lconstr ":=" lconstr
-| WITH binders of_type_with_opt_coercion ":=" lconstr
+field_body: [
+| REPLACE binders of_type lconstr
+| WITH binders of_type
+| REPLACE binders of_type lconstr ":=" lconstr
+| WITH binders of_type ":=" lconstr
 ]
 
-simple_assum_coe: [
-| REPLACE LIST1 ident_decl of_type_with_opt_coercion lconstr
-| WITH LIST1 ident_decl of_type_with_opt_coercion
+assumpt: [
+| REPLACE LIST1 ident_decl of_type lconstr
+| WITH LIST1 ident_decl of_type
 ]
 
 constructor_type: [
-| REPLACE binders [ of_type_with_opt_coercion lconstr | ]
-| WITH binders OPT of_type_with_opt_coercion
+| REPLACE binders [ of_type lconstr | ]
+| WITH binders OPT of_type
 ]
 
 (* todo: is this really correct? Search for "Pvernac.register_proof_mode" *)
@@ -1435,12 +1426,12 @@ legacy_attr: [
 
 sentence: [ ]  (* productions defined below *)
 
-rec_definition: [
+fix_definition: [
 | REPLACE ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
 | WITH ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
-corec_definition: [
+cofix_definition: [
 | REPLACE ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 | WITH ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
@@ -1457,7 +1448,7 @@ inductive_definition: [
 ]
 
 (* note that constructor -> identref constructor_type *)
-constructor_list_or_record_decl: [
+constructors_or_record: [
 | DELETE "|" LIST1 constructor SEP "|"
 | REPLACE identref constructor_type "|" LIST1 constructor SEP "|"
 | WITH OPT "|" LIST1 constructor SEP "|"
@@ -1468,8 +1459,8 @@ constructor_list_or_record_decl: [
 ]
 
 record_binder: [
-| REPLACE name record_binder_body
-| WITH name OPT record_binder_body
+| REPLACE name field_body
+| WITH name OPT field_body
 | DELETE name
 ]
 
@@ -1837,11 +1828,11 @@ tactic_mode: [
 
 tactic_mode: [ | DELETENT ]
 
-sexpr: [
+ltac2_scope: [
 | REPLACE syn_node      (* Ltac2 plugin *)
 | WITH name TAG Ltac2
-| REPLACE syn_node "(" LIST1 sexpr SEP "," ")"      (* Ltac2 plugin *)
-| WITH name "(" LIST1 sexpr SEP "," ")" TAG Ltac2
+| REPLACE syn_node "(" LIST1 ltac2_scope SEP "," ")"      (* Ltac2 plugin *)
+| WITH name "(" LIST1 ltac2_scope SEP "," ")" TAG Ltac2
 ]
 
 syn_node: [ | DELETENT ]
@@ -1851,7 +1842,7 @@ RENAME: [
 ]
 
 toplevel_selector: [
-| selector_body
+| selector
 | "all"
 | "!"
 (* par is accepted even though it's not in the .mlg *)
@@ -1859,7 +1850,7 @@ toplevel_selector: [
 ]
 
 toplevel_selector_temp: [
-| DELETE selector_body ":"
+| DELETE selector ":"
 | DELETE "all" ":"
 | DELETE "!" ":"
 | toplevel_selector ":"
@@ -1943,7 +1934,7 @@ tactic_notation_tactics: [
 ]
 
 (* defined in OCaml outside of mlgs *)
-tactic_arg: [
+tactic_value: [
 | "uconstr" ":" "(" term200 ")"
 | MOVEALLBUT simple_tactic
 ]
@@ -1951,10 +1942,6 @@ tactic_arg: [
 nonterminal: [ ]
 
 value_tactic: [ ]
-
-RENAME: [
-| tactic_arg tactic_value
-]
 
 syn_value: [
 | IDENT; ":" "(" nonterminal ")"
@@ -1975,7 +1962,7 @@ ltac2_match_key: [
 
 ltac2_constructs: [
 | ltac2_match_key tac2expr6 "with" ltac2_match_list "end"
-| ltac2_match_key OPT "reverse" "goal" "with" gmatch_list "end"
+| ltac2_match_key OPT "reverse" "goal" "with" goal_match_list "end"
 ]
 
 simple_tactic: [
@@ -2214,14 +2201,7 @@ tac2expr5: [
 | DELETE simple_tactic
 ]
 
-RENAME: [
-| Prim.string string
-| Prim.integer integer
-| Prim.qualid qualid
-| Prim.natural natural
-]
-
-gmatch_list: [
+goal_match_list: [
 | EDIT ADD_OPT "|" LIST1 gmatch_rule SEP "|"      (* Ltac2 plugin *)
 ]
 
@@ -2381,7 +2361,6 @@ SPLICE: [
 | decorated_vernac
 | ext_module_expr
 | ext_module_type
-| pattern_ident
 | test
 | binder_constr
 | atomic_constr
@@ -2449,7 +2428,6 @@ SPLICE: [
 | intropatterns
 | instance_name
 | failkw
-| selector
 | ne_in_or_out_modules
 | search_queries
 | locatable
@@ -2489,56 +2467,27 @@ RENAME: [
 | tactic3 ltac_expr3  (* todo: can't figure out how this gets mapped by coqpp *)
 | tactic1 ltac_expr1  (* todo: can't figure out how this gets mapped by coqpp *)
 | tactic0 ltac_expr0  (* todo: can't figure out how this gets mapped by coqpp *)
-| ltac1_expr ltac_expr
 | ltac_expr5 ltac_expr
 
 (* | nonsimple_intropattern intropattern (* ltac2 *) *)
 
 | term200 term
 | pattern100 pattern
-| match_constr term_match
 (*| impl_ident_tail impl_ident*)
 | ssexpr50 section_var_expr50
 | ssexpr0 section_var_expr0
 | section_subset_expr section_var_expr
 | fun_scheme_arg func_scheme_def
 
-| tactic_then_gen for_each_goal
-| ltac2_tactic_then_gen ltac2_for_each_goal
-| selector_body selector
-| match_hyps match_hyp
-
 | BULLET bullet
-| fix_decl fix_body
-| cofix_decl cofix_body
-(* todo: it's confusing that Constr.constr and constr mean different things *)
-| constr one_term
-| appl_arg arg
-| rec_definition fix_definition
-| corec_definition cofix_definition
-| univ_instance univ_annot
-| simple_assum_coe assumpt
-| of_type_with_opt_coercion of_type
-| attribute_value attr_value
-| constructor_list_or_record_decl constructors_or_record
-| record_binder_body field_body
-| class_rawexpr class
-| smart_global reference
+| constr one_term (* many, many, many *)
+| class_rawexpr class  (* OCaml reserved word *)
+| smart_global reference (* many, many *)
 (*
 | searchabout_query search_item
 *)
-| option_table setting_name
-| argument_spec_block arg_specs
-| more_implicits_block implicits_alt
-| arguments_modifier args_modifier
-| constr_as_binder_kind binder_interp
-| syntax_extension_type explicit_subentry
-| numnotoption numeral_modifier
-| tactic_arg_compat tactic_arg
-| lconstr_pattern cpattern
-| Pltac.tactic ltac_expr
-| sexpr ltac2_scope
-| tac2type5 ltac2_type
+| Pltac.tactic ltac_expr  (* many uses in EXTENDs *)
+| tac2type5 ltac2_type (* careful *)
 | tac2type2 ltac2_type2
 | tac2type1 ltac2_type1
 | tac2type0 ltac2_type0
@@ -2549,12 +2498,11 @@ RENAME: [
 | tac2expr2 ltac2_expr2
 | tac2expr1 ltac2_expr1
 | tac2expr0 ltac2_expr0
-| gmatch_list goal_match_list
 | starredidentref starred_ident_ref
 ]
 
 simple_tactic: [
-(* due to renaming of tactic_arg; Use LIST1 for function application *)
+(* due to renaming of tactic_value; Use LIST1 for function application *)
 | qualid LIST1 tactic_arg
 ]
 
@@ -2615,17 +2563,7 @@ NOTINRSTS: [
 | q_constr_matching
 | q_goal_matching
 
-(* todo: figure these out
-(*Warning: editedGrammar: Undefined symbol 'ltac1_expr' *)
-| dangling_pattern_extension_rule
-| vernac_aux
-| subprf
-| tactic_mode
-| tac2expr_in_env (* no refs *)
-| tac2mode (* no refs *)
-| ltac_use_default (* from tac2mode *)
-| tacticals
-*)
+
 ]
 
 REACHABLE: [

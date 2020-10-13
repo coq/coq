@@ -82,9 +82,9 @@ let test_array_closing =
 GRAMMAR EXTEND Gram
   GLOBAL: binder_constr lconstr constr term
   universe_level universe_name sort sort_family
-  global constr_pattern lconstr_pattern Constr.ident
+  global constr_pattern cpattern Constr.ident
   closed_binder open_binders binder binders binders_fixannot
-  record_declaration typeclass_constraint pattern appl_arg type_cstr;
+  record_declaration typeclass_constraint pattern arg type_cstr;
   Constr.ident:
     [ [ id = Prim.ident -> { id } ] ]
   ;
@@ -97,7 +97,7 @@ GRAMMAR EXTEND Gram
   constr_pattern:
     [ [ c = constr -> { c } ] ]
   ;
-  lconstr_pattern:
+  cpattern:
     [ [ c = lconstr -> { c } ] ]
   ;
   sort:
@@ -135,7 +135,7 @@ GRAMMAR EXTEND Gram
   ;
   constr:
     [ [ c = term LEVEL "8" -> { c }
-      | "@"; f=global; i = univ_instance -> { CAst.make ~loc @@ CAppExpl((None,f,i),[]) } ] ]
+      | "@"; f=global; i = univ_annot -> { CAst.make ~loc @@ CAppExpl((None,f,i),[]) } ] ]
   ;
   term:
     [ "200" RIGHTA
@@ -152,8 +152,8 @@ GRAMMAR EXTEND Gram
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
     | "10" LEFTA
-      [ f = term; args = LIST1 appl_arg -> { CAst.make ~loc @@ CApp((None,f),args) }
-      | "@"; f = global; i = univ_instance; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((None,f,i),args) }
+      [ f = term; args = LIST1 arg -> { CAst.make ~loc @@ CApp((None,f),args) }
+      | "@"; f = global; i = univ_annot; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((None,f,i),args) }
       | "@"; lid = pattern_ident; args = LIST1 identref ->
         { let { CAst.loc = locid; v = id } = lid in
           let args = List.map (fun x -> CAst.make @@ CRef (qualid_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in
@@ -163,7 +163,7 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CAppExpl ((None, (qualid_of_ident ~loc ldots_var), None),[c]) } ]
     | "8" [ ]
     | "1" LEFTA
-      [ c = term; ".("; f = global; args = LIST0 appl_arg; ")" ->
+      [ c = term; ".("; f = global; args = LIST0 arg; ")" ->
         { CAst.make ~loc @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,None)),args@[c,None]) }
       | c = term; ".("; "@"; f = global;
         args = LIST0 (term LEVEL "9"); ")" ->
@@ -171,7 +171,7 @@ GRAMMAR EXTEND Gram
       | c = term; "%"; key = IDENT -> { CAst.make ~loc @@ CDelimiters (key,c) } ]
     | "0"
       [ c = atomic_constr -> { c }
-      | c = match_constr -> { c }
+      | c = term_match -> { c }
       | "("; c = term LEVEL "200"; ")" ->
         { (* Preserve parentheses around numerals so that constrintern does not
              collapse -(3) into the numeral -3. *)
@@ -184,7 +184,7 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CNotation(None,(InConstrEntry,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = term LEVEL "200"; "}" ->
         { CAst.make ~loc @@ CGeneralization (MaxImplicit, None, c) }
-      | test_array_opening; "["; "|"; ls = array_elems; "|"; def = lconstr; ty = type_cstr; test_array_closing; "|"; "]"; u = univ_instance ->
+      | test_array_opening; "["; "|"; ls = array_elems; "|"; def = lconstr; ty = type_cstr; test_array_closing; "|"; "]"; u = univ_annot ->
         { let t = Array.make (List.length ls) def in
           List.iteri (fun i e -> t.(i) <- e) ls;
           CAst.make ~loc @@ CArray(u, t, def, ty)
@@ -219,16 +219,16 @@ GRAMMAR EXTEND Gram
           | _, _ -> ty, c1 in
           CAst.make ~loc @@ CLetIn(id,mkLambdaCN ?loc:(constr_loc c1) bl c1,
                  Option.map (mkProdCN ?loc:(fst ty) bl) (snd ty), c2) }
-      | "let"; "fix"; fx = fix_decl; "in"; c = term LEVEL "200" ->
+      | "let"; "fix"; fx = fix_body; "in"; c = term LEVEL "200" ->
         { let {CAst.loc=locf;CAst.v=({CAst.loc=li;CAst.v=id} as lid,_,_,_,_ as dcl)} = fx in
           let fix = CAst.make ?loc:locf @@ CFix (lid,[dcl]) in
           CAst.make ~loc @@ CLetIn( CAst.make ?loc:li @@ Name id,fix,None,c) }
-      | "let"; "cofix"; fx = cofix_decl; "in"; c = term LEVEL "200" ->
+      | "let"; "cofix"; fx = cofix_body; "in"; c = term LEVEL "200" ->
         { let {CAst.loc=locf;CAst.v=({CAst.loc=li;CAst.v=id} as lid,_,_,_ as dcl)} = fx in
           let cofix = CAst.make ?loc:locf @@ CCoFix (lid,[dcl]) in
           CAst.make ~loc @@ CLetIn( CAst.make ?loc:li @@ Name id,cofix,None,c) }
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> { l } | "()" -> { [] } ];
-        po = return_type; ":="; c1 = term LEVEL "200"; "in";
+        po = as_return_type; ":="; c1 = term LEVEL "200"; "in";
         c2 = term LEVEL "200" ->
         { CAst.make ~loc @@ CLetTuple (lb,po,c1,c2) }
       | "let"; "'"; p = pattern LEVEL "200"; ":="; c1 = term LEVEL "200";
@@ -244,19 +244,19 @@ GRAMMAR EXTEND Gram
         "in"; c2 = term LEVEL "200" ->
         { CAst.make ~loc @@
           CCases (LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [CAst.make ~loc ([[p]], c2)]) }
-      | "if"; c = term LEVEL "200"; po = return_type;
+      | "if"; c = term LEVEL "200"; po = as_return_type;
         "then"; b1 = term LEVEL "200";
         "else"; b2 = term LEVEL "200" ->
         { CAst.make ~loc @@ CIf (c, po, b1, b2) }
       | "fix"; c = fix_decls -> { let (id,dcls) = c in CAst.make ~loc @@ CFix (id,dcls) }
       | "cofix"; c = cofix_decls -> { let (id,dcls) = c in CAst.make ~loc @@ CCoFix (id,dcls) } ] ]
   ;
-  appl_arg:
+  arg:
     [ [ test_lpar_id_coloneq; "("; id = identref; ":="; c = lconstr; ")" -> { (c,Some (CAst.make ?loc:id.CAst.loc @@ ExplByName id.CAst.v)) }
       | c=term LEVEL "9" -> { (c,None) } ] ]
   ;
   atomic_constr:
-    [ [ g = global; i = univ_instance -> { CAst.make ~loc @@ CRef (g,i) }
+    [ [ g = global; i = univ_annot -> { CAst.make ~loc @@ CRef (g,i) }
       | s = sort   -> { CAst.make ~loc @@  CSort s }
       | n = NUMBER-> { CAst.make ~loc @@ CPrim (Numeral (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPrim (String s) }
@@ -272,7 +272,7 @@ GRAMMAR EXTEND Gram
     [ [ "@{"; l = LIST1 inst SEP ";"; "}" -> { l }
       | -> { [] } ] ]
   ;
-  univ_instance:
+  univ_annot:
     [ [ "@{"; l = LIST0 universe_level; "}" -> { Some l }
       | -> { None } ] ]
   ;
@@ -285,26 +285,26 @@ GRAMMAR EXTEND Gram
       | id = global -> { UNamed (GType id) } ] ]
   ;
   fix_decls:
-    [ [ dcl = fix_decl -> { let (id,_,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
-      | dcl = fix_decl; "with"; dcls = LIST1 fix_decl SEP "with"; "for"; id = identref ->
+    [ [ dcl = fix_body -> { let (id,_,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
+      | dcl = fix_body; "with"; dcls = LIST1 fix_body SEP "with"; "for"; id = identref ->
         { (id,List.map (fun x -> x.CAst.v) (dcl::dcls)) } ] ]
   ;
   cofix_decls:
-    [ [ dcl = cofix_decl -> { let (id,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
-      | dcl = cofix_decl; "with"; dcls = LIST1 cofix_decl SEP "with"; "for"; id = identref ->
+    [ [ dcl = cofix_body -> { let (id,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
+      | dcl = cofix_body; "with"; dcls = LIST1 cofix_body SEP "with"; "for"; id = identref ->
         { (id,List.map (fun x -> x.CAst.v) (dcl::dcls)) } ] ]
   ;
-  fix_decl:~loc @@ ExplByName id))
+  fix_body:
     [ [ id = identref; bl = binders_fixannot; ty = type_cstr; ":=";
         c = term LEVEL "200" ->
         { CAst.make ~loc (id,snd bl,fst bl,ty,c) } ] ]
   ;
-  cofix_decl:
+  cofix_body:
     [ [ id = identref; bl = binders; ty = type_cstr; ":=";
         c = term LEVEL "200" ->
         { CAst.make ~loc (id,bl,ty,c) } ] ]
   ;
-  match_constr:
+  term_match:
     [ [ "match"; ci = LIST1 case_item SEP ","; ty = OPT case_type; "with";
         br = branches; "end" -> { CAst.make ~loc @@ CCases(RegularStyle,ty,ci,br) } ] ]
   ;
@@ -317,7 +317,7 @@ GRAMMAR EXTEND Gram
   case_type:
     [ [ "return"; ty = term LEVEL "100" -> { ty } ] ]
   ;
-  return_type:
+  as_return_type:
     [ [ a = OPT [ na = OPT["as"; na = name -> { na } ];
                   ty = case_type -> { (na,ty) } ] ->
         { match a with

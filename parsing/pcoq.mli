@@ -196,7 +196,9 @@ module Constr :
     val sort_family : Sorts.family Entry.t
     val pattern : cases_pattern_expr Entry.t
     val constr_pattern : constr_expr Entry.t
+    val cpattern : constr_expr Entry.t
     val lconstr_pattern : constr_expr Entry.t
+      [@@deprecated "Deprecated in 8.13; use 'cpattern' instead"]
     val closed_binder : local_binder_expr list Entry.t
     val binder : local_binder_expr list Entry.t (* closed_binder or variable *)
     val binders : local_binder_expr list Entry.t (* list of binder *)
@@ -204,7 +206,9 @@ module Constr :
     val binders_fixannot : (local_binder_expr list * recursion_order_expr option) Entry.t
     val typeclass_constraint : (lname * bool * constr_expr) Entry.t
     val record_declaration : constr_expr Entry.t
+    val arg : (constr_expr * explicitation CAst.t option) Entry.t
     val appl_arg : (constr_expr * explicitation CAst.t option) Entry.t
+      [@@deprecated "Deprecated in 8.13; use 'arg' instead"]
     val type_cstr : constr_expr Entry.t
   end
 

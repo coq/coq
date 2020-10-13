@@ -31,7 +31,9 @@ val simple_tactic : raw_tactic_expr Entry.t
 val simple_intropattern : constr_expr intro_pattern_expr CAst.t Entry.t
 val in_clause : Names.lident Locus.clause_expr Entry.t
 val clause_dft_concl : Names.lident Locus.clause_expr Entry.t
+val tactic_value : raw_tactic_arg Entry.t
 val tactic_arg : raw_tactic_arg Entry.t
+  [@@deprecated "Deprecated in 8.13; use 'tactic_value' instead"]
 val ltac_expr : raw_tactic_expr Entry.t
 val tactic_expr : raw_tactic_expr Entry.t
   [@@deprecated "Deprecated in 8.13; use 'ltac_expr' instead"]

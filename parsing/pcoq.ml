@@ -321,7 +321,8 @@ module Constr =
     let sort_family = Entry.create "sort_family"
     let pattern = Entry.create "pattern"
     let constr_pattern = Entry.create "constr_pattern"
-    let lconstr_pattern = Entry.create "lconstr_pattern"
+    let cpattern = Entry.create "cpattern"
+    let lconstr_pattern = cpattern
     let closed_binder = Entry.create "closed_binder"
     let binder = Entry.create "binder"
     let binders = Entry.create "binders"
@@ -329,7 +330,8 @@ module Constr =
     let binders_fixannot = Entry.create "binders_fixannot"
     let typeclass_constraint = Entry.create "typeclass_constraint"
     let record_declaration = Entry.create "record_declaration"
-    let appl_arg = Entry.create "appl_arg"
+    let arg = Entry.create "arg"
+    let appl_arg = arg
     let type_cstr = Entry.create "type_cstr"
   end
 

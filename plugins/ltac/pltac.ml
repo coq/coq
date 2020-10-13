@@ -37,7 +37,8 @@ let clause_dft_concl =
 
 
 (* Main entries for ltac *)
-let tactic_arg = Entry.create "tactic_arg"
+let tactic_value = Entry.create "tactic_value"
+let tactic_arg = tactic_value
 let ltac_expr = Entry.create "ltac_expr"
 let tactic_expr = ltac_expr
 let binder_tactic = Entry.create "binder_tactic"

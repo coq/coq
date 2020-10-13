@@ -320,7 +320,7 @@ GRAMMAR EXTEND Gram
   with_bindings:
     [ [ "with"; bl = bindings -> { bl } | -> { NoBindings } ] ]
   ;
-  red_flags:
+  red_flag:
     [ [ IDENT "beta" -> { [FBeta] }
       | IDENT "iota" -> { [FMatch;FFix;FCofix] }
       | IDENT "match" -> { [FMatch] }
@@ -337,7 +337,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   strategy_flag:
-    [ [ s = LIST1 red_flags -> { Redops.make_red_flag (List.flatten s) }
+    [ [ s = LIST1 red_flag -> { Redops.make_red_flag (List.flatten s) }
       | d = delta_flag -> { all_with d }
     ] ]
   ;

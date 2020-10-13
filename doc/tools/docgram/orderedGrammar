@@ -1435,7 +1435,7 @@ simple_tactic: [
 | "notypeclasses" "refine" one_term
 | "simple" "notypeclasses" "refine" one_term
 | "solve_constraints"
-| "subst" OPT ( LIST1 ident )
+| "subst" LIST0 ident
 | "simple" "subst"
 | "evar" "(" ident ":" term ")"
 | "evar" one_term

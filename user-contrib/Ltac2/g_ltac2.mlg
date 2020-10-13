@@ -80,7 +80,7 @@ let tac2def_syn = Entry.create "tac2def_syn"
 let tac2def_mut = Entry.create "tac2def_mut"
 let tac2mode = Entry.create "ltac2_command"
 
-let ltac1_expr = Pltac.ltac_expr
+let ltac_expr = Pltac.ltac_expr
 let tac2expr_in_env = Tac2entries.Pltac.tac2expr_in_env
 
 let inj_wit wit loc x = CAst.make ~loc @@ CTacExt (wit, x)
@@ -210,15 +210,15 @@ GRAMMAR EXTEND Gram
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_constr c }
       | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_open_constr c }
       | IDENT "ident"; ":"; "("; c = lident; ")" -> { Tac2quote.of_ident c }
-      | IDENT "pattern"; ":"; "("; c = Constr.lconstr_pattern; ")" -> { inj_pattern loc c }
+      | IDENT "pattern"; ":"; "("; c = Constr.cpattern; ")" -> { inj_pattern loc c }
       | IDENT "reference"; ":"; "("; c = globref; ")" -> { inj_reference loc c }
       | IDENT "ltac1"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1 loc qid }
       | IDENT "ltac1val"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1val loc qid }
     ] ]
   ;
   ltac1_expr_in_env:
-    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = ltac1_expr -> { ids, e }
-      | e = ltac1_expr -> { [], e }
+    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = ltac_expr -> { ids, e }
+      | e = ltac_expr -> { [], e }
     ] ]
   ;
   tac2expr_in_env :
@@ -361,11 +361,11 @@ GRAMMAR EXTEND Gram
       | id = Prim.ident -> { CAst.make ~loc (Some id) }
     ] ]
   ;
-  sexpr:
+  ltac2_scope:
     [ [ s = Prim.string -> { SexprStr (CAst.make ~loc s) }
       | n = Prim.integer -> { SexprInt (CAst.make ~loc n) }
       | id = syn_node -> { SexprRec (loc, id, []) }
-      | id = syn_node; "("; tok = LIST1 sexpr SEP "," ; ")" ->
+      | id = syn_node; "("; tok = LIST1 ltac2_scope SEP "," ; ")" ->
         { SexprRec (loc, id, tok) }
     ] ]
   ;
@@ -375,7 +375,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2def_syn:
-    [ [ "Notation"; toks = LIST1 sexpr; n = syn_level; ":=";
+    [ [ "Notation"; toks = LIST1 ltac2_scope; n = syn_level; ":=";
         e = tac2expr ->
         { StrSyn (toks, n, e) }
     ] ]
@@ -658,22 +658,22 @@ GRAMMAR EXTEND Gram
       | -> { [] }
     ] ]
   ;
-  tactic_then_gen:
-    [ [ ta = tac2expr; "|"; tg = tactic_then_gen -> { let (first,last) = tg in (Some ta :: first, last) }
+  for_each_goal:
+    [ [ ta = tac2expr; "|"; tg = for_each_goal -> { let (first,last) = tg in (Some ta :: first, last) }
       | ta = tac2expr; ".."; l = tactic_then_last -> { ([], Some (Some ta, l)) }
       | ".."; l = tactic_then_last -> { ([], Some (None, l)) }
       | ta = tac2expr -> { ([Some ta], None) }
-      | "|"; tg = tactic_then_gen -> { let (first,last) = tg in (None :: first, last) }
+      | "|"; tg = for_each_goal -> { let (first,last) = tg in (None :: first, last) }
       | -> { ([None], None) }
     ] ]
   ;
   q_dispatch:
-    [ [ d = tactic_then_gen -> { CAst.make ~loc d } ] ]
+    [ [ d = for_each_goal -> { CAst.make ~loc d } ] ]
   ;
   q_occurrences:
     [ [ occs = occs -> { occs } ] ]
   ;
-  red_flag:
+  ltac2_red_flag:
     [ [ IDENT "beta" -> { CAst.make ~loc @@ QBeta }
       | IDENT "iota" -> { CAst.make ~loc @@ QIota }
       | IDENT "match" -> { CAst.make ~loc @@ QMatch }
@@ -702,7 +702,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   strategy_flag:
-    [ [ s = LIST1 red_flag -> { CAst.make ~loc s }
+    [ [ s = LIST1 ltac2_red_flag -> { CAst.make ~loc s }
       | d = delta_flag ->
       { CAst.make ~loc
           [CAst.make ~loc QBeta; CAst.make ~loc QIota; CAst.make ~loc QZeta; d] }
@@ -721,8 +721,8 @@ GRAMMAR EXTEND Gram
   ;
   match_pattern:
     [ [ IDENT "context";  id = OPT Prim.ident;
-          "["; pat = Constr.lconstr_pattern; "]" -> { CAst.make ~loc @@ QConstrMatchContext (id, pat) }
-      | pat = Constr.lconstr_pattern -> { CAst.make ~loc @@ QConstrMatchPattern pat } ] ]
+          "["; pat = Constr.cpattern; "]" -> { CAst.make ~loc @@ QConstrMatchContext (id, pat) }
+      | pat = Constr.cpattern -> { CAst.make ~loc @@ QConstrMatchPattern pat } ] ]
   ;
   match_rule:
     [ [ mp = match_pattern; "=>"; tac = tac2expr ->
@@ -752,12 +752,12 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ (mp, tac) }
     ] ]
   ;
-  gmatch_list:
+  goal_match_list:
     [ [ mrl = LIST1 gmatch_rule SEP "|" -> { CAst.make ~loc @@ mrl }
       | "|"; mrl = LIST1 gmatch_rule SEP "|" -> { CAst.make ~loc @@ mrl } ] ]
   ;
   q_goal_matching:
-    [ [ m = gmatch_list -> { m } ] ]
+    [ [ m = goal_match_list -> { m } ] ]
   ;
   move_location:
     [ [ "at"; IDENT "top" -> { CAst.make ~loc @@ QMoveFirst }

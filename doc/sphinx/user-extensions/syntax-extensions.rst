@@ -444,7 +444,7 @@ Displaying information about notations
 
    This command doesn't display all nonterminals of the grammar.  For example,
    productions shown by `Print Grammar tactic` refer to nonterminals `tactic_then_locality`
-   and `tactic_then_gen` which are not shown and can't be printed.
+   and `for_each_goal` which are not shown and can't be printed.
 
    Most of the grammar in the documentation was updated in 8.12 to make it accurate and
    readable.  This was done using a new developer tool that extracts the grammar from the
@@ -486,7 +486,7 @@ Displaying information about notations
      | "4" LEFTA
        [ SELF; ";"; binder_tactic
        | SELF; ";"; SELF
-       | SELF; ";"; tactic_then_locality; tactic_then_gen; "]" ]
+       | SELF; ";"; tactic_then_locality; for_each_goal; "]" ]
      | "3" RIGHTA
        [ IDENT "try"; SELF
        :

@@ -43,7 +43,8 @@ module Vernac_ =
     let command = Entry.create "command"
     let syntax = Entry.create "syntax_command"
     let vernac_control = Entry.create "Vernac.vernac_control"
-    let rec_definition = Entry.create "Vernac.rec_definition"
+    let fix_definition = Entry.create "Vernac.fix_definition"
+    let rec_definition = fix_definition
     let red_expr = Entry.create "red_expr"
     let hint_info = Entry.create "hint_info"
     (* Main vernac entry *)
