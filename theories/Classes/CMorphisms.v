@@ -1,4 +1,4 @@
-(* -*- coding: utf-8; coq-prog-args: ("-coqlib" "../.." "-R" ".." "Coq" "-top" "Coq.Classes.CMorphisms") -*- *)
+(* -*- coding: utf-8; coq-prog-args: ("-top" "Coq.Classes.CMorphisms") -*- *)
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
 (*  v      *         Copyright INRIA, CNRS and contributors             *)
@@ -308,7 +308,7 @@ Section GenericInstances.
 
   Global Program 
   Instance trans_contra_inv_impl_type_morphism
-  `(Transitive A R) : Proper (R --> flip arrow) (R x) | 3.
+  `(Transitive A R) {x} : Proper (R --> flip arrow) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -318,7 +318,7 @@ Section GenericInstances.
 
   Global Program 
   Instance trans_co_impl_type_morphism
-    `(Transitive A R) : Proper (R ++> arrow) (R x) | 3.
+    `(Transitive A R) {x} : Proper (R ++> arrow) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -328,7 +328,7 @@ Section GenericInstances.
 
   Global Program 
   Instance trans_sym_co_inv_impl_type_morphism
-    `(PER A R) : Proper (R ++> flip arrow) (R x) | 3.
+    `(PER A R) {x} : Proper (R ++> flip arrow) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -337,7 +337,7 @@ Section GenericInstances.
   Qed.
 
   Global Program Instance trans_sym_contra_arrow_morphism
-    `(PER A R) : Proper (R --> arrow) (R x) | 3.
+    `(PER A R) {x} : Proper (R --> arrow) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -346,7 +346,7 @@ Section GenericInstances.
   Qed.
 
   Global Program Instance per_partial_app_type_morphism
-  `(PER A R) : Proper (R ==> iffT) (R x) | 2.
+  `(PER A R) {x} : Proper (R ==> iffT) (R x) | 2.
 
   Next Obligation.
   Proof with auto.
@@ -399,17 +399,17 @@ Section GenericInstances.
   (** Coq functions are morphisms for Leibniz equality,
      applied only if really needed. *)
 
-  Global Instance reflexive_eq_dom_reflexive `(Reflexive B R') :
+  Global Instance reflexive_eq_dom_reflexive `(Reflexive B R') {A} :
     Reflexive (@Logic.eq A ==> R').
   Proof. simpl_crelation. Qed.
 
   (** [respectful] is a morphism for crelation equivalence . *)
 
-  Global Instance respectful_morphism :
+  Global Instance respectful_morphism {A B} :
     Proper (relation_equivalence ++> relation_equivalence ++> relation_equivalence) 
            (@respectful A B).
   Proof. 
-    intros A B R R' HRR' S S' HSS' f g. 
+    intros R R' HRR' S S' HSS' f g.
     unfold respectful , relation_equivalence in *; simpl in *.
     split ; intros H x y Hxy.
     - apply (fst (HSS' _ _)). apply H. now apply (snd (HRR' _ _)).
@@ -511,9 +511,9 @@ Ltac partial_application_tactic :=
 
 (** Bootstrap !!! *)
 
-Instance proper_proper : Proper (relation_equivalence ==> eq ==> iffT) (@Proper A).
+Instance proper_proper {A} : Proper (relation_equivalence ==> eq ==> iffT) (@Proper A).
 Proof.
-  intros A R R' HRR' x y <-. red in HRR'.
+  intros R R' HRR' x y <-. red in HRR'.
   split ; red ; intros. 
   - now apply (fst (HRR' _ _)).
   - now apply (snd (HRR' _ _)).

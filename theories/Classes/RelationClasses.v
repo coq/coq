@@ -395,7 +395,7 @@ Notation "∙⊥∙" := false_predicate : predicate_scope.
 
 (** Predicate equivalence is an equivalence, and predicate implication defines a preorder. *)
 
-Program Instance predicate_equivalence_equivalence : 
+Program Instance predicate_equivalence_equivalence {l} :
   Equivalence (@predicate_equivalence l).
 
   Next Obligation.
@@ -413,7 +413,7 @@ Program Instance predicate_equivalence_equivalence :
       firstorder.
   Qed.
 
-Program Instance predicate_implication_preorder :
+Program Instance predicate_implication_preorder {l} :
   PreOrder (@predicate_implication l).
   Next Obligation.
     intro l; induction l ; firstorder.
@@ -480,7 +480,7 @@ Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : type
 
 (** The partial order defined by subrelation and relation equivalence. *)
 
-Program Instance subrelation_partial_order :
+Program Instance subrelation_partial_order {A} :
   PartialOrder (@relation_equivalence A) subrelation.
 
 Next Obligation.

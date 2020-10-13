@@ -61,11 +61,9 @@ Class Measure {A B} (f : A -> B).
 
 (** Standard measures. *)
 
-Instance fst_measure : @Measure (A * B) A Fst.
-Defined.
+Instance fst_measure {A B} : @Measure (A * B) A Fst := {}.
 
-Instance snd_measure : @Measure (A * B) B Snd.
-Defined.
+Instance snd_measure {A B} : @Measure (A * B) B Snd := {}.
 
 (** We define a product relation over [A*B]: each components should
     satisfy the corresponding initial relation. *)
@@ -96,11 +94,11 @@ Section RelCompFun_Instances.
     `(Measure A B f, Irreflexive _ R) : Irreflexive (R@@f).
   Proof. firstorder. Qed.
 
-  Global Program Instance RelCompFun_Equivalence
-    `(Measure A B f, Equivalence _ R) : Equivalence (R@@f).
+  Global Instance RelCompFun_Equivalence
+    `(Measure A B f, Equivalence _ R) : Equivalence (R@@f) := {}.
 
-  Global Program Instance RelCompFun_StrictOrder
-    `(Measure A B f, StrictOrder _ R) : StrictOrder (R@@f).
+  Global Instance RelCompFun_StrictOrder
+    `(Measure A B f, StrictOrder _ R) : StrictOrder (R@@f) := {}.
 
 End RelCompFun_Instances.
 
