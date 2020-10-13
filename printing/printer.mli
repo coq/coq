@@ -25,7 +25,7 @@ val print_goal_tag_opt_name : string list
 
 (** Printers for terms.
 
-    The "lconstr" variant does not require parentheses to isolate the
+    The "term" variant does not require parentheses to isolate the
     expression from the surrounding context (for instance [3 + 4]
     will be written [3 + 4]). The "constr" variant (w/o "l")
     enforces parentheses whenever the term is not an atom (for

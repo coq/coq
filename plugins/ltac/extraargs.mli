@@ -41,6 +41,12 @@ val wit_lconstr :
   (constr_expr,
   glob_constr_and_expr,
   EConstr.t) Genarg.genarg_type
+  [@@deprecated "Deprecated in 8.13; use 'term' instead"]
+
+val wit_term :
+  (constr_expr,
+  glob_constr_and_expr,
+  EConstr.t) Genarg.genarg_type
 
 val wit_casted_constr :
   (constr_expr,

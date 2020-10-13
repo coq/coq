@@ -306,8 +306,8 @@ GRAMMAR EXTEND Gram
       | pat = naming_intropattern -> { CAst.make ~loc @@ IntroNaming pat } ] ]
   ;
   simple_binding:
-    [ [ "("; id = ident; ":="; c = lconstr; ")" -> { CAst.make ~loc (NamedHyp id, c) }
-      | "("; n = natural; ":="; c = lconstr; ")" -> { CAst.make ~loc (AnonHyp n, c) } ] ]
+    [ [ "("; id = ident; ":="; c = term LEVEL "200"; ")" -> { CAst.make ~loc (NamedHyp id, c) }
+      | "("; n = natural; ":="; c = term LEVEL "200"; ")" -> { CAst.make ~loc (AnonHyp n, c) } ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
@@ -418,24 +418,24 @@ GRAMMAR EXTEND Gram
   simple_binder:
     [ [ na=name -> { ([na],Default Glob_term.Explicit, CAst.make ~loc @@
                     CHole (Some (Evar_kinds.BinderType na.CAst.v), IntroAnonymous, None)) }
-      | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> { (nal,Default Glob_term.Explicit,c) }
+      | "("; nal=LIST1 name; ":"; c=term LEVEL "200"; ")" -> { (nal,Default Glob_term.Explicit,c) }
     ] ]
   ;
   fixdecl:
     [ [ "("; id = ident; bl=LIST0 simple_binder; ann=struct_annot;
-        ":"; ty=lconstr; ")" -> { (loc, id, bl, ann, ty) } ] ]
+        ":"; ty=term LEVEL "200"; ")" -> { (loc, id, bl, ann, ty) } ] ]
   ;
   struct_annot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> { Some id }
       | -> { None } ] ]
   ;
   cofixdecl:
-    [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
+    [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=term LEVEL "200"; ")" ->
         { (loc, id, bl, None, ty) } ] ]
   ;
   bindings_with_parameters:
     [ [ check_for_coloneq; "(";  id = ident; bl = LIST0 simple_binder;
-        ":="; c = lconstr; ")" -> { (id, mkCLambdaN_simple bl c) } ] ]
+        ":="; c = term LEVEL "200"; ")" -> { (id, mkCLambdaN_simple bl c) } ] ]
   ;
   eliminator:
     [ [ "using"; el = constr_with_bindings -> { el } ] ]
@@ -546,31 +546,31 @@ GRAMMAR EXTEND Gram
 
       (* Alternative syntax for "pose proof c as id" *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
-          c = lconstr; ")" ->
+          c = term LEVEL "200"; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eassert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
-          c = lconstr; ")" ->
+          c = term LEVEL "200"; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       (* Alternative syntax for "assert c as id by tac" *)
       | IDENT "assert"; test_lpar_id_colon; "("; lid = identref; ":";
-          c = lconstr; ")"; tac=by_tactic ->
+          c = term LEVEL "200"; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (false,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eassert"; test_lpar_id_colon; "("; lid = identref; ":";
-          c = lconstr; ")"; tac=by_tactic ->
+          c = term LEVEL "200"; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (true,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       (* Alternative syntax for "enough c as id by tac" *)
       | IDENT "enough"; test_lpar_id_colon; "("; lid = identref; ":";
-          c = lconstr; ")"; tac=by_tactic ->
+          c = term LEVEL "200"; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (false,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eenough"; test_lpar_id_colon; "("; lid = identref; ":";
-          c = lconstr; ")"; tac=by_tactic ->
+          c = term LEVEL "200"; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (true,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
@@ -581,16 +581,16 @@ GRAMMAR EXTEND Gram
 
       (* Alternative syntax for "pose proof c as id by tac" *)
       | IDENT "pose"; IDENT "proof"; test_lpar_id_coloneq; "("; lid = identref; ":=";
-          c = lconstr; ")" ->
+          c = term LEVEL "200"; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "epose"; IDENT "proof"; test_lpar_id_coloneq; "("; lid = identref; ":=";
-          c = lconstr; ")" ->
+          c = term LEVEL "200"; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
-      | IDENT "pose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
+      | IDENT "pose"; IDENT "proof"; c = term LEVEL "200"; ipat = as_ipat ->
           { TacAtom (CAst.make ~loc @@ TacAssert (false,true,None,ipat,c)) }
-      | IDENT "epose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
+      | IDENT "epose"; IDENT "proof"; c = term LEVEL "200"; ipat = as_ipat ->
           { TacAtom (CAst.make ~loc @@ TacAssert (true,true,None,ipat,c)) }
       | IDENT "enough"; c = constr; ipat = as_ipat; tac = by_tactic ->
           { TacAtom (CAst.make ~loc @@ TacAssert (false,false,Some tac,ipat,c)) }

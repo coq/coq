@@ -92,9 +92,9 @@ GRAMMAR EXTEND Gram
     | mp = ssr_mpat; rt = ssr_rtype -> { mp, mk_cnotype mp, rt }
     | mp = ssr_mpat -> { mp, no_ct, no_rt }
   ] ];
-  ssr_dthen: [[ dp = ssr_dpat; "then"; c = lconstr -> { mk_dthen ~loc dp c } ]];
+  ssr_dthen: [[ dp = ssr_dpat; "then"; c = term -> { mk_dthen ~loc dp c } ]];
   ssr_elsepat: [[ "else" -> { [[CAst.make ~loc @@ CPatAtom None]] } ]];
-  ssr_else: [[ mp = ssr_elsepat; c = lconstr -> { CAst.make ~loc (mp, c) } ]];
+  ssr_else: [[ mp = ssr_elsepat; c = term -> { CAst.make ~loc (mp, c) } ]];
   binder_constr: [
     [ "if"; c = term LEVEL "200"; "is"; db1 = ssr_dthen; b2 = ssr_else ->
       { let b1, ct, rt = db1 in CAst.make ~loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2]) }
@@ -105,13 +105,13 @@ GRAMMAR EXTEND Gram
         (make ?loc:l1 (p1, r2), make ?loc:l2 (p2, r1))
       in
       CAst.make ~loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2]) }
-    | "let"; ":"; mp = ssr_mpat; ":="; c = lconstr; "in"; c1 = lconstr ->
+    | "let"; ":"; mp = ssr_mpat; ":="; c = term; "in"; c1 = term ->
       { mk_let ~loc no_rt [mk_pat c no_ct] mp c1 }
-    | "let"; ":"; mp = ssr_mpat; ":="; c = lconstr;
-      rt = ssr_rtype; "in"; c1 = lconstr ->
+    | "let"; ":"; mp = ssr_mpat; ":="; c = term;
+      rt = ssr_rtype; "in"; c1 = term ->
       { mk_let ~loc rt [mk_pat c (mk_cnotype mp)] mp c1 }
-    | "let"; ":"; mp = ssr_mpat; "in"; t = pattern; ":="; c = lconstr;
-      rt = ssr_rtype; "in"; c1 = lconstr ->
+    | "let"; ":"; mp = ssr_mpat; "in"; t = pattern; ":="; c = term;
+      rt = ssr_rtype; "in"; c1 = term ->
       { mk_let ~loc rt [mk_pat c (mk_ctype mp t)] mp c1 }
   ] ];
 END

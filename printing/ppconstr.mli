@@ -65,7 +65,7 @@ val default_term_pr : term_pr
   [modular_constr_pr pr s p t] prints the head of the term [t] and calls
   [pr] on its subterms.
   [s] is typically {!Pp.mt} and [p] is [lsimpleconstr] for "constr" printers
-  and [ltop] for "lconstr" printers (spiwack: we might need more
+  and [ltop] for "term" printers (spiwack: we might need more
   specification here).
   We can make a new modular constr printer by overriding certain branches,
   for instance if we want to build a printer which prints "Prop" as "Omega"

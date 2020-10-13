@@ -1058,7 +1058,7 @@ let symb_failed entry prev_symb_result prev_symb symb =
 let level_number entry lab =
   let rec lookup levn =
     function
-      [] -> failwith ("unknown level " ^ lab)
+      [] -> failwith ("Unknown level " ^ lab ^ " for " ^ entry.ename)
     | lev :: levs ->
         if is_level_labelled lab lev then levn else lookup (succ levn) levs
   in

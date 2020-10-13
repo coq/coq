@@ -214,10 +214,12 @@ let interp_prod_item = function
     let symbol = parse_user_entry ?loc nt sep in
     let interp s = function
     | None ->
-      if String.Map.mem s !entry_names then String.Map.find s !entry_names
+      (* todo: how to make this a warning? *)
+      if s = "lconstr" then user_err Pp.(str ("'lconstr' is deprecated, please use 'term'.")) (* to remove in 8.14 *)
+      else if String.Map.mem s !entry_names then String.Map.find s !entry_names
       else begin match ArgT.name s with
       | None ->
-         if s = "var" then user_err Pp.(str ("var is deprecated, use hyp.")) (* to remove in 8.14 *)
+         if s = "var" then user_err Pp.(str ("'var` is deprecated, please use `hyp`.")) (* to remove in 8.14 *)
          else user_err Pp.(str ("Unknown entry "^s^"."))
       | Some arg -> arg
       end

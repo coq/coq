@@ -77,6 +77,9 @@ let test_array_closing =
     lk_kw "|" >> lk_kw "]" >> check_no_space
   end
 
+[@@@ocaml.warning "-3"]
+let lconstr = Pcoq.Constr.lconstr
+[@@@ocaml.warning "+3"]
 }
 
 GRAMMAR EXTEND Gram
@@ -98,7 +101,7 @@ GRAMMAR EXTEND Gram
     [ [ c = constr -> { c } ] ]
   ;
   cpattern:
-    [ [ c = lconstr -> { c } ] ]
+    [ [ c = term LEVEL "200" -> { c } ] ]
   ;
   sort:
     [ [ "Set"  -> { UNamed [GSet,0] }
@@ -184,7 +187,7 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CNotation(None,(InConstrEntry,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = term LEVEL "200"; "}" ->
         { CAst.make ~loc @@ CGeneralization (MaxImplicit, None, c) }
-      | test_array_opening; "["; "|"; ls = array_elems; "|"; def = lconstr; ty = type_cstr; test_array_closing; "|"; "]"; u = univ_annot ->
+      | test_array_opening; "["; "|"; ls = array_elems; "|"; def = term LEVEL "200"; ty = type_cstr; test_array_closing; "|"; "]"; u = univ_annot ->
         { let t = Array.make (List.length ls) def in
           List.iteri (fun i e -> t.(i) <- e) ls;
           CAst.make ~loc @@ CArray(u, t, def, ty)
@@ -193,7 +196,7 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CGeneralization (Explicit, None, c) } ] ]
   ;
   array_elems:
-    [ [ fs = LIST0 lconstr SEP ";" -> { fs } ]]
+    [ [ fs = LIST0 term LEVEL "200" SEP ";" -> { fs } ]]
   ;
   record_declaration:
     [ [ fs = fields_def -> { CAst.make ~loc @@ CRecord fs } ] ]
@@ -204,7 +207,7 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   field_def:
-    [ [ id = global; bl = binders; ":="; c = lconstr ->
+    [ [ id = global; bl = binders; ":="; c = term LEVEL "200" ->
         { (id, mkLambdaCN ~loc bl c) } ] ]
   ;
   binder_constr:
@@ -252,7 +255,7 @@ GRAMMAR EXTEND Gram
       | "cofix"; c = cofix_decls -> { let (id,dcls) = c in CAst.make ~loc @@ CCoFix (id,dcls) } ] ]
   ;
   arg:
-    [ [ test_lpar_id_coloneq; "("; id = identref; ":="; c = lconstr; ")" -> { (c,Some (CAst.make ?loc:id.CAst.loc @@ ExplByName id.CAst.v)) }
+    [ [ test_lpar_id_coloneq; "("; id = identref; ":="; c = term LEVEL "200"; ")" -> { (c,Some (CAst.make ?loc:id.CAst.loc @@ ExplByName id.CAst.v)) }
       | c=term LEVEL "9" -> { (c,None) } ] ]
   ;
   atomic_constr:
@@ -266,7 +269,7 @@ GRAMMAR EXTEND Gram
       | id = pattern_ident; inst = evar_instance -> { CAst.make ~loc @@ CEvar(id,inst) } ] ]
   ;
   inst:
-    [ [ id = identref; ":="; c = lconstr -> { (id,c) } ] ]
+    [ [ id = identref; ":="; c = term LEVEL "200" -> { (id,c) } ] ]
   ;
   evar_instance:
     [ [ "@{"; l = LIST1 inst SEP ";"; "}" -> { l }
@@ -332,7 +335,7 @@ GRAMMAR EXTEND Gram
   ;
   eqn:
     [ [ pll = LIST1 mult_pattern SEP "|";
-        "=>"; rhs = lconstr -> { (CAst.make ~loc (pll,rhs)) } ] ]
+        "=>"; rhs = term LEVEL "200" -> { (CAst.make ~loc (pll,rhs)) } ] ]
   ;
   record_pattern:
     [ [ id = global; ":="; pat = pattern LEVEL "200" -> { (id, pat) } ] ]
@@ -387,7 +390,7 @@ GRAMMAR EXTEND Gram
   open_binders:
     (* Same as binders but parentheses around a closed binder are optional if
        the latter is unique *)
-    [ [ id = name; idl = LIST0 name; ":"; c = lconstr ->
+    [ [ id = name; idl = LIST0 name; ":"; c = term LEVEL "200" ->
         { [CLocalAssum (id::idl,Default Explicit,c)] }
         (* binders factorized with open binder *)
       | id = name; idl = LIST0 name; bl = binders ->
@@ -406,29 +409,29 @@ GRAMMAR EXTEND Gram
       | bl = closed_binder -> { bl } ] ]
   ;
   closed_binder:
-    [ [ "("; id = name; idl = LIST1 name; ":"; c = lconstr; ")" ->
+    [ [ "("; id = name; idl = LIST1 name; ":"; c = term LEVEL "200"; ")" ->
         { [CLocalAssum (id::idl,Default Explicit,c)] }
-      | "("; id = name; ":"; c = lconstr; ")" ->
+      | "("; id = name; ":"; c = term LEVEL "200"; ")" ->
         { [CLocalAssum ([id],Default Explicit,c)] }
-      | "("; id = name; ":="; c = lconstr; ")" ->
+      | "("; id = name; ":="; c = term LEVEL "200"; ")" ->
         { match c.CAst.v with
           | CCast(c, CastConv t) -> [CLocalDef (id,c,Some t)]
           | _ -> [CLocalDef (id,c,None)] }
-      | "("; id = name; ":"; t = lconstr; ":="; c = lconstr; ")" ->
+      | "("; id = name; ":"; t = term LEVEL "200"; ":="; c = term LEVEL "200"; ")" ->
         { [CLocalDef (id,c,Some t)] }
       | "{"; id = name; "}" ->
         { [CLocalAssum ([id],Default MaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))] }
-      | "{"; id = name; idl = LIST1 name; ":"; c = lconstr; "}" ->
+      | "{"; id = name; idl = LIST1 name; ":"; c = term LEVEL "200"; "}" ->
         { [CLocalAssum (id::idl,Default MaxImplicit,c)] }
-      | "{"; id = name; ":"; c = lconstr; "}" ->
+      | "{"; id = name; ":"; c = term LEVEL "200"; "}" ->
         { [CLocalAssum ([id],Default MaxImplicit,c)] }
       | "{"; id = name; idl = LIST1 name; "}" ->
         { List.map (fun id -> CLocalAssum ([id],Default MaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) (id::idl) }
       | "["; id = name; "]" ->
         { [CLocalAssum ([id],Default NonMaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))] }
-      | "["; id = name; idl = LIST1 name; ":"; c = lconstr; "]" ->
+      | "["; id = name; idl = LIST1 name; ":"; c = term LEVEL "200"; "]" ->
         { [CLocalAssum (id::idl,Default NonMaxImplicit,c)] }
-      | "["; id = name; ":"; c = lconstr; "]" ->
+      | "["; id = name; ":"; c = term LEVEL "200"; "]" ->
         { [CLocalAssum ([id],Default NonMaxImplicit,c)] }
       | "["; id = name; idl = LIST1 name; "]" ->
         { List.map (fun id -> CLocalAssum ([id],Default NonMaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) (id::idl) }
@@ -456,10 +459,10 @@ GRAMMAR EXTEND Gram
           { (CAst.make ~loc Anonymous), false, c } ] ]
   ;
   type_cstr:
-    [ [ ":"; c = lconstr -> { c }
+    [ [ ":"; c = term LEVEL "200" -> { c }
       | -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) } ] ]
   ;
   let_type_cstr:
-    [ [ c = OPT [":"; c = lconstr -> { c } ] -> { Loc.tag ~loc c } ] ]
+    [ [ c = OPT [":"; c = term LEVEL "200" -> { c } ] -> { Loc.tag ~loc c } ] ]
   ;
   END

@@ -184,6 +184,7 @@ module Constr :
     val constr : constr_expr Entry.t
     val constr_eoi : constr_expr Entry.t
     val lconstr : constr_expr Entry.t
+      [@@deprecated "Deprecated in 8.13; use 'term' instead"]
     val binder_constr : constr_expr Entry.t
     val term : constr_expr Entry.t
     val operconstr : constr_expr Entry.t

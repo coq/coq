@@ -13,10 +13,6 @@
 DOC_GRAMMAR
 
 (* first, fixup symbols duplicated across files *)
-lglob: [
-| lconstr
-| DELETE EXTRAARGS_lconstr
-]
 
 hint: [
 | "Extern" natural OPT constr_pattern "=>" tactic
@@ -98,9 +94,9 @@ RENAME: [
    Put other renames at the end *)
 RENAME: [
   (* map missing names for rhs *)
-| Constr.constr term
+| Constr.constr term200
 | Constr.global global
-| Constr.lconstr lconstr
+| Constr.term200 term200
 | Constr.cpattern cpattern
 | G_vernac.query_command query_command
 | G_vernac.section_subset_expr section_var_expr
@@ -257,7 +253,7 @@ dirpath: [
 ]
 
 let_type_cstr: [
-| DELETE OPT [ ":" lconstr ]
+| DELETE OPT [ ":" term200 ]
 | type_cstr
 ]
 
@@ -339,6 +335,10 @@ type: [
 | term200
 ]
 
+term: [
+| DELETE _term
+]
+
 term100: [
 | REPLACE term99 "<:" term200
 | WITH term99 "<:" type
@@ -396,8 +396,8 @@ term0: [
 | MOVETO term_generalizing "`{" term200 "}"
 | MOVETO term_generalizing "`(" term200 ")"
 | MOVETO term_ltac "ltac" ":" "(" ltac_expr5 ")"
-| REPLACE "[" "|" array_elems "|" lconstr type_cstr "|" "]" univ_annot
-| WITH "[|" array_elems "|" lconstr type_cstr "|]" univ_annot
+| REPLACE "[" "|" array_elems "|" term200 type_cstr "|" "]" univ_annot
+| WITH "[|" array_elems "|" term200 type_cstr "|]" univ_annot
 ]
 
 fix_decls: [
@@ -430,8 +430,8 @@ binder: [
 ]
 
 open_binders: [
-| REPLACE name LIST0 name ":" lconstr
-| WITH LIST1 name ":" lconstr
+| REPLACE name LIST0 name ":" term200
+| WITH LIST1 name ":" term200
 (* @Zimmi48: Special token .. is for use in the Notation command. (see bug_3304.v) *)
 | DELETE name ".." name
 | REPLACE name LIST0 name binders
@@ -442,33 +442,33 @@ open_binders: [
 closed_binder: [
 | name
 
-| REPLACE "(" name LIST1 name ":" lconstr ")"
+| REPLACE "(" name LIST1 name ":" term200 ")"
 | WITH "(" LIST1 name ":" type ")"
-| DELETE "(" name ":" lconstr ")"
+| DELETE "(" name ":" term200 ")"
 
-| DELETE "(" name ":=" lconstr ")"
+| DELETE "(" name ":=" term200 ")"
 
-| REPLACE "(" name ":" lconstr ":=" lconstr ")"
-| WITH "(" name type_cstr ":=" lconstr ")"
+| REPLACE "(" name ":" term200 ":=" term200 ")"
+| WITH "(" name type_cstr ":=" term200 ")"
 
 | DELETE "{" name "}"
 | DELETE "{" name LIST1 name "}"
 
-| REPLACE "{" name LIST1 name ":" lconstr "}"
+| REPLACE "{" name LIST1 name ":" term200 "}"
 | WITH "{" LIST1 name type_cstr "}"
-| DELETE "{" name ":" lconstr  "}"
+| DELETE "{" name ":" term200  "}"
 | MOVETO implicit_binders "{" LIST1 name type_cstr "}"
 
 | DELETE "[" name "]"
 | DELETE "[" name LIST1 name "]"
 
-| REPLACE "[" name LIST1 name ":" lconstr "]"
+| REPLACE "[" name LIST1 name ":" term200 "]"
 | WITH "[" LIST1 name type_cstr "]"
-| DELETE "[" name ":" lconstr  "]"
+| DELETE "[" name ":" term200  "]"
 | MOVETO implicit_binders "[" LIST1 name type_cstr "]"
 
-| REPLACE "(" Prim.name ":" lconstr "|" lconstr ")"
-| WITH "(" Prim.name ":" type "|" lconstr ")"
+| REPLACE "(" Prim.name ":" term200 "|" term200 ")"
+| WITH "(" Prim.name ":" type "|" term200 ")"
 
 | MOVETO generalizing_binder "`(" LIST1 typeclass_constraint SEP "," ")"
 | MOVETO generalizing_binder "`{" LIST1 typeclass_constraint SEP "," "}"
@@ -526,8 +526,8 @@ DELETE: [
 ]
 
 eqn: [
-| REPLACE LIST1 mult_pattern SEP "|" "=>" lconstr
-| WITH LIST1 [ LIST1 pattern100 SEP "," ] SEP "|" "=>" lconstr
+| REPLACE LIST1 mult_pattern SEP "|" "=>" term200
+| WITH LIST1 [ LIST1 pattern100 SEP "," ] SEP "|" "=>" term200
 ]
 
 universe_increment: [
@@ -555,7 +555,7 @@ variant_definition: [
 ]
 
 gallina: [
-| REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
+| REPLACE thm_token ident_decl binders ":" term200 LIST0 [ "with" ident_decl binders ":" term200 ]
 | WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
 | DELETE assumptions_token inline assum_list
 | REPLACE finite_token LIST1 inductive_definition SEP "with"
@@ -625,10 +625,10 @@ attr_value: [
 ]
 
 def_body: [
-| DELETE binders ":=" reduce lconstr
-| REPLACE binders ":" lconstr ":=" reduce lconstr
-| WITH LIST0 binder OPT (":" type) ":=" reduce lconstr
-| REPLACE binders ":" lconstr
+| DELETE binders ":=" reduce term200
+| REPLACE binders ":" term200 ":=" reduce term200
+| WITH LIST0 binder OPT (":" type) ":=" reduce term200
+| REPLACE binders ":" term200
 | WITH LIST0 binder ":" type
 ]
 
@@ -722,8 +722,8 @@ gallina_ext: [
 | WITH "Set" setting_name option_setting
 | REPLACE "Export" "Unset" setting_name
 | WITH "Unset" setting_name
-| REPLACE "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
-| WITH "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
+| REPLACE "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" term200 | ]
+| WITH "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" term200 ]
 
 | REPLACE "From" global "Require" export_token LIST1 global
 | WITH "From" dirpath "Require" export_token LIST1 global
@@ -910,7 +910,7 @@ match_list: [
 ]
 
 match_rule: [
-(* redundant; match_pattern -> term -> _ *)
+(* redundant; match_pattern -> term200 -> _ *)
 | DELETE "_" "=>" ltac_expr5
 ]
 
@@ -1315,7 +1315,7 @@ command: [
 | DELETE "Show" "Zify" "BinOpSpec"      (* micromega plugin *)
 (* keep this one | "Show" "Zify" "Spec"      (* micromega plugin *)*)
 | "Show" "Zify" show_zify  TAG Micromega
-| REPLACE "Goal" lconstr
+| REPLACE "Goal" term200
 | WITH "Goal" type
 ]
 
@@ -1369,19 +1369,19 @@ binder_tactic: [
 ]
 
 field_body: [
-| REPLACE binders of_type lconstr
+| REPLACE binders of_type term200
 | WITH binders of_type
-| REPLACE binders of_type lconstr ":=" lconstr
-| WITH binders of_type ":=" lconstr
+| REPLACE binders of_type term200 ":=" term200
+| WITH binders of_type ":=" term200
 ]
 
 assumpt: [
-| REPLACE LIST1 ident_decl of_type lconstr
+| REPLACE LIST1 ident_decl of_type term200
 | WITH LIST1 ident_decl of_type
 ]
 
 constructor_type: [
-| REPLACE binders [ of_type lconstr | ]
+| REPLACE binders [ of_type term200 | ]
 | WITH binders OPT of_type
 ]
 
@@ -1427,24 +1427,24 @@ legacy_attr: [
 sentence: [ ]  (* productions defined below *)
 
 fix_definition: [
-| REPLACE ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
-| WITH ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
+| REPLACE ident_decl binders_fixannot type_cstr OPT [ ":=" term200 ] decl_notations
+| WITH ident_decl binders_fixannot type_cstr OPT [ ":=" term200 ] decl_notations
 ]
 
 cofix_definition: [
-| REPLACE ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
-| WITH ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
+| REPLACE ident_decl binders type_cstr OPT [ ":=" term200 ] decl_notations
+| WITH ident_decl binders type_cstr OPT [ ":=" term200 ] decl_notations
 ]
 
 type_cstr: [
-| REPLACE ":" lconstr
+| REPLACE ":" term200
 | WITH ":" type
 | OPTINREF
 ]
 
 inductive_definition: [
-| REPLACE opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
-| WITH    opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" type ]    opt_constructors_or_fields decl_notations
+| REPLACE opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" term200 ] opt_constructors_or_fields decl_notations
+| WITH    opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] opt_constructors_or_fields decl_notations
 ]
 
 (* note that constructor -> identref constructor_type *)
@@ -1469,12 +1469,12 @@ at_level_opt: [
 ]
 
 query_command: [
-| REPLACE "Eval" red_expr "in" lconstr "."
-| WITH "Eval" red_expr "in" lconstr
-| REPLACE "Compute" lconstr "."
-| WITH "Compute" lconstr
-| REPLACE "Check" lconstr "."
-| WITH "Check" lconstr
+| REPLACE "Eval" red_expr "in" term200 "."
+| WITH "Eval" red_expr "in" term200
+| REPLACE "Compute" term200 "."
+| WITH "Compute" term200
+| REPLACE "Check" term200 "."
+| WITH "Check" term200
 | REPLACE "About" smart_global OPT univ_name_list "."
 | WITH "About" smart_global OPT univ_name_list
 | REPLACE "SearchHead" constr_pattern in_or_out_modules "."
@@ -1665,9 +1665,9 @@ eauto_search_strategy: [
 
 
 constr_body: [
-| DELETE ":=" lconstr
-| REPLACE ":" lconstr ":=" lconstr
-| WITH OPT ( ":" type ) ":=" lconstr
+| DELETE ":=" term200
+| REPLACE ":" term200 ":=" term200
+| WITH OPT ( ":" type ) ":=" term200
 ]
 
 opt_hintbases: [
@@ -1689,7 +1689,7 @@ instance_name: [
 ]
 
 simple_reserv: [
-| REPLACE LIST1 identref ":" lconstr
+| REPLACE LIST1 identref ":" term200
 | WITH LIST1 identref ":" type
 ]
 
@@ -2210,8 +2210,8 @@ ltac2_quotations: [
 ]
 
 ltac2_tactic_atom: [
-| MOVETO ltac2_quotations "constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
-| MOVETO ltac2_quotations "open_constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "constr" ":" "(" term200 ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "open_constr" ":" "(" term200 ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "ident" ":" "(" lident ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "pattern" ":" "(" cpattern ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "reference" ":" "(" globref ")"      (* Ltac2 plugin *)
@@ -2259,9 +2259,9 @@ ssexpr35: [
 ]
 
 simple_binding: [
-| REPLACE "(" ident ":=" lconstr ")"
-| WITH "(" [ ident | natural ] ":=" lconstr ")"
-| DELETE "(" natural ":=" lconstr ")"
+| REPLACE "(" ident ":=" term200 ")"
+| WITH "(" [ ident | natural ] ":=" term200 ")"
+| DELETE "(" natural ":=" term200 ")"
 ]
 
 
@@ -2273,6 +2273,8 @@ subprf: [
 ltac2_expr: [
 | DELETE _ltac2_expr
 ]
+
+lconstr: [ | DELETENT ]
 
 SPLICE: [
 | clause
@@ -2307,7 +2309,6 @@ SPLICE: [
 | global
 | reference
 | bar_cbrace
-| lconstr
 
 (*
 | ast_closure_term

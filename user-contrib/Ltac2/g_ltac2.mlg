@@ -208,8 +208,8 @@ GRAMMAR EXTEND Gram
       | "@"; id = Prim.ident -> { Tac2quote.of_ident (CAst.make ~loc id) }
       | "&"; id = lident -> { Tac2quote.of_hyp ~loc id }
       | "'"; c = Constr.constr -> { inj_open_constr loc c }
-      | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_constr c }
-      | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_open_constr c }
+      | IDENT "constr"; ":"; "("; c = Constr.term LEVEL "200"; ")" -> { Tac2quote.of_constr c }
+      | IDENT "open_constr"; ":"; "("; c = Constr.term LEVEL "200"; ")" -> { Tac2quote.of_open_constr c }
       | IDENT "ident"; ":"; "("; c = lident; ")" -> { Tac2quote.of_ident c }
       | IDENT "pattern"; ":"; "("; c = Constr.cpattern; ")" -> { inj_pattern loc c }
       | IDENT "reference"; ":"; "("; c = globref; ")" -> { inj_reference loc c }
@@ -430,7 +430,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   simple_binding:
-    [ [ "("; h = qhyp; ":="; c = Constr.lconstr; ")" ->
+    [ [ "("; h = qhyp; ":="; c = Constr.term LEVEL "200"; ")" ->
         { CAst.make ~loc (h, c) }
     ] ]
   ;
@@ -776,7 +776,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   pose:
-    [ [ test_lpar_id_coloneq; "("; id = ident_or_anti; ":="; c = Constr.lconstr; ")" ->
+    [ [ test_lpar_id_coloneq; "("; id = ident_or_anti; ":="; c = Constr.term LEVEL "200"; ")" ->
         { CAst.make ~loc (Some id, c) }
       | c = Constr.constr; na = as_name -> { CAst.make ~loc (na, c) }
     ] ]
@@ -795,9 +795,9 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   assertion:
-    [ [ test_lpar_id_coloneq; "("; id = ident_or_anti; ":="; c = Constr.lconstr; ")" ->
+    [ [ test_lpar_id_coloneq; "("; id = ident_or_anti; ":="; c = Constr.term LEVEL "200"; ")" ->
         { CAst.make ~loc (QAssertValue (id, c)) }
-      | test_lpar_id_colon; "("; id = ident_or_anti; ":"; c = Constr.lconstr; ")"; tac = by_tactic ->
+      | test_lpar_id_colon; "("; id = ident_or_anti; ":"; c = Constr.term LEVEL "200"; ")"; tac = by_tactic ->
       { let ipat = CAst.make ~loc @@ QIntroNaming (CAst.make ~loc @@ QIntroIdentifier id) in
         CAst.make ~loc (QAssertType (Some ipat, c, tac)) }
       | c = Constr.constr; ipat = as_ipat; tac = by_tactic ->

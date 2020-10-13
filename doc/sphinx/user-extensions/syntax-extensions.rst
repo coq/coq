@@ -1860,6 +1860,8 @@ Tactic notations allow customizing the syntax of tactics.
         we want to support all these?
         @JasonGross's opinion here: https://github.com/coq/coq/pull/11718#discussion_r415387421
 
+     .. todo "term" is now available, not sure it's worth documenting
+
    .. list-table::
       :header-rows: 1
 

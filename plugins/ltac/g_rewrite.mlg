@@ -282,11 +282,11 @@ VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
   | #[ atts = rewrite_attributes; ] [ "Declare" "Morphism" constr(m) ":" ident(n) ]
     => { VtSideff([n], VtLater) }
     -> { add_morphism_as_parameter atts m n }
-  | #[ atts = rewrite_attributes; ] ![ open_proof ] [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
+  | #[ atts = rewrite_attributes; ] ![ open_proof ] [ "Add" "Morphism" constr(m) "with" "signature" term(s) "as" ident(n) ]
     => { VtStartProof(GuaranteesOpacity,[n]) }
     -> { add_morphism atts [] m s n }
   | #[ atts = rewrite_attributes; ] ![ open_proof ] [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
-        "with" "signature" lconstr(s) "as" ident(n) ]
+        "with" "signature" term(s) "as" ident(n) ]
     => { VtStartProof(GuaranteesOpacity,[n]) }
     -> { add_morphism atts binders m s n }
 END

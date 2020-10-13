@@ -53,11 +53,11 @@ GRAMMAR EXTEND Gram
     | ":"; l = LIST1 [id = IDENT -> { id } ] -> { l } ] ]
   ;
   command:
-    [ [ IDENT "Goal"; c = lconstr ->
+    [ [ IDENT "Goal"; c = term LEVEL "200" ->
         { VernacDefinition (Decls.(NoDischarge, Definition), ((CAst.make ~loc Names.Anonymous), None), ProveBody ([], c)) }
       | IDENT "Proof" -> { VernacProof (None,None) }
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> { VernacProofMode mn }
-      | IDENT "Proof"; c = lconstr -> { VernacExactProof c }
+      | IDENT "Proof"; c = term LEVEL "200" -> { VernacExactProof c }
       | IDENT "Abort" -> { VernacAbort None }
       | IDENT "Abort"; IDENT "All" -> { VernacAbortAll }
       | IDENT "Abort"; id = identref -> { VernacAbort (Some id) }
@@ -127,8 +127,8 @@ GRAMMAR EXTEND Gram
       | IDENT "Constructors"; lc = LIST1 global -> { HintsConstructors lc } ] ]
     ;
   constr_body:
-    [ [ ":="; c = lconstr -> { c }
-      | ":"; t = lconstr; ":="; c = lconstr -> { CAst.make ~loc @@ CCast(c,CastConv t) } ] ]
+    [ [ ":="; c = term LEVEL "200" -> { c }
+      | ":"; t = term LEVEL "200"; ":="; c = term LEVEL "200" -> { CAst.make ~loc @@ CCast(c,CastConv t) } ] ]
   ;
   mode:
     [ [ l = LIST1 [ "+" -> { ModeInput }

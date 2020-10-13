@@ -69,7 +69,7 @@ GRAMMAR EXTEND Gram
   ;
 
   Constr.closed_binder:
-    [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> {
+    [[ "("; id=Prim.name; ":"; t=Constr.term LEVEL "200"; "|"; c=Constr.term LEVEL "200"; ")" -> {
           let typ = mkAppC (sigref loc, [mkLambdaC ([id], default_binder_kind, t, c)]) in
           [CLocalAssum ([id], default_binder_kind, typ)] }
     ] ];

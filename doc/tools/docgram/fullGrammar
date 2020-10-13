@@ -18,7 +18,7 @@ constr_pattern: [
 ]
 
 cpattern: [
-| lconstr
+| term200
 ]
 
 sort: [
@@ -117,12 +117,12 @@ term0: [
 | "{|" record_declaration bar_cbrace
 | "{" binder_constr "}"
 | "`{" term200 "}"
-| test_array_opening "[" "|" array_elems "|" lconstr type_cstr test_array_closing "|" "]" univ_annot
+| test_array_opening "[" "|" array_elems "|" term200 type_cstr test_array_closing "|" "]" univ_annot
 | "`(" term200 ")"
 ]
 
 array_elems: [
-| LIST0 lconstr SEP ";"
+| LIST0 term200 SEP ";"
 ]
 
 record_declaration: [
@@ -136,7 +136,7 @@ fields_def: [
 ]
 
 field_def: [
-| global binders ":=" lconstr
+| global binders ":=" term200
 ]
 
 binder_constr: [
@@ -155,7 +155,7 @@ binder_constr: [
 ]
 
 arg: [
-| test_lpar_id_coloneq "(" identref ":=" lconstr ")"
+| test_lpar_id_coloneq "(" identref ":=" term200 ")"
 | term9
 ]
 
@@ -171,7 +171,7 @@ atomic_constr: [
 ]
 
 inst: [
-| identref ":=" lconstr
+| identref ":=" term200
 ]
 
 evar_instance: [
@@ -235,7 +235,7 @@ mult_pattern: [
 ]
 
 eqn: [
-| LIST1 mult_pattern SEP "|" "=>" lconstr
+| LIST1 mult_pattern SEP "|" "=>" term200
 ]
 
 record_pattern: [
@@ -300,7 +300,7 @@ binders_fixannot: [
 ]
 
 open_binders: [
-| name LIST0 name ":" lconstr
+| name LIST0 name ":" term200
 | name LIST0 name binders
 | name ".." name
 | closed_binder binders
@@ -316,17 +316,17 @@ binder: [
 ]
 
 closed_binder: [
-| "(" name LIST1 name ":" lconstr ")"
-| "(" name ":" lconstr ")"
-| "(" name ":=" lconstr ")"
-| "(" name ":" lconstr ":=" lconstr ")"
+| "(" name LIST1 name ":" term200 ")"
+| "(" name ":" term200 ")"
+| "(" name ":=" term200 ")"
+| "(" name ":" term200 ":=" term200 ")"
 | "{" name "}"
-| "{" name LIST1 name ":" lconstr "}"
-| "{" name ":" lconstr "}"
+| "{" name LIST1 name ":" term200 "}"
+| "{" name ":" term200 "}"
 | "{" name LIST1 name "}"
 | "[" name "]"
-| "[" name LIST1 name ":" lconstr "]"
-| "[" name ":" lconstr "]"
+| "[" name LIST1 name ":" term200 "]"
+| "[" name ":" term200 "]"
 | "[" name LIST1 name "]"
 | "`(" LIST1 typeclass_constraint SEP "," ")"
 | "`{" LIST1 typeclass_constraint SEP "," "}"
@@ -342,12 +342,12 @@ typeclass_constraint: [
 ]
 
 type_cstr: [
-| ":" lconstr
+| ":" term200
 |
 ]
 
 let_type_cstr: [
-| OPT [ ":" lconstr ]
+| OPT [ ":" term200 ]
 ]
 
 preident: [
@@ -470,10 +470,10 @@ opt_hintbases: [
 ]
 
 command: [
-| "Goal" lconstr
+| "Goal" term200
 | "Proof"
 | "Proof" "Mode" string
-| "Proof" lconstr
+| "Proof" term200
 | "Abort"
 | "Abort" "All"
 | "Abort" identref
@@ -517,7 +517,7 @@ command: [
 | "Add" "LoadPath" ne_string "as" dirpath
 | "Add" "Rec" "LoadPath" ne_string "as" dirpath
 | "Remove" "LoadPath" ne_string
-| "Type" lconstr
+| "Type" term200
 | "Print" printable
 | "Print" smart_global OPT univ_name_list
 | "Print" "Module" "Type" global
@@ -644,8 +644,8 @@ command: [
 | "Add" "Parametric" "Setoid" G_REWRITE_binders ":" constr constr constr "as" ident
 | "Add" "Morphism" constr ":" ident
 | "Declare" "Morphism" constr ":" ident
-| "Add" "Morphism" constr "with" "signature" lconstr "as" ident
-| "Add" "Parametric" "Morphism" G_REWRITE_binders ":" constr "with" "signature" lconstr "as" ident
+| "Add" "Morphism" constr "with" "signature" term200 "as" ident
+| "Add" "Parametric" "Morphism" G_REWRITE_binders ":" constr "with" "signature" term200 "as" ident
 | "Print" "Rewrite" "HintDb" preident
 | "Reset" "Ltac" "Profile"
 | "Show" "Ltac" "Profile"
@@ -716,8 +716,8 @@ hint: [
 ]
 
 constr_body: [
-| ":=" lconstr
-| ":" lconstr ":=" lconstr
+| ":=" term200
+| ":" term200 ":=" term200
 ]
 
 mode: [
@@ -789,7 +789,7 @@ subprf: [
 ]
 
 gallina: [
-| thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
+| thm_token ident_decl binders ":" term200 LIST0 [ "with" ident_decl binders ":" term200 ]
 | assumption_token inline assum_list
 | assumptions_token inline assum_list
 | def_token ident_decl def_body
@@ -803,7 +803,7 @@ gallina: [
 | "Combined" "Scheme" identref "from" LIST1 identref SEP ","
 | "Register" global "as" qualid
 | "Register" "Inline" global
-| "Primitive" ident_decl OPT [ ":" lconstr ] ":=" register_token
+| "Primitive" ident_decl OPT [ ":" term200 ] ":=" register_token
 | "Universe" LIST1 identref
 | "Universes" LIST1 identref
 | "Constraint" LIST1 univ_constraint SEP ","
@@ -873,9 +873,9 @@ finite_token: [
 ]
 
 def_body: [
-| binders ":=" reduce lconstr
-| binders ":" lconstr ":=" reduce lconstr
-| binders ":" lconstr
+| binders ":=" reduce term200
+| binders ":" term200 ":=" reduce term200
+| binders ":" term200
 ]
 
 reduce: [
@@ -902,7 +902,7 @@ opt_constructors_or_fields: [
 ]
 
 inductive_definition: [
-| opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
+| opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" term200 ] opt_constructors_or_fields decl_notations
 ]
 
 constructors_or_record: [
@@ -920,11 +920,11 @@ opt_coercion: [
 ]
 
 fix_definition: [
-| ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
+| ident_decl binders_fixannot type_cstr OPT [ ":=" term200 ] decl_notations
 ]
 
 cofix_definition: [
-| ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
+| ident_decl binders type_cstr OPT [ ":=" term200 ] decl_notations
 ]
 
 scheme: [
@@ -951,9 +951,9 @@ record_fields: [
 ]
 
 field_body: [
-| binders of_type lconstr
-| binders of_type lconstr ":=" lconstr
-| binders ":=" lconstr
+| binders of_type term200
+| binders of_type term200 ":=" term200
+| binders ":=" term200
 ]
 
 record_binder: [
@@ -971,11 +971,11 @@ assum_coe: [
 ]
 
 assumpt: [
-| LIST1 ident_decl of_type lconstr
+| LIST1 ident_decl of_type term200
 ]
 
 constructor_type: [
-| binders [ of_type lconstr | ]
+| binders [ of_type term200 | ]
 ]
 
 constructor: [
@@ -1011,7 +1011,7 @@ gallina_ext: [
 | "Coercion" global ":" class_rawexpr ">->" class_rawexpr
 | "Coercion" by_notation ":" class_rawexpr ">->" class_rawexpr
 | "Context" LIST1 binder
-| "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
+| "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" term200 | ]
 | "Existing" "Instance" global hint_info
 | "Existing" "Instances" LIST1 global OPT [ "|" natural ]
 | "Existing" "Class" global
@@ -1100,7 +1100,7 @@ module_expr_atom: [
 ]
 
 with_declaration: [
-| "Definition" fullyqualid OPT univ_decl ":=" Constr.lconstr
+| "Definition" fullyqualid OPT univ_decl ":=" Constr.term
 | "Module" fullyqualid ":=" qualid
 ]
 
@@ -1199,13 +1199,13 @@ reserv_tuple: [
 ]
 
 simple_reserv: [
-| LIST1 identref ":" lconstr
+| LIST1 identref ":" term200
 ]
 
 query_command: [
-| "Eval" red_expr "in" lconstr "."
-| "Compute" lconstr "."
-| "Check" lconstr "."
+| "Eval" red_expr "in" term200 "."
+| "Compute" term200 "."
+| "Check" term200 "."
 | "About" smart_global OPT univ_name_list "."
 | "SearchHead" constr_pattern in_or_out_modules "."
 | "SearchPattern" constr_pattern in_or_out_modules "."
@@ -1439,7 +1439,7 @@ simple_tactic: [
 | "firstorder" OPT tactic firstorder_using "with" LIST1 preident
 | "gintuition" OPT tactic
 | "functional" "inversion" quantified_hypothesis OPT reference      (* funind plugin *)
-| "functional" "induction" lconstr fun_ind_using with_names      (* funind plugin *)
+| "functional" "induction" term200 fun_ind_using with_names      (* funind plugin *)
 | "soft" "functional" "induction" LIST1 constr fun_ind_using with_names      (* funind plugin *)
 | "reflexivity"
 | "exact" casted_constr
@@ -1551,7 +1551,7 @@ simple_tactic: [
 | "subst" LIST1 hyp
 | "subst"
 | "simple" "subst"
-| "evar" test_lpar_id_colon "(" ident ":" lconstr ")"
+| "evar" test_lpar_id_colon "(" ident ":" term200 ")"
 | "evar" constr
 | "instantiate" "(" ident ":=" lglob ")"
 | "instantiate" "(" integer ":=" lglob ")" hloc
@@ -1665,18 +1665,18 @@ simple_tactic: [
 | "eset" constr as_name clause_dft_concl
 | "remember" constr as_name eqn_ipat clause_dft_all
 | "eremember" constr as_name eqn_ipat clause_dft_all
-| "assert" test_lpar_id_coloneq "(" identref ":=" lconstr ")"
-| "eassert" test_lpar_id_coloneq "(" identref ":=" lconstr ")"
-| "assert" test_lpar_id_colon "(" identref ":" lconstr ")" by_tactic
-| "eassert" test_lpar_id_colon "(" identref ":" lconstr ")" by_tactic
-| "enough" test_lpar_id_colon "(" identref ":" lconstr ")" by_tactic
-| "eenough" test_lpar_id_colon "(" identref ":" lconstr ")" by_tactic
+| "assert" test_lpar_id_coloneq "(" identref ":=" term200 ")"
+| "eassert" test_lpar_id_coloneq "(" identref ":=" term200 ")"
+| "assert" test_lpar_id_colon "(" identref ":" term200 ")" by_tactic
+| "eassert" test_lpar_id_colon "(" identref ":" term200 ")" by_tactic
+| "enough" test_lpar_id_colon "(" identref ":" term200 ")" by_tactic
+| "eenough" test_lpar_id_colon "(" identref ":" term200 ")" by_tactic
 | "assert" constr as_ipat by_tactic
 | "eassert" constr as_ipat by_tactic
-| "pose" "proof" test_lpar_id_coloneq "(" identref ":=" lconstr ")"
-| "epose" "proof" test_lpar_id_coloneq "(" identref ":=" lconstr ")"
-| "pose" "proof" lconstr as_ipat
-| "epose" "proof" lconstr as_ipat
+| "pose" "proof" test_lpar_id_coloneq "(" identref ":=" term200 ")"
+| "epose" "proof" test_lpar_id_coloneq "(" identref ":=" term200 ")"
+| "pose" "proof" term200 as_ipat
+| "epose" "proof" term200 as_ipat
 | "enough" constr as_ipat by_tactic
 | "eenough" constr as_ipat by_tactic
 | "generalize" constr
@@ -1817,11 +1817,15 @@ glob: [
 ]
 
 EXTRAARGS_lconstr: [
-| l_constr
+| _term
+]
+
+term: [
+| _term
 ]
 
 lglob: [
-| EXTRAARGS_lconstr
+| term200
 ]
 
 casted_constr: [
@@ -2027,7 +2031,7 @@ fresh_id: [
 
 constr_eval: [
 | "eval" red_expr "in" Constr.constr
-| "context" identref "[" Constr.lconstr "]"
+| "context" identref "[" term200 "]"
 | "type" "of" Constr.constr
 ]
 
@@ -2184,7 +2188,7 @@ withtac: [
 ]
 
 Constr.closed_binder: [
-| "(" Prim.name ":" Constr.lconstr "|" Constr.lconstr ")"
+| "(" Prim.name ":" Constr.term "|" Constr.term ")"
 ]
 
 glob_constr_with_bindings: [
@@ -2334,8 +2338,8 @@ simple_intropattern_closed: [
 ]
 
 simple_binding: [
-| "(" ident ":=" lconstr ")"
-| "(" natural ":=" lconstr ")"
+| "(" ident ":=" term200 ")"
+| "(" natural ":=" term200 ")"
 ]
 
 bindings: [
@@ -2446,11 +2450,11 @@ orient_rw: [
 
 simple_binder: [
 | name
-| "(" LIST1 name ":" lconstr ")"
+| "(" LIST1 name ":" term200 ")"
 ]
 
 fixdecl: [
-| "(" ident LIST0 simple_binder struct_annot ":" lconstr ")"
+| "(" ident LIST0 simple_binder struct_annot ":" term200 ")"
 ]
 
 struct_annot: [
@@ -2459,11 +2463,11 @@ struct_annot: [
 ]
 
 cofixdecl: [
-| "(" ident LIST0 simple_binder ":" lconstr ")"
+| "(" ident LIST0 simple_binder ":" term200 ")"
 ]
 
 bindings_with_parameters: [
-| check_for_coloneq "(" ident LIST0 simple_binder ":=" lconstr ")"
+| check_for_coloneq "(" ident LIST0 simple_binder ":=" term200 ")"
 ]
 
 eliminator: [
@@ -2651,8 +2655,8 @@ G_LTAC2_tactic_atom: [
 | "@" Prim.ident      (* Ltac2 plugin *)
 | "&" lident      (* Ltac2 plugin *)
 | "'" Constr.constr      (* Ltac2 plugin *)
-| "constr" ":" "(" Constr.lconstr ")"      (* Ltac2 plugin *)
-| "open_constr" ":" "(" Constr.lconstr ")"      (* Ltac2 plugin *)
+| "constr" ":" "(" Constr.term ")"      (* Ltac2 plugin *)
+| "open_constr" ":" "(" Constr.term ")"      (* Ltac2 plugin *)
 | "ident" ":" "(" lident ")"      (* Ltac2 plugin *)
 | "pattern" ":" "(" Constr.cpattern ")"      (* Ltac2 plugin *)
 | "reference" ":" "(" globref ")"      (* Ltac2 plugin *)
@@ -2842,7 +2846,7 @@ qhyp: [
 ]
 
 G_LTAC2_simple_binding: [
-| "(" qhyp ":=" Constr.lconstr ")"      (* Ltac2 plugin *)
+| "(" qhyp ":=" Constr.term ")"      (* Ltac2 plugin *)
 ]
 
 G_LTAC2_bindings: [
@@ -3149,7 +3153,7 @@ G_LTAC2_as_name: [
 ]
 
 pose: [
-| test_lpar_id_coloneq "(" ident_or_anti ":=" Constr.lconstr ")"      (* Ltac2 plugin *)
+| test_lpar_id_coloneq "(" ident_or_anti ":=" Constr.term ")"      (* Ltac2 plugin *)
 | Constr.constr G_LTAC2_as_name      (* Ltac2 plugin *)
 ]
 
@@ -3168,8 +3172,8 @@ G_LTAC2_by_tactic: [
 ]
 
 assertion: [
-| test_lpar_id_coloneq "(" ident_or_anti ":=" Constr.lconstr ")"      (* Ltac2 plugin *)
-| test_lpar_id_colon "(" ident_or_anti ":" Constr.lconstr ")" G_LTAC2_by_tactic      (* Ltac2 plugin *)
+| test_lpar_id_coloneq "(" ident_or_anti ":=" Constr.term ")"      (* Ltac2 plugin *)
+| test_lpar_id_colon "(" ident_or_anti ":" Constr.term ")" G_LTAC2_by_tactic      (* Ltac2 plugin *)
 | Constr.constr G_LTAC2_as_ipat G_LTAC2_by_tactic      (* Ltac2 plugin *)
 ]
 

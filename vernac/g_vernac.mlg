@@ -201,9 +201,9 @@ GRAMMAR EXTEND Gram
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = lconstr;
+    [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = term LEVEL "200";
         l = LIST0
-          [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
+          [ "with"; id = ident_decl; bl = binders; ":"; c = term LEVEL "200" ->
           { (id,(bl,c)) } ] ->
           { VernacStartTheoremProof (thm, (id,(bl,c))::l) }
       | stre = assumption_token; nl = inline; bl = assum_list ->
@@ -234,7 +234,7 @@ GRAMMAR EXTEND Gram
           { VernacRegister(g, RegisterCoqlib quid) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
-      | IDENT "Primitive"; id = ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
+      | IDENT "Primitive"; id = ident_decl; typopt = OPT [ ":"; typ = term LEVEL "200" -> { typ } ]; ":="; r = register_token ->
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
@@ -308,13 +308,13 @@ GRAMMAR EXTEND Gram
   ;
   (* Simple definitions *)
   def_body:
-    [ [ bl = binders; ":="; red = reduce; c = lconstr ->
+    [ [ bl = binders; ":="; red = reduce; c = term LEVEL "200" ->
         { match c.CAst.v with
           | CCast(c, Glob_term.CastConv t) -> DefineBody (bl, red, c, Some t)
           | _ -> DefineBody (bl, red, c, None) }
-    | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
+    | bl = binders; ":"; t = term LEVEL "200"; ":="; red = reduce; c = term LEVEL "200" ->
         { DefineBody (bl, red, c, Some t) }
-    | bl = binders; ":"; t = lconstr ->
+    | bl = binders; ":"; t = term LEVEL "200" ->
         { ProveBody (bl, t) } ] ]
   ;
   reduce:
@@ -345,7 +345,7 @@ GRAMMAR EXTEND Gram
   inductive_definition:
     [ [ oc = opt_coercion; id = ident_decl; indpar = binders;
         extrapar = OPT [ "|"; p = binders -> { p } ];
-        c = OPT [ ":"; c = lconstr -> { c } ];
+        c = OPT [ ":"; c = term LEVEL "200" -> { c } ];
         lc=opt_constructors_or_fields; ntn = decl_notations ->
            { (((oc,id),(indpar,extrapar),c,lc),ntn) } ] ]
   ;
@@ -373,14 +373,14 @@ GRAMMAR EXTEND Gram
     [ [ id_decl = ident_decl;
         bl = binders_fixannot;
         rtype = type_cstr;
-        body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notations ->
+        body_def = OPT [":="; def = term LEVEL "200" -> { def } ]; notations = decl_notations ->
           { let binders, rec_order = bl in
             {fname = fst id_decl; univs = snd id_decl; rec_order; binders; rtype; body_def; notations}
           } ] ]
   ;
   cofix_definition:
     [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
-        body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notations ->
+        body_def = OPT [":="; def = term LEVEL "200" -> { def }]; notations = decl_notations ->
         { {fname = fst id_decl; univs = snd id_decl; rec_order = (); binders; rtype; body_def; notations}
         } ]]
   ;
@@ -429,11 +429,11 @@ GRAMMAR EXTEND Gram
   ;
   field_body:
     [ [ l = binders; oc = of_type;
-         t = lconstr -> { fun id -> (oc,AssumExpr (id,l,t)) }
+         t = term LEVEL "200" -> { fun id -> (oc,AssumExpr (id,l,t)) }
       | l = binders; oc = of_type;
-         t = lconstr; ":="; b = lconstr -> { fun id ->
+         t = term LEVEL "200"; ":="; b = term LEVEL "200" -> { fun id ->
            (oc,DefExpr (id,l,b,Some t)) }
-      | l = binders; ":="; b = lconstr -> { fun id ->
+      | l = binders; ":="; b = term LEVEL "200" -> { fun id ->
          match b.CAst.v with
          | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
              (NoInstance,DefExpr(id,l,b',Some t))
@@ -451,13 +451,13 @@ GRAMMAR EXTEND Gram
     [ [ "("; a = assumpt; ")" -> { a } ] ]
   ;
   assumpt:
-    [ [ idl = LIST1 ident_decl; oc = of_type; c = lconstr ->
+    [ [ idl = LIST1 ident_decl; oc = of_type; c = term LEVEL "200" ->
         { (oc <> NoInstance,(idl,c)) } ] ]
   ;
 
   constructor_type:
     [[ l = binders;
-      t= [ coe = of_type; c = lconstr ->
+      t= [ coe = of_type; c = term LEVEL "200" ->
                     { fun l id -> (coe <> NoInstance,(id,mkProdCN ~loc l c)) }
             |  ->
                  { fun l id -> (false,(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
@@ -601,7 +601,7 @@ GRAMMAR EXTEND Gram
     [ [ qid = qualid -> { CAst.make ~loc @@ CMident qid } | "("; me = module_expr; ")" -> { me } ] ]
   ;
   with_declaration:
-    [ [ "Definition"; fqid = fullyqualid; udecl = OPT univ_decl; ":="; c = Constr.lconstr ->
+    [ [ "Definition"; fqid = fullyqualid; udecl = OPT univ_decl; ":="; c = term LEVEL "200" ->
           { CWith_Definition (fqid,udecl,c) }
       | IDENT "Module"; fqid = fullyqualid; ":="; qid = qualid ->
           { CWith_Module (fqid,qid) }
@@ -690,7 +690,7 @@ GRAMMAR EXTEND Gram
          t = term LEVEL "200";
          info = hint_info ;
          props = [ ":="; "{"; r = record_declaration; "}" -> { Some (true,r) } |
-             ":="; c = lconstr -> { Some (false,c) } | -> { None } ] ->
+             ":="; c = term LEVEL "200" -> { Some (false,c) } | -> { None } ] ->
            { VernacInstance (fst namesup,snd namesup,t,props,info) }
 
       | IDENT "Existing"; IDENT "Instance"; id = global;
@@ -817,7 +817,7 @@ GRAMMAR EXTEND Gram
     [ [ "("; a = simple_reserv; ")" -> { a } ] ]
   ;
   simple_reserv:
-    [ [ idl = LIST1 identref; ":"; c = lconstr -> { (idl,c) } ] ]
+    [ [ idl = LIST1 identref; ":"; c = term LEVEL "200" -> { (idl,c) } ] ]
   ;
 
 END
@@ -868,7 +868,7 @@ GRAMMAR EXTEND Gram
           { VernacRemoveLoadPath dir }
 
       (* Type-Checking *)
-      | "Type"; c = lconstr -> { VernacGlobalCheck c }
+      | "Type"; c = term LEVEL "200" -> { VernacGlobalCheck c }
 
       (* Printing (careful factorization of entries) *)
       | IDENT "Print"; p = printable -> { VernacPrint p }
@@ -913,11 +913,11 @@ GRAMMAR EXTEND Gram
           { VernacRemoveOption ([table], v) } ]]
   ;
   query_command: (* TODO: rapprocher Eval et Check *)
-    [ [ IDENT "Eval"; r = red_expr; "in"; c = lconstr; "." ->
+    [ [ IDENT "Eval"; r = red_expr; "in"; c = term LEVEL "200"; "." ->
           { fun g -> VernacCheckMayEval (Some r, g, c) }
-      | IDENT "Compute"; c = lconstr; "." ->
+      | IDENT "Compute"; c = term LEVEL "200"; "." ->
           { fun g -> VernacCheckMayEval (Some (Genredexpr.CbvVm None), g, c) }
-      | IDENT "Check"; c = lconstr; "." ->
+      | IDENT "Check"; c = term LEVEL "200"; "." ->
          { fun g -> VernacCheckMayEval (None, g, c) }
       (* Searching the environment *)
       | IDENT "About"; qid = smart_global; l = OPT univ_name_list; "." ->

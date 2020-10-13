@@ -37,15 +37,15 @@ ARGUMENT EXTEND rpattern
   INTERPRETED BY { interp_rpattern }
   GLOBALIZED BY { glob_rpattern }
   SUBSTITUTED BY { subst_rpattern }
-  | [ lconstr(c) ] -> { mk_rpattern (T (mk_lterm c None)) }
-  | [ "in" lconstr(c) ] -> { mk_rpattern (In_T (mk_lterm c None)) }
-  | [ lconstr(x) "in" lconstr(c) ] ->
+  | [ term(c) ] -> { mk_rpattern (T (mk_lterm c None)) }
+  | [ "in" term(c) ] -> { mk_rpattern (In_T (mk_lterm c None)) }
+  | [ term(x) "in" term(c) ] ->
     { mk_rpattern (X_In_T (mk_lterm x None, mk_lterm c None)) }
-  | [ "in" lconstr(x) "in" lconstr(c) ] ->
+  | [ "in" term(x) "in" term(c) ] ->
     { mk_rpattern (In_X_In_T (mk_lterm x None, mk_lterm c None)) }
-  | [ lconstr(e) "in" lconstr(x) "in" lconstr(c) ] ->
+  | [ term(e) "in" term(x) "in" term(c) ] ->
     { mk_rpattern (E_In_X_In_T (mk_lterm e None, mk_lterm x None, mk_lterm c None)) }
-  | [ lconstr(e) "as" lconstr(x) "in" lconstr(c) ] ->
+  | [ term(e) "as" term(x) "in" term(c) ] ->
     { mk_rpattern (E_As_X_In_T (mk_lterm e None, mk_lterm x None, mk_lterm c None)) }
 END
 
@@ -90,12 +90,12 @@ ARGUMENT EXTEND lcpattern
      GLOBALIZED BY { glob_cpattern } SUBSTITUTED BY { subst_ssrterm }
      RAW_PRINTED BY { pr_ssrterm }
      GLOB_PRINTED BY { pr_ssrterm }
-| [ "Qed" lconstr(c) ] -> { mk_lterm c None }
+| [ "Qed" term(c) ] -> { mk_lterm c None }
 END
 
 GRAMMAR EXTEND Gram
   GLOBAL: lcpattern;
-  lcpattern: [[ k = ssrtermkind; c = lconstr -> {
+  lcpattern: [[ k = ssrtermkind; c = term LEVEL "200" -> {
     let pattern = mk_term k c None in
     if loc_of_cpattern pattern <> Some loc && k = '('
     then mk_term 'x' c None

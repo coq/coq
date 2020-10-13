@@ -97,7 +97,7 @@ let functional_induction b c x pat =
 }
 
 TACTIC EXTEND newfunind
-| ["functional" "induction" lconstr(c) fun_ind_using(princl) with_names(pat)] ->
+| ["functional" "induction" term(c) fun_ind_using(princl) with_names(pat)] ->
    {
      (Extratactics.onSomeWithHoles
           (fun x -> functional_induction true c x pat) princl)

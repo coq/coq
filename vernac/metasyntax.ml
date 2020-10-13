@@ -64,11 +64,9 @@ let pr_grammar = function
   | "constr" | "term" | "binder_constr" ->
       str "Entry constr is" ++ fnl () ++
       pr_entry Pcoq.Constr.constr ++
-      str "and lconstr is" ++ fnl () ++
-      pr_entry Pcoq.Constr.lconstr ++
-      str "where binder_constr is" ++ fnl () ++
+      str "Entry binder_constr is" ++ fnl () ++
       pr_entry Pcoq.Constr.binder_constr ++
-      str "and term is" ++ fnl () ++
+      str "Entry term is" ++ fnl () ++
       pr_entry Pcoq.Constr.term
   | "pattern" ->
       pr_entry Pcoq.Constr.pattern

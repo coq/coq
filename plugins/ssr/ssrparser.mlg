@@ -533,7 +533,7 @@ ARGUMENT EXTEND ast_closure_lterm
      SUBSTITUTED BY { subst_ast_closure_term }
      RAW_PRINTED BY { pp_ast_closure_term }
      GLOB_PRINTED BY { pp_ast_closure_term }
-  | [ term_annotation(a) lconstr(c) ] -> { mk_ast_closure_term a c }
+  | [ term_annotation(a) term(c) ] -> { mk_ast_closure_term a c }
 END
 
 (* Old Views *)
@@ -1319,18 +1319,18 @@ ARGUMENT EXTEND ssrbinder TYPED AS (ssrfwdfmt * constr) PRINTED BY { pr_ssrbinde
    { let { CAst.loc=xloc } as x = bvar_lname bv in
      (FwdPose, [BFvar]),
      CAst.make ~loc @@ CLambdaN ([CLocalAssum([x],Default Glob_term.Explicit,mkCHole xloc)],mkCHole (Some loc)) }
- | [ "(" ssrbvar(bv) ":" lconstr(t) ")" ] ->
+ | [ "(" ssrbvar(bv) ":" term(t) ")" ] ->
    { let x = bvar_lname bv in
      (FwdPose, [BFdecl 1]),
      CAst.make ~loc @@ CLambdaN ([CLocalAssum([x], Default Glob_term.Explicit, t)], mkCHole (Some loc)) }
- | [ "(" ssrbvar(bv) ne_ssrbvar_list(bvs) ":" lconstr(t) ")" ] ->
+ | [ "(" ssrbvar(bv) ne_ssrbvar_list(bvs) ":" term(t) ")" ] ->
    { let xs = List.map bvar_lname (bv :: bvs) in
      let n = List.length xs in
      (FwdPose, [BFdecl n]),
      CAst.make ~loc @@ CLambdaN ([CLocalAssum (xs, Default Glob_term.Explicit, t)], mkCHole (Some loc)) }
- | [ "(" ssrbvar(id) ":" lconstr(t) ":=" lconstr(v) ")" ] ->
+ | [ "(" ssrbvar(id) ":" term(t) ":=" term(v) ")" ] ->
    { (FwdPose,[BFdef]), CAst.make ~loc @@ CLetIn (bvar_lname id, v, Some t, mkCHole (Some loc)) }
- | [ "(" ssrbvar(id) ":=" lconstr(v) ")" ] ->
+ | [ "(" ssrbvar(id) ":=" term(v) ")" ] ->
    { (FwdPose,[BFdef]), CAst.make ~loc @@ CLetIn (bvar_lname id, v, None, mkCHole (Some loc)) }
      END
 
@@ -2186,7 +2186,7 @@ TACTIC EXTEND ssrexact
      tclBY (inner_ssrapplytac views gens_clr ist) }
 | [ "exact" ] -> {
      Tacticals.New.tclORELSE (donetac ~-1) (tclBY apply_top_tac) }
-| [ "exact" "<:" lconstr(pf) ] -> { vmexacttac pf }
+| [ "exact" "<:" term(pf) ] -> { vmexacttac pf }
 END
 
 (** The "congr" tactic *)
