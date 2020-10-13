@@ -229,6 +229,6 @@ let uses_parser : string key_parser = fun orig args ->
   assert_once ~name:"using" orig;
   match args with
   | VernacFlagLeaf str -> str
-  |  _ -> CErrors.user_err (Pp.str "Ill formed uses attribute")
+  |  _ -> CErrors.user_err (Pp.str "Ill formed \"using\" attribute")
 
 let using = attribute_of_list ["using",uses_parser]

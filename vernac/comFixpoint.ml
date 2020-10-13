@@ -263,7 +263,8 @@ let build_recthms ~indexes ?using fixnames fixtypes fiximps =
           let env = Global.env() in
           let sigma = Evd.from_env env in
           let l = Proof_using.process_expr env sigma expr terms in
-          Names.Id.Set.(List.fold_right add l empty)) in
+          Names.Id.Set.(List.fold_right add l empty))
+        in
         let args = List.map Context.Rel.Declaration.get_name ctx in
         Declare.CInfo.make ~name ~typ ~args ~impargs ?using ()
       ) fixnames fixtypes fiximps

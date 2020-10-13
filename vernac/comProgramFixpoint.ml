@@ -262,7 +262,8 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?using r measure notat
   let using = using |> Option.map (fun expr ->
     let terms = List.map EConstr.of_constr [evars_def; evars_typ] in
     let l = Proof_using.process_expr env sigma expr terms in
-    Names.Id.Set.(List.fold_right add l empty)) in
+    Names.Id.Set.(List.fold_right add l empty))
+  in
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using () in
   let info = Declare.Info.make ~udecl ~poly ~hook () in
@@ -294,7 +295,8 @@ let do_program_recursive ~pm ~scope ~poly ?using fixkind fixl =
     let using = using |> Option.map (fun expr ->
       let terms = [def; typ] in
       let l = Proof_using.process_expr env evd expr terms in
-      Names.Id.Set.(List.fold_right add l empty)) in
+      Names.Id.Set.(List.fold_right add l empty))
+    in
     let def = nf_evar evd (Termops.it_mkNamedLambda_or_LetIn def rec_sign) in
     let typ = nf_evar evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign) in
     let evm = collect_evars_of_term evd def typ in

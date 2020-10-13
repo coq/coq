@@ -121,7 +121,8 @@ let do_definition ?hook ~name ~scope ~poly ~kind ?using udecl bl red_option c ct
   let using = using |> Option.map (fun expr ->
     let terms = body :: match types with Some x -> [x] | None -> [] in
     let l = Proof_using.process_expr (Global.env()) evd expr terms in
-    Names.Id.Set.(List.fold_right add l empty)) in
+    Names.Id.Set.(List.fold_right add l empty))
+  in
   let kind = Decls.IsDefinition kind in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ?using () in
   let info = Declare.Info.make ~scope ~kind ?hook ~udecl ~poly () in
@@ -140,7 +141,8 @@ let do_definition_program ?hook ~pm ~name ~scope ~poly ~kind ?using udecl bl red
   let using = using |> Option.map (fun expr ->
     let terms = body :: match types with Some x -> [x] | None -> [] in
     let l = Proof_using.process_expr (Global.env()) evd expr terms in
-    Names.Id.Set.(List.fold_right add l empty)) in
+    Names.Id.Set.(List.fold_right add l empty))
+  in
   let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let pm, _ =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in

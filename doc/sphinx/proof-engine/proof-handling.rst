@@ -199,6 +199,32 @@ list of assertion commands is given in :ref:`Assertions`. The command
 
    .. seealso:: :ref:`tactics-implicit-automation`
 
+.. attr:: using
+
+   This attribute can be applied to the :cmd:`Definition`, :cmd:`Example`,
+   :cmd:`Fixpoint` and :cmd:`CoFixpoint` commands as well as to :cmd:`Lemma` and
+   its variants.  It takes
+   a :n:`@section_var_expr`, in quotes, as its value. This is equivalent to
+   specifying the same :n:`@section_var_expr` in
+   :cmd:`Proof using`.
+
+   .. example::
+
+      .. coqtop:: all
+
+         Section Test.
+         Variable n : nat.
+         Hypothesis Hn : n <> 0.
+
+         #[using="Hn"]
+         Lemma example : 0 < n.
+
+      .. coqtop:: in
+
+         Abort.
+         End Test.
+
+
 Proof using options
 ```````````````````
 
