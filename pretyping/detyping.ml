@@ -715,9 +715,9 @@ and detype_r d flags avoid env sigma t =
         (* Meta in constr are not user-parsable and are mapped to Evar *)
         if n = Constr_matching.special_meta then
           (* Using a dash to be unparsable *)
-          GEvar (Id.of_string_soft "CONTEXT-HOLE", [])
+          GEvar (CAst.make @@ Id.of_string_soft "CONTEXT-HOLE", [])
         else
-          GEvar (Id.of_string_soft ("M" ^ string_of_int n), [])
+          GEvar (CAst.make @@ Id.of_string_soft ("M" ^ string_of_int n), [])
     | Var id ->
         (* Discriminate between section variable and non-section variable *)
         (try let _ = Global.lookup_named id in GRef (GlobRef.VarRef id, None)
@@ -788,12 +788,12 @@ and detype_r d flags avoid env sigma t =
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
           let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel n -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
           let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
-          id,l
+          id,List.map (fun (id,c) -> (CAst.make id,c)) l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)),
-          (List.map (fun c -> (Id.of_string "__",c)) cl)
+          (List.map (fun c -> (CAst.make @@ Id.of_string "__",c)) cl)
       in
-        GEvar (id,
+        GEvar (CAst.make id,
                List.map (on_snd (detype d flags avoid env sigma)) l)
     | Ind (ind_sp,u) ->
         GRef (GlobRef.IndRef ind_sp, detype_instance sigma u)

@@ -75,7 +75,7 @@ type 'a glob_constr_r =
   | GVar of Id.t
       (** An identifier that cannot be regarded as "GRef".
           Bound variables are typically represented this way. *)
-  | GEvar   of existential_name * (Id.t * 'a glob_constr_g) list
+  | GEvar   of existential_name CAst.t * (lident * 'a glob_constr_g) list
   | GPatVar of Evar_kinds.matching_var_kind (** Used for patterns only *)
   | GApp    of 'a glob_constr_g * 'a glob_constr_g list
   | GLambda of Name.t * binding_kind *  'a glob_constr_g * 'a glob_constr_g

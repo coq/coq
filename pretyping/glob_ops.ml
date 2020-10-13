@@ -128,7 +128,7 @@ let fix_kind_eq k1 k2 = match k1, k2 with
   | (GFix _ | GCoFix _), _ -> false
 
 let instance_eq f (x1,c1) (x2,c2) =
-  Id.equal x1 x2 && f c1 c2
+  Id.equal x1.CAst.v x2.CAst.v && f c1 c2
 
 let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GRef (gr1, u1), GRef (gr2, u2) ->
@@ -136,7 +136,7 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     Option.equal (List.equal glob_level_eq) u1 u2
   | GVar id1, GVar id2 -> Id.equal id1 id2
   | GEvar (id1, arg1), GEvar (id2, arg2) ->
-    Id.equal id1 id2 && List.equal (instance_eq f) arg1 arg2
+    Id.equal id1.CAst.v id2.CAst.v && List.equal (instance_eq f) arg1 arg2
   | GPatVar k1, GPatVar k2 -> matching_var_kind_eq k1 k2
   | GApp (f1, arg1), GApp (f2, arg2) ->
     f f1 f2 && List.equal f arg1 arg2

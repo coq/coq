@@ -154,7 +154,7 @@ GRAMMAR EXTEND Gram
     | "10" LEFTA
       [ f = operconstr; args = LIST1 appl_arg -> { CAst.make ~loc @@ CApp((None,f),args) }
       | "@"; f = global; i = univ_instance; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((None,f,i),args) }
-      | "@"; lid = pattern_identref; args = LIST1 identref ->
+      | "@"; lid = pattern_ident; args = LIST1 identref ->
         { let { CAst.loc = locid; v = id } = lid in
           let args = List.map (fun x -> CAst.make @@ CRef (qualid_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in
           CAst.make ~loc @@ CApp((None, CAst.make ?loc:locid @@ CPatVar id),args) } ]
@@ -252,7 +252,7 @@ GRAMMAR EXTEND Gram
       | "cofix"; c = cofix_decls -> { let (id,dcls) = c in CAst.make ~loc @@ CCoFix (id,dcls) } ] ]
   ;
   appl_arg:
-    [ [ test_lpar_id_coloneq; "("; id = ident; ":="; c = lconstr; ")" -> { (c,Some (CAst.make ~loc @@ ExplByName id)) }
+    [ [ test_lpar_id_coloneq; "("; id = identref; ":="; c = lconstr; ")" -> { (c,Some (CAst.make ?loc:id.CAst.loc @@ ExplByName id.CAst.v)) }
       | c=operconstr LEVEL "9" -> { (c,None) } ] ]
   ;
   atomic_constr:
@@ -261,12 +261,12 @@ GRAMMAR EXTEND Gram
       | n = NUMBER-> { CAst.make ~loc @@ CPrim (Numeral (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPrim (String s) }
       | "_"      -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) }
-      | "?"; "["; id = ident; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id, None) }
-      | "?"; "["; id = pattern_ident; "]"  -> { CAst.make ~loc @@  CHole (None, IntroFresh id, None) }
+      | "?"; "["; id = identref; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id.CAst.v, None) }
+      | "?"; "["; id = pattern_ident; "]"  -> { CAst.make ~loc @@  CHole (None, IntroFresh id.CAst.v, None) }
       | id = pattern_ident; inst = evar_instance -> { CAst.make ~loc @@ CEvar(id,inst) } ] ]
   ;
   inst:
-    [ [ id = ident; ":="; c = lconstr -> { (id,c) } ] ]
+    [ [ id = identref; ":="; c = lconstr -> { (id,c) } ] ]
   ;
   evar_instance:
     [ [ "@{"; l = LIST1 inst SEP ";"; "}" -> { l }

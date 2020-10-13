@@ -148,7 +148,7 @@ type 'a pretype_fun = ?loc:Loc.t -> program_mode:bool -> poly:bool -> bool -> Ev
 type pretyper = {
   pretype_ref : pretyper -> GlobRef.t * glob_level list option -> unsafe_judgment pretype_fun;
   pretype_var : pretyper -> Id.t -> unsafe_judgment pretype_fun;
-  pretype_evar : pretyper -> existential_name * (Id.t * glob_constr) list -> unsafe_judgment pretype_fun;
+  pretype_evar : pretyper -> existential_name CAst.t * (lident * glob_constr) list -> unsafe_judgment pretype_fun;
   pretype_patvar : pretyper -> Evar_kinds.matching_var_kind -> unsafe_judgment pretype_fun;
   pretype_app : pretyper -> glob_constr * glob_constr list -> unsafe_judgment pretype_fun;
   pretype_lambda : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;

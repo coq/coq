@@ -514,12 +514,12 @@ let match_goals ot nt =
     | CHole (k,naming,solve), CHole (k2,naming2,solve2) -> ()
     | CPatVar _, CPatVar _ -> ()
     | CEvar (n,l), CEvar (n2,l2) ->
-      let oevar = if ogname = "" then Id.to_string n else ogname in
-      nevar_to_oevar := CString.Map.add (Id.to_string n2) oevar !nevar_to_oevar;
+      let oevar = if ogname = "" then Id.to_string n.CAst.v else ogname in
+      nevar_to_oevar := CString.Map.add (Id.to_string n2.CAst.v) oevar !nevar_to_oevar;
       iter2  (fun x x2 -> let (_, g) = x and (_, g2) = x2 in constr_expr ogname g g2)  l l2
     | CEvar (n,l), nt' ->
       (* pass down the old goal evar name *)
-      match_goals_r (Id.to_string n) nt' nt'
+      match_goals_r (Id.to_string n.CAst.v) nt' nt'
     | CSort s, CSort s2 -> ()
     | CCast (c,c'), CCast (c2,c'2) ->
       constr_expr ogname c c2;

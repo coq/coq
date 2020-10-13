@@ -227,11 +227,11 @@ let tag_var = tag Tag.variable
 
   let pr_evar pr id l =
     hov 0 (
-      tag_evar (str "?" ++ pr_id id) ++
+      tag_evar (str "?" ++ pr_lident id) ++
         (match l with
           | [] -> mt()
           | l ->
-            let f (id,c) = pr_id id ++ str ":=" ++ pr ltop c in
+            let f (id,c) = pr_lident id ++ str ":=" ++ pr ltop c in
             str"@{" ++ hov 0 (prlist_with_sep pr_semicolon f (List.rev l)) ++ str"}"))
 
   let las = lapp

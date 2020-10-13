@@ -156,7 +156,7 @@ let rec constr_expr_eq e1 e2 =
     | CPatVar i1, CPatVar i2 ->
       Id.equal i1 i2
     | CEvar (id1, c1), CEvar (id2, c2) ->
-      Id.equal id1 id2 && List.equal instance_eq c1 c2
+      Id.equal id1.CAst.v id2.CAst.v && List.equal instance_eq c1 c2
     | CSort s1, CSort s2 ->
       Glob_ops.glob_sort_eq s1 s2
     | CCast(t1,c1), CCast(t2,c2) ->
@@ -235,7 +235,7 @@ and constr_notation_substitution_eq (e1, el1, b1, bl1) (e2, el2, b2, bl2) =
   List.equal (List.equal local_binder_eq) bl1 bl2
 
 and instance_eq (x1,c1) (x2,c2) =
-  Id.equal x1 x2 && constr_expr_eq c1 c2
+  Id.equal x1.CAst.v x2.CAst.v && constr_expr_eq c1 c2
 
 and cast_expr_eq c1 c2 = match c1, c2 with
 | CastConv t1, CastConv t2
