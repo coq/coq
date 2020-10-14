@@ -186,9 +186,13 @@ let send_proofview uri doc : unit Lwt.t =
     in
     output_json @@ mk_notification ~event:"coqtop/updateProofview" ~params
 
+let update_view uri st =
+  send_highlights uri st >>= fun () ->
+  send_proofview uri st >>= fun () ->
+  publish_diagnostics uri st
+
 let textDocumentDidOpen params : unit Lwt.t =
   let open Yojson.Basic.Util in
-  let open Lwt.Infix in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let text = textDocument |> member "text" |> to_string in
@@ -197,8 +201,7 @@ let textDocumentDidOpen params : unit Lwt.t =
   Hashtbl.add doc_ids id uri;
   let st = DocumentManager.init (get_init_state ()) doc in
   Hashtbl.add states uri st;
-  send_highlights uri st >>= fun () ->
-  publish_diagnostics uri st
+  update_view uri st
 
 let textDocumentDidChange params : unit Lwt.t =
   let open Yojson.Basic.Util in
@@ -210,14 +213,13 @@ let textDocumentDidChange params : unit Lwt.t =
     let range = edit |> member "range" in
     let start = range |> member "start" |> parse_loc in
     let stop = range |> member "end" |> parse_loc in
-    DocumentManager.(Range.{ start; stop }, text)
+    Range.{ start; stop }, text
   in
   let textEdits = List.map read_edit contentChanges in
   let st = Hashtbl.find states uri in
   let st = DocumentManager.apply_text_edits st textEdits in
   Hashtbl.replace states uri st;
-  send_highlights uri st >>= fun () ->
-  publish_diagnostics uri st
+  update_view uri st
 
 let textDocumentDidSave params : unit Lwt.t =
   let open Yojson.Basic.Util in
@@ -226,13 +228,11 @@ let textDocumentDidSave params : unit Lwt.t =
   let st = Hashtbl.find states uri in
   let st = DocumentManager.validate_document st in
   Hashtbl.replace states uri st;
-  send_highlights uri st >>= fun () ->
-  publish_diagnostics uri st
+  update_view uri st
 
 let progress_hook uri () : unit Lwt.t =
-  let doc = Hashtbl.find states uri in
-  send_highlights uri doc >>= fun () ->
-  publish_diagnostics uri doc
+  let st = Hashtbl.find states uri in
+  update_view uri st
 
 let coqtopInterpretToPoint ~id params : (string * DocumentManager.events) Lwt.t =
   let open Yojson.Basic.Util in
@@ -243,8 +243,7 @@ let coqtopInterpretToPoint ~id params : (string * DocumentManager.events) Lwt.t 
   let progress_hook = progress_hook uri in
   DocumentManager.interpret_to_position ~progress_hook st loc >>= fun (st, events) ->
   Hashtbl.replace states uri st;
-  send_highlights uri st >>= fun () ->
-  publish_diagnostics uri st >>= fun () ->
+  update_view uri st >>= fun () ->
   Lwt.return (uri, events)
 
 let coqtopStepBackward ~id params : (string * DocumentManager.events) Lwt.t =
@@ -254,30 +253,25 @@ let coqtopStepBackward ~id params : (string * DocumentManager.events) Lwt.t =
   let st = Hashtbl.find states uri in
   DocumentManager.interpret_to_previous st >>= fun (st, events) ->
   Hashtbl.replace states uri st;
-  send_highlights uri st >>= fun () ->
-  publish_diagnostics uri st >>= fun () ->
+  update_view uri st >>= fun () ->
   Lwt.return (uri,events)
 
 let coqtopStepForward ~id params : (string * DocumentManager.events) Lwt.t =
   let open Yojson.Basic.Util in
-  let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   DocumentManager.interpret_to_next st >>= fun (st, events) ->
   Hashtbl.replace states uri st;
-  send_highlights uri st >>= fun () ->
-  publish_diagnostics uri st >>= fun () ->
+  update_view uri st >>= fun () ->
   Lwt.return (uri,events)
 
 let coqtopResetCoq ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
-  let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let st = DocumentManager.reset (get_init_state ()) st in
   Hashtbl.replace states uri st;
-  send_highlights uri st >>= fun () ->
-  publish_diagnostics uri st
+  update_view uri st
 
 let coqtopInterpretToEnd ~id params : (string * DocumentManager.events) Lwt.t =
   let open Yojson.Basic.Util in
@@ -287,8 +281,7 @@ let coqtopInterpretToEnd ~id params : (string * DocumentManager.events) Lwt.t =
   let progress_hook = progress_hook uri in
   DocumentManager.interpret_to_end ~progress_hook st >>= fun (st, events) ->
   Hashtbl.replace states uri st;
-  send_highlights uri st >>= fun () ->
-  publish_diagnostics uri st >>= fun () ->
+  update_view uri st >>= fun () ->
   Lwt.return (uri,events)
 
 type lsp_event = Request of Yojson.Basic.t
@@ -349,9 +342,7 @@ let handle_event = function
         | None -> Lwt.return ()
         | Some st->
           Hashtbl.replace states uri st;
-          send_highlights uri st >>= fun () ->
-          send_proofview uri st >>= fun () ->
-          publish_diagnostics uri st
+          update_view uri st
       end >>= fun () ->
       inject_dm_events (uri, events)
     end

@@ -163,8 +163,14 @@ let interpret_to_end ?progress_hook state =
 let reset vernac_st state =
   init vernac_st state.document
 
+let retract state loc =
+  let observe_loc = Option.map (fun loc' -> min loc loc') state.observe_loc in
+  { state with observe_loc }
+
 let apply_text_edits state edits =
-  { state with document = apply_text_edits state.document edits }
+  let document = apply_text_edits state.document edits in
+  let state = { state with document } in
+  retract state (Document.parsed_loc document)
 
 let validate_document state =
   let parsing_state_hook = ExecutionManager.get_parsing_state_after state.execution_state in
@@ -210,7 +216,7 @@ let handle_event ev st =
       Lwt.return (None, inject_em_events events)
 
 let get_current_proof st =
-  match Option.bind st.observe_loc (Document.find_sentence st.document) with
+  match Option.bind st.observe_loc (Document.find_sentence_before st.document) with
   | None -> None
   | Some sentence ->
     let pos = Document.position_of_loc st.document sentence.stop in
