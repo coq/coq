@@ -128,7 +128,7 @@ type state = {
   of_sentence : ((execution_status Lwt.t * execution_status Lwt.u) * feedback_message list) SM.t;
 }
 
-type progress_hook = state option -> unit Lwt.t
+type progress_hook = unit -> unit Lwt.t
 
 let init_master vernac_state = {
   initial = vernac_state;
@@ -172,7 +172,7 @@ let prepare_task ~progress_hook doc st task : state * prepared_task =
   | Exec(id,ast) ->
      { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PExec(id,ast)
   | OpaqueProof (id,ids) ->
-     let remote_mapping = ProofWorker.empty_remote_mapping ~progress_hook:(fun () -> progress_hook None) in
+     let remote_mapping = ProofWorker.empty_remote_mapping ~progress_hook in
      let (st,remote_mapping), jobs = CList.fold_left_map (remotize doc) (st,remote_mapping) ids in
      { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PDelegate(id, remote_mapping, jobs)
   | _ -> CErrors.anomaly Pp.(str "task not supported yet")
@@ -219,8 +219,7 @@ and execute ~doc_id st (vs,events,interrupted) task =
     with Sys.Break ->
       Lwt.return (vs,events,true)
 
-let observe progress_hook doc id st : (state * events) Lwt.t =
-  log @@ "[M] Observe " ^ Stateid.to_string id;
+let build_tasks_for ~progress_hook doc st id =
   let rec build_tasks id tasks =
     begin match find_fulfilled_opt id st.of_sentence with
     | Some (Success (Some vs)) ->
@@ -243,17 +242,7 @@ let observe progress_hook doc id st : (state * events) Lwt.t =
     end
   in
   let vs, tasks = build_tasks id [] in
-  let st, tasks = CList.fold_left_map (prepare_task ~progress_hook doc) st tasks in
-  (* st is now final, we could return it, but we only implement asynchronous
-    fulfilling of delegated jobs *)
-  let progress_hook () = progress_hook (Some st) in
-  let execute_w_progress x t =
-    let doc_id = Document.id_of_doc doc in
-    execute ~doc_id st x t >>= fun x ->
-    progress_hook () >>= fun () ->
-    Lwt.return x in
-  Lwt_list.fold_left_s execute_w_progress (vs,[],false) tasks >>= fun (_,events,_) ->
-  Lwt.return (st,events)
+  vs, CList.fold_left_map (prepare_task ~progress_hook doc) st tasks
 
 (* If we don't work we have re-create a minimal state that is good enough to
    execute the sentences and send feedback. It is easier/faster than sending a
@@ -276,10 +265,10 @@ let errors st =
     | _ -> acc)
     [] @@ SM.bindings st.of_sentence
 
-let warning_of_feedback id (lvl,loc,msg) = (id,loc, Pp.string_of_ppcmds msg)
+let mk_feedback id (lvl,loc,msg) = (id,lvl,loc,Pp.string_of_ppcmds msg)
 
-let warnings st =
-  List.fold_left (fun acc (id, (_,l)) -> List.map (warning_of_feedback id) l @ acc) [] @@ SM.bindings st.of_sentence
+let feedback st =
+  List.fold_left (fun acc (id, (_,l)) -> List.map (mk_feedback id) l @ acc) [] @@ SM.bindings st.of_sentence
 
 let shift_locs st pos offset =
   (* FIXME shift loc in feedback *)
@@ -353,6 +342,7 @@ let get_proofview st id =
 
 let handle_feedback state_id contents st =
   match contents with
+  | Feedback.Message(Feedback.Info,_,_) -> st
   | Feedback.Message(lvl,loc,msg) ->
     begin match SM.find_opt state_id st.of_sentence with
     | None -> log @@ "Received feedback on non-existing state id " ^ Stateid.to_string state_id; st

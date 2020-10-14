@@ -21,21 +21,25 @@ type ast = Vernacexpr.vernac_control
 type state
 (** Execution state, includes the cache *)
 
-type progress_hook = state option -> unit Lwt.t
+type progress_hook = unit -> unit Lwt.t
 
 type event
 type events = event Lwt.t list
 
 val handle_event : event -> events Lwt.t
 
-val observe : progress_hook -> Document.document -> sentence_id -> state ->
-  (state * events) Lwt.t
+type prepared_task
+
+val build_tasks_for : progress_hook:progress_hook -> document -> state -> sentence_id -> Vernacstate.t * (state * prepared_task list)
+
 val query : sentence_id -> state -> ast -> state
 
 val invalidate : schedule -> sentence_id -> state -> state Lwt.t
 
+val execute : doc_id:Feedback.doc_id -> state -> Vernacstate.t * events * bool -> prepared_task -> (Vernacstate.t * event Lwt.t list * bool) Lwt.t
+
 val errors : state -> (sentence_id * Loc.t option * string) list
-val warnings : state -> (sentence_id * Loc.t option * string) list
+val feedback : state -> (sentence_id * Feedback.level * Loc.t option * string) list
 val shift_locs : state -> int -> int -> state
 val executed_ids : state -> sentence_id list
 val is_executed : state -> sentence_id -> bool

@@ -188,6 +188,7 @@ module ParsedDoc : sig
   val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Parser.t -> Scheduler.state -> t * Scheduler.state
   val remove_sentence : t -> sentence_id -> t
   val remove_sentences_after : t -> int -> t * Stateid.Set.t
+  val sentences : t -> sentence list
   val sentences_before : t -> int -> sentence list
   val sentences_after : t -> int -> sentence list
   val get_sentence : t -> sentence_id -> sentence option
@@ -295,6 +296,9 @@ end = struct
     let sentences_by_id = Stateid.Set.fold (fun id m -> log @@ "Remove sentence (after) " ^ Stateid.to_string id; SM.remove id m) removed parsed.sentences_by_id in
     (* TODO clean up the schedule and free cached states *)
     { parsed with sentences_by_id; sentences_by_end = before}, removed
+
+  let sentences parsed =
+    List.map snd @@ SM.bindings parsed.sentences_by_id
 
   let sentences_before parsed loc =
     let (before,ov,after) = LM.split loc parsed.sentences_by_end in
@@ -626,4 +630,5 @@ let end_loc doc = RawDoc.end_loc doc.raw_doc
 let range_of_id doc id = ParsedDoc.range_of_id doc.raw_doc doc.parsed_doc id
 let range_of_loc doc loc = RawDoc.range_of_loc doc.raw_doc loc
 let parse_errors doc = ParsedDoc.parse_errors doc.raw_doc doc.parsed_doc
+let sentences doc = ParsedDoc.sentences doc.parsed_doc
 let sentences_before doc loc = ParsedDoc.sentences_before doc.parsed_doc loc

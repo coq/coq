@@ -54,26 +54,28 @@ let empty_remote_mapping ~progress_hook = {
   progress_hook;
 }
 
+type event =
+ | WorkerStart : 'a remote_mapping * 'job * ('job -> unit Lwt.t) * string -> event
+ | WorkerDied
+ | WorkerProgress : link * 'a remote_mapping -> event
+ | WorkerEnd of (int * Unix.process_status)
+type events = event Lwt.t list
+
+let worker_progress link remote_mapping =
+  Lwt_io.read_value link.read_from >?= function
+    | Result.Error e ->
+      log @@ "[M] Worker died: " ^ Printexc.to_string e;
+      Lwt.return WorkerDied
+    | Result.Ok (i,v) ->
+      let resolver = M.find i remote_mapping.it in
+      log @@ "[M] Manager fulfilling " ^ Stateid.to_string i;
+      Lwt.wakeup_later resolver.on_master v;
+      Lwt.return @@ WorkerProgress(link,remote_mapping)
+
 (* Reads values from the worker and passes them to the resolvers in master *)
-let new_manager : 'a remote_mapping -> link -> unit = fun remote_mapping link ->
-  log @@ "[M] installing manager";
-  let rec main () =
-    Lwt_io.read_value link.read_from >?= function
-      | Result.Error e ->
-        log @@ "[M] Worker died: " ^ Printexc.to_string e;
-        Lwt.return ()
-      | Result.Ok (i,v) ->
-        let resolver = M.find i remote_mapping.it in
-        log @@ "[M] Manager fulfilling " ^ Stateid.to_string i;
-        Lwt.wakeup_later resolver.on_master v;
-        remote_mapping.progress_hook () >>= fun () ->
-        main ()
-  in
-    Lwt.async_exception_hook := (fun x ->
-      log @@ "[M] Manager terminated " ^ Printexc.to_string x); (* HACK *)
-    M.iter (fun _ { cancel } -> Lwt.on_cancel cancel (kill_link link)) remote_mapping.it;
-    Lwt.async @@ main
-;;
+let trap_cancel : 'a remote_mapping -> link -> unit = fun remote_mapping link ->
+  log @@ "[M] installing cancel trap";
+    M.iter (fun _ { cancel } -> Lwt.on_cancel cancel (kill_link link)) remote_mapping.it
 
 (* Reads values from the local premises and writes them to master *)
 let new_worker : 'a remote_mapping -> link -> unit = fun remote_mapping link ->
@@ -83,7 +85,7 @@ let new_worker : 'a remote_mapping -> link -> unit = fun remote_mapping link ->
     log @@ "[W] Worker terminated " ^ Printexc.to_string x); (* HACK *)
   M.iter (fun i { on_worker } ->
     Lwt.async @@ (fun () -> on_worker >>= fun v ->
-      Lwt_mutex.with_lock m (fun () ->
+      Lwt_mutex.with_lock m (fun () -> (* Mutex maybe not needed *)
         log @@ "[W] Remote fulfilling of " ^ Stateid.to_string i;
         Lwt_io.write_value link.write_to (i,v) >!= fun () ->
         Lwt_io.flush_all ())
@@ -103,29 +105,21 @@ let lwt_remotely_wait r id =
 
 type role = Master | Worker
 
-type event =
- | WorkerStart : 'a remote_mapping * Job.t * (Job.t -> unit Lwt.t) * string -> event
- | WorkerEnd of (int * Unix.process_status)
-type events = event Lwt.t list
-
-
 let pool = Lwt_condition.create ()
 let pool_occupants = ref 0
 let pool_size = Job.pool_size
 
-let wait_worker pid = [
+let wait_worker pid =
   Lwt_unix.wait () >>= fun x ->
   decr pool_occupants; Lwt_condition.signal pool ();
   log @@ "[T] vacation request ready";
   Lwt.return @@ WorkerEnd x
-]
 
-let wait_process proc = [
+let wait_process proc =
   proc#close >>= fun x ->
   decr pool_occupants; Lwt_condition.signal pool ();
   log @@ "[T] vacation request ready";
   Lwt.return @@ WorkerEnd (0,x)
-]
 
 let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mapping ->
   let open Lwt_unix in
@@ -159,8 +153,8 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
           let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input worker in
           let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output worker in
           let link = { write_to; read_from; pid = Some pid } in
-          new_manager remote_mapping link;
-          Lwt.return (Master, wait_worker pid)
+          trap_cancel remote_mapping link;
+          Lwt.return (Master, [worker_progress link remote_mapping; wait_worker pid])
 ;;
 
 let create_process_worker procname remote_mapping job =
@@ -184,12 +178,12 @@ let create_process_worker procname remote_mapping job =
       let read_from = Lwt_io.of_fd ~mode:Lwt_io.Input worker in
       let write_to = Lwt_io.of_fd ~mode:Lwt_io.Output worker in
       let link = { write_to; read_from; pid = Some proc#pid } in
-      new_manager remote_mapping link;
+      trap_cancel remote_mapping link;
       log @@ "[M] sending mapping";
       Lwt_io.write_value write_to (marshalable_remote_mapping remote_mapping) >!= fun () ->
       log @@ "[M] sending job";
       Lwt_io.write_value write_to job >!= fun () ->
-      Lwt.return (wait_process proc)
+      Lwt.return [worker_progress link remote_mapping; wait_process proc]
 
 let new_process_worker remote_mapping link =
   new_worker remote_mapping link
@@ -198,6 +192,11 @@ let handle_event = function
   | WorkerEnd (pid, _status) ->
       log @@ Printf.sprintf "[M] Worker %d went on holidays" pid;
       Lwt.return []
+  | WorkerDied ->
+      log @@ Printf.sprintf "[M] Worker died";
+      Lwt.return []
+  | WorkerProgress (link,remote_mapping) ->
+    Lwt.return [worker_progress link remote_mapping]
   | WorkerStart (mapping,job,action,procname) ->
       if Sys.os_type = "Unix" then
         fork_worker mapping >>= fun (role,events) ->
@@ -207,8 +206,7 @@ let handle_event = function
           action job >>= fun () ->
           log @@ "[W] Worker goes on holidays"; exit 0
       else
-        create_process_worker procname mapping job >>= fun events ->
-        Lwt.return events
+        create_process_worker procname mapping job
 
 let worker_available ~job ~fork_action = [
   begin

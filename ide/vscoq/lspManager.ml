@@ -53,7 +53,7 @@ let output_json obj : unit Lwt.t =
   let msg  = Yojson.Basic.pretty_to_string ~std:true obj in
   let size = String.length msg in
   let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
-  (*log @@ "replied: " ^ msg;*)
+  (* log @@ "sent: " ^ msg; *)
   Lwt_io.write Lwt_io.stdout s >!= fun () -> Lwt.return ()
 
 let mk_notification ~event ~params = `Assoc ["jsonrpc", `String "2.0"; "method", `String event; "params", params]
@@ -86,10 +86,20 @@ let mk_range Range.{ start; stop } =
   ]
 
 let publish_diagnostics uri doc : unit Lwt.t =
+  let mk_severity lvl =
+    let open Feedback in
+    `Int (match lvl with
+    | Error -> 1
+    | Warning -> 2
+    | Notice -> 3
+    | Info -> 3
+    | Debug -> 3
+    )
+  in
   let mk_diagnostic d =
     `Assoc [
       "range", mk_range d.range;
-      "severity", `Int (match d.severity with Error -> 1 | Warning -> 2);
+      "severity", mk_severity d.severity;
       "message", `String d.message;
     ]
   in
@@ -116,6 +126,65 @@ let send_highlights uri doc : unit Lwt.t =
   ]
   in
   output_json @@ mk_notification ~event:"coqtop/updateHighlights" ~params
+
+let mk_goal sigma g =
+  let env = Goal.V82.env sigma g in
+  let min_env = Environ.reset_context env in
+  let id = Goal.uid g in
+  let ccl =
+    pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
+  in
+  let mk_hyp d (env,l) =
+    let d' = CompactedDecl.to_named_context d in
+    let env' = List.fold_right Environ.push_named d' env in
+    let ids, body, typ = match d with
+    | CompactedDecl.LocalAssum (ids, typ) ->
+       ids, None, typ
+    | CompactedDecl.LocalDef (ids,c,typ) ->
+      ids, Some c, typ
+    in
+  let ids = List.map (fun id -> `String (Names.Id.to_string id.Context.binder_name)) ids in
+  let typ = pr_ltype_env env sigma typ in
+    let hyp = `Assoc ([
+      "identifiers", `List ids;
+      "type", `String (Pp.string_of_ppcmds typ);
+      "diff", `String "None";
+    ] @ Option.cata (fun body -> ["body", `String (Pp.string_of_ppcmds @@ pr_lconstr_env ~inctx:true env sigma body)]) [] body) in
+    (env', hyp :: l)
+  in
+  let (_env, hyps) =
+    Context.Compacted.fold mk_hyp
+      (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
+  `Assoc [
+    "id", `Int (int_of_string id);
+    "hypotheses", `List (List.rev hyps);
+    "goal", `String (Pp.string_of_ppcmds ccl)
+  ]
+
+
+let mk_proofview loc Proof.{ goals; sigma } =
+  let goals = List.map (mk_goal sigma) goals in
+  let shelved = List.map (mk_goal sigma) (Evd.shelf sigma) in
+  let given_up = List.map (mk_goal sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
+  `Assoc [
+    "type", `String "proof-view";
+    "goals", `List goals;
+    "shelvedGoals", `List shelved;
+    "abandonedGoals", `List given_up;
+    "focus", mk_loc loc
+  ]
+
+let send_proofview uri doc : unit Lwt.t =
+  match DocumentManager.get_current_proof doc with
+  | None -> Lwt.return ()
+  | Some (proofview, pos) ->
+    let result = mk_proofview pos proofview in
+    let params = `Assoc [
+      "uri", `String uri;
+      "proofview", result;
+    ]
+    in
+    output_json @@ mk_notification ~event:"coqtop/updateProofview" ~params
 
 let textDocumentDidOpen params : unit Lwt.t =
   let open Yojson.Basic.Util in
@@ -160,109 +229,45 @@ let textDocumentDidSave params : unit Lwt.t =
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st
 
-let mk_goal sigma g =
-  let env = Goal.V82.env sigma g in
-  let min_env = Environ.reset_context env in
-  let id = Goal.uid g in
-  let ccl =
-    pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
-  in
-  let mk_hyp d (env,l) =
-    let d' = CompactedDecl.to_named_context d in
-    let env' = List.fold_right Environ.push_named d' env in
-    let ids, body, typ = match d with
-    | CompactedDecl.LocalAssum (ids, typ) ->
-       ids, None, typ
-    | CompactedDecl.LocalDef (ids,c,typ) ->
-      ids, Some c, typ
-    in
-  let ids = List.map (fun id -> `String (Names.Id.to_string id.Context.binder_name)) ids in
-  let typ = pr_ltype_env env sigma typ in
-    let hyp = `Assoc ([
-      "identifiers", `List ids;
-      "type", `String (Pp.string_of_ppcmds typ);
-      "diff", `String "None";
-    ] @ Option.cata (fun body -> ["body", `String (Pp.string_of_ppcmds @@ pr_lconstr_env ~inctx:true env sigma body)]) [] body) in
-    (env', hyp :: l)
-  in
-  let (_env, hyps) =
-    Context.Compacted.fold mk_hyp
-      (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
-  `Assoc [
-    "id", `Int (int_of_string id);
-    "hypotheses", `List (List.rev hyps);
-    "goal", `String (Pp.string_of_ppcmds ccl)
-  ]
-
-let mk_proofview loc Proof.{ goals; sigma } =
-  let goals = List.map (mk_goal sigma) goals in
-  let shelved = List.map (mk_goal sigma) (Evd.shelf sigma) in
-  let given_up = List.map (mk_goal sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
-  `Assoc [
-    "type", `String "proof-view";
-    "goals", `List goals;
-    "shelvedGoals", `List shelved;
-    "abandonedGoals", `List given_up;
-    "focus", mk_loc loc
-  ]
-
-let progress_hook uri doc : unit Lwt.t =
-  let doc =
-    match doc with
-    | None -> Hashtbl.find states uri
-    | Some x -> x in
+let progress_hook uri () : unit Lwt.t =
+  let doc = Hashtbl.find states uri in
   send_highlights uri doc >>= fun () ->
   publish_diagnostics uri doc
 
-let coqtopInterpretToPoint ~id params : ExecutionManager.events Lwt.t =
+let coqtopInterpretToPoint ~id params : (string * DocumentManager.events) Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let loc = params |> member "location" |> parse_loc in
   let st = Hashtbl.find states uri in
   let progress_hook = progress_hook uri in
-  DocumentManager.interpret_to_position ~progress_hook st loc >>= fun (st, proof, events) ->
+  DocumentManager.interpret_to_position ~progress_hook st loc >>= fun (st, events) ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st >>= fun () ->
-  match proof with
-  | None -> Lwt.return events
-  | Some (proofview, pos) ->
-    let result = mk_proofview pos proofview in
-    output_json @@ mk_response ~id ~result >>= fun () ->
-    Lwt.return events
+  Lwt.return (uri, events)
 
-let coqtopStepBackward ~id params : ExecutionManager.events Lwt.t =
+let coqtopStepBackward ~id params : (string * DocumentManager.events) Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
-  DocumentManager.interpret_to_previous st >>= fun (st, proof, events) ->
+  DocumentManager.interpret_to_previous st >>= fun (st, events) ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st >>= fun () ->
-  match proof with
-  | None -> Lwt.return events
-  | Some (proofview, pos) ->
-    let result = mk_proofview pos proofview in
-    output_json @@ mk_response ~id ~result >>= fun () ->
-    Lwt.return events
+  Lwt.return (uri,events)
 
-let coqtopStepForward ~id params : ExecutionManager.events Lwt.t =
+let coqtopStepForward ~id params : (string * DocumentManager.events) Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
-  DocumentManager.interpret_to_next st >>= fun (st, proof, events) ->
+  DocumentManager.interpret_to_next st >>= fun (st, events) ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st >>= fun () ->
-  match proof with
-  | None -> Lwt.return events
-  | Some (proofview, pos) ->
-    let result = mk_proofview pos proofview in
-    output_json @@ mk_response ~id ~result >>= fun () ->
-    Lwt.return events
+  Lwt.return (uri,events)
 
 let coqtopResetCoq ~id params : unit Lwt.t =
   let open Yojson.Basic.Util in
@@ -274,36 +279,31 @@ let coqtopResetCoq ~id params : unit Lwt.t =
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st
 
-let coqtopInterpretToEnd ~id params : ExecutionManager.events Lwt.t =
+let coqtopInterpretToEnd ~id params : (string * DocumentManager.events) Lwt.t =
   let open Yojson.Basic.Util in
   let open Lwt.Infix in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let progress_hook = progress_hook uri in
-  DocumentManager.interpret_to_end ~progress_hook st >>= fun (st, proof, events) ->
+  DocumentManager.interpret_to_end ~progress_hook st >>= fun (st, events) ->
   Hashtbl.replace states uri st;
   send_highlights uri st >>= fun () ->
   publish_diagnostics uri st >>= fun () ->
-  match proof with
-  | None -> Lwt.return events
-  | Some (proofview, pos) ->
-    let result = mk_proofview pos proofview in
-    output_json @@ mk_response ~id ~result >>= fun () ->
-    Lwt.return events
+  Lwt.return (uri,events)
 
 type lsp_event = Request of Yojson.Basic.t
 
 type event =
- | LspManager of lsp_event
- | ExecutionManager of ExecutionManager.event
+ | LspManagerEvent of lsp_event
+ | DocumentManagerEvent of string * DocumentManager.event
 
 type events = event Lwt.t list
 
-let inject_em_event x : event Lwt.t =
-  x >>= fun x -> Lwt.return @@ ExecutionManager x
+let inject_dm_event uri x : event Lwt.t =
+  x >>= fun e -> Lwt.return @@ DocumentManagerEvent(uri,e)
 
-let inject_em_events l =
-  Lwt.return @@ List.map inject_em_event l
+let inject_dm_events (uri,l) =
+  Lwt.return @@ List.map (inject_dm_event uri) l
 
 let dispatch_method ~id method_name params : events Lwt.t =
   let open Lwt.Infix in
@@ -313,17 +313,17 @@ let dispatch_method ~id method_name params : events Lwt.t =
   | "textDocument/didOpen" -> textDocumentDidOpen params >>= fun () -> Lwt.return []
   | "textDocument/didChange" -> textDocumentDidChange params >>= fun () -> Lwt.return []
   | "textDocument/didSave" -> textDocumentDidSave params >>= fun () -> Lwt.return []
-  | "coqtop/interpretToPoint" -> coqtopInterpretToPoint ~id params >>= inject_em_events
-  | "coqtop/stepBackward" -> coqtopStepBackward ~id params  >>= inject_em_events
-  | "coqtop/stepForward" -> coqtopStepForward ~id params  >>= inject_em_events
+  | "coqtop/interpretToPoint" -> coqtopInterpretToPoint ~id params >>= inject_dm_events
+  | "coqtop/stepBackward" -> coqtopStepBackward ~id params  >>= inject_dm_events
+  | "coqtop/stepForward" -> coqtopStepForward ~id params  >>= inject_dm_events
   | "coqtop/resetCoq" -> coqtopResetCoq ~id params >>= fun () -> Lwt.return []
-  | "coqtop/interpretToEnd" -> coqtopInterpretToEnd ~id params >>= inject_em_events
+  | "coqtop/interpretToEnd" -> coqtopInterpretToEnd ~id params >>= inject_dm_events
   | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; Lwt.return []
 
 let lsp () = [
   read_request Lwt_io.stdin >!= fun req ->
   log "[T] UI req ready";
-  Lwt.return @@ LspManager (Request req)
+  Lwt.return @@ LspManagerEvent (Request req)
 ]
 
 let handle_lsp_event = function
@@ -337,17 +337,33 @@ let handle_lsp_event = function
       Lwt.return @@ more_events @ lsp()
 
 let handle_event = function
-  | LspManager e -> handle_lsp_event e
-  | ExecutionManager e -> ExecutionManager.handle_event e >>= inject_em_events
+  | LspManagerEvent e -> handle_lsp_event e
+  | DocumentManagerEvent (uri, e) ->
+    begin match Hashtbl.find_opt states uri with
+    | None ->
+      log @@ "[LSP] ignoring event on non-existing document";
+      Lwt.return []
+    | Some st ->
+      DocumentManager.handle_event e st >>= fun (ost, events) ->
+      begin match ost with
+        | None -> Lwt.return ()
+        | Some st->
+          Hashtbl.replace states uri st;
+          send_highlights uri st >>= fun () ->
+          send_proofview uri st >>= fun () ->
+          publish_diagnostics uri st
+      end >>= fun () ->
+      inject_dm_events (uri, events)
+    end
 
 let handle_feedback feedback =
   let Feedback.{ doc_id; span_id; contents } = feedback in
   match Hashtbl.find_opt doc_ids doc_id with
-  | None -> log @@ "[T] ignoring feedback with doc_id = " ^ (string_of_int doc_id)
+  | None -> log @@ "[LSP] ignoring feedback with doc_id = " ^ (string_of_int doc_id)
   | Some uri ->
     let st = Hashtbl.find states uri in
     let st = DocumentManager.handle_feedback span_id contents st in
-    Hashtbl.replace states uri st
+    Hashtbl.replace states uri st (* TODO could we publish diagnostics here? *)
 
 let init () =
   init_state := Some (Vernacstate.freeze_interp_state ~marshallable:false)
