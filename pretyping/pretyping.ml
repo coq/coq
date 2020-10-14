@@ -857,7 +857,7 @@ struct
               typing the argument, so we replace it by an existential
               variable *)
               let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
-              (sigma, make_judge c_hole c1), (c_hole, c, trace) :: bidiargs
+              (sigma, make_judge c_hole c1), (c_hole, c1, c, trace) :: bidiargs
             else
               let tycon = Some c1 in
               pretype tycon env sigma c, bidiargs
@@ -886,12 +886,10 @@ struct
     let sigma, resj, resj_before_bidi, bidiargs = apply_rec env sigma 0 fj fj candargs [] args in
     let sigma, resj = refresh_template env sigma resj in
     let sigma, resj, otrace = inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon in
-    let refine_arg n (sigma,t) (newarg,origarg,trace) =
+    let refine_arg n (sigma,t) (newarg,ty,origarg,trace) =
       (* Refine an argument (originally `origarg`) represented by an evar
          (`newarg`) to use typing information from the context *)
-      (* Recover the expected type of the argument *)
-      let ty = Retyping.get_type_of !!env sigma newarg in
-      (* Type the argument using this expected type *)
+      (* Type the argument using the expected type *)
       let sigma, j = pretype (Some ty) env sigma origarg in
       (* Unify the (possibly refined) existential variable with the
       (typechecked) original value *)
