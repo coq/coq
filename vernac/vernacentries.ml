@@ -957,9 +957,15 @@ let interp_filter_in m = function
 
 let vernac_import export refl =
   let import_mod (qid,f) =
-    let m = try Nametab.locate_module qid
+    let loc = qid.loc in
+    let m = try
+        let m = Nametab.locate_module qid in
+        let () = if Modops.is_functor (Global.lookup_module m).Declarations.mod_type
+          then CErrors.user_err ?loc Pp.(str "Cannot import functor " ++ pr_qualid qid ++ str".")
+        in
+        m
       with Not_found ->
-        CErrors.user_err Pp.(str "Cannot find module " ++ pr_qualid qid)
+        CErrors.user_err ?loc Pp.(str "Cannot find module " ++ pr_qualid qid)
     in
     let f = interp_filter_in m f in
     Declaremods.import_module f ~export m
