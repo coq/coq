@@ -14,7 +14,9 @@ val set_debug : unit -> unit
 
 val load_rcfile : rcfile:(string option) -> state:Vernac.State.t -> Vernac.State.t
 
-(* LoadPath for Coq user libraries *)
+(** Standard LoadPath for Coq user libraries; in particular it
+   includes (in-order) Coq's standard library, Coq's [user-contrib]
+   folder, and directories specified in [COQPATH] and [XDG_DIRS] *)
 val libs_init_load_path
   : coqlib:CUnix.physical_path
   -> CUnix.physical_path list * Loadpath.vo_path list
