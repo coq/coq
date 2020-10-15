@@ -132,8 +132,6 @@ let init_load_path () =
   includes := []
 
 
-let set_debug () = Flags.debug := true
-
 let impredicative_set = ref Declarations.PredicativeSet
 let set_impredicative_set () = impredicative_set := Declarations.ImpredicativeSet
 
@@ -222,7 +220,7 @@ let guill s = str "\"" ++ str s ++ str "\""
 let where = function
 | None -> mt ()
 | Some s ->
-  if !Flags.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
+  if CDebug.(get_flag misc) then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
 let explain_exn = function
   | Stream.Failure ->
@@ -251,7 +249,7 @@ let explain_exn = function
     hov 0 (fnl () ++ str "User interrupt.")
   | Univ.UniverseInconsistency i ->
     let msg =
-      if !Flags.debug then
+      if CDebug.(get_flag misc) then
         str "." ++ spc() ++
           Univ.explain_universe_inconsistency Univ.Level.pr i
       else
@@ -339,7 +337,7 @@ let parse_args argv =
     | ("-Q"|"-R") :: d :: p :: rem -> set_include d p;parse rem
     | ("-Q"|"-R") :: ([] | [_]) -> usage ()
 
-    | "-debug" :: rem -> set_debug (); parse rem
+    | "-debug" :: rem -> CDebug.set_debug_all true; parse rem
 
     | "-where" :: _ ->
       Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
@@ -377,7 +375,7 @@ let init_with_argv argv =
   try
     parse_args argv;
     CWarnings.set_flags ("+"^Typeops.warn_bad_relevance_name);
-    if !Flags.debug then Printexc.record_backtrace true;
+    if CDebug.(get_flag misc) then Printexc.record_backtrace true;
     Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
     Flags.if_verbose print_header ();
     init_load_path ();
@@ -392,7 +390,7 @@ let run senv =
     let senv = compile_files senv in
     flush_all(); senv
   with e ->
-    if !Flags.debug then Printexc.print_backtrace stderr;
+    if CDebug.(get_flag misc) then Printexc.print_backtrace stderr;
     fatal_error (explain_exn e) (is_anomaly e)
 
 let start () =

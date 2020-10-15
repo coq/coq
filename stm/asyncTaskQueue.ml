@@ -13,7 +13,7 @@ open Pp
 open Util
 
 let stm_pr_err pp = Format.eprintf "%s] @[%a@]\n%!" (Spawned.process_id ()) Pp.pp_with pp
-let stm_prerr_endline s = if !Flags.debug then begin stm_pr_err (str s) end else ()
+let stm_prerr_endline s = if CDebug.(get_flag misc) then begin stm_pr_err (str s) end else ()
 
 type cancel_switch = bool ref
 let async_proofs_flags_for_workers = ref []

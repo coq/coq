@@ -46,7 +46,6 @@ let async_proofs_is_worker () = !async_proofs_worker_id <> "master"
 
 let load_vos_libraries = ref false
 
-let debug = ref false
 let xml_debug = ref false
 
 let in_debugger = ref false

@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (* enable in case of stm problems  *)
-(* let stm_debug () = !Flags.debug *)
+(* let stm_debug () = CDebug.(get_flag misc) *)
 let stm_debug = ref false
 
 let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (Spawned.process_id ()) s
@@ -18,7 +18,7 @@ let stm_pp_err pp = Format.eprintf "%s] @[%a@]\n%!" (Spawned.process_id ()) Pp.p
 let stm_prerr_endline s = if !stm_debug then begin stm_pr_err (s ()) end else ()
 let stm_pperr_endline s = if !stm_debug then begin stm_pp_err (s ()) end else ()
 
-let stm_prerr_debug   s = if !Flags.debug then begin stm_pr_err (s ()) end else ()
+let stm_prerr_debug   s = if CDebug.(get_flag misc) then begin stm_pr_err (s ()) end else ()
 
 open Pp
 open CErrors
@@ -785,7 +785,7 @@ end = struct (* {{{ *)
   end
 
   let print ?(now=false) () =
-    if !Flags.debug then NB.command ~now (print_dag !vcs)
+    if CDebug.(get_flag misc) then NB.command ~now (print_dag !vcs)
 
   let backup () = !vcs
   let restore v = vcs := v
@@ -1533,7 +1533,7 @@ end = struct (* {{{ *)
         when is_tac expr && Vernacstate.Stm.same_env o n -> (* A pure tactic *)
           Some (id, `ProofOnly (prev, Vernacstate.Stm.pstate n))
       | Some _, Some s ->
-        if !Flags.debug then msg_debug (Pp.str "STM: sending back a fat state");
+        if CDebug.(get_flag misc) then msg_debug (Pp.str "STM: sending back a fat state");
           Some (id, `Full s)
       | _, Some s -> Some (id, `Full s) in
     let rec aux seen = function

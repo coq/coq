@@ -21,6 +21,10 @@ to OCaml code. *)
 type mllambda
 type global
 
+val debug_native_compiler : CDebug.t
+
+val keep_debug_files : unit -> bool
+
 val pp_global : Format.formatter -> global -> unit
 
 val mk_open : string -> global

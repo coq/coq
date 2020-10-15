@@ -35,11 +35,11 @@ let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let pr_error s = pr_with_pid s
 let pr_debug s =
-  if !Flags.debug then pr_with_pid s
+  if CDebug.(get_flag misc) then pr_with_pid s
 let pr_debug_call q =
-  if !Flags.debug then pr_with_pid ("<-- " ^ Xmlprotocol.pr_call q)
+  if CDebug.(get_flag misc) then pr_with_pid ("<-- " ^ Xmlprotocol.pr_call q)
 let pr_debug_answer q r =
-  if !Flags.debug then pr_with_pid ("--> " ^ Xmlprotocol.pr_full_value q r)
+  if CDebug.(get_flag misc) then pr_with_pid ("--> " ^ Xmlprotocol.pr_full_value q r)
 
 (** Categories of commands *)
 

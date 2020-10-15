@@ -24,6 +24,11 @@ open Environ
 compiler. mllambda represents a fragment of ML, and can easily be printed
 to OCaml code. *)
 
+let debug_native_flag, debug_native_compiler = CDebug.create_full ~name:"native-compiler" ()
+
+let keep_debug_files () =
+  CDebug.get_flag debug_native_flag
+
 (** Local names **)
 
 (* The first component is there for debugging purposes only *)
@@ -1939,7 +1944,7 @@ let compile_constant env sigma con cb =
     | Def t ->
       let t = Mod_subst.force_constr t in
       let code = lambda_of_constr env sigma t in
-      if !Flags.debug then Feedback.msg_debug (Pp.str "Generated lambda code");
+      debug_native_compiler (fun () -> Pp.str "Generated lambda code");
       let is_lazy = is_lazy t in
       let code = if is_lazy then mk_lazy code else code in
       let l = Constant.label con in
@@ -1950,11 +1955,11 @@ let compile_constant env sigma con cb =
           let (auxdefs,code) = compile_with_fv env sigma (Some univ) [] (Some l) code in
           (auxdefs,mkMLlam [|univ|] code)
       in
-      if !Flags.debug then Feedback.msg_debug (Pp.str "Generated mllambda code");
+      debug_native_compiler (fun () -> Pp.str "Generated mllambda code");
       let code =
         optimize_stk (Glet(Gconstant ("", con),code)::auxdefs)
       in
-      if !Flags.debug then Feedback.msg_debug (Pp.str "Optimized mllambda code");
+      debug_native_compiler (fun () -> Pp.str "Optimized mllambda code");
       code
     | _ ->
         let i = push_symbol (SymbConst con) in

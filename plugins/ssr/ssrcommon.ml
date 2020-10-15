@@ -252,7 +252,7 @@ let interp_refine ist gl rc =
   in
   let sigma, c = Pretyping.understand_ltac flags (pf_env gl) (project gl) vars kind rc in
 (*   ppdebug(lazy(str"sigma@interp_refine=" ++ pr_evar_map None sigma)); *)
-  ppdebug(lazy(str"c@interp_refine=" ++ Printer.pr_econstr_env (pf_env gl) sigma c));
+  debug_ssr (fun () -> str"c@interp_refine=" ++ Printer.pr_econstr_env (pf_env gl) sigma c);
   (sigma, (sigma, c))
 
 
@@ -1207,7 +1207,7 @@ let gentac gen =
   Proofview.V82.tactic begin fun gl ->
 (*   ppdebug(lazy(str"sigma@gentac=" ++ pr_evar_map None (project gl))); *)
   let conv, _, cl, c, clr, ucst,gl = pf_interp_gen_aux gl false gen in
-  ppdebug(lazy(str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c));
+  debug_ssr (fun () -> str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c);
   let gl = pf_merge_uc ucst gl in
   if conv
   then tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl

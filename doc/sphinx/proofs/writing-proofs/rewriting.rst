@@ -559,9 +559,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
       on the profile file to see the results. Consult the ``perf`` documentation
       for more details.
 
-.. flag:: Debug Cbv
-
-   This flag makes :tacn:`cbv` (and its derivative :tacn:`compute`) print
+   :opt:`Debug` ``"Cbv"`` makes :tacn:`cbv` (and its derivative :tacn:`compute`) print
    information about the constants it encounters and the unfolding decisions it
    makes.
 
@@ -662,10 +660,8 @@ the conversion in hypotheses :n:`{+ @ident}`.
    This applies :tacn:`simpl` only to the :n:`{+ @natural}` applicative subterms whose
    head occurrence is :n:`@qualid` (or :n:`@string`).
 
-.. flag:: Debug RAKAM
-
-   This flag makes :tacn:`cbn` print various debugging information.
-   ``RAKAM`` is the Refolding Algebraic Krivine Abstract Machine.
+:opt:`Debug` ``"RAKAM"`` makes :tacn:`cbn` print various debugging information.
+``RAKAM`` is the Refolding Algebraic Krivine Abstract Machine.
 
 .. tacn:: unfold @qualid
    :name: unfold

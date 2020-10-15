@@ -296,8 +296,8 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
       | Some id ->
         if pats = [] then Tacticals.New.tclIDTAC else
         let args = Array.of_list args in
-        ppdebug(lazy(str"specialized="++ pr_econstr_env (pf_env gl) (project gl) EConstr.(mkApp (mkVar id,args))));
-        ppdebug(lazy(str"specialized_ty="++ pr_econstr_env (pf_env gl) (project gl) ct));
+        debug_ssr (fun () -> str"specialized="++ pr_econstr_env (pf_env gl) (project gl) EConstr.(mkApp (mkVar id,args)));
+        debug_ssr (fun () -> str"specialized_ty="++ pr_econstr_env (pf_env gl) (project gl) ct);
         Tacticals.New.tclTHENS (basecuttac "ssr_have" ct)
           [Tactics.apply EConstr.(mkApp (mkVar id,args)); Tacticals.New.tclIDTAC] in
       "ssr_have",
@@ -395,7 +395,7 @@ let intro_lock ipats =
             Array.length args = 3 && is_app_evar sigma args.(2) ->
           protect_subgoal env sigma hd args
         | _ ->
-    ppdebug(lazy Pp.(str"under: stop:" ++ pr_econstr_env env sigma t));
+    debug_ssr (fun () -> Pp.(str"under: stop:" ++ pr_econstr_env env sigma t));
 
             Proofview.tclUNIT ()
        end)
@@ -468,13 +468,13 @@ let undertac ?(pad_intro = false) ist ipats ((dir,_),_ as rule) hint =
     | Some l -> [IPatCase(Regular [l;[]])] in
 
   let map_redex env evar_map ~before:_ ~after:t =
-    ppdebug(lazy Pp.(str"under vars: " ++ prlist Names.Name.print varnames));
+    debug_ssr (fun () -> Pp.(str"under vars: " ++ prlist Names.Name.print varnames));
 
     let evar_map, ty = Typing.type_of env evar_map t in
     let new_t = (* pretty-rename the bound variables *)
       try begin match EConstr.destApp evar_map t with (f, ar) ->
             let lam = Array.last ar in
-            ppdebug(lazy Pp.(str"under: mapping:" ++
+            debug_ssr(fun () -> Pp.(str"under: mapping:" ++
                              pr_econstr_env env evar_map lam));
             let new_lam = pretty_rename evar_map lam varnames in
             let new_ar, len1 = Array.copy ar, pred (Array.length ar) in
@@ -482,10 +482,10 @@ let undertac ?(pad_intro = false) ist ipats ((dir,_),_ as rule) hint =
             EConstr.mkApp (f, new_ar)
           end with
       | DestKO ->
-        ppdebug(lazy Pp.(str"under: cannot pretty-rename bound variables with destApp"));
+        debug_ssr (fun () -> Pp.(str"under: cannot pretty-rename bound variables with destApp"));
         t
     in
-    ppdebug(lazy Pp.(str"under: to:" ++ pr_econstr_env env evar_map new_t));
+    debug_ssr (fun () -> Pp.(str"under: to:" ++ pr_econstr_env env evar_map new_t));
     evar_map, new_t
   in
   let undertacs =

@@ -11,7 +11,7 @@
 open Spawn
 
 let pr_err s = Printf.eprintf "(Spawned,%d) %s\n%!" (Unix.getpid ()) s
-let prerr_endline s = if !Flags.debug then begin pr_err s end else ()
+let prerr_endline s = if CDebug.(get_flag misc) then begin pr_err s end else ()
 
 type chandescr = AnonPipe | Socket of string * int * int
 

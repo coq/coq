@@ -574,7 +574,7 @@ let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)
   with Not_found as exn ->
     let exn, info = Exninfo.capture exn in
-    if !Flags.debug then Feedback.msg_debug (Pp.str "pr_global_env not found");
+    if CDebug.(get_flag misc) then Feedback.msg_debug (Pp.str "pr_global_env not found");
     Exninfo.iraise (exn, info)
 
 let global_inductive qid =
