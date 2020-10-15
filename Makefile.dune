@@ -82,7 +82,7 @@ voboot:
 states:
 	dune build $(DUNEOPT) dev/shim/coqtop-prelude
 
-NONDOC_INSTALL_TARGETS:=coq.install coqide-server.install coqide.install
+NONDOC_INSTALL_TARGETS:=coq.install coqide-server.install coqide.install vscoq-server.install
 
 world:
 	dune build --profile=release $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)
