@@ -103,6 +103,7 @@ val add_private_constant :
 (** Adding an inductive type *)
 
 val add_mind :
+  ?typing_flags:Declarations.typing_flags ->
   Label.t -> Entries.mutual_inductive_entry ->
     MutInd.t safe_transformer
 
