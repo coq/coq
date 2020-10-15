@@ -2130,6 +2130,13 @@ Proof.
 intros; apply Rmult_lt_0_compat;[|apply Rinv_0_lt_compat]; assumption.
 Qed.
 
+Lemma Rdiv_le_pos : forall a b, 0 <= a -> 0 < b -> 0 <= a / b.
+Proof.
+intros. eapply Rmult_le_pos.
+  eapply H.
+  eapply Rlt_le. eapply Rinv_0_lt_compat. eapply H0.
+Qed.
+
 Lemma Rdiv_plus_distr : forall a b c, (a + b)/c = a/c + b/c.
 intros a b c; apply Rmult_plus_distr_r.
 Qed.
