@@ -43,7 +43,7 @@ Definition is_inverse A B f g := (forall a:A, g (f a) = a) /\ (forall b:B, f (g 
 #[universes(template)]
 Record Delta A := { pi1:A; pi2:A; eq:pi1=pi2 }.
 
-Definition delta {A} (a:A) := {|pi1 := a; pi2 := a; eq := eq_refl a |}.
+Definition delta {A} (a:A) := {| pi1 := a; pi2 := a; eq := eq_refl a |}.
 
 Arguments pi1 {A} _.
 Arguments pi2 {A} _.
