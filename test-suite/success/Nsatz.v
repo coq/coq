@@ -1,6 +1,8 @@
 Require Import TestSuite.admit.
 (* compile en user    3m39.915s sur cachalot *)
 Require Import Nsatz.
+Require List.
+Import List.ListNotations.
 
 (* Example with a generic domain *)
 
@@ -294,7 +296,7 @@ Lemma minh: forall A B C D O E H I:point,
 Proof. geo_begin.
 idtac "minh". 
 Time nsatz with radicalmax :=1%N strategy:=1%Z
-  parameters:=(X O::X B::X C::nil)
+  parameters:=[X O; X B; X C]
   variables:= (@nil R).
 (*Finished transaction in 13. secs (10.102464u,0.s)
 *)
@@ -314,15 +316,15 @@ Proof.
 geo_begin.
 idtac "Pappus".
 Time nsatz with radicalmax :=1%N strategy:=0%Z
-  parameters:=(X B::X A1::Y A1::X B1::Y B1::X C::Y C1::nil)
-  variables:= (X B
- :: X A1
-    :: Y A1
-       :: X B1
-          :: Y B1
-             :: X C
-                :: Y C1
-                   :: X C1 :: Y P :: X P :: Y Q :: X Q :: Y S :: X S :: nil).
+  parameters:=[X B; X A1; Y A1; X B1; Y B1; X C; Y C1]
+  variables:= [X B;
+  X A1;
+     Y A1;
+        X B1;
+           Y B1;
+              X C;
+                 Y C1;
+                    X C1; Y P; X P; Y Q; X Q; Y S; X S].
 (*Finished transaction in 8. secs (7.795815u,0.000999999999999s)
 *)
 Qed.
@@ -347,7 +349,7 @@ Proof.
 geo_begin.
 idtac "Simson".
 Time nsatz with radicalmax :=1%N strategy:=0%Z
-  parameters:=(X B::Y B::X C::Y C::Y D::nil)
+  parameters:=[X B; Y B; X C; Y C; Y D]
   variables:= (@nil R). (* compute -[X Y]. *)
 (*Finished transaction in 8. secs (7.550852u,0.s)
 *)
@@ -432,20 +434,20 @@ Proof.
 geo_begin.
 idtac "Desargues".
 Time 
-let lv := rev (X A
- :: X B
-    :: Y B
-       :: X C
-          :: Y C
-             :: Y A1 :: X A1
-                :: Y B1
-                   :: Y C1
-                      :: X T
-                         :: Y T
-                            :: X Q
-                               :: Y Q :: X P :: Y P :: X C1 :: X B1 :: nil) in
+let lv := rev [X A;
+    X B;
+      Y B;
+         X C;
+            Y C;
+               Y A1; X A1;
+                  Y B1;
+                     Y C1;
+                        X T;
+                           Y T;
+                              X Q;
+                                 Y Q; X P; Y P; X C1; X B1] in
 nsatz with radicalmax :=1%N strategy:=0%Z
-  parameters:=(X A::X B::Y B::X C::Y C::X A1::Y B1::Y C1::nil)
+  parameters:=[X A; X B; Y B; X C; Y C; X A1; Y B1; Y C1]
   variables:= lv. (*Finished transaction in 8. secs (8.02578u,0.001s)*)
 Qed.
 
@@ -522,9 +524,9 @@ Lemma hauteurs:forall A B C A1 B1 C1 H:point,
 geo_begin.
 idtac "hauteurs".
 Time 
- let lv := constr:(Y A1
- :: X A1 :: Y B1 :: X B1 :: Y A :: Y B :: X B :: X A :: X H :: Y C
- :: Y C1 :: Y H :: X C1 :: X C :: (@Datatypes.nil R)) in
+ let lv := constr:([Y A1;
+ X A1; Y B1; X B1; Y A; Y B; X B; X A; X H; Y C;
+ Y C1; Y H; X C1; X C]) in
 nsatz with radicalmax := 2%N strategy := 1%Z parameters := (@Datatypes.nil R)
  variables := lv.
 (*Finished transaction in 5. secs (4.360337u,0.008999s)*)
