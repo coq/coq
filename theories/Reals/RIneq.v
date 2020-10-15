@@ -459,12 +459,12 @@ Lemma Rplus_eq_0_l :
   forall r1 r2, 0 <= r1 -> 0 <= r2 -> r1 + r2 = 0 -> r1 = 0.
 Proof.
   intros a b H [H0| H0] H1; auto with real.
-    absurd (0 < a + b).
-      rewrite H1; auto with real.
-      apply Rle_lt_trans with (a + 0).
-        rewrite Rplus_0_r; assumption.
-        auto using Rplus_lt_compat_l with real.
-    rewrite <- H0, Rplus_0_r in H1; assumption.
+  - absurd (0 < a + b).
+    + rewrite H1; auto with real.
+    + apply Rle_lt_trans with (a + 0).
+      * rewrite Rplus_0_r; assumption.
+      * auto using Rplus_lt_compat_l with real.
+  - rewrite <- H0, Rplus_0_r in H1; assumption.
 Qed.
 
 Lemma Rplus_eq_R0 :
@@ -1529,7 +1529,7 @@ Qed.
 
 Lemma Rinv_1_lt_contravar : forall r1 r2, 1 <= r1 -> r1 < r2 -> / r2 < / r1.
 Proof.
- intros x y H' H'0.
+  intros x y H' H'0.
   cut (0 < x); [ intros Lt0 | apply Rlt_le_trans with (r2 := 1) ];
     auto with real.
   apply Rmult_lt_reg_l with (r := x); auto with real.
@@ -1753,11 +1753,11 @@ Qed.
 Lemma INR_IPR : forall p, INR (Pos.to_nat p) = IPR p.
 Proof.
   assert (H: forall p, 2 * INR (Pos.to_nat p) = IPR_2 p).
-    induction p as [p|p|] ; simpl IPR_2.
+  { induction p as [p|p|] ; simpl IPR_2.
     rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- IHp.
     now rewrite (Rplus_comm (2 * _)).
     now rewrite Pos2Nat.inj_xO, mult_INR, <- IHp.
-    apply Rmult_1_r.
+    apply Rmult_1_r. }
   intros [p|p|] ; unfold IPR.
   rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- H.
   apply Rplus_comm.
@@ -1830,12 +1830,12 @@ Qed.
 
 Lemma pow_IZR : forall z n, pow (IZR z) n = IZR (Z.pow z (Z.of_nat n)).
 Proof.
- intros z [|n];simpl;trivial.
- rewrite Zpower_pos_nat.
- rewrite SuccNat2Pos.id_succ. unfold Zpower_nat;simpl.
- rewrite mult_IZR.
- induction n;simpl;trivial.
- rewrite mult_IZR;ring[IHn].
+  intros z [|n];simpl;trivial.
+  rewrite Zpower_pos_nat.
+  rewrite SuccNat2Pos.id_succ. unfold Zpower_nat;simpl.
+  rewrite mult_IZR.
+  induction n;simpl;trivial.
+  rewrite mult_IZR;ring[IHn].
 Qed.
 
 (**********)
@@ -2043,7 +2043,7 @@ Proof.
 Qed.
 
 Lemma Ropp_div : forall x y, -x/y = - (x / y).
-intros x y; unfold Rdiv; ring.
+  intros x y; unfold Rdiv; ring.
 Qed.
 
 Lemma Ropp_div_den : forall x y : R, y<>0 -> x / - y = - (x / y).
@@ -2068,22 +2068,22 @@ Lemma R_rm : ring_morph
   0%R 1%R Rplus Rmult Rminus Ropp eq
   0%Z 1%Z Zplus Zmult Zminus Z.opp Zeq_bool IZR.
 Proof.
-constructor ; try easy.
-exact plus_IZR.
-exact minus_IZR.
-exact mult_IZR.
-exact opp_IZR.
-intros x y H.
-apply f_equal.
-now apply Zeq_bool_eq.
+  constructor ; try easy.
+  - exact plus_IZR.
+  - exact minus_IZR.
+  - exact mult_IZR.
+  - exact opp_IZR.
+  - intros x y H.
+    apply f_equal.
+    now apply Zeq_bool_eq.
 Qed.
 
 Lemma Zeq_bool_IZR x y :
   IZR x = IZR y -> Zeq_bool x y = true.
 Proof.
-intros H.
-apply Zeq_is_eq_bool.
-now apply eq_IZR.
+  intros H.
+  apply Zeq_is_eq_bool.
+  now apply eq_IZR.
 Qed.
 
 Add Field RField : Rfield
@@ -2127,15 +2127,15 @@ Qed.
 
 Lemma Rdiv_lt_0_compat : forall a b, 0 < a -> 0 < b -> 0 < a/b.
 Proof.
-intros; apply Rmult_lt_0_compat;[|apply Rinv_0_lt_compat]; assumption.
+  intros; apply Rmult_lt_0_compat;[|apply Rinv_0_lt_compat]; assumption.
 Qed.
 
 Lemma Rdiv_plus_distr : forall a b c, (a + b)/c = a/c + b/c.
-intros a b c; apply Rmult_plus_distr_r.
+  intros a b c; apply Rmult_plus_distr_r.
 Qed.
 
 Lemma Rdiv_minus_distr : forall a b c, (a - b)/c = a/c - b/c.
-intros a b c; unfold Rminus, Rdiv; rewrite Rmult_plus_distr_r; ring.
+  intros a b c; unfold Rminus, Rdiv; rewrite Rmult_plus_distr_r; ring.
 Qed.
 
 (* A test for equality function. *)
