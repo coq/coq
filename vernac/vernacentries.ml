@@ -498,15 +498,17 @@ let program_inference_hook env sigma ev =
 
 (* XXX: Interpretation of lemma command, duplication with ComFixpoint
    / ComDefinition ? *)
-let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
+let interp_lemma ~program_mode ~scope env0 evd thms =
+  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let inference_hook = if program_mode then Some program_inference_hook else None in
   List.fold_left_map (fun evd ((id, _), (bl, t)) ->
       let evd, (impls, ((env, ctx), imps)) =
-        Constrintern.interp_context_evars ~program_mode env0 evd bl
+        Constrintern.interp_context_evars ~flags env0 evd bl
       in
       let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd t in
-      let flags = Pretyping.{ all_and_fail_flags with program_mode } in
-      let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
+      let solve_flags = Pretyping.{ all_and_fail_flags with program_mode } in
+      (* should we solve once at the end of the fold instead of at every lemma? *)
+      let evd = Pretyping.solve_remaining_evars ?hook:inference_hook solve_flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
       check_name_freshness scope id;
       let thm = Declare.CInfo.make ~name:id.CAst.v ~typ:(EConstr.it_mkProd_or_LetIn t' ctx)
@@ -527,10 +529,9 @@ let post_check_evd ~udecl ~poly evd =
 
 let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let env0 = Global.env () in
-  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let decl = fst (List.hd thms) in
   let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
-  let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
+  let evd, thms = interp_lemma ~program_mode ~scope env0 evd thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   match mut_analysis with

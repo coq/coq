@@ -138,14 +138,18 @@ let typecheck_params_and_fields def poly pl ps records =
            | CLocalPattern {CAst.loc} ->
               Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters")) ps
   in
-  let sigma, (impls_env, ((env1,newps), imps)) = interp_context_evars ~program_mode:false env0 sigma ps in
+  let sigma, (impls_env, ((env1,newps), imps)) =
+    interp_context_evars ~flags:Pretyping.all_no_fail_flags env0 sigma ps
+  in
   let fold (sigma, template) (_, t, _, _) = match t with
     | Some t ->
        let env = EConstr.push_rel_context newps env0 in
        let poly =
          match t with
          | { CAst.v = CSort (Glob_term.UAnonymous {rigid=true}) } -> true | _ -> false in
-       let sigma, s = interp_type_evars ~program_mode:false env sigma ~impls:empty_internalization_env t in
+       let sigma, s =
+         interp_constr_evars_gen ~flags:Pretyping.all_no_fail_flags env sigma Pretyping.IsType t
+       in
        let sred = Reductionops.whd_allnolet env sigma s in
          (match EConstr.kind sigma sred with
          | Sort s' ->
@@ -182,7 +186,8 @@ let typecheck_params_and_fields def poly pl ps records =
   in
   let (sigma, data) = List.fold_left2_map fold sigma records arities in
   let sigma =
-    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
+    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma
+  in
   let fold sigma (typ, sort) (_, newfs) =
     let _, univ = compute_constructor_level sigma env_ar newfs in
     let univ = if Sorts.is_sprop sort then univ else Univ.Universe.sup univ Univ.type0m_univ in

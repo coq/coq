@@ -111,6 +111,9 @@ val interp_open_constr : ?expected_type:typing_constraint -> env -> evar_map -> 
 
 (** Accepting unresolved evars *)
 
+val interp_constr_evars_gen : flags:inference_flags -> env -> evar_map ->
+  ?impls:internalization_env -> typing_constraint -> constr_expr -> evar_map * constr
+
 val interp_constr_evars : ?program_mode:bool -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr -> evar_map * constr
 
@@ -122,6 +125,11 @@ val interp_type_evars : ?program_mode:bool -> env -> evar_map ->
 
 (** Accepting unresolved evars and giving back the manual implicit arguments *)
 
+val interp_constr_evars_impls_gen : flags:inference_flags ->
+  env -> evar_map -> ?impls:internalization_env ->
+  typing_constraint -> constr_expr ->
+  evar_map * (constr * Impargs.manual_implicits)
+
 val interp_constr_evars_impls : ?program_mode:bool -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr ->
   evar_map * (constr * Impargs.manual_implicits)
@@ -130,7 +138,7 @@ val interp_casted_constr_evars_impls : ?program_mode:bool -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr -> types ->
   evar_map * (constr * Impargs.manual_implicits)
 
-val interp_type_evars_impls : ?flags:inference_flags -> env -> evar_map ->
+val interp_type_evars_impls : flags:inference_flags -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr ->
   evar_map * (types * Impargs.manual_implicits)
 
@@ -146,17 +154,10 @@ val intern_reference : qualid -> GlobRef.t
 (** Expands abbreviations (syndef); raise an error if not existing *)
 val interp_reference : ltac_sign -> qualid -> glob_constr
 
-(** Interpret binders *)
-
-val interp_binder  : env -> evar_map -> Name.t -> constr_expr ->
-  types Evd.in_evar_universe_context
-
-val interp_binder_evars : env -> evar_map -> Name.t -> constr_expr -> evar_map * types
-
 (** Interpret contexts: returns extended env and context *)
 
 val interp_context_evars :
-  ?program_mode:bool -> ?impl_env:internalization_env ->
+  flags:inference_flags -> ?impl_env:internalization_env ->
   env -> evar_map -> local_binder_expr list ->
   evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits))
 

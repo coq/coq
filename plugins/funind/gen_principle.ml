@@ -44,7 +44,8 @@ let build_newrecursive lnameargsardef =
         let arity, _ctx = Constrintern.interp_type env0 sigma arityc in
         let evd = Evd.from_env env0 in
         let evd, (_, (_, impls')) =
-          Constrintern.interp_context_evars ~program_mode:false env evd binders
+          Constrintern.interp_context_evars ~flags:Pretyping.all_no_fail_flags
+            env evd binders
         in
         let impl =
           Constrintern.compute_internalization_data env0 evd recname

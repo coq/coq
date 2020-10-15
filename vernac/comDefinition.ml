@@ -85,7 +85,7 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let (bl, c, ctypopt, apply_under_binders) = protect_pattern_in_binder bl c ctypopt in
   (* Build the parameters *)
-  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode ~impl_env env evd bl in
+  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~flags ~impl_env env evd bl in
   (* Build the type *)
   let evd, tyopt = Option.fold_left_map
       (interp_type_evars_impls ~flags ~impls env_bl)
@@ -95,17 +95,26 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let evd, c, imps, tyopt =
     match tyopt with
     | None ->
-      let evd, (c, impsbody) = interp_constr_evars_impls ~program_mode ~impls env_bl evd c in
+      let evd, (c, impsbody) =
+        interp_constr_evars_impls_gen ~flags ~impls env_bl evd Pretyping.WithoutTypeConstraint c
+      in
       evd, c, imps1@impsbody, None
     | Some (ty, impsty) ->
-      let evd, (c, impsbody) = interp_casted_constr_evars_impls ~program_mode ~impls env_bl evd c ty in
+      let evd, (c, impsbody) =
+        interp_constr_evars_impls_gen ~flags ~impls env_bl evd (Pretyping.OfType ty) c
+      in
       check_imps ~impsty ~impsbody;
       evd, c, imps1@impsty, Some ty
   in
+  (* solve typeclasses / heuristics *)
+  (* even with program_mode=false we don't fail here as we don't want
+     to fail if there are unused evars *)
+  let solve_flags = Pretyping.{all_no_fail_flags with program_mode} in
+  let evd = Pretyping.solve_remaining_evars solve_flags env evd in
   (* Do the reduction *)
   let evd, c = apply_under_binders (red_constant_body red_option) env_bl evd c in
 
-  (* Declare the definition *)
+  (* Add binders to body and type *)
   let c = EConstr.it_mkLambda_or_LetIn c ctx in
   let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
   evd, (c, tyopt), imps
