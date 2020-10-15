@@ -161,8 +161,8 @@ let coerce_var_to_ident fresh env sigma v =
     match out_gen (topwit wit_intro_pattern) v with
     | { CAst.v=IntroNaming (IntroIdentifier id)} -> id
     | _ -> fail ()
-  else if has_type v (topwit wit_var) then
-    out_gen (topwit wit_var) v
+  else if has_type v (topwit wit_hyp) then
+    out_gen (topwit wit_hyp) v
   else match Value.to_constr v with
   | None -> fail ()
   | Some c ->
@@ -184,8 +184,8 @@ let id_of_name = function
   | Some (IntroNaming (IntroIdentifier id)) -> id
   | Some _ -> fail ()
   | None ->
-  if has_type v (topwit wit_var) then
-    out_gen (topwit wit_var) v
+  if has_type v (topwit wit_hyp) then
+    out_gen (topwit wit_hyp) v
   else
     match Value.to_constr v with
     | None -> fail ()
@@ -222,8 +222,8 @@ let coerce_to_intro_pattern sigma v =
   match is_intro_pattern v with
   | Some pat -> pat
   | None ->
-  if has_type v (topwit wit_var) then
-    let id = out_gen (topwit wit_var) v in
+  if has_type v (topwit wit_hyp) then
+    let id = out_gen (topwit wit_hyp) v in
     IntroNaming (IntroIdentifier id)
   else match Value.to_constr v with
   | Some c when isVar sigma c ->
@@ -259,8 +259,8 @@ let coerce_to_constr env v =
     ([], c)
   else if has_type v (topwit wit_constr_under_binders) then
     out_gen (topwit wit_constr_under_binders) v
-  else if has_type v (topwit wit_var) then
-    let id = out_gen (topwit wit_var) v in
+  else if has_type v (topwit wit_hyp) then
+    let id = out_gen (topwit wit_hyp) v in
     (try [], constr_of_id env id with Not_found -> fail ())
   else fail ()
 
@@ -282,8 +282,8 @@ let coerce_to_evaluable_ref env sigma v =
   | Some (IntroNaming (IntroIdentifier id)) when is_variable env id -> EvalVarRef id
   | Some _ -> fail ()
   | None ->
-  if has_type v (topwit wit_var) then
-    let id = out_gen (topwit wit_var) v in
+  if has_type v (topwit wit_hyp) then
+    let id = out_gen (topwit wit_hyp) v in
     if Id.List.mem id (Termops.ids_of_context env) then EvalVarRef id
     else fail ()
   else if has_type v (topwit wit_ref) then
@@ -328,8 +328,8 @@ let coerce_to_hyp env sigma v =
   | Some (IntroNaming (IntroIdentifier id)) when is_variable env id -> id
   | Some _ -> fail ()
   | None ->
-  if has_type v (topwit wit_var) then
-    let id = out_gen (topwit wit_var) v in
+  if has_type v (topwit wit_hyp) then
+    let id = out_gen (topwit wit_hyp) v in
     if is_variable env id then id else fail ()
   else match Value.to_constr v with
   | Some c when isVar sigma c -> destVar sigma c
@@ -360,8 +360,8 @@ let coerce_to_quantified_hypothesis sigma v =
   | Some (IntroNaming (IntroIdentifier id)) -> NamedHyp id
   | Some _ -> raise (CannotCoerceTo "a quantified hypothesis")
   | None ->
-  if has_type v (topwit wit_var) then
-    let id = out_gen (topwit wit_var) v in
+  if has_type v (topwit wit_hyp) then
+    let id = out_gen (topwit wit_hyp) v in
     NamedHyp id
   else if has_type v (topwit wit_int) then
     AnonHyp (out_gen (topwit wit_int) v)

@@ -29,8 +29,6 @@ open Pvernac.Vernac_
 open Pltac
 open Vernacextend
 
-let wit_hyp = wit_var
-
 }
 
 DECLARE PLUGIN "ltac_plugin"

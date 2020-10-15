@@ -47,7 +47,7 @@ let () =
 
 let () =
   let register name entry = Tacentries.register_tactic_notation_entry name entry in
-  register "hyp" wit_var;
+  register "hyp" wit_hyp;
   register "simple_intropattern" wit_simple_intropattern;
   register "integer" wit_integer;
   register "reference" wit_ref;
@@ -140,7 +140,7 @@ ARGUMENT EXTEND occurrences
   GLOB_PRINTED BY { pr_occurrences }
 
 | [ ne_integer_list(l) ] -> { ArgArg l }
-| [ var(id) ] -> { ArgVar id }
+| [ hyp(id) ] -> { ArgVar id }
 END
 
 {

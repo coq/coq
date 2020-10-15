@@ -280,7 +280,7 @@ let interp_wit wit ist gl x =
   sigma, Tacinterp.Value.cast (topwit wit) arg
 
 let interp_hyp ist gl (SsrHyp (loc, id)) =
-  let s, id' = interp_wit wit_var ist gl CAst.(make ?loc id) in
+  let s, id' = interp_wit wit_hyp ist gl CAst.(make ?loc id) in
   if not_section_id id' then s, SsrHyp (loc, id') else
   hyp_err ?loc "Can't clear section hypothesis " id'
 

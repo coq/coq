@@ -279,7 +279,8 @@ module Prim =
     let strategy_level = Entry.create "strategy_level"
 
     (* parsed like ident but interpreted as a term *)
-    let var = Entry.create "var"
+    let hyp = Entry.create "hyp"
+    let var = hyp
 
     let name = Entry.create "name"
     let identref = Entry.create "identref"
@@ -504,7 +505,7 @@ let () =
   Grammar.register0 wit_string (Prim.string);
   Grammar.register0 wit_pre_ident (Prim.preident);
   Grammar.register0 wit_ident (Prim.ident);
-  Grammar.register0 wit_var (Prim.var);
+  Grammar.register0 wit_hyp (Prim.hyp);
   Grammar.register0 wit_ref (Prim.reference);
   Grammar.register0 wit_smart_global (Prim.smart_global);
   Grammar.register0 wit_sort_family (Constr.sort_family);
