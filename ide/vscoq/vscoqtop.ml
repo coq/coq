@@ -46,8 +46,8 @@ let islave_parse ~opts extra_args =
   let run_mode, extra_args = coqtop_toplevel.parse_extra ~opts extra_args in
   run_mode, []
 
-let islave_default_opts =
-  Coqargs.{ default with
+let islave_default_opts flags =
+  Coqargs.{ flags with
     config = { default.config with
       stm_flags = { default.config.stm_flags with
          Stm.AsyncOpts.async_proofs_worker_priority = CoqworkmgrApi.High }}}
@@ -56,12 +56,22 @@ let islave_init run_mode ~opts =
   Coqtop.init_toploop opts
 
 let main () =
+  log @@ "Looking for _CoqProject file in: " ^ Unix.getcwd ();
+  let opts =
+    match CoqProject_file.find_project_file ~from:(Unix.getcwd ()) ~projfile_name:"_CoqProject" with
+    | None -> islave_default_opts Coqargs.default
+    | Some f ->
+      let project = CoqProject_file.read_project_file ~warning_fn:(fun _ -> ()) f in
+      let args = CoqProject_file.coqtop_args_from_project project in
+      log @@ "Args from project file: " ^ String.concat " " args;
+      fst @@ Coqargs.parse_args ~help:vscoqtop_specific_usage ~init:Coqargs.default args
+  in
   let custom = Coqtop.{
       parse_extra = islave_parse;
       help = vscoqtop_specific_usage;
       init = islave_init;
       run = loop;
-      opts = islave_default_opts } in
+      opts } in
   Coqtop.start_coq custom
 
 let _ =
