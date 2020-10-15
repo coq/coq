@@ -1854,7 +1854,8 @@ module MutualEntry : sig
   val declare_variable
     : pinfo:Proof_info.t
     -> uctx:UState.t
-    -> Entries.parameter_entry
+    -> sec_vars:Id.Set.t option
+    -> univs:Entries.universes_entry
     -> Names.GlobRef.t list
 
   val declare_mutdef
@@ -1920,10 +1921,11 @@ end = struct
     in
     List.map_i (declare_mutdef ~pinfo ~uctx pe) 0 pinfo.Proof_info.cinfo
 
-  let declare_variable ~pinfo ~uctx pe =
+  let declare_variable ~pinfo ~uctx ~sec_vars ~univs =
     let { Info.scope; hook } = pinfo.Proof_info.info in
     List.map_i (
       fun i { CInfo.name; typ; impargs } ->
+        let pe = (sec_vars, (typ, univs), None) in
         declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
     ) 0 pinfo.Proof_info.cinfo
 
@@ -1953,8 +1955,8 @@ let compute_proof_using_for_admitted proof typ pproofs =
       Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
     | _ -> None
 
-let finish_admitted ~pm ~pinfo ~uctx pe =
-  let cst = MutualEntry.declare_variable ~pinfo ~uctx pe in
+let finish_admitted ~pm ~pinfo ~uctx ~sec_vars ~univs =
+  let cst = MutualEntry.declare_variable ~pinfo ~uctx ~sec_vars ~univs in
   (* If the constant was an obligation we need to update the program map *)
   match CEphemeron.get pinfo.Proof_info.proof_ending with
   | Proof_ending.End_obligation oinfo ->
@@ -1974,7 +1976,7 @@ let save_admitted ~pm ~proof =
   let sec_vars = compute_proof_using_for_admitted proof typ pproofs in
   let uctx = get_initial_euctx proof in
   let univs = UState.check_univ_decl ~poly uctx udecl in
-  finish_admitted ~pm ~pinfo:proof.pinfo ~uctx (sec_vars, (typ, univs), None)
+  finish_admitted ~pm ~pinfo:proof.pinfo ~uctx ~sec_vars ~univs
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
@@ -2097,12 +2099,9 @@ let save_lemma_admitted_delayed ~pm ~proof ~pinfo =
   let poly = match proof_entry_universes with
     | Entries.Monomorphic_entry _ -> false
     | Entries.Polymorphic_entry (_, _) -> true in
-  let typ = match proof_entry_type with
-    | None -> CErrors.user_err Pp.(str "Admitted requires an explicit statement");
-    | Some typ -> typ in
-  let ctx = UState.univ_entry ~poly uctx in
+  let univs = UState.univ_entry ~poly uctx in
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-  finish_admitted ~pm ~uctx ~pinfo (sec_vars, (typ, ctx), None)
+  finish_admitted ~pm ~uctx ~pinfo ~sec_vars ~univs
 
 let save_lemma_proved_delayed ~pm ~proof ~pinfo ~idopt =
   (* vio2vo calls this but with invalid info, we have to workaround
