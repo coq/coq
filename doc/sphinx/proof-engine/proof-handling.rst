@@ -878,6 +878,11 @@ Controlling the effect of proof editing commands
    proved before starting the previous proof) and Coq will switch back to the
    proof of the previous assertion.
 
+.. flag:: Printing Goal Names
+
+   When turned on, the name of the goal is printed in interactive
+   proof mode, which can be useful in cases of cross references
+   between goals.
 
 Controlling memory usage
 ------------------------
