@@ -995,6 +995,9 @@ let add_mind l mie senv =
   let mib = Indtypes.check_inductive senv.env ~sec_univs kn mie in
   kn, add_checked_mind kn mib senv
 
+let add_mind ?typing_flags l mie senv =
+  with_typing_flags ?typing_flags senv ~f:(add_mind l mie)
+
 (** Insertion of module types *)
 
 let add_modtype l params_mte inl senv =
