@@ -678,9 +678,15 @@ let polymorphic_cumulative =
   in
   let open Attributes in
   let open Notations in
+  (* EJGA: this seems redudant with code in attributes.ml *)
   qualify_attribute "universes"
-    (bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic"
-     ++ bool_attribute ~name:"Cumulativity" ~on:"cumulative" ~off:"noncumulative")
+    (deprecated_bool_attribute
+       ~name:"Polymorphism"
+       ~on:"polymorphic" ~off:"monomorphic"
+     ++
+     deprecated_bool_attribute
+       ~name:"Cumulativity"
+       ~on:"cumulative" ~off:"noncumulative")
   >>= function
   | Some poly, Some cum ->
      (* Case of Polymorphic|Monomorphic Cumulative|NonCumulative Inductive
