@@ -220,14 +220,15 @@ let check_allowed_sort env sigma ind c p =
   else
     Sorts.relevance_of_sort_family ksort
 
+let check_actual_type env sigma cj t =
+  try Evarconv.unify_leq_delay env sigma cj.uj_type t
+  with Evarconv.UnableToUnify (sigma,e) -> error_actual_type env sigma cj t e
+
 let judge_of_cast env sigma cj k tj =
   let expected_type = tj.utj_val in
-  match Evarconv.unify_leq_delay env sigma cj.uj_type expected_type with
-  | exception Evarconv.UnableToUnify _ ->
-    error_actual_type_core env sigma cj expected_type;
-  | sigma ->
-    sigma, { uj_val = mkCast (cj.uj_val, k, expected_type);
-             uj_type = expected_type }
+  let sigma = check_actual_type env sigma cj expected_type in
+  sigma, { uj_val = mkCast (cj.uj_val, k, expected_type);
+           uj_type = expected_type }
 
 let check_fix env sigma pfix =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
@@ -340,7 +341,7 @@ let judge_of_array env sigma u tj defj tyj =
   let sigma = Evd.set_leq_sort env sigma tyj.utj_type
       (Sorts.sort_of_univ (Univ.Universe.make ulev))
   in
-  let check_one sigma j = Evarconv.unify_leq_delay env sigma j.uj_type tyj.utj_val in
+  let check_one sigma j = check_actual_type env sigma j tyj.utj_val in
   let sigma = check_one sigma defj in
   let sigma = Array.fold_left check_one sigma tj in
   let arr = EConstr.of_constr @@ type_of_array env u in
@@ -391,7 +392,7 @@ let rec execute env sigma cstr =
             let t = mkApp (mkIndU (ci.ci_ind,univs), args) in
             let sigma, tj = execute env sigma t in
             let sigma, tj = type_judgment env sigma tj in
-            let sigma = Evarconv.unify_leq_delay env sigma cj.uj_type tj.utj_val in
+            let sigma = check_actual_type env sigma cj tj.utj_val in
             sigma
         in
         judge_of_case env sigma ci pj iv cj lfj
@@ -492,10 +493,7 @@ and execute_array env = Array.fold_left_map (execute env)
 
 let check env sigma c t =
   let sigma, j = execute env sigma c in
-  match Evarconv.unify_leq_delay env sigma j.uj_type t with
-  | exception Evarconv.UnableToUnify _ ->
-    error_actual_type_core env sigma j t
-  | sigma -> sigma
+  check_actual_type env sigma j t
 
 (* Type of a constr *)
 
