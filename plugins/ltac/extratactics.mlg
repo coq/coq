@@ -202,6 +202,23 @@ TACTIC EXTEND dependent_rewrite
 END
 
 (**********************************************************************)
+(* On-do                                                              *)
+
+{
+
+let on_do with_evars c ipat =
+  match ipat.CAst.v with
+  | IntroAction pat -> on_do with_evars c pat
+  | _ -> user_err (str "action expected")
+
+}
+
+TACTIC EXTEND on_do
+| [ "on" destruction_arg(c) "do" simple_intropattern(ipat) ] ->
+    { on_do false c ipat }
+END
+
+(**********************************************************************)
 (* Decompose                                                          *)
 
 TACTIC EXTEND decompose_sum

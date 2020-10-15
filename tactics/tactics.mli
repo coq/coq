@@ -140,6 +140,9 @@ val intro_pattern_to : evars_flag -> Id.t Logic.move_location -> delayed_open_co
 (** Implements user-level "intros", with [] standing for "**" *)
 val intros_patterns : evars_flag -> intro_patterns -> unit Proofview.tactic
 
+val on_do : evars_flag -> delayed_open_constr_with_bindings destruction_arg ->
+  Tactypes.delayed_open_constr Tactypes.intro_pattern_action_expr -> unit Proofview.tactic
+
 (** {6 Exact tactics. } *)
 
 val assumption       : unit Proofview.tactic

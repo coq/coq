@@ -2605,6 +2605,20 @@ let intros_patterns with_evars = function
   | [] -> intros
   | l -> intro_patterns_to with_evars MoveLast l
 
+let on_do with_evars arg pat =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    onOpenInductionArg env sigma
+      (fun _clear_flag (sigma,(c,bl)) ->
+        match kind sigma c, bl with
+        | Var id, NoBindings ->
+           intro_pattern_action with_evars true true pat [] (MoveAfter id)
+             (fun _ _ _ -> Proofview.tclUNIT ()) id
+        | c, _ -> failwith "TODO: let-in first, then clear")
+      arg
+    end
+
 (**************************)
 (*   Forward reasoning    *)
 (**************************)
