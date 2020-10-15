@@ -9,12 +9,18 @@
 (************************************************************************)
 
 (** The type of parsing attribute data *)
+type vernac_flag_type =
+  | FlagIdent of string
+  | FlagString of string
+
 type vernac_flags = vernac_flag list
 and vernac_flag = string * vernac_flag_value
 and vernac_flag_value =
   | VernacFlagEmpty
-  | VernacFlagLeaf of string
+  | VernacFlagLeaf of vernac_flag_type
   | VernacFlagList of vernac_flags
+
+val pr_vernac_flag : vernac_flag -> Pp.t
 
 type +'a attribute
 (** The type of attributes. When parsing attributes if an ['a
@@ -82,10 +88,20 @@ val attribute_of_list : (string * 'a key_parser) list -> 'a option attribute
 (** Make an attribute from a list of key parsers together with their
    associated key. *)
 
-val bool_attribute : name:string -> on:string -> off:string -> bool option attribute
-(** Define boolean attribute [name] with value [true] when [on] is
-   provided and [false] when [off] is provided. The attribute may only
-   be set once for a command. *)
+(** Define boolean attribute [name], of the form [name={on,off}]. The
+   attribute may only be set once for a command. *)
+val bool_attribute : name:string -> bool option attribute
+
+val deprecated_bool_attribute
+  : name:string
+  -> on:string
+  -> off:string
+  -> bool option attribute
+(** Define boolean attribute [name] with will be set when [on] is
+   provided and unset when [off] is provided. The attribute may only
+   be set once for a command; this attribute both accepts the old
+   [name(on)] [name(off)] and new attribute syntax, with [on] taken as
+   the key. *)
 
 val qualify_attribute : string -> 'a attribute -> 'a attribute
 (** [qualified_attribute qual att] treats [#[qual(atts)]] like [att]
