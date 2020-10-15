@@ -64,7 +64,7 @@ type prepared_task =
   | PExec of sentence_id * ast
   | PDelegate of sentence_id * execution_status DelegationManager.remote_mapping * prepared_task list
 
-type job = prepared_task list * Vernacstate.t * sentence_id
+type job = prepared_task list * Vernacstate.t * int * sentence_id
 
 module ProofWorker = DelegationManager.Make(struct
   type t = job
@@ -145,9 +145,9 @@ let find_fulfilled_opt x m =
   with Not_found -> None
 
 module Jobs = struct
-  type data = execution_status DelegationManager.remote_mapping * (prepared_task list * Vernacstate.t * sentence_id)
+  type data = execution_status DelegationManager.remote_mapping * job
   type dependency = sentence_id
-  let is_invalid id (_,(_,_,id1)) = Stateid.equal id id1
+  let is_invalid id (_,(_,_,_,id1)) = Stateid.equal id id1
 end
 module Queue = MakeQueue(Jobs)
 
@@ -187,7 +187,7 @@ let id_of_prepared_task = function
   | PExec(id, _) -> id
   | PDelegate(id, _, _) -> id
 
-let rec worker_main ~doc_id st ((job , vs, _state_id) : job) =
+let rec worker_main st ((job , vs, doc_id, _state_id) : job) =
   (* signalling progress is automtically done by the resolution of remote
      promises *)
   Lwt_list.fold_left_s (execute ~doc_id st) (vs,[],false) job >>= fun _ ->
@@ -208,13 +208,13 @@ and execute ~doc_id st (vs,events,interrupted) task =
           update st id v;
           Lwt.return (vs,events @ ev,false)
       | PDelegate (id, mapping, job) ->
-          Queue.enqueue (mapping,(job,vs,id));
+          Queue.enqueue (mapping,(job,vs,doc_id,id));
           let ast = CAst.make @@ Vernacexpr.{ expr = VernacEndProof Admitted; attrs = []; control = [] } in
           interp_ast ~doc_id ~state_id:id vs ast >>= fun (vs, v, ev) ->
           update st id v;
           let e =
             ProofWorker.worker_available ~job:Queue.dequeue
-              ~fork_action:(worker_main ~doc_id st) in
+              ~fork_action:(worker_main st) in
           Lwt.return (vs,events @ ev @ List.map inject_dm_event e ,false)
     with Sys.Break ->
       Lwt.return (vs,events,true)
@@ -315,7 +315,7 @@ let rec invalidate schedule id st =
   let of_sentence = invalidate1 st.of_sentence id in
   let removed = Queue.remove_invalid id in
   let of_sentence = List.fold_left invalidate1 of_sentence
-    List.(concat (map (fun (_,(ptl,_,_)) -> map id_of_prepared_task ptl) removed)) in
+    List.(concat (map (fun (_,(ptl,_,_,_)) -> map id_of_prepared_task ptl) removed)) in
   if of_sentence == st.of_sentence then Lwt.return st else
   let deps = Scheduler.dependents schedule id in
   Stateid.Set.fold (fun dep_id st ->
@@ -355,9 +355,9 @@ let handle_feedback state_id contents st =
 module WorkerProcess = struct
   type options = ProofWorker.options
   let parse_options = ProofWorker.parse_options
-  let main ~doc_id ~st:initial_vernac_state options =
+  let main ~st:initial_vernac_state options =
     ProofWorker.setup_plumbing options >>= fun (mapping, link, job) ->
     init_worker initial_vernac_state mapping link >>= fun (remote_mapping,state) ->
     ProofWorker.new_process_worker remote_mapping link;
-    worker_main ~doc_id state job
+    worker_main state job
 end

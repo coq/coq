@@ -54,5 +54,5 @@ val handle_feedback : Stateid.t -> Feedback.feedback_content -> state -> state
 module WorkerProcess : sig
   type options
   val parse_options : (options,'b) DelegationManager.coqtop_extra_args_fn
-  val main : doc_id:int -> st:Vernacstate.t -> options -> unit Lwt.t
+  val main : st:Vernacstate.t -> options -> unit Lwt.t
 end
