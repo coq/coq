@@ -32,14 +32,13 @@
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
-# Tagged on 2020-06-13 and compatible with Coq 8.12.
-: "${unicoq_CI_REF:=v1.4-8.12}"
+# Tagged on 2020-08-12 and compatible with Coq 8.12.
+: "${unicoq_CI_REF:=v1.5-8.12}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
-# There's no 8.12-compatible release yet but there is an
-# 8.12-compatible branch.
-: "${mtac2_CI_REF:=master-8.12}"
+# Tagged on 2020-08-19 and compatible with Coq 8.12
+: "${mtac2_CI_REF:=v1.3-coq8.12}"
 : "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2}"
 : "${mtac2_CI_ARCHIVEURL:=${mtac2_CI_GITURL}/archive}"
 
@@ -125,8 +124,8 @@
 ########################################################################
 # Gappa stand alone tool
 ########################################################################
-# Keeping same version from Coq 8.11 release (no new release since)
-: "${gappa_tool_CI_REF:=f53e105cd73484fc76eb58ba24ead73be502c608}"
+# This is the same version as in the Coq Platform
+: "${gappa_tool_CI_REF:=gappa-1.3.5}"
 : "${gappa_tool_CI_GITURL:=https://gitlab.inria.fr/gappa/gappa}"
 : "${gappa_tool_CI_ARCHIVEURL:=${gappa_tool_CI_GITURL}/-/archive}"
 
@@ -235,9 +234,8 @@
 ########################################################################
 # Bignums
 ########################################################################
-# There's no 8.12-compatible release yet but there is an
-# 8.12-compatible branch.
-: "${bignums_CI_REF:=v8.12}"
+# Released on 2020-07-24 and compatible with Coq 8.12
+: "${bignums_CI_REF:=V8.12.0}"
 : "${bignums_CI_GITURL:=https://github.com/coq/bignums}"
 : "${bignums_CI_ARCHIVEURL:=${bignums_CI_GITURL}/archive}"
 
@@ -265,16 +263,16 @@
 ########################################################################
 # Equations
 ########################################################################
-# Hash of the 8.12 branch suited for 8.12.0
-: "${equations_CI_REF:=990b264fa1622be1550db08dae87a6aa48851e23}"
+# Released on 2020-07-30 and compatible with Coq 8.12.
+: "${equations_CI_REF:=v1.2.3-8.12}"
 : "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
 
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-# Released on 2020-07-29 and compatible with Coq 8.12.
-: "${elpi_CI_REF:=v1.5.1}"
+# Released on 2020-08-21 and compatible with Coq 8.12.
+: "${elpi_CI_REF:=v1.6.0}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
@@ -293,25 +291,24 @@
 ########################################################################
 # ext-lib
 ########################################################################
-# This commit contains two compatibility fixes compared to the last
-# released version
-: "${ext_lib_CI_REF:=ad7ba4509212e032f78056a60459c2ddba8b4235}"
+# Released on 2020-08-07 and compatible with Coq 8.12.
+: "${ext_lib_CI_REF:=v0.11.2}"
 : "${ext_lib_CI_GITURL:=https://github.com/coq-community/coq-ext-lib}"
 : "${ext_lib_CI_ARCHIVEURL:=${ext_lib_CI_GITURL}/archive}"
 
 ########################################################################
 # simple-io
 ########################################################################
-: "${simple_io_CI_REF:=2901321752c2184febe5224d5bfd74295a030e72}"
+# Released on 2020-10-14 and compatible with Coq 8.12.
+: "${simple_io_CI_REF:=1.4.0}"
 : "${simple_io_CI_GITURL:=https://github.com/Lysxia/coq-simple-io}"
 : "${simple_io_CI_ARCHIVEURL:=${simple_io_CI_GITURL}/archive}"
 
 ########################################################################
 # quickchick
 ########################################################################
-# There is not yet a Coq 8.12-specific tag but there is already a
-# branch.
-: "${quickchick_CI_REF:=8.12}"
+# Released on 2020-08-06 and compatible with Coq 8.12.
+: "${quickchick_CI_REF:=v1.4.0}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
@@ -326,16 +323,15 @@
 # menhirlib
 ########################################################################
 # Note: menhirlib is now in subfolder coq-menhirlib of menhir
-: "${menhirlib_CI_REF:=20200525}"
+: "${menhirlib_CI_REF:=20200624}"
 : "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/menhir}"
 : "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
 
 ########################################################################
 # aac_tactics
 ########################################################################
-# There is not yet a Coq 8.12-specific tag but there is already a
-# branch.
-: "${aac_tactics_CI_REF:=v8.12}"
+# Released on 2020-07-26 and compatible with Coq 8.12.
+: "${aac_tactics_CI_REF:=v8.12.0}"
 : "${aac_tactics_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
 : "${aac_tactics_CI_ARCHIVEURL:=${aac_tactics_CI_GITURL}/archive}"
 
