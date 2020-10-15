@@ -123,7 +123,7 @@ let call_compiler ?profile:(profile=false) ml_filename =
        ::"-w"::"a"
        ::include_dirs) @
       ["-impl"; ml_filename] in
-  if !Flags.debug then Feedback.msg_debug (Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
+  debug_native_compiler (fun () -> Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
   try
     let res = CUnix.sys_command (Envars.ocamlfind ()) args in
     match res with
@@ -173,7 +173,7 @@ let call_linker ?(fatal=true) env ~prefix f upds =
     begin
       let msg = "Cannot find native compiler file " ^ f in
       if fatal then CErrors.user_err Pp.(str msg)
-      else if !Flags.debug then Feedback.msg_debug (Pp.str msg)
+      else debug_native_compiler (fun () -> Pp.str msg)
     end
   else
   (try
@@ -182,7 +182,7 @@ let call_linker ?(fatal=true) env ~prefix f upds =
    with Dynlink.Error _ as exn ->
      let exn = Exninfo.capture exn in
      if fatal then Exninfo.iraise exn
-     else if !Flags.debug then Feedback.msg_debug CErrors.(iprint exn));
+     else debug_native_compiler (fun () -> CErrors.(iprint exn)));
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library env ~prefix ~dirname ~basename =

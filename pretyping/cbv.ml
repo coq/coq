@@ -197,10 +197,7 @@ let cofixp_reducible flgs _ stk =
   else
     false
 
-let get_debug_cbv = Goptions.declare_bool_option_and_ref
-    ~depr:false
-    ~value:false
-    ~key:["Debug";"Cbv"]
+let debug_cbv = CDebug.create ~name:"Cbv"
 
 (* Reduction of primitives *)
 
@@ -494,7 +491,7 @@ and norm_head_ref k info env stack normt t =
   if red_set_ref info.reds normt then
     match cbv_value_cache info normt with
       | Declarations.Def body ->
-         if get_debug_cbv () then Feedback.msg_debug Pp.(str "Unfolding " ++ debug_pr_key normt);
+         debug_cbv (fun () -> Pp.(str "Unfolding " ++ debug_pr_key normt));
          strip_appl (shift_value k body) stack
       | Declarations.Primitive op ->
         let c = match normt with
@@ -503,11 +500,11 @@ and norm_head_ref k info env stack normt t =
         in
         (PRIMITIVE(op,c,[||]),stack)
       | Declarations.OpaqueDef _ | Declarations.Undef _ ->
-         if get_debug_cbv () then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
+         debug_cbv (fun () -> Pp.(str "Not unfolding " ++ debug_pr_key normt));
          (VAL(0,make_constr_ref k normt t),stack)
   else
     begin
-      if get_debug_cbv () then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
+      debug_cbv (fun () -> Pp.(str "Not unfolding " ++ debug_pr_key normt));
       (VAL(0,make_constr_ref k normt t),stack)
     end
 

@@ -15,7 +15,8 @@ let ( / ) s1 s2 = Filename.concat s1 s2
 
 let set_debug () =
   let () = Exninfo.record_backtrace true in
-  Flags.debug := true
+  Flags.debug := true;
+  CDebug.set_debug_levels [("all",1)]
 
 (* Loading of the resource file.
    rcfile is either $XDG_CONFIG_HOME/.coqrc.VERSION, or $XDG_CONFIG_HOME/.coqrc if the first one

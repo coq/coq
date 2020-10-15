@@ -47,17 +47,9 @@ let default_flags env =
   let ts = default_transparent_state env in
   default_flags_of ts
 
-let debug_unification =
-  Goptions.declare_bool_option_and_ref
-    ~depr:false
-    ~key:["Debug";"Unification"]
-    ~value:false
+let debug_unification = CDebug.create ~name:"unification"
 
-let debug_ho_unification =
-  Goptions.declare_bool_option_and_ref
-    ~depr:false
-    ~key:["Debug";"HO";"Unification"]
-    ~value:false
+let debug_ho_unification = CDebug.create ~name:"ho-unification"
 
 (*******************************************)
 (* Functions to deal with impossible cases *)
@@ -767,9 +759,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   in
   let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
   (* Evar must be undefined since we have flushed evars *)
-  let () = if debug_unification () then
-             let open Pp in
-             Feedback.msg_debug (v 0 (pr_state env evd appr1 ++ cut () ++ pr_state env evd appr2 ++ cut ())) in
+  let () = debug_unification (fun () -> Pp.(v 0 (pr_state env evd appr1 ++ cut () ++ pr_state env evd appr2 ++ cut ()))) in
   match (flex_kind_of_term flags env evd term1 sk1,
          flex_kind_of_term flags env evd term2 sk2) with
     | Flexible (sp1,al1), Flexible (sp2,al2) ->
@@ -1235,17 +1225,17 @@ let apply_on_subterm env evd fixed f test c t =
               (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
               applyrec acc t
     else
-    (if debug_ho_unification () then
-     Feedback.msg_debug Pp.(str"Testing " ++ prc env !evdref c ++ str" against " ++ prc env !evdref t);
+    (debug_ho_unification (fun () ->
+     Pp.(str"Testing " ++ prc env !evdref c ++ str" against " ++ prc env !evdref t));
      let b, evd =
         try test env !evdref k c t
         with e when CErrors.noncritical e -> assert false in
-     if b then (if debug_ho_unification () then Feedback.msg_debug (Pp.str "succeeded");
+     if b then (debug_ho_unification (fun () -> Pp.str "succeeded");
                 let evd', fixed, t' = f !evdref !fixedref k t in
                 fixedref := fixed;
                 evdref := evd'; t')
      else (
-       if debug_ho_unification () then Feedback.msg_debug (Pp.str "failed");
+       debug_ho_unification (fun () -> Pp.str "failed");
        map_constr_with_binders_left_to_right !evdref
         (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
         applyrec acc t))
@@ -1356,9 +1346,9 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   let env_evar = evar_filtered_env env_rhs evi in
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
-  if debug_ho_unification () then
-    (Feedback.msg_debug Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs);
-     Feedback.msg_debug Pp.(str"env evars: " ++ Termops.Internal.print_env env_evar));
+  debug_ho_unification (fun () ->
+     Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs ++ fnl () ++
+         str"env evars: " ++ Termops.Internal.print_env env_evar));
   let args = List.map (nf_evar evd) args in
   let argsubst = List.map2 (fun decl c -> (NamedDecl.get_id decl, c)) ctxt args in
   let instance = evar_identity_subst evi in
@@ -1391,17 +1381,17 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   let rec set_holes env_rhs evd fixed rhs = function
   | (id,idty,c,cty,evsref,filter,occs)::subst ->
      let c = nf_evar evd c in
-     if debug_ho_unification () then
-       Feedback.msg_debug Pp.(str"set holes for: " ++
+     debug_ho_unification (fun () ->
+       Pp.(str"set holes for: " ++
                                 prc env_rhs evd (mkVar id.binder_name) ++ spc () ++
                                 prc env_rhs evd c ++ str" in " ++
-                                prc env_rhs evd rhs);
+                                prc env_rhs evd rhs));
      let occ = ref 1 in
      let set_var evd fixed k inst =
        let oc = !occ in
-       if debug_ho_unification () then
-       (Feedback.msg_debug Pp.(str"Found one occurrence");
-        Feedback.msg_debug Pp.(str"cty: " ++ prc env_rhs evd c));
+       debug_ho_unification (fun () ->
+       Pp.(str"Found one occurrence" ++ fnl () ++
+           str"cty: " ++ prc env_rhs evd c));
        incr occ;
        match occs with
        | AtOccurrences occs ->
@@ -1410,10 +1400,10 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
        | Unspecified prefer_abstraction ->
           let evd, fixed, evty = set_holes env_rhs evd fixed cty subst in
           let evty = nf_evar evd evty in
-          if debug_ho_unification () then
-            Feedback.msg_debug Pp.(str"abstracting one occurrence " ++ prc env_rhs evd inst ++
-                                   str" of type: " ++ prc env_evar evd evty ++
-                                   str " for " ++ prc env_rhs evd c);
+          debug_ho_unification (fun () ->
+            Pp.(str"abstracting one occurrence " ++ prc env_rhs evd inst ++
+                str" of type: " ++ prc env_evar evd evty ++
+                str " for " ++ prc env_rhs evd c));
           let instance = Filter.filter_list filter instance in
           (* Allow any type lower than the variable's type as the
              abstracted subterm might have a smaller type, which could be
@@ -1429,8 +1419,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
           evd, fixed, mkEvar (evk, instance)
      in
      let evd, fixed, rhs' = apply_on_subterm env_rhs evd fixed set_var test c rhs in
-     if debug_ho_unification () then
-       Feedback.msg_debug Pp.(str"abstracted: " ++ prc env_rhs evd rhs');
+     debug_ho_unification (fun () ->
+       Pp.(str"abstracted: " ++ prc env_rhs evd rhs'));
      let () = check_selected_occs env_rhs evd c !occ occs in
      let env_rhs' = push_named (NamedDecl.LocalAssum (id,idty)) env_rhs in
      set_holes env_rhs' evd fixed rhs' subst
@@ -1443,9 +1433,9 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   (* Thin evars making the term typable in env_evar *)
   let evd, rhs' = thin_evars env_evar evd ctxt rhs' in
   (* We instantiate the evars of which the value is forced by typing *)
-  if debug_ho_unification () then
-    (Feedback.msg_debug Pp.(str"solve_evars on: " ++ prc env_evar evd rhs');
-     Feedback.msg_debug Pp.(str"evars: " ++ pr_evar_map (Some 0) env_evar evd));
+  debug_ho_unification (fun () ->
+    Pp.(str"solve_evars on: " ++ prc env_evar evd rhs' ++ fnl () ++
+        str"evars: " ++ pr_evar_map (Some 0) env_evar evd));
   let evd,rhs' =
     try !solve_evars env_evar evd rhs'
     with e when Pretype_errors.precatchable_exception e ->
@@ -1453,18 +1443,18 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
       raise (TypingFailed evd) in
   let rhs' = nf_evar evd rhs' in
   (* We instantiate the evars of which the value is forced by typing *)
-  if debug_ho_unification () then
-    (Feedback.msg_debug Pp.(str"after solve_evars: " ++ prc env_evar evd rhs');
-     Feedback.msg_debug Pp.(str"evars: " ++ pr_evar_map (Some 0) env_evar evd));
+  debug_ho_unification (fun () ->
+    Pp.(str"after solve_evars: " ++ prc env_evar evd rhs' ++ fnl () ++
+    str"evars: " ++ pr_evar_map (Some 0) env_evar evd));
 
   let rec abstract_free_holes evd = function
    | (id,idty,c,cty,evsref,_,_)::l ->
      let id = id.binder_name in
      let c = nf_evar evd c in
-     if debug_ho_unification () then
-       Feedback.msg_debug Pp.(str"abstracting: " ++
-                                prc env_rhs evd (mkVar id) ++ spc () ++
-                                prc env_rhs evd c);
+     debug_ho_unification (fun () ->
+       Pp.(str"abstracting: " ++
+             prc env_rhs evd (mkVar id) ++ spc () ++
+             prc env_rhs evd c));
      let rec force_instantiation evd = function
      | (evk,evty,inst,abstract)::evs ->
        let evk = Option.default evk (Evarutil.advance evd evk) in
@@ -1494,14 +1484,14 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
              let e, info = Exninfo.capture e in
              Exninfo.iraise (NotFoundInstance e, info)
          else
-           ((if debug_ho_unification () then
+           ((debug_ho_unification (fun () ->
                let evi = Evd.find evd evk in
                let env = Evd.evar_env env_rhs evi in
-               Feedback.msg_debug Pp.(str"evar is defined: " ++
+               Pp.(str"evar is defined: " ++
                  int (Evar.repr evk) ++ spc () ++
                  prc env evd (match evar_body evi with Evar_defined c -> c
                    | Evar_empty -> assert false)));
-            evd)
+            evd))
        in force_instantiation evd evs
      | [] -> abstract_free_holes evd l
      in force_instantiation evd !evsref
@@ -1509,27 +1499,27 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      if Evd.is_defined evd evk then
        (* Can happen due to dependencies: instantiating evars in the arguments of evk might
            instantiate evk itself. *)
-       (if debug_ho_unification () then
+       (debug_ho_unification (fun () ->
           begin
             let evi = Evd.find evd evk in
             let evenv = evar_env env_rhs evi in
             let body = match evar_body evi with Evar_empty -> assert false | Evar_defined c -> c in
-            Feedback.msg_debug Pp.(str"evar was defined already as: " ++ prc evenv evd body)
-          end;
+            Pp.(str"evar was defined already as: " ++ prc evenv evd body)
+          end);
         evd)
      else
        try
          let evi = Evd.find_undefined evd evk in
          let evenv = evar_env env_rhs evi in
          let rhs' = nf_evar evd rhs' in
-           if debug_ho_unification () then
-             Feedback.msg_debug Pp.(str"abstracted type before second solve_evars: " ++
-                                      prc evenv evd rhs');
+           debug_ho_unification (fun () ->
+             Pp.(str"abstracted type before second solve_evars: " ++
+                   prc evenv evd rhs'));
          (* solve_evars is not commuting with nf_evar, because restricting
              an evar might provide a more specific type. *)
           let evd, _ = !solve_evars evenv evd rhs' in
-          if debug_ho_unification () then
-            Feedback.msg_debug Pp.(str"abstracted type: " ++ prc evenv evd (nf_evar evd rhs'));
+          debug_ho_unification (fun () ->
+            Pp.(str"abstracted type: " ++ prc evenv evd (nf_evar evd rhs')));
           let flags = default_flags_of TransparentState.full in
             Evarsolve.instantiate_evar evar_unify flags env_rhs evd evk rhs'
          with IllTypedInstance _ -> raise (TypingFailed evd)
@@ -1582,11 +1572,10 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
   let t2 = apprec_nohdbeta flags env evd (whd_head_evar evd t2) in
   let (term1,l1 as appr1) = try destApp evd t1 with DestKO -> (t1, [||]) in
   let (term2,l2 as appr2) = try destApp evd t2 with DestKO -> (t2, [||]) in
-  let () = if debug_unification () then
-             let open Pp in
-             Feedback.msg_debug (v 0 (str "Heuristic:" ++ spc () ++
+  let () = debug_unification (fun () ->
+             Pp.(v 0 (str "Heuristic:" ++ spc () ++
                                 Termops.Internal.print_constr_env env evd t1 ++ cut () ++
-                                Termops.Internal.print_constr_env env evd t2 ++ cut ())) in
+                                Termops.Internal.print_constr_env env evd t2 ++ cut ()))) in
   let app_empty = Array.is_empty l1 && Array.is_empty l2 in
   match EConstr.kind evd term1, EConstr.kind evd term2 with
   | Evar (evk1,args1), (Rel _|Var _) when app_empty

@@ -420,16 +420,16 @@ let cc_tactic depth additionnal_terms =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     Coqlib.(check_required_library logic_module_name);
-    let _ = debug (fun () -> Pp.str "Reading subgoal ...") in
+    let _ = debug_congruence (fun () -> Pp.str "Reading subgoal ...") in
     let state = make_prb gl depth additionnal_terms in
-    let _ = debug (fun () -> Pp.str "Problem built, solving ...") in
+    let _ = debug_congruence (fun () -> Pp.str "Problem built, solving ...") in
     let sol = execute true state in
-    let _ = debug (fun () -> Pp.str "Computation completed.") in
+    let _ = debug_congruence (fun () -> Pp.str "Computation completed.") in
     let uf=forest state in
     match sol with
       None -> Tacticals.New.tclFAIL 0 (str "congruence failed")
     | Some reason ->
-        debug (fun () -> Pp.str "Goal solved, generating proof ...");
+        debug_congruence (fun () -> Pp.str "Goal solved, generating proof ...");
         match reason with
           Discrimination (i,ipac,j,jpac) ->
             let p=build_proof (Tacmach.New.pf_env gl) sigma uf (`Discr (i,ipac,j,jpac)) in

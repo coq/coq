@@ -15,7 +15,6 @@ open Names
 open Printer
 open Tacmach
 
-open Ssrmatching_plugin
 open Ssrast
 
 let pr_spc () = str " "
@@ -129,15 +128,4 @@ and pr_block = function (Prefix id) -> str"^" ++ Id.print id
                       | (SuffixId id) -> str"^~" ++ Id.print id
                       | (SuffixNum n) -> str"^~" ++ int n
 
-(* 0 cost pp function. Active only if Debug Ssreflect is Set *)
-let ppdebug_ref = ref (fun _ -> ())
-let ssr_pp s = Feedback.msg_debug (str"SSR: "++Lazy.force s)
-let () =
-  Goptions.(declare_bool_option
-    { optkey   = ["Debug";"Ssreflect"];
-      optdepr  = false;
-      optread  = (fun _ -> !ppdebug_ref == ssr_pp);
-      optwrite = (fun b ->
-        Ssrmatching.debug b;
-        if b then ppdebug_ref := ssr_pp else ppdebug_ref := fun _ -> ()) })
-let ppdebug s = !ppdebug_ref s
+let debug_ssr = CDebug.create ~name:"ssreflect"

@@ -308,6 +308,11 @@ let get_native_compiler s =
   else
     n
 
+let parse_debug_flags s =
+  match CDebug.parse_flags s with
+  | None -> error_wrong_arg "Error: invalid debug flags"
+  | Some l -> l
+
 (* Main parsing routine *)
 (*s Parsing of the command line *)
 
@@ -395,7 +400,7 @@ let parse_args ~help ~init arglist : t * string list =
         Stm.AsyncOpts.async_proofs_cmd_error_resilience = get_bool opt (next ())
       }}}
 
-    |"-async-proofs-delegation-threshold" ->
+    |"async-proofs-delegation-threshold" ->
       { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_delegation_threshold = get_float opt (next ())
       }}}
@@ -507,7 +512,12 @@ let parse_args ~help ~init arglist : t * string list =
     |"-bt" -> Exninfo.record_backtrace true; oval
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> set_query oval PrintConfig
+
     |"-debug" -> Coqinit.set_debug (); oval
+    |"-d" | "-D" ->
+      CDebug.set_debug_levels (parse_debug_flags (next ()));
+      oval
+
     |"-xml-debug" -> Flags.xml_debug := true; Coqinit.set_debug (); oval
     |"-diffs" ->
       add_set_option oval Proof_diffs.opt_name @@ Stm.OptionSet (Some (next ()))

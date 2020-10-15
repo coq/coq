@@ -21,6 +21,8 @@ to OCaml code. *)
 type mllambda
 type global
 
+val debug_native_compiler : ?verbosity:int -> (unit -> Pp.t) -> unit
+
 val pp_global : Format.formatter -> global -> unit
 
 val mk_open : string -> global

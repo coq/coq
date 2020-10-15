@@ -9,6 +9,7 @@ Stateid
 Loc
 Feedback
 CErrors
+CDebug
 CWarnings
 
 AcyclicGraph

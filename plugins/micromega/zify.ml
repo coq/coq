@@ -14,7 +14,7 @@ open Pp
 open Lazy
 module NamedDecl = Context.Named.Declaration
 
-let debug = false
+let debug_zify = CDebug.create ~name:"zify"
 
 (* The following [constr] are necessary for constructing the proof terms *)
 
@@ -800,12 +800,11 @@ let pp_prf prf =
 
 let interp_prf evd inj source prf =
   let t, prf' = interp_prf evd inj source prf in
-  if debug then
-    Feedback.msg_debug
+  debug_zify (fun () ->
       Pp.(
         str "interp_prf " ++ gl_pr_constr inj.EInjT.inj ++ str " "
         ++ gl_pr_constr source ++ str " = " ++ gl_pr_constr t ++ str " by "
-        ++ gl_pr_constr prf' ++ str " from " ++ pp_prf prf ++ fnl ());
+        ++ gl_pr_constr prf' ++ str " from " ++ pp_prf prf ++ fnl ()));
   (t, prf')
 
 let mkvar evd inj e =
@@ -883,13 +882,12 @@ let app_unop evd src unop arg prf =
 
 let app_unop evd src unop arg prf =
   let res = app_unop evd src unop arg prf in
-  if debug then
-    Feedback.msg_debug
+  debug_zify (fun () ->
       Pp.(
         str "\napp_unop "
         ++ pp_prf evd unop.EUnOpT.inj1_t arg prf
         ++ str " => "
-        ++ pp_prf evd unop.EUnOpT.inj2_t src res);
+        ++ pp_prf evd unop.EUnOpT.inj2_t src res));
   res
 
 let app_binop evd src binop arg1 prf1 arg2 prf2 =
@@ -1057,8 +1055,8 @@ let match_operator env evd hd args (t, d) =
 
 let pp_trans_expr env evd e res =
   let {deriv = inj} = get_injection env evd e.typ in
-  if debug then
-    Feedback.msg_debug Pp.(str "\ntrans_expr " ++ pp_prf evd inj e.constr res);
+  debug_zify (fun () ->
+    Pp.(str "\ntrans_expr " ++ pp_prf evd inj e.constr res));
   res
 
 let rec trans_expr env evd e =
@@ -1152,7 +1150,7 @@ let trans_binrel evd src rop a1 prf1 a2 prf2 =
 
 let trans_binrel evd src rop a1 prf1 a2 prf2 =
   let res = trans_binrel evd src rop a1 prf1 a2 prf2 in
-  if debug then Feedback.msg_debug Pp.(str "\ntrans_binrel " ++ pp_prfp res);
+  debug_zify (fun () -> Pp.(str "\ntrans_binrel " ++ pp_prfp res));
   res
 
 let mkprf t p =
@@ -1164,11 +1162,10 @@ let mkprf t p =
 
 let mkprf t p =
   let t', p = mkprf t p in
-  if debug then
-    Feedback.msg_debug
+  debug_zify (fun () ->
       Pp.(
         str "mkprf " ++ gl_pr_constr t ++ str " <-> " ++ gl_pr_constr t'
-        ++ str " by " ++ gl_pr_constr p);
+        ++ str " by " ++ gl_pr_constr p));
   (t', p)
 
 let trans_bin_prop op_constr op_iff t1 p1 t2 p2 =
@@ -1186,7 +1183,7 @@ let trans_bin_prop op_constr op_iff t1 p1 t2 p2 =
 
 let trans_bin_prop op_constr op_iff t1 p1 t2 p2 =
   let prf = trans_bin_prop op_constr op_iff t1 p1 t2 p2 in
-  if debug then Feedback.msg_debug (pp_prfp prf);
+  debug_zify (fun () -> pp_prfp prf);
   prf
 
 let trans_un_prop op_constr op_iff p1 prf1 =
@@ -1250,8 +1247,8 @@ let trans_hyps env evd l =
     [] l
 
 let trans_hyp h t0 prfp =
-  if debug then
-    Feedback.msg_debug Pp.(str "trans_hyp: " ++ pp_prfp prfp ++ fnl ());
+  debug_zify (fun () ->
+    Pp.(str "trans_hyp: " ++ pp_prfp prfp ++ fnl ()));
   match prfp with
   | IProof -> Tacticals.New.tclIDTAC (* Should detect before *)
   | CProof t' ->
@@ -1278,8 +1275,8 @@ let trans_hyp h t0 prfp =
                (tclTHEN (Tactics.clear [h]) (Tactics.rename_hyp [(h', h)])))))
 
 let trans_concl prfp =
-  if debug then
-    Feedback.msg_debug Pp.(str "trans_concl: " ++ pp_prfp prfp ++ fnl ());
+  debug_zify (fun () ->
+    Pp.(str "trans_concl: " ++ pp_prfp prfp ++ fnl ()));
   match prfp with
   | IProof -> Tacticals.New.tclIDTAC
   | CProof t ->

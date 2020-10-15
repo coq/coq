@@ -56,5 +56,4 @@ val pr_guarded :
 
 val pr_occ : ssrocc -> Pp.t
 
-val ppdebug : Pp.t Lazy.t -> unit
-
+val debug_ssr : ?verbosity:int -> (unit -> Pp.t) -> unit

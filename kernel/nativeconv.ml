@@ -159,12 +159,12 @@ let native_conv_gen pb sigma env univs t1 t2 =
   let ml_filename, prefix = get_ml_filename () in
   let code, upds = mk_conv_code env sigma prefix t1 t2 in
   let fn = compile ml_filename code ~profile:false in
-  if !Flags.debug then Feedback.msg_debug (Pp.str "Running test...");
+  debug_native_compiler (fun () -> Pp.str "Running test...");
   let t0 = Sys.time () in
   call_linker env ~fatal:true ~prefix fn (Some upds);
   let t1 = Sys.time () in
   let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
-  if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
+  debug_native_compiler (fun () -> Pp.str time_info);
   (* TODO change 0 when we can have de Bruijn *)
   fst (conv_val env pb 0 !rt1 !rt2 univs)
 

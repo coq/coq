@@ -49,11 +49,7 @@ let is_keyed_unification =
     ~key:["Keyed";"Unification"]
     ~value:false
 
-let debug_unification =
-  Goptions.declare_bool_option_and_ref
-    ~depr:false
-    ~key:["Debug";"Tactic";"Unification"]
-    ~value:false
+let debug_tactic_unification = CDebug.create ~name:"tactic-unification"
 
 (** Making this unification algorithm correct w.r.t. the evar-map abstraction
     breaks too much stuff. So we redefine incorrect functions here. *)
@@ -692,8 +688,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     let cM = Evarutil.whd_head_evar sigma curm
     and cN = Evarutil.whd_head_evar sigma curn in
     let () =
-      if debug_unification () then
-        Feedback.msg_debug (
+      debug_tactic_unification (fun () ->
           Termops.Internal.print_constr_env curenv sigma cM ++ str" ~= " ++
           Termops.Internal.print_constr_env curenv sigma cN)
     in
@@ -1117,7 +1112,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
   in
 
-  if debug_unification () then Feedback.msg_debug (str "Starting unification");
+  debug_tactic_unification (fun () -> str "Starting unification");
   let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
   try
   let res =
@@ -1142,11 +1137,11 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     let a = match res with
     | Some sigma -> sigma, ms, es
     | None -> unirec_rec (env,0) cv_pb opt subst m n in
-    if debug_unification () then Feedback.msg_debug (str "Leaving unification with success");
+    debug_tactic_unification (fun () -> str "Leaving unification with success");
     a
   with e ->
     let e = Exninfo.capture e in
-    if debug_unification () then Feedback.msg_debug (str "Leaving unification with failure");
+    debug_tactic_unification (fun () -> str "Leaving unification with failure");
     Exninfo.iraise e
 
 let unify_0 env sigma = unify_0_with_initial_metas (sigma,[],[]) true env

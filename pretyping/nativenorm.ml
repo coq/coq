@@ -468,15 +468,15 @@ let start_profiler_linux profile_fn =
       Unix.stdin dev_null dev_null
   in
   (* doesn't seem to be a way to test whether process creation succeeded *)
-  if !Flags.debug then
-    Feedback.msg_debug (Pp.str (Format.sprintf "Native compute profiler started, pid = %d, output to: %s" profiler_pid profile_fn));
+  debug_native_compiler (fun () ->
+    Pp.str (Format.sprintf "Native compute profiler started, pid = %d, output to: %s" profiler_pid profile_fn));
   Some profiler_pid
 
 (* kill profiler via SIGINT *)
 let stop_profiler_linux m_pid =
   match m_pid with
   | Some pid -> (
-    let _ = if !Flags.debug then Feedback.msg_debug (Pp.str "Stopping native code profiler") in
+    let _ = debug_native_compiler (fun () -> Pp.str "Stopping native code profiler") in
     try
       Unix.kill pid Sys.sigint;
       let _ = Unix.waitpid [] pid in ()

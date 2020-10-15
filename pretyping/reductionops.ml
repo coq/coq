@@ -692,27 +692,23 @@ module CredNative = RedNative(CNativeEntries)
     contract_* in any case .
 *)
 
-let debug_RAKAM =
-  Goptions.declare_bool_option_and_ref
-    ~depr:false
-    ~key:["Debug";"RAKAM"]
-    ~value:false
+let debug_RAKAM = CDebug.create ~name:"RAKAM"
 
 let rec whd_state_gen flags env sigma =
   let open Context.Named.Declaration in
   let rec whrec (x, stack) : state =
-    let () = if debug_RAKAM () then
+    let () =
         let open Pp in
         let pr c = Termops.Internal.print_constr_env env sigma c in
-        Feedback.msg_debug
+        debug_RAKAM (fun () ->
                (h (str "<<" ++ pr x ++
                    str "|" ++ cut () ++ Stack.pr pr stack ++
-                   str ">>"))
+                   str ">>")))
     in
     let c0 = EConstr.kind sigma x in
     let fold () =
-      let () = if debug_RAKAM () then
-          let open Pp in Feedback.msg_debug (str "<><><><><>") in
+      let () = debug_RAKAM (fun () ->
+          let open Pp in str "<><><><><>") in
       ((EConstr.of_kind c0, stack))
     in
     match c0 with

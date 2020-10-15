@@ -19,7 +19,7 @@ open Environ
 
 exception Elimconst
 
-val debug_RAKAM : unit -> bool
+val debug_RAKAM : ?verbosity:int -> (unit -> Pp.t) -> unit
 
 module CredNative : Primred.RedNative with
   type elem = EConstr.t and type args = EConstr.t array and type evd = Evd.evar_map

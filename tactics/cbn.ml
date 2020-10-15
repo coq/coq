@@ -539,19 +539,18 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let open Context.Named.Declaration in
   let open ReductionBehaviour in
   let rec whrec cst_l (x, stack) =
-    let () = if debug_RAKAM () then
+    let () = debug_RAKAM (fun () ->
         let open Pp in
         let pr c = Termops.Internal.print_constr_env env sigma c in
-        Feedback.msg_debug
                (h (str "<<" ++ pr x ++
                    str "|" ++ cut () ++ Cst_stack.pr env sigma cst_l ++
                    str "|" ++ cut () ++ Stack.pr pr stack ++
-                   str ">>"))
+                   str ">>")))
     in
     let c0 = EConstr.kind sigma x in
     let fold () =
-      let () = if debug_RAKAM () then
-          let open Pp in Feedback.msg_debug (str "<><><><><>") in
+      let () = debug_RAKAM (fun () ->
+          Pp.(str "<><><><><>")) in
       ((EConstr.of_kind c0, stack),cst_l)
     in
     match c0 with

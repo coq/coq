@@ -95,13 +95,13 @@ let pinject p c n a =
    p_rule=Inject(p,c,n,a)}
 
 let rec equal_proof env sigma uf i j=
-  debug (fun () -> str "equal_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
+  debug_congruence (fun () -> str "equal_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
   if i=j then prefl (term uf i) else
     let (li,lj)=join_path uf i j in
     ptrans (path_proof env sigma uf i li) (psym (path_proof env sigma uf j lj))
 
 and edge_proof env sigma uf ((i,j),eq)=
-  debug (fun () -> str "edge_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
+  debug_congruence (fun () -> str "edge_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
   let pi=equal_proof env sigma uf i eq.lhs in
   let pj=psym (equal_proof env sigma uf j eq.rhs) in
   let pij=
@@ -117,7 +117,7 @@ and edge_proof env sigma uf ((i,j),eq)=
   ptrans (ptrans pi pij) pj
 
 and constr_proof env sigma uf i ipac=
-  debug (fun () -> str "constr_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20));
+  debug_congruence (fun () -> str "constr_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20));
   let t=find_oldest_pac uf i ipac in
   let eq_it=equal_proof env sigma uf i t in
   if ipac.args=[] then
@@ -130,20 +130,20 @@ and constr_proof env sigma uf i ipac=
     ptrans eq_it (pcongr p (prefl targ))
 
 and path_proof env sigma uf i l=
-  debug (fun () -> str "path_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ str "{" ++
+  debug_congruence (fun () -> str "path_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ str "{" ++
            (prlist_with_sep (fun () -> str ",") (fun ((_,j),_) -> int j) l) ++ str "}");
   match l with
   | [] -> prefl (term uf i)
   | x::q->ptrans (path_proof env sigma uf (snd (fst x)) q) (edge_proof env sigma uf x)
 
 and congr_proof env sigma uf i j=
-  debug (fun () -> str "congr_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
+  debug_congruence (fun () -> str "congr_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
   let (i1,i2) = subterms uf i
   and (j1,j2) = subterms uf j in
   pcongr (equal_proof env sigma uf i1 j1) (equal_proof env sigma uf i2 j2)
 
 and ind_proof env sigma uf i ipac j jpac=
-   debug (fun () -> str "ind_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
+   debug_congruence (fun () -> str "ind_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
   let p=equal_proof env sigma uf i j
   and p1=constr_proof env sigma uf i ipac
   and p2=constr_proof env sigma uf j jpac in

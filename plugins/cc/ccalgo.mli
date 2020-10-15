@@ -121,7 +121,7 @@ val term_equal : term -> term -> bool
 
 val constr_of_term : term -> constr
 
-val debug : (unit -> Pp.t) -> unit
+val debug_congruence : ?verbosity:int -> (unit -> Pp.t) -> unit
 
 val forest : state -> forest
 

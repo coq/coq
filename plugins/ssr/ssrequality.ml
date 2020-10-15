@@ -76,7 +76,7 @@ let simpltac s = Proofview.Goal.enter (fun _ -> simpltac s)
 (** The "congr" tactic *)
 
 let interp_congrarg_at ist gl n rf ty m =
-  ppdebug(lazy Pp.(str"===interp_congrarg_at==="));
+  debug_ssr (fun () -> Pp.(str"===interp_congrarg_at==="));
   let congrn, _ = mkSsrRRef "nary_congruence" in
   let args1 = mkRnat n :: mkRHoles n @ [ty] in
   let args2 = mkRHoles (3 * n) in
@@ -84,7 +84,7 @@ let interp_congrarg_at ist gl n rf ty m =
     if i + n > m then None else
     try
       let rt = mkRApp congrn (args1 @  mkRApp rf (mkRHoles i) :: args2) in
-      ppdebug(lazy Pp.(str"rt=" ++ Printer.pr_glob_constr_env (pf_env gl) rt));
+      debug_ssr (fun () -> Pp.(str"rt=" ++ Printer.pr_glob_constr_env (pf_env gl) rt));
       Some (interp_refine ist gl rt)
     with _ -> loop (i + 1) in
   loop 0
@@ -92,8 +92,8 @@ let interp_congrarg_at ist gl n rf ty m =
 let pattern_id = mk_internal_id "pattern value"
 
 let congrtac ((n, t), ty) ist gl =
-  ppdebug(lazy (Pp.str"===congr==="));
-  ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (Tacmach.pf_concl gl)));
+  debug_ssr (fun () -> (Pp.str"===congr==="));
+  debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (Tacmach.pf_concl gl)));
   let sigma, _ as it = interp_term (pf_env gl) (project gl) ist t in
   let gl = pf_merge_uc_of sigma gl in
   let _, f, _, _ucst = pf_abs_evars gl it in
@@ -124,8 +124,8 @@ let newssrcongrtac arg ist =
   Proofview.Goal.enter_one ~__LOC__ begin fun _g ->
     (Ssrcommon.tacMK_SSR_CONST "ssr_congr_arrow") end >>= fun arr ->
   Proofview.V82.tactic begin fun gl ->
-  ppdebug(lazy Pp.(str"===newcongr==="));
-  ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
+  debug_ssr (fun () -> Pp.(str"===newcongr==="));
+  debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
   (* utils *)
   let fs gl t = Reductionops.nf_evar (project gl) t in
   let tclMATCH_GOAL (c, gl_c) proj t_ok t_fail gl =
@@ -385,8 +385,8 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
     | Pretype_errors.PretypeError (env, sigma, te) -> raise (PRtype_error (Some (env, sigma, te)))
     | e when CErrors.noncritical e -> raise (PRtype_error None)
   in
-  ppdebug(lazy Pp.(str"pirrel_rewrite: proof term: " ++ pr_econstr_env env sigma proof));
-  ppdebug(lazy Pp.(str"pirrel_rewrite of type: " ++ pr_econstr_env env sigma proof_ty));
+  debug_ssr (fun () -> Pp.(str"pirrel_rewrite: proof term: " ++ pr_econstr_env env sigma proof));
+  debug_ssr (fun () -> Pp.(str"pirrel_rewrite of type: " ++ pr_econstr_env env sigma proof_ty));
   try Proofview.V82.of_tactic (refine_with
     ~first_goes_last:(not !ssroldreworder || under) ~with_evars:under (sigma, proof)) gl
   with e when CErrors.noncritical e ->
@@ -435,12 +435,12 @@ let rwcltac ?under ?map_redex cl rdx dir sr =
   let sigma0 = Evd.set_universe_context sigma0 ucst in
   let rdxt = Retyping.get_type_of env (fst sr) rdx in
 (*         ppdebug(lazy(str"sigma@rwcltac=" ++ pr_evar_map None (fst sr))); *)
-        ppdebug(lazy Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma0 (snd sr)));
+        debug_ssr (fun () -> Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma0 (snd sr)));
   let cvtac, rwtac, sigma0 =
     if EConstr.Vars.closed0 sigma0 r' then
       let sigma, c, c_eq = fst sr, snd sr, Coqlib.(lib_ref "core.eq.type") in
       let sigma, c_ty = Typing.type_of env sigma c in
-        ppdebug(lazy Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty));
+        debug_ssr (fun () -> Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty));
       let open EConstr in
       match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
@@ -521,7 +521,7 @@ let rwprocess_rule env dir rule =
       let t =
         if red = 1 then Tacred.hnf_constr env sigma t0
         else Reductionops.whd_betaiotazeta env sigma t0 in
-      ppdebug(lazy Pp.(str"rewrule="++pr_econstr_pat env sigma t));
+      debug_ssr (fun () -> Pp.(str"rewrule="++pr_econstr_pat env sigma t));
       match EConstr.kind sigma t with
       | Prod (_, xt, at) ->
         let sigma = Evd.create_evar_defs sigma in

@@ -19,20 +19,12 @@ open Sorts
 open Constr
 open Context
 open Vars
-open Goptions
 open Tacmach
 open Util
 
 let init_size=5
 
-let cc_verbose=
-  declare_bool_option_and_ref
-    ~depr:false
-    ~key:["Congruence";"Verbose"]
-    ~value:false
-
-let debug x =
-  if cc_verbose () then Feedback.msg_debug (x ())
+let debug_congruence = CDebug.create ~name:"congruence"
 
 (* Signature table *)
 
@@ -576,7 +568,7 @@ let add_inst state (inst,int_subst) =
   Control.check_for_interrupt ();
   if state.rew_depth > 0 then
   if is_redundant state inst.qe_hyp_id int_subst then
-    debug (fun () -> str "discarding redundant (dis)equality")
+    debug_congruence (fun () -> str "discarding redundant (dis)equality")
   else
     begin
       Identhash.add state.q_history inst.qe_hyp_id int_subst;
@@ -591,7 +583,7 @@ let add_inst state (inst,int_subst) =
             state.rew_depth<-pred state.rew_depth;
             if inst.qe_pol then
               begin
-                debug (fun () ->
+                debug_congruence (fun () ->
                    (str "Adding new equality, depth="++ int state.rew_depth) ++ fnl () ++
                   (str "  [" ++ Printer.pr_econstr_env state.env state.sigma (EConstr.of_constr prf) ++ str " : " ++
                            pr_term state.env state.sigma s ++ str " == " ++ pr_term state.env state.sigma t ++ str "]"));
@@ -599,7 +591,7 @@ let add_inst state (inst,int_subst) =
               end
             else
               begin
-                debug (fun () ->
+                debug_congruence (fun () ->
                    (str "Adding new disequality, depth="++ int state.rew_depth) ++ fnl () ++
                   (str "  [" ++ Printer.pr_econstr_env state.env state.sigma (EConstr.of_constr prf) ++ str " : " ++
                            pr_term state.env state.sigma s ++ str " <> " ++ pr_term state.env state.sigma t ++ str "]"));
@@ -630,7 +622,7 @@ let join_path uf i j=
   min_path (down_path uf i [],down_path uf j [])
 
 let union state i1 i2 eq=
-  debug (fun () -> str "Linking " ++ pr_idx_term state.env state.sigma state.uf i1 ++
+  debug_congruence (fun () -> str "Linking " ++ pr_idx_term state.env state.sigma state.uf i1 ++
                  str " and " ++ pr_idx_term state.env state.sigma state.uf i2 ++ str ".");
   let r1= get_representative state.uf i1
   and r2= get_representative state.uf i2 in
@@ -670,7 +662,7 @@ let union state i1 i2 eq=
         | _,_ -> ()
 
 let merge eq state = (* merge and no-merge *)
-  debug
+  debug_congruence
     (fun () -> str "Merging " ++ pr_idx_term state.env state.sigma state.uf eq.lhs ++
        str " and " ++ pr_idx_term state.env state.sigma state.uf eq.rhs ++ str ".");
   let uf=state.uf in
@@ -683,7 +675,7 @@ let merge eq state = (* merge and no-merge *)
         union state j i (swap eq)
 
 let update t state = (* update 1 and 2 *)
-  debug
+  debug_congruence
     (fun () -> str "Updating term " ++ pr_idx_term state.env state.sigma state.uf t ++ str ".");
   let (i,j) as sign = signature state.uf t in
   let (u,v) = subterms state.uf t in
@@ -745,7 +737,7 @@ let process_constructor_mark t i rep pac state =
             end
 
 let process_mark t m state =
-  debug
+  debug_congruence
     (fun () -> str "Processing mark for term " ++ pr_idx_term state.env state.sigma state.uf t ++ str ".");
   let i=find state.uf t in
   let rep=get_representative state.uf i in
@@ -766,7 +758,7 @@ let check_disequalities state =
           if Int.equal (find uf dis.lhs) (find uf dis.rhs) then (str "Yes", Some dis)
           else (str "No", check_aux q)
         in
-        let _ = debug
+        let _ = debug_congruence
         (fun () -> str "Checking if " ++ pr_idx_term state.env state.sigma state.uf dis.lhs ++ str " = " ++
          pr_idx_term state.env state.sigma state.uf dis.rhs ++ str " ... " ++ info) in
         ans
@@ -953,7 +945,7 @@ let find_instances state =
   let pb_stack= init_pb_stack state in
   let res =ref [] in
   let _ =
-    debug (fun () -> str "Running E-matching algorithm ... ");
+    debug_congruence (fun () -> str "Running E-matching algorithm ... ");
     try
       while true do
         Control.check_for_interrupt ();
@@ -964,7 +956,7 @@ let find_instances state =
     !res
 
 let rec execute first_run state =
-  debug (fun () -> str "Executing ... ");
+  debug_congruence (fun () -> str "Executing ... ");
   try
     while
       Control.check_for_interrupt ();
@@ -974,7 +966,7 @@ let rec execute first_run state =
         None ->
           if not(Int.Set.is_empty state.pa_classes) then
             begin
-              debug (fun () -> str "First run was incomplete, completing ... ");
+              debug_congruence (fun () -> str "First run was incomplete, completing ... ");
               complete state;
               execute false state
             end
@@ -989,12 +981,12 @@ let rec execute first_run state =
                   end
                 else
               begin
-                debug (fun () -> str "Out of instances ... ");
+                debug_congruence (fun () -> str "Out of instances ... ");
                 None
               end
             else
               begin
-                debug (fun () -> str "Out of depth ... ");
+                debug_congruence (fun () -> str "Out of depth ... ");
                 None
               end
       | Some dis -> Some

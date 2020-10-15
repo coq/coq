@@ -194,17 +194,17 @@ let mkGApp f args =
 let interp_glob ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
   let env = Goal.env goal in
   let sigma = Goal.sigma goal in
-  Ssrprinters.ppdebug (lazy
+  Ssrprinters.debug_ssr (fun () ->
     Pp.(str"interp-in: " ++ Printer.pr_glob_constr_env env glob));
   try
     let sigma,term = Tacinterp.interp_open_constr ist env sigma (glob,None) in
-    Ssrprinters.ppdebug (lazy
+    Ssrprinters.debug_ssr (fun () ->
       Pp.(str"interp-out: " ++ Printer.pr_econstr_env env sigma term));
     tclUNIT (env,sigma,term)
   with e ->
     (* XXX this is another catch all! *)
     let e, info = Exninfo.capture e in
-    Ssrprinters.ppdebug (lazy
+    Ssrprinters.debug_ssr (fun () ->
     Pp.(str"interp-err: " ++ Printer.pr_glob_constr_env env glob));
     tclZERO ~info e
 end
@@ -217,7 +217,7 @@ end
 let tclKeepOpenConstr (_env, sigma, t) = Unsafe.tclEVARS sigma <*> tclUNIT t
 
 let tclADD_CLEAR_IF_ID (env, ist, t) x =
-  Ssrprinters.ppdebug (lazy
+  Ssrprinters.debug_ssr (fun () ->
     Pp.(str"tclADD_CLEAR_IF_ID: " ++ Printer.pr_econstr_env env ist t));
   let hd, args = EConstr.decompose_app ist t in
   match EConstr.kind ist hd with
@@ -269,11 +269,11 @@ let interp_view ~clear_if_id ist v p =
   let p_id = DAst.make p_id in
   match DAst.get v with
   | Glob_term.GApp (hd, rargs) when is_specialize hd ->
-     Ssrprinters.ppdebug (lazy Pp.(str "specialize"));
+     Ssrprinters.debug_ssr (fun () -> Pp.(str "specialize"));
      interp_glob ist (mkGApp p_id rargs)
      >>= tclKeepOpenConstr >>= tclPAIR []
   | _ ->
-     Ssrprinters.ppdebug (lazy Pp.(str "view"));
+     Ssrprinters.debug_ssr (fun () -> Pp.(str "view"));
      (* We find out how to build (v p) eventually using an adaptor *)
      let adaptors = AdaptorDb.(get Forward) in
      Proofview.tclORELSE
@@ -324,7 +324,7 @@ Goal.enter_one ~__LOC__ begin fun g ->
   let rigid = rigid_of und0 in
   let n, p, to_prune, _ucst = pf_abs_evars2 s0 rigid (sigma, p) in
   let p = if simple_types then pf_abs_cterm s0 n p else p in
-  Ssrprinters.ppdebug (lazy Pp.(str"view@finalized: " ++
+  Ssrprinters.debug_ssr (fun () -> Pp.(str"view@finalized: " ++
     Printer.pr_econstr_env env sigma p));
   let sigma = List.fold_left Evd.remove sigma to_prune in
   Unsafe.tclEVARS sigma <*>
@@ -349,26 +349,26 @@ let rec apply_all_views_aux ~clear_if_id vs finalization conclusion s0 =
                 pose_proof name p <*> conclusion ~to_clear:name) <*>
             tclUNIT false)
   | v :: vs ->
-      Ssrprinters.ppdebug (lazy Pp.(str"piling..."));
+      Ssrprinters.debug_ssr (fun () -> Pp.(str"piling..."));
       is_tac_in_term ~extra_scope:"ssripat" v >>= function
       | `Term v ->
-           Ssrprinters.ppdebug (lazy Pp.(str"..a term"));
+           Ssrprinters.debug_ssr (fun () -> Pp.(str"..a term"));
            pile_up_view ~clear_if_id v <*>
            apply_all_views_aux ~clear_if_id vs finalization conclusion s0
       | `Tac tac ->
-           Ssrprinters.ppdebug (lazy Pp.(str"..a tactic"));
+           Ssrprinters.debug_ssr (fun () -> Pp.(str"..a tactic"));
            finalization s0 (fun name p ->
             (match p with
             | None -> tclUNIT ()
             | Some p -> pose_proof name p) <*>
            Tacinterp.eval_tactic tac <*>
            if vs = [] then begin
-             Ssrprinters.ppdebug (lazy Pp.(str"..was the last view"));
+             Ssrprinters.debug_ssr (fun () -> Pp.(str"..was the last view"));
              conclusion ~to_clear:name <*> tclUNIT true
            end else
              Tactics.clear name <*>
              tclINDEPENDENTL begin
-               Ssrprinters.ppdebug (lazy Pp.(str"..was NOT the last view"));
+               Ssrprinters.debug_ssr (fun () -> Pp.(str"..was NOT the last view"));
                Ssrcommon.tacSIGMA >>=
                  apply_all_views_aux ~clear_if_id vs finalization conclusion
              end >>= reduce_or)
