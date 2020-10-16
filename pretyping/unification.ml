@@ -2015,8 +2015,9 @@ let flags_of flags =
   let subterm_ts = flags.subterm_unify_flags.modulo_delta in
   let allowed_evars = flags.core_unify_flags.allowed_evars in
   let allow_K_at_toplevel = flags.allow_K_in_toplevel_higher_order_unification in
+  let use_pattern_unification = flags.core_unify_flags.use_pattern_unification in
   Evarsolve.{ modulo_betaiota; open_ts; closed_ts; subterm_ts; allowed_evars;
-              allow_K_at_toplevel; with_cs = true }
+              allow_K_at_toplevel; use_pattern_unification; with_cs = true }
 
 let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
   let hd1,l1 = decompose_app_vect evd (whd_nored env evd ty1) in

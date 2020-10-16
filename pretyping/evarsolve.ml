@@ -57,7 +57,8 @@ type unify_flags = {
   subterm_ts : TransparentState.t;
   allowed_evars : AllowedEvars.t;
   allow_K_at_toplevel : bool;
-  with_cs : bool
+  with_cs : bool;
+  use_pattern_unification : bool;
 }
 
 let is_evar_allowed flags evk =

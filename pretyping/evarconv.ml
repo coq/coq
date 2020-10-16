@@ -41,7 +41,9 @@ let default_flags_of ?(subterm_ts=TransparentState.empty) ts =
   { modulo_betaiota = true;
     open_ts = ts; closed_ts = ts; subterm_ts;
     allowed_evars = AllowedEvars.all; with_cs = true;
-    allow_K_at_toplevel = true }
+    allow_K_at_toplevel = true;
+    use_pattern_unification = true;
+  }
 
 let default_flags env =
   let ts = default_transparent_state env in
@@ -509,7 +511,10 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
                    NotClean: pruning in solve_simple_eqn is incomplete wrt
                      Miller patterns *)
                 default ()
-              | x -> x)
+              | x ->
+                if debug_unification () then
+                  Feedback.msg_debug Pp.(str "Solved as a simple equation");
+                x)
           | _, Evar ev when Evd.is_undefined evd (fst ev) && is_evar_allowed flags (fst ev) ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
               (position_problem false pbty,ev,term1) with
@@ -519,7 +524,10 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
                    NotClean: pruning in solve_simple_eqn is incomplete wrt
                      Miller patterns *)
                 default ()
-              | x -> x)
+              | x ->
+                if debug_unification () then
+                  Feedback.msg_debug Pp.(str "Solved as a simple equation");
+                x)
           | _ -> default ()
         end
 
@@ -529,13 +537,24 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     UnifFailure (i, NotSameHead)
   in
   let miller_pfenning on_left fallback ev lF tM evd =
-    match is_unification_pattern_evar env evd ev lF tM with
+    if not flags.use_pattern_unification then fallback ()
+    else match is_unification_pattern_evar env evd ev lF tM with
       | None -> fallback ()
       | Some l1' -> (* Miller-Pfenning's patterns unification *)
+        if debug_unification () then
+          Feedback.msg_debug Pp.(str "Miller pattern detected");
         let t2 = tM in
         let t2 = solve_pattern_eqn env evd l1' t2 in
-          solve_simple_eqn (conv_fun evar_conv_x) flags env evd
-            (position_problem on_left pbty,ev,t2)
+        match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
+            (position_problem on_left pbty,ev,t2) with
+        | Success _ as r ->
+          if debug_unification () then
+            Feedback.msg_debug Pp.(str "Miller pattern resolution succeeded");
+          r
+        | UnifFailure _ as r ->
+          if debug_unification () then
+            Feedback.msg_debug Pp.(str "Miller pattern resolution failed");
+          r
   in
   let consume_stack on_left (termF,skF) (termO,skO) evd =
     let switch f a b = if on_left then f a b else f b a in
