@@ -2042,16 +2042,6 @@ Proof.
   apply Rinv_le_contravar with (1 := H).
 Qed.
 
-Lemma Ropp_div : forall x y, -x/y = - (x / y).
-intros x y; unfold Rdiv; ring.
-Qed.
-
-Lemma Ropp_div_den : forall x y : R, y<>0 -> x / - y = - (x / y).
-Proof.
-  intros.
-  field; assumption.
-Qed.
-
 Lemma double : forall r1, 2 * r1 = r1 + r1.
 Proof.
   intro; ring.
@@ -2125,28 +2115,143 @@ Proof.
   intros; elim (completeness E H H0); intros; split with x; assumption.
 Qed.
 
-Lemma Rdiv_lt_0_compat : forall a b, 0 < a -> 0 < b -> 0 < a / b.
+Lemma Rdiv_def : forall x y, x / y = x * / y.
+Proof.
+  intros. eapply eq_refl.
+Qed.
+
+Lemma Rdiv_lt_compat_l : forall x y z, 0 < x -> 0 < z -> z < y -> x / y < x / z.
+Proof.
+  intros. apply Rmult_lt_compat_l.
+    eapply H.
+    eapply Rinv_lt_contravar.
+      eapply Rmult_lt_0_compat.
+        eapply H0.
+        eapply Rlt_trans.
+          eapply H0.
+          eapply H1.
+      eapply H1.
+Qed.
+
+Lemma Rdiv_lt_compat_r : forall x y z, x < y -> 0 < z -> x / z < y / z.
+Proof.
+  intros. apply Rmult_lt_compat_r.
+    eapply Rinv_0_lt_compat. eapply H0.
+    eapply H.
+Qed.
+
+Lemma Rdiv_lt_0_compat : forall x y, 0 < x -> 0 < y -> 0 < x / y.
 Proof.
   intros. apply Rmult_lt_0_compat.
-  - eapply H.
-  - eapply Rinv_0_lt_compat. eapply H0.
+    eapply H.
+    eapply Rinv_0_lt_compat. eapply H0.
 Qed.
 
-Lemma Rdiv_le_pos : forall a b, 0 <= a -> 0 < b -> 0 <= a / b.
+Lemma Rdiv_le_compat_l : forall x y z, 0 <= x -> 0 < z -> z <= y -> x / y <= x / z.
+Proof.
+  intros. apply Rmult_le_compat_l.
+    eapply H.
+    eapply Rinv_le_contravar.
+      eapply H0.
+      eapply H1.
+Qed.
+
+Lemma Rdiv_le_compat_r : forall x y z, x <= y -> 0 < z -> x / z <= y / z.
+Proof.
+  intros. apply Rmult_le_compat_r.
+    eapply Rlt_le. eapply Rinv_0_lt_compat. eapply H0.
+    eapply H.
+Qed.
+
+Lemma Rdiv_le_pos : forall x y, 0 <= x -> 0 < y -> 0 <= x / y.
 Proof.
   intros. eapply Rmult_le_pos.
-  - eapply H.
-  - eapply Rlt_le. eapply Rinv_0_lt_compat. eapply H0.
+    eapply H.
+    eapply Rlt_le. eapply Rinv_0_lt_compat. eapply H0.
 Qed.
 
-Lemma Rdiv_plus_distr : forall a b c, (a + b) / c = a / c + b / c.
+Lemma Rdiv_plus_distr : forall x y z, (x + y) / z = x / z + y / z.
 Proof.
   intros. eapply Rmult_plus_distr_r.
 Qed.
 
-Lemma Rdiv_minus_distr : forall a b c, (a - b) / c = a / c - b / c.
+Lemma Rdiv_0 : forall x, 0 / x = 0.
+Proof.
+  intros. eapply Rmult_0_l.
+Qed.
+
+Lemma Ropp_div : forall x y, - x / y = - (x / y).
+Proof.
+  intros. eapply eq_sym. eapply Ropp_mult_distr_l.
+Qed.
+
+Lemma Ropp_div_den : forall x y, y <> 0 -> x / - y = - (x / y).
+Proof.
+  intros. eapply eq_trans.
+    eapply Rdiv_def.
+    eapply eq_trans.
+      eapply f_equal. eapply eq_sym. eapply Ropp_inv_permute. eapply H.
+      eapply eq_sym. eapply Ropp_mult_distr_r.
+Qed.
+
+Lemma Rdiv_minus_distr : forall x y z, (x - y) / z = x / z - y / z.
 Proof.
   intros. eapply Rmult_minus_distr_r.
+Qed.
+
+Lemma Rmult_div : forall x y z, x * (y / z) = x * y / z.
+Proof.
+  intros. eapply eq_sym. eapply Rmult_assoc.
+Qed.
+
+Lemma Rdiv_mult : forall x y z, y <> 0 -> z <> 0 -> x / (y * z) = x / y / z.
+Proof.
+  intros. eapply eq_trans.
+    eapply Rdiv_def.
+    eapply eq_trans.
+      eapply f_equal. eapply Rinv_mult_distr.
+        eapply H.
+        eapply H0.
+      eapply eq_sym. eapply Rmult_assoc.
+Qed.
+
+Lemma Rdiv_1_l : forall x, 1 / x = / x.
+Proof.
+  intros. eapply Rmult_1_l.
+Qed.
+
+Lemma Rdiv_1_r : forall x, x / 1 = x.
+Proof.
+  intros. eapply eq_trans.
+    eapply Rdiv_def.
+    eapply eq_trans.
+      eapply f_equal. eapply Rinv_1.
+      eapply Rmult_1_r.
+Qed.
+
+Lemma Rdiv_idem : forall x, x <> 0 -> x / x = 1.
+Proof.
+  intros. eapply Rinv_r. eapply H.
+Qed.
+
+Lemma Rdiv_inv : forall x y, y <> 0 -> x / / y = x * y.
+Proof.
+  intros. eapply eq_trans.
+    eapply Rdiv_def.
+    eapply f_equal. eapply Rinv_involutive. eapply H.
+Qed.
+
+Lemma Rdiv_div : forall x y z, y <> 0 -> z <> 0 -> x / (y / z) = x / y * z.
+Proof.
+  intros. eapply eq_trans.
+    eapply Rdiv_def.
+    eapply eq_trans.
+      eapply f_equal. eapply Rinv_mult_distr.
+        eapply H.
+        eapply Rinv_neq_0_compat. eapply H0.
+      eapply eq_trans.
+        eapply eq_sym. eapply Rmult_assoc.
+        eapply f_equal. eapply Rinv_involutive. eapply H0.
 Qed.
 
 (* A test for equality function. *)
