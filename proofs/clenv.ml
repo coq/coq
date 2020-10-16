@@ -693,7 +693,7 @@ let unify ?(flags=fail_quick_unif_flags) ?(with_ho=true) m =
     try
       let sigma = Evarutil.add_unification_pb (CONV,env,m,n) sigma in
       let flags = Unification.flags_of flags in
-      let sigma = Evarconv.solve_unif_constraints_with_heuristics ~flags ~with_ho env sigma in
+      let sigma = Evarconv.unify ~flags ~with_ho env sigma CONV m n in
         Proofview.Unsafe.tclEVARSADVANCE sigma
     with e when CErrors.noncritical e ->
       let info = Exninfo.reify () in
