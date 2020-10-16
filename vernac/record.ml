@@ -118,11 +118,16 @@ let check_parameters_must_be_named = function
   | CLocalPattern {CAst.loc} ->
     Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters")
 
+(** [DataI.t] contains the information used in record interpretation,
+   it is a strict subset of [Ast.t] thus this should be
+   eventually removed or merged with [Ast.t] *)
 module DataI = struct
   type t =
     { name : Id.t
     ; arity : Constrexpr.constr_expr option
+    (** declared sort for the record  *)
     ; nots : Vernacexpr.decl_notation list list
+    (** notations for fields *)
     ; fs : Vernacexpr.local_decl_expr list
     }
 end
@@ -132,6 +137,8 @@ type projection_flags = {
   pf_canonical: bool;
 }
 
+(** [DataR.t] contains record data after interpretation /
+   type-inference *)
 module DataR = struct
   type t =
     { min_univ : Univ.Universe.t
@@ -334,6 +341,11 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
 
 (* TODO: refactor the declaration part here; this requires some
    surgery as Evarutil.finalize is called too early in the path *)
+(** This builds and _declares_ a named projection, the code looks
+   tricky due to the term manipulation. It also handles declaring the
+   implicits parameters, coercion status, etc... of the projection;
+   this could be refactored as noted above by moving to the
+   higher-level declare constant API *)
 let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramdecls
     paramargs decl impls fid subst sp_projs nfi ti i indsp mib lifted_fields x rp =
   let ccl = subst_projection fid subst ti in
@@ -385,6 +397,8 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   let i = if is_local_assum decl then i+1 else i in
   (Some kn::sp_projs, i, Projection term::subst)
 
+(** [build_proj] will build a projection for each field, or skip if
+   the field is anonymous, i.e. [_ : t] *)
 let build_proj env mib indsp primitive x rp lifted_fields ~poly paramdecls paramargs ~uinstance ~kind ~univs
     (nfi,i,kinds,sp_projs,subst) flags decl impls =
   let fi = RelDecl.get_name decl in
@@ -408,6 +422,8 @@ let build_proj env mib indsp primitive x rp lifted_fields ~poly paramdecls param
    ; pk_canonical = flags.pf_canonical } :: kinds
   , sp_projs, subst)
 
+(** [declare_projections] prepares the common context for all record
+   projections and then calls [build_proj] for each one. *)
 let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name flags fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
@@ -494,6 +510,21 @@ let inStruc : Recordops.struc_typ -> Libobject.obj =
 let declare_structure_entry o =
   Lib.add_anonymous_leaf (inStruc o)
 
+(** Main record declaration part:
+
+   The entry point is [definition_structure], which will match on the
+   declared [kind] and then either follow the regular record
+   declaration path to [declare_structure] or handle the record as a
+   class declaration with [declare_class].
+
+*)
+
+(** [declare_structure] does two principal things:
+
+  - prepares and declares the low-level (mutual) inductive corresponding to [record_data]
+  - prepares and declares the corresponding record projections, mainly taken care of by
+    [declare_projections]
+*)
 let declare_structure ~cumulative finite ~ubind ~univs paramimpls params template ?(kind=Decls.StructureComponent) ?name (record_data : Data.t list) =
   let nparams = List.length params in
   let poly, ctx =
@@ -624,6 +655,28 @@ let build_record_constant ~rdata ~ubind ~univs ~cumulative ~template fields para
   in
   List.map map inds
 
+(** [declare_class] will prepare and declare a [Class]. This is done in
+   2 steps:
+
+  1. two markely different paths are followed depending on whether the
+   class declaration refers to a constant "definitional classes" or to
+   a record, that is to say:
+
+      Class foo := bar : T.
+
+    which is equivalent to
+
+      Definition foo := T.
+      Definition bar (x:foo) : T := x.
+      Existing Class foo.
+
+    vs
+
+      Class foo := { ... }.
+
+  2. declare the class, using the information from 1. in the form of [Classes.typeclass]
+
+  *)
 let declare_class def ~cumulative ~ubind ~univs id idbuild paramimpls params
     rdata template ?(kind=Decls.StructureComponent) coers =
   let implfs =
@@ -670,7 +723,6 @@ let declare_class def ~cumulative ~ubind ~univs id idbuild paramimpls params
     Classes.add_class env sigma k; impl
   in
   List.map map data
-
 
 let add_constant_class env sigma cst =
   let ty, univs = Typeops.type_of_global_in_context env (GlobRef.ConstRef cst) in
@@ -738,7 +790,7 @@ module Ast = struct
     ; sort : constr_expr option
     }
 
-  let to_rdata { name; is_coercion; cfs; idbuild; sort } =
+  let to_datai { name; is_coercion; cfs; idbuild; sort } =
     let fs = List.map fst cfs in
     { DataI.name = name.CAst.v
     ; arity = sort
@@ -769,7 +821,7 @@ let check_priorities kind records =
     user_err Pp.(str "Priorities only allowed for type class substructures")
 
 let extract_record_data records =
-  let data = List.map Ast.to_rdata records in
+  let data = List.map Ast.to_datai records in
   let pss = List.map (fun { Ast.binders; _ } -> binders) records in
   let ps = match pss with
   | [] -> CErrors.anomaly (str "Empty record block")
@@ -817,9 +869,9 @@ let regular_structure ~cumulative ~template ~ubind ~impargs ~univs ~params ~fini
   let inds = declare_structure ~cumulative finite ~ubind ~univs impargs params template data in
   List.map (fun ind -> GlobRef.IndRef ind) inds
 
-(* [fs] corresponds to fields and [ps] to parameters; [coers] is a
-   list telling if the corresponding fields must me declared as coercions
-   or subinstances. *)
+(** [fs] corresponds to fields and [ps] to parameters; [coers] is a
+    list telling if the corresponding fields must me declared as coercions
+    or subinstances. *)
 let definition_structure udecl kind ~template ~cumulative ~poly finite (records : Ast.t list) =
   let () = check_unique_names records in
   let () = check_priorities kind records in
