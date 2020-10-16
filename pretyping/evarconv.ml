@@ -736,7 +736,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
          solve_simple_eqn (conv_fun evar_conv_x) flags env i'
                           (position_problem true pbty,destEvar i' ev1',Stack.zip i' (t2,r))
        else evar_eqappr_x flags env evd pbty
-                          t1' (term2, sk2)
+                          t1' (t2, sk2)
     | None, (UnifFailure _ as x) ->
        (* sk1 and sk2 have no common outer part *)
        if Stack.not_purely_applicative sk2 then
