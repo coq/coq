@@ -710,33 +710,33 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     | None, Success i' ->
        (* We do have sk1[] = sk2[]: we now unify ?ev1 and ?ev2 *)
        (* Note that ?ev1 and ?ev2, may have been instantiated in the meantime *)
-       let ev1' = whd_evar i' t1 in
+       let ev1', _ as t1' = whd_nored_state env i' (t1, sk1) in
        if isEvar i' ev1' then
          solve_simple_eqn (conv_fun evar_conv_x) flags env i'
-                          (position_problem true pbty,destEvar i' ev1',term2)
+                          (position_problem true pbty,destEvar i' ev1', t2)
        else
          evar_eqappr_x flags env evd pbty
-                       (ev1', sk1) (term2, sk2)
+                       t1' (t2, sk2)
     | Some (r,[]), Success i' ->
        (* We have sk1'[] = sk2[] for some sk1' s.t. sk1[]=sk1'[r[]] *)
        (* we now unify r[?ev1] and ?ev2 *)
-       let ev2' = whd_evar i' t2 in
+       let ev2', _ as t2' = whd_nored_state env i' (t2,sk2) in
        if isEvar i' ev2' then
          solve_simple_eqn (conv_fun evar_conv_x) flags env i'
-                          (position_problem false pbty,destEvar i' ev2',Stack.zip i' (term1,r))
+                          (position_problem false pbty,destEvar i' ev2',Stack.zip i' (t1,r))
        else
          evar_eqappr_x flags env evd pbty
-                       (ev2', sk1) (term2, sk2)
+                       t2' (t2, sk2)
     | Some ([],r), Success i' ->
        (* Symmetrically *)
        (* We have sk1[] = sk2'[] for some sk2' s.t. sk2[]=sk2'[r[]] *)
        (* we now unify ?ev1 and r[?ev2] *)
-       let ev1' = whd_evar i' t1 in
+       let ev1',_ as t1' = whd_nored_state env i' (t1, sk1) in
        if isEvar i' ev1' then
          solve_simple_eqn (conv_fun evar_conv_x) flags env i'
-                          (position_problem true pbty,destEvar i' ev1',Stack.zip i' (term2,r))
+                          (position_problem true pbty,destEvar i' ev1',Stack.zip i' (t2,r))
        else evar_eqappr_x flags env evd pbty
-                          (ev1', sk1) (term2, sk2)
+                          t1' (term2, sk2)
     | None, (UnifFailure _ as x) ->
        (* sk1 and sk2 have no common outer part *)
        if Stack.not_purely_applicative sk2 then
