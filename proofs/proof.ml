@@ -115,6 +115,7 @@ type t =
   (** the name of the theorem whose proof is being constructed *)
   ; poly : bool
   (** polymorphism *)
+  ; typing_flags : Declarations.typing_flags option
   }
 
 (*** General proof functions ***)
@@ -278,7 +279,7 @@ let end_of_stack = CondEndStack end_of_stack_kind
 
 let unfocused = is_last_focus end_of_stack_kind
 
-let start ~name ~poly sigma goals =
+let start ~name ~poly ?typing_flags sigma goals =
   let entry, proofview = Proofview.init sigma goals in
   let pr =
     { proofview
@@ -286,10 +287,11 @@ let start ~name ~poly sigma goals =
     ; focus_stack = []
     ; name
     ; poly
+    ; typing_flags
   } in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
 
-let dependent_start ~name ~poly goals =
+let dependent_start ~name ~poly ?typing_flags goals =
   let entry, proofview = Proofview.dependent_init goals in
   let pr =
     { proofview
@@ -297,6 +299,7 @@ let dependent_start ~name ~poly goals =
     ; focus_stack = []
     ; name
     ; poly
+    ; typing_flags
   } in
   let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
   _focus end_of_stack (Obj.repr ()) 1 number_of_goals pr
@@ -560,6 +563,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
       else tac
     in
     let env = Global.env () in
+    let env = Option.cata (fun f -> Environ.set_typing_flags f env) env pr.typing_flags in
     let (p,(status,info),()) = run_tactic env tac pr in
     let env = Global.env () in
     let sigma = Evd.from_env env in
