@@ -77,7 +77,7 @@ END
 (* true = All transparent, false = Opaque if possible *)
 
 VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
- | [ "Typeclasses" "eauto" ":=" debug(d) eauto_search_strategy(s) integer_opt(depth) ] -> {
+ | [ "Typeclasses" "eauto" ":=" debug(d) eauto_search_strategy(s) natural_opt(depth) ] -> {
      set_typeclasses_debug d;
      Option.iter set_typeclasses_strategy s;
      set_typeclasses_depth depth
