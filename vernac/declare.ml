@@ -1428,9 +1428,9 @@ let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof
      marked "opaque", this is a hack tho, see #10446, and
      build_constant_by_tactic uses a different method that would break
      program_inference_hook *)
-  let { Proof_info.info = { Info.poly; _ }; _ } = pinfo in
+  let { Proof_info.info = { Info.poly; typing_flags; _ }; _ } = pinfo in
   let goals = [Global.env_of_context sign, typ] in
-  let proof = Proof.start ~name ~poly sigma goals in
+  let proof = Proof.start ~name ~poly ?typing_flags sigma goals in
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   { proof
   ; endline_tactic = None
@@ -1451,7 +1451,8 @@ let start_core ~info ~cinfo ?proof_ending sigma =
 let start = start_core ?proof_ending:None
 
 let start_dependent ~info ~name ~proof_ending goals =
-  let proof = Proof.dependent_start ~name ~poly:info.Info.poly goals in
+  let { Info.poly; typing_flags; _ } = info in
+  let proof = Proof.dependent_start ~name ~poly ?typing_flags goals in
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   let cinfo = [] in
   let pinfo = Proof_info.make ~info ~cinfo ~proof_ending () in
