@@ -13,6 +13,24 @@ Require Import Rfunctions.
 Require Import Rsqrt_def.
 Local Open Scope R_scope.
 
+#[deprecated(since="8.13", note="Use Rdiv_lt_0_compat instead, or Rmult_lt_0_compat and Rinv_0_lt_compat.")]
+Lemma Rlt_mult_inv_pos : forall x y:R, 0 < x -> 0 < y -> 0 < x * / y.
+intros x y H H0; try assumption.
+replace 0 with (x * 0).
+apply Rmult_lt_compat_l; auto with real.
+ring.
+Qed.
+
+#[deprecated(since="8.13", note="Use Rdiv_le_pos instead, or Rmult_le_pos, Rlt_le and Rinv_0_lt_compat.")]
+Lemma Rle_mult_inv_pos : forall x y:R, 0 <= x -> 0 < y -> 0 <= x * / y.
+intros x y H H0; try assumption.
+case H; intros.
+red; left.
+apply Rlt_mult_inv_pos; auto with real.
+rewrite <- H1.
+red; right; ring.
+Qed.
+
 (** * Continuous extension of Rsqrt on R *)
 Definition sqrt (x:R) : R :=
   match Rcase_abs x with
