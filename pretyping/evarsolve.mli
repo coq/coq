@@ -53,8 +53,9 @@ type unify_flags = {
   allow_K_at_toplevel : bool;
   (* During higher-order unifications, allow to produce K-redexes: i.e. to produce
      an abstraction for an unused argument *)
-  with_cs : bool
+  with_cs : bool;
   (* Enable canonical structure resolution during unification *)
+  use_pattern_unification : bool;
 }
 
 type unification_result =
