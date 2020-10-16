@@ -245,7 +245,7 @@ let interp_fixpoint ?(check_recursivity=true) ?typing_flags ~cofix l :
     UState.universe_decl * UState.t *
     (EConstr.rel_context * Impargs.manual_implicits * int option) list) =
   let env = Global.env () in
-  let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+  let env = Environ.update_typing_flags ?typing_flags env in
   let (env,_,pl,evd),fix,info = interp_recursive env ~program_mode:false ~cofix l in
   if check_recursivity then check_recursive true env evd fix;
   let evd = Pretyping.(solve_remaining_evars all_no_fail_flags env evd) in

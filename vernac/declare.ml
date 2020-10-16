@@ -588,7 +588,7 @@ let mutual_make_bodies ~typing_flags ~fixitems ~rec_declaration ~possible_indexe
   match possible_indexes with
   | Some possible_indexes ->
     let env = Global.env() in
-    let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+    let env = Environ.update_typing_flags ?typing_flags env in
     let indexes = Pretyping.search_guard env possible_indexes rec_declaration in
     let vars = Vars.universes_of_constr (Constr.mkFix ((indexes,0),rec_declaration)) in
     let fixdecls = CList.map_i (fun i _ -> Constr.mkFix ((indexes,i),rec_declaration)) 0 fixitems in
@@ -1918,7 +1918,7 @@ end = struct
       (* Try all combinations... not optimal *)
       let env = Global.env() in
       let typing_flags = pinfo.Proof_info.info.Info.typing_flags in
-      let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+      let env = Environ.update_typing_flags ?typing_flags env in
       Internal.map_entry_body entry
         ~f:(guess_decreasing env possible_indexes)
     in

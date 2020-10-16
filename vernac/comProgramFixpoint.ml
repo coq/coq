@@ -284,7 +284,7 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
   let cofix = fixkind = Declare.Obls.IsCoFixpoint in
   let (env, rec_sign, udecl, evd), fix, info =
     let env = Global.env () in
-    let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+    let env = Environ.update_typing_flags ?typing_flags env in
     interp_recursive env ~cofix ~program_mode:true fixl
   in
     (* Program-specific code *)
@@ -323,9 +323,9 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
       in
       let indexes =
         let env = Global.env () in
-        let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+        let env = Environ.update_typing_flags ?typing_flags env in
         Pretyping.search_guard env possible_indexes fixdecls in
-      let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+      let env = Environ.update_typing_flags ?typing_flags env in
       List.iteri (fun i _ ->
           Inductive.check_fix env
             ((indexes,i),fixdecls))

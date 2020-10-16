@@ -479,6 +479,9 @@ let set_typing_flags c env =
     let env = set_type_in_type (not c.check_universes) env in
     env
 
+let update_typing_flags ?typing_flags env =
+  Option.cata (fun flags -> set_typing_flags flags env) env typing_flags
+
 let set_cumulative_sprop b env =
   set_typing_flags {env.env_typing_flags with cumulative_sprop=b} env
 
