@@ -113,7 +113,7 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
 let do_definition ?hook ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =
   let program_mode = false in
   let env = Global.env() in
-  let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+  let env = Environ.update_typing_flags ?typing_flags env in
   (* Explicitly bound universes and constraints *)
   let evd, udecl = interp_univ_decl_opt env udecl in
   let evd, (body, types), impargs =
@@ -134,7 +134,7 @@ let do_definition ?hook ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl r
 let do_definition_program ?hook ~pm ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =
   let program_mode = true in
   let env = Global.env() in
-  let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+  let env = Environ.update_typing_flags ?typing_flags env in
   (* Explicitly bound universes and constraints *)
   let evd, udecl = interp_univ_decl_opt env udecl in
   let evd, (body, types), impargs =

@@ -641,7 +641,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
       | NonUniformParameters -> ([], params, indl)
   in
   let env = Global.env () in
-  let env = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env) env typing_flags in
+  let env = Environ.update_typing_flags ?typing_flags env in
   let mie,pl,impls = interp_mutual_inductive_gen env ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags mie pl impls);

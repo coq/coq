@@ -550,7 +550,7 @@ let post_check_evd ~udecl ~poly evd =
 
 let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ?using ?hook thms =
   let env0 = Global.env () in
-  let env0 = Option.cata (fun typing_flags -> Environ.set_typing_flags typing_flags env0) env0 typing_flags in
+  let env0 = Environ.update_typing_flags ?typing_flags env0 in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let decl = fst (List.hd thms) in
   let evd, udecl = Constrintern.interp_univ_decl_opt env0 (snd decl) in

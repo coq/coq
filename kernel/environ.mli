@@ -351,6 +351,9 @@ val set_type_in_type : bool -> env -> env
 val set_allow_sprop : bool -> env -> env
 val sprop_allowed : env -> bool
 
+(** [update_typing_flags ?typing_flags] may update env with optional typing flags *)
+val update_typing_flags : ?typing_flags:typing_flags -> env -> env
+
 val universes_of_global : env -> GlobRef.t -> AUContext.t
 
 (** {6 Sets of referred section variables }

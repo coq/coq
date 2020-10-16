@@ -563,7 +563,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
       else tac
     in
     let env = Global.env () in
-    let env = Option.cata (fun f -> Environ.set_typing_flags f env) env pr.typing_flags in
+    let env = Environ.update_typing_flags ?typing_flags:pr.typing_flags env in
     let (p,(status,info),()) = run_tactic env tac pr in
     let env = Global.env () in
     let sigma = Evd.from_env env in
