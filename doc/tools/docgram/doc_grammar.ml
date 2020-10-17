@@ -909,14 +909,17 @@ let apply_splice g edit_map =
   List.iter (fun b ->
       let (nt0, prods0) = b in
       let rec splice_loop nt prods cnt =
-        let max_cnt = 10 in
-        let (nt', prods') = edit_rule g edit_map nt prods in
-        if cnt > max_cnt then
-          error "Splice for '%s' not done after %d iterations\n" nt0 max_cnt;
-        if nt' = nt && prods' = prods then
-          (nt', prods')
-        else
-          splice_loop nt' prods' (cnt+1)
+        if cnt >= 10 then begin
+          error "Splice for '%s' not done after %d iterations.  Current value is:\n" nt0 cnt;
+          List.iter (fun prod -> Printf.eprintf "  %s\n" (prod_to_str prod)) prods;
+          (nt, prods)
+        end else begin
+          let (nt', prods') = edit_rule g edit_map nt prods in
+          if nt' = nt && prods' = prods then
+            (nt, prods)
+          else
+            splice_loop nt' prods' (cnt+1)
+        end
       in
       let (nt', prods') = splice_loop nt0 prods0 0 in
       g_update_prods g nt' prods')
