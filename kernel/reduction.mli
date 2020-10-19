@@ -31,14 +31,12 @@ exception NotConvertible
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
-  ?evars:((existential->constr option) * UGraph.t) ->
+  ?evars:(existential->constr option) ->
   'a -> 'a -> unit
 
 type conv_pb = CONV | CUMUL
 
 type 'a universe_compare = {
-  compare_graph : 'a -> UGraph.t; (* used for case inversion in reduction *)
-
   (* Might raise NotConvertible *)
   compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
   compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
@@ -50,7 +48,7 @@ type 'a universe_state = 'a * 'a universe_compare
 
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
+type 'a infer_conversion_function = env -> 'a -> 'a -> Univ.Constraint.t
 
 val get_cumulativity_constraints : conv_pb -> Univ.Variance.t array ->
   Univ.Instance.t -> Univ.Instance.t -> Univ.Constraint.t

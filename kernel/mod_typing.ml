@@ -80,12 +80,11 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
               let j = Typeops.infer env' c in
               assert (j.uj_val == c); (* relevances should already be correct here *)
               let typ = cb.const_type in
-              let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
-                  j.uj_type typ in
+              let cst' = Reduction.infer_conv_leq env' j.uj_type typ in
               j.uj_val, cst'
             | Def cs ->
               let c' = Mod_subst.force_constr cs in
-              c, Reduction.infer_conv env' (Environ.universes env') c c'
+              c, Reduction.infer_conv env' c c'
             | Primitive _ ->
               error_incorrect_with_constraint lab
           in
@@ -103,12 +102,11 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
               let j = Typeops.infer env' c in
               assert (j.uj_val == c); (* relevances should already be correct here *)
               let typ = cb.const_type in
-              let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
-                  j.uj_type typ in
+              let cst' = Reduction.infer_conv_leq env' j.uj_type typ in
               cst'
             | Def cs ->
               let c' = Mod_subst.force_constr cs in
-              let cst' = Reduction.infer_conv env' (Environ.universes env') c c' in
+              let cst' = Reduction.infer_conv env' c c' in
               cst'
             | Primitive _ ->
               error_incorrect_with_constraint lab

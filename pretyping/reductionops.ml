@@ -1094,7 +1094,8 @@ let f_conv_leq ?l2r ?reds env ?evars x y =
 let test_trans_conversion (f: constr Reduction.extended_conversion_function) reds env sigma x y =
   try
     let evars ev = safe_evar_value sigma ev in
-    let _ = f ~reds env ~evars:(evars, Evd.universes sigma) x y in
+    let env = Environ.set_universes (Evd.universes sigma) env in
+    let _ = f ~reds env ~evars x y in
     true
   with Reduction.NotConvertible -> false
     | e ->
@@ -1112,7 +1113,8 @@ let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
     | Reduction.CONV -> f_conv
     | Reduction.CUMUL -> f_conv_leq
   in
-    try f ~reds:ts env ~evars:(safe_evar_value sigma, Evd.universes sigma) x y; true
+    let env = Environ.set_universes (Evd.universes sigma) env in
+    try f ~reds:ts env ~evars:(safe_evar_value sigma) x y; true
     with Reduction.NotConvertible -> false
     | Univ.UniverseInconsistency _ -> false
     | e ->
@@ -1138,8 +1140,7 @@ let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
 
 let sigma_univ_state =
   let open Reduction in
-  { compare_graph = Evd.universes;
-    compare_sorts = sigma_compare_sorts;
+  { compare_sorts = sigma_compare_sorts;
     compare_instances = sigma_compare_instances;
     compare_cumul_instances = sigma_check_inductive_instances; }
 
@@ -1164,6 +1165,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
       | None ->
         let x = EConstr.Unsafe.to_constr x in
         let y = EConstr.Unsafe.to_constr y in
+        let env = Environ.set_universes (Evd.universes sigma) env in
         let sigma' =
           conv_fun pb ~l2r:false sigma ts
             env (sigma, sigma_univ_state) x y in
