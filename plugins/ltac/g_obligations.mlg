@@ -111,6 +111,8 @@ END
 VERNAC COMMAND EXTEND Solve_Obligations CLASSIFIED AS SIDEFF STATE program
 | [ "Solve" "Obligations" "of" ident(name) "with" tactic(t) ] ->
     { try_solve_obligations (Some name) (Some (Tacinterp.interp t)) }
+| [ "Solve" "Obligations" "of" ident(name) ] ->
+    { try_solve_obligations (Some name) None }
 | [ "Solve" "Obligations" "with" tactic(t) ] ->
     { try_solve_obligations None (Some (Tacinterp.interp t)) }
 | [ "Solve" "Obligations" ] ->
