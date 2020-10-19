@@ -2206,25 +2206,59 @@ let warn_solve_errored =
         ; fnl ()
         ; str "This will become an error in the future" ])
 
-let solve_by_tac ?loc name evi t ~poly ~uctx =
-  (* the status is dropped. *)
+let solve_by_tac prg obls i tac =
+  let obl = obls.(i) in
+  let obl = subst_deps_obl obls obl in
+  let tac = Option.(default !default_tactic (append tac obl.obl_tac)) in
+  let uctx = Internal.get_uctx prg in
+  let uctx = UState.update_sigma_univs uctx (Global.universes ()) in
+  let poly = Internal.get_poly prg in
+  let evi = evar_of_obligation obl in
+  (* the status of [build_by_tactic] is dropped. *)
   try
     let env = Global.env () in
     let body, types, _univs, _, uctx =
-      build_by_tactic env ~uctx ~poly ~typ:evi.evar_concl t in
+      build_by_tactic env ~uctx ~poly ~typ:evi.evar_concl tac in
     Inductiveops.control_only_guard env (Evd.from_ctx uctx) (EConstr.of_constr body);
     Some (body, types, uctx)
   with
   | Tacticals.FailError (_, s) as exn ->
     let _ = Exninfo.capture exn in
+    let loc = fst obl.obl_location in
     CErrors.user_err ?loc ~hdr:"solve_obligation" (Lazy.force s)
   (* If the proof is open we absorb the error and leave the obligation open *)
   | Proof_.OpenProof _ ->
     None
   | e when CErrors.noncritical e ->
     let err = CErrors.print e in
+    let loc = fst obl.obl_location in
     warn_solve_errored ?loc err;
     None
+
+let solve_and_declare_by_tac prg obls i tac =
+  match solve_by_tac prg obls i tac with
+  | None -> None
+  | Some (t, ty, uctx) ->
+    let obl = obls.(i) in
+    let poly = Internal.get_poly prg in
+    let prg = ProgramDecl.Internal.set_uctx ~uctx prg in
+    let def, obl', _cst = declare_obligation prg obl ~body:t ~types:ty ~uctx in
+    obls.(i) <- obl';
+    if def && not poly then (
+      (* Declare the term constraints with the first obligation only *)
+      let uctx_global = UState.from_env (Global.env ()) in
+      let uctx = UState.merge_subst uctx_global (UState.subst uctx) in
+      Some (ProgramDecl.Internal.set_uctx ~uctx prg))
+    else Some prg
+
+let solve_obligation_by_tac prg obls i tac =
+  let obl = obls.(i) in
+  match obl.obl_body with
+  | Some _ -> None
+  | None ->
+    if List.is_empty (deps_remaining obls obl.obl_deps)
+    then solve_and_declare_by_tac prg obls i tac
+    else None
 
 let get_unique_prog ~pm prg =
   match State.get_unique_open_prog pm prg with
@@ -2263,49 +2297,6 @@ let rec solve_obligation prg num tac =
   let lemma = Option.cata (fun tac -> Proof.set_endline_tactic tac lemma) lemma tac in
   lemma
 
-and obligation (user_num, name, typ) ~pm tac =
-  let num = pred user_num in
-  let prg = get_unique_prog ~pm name in
-  let { obls; remaining } = Internal.get_obligations prg in
-  if num >= 0 && num < Array.length obls then
-    let obl = obls.(num) in
-    match obl.obl_body with
-    | None -> solve_obligation prg num tac
-    | Some r -> Error.already_solved num
-  else Error.unknown_obligation num
-
-and solve_obligation_by_tac prg obls i tac =
-  let obl = obls.(i) in
-    match obl.obl_body with
-    | Some _ -> None
-    | None ->
-      if List.is_empty (deps_remaining obls obl.obl_deps) then
-        let obl = subst_deps_obl obls obl in
-        let tac =
-          match tac with
-          | Some t -> t
-          | None ->
-            match obl.obl_tac with
-            | Some t -> t
-            | None -> !default_tactic
-        in
-        let uctx = Internal.get_uctx prg in
-        let uctx = UState.update_sigma_univs uctx (Global.universes ()) in
-        let poly = Internal.get_poly prg in
-        match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac ~poly ~uctx with
-        | None -> None
-        | Some (t, ty, uctx) ->
-          let prg = ProgramDecl.Internal.set_uctx ~uctx prg in
-          let def, obl', _cst = declare_obligation prg obl ~body:t ~types:ty ~uctx in
-          obls.(i) <- obl';
-          if def && not poly then (
-            (* Declare the term constraints with the first obligation only *)
-            let uctx_global = UState.from_env (Global.env ()) in
-            let uctx = UState.merge_subst uctx_global (UState.subst uctx) in
-            Some (ProgramDecl.Internal.set_uctx ~uctx prg))
-          else Some prg
-      else None
-
 and solve_prg_obligations ~pm prg ?oblset tac =
   let { obls; remaining } = Internal.get_obligations prg in
   let rem = ref remaining in
@@ -2332,15 +2323,21 @@ and solve_prg_obligations ~pm prg ?oblset tac =
   in
   update_obls ~pm prg obls' !rem
 
-and solve_obligations ~pm n tac =
+and auto_solve_obligations ~pm n ?oblset tac : State.t * progress =
+  Flags.if_verbose Feedback.msg_info
+    (str "Solving obligations automatically...");
+  let prg = get_unique_prog ~pm n in
+  solve_prg_obligations ~pm prg ?oblset tac
+
+let solve_obligations ~pm n tac =
   let prg = get_unique_prog ~pm n in
   solve_prg_obligations ~pm prg tac
 
-and solve_all_obligations ~pm tac =
+let solve_all_obligations ~pm tac =
   State.fold pm ~init:pm ~f:(fun k v pm ->
       solve_prg_obligations ~pm v tac |> fst)
 
-and try_solve_obligation ~pm n prg tac =
+let try_solve_obligation ~pm n prg tac =
   let prg = get_unique_prog ~pm prg in
   let {obls; remaining} = Internal.get_obligations prg in
   let obls' = Array.copy obls in
@@ -2350,14 +2347,19 @@ and try_solve_obligation ~pm n prg tac =
     pm
   | None -> pm
 
-and try_solve_obligations ~pm n tac =
+let try_solve_obligations ~pm n tac =
   solve_obligations ~pm n tac |> fst
 
-and auto_solve_obligations ~pm n ?oblset tac : State.t * progress =
-  Flags.if_verbose Feedback.msg_info
-    (str "Solving obligations automatically...");
-  let prg = get_unique_prog ~pm n in
-  solve_prg_obligations ~pm prg ?oblset tac
+let obligation (user_num, name, typ) ~pm tac =
+  let num = pred user_num in
+  let prg = get_unique_prog ~pm name in
+  let { obls; remaining } = Internal.get_obligations prg in
+  if num >= 0 && num < Array.length obls then
+    let obl = obls.(num) in
+    match obl.obl_body with
+    | None -> solve_obligation prg num tac
+    | Some r -> Error.already_solved num
+  else Error.unknown_obligation num
 
 let show_single_obligation i n obls x =
   let x = subst_deps_obl obls x in
