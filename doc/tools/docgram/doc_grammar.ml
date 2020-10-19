@@ -1921,12 +1921,15 @@ let process_rst g file args seen tac_prods cmd_prods =
         if mtch = rhs then
           rhs (* no change *)
         else if mtch = "" then begin
-          warn "%s line %d: NO MATCH `%s`\n" file !linenum rhs;
-          if best <> "" then
-            warn "%s line %d: BEST `%s`\n" file !linenum best;
+          error "%s line %d: NO MATCH for `%s`\n" file !linenum rhs;
+          if best <> "" then begin
+            Printf.eprintf "    closest match is: `%s`\n" best;
+            Printf.eprintf "    Please update the rst manually while preserving any subscripts, e.g. 'NT__sub'\n"
+          end;
           rhs
         end else if multi then begin
-          warn "%s line %d: MULTIMATCH `%s`\n" file !linenum rhs;
+          error "%s line %d: MULTIPLE MATCHES for `%s`\n" file !linenum rhs;
+          Printf.eprintf "    Please update the rst manually while preserving any subscripts, e.g. 'NT__sub'\n";
           rhs
         end else
           mtch (* update cmd/tacn *)
@@ -2081,13 +2084,11 @@ let process_grammar args =
       print_in_order out g `MLG !g.order StringSet.empty;
       close_out out;
       finish_with_file (dir "orderedGrammar") args;
-      check_singletons g
+      check_singletons g;
 (*      print_dominated g*)
-    end;
 
-    let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
-    let args = { args with no_update = false } in (* always update rsts in place for now *)
-    if !exit_code = 0 then begin
+      let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
+      let args = { args with no_update = false } in (* always update rsts in place for now *)
       let plist nt =
         let list = (List.map (fun t -> String.trim (prod_to_prodn t))
           (NTMap.find nt !g.map)) in
@@ -2098,7 +2099,6 @@ let process_grammar args =
       report_omitted_prods g !seen.nts "Nonterminal" "";
       let out = open_out (dir "updated_rsts") in
       close_out out;
-    end;
 
 (*
       if args.check_tacs then
@@ -2107,7 +2107,6 @@ let process_grammar args =
         report_omitted_prods cmd_list !seen.cmds "Command" "\n                  ";
 *)
 
-    if !exit_code = 0 then begin
       (* generate report on cmds or tacs *)
       let cmdReport outfile cmdStr cmd_nts cmds cmdvs =
         let rstCmds = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings cmds)) in
@@ -2116,7 +2115,7 @@ let process_grammar args =
             StringSet.union set (StringSet.of_list (List.map (fun p -> String.trim (prod_to_prodn p)) (NTMap.find nt !prodn_gram.map)))
           ) StringSet.empty cmd_nts in
         let allCmds = StringSet.union rstCmdvs (StringSet.union rstCmds gramCmds) in
-        let out = open_temp_bin (dir outfile) in
+        let out = open_out_bin (dir outfile) in
         StringSet.iter (fun c ->
             let rsts = StringSet.mem c rstCmds in
             let gram = StringSet.mem c gramCmds in
@@ -2130,7 +2129,6 @@ let process_grammar args =
             fprintf out "%s%s  %s\n" pfx var c)
           allCmds;
         close_out out;
-        finish_with_file (dir outfile) args;
         Printf.printf "# %s in rsts, gram, total = %d %d %d\n" cmdStr (StringSet.cardinal gramCmds)
           (StringSet.cardinal rstCmds) (StringSet.cardinal allCmds);
       in
@@ -2142,17 +2140,16 @@ let process_grammar args =
 
       let tac_nts = ["simple_tactic"] in
       if args.check_tacs then
-        cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs
-    end;
+        cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs;
 
-    (* generate prodnGrammar for reference *)
-    if !exit_code = 0 && not args.verify then begin
-      let out = open_temp_bin (dir "prodnGrammar") in
-      print_in_order out prodn_gram `PRODN !prodn_gram.order StringSet.empty;
-      close_out out;
-      finish_with_file (dir "prodnGrammar") args
-    end
-  end
+      (* generate prodnGrammar for reference *)
+      if not args.verify then begin
+        let out = open_out_bin (dir "prodnGrammar") in
+        print_in_order out prodn_gram `PRODN !prodn_gram.order StringSet.empty;
+        close_out out;
+      end
+    end (* if !exit_code = 0 *)
+  end (* if not args.fullGrammar *)
 
 let parse_args () =
   let suffix_regex = Str.regexp ".*\\.\\([a-z]+\\)$" in
