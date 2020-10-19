@@ -81,14 +81,11 @@ let protect_pattern_in_binder bl c ctypopt =
   else
     (bl, c, ctypopt, fun f env evd c -> f env evd c)
 
-let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
+let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
-  let env = Global.env() in
-  (* Explicitly bound universes and constraints *)
-  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let (bl, c, ctypopt, apply_under_binders) = protect_pattern_in_binder bl c ctypopt in
   (* Build the parameters *)
-  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode env evd bl in
+  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode ~impl_env env evd bl in
   (* Build the type *)
   let evd, tyopt = Option.fold_left_map
       (interp_type_evars_impls ~flags ~impls env_bl)
@@ -111,12 +108,15 @@ let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
   (* Declare the definition *)
   let c = EConstr.it_mkLambda_or_LetIn c ctx in
   let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
-  (c, tyopt), evd, udecl, imps
+  evd, (c, tyopt), imps
 
 let do_definition ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
   let program_mode = false in
-  let (body, types), evd, udecl, impargs =
-    interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
+  let env = Global.env() in
+  (* Explicitly bound universes and constraints *)
+  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
+  let evd, (body, types), impargs =
+    interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
   let kind = Decls.IsDefinition kind in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
@@ -127,8 +127,11 @@ let do_definition ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
 
 let do_definition_program ?hook ~pm ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
   let program_mode = true in
-  let (body, types), evd, udecl, impargs =
-    interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
+  let env = Global.env() in
+  (* Explicitly bound universes and constraints *)
+  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
+  let evd, (body, types), impargs =
+    interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
   let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let pm, _ =

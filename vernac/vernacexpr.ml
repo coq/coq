@@ -167,8 +167,8 @@ type fixpoint_expr = recursion_order_expr option fix_expr_gen
 type cofixpoint_expr = unit fix_expr_gen
 
 type local_decl_expr =
-  | AssumExpr of lname * constr_expr
-  | DefExpr of lname * constr_expr * constr_expr option
+  | AssumExpr of lname * local_binder_expr list * constr_expr
+  | DefExpr of lname * local_binder_expr list * constr_expr * constr_expr option
 
 type inductive_kind = Inductive_kw | CoInductive | Variant | Record | Structure | Class of bool (* true = definitional, false = inductive *)
 type simple_binder = lident list  * constr_expr

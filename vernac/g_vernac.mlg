@@ -429,19 +429,19 @@ GRAMMAR EXTEND Gram
   ;
   record_binder_body:
     [ [ l = binders; oc = of_type_with_opt_coercion;
-         t = lconstr -> { fun id -> (oc,AssumExpr (id,mkProdCN ~loc l t)) }
+         t = lconstr -> { fun id -> (oc,AssumExpr (id,l,t)) }
       | l = binders; oc = of_type_with_opt_coercion;
          t = lconstr; ":="; b = lconstr -> { fun id ->
-           (oc,DefExpr (id,mkLambdaCN ~loc l b,Some (mkProdCN ~loc l t))) }
+           (oc,DefExpr (id,l,b,Some t)) }
       | l = binders; ":="; b = lconstr -> { fun id ->
          match b.CAst.v with
          | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
-             (NoInstance,DefExpr(id,mkLambdaCN ~loc l b',Some (mkProdCN ~loc l t)))
+             (NoInstance,DefExpr(id,l,b',Some t))
          | _ ->
-             (NoInstance,DefExpr(id,mkLambdaCN ~loc l b,None)) } ] ]
+             (NoInstance,DefExpr(id,l,b,None)) } ] ]
   ;
   record_binder:
-    [ [ id = name -> { (NoInstance,AssumExpr(id, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) }
+    [ [ id = name -> { (NoInstance,AssumExpr(id, [], CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) }
       | id = name; f = record_binder_body -> { f id } ] ]
   ;
   assum_list:
