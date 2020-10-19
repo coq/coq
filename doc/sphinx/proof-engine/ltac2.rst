@@ -3,8 +3,8 @@
 Ltac2
 =====
 
-The Ltac tactic language is probably one of the ingredients of the success of
-Coq, yet it is at the same time its Achilles' heel. Indeed, Ltac:
+The |Ltac| tactic language is probably one of the ingredients of the success of
+|Coq|, yet it is at the same time its Achilles' heel. Indeed, |Ltac|:
 
 - has often unclear semantics
 - is very non-uniform due to organic growth
@@ -30,7 +30,7 @@ as Ltac1.
 Current limitations include:
 
 - There are a number of tactics that are not yet supported in Ltac2 because
-  the interface OCaml and/or Ltac2 notations haven't been written.  See
+  the interface |OCaml| and/or Ltac2 notations haven't been written.  See
   :ref:`defining_tactics`.
 
 - Missing usability features such as:
@@ -90,7 +90,7 @@ In particular, Ltac2 is:
   * together with the Hindley-Milner type system
 
 - a language featuring meta-programming facilities for the manipulation of
-  Coq-side terms
+  |Coq|-side terms
 - a language featuring notation facilities to help write palatable scripts
 
 We describe these in more detail in the remainder of this document.
@@ -108,14 +108,14 @@ that ML constitutes a sweet spot in PL design, as it is relatively expressive
 while not being either too lax (unlike dynamic typing) nor too strict
 (unlike, say, dependent types).
 
-The main goal of Ltac2 is to serve as a meta-language for Coq. As such, it
+The main goal of Ltac2 is to serve as a meta-language for |Coq|. As such, it
 naturally fits in the ML lineage, just as the historical ML was designed as
 the tactic language for the LCF prover. It can also be seen as a general-purpose
-language, by simply forgetting about the Coq-specific features.
+language, by simply forgetting about the |Coq|-specific features.
 
 Sticking to a standard ML type system can be considered somewhat weak for a
-meta-language designed to manipulate Coq terms. In particular, there is no
-way to statically guarantee that a Coq term resulting from an Ltac2
+meta-language designed to manipulate |Coq| terms. In particular, there is no
+way to statically guarantee that a |Coq| term resulting from an Ltac2
 computation will be well-typed. This is actually a design choice, motivated
 by backward compatibility with Ltac1. Instead, well-typedness is deferred to
 dynamic checks, allowing many primitive functions to fail whenever they are
@@ -138,7 +138,7 @@ Type Syntax
 ~~~~~~~~~~~
 
 At the level of terms, we simply elaborate on Ltac1 syntax, which is quite
-close to OCaml. Types follow the simply-typed syntax of OCaml.
+close to |OCaml|. Types follow the simply-typed syntax of |OCaml|.
 
 .. insertprodn ltac2_type ltac2_typevar
 
@@ -160,7 +160,7 @@ declarations such as algebraic datatypes and records.
 
 Built-in types include:
 
-- ``int``, machine integers (size not specified, in practice inherited from OCaml)
+- ``int``, machine integers (size not specified, in practice inherited from |OCaml|)
 - ``string``, mutable strings
 - ``'a array``, mutable arrays
 - ``exn``, exceptions
@@ -201,7 +201,7 @@ One can define new types with the following commands.
      :token:`tac2typ_knd` should be in the form :n:`[ {? {? %| } {+| @tac2alg_constructor } } ]`.
 
    Without :n:`{| := | ::= }`
-     Defines an abstract type for use representing data from OCaml.  Not for
+     Defines an abstract type for use representing data from |OCaml|.  Not for
      end users.
 
    :n:`with @tac2typ_def`
@@ -227,9 +227,9 @@ One can define new types with the following commands.
 .. cmd:: Ltac2 @ external @ident : @ltac2_type := @string @string
    :name: Ltac2 external
 
-   Declares abstract terms.  Frequently, these declare OCaml functions
+   Declares abstract terms.  Frequently, these declare |OCaml| functions
    defined in |Coq| and give their type information.  They can also declare
-   data structures from OCaml.  This command has no use for the end user.
+   data structures from |OCaml|.  This command has no use for the end user.
 
 APIs
 ~~~~
@@ -363,7 +363,7 @@ Reduction
 ~~~~~~~~~
 
 We use the usual ML call-by-value reduction, with an otherwise unspecified
-evaluation order. This is a design choice making it compatible with OCaml,
+evaluation order. This is a design choice making it compatible with |OCaml|,
 if ever we implement native compilation. The expected equations are as follows::
 
   (fun x => t) V ≡ t{x := V} (βv)
@@ -407,7 +407,7 @@ standard IO monad as the ambient effectful world, Ltac2 is has a
 tactic monad.
 
 Note that the order of evaluation of application is *not* specified and is
-implementation-dependent, as in OCaml.
+implementation-dependent, as in |OCaml|.
 
 We recall that the `Proofview.tactic` monad is essentially a IO monad together
 with backtracking state representing the proof state.
@@ -537,8 +537,8 @@ aware of bound variables and must use heuristics to decide whether a variable
 is a proper one or referring to something in the Ltac context.
 
 Likewise, in Ltac1, constr parsing is implicit, so that ``foo 0`` is
-not ``foo`` applied to the Ltac integer expression ``0`` (Ltac does have a
-notion of integers, though it is not first-class), but rather the Coq term
+not ``foo`` applied to the Ltac integer expression ``0`` (|Ltac| does have a
+notion of integers, though it is not first-class), but rather the |Coq| term
 :g:`Datatypes.O`.
 
 The implicit parsing is confusing to users and often gives unexpected results.
@@ -570,11 +570,11 @@ Built-in quotations
 The current implementation recognizes the following built-in quotations:
 
 - ``ident``, which parses identifiers (type ``Init.ident``).
-- ``constr``, which parses Coq terms and produces an-evar free term at runtime
+- ``constr``, which parses |Coq| terms and produces an-evar free term at runtime
   (type ``Init.constr``).
-- ``open_constr``, which parses Coq terms and produces a term potentially with
+- ``open_constr``, which parses |Coq| terms and produces a term potentially with
   holes at runtime (type ``Init.constr`` as well).
-- ``pattern``, which parses Coq patterns and produces a pattern used for term
+- ``pattern``, which parses |Coq| patterns and produces a pattern used for term
   matching (type ``Init.pattern``).
 - ``reference``  Qualified names
   are globalized at internalization into the corresponding global reference,
@@ -617,7 +617,7 @@ Term Antiquotations
 Syntax
 ++++++
 
-One can also insert Ltac2 code into Coq terms, similar to what is possible in
+One can also insert Ltac2 code into |Coq| terms, similar to what is possible in
 Ltac1.
 
 .. prodn::
@@ -629,7 +629,7 @@ for their side-effects.
 Semantics
 +++++++++
 
-A quoted Coq term is interpreted in two phases, internalization and
+A quoted |Coq| term is interpreted in two phases, internalization and
 evaluation.
 
 - Internalization is part of the static semantics, that is, it is done at Ltac2
@@ -637,17 +637,17 @@ evaluation.
 - Evaluation is part of the dynamic semantics, that is, it is done when
   a term gets effectively computed by Ltac2.
 
-Note that typing of Coq terms is a *dynamic* process occurring at Ltac2
+Note that typing of |Coq| terms is a *dynamic* process occurring at Ltac2
 evaluation time, and not at Ltac2 typing time.
 
 Static semantics
 ****************
 
-During internalization, Coq variables are resolved and antiquotations are
-type checked as Ltac2 terms, effectively producing a ``glob_constr`` in Coq
+During internalization, |Coq| variables are resolved and antiquotations are
+type checked as Ltac2 terms, effectively producing a ``glob_constr`` in |Coq|
 implementation terminology. Note that although it went through the
 type checking of **Ltac2**, the resulting term has not been fully computed and
-is potentially ill-typed as a runtime **Coq** term.
+is potentially ill-typed as a runtime **|Coq|** term.
 
 .. example::
 
@@ -669,7 +669,7 @@ of the corresponding term expression.
       let x := '0 in constr:(1 + ltac2:(exact x))
 
 Beware that the typing environment of antiquotations is **not**
-expanded by the Coq binders from the term.
+expanded by the |Coq| binders from the term.
 
   .. example::
 
@@ -692,17 +692,17 @@ as follows.
 
 `constr:(fun x : nat => ltac2:(exact (hyp @x)))`
 
-This pattern is so common that we provide dedicated Ltac2 and Coq term notations
+This pattern is so common that we provide dedicated Ltac2 and |Coq| term notations
 for it.
 
 - `&x` as an Ltac2 expression expands to `hyp @x`.
-- `&x` as a Coq constr expression expands to
+- `&x` as a |Coq| constr expression expands to
   `ltac2:(Control.refine (fun () => hyp @x))`.
 
-In the special case where Ltac2 antiquotations appear inside a Coq term
+In the special case where Ltac2 antiquotations appear inside a |Coq| term
 notation, the notation variables are systematically bound in the body
 of the tactic expression with type `Ltac2.Init.preterm`. Such a type represents
-untyped syntactic Coq expressions, which can by typed in the
+untyped syntactic |Coq| expressions, which can by typed in the
 current context using the `Ltac2.Constr.pretype` function.
 
 .. example::
@@ -748,9 +748,9 @@ the notation section.
 
 .. prodn:: term += $@lident
 
-In a Coq term, writing :g:`$x` is semantically equivalent to
+In a |Coq| term, writing :g:`$x` is semantically equivalent to
 :g:`ltac2:(Control.refine (fun () => x))`, up to re-typechecking. It allows to
-insert in a concise way an Ltac2 variable of type :n:`constr` into a Coq term.
+insert in a concise way an Ltac2 variable of type :n:`constr` into a |Coq| term.
 
 Match over terms
 ~~~~~~~~~~~~~~~~
@@ -1129,7 +1129,7 @@ Match on values
 .. tacn:: match @ltac2_expr5 with {? @ltac2_branches } end
    :name: match (Ltac2)
 
-   Matches a value, akin to the OCaml `match` construct.  By itself, it doesn't cause backtracking
+   Matches a value, akin to the |OCaml| `match` construct.  By itself, it doesn't cause backtracking
    as do the `*match*!` and `*match*! goal` constructs.
 
    .. insertprodn ltac2_branches atomic_tac2pat
@@ -1254,7 +1254,7 @@ Abbreviations
 
    Introduces a special kind of notation, called an abbreviation,
    that does not add any parsing rules. It is similar in
-   spirit to Coq abbreviations (see :cmd:`Notation (abbreviation)`,
+   spirit to |Coq| abbreviations (see :cmd:`Notation (abbreviation)`,
    insofar as its main purpose is to give an
    absolute name to a piece of pure syntax, which can be transparently referred to
    by this name as if it were a proper definition.
@@ -1281,7 +1281,7 @@ Abbreviations
 Defining tactics
 ~~~~~~~~~~~~~~~~
 
-Built-in tactics (those defined in OCaml code in the |Coq| executable) and Ltac1 tactics,
+Built-in tactics (those defined in |OCaml| code in the |Coq| executable) and Ltac1 tactics,
 which are defined in `.v` files, must be defined through notations.  (Ltac2 tactics can be
 defined with :cmd:`Ltac2`.
 
@@ -1795,7 +1795,7 @@ Transition from Ltac1
 Owing to the use of a lot of notations, the transition should not be too
 difficult. In particular, it should be possible to do it incrementally. That
 said, we do *not* guarantee it will be a blissful walk either.
-Hopefully, owing to the fact Ltac2 is typed, the interactive dialogue with Coq
+Hopefully, owing to the fact Ltac2 is typed, the interactive dialogue with |Coq|
 will help you.
 
 We list the major changes and the transition strategies hereafter.

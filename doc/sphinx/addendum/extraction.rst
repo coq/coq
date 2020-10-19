@@ -16,7 +16,7 @@ Before using any of the commands or options described in this chapter,
 the extraction framework should first be loaded explicitly
 via ``Require Extraction``, or via the more robust
 ``From Coq Require Extraction``.
-Note that in earlier versions of Coq, these commands and options were
+Note that in earlier versions of |Coq|, these commands and options were
 directly available without any preliminary ``Require``.
 
 .. coqtop:: in
@@ -72,10 +72,10 @@ produce one monolithic file or one file per |Coq| library.
    Recursive extraction of all the mentioned objects and all
    their dependencies, just as :n:`Extraction @string {+ @qualid }`,
    but instead of producing one monolithic file, this command splits
-   the produced code in separate ML files, one per corresponding Coq
+   the produced code in separate ML files, one per corresponding |Coq|
    ``.v`` file. This command is hence quite similar to
    :cmd:`Recursive Extraction Library`, except that only the needed
-   parts of Coq libraries are extracted instead of the whole.
+   parts of |Coq| libraries are extracted instead of the whole.
    The naming convention in case of name clash is the same one as
    :cmd:`Extraction Library`: identifiers are here renamed using prefixes
    ``coq_``  or ``Coq_``.
@@ -138,7 +138,7 @@ and commands:
    Default is on. This controls all type-preserving optimizations made on
    the ML terms (mostly reduction of dummy beta/iota redexes, but also
    simplifications on Cases, etc). Turn this flag off if you want a
-   ML term as close as possible to the Coq term.
+   ML term as close as possible to the |Coq| term.
 
 .. flag:: Extraction Conservative Types
 
@@ -434,7 +434,7 @@ Additional settings
 
    Controls which optimizations are used during extraction, providing a finer-grained
    control than :flag:`Extraction Optimize`.  The bits of :token:`natural` are used as a bit mask.
-   Keeping an option off keeps the extracted ML more similar to the Coq term.
+   Keeping an option off keeps the extracted ML more similar to the |Coq| term.
    Values are:
 
    +-----+-------+----------------------------------------------------------------+
@@ -465,7 +465,7 @@ Additional settings
 
 .. flag:: Extraction TypeExpand
 
-   If set, fully expand Coq types in ML.  See the Coq source code to learn more.
+   If set, fully expand |Coq| types in ML.  See the |Coq| source code to learn more.
 
 Differences between |Coq| and ML type systems
 ----------------------------------------------
@@ -515,7 +515,7 @@ In |OCaml|, we must cast any argument of the constructor dummy
 Even with those unsafe castings, you should never get error like
 ``segmentation fault``. In fact even if your program may seem
 ill-typed to the |OCaml| type checker, it can't go wrong : it comes
-from a Coq well-typed terms, so for example inductive types will always 
+from a |Coq| well-typed terms, so for example inductive types will always
 have the correct number of arguments, etc. Of course, when launching
 manually some extracted function, you should apply it to arguments
 of the right shape (from the |Coq| point-of-view).
@@ -524,7 +524,7 @@ More details about the correctness of the extracted programs can be
 found in :cite:`Let02`.
 
 We have to say, though, that in most "realistic" programs, these problems do not
-occur. For example all the programs of Coq library are accepted by the |OCaml|
+occur. For example all the programs of |Coq| library are accepted by the |OCaml|
 type checker without any ``Obj.magic`` (see examples below).
 
 Some examples

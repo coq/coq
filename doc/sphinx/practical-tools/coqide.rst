@@ -5,9 +5,9 @@
 |Coq| Integrated Development Environment
 ========================================
 
-The Coq Integrated Development Environment is a graphical tool, to be
+The |Coq| Integrated Development Environment is a graphical tool, to be
 used as a user-friendly replacement to `coqtop`. Its main purpose is to
-allow the user to navigate forward and backward into a Coq vernacular
+allow the user to navigate forward and backward into a |Coq| vernacular
 file, executing corresponding commands or undoing them respectively.
 
 |CoqIDE| is run by typing the command `coqide` on the command line.
@@ -23,7 +23,7 @@ no meaning for |CoqIDE| being ignored.
      :alt: |CoqIDE| main screen
 
 A sample |CoqIDE| main screen, while navigating into a file `Fermat.v`,
-is shown in the figure :ref:`CoqIDE main screen <coqide_mainscreen>`.
+is shown in the figure :ref:`|CoqIDE| main screen <coqide_mainscreen>`.
 At the top is a menu bar, and a tool bar
 below it. The large window on the left is displaying the various
 *script buffers*. The upper right window is the *goal window*, where
@@ -39,7 +39,7 @@ The *File* menu allows you to open files or create some, save them,
 print or export them into various formats. Among all these buffers,
 there is always one which is the current *running buffer*, whose name
 is displayed on a background in the *processed* color (green by default), which
-is the one where Coq commands are currently executed.
+is the one where |Coq| commands are currently executed.
 
 Buffers may be edited as in any text editor, and classical basic
 editing commands (Copy/Paste, …) are available in the *Edit* menu.
@@ -47,7 +47,7 @@ editing commands (Copy/Paste, …) are available in the *Edit* menu.
 editing commands, you may launch your favorite text editor on the
 current buffer, using the *Edit/External Editor* menu.
 
-Interactive navigation into Coq scripts
+Interactive navigation into |Coq| scripts
 --------------------------------------------
 
 The running buffer is the one where navigation takes place. The toolbar offers
@@ -58,7 +58,7 @@ processed color. If that command fails, the error message is displayed in the
 message window, and the location of the error is emphasized by an underline in
 the error foreground color (red by default).
 
-In the figure :ref:`CoqIDE main screen <coqide_mainscreen>`,
+In the figure :ref:`|CoqIDE| main screen <coqide_mainscreen>`,
 the running buffer is `Fermat.v`, all commands until
 the ``Theorem`` have been already executed, and the user tried to go
 forward executing ``Induction n``. That command failed because no such
@@ -153,7 +153,7 @@ as standard |GtkSourceView| styles are available. Other styles can be
 added e.g. in ``$HOME/.local/share/gtksourceview-3.0/styles/`` (see
 the general documentation about |GtkSourceView| for the various
 possibilities). Note that the style of the rest of graphical part of
-Coqide is not under the control of |GtkSourceView| but of GTK+ and
+|CoqIDE| is not under the control of |GtkSourceView| but of GTK+ and
 governed by files such as ``settings.ini`` and ``gtk.css`` in
 ``$XDG_CONFIG_HOME/gtk-3.0`` or files in
 ``$HOME/.themes/NameOfTheme/gtk-3.0``, as well as the environment
@@ -219,7 +219,7 @@ mathematical symbols ∀ and ∃, you may define:
      : type_scope.
 
 There exists a small set of such notations already defined, in the
-file `utf8.v` of Coq library, so you may enable them just by
+file `utf8.v` of |Coq| library, so you may enable them just by
 ``Require Import Unicode.Utf8`` inside |CoqIDE|, or equivalently,
 by starting |CoqIDE| with ``coqide -l utf8``.
 
@@ -237,7 +237,7 @@ use antialiased fonts or not, by setting the environment variable
 Bindings for input of Unicode symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CoqIDE supports a builtin mechanism to input non-ASCII symbols.
+|CoqIDE| supports a builtin mechanism to input non-ASCII symbols.
 For example, to input ``π``, it suffices to type ``\pi`` then press the
 combination of key ``Shift+Space`` (default key binding). Often, it
 suffices to type a prefix of the latex token, e.g. typing ``\p``

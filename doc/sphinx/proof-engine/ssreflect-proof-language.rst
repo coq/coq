@@ -158,23 +158,23 @@ compatible with the rest of |Coq|, up to a few discrepancies:
   generalized form, turn off the |SSR| Boolean ``if`` notation using the command:
   ``Close Scope boolean_if_scope``.
 + The following flags can be unset to make |SSR| more compatible with
-  parts of Coq:
+  parts of |Coq|:
 
 .. flag:: SsrRewrite
 
    Controls whether the incompatible rewrite syntax is enabled (the default).
-   Disabling the flag makes the syntax compatible with other parts of Coq.
+   Disabling the flag makes the syntax compatible with other parts of |Coq|.
 
 .. flag:: SsrIdents
 
    Controls whether tactics can refer to |SSR|-generated variables that are
    in the form _xxx_.  Scripts with explicit references to such variables
    are fragile; they are prone to failure if the proof is later modified or
-   if the details of variable name generation change in future releases of Coq.
+   if the details of variable name generation change in future releases of |Coq|.
 
    The default is on, which gives an error message when the user tries to
    create such identifiers.  Disabling the flag generates a warning instead,
-   increasing compatibility with other parts of Coq.
+   increasing compatibility with other parts of |Coq|.
 
 |Gallina| extensions
 --------------------

@@ -1001,12 +1001,12 @@ of the ``Require`` command can be used to bypass the implicit shortening
 by providing an absolute root to the required file (see :ref:`compiled-files`).
 
 There also exists another independent loadpath mechanism attached to
-OCaml object files (``.cmo`` or ``.cmxs``) rather than |Coq| object
-files as described above. The OCaml loadpath is managed using
-the option ``-I`` `path` (in the OCaml world, there is neither a
+|OCaml| object files (``.cmo`` or ``.cmxs``) rather than |Coq| object
+files as described above. The |OCaml| loadpath is managed using
+the option ``-I`` `path` (in the |OCaml| world, there is neither a
 notion of logical name prefix nor a way to access files in
 subdirectories of path). See the command :cmd:`Declare ML Module` in
-:ref:`compiled-files` to understand the need of the OCaml loadpath.
+:ref:`compiled-files` to understand the need of the |OCaml| loadpath.
 
 See :ref:`command-line-options` for a more general view over the |Coq| command
 line options.

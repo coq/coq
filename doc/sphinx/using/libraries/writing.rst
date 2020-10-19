@@ -1,9 +1,9 @@
-Writing Coq libraries and plugins
-=================================
+Writing |Coq| libraries and plugins
+===================================
 
-This section presents the part of the Coq language that is useful only
-to library and plugin authors.  A tutorial for writing Coq plugins is
-available in the Coq repository in `doc/plugin_tutorial
+This section presents the part of the |Coq| language that is useful only
+to library and plugin authors.  A tutorial for writing |Coq| plugins is
+available in the |Coq| repository in `doc/plugin_tutorial
 <https://github.com/coq/coq/tree/master/doc/plugin_tutorial>`_.
 
 Deprecating library objects or tactics
