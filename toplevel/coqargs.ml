@@ -516,12 +516,12 @@ let parse_args ~help ~init arglist : t * string list =
     |"-impredicative-set" ->
       set_logic (fun o -> { o with impredicative_set = Declarations.ImpredicativeSet }) oval
     |"-allow-sprop" ->
-      add_set_option oval Vernacentries.allow_sprop_opt_name (Stm.OptionSet None)
+      add_set_option oval ComFlags.allow_sprop_opt_name (Stm.OptionSet None)
     |"-disallow-sprop" ->
-      add_set_option oval Vernacentries.allow_sprop_opt_name Stm.OptionUnset
+      add_set_option oval ComFlags.allow_sprop_opt_name Stm.OptionUnset
     |"-sprop-cumulative" ->
       warn_deprecated_sprop_cumul();
-      add_set_option oval Vernacentries.cumul_sprop_opt_name (Stm.OptionSet None)
+      add_set_option oval ComFlags.cumul_sprop_opt_name (Stm.OptionSet None)
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { oval.post with memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}

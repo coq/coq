@@ -69,6 +69,14 @@ let is_reversible_pattern_implicit_args () = !implicit_args.reversible_pattern
 let is_contextual_implicit_args () = !implicit_args.contextual
 let is_maximal_implicit_args () = !implicit_args.maximal
 
+let () =
+  let open Goptions in
+  declare_bool_option
+    { optdepr  = false;
+      optkey   = ["Implicit";"Arguments"];
+      optread  = is_implicit_args;
+      optwrite = make_implicit_args }
+
 let with_implicit_protection f x =
   let oflags = !implicit_args in
   try

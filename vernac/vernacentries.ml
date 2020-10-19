@@ -16,7 +16,6 @@ open CAst
 open Util
 open Names
 open Printer
-open Goptions
 open Libnames
 open Vernacexpr
 open Locality
@@ -642,7 +641,7 @@ let vernac_assumption ~atts discharge kind l nl =
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l
 
 let is_polymorphic_inductive_cumulativity =
-  declare_bool_option_and_ref ~depr:false ~value:false
+  Goptions.declare_bool_option_and_ref ~depr:false ~value:false
     ~key:["Polymorphic";"Inductive";"Cumulativity"]
 
 let polymorphic_cumulative =
@@ -1074,7 +1073,7 @@ let vernac_begin_section ~poly ({v=id} as lid) =
   Lib.open_section id;
   (* If there was no polymorphism attribute this just sets the option
      to its current value ie noop. *)
-  set_bool_option_value_gen ~locality:OptLocal ["Universe"; "Polymorphism"] poly
+  Goptions.(set_bool_option_value_gen ~locality:OptLocal ["Universe"; "Polymorphism"] poly)
 
 let vernac_end_section {CAst.loc; v} =
   Dumpglob.dump_reference ?loc
@@ -1310,6 +1309,7 @@ let vernac_hints ~atts dbnames h =
     else dbnames
   in
   let locality, poly = Attributes.(parse Notations.(option_locality ++ polymorphic) atts) in
+  let open Goptions in
   let () = match locality with
   | OptGlobal ->
     if Global.sections_are_opened () then
@@ -1347,230 +1347,6 @@ let vernac_generalizable ~local =
   let local = Option.default true local in
   Implicit_quantifiers.declare_generalizable ~local
 
-let allow_sprop_opt_name = ["Allow";"StrictProp"]
-let cumul_sprop_opt_name = ["Cumulative";"StrictProp"]
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = allow_sprop_opt_name;
-      optread  = (fun () -> Global.sprop_allowed());
-      optwrite = Global.set_allow_sprop }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = cumul_sprop_opt_name;
-      optread  = Global.is_cumulative_sprop;
-      optwrite = Global.set_cumulative_sprop }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Silent"];
-      optread  = (fun () -> !Flags.quiet);
-      optwrite = ((:=) Flags.quiet) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Implicit";"Arguments"];
-      optread  = Impargs.is_implicit_args;
-      optwrite = Impargs.make_implicit_args }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Strict";"Implicit"];
-      optread  = Impargs.is_strict_implicit_args;
-      optwrite = Impargs.make_strict_implicit_args }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Strongly";"Strict";"Implicit"];
-      optread  = Impargs.is_strongly_strict_implicit_args;
-      optwrite = Impargs.make_strongly_strict_implicit_args }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Contextual";"Implicit"];
-      optread  = Impargs.is_contextual_implicit_args;
-      optwrite = Impargs.make_contextual_implicit_args }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Reversible";"Pattern";"Implicit"];
-      optread  = Impargs.is_reversible_pattern_implicit_args;
-      optwrite = Impargs.make_reversible_pattern_implicit_args }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Maximal";"Implicit";"Insertion"];
-      optread  = Impargs.is_maximal_implicit_args;
-      optwrite = Impargs.make_maximal_implicit_args }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Coercions"];
-      optread  = (fun () -> !Constrextern.print_coercions);
-      optwrite = (fun b ->  Constrextern.print_coercions := b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Parentheses"];
-      optread  = (fun () -> !Constrextern.print_parentheses);
-      optwrite = (fun b ->  Constrextern.print_parentheses := b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Existential";"Instances"];
-      optread  = (fun () -> !Detyping.print_evar_arguments);
-      optwrite = (:=) Detyping.print_evar_arguments }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Implicit"];
-      optread  = (fun () -> !Constrextern.print_implicits);
-      optwrite = (fun b ->  Constrextern.print_implicits := b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Implicit";"Defensive"];
-      optread  = (fun () -> !Constrextern.print_implicits_defensive);
-      optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Projections"];
-      optread  = (fun () -> !Constrextern.print_projections);
-      optwrite = (fun b ->  Constrextern.print_projections := b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Notations"];
-      optread  = (fun () -> not !Constrextern.print_no_symbol);
-      optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"All"];
-      optread  = (fun () -> !Flags.raw_print);
-      optwrite = (fun b -> Flags.raw_print := b) }
-
-let () =
-  declare_int_option
-    { optdepr  = false;
-      optkey   = ["Inline";"Level"];
-      optread  = (fun () -> Some (Flags.get_inline_level ()));
-      optwrite = (fun o ->
-                   let lev = Option.default Flags.default_inline_level o in
-                   Flags.set_inline_level lev) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Kernel"; "Term"; "Sharing"];
-      optread  = (fun () -> (Global.typing_flags ()).Declarations.share_reduction);
-      optwrite = Global.set_share_reduction }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Compact";"Contexts"];
-      optread  = (fun () -> Printer.get_compact_context());
-      optwrite = (fun b -> Printer.set_compact_context b) }
-
-let () =
-  declare_int_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Depth"];
-      optread  = Topfmt.get_depth_boxes;
-      optwrite = Topfmt.set_depth_boxes }
-
-let () =
-  declare_int_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Width"];
-      optread  = Topfmt.get_margin;
-      optwrite = Topfmt.set_margin }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Universes"];
-      optread  = (fun () -> !Constrextern.print_universes);
-      optwrite = (fun b -> Constrextern.print_universes:=b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Dump";"Bytecode"];
-      optread  = (fun () -> !Vmbytegen.dump_bytecode);
-      optwrite = (:=) Vmbytegen.dump_bytecode }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Dump";"Lambda"];
-      optread  = (fun () -> !Vmlambda.dump_lambda);
-      optwrite = (:=) Vmlambda.dump_lambda }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Parsing";"Explicit"];
-      optread  = (fun () -> !Constrintern.parsing_explicit);
-      optwrite = (fun b ->  Constrintern.parsing_explicit := b) }
-
-let () =
-  declare_string_option ~preprocess:CWarnings.normalize_flags_string
-    { optdepr  = false;
-      optkey   = ["Warnings"];
-      optread  = CWarnings.get_flags;
-      optwrite = CWarnings.set_flags }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Guard"; "Checking"];
-      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_guarded);
-      optwrite = (fun b -> Global.set_check_guarded b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Positivity"; "Checking"];
-      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_positive);
-      optwrite = (fun b -> Global.set_check_positive b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Universe"; "Checking"];
-      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_universes);
-      optwrite = (fun b -> Global.set_check_universes b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Definitional"; "UIP"];
-      optread  = (fun () -> (Global.typing_flags ()).Declarations.allow_uip);
-      optwrite = (fun b -> Global.set_typing_flags
-                     {(Global.typing_flags ()) with Declarations.allow_uip = b})
-    }
-
 let vernac_set_strategy ~local l =
   let local = Option.default false local in
   let glob_ref r =
@@ -1594,6 +1370,7 @@ let vernac_set_opacity ~local (v,l) =
   Redexpr.set_strategy local [v,l]
 
 let vernac_set_option0 ~locality key opt =
+  let open Goptions in
   match opt with
   | OptionUnset -> unset_option_value_gen ~locality key
   | OptionSetString s -> set_string_option_value_gen ~locality key s
@@ -1601,7 +1378,7 @@ let vernac_set_option0 ~locality key opt =
   | OptionSetTrue -> set_bool_option_value_gen ~locality key true
 
 let vernac_set_append_option ~locality key s =
-  set_string_option_append_value_gen ~locality key s
+  Goptions.set_string_option_append_value_gen ~locality key s
 
 let vernac_set_option ~locality table v = match v with
 | OptionSetString s ->
@@ -1617,13 +1394,14 @@ let vernac_set_option ~locality table v = match v with
       vernac_set_option0 ~locality table v
 | _ -> vernac_set_option0 ~locality table v
 
-let vernac_add_option = iter_table { aux = fun table -> table.add }
+let vernac_add_option = Goptions.(iter_table { aux = fun table -> table.add })
 
-let vernac_remove_option = iter_table { aux = fun table -> table.remove }
+let vernac_remove_option = Goptions.(iter_table { aux = fun table -> table.remove })
 
-let vernac_mem_option = iter_table { aux = fun table -> table.mem }
+let vernac_mem_option = Goptions.(iter_table { aux = fun table -> table.mem })
 
 let vernac_print_option key =
+  let open Goptions in
   try (get_ref_table key).print ()
   with Not_found ->
   try (get_string_table key).print ()
@@ -1750,7 +1528,7 @@ let vernac_print ~pstate =
   let sigma, env = get_current_or_global_context ~pstate in
   function
   | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
-  | PrintTables -> print_tables ()
+  | PrintTables -> Goptions.print_tables ()
   | PrintFullContext-> Prettyp.print_full_context_typ env sigma
   | PrintSectionContext qid -> Prettyp.print_sec_context_typ env sigma qid
   | PrintInspect n -> Prettyp.inspect env sigma n
