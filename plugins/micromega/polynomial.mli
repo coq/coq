@@ -120,6 +120,7 @@ type cstr = {coeffs : Vect.t; op : op; cst : Q.t}
 and op = Eq | Ge | Gt
 
 val eval_op : op -> Q.t -> Q.t -> bool
+val compare_op : op -> op -> int
 
 (*val opMult : op -> op -> op*)
 
@@ -152,6 +153,9 @@ module LinPoly : sig
 
     (** [reserve i] reserves the integer i *)
     val reserve : int -> unit
+
+    (** [safe_reserve i] reserves the integer i *)
+    val safe_reserve : int -> unit
 
     (** [get_fresh ()] return the first fresh variable *)
     val get_fresh : unit -> int
@@ -289,8 +293,9 @@ module ProofFormat : sig
   (* x = z - t, z >= 0, t >= 0 *)
 
   val pr_size : prf_rule -> Q.t
-  val pr_rule_max_id : prf_rule -> int
-  val proof_max_id : proof -> int
+  val pr_rule_max_def : prf_rule -> int
+  val pr_rule_max_hyp : prf_rule -> int
+  val proof_max_def : proof -> int
   val normalise_proof : int -> proof -> int * proof
   val output_prf_rule : out_channel -> prf_rule -> unit
   val output_proof : out_channel -> proof -> unit
@@ -302,13 +307,15 @@ module ProofFormat : sig
   val cmpl_prf_rule :
        ('a Micromega.pExpr -> 'a Micromega.pol)
     -> (Q.t -> 'a)
-    -> int list
+    -> prf_rule list
     -> prf_rule
     -> 'a Micromega.psatz
 
   val proof_of_farkas : prf_rule IMap.t -> Vect.t -> prf_rule
   val eval_prf_rule : (int -> LinPoly.t * op) -> prf_rule -> LinPoly.t * op
   val eval_proof : (LinPoly.t * op) IMap.t -> proof -> bool
+
+  module PrfRuleMap : Map.S with type key = prf_rule
 end
 
 val output_cstr : out_channel -> cstr -> unit
@@ -344,6 +351,12 @@ module WithProof : sig
       @return the polynomial p+q with its sign and proof *)
   val addition : t -> t -> t
 
+  (** [neg p]
+      @return the polynomial -p with its sign and proof
+      @raise an error if this not an equality
+ *)
+  val neg : t -> t
+
   (** [mult p q]
       @return the polynomial p*q with its sign and proof.
       @raise InvalidProof if p is not a constant and p  is not an equality *)
@@ -359,6 +372,10 @@ module WithProof : sig
       - The pivoting also requires some sign conditions for [a]
    *)
   val linear_pivot : t list -> t -> Vect.var -> t -> t option
+
+  (** [simple_pivot (c,x) p q]  performs a pivoting over the variable [x] where
+      p = c+a1.x1+....+c.x+...an.xn and c <> 0 *)
+  val simple_pivot : Q.t * var -> t -> t -> t option
 
   (** [subst sys] performs the equivalent of the 'subst' tactic of Coq.
     For every p=0 \in sys such that p is linear in x with coefficient +/- 1

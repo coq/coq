@@ -1,5 +1,6 @@
-Require Import ZArith ZifyInt63 Lia.
+Require Import ZArith  Lia.
 Require Import Int63.
+Require ZifyInt63.
 
 Open Scope int63_scope.
 

@@ -57,12 +57,17 @@ let pp_var_num pp_var o {var = v; coe = n} =
   else Printf.fprintf o "%s*%a" (Q.to_string n) pp_var v
 
 let pp_var_num_smt pp_var o {var = v; coe = n} =
-  if Int.equal v 0 then
-    if Q.zero =/ n then () else Printf.fprintf o "%s" (Q.to_string n)
+  let pp_num o q =
+    let nn = Q.num n in
+    let dn = Q.den n in
+    if Z.equal dn Z.one then output_string o (Z.to_string nn)
+    else Printf.fprintf o "(/ %s %s)" (Z.to_string nn) (Z.to_string dn)
+  in
+  if Int.equal v 0 then if Q.zero =/ n then () else pp_num o n
   else if Q.one =/ n then pp_var o v
   else if Q.minus_one =/ n then Printf.fprintf o "(- %a)" pp_var v
   else if Q.zero =/ n then ()
-  else Printf.fprintf o "(* %s %a)" (Q.to_string n) pp_var v
+  else Printf.fprintf o "(* %a %a)" pp_num n pp_var v
 
 let rec pp_gen pp_var o v =
   match v with
