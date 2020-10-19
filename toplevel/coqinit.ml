@@ -89,21 +89,23 @@ let libs_init_load_path ~coqlib =
   let misc_ml, misc_vo =
     List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ coqpath) |> List.split in
 
-  plugins_dirs @ contrib_ml @ List.concat misc_ml,
+  let ml_loadpath = plugins_dirs @ contrib_ml @ List.concat misc_ml in
+  let vo_loadpath =
+    (* current directory (not recursively!) *)
+    [ { unix_path = "."
+      ; coq_path = Libnames.default_root_prefix
+      ; implicit = false
+      ; has_ml = true
+      ; recursive = false
+      } ] @
 
-  (* current directory (not recursively!) *)
-  [ { unix_path = "."
-    ; coq_path = Libnames.default_root_prefix
-    ; implicit = false
-    ; has_ml = true
-    ; recursive = false
-    } ] @
+    (* then standard library *)
+    [build_stdlib_vo_path ~unix_path:(coqlib/"theories") ~coq_path] @
 
-  (* then standard library *)
-  [build_stdlib_vo_path ~unix_path:(coqlib/"theories") ~coq_path] @
+    (* then user-contrib *)
+    contrib_vo @
 
-  (* then user-contrib *)
-  contrib_vo @
-
-  (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME and COQPATH *)
-  List.concat misc_vo
+    (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME and COQPATH *)
+    List.concat misc_vo
+  in
+  ml_loadpath, vo_loadpath
