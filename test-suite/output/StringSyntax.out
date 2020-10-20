@@ -1096,3 +1096,9 @@ Expects a single character or a three-digit ASCII code.
      : nat
 The command has indeed failed with message:
 Expects a single character or a three-digit ASCII code.
+"abc"
+     : string2
+"abc" : string2
+     : string2
+"abc" : string1
+     : string1

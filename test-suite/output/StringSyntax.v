@@ -95,3 +95,23 @@ Check "255".
 Fail Check "256".
 
 End Test3.
+
+(* Test overlapping string notations *)
+Module Test4.
+
+Notation string1 := (list Byte.byte).
+Definition id_string1 := @id string1.
+
+String Notation string1 id_string1 id_string1 : list_scope.
+
+Notation string2 := (list Ascii.ascii).
+Definition a2b := List.map byte_of_ascii.
+Definition b2a := List.map ascii_of_byte.
+
+String Notation string2 b2a a2b : list_scope.
+
+Check "abc"%list.
+Check ["a";"b";"c"]%char%list : string2.
+Check ["a";"b";"c"]%byte%list : string1.
+
+End Test4.

@@ -1246,7 +1246,6 @@ let cache_prim_token_interpretation (_,infos) =
     String.Map.add sc (infos.pt_required,ptii) !prim_token_interp_infos;
   let add_uninterp r =
     let l = try GlobRef.Map.find r !prim_token_uninterp_infos with Not_found -> [] in
-    let l = List.remove_assoc_f String.equal sc l in
     prim_token_uninterp_infos :=
       GlobRef.Map.add r ((sc,(ptii,infos.pt_in_match)) :: l)
         !prim_token_uninterp_infos in
