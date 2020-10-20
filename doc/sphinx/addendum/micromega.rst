@@ -283,14 +283,19 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 .. tacn:: zify
    :name: zify
 
-   This tactic is internally called by :tacn:`lia` to support additional types e.g., :g:`nat`, :g:`positive` and :g:`N`.
-   By requiring the module ``ZifyBool``, the boolean type :g:`bool` and some comparison operators are also supported.
+   This tactic is internally called by :tacn:`lia` to support additional types, e.g., :g:`nat`, :g:`positive` and :g:`N`.
+   Additional support is provided by the following modules:
+
+   + For boolean operators (e.g., :g:`Nat.leb`), require the module :g:`ZifyBool`.
+   + For comparison operators (e.g., :g:`Z.compare`), require the module :g:`ZifyComparison`.
+   + For native 63 bit integers, require the module :g:`ZifyInt63`.
+
    :tacn:`zify` can also be extended by rebinding the tactics `Zify.zify_pre_hook` and `Zify.zify_post_hook` that are
    respectively run in the first and the last steps of :tacn:`zify`.
 
    + To support :g:`Z.div` and :g:`Z.modulo`: ``Ltac Zify.zify_post_hook ::= Z.div_mod_to_equations``.
    + To support :g:`Z.quot` and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.quot_rem_to_equations``.
-   + To support :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot`, and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations``.
+   + To support :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot` and :g:`Z.rem`: either ``Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations`` or ``Ltac Zify.zify_convert_to_euclidean_division_equations_flag ::= constr:(true)``.
 
    The :tacn:`zify` tactic can be extended with new types and operators by declaring and registering new typeclass instances using the following commands.
    The typeclass declarations can be found in the module ``ZifyClasses`` and the default instances can be found in the module ``ZifyInst``.
