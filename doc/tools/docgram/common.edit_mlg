@@ -207,19 +207,19 @@ tactic_then_last: [
 ]
 
 ltac2_tactic_then_last: [
-| REPLACE "|" LIST0 ( OPT tac2expr6 ) SEP "|"      (* Ltac2 plugin *)
-| WITH LIST0 (  "|" OPT tac2expr6 )  TAG Ltac2
+| REPLACE "|" LIST0 ( OPT ltac2_expr6 ) SEP "|"      (* Ltac2 plugin *)
+| WITH LIST0 (  "|" OPT ltac2_expr6 )  TAG Ltac2
 ]
 
 ltac2_goal_tactics: [
-| LIST0 ( OPT tac2expr6 ) SEP "|"  TAG Ltac2
+| LIST0 ( OPT ltac2_expr6 ) SEP "|"  TAG Ltac2
 ]
 
 ltac2_for_each_goal: [ | DELETENT ]
 
 ltac2_for_each_goal: [
 | ltac2_goal_tactics  TAG Ltac2
-| OPT ( ltac2_goal_tactics "|" ) OPT tac2expr6 ".." OPT ( "|" ltac2_goal_tactics )  TAG Ltac2
+| OPT ( ltac2_goal_tactics "|" ) OPT ltac2_expr6 ".." OPT ( "|" ltac2_goal_tactics )  TAG Ltac2
 ]
 
 ltac2_tactic_then_last: [
@@ -1627,7 +1627,7 @@ ltac2_rewriter: [
 | OPT natural OPT [ "?" | "!" ] ltac2_constr_with_bindings
 ]
 
-tac2expr0: [
+ltac2_expr0: [
 | DELETE "(" ")"
 ]
 
@@ -1961,7 +1961,7 @@ ltac2_match_key: [
 ]
 
 ltac2_constructs: [
-| ltac2_match_key tac2expr6 "with" ltac2_match_list "end"
+| ltac2_match_key ltac2_expr6 "with" ltac2_match_list "end"
 | ltac2_match_key OPT "reverse" "goal" "with" goal_match_list "end"
 ]
 
@@ -2058,7 +2058,7 @@ atomic_tac2pat: [
 | OPTINREF
 ]
 
-tac2expr0: [
+ltac2_expr0: [
 (*
 | DELETE "(" ")" (* covered by "()" prodn *)
 | REPLACE "{" [  | LIST1 tac2rec_fieldexpr OPT ";" ] "}"
@@ -2071,13 +2071,13 @@ tac2expr0: [
 use LIST1? *)
 
 SPLICE: [
-| tac2expr4
+| ltac2_expr4
 ]
 
-tac2expr3: [
-| REPLACE tac2expr2 "," LIST1 tac2expr2 SEP ","      (* Ltac2 plugin *)
-| WITH LIST1 tac2expr2 SEP "," TAG Ltac2
-| DELETE tac2expr2      (* Ltac2 plugin *)
+ltac2_expr3: [
+| REPLACE ltac2_expr2 "," LIST1 ltac2_expr2 SEP ","      (* Ltac2 plugin *)
+| WITH LIST1 ltac2_expr2 SEP "," TAG Ltac2
+| DELETE ltac2_expr2      (* Ltac2 plugin *)
 ]
 
 tac2rec_fieldexprs: [
@@ -2158,7 +2158,7 @@ ltac2_entry: [
 | WITH "Ltac2" tac2def_val
 | REPLACE tac2def_ext     (* Ltac2 plugin *)
 | WITH "Ltac2" tac2def_ext
-| "Ltac2" "Notation" [ string | lident ] ":=" tac2expr6 TAG Ltac2  (* variant *)
+| "Ltac2" "Notation" [ string | lident ] ":=" ltac2_expr6 TAG Ltac2  (* variant *)
 | MOVEALLBUT command
 (* todo: MOVEALLBUT should ignore tag on "but" prodns *)
 ]
@@ -2194,10 +2194,10 @@ SPLICE: [
 | anti
 ]
 
-tac2expr5: [
-| REPLACE "let" OPT "rec" LIST1 ltac2_let_clause SEP "with" "in" tac2expr6      (* Ltac2 plugin *)
-| WITH "let" OPT "rec" ltac2_let_clause LIST0 ( "with" ltac2_let_clause ) "in" tac2expr6 TAG Ltac2
-| MOVETO simple_tactic "match" tac2expr5 "with" OPT ltac2_branches "end"      (* Ltac2 plugin *)
+ltac2_expr5: [
+| REPLACE "let" OPT "rec" LIST1 ltac2_let_clause SEP "with" "in" ltac2_expr6      (* Ltac2 plugin *)
+| WITH "let" OPT "rec" ltac2_let_clause LIST0 ( "with" ltac2_let_clause ) "in" ltac2_expr6 TAG Ltac2
+| MOVETO simple_tactic "match" ltac2_expr5 "with" OPT ltac2_branches "end"      (* Ltac2 plugin *)
 | DELETE simple_tactic
 ]
 
@@ -2268,6 +2268,10 @@ simple_binding: [
 subprf: [
 | MOVEALLBUT simple_tactic
 | "{" (* should be removed.  See https://github.com/coq/coq/issues/12004 *)
+]
+
+ltac2_expr: [
+| DELETE _ltac2_expr
 ]
 
 SPLICE: [
@@ -2450,7 +2454,6 @@ SPLICE: [
 | refglobals (* Ltac2 *)
 | syntax_modifiers
 | array_elems
-| ltac2_expr
 | G_LTAC2_input_fun
 | ltac2_simple_intropattern_closed
 | ltac2_with_bindings
@@ -2487,17 +2490,8 @@ RENAME: [
 | searchabout_query search_item
 *)
 | Pltac.tactic ltac_expr  (* many uses in EXTENDs *)
-| tac2type5 ltac2_type (* careful *)
-| tac2type2 ltac2_type2
-| tac2type1 ltac2_type1
-| tac2type0 ltac2_type0
-| typ_param ltac2_typevar
-| tac2expr6 ltac2_expr
-| tac2expr5 ltac2_expr5
-| tac2expr3 ltac2_expr3
-| tac2expr2 ltac2_expr2
-| tac2expr1 ltac2_expr1
-| tac2expr0 ltac2_expr0
+| ltac2_type5 ltac2_type
+| ltac2_expr6 ltac2_expr
 | starredidentref starred_ident_ref
 ]
 

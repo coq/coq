@@ -690,7 +690,7 @@ command: [
 | "Numeral" "Notation" reference reference reference ":" ident numeral_modifier
 | "String" "Notation" reference reference reference ":" ident
 | "Ltac2" ltac2_entry      (* Ltac2 plugin *)
-| "Ltac2" "Eval" ltac2_expr      (* Ltac2 plugin *)
+| "Ltac2" "Eval" ltac2_expr6      (* Ltac2 plugin *)
 | "Print" "Ltac2" reference      (* Ltac2 plugin *)
 ]
 
@@ -2572,50 +2572,50 @@ tac2pat0: [
 
 atomic_tac2pat: [
 |      (* Ltac2 plugin *)
-| tac2pat1 ":" tac2type5      (* Ltac2 plugin *)
+| tac2pat1 ":" ltac2_type5      (* Ltac2 plugin *)
 | tac2pat1 "," LIST0 tac2pat1 SEP ","      (* Ltac2 plugin *)
 | tac2pat1      (* Ltac2 plugin *)
 ]
 
-tac2expr6: [
-| tac2expr5 ";" tac2expr6      (* Ltac2 plugin *)
-| tac2expr5      (* Ltac2 plugin *)
+ltac2_expr6: [
+| ltac2_expr5 ";" ltac2_expr6      (* Ltac2 plugin *)
+| ltac2_expr5      (* Ltac2 plugin *)
 ]
 
-tac2expr5: [
-| "fun" LIST1 G_LTAC2_input_fun "=>" tac2expr6      (* Ltac2 plugin *)
-| "let" rec_flag LIST1 G_LTAC2_let_clause SEP "with" "in" tac2expr6      (* Ltac2 plugin *)
-| "match" tac2expr5 "with" G_LTAC2_branches "end"      (* Ltac2 plugin *)
-| tac2expr4      (* Ltac2 plugin *)
+ltac2_expr5: [
+| "fun" LIST1 G_LTAC2_input_fun "=>" ltac2_expr6      (* Ltac2 plugin *)
+| "let" rec_flag LIST1 G_LTAC2_let_clause SEP "with" "in" ltac2_expr6      (* Ltac2 plugin *)
+| "match" ltac2_expr5 "with" G_LTAC2_branches "end"      (* Ltac2 plugin *)
+| ltac2_expr4      (* Ltac2 plugin *)
 ]
 
-tac2expr4: [
-| tac2expr3      (* Ltac2 plugin *)
+ltac2_expr4: [
+| ltac2_expr3      (* Ltac2 plugin *)
 ]
 
-tac2expr3: [
-| tac2expr2 "," LIST1 tac2expr2 SEP ","      (* Ltac2 plugin *)
-| tac2expr2      (* Ltac2 plugin *)
+ltac2_expr3: [
+| ltac2_expr2 "," LIST1 ltac2_expr2 SEP ","      (* Ltac2 plugin *)
+| ltac2_expr2      (* Ltac2 plugin *)
 ]
 
-tac2expr2: [
-| tac2expr1 "::" tac2expr2      (* Ltac2 plugin *)
-| tac2expr1      (* Ltac2 plugin *)
+ltac2_expr2: [
+| ltac2_expr1 "::" ltac2_expr2      (* Ltac2 plugin *)
+| ltac2_expr1      (* Ltac2 plugin *)
 ]
 
-tac2expr1: [
-| tac2expr0 LIST1 tac2expr0      (* Ltac2 plugin *)
-| tac2expr0 ".(" Prim.qualid ")"      (* Ltac2 plugin *)
-| tac2expr0 ".(" Prim.qualid ")" ":=" tac2expr5      (* Ltac2 plugin *)
-| tac2expr0      (* Ltac2 plugin *)
+ltac2_expr1: [
+| ltac2_expr0 LIST1 ltac2_expr0      (* Ltac2 plugin *)
+| ltac2_expr0 ".(" Prim.qualid ")"      (* Ltac2 plugin *)
+| ltac2_expr0 ".(" Prim.qualid ")" ":=" ltac2_expr5      (* Ltac2 plugin *)
+| ltac2_expr0      (* Ltac2 plugin *)
 ]
 
-tac2expr0: [
-| "(" tac2expr6 ")"      (* Ltac2 plugin *)
-| "(" tac2expr6 ":" tac2type5 ")"      (* Ltac2 plugin *)
+ltac2_expr0: [
+| "(" ltac2_expr6 ")"      (* Ltac2 plugin *)
+| "(" ltac2_expr6 ":" ltac2_type5 ")"      (* Ltac2 plugin *)
 | "()"      (* Ltac2 plugin *)
 | "(" ")"      (* Ltac2 plugin *)
-| "[" LIST0 tac2expr5 SEP ";" "]"      (* Ltac2 plugin *)
+| "[" LIST0 ltac2_expr5 SEP ";" "]"      (* Ltac2 plugin *)
 | "{" tac2rec_fieldexprs "}"      (* Ltac2 plugin *)
 | G_LTAC2_tactic_atom      (* Ltac2 plugin *)
 ]
@@ -2627,7 +2627,7 @@ G_LTAC2_branches: [
 ]
 
 branch: [
-| tac2pat1 "=>" tac2expr6      (* Ltac2 plugin *)
+| tac2pat1 "=>" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 rec_flag: [
@@ -2640,7 +2640,7 @@ mut_flag: [
 |      (* Ltac2 plugin *)
 ]
 
-typ_param: [
+ltac2_typevar: [
 | "'" Prim.ident      (* Ltac2 plugin *)
 ]
 
@@ -2666,36 +2666,36 @@ ltac1_expr_in_env: [
 ]
 
 tac2expr_in_env: [
-| test_ltac1_env LIST0 locident "|-" tac2expr6      (* Ltac2 plugin *)
-| tac2expr6      (* Ltac2 plugin *)
+| test_ltac1_env LIST0 locident "|-" ltac2_expr6      (* Ltac2 plugin *)
+| ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 G_LTAC2_let_clause: [
-| let_binder ":=" tac2expr6      (* Ltac2 plugin *)
+| let_binder ":=" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 let_binder: [
 | LIST1 G_LTAC2_input_fun      (* Ltac2 plugin *)
 ]
 
-tac2type5: [
-| tac2type2 "->" tac2type5      (* Ltac2 plugin *)
-| tac2type2      (* Ltac2 plugin *)
+ltac2_type5: [
+| ltac2_type2 "->" ltac2_type5      (* Ltac2 plugin *)
+| ltac2_type2      (* Ltac2 plugin *)
 ]
 
-tac2type2: [
-| tac2type1 "*" LIST1 tac2type1 SEP "*"      (* Ltac2 plugin *)
-| tac2type1      (* Ltac2 plugin *)
+ltac2_type2: [
+| ltac2_type1 "*" LIST1 ltac2_type1 SEP "*"      (* Ltac2 plugin *)
+| ltac2_type1      (* Ltac2 plugin *)
 ]
 
-tac2type1: [
-| tac2type0 Prim.qualid      (* Ltac2 plugin *)
-| tac2type0      (* Ltac2 plugin *)
+ltac2_type1: [
+| ltac2_type0 Prim.qualid      (* Ltac2 plugin *)
+| ltac2_type0      (* Ltac2 plugin *)
 ]
 
-tac2type0: [
-| "(" LIST1 tac2type5 SEP "," ")" OPT Prim.qualid      (* Ltac2 plugin *)
-| typ_param      (* Ltac2 plugin *)
+ltac2_type0: [
+| "(" LIST1 ltac2_type5 SEP "," ")" OPT Prim.qualid      (* Ltac2 plugin *)
+| ltac2_typevar      (* Ltac2 plugin *)
 | "_"      (* Ltac2 plugin *)
 | Prim.qualid      (* Ltac2 plugin *)
 ]
@@ -2714,7 +2714,7 @@ G_LTAC2_input_fun: [
 ]
 
 tac2def_body: [
-| G_LTAC2_binder LIST0 G_LTAC2_input_fun ":=" tac2expr6      (* Ltac2 plugin *)
+| G_LTAC2_binder LIST0 G_LTAC2_input_fun ":=" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 tac2def_val: [
@@ -2722,11 +2722,11 @@ tac2def_val: [
 ]
 
 tac2def_mut: [
-| "Set" Prim.qualid OPT [ "as" locident ] ":=" tac2expr6      (* Ltac2 plugin *)
+| "Set" Prim.qualid OPT [ "as" locident ] ":=" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 tac2typ_knd: [
-| tac2type5      (* Ltac2 plugin *)
+| ltac2_type5      (* Ltac2 plugin *)
 | "[" ".." "]"      (* Ltac2 plugin *)
 | "[" tac2alg_constructors "]"      (* Ltac2 plugin *)
 | "{" tac2rec_fields "}"      (* Ltac2 plugin *)
@@ -2739,7 +2739,7 @@ tac2alg_constructors: [
 
 tac2alg_constructor: [
 | Prim.ident      (* Ltac2 plugin *)
-| Prim.ident "(" LIST0 tac2type5 SEP "," ")"      (* Ltac2 plugin *)
+| Prim.ident "(" LIST0 ltac2_type5 SEP "," ")"      (* Ltac2 plugin *)
 ]
 
 tac2rec_fields: [
@@ -2750,7 +2750,7 @@ tac2rec_fields: [
 ]
 
 tac2rec_field: [
-| mut_flag Prim.ident ":" tac2type5      (* Ltac2 plugin *)
+| mut_flag Prim.ident ":" ltac2_type5      (* Ltac2 plugin *)
 ]
 
 tac2rec_fieldexprs: [
@@ -2761,13 +2761,13 @@ tac2rec_fieldexprs: [
 ]
 
 tac2rec_fieldexpr: [
-| Prim.qualid ":=" tac2expr1      (* Ltac2 plugin *)
+| Prim.qualid ":=" ltac2_expr1      (* Ltac2 plugin *)
 ]
 
 tac2typ_prm: [
 |      (* Ltac2 plugin *)
-| typ_param      (* Ltac2 plugin *)
-| "(" LIST1 typ_param SEP "," ")"      (* Ltac2 plugin *)
+| ltac2_typevar      (* Ltac2 plugin *)
+| "(" LIST1 ltac2_typevar SEP "," ")"      (* Ltac2 plugin *)
 ]
 
 tac2typ_def: [
@@ -2785,7 +2785,7 @@ tac2def_typ: [
 ]
 
 tac2def_ext: [
-| "@" "external" locident ":" tac2type5 ":=" Prim.string Prim.string      (* Ltac2 plugin *)
+| "@" "external" locident ":" ltac2_type5 ":=" Prim.string Prim.string      (* Ltac2 plugin *)
 ]
 
 syn_node: [
@@ -2806,7 +2806,7 @@ syn_level: [
 ]
 
 tac2def_syn: [
-| "Notation" LIST1 ltac2_scope syn_level ":=" tac2expr6      (* Ltac2 plugin *)
+| "Notation" LIST1 ltac2_scope syn_level ":=" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 lident: [
@@ -3024,15 +3024,15 @@ q_rewriting: [
 ]
 
 G_LTAC2_tactic_then_last: [
-| "|" LIST0 ( OPT tac2expr6 ) SEP "|"      (* Ltac2 plugin *)
+| "|" LIST0 ( OPT ltac2_expr6 ) SEP "|"      (* Ltac2 plugin *)
 |      (* Ltac2 plugin *)
 ]
 
 G_LTAC2_for_each_goal: [
-| tac2expr6 "|" G_LTAC2_for_each_goal      (* Ltac2 plugin *)
-| tac2expr6 ".." G_LTAC2_tactic_then_last      (* Ltac2 plugin *)
+| ltac2_expr6 "|" G_LTAC2_for_each_goal      (* Ltac2 plugin *)
+| ltac2_expr6 ".." G_LTAC2_tactic_then_last      (* Ltac2 plugin *)
 | ".." G_LTAC2_tactic_then_last      (* Ltac2 plugin *)
-| tac2expr6      (* Ltac2 plugin *)
+| ltac2_expr6      (* Ltac2 plugin *)
 | "|" G_LTAC2_for_each_goal      (* Ltac2 plugin *)
 |      (* Ltac2 plugin *)
 ]
@@ -3099,7 +3099,7 @@ G_LTAC2_match_pattern: [
 ]
 
 G_LTAC2_match_rule: [
-| G_LTAC2_match_pattern "=>" tac2expr6      (* Ltac2 plugin *)
+| G_LTAC2_match_pattern "=>" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 G_LTAC2_match_list: [
@@ -3120,7 +3120,7 @@ gmatch_pattern: [
 ]
 
 gmatch_rule: [
-| gmatch_pattern "=>" tac2expr6      (* Ltac2 plugin *)
+| gmatch_pattern "=>" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 goal_match_list: [
@@ -3163,7 +3163,7 @@ G_LTAC2_as_ipat: [
 ]
 
 G_LTAC2_by_tactic: [
-| "by" tac2expr6      (* Ltac2 plugin *)
+| "by" ltac2_expr6      (* Ltac2 plugin *)
 |      (* Ltac2 plugin *)
 ]
 
@@ -3186,11 +3186,11 @@ ltac2_entry: [
 ]
 
 ltac2_expr: [
-| tac2expr6      (* Ltac2 plugin *)
+| _ltac2_expr      (* Ltac2 plugin *)
 ]
 
 tac2mode: [
-| ltac2_expr ltac_use_default      (* Ltac2 plugin *)
+| ltac2_expr6 ltac_use_default      (* Ltac2 plugin *)
 | G_vernac.query_command      (* Ltac2 plugin *)
 ]
 

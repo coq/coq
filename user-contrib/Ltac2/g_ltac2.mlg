@@ -71,8 +71,9 @@ let test_ltac1_env =
     lk_ident_list >> lk_kw "|-"
   end
 
-let tac2expr = Tac2entries.Pltac.tac2expr
-let tac2type = Entry.create "tac2type"
+let ltac2_expr = Tac2entries.Pltac.ltac2_expr
+let _ltac2_expr = ltac2_expr
+let ltac2_type = Entry.create "ltac2_type"
 let tac2def_val = Entry.create "tac2def_val"
 let tac2def_typ = Entry.create "tac2def_typ"
 let tac2def_ext = Entry.create "tac2def_ext"
@@ -101,7 +102,7 @@ let pattern_of_qualid qid =
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext tac2def_syn
+  GLOBAL: ltac2_expr ltac2_type tac2def_val tac2def_typ tac2def_ext tac2def_syn
           tac2def_mut tac2expr_in_env;
   tac2pat:
     [ "1" LEFTA
@@ -125,7 +126,7 @@ GRAMMAR EXTEND Gram
   atomic_tac2pat:
     [ [ ->
         { CAst.make ~loc @@ CPatRef (AbsKn (Tuple 0), []) }
-      | p = tac2pat; ":"; t = tac2type ->
+      | p = tac2pat; ":"; t = ltac2_type ->
         { CAst.make ~loc @@ CPatCnv (p, t) }
       | p = tac2pat; ","; pl = LIST0 tac2pat SEP "," ->
         { let pl = p :: pl in
@@ -133,17 +134,17 @@ GRAMMAR EXTEND Gram
       | p = tac2pat -> { p }
     ] ]
   ;
-  tac2expr:
+  ltac2_expr:
     [ "6" RIGHTA
         [ e1 = SELF; ";"; e2 = SELF -> { CAst.make ~loc @@ CTacSeq (e1, e2) } ]
     | "5"
-      [ "fun"; it = LIST1 input_fun ; "=>"; body = tac2expr LEVEL "6" ->
+      [ "fun"; it = LIST1 input_fun ; "=>"; body = ltac2_expr LEVEL "6" ->
         { CAst.make ~loc @@ CTacFun (it, body) }
       | "let"; isrec = rec_flag;
           lc = LIST1 let_clause SEP "with"; "in";
-          e = tac2expr LEVEL "6" ->
+          e = ltac2_expr LEVEL "6" ->
         { CAst.make ~loc @@ CTacLet (isrec, lc, e) }
-      | "match"; e = tac2expr LEVEL "5"; "with"; bl = branches; "end" ->
+      | "match"; e = ltac2_expr LEVEL "5"; "with"; bl = branches; "end" ->
         { CAst.make ~loc @@ CTacCse (e, bl) }
       ]
     | "4" LEFTA [ ]
@@ -151,25 +152,25 @@ GRAMMAR EXTEND Gram
         { let el = e0 :: el in
           CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Tuple (List.length el))), el) } ]
     | "2" RIGHTA
-      [ e1 = tac2expr; "::"; e2 = tac2expr ->
+      [ e1 = ltac2_expr; "::"; e2 = ltac2_expr ->
         { CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Other Tac2core.Core.c_cons)), [e1; e2]) }
       ]
     | "1" LEFTA
-      [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" ->
+      [ e = ltac2_expr; el = LIST1 ltac2_expr LEVEL "0" ->
         { CAst.make ~loc @@ CTacApp (e, el) }
       | e = SELF; ".("; qid = Prim.qualid; ")" ->
         { CAst.make ~loc @@ CTacPrj (e, RelId qid) }
-      | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "5" ->
+      | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = ltac2_expr LEVEL "5" ->
         { CAst.make ~loc @@ CTacSet (e, RelId qid, r) } ]
     | "0"
       [ "("; a = SELF; ")" -> { a }
-      | "("; a = SELF; ":"; t = tac2type; ")" ->
+      | "("; a = SELF; ":"; t = ltac2_type; ")" ->
         { CAst.make ~loc @@ CTacCnv (a, t) }
       | "()" ->
         { CAst.make ~loc @@ CTacCst (AbsKn (Tuple 0)) }
       | "("; ")" ->
         { CAst.make ~loc @@ CTacCst (AbsKn (Tuple 0)) }
-      | "["; a = LIST0 tac2expr LEVEL "5" SEP ";"; "]" ->
+      | "["; a = LIST0 ltac2_expr LEVEL "5" SEP ";"; "]" ->
         { Tac2quote.of_list ~loc (fun x -> x) a }
       | "{"; a = tac2rec_fieldexprs; "}" ->
         { CAst.make ~loc @@ CTacRec a }
@@ -183,7 +184,7 @@ GRAMMAR EXTEND Gram
   ]
   ;
   branch:
-  [ [ pat = tac2pat LEVEL "1"; "=>"; e = tac2expr LEVEL "6" -> { (pat, e) } ] ]
+  [ [ pat = tac2pat LEVEL "1"; "=>"; e = ltac2_expr LEVEL "6" -> { (pat, e) } ] ]
   ;
   rec_flag:
     [ [ IDENT "rec" -> { true }
@@ -193,7 +194,7 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "mutable" -> { true }
       | -> { false } ] ]
   ;
-  typ_param:
+  ltac2_typevar:
     [ [ "'"; id = Prim.ident -> { id } ] ]
   ;
   tactic_atom:
@@ -222,7 +223,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2expr_in_env :
-    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = tac2expr ->
+    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = ltac2_expr ->
       { let check { CAst.v = id; CAst.loc = loc } =
           if Tac2env.is_constructor (Libnames.qualid_of_ident ?loc id) then
             CErrors.user_err ?loc Pp.(str "Invalid bound Ltac2 identifier " ++ Id.print id)
@@ -230,11 +231,11 @@ GRAMMAR EXTEND Gram
         let () = List.iter check ids in
         (ids, e)
       }
-      | tac = tac2expr -> { [], tac }
+      | tac = ltac2_expr -> { [], tac }
     ] ]
   ;
   let_clause:
-    [ [ binder = let_binder; ":="; te = tac2expr ->
+    [ [ binder = let_binder; ":="; te = ltac2_expr ->
       { let (pat, fn) = binder in
         let te = match fn with
         | None -> te
@@ -252,23 +253,23 @@ GRAMMAR EXTEND Gram
         | _ -> CErrors.user_err ~loc (str "Invalid pattern") }
     ] ]
   ;
-  tac2type:
+  ltac2_type:
     [ "5" RIGHTA
-      [ t1 = tac2type; "->"; t2 = tac2type -> { CAst.make ~loc @@ CTypArrow (t1, t2) } ]
+      [ t1 = ltac2_type; "->"; t2 = ltac2_type -> { CAst.make ~loc @@ CTypArrow (t1, t2) } ]
     | "2"
-      [ t = tac2type; "*"; tl = LIST1 tac2type LEVEL "1" SEP "*" ->
+      [ t = ltac2_type; "*"; tl = LIST1 ltac2_type LEVEL "1" SEP "*" ->
       { let tl = t :: tl in
         CAst.make ~loc @@ CTypRef (AbsKn (Tuple (List.length tl)), tl) } ]
     | "1" LEFTA
       [ t = SELF; qid = Prim.qualid -> { CAst.make ~loc @@ CTypRef (RelId qid, [t]) } ]
     | "0"
-      [ "(";  p = LIST1 tac2type LEVEL "5" SEP ","; ")"; qid = OPT Prim.qualid ->
+      [ "(";  p = LIST1 ltac2_type LEVEL "5" SEP ","; ")"; qid = OPT Prim.qualid ->
         { match p, qid with
           | [t], None -> t
           | _, None -> CErrors.user_err ~loc (Pp.str "Syntax error")
           | ts, Some qid -> CAst.make ~loc @@ CTypRef (RelId qid, p)
         }
-      | id = typ_param -> { CAst.make ~loc @@ CTypVar (Name id) }
+      | id = ltac2_typevar -> { CAst.make ~loc @@ CTypVar (Name id) }
       | "_" -> { CAst.make ~loc @@ CTypVar Anonymous }
       | qid = Prim.qualid -> { CAst.make ~loc @@ CTypRef (RelId qid, []) }
       ]
@@ -284,7 +285,7 @@ GRAMMAR EXTEND Gram
     [ [ b = tac2pat LEVEL "0" -> { b } ] ]
   ;
   tac2def_body:
-    [ [ name = binder; it = LIST0 input_fun; ":="; e = tac2expr ->
+    [ [ name = binder; it = LIST0 input_fun; ":="; e = ltac2_expr ->
       { let e = if List.is_empty it then e else CAst.make ~loc @@ CTacFun (it, e) in
         (name, e) }
     ] ]
@@ -295,10 +296,10 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2def_mut:
-    [ [ "Set"; qid = Prim.qualid; old = OPT [ "as"; id = locident -> { id } ]; ":="; e = tac2expr -> { StrMut (qid, old, e) } ] ]
+    [ [ "Set"; qid = Prim.qualid; old = OPT [ "as"; id = locident -> { id } ]; ":="; e = ltac2_expr -> { StrMut (qid, old, e) } ] ]
   ;
   tac2typ_knd:
-    [ [ t = tac2type -> { CTydDef (Some t) }
+    [ [ t = ltac2_type -> { CTydDef (Some t) }
       | "["; ".."; "]" -> { CTydOpn }
       | "["; t = tac2alg_constructors; "]" -> { CTydAlg t }
       | "{"; t = tac2rec_fields; "}"-> { CTydRec t } ] ]
@@ -309,7 +310,7 @@ GRAMMAR EXTEND Gram
   ;
   tac2alg_constructor:
     [ [ c = Prim.ident -> { (c, []) }
-      | c = Prim.ident; "("; args = LIST0 tac2type SEP ","; ")"-> { (c, args) } ] ]
+      | c = Prim.ident; "("; args = LIST0 ltac2_type SEP ","; ")"-> { (c, args) } ] ]
   ;
   tac2rec_fields:
     [ [ f = tac2rec_field; ";"; l = tac2rec_fields -> { f :: l }
@@ -318,7 +319,7 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   tac2rec_field:
-    [ [ mut = mut_flag; id = Prim.ident; ":"; t = tac2type -> { (id, mut, t) } ] ]
+    [ [ mut = mut_flag; id = Prim.ident; ":"; t = ltac2_type -> { (id, mut, t) } ] ]
   ;
   tac2rec_fieldexprs:
     [ [ f = tac2rec_fieldexpr; ";"; l = tac2rec_fieldexprs -> { f :: l }
@@ -327,12 +328,12 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   tac2rec_fieldexpr:
-    [ [ qid = Prim.qualid; ":="; e = tac2expr LEVEL "1" -> { RelId qid, e } ] ]
+    [ [ qid = Prim.qualid; ":="; e = ltac2_expr LEVEL "1" -> { RelId qid, e } ] ]
   ;
   tac2typ_prm:
     [ [ -> { [] }
-      | id = typ_param -> { [CAst.make ~loc id] }
-      | "("; ids = LIST1 [ id = typ_param -> { CAst.make ~loc id } ] SEP "," ;")" -> { ids }
+      | id = ltac2_typevar -> { [CAst.make ~loc id] }
+      | "("; ids = LIST1 [ id = ltac2_typevar -> { CAst.make ~loc id } ] SEP "," ;")" -> { ids }
     ] ]
   ;
   tac2typ_def:
@@ -350,7 +351,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2def_ext:
-    [ [ "@"; IDENT "external"; id = locident; ":"; t = tac2type LEVEL "5"; ":=";
+    [ [ "@"; IDENT "external"; id = locident; ":"; t = ltac2_type LEVEL "5"; ":=";
         plugin = Prim.string; name = Prim.string ->
       { let ml = { mltac_plugin = plugin; mltac_tactic = name } in
         StrPrm (id, t, ml) }
@@ -376,7 +377,7 @@ GRAMMAR EXTEND Gram
   ;
   tac2def_syn:
     [ [ "Notation"; toks = LIST1 ltac2_scope; n = syn_level; ":=";
-        e = tac2expr ->
+        e = ltac2_expr ->
         { StrSyn (toks, n, e) }
     ] ]
   ;
@@ -654,15 +655,15 @@ GRAMMAR EXTEND Gram
     [ [ r = oriented_rewriter -> { r } ] ]
   ;
   tactic_then_last:
-    [ [ "|"; lta = LIST0 (OPT tac2expr LEVEL "6") SEP "|" -> { lta }
+    [ [ "|"; lta = LIST0 (OPT ltac2_expr LEVEL "6") SEP "|" -> { lta }
       | -> { [] }
     ] ]
   ;
   for_each_goal:
-    [ [ ta = tac2expr; "|"; tg = for_each_goal -> { let (first,last) = tg in (Some ta :: first, last) }
-      | ta = tac2expr; ".."; l = tactic_then_last -> { ([], Some (Some ta, l)) }
+    [ [ ta = ltac2_expr; "|"; tg = for_each_goal -> { let (first,last) = tg in (Some ta :: first, last) }
+      | ta = ltac2_expr; ".."; l = tactic_then_last -> { ([], Some (Some ta, l)) }
       | ".."; l = tactic_then_last -> { ([], Some (None, l)) }
-      | ta = tac2expr -> { ([Some ta], None) }
+      | ta = ltac2_expr -> { ([Some ta], None) }
       | "|"; tg = for_each_goal -> { let (first,last) = tg in (None :: first, last) }
       | -> { ([None], None) }
     ] ]
@@ -725,7 +726,7 @@ GRAMMAR EXTEND Gram
       | pat = Constr.cpattern -> { CAst.make ~loc @@ QConstrMatchPattern pat } ] ]
   ;
   match_rule:
-    [ [ mp = match_pattern; "=>"; tac = tac2expr ->
+    [ [ mp = match_pattern; "=>"; tac = ltac2_expr ->
         { CAst.make ~loc @@ (mp, tac) }
     ] ]
   ;
@@ -748,7 +749,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   gmatch_rule:
-    [ [ mp = gmatch_pattern; "=>"; tac = tac2expr ->
+    [ [ mp = gmatch_pattern; "=>"; tac = ltac2_expr ->
         { CAst.make ~loc @@ (mp, tac) }
     ] ]
   ;
@@ -789,7 +790,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   by_tactic:
-    [ [ "by"; tac = tac2expr -> { Some tac }
+    [ [ "by"; tac = ltac2_expr -> { Some tac }
       | -> { None }
     ] ]
   ;
@@ -813,7 +814,7 @@ END
 (*
 GRAMMAR EXTEND Gram
   Pcoq.Constr.term: LEVEL "0"
-    [ [ IDENT "ltac2"; ":"; "("; tac = tac2expr; ")" ->
+    [ [ IDENT "ltac2"; ":"; "("; tac = ltac2_expr; ")" ->
       { let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
         CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
       | test_ampersand_ident; "&"; id = Prim.ident ->
@@ -858,7 +859,7 @@ let rules = [
   Pcoq.(
     Production.make
       (Rule.stop ++ Symbol.token (PIDENT (Some "ltac2")) ++ Symbol.token (PKEYWORD ":") ++
-       Symbol.token (PKEYWORD "(") ++ Symbol.nterm tac2expr ++ Symbol.token (PKEYWORD ")"))
+       Symbol.token (PKEYWORD "(") ++ Symbol.nterm ltac2_expr ++ Symbol.token (PKEYWORD ")"))
     begin fun _ tac _ _ _ loc ->
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
@@ -890,7 +891,7 @@ END
 
 VERNAC ARGUMENT EXTEND ltac2_expr
 PRINTED BY { pr_ltac2expr }
-| [ tac2expr(e) ] -> { e }
+| [ _ltac2_expr(e) ] -> { e }
 END
 
 {
