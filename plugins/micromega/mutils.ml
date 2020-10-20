@@ -22,21 +22,14 @@
 open NumCompat
 module Z_ = NumCompat.Z
 
-module Int = struct
-  type t = int
-
-  let compare : int -> int -> int = compare
-  let equal : int -> int -> bool = ( = )
-end
-
 module ISet = struct
-  include Set.Make (Int)
+  include Int.Set
 
   let pp o s = iter (fun i -> Printf.fprintf o "%i " i) s
 end
 
 module IMap = struct
-  include Map.Make (Int)
+  include Int.Map
 
   let from k m =
     let _, _, r = split (k - 1) m in

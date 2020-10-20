@@ -10,21 +10,14 @@
 
 open NumCompat
 
-module Int : sig
-  type t = int
-
-  val compare : int -> int -> int
-  val equal : int -> int -> bool
-end
-
 module ISet : sig
-  include Set.S with type elt = int
+  include CSet.S with type elt = int
 
   val pp : out_channel -> t -> unit
 end
 
 module IMap : sig
-  include Map.S with type key = int
+  include CMap.ExtS with type key = int and module Set := ISet
 
   (** [from k  m] returns the submap of [m] with keys greater or equal k *)
   val from : key -> 'elt t -> 'elt t
