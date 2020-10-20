@@ -96,6 +96,7 @@ type rel_context_val = {
 
 type env = {
   env_globals       : Globals.t;
+  env_irr_csts : Cset_env.t;
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_nb_rel        : int;
@@ -123,6 +124,7 @@ let empty_env = {
     ; modules = MPmap.empty
     ; modtypes = MPmap.empty
     };
+  env_irr_csts = Cset_env.empty;
   env_named_context = empty_named_context_val;
   env_rel_context = empty_rel_context_val;
   env_nb_rel = 0;
@@ -503,8 +505,13 @@ let add_constant_key kn cb linkinfo env =
     Cmap_env.add kn (cb,(ref linkinfo, ref None)) env.env_globals.Globals.constants in
   let new_globals =
     { env.env_globals with
-        Globals.constants = new_constants } in
-  { env with env_globals = new_globals }
+      Globals.constants = new_constants }
+  in
+  let new_irr = if cb.const_relevance == Sorts.Irrelevant then
+      Cset_env.add kn env.env_irr_csts
+    else env.env_irr_csts
+  in
+  { env with env_globals = new_globals; env_irr_csts = new_irr }
 
 let add_constant kn cb env =
   add_constant_key kn cb no_link_info env

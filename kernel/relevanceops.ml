@@ -26,8 +26,7 @@ let relevance_of_var env x =
   Context.Named.Declaration.get_relevance decl
 
 let relevance_of_constant env c =
-  let decl = lookup_constant c env in
-  decl.const_relevance
+  if Cset_env.mem c env.env_irr_csts then Sorts.Irrelevant else Sorts.Relevant
 
 let relevance_of_constructor env ((mi,i),_) =
   let decl = lookup_mind mi env in

@@ -82,6 +82,7 @@ type rel_context_val = private {
 
 type env = private {
   env_globals       : Globals.t;
+  env_irr_csts : Cset_env.t;
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_nb_rel        : int;
