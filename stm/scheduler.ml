@@ -74,8 +74,14 @@ let push_state id ast st =
   match Vernac_classifier.classify_vernac ast with
   | VtStartProof _ -> base_id st, [] :: push_id id st, Exec(id,ast)
   | VtQed (VtKeep (VtKeepAxiom | VtKeepOpaque)) ->
-    let pop = List.tl st in
-    base_id pop, push_id id pop, OpaqueProof(id, List.rev @@ List.hd st)
+    begin match st with
+    | [] -> assert false
+    | [main] ->
+      (* can happen on ill-formed documents *)
+      base_id st, [id::main], Exec(id,ast)
+    | _ :: pop ->
+      base_id pop, push_id id pop, OpaqueProof(id, List.rev @@ List.hd st)
+    end
   | VtQed (VtKeep VtKeepDefined) ->
     base_id st, push_id id @@ merge st, Exec(id,ast)
   | (VtQuery | VtProofStep _) ->
