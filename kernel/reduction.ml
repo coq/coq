@@ -387,18 +387,10 @@ let esubst_of_rel_context_instance ctx u args e =
   in
   aux 0 e args (List.rev ctx)
 
-(* When converting [f bla] and [f bli] with irrelevant [f] we need to
-   forget about the applications. However a surrounding [match] could
-   put us back in the relevant realm so we can't skip the whole stack. *)
-let rec forget_irrelevant_stack = function
-  | [] -> []
-  | (Zapp _ | Zupdate _ | Zshift _) :: rest -> forget_irrelevant_stack rest
-  | st -> st
-
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
-  try eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
-  with NotConvertible when is_irrelevant infos lft1 term1 && is_irrelevant infos lft2 term2 -> cuniv
+  if is_irrelevant infos lft1 term1 && is_irrelevant infos lft2 term2 then cuniv
+  else eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
@@ -438,20 +430,12 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FRel n, FRel m) ->
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
-        if is_irrelevant infos el1 hd1 && is_irrelevant infos el2 hd2
-        then convert_stacks l2r infos lft1 lft2
-            (forget_irrelevant_stack v1) (forget_irrelevant_stack v2) cuniv
-        else if Int.equal (reloc_rel n el1) (reloc_rel m el2)
+        if Int.equal (reloc_rel n el1) (reloc_rel m el2)
         then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
-      (* NB lift doesn't matter for flex so no need to el_stack, just pass some dummy *)
-      if is_irrelevant infos el_id hd1 && is_irrelevant infos el_id hd2 then
-        convert_stacks l2r infos lft1 lft2
-          (forget_irrelevant_stack v1) (forget_irrelevant_stack v2) cuniv
-      else
       (try
          let nargs = same_args_size v1 v2 in
          let cuniv = conv_table_key infos.cnv_inf ~nargs fl1 fl2 cuniv in
