@@ -739,15 +739,6 @@ let arraycopy accu vA t =
     no_check_arraycopy t
   else accu vA t
 
-let no_check_arrayreroot t =
-  of_parray (Parray.reroot (to_parray t))
-[@@ocaml.inline always]
-
-let arrayreroot accu vA t =
-  if is_parray t then
-    no_check_arrayreroot t
-  else accu vA t
-
 let no_check_arraylength t =
   mk_uint (Parray.length (to_parray t))
 [@@ocaml.inline always]

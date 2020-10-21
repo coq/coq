@@ -262,7 +262,7 @@ let check_prim_op = function
   | Arraymake -> opISINT_CAML_CALL2
   | Arrayget -> opISARRAY_INT_CAML_CALL2
   | Arrayset -> opISARRAY_INT_CAML_CALL3
-  | Arraydefault | Arraycopy | Arrayreroot | Arraylength ->
+  | Arraydefault | Arraycopy | Arraylength ->
       opISARRAY_CAML_CALL1
 
 let emit_instr env = function

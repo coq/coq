@@ -508,7 +508,6 @@ let is_caml_prim = let open CPrimitives in function
   | Arraydefault
   | Arrayset
   | Arraycopy
-  | Arrayreroot
   | Arraylength -> true
   | _ -> false
 

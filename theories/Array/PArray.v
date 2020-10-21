@@ -22,12 +22,6 @@ Arguments length {_} _.
 Primitive copy : forall A, array A -> array A := #array_copy.
 Arguments copy {_} _.
 
-(* [reroot t] produces an array that is extensionaly equal to [t], but whose
-   history has been squashed. Useful when performing multiple accesses in an old
-   copy of an array that has been updated. *)
-Primitive reroot : forall A, array A -> array A := #array_reroot.
-Arguments reroot {_} _.
-
 Module Export PArrayNotations.
 
 Declare Scope array_scope.
@@ -64,9 +58,6 @@ Axiom length_set : forall A t i (a:A),
 Axiom get_copy : forall A (t:array A) i, (copy t).[i] = t.[i].
 Axiom length_copy : forall A (t:array A), length (copy t) = length t.
 
-Axiom get_reroot : forall A (t:array A) i, (reroot t).[i] = t.[i].
-Axiom length_reroot : forall A (t:array A), length (reroot t) = length t.
-
 Axiom array_ext : forall A (t1 t2:array A),
   length t1 = length t2 ->
   (forall i, i <? length t1 = true -> t1.[i] = t2.[i]) ->
@@ -92,16 +83,6 @@ Proof.
     exfalso; eapply BinInt.Z.lt_irrefl; eassumption.
   assert (get_make := get_make A a size (length (make size a))).
   rewrite !get_out_of_bounds in get_make; assumption.
-Qed.
-
-Lemma default_reroot A (t:array A) : default (reroot t) = default t.
-Proof.
-  assert (irr_lt : length t <? length t = false).
-    destruct (Int63.ltbP (length t) (length t)); try reflexivity.
-    exfalso; eapply BinInt.Z.lt_irrefl; eassumption.
-  assert (get_reroot := get_reroot A t (length t)).
-  rewrite !get_out_of_bounds in get_reroot; try assumption.
-  rewrite length_reroot; assumption.
 Qed.
 
 Lemma get_set_same_default A (t : array A) (i : int) :

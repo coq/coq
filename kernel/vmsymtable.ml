@@ -69,7 +69,6 @@ let parray_get = set_global Vmvalues.parray_get
 let parray_get_default = set_global Vmvalues.parray_get_default
 let parray_set = set_global Vmvalues.parray_set
 let parray_copy = set_global Vmvalues.parray_copy
-let parray_reroot = set_global Vmvalues.parray_reroot
 let parray_length = set_global Vmvalues.parray_length
 
 (* table pour les structured_constant et les annotations des switchs *)
@@ -135,7 +134,6 @@ let slot_for_caml_prim =
   | Arraydefault -> parray_get_default
   | Arrayset -> parray_set
   | Arraycopy -> parray_copy
-  | Arrayreroot -> parray_reroot
   | Arraylength -> parray_length
   | _ -> assert false
 
