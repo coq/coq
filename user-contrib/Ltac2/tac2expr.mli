@@ -105,6 +105,7 @@ type raw_tacexpr_r =
 | CTacLet of rec_flag * (raw_patexpr * raw_tacexpr) list * raw_tacexpr
 | CTacCnv of raw_tacexpr * raw_typexpr
 | CTacSeq of raw_tacexpr * raw_tacexpr
+| CTacIft of raw_tacexpr * raw_tacexpr * raw_tacexpr
 | CTacCse of raw_tacexpr * raw_taccase list
 | CTacRec of raw_recexpr
 | CTacPrj of raw_tacexpr * ltac_projection or_relid

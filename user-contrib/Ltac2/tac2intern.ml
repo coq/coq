@@ -29,6 +29,7 @@ let t_string = coq_type "string"
 let t_constr = coq_type "constr"
 let t_ltac1 = ltac1_type "t"
 let t_preterm = coq_type "preterm"
+let t_bool = coq_type "bool"
 
 (** Union find *)
 
@@ -749,6 +750,15 @@ let rec intern_rec env {loc;v=e} = match e with
   let (e2, t2) = intern_rec env e2 in
   let () = check_elt_unit loc1 env t1 in
   (GTacLet (false, [Anonymous, e1], e2), t2)
+| CTacIft (e, e1, e2) ->
+  let loc = e.loc in
+  let loc1 = e1.loc in
+  let (e, t) = intern_rec env e in
+  let (e1, t1) = intern_rec env e1 in
+  let (e2, t2) = intern_rec env e2 in
+  let () = unify ?loc env t (GTypRef (Other t_bool, [])) in
+  let () = unify ?loc:loc1 env t1 t2 in
+  (GTacCse (e, Other t_bool, [|e1; e2|], [||]), t2)
 | CTacCse (e, pl) ->
   intern_case env loc e pl
 | CTacRec fs ->
@@ -1271,6 +1281,11 @@ let rec globalize ids ({loc;v=er} as e) = match er with
   let e1 = globalize ids e1 in
   let e2 = globalize ids e2 in
   CAst.make ?loc @@ CTacSeq (e1, e2)
+| CTacIft (e, e1, e2) ->
+  let e = globalize ids e in
+  let e1 = globalize ids e1 in
+  let e2 = globalize ids e2 in
+  CAst.make ?loc @@ CTacIft (e, e1, e2)
 | CTacCse (e, bl) ->
   let e = globalize ids e in
   let bl = List.map (fun b -> globalize_case ids b) bl in
@@ -1486,6 +1501,11 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
   let e1' = subst_rawexpr subst e1 in
   let e2' = subst_rawexpr subst e2 in
   if e1' == e1 && e2' == e2 then t else CAst.make ?loc @@ CTacSeq (e1', e2')
+| CTacIft (e, e1, e2) ->
+  let e' = subst_rawexpr subst e in
+  let e1' = subst_rawexpr subst e1 in
+  let e2' = subst_rawexpr subst e2 in
+  if e' == e && e1' == e1 && e2' == e2 then t else CAst.make ?loc @@ CTacIft (e', e1', e2')
 | CTacCse (e, bl) ->
   let map (p, e as x) =
     let p' = subst_rawpattern subst p in

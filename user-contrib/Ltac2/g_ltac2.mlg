@@ -146,6 +146,8 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CTacLet (isrec, lc, e) }
       | "match"; e = ltac2_expr LEVEL "5"; "with"; bl = branches; "end" ->
         { CAst.make ~loc @@ CTacCse (e, bl) }
+      | "if"; e = ltac2_expr LEVEL "5"; "then"; e1 = ltac2_expr LEVEL "5"; "else"; e2 = ltac2_expr LEVEL "5" ->
+        { CAst.make ~loc @@ CTacIft (e, e1, e2) }
       ]
     | "4" LEFTA [ ]
     | "3" [ e0 = SELF; ","; el = LIST1 NEXT SEP "," ->
