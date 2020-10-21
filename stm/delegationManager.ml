@@ -204,15 +204,15 @@ let handle_event = function
     Lwt.return [worker_progress link remote_mapping]
   | WorkerStart (mapping,job,action,procname) ->
     log "[M] WorkerStart";
-      if Sys.os_type = "Unix" then
-        fork_worker mapping >>= fun (role,events) ->
-        match role with
-        | Master -> Lwt.return events
-        | Worker ->
-          action job >>= fun () ->
-          log @@ "[W] Worker goes on holidays"; exit 0
-      else
-        create_process_worker procname mapping job
+    if Sys.os_type = "Unix" then
+      fork_worker mapping >>= fun (role,events) ->
+      match role with
+      | Master -> Lwt.return events
+      | Worker ->
+        action job >>= fun () ->
+        log @@ "[W] Worker goes on holidays"; exit 0
+    else
+      create_process_worker procname mapping job
 
 let pr_event = function
   | WorkerEnd (pid, _status) ->
