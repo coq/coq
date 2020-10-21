@@ -44,7 +44,7 @@ let read_request ic : Yojson.Basic.t Lwt.t =
   Lwt_io.read_line ic >!= fun header ->
   let scan_header = Scanf.Scanning.from_string header in
   try
-  Scanf.bscanf scan_header "Content-Length: %d" (fun size ->
+    Scanf.bscanf scan_header "Content-Length: %d" (fun size ->
       let buf = Bytes.create size in
       (* Discard a second newline *)
       Lwt_io.read_line ic >!= fun _ ->
@@ -52,7 +52,7 @@ let read_request ic : Yojson.Basic.t Lwt.t =
       Lwt.return @@ Bytes.to_string buf
     ) >>= fun obj_str ->
     log ~verbosity:2 @@ "received: " ^ obj_str;
-  Lwt.return @@ Yojson.Basic.from_string obj_str
+    Lwt.return @@ Yojson.Basic.from_string obj_str
   with Scanf.Scan_failure _ as reraise ->
     let reraise = Exninfo.capture reraise in
     log ~verbosity:1 @@ "failed to decode header: " ^ header;
