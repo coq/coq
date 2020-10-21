@@ -30,8 +30,7 @@ type state = {
 }
 
 type event =
-  | Execute of Vernacstate.t * ExecutionManager.prepared_task list
-  | InterpretToLoc of int
+  | ExecuteToLoc of int * Vernacstate.t * ExecutionManager.prepared_task list
   | ExecutionManagerEvent of ExecutionManager.event
 
 type events = event Lwt.t list
@@ -91,11 +90,14 @@ let interpret_to_loc ?(progress_hook=fun doc -> Lwt.return ()) state loc : (stat
     | Some { id; stop; start } ->
       let progress_hook () = Lwt.return () in
       let vernac_st, (st, tasks) = ExecutionManager.build_tasks_for ~progress_hook state.document state.execution_state id in
-      log @@ "[DM] Observed " ^ Stateid.to_string id;
       let state = { state with execution_state = st } in
-      if Document.parsed_loc state.document < loc && Document.more_to_parse state.document then
-        Lwt.return (state, List.map Lwt.return [Execute (vernac_st, tasks); InterpretToLoc loc])
+      if CList.is_empty tasks then
+        let state = { state with observe_loc = Some loc } in
+        Lwt.return (state, [])
       else
+        if Document.parsed_loc state.document < loc && Document.more_to_parse state.document then
+          Lwt.return (state, List.map Lwt.return [ExecuteToLoc (loc, vernac_st, tasks)])
+        else
       (*
       let executed_loc = Some stop in
       let proof_data = match ExecutionManager.get_proofview st id with
@@ -103,8 +105,7 @@ let interpret_to_loc ?(progress_hook=fun doc -> Lwt.return ()) state loc : (stat
         | Some pv -> let pos = Document.position_of_loc state.document stop in Some (pv, pos)
       in
       *)
-      (* TODO remove proof_data *)
-      Lwt.return (state, [Lwt.return @@ Execute (vernac_st, tasks)])
+        Lwt.return (state, [Lwt.return @@ ExecuteToLoc (loc, vernac_st, tasks)])
 
 (*
 let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data * events) Lwt.t =
@@ -203,18 +204,18 @@ let inject_em_events events = List.map inject_em_event events
 let handle_event ev st =
   let open Lwt.Infix in
   match ev with
-  | Execute (vernac_st, []) ->
+  | ExecuteToLoc (loc, vernac_st, []) ->
+    log "[DM] event: Execute (no tasks)";
     (* We update the state to trigger a publication of diagnostics *)
-    Lwt.return (Some st, [])
-  | Execute (vernac_st, task :: tasks) ->
+    interpret_to_loc st loc >>= fun (st, events) ->
+    Lwt.return (Some st, events)
+  | ExecuteToLoc (loc, vernac_st, task :: tasks) ->
+    log "[DM] event: Execute (more tasks)";
     let doc_id = Document.id_of_doc st.document in
     ExecutionManager.execute ~doc_id st.execution_state (vernac_st, [], false) task >>= fun (vernac_st,events,interrupted) ->
     (* We do not update the state here because we may have received feedback while
        executing *)
-    Lwt.return (None, inject_em_events events @ [Lwt.return @@ Execute(vernac_st,tasks)])
-  | InterpretToLoc loc ->
-    interpret_to_loc st loc >>= fun (st, events) ->
-      Lwt.return (Some st, events)
+    Lwt.return (None, inject_em_events events @ [Lwt.return @@ ExecuteToLoc(loc, vernac_st,tasks)])
   | ExecutionManagerEvent ev ->
     ExecutionManager.handle_event ev >>= fun events ->
       Lwt.return (None, inject_em_events events)
