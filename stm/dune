@@ -3,7 +3,7 @@
  (synopsis "Coq's State Transaction Machine")
  (public_name coq.stm)
  (wrapped false)
- (modules asyncTaskQueue coqworkmgrApi dag proofBlockDelimiter spawned stm vcs vio_checking workerPool tQueue)
+ (modules asyncTaskQueue coqworkmgrApi dag proofBlockDelimiter spawned stm vcs vio_checking workerPool tQueue partac)
  (libraries vernac))
 
 (library
