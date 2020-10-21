@@ -135,6 +135,8 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
   Lwt_io.flush_all () >!= fun () ->
   let pid = Lwt_unix.fork () in
   if pid = 0 then
+    (* Children process *)
+    close stdin >>= fun () ->
     close chan >>= fun () ->
     log @@ "[W] Borning...";
     let chan = socket PF_INET SOCK_STREAM 0 in
@@ -145,6 +147,7 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
     new_worker remote_mapping link;
     Lwt.return (Worker, [])
   else
+    (* Parent process *)
     let timeout = sleep 2. >>= fun () -> Lwt.return None in
     let accept = accept chan >>= fun x -> Lwt.return @@ Some x in
     Lwt.pick [timeout; accept] >>= function
