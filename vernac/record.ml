@@ -582,26 +582,17 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
       in
       List.map map inds
   in
-  let ctx_context =
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    List.map (fun decl ->
-      match Typeclasses.class_of_constr env sigma (EConstr.of_constr (RelDecl.get_type decl)) with
-      | Some (_, ((cl,_), _)) -> Some cl.cl_impl
-      | None -> None)
-      params, params
-  in
-  let univs, ctx_context, fields =
+  let univs, params, fields =
     match univs with
     | Polymorphic_entry (nas, univs) ->
       let usubst, auctx = Univ.abstract_universes nas univs in
       let usubst = Univ.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in
-      let ctx_context = on_snd (fun d -> Context.Rel.map map d) ctx_context in
-      auctx, ctx_context, fields
+      let params = Context.Rel.map map params in
+      auctx, params, fields
     | Monomorphic_entry _ ->
-      Univ.AUContext.empty, ctx_context, fields
+      Univ.AUContext.empty, params, fields
   in
   let map (impl, projs) =
     let k =
@@ -609,7 +600,7 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
         cl_impl = impl;
         cl_strict = !typeclasses_strict;
         cl_unique = !typeclasses_unique;
-        cl_context = ctx_context;
+        cl_context = params;
         cl_props = fields;
         cl_projs = projs }
     in
@@ -629,7 +620,7 @@ let add_constant_class env sigma cst =
   let tc =
     { cl_univs = univs;
       cl_impl = GlobRef.ConstRef cst;
-      cl_context = (List.map (const None) ctx, ctx);
+      cl_context = ctx;
       cl_props = [LocalAssum (make_annot Anonymous r, t)];
       cl_projs = [];
       cl_strict = !typeclasses_strict;
@@ -651,7 +642,7 @@ let add_inductive_class env sigma ind =
     let r = Inductive.relevance_of_inductive env ind in
       { cl_univs = univs;
         cl_impl = GlobRef.IndRef ind;
-        cl_context = List.map (const None) ctx, ctx;
+        cl_context = ctx;
         cl_props = [LocalAssum (make_annot Anonymous r, ty)];
         cl_projs = [];
         cl_strict = !typeclasses_strict;

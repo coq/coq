@@ -152,9 +152,6 @@ let subst_class (subst,cl) =
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
   let do_subst_ctx = List.Smart.map (RelDecl.map_constr do_subst) in
-  let do_subst_context (grs,ctx) =
-    List.Smart.map (Option.Smart.map do_subst_gr) grs,
-    do_subst_ctx ctx in
   let do_subst_meth m =
     let c = Option.Smart.map do_subst_con m.meth_const in
     if c == m.meth_const then m
@@ -168,7 +165,7 @@ let subst_class (subst,cl) =
   let do_subst_projs projs = List.Smart.map do_subst_meth projs in
   { cl_univs = cl.cl_univs;
     cl_impl = do_subst_gr cl.cl_impl;
-    cl_context = do_subst_context cl.cl_context;
+    cl_context = do_subst_ctx cl.cl_context;
     cl_props = do_subst_ctx cl.cl_props;
     cl_projs = do_subst_projs cl.cl_projs;
     cl_strict = cl.cl_strict;
@@ -197,25 +194,16 @@ let discharge_class (_,cl) =
       | VarRef _ | ConstructRef _ -> assert false
       | ConstRef cst -> Lib.section_segment_of_constant cst
       | IndRef (ind,_) -> Lib.section_segment_of_mutual_inductive ind in
-  let discharge_context ctx' subst (grs, ctx) =
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    let grs' =
-      let newgrs = List.map (fun decl ->
-                             match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr env sigma with
-                             | None -> None
-                             | Some (_, ((tc,_), _)) -> Some tc.cl_impl)
-                            ctx'
-      in
-      grs @ newgrs
-    in grs', discharge_rel_context subst 1 ctx @ ctx' in
+  let discharge_context ctx' subst ctx =
+    discharge_rel_context subst 1 ctx @ ctx'
+  in
   try
     let info = abs_context cl in
     let ctx = info.Section.abstr_ctx in
     let ctx, subst = rel_of_variable_context ctx in
     let usubst, cl_univs' = Lib.discharge_abstract_universe_context info cl.cl_univs in
     let context = discharge_context ctx (subst, usubst) cl.cl_context in
-    let props = discharge_rel_context (subst, usubst) (succ (List.length (fst cl.cl_context))) cl.cl_props in
+    let props = discharge_rel_context (subst, usubst) (succ (List.length cl.cl_context)) cl.cl_props in
     let discharge_proj x = x in
     { cl_univs = cl_univs';
       cl_impl = cl.cl_impl;
@@ -324,7 +312,7 @@ let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma t
 let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst name =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
-      [] subst (snd k.cl_context)
+      [] subst k.cl_context
   in
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
@@ -399,7 +387,7 @@ let do_instance_subst_constructor_and_ty subst k u ctx =
   let subst =
     List.fold_left2 (fun subst' s decl ->
       if is_local_assum decl then s :: subst' else subst')
-    [] subst (k.cl_props @ snd k.cl_context)
+    [] subst (k.cl_props @ k.cl_context)
   in
   let (app, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr ctx in
@@ -530,7 +518,7 @@ let interp_instance_context ~program_mode env ctx ~generalize pl tclass =
   let u_s = EInstance.kind sigma u in
   let cl = Typeclasses.typeclass_univ_instance (k, u_s) in
   let args = List.map of_constr args in
-  let cl_context = List.map (Termops.map_rel_decl of_constr) (snd cl.cl_context) in
+  let cl_context = List.map (Termops.map_rel_decl of_constr) cl.cl_context in
   let _, args =
     List.fold_right (fun decl (args, args') ->
         match decl with
