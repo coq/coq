@@ -52,7 +52,7 @@ check_variable "CI_JOB_URL"
 : "${new_coq_opam_archive_git_branch:=master}"
 : "${old_coq_opam_archive_git_branch:=master}"
 : "${num_of_iterations:=1}"
-: "${coq_opam_packages:=coq-performance-tests-lite coq-engine-bench-lite coq-hott coq-bignums coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-sf-plf coq-coquelicot coq-lambda-rust coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast}"
+: "${coq_opam_packages:=coq-performance-tests-lite coq-engine-bench-lite coq-hott coq-bignums coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-sf-plf coq-coquelicot coq-lambda-rust coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial}"
 
 new_coq_commit=$(git rev-parse HEAD^2)
 old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
@@ -268,6 +268,9 @@ create_opam() {
 
     opam repo add -q --this-switch coq-extra-dev "$OPAM_COQ_DIR/extra-dev"
     opam repo add -q --this-switch coq-released "$OPAM_COQ_DIR/released"
+
+    # Pinning for packages that are not in a repository
+    opam pin add -ynq coq-perennial.dev git+https://github.com/mit-pdos/perennial#coq/tested
 
     opam install -qy -j$number_of_processors $initial_opam_packages
     if [ ! -z "$BENCH_DEBUG" ]; then opam repo list; fi
