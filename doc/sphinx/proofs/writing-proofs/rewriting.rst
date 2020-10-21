@@ -274,9 +274,13 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
       .. exn:: Too few occurrences.
          :undocumented:
 
-   .. tacv:: change @term {? {? at {+ @natural}} with @term} in @ident
+   .. tacv:: change @term {? {? at {+ @natural}} with @term} in @goal_occurrences
 
-      This applies the :tacn:`change` tactic not to the goal but to the hypothesis :n:`@ident`.
+      In the presence of :n:`with`, this applies :tacn:`change` to the
+      occurrences specified by :n:`@goal_occurrences`. In the
+      absence of :n:`with`, :n:`@goal_occurrences` is expected to
+      only list hypotheses (and optionally the conclusion) without
+      specifying occurrences (i.e. no :n:`at` clause).
 
    .. tacv:: now_show @term
 
