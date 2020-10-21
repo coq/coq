@@ -379,9 +379,11 @@ GRAMMAR EXTEND Gram
           { {onhyps=None; concl_occs=occs} }
       | "*"; "|-"; occs=concl_occ ->
           { {onhyps=None; concl_occs=occs} }
-      | hl=LIST0 hypident_occ SEP","; "|-"; occs=concl_occ ->
+      | "|-"; occs=concl_occ ->
+          { {onhyps=Some []; concl_occs=occs} }
+      | hl = LIST1 hypident_occ SEP ","; "|-"; occs=concl_occ ->
           { {onhyps=Some hl; concl_occs=occs} }
-      | hl=LIST0 hypident_occ SEP"," ->
+      | hl = LIST1 hypident_occ SEP "," ->
           { {onhyps=Some hl; concl_occs=NoOccurrences} } ] ]
   ;
   clause_dft_concl:
