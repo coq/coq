@@ -25,6 +25,7 @@ let loop run_mode ~opts:_ state =
           LspManager.handle_event e >>= fun more_events ->
           Lwt.return @@ acc @ more_events
      in
+        log @@ "Main loop events ready: " ^ Pp.string_of_ppcmds Pp.(prlist_with_sep spc LspManager.pr_event ready);
         Lwt_list.fold_left_s perform remaining ready >>= fun events ->
         loop events
   in

@@ -72,3 +72,5 @@ val get_current_proof : state -> proof_data
 val handle_feedback : Stateid.t -> Feedback.feedback_content -> state -> state
 
 val handle_event : event -> state -> (state option * events) Lwt.t
+
+val pr_event : event -> Pp.t

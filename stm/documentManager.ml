@@ -9,7 +9,11 @@
 (************************************************************************)
 open Document
 
-let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
+let debug_dm = CDebug.create ~name:"document-manager"
+
+let log msg =
+  if CDebug.get_debug_level "document-manager" >= 1 then
+  Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
 type proof_data = (Proof.data * Position.t) option
 
@@ -223,3 +227,7 @@ let get_current_proof st =
     match ExecutionManager.get_proofview st.execution_state sentence.id with
     | None -> None
     | Some pv -> Some (pv, pos)
+
+let pr_event = function
+| ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
+| ExecutionManagerEvent ev -> ExecutionManager.pr_event ev

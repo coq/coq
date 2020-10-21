@@ -32,13 +32,18 @@ let fresh_doc_id =
   let doc_id = ref (-1) in
   fun () -> incr doc_id; !doc_id
 
-let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
+let lsp_debug = CDebug.create ~name:"vscoq-lsp"
+
+let log ~verbosity msg =
+  if CDebug.get_debug_level "vscoq-lsp" >= verbosity then
+  Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
 (*let string_field name obj = Yojson.Basic.to_string (List.assoc name obj)*)
 
 let read_request ic : Yojson.Basic.t Lwt.t =
   Lwt_io.read_line ic >!= fun header ->
   let scan_header = Scanf.Scanning.from_string header in
+  try
   Scanf.bscanf scan_header "Content-Length: %d" (fun size ->
       let buf = Bytes.create size in
       (* Discard a second newline *)
@@ -46,8 +51,12 @@ let read_request ic : Yojson.Basic.t Lwt.t =
       Lwt_io.read_into_exactly ic buf 0 size >!= fun () ->
       Lwt.return @@ Bytes.to_string buf
     ) >>= fun obj_str ->
-  log @@ "received: " ^ obj_str;
+    log ~verbosity:2 @@ "received: " ^ obj_str;
   Lwt.return @@ Yojson.Basic.from_string obj_str
+  with Scanf.Scan_failure _ as reraise ->
+    let reraise = Exninfo.capture reraise in
+    log ~verbosity:1 @@ "failed to decode header: " ^ header;
+    Exninfo.iraise reraise
 
 let output_json obj : unit Lwt.t =
   let msg  = Yojson.Basic.pretty_to_string ~std:true obj in
@@ -311,11 +320,11 @@ let dispatch_method ~id method_name params : events Lwt.t =
   | "coqtop/stepForward" -> coqtopStepForward ~id params  >>= inject_dm_events
   | "coqtop/resetCoq" -> coqtopResetCoq ~id params >>= fun () -> Lwt.return []
   | "coqtop/interpretToEnd" -> coqtopInterpretToEnd ~id params >>= inject_dm_events
-  | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; Lwt.return []
+  | _ -> log ~verbosity:1 @@ "Ignoring call to unknown method: " ^ method_name; Lwt.return []
 
 let lsp () = [
   read_request Lwt_io.stdin >!= fun req ->
-  log "[T] UI req ready";
+  log ~verbosity:2 "[T] UI req ready";
   Lwt.return @@ LspManagerEvent (Request req)
 ]
 
@@ -325,16 +334,20 @@ let handle_lsp_event = function
       let id = Option.default 0 (req |> member "id" |> to_int_option) in
       let method_name = req |> member "method" |> to_string in
       let params = req |> member "params" in
-      log @@ "[T] ui step: " ^ method_name;
+      log ~verbosity:1 @@ "[T] ui step: " ^ method_name;
       dispatch_method ~id method_name params >>= fun more_events ->
       Lwt.return @@ more_events @ lsp()
+
+let pr_lsp_event = function
+  | Request req ->
+    Pp.str "Request"
 
 let handle_event = function
   | LspManagerEvent e -> handle_lsp_event e
   | DocumentManagerEvent (uri, e) ->
     begin match Hashtbl.find_opt states uri with
     | None ->
-      log @@ "[LSP] ignoring event on non-existing document";
+      log ~verbosity:1 @@ "[LSP] ignoring event on non-existing document";
       Lwt.return []
     | Some st ->
       DocumentManager.handle_event e st >>= fun (ost, events) ->
@@ -347,10 +360,15 @@ let handle_event = function
       inject_dm_events (uri, events)
     end
 
+let pr_event = function
+  | LspManagerEvent e -> pr_lsp_event e
+  | DocumentManagerEvent (uri, e) ->
+    DocumentManager.pr_event e
+
 let handle_feedback feedback =
   let Feedback.{ doc_id; span_id; contents } = feedback in
   match Hashtbl.find_opt doc_ids doc_id with
-  | None -> log @@ "[LSP] ignoring feedback with doc_id = " ^ (string_of_int doc_id)
+  | None -> log ~verbosity:1 @@ "[LSP] ignoring feedback with doc_id = " ^ (string_of_int doc_id)
   | Some uri ->
     let st = Hashtbl.find states uri in
     let st = DocumentManager.handle_feedback span_id contents st in

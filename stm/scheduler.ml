@@ -11,7 +11,11 @@
 type sentence_id = Stateid.t
 type ast = Vernacexpr.vernac_control
 
-let log msg = Format.eprintf "@[%s@]@\n%!" msg
+let debug_scheduler = CDebug.create ~name:"scheduler"
+
+let log msg =
+  if CDebug.get_debug_level "scheduler" >= 2 then
+    Format.eprintf "@[%s@]@\n%!" msg
 
 type vernac_classification =
   ParsingEffect | StateEffect
@@ -80,13 +84,26 @@ let push_state id ast st =
     base_id st, List.map (fun s -> id :: s) st, Exec(id,ast)
   | _ -> assert false
 
-(* For now, a trivial linear scheduler *)
+let string_of_task (id,(base_id,task)) =
+  let s = match task with
+  | Skip id -> "Skip " ^ Stateid.to_string id
+  | Exec (id, ast) -> "Exec " ^ Stateid.to_string id ^ " (" ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^ ")"
+  | OpaqueProof (id, ids) -> "OpaqueProof [" ^ Stateid.to_string id ^ " | " ^ String.concat "," (List.map Stateid.to_string ids) ^ "]"
+  | Query(id,ast) -> "Query " ^ Stateid.to_string id
+  in
+  Format.sprintf "[%s] : [%s] -> %s" (Stateid.to_string id) (Option.cata Stateid.to_string "init" base_id) s
+
+let string_of_state st =
+  String.concat "|" (List.map (fun l -> String.concat " " (List.map Stateid.to_string l)) st)
+
 let schedule_sentence (id,oast) st schedule =
   let base, st, task = match oast with
     | Some ast -> push_state id ast st
     | None -> base_id st, st, Skip id
   in
   log @@ "Scheduled " ^ (Stateid.to_string id) ^ " based on " ^ (match base with Some id -> Stateid.to_string id | None -> "no state");
+  log @@ string_of_task (id, (base, task));
+  log @@ "New scheduler state: " ^ string_of_state st;
   let tasks = SM.add id (base, task) schedule.tasks in
   let add_dep deps x id =
     let upd = function
@@ -127,15 +144,6 @@ let dependents schedule id =
 {{1,2,3,4,5,6}}  ||     {{1,2,5,6}}
 7. Check x.
 *)
-
-let string_of_task (id,(base_id,task)) =
-  let s = match task with
-  | Skip id -> "Skip " ^ Stateid.to_string id
-  | Exec (id, ast) -> "Exec " ^ Stateid.to_string id ^ " (" ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^ ")"
-  | OpaqueProof (id, ids) -> "OpaqueProof [" ^ Stateid.to_string id ^ " | " ^ String.concat "," (List.map Stateid.to_string ids) ^ "]"
-  | Query(id,ast) -> "Query " ^ Stateid.to_string id
-  in
-  Format.sprintf "[%s] : [%s] -> %s" (Stateid.to_string id) (Option.cata Stateid.to_string "init" base_id) s
 
 let string_of_schedule schedule =
   "Task\n" ^

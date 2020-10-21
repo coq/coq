@@ -27,6 +27,7 @@ type event
 type events = event Lwt.t list
 
 val handle_event : event -> events Lwt.t
+val pr_event : event -> Pp.t
 
 type prepared_task
 

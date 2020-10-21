@@ -93,6 +93,9 @@ let handle_event = function
   | ProofWorkerEvent event -> ProofWorker.handle_event event >>= inject_dm_events
   (*| TacticWorkerEvent event -> Declare.Proof.handle_event event >>= inject_pm_events*)
 
+let pr_event = function
+  | ProofWorkerEvent event -> ProofWorker.pr_event event
+
 let interp_ast ~doc_id ~state_id vernac_st ast =
     Feedback.set_id_for_feedback doc_id state_id;
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));

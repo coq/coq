@@ -11,7 +11,11 @@
 open Lwt.Infix
 open Lwt_err.Infix
 
-let log msg = Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
+let debug_delegation_manager = CDebug.create ~name:"delegation-manager"
+
+let log msg =
+  if CDebug.get_debug_level "delegation-manager" >= 1 then
+  Format.eprintf "%d] @[%s@]@\n%!" (Unix.getpid ()) msg
 
 type sentence_id = Stateid.t
 type ('a,'b) coqtop_extra_args_fn = opts:'b -> string list -> 'a * string list
@@ -196,8 +200,10 @@ let handle_event = function
       log @@ Printf.sprintf "[M] Worker died";
       Lwt.return []
   | WorkerProgress (link,remote_mapping) ->
+    log "[M] WorkerProgress";
     Lwt.return [worker_progress link remote_mapping]
   | WorkerStart (mapping,job,action,procname) ->
+    log "[M] WorkerStart";
       if Sys.os_type = "Unix" then
         fork_worker mapping >>= fun (role,events) ->
         match role with
@@ -207,6 +213,16 @@ let handle_event = function
           log @@ "[W] Worker goes on holidays"; exit 0
       else
         create_process_worker procname mapping job
+
+let pr_event = function
+  | WorkerEnd (pid, _status) ->
+    Pp.str "WorkerEnd"
+  | WorkerDied ->
+    Pp.str "WorkerDied"
+  | WorkerProgress (link,remote_mapping) ->
+    Pp.str "WorkerProgress"
+  | WorkerStart (mapping,job,action,procname) ->
+    Pp.str "WorkerStart"
 
 let worker_available ~job ~fork_action = [
   begin

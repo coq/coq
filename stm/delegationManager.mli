@@ -37,6 +37,7 @@ type event
 type events = event Lwt.t list
 
 val handle_event : event -> events Lwt.t
+val pr_event : event -> Pp.t
 
 (* When a worker is available [job] is called and when it returns the
    event becomes ready; in turn the event triggers the action.

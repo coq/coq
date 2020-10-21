@@ -12,6 +12,7 @@ type events = event Lwt.t list
 
 val lsp : unit -> events
 val handle_event : event -> events Lwt.t
+val pr_event : event -> Pp.t
 val handle_feedback : Feedback.feedback -> unit
 
 val init : unit -> unit
