@@ -19,11 +19,19 @@ type glob_output =
   | MultFiles                   (* one glob file per .v file *)
   | File of string              (* Single file for all coqc arguments *)
 
-(* Default "NoGlob" *)
-val set_glob_output : glob_output -> unit
+(** [push_output o] temporarily overrides the output location to [o].
+    The original output can be restored using [pop_output] *)
+val push_output : glob_output -> unit
 
+(** Restores the original output that was overridden by [push_output] *)
+val pop_output : unit -> unit
+
+(** Alias for [push_output NoGlob] *)
 val pause : unit -> unit
+
+(** Deprecated alias for [pop_output] *)
 val continue : unit -> unit
+[@@ocaml.deprecated "Use pop_output"]
 
 val add_glob : ?loc:Loc.t -> Names.GlobRef.t -> unit
 val add_glob_kn : ?loc:Loc.t -> Names.KerName.t -> unit

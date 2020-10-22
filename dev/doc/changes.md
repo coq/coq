@@ -30,6 +30,13 @@ Generic arguments:
 
 - Generic arguments: `wit_var` is deprecated, use `wit_hyp`.
 
+Dumpglob:
+
+- The function `Dumpglob.pause` and `Dumpglob.continue` are replaced
+  by `Dumpglob.push_output` and `Dumpglob.pop_output`. This allows
+  plugins to temporarily change/pause the output of Dumpglob, and then
+  restore it to the original setting.
+
 ## Changes between Coq 8.11 and Coq 8.12
 
 ### Code formatting
