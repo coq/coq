@@ -1894,7 +1894,8 @@ let has_occ ((_, occ), _) = occ <> None
 let gens_sep = function [], [] -> mt | _ -> spc
 
 let pr_dgens pr_gen (gensl, clr) =
-  let prgens s gens = str s ++ pr_list spc pr_gen gens in
+  let prgens s gens =
+  if CList.is_empty gens then mt () else str s ++ pr_list spc pr_gen gens in
   let prdeps deps = prgens ": " deps ++ spc () ++ str "/" in
   match gensl with
   | [deps; []] -> prdeps deps ++ pr_clear pr_spc clr
@@ -2194,7 +2195,7 @@ END
 
 let pr_ssrcongrarg _ _ _ ((n, f), dgens) =
   (if n <= 0 then mt () else str " " ++ int n) ++
-  str " " ++ pr_term f ++ pr_dgens pr_gen dgens
+  pr_term f ++ pr_dgens pr_gen dgens
 
 }
 
