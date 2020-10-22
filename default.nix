@@ -43,7 +43,6 @@ stdenv.mkDerivation rec {
     hostname
     python3 time # coq-makefile timing tools
   ]
-  ++ (with ocamlPackages; [ ocaml findlib ])
   ++ optionals buildIde [
     ocamlPackages.lablgtk3-sourceview3
     glib gnome3.defaultIconTheme wrapGAppsHook
@@ -69,10 +68,13 @@ stdenv.mkDerivation rec {
     ++ [ dune_2 ] # Maybe the next build system
   );
 
-  # Since #12604, ocamlfind looks for num when building plugins
+  # OCaml and findlib are needed so that native_compute works
+  # This follows a similar change in the nixpkgs repo (cf. NixOS/nixpkgs#101058)
+  # ocamlfind looks for zarith when building plugins
   # This follows a similar change in the nixpkgs repo (cf. NixOS/nixpkgs#94230)
-  # Same for zarith which is needed since its introduction as a dependency of Coq
-  propagatedBuildInputs = with ocamlPackages; [ zarith ];
+  propagatedBuildInputs = with ocamlPackages; [ ocaml findlib zarith ];
+
+  propagatedUserEnvPkgs = with ocamlPackages; [ ocaml findlib ];
 
   src =
     if shell then null
