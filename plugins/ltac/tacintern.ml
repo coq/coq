@@ -769,38 +769,6 @@ let glob_tactic_env l env x =
   (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars })
     x
 
-let split_ltac_fun = function
-  | TacFun (l,t) -> (l,t)
-  | t -> ([],t)
-
-let pr_ltac_fun_arg n = spc () ++ Name.print n
-
-let print_ltac id =
- try
-  let kn = Tacenv.locate_tactic id in
-  let entries = Tacenv.ltac_entries () in
-  let tac = KNmap.find kn entries in
-  let filter mp =
-    try Some (Nametab.shortest_qualid_of_module mp)
-    with Not_found -> None
-  in
-  let mods = List.map_filter filter tac.Tacenv.tac_redef in
-  let redefined = match mods with
-  | [] -> mt ()
-  | mods ->
-    let redef = prlist_with_sep fnl pr_qualid mods in
-    fnl () ++ str "Redefined by:" ++ fnl () ++ redef
-  in
-  let l,t = split_ltac_fun tac.Tacenv.tac_body in
-  hv 2 (
-    hov 2 (str "Ltac" ++ spc() ++ pr_qualid id ++
-           prlist pr_ltac_fun_arg l ++ spc () ++ str ":=")
-    ++ spc() ++ Pptactic.pr_glob_tactic (Global.env ()) t) ++ redefined
- with
-  Not_found ->
-   user_err ~hdr:"print_ltac"
-    (pr_qualid id ++ spc() ++ str "is not a user defined tactic.")
-
 (** Registering *)
 
 let lift intern = (); fun ist x -> (ist, intern ist x)

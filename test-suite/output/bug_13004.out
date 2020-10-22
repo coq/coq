@@ -1,2 +1,2 @@
-Ltac bug_13004.t := ltac2:(print (of_string "hi"))
-Ltac bug_13004.u := ident:(H)
+Ltac t := ltac2:(print (of_string "hi"))
+Ltac u := ident:(H)

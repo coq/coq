@@ -466,7 +466,7 @@ END
 
 VERNAC COMMAND EXTEND VernacPrintLtac CLASSIFIED AS QUERY
 | [ "Print" "Ltac" reference(r) ] ->
-  { Feedback.msg_notice (Tacintern.print_ltac r) }
+  { Feedback.msg_notice (Tacentries.print_ltac r) }
 END
 
 VERNAC COMMAND EXTEND VernacLocateLtac CLASSIFIED AS QUERY

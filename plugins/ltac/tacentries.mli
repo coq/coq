@@ -69,6 +69,9 @@ val print_ltacs : unit -> unit
 val print_located_tactic : Libnames.qualid -> unit
 (** Display the absolute name of a tactic. *)
 
+val print_ltac : Libnames.qualid -> Pp.t
+(** Display the definition of a tactic. *)
+
 (** {5 Low-level registering of tactics} *)
 
 type (_, 'a) ml_ty_sig =
