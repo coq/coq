@@ -1167,7 +1167,7 @@ function make_menhir {
   make_ocaml
   make_findlib
   make_ocamlbuild
-  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20200525 menhir-20200525 tar.gz 1 ; then
+  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20200624 menhir-20200624 tar.gz 1 ; then
     # ToDo: don't know if this is the intended / most reliable to do it, but it works
     log2 dune build @install
     log2 dune install menhir menhirSdk menhirLib
