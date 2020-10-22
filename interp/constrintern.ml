@@ -2471,6 +2471,15 @@ let intern_constr_pattern env sigma ?(as_type=false) ?(ltacvars=empty_ltac_sign)
             ~pattern_mode:true ~ltacvars env sigma c in
   pattern_of_glob_constr c
 
+let interp_constr_pattern env sigma ?(expected_type=WithoutTypeConstraint) c =
+  let kind_for_intern = match expected_type with OfType _ -> WithoutTypeConstraint | _ -> expected_type in
+  let c = intern_gen kind_for_intern ~pattern_mode:true env sigma c in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with expand_evars = false } in
+  let sigma, c = understand_tcc ~flags env sigma ~expected_type c in
+  (* FIXME: it is necessary to be unsafe here because of the way we handle
+     evars in the pretyper. Sometimes they get solved eagerly. *)
+  pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
+
 let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
       { Genintern.intern_ids = ids; Genintern.notation_variable_status = vl } c =
   let tmp_scope = scope_of_type_kind env sigma kind in
