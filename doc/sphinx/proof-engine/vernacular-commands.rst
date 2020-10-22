@@ -637,10 +637,10 @@ file is a particular case of a module called a *library file*.
 
 .. cmd:: Declare ML Module {+ @string }
 
-   This commands dynamically loads OCaml compiled code from
+   This commands dynamically loads |OCaml| compiled code from
    a :n:`.mllib` file.
    It is used to load plugins dynamically.  The
-   files must be accessible in the current OCaml loadpath (see the
+   files must be accessible in the current |OCaml| loadpath (see the
    command :cmd:`Add ML Path`).  The :n:`.mllib` suffix may be omitted.
 
    This command is reserved for plugin developers, who should provide
@@ -656,7 +656,7 @@ file is a particular case of a module called a *library file*.
 
 .. cmd:: Print ML Modules
 
-   This prints the name of all OCaml modules loaded with :cmd:`Declare ML Module`.
+   This prints the name of all |OCaml| modules loaded with :cmd:`Declare ML Module`.
    To know from where these module were loaded, the user
    should use the command :cmd:`Locate File`.
 
@@ -719,13 +719,13 @@ the toplevel, and using them in source files is discouraged.
 
 .. cmd:: Add ML Path @string
 
-   This command adds the path :n:`@string` to the current OCaml
+   This command adds the path :n:`@string` to the current |OCaml|
    loadpath (cf. :cmd:`Declare ML Module`).
 
 
 .. cmd:: Print ML Path
 
-   This command displays the current OCaml loadpath. This
+   This command displays the current |OCaml| loadpath. This
    command makes sense only under the bytecode version of ``coqtop``, i.e.
    using option ``-byte``
    (cf. :cmd:`Declare ML Module`).
@@ -794,10 +794,10 @@ Quitting and debugging
 
 .. cmd:: Drop
 
-   This command temporarily enters the OCaml toplevel.
+   This command temporarily enters the |OCaml| toplevel.
    It is a debug facility used by |Coq|’s implementers.  Valid only in the
    bytecode version of coqtop.
-   The OCaml command:
+   The |OCaml| command:
 
    ::
 
@@ -1230,15 +1230,15 @@ in support libraries of plug-ins.
 
 .. _exposing-constants-to-ocaml-libraries:
 
-Exposing constants to OCaml libraries
-`````````````````````````````````````
+Exposing constants to |OCaml| libraries
+```````````````````````````````````````
 
 .. cmd:: Register @qualid__1 as @qualid__2
 
-   Makes the constant :n:`@qualid__1` accessible to OCaml libraries under
+   Makes the constant :n:`@qualid__1` accessible to |OCaml| libraries under
    the name :n:`@qualid__2`.  The constant can then be dynamically located
-   in OCaml code by
-   calling :n:`Coqlib.lib_ref "@qualid__2"`.  The OCaml code doesn't need
+   in |OCaml| code by
+   calling :n:`Coqlib.lib_ref "@qualid__2"`.  The |OCaml| code doesn't need
    to know where the constant is defined (what file, module, library, etc.).
 
    As a special case, when the first segment of :n:`@qualid__2` is :g:`kernel`,
@@ -1267,7 +1267,7 @@ Registering primitive operations
 
 .. cmd:: Primitive @ident_decl {? : @term } := #@ident
 
-   Makes the primitive type or primitive operator :n:`#@ident` defined in OCaml
+   Makes the primitive type or primitive operator :n:`#@ident` defined in |OCaml|
    accessible in |Coq| commands and tactics.
    For internal use by implementors of |Coq|'s standard library or standard library
    replacements.  No space is allowed after the `#`.  Invalid values give a syntax

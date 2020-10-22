@@ -17,7 +17,7 @@ Inductive types
       constructor ::= @ident {* @binder } {? @of_type }
 
    This command defines one or more
-   inductive types and its constructors.  Coq generates destructors
+   inductive types and its constructors.  |Coq| generates destructors
    depending on the universe that the inductive type belongs to.
 
    The destructors are named :n:`@ident`\ ``_rect``, :n:`@ident`\ ``_ind``,
@@ -405,7 +405,7 @@ constructions.
    It is especially useful when defining functions over mutually defined
    inductive types.  Example: :ref:`Mutual Fixpoints<example_mutual_fixpoints>`.
 
-   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof editing mode.
+   If :n:`@term` is omitted, :n:`@type` is required and |Coq| enters proof editing mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.

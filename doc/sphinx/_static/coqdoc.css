@@ -66,3 +66,7 @@
 .coqdoc-tactic {
     font-weight: bold;
 }
+
+.smallcaps {
+    font-variant: small-caps;
+}

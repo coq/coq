@@ -24,13 +24,13 @@ develop his theories and proofs step by step. The |Coq| toplevel is run
 by the command ``coqtop``.
 
 There are two different binary images of |Coq|: the byte-code one and the
-native-code one (if OCaml provides a native-code compiler for
+native-code one (if |OCaml| provides a native-code compiler for
 your platform, which is supposed in the following). By default,
 ``coqtop`` executes the native-code version; run ``coqtop.byte`` to get
 the byte-code version.
 
-The byte-code toplevel is based on an OCaml toplevel (to
-allow dynamic linking of tactics). You can switch to the OCaml toplevel
+The byte-code toplevel is based on an |OCaml| toplevel (to
+allow dynamic linking of tactics). You can switch to the |OCaml| toplevel
 with the command ``Drop.``, and come back to the |Coq|
 toplevel with the command ``Coqloop.loop();;``.
 
@@ -61,7 +61,7 @@ By resource file
 
 When |Coq| is launched, with either ``coqtop`` or ``coqc``, the
 resource file ``$XDG_CONFIG_HOME/coq/coqrc.xxx``, if it exists, will
-be implicitly prepended to any document read by Coq, whether it is an
+be implicitly prepended to any document read by |Coq|, whether it is an
 interactive session or a file to compile. Here, ``$XDG_CONFIG_HOME``
 is the configuration directory of the user (by default it's ``~/.config``)
 and ``xxx`` is the version number (e.g. 8.8). If
@@ -133,7 +133,7 @@ The following command-line options are recognized by the commands ``coqc``
 and ``coqtop``, unless stated otherwise:
 
 :-I *directory*, -include *directory*: Add physical path *directory*
-  to the OCaml loadpath.
+  to the |OCaml| loadpath.
 
   .. seealso::
 
@@ -253,8 +253,8 @@ and ``coqtop``, unless stated otherwise:
 
   .. warning:: This makes the logic inconsistent.
 :-mangle-names *ident*: *Experimental.* Do not depend on this option. Replace
-  Coq's auto-generated name scheme with names of the form *ident0*, *ident1*,
-  etc. Within Coq, the :flag:`Mangle Names` flag turns this behavior on,
+  |Coq|'s auto-generated name scheme with names of the form *ident0*, *ident1*,
+  etc. Within |Coq|, the :flag:`Mangle Names` flag turns this behavior on,
   and the :opt:`Mangle Names Prefix` option sets the prefix to use. This feature
   is intended to be used as a linter for developments that want to be robust to
   changes in the auto-generated name scheme. The options are provided to
@@ -264,7 +264,7 @@ and ``coqtop``, unless stated otherwise:
    type of the option. For flags :n:`@setting_name` is equivalent to
    :n:`@setting_name=true`. For instance ``-set "Universe Polymorphism"``
    will enable :flag:`Universe Polymorphism`. Note that the quotes are
-   shell syntax, Coq does not see them.
+   shell syntax, |Coq| does not see them.
    See the :ref:`note above <interleave-command-line>` regarding the order
    of command-line options.
 :-unset *string*: As ``-set`` but used to disable options and flags.
@@ -304,7 +304,7 @@ and ``coqtop``, unless stated otherwise:
 Compiled interfaces (produced using ``-vos``)
 ----------------------------------------------
 
-Compiled interfaces help saving time while developing Coq formalizations,
+Compiled interfaces help saving time while developing |Coq| formalizations,
 by compiling the formal statements exported by a library independently of
 the proofs that it contains.
 
@@ -473,7 +473,7 @@ set of reflexive transitive dependencies of set :math:`S`. Then:
   context without type checking. Basic integrity checks (checksums) are
   nonetheless performed.
 
-As a rule of thumb, -admit can be used to tell Coq that some libraries
+As a rule of thumb, -admit can be used to tell |Coq| that some libraries
 have already been checked. So ``coqchk A B`` can be split in ``coqchk A`` &&
 ``coqchk B -admit A`` without type checking any definition twice. Of
 course, the latter is slightly slower since it makes more disk access.

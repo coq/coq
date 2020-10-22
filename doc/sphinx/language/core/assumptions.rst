@@ -117,7 +117,7 @@ Assumptions
 
 Assumptions extend the environment with axioms, parameters, hypotheses
 or variables. An assumption binds an :n:`@ident` to a :n:`@type`. It is accepted
-by Coq if and only if this :n:`@type` is a correct type in the environment
+by |Coq| if and only if this :n:`@type` is a correct type in the environment
 preexisting the declaration and if :n:`@ident` was not previously defined in
 the same module. This :n:`@type` is considered to be the type (or
 specification, or statement) assumed by :n:`@ident` and we say that :n:`@ident`

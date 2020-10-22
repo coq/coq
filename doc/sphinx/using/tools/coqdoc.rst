@@ -253,7 +253,7 @@ The latter cannot be used around some inner parts of a proof, but can
 be used around a whole proof.
 
 Lastly, it is possible to adopt a middle-ground approach when the
-desired output is HTML, where a given snippet of Coq material is
+desired output is HTML, where a given snippet of |Coq| material is
 hidden by default, but can be made visible with user interaction.
 
 ::
@@ -358,11 +358,11 @@ Command line options
 **Hyperlink options**
 
   :--glob-from file: Make references using |Coq| globalizations from file
-    file. (Such globalizations are obtained with Coq option ``-dump-glob``).
+    file. (Such globalizations are obtained with |Coq| option ``-dump-glob``).
   :--no-externals: Do not insert links to the |Coq| standard library.
   :--external url coqdir: Use given URL for linking references whose
     name starts with prefix ``coqdir``.
-  :--coqlib url: Set base URL for the Coq standard library (default is
+  :--coqlib url: Set base URL for the |Coq| standard library (default is
     `<http://coq.inria.fr/library/>`_). This is equivalent to ``--external url
     Coq``.
   :-R dir coqdir: Recursively map physical directory dir to |Coq| logical

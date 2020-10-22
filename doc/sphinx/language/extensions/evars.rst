@@ -68,7 +68,7 @@ Inferable subterms
 ~~~~~~~~~~~~~~~~~~
 
 Expressions often contain redundant pieces of information. Subterms that can be
-automatically inferred by Coq can be replaced by the symbol ``_`` and Coq will
+automatically inferred by |Coq| can be replaced by the symbol ``_`` and |Coq| will
 guess the missing piece of information.
 
 .. extracted from Gallina extensions chapter

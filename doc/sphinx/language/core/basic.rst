@@ -134,7 +134,7 @@ Numbers
      hexdigit ::= {| 0 .. 9 | a .. f | A .. F }
 
   :n:`@integer` and :n:`@natural` are limited to the range that fits
-  into an OCaml integer (63-bit integers on most architectures).
+  into an |OCaml| integer (63-bit integers on most architectures).
   :n:`@bigint` and :n:`@bignat` have no range limitation.
 
   The :ref:`standard library <thecoqlibrary>` provides some
@@ -152,8 +152,8 @@ Strings
   :token:`string`.
 
 Keywords
-  The following character sequences are keywords defined in the main Coq grammar
-  that cannot be used as identifiers (even when starting Coq with the `-noinit`
+  The following character sequences are keywords defined in the main |Coq| grammar
+  that cannot be used as identifiers (even when starting |Coq| with the `-noinit`
   command-line flag)::
 
     _ Axiom CoFixpoint Definition Fixpoint Hypothesis Parameter Prop
@@ -168,8 +168,8 @@ Keywords
   keywords.
 
 Other tokens
-  The following character sequences are tokens defined in the main Coq grammar
-  (even when starting Coq with the `-noinit` command-line flag)::
+  The following character sequences are tokens defined in the main |Coq| grammar
+  (even when starting |Coq| with the `-noinit` command-line flag)::
 
     ! #[ % & ' ( () ) * + , - ->
     . .( .. ... / : ::= := :> :>> ; < <+ <- <:

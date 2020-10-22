@@ -99,7 +99,7 @@ Yes, building the variables map and doing the substitution after
 normalizing is automatically done by the tactic. So you can just
 forget this paragraph and use the tactic according to your intuition.
 
-Concrete usage in Coq
+Concrete usage in |Coq|
 --------------------------
 
 .. tacn:: ring {? [ {+ @term } ] }
@@ -433,10 +433,10 @@ How does it work?
 
 The code of ``ring`` is a good example of a tactic written using *reflection*.
 What is reflection? Basically, using it means that a part of a tactic is written
-in Gallina, Coq's language of terms, rather than |Ltac| or |OCaml|. From the
+in Gallina, |Coq|'s language of terms, rather than |Ltac| or |OCaml|. From the
 philosophical point of view, reflection is using the ability of the Calculus of
 Constructions to speak and reason about itself. For the ``ring`` tactic we used
-Coq as a programming language and also as a proof environment to build a tactic
+|Coq| as a programming language and also as a proof environment to build a tactic
 and to prove its correctness.
 
 The interested reader is strongly advised to have a look at the

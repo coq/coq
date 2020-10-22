@@ -159,7 +159,7 @@ of the terms that are compared.
     End theory.
   End EQ.
 
-We use Coq modules as namespaces. This allows us to follow the same
+We use |Coq| modules as namespaces. This allows us to follow the same
 pattern and naming convention for the rest of the chapter. The base
 namespace contains the definitions of the algebraic structure. To
 keep the example small, the algebraic structure ``EQ.type`` we are
@@ -224,7 +224,7 @@ example work:
   Fail Check forall (e : EQ.type) (a b : EQ.obj e), (a, b) == (a, b).
 
 The error message is telling that |Coq| has no idea on how to compare
-pairs of objects. The following construction is telling Coq exactly
+pairs of objects. The following construction is telling |Coq| exactly
 how to do that.
 
 .. coqtop:: all

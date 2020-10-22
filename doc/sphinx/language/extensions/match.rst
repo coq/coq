@@ -639,7 +639,7 @@ Dependent pattern matching
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The examples given so far do not need an explicit elimination
-predicate because all the |rhs| have the same type and Coq
+predicate because all the |rhs| have the same type and |Coq|
 succeeds to synthesize it. Unfortunately when dealing with dependent
 patterns it often happens that we need to write cases where the types
 of the |rhs| are different instances of the elimination predicate. The

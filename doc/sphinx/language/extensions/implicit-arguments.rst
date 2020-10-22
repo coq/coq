@@ -115,7 +115,7 @@ application will include that argument.  Otherwise, the argument is
 *non-maximally inserted* and the partial application will not include that argument.
 
 Each implicit argument can be declared to be inserted maximally or non
-maximally. In Coq, maximally inserted implicit arguments are written between curly braces
+maximally. In |Coq|, maximally inserted implicit arguments are written between curly braces
 "{ }" and non-maximally inserted implicit arguments are written in square brackets "[ ]".
 
 .. seealso:: :flag:`Maximal Implicit Insertion`

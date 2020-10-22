@@ -13,7 +13,7 @@ Class and Instance declarations
 -------------------------------
 
 The syntax for class and instance declarations is the same as the record
-syntax of Coq:
+syntax of |Coq|:
 
 .. coqdoc::
 
@@ -61,7 +61,7 @@ Note that if you finish the proof with :cmd:`Qed` the entire instance
 will be opaque, including the fields given in the initial term.
 
 Alternatively, in :flag:`Program Mode` if one does not give all the
-members in the Instance declaration, Coq generates obligations for the
+members in the Instance declaration, |Coq| generates obligations for the
 remaining fields, e.g.:
 
 .. coqtop:: in
@@ -242,7 +242,7 @@ binders. For example:
    Definition lt `{eqa : EqDec A, ! Ord eqa} (x y : A) := andb (le x y) (neqb x y).
 
 The ``!`` modifier switches the way a binder is parsed back to the usual
-interpretation of Coq. In particular, it uses the implicit arguments
+interpretation of |Coq|. In particular, it uses the implicit arguments
 mechanism if available, as shown in the example.
 
 Substructures
@@ -511,13 +511,13 @@ Settings
    This flag (off by default) respects the dependency order
    between subgoals, meaning that subgoals on which other subgoals depend
    come first, while the non-dependent subgoals were put before
-   the dependent ones previously (Coq 8.5 and below). This can result in
+   the dependent ones previously (|Coq| 8.5 and below). This can result in
    quite different performance behaviors of proof search.
 
 
 .. flag:: Typeclasses Filtered Unification
 
-   This flag, available since Coq 8.6 and off by default, switches the
+   This flag, available since |Coq| 8.6 and off by default, switches the
    hint application procedure to a filter-then-unify strategy. To apply a
    hint, we first check that the goal *matches* syntactically the
    inferred or specified pattern of the hint, and only then try to

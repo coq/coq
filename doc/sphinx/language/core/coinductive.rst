@@ -76,7 +76,7 @@ propositional η-equality, which itself would require full η-conversion for
 subject reduction to hold, but full η-conversion is not acceptable as it would
 make type checking undecidable.
 
-Since the introduction of primitive records in Coq 8.5, an alternative
+Since the introduction of primitive records in |Coq| 8.5, an alternative
 presentation is available, called *negative co-inductive types*. This consists
 in defining a co-inductive type as a primitive record type through its
 projections. Such a technique is akin to the *co-pattern* style that can be
@@ -115,7 +115,7 @@ equality:
 
    Axiom Stream_ext : forall (s1 s2: Stream), EqSt s1 s2 -> s1 = s2.
 
-As of Coq 8.9, it is now advised to use negative co-inductive types rather than
+As of |Coq| 8.9, it is now advised to use negative co-inductive types rather than
 their positive counterparts.
 
 .. seealso::
@@ -195,7 +195,7 @@ Top-level definitions of co-recursive functions
    As in the :cmd:`Fixpoint` command, the :n:`with` clause allows simultaneously
    defining several mutual cofixpoints.
 
-   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof editing mode.
+   If :n:`@term` is omitted, :n:`@type` is required and |Coq| enters proof editing mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.

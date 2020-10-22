@@ -90,7 +90,7 @@ Section :ref:`typing-rules`.
    :attr:`universes(monomorphic)`, :attr:`program` and
    :attr:`canonical` attributes.
 
-   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof editing mode.
+   If :n:`@term` is omitted, :n:`@type` is required and |Coq| enters proof editing mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
@@ -135,7 +135,7 @@ Chapter :ref:`Tactics`. The basic assertion command is:
       | Proposition
       | Property
 
-   After the statement is asserted, Coq needs a proof. Once a proof of
+   After the statement is asserted, |Coq| needs a proof. Once a proof of
    :n:`@type` under the assumptions represented by :n:`@binder`\s is given and
    validated, the proof is generalized into a proof of :n:`forall {* @binder }, @type` and
    the theorem is bound to the name :n:`@ident` in the environment.
@@ -172,7 +172,7 @@ Chapter :ref:`Tactics`. The basic assertion command is:
       This feature, called nested proofs, is disabled by default.
       To activate it, turn the :flag:`Nested Proofs Allowed` flag on.
 
-Proofs start with the keyword :cmd:`Proof`. Then Coq enters the proof editing mode
+Proofs start with the keyword :cmd:`Proof`. Then |Coq| enters the proof editing mode
 until the proof is completed. In proof editing mode, the user primarily enters
 tactics, which are described in chapter :ref:`Tactics`. The user may also enter
 commands to manage the proof editing mode. They are described in Chapter

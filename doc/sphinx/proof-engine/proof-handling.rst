@@ -11,7 +11,7 @@ section. They can also use some other specialized commands called
 *tactics*. They are the very tools allowing the user to deal with
 logical reasoning. They are documented in Chapter :ref:`tactics`.
 
-Coq user interfaces usually have a way of marking whether the user has
+|Coq| user interfaces usually have a way of marking whether the user has
 switched to proof editing mode. For instance, in coqtop the prompt ``Coq <``   is changed into
 :n:`@ident <`   where :token:`ident` is the declared name of the theorem currently edited.
 
@@ -36,7 +36,7 @@ terms are called *proof terms*.
 
 .. exn:: No focused proof.
 
-   Coq raises this error message when one attempts to use a proof editing command
+   |Coq| raises this error message when one attempts to use a proof editing command
    out of the proof editing mode.
 
 .. _proof-editing-mode:
@@ -62,7 +62,7 @@ list of assertion commands is given in :ref:`Assertions`. The command
 
    This command is available in interactive editing proof mode when the
    proof is completed. Then :cmd:`Qed` extracts a proof term from the proof
-   script, switches back to Coq top-level and attaches the extracted
+   script, switches back to |Coq| top-level and attaches the extracted
    proof term to the declared name of the original goal. This name is
    added to the environment as an opaque constant.
 
@@ -675,10 +675,10 @@ Requesting information
 Showing differences between proof steps
 ---------------------------------------
 
-Coq can automatically highlight the differences between successive proof steps
-and between values in some error messages.  Coq can also highlight differences
+|Coq| can automatically highlight the differences between successive proof steps
+and between values in some error messages.  |Coq| can also highlight differences
 in the proof term.
-For example, the following screenshots of CoqIDE and coqtop show the application
+For example, the following screenshots of |CoqIDE| and coqtop show the application
 of the same :tacn:`intros` tactic.  The tactic creates two new hypotheses, highlighted in green.
 The conclusion is entirely in pale green because although it’s changed, no tokens were added
 to it.  The second screenshot uses the "removed" option, so it shows the conclusion a
@@ -714,7 +714,7 @@ new, no line of old text is shown for them.
   .. image:: ../_static/diffs-coqtop-on3.png
      :alt: coqtop with Set Diffs on
 
-This image shows an error message with diff highlighting in CoqIDE:
+This image shows an error message with diff highlighting in |CoqIDE|:
 
 ..
 
@@ -735,21 +735,21 @@ How to enable diffs
 
 For coqtop, showing diffs can be enabled when starting coqtop with the
 ``-diffs on|off|removed`` command-line option or by setting the :opt:`Diffs` option
-within Coq.  You will need to provide the ``-color on|auto`` command-line option when
+within |Coq|.  You will need to provide the ``-color on|auto`` command-line option when
 you start coqtop in either case.
 
 Colors for coqtop can be configured by setting the ``COQ_COLORS`` environment
 variable.  See section :ref:`customization-by-environment-variables`.  Diffs
 use the tags ``diff.added``, ``diff.added.bg``, ``diff.removed`` and ``diff.removed.bg``.
 
-In CoqIDE, diffs should be enabled from the ``View`` menu.  Don’t use the ``Set Diffs``
-command in CoqIDE.  You can change the background colors shown for diffs from the
+In |CoqIDE|, diffs should be enabled from the ``View`` menu.  Don’t use the ``Set Diffs``
+command in |CoqIDE|.  You can change the background colors shown for diffs from the
 ``Edit | Preferences | Tags`` panel by changing the settings for the ``diff.added``,
 ``diff.added.bg``, ``diff.removed`` and ``diff.removed.bg`` tags.  This panel also
 lets you control other attributes of the highlights, such as the foreground
 color, bold, italic, underline and strikeout.
 
-As of June 2019, Proof General can also display Coq-generated proof diffs automatically.
+As of June 2019, Proof General can also display |Coq|-generated proof diffs automatically.
 Please see the PG documentation section
 "`Showing Proof Diffs" <https://proofgeneral.github.io/doc/master/userman/Coq-Proof-General#Showing-Proof-Diffs>`_)
 for details.
@@ -840,7 +840,7 @@ To show differences in the proof term:
 
 - In coqtop and Proof General, use the :cmd:`Show Proof` `Diffs` command.
 
-- In CoqIDE, position the cursor on or just after a tactic to compare the proof term
+- In |CoqIDE|, position the cursor on or just after a tactic to compare the proof term
   after the tactic with the proof term before the tactic, then select
   `View / Show Proof` from the menu or enter the associated key binding.
   Differences will be shown applying the current `Show Diffs` setting
@@ -872,10 +872,10 @@ Controlling the effect of proof editing commands
 
    When turned on (it is off by default), this flag enables support for nested
    proofs: a new assertion command can be inserted before the current proof is
-   finished, in which case Coq will temporarily switch to the proof of this
+   finished, in which case |Coq| will temporarily switch to the proof of this
    *nested lemma*. When the proof of the nested lemma is finished (with :cmd:`Qed`
    or :cmd:`Defined`), its statement will be made available (as if it had been
-   proved before starting the previous proof) and Coq will switch back to the
+   proved before starting the previous proof) and |Coq| will switch back to the
    proof of the previous assertion.
 
 .. flag:: Printing Goal Names
@@ -892,7 +892,7 @@ Controlling memory usage
    Prints heap usage statistics, which are values from the `stat` type of the `Gc` module
    described
    `here <https://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#TYPEstat>`_
-   in the OCaml documentation.
+   in the |OCaml| documentation.
    The `live_words`, `heap_words` and `top_heap_words` values give the basic information.
    Words are 8 bytes or 4 bytes, respectively, for 64- and 32-bit executables.
 
@@ -907,7 +907,7 @@ to force |Coq| to optimize some of its internal data structures.
 .. cmd:: Optimize Heap
 
    Perform a heap compaction.  This is generally an expensive operation.
-   See: `OCaml Gc.compact <http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact>`_
+   See: `|OCaml| Gc.compact <http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact>`_
    There is also an analogous tactic :tacn:`optimize_heap`.
 
 Memory usage parameters can be set through the :ref:`OCAMLRUNPARAM <OCAMLRUNPARAM>`

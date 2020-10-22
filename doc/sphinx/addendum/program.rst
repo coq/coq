@@ -22,7 +22,7 @@ complete |Coq| term. |Program| replaces the |Program| tactic by Catherine
 Parent :cite:`Parent95b` which had a similar goal but is no longer maintained.
 
 The languages available as input are currently restricted to |Coq|’s
-term language, but may be extended to OCaml, Haskell and
+term language, but may be extended to |OCaml|, Haskell and
 others in the future. We use the same syntax as |Coq| and permit to use
 implicit arguments and the existing coercion mechanism. Input terms
 and types are typed in an extended system (Russell) and interpreted
