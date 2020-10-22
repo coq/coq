@@ -603,7 +603,7 @@ $(CSDPCERTBYTE): $(CSDPCERTCMO)
 # tests
 ###########################################################################
 
-.PHONY: validate check test-suite $(ALLSTDLIB).v
+.PHONY: validate check test-suite
 
 VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m -coqlib .
 
@@ -611,15 +611,11 @@ validate: $(CHICKEN) | $(ALLVO:.$(VO)=.vo)
 	$(SHOW)'COQCHK <theories & plugins>'
 	$(HIDE)$(CHICKEN) $(VALIDOPTS) $(ALLVO)
 
-$(ALLSTDLIB).v:
-	$(SHOW)'MAKE $(notdir $@)'
-	$(HIDE)echo "Require $(ALLMODS)." > $@
-
 MAKE_TSOPTS=-C test-suite -s VERBOSE=$(VERBOSE)
 
 check: validate test-suite
 
-test-suite: world byte $(ALLSTDLIB).v
+test-suite: world byte
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
 

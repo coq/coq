@@ -144,6 +144,7 @@ bugs: $(BUGS)
 clean:
 	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
 	rm -f vos/Makefile vos/Makefile.conf
+	rm -f misc/universes/all_stdlib.v
 	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>'
 	$(HIDE)find . \( \
 	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.vos' -o -name '*.vok' -o -name '*.log' -o -name '*.glob' \
@@ -649,7 +650,7 @@ misc: $(patsubst %.sh,%.log,$(wildcard misc/*.sh))
 misc/universes.log: misc/universes/all_stdlib.v
 
 misc/universes/all_stdlib.v:
-	cd .. && $(MAKE) test-suite/$@
+	cd misc/universes && ./build_all_stdlib.sh > all_stdlib.v
 
 $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	@echo "TEST      $<"
