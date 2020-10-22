@@ -458,3 +458,7 @@ reflexive_eq_dom_reflexive:
 B.b: B.a
 A.b: A.a
 F.L: F.P 0
+inr: forall {A B : Type}, B -> A + B
+inl: forall {A B : Type}, A -> A + B
+(use "About" for full details on the implicit arguments of inl and inr)
+f: None = 0

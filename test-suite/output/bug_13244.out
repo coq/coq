@@ -1,0 +1,9 @@
+negbT: forall [b : bool], b = false -> ~~ b
+contra_notN: forall [P : Prop] [b : bool], (b -> P) -> ~ P -> ~~ b
+contraPN: forall [P : Prop] [b : bool], (b -> ~ P) -> P -> ~~ b
+contraNN: forall [c b : bool], (c -> b) -> ~~ b -> ~~ c
+contraL: forall [c b : bool], (c -> ~~ b) -> b -> ~~ c
+contraTN: forall [c b : bool], (c -> ~~ b) -> b -> ~~ c
+contra: forall [c b : bool], (c -> b) -> ~~ b -> ~~ c
+introN: forall [P : Prop] [b : bool], reflect P b -> ~ P -> ~~ b
+contraFN: forall [c b : bool], (c -> b) -> b = false -> ~~ c
