@@ -301,7 +301,7 @@ let unfold_ref_with_args infos tab fl v =
   | Primitive op when check_native_args op v ->
     let c = match fl with ConstKey c -> c | _ -> assert false in
     let rargs, a, nargs, v = get_native_args1 op c v in
-    Some (whd_stack infos tab a (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
+    Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
   | Undef _ | OpaqueDef _ | Primitive _ -> None
 
 type conv_tab = {
@@ -411,23 +411,26 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          let cuniv = conv_table_key infos.cnv_inf fl1 fl2 cuniv in
          convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | Univ.UniverseInconsistency _ ->
-         (* else the oracle tells which constant is to be expanded *)
-         let oracle = CClosure.oracle_of_infos infos.cnv_inf in
-         let (app1,app2) =
-           let aux appr1 lft1 fl1 tab1 v1 appr2 lft2 fl2 tab2 v2 =
-             match unfold_ref_with_args infos.cnv_inf tab1 fl1 v1 with
-             | Some t1 -> ((lft1, t1), appr2)
-             | None -> match unfold_ref_with_args infos.cnv_inf tab2 fl2 v2 with
-               | Some t2 -> (appr1, (lft2, t2))
-               | None -> raise NotConvertible
-           in
-           if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
-             aux appr1 lft1 fl1 infos.lft_tab v1 appr2 lft2 fl2 infos.rgt_tab v2
-           else
-             let (app2,app1) = aux appr2 lft2 fl2 infos.rgt_tab v2 appr1 lft1 fl1 infos.lft_tab v1 in
-             (app1,app2)
-         in
-         eqappr cv_pb l2r infos app1 app2 cuniv)
+        let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
+        let r2 = unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 in
+        match r1, r2 with
+        | None, None -> raise NotConvertible
+        | Some t1, Some t2 ->
+          (* else the oracle tells which constant is to be expanded *)
+          let oracle = CClosure.oracle_of_infos infos.cnv_inf in
+          if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
+            eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
+          else
+            eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
+        | Some (t1, v1), None ->
+          let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos.cnv_inf)) in
+          let t1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab t1 v1 in
+          eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
+        | None, Some (t2, v2) ->
+          let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos.cnv_inf)) in
+          let t2 = whd_stack (infos_with_reds infos.cnv_inf all) infos.rgt_tab t2 v2 in
+          eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
+        )
 
     | (FProj (p1,c1), FProj (p2, c2)) ->
       (* Projections: prefer unfolding to first-order unification,
