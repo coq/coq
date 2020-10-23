@@ -93,6 +93,9 @@ Definition digits := 63.
 Definition max_int := Eval vm_compute in 0 - 1.
 Register Inline max_int.
 
+Axiom int_lower_bound : forall x, 0 <=? x = true.
+Axiom int_upper_bound : forall x, x <=? max_int = true.
+
 (** Access to the nth digits *)
 Definition get_digit x p := (0 <? (x land (1 << p))).
 
