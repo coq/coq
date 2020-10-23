@@ -93,7 +93,8 @@ git_download()
     git checkout "$ref"
     git log -n 1
     if [[ $ov_url ]]; then
-        git -c pull.rebase=false pull --no-ff "$ov_url" "$ov_ref"
+        git -c pull.rebase=false -c user.email=nobody@example.invalid -c user.name=Nobody \
+            pull --no-ff "$ov_url" "$ov_ref"
         git log -n 1 HEAD^2
         git log -n 1
     fi
