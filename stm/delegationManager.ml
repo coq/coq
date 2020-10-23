@@ -207,7 +207,7 @@ let handle_event = function
     Lwt.return [worker_progress link remote_mapping]
   | WorkerStart (mapping,job,action,procname) ->
     log "[M] WorkerStart";
-    if Sys.os_type = "Unix" then
+    if false (* Sys.os_type = "Unix" *) then
       fork_worker mapping >>= fun (role,events) ->
       match role with
       | Master -> Lwt.return events
