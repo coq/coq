@@ -44,6 +44,18 @@ CI_BUILD_DIR="$PWD/_build_ci"
 
 ls -l "$CI_BUILD_DIR" || true
 
+declare -A overlays
+
+overlay()
+{
+    local project=$1
+    local ov_url=$2
+    local ov_ref=$3
+
+    overlays[${project}_URL]=$ov_url
+    overlays[${project}_REF]=$ov_ref
+}
+
 set +x
 for overlay in "${ci_dir}"/user-overlays/*.sh; do
     # shellcheck source=/dev/null
@@ -62,32 +74,43 @@ set -x
 # (local build), it uses git clone to perform the download.
 git_download()
 {
-  local PROJECT=$1
-  local DEST="$CI_BUILD_DIR/$PROJECT"
-  local GITURL_VAR="${PROJECT}_CI_GITURL"
-  local GITURL="${!GITURL_VAR}"
-  local REF_VAR="${PROJECT}_CI_REF"
-  local REF="${!REF_VAR}"
+  local project=$1
+  local dest="$CI_BUILD_DIR/$project"
 
-  if [ -d "$DEST" ]; then
-    echo "Warning: download and unpacking of $PROJECT skipped because $DEST already exists."
-  elif [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
-    git clone "$GITURL" "$DEST"
-    cd "$DEST"
-    git checkout "$REF"
-  else # When possible, we download tarballs to reduce bandwidth and latency
-    local ARCHIVEURL_VAR="${PROJECT}_CI_ARCHIVEURL"
-    local ARCHIVEURL="${!ARCHIVEURL_VAR}"
-    mkdir -p "$DEST"
-    cd "$DEST"
-    local COMMIT=$(git ls-remote "$GITURL" "refs/heads/$REF" | cut -f 1)
-    if [[ "$COMMIT" == "" ]]; then
-      # $REF must have been a tag or hash, not a branch
-      COMMIT="$REF"
+  local giturl_var="${project}_CI_GITURL"
+  local giturl="${!giturl_var}"
+  local ref_var="${project}_CI_REF"
+  local ref="${!ref_var}"
+
+  local ov_url=${overlays[${project}_URL]}
+  local ov_ref=${overlays[${project}_REF]}
+
+  if [ -d "$dest" ]; then
+    echo "Warning: download and unpacking of $project skipped because $dest already exists."
+  elif [[ $ov_url ]] || [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
+    git clone "$giturl" "$dest"
+    cd "$dest"
+    git checkout "$ref"
+    git log -n 1
+    if [[ $ov_url ]]; then
+        git -c pull.rebase=false pull --no-ff "$ov_url" "$ov_ref"
+        git log -n 1 HEAD^2
+        git log -n 1
     fi
-    wget "$ARCHIVEURL/$COMMIT.tar.gz"
-    tar xfz "$COMMIT.tar.gz" --strip-components=1
-    rm -f "$COMMIT.tar.gz"
+  else # When possible, we download tarballs to reduce bandwidth and latency
+    local archiveurl_var="${project}_CI_ARCHIVEURL"
+    local archiveurl="${!archiveurl_var}"
+    mkdir -p "$dest"
+    cd "$dest"
+    local commit
+    commit=$(git ls-remote "$giturl" "refs/heads/$ref" | cut -f 1)
+    if [[ "$commit" == "" ]]; then
+      # $ref must have been a tag or hash, not a branch
+      commit="$ref"
+    fi
+    wget "$archiveurl/$commit.tar.gz"
+    tar xfz "$commit.tar.gz" --strip-components=1
+    rm -f "$commit.tar.gz"
   fi
 }
 

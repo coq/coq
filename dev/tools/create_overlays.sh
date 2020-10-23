@@ -66,8 +66,7 @@ do
     make ci-$_CONTRIB_NAME || true
     setup_contrib_git $_CONTRIB_DIR $_CONTRIB_GITPUSHURL
 
-    echo "    ${_CONTRIB_NAME}_CI_REF=$OVERLAY_BRANCH" >> $OVERLAY_FILE
-    echo "    ${_CONTRIB_NAME}_CI_GITURL=$_CONTRIB_GITURL" >> $OVERLAY_FILE
+    echo "    overlay ${_CONTRIB_NAME} $_CONTRIB_GITURL $OVERLAY_BRANCH" >> $OVERLAY_FILE
     echo "" >> $OVERLAY_FILE
     shift
 done
