@@ -28,7 +28,10 @@ val classify_vernac : ast -> vernac_classification
 type task =
   | Skip of sentence_id
   | Exec of sentence_id * ast
-  | OpaqueProof of sentence_id * sentence_id list
+  | OpaqueProof of { terminator_id: sentence_id;
+                     opener_id: sentence_id;
+                     tasks_ids : sentence_id list;
+                   }
   | Query of sentence_id * ast
 
 type schedule

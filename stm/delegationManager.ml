@@ -46,7 +46,7 @@ module type Job = sig
   val pool_size : int
 end
 
-module Make (Job : Job) = struct
+module MakeWorker (Job : Job) = struct
 
 let option_name = "-" ^ Str.global_replace (Str.regexp_string " ") "." Job.name ^ "_master_address"
 

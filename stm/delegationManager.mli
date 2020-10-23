@@ -22,7 +22,7 @@ module type Job = sig
   val pool_size : int
 end
 
-module Make (Job : Job) : sig
+module MakeWorker (Job : Job) : sig
 
 
 (* When resolved (asynchronously) the hook is called to notify the UI *)

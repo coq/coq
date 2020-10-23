@@ -62,11 +62,16 @@ let error loc msg vernac_st = Error ((loc,msg),(Some vernac_st))
 type prepared_task =
   | PSkip of sentence_id
   | PExec of sentence_id * ast
-  | PDelegate of sentence_id * execution_status DelegationManager.remote_mapping * prepared_task list
+  | PDelegate of { terminator_id: sentence_id;
+                   opener_id: sentence_id;
+                   last_step_id: sentence_id;
+                   remote_mapping: execution_status DelegationManager.remote_mapping;
+                   tasks: prepared_task list;
+                 }
 
 type job = prepared_task list * Vernacstate.t * int * sentence_id
 
-module ProofWorker = DelegationManager.Make(struct
+module ProofWorker = DelegationManager.MakeWorker(struct
   type t = job
   let name = "proof"
   let binary_name = "vscoqtop_worker.opt"
@@ -118,6 +123,23 @@ let interp_ast ~doc_id ~state_id vernac_st ast =
         let loc = Loc.get_loc info in
         let msg = CErrors.iprint (e, info) in
         Lwt.return (vernac_st, error loc (Pp.string_of_ppcmds msg) vernac_st,[])
+
+let interp_qed_delayed ~state_id vernac_st =
+  let f proof =
+    let fix_exn x = x in (* FIXME *)
+    let f, assign = Future.create_delegate ~blocking:false ~name:"XX" fix_exn in
+    Declare.Proof.close_future_proof ~feedback_id:state_id proof f, assign
+  in
+  let lemmas = Option.get @@ vernac_st.Vernacstate.lemmas in
+  let proof, assign = Vernacstate.LemmaStack.with_top lemmas ~f in
+  let pinfo = Declare.Proof.Proof_info.default () in
+  let control = [] (* FIXME *) in
+  let opaque = Vernacexpr.Opaque in
+  let pending = CAst.make @@ Vernacexpr.Proved (opaque, None) in
+  log "calling interp_qed_delayed done";
+  let vernac_st = Vernacinterp.interp_qed_delayed_proof ~proof ~pinfo ~st:vernac_st ~control pending in
+  log "interp_qed_delayed done";
+  Lwt.return (vernac_st, success vernac_st, assign)
 
 type sentence_id = Stateid.t
 type ast = Vernacexpr.vernac_control
@@ -174,10 +196,11 @@ let prepare_task ~progress_hook doc st task : state * prepared_task =
      { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PSkip id
   | Exec(id,ast) ->
      { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PExec(id,ast)
-  | OpaqueProof (id,ids) ->
+  | OpaqueProof { terminator_id; opener_id; tasks_ids } ->
      let remote_mapping = ProofWorker.empty_remote_mapping ~progress_hook in
-     let (st,remote_mapping), jobs = CList.fold_left_map (remotize doc) (st,remote_mapping) ids in
-     { st with of_sentence = SM.add id (Lwt.task (), []) st.of_sentence }, PDelegate(id, remote_mapping, jobs)
+     let (st,remote_mapping), tasks = CList.fold_left_map (remotize doc) (st,remote_mapping) tasks_ids in
+     let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
+     { st with of_sentence = SM.add terminator_id (Lwt.task (), []) st.of_sentence }, PDelegate {terminator_id; opener_id; last_step_id; remote_mapping; tasks}
   | _ -> CErrors.anomaly Pp.(str "task not supported yet")
 
 let update st id v =
@@ -185,10 +208,15 @@ let update st id v =
   | ((_,r),_) -> Lwt.wakeup r v
   | exception Not_found -> CErrors.anomaly Pp.(str "No state for " ++ Stateid.print id)
 
+let listen st id (f : execution_status -> unit) =
+  match SM.find id st.of_sentence with
+  | ((p,_),_) -> Lwt.async (fun () -> p >>= fun v -> (f v; Lwt.return ()))
+  | exception Not_found -> CErrors.anomaly Pp.(str "No state for " ++ Stateid.print id)
+
 let id_of_prepared_task = function
   | PSkip id -> id
   | PExec(id, _) -> id
-  | PDelegate(id, _, _) -> id
+  | PDelegate { terminator_id } -> terminator_id
 
 let rec worker_main st ((job , vs, doc_id, _state_id) : job) =
   (* signalling progress is automtically done by the resolution of remote
@@ -210,15 +238,33 @@ and execute ~doc_id st (vs,events,interrupted) task =
           interp_ast ~doc_id ~state_id:id vs ast >>= fun (vs, v, ev) ->
           update st id v;
           Lwt.return (vs,events @ ev,false)
-      | PDelegate (id, mapping, job) ->
-          Queue.enqueue (mapping,(job,vs,doc_id,id));
-          let ast = CAst.make @@ Vernacexpr.{ expr = VernacEndProof Admitted; attrs = []; control = [] } in
-          interp_ast ~doc_id ~state_id:id vs ast >>= fun (vs, v, ev) ->
-          update st id v;
-          let e =
-            ProofWorker.worker_available ~job:Queue.dequeue
-              ~fork_action:(worker_main st) in
-          Lwt.return (vs,events @ ev @ List.map inject_dm_event e ,false)
+      | PDelegate { terminator_id; opener_id; last_step_id; remote_mapping; tasks } ->
+          begin match find_fulfilled_opt opener_id st.of_sentence with
+          | Some (Success _) ->
+            (* The proof was successfully opened *)
+            Queue.enqueue (remote_mapping,(tasks,vs,doc_id,terminator_id));
+            interp_qed_delayed ~state_id:terminator_id vs >>= fun (vs, v, assign) -> update st terminator_id v;
+            let update_proof_state assign status =
+              match status with
+              | Success None -> assert false
+              | Success (Some vernac_st) ->
+                let f proof =
+                  log "Resolved future";
+                  assign (`Val (Declare.Proof.return_proof proof))
+                in
+                Vernacstate.LemmaStack.with_top (Option.get @@ vernac_st.Vernacstate.lemmas) ~f
+              | Error _ -> ()
+            in
+            listen st last_step_id (update_proof_state assign);
+            let e =
+              ProofWorker.worker_available ~job:Queue.dequeue
+                ~fork_action:(worker_main st) in
+            Lwt.return (vs,events @ List.map inject_dm_event e ,false)
+          | _ ->
+            (* If executing the proof opener failed, we skip the proof *)
+            update st terminator_id (Success (Some vs));
+            Lwt.return (vs,events,false)
+          end
     with Sys.Break ->
       Lwt.return (vs,events,true)
 
