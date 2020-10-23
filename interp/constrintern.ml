@@ -715,7 +715,7 @@ let out_patvar = CAst.map_with_loc (fun ?loc -> function
   | _ -> assert false)
 
 let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) = function
- | Anonymous -> (renaming,env), None, Anonymous
+ | Anonymous -> (renaming,env), None, Anonymous, Explicit
  | Name id ->
   let store,get = set_temporary_memory () in
   let test_kind = test_kind_tolerant in
@@ -726,17 +726,17 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
     let pat, na = match disjpat with
     | [pat] when is_patvar_store store pat -> let na = get () in None, na
     | _ -> Some ((List.map (fun x -> x.v) ids,disjpat),id), na.v in
-    (renaming,env), pat, na
+    (renaming,env), pat, na, Explicit
   with Not_found ->
   try
     (* Trying to associate a pattern *)
-    let pat,(onlyident,scopes) = Id.Map.find id binders in
+    let (pat,bk),(onlyident,scopes) = Id.Map.find id binders in
     let env = set_env_scopes env scopes in
     if onlyident then
       (* Do not try to interpret a variable as a constructor *)
       let na = out_patvar pat in
       let env = push_name_env ntnvars [] env na in
-      (renaming,env), None, na.v
+      (renaming,env), None, na.v, bk
     else
       (* Interpret as a pattern *)
       let env,((disjpat,ids),id),na = intern_pat test_kind ntnvars env pat in
@@ -744,7 +744,7 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
         match disjpat with
         | [pat] when is_patvar_store store pat -> let na = get () in None, na
         | _ -> Some ((List.map (fun x -> x.v) ids,disjpat),id), na.v in
-      (renaming,env), pat, na
+      (renaming,env), pat, na, bk
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
@@ -752,7 +752,7 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
     let renaming' =
       if Id.equal id id' then renaming else Id.Map.add id id' renaming
     in
-    (renaming',env), None, Name id'
+    (renaming',env), None, Name id', Explicit
 
 type binder_action =
 | AddLetIn of lname * constr_expr * constr_expr option
@@ -877,7 +877,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
             Id.Map.add id (gc, None) map
           with Nametab.GlobalizationError _ -> map
         in
-        let mk_env' (c, (onlyident,scopes)) =
+        let mk_env' ((c,_bk), (onlyident,scopes)) =
           let nenv = set_env_scopes env scopes in
           let test_kind =
             if onlyident then test_kind_ident_in_notation
@@ -916,17 +916,17 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
     (* Two special cases to keep binder name synchronous with BinderType *)
     | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
-        let subinfos,disjpat,na = traverse_binder intern_pat ntnvars subst avoid subinfos na in
+        let subinfos,disjpat,na,bk = traverse_binder intern_pat ntnvars subst avoid subinfos na in
         let ty = DAst.make ?loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
-        DAst.make ?loc @@ GProd (na,Explicit,ty,Option.fold_right apply_cases_pattern disjpat (aux subst' subinfos c'))
+        DAst.make ?loc @@ GProd (na,bk,ty,Option.fold_right apply_cases_pattern disjpat (aux subst' subinfos c'))
     | NLambda (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
-        let subinfos,disjpat,na = traverse_binder intern_pat ntnvars subst  avoid subinfos na in
+        let subinfos,disjpat,na,bk = traverse_binder intern_pat ntnvars subst  avoid subinfos na in
         let ty = DAst.make ?loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
-        DAst.make ?loc @@ GLambda (na,Explicit,ty,Option.fold_right apply_cases_pattern disjpat (aux subst' subinfos c'))
+        DAst.make ?loc @@ GLambda (na,bk,ty,Option.fold_right apply_cases_pattern disjpat (aux subst' subinfos c'))
     | t ->
       glob_constr_of_notation_constr_with_binders ?loc
-        (traverse_binder intern_pat ntnvars subst  avoid) (aux subst') ~h:binder_status_fun subinfos t
+        (traverse_binder intern_pat ntnvars subst avoid) (aux subst') ~h:binder_status_fun subinfos t
   and subst_var (terms, binderopt, _terminopt) (renaming, env) id =
     (* subst remembers the delimiters stack in the interpretation *)
     (* of the notations *)
@@ -935,7 +935,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       intern (set_env_scopes env scopes) a
     with Not_found ->
     try
-      let pat,(onlyident,scopes) = Id.Map.find id binders in
+      let (pat,_bk),(onlyident,scopes) = Id.Map.find id binders in
       let nenv = set_env_scopes env scopes in
       let test_kind =
         if onlyident then test_kind_ident_in_notation
@@ -982,13 +982,13 @@ let split_by_type ids subst =
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
     | NtnTypeBinder NtnBinderParsedAsConstr (AsIdentOrPattern | AsStrictPattern) ->
        let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
-       let binders' = Id.Map.add id (coerce_to_cases_pattern_expr a,(false,scl)) binders' in
+       let binders' = Id.Map.add id ((coerce_to_cases_pattern_expr a,Explicit),(false,scl)) binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
     | NtnTypeBinder NtnBinderParsedAsConstr AsIdent ->
        let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
-       let binders' = Id.Map.add id (cases_pattern_of_name (coerce_to_name a),(true,scl)) binders' in
+       let binders' = Id.Map.add id ((cases_pattern_of_name (coerce_to_name a),Explicit),(true,scl)) binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern _ as x) ->
+    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern _ | NtnParsedAsBinder as x) ->
        let onlyident = (x = NtnParsedAsIdent) in
        let binders,binders' = bind id (onlyident,scl) binders binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
