@@ -82,7 +82,10 @@ type event = ProofWorkerEvent of ProofWorker.event (*| TacticWorkerEvent of Decl
 type events = event Lwt.t list
 
 let inject_dm_event x : event Lwt.t =
+  Lwt.map (fun x -> ProofWorkerEvent x) x
+  (*
   x >>= fun x -> Lwt.return @@ ProofWorkerEvent x
+  *)
 
 let inject_dm_events l =
   Lwt.return @@ List.map inject_dm_event l

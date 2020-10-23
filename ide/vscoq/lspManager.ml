@@ -40,8 +40,10 @@ let log ~verbosity msg =
 
 (*let string_field name obj = Yojson.Basic.to_string (List.assoc name obj)*)
 
-let read_request ic : Yojson.Basic.t Lwt.t =
-  Lwt_io.read_line ic >!= fun header ->
+let read_request ic : Yojson.Basic.t option Lwt.t =
+  Lwt_io.read_line ic >?= function
+  | Result.Error _ -> Lwt.return None
+  | Result.Ok(header) ->
   let scan_header = Scanf.Scanning.from_string header in
   try
     Scanf.bscanf scan_header "Content-Length: %d" (fun size ->
@@ -52,11 +54,10 @@ let read_request ic : Yojson.Basic.t Lwt.t =
       Lwt.return @@ Bytes.to_string buf
     ) >>= fun obj_str ->
     log ~verbosity:2 @@ "received: " ^ obj_str;
-    Lwt.return @@ Yojson.Basic.from_string obj_str
-  with Scanf.Scan_failure _ as reraise ->
-    let reraise = Exninfo.capture reraise in
+    Lwt.return @@ Some (Yojson.Basic.from_string obj_str)
+  with Scanf.Scan_failure _ | Failure _ | End_of_file | Invalid_argument _ ->
     log ~verbosity:1 @@ "failed to decode header: " ^ header;
-    Exninfo.iraise reraise
+    Lwt.return None
 
 let output_json obj : unit Lwt.t =
   let msg  = Yojson.Basic.pretty_to_string ~std:true obj in
@@ -293,7 +294,7 @@ let coqtopInterpretToEnd ~id params : (string * DocumentManager.events) Lwt.t =
   update_view uri st >>= fun () ->
   Lwt.return (uri,events)
 
-type lsp_event = Request of Yojson.Basic.t
+type lsp_event = Request of Yojson.Basic.t option
 
 type event =
  | LspManagerEvent of lsp_event
@@ -329,7 +330,9 @@ let lsp () = [
 ]
 
 let handle_lsp_event = function
-  | Request req ->
+  | Request None ->
+    Lwt.return []
+  | Request (Some req) ->
       let open Yojson.Basic.Util in
       let id = Option.default 0 (req |> member "id" |> to_int_option) in
       let method_name = req |> member "method" |> to_string in

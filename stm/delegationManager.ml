@@ -71,31 +71,29 @@ let worker_progress link remote_mapping =
       log @@ "[M] Worker died: " ^ Printexc.to_string e;
       Lwt.return WorkerDied
     | Result.Ok (i,v) ->
-      let resolver = M.find i remote_mapping.it in
       log @@ "[M] Manager fulfilling " ^ Stateid.to_string i;
-      Lwt.wakeup_later resolver.on_master v;
+      let resolver = M.find i remote_mapping.it in
+      Lwt.wakeup resolver.on_master v;
+      log @@ "[M] Resolver called for " ^ Stateid.to_string i;
       Lwt.return @@ WorkerProgress(link,remote_mapping)
 
 (* Reads values from the worker and passes them to the resolvers in master *)
 let trap_cancel : 'a remote_mapping -> link -> unit = fun remote_mapping link ->
   log @@ "[M] installing cancel trap";
-    M.iter (fun _ { cancel } -> Lwt.on_cancel cancel (kill_link link)) remote_mapping.it
+    M.iter (fun _ { cancel } -> Lwt.on_cancel cancel (fun () -> log "[M] Canceled"; kill_link link ())) remote_mapping.it
 
 (* Reads values from the local premises and writes them to master *)
 let new_worker : 'a remote_mapping -> link -> unit = fun remote_mapping link ->
-  let m = Lwt_mutex.create () in
   log @@ "[W] installing async fulfillers";
   Lwt.async_exception_hook := (fun x ->
     log @@ "[W] Worker terminated " ^ Printexc.to_string x); (* HACK *)
   M.iter (fun i { on_worker } ->
     Lwt.async @@ (fun () -> on_worker >>= fun v ->
-      Lwt_mutex.with_lock m (fun () -> (* Mutex maybe not needed *)
         log @@ "[W] Remote fulfilling of " ^ Stateid.to_string i;
         Lwt_io.write_value link.write_to (i,v) >!= fun () ->
+        log @@ "[W] Wrote remote fulfilling of " ^ Stateid.to_string i;
         Lwt_io.flush_all ())
-    )
   ) remote_mapping.it
-;;
 
 (* Like Lwt.wait but the resolved is remote_mapping, via IPC *)
 let lwt_remotely_wait r id =
@@ -105,7 +103,6 @@ let lwt_remotely_wait r id =
   let on_worker, worker = Lwt.task () in
   let m = M.add id { on_master; on_worker; cancel = master } m in
   { r with it = m }, (master, worker)
-;;
 
 type role = Master | Worker
 
@@ -133,10 +130,11 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
   let address = getsockname chan in
   log @@ "[M] Forking...";
   Lwt_io.flush_all () >!= fun () ->
+  openfile "/dev/null" [O_RDWR] 0o640 >>= fun null ->
   let pid = Lwt_unix.fork () in
-  if pid = 0 then
+  if pid = 0 then begin
     (* Children process *)
-    close stdin >>= fun () ->
+    dup2 null stdin;
     close chan >>= fun () ->
     log @@ "[W] Borning...";
     let chan = socket PF_INET SOCK_STREAM 0 in
@@ -146,7 +144,7 @@ let fork_worker : 'a remote_mapping -> (role * events) Lwt.t = fun remote_mappin
     let link = { write_to; read_from; pid = None } in
     new_worker remote_mapping link;
     Lwt.return (Worker, [])
-  else
+  end else
     (* Parent process *)
     let timeout = sleep 2. >>= fun () -> Lwt.return None in
     let accept = accept chan >>= fun x -> Lwt.return @@ Some x in
@@ -210,10 +208,12 @@ let handle_event = function
     if false (* Sys.os_type = "Unix" *) then
       fork_worker mapping >>= fun (role,events) ->
       match role with
-      | Master -> Lwt.return events
+      | Master ->
+        log "[M] Worker forked, returning events";
+        Lwt.return events
       | Worker ->
         action job >>= fun () ->
-        log @@ "[W] Worker goes on holidays"; exit 0
+        log "[W] I'm going on holidays"; Lwt_io.flush_all () >>= fun () -> Lwt.return []
     else
       create_process_worker procname mapping job
 
@@ -243,7 +243,6 @@ type options = int
 
 let setup_plumbing port =
   let open Lwt_unix in
-  (* TODO: encalpsulate this into a function in DelegationManager *)
   let chan = socket PF_INET SOCK_STREAM 0 in
   let address = ADDR_INET (Unix.inet_addr_loopback,port) in
   log @@ "[PW] connecting to " ^ string_of_int port;

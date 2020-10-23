@@ -25,7 +25,8 @@ let loop run_mode ~opts:_ state =
           LspManager.handle_event e >>= fun more_events ->
           Lwt.return @@ acc @ more_events
      in
-        log @@ "Main loop events ready: " ^ Pp.string_of_ppcmds Pp.(prlist_with_sep spc LspManager.pr_event ready);
+        let nremaining = List.length remaining in
+        log @@ "Main loop events ready: " ^ Pp.string_of_ppcmds Pp.(prlist_with_sep spc LspManager.pr_event ready) ^ " , " ^ string_of_int nremaining ^ " events waiting";
         Lwt_list.fold_left_s perform remaining ready >>= fun events ->
         loop events
   in

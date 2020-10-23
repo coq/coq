@@ -2,7 +2,7 @@ open Lwt.Infix
 
 let fatal_plumbing_error = function
   | End_of_file ->
-      Printf.eprintf "link closed, goodbye!\n%!";
+      Printf.eprintf "[%i] link closed, goodbye!\n%!" (Unix.getpid ());
       exit 0
   | Lwt_io.Channel_closed s ->
       CErrors.anomaly Pp.(str "Lwt channel used after close: " ++ str s)
