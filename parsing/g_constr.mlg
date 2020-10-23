@@ -219,7 +219,7 @@ GRAMMAR EXTEND Gram
           | _, _ -> ty, c1 in
           CAst.make ~loc @@ CLetIn(id,mkLambdaCN ?loc:(constr_loc c1) bl c1,
                  Option.map (mkProdCN ?loc:(fst ty) bl) (snd ty), c2) }
-      | "let"; "fix"; fx = fix_body; "in"; c = term LEVEL "200" ->
+      | "let"; "fix"; fx = fix_decl; "in"; c = term LEVEL "200" ->
         { let {CAst.loc=locf;CAst.v=({CAst.loc=li;CAst.v=id} as lid,_,_,_,_ as dcl)} = fx in
           let fix = CAst.make ?loc:locf @@ CFix (lid,[dcl]) in
           CAst.make ~loc @@ CLetIn( CAst.make ?loc:li @@ Name id,fix,None,c) }
@@ -285,8 +285,8 @@ GRAMMAR EXTEND Gram
       | id = global -> { UNamed (GType id) } ] ]
   ;
   fix_decls:
-    [ [ dcl = fix_body -> { let (id,_,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
-      | dcl = fix_body; "with"; dcls = LIST1 fix_body SEP "with"; "for"; id = identref ->
+    [ [ dcl = fix_decl -> { let (id,_,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
+      | dcl = fix_decl; "with"; dcls = LIST1 fix_decl SEP "with"; "for"; id = identref ->
         { (id,List.map (fun x -> x.CAst.v) (dcl::dcls)) } ] ]
   ;
   cofix_decls:
@@ -294,7 +294,7 @@ GRAMMAR EXTEND Gram
       | dcl = cofix_body; "with"; dcls = LIST1 cofix_body SEP "with"; "for"; id = identref ->
         { (id,List.map (fun x -> x.CAst.v) (dcl::dcls)) } ] ]
   ;
-  fix_body:
+  fix_decl:
     [ [ id = identref; bl = binders_fixannot; ty = type_cstr; ":=";
         c = term LEVEL "200" ->
         { CAst.make ~loc (id,snd bl,fst bl,ty,c) } ] ]

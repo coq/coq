@@ -271,7 +271,7 @@ binder_constr: [
 | MOVETO term_forall_or_fun "fun" open_binders "=>" term200
 | MOVETO term_let "let" name binders let_type_cstr ":=" term200 "in" term200
 | MOVETO term_if "if" term200 as_return_type "then" term200 "else" term200
-| MOVETO term_fix "let" "fix" fix_body "in" term200
+| MOVETO term_fix "let" "fix" fix_decl "in" term200
 | MOVETO term_cofix "let" "cofix" cofix_body "in" term200
 | MOVETO term_let "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" term200 "in" term200
 | MOVETO term_let "let" "'" pattern200 ":=" term200 "in" term200
@@ -401,9 +401,9 @@ term0: [
 ]
 
 fix_decls: [
-| DELETE fix_body
-| REPLACE fix_body "with" LIST1 fix_body SEP "with" "for" identref
-| WITH fix_body OPT ( LIST1 ("with" fix_body) "for" identref )
+| DELETE fix_decl
+| REPLACE fix_decl "with" LIST1 fix_decl SEP "with" "for" identref
+| WITH fix_decl OPT ( LIST1 ("with" fix_decl) "for" identref )
 ]
 
 cofix_decls: [
@@ -1159,8 +1159,8 @@ command: [
 | "SubClass" ident_decl def_body
 | REPLACE "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | WITH "Ltac" ltac_tacdef_body LIST0 ( "with" ltac_tacdef_body )
-| REPLACE "Function" LIST1 function_rec_definition_loc SEP "with"      (* funind plugin *)
-| WITH "Function" function_rec_definition_loc LIST0 ( "with" function_rec_definition_loc )      (* funind plugin *)
+| REPLACE "Function" LIST1 function_fix_definition SEP "with"      (* funind plugin *)
+| WITH "Function" function_fix_definition LIST0 ( "with" function_fix_definition )      (* funind plugin *)
 | REPLACE "Functional" "Scheme" LIST1 fun_scheme_arg SEP "with"      (* funind plugin *)
 | WITH "Functional" "Scheme" fun_scheme_arg LIST0 ( "with" fun_scheme_arg )      (* funind plugin *)
 | DELETE "Cd"
@@ -2347,7 +2347,7 @@ SPLICE: [
 | check_module_types
 | constr_pattern
 | decl_sep
-| function_rec_definition_loc (* loses funind annotation *)
+| function_fix_definition (* loses funind annotation *)
 | glob
 | glob_constr_with_bindings
 | id_or_meta
@@ -2518,7 +2518,7 @@ SPLICE: [
 | ltac_defined_tactics
 | tactic_notation_tactics
 ]
-(* todo: ssrreflect*.rst ref to fix_body is incorrect *)
+(* todo: ssrreflect*.rst ref to fix_decl is incorrect *)
 
 REACHABLE: [
 | command
