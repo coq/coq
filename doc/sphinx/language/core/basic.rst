@@ -172,7 +172,7 @@ Other tokens
   (even when starting |Coq| with the `-noinit` command-line flag)::
 
     ! #[ % & ' ( () ) * + , - ->
-    . .( .. ... / : ::= := :> :>> ; < <+ <- <:
+    . .( .. ... / : ::= := :> ; < <+ <- <:
     <<: <= = => > >-> >= ? @ @{ [ ] _
     `( `{ { {| | }
 
