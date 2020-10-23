@@ -272,9 +272,14 @@ let default_binder_status_fun = {
   slide = (fun x -> x);
 }
 
+let test_implicit_argument_mark bk =
+  if not (Glob_ops.binding_kind_eq bk Explicit) then
+    user_err (Pp.str "Unexpected implicit argument mark.")
+
 let protect g e na =
-  let e',disjpat,na = g e na in
+  let e',disjpat,na,bk = g e na in
   if disjpat <> None then user_err (Pp.str "Unsupported substitution of an arbitrary pattern.");
+  test_implicit_argument_mark bk;
   e',na
 
 let apply_cases_pattern_term ?loc (ids,disjpat) tm c =
@@ -302,12 +307,13 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
       DAst.get (subst_glob_vars outerl it)
   | NLambda (na,ty,c) ->
       let e = h.switch_lambda e in
-      let e',disjpat,na = g e na in GLambda (na,Explicit,f (h.restart_prod e) ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
+      let e',disjpat,na,bk = g e na in GLambda (na,bk,f (h.restart_prod e) ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NProd (na,ty,c) ->
       let e = h.switch_prod e in
-      let e',disjpat,na = g e na in GProd (na,Explicit,f (h.restart_prod e) ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
+      let e',disjpat,na,bk = g e na in GProd (na,bk,f (h.restart_prod e) ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NLetIn (na,b,t,c) ->
-      let e',disjpat,na = g e na in
+      let e',disjpat,na,bk = g e na in
+      test_implicit_argument_mark bk;
       (match disjpat with
        | None -> GLetIn (na,f (h.restart_lambda e) b,Option.map (f (h.restart_prod e)) t,f e' c)
        | Some (disjpat,_id) -> DAst.get (apply_cases_pattern_term ?loc disjpat (f e b) (f e' c)))
@@ -323,7 +329,10 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
           e',Some (CAst.make ?loc (ind,nal')) in
         let e',na' = protect g e' na in
         (e',(f e tm,(na',t'))::tml')) tml (e,[]) in
-      let fold (idl,e) na = let (e,disjpat,na) = g e na in ((Name.cons na idl,e),disjpat,na) in
+      let fold (idl,e) na =
+        let (e,disjpat,na,bk) = g e na in
+        test_implicit_argument_mark bk;
+        ((Name.cons na idl,e),disjpat,na) in
       let eqnl' = List.map (fun (patl,rhs) ->
         let ((idl,e),patl) =
           List.fold_left_map (cases_pattern_fold_map ?loc fold) ([],e) patl in
@@ -356,7 +365,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
 
 let glob_constr_of_notation_constr ?loc x =
   let rec aux () x =
-    glob_constr_of_notation_constr_with_binders ?loc (fun () id -> ((),None,id)) aux () x
+    glob_constr_of_notation_constr_with_binders ?loc (fun () id -> ((),None,id,Explicit)) aux () x
   in aux () x
 
 (******************************************************************************)
@@ -852,6 +861,7 @@ let is_onlybinding_pattern_like_meta isvar id metas =
       | _,NtnTypeBinder (NtnBinderParsedAsConstr
                            (AsIdentOrPattern | AsStrictPattern)) -> true
       | _,NtnTypeBinder (NtnParsedAsPattern strict) -> not (strict && isvar)
+      | _,NtnTypeBinder NtnParsedAsBinder -> not isvar
       | _ -> false
   with Not_found -> false
 
@@ -1497,7 +1507,7 @@ let match_notation_constr ~print_univ c ~vars (metas,pat) =
           let v = glob_constr_of_cases_pattern (Global.env()) pat in
           (((vars,v),scl)::terms',termlists',binders',binderlists')
         | _ -> raise No_match)
-    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern _) ->
+    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern _ | NtnParsedAsBinder) ->
        (terms',termlists',(Id.List.assoc x binders,scl)::binders',binderlists')
     | NtnTypeConstrList ->
        (terms',(Id.List.assoc x termlists,scl)::termlists',binders',binderlists')

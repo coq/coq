@@ -342,12 +342,10 @@ let unparsing_metavar i from typs =
   match x with
   | ETConstr _ | ETGlobal | ETBigint ->
      UnpMetaVar (prec,side)
-  | ETPattern _ ->
-     UnpBinderMetaVar prec
-  | ETIdent ->
-     UnpBinderMetaVar prec
-  | ETBinder isopen ->
-     assert false
+  | ETPattern _ | ETIdent ->
+     UnpBinderMetaVar (prec,NotQuotedPattern)
+  | ETBinder _ ->
+     UnpBinderMetaVar (prec,QuotedPattern)
 
 (* Heuristics for building default printing rules *)
 
@@ -636,7 +634,7 @@ let prod_entry_type = function
   | ETIdent -> ETProdName
   | ETGlobal -> ETProdReference
   | ETBigint -> ETProdBigint
-  | ETBinder _ -> assert false (* See check_binder_type *)
+  | ETBinder o -> ETProdOneBinder o
   | ETConstr (s,_,p) -> ETProdConstr (s,p)
   | ETPattern (_,n) -> ETProdPattern (match n with None -> 0 | Some n -> n)
 
@@ -970,15 +968,6 @@ let check_useless_entry_types recvars mainvars etyps =
                   (Id.print x ++ str " is unbound in the notation.")
   | _ -> ()
 
-let check_binder_type recvars etyps =
-  let l1,l2 = List.split recvars in
-  let l = l1@l2 in
-  List.iter (function
-    | (x,ETBinder b) when not (List.mem x l) ->
-       CErrors.user_err (str (if b then "binder" else "closed binder") ++
-                 strbrk " is only for use in recursive notations for binders.")
-    | _ -> ()) etyps
-
 let interp_non_syntax_modifiers mods =
   let set modif (only_parsing,only_printing,entry) = match modif with
     | SetOnlyParsing -> Some (true,only_printing,entry)
@@ -1058,7 +1047,7 @@ let make_interpretation_type isrec isonlybinding default_if_binding = function
   | ETBigint | ETGlobal -> NtnTypeConstr
   | ETBinder _ ->
      if isrec then NtnTypeBinderList
-     else anomaly Pp.(str "Type binder is only for use in recursive notations for binders.")
+     else NtnTypeBinder NtnParsedAsBinder
 
 let subentry_of_constr_prod_entry from_level = function
   (* Specific 8.2 approximation *)
@@ -1297,7 +1286,6 @@ let compute_syntax_data ~local deprecation df modifiers =
   let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
   let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint df in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
-  let _ = check_binder_type recvars mods.etyps in
 
   (* Notations for interp and grammar  *)
   let msgs,n = find_precedence mods.custom mods.level mods.etyps symbols onlyprint in

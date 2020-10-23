@@ -94,6 +94,9 @@ and cases_pattern_notation_substitution_eq (s1, n1) (s2, n2) =
   List.equal cases_pattern_expr_eq s1 s2 &&
   List.equal (List.equal cases_pattern_expr_eq) n1 n2
 
+let kinded_cases_pattern_expr_eq (p1,bk1) (p2,bk2) =
+  cases_pattern_expr_eq p1 p2 && Glob_ops.binding_kind_eq bk1 bk2
+
 let eq_universes u1 u2 =
   match u1, u2 with
   | None, None -> true
@@ -231,7 +234,7 @@ and local_binder_eq l1 l2 = match l1, l2 with
 and constr_notation_substitution_eq (e1, el1, b1, bl1) (e2, el2, b2, bl2) =
   List.equal constr_expr_eq e1 e2 &&
   List.equal (List.equal constr_expr_eq) el1 el2 &&
-  List.equal cases_pattern_expr_eq b1 b2 &&
+  List.equal kinded_cases_pattern_expr_eq b1 b2 &&
   List.equal (List.equal local_binder_eq) bl1 bl2
 
 and instance_eq (x1,c1) (x2,c2) =
@@ -472,7 +475,7 @@ let locs_of_notation ?loc locs ntn =
 let ntn_loc ?loc (args,argslist,binders,binderslist) =
   locs_of_notation ?loc
     (List.map constr_loc (args@List.flatten argslist)@
-     List.map cases_pattern_expr_loc binders@
+     List.map (fun (x,_) -> cases_pattern_expr_loc x) binders@
      List.map local_binders_loc binderslist)
 
 let patntn_loc ?loc (args,argslist) =

@@ -78,6 +78,8 @@ type notation_binder_source =
   | NtnParsedAsIdent
   (* This accepts ident, or pattern, or both *)
   | NtnBinderParsedAsConstr of constr_as_binder_kind
+  (* This accepts ident, _, and quoted pattern *)
+  | NtnParsedAsBinder
 
 type notation_var_instance_type =
   | NtnTypeConstr | NtnTypeBinder of notation_binder_source | NtnTypeConstrList | NtnTypeBinderList

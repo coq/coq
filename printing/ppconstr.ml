@@ -98,10 +98,10 @@ let tag_var = tag Tag.variable
         let pp2 = aux l in
         let pp1 = pr (if parens && side <> None then LevelLe 0 else prec) c in
         return unp pp1 pp2
-      | UnpBinderMetaVar prec as unp :: l ->
-        let c = pop bl in
+      | UnpBinderMetaVar (prec,style) as unp :: l ->
+        let c,bk = pop bl in
         let pp2 = aux l in
-        let pp1 = pr_patt prec c in
+        let pp1 = pr_patt prec style bk c in
         return unp pp1 pp2
       | UnpListMetaVar (prec, sl, side) as unp :: l ->
         let cl = pop envlist in
@@ -310,7 +310,7 @@ let tag_var = tag Tag.variable
         pr_patt (fun()->str"(") lpattop p ++ str")", latom
 
       | CPatNotation (which,s,(l,ll),args) ->
-        let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ -> mt ()) (fun _ _ _ -> mt()) which s (l,ll,[],[]) in
+        let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ _ _ -> mt ()) (fun _ _ _ -> mt()) which s (l,ll,[],[]) in
         (if List.is_empty args||prec_less l_not (LevelLt lapp) then strm_not else surround strm_not)
         ++ prlist (pr_patt spc (LevelLt lapp)) args, if not (List.is_empty args) then lapp else l_not
 
@@ -328,6 +328,15 @@ let tag_var = tag Tag.variable
       (sep() ++ if prec_less prec inh then strm else surround strm)
 
   let pr_patt = pr_patt mt
+
+  let pr_patt_binder prec style bk c =
+    match bk with
+    | MaxImplicit -> str "{" ++ pr_patt lpattop c ++ str "}"
+    | NonMaxImplicit -> str "[" ++ pr_patt lpattop c ++ str "]"
+    | Explicit ->
+      match style, c with
+      | NotQuotedPattern, _ | _, {v=CPatAtom _} -> pr_patt prec c
+      | QuotedPattern, _ -> str "'" ++ pr_patt prec c
 
   let pr_eqn pr {loc;v=(pl,rhs)} =
     spc() ++ hov 4
@@ -673,7 +682,7 @@ let tag_var = tag Tag.variable
       | CNotation (_,(_,"( _ )"),([t],[],[],[])) ->
         return (pr (fun()->str"(") ltop t ++ str")", latom)
       | CNotation (which,s,env) ->
-        pr_notation (pr mt) pr_patt (pr_binders_gen (pr mt ltop)) which s env
+        pr_notation (pr mt) pr_patt_binder (pr_binders_gen (pr mt ltop)) which s env
       | CGeneralization (bk,ak,c) ->
         return (pr_generalization bk ak (pr mt ltop c), latom)
       | CPrim p ->

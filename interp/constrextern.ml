@@ -1303,7 +1303,8 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
                       termlists in
                   let bl =
                     List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
-                      mkCPatOr (List.map (extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes')) vars) bl))
+                      (mkCPatOr (List.map (extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes')) vars) bl)),
+                      Explicit)
                       binders in
                   let bll =
                     List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
