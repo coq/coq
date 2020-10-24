@@ -709,6 +709,30 @@ Note also that in the absence of a ``as ident``, ``as strict pattern`` or
 ``as pattern`` :n:`@syntax_modifier`\s, the default is to consider sub-expressions occurring
 in binding position and parsed as terms to be ``as ident``.
 
+Binders bound in the notation and parsed as general binders
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+It is also possible to rely on Coq's syntax of binders using the
+`binder` modifier as follows:
+
+.. coqtop:: in
+
+   Notation "'myforall' p , [ P , Q ] " := (forall p, P -> Q)
+     (at level 200, p binder).
+
+In this case, all of :n:`@ident`, :n:`{@ident}`, :n:`[@ident]`, :n:`@ident:@type`,
+:n:`{@ident:@type}`, :n:`[@ident:@type]`, :n:`'@pattern` can be used in place of
+the corresponding notation variable. In particular, the binder can
+declare implicit arguments:
+
+.. coqtop:: all
+
+   Check fun (f : myforall {a}, [a=0, Prop]) => f eq_refl.
+   Check myforall '((x,y):nat*nat), [ x = y, True ].
+
+By using instead `closed binder`, the same list of binders is allowed
+except that :n:`@ident:@type` requires parentheses around.
+
 .. _NotationsWithBinders:
 
 Binders not bound in the notation
