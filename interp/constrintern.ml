@@ -928,10 +928,10 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         aux (terms,None,Some (l,terminator,iter)) subinfos (NVar ldots_var)
       with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation."))
-    | NProd (Name id, NHole _, c') when option_mem_assoc id binderopt ->
+    | NProd (Name id, None, c') when option_mem_assoc id binderopt ->
         let binder = snd (Option.get binderopt) in
         expand_binders ?loc mkGProd [binder] (aux subst' (renaming,env) c')
-    | NLambda (Name id,NHole _,c') when option_mem_assoc id binderopt ->
+    | NLambda (Name id, None, c') when option_mem_assoc id binderopt ->
         let binder = snd (Option.get binderopt) in
         expand_binders ?loc mkGLambda [binder] (aux subst' (renaming,env) c')
     | t ->
