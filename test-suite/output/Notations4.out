@@ -197,3 +197,15 @@ Found an inductive type while a pattern was expected.
      : nat * nat
 %%%
      : Type
+## (x, _) (x = 0)
+     : Prop
+The command has indeed failed with message:
+Unexpected type constraint in notation already providing a type constraint.
+## '(x, y) (x + y = 0)
+     : Prop
+## x (x = 0)
+     : Prop
+## '(x, y) (x = 0)
+     : Prop
+fun f : ## a (a = 0) => f 1 eq_refl
+     : ## a (a = 0) -> 1 = 0

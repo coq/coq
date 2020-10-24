@@ -487,3 +487,21 @@ Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
 Check %%%.
 
 End MorePrecise3.
+
+Module TypedPattern.
+
+Notation "## x P" := (forall x:nat*nat, P) (x pattern, at level 0).
+Check ## (x,y) (x=0).
+Fail Check ## ((x,y):bool*bool) (x=y).
+
+End TypedPattern.
+
+Module SingleBinder.
+
+Notation "## x P" := (forall x, x = x -> P) (x binder, at level 0).
+Check ## '(x,y) (x+y=0).
+Check ## (x:nat) (x=0).
+Check ## '((x,y):nat*nat) (x=0).
+Check fun (f : ## {a} (a=0)) => f (a:=1) eq_refl.
+
+End SingleBinder.
