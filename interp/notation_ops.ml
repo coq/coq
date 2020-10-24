@@ -131,7 +131,11 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
   | NApp (t1, a1), NApp (t2, a2) -> aux vars renaming t1 t2; List.iter2 (aux vars renaming) a1 a2
   | NLambda (na1, t1, u1), NLambda (na2, t2, u2)
   | NProd (na1, t1, u1), NProd (na2, t2, u2) ->
-    aux vars renaming t1 t2;
+    (match t1, t2 with
+     | None, None -> ()
+     | Some _, None -> if lt then strictly_lt := true
+     | Some t1, Some t2 -> aux vars renaming t1 t2
+     | None, Some _ -> raise Exit);
     let renaming = check_eq_name vars renaming na1 na2 in
     aux vars renaming u1 u2
   | NLetIn (na1, b1, t1, u1), NLetIn (na2, b2, t2, u2) ->
@@ -316,13 +320,13 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
       DAst.get (subst_glob_vars outerl it)
   | NLambda (na,ty,c) ->
       let e = h.switch_lambda e in
-      let ty = Some (f (h.restart_prod e) ty) in
+      let ty = Option.map (f (h.restart_prod e)) ty in
       let e',disjpat,na',bk,ty = g e na ty in
       GLambda (na',bk,set_anonymous_type na ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NProd (na,ty,c) ->
       let e = h.switch_prod e in
-      let ty = f (h.restart_prod e) ty in
-      let e',disjpat,na',bk,ty = g e na (Some ty) in
+      let ty = Option.map (f (h.restart_prod e)) ty in
+      let e',disjpat,na',bk,ty = g e na ty in
       GProd (na',bk,set_anonymous_type na ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NLetIn (na,b,t,c) ->
       let t = Option.map (f (h.restart_prod e)) t in
@@ -575,8 +579,8 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   | GApp (g,args) ->
      (* Treat applicative notes as binary nodes *)
      let a,args = List.sep_last args in mkNApp1 (aux (DAst.make (GApp (g, args))), aux a)
-  | GLambda (na,bk,ty,c) -> add_name found na; NLambda (na,aux ty,aux c)
-  | GProd (na,bk,ty,c) -> add_name found na; NProd (na,aux ty,aux c)
+  | GLambda (na,bk,ty,c) -> add_name found na; NLambda (na,aux_type ty,aux c)
+  | GProd (na,bk,ty,c) -> add_name found na; NProd (na,aux_type ty,aux c)
   | GLetIn (na,b,t,c) -> add_name found na; NLetIn (na,aux b,Option.map aux t, aux c)
   | GCases (sty,rtntypopt,tml,eqnl) ->
       let f {CAst.v=(idl,pat,rhs)} = List.iter (add_id found) idl; (pat,aux rhs) in
@@ -613,6 +617,9 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   | GEvar _ | GPatVar _ ->
       user_err Pp.(str "Existential variables not allowed in notations.")
   ) x
+  and aux_type t = DAst.with_val (function
+  | GHole (Evar_kinds.BinderType _,IntroAnonymous,None) -> None
+  | _ -> Some (aux t)) t
   in
   let t = aux a in
   (* Side effect *)
@@ -721,13 +728,13 @@ let rec subst_notation_constr subst bound raw =
           NList (id1,id2,r1',r2',b)
 
   | NLambda (n,r1,r2) ->
-      let r1' = subst_notation_constr subst bound r1
+      let r1' = Option.Smart.map (subst_notation_constr subst bound) r1
       and r2' = subst_notation_constr subst bound r2 in
         if r1' == r1 && r2' == r2 then raw else
           NLambda (n,r1',r2')
 
   | NProd (n,r1,r2) ->
-      let r1' = subst_notation_constr subst bound r1
+      let r1' = Option.Smart.map (subst_notation_constr subst bound) r1
       and r2' = subst_notation_constr subst bound r2 in
         if r1' == r1 && r2' == r2 then raw else
           NProd (n,r1',r2')
@@ -843,7 +850,7 @@ let abstract_return_type_context_glob_constr tml rtn =
 
 let abstract_return_type_context_notation_constr tml rtn =
   abstract_return_type_context snd
-    (fun na c -> NLambda(na,NHole (Evar_kinds.InternalHole, IntroAnonymous, None),c)) tml rtn
+    (fun na c -> NLambda(na,None,c)) tml rtn
 
 let rec push_pattern_binders vars pat =
   match DAst.get pat with
@@ -1350,9 +1357,9 @@ let rec match_ inner u alp metas sigma a1 a2 =
       List.fold_left2 (match_ may_use_eta u alp metas)
         (match_hd u alp metas sigma f1 f2) l1 l2
   | GLambda (na1,bk1,t1,b1), NLambda (na2,t2,b2) ->
-     match_extended_binders false u alp metas na1 na2 bk1 t1 (match_in u alp metas sigma t1 t2) b1 b2
+     match_extended_binders false u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
   | GProd (na1,bk1,t1,b1), NProd (na2,t2,b2) ->
-     match_extended_binders true u alp metas na1 na2 bk1 t1 (match_in u alp metas sigma t1 t2) b1 b2
+     match_extended_binders true u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
   | GLetIn (na1,b1,_,c1), NLetIn (na2,b2,None,c2)
   | GLetIn (na1,b1,None,c1), NLetIn (na2,b2,_,c2) ->
      match_binders u alp metas na1 na2 (match_in u alp metas sigma b1 b2) c1 c2
@@ -1421,14 +1428,14 @@ let rec match_ inner u alp metas sigma a1 a2 =
      otherwise how to ensure it corresponds to a well-typed eta-expansion;
      we make an exception for types which are metavariables: this is useful e.g.
      to print "{x:_ & P x}" knowing that notation "{x & P x}" is not defined. *)
-  | _b1, NLambda (Name id as na,(NHole _ | NVar _ as t2),b2) when inner ->
+  | _b1, NLambda (Name id as na,(None | Some (NVar _) as t2),b2) when inner ->
       let avoid =
         Id.Set.union (free_glob_vars a1) (* as in Namegen: *) (glob_visible_short_qualid a1) in
       let id' = Namegen.next_ident_away id avoid in
       let t1 = DAst.make @@ GHole(Evar_kinds.BinderType (Name id'),IntroAnonymous,None) in
       let sigma = match t2 with
-      | NHole _ -> sigma
-      | NVar id2 -> bind_term_env alp sigma id2 t1
+      | None -> sigma
+      | Some (NVar id2) -> bind_term_env alp sigma id2 t1
       | _ -> assert false in
       let (alp,sigma) =
         if is_bindinglist_meta id metas then
@@ -1447,6 +1454,10 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _
      | GLetIn _ | GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _
      | GCast _ | GInt _ | GFloat _ | GArray _), _ -> raise No_match
+
+and match_in_type u alp metas sigma t = function
+  | None -> sigma
+  | Some t' -> match_in u alp metas sigma t t'
 
 and match_in u = match_ true u
 
