@@ -1126,7 +1126,7 @@ and factorize_prod ?impargs scopes vars na bk t c =
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = extern_typ scopes vars b in
       let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
-      let binder = CLocalPattern (make ?loc:c.loc (p,None)) in
+      let binder = CLocalPattern p in
       (match b.v with
       | CProdN (bl,b) -> CProdN (binder::bl,b)
       | _ -> CProdN ([binder],b))
@@ -1167,7 +1167,7 @@ and factorize_lambda inctx scopes vars na bk t c =
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = sub_extern inctx scopes vars b in
       let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
-      let binder = CLocalPattern (make ?loc:c.loc (p,None)) in
+      let binder = CLocalPattern p in
       (match b.v with
       | CLambdaN (bl,b) -> CLambdaN (binder::bl,b)
       | _ -> CLambdaN ([binder],b))
@@ -1219,7 +1219,10 @@ and extern_local_binder scopes vars = function
         if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
       let p = mkCPatOr (List.map (extern_cases_pattern vars) p) in
       let (assums,ids,l) = extern_local_binder scopes vars l in
-      (assums,ids, CLocalPattern(CAst.make @@ (p,ty)) :: l)
+      let p = match ty with
+        | None -> p
+        | Some ty -> CAst.make @@ (CPatCast (p,ty)) in
+      (assums,ids, CLocalPattern p :: l)
 
 and extern_eqn inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
   let pll = List.map (List.map (extern_cases_pattern_in_scope scopes vars)) pll in

@@ -433,7 +433,8 @@ let match_goals ot nt =
         constr_expr ogname c c2;
         constr_expr_opt ogname t t2
       | CLocalPattern p, CLocalPattern p2 ->
-        let (p,ty), (p2,ty2) = p.v,p2.v in
+        let ty = match p.v with CPatCast (_,ty) -> Some ty | _ -> None in
+        let ty2 = match p2.v with CPatCast (_,ty) -> Some ty | _ -> None in
         constr_expr_opt ogname ty ty2
       | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (2)")
     in

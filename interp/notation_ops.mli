@@ -53,7 +53,7 @@ val apply_cases_pattern : ?loc:Loc.t ->
   (Id.t list * cases_pattern_disjunction) * Id.t -> glob_constr -> glob_constr
 
 val glob_constr_of_notation_constr_with_binders : ?loc:Loc.t ->
-  ('a -> Name.t -> 'a * ((Id.t list * cases_pattern_disjunction) * Id.t) option * Name.t * Glob_term.binding_kind) ->
+  ('a -> Name.t -> glob_constr option -> 'a * ((Id.t list * cases_pattern_disjunction) * Id.t) option * Name.t * Glob_term.binding_kind * glob_constr option) ->
   ('a -> notation_constr -> glob_constr) -> ?h:'a binder_status_fun ->
   'a -> notation_constr -> glob_constr
 
