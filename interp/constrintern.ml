@@ -298,21 +298,20 @@ let error_expect_binder_notation_type ?loc id =
 let set_var_scope ?loc id istermvar (tmp_scope,subscopes as scopes) ntnvars =
   try
     let used_as_binder,idscopes,typ = Id.Map.find id ntnvars in
-    if not istermvar then used_as_binder := true;
-    let () = if istermvar then
+    if istermvar then begin
       (* scopes have no effect on the interpretation of identifiers *)
-      begin match !idscopes with
+      (match !idscopes with
       | None -> idscopes := Some scopes
       | Some (tmp_scope', subscopes') ->
         let s' = make_current_scope tmp_scope' subscopes' in
         let s = make_current_scope tmp_scope subscopes in
-        if not (List.equal String.equal s' s) then error_inconsistent_scope ?loc id s' s
+        if not (List.equal String.equal s' s) then error_inconsistent_scope ?loc id s' s);
+      (match typ with
+      | Notation_term.NtnInternTypeOnlyBinder -> error_expect_binder_notation_type ?loc id
+      | Notation_term.NtnInternTypeAny -> ())
       end
-    in
-    match typ with
-    | Notation_term.NtnInternTypeOnlyBinder ->
-        if istermvar then error_expect_binder_notation_type ?loc id
-    | Notation_term.NtnInternTypeAny -> ()
+    else
+      used_as_binder := true
   with Not_found ->
     (* Not in a notation *)
     ()
