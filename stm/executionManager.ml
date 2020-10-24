@@ -69,7 +69,7 @@ type prepared_task =
                    tasks: prepared_task list;
                  }
 
-type job = prepared_task list * Vernacstate.t * int * sentence_id
+type job = prepared_task list * Vernacstate.t * int * sentence_id * sentence_id
 
 module ProofWorker = DelegationManager.MakeWorker(struct
   type t = job
@@ -175,7 +175,7 @@ let find_fulfilled_opt x m =
 module Jobs = struct
   type data = execution_status DelegationManager.remote_mapping * job
   type dependency = sentence_id
-  let is_invalid id (_,(_,_,_,id1)) = Stateid.equal id id1
+  let is_invalid id (_,(_,_,_,id1,_)) = Stateid.equal id id1
 end
 module Queue = MakeQueue(Jobs)
 
@@ -221,13 +221,24 @@ let id_of_prepared_task = function
   | PExec(id, _) -> id
   | PDelegate { terminator_id } -> terminator_id
 
-let rec worker_main st ((job , vs, doc_id, _state_id) : job) =
+(* TODO move to proper place *)
+let worker_execute ~doc_id st last_step_id (vs,events,interrupted) = function
+  | PSkip id ->
+    Lwt.return (vs,events,false)
+  | PExec (id,ast) ->
+    interp_ast ~doc_id ~state_id:id vs ast >>= fun (vs, v, ev) ->
+    let ovs = if Stateid.equal id last_step_id then Some vs else None in
+    update st id (Success ovs);
+    Lwt.return (vs,events @ ev,false)
+  | _ -> assert false
+
+let worker_main st ((job , vs, doc_id, _state_id, last_step_id) : job) =
   (* signalling progress is automtically done by the resolution of remote
      promises *)
-  Lwt_list.fold_left_s (execute ~doc_id st) (vs,[],false) job >>= fun _ ->
+  Lwt_list.fold_left_s (worker_execute ~doc_id st last_step_id) (vs,[],false) job >>= fun _ ->
   Lwt.return ()
 
-and execute ~doc_id st (vs,events,interrupted) task =
+let execute ~doc_id st (vs,events,interrupted) task =
   if interrupted then begin
     update st (id_of_prepared_task task) (Error ((None,"interrupted"),None));
     Lwt.return (vs,events,true)
@@ -245,7 +256,7 @@ and execute ~doc_id st (vs,events,interrupted) task =
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
             (* The proof was successfully opened *)
-            Queue.enqueue (remote_mapping,(tasks,vs,doc_id,terminator_id));
+            Queue.enqueue (remote_mapping,(tasks,vs,doc_id,terminator_id,last_step_id));
             interp_qed_delayed ~state_id:terminator_id vs >>= fun (vs, v, assign) -> update st terminator_id v;
             let update_proof_state assign status =
               match status with
@@ -367,7 +378,7 @@ let rec invalidate schedule id st =
   let of_sentence = invalidate1 st.of_sentence id in
   let removed = Queue.remove_invalid id in
   let of_sentence = List.fold_left invalidate1 of_sentence
-    List.(concat (map (fun (_,(ptl,_,_,_)) -> map id_of_prepared_task ptl) removed)) in
+    List.(concat (map (fun (_,(ptl,_,_,_,_)) -> map id_of_prepared_task ptl) removed)) in
   if of_sentence == st.of_sentence then Lwt.return st else
   let deps = Scheduler.dependents schedule id in
   Stateid.Set.fold (fun dep_id st ->
