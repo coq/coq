@@ -1857,8 +1857,18 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
         | Evar (evk',argsv2) when Evar.equal evk evk' ->
             solve_refl (fun flags _b env sigma pb c c' -> is_fconv pb env sigma c c') flags
                        env evd pbty evk argsv argsv2
+        | Lambda (na,c2,t2) ->
+          (match eta_lambda unify flags env evd true (mkEvar ev) na t2 c2 with
+          | Success evd -> evd
+          | x -> raise (OccurCheckIn (evd,rhs)))
         | _ ->
-            raise (OccurCheckIn (evd,rhs))
+        let f,args = decompose_app evd c in
+        match EConstr.kind evd f with
+        | Construct (cstr,u) when has_eta_constructor env cstr ->
+          (match eta_constructor unify flags env evd true (mkEvar ev) cstr args with
+          | Success evd -> evd
+          | x -> raise (OccurCheckIn (evd,rhs)))
+        | _ -> raise (OccurCheckIn (evd,rhs))
 
 (* This code (i.e. solve_pb, etc.) takes a unification
  * problem, and tries to solve it. If it solves it, then it removes

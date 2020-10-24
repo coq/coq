@@ -506,21 +506,17 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
           | Evar ev, _ when Evd.is_undefined evd (fst ev) && is_evar_allowed flags (fst ev) ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
               (position_problem true pbty,ev,term2) with
-              | UnifFailure (_,(OccurCheck _ | NotClean _)) ->
+              | UnifFailure (_,NotClean _) ->
                 (* Eta-expansion might apply *)
-                (* OccurCheck: eta-expansion could solve
-                     ?X = {| foo := ?X.(foo) |}
-                   NotClean: pruning in solve_simple_eqn is incomplete wrt
+                (* NotClean: pruning in solve_simple_eqn is incomplete wrt
                      Miller patterns *)
                 default ()
               | x -> x)
           | _, Evar ev when Evd.is_undefined evd (fst ev) && is_evar_allowed flags (fst ev) ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
               (position_problem false pbty,ev,term1) with
-              | UnifFailure (_, (OccurCheck _ | NotClean _)) ->
-                (* OccurCheck: eta-expansion could solve
-                     ?X = {| foo := ?X.(foo) |}
-                   NotClean: pruning in solve_simple_eqn is incomplete wrt
+              | UnifFailure (_, NotClean _) ->
+                (* NotClean: pruning in solve_simple_eqn is incomplete wrt
                      Miller patterns *)
                 default ()
               | x -> x)
@@ -628,6 +624,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           end
       | _ -> default evd
   in
+  let eta_constructor_stack on_left apprF cstr skR =
+    match Stack.list_of_app_stack skR with
+    | Some lR when has_eta_constructor env cstr ->
+      eta_constructor (conv_fun evar_conv_x) flags env evd on_left (Stack.zip evd apprF) cstr lR
+    | _ -> UnifFailure (evd,NotSameHead)
+  in
   let flex_rigid l2r ev (termF, skF as apprF) (termR, skR as apprR) =
     (* Problem: E[?n[inst]] = E'[M] with M blocking computation (in theory)
        Strategy, as far as I understand:
@@ -644,11 +646,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     let eta evd =
       match EConstr.kind evd termR with
       | Lambda (na,tR,cR) when (* if ever problem is ill-typed: *) List.is_empty skR ->
-         eta_lambda (conv_fun evar_conv_x) flags env evd (not l2r) (Stack.zip evd apprF) na tR cR
-      | Construct (cstr,u) when has_eta_constructor env cstr ->
-        (match Stack.list_of_app_stack skR with
-        | Some lR -> eta_constructor (conv_fun evar_conv_x) flags env evd (not l2r) (Stack.zip evd apprF) cstr lR
-        | _ -> UnifFailure (evd,NotSameHead))
+         eta_lambda (conv_fun evar_conv_x) flags env evd l2r (Stack.zip evd apprF) na tR cR
+      | Construct (cstr,u) -> eta_constructor_stack l2r apprF cstr skR
       | _ -> UnifFailure (evd,NotSameHead)
     in
     match Stack.list_of_app_stack skF with
@@ -1015,17 +1014,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             |Some _, _ -> UnifFailure (evd,NotSameArgSize)
           else UnifFailure (evd,NotSameHead)
 
-        | Construct (cstr,_), _ ->
-          (match Stack.list_of_app_stack sk1 with
-          | Some args1 when has_eta_constructor env cstr ->
-            eta_constructor (conv_fun evar_conv_x) flags env evd true (Stack.zip evd appr2) cstr args1
-          | _ -> UnifFailure (evd,NotSameHead))
-
-        | _, Construct (cstr,_) ->
-          (match Stack.list_of_app_stack sk2 with
-          | Some args2 when has_eta_constructor env cstr ->
-            eta_constructor (conv_fun evar_conv_x) flags env evd false (Stack.zip evd appr1) cstr args2
-          | _ -> UnifFailure (evd,NotSameHead))
+        | Construct (cstr,_), _ -> eta_constructor_stack true appr2 cstr sk1
+        | _, Construct (cstr,_) -> eta_constructor_stack false appr1 cstr sk2
 
         | Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
           if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
