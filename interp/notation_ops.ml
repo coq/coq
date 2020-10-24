@@ -276,11 +276,20 @@ let test_implicit_argument_mark bk =
   if not (Glob_ops.binding_kind_eq bk Explicit) then
     user_err (Pp.str "Unexpected implicit argument mark.")
 
+let test_pattern_cast = function
+  | None -> ()
+  | Some t -> user_err ?loc:t.CAst.loc (Pp.str "Unsupported pattern cast.")
+
 let protect g e na =
-  let e',disjpat,na,bk = g e na in
+  let e',disjpat,na,bk,t = g e na None in
   if disjpat <> None then user_err (Pp.str "Unsupported substitution of an arbitrary pattern.");
   test_implicit_argument_mark bk;
+  test_pattern_cast t;
   e',na
+
+let set_anonymous_type na = function
+  | None -> DAst.make @@ GHole (Evar_kinds.BinderType na, IntroAnonymous, None)
+  | Some t -> t
 
 let apply_cases_pattern_term ?loc (ids,disjpat) tm c =
   let eqns = List.map (fun pat -> (CAst.make ?loc (ids,[pat],c))) disjpat in
@@ -307,16 +316,21 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
       DAst.get (subst_glob_vars outerl it)
   | NLambda (na,ty,c) ->
       let e = h.switch_lambda e in
-      let e',disjpat,na,bk = g e na in GLambda (na,bk,f (h.restart_prod e) ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
+      let ty = Some (f (h.restart_prod e) ty) in
+      let e',disjpat,na',bk,ty = g e na ty in
+      GLambda (na',bk,set_anonymous_type na ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NProd (na,ty,c) ->
       let e = h.switch_prod e in
-      let e',disjpat,na,bk = g e na in GProd (na,bk,f (h.restart_prod e) ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
+      let ty = f (h.restart_prod e) ty in
+      let e',disjpat,na',bk,ty = g e na (Some ty) in
+      GProd (na',bk,set_anonymous_type na ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NLetIn (na,b,t,c) ->
-      let e',disjpat,na,bk = g e na in
+      let t = Option.map (f (h.restart_prod e)) t in
+      let e',disjpat,na,bk,t = g e na t in
       test_implicit_argument_mark bk;
       (match disjpat with
-       | None -> GLetIn (na,f (h.restart_lambda e) b,Option.map (f (h.restart_prod e)) t,f e' c)
-       | Some (disjpat,_id) -> DAst.get (apply_cases_pattern_term ?loc disjpat (f e b) (f e' c)))
+       | None -> GLetIn (na,f (h.restart_lambda e) b,t,f e' c)
+       | Some (disjpat,_id) -> test_pattern_cast t; DAst.get (apply_cases_pattern_term ?loc disjpat (f e b) (f e' c)))
   | NCases (sty,rtntypopt,tml,eqnl) ->
       let e = h.no e in
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
@@ -330,8 +344,9 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
         let e',na' = protect g e' na in
         (e',(f e tm,(na',t'))::tml')) tml (e,[]) in
       let fold (idl,e) na =
-        let (e,disjpat,na,bk) = g e na in
+        let (e,disjpat,na,bk,t) = g e na None in
         test_implicit_argument_mark bk;
+        test_pattern_cast t;
         ((Name.cons na idl,e),disjpat,na) in
       let eqnl' = List.map (fun (patl,rhs) ->
         let ((idl,e),patl) =
@@ -365,7 +380,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
 
 let glob_constr_of_notation_constr ?loc x =
   let rec aux () x =
-    glob_constr_of_notation_constr_with_binders ?loc (fun () id -> ((),None,id,Explicit)) aux () x
+    glob_constr_of_notation_constr_with_binders ?loc (fun () id t -> ((),None,id,Explicit,t)) aux () x
   in aux () x
 
 (******************************************************************************)
