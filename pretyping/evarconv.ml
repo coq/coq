@@ -553,21 +553,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         (* E'[redex]=E[?n] reduces to either r[redex]=l[?n] with
            case/fix/proj in E' (why?) or r[redex]=?n *)
         switch (evar_conv_x flags env i' pbty) (Stack.zip evd (termF,l)) (Stack.zip evd (termO,r))
-    | None, Success i' -> switch (evar_conv_x flags env i' pbty) termF termO
-    | _, (UnifFailure _ as x) -> x
-    | Some _, _ -> UnifFailure (evd,NotSameArgSize) in
-  let eta_lambda env evd onleft term (term',sk') =
-    (* Reduces an equation [env |- <(fun na:c1 => c'1)|empty> = <term'|sk'>] to
-       [env, na:c1 |- c'1 = sk'[term'] (with some additional reduction) *)
-    let (na,c1,c'1) = destLambda evd term in
-    let env' = push_rel (RelDecl.LocalAssum (na,c1)) env in
-    let out1 = whd_betaiota_deltazeta_for_iota_state
-      flags.open_ts env' evd (c'1, Stack.empty) in
-    let out2 = whd_nored_state env' evd
-      (lift 1 (Stack.zip evd (term', sk')), Stack.append_app [|EConstr.mkRel 1|] Stack.empty) in
-    if onleft then evar_eqappr_x flags env' evd CONV out1 out2
-    else evar_eqappr_x flags env' evd CONV out2 out1
-  in
+      |None, Success i' -> switch (evar_conv_x flags env i' pbty) termF termO
+      |_, (UnifFailure _ as x) -> x
+      |Some _, _ -> UnifFailure (evd,NotSameArgSize) in
   let rigids env evd sk term sk' term' =
     let nargs = Stack.args_size sk in
     let nargs' = Stack.args_size sk' in
@@ -655,9 +643,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     let switch f a b = if l2r then f a b else f b a in
     let eta evd =
       match EConstr.kind evd termR with
-      | Lambda _ when (* if ever problem is ill-typed: *) List.is_empty skR ->
-         eta_lambda env evd false termR apprF
-      | Construct u -> eta_constructor flags env evd u skR apprF
+      | Lambda (na,tR,cR) when (* if ever problem is ill-typed: *) List.is_empty skR ->
+         eta_lambda (conv_fun evar_conv_x) flags env evd (not l2r) (Stack.zip evd apprF) na tR cR
+      | Construct (cstr,u) when has_eta_constructor env cstr ->
+        (match Stack.list_of_app_stack skR with
+        | Some lR -> eta_constructor (conv_fun evar_conv_x) flags env evd (not l2r) (Stack.zip evd apprF) cstr lR
+        | _ -> UnifFailure (evd,NotSameHead))
       | _ -> UnifFailure (evd,NotSameHead)
     in
     match Stack.list_of_app_stack skF with
@@ -966,10 +957,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
     (* Eta-expansion *)
     | Rigid, _ when isLambda evd term1 && (* if ever ill-typed: *) List.is_empty sk1 ->
-        eta_lambda env evd true term1 (term2,sk2)
+        let na,t1,c1 = destLambda evd term1 in
+        eta_lambda (conv_fun evar_conv_x) flags env evd false (Stack.zip evd appr2) na t1 c1
 
     | _, Rigid when isLambda evd term2 && (* if ever ill-typed: *) List.is_empty sk2 ->
-        eta_lambda env evd false term2 (term1,sk1)
+        let na,t2,c2 = destLambda evd term2 in
+        eta_lambda (conv_fun evar_conv_x) flags env evd true (Stack.zip evd appr1) na t2 c2
 
     | Rigid, Rigid -> begin
         match EConstr.kind evd term1, EConstr.kind evd term2 with
@@ -1022,11 +1015,17 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             |Some _, _ -> UnifFailure (evd,NotSameArgSize)
           else UnifFailure (evd,NotSameHead)
 
-        | Construct u, _ ->
-          eta_constructor flags env evd u sk1 (term2,sk2)
+        | Construct (cstr,_), _ ->
+          (match Stack.list_of_app_stack sk1 with
+          | Some args1 when has_eta_constructor env cstr ->
+            eta_constructor (conv_fun evar_conv_x) flags env evd true (Stack.zip evd appr2) cstr args1
+          | _ -> UnifFailure (evd,NotSameHead))
 
-        | _, Construct u ->
-          eta_constructor flags env evd u sk2 (term1,sk1)
+        | _, Construct (cstr,_) ->
+          (match Stack.list_of_app_stack sk2 with
+          | Some args2 when has_eta_constructor env cstr ->
+            eta_constructor (conv_fun evar_conv_x) flags env evd false (Stack.zip evd appr1) cstr args2
+          | _ -> UnifFailure (evd,NotSameHead))
 
         | Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
           if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
@@ -1119,32 +1118,6 @@ and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c
        (fun i -> evar_conv_x flags env i CONV h2
          (fst (decompose_app_vect i (substl ks h))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
-
-and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
-  (* reduces an equation <Construct(ind,i)|sk1> == <term2|sk2> to the
-     equations [arg_i = Proj_i (sk2[term2])] where [sk1] is [params args] *)
-  let open Declarations in
-  let mib = lookup_mind (fst ind) env in
-    match get_projections env ind with
-    | Some projs when mib.mind_finite == BiFinite ->
-      let pars = mib.mind_nparams in
-      begin match Stack.list_of_app_stack sk1 with
-      | None -> UnifFailure (evd,NotSameHead)
-      | Some l1 ->
-        (try
-           let l1' = List.skipn pars l1 in
-           let l2' =
-             let term = Stack.zip evd (term2,sk2) in
-               List.map (fun p -> EConstr.mkProj (Projection.make p false, term)) (Array.to_list projs)
-           in
-          let f i t1 t2 = evar_conv_x { flags with with_cs = false } env i CONV t1 t2 in
-          ise_list2 evd f l1' l2'
-         with
-         | Failure _ ->
-           (* List.skipn: partially applied constructor *)
-           UnifFailure(evd,NotSameHead))
-      end
-    | _ -> UnifFailure (evd,NotSameHead)
 
 let evar_conv_x flags = evar_conv_x flags
 

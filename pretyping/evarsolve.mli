@@ -134,6 +134,11 @@ val instantiate_evar : unifier -> unify_flags -> env -> evar_map ->
 val evar_define : unifier -> unify_flags -> ?choose:bool -> ?imitate_defs:bool ->
   env -> evar_map -> bool option -> existential -> constr -> evar_map
 
+val has_eta_constructor : env -> Names.constructor -> bool
+val eta_lambda : unifier -> unify_flags -> env -> evar_map -> bool ->
+  constr -> Names.Name.t Context.binder_annot -> types -> constr -> unification_result
+val eta_constructor : unifier -> unify_flags -> env -> evar_map -> bool ->
+  constr -> Names.constructor -> constr list -> unification_result
 
 val refresh_universes :
   ?status:Evd.rigid ->

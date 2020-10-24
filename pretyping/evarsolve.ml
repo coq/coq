@@ -25,6 +25,7 @@ open Reductionops
 open Evarutil
 open Pretype_errors
 
+module RelDecl = Context.Rel.Declaration
 module AllowedEvars = struct
 
   type t =
@@ -255,11 +256,14 @@ let get_type_of_refresh ?(polyprop=true) ?(lax=false) env sigma c =
   let ty = Retyping.get_type_of ~polyprop ~lax env sigma c in
     refresh_universes (Some false) env sigma ty
 
-let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
+let unposition_problem f pbty c1 c2 =
   match pbty with
-  | Some true -> add_conv_pb ~tail (Reduction.CUMUL,env,t1,t2) evd
-  | Some false -> add_conv_pb ~tail (Reduction.CUMUL,env,t2,t1) evd
-  | None -> add_conv_pb ~tail (Reduction.CONV,env,t1,t2) evd
+  | Some true -> f Reduction.CUMUL c1 c2
+  | Some false -> f Reduction.CUMUL c2 c1
+  | None -> f Reduction.CONV c1 c2
+
+let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
+  unposition_problem (fun pbty c1 c2 -> add_conv_pb ~tail (pbty,env,c1,c2) evd) pbty t1 t2
 
 (* We retype applications to ensure the universe constraints are collected *)
 
@@ -739,6 +743,44 @@ let solve_pattern_eqn env sigma l c =
   (* Warning: we may miss some opportunity to eta-reduce more since c'
      is not in normal form *)
   shrink_eta env c'
+
+(*****************************************)
+(* Eta-expansion                         *)
+(*****************************************)
+
+let eta_lambda unify flags env evd l2r term1 na t2 c2 =
+  (* Reduces an equation [env |- term == (fun na:t => c) to
+     [env, na:t |- term na == c *)
+  let env' = push_rel (RelDecl.LocalAssum (na,t2)) env in
+  let c1 = mkApp (lift 1 term1, [|EConstr.mkRel 1|]) in
+  if l2r then unify flags TermUnification env' evd Reduction.CONV c1 c2
+  else unify flags TermUnification env' evd Reduction.CONV c1 c2
+
+let has_eta_constructor env (ind,j) =
+  let open Declarations in
+  let mib = lookup_mind (fst ind) env in
+  match mib.mind_record with
+  | NotRecord | FakeRecord -> false
+  | PrimRecord infos -> true
+
+let eta_constructor unify flags env evd l2r term1 (ind,j) args2 =
+  (* reduces an equation term1 == Construct(ind,i) params2 args2 to
+     equations [Proj_i term1 == arg2_i] *)
+  let open Declarations in
+  let mib = lookup_mind (fst ind) env in
+  match Declareops.inductive_make_projections ind mib with
+  | Some projs when mib.mind_finite == BiFinite ->
+    let pars = mib.mind_nparams in
+    let _, args2 = List.chop pars args2 in
+    let args1 =
+      List.map (fun p -> EConstr.mkProj (Projection.make p false, term1)) (Array.to_list projs)
+    in
+    let flags = { flags with with_cs = false} in
+    if l2r then
+      ise_list2 evd (fun evd -> unify flags TermUnification env evd Reduction.CONV) args1 args2
+    else
+      ise_list2 evd (fun evd -> unify flags TermUnification env evd Reduction.CONV) args2 args1
+  | _ -> anomaly Pp.(str "Expect a constructor supporting eta.")
 
 (*****************************************)
 (* Refining/solving unification problems *)
