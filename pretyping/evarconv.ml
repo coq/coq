@@ -286,66 +286,6 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
  * possibly applied to arguments. *)
 
-let join_failures evd1 evd2 e1 e2 =
-  match e1, e2 with
-  | _, CannotSolveConstraint (_,ProblemBeyondCapabilities) -> (evd1,e1)
-  | _ -> (evd2,e2)
-
-let rec ise_try evd = function
-    [] -> assert false
-  | [f] -> f evd
-  | f1::l ->
-      match f1 evd with
-      | Success _ as x -> x
-      | UnifFailure (evd1,e1) ->
-          match ise_try evd l with
-          | Success _ as x -> x
-          | UnifFailure (evd2,e2) ->
-              let evd,e = join_failures evd1 evd2 e1 e2 in
-              UnifFailure (evd,e)
-
-let ise_and evd l =
-  let rec ise_and i = function
-      [] -> assert false
-    | [f] -> f i
-    | f1::l ->
-        match f1 i with
-        | Success i' -> ise_and i' l
-        | UnifFailure _ as x -> x in
-  ise_and evd l
-
-let ise_list2 evd f l1 l2 =
-  let rec allrec k l1 l2 = match l1, l2 with
-  | [], [] -> k evd
-  | x1 :: l1, x2 :: l2 ->
-    let k evd = match k evd with
-    | Success evd -> f evd x1 x2
-    | UnifFailure _ as x -> x
-    in
-    allrec k l1 l2
-  | ([], _ :: _) | (_ :: _, []) -> UnifFailure (evd, NotSameArgSize)
-  in
-  allrec (fun i -> Success i) l1 l2
-
-let ise_array2 evd f v1 v2 =
-  let rec allrec i = function
-    | -1 -> Success i
-    | n ->
-        match f i v1.(n) v2.(n) with
-        | Success i' -> allrec i' (n-1)
-        | UnifFailure _ as x -> x in
-  let lv1 = Array.length v1 in
-  if Int.equal lv1 (Array.length v2) then allrec evd (pred lv1)
-  else UnifFailure (evd,NotSameArgSize)
-
-let rec ise_inst2 evd f l1 l2 = match l1, l2 with
-| [], [] -> Success evd
-| [], (_ :: _) | (_ :: _), [] -> assert false
-| c1 :: l1, c2 :: l2 ->
-  match ise_inst2 evd f l1 l2 with
-  | Success evd' -> f evd' c1 c2
-  | UnifFailure _ as x -> x
-
 (* Applicative node of stack are read from the outermost to the innermost
    but are unified the other way. *)
 let rec ise_app_rev_stack2 env f evd revsk1 revsk2 =
@@ -1077,7 +1017,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           if Evar.equal sp1 sp2 then
             match ise_stack2 false env evd (evar_conv_x flags) sk1 sk2 with
             |None, Success i' ->
-              ise_inst2 i' (fun i' -> evar_conv_x flags env i' CONV) al1 al2
+              ise_list2 i' (fun i' -> evar_conv_x flags env i' CONV) al1 al2
             |_, (UnifFailure _ as x) -> x
             |Some _, _ -> UnifFailure (evd,NotSameArgSize)
           else UnifFailure (evd,NotSameHead)

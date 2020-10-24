@@ -80,6 +80,58 @@ let is_success = function Success _ -> true | UnifFailure _ -> false
 let test_success unify flags b env evd c c' rhs =
   is_success (unify flags b env evd c c' rhs)
 
+let join_failures evd1 evd2 e1 e2 =
+  match e1, e2 with
+  | _, CannotSolveConstraint (_,ProblemBeyondCapabilities) -> (evd1,e1)
+  | _ -> (evd2,e2)
+
+let rec ise_try evd = function
+  | [] -> assert false
+  | [f] -> f evd
+  | f1::l ->
+    match f1 evd with
+    | Success _ as x -> x
+    | UnifFailure (evd1,e1) ->
+      match ise_try evd l with
+      | Success _ as x -> x
+      | UnifFailure (evd2,e2) ->
+        let evd,e = join_failures evd1 evd2 e1 e2 in
+        UnifFailure (evd,e)
+
+let rec ise_and evd = function
+  | [] -> assert false
+  | [f] -> f evd
+  | f::l ->
+    match f evd with
+    | Success evd' -> ise_and evd' l
+    | UnifFailure _ as x -> x
+
+let ise_exact f x1 x2 =
+  match f x1 x2 with
+  | None, x -> x
+  | _, (UnifFailure _ as x) -> x
+  | Some _, Success i -> UnifFailure (i,NotSameArgSize)
+
+let ise_array2 evd f v1 v2 =
+  let rec allrec i = function
+    | -1 -> Success i
+    | n ->
+      match f i v1.(n) v2.(n) with
+      | Success i' -> allrec i' (n-1)
+      | UnifFailure _ as x -> x in
+  let lv1 = Array.length v1 in
+  if Int.equal lv1 (Array.length v2) then allrec evd (pred lv1)
+  else UnifFailure (evd,NotSameArgSize)
+
+let rec ise_list2 evd f l1 l2 =
+  match l1, l2 with
+  | [], [] -> Success evd
+  | [], _ | _, [] -> UnifFailure (evd,NotSameArgSize)
+  | a1::l1, a2::l2 ->
+    match f evd a1 a2 with
+    | Success evd' -> ise_list2 evd' f l1 l2
+    | UnifFailure _ as x -> x
+
 (** A unification function parameterized by:
     - unification flags
     - the kind of unification

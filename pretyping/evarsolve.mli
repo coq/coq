@@ -63,6 +63,24 @@ type unification_result =
 
 val is_success : unification_result -> bool
 
+(* Try in sequence unification functions until one works; returns a Failure if none work *)
+val ise_try : evar_map -> (evar_map -> unification_result) list -> unification_result
+
+(* All unification functions should unify; returns a Failure if some fails *)
+val ise_and : evar_map -> (evar_map -> unification_result) list -> unification_result
+
+(* Returns a success if the unification function returns Some and a success *)
+val ise_exact : ('a -> 'b -> 'c option * unification_result) ->
+  'a -> 'b -> unification_result
+
+(* The unification function should succeed on all pairs; returns a Failure if some fails or if not same size *)
+val ise_array2 : evar_map -> (evar_map -> 'a -> 'b -> unification_result) ->
+  'a array -> 'b array -> unification_result
+
+(* The unification function should succeed on all pairs; returns a Failure if some fails or if not same size *)
+val ise_list2 : evar_map -> (evar_map -> 'a -> 'b -> unification_result) ->
+  'a list -> 'b list -> unification_result
+
 val is_evar_allowed : unify_flags -> Evar.t -> bool
 
 (** Replace the vars and rels that are aliases to other vars and rels by
