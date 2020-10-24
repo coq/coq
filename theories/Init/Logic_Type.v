@@ -19,6 +19,7 @@ Require Export Logic.
 
 (** Negation of a type in [Type] *)
 
+#[deprecated(since="8.13", note="Use 'not' instead.")]
 Definition notT (A:Type) := A -> False.
 
 (** Properties of [identity] *)

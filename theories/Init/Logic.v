@@ -31,7 +31,7 @@ Inductive False : Prop :=.
 Register False as core.False.type.
 
 (** [not A], written [~A], is the negation of [A] *)
-Definition not (A:Prop) := A -> False.
+Definition not (A : Type) : Prop := A -> False.
 
 Notation "~ x" := (not x) : type_scope.
 
