@@ -14,5 +14,7 @@ Module WithPoly.
   Set Universe Polymorphism.
   Definition foo (A : Type@{i}) (B : Type@{i}) := A -> B.
   Set Printing Universes.
-  Fail Check ((@foo : Set -> _ -> _) : _ -> Type -> _).
+  (* With contravariant subtyping, we can instantiate foo on Type,
+     and have in Set -> Type -> Type *)
+  Check ((@foo : Set -> _ -> _) : _ -> Type -> _).
 End WithPoly.

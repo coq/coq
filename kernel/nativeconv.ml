@@ -119,7 +119,7 @@ and conv_atom env pb lvl a1 a2 cu =
           if not (Int.equal (Array.length f1) (Array.length f2)) then raise NotConvertible
           else conv_fix env lvl t1 f1 t2 f2 cu
     | Aprod(_,d1,_c1), Aprod(_,d2,_c2) ->
-       let cu = conv_val env CONV lvl d1 d2 cu in
+       let cu = conv_val env CUMUL lvl d2 d1 cu in
        let v = mk_rel_accu lvl in
        conv_val env pb (lvl + 1) (d1 v) (d2 v) cu
     | Aproj((ind1, i1), ac1), Aproj((ind2, i2), ac2) ->

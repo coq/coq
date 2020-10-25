@@ -48,7 +48,7 @@ and conv_whd env pb k whd1 whd2 cu =
      **)
     assert false
   | Vprod p1, Vprod p2 ->
-      let cu = conv_val env CONV k (dom p1) (dom p2) cu in
+      let cu = conv_val env CUMUL k (dom p2) (dom p1) cu in
       conv_fun env pb k (codom p1) (codom p2) cu
   | Vfun f1, Vfun f2 -> conv_fun env CONV k f1 f2 cu
   | Vfix (f1,None), Vfix (f2,None) -> conv_fix env k f1 f2 cu

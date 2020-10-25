@@ -1047,13 +1047,13 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                UnifFailure (evd,UnifUnivInconsistency p)
              | e when CErrors.noncritical e -> UnifFailure (evd,NotSameHead))
 
-        | Prod (n1,c1,c'1), Prod (n2,c2,c'2) when app_empty ->
+        | Prod (na1,t1,t1'), Prod (na2,t2,t2') when app_empty ->
             ise_and evd
-              [(fun i -> evar_conv_x flags env i CONV c1 c2);
+              [(fun i -> evar_conv_x flags env i CUMUL t2 t1);
                (fun i ->
-                 let c = nf_evar i c1 in
-                 let na = Nameops.Name.pick_annot n1 n2 in
-                 evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c)) env) i pbty c'1 c'2)]
+                 let t = nf_evar i t1 in
+                 let na = Nameops.Name.pick_annot na1 na2 in
+                 evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,t)) env) i pbty t1' t2')]
 
         | Rel x1, Rel x2 ->
             if Int.equal x1 x2 then
