@@ -879,7 +879,8 @@ Print/identity tactic: idtac
 .. tacn:: idtac {* {| @ident | @string | @natural } }
    :name: idtac
 
-   Leaves the proof unchanged and prints the given tokens. Strings and integers are printed
+   Leaves the proof unchanged and prints the given tokens. :token:`String<string>`\s
+   and :token:`natural`\s are printed
    literally. If :token:`ident` is an |Ltac| variable, its contents are printed; if not, it
    is an error.
 
@@ -888,7 +889,7 @@ Print/identity tactic: idtac
 Failing
 ~~~~~~~
 
-.. tacn:: {| fail | gfail } {? @int_or_var } {* {| @ident | @string | @integer } }
+.. tacn:: {| fail | gfail } {? @int_or_var } {* {| @ident | @string | @natural } }
    :name: fail; gfail
 
    :tacn:`fail` is the always-failing tactic: it does not solve any
@@ -919,7 +920,7 @@ Failing
       the call to :tacn:`fail` :n:`@natural` is not enclosed in a :n:`+` construct,
       respecting the algebraic identity.
 
-   :n:`{* {| @ident | @string | @integer } }`
+   :n:`{* {| @ident | @string | @natural } }`
       The given tokens are used for printing the failure message.  If :token:`ident`
       is an |Ltac| variable, its contents are printed; if not, it is an error.
 
@@ -937,7 +938,7 @@ Failing
 
       .. todo the example is too long; could show the Goal True. Proof. once and hide the Aborts
          to shorten it.  And add a line of text before each subexample.  Perhaps add some very short
-         explanations/generalizations (eg gfail always fails; "tac; fail" succeeds but "fail." alone
+         explanations/generalizations (e.g. gfail always fails; "tac; fail" succeeds but "fail." alone
          fails.
 
       .. coqtop:: reset all fail
@@ -1488,7 +1489,7 @@ Examples:
       match_context_rule ::= [ {*, @match_hyp } |- @match_pattern ] => @ltac_expr
       match_hyp ::= | @name := {? [ @match_pattern ] : } @match_pattern
 
-.. todo PR The following items (up to numgoals) are part of "value_tactic".  I'd like to make
+.. todo The following items (up to numgoals) are part of "value_tactic".  I'd like to make
    this a subsection and explain that they all return values.  How do I get a 5th-level section title?
 
 Filling a term context

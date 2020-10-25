@@ -7,10 +7,10 @@ of program refinements. To use the Derive extension it must first be
 required with ``Require Coq.derive.Derive``. When the extension is loaded,
 it provides the following command:
 
-.. cmd:: Derive @ident__1 SuchThat @type As @ident__2
+.. cmd:: Derive @ident__1 SuchThat @one_term As @ident__2
 
-   :n:`@ident__1` can appear in :n:`@type`. This command opens a new proof
-   presenting the user with a goal for :n:`@type` in which the name :n:`@ident__1` is
+   :n:`@ident__1` can appear in :n:`@one_term`. This command opens a new proof
+   presenting the user with a goal for :n:`@one_term` in which the name :n:`@ident__1` is
    bound to an existential variable :g:`?x` (formally, there are other goals
    standing for the existential variables but they are shelved, as
    described in :tacn:`shelve`).

@@ -90,7 +90,7 @@ operconstr90: [
 operconstr10: [
 | operconstr9 LIST1 appl_arg
 | "@" global univ_instance LIST0 operconstr9
-| "@" pattern_identref LIST1 identref
+| "@" pattern_ident LIST1 identref
 | operconstr9
 ]
 
@@ -155,7 +155,7 @@ binder_constr: [
 ]
 
 appl_arg: [
-| test_lpar_id_coloneq "(" ident ":=" lconstr ")"
+| test_lpar_id_coloneq "(" identref ":=" lconstr ")"
 | operconstr9
 ]
 
@@ -165,13 +165,13 @@ atomic_constr: [
 | NUMBER
 | string
 | "_"
-| "?" "[" ident "]"
+| "?" "[" identref "]"
 | "?" "[" pattern_ident "]"
 | pattern_ident evar_instance
 ]
 
 inst: [
-| ident ":=" lconstr
+| identref ":=" lconstr
 ]
 
 evar_instance: [
@@ -362,16 +362,12 @@ pattern_ident: [
 | LEFTQMARK ident
 ]
 
-pattern_identref: [
-| pattern_ident
-]
-
-var: [
-| ident
-]
-
 identref: [
 | ident
+]
+
+hyp: [
+| identref
 ]
 
 field: [
@@ -596,9 +592,9 @@ command: [
 | "Optimize" "Proof"
 | "Optimize" "Heap"
 | "Hint" "Cut" "[" hints_path "]" opthints
-| "Typeclasses" "Transparent" LIST0 reference
-| "Typeclasses" "Opaque" LIST0 reference
-| "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT integer
+| "Typeclasses" "Transparent" LIST1 reference
+| "Typeclasses" "Opaque" LIST1 reference
+| "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT natural
 | "Proof" "with" Pltac.tactic OPT [ "using" G_vernac.section_subset_expr ]
 | "Proof" "using" G_vernac.section_subset_expr OPT [ "with" Pltac.tactic ]
 | "Tactic" "Notation" OPT ltac_tactic_level LIST1 ltac_production_item ":=" tactic
@@ -615,6 +611,7 @@ command: [
 | "Solve" "Obligation" natural "of" ident "with" tactic
 | "Solve" "Obligation" natural "with" tactic
 | "Solve" "Obligations" "of" ident "with" tactic
+| "Solve" "Obligations" "of" ident
 | "Solve" "Obligations" "with" tactic
 | "Solve" "Obligations"
 | "Solve" "All" "Obligations" "with" tactic
@@ -1551,7 +1548,7 @@ simple_tactic: [
 | "notypeclasses" "refine" uconstr
 | "simple" "notypeclasses" "refine" uconstr
 | "solve_constraints"
-| "subst" LIST1 var
+| "subst" LIST1 hyp
 | "subst"
 | "simple" "subst"
 | "evar" test_lpar_id_colon "(" ident ":" lconstr ")"
@@ -1619,6 +1616,7 @@ simple_tactic: [
 | "convert_concl_no_check" constr
 | "typeclasses" "eauto" "bfs" OPT int_or_var "with" LIST1 preident
 | "typeclasses" "eauto" OPT int_or_var "with" LIST1 preident
+| "typeclasses" "eauto" "bfs" OPT int_or_var
 | "typeclasses" "eauto" OPT int_or_var
 | "head_of_constr" ident constr
 | "not_evar" constr
@@ -1811,7 +1809,7 @@ EXTRAARGS_natural: [
 
 occurrences: [
 | LIST1 integer
-| var
+| hyp
 ]
 
 glob: [

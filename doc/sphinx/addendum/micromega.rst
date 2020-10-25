@@ -25,8 +25,8 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
   ``n`` is an optional integer limiting the proof search depth,
   is an incomplete proof procedure for non-linear arithmetic.
   It is based on John Harrison’s HOL Light
-  driver to the external prover `csdp` [#csdp]_. Note that the `csdp` driver is
-  generating a *proof cache* which makes it possible to rerun scripts
+  driver to the external prover `csdp` [#csdp]_. Note that the `csdp` driver
+  generates a *proof cache* which makes it possible to rerun scripts
   even without `csdp`.
 
 .. flag:: Simplex
@@ -250,7 +250,7 @@ proof by abstracting monomials by variables.
 `psatz`: a proof procedure for non-linear arithmetic
 ----------------------------------------------------
 
-.. tacn:: psatz
+.. tacn:: psatz @one_term {? @int_or_var }
    :name: psatz
 
    This tactic explores the *Cone* by increasing degrees – hence the
@@ -300,48 +300,86 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    The :tacn:`zify` tactic can be extended with new types and operators by declaring and registering new typeclass instances using the following commands.
    The typeclass declarations can be found in the module ``ZifyClasses`` and the default instances can be found in the module ``ZifyInst``.
 
-.. cmd:: Add Zify {| InjTyp | BinOp | UnOp |CstOp | BinRel | UnOpSpec | BinOpSpec } @qualid
+.. cmd:: Add Zify @add_zify @one_term
 
-   This command registers an instance of one of the typeclasses among ``InjTyp``, ``BinOp``, ``UnOp``, ``CstOp``,  ``BinRel``,
-   ``UnOpSpec``, ``BinOpSpec``.
+   .. insertprodn add_zify add_zify
 
-.. cmd:: Show Zify {| InjTyp | BinOp | UnOp |CstOp | BinRel | UnOpSpec | BinOpSpec }
+   .. prodn::
+      add_zify ::= {| InjTyp | BinOp | UnOp | CstOp | BinRel | UnOpSpec | BinOpSpec }
+      | {| PropOp | PropBinOp | PropUOp | Saturate }
 
-   The command prints the typeclass instances of one the typeclasses
-   among ``InjTyp``, ``BinOp``, ``UnOp``, ``CstOp``, ``BinRel``,
-   ``UnOpSpec``, ``BinOpSpec``. For instance, :cmd:`Show Zify` ``InjTyp``
+   Registers an instance of the specified typeclass.
+
+.. cmd:: Show Zify @show_zify
+
+   .. insertprodn show_zify show_zify
+
+   .. prodn::
+      show_zify ::= {| InjTyp | BinOp | UnOp | CstOp | BinRel | UnOpSpec | BinOpSpec | Spec }
+
+   Prints instances for the specified typeclass.  For instance, :cmd:`Show Zify` ``InjTyp``
    prints the list of types that supported by :tacn:`zify` i.e.,
    :g:`Z`, :g:`nat`, :g:`positive` and :g:`N`.
 
 .. cmd:: Show Zify Spec
 
    .. deprecated:: 8.13
-       Use instead either :cmd:`Show Zify` ``UnOpSpec`` or :cmd:`Show Zify` ``BinOpSpec``.
+       Use :cmd:`Show Zify` ``UnOpSpec`` or :cmd:`Show Zify` ``BinOpSpec`` instead.
 
-.. cmd:: Add InjTyp
-
-   .. deprecated:: 8.13
-       Use instead either :cmd:`Add Zify` ``InjTyp``.
-
-.. cmd:: Add BinOp
+.. cmd:: Add InjTyp @one_term
 
    .. deprecated:: 8.13
-       Use instead either :cmd:`Add Zify` ``BinOp``.
+       Use :cmd:`Add Zify` ``InjTyp`` instead.
 
-.. cmd:: Add UnOp
-
-   .. deprecated:: 8.13
-       Use instead either :cmd:`Add Zify` ``UnOp``.
-
-.. cmd:: Add CstOp
+.. cmd:: Add BinOp @one_term
 
    .. deprecated:: 8.13
-       Use instead either :cmd:`Add Zify` ``CstOp``.
+       Use :cmd:`Add Zify` ``BinOp`` instead.
 
-.. cmd:: Add BinRel
+.. cmd:: Add BinOpSpec @one_term
 
    .. deprecated:: 8.13
-       Use instead either :cmd:`Add Zify` ``BinRel``.
+       Use :cmd:`Add Zify` ``BinOpSpec`` instead.
+
+.. cmd:: Add UnOp @one_term
+
+   .. deprecated:: 8.13
+       Use :cmd:`Add Zify` ``UnOp`` instead.
+
+.. cmd:: Add UnOpSpec @one_term
+
+   .. deprecated:: 8.13
+       Use :cmd:`Add Zify` ``UnOpSpec`` instead.
+
+.. cmd:: Add CstOp @one_term
+
+   .. deprecated:: 8.13
+       Use :cmd:`Add Zify` ``CstOp`` instead.
+
+.. cmd:: Add BinRel @one_term
+
+   .. deprecated:: 8.13
+       Use :cmd:`Add Zify` ``BinRel`` instead.
+
+.. cmd:: Add PropOp @one_term
+
+   .. deprecated:: 8.13
+       Use :cmd:`Add Zify` ``PropOp`` instead.
+
+.. cmd:: Add PropBinOp @one_term
+
+   .. deprecated:: 8.13
+       Use :cmd:`Add Zify` ``PropBinOp`` instead.
+
+.. cmd:: Add PropUOp @one_term
+
+   .. deprecated:: 8.13
+       Use :cmd:`Add Zify` ``PropUOp`` instead.
+
+.. cmd:: Add Saturate @one_term
+
+   .. deprecated:: 8.13
+       Use :cmd:`Add Zify` ``Saturate`` instead.
 
 
 

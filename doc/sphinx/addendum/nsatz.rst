@@ -5,8 +5,16 @@ Nsatz: tactics for proving equalities in integral domains
 
 :Author: Loïc Pottier
 
-.. tacn:: nsatz
-   :name: nsatz
+
+To use the tactics described in this section, load the ``Nsatz`` module with the
+command ``Require Import Nsatz``.  Alternatively, if you prefer not to transitively depend on the
+files that declare the axioms used to define the real numbers, you can
+``Require Import NsatzTactic`` instead; this will still allow
+:tacn:`nsatz` to solve goals defined about :math:`\mathbb{Z}`,
+:math:`\mathbb{Q}` and any user-registered rings.
+
+
+.. tacn:: nsatz {? with radicalmax := @one_term strategy := @one_term parameters := @one_term variables := @one_term }
 
    This tactic is for solving goals of the form
 
@@ -32,13 +40,36 @@ Nsatz: tactics for proving equalities in integral domains
 
    doing automatic introductions.
 
-   You can load the ``Nsatz`` module with the command ``Require Import Nsatz``.
+   `radicalmax`
+     bound when searching for r such that
+     :math:`c (P−Q) r = \sum_{i=1..s} S_i (P i − Q i)`.
+     This argument must be of type `N` (binary natural numbers).
 
-   Alternatively, if you prefer not to transitively depend on the
-   files declaring the axioms used to define the real numbers, you can
-   ``Require Import NsatzTactic`` instead; this will still allow
-   :tacn:`nsatz` to solve goals defined about :math:`\mathbb{Z}`,
-   :math:`\mathbb{Q}` and any user-registered rings.
+   `strategy`
+     gives the order on variables :math:`X_1,\ldots,X_n` and the strategy
+     used in Buchberger algorithm (see :cite:`sugar` for details):
+
+       * `strategy := 0%Z`: reverse lexicographic order and newest s-polynomial.
+       * `strategy := 1%Z`: reverse lexicographic order and sugar strategy.
+       * `strategy := 2%Z`: pure lexicographic order and newest s-polynomial.
+       * `strategy := 3%Z`: pure lexicographic order and sugar strategy.
+
+   `parameters`
+     a list of parameters of type `R`, containing the variables :math:`X_{i_1},\ldots,X_{i_k}` among
+     :math:`X_1,\ldots,X_n`.  Computation will be performed with
+     rational fractions in these parameters, i.e. polynomials have
+     coefficients in :math:`R(X_{i_1},\ldots,X_{i_k})`. In this case, the coefficient
+     :math:`c` can be a nonconstant polynomial in :math:`X_{i_1},\ldots,X_{i_k}`, and the tactic
+     produces a goal which states that :math:`c` is not zero.
+
+   `variables`
+     a list of variables of type `R` in the decreasing order in
+     which they will be used in the Buchberger algorithm. If the list is empty,
+     then `lvar` is replaced by all the variables which are not in
+     `parameters`.
+
+   See the file `Nsatz.v <https://github.com/coq/coq/blob/master/test-suite/success/Nsatz.v>`_
+   for examples, especially in geometry.
 
 More about `nsatz`
 ---------------------
@@ -63,32 +94,3 @@ Buchberger algorithm.
 
 This computation is done after a step of *reification*, which is
 performed using :ref:`typeclasses`.
-
-.. tacv:: nsatz with radicalmax:=@natural%N strategy:=@natural%Z parameters:=[{*, @ident}] variables:=[{*, @ident}]
-
-   Most complete syntax for `nsatz`.
-
-   * `radicalmax` is a bound when searching for r such that
-     :math:`c (P−Q) r = \sum_{i=1..s} S_i (P i − Q i)`
-
-   * `strategy` gives the order on variables :math:`X_1,\ldots,X_n` and the strategy
-     used in Buchberger algorithm (see :cite:`sugar` for details):
-
-       * strategy = 0: reverse lexicographic order and newest s-polynomial.
-       * strategy = 1: reverse lexicographic order and sugar strategy.
-       * strategy = 2: pure lexicographic order and newest s-polynomial.
-       * strategy = 3: pure lexicographic order and sugar strategy.
-
-   * `parameters` is the list of variables :math:`X_{i_1},\ldots,X_{i_k}` among
-     :math:`X_1,\ldots,X_n` which are considered as parameters: computation will be performed with
-     rational fractions in these variables, i.e. polynomials are considered
-     with coefficients in :math:`R(X_{i_1},\ldots,X_{i_k})`. In this case, the coefficient
-     :math:`c` can be a non constant polynomial in :math:`X_{i_1},\ldots,X_{i_k}`, and the tactic
-     produces a goal which states that :math:`c` is not zero.
-
-   * `variables` is the list of the variables in the decreasing order in
-     which they will be used in the Buchberger algorithm. If `variables` = :g:`(@nil R)`,
-     then `lvar` is replaced by all the variables which are not in
-     `parameters`.
-
-See the test-suite file `Nsatz.v <https://github.com/coq/coq/blob/master/test-suite/success/Nsatz.v>`_ for many examples, especially in geometry.

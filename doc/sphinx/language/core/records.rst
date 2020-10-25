@@ -18,7 +18,7 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
    .. insertprodn record_definition field_def
 
    .. prodn::
-      record_definition ::= {? > } @ident_decl {* @binder } {? : @type } {? @ident } %{ {*; @record_field } {? ; } %} {? @decl_notations }
+      record_definition ::= {? > } @ident_decl {* @binder } {? : @sort } {? := {? @ident } %{ {*; @record_field } {? ; } %} }
       record_field ::= {* #[ {*, @attribute } ] } @name {? @field_body } {? %| @natural } {? @decl_notations }
       field_body ::= {* @binder } @of_type
       | {* @binder } @of_type := @term
@@ -26,18 +26,27 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
       term_record ::= %{%| {*; @field_def } {? ; } %|%}
       field_def ::= @qualid {* @binder } := @term
 
-
    Each :n:`@record_definition` defines a record named by :n:`@ident_decl`.
    The constructor name is given by :n:`@ident`.
    If the constructor name is not specified, then the default name :n:`Build_@ident` is used,
    where :n:`@ident` is the record name.
 
-   If :n:`@type` is
-   omitted, the default type is :math:`\Type`. The identifiers inside the brackets are the field names.
-   The type of each field :n:`@ident` is :n:`forall {* @binder }, @type`.
+   If :token:`sort` is omitted, the default sort is Type.
    Notice that the type of an identifier can depend on a previously-given identifier. Thus the
    order of the fields is important. :n:`@binder` parameters may be applied to the record as a whole
    or to individual fields.
+
+   .. todo
+      "Record foo2:Prop := { a }." gives the error "Cannot infer this placeholder of type "Type",
+      while "Record foo2:Prop := { a:Type }." gives the output "foo2 is defined.
+      a cannot be defined because it is informative and foo2 is not."
+      Your thoughts?
+
+   :n:`{? > }`
+     If provided, the constructor name is automatically declared as
+     a coercion from the class of the last field type to the record name
+     (this may fail if the uniform inheritance condition is not
+     satisfied).  See :ref:`coercions`.
 
    Notations can be attached to fields using the :n:`@decl_notations` annotation.
 
@@ -76,7 +85,7 @@ Let us now see the work done by the ``Record`` macro. First the macro
 generates a variant type definition with just one constructor:
 :n:`Variant @ident {* @binder } : @sort := @ident__0 {* @binder }`.
 
-To build an object of type :token:`ident`, one should provide the constructor
+To build an object of type :token:`ident`, provide the constructor
 :n:`@ident__0` with the appropriate number of terms filling the fields of the record.
 
 .. example::

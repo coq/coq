@@ -980,7 +980,7 @@ described first.
 
    This command has an effect on unfoldable constants, i.e. on constants
    defined by :cmd:`Definition` or :cmd:`Let` (with an explicit body), or by a command
-   assimilated to a definition such as :cmd:`Fixpoint`, :cmd:`Program Definition`, etc,
+   associated with a definition such as :cmd:`Fixpoint`, etc,
    or by a proof ended by :cmd:`Defined`. The command tells not to unfold the
    constants in the :n:`@reference` sequence in tactics using δ-conversion (unfolding
    a constant is replacing it by its definition).
