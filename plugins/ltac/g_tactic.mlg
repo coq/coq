@@ -327,6 +327,7 @@ GRAMMAR EXTEND Gram
   ;
   red_flag:
     [ [ IDENT "beta" -> { [FBeta] }
+      | IDENT "eta" -> { [FEta] }
       | IDENT "iota" -> { [FMatch;FFix;FCofix] }
       | IDENT "match" -> { [FMatch] }
       | IDENT "fix" -> { [FFix] }

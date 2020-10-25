@@ -349,6 +349,7 @@ let make_red_flag l =
   | {v=flag} :: lf ->
     let red = match flag with
     | QBeta -> { red with rBeta = true }
+    | QEta -> { red with rEta = true }
     | QMatch -> { red with rMatch = true }
     | QFix -> { red with rFix = true }
     | QCofix -> { red with rCofix = true }
@@ -369,7 +370,7 @@ let make_red_flag l =
     add_flag red lf
   in
   add_flag
-    {rBeta = false; rMatch = false; rFix = false; rCofix = false;
+    {rBeta = false; rEta = false; rMatch = false; rFix = false; rCofix = false;
      rZeta = false; rDelta = false; rConst = []}
     l
 

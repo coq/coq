@@ -1185,7 +1185,7 @@ let rec decompose_assum env sigma orig_goal =
 let tclFULL_BETAIOTA = Goal.enter begin fun gl ->
   let r, _ = Redexpr.reduction_of_red_expr (Goal.env gl)
     Genredexpr.(Lazy {
-      rBeta=true; rMatch=true; rFix=true; rCofix=true;
+      rBeta=true; rEta=true; rMatch=true; rFix=true; rCofix=true;
       rZeta=false; rDelta=false; rConst=[]}) in
   Tactics.e_reduct_in_concl ~cast:false ~check:false (r,Constr.DEFAULTcast)
 end

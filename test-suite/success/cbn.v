@@ -16,3 +16,10 @@ Goal forall n, foo (S n) = g n.
     |- g _ = g _ => reflexivity
   end.
 Qed.
+
+(* Support for eta *)
+
+Theorem g (f:nat->nat) : f = fun a => f a.
+cbn eta.
+match goal with |- f = f => idtac end.
+Abort.

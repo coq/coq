@@ -62,9 +62,10 @@ let to_clause v = match Value.to_tuple v with
 let clause = make_to_repr to_clause
 
 let to_red_flag v = match Value.to_tuple v with
-| [| beta; iota; fix; cofix; zeta; delta; const |] ->
+| [| beta; eta; iota; fix; cofix; zeta; delta; const |] ->
   {
     rBeta = Value.to_bool beta;
+    rEta = Value.to_bool eta;
     rMatch = Value.to_bool iota;
     rFix = Value.to_bool fix;
     rCofix = Value.to_bool cofix;

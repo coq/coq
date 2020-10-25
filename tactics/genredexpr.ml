@@ -14,6 +14,7 @@
 
 type 'a red_atom =
   | FBeta
+  | FEta
   | FMatch
   | FFix
   | FCofix
@@ -25,6 +26,7 @@ type 'a red_atom =
 
 type 'a glob_red_flag = {
   rBeta : bool;
+  rEta : bool;
   rMatch : bool;
   rFix : bool;
   rCofix : bool;

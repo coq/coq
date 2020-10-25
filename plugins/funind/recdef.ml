@@ -165,6 +165,7 @@ let simpl_iter clause =
   reduce
     (Lazy
        { rBeta = true
+       ; rEta = true
        ; rMatch = true
        ; rFix = true
        ; rCofix = true

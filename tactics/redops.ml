@@ -16,6 +16,7 @@ let make_red_flag l =
   let rec add_flag red = function
     | [] -> red
     | FBeta :: lf -> add_flag { red with rBeta = true } lf
+    | FEta :: lf -> add_flag { red with rEta = true } lf
     | FMatch :: lf -> add_flag { red with rMatch = true } lf
     | FFix :: lf -> add_flag { red with rFix = true } lf
     | FCofix :: lf -> add_flag { red with rCofix = true } lf
@@ -34,13 +35,13 @@ let make_red_flag l =
           lf
   in
   add_flag
-    {rBeta = false; rMatch = false; rFix = false; rCofix = false;
+    {rBeta = false; rEta = false; rMatch = false; rFix = false; rCofix = false;
      rZeta = false; rDelta = false; rConst = []}
     l
 
 
 let all_flags =
-  {rBeta = true; rMatch = true; rFix = true; rCofix = true;
+  {rBeta = true; rEta = true; rMatch = true; rFix = true; rCofix = true;
    rZeta = true; rDelta = true; rConst = []}
 
 (** Mapping [red_expr_gen] *)

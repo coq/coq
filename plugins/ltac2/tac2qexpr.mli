@@ -119,6 +119,7 @@ type dispatch = dispatch_r CAst.t
 
 type red_flag_r =
 | QBeta
+| QEta
 | QIota
 | QMatch
 | QFix
