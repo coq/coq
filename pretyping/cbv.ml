@@ -667,6 +667,11 @@ and cbv_value_cache info ref =
     in
     KeyTable.add info.tab ref v; v
 
+let rec mkEtaLambdaN sigma l b =
+  match l with
+  | []       -> b
+  | (v,t)::l -> mkEtaLambdaN sigma l (EConstr.Unsafe.to_constr (Reductionops.shrink_eta sigma (EConstr.of_constr (mkLambda (v,t,b)))))
+
 (* When we are sure t will never produce a redex with its stack, we
  * normalize (even under binders) the applied terms and we build the
  * final term
@@ -722,7 +727,9 @@ and cbv_norm_value info = function (* reduction under binders *)
       let nctxt =
         List.map_i (fun i (x,ty) ->
           (x,cbv_norm_term info (subs_liftn i env) ty)) 0 ctxt in
-      Term.compose_lam (List.rev nctxt) (cbv_norm_term info (subs_liftn n env) b)
+      let c = cbv_norm_term info (subs_liftn n env) b in
+      if red_set info.reds fETA then mkEtaLambdaN info.sigma (List.rev nctxt) c
+      else Term.compose_lam (List.rev nctxt) c
   | FIXP ((lij,(names,lty,bds)),env,args) ->
       mkApp
         (mkFix (lij,
