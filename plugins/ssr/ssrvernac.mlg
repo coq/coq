@@ -309,9 +309,15 @@ END
       ~category:"deprecated" ~default:CWarnings.Enabled
       (fun () ->
          (Pp.strbrk
-            "SSReflect's Search command has been moved to the \
-             ssrsearch module; please Require that module if you \
-             still want to use SSReflect's Search command"))
+            "In previous versions of Coq, loading SSReflect had the effect of \
+             replacing the built-in 'Search' command with an SSReflect version \
+             of that command. \
+             Coq's own search feature was still available via 'SearchAbout' \
+             (but that alias is deprecated). \
+             This replacement no longer happens; now 'Search' calls Coq's own search \
+             feature even when SSReflect is loaded. \
+             If you want to use SSReflect's deprecated Search command \
+             instead of the built-in one, please Require the ssrsearch module."))
 
 open G_vernac
 }
