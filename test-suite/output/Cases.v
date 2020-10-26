@@ -242,3 +242,15 @@ end.
 Print stray.
 
 End Bug11231.
+
+Module Wish12762.
+
+Inductive foo := a | b | c.
+
+Definition bar (f : foo) :=
+  match f with
+  | a => 0
+  | B => 1
+  end.
+
+End Wish12762.

@@ -138,12 +138,12 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   Fixpoint compare x y :=
     match x, y with
       | x~1, y~1 => compare x y
-      | x~1, _ => Gt
+      | _~1, _ => Gt
       | x~0, y~0 => compare x y
-      | x~0, _ => Lt
-      | 1, y~1 => Lt
+      | _~0, _ => Lt
+      | 1, _~1 => Lt
       | 1, 1 => Eq
-      | 1, y~0 => Gt
+      | 1, _~0 => Gt
     end.
 
   Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).

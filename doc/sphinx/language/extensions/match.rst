@@ -290,6 +290,43 @@ This example emphasizes what the printing settings offer.
 
        Print snd.
 
+Conventions about unused pattern-matching variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pattern-matching variables that are not used on the right-hand side of ``=>`` are
+considered the sign of a potential error. For instance, it could
+result from an undetected mispelled constant constructor. By default,
+a warning is issued in such situations.
+
+.. warn:: Unused variable @ident catches more than one case.
+
+   This indicates that an unused pattern variable :token:`ident`
+   occurs in a pattern-matching clause used to complete at least two
+   cases of the pattern-matching problem.
+
+   The warning can be deactivated by using a variable name starting
+   with ``_`` or by setting ``Set Warnings
+   "-unused-pattern-matching-variable"``.
+
+   Here is an example where the warning is activated.
+
+   .. example::
+
+      .. coqtop:: none
+
+         Set Warnings "-unused-pattern-matching-variable".
+
+      .. coqtop:: all
+
+         Definition is_zero (o : option nat) := match o with
+         | Some 0 => true
+         | x => false
+         end.
+
+      .. coqtop:: none
+
+         Set Warnings "+unused-pattern-matching-variable".
+
 Patterns
 --------
 

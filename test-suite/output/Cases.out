@@ -178,3 +178,6 @@ match N with
 | _ => Node
 end
      : Tree -> Tree
+File "stdin", line 253, characters 4-5:
+Warning: Unused variable B catches more than one case.
+[unused-pattern-matching-variable,pattern-matching]

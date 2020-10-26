@@ -139,8 +139,8 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
     | xH =>
         match m with
         | Leaf => Leaf
-        | Node Leaf o Leaf => Leaf
-        | Node l o r => Node l None r
+        | Node Leaf _ Leaf => Leaf
+        | Node l _ r => Node l None r
         end
     | xO ii =>
         match m with
