@@ -1165,7 +1165,7 @@ module FNativeEntries =
 
     let mkFloat env f =
       check_float env;
-      { mark = mark Norm KnownR; term = FFloat f }
+      { mark = mark Cstr KnownR; term = FFloat f }
 
     let mkBool env b =
       check_bool env;
