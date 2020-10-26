@@ -25,6 +25,7 @@ sig
   val ordinal : int -> string
   val is_sub : string -> string -> int -> bool
   val is_prefix : string -> string -> bool
+  val is_suffix : string -> string -> bool
   module Set : Set.S with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
   module List : CList.MonoS with type elt = t
@@ -104,6 +105,9 @@ let is_sub p s off =
 
 let is_prefix p s =
   is_sub p s 0
+
+let is_suffix p s =
+  is_sub p s (String.length s - String.length p)
 
 let plural n s = if n<>1 then s^"s" else s
 

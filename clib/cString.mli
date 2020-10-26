@@ -54,6 +54,9 @@ sig
   val is_prefix : string -> string -> bool
   (** [is_prefix p s] tests whether [p] is a prefix of [s]. *)
 
+  val is_suffix : string -> string -> bool
+  (** [is_suffix suf s] tests whether [suf] is a suffix of [s]. *)
+
   (** {6 Generic operations} **)
 
   module Set : Set.S with type elt = t
