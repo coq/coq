@@ -1328,10 +1328,14 @@ let rec knr info tab m stk =
   | FFlex(ConstKey (kn,_u as c)) when red_set info.i_flags (fCONST kn) ->
       (match ref_value_cache info tab (ConstKey c) with
         | Def v -> kni info tab v stk
-        | Primitive op when check_native_args op stk ->
-          let rargs, a, nargs, stk = get_native_args1 op c stk in
-          kni info tab a (Zprimitive(op,c,rargs,nargs)::stk)
-        | Undef _ | OpaqueDef _ | Primitive _ -> (set_norm m; (m,stk)))
+        | Primitive op ->
+          if check_native_args op stk then
+            let rargs, a, nargs, stk = get_native_args1 op c stk in
+            kni info tab a (Zprimitive(op,c,rargs,nargs)::stk)
+          else
+            (* Similarly to fix, partially applied primitives are not Norm! *)
+            (m, stk)
+        | Undef _ | OpaqueDef _ -> (set_norm m; (m,stk)))
   | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->
       (match ref_value_cache info tab (VarKey id) with
         | Def v -> kni info tab v stk
