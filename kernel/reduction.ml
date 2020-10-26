@@ -295,6 +295,14 @@ let conv_table_key infos ~nargs k1 k2 cuniv =
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
 
+(* Because it's used in a polymorphic recursion we define this as a
+   ['a universe_compare] instead of [unit universe_compare]. *)
+let no_check_univs = {
+  compare_sorts = (fun _ _ _ _ x -> x);
+  compare_instances = (fun ~flex:_ _ _ x -> x);
+  compare_cumul_instances = (fun _ _ _ _ x -> x);
+}
+
 let unfold_ref_with_args infos tab fl v =
   let env = info_env infos in
   let flags = RedFlags.red_transparent (info_flags infos) in
@@ -501,10 +509,11 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         if not (is_empty_stack v1 && is_empty_stack v2) then
           anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
         (* We assume terms well-typed in the same supertype, so we don't compare the domains *)
-        let (x1,_ty1,bd1) = destFLambda mk_clos hd1 in
-        let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
+        let (x1,ty1,bd1) = destFLambda mk_clos hd1 in
+        let (_,ty2,bd2) = destFLambda mk_clos hd2 in
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
+        let _, _ = ccnv CONV l2r infos el1 el2 ty1 ty2 (fst cuniv,no_check_univs) in
         ccnv CONV l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) bd1 bd2 cuniv
 
     | (FProd (x1, t1, t1', e1), FProd (_, t2, t2', e2)) ->
