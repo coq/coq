@@ -49,7 +49,7 @@ the assertion of a theorem using an assertion command like :cmd:`Theorem`. The
 list of assertion commands is given in :ref:`Assertions`. The command
 :cmd:`Goal` can also be used.
 
-.. cmd:: Goal @form
+.. cmd:: Goal @type
 
    This is intended for quick assertion of statements, without knowing in
    advance which name to give to the assertion, typically for quick
@@ -63,7 +63,7 @@ list of assertion commands is given in :ref:`Assertions`. The command
    This command is available in interactive editing proof mode when the
    proof is completed. Then :cmd:`Qed` extracts a proof term from the proof
    script, switches back to Coq top-level and attaches the extracted
-   proof term to the declared name of the original goal. This name is
+   proof term to the declared name of the original goal. The name is
    added to the environment as an opaque constant.
 
    .. exn:: Attempt to save an incomplete proof.
@@ -80,42 +80,42 @@ list of assertion commands is given in :ref:`Assertions`. The command
       a while when the proof is large. In some exceptional cases one may
       even incur a memory overflow.
 
-.. cmd:: Defined
-
-   Same as :cmd:`Qed`, except the proof is made *transparent*, which means
-   that its content can be explicitly used for type checking and that it can be
-   unfolded in conversion tactics (see :ref:`performingcomputations`,
-   :cmd:`Opaque`, :cmd:`Transparent`).
-
 .. cmd:: Save @ident
    :name: Save
 
-   Saves a completed proof with the name :token:`ident`.
+   Saves a completed proof with the name :token:`ident`, which
+   overrides any name provided by the :cmd:`Theorem` command or
+   its variants.
+
+.. cmd:: Defined {? @ident }
+
+   Similar to :cmd:`Qed` and :cmd:`Save`, except the proof is made *transparent*, which means
+   that its content can be explicitly used for type checking and that it can be
+   unfolded in conversion tactics (see :ref:`performingcomputations`,
+   :cmd:`Opaque`, :cmd:`Transparent`).  If :token:`ident` is specified,
+   the proof is defined with the given name, which overrides any name
+   provided by the :cmd:`Theorem` command or its variants.
 
 .. cmd:: Admitted
 
    This command is available in interactive editing mode to give up
    the current proof and declare the initial goal as an axiom.
 
-.. cmd:: Abort
+.. cmd:: Abort {? {| All | @ident } }
 
-   This command cancels the current proof development, switching back to
+   Cancels the current proof development, switching back to
    the previous proof development, or to the |Coq| toplevel if no other
-   proof was edited.
+   proof was being edited.
+
+   :n:`@ident`
+     Aborts editing the proof named :n:`@ident` for use when you have
+     nested proofs.  See also :flag:`Nested Proofs Allowed`.
+
+   :n:`All`
+     Aborts all current proofs.
 
    .. exn:: No focused proof (No proof-editing in progress).
       :undocumented:
-
-   .. cmdv::  Abort @ident
-
-      Aborts the editing of the proof named :token:`ident` (in case you have
-      nested proofs).
-
-      .. seealso:: :flag:`Nested Proofs Allowed`
-
-   .. cmdv:: Abort All
-
-      Aborts all current goals.
 
 .. cmd:: Proof @term
    :name: Proof `term`
@@ -143,12 +143,26 @@ list of assertion commands is given in :ref:`Assertions`. The command
 
    .. seealso:: :cmd:`Proof with`
 
-.. cmd:: Proof using {+ @ident }
+.. cmd:: Proof using @section_var_expr {? with @ltac_expr }
 
-   This command applies in proof editing mode. It declares the set of
+   .. insertprodn section_var_expr starred_ident_ref
+
+   .. prodn::
+      section_var_expr ::= {* @starred_ident_ref }
+      | {? - } @section_var_expr50
+      section_var_expr50 ::= @section_var_expr0 - @section_var_expr0
+      | @section_var_expr0 + @section_var_expr0
+      | @section_var_expr0
+      section_var_expr0 ::= @starred_ident_ref
+      | ( @section_var_expr ) {? * }
+      starred_ident_ref ::= @ident {? * }
+      | Type {? * }
+      | All
+
+   Opens proof editing mode, declaring the set of
    section variables (see :ref:`gallina-assumptions`) used by the proof.
    At :cmd:`Qed` time, the
-   system will assert that the set of section variables actually used in
+   system verifies that the set of section variables used in
    the proof is a subset of the declared one.
 
    The set of declared variables is closed under type dependency. For
@@ -160,51 +174,30 @@ list of assertion commands is given in :ref:`Assertions`. The command
    the statement. In other words ``Proof using e`` is equivalent to
    ``Proof using Type + e`` for any declaration expression ``e``.
 
-   .. cmdv:: Proof using {+ @ident } with @tactic
+   :n:`- @section_var_expr50`
+     Use all section variables except those specified by :n:`@section_var_expr50`
 
-      Combines in a single line :cmd:`Proof with` and :cmd:`Proof using`.
+   :n:`@section_var_expr0 + @section_var_expr0`
+     Use section variables from the union of both collections.
+     See :ref:`nameaset` to see how to form a named collection.
 
-      .. seealso:: :ref:`tactics-implicit-automation`
+   :n:`@section_var_expr0 - @section_var_expr0`
+     Use section variables which are in the first collection but not in the
+     second one.
 
-   .. cmdv:: Proof using All
+   :n:`{? * }`
+     Use the transitive closure of the specified collection.
 
-      Use all section variables.
+   :n:`Type`
+     Use only section variables occurring in the statement.  Specifying :n:`*`
+     uses the forward transitive closure of all the section variables occurring
+     in the statement. For example, if the variable ``H`` has type ``p < 5`` then
+     ``H`` is in ``p*`` since ``p`` occurs in the type of ``H``.
 
-   .. cmdv:: Proof using {? Type }
+   :n:`All`
+     Use all section variables.
 
-      Use only section variables occurring in the statement.
-
-   .. cmdv:: Proof using Type*
-
-      The ``*`` operator computes the forward transitive closure. E.g. if the
-      variable ``H`` has type ``p < 5`` then ``H`` is in ``p*`` since ``p`` occurs in the type
-      of ``H``. ``Type*`` is the forward transitive closure of the entire set of
-      section variables occurring in the statement.
-
-   .. cmdv:: Proof using -({+ @ident })
-
-      Use all section variables except the list of :token:`ident`.
-
-   .. cmdv:: Proof using @collection__1 + @collection__2
-
-      Use section variables from the union of both collections.
-      See :ref:`nameaset` to know how to form a named collection.
-
-   .. cmdv:: Proof using @collection__1 - @collection__2
-
-      Use section variables which are in the first collection but not in the
-      second one.
-
-   .. cmdv:: Proof using @collection - ({+ @ident })
-
-      Use section variables which are in the first collection but not in the
-      list of :token:`ident`.
-
-   .. cmdv:: Proof using @collection *
-
-      Use section variables in the forward transitive closure of the collection.
-      The ``*`` operator binds stronger than ``+`` and ``-``.
-
+   .. seealso:: :ref:`tactics-implicit-automation`
 
 Proof using options
 ```````````````````
@@ -212,10 +205,10 @@ Proof using options
 The following options modify the behavior of ``Proof using``.
 
 
-.. opt:: Default Proof Using "@collection"
+.. opt:: Default Proof Using "@section_var_expr"
    :name: Default Proof Using
 
-   Use :n:`@collection` as the default ``Proof using`` value. E.g. ``Set Default
+   Use :n:`@section_var_expr` as the default ``Proof using`` value. E.g. ``Set Default
    Proof Using "a b"`` will complete all ``Proof`` commands not followed by a
    ``using`` part with ``using a b``.
 
@@ -230,7 +223,7 @@ The following options modify the behavior of ``Proof using``.
 Name a set of section hypotheses for ``Proof using``
 ````````````````````````````````````````````````````
 
-.. cmd:: Collection @ident := @collection
+.. cmd:: Collection @ident := @section_var_expr
 
    This can be used to name a set of section
    hypotheses, with the purpose of making ``Proof using`` annotations more
@@ -259,7 +252,7 @@ Name a set of section hypotheses for ``Proof using``
 
 
 
-.. cmd:: Existential @num := @term
+.. cmd:: Existential @num {? : @type } := @term
 
    This command instantiates an existential variable. :token:`num` is an index in
    the list of uninstantiated existential variables displayed by :cmd:`Show Existentials`.
@@ -285,64 +278,60 @@ their own proof modes. The default proof mode used when opening a proof can
 be changed using the following option.
 
 .. opt:: Default Proof Mode @string
-   :name: Default Proof Mode
 
    Select the proof mode to use when starting a proof. Depending on the proof
    mode, various syntactic constructs are allowed when writing an interactive
-   proof. The possible option values are listed below.
+   proof. All proof modes support vernacular commands; the proof mode determines
+   which tactic language and set of tactic definitions are available.  The
+   possible option values are:
 
-   - "Classic": this is the default. It activates the |Ltac| language to interact
-     with the proof, and also allows vernacular commands.
+   `"Classic"`
+     Activates the |Ltac| language and the tactics with the syntax documented
+     in this manual.
+     Some tactics are not available until the associated plugin is loaded,
+     such as `SSR` or `micromega`.
+     This proof mode is set when the :term:`prelude` is loaded.
 
-   - "Noedit": this proof mode only allows vernacular commands. No tactic
-     language is activated at all. This is the default when the prelude is not
-     loaded, e.g. through the `-noinit` option for `coqc`.
+   `"Noedit"`
+     No tactic
+     language is activated at all. This is the default when the :term:`prelude`
+     is not loaded, e.g. through the `-noinit` option for `coqc`.
 
-   - "Ltac2": this proof mode is made available when requiring the Ltac2
-     library, and is set to be the default when it is imported. It allows
-     to use the Ltac2 language, as well as vernacular commands.
+   `"Ltac2"`
+     Activates the Ltac2 language and the Ltac2-specific variants of the documented
+     tactics.
+     This value is only available after :cmd:`Requiring <Require>` Ltac2.
+     :cmd:`Importing <Import>` Ltac2 sets this mode.
 
-   - Some external plugins also define their own proof mode, which can be
-     activated via this command.
+   Some external plugins also define their own proof mode, which can be
+   activated with this command.
 
 Navigation in the proof tree
 --------------------------------
 
-.. cmd:: Undo
+.. cmd:: Undo {? {? To } @num }
 
-   This command cancels the effect of the last command. Thus, it
-   backtracks one step.
+   Cancels the effect of the last :token:`num` commands or tactics.
+   The :n:`To @num` form goes back to the specified state number.
+   If :token:`num` is not specified, the command goes back one command or tactic.
 
-.. cmdv:: Undo @num
+.. cmd:: Restart
 
-   Repeats Undo :token:`num` times.
-
-.. cmdv:: Restart
-   :name: Restart
-
-   This command restores the proof editing process to the original goal.
+   Restores the proof editing process to the original goal.
 
    .. exn:: No focused proof to restart.
       :undocumented:
 
-.. cmd:: Focus
+.. cmd:: Focus {? @num }
 
-   This focuses the attention on the first subgoal to prove and the
+   Focuses the attention on the first subgoal to prove or, if :token:`num` is
+   specified, the :token:`num`\-th.  The
    printing of the other subgoals is suspended until the focused subgoal
-   is solved or unfocused. This is useful when there are many current
-   subgoals which clutter your screen.
+   is solved or unfocused.
 
    .. deprecated:: 8.8
 
-      Prefer the use of bullets or focusing brackets (see below).
-
-.. cmdv:: Focus @num
-
-   This focuses the attention on the :token:`num` th subgoal to prove.
-
-   .. deprecated:: 8.8
-
-      Prefer the use of focusing brackets with a goal selector (see below).
+      Prefer the use of bullets or focusing brackets with a goal selector (see below).
 
 .. cmd:: Unfocus
 
@@ -361,11 +350,19 @@ Navigation in the proof tree
 .. index:: {
            }
 
-.. cmd:: {| %{ | %} }
+.. todo: :name: "{"; "}" doesn't work, nor does :name: left curly bracket; right curly bracket,
+   hence the verbose names
 
-   The command ``{`` (without a terminating period) focuses on the first
-   goal, much like :cmd:`Focus` does, however, the subproof can only be
-   unfocused when it has been fully solved ( *i.e.* when there is no
+.. tacn:: {? {| @num | [ @ident ] } : } %{
+         %}
+
+   .. todo
+      See https://github.com/coq/coq/issues/12004 and
+      https://github.com/coq/coq/issues/12825.
+
+   ``{`` (without a terminating period) focuses on the first
+   goal.  The subproof can only be
+   unfocused when it has been fully solved (*i.e.*, when there is no
    focused goal left). Unfocusing is then handled by ``}`` (again, without a
    terminating period). See also an example in the next section.
 
@@ -373,67 +370,65 @@ Navigation in the proof tree
    together with a suggestion about the right bullet or ``}`` to unfocus it
    or focus the next one.
 
-   .. cmdv:: @num: %{
+   :n:`@num:`
+     Focuses on the :token:`num`\-th subgoal to prove.
 
-      This focuses on the :token:`num`\-th subgoal to prove.
+   :n:`[ @ident ]: %{`
+     Focuses on the named goal :token:`ident`.
 
-   .. cmdv:: [@ident]: %{
+   .. note::
 
-      This focuses on the named goal :token:`ident`.
+      Goals are just existential variables and existential variables do not
+      get a name by default. You can give a name to a goal by using :n:`refine ?[@ident]`.
+      You may also wrap this in an Ltac-definition like:
 
-      .. note::
+      .. coqtop:: in
 
-         Goals are just existential variables and existential variables do not
-         get a name by default. You can give a name to a goal by using :n:`refine ?[@ident]`.
-         You may also wrap this in an Ltac-definition like:
+         Ltac name_goal name := refine ?[name].
 
-         .. coqtop:: in
+   .. seealso:: :ref:`existential-variables`
 
-            Ltac name_goal name := refine ?[name].
+   .. example::
 
-      .. seealso:: :ref:`existential-variables`
+      This first example uses the Ltac definition above, and the named goals
+      only serve for documentation.
 
-      .. example::
+      .. coqtop:: all
 
-         This first example uses the Ltac definition above, and the named goals
-         only serve for documentation.
+         Goal forall n, n + 0 = n.
+         Proof.
+         induction n; [ name_goal base | name_goal step ].
+         [base]: {
 
-         .. coqtop:: all
+      .. coqtop:: all
 
-            Goal forall n, n + 0 = n.
-            Proof.
-            induction n; [ name_goal base | name_goal step ].
-            [base]: {
+         reflexivity.
 
-         .. coqtop:: all
+      .. coqtop:: in
 
-            reflexivity.
+         }
 
-         .. coqtop:: in
+      .. coqtop:: all
 
-            }
+         [step]: {
 
-         .. coqtop:: all
+      .. coqtop:: all
 
-            [step]: {
+         simpl.
+         f_equal.
+         assumption.
+         }
+         Qed.
 
-         .. coqtop:: all
+      This can also be a way of focusing on a shelved goal, for instance:
 
-            simpl.
-            f_equal.
-            assumption.
-            }
-            Qed.
+      .. coqtop:: all
 
-         This can also be a way of focusing on a shelved goal, for instance:
-
-         .. coqtop:: all
-
-            Goal exists n : nat, n = n.
-            eexists ?[x].
-            reflexivity.
-            [x]: exact 0.
-            Qed.
+         Goal exists n : nat, n = n.
+         eexists ?[x].
+         reflexivity.
+         [x]: exact 0.
+         Qed.
 
    .. exn:: This proof is focused, but cannot be unfocused this way.
 
@@ -450,14 +445,14 @@ Navigation in the proof tree
       Brackets are used to focus on a single goal given either by its position
       or by its name if it has one.
 
-  .. seealso:: The error messages about bullets below.
+  .. seealso:: The error messages for bullets below.
 
 .. _bullets:
 
 Bullets
 ```````
 
-Alternatively to ``{`` and ``}``, proofs can be structured with bullets. The
+Alternatively, proofs can be structured with bullets instead of ``{`` and ``}``. The
 use of a bullet ``b`` for the first time focuses on the first goal ``g``, the
 same bullet cannot be used again until the proof of ``g`` is completed,
 then it is mandatory to focus the next goal with ``b``. The consequence is
@@ -552,111 +547,103 @@ Requesting information
 ----------------------
 
 
-.. cmd:: Show
+.. cmd:: Show {? {| @ident | @num } }
 
-   This command displays the current goals.
+   Displays the current goals.
+
+   :n:`@num`
+     Display only the :token:`num`\-th subgoal.
+
+   :n:`@ident`
+     Displays the named goal :token:`ident`. This is useful in
+     particular to display a shelved goal but only works if the
+     corresponding existential variable has been named by the user
+     (see :ref:`existential-variables`) as in the following example.
+
+     .. example::
+
+        .. coqtop:: all abort
+
+           Goal exists n, n = 0.
+           eexists ?[n].
+           Show n.
 
    .. exn:: No focused proof.
       :undocumented:
 
-   .. cmdv:: Show @num
+   .. exn:: No such goal.
+      :undocumented:
 
-      Displays only the :token:`num`\-th subgoal.
+.. cmd:: Show Proof {? Diffs {? removed } }
 
-      .. exn:: No such goal.
-         :undocumented:
+   Displays the proof term generated by the tactics
+   that have been applied so far. If the proof is incomplete, the term
+   will contain holes, which correspond to subterms which are still to be
+   constructed. Each hole is an existential variable, which appears as a
+   question mark followed by an identifier.
 
-   .. cmdv:: Show @ident
+   Experimental: Specifying “Diffs” highlights the difference between the
+   current and previous proof step.  By default, the command shows the
+   output once with additions highlighted.  Including “removed” shows
+   the output twice: once showing removals and once showing additions.
+   It does not examine the :opt:`Diffs` option.  See :ref:`showing_diffs`.
 
-      Displays the named goal :token:`ident`. This is useful in
-      particular to display a shelved goal but only works if the
-      corresponding existential variable has been named by the user
-      (see :ref:`existential-variables`) as in the following example.
+.. cmd:: Show Conjectures
 
-      .. example::
+   Prints the names of all the
+   theorems that are currently being proved. As it is possible to start
+   proving a previous lemma during the proof of a theorem, there may
+   be multiple names.
 
-         .. coqtop:: all abort
+.. cmd:: Show Intro
 
-            Goal exists n, n = 0.
-            eexists ?[n].
-            Show n.
+   If the current goal begins by at least one product,
+   prints the name of the first product as it would be
+   generated by an anonymous :tacn:`intro`. The aim of this command is to ease
+   the writing of more robust scripts. For example, with an appropriate
+   Proof General macro, it is possible to transform any anonymous :tacn:`intro`
+   into a qualified one such as ``intro y13``. In the case of a non-product
+   goal, it prints nothing.
 
-   .. cmdv:: Show Proof {? Diffs {? removed } }
-      :name: Show Proof
+.. cmd:: Show Intros
 
-      Displays the proof term generated by the tactics
-      that have been applied so far. If the proof is incomplete, the term
-      will contain holes, which correspond to subterms which are still to be
-      constructed. Each hole is an existential variable, which appears as a
-      question mark followed by an identifier.
+   Similar to the previous command.
+   Simulates the naming process of :tacn:`intros`.
 
-      Experimental: Specifying “Diffs” highlights the difference between the
-      current and previous proof step.  By default, the command shows the
-      output once with additions highlighted.  Including “removed” shows
-      the output twice: once showing removals and once showing additions.
-      It does not examine the :opt:`Diffs` option.  See :ref:`showing_diffs`.
+.. cmd:: Show Existentials
 
-   .. cmdv:: Show Conjectures
-      :name: Show Conjectures
+   Displays all open goals / existential variables in the current proof
+   along with the type and the context of each variable.
 
-      It prints the list of the names of all the
-      theorems that are currently being proved. As it is possible to start
-      proving a previous lemma during the proof of a theorem, this list may
-      contain several names.
+.. cmd:: Show Match @qualid
 
-   .. cmdv:: Show Intro
-      :name: Show Intro
+   Displays a template of the Gallina :token:`match<term_match>`
+   construct with a branch for each constructor of the type
+   :token:`qualid`.  This is used internally by
+   `company-coq <https://github.com/cpitclaudel/company-coq>`_.
 
-      If the current goal begins by at least one product,
-      this command prints the name of the first product, as it would be
-      generated by an anonymous :tacn:`intro`. The aim of this command is to ease
-      the writing of more robust scripts. For example, with an appropriate
-      Proof General macro, it is possible to transform any anonymous :tacn:`intro`
-      into a qualified one such as ``intro y13``. In the case of a non-product
-      goal, it prints nothing.
+   .. example::
 
-   .. cmdv:: Show Intros
-      :name: Show Intros
+      .. coqtop:: all
 
-      This command is similar to the previous one, it
-      simulates the naming process of an :tacn:`intros`.
+         Show Match nat.
 
-   .. cmdv:: Show Existentials
-      :name: Show Existentials
+   .. exn:: Unknown inductive type.
+      :undocumented:
 
-      Displays all open goals / existential variables in the current proof
-      along with the type and the context of each variable.
+.. cmd:: Show Universes
 
-   .. cmdv:: Show Match @ident
+   Displays the set of all universe constraints and
+   its normalized form at the current stage of the proof, useful for
+   debugging universe inconsistencies.
 
-      This variant displays a template of the Gallina
-      ``match`` construct with a branch for each constructor of the type
-      :token:`ident`
+.. cmd:: Show Goal @num at @num
 
-      .. example::
-
-         .. coqtop:: all
-
-            Show Match nat.
-
-      .. exn:: Unknown inductive type.
-         :undocumented:
-
-   .. cmdv:: Show Universes
-      :name: Show Universes
-
-      It displays the set of all universe constraints and
-      its normalized form at the current stage of the proof, useful for
-      debugging universe inconsistencies.
-
-   .. cmdv:: Show Goal @num at @num
-      :name: Show Goal
-
-      This command is only available in coqtop.  Displays a goal at a
-      proof state using the goal ID number and the proof state ID number.
-      It is primarily for use by tools such as Prooftree that need to fetch
-      goal history in this way.  Prooftree is a tool for visualizing a proof
-      as a tree that runs in Proof General.
+   Available in coqtop.  Displays a goal at a
+   proof state using the goal ID number and the proof state ID number.
+   It is primarily for use by tools such as Prooftree that need to fetch
+   goal history in this way.  Prooftree is a tool for visualizing a proof
+   as a tree that runs in Proof General.
 
 .. cmd:: Guarded
 

@@ -8,35 +8,36 @@ Proof schemes
 Generation of induction principles with ``Scheme``
 --------------------------------------------------------
 
-The ``Scheme`` command is a high-level tool for generating automatically
-(possibly mutual) induction principles for given types and sorts. Its
-syntax follows the schema:
+.. cmd:: Scheme {? @ident := } @scheme_kind {* with {? @ident := } @scheme_kind }
 
-.. cmd:: Scheme @ident__1 := Induction for @ident__2 Sort @sort {* with @ident__i := Induction for @ident__j Sort @sort}
+   .. insertprodn scheme_kind sort_family
 
-  This command is a high-level tool for generating automatically
+   .. prodn::
+      scheme_kind ::= Equality for @reference
+      | {| Induction | Minimality | Elimination | Case } for @reference Sort @sort_family
+      sort_family ::= Set
+      | Prop
+      | SProp
+      | Type
+
+  A high-level tool for automatically generating
   (possibly mutual) induction principles for given types and sorts.
-  Each :n:`@ident__j` is a different inductive type identifier belonging to
+  Each :n:`@reference` is a different inductive type identifier belonging to
   the same package of mutual inductive definitions.
-  The command generates the :n:`@ident__i`\s to be mutually recursive
-  definitions. Each term :n:`@ident__i` proves a general principle of mutual
-  induction for objects in type :n:`@ident__j`.
+  The command generates the :n:`@ident`\s as mutually recursive
+  definitions. Each term :n:`@ident` proves a general principle of mutual
+  induction for objects in type :n:`@reference`.
 
-.. cmdv:: Scheme @ident := Minimality for @ident Sort @sort {* with @ident := Minimality for @ident' Sort @sort}
+  :n:`@ident`
+    The name of the scheme. If not provided, the scheme name will be determined automatically
+    from the sorts involved.
 
-   Same as before but defines a non-dependent elimination principle more
-   natural in case of inductively defined relations.
+  :n:`Minimality for @reference Sort @sort_family`
+    Defines a non-dependent elimination principle more natural for inductively defined relations.
 
-.. cmdv:: Scheme Equality for @ident
-   :name: Scheme Equality
-
-   Tries to generate a Boolean equality and a proof of the decidability of the usual equality. If `ident`
-   involves some other inductive types, their equality has to be defined first.
-
-.. cmdv:: Scheme Induction for @ident Sort @sort {* with Induction for @ident Sort @sort}
-
-   If you do not provide the name of the schemes, they will be automatically computed from the
-   sorts involved (works also with Minimality).
+  :n:`Equality for @reference`
+     Tries to generate a Boolean equality and a proof of the decidability of the usual equality.
+     If :token:`reference` involves other inductive types, their equality has to be defined first.
 
 .. example::
 
@@ -138,13 +139,13 @@ Automatic declaration of schemes
 Combined Scheme
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Combined Scheme @ident from {+, @ident__i}
+.. cmd:: Combined Scheme @ident__def from {+, @ident }
 
    This command is a tool for combining induction principles generated
    by the :cmd:`Scheme` command.
-   Each :n:`@ident__i` is a different inductive principle that must  belong
+   Each :n:`@ident` is a different inductive principle that must  belong
    to the same package of mutual inductive principle definitions.
-   This command generates :n:`@ident` to be the conjunction of the
+   This command generates :n:`@ident__def` as the conjunction of the
    principles: it is built from the common premises of the principles
    and concluded by the conjunction of their conclusions.
    In the case where all the inductive principles used are in sort
@@ -197,32 +198,30 @@ Combined Scheme
 Generation of inversion principles with ``Derive`` ``Inversion``
 -----------------------------------------------------------------
 
-.. cmd:: Derive Inversion @ident with @ident Sort @sort
-         Derive Inversion @ident with (forall {* @binder }, @ident @term) Sort @sort
+.. cmd:: Derive Inversion @ident with @one_term {? Sort @sort_family }
 
-   This command generates an inversion principle for the
-   :tacn:`inversion ... using ...` tactic.  The first :token:`ident` is the name
-   of the generated principle.  The second :token:`ident` should be an inductive
-   predicate, and :n:`{* @binder }` the variables occurring in the term
-   :token:`term`. This command generates the inversion lemma for the sort
-   :token:`sort` corresponding to the instance :n:`forall {* @binder }, @ident @term`.
-   When applied, it is equivalent to having inverted the instance with the
-   tactic :g:`inversion`.
+   Generates an inversion lemma for the
+   :tacn:`inversion ... using ...` tactic.  :token:`ident` is the name
+   of the generated lemma.  :token:`one_term` should be in the form
+   :token:`qualid` or :n:`(forall {+ @binder }, @qualid @term)` where
+   :token:`qualid` is the name of an inductive
+   predicate and :n:`{+ @binder }` binds the variables occurring in the term
+   :token:`term`. The lemma is generated for the sort
+   :token:`sort_family` corresponding to :token:`one_term`.
+   Applying the lemma is equivalent to inverting the instance with the
+   :tacn:`inversion` tactic.
 
-.. cmdv:: Derive Inversion_clear @ident with @ident Sort @sort
-          Derive Inversion_clear @ident with (forall {* @binder }, @ident @term) Sort @sort
+.. cmd:: Derive Inversion_clear @ident with @one_term {? Sort @sort_family }
 
    When applied, it is equivalent to having inverted the instance with the
    tactic inversion replaced by the tactic `inversion_clear`.
 
-.. cmdv:: Derive Dependent Inversion @ident with @ident Sort @sort
-          Derive Dependent Inversion @ident with (forall {* @binder }, @ident @term) Sort @sort
+.. cmd:: Derive Dependent Inversion @ident with @one_term Sort @sort_family
 
    When applied, it is equivalent to having inverted the instance with
    the tactic `dependent inversion`.
 
-.. cmdv:: Derive Dependent Inversion_clear @ident with @ident Sort @sort
-          Derive Dependent Inversion_clear @ident with (forall {* @binder }, @ident @term) Sort @sort
+.. cmd:: Derive Dependent Inversion_clear @ident with @one_term Sort @sort_family
 
    When applied, it is equivalent to having inverted the instance
    with the tactic `dependent inversion_clear`.

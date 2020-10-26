@@ -102,7 +102,7 @@ forget this paragraph and use the tactic according to your intuition.
 Concrete usage in Coq
 --------------------------
 
-.. tacn:: ring {? [ {+ @term } ] }
+.. tacn:: ring {? [ {+ @one_term } ] }
 
    Solves polynomical equations of a ring
    (or semiring) structure. It proceeds by normalizing both sides
@@ -110,13 +110,34 @@ Concrete usage in Coq
    distributivity, constant propagation, rewriting of monomials) and
    syntactically comparing the results.
 
-.. tacn:: ring_simplify {? [ {+ @term } ] } {+ @term } {? in @ident }
+   :n:`[ {+ @one_term } ]`
+     If specified, the tactic decides the equality of two terms modulo ring operations and
+     the equalities defined by the :token:`one_term`\s.
+     Each :token:`one_term` has to be a proof of some equality :g:`m = p`, where :g:`m`
+     is a monomial (after “abstraction”), :g:`p` a polynomial and :g:`=` is the
+     corresponding equality of the ring structure.
+
+.. tacn:: ring_simplify {? [ {+ @one_term } ] } {+ @one_term } {? in @ident }
 
    Applies the normalization procedure described above to
-   the given terms. The tactic then replaces all occurrences of the terms
-   given in the conclusion of the goal by their normal forms. If no term
+   the given :token:`one_term`\s. The tactic then replaces all occurrences of the :token:`one_term`\s
+   given in the conclusion of the goal by their normal forms. If no :token:`one_term`
    is given, then the conclusion should be an equation and both
    sides are normalized. The tactic can also be applied in a hypothesis.
+
+   :n:`in @ident`
+     If specified, the tactic performs the simplification in the hypothesis named :token:`ident`.
+
+   .. note::
+
+     :n:`ring_simplify @one_term__1; ring_simplify @one_term__2` is not equivalent to
+     :n:`ring_simplify @one_term__1 @one_term__2`.
+
+     In the latter case the variables map is shared between the two :token:`one_term`\s, and
+     common subterm :g:`t` of :n:`@one_term__1` and :n:`@one_term__2`
+     will have the same associated variable number. So the first
+     alternative should be avoided for :token:`one_term`\s belonging to the same ring
+     theory.
 
    The tactic must be loaded by ``Require Import Ring``. The ring structures
    must be declared with the ``Add Ring`` command (see below). The ring of
@@ -145,31 +166,6 @@ Concrete usage in Coq
          2 * a * b = 30 -> (a + b) ^ 2 = a ^ 2 + b ^ 2 + 30.
     intros a b H; ring [H].
     Abort.
-
-
-.. tacv:: ring [{* @term }] 
- 
-   This tactic decides the equality of two terms modulo ring operations and
-   the equalities defined by the :token:`term`\ s.
-   Each :token:`term` has to be a proof of some equality :g:`m = p`, where :g:`m`
-   is a monomial (after “abstraction”), :g:`p` a polynomial and :g:`=` the
-   corresponding equality of the ring structure.
-
-.. tacv:: ring_simplify [{* @term }] {* @term } in @ident
- 
-   This tactic performs the simplification in the hypothesis named :token:`ident`.
-
-
-.. note:: 
-
-  :n:`ring_simplify @term__1; ring_simplify @term__2` is not equivalent to
-  :n:`ring_simplify @term__1 @term__2`.
-
-  In the latter case the variables map is shared between the two terms, and
-  common subterm :g:`t` of :n:`@term__1` and :n:`@term__2`
-  will have the same associated variable number. So the first
-  alternative should be avoided for terms belonging to the same ring
-  theory.
 
 
 Error messages:
@@ -515,14 +511,26 @@ application of the main correctness theorem to well-chosen arguments.
 Dealing with fields
 ------------------------
 
-.. tacn:: field {? [ {+ @term } ] }
+.. tacn:: field {? [ {+ @one_term } ] }
 
-   This tactic is an extension of the :tacn:`ring` tactic that deals with rational
+   An extension of the :tacn:`ring` tactic that deals with rational
    expressions. Given a rational expression :math:`F = 0`. It first reduces the
    expression `F` to a common denominator :math:`N/D = 0` where `N` and `D`
    are two ring expressions. For example, if we take :math:`F = (1 − 1/x) x − x + 1`, this
    gives :math:`N = (x − 1) x − x^2 + x` and :math:`D = x`. It then calls ring to solve
    :math:`N = 0`.
+
+   :n:`[ {+ @one_term } ]`
+     If specified, the tactic decides the equality of two terms modulo
+     field operations and the equalities defined
+     by the :token:`one_term`\s. Each :token:`one_term` has to be a proof of some equality
+     :g:`m = p`, where :g:`m` is a monomial (after “abstraction”), :g:`p` a polynomial
+     and :g:`=` the corresponding equality of the field structure.
+
+  .. note::
+
+     Rewriting works with the equality  :g:`m = p` only if :g:`p` is a polynomial since
+     rewriting is handled by the underlying ring tactic.
 
    Note that :n:`field` also generates nonzero conditions for all the
    denominators it encounters in the reduction. In our example, it
@@ -559,71 +567,36 @@ Dealing with fields
     intros x y H H1; field [H1]; auto.
     Abort.
 
-.. tacv:: field [{* @term}] 
-
-   This tactic decides the equality of two terms modulo
-   field operations and the equalities defined
-   by the :token:`term`\s. Each :token:`term` has to be a proof of some equality
-   :g:`m = p`, where :g:`m` is a monomial (after “abstraction”), :g:`p` a polynomial
-   and :g:`=` the corresponding equality of the field structure.
-
-.. note:: 
-
-   Rewriting works with the equality  :g:`m = p` only if :g:`p` is a polynomial since
-   rewriting is handled by the underlying ring tactic.
-
-.. tacn:: field_simplify {? [ {+ @term } ] } {+ @term } {? in @ident }
+.. tacn:: field_simplify {? [ {+ @one_term__eq } ] } {+ @one_term } {? in @ident }
  
-   performs the simplification in the conclusion of the
+   Performs the simplification in the conclusion of the
    goal, :math:`F_1 = F_2` becomes :math:`N_1 / D_1 = N_2 / D_2`. A normalization step
    (the same as the one for rings) is then applied to :math:`N_1`, :math:`D_1`, 
    :math:`N_2` and :math:`D_2`. This way, polynomials remain in factorized form during
    fraction simplification. This yields smaller expressions when
    reducing to the same denominator since common factors can be canceled.
 
-.. tacv:: field_simplify [{* @term }] 
+   :n:`[ {+ @one_term__eq } ]`
+     Do simplification in the conclusion of the goal using the equalities
+     defined by these :token:`one_term`\s.
 
-   This variant performs the simplification in the conclusion of the goal using the equalities
-   defined by the :token:`term`\s.
+   :n:`{+ @one_term }`
+     Terms to simplify in the conclusion.
 
-.. tacv:: field_simplify [{* @term }] {* @term }
+   :n:`in @ident`
+     If specified, substitute in the hypothesis :n:`@ident` instead of the conclusion.
 
-   This variant performs the simplification in the terms :token:`term`\s  of the conclusion of the goal
-   using the equalities defined by :token:`term`\s inside the brackets.
+.. tacn:: field_simplify_eq {? [ {+ @one_term } ] } {? in @ident }
 
-.. tacv:: field_simplify in @ident
+   Performs the simplification in the conclusion of
+   the goal, removing the denominator. :math:`F_1 = F_2` becomes :math:`N_1 D_2 = N_2 D_1`.
 
-   This variant performs the simplification in the assumption :token:`ident`.
+   :n:`[ {+ @one_term } ]`
+     Do simplification in the conclusion of the goal using the equalities
+     defined by these :token:`one_term`\s.
 
-.. tacv:: field_simplify [{* @term }] in @ident
- 
-   This variant performs the simplification
-   in the assumption :token:`ident` using the equalities defined by the :token:`term`\s.
-
-.. tacv:: field_simplify [{* @term }] {* @term } in @ident
-
-   This variant performs the simplification in the :token:`term`\s of the
-   assumption :token:`ident` using the
-   equalities defined by the :token:`term`\s inside the brackets.
-
-.. tacn:: field_simplify_eq {? [ {+ @term } ] } {? in @ident }
-
-   performs the simplification in the conclusion of
-   the goal removing the denominator. :math:`F_1 = F_2` becomes :math:`N_1 D_2 = N_2 D_1`.
-
-.. tacv:: field_simplify_eq [ {* @term }]
-
-   This variant performs the simplification in
-   the conclusion of the goal using the equalities defined by :token:`term`\s.
-
-.. tacv:: field_simplify_eq in @ident
-
-   This variant performs the simplification in the assumption :token:`ident`.
-
-.. tacv:: field_simplify_eq [{* @term}] in @ident
-
-   This variant performs the simplification in the assumption :token:`ident`
-   using the equalities defined by :token:`term`\s and removing the denominator.
+   :n:`in @ident`
+     If specified, simplify in the hypothesis :n:`@ident` instead of the conclusion.
 
 
 Adding a new field structure

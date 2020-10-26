@@ -25,8 +25,8 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
   ``n`` is an optional integer limiting the proof search depth,
   is an incomplete proof procedure for non-linear arithmetic.
   It is based on John Harrison’s HOL Light
-  driver to the external prover `csdp` [#csdp]_. Note that the `csdp` driver is
-  generating a *proof cache* which makes it possible to rerun scripts
+  driver to the external prover `csdp` [#csdp]_. Note that the `csdp` driver
+  generates a *proof cache* which makes it possible to rerun scripts
   even without `csdp`.
 
 .. flag:: Simplex
@@ -243,7 +243,7 @@ proof by abstracting monomials by variables.
 `psatz`: a proof procedure for non-linear arithmetic
 ----------------------------------------------------
 
-.. tacn:: psatz
+.. tacn:: psatz @one_term {? @int_or_var }
    :name: psatz
 
    This tactic explores the *Cone* by increasing degrees – hence the
@@ -283,7 +283,6 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    + To support :g:`Z.div` and :g:`Z.modulo`: ``Ltac Zify.zify_post_hook ::= Z.div_mod_to_equations``.
    + To support :g:`Z.quot` and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.quot_rem_to_equations``.
    + To support :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot`, and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations``.
-
 
 .. cmd:: Show Zify InjTyp
    :name: Show Zify InjTyp

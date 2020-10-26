@@ -123,6 +123,7 @@ Polymorphic, Monomorphic
 -------------------------
 
 .. attr:: universes(polymorphic)
+   :name: universes(polymorphic); Polymorphic
 
    This attribute can be used to declare universe polymorphic
    definitions and inductive types.  There is also a legacy syntax
@@ -136,6 +137,7 @@ Polymorphic, Monomorphic
    used.
 
 .. attr:: universes(monomorphic)
+   :name: universes(monomorphic); Monomorphic
 
    This attribute can be used to declare universe monomorphic
    definitions and inductive types (i.e. global universe constraints
@@ -170,6 +172,7 @@ Cumulative, NonCumulative
 -------------------------
 
 .. attr:: universes(cumulative)
+   :name: universes(cumulative); Cumulative
 
    Polymorphic inductive types, coinductive types, variants and
    records can be declared cumulative using this attribute or the
@@ -200,6 +203,7 @@ Cumulative, NonCumulative
    effect on *monomorphic* inductive definitions.
 
 .. attr:: universes(noncumulative)
+   :name: universes(noncumulative); NonCumulative
 
    Declares the inductive type as non-cumulative even if the
    :flag:`Polymorphic Inductive Cumulativity` flag is on.  There is
@@ -384,29 +388,26 @@ Explicit Universes
 The syntax has been extended to allow users to explicitly bind names
 to universes and explicitly instantiate polymorphic definitions.
 
-.. cmd:: Universe @ident
-         Polymorphic Universe @ident
+.. cmd:: Universe {+ @ident }
 
-   In the monorphic case, this command declares a new global universe
-   named :token:`ident`, which can be referred to using its qualified name
-   as well. Global universe names live in a separate namespace. The
-   command supports the :attr:`universes(polymorphic)` attribute (or
-   the ``Polymorphic`` prefix) only in sections, meaning the universe
-   quantification will be discharged on each section definition
+   In the monomorphic case, declares new global universes
+   with the given names.  Global universe names live in a separate namespace.
+   The command supports the :attr:`universes(polymorphic)` attribute (or
+   the ``Polymorphic`` legacy attribute) only in sections, meaning the universe
+   quantification will be discharged for each section definition
    independently.
 
    .. exn:: Polymorphic universes can only be declared inside sections, use Monomorphic Universe instead.
       :undocumented:
 
-.. cmd:: Constraint @univ_constraint
-         Polymorphic Constraint @univ_constraint
+.. cmd:: Constraint {+, @univ_constraint }
 
-   This command declares a new constraint between named universes.
+   Declares new constraints between named universes.
 
-   If consistent, the constraint is then enforced in the global
+   If consistent, the constraints are then enforced in the global
    environment. Like :cmd:`Universe`, it can be used with the
    :attr:`universes(polymorphic)` attribute (or the ``Polymorphic``
-   prefix) in sections only to declare constraints discharged at
+   legacy attribute) in sections only to declare constraints discharged at
    section closing time. One cannot declare a global constraint on
    polymorphic universes.
 

@@ -33,7 +33,7 @@ obligations which need to be resolved to create the final term.
 .. _elaborating-programs:
 
 Elaborating programs
----------------------
+--------------------
 
 The main difference from |Coq| is that an object in a type :g:`T : Set` can
 be considered as an object of type :g:`{x : T | P}` for any well-formed
@@ -83,7 +83,7 @@ coercions.
 
 .. flag:: Program Cases
 
-   This controls the special treatment of pattern matching generating equalities
+   Controls the special treatment of pattern matching generating equalities
    and disequalities when using |Program| (it is on by default). All
    pattern-matches and let-patterns are handled using the standard algorithm
    of |Coq| (see :ref:`extendedpatternmatching`) when this flag is
@@ -91,7 +91,7 @@ coercions.
 
 .. flag:: Program Generalized Coercion
 
-   This controls the coercion of general inductive types when using |Program|
+   Controls the coercion of general inductive types when using |Program|
    (the flag is on by default). Coercion of subset types and pairs is still
    active in this case.
 
@@ -104,16 +104,16 @@ coercions.
    typechecking.
 
 .. attr:: program
+   :name: program; Program
 
-   This attribute allows to use the Program mode on a specific
+   Allows using the Program mode on a specific
    definition.  An alternative syntax is to use the legacy ``Program``
-   prefix (cf. :n:`@legacy_attr`) as documented in the rest of this
-   chapter.
+   prefix (cf. :n:`@legacy_attr`) as it is elsewhere in this chapter.
 
 .. _syntactic_control:
 
 Syntactic control over equalities
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To give more control over the generation of equalities, the
 type checker will fall back directly to |Coq|’s usual typing of dependent
@@ -158,36 +158,20 @@ prove some goals to construct the final definitions.
 Program Definition
 ~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Program Definition @ident := @term
+A :cmd:`Definition` command with the :attr:`program` attribute types
+the value term in Russell and generates proof
+obligations. Once solved using the commands shown below, it binds the
+final |Coq| term to the name :n:`@ident` in the environment.
 
-   This command types the value term in Russell and generates proof
-   obligations. Once solved using the commands shown below, it binds the
-   final |Coq| term to the name :n:`@ident` in the environment.
+:n:`Program Definition @ident : @type := @term`
 
-   .. exn:: @ident already exists.
-      :name: @ident already exists. (Program Definition)
-      :undocumented:
-
-   .. cmdv:: Program Definition @ident : @type := @term
-
-      It interprets the type :n:`@type`, potentially generating proof
-      obligations to be resolved. Once done with them, we have a |Coq|
-      type :n:`@type__0`. It then elaborates the preterm :n:`@term` into a |Coq|
-      term :n:`@term__0`, checking that the type of :n:`@term__0` is coercible to
-      :n:`@type__0`, and registers :n:`@ident` as being of type :n:`@type__0` once the
-      set of obligations generated during the interpretation of :n:`@term__0`
-      and the aforementioned coercion derivation are solved.
-
-      .. exn:: In environment … the term: @term does not have type @type. Actually, it has type ...
-         :undocumented:
-
-   .. cmdv:: Program Definition @ident {* @binder } : @type := @term
-
-      This is equivalent to:
-
-      :n:`Program Definition @ident : forall {* @binder }, @type := fun {* @binder } => @term`.
-
-      .. TODO refer to production in alias
+Interprets the type :n:`@type`, potentially generating proof
+obligations to be resolved. Once done with them, we have a |Coq|
+type :n:`@type__0`. It then elaborates the preterm :n:`@term` into a |Coq|
+term :n:`@term__0`, checking that the type of :n:`@term__0` is coercible to
+:n:`@type__0`, and registers :n:`@ident` as being of type :n:`@type__0` once the
+set of obligations generated during the interpretation of :n:`@term__0`
+and the aforementioned coercion derivation are solved.
 
 .. seealso:: Sections :ref:`vernac-controlling-the-reduction-strategies`, :tacn:`unfold`
 
@@ -196,20 +180,8 @@ Program Definition
 Program Fixpoint
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Program Fixpoint @fix_definition {* with @fix_definition }
-
-   The optional :n:`@fixannot` annotation can be one of:
-
-   + :g:`measure f R` where :g:`f` is a value of type :g:`X` computed on
-     any subset of the arguments and the optional term
-     :g:`R` is a relation on :g:`X`. :g:`X` defaults to :g:`nat` and :g:`R`
-     to :g:`lt`.
-
-   + :g:`wf R x` which is equivalent to :g:`measure x R`.
-
-   The structural fixpoint operator behaves just like the one of |Coq| (see
-   :cmd:`Fixpoint`), except it may also generate obligations. It works
-   with mutually recursive definitions too.
+A :cmd:`Fixpoint` command with the :attr:`program` attribute may also generate obligations. It works
+with mutually recursive definitions too.  For example:
 
 .. coqtop:: reset in
 
@@ -222,6 +194,17 @@ Program Fixpoint
      | S (S p) => S (div2 p)
      | _ => O
      end.
+
+The :cmd:`Fixpoint` command may include an optional :n:`@fixannot` annotation, which can be:
+
++ :g:`measure f R` where :g:`f` is a value of type :g:`X` computed on
+  any subset of the arguments and the optional term
+  :g:`R` is a relation on :g:`X`. :g:`X` defaults to :g:`nat` and :g:`R`
+  to :g:`lt`.
+
++ :g:`wf R x` which is equivalent to :g:`measure x R`.
+
+.. todo see https://github.com/coq/coq/pull/12936#discussion_r492747830
 
 Here we have one obligation for each branch (branches for :g:`0` and
 ``(S 0)`` are automatically generated by the pattern matching
@@ -246,8 +229,6 @@ using the syntax:
      | _ => O
      end.
 
-
-
 .. caution:: When defining structurally recursive functions, the generated
    obligations should have the prototype of the currently defined
    functional in their context. In this case, the obligations should be
@@ -266,67 +247,70 @@ using the syntax:
 Program Lemma
 ~~~~~~~~~~~~~
 
-.. cmd:: Program Lemma @ident : @type
-
-   The Russell language can also be used to type statements of logical
-   properties. It will generate obligations, try to solve them
-   automatically and fail if some unsolved obligations remain. In this
-   case, one can first define the lemma’s statement using :g:`Program
-   Definition` and use it as the goal afterwards. Otherwise the proof
-   will be started with the elaborated version as a goal. The
-   :g:`Program` prefix can similarly be used as a prefix for
-   :g:`Variable`, :g:`Hypothesis`, :g:`Axiom` etc.
+A :cmd:`Lemma` command with the :attr:`program` attribute uses the Russell
+language to type statements of logical
+properties. It generates obligations, tries to solve them
+automatically and fails if some unsolved obligations remain. In this
+case, one can first define the lemma’s statement using :cmd:`Definition`
+and use it as the goal afterwards. Otherwise the proof
+will be started with the elaborated version as a goal. The
+:attr:`Program` attribute can similarly be used with
+:cmd:`Variable`, :cmd:`Hypothesis`, :cmd:`Axiom` etc.
 
 .. _solving_obligations:
 
 Solving obligations
---------------------
+-------------------
 
 The following commands are available to manipulate obligations. The
 optional identifier is used when multiple functions have unsolved
 obligations (e.g. when defining mutually recursive blocks). The
 optional tactic is replaced by the default one if not specified.
 
-.. cmd:: {? {| Local | Global } } Obligation Tactic := @ltac_expr
+.. cmd:: Obligation Tactic := @ltac_expr
    :name: Obligation Tactic
 
    Sets the default obligation solving tactic applied to all obligations
    automatically, whether to solve them or when starting to prove one,
-   e.g. using :g:`Next`. :g:`Local` makes the setting last only for the current
-   module. Inside sections, local is the default.
+   e.g. using :cmd:`Next Obligation`.
+
+   This command supports the :attr:`local` and :attr:`global` attributes.
+   :attr:`local` makes the setting last only for the current
+   module. :attr:`local` is the default inside sections while :attr:`global`
+   otherwise.
 
 .. cmd:: Show Obligation Tactic
 
    Displays the current default tactic.
 
-.. cmd:: Obligations {? of @ident}
+.. cmd:: Obligations {? of @ident }
 
    Displays all remaining obligations.
 
-.. cmd:: Obligation @num {? of @ident}
+.. cmd:: Obligation @num {? of @ident } {? : @type {? with @ltac_expr } }
 
    Start the proof of obligation :token:`num`.
 
-.. cmd:: Next Obligation {? of @ident}
+.. cmd:: Next Obligation {? of @ident } {? with @ltac_expr }
 
    Start the proof of the next unsolved obligation.
 
-.. cmd:: Solve Obligations {? {? of @ident} with @ltac_expr}
+.. cmd:: Solve Obligations {? of @ident } {? with @ltac_expr }
 
-   Tries to solve each obligation of ``ident`` using the given ``tactic`` or the default one.
+   Tries to solve each obligation of :token:`ident` using the given :token:`ltac_expr` or the default one.
 
-.. cmd:: Solve All Obligations {? with @ltac_expr}
+.. cmd:: Solve All Obligations {? with @ltac_expr }
 
    Tries to solve each obligation of every program using the given
    tactic or the default one (useful for mutually recursive definitions).
 
-.. cmd:: Admit Obligations {? of @ident}
+.. cmd:: Admit Obligations {? of @ident }
 
-   Admits all obligations (of ``ident``).
+   Admits all obligations (of :token:`ident`).
 
    .. note:: Does not work with structurally recursive programs.
 
-.. cmd:: Preterm {? of @ident}
+.. cmd:: Preterm {? of @ident }
 
    Shows the term that will be fed to the kernel once the obligations
    are solved. Useful for debugging.

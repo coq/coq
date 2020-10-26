@@ -295,10 +295,29 @@ the Existing Instance command to achieve the same effect.
 Summary of the commands
 -----------------------
 
-.. cmd:: Class @inductive_definition {* with @inductive_definition }
+.. cmd:: Class @record_definition
+         Class @singleton_class_definition
 
-   The :cmd:`Class` command is used to declare a typeclass with parameters
-   :n:`{* @binder }` and fields the declared record fields.
+   .. insertprodn singleton_class_definition singleton_class_definition
+
+   .. prodn::
+      singleton_class_definition ::= {? > } @ident_decl {* @binder } {? : @sort } := @constructor
+
+   The first form declares a record and makes the record a typeclass with parameters
+   :n:`{* @binder }` and the listed record fields.
+
+   .. _singleton-class:
+
+   The second form declares a *singleton* class with a single method.  This
+   singleton class is a so-called definitional class, represented simply
+   as a definition ``ident binders := term`` and whose instances are
+   themselves objects of this type. Definitional classes are not wrapped
+   inside records, and the trivial projection of an instance of such a
+   class is convertible to the instance itself. This can be useful to
+   make instances of existing objects easily and to reduce proof size by
+   not inserting useless projections. The class constant itself is
+   declared rigid during resolution so that the class abstraction is
+   maintained.
 
    Like any command declaring a record, this command supports the
    :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
@@ -306,22 +325,7 @@ Summary of the commands
    :attr:`universes(cumulative)`, :attr:`universes(noncumulative)` and
    :attr:`private(matching)` attributes.
 
-   .. _singleton-class:
-
-   .. cmdv:: Class @ident {* @binder } : {? @sort} := @ident : @term
-
-      This variant declares a *singleton* class with a single method.  This
-      singleton class is a so-called definitional class, represented simply
-      as a definition ``ident binders := term`` and whose instances are
-      themselves objects of this type. Definitional classes are not wrapped
-      inside records, and the trivial projection of an instance of such a
-      class is convertible to the instance itself. This can be useful to
-      make instances of existing objects easily and to reduce proof size by
-      not inserting useless projections. The class constant itself is
-      declared rigid during resolution so that the class abstraction is
-      maintained.
-
-   .. cmdv:: Existing Class @ident
+   .. cmd:: Existing Class @qualid
 
       This variant declares a class from a previously declared constant or
       inductive definition. No methods or instances are defined.
@@ -330,27 +334,31 @@ Summary of the commands
 
          This command has no effect when used on a typeclass.
 
-.. cmd:: Instance @ident {* @binder } : @term__0 {+ @term} {? | @num} := { {*; @field_def} }
+.. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_def } %} | := @term } }
 
-   This command is used to declare a typeclass instance named
-   :token:`ident` of the class :n:`@term__0` with parameters :token:`term` and
+   .. insertprodn hint_info hint_info
+
+   .. prodn::
+      hint_info ::= %| {? @num } {? @one_term }
+
+   Declares a typeclass instance named
+   :token:`ident_decl` of the class :n:`@type` with the specified parameters and with
    fields defined by :token:`field_def`, where each field must be a declared field of
    the class.
 
-   An arbitrary context of :n:`{* @binder }` can be put after the name of the
-   instance and before the colon to declare a parameterized instance. An
-   optional priority can be declared, 0 being the highest priority as for
-   :tacn:`auto` hints. If the priority :token:`num` is not specified, it defaults to the number
+   Add one or more :token:`binder`\s to declare a parameterized instance. :token:`hint_info`
+   specifies the hint priority, where 0 is the highest priority as for
+   :tacn:`auto` hints. If the priority is not specified, the default is the number
    of non-dependent binders of the instance.
 
    This command supports the :attr:`global` attribute that can be
    used on instances declared in a section so that their
-   generalization is automatically redeclared after the section is
+   generalization is automatically redeclared when the section is
    closed.
 
    Like :cmd:`Definition`, it also supports the :attr:`program`
    attribute to switch the type checking to `Program` (chapter
-   :ref:`programs`) and use the obligation mechanism to manage missing
+   :ref:`programs`) and to use the obligation mechanism to manage missing
    fields.
 
    Finally, it supports the lighter :attr:`refine` attribute:
@@ -362,66 +370,41 @@ Summary of the commands
       to fill them.  It works exactly as if no body had been given and
       the :tacn:`refine` tactic has been used first.
 
-   .. cmdv:: Instance @ident {* @binder } : forall {* @binder }, @term__0 {+ @term} {? | @num } := @term
+   .. cmd:: Declare Instance @ident_decl {* @binder } : @term {? @hint_info }
 
-      This syntax is used for declaration of singleton class instances or
-      for directly giving an explicit term of type :n:`forall {* @binder }, @term__0
-      {+ @term}`.  One need not even mention the unique field name for
-      singleton classes.
-
-   .. cmdv:: Declare Instance
-      :name: Declare Instance
-
-      In a :cmd:`Module Type`, this command states that a corresponding concrete
+      In a :cmd:`Module Type`, declares that a corresponding concrete
       instance should exist in any implementation of this :cmd:`Module Type`. This
       is similar to the distinction between :cmd:`Parameter` vs. :cmd:`Definition`, or
       between :cmd:`Declare Module` and :cmd:`Module`.
 
 
-Besides the :cmd:`Class` and :cmd:`Instance` vernacular commands, there are a
-few other commands related to typeclasses.
+   .. cmd:: Existing Instance @qualid {? @hint_info }
+            Existing Instances {+ @qualid } {? %| @num }
 
-.. cmd:: Existing Instance {+ @ident} {? | @num}
+      Adds a constant whose type ends with
+      an applied typeclass to the instance database with an optional
+      priority :token:`num`.  It can be used for redeclaring instances at the end of
+      sections, or declaring structure projections as instances. This is
+      equivalent to ``Hint Resolve ident : typeclass_instances``, except it
+      registers instances for :cmd:`Print Instances`.
 
-   This command adds an arbitrary list of constants whose type ends with
-   an applied typeclass to the instance database with an optional
-   priority :token:`num`.  It can be used for redeclaring instances at the end of
-   sections, or declaring structure projections as instances. This is
-   equivalent to ``Hint Resolve ident : typeclass_instances``, except it
-   registers instances for :cmd:`Print Instances`.
+.. cmd:: Print Instances @reference
 
-.. tacn:: typeclasses eauto
-   :name: typeclasses eauto
+   Shows the list of instances associated with the typeclass :token:`reference`.
 
-   This proof search tactic implements the resolution engine that is run
+.. tacn:: typeclasses eauto {? bfs } {? @int_or_var } {? with {+ @ident } }
+
+   This proof search tactic uses the resolution engine that is run
    implicitly during type checking. This tactic uses a different resolution
    engine than :tacn:`eauto` and :tacn:`auto`. The main differences are the
    following:
 
-   + Contrary to :tacn:`eauto` and :tacn:`auto`, the resolution is done entirely in
-     the new proof engine (as of Coq 8.6), meaning that backtracking is
+   + Unlike :tacn:`eauto` and :tacn:`auto`, the resolution is done entirely in
+     the proof engine, meaning that backtracking is
      available among dependent subgoals, and shelving goals is supported.
      ``typeclasses eauto`` is a multi-goal tactic. It analyses the dependencies
      between subgoals to avoid backtracking on subgoals that are entirely
      independent.
-
-   + When called with no arguments, ``typeclasses eauto`` uses
-     the ``typeclass_instances`` database by default (instead of core).
-     Dependent subgoals are automatically shelved, and shelved goals can
-     remain after resolution ends (following the behavior of Coq 8.5).
-
-     .. note::
-        As of Coq 8.6, ``all:once (typeclasses eauto)`` faithfully
-        mimics what happens during typeclass resolution when it is called
-        during refinement/type inference, except that *only* declared class
-        subgoals are considered at the start of resolution during type
-        inference, while ``all`` can select non-class subgoals as well. It might
-        move to ``all:typeclasses eauto`` in future versions when the
-        refinement engine will be able to backtrack.
-
-   + When called with specific databases (e.g. with), ``typeclasses eauto``
-     allows shelved goals to remain at any point during search and treat
-     typeclass goals like any other.
 
    + The transparency information of databases is used consistently for
      all hints declared in them. It is always used when calling the
@@ -446,26 +429,44 @@ few other commands related to typeclasses.
    + When considering local hypotheses, we use the union of all the modes
      declared in the given databases.
 
-   .. tacv:: typeclasses eauto @num
+   + Use the :cmd:`Typeclasses eauto` command to customize the behavior of
+     this tactic.
+
+   :n:`@int_or_var`
+     Specifies the maximum depth of the search.
 
       .. warning::
-         The semantics for the limit :n:`@num`
-         is different than for auto. By default, if no limit is given, the
-         search is unbounded. Contrary to :tacn:`auto`, introduction steps are
-         counted, which might result in larger limits being necessary when
-         searching with ``typeclasses eauto`` than with :tacn:`auto`.
+         The semantics for the limit :n:`@int_or_var`
+         are different than for :tacn:`auto`. By default, if no limit is given, the
+         search is unbounded. Unlike :tacn:`auto`, introduction steps count against
+         the limit, which might result in larger limits being necessary when
+         searching with :tacn:`typeclasses eauto` than with :tacn:`auto`.
 
-   .. tacv:: typeclasses eauto with {+ @ident}
+   :n:`with {+ @ident }`
+     Runs resolution with the specified hint databases. It treats
+     typeclass subgoals the same as other subgoals (no shelving of
+     non-typeclass goals in particular), while allowing shelved goals
+     to remain at any point during search.
 
-      This variant runs resolution with the given hint databases. It treats
-      typeclass subgoals the same as other subgoals (no shelving of
-      non-typeclass goals in particular).
+     When :n:`with` is not specified, :tacn:`typeclasses eauto` uses
+     the ``typeclass_instances`` database by default (instead of ``core``).
+     Dependent subgoals are automatically shelved, and shelved goals can
+     remain after resolution ends (following the behavior of Coq 8.5).
 
-.. tacn:: autoapply @term with @ident
+     .. note::
+        ``all:once (typeclasses eauto)`` faithfully
+        mimics what happens during typeclass resolution when it is called
+        during refinement/type inference, except that *only* declared class
+        subgoals are considered at the start of resolution during type
+        inference, while ``all`` can select non-class subgoals as well. It might
+        move to ``all:typeclasses eauto`` in future versions when the
+        refinement engine will be able to backtrack.
+
+.. tacn:: autoapply @one_term with @ident
    :name: autoapply
 
-   The tactic ``autoapply`` applies a term using the transparency information
-   of the hint database ident, and does *no* typeclass resolution. This can
+   The tactic ``autoapply`` applies :token:`one_term` using the transparency information
+   of the hint database :token:`ident`, and does *no* typeclass resolution. This can
    be used in :cmd:`Hint Extern`’s for typeclass instances (in the hint
    database ``typeclass_instances``) to allow backtracking on the typeclass
    subgoals created by the lemma application, rather than doing typeclass
@@ -476,16 +477,16 @@ few other commands related to typeclasses.
 Typeclasses Transparent, Typeclasses Opaque
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Typeclasses Transparent {+ @ident}
+.. cmd:: Typeclasses Transparent {+ @qualid }
 
-   This command makes the identifiers transparent during typeclass
+   Makes :token:`qualid` transparent during typeclass
    resolution.
-   Shortcut for :n:`Hint Transparent {+ @ident } : typeclass_instances`.
+   A shortcut for :cmd:`Hint Transparent` :n:`{+ @qualid } : typeclass_instances`
 
-.. cmd:: Typeclasses Opaque {+ @ident}
+.. cmd:: Typeclasses Opaque {+ @qualid }
 
-   Make the identifiers opaque for typeclass search.
-   Shortcut for :n:`Hint Opaque {+ @ident } : typeclass_instances`.
+   Make :token:`qualid` opaque for typeclass search.
+   A shortcut for :cmd:`Hint Opaque` :n:`{+ @qualid } : typeclass_instances`.
 
    It is useful when some constants prevent some unifications and make
    resolution fail. It is also useful to declare constants which
@@ -601,22 +602,25 @@ Settings
    of goals.  Setting this option to 1 or 2 turns on the :flag:`Typeclasses Debug` flag; setting this
    option to 0 turns that flag off.
 
-Typeclasses eauto `:=`
-~~~~~~~~~~~~~~~~~~~~~~
+Typeclasses eauto
+~~~~~~~~~~~~~~~~~
 
-.. cmd:: Typeclasses eauto := {? debug} {? {| (dfs) | (bfs) } } @num
+.. cmd:: Typeclasses eauto := {? debug } {? ( {| bfs | dfs } ) } {? @num }
    :name: Typeclasses eauto
 
-   This command allows more global customization of the typeclass
-   resolution tactic. The semantics of the options are:
+   Allows more global customization of the :tacn:`typeclasses eauto` tactic.
+   The options are:
 
-   + ``debug`` This sets the debug mode. In debug mode, the trace of
-     successfully applied tactics is printed. The debug mode can also
+   ``debug``
+     Sets debug mode. In debug mode, a trace of
+     successfully applied tactics is printed. Debug mode can also
      be set with :flag:`Typeclasses Debug`.
 
-   + ``(dfs)``, ``(bfs)`` This sets the search strategy to depth-first
+   ``dfs``, ``bfs``
+     Sets the search strategy to depth-first
      search (the default) or breadth-first search. The search strategy
      can also be set with :flag:`Typeclasses Iterative Deepening`.
 
-   + :token:`num` This sets the depth limit of the search. The depth
-     limit can also be set with :opt:`Typeclasses Depth`.
+   :token:`num`
+     Sets the depth limit for the search. The limit can also be set with
+     :opt:`Typeclasses Depth`.

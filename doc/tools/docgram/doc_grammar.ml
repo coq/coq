@@ -1724,6 +1724,7 @@ let open_temp_bin file =
 
 let match_cmd_regex = Str.regexp "[a-zA-Z0-9_ ]+"
 let match_subscripts = Str.regexp "__[a-zA-Z0-9]+"
+let remove_subscrs str = Str.global_replace match_subscripts "" str
 
 let find_longest_match prods str =
   let get_pfx str = String.trim (if Str.string_match match_cmd_regex str 0 then Str.matched_string str else "") in
@@ -1737,7 +1738,6 @@ let find_longest_match prods str =
     in
     aux 0
   in
-  let remove_subscrs str = Str.global_replace match_subscripts "" str in
 
   let slen = String.length str in
   let str_pfx = get_pfx str in
@@ -1892,25 +1892,15 @@ let process_rst g file args seen tac_prods cmd_prods =
 (*    "doc/sphinx/proof-engine/ssreflect-proof-language.rst"]*)
 (*  in*)
 
-  let cmd_replace_files = [
-    "doc/sphinx/language/core/records.rst";
-    "doc/sphinx/language/core/sections.rst";
-    "doc/sphinx/language/extensions/implicit-arguments.rst";
-    "doc/sphinx/language/extensions/arguments-command.rst";
-    "doc/sphinx/language/gallina-extensions.rst";
-    "doc/sphinx/language/gallina-specification-language.rst";
-    "doc/sphinx/language/using/libraries/funind.rst";
-    "doc/sphinx/proof-engine/ltac.rst";
-    "doc/sphinx/proof-engine/ltac2.rst";
-    "doc/sphinx/proof-engine/vernacular-commands.rst";
-    "doc/sphinx/user-extensions/syntax-extensions.rst";
-    "doc/sphinx/proof-engine/vernacular-commands.rst"
+  let cmd_exclude_files = [
+    "doc/sphinx/proof-engine/ssreflect-proof-language.rst";
+    "doc/sphinx/proof-engine/tactics.rst"
   ]
   in
 
   let save_n_get_more direc pfx first_rhs seen_map prods =
     let replace rhs prods =
-      if StringSet.is_empty prods || not (List.mem file cmd_replace_files) then
+      if StringSet.is_empty prods || (List.mem file cmd_exclude_files) then
         rhs (* no change *)
       else
         let mtch, multi, best = find_longest_match prods rhs in
@@ -1918,12 +1908,15 @@ let process_rst g file args seen tac_prods cmd_prods =
         if mtch = rhs then
           rhs (* no change *)
         else if mtch = "" then begin
-          warn "%s line %d: NO MATCH `%s`\n" file !linenum rhs;
-          if best <> "" then
-            warn "%s line %d: BEST `%s`\n" file !linenum best;
+          error "%s line %d: NO MATCH for `%s`\n" file !linenum rhs;
+          if best <> "" then begin
+            Printf.eprintf "    closest match is: `%s`\n" best;
+            Printf.eprintf "    Please update the rst manually while preserving any subscripts, e.g. 'NT__sub'\n"
+          end;
           rhs
         end else if multi then begin
-          warn "%s line %d: MULTIMATCH `%s`\n" file !linenum rhs;
+          error "%s line %d: MULTIPLE MATCHES for `%s`\n" file !linenum rhs;
+          Printf.eprintf "    Please update the rst manually while preserving any subscripts, e.g. 'NT__sub'\n";
           rhs
         end else
           mtch (* update cmd/tacn *)
@@ -1936,7 +1929,7 @@ let process_rst g file args seen tac_prods cmd_prods =
 
     fprintf new_rst "%s%s\n" pfx (replace first_rhs prods);
 
-    map := NTMap.add first_rhs (file, !linenum) !map;
+    map := NTMap.add (remove_subscrs first_rhs) (file, !linenum) !map;
     while
       let nextline = getline() in
       ignore (Str.string_match contin_regex nextline 0);
@@ -2078,13 +2071,11 @@ let process_grammar args =
       print_in_order out g `MLG !g.order StringSet.empty;
       close_out out;
       finish_with_file (dir "orderedGrammar") args;
-      check_singletons g
+      check_singletons g;
 (*      print_dominated g*)
-    end;
 
-    let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
-    let args = { args with no_update = false } in (* always update rsts in place for now *)
-    if !exit_code = 0 then begin
+      let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
+      let args = { args with no_update = false } in (* always update rsts in place for now *)
       let plist nt =
         let list = (List.map (fun t -> String.trim (prod_to_prodn t))
           (NTMap.find nt !g.map)) in
@@ -2095,7 +2086,6 @@ let process_grammar args =
       report_omitted_prods g !seen.nts "Nonterminal" "";
       let out = open_out (dir "updated_rsts") in
       close_out out;
-    end;
 
 (*
       if args.check_tacs then
@@ -2104,7 +2094,6 @@ let process_grammar args =
         report_omitted_prods cmd_list !seen.cmds "Command" "\n                  ";
 *)
 
-    if !exit_code = 0 then begin
       (* generate report on cmds or tacs *)
       let cmdReport outfile cmdStr cmd_nts cmds cmdvs =
         let rstCmds = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings cmds)) in
@@ -2113,7 +2102,7 @@ let process_grammar args =
             StringSet.union set (StringSet.of_list (List.map (fun p -> String.trim (prod_to_prodn p)) (NTMap.find nt !prodn_gram.map)))
           ) StringSet.empty cmd_nts in
         let allCmds = StringSet.union rstCmdvs (StringSet.union rstCmds gramCmds) in
-        let out = open_temp_bin (dir outfile) in
+        let out = open_out_bin (dir outfile) in
         StringSet.iter (fun c ->
             let rsts = StringSet.mem c rstCmds in
             let gram = StringSet.mem c gramCmds in
@@ -2127,7 +2116,6 @@ let process_grammar args =
             fprintf out "%s%s  %s\n" pfx var c)
           allCmds;
         close_out out;
-        finish_with_file (dir outfile) args;
         Printf.printf "# %s in rsts, gram, total = %d %d %d\n" cmdStr (StringSet.cardinal gramCmds)
           (StringSet.cardinal rstCmds) (StringSet.cardinal allCmds);
       in
@@ -2139,17 +2127,16 @@ let process_grammar args =
 
       let tac_nts = ["simple_tactic"] in
       if args.check_tacs then
-        cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs
-    end;
+        cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs;
 
-    (* generate prodnGrammar for reference *)
-    if !exit_code = 0 && not args.verify then begin
-      let out = open_temp_bin (dir "prodnGrammar") in
-      print_in_order out prodn_gram `PRODN !prodn_gram.order StringSet.empty;
-      close_out out;
-      finish_with_file (dir "prodnGrammar") args
-    end
-  end
+      (* generate prodnGrammar for reference *)
+      if not args.verify then begin
+        let out = open_out_bin (dir "prodnGrammar") in
+        print_in_order out prodn_gram `PRODN !prodn_gram.order StringSet.empty;
+        close_out out;
+      end
+    end (* if !exit_code = 0 *)
+  end (* if not args.fullGrammar *)
 
 let parse_args () =
   let suffix_regex = Str.regexp ".*\\.\\([a-z]+\\)$" in

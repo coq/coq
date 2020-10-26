@@ -86,42 +86,36 @@ specified, the default selector is used.
    Although other selectors are available, only ``all``, ``!`` or a
    single natural number are valid default goal selectors.
 
-.. _bindingslist:
+.. _bindings:
 
-Bindings list
-~~~~~~~~~~~~~
+Bindings
+~~~~~~~~
 
-Tactics that take a term as an argument may also support a bindings list
+Tactics that take a term as an argument may also accept :token:`bindings`
 to instantiate some parameters of the term by name or position.
-The general form of a term with a bindings list is
-:n:`@term with @bindings_list` where :token:`bindings_list` can take two different forms:
+The general form of a term with :token:`bindings` is
+:n:`@term__tac with @bindings` where :token:`bindings` can take two different forms:
 
-.. _bindings_list_grammar:
+  .. insertprodn bindings bindings
 
   .. prodn::
-     ref ::= @ident
-     | @num
-     bindings_list ::= {+ (@ref := @term) }
-     | {+ @term }
+     bindings ::= {+ ( {| @ident | @num } := @term ) }
+     | {+ @one_term }
 
-+ In a bindings list of the form :n:`{+ (@ref:= @term)}`, :n:`@ref` is either an
-  :n:`@ident` or a :n:`@num`. The references are determined according to the type of
-  :n:`@term`. If :n:`@ref` is an identifier, this identifier has to be bound in the
-  type of :n:`@term` and the binding provides the tactic with an instance for the
-  parameter of this name. If :n:`@ref` is a number ``n``, it refers to
-  the ``n``-th non dependent premise of the :n:`@term`, as determined by the type
-  of :n:`@term`.
++ In the first form, if an :token:`ident` is specified, it must be bound in the
+  type of :n:`@term` and provides the tactic with an instance for the
+  parameter of this name. If a :token:`num` is specified, it refers to
+  the ``n``-th non dependent premise of :n:`@term__tac`.
 
   .. exn:: No such binder.
      :undocumented:
 
-+ A bindings list can also be a simple list of terms :n:`{* @term}`.
-  In that case the references to which these terms correspond are
-  determined by the tactic. In case of :tacn:`induction`, :tacn:`destruct`, :tacn:`elim`
-  and :tacn:`case`, the terms have to
-  provide instances for all the dependent products in the type of term while in
++ In the second form, the interpretation of the :token:`one_term`\s depend on which
+  tactic they appear in.  For :tacn:`induction`, :tacn:`destruct`, :tacn:`elim`
+  and :tacn:`case`, the :token:`one_term`\s
+  provide instances for all the dependent products in the type of :n:`@term__tac` while in
   the case of :tacn:`apply`, or of :tacn:`constructor` and its variants, only instances
-  for the dependent products that are not bound in the conclusion of the type
+  for the dependent products that are not bound in the conclusion of :n:`@term__tac`
   are required.
 
   .. exn:: Not the right number of missing arguments.
@@ -682,11 +676,11 @@ Applying theorems
       .. exn:: Not the right number of missing arguments.
          :undocumented:
 
-   .. tacv:: apply @term with @bindings_list
+   .. tacv:: apply @term with @bindings
 
       This also provides apply with values for instantiating premises. Here, variables
       are referred by names and non-dependent products by increasing numbers (see
-      :ref:`bindings list <bindingslist>`).
+      :ref:`bindings`).
 
    .. tacv:: apply {+, @term}
 
@@ -747,8 +741,8 @@ Applying theorems
       tactics that backtrack often. Moreover, it does not traverse tuples as :tacn:`apply`
       does.
 
-   .. tacv:: {? simple} apply {+, @term {? with @bindings_list}}
-             {? simple} eapply {+, @term {? with @bindings_list}}
+   .. tacv:: {? simple} apply {+, @term {? with @bindings}}
+             {? simple} eapply {+, @term {? with @bindings}}
       :name: simple apply; simple eapply
 
       This summarizes the different syntaxes for :tacn:`apply` and :tacn:`eapply`.
@@ -888,18 +882,18 @@ Applying theorems
 
       This applies each :token:`term` in sequence in :token:`ident`.
 
-   .. tacv:: apply {+, @term with @bindings_list} in @ident
+   .. tacv:: apply {+, @term with @bindings} in @ident
 
       This does the same but uses the bindings in each :n:`(@ident := @term)` to
       instantiate the parameters of the corresponding type of :token:`term`
-      (see :ref:`bindings list <bindingslist>`).
+      (see :ref:`bindings`).
 
-   .. tacv:: eapply {+, @term {? with @bindings_list } } in @ident
+   .. tacv:: eapply {+, @term {? with @bindings } } in @ident
 
       This works as :tacn:`apply … in` but turns unresolved bindings into
       existential variables, if any, instead of failing.
 
-   .. tacv:: apply {+, @term {? with @bindings_list } } in @ident as @simple_intropattern
+   .. tacv:: apply {+, @term {? with @bindings } } in @ident as @simple_intropattern
       :name: apply … in … as
 
       This works as :tacn:`apply … in` then applies the :token:`simple_intropattern`
@@ -911,8 +905,8 @@ Applying theorems
       only on subterms that contain no variables to instantiate and does not
       traverse tuples. See :ref:`the corresponding example <simple_apply_ex>`.
 
-   .. tacv:: {? simple} apply {+, @term {? with @bindings_list}} in @ident {? as @simple_intropattern}
-             {? simple} eapply {+, @term {? with @bindings_list}} in @ident {? as @simple_intropattern}
+   .. tacv:: {? simple} apply {+, @term {? with @bindings}} in @ident {? as @simple_intropattern}
+             {? simple} eapply {+, @term {? with @bindings}} in @ident {? as @simple_intropattern}
 
       This summarizes the different syntactic variants of :n:`apply @term in @ident`
       and :n:`eapply @term in @ident`.
@@ -938,48 +932,48 @@ Applying theorems
       :g:`constructor n` where ``n`` is the number of constructors of the head
       of the goal.
 
-   .. tacv:: constructor @num with @bindings_list
+   .. tacv:: constructor @num with @bindings
 
       Let ``c`` be the i-th constructor of :g:`I`, then
-      :n:`constructor i with @bindings_list` is equivalent to
-      :n:`intros; apply c with @bindings_list`.
+      :n:`constructor i with @bindings` is equivalent to
+      :n:`intros; apply c with @bindings`.
 
       .. warning::
 
-         The terms in the :token:`bindings_list` are checked in the context
+         The terms in :token:`bindings` are checked in the context
          where constructor is executed and not in the context where :tacn:`apply`
          is executed (the introductions are not taken into account).
 
-   .. tacv:: split {? with @bindings_list }
+   .. tacv:: split {? with @bindings }
       :name: split
 
       This applies only if :g:`I` has a single constructor. It is then
-      equivalent to :n:`constructor 1 {? with @bindings_list }`. It is
+      equivalent to :n:`constructor 1 {? with @bindings }`. It is
       typically used in the case of a conjunction :math:`A \wedge B`.
 
-      .. tacv:: exists @bindings_list
+      .. tacv:: exists @bindings
          :name: exists
 
          This applies only if :g:`I` has a single constructor. It is then equivalent
-         to :n:`intros; constructor 1 with @bindings_list.` It is typically used in
+         to :n:`intros; constructor 1 with @bindings.` It is typically used in
          the case of an existential quantification :math:`\exists x, P(x).`
 
-      .. tacv:: exists {+, @bindings_list }
+      .. tacv:: exists {+, @bindings }
 
-         This iteratively applies :n:`exists @bindings_list`.
+         This iteratively applies :n:`exists @bindings`.
 
       .. exn:: Not an inductive goal with 1 constructor.
          :undocumented:
 
-   .. tacv:: left {? with @bindings_list }
-             right {? with @bindings_list }
+   .. tacv:: left {? with @bindings }
+             right {? with @bindings }
       :name: left; right
 
       These tactics apply only if :g:`I` has two constructors, for
       instance in the case of a disjunction :math:`A \vee B`.
       Then, they are respectively equivalent to
-      :n:`constructor 1 {? with @bindings_list }` and
-      :n:`constructor 2 {? with @bindings_list }`.
+      :n:`constructor 1 {? with @bindings }` and
+      :n:`constructor 2 {? with @bindings }`.
 
       .. exn:: Not an inductive goal with 2 constructors.
          :undocumented:
@@ -1518,13 +1512,13 @@ Controlling the proof flow
    list of remaining subgoal to prove.
 
 .. tacv:: specialize (@ident {* @term}) {? as @simple_intropattern}
-          specialize @ident with @bindings_list {? as @simple_intropattern}
+          specialize @ident with @bindings {? as @simple_intropattern}
    :name: specialize; _
 
    This tactic works on local hypothesis :n:`@ident`. The
    premises of this hypothesis (either universal quantifications or
    non-dependent implications) are instantiated by concrete terms coming either
-   from arguments :n:`{* @term}` or from a :ref:`bindings list <bindingslist>`.
+   from arguments :n:`{* @term}` or from :ref:`bindings`.
    In the first form the application to :n:`{* @term}`  can be partial. The
    first form is equivalent to :n:`assert (@ident := @ident {* @term})`. In the
    second form, instantiation elements can also be partial. In this case the
@@ -1767,7 +1761,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       by :token:`naming_intropattern` (see :tacn:`intros`),
       in particular ``?`` can be used to let Coq generate a fresh name.
 
-   .. tacv:: destruct @term with @bindings_list
+   .. tacv:: destruct @term with @bindings
 
       This behaves like :n:`destruct @term` providing explicit instances for
       the dependent premises of the type of :token:`term`.
@@ -1781,9 +1775,9 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       are left as existential variables to be inferred later, in the same way
       as :tacn:`eapply` does.
 
-   .. tacv:: destruct @term using @term {? with @bindings_list }
+   .. tacv:: destruct @term using @term {? with @bindings }
 
-      This is synonym of :n:`induction @term using @term {? with @bindings_list }`.
+      This is synonym of :n:`induction @term using @term {? with @bindings }`.
 
    .. tacv:: destruct @term in @goal_occurrences
 
@@ -1792,8 +1786,8 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       clause is an occurrence clause whose syntax and behavior is described
       in :ref:`occurrences sets <occurrencessets>`.
 
-   .. tacv:: destruct @term {? with @bindings_list } {? as @or_and_intropattern_loc } {? eqn:@naming_intropattern } {? using @term {? with @bindings_list } } {? in @goal_occurrences }
-             edestruct @term {? with @bindings_list } {? as @or_and_intropattern_loc } {? eqn:@naming_intropattern } {? using @term {? with @bindings_list } } {? in @goal_occurrences }
+   .. tacv:: destruct @term {? with @bindings } {? as @or_and_intropattern_loc } {? eqn:@naming_intropattern } {? using @term {? with @bindings } } {? in @goal_occurrences }
+             edestruct @term {? with @bindings } {? as @or_and_intropattern_loc } {? eqn:@naming_intropattern } {? using @term {? with @bindings } } {? in @goal_occurrences }
 
       These are the general forms of :tacn:`destruct` and :tacn:`edestruct`.
       They combine the effects of the ``with``, ``as``, ``eqn:``, ``using``,
@@ -1806,15 +1800,15 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    recursion. It behaves as :n:`elim @term` but using a case-analysis
    elimination principle and not a recursive one.
 
-.. tacv:: case @term with @bindings_list
+.. tacv:: case @term with @bindings
 
-   Analogous to :n:`elim @term with @bindings_list` above.
+   Analogous to :n:`elim @term with @bindings` above.
 
-.. tacv:: ecase @term {? with @bindings_list }
+.. tacv:: ecase @term {? with @bindings }
    :name: ecase
 
    In case the type of :n:`@term` has dependent premises, or dependent premises
-   whose values are not inferable from the :n:`with @bindings_list` clause,
+   whose values are not inferable from the :n:`with @bindings` clause,
    :n:`ecase` turns them into existential variables to be resolved later on.
 
 .. tacv:: simple destruct @ident
@@ -1906,10 +1900,10 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    :n:`(p`:sub:`1` :n:`, ... , p`:sub:`n` :n:`)` can be used instead of
    :n:`[ p`:sub:`1` :n:`... p`:sub:`n` :n:`]`.
 
-.. tacv:: induction @term with @bindings_list
+.. tacv:: induction @term with @bindings
 
    This behaves like :tacn:`induction` providing explicit instances for the
-   premises of the type of :n:`term` (see :ref:`bindings list <bindingslist>`).
+   premises of the type of :n:`term` (see :ref:`bindings`).
 
 .. tacv:: einduction @term
    :name: einduction
@@ -1926,7 +1920,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    It does not expect the conclusion of the type of the first :n:`@term` to be
    inductive.
 
-.. tacv:: induction @term using @term with @bindings_list
+.. tacv:: induction @term using @term with @bindings
 
    This behaves as :tacn:`induction … using …` but also providing instances
    for the premises of the type of the second :n:`@term`.
@@ -1954,8 +1948,8 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
          induction y in x |-   *.
          Show 2.
 
-.. tacv:: induction @term with @bindings_list as @or_and_intropattern_loc using @term with @bindings_list in @goal_occurrences
-          einduction @term with @bindings_list as @or_and_intropattern_loc using @term with @bindings_list in @goal_occurrences
+.. tacv:: induction @term with @bindings as @or_and_intropattern_loc using @term with @bindings in @goal_occurrences
+          einduction @term with @bindings as @or_and_intropattern_loc using @term with @bindings in @goal_occurrences
 
    These are the most general forms of :tacn:`induction` and :tacn:`einduction`. It combines the
    effects of the with, as, using, and in clauses.
@@ -1978,11 +1972,11 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    products, the tactic tries to find an instance for which the elimination
    lemma applies and fails otherwise.
 
-.. tacv:: elim @term with @bindings_list
+.. tacv:: elim @term with @bindings
    :name: elim … with
 
    Allows to give explicit instances to the premises of the type of :n:`@term`
-   (see :ref:`bindings list <bindingslist>`).
+   (see :ref:`bindings`).
 
 .. tacv:: eelim @term
    :name: eelim
@@ -1991,15 +1985,15 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    existential variables to be resolved later on.
 
 .. tacv:: elim @term using @term
-          elim @term using @term with @bindings_list
+          elim @term using @term with @bindings
 
    Allows the user to give explicitly an induction principle :n:`@term` that
    is not the standard one for the underlying inductive type of :n:`@term`. The
-   :n:`@bindings_list` clause allows instantiating premises of the type of
+   :n:`@bindings` clause allows instantiating premises of the type of
    :n:`@term`.
 
-.. tacv:: elim @term with @bindings_list using @term with @bindings_list
-          eelim @term with @bindings_list using @term with @bindings_list
+.. tacv:: elim @term with @bindings using @term with @bindings
+          eelim @term with @bindings using @term with @bindings
 
    These are the most general forms of :tacn:`elim` and :tacn:`eelim`. It combines the
    effects of the ``using`` clause and of the two uses of the ``with`` clause.
@@ -2148,13 +2142,13 @@ and an explanation of the underlying technique.
    :n:`discriminate @ident` where :n:`@ident` is the identifier for the last
    introduced hypothesis.
 
-.. tacv:: discriminate @term with @bindings_list
+.. tacv:: discriminate @term with @bindings
 
    This does the same thing as :n:`discriminate @term` but using the given
    bindings to instantiate parameters or hypotheses of :n:`@term`.
 
 .. tacv:: ediscriminate @num
-          ediscriminate @term {? with @bindings_list}
+          ediscriminate @term {? with @bindings}
    :name: ediscriminate; _
 
    This works the same as :tacn:`discriminate` but if the type of :token:`term`, or the
@@ -2212,7 +2206,7 @@ and an explanation of the underlying technique.
    different types :g:`(P t`:sub:`1` :g:`... t`:sub:`n` :g:`)` and
    :g:`(P u`:sub:`1` :g:`... u`:sub:`n` :sub:`)`. If :g:`t`:sub:`1` and
    :g:`u`:sub:`1` are the same and have for type an inductive type for which a decidable
-   equality has been declared using the command :cmd:`Scheme Equality`
+   equality has been declared using :cmd:`Scheme` :n:`Equality ...`
    (see :ref:`proofschemes-induction-principles`),
    the use of a sigma type is avoided.
 
@@ -2239,13 +2233,13 @@ and an explanation of the underlying technique.
       :n:`injection @ident` where :n:`@ident` is the identifier for the last
       introduced hypothesis.
 
-   .. tacv:: injection @term with @bindings_list
+   .. tacv:: injection @term with @bindings
 
       This does the same as :n:`injection @term` but using the given bindings to
       instantiate parameters or hypotheses of :n:`@term`.
 
    .. tacv:: einjection @num
-             einjection @term {? with @bindings_list}
+             einjection @term {? with @bindings}
       :name: einjection; _
 
       This works the same as :n:`injection` but if the type of :n:`@term`, or the
@@ -2260,10 +2254,10 @@ and an explanation of the underlying technique.
       .. exn:: goal does not satisfy the expected preconditions.
          :undocumented:
 
-   .. tacv:: injection @term {? with @bindings_list} as {+ @simple_intropattern}
+   .. tacv:: injection @term {? with @bindings} as {+ @simple_intropattern}
              injection @num as {+ @simple_intropattern}
              injection as {+ @simple_intropattern}
-             einjection @term {? with @bindings_list} as {+ @simple_intropattern}
+             einjection @term {? with @bindings} as {+ @simple_intropattern}
              einjection @num as {+ @simple_intropattern}
              einjection as {+ @simple_intropattern}
 
@@ -2275,10 +2269,10 @@ and an explanation of the underlying technique.
       to the number of new equalities. The original equality is erased if it
       corresponds to a hypothesis.
 
-   .. tacv:: injection @term {? with @bindings_list} as @injection_intropattern
+   .. tacv:: injection @term {? with @bindings} as @injection_intropattern
              injection @num as @injection_intropattern
              injection as @injection_intropattern
-             einjection @term {? with @bindings_list} as @injection_intropattern
+             einjection @term {? with @bindings} as @injection_intropattern
              einjection @num as @injection_intropattern
              einjection as @injection_intropattern
 
@@ -4133,7 +4127,7 @@ use one or several databases specific to your development.
    Adds the rewriting rules :n:`{+ @term}` with a right-to-left orientation in
    the bases :n:`{+ @ident}`.
 
-.. cmd:: Hint Rewrite {+ @term} using @tactic : {+ @ident}
+.. cmd:: Hint Rewrite {? {| -> | <- } } {+ @one_term } {? using @ltac_expr } {? : {* @ident } }
 
    When the rewriting rules :n:`{+ @term}` in :n:`{+ @ident}` will be used, the
    tactic ``tactic`` will be applied to the generated subgoals, the main subgoal
@@ -4609,13 +4603,13 @@ symbol :g:`=`.
    :n:`simplify_eq @ident` where :n:`@ident` is the identifier for the last
    introduced hypothesis.
 
-.. tacv:: simplify_eq @term with @bindings_list
+.. tacv:: simplify_eq @term with @bindings
 
    This does the same as :n:`simplify_eq @term` but using the given bindings to
    instantiate parameters or hypotheses of :n:`@term`.
 
 .. tacv:: esimplify_eq @num
-          esimplify_eq @term {? with @bindings_list}
+          esimplify_eq @term {? with @bindings}
    :name: esimplify_eq; _
 
    This works the same as :tacn:`simplify_eq` but if the type of :n:`@term`, or the
