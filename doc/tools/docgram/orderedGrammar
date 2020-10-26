@@ -1499,7 +1499,7 @@ simple_tactic: [
 | "autounfold_one" OPT hintbases OPT ( "in" ident )
 | "unify" one_term one_term OPT ( "with" ident )
 | "convert_concl_no_check" one_term
-| "typeclasses" "eauto" OPT "bfs" OPT int_or_var OPT ( "with" LIST1 ident )
+| "typeclasses" "eauto" OPT "bfs" int_or_var OPT ( "with" LIST1 ident )
 | "head_of_constr" ident one_term
 | "not_evar" one_term
 | "is_ground" one_term

@@ -393,7 +393,7 @@ Summary of the commands
    Shows the list of instances associated with the typeclass :token:`reference`.
 
 
-.. tacn:: typeclasses eauto {? bfs } {? @int_or_var } {? with {+ @ident } }
+.. tacn:: typeclasses eauto {? bfs } @int_or_var {? with {+ @ident } }
 
    This proof search tactic uses the resolution engine that is run
    implicitly during type checking. This tactic uses a different resolution

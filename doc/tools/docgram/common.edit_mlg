@@ -1107,7 +1107,7 @@ simple_tactic: [
 | REPLACE "transparent_abstract" tactic3 "using" ident
 | WITH "transparent_abstract" tactic_expr3 OPT ( "using" ident )
 | REPLACE "typeclasses" "eauto" "bfs" OPT int_or_var "with" LIST1 preident
-| WITH "typeclasses" "eauto" OPT "bfs" OPT int_or_var OPT ( "with" LIST1 preident )
+| WITH "typeclasses" "eauto" OPT "bfs" int_or_var OPT ( "with" LIST1 preident )
 | DELETE "typeclasses" "eauto" OPT int_or_var "with" LIST1 preident
 | DELETE "typeclasses" "eauto" "bfs" OPT int_or_var
 | DELETE "typeclasses" "eauto" OPT int_or_var
