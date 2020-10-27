@@ -1334,8 +1334,8 @@ let () =
   ;
   Genprint.register_print0
     wit_constr
-    (lift_env Ppconstr.pr_lconstr_expr)
-    (lift_env (fun env sigma (c, _) -> pr_lglob_constr_pptac env sigma c))
+    (lift_env Ppconstr.pr_constr_expr)
+    (lift_env (fun env sigma (c, _) -> pr_glob_constr_pptac env sigma c))
     (make_constr_printer Printer.pr_econstr_n_env)
   ;
   Genprint.register_print0
