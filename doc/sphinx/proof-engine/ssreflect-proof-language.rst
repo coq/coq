@@ -5724,11 +5724,11 @@ respectively.
 
    local function definition
 
-.. tacv:: pose fix @fix_body
+.. tacv:: pose fix @fix_decl
 
    local fix definition
 
-.. tacv:: pose cofix @fix_body
+.. tacv:: pose cofix @fix_decl
 
    local cofix definition
 

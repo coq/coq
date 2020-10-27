@@ -161,7 +161,7 @@ Syntactic values
 Provides a way to use the syntax and semantics of a grammar nonterminal as a
 value in an :token:`ltac_expr`.  The table below describes the most useful of
 these.  You can see the others by running ":cmd:`Print Grammar` `tactic`" and
-examining the part at the end under "Entry tactic:tactic_arg".
+examining the part at the end under "Entry tactic:tactic_value".
 
    :token:`ident`
       name of a grammar nonterminal listed in the table

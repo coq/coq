@@ -444,7 +444,7 @@ Displaying information about notations
 
    This command doesn't display all nonterminals of the grammar.  For example,
    productions shown by `Print Grammar tactic` refer to nonterminals `tactic_then_locality`
-   and `tactic_then_gen` which are not shown and can't be printed.
+   and `for_each_goal` which are not shown and can't be printed.
 
    Most of the grammar in the documentation was updated in 8.12 to make it accurate and
    readable.  This was done using a new developer tool that extracts the grammar from the
@@ -477,16 +477,16 @@ Displaying information about notations
    such as `1+2*3` in the usual way as `1+(2*3)`.  However, most nonterminals have a single level.
 
    For example, this output from `Print Grammar tactic` shows the first 3 levels for
-   `tactic_expr`, designated as "5", "4" and "3".  Level 3 is right-associative,
+   `ltac_expr`, designated as "5", "4" and "3".  Level 3 is right-associative,
    which applies to the productions within it, such as the `try` construct::
 
-     Entry tactic_expr is
+     Entry ltac_expr is
      [ "5" RIGHTA
        [ binder_tactic ]
      | "4" LEFTA
        [ SELF; ";"; binder_tactic
        | SELF; ";"; SELF
-       | SELF; ";"; tactic_then_locality; tactic_then_gen; "]" ]
+       | SELF; ";"; tactic_then_locality; for_each_goal; "]" ]
      | "3" RIGHTA
        [ IDENT "try"; SELF
        :
@@ -510,7 +510,7 @@ Displaying information about notations
 
    The output for `Print Grammar constr` includes :cmd:`Notation` definitions,
    which are dynamically added to the grammar at run time.
-   For example, in the definition for `operconstr`, the production on the second line shown
+   For example, in the definition for `term`, the production on the second line shown
    here is defined by a :cmd:`Reserved Notation` command in `Notations.v`::
 
      | "50" LEFTA

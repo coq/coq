@@ -17,7 +17,7 @@ constr_pattern: [
 | constr
 ]
 
-lconstr_pattern: [
+cpattern: [
 | lconstr
 ]
 
@@ -58,67 +58,67 @@ universe: [
 ]
 
 lconstr: [
-| operconstr200
+| term200
 ]
 
 constr: [
-| operconstr8
-| "@" global univ_instance
+| term8
+| "@" global univ_annot
 ]
 
-operconstr200: [
+term200: [
 | binder_constr
-| operconstr100
+| term100
 ]
 
-operconstr100: [
-| operconstr99 "<:" operconstr200
-| operconstr99 "<<:" operconstr200
-| operconstr99 ":" operconstr200
-| operconstr99 ":>"
-| operconstr99
+term100: [
+| term99 "<:" term200
+| term99 "<<:" term200
+| term99 ":" term200
+| term99 ":>"
+| term99
 ]
 
-operconstr99: [
-| operconstr90
+term99: [
+| term90
 ]
 
-operconstr90: [
-| operconstr10
+term90: [
+| term10
 ]
 
-operconstr10: [
-| operconstr9 LIST1 appl_arg
-| "@" global univ_instance LIST0 operconstr9
+term10: [
+| term9 LIST1 arg
+| "@" global univ_annot LIST0 term9
 | "@" pattern_ident LIST1 identref
-| operconstr9
+| term9
 ]
 
-operconstr9: [
-| ".." operconstr0 ".."
-| operconstr8
+term9: [
+| ".." term0 ".."
+| term8
 ]
 
-operconstr8: [
-| operconstr1
+term8: [
+| term1
 ]
 
-operconstr1: [
-| operconstr0 ".(" global LIST0 appl_arg ")"
-| operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
-| operconstr0 "%" IDENT
-| operconstr0
+term1: [
+| term0 ".(" global LIST0 arg ")"
+| term0 ".(" "@" global LIST0 ( term9 ) ")"
+| term0 "%" IDENT
+| term0
 ]
 
-operconstr0: [
+term0: [
 | atomic_constr
-| match_constr
-| "(" operconstr200 ")"
+| term_match
+| "(" term200 ")"
 | "{|" record_declaration bar_cbrace
 | "{" binder_constr "}"
-| "`{" operconstr200 "}"
-| test_array_opening "[" "|" array_elems "|" lconstr type_cstr test_array_closing "|" "]" univ_instance
-| "`(" operconstr200 ")"
+| "`{" term200 "}"
+| test_array_opening "[" "|" array_elems "|" lconstr type_cstr test_array_closing "|" "]" univ_annot
+| "`(" term200 ")"
 ]
 
 array_elems: [
@@ -140,27 +140,27 @@ field_def: [
 ]
 
 binder_constr: [
-| "forall" open_binders "," operconstr200
-| "fun" open_binders "=>" operconstr200
-| "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
-| "let" "fix" fix_decl "in" operconstr200
-| "let" "cofix" cofix_decl "in" operconstr200
-| "let" [ "(" LIST0 name SEP "," ")" | "()" ] return_type ":=" operconstr200 "in" operconstr200
-| "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
-| "let" "'" pattern200 ":=" operconstr200 case_type "in" operconstr200
-| "let" "'" pattern200 "in" pattern200 ":=" operconstr200 case_type "in" operconstr200
-| "if" operconstr200 return_type "then" operconstr200 "else" operconstr200
+| "forall" open_binders "," term200
+| "fun" open_binders "=>" term200
+| "let" name binders let_type_cstr ":=" term200 "in" term200
+| "let" "fix" fix_decl "in" term200
+| "let" "cofix" cofix_body "in" term200
+| "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" term200 "in" term200
+| "let" "'" pattern200 ":=" term200 "in" term200
+| "let" "'" pattern200 ":=" term200 case_type "in" term200
+| "let" "'" pattern200 "in" pattern200 ":=" term200 case_type "in" term200
+| "if" term200 as_return_type "then" term200 "else" term200
 | "fix" fix_decls
 | "cofix" cofix_decls
 ]
 
-appl_arg: [
+arg: [
 | test_lpar_id_coloneq "(" identref ":=" lconstr ")"
-| operconstr9
+| term9
 ]
 
 atomic_constr: [
-| global univ_instance
+| global univ_annot
 | sort
 | NUMBER
 | string
@@ -179,7 +179,7 @@ evar_instance: [
 |
 ]
 
-univ_instance: [
+univ_annot: [
 | "@{" LIST0 universe_level "}"
 |
 ]
@@ -198,31 +198,31 @@ fix_decls: [
 ]
 
 cofix_decls: [
-| cofix_decl
-| cofix_decl "with" LIST1 cofix_decl SEP "with" "for" identref
+| cofix_body
+| cofix_body "with" LIST1 cofix_body SEP "with" "for" identref
 ]
 
 fix_decl: [
-| identref binders_fixannot type_cstr ":=" operconstr200
+| identref binders_fixannot type_cstr ":=" term200
 ]
 
-cofix_decl: [
-| identref binders type_cstr ":=" operconstr200
+cofix_body: [
+| identref binders type_cstr ":=" term200
 ]
 
-match_constr: [
+term_match: [
 | "match" LIST1 case_item SEP "," OPT case_type "with" branches "end"
 ]
 
 case_item: [
-| operconstr100 OPT [ "as" name ] OPT [ "in" pattern200 ]
+| term100 OPT [ "as" name ] OPT [ "in" pattern200 ]
 ]
 
 case_type: [
-| "return" operconstr100
+| "return" term100
 ]
 
-return_type: [
+as_return_type: [
 | OPT [ OPT [ "as" name ] case_type ]
 ]
 
@@ -253,7 +253,7 @@ pattern200: [
 ]
 
 pattern100: [
-| pattern99 ":" operconstr200
+| pattern99 ":" term200
 | pattern99
 ]
 
@@ -335,10 +335,10 @@ closed_binder: [
 ]
 
 typeclass_constraint: [
-| "!" operconstr200
-| "{" name "}" ":" [ "!" | ] operconstr200
-| test_name_colon name ":" [ "!" | ] operconstr200
-| operconstr200
+| "!" term200
+| "{" name "}" ":" [ "!" | ] term200
+| test_name_colon name ":" [ "!" | ] term200
+| term200
 ]
 
 type_cstr: [
@@ -506,7 +506,7 @@ command: [
 | "Remove" "Hints" LIST1 global opt_hintbases
 | "Hint" hint opt_hintbases
 | "Comments" LIST0 comment
-| "Declare" "Instance" ident_decl binders ":" operconstr200 hint_info
+| "Declare" "Instance" ident_decl binders ":" term200 hint_info
 | "Declare" "Scope" IDENT
 | "Pwd"
 | "Cd"
@@ -525,13 +525,13 @@ command: [
 | "Print" "Namespace" dirpath
 | "Inspect" natural
 | "Add" "ML" "Path" ne_string
-| "Set" option_table option_setting
-| "Unset" option_table
-| "Print" "Table" option_table
+| "Set" setting_name option_setting
+| "Unset" setting_name
+| "Print" "Table" setting_name
 | "Add" IDENT IDENT LIST1 table_value
 | "Add" IDENT LIST1 table_value
-| "Test" option_table "for" LIST1 table_value
-| "Test" option_table
+| "Test" setting_name "for" LIST1 table_value
+| "Test" setting_name
 | "Remove" IDENT IDENT LIST1 table_value
 | "Remove" IDENT LIST1 table_value
 | "Write" "State" IDENT
@@ -569,7 +569,7 @@ command: [
 | "Show" "Extraction"      (* extraction plugin *)
 | "Set" "Firstorder" "Solver" tactic
 | "Print" "Firstorder" "Solver"
-| "Function" LIST1 function_rec_definition_loc SEP "with"      (* funind plugin *)
+| "Function" LIST1 function_fix_definition SEP "with"      (* funind plugin *)
 | "Functional" "Scheme" LIST1 fun_scheme_arg SEP "with"      (* funind plugin *)
 | "Functional" "Case" fun_scheme_arg      (* funind plugin *)
 | "Generate" "graph" "for" reference      (* funind plugin *)
@@ -686,11 +686,11 @@ command: [
 | "Print" "Rings"      (* ring plugin *)
 | "Add" "Field" ident ":" constr OPT field_mods      (* ring plugin *)
 | "Print" "Fields"      (* ring plugin *)
-| "Number" "Notation" reference reference reference ":" ident numnotoption
-| "Numeral" "Notation" reference reference reference ":" ident numnotoption
+| "Number" "Notation" reference reference reference ":" ident numeral_modifier
+| "Numeral" "Notation" reference reference reference ":" ident numeral_modifier
 | "String" "Notation" reference reference reference ":" ident
 | "Ltac2" ltac2_entry      (* Ltac2 plugin *)
-| "Ltac2" "Eval" ltac2_expr      (* Ltac2 plugin *)
+| "Ltac2" "Eval" ltac2_expr6      (* Ltac2 plugin *)
 | "Print" "Ltac2" reference      (* Ltac2 plugin *)
 ]
 
@@ -745,10 +745,10 @@ attribute_list: [
 ]
 
 attribute: [
-| ident attribute_value
+| ident attr_value
 ]
 
-attribute_value: [
+attr_value: [
 | "=" string
 | "(" attribute_list ")"
 |
@@ -795,10 +795,10 @@ gallina: [
 | def_token ident_decl def_body
 | "Let" ident_decl def_body
 | finite_token LIST1 inductive_definition SEP "with"
-| "Fixpoint" LIST1 rec_definition SEP "with"
-| "Let" "Fixpoint" LIST1 rec_definition SEP "with"
-| "CoFixpoint" LIST1 corec_definition SEP "with"
-| "Let" "CoFixpoint" LIST1 corec_definition SEP "with"
+| "Fixpoint" LIST1 fix_definition SEP "with"
+| "Let" "Fixpoint" LIST1 fix_definition SEP "with"
+| "CoFixpoint" LIST1 cofix_definition SEP "with"
+| "Let" "CoFixpoint" LIST1 cofix_definition SEP "with"
 | "Scheme" LIST1 scheme SEP "with"
 | "Combined" "Scheme" identref "from" LIST1 identref SEP ","
 | "Register" global "as" qualid
@@ -897,7 +897,7 @@ decl_notations: [
 ]
 
 opt_constructors_or_fields: [
-| ":=" constructor_list_or_record_decl
+| ":=" constructors_or_record
 |
 ]
 
@@ -905,7 +905,7 @@ inductive_definition: [
 | opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
 ]
 
-constructor_list_or_record_decl: [
+constructors_or_record: [
 | "|" LIST1 constructor SEP "|"
 | identref constructor_type "|" LIST1 constructor SEP "|"
 | identref constructor_type
@@ -919,11 +919,11 @@ opt_coercion: [
 |
 ]
 
-rec_definition: [
+fix_definition: [
 | ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
-corec_definition: [
+cofix_definition: [
 | ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
@@ -950,39 +950,39 @@ record_fields: [
 |
 ]
 
-record_binder_body: [
-| binders of_type_with_opt_coercion lconstr
-| binders of_type_with_opt_coercion lconstr ":=" lconstr
+field_body: [
+| binders of_type lconstr
+| binders of_type lconstr ":=" lconstr
 | binders ":=" lconstr
 ]
 
 record_binder: [
 | name
-| name record_binder_body
+| name field_body
 ]
 
 assum_list: [
 | LIST1 assum_coe
-| simple_assum_coe
+| assumpt
 ]
 
 assum_coe: [
-| "(" simple_assum_coe ")"
+| "(" assumpt ")"
 ]
 
-simple_assum_coe: [
-| LIST1 ident_decl of_type_with_opt_coercion lconstr
+assumpt: [
+| LIST1 ident_decl of_type lconstr
 ]
 
 constructor_type: [
-| binders [ of_type_with_opt_coercion lconstr | ]
+| binders [ of_type lconstr | ]
 ]
 
 constructor: [
 | identref constructor_type
 ]
 
-of_type_with_opt_coercion: [
+of_type: [
 | ":>"
 | ":" ">"
 | ":"
@@ -1011,16 +1011,16 @@ gallina_ext: [
 | "Coercion" global ":" class_rawexpr ">->" class_rawexpr
 | "Coercion" by_notation ":" class_rawexpr ">->" class_rawexpr
 | "Context" LIST1 binder
-| "Instance" instance_name ":" operconstr200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
+| "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
 | "Existing" "Instance" global hint_info
 | "Existing" "Instances" LIST1 global OPT [ "|" natural ]
 | "Existing" "Class" global
-| "Arguments" smart_global LIST0 argument_spec_block OPT [ "," LIST1 [ LIST0 more_implicits_block ] SEP "," ] OPT [ ":" LIST1 arguments_modifier SEP "," ]
+| "Arguments" smart_global LIST0 arg_specs OPT [ "," LIST1 [ LIST0 implicits_alt ] SEP "," ] OPT [ ":" LIST1 args_modifier SEP "," ]
 | "Implicit" "Type" reserv_list
 | "Implicit" "Types" reserv_list
 | "Generalizable" [ "All" "Variables" | "No" "Variables" | [ "Variable" | "Variables" ] LIST1 identref ]
-| "Export" "Set" option_table option_setting
-| "Export" "Unset" option_table
+| "Export" "Set" setting_name option_setting
+| "Export" "Unset" setting_name
 ]
 
 filtered_import: [
@@ -1142,7 +1142,7 @@ ssexpr0: [
 | "(" ssexpr35 ")" "*"
 ]
 
-arguments_modifier: [
+args_modifier: [
 | "simpl" "nomatch"
 | "simpl" "never"
 | "default" "implicits"
@@ -1164,7 +1164,7 @@ argument_spec: [
 | OPT "!" name OPT scope_delimiter
 ]
 
-argument_spec_block: [
+arg_specs: [
 | argument_spec
 | "/"
 | "&"
@@ -1173,7 +1173,7 @@ argument_spec_block: [
 | "{" LIST1 argument_spec "}" OPT scope_delimiter
 ]
 
-more_implicits_block: [
+implicits_alt: [
 | name
 | "[" LIST1 name "]"
 | "{" LIST1 name "}"
@@ -1282,7 +1282,7 @@ table_value: [
 | STRING
 ]
 
-option_table: [
+setting_name: [
 | LIST1 IDENT
 ]
 
@@ -1391,9 +1391,9 @@ syntax_modifier: [
 | "only" "parsing"
 | "format" STRING OPT STRING
 | IDENT; "," LIST1 IDENT SEP "," "at" level
-| IDENT; "at" level OPT constr_as_binder_kind
-| IDENT constr_as_binder_kind
-| IDENT syntax_extension_type
+| IDENT; "at" level OPT binder_interp
+| IDENT binder_interp
+| IDENT explicit_subentry
 ]
 
 syntax_modifiers: [
@@ -1401,19 +1401,19 @@ syntax_modifiers: [
 |
 ]
 
-syntax_extension_type: [
+explicit_subentry: [
 | "ident"
 | "global"
 | "bigint"
 | "binder"
 | "constr"
-| "constr" at_level_opt OPT constr_as_binder_kind
+| "constr" at_level_opt OPT binder_interp
 | "pattern"
 | "pattern" "at" "level" natural
 | "strict" "pattern"
 | "strict" "pattern" "at" "level" natural
 | "closed" "binder"
-| "custom" IDENT at_level_opt OPT constr_as_binder_kind
+| "custom" IDENT at_level_opt OPT binder_interp
 ]
 
 at_level_opt: [
@@ -1421,7 +1421,7 @@ at_level_opt: [
 |
 ]
 
-constr_as_binder_kind: [
+binder_interp: [
 | "as" "ident"
 | "as" "pattern"
 | "as" "strict" "pattern"
@@ -1789,8 +1789,8 @@ auto_using': [
 |      (* funind plugin *)
 ]
 
-function_rec_definition_loc: [
-| Vernac.rec_definition      (* funind plugin *)
+function_fix_definition: [
+| Vernac.fix_definition      (* funind plugin *)
 ]
 
 fun_scheme_arg: [
@@ -1923,16 +1923,16 @@ eauto_search_strategy: [
 ]
 
 tactic_then_last: [
-| "|" LIST0 ( OPT tactic_expr5 ) SEP "|"
+| "|" LIST0 ( OPT ltac_expr5 ) SEP "|"
 |
 ]
 
-tactic_then_gen: [
-| tactic_expr5 "|" tactic_then_gen
-| tactic_expr5 ".." tactic_then_last
+for_each_goal: [
+| ltac_expr5 "|" for_each_goal
+| ltac_expr5 ".." tactic_then_last
 | ".." tactic_then_last
-| tactic_expr5
-| "|" tactic_then_gen
+| ltac_expr5
+| "|" for_each_goal
 |
 ]
 
@@ -1940,60 +1940,60 @@ tactic_then_locality: [
 | "[" OPT ">"
 ]
 
-tactic_expr5: [
+ltac_expr5: [
 | binder_tactic
-| tactic_expr4
+| ltac_expr4
 ]
 
-tactic_expr4: [
-| tactic_expr3 ";" binder_tactic
-| tactic_expr3 ";" tactic_expr3
-| tactic_expr3 ";" tactic_then_locality tactic_then_gen "]"
-| tactic_expr3
+ltac_expr4: [
+| ltac_expr3 ";" binder_tactic
+| ltac_expr3 ";" ltac_expr3
+| ltac_expr3 ";" tactic_then_locality for_each_goal "]"
+| ltac_expr3
 ]
 
-tactic_expr3: [
-| "try" tactic_expr3
-| "do" int_or_var tactic_expr3
-| "timeout" int_or_var tactic_expr3
-| "time" OPT string tactic_expr3
-| "repeat" tactic_expr3
-| "progress" tactic_expr3
-| "once" tactic_expr3
-| "exactly_once" tactic_expr3
-| "infoH" tactic_expr3
-| "abstract" tactic_expr2
-| "abstract" tactic_expr2 "using" ident
-| selector tactic_expr3
-| tactic_expr2
+ltac_expr3: [
+| "try" ltac_expr3
+| "do" int_or_var ltac_expr3
+| "timeout" int_or_var ltac_expr3
+| "time" OPT string ltac_expr3
+| "repeat" ltac_expr3
+| "progress" ltac_expr3
+| "once" ltac_expr3
+| "exactly_once" ltac_expr3
+| "infoH" ltac_expr3
+| "abstract" ltac_expr2
+| "abstract" ltac_expr2 "using" ident
+| "only" selector ":" ltac_expr3
+| ltac_expr2
 ]
 
-tactic_expr2: [
-| tactic_expr1 "+" binder_tactic
-| tactic_expr1 "+" tactic_expr2
-| "tryif" tactic_expr5 "then" tactic_expr5 "else" tactic_expr2
-| tactic_expr1 "||" binder_tactic
-| tactic_expr1 "||" tactic_expr2
-| tactic_expr1
+ltac_expr2: [
+| ltac_expr1 "+" binder_tactic
+| ltac_expr1 "+" ltac_expr2
+| "tryif" ltac_expr5 "then" ltac_expr5 "else" ltac_expr2
+| ltac_expr1 "||" binder_tactic
+| ltac_expr1 "||" ltac_expr2
+| ltac_expr1
 ]
 
-tactic_expr1: [
+ltac_expr1: [
 | match_key "goal" "with" match_context_list "end"
 | match_key "reverse" "goal" "with" match_context_list "end"
-| match_key tactic_expr5 "with" match_list "end"
-| "first" "[" LIST0 tactic_expr5 SEP "|" "]"
-| "solve" "[" LIST0 tactic_expr5 SEP "|" "]"
+| match_key ltac_expr5 "with" match_list "end"
+| "first" "[" LIST0 ltac_expr5 SEP "|" "]"
+| "solve" "[" LIST0 ltac_expr5 SEP "|" "]"
 | "idtac" LIST0 message_token
 | failkw [ int_or_var | ] LIST0 message_token
 | simple_tactic
-| tactic_arg
-| reference LIST0 tactic_arg_compat
-| tactic_expr0
+| tactic_value
+| reference LIST0 tactic_arg
+| ltac_expr0
 ]
 
-tactic_expr0: [
-| "(" tactic_expr5 ")"
-| "[" ">" tactic_then_gen "]"
+ltac_expr0: [
+| "(" ltac_expr5 ")"
+| "[" ">" for_each_goal "]"
 | tactic_atom
 ]
 
@@ -2003,17 +2003,17 @@ failkw: [
 ]
 
 binder_tactic: [
-| "fun" LIST1 input_fun "=>" tactic_expr5
-| "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" tactic_expr5
+| "fun" LIST1 input_fun "=>" ltac_expr5
+| "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" ltac_expr5
 ]
 
-tactic_arg_compat: [
-| tactic_arg
+tactic_arg: [
+| tactic_value
 | Constr.constr
 | "()"
 ]
 
-tactic_arg: [
+tactic_value: [
 | constr_eval
 | "fresh" LIST0 fresh_id
 | "type_term" uconstr
@@ -2054,26 +2054,26 @@ input_fun: [
 ]
 
 let_clause: [
-| identref ":=" tactic_expr5
-| "_" ":=" tactic_expr5
-| identref LIST1 input_fun ":=" tactic_expr5
+| identref ":=" ltac_expr5
+| "_" ":=" ltac_expr5
+| identref LIST1 input_fun ":=" ltac_expr5
 ]
 
 match_pattern: [
-| "context" OPT Constr.ident "[" Constr.lconstr_pattern "]"
-| Constr.lconstr_pattern
+| "context" OPT Constr.ident "[" Constr.cpattern "]"
+| Constr.cpattern
 ]
 
-match_hyps: [
+match_hyp: [
 | name ":" match_pattern
 | name ":=" "[" match_pattern "]" ":" match_pattern
 | name ":=" match_pattern
 ]
 
 match_context_rule: [
-| LIST0 match_hyps SEP "," "|-" match_pattern "=>" tactic_expr5
-| "[" LIST0 match_hyps SEP "," "|-" match_pattern "]" "=>" tactic_expr5
-| "_" "=>" tactic_expr5
+| LIST0 match_hyp SEP "," "|-" match_pattern "=>" ltac_expr5
+| "[" LIST0 match_hyp SEP "," "|-" match_pattern "]" "=>" ltac_expr5
+| "_" "=>" ltac_expr5
 ]
 
 match_context_list: [
@@ -2082,8 +2082,8 @@ match_context_list: [
 ]
 
 match_rule: [
-| match_pattern "=>" tactic_expr5
-| "_" "=>" tactic_expr5
+| match_pattern "=>" ltac_expr5
+| "_" "=>" ltac_expr5
 ]
 
 match_list: [
@@ -2103,12 +2103,12 @@ ltac_def_kind: [
 ]
 
 tacdef_body: [
-| Constr.global LIST1 input_fun ltac_def_kind tactic_expr5
-| Constr.global ltac_def_kind tactic_expr5
+| Constr.global LIST1 input_fun ltac_def_kind ltac_expr5
+| Constr.global ltac_def_kind ltac_expr5
 ]
 
 tactic: [
-| tactic_expr5
+| ltac_expr5
 ]
 
 range_selector: [
@@ -2121,17 +2121,13 @@ range_selector_or_nth: [
 | natural OPT [ "," LIST1 range_selector SEP "," ]
 ]
 
-selector_body: [
+selector: [
 | range_selector_or_nth
 | test_bracket_ident "[" ident "]"
 ]
 
-selector: [
-| "only" selector_body ":"
-]
-
 toplevel_selector: [
-| selector_body ":"
+| selector ":"
 | "!" ":"
 | "all" ":"
 ]
@@ -2147,8 +2143,8 @@ G_LTAC_hint: [
 | "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
 ]
 
-G_LTAC_operconstr0: [
-| "ltac" ":" "(" Pltac.tactic_expr ")"
+G_LTAC_term0: [
+| "ltac" ":" "(" Pltac.ltac_expr ")"
 ]
 
 ltac_selector: [
@@ -2327,7 +2323,7 @@ intropattern: [
 ]
 
 simple_intropattern: [
-| simple_intropattern_closed LIST0 [ "%" operconstr0 ]
+| simple_intropattern_closed LIST0 [ "%" term0 ]
 ]
 
 simple_intropattern_closed: [
@@ -2356,7 +2352,7 @@ with_bindings: [
 |
 ]
 
-red_flags: [
+red_flag: [
 | "beta"
 | "iota"
 | "match"
@@ -2373,7 +2369,7 @@ delta_flag: [
 ]
 
 strategy_flag: [
-| LIST1 red_flags
+| LIST1 red_flag
 | delta_flag
 ]
 
@@ -2500,7 +2496,7 @@ as_name: [
 ]
 
 by_tactic: [
-| "by" tactic_expr3
+| "by" ltac_expr3
 |
 ]
 
@@ -2553,7 +2549,7 @@ field_mods: [
 | "(" LIST1 field_mod SEP "," ")"      (* ring plugin *)
 ]
 
-numnotoption: [
+numeral_modifier: [
 |
 | "(" "warning" "after" bignat ")"
 | "(" "abstract" "after" bignat ")"
@@ -2576,50 +2572,50 @@ tac2pat0: [
 
 atomic_tac2pat: [
 |      (* Ltac2 plugin *)
-| tac2pat1 ":" tac2type5      (* Ltac2 plugin *)
+| tac2pat1 ":" ltac2_type5      (* Ltac2 plugin *)
 | tac2pat1 "," LIST0 tac2pat1 SEP ","      (* Ltac2 plugin *)
 | tac2pat1      (* Ltac2 plugin *)
 ]
 
-tac2expr6: [
-| tac2expr5 ";" tac2expr6      (* Ltac2 plugin *)
-| tac2expr5      (* Ltac2 plugin *)
+ltac2_expr6: [
+| ltac2_expr5 ";" ltac2_expr6      (* Ltac2 plugin *)
+| ltac2_expr5      (* Ltac2 plugin *)
 ]
 
-tac2expr5: [
-| "fun" LIST1 G_LTAC2_input_fun "=>" tac2expr6      (* Ltac2 plugin *)
-| "let" rec_flag LIST1 G_LTAC2_let_clause SEP "with" "in" tac2expr6      (* Ltac2 plugin *)
-| "match" tac2expr5 "with" G_LTAC2_branches "end"      (* Ltac2 plugin *)
-| tac2expr4      (* Ltac2 plugin *)
+ltac2_expr5: [
+| "fun" LIST1 G_LTAC2_input_fun "=>" ltac2_expr6      (* Ltac2 plugin *)
+| "let" rec_flag LIST1 G_LTAC2_let_clause SEP "with" "in" ltac2_expr6      (* Ltac2 plugin *)
+| "match" ltac2_expr5 "with" G_LTAC2_branches "end"      (* Ltac2 plugin *)
+| ltac2_expr4      (* Ltac2 plugin *)
 ]
 
-tac2expr4: [
-| tac2expr3      (* Ltac2 plugin *)
+ltac2_expr4: [
+| ltac2_expr3      (* Ltac2 plugin *)
 ]
 
-tac2expr3: [
-| tac2expr2 "," LIST1 tac2expr2 SEP ","      (* Ltac2 plugin *)
-| tac2expr2      (* Ltac2 plugin *)
+ltac2_expr3: [
+| ltac2_expr2 "," LIST1 ltac2_expr2 SEP ","      (* Ltac2 plugin *)
+| ltac2_expr2      (* Ltac2 plugin *)
 ]
 
-tac2expr2: [
-| tac2expr1 "::" tac2expr2      (* Ltac2 plugin *)
-| tac2expr1      (* Ltac2 plugin *)
+ltac2_expr2: [
+| ltac2_expr1 "::" ltac2_expr2      (* Ltac2 plugin *)
+| ltac2_expr1      (* Ltac2 plugin *)
 ]
 
-tac2expr1: [
-| tac2expr0 LIST1 tac2expr0      (* Ltac2 plugin *)
-| tac2expr0 ".(" Prim.qualid ")"      (* Ltac2 plugin *)
-| tac2expr0 ".(" Prim.qualid ")" ":=" tac2expr5      (* Ltac2 plugin *)
-| tac2expr0      (* Ltac2 plugin *)
+ltac2_expr1: [
+| ltac2_expr0 LIST1 ltac2_expr0      (* Ltac2 plugin *)
+| ltac2_expr0 ".(" Prim.qualid ")"      (* Ltac2 plugin *)
+| ltac2_expr0 ".(" Prim.qualid ")" ":=" ltac2_expr5      (* Ltac2 plugin *)
+| ltac2_expr0      (* Ltac2 plugin *)
 ]
 
-tac2expr0: [
-| "(" tac2expr6 ")"      (* Ltac2 plugin *)
-| "(" tac2expr6 ":" tac2type5 ")"      (* Ltac2 plugin *)
+ltac2_expr0: [
+| "(" ltac2_expr6 ")"      (* Ltac2 plugin *)
+| "(" ltac2_expr6 ":" ltac2_type5 ")"      (* Ltac2 plugin *)
 | "()"      (* Ltac2 plugin *)
 | "(" ")"      (* Ltac2 plugin *)
-| "[" LIST0 tac2expr5 SEP ";" "]"      (* Ltac2 plugin *)
+| "[" LIST0 ltac2_expr5 SEP ";" "]"      (* Ltac2 plugin *)
 | "{" tac2rec_fieldexprs "}"      (* Ltac2 plugin *)
 | G_LTAC2_tactic_atom      (* Ltac2 plugin *)
 ]
@@ -2631,7 +2627,7 @@ G_LTAC2_branches: [
 ]
 
 branch: [
-| tac2pat1 "=>" tac2expr6      (* Ltac2 plugin *)
+| tac2pat1 "=>" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 rec_flag: [
@@ -2644,7 +2640,7 @@ mut_flag: [
 |      (* Ltac2 plugin *)
 ]
 
-typ_param: [
+ltac2_typevar: [
 | "'" Prim.ident      (* Ltac2 plugin *)
 ]
 
@@ -2658,48 +2654,48 @@ G_LTAC2_tactic_atom: [
 | "constr" ":" "(" Constr.lconstr ")"      (* Ltac2 plugin *)
 | "open_constr" ":" "(" Constr.lconstr ")"      (* Ltac2 plugin *)
 | "ident" ":" "(" lident ")"      (* Ltac2 plugin *)
-| "pattern" ":" "(" Constr.lconstr_pattern ")"      (* Ltac2 plugin *)
+| "pattern" ":" "(" Constr.cpattern ")"      (* Ltac2 plugin *)
 | "reference" ":" "(" globref ")"      (* Ltac2 plugin *)
 | "ltac1" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
 | "ltac1val" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
 ]
 
 ltac1_expr_in_env: [
-| test_ltac1_env LIST0 locident "|-" ltac1_expr      (* Ltac2 plugin *)
-| ltac1_expr      (* Ltac2 plugin *)
+| test_ltac1_env LIST0 locident "|-" ltac_expr5      (* Ltac2 plugin *)
+| ltac_expr5      (* Ltac2 plugin *)
 ]
 
 tac2expr_in_env: [
-| test_ltac1_env LIST0 locident "|-" tac2expr6      (* Ltac2 plugin *)
-| tac2expr6      (* Ltac2 plugin *)
+| test_ltac1_env LIST0 locident "|-" ltac2_expr6      (* Ltac2 plugin *)
+| ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 G_LTAC2_let_clause: [
-| let_binder ":=" tac2expr6      (* Ltac2 plugin *)
+| let_binder ":=" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 let_binder: [
 | LIST1 G_LTAC2_input_fun      (* Ltac2 plugin *)
 ]
 
-tac2type5: [
-| tac2type2 "->" tac2type5      (* Ltac2 plugin *)
-| tac2type2      (* Ltac2 plugin *)
+ltac2_type5: [
+| ltac2_type2 "->" ltac2_type5      (* Ltac2 plugin *)
+| ltac2_type2      (* Ltac2 plugin *)
 ]
 
-tac2type2: [
-| tac2type1 "*" LIST1 tac2type1 SEP "*"      (* Ltac2 plugin *)
-| tac2type1      (* Ltac2 plugin *)
+ltac2_type2: [
+| ltac2_type1 "*" LIST1 ltac2_type1 SEP "*"      (* Ltac2 plugin *)
+| ltac2_type1      (* Ltac2 plugin *)
 ]
 
-tac2type1: [
-| tac2type0 Prim.qualid      (* Ltac2 plugin *)
-| tac2type0      (* Ltac2 plugin *)
+ltac2_type1: [
+| ltac2_type0 Prim.qualid      (* Ltac2 plugin *)
+| ltac2_type0      (* Ltac2 plugin *)
 ]
 
-tac2type0: [
-| "(" LIST1 tac2type5 SEP "," ")" OPT Prim.qualid      (* Ltac2 plugin *)
-| typ_param      (* Ltac2 plugin *)
+ltac2_type0: [
+| "(" LIST1 ltac2_type5 SEP "," ")" OPT Prim.qualid      (* Ltac2 plugin *)
+| ltac2_typevar      (* Ltac2 plugin *)
 | "_"      (* Ltac2 plugin *)
 | Prim.qualid      (* Ltac2 plugin *)
 ]
@@ -2718,7 +2714,7 @@ G_LTAC2_input_fun: [
 ]
 
 tac2def_body: [
-| G_LTAC2_binder LIST0 G_LTAC2_input_fun ":=" tac2expr6      (* Ltac2 plugin *)
+| G_LTAC2_binder LIST0 G_LTAC2_input_fun ":=" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 tac2def_val: [
@@ -2726,11 +2722,11 @@ tac2def_val: [
 ]
 
 tac2def_mut: [
-| "Set" Prim.qualid OPT [ "as" locident ] ":=" tac2expr6      (* Ltac2 plugin *)
+| "Set" Prim.qualid OPT [ "as" locident ] ":=" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 tac2typ_knd: [
-| tac2type5      (* Ltac2 plugin *)
+| ltac2_type5      (* Ltac2 plugin *)
 | "[" ".." "]"      (* Ltac2 plugin *)
 | "[" tac2alg_constructors "]"      (* Ltac2 plugin *)
 | "{" tac2rec_fields "}"      (* Ltac2 plugin *)
@@ -2743,7 +2739,7 @@ tac2alg_constructors: [
 
 tac2alg_constructor: [
 | Prim.ident      (* Ltac2 plugin *)
-| Prim.ident "(" LIST0 tac2type5 SEP "," ")"      (* Ltac2 plugin *)
+| Prim.ident "(" LIST0 ltac2_type5 SEP "," ")"      (* Ltac2 plugin *)
 ]
 
 tac2rec_fields: [
@@ -2754,7 +2750,7 @@ tac2rec_fields: [
 ]
 
 tac2rec_field: [
-| mut_flag Prim.ident ":" tac2type5      (* Ltac2 plugin *)
+| mut_flag Prim.ident ":" ltac2_type5      (* Ltac2 plugin *)
 ]
 
 tac2rec_fieldexprs: [
@@ -2765,13 +2761,13 @@ tac2rec_fieldexprs: [
 ]
 
 tac2rec_fieldexpr: [
-| Prim.qualid ":=" tac2expr1      (* Ltac2 plugin *)
+| Prim.qualid ":=" ltac2_expr1      (* Ltac2 plugin *)
 ]
 
 tac2typ_prm: [
 |      (* Ltac2 plugin *)
-| typ_param      (* Ltac2 plugin *)
-| "(" LIST1 typ_param SEP "," ")"      (* Ltac2 plugin *)
+| ltac2_typevar      (* Ltac2 plugin *)
+| "(" LIST1 ltac2_typevar SEP "," ")"      (* Ltac2 plugin *)
 ]
 
 tac2typ_def: [
@@ -2789,7 +2785,7 @@ tac2def_typ: [
 ]
 
 tac2def_ext: [
-| "@" "external" locident ":" tac2type5 ":=" Prim.string Prim.string      (* Ltac2 plugin *)
+| "@" "external" locident ":" ltac2_type5 ":=" Prim.string Prim.string      (* Ltac2 plugin *)
 ]
 
 syn_node: [
@@ -2797,11 +2793,11 @@ syn_node: [
 | Prim.ident      (* Ltac2 plugin *)
 ]
 
-sexpr: [
+ltac2_scope: [
 | Prim.string      (* Ltac2 plugin *)
 | Prim.integer      (* Ltac2 plugin *)
 | syn_node      (* Ltac2 plugin *)
-| syn_node "(" LIST1 sexpr SEP "," ")"      (* Ltac2 plugin *)
+| syn_node "(" LIST1 ltac2_scope SEP "," ")"      (* Ltac2 plugin *)
 ]
 
 syn_level: [
@@ -2810,7 +2806,7 @@ syn_level: [
 ]
 
 tac2def_syn: [
-| "Notation" LIST1 sexpr syn_level ":=" tac2expr6      (* Ltac2 plugin *)
+| "Notation" LIST1 ltac2_scope syn_level ":=" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 lident: [
@@ -3028,28 +3024,28 @@ q_rewriting: [
 ]
 
 G_LTAC2_tactic_then_last: [
-| "|" LIST0 ( OPT tac2expr6 ) SEP "|"      (* Ltac2 plugin *)
+| "|" LIST0 ( OPT ltac2_expr6 ) SEP "|"      (* Ltac2 plugin *)
 |      (* Ltac2 plugin *)
 ]
 
-G_LTAC2_tactic_then_gen: [
-| tac2expr6 "|" G_LTAC2_tactic_then_gen      (* Ltac2 plugin *)
-| tac2expr6 ".." G_LTAC2_tactic_then_last      (* Ltac2 plugin *)
+G_LTAC2_for_each_goal: [
+| ltac2_expr6 "|" G_LTAC2_for_each_goal      (* Ltac2 plugin *)
+| ltac2_expr6 ".." G_LTAC2_tactic_then_last      (* Ltac2 plugin *)
 | ".." G_LTAC2_tactic_then_last      (* Ltac2 plugin *)
-| tac2expr6      (* Ltac2 plugin *)
-| "|" G_LTAC2_tactic_then_gen      (* Ltac2 plugin *)
+| ltac2_expr6      (* Ltac2 plugin *)
+| "|" G_LTAC2_for_each_goal      (* Ltac2 plugin *)
 |      (* Ltac2 plugin *)
 ]
 
 q_dispatch: [
-| G_LTAC2_tactic_then_gen      (* Ltac2 plugin *)
+| G_LTAC2_for_each_goal      (* Ltac2 plugin *)
 ]
 
 q_occurrences: [
 | G_LTAC2_occs      (* Ltac2 plugin *)
 ]
 
-red_flag: [
+ltac2_red_flag: [
 | "beta"      (* Ltac2 plugin *)
 | "iota"      (* Ltac2 plugin *)
 | "match"      (* Ltac2 plugin *)
@@ -3080,7 +3076,7 @@ G_LTAC2_delta_flag: [
 ]
 
 G_LTAC2_strategy_flag: [
-| LIST1 red_flag      (* Ltac2 plugin *)
+| LIST1 ltac2_red_flag      (* Ltac2 plugin *)
 | G_LTAC2_delta_flag      (* Ltac2 plugin *)
 ]
 
@@ -3098,12 +3094,12 @@ q_hintdb: [
 ]
 
 G_LTAC2_match_pattern: [
-| "context" OPT Prim.ident "[" Constr.lconstr_pattern "]"      (* Ltac2 plugin *)
-| Constr.lconstr_pattern      (* Ltac2 plugin *)
+| "context" OPT Prim.ident "[" Constr.cpattern "]"      (* Ltac2 plugin *)
+| Constr.cpattern      (* Ltac2 plugin *)
 ]
 
 G_LTAC2_match_rule: [
-| G_LTAC2_match_pattern "=>" tac2expr6      (* Ltac2 plugin *)
+| G_LTAC2_match_pattern "=>" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
 G_LTAC2_match_list: [
@@ -3124,16 +3120,16 @@ gmatch_pattern: [
 ]
 
 gmatch_rule: [
-| gmatch_pattern "=>" tac2expr6      (* Ltac2 plugin *)
+| gmatch_pattern "=>" ltac2_expr6      (* Ltac2 plugin *)
 ]
 
-gmatch_list: [
+goal_match_list: [
 | LIST1 gmatch_rule SEP "|"      (* Ltac2 plugin *)
 | "|" LIST1 gmatch_rule SEP "|"      (* Ltac2 plugin *)
 ]
 
 q_goal_matching: [
-| gmatch_list      (* Ltac2 plugin *)
+| goal_match_list      (* Ltac2 plugin *)
 ]
 
 move_location: [
@@ -3167,7 +3163,7 @@ G_LTAC2_as_ipat: [
 ]
 
 G_LTAC2_by_tactic: [
-| "by" tac2expr6      (* Ltac2 plugin *)
+| "by" ltac2_expr6      (* Ltac2 plugin *)
 |      (* Ltac2 plugin *)
 ]
 
@@ -3190,11 +3186,11 @@ ltac2_entry: [
 ]
 
 ltac2_expr: [
-| tac2expr6      (* Ltac2 plugin *)
+| _ltac2_expr      (* Ltac2 plugin *)
 ]
 
 tac2mode: [
-| ltac2_expr ltac_use_default      (* Ltac2 plugin *)
+| ltac2_expr6 ltac_use_default      (* Ltac2 plugin *)
 | G_vernac.query_command      (* Ltac2 plugin *)
 ]
 

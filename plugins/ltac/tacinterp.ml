@@ -1997,7 +1997,7 @@ let interp_tac_gen lfun avoid_ids debug t =
 let interp t = interp_tac_gen Id.Map.empty Id.Set.empty (get_debug()) t
 
 (* MUST be marshallable! *)
-type tactic_expr = {
+type ltac_expr = {
   global: bool;
   ast:  Tacexpr.raw_tactic_expr;
 }

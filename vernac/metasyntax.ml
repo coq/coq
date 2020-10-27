@@ -61,15 +61,15 @@ let pr_registered_grammar name =
     prlist pr_one entries
 
 let pr_grammar = function
-  | "constr" | "operconstr" | "binder_constr" ->
+  | "constr" | "term" | "binder_constr" ->
       str "Entry constr is" ++ fnl () ++
       pr_entry Pcoq.Constr.constr ++
       str "and lconstr is" ++ fnl () ++
       pr_entry Pcoq.Constr.lconstr ++
       str "where binder_constr is" ++ fnl () ++
       pr_entry Pcoq.Constr.binder_constr ++
-      str "and operconstr is" ++ fnl () ++
-      pr_entry Pcoq.Constr.operconstr
+      str "and term is" ++ fnl () ++
+      pr_entry Pcoq.Constr.term
   | "pattern" ->
       pr_entry Pcoq.Constr.pattern
   | "vernac" ->

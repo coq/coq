@@ -8,7 +8,7 @@ Entry custom:myconstr is
 | "4" RIGHTA
   [ SELF; "*"; NEXT ]
 | "3" RIGHTA
-  [ "<"; operconstr LEVEL "10"; ">" ] ]
+  [ "<"; term LEVEL "10"; ">" ] ]
 
 [< b > + < b > * < 2 >]
      : nat
@@ -77,7 +77,7 @@ The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
 Entry custom:expr is
 [ "201" RIGHTA
-  [ "{"; operconstr LEVEL "200"; "}" ] ]
+  [ "{"; term LEVEL "200"; "}" ] ]
 
 fun x : nat => [ x ]
      : nat -> nat

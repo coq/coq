@@ -33,7 +33,7 @@ type argument = Genarg.ArgT.any Extend.user_symbol
 
 let atactic n =
   if n = 5 then Pcoq.Symbol.nterm Pltac.binder_tactic
-  else Pcoq.Symbol.nterml Pltac.tactic_expr (string_of_int n)
+  else Pcoq.Symbol.nterml Pltac.ltac_expr (string_of_int n)
 
 type entry_name = EntryName :
   'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, _, 'a) Pcoq.Symbol.t -> entry_name
@@ -116,7 +116,7 @@ let get_tactic_entry n =
   else if Int.equal n 5 then
     Pltac.binder_tactic, None
   else if 1<=n && n<5 then
-    Pltac.tactic_expr, Some (Gramlib.Gramext.Level (string_of_int n))
+    Pltac.ltac_expr, Some (Gramlib.Gramext.Level (string_of_int n))
   else
     user_err Pp.(str ("Invalid Tactic Notation level: "^(string_of_int n)^"."))
 
@@ -383,7 +383,7 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
   in
   List.iteri iter (List.rev prods);
   (* We call [extend_atomic_tactic] only for "basic tactics" (the ones
-     at tactic_expr level 0) *)
+     at ltac_expr level 0) *)
   if Int.equal level 0 then extend_atomic_tactic name prods
 
 (**********************************************************************)
@@ -420,7 +420,7 @@ let create_ltac_quotation name cast (e, l) =
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
   let gram = (level, assoc, [Pcoq.Production.make rule action]) in
-  Pcoq.grammar_extend Pltac.tactic_arg {pos=None; data=[gram]}
+  Pcoq.grammar_extend Pltac.tactic_value {pos=None; data=[gram]}
 
 (** Command *)
 
@@ -555,10 +555,10 @@ let print_located_tactic qid =
 
 let () =
   let entries = [
-    AnyEntry Pltac.tactic_expr;
+    AnyEntry Pltac.ltac_expr;
     AnyEntry Pltac.binder_tactic;
     AnyEntry Pltac.simple_tactic;
-    AnyEntry Pltac.tactic_arg;
+    AnyEntry Pltac.tactic_value;
   ] in
   register_grammars_by_name "tactic" entries
 

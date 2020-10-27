@@ -317,7 +317,7 @@ let pattern_of_string ?env s =
     | None -> Global.env ()
     | Some e -> e
   in
-  let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
+  let constr = Pcoq.parse_string Pcoq.Constr.cpattern s in
   let (_, pat) = Constrintern.intern_constr_pattern env (Evd.from_env env) constr in
   pat
 

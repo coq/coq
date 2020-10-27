@@ -100,7 +100,7 @@ ARGUMENT EXTEND ssrtacarg TYPED AS tactic PRINTED BY { pr_ssrtacarg env sigma }
 END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrtacarg;
-  ssrtacarg: [[ tac = tactic_expr LEVEL "5" -> { tac } ]];
+  ssrtacarg: [[ tac = ltac_expr LEVEL "5" -> { tac } ]];
 END
 
 (* Copy of ssrtacarg with LEVEL "3", useful for: "under ... do ..." *)
@@ -108,7 +108,7 @@ ARGUMENT EXTEND ssrtac3arg TYPED AS tactic PRINTED BY { pr_ssrtacarg env sigma }
 END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrtac3arg;
-  ssrtac3arg: [[ tac = tactic_expr LEVEL "3" -> { tac } ]];
+  ssrtac3arg: [[ tac = ltac_expr LEVEL "3" -> { tac } ]];
 END
 
 {
@@ -1337,7 +1337,7 @@ ARGUMENT EXTEND ssrbinder TYPED AS (ssrfwdfmt * constr) PRINTED BY { pr_ssrbinde
 GRAMMAR EXTEND Gram
   GLOBAL: ssrbinder;
   ssrbinder: [
-  [  ["of" -> { () } | "&" -> { () } ]; c = operconstr LEVEL "99" -> {
+  [  ["of" -> { () } | "&" -> { () } ]; c = term LEVEL "99" -> {
      (FwdPose, [BFvar]),
      CAst.make ~loc @@ CLambdaN ([CLocalAssum ([CAst.make ~loc Anonymous],Default Glob_term.Explicit,c)],mkCHole (Some loc)) } ]
   ];
@@ -1594,18 +1594,18 @@ GRAMMAR EXTEND Gram
     | n = Prim.natural -> { ArgArg (check_index ~loc n) }
     ] ];
   ssrswap: [[ IDENT "first" -> { loc, true } | IDENT "last" -> { loc, false } ]];
-  ssrorelse: [[ "||"; tac = tactic_expr LEVEL "2" -> { tac } ]];
+  ssrorelse: [[ "||"; tac = ltac_expr LEVEL "2" -> { tac } ]];
   ssrseqarg: [
     [ arg = ssrswap -> { noindex, swaptacarg arg }
     | i = ssrseqidx; tac = ssrortacarg; def = OPT ssrorelse -> { i, (tac, def) }
     | i = ssrseqidx; arg = ssrswap -> { i, swaptacarg arg }
-    | tac = tactic_expr LEVEL "3" -> { noindex, (mk_hint tac, None) }
+    | tac = ltac_expr LEVEL "3" -> { noindex, (mk_hint tac, None) }
     ] ];
 END
 
 {
 
-let tactic_expr = Pltac.tactic_expr
+let ltac_expr = Pltac.ltac_expr
 
 }
 
@@ -1688,9 +1688,9 @@ let tclintros_expr ?loc tac ipats =
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: tactic_expr;
-  tactic_expr: LEVEL "1" [ RIGHTA
-    [ tac = tactic_expr; intros = ssrintros_ne -> { tclintros_expr ~loc tac intros }
+  GLOBAL: ltac_expr;
+  ltac_expr: LEVEL "1" [ RIGHTA
+    [ tac = ltac_expr; intros = ssrintros_ne -> { tclintros_expr ~loc tac intros }
     ] ];
 END
 
@@ -1704,9 +1704,9 @@ END
 (* (Removing user-specified parentheses is dubious anyway).          *)
 
 GRAMMAR EXTEND Gram
-  GLOBAL: tactic_expr;
-  ssrparentacarg: [[ "("; tac = tactic_expr; ")" -> { CAst.make ~loc (Tacexp tac) } ]];
-  tactic_expr: LEVEL "0" [[ arg = ssrparentacarg -> { TacArg arg } ]];
+  GLOBAL: ltac_expr;
+  ssrparentacarg: [[ "("; tac = ltac_expr; ")" -> { CAst.make ~loc (Tacexp tac) } ]];
+  ltac_expr: LEVEL "0" [[ arg = ssrparentacarg -> { TacArg arg } ]];
 END
 
 (** The internal "done" and "ssrautoprop" tactics. *)
@@ -1741,7 +1741,7 @@ let tclBY tac = Tacticals.New.tclTHEN tac (donetac ~-1)
 (* The latter two are used in forward-chaining tactics (have, suffice, wlog) *)
 (* and subgoal reordering tacticals (; first & ; last), respectively.        *)
 
-(* Force use of the tactic_expr parsing entry, to rule out tick marks. *)
+(* Force use of the ltac_expr parsing entry, to rule out tick marks. *)
 
 (** The "by" tactical. *)
 
@@ -1782,12 +1782,12 @@ let ssrdotac_expr ?loc n m tac clauses =
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: tactic_expr;
+  GLOBAL: ltac_expr;
   ssrdotac: [
-    [ tac = tactic_expr LEVEL "3" -> { mk_hint tac }
+    [ tac = ltac_expr LEVEL "3" -> { mk_hint tac }
     | tacs = ssrortacarg -> { tacs }
   ] ];
-  tactic_expr: LEVEL "3" [ RIGHTA
+  ltac_expr: LEVEL "3" [ RIGHTA
     [ IDENT "do"; m = ssrmmod; tac = ssrdotac; clauses = ssrclauses ->
       { ssrdotac_expr ~loc noindex m tac clauses }
     | IDENT "do"; tac = ssrortacarg; clauses = ssrclauses ->
@@ -1833,20 +1833,20 @@ let tclseq_expr ?loc tac dir arg =
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: tactic_expr;
+  GLOBAL: ltac_expr;
   ssr_first: [
     [ tac = ssr_first; ipats = ssrintros_ne -> { tclintros_expr ~loc tac ipats }
-    | "["; tacl = LIST0 tactic_expr SEP "|"; "]" -> { TacFirst tacl }
+    | "["; tacl = LIST0 ltac_expr SEP "|"; "]" -> { TacFirst tacl }
     ] ];
   ssr_first_else: [
     [ tac1 = ssr_first; tac2 = ssrorelse -> { TacOrelse (tac1, tac2) }
     | tac = ssr_first -> { tac } ]];
-  tactic_expr: LEVEL "4" [ LEFTA
-    [ tac1 = tactic_expr; ";"; IDENT "first"; tac2 = ssr_first_else ->
+  ltac_expr: LEVEL "4" [ LEFTA
+    [ tac1 = ltac_expr; ";"; IDENT "first"; tac2 = ssr_first_else ->
       { TacThen (tac1, tac2) }
-    | tac = tactic_expr; ";"; IDENT "first"; arg = ssrseqarg ->
+    | tac = ltac_expr; ";"; IDENT "first"; arg = ssrseqarg ->
       { tclseq_expr ~loc tac L2R arg }
-    | tac = tactic_expr; ";"; IDENT "last"; arg = ssrseqarg ->
+    | tac = ltac_expr; ";"; IDENT "last"; arg = ssrseqarg ->
       { tclseq_expr ~loc tac R2L arg }
     ] ];
 END
@@ -2447,8 +2447,8 @@ END
 
 (* The standard TACTIC EXTEND does not work for abstract *)
 GRAMMAR EXTEND Gram
-  GLOBAL: tactic_expr;
-  tactic_expr: LEVEL "3"
+  GLOBAL: ltac_expr;
+  ltac_expr: LEVEL "3"
     [ RIGHTA [ IDENT "abstract"; gens = ssrdgens ->
                { ssrtac_expr ~loc "abstract"
                 [Tacexpr.TacGeneric (None, Genarg.in_gen (Genarg.rawwit wit_ssrdgens) gens)] } ]];

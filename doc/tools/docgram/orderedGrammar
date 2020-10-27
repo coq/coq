@@ -320,11 +320,11 @@ univ_constraint: [
 ]
 
 term_fix: [
-| "let" "fix" fix_body "in" term
-| "fix" fix_body OPT ( LIST1 ( "with" fix_body ) "for" ident )
+| "let" "fix" fix_decl "in" term
+| "fix" fix_decl OPT ( LIST1 ( "with" fix_decl ) "for" ident )
 ]
 
-fix_body: [
+fix_decl: [
 | ident LIST0 binder OPT fixannot OPT ( ":" type ) ":=" term
 ]
 
@@ -885,6 +885,7 @@ command: [
 | "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* ring plugin *)
 | "Print" "Fields"      (* ring plugin *)
 | "Number" "Notation" qualid qualid qualid ":" scope_name OPT numeral_modifier
+| "Numeral" "Notation" qualid qualid qualid ":" scope_name OPT numeral_modifier
 | "Hint" "Cut" "[" hints_path "]" OPT ( ":" LIST1 ident )
 | "Typeclasses" "Transparent" LIST1 qualid
 | "Typeclasses" "Opaque" LIST1 qualid
@@ -909,7 +910,6 @@ command: [
 | "Derive" "Dependent" "Inversion_clear" ident "with" one_term "Sort" sort_family
 | "Declare" "Left" "Step" one_term
 | "Declare" "Right" "Step" one_term
-| "Numeral" "Notation" qualid qualid qualid ":" scope_name OPT numeral_modifier
 | "String" "Notation" qualid qualid qualid ":" scope_name
 | "SubClass" ident_decl def_body
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
@@ -1435,7 +1435,7 @@ simple_tactic: [
 | "notypeclasses" "refine" one_term
 | "simple" "notypeclasses" "refine" one_term
 | "solve_constraints"
-| "subst" OPT ( LIST1 ident )
+| "subst" LIST0 ident
 | "simple" "subst"
 | "evar" "(" ident ":" term ")"
 | "evar" one_term

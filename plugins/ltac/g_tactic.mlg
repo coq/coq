@@ -291,7 +291,7 @@ GRAMMAR EXTEND Gram
   ;
   simple_intropattern:
     [ [ pat = simple_intropattern_closed;
-        l = LIST0 ["%"; c = operconstr LEVEL "0" -> { c } ] ->
+        l = LIST0 ["%"; c = term LEVEL "0" -> { c } ] ->
           { let {CAst.loc=loc0;v=pat} = pat in
           let f c pat =
             let loc1 = Constrexpr_ops.constr_loc c in
@@ -320,7 +320,7 @@ GRAMMAR EXTEND Gram
   with_bindings:
     [ [ "with"; bl = bindings -> { bl } | -> { NoBindings } ] ]
   ;
-  red_flags:
+  red_flag:
     [ [ IDENT "beta" -> { [FBeta] }
       | IDENT "iota" -> { [FMatch;FFix;FCofix] }
       | IDENT "match" -> { [FMatch] }
@@ -337,7 +337,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   strategy_flag:
-    [ [ s = LIST1 red_flags -> { Redops.make_red_flag (List.flatten s) }
+    [ [ s = LIST1 red_flag -> { Redops.make_red_flag (List.flatten s) }
       | d = delta_flag -> { all_with d }
     ] ]
   ;
@@ -460,7 +460,7 @@ GRAMMAR EXTEND Gram
     [ [ "as"; id = ident -> { Names.Name.Name id } | -> { Names.Name.Anonymous } ] ]
   ;
   by_tactic:
-    [ [ "by"; tac = tactic_expr LEVEL "3" -> { Some tac }
+    [ [ "by"; tac = ltac_expr LEVEL "3" -> { Some tac }
     | -> { None } ] ]
   ;
   rewriter :

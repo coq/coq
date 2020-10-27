@@ -25,7 +25,9 @@ module Vernac_ :
     val command : vernac_expr Entry.t
     val syntax : vernac_expr Entry.t
     val vernac_control : vernac_control Entry.t
+    val fix_definition : fixpoint_expr Entry.t
     val rec_definition : fixpoint_expr Entry.t
+      [@@deprecated "Deprecated in 8.13; use 'fix_definition' instead"]
     val noedit_mode : vernac_expr Entry.t
     val command_entry : vernac_expr Entry.t
     val main_entry : vernac_control option Entry.t

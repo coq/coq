@@ -24,7 +24,8 @@ open Tac2intern
 
 module Pltac =
 struct
-let tac2expr = Pcoq.Entry.create "tac2expr"
+let ltac2_expr = Pcoq.Entry.create "ltac2_expr"
+let tac2expr = ltac2_expr
 let tac2expr_in_env = Pcoq.Entry.create "tac2expr_in_env"
 
 let q_ident = Pcoq.Entry.create "q_ident"
@@ -643,7 +644,7 @@ let perform_notation syn st =
   | Some lev -> Some (string_of_int lev)
   in
   let rule = (lev, None, [rule]) in
-  ([Pcoq.ExtendRule (Pltac.tac2expr, {Pcoq.pos=None; data=[rule]})], st)
+  ([Pcoq.ExtendRule (Pltac.ltac2_expr, {Pcoq.pos=None; data=[rule]})], st)
 
 let ltac2_notation =
   Pcoq.create_grammar_command "ltac2-notation" perform_notation

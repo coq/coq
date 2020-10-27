@@ -41,7 +41,7 @@ let () = create_generic_quotation "ipattern" Pltac.simple_intropattern wit_simpl
 let () = create_generic_quotation "open_constr" Pcoq.Constr.lconstr Stdarg.wit_open_constr
 let () =
   let inject (loc, v) = Tacexpr.Tacexp v in
-  Tacentries.create_ltac_quotation "ltac" inject (Pltac.tactic_expr, Some 5)
+  Tacentries.create_ltac_quotation "ltac" inject (Pltac.ltac_expr, Some 5)
 
 (** Backward-compatible tactic notation entry names *)
 

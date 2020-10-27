@@ -342,9 +342,9 @@ Recursive functions: fix
 .. insertprodn term_fix fixannot
 
 .. prodn::
-   term_fix ::= let fix @fix_body in @term
-   | fix @fix_body {? {+ with @fix_body } for @ident }
-   fix_body ::= @ident {* @binder } {? @fixannot } {? : @type } := @term
+   term_fix ::= let fix @fix_decl in @term
+   | fix @fix_decl {? {+ with @fix_decl } for @ident }
+   fix_decl ::= @ident {* @binder } {? @fixannot } {? : @type } := @term
    fixannot ::= %{ struct @ident %}
    | %{ wf @one_term @ident %}
    | %{ measure @one_term {? @ident } {? @one_term } %}

@@ -31,7 +31,7 @@ let warn_deprecated_numeral_notation =
 
 }
 
-VERNAC ARGUMENT EXTEND numnotoption
+VERNAC ARGUMENT EXTEND numeral_modifier
   PRINTED BY { pr_numnot_option }
 | [ ] -> { Nop }
 | [ "(" "warning" "after" bignat(waft) ")" ] -> { Warning (NumTok.UnsignedNat.of_string waft) }
@@ -40,11 +40,11 @@ END
 
 VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
   | #[ locality = Attributes.locality; ] [ "Number" "Notation" reference(ty) reference(f) reference(g) ":"
-      ident(sc) numnotoption(o) ] ->
+      ident(sc) numeral_modifier(o) ] ->
 
     { vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
   | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
-      ident(sc) numnotoption(o) ] ->
+      ident(sc) numeral_modifier(o) ] ->
 
     { warn_deprecated_numeral_notation ();
       vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }

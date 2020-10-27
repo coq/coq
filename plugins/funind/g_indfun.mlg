@@ -147,19 +147,19 @@ END
 module Vernac = Pvernac.Vernac_
 module Tactic = Pltac
 
-let (wit_function_rec_definition_loc : Vernacexpr.fixpoint_expr Loc.located Genarg.uniform_genarg_type) =
-  Genarg.create_arg "function_rec_definition_loc"
+let (wit_function_fix_definition : Vernacexpr.fixpoint_expr Loc.located Genarg.uniform_genarg_type) =
+  Genarg.create_arg "function_fix_definition"
 
-let function_rec_definition_loc =
-  Pcoq.create_generic_entry2 "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
+let function_fix_definition =
+  Pcoq.create_generic_entry2 "function_fix_definition" (Genarg.rawwit wit_function_fix_definition)
 
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: function_rec_definition_loc ;
+  GLOBAL: function_fix_definition ;
 
-  function_rec_definition_loc:
-    [ [ g = Vernac.rec_definition -> { Loc.tag ~loc g } ]]
+  function_fix_definition:
+    [ [ g = Vernac.fix_definition -> { Loc.tag ~loc g } ]]
     ;
 
 END
@@ -168,7 +168,7 @@ END
 
 let () =
   let raw_printer env sigma _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
-  Pptactic.declare_extra_vernac_genarg_pprule wit_function_rec_definition_loc raw_printer
+  Pptactic.declare_extra_vernac_genarg_pprule wit_function_fix_definition raw_printer
 
 let is_proof_termination_interactively_checked recsl =
   List.exists (function
@@ -196,7 +196,7 @@ let is_interactive recsl =
 }
 
 VERNAC COMMAND EXTEND Function STATE CUSTOM
-| ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")]
+| ["Function" ne_function_fix_definition_list_sep(recsl,"with")]
     => { classify_funind recsl }
     -> {
          if is_interactive recsl then

@@ -48,7 +48,7 @@ let assumption_token = Entry.create "assumption_token"
 let def_body = Entry.create "def_body"
 let decl_notations = Entry.create "decl_notations"
 let record_field = Entry.create "record_field"
-let of_type_with_opt_coercion = Entry.create "of_type_with_opt_coercion"
+let of_type = Entry.create "of_type"
 let section_subset_expr = Entry.create "section_subset_expr"
 let scope_delimiter = Entry.create "scope_delimiter"
 let syntax_modifiers = Entry.create "syntax_modifiers"
@@ -113,10 +113,10 @@ GRAMMAR EXTEND Gram
     ]
   ;
   attribute:
-    [ [ k = ident ; v = attribute_value -> { Names.Id.to_string k, v } ]
+    [ [ k = ident ; v = attr_value -> { Names.Id.to_string k, v } ]
     ]
   ;
-  attribute_value:
+  attr_value:
     [ [ "=" ; v = string -> { VernacFlagLeaf v }
       | "(" ; a = attribute_list ; ")" -> { VernacFlagList a }
       | -> { VernacFlagEmpty } ]
@@ -196,8 +196,8 @@ let name_of_ident_decl : ident_decl -> name_decl =
 
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
-  GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type_with_opt_coercion
-    record_field decl_notations rec_definition ident_decl univ_decl;
+  GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type
+    record_field decl_notations fix_definition ident_decl univ_decl;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -219,13 +219,13 @@ GRAMMAR EXTEND Gram
       (* Gallina inductive declarations *)
       | f = finite_token; indl = LIST1 inductive_definition SEP "with" ->
           { VernacInductive (f, indl) }
-      | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+      | "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
           { VernacFixpoint (NoDischarge, recs) }
-      | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+      | IDENT "Let"; "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
           { VernacFixpoint (DoDischarge, recs) }
-      | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+      | "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
           { VernacCoFixpoint (NoDischarge, corecs) }
-      | IDENT "Let"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+      | IDENT "Let"; "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
           { VernacCoFixpoint (DoDischarge, corecs) }
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> { VernacScheme l }
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
@@ -339,7 +339,7 @@ GRAMMAR EXTEND Gram
   ;
   (* Inductives and records *)
   opt_constructors_or_fields:
-    [ [ ":="; lc = constructor_list_or_record_decl -> { lc }
+    [ [ ":="; lc = constructors_or_record -> { lc }
       | -> { RecordDecl (None, []) } ] ]
   ;
   inductive_definition:
@@ -349,7 +349,7 @@ GRAMMAR EXTEND Gram
         lc=opt_constructors_or_fields; ntn = decl_notations ->
            { (((oc,id),(indpar,extrapar),c,lc),ntn) } ] ]
   ;
-  constructor_list_or_record_decl:
+  constructors_or_record:
     [ [ "|"; l = LIST1 constructor SEP "|" -> { Constructors l }
       | id = identref ; c = constructor_type; "|"; l = LIST1 constructor SEP "|" ->
           { Constructors ((c id)::l) }
@@ -369,7 +369,7 @@ GRAMMAR EXTEND Gram
       |  -> { false } ] ]
   ;
   (* (co)-fixpoints *)
-  rec_definition:
+  fix_definition:
     [ [ id_decl = ident_decl;
         bl = binders_fixannot;
         rtype = type_cstr;
@@ -378,7 +378,7 @@ GRAMMAR EXTEND Gram
             {fname = fst id_decl; univs = snd id_decl; rec_order; binders; rtype; body_def; notations}
           } ] ]
   ;
-  corec_definition:
+  cofix_definition:
     [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notations ->
         { {fname = fst id_decl; univs = snd id_decl; rec_order = (); binders; rtype; body_def; notations}
@@ -427,10 +427,10 @@ GRAMMAR EXTEND Gram
       | -> { [] }
     ] ]
   ;
-  record_binder_body:
-    [ [ l = binders; oc = of_type_with_opt_coercion;
+  field_body:
+    [ [ l = binders; oc = of_type;
          t = lconstr -> { fun id -> (oc,AssumExpr (id,l,t)) }
-      | l = binders; oc = of_type_with_opt_coercion;
+      | l = binders; oc = of_type;
          t = lconstr; ":="; b = lconstr -> { fun id ->
            (oc,DefExpr (id,l,b,Some t)) }
       | l = binders; ":="; b = lconstr -> { fun id ->
@@ -442,22 +442,22 @@ GRAMMAR EXTEND Gram
   ;
   record_binder:
     [ [ id = name -> { (NoInstance,AssumExpr(id, [], CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) }
-      | id = name; f = record_binder_body -> { f id } ] ]
+      | id = name; f = field_body -> { f id } ] ]
   ;
   assum_list:
-    [ [ bl = LIST1 assum_coe -> { bl } | b = simple_assum_coe -> { [b] } ] ]
+    [ [ bl = LIST1 assum_coe -> { bl } | b = assumpt -> { [b] } ] ]
   ;
   assum_coe:
-    [ [ "("; a = simple_assum_coe; ")" -> { a } ] ]
+    [ [ "("; a = assumpt; ")" -> { a } ] ]
   ;
-  simple_assum_coe:
-    [ [ idl = LIST1 ident_decl; oc = of_type_with_opt_coercion; c = lconstr ->
+  assumpt:
+    [ [ idl = LIST1 ident_decl; oc = of_type; c = lconstr ->
         { (oc <> NoInstance,(idl,c)) } ] ]
   ;
 
   constructor_type:
     [[ l = binders;
-      t= [ coe = of_type_with_opt_coercion; c = lconstr ->
+      t= [ coe = of_type; c = lconstr ->
                     { fun l id -> (coe <> NoInstance,(id,mkProdCN ~loc l c)) }
             |  ->
                  { fun l id -> (false,(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
@@ -468,7 +468,7 @@ GRAMMAR EXTEND Gram
   constructor:
     [ [ id = identref; c=constructor_type -> { c id } ] ]
   ;
-  of_type_with_opt_coercion:
+  of_type:
     [ [   ":>" -> { BackInstance }
         | ":"; ">" -> { BackInstance }
         | ":" -> { NoInstance } ] ]
@@ -687,7 +687,7 @@ GRAMMAR EXTEND Gram
           { VernacContext (List.flatten c) }
 
       | IDENT "Instance"; namesup = instance_name; ":";
-         t = operconstr LEVEL "200";
+         t = term LEVEL "200";
          info = hint_info ;
          props = [ ":="; "{"; r = record_declaration; "}" -> { Some (true,r) } |
              ":="; c = lconstr -> { Some (false,c) } | -> { None } ] ->
@@ -707,13 +707,13 @@ GRAMMAR EXTEND Gram
 
       (* Arguments *)
       | IDENT "Arguments"; qid = smart_global;
-        args = LIST0 argument_spec_block;
+        args = LIST0 arg_specs;
         more_implicits = OPT
           [ ","; impl = LIST1
-            [ impl = LIST0 more_implicits_block -> { List.flatten impl } ]
+            [ impl = LIST0 implicits_alt -> { List.flatten impl } ]
             SEP "," -> { impl }
           ];
-        mods = OPT [ ":"; l = LIST1 arguments_modifier SEP "," -> { l } ] ->
+        mods = OPT [ ":"; l = LIST1 args_modifier SEP "," -> { l } ] ->
          { let mods = match mods with None -> [] | Some l -> List.flatten l in
          let more_implicits = Option.default [] more_implicits in
          VernacArguments (qid, List.flatten args, more_implicits, mods) }
@@ -732,7 +732,7 @@ GRAMMAR EXTEND Gram
                   idl = LIST1 identref -> { Some idl } ] ->
              { VernacGeneralizable gen } ] ]
   ;
-  arguments_modifier:
+  args_modifier:
     [ [ IDENT "simpl"; IDENT "nomatch" -> { [`ReductionDontExposeCase] }
       | IDENT "simpl"; IDENT "never" -> { [`ReductionNeverUnfold] }
       | IDENT "default"; IDENT "implicits" -> { [`DefaultImplicits] }
@@ -757,7 +757,7 @@ GRAMMAR EXTEND Gram
     ]
   ];
   (* List of arguments implicit status, scope, modifiers *)
-  argument_spec_block: [
+  arg_specs: [
     [ item = argument_spec ->
       { let name, recarg_like, notation_scope = item in
       [RealArg { name=name; recarg_like=recarg_like;
@@ -791,8 +791,8 @@ GRAMMAR EXTEND Gram
                  implicit_status = MaxImplicit}) items }
     ]
   ];
-  (* Same as [argument_spec_block], but with only implicit status and names *)
-  more_implicits_block: [
+  (* Same as [arg_specs], but with only implicit status and names *)
+  implicits_alt: [
     [ name = name -> { [(name.CAst.v, Explicit)] }
     | "["; items = LIST1 name; "]" ->
        { List.map (fun name -> (name.CAst.v, NonMaxImplicit)) items }
@@ -826,9 +826,9 @@ GRAMMAR EXTEND Gram
   GLOBAL: command query_command class_rawexpr gallina_ext search_query search_queries;
 
   gallina_ext:
-    [ [ IDENT "Export"; "Set"; table = option_table; v = option_setting ->
+    [ [ IDENT "Export"; "Set"; table = setting_name; v = option_setting ->
         { VernacSetOption (true, table, v) }
-      | IDENT "Export"; IDENT "Unset"; table = option_table ->
+      | IDENT "Export"; IDENT "Unset"; table = setting_name ->
           { VernacSetOption (true, table, OptionUnset) }
     ] ];
 
@@ -837,7 +837,7 @@ GRAMMAR EXTEND Gram
 
       (* Hack! Should be in grammar_ext, but camlp5 factorizes badly *)
       | IDENT "Declare"; IDENT "Instance"; id = ident_decl; bl = binders; ":";
-         t = operconstr LEVEL "200";
+         t = term LEVEL "200";
          info = hint_info ->
            { VernacDeclareInstance (id, bl, t, info) }
 
@@ -885,12 +885,12 @@ GRAMMAR EXTEND Gram
           { VernacAddMLPath dir }
 
       (* For acting on parameter tables *)
-      | "Set"; table = option_table; v = option_setting ->
+      | "Set"; table = setting_name; v = option_setting ->
           { VernacSetOption (false, table, v) }
-      | IDENT "Unset"; table = option_table ->
+      | IDENT "Unset"; table = setting_name ->
           { VernacSetOption (false, table, OptionUnset) }
 
-      | IDENT "Print"; IDENT "Table"; table = option_table ->
+      | IDENT "Print"; IDENT "Table"; table = setting_name ->
           { VernacPrintOption table }
 
       | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 table_value
@@ -902,9 +902,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Add"; table = IDENT; v = LIST1 table_value ->
           { VernacAddOption ([table], v) }
 
-      | IDENT "Test"; table = option_table; "for"; v = LIST1 table_value
+      | IDENT "Test"; table = setting_name; "for"; v = LIST1 table_value
         -> { VernacMemOption (table, v) }
-      | IDENT "Test"; table = option_table ->
+      | IDENT "Test"; table = setting_name ->
           { VernacPrintOption table }
 
       | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 table_value
@@ -1006,7 +1006,7 @@ GRAMMAR EXTEND Gram
     [ [ id = global   -> { Goptions.QualidRefValue id }
       | s  = STRING   -> { Goptions.StringRefValue s } ] ]
   ;
-  option_table:
+  setting_name:
     [ [ fl = LIST1 [ x = IDENT -> { x } ] -> { fl } ]]
   ;
   ne_in_or_out_modules:
@@ -1191,10 +1191,10 @@ GRAMMAR EXTEND Gram
           | s, None -> SetFormat ("text",s) end }
       | x = IDENT; ","; l = LIST1 [id = IDENT -> { id } ] SEP ","; "at";
         lev = level -> { SetItemLevel (x::l,None,lev) }
-      | x = IDENT; "at"; lev = level; b = OPT constr_as_binder_kind ->
+      | x = IDENT; "at"; lev = level; b = OPT binder_interp ->
         { SetItemLevel ([x],b,lev) }
-      | x = IDENT; b = constr_as_binder_kind -> { SetItemLevel ([x],Some b,DefaultLevel) }
-      | x = IDENT; typ = syntax_extension_type -> { SetEntryType (x,typ) }
+      | x = IDENT; b = binder_interp -> { SetItemLevel ([x],Some b,DefaultLevel) }
+      | x = IDENT; typ = explicit_subentry -> { SetEntryType (x,typ) }
     ] ]
   ;
   syntax_modifiers:
@@ -1202,18 +1202,18 @@ GRAMMAR EXTEND Gram
       | -> { [] }
     ] ]
   ;
-  syntax_extension_type:
+  explicit_subentry:
     [ [ IDENT "ident" -> { ETIdent } | IDENT "global" -> { ETGlobal }
       | IDENT "bigint" -> { ETBigint }
       | IDENT "binder" -> { ETBinder true }
       | IDENT "constr" -> { ETConstr (InConstrEntry,None,DefaultLevel) }
-      | IDENT "constr"; n = at_level_opt; b = OPT constr_as_binder_kind -> { ETConstr (InConstrEntry,b,n) }
+      | IDENT "constr"; n = at_level_opt; b = OPT binder_interp -> { ETConstr (InConstrEntry,b,n) }
       | IDENT "pattern" -> { ETPattern (false,None) }
       | IDENT "pattern"; "at"; IDENT "level"; n = natural -> { ETPattern (false,Some n) }
       | IDENT "strict"; IDENT "pattern" -> { ETPattern (true,None) }
       | IDENT "strict"; IDENT "pattern"; "at"; IDENT "level"; n = natural -> { ETPattern (true,Some n) }
       | IDENT "closed"; IDENT "binder" -> { ETBinder false }
-      | IDENT "custom"; x = IDENT; n = at_level_opt; b = OPT constr_as_binder_kind ->
+      | IDENT "custom"; x = IDENT; n = at_level_opt; b = OPT binder_interp ->
            { ETConstr (InCustomEntry x,b,n) }
     ] ]
   ;
@@ -1221,7 +1221,7 @@ GRAMMAR EXTEND Gram
     [ [ "at"; n = level -> { n }
       | -> { DefaultLevel } ] ]
   ;
-  constr_as_binder_kind:
+  binder_interp:
     [ [ "as"; IDENT "ident" -> { Notation_term.AsIdent }
       | "as"; IDENT "pattern" -> { Notation_term.AsIdentOrPattern }
       | "as"; IDENT "strict"; IDENT "pattern" -> { Notation_term.AsStrictPattern } ] ]
