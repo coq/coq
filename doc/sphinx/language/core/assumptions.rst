@@ -45,6 +45,8 @@ fun and forall gets identical. Moreover, parentheses can be omitted in
 the case of a single sequence of bindings sharing the same type (e.g.:
 :g:`fun (x y z : A) => t` can be shortened in :g:`fun x y z : A => t`).
 
+:n:`{| of | & } @term10` is for use with |SSR|.  Please see :ref:`ssr_anonymous_args`.
+
 .. index:: fun
 .. index:: forall
 

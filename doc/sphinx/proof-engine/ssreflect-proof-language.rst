@@ -439,18 +439,17 @@ The syntax of the new declaration is
       Unset Printing Implicit Defensive.
 
 
+.. _ssr_anonymous_args:
+
 Anonymous arguments
 ~~~~~~~~~~~~~~~~~~~
 
 When in a definition, the type of a certain argument is mandatory, but
 not its name, one usually uses “arrow” abstractions for prenex
-arguments, or the ``(_ : term)`` syntax for inner arguments. In |SSR|,
-the latter can be replaced by the open syntax ``of term`` or
-(equivalently) ``& term``, which are both syntactically equivalent to a
-``(_ : term)`` expression. This feature almost behaves as the
-following extension of the binder syntax:
-
-.. todo .. prodn:: binder += {| & @term | of @term }
+arguments, or the :n:`(_ : @term)` syntax for inner arguments. In |SSR|,
+the latter can be replaced by the open syntax :n:`of @term10` or
+(equivalently) :n:`& @term`, which are both syntactically equivalent to a
+:n:`(_ : @term)` expression. This is an extension of the :token:`binder` syntax.
 
 Caveat: ``& T`` and ``of T`` abbreviations have to appear at the end
 of a binder list. For instance, the usual two-constructor polymorphic
@@ -2521,7 +2520,7 @@ The have tactic.
       hat ::= ^ @ident
       | ^~ @ident
       | ^~ @natural
-      ssriorpat ::= @ssripats {? {| %| | %|- | %|-> | %|| | %||| | %|||| } @ssriorpat }
+      ssriorpat ::= @ssripats {? {| %| | %|- } @ssriorpat }
       ssrbinder ::= @ssrbvar
       | ( {+ @ssrbvar } : @term )
       | ( @ssrbvar {? : @term } {? := @term } )
