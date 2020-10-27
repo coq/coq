@@ -16,13 +16,13 @@ module DMap = Dyn.Map(struct type 'a t = 'a -> unit Proofview.tactic end)
 
 let interp_map = ref DMap.empty
 
-type 'a tactic_interpreter = 'a Dyn.tag
-type interpretable = I : 'a tactic_interpreter * 'a -> interpretable
+type interpretable = I : 'a Dyn.tag * 'a -> interpretable
+type 'a tactic_interpreter = Interpreter of ('a -> interpretable)
 
 let register_tactic_interpreter na f =
   let t = Dyn.create na in
   interp_map := DMap.add t f !interp_map;
-  t
+  Interpreter (fun x -> I (t,x))
 
 let interp_tac (I (tag,t)) =
   let f = DMap.find tag !interp_map in

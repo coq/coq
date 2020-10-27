@@ -9,10 +9,13 @@
 (************************************************************************)
 
 (** Tactic interpreters have to register their interpretation function *)
-type 'a tactic_interpreter
-type interpretable = I : 'a tactic_interpreter * 'a -> interpretable
+type interpretable
 
-(** ['a] should be marshallable if ever used with [par:] *)
+type 'a tactic_interpreter = private Interpreter of ('a -> interpretable)
+
+(** ['a] should be marshallable if ever used with [par:]. Must be
+    called no more than once per process with a particular string: make
+    sure to use partial application. *)
 val register_tactic_interpreter :
   string -> ('a -> unit Proofview.tactic) -> 'a tactic_interpreter
 

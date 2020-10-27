@@ -2019,7 +2019,7 @@ let hide_interp {global;ast} =
       hide_interp (Proofview.Goal.env gl)
     end
 
-let hide_interp = ComTactic.register_tactic_interpreter "ltac1" hide_interp
+let ComTactic.Interpreter hide_interp = ComTactic.register_tactic_interpreter "ltac1" hide_interp
 
 (***************************************************************************)
 (** Register standard arguments *)

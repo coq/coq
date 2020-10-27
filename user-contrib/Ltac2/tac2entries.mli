@@ -53,7 +53,7 @@ val print_ltac : Libnames.qualid -> unit
 (** {5 Eval loop} *)
 
 (** Evaluate a tactic expression in the current environment *)
-val call : pstate:Declare.Proof.t -> default:bool -> raw_tacexpr -> Declare.Proof.t
+val call : pstate:Declare.Proof.t -> with_end_tac:bool -> raw_tacexpr -> Declare.Proof.t
 
 (** {5 Toplevel exceptions} *)
 

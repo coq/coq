@@ -131,7 +131,7 @@ type tactic_expr = {
   ast:  Tacexpr.raw_tactic_expr;
 }
 
-val hide_interp : tactic_expr ComTactic.tactic_interpreter
+val hide_interp : tactic_expr -> ComTactic.interpretable
 
 (** Internals that can be useful for syntax extensions. *)
 
