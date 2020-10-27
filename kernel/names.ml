@@ -447,6 +447,22 @@ module KNset = KNmap.Set
 
 (** {6 Kernel pairs } *)
 
+module type EqType =
+sig
+  type t
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
+  val hash : t -> int
+end
+
+module type QNameS =
+sig
+  type t
+  module CanOrd : EqType with type t = t
+  module UserOrd : EqType with type t = t
+  module SyntacticOrd : EqType with type t = t
+end
+
 (** For constant and inductive names, we use a kernel name couple (kn1,kn2)
    where kn1 corresponds to the name used at toplevel (i.e. what the user see)
    and kn2 corresponds to the canonical kernel name i.e. in the environment
@@ -529,6 +545,7 @@ module KerPair = struct
   end
 
   module SyntacticOrd = struct
+    type t = kernel_pair
     let compare x y = match x, y with
       | Same knx, Same kny -> KerName.compare knx kny
       | Dual (knux,kncx), Dual (knuy,kncy) ->
@@ -599,100 +616,147 @@ module Mindmap = HMap.Make(MutInd.CanOrd)
 module Mindset = Mindmap.Set
 module Mindmap_env = HMap.Make(MutInd.UserOrd)
 
+module Ind =
+struct
+  (** Designation of a (particular) inductive type. *)
+  type t = MutInd.t      (* the name of the inductive type *)
+        * int           (* the position of this inductive type
+                                    within the block of mutually-recursive inductive types.
+                                    BEWARE: indexing starts from 0. *)
+  let modpath (mind, _) = MutInd.modpath mind
+
+  module CanOrd =
+  struct
+    type nonrec t = t
+    let equal (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.CanOrd.equal m1 m2
+    let compare (m1, i1) (m2, i2) =
+      let c = Int.compare i1 i2 in
+      if Int.equal c 0 then MutInd.CanOrd.compare m1 m2 else c
+    let hash (m, i) =
+      Hashset.Combine.combine (MutInd.CanOrd.hash m) (Int.hash i)
+  end
+
+  module UserOrd =
+  struct
+    type nonrec t = t
+    let equal (m1, i1) (m2, i2) =
+      Int.equal i1 i2 && MutInd.UserOrd.equal m1 m2
+    let compare (m1, i1) (m2, i2) =
+      let c = Int.compare i1 i2 in
+      if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
+    let hash (m, i) =
+      Hashset.Combine.combine (MutInd.UserOrd.hash m) (Int.hash i)
+  end
+
+  module SyntacticOrd =
+  struct
+    type nonrec t = t
+    let equal (m1, i1) (m2, i2) =
+      Int.equal i1 i2 && MutInd.SyntacticOrd.equal m1 m2
+
+    let compare (m1, i1) (m2, i2) =
+      let c = Int.compare i1 i2 in
+      if Int.equal c 0 then MutInd.SyntacticOrd.compare m1 m2 else c
+
+    let hash (m, i) =
+      Hashset.Combine.combine (MutInd.SyntacticOrd.hash m) (Int.hash i)
+  end
+
+end
+
+module Construct =
+struct
+  (** Designation of a (particular) constructor of a (particular) inductive type. *)
+  type t = Ind.t (* designates the inductive type *)
+         * int   (* the index of the constructor
+                                    BEWARE: indexing starts from 1. *)
+
+  let modpath (ind, _) = Ind.modpath ind
+
+  module CanOrd =
+  struct
+    type nonrec t = t
+    let equal (ind1, j1) (ind2, j2) = Int.equal j1 j2 && Ind.CanOrd.equal ind1 ind2
+    let compare (ind1, j1) (ind2, j2) =
+      let c = Int.compare j1 j2 in
+      if Int.equal c 0 then Ind.CanOrd.compare ind1 ind2 else c
+    let hash (ind, i) =
+      Hashset.Combine.combine (Ind.CanOrd.hash ind) (Int.hash i)
+  end
+
+  module UserOrd =
+  struct
+    type nonrec t = t
+    let equal (ind1, j1) (ind2, j2) =
+      Int.equal j1 j2 && Ind.UserOrd.equal ind1 ind2
+    let compare (ind1, j1) (ind2, j2) =
+      let c = Int.compare j1 j2 in
+      if Int.equal c 0 then Ind.UserOrd.compare ind1 ind2 else c
+    let hash (ind, i) =
+      Hashset.Combine.combine (Ind.UserOrd.hash ind) (Int.hash i)
+  end
+
+  module SyntacticOrd =
+  struct
+    type nonrec t = t
+    let equal (ind1, j1) (ind2, j2) =
+      Int.equal j1 j2 && Ind.SyntacticOrd.equal ind1 ind2
+    let compare (ind1, j1) (ind2, j2) =
+      let c = Int.compare j1 j2 in
+      if Int.equal c 0 then Ind.SyntacticOrd.compare ind1 ind2 else c
+    let hash (ind, i) =
+      Hashset.Combine.combine (Ind.SyntacticOrd.hash ind) (Int.hash i)
+  end
+
+end
+
 (** Designation of a (particular) inductive type. *)
-type inductive = MutInd.t      (* the name of the inductive type *)
-               * int           (* the position of this inductive type
-                                  within the block of mutually-recursive inductive types.
-                                  BEWARE: indexing starts from 0. *)
+type inductive = Ind.t
 
 (** Designation of a (particular) constructor of a (particular) inductive type. *)
-type constructor = inductive   (* designates the inductive type *)
-                 * int         (* the index of the constructor
-                                  BEWARE: indexing starts from 1. *)
+type constructor = Construct.t
 
-let ind_modpath (mind,_) = MutInd.modpath mind
-let constr_modpath (ind,_) = ind_modpath ind
+let ind_modpath = Ind.modpath
+let constr_modpath = Construct.modpath
 
 let ith_mutual_inductive (mind, _) i = (mind, i)
 let ith_constructor_of_inductive ind i = (ind, i)
 let inductive_of_constructor (ind, _i) = ind
 let index_of_constructor (_ind, i) = i
 
-let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.equal m1 m2
-let eq_user_ind (m1, i1) (m2, i2) =
-  Int.equal i1 i2 && MutInd.UserOrd.equal m1 m2
-let eq_syntactic_ind (m1, i1) (m2, i2) =
-  Int.equal i1 i2 && MutInd.SyntacticOrd.equal m1 m2
+let eq_ind = Ind.CanOrd.equal
+let eq_user_ind = Ind.UserOrd.equal
+let eq_syntactic_ind = Ind.SyntacticOrd.equal
 
-let ind_ord (m1, i1) (m2, i2) =
-  let c = Int.compare i1 i2 in
-  if Int.equal c 0 then MutInd.CanOrd.compare m1 m2 else c
-let ind_user_ord (m1, i1) (m2, i2) =
-  let c = Int.compare i1 i2 in
-  if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
-let ind_syntactic_ord (m1, i1) (m2, i2) =
-  let c = Int.compare i1 i2 in
-  if Int.equal c 0 then MutInd.SyntacticOrd.compare m1 m2 else c
+let ind_ord = Ind.CanOrd.compare
+let ind_user_ord = Ind.UserOrd.compare
+let ind_syntactic_ord = Ind.SyntacticOrd.compare
 
-let ind_hash (m, i) =
-  Hashset.Combine.combine (MutInd.hash m) (Int.hash i)
-let ind_user_hash (m, i) =
-  Hashset.Combine.combine (MutInd.UserOrd.hash m) (Int.hash i)
-let ind_syntactic_hash (m, i) =
-  Hashset.Combine.combine (MutInd.SyntacticOrd.hash m) (Int.hash i)
+let ind_hash = Ind.CanOrd.hash
+let ind_user_hash = Ind.UserOrd.hash
+let ind_syntactic_hash = Ind.SyntacticOrd.hash
 
-let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
-let eq_user_constructor (ind1, j1) (ind2, j2) =
-  Int.equal j1 j2 && eq_user_ind ind1 ind2
-let eq_syntactic_constructor (ind1, j1) (ind2, j2) =
-  Int.equal j1 j2 && eq_syntactic_ind ind1 ind2
+let eq_constructor = Construct.CanOrd.equal
+let eq_user_constructor = Construct.UserOrd.equal
+let eq_syntactic_constructor = Construct.SyntacticOrd.equal
 
-let constructor_ord (ind1, j1) (ind2, j2) =
-  let c = Int.compare j1 j2 in
-  if Int.equal c 0 then ind_ord ind1 ind2 else c
-let constructor_user_ord (ind1, j1) (ind2, j2) =
-  let c = Int.compare j1 j2 in
-  if Int.equal c 0 then ind_user_ord ind1 ind2 else c
-let constructor_syntactic_ord (ind1, j1) (ind2, j2) =
-  let c = Int.compare j1 j2 in
-  if Int.equal c 0 then ind_syntactic_ord ind1 ind2 else c
+let constructor_ord = Construct.CanOrd.compare
+let constructor_user_ord = Construct.UserOrd.compare
+let constructor_syntactic_ord = Construct.SyntacticOrd.compare
 
-let constructor_hash (ind, i) =
-  Hashset.Combine.combine (ind_hash ind) (Int.hash i)
-let constructor_user_hash (ind, i) =
-  Hashset.Combine.combine (ind_user_hash ind) (Int.hash i)
-let constructor_syntactic_hash (ind, i) =
-  Hashset.Combine.combine (ind_syntactic_hash ind) (Int.hash i)
+let constructor_hash = Construct.CanOrd.hash
+let constructor_user_hash = Construct.UserOrd.hash
+let constructor_syntactic_hash = Construct.SyntacticOrd.hash
 
-module InductiveOrdered = struct
-  type t = inductive
-  let compare = ind_ord
-end
+module Indset = Set.Make(Ind.CanOrd)
+module Indset_env = Set.Make(Ind.UserOrd)
+module Indmap = Map.Make(Ind.CanOrd)
+module Indmap_env = Map.Make(Ind.UserOrd)
 
-module InductiveOrdered_env = struct
-  type t = inductive
-  let compare = ind_user_ord
-end
-
-module Indset = Set.Make(InductiveOrdered)
-module Indset_env = Set.Make(InductiveOrdered_env)
-module Indmap = Map.Make(InductiveOrdered)
-module Indmap_env = Map.Make(InductiveOrdered_env)
-
-module ConstructorOrdered = struct
-  type t = constructor
-  let compare = constructor_ord
-end
-
-module ConstructorOrdered_env = struct
-  type t = constructor
-  let compare = constructor_user_ord
-end
-
-module Constrset = Set.Make(ConstructorOrdered)
-module Constrset_env = Set.Make(ConstructorOrdered_env)
-module Constrmap = Map.Make(ConstructorOrdered)
-module Constrmap_env = Map.Make(ConstructorOrdered_env)
+module Constrset = Set.Make(Construct.CanOrd)
+module Constrset_env = Set.Make(Construct.UserOrd)
+module Constrmap = Map.Make(Construct.CanOrd)
+module Constrmap_env = Map.Make(Construct.UserOrd)
 
 (** {6 Hash-consing of name objects } *)
 
@@ -786,6 +850,8 @@ struct
       Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
 
     module SyntacticOrd = struct
+      type nonrec t = t
+
       let compare a b =
         let c = ind_syntactic_ord a.proj_ind b.proj_ind in
         if c == 0 then Int.compare a.proj_arg b.proj_arg
@@ -798,6 +864,8 @@ struct
         Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
     end
     module CanOrd = struct
+      type nonrec t = t
+
       let compare a b =
         let c = ind_ord a.proj_ind b.proj_ind in
         if c == 0 then Int.compare a.proj_arg b.proj_arg
@@ -810,6 +878,8 @@ struct
         Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
     end
     module UserOrd = struct
+      type nonrec t = t
+
       let compare a b =
         let c = ind_user_ord a.proj_ind b.proj_ind in
         if c == 0 then Int.compare a.proj_arg b.proj_arg
@@ -876,6 +946,7 @@ struct
   let hash (c, b) = (if b then 0 else 1) + Repr.hash c
 
   module SyntacticOrd = struct
+    type nonrec t = t
     let compare (c, b) (c', b') =
       if b = b' then Repr.SyntacticOrd.compare c c' else -1
     let equal (c, b as x) (c', b' as x') =
@@ -883,11 +954,20 @@ struct
     let hash (c, b) = (if b then 0 else 1) + Repr.SyntacticOrd.hash c
   end
   module CanOrd = struct
+    type nonrec t = t
     let compare (c, b) (c', b') =
       if b = b' then Repr.CanOrd.compare c c' else -1
     let equal (c, b as x) (c', b' as x') =
       x == x' || b = b' && Repr.CanOrd.equal c c'
     let hash (c, b) = (if b then 0 else 1) + Repr.CanOrd.hash c
+  end
+  module UserOrd = struct
+    type nonrec t = t
+    let compare (c, b) (c', b') =
+      if b = b' then Repr.UserOrd.compare c c' else -1
+    let equal (c, b as x) (c', b' as x') =
+      x == x' || b = b' && Repr.UserOrd.equal c c'
+    let hash (c, b) = (if b then 0 else 1) + Repr.UserOrd.hash c
   end
 
   module Self_Hashcons =
@@ -982,31 +1062,36 @@ module GlobRef = struct
 
   (* By default, [global_reference] are ordered on their canonical part *)
 
-  module Ordered = struct
-    open Constant.CanOrd
+  module CanOrd = struct
     type t = GlobRefInternal.t
     let compare gr1 gr2 =
-      GlobRefInternal.global_ord_gen compare ind_ord constructor_ord gr1 gr2
-    let equal gr1 gr2 = GlobRefInternal.global_eq_gen equal eq_ind eq_constructor gr1 gr2
-    let hash gr = GlobRefInternal.global_hash_gen hash ind_hash constructor_hash gr
+      GlobRefInternal.global_ord_gen Constant.CanOrd.compare Ind.CanOrd.compare Construct.CanOrd.compare gr1 gr2
+    let equal gr1 gr2 = GlobRefInternal.global_eq_gen Constant.CanOrd.equal Ind.CanOrd.equal Construct.CanOrd.equal gr1 gr2
+    let hash gr = GlobRefInternal.global_hash_gen Constant.CanOrd.hash Ind.CanOrd.hash Construct.CanOrd.hash gr
   end
 
-  module Ordered_env = struct
-    open Constant.UserOrd
+  module UserOrd = struct
     type t = GlobRefInternal.t
     let compare gr1 gr2 =
-      GlobRefInternal.global_ord_gen compare ind_user_ord constructor_user_ord gr1 gr2
-    let equal gr1 gr2 =
-      GlobRefInternal.global_eq_gen equal eq_user_ind eq_user_constructor gr1 gr2
-    let hash gr = GlobRefInternal.global_hash_gen hash ind_user_hash constructor_user_hash gr
+      GlobRefInternal.global_ord_gen Constant.UserOrd.compare Ind.UserOrd.compare Construct.UserOrd.compare gr1 gr2
+    let equal gr1 gr2 = GlobRefInternal.global_eq_gen Constant.UserOrd.equal Ind.UserOrd.equal Construct.UserOrd.equal gr1 gr2
+    let hash gr = GlobRefInternal.global_hash_gen Constant.UserOrd.hash Ind.UserOrd.hash Construct.UserOrd.hash gr
   end
 
-  module Map = HMap.Make(Ordered)
+  module SyntacticOrd = struct
+    type t = GlobRefInternal.t
+    let compare gr1 gr2 =
+      GlobRefInternal.global_ord_gen Constant.SyntacticOrd.compare Ind.SyntacticOrd.compare Construct.SyntacticOrd.compare gr1 gr2
+    let equal gr1 gr2 = GlobRefInternal.global_eq_gen Constant.SyntacticOrd.equal Ind.SyntacticOrd.equal Construct.SyntacticOrd.equal gr1 gr2
+    let hash gr = GlobRefInternal.global_hash_gen Constant.SyntacticOrd.hash Ind.SyntacticOrd.hash Construct.SyntacticOrd.hash gr
+  end
+
+  module Map = HMap.Make(CanOrd)
   module Set = Map.Set
 
   (* Alternative sets and maps indexed by the user part of the kernel names *)
 
-  module Map_env = HMap.Make(Ordered_env)
+  module Map_env = HMap.Make(UserOrd)
   module Set_env = Map_env.Set
 
 end

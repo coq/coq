@@ -100,8 +100,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let pre_princ = substl (List.map mkVar ptes_vars) pre_princ in
   let is_dom c =
     match Constr.kind c with
-    | Ind ((u, _), _) -> MutInd.equal u rel_as_kn
-    | Construct (((u, _), _), _) -> MutInd.equal u rel_as_kn
+    | Ind ((u, _), _) -> Environ.QMutInd.equal env u rel_as_kn
+    | Construct (((u, _), _), _) -> Environ.QMutInd.equal env u rel_as_kn
     | _ -> false
   in
   let get_fun_num c =

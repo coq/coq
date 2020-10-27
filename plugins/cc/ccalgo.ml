@@ -145,7 +145,7 @@ let rec term_equal t1 t2 =
     | Appli (t1, u1), Appli (t2, u2) -> term_equal t1 t2 && term_equal u1 u2
     | Constructor {ci_constr=(c1,u1); ci_arity=i1; ci_nhyps=j1},
       Constructor {ci_constr=(c2,u2); ci_arity=i2; ci_nhyps=j2} ->
-      Int.equal i1 i2 && Int.equal j1 j2 && eq_constructor c1 c2 (* FIXME check eq? *)
+      Int.equal i1 i2 && Int.equal j1 j2 && Construct.CanOrd.equal c1 c2 (* FIXME check eq? *)
     | _ -> false
 
 open Hashset.Combine
@@ -155,7 +155,7 @@ let rec hash_term = function
   | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
   | Eps i -> combine 3 (Id.hash i)
   | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
-  | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (constructor_hash c) i j
+  | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (Construct.CanOrd.hash c) i j
 
 type ccpattern =
     PApp of term * ccpattern list (* arguments are reversed *)

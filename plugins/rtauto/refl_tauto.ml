@@ -100,7 +100,7 @@ let rec make_form env sigma atom_env term =
   | Cast(a,_,_) ->
     make_form env sigma atom_env a
   | Ind (ind, _) ->
-    if Names.eq_ind ind (fst (Lazy.force li_False)) then
+    if Names.Ind.CanOrd.equal ind (fst (Lazy.force li_False)) then
       Bot
     else
       make_atom atom_env (normalize term)
@@ -108,11 +108,11 @@ let rec make_form env sigma atom_env term =
     begin
       try
         let ind, _ = destInd sigma hd in
-        if Names.eq_ind ind (fst (Lazy.force li_and)) then
+        if Names.Ind.CanOrd.equal ind (fst (Lazy.force li_and)) then
           let fa = make_form env sigma atom_env argv.(0) in
           let fb = make_form env sigma atom_env argv.(1) in
           Conjunct (fa,fb)
-        else if Names.eq_ind ind (fst (Lazy.force li_or)) then
+        else if Names.Ind.CanOrd.equal ind (fst (Lazy.force li_or)) then
           let fa = make_form env sigma atom_env argv.(0) in
           let fb = make_form env sigma atom_env argv.(1) in
           Disjunct (fa,fb)

@@ -32,7 +32,7 @@ module Refset' = GlobRef.Set_env
 
 let occur_kn_in_ref kn = let open GlobRef in function
   | IndRef (kn',_)
-  | ConstructRef ((kn',_),_) -> MutInd.equal kn kn'
+  | ConstructRef ((kn',_),_) -> MutInd.CanOrd.equal kn kn'
   | ConstRef _ | VarRef _ -> false
 
 let repr_of_r = let open GlobRef in function

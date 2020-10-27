@@ -832,3 +832,66 @@ let set_retroknowledge env r = { env with retroknowledge = r }
 let set_native_symbols env native_symbols = { env with native_symbols }
 let add_native_symbols dir syms env =
   { env with native_symbols = DPmap.add dir syms env.native_symbols }
+
+module type QNameS =
+sig
+  type t
+  val equal : env -> t -> t -> bool
+  val compare : env -> t -> t -> int
+  val hash : env -> t -> int
+end
+
+module QConstant =
+struct
+  type t = Constant.t
+  let equal _env c1 c2 = Constant.CanOrd.equal c1 c2
+  let compare _env c1 c2 = Constant.CanOrd.compare c1 c2
+  let hash _env c = Constant.CanOrd.hash c
+end
+
+module QMutInd =
+struct
+  type t = MutInd.t
+  let equal _env c1 c2 = MutInd.CanOrd.equal c1 c2
+  let compare _env c1 c2 = MutInd.CanOrd.compare c1 c2
+  let hash _env c = MutInd.CanOrd.hash c
+end
+
+module QInd =
+struct
+  type t = Ind.t
+  let equal _env c1 c2 = Ind.CanOrd.equal c1 c2
+  let compare _env c1 c2 = Ind.CanOrd.compare c1 c2
+  let hash _env c = Ind.CanOrd.hash c
+end
+
+module QConstruct =
+struct
+  type t = Construct.t
+  let equal _env c1 c2 = Construct.CanOrd.equal c1 c2
+  let compare _env c1 c2 = Construct.CanOrd.compare c1 c2
+  let hash _env c = Construct.CanOrd.hash c
+end
+
+module QProjection =
+struct
+  type t = Projection.t
+  let equal _env c1 c2 = Projection.CanOrd.equal c1 c2
+  let compare _env c1 c2 = Projection.CanOrd.compare c1 c2
+  let hash _env c = Projection.CanOrd.hash c
+  module Repr =
+  struct
+    type t = Projection.Repr.t
+    let equal _env c1 c2 = Projection.Repr.CanOrd.equal c1 c2
+    let compare _env c1 c2 = Projection.Repr.CanOrd.compare c1 c2
+    let hash _env c = Projection.Repr.CanOrd.hash c
+  end
+end
+
+module QGlobRef =
+struct
+  type t = GlobRef.t
+  let equal _env c1 c2 = GlobRef.CanOrd.equal c1 c2
+  let compare _env c1 c2 = GlobRef.CanOrd.compare c1 c2
+  let hash _env c = GlobRef.CanOrd.hash c
+end

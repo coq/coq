@@ -307,6 +307,60 @@ module KNset  : CSig.SetS with type elt = KerName.t
 module KNpred : Predicate.S with type elt = KerName.t
 module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
 
+(** {6 Signature for quotiented names} *)
+
+module type EqType =
+sig
+  type t
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
+  val hash : t -> int
+end
+
+module type QNameS =
+sig
+  type t
+  (** A type of reference that implements an implicit quotient by containing
+      two different names. The first one is the user name, i.e. what the user
+      sees when printing. The second one is the canonical name, which is the
+      actual absolute name of the reference.
+
+      This mechanism is fundamentally tied to the module system of Coq. Functor
+      application and module inclusion are the typical ways to introduce names
+      where the canonical and user components differ. In particular, the two
+      components should be undistinguishable from the point of view of typing,
+      i.e. from a "kernel" ground. This aliasing only makes sense inside an
+      environment, but at this point this notion is not even defined so, this
+      dual name trick is fragile. One has to ensure many invariants when
+      creating such names, but the kernel is quite lenient when it comes to
+      checking that these invariants hold. (Read: there are soundness bugs
+      lurking in the module system.)
+
+      One could enforce the invariants by splitting the names and storing that
+      information in the environment instead, but unfortunately, this wreaks
+      havoc in the upper layers. The latter are infamously not stable by
+      syntactic equality, in particular they might observe the difference
+      between canonical and user names if not packed together.
+
+      For this reason, it is discouraged to use the canonical-accessing API
+      in the upper layers, notably the [CanOrd] module below. Instead, one
+      should use their quotiented versions defined in the [Environ] module.
+      Eventually all uses to [CanOrd] outside of the kernel should be removed.
+
+      CAVEAT: name sets and maps are still exposing a canonical-accessing API
+      surreptitiously. *)
+
+  module CanOrd : EqType with type t = t
+  (** Equality functions over the canonical name. Their use should be
+      restricted to the kernel. *)
+
+  module UserOrd : EqType with type t = t
+  (** Equality functions over the user name. *)
+
+  module SyntacticOrd : EqType with type t = t
+  (** Equality functions using both names, for low-level uses. *)
+end
+
 (** {6 Constant Names } *)
 
 module Constant:
@@ -340,28 +394,12 @@ sig
 
   (** Comparisons *)
 
-  module CanOrd : sig
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
-  module UserOrd : sig
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module SyntacticOrd : sig
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  val equal : t -> t -> bool
+  val equal : t -> t -> bool [@@ocaml.deprecated "Use QConstant.equal"]
   (** Default comparison, alias for [CanOrd.equal] *)
 
-  val hash : t -> int
+  val hash : t -> int [@@ocaml.deprecated "Use QConstant.hash"]
   (** Hashing function *)
 
   val change_label : t -> Label.t -> t
@@ -430,28 +468,12 @@ sig
 
   (** Comparisons *)
 
-  module CanOrd : sig
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
-  module UserOrd : sig
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  val equal : t -> t -> bool [@@ocaml.deprecated "Use QMutInd.equal"]
+ (** Default comparison, alias for [CanOrd.equal] *)
 
-  module SyntacticOrd : sig
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  val equal : t -> t -> bool
-  (** Default comparison, alias for [CanOrd.equal] *)
-
-  val hash : t -> int
+  val hash : t -> int [@@ocaml.deprecated "Use QMutInd.hash"]
 
   (** Displaying *)
 
@@ -473,16 +495,35 @@ module Mindset : CSig.SetS with type elt = MutInd.t
 module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
 module Mindmap_env : CMap.ExtS with type key = MutInd.t
 
-(** Designation of a (particular) inductive type. *)
-type inductive = MutInd.t      (* the name of the inductive type *)
-               * int           (* the position of this inductive type
-                                  within the block of mutually-recursive inductive types.
-                                  BEWARE: indexing starts from 0. *)
+module Ind :
+sig
+  (** Designation of a (particular) inductive type. *)
+  type t = MutInd.t      (* the name of the inductive type *)
+         * int           (* the position of this inductive type
+                                    within the block of mutually-recursive inductive types.
+                                    BEWARE: indexing starts from 0. *)
+  val modpath : t -> ModPath.t
 
-(** Designation of a (particular) constructor of a (particular) inductive type. *)
-type constructor = inductive   (* designates the inductive type *)
-                 * int         (* the index of the constructor
-                                  BEWARE: indexing starts from 1. *)
+  include QNameS with type t := t
+
+end
+
+type inductive = Ind.t
+
+module Construct :
+sig
+  (** Designation of a (particular) constructor of a (particular) inductive type. *)
+  type t = Ind.t   (* designates the inductive type *)
+         * int     (* the index of the constructor
+                                    BEWARE: indexing starts from 1. *)
+
+  val modpath : t -> ModPath.t
+
+  include QNameS with type t := t
+
+end
+
+type constructor = Construct.t
 
 module Indset : CSet.S with type elt = inductive
 module Constrset : CSet.S with type elt = constructor
@@ -494,30 +535,51 @@ module Indmap_env : CMap.ExtS with type key = inductive and module Set := Indset
 module Constrmap_env : CMap.ExtS with type key = constructor and module Set := Constrset_env
 
 val ind_modpath : inductive -> ModPath.t
+[@@ocaml.deprecated "Use the Ind module"]
+
 val constr_modpath : constructor -> ModPath.t
+[@@ocaml.deprecated "Use the Construct module"]
 
 val ith_mutual_inductive : inductive -> int -> inductive
 val ith_constructor_of_inductive : inductive -> int -> constructor
 val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
 val eq_ind : inductive -> inductive -> bool
+[@@ocaml.deprecated "Use the Ind module"]
 val eq_user_ind : inductive -> inductive -> bool
+[@@ocaml.deprecated "Use the Ind module"]
 val eq_syntactic_ind : inductive -> inductive -> bool
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_ord : inductive -> inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_hash : inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_user_ord : inductive -> inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_user_hash : inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_syntactic_ord : inductive -> inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val ind_syntactic_hash : inductive -> int
+[@@ocaml.deprecated "Use the Ind module"]
 val eq_constructor : constructor -> constructor -> bool
+[@@ocaml.deprecated "Use the Construct module"]
 val eq_user_constructor : constructor -> constructor -> bool
+[@@ocaml.deprecated "Use the Construct module"]
 val eq_syntactic_constructor : constructor -> constructor -> bool
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_ord : constructor -> constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_hash : constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_user_ord : constructor -> constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_user_hash : constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_syntactic_ord : constructor -> constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 val constructor_syntactic_hash : constructor -> int
+[@@ocaml.deprecated "Use the Construct module"]
 
 (** {6 Hash-consing } *)
 
@@ -558,21 +620,7 @@ module Projection : sig
 
     val make : inductive -> proj_npars:int -> proj_arg:int -> Label.t -> t
 
-    module SyntacticOrd : sig
-      val compare : t -> t -> int
-      val equal : t -> t -> bool
-      val hash : t -> int
-    end
-    module CanOrd : sig
-      val compare : t -> t -> int
-      val equal : t -> t -> bool
-      val hash : t -> int
-    end
-    module UserOrd : sig
-      val compare : t -> t -> int
-      val equal : t -> t -> bool
-      val hash : t -> int
-    end
+    include QNameS with type t := t
 
     val constant : t -> Constant.t
     (** Don't use this if you don't have to. *)
@@ -583,9 +631,9 @@ module Projection : sig
     val arg : t -> int
     val label : t -> Label.t
 
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val compare : t -> t -> int
+    val equal : t -> t -> bool [@@ocaml.deprecated "Use QProjection.equal"]
+    val hash : t -> int [@@ocaml.deprecated "Use QProjection.hash"]
+    val compare : t -> t -> int [@@ocaml.deprecated "Use QProjection.compare"]
 
     val map : (MutInd.t -> MutInd.t) -> t -> t
     val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t
@@ -602,16 +650,7 @@ module Projection : sig
   val make : Repr.t -> bool -> t
   val repr : t -> Repr.t
 
-  module SyntacticOrd : sig
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-  module CanOrd : sig
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
   val constant : t -> Constant.t
   val mind : t -> MutInd.t
@@ -623,14 +662,18 @@ module Projection : sig
   val unfold : t -> t
 
   val equal : t -> t -> bool
+  [@@ocaml.deprecated "Use QProjection.equal"]
   val hash : t -> int
+  [@@ocaml.deprecated "Use QProjection.hash"]
   val hcons : t -> t
   (** Hashconsing of projections. *)
 
   val repr_equal : t -> t -> bool
+  [@@ocaml.deprecated "Use an explicit projection of Repr"]
   (** Ignoring the unfolding boolean. *)
 
   val compare : t -> t -> int
+  [@@ocaml.deprecated "Use QProjection.compare"]
 
   val map : (MutInd.t -> MutInd.t) -> t -> t
   val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t
@@ -656,19 +699,7 @@ module GlobRef : sig
 
   val equal : t -> t -> bool
 
-  module Ordered : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
-
-  module Ordered_env : sig
-    type nonrec t = t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-  end
+  include QNameS with type t := t
 
   module Set_env : CSig.SetS with type elt = t
   module Map_env : Map.ExtS

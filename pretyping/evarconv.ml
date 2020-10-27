@@ -387,7 +387,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
         | UnifFailure _ as x -> fail x)
       | UnifFailure _ as x -> fail x)
     | Stack.Proj (p1)::q1, Stack.Proj (p2)::q2 ->
-       if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
+       if QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
        then ise_stack2 true i q1 q2
        else fail (UnifFailure (i, NotSameHead))
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1,
@@ -429,7 +429,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
           (fun i -> ise_stack2 i a1 a2)]
       else UnifFailure (i,NotSameHead)
     | Stack.Proj (p1)::q1, Stack.Proj (p2)::q2 ->
-       if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
+       if QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
        then ise_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
@@ -566,11 +566,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     in
     let compare_heads evd =
       match EConstr.kind evd term, EConstr.kind evd term' with
-      | Const (c, u), Const (c', u') when Constant.equal c c' ->
+      | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
         let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
         check_strict evd u u'
       | Const _, Const _ -> UnifFailure (evd, NotSameHead)
-      | Ind ((mi,i) as ind , u), Ind (ind', u') when Names.eq_ind ind ind' ->
+      | Ind ((mi,i) as ind , u), Ind (ind', u') when Names.Ind.CanOrd.equal ind ind' ->
         if EInstance.is_empty u && EInstance.is_empty u' then Success evd
         else
           let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
@@ -589,7 +589,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           end
       | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
       | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
-        when Names.eq_constructor cons cons' ->
+        when Names.Construct.CanOrd.equal cons cons' ->
         if EInstance.is_empty u && EInstance.is_empty u' then Success evd
         else
           let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
@@ -831,7 +831,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         in
         ise_try evd [f1; f2]
 
-        | Proj (p, c), Proj (p', c') when Projection.repr_equal p p' ->
+        | Proj (p, c), Proj (p', c') when QProjection.Repr.equal env (Projection.repr p) (Projection.repr p') ->
           let f1 i =
             ise_and i
             [(fun i -> evar_conv_x flags env i CONV c c');
@@ -844,7 +844,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             ise_try evd [f1; f2]
 
         (* Catch the p.c ~= p c' cases *)
-        | Proj (p,c), Const (p',u) when Constant.equal (Projection.constant p) p' ->
+        | Proj (p,c), Const (p',u) when QConstant.equal env (Projection.constant p) p' ->
           let res =
             try Some (destApp evd (Retyping.expand_projection env evd p c []))
             with Retyping.RetypeError _ -> None
@@ -855,7 +855,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                 appr2
             | None -> UnifFailure (evd,NotSameHead))
 
-        | Const (p,u), Proj (p',c') when Constant.equal p (Projection.constant p') ->
+        | Const (p,u), Proj (p',c') when QConstant.equal env p (Projection.constant p') ->
           let res =
             try Some (destApp evd (Retyping.expand_projection env evd p' c' []))
             with Retyping.RetypeError _ -> None

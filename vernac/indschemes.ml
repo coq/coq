@@ -405,7 +405,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
 let get_common_underlying_mutual_inductive env = function
   | [] -> assert false
   | (id,(mind,i as ind))::l as all ->
-      match List.filter (fun (_,(mind',_)) -> not (MutInd.equal mind mind')) l with
+      match List.filter (fun (_,(mind',_)) -> not (Environ.QMutInd.equal env mind mind')) l with
       | (_,ind')::_ ->
           raise (RecursionSchemeError (env, NotMutualInScheme (ind,ind')))
       | [] ->

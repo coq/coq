@@ -244,9 +244,9 @@ let matches_core env sigma allow_bound_rels
     let open GlobRef in
     match ref, EConstr.kind sigma c with
     | VarRef id, Var id' -> Names.Id.equal id id'
-    | ConstRef c, Const (c',_) -> Constant.equal c c'
-    | IndRef i, Ind (i', _) -> Names.eq_ind i i'
-    | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
+    | ConstRef c, Const (c',_) -> Environ.QConstant.equal env c c'
+    | IndRef i, Ind (i', _) -> Names.Ind.CanOrd.equal i i'
+    | ConstructRef c, Construct (c',u) -> Names.Construct.CanOrd.equal c c'
     | _, _ -> false
   in
   let rec sorec ctx env subst p t =
@@ -307,11 +307,11 @@ let matches_core env sigma allow_bound_rels
 
       | PApp (c1,arg1), App (c2,arg2) ->
         (match c1, EConstr.kind sigma c2 with
-        | PRef (GlobRef.ConstRef r), Proj (pr,c) when not (Constant.equal r (Projection.constant pr))
+        | PRef (GlobRef.ConstRef r), Proj (pr,c) when not (Environ.QConstant.equal env r (Projection.constant pr))
             || Projection.unfolded pr ->
           raise PatternMatchingFailure
         | PProj (pr1,c1), Proj (pr,c) ->
-          if Projection.equal pr1 pr then
+          if Environ.QProjection.equal env pr1 pr then
             try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c) arg1 arg2
             with Invalid_argument _ -> raise PatternMatchingFailure
           else raise PatternMatchingFailure
@@ -324,7 +324,7 @@ let matches_core env sigma allow_bound_rels
           with Invalid_argument _ -> raise PatternMatchingFailure)
 
       | PApp (PRef (GlobRef.ConstRef c1), _), Proj (pr, c2)
-        when Projection.unfolded pr || not (Constant.equal c1 (Projection.constant pr)) ->
+        when Projection.unfolded pr || not (Environ.QConstant.equal env c1 (Projection.constant pr)) ->
         raise PatternMatchingFailure
 
       | PApp (c, args), Proj (pr, c2) ->
@@ -332,7 +332,7 @@ let matches_core env sigma allow_bound_rels
                sorec ctx env subst p term
          with Retyping.RetypeError _ -> raise PatternMatchingFailure)
 
-      | PProj (p1,c1), Proj (p2,c2) when Projection.equal p1 p2 ->
+      | PProj (p1,c1), Proj (p2,c2) when Environ.QProjection.equal env p1 p2 ->
           sorec ctx env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
@@ -374,7 +374,7 @@ let matches_core env sigma allow_bound_rels
           | Some ind1 ->
             (* ppedrot: Something spooky going here. The comparison used to be
                the generic one, so I may have broken something. *)
-            if not (eq_ind ind1 ci2.ci_ind) then raise PatternMatchingFailure
+            if not (Ind.CanOrd.equal ind1 ci2.ci_ind) then raise PatternMatchingFailure
           in
           let () =
             if not ci1.cip_extensible && not (Int.equal (List.length br1) n2)

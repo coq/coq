@@ -240,7 +240,7 @@ let strip_unfold_term _ ((sigma, t) as p) kt = match EConstr.kind sigma t with
 
 let same_proj sigma t1 t2 =
   match EConstr.kind sigma t1, EConstr.kind sigma t2 with
-  | Proj(c1,_), Proj(c2, _) -> Projection.equal c1 c2
+  | Proj(c1,_), Proj(c2, _) -> Projection.CanOrd.equal c1 c2
   | _ -> false
 
 let all_ok _ _ = true

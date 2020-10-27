@@ -193,7 +193,7 @@ let head_in indl t gl =
   let sigma = Tacmach.New.project gl in
   try
     let ity,_ = extract_mrectype sigma t in
-    List.exists (fun i -> eq_ind (fst i) (fst ity)) indl
+    List.exists (fun i -> Ind.CanOrd.equal (fst i) (fst ity)) indl
   with Not_found -> false
 
 let decompose_these c l =

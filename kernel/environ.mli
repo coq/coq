@@ -284,6 +284,32 @@ val template_polymorphic_ind : inductive -> env -> bool
 val template_polymorphic_variables : inductive -> env -> Univ.Level.t list
 val template_polymorphic_pind : pinductive -> env -> bool
 
+(** {6 Name quotients} *)
+
+module type QNameS =
+sig
+  type t
+  val equal : env -> t -> t -> bool
+  val compare : env -> t -> t -> int
+  val hash : env -> t -> int
+end
+
+module QConstant : QNameS with type t = Constant.t
+
+module QMutInd : QNameS with type t = MutInd.t
+
+module QInd : QNameS with type t = Ind.t
+
+module QConstruct : QNameS with type t = Construct.t
+
+module QProjection :
+sig
+  include QNameS with type t = Projection.t
+  module Repr : QNameS with type t = Projection.Repr.t
+end
+
+module QGlobRef : QNameS with type t = GlobRef.t
+
 (** {5 Modules } *)
 
 val add_modtype : module_type_body -> env -> env

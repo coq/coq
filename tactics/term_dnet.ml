@@ -91,7 +91,7 @@ struct
     | DArray (t,def,ty) -> DArray(Array.map f t, f def, f ty)
 
   let compare_ci ci1 ci2 =
-    let c = ind_ord ci1.ci_ind ci2.ci_ind in
+    let c = Ind.CanOrd.compare ci1.ci_ind ci2.ci_ind in
     if c = 0 then
       let c = Int.compare ci1.ci_npar ci2.ci_npar in
       if c = 0 then
@@ -107,7 +107,7 @@ struct
   | DRel, _ -> -1 | _, DRel -> 1
   | DSort, DSort -> 0
   | DSort, _ -> -1 | _, DSort -> 1
-  | DRef gr1, DRef gr2 -> GlobRef.Ordered.compare gr1 gr2
+  | DRef gr1, DRef gr2 -> GlobRef.CanOrd.compare gr1 gr2
   | DRef _, _ -> -1 | _, DRef _ -> 1
 
   | DCtx (tl1, tr1), DCtx (tl2, tr2)

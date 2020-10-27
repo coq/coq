@@ -58,7 +58,7 @@ match t1, t2 with
     (eq_notation_constr vars) t1 t2
   in
   let eqf (t1, (na1, o1)) (t2, (na2, o2)) =
-    let eq (i1, n1) (i2, n2) = eq_ind i1 i2 && List.equal Name.equal n1 n2 in
+    let eq (i1, n1) (i2, n2) = Ind.CanOrd.equal i1 i2 && List.equal Name.equal n1 n2 in
     (eq_notation_constr vars) t1 t2 && Name.equal na1 na2 && Option.equal eq o1 o2
   in
   Option.equal (eq_notation_constr vars) o1 o2 &&
@@ -801,7 +801,7 @@ let rec fold_cases_pattern_eq f x p p' =
   let loc = p.CAst.loc in
   match DAst.get p, DAst.get p' with
   | PatVar na, PatVar na' -> let x,na = f x na na' in x, DAst.make ?loc @@ PatVar na
-  | PatCstr (c,l,na), PatCstr (c',l',na') when eq_constructor c c' ->
+  | PatCstr (c,l,na), PatCstr (c',l',na') when Construct.CanOrd.equal c c' ->
      let x,l = fold_cases_pattern_list_eq f x l l' in
      let x,na = f x na na' in
      x, DAst.make ?loc @@ PatCstr (c,l,na)
@@ -818,7 +818,7 @@ and fold_cases_pattern_list_eq f x pl pl' = match pl, pl' with
 let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
 | PatVar na1, PatVar na2 -> Name.equal na1 na2
 | PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
-  eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
+  Construct.CanOrd.equal c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
   Name.equal na1 na2
 | _ -> false
 
@@ -1041,7 +1041,7 @@ let rec match_cases_pattern_binders allow_catchall metas (alp,sigma as acc) pat1
   | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
   | _, PatVar Anonymous when allow_catchall -> acc
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
-      when eq_constructor c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
+      when Construct.CanOrd.equal c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
       List.fold_left2 (match_cases_pattern_binders false metas)
         (match_names metas acc na1 na2) patl1 patl2
   | _ -> raise No_match
@@ -1391,11 +1391,11 @@ let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
  match DAst.get a1, a2 with
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 a1),(false,0,[])
   | PatVar Anonymous, NHole _ -> sigma,(false,0,[])
-  | PatCstr ((ind,_ as r1),largs,Anonymous), NRef (GlobRef.ConstructRef r2) when eq_constructor r1 r2 ->
+  | PatCstr ((ind,_ as r1),largs,Anonymous), NRef (GlobRef.ConstructRef r2) when Construct.CanOrd.equal r1 r2 ->
       let l = try add_patterns_for_params_remove_local_defs (Global.env ()) r1 largs with Not_found -> raise No_match in
       sigma,(false,0,l)
   | PatCstr ((ind,_ as r1),args1,Anonymous), NApp (NRef (GlobRef.ConstructRef r2),l2)
-      when eq_constructor r1 r2 ->
+      when Construct.CanOrd.equal r1 r2 ->
       let l1 = try add_patterns_for_params_remove_local_defs (Global.env()) r1 args1 with Not_found -> raise No_match in
       let le2 = List.length l2 in
       if le2 > List.length l1
@@ -1418,10 +1418,10 @@ and match_cases_pattern_no_more_args metas sigma a1 a2 =
 
 let match_ind_pattern metas sigma ind pats a2 =
   match a2 with
-  | NRef (GlobRef.IndRef r2) when eq_ind ind r2 ->
+  | NRef (GlobRef.IndRef r2) when Ind.CanOrd.equal ind r2 ->
       sigma,(false,0,pats)
   | NApp (NRef (GlobRef.IndRef r2),l2)
-      when eq_ind ind r2 ->
+      when Ind.CanOrd.equal ind r2 ->
       let le2 = List.length l2 in
       if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length pats
       then

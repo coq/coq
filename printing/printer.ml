@@ -884,7 +884,7 @@ struct
       MutInd.CanOrd.compare m1 m2
     | Guarded k1 , Guarded k2
     | TypeInType k1, TypeInType k2 ->
-      GlobRef.Ordered.compare k1 k2
+      GlobRef.CanOrd.compare k1 k2
     | Constant _, _ -> -1
     | _, Constant _ -> 1
     | Positive _, _ -> -1

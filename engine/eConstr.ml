@@ -127,9 +127,9 @@ let isRef sigma c = match kind sigma c with
 let isRefX sigma x c =
   let open GlobRef in
   match x, kind sigma c with
-  | ConstRef c, Const (c', _) -> Constant.equal c c'
-  | IndRef i, Ind (i', _) -> eq_ind i i'
-  | ConstructRef i, Construct (i', _) -> eq_constructor i i'
+  | ConstRef c, Const (c', _) -> Constant.CanOrd.equal c c'
+  | IndRef i, Ind (i', _) -> Ind.CanOrd.equal i i'
+  | ConstructRef i, Construct (i', _) -> Construct.CanOrd.equal i i'
   | VarRef id, Var id' -> Id.equal id id'
   | _ -> false
 
@@ -514,7 +514,7 @@ let compare_head_gen_proj env sigma equ eqs eqc' nargs m n =
   | Proj (p, c), App (f, args)
   | App (f, args), Proj (p, c) ->
       (match kind f with
-      | Const (p', u) when Constant.equal (Projection.constant p) p' ->
+      | Const (p', u) when Environ.QConstant.equal env (Projection.constant p) p' ->
           let npars = Projection.npars p in
           if Array.length args == npars + 1 then
             eqc' 0 c args.(npars)

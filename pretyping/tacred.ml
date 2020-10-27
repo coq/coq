@@ -82,7 +82,7 @@ type evaluable_reference =
   | EvalEvar of EConstr.existential
 
 let evaluable_reference_eq sigma r1 r2 = match r1, r2 with
-| EvalConst c1, EvalConst c2 -> Constant.equal c1 c2
+| EvalConst c1, EvalConst c2 -> Constant.CanOrd.equal c1 c2
 | EvalVar id1, EvalVar id2 -> Id.equal id1 id2
 | EvalRel i1, EvalRel i2 -> Int.equal i1 i2
 | EvalEvar (e1, ctx1), EvalEvar (e2, ctx2) ->
@@ -995,7 +995,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
       | CoFix _ | Fix _ -> s'
       | Proj (p,t) when
           (match EConstr.kind sigma constr with
-          | Const (c', _) -> Constant.equal (Projection.constant p) c'
+          | Const (c', _) -> Constant.CanOrd.equal (Projection.constant p) c'
           | _ -> false) ->
         let npars = Projection.npars p in
           if List.length stack <= npars then
@@ -1101,7 +1101,7 @@ let contextually byhead occs f env sigma t =
 
 let match_constr_evaluable_ref sigma c evref =
   match EConstr.kind sigma c, evref with
-  | Const (c,u), EvalConstRef c' when Constant.equal c c' -> Some u
+  | Const (c,u), EvalConstRef c' when Constant.CanOrd.equal c c' -> Some u
   | Var id, EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
   | _, _ -> None
 
@@ -1324,7 +1324,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
   if isIndRef ref then
     let ((mind,u),t) = reduce_to_ind_gen allow_product env sigma t in
     begin match ref with
-    | GlobRef.IndRef mind' when eq_ind mind mind' -> t
+    | GlobRef.IndRef mind' when Ind.CanOrd.equal mind mind' -> t
     | _ -> error_cannot_recognize ref
     end
   else

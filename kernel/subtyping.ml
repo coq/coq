@@ -182,7 +182,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   begin
     let kn2' = kn_of_delta reso2 kn2 in
     if KerName.equal kn2 kn2' ||
-       MutInd.equal (mind_of_delta_kn reso1 kn1)
+       MutInd.CanOrd.equal (mind_of_delta_kn reso1 kn1)
                     (subst_mind subst2 (MutInd.make kn2 kn2'))
     then ()
     else error NotEqualInductiveAliases

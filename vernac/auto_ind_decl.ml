@@ -145,7 +145,7 @@ let build_beq_scheme_deps kn =
       | Cast (x,_,_) -> aux accu (Term.applist (x,a))
       | App _ -> assert false
       | Ind ((kn', _), _) ->
-          if MutInd.equal kn kn' then accu
+          if Environ.QMutInd.equal env kn kn' then accu
           else
             let eff = SchemeMutualDep (kn', !beq_scheme_kind_aux ()) in
             List.fold_left aux (eff :: accu) a
@@ -253,7 +253,7 @@ let build_beq_scheme mode kn =
         | Cast (x,_,_) -> aux (Term.applist (x,a))
         | App _ -> assert false
         | Ind ((kn',i as ind'),u) (*FIXME: universes *) ->
-            if MutInd.equal kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
+            if Environ.QMutInd.equal env kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
             else begin
               try
                 let eq = match lookup_scheme (!beq_scheme_kind_aux()) ind' with
@@ -496,7 +496,7 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
           let u,v = try destruct_ind env sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
-          in if eq_ind (fst u) ind
+          in if Ind.CanOrd.equal (fst u) ind
              then Tacticals.New.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
                find_scheme bl_scheme_key (fst u) (*FIXME*) >>= fun c ->
@@ -539,7 +539,8 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
         with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp2,i2) ->
-  if not (MutInd.equal sp1 sp2) || not (Int.equal i1 i2)
+  Proofview.tclENV >>= fun env ->
+  if not (Environ.QMutInd.equal env sp1 sp2) || not (Int.equal i1 i2)
   then Tacticals.New.tclZEROMSG (str "Eq should be on the same type")
   else aux (Array.to_list ca1) (Array.to_list ca2)
 

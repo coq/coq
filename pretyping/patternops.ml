@@ -23,7 +23,7 @@ open Environ
 
 let case_info_pattern_eq i1 i2 =
   i1.cip_style == i2.cip_style &&
-  Option.equal eq_ind i1.cip_ind i2.cip_ind &&
+  Option.equal Ind.CanOrd.equal i1.cip_ind i2.cip_ind &&
   Option.equal (List.equal (==)) i1.cip_ind_tags i2.cip_ind_tags &&
   i1.cip_extensible == i2.cip_extensible
 
@@ -59,7 +59,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PCoFix (i1,f1), PCoFix (i2,f2) ->
   Int.equal i1 i2 && rec_declaration_eq f1 f2
 | PProj (p1, t1), PProj (p2, t2) ->
-   Projection.equal p1 p2 && constr_pattern_eq t1 t2
+   Projection.CanOrd.equal p1 p2 && constr_pattern_eq t1 t2
 | PInt i1, PInt i2 ->
    Uint63.equal i1 i2
 | PFloat f1, PFloat f2 ->
@@ -547,7 +547,7 @@ and pats_of_glob_branches loc metas vars ind brs =
         true, [] (* ends with _ => _ *)
       | PatCstr((indsp,j),lv,_), _, _ ->
         let () = match ind with
-        | Some sp when eq_ind sp indsp -> ()
+        | Some sp when Ind.CanOrd.equal sp indsp -> ()
         | _ ->
           err ?loc (Pp.str "All constructors must be in the same inductive type.")
         in

@@ -206,7 +206,7 @@ let is_array_const env sigma c =
   | Const (cst,_) ->
     (match env.Environ.retroknowledge.Retroknowledge.retro_array with
      | None -> false
-     | Some cst' -> Constant.equal cst cst')
+     | Some cst' -> Environ.QConstant.equal env cst cst')
   | _ -> false
 
 let split_as_array env sigma0 = function

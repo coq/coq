@@ -45,7 +45,7 @@ let has_ref s = CString.Map.mem s !table
 
 let check_ind_ref s ind =
   match CString.Map.find s !table with
-  | GlobRef.IndRef r -> eq_ind r ind
+  | GlobRef.IndRef r -> Ind.CanOrd.equal r ind
   | _ -> false
   | exception Not_found -> false
 
@@ -84,7 +84,7 @@ let gen_reference_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
   let qualid = qualid_of_string s in
   let all = Nametab.locate_all qualid in
-  let all = List.sort_uniquize GlobRef.Ordered_env.compare all in
+  let all = List.sort_uniquize GlobRef.UserOrd.compare all in
   let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with
     | [x] -> x

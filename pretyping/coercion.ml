@@ -119,7 +119,7 @@ let disc_subset sigma x =
        Ind (i,_) ->
          let len = Array.length l in
          let sigty = delayed_force sig_typ in
-           if Int.equal len 2 && eq_ind i (Globnames.destIndRef sigty)
+           if Int.equal len 2 && Ind.CanOrd.equal i (Globnames.destIndRef sigty)
            then
              let (a, b) = pair_of_array l in
                Some (a, b)
@@ -240,10 +240,10 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
          let sigT = delayed_force sigT_typ in
          let prod = delayed_force prod_typ in
          (* Sigma types *)
-         if Int.equal len (Array.length l') && Int.equal len 2 && eq_ind i i'
-            && (eq_ind i (destIndRef sigT) || eq_ind i (destIndRef prod))
+         if Int.equal len (Array.length l') && Int.equal len 2 && Ind.CanOrd.equal i i'
+            && (Ind.CanOrd.equal i (destIndRef sigT) || Ind.CanOrd.equal i (destIndRef prod))
          then
-           if eq_ind i (destIndRef sigT)
+           if Ind.CanOrd.equal i (destIndRef sigT)
            then
              begin
                let (a, pb), (a', pb') =
@@ -303,7 +303,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
                      papp sigma prod_intro [| a'; b'; x ; y |])
              end
          else
-         if eq_ind i i' && Int.equal len (Array.length l') then
+         if Ind.CanOrd.equal i i' && Int.equal len (Array.length l') then
            (try subco sigma
             with NoSubtacCoercion ->
               let sigma, typ = Typing.type_of env sigma c in

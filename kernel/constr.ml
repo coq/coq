@@ -353,9 +353,9 @@ let isRef c = match kind c with
 let isRefX x c =
   let open GlobRef in
   match x, kind c with
-  | ConstRef c, Const (c', _) -> Constant.equal c c'
-  | IndRef i, Ind (i', _) -> eq_ind i i'
-  | ConstructRef i, Construct (i', _) -> eq_constructor i i'
+  | ConstRef c, Const (c', _) -> Constant.CanOrd.equal c c'
+  | IndRef i, Ind (i', _) -> Ind.CanOrd.equal i i'
+  | ConstructRef i, Construct (i', _) -> Construct.CanOrd.equal i i'
   | VarRef id, Var id' -> Id.equal id id'
   | _ -> false
 
@@ -950,14 +950,14 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
     leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
-  | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq 0 c1 c2
+  | Proj (p1,c1), Proj (p2,c2) -> Projection.CanOrd.equal p1 p2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && List.equal (eq 0) l1 l2
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
-    Constant.equal c1 c2 && leq_universes (Some (GlobRef.ConstRef c1, nargs)) u1 u2
-  | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && leq_universes (Some (GlobRef.IndRef c1, nargs)) u1 u2
+    Constant.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstRef c1, nargs)) u1 u2
+  | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.IndRef c1, nargs)) u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
-    eq_constructor c1 c2 && leq_universes (Some (GlobRef.ConstructRef c1, nargs)) u1 u2
+    Construct.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstructRef c1, nargs)) u1 u2
   | Case (_,p1,iv1,c1,bl1), Case (_,p2,iv2,c2,bl2) ->
     eq 0 p1 p2 && eq_invert (eq 0) (leq_universes None) iv1 iv2 && eq 0 c1 c2 && Array.equal (eq 0) bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
@@ -1139,9 +1139,9 @@ let constr_ord_int f t1 t2 =
     | App _, _ -> -1 | _, App _ -> 1
     | Const (c1,_u1), Const (c2,_u2) -> Constant.CanOrd.compare c1 c2
     | Const _, _ -> -1 | _, Const _ -> 1
-    | Ind (ind1, _u1), Ind (ind2, _u2) -> ind_ord ind1 ind2
+    | Ind (ind1, _u1), Ind (ind2, _u2) -> Ind.CanOrd.compare ind1 ind2
     | Ind _, _ -> -1 | _, Ind _ -> 1
-    | Construct (ct1,_u1), Construct (ct2,_u2) -> constructor_ord ct1 ct2
+    | Construct (ct1,_u1), Construct (ct2,_u2) -> Construct.CanOrd.compare ct1 ct2
     | Construct _, _ -> -1 | _, Construct _ -> 1
     | Case (_,p1,iv1,c1,bl1), Case (_,p2,iv2,c2,bl2) ->
       let c = f p1 p2 in
@@ -1158,7 +1158,7 @@ let constr_ord_int f t1 t2 =
         ((Int.compare =? (Array.compare f)) ==? (Array.compare f))
         ln1 ln2 tl1 tl2 bl1 bl2
     | CoFix _, _ -> -1 | _, CoFix _ -> 1
-    | Proj (p1,c1), Proj (p2,c2) -> (Projection.compare =? f) p1 p2 c1 c2
+    | Proj (p1,c1), Proj (p2,c2) -> (Projection.CanOrd.compare =? f) p1 p2 c1 c2
     | Proj _, _ -> -1 | _, Proj _ -> 1
     | Int i1, Int i2 -> Uint63.compare i1 i2
     | Int _, _ -> -1 | _, Int _ -> 1
@@ -1331,11 +1331,11 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Ind (ind,u) ->
         let u', hu = sh_instance u in
         (Ind (sh_ind ind, u'),
-         combinesmall 10 (combine (ind_syntactic_hash ind) hu))
+         combinesmall 10 (combine (Ind.SyntacticOrd.hash ind) hu))
       | Construct (c,u) ->
         let u', hu = sh_instance u in
         (Construct (sh_construct c, u'),
-         combinesmall 11 (combine (constructor_syntactic_hash c) hu))
+         combinesmall 11 (combine (Construct.SyntacticOrd.hash c) hu))
       | Case (ci,p,iv,c,bl) ->
         let p, hp = sh_rec p
         and iv, hiv = sh_invert iv
@@ -1442,11 +1442,11 @@ let rec hash t =
     | Evar (e,l) ->
       combinesmall 8 (combine (Evar.hash e) (hash_term_list l))
     | Const (c,u) ->
-      combinesmall 9 (combine (Constant.hash c) (Instance.hash u))
+      combinesmall 9 (combine (Constant.CanOrd.hash c) (Instance.hash u))
     | Ind (ind,u) ->
-      combinesmall 10 (combine (ind_hash ind) (Instance.hash u))
+      combinesmall 10 (combine (Ind.CanOrd.hash ind) (Instance.hash u))
     | Construct (c,u) ->
-      combinesmall 11 (combine (constructor_hash c) (Instance.hash u))
+      combinesmall 11 (combine (Construct.CanOrd.hash c) (Instance.hash u))
     | Case (_ , p, iv, c, bl) ->
       combinesmall 12 (combine4 (hash c) (hash p) (hash_invert iv) (hash_term_array bl))
     | Fix (_ln ,(_, tl, bl)) ->
@@ -1456,7 +1456,7 @@ let rec hash t =
     | Meta n -> combinesmall 15 n
     | Rel n -> combinesmall 16 n
     | Proj (p,c) ->
-      combinesmall 17 (combine (Projection.hash p) (hash c))
+      combinesmall 17 (combine (Projection.CanOrd.hash p) (hash c))
     | Int i -> combinesmall 18 (Uint63.hash i)
     | Float f -> combinesmall 19 (Float64.hash f)
     | Array(u,t,def,ty) ->
@@ -1503,7 +1503,7 @@ struct
     let h3 = Array.fold_left hash_bool_list 0 info.cstr_tags in
     combine3 h1 h2 h3
   let hash ci =
-    let h1 = ind_hash ci.ci_ind in
+    let h1 = Ind.CanOrd.hash ci.ci_ind in
     let h2 = Int.hash ci.ci_npar in
     let h3 = Array.fold_left combine 0 ci.ci_cstr_ndecls in
     let h4 = Array.fold_left combine 0 ci.ci_cstr_nargs in

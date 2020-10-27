@@ -44,7 +44,7 @@ let find_mutually_recursive_statements sigma thms =
             [] in
       ind_hyps,ind_ccl) thms in
     let inds_hyps,ind_ccls = List.split inds in
-    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> Names.MutInd.equal kn kn' in
+    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> Environ.QMutInd.equal (Global.env ()) kn kn' in
     (* Check if all conclusions are coinductive in the same type *)
     (* (degenerated cartesian product since there is at most one coind ccl) *)
     let same_indccl =
@@ -70,7 +70,7 @@ let find_mutually_recursive_statements sigma thms =
       | [], _::_ ->
           let () = match same_indccl with
           | ind :: _ ->
-            if List.distinct_f Names.ind_ord (List.map pi1 ind)
+            if List.distinct_f Names.Ind.CanOrd.compare (List.map pi1 ind)
             then
               Flags.if_verbose Feedback.msg_info
                 (Pp.strbrk
