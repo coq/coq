@@ -280,8 +280,8 @@ Definition of_hexadecimal (d : Hexadecimal.hexadecimal) : IR :=
 
 Definition of_number (n : Number.number) : IR :=
   match n with
-  | Number.Dec d => of_decimal d
-  | Number.Hex h => of_hexadecimal h
+  | Number.Decimal d => of_decimal d
+  | Number.Hexadecimal h => of_hexadecimal h
   end.
 
 Definition IQmake_to_decimal num den :=
@@ -369,13 +369,13 @@ Definition to_hexadecimal (n : IR) : option Hexadecimal.hexadecimal :=
 Definition to_number q :=
   match to_decimal q with
   | None => None
-  | Some q => Some (Number.Dec q)
+  | Some q => Some (Number.Decimal q)
   end.
 
 Definition to_hex_number q :=
   match to_hexadecimal q with
   | None => None
-  | Some q => Some (Number.Hex q)
+  | Some q => Some (Number.Hexadecimal q)
   end.
 
 Number Notation R of_number to_hex_number (via IR

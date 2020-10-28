@@ -569,7 +569,7 @@ Inductive I' :=
 | I'unit : I'
 | I'sum : I -> I' -> I'.
 Definition of_uint' (x : Number.uint) : I' := I'empty.
-Definition to_uint' (x : I') : Number.uint := Number.UIntDec Decimal.Nil.
+Definition to_uint' (x : I') : Number.uint := Number.UIntDecimal Decimal.Nil.
 Number Notation nSet of_uint' to_uint' (via I'
   mapping [Empty_set => I'empty, unit => I'unit, sum => I'sum])
   : type_scope.

@@ -641,8 +641,8 @@ Fixpoint of_hex_uint (d:Hexadecimal.uint) : N :=
 
 Definition of_num_uint (d:Number.uint) : N :=
   match d with
-  | Number.UIntDec d => of_uint d
-  | Number.UIntHex d => of_hex_uint d
+  | Number.UIntDecimal d => of_uint d
+  | Number.UIntHexadecimal d => of_hex_uint d
   end.
 
 Definition of_int (d:Decimal.int) : option positive :=
@@ -667,8 +667,8 @@ Definition of_hex_int (d:Hexadecimal.int) : option positive :=
 
 Definition of_num_int (d:Number.int) : option positive :=
   match d with
-  | Number.IntDec d => of_int d
-  | Number.IntHex d => of_hex_int d
+  | Number.IntDecimal d => of_int d
+  | Number.IntHexadecimal d => of_hex_int d
   end.
 
 Fixpoint to_little_uint p :=
@@ -689,13 +689,13 @@ Fixpoint to_little_hex_uint p :=
 
 Definition to_hex_uint p := Hexadecimal.rev (to_little_hex_uint p).
 
-Definition to_num_uint p := Number.UIntDec (to_uint p).
+Definition to_num_uint p := Number.UIntDecimal (to_uint p).
 
 Definition to_int n := Decimal.Pos (to_uint n).
 
 Definition to_hex_int p := Hexadecimal.Pos (to_hex_uint p).
 
-Definition to_num_int n := Number.IntDec (to_int n).
+Definition to_num_int n := Number.IntDecimal (to_int n).
 
 Number Notation positive of_num_int to_num_uint : positive_scope.
 

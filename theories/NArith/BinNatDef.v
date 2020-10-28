@@ -392,8 +392,8 @@ Definition of_hex_uint (d:Hexadecimal.uint) := Pos.of_hex_uint d.
 
 Definition of_num_uint (d:Number.uint) :=
   match d with
-  | Number.UIntDec d => of_uint d
-  | Number.UIntHex d => of_hex_uint d
+  | Number.UIntDecimal d => of_uint d
+  | Number.UIntHexadecimal d => of_hex_uint d
   end.
 
 Definition of_int (d:Decimal.int) :=
@@ -410,8 +410,8 @@ Definition of_hex_int (d:Hexadecimal.int) :=
 
 Definition of_num_int (d:Number.int) :=
   match d with
-  | Number.IntDec d => of_int d
-  | Number.IntHex d => of_hex_int d
+  | Number.IntDecimal d => of_int d
+  | Number.IntHexadecimal d => of_hex_int d
   end.
 
 Definition to_uint n :=
@@ -426,13 +426,13 @@ Definition to_hex_uint n :=
   | pos p => Pos.to_hex_uint p
   end.
 
-Definition to_num_uint n := Number.UIntDec (to_uint n).
+Definition to_num_uint n := Number.UIntDecimal (to_uint n).
 
 Definition to_int n := Decimal.Pos (to_uint n).
 
 Definition to_hex_int n := Hexadecimal.Pos (to_hex_uint n).
 
-Definition to_num_int n := Number.IntDec (to_int n).
+Definition to_num_int n := Number.IntDecimal (to_int n).
 
 Number Notation N of_num_uint to_num_uint : N_scope.
 

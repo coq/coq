@@ -396,20 +396,20 @@ Definition to_hexadecimal (n : IQ) : option Hexadecimal.hexadecimal :=
 
 Definition of_number (n : Number.number) : IQ :=
   match n with
-  | Number.Dec d => of_decimal d
-  | Number.Hex h => of_hexadecimal h
+  | Number.Decimal d => of_decimal d
+  | Number.Hexadecimal h => of_hexadecimal h
   end.
 
 Definition to_number (q:IQ) : option Number.number :=
   match to_decimal q with
   | None => None
-  | Some q => Some (Number.Dec q)
+  | Some q => Some (Number.Decimal q)
   end.
 
 Definition to_hex_number q :=
   match to_hexadecimal q with
   | None => None
-  | Some q => Some (Number.Hex q)
+  | Some q => Some (Number.Hexadecimal q)
   end.
 
 Number Notation Q of_number to_hex_number (via IQ

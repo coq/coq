@@ -14,24 +14,24 @@ Require Import Decimal Hexadecimal Number.
 
 #[deprecated(since="8.13",note="Use Number.uint instead.")]
 Notation uint := uint (only parsing).
-#[deprecated(since="8.13",note="Use Number.UintDec instead.")]
-Notation UIntDec := UIntDec (only parsing).
-#[deprecated(since="8.13",note="Use Number.UintHex instead.")]
-Notation UIntHex := UIntHex (only parsing).
+#[deprecated(since="8.13",note="Use Number.UintDecimal instead.")]
+Notation UIntDec := UIntDecimal (only parsing).
+#[deprecated(since="8.13",note="Use Number.UintHexadecimal instead.")]
+Notation UIntHex := UIntHexadecimal (only parsing).
 
 #[deprecated(since="8.13",note="Use Number.int instead.")]
 Notation int := int (only parsing).
-#[deprecated(since="8.13",note="Use Number.IntDec instead.")]
-Notation IntDec := IntDec (only parsing).
-#[deprecated(since="8.13",note="Use Number.IntHex instead.")]
-Notation IntHex := IntHex (only parsing).
+#[deprecated(since="8.13",note="Use Number.IntDecimal instead.")]
+Notation IntDec := IntDecimal (only parsing).
+#[deprecated(since="8.13",note="Use Number.IntHexadecimal instead.")]
+Notation IntHex := IntHexadecimal (only parsing).
 
 #[deprecated(since="8.13",note="Use Number.numeral instead.")]
 Notation numeral := number (only parsing).
-#[deprecated(since="8.13",note="Use Number.Dec instead.")]
-Notation Dec := Dec (only parsing).
-#[deprecated(since="8.13",note="Use Number.Hex instead.")]
-Notation Hex := Hex (only parsing).
+#[deprecated(since="8.13",note="Use Number.Decimal instead.")]
+Notation Dec := Decimal (only parsing).
+#[deprecated(since="8.13",note="Use Number.Hexadecimal instead.")]
+Notation Hex := Hexadecimal (only parsing).
 
 #[deprecated(since="8.13",note="Use Number.uint_beq instead.")]
 Notation uint_beq := uint_beq (only parsing).

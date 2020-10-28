@@ -214,8 +214,8 @@ Definition of_hex_uint (d:Hexadecimal.uint) := of_hex_uint_acc d O.
 
 Definition of_num_uint (d:Number.uint) :=
   match d with
-  | Number.UIntDec d => of_uint d
-  | Number.UIntHex d => of_hex_uint d
+  | Number.UIntDecimal d => of_uint d
+  | Number.UIntHexadecimal d => of_hex_uint d
   end.
 
 Fixpoint to_little_uint n acc :=
@@ -236,9 +236,9 @@ Fixpoint to_little_hex_uint n acc :=
 Definition to_hex_uint n :=
   Hexadecimal.rev (to_little_hex_uint n Hexadecimal.zero).
 
-Definition to_num_uint n := Number.UIntDec (to_uint n).
+Definition to_num_uint n := Number.UIntDecimal (to_uint n).
 
-Definition to_num_hex_uint n := Number.UIntHex (to_hex_uint n).
+Definition to_num_hex_uint n := Number.UIntHexadecimal (to_hex_uint n).
 
 Definition of_int (d:Decimal.int) : option nat :=
   match Decimal.norm d with
@@ -254,15 +254,15 @@ Definition of_hex_int (d:Hexadecimal.int) : option nat :=
 
 Definition of_num_int (d:Number.int) : option nat :=
   match d with
-  | Number.IntDec d => of_int d
-  | Number.IntHex d => of_hex_int d
+  | Number.IntDecimal d => of_int d
+  | Number.IntHexadecimal d => of_hex_int d
   end.
 
 Definition to_int n := Decimal.Pos (to_uint n).
 
 Definition to_hex_int n := Hexadecimal.Pos (to_hex_uint n).
 
-Definition to_num_int n := Number.IntDec (to_int n).
+Definition to_num_int n := Number.IntDecimal (to_int n).
 
 (** ** Euclidean division *)
 

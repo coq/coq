@@ -836,8 +836,8 @@ let coqnumber_of_rawnum inds c n =
     mkApp (mkConstruct (ind, 2), [|i; f; e|])  (* (D|Hexad)ecimalExp *)
 
 let mkDecHex ind c n = match c with
-  | CDec -> mkApp (mkConstruct (ind, 1), [|n|])  (* (UInt|Int|)Dec *)
-  | CHex -> mkApp (mkConstruct (ind, 2), [|n|])  (* (UInt|Int|)Hex *)
+  | CDec -> mkApp (mkConstruct (ind, 1), [|n|])  (* (UInt|Int|)Decimal *)
+  | CHex -> mkApp (mkConstruct (ind, 2), [|n|])  (* (UInt|Int|)Hexadecimal *)
 
 exception NonDecimal
 
@@ -912,8 +912,8 @@ let rawnum_of_coqnumber cl c =
 let destDecHex c = match Constr.kind c with
   | App (c,[|c'|]) ->
      (match Constr.kind c with
-      | Construct ((_,1), _) (* (UInt|Int|)Dec *) -> CDec, c'
-      | Construct ((_,2), _) (* (UInt|Int|)Hex *) -> CHex, c'
+      | Construct ((_,1), _) (* (UInt|Int|)Decimal *) -> CDec, c'
+      | Construct ((_,2), _) (* (UInt|Int|)Hexadecimal *) -> CHex, c'
       | _ -> raise NotAValidPrimToken)
   | _ -> raise NotAValidPrimToken
 

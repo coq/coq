@@ -1884,7 +1884,7 @@ The following errors apply to both string and number notations:
           | _ => None end in
         f (Decimal.rev u).
       Definition of_uint (u : Number.uint) : option radix3 :=
-        match u with Number.UIntDec u => of_uint_dec u | Number.UIntHex _ => None end.
+        match u with Number.UIntDecimal u => of_uint_dec u | Number.UIntHexadecimal _ => None end.
 
    and a printing function
 
@@ -1897,7 +1897,7 @@ The following errors apply to both string and number notations:
           | x3p1 x => Decimal.D1 (f x)
           | x3p2 x => Decimal.D2 (f x) end in
         Decimal.rev (f x).
-      Definition to_uint (x : radix3) : Number.uint := Number.UIntDec (to_uint_dec x).
+      Definition to_uint (x : radix3) : Number.uint := Number.UIntDecimal (to_uint_dec x).
 
    before declaring the notation
 
