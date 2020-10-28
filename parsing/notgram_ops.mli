@@ -18,8 +18,8 @@ val declare_notation_grammar : notation -> notation_grammar -> unit
 val grammar_of_notation : notation -> notation_grammar
   (** raise [Not_found] if not declared *)
 
-val declare_notation_subentries : notation -> Extend.constr_entry_key list -> unit
-val subentries_of_notation : notation -> Extend.constr_entry_key list
+val declare_notation_non_terminals : notation -> Extend.constr_entry_key list -> unit
+val non_terminals_of_notation : notation -> Extend.constr_entry_key list
 
 (** Returns notations with defined parsing/printing rules *)
 val get_defined_notations : unit -> notation list
