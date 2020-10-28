@@ -1120,13 +1120,10 @@ let make_interpretation_type isrec isonlybinding default_if_binding = function
      else NtnTypeBinder NtnParsedAsBinder
 
 let entry_relative_level_of_constr_prod_entry from_level = function
-  | ETConstr (InCustomEntry s,_,(_,y)) as x ->
+  | ETConstr (entry,_,(_,y)) as x ->
      let side = match y with BorderProd (side,_) -> Some side | _ -> None in
-     InCustomEntryRelativeLevel (s,(precedence_of_entry_type from_level x,side))
-  (* level and use of parentheses for coercion is hard-wired for "constr";
-     we don't remember the level *)
-  | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeRelativeLevel
-  | _ -> InConstrEntrySomeRelativeLevel
+     (entry,(precedence_of_entry_type from_level x,side))
+  | _ -> InConstrEntry,(LevelSome,None) (*??*)
 
 let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
@@ -1178,8 +1175,8 @@ let is_coercion level typs =
   | Some (custom,n,_), [_,e] ->
      (match e, custom with
      | ETConstr _, _ ->
-         let entry = make_notation_entry_level custom n in
-         let entry_relative = entry_relative_level_of_constr_prod_entry (custom,n) e in
+         let entry = (custom,n) in
+         let entry_relative = entry_relative_level_of_constr_prod_entry entry e in
          if is_coercion entry entry_relative then
            Some (IsEntryCoercion (entry,entry_relative))
          else
@@ -1846,7 +1843,8 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) modl =
       } in
       interp_notation_constr env nenv c
   in
-  let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
+  let level_arg = NumLevel 9 (* level of arguments of an application *) in
+  let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(level_arg,InternalProd))) in
   let level = (InConstrEntry,0,[]) in
   let interp = make_interpretation_vars ~default_if_binding:AsNameOrPattern [] acvars level (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in

@@ -355,8 +355,6 @@ val locate_notation : (glob_constr -> Pp.t) -> notation_key ->
 
 val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
 
-val make_notation_entry_level : notation_entry -> entry_level -> notation_entry_level
-
 (** Coercions between entries *)
 
 val is_coercion : notation_entry_level -> notation_entry_relative_level -> bool
