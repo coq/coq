@@ -1564,11 +1564,13 @@ let sublevel_ord lev lev' =
   | LevelLt n, LevelLe n' -> n < n'
   | LevelLe n, LevelLt n' -> n <= n'-1
 
-let notation_entry_relative_entry_level_lt s1 s2 = match (s1,s2) with
-| InConstrEntrySomeRelativeLevel, InConstrEntrySomeLevel -> true
-| InCustomEntryRelativeLevel (s1,(n1,_)), InCustomEntryLevel (s2,n2) ->
-  String.equal s1 s2 && not (entry_relative_level_le (Some n2) n1)
-| (InConstrEntrySomeRelativeLevel | InCustomEntryRelativeLevel _), _ -> false
+let is_coercion s1 s2 = match (s1,s2) with
+| InConstrEntrySomeLevel, InConstrEntrySomeRelativeLevel -> false (* only hard-wired coercions in constr *)
+|  InCustomEntryLevel (s1,n1), InCustomEntryRelativeLevel (s2,(n2,_)) when String.equal s1 s2 ->
+  (match n2 with
+  | LevelLt n2 | LevelLe n2 -> n1 < n2
+  | LevelSome -> true (* unless n2 is the entry top level but we shall know it only dynamically *))
+| (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> true
 
 let notation_entry_entry_relative_level_le s1 s2 = match (s1,s2) with
 | InConstrEntrySomeLevel, InConstrEntrySomeRelativeLevel -> true

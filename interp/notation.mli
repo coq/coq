@@ -351,9 +351,21 @@ val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
 
 val make_notation_entry_level : notation_entry -> entry_level -> notation_entry_level
 
-type entry_coercion = (notation_with_optional_scope * notation) list
+(** Coercions between entries *)
+
+val is_coercion : notation_entry_level -> notation_entry_relative_level -> bool
+  (** For a rule of the form
+      "Notation string := x (in some-entry, x at some-relative-entry)",
+      tell if going from some-entry to some-relative-entry is coercing *)
+
 val declare_entry_coercion : specific_notation -> notation_entry_level -> notation_entry_relative_level -> unit
+  (** Add a coercion from some-entry to some-relative-entry *)
+
+type entry_coercion = (notation_with_optional_scope * notation) list
 val availability_of_entry_coercion : notation_entry_relative_level -> notation_entry_level -> entry_coercion option
+  (** Return a coercion path from some-relative-entry to some-entry if there is one *)
+
+(** Special properties of entries *)
 
 val declare_custom_entry_has_global : string -> int -> unit
 val declare_custom_entry_has_ident : string -> int -> unit
@@ -368,8 +380,6 @@ type level = notation_entry * entry_level * entry_relative_level list
 
 val level_eq : level -> level -> bool
 val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
-
-val notation_entry_relative_entry_level_lt : notation_entry_relative_level -> notation_entry_level -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 
