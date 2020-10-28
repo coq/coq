@@ -319,7 +319,7 @@ let precedence_of_position_and_level from_level = function
   | NextLevel, _ -> LevelLt from_level, None
   | DefaultLevel, _ -> LevelSome, None
 
-(** Computing precedences of subentries for parsing *)
+(** Computing precedences of non-terminals for parsing *)
 let precedence_of_entry_type (from_custom,from_level) = function
   | ETConstr (custom,_,x) when notation_entry_eq custom from_custom ->
     fst (precedence_of_position_and_level from_level x)
@@ -870,7 +870,7 @@ let check_and_extend_constr_grammar ntn rule =
         Some (Notgram_ops.grammar_of_notation ntn_for_grammar)
       with Not_found -> None
     in
-    let oldtyps = Notgram_ops.subentries_of_notation ntn_for_grammar in
+    let oldtyps = Notgram_ops.non_terminals_of_notation ntn_for_grammar in
     if not (Notation.level_eq prec oldprec) && oldparsing <> None then
       error_parsing_incompatible_level ntn ntn_for_grammar oldprec oldtyps prec typs;
     if oldparsing = None then raise Not_found
@@ -888,7 +888,7 @@ let cache_one_syntax_extension (ntn,synext) =
           Some (Notgram_ops.grammar_of_notation ntn)
         with Not_found -> None
       in
-      let oldtyps = Notgram_ops.subentries_of_notation ntn in
+      let oldtyps = Notgram_ops.non_terminals_of_notation ntn in
       if not (Notation.level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_eq synext.synext_nottyps oldtyps) &&
          (oldparsing <> None || synext.synext_notgram = None) then
         error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps;
@@ -896,7 +896,7 @@ let cache_one_syntax_extension (ntn,synext) =
     with Not_found ->
       (* Declare the level and the precomputed parsing rule *)
       let () = Notation.declare_notation_level ntn prec in
-      let () = Notgram_ops.declare_notation_subentries ntn synext.synext_nottyps in
+      let () = Notgram_ops.declare_notation_non_terminals ntn synext.synext_nottyps in
       let () = Option.iter (Notgram_ops.declare_notation_grammar ntn) synext.synext_notgram in
       None in
   (* Declare the parsing rule *)
@@ -1573,7 +1573,7 @@ exception NoSyntaxRule
 let recover_notation_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
-    let pa_typs = Notgram_ops.subentries_of_notation ntn in
+    let pa_typs = Notgram_ops.non_terminals_of_notation ntn in
     let pa_rule = try Some (Notgram_ops.grammar_of_notation ntn) with Not_found -> None in
     let pp_rule = try Some (find_generic_notation_printing_rule ntn) with Not_found -> None in
     {
