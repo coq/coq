@@ -75,11 +75,14 @@ let pr_hyp (SsrHyp (_, id)) = Id.print id
 let pr_hyps = pr_list pr_spc pr_hyp
 
 let pr_occ = function
-  | Some (true, occ) -> str "{-" ++ pr_list pr_spc int occ ++ str "}"
-  | Some (false, occ) -> str "{+" ++ pr_list pr_spc int occ ++ str "}"
+  | Some (true, occ) ->
+    if CList.is_empty occ then mt () else str "{-" ++ pr_list pr_spc int occ ++ str "}"
+  | Some (false, occ) ->
+    if CList.is_empty occ then mt () else str "{+" ++ pr_list pr_spc int occ ++ str "}"
   | None -> str "{}"
 
-let pr_clear_ne clr = str "{" ++ pr_hyps clr ++ str "}"
+let pr_clear_ne clr =
+  if CList.is_empty clr then mt () else str "{" ++ pr_hyps clr ++ str "}"
 let pr_clear sep clr = sep () ++ pr_clear_ne clr
 
 let pr_dir = function L2R -> str "->" | R2L -> str "<-"

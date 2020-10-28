@@ -1,0 +1,4 @@
+Ltac bug_13238.t1 x := replace (x x) with (x x)
+Ltac bug_13238.t2 x := case : x 
+Ltac bug_13238.t3 := by move ->
+Ltac bug_13238.t4 := congr True 
