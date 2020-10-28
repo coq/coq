@@ -871,7 +871,7 @@ let check_and_extend_constr_grammar ntn rule =
       with Not_found -> None
     in
     let oldtyps = Notgram_ops.non_terminals_of_notation ntn_for_grammar in
-    if not (Notation.level_eq prec oldprec) && oldparsing <> None then
+    if not (level_eq prec oldprec) && oldparsing <> None then
       error_parsing_incompatible_level ntn ntn_for_grammar oldprec oldtyps prec typs;
     if oldparsing = None then raise Not_found
   with Not_found ->
@@ -889,7 +889,7 @@ let cache_one_syntax_extension (ntn,synext) =
         with Not_found -> None
       in
       let oldtyps = Notgram_ops.non_terminals_of_notation ntn in
-      if not (Notation.level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_eq synext.synext_nottyps oldtyps) &&
+      if not (level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_eq synext.synext_nottyps oldtyps) &&
          (oldparsing <> None || synext.synext_notgram = None) then
         error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps;
       oldparsing
@@ -1187,13 +1187,10 @@ let make_interpretation_type isrec isbinding default_if_binding typ =
   | ETBigint, false | ETGlobal, false -> NtnTypeConstr
 
 let entry_relative_level_of_constr_prod_entry from_level = function
-  | ETConstr (InCustomEntry s,_,(_,y)) as x ->
+  | ETConstr (entry,_,(_,y)) as x ->
      let side = match y with BorderProd (side,_) -> Some side | _ -> None in
-     InCustomEntryRelativeLevel (s,(precedence_of_entry_type from_level x,side))
-  (* level and use of parentheses for coercion is hard-wired for "constr";
-     we don't remember the level *)
-  | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeRelativeLevel
-  | _ -> InConstrEntrySomeRelativeLevel
+     (entry,(precedence_of_entry_type from_level x,side))
+  | _ -> InConstrEntry,(LevelSome,None) (*??*)
 
 let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
@@ -1245,8 +1242,8 @@ let is_coercion level typs =
   | Some (custom,n,_), [_,e] ->
      (match e, custom with
      | ETConstr _, _ ->
-         let entry = make_notation_entry_level custom n in
-         let entry_relative = entry_relative_level_of_constr_prod_entry (custom,n) e in
+         let entry = (custom,n) in
+         let entry_relative = entry_relative_level_of_constr_prod_entry entry e in
          if is_coercion entry entry_relative then
            Some (IsEntryCoercion (entry,entry_relative))
          else
@@ -1923,7 +1920,8 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
       } in
       interp_notation_constr env nenv c
   in
-  let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
+  let level_arg = NumLevel 9 (* level of arguments of an application *) in
+  let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(level_arg,InternalProd))) in
   let level = (InConstrEntry,0,[]) in
   let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] acvars level (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in

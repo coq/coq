@@ -349,8 +349,6 @@ val locate_notation : (glob_constr -> Pp.t) -> notation_key ->
 
 val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
 
-val make_notation_entry_level : notation_entry -> entry_level -> notation_entry_level
-
 (** Coercions between entries *)
 
 val is_coercion : notation_entry_level -> notation_entry_relative_level -> bool
@@ -372,14 +370,6 @@ val declare_custom_entry_has_ident : string -> int -> unit
 
 val entry_has_global : notation_entry_relative_level -> bool
 val entry_has_ident : notation_entry_relative_level -> bool
-
-(** Dealing with precedences *)
-
-type level = notation_entry * entry_level * entry_relative_level list
-  (* first argument is InCustomEntry s for custom entries *)
-
-val level_eq : level -> level -> bool
-val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 

@@ -10,6 +10,7 @@
 
 open Util
 open Pp
+open Notationextern
 open Notation
 open Constrexpr
 

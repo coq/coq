@@ -30,6 +30,15 @@ val interpretation_eq : interpretation -> interpretation -> bool
 val notation_entry_level_eq : notation_entry_level -> notation_entry_level -> bool
 (** Equality on [notation_entry_level]. *)
 
+type level = notation_entry * entry_level * entry_relative_level list
+  (* first argument is InCustomEntry s for custom entries *)
+
+val level_eq : level -> level -> bool
+(** Equality on [level]. *)
+
+val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
+(** Equality on [entry_relative_level]. *)
+
 (** Binds a notation in a given scope to an interpretation *)
 type 'a interp_rule_gen =
   | NotationRule of Constrexpr.specific_notation

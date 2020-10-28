@@ -252,26 +252,10 @@ let find_delimiters_scope ?loc key =
 
 (** Dealing with precedences *)
 
-type level = notation_entry * entry_level * entry_relative_level list
-  (* first argument is InCustomEntry s for custom entries *)
-
-let entry_relative_level_le child parent =
-  match child with
-  | None -> true
-  | Some child ->
-  match parent with
+let entry_relative_level_le child = function
   | LevelLt parent -> child < parent
   | LevelLe parent -> child <= parent
   | LevelSome -> true
-
-let entry_relative_level_eq t1 t2 = match t1, t2 with
-| LevelLt n1, LevelLt n2 -> Int.equal n1 n2
-| LevelLe n1, LevelLe n2 -> Int.equal n1 n2
-| LevelSome, LevelSome -> true
-| (LevelLt _ | LevelLe _ | LevelSome), _ -> false
-
-let level_eq (s1, l1, t1) (s2, l2, t2) =
-  notation_entry_eq s1 s2 && Int.equal l1 l2 && List.equal entry_relative_level_eq t1 t2
 
 let notation_level_map = Summary.ref ~stage:Summary.Stage.Synterp ~name:"notation_level_map" NotationMap.empty
 
@@ -281,10 +265,6 @@ let declare_notation_level ntn level =
     anomaly (str "Notation " ++ pr_notation ntn ++ str " is already assigned a level.")
   with Not_found ->
   notation_level_map := NotationMap.add ntn level !notation_level_map
-
-let level_of_notation ntn =
-  NotationMap.find ntn !notation_level_map
-
 
 (**********************************************************************)
 (* Interpreting numbers (not in summary because functional objects)   *)
@@ -1546,14 +1526,9 @@ module EntryCoercionOrd =
 
 module EntryCoercionMap = Map.Make(EntryCoercionOrd)
 
-let entry_coercion_map : (((entry_level option * entry_relative_level) * entry_coercion) list EntryCoercionMap.t) ref =
+(* We index coercions by pairs of entry names to avoid a full linear search *)
+let entry_coercion_map : (((entry_level * entry_relative_level) * entry_coercion) list EntryCoercionMap.t) ref =
   ref EntryCoercionMap.empty
-
-let level_ord lev lev' =
-  match lev, lev' with
-  | None, _ -> true
-  | _, None -> true
-  | Some n, Some n' -> n <= n'
 
 let sublevel_ord lev lev' =
   match lev, lev' with
@@ -1563,52 +1538,31 @@ let sublevel_ord lev lev' =
   | LevelLt n, LevelLe n' -> n < n'
   | LevelLe n, LevelLt n' -> n <= n'-1
 
-let is_coercion s1 s2 = match (s1,s2) with
-| InConstrEntrySomeLevel, InConstrEntrySomeRelativeLevel -> false (* only hard-wired coercions in constr *)
-|  InCustomEntryLevel (s1,n1), InCustomEntryRelativeLevel (s2,(n2,_)) when String.equal s1 s2 ->
-  (match n2 with
+let is_coercion (e1,n1) (e2,(n2,_)) =
+  not (notation_entry_eq e1 e2) ||
+  match n2 with
   | LevelLt n2 | LevelLe n2 -> n1 < n2
-  | LevelSome -> true (* unless n2 is the entry top level but we shall know it only dynamically *))
-| (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> true
+  | LevelSome -> true (* unless n2 is the entry top level but we shall know it only dynamically *)
 
-let notation_entry_entry_relative_level_le s1 s2 = match (s1,s2) with
-| InConstrEntrySomeLevel, InConstrEntrySomeRelativeLevel -> true
-| InCustomEntryLevel (s1,n1), InCustomEntryRelativeLevel (s2,(n2,_)) ->
-  String.equal s1 s2 && entry_relative_level_le (Some n1) n2
-| (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
+let included (e1,n1) (e2,(n2,_)) =
+  notation_entry_eq e1 e2 && entry_relative_level_le n1 n2
 
 let rec search nfrom nto = function
   | [] -> raise Not_found
   | ((pfrom,pto),coe)::l ->
     if entry_relative_level_le pfrom nfrom && entry_relative_level_le nto pto then coe else search nfrom nto l
 
-let make_notation_entry_level entry level =
-  match entry with
-  | InConstrEntry -> InConstrEntrySomeLevel
-  | InCustomEntry s -> InCustomEntryLevel (s,level)
-
-let decompose_notation_entry_level = function
-  | InConstrEntrySomeLevel -> InConstrEntry, None
-  | InCustomEntryLevel (s,n) -> InCustomEntry s, Some n
-
-let decompose_notation_entry_relative_level = function
-  | InConstrEntrySomeRelativeLevel -> InConstrEntry, LevelSome
-  | InCustomEntryRelativeLevel (s,(n,_)) -> InCustomEntry s, n
-
-let availability_of_entry_coercion relative_entry entry' =
-  if notation_entry_entry_relative_level_le entry' relative_entry then Some []
+let availability_of_entry_coercion (entry,(sublev,_) as entry_sublev) (entry',lev' as entry_lev) =
+  if included entry_lev entry_sublev then
+    (* [entry] is by default included in [relative_entry] *)
+    Some []
   else
-    let entry, sublev = decompose_notation_entry_relative_level relative_entry in
-    let entry', lev = decompose_notation_entry_level entry' in
-    try Some (search sublev lev (EntryCoercionMap.find (entry,entry') !entry_coercion_map))
+    try Some (search sublev lev' (EntryCoercionMap.find (entry,entry') !entry_coercion_map))
     with Not_found -> None
 
 let better_path ((lev1,sublev2),path) ((lev1',sublev2'),path') =
   (* better = shorter and lower source and higher target *)
-  level_ord lev1 lev1' && sublevel_ord sublev2' sublev2 && List.length path <= List.length path'
-
-let shorter_path (_,path) (_,path') =
-  List.length path <= List.length path'
+  lev1 <= lev1' && sublevel_ord sublev2' sublev2 && List.length path <= List.length path'
 
 let rec insert_coercion_path path = function
   | [] -> [path]
@@ -1616,32 +1570,35 @@ let rec insert_coercion_path path = function
       (* If better or equal we keep the more recent one *)
       if better_path path path' then path::paths
       else if better_path path' path then allpaths
-      else if shorter_path path path' then path::allpaths
       else path'::insert_coercion_path path paths
 
-let declare_entry_coercion ntn entry relative_entry =
-  let entry, lev = decompose_notation_entry_level entry in
-  let entry', sublev = decompose_notation_entry_relative_level relative_entry in
+let declare_entry_coercion ntn entry_level entry_relative_level' =
+  let entry, lev = entry_level in
+  let entry', (sublev',_) = entry_relative_level' in
   (* Transitive closure *)
   let toaddleft =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
         List.fold_right (fun ((lev'',sublev'''),path) l ->
-        if notation_entry_eq entry entry''' && entry_relative_level_le lev sublev''' &&
-           not (notation_entry_eq entry' entry'')
-        then ((entry'',entry'),((lev'',sublev),path@[ntn]))::l else l) paths l)
+        if included entry_level (entry''',(sublev''',None)) &&
+           not (included (entry'',lev'') entry_relative_level')
+        then ((entry'',entry'),((lev'',sublev'),path@[ntn]))::l else l) paths l)
       !entry_coercion_map [] in
   let toaddright =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
         List.fold_right (fun ((lev'',sublev'''),path) l ->
-        if entry' = entry'' && entry_relative_level_le lev'' sublev && entry <> entry'''
+        if included (entry'',lev'') entry_relative_level' &&
+           not (included entry_level (entry''',(sublev''',None)))
         then ((entry,entry'''),((lev,sublev'''),path@[ntn]))::l else l) paths l)
       !entry_coercion_map [] in
   entry_coercion_map :=
     List.fold_right (fun (pair,path) ->
         let olds = try EntryCoercionMap.find pair !entry_coercion_map with Not_found -> [] in
         EntryCoercionMap.add pair (insert_coercion_path path olds))
-      (((entry,entry'),((lev,sublev),[ntn]))::toaddright@toaddleft)
+      (((entry,entry'),((lev,sublev'),[ntn]))::toaddright@toaddleft)
       !entry_coercion_map
+
+(* Hard-wired coercion in constr corresponding to "( x )" *)
+let _ = entry_coercion_map := (EntryCoercionMap.add (InConstrEntry,InConstrEntry) [(0,LevelSome),[]] !entry_coercion_map)
 
 let entry_has_global_map = ref String.Map.empty
 
@@ -1654,9 +1611,9 @@ let declare_custom_entry_has_global s n =
     entry_has_global_map := String.Map.add s n !entry_has_global_map
 
 let entry_has_global = function
-  | InConstrEntrySomeRelativeLevel -> true
-  | InCustomEntryRelativeLevel (s,(n,_)) ->
-     try entry_relative_level_le (Some (String.Map.find s !entry_has_global_map)) n with Not_found -> false
+  | InConstrEntry, _ -> true
+  | InCustomEntry s, (n,_) ->
+     try entry_relative_level_le (String.Map.find s !entry_has_global_map) n with Not_found -> false
 
 let entry_has_ident_map = ref String.Map.empty
 
@@ -1669,9 +1626,9 @@ let declare_custom_entry_has_ident s n =
     entry_has_ident_map := String.Map.add s n !entry_has_ident_map
 
 let entry_has_ident = function
-  | InConstrEntrySomeRelativeLevel -> true
-  | InCustomEntryRelativeLevel (s,(n,_)) ->
-     try entry_relative_level_le (Some (String.Map.find s !entry_has_ident_map)) n with Not_found -> false
+  | InConstrEntry, _ -> true
+  | InCustomEntry s, (n,_) ->
+     try entry_relative_level_le (String.Map.find s !entry_has_ident_map) n with Not_found -> false
 
 type entry_coercion_kind =
   | IsEntryCoercion of notation_entry_level * notation_entry_relative_level
@@ -2029,6 +1986,20 @@ let decompose_notation_pure_key s =
 
 let decompose_notation_key (from,s) =
   from, decompose_notation_pure_key s
+
+let is_numeral_in_constr (entry,symbs) =
+  match entry, List.filter (function Break _ -> false | _ -> true) symbs with
+  | InConstrEntry, ([Terminal "-"; Terminal x] | [Terminal x]) ->
+      NumTok.Unsigned.parse_string x <> None
+  | _ ->
+      false
+
+let level_of_notation ntn =
+  if is_numeral_in_constr (decompose_notation_key ntn) then
+    (* A primitive notation *)
+    (fst ntn, 0, []) (* TODO: string notations*)
+  else
+    NotationMap.find ntn !notation_level_map
 
 (************)
 (* Printing *)

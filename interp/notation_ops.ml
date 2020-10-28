@@ -1309,9 +1309,11 @@ let remove_sigma x (terms,termlists,binders,binderlists) =
 let remove_bindinglist_sigma x (terms,termlists,binders,binderlists) =
   (terms,termlists,binders,Id.List.remove_assoc x binderlists)
 
-let add_ldots_var metas = (ldots_var,((Constrexpr.InConstrEntrySomeRelativeLevel,([],[])),NtnTypeConstr))::metas
+let default_constr_entry_relative_level = Constrexpr.(InConstrEntry,(LevelSome,None))
 
-let add_meta_bindinglist x metas = (x,((Constrexpr.InConstrEntrySomeRelativeLevel,([],[])),NtnTypeBinderList (*arbitrary:*) NtnBinderParsedAsBinder))::metas
+let add_ldots_var metas = (ldots_var,((default_constr_entry_relative_level,([],[])),NtnTypeConstr))::metas
+
+let add_meta_bindinglist x metas = (x,((default_constr_entry_relative_level,([],[])),NtnTypeBinderList (*arbitrary:*) NtnBinderParsedAsBinder))::metas
 
 (* This tells if letins in the middle of binders should be included in
    the sequence of binders *)
@@ -1357,7 +1359,7 @@ let match_binderlist match_iter_fun match_termin_fun alp metas sigma rest x y it
   let alp,sigma = bind_bindinglist_env alp sigma x bl in
   match_termin_fun alp metas sigma rest termin
 
-let add_meta_term x metas = (x,((Constrexpr.InConstrEntrySomeRelativeLevel,([],[])),NtnTypeConstr))::metas (* Should reuse the scope of the partner of x! *)
+let add_meta_term x metas = (x,((default_constr_entry_relative_level,([],[])),NtnTypeConstr))::metas (* Should reuse the scope of the partner of x! *)
 
 let match_termlist match_fun alp metas sigma rest x y iter termin revert =
   let rec aux alp sigma acc rest =

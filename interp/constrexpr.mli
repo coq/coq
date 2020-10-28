@@ -42,21 +42,13 @@ type entry_level = int
 type entry_relative_level = LevelLt of entry_level | LevelLe of entry_level | LevelSome
 
 (* The entry in which a notation is declared *)
-type notation_entry =
-  | InConstrEntry
-  | InCustomEntry of string
+type notation_entry = InConstrEntry | InCustomEntry of string
 
 (* A notation entry with the level where the notation lives *)
-(* Note: the level is hard-wired in the printer for constr *)
-type notation_entry_level =
-  | InConstrEntrySomeLevel
-  | InCustomEntryLevel of string * entry_level
+type notation_entry_level = notation_entry * entry_level
 
 (* Notation subentries, to be associated to the variables of the notation *)
-(* Note: the level is hard-wired in the printer for constr *)
-type notation_entry_relative_level =
-  | InConstrEntrySomeRelativeLevel
-  | InCustomEntryRelativeLevel of string * (entry_relative_level * side option)
+type notation_entry_relative_level = notation_entry * (entry_relative_level * side option)
 
 type notation_key = string
 
