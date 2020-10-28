@@ -274,7 +274,6 @@ let level_eq (s1, l1, t1) (s2, l2, t2) =
   notation_entry_eq s1 s2 && Int.equal l1 l2 && List.equal entry_relative_level_eq t1 t2
 
 let notation_level_map = Summary.ref ~stage:Summary.Stage.Synterp ~name:"notation_level_map" NotationMap.empty
-  (* in a separate summary, because Synterp *)
 
 let declare_notation_level ntn level =
   try
