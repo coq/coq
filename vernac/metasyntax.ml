@@ -1122,11 +1122,11 @@ let make_interpretation_type isrec isonlybinding default_if_binding = function
 let subentry_of_constr_prod_entry from_level = function
   | ETConstr (InCustomEntry s,_,(_,y)) as x ->
      let side = match y with BorderProd (side,_) -> Some side | _ -> None in
-     InCustomSubentryLevel (s,(precedence_of_entry_type from_level x,side))
+     InCustomEntryRelativeLevel (s,(precedence_of_entry_type from_level x,side))
   (* level and use of parentheses for coercion is hard-wired for "constr";
      we don't remember the level *)
-  | ETConstr (InConstrEntry,_,_) -> InConstrSubentrySomeLevel
-  | _ -> InConstrSubentrySomeLevel
+  | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeRelativeLevel
+  | _ -> InConstrEntrySomeRelativeLevel
 
 let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)

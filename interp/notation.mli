@@ -255,7 +255,7 @@ type notation_use =
 val declare_uninterpretation : ?also_in_cases_pattern:bool -> interp_rule -> interpretation -> unit
 
 type entry_coercion_kind =
-  | IsEntryCoercion of notation_entry_level * notation_subentry_level
+  | IsEntryCoercion of notation_entry_level * notation_entry_relative_level
   | IsEntryGlobal of string * int
   | IsEntryIdent of string * int
 
@@ -358,14 +358,14 @@ val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
 val make_notation_entry_level : notation_entry -> entry_level -> notation_entry_level
 
 type entry_coercion = (notation_with_optional_scope * notation) list
-val declare_entry_coercion : specific_notation -> notation_entry_level -> notation_subentry_level -> unit
-val availability_of_entry_coercion : notation_subentry_level -> notation_entry_level -> entry_coercion option
+val declare_entry_coercion : specific_notation -> notation_entry_level -> notation_entry_relative_level -> unit
+val availability_of_entry_coercion : notation_entry_relative_level -> notation_entry_level -> entry_coercion option
 
 val declare_custom_entry_has_global : string -> int -> unit
 val declare_custom_entry_has_ident : string -> int -> unit
 
-val entry_has_global : notation_subentry_level -> bool
-val entry_has_ident : notation_subentry_level -> bool
+val entry_has_global : notation_entry_relative_level -> bool
+val entry_has_ident : notation_entry_relative_level -> bool
 
 (** Dealing with precedences *)
 
@@ -375,7 +375,7 @@ type level = notation_entry * entry_level * entry_relative_level list
 val level_eq : level -> level -> bool
 val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
 
-val notation_subentry_entry_level_lt : notation_subentry_level -> notation_entry_level -> bool
+val notation_subentry_entry_level_lt : notation_entry_relative_level -> notation_entry_level -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 

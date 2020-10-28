@@ -50,10 +50,10 @@ let notation_entry_level_eq s1 s2 = match (s1,s2) with
 | InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
 | (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
 
-let notation_subentry_level_eq s1 s2 = match (s1,s2) with
-| InConstrSubentrySomeLevel, InConstrSubentrySomeLevel -> true
-| InCustomSubentryLevel (s1,n1), InCustomSubentryLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
-| (InConstrSubentrySomeLevel | InCustomSubentryLevel _), _ -> false
+let notation_entry_relative_level_eq s1 s2 = match (s1,s2) with
+| InConstrEntrySomeRelativeLevel, InConstrEntrySomeRelativeLevel -> true
+| InCustomEntryRelativeLevel (s1,n1), InCustomEntryRelativeLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
+| (InConstrEntrySomeRelativeLevel | InCustomEntryRelativeLevel _), _ -> false
 
 let notation_with_optional_scope_eq inscope1 inscope2 = match (inscope1,inscope2) with
  | LastLonelyNotation, LastLonelyNotation -> true
@@ -81,7 +81,7 @@ let ntpe_eq t1 t2 = match t1, t2 with
 | (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList), _ -> false
 
 let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
-  notation_subentry_level_eq entry1 entry2 &&
+  notation_entry_relative_level_eq entry1 entry2 &&
   pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
   ntpe_eq tp1 tp2
 
@@ -1745,14 +1745,14 @@ let sublevel_ord lev lev' =
   | LevelLe n, LevelLt n' -> n <= n'-1
 
 let notation_subentry_entry_level_lt s1 s2 = match (s1,s2) with
-| InConstrSubentrySomeLevel, InConstrEntrySomeLevel -> true
-| InCustomSubentryLevel (s1,(n1,_)), InCustomEntryLevel (s2,n2) ->
+| InConstrEntrySomeRelativeLevel, InConstrEntrySomeLevel -> true
+| InCustomEntryRelativeLevel (s1,(n1,_)), InCustomEntryLevel (s2,n2) ->
   String.equal s1 s2 && not (entry_relative_level_le (Some n2) n1)
-| (InConstrSubentrySomeLevel | InCustomSubentryLevel _), _ -> false
+| (InConstrEntrySomeRelativeLevel | InCustomEntryRelativeLevel _), _ -> false
 
 let notation_entry_subentry_level_le s1 s2 = match (s1,s2) with
-| InConstrEntrySomeLevel, InConstrSubentrySomeLevel -> true
-| InCustomEntryLevel (s1,n1), InCustomSubentryLevel (s2,(n2,_)) ->
+| InConstrEntrySomeLevel, InConstrEntrySomeRelativeLevel -> true
+| InCustomEntryLevel (s1,n1), InCustomEntryRelativeLevel (s2,(n2,_)) ->
   String.equal s1 s2 && entry_relative_level_le (Some n1) n2
 | (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
 
@@ -1770,14 +1770,14 @@ let decompose_notation_entry_level = function
   | InConstrEntrySomeLevel -> InConstrEntry, None
   | InCustomEntryLevel (s,n) -> InCustomEntry s, Some n
 
-let decompose_notation_subentry_level = function
-  | InConstrSubentrySomeLevel -> InConstrEntry, LevelSome
-  | InCustomSubentryLevel (s,(n,_)) -> InCustomEntry s, n
+let decompose_notation_entry_relative_level = function
+  | InConstrEntrySomeRelativeLevel -> InConstrEntry, LevelSome
+  | InCustomEntryRelativeLevel (s,(n,_)) -> InCustomEntry s, n
 
 let availability_of_entry_coercion subentry entry' =
   if notation_entry_subentry_level_le entry' subentry then Some []
   else
-    let entry, sublev = decompose_notation_subentry_level subentry in
+    let entry, sublev = decompose_notation_entry_relative_level subentry in
     let entry', lev = decompose_notation_entry_level entry' in
     try Some (search sublev lev (EntryCoercionMap.find (entry,entry') !entry_coercion_map))
     with Not_found -> None
@@ -1800,7 +1800,7 @@ let rec insert_coercion_path path = function
 
 let declare_entry_coercion ntn entry subentry =
   let entry, lev = decompose_notation_entry_level entry in
-  let entry', sublev = decompose_notation_subentry_level subentry in
+  let entry', sublev = decompose_notation_entry_relative_level subentry in
   (* Transitive closure *)
   let toaddleft =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
@@ -1833,8 +1833,8 @@ let declare_custom_entry_has_global s n =
     entry_has_global_map := String.Map.add s n !entry_has_global_map
 
 let entry_has_global = function
-  | InConstrSubentrySomeLevel -> true
-  | InCustomSubentryLevel (s,(n,_)) ->
+  | InConstrEntrySomeRelativeLevel -> true
+  | InCustomEntryRelativeLevel (s,(n,_)) ->
      try entry_relative_level_le (Some (String.Map.find s !entry_has_global_map)) n with Not_found -> false
 
 let entry_has_ident_map = ref String.Map.empty
@@ -1848,12 +1848,12 @@ let declare_custom_entry_has_ident s n =
     entry_has_ident_map := String.Map.add s n !entry_has_ident_map
 
 let entry_has_ident = function
-  | InConstrSubentrySomeLevel -> true
-  | InCustomSubentryLevel (s,(n,_)) ->
+  | InConstrEntrySomeRelativeLevel -> true
+  | InCustomEntryRelativeLevel (s,(n,_)) ->
      try entry_relative_level_le (Some (String.Map.find s !entry_has_ident_map)) n with Not_found -> false
 
 type entry_coercion_kind =
-  | IsEntryCoercion of notation_entry_level * notation_subentry_level
+  | IsEntryCoercion of notation_entry_level * notation_entry_relative_level
   | IsEntryGlobal of string * int
   | IsEntryIdent of string * int
 

@@ -54,9 +54,9 @@ type notation_entry_level =
 
 (* Notation subentries, to be associated to the variables of the notation *)
 (* Note: the level is hard-wired in the printer for constr *)
-type notation_subentry_level =
-  | InConstrSubentrySomeLevel
-  | InCustomSubentryLevel of string * (entry_relative_level * side option)
+type notation_entry_relative_level =
+  | InConstrEntrySomeRelativeLevel
+  | InCustomEntryRelativeLevel of string * (entry_relative_level * side option)
 
 type notation_key = string
 
