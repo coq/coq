@@ -1019,20 +1019,12 @@ let rec factorize_left cmp = function
 module Smart =
 struct
 
-  let rec map_loop f p = function
-    | [] -> ()
-    | x :: l' as l ->
-      let x' = f x in
-      map_loop f p l';
-      if x' == x && !p == l' then p := l else p := x' :: !p
-
-  let map f = function
-    | [] -> []
-    | x :: l' as l ->
-      let p = ref [] in
-      let x' = f x in
-      map_loop f p l';
-      if x' == x && !p == l' then l else x' :: !p
+  let rec map f l = match l with
+  | [] -> l
+  | h :: tl ->
+    let h' = f h in
+    let tl' = map f tl in
+    if h' == h && tl' == tl then l else h' :: tl'
 
 end
 
