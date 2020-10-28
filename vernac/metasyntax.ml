@@ -1119,7 +1119,7 @@ let make_interpretation_type isrec isonlybinding default_if_binding = function
      if isrec then NtnTypeBinderList
      else NtnTypeBinder NtnParsedAsBinder
 
-let subentry_of_constr_prod_entry from_level = function
+let entry_relative_level_of_constr_prod_entry from_level = function
   | ETConstr (InCustomEntry s,_,(_,y)) as x ->
      let side = match y with BorderProd (side,_) -> Some side | _ -> None in
      InCustomEntryRelativeLevel (s,(precedence_of_entry_type from_level x,side))
@@ -1146,7 +1146,7 @@ let make_interpretation_vars
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
   Id.Map.mapi (fun x (isonlybinding, sc) ->
     let typ = Id.List.assoc x typs in
-    ((subentry_of_constr_prod_entry (from,level) typ,sc),
+    ((entry_relative_level_of_constr_prod_entry (from,level) typ,sc),
      make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding default_if_binding typ)) mainvars
 
 let check_rule_productivity l =
@@ -1179,9 +1179,9 @@ let is_coercion level typs =
      (match e, custom with
      | ETConstr _, _ ->
          let entry = make_notation_entry_level custom n in
-         let subentry = subentry_of_constr_prod_entry (custom,n) e in
-         if notation_subentry_entry_level_lt subentry entry then None
-         else Some (IsEntryCoercion (entry,subentry))
+         let entry_relative = entry_relative_level_of_constr_prod_entry (custom,n) e in
+         if notation_subentry_entry_level_lt entry_relative entry then None
+         else Some (IsEntryCoercion (entry,entry_relative))
      | ETGlobal, InCustomEntry s -> Some (IsEntryGlobal (s,n))
      | ETIdent, InCustomEntry s -> Some (IsEntryIdent (s,n))
      | _ -> None)
