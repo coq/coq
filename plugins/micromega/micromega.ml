@@ -2142,6 +2142,11 @@ let zWeakChecker =
 let psub1 =
   psub0 Z0 Z.add Z.sub Z.opp zeq_bool
 
+(** val popp1 : z pol -> z pol **)
+
+let popp1 =
+  popp0 Z.opp
+
 (** val padd1 : z pol -> z pol -> z pol **)
 
 let padd1 =
@@ -2235,6 +2240,7 @@ type zArithProof =
 | DoneProof
 | RatProof of zWitness * zArithProof
 | CutProof of zWitness * zArithProof
+| SplitProof of z polC * zArithProof * zArithProof
 | EnumProof of zWitness * zWitness * zArithProof list
 | ExProof of positive * zArithProof
 
@@ -2345,6 +2351,15 @@ let rec zChecker l = function
      (match genCuttingPlane f with
       | Some cp -> zChecker ((nformula_of_cutting_plane cp)::l) pf0
       | None -> true)
+   | None -> false)
+| SplitProof (p, pf1, pf2) ->
+  (match genCuttingPlane (p,NonStrict) with
+   | Some cp1 ->
+     (match genCuttingPlane ((popp1 p),NonStrict) with
+      | Some cp2 ->
+        (&&) (zChecker ((nformula_of_cutting_plane cp1)::l) pf1)
+          (zChecker ((nformula_of_cutting_plane cp2)::l) pf2)
+      | None -> false)
    | None -> false)
 | EnumProof (w1, w2, pf0) ->
   (match eval_Psatz0 l w1 with

@@ -296,6 +296,9 @@ Qed.
 Definition psub  := psub Z0  Z.add Z.sub Z.opp Zeq_bool.
 Declare Equivalent Keys psub RingMicromega.psub.
 
+Definition popp  := popp Z.opp.
+Declare Equivalent Keys popp RingMicromega.popp.
+
 Definition padd  := padd Z0  Z.add Zeq_bool.
 Declare Equivalent Keys padd RingMicromega.padd.
 
@@ -608,16 +611,18 @@ Inductive ZArithProof :=
 | DoneProof
 | RatProof : ZWitness -> ZArithProof -> ZArithProof
 | CutProof : ZWitness -> ZArithProof -> ZArithProof
+| SplitProof : PolC Z -> ZArithProof -> ZArithProof -> ZArithProof
 | EnumProof : ZWitness -> ZWitness -> list ZArithProof -> ZArithProof
 | ExProof   : positive -> ZArithProof -> ZArithProof
 (*ExProof x : exists z t, x = z - t /\ z >= 0 /\ t >= 0 *)
 .
-(*| SplitProof :   PolC Z -> ZArithProof -> ZArithProof -> ZArithProof.*)
+
 
 Register ZArithProof as micromega.ZArithProof.type.
 Register DoneProof   as micromega.ZArithProof.DoneProof.
 Register RatProof    as micromega.ZArithProof.RatProof.
 Register CutProof    as micromega.ZArithProof.CutProof.
+Register SplitProof  as micromega.ZArithProof.SplitProof.
 Register EnumProof   as micromega.ZArithProof.EnumProof.
 Register ExProof     as micromega.ZArithProof.ExProof.
 
@@ -1042,11 +1047,12 @@ Fixpoint max_var_prf (w : ZArithProof) : positive :=
   match w with
   | DoneProof => xH
   | RatProof w pf | CutProof w pf => Pos.max (max_var_psatz w) (max_var_prf pf)
-  | EnumProof w1 w2 l => List.fold_left (fun acc prf => Pos.max acc (max_var_prf prf)) l
-                                        (Pos.max (max_var_psatz w1) (max_var_psatz w2))
+  | SplitProof p pf1 pf2 => Pos.max (max_var xH p) (Pos.max (max_var_prf pf1) (max_var_prf pf1))
+  | EnumProof w1 w2 l => List.fold_left
+                           (fun acc prf => Pos.max acc (max_var_prf prf)) l
+                           (Pos.max (max_var_psatz w1) (max_var_psatz w2))
   | ExProof _ pf => max_var_prf pf
   end.
-
 
 
 Fixpoint ZChecker  (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :=
@@ -1067,6 +1073,14 @@ Fixpoint ZChecker  (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool 
             | None => true
             | Some cp => ZChecker (nformula_of_cutting_plane cp::l) pf
           end
+      end
+    | SplitProof p pf1 pf2 =>
+      match genCuttingPlane (p,NonStrict) , genCuttingPlane (popp p, NonStrict) with
+      | None , _ | _ , None => false
+      | Some cp1 , Some cp2 =>
+        ZChecker (nformula_of_cutting_plane cp1::l) pf1
+        &&
+        ZChecker (nformula_of_cutting_plane cp2::l) pf2
       end
     | ExProof x prf =>
       let fr := max_var_nformulae l in
@@ -1105,6 +1119,7 @@ Fixpoint bdepth (pf : ZArithProof) : nat :=
     | DoneProof  => O
     | RatProof _ p =>  S (bdepth p)
     | CutProof _  p =>   S  (bdepth p)
+    | SplitProof _ p1 p2 => S (Nat.max (bdepth p1) (bdepth p2))
     | EnumProof _ _ l => S (List.fold_right (fun pf x => Nat.max (bdepth pf) x)   O l)
     | ExProof _ p   => S (bdepth p)
   end.
@@ -1137,6 +1152,26 @@ Proof.
   intros.
   eapply lt_le_trans. eassumption.
   rewrite <- Nat.succ_le_mono.
+  apply Nat.le_max_r.
+Qed.
+
+Lemma ltof_bdepth_split_l :
+  forall p pf1 pf2,
+         ltof ZArithProof bdepth pf1 (SplitProof p pf1 pf2).
+Proof.
+  intros.
+  unfold ltof. simpl.
+  rewrite Nat.lt_succ_r.
+  apply Nat.le_max_l.
+Qed.
+
+Lemma ltof_bdepth_split_r :
+  forall p pf1 pf2,
+         ltof ZArithProof bdepth pf2 (SplitProof p pf1 pf2).
+Proof.
+  intros.
+  unfold ltof. simpl.
+  rewrite Nat.lt_succ_r.
   apply Nat.le_max_r.
 Qed.
 
@@ -1470,11 +1505,23 @@ Ltac pos_tac :=
                                      apply (Pos2Z.pos_le_pos X Y) in H
   end.
 
+Lemma eval_nformula_split : forall env p,
+    eval_nformula env (p,NonStrict) \/ eval_nformula env (popp p,NonStrict).
+Proof.
+  unfold popp.
+  simpl. intros. rewrite (eval_pol_opp Zsor ZSORaddon).
+  rewrite Z.opp_nonneg_nonpos.
+  apply Z.le_ge_cases.
+Qed.
+
+
+
+
 Lemma ZChecker_sound : forall w l,
     ZChecker l w = true -> forall env, make_impl  (eval_nformula env)  l False.
 Proof.
   induction w    using (well_founded_ind (well_founded_ltof _ bdepth)).
-  destruct w as [ | w pf | w pf | w1 w2 pf | x pf].
+  destruct w as [ | w pf | w pf | p pf1 pf2 | w1 w2 pf | x pf].
   - (* DoneProof *)
   simpl. discriminate.
   - (* RatProof *)
@@ -1527,6 +1574,26 @@ Proof.
   intros.
   apply eval_Psatz_sound with (2:= Hlc) in H2.
   apply genCuttingPlaneNone with (2:= H2) ; auto.
+  - (* SplitProof *)
+    intros l.
+    cbn - [genCuttingPlane].
+    case_eq (genCuttingPlane (p, NonStrict)) ; [| discriminate].
+    case_eq (genCuttingPlane (popp p, NonStrict)) ; [| discriminate].
+    intros cp1 GCP1 cp2 GCP2 ZC1 env.
+    flatten_bool.
+    destruct (eval_nformula_split env p).
+    + apply H with (env:=env) in H0.
+      rewrite <- make_conj_impl in *.
+      intro ; apply H0.
+      rewrite make_conj_cons. split; auto.
+      apply cutting_plane_sound with (f:= (p,NonStrict)) ; auto.
+      apply ltof_bdepth_split_l.
+    + apply H with (env:=env) in H1.
+      rewrite <- make_conj_impl in *.
+      intro ; apply H1.
+      rewrite make_conj_cons. split; auto.
+      apply cutting_plane_sound with (f:= (popp p,NonStrict)) ; auto.
+      apply ltof_bdepth_split_r.
   - (* EnumProof *)
   intros l.
   simpl.
@@ -1758,6 +1825,7 @@ Fixpoint xhyps_of_pt (base:nat) (acc : list nat) (pt:ZArithProof)  : list nat :=
     | DoneProof => acc
     | RatProof c pt => xhyps_of_pt (S base ) (xhyps_of_psatz base acc c) pt
     | CutProof c pt => xhyps_of_pt (S base ) (xhyps_of_psatz base acc c) pt
+    | SplitProof p pt1 pt2 => xhyps_of_pt (S base) (xhyps_of_pt (S base) acc pt1) pt2
     | EnumProof c1 c2 l =>
       let acc := xhyps_of_psatz base (xhyps_of_psatz base acc c2) c1 in
         List.fold_left (xhyps_of_pt (S base)) l acc

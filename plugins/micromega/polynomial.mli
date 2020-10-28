@@ -287,6 +287,7 @@ module ProofFormat : sig
   type proof =
     | Done
     | Step of int * prf_rule * proof
+    | Split of int * Vect.t * proof * proof
     | Enum of int * prf_rule * Vect.t * prf_rule * proof list
     | ExProof of int * int * int * var * var * var * proof
 
@@ -314,6 +315,7 @@ module ProofFormat : sig
   val proof_of_farkas : prf_rule IMap.t -> Vect.t -> prf_rule
   val eval_prf_rule : (int -> LinPoly.t * op) -> prf_rule -> LinPoly.t * op
   val eval_proof : (LinPoly.t * op) IMap.t -> proof -> bool
+  val simplify_proof : proof -> proof * Mutils.ISet.t
 
   module PrfRuleMap : Map.S with type key = prf_rule
 end

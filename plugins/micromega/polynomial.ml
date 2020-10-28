@@ -459,6 +459,7 @@ module ProofFormat = struct
   type proof =
     | Done
     | Step of int * prf_rule * proof
+    | Split of int * Vect.t * proof * proof
     | Enum of int * prf_rule * Vect.t * prf_rule * proof list
     | ExProof of int * int * int * var * var * var * proof
 
@@ -485,6 +486,9 @@ module ProofFormat = struct
     | Done -> Printf.fprintf o "."
     | Step (i, p, pf) ->
       Printf.fprintf o "%i:= %a ; %a" i output_prf_rule p output_proof pf
+    | Split (i, v, p1, p2) ->
+      Printf.fprintf o "%i:=%a ; { %a } { %a }" i Vect.pp v output_proof p1
+        output_proof p2
     | Enum (i, p1, v, p2, pl) ->
       Printf.fprintf o "%i{%a<=%a<=%a}%a" i output_prf_rule p1 Vect.pp v
         output_prf_rule p2 (pp_list ";" output_proof) pl
@@ -524,6 +528,7 @@ module ProofFormat = struct
   let rec proof_max_def = function
     | Done -> -1
     | Step (i, pr, prf) -> max i (max (pr_rule_max_def pr) (proof_max_def prf))
+    | Split (i, _, p1, p2) -> max i (max (proof_max_def p1) (proof_max_def p2))
     | Enum (i, p1, _, p2, l) ->
       let m = max (pr_rule_max_def p1) (pr_rule_max_def p2) in
       List.fold_left (fun i prf -> max i (proof_max_def prf)) (max i m) l
@@ -573,37 +578,40 @@ module ProofFormat = struct
       ISet.union (pr_rule_collect_defs p1) (pr_rule_collect_defs p2)
 
   (** [simplify_proof p] removes proof steps that are never re-used. *)
-  let simplify_proof p =
-    let rec simplify_proof p =
-      match p with
-      | Done -> (Done, ISet.empty)
-      | Step (i, pr, Done) -> (p, ISet.add i (pr_rule_collect_defs pr))
-      | Step (i, pr, prf) ->
-        let prf', hyps = simplify_proof prf in
-        if not (ISet.mem i hyps) then (prf', hyps)
-        else
-          ( Step (i, pr, prf')
-          , ISet.add i (ISet.union (pr_rule_collect_defs pr) hyps) )
-      | Enum (i, p1, v, p2, pl) ->
-        let pl, hl = List.split (List.map simplify_proof pl) in
-        let hyps = List.fold_left ISet.union ISet.empty hl in
-        ( Enum (i, p1, v, p2, pl)
-        , ISet.add i
-            (ISet.union
-               (ISet.union (pr_rule_collect_defs p1) (pr_rule_collect_defs p2))
-               hyps) )
-      | ExProof (i, j, k, x, z, t, prf) ->
-        let prf', hyps = simplify_proof prf in
-        if
-          (not (ISet.mem i hyps))
-          && (not (ISet.mem j hyps))
-          && not (ISet.mem k hyps)
-        then (prf', hyps)
-        else
-          ( ExProof (i, j, k, x, z, t, prf')
-          , ISet.add i (ISet.add j (ISet.add k hyps)) )
-    in
-    fst (simplify_proof p)
+  let rec simplify_proof p =
+    match p with
+    | Done -> (Done, ISet.empty)
+    | Step (i, pr, Done) -> (p, ISet.add i (pr_rule_collect_defs pr))
+    | Step (i, pr, prf) ->
+      let prf', hyps = simplify_proof prf in
+      if not (ISet.mem i hyps) then (prf', hyps)
+      else
+        ( Step (i, pr, prf')
+        , ISet.add i (ISet.union (pr_rule_collect_defs pr) hyps) )
+    | Split (i, v, p1, p2) ->
+      let p1, h1 = simplify_proof p1 in
+      let p2, h2 = simplify_proof p2 in
+      if not (ISet.mem i h1) then (p1, h1) (* Should not have computed p2 *)
+      else if not (ISet.mem i h2) then (p2, h2)
+      else (Split (i, v, p1, p2), ISet.add i (ISet.union h1 h2))
+    | Enum (i, p1, v, p2, pl) ->
+      let pl, hl = List.split (List.map simplify_proof pl) in
+      let hyps = List.fold_left ISet.union ISet.empty hl in
+      ( Enum (i, p1, v, p2, pl)
+      , ISet.add i
+          (ISet.union
+             (ISet.union (pr_rule_collect_defs p1) (pr_rule_collect_defs p2))
+             hyps) )
+    | ExProof (i, j, k, x, z, t, prf) ->
+      let prf', hyps = simplify_proof prf in
+      if
+        (not (ISet.mem i hyps))
+        && (not (ISet.mem j hyps))
+        && not (ISet.mem k hyps)
+      then (prf', hyps)
+      else
+        ( ExProof (i, j, k, x, z, t, prf')
+        , ISet.add i (ISet.add j (ISet.add k hyps)) )
 
   let rec normalise_proof id prf =
     match prf with
@@ -619,6 +627,10 @@ module ProofFormat = struct
           bds
       in
       (id, prf)
+    | Split (i, v, p1, p2) ->
+      let id, p1 = normalise_proof id p1 in
+      let id, p2 = normalise_proof id p2 in
+      (id, Split (i, v, p1, p2))
     | ExProof (i, j, k, x, z, t, prf) ->
       let id, prf = normalise_proof id prf in
       (id, ExProof (i, j, k, x, z, t, prf))
@@ -640,7 +652,7 @@ module ProofFormat = struct
           (bds2 @ bds1) )
 
   let normalise_proof id prf =
-    let prf = simplify_proof prf in
+    let prf = fst (simplify_proof prf) in
     let res = normalise_proof id prf in
     if debug then
       Printf.printf "normalise_proof %a -> %a" output_proof prf output_proof
@@ -815,6 +827,14 @@ module ProofFormat = struct
   let cmpl_prf_rule_z env r =
     cmpl_prf_rule Mc.normZ (fun x -> CamlToCoq.bigint (Q.num x)) env r
 
+  let cmpl_pol_z lp =
+    try
+      let cst x = CamlToCoq.bigint (Q.num x) in
+      Mc.normZ (LinPoly.coq_poly_of_linpol cst lp)
+    with x ->
+      Printf.printf "cmpl_pol_z %s %a\n" (Printexc.to_string x) LinPoly.pp lp;
+      raise x
+
   let rec cmpl_proof env = function
     | Done -> Mc.DoneProof
     | Step (i, p, prf) -> (
@@ -823,6 +843,11 @@ module ProofFormat = struct
         Mc.CutProof (cmpl_prf_rule_z env p', cmpl_proof (Def i :: env) prf)
       | _ -> Mc.RatProof (cmpl_prf_rule_z env p, cmpl_proof (Def i :: env) prf)
       )
+    | Split (i, v, p1, p2) ->
+      Mc.SplitProof
+        ( cmpl_pol_z v
+        , cmpl_proof (Def i :: env) p1
+        , cmpl_proof (Def i :: env) p2 )
     | Enum (i, p1, _, p2, l) ->
       Mc.EnumProof
         ( cmpl_prf_rule_z env p1
@@ -885,6 +910,7 @@ module ProofFormat = struct
         false
       end
       else eval_proof (IMap.add i (p, o) env) rst
+    | Split (i, v, p1, p2) -> failwith "Not implemented"
     | Enum (i, r1, v, r2, l) ->
       let _ = eval_prf_rule (fun i -> IMap.find i env) r1 in
       let _ = eval_prf_rule (fun i -> IMap.find i env) r2 in
