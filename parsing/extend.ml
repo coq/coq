@@ -70,9 +70,9 @@ and constr_prod_entry_key =
   | ETProdGlobal          (* Parsed as a global reference *)
   | ETProdBigint          (* Parsed as an (unbounded) integer *)
   | ETProdOneBinder of bool (* Parsed as name, or name:type or 'pattern, possibly in closed form *)
-  | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or pattern, or a subentry of those *)
+  | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or custom when extending a constr or custom entry; parsed as pattern or custom pattern when extending a pattern or custom pattern entry *)
   | ETProdPattern of int  (* Parsed as pattern as a binder (as subpart of a constr) *)
-  | ETProdConstrList of Constrexpr.notation_entry * (production_level * production_position) * (bool * string) list (* Parsed as non-empty list of constr, or subentries of those *)
+  | ETProdConstrList of Constrexpr.notation_entry * (production_level * production_position) * (bool * string) list (* Parsed as a non-empty list of constr or custom entry *)
   | ETProdBinderList of binder_entry_kind  (* Parsed as non-empty list of local binders *)
 
 (** {5 AST for user-provided entries} *)
