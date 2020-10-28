@@ -375,7 +375,7 @@ type level = notation_entry * entry_level * entry_relative_level list
 val level_eq : level -> level -> bool
 val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
 
-val notation_subentry_entry_level_lt : notation_entry_relative_level -> notation_entry_level -> bool
+val notation_entry_relative_entry_level_lt : notation_entry_relative_level -> notation_entry_level -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 

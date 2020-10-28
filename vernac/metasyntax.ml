@@ -1180,7 +1180,7 @@ let is_coercion level typs =
      | ETConstr _, _ ->
          let entry = make_notation_entry_level custom n in
          let entry_relative = entry_relative_level_of_constr_prod_entry (custom,n) e in
-         if notation_subentry_entry_level_lt entry_relative entry then None
+         if notation_entry_relative_entry_level_lt entry_relative entry then None
          else Some (IsEntryCoercion (entry,entry_relative))
      | ETGlobal, InCustomEntry s -> Some (IsEntryGlobal (s,n))
      | ETIdent, InCustomEntry s -> Some (IsEntryIdent (s,n))

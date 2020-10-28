@@ -1744,13 +1744,13 @@ let sublevel_ord lev lev' =
   | LevelLt n, LevelLe n' -> n < n'
   | LevelLe n, LevelLt n' -> n <= n'-1
 
-let notation_subentry_entry_level_lt s1 s2 = match (s1,s2) with
+let notation_entry_relative_entry_level_lt s1 s2 = match (s1,s2) with
 | InConstrEntrySomeRelativeLevel, InConstrEntrySomeLevel -> true
 | InCustomEntryRelativeLevel (s1,(n1,_)), InCustomEntryLevel (s2,n2) ->
   String.equal s1 s2 && not (entry_relative_level_le (Some n2) n1)
 | (InConstrEntrySomeRelativeLevel | InCustomEntryRelativeLevel _), _ -> false
 
-let notation_entry_subentry_level_le s1 s2 = match (s1,s2) with
+let notation_entry_entry_relative_level_le s1 s2 = match (s1,s2) with
 | InConstrEntrySomeLevel, InConstrEntrySomeRelativeLevel -> true
 | InCustomEntryLevel (s1,n1), InCustomEntryRelativeLevel (s2,(n2,_)) ->
   String.equal s1 s2 && entry_relative_level_le (Some n1) n2
@@ -1774,10 +1774,10 @@ let decompose_notation_entry_relative_level = function
   | InConstrEntrySomeRelativeLevel -> InConstrEntry, LevelSome
   | InCustomEntryRelativeLevel (s,(n,_)) -> InCustomEntry s, n
 
-let availability_of_entry_coercion subentry entry' =
-  if notation_entry_subentry_level_le entry' subentry then Some []
+let availability_of_entry_coercion relative_entry entry' =
+  if notation_entry_entry_relative_level_le entry' relative_entry then Some []
   else
-    let entry, sublev = decompose_notation_entry_relative_level subentry in
+    let entry, sublev = decompose_notation_entry_relative_level relative_entry in
     let entry', lev = decompose_notation_entry_level entry' in
     try Some (search sublev lev (EntryCoercionMap.find (entry,entry') !entry_coercion_map))
     with Not_found -> None
@@ -1798,9 +1798,9 @@ let rec insert_coercion_path path = function
       else if shorter_path path path' then path::allpaths
       else path'::insert_coercion_path path paths
 
-let declare_entry_coercion ntn entry subentry =
+let declare_entry_coercion ntn entry relative_entry =
   let entry, lev = decompose_notation_entry_level entry in
-  let entry', sublev = decompose_notation_entry_relative_level subentry in
+  let entry', sublev = decompose_notation_entry_relative_level relative_entry in
   (* Transitive closure *)
   let toaddleft =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
