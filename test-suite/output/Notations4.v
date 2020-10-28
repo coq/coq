@@ -29,6 +29,14 @@ Notation "x" := x (in custom myconstr at level 0, x global).
 Check [ b + c ].
 Check fun a => [ a + a ].
 
+Module NonCoercions.
+
+(* Check invalid coercions (thus not used for printing) *)
+Notation "[[ x ]]" := x (at level 0, x at level 42).
+Notation "[[[ x ]]]" := x (in custom myconstr at level 5, x custom myconstr at level 5).
+
+End NonCoercions.
+
 End A.
 
 Module B.
