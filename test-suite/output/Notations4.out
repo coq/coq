@@ -18,10 +18,7 @@ Entry custom:myconstr is
      : nat
 fun a : nat => [a + a]
      : nat -> nat
-File "./output/Notations4.v", line 35, characters 0-52:
-Warning: This notation will not be used for printing as it is bound to a
-single variable. [notation-bound-to-variable,parsing]
-File "./output/Notations4.v", line 36, characters 0-88:
+File "./output/Notations4.v", line 38, characters 0-88:
 Warning: This notation will not be used for printing as it is bound to a
 single variable. [notation-bound-to-variable,parsing]
 [1 {f 1}]
@@ -85,18 +82,18 @@ fun x : nat => [x]
      : nat -> nat
 ∀ x : nat, x = x
      : Prop
-File "./output/Notations4.v", line 193, characters 0-160:
+File "./output/Notations4.v", line 195, characters 0-160:
 Warning: Notation "∀ _ .. _ , _" was already defined with a different format
 in scope type_scope. [notation-incompatible-format,parsing]
 ∀x : nat,x = x
      : Prop
-File "./output/Notations4.v", line 206, characters 0-60:
+File "./output/Notations4.v", line 208, characters 0-60:
 Warning: Notation "_ %%% _" was already defined with a different format.
 [notation-incompatible-format,parsing]
-File "./output/Notations4.v", line 210, characters 0-64:
+File "./output/Notations4.v", line 212, characters 0-64:
 Warning: Notation "_ %%% _" was already defined with a different format.
 [notation-incompatible-format,parsing]
-File "./output/Notations4.v", line 215, characters 0-62:
+File "./output/Notations4.v", line 217, characters 0-62:
 Warning: Lonely notation "_ %%%% _" was already defined with a different
 format. [notation-incompatible-format,parsing]
 3  %%  4
@@ -105,10 +102,10 @@ format. [notation-incompatible-format,parsing]
      : nat
 3   %%   4
      : nat
-File "./output/Notations4.v", line 243, characters 47-59:
+File "./output/Notations4.v", line 245, characters 47-59:
 Warning: The format modifier is irrelevant for only-parsing rules.
 [irrelevant-format-only-parsing,parsing]
-File "./output/Notations4.v", line 247, characters 36-48:
+File "./output/Notations4.v", line 249, characters 36-48:
 Warning: The only parsing modifier has no effect in Reserved Notation.
 [irrelevant-reserved-notation-only-parsing,parsing]
 fun x : nat => U (S x)
@@ -119,7 +116,7 @@ fun x : nat => V x
      : forall x : nat, nat * (?T -> ?T)
 where
 ?T : [x : nat  x0 : ?T |- Type] (x0 cannot be used)
-File "./output/Notations4.v", line 264, characters 0-30:
+File "./output/Notations4.v", line 266, characters 0-30:
 Warning: Notation "_ :=: _" was already used. [notation-overridden,parsing]
 0 :=: 0
      : Prop

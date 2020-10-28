@@ -2579,9 +2579,9 @@ let freeze ~marshallable =
   !delimiters_map, !notations_key_table, !scope_class_map,
   !prim_token_interp_infos, !prim_token_uninterp_infos,
   !entry_coercion_map, !entry_has_global_map,
-  !entry_has_ident_map)
+  !entry_has_ident_map, !notation_level_map)
 
-let unfreeze (scm,scs,asc,dlm,fkm,clsc,ptii,ptui,coe,globs,ids) =
+let unfreeze (scm,scs,asc,dlm,fkm,clsc,ptii,ptui,coe,globs,ids,levs) =
   scope_map := scm;
   scope_stack := scs;
   delimiters_map := dlm;
@@ -2592,7 +2592,8 @@ let unfreeze (scm,scs,asc,dlm,fkm,clsc,ptii,ptui,coe,globs,ids) =
   prim_token_uninterp_infos := ptui;
   entry_coercion_map := coe;
   entry_has_global_map := globs;
-  entry_has_ident_map := ids
+  entry_has_ident_map := ids;
+  notation_level_map := levs
 
 let init () =
   init_scope_map ();
@@ -2600,7 +2601,8 @@ let init () =
   notations_key_table := KeyMap.empty;
   scope_class_map := initial_scope_class_map;
   prim_token_interp_infos := String.Map.empty;
-  prim_token_uninterp_infos := GlobRef.Map.empty
+  prim_token_uninterp_infos := GlobRef.Map.empty;
+  notation_level_map := NotationMap.empty
 
 let _ =
   Summary.declare_summary "symbols"
