@@ -787,20 +787,39 @@ nested iterating pattern, the second placeholder is finally filled with the
 terminating expression.
 
 In the example above, the iterator :math:`φ([~]_E , [~]_I)` is :math:`cons [~]_E\, [~]_I`
-and the terminating expression is ``nil``. Here are other examples:
+and the terminating expression is ``nil``.
+
+Here is another example with the pattern associating on the left:
 
 .. coqtop:: in
 
    Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) (at level 0).
+
+Here is an example with more involved recursive patterns:
+
+.. coqtop:: in
 
    Notation "[| t * ( x , y , .. , z ) ; ( a , b , .. , c )  * u |]" :=
      (pair (pair .. (pair (pair t x) (pair t y)) .. (pair t z))
            (pair .. (pair (pair a u) (pair b u)) .. (pair c u)))
      (t at level 39).
 
-Notations with recursive patterns can be reserved like standard
-notations, they can also be declared within
-:ref:`notation scopes <Scopes>`.
+To give a flavor of the extent and limits of the mechanism, here is an
+example showing a notation for a chain of equalities. It relies on an
+artificial expansion of the intended denotation so as to expose a
+``φ(x, .. φ(y,t) ..)`` structure, with the drawback that if ever the
+beta-redexes are contracted, the notations stops to be used for
+printing.
+
+.. coqtop:: in
+
+   Notation "x  ⪯ y  ⪯ ..  ⪯ z  ⪯ t" :=
+     ((fun b A a => a <= b /\ A b) y .. ((fun b A a => a <= b /\ A b) z (fun b => b <= t)) .. x)
+     (at level 70, y at next level, z at next level, t at next level).
+
+Note finally that notations with recursive patterns can be reserved like
+standard notations, they can also be declared within :ref:`notation
+scopes <Scopes>`.
 
 .. _RecursiveNotationsWithBinders:
 
