@@ -51,3 +51,12 @@ Time Qed. (* 0.06 s *)
 
 Set Printing All.
 Set Printing Depth 100000.
+
+Tactic Notation "my_rewrite_strat" constr(x) := rewrite_strat topdown x.
+Tactic Notation "my_rewrite_strat2" uconstr(x) := rewrite_strat topdown x.
+Goal (forall x, S x = 0) -> 1=0.
+intro H.
+my_rewrite_strat H.
+Undo.
+my_rewrite_strat2 H.
+Abort.

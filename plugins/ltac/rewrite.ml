@@ -1638,9 +1638,9 @@ let cl_rewrite_clause l left2right occs clause =
 let cl_rewrite_clause_strat strat clause =
   cl_rewrite_clause_strat false strat clause
 
-let apply_glob_constr c l2r occs = (); fun ({ state = () ; env = env } as input) ->
+let apply_glob_constr ist c l2r occs = (); fun ({ state = () ; env = env } as input) ->
   let c sigma =
-    let (sigma, c) = Pretyping.understand_tcc env sigma c in
+    let (sigma, c) = Tacinterp.interp_open_constr ist env sigma c in
     (sigma, (c, NoBindings))
   in
   let flags = general_rewrite_unif_flags () in
@@ -1717,12 +1717,12 @@ let rec pr_strategy prc prr = function
 | StratEval r -> str "eval" ++ spc () ++ prr r
 | StratFold c -> str "fold" ++ spc () ++ prc c
 
-let rec strategy_of_ast = function
+let rec strategy_of_ast ist = function
   | StratId -> Strategies.id
   | StratFail -> Strategies.fail
   | StratRefl -> Strategies.refl
   | StratUnary (f, s) ->
-    let s' = strategy_of_ast s in
+    let s' = strategy_of_ast ist s in
     let f' = match f with
       | Subterms -> all_subterms
       | Subterm -> one_subterm
@@ -1736,13 +1736,13 @@ let rec strategy_of_ast = function
       | Repeat -> Strategies.repeat
     in f' s'
   | StratBinary (f, s, t) ->
-    let s' = strategy_of_ast s in
-    let t' = strategy_of_ast t in
+    let s' = strategy_of_ast ist s in
+    let t' = strategy_of_ast ist t in
     let f' = match f with
       | Compose -> Strategies.seq
       | Choice -> Strategies.choice
     in f' s' t'
-  | StratConstr (c, b) -> { strategy = apply_glob_constr (fst c) b AllOccurrences }
+  | StratConstr (c, b) -> { strategy = apply_glob_constr ist c b AllOccurrences }
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
   | StratTerms l -> { strategy =
     (fun ({ state = () ; env } as input) ->
@@ -1751,7 +1751,7 @@ let rec strategy_of_ast = function
                     }
   | StratEval r -> { strategy =
     (fun ({ state = () ; env ; evars } as input) ->
-     let (sigma,r_interp) = Tacinterp.interp_redexp env (goalevars evars) r in
+     let (sigma,r_interp) = Tacinterp.interp_red_expr ist env (goalevars evars) r in
      (Strategies.reduce r_interp).strategy { input with
                                              evars = (sigma,cstrevars evars) }) }
   | StratFold c -> Strategies.fold_glob (fst c)

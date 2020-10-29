@@ -67,12 +67,12 @@ END
 {
 
 type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
-type glob_strategy = (glob_constr_and_expr, Tacexpr.raw_red_expr) strategy_ast
+type glob_strategy = (glob_constr_and_expr, Tacexpr.glob_red_expr) strategy_ast
 
 let interp_strategy ist gl s =
   let sigma = project gl in
-    sigma, strategy_of_ast s
-let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (fun c -> c) s
+    sigma, strategy_of_ast ist s
+let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (Tacintern.intern_red_expr ist) s
 let subst_strategy s str = str
 
 let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"
@@ -80,12 +80,9 @@ let pr_raw_strategy env sigma prc prlc _ (s : raw_strategy) =
   let prr = Pptactic.pr_red_expr env sigma (prc, prlc, Pputils.pr_or_by_notation Libnames.pr_qualid, prc) in
   Rewrite.pr_strategy (prc env sigma) prr s
 let pr_glob_strategy env sigma prc prlc _ (s : glob_strategy) =
-  let prr = Pptactic.pr_red_expr env sigma
-    (Ppconstr.pr_constr_expr,
-    Ppconstr.pr_lconstr_expr,
-    Pputils.pr_or_by_notation Libnames.pr_qualid,
-    Ppconstr.pr_constr_expr)
-  in
+  let prpat env sigma (_,c,_) = prc env sigma c in
+  let prcst = Pputils.pr_or_var Pptactic.(pr_and_short_name (pr_evaluable_reference_env env)) in
+  let prr = Pptactic.pr_red_expr env sigma (prc, prlc, prcst, prpat) in
   Rewrite.pr_strategy (prc env sigma) prr s
 
 }
@@ -130,15 +127,15 @@ END
 {
 
 let db_strat db = StratUnary (Topdown, StratHints (false, db))
-let cl_rewrite_clause_db db = cl_rewrite_clause_strat (strategy_of_ast (db_strat db))
+let cl_rewrite_clause_db ist db = cl_rewrite_clause_strat (strategy_of_ast ist (db_strat db))
 
 }
 
 TACTIC EXTEND rewrite_strat
 | [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> { cl_rewrite_clause_strat s (Some id) }
 | [ "rewrite_strat" rewstrategy(s) ] -> { cl_rewrite_clause_strat s None }
-| [ "rewrite_db" preident(db) "in" hyp(id) ] -> { cl_rewrite_clause_db db (Some id) }
-| [ "rewrite_db" preident(db) ] -> { cl_rewrite_clause_db db None }
+| [ "rewrite_db" preident(db) "in" hyp(id) ] -> { cl_rewrite_clause_db ist db (Some id) }
+| [ "rewrite_db" preident(db) ] -> { cl_rewrite_clause_db ist db None }
 END
 
 {
