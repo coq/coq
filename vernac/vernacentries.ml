@@ -1628,6 +1628,7 @@ let () =
     }
 
 let vernac_set_strategy ~local l =
+  let open Tacred in
   let local = Option.default false local in
   let glob_ref r =
     match smart_global r with
@@ -1639,6 +1640,7 @@ let vernac_set_strategy ~local l =
   Redexpr.set_strategy local l
 
 let vernac_set_opacity ~local (v,l) =
+  let open Tacred in
   let local = Option.default true local in
   let glob_ref r =
     match smart_global r with

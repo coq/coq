@@ -81,7 +81,7 @@ let subst_strategy (subs,(local,obj)) =
   local,
   List.Smart.map
     (fun (k,ql as entry) ->
-      let ql' = List.Smart.map (Mod_subst.subst_evaluable_reference subs) ql in
+      let ql' = List.Smart.map (Tacred.subst_evaluable_reference subs) ql in
       if ql==ql' then entry else (k,ql'))
     obj
 
@@ -344,7 +344,7 @@ let subst_red_expr subs =
   let sigma = Evd.from_env env in
   Redops.map_red_expr_gen
     (subst_mps subs)
-    (Mod_subst.subst_evaluable_reference subs)
+    (Tacred.subst_evaluable_reference subs)
     (Patternops.subst_pattern env sigma subs)
 
 let inReduction : bool * string * red_expr -> obj =

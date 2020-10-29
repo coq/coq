@@ -625,7 +625,7 @@ let build_class_constant ~univs ~rdata field implfs params paramimpls coers bind
   let cref = GlobRef.ConstRef cst in
   Impargs.declare_manual_implicits false cref paramimpls;
   Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
-  Classes.set_typeclass_transparency (EvalConstRef cst) false false;
+  Classes.set_typeclass_transparency (Tacred.EvalConstRef cst) false false;
   let sub = List.hd coers in
   let m = {
     meth_name = Name proj_name;
@@ -744,7 +744,7 @@ let add_constant_class env sigma cst =
     }
   in
   Classes.add_class env sigma tc;
-    Classes.set_typeclass_transparency (EvalConstRef cst) false false
+    Classes.set_typeclass_transparency (Tacred.EvalConstRef cst) false false
 
 let add_inductive_class env sigma ind =
   let mind, oneind = Inductive.lookup_mind_specif env ind in

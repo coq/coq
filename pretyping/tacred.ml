@@ -43,6 +43,25 @@ exception ReductionTacticError of reduction_tactic_error
 exception Elimconst
 exception Redelimination
 
+type evaluable_global_reference =
+  | EvalVarRef of Id.t
+  | EvalConstRef of Constant.t
+
+(* Better to have it here that in closure, since used in grammar.cma *)
+let eq_egr e1 e2 = match e1, e2 with
+    EvalConstRef con1, EvalConstRef con2 -> Constant.CanOrd.equal con1 con2
+  | EvalVarRef id1, EvalVarRef id2 -> Id.equal id1 id2
+  | _, _ -> false
+
+(* Here the semantics is completely unclear.
+   What does "Hint Unfold t" means when "t" is a parameter?
+   Does the user mean "Unfold X.t" or does she mean "Unfold y"
+   where X.t is later on instantiated with y? I choose the first
+   interpretation (i.e. an evaluable reference is never expanded). *)
+let subst_evaluable_reference subst = function
+  | EvalVarRef id -> EvalVarRef id
+  | EvalConstRef kn -> EvalConstRef (Mod_subst.subst_constant subst kn)
+
 let error_not_evaluable r =
   user_err ~hdr:"error_not_evaluable"
     (str "Cannot coerce" ++ spc () ++ Nametab.pr_global_env Id.Set.empty r ++

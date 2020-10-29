@@ -36,7 +36,7 @@ type 'a hint_ast =
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
-  | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
+  | Unfold_nth of Tacred.evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument       (* Hint Extern *)
 
 type hint = private {
@@ -173,8 +173,8 @@ type hints_entry =
   | HintsResolveEntry of (hint_info * hnf * hints_path_atom * hint_term) list
   | HintsImmediateEntry of (hints_path_atom * hint_term) list
   | HintsCutEntry of hints_path
-  | HintsUnfoldEntry of evaluable_global_reference list
-  | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
+  | HintsUnfoldEntry of Tacred.evaluable_global_reference list
+  | HintsTransparencyEntry of Tacred.evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 

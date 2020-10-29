@@ -883,7 +883,7 @@ let shrink_body c ty =
 (* Saving an obligation                                                *)
 (***********************************************************************)
 
-let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
+let unfold_entry cst = Hints.HintsUnfoldEntry [Tacred.EvalConstRef cst]
 
 let add_hint local prg cst =
   let locality = if local then Goptions.OptLocal else Goptions.OptExport in

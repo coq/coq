@@ -10,7 +10,6 @@
 
 (** Interpretation layer of redexprs such as hnf, cbv, etc. *)
 
-open Names
 open Constr
 open EConstr
 open Pattern
@@ -19,7 +18,7 @@ open Reductionops
 open Locus
 
 type red_expr =
-  (constr, evaluable_global_reference, constr_pattern) red_expr_gen
+  (constr, Tacred.evaluable_global_reference, constr_pattern) red_expr_gen
 
 type red_expr_val
 
@@ -50,7 +49,7 @@ val declare_red_expr : bool -> string -> red_expr -> unit
    true, the effect is non-synchronous (i.e. it does not survive
    section and module closure). *)
 val set_strategy :
-  bool -> (Conv_oracle.level * evaluable_global_reference list) list -> unit
+  bool -> (Conv_oracle.level * Tacred.evaluable_global_reference list) list -> unit
 
 (** call by value normalisation function using the virtual machine *)
 val cbv_vm : reduction_function

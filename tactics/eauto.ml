@@ -386,6 +386,7 @@ let make_dimension n = function
   | Some d -> (false,d)
 
 let autounfolds ids csts gl cls =
+  let open Tacred in
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   let env = Tacmach.New.pf_env gl in
   let ids = List.filter (fun id -> List.mem id hyps && Tacred.is_evaluable env (EvalVarRef id)) ids in

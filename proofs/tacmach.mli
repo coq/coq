@@ -69,7 +69,7 @@ val pf_reduce_to_atomic_ind     : Goal.goal sigma -> types -> (inductive * EInst
 [@@ocaml.deprecated "Use Tacred.pf_reduce_to_atomic_ind"]
 val pf_compute                 : Goal.goal sigma -> constr -> constr
 [@@ocaml.deprecated "Use the version in Tacmach.New"]
-val pf_unfoldn    : (occurrences * evaluable_global_reference) list
+val pf_unfoldn    : (occurrences * Tacred.evaluable_global_reference) list
   -> Goal.goal sigma -> constr -> constr
 [@@ocaml.deprecated "Use Tacred.unfoldn"]
 
