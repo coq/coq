@@ -11,12 +11,13 @@ Fail #[universes(template)]
 Fail #[universes(template)]
  Record foo@{i}  (T:=Type@{i}:Type@{i+1}) (A:Type@{i}) : Type@{i+1} := bar { X:T }.
 
+Universe u.
 
 (* no implicit template poly, no explicit universe annotations *)
-Inductive foo (A:Type) := bar X : foo X -> foo A | nonempty.
+Inductive foo (A:Type) := bar (X:Type@{u}) : foo X -> foo A | nonempty.
 Arguments nonempty {_}.
 
-Fail Check foo nat : Type@{foo.u0}.
+Fail Check foo nat : Type@{foo.u}.
 (* template poly didn't activate *)
 
 Definition U := Type.
