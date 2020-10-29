@@ -2080,6 +2080,15 @@ let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs ars
         Some (sigma', p, arsign)
   with e when precatchable_exception e -> None
 
+let expected_elimination_sort env tomatchl =
+  List.fold_right (fun (_,tm) s ->
+      match tm with
+      | IsInd (_,IndType(indf,_),_) ->
+        (* Not a degenerated line, see coerce_to_indtype *)
+        let s' = Inductive.elim_sort (Inductive.lookup_mind_specif env (fst (fst (dest_ind_family indf)))) in
+        if Sorts.family_leq s s' then s else s'
+      | NotInd _ -> s) tomatchl Sorts.InType
+
 (* Builds the predicate. If the predicate is dependent, its context is
  * made of 1+nrealargs assumptions for each matched term in an inductive
  * type and 1 assumption for each term not _syntactically_ in an
@@ -2130,8 +2139,12 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
     | Some rtntyp ->
       (* We extract the signature of the arity *)
       let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma) arsign env in
-      let sigma, newt = new_sort_variable univ_flexible sigma in
-      let sigma, predcclj = typing_fun (mk_tycon (mkSort newt)) envar sigma rtntyp in
+      (* We put a type constraint on the predicate so that one
+         branch type-checked first does not lead to a lower type than
+         another branch; we take into account the possible elimination
+         constraints on the predicate *)
+      let sigma, rtnsort = fresh_sort_in_family sigma (expected_elimination_sort !!env tomatchs) in
+      let sigma, predcclj = typing_fun (Some (mkSort rtnsort)) envar sigma rtntyp in
       let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl, building_arsign]
   in
