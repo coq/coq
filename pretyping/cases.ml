@@ -1784,25 +1784,24 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
   !evdref, ans
 
 let build_tycon ?loc env tycon_env s subst tycon extenv sigma t =
-  let sigma, t, tt = match t with
+  let s = mkSort s in
+  match t with
     | None ->
         (* This is the situation we are building a return predicate and
            we are in an impossible branch *)
         let n = Context.Rel.length (rel_context !!env) in
         let n' = Context.Rel.length (rel_context !!tycon_env) in
-        let sigma, (impossible_case_type, u) =
-          Evarutil.new_type_evar (reset_context !!env) ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase)
-            sigma univ_flexible_alg
-        in
-        (sigma, lift (n'-n) impossible_case_type, mkSort u)
+        let src = Loc.tag ?loc Evar_kinds.ImpossibleCase in
+        let sigma, impossible_case_type =
+          Evarutil.new_evar (reset_context !!env) sigma ~src ~typeclass_candidate:false s in
+        (sigma, { uj_val = lift (n'-n) impossible_case_type; uj_type = s })
     | Some t ->
         let sigma, t = abstract_tycon ?loc tycon_env sigma subst tycon extenv t in
         let sigma, tt = Typing.type_of !!extenv sigma t in
-        (sigma, t, tt) in
-  match unify_leq_delay !!env sigma tt (mkSort s) with
-  | exception Evarconv.UnableToUnify _ -> anomaly (Pp.str "Build_tycon: should be a type.");
-  | sigma ->
-    sigma, { uj_val = t; uj_type = tt }
+        match unify_leq_delay !!env sigma tt s with
+        | exception Evarconv.UnableToUnify _ -> anomaly (Pp.str "Build_tycon: should be a type.");
+        | sigma -> (sigma, { uj_val = t; uj_type = tt })
+
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
  * type T, [build_inversion_problem Gamma Sigma (t1..tn) T] builds a return
