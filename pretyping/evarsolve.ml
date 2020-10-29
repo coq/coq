@@ -1571,7 +1571,7 @@ let rec invert_definition unify flags choose imitate_defs
           evdref := evd;
           evar in
 
-  let rec imitate (env',k as envk) t =
+  let rec imitate pbty (env',k as envk) t =
     match EConstr.kind !evdref t with
     | Rel i when i>k ->
         let open Context.Rel.Declaration in
@@ -1580,16 +1580,41 @@ let rec invert_definition unify flags choose imitate_defs
         | LocalDef (_,b,_) ->
           try project_variable (RelAlias (i-k))
           with NotInvertibleUsingOurAlgorithm _ when imitate_defs ->
-            imitate envk (lift i (EConstr.of_constr b)))
+            imitate pbty envk (lift i (EConstr.of_constr b)))
     | Var id ->
         (match Environ.lookup_named id env' with
         | LocalAssum _ -> project_variable (VarAlias id)
         | LocalDef (_,b,_) ->
           try project_variable (VarAlias id)
           with NotInvertibleUsingOurAlgorithm _ when imitate_defs ->
-            imitate envk (EConstr.of_constr b))
+            imitate pbty envk (EConstr.of_constr b))
+    | Sort s when not (Option.is_empty pbty) && not choose ->
+        let s = ESorts.kind !evdref s in
+        (match s, Option.get pbty with
+        | (SProp | Prop), true ->
+          (* In the absence of subtyping SProp <= Prop, there is only solution to
+             ?x <= SProp or ?x <= Prop *)
+          t
+        | (SProp | Prop), false ->
+          (* In the absence of support for minimizing Prop <= Type(u) into u=Prop
+             we do not generate such equations *)
+          t
+        | _, b ->
+          let loc,_ = Evd.evar_source evk !evdref in
+          (* Name: to improve *)
+          let name = Option.map (fun id -> Nameops.add_suffix id "_as_univ") (Evd.evar_ident evk !evdref) in
+          let evd, s' = Evd.new_sort_variable ?loc ?name univ_flexible !evdref in
+          let evd = if b then Evd.set_leq_sort env evd s' s else Evd.set_leq_sort env evd s s' in
+          evdref := evd;
+          mkSort s')
+    | Prod (na,t,u) when not (Option.is_empty pbty) && not choose ->
+        progress := true;
+        let t' = imitate None envk t in
+        let envk' = (push_rel (LocalAssum (na,t)) env', k+1) in
+        let u' = imitate pbty envk' u in
+        mkProd (na,t',u')
     | LetIn (na,b,u,c) ->
-        imitate envk (subst1 b c)
+        imitate pbty envk (subst1 b c)
     | Evar (evk',args' as ev') ->
         if Evar.equal evk evk' then raise (OccurCheckIn (evd,rhs));
         (* Evar/Evar problem (but left evar is virtual) *)
@@ -1600,7 +1625,7 @@ let rec invert_definition unify flags choose imitate_defs
           evdref := evd;
           body
         with
-        | EvarSolvedOnTheFly (evd,t) -> evdref:=evd; imitate envk t
+        | EvarSolvedOnTheFly (evd,t) -> evdref:=evd; imitate pbty envk t
         | CannotProject (evd,ev') ->
           if not !progress then
             raise (NotEnoughInformationEvarEvar t);
@@ -1644,7 +1669,7 @@ let rec invert_definition unify flags choose imitate_defs
               try
                 let t =
                   map_constr_with_full_binders !evdref (fun d (env,k) -> push_rel d env, k+1)
-                    imitate envk t in
+                    (imitate None) envk t in
                 (* Less dependent solutions come last *)
                 l@[t]
               with e when CErrors.noncritical e -> l in
@@ -1658,7 +1683,7 @@ let rec invert_definition unify flags choose imitate_defs
         | None ->
            (* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
           map_constr_with_full_binders !evdref (fun d (env,k) -> push_rel d env, k+1)
-                                        imitate envk t
+                                        (imitate None) envk t
   in
   let rhs = whd_beta env evd rhs (* heuristic *) in
   let fast rhs =
@@ -1678,9 +1703,9 @@ let rec invert_definition unify flags choose imitate_defs
       Id.Set.subset (collect_vars evd rhs) !names
   in
   let body =
-    if fast rhs then nf_evar evd rhs (* FIXME? *)
+    if Option.is_empty pbty && fast rhs then nf_evar evd rhs (* FIXME? *)
     else
-      let t' = imitate (env,0) rhs in
+      let t' = imitate pbty (env,0) rhs in
         if !progress then
           (recheck_applications unify flags (evar_env env evi) evdref t'; t')
         else t'
