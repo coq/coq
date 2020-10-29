@@ -1914,9 +1914,24 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
                   it = None } } ] in
   (* [pb] is the auxiliary pattern-matching serving as skeleton for the
       return type of the original problem Xi *)
-  let s' = Retyping.get_sort_of !!env sigma t in
-  let sigma, s = Evd.new_sort_variable univ_flexible sigma in
-  let sigma = Evd.set_leq_sort !!env sigma s' s in
+  let s = Retyping.get_sort_of !!env sigma t in
+  let sigma, s = Sorts.(match s with
+  | SProp | Prop | Set ->
+    (* To anticipate a possible restriction on an elimination from
+       SProp, Prop or (impredicative) Set we preserve the sort of the
+       main branch, knowing that the default impossible case shall
+       always be coercible to one of those *)
+      sigma, s
+  | Type _ ->
+    (* If the sort has algebraic universes, we cannot use this sort a
+       type constraint for the impossible case; especially if the
+       default case is not the canonical one provided in Prop by Coq
+       but one given by the user, which may be in either sort (an
+       example is in Vector.caseS', even if this one can probably be
+       put in Prop too with some care) *)
+    let sigma, s' = Evd.new_sort_variable univ_flexible sigma in
+    let sigma = Evd.set_leq_sort !!env sigma s s' in
+    sigma, s') in
   let pb =
     { env       = pb_env;
       pred      = (*ty *) mkSort s;
