@@ -271,8 +271,8 @@
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-# Released on 2020-08-21 and compatible with Coq 8.12.
-: "${elpi_CI_REF:=v1.6.0}"
+# Released on 2020-07-29 and compatible with Coq 8.12 and HB 0.10.
+: "${elpi_CI_REF:=v1.5.1}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
