@@ -28,12 +28,14 @@ type t
 val empty : t
 
 val make : lbound:UGraph.Bound.t -> UGraph.t -> t
+[@@ocaml.deprecated "Use from_env"]
 
 val make_with_initial_binders : lbound:UGraph.Bound.t -> UGraph.t -> lident list -> t
+[@@ocaml.deprecated "Use from_env"]
 
 val of_binders : UnivNames.universe_binders -> t
 
-val from_env : Environ.env -> t
+val from_env : ?binders:lident list -> Environ.env -> t
 
 val of_context_set : Univ.ContextSet.t -> t
 

@@ -63,8 +63,6 @@ let make ~lbound univs =
     universes_lbound = lbound;
     initial_universes = univs}
 
-let from_env env = make ~lbound:(Environ.universes_lbound env) (Environ.universes env)
-
 let is_empty uctx =
   ContextSet.is_empty uctx.local &&
     LMap.is_empty uctx.univ_variables
@@ -606,12 +604,15 @@ let new_univ_variable ?loc rigid name uctx =
 
 let add_global_univ uctx u = add_universe None true UGraph.Bound.Set uctx u
 
-let make_with_initial_binders ~lbound e us =
-  let uctx = make ~lbound e in
+let make_with_initial_binders ~lbound univs us =
+  let uctx = make ~lbound univs in
   List.fold_left
     (fun uctx { CAst.loc; v = id } ->
        fst (new_univ_variable ?loc univ_rigid (Some id) uctx))
     uctx us
+
+let from_env ?(binders=[]) env =
+  make_with_initial_binders ~lbound:(Environ.universes_lbound env) (Environ.universes env) binders
 
 let make_flexible_variable uctx ~algebraic u =
   let {local = cstrs; univ_variables = uvars;

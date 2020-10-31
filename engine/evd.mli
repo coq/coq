@@ -153,9 +153,9 @@ type evar_map
 val empty : evar_map
 (** The empty evar map. *)
 
-val from_env : env -> evar_map
+val from_env : ?binders:lident list -> env -> evar_map
 (** The empty evar map with given universe context, taking its initial
-    universes from env. *)
+    universes from env, possibly with initial universe binders. *)
 
 val from_ctx : UState.t -> evar_map
 (** The empty evar map with given universe context *)
