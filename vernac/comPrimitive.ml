@@ -30,7 +30,7 @@ let do_primitive id udecl prim typopt =
     declare id {Entries.prim_entry_type = None; prim_entry_content = prim}
   | Some typ ->
     let env = Global.env () in
-    let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
+    let evd, udecl = Constrintern.interp_univ_decl_opt env udecl in
     let auctx = CPrimitives.op_or_type_univs prim in
     let evd, u = Evd.with_context_set UState.univ_flexible evd (UnivGen.fresh_instance auctx) in
     let expected_typ = EConstr.of_constr @@ Typeops.type_of_prim_or_type env u prim in

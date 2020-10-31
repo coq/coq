@@ -176,7 +176,7 @@ let interp_recursive ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen lis
            if not (CList.for_all2eq (fun x y -> Id.equal x.CAst.v y.CAst.v) lsu usu) then
              CErrors.user_err Pp.(str "(co)-recursive definitions should all have the same universe binders");
            Some us) fixl None in
-  let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env all_universes in
+  let sigma, decl = interp_univ_decl_opt env all_universes in
   let sigma, (fixctxs, fiximppairs, fixannots) =
     on_snd List.split3 @@
       List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma ~cofix) sigma fixl in

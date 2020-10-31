@@ -115,7 +115,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?using r measure notat
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
-  let sigma, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
+  let sigma, udecl = interp_univ_decl_opt env pl in
   let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in

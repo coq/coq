@@ -191,3 +191,10 @@ val get_asymmetric_patterns : unit -> bool
 val check_duplicate : ?loc:Loc.t -> (qualid * constr_expr) list -> unit
 (** Check that a list of record field definitions doesn't contain
     duplicates. *)
+
+(** Local universe and constraint declarations. *)
+val interp_univ_decl : Environ.env -> universe_decl_expr ->
+                       Evd.evar_map * UState.universe_decl
+
+val interp_univ_decl_opt : Environ.env -> universe_decl_expr option ->
+                       Evd.evar_map * UState.universe_decl
