@@ -515,16 +515,6 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
     evd thms
 
 (* Checks done in start_lemma_com *)
-let post_check_evd ~udecl ~poly evd =
-  let () =
-    if not UState.(udecl.univdecl_extensible_instance &&
-                   udecl.univdecl_extensible_constraints) then
-      ignore (Evd.check_univ_decl ~poly evd udecl)
-  in
-  if poly then evd
-  else (* We fix the variables to ensure they won't be lowered to Set *)
-    Evd.fix_undefined_variables evd
-
 let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let env0 = Global.env () in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
@@ -536,12 +526,10 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   match mut_analysis with
   | RecLemmas.NonMutual thm ->
     let thm = Declare.CInfo.to_constr evd thm in
-    let evd = post_check_evd ~udecl ~poly evd in
     let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl () in
     Declare.Proof.start_with_initialization ~info ~cinfo:thm evd
   | RecLemmas.Mutual { mutual_info; cinfo ; possible_guards } ->
     let cinfo = List.map (Declare.CInfo.to_constr evd) cinfo in
-    let evd = post_check_evd ~udecl ~poly evd in
     let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl () in
     Declare.Proof.start_mutual_with_initialization ~info ~cinfo evd ~mutual_info (Some possible_guards)
 

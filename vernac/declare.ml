@@ -1424,13 +1424,24 @@ let initialize_named_context_for_proof () =
       let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
+let post_check_evd ~udecl ~poly evd =
+  let () =
+    if not UState.(udecl.univdecl_extensible_instance &&
+                   udecl.univdecl_extensible_constraints) then
+      ignore (Evd.check_univ_decl ~poly evd udecl)
+  in
+  if poly then evd
+  else (* We fix the variables to ensure they won't be lowered to Set *)
+    Evd.fix_undefined_variables evd
+
 let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof ()) sigma =
   (* In ?sign, we remove the bodies of variables in the named context
      marked "opaque", this is a hack tho, see #10446, and
      build_constant_by_tactic uses a different method that would break
      program_inference_hook *)
-  let { Proof_info.info = { Info.poly; _ }; _ } = pinfo in
+  let { Proof_info.info = { Info.poly; udecl; _ }; _ } = pinfo in
   let goals = [Global.env_of_context sign, typ] in
+  let sigma = post_check_evd ~udecl ~poly sigma in
   let proof = Proof.start ~name ~poly sigma goals in
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   { proof
