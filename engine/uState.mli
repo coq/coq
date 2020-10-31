@@ -33,11 +33,16 @@ val make : lbound:UGraph.Bound.t -> UGraph.t -> t
 val make_with_initial_binders : lbound:UGraph.Bound.t -> UGraph.t -> lident list -> t
 [@@ocaml.deprecated "Use from_env"]
 
-val of_binders : UnivNames.universe_binders -> t
-
 val from_env : ?binders:lident list -> Environ.env -> t
+(** Main entry point at the beginning of a declaration declaring the
+    binding names as rigid universes. *)
+
+val of_binders : UnivNames.universe_binders -> t
+(** Main entry point when only names matter, e.g. for printing. *)
 
 val of_context_set : Univ.ContextSet.t -> t
+(** Main entry point when starting from the instance of a global
+    reference, e.g. when building a scheme. *)
 
 (** Misc *)
 

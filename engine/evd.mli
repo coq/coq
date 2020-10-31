@@ -155,10 +155,16 @@ val empty : evar_map
 
 val from_env : ?binders:lident list -> env -> evar_map
 (** The empty evar map with given universe context, taking its initial
-    universes from env, possibly with initial universe binders. *)
+    universes from env, possibly with initial universe binders. This
+    is the main entry point at the beginning of the process of
+    interpreting a declaration (e.g. before entering the
+    interpretation of a Theorem statement). *)
 
 val from_ctx : UState.t -> evar_map
-(** The empty evar map with given universe context *)
+(** The empty evar map with given universe context. This is the main
+    entry point when resuming from a already interpreted declaration
+    (e.g.  after having interpreted a Theorem statement and preparing
+    to open a goal). *)
 
 val is_empty : evar_map -> bool
 (** Whether an evarmap is empty. *)
