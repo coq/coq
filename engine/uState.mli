@@ -23,25 +23,27 @@ type t
 
 (** {5 Constructors} *)
 
+(** Different ways to create a new universe state *)
+
 val empty : t
 
 val make : lbound:UGraph.Bound.t -> UGraph.t -> t
 
 val make_with_initial_binders : lbound:UGraph.Bound.t -> UGraph.t -> lident list -> t
 
+val of_binders : UnivNames.universe_binders -> t
+
 val from_env : Environ.env -> t
+
+val of_context_set : Univ.ContextSet.t -> t
+
+(** Misc *)
 
 val is_empty : t -> bool
 
 val union : t -> t -> t
 
-val of_context_set : Univ.ContextSet.t -> t
-
-val of_binders : UnivNames.universe_binders -> t
-
-val universe_binders : t -> UnivNames.universe_binders
-
-(** {5 Projections} *)
+(** {5 Projections and other destructors} *)
 
 val context_set : t -> Univ.ContextSet.t
 (** The local context of the state, i.e. a set of bound variables together
@@ -68,6 +70,9 @@ val context : t -> Univ.UContext.t
 
 val univ_entry : poly:bool -> t -> Entries.universes_entry
 (** Pick from {!context} or {!context_set} based on [poly]. *)
+
+val universe_binders : t -> UnivNames.universe_binders
+(** Return names of universes, inventing names if needed *)
 
 (** {5 Constraints handling} *)
 
@@ -115,7 +120,7 @@ val emit_side_effects : Safe_typing.private_constants -> t -> t
 val demote_global_univs : Environ.env -> t -> t
 (** Removes from the uctx_local part of the UState the universes and constraints
     that are present in the universe graph in the input env (supposedly the
-    global ones *)
+    global ones) *)
 
 val demote_seff_univs : Univ.LSet.t -> t -> t
 (** Mark the universes as not local any more, because they have been
@@ -123,6 +128,11 @@ val demote_seff_univs : Univ.LSet.t -> t -> t
    emit_side_effects instead. *)
 
 val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
+(** Declare a new local universe; use rigid if a global or bound
+    universe; use flexible for a universe existential variable; use
+    univ_flexible_alg for a universe existential variable allowed to
+    be instantiated with an algebraic universe *)
+
 val add_global_univ : t -> Univ.Level.t -> t
 
 (** [make_flexible_variable g algebraic l]

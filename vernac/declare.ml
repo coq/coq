@@ -1291,7 +1291,7 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto} =
 
    FIXME: There is duplication of this code with obligation_terminator
    and Obligations.admit_obligations *)
-let obligation_admitted_terminator ~pm {name; num; auto} ctx' dref =
+let obligation_admitted_terminator ~pm {name; num; auto} uctx' dref =
   let prg = Option.get (State.find pm name) in
   let {obls; remaining = rem} = prg.prg_obligations in
   let obl = obls.(num) in
@@ -1303,21 +1303,21 @@ let obligation_admitted_terminator ~pm {name; num; auto} ctx' dref =
       if not transparent then err_not_transp ()
     | _ -> ()
   in
-  let inst, ctx' =
+  let inst, uctx' =
     if not prg.prg_info.Info.poly (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
-      let ctx = UState.from_env (Global.env ()) in
-      let ctx' = UState.merge_subst ctx (UState.subst ctx') in
-      (Univ.Instance.empty, ctx')
+      let uctx = UState.from_env (Global.env ()) in
+      let uctx' = UState.merge_subst uctx (UState.subst uctx') in
+      (Univ.Instance.empty, uctx')
     else
       (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
-      let uctx = UState.context ctx' in
-      (Univ.UContext.instance uctx, ctx')
+      let uctx = UState.context uctx' in
+      (Univ.UContext.instance uctx, uctx')
   in
   let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
   let () = if transparent then add_hint true prg cst in
-  update_program_decl_on_defined ~pm prg obls num obl ~uctx:ctx' rem ~auto
+  update_program_decl_on_defined ~pm prg obls num obl ~uctx:uctx' rem ~auto
 
 end
 
@@ -1627,12 +1627,12 @@ let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
 
 let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) =
   let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-  let universes = UState.restrict uctx used_univs in
-  let typus = UState.restrict universes used_univs_typ in
-  let utyp = UState.check_univ_decl ~poly typus udecl in
+  let uctx = UState.restrict uctx used_univs in
+  let uctx' = UState.restrict uctx used_univs_typ in
+  let utyp = UState.check_univ_decl ~poly uctx' udecl in
   let ubody = Univ.ContextSet.diff
-      (UState.context_set universes)
-      (UState.context_set typus)
+      (UState.context_set uctx)
+      (UState.context_set uctx')
   in
   utyp, ubody
 
@@ -1643,8 +1643,8 @@ let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) 
      for the typ. We recheck the declaration after restricting with
      the actually used universes.
      TODO: check if restrict is really necessary now. *)
-  let ctx = UState.restrict uctx used_univs in
-  let utyp = UState.check_univ_decl ~poly ctx udecl in
+  let uctx = UState.restrict uctx used_univs in
+  let utyp = UState.check_univ_decl ~poly uctx udecl in
   utyp, Univ.ContextSet.empty
 
 let close_proof ~opaque ~keep_body_ucst_separate ps =
@@ -1712,9 +1712,9 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
             (Vars.universes_of_constr types)
             (Vars.universes_of_constr pt)
         in
-        let univs = UState.restrict uctx used_univs in
-        let univs = UState.check_mono_univ_decl univs udecl in
-        (pt,univs),eff)
+        let uctx = UState.restrict uctx used_univs in
+        let uctx = UState.check_mono_univ_decl uctx udecl in
+        (pt,uctx),eff)
     |> delayed_definition_entry ~opaque ~feedback_id ~using ~univs ~types
   in
   let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in

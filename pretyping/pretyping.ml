@@ -139,7 +139,7 @@ let interp_known_universe_level_name evd qid =
     let qid = Nametab.locate_universe qid in
     Univ.Level.make qid
 
-let interp_universe_level_name ~anon_rigidity evd qid =
+let interp_universe_level_name evd qid =
   try evd, interp_known_universe_level_name evd qid
   with Not_found ->
     if Libnames.qualid_is_ident qid then (* Undeclared *)
@@ -162,21 +162,15 @@ let interp_universe_level_name ~anon_rigidity evd qid =
         with UGraph.AlreadyDeclared -> evd
       in evd, level
 
-let interp_universe_name ?loc evd l =
-  (* [univ_flexible_alg] can produce algebraic universes in terms *)
-  let anon_rigidity = univ_flexible in
-  let evd', l = interp_universe_level_name ~anon_rigidity evd l in
-  evd', l
-
-let interp_sort_name ?loc sigma = function
+let interp_sort_name sigma = function
   | GSProp -> sigma, Univ.Level.sprop
   | GProp -> sigma, Univ.Level.prop
   | GSet -> sigma, Univ.Level.set
-  | GType l -> interp_universe_name ?loc sigma l
+  | GType l -> interp_universe_level_name sigma l
 
 let interp_sort_info ?loc evd l =
     List.fold_left (fun (evd, u) (l,n) ->
-      let evd', u' = interp_sort_name ?loc evd l in
+      let evd', u' = interp_sort_name evd l in
       let u' = Univ.Universe.make u' in
       let u' = match n with
       | 0 -> u'
@@ -410,7 +404,7 @@ let interp_known_glob_level ?loc evd = function
 
 let interp_glob_level ?loc evd : glob_level -> _ = function
   | UAnonymous {rigid} -> new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd
-  | UNamed s -> interp_sort_name ?loc evd s
+  | UNamed s -> interp_sort_name evd s
 
 let interp_instance ?loc evd l =
   let evd, l' =
