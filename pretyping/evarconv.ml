@@ -1312,6 +1312,7 @@ let check_selected_occs env sigma c occ occs =
      raise (PretypeError (env,sigma,NoOccurrenceFound (c,None)))
      else ()
 
+(* Error local to the module *)
 exception TypingFailed of evar_map
 
 let set_of_evctx l =
@@ -1341,12 +1342,6 @@ let thin_evars env sigma sign c =
   in
   let c' = applyrec (env,0) c in
   (!sigma, c')
-
-exception NotFoundInstance of exn
-let () = CErrors.register_handler (function
-    | NotFoundInstance e ->
-      Some Pp.(str "Failed to instantiate evar: " ++ CErrors.print e)
-    | _ -> None)
 
 let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   try
@@ -1490,9 +1485,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                           List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
                  instantiate_evar evar_unify flags env_rhs evd ev vid
                | _ -> evd)
-           with e when CErrors.noncritical e ->
-             let e, info = Exninfo.capture e in
-             Exninfo.iraise (NotFoundInstance e, info)
+           with IllTypedInstance _ (* from instantiate_evar *) | TypingFailed _ ->
+              user_err (Pp.str "Cannot find an instance.")
          else
            ((if debug_ho_unification () then
                let evi = Evd.find evd evk in
@@ -1709,7 +1703,7 @@ let solve_unconstrained_impossible_cases env evd =
       let evd' = Evd.merge_context_set Evd.univ_flexible_alg ?loc evd' ctx in
       let ty = j_type j in
       let flags = default_flags env in
-      instantiate_evar evar_unify flags env evd' evk ty
+      instantiate_evar evar_unify flags env evd' evk ty (* should we protect from raising IllTypedInstance? *)
     | _ -> evd') evd evd
 
 let solve_unif_constraints_with_heuristics env
