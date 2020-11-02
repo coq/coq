@@ -160,7 +160,7 @@ let register_loaded_library m =
     let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
     let f = prefix ^ "cmo" in
     let f = Dynlink.adapt_filename f in
-    Nativelib.link_library (Global.env()) ~prefix ~dirname ~basename:f
+    Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
     | [] ->
@@ -502,7 +502,7 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
   (* Writing native code files *)
   if output_native_objects then
     let fn = Filename.dirname f ^"/"^ Nativecode.mod_uid_of_dirpath dir in
-    Nativelib.compile_library dir ast fn
+    Nativelib.compile_library ast fn
 
 let save_library_raw f sum lib univs proofs =
   save_library_base f sum lib (Some univs) None proofs

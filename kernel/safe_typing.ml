@@ -121,7 +121,6 @@ type compiled_library = {
   comp_univs : Univ.ContextSet.t;
   comp_deps : library_info array;
   comp_enga : engagement;
-  comp_natsymbs : Nativevalues.symbols
 }
 
 type reimport = compiled_library * Univ.ContextSet.t * vodigest
@@ -1139,7 +1138,6 @@ let end_module l restype senv =
   let mb, cst = build_module_body params restype senv in
   let senv = push_context_set ~strict:true (Univ.LSet.empty,cst) senv in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = Environ.set_native_symbols newenv senv.env.Environ.native_symbols in
   let newenv = set_engagement_opt newenv senv.engagement in
   let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
   let senv' = propagate_loads { senv with env = newenv } in
@@ -1166,7 +1164,6 @@ let end_modtype l senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = Environ.set_native_symbols newenv senv.env.Environ.native_symbols in
   let newenv = set_engagement_opt newenv senv.engagement in
   let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
   let senv' = propagate_loads {senv with env=newenv} in
@@ -1229,8 +1226,6 @@ let module_of_library lib = lib.comp_mod
 
 let univs_of_library lib = lib.comp_univs
 
-type native_library = Nativecode.global list
-
 (** FIXME: MS: remove?*)
 let current_modpath senv = senv.modpath
 let current_dirpath senv = Names.ModPath.dp (current_modpath senv)
@@ -1272,9 +1267,8 @@ let export ?except ~output_native_objects senv dir =
     comp_univs = senv.univ;
     comp_deps = Array.of_list (DPmap.bindings senv.required);
     comp_enga = Environ.engagement senv.env;
-    comp_natsymbs = symbols }
-  in
-  mp, lib, ast
+  } in
+  mp, lib, (ast, symbols)
 
 (* cst are the constraints that were computed by the vi2vo step and hence are
  * not part of the [lib.comp_univs] field (but morally should be) *)
@@ -1294,7 +1288,6 @@ let import lib cst vodigest senv =
     let linkinfo = Nativecode.link_info_of_dirpath lib.comp_name in
     Modops.add_linked_module mb linkinfo env
   in
-  let env = Environ.add_native_symbols lib.comp_name lib.comp_natsymbs env in
   let sections =
     Option.map (Section.map_custom (fun custom ->
         {custom with rev_reimport = (lib,cst,vodigest) :: custom.rev_reimport}))

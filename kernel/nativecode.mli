@@ -69,7 +69,7 @@ val compile_mind_field : ModPath.t -> Label.t ->
 val mk_conv_code : env -> evars -> string -> constr -> constr -> linkable_code
 val mk_norm_code : env -> evars -> string -> constr -> linkable_code
 
-val mk_library_header : DirPath.t -> global list
+val mk_library_header : Nativevalues.symbols -> global list
 
 val mod_uid_of_dirpath : DirPath.t -> string
 

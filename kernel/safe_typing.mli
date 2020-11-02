@@ -191,8 +191,6 @@ val current_dirpath : safe_environment -> DirPath.t
 
 type compiled_library
 
-type native_library = Nativecode.global list
-
 val module_of_library : compiled_library -> Declarations.module_body
 val univs_of_library : compiled_library -> Univ.ContextSet.t
 
@@ -201,7 +199,7 @@ val start_library : DirPath.t -> ModPath.t safe_transformer
 val export :
   ?except:Future.UUIDSet.t -> output_native_objects:bool ->
   safe_environment -> DirPath.t ->
-    ModPath.t * compiled_library * native_library
+    ModPath.t * compiled_library * Nativelib.native_library
 
 (* Constraints are non empty iff the file is a vi2vo *)
 val import : compiled_library -> Univ.ContextSet.t -> vodigest ->

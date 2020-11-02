@@ -134,7 +134,7 @@ val body_of_constant_body : Opaqueproof.indirect_accessor ->
 
 val start_library : DirPath.t -> ModPath.t
 val export : ?except:Future.UUIDSet.t -> output_native_objects:bool -> DirPath.t ->
-  ModPath.t * Safe_typing.compiled_library * Safe_typing.native_library
+  ModPath.t * Safe_typing.compiled_library * Nativelib.native_library
 val import :
   Safe_typing.compiled_library -> Univ.ContextSet.t -> Safe_typing.vodigest ->
   ModPath.t

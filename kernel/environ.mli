@@ -90,7 +90,6 @@ type env = private {
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
-  native_symbols : Nativevalues.symbols DPmap.t;
 }
 
 val oracle : env -> Conv_oracle.oracle
@@ -414,6 +413,3 @@ val no_link_info : link_info
 
 (** Primitives *)
 val set_retroknowledge : env -> Retroknowledge.retroknowledge -> env
-
-val set_native_symbols : env -> Nativevalues.symbols DPmap.t -> env
-val add_native_symbols : DirPath.t -> Nativevalues.symbols -> env -> env
