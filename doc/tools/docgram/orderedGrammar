@@ -1640,6 +1640,7 @@ simple_tactic: [
 | "ring" OPT ( "[" LIST1 one_term "]" )
 | "ring_simplify" OPT ( "[" LIST1 one_term "]" ) LIST1 one_term OPT ( "in" ident )
 | "match" ltac2_expr5 "with" OPT ltac2_branches "end"
+| "if" ltac2_expr5 "then" ltac2_expr5 "else" ltac2_expr5
 | qualid LIST1 tactic_arg
 ]
 

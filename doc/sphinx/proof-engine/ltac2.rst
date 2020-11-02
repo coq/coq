@@ -266,7 +266,6 @@ There is dedicated syntax for list and array literals.
    | @ltac2_expr5
    ltac2_expr5 ::= fun {+ @tac2pat0 } => @ltac2_expr
    | let {? rec } @ltac2_let_clause {* with @ltac2_let_clause } in @ltac2_expr
-   | if @ltac2_expr5 then @ltac2_expr5 else @ltac2_expr5
    | @ltac2_expr3
    ltac2_let_clause ::= {+ @tac2pat0 } := @ltac2_expr
    ltac2_expr3 ::= {+, @ltac2_expr2 }
