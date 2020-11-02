@@ -45,6 +45,8 @@ let should_gname =
     ~key:["Printing";"Goal";"Names"]
     ~value:false
 
+let print_goal_names = should_gname (* for export *)
+
 (**********************************************************************)
 (** Terms                                                             *)
 

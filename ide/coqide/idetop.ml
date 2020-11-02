@@ -195,7 +195,7 @@ let concl_next_tac =
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
   let min_env = Environ.reset_context env in
-  let id = Goal.uid g in
+  let id = if Printer.print_goal_names () then Names.Id.to_string (Termops.evar_suggested_name g sigma) else "" in
   let ccl =
     pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
   in
@@ -206,7 +206,7 @@ let process_goal sigma g =
   let (_env, hyps) =
     Context.Compacted.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
-  { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
+  { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id }
 
 let process_goal_diffs diff_goal_map oldp nsigma ng =
   let open Evd in
