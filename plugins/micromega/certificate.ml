@@ -1061,20 +1061,6 @@ let elim_redundant sys = tr_sys "elim_redundant" elim_redundant sys
     A necessary condition is to take the variable with the smallest coefficient *)
 
 let fourier_small (sys : WithProof.t list) =
-  let size ((p, o), prf) =
-    let _, p' = Vect.decomp_cst p in
-    let (x, q), p' = Vect.decomp_fst p' in
-    Vect.fold
-      (fun (l, (q, x)) x' q' ->
-        let q' = Q.abs q' in
-        (l + 1, if q </ q then (q, x) else (q', x')))
-      (1, (Q.abs q, x))
-      p
-  in
-  let cmp ((l1, (q1, _)), ((_, o), _)) ((l2, (q2, _)), ((_, o'), _)) =
-    if l1 < l2 then -1 else if l1 = l2 then Q.compare q1 q2 else 1
-  in
-  let syss = List.sort cmp (List.rev_map (fun wp -> (size wp, wp)) sys) in
   let gen_pivot acc (q, x) wp l =
     List.fold_left
       (fun acc (s, wp') ->
@@ -1091,7 +1077,7 @@ let fourier_small (sys : WithProof.t list) =
     | [] -> acc
     | ((_, qx), wp) :: l' -> all_pivots (gen_pivot acc qx wp (acc @ l')) l'
   in
-  List.rev_map snd (all_pivots [] syss)
+  List.rev_map snd (all_pivots [] (WithProof.sort sys))
 
 let fourier_small = tr_sys "fourier_small" fourier_small
 

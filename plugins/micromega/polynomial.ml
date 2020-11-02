@@ -1081,6 +1081,22 @@ module WithProof = struct
       | None -> sys0
       | Some sys' -> sys' )
 
+  let sort (sys : t list) =
+    let size ((p, o), prf) =
+      let _, p' = Vect.decomp_cst p in
+      let (x, q), p' = Vect.decomp_fst p' in
+      Vect.fold
+        (fun (l, (q, x)) x' q' ->
+          let q' = Q.abs q' in
+          (l + 1, if q </ q then (q, x) else (q', x')))
+        (1, (Q.abs q, x))
+        p
+    in
+    let cmp ((l1, (q1, _)), ((_, o), _)) ((l2, (q2, _)), ((_, o'), _)) =
+      if l1 < l2 then -1 else if l1 = l2 then Q.compare q1 q2 else 1
+    in
+    List.sort cmp (List.rev_map (fun wp -> (size wp, wp)) sys)
+
   let subst sys0 =
     let elim sys =
       let oeq, sys' = extract (is_substitution true) sys in
@@ -1088,7 +1104,7 @@ module WithProof = struct
       | None -> None
       | Some (v, pc) -> simplify (linear_pivot sys0 pc v) sys'
     in
-    iterate_until_stable elim sys0
+    iterate_until_stable elim (List.map snd (sort sys0))
 
   let saturate_subst b sys0 =
     let select = is_substitution b in

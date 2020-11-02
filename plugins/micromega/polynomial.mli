@@ -379,6 +379,9 @@ module WithProof : sig
       p = c+a1.x1+....+c.x+...an.xn and c <> 0 *)
   val simple_pivot : Q.t * var -> t -> t -> t option
 
+  (** [sort sys] sorts constraints according to the lexicographic order (number of variables, size of the smallest coefficient *)
+  val sort : t list -> ((int * (Q.t * var)) * t) list
+
   (** [subst sys] performs the equivalent of the 'subst' tactic of Coq.
     For every p=0 \in sys such that p is linear in x with coefficient +/- 1
                                i.e. p = 0 <-> x = e and x \notin e.
