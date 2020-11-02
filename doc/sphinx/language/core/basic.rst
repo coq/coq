@@ -242,7 +242,6 @@ rest of the |Coq| manual: :term:`terms <term>` and :term:`types
         | @term_generalizing
         | [| {*; @term } %| @term {? : @type } |] {? @univ_annot }
         | @term_ltac
-        | ltac : ( @ltac_expr )
         | ( @term )
         qualid_annotated ::= @qualid {? @univ_annot }
 
@@ -369,6 +368,7 @@ this attribute`.
 .. prodn::
    attributes ::= {* #[ {*, @attribute } ] } {* @legacy_attr }
    attribute ::= @ident {? @attr_value }
+   | using {? @attr_value }
    attr_value ::= = @string
    | ( {*, @attribute } )
    legacy_attr ::= {| Local | Global }

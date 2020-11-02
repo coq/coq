@@ -57,7 +57,6 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    ltac_expr4 ::= @ltac_expr3 ; {| @ltac_expr3 | @binder_tactic }
    | @ltac_expr3 ; [ @for_each_goal ]
    | @ltac_expr3
-   | @simple_tactic
    ltac_expr3 ::= @l3_tactic
    | @ltac_expr2
    ltac_expr2 ::= @ltac_expr1 + {| @ltac_expr2 | @binder_tactic }
@@ -72,7 +71,7 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    tactic_arg ::= @tactic_value
    | @term
    | ()
-   ltac_expr0 ::= ( @ltac_expr )   SSR
+   ltac_expr0 ::= ( @ltac_expr )
    | [> @for_each_goal ]
    | @tactic_atom
    tactic_atom ::= @integer
@@ -1126,8 +1125,7 @@ Pattern matching on terms: match
       | multimatch
       match_pattern ::= @cpattern
       | context {? @ident } [ @cpattern ]
-      cpattern ::= {? Qed } @one_term   SSR
-      | @term
+      cpattern ::= @term
 
    :tacn:`lazymatch`, :tacn:`match` and :tacn:`multimatch` are :token:`ltac_expr1`\s.
 

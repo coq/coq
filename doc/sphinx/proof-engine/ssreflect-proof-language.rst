@@ -491,17 +491,15 @@ inferred from the whole context of the goal (see for example section
 Definitions
 ~~~~~~~~~~~
 
-.. tacn:: pose fix @ssrbvar {* @ssrbinder } {? %{ struct @ident %} } @ssrfwd
-          pose cofix @ssrbvar {* @ssrbinder } @ssrfwd
-          pose @ident {* @ssrbinder } @ssrfwd
+.. tacn:: pose fix @ssrbvar {* @ssrbinder } {? %{ struct @ident %} } @ssrdefbody
+          pose cofix @ssrbvar {* @ssrbinder } @ssrdefbody
+          pose @ident {* @ssrbinder } @ssrdefbody
    :name: pose (ssreflect); _; _
 
-   .. insertprodn ssrfwd ssrsetfwd
+   .. insertprodn ssrdefbody ssrdefbody
 
    .. prodn::
-      ssrfwd ::= {? : @term } := @term
-      ssrsetfwd ::= {? : @term } := %{ @clear_switch %} @cpattern
-      | {? : @term } := @lcpattern
+      ssrdefbody ::= {? : @term } := @term
 
    This tactic allows to add a defined constant to a proof context.
    |SSR| generalizes this tactic in several ways. In particular, the
@@ -603,8 +601,14 @@ resemble ML-like definitions of polymorphic functions.
 Abbreviations
 ~~~~~~~~~~~~~
 
-.. tacn:: set @ident @ssrsetfwd {? @ssrclauses }
+.. tacn:: set @ident {? : @term } := {| %{ @clear_switch %} @cpattern | @lcpattern } {? @ssr_in }
    :name: set (ssreflect)
+
+   .. insertprodn ssr_in ssr_in
+
+   .. prodn::
+      ssr_in ::= in @ssrclausehyps {? %|- } {? * }
+      | in {| * | * %|- | %|- * }
 
    The |SSR| ``set`` tactic performs abbreviations: it introduces a
    defined constant for a subterm appearing in the goal and/or in the
@@ -1189,7 +1193,7 @@ The move tactic.
 ````````````````
 
 .. tacn:: move {? {? @ssrarg } {| -> | <- } }
-          move @ssrarg {? @ssrclauses }
+          move @ssrarg {? @ssr_in }
    :name: move (ssreflect); _
 
    This tactic, in its defective form, behaves like the :tacn:`hnf` tactic.
@@ -1217,7 +1221,7 @@ The move tactic.
 The case tactic
 ```````````````
 
-.. tacn:: case {? @ssrarg {? @ssrclauses } }
+.. tacn:: case {? @ssrarg {? @ssr_in } }
    :name: case (ssreflect)
 
    This tactic performs *primitive case analysis* on (co)inductive
@@ -1257,7 +1261,7 @@ The case tactic
 The elim tactic
 ```````````````
 
-.. tacn:: elim {? @ssrarg {? @ssrclauses } }
+.. tacn:: elim {? @ssrarg {? @ssr_in } }
    :name: elim (ssreflect)
 
    .. insertprodn ssrarg ssreqpat
@@ -1614,7 +1618,7 @@ whose general syntax is
      | -/ @integer {| /= | / | / @integer = }
      | @ssrfwdview
      | [: {* @ident } ]
-     | @ssrcpat
+     | @ssrblockpat
 
 The ``=>`` tactical first executes :token:`tactic`, then the :token:`i_item`\s,
 left to right. An :token:`s_item` specifies a
@@ -2338,14 +2342,13 @@ Iteration
 ~~~~~~~~~
 
 .. tacn:: do @int_or_var @ltac_expr3
-          do {? @int_or_var } @ssrmmod {| @ltac_expr3 | [ @ssrortacs ]  } {? @ssrclauses }
+          do {? @int_or_var } @ssrmmod {| @ltac_expr3 | [ @ssrortacs ]  } {? @ssr_in }
    :name: do (ssreflect); _
 
    .. insertprodn ssrmmod ssrmmod
 
    .. prodn::
       ssrmmod ::= !
-      | ?
       | ?
 
    This tactical offers an accurate control on the repetition of tactics.
@@ -2505,26 +2508,27 @@ The have tactic.
       ssrhpats_wtransp ::= {? @ssripats }
       | {? @ssripats } @ {? @ssripats }
       ssripats ::= {+ @i_item }
-      s_item ::= //=
+      s_item ::= //
       | /=
-      | / @natural {| / {? @natural = } | = | /= }
-      | // {? @natural = }
-      | //
+      | //=
+      | / @natural / @natural =
+      | / @natural /=
       ssrdocc ::= %{ @clear_switch %}
       | %{ {* @ident } %}
       clear_switch ::= {| @natural | + | - } {* @natural }
       ssrfwdview ::= {+ / @one_term }
-      ssrcpat ::= [ @hat ]
-      | [ @ssriorpat ]
-      | [= @ssriorpat ]
       hat ::= ^ @ident
       | ^~ @ident
       | ^~ @natural
       ssriorpat ::= @ssripats {? {| %| | %|- } @ssriorpat }
+      ssrblockpat ::= [ @hat ]
+      | [ @ssriorpat ]
+      | [= @ssriorpat ]
       ssrbinder ::= @ssrbvar
       | ( {+ @ssrbvar } : @term )
       | ( @ssrbvar {? : @term } {? := @term } )
-      | {| of | & } @term10
+      | of @term10
+      | & @term10
       ssrbvar ::= @ident
       | _
       ssrhavefwd ::= : @term {? by @ssrhintarg }
@@ -3118,7 +3122,7 @@ The main features of the rewrite tactic are:
 
 The general form of an |SSR| rewrite tactic is:
 
-.. tacn:: rewrite {+ @r_prefix } {? @ssrclauses }
+.. tacn:: rewrite {+ @r_prefix } {? @ssr_in }
    :name: rewrite (ssreflect)
    :undocumented:
 
@@ -4106,21 +4110,19 @@ definition.
       rewrite /=.
       unlock lid.
 
-.. tacn:: unlock {* {? %{ @clear_switch %} } @term } {? @ssrclauses }
+.. tacn:: unlock {* {? %{ @clear_switch %} } @term } {? @ssr_in }
    :name: unlock (ssreflect)
 
-   .. insertprodn ssrclauses lcpattern
+   .. insertprodn ssrclausehyps lcpattern
 
    .. prodn::
-      ssrclauses ::= in @ssrclausehyps {? %|- } {? * }
-      | in {| * | * %|- | %|- * }
-      ssrclausehyps ::= @gen_item {? {? , } @ssrclausehyps }
+      ssrclausehyps ::= @gen_item {* {? , } @gen_item }
       gen_item ::= @ssrclear
       | {? @ } @ident
       | ( @ident {? := @lcpattern } )
       | (@ @ident := @lcpattern )
       ssrclear ::= %{ {+ @ident } %}
-      lcpattern ::= {? Qed } @term
+      lcpattern ::= @term
 
    This tactic unfolds such definitions while removing “locks”, i.e. it
    replaces the occurrence(s) of :token:`ident` coded by the
@@ -4200,16 +4202,11 @@ which the function is supplied:
 .. tacn:: congr {? @natural } @one_term {? @ssrdgens }
    :name: congr (ssreflect)
 
-   .. insertprodn ssrdgens ssrdgens_tl
+   .. insertprodn ssrdgens ssrgen
 
    .. prodn::
-      ssrdgens ::= : @ssrgen {? @ssrdgens_tl }
-      ssrgen ::= {? @ssrdocc } @cpattern
-      ssrdgens_tl ::= %{ {+ @ident } %} @cpattern {? @ssrdgens_tl }
-      | %{ {+ @ident } %}
-      | %{ @clear_switch %} @cpattern {? @ssrdgens_tl }
-      | / {? @ssrdgens_tl }
-      | @cpattern {? @ssrdgens_tl }
+      ssrdgens ::= : @ssrgen {? / @ssrgen }
+      ssrgen ::= @cpattern {* {| {+ @ident } | @cpattern } }
 
    This tactic:
 

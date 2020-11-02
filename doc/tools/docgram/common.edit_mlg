@@ -29,15 +29,9 @@ strategy_level_or_var: [
 | strategy_level
 ]
 
-term0: [
-| "ltac" ":" "(" ltac_expr5 ")"
-]
-
 EXTRAARGS_natural: [ | DELETENT ]
 EXTRAARGS_lconstr:  [ | DELETENT ]
 EXTRAARGS_strategy_level: [ | DELETENT ]
-G_LTAC_hint: [ | DELETENT ]
-G_LTAC_term0: [ | DELETENT ]
 
 binders: [
 | DELETE Pcoq.Constr.binders
@@ -91,6 +85,7 @@ RENAME: [
 | G_LTAC2_as_ipat ltac2_as_ipat
 | G_LTAC2_by_tactic ltac2_by_tactic
 | G_LTAC2_match_list ltac2_match_list
+| G_SSRMATCHING_cpattern ssr_cpattern
 ]
 
 (* Renames to eliminate qualified names.
@@ -111,7 +106,7 @@ RENAME: [
 | Prim.natural natural
 | Pvernac.Vernac_.main_entry vernac_control
 | Tactic.tactic tactic
-| Pltac.tactic_expr tactic_expr5
+| Pltac.ltac_expr ltac_expr5
 
   (* SSR *)
 | Pcoq.Constr.constr term
@@ -310,6 +305,7 @@ atomic_constr: [
 ltac_expr0: [
 | REPLACE "[" ">" for_each_goal "]"
 | WITH "[>" for_each_goal "]"
+| DELETE ssrparentacarg
 ]
 
 (* lexer token *)
@@ -816,6 +812,7 @@ ltac_expr4: [
 | MOVETO simple_tactic ltac_expr5 ";" "first" ssr_first_else      TAG SSR
 | MOVETO simple_tactic ltac_expr5 ";" "first" ssrseqarg      TAG SSR
 | MOVETO simple_tactic ltac_expr5 ";" "last" ssrseqarg      TAG SSR
+| DELETE simple_tactic
 ]
 
 l3_tactic: [ ]
@@ -2107,11 +2104,25 @@ ssrfwd: [
 
 ssrsetfwd: [
 | REPLACE ":" ast_closure_lterm ":=" "{" ssrocc "}" cpattern      (* SSR plugin *)
-| WITH OPT ( ":" ast_closure_lterm ) ":=" "{" ssrocc "}" cpattern      TAG SSR
+| WITH OPT ( ":" ast_closure_lterm ) ":=" [ "{" ssrocc "}" cpattern | lcpattern ]      TAG SSR
+| DELETE ":" ast_closure_lterm ":=" lcpattern      (* SSR plugin *)
 | DELETE ":=" "{" ssrocc "}" cpattern      (* SSR plugin *)
-| REPLACE ":" ast_closure_lterm ":=" lcpattern      (* SSR plugin *)
-| WITH OPT ( ":" ast_closure_lterm ) ":=" lcpattern      TAG SSR
 | DELETE ":=" lcpattern      (* SSR plugin *)
+]
+
+
+(* per @gares *)
+ssrdgens: [
+| REPLACE ":" ssrgen ssrdgens_tl      (* SSR plugin *)
+| WITH ":" ssrgen OPT ( "/" ssrgen )      TAG SSR
+]
+
+ssrdgens_tl: [ | DELETENT ]
+
+ssrgen: [
+| REPLACE ssrdocc cpattern      (* SSR plugin *)
+| WITH cpattern LIST0 [ LIST1 ident | cpattern ]    TAG SSR
+| DELETE cpattern      (* SSR plugin *)
 ]
 
 OPTINREF: [ ]  (* todo: move just before splice (though seems to be in an infinite loop there :-( *)
@@ -2120,10 +2131,6 @@ ssrortacs: [
 | EDIT ssrtacarg "|" ADD_OPT ssrortacs      (* ssr plugin *)
 | EDIT "|" ADD_OPT ssrortacs      (* ssr plugin *)
 | EDIT ADD_OPT ssrtacarg "|" OPT ssrortacs
-]
-
-ssrgen: [
-| EDIT ADD_OPT ssrdocc cpattern      TAG SSR
 ]
 
 ssrocc: [
@@ -2152,14 +2159,11 @@ ssripat: [
 ]
 
 ssrsimpl_ne: [
-| REPLACE "/" natural "/" natural "="      (* SSR plugin *)
-| WITH "/" natural [ "/" OPT ( natural "=" ) | "=" | "/=" ]       TAG SSR
+| DELETE "/" natural "/" "="      (* SSR plugin *)
+(* parsed but not supported per @gares *)
 | DELETE "/" natural "/"      (* SSR plugin *)
 | DELETE "/" natural "="      (* SSR plugin *)
-| DELETE "/" natural "/="      (* SSR plugin *)
-| DELETE "/" natural "/" "="      (* SSR plugin *)
-| REPLACE "//" natural "="      (* SSR plugin *)
-| WITH "//" OPT ( natural "=" )      TAG SSR
+| DELETE "//" natural "="      (* SSR plugin *)
 ]
 
 hat: [
@@ -2236,7 +2240,7 @@ ssrclauses: [
 
 ssrclausehyps: [
 | REPLACE ssrwgen "," ssrclausehyps      (* SSR plugin *)
-| WITH ssrwgen OPT ( OPT "," ssrclausehyps )     TAG SSR
+| WITH ssrwgen LIST0 ( OPT "," ssrwgen )     TAG SSR
 | DELETE ssrwgen ssrclausehyps      (* SSR plugin *)
 | DELETE ssrwgen      (* SSR plugin *)
 ]
@@ -2315,7 +2319,8 @@ ssripats: [  (* fix inconsistency *)
 ]
 
 lcpattern: [
-| EDIT ADD_OPT "Qed" lconstr      TAG SSR
+(* per @gares *)
+| DELETE "Qed" lconstr
 ]
 
 ssrapplyarg: [
@@ -2342,8 +2347,8 @@ ssrhint3arg: [
 
 ssr_first: [
 | DELETE ssr_first ssrintros_ne      (* SSR plugin *)
-| REPLACE "[" LIST0 tactic_expr5 SEP "|" "]"      (* SSR plugin *)
-| WITH "[" LIST0 tactic_expr5 SEP "|" "]" LIST0 ssrintros_ne     TAG SSR
+| REPLACE "[" LIST0 ltac_expr5 SEP "|" "]"      (* SSR plugin *)
+| WITH "[" LIST0 ltac_expr5 SEP "|" "]" LIST0 ssrintros_ne     TAG SSR
 ]
 
 ssr_first_else: [
@@ -2361,8 +2366,8 @@ ssr_dpat: [
 | DELETE ssr_mpat      (* SSR plugin *)
 ]
 
-cpattern: [
-| EDIT ADD_OPT "Qed" constr      TAG SSR
+ssr_cpattern: [
+| DELETE "Qed" constr
 ]
 
 ssrarg: [
@@ -2373,6 +2378,12 @@ ssragen: [
 | REPLACE "{" LIST1 ssrhyp "}" ssrterm      (* SSR plugin *)
 | WITH OPT ( "{" LIST1 ssrhyp "}" ) ssrterm      TAG SSR
 | DELETE ssrterm      (* SSR plugin *)
+]
+
+ssrbinder: [
+| REPLACE [ "of" | "&" ] term99      (* SSR plugin *)
+| WITH "of" term99      TAG SSR
+| "&" term99      TAG SSR
 ]
 
 SPLICE: [
@@ -2456,6 +2467,7 @@ SPLICE: [
 | ssrunlockarg
 | ssr_search_arg
 | ssrortacarg
+| ssrsetfwd
 | ssr_idcomma
 | ssr_dthen
 | ssr_else
@@ -2633,8 +2645,10 @@ RENAME: [
 | ssrrwarg r_prefix
 | rpattern r_pattern
 | ssripat i_item
-| ssrsimpl_ne s_item
 | ssrwgen gen_item
+| ssrfwd ssrdefbody
+| ssrclauses ssr_in
+| ssrcpat ssrblockpat
 ]
 
 simple_tactic: [
