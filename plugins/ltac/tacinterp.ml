@@ -153,11 +153,15 @@ let add_extra_loc loc extra =
   match loc with
   | None -> extra
   | Some loc -> TacStore.set extra f_loc loc
-let add_loc loc ist =
+let extract_loc ist = TacStore.get ist.extra f_loc
+
+let ensure_loc loc ist =
   match loc with
   | None -> ist
-  | Some loc -> { ist with extra = TacStore.set ist.extra f_loc loc }
-let extract_loc ist = TacStore.get ist.extra f_loc
+  | Some loc ->
+    match extract_loc ist with
+    | None -> { ist with extra = TacStore.set ist.extra f_loc loc }
+    | Some _ -> ist
 
 let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
 
@@ -1175,7 +1179,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic = match tac with
   | TacFirst l -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)
   | TacSolve l -> Tacticals.New.tclSOLVE (List.map (interp_tactic ist) l)
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
-  | TacArg {CAst.loc} -> Ftactic.run (val_interp (add_loc loc ist) tac) (fun v -> tactic_of_value ist v)
+  | TacArg {CAst.loc} -> Ftactic.run (val_interp (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
   | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
   | TacAlias {loc; v=(s,l)} ->
@@ -1254,9 +1258,12 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
       let extra = TacStore.set extra f_trace trace in
       let ist = { lfun = Id.Map.empty; poly; extra } in
       let appl = GlbAppl[r,[]] in
+      (* We call a global ltac reference: add a loc on its executation only if not
+         already in another global reference *)
+      let ist = ensure_loc loc ist in
       Profile_ltac.do_profile "interp_ltac_reference" trace ~count_call:false
-        (catch_error_tac_loc (* interp *) loc false trace
-           (val_interp ~appl (add_loc (* exec *) loc ist) (Tacenv.interp_ltac r)))
+        (catch_error_tac_loc (* loc for interpretation *) loc false trace
+           (val_interp ~appl ist (Tacenv.interp_ltac r)))
 
 and interp_tacarg ist arg : Val.t Ftactic.t =
   match arg with
@@ -1325,7 +1332,7 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
                 ; extra = TacStore.set ist.extra f_trace []
                 } in
               Profile_ltac.do_profile "interp_app" trace ~count_call:false
-                (catch_error_tac_loc loc false trace (val_interp (add_loc loc ist) body)) >>= fun v ->
+                (catch_error_tac_loc loc false trace (val_interp (ensure_loc loc ist) body)) >>= fun v ->
               Ftactic.return (name_vfun (push_appl appl largs) v)
             end
             begin fun (e, info) ->

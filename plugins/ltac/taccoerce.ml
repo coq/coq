@@ -394,8 +394,13 @@ type appl =
 
 (* Values for interpretation *)
 type tacvalue =
-  | VFun of appl * Tacexpr.ltac_trace * Loc.t option * Val.t Id.Map.t *
-      Name.t list * Tacexpr.glob_tactic_expr
+  | VFun of
+      appl *
+      Tacexpr.ltac_trace *
+      Loc.t option * (* when executing a global Ltac function: the location where this function was called *)
+      Val.t Id.Map.t * (* closure *)
+      Name.t list * (* binders *)
+      Tacexpr.glob_tactic_expr (* body *)
   | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
 
 let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
