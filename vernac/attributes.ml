@@ -224,3 +224,11 @@ let canonical_field =
   enable_attribute ~key:"canonical" ~default:(fun () -> true)
 let canonical_instance =
   enable_attribute ~key:"canonical" ~default:(fun () -> false)
+
+let uses_parser : string key_parser = fun orig args ->
+  assert_once ~name:"using" orig;
+  match args with
+  | VernacFlagLeaf str -> str
+  |  _ -> CErrors.user_err (Pp.str "Ill formed \"using\" attribute")
+
+let using = attribute_of_list ["using",uses_parser]

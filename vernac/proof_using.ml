@@ -18,30 +18,30 @@ module NamedDecl = Context.Named.Declaration
 
 let known_names = Summary.ref [] ~name:"proofusing-nameset"
 
-let rec close_fwd e s =
+let rec close_fwd env sigma s =
   let s' =
     List.fold_left (fun s decl ->
       let vb = match decl with
                | LocalAssum _ -> Id.Set.empty
-               | LocalDef (_,b,_) -> global_vars_set e b
+               | LocalDef (_,b,_) -> Termops.global_vars_set env sigma b
       in
-      let vty = global_vars_set e (NamedDecl.get_type decl) in
+      let vty = Termops.global_vars_set env sigma (NamedDecl.get_type decl) in
       let vbty = Id.Set.union vb vty in
       if Id.Set.exists (fun v -> Id.Set.mem v s) vbty
       then Id.Set.add (NamedDecl.get_id decl) (Id.Set.union s vbty) else s)
-    s (named_context e)
+    s (EConstr.named_context env)
     in
-  if Id.Set.equal s s' then s else close_fwd e s'
+  if Id.Set.equal s s' then s else close_fwd env sigma s'
 
-let set_of_type env ty =
+let set_of_type env sigma ty =
   List.fold_left (fun acc ty ->
-      Id.Set.union (global_vars_set env ty) acc)
+      Id.Set.union (Termops.global_vars_set env sigma ty) acc)
     Id.Set.empty ty
 
 let full_set env =
   List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
-let process_expr env e v_ty =
+let process_expr env sigma e v_ty =
   let rec aux = function
     | SsEmpty -> Id.Set.empty
     | SsType -> v_ty
@@ -49,7 +49,7 @@ let process_expr env e v_ty =
     | SsUnion(e1,e2) -> Id.Set.union (aux e1) (aux e2)
     | SsSubstr(e1,e2) -> Id.Set.diff (aux e1) (aux e2)
     | SsCompl e -> Id.Set.diff (full_set env) (aux e)
-    | SsFwdClose e -> close_fwd env (aux e)
+    | SsFwdClose e -> close_fwd env sigma (aux e)
   and set_of_id id =
     if Id.to_string id = "All" then
       full_set env
@@ -59,9 +59,9 @@ let process_expr env e v_ty =
   in
   aux e
 
-let process_expr env e ty =
-  let v_ty = set_of_type env ty in
-  let s = Id.Set.union v_ty (process_expr env e v_ty) in
+let process_expr env sigma e ty =
+  let v_ty = set_of_type env sigma ty in
+  let s = Id.Set.union v_ty (process_expr env sigma e v_ty) in
   Id.Set.elements s
 
 let name_set id expr = known_names := (id,expr) :: !known_names
@@ -110,7 +110,7 @@ let suggest_common env ppid used ids_typ skip =
       S.empty (named_context env)
   in
   let all = S.diff all skip in
-  let fwd_typ = close_fwd env ids_typ in
+  let fwd_typ = close_fwd env (Evd.from_env env) ids_typ in
   if !Flags.debug then begin
     print (str "All "        ++ pr_set false all);
     print (str "Type "       ++ pr_set false ids_typ);

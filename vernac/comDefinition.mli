@@ -31,6 +31,7 @@ val do_definition
   -> scope:Locality.locality
   -> poly:bool
   -> kind:Decls.definition_object_kind
+  -> ?using:Vernacexpr.section_subset_expr
   -> universe_decl_expr option
   -> local_binder_expr list
   -> red_expr option
@@ -45,6 +46,7 @@ val do_definition_program
   -> scope:Locality.locality
   -> poly:bool
   -> kind:Decls.logical_kind
+  -> ?using:Vernacexpr.section_subset_expr
   -> universe_decl_expr option
   -> local_binder_expr list
   -> red_expr option

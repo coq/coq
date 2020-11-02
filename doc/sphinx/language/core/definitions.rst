@@ -87,8 +87,8 @@ Section :ref:`typing-rules`.
    computation on :n:`@term`.
 
    These commands also support the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`program` (see :ref:`program_definition`) and
-   :attr:`canonical` attributes.
+   :attr:`universes(monomorphic)`, :attr:`program` (see :ref:`program_definition`),
+   :attr:`canonical` and :attr:`using` attributes.
 
    If :n:`@term` is omitted, :n:`@type` is required and |Coq| enters proof editing mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
@@ -158,6 +158,8 @@ Chapter :ref:`Tactics`. The basic assertion command is:
    the lemma in the environment. To know if the use of induction hypotheses is
    correct at some time of the interactive development of a proof, use the
    command :cmd:`Guarded`.
+
+   This command accepts the :attr:`using` attribute.
 
    .. exn:: The term @term has type @type which should be Set, Prop or Type.
       :undocumented:

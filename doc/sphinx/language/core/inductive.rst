@@ -416,6 +416,8 @@ constructions.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
 
+   This command accepts the :attr:`using` attribute.
+
    .. note::
 
       + Some fixpoints may have several arguments that fit as decreasing

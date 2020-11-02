@@ -79,6 +79,7 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
+    -> ?using:Names.Id.Set.t
     -> unit
     -> 'constr t
 
@@ -244,6 +245,12 @@ module Proof : sig
    * (w.r.t. type dependencies and let-ins covered by it) *)
   val set_used_variables : t -> Names.Id.t list -> Constr.named_context * t
 
+  (** Gets the set of variables declared to be used by the proof. None means
+      no "Proof using" or #[using] was given *)
+  val get_used_variables : t -> Id.Set.t option
+
+  (** Compacts the representation of the proof by pruning all intermediate
+      terms *)
   val compact : t -> t
 
   (** Update the proof's universe information typically after a
@@ -333,6 +340,7 @@ type 'a proof_entry
 
 val definition_entry
   :  ?opaque:bool
+  -> ?using:Names.Id.Set.t
   -> ?inline:bool
   -> ?types:Constr.types
   -> ?univs:Entries.universes_entry

@@ -2275,8 +2275,9 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
               ), true, true
           | `MaybeASync (start, nodes, name, delegate) -> (fun () ->
                 reach ~cache:true start;
-                (* no sections *)
-                if CList.is_empty (Environ.named_context (Global.env ()))
+                if CList.is_empty (Environ.named_context (Global.env ())) (* no sections *)
+                   || PG_compat.get_pstate () |> (* #[using] attribute *)
+                        Option.cata (fun x -> Option.has_some (Declare.Proof.get_used_variables x)) false
                 then Util.pi1 (aux (`ASync (start, nodes, name, delegate))) ()
                 else Util.pi1 (aux (`Sync (name, `NoPU_NoHint_NoES))) ()
               ), not redefine_qed, true

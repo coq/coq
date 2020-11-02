@@ -55,11 +55,13 @@ module CInfo = struct
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
+    ; using : Names.Id.Set.t option
+    (** Explicit declaration of section variables used by the constant *)
     }
 
 
-  let make ~name ~typ ?(args=[]) ?(impargs=[]) () =
-    { name; typ; args; impargs }
+  let make ~name ~typ ?(args=[]) ?(impargs=[]) ?using () =
+    { name; typ; args; impargs; using }
 
   let to_constr sigma thm = { thm with typ = EConstr.to_constr sigma thm.typ }
 
@@ -108,10 +110,10 @@ let default_univ_entry = Entries.Monomorphic_entry Univ.ContextSet.empty
 
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
-let definition_entry_core ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?types
+let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?feedback_id ?types
     ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
   { proof_entry_body = Future.from_val ((body,univsbody), eff);
-    proof_entry_secctx = section_vars;
+    proof_entry_secctx = using;
     proof_entry_type = types;
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
@@ -119,7 +121,7 @@ let definition_entry_core ?(opaque=false) ?(inline=false) ?feedback_id ?section_
     proof_entry_inline_code = inline}
 
 let definition_entry =
-  definition_entry_core ?eff:None ?univsbody:None ?feedback_id:None ?section_vars:None
+  definition_entry_core ?eff:None ?univsbody:None ?feedback_id:None
 
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry
@@ -236,9 +238,9 @@ let pure_definition_entry ?(opaque=false) ?(inline=false) ?types
     proof_entry_feedback = None;
     proof_entry_inline_code = inline}
 
-let delayed_definition_entry ~opaque ?feedback_id ~section_vars ~univs ?types body =
+let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types body =
   { proof_entry_body = body
-  ; proof_entry_secctx = section_vars
+  ; proof_entry_secctx = using
   ; proof_entry_type = types
   ; proof_entry_universes = univs
   ; proof_entry_opaque = opaque
@@ -608,8 +610,8 @@ let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declar
       uctx, univs
   in
   let csts = CList.map2
-      (fun CInfo.{ name; typ; impargs } body ->
-         let entry = definition_entry ~opaque ~types:typ ~univs body in
+      (fun CInfo.{ name; typ; impargs; using } body ->
+         let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
          declare_entry ~name ~scope ~kind ~impargs ~uctx entry)
       cinfo fixdecls
   in
@@ -660,7 +662,7 @@ let check_evars_are_solved env sigma t =
   let evars = Evarutil.undefined_evars_of_term sigma t in
   if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
-let prepare_definition ~info ~opaque ~body ~typ sigma =
+let prepare_definition ~info ~opaque ?using ~body ~typ sigma =
   let { Info.poly; udecl; inline; _ } = info in
   let env = Global.env () in
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
@@ -669,13 +671,13 @@ let prepare_definition ~info ~opaque ~body ~typ sigma =
   Option.iter (check_evars_are_solved env sigma) types;
   check_evars_are_solved env sigma body;
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  let entry = definition_entry ~opaque ~inline ?types ~univs body in
+  let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body sigma =
-  let { CInfo.name; impargs; typ; _ } = cinfo in
-  let entry, uctx = prepare_definition ~info ~opaque ~body ~typ sigma in
+  let { CInfo.name; impargs; typ; using; _ } = cinfo in
+  let entry, uctx = prepare_definition ~info ~opaque ?using ~body ~typ sigma in
   let { Info.scope; kind; hook; _ } = info in
   declare_entry_core ~name ~scope ~kind ~impargs ~obls ?hook ~uctx entry, uctx
 
@@ -803,6 +805,7 @@ module ProgramDecl = struct
     let set_uctx ~uctx prg = {prg with prg_uctx = uctx}
     let get_poly prg = prg.prg_info.Info.poly
     let get_obligations prg = prg.prg_obligations
+    let get_using prg = prg.prg_cinfo.CInfo.using
   end
 end
 
@@ -1137,7 +1140,7 @@ let declare_mutual_definition ~pm l =
     in
     let term = EConstr.to_constr sigma term in
     let typ = EConstr.to_constr sigma typ in
-    let def = (x.prg_reduce term, r, x.prg_reduce typ, x.prg_cinfo.CInfo.impargs) in
+    let def = (x.prg_reduce term, r, x.prg_reduce typ, x.prg_cinfo.CInfo.impargs, x.prg_cinfo.CInfo.using) in
     let oblsubst = List.map (fun (id, (_, c)) -> (id, c)) oblsubst in
     (def, oblsubst)
   in
@@ -1151,11 +1154,11 @@ let declare_mutual_definition ~pm l =
   (*   let fixdefs = List.map reduce_fix fixdefs in *)
   let fixdefs, fixrs, fixtypes, fixitems =
     List.fold_right2
-      (fun (d, r, typ, impargs) name (a1, a2, a3, a4) ->
+      (fun (d, r, typ, impargs, using) name (a1, a2, a3, a4) ->
         ( d :: a1
         , r :: a2
         , typ :: a3
-        , CInfo.{name; typ; impargs; args = []} :: a4 ))
+        , CInfo.{name; typ; impargs; args = []; using } :: a4 ))
       defs first.prg_deps ([], [], [], [])
   in
   let fixkind = Option.get first.prg_fixkind in
@@ -1376,7 +1379,7 @@ end
 
 type t =
   { endline_tactic : Genarg.glob_generic_argument option
-  ; section_vars : Id.Set.t option
+  ; using : Id.Set.t option
   ; proof : Proof.t
   ; initial_euctx : UState.t
   (** The initial universe context (for the statement) *)
@@ -1435,7 +1438,7 @@ let start_proof_core ~name ~typ ~pinfo ?(sign=initialize_named_context_for_proof
   let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
   { proof
   ; endline_tactic = None
-  ; section_vars = None
+  ; using = None
   ; initial_euctx
   ; pinfo
   }
@@ -1458,7 +1461,7 @@ let start_dependent ~info ~name ~proof_ending goals =
   let pinfo = Proof_info.make ~info ~cinfo ~proof_ending () in
   { proof
   ; endline_tactic = None
-  ; section_vars = None
+  ; using = None
   ; initial_euctx
   ; pinfo
   }
@@ -1523,7 +1526,7 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
     map lemma ~f:(fun p ->
         pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
 
-let get_used_variables pf = pf.section_vars
+let get_used_variables pf = pf.using
 let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
 
 let set_used_variables ps l =
@@ -1547,9 +1550,9 @@ let set_used_variables ps l =
        else (ctx, all_safe) in
   let ctx, _ =
     Environ.fold_named_context aux env ~init:(ctx,ctx_set) in
-  if not (Option.is_empty ps.section_vars) then
+  if not (Option.is_empty ps.using) then
     CErrors.user_err Pp.(str "Used section variables can be declared only once");
-  ctx, { ps with section_vars = Some (Context.Named.to_vars ctx) }
+  ctx, { ps with using = Some (Context.Named.to_vars ctx) }
 
 let get_open_goals ps =
   let Proof.{ goals; stack; sigma } = Proof.data ps.proof in
@@ -1646,7 +1649,7 @@ let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) 
 
 let close_proof ~opaque ~keep_body_ucst_separate ps =
 
-  let { section_vars; proof; initial_euctx; pinfo } = ps in
+  let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.name; poly } = Proof.data proof in
   let unsafe_typ = keep_body_ucst_separate && not poly in
@@ -1667,7 +1670,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
       then make_univs_private_poly ~poly ~uctx ~udecl t b
       else make_univs ~poly ~uctx ~udecl t b
     in
-    definition_entry_core ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
+    definition_entry_core ~opaque ?using ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
   let entries = CList.map make_entry elist  in
   { name; entries; uctx }
@@ -1675,7 +1678,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
 type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
 let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
-  let { section_vars; proof; initial_euctx; pinfo } = ps in
+  let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.name; poly; entry; sigma } = Proof.data proof in
 
@@ -1712,7 +1715,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
         let univs = UState.restrict uctx used_univs in
         let univs = UState.check_mono_univ_decl univs udecl in
         (pt,univs),eff)
-    |> delayed_definition_entry ~opaque ~feedback_id ~section_vars ~univs ~types
+    |> delayed_definition_entry ~opaque ~feedback_id ~using ~univs ~types
   in
   let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in
   { name; entries; uctx = initial_euctx }
@@ -2289,7 +2292,8 @@ let rec solve_obligation prg num tac =
     let name = Internal.get_name prg in
     Proof_ending.End_obligation {name; num; auto}
   in
-  let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) () in
+  let using = Internal.get_using prg in
+  let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) ?using () in
   let poly = Internal.get_poly prg in
   let info = Info.make ~scope ~kind ~poly () in
   let lemma = Proof.start_core ~cinfo ~info ~proof_ending evd  in

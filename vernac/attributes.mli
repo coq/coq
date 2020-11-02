@@ -51,6 +51,7 @@ val option_locality : Goptions.option_locality attribute
 val deprecation : Deprecation.t option attribute
 val canonical_field : bool attribute
 val canonical_instance : bool attribute
+val using : string option attribute
 
 val program_mode_option_name : string list
 (** For internal use when messing with the global option. *)

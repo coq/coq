@@ -28,8 +28,8 @@ More information on co-inductive definitions can be found in
    This command supports the :attr:`universes(polymorphic)`,
    :attr:`universes(monomorphic)`, :attr:`universes(template)`,
    :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
-   :attr:`universes(noncumulative)` and :attr:`private(matching)`
-   attributes.
+   :attr:`universes(noncumulative)`, :attr:`private(matching)`
+   and :attr:`using` attributes.
 
 .. example::
 

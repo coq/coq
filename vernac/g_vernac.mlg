@@ -113,7 +113,8 @@ GRAMMAR EXTEND Gram
     ]
   ;
   attribute:
-    [ [ k = ident ; v = attr_value -> { Names.Id.to_string k, v } ]
+    [ [ k = ident ; v = attr_value -> { Names.Id.to_string k, v }
+      | "using" ; v = attr_value -> { "using", v } ]
     ]
   ;
   attr_value:

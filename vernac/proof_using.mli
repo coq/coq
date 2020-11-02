@@ -11,7 +11,8 @@
 (** Utility code for section variables handling in Proof using... *)
 
 val process_expr :
-  Environ.env -> Vernacexpr.section_subset_expr -> Constr.types list ->
+  Environ.env -> Evd.evar_map ->
+  Vernacexpr.section_subset_expr -> EConstr.types list ->
     Names.Id.t list
 
 val name_set : Names.Id.t -> Vernacexpr.section_subset_expr -> unit
@@ -24,3 +25,5 @@ val get_default_proof_using : unit -> Vernacexpr.section_subset_expr option
 
 val proof_using_opt_name : string list
 (** For the stm *)
+
+val using_from_string : string -> Vernacexpr.section_subset_expr
