@@ -348,5 +348,8 @@ let universes_of_constr c =
     | Array (u,_,_,_) ->
       let s = LSet.fold LSet.add (Instance.levels u) s in
       Constr.fold aux s c
+    | Case (_,_,CaseInvert {univs;args=_},_,_) ->
+      let s = LSet.fold LSet.add (Instance.levels univs) s in
+      Constr.fold aux s c
     | _ -> Constr.fold aux s c
   in aux LSet.empty c

@@ -563,6 +563,9 @@ let universes_of_constr sigma c =
     | Array (u,_,_,_) ->
       let s = LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s in
       fold sigma aux s c
+    | Case (_,_,CaseInvert {univs;args=_},_,_) ->
+      let s = LSet.fold LSet.add (Instance.levels (EInstance.kind sigma univs)) s in
+      fold sigma aux s c
     | _ -> fold sigma aux s c
   in aux LSet.empty c
 
