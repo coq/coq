@@ -1042,6 +1042,13 @@ let interp_non_syntax_modifiers mods =
   in
   List.fold_left (fun st modif -> Option.bind st @@ set modif) (Some (false,false,InConstrEntry)) mods
 
+(* Check if an interpretation can be used for printing a cases printing *)
+let has_no_binders_type =
+  List.for_all (fun (_,(_,typ)) ->
+  match typ with
+  | NtnTypeBinder _ | NtnTypeBinderList -> false
+  | NtnTypeConstr | NtnTypeConstrList -> true)
+
 (* Compute precedences from modifiers (or find default ones) *)
 
 let set_entry_type from n etyps (x,typ) =
@@ -1226,6 +1233,9 @@ let find_precedence custom lev etyps symbols onlyprint =
             | _ ->
               user_err Pp.(str "A notation starting with an atomic expression must be at level 0.")
             end
+        | (ETPattern _ | ETBinder _), InConstrEntry when not onlyprint ->
+            (* Don't know exactly if we can make sense of this case *)
+            user_err Pp.(str "Binders or patterns not supported in leftmost position.")
         | (ETPattern _ | ETBinder _ | ETConstr _), _ ->
             (* Give a default ? *)
             if Option.is_empty lev then
@@ -1416,6 +1426,7 @@ type notation_obj = {
   notobj_deprecation : Deprecation.t option;
   notobj_notation : notation * notation_location;
   notobj_specific_pp_rules : syntax_printing_extension option;
+  notobj_also_in_cases_pattern : bool;
 }
 
 let load_notation_common silently_define_scope_if_undefined _ (_, nobj) =
@@ -1438,9 +1449,10 @@ let open_notation i (_, nobj) =
     let pat = nobj.notobj_interp in
     let deprecation = nobj.notobj_deprecation in
     let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
+    let also_in_cases_pattern = nobj.notobj_also_in_cases_pattern in
     (* Declare the notation *)
     (match nobj.notobj_use with
-    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion deprecation
+    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use ~also_in_cases_pattern nobj.notobj_coercion deprecation
     | None -> ());
     (* Declare specific format if any *)
     (match nobj.notobj_specific_pp_rules with
@@ -1621,19 +1633,21 @@ let add_notation_in_scope ~local deprecation df env c mods scope =
   let (acvars, ac, reversibility) = interp_notation_constr env nenv c in
   let interp = make_interpretation_vars sd.recvars (pi2 sd.level) acvars (fst sd.pa_syntax_data) in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
+  let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
+  let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparse,coe = printability (Some sd.level) sd.subentries sd.only_parsing reversibility ac in
   let notation, location = sd.info in
   let use = make_use true onlyparse sd.only_printing in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
-    notobj_interp = (List.map_filter map i_vars, ac);
-    (* Order is important here! *)
     notobj_use = use;
+    notobj_interp = (vars, ac);
     notobj_coercion = coe;
     notobj_deprecation = sd.deprecation;
     notobj_notation = (notation, location);
     notobj_specific_pp_rules = sy_pp_rules;
+    notobj_also_in_cases_pattern = also_in_cases_pattern;
   } in
   (* Ready to change the global state *)
   List.iter (fun f -> f ()) sd.msgs;
@@ -1665,18 +1679,20 @@ let add_notation_interpretation_core ~local df env ?(impls=empty_internalization
   let plevel = match level with Some (from,level,l) -> level | None (* numeral: irrelevant )*) -> 0 in
   let interp = make_interpretation_vars recvars plevel acvars (List.combine mainvars i_typs) in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
+  let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
+  let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparse,coe = printability level i_typs onlyparse reversibility ac in
   let use = make_use false onlyparse onlyprint in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
-    notobj_interp = (List.map_filter map i_vars, ac);
-    (* Order is important here! *)
     notobj_use = use;
+    notobj_interp = (vars, ac);
     notobj_coercion = coe;
     notobj_deprecation = deprecation;
     notobj_notation = df';
     notobj_specific_pp_rules = pp_sy;
+    notobj_also_in_cases_pattern = also_in_cases_pattern;
   } in
   Lib.add_anonymous_leaf (inNotation notation);
   df'
@@ -1850,8 +1866,9 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
   let in_pat id = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
   let interp = make_interpretation_vars ~default_if_binding:AsIdentOrPattern [] 0 acvars (List.map in_pat vars) in
   let vars = List.map (fun x -> (x, Id.Map.find x interp)) vars in
+  let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = onlyparsing || fst (printability None [] false reversibility pat) in
-  Syntax_def.declare_syntactic_definition ~local deprecation ident ~onlyparsing (vars,pat)
+  Syntax_def.declare_syntactic_definition ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
 (* Declaration of custom entry                                        *)

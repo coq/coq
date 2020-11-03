@@ -234,7 +234,7 @@ type notation_use =
   | OnlyParsing
   | ParsingAndPrinting
 
-val declare_uninterpretation : interp_rule -> interpretation -> unit
+val declare_uninterpretation : ?also_in_cases_pattern:bool -> interp_rule -> interpretation -> unit
 
 type entry_coercion_kind =
   | IsEntryCoercion of notation_entry_level
@@ -243,6 +243,7 @@ type entry_coercion_kind =
 
 val declare_notation : notation_with_optional_scope * notation ->
   interpretation -> notation_location -> use:notation_use ->
+  also_in_cases_pattern:bool ->
   entry_coercion_kind option ->
   Deprecation.t option -> unit
 

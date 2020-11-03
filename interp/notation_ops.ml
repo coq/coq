@@ -1436,9 +1436,8 @@ let reorder_canonically_substitution terms termlists metas =
   List.fold_right (fun (x,(scl,typ)) (terms',termlists') ->
     match typ with
       | NtnTypeConstr -> ((Id.List.assoc x terms, scl)::terms',termlists')
-      | NtnTypeBinder _ -> assert false
       | NtnTypeConstrList -> (terms',(Id.List.assoc x termlists,scl)::termlists')
-      | NtnTypeBinderList -> assert false)
+      | NtnTypeBinder _ | NtnTypeBinderList -> anomaly (str "Unexpected binder in pattern notation."))
     metas ([],[])
 
 let match_notation_constr_cases_pattern c (metas,pat) =
