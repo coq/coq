@@ -114,8 +114,8 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
           ungeneralizable loc id) vars;
       vars
 
-let rec make_fresh ids env x =
-  if is_freevar ids env x then x else make_fresh ids env (Nameops.increment_subscript x)
+let make_fresh ids env x =
+  Namegen.next_ident_away_from x (fun x -> not (is_freevar ids env x))
 
 let next_name_away_from na avoid =
   match na with
