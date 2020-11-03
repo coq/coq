@@ -26,7 +26,7 @@ let global_of_extended_global_head = function
   | SynDef kn ->
       let _, syn_def = search_syntactic_definition kn in
       let rec head_of = function
-        | NRef ref -> ref
+        | NRef (ref,None) -> ref
         | NApp (rc, _) -> head_of rc
         | NCast (rc, _) -> head_of rc
         | NLetIn (_, _, _, rc) -> head_of rc
@@ -37,8 +37,8 @@ let global_of_extended_global = function
   | TrueGlobal ref -> ref
   | SynDef kn ->
   match search_syntactic_definition kn with
-  | [],NRef ref -> ref
-  | [],NApp (NRef ref,[]) -> ref
+  | [],NRef (ref,None) -> ref
+  | [],NApp (NRef (ref,None),[]) -> ref
   | _ -> raise Not_found
 
 let locate_global_with_alias ?(head=false) qid =

@@ -387,10 +387,10 @@ let locate_global_inductive allow_params qid =
     | Globnames.TrueGlobal _ -> raise Not_found
     | Globnames.SynDef kn ->
     match Syntax_def.search_syntactic_definition kn with
-    | [], Notation_term.(NApp (NRef (GlobRef.IndRef i), l)) when allow_params ->
+    | [], Notation_term.(NApp (NRef (GlobRef.IndRef i,None), l)) when allow_params ->
        i,
        List.map (function
-           | Notation_term.NRef r -> Some r
+           | Notation_term.NRef (r,None) -> Some r
            | Notation_term.NHole _ -> None
            | _ -> raise Not_found) l
     | _ -> raise Not_found in
