@@ -216,18 +216,16 @@ let name_of_reference ref = Id.to_string (Nametab.basename_of_global ref)
 let search_filter query gr kind env sigma typ = match query with
 | GlobSearchSubPattern (where,head,pat) ->
   let open Context.Rel.Declaration in
-  let collect_hyps ctx =
-    List.fold_left (fun acc d -> match get_value d with
-                       | None -> get_type d :: acc
-                       | Some b -> b :: get_type d :: acc) [] ctx in
+  let rec collect env hyps typ =
+    match Constr.kind typ with
+    | LetIn (na,b,t,c) -> collect (push_rel (LocalDef (na,b,t)) env) ((env,b) :: (env,t) :: hyps) c
+    | Prod (na,t,c) -> collect (push_rel (LocalAssum (na,t)) env) ((env,t) :: hyps) c
+    | _ -> (hyps,(env,typ)) in
   let typl= match where with
-  | InHyp -> collect_hyps (fst (Term.decompose_prod_assum typ))
-  | InConcl -> [snd (Term.decompose_prod_assum typ)]
-  | Anywhere ->
-      if head then
-        let ctx, ccl = Term.decompose_prod_assum typ in ccl :: collect_hyps ctx
-      else [typ] in
-  List.exists (fun typ ->
+  | InHyp -> fst (collect env [] typ)
+  | InConcl -> [snd (collect env [] typ)]
+  | Anywhere -> if head then let hyps, ccl = collect env [] typ in ccl :: hyps else [env,typ] in
+  List.exists (fun (env,typ) ->
       let f =
         if head then Constr_matching.is_matching_head
         else Constr_matching.is_matching_appsubterm ~closed:false in
