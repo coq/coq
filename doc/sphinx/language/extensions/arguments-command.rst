@@ -86,6 +86,7 @@ Setting properties of a function's arguments
          the parameter name used in the function definition).  Unless `rename` is specified,
          the list of :n:`@name`\s must be a prefix of the formal parameters, including all implicit
          arguments.  `_` can be used to skip over a formal parameter.
+         The construct :n:`@name {? % @scope }` declares :n:`@name` as non-implicit if `clear implicits` is specified or at least one other name is declared implicit in the same list of :n:`@name`\s.
          :token:`scope` can be either a scope name or its delimiting key.  See :ref:`binding_to_scope`.
 
       `clear implicits`
