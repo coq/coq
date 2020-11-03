@@ -68,6 +68,7 @@ COQMAKEFILEIN:=$(BCONTEXT)/tools/CoqMakefile.in
 COQTEX:=$(CBIN)/coq-tex$(EXE)
 COQWC:=$(CBIN)/coqwc$(EXE)
 COQDOC:=$(CBIN)/coqdoc$(EXE)
+COQNATIVE:=$(CBIN)/coqnative$(EXE)
 COQDOCSTY:=$(CONTEXT)/lib/coq-core/tools/coqdoc/coqdoc.sty
 COQDOCCSS:=$(CONTEXT)/lib/coq-core/tools/coqdoc/coqdoc.css
 COQWORKMGR:=$(CBIN)/coqworkmgr$(EXE)
@@ -80,7 +81,7 @@ OCAMLLIBDEP:=$(CBIN)/ocamllibdep$(EXE)
 FAKEIDE:=$(CBIN)/fake_ide$(EXE)
 USERCONTRIBDIRS:=Ltac2
 CHICKEN:=$(CBIN)/coqchk$(EXE)
-TOOLS:=$(VOTOUR) $(COQDOC) $(COQDOCSTY) $(COQDOCCSS) $(COQWC) $(COQMAKEFILE) $(COQMAKEFILEIN)
+TOOLS:=$(VOTOUR) $(COQDOC) $(COQDOCSTY) $(COQDOCCSS) $(COQWC) $(COQMAKEFILE) $(COQMAKEFILEIN) $(COQNATIVE)
 CSDPCERT:=$(CBIN)/csdpcert$(EXE)
 
 ifeq ($(origin COQ_SRC_DIR),undefined)

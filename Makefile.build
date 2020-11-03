@@ -98,7 +98,7 @@ states: $(VO_OUT_DIR)theories/Init/Prelude.$(VO)
 
 .PHONY: coqbinaries tools
 
-coqbinaries: $(TOPBINOPT) $(COQC) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
+coqbinaries: $(TOPBINOPT) $(COQC) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE) $(COQNATIVE)
 tools: $(TOOLS) $(OCAMLLIBDEP) $(COQDEP) $(DOC_GRAM)
 
 ###########################################################################
@@ -217,11 +217,14 @@ DUNEPLUGININCLUDES=$(addprefix -I _build/default/, $(wildcard plugins/*))
 NATIVEINCLUDES=$(addprefix -nI _build/default/, kernel/.kernel.objs/byte)
 USERCONTRIBINCLUDES=$(addprefix -I _build/default/user-contrib/,$(USERCONTRIBDIRS))
 
-COQOPTS=$(NATIVECOMPUTE) $(COQWARNERROR) $(COQUSERFLAGS)
+ifdef NATIVECOMPUTE
+  COQOPTS += -native-compiler ondemand
+endif
+COQOPTS += $(COQWARNERROR) $(COQUSERFLAGS)
 # Beware this depends on the makefile being in a particular dir, we
 # should pass an absolute path here but windows is tricky
 # c.f. https://github.com/coq/coq/pull/9560
-BOOTCOQC=$(TIMER) $(COQC) -coqlib $(VO_OUT_DIR) -q $(COQOPTS) $(DUNEPLUGININCLUDES) $(NATIVEINCLUDES) $(USERCONTRIBINCLUDES)
+BOOTCOQC=$(TIMER) $(COQC) -coqlib $(VO_OUT_DIR) -q $(COQOPTS) $(DUNEPLUGININCLUDES) $(USERCONTRIBINCLUDES)
 
 ###########################################################################
 # Infrastructure for the rest of the Makefile
@@ -231,6 +234,10 @@ VO_TOOLS_DEP = $(COQC)
 
 ifeq ($(BEST),byte)
   VO_TOOLS_DEP += $(CONTEXT)/lib/stublibs/dllbyterun_stubs.so
+endif
+
+ifdef NATIVECOMPUTE
+  VO_TOOLS_DEP += $(COQNATIVE)
 endif
 
 ifdef VALIDATE
@@ -324,6 +331,10 @@ $(VO_OUT_DIR)theories/Init/%.vo $(VO_OUT_DIR)theories/Init/%.glob: $(VO_OUT_DIR)
 	$(HIDE)rm -f $(VO_OUT_DIR)theories/Init/$*.glob
 	$(HIDE)mkdir -p $(shell dirname $<)
 	$(HIDE)$(BOOTCOQC) $< -o $@ -noinit -R $(VO_OUT_DIR)theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
+ifdef NATIVECOMPUTE
+	$(SHOW)'COQNATIVE $*.vo'
+	$(HIDE)$(COQNATIVE) $(NATIVEINCLUDES) -coqlib . -R $(VO_OUT_DIR)theories Coq $(VO_OUT_DIR)theories/Init/$*.vo
+endif
 
 $(VO_OUT_DIR)theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP) | $(VO_OUT_DIR)
 	$(SHOW)'COQC -quick -noinit $<'
@@ -337,6 +348,10 @@ $(VO_OUT_DIR)%.vo $(VO_OUT_DIR)%.glob: $(VO_OUT_DIR)%.v $(VO_OUT_DIR)theories/In
 	$(HIDE)rm -f $*.glob
 	$(HIDE)mkdir -p $(shell dirname $<)
 	$(HIDE)$(BOOTCOQC) $< -o $@ $(TIMING_ARG) $(TIMING_EXTRA)
+ifdef NATIVECOMPUTE
+	$(SHOW)'COQNATIVE $*.vo'
+	$(HIDE)$(COQNATIVE) $(NATIVEINCLUDES) -coqlib . -R $(VO_OUT_DIR)theories Coq $(VO_OUT_DIR)$*.vo
+endif
 ifdef VALIDATE
 	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
 	$(HIDE)$(CHICKEN) $(VALIDOPTS) -norec $(call vo_to_mod,$@) \
