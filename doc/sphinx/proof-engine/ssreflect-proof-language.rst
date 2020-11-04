@@ -601,7 +601,7 @@ resemble ML-like definitions of polymorphic functions.
 Abbreviations
 ~~~~~~~~~~~~~
 
-.. tacn:: set @ident {? : @term } := {| %{ @clear_switch %} @cpattern | @lcpattern } {? @ssr_in }
+.. tacn:: set @ident {? : @term } := {| %{ @ssr_occurrences %} @cpattern | @lcpattern } {? @ssr_in }
    :name: set (ssreflect)
 
    .. insertprodn ssr_in ssr_in
@@ -2513,9 +2513,8 @@ The have tactic.
       | //=
       | / @natural / @natural =
       | / @natural /=
-      ssrdocc ::= %{ @clear_switch %}
+      ssrdocc ::= %{ @ssr_occurrences %}
       | %{ {* @ident } %}
-      clear_switch ::= {| @natural | + | - } {* @natural }
       ssrfwdview ::= {+ / @one_term }
       hat ::= ^ @ident
       | ^~ @ident
@@ -3122,30 +3121,32 @@ The main features of the rewrite tactic are:
 
 The general form of an |SSR| rewrite tactic is:
 
-.. tacn:: rewrite {+ @r_prefix } {? @ssr_in }
+.. tacn:: rewrite {+ @rewrite_item } {? @ssr_in }
    :name: rewrite (ssreflect)
    :undocumented:
 
-   .. insertprodn r_prefix r_pattern
+   .. insertprodn rewrite_item rewrite_pattern
 
    .. prodn::
-      r_prefix ::= - {? @mult } {? @ssrrwocc } {? @ssrpattern_squarep } @r_item
-      | @mult {? @ssrrwocc } {? @ssrpattern_squarep } @r_item
+      rewrite_item ::= - {? @mult } {? @occ_or_clear } {? @ssrpattern_squarep } @r_item
+      | @mult {? @occ_or_clear } {? @ssrpattern_squarep } @r_item
       | -/ @term
       | {? {? %{ {+ @ident } %} } @ssrpattern_squarep } @r_item
       | %{ {+ @ident } %} {? @r_item }
-      | %{ {? @clear_switch } %} {? @ssrpattern_squarep } @r_item
-      ssrrwocc ::= %{ {* @ident } %}
-      | %{ @clear_switch %}
+      | %{ {? @ssr_occurrences } %} {? @ssrpattern_squarep } @r_item
+      occ_or_clear ::= @clear_switch
+      | %{ @ssr_occurrences %}
+      clear_switch ::= %{ {* @ident } %}
+      ssr_occurrences ::= {| @natural | + | - } {* @natural }
       r_item ::= {| {? / } @term | @s_item }
-      ssrpattern_squarep ::= [ @r_pattern ]
-      r_pattern ::= {? {? {? {? @term } in } @term } in } @term
+      ssrpattern_squarep ::= [ @rewrite_pattern ]
+      rewrite_pattern ::= {? {? {? {? @term } in } @term } in } @term
       | @term as @term in @term
 
 The combination of a rewrite tactic with the ``in`` tactical (see section
 :ref:`localization_ssr`) performs rewriting in both the context and the goal.
 
-An :token:`r_prefix` contains annotations to qualify where and how the rewrite
+An :token:`rewrite_item` contains annotations to qualify where and how the rewrite
 operation should be performed:
 
 + The optional initial ``-`` indicates the direction of the rewriting of
@@ -3156,7 +3157,7 @@ operation should be performed:
   rewrite operation should be repeated.
 + A rewrite operation matches the occurrences of a *rewrite pattern*,
   and replaces these occurrences by another term, according to the
-  given :token:`r_item`. The optional *redex switch* ``[r_pattern]``,
+  given :token:`r_item`. The optional *redex switch* ``[rewrite_pattern]``,
   which should
   always be surrounded by brackets, gives explicitly this rewrite
   pattern. In its simplest form, it is a regular term. If no explicit
@@ -3206,8 +3207,8 @@ An :token:`r_item` can be:
       ``eq`` is the Leibniz equality or a registered setoid
       equality.
     + A list of terms ``(t1 ,…,tn)``, each ``ti`` having a type above.
-      The tactic: ``rewrite r_prefix (t1 ,…,tn ).``
-      is equivalent to: ``do [rewrite r_prefix t1 | … | rewrite r_prefix tn ].``
+      The tactic: ``rewrite rewrite_item (t1 ,…,tn ).``
+      is equivalent to: ``do [rewrite rewrite_item t1 | … | rewrite rewrite_item tn ].``
     + An anonymous rewrite lemma ``(_ : term)``, where term has a type as above.
 
   .. example::
@@ -3353,7 +3354,7 @@ proof of ``addnCA``.
 Explicit redex switches are matched first
 `````````````````````````````````````````
 
-If an :token:`r_prefix` involves a *redex switch*, the first step is to find a
+If an :token:`rewrite_item` involves a *redex switch*, the first step is to find a
 subterm matching this redex pattern, independently from the left hand
 side of the equality the user wants to rewrite.
 
@@ -3813,7 +3814,7 @@ The under tactic
 
 The convenience :tacn:`under<under (ssreflect)>` tactic supports the following syntax:
 
-.. tacn:: under @r_prefix {? @ssrintros } {? do @ssrhint3arg }
+.. tacn:: under @rewrite_item {? @ssrintros } {? do @ssrhint3arg }
    :name: under (ssreflect)
 
    .. insertprodn ssrhint3arg ssrhint3arg
@@ -3829,7 +3830,7 @@ The convenience :tacn:`under<under (ssreflect)>` tactic supports the following s
 
       This error can occur when using the version with a ``do`` clause.
 
-   The multiplier part of :token:`r_prefix` is not supported.
+   The multiplier part of :token:`rewrite_item` is not supported.
 
 We distinguish two modes,
 :ref:`interactive mode <under_interactive>` without a ``do`` clause, and
@@ -4110,7 +4111,7 @@ definition.
       rewrite /=.
       unlock lid.
 
-.. tacn:: unlock {* {? %{ @clear_switch %} } @term } {? @ssr_in }
+.. tacn:: unlock {* {? %{ @ssr_occurrences %} } @term } {? @ssr_in }
    :name: unlock (ssreflect)
 
    .. insertprodn ssrclausehyps lcpattern
@@ -4368,7 +4369,7 @@ pattern for the redex looking at the rule used for rewriting.
 .. list-table::
    :header-rows: 1
 
-   * - :token:`r_pattern`
+   * - :token:`rewrite_pattern`
      - redex
      - subterms affected
 
@@ -4391,7 +4392,7 @@ presented in the tables above can contain
 holes.
 
 For a quick glance at what can be expressed with the last
-:token:`r_pattern`
+:token:`rewrite_pattern`
 consider the goal ``a = b`` and the tactic
 
 .. coqdoc::
@@ -4408,7 +4409,7 @@ of rule can be unified).
 Matching contextual patterns
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :token:`c_pattern` and :token:`r_pattern` involving terms
+The :token:`c_pattern` and :token:`rewrite_pattern` involving terms
 with holes are matched
 against the goal in order to find a closed instantiation. This
 matching proceeds as follows:
@@ -4444,7 +4445,7 @@ the rewrite rule.
 .. list-table::
    :header-rows: 1
 
-   * - :token:`r_pattern`
+   * - :token:`rewrite_pattern`
      - instantiation order and place for ``term_i`` and redex
 
    * - ``in ident in term``

@@ -226,18 +226,26 @@ ssrgen: [
 | cpattern LIST0 [ LIST1 ident | cpattern ]      (* SSR plugin *)
 ]
 
-r_prefix: [
-| "-" OPT mult OPT ssrrwocc OPT ssrpattern_squarep r_item      (* SSR plugin *)
-| mult OPT ssrrwocc OPT ssrpattern_squarep r_item      (* SSR plugin *)
+rewrite_item: [
+| "-" OPT mult OPT occ_or_clear OPT ssrpattern_squarep r_item      (* SSR plugin *)
+| mult OPT occ_or_clear OPT ssrpattern_squarep r_item      (* SSR plugin *)
 | "-/" term      (* SSR plugin *)
 | OPT ( OPT ( "{" LIST1 ident "}" ) ssrpattern_squarep ) r_item      (* SSR plugin *)
 | "{" LIST1 ident "}" OPT r_item      (* SSR plugin *)
-| "{" OPT clear_switch "}" OPT ssrpattern_squarep r_item      (* SSR plugin *)
+| "{" OPT ssr_occurrences "}" OPT ssrpattern_squarep r_item      (* SSR plugin *)
 ]
 
-ssrrwocc: [
-| "{" LIST0 ident "}"      (* SSR plugin *)
-| "{" clear_switch "}"      (* SSR plugin *)
+occ_or_clear: [
+| clear_switch
+| "{" ssr_occurrences "}"      (* SSR plugin *)
+]
+
+clear_switch: [
+| "{" LIST0 ident "}"
+]
+
+ssr_occurrences: [
+| [ natural | "+" | "-" ] LIST0 natural      (* SSR plugin *)
 ]
 
 r_item: [
@@ -245,16 +253,12 @@ r_item: [
 ]
 
 ssrpattern_squarep: [
-| "[" r_pattern "]"      (* SSR plugin *)
+| "[" rewrite_pattern "]"      (* SSR plugin *)
 ]
 
-r_pattern: [
+rewrite_pattern: [
 | OPT ( OPT ( OPT ( OPT term "in" ) term ) "in" ) term      (* SSR plugin *)
 | term "as" term "in" term      (* SSR plugin *)
-]
-
-ssr_cpattern: [
-| one_term      (* SSR plugin *)
 ]
 
 ssr_in: [
@@ -289,6 +293,10 @@ ssrviewpos: [
 | "for" "move" "/"      (* SSR plugin *)
 | "for" "apply" "/"      (* SSR plugin *)
 | "for" "apply" "//"      (* SSR plugin *)
+]
+
+ssr_one_term_pattern: [
+| one_term      (* SSR plugin *)
 ]
 
 firstorder_rhs: [
@@ -1470,12 +1478,8 @@ s_item: [
 ]
 
 ssrdocc: [
-| "{" clear_switch "}"      (* SSR plugin *)
+| "{" ssr_occurrences "}"      (* SSR plugin *)
 | "{" LIST0 ident "}"      (* SSR plugin *)
-]
-
-clear_switch: [
-| [ natural | "+" | "-" ] LIST0 natural      (* SSR plugin *)
 ]
 
 ssrfwdview: [
@@ -1886,12 +1890,12 @@ simple_tactic: [
 | "congr" OPT natural one_term OPT ssrdgens      (* SSR plugin *)
 | "ssrinstancesofruleL2R" term      (* SSR plugin *)
 | "ssrinstancesofruleR2L" term      (* SSR plugin *)
-| "rewrite" LIST1 r_prefix OPT ssr_in      (* SSR plugin *)
-| "unlock" LIST0 ( OPT ( "{" clear_switch "}" ) term ) OPT ssr_in      (* SSR plugin *)
+| "rewrite" LIST1 rewrite_item OPT ssr_in      (* SSR plugin *)
+| "unlock" LIST0 ( OPT ( "{" ssr_occurrences "}" ) term ) OPT ssr_in      (* SSR plugin *)
 | "pose" "fix" ssrbvar LIST0 ssrbinder OPT ( "{" "struct" ident "}" ) ssrdefbody      (* SSR plugin *)
 | "pose" "cofix" ssrbvar LIST0 ssrbinder ssrdefbody      (* SSR plugin *)
 | "pose" ident LIST0 ssrbinder ssrdefbody      (* SSR plugin *)
-| "set" ident OPT ( ":" term ) ":=" [ "{" clear_switch "}" cpattern | lcpattern ] OPT ssr_in      (* SSR plugin *)
+| "set" ident OPT ( ":" term ) ":=" [ "{" ssr_occurrences "}" cpattern | lcpattern ] OPT ssr_in      (* SSR plugin *)
 | "abstract" ssrdgens      (* SSR plugin *)
 | "have" ssrhpats_wtransp LIST0 ssrbinder ssrhavefwd      (* SSR plugin *)
 | "have" [ "suff" | "suffices" ] OPT ssripats ssrhavefwd      (* SSR plugin *)
@@ -1899,8 +1903,8 @@ simple_tactic: [
 | [ "suff" | "suffices" ] ssrsufffwd      (* SSR plugin *)
 | [ "wlog" | "without loss" ] OPT [ "suff" | "suffices" ] OPT ssripats ssrwlogfwd OPT ( "by" ssrhintarg )      (* SSR plugin *)
 | [ "gen" | "generally" ] "have" OPT ssrclear OPT ( [ ident | "_" ] "," ) OPT ssripats ssrwlogfwd OPT ( "by" ssrhintarg )      (* SSR plugin *)
-| "under" r_prefix OPT ssrintros OPT ( "do" ssrhint3arg )      (* SSR plugin *)
-| "ssrinstancesoftpat" ssr_cpattern      (* SSR plugin *)
+| "under" rewrite_item OPT ssrintros OPT ( "do" ssrhint3arg )      (* SSR plugin *)
+| "ssrinstancesoftpat" ssr_one_term_pattern      (* SSR plugin *)
 | ltac_expr ";" "first" ssr_first_else      (* SSR plugin *)
 | ltac_expr ";" "first" ssrseqarg      (* SSR plugin *)
 | ltac_expr ";" "last" ssrseqarg      (* SSR plugin *)

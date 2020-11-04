@@ -85,7 +85,7 @@ RENAME: [
 | G_LTAC2_as_ipat ltac2_as_ipat
 | G_LTAC2_by_tactic ltac2_by_tactic
 | G_LTAC2_match_list ltac2_match_list
-| G_SSRMATCHING_cpattern ssr_cpattern
+| G_SSRMATCHING_cpattern ssr_one_term_pattern
 ]
 
 (* Renames to eliminate qualified names.
@@ -2295,6 +2295,15 @@ ssrmmod: [
 | DELETE LEFTQMARK      (* SSR plugin *)  (* duplicate *)
 ]
 
+clear_switch: [
+| "{" LIST0 ident "}"
+]
+
+ssrrwocc: [
+| REPLACE "{" LIST0 ssrhyp "}"      (* SSR plugin *)
+| WITH clear_switch
+]
+
 ssrrwarg: [
 | EDIT "{" ADD_OPT ssrocc "}" OPT ssrpattern_squarep ssrrule_ne      TAG SSR
 | REPLACE "{" LIST1 ssrhyp "}" ssrpattern_ne_squarep ssrrule_ne      (* SSR plugin *)
@@ -2366,7 +2375,7 @@ ssr_dpat: [
 | DELETE ssr_mpat      (* SSR plugin *)
 ]
 
-ssr_cpattern: [
+ssr_one_term_pattern: [
 | DELETE "Qed" constr
 ]
 
@@ -2634,7 +2643,7 @@ RENAME: [
 | ltac2_type5 ltac2_type
 | ltac2_expr6 ltac2_expr
 | starredidentref starred_ident_ref
-| ssrocc clear_switch
+| ssrocc ssr_occurrences
 | ssrsimpl_ne s_item
 | ssrclear_ne ssrclear
 | ssrmult_ne mult
@@ -2642,8 +2651,9 @@ RENAME: [
 | ssrrule_ne r_item
 | ssrintros_ne ssrintros
 | ssrpattern_ne_squarep ssrpattern_squarep
-| ssrrwarg r_prefix
-| rpattern r_pattern
+| ssrrwarg rewrite_item
+| ssrrwocc occ_or_clear
+| rpattern rewrite_pattern
 | ssripat i_item
 | ssrwgen gen_item
 | ssrfwd ssrdefbody
