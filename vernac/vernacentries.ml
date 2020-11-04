@@ -1934,10 +1934,9 @@ let vernac_search ~pstate ~atts s gopt r =
   let open ComSearch in
   let gopt = query_command_selector gopt in
   let sigma, env =
-    match gopt with | None ->
-      (* 1st goal by default if it exists, otherwise no goal at all *)
-      (try get_goal_or_global_context ~pstate 1
-       with _ -> let env = Global.env () in (Evd.from_env env, env))
+    match gopt with
+    (* 1st goal by default if it exists, otherwise no goal at all *)
+    | None -> get_goal_or_global_context ~pstate 1
     (* if goal selector is given and wrong, then let exceptions be raised. *)
     | Some g -> get_goal_or_global_context ~pstate g in
   interp_search env sigma s r
