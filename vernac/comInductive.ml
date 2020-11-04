@@ -271,9 +271,8 @@ let inductive_levels env evd arities inds =
     if Sorts.is_prop a || Sorts.is_sprop a then None
     else Some (univ_of_sort a)) destarities
   in
-  let cstrs_levels, min_levels, sizes =
-    CList.split3
-      (List.map2 (fun (_,tys) (arity,(ctx,du)) ->
+  let cstrs_levels, sizes =
+    CList.split (List.map2 (fun (_,tys) (arity,(ctx,du)) ->
         let len = List.length tys in
         let minlev = Sorts.univ_of_sort du in
         let minlev =
@@ -283,13 +282,15 @@ let inductive_levels env evd arities inds =
         in
         let minlev =
           (* Indices contribute. *)
-          if indices_matter env && List.length ctx > 0 then (
+          if indices_matter env then begin
             let ilev = sign_level env evd ctx in
-              Univ.sup ilev minlev)
+            Univ.sup ilev minlev
+          end
           else minlev
         in
         let clev = extract_level env evd minlev tys in
-          (clev, minlev, len)) inds destarities)
+        (clev, len))
+        inds destarities)
   in
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
