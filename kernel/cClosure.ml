@@ -1535,7 +1535,12 @@ let whd_stack infos tab m stk = match Mark.red_state m.mark with
   knh infos m stk
 | Red | Cstr ->
   let k = kni infos tab m stk in
-  let () = if infos.i_cache.i_share then ignore (fapp_stack k) in (* to unlock Zupdates! *)
+  let () =
+    if infos.i_cache.i_share then
+      (* to unlock Zupdates! *)
+      let (m', stk') = k in
+      if not (m == m' && stk == stk') then ignore (zip m' stk')
+  in
   k
 
 let create_clos_infos ?univs ?(evars=fun _ -> None) flgs env =
