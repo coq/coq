@@ -2586,6 +2586,7 @@ ltac2_expr5: [
 | "fun" LIST1 G_LTAC2_input_fun "=>" ltac2_expr6      (* Ltac2 plugin *)
 | "let" rec_flag LIST1 G_LTAC2_let_clause SEP "with" "in" ltac2_expr6      (* Ltac2 plugin *)
 | "match" ltac2_expr5 "with" G_LTAC2_branches "end"      (* Ltac2 plugin *)
+| "if" ltac2_expr5 "then" ltac2_expr5 "else" ltac2_expr5      (* Ltac2 plugin *)
 | ltac2_expr4      (* Ltac2 plugin *)
 ]
 

@@ -2198,6 +2198,7 @@ ltac2_expr5: [
 | REPLACE "let" OPT "rec" LIST1 ltac2_let_clause SEP "with" "in" ltac2_expr6      (* Ltac2 plugin *)
 | WITH "let" OPT "rec" ltac2_let_clause LIST0 ( "with" ltac2_let_clause ) "in" ltac2_expr6 TAG Ltac2
 | MOVETO simple_tactic "match" ltac2_expr5 "with" OPT ltac2_branches "end"      (* Ltac2 plugin *)
+| MOVETO simple_tactic "if" ltac2_expr5 "then" ltac2_expr5 "else" ltac2_expr5      (* Ltac2 plugin *)
 | DELETE simple_tactic
 ]
 

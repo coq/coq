@@ -38,7 +38,6 @@ Current limitations include:
   - Printing functions are limited and awkward to use.  Only a few data types are
     printable.
   - Deep pattern matching and matching on tuples don't work.
-  - If statements on Ltac2 boolean values
   - A convenient way to build terms with casts through the low-level API. Because the
     cast type is opaque, building terms with casts currently requires an awkward construction like the
     following, which also incurs extra overhead to repeat typechecking for each
@@ -345,12 +344,10 @@ Ltac2 Definitions
 
       .. coqtop:: all
 
-         Ltac2 mutable rec f b := match b with true => 0 | _ => f true end.
-         Ltac2 Set f := fun b =>
-                  match b with true => 1 | _ => f true end.
+         Ltac2 mutable rec f b := if b then 0 else f true.
+         Ltac2 Set f := fun b => if b then 1 else f true.
          Ltac2 Eval (f false).
-         Ltac2 Set f as oldf := fun b =>
-                  match b with true => 2 | _ => oldf false end.
+         Ltac2 Set f as oldf := fun b => if b then  2 else oldf false.
          Ltac2 Eval (f false).
 
       In the definition, the `f` in the body is resolved statically
@@ -1148,6 +1145,13 @@ Match on values
       atomic_tac2pat ::= @tac2pat1 : @ltac2_type
       | @tac2pat1 , {*, @tac2pat1 }
       | @tac2pat1
+
+.. tacn:: if @ltac2_expr5__test then @ltac2_expr5__then else @ltac2_expr5__else
+   :name: if-then-else (Ltac2)
+
+   Equivalent to a :tacn:`match <match (Ltac2)>` on a boolean value.  If the
+   :n:`@ltac2_expr5__test` evaluates to true, :n:`@ltac2_expr5__then`
+   is evaluated.  Otherwise :n:`@ltac2_expr5__else` is evaluated.
 
 .. note::
 
