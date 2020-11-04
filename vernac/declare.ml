@@ -622,7 +622,7 @@ let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declar
   let isfix = Option.has_some possible_indexes in
   let fixnames = List.map (fun { CInfo.name } -> name) cinfo in
   recursive_message isfix indexes fixnames;
-  List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
+  List.iter (Metasyntax.add_notation_interpretation ~local:(scope=Locality.Discharge) (Global.env())) ntns;
   csts
 
 let declare_mutually_recursive = declare_mutually_recursive_core ~restrict_ucontext:true ()
@@ -748,7 +748,7 @@ module ProgramDecl = struct
     ; prg_obligations : obligations
     ; prg_deps : Id.t list
     ; prg_fixkind : fixpoint_kind option
-    ; prg_notations : Vernacexpr.decl_notation list
+    ; prg_notations : Metasyntax.where_decl_notation list
     ; prg_reduce : constr -> constr
     }
 

@@ -1682,9 +1682,11 @@ let add_syntax_extension ~local ({CAst.loc;v=df},mods) = let open SynData in
   List.iter (fun f -> f ()) psd.msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,(pa_rules,pp_rules)))
 
-(* Notations with only interpretation *)
+(* Notations associated to a where clause *)
 
-let add_notation_interpretation env decl_ntn =
+type where_decl_notation = decl_notation * bool * notation_entry
+
+let prepare_where_notation decl_ntn =
   let
     { decl_ntn_string = { CAst.loc ; v = df };
       decl_ntn_interp = c;
@@ -1692,26 +1694,21 @@ let add_notation_interpretation env decl_ntn =
       decl_ntn_scope = sc;
     } = decl_ntn in
   match interp_non_syntax_modifiers modifiers with
-  | None -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here.")
-  | Some (only_parsing,only_printing,entry) ->
-    let df' = add_notation_interpretation_core ~local:false df env entry c sc only_parsing false None in
-    Dumpglob.dump_notation (loc,df') sc true
+  | None | Some (_,true,_) ->
+    CErrors.user_err (str"Only modifiers not affecting parsing are supported here.")
+  | Some (only_parsing,false,entry) ->
+    (decl_ntn,only_parsing,entry)
 
-let set_notation_for_interpretation env impls decl_ntn =
-  let
-    { decl_ntn_string = { CAst.v = df };
-      decl_ntn_interp = c;
-      decl_ntn_modifiers = modifiers;
-      decl_ntn_scope = sc;
-    } = decl_ntn in
-  match interp_non_syntax_modifiers modifiers with
-  | None -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here")
-  | Some (only_parsing,only_printing,entry) ->
-    (try ignore
-      (Flags.silently (fun () -> add_notation_interpretation_core ~local:false df env ~impls entry c sc only_parsing false None) ());
-    with NoSyntaxRule ->
-      user_err Pp.(str "Parsing rule for this notation has to be previously declared."));
-    Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
+let add_notation_interpretation ~local env (decl_ntn,only_parsing,entry) =
+  let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
+  let df' = add_notation_interpretation_core ~local df env entry c sc only_parsing false None in
+  Dumpglob.dump_notation (loc,df') sc true
+
+(* interpreting a where clause *)
+let set_notation_for_interpretation env impls (decl_ntn,only_parsing,entry) =
+  let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
+  let _ = add_notation_interpretation_core ~local:true df env ~impls entry c sc only_parsing false None in
+  Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
 (* Main entry point *)
 

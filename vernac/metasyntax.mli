@@ -34,15 +34,21 @@ val add_delimiters : locality_flag -> scope_name -> string -> unit
 val remove_delimiters : locality_flag -> scope_name -> unit
 val add_class_scope : locality_flag -> scope_name -> scope_class list -> unit
 
-(** Add only the interpretation of a notation that already has pa/pp rules *)
+(** Add a notation interpretation associated to a "where" clause (already has pa/pp rules) *)
+
+type where_decl_notation
+
+val prepare_where_notation :
+  decl_notation -> where_decl_notation
+  (** Interpret the modifiers of a where-notation *)
 
 val add_notation_interpretation :
-  env -> decl_notation -> unit
-
-(** Add a notation interpretation for supporting the "where" clause *)
+  local:bool -> env -> where_decl_notation -> unit
+  (** Declare the interpretation of the where-notation *)
 
 val set_notation_for_interpretation :
-  env -> Constrintern.internalization_env -> decl_notation -> unit
+  env -> Constrintern.internalization_env -> where_decl_notation -> unit
+  (** Set the interpretation of the where-notation for interpreting a mutual block *)
 
 (** Add only the parsing/printing rule of a notation *)
 

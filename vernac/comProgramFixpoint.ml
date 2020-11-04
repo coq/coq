@@ -332,7 +332,7 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
   | Declare.Obls.IsFixpoint _ -> Decls.(IsDefinition Fixpoint)
   | Declare.Obls.IsCoFixpoint -> Decls.(IsDefinition CoFixpoint)
   in
-  let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
+  let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   let info = Declare.Info.make ~poly ~scope ~kind ~udecl ?typing_flags () in
   Declare.Obls.add_mutual_definitions ~pm defs ~info ~uctx ~ntns fixkind
 

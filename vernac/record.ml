@@ -127,7 +127,7 @@ module DataI = struct
     { name : Id.t
     ; arity : Constrexpr.constr_expr option
     (** declared sort for the record  *)
-    ; nots : Vernacexpr.decl_notation list list
+    ; nots : Metasyntax.where_decl_notation list list
     (** notations for fields *)
     ; fs : Vernacexpr.local_decl_expr list
     }
@@ -810,7 +810,7 @@ module Ast = struct
     let fs = List.map fst cfs in
     { DataI.name = name.CAst.v
     ; arity = sort
-    ; nots = List.map (fun (_, { rf_notation }) -> rf_notation) cfs
+    ; nots = List.map (fun (_, { rf_notation }) -> List.map Metasyntax.prepare_where_notation rf_notation) cfs
     ; fs
     }
 end

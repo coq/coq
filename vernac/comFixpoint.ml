@@ -212,7 +212,7 @@ let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let sigma, fixdefs =
     Metasyntax.with_syntax_protection (fun () ->
-      let notations = List.map_append (fun { Vernacexpr.notations } -> notations) fixl in
+      let notations = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations) fixl in
       List.iter (Metasyntax.set_notation_for_interpretation env_rec impls) notations;
       List.fold_left4_map
         (fun sigma fixctximpenv -> interp_fix_body ~program_mode env_rec sigma (Id.Map.fold Id.Map.add fixctximpenv impls))
@@ -279,7 +279,7 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ?typing_flags ((f
     Declare.Proof.start_mutual_with_initialization ~info
       evd ~mutual_info:(cofix,indexes,init_terms) ~cinfo:thms None in
   (* Declare notations *)
-  List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
+  List.iter (Metasyntax.add_notation_interpretation ~local:(scope=Locality.Discharge) (Global.env())) ntns;
   lemma
 
 let declare_fixpoint_generic ?indexes ~scope ~poly ?typing_flags ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
@@ -324,7 +324,7 @@ let do_fixpoint_common ?typing_flags (fixl : Vernacexpr.fixpoint_expr list) =
   let fixl = List.map (fun fix ->
       Vernacexpr.{ fix
                    with rec_order = adjust_rec_order ~structonly:true fix.binders fix.rec_order }) fixl in
-  let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
+  let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   let (_, _, _, info as fix) = interp_fixpoint ~cofix:false ?typing_flags fixl in
   fixl, ntns, fix, List.map compute_possible_guardness_evidences info
 
@@ -339,7 +339,7 @@ let do_fixpoint ~scope ~poly ?typing_flags ?using l =
 
 let do_cofixpoint_common (fixl : Vernacexpr.cofixpoint_expr list) =
   let fixl = List.map (fun fix -> {fix with Vernacexpr.rec_order = None}) fixl in
-  let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
+  let ntns = List.map_append (fun { Vernacexpr.notations } -> List.map Metasyntax.prepare_where_notation notations ) fixl in
   interp_fixpoint ~cofix:true fixl, ntns
 
 let do_cofixpoint_interactive ~scope ~poly l =

@@ -143,7 +143,7 @@ val declare_mutually_recursive
   : info:Info.t
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
-  -> ntns:Vernacexpr.decl_notation list
+  -> ntns:Metasyntax.where_decl_notation list
   -> uctx:UState.t
   -> rec_declaration:Constr.rec_declaration
   -> possible_indexes:lemma_possible_guards option
@@ -515,7 +515,7 @@ val add_mutual_definitions :
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
   -> ?opaque:bool
-  -> ntns:Vernacexpr.decl_notation list
+  -> ntns:Metasyntax.where_decl_notation list
   -> fixpoint_kind
   -> OblState.t
 
