@@ -9,7 +9,11 @@
 (************************************************************************)
 open Scheduler
 
-let log msg = Format.eprintf "@[%s@]@\n%!" msg
+let debug_document = CDebug.create ~name:"document"
+
+let log msg =
+  if CDebug.get_debug_level "document" >= 2 then
+  Format.eprintf "@[%s@]@\n%!" msg
 
 module Position = struct
 
@@ -475,7 +479,6 @@ let rec junk_sentence_end stream =
 
 (** Parse until we need to execute more. *)
 let rec parse_more parsing_state stream raw parsed =
-  log "Parsing more";
   let handle_parse_error start msg =
     log @@ "handling parse error at " ^ string_of_int start;
     junk_sentence_end stream;
