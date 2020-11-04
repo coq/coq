@@ -25,7 +25,8 @@ let open_header = ["Nativevalues";
 let open_header = List.map mk_open open_header
 
 (* Directory where compiled files are stored *)
-let output_dir = ref ".coq-native"
+let dft_output_dir = ".coq-native"
+let output_dir = ref dft_output_dir
 
 (* Extension of generated ml files, stored for debugging purposes *)
 let source_ext = ".native"
@@ -92,9 +93,14 @@ let error_native_compiler_failed e =
   CErrors.user_err msg
 
 let call_compiler ?profile:(profile=false) ml_filename =
-  let load_path = !get_load_paths () in
-  let load_path = List.map (fun dn -> dn / !output_dir) load_path in
-  let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (get_include_dirs () @ load_path)) in
+  (* The below path is computed from Require statements, by uniquizing
+     the paths, see [Library.get_used_load_paths] This is in general
+     hacky and we should do a bit better once we move loadpath to its
+     own library *)
+  let require_load_path = !get_load_paths () in
+  (* We assume that installed files always go in .coq-native for now *)
+  let install_load_path = List.map (fun dn -> dn / dft_output_dir) require_load_path in
+  let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (get_include_dirs () @ install_load_path)) in
   let f = Filename.chop_extension ml_filename in
   let link_filename = f ^ ".cmo" in
   let link_filename = Dynlink.adapt_filename link_filename in
@@ -186,5 +192,10 @@ let call_linker ?(fatal=true) env ~prefix f upds =
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library env ~prefix ~dirname ~basename =
-  let f = dirname / !output_dir / basename in
+  (* We try both [output_dir] and [.coq-native], unfortunately from
+     [Require] we don't know if we are loading a library in the build
+     dir or in the installed layout *)
+  let install_location = dirname / dft_output_dir / basename in
+  let build_location = dirname / !output_dir / basename in
+  let f = if Sys.file_exists build_location then build_location else install_location in
   call_linker env ~fatal:false ~prefix f None
