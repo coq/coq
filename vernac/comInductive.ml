@@ -327,8 +327,13 @@ let inductive_levels env evd arities inds =
         let duu = Sorts.univ_of_sort du in
         let template_prop, evd =
           if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
-            if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu) then
-              true, Evd.set_eq_sort env evd Sorts.prop du
+            if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu)
+            then if Term.isArity arity
+            (* If not a syntactic arity, the universe may be used in a
+               polymorphic instance and so cannot be lowered to Prop.
+               See #13300. *)
+              then true, Evd.set_eq_sort env evd Sorts.prop du
+              else false, Evd.set_eq_sort env evd Sorts.set du
             else false, evd
           else false, Evd.set_eq_sort env evd (sort_of_univ cu) du
         in
