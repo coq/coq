@@ -479,10 +479,6 @@ module Latex = struct
 
   let end_coq () = printf "\\end{coqdoccode}\n"
 
-  let start_code () = end_doc (); start_coq ()
-
-  let end_code () = end_coq (); start_doc ()
-
   let section_kind = function
     | 1 -> "\\section{"
     | 2 -> "\\subsection{"
@@ -753,10 +749,6 @@ module Html = struct
   let start_comment () = printf "<span class=\"comment\">(*"
 
   let end_comment () = printf "*)</span>"
-
-  let start_code () = end_doc (); start_coq ()
-
-  let end_code () = end_coq (); start_doc ()
 
   let start_inline_coq () =
     if !inline_notmono then printf "<span class=\"inlinecodenm\">"
@@ -1069,9 +1061,6 @@ module TeXmacs = struct
   let start_comment () = ()
   let end_comment () = ()
 
-  let start_code () = in_doc := true; printf "<\\code>\n"
-  let end_code () = in_doc := false; printf "\n</code>"
-
   let section_kind = function
     | 1 -> "section"
     | 2 -> "subsection"
@@ -1181,9 +1170,6 @@ module Raw = struct
   let start_coq () = ()
   let end_coq () = ()
 
-  let start_code () = end_doc (); start_coq ()
-  let end_code () = end_coq (); start_doc ()
-
   let section_kind =
     function
       | 1 -> "* "
@@ -1239,9 +1225,6 @@ let end_comment = select Latex.end_comment Html.end_comment TeXmacs.end_comment 
 
 let start_coq = select Latex.start_coq Html.start_coq TeXmacs.start_coq Raw.start_coq
 let end_coq = select Latex.end_coq Html.end_coq TeXmacs.end_coq Raw.end_coq
-
-let start_code = select Latex.start_code Html.start_code TeXmacs.start_code Raw.start_code
-let end_code = select Latex.end_code Html.end_code TeXmacs.end_code Raw.end_code
 
 let start_inline_coq =
   select Latex.start_inline_coq Html.start_inline_coq TeXmacs.start_inline_coq Raw.start_inline_coq
