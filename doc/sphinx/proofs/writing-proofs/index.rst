@@ -27,9 +27,9 @@ flavors of tactics, including the SSReflect proof language.
 .. toctree::
    :maxdepth: 1
 
-   ../../proof-engine/proof-handling
+   proof-mode
    ../../proof-engine/tactics
-    rewriting
+   rewriting
    ../../proof-engine/ssreflect-proof-language
    ../../proof-engine/detailed-tactic-examples
    ../../user-extensions/proof-schemes

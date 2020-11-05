@@ -855,6 +855,3 @@ Conversion tactics applied to hypotheses
    definition.
 
    Example: :n:`unfold not in (type of H1) (type of H3)`.
-
-.. exn:: No such hypothesis: @ident.
-   :undocumented:

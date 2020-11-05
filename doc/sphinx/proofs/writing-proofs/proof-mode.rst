@@ -824,24 +824,24 @@ new, no line of old text is shown for them.
 
 ..
 
-  .. image:: ../_static/diffs-coqide-on.png
+  .. image:: ../../_static/diffs-coqide-on.png
      :alt: |CoqIDE| with Set Diffs on
 
 ..
 
-  .. image:: ../_static/diffs-coqide-removed.png
+  .. image:: ../../_static/diffs-coqide-removed.png
      :alt: |CoqIDE| with Set Diffs removed
 
 ..
 
-  .. image:: ../_static/diffs-coqtop-on3.png
+  .. image:: ../../_static/diffs-coqtop-on3.png
      :alt: coqtop with Set Diffs on
 
 This image shows an error message with diff highlighting in |CoqIDE|:
 
 ..
 
-  .. image:: ../_static/diffs-error-message.png
+  .. image:: ../../_static/diffs-error-message.png
      :alt: |CoqIDE| error message with diffs
 
 How to enable diffs
@@ -943,7 +943,7 @@ the split because it has not changed.
 
 ..
 
-  .. image:: ../_static/diffs-coqide-multigoal.png
+  .. image:: ../../_static/diffs-coqide-multigoal.png
      :alt: coqide with Set Diffs on with multiple goals
 
 Diffs may appear like this after applying a :tacn:`intro` tactic that results
@@ -951,7 +951,7 @@ in a compacted hypotheses:
 
 ..
 
-  .. image:: ../_static/diffs-coqide-compacted.png
+  .. image:: ../../_static/diffs-coqide-compacted.png
      :alt: coqide with Set Diffs on with compacted hypotheses
 
 .. _showing_proof_diffs:
@@ -974,7 +974,7 @@ To show differences in the proof term:
 
   ..
 
-    .. image:: ../_static/diffs-show-proof.png
+    .. image:: ../../_static/diffs-show-proof.png
        :alt: coqide with Set Diffs on with compacted hypotheses
 
 Controlling the effect of proof editing commands

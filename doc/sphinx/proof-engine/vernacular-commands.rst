@@ -990,11 +990,6 @@ described first.
    has to check the conversion (see Section :ref:`conversion-rules`) of two distinct
    applied constants.
 
-   .. seealso::
-
-      Sections :ref:`performingcomputations`, :ref:`tactics-automating`,
-      :ref:`proof-editing-mode`
-
 .. cmd:: Transparent {+ @reference }
 
    This command accepts the :attr:`global` attribute.  By default, the scope
@@ -1015,10 +1010,7 @@ described first.
 
       There is no constant named :n:`@qualid` in the environment.
 
-      .. seealso::
-
-         Sections :ref:`performingcomputations`,
-         :ref:`tactics-automating`, :ref:`proof-editing-mode`
+.. seealso:: :ref:`performingcomputations` and :ref:`proof-editing-mode`
 
 .. _vernac-strategy:
 
