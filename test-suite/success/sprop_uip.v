@@ -121,6 +121,33 @@ Proof.
   simpl. Fail check.
 Abort.
 
+Module HoTTStyle.
+  (* a small proof which tests destruct in a tricky case *)
+
+  Definition ap {A B} (f:A -> B) {x y} (e : seq x y) : seq (f x) (f y).
+  Proof. destruct e. reflexivity. Defined.
+
+  Section S.
+    Context
+      (A : Type)
+      (B : Type)
+      (f : A -> B)
+      (g : B -> A)
+      (section : forall a, seq (g (f a)) a)
+      (retraction : forall b, seq (f (g b)) b).
+
+    Lemma bla (P : B -> Type) (a : A) (F : forall a, P (f a))
+      : seq_rect _ (f (g (f a))) (fun a _ => P a) (F (g (f a))) (f a) (retraction (f a)) = F a.
+    Proof.
+      lazy.
+      change (retraction (f a)) with (ap f (section a)).
+      destruct (section a).
+      reflexivity.
+    Qed.
+  End S.
+
+End HoTTStyle.
+
 (* check that extraction doesn't fall apart on matches with special reduction *)
 Require Extraction.
 
