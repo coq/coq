@@ -1386,7 +1386,7 @@ Scopes` or :cmd:`Print Scope`.
 ``char_scope``
   This scope includes interpretation for all strings of the form ``"c"``
   where :g:`c` is an ASCII character, or of the form ``"nnn"`` where nnn is
-  a three-digits number (possibly with leading 0's), or of the form
+  a three-digit number (possibly with leading 0s), or of the form
   ``""""``. Their respective denotations are the ASCII code of :g:`c`, the
   decimal ASCII code ``nnn``, or the ascii code of the character ``"`` (i.e.
   the ASCII code 34), all of them being represented in the type :g:`ascii`.
@@ -1553,16 +1553,18 @@ numbers (see :ref:`datatypes`).
 Number notations
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Number Notation @qualid__type @qualid__parse @qualid__print : @scope_name {? @numeral_modifier }
+.. cmd:: Number Notation @qualid__type @qualid__parse @qualid__print {? ( {+, @number_modifier } ) } : @scope_name
    :name: Number Notation
 
-   .. insertprodn numeral_modifier numeral_modifier
+   .. insertprodn number_modifier number_string_via
 
    .. prodn::
-      numeral_modifier ::= ( warning after @bignat )
-      | ( abstract after @bignat )
+      number_modifier ::= warning after @bignat
+      | abstract after @bignat
+      | @number_string_via
+      number_string_via ::= via @qualid mapping [ {+, {| @qualid => @qualid | [ @qualid ] => @qualid } } ]
 
-   This command allows the user to customize the way numeral literals
+   This command allows the user to customize the way number literals
    are parsed and printed.
 
       :n:`@qualid__type`
@@ -1571,32 +1573,32 @@ Number notations
          parsing and printing functions, respectively.  The parsing function
          :n:`@qualid__parse` should have one of the following types:
 
-            * :n:`Numeral.int -> @qualid__type`
-            * :n:`Numeral.int -> option @qualid__type`
-            * :n:`Numeral.uint -> @qualid__type`
-            * :n:`Numeral.uint -> option @qualid__type`
+            * :n:`Number.int -> @qualid__type`
+            * :n:`Number.int -> option @qualid__type`
+            * :n:`Number.uint -> @qualid__type`
+            * :n:`Number.uint -> option @qualid__type`
             * :n:`Z -> @qualid__type`
             * :n:`Z -> option @qualid__type`
-            * :n:`Numeral.numeral -> @qualid__type`
-            * :n:`Numeral.numeral -> option @qualid__type`
+            * :n:`Number.number -> @qualid__type`
+            * :n:`Number.number -> option @qualid__type`
 
          And the printing function :n:`@qualid__print` should have one of the
          following types:
 
-            * :n:`@qualid__type -> Numeral.int`
-            * :n:`@qualid__type -> option Numeral.int`
-            * :n:`@qualid__type -> Numeral.uint`
-            * :n:`@qualid__type -> option Numeral.uint`
+            * :n:`@qualid__type -> Number.int`
+            * :n:`@qualid__type -> option Number.int`
+            * :n:`@qualid__type -> Number.uint`
+            * :n:`@qualid__type -> option Number.uint`
             * :n:`@qualid__type -> Z`
             * :n:`@qualid__type -> option Z`
-            * :n:`@qualid__type -> Numeral.numeral`
-            * :n:`@qualid__type -> option Numeral.numeral`
+            * :n:`@qualid__type -> Number.number`
+            * :n:`@qualid__type -> option Number.number`
 
          .. deprecated:: 8.12
-            Numeral notations on :g:`Decimal.uint`, :g:`Decimal.int` and
-            :g:`Decimal.decimal` are replaced respectively by numeral
-            notations on :g:`Numeral.uint`, :g:`Numeral.int` and
-            :g:`Numeral.numeral`.
+            Number notations on :g:`Decimal.uint`, :g:`Decimal.int` and
+            :g:`Decimal.decimal` are replaced respectively by number
+            notations on :g:`Number.uint`, :g:`Number.int` and
+            :g:`Number.number`.
 
          When parsing, the application of the parsing function
          :n:`@qualid__parse` to the number will be fully reduced, and universes
@@ -1606,7 +1608,44 @@ Number notations
          function application, constructors, inductive type families,
          sorts, and primitive integers) will be considered for printing.
 
-      :n:`( warning after @bignat )`
+      .. _number-string-via:
+
+      :n:`via @qualid__ind mapping [ {+, @qualid__constant => @qualid__constructor } ]`
+         When using this option, :n:`@qualid__type` no
+         longer needs to be an inductive type and is instead mapped to the
+         inductive type :n:`@qualid__ind` according to the provided
+         list of pairs, whose first component :n:`@qualid__constant` is a
+         constant of type :n:`@qualid__type`
+         (or a function of type :n:`{* _ -> } @qualid__type`) and the second a
+         constructor of type :n:`@qualid__ind`. The type
+         :n:`@qualid__type` is then replaced by :n:`@qualid__ind` in the
+         above parser and printer types.
+
+         When :n:`@qualid__constant` is surrounded by square brackets,
+         all the implicit arguments of :n:`@qualid__constant` (whether maximally inserted or not) are ignored
+         when translating to :n:`@qualid__constructor` (i.e., before
+         applying :n:`@qualid__print`) and replaced with implicit
+         argument holes :g:`_` when translating from
+         :n:`@qualid__constructor` to :n:`@qualid__constant` (after
+         :n:`@qualid__parse`). See below for an :ref:`example <example-number-notation-implicit-args>`.
+
+         .. note::
+            The implicit status of the arguments is considered
+            only at notation declaration time, any further
+            modification of this status has no impact
+            on the previously declared notations.
+
+         .. note::
+            In case of multiple implicit options (for instance
+            :g:`Arguments eq_refl {A}%type_scope {x}, [_] _`), an
+            argument is considered implicit when it is implicit in any of the
+            options.
+
+         .. note::
+            To use a :token:`sort` as the target type :n:`@qualid__type`, use an :ref:`abbreviation <Abbreviations>`
+            as in the :ref:`example below <example-number-notation-non-inductive>`.
+
+      :n:`warning after @bignat`
          displays a warning message about a possible stack
          overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@bignat`.
 
@@ -1616,11 +1655,11 @@ Number notations
             with :n:`(warning after @bignat)`, this warning is emitted when
             parsing a number greater than or equal to :token:`bignat`.
 
-      :n:`( abstract after @bignat )`
+      :n:`abstract after @bignat`
          returns :n:`(@qualid__parse m)` when parsing a literal
          :n:`m` that's greater than :n:`@bignat` rather than reducing it to a normal form.
          Here :g:`m` will be a
-         :g:`Numeral.int`, :g:`Numeral.uint`, :g:`Z` or :g:`Numeral.numeral`, depending on the
+         :g:`Number.int`, :g:`Number.uint`, :g:`Z` or :g:`Number.number`, depending on the
          type of the parsing function :n:`@qualid__parse`. This allows for a
          more compact representation of literals in types such as :g:`nat`,
          and limits parse failures due to stack overflow.  Note that a
@@ -1642,76 +1681,94 @@ Number notations
             As noted above, the :n:`(abstract after @natural)` directive has no
             effect when :n:`@qualid__parse` lands in an :g:`option` type.
 
+         .. exn:: 'via' and 'abstract' cannot be used together.
+
+            With the :n:`abstract after` option, the parser function
+            :n:`@qualid__parse` does not reduce large numbers to a normal form,
+            which prevents doing the translation given in the :n:`mapping` list.
+
    .. exn:: Cannot interpret this number as a value of type @type
 
-     The numeral notation registered for :token:`type` does not support
+     The number notation registered for :token:`type` does not support
      the given number.  This error is given when the interpretation
      function returns :g:`None`, or if the interpretation is registered
      only for integers or non-negative integers, and the given number
      has a fractional or exponent part or is negative.
 
 
-   .. exn:: @qualid__parse should go from Numeral.int to @type or (option @type). Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
+   .. exn:: @qualid__parse should go from Number.int to @type or (option @type). Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).
 
      The parsing function given to the :cmd:`Number Notation`
      vernacular is not of the right type.
 
-   .. exn:: @qualid__print should go from @type to Numeral.int or (option Numeral.int).  Instead of Numeral.int, the types Numeral.uint or Z or Int63.int or Numeral.numeral could be used (you may need to require BinNums or Numeral or Int63 first).
+   .. exn:: @qualid__print should go from @type to Number.int or (option Number.int).  Instead of Number.int, the types Number.uint or Z or Int63.int or Number.number could be used (you may need to require BinNums or Number or Int63 first).
 
      The printing function given to the :cmd:`Number Notation`
      vernacular is not of the right type.
 
-   .. exn:: Unexpected term @term while parsing a numeral notation.
+   .. exn:: Unexpected term @term while parsing a number notation.
 
      Parsing functions must always return ground terms, made up of
-     applications of constructors, inductive types, and primitive
+     function application, constructors, inductive type families, sorts and primitive
      integers.  Parsing functions may not return terms containing
      axioms, bare (co)fixpoints, lambdas, etc.
 
-   .. exn:: Unexpected non-option term @term while parsing a numeral notation.
+   .. exn:: Unexpected non-option term @term while parsing a number notation.
 
      Parsing functions expected to return an :g:`option` must always
      return a concrete :g:`Some` or :g:`None` when applied to a
      concrete number expressed as a (hexa)decimal.  They may not return
      opaque constants.
 
+   .. exn:: Multiple 'via' options.
+
+     At most one :g:`via` option can be given.
+
+   .. exn:: Multiple 'warning after' or 'abstract after' options.
+
+     At most one :g:`warning after` or :g:`abstract after` option can be given.
+
 .. _string-notations:
 
 String notations
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: String Notation @qualid @qualid__parse @qualid__print : @scope_name
+.. cmd:: String Notation @qualid__type @qualid__parse @qualid__print {? ( @number_string_via ) } : @scope_name
    :name: String Notation
 
    Allows the user to customize how strings are parsed and printed.
 
-   The token :n:`@qualid` should be the name of an inductive type,
-   while :n:`@qualid__parse` and :n:`@qualid__print` should be the names of the
-   parsing and printing functions, respectively.  The parsing function
-   :n:`@qualid__parse` should have one of the following types:
+      :n:`@qualid__type`
+         the name of an inductive type,
+         while :n:`@qualid__parse` and :n:`@qualid__print` should be the names of the
+         parsing and printing functions, respectively.  The parsing function
+         :n:`@qualid__parse` should have one of the following types:
 
-      * :n:`Byte.byte -> @qualid`
-      * :n:`Byte.byte -> option @qualid`
-      * :n:`list Byte.byte -> @qualid`
-      * :n:`list Byte.byte -> option @qualid`
+            * :n:`Byte.byte -> @qualid__type`
+            * :n:`Byte.byte -> option @qualid__type`
+            * :n:`list Byte.byte -> @qualid__type`
+            * :n:`list Byte.byte -> option @qualid__type`
 
-   The printing function :n:`@qualid__print` should have one of the
-   following types:
+         The printing function :n:`@qualid__print` should have one of the
+         following types:
 
-      * :n:`@qualid -> Byte.byte`
-      * :n:`@qualid -> option Byte.byte`
-      * :n:`@qualid -> list Byte.byte`
-      * :n:`@qualid -> option (list Byte.byte)`
+            * :n:`@qualid__type -> Byte.byte`
+            * :n:`@qualid__type -> option Byte.byte`
+            * :n:`@qualid__type -> list Byte.byte`
+            * :n:`@qualid__type -> option (list Byte.byte)`
 
-   When parsing, the application of the parsing function
-   :n:`@qualid__parse` to the string will be fully reduced, and universes
-   of the resulting term will be refreshed.
+         When parsing, the application of the parsing function
+         :n:`@qualid__parse` to the string will be fully reduced, and universes
+         of the resulting term will be refreshed.
 
-   Note that only fully-reduced ground terms (terms containing only
-   function application, constructors, inductive type families,
-   sorts, and primitive integers) will be considered for printing.
+         Note that only fully-reduced ground terms (terms containing only
+         function application, constructors, inductive type families,
+         sorts, and primitive integers) will be considered for printing.
 
-   .. exn:: Cannot interpret this string as a value of type @type
+      :n:`via @qualid__ind mapping [ {+, @qualid__constant => @qualid__constructor } ]`
+         works as for :ref:`number notations above <number-string-via>`.
+
+  .. exn:: Cannot interpret this string as a value of type @type
 
      The string notation registered for :token:`type` does not support
      the given string.  This error is given when the interpretation
@@ -1730,7 +1787,7 @@ String notations
    .. exn:: Unexpected term @term while parsing a string notation.
 
      Parsing functions must always return ground terms, made up of
-     applications of constructors, inductive types, and primitive
+     function application, constructors, inductive type families, sorts and primitive
      integers.  Parsing functions may not return terms containing
      axioms, bare (co)fixpoints, lambdas, etc.
 
@@ -1741,16 +1798,37 @@ String notations
      concrete string expressed as a decimal.  They may not return
      opaque constants.
 
-The following errors apply to both string and numeral notations:
+.. note::
+   Number or string notations for parameterized inductive types can be
+   added by declaring an :ref:`abbreviation <Abbreviations>` for the
+   inductive which instantiates all parameters. See :ref:`example below <example-string-notation-parameterized-inductive>`.
+
+The following errors apply to both string and number notations:
 
    .. exn:: @type is not an inductive type.
 
-     String and numeral notations can only be declared for inductive types with no
-     arguments.
+     String and number notations can only be declared for inductive types.
+     Declare string or numeral notations for non-inductive types using :n:`@number_string_via`.
+
+   .. exn:: @qualid was already mapped to @qualid and cannot be remapped to @qualid
+
+      Duplicates are not allowed in the :n:`mapping` list.
+
+   .. exn:: Missing mapping for constructor @qualid
+
+      A mapping should be provided for :n:`@qualid` in the :n:`mapping` list.
+
+   .. warn:: @type was already mapped to @type, mapping it also to @type might yield ill typed terms when using the notation.
+
+      Two pairs in the :n:`mapping` list associate types that might be incompatible.
+
+   .. warn:: Type of @qualid seems incompatible with the type of @qualid. Expected type is: @type instead of @type. This might yield ill typed terms when using the notation.
+
+      A mapping given in the :n:`mapping` list associates a constant with a seemingly incompatible constructor.
 
    .. exn:: Cannot interpret in @scope_name because @qualid could not be found in the current environment.
 
-     The inductive type used to register the string or numeral notation is no
+     The inductive type used to register the string or number notation is no
      longer available in the environment.  Most likely, this is because
      the notation was declared inside a functor for an
      inductive type inside the functor.  This use case is not currently
@@ -1778,6 +1856,198 @@ The following errors apply to both string and numeral notations:
      references, or notations which evaluate to single qualified identifiers.
 
      .. todo note on "single qualified identifiers" https://github.com/coq/coq/pull/11718#discussion_r415076703
+
+.. example:: Number Notation for radix 3
+
+   The following example parses and prints natural numbers
+   whose digits are :g:`0`, :g:`1` or :g:`2` as terms of the following
+   inductive type encoding radix 3 numbers.
+
+   .. coqtop:: in reset
+
+      Inductive radix3 : Set :=
+        | x0 : radix3
+        | x3 : radix3 -> radix3
+        | x3p1 : radix3 -> radix3
+        | x3p2 : radix3 -> radix3.
+
+   We first define a parsing function
+
+   .. coqtop:: in
+
+      Definition of_uint_dec (u : Decimal.uint) : option radix3 :=
+        let fix f u := match u with
+          | Decimal.Nil => Some x0
+          | Decimal.D0 u => match f u with Some u => Some (x3 u) | None => None end
+          | Decimal.D1 u => match f u with Some u => Some (x3p1 u) | None => None end
+          | Decimal.D2 u => match f u with Some u => Some (x3p2 u) | None => None end
+          | _ => None end in
+        f (Decimal.rev u).
+      Definition of_uint (u : Number.uint) : option radix3 :=
+        match u with Number.UIntDecimal u => of_uint_dec u | Number.UIntHexadecimal _ => None end.
+
+   and a printing function
+
+   .. coqtop:: in
+
+      Definition to_uint_dec (x : radix3) : Decimal.uint :=
+        let fix f x := match x with
+          | x0 => Decimal.Nil
+          | x3 x => Decimal.D0 (f x)
+          | x3p1 x => Decimal.D1 (f x)
+          | x3p2 x => Decimal.D2 (f x) end in
+        Decimal.rev (f x).
+      Definition to_uint (x : radix3) : Number.uint := Number.UIntDecimal (to_uint_dec x).
+
+   before declaring the notation
+
+   .. coqtop:: in
+
+      Declare Scope radix3_scope.
+      Open Scope radix3_scope.
+      Number Notation radix3 of_uint to_uint : radix3_scope.
+
+   We can check the printer
+
+   .. coqtop:: all
+
+      Check x3p2 (x3p1 x0).
+
+   and the parser
+
+   .. coqtop:: all
+
+      Set Printing All.
+      Check 120.
+
+   Digits other than :g:`0`, :g:`1` and :g:`2` are rejected.
+
+   .. coqtop:: all fail
+
+      Check 3.
+
+.. _example-number-notation-non-inductive:
+
+.. example:: Number Notation for a non inductive type
+
+   The following example encodes the terms in the form :g:`sum unit ( ... (sum unit unit) ... )`
+   as the number of units in the term. For instance :g:`sum unit (sum unit unit)`
+   is encoded as :g:`3` while :g:`unit` is :g:`1` and :g:`0` stands for :g:`Empty_set`.
+   The inductive :g:`I` will be used as :n:`@qualid__ind`.
+
+   .. coqtop:: in reset
+
+      Inductive I := Iempty : I | Iunit : I | Isum : I -> I -> I.
+
+   We then define :n:`@qualid__parse` and :n:`@qualid__print`
+
+   .. coqtop:: in
+
+      Definition of_uint (x : Number.uint) : I :=
+        let fix f n := match n with
+          | O => Iempty | S O => Iunit
+          | S n => Isum Iunit (f n) end in
+        f (Nat.of_num_uint x).
+
+      Definition to_uint (x : I) : Number.uint :=
+        let fix f i := match i with
+          | Iempty => O | Iunit => 1
+          | Isum i1 i2 => f i1 + f i2 end in
+        Nat.to_num_uint (f x).
+
+      Inductive sum (A : Set) (B : Set) : Set := pair : A -> B -> sum A B.
+
+   the number notation itself
+
+   .. coqtop:: in
+
+      Notation nSet := Set (only parsing).
+      Number Notation nSet of_uint to_uint (via I
+        mapping [Empty_set => Iempty, unit => Iunit, sum => Isum]) : type_scope.
+
+   and check the printer
+
+   .. coqtop:: all
+
+      Local Open Scope type_scope.
+      Check sum unit (sum unit unit).
+
+   and the parser
+
+   .. coqtop:: all
+
+      Set Printing All.
+      Check 3.
+
+.. _example-number-notation-implicit-args:
+
+.. example:: Number Notation with implicit arguments
+
+   The following example parses and prints natural numbers between
+   :g:`0` and :g:`n-1` as terms of type :g:`Fin.t n`.
+
+   .. coqtop:: all reset
+
+      Require Import Vector.
+      Print Fin.t.
+
+   Note the implicit arguments of :g:`Fin.F1` and :g:`Fin.FS`,
+   which won't appear in the corresponding inductive type.
+
+   .. coqtop:: in
+
+      Inductive I := I1 : I | IS : I -> I.
+
+      Definition of_uint (x : Number.uint) : I :=
+        let fix f n := match n with O => I1 | S n => IS (f n) end in
+        f (Nat.of_num_uint x).
+
+      Definition to_uint (x : I) : Number.uint :=
+        let fix f i := match i with I1 => O | IS n => S (f n) end in
+        Nat.to_num_uint (f x).
+
+      Declare Scope fin_scope.
+      Delimit Scope fin_scope with fin.
+      Local Open Scope fin_scope.
+      Number Notation Fin.t of_uint to_uint (via I
+        mapping [[Fin.F1] => I1, [Fin.FS] => IS]) : fin_scope.
+
+   Now :g:`2` is parsed as :g:`Fin.FS (Fin.FS Fin.F1)`, that is
+   :g:`@Fin.FS _ (@Fin.FS _ (@Fin.F1 _))`.
+
+   .. coqtop:: all
+
+      Check 2.
+
+   which can be of type :g:`Fin.t 3` (numbers :g:`0`, :g:`1` and :g:`2`)
+
+   .. coqtop:: all
+
+      Check 2 : Fin.t 3.
+
+   but cannot be of type :g:`Fin.t 2` (only :g:`0` and :g:`1`)
+
+   .. coqtop:: all fail
+
+      Check 2 : Fin.t 2.
+
+.. _example-string-notation-parameterized-inductive:
+
+.. example:: String Notation with a parameterized inductive type
+
+   The parameter :g:`Byte.byte` for the parameterized inductive type
+   :g:`list` is given through an :ref:`abbreviation <Abbreviations>`.
+
+   .. coqtop:: in reset
+
+      Notation string := (list Byte.byte) (only parsing).
+      Definition id_string := @id string.
+
+      String Notation string id_string id_string : list_scope.
+
+   .. coqtop:: all
+
+      Check "abc"%list.
 
 .. _TacticNotation:
 

@@ -50,12 +50,32 @@ let locate_global_with_alias ?(head=false) qid =
     user_err ?loc:qid.CAst.loc (pr_qualid qid ++
       str " is bound to a notation that does not denote a reference.")
 
+let global_constant_with_alias qid  =
+  try match locate_global_with_alias qid with
+  | Names.GlobRef.ConstRef c -> c
+  | ref ->
+      user_err ?loc:qid.CAst.loc ~hdr:"global_inductive"
+        (pr_qualid qid ++ spc () ++ str "is not a reference to a constant.")
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
+    Nametab.error_global_not_found ~info qid
+
 let global_inductive_with_alias qid  =
   try match locate_global_with_alias qid with
   | Names.GlobRef.IndRef ind -> ind
   | ref ->
       user_err ?loc:qid.CAst.loc ~hdr:"global_inductive"
         (pr_qualid qid ++ spc () ++ str "is not an inductive type.")
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
+    Nametab.error_global_not_found ~info qid
+
+let global_constructor_with_alias qid  =
+  try match locate_global_with_alias qid with
+  | Names.GlobRef.ConstructRef c -> c
+  | ref ->
+      user_err ?loc:qid.CAst.loc ~hdr:"global_inductive"
+        (pr_qualid qid ++ spc () ++ str "is not a constructor of an inductive type.")
   with Not_found as exn ->
     let _, info = Exninfo.capture exn in
     Nametab.error_global_not_found ~info qid
@@ -72,9 +92,17 @@ let smart_global ?(head = false) = let open Constrexpr in CAst.with_loc_val (fun
   | ByNotation (ntn,sc) ->
     Notation.interp_notation_as_global_reference ?loc ~head (fun _ -> true) ntn sc)
 
-let smart_global_inductive = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
-  | AN r ->
-    global_inductive_with_alias r
+let smart_global_kind f dest is = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
+  | AN r -> f r
   | ByNotation (ntn,sc) ->
-    destIndRef
-      (Notation.interp_notation_as_global_reference ?loc ~head:false isIndRef ntn sc))
+    dest
+      (Notation.interp_notation_as_global_reference ?loc ~head:false is ntn sc))
+
+let smart_global_constant =
+  smart_global_kind global_constant_with_alias destConstRef isConstRef
+
+let smart_global_inductive =
+  smart_global_kind global_inductive_with_alias destIndRef isIndRef
+
+let smart_global_constructor =
+  smart_global_kind global_constructor_with_alias destConstructRef isConstructRef

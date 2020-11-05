@@ -58,7 +58,7 @@ type abstraction_kind = AbsLambda | AbsPi
 type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
 type prim_token =
-  | Numeral of NumTok.Signed.t
+  | Number of NumTok.Signed.t
   | String of string
 
 type instance_expr = Glob_term.glob_level list

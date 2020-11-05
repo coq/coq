@@ -538,12 +538,11 @@ let autoloaded_mlgs = [ (* in the order they are loaded by Coq *)
  "plugins/ltac/g_eqdecide.mlg";
  "plugins/ltac/g_tactic.mlg";
  "plugins/ltac/g_ltac.mlg";
- "plugins/syntax/g_string.mlg";
  "plugins/btauto/g_btauto.mlg";
  "plugins/rtauto/g_rtauto.mlg";
  "plugins/cc/g_congruence.mlg";
  "plugins/firstorder/g_ground.mlg";
- "plugins/syntax/g_numeral.mlg";
+ "plugins/syntax/g_number_string.mlg";
 ]
 
 

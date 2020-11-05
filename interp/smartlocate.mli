@@ -28,11 +28,23 @@ val global_of_extended_global : extended_global_reference -> GlobRef.t
     a reference. *)
 val global_with_alias : ?head:bool -> qualid -> GlobRef.t
 
+(** The same for constants *)
+val global_constant_with_alias : qualid -> Constant.t
+
 (** The same for inductive types *)
 val global_inductive_with_alias : qualid -> inductive
+
+(** The same for constructors of an inductive type *)
+val global_constructor_with_alias : qualid -> constructor
 
 (** Locate a reference taking into account notations and "aliases" *)
 val smart_global : ?head:bool -> qualid Constrexpr.or_by_notation -> GlobRef.t
 
+(** The same for constants *)
+val smart_global_constant : qualid Constrexpr.or_by_notation -> Constant.t
+
 (** The same for inductive types *)
 val smart_global_inductive : qualid Constrexpr.or_by_notation -> inductive
+
+(** The same for constructors of an inductive type *)
+val smart_global_constructor : qualid Constrexpr.or_by_notation -> constructor

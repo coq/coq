@@ -43,6 +43,7 @@ let _ =
        let id_int63 = Nametab.locate q_id_int63 in
        let o = { to_kind = Int63, Direct;
                  to_ty = id_int63;
+                 to_post = [||];
                  of_kind = Int63, Direct;
                  of_ty = id_int63;
                  ty_name = q_int63;
@@ -50,7 +51,7 @@ let _ =
        enable_prim_token_interpretation
          { pt_local = false;
            pt_scope = int63_scope;
-           pt_interp_info = NumeralNotation o;
+           pt_interp_info = NumberNotation o;
            pt_required = (int63_path, int63_module);
            pt_refs = [];
            pt_in_match = false })

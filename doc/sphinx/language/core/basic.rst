@@ -113,7 +113,7 @@ Identifiers
 
 Numbers
   Numbers are sequences of digits with an optional fractional part
-  and exponent, optionally preceded by a minus sign. Hexadecimal numerals
+  and exponent, optionally preceded by a minus sign. Hexadecimal numbers
   start with ``0x`` or ``0X``. :n:`@bigint` are integers;
   numbers without fractional nor exponent parts. :n:`@bignat` are non-negative
   integers.  Underscores embedded in the digits are ignored, for example

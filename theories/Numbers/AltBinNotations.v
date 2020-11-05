@@ -17,7 +17,7 @@
     the [Decimal.int] representation. When working with numbers with
     thousands of digits and more, conversion from/to [Decimal.int] can
     become significantly slow. If that becomes a problem for your
-    development, this file provides some alternative [Numeral
+    development, this file provides some alternative [Number
     Notation] commands that use [Z] as bridge type. To enable these
     commands, just be sure to [Require] this file after other files
     defining numeral notations.

@@ -1,4 +1,4 @@
-(* Test that numeral notations don't work on proof-local variables, especially not ones containing evars *)
+(* Test that number notations don't work on proof-local variables, especially not ones containing evars *)
 Inductive unit11 := tt11.
 Declare Scope unit11_scope.
 Delimit Scope unit11_scope with unit11.

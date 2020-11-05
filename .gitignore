@@ -155,6 +155,7 @@ kernel/byterun/coq_jumptbl.h
 kernel/genOpcodeFiles.exe
 kernel/vmopcodes.ml
 kernel/uint63.ml
+kernel/float64.ml
 ide/coqide/default.bindings
 ide/coqide/default_bindings_src.exe
 ide/coqide/index_urls.txt

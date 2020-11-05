@@ -149,11 +149,9 @@ CCCMO:=plugins/cc/cc_plugin.cmo
 BTAUTOCMO:=plugins/btauto/btauto_plugin.cmo
 RTAUTOCMO:=plugins/rtauto/rtauto_plugin.cmo
 SYNTAXCMO:=$(addprefix plugins/syntax/, \
-        r_syntax_plugin.cmo \
 	int63_syntax_plugin.cmo \
 	float_syntax_plugin.cmo \
-	numeral_notation_plugin.cmo \
-	string_notation_plugin.cmo)
+	number_string_notation_plugin.cmo)
 DERIVECMO:=plugins/derive/derive_plugin.cmo
 LTACCMO:=plugins/ltac/ltac_plugin.cmo plugins/ltac/tauto_plugin.cmo
 SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
