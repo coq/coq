@@ -1,0 +1,84 @@
+\documentclass[12pt]{report}
+\usepackage[utf8x]{inputenc}
+
+%Warning: tipa declares many non-standard macros used by utf8x to
+%interpret utf8 characters but extra packages might have to be added
+%such as "textgreek" for Greek letters not already in tipa
+%or "stmaryrd" for mathematical symbols.
+%Utf8 codes missing a LaTeX interpretation can be defined by using
+%\DeclareUnicodeCharacter{code}{interpretation}.
+%Use coqdoc's option -p to add new packages or declarations.
+\usepackage{tipa}
+
+\usepackage[T1]{fontenc}
+\usepackage{fullpage}
+\usepackage{coqdoc}
+\usepackage{amsmath,amssymb}
+\usepackage{url}
+\begin{document}
+\coqlibrary{Coqdoc.verbatim}{Library }{Coqdoc.verbatim}
+
+\begin{coqdoccode}
+\end{coqdoccode}
+
+
+\begin{verbatim}
+uint32_t shift_right( uint32_t a, uint32_t shift )
+{
+    return a >> shift;
+}
+\end{verbatim}
+
+
+This line and the following shows \texttt{verbatim } text:
+
+
+\texttt{ A stand-alone inline verbatim }
+
+
+\texttt{ A non-ended inline verbatim to test line location
+}
+
+
+
+\begin{itemize}
+\item  item 1
+
+\item  item 2 is \texttt{verbatim}
+
+\item  item 3 is \texttt{verbatim} too
+\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\coqdocvar{A} \coqdocvar{coq} \coqdocvar{block} : \coqdockw{\ensuremath{\forall}} \coqdocvar{n}, \coqdocvar{n} = 0
+
+\coqdocemptyline
+
+\item  \texttt{verbatim} again, and a formula  \coqdocvar{True} \ensuremath{\rightarrow} \coqdocvar{False} 
+
+\item 
+\begin{verbatim}
+multiline
+verbatim
+\end{verbatim}
+
+\item  last item
+
+\end{itemize}
+
+
+\begin{verbatim}
+Γ ⊢ A
+----
+Γ ⊢ A ∨ B
+\end{verbatim}
+
+
+\begin{verbatim}
+A non-ended block verbatim to test line location
+
+*)
+\end{verbatim}
+\begin{coqdoccode}
+\end{coqdoccode}
+\end{document}

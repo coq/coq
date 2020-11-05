@@ -313,7 +313,7 @@ module Latex = struct
 
   let start_verbatim inline =
     if inline then printf "\\texttt{"
-    else printf "\\begin{verbatim}"
+    else printf "\\begin{verbatim}\n"
 
   let stop_verbatim inline =
     if inline then printf "}"
@@ -628,11 +628,11 @@ module Html = struct
   let stop_quote () = start_quote ()
 
   let start_verbatim inline =
-    if inline then printf "<tt>"
-    else printf "<pre>"
+    if inline then printf "<code>"
+    else printf "<pre>\n"
 
   let stop_verbatim inline =
-    if inline then printf "</tt>"
+    if inline then printf "</code>"
     else printf "</pre>\n"
 
   let url addr name =

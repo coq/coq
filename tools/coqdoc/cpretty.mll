@@ -748,8 +748,10 @@ and doc_bol = parse
       }
   | (space_nl* nl) as s
       { new_lines (count_newlines s) lexbuf; Output.paragraph (); doc_bol lexbuf }
-  | "<<" space*
-      { Output.start_verbatim false; verbatim 0 false lexbuf; doc_bol lexbuf }
+  | "<<" space* nl
+      { new_lines 1 lexbuf; Output.start_verbatim false; verbatim_block lexbuf; doc_bol lexbuf }
+  | "<<"
+      { Output.start_verbatim true; verbatim_inline lexbuf; doc None lexbuf }
   | eof
       { true }
   | '_'
@@ -771,10 +773,14 @@ and doc_list_bol indents = parse
         | InLevel (_,false) ->
             backtrack lexbuf; doc_bol lexbuf
       }
-  | "<<" space*
-      { Output.start_verbatim false;
-        verbatim 0 false lexbuf;
+  | "<<" space* nl
+      { new_lines 1 lexbuf; Output.start_verbatim false;
+        verbatim_block lexbuf;
         doc_list_bol indents lexbuf }
+  | "<<" space*
+      { Output.start_verbatim true;
+        verbatim_inline lexbuf;
+        doc (Some indents) lexbuf }
   | "[[" nl
       { new_lines 1 lexbuf; formatted := Some lexbuf.lex_start_p;
         Output.start_inline_coq_block ();
@@ -921,7 +927,7 @@ and doc indents = parse
         Output.char (lexeme_char lexbuf 1);
         doc indents lexbuf }
   | "<<" space*
-      { Output.start_verbatim true; verbatim 0 true lexbuf; doc_bol lexbuf }
+      { Output.start_verbatim true; verbatim_inline lexbuf; doc indents lexbuf }
   | '"'
       { if !Cdglobals.plain_comments 
 	then Output.char '"' 
@@ -961,20 +967,25 @@ and escaped_html = parse
         { backtrack lexbuf }
   | _   { Output.html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
 
-and verbatim depth inline = parse
-  | nl ">>" space* nl { new_lines 2 lexbuf; Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
-  | nl ">>" { new_lines 1 lexbuf; Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
-  | ">>" { Output.stop_verbatim inline }
-  | "(*" { Output.verbatim_char inline '(';
-           Output.verbatim_char inline '*';
-           verbatim (depth+1) inline lexbuf }
-  | "*)" { if (depth == 0)
-           then (Output.stop_verbatim inline; backtrack lexbuf)
-           else (Output.verbatim_char inline '*';
-                 Output.verbatim_char inline ')';
-                 verbatim (depth-1) inline lexbuf) }
-  | eof { Output.stop_verbatim inline }
-  | _ { Output.verbatim_char inline (lexeme_char lexbuf 0); verbatim depth inline lexbuf }
+and verbatim_block = parse
+  | nl ">>" space* nl { new_lines 2 lexbuf; Output.verbatim_char false '\n'; Output.stop_verbatim false }
+  | nl ">>"
+        { new_lines 1 lexbuf;
+          warn "missing newline after \">>\" block" lexbuf;
+          Output.verbatim_char false '\n';
+          Output.stop_verbatim false }
+  | eof { warn "unterminated \">>\" block" lexbuf; Output.stop_verbatim false }
+  | nl { new_lines 1 lexbuf; Output.verbatim_char false (lexeme_char lexbuf 0); verbatim_block lexbuf }
+  | _ { Output.verbatim_char false (lexeme_char lexbuf 0); verbatim_block lexbuf }
+
+and verbatim_inline = parse
+  | nl { new_lines 1 lexbuf;
+         warn "unterminated inline \">>\"" lexbuf;
+         Output.char '\n';
+         Output.stop_verbatim true }
+  | ">>" { Output.stop_verbatim true }
+  | eof { warn "unterminated inline \">>\"" lexbuf; Output.stop_verbatim true }
+  | _ { Output.verbatim_char true (lexeme_char lexbuf 0); verbatim_inline lexbuf }
 
 and url = parse
   | "}}" { Output.url (Buffer.contents url_buffer) None; Buffer.clear url_buffer }
