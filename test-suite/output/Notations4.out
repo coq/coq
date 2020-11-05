@@ -125,3 +125,57 @@ Warning: Notation "_ :=: _" was already used. [notation-overridden,parsing]
      : Prop
 fun x : nat => <{ x; (S x) }>
      : nat -> nat
+exists p : nat, ▢_p (p >= 1)
+     : Prop
+▢_n (n >= 1)
+     : Prop
+The command has indeed failed with message:
+Found an inductive type while a variable name was expected.
+The command has indeed failed with message:
+Found a constructor while a variable name was expected.
+The command has indeed failed with message:
+Found a constant while a variable name was expected.
+exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
+     : Prop
+▢_n (n >= 1)
+     : Prop
+The command has indeed failed with message:
+Found an inductive type while a pattern was expected.
+▢_tt (tt = tt)
+     : Prop
+The command has indeed failed with message:
+Found a constant while a pattern was expected.
+exists x y : nat, ▢_(x, y) (x >= 1 /\ y >= 2)
+     : Prop
+pseudo_force n (fun n : nat => n >= 1)
+     : Prop
+The command has indeed failed with message:
+Found an inductive type while a pattern was expected.
+▢_tt (tt = tt)
+     : Prop
+The command has indeed failed with message:
+Found a constant while a pattern was expected.
+exists x y : nat, myforce (x, y) (x >= 1 /\ y >= 2)
+     : Prop
+myforce n (n >= 1)
+     : Prop
+The command has indeed failed with message:
+Found an inductive type while a pattern was expected.
+myforce tt (tt = tt)
+     : Prop
+The command has indeed failed with message:
+Found a constant while a pattern was expected.
+id nat
+     : Set
+fun a : bool => id a
+     : bool -> bool
+fun nat : bool => id nat
+     : bool -> bool
+The command has indeed failed with message:
+Found an inductive type while a pattern was expected.
+!! nat, nat = true
+     : Prop
+!!! nat, nat = true
+     : Prop
+!!!! (nat, id), nat = true /\ id = false
+     : Prop

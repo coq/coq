@@ -523,6 +523,7 @@ let rec cases_pattern_of_glob_constr env na c =
     | Anonymous -> PatVar (Name id)
     end
   | GHole (_,_,_) -> PatVar na
+  | GRef (GlobRef.VarRef id,_) -> PatVar (Name id)
   | GRef (GlobRef.ConstructRef cstr,_) -> PatCstr (cstr,[],na)
   | GApp (c, l) ->
     begin match DAst.get c with
