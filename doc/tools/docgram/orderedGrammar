@@ -1047,7 +1047,7 @@ command: [
 | "Declare" "Left" "Step" one_term
 | "Declare" "Right" "Step" one_term
 | "Number" "Notation" qualid qualid qualid OPT ( "(" LIST1 number_modifier SEP "," ")" ) ":" scope_name
-| "Numeral" "Notation" qualid qualid qualid ":" scope_name deprecated_number_modifier
+| "Numeral" "Notation" qualid qualid qualid ":" scope_name OPT deprecated_number_modifier
 | "String" "Notation" qualid qualid qualid OPT ( "(" number_string_via ")" ) ":" scope_name
 | "SubClass" ident_decl def_body
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
@@ -1406,8 +1406,6 @@ field_mod: [
 | "completeness" one_term      (* ring plugin *)
 ]
 
-deprecated_number_modifier: [
-|
 ssrmmod: [
 | "!"      (* SSR plugin *)
 | "?"      (* SSR plugin *)
@@ -1520,7 +1518,7 @@ ssrhavefwd: [
 | ":" term ":=" OPT term      (* SSR plugin *)
 ]
 
-numeral_modifier: [
+deprecated_number_modifier: [
 | "(" "warning" "after" bignat ")"
 | "(" "abstract" "after" bignat ")"
 ]

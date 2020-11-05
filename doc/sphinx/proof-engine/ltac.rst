@@ -730,7 +730,7 @@ First tactic to make progress: ||
 Yet another way of branching without backtracking is the following
 structure:
 
-.. tacn:: @ltac_expr1 || {| @ltac_expr2 | @binder_tactic }
+.. tacn:: @ltac_expr1 %|| {| @ltac_expr2 | @binder_tactic }
    :name: || (first tactic making progress)
 
    :n:`@ltac_expr1 || @ltac_expr2` is
