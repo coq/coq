@@ -1,8 +1,8 @@
 .. _writing-proofs:
 
-==============
-Writing proofs
-==============
+===================
+Basic proof writing
+===================
 
 |Coq| is an interactive theorem prover, or proof assistant, which means
 that proofs can be constructed interactively through a dialog between
