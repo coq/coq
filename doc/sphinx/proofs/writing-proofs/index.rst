@@ -1,8 +1,8 @@
 .. _writing-proofs:
 
-==============
-Writing proofs
-==============
+===================
+Basic proof writing
+===================
 
 |Coq| is an interactive theorem prover, or proof assistant, which means
 that proofs can be constructed interactively through a dialog between
@@ -27,8 +27,9 @@ flavors of tactics, including the SSReflect proof language.
 .. toctree::
    :maxdepth: 1
 
-   ../../proof-engine/proof-handling
+   proof-mode
    ../../proof-engine/tactics
+   rewriting
    ../../proof-engine/ssreflect-proof-language
    ../../proof-engine/detailed-tactic-examples
    ../../user-extensions/proof-schemes

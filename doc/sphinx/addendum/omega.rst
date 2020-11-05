@@ -1,6 +1,6 @@
 .. _omega_chapter:
 
-Omega: a solver for quantifier-free problems in Presburger Arithmetic
+Omega: a (deprecated) solver for arithmetic
 =====================================================================
 
 :Author: Pierre Crégut

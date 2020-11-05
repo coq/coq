@@ -1,6 +1,6 @@
 .. _micromega:
 
-Micromega: tactics for solving arithmetic goals over ordered rings
+Micromega: solvers for arithmetic goals over ordered rings
 ==================================================================
 
 :Authors: Frédéric Besson and Evgeny Makarov
