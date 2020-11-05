@@ -62,16 +62,9 @@ jobs:
 
   - script: |
       set -e
-      brew update
-      (cd $(brew --repository)/Library/Taps/homebrew/homebrew-core/ && git fetch --shallow-since=${HBCORE_DATE} && git checkout ${HBCORE_REF})
-      brew install gnu-time opam pkg-config gtksourceview3 adwaita-icon-theme || true
-      # || true: workaround #12657, see also #12672 and commit message for this line
+      brew install gnu-time opam gtksourceview3 adwaita-icon-theme
       pip3 install macpack
     displayName: 'Install system dependencies'
-    env:
-      HOMEBREW_NO_AUTO_UPDATE: "1"
-      HBCORE_DATE: "2019-09-03"
-      HBCORE_REF: "44ee64cf4b9f2d2bf000758d356db0c77425e42e"
 
   - script: |
       set -e
@@ -107,17 +100,17 @@ jobs:
       make install
     displayName: 'Install Coq'
 
-  - script: |
-      set -e
-      eval $(opam env)
-      export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
-      ./dev/build/osx/make-macos-dmg.sh
-      mv _build/*.dmg "$(Build.ArtifactStagingDirectory)/"
-    displayName: 'Create the dmg bundle'
-    env:
-      OUTDIR: '$(Build.BinariesDirectory)'
+#  - script: |
+#      set -e
+#      eval $(opam env)
+#      export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
+#      ./dev/build/osx/make-macos-dmg.sh
+#      mv _build/*.dmg "$(Build.ArtifactStagingDirectory)/"
+#    displayName: 'Create the dmg bundle'
+#    env:
+#      OUTDIR: '$(Build.BinariesDirectory)'
 
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: coq-macOS-installer
+#  - task: PublishBuildArtifacts@1
+#    inputs:
+#      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+#      artifactName: coq-macOS-installer
