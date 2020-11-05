@@ -734,7 +734,7 @@ module Html = struct
 
   let end_doc () = in_doc := false;
     stop_item ();
-    if not !raw_comments then printf "\n</div>\n"
+    if not !raw_comments then printf "</div>\n"
 
   let start_emph () = printf "<i>"
 

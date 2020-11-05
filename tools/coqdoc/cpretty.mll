@@ -893,7 +893,7 @@ and doc indents = parse
        doc_bol lexbuf
       }
   | '*'* "*)" space* nl
-      { new_lines 1 lexbuf; true }
+      { new_lines 1 lexbuf; Output.char '\n'; true }
   | '*'* "*)"
       { false }
   | "$"
