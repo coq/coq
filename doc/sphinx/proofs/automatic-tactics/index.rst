@@ -13,8 +13,10 @@ complex goals in new domains.
 .. toctree::
    :maxdepth: 1
 
+   logic
    ../../addendum/omega
    ../../addendum/micromega
    ../../addendum/ring
    ../../addendum/nsatz
+   auto
    ../../addendum/generalized-rewriting

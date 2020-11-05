@@ -1,7 +1,8 @@
 .. _decisionprocedures:
 
-Decision procedures
--------------------
+==============================
+Solvers for logic and equality
+==============================
 
 .. tacn:: tauto
    :name: tauto

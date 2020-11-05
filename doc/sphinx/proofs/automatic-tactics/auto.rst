@@ -1,7 +1,8 @@
 .. _automation:
 
-Automation
-----------
+=========================
+Programmable proof search
+=========================
 
 .. tacn:: auto
    :name: auto
