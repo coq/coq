@@ -1,3 +1,7 @@
+=================================
+Term rewriting and simplification
+=================================
+
 .. _rewritingexpressions:
 
 Rewriting expressions

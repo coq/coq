@@ -29,6 +29,7 @@ flavors of tactics, including the SSReflect proof language.
 
    ../../proof-engine/proof-handling
    ../../proof-engine/tactics
+    rewriting
    ../../proof-engine/ssreflect-proof-language
    ../../proof-engine/detailed-tactic-examples
    ../../user-extensions/proof-schemes
