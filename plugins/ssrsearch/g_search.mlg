@@ -301,10 +301,6 @@ let ssrdisplaysearch gr env t =
   let pr_res = pr_global gr ++ str ":" ++ spc () ++ pr_lconstr_env env Evd.empty t in
   Feedback.msg_notice (hov 2 pr_res ++ fnl ())
 
-(* Remove the warning entirely when this plugin is loaded. *)
-let _ =
-  Ssreflect_plugin.Ssrvernac.warn_search_moved_enabled := false
-
 let deprecated_search =
   CWarnings.create
     ~name:"deprecated-ssr-search"

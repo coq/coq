@@ -304,21 +304,6 @@ END
 
 {
 
-  let warn_search_moved_enabled = ref true
-  let warn_search_moved = CWarnings.create ~name:"ssr-search-moved"
-      ~category:"deprecated" ~default:CWarnings.Enabled
-      (fun () ->
-         (Pp.strbrk
-            "In previous versions of Coq, loading SSReflect had the effect of \
-             replacing the built-in 'Search' command with an SSReflect version \
-             of that command. \
-             Coq's own search feature was still available via 'SearchAbout' \
-             (but that alias is deprecated). \
-             This replacement no longer happens; now 'Search' calls Coq's own search \
-             feature even when SSReflect is loaded. \
-             If you want to use SSReflect's deprecated Search command \
-             instead of the built-in one, please Require the ssrsearch module."))
-
 open G_vernac
 }
 
@@ -328,7 +313,6 @@ GRAMMAR EXTEND Gram
   query_command:
     [ [ IDENT "Search"; s = search_query; l = search_queries; "." ->
           { let (sl,m) = l in
-            if !warn_search_moved_enabled then warn_search_moved ();
             fun g ->
               Vernacexpr.VernacSearch (Vernacexpr.Search (s::sl),g, m) }
       ] ]
