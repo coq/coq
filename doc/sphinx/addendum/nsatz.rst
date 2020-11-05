@@ -1,6 +1,6 @@
 .. _nsatz_chapter:
 
-Nsatz: tactics for proving equalities in integral domains
+Nsatz: a solver for equalities in integral domains
 ===========================================================
 
 :Author: Loïc Pottier

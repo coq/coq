@@ -1,13 +1,13 @@
 .. _automatic-tactics:
 
 =====================================================
-Built-in decision procedures and programmable tactics
+Automatic solvers and programmable tactics
 =====================================================
 
 Some tactics are largely automated and are able to solve complex
-goals.  This chapter presents both some decision procedures that can
-be used to solve some specific categories of goals, and some
-programmable tactics, that the user can instrument to handle some
+goals.  This chapter presents both built-in solvers that can
+be used on specific categories of goals and
+programmable tactics that the user can instrument to handle
 complex goals in new domains.
 
 .. toctree::

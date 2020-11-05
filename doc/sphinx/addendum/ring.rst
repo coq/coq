@@ -10,8 +10,8 @@
 
 .. _theringandfieldtacticfamilies:
 
-The ring and field tactic families
-====================================
+ring and field: solvers for polynomial and rational equations
+=============================================================
 
 :Author: Bruno Barras, Benjamin Grégoire, Assia Mahboubi, Laurent Théry [#f1]_
 
