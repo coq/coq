@@ -1141,9 +1141,6 @@ Infrastructure and dependencies
 Changes in 8.12.0
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. contents::
-   :local:
-
 **Notations**
 
 - **Added:**
@@ -1215,6 +1212,116 @@ Changes in 8.12.0
   rebuild the ``modules/`` tests on subsequent runs, if they have not been
   modified in the meantime (`#12583 <https://github.com/coq/coq/pull/12583>`_,
   fixes `#12582 <https://github.com/coq/coq/issues/12582>`_, by Jason Gross).
+
+Changes in 8.12.1
+~~~~~~~~~~~~~~~~~~~~~
+
+**Kernel**
+
+- **Fixed:** Incompleteness of conversion checking on problems
+  involving :ref:`eta-expansion` and :ref:`cumulative universe
+  polymorphic inductive types <cumulative>` (`#12738
+  <https://github.com/coq/coq/pull/12738>`_, fixes `#7015
+  <https://github.com/coq/coq/issues/7015>`_, by Gaëtan Gilbert).
+
+**Notations**
+
+- **Fixed:**
+  Undetected collision between a lonely notation and a notation in
+  scope at printing time
+  (`#12946 <https://github.com/coq/coq/pull/12946>`_,
+  fixes the first part of `#12908 <https://github.com/coq/coq/issues/12908>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  Printing of notations in custom entries with
+  variables not mentioning an explicit level
+  (`#13026 <https://github.com/coq/coq/pull/13026>`_,
+  fixes `#12775 <https://github.com/coq/coq/issues/12775>`_
+  and `#13018 <https://github.com/coq/coq/issues/13018>`_,
+  by Hugo Herbelin).
+
+**Tactics**
+
+- **Added:**
+  :tacn:`replace` and :tacn:`inversion` support registration of a
+  :g:`core.identity`\-like equality in :g:`Type`, such as HoTT's :g:`path`
+  (`#12847 <https://github.com/coq/coq/pull/12847>`_,
+  partially fixes `#12846 <https://github.com/coq/coq/issues/12846>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  Anomaly with :tacn:`injection` involving artificial
+  dependencies disappearing by reduction
+  (`#12816 <https://github.com/coq/coq/pull/12816>`_,
+  fixes `#12787 <https://github.com/coq/coq/issues/12787>`_,
+  by Hugo Herbelin).
+
+**Tactic language**
+
+- **Fixed:**
+  Miscellaneous issues with locating tactic errors
+  (`#13247 <https://github.com/coq/coq/pull/13247>`_,
+  fixes `#12773 <https://github.com/coq/coq/issues/12773>`_
+  and `#12992 <https://github.com/coq/coq/issues/12992>`_,
+  by Hugo Herbelin).
+
+**SSReflect**
+
+- **Fixed:**
+  Regression in error reporting after :tacn:`case <case (ssreflect)>`.
+  A generic error message "Could not fill dependent hole in apply" was
+  reported for any error following :tacn:`case <case (ssreflect)>` or
+  :tacn:`elim <elim (ssreflect)>`
+  (`#12857 <https://github.com/coq/coq/pull/12857>`_,
+  fixes `#12837 <https://github.com/coq/coq/issues/12837>`_,
+  by Enrico Tassi).
+
+**Commands and options**
+
+- **Fixed:**
+  Failures of :cmd:`Search` in the presence of primitive projections
+  (`#13301 <https://github.com/coq/coq/pull/13301>`_,
+  fixes `#13298 <https://github.com/coq/coq/issues/13298>`_,
+  by Hugo Herbelin).
+
+**Tools**
+
+- **Fixed:**
+  Special symbols now escaped in the index produced by coqdoc,
+  avoiding collision with the syntax of the output format
+  (`#12754 <https://github.com/coq/coq/pull/12754>`_,
+  fixes `#12752 <https://github.com/coq/coq/issues/12752>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  The `details` environment added in the 8.12 release can now be used
+  as advertised in the reference manual
+  (`#12772 <https://github.com/coq/coq/pull/12772>`_,
+  by Thomas Letan).
+- **Fixed:**
+  Targets such as ``print-pretty-timed`` in ``coq_makefile``\-made
+  ``Makefile``\s no longer error in rare cases where ``--output-sync`` is not
+  passed to make and the timing output gets interleaved in just the wrong way
+  (`#13063 <https://github.com/coq/coq/pull/13063>`_, fixes `#13062
+  <https://github.com/coq/coq/issues/13062>`_, by Jason Gross).
+
+**CoqIDE**
+
+- **Fixed:**
+  View menu "Display parentheses"
+  (`#12794 <https://github.com/coq/coq/pull/12794>`_ and `#13067 <https://github.com/coq/coq/pull/13067>`_,
+  fixes `#12793 <https://github.com/coq/coq/issues/12793>`_,
+  by Jean-Christophe Léchenet and Hugo Herbelin).
+
+**Infrastructure and dependencies**
+
+- **Added:**
+  Coq is now tested against OCaml 4.11.1
+  (`#12972 <https://github.com/coq/coq/pull/12972>`_,
+  by Emilio Jesus Gallego Arias).
+- **Fixed:**
+  The reference manual can now build with Sphinx 3
+  (`#13011 <https://github.com/coq/coq/pull/13011>`_,
+  fixes `#12332 <https://github.com/coq/coq/issues/12332>`_,
+  by Théo Zimmermann and Jim Fehrle).
 
 Version 8.11
 ------------
