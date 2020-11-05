@@ -1508,15 +1508,20 @@ module MiniEConstr = struct
   let unsafe_to_constr_array v = v
   let unsafe_eq = Refl
 
+  let is_trivial sigma =
+    EvMap.is_empty sigma.defn_evars
+    && Univ.LMap.is_empty (UState.subst sigma.universes)
+
   let to_constr ?(abort_on_undefined_evars=true) sigma c =
-    let evar_value =
-      if not abort_on_undefined_evars then fun ev -> safe_evar_value sigma ev
-      else fun ev ->
-        match safe_evar_value sigma ev with
-        | Some _ as v -> v
-        | None -> anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
-    in
-    UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
+    if is_trivial sigma then c else
+      let evar_value =
+        if not abort_on_undefined_evars then fun ev -> safe_evar_value sigma ev
+        else fun ev ->
+          match safe_evar_value sigma ev with
+          | Some _ as v -> v
+          | None -> anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
+      in
+      UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
 
   let to_constr_opt sigma c =
     let evar_value ev = Some (existential_value sigma ev) in
