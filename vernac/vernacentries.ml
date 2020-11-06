@@ -504,9 +504,8 @@ let dump_global r =
 (**********)
 (* Syntax *)
 
-let vernac_syntax_extension ~module_local infix l =
-  if infix then Metasyntax.check_infix_modifiers (snd l);
-  Metasyntax.add_syntax_extension ~local:module_local l
+let vernac_syntax_extension ~module_local ~infix l =
+  Metasyntax.add_syntax_extension ~local:module_local ~infix l
 
 let vernac_declare_scope ~module_local sc =
   Metasyntax.declare_scope module_local sc
@@ -2091,7 +2090,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
 
   (* Syntax *)
   | VernacSyntaxExtension (infix, sl) ->
-    VtDefault(fun () -> with_module_locality ~atts vernac_syntax_extension infix sl)
+    VtDefault(fun () -> with_module_locality ~atts vernac_syntax_extension ~infix sl)
   | VernacDeclareScope sc ->
     VtDefault(fun () -> with_module_locality ~atts vernac_declare_scope sc)
   | VernacDelimiters (sc,lr) ->

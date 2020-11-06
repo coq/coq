@@ -464,7 +464,7 @@ let pr_ne_params_list pr_c l =
 
 let pr_thm_token k = keyword (string_of_theorem_kind k)
 
-let pr_syntax_modifier = let open Gramlib.Gramext in function
+let pr_syntax_modifier = let open Gramlib.Gramext in CAst.with_val (function
     | SetItemLevel (l,bko,n) ->
       prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n ++
       pr_opt pr_constr_as_binder_kind bko
@@ -478,8 +478,8 @@ let pr_syntax_modifier = let open Gramlib.Gramext in function
     | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_simple_entry_type typ
     | SetOnlyPrinting -> keyword "only printing"
     | SetOnlyParsing -> keyword "only parsing"
-    | SetFormat("text",s) -> keyword "format " ++ pr_ast qs s
-    | SetFormat(k,s) -> keyword "format " ++ qs k ++ spc() ++ pr_ast qs s
+    | SetFormat (TextFormat s) -> keyword "format " ++ pr_ast qs s
+    | SetFormat (ExtraFormat (k,s)) -> keyword "format " ++ qs k ++ spc() ++ pr_ast qs s)
 
 let pr_syntax_modifiers = function
   | [] -> mt()

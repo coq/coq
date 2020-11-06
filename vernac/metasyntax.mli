@@ -19,11 +19,11 @@ val add_token_obj : string -> unit
 
 (** Adding a (constr) notation in the environment*)
 
-val add_infix : local:bool -> Deprecation.t option -> env -> (lstring * syntax_modifier list) ->
+val add_infix : local:bool -> Deprecation.t option -> env -> (lstring * syntax_modifier CAst.t list) ->
   constr_expr -> scope_name option -> unit
 
 val add_notation : local:bool -> Deprecation.t option -> env -> constr_expr ->
-  (lstring * syntax_modifier list) -> scope_name option -> unit
+  (lstring * syntax_modifier CAst.t list) -> scope_name option -> unit
 
 val add_notation_extra_printing_rule : string -> string -> string -> unit
 
@@ -53,19 +53,17 @@ val set_notation_for_interpretation :
 (** Add only the parsing/printing rule of a notation *)
 
 val add_syntax_extension :
-  local:bool -> (lstring * syntax_modifier list) -> unit
+  local:bool -> infix:bool -> (lstring * syntax_modifier CAst.t list) -> unit
 
 (** Add a syntactic definition (as in "Notation f := ...") *)
 
 val add_syntactic_definition : local:bool -> Deprecation.t option -> env ->
-  Id.t -> Id.t list * constr_expr -> syntax_modifier list -> unit
+  Id.t -> Id.t list * constr_expr -> syntax_modifier CAst.t list -> unit
 
 (** Print the Camlp5 state of a grammar *)
 
 val pr_grammar : string -> Pp.t
 val pr_custom_grammar : string -> Pp.t
-
-val check_infix_modifiers : syntax_modifier list -> unit
 
 val with_syntax_protection : ('a -> 'b) -> 'a -> 'b
 

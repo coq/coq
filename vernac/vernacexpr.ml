@@ -129,6 +129,10 @@ type definition_expr =
   | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
       * constr_expr option
 
+type notation_format =
+  | TextFormat of lstring
+  | ExtraFormat of string * lstring
+
 type syntax_modifier =
   | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level
   | SetItemScope of string list * scope_name
@@ -138,13 +142,13 @@ type syntax_modifier =
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing
   | SetOnlyPrinting
-  | SetFormat of string * lstring
+  | SetFormat of notation_format
 
 type decl_notation =
   { decl_ntn_string : lstring
   ; decl_ntn_interp : constr_expr
   ; decl_ntn_scope : scope_name option
-  ; decl_ntn_modifiers : syntax_modifier list
+  ; decl_ntn_modifiers : syntax_modifier CAst.t list
   }
 
 type 'a fix_expr_gen =
@@ -309,15 +313,15 @@ type nonrec vernac_expr =
 
   | VernacLoad of verbose_flag * string
   (* Syntax *)
-  | VernacSyntaxExtension of bool * (lstring * syntax_modifier list)
+  | VernacSyntaxExtension of bool * (lstring * syntax_modifier CAst.t list)
   | VernacOpenCloseScope of bool * scope_name
   | VernacDeclareScope of scope_name
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * class_rawexpr list
-  | VernacInfix of (lstring * syntax_modifier list) *
+  | VernacInfix of (lstring * syntax_modifier CAst.t list) *
       constr_expr * scope_name option
   | VernacNotation of
-      constr_expr * (lstring * syntax_modifier list) *
+      constr_expr * (lstring * syntax_modifier CAst.t list) *
       scope_name option
   | VernacNotationAddFormat of string * string * string
   | VernacDeclareCustomEntry of string
@@ -408,7 +412,7 @@ type nonrec vernac_expr =
   | VernacRemoveHints of string list * qualid list
   | VernacHints of string list * hints_expr
   | VernacSyntacticDefinition of
-      lident * (Id.t list * constr_expr) * syntax_modifier list
+      lident * (Id.t list * constr_expr) * syntax_modifier CAst.t list
   | VernacArguments of
       qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *
