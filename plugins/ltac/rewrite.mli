@@ -62,7 +62,7 @@ type rewrite_result =
 
 type strategy
 
-val strategy_of_ast : (glob_constr_and_expr, raw_red_expr) strategy_ast -> strategy
+val strategy_of_ast : interp_sign -> (glob_constr_and_expr, glob_red_expr) strategy_ast -> strategy
 
 val map_strategy : ('a -> 'b) -> ('c -> 'd) ->
   ('a, 'c) strategy_ast -> ('b, 'd) strategy_ast
