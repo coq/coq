@@ -53,7 +53,16 @@ let kind_searcher = Decls.(function
 let interp_search_item env sigma =
   function
   | SearchSubPattern ((where,head),pat) ->
-      let _,pat = Constrintern.intern_constr_pattern env sigma pat in
+      let expected_type = Pretyping.(if head then IsType else WithoutTypeConstraint) in
+      let pat =
+        try Constrintern.interp_constr_pattern env sigma ~expected_type pat
+        with e when CErrors.noncritical e ->
+          (* We cannot ensure (yet?) that a typable pattern will
+             actually be typed, consider e.g. (forall A, A -> A /\ A)
+             which fails, not seeing that A can be Prop; so we use an
+             untyped pattern as a fallback (i.e w/o no insertion of
+             coercions, no compilation of pattern-matching) *)
+          snd (Constrintern.intern_constr_pattern env sigma ~as_type:head pat) in
       GlobSearchSubPattern (where,head,pat)
   | SearchString ((Anywhere,false),s,None) when Id.is_valid s ->
       GlobSearchString s

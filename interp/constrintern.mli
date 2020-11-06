@@ -136,9 +136,15 @@ val interp_type_evars_impls : ?flags:inference_flags -> env -> evar_map ->
 
 (** Interprets constr patterns *)
 
+(** Without typing *)
 val intern_constr_pattern :
   env -> evar_map -> ?as_type:bool -> ?ltacvars:ltac_sign ->
     constr_pattern_expr -> patvar list * constr_pattern
+
+(** With typing *)
+val interp_constr_pattern :
+  env -> evar_map -> ?expected_type:typing_constraint ->
+    constr_pattern_expr -> constr_pattern
 
 (** Raise Not_found if syndef not bound to a name and error if unexisting ref *)
 val intern_reference : qualid -> GlobRef.t
