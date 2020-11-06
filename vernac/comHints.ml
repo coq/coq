@@ -62,7 +62,7 @@ let project_hint ~poly pri l2r r =
       cb
   in
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
-  (info, true, Hints.PathAny, Hints.IsGlobRef (GlobRef.ConstRef c))
+  (info, true, Hints.PathAny, Hints.hint_globref (GlobRef.ConstRef c))
 
 let warn_deprecated_hint_constr =
   CWarnings.create ~name:"fragile-hint-constr" ~category:"automation"
@@ -84,16 +84,6 @@ let soft_evaluable =
 let interp_hints ~poly h =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let f poly c =
-    let evd, c = Constrintern.interp_open_constr env sigma c in
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    let c, diff = Hints.prepare_hint true env sigma (evd, c) in
-    if poly then (Hints.IsConstr (c, Some diff) [@ocaml.warning "-3"])
-    else
-      let () = DeclareUctx.declare_universe_context ~poly:false diff in
-      (Hints.IsConstr (c, None) [@ocaml.warning "-3"])
-  in
   let fref r =
     let gr = Smartlocate.global_with_alias r in
     Dumpglob.add_glob ?loc:r.CAst.loc gr;
@@ -106,10 +96,22 @@ let interp_hints ~poly h =
     match c with
     | HintsReference c ->
       let gr = Smartlocate.global_with_alias c in
-      (PathHints [gr], IsGlobRef gr)
+      (PathHints [gr], hint_globref gr)
     | HintsConstr c ->
       let () = warn_deprecated_hint_constr () in
-      (PathAny, f poly c)
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      let c, uctx = Constrintern.interp_constr env sigma c in
+      let subst, uctx = UState.normalize_variables uctx in
+      let c = EConstr.Vars.subst_univs_constr subst c in
+      let diff = UState.context_set uctx in
+      let c =
+        if poly then (c, Some diff)
+        else
+          let () = DeclareUctx.declare_universe_context ~poly:false diff in
+          (c, None)
+      in
+      (PathAny, Hints.hint_constr c) [@ocaml.warning "-3"]
   in
   let fp = Constrintern.intern_constr_pattern env sigma in
   let fres (info, b, r) =
@@ -149,7 +151,7 @@ let interp_hints ~poly h =
           ( empty_hint_info
           , true
           , PathHints [gr]
-          , IsGlobRef gr ))
+          , hint_globref gr ))
     in
     HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->

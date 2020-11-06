@@ -167,9 +167,7 @@ type hint_db = Hint_db.t
 
 type hnf = bool
 
-type hint_term =
-  | IsGlobRef of GlobRef.t
-  | IsConstr of constr * Univ.ContextSet.t option [@ocaml.deprecated "Declare a hint constant instead"]
+type hint_term
 
 type hints_entry =
   | HintsResolveEntry of (hint_info * hnf * hints_path_atom * hint_term) list
@@ -199,8 +197,10 @@ val current_pure_db : unit -> hint_db list
 
 val add_hints : locality:Goptions.option_locality -> hint_db_name list -> hints_entry -> unit
 
-val prepare_hint : bool (* Check no remaining evars *) ->
-  env -> evar_map -> evar_map * constr -> (constr * Univ.ContextSet.t)
+val hint_globref : GlobRef.t -> hint_term
+
+val hint_constr : constr * Univ.ContextSet.t option -> hint_term
+[@ocaml.deprecated "Declare a hint constant instead"]
 
 (** A constr which is Hint'ed will be:
    - (1) used as an Exact, if it does not start with a product
@@ -210,8 +210,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> hint_info -> check:bool -> ?name:hints_path_atom ->
-  hint_term -> hint_entry list
+  env -> evar_map -> hint_info -> GlobRef.t -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].
    used to add an hypothesis to the local hint database;

@@ -482,8 +482,7 @@ let make_resolve_hyp env sigma st only_classes pri decl =
   let keep = not only_classes || is_class in
     if keep then
       let id = GlobRef.VarRef id in
-      let name = PathHints [id] in
-        (make_resolves env sigma pri ~name ~check:false (IsGlobRef id))
+      make_resolves env sigma pri id
     else []
 
 let make_hints g (modes,st) only_classes sign =
