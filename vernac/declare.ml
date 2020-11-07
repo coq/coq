@@ -2499,7 +2499,12 @@ let admit_obligations ~pm n =
 
 let next_obligation ~pm n tac =
   let prg = match n with
-    | None -> State.first_pending pm |> Option.get
+    | None ->
+      begin match State.first_pending pm with
+        | Some prg -> prg
+        | None ->
+          Error.no_obligations None
+      end
     | Some _ -> get_unique_prog ~pm n
   in
   let {obls; remaining} = Internal.get_obligations prg in
