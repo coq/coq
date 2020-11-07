@@ -524,7 +524,7 @@ let rec check_glob env sigma g c = match DAst.get g, Constr.kind c with
 
 let rec constr_of_glob to_post post env sigma g = match DAst.get g with
   | Glob_term.GRef (r, _) ->
-      let o = List.find_opt (fun (_,r',_) -> GlobRef.equal r r') post in
+      let o = List.find_opt (fun (_,r',_) -> GlobRef.CanOrd.equal r r') post in
       begin match o with
       | None -> constr_of_globref ~allow_constant:false env sigma r
       | Some (r, _, a) ->
@@ -536,7 +536,7 @@ let rec constr_of_glob to_post post env sigma g = match DAst.get g with
       end
   | Glob_term.GApp (gc, gcl) ->
       let o = match DAst.get gc with
-        | Glob_term.GRef (r, _) -> List.find_opt (fun (_,r',_) -> GlobRef.equal r r') post
+        | Glob_term.GRef (r, _) -> List.find_opt (fun (_,r',_) -> GlobRef.CanOrd.equal r r') post
         | _ -> None in
       begin match o with
       | None ->
@@ -616,7 +616,7 @@ let rec postprocess token_kind ?loc ty to_post post g =
   let o =
     match DAst.get g' with
     | Glob_term.GRef (r, None) ->
-       List.find_opt (fun (r',_,_) -> GlobRef.equal r r') post
+       List.find_opt (fun (r',_,_) -> GlobRef.CanOrd.equal r r') post
     | _ -> None in
   match o with None -> g | Some (_, r, a) ->
   let rec f n a gl = match a, gl with

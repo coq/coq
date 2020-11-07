@@ -653,7 +653,7 @@ let is_list_cons l =
 let is_native_char = function
   | MLcons(_,gr,l) ->
     is_ascii_registered ()
-    && GlobRef.equal gr (ascii_constructor_ref ())
+    && GlobRef.CanOrd.equal gr (ascii_constructor_ref ())
     && check_extract_ascii ()
     && is_list_cons l
   | _ -> false
@@ -702,10 +702,10 @@ let check_extract_string () =
 
 let rec is_native_string_rec empty_string_ref string_constructor_ref = function
   (* "EmptyString" constructor *)
-  | MLcons(_, gr, []) -> GlobRef.equal gr empty_string_ref
+  | MLcons(_, gr, []) -> GlobRef.CanOrd.equal gr empty_string_ref
   (* "String" constructor *)
   | MLcons(_, gr, [hd; tl]) ->
-      GlobRef.equal gr string_constructor_ref
+      GlobRef.CanOrd.equal gr string_constructor_ref
       && is_native_char hd
       && is_native_string_rec empty_string_ref string_constructor_ref tl
   (* others *)
@@ -720,7 +720,7 @@ let is_native_string c =
   match c with
   | MLcons(_, GlobRef.ConstructRef(ind, j), l) ->
       is_string_registered ()
-      && GlobRef.equal (GlobRef.IndRef ind) (string_type_ref ())
+      && GlobRef.CanOrd.equal (GlobRef.IndRef ind) (string_type_ref ())
       && check_extract_string ()
       && is_native_string_rec (empty_string_ref ()) (string_constructor_ref ()) c
   | _ -> false
@@ -731,10 +731,10 @@ let get_native_string c =
   let buf = Buffer.create 64 in
   let rec get = function
     (* "EmptyString" constructor *)
-    | MLcons(_, gr, []) when GlobRef.equal gr (empty_string_ref ()) ->
+    | MLcons(_, gr, []) when GlobRef.CanOrd.equal gr (empty_string_ref ()) ->
         Buffer.contents buf
     (* "String" constructor *)
-    | MLcons(_, gr, [hd; tl]) when GlobRef.equal gr (string_constructor_ref ()) ->
+    | MLcons(_, gr, [hd; tl]) when GlobRef.CanOrd.equal gr (string_constructor_ref ()) ->
         Buffer.add_char buf (get_native_char hd);
         get tl
     (* others *)

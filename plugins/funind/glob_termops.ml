@@ -578,7 +578,7 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
             match Evd.evar_source evi with
             | loc_evi, ImplicitArg (gr_evi, p_evi, b_evi) ->
               if
-                GlobRef.equal grk gr_evi && pk = p_evi && bk = b_evi
+                GlobRef.CanOrd.equal grk gr_evi && pk = p_evi && bk = b_evi
                 && rt.CAst.loc = loc_evi
               then raise (Found (EvarInfo evi))
             | _ -> ())

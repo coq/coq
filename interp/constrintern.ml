@@ -1572,7 +1572,7 @@ let sort_fields ~complete loc fields completer =
                let field_glob_ref,this_field_record = intern_field_ref field_ref in
                let remaining_projs, (field_index, _, regular) =
                  let the_proj = function
-                   | (idx, Some glob_id, _) -> GlobRef.equal field_glob_ref (GlobRef.ConstRef glob_id)
+                   | (idx, Some glob_id, _) -> GlobRef.CanOrd.equal field_glob_ref (GlobRef.ConstRef glob_id)
                    | (idx, None, _) -> false in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->

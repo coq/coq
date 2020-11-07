@@ -1129,7 +1129,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                 | App (c,ca) -> (
                   match EConstr.kind sigma c with
                   | Ind (indeq, u) ->
-                     if GlobRef.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
+                     if GlobRef.CanOrd.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
                      then
                        Tacticals.tclTHEN
                          (do_replace_bl handle ind

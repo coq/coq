@@ -38,17 +38,17 @@ let kind_searcher = Decls.(function
   (* Kinds referring to the status of the object *)
   | IsDefinition (Coercion | SubClass | IdentityCoercion as k') ->
     let coercions = Coercionops.coercions () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.equal c.Coercionops.coe_value gr &&
+    Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Coercionops.coe_value gr &&
                                       (k' <> SubClass && k' <> IdentityCoercion || c.Coercionops.coe_is_identity)) coercions)
   | IsDefinition CanonicalStructure ->
     let canonproj = Structures.CSTable.entries () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.equal c.Structures.CSTable.solution gr) canonproj)
+    Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Structures.CSTable.solution gr) canonproj)
   | IsDefinition Scheme ->
     let schemes = DeclareScheme.all_schemes () in
-    Inr (fun gr -> Indset.exists (fun c -> GlobRef.equal (GlobRef.IndRef c) gr) schemes)
+    Inr (fun gr -> Indset.exists (fun c -> GlobRef.CanOrd.equal (GlobRef.IndRef c) gr) schemes)
   | IsDefinition Instance ->
     let instances = Typeclasses.all_instances () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.equal c.Typeclasses.is_impl gr) instances))
+    Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Typeclasses.is_impl gr) instances))
 
 let interp_search_item env sigma =
   function

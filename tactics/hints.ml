@@ -374,7 +374,7 @@ let instantiate_hint env sigma p =
   { p with code = { p.code with obj = code } }
 
 let hints_path_atom_eq h1 h2 = match h1, h2 with
-| PathHints l1, PathHints l2 -> List.equal GlobRef.equal l1 l2
+| PathHints l1, PathHints l2 -> List.equal GlobRef.CanOrd.equal l1 l2
 | PathAny, PathAny -> true
 | _ -> false
 
@@ -431,7 +431,7 @@ let path_seq p p' =
 let rec path_derivate hp hint =
   let rec derivate_atoms hints hints' =
     match hints, hints' with
-    | gr :: grs, gr' :: grs' when GlobRef.equal gr gr' -> derivate_atoms grs grs'
+    | gr :: grs, gr' :: grs' when GlobRef.CanOrd.equal gr gr' -> derivate_atoms grs grs'
     | [], [] -> PathEpsilon
     | [], hints -> PathEmpty
     | grs, [] -> PathAtom (PathHints grs)
@@ -726,7 +726,7 @@ struct
 
   let remove_list env grs db =
     let filter (_, h) =
-      match h.name with PathHints [gr] -> not (List.mem_f GlobRef.equal gr grs) | _ -> true in
+      match h.name with PathHints [gr] -> not (List.mem_f GlobRef.CanOrd.equal gr grs) | _ -> true in
     let hintmap = GlobRef.Map.map (remove_he (dn_ts db) filter) db.hintdb_map in
     let hintnopat = List.filter filter db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }

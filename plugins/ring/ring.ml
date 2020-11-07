@@ -65,7 +65,7 @@ and tag_arg sigma f_map n tag c = match tag with
 | Rec -> mk_clos_but sigma f_map n c
 
 let interp_map l t =
-  try Some(List.assoc_f GlobRef.equal t l) with Not_found -> None
+  try Some(List.assoc_f GlobRef.CanOrd.equal t l) with Not_found -> None
 
 let protect_maps : protection String.Map.t ref = ref String.Map.empty
 let add_map s m = protect_maps := String.Map.add s m !protect_maps

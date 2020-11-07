@@ -864,13 +864,13 @@ let is_res r =
   | _ -> false
 
 let is_gr c gr =
-  match DAst.get c with GRef (r, _) -> GlobRef.equal r gr | _ -> false
+  match DAst.get c with GRef (r, _) -> GlobRef.CanOrd.equal r gr | _ -> false
 
 let is_gvar c = match DAst.get c with GVar id -> true | _ -> false
 
 let same_raw_term rt1 rt2 =
   match (DAst.get rt1, DAst.get rt2) with
-  | GRef (r1, _), GRef (r2, _) -> GlobRef.equal r1 r2
+  | GRef (r1, _), GRef (r2, _) -> GlobRef.CanOrd.equal r1 r2
   | GHole _, GHole _ -> true
   | _ -> false
 

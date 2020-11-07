@@ -136,7 +136,7 @@ let compare_notation_constr lt var_eq_hole (vars1,vars2) t1 t2 =
   | NHole _, NVar id2 when lt && List.mem_f Id.equal id2 vars2 -> ()
   | NVar id1, NHole _ when lt && List.mem_f Id.equal id1 vars1 -> ()
   | _, NVar id2 when lt && List.mem_f Id.equal id2 vars2 -> strictly_lt := true
-  | NRef (gr1,u1), NRef (gr2,u2) when GlobRef.equal gr1 gr2 && compare_glob_universe_instances lt strictly_lt u1 u2 -> ()
+  | NRef (gr1,u1), NRef (gr2,u2) when GlobRef.CanOrd.equal gr1 gr2 && compare_glob_universe_instances lt strictly_lt u1 u2 -> ()
   | NHole (_, _, _), NHole (_, _, _) -> () (* FIXME? *)
   | _, NHole (_, _, _) when lt -> strictly_lt := true
   | NList (i1, j1, iter1, tail1, b1), NList (i2, j2, iter2, tail2, b2)
@@ -173,7 +173,7 @@ let compare_notation_constr lt var_eq_hole (vars1,vars2) t1 t2 =
     aux vars renaming tail1 t2
   | NApp (t1, a1), NApp (t2, a2) -> aux vars renaming t1 t2; List.iter2 (aux vars renaming) a1 a2
   | NProj ((cst1,u1), l1, a1), NProj ((cst2,u2), l2, a2)
-    when GlobRef.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances lt strictly_lt u1 u2 ->
+    when GlobRef.CanOrd.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances lt strictly_lt u1 u2 ->
     List.iter2 (aux vars renaming) l1 l2; aux vars renaming a1 a2
   | NLambda (na1, t1, u1), NLambda (na2, t2, u2)
   | NProd (na1, t1, u1), NProd (na2, t2, u2) ->
@@ -1423,7 +1423,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GVar id1, NVar id2 when alpha_var id1 id2 alp.staticbinders -> sigma
 
   (* Matching compositionally *)
-  | GRef (r1,u1), NRef (r2,u2) when (GlobRef.equal r1 r2) && compare_glob_universe_instances_le u1 u2 -> sigma
+  | GRef (r1,u1), NRef (r2,u2) when (GlobRef.CanOrd.equal r1 r2) && compare_glob_universe_instances_le u1 u2 -> sigma
   | GApp (f1,l1), NApp (f2,l2) ->
       let n1 = List.length l1 and n2 = List.length l2 in
       let f1,l1,f2,l2 =
@@ -1435,11 +1435,11 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
       List.fold_left2 (match_ may_use_eta u alp metas)
         (match_hd u alp metas sigma f1 f2) l1 l2
-  | GProj ((cst1,u1),l1,a1), NProj ((cst2,u2),l2,a2) when GlobRef.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 ->
+  | GProj ((cst1,u1),l1,a1), NProj ((cst2,u2),l2,a2) when GlobRef.CanOrd.equal (GlobRef.ConstRef cst1) (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 ->
      match_in u alp metas (List.fold_left2 (match_in u alp metas) sigma l1 l2) a1 a2
   | GApp (f1,l1), NProj ((cst2,u2),l2,a2) ->
      (match DAst.get f1 with
-     | GRef (r1,u1) when GlobRef.equal r1 (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 &&
+     | GRef (r1,u1) when GlobRef.CanOrd.equal r1 (GlobRef.ConstRef cst2) && compare_glob_universe_instances_le u1 u2 &&
          List.length l1 = List.length l2 + 1 ->
         List.fold_left2 (match_in u alp metas) sigma l1 (l2@[a2])
      | _ -> raise No_match)

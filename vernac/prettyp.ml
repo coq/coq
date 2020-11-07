@@ -1098,12 +1098,12 @@ let print_path_between cls clt =
 let print_canonical_projections env sigma grefs =
   let open Structures in
   let match_proj_gref { CSTable.projection; value; solution } gr =
-    GlobRef.equal projection gr ||
+    GlobRef.CanOrd.equal projection gr ||
     begin match value with
-      | ValuePattern.Const_cs y -> GlobRef.equal y gr
+      | ValuePattern.Const_cs y -> GlobRef.CanOrd.equal y gr
       | _ -> false
     end ||
-    GlobRef.equal solution gr
+    GlobRef.CanOrd.equal solution gr
   in
   let projs =
     List.filter (fun p -> List.for_all (match_proj_gref p) grefs)
