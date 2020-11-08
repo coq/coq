@@ -1077,11 +1077,8 @@ let internalization_type_of_entry_type = function
   | ETConstr _ | ETBigint | ETGlobal
   | ETIdent | ETName _ | ETPattern _ -> NtnInternTypeAny None
 
-let set_internalization_type typs =
-  List.map (fun (_, e) -> internalization_type_of_entry_type e) typs
-
-let make_internalization_vars recvars mainvars typs =
-  let maintyps = List.combine mainvars typs in
+let make_internalization_vars recvars maintyps =
+  let maintyps = List.map (on_snd internalization_type_of_entry_type) maintyps in
   let extratyps = List.map (fun (x,y) -> (y,List.assoc x maintyps)) recvars in
   maintyps @ extratyps
 
@@ -1162,7 +1159,7 @@ let warn_non_reversible_notation =
 
 let is_coercion level typs =
   match level, typs with
-  | Some (custom,n,_), [e] ->
+  | Some (custom,n,_), [_,e] ->
      (match e, custom with
      | ETConstr _, _ ->
          let customkey = make_notation_entry_level custom n in
@@ -1296,11 +1293,10 @@ module SynData = struct
     (* Fields for internalization *)
     recvars       : (Id.t * Id.t) list;
     mainvars      : Id.List.elt list;
-    intern_typs   : notation_var_internalization_type list;
 
     (* Notation data for parsing *)
     level         : level;
-    subentries    : constr_entry_key list;
+    subentries    : subentry_types;
     pa_syntax_data : subentry_types * symbol list;
     pp_syntax_data : subentry_types * symbol list;
     not_data      : syn_pa_data;
@@ -1355,7 +1351,6 @@ let compute_syntax_data ~local main_data df mods =
       find_subentry_types main_data.entry n assoc etyps symbols_for_grammar
     else
       sy_typs, prec in
-  let i_typs = set_internalization_type sy_typs in
   check_locality_compatibility local main_data.entry sy_typs;
   let pa_sy_data = (sy_typs_for_grammar,symbols_for_grammar) in
   let pp_sy_data = (sy_typs,symbols) in
@@ -1373,10 +1368,9 @@ let compute_syntax_data ~local main_data df mods =
 
     recvars;
     mainvars;
-    intern_typs = i_typs;
 
     level  = (main_data.entry,n,prec);
-    subentries = List.map snd sy_typs;
+    subentries = sy_typs;
     pa_syntax_data = pa_sy_data;
     pp_syntax_data = pp_sy_data;
     not_data    = sy_fulldata;
@@ -1536,7 +1530,7 @@ let make_parsing_rules main_data (sd : SynData.syn_data) = let open SynData in
   in {
     synext_level    = sd.level;
     synext_notgram  = pa_rule;
-    synext_nottyps = sd.subentries;
+    synext_nottyps = List.map snd sd.subentries;
   }
 
 let make_printing_rules reserved main_data sd =
@@ -1603,7 +1597,7 @@ let add_notation_in_scope ~local main_data df env c sd scope =
       (if onlyparse then None else rules),
       (if has_generic then None else (* We use the format of this notation as the default *) rules) in
   (* Prepare the interpretation *)
-  let i_vars = make_internalization_vars sd.recvars sd.mainvars sd.intern_typs in
+  let i_vars = make_internalization_vars sd.recvars sd.subentries in
   let nenv = {
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map sd.recvars;
@@ -1645,20 +1639,20 @@ let add_notation_interpretation_core ~local main_data df env ?(impls=empty_inter
     (* If the only printing flag has been explicitly requested, put it back *)
     let main_data = { main_data with onlyprinting = main_data.onlyprinting || pa_sy.synext_notgram = None } in
     let typs = pa_sy.synext_nottyps in
-    Some pa_sy.synext_level, typs, main_data, pp_sy
+    Some pa_sy.synext_level, List.combine mainvars typs, main_data, pp_sy
   end else None, [], { main_data with onlyprinting = main_data.onlyprinting }, None in
   (* Declare interpretation *)
-  let sy_pp_rules = make_specific_printing_rules (List.combine mainvars i_typs) symbols level sy_pp_rules (main_data.format, main_data.extra) in
+  let sy_pp_rules = make_specific_printing_rules i_typs symbols level sy_pp_rules (main_data.format, main_data.extra) in
   let path = (Lib.library_dp(), Lib.current_dirpath true) in
   let df' = notation_key, (path,df) in
-  let i_vars = make_internalization_vars recvars mainvars (List.map internalization_type_of_entry_type i_typs) in
+  let i_vars = make_internalization_vars recvars i_typs in
   let nenv = {
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
   let plevel = match level with Some (from,level,l) -> level | None (* numeral: irrelevant )*) -> 0 in
-  let interp = make_interpretation_vars recvars plevel acvars (List.combine mainvars i_typs) in
+  let interp = make_interpretation_vars recvars plevel acvars i_typs in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
   let also_in_cases_pattern = has_no_binders_type vars in
