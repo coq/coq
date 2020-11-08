@@ -2208,6 +2208,12 @@ let rec raw_analyze_anonymous_notation_tokens = function
 
 (* Interpret notations with a recursive component *)
 
+type notation_symbols = {
+  recvars : (Id.t * Id.t) list; (* pairs (x,y) as in [ x ; .. ; y ] *)
+  mainvars : Id.t list; (* variables non involved in a recursive pattern *)
+  symbols : symbol list; (* the decomposition of the notation into terminals and nonterminals *)
+}
+
 let out_nt = function NonTerminal x -> x | _ -> assert false
 
 let msg_expected_form_of_recursive_notation =
@@ -2256,10 +2262,10 @@ let get_notation_vars l =
 
 let decompose_raw_notation ntn =
   let l = split_notation_string ntn in
-  let l = raw_analyze_notation_tokens l in
-  let recvars,l = interp_list_parser [] l in
-  let vars = get_notation_vars l in
-  recvars, vars, l
+  let symbols = raw_analyze_notation_tokens l in
+  let recvars, symbols = interp_list_parser [] symbols in
+  let mainvars = get_notation_vars symbols in
+  {recvars; mainvars; symbols}
 
 let interpret_notation_string ntn =
   (* We collect the possible interpretations of a notation string depending on whether it is

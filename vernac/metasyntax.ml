@@ -211,7 +211,7 @@ let is_numeral_in_constr entry symbs =
       false
 
 let analyze_notation_tokens ~onlyprinting df =
-  let (recvars,mainvars,symbols as res) = decompose_raw_notation df in
+  let { recvars; mainvars; symbols } as res = decompose_raw_notation df in
     (* don't check for nonlinearity if printing only, see Bug 5526 *)
   (if not onlyprinting then
     match List.duplicates Id.equal (mainvars @ List.map snd recvars) with
@@ -1335,7 +1335,7 @@ let compute_syntax_data ~local main_data df mods =
   let onlyprinting = main_data.onlyprinting in
   if main_data.itemscopes <> [] then user_err (str "General notations don't support 'in scope'.");
   let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
-  let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprinting df in
+  let {recvars;mainvars;symbols} = analyze_notation_tokens ~onlyprinting df in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
 
   (* Notations for interp and grammar  *)
@@ -1636,10 +1636,10 @@ let add_notation_in_scope ~local main_data df env c sd scope =
   df'
 
 let add_notation_interpretation_core ~local main_data df env ?(impls=empty_internalization_env) c scope =
-  let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting df in
+  let {recvars;mainvars;symbols} = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting df in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
-  let notation_key = make_notation_key main_data.entry symbs in
-  let level, i_typs, main_data, sy_pp_rules = if not (is_numeral_in_constr main_data.entry symbs) then begin
+  let notation_key = make_notation_key main_data.entry symbols in
+  let level, i_typs, main_data, sy_pp_rules = if not (is_numeral_in_constr main_data.entry symbols) then begin
     let (pa_sy,pp_sy) = recover_notation_syntax notation_key in
     let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,(notation_key,pa_sy,pp_sy))) in
     (* If the only printing flag has been explicitly requested, put it back *)
@@ -1648,7 +1648,7 @@ let add_notation_interpretation_core ~local main_data df env ?(impls=empty_inter
     Some pa_sy.synext_level, typs, main_data, pp_sy
   end else None, [], { main_data with onlyprinting = main_data.onlyprinting }, None in
   (* Declare interpretation *)
-  let sy_pp_rules = make_specific_printing_rules (List.combine mainvars i_typs) symbs level sy_pp_rules (main_data.format, main_data.extra) in
+  let sy_pp_rules = make_specific_printing_rules (List.combine mainvars i_typs) symbols level sy_pp_rules (main_data.format, main_data.extra) in
   let path = (Lib.library_dp(), Lib.current_dirpath true) in
   let df' = notation_key, (path,df) in
   let i_vars = make_internalization_vars recvars mainvars (List.map internalization_type_of_entry_type i_typs) in
@@ -1742,8 +1742,8 @@ let add_notation ~local deprecation env c ({CAst.loc;v=df},modifiers) sc =
 
 let add_notation_extra_printing_rule df k v =
   let notk =
-    let _,_, symbs = analyze_notation_tokens ~onlyprinting:true df in
-    make_notation_key InConstrEntry symbs in
+    let { symbols } = analyze_notation_tokens ~onlyprinting:true df in
+    make_notation_key InConstrEntry symbols in
   add_notation_extra_printing_rule notk k v
 
 (* Infix notations *)
