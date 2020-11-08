@@ -1020,7 +1020,7 @@ let rec gen_nt_name sym =
   good_name name
 
 (* create a new nt for LIST* or OPT with the specified name *)
-let rec maybe_add_nt g insert_after name sym queue =
+let maybe_add_nt g insert_after name sym queue =
   let empty = [Snterm "empty"] in
   let maybe_unwrap ?(multi=false) sym =
     match sym with
@@ -1094,65 +1094,6 @@ let rec maybe_add_nt g insert_after name sym queue =
   end;
   new_nt
 
-(* expand LIST*, OPT and add "empty" *)
-(* todo: doesn't handle recursive expansions well, such as syntax_modifier_opt *)
-and expand_rule g edited_nt queue =
-  let rule = NTMap.find edited_nt !g.map in
-  let insert_after = ref edited_nt in
-  let rec expand rule =
-    let rec aux syms res =
-      match syms with
-      | [] -> res
-      | sym0 :: tl ->
-        let new_sym = match sym0 with
-          | Sterm _
-          | Snterm _ ->
-            sym0
-          | Slist1 sym
-          | Slist1sep (sym, _)
-          | Slist0 sym
-          | Slist0sep (sym, _)
-          | Sopt sym ->
-            let name = gen_nt_name sym in
-            if name <> "" then begin
-              let new_nt = maybe_add_nt g insert_after name sym0 queue in
-              Snterm new_nt
-            end else sym0
-          | Sparen slist -> Sparen (expand slist)
-          | Sprod slistlist ->
-            let has_empty = List.length (List.hd (List.rev slistlist)) = 0 in
-            let name = gen_nt_name sym0 in
-            if name <> "" then begin
-              let new_nt = maybe_add_nt g insert_after name
-                  (if has_empty then (Sopt (Sprod (List.rev (List.tl (List.rev slistlist))) ))
-                  else sym0) queue
-              in
-              Snterm new_nt
-            end else
-              Sprod (List.map expand slistlist)
-          | Sedit _
-          | Sedit2 _ ->
-            sym0 (* these constructors not used here *)
-        in
-        aux tl (new_sym :: res)
-    in
-    List.rev (aux rule (if edited_nt <> "empty" && ematch rule [] then [Snterm "empty"] else []))
-  in
-  let rule' = List.map expand rule in
-  g_update_prods g edited_nt rule'
-
-let expand_lists g =
-  (* todo: use Queue.of_seq w OCaml 4.07+ *)
-  let queue = Queue.create () in
-  List.iter (fun nt -> Queue.add nt queue) !g.order;
-  try
-    while true do
-      let nt = Queue.pop queue in
-      expand_rule g nt queue
-    done
-  with
-  | Queue.Empty -> ()
-
 let apply_merge g edit_map =
   List.iter (fun b ->
       let (from_nt, to_nt) = b in
@@ -1213,10 +1154,6 @@ let edit_all_prods g op eprods =
           global_repl g [(Snterm nt)] [(Sopt (Snterm nt))]
         end)
       !g.order; true
-  | "EXPAND" ->
-    if List.length eprods > 1 || List.length (List.hd eprods) <> 0 then
-      error "'EXPAND:' expects a single empty production\n";
-    expand_lists g; true
   | _ -> false
 
 let edit_single_prod g edit0 prods nt =
@@ -1281,6 +1218,11 @@ let apply_edit_file g edits =
             with Not_found -> prods in
             let prods' = moveto nt dest_nt oprod prods in
             aux tl prods' add_nt
+          | [Snterm "COPYALL"; Snterm dest_nt] :: tl ->
+            if NTMap.mem dest_nt !g.map then
+              error "COPYALL target nonterminal `%s` already exists\n" dest_nt;
+            g_maybe_add g dest_nt prods;
+            aux tl prods add_nt
           | [Snterm "MOVEALLBUT"; Snterm dest_nt] :: tl ->
             List.iter (fun tlprod ->
                 if not (List.mem tlprod prods) then
@@ -1300,6 +1242,8 @@ let apply_edit_file g edits =
             aux tl (remove_prod [] prods nt) add_nt
           | (Snterm "INSERTALL" :: syms) :: tl ->
             aux tl (List.map (fun p -> syms @ p) prods) add_nt
+          | (Snterm "APPENDALL" :: syms) :: tl ->
+            aux tl (List.map (fun p -> p @ syms) prods) add_nt
           | (Snterm "PRINT" :: _) :: tl ->
             pr_prods nt prods;
             aux tl prods add_nt
@@ -1395,56 +1339,6 @@ let nt_subset_in_orig_order g nts =
   let subset = StringSet.of_list nts in
   List.filter (fun nt -> StringSet.mem nt subset) !g.order
 
-let print_chunk out g seen fmt title starts ends =
-  fprintf out "\n\n%s:\n%s\n" title header;
-  List.iter (fun start ->
-      let nts = (nt_closure g start ends) in
-      print_in_order out g fmt (nt_subset_in_orig_order g nts) !seen;
-      seen := StringSet.union !seen (StringSet.of_list nts))
-    starts
-
-let print_chunks g out fmt () =
-  let seen = ref StringSet.empty in
-  print_chunk out g seen fmt "lconstr" ["lconstr"] ["binder_constr"; "tactic_expr5"];
-  print_chunk out g seen fmt "Gallina syntax of terms" ["binder_constr"] ["tactic_expr5"];
-  print_chunk out g seen fmt "Gallina The Vernacular" ["gallina"] ["tactic_expr5"];
-  print_chunk out g seen fmt "intropattern_list_opt" ["intropattern_list"; "or_and_intropattern_loc"] ["operconstr"; "tactic_expr5"];
-  print_chunk out g seen fmt "simple_tactic" ["simple_tactic"]
-    ["tactic_expr5"; "tactic_expr3"; "tactic_expr2"; "tactic_expr1"; "tactic_expr0"];
-
-  (*print_chunk out g seen fmt "Ltac" ["tactic_expr5"] [];*)
-  print_chunk out g seen fmt "Ltac" ["tactic_expr5"] ["tactic_expr4"];
-  print_chunk out g seen fmt "Ltac 4" ["tactic_expr4"] ["tactic_expr3"; "tactic_expr2"];
-  print_chunk out g seen fmt "Ltac 3" ["tactic_expr3"] ["tactic_expr2"];
-  print_chunk out g seen fmt "Ltac 2" ["tactic_expr2"] ["tactic_expr1"];
-  print_chunk out g seen fmt "Ltac 1" ["tactic_expr1"] ["tactic_expr0"];
-  print_chunk out g seen fmt "Ltac 0" ["tactic_expr0"] [];
-
-
-  print_chunk out g seen fmt "command" ["command"] [];
-  print_chunk out g seen fmt "vernac_toplevel" ["vernac_toplevel"] [];
-  print_chunk out g seen fmt "vernac_control" ["vernac_control"] []
-
-  (*
-    let ssr_tops = ["ssr_dthen"; "ssr_else"; "ssr_mpat"; "ssr_rtype"] in
-    seen := StringSet.union !seen (StringSet.of_list ssr_tops);
-
-    print_chunk out g seen fmt "ssrindex" ["ssrindex"] [];
-    print_chunk out g seen fmt "command" ["command"] [];
-    print_chunk out g seen fmt "binder_constr" ["binder_constr"] [];
-    (*print_chunk out g seen fmt "closed_binder" ["closed_binder"] [];*)
-    print_chunk out g seen fmt "gallina_ext" ["gallina_ext"] [];
-    (*print_chunk out g seen fmt "hloc" ["hloc"] [];*)
-    (*print_chunk out g seen fmt "hypident" ["hypident"] [];*)
-    print_chunk out g seen fmt "simple_tactic" ["simple_tactic"] [];
-    print_chunk out g seen fmt "tactic_expr" ["tactic_expr4"; "tactic_expr1"; "tactic_expr0"] [];
-    fprintf out "\n\nRemainder:\n";
-    print_in_order g (List.filter (fun x -> not (StringSet.mem x !seen)) !g.order) StringSet.empty;
-  *)
-
-
-    (*seen := StringSet.diff !seen (StringSet.of_list ssr_tops);*)
-    (*print_chunk out g seen fmt "vernac_toplevel" ["vernac_toplevel"] [];*)
 let index_of str list =
   let rec index_of_r str list index =
     match list with
@@ -1477,89 +1371,6 @@ let get_range g start end_ =
   pfx (endi - starti) (nthcdr starti !g.order)
 
 let get_rangeset g start end_ = StringSet.of_list (get_range g start end_)
-
-let print_dominated g =
-  let info nt rangeset exclude =
-    let reachable = StringSet.of_list (nt_closure g nt exclude) in
-    let unreachable = StringSet.of_list (nt_closure g (List.hd start_symbols) (nt::exclude)) in
-    let dominated = StringSet.diff reachable unreachable in
-    Printf.printf "For %s, 'attribute' is: reachable = %b, unreachable = %b, dominated = %b\n" nt
-        (StringSet.mem "attribute" reachable)
-        (StringSet.mem "attribute" unreachable)
-        (StringSet.mem "attribute" dominated);
-    Printf.printf "  rangeset = %b excluded = %b\n"
-        (StringSet.mem "attribute" rangeset)
-        (List.mem "attribute" exclude);
-    reachable, dominated
-  in
-  let pr3 nt rangeset reachable dominated =
-    let missing = StringSet.diff dominated rangeset in
-    if not (StringSet.is_empty missing) then begin
-      Printf.printf "\nMissing in range for '%s':\n" nt;
-      StringSet.iter (fun nt -> Printf.printf "  %s\n" nt) missing
-    end;
-
-    let unneeded = StringSet.diff rangeset reachable in
-    if not (StringSet.is_empty unneeded) then begin
-      Printf.printf "\nUnneeded in range for '%s':\n" nt;
-      StringSet.iter (fun nt -> Printf.printf "  %s\n" nt) unneeded
-    end;
-  in
-  let pr2 nt rangeset exclude =
-    let reachable, dominated = info nt rangeset exclude in
-    pr3 nt rangeset reachable dominated
-  in
-  let pr nt end_ = pr2 nt (get_rangeset g nt end_) [] in
-
-  let ssr_ltac = ["ssr_first_else"; "ssrmmod"; "ssrdotac"; "ssrortacarg";
-      "ssrparentacarg"] in
-  let ssr_tac = ["ssrintrosarg"; "ssrhintarg"; "ssrtclarg"; "ssrseqarg"; "ssrmovearg";
-      "ssrrpat"; "ssrclauses"; "ssrcasearg"; "ssrarg"; "ssrapplyarg"; "ssrexactarg";
-      "ssrcongrarg"; "ssrterm"; "ssrrwargs"; "ssrunlockargs"; "ssrfixfwd"; "ssrcofixfwd";
-      "ssrfwdid"; "ssrposefwd"; "ssrsetfwd"; "ssrdgens"; "ssrhavefwdwbinders"; "ssrhpats_nobs";
-      "ssrhavefwd"; "ssrsufffwd"; "ssrwlogfwd"; "ssrhint"; "ssrclear"; "ssr_idcomma";
-      "ssrrwarg"; "ssrintros_ne"; "ssrhint3arg" ] @ ssr_ltac in
-  let ssr_cmd = ["ssr_modlocs"; "ssr_search_arg"; "ssrhintref"; "ssrhintref_list";
-      "ssrviewpos"; "ssrviewposspc"] in
-  let ltac = ["ltac_expr"; "ltac_expr0"; "ltac_expr1"; "ltac_expr2"; "ltac_expr3"] in
-  let term = ["term"; "term0"; "term1"; "term10"; "term100"; "term9";
-      "pattern"; "pattern0"; "pattern1"; "pattern10"] in
-
-  pr "term" "constr";
-
-  let ltac_rangeset = List.fold_left StringSet.union StringSet.empty
-                            [(get_rangeset g "ltac_expr" "tactic_atom");
-                            (get_rangeset g "toplevel_selector" "range_selector");
-                            (get_rangeset g "ltac_match_term" "match_pattern");
-                            (get_rangeset g "ltac_match_goal" "match_pattern_opt")] in
-  pr2 "ltac_expr" ltac_rangeset ("simple_tactic" :: ssr_tac);
-
-  let dec_vern_rangeset = get_rangeset g "decorated_vernac" "opt_coercion" in
-  let dev_vern_excl =
-      ["gallina_ext"; "command"; "tactic_mode"; "syntax"; "command_entry"] @ term @ ltac @ ssr_tac in
-  pr2 "decorated_vernac" dec_vern_rangeset dev_vern_excl;
-
-  let simp_tac_range = get_rangeset g "simple_tactic" "hypident_occ_list_comma" in
-  let simp_tac_excl = ltac @ ssr_tac in
-  pr2 "simple_tactic" simp_tac_range simp_tac_excl;
-
-  let cmd_range = get_rangeset g "command" "int_or_id_list_opt" in
-  let cmd_excl = ssr_tac @ ssr_cmd in
-  pr2 "command" cmd_range cmd_excl;
-
-  let syn_range = get_rangeset g "syntax" "constr_as_binder_kind" in
-  let syn_excl = ssr_tac @ ssr_cmd in
-  pr2 "syntax" syn_range syn_excl;
-
-  let gext_range = get_rangeset g "gallina_ext" "Structure_opt" in
-  let gext_excl = ssr_tac @ ssr_cmd in
-  pr2 "gallina_ext" gext_range gext_excl;
-
-  let qry_range = get_rangeset g "query_command" "searchabout_query_list" in
-  let qry_excl = ssr_tac @ ssr_cmd in
-  pr2 "query_command" qry_range qry_excl
-
-  (* todo: tactic_mode *)
 
 let check_range_consistency g start end_ =
   let defined_list = get_range g start end_ in
@@ -1913,10 +1724,6 @@ let process_rst g file args seen tac_prods cmd_prods =
     end
   in
 
-(*  let skip_files = ["doc/sphinx/proof-engine/ltac.rst"; "doc/sphinx/proof-engine/ltac2.rst";*)
-(*    "doc/sphinx/proof-engine/ssreflect-proof-language.rst"]*)
-(*  in*)
-
   let cmd_exclude_files = [
     "doc/sphinx/proof-engine/ssreflect-proof-language.rst";
     "doc/sphinx/proofs/automatic-tactics/auto.rst";
@@ -2101,7 +1908,6 @@ let process_grammar args =
       close_out out;
       finish_with_file (dir "orderedGrammar") args;
 (*      check_singletons g*)
-(*      print_dominated g*)
 
       let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
       let args = { args with no_update = false } in (* always update rsts in place for now *)

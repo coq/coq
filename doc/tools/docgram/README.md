@@ -181,9 +181,6 @@ as a separate production.  (Doesn't work recursively; splicing for both
 
 `OPTINREF` - applies the local `OPTINREF` edit to every nonterminal
 
-`EXPAND` - expands LIST0, LIST1, LIST* ... SEP and OPT constructs into
-new non-terminals
-
 ### Local edits
 
 `DELETE <production>` - removes the specified production from the grammar
@@ -201,6 +198,9 @@ that appear in the specified production:
   The current version handles a single USE_NT or ADD_OPT per EDIT.  These symbols
   may appear in the middle of the production given in the EDIT.
 
+`APPENDALL <symbols>` - inserts <symbols> at the end of every production in
+<edited_nt>.
+
 `INSERTALL <symbols>` - inserts <symbols> at the beginning of every production in
 <edited_nt>.
 
@@ -212,9 +212,11 @@ that appear in the specified production:
 | WITH <newprod>
 ```
 
+`COPYALL <destination>` - creates a new nonterminal `<destination>` and copies
+all the productions in the nonterminal to `<destination>`.
+
 `MOVETO <destination> <production>` - moves the production to `<destination>` and,
  if needed, creates a new production <edited_nt> -> \<destination>.
-
 
 `MOVEALLBUT <destination>` - moves all the productions in the nonterminal to `<destination>`
 *except* for the productions following the `MOVEALLBUT` production in the edit script
