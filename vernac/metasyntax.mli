@@ -52,7 +52,7 @@ val set_notation_for_interpretation :
 
 (** Add only the parsing/printing rule of a notation *)
 
-val add_syntax_extension :
+val add_reserved_notation :
   local:bool -> infix:bool -> (lstring * syntax_modifier CAst.t list) -> unit
 
 (** Add a syntactic definition (as in "Notation f := ...") *)

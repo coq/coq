@@ -1625,7 +1625,7 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
 
 (* Notations without interpretation (Reserved Notation) *)
 
-let add_syntax_extension ~local ~infix ({CAst.loc;v=df},mods) =
+let add_reserved_notation ~local ~infix ({CAst.loc;v=df},mods) =
   let open SynData in
   let (main_data,mods) = interp_non_syntax_modifiers ~reserved:true ~infix ~syndef:false None mods in
   let mods = interp_modifiers main_data.entry mods in

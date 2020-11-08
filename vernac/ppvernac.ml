@@ -774,7 +774,7 @@ let pr_vernac_expr v =
               | None -> mt()
               | Some sc -> str" :" ++ spc() ++ str sc))
     )
-  | VernacSyntaxExtension (_, (s, l)) ->
+  | VernacReservedNotation (_, (s, l)) ->
     return (
       keyword "Reserved Notation" ++ spc() ++ pr_ast qs s ++
       pr_syntax_modifiers l

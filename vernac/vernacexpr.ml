@@ -313,7 +313,7 @@ type nonrec vernac_expr =
 
   | VernacLoad of verbose_flag * string
   (* Syntax *)
-  | VernacSyntaxExtension of bool * (lstring * syntax_modifier CAst.t list)
+  | VernacReservedNotation of bool * (lstring * syntax_modifier CAst.t list)
   | VernacOpenCloseScope of bool * scope_name
   | VernacDeclareScope of scope_name
   | VernacDelimiters of scope_name * string option
