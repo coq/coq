@@ -203,3 +203,5 @@ Unexpected type constraint in notation already providing a type constraint.
      : Prop
 fun f : ## a (a = 0) => f 1 eq_refl
      : ## a (a = 0) -> 1 = 0
+[MyNotation 0]
+     : nat

@@ -86,7 +86,8 @@ let declare_specific_notation_printing_rules specific_ntn rules =
   specific_notation_printing_rules := SpecificNotationMap.add specific_ntn rules !specific_notation_printing_rules
 
 let has_generic_notation_printing_rule ntn =
-  NotationMap.mem ntn !generic_notation_printing_rules
+  try (NotationMap.find ntn !generic_notation_printing_rules).notation_printing_reserved
+  with Not_found -> false
 
 let find_generic_notation_printing_rule ntn =
   NotationMap.find ntn !generic_notation_printing_rules

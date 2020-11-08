@@ -465,3 +465,12 @@ Check ## '((x,y):nat*nat) (x=0).
 Check fun (f : ## {a} (a=0)) => f (a:=1) eq_refl.
 
 End SingleBinder.
+
+Module GenericFormatPrecedence.
+(* Check that if a generic format exists, we use it preferably to no
+   explicit generic format *)
+Notation "[ 'MyNotation' G ]" := (S G) (at level 0, format "[ 'MyNotation'  G ]") : nat_scope.
+Notation "[ 'MyNotation' G ]" := (G+0) (at level 0, only parsing) : bool_scope.
+Notation "[ 'MyNotation' G ]" := (G*0).
+Check 0*0.
+End GenericFormatPrecedence.
