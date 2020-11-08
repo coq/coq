@@ -1536,7 +1536,7 @@ let make_parsing_rules main_data (sd : SynData.syn_data) = let open SynData in
   in {
     synext_level    = sd.level;
     synext_notgram  = pa_rule;
-    synext_nottyps = sd.not_data.typs_for_grammar;
+    synext_nottyps = sd.subentries;
   }
 
 let make_printing_rules reserved main_data sd =
