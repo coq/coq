@@ -1677,7 +1677,7 @@ let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_sym
   Lib.add_anonymous_leaf (inNotation notation);
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
-(* Main entry point *)
+(* Main entry point for command Notation *)
 
 let add_notation ~local deprecation env c ({CAst.loc;v=df},modifiers) sc =
   (* Extract the modifiers not affecting the parsing rule *)
@@ -1710,6 +1710,8 @@ let add_notation ~local deprecation env c ({CAst.loc;v=df},modifiers) sc =
   Lib.add_anonymous_leaf (inNotation notation);
   (* Dump the location of the notation for coqdoc *)
   Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
+
+(* Main entry point for Format Notation *)
 
 let add_notation_extra_printing_rule df k v =
   let notk =
