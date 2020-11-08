@@ -729,19 +729,13 @@ type syntax_parsing_extension = {
   synext_nottyps : constr_entry_key list;
 }
 
-type syntax_printing_extension = {
-  synext_reserved : bool;
-  synext_unparsing : unparsing_rule;
-  synext_extra : (string * string) list;
-}
-
-let generic_format_to_declare ntn {synext_unparsing = (rules,_); synext_extra = extra_rules } =
+let generic_format_to_declare ntn { notation_printing_rules = rules } =
   try
-    let (generic_rules,_),reserved,generic_extra_rules =
+    let { notation_printing_reserved = reserved; notation_printing_rules = generic_rules } =
       Ppextend.find_generic_notation_printing_rule ntn in
     if reserved &&
-       (not (List.for_all2eq unparsing_eq rules generic_rules)
-       || extra_rules <> generic_extra_rules)
+       (not (List.for_all2eq unparsing_eq rules.notation_printing_unparsing generic_rules.notation_printing_unparsing)
+       || rules.notation_printing_extra <> generic_rules.notation_printing_extra)
     then
       (warn_incompatible_format (None,ntn); true)
     else
@@ -752,19 +746,17 @@ let check_reserved_format ntn = function
   | None -> ()
   | Some sy_pp_rules -> let _ = generic_format_to_declare ntn sy_pp_rules in ()
 
-let specific_format_to_declare (specific,ntn as specific_ntn)
-      {synext_unparsing = (rules,_); synext_extra = extra_rules } =
+let specific_format_to_declare (specific,ntn as specific_ntn) rules =
   try
-    let (specific_rules,_),specific_extra_rules =
-      Ppextend.find_specific_notation_printing_rule specific_ntn in
-    if not (List.for_all2eq unparsing_eq rules specific_rules)
-       || extra_rules <> specific_extra_rules then
+    let specific_rules = Ppextend.find_specific_notation_printing_rule specific_ntn in
+    if not (List.for_all2eq unparsing_eq rules.notation_printing_unparsing specific_rules.notation_printing_unparsing)
+       || rules.notation_printing_extra <> specific_rules.notation_printing_extra then
       (warn_incompatible_format (Some specific,ntn); true)
     else false
   with Not_found -> true
 
 type syntax_extension_obj =
-  locality_flag * (notation * syntax_parsing_extension * syntax_printing_extension option)
+  locality_flag * (notation * syntax_parsing_extension * generic_notation_printing_rules option)
 
 let check_and_extend_constr_grammar ntn rule =
   try
@@ -818,8 +810,7 @@ let cache_one_syntax_extension (ntn,pa_se,pp_se) =
     (* Check compatibility of format in case of two Reserved Notation *)
     (* and declare or redeclare printing rule *)
     if generic_format_to_declare ntn pp_se then
-      declare_generic_notation_printing_rules ntn
-        ~extra:pp_se.synext_extra ~reserved:pp_se.synext_reserved pp_se.synext_unparsing
+      declare_generic_notation_printing_rules ntn pp_se
 
 let cache_syntax_extension (_, (_, sy)) =
   cache_one_syntax_extension sy
@@ -831,7 +822,7 @@ let subst_printing_rule subst x = x
 let subst_syntax_extension (subst, (local, (ntn,pa_sy,pp_sy))) =
   (local, (ntn,
     { pa_sy with synext_notgram = Option.map (List.map (subst_parsing_rule subst)) pa_sy.synext_notgram },
-    Option.map (fun pp_sy -> {pp_sy with synext_unparsing = subst_printing_rule subst pp_sy.synext_unparsing}) pp_sy)
+    subst_printing_rule subst pp_sy)
   )
 
 let classify_syntax_definition (local, _ as o) =
@@ -1364,11 +1355,11 @@ let compute_syntax_data ~local main_data df mods =
   (* Return relevant data for interpretation and for parsing/printing *)
   { info = ntn_for_interp;
 
-    msgs;
 
     recvars;
     mainvars;
 
+    msgs;
     level  = (main_data.entry,n,prec);
     subentries = sy_typs;
     pa_syntax_data = pa_sy_data;
@@ -1387,7 +1378,7 @@ type notation_obj = {
   notobj_use : notation_use option;
   notobj_deprecation : Deprecation.t option;
   notobj_notation : notation * notation_location;
-  notobj_specific_pp_rules : syntax_printing_extension option;
+  notobj_specific_pp_rules : notation_printing_rules option;
   notobj_also_in_cases_pattern : bool;
 }
 
@@ -1420,8 +1411,7 @@ let open_notation i (_, nobj) =
     (match nobj.notobj_specific_pp_rules with
     | Some pp_sy ->
       if specific_format_to_declare (scope,ntn) pp_sy then
-        Ppextend.declare_specific_notation_printing_rules
-          (scope,ntn) ~extra:pp_sy.synext_extra pp_sy.synext_unparsing
+        Ppextend.declare_specific_notation_printing_rules (scope,ntn) pp_sy
     | None -> ())
   end
 
@@ -1476,13 +1466,7 @@ let recover_notation_syntax ntn =
     with Not_found ->
       raise NoSyntaxRule in
   let pp =
-    try
-      let pp_rule,reserved,pp_extra_rules = find_generic_notation_printing_rule ntn in
-      Some {
-        synext_reserved = reserved;
-        synext_unparsing = pp_rule;
-        synext_extra = pp_extra_rules;
-      }
+    try Some (find_generic_notation_printing_rule ntn)
     with Not_found -> None in
   pa,pp
 
@@ -1533,15 +1517,18 @@ let make_parsing_rules main_data (sd : SynData.syn_data) = let open SynData in
     synext_nottyps = List.map snd sd.subentries;
   }
 
-let make_printing_rules reserved main_data sd =
+let make_generic_printing_rules reserved main_data sd =
   let open SynData in
   let custom,level,_ = sd.level in
   let pp_rule = make_pp_rule level sd.pp_syntax_data main_data.format in
   (* We produce a generic rule even if this precise notation is only parsing *)
   Some {
-    synext_reserved = reserved;
-    synext_unparsing = (pp_rule,level);
-    synext_extra  = main_data.extra;
+    notation_printing_reserved = reserved;
+    notation_printing_rules = {
+      notation_printing_unparsing = pp_rule;
+      notation_printing_level = level;
+      notation_printing_extra  = main_data.extra;
+    }
   }
 
 let merge_extra extra1 extra2 =
@@ -1552,15 +1539,15 @@ let make_specific_printing_rules etyps symbols level pp_rule (format,new_extra) 
   match level with
   | None -> None
   | Some (_,level,_) ->
-  let old_extra = match pp_rule with Some { synext_extra = old_extra } -> old_extra | None -> [] in
+  let old_extra = match pp_rule with Some { notation_printing_rules = { notation_printing_extra } } -> notation_printing_extra | None -> [] in
   let pp_rule = match format, pp_rule with
-    | None, Some { synext_unparsing = (pp_rule,_) } -> pp_rule
+    | None, Some { notation_printing_rules = { notation_printing_unparsing = pp_rule } } -> pp_rule
     | _ -> make_pp_rule level (etyps,symbols) format in
   (* Should we warn if there is an incompatible reserved format? *)
   Some {
-    synext_reserved = false;
-    synext_unparsing = (pp_rule,level);
-    synext_extra  = merge_extra old_extra new_extra;
+    notation_printing_unparsing = pp_rule;
+    notation_printing_level = level;
+    notation_printing_extra = merge_extra old_extra new_extra;
   }
 
 let warn_unused_interpretation =
@@ -1592,9 +1579,9 @@ let add_notation_in_scope ~local main_data df env c sd scope =
     match main_data.onlyparsing, Ppextend.has_generic_notation_printing_rule sd.info with
     | true, true -> None, None
     | onlyparse, has_generic ->
-      let rules = make_printing_rules false main_data sd in
+      let rules = make_generic_printing_rules false main_data sd in
       let _ = check_reserved_format sd.info rules in
-      (if onlyparse then None else rules),
+      (if onlyparse then None else Option.map (fun x -> x.notation_printing_rules) rules),
       (if has_generic then None else (* We use the format of this notation as the default *) rules) in
   (* Prepare the interpretation *)
   let i_vars = make_internalization_vars sd.recvars sd.subentries in
@@ -1681,7 +1668,7 @@ let add_syntax_extension ~local ~infix ({CAst.loc;v=df},mods) =
   let mods = interp_modifiers main_data.entry mods in
   let sd = compute_syntax_data ~local main_data df mods in
   let pa_rules = make_parsing_rules main_data sd in
-  let pp_rules = make_printing_rules true main_data sd in
+  let pp_rules = make_generic_printing_rules true main_data sd in
   List.iter (fun f -> f ()) sd.msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,(sd.info,pa_rules,pp_rules)))
 
