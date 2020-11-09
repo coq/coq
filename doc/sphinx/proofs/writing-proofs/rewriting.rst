@@ -362,7 +362,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    These parameterized reduction tactics apply to any goal and perform
    the normalization of the goal according to the specified flags. In
-   correspondence with the kinds of reduction considered in |Coq| namely
+   correspondence with the kinds of reduction considered in Coq namely
    :math:`\beta` (reduction of functional application), :math:`\delta`
    (unfolding of transparent constants, see :ref:`vernac-controlling-the-reduction-strategies`),
    :math:`\iota` (reduction of
@@ -444,8 +444,8 @@ the conversion in hypotheses :n:`{+ @ident}`.
 .. tacv:: native_compute
    :name: native_compute
 
-   This tactic evaluates the goal by compilation to |OCaml| as described
-   in :cite:`FullReduction`. If |Coq| is running in native code, it can be
+   This tactic evaluates the goal by compilation to OCaml as described
+   in :cite:`FullReduction`. If Coq is running in native code, it can be
    typically two to five times faster than :tacn:`vm_compute`. Note however that the
    compilation cost is higher, so it is worth using only for intensive
    computations.
@@ -783,7 +783,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
       If we try to prove :g:`id (fact n) = fact n` by
       :tacn:`reflexivity`, it will now take time proportional to
-      :math:`n!`, because |Coq| will keep unfolding :g:`fact` and
+      :math:`n!`, because Coq will keep unfolding :g:`fact` and
       :g:`*` and :g:`+` before it unfolds :g:`id`, resulting in a full
       computation of :g:`fact n` (in unary, because we are using
       :g:`nat`), which takes time :math:`n!`.  We can see this cross
@@ -827,7 +827,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
          Time Defined.
 
       On small examples this sort of behavior doesn't matter, but
-      because |Coq| is a super-linear performance domain in so many
+      because Coq is a super-linear performance domain in so many
       places, unless great care is taken, tactic automation using
       :tacn:`with_strategy` may not be robustly performant when
       scaling the size of the input.

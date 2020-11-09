@@ -5,10 +5,10 @@ Program extraction
 
 :Authors: Jean-Christophe Filliâtre and Pierre Letouzey
 
-We present here the |Coq| extraction commands, used to build certified
+We present here the Coq extraction commands, used to build certified
 and relatively efficient functional programs, extracting them from
-either |Coq| functions or |Coq| proofs of specifications. The
-functional languages available as output are currently |OCaml|, Haskell
+either Coq functions or Coq proofs of specifications. The
+functional languages available as output are currently OCaml, Haskell
 and Scheme. In the following, "ML" will be used (abusively) to refer
 to any of the three.
 
@@ -16,7 +16,7 @@ Before using any of the commands or options described in this chapter,
 the extraction framework should first be loaded explicitly
 via ``Require Extraction``, or via the more robust
 ``From Coq Require Extraction``.
-Note that in earlier versions of |Coq|, these commands and options were
+Note that in earlier versions of Coq, these commands and options were
 directly available without any preliminary ``Require``.
 
 .. coqtop:: in
@@ -29,23 +29,23 @@ Generating ML Code
 .. note::
 
   In the following, a qualified identifier :token:`qualid`
-  can be used to refer to any kind of |Coq| global "object" : constant,
+  can be used to refer to any kind of Coq global "object" : constant,
   inductive type, inductive constructor or module name.
 
 The next two commands are meant to be used for rapid preview of
-extraction. They both display extracted term(s) inside |Coq|.
+extraction. They both display extracted term(s) inside Coq.
 
 .. cmd:: Extraction @qualid
 
-   Extraction of the mentioned object in the |Coq| toplevel.
+   Extraction of the mentioned object in the Coq toplevel.
 
 .. cmd:: Recursive Extraction {+ @qualid }
 
    Recursive extraction of all the mentioned objects and
-   all their dependencies in the |Coq| toplevel.
+   all their dependencies in the Coq toplevel.
 
 All the following commands produce real ML files. User can choose to
-produce one monolithic file or one file per |Coq| library.
+produce one monolithic file or one file per Coq library.
 
 .. cmd:: Extraction @string {+ @qualid }
 
@@ -57,14 +57,14 @@ produce one monolithic file or one file per |Coq| library.
   
 .. cmd:: Extraction Library @ident
 
-   Extraction of the whole |Coq| library :n:`@ident.v` to an ML module
+   Extraction of the whole Coq library :n:`@ident.v` to an ML module
    :n:`@ident.ml`. In case of name clash, identifiers are here renamed
    using prefixes ``coq_``  or ``Coq_`` to ensure a session-independent
    renaming.
 
 .. cmd:: Recursive Extraction Library @ident
 
-   Extraction of the |Coq| library :n:`@ident.v` and all other modules
+   Extraction of the Coq library :n:`@ident.v` and all other modules
    :n:`@ident.v` depends on.
 
 .. cmd:: Separate Extraction {+ @qualid }
@@ -72,26 +72,26 @@ produce one monolithic file or one file per |Coq| library.
    Recursive extraction of all the mentioned objects and all
    their dependencies, just as :n:`Extraction @string {+ @qualid }`,
    but instead of producing one monolithic file, this command splits
-   the produced code in separate ML files, one per corresponding |Coq|
+   the produced code in separate ML files, one per corresponding Coq
    ``.v`` file. This command is hence quite similar to
    :cmd:`Recursive Extraction Library`, except that only the needed
-   parts of |Coq| libraries are extracted instead of the whole.
+   parts of Coq libraries are extracted instead of the whole.
    The naming convention in case of name clash is the same one as
    :cmd:`Extraction Library`: identifiers are here renamed using prefixes
    ``coq_``  or ``Coq_``.
 
 The following command is meant to help automatic testing of
 the extraction, see for instance the ``test-suite`` directory
-in the |Coq| sources.
+in the Coq sources.
 
 .. cmd:: Extraction TestCompile {+ @qualid }
 
    All the mentioned objects and all their dependencies are extracted
-   to a temporary |OCaml| file, just as in ``Extraction "file"``. Then
+   to a temporary OCaml file, just as in ``Extraction "file"``. Then
    this temporary file and its signature are compiled with the same
-   |OCaml| compiler used to built |Coq|. This command succeeds only
-   if the extraction and the |OCaml| compilation succeed. It fails
-   if the current target language of the extraction is not |OCaml|.
+   OCaml compiler used to built Coq. This command succeeds only
+   if the extraction and the OCaml compilation succeed. It fails
+   if the current target language of the extraction is not OCaml.
 
 Extraction Options
 -------------------
@@ -120,17 +120,17 @@ Setting the target language
 Inlining and optimizations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Since |OCaml| is a strict language, the extracted code has to
+Since OCaml is a strict language, the extracted code has to
 be optimized in order to be efficient (for instance, when using
 induction principles we do not want to compute all the recursive calls
 but only the needed ones). So the extraction mechanism provides an
 automatic optimization routine that will be called each time the user
-wants to generate an |OCaml| program. The optimizations can be split in two
+wants to generate an OCaml program. The optimizations can be split in two
 groups: the type-preserving ones (essentially constant inlining and
 reductions) and the non type-preserving ones (some function
 abstractions of dummy types are removed when it is deemed safe in order
 to have more elegant types). Therefore some constants may not appear in the
-resulting monolithic |OCaml| program. In the case of modular extraction,
+resulting monolithic OCaml program. In the case of modular extraction,
 even if some inlining is done, the inlined constants are nevertheless
 printed, to ensure session-independent programs.
 
@@ -138,7 +138,7 @@ Concerning Haskell, type-preserving optimizations are less useful
 because of laziness. We still make some optimizations, for example in
 order to produce more readable code.
 
-The type-preserving optimizations are controlled by the following |Coq| flags
+The type-preserving optimizations are controlled by the following Coq flags
 and commands:
 
 .. flag:: Extraction Optimize
@@ -146,7 +146,7 @@ and commands:
    Default is on. This controls all type-preserving optimizations made on
    the ML terms (mostly reduction of dummy beta/iota redexes, but also
    simplifications on Cases, etc). Turn this flag off if you want a
-   ML term as close as possible to the |Coq| term.
+   ML term as close as possible to the Coq term.
 
 .. flag:: Extraction Conservative Types
 
@@ -199,7 +199,7 @@ The user can explicitly ask for a constant to be extracted by two means:
 
   * by mentioning it on the extraction command line
 
-  * by extracting the whole |Coq| module of this constant.
+  * by extracting the whole Coq module of this constant.
 
 In both cases, the declaration of this constant will be present in the
 produced file. But this same constant may or may not be inlined in
@@ -321,7 +321,7 @@ Realizing inductive types
 
 The system also provides a mechanism to specify ML terms for inductive
 types and constructors. For instance, the user may want to use the ML
-native boolean type instead of the |Coq| one. The syntax is the following:
+native boolean type instead of the Coq one. The syntax is the following:
 
 .. cmd:: Extract Inductive @qualid => {| @ident | @string } [ {* {| @ident | @string } } ] {? @string__match }
 
@@ -350,7 +350,7 @@ native boolean type instead of the |Coq| one. The syntax is the following:
      arguments is considered to have one unit argument, in order to block
      early evaluation of the branch: ``| O => bar`` leads to the functional
      form ``(fun () -> bar)``. For instance, when extracting :g:`nat`
-     into |OCaml| ``int``, the code to be provided has type:
+     into OCaml ``int``, the code to be provided has type:
      ``(unit->'a)->(int->'a)->int->'a``.
 
 .. caution:: As for :cmd:`Extract Constant`, this command should be used with care:
@@ -361,15 +361,15 @@ native boolean type instead of the |Coq| one. The syntax is the following:
   * Extracting an inductive type to a pre-existing ML inductive type
     is quite sound. But extracting to a general type (by providing an
     ad-hoc pattern matching) will often **not** be fully rigorously
-    correct. For instance, when extracting ``nat`` to |OCaml| ``int``,
+    correct. For instance, when extracting ``nat`` to OCaml ``int``,
     it is theoretically possible to build ``nat`` values that are
-    larger than |OCaml| ``max_int``. It is the user's responsibility to
+    larger than OCaml ``max_int``. It is the user's responsibility to
     be sure that no overflow or other bad events occur in practice.
 
   * Translating an inductive type to an arbitrary ML type does **not**
     magically improve the asymptotic complexity of functions, even if the
     ML type is an efficient representation. For instance, when extracting
-    ``nat`` to |OCaml| ``int``, the function ``Nat.mul`` stays quadratic.
+    ``nat`` to OCaml ``int``, the function ``Nat.mul`` stays quadratic.
     It might be interesting to associate this translation with
     some specific :cmd:`Extract Constant` when primitive counterparts exist.
 
@@ -383,9 +383,9 @@ Typical examples are the following:
 
 .. note::
 
-   When extracting to |OCaml|, if an inductive constructor or type has arity 2 and
+   When extracting to OCaml, if an inductive constructor or type has arity 2 and
    the corresponding string is enclosed by parentheses, and the string meets
-   |OCaml|'s lexical criteria for an infix symbol, then the rest of the string is
+   OCaml's lexical criteria for an infix symbol, then the rest of the string is
    used as an infix constructor or type.
 
 .. coqtop:: in
@@ -394,7 +394,7 @@ Typical examples are the following:
    Extract Inductive prod => "(*)"  [ "(,)" ].
 
 As an example of translation to a non-inductive datatype, let's turn
-``nat`` into |OCaml| ``int`` (see caveat above):
+``nat`` into OCaml ``int`` (see caveat above):
 
 .. coqtop:: in
 
@@ -404,11 +404,11 @@ Avoiding conflicts with existing filenames
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using :cmd:`Extraction Library`, the names of the extracted files
-directly depend on the names of the |Coq| files. It may happen that
+directly depend on the names of the Coq files. It may happen that
 these filenames are in conflict with already existing files, 
 either in the standard library of the target language or in other
 code that is meant to be linked with the extracted code. 
-For instance the module ``List`` exists both in |Coq| and in |OCaml|.
+For instance the module ``List`` exists both in Coq and in OCaml.
 It is possible to instruct the extraction not to use particular filenames.
 
 .. cmd:: Extraction Blacklist {+ @ident }
@@ -424,7 +424,7 @@ It is possible to instruct the extraction not to use particular filenames.
 
    Allow the extraction to use any filename.
 
-For |OCaml|, a typical use of these commands is
+For OCaml, a typical use of these commands is
 ``Extraction Blacklist String List``.
 
 Additional settings
@@ -440,7 +440,7 @@ Additional settings
 
    Controls which optimizations are used during extraction, providing a finer-grained
    control than :flag:`Extraction Optimize`.  The bits of :token:`natural` are used as a bit mask.
-   Keeping an option off keeps the extracted ML more similar to the |Coq| term.
+   Keeping an option off keeps the extracted ML more similar to the Coq term.
    Values are:
 
    +-----+-------+----------------------------------------------------------------+
@@ -471,14 +471,14 @@ Additional settings
 
 .. flag:: Extraction TypeExpand
 
-   If set, fully expand |Coq| types in ML.  See the |Coq| source code to learn more.
+   If set, fully expand Coq types in ML.  See the Coq source code to learn more.
 
-Differences between |Coq| and ML type systems
+Differences between Coq and ML type systems
 ----------------------------------------------
 
-Due to differences between |Coq| and ML type systems, 
+Due to differences between Coq and ML type systems,
 some extracted programs are not directly typable in ML. 
-We now solve this problem (at least in |OCaml|) by adding
+We now solve this problem (at least in OCaml) by adding
 when needed some unsafe casting ``Obj.magic``, which give
 a generic type ``'a`` to any term.
 
@@ -492,7 +492,7 @@ function:
 
    Definition dp {A B:Type}(x:A)(y:B)(f:forall C:Type, C->C) := (f A x, f B y).
 
-In |OCaml|, for instance, the direct extracted term would be::
+In OCaml, for instance, the direct extracted term would be::
 
    let dp x y f = Pair((f () x),(f () y))
 
@@ -506,7 +506,7 @@ We now produce the following correct version::
 
    let dp x y f = Pair ((Obj.magic f () x), (Obj.magic f () y))
 
-Secondly, some |Coq| definitions may have no counterpart in ML. This
+Secondly, some Coq definitions may have no counterpart in ML. This
 happens when there is a quantification over types inside the type
 of a constructor; for example:
 
@@ -515,29 +515,29 @@ of a constructor; for example:
    Inductive anything : Type := dummy : forall A:Set, A -> anything.
 
 which corresponds to the definition of an ML dynamic type.
-In |OCaml|, we must cast any argument of the constructor dummy
+In OCaml, we must cast any argument of the constructor dummy
 (no GADT are produced yet by the extraction).
 
 Even with those unsafe castings, you should never get error like
 ``segmentation fault``. In fact even if your program may seem
-ill-typed to the |OCaml| type checker, it can't go wrong : it comes
-from a |Coq| well-typed terms, so for example inductive types will always
+ill-typed to the OCaml type checker, it can't go wrong : it comes
+from a Coq well-typed terms, so for example inductive types will always
 have the correct number of arguments, etc. Of course, when launching
 manually some extracted function, you should apply it to arguments
-of the right shape (from the |Coq| point-of-view).
+of the right shape (from the Coq point-of-view).
 
 More details about the correctness of the extracted programs can be 
 found in :cite:`Let02`.
 
 We have to say, though, that in most "realistic" programs, these problems do not
-occur. For example all the programs of |Coq| library are accepted by the |OCaml|
+occur. For example all the programs of Coq library are accepted by the OCaml
 type checker without any ``Obj.magic`` (see examples below).
 
 Some examples
 -------------
 
 We present here two examples of extraction, taken from the
-|Coq| Standard Library. We choose |OCaml| as the target language,
+Coq Standard Library. We choose OCaml as the target language,
 but everything, with slight modifications, can also be done in the
 other languages supported by extraction.
 We then indicate where to find other examples and tests of extraction.
@@ -554,7 +554,7 @@ This module contains a theorem ``eucl_dev``, whose type is::
 
 where ``diveucl`` is a type for the pair of the quotient and the
 modulo, plus some logical assertions that disappear during extraction.
-We can now extract this program to |OCaml|:
+We can now extract this program to OCaml:
 
 .. coqtop:: none
 
@@ -570,11 +570,11 @@ We can now extract this program to |OCaml|:
 The inlining of ``gt_wf_rec`` and others is not
 mandatory. It only enhances readability of extracted code.
 You can then copy-paste the output to a file ``euclid.ml`` or let 
-|Coq| do it for you with the following command::
+Coq do it for you with the following command::
 
    Extraction "euclid" eucl_dev.
 
-Let us play the resulting program (in an |OCaml| toplevel)::
+Let us play the resulting program (in an OCaml toplevel)::
 
    #use "euclid.ml";;
    type nat = O | S of nat
@@ -588,7 +588,7 @@ Let us play the resulting program (in an |OCaml| toplevel)::
    # eucl_dev (S (S O)) (S (S (S (S (S O)))));;
    - : diveucl = Divex (S (S O), S O)
 
-It is easier to test on |OCaml| integers::
+It is easier to test on OCaml integers::
 
    # let rec nat_of_int = function 0 -> O | n -> S (nat_of_int (n-1));;
    val nat_of_int : int -> nat = <fun>
@@ -614,12 +614,12 @@ Extraction's horror museum
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some pathological examples of extraction are grouped in the file
-``test-suite/success/extraction.v`` of the sources of |Coq|.
+``test-suite/success/extraction.v`` of the sources of Coq.
 
 Users' Contributions
 ~~~~~~~~~~~~~~~~~~~~
 
-Several of the |Coq| Users' Contributions use extraction to produce
+Several of the Coq Users' Contributions use extraction to produce
 certified programs. In particular the following ones have an automatic
 extraction test:
 

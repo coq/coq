@@ -8,7 +8,7 @@ Implicit Coercions
 General Presentation
 ---------------------
 
-This section describes the inheritance mechanism of |Coq|. In |Coq| with
+This section describes the inheritance mechanism of Coq. In Coq with
 inheritance, we are not interested in adding any expressive power to
 our theory, but only convenience. Given a term, possibly not typable,
 we are interested in the problem of determining if it can be well

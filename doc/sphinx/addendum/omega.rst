@@ -9,7 +9,7 @@ Omega: a (deprecated) solver for arithmetic
 
    The :tacn:`omega` tactic is deprecated in favor of the :tacn:`lia`
    tactic.  The goal is to consolidate the arithmetic solving
-   capabilities of |Coq| into a single engine; moreover, :tacn:`lia` is
+   capabilities of Coq into a single engine; moreover, :tacn:`lia` is
    in general more powerful than :tacn:`omega` (it is a complete
    Presburger arithmetic solver while :tacn:`omega` was known to be
    incomplete).
@@ -143,7 +143,7 @@ Options
 
    .. deprecated:: 8.5
 
-   This deprecated flag (on by default) is for compatibility with |Coq| pre 8.5. It
+   This deprecated flag (on by default) is for compatibility with Coq pre 8.5. It
    resets internal name counters to make executions of :tacn:`omega` independent.
 
 .. flag:: Omega UseLocalDefs

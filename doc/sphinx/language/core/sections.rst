@@ -84,7 +84,7 @@ Sections create local contexts which can be shared across multiple definitions.
    will be wrapped with a :n:`@term_let` with the same declaration.
 
    As for :cmd:`Definition`, :cmd:`Fixpoint` and :cmd:`CoFixpoint`,
-   if :n:`@term` is omitted, :n:`@type` is required and |Coq| enters proof editing mode.
+   if :n:`@term` is omitted, :n:`@type` is required and Coq enters proof editing mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
