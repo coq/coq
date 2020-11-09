@@ -496,14 +496,14 @@ automatically created.
         ``typeclass_instances`` hint database.
 
 
-Hint databases defined in the |Coq| standard library
+Hint databases defined in the Coq standard library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Several hint databases are defined in the |Coq| standard library. The
+Several hint databases are defined in the Coq standard library. The
 actual content of a database is the collection of hints declared
 to belong to this database in each of the various modules currently
 loaded. Especially, requiring new modules may extend the database.
-At |Coq| startup, only the core database is nonempty and can be used.
+At Coq startup, only the core database is nonempty and can be used.
 
 :core: This special database is automatically used by ``auto``, except when
        pseudo-database ``nocore`` is given to ``auto``. The core database
@@ -624,7 +624,7 @@ but this is a mere workaround and has some limitations (for instance, external
 hints cannot be removed).
 
 A proper way to fix this issue is to bind the hints to their module scope, as
-for most of the other objects |Coq| uses. Hints should only be made available when
+for most of the other objects Coq uses. Hints should only be made available when
 the module they are defined in is imported, not just required. It is very
 difficult to change the historical behavior, as it would break a lot of scripts.
 We propose a smooth transitional path by providing the :opt:`Loose Hint Behavior`

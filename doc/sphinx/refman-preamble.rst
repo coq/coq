@@ -15,15 +15,9 @@
 .. |c_i| replace:: `c`\ :math:`_{i}`
 .. |c_n| replace:: `c`\ :math:`_{n}`
 .. |Cic| replace:: CIC
-.. |Coq| replace:: :smallcaps:`Coq`
-.. |CoqIDE| replace:: :smallcaps:`CoqIDE`
 .. |eq_beta_delta_iota_zeta| replace:: `=`\ :math:`_{\beta\delta\iota\zeta}`
-.. |Gallina| replace:: :smallcaps:`Gallina`
 .. |Latex| replace:: :smallcaps:`LaTeX`
-.. |L_tac| replace:: `L`:sub:`tac`
 .. |Ltac| replace:: `L`:sub:`tac`
-.. |ML| replace:: :smallcaps:`ML`
-.. |OCaml| replace:: :smallcaps:`OCaml`
 .. |p_1| replace:: `p`\ :math:`_{1}`
 .. |p_i| replace:: `p`\ :math:`_{i}`
 .. |p_n| replace:: `p`\ :math:`_{n}`

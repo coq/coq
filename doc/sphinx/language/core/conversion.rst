@@ -85,7 +85,7 @@ reduction is called δ-reduction and shows as follows.
 ζ-reduction
 ~~~~~~~~~~~
 
-|Coq| allows also to remove local definitions occurring in terms by
+Coq allows also to remove local definitions occurring in terms by
 replacing the defined variable by its value. The declaration being
 destroyed, this reduction differs from δ-reduction. It is called
 ζ-reduction and shows as follows.

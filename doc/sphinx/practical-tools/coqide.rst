@@ -2,28 +2,28 @@
 
 .. _coqintegrateddevelopmentenvironment:
 
-|Coq| Integrated Development Environment
+Coq Integrated Development Environment
 ========================================
 
-The |Coq| Integrated Development Environment is a graphical tool, to be
+The Coq Integrated Development Environment is a graphical tool, to be
 used as a user-friendly replacement to `coqtop`. Its main purpose is to
-allow the user to navigate forward and backward into a |Coq| vernacular
+allow the user to navigate forward and backward into a Coq vernacular
 file, executing corresponding commands or undoing them respectively.
 
-|CoqIDE| is run by typing the command `coqide` on the command line.
+CoqIDE is run by typing the command `coqide` on the command line.
 Without argument, the main screen is displayed with an “unnamed
 buffer”, and with a filename as argument, another buffer displaying
 the contents of that file. Additionally, `coqide` accepts the same
 options as `coqtop`, given in :ref:`thecoqcommands`, the ones having obviously
-no meaning for |CoqIDE| being ignored.
+no meaning for CoqIDE being ignored.
 
 .. _coqide_mainscreen:
 
   .. image:: ../_static/coqide.png
-     :alt: |CoqIDE| main screen
+     :alt: CoqIDE main screen
 
-A sample |CoqIDE| main screen, while navigating into a file `Fermat.v`,
-is shown in the figure :ref:`|CoqIDE| main screen <coqide_mainscreen>`.
+A sample CoqIDE main screen, while navigating into a file `Fermat.v`,
+is shown in the figure :ref:`CoqIDE main screen <coqide_mainscreen>`.
 At the top is a menu bar, and a tool bar
 below it. The large window on the left is displaying the various
 *script buffers*. The upper right window is the *goal window*, where
@@ -39,15 +39,15 @@ The *File* menu allows you to open files or create some, save them,
 print or export them into various formats. Among all these buffers,
 there is always one which is the current *running buffer*, whose name
 is displayed on a background in the *processed* color (green by default), which
-is the one where |Coq| commands are currently executed.
+is the one where Coq commands are currently executed.
 
 Buffers may be edited as in any text editor, and classical basic
 editing commands (Copy/Paste, …) are available in the *Edit* menu.
-|CoqIDE| offers only basic editing commands, so if you need more complex
+CoqIDE offers only basic editing commands, so if you need more complex
 editing commands, you may launch your favorite text editor on the
 current buffer, using the *Edit/External Editor* menu.
 
-Interactive navigation into |Coq| scripts
+Interactive navigation into Coq scripts
 --------------------------------------------
 
 The running buffer is the one where navigation takes place. The toolbar offers
@@ -58,7 +58,7 @@ processed color. If that command fails, the error message is displayed in the
 message window, and the location of the error is emphasized by an underline in
 the error foreground color (red by default).
 
-In the figure :ref:`|CoqIDE| main screen <coqide_mainscreen>`,
+In the figure :ref:`CoqIDE main screen <coqide_mainscreen>`,
 the running buffer is `Fermat.v`, all commands until
 the ``Theorem`` have been already executed, and the user tried to go
 forward executing ``Induction n``. That command failed because no such
@@ -74,7 +74,7 @@ and use the goto button. Unlike with `coqtop`, you should never use
 There are two additional buttons for navigation within the running buffer. The
 "down" button with a line goes directly to the end; the "up" button with a line
 goes back to the beginning. The handling of errors when using the go-to-the-end
-button depends on whether |Coq| is running in asynchronous mode or not (see
+button depends on whether Coq is running in asynchronous mode or not (see
 Chapter :ref:`asynchronousandparallelproofprocessing`). If it is not running in that mode, execution
 stops as soon as an error is found. Otherwise, execution continues, and the
 error is marked with an underline in the error foreground color, with a
@@ -86,12 +86,12 @@ If you ever try to execute a command that runs for a long time
 and would like to abort it before it terminates, you may
 use the interrupt button (the white cross on a red circle).
 
-There are other buttons on the |CoqIDE| toolbar: a button to save the running
+There are other buttons on the CoqIDE toolbar: a button to save the running
 buffer; a button to close the current buffer (an "X"); buttons to switch among
 buffers (left and right arrows); an "information" button; and a "gears" button.
 
-The "gears" button submits proof terms to the |Coq| kernel for type checking.
-When |Coq| uses asynchronous processing (see Chapter :ref:`asynchronousandparallelproofprocessing`),
+The "gears" button submits proof terms to the Coq kernel for type checking.
+When Coq uses asynchronous processing (see Chapter :ref:`asynchronousandparallelproofprocessing`),
 proofs may have been completed without kernel-checking of generated proof terms.
 The presence of unchecked proof terms is indicated by ``Qed`` statements that
 have a subdued *being-processed* color (light blue by default), rather than the
@@ -114,11 +114,11 @@ Queries
 ------------
 
 .. image:: ../_static/coqide-queries.png
-   :alt: |CoqIDE| queries
+   :alt: CoqIDE queries
 
 We call *query* any vernacular command that does not change the current state,
 such as ``Check``, ``Search``, etc. To run such commands interactively, without
-writing them in scripts, |CoqIDE| offers a *query pane*. The query pane can be
+writing them in scripts, CoqIDE offers a *query pane*. The query pane can be
 displayed on demand by using the ``View`` menu, or using the shortcut ``F1``.
 Queries can also be performed by selecting a particular phrase, then choosing an
 item from the ``Queries`` menu. The response then appears in the message window.
@@ -148,12 +148,12 @@ The first section is for selecting the text font used for scripts,
 goal and message windows.
 
 The second and third sections are for controlling colors and style of
-the three main buffers. A predefined |Coq| highlighting style as well
+the three main buffers. A predefined Coq highlighting style as well
 as standard |GtkSourceView| styles are available. Other styles can be
 added e.g. in ``$HOME/.local/share/gtksourceview-3.0/styles/`` (see
 the general documentation about |GtkSourceView| for the various
 possibilities). Note that the style of the rest of graphical part of
-|CoqIDE| is not under the control of |GtkSourceView| but of GTK+ and
+CoqIDE is not under the control of |GtkSourceView| but of GTK+ and
 governed by files such as ``settings.ini`` and ``gtk.css`` in
 ``$XDG_CONFIG_HOME/gtk-3.0`` or files in
 ``$HOME/.themes/NameOfTheme/gtk-3.0``, as well as the environment
@@ -169,7 +169,7 @@ The next section is devoted to file management: you may configure
 automatic saving of files, by periodically saving the contents into
 files named `#f#` for each opened file `f`. You may also activate the
 *revert* feature: in case a opened file is modified on the disk by a
-third party, |CoqIDE| may read it again for you. Note that in the case
+third party, CoqIDE may read it again for you. Note that in the case
 you edited that same file, you will be prompted to choose to either
 discard your changes or not. The File charset encoding choice is
 described below in :ref:`character-encoding-saved-files`.
@@ -196,9 +196,9 @@ still edit this configuration file by hand, but this is more involved.
 Using Unicode symbols
 --------------------------
 
-|CoqIDE| is based on GTK+ and inherits from it support for Unicode in
+CoqIDE is based on GTK+ and inherits from it support for Unicode in
 its text windows. Consequently a large set of symbols is available for
-notations. Furthermore, |CoqIDE| conveniently provides a simple way to
+notations. Furthermore, CoqIDE conveniently provides a simple way to
 input Unicode characters.
 
 
@@ -219,9 +219,9 @@ mathematical symbols ∀ and ∃, you may define:
      : type_scope.
 
 There exists a small set of such notations already defined, in the
-file `utf8.v` of |Coq| library, so you may enable them just by
-``Require Import Unicode.Utf8`` inside |CoqIDE|, or equivalently,
-by starting |CoqIDE| with ``coqide -l utf8``.
+file `utf8.v` of Coq library, so you may enable them just by
+``Require Import Unicode.Utf8`` inside CoqIDE, or equivalently,
+by starting CoqIDE with ``coqide -l utf8``.
 
 However, there are some issues when using such Unicode symbols: you of
 course need to use a character font which supports them. In the Fonts
@@ -237,7 +237,7 @@ use antialiased fonts or not, by setting the environment variable
 Bindings for input of Unicode symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-|CoqIDE| supports a builtin mechanism to input non-ASCII symbols.
+CoqIDE supports a builtin mechanism to input non-ASCII symbols.
 For example, to input ``π``, it suffices to type ``\pi`` then press the
 combination of key ``Shift+Space`` (default key binding). Often, it
 suffices to type a prefix of the latex token, e.g. typing ``\p``
@@ -255,7 +255,7 @@ Custom bindings may be added, as explained further on.
 .. note::
 
     It remains possible to input non-ASCII symbols using system-wide
-    approaches independent of |CoqIDE|.
+    approaches independent of CoqIDE.
 
 
 Adding custom bindings
@@ -286,7 +286,7 @@ Similarly, the above settings ensure than ``\l`` resolves to ``\le``,
 and that ``\la`` resolves to ``\lambda``.
 
 It can be useful to work with per-project binding files. For this purpose
-|CoqIDE| accepts a command line argument of the form
+CoqIDE accepts a command line argument of the form
 ``-unicode-bindings file1,file2,...,fileN``.
 Each of the file tokens provided may consists of one of:
 
@@ -320,7 +320,7 @@ related to the way files are saved.
 If you have no need to exchange files with non UTF-8 aware
 applications, it is better to choose the UTF-8 encoding, since it
 guarantees that your files will be read again without problems. (This
-is because when |CoqIDE| reads a file, it tries to automatically detect
+is because when CoqIDE reads a file, it tries to automatically detect
 its character encoding.)
 
 If you choose something else than UTF-8, then missing characters will

@@ -10,13 +10,13 @@ SProp (proof irrelevant propositions)
    In particular, conversion checking through bytecode or native code
    compilation currently does not understand proof irrelevance.
 
-This section describes the extension of |Coq| with definitionally
+This section describes the extension of Coq with definitionally
 proof irrelevant propositions (types in the sort :math:`\SProp`, also
 known as strict propositions) as described in
 :cite:`Gilbert:POPL2019`.
 
 Use of |SProp| may be disabled by passing ``-disallow-sprop`` to the
-|Coq| program or by turning the :flag:`Allow StrictProp` flag off.
+Coq program or by turning the :flag:`Allow StrictProp` flag off.
 
 .. flag:: Allow StrictProp
    :name: Allow StrictProp

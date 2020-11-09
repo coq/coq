@@ -864,17 +864,17 @@ Libraries and qualified names
 Names of libraries
 ~~~~~~~~~~~~~~~~~~
 
-The theories developed in |Coq| are stored in *library files* which are
+The theories developed in Coq are stored in *library files* which are
 hierarchically classified into *libraries* and *sublibraries*. To
 express this hierarchy, library names are represented by qualified
 identifiers qualid, i.e. as list of identifiers separated by dots (see
 :ref:`qualified-names`). For instance, the library file ``Mult`` of the standard
-|Coq| library ``Arith`` is named ``Coq.Arith.Mult``. The identifier that starts
+Coq library ``Arith`` is named ``Coq.Arith.Mult``. The identifier that starts
 the name of a library is called a *library root*. All library files of
-the standard library of |Coq| have the reserved root |Coq| but library
-filenames based on other roots can be obtained by using |Coq| commands
+the standard library of Coq have the reserved root Coq but library
+filenames based on other roots can be obtained by using Coq commands
 (coqc, coqtop, coqdep, …) options ``-Q`` or ``-R`` (see :ref:`command-line-options`).
-Also, when an interactive |Coq| session starts, a library of root ``Top`` is
+Also, when an interactive Coq session starts, a library of root ``Top`` is
 started, unless option ``-top`` or ``-notop`` is set (see :ref:`command-line-options`).
 
 .. _qualified-names:
@@ -897,7 +897,7 @@ followed by the sequence of submodules names encapsulating the
 construction and ended by the proper name of the construction.
 Typically, the absolute name ``Coq.Init.Logic.eq`` denotes Leibniz’
 equality defined in the module Logic in the sublibrary ``Init`` of the
-standard library of |Coq|.
+standard library of Coq.
 
 The proper name that ends the name of a construction is the short name
 (or sometimes base name) of the construction (for instance, the short
@@ -906,7 +906,7 @@ name is a *partially qualified name* (e.g. ``Logic.eq`` is a partially
 qualified name for ``Coq.Init.Logic.eq``). Especially, the short name of a
 construction is its shortest partially qualified name.
 
-|Coq| does not accept two constructions (definition, theorem, …) with
+Coq does not accept two constructions (definition, theorem, …) with
 the same absolute name but different constructions can have the same
 short name (or even same partially qualified names as soon as the full
 names are different).
@@ -916,14 +916,14 @@ names also applies to library filenames.
 
 **Visibility**
 
-|Coq| maintains a table called the name table which maps partially qualified
+Coq maintains a table called the name table which maps partially qualified
 names of constructions to absolute names. This table is updated by the
 commands :cmd:`Require`, :cmd:`Import` and :cmd:`Export` and
 also each time a new declaration is added to the context. An absolute
 name is called visible from a given short or partially qualified name
 when this latter name is enough to denote it. This means that the
 short or partially qualified name is mapped to the absolute name in
-|Coq| name table. Definitions with the :attr:`local` attribute are only accessible with
+Coq name table. Definitions with the :attr:`local` attribute are only accessible with
 their fully qualified name (see :ref:`gallina-definitions`).
 
 It may happen that a visible name is hidden by the short name or a
@@ -953,13 +953,13 @@ accessible, absolute names can never be hidden.
 Libraries and filesystem
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note:: The questions described here have been subject to redesign in |Coq| 8.5.
-   Former versions of |Coq| use the same terminology to describe slightly different things.
+.. note:: The questions described here have been subject to redesign in Coq 8.5.
+   Former versions of Coq use the same terminology to describe slightly different things.
 
 Compiled files (``.vo`` and ``.vio``) store sub-libraries. In order to refer
-to them inside |Coq|, a translation from file-system names to |Coq| names
+to them inside Coq, a translation from file-system names to Coq names
 is needed. In this translation, names in the file system are called
-*physical* paths while |Coq| names are contrastingly called *logical*
+*physical* paths while Coq names are contrastingly called *logical*
 names.
 
 A logical prefix Lib can be associated with a physical path using
@@ -967,7 +967,7 @@ the command line option ``-Q`` `path` ``Lib``. All subfolders of path are
 recursively associated to the logical path ``Lib`` extended with the
 corresponding suffix coming from the physical path. For instance, the
 folder ``path/fOO/Bar`` maps to ``Lib.fOO.Bar``. Subdirectories corresponding
-to invalid |Coq| identifiers are skipped, and, by convention,
+to invalid Coq identifiers are skipped, and, by convention,
 subdirectories named ``CVS`` or ``_darcs`` are skipped too.
 
 Thanks to this mechanism, ``.vo`` files are made available through the
@@ -979,7 +979,7 @@ its logical name, so that an error is issued if it is loaded with the
 wrong loadpath afterwards.
 
 Some folders have a special status and are automatically put in the
-path. |Coq| commands associate automatically a logical path to files in
+path. Coq commands associate automatically a logical path to files in
 the repository trees rooted at the directory from where the command is
 launched, ``coqlib/user-contrib/``, the directories listed in the
 ``$COQPATH``, ``${XDG_DATA_HOME}/coq/`` and ``${XDG_DATA_DIRS}/coq/``
@@ -1001,12 +1001,12 @@ of the ``Require`` command can be used to bypass the implicit shortening
 by providing an absolute root to the required file (see :ref:`compiled-files`).
 
 There also exists another independent loadpath mechanism attached to
-|OCaml| object files (``.cmo`` or ``.cmxs``) rather than |Coq| object
-files as described above. The |OCaml| loadpath is managed using
-the option ``-I`` `path` (in the |OCaml| world, there is neither a
+OCaml object files (``.cmo`` or ``.cmxs``) rather than Coq object
+files as described above. The OCaml loadpath is managed using
+the option ``-I`` `path` (in the OCaml world, there is neither a
 notion of logical name prefix nor a way to access files in
 subdirectories of path). See the command :cmd:`Declare ML Module` in
-:ref:`compiled-files` to understand the need of the |OCaml| loadpath.
+:ref:`compiled-files` to understand the need of the OCaml loadpath.
 
-See :ref:`command-line-options` for a more general view over the |Coq| command
+See :ref:`command-line-options` for a more general view over the Coq command
 line options.

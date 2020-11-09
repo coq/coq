@@ -8,25 +8,25 @@ Program
 :Author: Matthieu Sozeau
 
 We present here the |Program| tactic commands, used to build
-certified |Coq| programs, elaborating them from their algorithmic
+certified Coq programs, elaborating them from their algorithmic
 skeleton and a rich specification :cite:`sozeau06`. It can be thought of as a
 dual of :ref:`Extraction <extraction>`. The goal of |Program| is to
 program as in a regular functional programming language whilst using
 as rich a specification as desired and proving that the code meets the
-specification using the whole |Coq| proof apparatus. This is done using
+specification using the whole Coq proof apparatus. This is done using
 a technique originating from the “Predicate subtyping” mechanism of
 PVS :cite:`Rushby98`, which generates type checking conditions while typing a
 term constrained to a particular type. Here we insert existential
 variables in the term, which must be filled with proofs to get a
-complete |Coq| term. |Program| replaces the |Program| tactic by Catherine
+complete Coq term. |Program| replaces the |Program| tactic by Catherine
 Parent :cite:`Parent95b` which had a similar goal but is no longer maintained.
 
-The languages available as input are currently restricted to |Coq|’s
-term language, but may be extended to |OCaml|, Haskell and
-others in the future. We use the same syntax as |Coq| and permit to use
+The languages available as input are currently restricted to Coq’s
+term language, but may be extended to OCaml, Haskell and
+others in the future. We use the same syntax as Coq and permit to use
 implicit arguments and the existing coercion mechanism. Input terms
 and types are typed in an extended system (Russell) and interpreted
-into |Coq| terms. The interpretation process may produce some proof
+into Coq terms. The interpretation process may produce some proof
 obligations which need to be resolved to create the final term.
 
 
@@ -35,7 +35,7 @@ obligations which need to be resolved to create the final term.
 Elaborating programs
 --------------------
 
-The main difference from |Coq| is that an object in a type :g:`T : Set` can
+The main difference from Coq is that an object in a type :g:`T : Set` can
 be considered as an object of type :g:`{x : T | P}` for any well-formed
 :g:`P : Prop`. If we go from :g:`T` to the subset of :g:`T` verifying property
 :g:`P`, we must prove that the object under consideration verifies it. Russell
@@ -86,7 +86,7 @@ coercions.
    Controls the special treatment of pattern matching generating equalities
    and disequalities when using |Program| (it is on by default). All
    pattern-matches and let-patterns are handled using the standard algorithm
-   of |Coq| (see :ref:`extendedpatternmatching`) when this flag is
+   of Coq (see :ref:`extendedpatternmatching`) when this flag is
    deactivated.
 
 .. flag:: Program Generalized Coercion
@@ -116,7 +116,7 @@ Syntactic control over equalities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To give more control over the generation of equalities, the
-type checker will fall back directly to |Coq|’s usual typing of dependent
+type checker will fall back directly to Coq’s usual typing of dependent
 pattern matching if a ``return`` or ``in`` clause is specified. Likewise, the
 if construct is not treated specially by |Program| so boolean tests in
 the code are not automatically reflected in the obligations. One can
@@ -161,13 +161,13 @@ Program Definition
 A :cmd:`Definition` command with the :attr:`program` attribute types
 the value term in Russell and generates proof
 obligations. Once solved using the commands shown below, it binds the
-final |Coq| term to the name :n:`@ident` in the environment.
+final Coq term to the name :n:`@ident` in the environment.
 
 :n:`Program Definition @ident : @type := @term`
 
 Interprets the type :n:`@type`, potentially generating proof
-obligations to be resolved. Once done with them, we have a |Coq|
-type :n:`@type__0`. It then elaborates the preterm :n:`@term` into a |Coq|
+obligations to be resolved. Once done with them, we have a Coq
+type :n:`@type__0`. It then elaborates the preterm :n:`@term` into a Coq
 term :n:`@term__0`, checking that the type of :n:`@term__0` is coercible to
 :n:`@type__0`, and registers :n:`@ident` as being of type :n:`@type__0` once the
 set of obligations generated during the interpretation of :n:`@term__0`
@@ -342,7 +342,7 @@ Frequently Asked Questions
 .. exn:: Ill-formed recursive definition.
 
   This error can happen when one tries to define a function by structural
-  recursion on a subset object, which means the |Coq| function looks like:
+  recursion on a subset object, which means the Coq function looks like:
 
   ::
 

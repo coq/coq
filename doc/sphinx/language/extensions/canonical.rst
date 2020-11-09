@@ -159,7 +159,7 @@ of the terms that are compared.
     End theory.
   End EQ.
 
-We use |Coq| modules as namespaces. This allows us to follow the same
+We use Coq modules as namespaces. This allows us to follow the same
 pattern and naming convention for the rest of the chapter. The base
 namespace contains the definitions of the algebraic structure. To
 keep the example small, the algebraic structure ``EQ.type`` we are
@@ -196,7 +196,7 @@ We amend that by equipping ``nat`` with a comparison relation.
    Check 3 == 3.
    Eval compute in 3 == 4.
 
-This last test shows that |Coq| is now not only able to type check ``3 == 3``,
+This last test shows that Coq is now not only able to type check ``3 == 3``,
 but also that the infix relation was bound to the ``nat_eq`` relation.
 This relation is selected whenever ``==`` is used on terms of type nat.
 This can be read in the line declaring the canonical structure
@@ -223,8 +223,8 @@ example work:
 
   Fail Check forall (e : EQ.type) (a b : EQ.obj e), (a, b) == (a, b).
 
-The error message is telling that |Coq| has no idea on how to compare
-pairs of objects. The following construction is telling |Coq| exactly
+The error message is telling that Coq has no idea on how to compare
+pairs of objects. The following construction is telling Coq exactly
 how to do that.
 
 .. coqtop:: all
@@ -241,7 +241,7 @@ how to do that.
 
   Check forall n m : nat, (3, 4) == (n, m).
 
-Thanks to the ``pair_EQty`` declaration, |Coq| is able to build a comparison
+Thanks to the ``pair_EQty`` declaration, Coq is able to build a comparison
 relation for pairs whenever it is able to build a comparison relation
 for each component of the pair. The declaration associates to the key ``*``
 (the type constructor of pairs) the canonical comparison
@@ -290,7 +290,7 @@ As before we register a canonical ``LE`` class for ``nat``.
 
   Canonical Structure nat_LEty : LE.type := LE.Pack nat nat_LEcl.
 
-And we enable |Coq| to relate pair of terms with ``<=``.
+And we enable Coq to relate pair of terms with ``<=``.
 
 .. coqtop:: all
 
@@ -355,10 +355,10 @@ theory of this new class.
 
 
 The problem is that the two classes ``LE`` and ``LEQ`` are not yet related by
-a subclass relation. In other words |Coq| does not see that an object of
+a subclass relation. In other words Coq does not see that an object of
 the ``LEQ`` class is also an object of the ``LE`` class.
 
-The following two constructions tell |Coq| how to canonically build the
+The following two constructions tell Coq how to canonically build the
 ``LE.type`` and ``EQ.type`` structure given an ``LEQ.type`` structure on the same
 type.
 
@@ -413,7 +413,7 @@ setting to any concrete instate of the algebraic structure.
 
   Abort.
 
-Again one has to tell |Coq| that the type ``nat`` is in the ``LEQ`` class, and
+Again one has to tell Coq that the type ``nat`` is in the ``LEQ`` class, and
 how the type constructor ``*`` interacts with the ``LEQ`` class. In the
 following proofs are omitted for brevity.
 
@@ -468,7 +468,7 @@ Note that no direct proof of ``n <= m -> m <= n -> n == m`` is provided by
 the user for ``n`` and m of type ``nat * nat``. What the user provides is a
 proof of this statement for ``n`` and ``m`` of type ``nat`` and a proof that the
 pair constructor preserves this property. The combination of these two
-facts is a simple form of proof search that |Coq| performs automatically
+facts is a simple form of proof search that Coq performs automatically
 while inferring canonical structures.
 
 Compact declaration of Canonical Structures
@@ -507,7 +507,7 @@ instances: ``[find e | EQ.obj e ~ T | "is not an EQ.type" ]``. It should be
 read as: “find a class e such that its objects have type T or fail
 with message "T is not an EQ.type"”.
 
-The other utilities are used to ask |Coq| to solve a specific unification
+The other utilities are used to ask Coq to solve a specific unification
 problem, that will in turn require the inference of some canonical structures.
 They are explained in more details in :cite:`CSwcu`.
 
@@ -532,7 +532,7 @@ The object ``Pack`` takes a type ``T`` (the key) and a mixin ``m``. It infers al
 the other pieces of the class ``LEQ`` and declares them as canonical
 values associated to the ``T`` key. All in all, the only new piece of
 information we add in the ``LEQ`` class is the mixin, all the rest is
-already canonical for ``T`` and hence can be inferred by |Coq|.
+already canonical for ``T`` and hence can be inferred by Coq.
 
 ``Pack`` is a notation, hence it is not type checked at the time of its
 declaration. It will be type checked when it is used, an in that case ``T`` is

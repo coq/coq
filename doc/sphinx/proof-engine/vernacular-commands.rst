@@ -433,7 +433,7 @@ Requests to the environment
       reference ::= @qualid
       | @string {? % @scope_key }
 
-   Displays the full name of objects from |Coq|'s various qualified namespaces such as terms,
+   Displays the full name of objects from Coq's various qualified namespaces such as terms,
    modules and Ltac, thereby showing the module they are defined in.  It also displays notation definitions.
 
    :n:`@qualid`
@@ -491,7 +491,7 @@ Printing flags
 
 .. flag:: Fast Name Printing
 
-   When turned on, |Coq| uses an asymptotically faster algorithm for the
+   When turned on, Coq uses an asymptotically faster algorithm for the
    generation of unambiguous names of bound variables while printing terms.
    While faster, it is also less clever and results in a typically less elegant
    display, e.g. it will generate more names rather than reusing certain names
@@ -504,12 +504,12 @@ Printing flags
 Loading files
 -----------------
 
-|Coq| offers the possibility of loading different parts of a whole
+Coq offers the possibility of loading different parts of a whole
 development stored in separate files. Their contents will be loaded as
 if they were entered from the keyboard. This means that the loaded
-files are text files containing sequences of commands for |Coq|’s
-toplevel. This kind of file is called a *script* for |Coq|. The standard
-(and default) extension of |Coq|’s script files is .v.
+files are text files containing sequences of commands for Coq’s
+toplevel. This kind of file is called a *script* for Coq. The standard
+(and default) extension of Coq’s script files is .v.
 
 
 .. cmd:: Load {? Verbose } {| @string | @ident }
@@ -521,7 +521,7 @@ toplevel. This kind of file is called a *script* for |Coq|. The standard
 
    If :n:`@string` is specified, it must specify a complete filename.
    `~` and .. abbreviations are
-   allowed as well as shell variables. If no extension is specified, |Coq|
+   allowed as well as shell variables. If no extension is specified, Coq
    will use the default extension ``.v``.
 
    Files loaded this way can't leave proofs open, nor can :cmd:`Load`
@@ -531,7 +531,7 @@ toplevel. This kind of file is called a *script* for |Coq|. The standard
    :cmd:`Require` loads `.vo` files that were previously
    compiled from `.v` files.
 
-   :n:`Verbose` displays the |Coq| output for each command and tactic
+   :n:`Verbose` displays the Coq output for each command and tactic
    in the loaded file, as if the commands and tactics were entered interactively.
 
    .. exn:: Can’t find file @ident on loadpath.
@@ -556,14 +556,14 @@ file is a particular case of a module called a *library file*.
 .. cmd:: Require {? {| Import | Export } } {+ @qualid }
    :name: Require; Require Import; Require Export
 
-   Loads compiled modules into the |Coq| environment.  For each :n:`@qualid`, which has the form
+   Loads compiled modules into the Coq environment.  For each :n:`@qualid`, which has the form
    :n:`{* @ident__prefix . } @ident`, the command searches for the logical name represented
    by the :n:`@ident__prefix`\s and loads the compiled file :n:`@ident.vo` from the associated
    filesystem directory.
 
    The process is applied recursively to all the loaded files;
    if they contain :cmd:`Require` commands, those commands are executed as well.
-   The compiled files must have been compiled with the same version of |Coq|.
+   The compiled files must have been compiled with the same version of Coq.
    The compiled files are neither replayed nor rechecked.
 
    * :n:`Import` - additionally does an :cmd:`Import` on the loaded module, making components defined
@@ -606,15 +606,15 @@ file is a particular case of a module called a *library file*.
 
       The command tried to load library file :n:`@ident`.vo that
       depends on some specific version of library :n:`@qualid` which is not the
-      one already loaded in the current |Coq| session. Probably :n:`@ident.v` was
+      one already loaded in the current Coq session. Probably :n:`@ident.v` was
       not properly recompiled with the last version of the file containing
       module :token:`qualid`.
 
    .. exn:: Bad magic number.
 
       The file :n:`@ident.vo` was found but either it is not a
-      |Coq| compiled module, or it was compiled with an incompatible
-      version of |Coq|.
+      Coq compiled module, or it was compiled with an incompatible
+      version of Coq.
 
    .. exn:: The file @ident.vo contains library @qualid__1 and not library @qualid__2.
 
@@ -633,14 +633,14 @@ file is a particular case of a module called a *library file*.
 .. cmd:: Print Libraries
 
    This command displays the list of library files loaded in the
-   current |Coq| session.
+   current Coq session.
 
 .. cmd:: Declare ML Module {+ @string }
 
-   This commands dynamically loads |OCaml| compiled code from
+   This commands dynamically loads OCaml compiled code from
    a :n:`.mllib` file.
    It is used to load plugins dynamically.  The
-   files must be accessible in the current |OCaml| loadpath (see the
+   files must be accessible in the current OCaml loadpath (see the
    command :cmd:`Add ML Path`).  The :n:`.mllib` suffix may be omitted.
 
    This command is reserved for plugin developers, who should provide
@@ -656,7 +656,7 @@ file is a particular case of a module called a *library file*.
 
 .. cmd:: Print ML Modules
 
-   This prints the name of all |OCaml| modules loaded with :cmd:`Declare ML Module`.
+   This prints the name of all OCaml modules loaded with :cmd:`Declare ML Module`.
    To know from where these module were loaded, the user
    should use the command :cmd:`Locate File`.
 
@@ -666,7 +666,7 @@ file is a particular case of a module called a *library file*.
 Loadpath
 ------------
 
-Loadpaths are preferably managed using |Coq| command line options (see
+Loadpaths are preferably managed using Coq command line options (see
 Section :ref:`libraries-and-filesystem`) but there remain vernacular commands to manage them
 for practical purposes. Such commands are only meant to be issued in
 the toplevel, and using them in source files is discouraged.
@@ -703,29 +703,29 @@ the toplevel, and using them in source files is discouraged.
 
    This command is equivalent to the command line option
    :n:`-R @string @dirpath`. It adds the physical directory string and all its
-   subdirectories to the current |Coq| loadpath.
+   subdirectories to the current Coq loadpath.
 
 
 .. cmd:: Remove LoadPath @string
 
-   This command removes the path :n:`@string` from the current |Coq| loadpath.
+   This command removes the path :n:`@string` from the current Coq loadpath.
 
 
 .. cmd:: Print LoadPath {? @dirpath }
 
-   This command displays the current |Coq| loadpath.  If :n:`@dirpath` is specified,
+   This command displays the current Coq loadpath.  If :n:`@dirpath` is specified,
    displays only the paths that extend that prefix.
 
 
 .. cmd:: Add ML Path @string
 
-   This command adds the path :n:`@string` to the current |OCaml|
+   This command adds the path :n:`@string` to the current OCaml
    loadpath (cf. :cmd:`Declare ML Module`).
 
 
 .. cmd:: Print ML Path
 
-   This command displays the current |OCaml| loadpath. This
+   This command displays the current OCaml loadpath. This
    command makes sense only under the bytecode version of ``coqtop``, i.e.
    using option ``-byte``
    (cf. :cmd:`Declare ML Module`).
@@ -789,25 +789,25 @@ Quitting and debugging
 
 .. cmd:: Quit
 
-   Causes |Coq| to exit.  Valid only in coqtop.
+   Causes Coq to exit.  Valid only in coqtop.
 
 
 .. cmd:: Drop
 
-   This command temporarily enters the |OCaml| toplevel.
-   It is a debug facility used by |Coq|’s implementers.  Valid only in the
+   This command temporarily enters the OCaml toplevel.
+   It is a debug facility used by Coq’s implementers.  Valid only in the
    bytecode version of coqtop.
-   The |OCaml| command:
+   The OCaml command:
 
    ::
 
       #use "include";;
 
    adds the right loadpaths and loads some toplevel printers for all
-   abstract types of |Coq|- section_path, identifiers, terms, judgments, ….
+   abstract types of Coq- section_path, identifiers, terms, judgments, ….
    You can also use the file base_include instead, that loads only the
    pretty-printers for section_paths and identifiers. You can return back
-   to |Coq| with the command:
+   to Coq with the command:
 
    ::
 
@@ -815,9 +815,9 @@ Quitting and debugging
 
    .. warning::
 
-      #. It only works with the bytecode version of |Coq| (i.e. `coqtop.byte`,
+      #. It only works with the bytecode version of Coq (i.e. `coqtop.byte`,
          see Section `interactive-use`).
-      #. You must have compiled |Coq| from the source package and set the
+      #. You must have compiled Coq from the source package and set the
          environment variable COQTOP to the root of your copy of the sources
          (see Section `customization-by-environment-variables`).
 
@@ -961,7 +961,7 @@ Controlling the reduction strategies and the conversion algorithm
 ----------------------------------------------------------------------
 
 
-|Coq| provides reduction strategies that the tactics can invoke and two
+Coq provides reduction strategies that the tactics can invoke and two
 different algorithms to check the convertibility of types. The first
 conversion algorithm lazily compares applicative terms while the other
 is a brute-force but efficient algorithm that first normalizes the
@@ -985,8 +985,8 @@ described first.
    constants in the :n:`@reference` sequence in tactics using δ-conversion (unfolding
    a constant is replacing it by its definition).
 
-   :cmd:`Opaque` has also an effect on the conversion algorithm of |Coq|, telling
-   it to delay the unfolding of a constant as much as possible when |Coq|
+   :cmd:`Opaque` has also an effect on the conversion algorithm of Coq, telling
+   it to delay the unfolding of a constant as much as possible when Coq
    has to check the conversion (see Section :ref:`conversion-rules`) of two distinct
    applied constants.
 
@@ -1222,15 +1222,15 @@ in support libraries of plug-ins.
 
 .. _exposing-constants-to-ocaml-libraries:
 
-Exposing constants to |OCaml| libraries
+Exposing constants to OCaml libraries
 ```````````````````````````````````````
 
 .. cmd:: Register @qualid__1 as @qualid__2
 
-   Makes the constant :n:`@qualid__1` accessible to |OCaml| libraries under
+   Makes the constant :n:`@qualid__1` accessible to OCaml libraries under
    the name :n:`@qualid__2`.  The constant can then be dynamically located
-   in |OCaml| code by
-   calling :n:`Coqlib.lib_ref "@qualid__2"`.  The |OCaml| code doesn't need
+   in OCaml code by
+   calling :n:`Coqlib.lib_ref "@qualid__2"`.  The OCaml code doesn't need
    to know where the constant is defined (what file, module, library, etc.).
 
    As a special case, when the first segment of :n:`@qualid__2` is :g:`kernel`,
@@ -1259,9 +1259,9 @@ Registering primitive operations
 
 .. cmd:: Primitive @ident_decl {? : @term } := #@ident
 
-   Makes the primitive type or primitive operator :n:`#@ident` defined in |OCaml|
-   accessible in |Coq| commands and tactics.
-   For internal use by implementors of |Coq|'s standard library or standard library
+   Makes the primitive type or primitive operator :n:`#@ident` defined in OCaml
+   accessible in Coq commands and tactics.
+   For internal use by implementors of Coq's standard library or standard library
    replacements.  No space is allowed after the `#`.  Invalid values give a syntax
    error.
 

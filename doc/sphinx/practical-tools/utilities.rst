@@ -8,7 +8,7 @@ The distribution provides utilities to simplify some tedious works
 beside proof development, tactics writing or documentation.
 
 
-Using |Coq| as a library
+Using Coq as a library
 ------------------------
 
 In previous versions, ``coqmktop`` was used to build custom
@@ -34,21 +34,21 @@ For example, to statically link |Ltac|, you can just do:
 
 and similarly for other plugins.
 
-Building a |Coq| project
+Building a Coq project
 ------------------------
 
-As of today it is possible to build |Coq| projects using two tools:
+As of today it is possible to build Coq projects using two tools:
 
-- coq_makefile, which is distributed by |Coq| and is based on generating a makefile,
-- Dune, the standard |OCaml| build tool, which, since version 1.9, supports building |Coq| libraries.
+- coq_makefile, which is distributed by Coq and is based on generating a makefile,
+- Dune, the standard OCaml build tool, which, since version 1.9, supports building Coq libraries.
 
 .. _coq_makefile:
 
-Building a |Coq| project with coq_makefile
+Building a Coq project with coq_makefile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The majority of |Coq| projects are very similar: a collection of ``.v``
-files and eventually some ``.ml`` ones (a |Coq| plugin). The main piece of
+The majority of Coq projects are very similar: a collection of ``.v``
+files and eventually some ``.ml`` ones (a Coq plugin). The main piece of
 metadata needed in order to build the project are the command line
 options to ``coqc`` (e.g. ``-R``, ``Q``, ``-I``, see :ref:`command
 line options <command-line-options>`). Collecting the list of files
@@ -74,11 +74,11 @@ to literally pass an argument ``foo`` to ``coqc``: in the
 example, this allows to pass the two-word option ``-w all`` (see
 :ref:`command line options <command-line-options>`).
 
-|CoqIDE|, Proof-General and VSCoq all
-understand ``_CoqProject`` files and can be used to invoke |Coq| with the desired options.
+CoqIDE, Proof-General and VSCoq all
+understand ``_CoqProject`` files and can be used to invoke Coq with the desired options.
 
 The ``coq_makefile`` utility can be used to set up a build infrastructure
-for the |Coq| project based on makefiles. The recommended way of
+for the Coq project based on makefiles. The recommended way of
 invoking ``coq_makefile`` is the following one:
 
 ::
@@ -91,14 +91,14 @@ Such command generates the following files:
 CoqMakefile
   is a makefile for ``GNU Make`` with targets to build the project
   (e.g. generate .vo or .html files from .v or compile .ml* files)
-  and install it in the ``user-contrib`` directory where the |Coq|
+  and install it in the ``user-contrib`` directory where the Coq
   library is installed. Run ``make`` with the ``-f CoqMakefile``
   option to use ``CoqMakefile``.
 
 CoqMakefile.conf
   contains make variables assignments that reflect
   the contents of the ``_CoqProject`` file as well as the path relevant to
-  |Coq|.
+  Coq.
 
 
 An optional file ``CoqMakefile.local`` can be provided by the user in order to
@@ -111,11 +111,11 @@ The extensions of the files listed in ``_CoqProject`` is used in order to
 decide how to build them. In particular:
 
 
-+ |Coq| files must use the ``.v`` extension
-+ |OCaml| files must use the ``.ml`` or ``.mli`` extension
-+ |OCaml| files that require pre processing for syntax
++ Coq files must use the ``.v`` extension
++ OCaml files must use the ``.ml`` or ``.mli`` extension
++ OCaml files that require pre processing for syntax
   extensions (like ``VERNAC EXTEND``) must use the ``.mlg`` extension
-+ In order to generate a plugin one has to list all |OCaml|
++ In order to generate a plugin one has to list all OCaml
   modules (i.e. ``Baz`` for ``baz.ml``) in a ``.mlpack`` file (or ``.mllib``
   file).
 
@@ -142,23 +142,23 @@ Here we describe only few of them.
 
 :CAMLPKGS:
    can be used to specify third party findlib packages, and is
-   passed to the |OCaml| compiler on building or linking of modules. Eg:
+   passed to the OCaml compiler on building or linking of modules. Eg:
    ``-package yojson``.
 :CAMLFLAGS:
-   can be used to specify additional flags to the |OCaml|
+   can be used to specify additional flags to the OCaml
    compiler, like ``-bin-annot`` or ``-w``....
 :OCAMLWARN:
    it contains a default of ``-warn-error +a-3``, useful to modify
    this setting; beware this is not recommended for projects in
-   |Coq|'s CI.
+   Coq's CI.
 :COQC, COQDEP, COQDOC:
    can be set in order to use alternative binaries
    (e.g. wrappers)
 :COQ_SRC_SUBDIRS:
    can be extended by including other paths in which ``*.cm*`` files
    are searched. For example ``COQ_SRC_SUBDIRS+=user-contrib/Unicoq``
-   lets you build a plugin containing |OCaml| code that depends on the
-   |OCaml| code of ``Unicoq``
+   lets you build a plugin containing OCaml code that depends on the
+   OCaml code of ``Unicoq``
 :COQFLAGS:
    override the flags passed to ``coqc``. By default ``-q``.
 :COQEXTRAFLAGS:
@@ -172,7 +172,7 @@ Here we describe only few of them.
 :COQDOCEXTRAFLAGS:
    extend the flags passed to ``coqdoc``
 :COQLIBINSTALL, COQDOCINSTALL:
-   specify where the |Coq| libraries and documentation will be installed.
+   specify where the Coq libraries and documentation will be installed.
    By default a combination of ``$(DESTDIR)`` (if defined) with
    ``$(COQLIB)/user-contrib`` and ``$(DOCDIR)/user-contrib``.
 
@@ -524,7 +524,7 @@ Precompiling for ``native_compute``
 +++++++++++++++++++++++++++++++++++
 
 To compile files for ``native_compute``, one can use the
-``-native-compiler yes`` option of |Coq|, for instance by putting the
+``-native-compiler yes`` option of Coq, for instance by putting the
 following in a :ref:`coqmakefilelocal` file:
 
 ::
@@ -555,27 +555,27 @@ of installing the extra ``.coq-native`` directories.
    This requires all dependencies to be themselves compiled with
    ``-native-compiler yes``.
 
-Building a |Coq| project with Dune
+Building a Coq project with Dune
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. note::
 
-   Dune's |Coq| support is still experimental; we strongly recommend
+   Dune's Coq support is still experimental; we strongly recommend
    using Dune 2.3 or later.
 
 .. note::
 
-   The canonical documentation for the |Coq| Dune extension is
+   The canonical documentation for the Coq Dune extension is
    maintained upstream; please refer to the `Dune manual
    <https://dune.readthedocs.io/>`_ for up-to-date information. This
    documentation is up to date for Dune 2.3.
 
-Building a |Coq| project with Dune requires setting up a Dune project
+Building a Coq project with Dune requires setting up a Dune project
 for your files. This involves adding a ``dune-project`` and
 ``pkg.opam`` file to the root (``pkg.opam`` can be empty or generated
 by Dune itself), and then providing ``dune`` files in the directories
 your ``.v`` files are placed. For the experimental version "0.1" of
-the |Coq| Dune language, |Coq| library stanzas look like:
+the Coq Dune language, Coq library stanzas look like:
 
 .. code:: scheme
 
@@ -592,12 +592,12 @@ the library under ``<module_prefix>``. If you declare an
 ``<opam_package>``, an ``.install`` file for the library will be
 generated; the optional ``(modules <ordered_set_lang>)`` field allows
 you to filter the list of modules, and ``(libraries
-<ocaml_libraries>)`` allows the |Coq| theory depend on ML plugins. For
-the moment, Dune relies on |Coq|'s standard mechanisms (such as
-``COQPATH``) to locate installed |Coq| libraries.
+<ocaml_libraries>)`` allows the Coq theory depend on ML plugins. For
+the moment, Dune relies on Coq's standard mechanisms (such as
+``COQPATH``) to locate installed Coq libraries.
 
 By default Dune will skip ``.v`` files present in subdirectories. In
-order to enable the usual recursive organization of |Coq| projects add
+order to enable the usual recursive organization of Coq projects add
 
 .. code:: scheme
 
@@ -611,7 +611,7 @@ of your project.
 
 .. example::
 
-   A typical stanza for a |Coq| plugin is split into two parts. An |OCaml| build directive, which is standard Dune:
+   A typical stanza for a Coq plugin is split into two parts. An OCaml build directive, which is standard Dune:
 
    .. code:: scheme
 
@@ -623,7 +623,7 @@ of your project.
 
        (coq.pp (modules g_equations))
 
-   And a |Coq|-specific part that depends on it via the ``libraries`` field:
+   And a Coq-specific part that depends on it via the ``libraries`` field:
 
    .. code:: scheme
 
@@ -642,37 +642,37 @@ Computing Module dependencies
 -----------------------------
 
 In order to compute module dependencies (to be used by ``make`` or
-``dune``), |Coq| provides the ``coqdep`` tool.
+``dune``), Coq provides the ``coqdep`` tool.
 
-``coqdep`` computes inter-module dependencies for |Coq|
+``coqdep`` computes inter-module dependencies for Coq
 programs, and prints the dependencies on the standard output in a
 format readable by make. When a directory is given as argument, it is
 recursively looked at.
 
-Dependencies of |Coq| modules are computed by looking at ``Require``
+Dependencies of Coq modules are computed by looking at ``Require``
 commands (``Require``, ``Require Export``, ``Require Import``), but also at the
 command ``Declare ML Module``.
 
 See the man page of ``coqdep`` for more details and options.
 
 Both Dune and ``coq_makefile`` use ``coqdep`` to compute the
-dependencies among the files part of a |Coq| project.
+dependencies among the files part of a Coq project.
 
-Embedded |Coq| phrases inside |Latex| documents
+Embedded Coq phrases inside |Latex| documents
 -----------------------------------------------
 
 When writing documentation about a proof development, one may want
-to insert |Coq| phrases inside a |Latex| document, possibly together
+to insert Coq phrases inside a |Latex| document, possibly together
 with the corresponding answers of the system. We provide a mechanical
-way to process such |Coq| phrases embedded in |Latex| files: the ``coq-tex``
-filter. This filter extracts |Coq| phrases embedded in |Latex| files,
+way to process such Coq phrases embedded in |Latex| files: the ``coq-tex``
+filter. This filter extracts Coq phrases embedded in |Latex| files,
 evaluates them, and insert the outcome of the evaluation after each
 phrase.
 
-Starting with a file ``file.tex`` containing |Coq| phrases, the ``coq-tex``
-filter produces a file named ``file.v.tex`` with the |Coq| outcome.
+Starting with a file ``file.tex`` containing Coq phrases, the ``coq-tex``
+filter produces a file named ``file.v.tex`` with the Coq outcome.
 
-There are options to produce the |Coq| parts in smaller font, italic,
+There are options to produce the Coq parts in smaller font, italic,
 between horizontal rules, etc. See the man page of ``coq-tex`` for more
 details.
 
