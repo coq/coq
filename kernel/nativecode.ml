@@ -1981,9 +1981,6 @@ let register_native_file s =
 let is_code_loaded name =
   match !name with
   | NotLinked -> false
-  | LinkedInteractive s ->
-      if (is_loaded_native_file s) then true
-      else (name := NotLinked; false)
   | Linked s ->
       if is_loaded_native_file s then true
       else (name := NotLinked; false)
@@ -2192,8 +2189,7 @@ let mk_library_header (symbols : Nativevalues.symbols) =
   [Glet(Ginternal "symbols_tbl", MLglobal (Ginternal symbols))]
 
 let update_location r =
-  let v = LinkedInteractive r.upd_prefix in
-  r.upd_info := v
+  r.upd_info := Linked r.upd_prefix
 
 let update_locations (ind_updates,const_updates) =
   Mindmap_env.iter (fun _ -> update_location) ind_updates;

@@ -37,7 +37,6 @@ val dummy_lazy_val : unit -> lazy_val
 (** Linking information for the native compiler *)
 type link_info =
   | Linked of string
-  | LinkedInteractive of string
   | NotLinked
 
 type key = int CEphemeron.key option ref
