@@ -1933,7 +1933,7 @@ and compile_named env sigma univ auxdefs id =
   | LocalAssum _ ->
       Glet(Gnamed id, MLprimitive (Mk_var id))::auxdefs
 
-let compile_constant env sigma prefix ~interactive con cb =
+let compile_constant env sigma con cb =
     let no_univs = 0 = Univ.AUContext.size (Declareops.constant_polymorphic_context cb) in
     begin match cb.const_body with
     | Def t ->
@@ -1942,10 +1942,6 @@ let compile_constant env sigma prefix ~interactive con cb =
       if !Flags.debug then Feedback.msg_debug (Pp.str "Generated lambda code");
       let is_lazy = is_lazy t in
       let code = if is_lazy then mk_lazy code else code in
-      let name =
-        if interactive then LinkedInteractive prefix
-        else Linked prefix
-      in
       let l = Constant.label con in
       let auxdefs,code =
         if no_univs then compile_with_fv env sigma None [] (Some l) code
@@ -1959,7 +1955,7 @@ let compile_constant env sigma prefix ~interactive con cb =
         optimize_stk (Glet(Gconstant ("", con),code)::auxdefs)
       in
       if !Flags.debug then Feedback.msg_debug (Pp.str "Optimized mllambda code");
-      code, name
+      code
     | _ ->
         let i = push_symbol (SymbConst con) in
         let args =
@@ -1969,9 +1965,7 @@ let compile_constant env sigma prefix ~interactive con cb =
         (*
         let t = mkMLlam [|univ|] (mkMLapp (MLprimitive Mk_const)
          *)
-        [Glet(Gconstant ("", con), mkMLapp (MLprimitive Mk_const) args)],
-          if interactive then LinkedInteractive prefix
-          else Linked prefix
+        [Glet(Gconstant ("", con), mkMLapp (MLprimitive Mk_const) args)]
     end
 
 module StringOrd = struct type t = string let compare = String.compare end
@@ -2049,8 +2043,12 @@ let compile_mind mb mind stack =
   in
   Array.fold_left_i f stack mb.mind_packets
 
-type code_location_update =
-    link_info ref * link_info
+type code_location_update = {
+  upd_info : link_info ref;
+  upd_interactive : bool;
+  upd_prefix : string;
+}
+
 type code_location_updates =
   code_location_update Mindmap_env.t * code_location_update Cmap_env.t
 
@@ -2068,11 +2066,11 @@ let compile_mind_deps env prefix ~interactive
     let comp_stack =
       compile_mind mib mind comp_stack
     in
-    let name =
-      if interactive then LinkedInteractive prefix
-      else Linked prefix
-    in
-    let upd = (nameref, name) in
+    let upd = {
+      upd_info = nameref;
+      upd_interactive = interactive;
+      upd_prefix = prefix;
+    } in
     let mind_updates = Mindmap_env.add mind upd mind_updates in
     (comp_stack, (mind_updates, const_updates))
 
@@ -2096,11 +2094,14 @@ let compile_deps env sigma prefix ~interactive init t =
            aux env lvl init (Mod_subst.force_constr t)
         | _ -> init
       in
-      let code, name =
-        compile_constant env sigma prefix ~interactive c cb
-      in
+      let code = compile_constant env sigma c cb in
+      let upd = {
+        upd_info = nameref;
+        upd_interactive = interactive;
+        upd_prefix = prefix;
+      } in
       let comp_stack = code@comp_stack in
-      let const_updates = Cmap_env.add c (nameref, name) const_updates in
+      let const_updates = Cmap_env.add c upd const_updates in
       comp_stack, (mind_updates, const_updates)
   | Construct (((mind,_),_),_u) -> compile_mind_deps env prefix ~interactive init mind
   | Proj (p,c) ->
@@ -2130,11 +2131,8 @@ let compile_deps env sigma prefix ~interactive init t =
   in
   aux env 0 init t
 
-let compile_constant_field env prefix con acc cb =
-    let (gl, _) =
-      compile_constant ~interactive:false env empty_evars prefix
-        con cb
-    in
+let compile_constant_field env _prefix con acc cb =
+    let gl = compile_constant env empty_evars con cb in
     gl@acc
 
 let compile_mind_field mp l acc mb =
@@ -2196,7 +2194,9 @@ let mk_library_header (symbols : Nativevalues.symbols) =
   let symbols = Format.sprintf "(str_decode \"%s\")" (str_encode symbols) in
   [Glet(Ginternal "symbols_tbl", MLglobal (Ginternal symbols))]
 
-let update_location (r,v) = r := v
+let update_location r =
+  let v = if r.upd_interactive then LinkedInteractive r.upd_prefix else Linked r.upd_prefix in
+  r.upd_info := v
 
 let update_locations (ind_updates,const_updates) =
   Mindmap_env.iter (fun _ -> update_location) ind_updates;
