@@ -670,7 +670,7 @@ let inline_side_effects env body side_eff =
   let side_eff = List.fold_left (fun accu (cb, _) -> cb :: accu) [] side_eff in
   let side_eff = List.rev side_eff in
   (** Most recent side-effects first in side_eff *)
-  if List.is_empty side_eff then (body, Univ.ContextSet.empty, sigs)
+  if List.is_empty side_eff then (body, Univ.ContextSet.empty, sigs, 0)
   else
     (** Second step: compute the lifts and substitutions to apply *)
     let cname c r = Context.make_annot (Name (Label.to_id (Constant.label c))) r in
@@ -724,10 +724,10 @@ let inline_side_effects env body side_eff =
       else mkLetIn (na, b, ty, accu)
     in
     let body = List.fold_right fold_arg args body in
-    (body, ctx, sigs)
+    (body, ctx, sigs, len - 1)
 
 let inline_private_constants env ((body, ctx), side_eff) =
-  let body, ctx',_ = inline_side_effects env body side_eff in
+  let body, ctx', _, _ = inline_side_effects env body side_eff in
   let ctx' = Univ.ContextSet.union ctx ctx' in
   (body, ctx')
 
@@ -879,11 +879,11 @@ let add_constant l decl senv =
       match decl with
       | OpaqueEntry ce ->
         let handle env body eff =
-          let body, uctx, signatures = inline_side_effects env body eff in
+          let body, uctx, signatures, skip = inline_side_effects env body eff in
           let trusted = check_signatures senv signatures in
           let trusted, uctx = match trusted with
           | None -> 0, uctx
-          | Some univs -> List.length signatures, Univ.ContextSet.union univs uctx
+          | Some univs -> skip, Univ.ContextSet.union univs uctx
           in
           body, uctx, trusted
         in
