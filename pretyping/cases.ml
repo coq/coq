@@ -298,7 +298,7 @@ let inductive_template env sigma tmloc ind =
             let ty = EConstr.of_constr ty in
             let ty' = substl subst ty in
             let sigma, e =
-              Evarutil.new_evar env ~src:(hole_source n) ~typeclass_candidate:false sigma ty'
+              Evarutil.new_evar env ~src:(hole_source n) sigma ty'
             in
             (sigma, e::subst,e::evarl,n+1)
         | LocalDef (na,b,ty) ->
