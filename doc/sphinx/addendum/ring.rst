@@ -382,7 +382,7 @@ The syntax for adding a new ring is
       that, given a term, “abstracts” it into an object of type |N| whose
       interpretation via ``Cp_phi`` (the evaluation function of power
       coefficient) is the original term, or returns ``InitialRing.NotConstant``
-      if not a constant coefficient (i.e. |L_tac| is the inverse function of
+      if not a constant coefficient (i.e. |Ltac| is the inverse function of
       ``Cp_phi``). See files ``plugins/ring/ZArithRing.v``
       and ``plugins/ring/RealField.v`` for examples. By default the tactic
       does not recognize power expressions as ring expressions.

@@ -20,7 +20,6 @@
 .. |eq_beta_delta_iota_zeta| replace:: `=`\ :math:`_{\beta\delta\iota\zeta}`
 .. |Gallina| replace:: :smallcaps:`Gallina`
 .. |Latex| replace:: :smallcaps:`LaTeX`
-.. |L_tac| replace:: `L`:sub:`tac`
 .. |Ltac| replace:: `L`:sub:`tac`
 .. |ML| replace:: :smallcaps:`ML`
 .. |OCaml| replace:: :smallcaps:`OCaml`
