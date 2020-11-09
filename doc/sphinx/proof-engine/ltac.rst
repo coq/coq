@@ -1730,6 +1730,8 @@ Defining |Ltac| symbols
 
 |Ltac| toplevel definitions are made as follows:
 
+.. index:: ::=
+
 .. cmd:: Ltac @tacdef_body {* with @tacdef_body }
    :name: Ltac
 
@@ -1754,10 +1756,15 @@ Defining |Ltac| symbols
       Defines a user-defined symbol, but gives an error if the symbol has already
       been defined.
 
-.. todo apparent inconsistency: "Ltac intros := idtac" seems like it redefines/hides an existing tactic,
-      but in fact it creates a tactic which can only be called by it's qualified name.  This is true in general
-      of tactic notations.  The only way to overwrite most primitive tactics, and any user-defined tactic
-      notation, is with another tactic notation.
+      .. todo apparent inconsistency:
+
+         "Ltac intros := idtac" seems like it redefines/hides an
+         existing tactic, but in fact it creates a tactic which can
+         only be called by its qualified name.  This is true in
+         general of tactic notations.  The only way to overwrite most
+         primitive tactics, and any user-defined tactic notation, is
+         with another tactic notation.
+
       .. exn:: There is already an Ltac named @qualid
          :undocumented:
 
@@ -1767,7 +1774,8 @@ Defining |Ltac| symbols
       do not count as user-defined tactics for `::=`.  If :attr:`local` is not
       specified, the redefinition applies across module boundaries.
 
-      .. exn: There is no Ltac named @qualid
+      .. exn:: There is no Ltac named @qualid
+         :undocumented:
 
    :n:`{* with @tacdef_body }`
       Permits definition of mutually recursive tactics.
