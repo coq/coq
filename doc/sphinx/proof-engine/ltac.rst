@@ -1730,6 +1730,8 @@ Defining |Ltac| symbols
 
 |Ltac| toplevel definitions are made as follows:
 
+.. index:: ::=
+
 .. cmd:: Ltac @tacdef_body {* with @tacdef_body }
    :name: Ltac
 
