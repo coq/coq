@@ -278,7 +278,23 @@ let process_universe_constraints ctx cstrs =
                 | Some l ->
                   Univ.Constraint.add (l, Le, r') local
                 | None ->
-                  if UGraph.check_leq univs l r then local else enforce_leq l r local
+                  let fold local (l', n) = match n with
+                  | 0 ->
+                    if Level.is_prop l' || Level.equal l' r' then local
+                    else
+                      let cst = (l', Le , r') in
+                      if UGraph.check_constraint univs cst then local
+                      else Constraint.add cst local
+                  | 1 ->
+                    let cst = (l', Lt, r') in
+                    if UGraph.check_constraint univs cst then local
+                    else Constraint.add cst local
+                  | _ ->
+                    let () = assert (1 < n) in
+                    if Level.equal l' r' then Constraint.add (l', Lt, r') local
+                    else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
+                  in
+                  List.fold_left fold local (Universe.repr l)
               end
           | ULub (l, r) ->
               equalize_variables true (Universe.make l) l (Universe.make r) r local
