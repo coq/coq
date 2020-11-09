@@ -50,7 +50,7 @@ Qed.
 
 Lemma N_nat_Z n : Z.of_nat (N.to_nat n) = Z.of_N n.
 Proof.
- destruct n; trivial. simpl.
+ destruct n as [|p]; trivial. simpl.
  destruct (Pos2Nat.is_succ p) as (m,H).
  rewrite H. simpl. f_equal. now apply SuccNat2Pos.inv.
 Qed.
@@ -668,7 +668,7 @@ Qed.
 
 Lemma inj_abs_nat z : Z.of_nat (Z.abs_nat z) = Z.abs z.
 Proof.
- destruct z; simpl; trivial;
+ destruct z as [|p|p]; simpl; trivial;
   destruct (Pos2Nat.is_succ p) as (n,H); rewrite H; simpl; f_equal;
    now apply SuccNat2Pos.inv.
 Qed.

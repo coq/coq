@@ -51,7 +51,7 @@ Qed.
 Lemma mod_bound_abs :
  forall a b, b~=0 -> abs (a mod b) < abs b.
 Proof.
-intros.
+intros a b **.
 destruct (abs_spec b) as [(LE,EQ)|(LE,EQ)]; rewrite EQ.
 destruct (mod_pos_bound a b). order. now rewrite abs_eq.
 destruct (mod_neg_bound a b). order. rewrite abs_neq; trivial.
@@ -87,11 +87,11 @@ Qed.
 
 Theorem div_unique_pos:
  forall a b q r, 0<=r<b -> a == b*q + r -> q == a/b.
-Proof. intros; apply div_unique with r; auto. Qed.
+Proof. intros a b q r **; apply div_unique with r; auto. Qed.
 
 Theorem div_unique_neg:
  forall a b q r, b<r<=0 -> a == b*q + r -> q == a/b.
-Proof. intros; apply div_unique with r; auto. Qed.
+Proof. intros a b q r **; apply div_unique with r; auto. Qed.
 
 Theorem mod_unique:
  forall a b q r, (0<=r<b \/ b<r<=0) -> a == b*q + r -> r == a mod b.
@@ -106,11 +106,11 @@ Qed.
 
 Theorem mod_unique_pos:
  forall a b q r, 0<=r<b -> a == b*q + r -> r == a mod b.
-Proof. intros; apply mod_unique with q; auto. Qed.
+Proof. intros a b q r **; apply mod_unique with q; auto. Qed.
 
 Theorem mod_unique_neg:
  forall a b q r, b<r<=0 -> a == b*q + r -> r == a mod b.
-Proof. intros; apply mod_unique with q; auto. Qed.
+Proof. intros a b q r **; apply mod_unique with q; auto. Qed.
 
 (** Sign rules *)
 
@@ -121,7 +121,7 @@ Ltac pos_or_neg a :=
 
 Fact mod_bound_or : forall a b, b~=0 -> 0<=a mod b<b \/ b<a mod b<=0.
 Proof.
-intros.
+intros a b **.
 destruct (lt_ge_cases 0 b); [left|right].
  apply mod_pos_bound; trivial. apply mod_neg_bound; order.
 Qed.
@@ -129,7 +129,7 @@ Qed.
 Fact opp_mod_bound_or : forall a b, b~=0 ->
  0 <= -(a mod b) < -b \/ -b < -(a mod b) <= 0.
 Proof.
-intros.
+intros a b **.
 destruct (lt_ge_cases 0 b); [right|left].
 rewrite <- opp_lt_mono, opp_nonpos_nonneg.
  destruct (mod_pos_bound a b); intuition; order.
@@ -139,14 +139,14 @@ Qed.
 
 Lemma div_opp_opp : forall a b, b~=0 -> -a/-b == a/b.
 Proof.
-intros. symmetry. apply div_unique with (- (a mod b)).
+intros a b **. symmetry. apply div_unique with (- (a mod b)).
 now apply opp_mod_bound_or.
 rewrite mul_opp_l, <- opp_add_distr, <- div_mod; order.
 Qed.
 
 Lemma mod_opp_opp : forall a b, b~=0 -> (-a) mod (-b) == - (a mod b).
 Proof.
-intros. symmetry. apply mod_unique with (a/b).
+intros a b **. symmetry. apply mod_unique with (a/b).
 now apply opp_mod_bound_or.
 rewrite mul_opp_l, <- opp_add_distr, <- div_mod; order.
 Qed.
@@ -200,28 +200,28 @@ Qed.
 Lemma div_opp_r_z :
  forall a b, b~=0 -> a mod b == 0 -> a/(-b) == -(a/b).
 Proof.
-intros. rewrite <- (opp_involutive a) at 1.
+intros a b **. rewrite <- (opp_involutive a) at 1.
 rewrite div_opp_opp; auto using div_opp_l_z.
 Qed.
 
 Lemma div_opp_r_nz :
  forall a b, b~=0 -> a mod b ~= 0 -> a/(-b) == -(a/b)-1.
 Proof.
-intros. rewrite <- (opp_involutive a) at 1.
+intros a b **. rewrite <- (opp_involutive a) at 1.
 rewrite div_opp_opp; auto using div_opp_l_nz.
 Qed.
 
 Lemma mod_opp_r_z :
  forall a b, b~=0 -> a mod b == 0 -> a mod (-b) == 0.
 Proof.
-intros. rewrite <- (opp_involutive a) at 1.
+intros a b **. rewrite <- (opp_involutive a) at 1.
 now rewrite mod_opp_opp, mod_opp_l_z, opp_0.
 Qed.
 
 Lemma mod_opp_r_nz :
  forall a b, b~=0 -> a mod b ~= 0 -> a mod (-b) == (a mod b) - b.
 Proof.
-intros. rewrite <- (opp_involutive a) at 1.
+intros a b **. rewrite <- (opp_involutive a) at 1.
 rewrite mod_opp_opp, mod_opp_l_nz by trivial.
 now rewrite opp_sub_distr, add_comm, add_opp_r.
 Qed.
@@ -247,7 +247,7 @@ Qed.
 
 Lemma mod_sign_mul : forall a b, b~=0 -> 0 <= (a mod b) * b.
 Proof.
-intros. destruct (lt_ge_cases 0 b).
+intros a b **. destruct (lt_ge_cases 0 b).
 apply mul_nonneg_nonneg; destruct (mod_pos_bound a b); order.
 apply mul_nonpos_nonpos; destruct (mod_neg_bound a b); order.
 Qed.
@@ -256,7 +256,7 @@ Qed.
 
 Lemma div_same : forall a, a~=0 -> a/a == 1.
 Proof.
-intros. pos_or_neg a. apply div_same; order.
+intros a ?. pos_or_neg a. apply div_same; order.
 rewrite <- div_opp_opp by trivial. now apply div_same.
 Qed.
 
@@ -279,7 +279,7 @@ Proof. exact mod_small. Qed.
 
 Lemma div_0_l: forall a, a~=0 -> 0/a == 0.
 Proof.
-intros. pos_or_neg a. apply div_0_l; order.
+intros a ?. pos_or_neg a. apply div_0_l; order.
 rewrite <- div_opp_opp, opp_0 by trivial. now apply div_0_l.
 Qed.
 
@@ -308,7 +308,7 @@ Proof. exact mod_1_l. Qed.
 
 Lemma div_mul : forall a b, b~=0 -> (a*b)/b == a.
 Proof.
-intros. symmetry. apply div_unique with 0.
+intros a b ?. symmetry. apply div_unique with 0.
 destruct (lt_ge_cases 0 b); [left|right]; split; order.
 nzsimpl; apply mul_comm.
 Qed.
@@ -350,7 +350,7 @@ Qed.
 
 Lemma mod_small_iff : forall a b, b~=0 -> (a mod b == a <-> 0<=a<b \/ b<a<=0).
 Proof.
-intros.
+intros a b **.
 rewrite <- div_small_iff, mod_eq by trivial.
 rewrite sub_move_r, <- (add_0_r a) at 1. rewrite add_cancel_l.
 rewrite eq_sym_iff, eq_mul_0. tauto.
@@ -393,7 +393,7 @@ Qed.
 
 Lemma mul_div_le : forall a b, 0<b -> b*(a/b) <= a.
 Proof.
-intros.
+intros a b **.
 rewrite (div_mod a b) at 2; try order.
 rewrite <- (add_0_r (b*(a/b))) at 1.
 rewrite <- add_le_mono_l.
@@ -412,7 +412,7 @@ Qed.
 
 Lemma mul_succ_div_gt: forall a b, 0<b -> a < b*(S (a/b)).
 Proof.
-intros.
+intros a b ?.
 nzsimpl.
 rewrite (div_mod a b) at 1; try order.
 rewrite <- add_lt_mono_l.
@@ -432,7 +432,7 @@ Qed.
 
 Lemma div_exact : forall a b, b~=0 -> (a == b*(a/b) <-> a mod b == 0).
 Proof.
-intros.
+intros a b **.
 rewrite (div_mod a b) at 1; try order.
 rewrite <- (add_0_r (b*(a/b))) at 2.
 apply add_cancel_l.
@@ -443,7 +443,7 @@ Qed.
 Theorem div_lt_upper_bound:
   forall a b q, 0<b -> a < b*q -> a/b < q.
 Proof.
-intros.
+intros a b q **.
 rewrite (mul_lt_mono_pos_l b) by trivial.
 apply le_lt_trans with a; trivial.
 now apply mul_div_le.
@@ -452,7 +452,7 @@ Qed.
 Theorem div_le_upper_bound:
   forall a b q, 0<b -> a <= b*q -> a/b <= q.
 Proof.
-intros.
+intros a b q **.
 rewrite <- (div_mul q b) by order.
 apply div_le_mono; trivial. now rewrite mul_comm.
 Qed.
@@ -460,7 +460,7 @@ Qed.
 Theorem div_le_lower_bound:
   forall a b q, 0<b -> b*q <= a -> q <= a/b.
 Proof.
-intros.
+intros a b q **.
 rewrite <- (div_mul q b) by order.
 apply div_le_mono; trivial. now rewrite mul_comm.
 Qed.
@@ -475,7 +475,7 @@ Proof. exact div_le_compat_l. Qed.
 Lemma mod_add : forall a b c, c~=0 ->
  (a + b * c) mod c == a mod c.
 Proof.
-intros.
+intros a b c **.
 symmetry.
 apply mod_unique with (a/c+b); trivial.
 now apply mod_bound_or.
@@ -486,7 +486,7 @@ Qed.
 Lemma div_add : forall a b c, c~=0 ->
  (a + b * c) / c == a / c + b.
 Proof.
-intros.
+intros a b c **.
 apply (mul_cancel_l _ _ c); try order.
 apply (add_cancel_r _ _ ((a+b*c) mod c)).
 rewrite <- div_mod, mod_add by order.
@@ -506,7 +506,7 @@ Qed.
 Lemma div_mul_cancel_r : forall a b c, b~=0 -> c~=0 ->
  (a*c)/(b*c) == a/b.
 Proof.
-intros.
+intros a b c **.
 symmetry.
 apply div_unique with ((a mod b)*c).
 (* ineqs *)
@@ -525,13 +525,13 @@ Qed.
 Lemma div_mul_cancel_l : forall a b c, b~=0 -> c~=0 ->
  (c*a)/(c*b) == a/b.
 Proof.
-intros. rewrite !(mul_comm c); now apply div_mul_cancel_r.
+intros a b c **. rewrite !(mul_comm c); now apply div_mul_cancel_r.
 Qed.
 
 Lemma mul_mod_distr_l: forall a b c, b~=0 -> c~=0 ->
   (c*a) mod (c*b) == c * (a mod b).
 Proof.
-intros.
+intros a b c **.
 rewrite <- (add_cancel_l _ _ ((c*b)* ((c*a)/(c*b)))).
 rewrite <- div_mod.
 rewrite div_mul_cancel_l by trivial.
@@ -543,7 +543,7 @@ Qed.
 Lemma mul_mod_distr_r: forall a b c, b~=0 -> c~=0 ->
   (a*c) mod (b*c) == (a mod b) * c.
 Proof.
- intros. rewrite !(mul_comm _ c); now rewrite mul_mod_distr_l.
+ intros a b c **. rewrite !(mul_comm _ c); now rewrite mul_mod_distr_l.
 Qed.
 
 
@@ -570,7 +570,7 @@ Qed.
 Lemma mul_mod_idemp_r : forall a b n, n~=0 ->
  (a*(b mod n)) mod n == (a*b) mod n.
 Proof.
- intros. rewrite !(mul_comm a). now apply mul_mod_idemp_l.
+ intros a b n **. rewrite !(mul_comm a). now apply mul_mod_idemp_l.
 Qed.
 
 Theorem mul_mod: forall a b n, n~=0 ->
@@ -591,7 +591,7 @@ Qed.
 Lemma add_mod_idemp_r : forall a b n, n~=0 ->
  (a+(b mod n)) mod n == (a+b) mod n.
 Proof.
- intros. rewrite !(add_comm a). now apply add_mod_idemp_l.
+ intros a b n **. rewrite !(add_comm a). now apply add_mod_idemp_l.
 Qed.
 
 Theorem add_mod: forall a b n, n~=0 ->

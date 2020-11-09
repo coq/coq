@@ -40,11 +40,11 @@ Module Type GenericSgn (Import Z : ZDecAxiomsSig')
                        (Import ZP : ZMulOrderProp Z) <: HasSgn Z.
  Definition sgn n :=
   match compare 0 n with Eq => 0 | Lt => 1 | Gt => -1 end.
- Lemma sgn_null : forall n, n==0 -> sgn n == 0.
+ Lemma sgn_null n : n==0 -> sgn n == 0.
  Proof. unfold sgn; intros. destruct (compare_spec 0 n); order. Qed.
- Lemma sgn_pos : forall n, 0<n -> sgn n == 1.
+ Lemma sgn_pos n : 0<n -> sgn n == 1.
  Proof. unfold sgn; intros. destruct (compare_spec 0 n); order. Qed.
- Lemma sgn_neg : forall n, n<0 -> sgn n == -1.
+ Lemma sgn_neg n : n<0 -> sgn n == -1.
  Proof. unfold sgn; intros. destruct (compare_spec 0 n); order. Qed.
 End GenericSgn.
 
@@ -101,7 +101,7 @@ Qed.
 
 Lemma abs_opp : forall n, abs (-n) == abs n.
 Proof.
- intros. destruct_max n.
+ intros n. destruct_max n.
  rewrite (abs_neq (-n)), opp_involutive. reflexivity.
  now rewrite opp_nonpos_nonneg.
  rewrite (abs_eq (-n)). reflexivity.
@@ -115,14 +115,14 @@ Qed.
 
 Lemma abs_0_iff : forall n, abs n == 0 <-> n==0.
 Proof.
- split. destruct_max n; auto.
+ intros n; split. destruct_max n; auto.
  now rewrite eq_opp_l, opp_0.
  intros EQ; rewrite EQ. rewrite abs_eq; auto using eq_refl, le_refl.
 Qed.
 
 Lemma abs_pos : forall n, 0 < abs n <-> n~=0.
 Proof.
- intros. rewrite <- abs_0_iff. split; [intros LT| intros NEQ].
+ intros n. rewrite <- abs_0_iff. split; [intros LT| intros NEQ].
  intro EQ. rewrite EQ in LT. now elim (lt_irrefl 0).
  assert (LE : 0 <= abs n) by apply abs_nonneg.
  rewrite lt_eq_cases in LE; destruct LE; auto.
@@ -131,12 +131,12 @@ Qed.
 
 Lemma abs_eq_or_opp : forall n, abs n == n \/ abs n == -n.
 Proof.
- intros. destruct_max n; auto with relations.
+ intros n. destruct_max n; auto with relations.
 Qed.
 
 Lemma abs_or_opp_abs : forall n, n == abs n \/ n == - abs n.
 Proof.
- intros. destruct_max n; rewrite ? opp_involutive; auto with relations.
+ intros n. destruct_max n; rewrite ? opp_involutive; auto with relations.
 Qed.
 
 Lemma abs_involutive : forall n, abs (abs n) == abs n.
@@ -147,7 +147,7 @@ Qed.
 Lemma abs_spec : forall n,
   (0 <= n /\ abs n == n) \/ (n < 0 /\ abs n == -n).
 Proof.
- intros. destruct (le_gt_cases 0 n).
+ intros n. destruct (le_gt_cases 0 n).
  left; split; auto. now apply abs_eq.
  right; split; auto. apply abs_neq. now apply lt_le_incl.
 Qed.
@@ -156,7 +156,7 @@ Lemma abs_case_strong :
   forall (P:t->Prop) n, Proper (eq==>iff) P ->
     (0<=n -> P n) -> (n<=0 -> P (-n)) -> P (abs n).
 Proof.
- intros. destruct_max n; auto.
+ intros P n **. destruct_max n; auto.
 Qed.
 
 Lemma abs_case : forall (P:t->Prop) n, Proper (eq==>iff) P ->
@@ -196,7 +196,7 @@ Qed.
 
 Lemma abs_triangle : forall n m, abs (n + m) <= abs n + abs m.
 Proof.
- intros. destruct_max n; destruct_max m.
+ intros n m. destruct_max n; destruct_max m.
  rewrite abs_eq. apply le_refl. now apply add_nonneg_nonneg.
  destruct_max (n+m); try rewrite opp_add_distr;
   apply add_le_mono_l || apply add_le_mono_r.
@@ -212,7 +212,7 @@ Qed.
 
 Lemma abs_sub_triangle : forall n m, abs n - abs m <= abs (n-m).
 Proof.
- intros.
+ intros n m.
  rewrite le_sub_le_add_l, add_comm.
  rewrite <- (sub_simpl_r n m) at 1.
  apply abs_triangle.
@@ -223,10 +223,10 @@ Qed.
 Lemma abs_mul : forall n m, abs (n * m) == abs n * abs m.
 Proof.
  assert (H : forall n m, 0<=n -> abs (n*m) == n * abs m).
-  intros. destruct_max m.
+  intros n m ?. destruct_max m.
   rewrite abs_eq. apply eq_refl. now apply mul_nonneg_nonneg.
   rewrite abs_neq, mul_opp_r. reflexivity. now apply mul_nonneg_nonpos .
- intros. destruct_max n. now apply H.
+ intros n m. destruct_max n. now apply H.
  rewrite <- mul_opp_opp, H, abs_opp. reflexivity.
  now apply opp_nonneg_nonpos.
 Qed.
@@ -271,7 +271,7 @@ Qed.
 
 Lemma sgn_pos_iff : forall n, sgn n == 1 <-> 0<n.
 Proof.
- split; try apply sgn_pos. destruct_sgn n; auto.
+ intros n; split; try apply sgn_pos. destruct_sgn n; auto.
  intros. elim (lt_neq 0 1); auto. apply lt_0_1.
  intros. elim (lt_neq (-1) 1); auto.
  apply lt_trans with 0. rewrite opp_neg_pos. apply lt_0_1. apply lt_0_1.
@@ -279,7 +279,7 @@ Qed.
 
 Lemma sgn_null_iff : forall n, sgn n == 0 <-> n==0.
 Proof.
- split; try apply sgn_null. destruct_sgn n; auto with relations.
+ intros n; split; try apply sgn_null. destruct_sgn n; auto with relations.
  intros. elim (lt_neq 0 1); auto with relations. apply lt_0_1.
  intros. elim (lt_neq (-1) 0); auto.
  rewrite opp_neg_pos. apply lt_0_1.
@@ -287,7 +287,7 @@ Qed.
 
 Lemma sgn_neg_iff : forall n, sgn n == -1 <-> n<0.
 Proof.
- split; try apply sgn_neg. destruct_sgn n; auto with relations.
+ intros n; split; try apply sgn_neg. destruct_sgn n; auto with relations.
  intros. elim (lt_neq (-1) 1); auto with relations.
  apply lt_trans with 0. rewrite opp_neg_pos. apply lt_0_1. apply lt_0_1.
  intros. elim (lt_neq (-1) 0); auto with relations.
@@ -296,7 +296,7 @@ Qed.
 
 Lemma sgn_opp : forall n, sgn (-n) == - sgn n.
 Proof.
- intros. destruct_sgn n.
+ intros n. destruct_sgn n.
  apply sgn_neg. now rewrite opp_neg_pos.
  setoid_replace n with 0 by auto with relations.
   rewrite opp_0. apply sgn_0.
@@ -305,7 +305,7 @@ Qed.
 
 Lemma sgn_nonneg : forall n, 0 <= sgn n <-> 0 <= n.
 Proof.
- split.
+ intros n; split.
  destruct_sgn n; intros.
  now apply lt_le_incl.
  order.
@@ -323,7 +323,7 @@ Qed.
 
 Lemma sgn_mul : forall n m, sgn (n*m) == sgn n * sgn m.
 Proof.
- intros. destruct_sgn n; nzsimpl.
+ intros n m. destruct_sgn n; nzsimpl.
  destruct_sgn m.
   apply sgn_pos. now apply mul_pos_pos.
   apply sgn_null. rewrite eq_mul_0; auto with relations.
@@ -337,7 +337,7 @@ Qed.
 
 Lemma sgn_abs : forall n, n * sgn n == abs n.
 Proof.
- intros. symmetry.
+ intros n. symmetry.
  destruct_sgn n; try rewrite mul_opp_r; nzsimpl.
  apply abs_eq. now apply lt_le_incl.
  rewrite abs_0_iff; auto with relations.
@@ -346,7 +346,7 @@ Qed.
 
 Lemma abs_sgn : forall n, abs n * sgn n == n.
 Proof.
- intros.
+ intros n.
  destruct_sgn n; try rewrite mul_opp_r; nzsimpl; auto.
  apply abs_eq. now apply lt_le_incl.
  rewrite eq_opp_l. apply abs_neq. now apply lt_le_incl.
@@ -354,7 +354,7 @@ Qed.
 
 Lemma sgn_sgn : forall x, sgn (sgn x) == sgn x.
 Proof.
- intros.
+ intros x.
  destruct (sgn_spec x) as [(LT,EQ)|[(EQ',EQ)|(LT,EQ)]]; rewrite EQ.
  apply sgn_pos, lt_0_1.
  now apply sgn_null.

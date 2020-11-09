@@ -559,7 +559,9 @@ Section MakeRingPol.
  Lemma Peq_ok P P' : (P ?== P') = true -> P === P'.
  Proof.
   unfold Pequiv.
-  revert P';induction P;destruct P';simpl; intros H l; try easy.
+  revert P';induction P as [|p P IHP|P2 IHP1 p P3 IHP2];
+   intros P';destruct P' as [|p0 P'|P'1 p0 P'2];simpl;
+   intros H l; try easy.
   - now apply (morph_eq CRmorph).
   - destruct (Pos.compare_spec p p0); [ subst | easy | easy ].
     now rewrite IHP.
@@ -643,13 +645,13 @@ Section MakeRingPol.
 
  Lemma PaddC_ok c P l : (PaddC P c)@l == P@l + [c].
  Proof.
-  revert l;induction P;simpl;intros;Esimpl;trivial.
+  revert l;induction P as [| |P2 IHP1 p P3 IHP2];simpl;intros;Esimpl;trivial.
   rewrite IHP2;rsimpl.
  Qed.
 
  Lemma PsubC_ok c P l : (PsubC P c)@l == P@l - [c].
  Proof.
-  revert l;induction P;simpl;intros.
+  revert l;induction P as [|p P IHP|P2 IHP1 p P3 IHP2];simpl;intros.
   - Esimpl.
   - rewrite IHP;rsimpl.
   - rewrite IHP2;rsimpl.
@@ -657,7 +659,7 @@ Section MakeRingPol.
 
  Lemma PmulC_aux_ok c P l : (PmulC_aux P c)@l == P@l * [c].
  Proof.
-  revert l;induction P;simpl;intros;Esimpl;trivial.
+  revert l;induction P as [| |P2 IHP1 p P3 IHP2];simpl;intros;Esimpl;trivial.
   rewrite IHP1, IHP2;rsimpl. add_permut. mul_permut.
  Qed.
 
@@ -673,7 +675,7 @@ Section MakeRingPol.
 
  Lemma Popp_ok P l : (--P)@l == - P@l.
  Proof.
-  revert l;induction P;simpl;intros.
+  revert l;induction P as [|p P IHP|P2 IHP1 p P3 IHP2];simpl;intros.
   - Esimpl.
   - apply IHP.
   - rewrite IHP1, IHP2;rsimpl.
@@ -686,7 +688,7 @@ Section MakeRingPol.
   (PaddX Padd P' k P) @ l == P@l + P'@l * (hd l)^k.
  Proof.
   intros IHP'.
-  revert k l. induction P;simpl;intros.
+  revert k l. induction P as [|p P IHP|P2 IHP1 p P3 IHP2];simpl;intros.
   - add_permut.
   - destruct p; simpl;
     rewrite ?jump_pred_double; add_permut.
@@ -698,8 +700,9 @@ Section MakeRingPol.
 
  Lemma Padd_ok P' P l : (P ++ P')@l == P@l + P'@l.
  Proof.
-  revert P l; induction P';simpl;intros;Esimpl.
-  - revert p l; induction P;simpl;intros.
+  revert P l; induction P' as [|p P' IHP'|P'1 IHP'1 p P'2 IHP'2];
+   simpl;intros P l;Esimpl.
+  - revert p l; induction P as [|p P IHP|P2 IHP1 p P3 IHP2];simpl;intros p0 l.
     + Esimpl; add_permut.
     + destr_pos_sub; intros ->;Esimpl.
       * now rewrite IHP'.
@@ -709,7 +712,7 @@ Section MakeRingPol.
       * rewrite IHP2;simpl. rsimpl.
       * rewrite IHP2;simpl. rewrite jump_pred_double. rsimpl.
       * rewrite IHP'. rsimpl.
-  - destruct P;simpl.
+  - destruct P as [|p0 ?|? ? ?];simpl.
     + Esimpl. add_permut.
     + destruct p0;simpl;Esimpl; rewrite IHP'2; simpl.
       * rsimpl. add_permut.
@@ -725,14 +728,15 @@ Section MakeRingPol.
 
  Lemma Psub_opp P' P : P -- P' === P ++ (--P').
  Proof.
-  revert P; induction P'; simpl; intros.
+  revert P; induction P' as [|p P' IHP'|P'1 IHP'1 p P'2 IHP'2]; simpl; intros P.
   - intro l; Esimpl.
-  - revert p; induction P; simpl; intros; try reflexivity.
+  - revert p; induction P; simpl; intros p0; try reflexivity.
     + destr_pos_sub; intros ->; now apply mkPinj_ext.
     + destruct p0; now apply PX_ext.
-  - destruct P; simpl; try reflexivity.
+  - destruct P as [|p0 P|P2 p0 P3]; simpl; try reflexivity.
     + destruct p0; now apply PX_ext.
     + destr_pos_sub; intros ->; apply mkPX_ext; auto.
+      let p1 := match goal with |- PsubX _ _ ?p1 _ === _ => p1 end in
       revert p1. induction P2; simpl; intros; try reflexivity.
       destr_pos_sub; intros ->; now apply mkPX_ext.
  Qed.
@@ -746,8 +750,8 @@ Section MakeRingPol.
    (forall P l, (Pmul P P') @ l == P @ l * P' @ l) ->
    forall P p l, (PmulI Pmul P' p P) @ l == P @ l * P' @ (jump p l).
  Proof.
-  intros IHP'.
-  induction P;simpl;intros.
+  intros IHP' P.
+  induction P as [|p P IHP|? IHP1 ? ? IHP2];simpl;intros p0 l.
   - Esimpl; mul_permut.
   - destr_pos_sub; intros ->;Esimpl.
     + now rewrite IHP'.
@@ -761,10 +765,10 @@ Section MakeRingPol.
 
  Lemma Pmul_ok P P' l : (P**P')@l == P@l * P'@l.
  Proof.
-  revert P l;induction P';simpl;intros.
+  revert P l;induction P' as [| |? IHP'1 ? ? IHP'2];simpl;intros P l.
   - apply PmulC_ok.
   - apply PmulI_ok;trivial.
-  - destruct P.
+  - destruct P as [|p0|].
     + rewrite (ARmul_comm ARth). Esimpl.
     + Esimpl. f_equiv. rewrite IHP'1; Esimpl.
       destruct p0;rewrite IHP'2;Esimpl.
@@ -821,7 +825,8 @@ Section MakeRingPol.
      P@l == Q@l + [c] * M@@l * R@l.
  Proof. 
  destruct cM as (c,M). revert M l.
- induction P; destruct M; intros l; simpl; auto; 
+ induction P as [c0|p P ?|P2 ? ? P3 ?]; intros M; destruct M; intros l;
+  simpl; auto;
  try (case ceqb_spec; intro He);
   try (case Pos.compare_spec; intros He);
   rewrite ?He;
@@ -858,7 +863,7 @@ Section MakeRingPol.
    [fst cM1] * (snd cM1)@@l == P2@l ->
    P1@l == (PNSubst1 P1 cM1 P2 n)@l.
  Proof.
- revert P1. induction n; simpl; intros P1;
+ revert P1. induction n as [|n IHn]; simpl; intros P1;
  generalize (POneSubst_ok P1 cM1 P2); destruct POneSubst;
    intros; rewrite <- ?IHn; auto; reflexivity.
  Qed.
@@ -890,7 +895,7 @@ Section MakeRingPol.
  Lemma PSubstL_ok n LM1 P1 P2 l :
    PSubstL P1 LM1 n = Some P2 -> MPcond LM1 l -> P1@l == P2@l.
  Proof.
- revert P1. induction LM1 as [|(M2,P2') LM2 IH]; simpl; intros.
+ revert P1. induction LM1 as [|(M2,P2') LM2 IH]; simpl; intros P3 H **.
  - discriminate.
  - assert (H':=PNSubst_ok n P3 M2 P2'). destruct PNSubst.
    * injection H as [= <-]. rewrite <- PSubstL1_ok; intuition.
@@ -900,7 +905,7 @@ Section MakeRingPol.
  Lemma PNSubstL_ok m n LM1 P1 l :
     MPcond LM1 l -> P1@l == (PNSubstL P1 LM1 m n)@l.
  Proof.
- revert LM1 P1. induction m; simpl; intros;
+ revert LM1 P1. induction m as [|m IHm]; simpl; intros LM1 P2 H;
  assert (H' := PSubstL_ok n LM1 P2); destruct PSubstL;
  auto; try reflexivity.
  rewrite <- IHm; auto.
@@ -979,7 +984,8 @@ Section POWER.
     forall res P p, (Ppow_pos res P p)@l == res@l * (pow_pos Pmul P p)@l.
   Proof.
    intros subst_l_ok res P p. revert res.
-   induction p;simpl;intros; rewrite ?subst_l_ok, ?Pmul_ok, ?IHp;
+   induction p as [p IHp|p IHp|];simpl;intros;
+    rewrite ?subst_l_ok, ?Pmul_ok, ?IHp;
     mul_permut.
   Qed.
 
@@ -987,7 +993,7 @@ Section POWER.
     (forall P, subst_l P@l == P@l) ->
     forall P n, (Ppow_N P n)@l == (pow_N P1 Pmul P n)@l.
   Proof.
-  destruct n;simpl.
+  intros ? P n; destruct n;simpl.
   - reflexivity.
   - rewrite Ppow_pos_ok by trivial. Esimpl.
   Qed.
@@ -1057,8 +1063,9 @@ Section POWER.
     PEeval l pe == (norm_aux pe)@l.
   Proof.
    intros.
-   induction pe; cbn.
-   - now rewrite (morph0 CRmorph). 
+   induction pe as [| |c|p|pe1 IHpe1 pe2 IHpe2|? IHpe1 ? IHpe2|? IHpe1 ? IHpe2
+                   |? IHpe|? IHpe n0]; cbn.
+   - now rewrite (morph0 CRmorph).
    - now rewrite (morph1 CRmorph).
    - reflexivity.
    - apply mkX_ok.
@@ -1071,8 +1078,9 @@ Section POWER.
    - rewrite IHpe1, IHpe2. now rewrite Pmul_ok.
    - rewrite IHpe. Esimpl.
    - rewrite Ppow_N_ok by reflexivity.
-     rewrite (rpow_pow_N pow_th). destruct n0; simpl; Esimpl.
-     induction p;simpl; now rewrite ?IHp, ?IHpe, ?Pms_ok, ?Pmul_ok.
+     rewrite (rpow_pow_N pow_th). destruct n0 as [|p]; simpl; Esimpl.
+     induction p as [p IHp|p IHp|];simpl;
+      now rewrite ?IHp, ?IHpe, ?Pms_ok, ?Pmul_ok.
   Qed.
 
  Lemma norm_subst_spec :
@@ -1125,7 +1133,7 @@ Section POWER.
   Lemma mon_of_pol_ok : forall P m, mon_of_pol P = Some m ->
               forall l, [fst m] * Mphi l (snd m) == P@l.
   Proof.
-    induction P;simpl;intros;Esimpl.
+    intros P; induction P as [c|p P IHP|P2 IHP1 ? P3 ?];simpl;intros m H l;Esimpl.
     assert (H1 := (morph_eq CRmorph) c cO).
     destruct (c ?=! cO).
     discriminate.
@@ -1142,7 +1150,7 @@ Section POWER.
         end with (P3 ?== P0).
     assert (H := Peq_ok P3 P0).
     destruct (P3 ?== P0).
-    case_eq (mon_of_pol P2);try intros (cc, pp); intros.
+    case_eq (mon_of_pol P2);try intros (cc, pp); intros H0 H1.
     inversion H1.
     simpl.
     rewrite mkVmon_ok;simpl.
@@ -1155,16 +1163,16 @@ Section POWER.
  Lemma interp_PElist_ok : forall l lpe,
          interp_PElist l lpe -> MPcond (mk_monpol_list lpe) l.
  Proof.
-   induction lpe;simpl. trivial.
-   destruct a;simpl;intros.
+   intros l lpe; induction lpe as [|a lpe IHlpe];simpl. trivial.
+   destruct a as [p p0];simpl;intros H.
    assert (HH:=mon_of_pol_ok (norm_subst 0 nil  p));
      destruct  (mon_of_pol (norm_subst 0 nil p)).
    split.
    rewrite <- norm_subst_spec by exact I.
-   destruct lpe;try destruct H;rewrite <- H;
+   destruct lpe;try destruct H as [H H0];rewrite <- H;
    rewrite (norm_subst_spec 0 nil); try exact I;apply HH;trivial.
-   apply IHlpe. destruct lpe;simpl;trivial. destruct H. exact H0.
-   apply IHlpe. destruct lpe;simpl;trivial. destruct H. exact H0.
+   apply IHlpe. destruct lpe;simpl;trivial. destruct H as [H H0]. exact H0.
+   apply IHlpe. destruct lpe;simpl;trivial. destruct H as [H H0]. exact H0.
  Qed.
 
  Lemma norm_subst_ok : forall n l lpe pe,
@@ -1180,7 +1188,7 @@ Section POWER.
    norm_subst n lmp pe1 ?== norm_subst n lmp pe2) = true ->
    PEeval l pe1 == PEeval l pe2.
  Proof.
-  simpl;intros.
+  simpl;intros n l lpe pe1 pe2 **.
   do 2 (rewrite (norm_subst_ok n l lpe);trivial).
   apply Peq_ok;trivial.
  Qed.
@@ -1285,36 +1293,36 @@ Section POWER.
 
  Lemma mkmult_rec_ok : forall lm r, mkmult_rec r lm == r * r_list_pow lm.
  Proof.
-   induction lm;intros;simpl;Esimpl.
+   intros lm; induction lm as [|a lm IHlm];intros;simpl;Esimpl.
    destruct a as (x,p);Esimpl.
    rewrite IHlm. rewrite mkmult_pow_spec. Esimpl.
   Qed.
 
  Lemma mkmult1_ok : forall lm, mkmult1 lm == r_list_pow lm.
  Proof.
-   destruct lm;simpl;Esimpl.
+   intros lm; destruct lm as [|p lm];simpl;Esimpl.
    destruct p. rewrite mkmult_rec_ok;rewrite mkpow_spec;Esimpl.
  Qed.
 
  Lemma mkmultm1_ok : forall lm, mkmultm1 lm == - r_list_pow lm.
  Proof.
-  destruct lm;simpl;Esimpl.
+  intros lm; destruct lm as [|p lm];simpl;Esimpl.
   destruct p;rewrite mkmult_rec_ok. rewrite mkopp_pow_spec;Esimpl.
  Qed.
 
  Lemma r_list_pow_rev :  forall l, r_list_pow (rev' l) == r_list_pow l.
  Proof.
    assert
-    (forall l lr : list (R * positive), r_list_pow (rev_append l lr) == r_list_pow lr * r_list_pow l).
-   induction l;intros;simpl;Esimpl.
-   destruct a;rewrite IHl;Esimpl.
+    (forall l lr : list (R * positive), r_list_pow (rev_append l lr) == r_list_pow lr * r_list_pow l) as H.
+   intros l; induction l as [|a l IHl];intros;simpl;Esimpl.
+   destruct a as [r p];rewrite IHl;Esimpl.
    rewrite (ARmul_comm ARth (pow_pos rmul r p)). reflexivity.
   intros;unfold rev'. rewrite H;simpl;Esimpl.
   Qed.
 
  Lemma mkmult_c_pos_ok : forall c lm, mkmult_c_pos c lm == [c]* r_list_pow lm.
  Proof.
-  intros;unfold mkmult_c_pos;simpl.
+  intros c lm;unfold mkmult_c_pos;simpl.
    assert (H := (morph_eq CRmorph) c cI).
    rewrite <- r_list_pow_rev; destruct (c ?=! cI).
   rewrite H;trivial;Esimpl.
@@ -1323,8 +1331,8 @@ Section POWER.
 
  Lemma mkmult_c_ok : forall c lm, mkmult_c c lm == [c] * r_list_pow lm.
  Proof.
-  intros;unfold mkmult_c;simpl.
-  case_eq (get_sign c);intros.
+  intros c lm;unfold mkmult_c;simpl.
+  case_eq (get_sign c);intros c0; try intros H.
   assert (H1 := (morph_eq CRmorph) c0  cI).
   destruct (c0 ?=! cI).
    rewrite (morph_eq CRmorph _ _ (sign_spec get_sign_spec _ H)). Esimpl. rewrite H1;trivial.
@@ -1336,8 +1344,8 @@ Qed.
 
  Lemma mkadd_mult_ok : forall rP c lm, mkadd_mult rP c lm == rP + [c]*r_list_pow lm.
  Proof.
-  intros;unfold mkadd_mult.
-  case_eq (get_sign c);intros.
+  intros rP c lm;unfold mkadd_mult.
+  case_eq (get_sign c);intros c0; try intros H.
   rewrite (morph_eq CRmorph _ _ (sign_spec get_sign_spec _ H));Esimpl.
   rewrite mkmult_c_pos_ok;Esimpl.
   rewrite mkmult_c_pos_ok;Esimpl.
@@ -1346,13 +1354,13 @@ Qed.
  Lemma add_pow_list_ok :
       forall r n l, r_list_pow (add_pow_list r n l) == pow_N rI rmul r n * r_list_pow l.
  Proof.
-   destruct n;simpl;intros;Esimpl.
+   intros r n; destruct n;simpl;intros;Esimpl.
  Qed.
 
  Lemma add_mult_dev_ok : forall P rP fv n lm,
     add_mult_dev rP P fv n lm == rP + P@fv*pow_N rI rmul (hd fv) n * r_list_pow lm.
   Proof.
-    induction P;simpl;intros.
+    intros P; induction P as [|p P IHP|P2 IHP1 p P3 IHP2];simpl;intros rP fv n lm.
     rewrite mkadd_mult_ok. rewrite add_pow_list_ok; Esimpl.
     rewrite IHP. simpl. rewrite add_pow_list_ok; Esimpl.
     change (match P3 with
@@ -1377,7 +1385,7 @@ Qed.
  Lemma mult_dev_ok : forall P fv n lm,
     mult_dev P fv n lm == P@fv * pow_N rI rmul (hd fv) n * r_list_pow lm.
  Proof.
-   induction P;simpl;intros;Esimpl.
+   intros P; induction P as [|p P IHP|P2 IHP1 p P3 IHP2];simpl;intros fv n lm;Esimpl.
    rewrite mkmult_c_ok;rewrite add_pow_list_ok;Esimpl.
    rewrite IHP. simpl;rewrite add_pow_list_ok;Esimpl.
   change (match P3 with
@@ -1463,7 +1471,7 @@ Qed.
 
   Lemma mkmult_pow_ok p r x : mkmult_pow r x p == r * x^p.
   Proof.
-    revert r; induction p;intros;simpl;Esimpl;rewrite !IHp;Esimpl.
+    revert r; induction p as [p IHp|p IHp|];intros;simpl;Esimpl;rewrite !IHp;Esimpl.
   Qed.
 
  Lemma mkpow_ok p x : mkpow x p == x^p.

@@ -210,7 +210,7 @@ Qed.
 
 Lemma eq_iff : forall (P Q : Prop), P = Q -> (P <-> Q).
 Proof.
-  intros.
+  intros P Q H.
   rewrite H.
   apply iff_refl.
 Defined.

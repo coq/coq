@@ -33,14 +33,14 @@ Module Type ZLcmProp
 
 Lemma quot_div_nonneg : forall a b, 0<=a -> 0<b -> a÷b == a/b.
 Proof.
- intros. apply div_unique_pos with (a rem b).
+ intros a b **. apply div_unique_pos with (a rem b).
  now apply rem_bound_pos.
  apply quot_rem. order.
 Qed.
 
 Lemma rem_mod_nonneg : forall a b, 0<=a -> 0<b -> a rem b == a mod b.
 Proof.
- intros. apply mod_unique_pos with (a÷b).
+ intros a b **. apply mod_unique_pos with (a÷b).
  now apply rem_bound_pos.
  apply quot_rem. order.
 Qed.
@@ -290,7 +290,7 @@ Qed.
 Lemma lcm_divide_iff : forall n m p,
   (lcm n m | p) <-> (n | p) /\ (m | p).
 Proof.
- intros. split. split.
+ intros n m p. split. split.
  transitivity (lcm n m); trivial using divide_lcm_l.
  transitivity (lcm n m); trivial using divide_lcm_r.
  intros (H,H'). now apply lcm_least.
@@ -387,7 +387,7 @@ Qed.
 
 Lemma lcm_abs_l : forall n m, lcm (abs n) m == lcm n m.
 Proof.
- intros. destruct (abs_eq_or_opp n) as [H|H]; rewrite H.
+ intros n m. destruct (abs_eq_or_opp n) as [H|H]; rewrite H.
  easy. apply lcm_opp_l.
 Qed.
 
@@ -438,7 +438,7 @@ Qed.
 Lemma lcm_mul_mono_l_nonneg :
  forall n m p, 0<=p -> lcm (p*n) (p*m) == p * lcm n m.
 Proof.
- intros. rewrite <- (abs_eq p) at 3; trivial. apply lcm_mul_mono_l.
+ intros n m p ?. rewrite <- (abs_eq p) at 3; trivial. apply lcm_mul_mono_l.
 Qed.
 
 Lemma lcm_mul_mono_r :
@@ -450,7 +450,7 @@ Qed.
 Lemma lcm_mul_mono_r_nonneg :
  forall n m p, 0<=p -> lcm (n*p) (m*p) == lcm n m * p.
 Proof.
- intros. rewrite <- (abs_eq p) at 3; trivial. apply lcm_mul_mono_r.
+ intros n m p ?. rewrite <- (abs_eq p) at 3; trivial. apply lcm_mul_mono_r.
 Qed.
 
 Lemma gcd_1_lcm_mul : forall n m, n~=0 -> m~=0 ->

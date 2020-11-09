@@ -235,13 +235,13 @@ Qed.
 Theorem Rle_lt_trans : forall n m p : R, n <= m -> m < p -> n < p.
 Proof.
 intros n m p H1 H2; le_elim H1.
-now apply Rlt_trans with (m := m). now rewrite H1.
+now apply (Rlt_trans (m := m)). now rewrite H1.
 Qed.
 
 Theorem Rlt_le_trans : forall n m p : R, n < m -> m <= p -> n < p.
 Proof.
 intros n m p H1 H2; le_elim H2.
-now apply Rlt_trans with (m := m). now rewrite <- H2.
+now apply (Rlt_trans (m := m)). now rewrite <- H2.
 Qed.
 
 Theorem Rle_gt_cases : forall n m : R, n <= m \/ m < n.

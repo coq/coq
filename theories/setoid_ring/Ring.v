@@ -17,22 +17,22 @@ Require Export Ring_tac.
 Lemma BoolTheory :
   ring_theory false true xorb andb xorb (fun b:bool => b) (eq(A:=bool)).
 split; simpl.
-destruct x; reflexivity.
-destruct x; destruct y; reflexivity.
-destruct x; destruct y; destruct z; reflexivity.
+intros x; destruct x; reflexivity.
+intros x y; destruct x; destruct y; reflexivity.
+intros x y z; destruct x; destruct y; destruct z; reflexivity.
 reflexivity.
-destruct x; destruct y; reflexivity.
-destruct x; destruct y; reflexivity.
-destruct x; destruct y; destruct z; reflexivity.
+intros x y; destruct x; destruct y; reflexivity.
+intros x y; destruct x; destruct y; reflexivity.
+intros x y z; destruct x; destruct y; destruct z; reflexivity.
 reflexivity.
-destruct x; reflexivity.
+intros x; destruct x; reflexivity.
 Qed.
 
 Definition bool_eq (b1 b2:bool) :=
   if b1 then b2 else negb b2.
 
 Lemma bool_eq_ok : forall b1 b2, bool_eq b1 b2 = true -> b1 = b2.
-destruct b1; destruct b2; auto.
+intros b1 b2; destruct b1; destruct b2; auto.
 Qed.
 
 Ltac bool_cst t :=

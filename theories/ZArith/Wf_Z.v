@@ -67,7 +67,7 @@ Lemma natlike_ind :
    forall x:Z, 0 <= x -> P x.
 Proof.
  intros P Ho Hrec x Hx; apply Z_of_nat_prop; trivial.
- induction n. exact Ho.
+ intros n; induction n. exact Ho.
  rewrite Nat2Z.inj_succ. apply Hrec; trivial using Nat2Z.is_nonneg.
 Qed.
 
@@ -78,7 +78,7 @@ Lemma natlike_rec :
    forall x:Z, 0 <= x -> P x.
 Proof.
  intros P Ho Hrec x Hx; apply Z_of_nat_set; trivial.
- induction n. exact Ho.
+ intros n; induction n. exact Ho.
  rewrite Nat2Z.inj_succ. apply Hrec; trivial using Nat2Z.is_nonneg.
 Qed.
 
@@ -101,9 +101,9 @@ Section Efficient_Rec.
       (forall z:Z, 0 <= z -> P z -> P (Z.succ z)) ->
       forall z:Z, 0 <= z -> P z.
   Proof.
-   intros P Ho Hrec.
+   intros P Ho Hrec z.
    induction z as [z IH] using (well_founded_induction_type R_wf).
-   destruct z; intros Hz.
+   destruct z as [|p|p]; intros Hz.
    - apply Ho.
    - set (y:=Z.pred (Zpos p)).
      assert (LE : 0 <= y) by (unfold y; now apply Z.lt_le_pred).
@@ -121,9 +121,9 @@ Section Efficient_Rec.
       (forall z:Z, 0 < z -> P (Z.pred z) -> P z) ->
       forall z:Z, 0 <= z -> P z.
   Proof.
-   intros P Ho Hrec.
+   intros P Ho Hrec z.
    induction z as [z IH] using (well_founded_induction_type R_wf).
-   destruct z; intros Hz.
+   destruct z as [|p|p]; intros Hz.
    - apply Ho.
    - assert (EQ : 0 <= Z.pred (Zpos p)) by now apply Z.lt_le_pred.
      apply Hrec. easy. apply IH; trivial. split; trivial.
@@ -138,7 +138,7 @@ Section Efficient_Rec.
       (forall x:Z, (forall y:Z, 0 <= y < x -> P y) -> 0 <= x -> P x) ->
       forall x:Z, 0 <= x -> P x.
   Proof.
-   intros P Hrec.
+   intros P Hrec x.
    induction x as [x IH] using (well_founded_induction_type R_wf).
    destruct x; intros Hx.
    - apply Hrec; trivial. intros y (Hy,Hy').
@@ -196,7 +196,7 @@ Section Efficient_Rec.
       (forall x:Z, (forall y:Z, z <= y < x -> P y) -> z <= x -> P x) ->
       forall x:Z, z <= x -> P x.
   Proof.
-    intros; now apply Zlt_lower_bound_rec with z.
+    intros P z ? x ?; now apply Zlt_lower_bound_rec with z.
   Qed.
 
 End Efficient_Rec.

@@ -19,19 +19,19 @@ Include NZParityProp Z Z ZP.
 
 Lemma odd_pred : forall n, odd (P n) = even n.
 Proof.
- intros. rewrite <- (succ_pred n) at 2. symmetry. apply even_succ.
+ intros n. rewrite <- (succ_pred n) at 2. symmetry. apply even_succ.
 Qed.
 
 Lemma even_pred : forall n, even (P n) = odd n.
 Proof.
- intros. rewrite <- (succ_pred n) at 2. symmetry. apply odd_succ.
+ intros n. rewrite <- (succ_pred n) at 2. symmetry. apply odd_succ.
 Qed.
 
 Lemma even_opp : forall n, even (-n) = even n.
 Proof.
  assert (H : forall n, Even n -> Even (-n)).
   intros n (m,H). exists (-m). rewrite mul_opp_r. now f_equiv.
- intros. rewrite eq_iff_eq_true, !even_spec.
+ intros n. rewrite eq_iff_eq_true, !even_spec.
  split. rewrite <- (opp_involutive n) at 2. apply H.
  apply H.
 Qed.

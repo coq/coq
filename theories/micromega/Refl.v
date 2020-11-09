@@ -31,7 +31,7 @@ Fixpoint make_impl (A : Type) (eval : A -> Prop) (l : list A) (goal : Prop) {str
 Theorem make_impl_true :
   forall (A : Type) (eval : A -> Prop) (l : list A), make_impl eval l True.
 Proof.
-induction l as [| a l IH]; simpl.
+intros A eval l; induction l as [| a l IH]; simpl.
 trivial.
 intro; apply IH.
 Qed.
@@ -42,9 +42,9 @@ Theorem make_impl_map :
          (EVAL : forall x, eval' x <-> eval (fst x)),
     make_impl eval' l r <-> make_impl eval (List.map fst l) r.
 Proof.
-induction l as [| a l IH]; simpl.
+intros A B eval eval' l; induction l as [| a l IH]; simpl.
 - tauto.
-- intros.
+- intros r EVAL.
   rewrite EVAL.
   rewrite IH.
   tauto.
@@ -61,18 +61,18 @@ Fixpoint make_conj (A : Type) (eval : A -> Prop) (l : list A) {struct l} : Prop 
 Theorem make_conj_cons : forall (A : Type) (eval : A -> Prop) (a : A) (l : list A),
   make_conj eval (a :: l) <-> eval a /\ make_conj eval l.
 Proof.
-intros; destruct l; simpl; tauto.
+intros A eval a l; destruct l; simpl; tauto.
 Qed.
 
 
 Lemma make_conj_impl : forall (A : Type) (eval : A -> Prop) (l : list A) (g : Prop),
   (make_conj eval l -> g) <-> make_impl eval l g.
 Proof.
-  induction l.
+  intros A eval l; induction l as [|? l IHl].
   simpl.
   tauto.
   simpl.
-  intros.
+  intros g.
   destruct l.
   simpl.
   tauto.
@@ -83,11 +83,11 @@ Qed.
 Lemma make_conj_in : forall (A : Type) (eval : A -> Prop) (l : list A),
   make_conj eval l -> (forall p, In p l -> eval p).
 Proof.
-  induction l.
+  intros A eval l; induction l as [|? l IHl].
   simpl.
   tauto.
   simpl.
-  intros.
+  intros H ? H0.
   destruct l.
   simpl in H0.
   destruct H0.
@@ -101,10 +101,10 @@ Qed.
 
 Lemma make_conj_app : forall  A eval l1 l2, @make_conj A eval (l1 ++ l2) <-> @make_conj A eval l1 /\ @make_conj A eval l2.
 Proof.
-  induction l1.
+  intros A eval l1; induction l1 as [|a l1 IHl1].
   simpl.
   tauto.
-  intros.
+  intros l2.
   change ((a::l1) ++ l2) with (a :: (l1 ++ l2)).
   rewrite make_conj_cons.
   rewrite IHl1.
@@ -116,7 +116,7 @@ Infix "+++" := rev_append (right associativity, at level 60) : list_scope.
 
 Lemma make_conj_rapp : forall  A eval l1 l2, @make_conj A eval (l1 +++ l2) <-> @make_conj A eval (l1++l2).
 Proof.
-  induction l1.
+  intros A eval l1; induction l1 as [|? ? IHl1].
   - simpl. tauto.
   - intros.
     simpl rev_append at 1.
@@ -141,10 +141,10 @@ Lemma not_make_conj_app : forall (A:Type) (t:list A) a eval
   (no_middle_eval : forall d, eval d \/ ~ eval d) ,
   ~ make_conj  eval (t ++ a) <-> (~ make_conj  eval t) \/ (~ make_conj eval a).
 Proof.
-  induction t.
+  intros A t; induction t as [|a t IHt].
   - simpl.
     tauto.
-  - intros.
+  - intros a0 **.
     simpl ((a::t)++a0).
     rewrite !not_make_conj_cons by auto.
     rewrite IHt by auto.

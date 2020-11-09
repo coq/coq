@@ -26,7 +26,7 @@ Qed.
 Lemma elim_concl_eq :
   forall x y, (x < y \/ y < x -> False) -> x = y.
 Proof.
-  intros.
+  intros x y H.
   destruct (Z_lt_le_dec x y).
   exfalso. apply H ; auto.
   destruct (Zle_lt_or_eq y x);auto.
@@ -37,7 +37,7 @@ Qed.
 Lemma elim_concl_le :
   forall x y, (y < x -> False) -> x <= y.
 Proof.
-  intros.
+  intros x y H.
   destruct (Z_lt_le_dec y x).
   exfalso ; auto.
   auto.
@@ -46,7 +46,7 @@ Qed.
 Lemma elim_concl_lt :
   forall x y, (y <= x -> False) -> x < y.
 Proof.
-  intros.
+  intros x y H.
   destruct (Z_lt_le_dec x y).
   auto.
   exfalso ; auto.
@@ -93,7 +93,7 @@ Qed.
 
 Lemma mul_le : forall e1 e2, 0 <= e1 -> 0 <= e2 -> 0 <= e1*e2.
 Proof.
-  intros.
+  intros e1 e2 H H0.
   change 0 with (0* e2).
   apply Zmult_le_compat_r; auto.
 Qed.

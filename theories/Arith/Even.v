@@ -39,28 +39,28 @@ Hint Constructors odd: arith.
 Lemma even_equiv : forall n, even n <-> Nat.Even n.
 Proof.
  fix even_equiv 1.
- destruct n as [|[|n]]; simpl.
+ intros n; destruct n as [|[|n]]; simpl.
  - split; [now exists 0 | constructor].
  - split.
-   + inversion_clear 1. inversion_clear H0.
+   + inversion_clear 1 as [|? H0]. inversion_clear H0.
    + now rewrite <- Nat.even_spec.
  - rewrite Nat.Even_succ_succ, <- even_equiv.
    split.
-   + inversion_clear 1. now inversion_clear H0.
+   + inversion_clear 1 as [|? H0]. now inversion_clear H0.
    + now do 2 constructor.
 Qed.
 
 Lemma odd_equiv : forall n, odd n <-> Nat.Odd n.
 Proof.
  fix odd_equiv 1.
- destruct n as [|[|n]]; simpl.
+ intros n; destruct n as [|[|n]]; simpl.
  - split.
    + inversion_clear 1.
    + now rewrite <- Nat.odd_spec.
  - split; [ now exists 0 | do 2 constructor ].
  - rewrite Nat.Odd_succ_succ, <- odd_equiv.
    split.
-   + inversion_clear 1. now inversion_clear H0.
+   + inversion_clear 1 as [? H0]. now inversion_clear H0.
    + now do 2 constructor.
 Qed.
 
@@ -68,14 +68,14 @@ Qed.
 
 Lemma even_or_odd n : even n \/ odd n.
 Proof.
-  induction n.
+  induction n as [|n IHn].
   - auto with arith.
   - elim IHn; auto with arith.
 Qed.
 
 Lemma even_odd_dec n : {even n} + {odd n}.
 Proof.
-  induction n.
+  induction n as [|n IHn].
   - auto with arith.
   - elim IHn; auto with arith.
 Defined.
