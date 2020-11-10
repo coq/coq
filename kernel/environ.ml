@@ -104,7 +104,6 @@ type env = {
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
-  native_symbols : Nativevalues.symbols DPmap.t;
 }
 
 let empty_named_context_val = {
@@ -136,7 +135,6 @@ let empty_env = {
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
   indirect_pterms = Opaqueproof.empty_opaquetab;
-  native_symbols = DPmap.empty;
 }
 
 
@@ -828,10 +826,6 @@ let is_type_in_type env r =
   | ConstructRef cstr -> type_in_type_ind (inductive_of_constructor cstr) env
 
 let set_retroknowledge env r = { env with retroknowledge = r }
-
-let set_native_symbols env native_symbols = { env with native_symbols }
-let add_native_symbols dir syms env =
-  { env with native_symbols = DPmap.add dir syms env.native_symbols }
 
 module type QNameS =
 sig

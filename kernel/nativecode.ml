@@ -2192,11 +2192,9 @@ let mk_norm_code env sigma prefix t =
       [|MLglobal (Ginternal "()")|])) in
   header::gl, (mind_updates, const_updates)
 
-let mk_library_header dir =
-  let libname = Format.sprintf "(str_decode \"%s\")" (str_encode dir) in
-  [Glet(Ginternal "symbols_tbl",
-    MLapp (MLglobal (Ginternal "get_library_native_symbols"),
-    [|MLglobal (Ginternal libname)|]))]
+let mk_library_header (symbols : Nativevalues.symbols) =
+  let symbols = Format.sprintf "(str_decode \"%s\")" (str_encode symbols) in
+  [Glet(Ginternal "symbols_tbl", MLglobal (Ginternal symbols))]
 
 let update_location (r,v) = r := v
 

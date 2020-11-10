@@ -525,7 +525,7 @@ let native_norm env sigma c ty =
     if print_timing then Feedback.msg_info (Pp.str time_info);
     let profiler_pid = if profile then start_profiler () else None in
     let t0 = Unix.gettimeofday () in
-    Nativelib.call_linker ~fatal:true env ~prefix fn (Some upd);
+    Nativelib.call_linker ~fatal:true ~prefix fn (Some upd);
     let t1 = Unix.gettimeofday () in
     if profile then stop_profiler profiler_pid;
     let time_info = Format.sprintf "native_compute: Evaluation done in %.5f" (t1 -. t0) in

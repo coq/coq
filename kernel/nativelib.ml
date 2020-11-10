@@ -145,8 +145,10 @@ let compile fn code ~profile:profile =
   if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
   r
 
-let compile_library dir code fn =
-  let header = mk_library_header dir in
+type native_library = Nativecode.global list * Nativevalues.symbols
+
+let compile_library (code, symb) fn =
+  let header = mk_library_header symb in
   let fn = fn ^ source_ext in
   let basename = Filename.basename fn in
   let dirname = Filename.dirname fn in
@@ -160,19 +162,9 @@ let compile_library dir code fn =
   let _ = call_compiler fn in
   if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn
 
-let native_symbols = ref Names.DPmap.empty
-
-let get_library_native_symbols dir =
-  try Names.DPmap.find dir !native_symbols
-  with Not_found ->
-    CErrors.user_err ~hdr:"get_library_native_symbols"
-      Pp.((str "Linker error in the native compiler. Are you using Require inside a nested Module declaration?") ++ fnl () ++
-          (str "This use case is not supported, but disabling the native compiler may help."))
-
 (* call_linker links dynamically the code for constants in environment or a  *)
 (* conversion test. *)
-let call_linker ?(fatal=true) env ~prefix f upds =
-  native_symbols := env.Environ.native_symbols;
+let call_linker ?(fatal=true) ~prefix f upds =
   rt1 := dummy_value ();
   rt2 := dummy_value ();
   if not (Sys.file_exists f) then
@@ -191,11 +183,11 @@ let call_linker ?(fatal=true) env ~prefix f upds =
      else if !Flags.debug then Feedback.msg_debug CErrors.(iprint exn));
   match upds with Some upds -> update_locations upds | _ -> ()
 
-let link_library env ~prefix ~dirname ~basename =
+let link_library ~prefix ~dirname ~basename =
   (* We try both [output_dir] and [.coq-native], unfortunately from
      [Require] we don't know if we are loading a library in the build
      dir or in the installed layout *)
   let install_location = dirname / dft_output_dir / basename in
   let build_location = dirname / !output_dir / basename in
   let f = if Sys.file_exists build_location then build_location else install_location in
-  call_linker env ~fatal:false ~prefix f None
+  call_linker ~fatal:false ~prefix f None
