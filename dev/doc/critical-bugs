@@ -312,6 +312,18 @@ Conversion machines
   risk: none without using -allow-sprop (off by default in 8.10.0),
         otherwise could be exploited by mistake
 
+Side-effects
+
+  component: side-effects
+  summary: polymorphic side-effects inside monomorphic definitions incorrectly handled as not inlined
+  introduced: ?
+  impacted released versions: at least from 8.6 to 8.12.0
+  impacted coqchk versions: none (no side-effects in the checker)
+  found by: ppedrot
+  exploit: test-suite/bugs/closed/bug_13330.v
+  GH issue number: #13330
+  risk: unlikely to be exploited by mistake, requires the use of unsafe tactics
+
 Conflicts with axioms in library
 
   component: library of real numbers
