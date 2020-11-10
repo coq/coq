@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Namegen
 open Constr
 open Context
 open EConstr
@@ -485,7 +484,7 @@ let rec decompose_app_rel env evd t =
     let (f', argl, argr) = decompose_app_rel env evd arg in
     let ty = Retyping.get_type_of env evd argl in
     let r = Retyping.relevance_of_type env evd ty in
-    let f'' = mkLambda (make_annot (Name default_dependent_ident) r, ty,
+    let f'' = mkLambda (make_annot (Name Namegen.default_dependent_ident) r, ty,
       mkLambda (make_annot (Name (Id.of_string "y")) r, lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
     in (f'', argl, argr)
@@ -1119,7 +1118,14 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
  *)
 
       | Lambda (n, t, b) when flags.under_lambdas ->
-        let n' = map_annot (Nameops.Name.map (fun id -> Tactics.fresh_id_in_env unfresh id env)) n in
+        let unfresh, n' =
+          let id = match n.binder_name with
+            | Anonymous ->  Namegen.default_dependent_ident
+            | Name id -> id
+          in
+          let id = Tactics.fresh_id_in_env unfresh id env in
+          Id.Set.add id unfresh, {n with binder_name = Name id}
+        in
         let unfresh = match n'.binder_name with
           | Anonymous -> unfresh
           | Name id -> Id.Set.add id unfresh
