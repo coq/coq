@@ -19,7 +19,8 @@ lglob: [
 ]
 
 hint: [
-| "Extern" natural OPT constr_pattern "=>" tactic
+| REPLACE "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
+| WITH "Extern" natural OPT constr_pattern "=>" tactic
 ]
 
 (* todo: does ARGUMENT EXTEND make the symbol global? It is in both extraargs and extratactics *)
@@ -28,19 +29,12 @@ strategy_level_or_var: [
 | strategy_level
 ]
 
-term0: [
-| "ltac" ":" "(" ltac_expr5 ")"
-]
-
 EXTRAARGS_natural: [ | DELETENT ]
 EXTRAARGS_lconstr:  [ | DELETENT ]
 EXTRAARGS_strategy_level: [ | DELETENT ]
-G_LTAC_hint: [ | DELETENT ]
-G_LTAC_term0: [ | DELETENT ]
 
-G_REWRITE_binders: [
+binders: [
 | DELETE Pcoq.Constr.binders
-| binders
 ]
 
 G_TACTIC_in_clause: [
@@ -50,7 +44,6 @@ G_TACTIC_in_clause: [
 ]
 
 SPLICE: [
-| G_REWRITE_binders
 | G_TACTIC_in_clause
 ]
 
@@ -92,6 +85,7 @@ RENAME: [
 | G_LTAC2_as_ipat ltac2_as_ipat
 | G_LTAC2_by_tactic ltac2_by_tactic
 | G_LTAC2_match_list ltac2_match_list
+| G_SSRMATCHING_cpattern ssr_one_term_pattern
 ]
 
 (* Renames to eliminate qualified names.
@@ -112,13 +106,14 @@ RENAME: [
 | Prim.natural natural
 | Pvernac.Vernac_.main_entry vernac_control
 | Tactic.tactic tactic
+| Pltac.ltac_expr ltac_expr5
 
   (* SSR *)
+| Pcoq.Constr.constr term
+| Prim.identref ident
 (*
 | G_vernac.def_body def_body
-| Pcoq.Constr.constr term
 | Prim.by_notation by_notation
-| Prim.identref ident
 | Prim.natural natural
 *)
 | Vernac.fix_definition fix_definition
@@ -156,11 +151,16 @@ DELETE: [
 | test_array_closing
 
   (* SSR *)
-(* | ssr_null_entry *)
-(*
+| ssr_null_entry
 | ssrtermkind  (* todo: rename as "test..." *)
-| term_annotation  (* todo: rename as "test..." *)
+| ssrdoarg  (* todo: this and the next one should be removed from the grammar? *)
+| ssrseqdir
+| ssrindex
+| ssrintrosarg
+| ssrtclarg
+| term_annotation  (* todo: what is this? *)
 | test_idcomma
+| test_ident_no_do
 | test_nohidden
 | test_not_ssrslashnum
 | test_ssr_rw_syntax
@@ -171,18 +171,12 @@ DELETE: [
 | test_ssrslashnum01
 | test_ssrslashnum10
 | test_ssrslashnum11
-| test_ident_no_do
-| ssrdoarg  (* todo: this and the next one should be removed from the grammar? *)
-| ssrseqdir
-*)
 
 (* unused *)
 | constr_comma_sequence'
 | auto_using'
 | constr_may_eval
 ]
-
-(* ssrintrosarg: [ | DELETENT ] *)
 
 (* additional nts to be spliced *)
 
@@ -202,10 +196,6 @@ for_each_goal: [
 | OPT ( goal_tactics "|" ) OPT ltac_expr5 ".." OPT ( "|" goal_tactics )
 ]
 
-tactic_then_last: [
-| OPTINREF
-]
-
 ltac2_tactic_then_last: [
 | REPLACE "|" LIST0 ( OPT ltac2_expr6 ) SEP "|"      (* Ltac2 plugin *)
 | WITH LIST0 (  "|" OPT ltac2_expr6 )  TAG Ltac2
@@ -220,10 +210,6 @@ ltac2_for_each_goal: [ | DELETENT ]
 ltac2_for_each_goal: [
 | ltac2_goal_tactics  TAG Ltac2
 | OPT ( ltac2_goal_tactics "|" ) OPT ltac2_expr6 ".." OPT ( "|" ltac2_goal_tactics )  TAG Ltac2
-]
-
-ltac2_tactic_then_last: [
-| OPTINREF
 ]
 
 reference: [ | DELETENT ]
@@ -270,7 +256,18 @@ binder_constr: [
 | MOVETO term_forall_or_fun "forall" open_binders "," term200
 | MOVETO term_forall_or_fun "fun" open_binders "=>" term200
 | MOVETO term_let "let" name binders let_type_cstr ":=" term200 "in" term200
+(*| MOVETO term_let "let" ":" ssr_mpat ":=" lconstr "in" lconstr  TAG SSR *)
+| DELETE "let" ":" ssr_mpat ":=" lconstr "in" lconstr  TAG SSR (* todo: restore for ssr *)
+| REPLACE "let" ":" ssr_mpat "in" pattern200 ":=" lconstr ssr_rtype "in" lconstr      (* ssr plugin *)
+| WITH "let" ":" ssr_mpat OPT ( "in" pattern200 ) ":=" lconstr ssr_rtype "in" lconstr  TAG SSR
+| DELETE "let" ":" ssr_mpat ":=" lconstr ssr_rtype "in" lconstr      (* SSR plugin *)
+| DELETE "let" ":" ssr_mpat OPT ( "in" pattern200 ) ":=" lconstr ssr_rtype "in" lconstr  TAG SSR  (* todo: restore for SSR *)
+(*| MOVETO term_let "let" ":" ssr_mpat OPT ( "in" pattern200 ) ":=" lconstr ssr_rtype "in" lconstr      TAG SSR*)
 | MOVETO term_if "if" term200 as_return_type "then" term200 "else" term200
+| REPLACE "if" term200 "is" ssr_dthen ssr_else
+| WITH "if" term200 [ "is" | "isn't" ] ssr_dthen ssr_else  TAG SSR
+| DELETE "if" term200 "isn't" ssr_dthen ssr_else
+| DELETE "if" term200 [ "is" | "isn't" ] ssr_dthen ssr_else  TAG SSR  (* todo: restore for SSR *)
 | MOVETO term_fix "let" "fix" fix_decl "in" term200
 | MOVETO term_cofix "let" "cofix" cofix_body "in" term200
 | MOVETO term_let "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" term200 "in" term200
@@ -310,6 +307,7 @@ atomic_constr: [
 ltac_expr0: [
 | REPLACE "[" ">" for_each_goal "]"
 | WITH "[>" for_each_goal "]"
+| DELETE ssrparentacarg
 ]
 
 (* lexer token *)
@@ -473,6 +471,7 @@ closed_binder: [
 | MOVETO generalizing_binder "`(" LIST1 typeclass_constraint SEP "," ")"
 | MOVETO generalizing_binder "`{" LIST1 typeclass_constraint SEP "," "}"
 | MOVETO generalizing_binder "`[" LIST1 typeclass_constraint SEP "," "]"
+| DELETE [ "of" | "&" ] term99  (* todo: remove for SSR *)
 ]
 
 name_colon: [
@@ -530,14 +529,6 @@ eqn: [
 | WITH LIST1 [ LIST1 pattern100 SEP "," ] SEP "|" "=>" lconstr
 ]
 
-universe_increment: [
-| OPTINREF
-]
-
-evar_instance: [
-| OPTINREF
-]
-
 (* No constructor syntax, OPT [ "|" binders ] is not supported for Record *)
 record_definition: [
 | opt_coercion ident_decl binders OPT [ ":" sort ] OPT ( ":=" OPT [ identref ] "{" record_fields "}" )
@@ -581,10 +572,6 @@ finite_token: [
 | DELETENT
 ]
 
-constructors_or_record: [
-| OPTINREF
-]
-
 record_fields: [
 | REPLACE record_field ";" record_fields
 | WITH LIST0 record_field SEP ";" OPT ";"
@@ -600,11 +587,6 @@ inline: [
 | REPLACE "Inline" "(" natural ")"
 | WITH "Inline" OPT ( "(" natural ")" )
 | DELETE "Inline"
-| OPTINREF
-]
-
-univ_annot: [
-| OPTINREF
 ]
 
 univ_decl: [
@@ -620,24 +602,12 @@ of_type: [
 | [ ":" | ":>" ] type
 ]
 
-attr_value: [
-| OPTINREF
-]
-
 def_body: [
 | DELETE binders ":=" reduce lconstr
 | REPLACE binders ":" lconstr ":=" reduce lconstr
 | WITH LIST0 binder OPT (":" type) ":=" reduce lconstr
 | REPLACE binders ":" lconstr
 | WITH LIST0 binder ":" type
-]
-
-reduce: [
-| OPTINREF
-]
-
-occs: [
-| OPTINREF
 ]
 
 delta_flag: [
@@ -653,7 +623,6 @@ ltac2_delta_flag: [
 
 ltac2_branches: [
 | EDIT ADD_OPT "|" LIST1 branch SEP "|"      (* Ltac2 plugin *)
-| OPTINREF
 ]
 
 strategy_flag: [
@@ -662,7 +631,6 @@ strategy_flag: [
 (*| REPLACE LIST1 red_flags
 | WITH LIST1 red_flag*)
 | (* empty *)
-| OPTINREF
 ]
 
 filtered_import: [
@@ -671,20 +639,14 @@ filtered_import: [
 | DELETE global
 ]
 
-functor_app_annot: [
-| OPTINREF
-]
-
 is_module_expr: [
 | REPLACE ":=" module_expr_inl LIST0 ext_module_expr
 | WITH ":=" LIST1 module_expr_inl SEP "<+"
-| OPTINREF
 ]
 
 is_module_type: [
 | REPLACE ":=" module_type_inl LIST0 ext_module_type
 | WITH ":=" LIST1 module_type_inl SEP "<+"
-| OPTINREF
 ]
 
 gallina_ext: [
@@ -727,10 +689,6 @@ gallina_ext: [
 
 | REPLACE "From" global "Require" export_token LIST1 global
 | WITH "From" dirpath "Require" export_token LIST1 global
-]
-
-export_token: [
-| OPTINREF
 ]
 
 (* lexer stuff *)
@@ -785,6 +743,7 @@ subsequent_letter: [
 
 ident: [
 | DELETE IDENT
+| DELETE IDENT (* 2nd copy from SSR *)
 | first_letter LIST0 subsequent_letter
 ]
 
@@ -840,6 +799,10 @@ ltac_expr4: [
 | REPLACE ltac_expr3 ";" binder_tactic
 | WITH ltac_expr3 ";" [ ltac_expr3 | binder_tactic ]
 | DELETE ltac_expr3 ";" ltac_expr3
+| MOVETO simple_tactic ltac_expr5 ";" "first" ssr_first_else      TAG SSR
+| MOVETO simple_tactic ltac_expr5 ";" "first" ssrseqarg      TAG SSR
+| MOVETO simple_tactic ltac_expr5 ";" "last" ssrseqarg      TAG SSR
+| DELETE simple_tactic
 ]
 
 l3_tactic: [ ]
@@ -849,6 +812,7 @@ ltac_expr3: [
 | REPLACE "abstract" ltac_expr2 "using" ident
 | WITH "abstract" ltac_expr2 OPT ( "using" ident )
 | l3_tactic
+| EDIT "do" ADD_OPT int_or_var ssrmmod ssrdotac ssrclauses  TAG SSR
 | MOVEALLBUT ltac_builtins
 | l3_tactic
 | ltac_expr2
@@ -1105,6 +1069,43 @@ simple_tactic: [
 (* in Tactic Notation: *)
 | "setoid_replace" constr "with" constr OPT ( "using" "relation" constr ) OPT ( "in" hyp )
        OPT ( "at" LIST1 int_or_var ) OPT ( "by" ltac_expr3 )
+| REPLACE "apply" ssrapplyarg      (* SSR plugin *)
+| WITH "apply" OPT ssrapplyarg      TAG SSR
+| DELETE "apply"
+| REPLACE "elim" ssrarg ssrclauses      (* SSR plugin *)
+| WITH "elim" OPT ( ssrarg ssrclauses )  TAG SSR
+| DELETE "elim"      (* SSR plugin *)
+| REPLACE "case" ssrcasearg ssrclauses      (* SSR plugin *)
+| WITH "case" OPT ( ssrcasearg ssrclauses ) TAG SSR
+| DELETE "case"      (* SSR plugin *)
+| REPLACE "under" ssrrwarg ssrintros_ne "do" ssrhint3arg      (* SSR plugin *)
+| WITH "under" ssrrwarg OPT ssrintros_ne OPT ( "do" ssrhint3arg )  TAG SSR
+| DELETE "under" ssrrwarg      (* SSR plugin *)
+| DELETE "under" ssrrwarg ssrintros_ne      (* SSR plugin *)
+| DELETE "under" ssrrwarg "do" ssrhint3arg      (* SSR plugin *)
+| REPLACE "move" ssrmovearg ssrrpat      (* SSR plugin *)
+| WITH "move" OPT ( OPT ssrmovearg ssrrpat )   TAG SSR
+| DELETE "move" ssrrpat      (* SSR plugin *)
+| DELETE "move"      (* SSR plugin *)
+| REPLACE "suff" "have" ssrhpats_nobs ssrhavefwd      (* SSR plugin *)
+| WITH [ "suff" | "suffices" ] OPT ( "have" ssrhpats_nobs ) ssrhavefwd      TAG SSR
+| DELETE "suffices" "have" ssrhpats_nobs ssrhavefwd      (* SSR plugin *)
+| REPLACE "suff" ssrsufffwd      (* SSR plugin *)
+| WITH [ "suff" | "suffices" ] ssrsufffwd      TAG SSR
+| DELETE "suffices" ssrsufffwd      (* SSR plugin *)
+| REPLACE "have" "suff" ssrhpats_nobs ssrhavefwd      (* SSR plugin *)
+| WITH "have" [ "suff" | "suffices" ] ssrhpats_nobs ssrhavefwd      TAG SSR
+| DELETE "have" "suffices" ssrhpats_nobs ssrhavefwd      (* SSR plugin *)
+| REPLACE "gen" "have" ssrclear ssr_idcomma ssrhpats_nobs ssrwlogfwd ssrhint      (* SSR plugin *)
+| WITH [ "gen" | "generally" ] "have" ssrclear ssr_idcomma ssrhpats_nobs ssrwlogfwd ssrhint      TAG SSR
+| DELETE "generally" "have" ssrclear ssr_idcomma ssrhpats_nobs ssrwlogfwd ssrhint      (* SSR plugin *)
+| REPLACE "wlog" "suff" ssrhpats_nobs ssrwlogfwd ssrhint      (* SSR plugin *)
+| WITH [ "wlog" | "without loss" ] OPT [ "suff" | "suffices" ] ssrhpats_nobs ssrwlogfwd ssrhint      TAG SSR
+| DELETE "wlog" "suffices" ssrhpats_nobs ssrwlogfwd ssrhint      (* SSR plugin *)
+| DELETE "wlog" ssrhpats_nobs ssrwlogfwd ssrhint      (* SSR plugin *)
+| DELETE "without" "loss" ssrhpats_nobs ssrwlogfwd ssrhint      (* SSR plugin *)
+| DELETE "without" "loss" "suff" ssrhpats_nobs ssrwlogfwd ssrhint      (* SSR plugin *)
+| DELETE "without" "loss" "suffices" ssrhpats_nobs ssrwlogfwd ssrhint      (* SSR plugin *)
 ]
 
 (* todo: don't use DELETENT for this *)
@@ -1319,10 +1320,6 @@ command: [
 | WITH "Goal" type
 ]
 
-option_setting: [
-| OPTINREF
-]
-
 syntax: [
 | REPLACE "Open" "Scope" IDENT
 | WITH "Open" "Scope" scope
@@ -1435,7 +1432,6 @@ cofix_definition: [
 type_cstr: [
 | REPLACE ":" lconstr
 | WITH ":" type
-| OPTINREF
 ]
 
 inductive_definition: [
@@ -1458,10 +1454,6 @@ record_binder: [
 | REPLACE name field_body
 | WITH name OPT field_body
 | DELETE name
-]
-
-at_level_opt: [
-| OPTINREF
 ]
 
 query_command: [
@@ -1498,10 +1490,6 @@ vernac_toplevel: [
 | DELETE vernac_control
 ]
 
-in_or_out_modules: [
-| OPTINREF
-]
-
 vernac_control: [
 (* replacing vernac_control with command is cheating a little;
    they can't refer to the vernac_toplevel commands.
@@ -1517,90 +1505,8 @@ vernac_control: [
 | DELETE decorated_vernac
 ]
 
-orient: [
-| OPTINREF
-]
-
-in_hyp_as: [
-| OPTINREF
-]
-
-as_name: [
-| OPTINREF
-]
-
-hloc: [
-| OPTINREF
-]
-
-as_or_and_ipat: [
-| OPTINREF
-]
-
-hintbases: [
-| OPTINREF
-]
-
-as_ipat: [
-| OPTINREF
-]
-
-auto_using: [
-| OPTINREF
-]
-
-with_bindings: [
-| OPTINREF
-]
-
-eqn_ipat: [
-| OPTINREF
-]
-
-withtac: [
-| OPTINREF
-]
-
 of_module_type: [
 | (* empty *)
-| OPTINREF
-]
-
-
-clause_dft_all: [
-| OPTINREF
-]
-
-opt_clause: [
-| OPTINREF
-]
-
-with_names: [
-| OPTINREF
-]
-
-in_hyp_list: [
-| OPTINREF
-]
-
-struct_annot: [
-| OPTINREF
-]
-
-firstorder_using: [
-| OPTINREF
-]
-
-fun_ind_using: [
-| OPTINREF
-]
-
-by_arg_tac: [
-| OPTINREF
-]
-
-by_tactic: [
-| OPTINREF
 ]
 
 rewriter: [
@@ -1647,41 +1553,16 @@ record_declaration: [
 
 fields_def: [ | DELETENT ]
 
-hint_info: [
-| OPTINREF
-]
-
-debug: [
-| OPTINREF
-]
-
-eauto_search_strategy: [
-| OPTINREF
-]
-
-
 constr_body: [
 | DELETE ":=" lconstr
 | REPLACE ":" lconstr ":=" lconstr
 | WITH OPT ( ":" type ) ":=" lconstr
 ]
 
-opt_hintbases: [
-| OPTINREF
-]
-
-opthints: [
-| OPTINREF
-]
-
 scheme: [
 | DELETE scheme_kind
 | REPLACE identref ":=" scheme_kind
 | WITH OPT ( identref ":=" ) scheme_kind
-]
-
-instance_name: [
-| OPTINREF
 ]
 
 simple_reserv: [
@@ -1702,22 +1583,9 @@ ltac2_in_clause: [
 | DELETE LIST0 ltac2_hypident_occ SEP ","      (* Ltac2 plugin *)
 ]
 
-concl_occ: [
-| OPTINREF
-]
-
-opt_coercion: [
-| OPTINREF
-]
-
-opt_constructors_or_fields: [
-| OPTINREF
-]
-
 decl_notations: [
 | REPLACE "where" LIST1 decl_notation SEP decl_sep
 | WITH "where" decl_notation LIST0 (decl_sep decl_notation )
-| OPTINREF
 ]
 
 module_expr: [
@@ -1776,15 +1644,6 @@ by_notation: [
 decl_notation: [
 | REPLACE ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 | WITH ne_lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
-]
-
-syntax_modifiers: [
-| OPTINREF
-]
-
-
-only_parsing: [
-| OPTINREF
 ]
 
 ltac_production_item: [
@@ -1908,6 +1767,7 @@ ltac_defined_tactics: [
 | "lra"
 | "nia"
 | "nra"
+| "over"  TAG SSR
 | "split_Rabs"
 | "split_Rmult"
 | "tauto"
@@ -1919,10 +1779,12 @@ ltac_defined_tactics: [
 tactic_notation_tactics: [
 | "assert_fails" ltac_expr3
 | "assert_succeeds" ltac_expr3
+| "dintuition" OPT ltac_expr5
+| "dtauto"
 | "field" OPT ( "[" LIST1 constr "]" )
 | "field_simplify" OPT ( "[" LIST1 constr "]" ) LIST1 constr OPT ( "in" ident )
 | "field_simplify_eq" OPT ( "[" LIST1 constr "]" ) OPT ( "in" ident )
-| "intuition" OPT ltac_expr5
+| "intuition" OPT ltac_expr5  (* todo: Not too keen on things like "with_power_flags" in tauto.ml, not easy to follow *)
 | "nsatz" OPT ( "with" "radicalmax" ":=" constr "strategy" ":=" constr "parameters" ":=" constr "variables" ":=" constr )
 | "psatz" constr OPT int_or_var
 | "ring" OPT ( "[" LIST1 constr "]" )
@@ -2024,10 +1886,6 @@ DELETE: [
 | test_ltac1_env
 ]
 
-mut_flag: [
-| OPTINREF
-]
-
 rec_flag: [
 | OPTINREF
 ]
@@ -2040,18 +1898,6 @@ ltac2_orient: [
 
 SPLICE: [
 | ltac2_orient
-]
-
-tac2typ_prm: [
-| OPTINREF
-]
-
-tac2type_body: [
-| OPTINREF
-]
-
-atomic_tac2pat: [
-| OPTINREF
 ]
 
 ltac2_expr0: [
@@ -2081,7 +1927,6 @@ tac2rec_fieldexprs: [
 | DELETE tac2rec_fieldexpr ";"
 | DELETE tac2rec_fieldexpr
 | LIST1 tac2rec_fieldexpr OPT ";"
-| OPTINREF
 ]
 
 tac2rec_fields: [
@@ -2089,7 +1934,6 @@ tac2rec_fields: [
 | DELETE tac2rec_field ";"
 | DELETE tac2rec_field
 | LIST1 tac2rec_field SEP ";" OPT ";" TAG Ltac2
-| OPTINREF
 ]
 
 (* todo: weird productions, ints only after an initial "-"??:
@@ -2101,46 +1945,6 @@ ltac2_occs_nums: [
 | DELETE LIST1 nat_or_anti      (* Ltac2 plugin *)
 | REPLACE "-" nat_or_anti LIST0 nat_or_anti      (* Ltac2 plugin *)
 | WITH OPT "-" LIST1 nat_or_anti TAG Ltac2
-]
-
-syn_level: [
-| OPTINREF
-]
-
-ltac2_delta_flag: [
-| OPTINREF
-]
-
-ltac2_occs: [
-| OPTINREF
-]
-
-ltac2_concl_occ: [
-| OPTINREF
-]
-
-ltac2_with_bindings: [
-| OPTINREF
-]
-
-ltac2_as_or_and_ipat: [
-| OPTINREF
-]
-
-ltac2_eqn_ipat: [
-| OPTINREF
-]
-
-ltac2_as_name: [
-| OPTINREF
-]
-
-ltac2_as_ipat: [
-| OPTINREF
-]
-
-ltac2_by_tactic: [
-| OPTINREF
 ]
 
 ltac2_entry: [
@@ -2177,14 +1981,9 @@ SPLICE: [
 | tac2def_ext
 | tac2def_syn
 | tac2def_mut
-| mut_flag
 | rec_flag
 | locident
-| syn_level
-| tac2rec_fieldexprs
-| tac2type_body
 | tac2alg_constructors
-| tac2rec_fields
 | ltac2_binder
 | branch
 | anti
@@ -2193,7 +1992,7 @@ SPLICE: [
 ltac2_expr5: [
 | REPLACE "let" OPT "rec" LIST1 ltac2_let_clause SEP "with" "in" ltac2_expr6      (* Ltac2 plugin *)
 | WITH "let" OPT "rec" ltac2_let_clause LIST0 ( "with" ltac2_let_clause ) "in" ltac2_expr6 TAG Ltac2
-| MOVETO simple_tactic "match" ltac2_expr5 "with" OPT ltac2_branches "end"      (* Ltac2 plugin *)
+| MOVETO simple_tactic "match" ltac2_expr5 "with" ltac2_branches "end"      (* Ltac2 plugin *)
 | MOVETO simple_tactic "if" ltac2_expr5 "then" ltac2_expr5 "else" ltac2_expr5      (* Ltac2 plugin *)
 | DELETE simple_tactic
 ]
@@ -2233,8 +2032,8 @@ q_clause: [
 ]
 
 ltac2_induction_clause: [
-| REPLACE ltac2_destruction_arg OPT ltac2_as_or_and_ipat OPT ltac2_eqn_ipat OPT clause      (* Ltac2 plugin *)
-| WITH ltac2_destruction_arg OPT ltac2_as_or_and_ipat OPT ltac2_eqn_ipat OPT ltac2_clause  TAG Ltac2
+| REPLACE ltac2_destruction_arg ltac2_as_or_and_ipat ltac2_eqn_ipat OPT clause      (* Ltac2 plugin *)
+| WITH ltac2_destruction_arg ltac2_as_or_and_ipat ltac2_eqn_ipat OPT ltac2_clause  TAG Ltac2
 ]
 
 starredidentref: [
@@ -2269,6 +2068,322 @@ subprf: [
 
 ltac2_expr: [
 | DELETE _ltac2_expr
+]
+
+ssrfwdview: [
+| REPLACE "/" ast_closure_term ssrfwdview      (* SSR plugin *)
+| WITH LIST1 ( "/" ast_closure_term )  TAG SSR
+| DELETE "/" ast_closure_term      (* SSR plugin *)
+]
+
+ssrfwd: [
+| REPLACE ":" ast_closure_lterm ":=" ast_closure_lterm      (* SSR plugin *)
+| WITH OPT ( ":" ast_closure_lterm ) ":=" ast_closure_lterm      TAG SSR
+| DELETE ":=" ast_closure_lterm      (* SSR plugin *)
+]
+
+ssrsetfwd: [
+| REPLACE ":" ast_closure_lterm ":=" "{" ssrocc "}" cpattern      (* SSR plugin *)
+| WITH OPT ( ":" ast_closure_lterm ) ":=" [ "{" ssrocc "}" cpattern | lcpattern ]      TAG SSR
+| DELETE ":" ast_closure_lterm ":=" lcpattern      (* SSR plugin *)
+| DELETE ":=" "{" ssrocc "}" cpattern      (* SSR plugin *)
+| DELETE ":=" lcpattern      (* SSR plugin *)
+]
+
+
+(* per @gares *)
+ssrdgens: [
+| REPLACE ":" ssrgen ssrdgens_tl      (* SSR plugin *)
+| WITH ":" ssrgen OPT ( "/" ssrgen )      TAG SSR
+]
+
+ssrdgens_tl: [ | DELETENT ]
+
+ssrgen: [
+| REPLACE ssrdocc cpattern      (* SSR plugin *)
+| WITH cpattern LIST0 [ LIST1 ident | cpattern ]    TAG SSR
+| DELETE cpattern      (* SSR plugin *)
+]
+
+OPTINREF: [ ]
+
+ssrortacs: [
+| EDIT ssrtacarg "|" ADD_OPT ssrortacs      (* ssr plugin *)
+| EDIT "|" ADD_OPT ssrortacs      (* ssr plugin *)
+| EDIT ADD_OPT ssrtacarg "|" OPT ssrortacs
+]
+
+ssrocc: [
+| REPLACE natural LIST0 natural      (* SSR plugin *)
+| WITH [ natural | "+" | "-" ] LIST0 natural      TAG SSR
+| DELETE "-" LIST0 natural      (* SSR plugin *)
+| DELETE "+" LIST0 natural      (* SSR plugin *)
+]
+
+ssripat: [
+| DELETE ssrdocc "->"      (* SSR plugin *)
+| DELETE ssrdocc "<-"      (* SSR plugin *)
+| REPLACE ssrdocc      (* SSR plugin *)
+| WITH ssrdocc OPT [ "->" | "<-" ]      TAG SSR
+| DELETE "->"      (* SSR plugin *)
+| DELETE "<-"      (* SSR plugin *)
+| DELETE "-/" "="      (* SSR plugin *)
+| DELETE "-/" "/"      (* SSR plugin *)
+| DELETE "-/" integer "/"      (* SSR plugin *)
+| DELETE "-/" integer "/="      (* SSR plugin *)
+| REPLACE "-/" integer "/" integer "="      (* SSR plugin *)
+| WITH "-/" integer [ "/=" | "/" | "/" integer "=" ]     TAG SSR
+| DELETE "-/" "/="      (* SSR plugin *)
+| DELETE "-//" "="      (* SSR plugin *)
+| DELETE "[" ":" LIST0 ident "]"      (* SSR plugin *)
+]
+
+ssrsimpl_ne: [
+| DELETE "/" natural "/" "="      (* SSR plugin *)
+(* parsed but not supported per @gares *)
+| DELETE "/" natural "/"      (* SSR plugin *)
+| DELETE "/" natural "="      (* SSR plugin *)
+| DELETE "//" natural "="      (* SSR plugin *)
+]
+
+hat: [
+| DELETE "^" "~" ident      (* SSR plugin *)
+| DELETE "^" "~" natural      (* SSR plugin *)
+]
+
+ssriorpat: [
+| ssripats OPT ( [ "|" | "|-" ] ssriorpat )   TAG SSR
+| DELETE OPT ssripats "|" ssriorpat      (* SSR plugin *)
+| DELETE OPT ssripats "|-" ">" ssriorpat      (* SSR plugin *)
+| DELETE OPT ssripats "|-" ssriorpat      (* SSR plugin *)
+(* "|->" | "||" | "|||" | "||||" are parsing hacks *)
+| DELETE OPT ssripats "|->" ssriorpat      (* SSR plugin *)
+| DELETE OPT ssripats "||" ssriorpat      (* SSR plugin *)
+| DELETE OPT ssripats "|||" ssriorpat      (* SSR plugin *)
+| DELETE OPT ssripats "||||" ssriorpat      (* SSR plugin *)
+| DELETE OPT ssripats      (* SSR plugin *)
+]
+
+ssrbinder: [
+| REPLACE "(" ssrbvar LIST1 ssrbvar ":" lconstr ")"      (* SSR plugin *)
+| WITH "(" LIST1 ssrbvar ":" lconstr ")"      TAG SSR
+| REPLACE "(" ssrbvar ":" lconstr ":=" lconstr ")"      (* SSR plugin *)
+| WITH "(" ssrbvar OPT ( ":" lconstr ) OPT ( ":=" lconstr ) ")"      TAG SSR
+| DELETE "(" ssrbvar ")"      (* SSR plugin *)
+| DELETE "(" ssrbvar ":" lconstr ")"      (* SSR plugin *)
+| DELETE "(" ssrbvar ":=" lconstr ")"      (* SSR plugin *)
+]
+
+ssrhavefwd: [
+| REPLACE ":" ast_closure_lterm ":=" ast_closure_lterm      (* SSR plugin *)
+| WITH ":" ast_closure_lterm ":=" OPT ast_closure_lterm     TAG SSR
+| DELETE ":" ast_closure_lterm ":="      (* SSR plugin *)
+| DELETE ":=" ast_closure_lterm      (* SSR plugin *)
+]
+
+ssrmult_ne: [
+| EDIT ADD_OPT natural ssrmmod      TAG SSR
+]
+
+rpattern: [
+| REPLACE lconstr "in" lconstr "in" lconstr      (* SSR plugin *)
+| WITH OPT ( OPT ( OPT ( OPT lconstr "in" ) lconstr ) "in" ) lconstr     TAG SSR
+| DELETE lconstr      (* SSR plugin *)
+| DELETE "in" lconstr      (* SSR plugin *)
+| DELETE lconstr "in" lconstr      (* SSR plugin *)
+| DELETE "in" lconstr "in" lconstr      (* SSR plugin *)
+]
+
+ssrrule_ne: [
+| DELETE ssrsimpl_ne      (* SSR plugin *)
+| REPLACE [ "/" ssrterm | ssrterm | ssrsimpl_ne ]      (* SSR plugin *)
+| WITH [ OPT "/" ssrterm  | ssrsimpl_ne ]      TAG SSR
+]
+
+ssrunlockarg: [
+| REPLACE "{" ssrocc "}" ssrterm      (* SSR plugin *)
+| WITH OPT ( "{" ssrocc "}" ) ssrterm      TAG SSR
+| DELETE ssrterm      (* SSR plugin *)
+]
+
+ssrclauses: [
+| REPLACE "in" ssrclausehyps "|-" "*"      (* SSR plugin *)
+| WITH "in" ssrclausehyps OPT "|-" OPT "*"      TAG SSR
+| DELETE "in" ssrclausehyps "|-"      (* SSR plugin *)
+| DELETE "in" ssrclausehyps "*"      (* SSR plugin *)
+| DELETE "in" ssrclausehyps      (* SSR plugin *)
+| REPLACE "in" "|-" "*"      (* SSR plugin *)
+| WITH "in" [ "*" | "*" "|-" | "|-" "*" ]     TAG SSR
+| DELETE "in" "*"      (* SSR plugin *)
+| DELETE "in" "*" "|-"      (* SSR plugin *)
+]
+
+ssrclausehyps: [
+| REPLACE ssrwgen "," ssrclausehyps      (* SSR plugin *)
+| WITH ssrwgen LIST0 ( OPT "," ssrwgen )     TAG SSR
+| DELETE ssrwgen ssrclausehyps      (* SSR plugin *)
+| DELETE ssrwgen      (* SSR plugin *)
+]
+
+ssrwgen: [
+| DELETE ssrhoi_hyp      (* SSR plugin *)
+| REPLACE "@" ssrhoi_hyp      (* SSR plugin *)
+| WITH OPT "@" ssrhoi_hyp      TAG SSR
+| REPLACE "(" ssrhoi_id ":=" lcpattern ")"      (* SSR plugin *)
+| WITH "(" ssrhoi_id OPT ( ":=" lcpattern ) ")"      TAG SSR
+| DELETE "(" ssrhoi_id ")"      (* SSR plugin *)
+| DELETE "(" "@" ssrhoi_id ":=" lcpattern ")"      (* SSR plugin *)
+]
+
+ssrcongrarg: [
+| REPLACE natural constr ssrdgens      (* SSR plugin *)
+| WITH OPT natural constr OPT ssrdgens      TAG SSR
+| DELETE natural constr      (* SSR plugin *)
+| DELETE constr ssrdgens      (* SSR plugin *)
+| DELETE constr      (* SSR plugin *)
+]
+
+ssrviewpos: [
+| DELETE "for" "apply" "/" "/"      (* SSR plugin *)
+]
+
+ssrhintref: [
+| REPLACE constr "|" natural      (* SSR plugin *)
+| WITH constr OPT ( "|" natural )     TAG SSR
+| DELETE constr      (* SSR plugin *)
+]
+
+ssr_search_arg: [
+| REPLACE "-" ssr_search_item OPT ssr_search_arg      (* SSR plugin *)
+| WITH LIST1 ( "-" ssr_search_item )      TAG SSR
+| DELETE ssr_search_item OPT ssr_search_arg      (* SSR plugin *)
+]
+
+ssr_search_item: [
+| DELETE string      (* SSR plugin *)
+| REPLACE string "%" preident      (* SSR plugin *)
+| WITH string OPT ( "%" preident )      TAG SSR
+]
+
+modloc: [
+| REPLACE "-" global      (* SSR plugin *)
+| WITH OPT "-" global      TAG SSR
+| DELETE global
+]
+
+ssrmmod: [
+| DELETE LEFTQMARK      (* SSR plugin *)  (* duplicate *)
+]
+
+clear_switch: [
+| "{" LIST0 ident "}"
+]
+
+ssrrwocc: [
+| REPLACE "{" LIST0 ssrhyp "}"      (* SSR plugin *)
+| WITH clear_switch
+]
+
+ssrrwarg: [
+| EDIT "{" ADD_OPT ssrocc "}" OPT ssrpattern_squarep ssrrule_ne      TAG SSR
+| REPLACE "{" LIST1 ssrhyp "}" ssrpattern_ne_squarep ssrrule_ne      (* SSR plugin *)
+| WITH OPT ( OPT ( "{" LIST1 ssrhyp "}" ) ssrpattern_ne_squarep ) ssrrule_ne      TAG SSR
+| DELETE ssrpattern_ne_squarep ssrrule_ne      (* SSR plugin *)
+| DELETE ssrrule_ne      (* SSR plugin *)
+]
+
+ssrpattern_squarep: [  (* fix inconsistency *)
+| REPLACE "[" rpattern "]"      (* SSR plugin *)
+| WITH ssrpattern_ne_squarep   TAG SSR
+]
+
+ssripats_ne: [
+| REPLACE ssripat OPT ssripats      (* SSR plugin *)
+| WITH LIST1 ssripat      TAG SSR
+]
+
+ssripats: [  (* fix inconsistency *)
+| REPLACE ssripat OPT ssripats      (* SSR plugin *)
+| WITH ssripats_ne     TAG SSR
+]
+
+lcpattern: [
+(* per @gares *)
+| DELETE "Qed" lconstr
+]
+
+ssrapplyarg: [
+| EDIT ADD_OPT ssrbwdview ":" ssragen OPT ssragens OPT ssrintros      TAG SSR
+]
+
+constr_with_bindings_arg: [
+| EDIT ADD_OPT ">" constr_with_bindings      TAG SSR
+]
+
+destruction_arg: [
+| DELETE constr_with_bindings
+]
+
+ssrhintarg: [
+| EDIT "[" ADD_OPT ssrortacs "]"      TAG SSR
+]
+
+
+ssrhint3arg: [
+| EDIT "[" ADD_OPT ssrortacs "]"      TAG SSR
+]
+
+
+ssr_first: [
+| DELETE ssr_first ssrintros_ne      (* SSR plugin *)
+| REPLACE "[" LIST0 ltac_expr5 SEP "|" "]"      (* SSR plugin *)
+| WITH "[" LIST0 ltac_expr5 SEP "|" "]" LIST0 ssrintros_ne     TAG SSR
+]
+
+ssr_first_else: [
+| EDIT ssr_first ADD_OPT ssrorelse      TAG SSR
+]
+
+ssrseqarg: [
+| EDIT ADD_OPT ssrseqidx ssrswap      TAG SSR
+]
+
+ssr_dpat: [
+| REPLACE ssr_mpat "in" pattern200 ssr_rtype      (* SSR plugin *)
+| WITH ssr_mpat OPT ( OPT ( "in" pattern200 ) ssr_rtype )      TAG SSR
+| DELETE ssr_mpat ssr_rtype      (* SSR plugin *)
+| DELETE ssr_mpat      (* SSR plugin *)
+]
+
+ssr_one_term_pattern: [
+| DELETE "Qed" constr
+]
+
+ssrarg: [
+| EDIT ADD_OPT ssrfwdview OPT ssreqid ssrdgens OPT ssrintros      (* SSR plugin *)
+]
+
+ssragen: [
+| REPLACE "{" LIST1 ssrhyp "}" ssrterm      (* SSR plugin *)
+| WITH OPT ( "{" LIST1 ssrhyp "}" ) ssrterm      TAG SSR
+| DELETE ssrterm      (* SSR plugin *)
+]
+
+ssrbinder: [
+| REPLACE [ "of" | "&" ] term99      (* SSR plugin *)
+| WITH "of" term99      TAG SSR
+| "&" term99      TAG SSR
+]
+
+firstorder_rhs: [
+| DELETE OPT firstorder_using
+| DELETE "with" LIST1 preident
+| REPLACE OPT firstorder_using "with" LIST1 preident
+| WITH OPT firstorder_using OPT ( "with" LIST1 preident )
+]
+
+attribute: [
+| DELETE "using" OPT attr_value
 ]
 
 SPLICE: [
@@ -2306,18 +2421,16 @@ SPLICE: [
 | bar_cbrace
 | lconstr
 
-(*
+(* SSR *)
 | ast_closure_term
 | ast_closure_lterm
 | ident_no_do
 | ssrterm
 | ssrtacarg
 | ssrtac3arg
-| ssrtclarg
 | ssrhyp
 | ssrhoi_hyp
 | ssrhoi_id
-| ssrindex
 | ssrhpats
 | ssrhpats_nobs
 | ssrfwdid
@@ -2332,11 +2445,34 @@ SPLICE: [
 | ssrcofixfwd
 | ssrfixfwd
 | ssrhavefwdwbinders
-| ssripats_ne
 | ssrparentacarg
 | ssrposefwd
-*)
-
+| ssrstruct
+| ssrrpat
+| ssrhint
+| ssrpattern_squarep
+| ssrhintref
+| ssr_search_item
+| ssr_modlocs
+| modloc
+| ssrexactarg
+| ssrclear
+| ssrmult
+| ssripats
+| ssrintros
+| ssrrule
+| ssrpattern_squarep
+| ssrcongrarg
+| ssrdotac
+| ssrunlockarg
+| ssr_search_arg
+| ssrortacarg
+| ssrsetfwd
+| ssr_idcomma
+| ssr_dthen
+| ssr_else
+| ssr_rtype
+| ssreqid
 | preident
 | lpar_id_coloneq
 | binders
@@ -2464,6 +2600,13 @@ SPLICE: [
 | number_string_mapping
 | number_options
 | string_option
+| tac2type_body
+| tac2rec_fields
+| mut_flag
+| tac2rec_fieldexprs
+| syn_level
+| firstorder_rhs
+| firstorder_using
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2493,16 +2636,27 @@ RENAME: [
 | ltac2_type5 ltac2_type
 | ltac2_expr6 ltac2_expr
 | starredidentref starred_ident_ref
+| ssrocc ssr_occurrences
+| ssrsimpl_ne s_item
+| ssrclear_ne ssrclear
+| ssrmult_ne mult
+| ssripats_ne ssripats
+| ssrrule_ne r_item
+| ssrintros_ne ssrintros
+| ssrpattern_ne_squarep ssrpattern_squarep
+| ssrrwarg rewrite_item
+| ssrrwocc occ_or_clear
+| rpattern rewrite_pattern
+| ssripat i_item
+| ssrwgen gen_item
+| ssrfwd ssrdefbody
+| ssrclauses ssr_in
+| ssrcpat ssrblockpat
 ]
 
 simple_tactic: [
 (* due to renaming of tactic_value; Use LIST1 for function application *)
 | qualid LIST1 tactic_arg
-]
-
-(* todo: doesn't work if up above... maybe because 'clause' doesn't exist? *)
-clause_dft_concl: [
-| OPTINREF
 ]
 
 SPLICE: [

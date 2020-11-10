@@ -562,7 +562,7 @@ Built-in quotations
    | ltac1 : ( @ltac1_expr_in_env )
    | ltac1val : ( @ltac1_expr_in_env )
    ltac1_expr_in_env ::= @ltac_expr
-   | {* @ident } |- @ltac_expr
+   | {* @ident } %|- @ltac_expr
 
 The current implementation recognizes the following built-in quotations:
 
@@ -978,7 +978,7 @@ Match over goals
    .. prodn::
       goal_match_list ::= {? %| } {+| @gmatch_rule }
       gmatch_rule ::= @gmatch_pattern => @ltac2_expr
-      gmatch_pattern ::= [ {*, @gmatch_hyp_pattern } |- @ltac2_match_pattern ]
+      gmatch_pattern ::= [ {*, @gmatch_hyp_pattern } %|- @ltac2_match_pattern ]
       gmatch_hyp_pattern ::= @name : @ltac2_match_pattern
 
    Matches over goals, similar to Ltac1 :tacn:`match goal`.
@@ -1602,8 +1602,8 @@ Here is the syntax for the :n:`q_*` nonterminals:
    ltac2_clause ::= in @ltac2_in_clause
    | at @ltac2_occs_nums
    ltac2_in_clause ::= * {? @ltac2_occs }
-   | * |- {? @ltac2_concl_occ }
-   | {*, @ltac2_hypident_occ } {? |- {? @ltac2_concl_occ } }
+   | * %|- {? @ltac2_concl_occ }
+   | {*, @ltac2_hypident_occ } {? %|- {? @ltac2_concl_occ } }
 
 .. insertprodn q_occurrences ltac2_hypident
 
@@ -1633,7 +1633,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
 .. insertprodn ltac2_oriented_rewriter ltac2_rewriter
 
 .. prodn::
-   ltac2_oriented_rewriter ::= {| -> | <- } @ltac2_rewriter
+   ltac2_oriented_rewriter ::= {? {| -> | <- } } @ltac2_rewriter
    ltac2_rewriter ::= {? @natural } {? {| ? | ! } } @ltac2_constr_with_bindings
 
 .. insertprodn ltac2_for_each_goal ltac2_goal_tactics

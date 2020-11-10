@@ -60,7 +60,7 @@ The constructs in :token:`ltac_expr` are :term:`left associative`.
    ltac_expr3 ::= @l3_tactic
    | @ltac_expr2
    ltac_expr2 ::= @ltac_expr1 + {| @ltac_expr2 | @binder_tactic }
-   | @ltac_expr1 || {| @ltac_expr2 | @binder_tactic }
+   | @ltac_expr1 %|| {| @ltac_expr2 | @binder_tactic }
    | @l2_tactic
    | @ltac_expr1
    ltac_expr1 ::= @tactic_value
@@ -729,7 +729,7 @@ First tactic to make progress: ||
 Yet another way of branching without backtracking is the following
 structure:
 
-.. tacn:: @ltac_expr1 || {| @ltac_expr2 | @binder_tactic }
+.. tacn:: @ltac_expr1 %|| {| @ltac_expr2 | @binder_tactic }
    :name: || (first tactic making progress)
 
    :n:`@ltac_expr1 || @ltac_expr2` is
@@ -1353,8 +1353,8 @@ Pattern matching on goals and hypotheses: match goal
    .. insertprodn goal_pattern match_hyp
 
    .. prodn::
-      goal_pattern ::= {*, @match_hyp } |- @match_pattern
-      | [ {*, @match_hyp } |- @match_pattern ]
+      goal_pattern ::= {*, @match_hyp } %|- @match_pattern
+      | [ {*, @match_hyp } %|- @match_pattern ]
       | _
       match_hyp ::= @name : @match_pattern
       | @name := @match_pattern

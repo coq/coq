@@ -108,10 +108,6 @@ let pr_firstorder_using_raw _ _ _ = Pptactic.pr_auto_using pr_qualid
 let pr_firstorder_using_glob _ _ _ = Pptactic.pr_auto_using (Pputils.pr_or_var (fun x -> pr_global (snd x)))
 let pr_firstorder_using_typed _ _ _ = Pptactic.pr_auto_using pr_global
 
-let warn_deprecated_syntax =
-  CWarnings.create ~name:"firstorder-deprecated-syntax" ~category:"deprecated"
-    (fun () -> Pp.strbrk "Deprecated syntax; use \",\" as separator")
-
 }
 
 ARGUMENT EXTEND firstorder_using
@@ -119,12 +115,7 @@ ARGUMENT EXTEND firstorder_using
   PRINTED BY { pr_firstorder_using_typed }
   RAW_PRINTED BY { pr_firstorder_using_raw }
   GLOB_PRINTED BY { pr_firstorder_using_glob }
-| [ "using" reference(a) ] -> { [a] }
-| [ "using" reference(a) "," ne_reference_list_sep(l,",") ] -> { a::l }
-| [ "using" reference(a) reference(b) reference_list(l) ] -> {
-    warn_deprecated_syntax ();
-    a::b::l
-  }
+| [ "using" ne_reference_list_sep(l,",") ] -> { l }
 | [ ] -> { [] }
 END
 
