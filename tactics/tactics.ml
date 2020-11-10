@@ -198,22 +198,24 @@ let clear_in_global_msg = function
   | Some ref -> str " implicitly in " ++ Printer.pr_global ref
 
 let clear_dependency_msg env sigma id err inglobal =
+  let ppidupper = function Some id -> Id.print id | None -> str "This variable" in
+  let ppid = function Some id -> Id.print id | None -> str "this variable" in
   let pp = clear_in_global_msg inglobal in
   match err with
   | Evarutil.OccurHypInSimpleClause None ->
-      Id.print id ++ str " is used" ++ pp ++ str " in conclusion."
+      ppidupper id ++ str " is used" ++ pp ++ str " in conclusion."
   | Evarutil.OccurHypInSimpleClause (Some id') ->
-      Id.print id ++ strbrk " is used" ++ pp ++ str " in hypothesis " ++ Id.print id' ++ str"."
+      ppidupper id ++ strbrk " is used" ++ pp ++ str " in hypothesis " ++ Id.print id' ++ str"."
   | Evarutil.EvarTypingBreak ev ->
-      str "Cannot remove " ++ Id.print id ++
+      str "Cannot remove " ++ ppid id ++
       strbrk " without breaking the typing of " ++
       Printer.pr_existential env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
-      str "Cannot remove " ++ Id.print id ++ str " as it would leave the existential " ++
+      str "Cannot remove " ++ ppid id ++ str " as it would leave the existential " ++
       Printer.pr_existential_key sigma ev ++ str" without candidates."
 
 let error_clear_dependency env sigma id err inglobal =
-  user_err (clear_dependency_msg env sigma id err inglobal)
+  user_err (clear_dependency_msg env sigma (Some id) err inglobal)
 
 let replacing_dependency_msg env sigma id err inglobal =
   let pp = clear_in_global_msg inglobal in
@@ -2130,7 +2132,9 @@ let clear_body ids =
   end
 
 let clear_wildcards ids =
-  Tacticals.New.tclMAP (fun {CAst.loc;v=id} -> clear [id]) ids
+  let clear_wildcards_msg ?loc env sigma _id err inglobal =
+    user_err ?loc (clear_dependency_msg env sigma None err inglobal) in
+  Tacticals.New.tclMAP (fun {CAst.loc;v=id} -> clear_gen (clear_wildcards_msg ?loc) [id]) ids
 
 (*   Takes a list of booleans, and introduces all the variables
  *  quantified in the goal which are associated with a value
