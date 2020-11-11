@@ -76,3 +76,5 @@ Variables
 Variables elt elt': Set.
 Timeout 5 Time Definition map' f (m:t' elt) : t' elt' :=
   Bbst (map_bst f m.(is_bst)) (map_avl f m.(is_avl)).
+
+End B.

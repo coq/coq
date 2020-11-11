@@ -43,6 +43,7 @@ let run_one logit test =
   process_results results
 
 let open_log_out_ch ml_fn =
+  let ml_fn = Filename.basename ml_fn in
   let log_fn = ml_fn ^ ".log" in
   open_out log_fn
 

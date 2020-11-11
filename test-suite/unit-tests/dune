@@ -1,0 +1,11 @@
+(rule
+ (alias test-gen)
+ (targets utest_rules.sexp)
+ (mode promote)
+ (deps
+  (glob_files lib/*.ml)
+  (glob_files clib/*.ml)
+  (glob_files printing/*.ml))
+ (action (run ./tools/utest_rules.exe)))
+
+(include utest_rules.sexp)

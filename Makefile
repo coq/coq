@@ -12,7 +12,7 @@
 
 .PHONY: help help-install states world watch check    # Main developer targets
 .PHONY: refman-html refman-pdf stdlib-html apidoc     # Documentation targets
-.PHONY: test-suite dev-targets
+.PHONY: test test-suite dev-targets
 .PHONY: fmt ocheck obuild ireport clean               # Maintenance targets
 .PHONY: dunestrap vio release install                 # Miscellaneous
 
@@ -119,9 +119,13 @@ help-install:
 
 # We regenerate always as to correctly track deps, can do better
 # We do a single call to dune as to avoid races and locking
-_build/default/theories_dune _build/default/ltac2_dune .dune-stamp: FORCE
+_build/default/theories_dune _build/default/ltac2_dune .dune-stamp: FORCE touch-tests
 	dune build $(DUNEOPT) --root . theories_dune ltac2_dune
 	touch .dune-stamp
+
+touch-tests:
+	touch test-suite/test_suite_rules.sexp
+	touch test-suite/unit-tests/utest_rules.sexp
 
 theories/dune: .dune-stamp
 	cp -a _build/default/theories_dune $@ && chmod +w $@
@@ -147,14 +151,20 @@ world: dunestrap
 vio: dunestrap
 	dune build $(DUNEOPT) @vio
 
-watch:
+watch: dunestrap
 	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS) -w
 
-check:
+check: dunestrap
 	dune build $(DUNEOPT) @check
 
-test-suite: dunestrap
-	dune runtest --no-buffer $(DUNEOPT)
+test-gen: dunestrap
+	dune build $(DUNEOPT) @test-gen
+
+test test-suite: test-gen
+	dune test $(DUNEOPT)
+
+watch-test: dunestrap
+	dune build $(DUNEOPT) @runtest -w
 
 refman-html: dunestrap
 	dune build --no-buffer @refman-html
@@ -165,7 +175,7 @@ refman-pdf: dunestrap
 stdlib-html: dunestrap
 	dune build @stdlib-html
 
-apidoc:
+apidoc: dunestrap
 	dune build $(DUNEOPT) @doc
 
 release: theories/dune
@@ -201,7 +211,7 @@ DOC_GRAM:=_build/default/doc/tools/docgram/doc_grammar.exe
 
 # not worth figuring out dependencies, just leave it to dune
 .PHONY: $(DOC_GRAM)
-$(DOC_GRAM):
+$(DOC_GRAM): dunestrap
 	dune build $(DUNEOPT) $@
 
 include doc/Makefile.docgram

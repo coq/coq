@@ -55,10 +55,10 @@
    (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 %{env:COQ_DUNE_EXTRA_OPT=}))))
 
 ; Use summary.log as the target
-(alias
- (name runtest)
- (package coqide-server)
- (deps test-suite/summary.log))
+; (alias
+;  (name runtest)
+;  (package coqide-server)
+;  (deps test-suite/summary.log))
 
 ; For make compat
 (alias

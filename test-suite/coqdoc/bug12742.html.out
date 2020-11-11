@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link href="coqdoc.css" rel="stylesheet" type="text/css" />
-<title>Coqdoc.bug12742</title>
+<title>bug12742</title>
 </head>
 
 <body>
@@ -16,7 +16,7 @@
 
 <div id="main">
 
-<h1 class="libtitle">Library Coqdoc.bug12742</h1>
+<h1 class="libtitle">Library bug12742</h1>
 
 <div class="code">
 </div>

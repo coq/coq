@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link href="coqdoc.css" rel="stylesheet" type="text/css" />
-<title>Coqdoc.bug5648</title>
+<title>bug5648</title>
 </head>
 
 <body>
@@ -16,7 +16,7 @@
 
 <div id="main">
 
-<h1 class="libtitle">Library Coqdoc.bug5648</h1>
+<h1 class="libtitle">Library bug5648</h1>
 
 <div class="code">
 <span class="id" title="keyword">Lemma</span> <a id="a" class="idref" href="#a"><span class="id" title="lemma">a</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Logic.html#True"><span class="id" title="inductive">True</span></a>.<br/>
@@ -30,15 +30,15 @@
 
 <br/>
 <span class="id" title="keyword">Definition</span> <a id="d" class="idref" href="#d"><span class="id" title="definition">d</span></a> <a id="x:3" class="idref" href="#x:3"><span class="id" title="binder">x</span></a> :=<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Coqdoc.bug5648.html#x:3"><span class="id" title="variable">x</span></a> <span class="id" title="keyword">with</span><br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#A"><span class="id" title="constructor">A</span></a> ⇒ 0<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Add"><span class="id" title="constructor">Add</span></a> ⇒ 1<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#G"><span class="id" title="constructor">G</span></a> ⇒ 2<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Goal"><span class="id" title="constructor">Goal</span></a> ⇒ 3<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#L"><span class="id" title="constructor">L</span></a> ⇒ 4<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Lemma"><span class="id" title="constructor">Lemma</span></a> ⇒ 5<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#P"><span class="id" title="constructor">P</span></a> ⇒ 6<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Proof"><span class="id" title="constructor">Proof</span></a> ⇒ 7<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bug5648.html#x:3"><span class="id" title="variable">x</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="bug5648.html#A"><span class="id" title="constructor">A</span></a> ⇒ 0<br/>
+&nbsp;&nbsp;| <a class="idref" href="bug5648.html#Add"><span class="id" title="constructor">Add</span></a> ⇒ 1<br/>
+&nbsp;&nbsp;| <a class="idref" href="bug5648.html#G"><span class="id" title="constructor">G</span></a> ⇒ 2<br/>
+&nbsp;&nbsp;| <a class="idref" href="bug5648.html#Goal"><span class="id" title="constructor">Goal</span></a> ⇒ 3<br/>
+&nbsp;&nbsp;| <a class="idref" href="bug5648.html#L"><span class="id" title="constructor">L</span></a> ⇒ 4<br/>
+&nbsp;&nbsp;| <a class="idref" href="bug5648.html#Lemma"><span class="id" title="constructor">Lemma</span></a> ⇒ 5<br/>
+&nbsp;&nbsp;| <a class="idref" href="bug5648.html#P"><span class="id" title="constructor">P</span></a> ⇒ 6<br/>
+&nbsp;&nbsp;| <a class="idref" href="bug5648.html#Proof"><span class="id" title="constructor">Proof</span></a> ⇒ 7<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
 </div>
 </div>

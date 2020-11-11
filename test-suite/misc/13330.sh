@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-$coqc misc/13330/bug_13330.v
+coqc 13330/bug_13330.v
 R=$?
 
 if [ $R == 0 ]; then

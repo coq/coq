@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 
-found=
-for config in ../config/coq_config.py ../_build/default/config/coq_config.py; do
-    if [ -f "$config" ]; then found=1; break; fi
-done
-if ! [[ "$found" ]]; then
-    echo "Could not find coq_config.py"
-    exit 1
-fi
+config=../../config/coq_config.py
+# config=
+# if [ -f "$../../config/coq_config.py" ]
+# then
+#   config=../../config/coq_config.py
+# else
+#   echo "Could not find coq_config.py"
+#   exit 1
+# fi
 
 if grep -q -F "is_a_released_version = False" "$config"; then
     echo "This is not a released version: nothing to test."

@@ -1,0 +1,4 @@
+(library
+ (name coq_utest)
+ (wrapped false)
+ (libraries ounit2))

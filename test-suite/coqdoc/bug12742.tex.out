@@ -16,7 +16,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{url}
 \begin{document}
-\coqlibrary{Coqdoc.bug12742}{Library }{Coqdoc.bug12742}
+\coqlibrary{bug12742}{Library }{bug12742}
 
 \begin{coqdoccode}
 \end{coqdoccode}

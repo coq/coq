@@ -22,6 +22,8 @@ let basename_noext filename =
 *)
 let vAccu = ref ([] : (string * string) list)
 
+let output_meta = ref true
+
 let separator_hack = ref true
 let filename_concat dir name =
   if !separator_hack
@@ -190,7 +192,8 @@ let rec find_dependencies st basename =
             add_dep (Dep_info.Dep.Ml (base,suff))
           in
           let decl (meta_file,str) =
-            Option.iter add_dep_other meta_file;
+            if !output_meta then
+              Option.iter add_dep_other meta_file;
             let s = basename_noext str in
             if not (StrSet.mem s !visited_ml) then begin
                 visited_ml := StrSet.add s !visited_ml;
@@ -341,7 +344,8 @@ let add_include st (rc, r, ln) =
   else
     Loadpath.add_q_include st r ln
 
-let init ~make_separator_hack args =
+let init ~enable_output_meta ~make_separator_hack args =
+  output_meta := enable_output_meta;
   separator_hack := make_separator_hack;
   vAccu := [];
   if not Coq_config.has_natdynlink then Makefile.set_dyndep "no";

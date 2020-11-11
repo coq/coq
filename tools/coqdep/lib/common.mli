@@ -16,7 +16,11 @@ module State : sig
 end
 
 (** [init args] Init coqdep, setting arguments from [args]. *)
-val init : make_separator_hack:bool -> Args.t -> State.t
+val init
+  : enable_output_meta:bool
+  -> make_separator_hack:bool
+  -> Args.t
+  -> State.t
 
 (** [treat_file_command_line file] Add an input file to be considered  *)
 val treat_file_command_line : string -> unit

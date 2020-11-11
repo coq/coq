@@ -150,3 +150,5 @@ bin
 .dune-stamp
 theories/dune
 user-contrib/Ltac2/dune
+test-suite/test_suite_rules.sexp
+test-suite/unit-tests/utest_rules.sexp

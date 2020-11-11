@@ -1,6 +1,6 @@
-ADD revert { Load "output/load/Load_noproof.v". }
-ADD { Load "output/load/Load_proof.v". }
-ADD { Fail Load "output/load/Load_openproof.v". }
+ADD revert { Load "../output/load/Load_noproof.v". }
+ADD { Load "../output/load/Load_proof.v". }
+ADD { Fail Load "../output/load/Load_openproof.v". }
 WAIT
 QUERY { Check f. }
 QUERY { Check u. }

@@ -5,7 +5,7 @@ set -e
 export COQBIN=$BIN
 export PATH=$COQBIN:$PATH
 
-cd misc/poly-capture-global-univs/
+cd poly-capture-global-univs/
 
 coq_makefile -f _CoqProject -o Makefile
 

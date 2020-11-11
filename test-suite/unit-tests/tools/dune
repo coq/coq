@@ -1,0 +1,2 @@
+(executable
+ (name utest_rules))

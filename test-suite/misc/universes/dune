@@ -1,4 +1,5 @@
 (rule
+ (alias runtest)
  (targets all_stdlib.v)
  (mode fallback)
  (deps

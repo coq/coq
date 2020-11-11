@@ -7,6 +7,6 @@ Fail From TestSuite Extra Dependency "extra_dep.txt" as d1.
 
 From TestSuite Extra Dependency "extra_dep.txt" as d2.
 
-Add LoadPath "prerequisite/subdir" as TestSuite.
-Fail From TestSuite Extra Dependency "extra_dep.txt".
-Fail Comments From TestSuite Extra Dependency "extra_dep.txt".
+Add LoadPath "prerequisite/subdir" as Test.
+Fail From Test Extra Dependency "extra_dep.txt".
+Fail Comments From Test Extra Dependency "extra_dep.txt".

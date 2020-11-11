@@ -16,19 +16,19 @@
 \usepackage{amsmath,amssymb}
 \usepackage{url}
 \begin{document}
-\coqlibrary{Coqdoc.bug5700}{Library }{Coqdoc.bug5700}
+\coqlibrary{bug5700}{Library }{bug5700}
 
 \begin{coqdoccode}
 \end{coqdoccode}
 \texttt{ foo (* \{bar\_bar\} *) } 
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Definition} \coqdef{Coqdoc.bug5700.const1}{const1}{\coqdocdefinition{const1}} := 1.\coqdoceol
+\coqdockw{Definition} \coqdef{bug5700.const1}{const1}{\coqdocdefinition{const1}} := 1.\coqdoceol
 \coqdocemptyline
 \end{coqdoccode}
 \texttt{ more (* nested (* comments *) within verbatim *) } 
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Definition} \coqdef{Coqdoc.bug5700.const2}{const2}{\coqdocdefinition{const2}} := 2.\coqdoceol
+\coqdockw{Definition} \coqdef{bug5700.const2}{const2}{\coqdocdefinition{const2}} := 2.\coqdoceol
 \end{coqdoccode}
 \end{document}

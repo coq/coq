@@ -5,7 +5,7 @@ set -e
 export COQBIN=$BIN
 export PATH=$COQBIN:$PATH
 
-cd misc/non-marshalable-state/
+cd non-marshalable-state/
 
 if which cygpath >/dev/null 2>&1; then OCAMLFINDSEP=\;; else OCAMLFINDSEP=:; fi
 export OCAMLPATH=$PWD$OCAMLFINDSEP$OCAMLPATH

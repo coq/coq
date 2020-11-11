@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   macOS:
-    runs-on: macOS-11
+    runs-on: macos-11
 
     steps:
       - uses: actions/checkout@v2

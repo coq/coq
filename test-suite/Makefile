@@ -685,15 +685,13 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 
 ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 
-ide/fake_ide.exe : ide/fake_ide.ml
-	$(SHOW) 'OCAMLC  $<'
-	$(HIDE)$(OCAMLBEST) -linkpkg -package coqide-server.protocol -package coqide-server.core $< -o $@
+fake_ide=dune exec -- ide/fake_ide.exe
 
-%.fake.log : %.fake ide/fake_ide.exe
+%.fake.log : %.fake
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  ide/fake_ide.exe $(coqidetop) "$<" "-q -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off $(call get_coq_prog_args,"$<")" 2>&1; \
+	  $(fake_ide) $(coqidetop) "$<" "-q -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off $(call get_coq_prog_args,"$<")" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
