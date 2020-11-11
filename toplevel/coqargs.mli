@@ -12,7 +12,8 @@ type color = [`ON | `AUTO | `EMACS | `OFF]
 
 val default_toplevel : Names.DirPath.t
 
-type native_compiler = NativeOff | NativeOn of { ondemand : bool }
+type native_compiler = Coq_config.native_compiler =
+  NativeOff | NativeOn of { ondemand : bool }
 
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;

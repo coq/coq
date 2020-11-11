@@ -57,4 +57,5 @@ val wwwstdlib : string
 val localwwwrefman : string
 
 val bytecode_compiler : bool
-val native_compiler : bool
+type native_compiler = NativeOff | NativeOn of { ondemand : bool }
+val native_compiler : native_compiler
