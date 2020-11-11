@@ -66,3 +66,9 @@ Reset Initial.
 Require Import Morphisms.
 
 Search is:Instance [ Reflexive | Symmetric ].
+
+Require Import List.
+
+Module Wish13349.
+Search partition "1" inside List.
+End Wish13349.

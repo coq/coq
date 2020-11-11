@@ -55,7 +55,8 @@ let interp_search_item env sigma =
   | SearchSubPattern ((where,head),pat) ->
       let _,pat = Constrintern.intern_constr_pattern env sigma pat in
       GlobSearchSubPattern (where,head,pat)
-  | SearchString ((Anywhere,false),s,None) when Id.is_valid s ->
+  | SearchString ((Anywhere,false),s,None)
+      when Id.is_valid_ident_part s && String.equal (String.drop_simple_quotes s) s ->
       GlobSearchString s
   | SearchString ((where,head),s,sc) ->
       (try
