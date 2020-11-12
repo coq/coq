@@ -1,0 +1,5 @@
+(test
+ (name pp_big_vect)
+ (libraries utest lib)
+ (action
+  (chdir %{project_root} (run %{test}))))

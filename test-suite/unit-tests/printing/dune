@@ -1,0 +1,5 @@
+(test
+ (name proof_diffs_test)
+ (libraries lib printing utest)
+ (action
+  (chdir %{project_root} (run %{test}))))

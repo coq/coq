@@ -1,0 +1,5 @@
+(tests
+ (names inteq unicode_tests)
+ (libraries utest clib)
+ (action
+  (chdir %{project_root} (run %{test}))))
