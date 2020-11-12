@@ -9,7 +9,7 @@ git_download iris_string_ident
 git_download iris_examples
 
 # Extract required version of Iris (avoiding "+" which does not work on MacOS :( *)
-iris_CI_REF=$(grep -F '"coq-iris"' < "${CI_BUILD_DIR}/iris_examples/coq-iris-examples.opam" | sed 's/.*"dev\.[0-9][0-9.-]*\.\([0-9a-z][0-9a-z]*\)".*/\1/')
+iris_CI_REF=$(grep -F '"coq-iris-heap-lang"' < "${CI_BUILD_DIR}/iris_examples/coq-iris-examples.opam" | sed 's/.*"dev\.[0-9][0-9.-]*\.\([0-9a-z][0-9a-z]*\)".*/\1/')
 
 # Setup Iris
 git_download iris
