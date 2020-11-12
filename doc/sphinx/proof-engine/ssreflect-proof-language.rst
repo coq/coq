@@ -1647,7 +1647,10 @@ Notations can be used to name tactics,  for example
    Notation "'myop'" := (ltac:(my ltac code)) : ssripat_scope.
 
 lets one write just ``/myop`` in the intro pattern. Note the scope
-annotation: views are interpreted opening the ``ssripat`` scope.
+annotation: views are interpreted opening the ``ssripat`` scope.  We
+provide the following ltac views: ``/[dup]`` to duplicate the top of
+the stack, ``/[swap]`` to swap the two first elements and ``/[apply]``
+to apply the top of the stack to the next.
 
 Intro patterns
 ``````````````
