@@ -87,29 +87,26 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       If a same field occurs in several canonical structures, then
       only the structure declared first as canonical is considered.
 
-   .. attr:: canonical(false)
-
-      To prevent a field from being involved in the inference of
-      canonical instances, its declaration can be annotated with the
-      :attr:`canonical(false)` attribute (cf. the syntax of
-      :n:`@record_field`).
-
-      .. example::
-
-         For instance, when declaring the :g:`Setoid` structure above, the
-         :g:`Prf_equiv` field declaration could be written as follows.
-
-         .. coqdoc::
-
-            #[canonical(false)] Prf_equiv : equivalence Carrier Equal
-
-      See :ref:`canonicalstructures` for a more realistic example.
-
 .. attr:: canonical
 
-   This attribute can decorate a :cmd:`Definition` or :cmd:`Let` command.
-   It is equivalent to having a :cmd:`Canonical Structure` declaration just
-   after the command.
+   This boolean attribute can decorate a :cmd:`Definition` or
+   :cmd:`Let` command.  It is equivalent to having a :cmd:`Canonical
+   Structure` declaration just after the command.
+
+   To prevent a field from being involved in the inference of
+   canonical instances, its declaration can be annotated with
+   ``canonical=no`` (cf. the syntax of :n:`@record_field`).
+
+   .. example::
+
+      For instance, when declaring the :g:`Setoid` structure above, the
+      :g:`Prf_equiv` field declaration could be written as follows.
+
+      .. coqdoc::
+
+         #[canonical=no] Prf_equiv : equivalence Carrier Equal
+
+   See :ref:`canonicalstructures` for a more realistic example.
 
 .. cmd:: Print Canonical Projections {* @reference }
 
@@ -331,7 +328,7 @@ We need to define a new class that inherits from both ``EQ`` and ``LE``.
                         LE_class : LE.class T;
                         extra : mixin (EQ.Pack T EQ_class) (LE.cmp T LE_class) }.
 
-    Structure type := _Pack { obj : Type; #[canonical(false)] class_of : class obj }.
+    Structure type := _Pack { obj : Type; #[canonical=no] class_of : class obj }.
 
     Arguments Mixin {e le} _.
 

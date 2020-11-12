@@ -16,11 +16,16 @@ Definition ι T (x: T) := x.
 
 Check ι _ ι.
 
+#[universes(polymorphic=no)]
+Definition ιι T (x: T) := x.
+
+Fail Check ιι _ ιι.
+
 #[program]
 Fixpoint f (n: nat) {wf lt n} : nat := _.
 Reset f.
 
-#[program(true)]
+#[program=yes]
 Fixpoint f (n: nat) {wf lt n} : nat := _.
 Reset f.
 
@@ -43,3 +48,14 @@ Export Set Foo.
 
 Fail #[ export ] Export Foo.
 (* Attribute for Locality specified twice *)
+
+(* Tests for deprecated attribute syntax *)
+Set Warnings "-deprecated-attribute-syntax".
+
+#[program(true)]
+Fixpoint f (n: nat) {wf lt n} : nat := _.
+Reset f.
+
+#[universes(monomorphic)]
+Definition ιιι T (x: T) := x.
+Fail Check ιιι _ ιιι.

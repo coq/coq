@@ -379,6 +379,9 @@ this attribute`.
 The order of top-level attributes doesn't affect their meaning.  ``#[foo,bar]``, ``#[bar,foo]``,
 ``#[foo]#[bar]`` and ``#[bar]#[foo]`` are equivalent.
 
+Boolean attributes take the form ``attr={yes,no}``, when the key is
+omitted the default is assumed to be ``yes``.
+
 The legacy attributes (:n:`@legacy_attr`) provide an older, alternate syntax
 for certain attributes.  They are equivalent to new attributes as follows:
 
@@ -388,9 +391,9 @@ Legacy attribute  New attribute
 `Local`           :attr:`local`
 `Global`          :attr:`global`
 `Polymorphic`     :attr:`universes(polymorphic)`
-`Monomorphic`     :attr:`universes(monomorphic)`
+`Monomorphic`     :attr:`universes(polymorphic)`
 `Cumulative`      :attr:`universes(cumulative)`
-`NonCumulative`   :attr:`universes(noncumulative)`
+`NonCumulative`   :attr:`universes(cumulative)`
 `Private`         :attr:`private(matching)`
 `Program`         :attr:`program`
 ================  ================================

@@ -32,10 +32,8 @@ Inductive types
    proposition).
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
-   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
-   :attr:`universes(noncumulative)` and :attr:`private(matching)`
-   attributes.
+   :attr:`universes(template)`, :attr:`universes(cumulative)`, and
+   :attr:`private(matching)` attributes.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
    The :n:`@ident`\s are simultaneously added to the environment before the types of constructors are checked.
@@ -1058,8 +1056,8 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    at level :math:`\Type` (without annotations or hiding it behind a
    definition) template polymorphic if possible.
 
-   This can be prevented using the :attr:`universes(notemplate)`
-   attribute.
+   This can be prevented using the :attr:`universes(template)`
+   attribute with the ``=no`` setting.
 
    Template polymorphism and full universe polymorphism (see Chapter
    :ref:`polymorphicuniverses`) are incompatible, so if the latter is
@@ -1079,9 +1077,9 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
 
 .. attr:: universes(template)
 
-   This attribute can be used to explicitly declare an inductive type
-   as template polymorphic, whether the :flag:`Auto Template
-   Polymorphism` flag is on or off.
+   This boolean attribute can be used to explicitly declare an
+   inductive type as template polymorphic, whether the :flag:`Auto
+   Template Polymorphism` flag is on or off.
 
    .. exn:: template and polymorphism not compatible
 
@@ -1094,11 +1092,9 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
       The attribute was used but the inductive definition does not
       satisfy the criterion to be template polymorphic.
 
-.. attr:: universes(notemplate)
-
-   This attribute can be used to prevent an inductive type to be
-   template polymorphic, even if the :flag:`Auto Template
-   Polymorphism` flag is on.
+   When ``universes(template=no)`` is used, it will prevent an
+   inductive type to be template polymorphic, even if the :flag:`Auto
+   Template Polymorphism` flag is on.
 
 In practice, the rule **Ind-Family** is used by Coq only when all the
 inductive types of the inductive definition are declared with an arity

@@ -320,10 +320,9 @@ Summary of the commands
    maintained.
 
    Like any command declaring a record, this command supports the
-   :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
-   :attr:`universes(template)`, :attr:`universes(notemplate)`,
-   :attr:`universes(cumulative)`, :attr:`universes(noncumulative)` and
-   :attr:`private(matching)` attributes.
+   :attr:`universes(polymorphic)`, :attr:`universes(template)`,
+   :attr:`universes(cumulative)`, and :attr:`private(matching)`
+   attributes.
 
    .. cmd:: Existing Class @qualid
 

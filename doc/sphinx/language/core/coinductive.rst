@@ -26,10 +26,8 @@ More information on co-inductive definitions can be found in
    For co-inductive types, the only elimination principle is case analysis.
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
-   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
-   :attr:`universes(noncumulative)`, :attr:`private(matching)`
-   and :attr:`using` attributes.
+   :attr:`universes(template)`, :attr:`universes(cumulative)`,
+   :attr:`private(matching)`, and :attr:`using` attributes.
 
 .. example::
 
