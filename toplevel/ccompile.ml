@@ -139,7 +139,7 @@ let compile opts copts ~echo ~f_in ~f_out =
         ~aux_file:(aux_file_name_for long_f_dot_out)
         ~v_file:long_f_dot_in);
 
-      Dumpglob.set_glob_output copts.glob_out;
+      Dumpglob.push_output copts.glob_out;
       Dumpglob.start_dump_glob ~vfile:long_f_dot_in ~vofile:long_f_dot_out;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
 

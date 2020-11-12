@@ -26,19 +26,29 @@ type glob_output =
   | MultFiles
   | File of string
 
-let glob_output = ref NoGlob
+let glob_output = ref []
 
-let dump () = !glob_output <> NoGlob
+let get_output () = match !glob_output with
+  | [] -> NoGlob
+  | g::_ -> g
 
-let set_glob_output mode =
-  glob_output := mode
+let push_output g = glob_output := g::!glob_output
+
+let pop_output () = glob_output := match !glob_output with
+    | [] -> CErrors.anomaly (Pp.str "No output left to pop")
+    | _::ds -> ds
+
+let pause () = push_output NoGlob
+let continue = pop_output
+
+let dump () = get_output () <> NoGlob
 
 let dump_string s =
-  if dump () && !glob_output != Feedback then
+  if dump () && get_output () != Feedback then
     output_string !glob_file s
 
 let start_dump_glob ~vfile ~vofile =
-  match !glob_output with
+  match get_output () with
   | MultFiles ->
       open_glob_file (Filename.chop_extension vofile ^ ".glob");
       output_string !glob_file "DIGEST ";
@@ -51,13 +61,9 @@ let start_dump_glob ~vfile ~vofile =
       ()
 
 let end_dump_glob () =
-  match !glob_output with
+  match get_output () with
   | MultFiles | File _ -> close_glob_file ()
   | NoGlob | Feedback -> ()
-
-let previous_state = ref MultFiles
-let pause () = previous_state := !glob_output; glob_output := NoGlob
-let continue () = glob_output := !previous_state
 
 open Decls
 open Declarations
@@ -141,7 +147,7 @@ let interval loc =
   loc1, loc2-1
 
 let dump_ref ?loc filepath modpath ident ty =
-  match !glob_output with
+  match get_output () with
   | Feedback ->
     Option.iter (fun loc ->
         Feedback.feedback (Feedback.GlobRef (loc, filepath, modpath, ident, ty))
@@ -247,7 +253,7 @@ let add_glob_kn ?loc kn =
     add_glob_gen ?loc sp lib_dp "syndef"
 
 let dump_def ?loc ty secpath id = Option.iter (fun loc ->
-  if !glob_output = Feedback then
+  if get_output () = Feedback then
     Feedback.feedback (Feedback.GlobDef (loc, id, secpath, ty))
   else
     let bl,el = interval loc in
