@@ -137,7 +137,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Cumulative" ->
         { ("universes", VernacFlagList ["cumulative", VernacFlagEmpty]) }
       | IDENT "NonCumulative" ->
-        { ("universes", VernacFlagList ["noncumulative", VernacFlagEmpty]) }
+        { ("universes", VernacFlagList ["cumulative", VernacFlagLeaf (FlagIdent "no")]) }
       | IDENT "Private" ->
         { ("private", VernacFlagList ["matching", VernacFlagEmpty]) }
       | IDENT "Program" ->

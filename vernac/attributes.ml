@@ -156,12 +156,20 @@ let legacy_bool_attribute ~name ~on ~off : bool option attribute =
      (off, single_key_parser ~name ~key:off false)]
 
 (* important note: we use on as the default for the new bool_attribute ! *)
+let deprecated_bool_attribute_warning =
+  CWarnings.create
+    ~name:"deprecated-attribute-syntax"
+    ~category:"parsing"
+    ~default:CWarnings.Enabled
+    (fun name ->
+       Pp.(str "Syntax for switching off boolean attributes has been updated, use " ++ str name ++ str "=no instead."))
+
 let deprecated_bool_attribute ~name ~on ~off : bool option attribute =
   bool_attribute ~name:on ++ legacy_bool_attribute ~name ~on ~off |> map (function
       | None, None ->
         None
       | None, Some v ->
-        (* Will insert deprecation warning *)
+        deprecated_bool_attribute_warning name;
         Some v
       | Some v, None -> Some v
       | Some v1, Some v2 ->
@@ -174,8 +182,16 @@ let deprecated_bool_attribute ~name ~on ~off : bool option attribute =
 let get_bool_value ~key ~default =
   function
   | VernacFlagEmpty -> default
-  | VernacFlagList [ "true", VernacFlagEmpty ] -> true
-  | VernacFlagList [ "false", VernacFlagEmpty ] -> false
+  | VernacFlagList [ "true", VernacFlagEmpty ] ->
+    deprecated_bool_attribute_warning key;
+    true
+  | VernacFlagList [ "false", VernacFlagEmpty ] ->
+    deprecated_bool_attribute_warning key;
+    false
+  | VernacFlagLeaf (FlagIdent "yes") ->
+    true
+  | VernacFlagLeaf (FlagIdent "no") ->
+    false
   | _ -> user_err Pp.(str "Attribute " ++ str key ++ str " only accepts boolean values.")
 
 let enable_attribute ~key ~default : bool attribute =
@@ -222,20 +238,36 @@ let () = let open Goptions in
 let program =
   enable_attribute ~key:"program" ~default:(fun () -> !program_mode)
 
-let locality =
-  deprecated_bool_attribute
-    ~name:"Locality"
-    ~on:"local" ~off:"global"
-
-let option_locality =
+(* This is a bit complex as the grammar in g_vernac.mlg doesn't
+   distingish between the boolean and ternary case.*)
+let option_locality_parser =
   let name = "Locality" in
   attribute_of_list [
-    ("local", single_key_parser ~name ~key:"local" Goptions.OptLocal);
-    ("global", single_key_parser ~name ~key:"global" Goptions.OptGlobal);
-    ("export", single_key_parser ~name ~key:"export" Goptions.OptExport);
-  ] >>= function
+    ("local", single_key_parser ~name ~key:"local" Goptions.OptLocal)
+  ; ("global", single_key_parser ~name ~key:"global" Goptions.OptGlobal)
+  ; ("export", single_key_parser ~name ~key:"export" Goptions.OptExport)
+  ]
+
+let option_locality =
+  option_locality_parser >>= function
   | None -> return Goptions.OptDefault
   | Some l -> return l
+
+(* locality is supposed to be true when local, false when global *)
+let locality =
+  let locality_to_bool =
+    function
+    | Goptions.OptLocal ->
+      true
+    | Goptions.OptGlobal ->
+      false
+    | Goptions.OptExport ->
+      CErrors.user_err Pp.(str "export attribute not supported here")
+    | Goptions.OptDefault ->
+      CErrors.user_err Pp.(str "default attribute not supported here")
+  in
+  option_locality_parser >>= function l ->
+    return (Option.map locality_to_bool l)
 
 let ukey = "universes"
 
@@ -287,7 +319,7 @@ let only_polymorphism atts = parse polymorphic atts
 
 
 let vernac_polymorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagEmpty]
-let vernac_monomorphic_flag = ukey, VernacFlagList ["monomorphic", VernacFlagEmpty]
+let vernac_monomorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagLeaf (FlagIdent "no")]
 
 let canonical_field =
   enable_attribute ~key:"canonical" ~default:(fun () -> true)

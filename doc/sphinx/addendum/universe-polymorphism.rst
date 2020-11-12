@@ -125,30 +125,27 @@ Polymorphic, Monomorphic
 .. attr:: universes(polymorphic)
    :name: universes(polymorphic); Polymorphic
 
-   This attribute can be used to declare universe polymorphic
-   definitions and inductive types.  There is also a legacy syntax
-   using the ``Polymorphic`` prefix (see :n:`@legacy_attr`) which, as
-   shown in the examples, is more commonly used.
+   This boolean attribute can be used to control whether universe
+   polymorphism is enabled in the definition of an inductive type.
+   There is also a legacy syntax using the ``Polymorphic`` prefix (see
+   :n:`@legacy_attr`) which, as shown in the examples, is more
+   commonly used.
+
+   When ``polymorphic=no`` is set, global universe constraints
+   are produced, even when the :flag:`Universe Polymorphism` flag is
+   on. There is also a legacy syntax using the ``Monomorphic`` prefix
+   (see :n:`@legacy_attr`).
 
 .. flag:: Universe Polymorphism
 
    This flag is off by default.  When it is on, new declarations are
-   polymorphic unless the :attr:`universes(monomorphic)` attribute is
-   used.
-
-.. attr:: universes(monomorphic)
-   :name: universes(monomorphic); Monomorphic
-
-   This attribute can be used to declare universe monomorphic
-   definitions and inductive types (i.e. global universe constraints
-   are produced), even when the :flag:`Universe Polymorphism` flag is
-   on.  There is also a legacy syntax using the ``Monomorphic`` prefix
-   (see :n:`@legacy_attr`).
+   polymorphic unless the :attr:`universes(polymorphic)` attribute is
+   used to override the default.
 
 Many other commands can be used to declare universe polymorphic or
 monomorphic constants depending on whether the :flag:`Universe
-Polymorphism` flag is on or the :attr:`universes(polymorphic)` or
-:attr:`universes(monomorphic)` attributes are used:
+Polymorphism` flag is on or the :attr:`universes(polymorphic)`
+attribute is used:
 
 - :cmd:`Lemma`, :cmd:`Axiom`, etc. can be used to declare universe
   polymorphic constants.
@@ -183,6 +180,9 @@ Cumulative, NonCumulative
    are convertible based on the universe variances; they do not need
    to be equal.
 
+   This means that two instances of the same inductive type (family)
+   are convertible only if all the universes are equal.
+
    .. exn:: The cumulative and noncumulative attributes can only be used in a polymorphic context.
 
       Using this attribute requires being in a polymorphic context,
@@ -195,23 +195,17 @@ Cumulative, NonCumulative
       ``#[ universes(polymorphic), universes(cumulative) ]`` can be
       abbreviated into ``#[ universes(polymorphic, cumulative) ]``.
 
+   When the attribtue is off, the inductive type as non-cumulative
+   even if the :flag:`Polymorphic Inductive Cumulativity` flag is on.
+   There is also a legacy syntax using the ``NonCumulative`` prefix
+   (see :n:`@legacy_attr`).
+
 .. flag:: Polymorphic Inductive Cumulativity
 
    When this flag is on (it is off by default), it makes all
    subsequent *polymorphic* inductive definitions cumulative, unless
-   the :attr:`universes(noncumulative)` attribute is used.  It has no
-   effect on *monomorphic* inductive definitions.
-
-.. attr:: universes(noncumulative)
-   :name: universes(noncumulative); NonCumulative
-
-   Declares the inductive type as non-cumulative even if the
-   :flag:`Polymorphic Inductive Cumulativity` flag is on.  There is
-   also a legacy syntax using the ``NonCumulative`` prefix (see
-   :n:`@legacy_attr`).
-
-   This means that two instances of the same inductive type (family)
-   are convertible only if all the universes are equal.
+   the :attr:`universes(cumulative)` attribute with setting ``off`` is
+   used.  It has no effect on *monomorphic* inductive definitions.
 
 Consider the examples below.
 

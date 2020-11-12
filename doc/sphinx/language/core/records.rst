@@ -53,10 +53,8 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
    :cmd:`Record` and :cmd:`Structure` are synonyms.
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
-   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
-   :attr:`universes(noncumulative)` and :attr:`private(matching)`
-   attributes.
+   :attr:`universes(template)`, :attr:`universes(cumulative)`, and
+   :attr:`private(matching)` attributes.
 
 More generally, a record may have explicitly defined (a.k.a. manifest)
 fields. For instance, we might have:
