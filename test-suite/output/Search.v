@@ -96,3 +96,9 @@ Module WithCoercions.
   Axiom f : None = 0.
   Search (None = 0).
 End WithCoercions.
+
+Require Import List.
+
+Module Wish13349.
+Search partition "1" inside List.
+End Wish13349.
