@@ -1224,6 +1224,13 @@ Changes in 8.12.1
   <https://github.com/coq/coq/pull/12738>`_, fixes `#7015
   <https://github.com/coq/coq/issues/7015>`_, by Gaëtan Gilbert).
 
+- **Fixed:**
+  Polymorphic side-effects inside monomorphic definitions were incorrectly
+  handled as not inlined. This allowed deriving an inconsistency
+  (`#13331 <https://github.com/coq/coq/pull/13331>`_,
+  fixes `#13330 <https://github.com/coq/coq/issues/13330>`_,
+  by Pierre-Marie Pédrot).
+
 **Notations**
 
 - **Fixed:**
