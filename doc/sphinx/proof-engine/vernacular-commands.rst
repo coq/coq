@@ -640,8 +640,9 @@ file is a particular case of a module called a *library file*.
    This commands dynamically loads OCaml compiled code from
    a :n:`.mllib` file.
    It is used to load plugins dynamically.  The
-   files must be accessible in the current OCaml loadpath (see the
-   command :cmd:`Add ML Path`).  The :n:`.mllib` suffix may be omitted.
+   files must be accessible in the current OCaml loadpath (see
+   :ref:`command line option <command-line-options>` :n:`-I` and command :cmd:`Add ML Path`).  The
+   :n:`.mllib` suffix may be omitted.
 
    This command is reserved for plugin developers, who should provide
    a .v file containing the command. Users of the plugins will then generally
@@ -719,17 +720,19 @@ the toplevel, and using them in source files is discouraged.
 
 .. cmd:: Add ML Path @string
 
-   This command adds the path :n:`@string` to the current OCaml
-   loadpath (cf. :cmd:`Declare ML Module`).
-
+   Equivalent to the :ref:`command line option <command-line-options>`
+   :n:`-I @string`.  Adds the path :n:`@string` to the current OCaml
+   loadpath (cf. :cmd:`Declare ML Module`). It is for
+   convenience, such as for use in an interactive session, and it
+   is not exported to compiled files. For separation of concerns with
+   respect to the relocability of files, we recommend using
+   :n:`-I @string`.
 
 .. cmd:: Print ML Path
 
-   This command displays the current OCaml loadpath. This
-   command makes sense only under the bytecode version of ``coqtop``, i.e.
-   using option ``-byte``
-   (cf. :cmd:`Declare ML Module`).
-
+   Displays the current OCaml loadpath, as provided by
+   the :ref:`command line option <command-line-options>` :n:`-I @string` or by the command :cmd:`Add
+   ML Path` `@string` (cf. :cmd:`Declare ML Module`).
 
 .. _backtracking_subsection:
 
