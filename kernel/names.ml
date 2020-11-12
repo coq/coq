@@ -44,6 +44,10 @@ struct
   | None -> true
   | Some _ -> false
 
+  let is_valid_ident_part s = match Unicode.ident_refutation ("x"^s) with
+  | None -> true
+  | Some _ -> false
+
   let of_bytes s =
     let s = Bytes.to_string s in
     check_valid s;

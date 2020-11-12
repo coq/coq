@@ -44,6 +44,9 @@ sig
   val is_valid : string -> bool
   (** Check that a string may be converted to an identifier. *)
 
+  val is_valid_ident_part : string -> bool
+  (** Check that a string is a valid part of an identifier *)
+
   val of_bytes : bytes -> t
   val of_string : string -> t
   (** Converts a string into an identifier.
