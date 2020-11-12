@@ -534,15 +534,19 @@ let intern_generalized_binder intern_type ntnvars
   in
   let na = match na with
     | Anonymous ->
-          let name =
-            let id =
-              match ty with
-              | { v = CApp ((_, { v = CRef (qid,_) } ), _) } when qualid_is_ident qid ->
-                qualid_basename qid
-              | _ -> default_non_dependent_ident
-            in Implicit_quantifiers.make_fresh ids' (Global.env ()) id
-          in Name name
-    | _ -> na in
+      let id =
+        match ty with
+        | { v = CApp ((_, { v = CRef (qid,_) } ), _) } when qualid_is_ident qid ->
+          qualid_basename qid
+        | _ -> default_non_dependent_ident
+      in
+      let ids' = List.fold_left (fun ids' lid -> Id.Set.add lid.CAst.v ids') ids' fvs in
+      let id =
+        Implicit_quantifiers.make_fresh ids' (Global.env ()) id
+      in
+      Name id
+    | _ -> na
+  in
   let impls = impls_type_list 1 ty' in
   (push_name_env ntnvars impls env' (make ?loc na),
    (make ?loc (na,b',ty')) :: List.rev bl)
