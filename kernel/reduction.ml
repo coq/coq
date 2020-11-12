@@ -280,11 +280,12 @@ let convert_constructors ctor nargs u1 u2 (s, check) =
   convert_constructors_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
     ctor nargs u1 u2 s, check
 
-let conv_table_key infos k1 k2 cuniv =
+let conv_table_key infos ~nargs k1 k2 cuniv =
   if k1 == k2 then cuniv else
   match k1, k2 with
   | ConstKey (cst, u), ConstKey (cst', u') when Constant.CanOrd.equal cst cst' ->
     if Univ.Instance.equal u u' then cuniv
+    else if Int.equal nargs 1 && is_array_type (info_env infos) cst then cuniv
     else
       let flex = evaluable_constant cst (info_env infos)
         && RedFlags.red_set (info_flags infos) (RedFlags.fCONST cst)
@@ -303,6 +304,11 @@ let unfold_ref_with_args infos tab fl v =
     let rargs, a, nargs, v = get_native_args1 op c v in
     Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
   | Undef _ | OpaqueDef _ | Primitive _ -> None
+
+let same_args_size sk1 sk2 =
+  let n = CClosure.stack_args_size sk1 in
+  if Int.equal n (CClosure.stack_args_size sk2) then n
+  else raise NotConvertible
 
 type conv_tab = {
   cnv_inf : clos_infos;
@@ -408,7 +414,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
       (try
-         let cuniv = conv_table_key infos.cnv_inf fl1 fl2 cuniv in
+         let nargs = same_args_size v1 v2 in
+         let cuniv = conv_table_key infos.cnv_inf ~nargs fl1 fl2 cuniv in
          convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | Univ.UniverseInconsistency _ ->
         let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
@@ -577,17 +584,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
-          let nargs = CClosure.stack_args_size v1 in
-          if not (Int.equal nargs (CClosure.stack_args_size v2))
-          then raise NotConvertible
-          else
-            match convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv with
-            | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-            | exception MustExpand ->
-              let env = info_env infos.cnv_inf in
-              let hd1 = eta_expand_ind env pind1 in
-              let hd2 = eta_expand_ind env pind2 in
-              eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
+          let nargs = same_args_size v1 v2 in
+          match convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv with
+          | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+          | exception MustExpand ->
+            let env = info_env infos.cnv_inf in
+            let hd1 = eta_expand_ind env pind1 in
+            let hd2 = eta_expand_ind env pind2 in
+            eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
       else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1 as pctor1), FConstruct ((ind2,j2),u2 as pctor2)) ->
@@ -597,17 +601,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
-          let nargs = CClosure.stack_args_size v1 in
-          if not (Int.equal nargs (CClosure.stack_args_size v2))
-          then raise NotConvertible
-          else
-            match convert_constructors (mind, snd ind1, j1) nargs u1 u2 cuniv with
-            | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-            | exception MustExpand ->
-              let env = info_env infos.cnv_inf in
-              let hd1 = eta_expand_constructor env pctor1 in
-              let hd2 = eta_expand_constructor env pctor2 in
-              eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
+          let nargs = same_args_size v1 v2 in
+          match convert_constructors (mind, snd ind1, j1) nargs u1 u2 cuniv with
+          | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+          | exception MustExpand ->
+            let env = info_env infos.cnv_inf in
+            let hd1 = eta_expand_constructor env pctor1 in
+            let hd2 = eta_expand_constructor env pctor2 in
+            eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
       else raise NotConvertible
 
     (* Eta expansion of records *)

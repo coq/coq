@@ -250,6 +250,8 @@ val constant_opt_value_in : env -> Constant.t puniverses -> constr option
 
 val is_primitive : env -> Constant.t -> bool
 
+val is_array_type : env -> Constant.t -> bool
+
 (** {6 Primitive projections} *)
 
 (** Checks that the number of parameters is correct. *)
