@@ -503,7 +503,7 @@ let do_instance_program ~pm env env' sigma ?hook ~global ~poly cty k u ctx ctx' 
     declare_instance_program pm env sigma ~global ~poly id pri imps decl term termtype
 
 let interp_instance_context ~program_mode env ctx ~generalize pl tclass =
-  let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
+  let sigma, decl = interp_univ_decl_opt env pl in
   let tclass =
     if generalize then CAst.make @@ CGeneralization (Glob_term.MaxImplicit, Some AbsPi, tclass)
     else tclass

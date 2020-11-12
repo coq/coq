@@ -114,7 +114,7 @@ let do_definition ?hook ~name ~scope ~poly ~kind ?using udecl bl red_option c ct
   let program_mode = false in
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
-  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
+  let evd, udecl = interp_univ_decl_opt env udecl in
   let evd, (body, types), impargs =
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
@@ -134,7 +134,7 @@ let do_definition_program ?hook ~pm ~name ~scope ~poly ~kind ?using udecl bl red
   let program_mode = true in
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
-  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
+  let evd, udecl = interp_univ_decl_opt env udecl in
   let evd, (body, types), impargs =
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in

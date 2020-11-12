@@ -123,10 +123,3 @@ val patntn_loc : ?loc:Loc.t -> cases_pattern_notation_substitution -> notation -
 
 (** For cases pattern parsing errors *)
 val error_invalid_pattern_notation : ?loc:Loc.t -> unit -> 'a
-
-(** Local universe and constraint declarations. *)
-val interp_univ_decl : Environ.env -> universe_decl_expr ->
-                       Evd.evar_map * UState.universe_decl
-
-val interp_univ_decl_opt : Environ.env -> universe_decl_expr option ->
-                       Evd.evar_map * UState.universe_decl

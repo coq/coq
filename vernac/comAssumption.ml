@@ -13,7 +13,6 @@ open Util
 open Vars
 open Names
 open Context
-open Constrexpr_ops
 open Constrintern
 open Impargs
 open Pretyping

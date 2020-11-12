@@ -832,9 +832,9 @@ let empty = {
   extras = Store.empty;
 }
 
-let from_env e = { empty with universes = UState.from_env e }
+let from_env ?binders e = { empty with universes = UState.from_env ?binders e }
 
-let from_ctx ctx = { empty with universes = ctx }
+let from_ctx uctx = { empty with universes = uctx }
 
 let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
 

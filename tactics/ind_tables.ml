@@ -100,9 +100,9 @@ let check_scheme kind ind = Option.has_some (lookup_scheme kind ind)
 
 let define internal role id c poly univs =
   let id = compute_name internal id in
-  let ctx = UState.minimize univs in
-  let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst ctx) c in
-  let univs = UState.univ_entry ~poly ctx in
+  let uctx = UState.minimize univs in
+  let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst uctx) c in
+  let univs = UState.univ_entry ~poly uctx in
   !declare_definition_scheme ~internal ~univs ~role ~name:id c
 
 (* Assumes that dependencies are already defined *)
