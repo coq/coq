@@ -43,7 +43,6 @@ type key = int CEphemeron.key option ref
 
 type link_info =
   | Linked of string
-  | LinkedInteractive of string
   | NotLinked
 
 type constant_key = Opaqueproof.opaque constant_body * (link_info ref * key)

@@ -50,7 +50,6 @@ val get_proj : symbols -> int -> inductive * int
 
 val get_symbols : unit -> symbols
 
-type code_location_update
 type code_location_updates
 type linkable_code = global list * code_location_updates
 
