@@ -5,4 +5,5 @@ ci_dir="$(dirname "$0")"
 
 fiat_crypto_CI_MAKE_ARGS="EXTERNAL_REWRITER=1 EXTERNAL_COQPRIME=1"
 
+export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/fiat_crypto" && make ${fiat_crypto_CI_MAKE_ARGS} standalone-ocaml lite-generated-files )

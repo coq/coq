@@ -18,6 +18,7 @@ fiat_crypto_CI_MAKE_ARGS="EXTERNAL_REWRITER=1 EXTERNAL_COQPRIME=1"
 fiat_crypto_CI_TARGETS1="${fiat_crypto_CI_MAKE_ARGS} pre-standalone-extracted printlite lite"
 fiat_crypto_CI_TARGETS2="${fiat_crypto_CI_MAKE_ARGS} all-except-compiled"
 
+export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/fiat_crypto" && git submodule update --init --recursive && \
         ulimit -s ${fiat_crypto_CI_STACKSIZE} && \
         make ${fiat_crypto_CI_TARGETS1} && make -j 1 ${fiat_crypto_CI_TARGETS2} )
