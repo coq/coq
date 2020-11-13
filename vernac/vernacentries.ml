@@ -1314,6 +1314,14 @@ let warn_implicit_core_hint_db =
          (fun () -> strbrk "Adding and removing hints in the core database implicitly is deprecated. "
              ++ strbrk"Please specify a hint database.")
 
+let warn_deprecated_hint_without_locality =
+  CWarnings.create ~name:"deprecated-hint-without-locality" ~category:"deprecated"
+    (fun () -> strbrk "The default value for hint locality is currently \
+    \"local\" in a section and \"global\" otherwise, but is scheduled to change \
+    in a future release. For the time being, adding hints outside of sections \
+    without specifying an explicit locality is therefore deprecated. It is \
+    recommended to use \"export\" whenever possible.")
+
 let check_hint_locality = function
 | OptGlobal ->
   if Global.sections_are_opened () then
@@ -1323,7 +1331,10 @@ let check_hint_locality = function
   if Global.sections_are_opened () then
   CErrors.user_err Pp.(str
     "This command does not support the export attribute in sections.");
-| OptDefault | OptLocal -> ()
+| OptDefault ->
+  if not @@ Global.sections_are_opened () then
+    warn_deprecated_hint_without_locality ()
+| OptLocal -> ()
 
 let vernac_remove_hints ~atts dbnames ids =
   let locality = Attributes.(parse option_locality atts) in
