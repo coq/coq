@@ -86,6 +86,13 @@ Pattern-matching on terms inhabiting inductive type having only one
 constructor can be alternatively written using :g:`let … in …`
 constructions. There are two variants of them.
 
+.. insertprodn destructuring_let destructuring_let
+
+.. prodn::
+   destructuring_let ::= let ( {*, @name } ) {? {? as @name } return @term100 } := @term in @term
+   | let ' @pattern := @term {? return @term100 } in @term
+   | let ' @pattern in @pattern := @term return @term100 in @term
+
 
 First destructuring let syntax
 ++++++++++++++++++++++++++++++

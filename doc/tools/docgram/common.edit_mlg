@@ -285,9 +285,12 @@ term_let: [
 (* Don't need to document that "( )" is equivalent to "()" *)
 | REPLACE "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" term200 "in" term200
 | WITH "let" "(" LIST0 name SEP "," ")" as_return_type ":=" term200 "in" term200
+| MOVETO destructuring_let "let" "(" LIST0 name SEP "," ")" as_return_type ":=" term200 "in" term200
 | REPLACE "let" "'" pattern200 ":=" term200 "in" term200
-| WITH  "let" "'" pattern200 ":=" term200 OPT case_type "in" term200
+| WITH "let" "'" pattern200 ":=" term200 OPT case_type "in" term200
 | DELETE "let" "'" pattern200 ":=" term200 case_type "in" term200
+| MOVETO destructuring_let "let" "'" pattern200 ":=" term200 OPT case_type "in" term200
+| MOVETO destructuring_let "let" "'" pattern200 "in" pattern200 ":=" term200 case_type "in" term200
 ]
 
 atomic_constr: [
