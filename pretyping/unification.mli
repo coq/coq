@@ -105,7 +105,7 @@ type metabinding = (metavariable * constr * (instance_constraint * instance_typi
 type subst0 =
   (evar_map *
     metabinding list *
-      (Environ.env * existential * t) list)
+      ((Environ.env * int) * existential * t) list)
 
 val w_merge : env -> bool -> core_unify_flags -> subst0 -> evar_map
 

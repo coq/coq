@@ -38,7 +38,7 @@ type metabinding = (metavariable * EConstr.constr * (instance_constraint * insta
 type subst0 =
   (evar_map *
     metabinding list *
-      (Environ.env * EConstr.existential * EConstr.t) list)
+      ((Environ.env * int) * EConstr.existential * EConstr.t) list)
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -227,7 +227,7 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst : subst0) 
     | Evar ev ->
         let env' = pop_rel_context nb env in
         let sigma,c = pose_all_metas_as_evars env' sigma c in
-        sigma,metasubst,(env,ev,solve_pattern_eqn env sigma l c)::evarsubst
+        sigma,metasubst,((env,nb),ev,solve_pattern_eqn env sigma l c)::evarsubst
     | _ -> assert false
 
 let push d (env,n) = (push_rel_assum d env,n+1)
@@ -769,21 +769,21 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             | Some sigma ->
               sigma, metasubst, evarsubst
             | None ->
-              sigma,metasubst,((curenv,ev,cN)::evarsubst)
+              sigma,metasubst,((curenvnb,ev,cN)::evarsubst)
             end
         | Evar (evk,_ as ev), _
             when is_evar_allowed flags evk
               && not (occur_evar sigma evk cN) ->
             let cmvars = free_rels sigma cM and cnvars = free_rels sigma cN in
               if Int.Set.subset cnvars cmvars then
-                sigma,metasubst,((curenv,ev,cN)::evarsubst)
+                sigma,metasubst,((curenvnb,ev,cN)::evarsubst)
               else error_cannot_unify_local curenv sigma (m,n,cN)
         | _, Evar (evk,_ as ev)
             when is_evar_allowed flags evk
               && not (occur_evar sigma evk cM) ->
             let cmvars = free_rels sigma cM and cnvars = free_rels sigma cN in
               if Int.Set.subset cmvars cnvars then
-                sigma,metasubst,((curenv,ev,cM)::evarsubst)
+                sigma,metasubst,((curenvnb,ev,cM)::evarsubst)
               else error_cannot_unify_local curenv sigma (m,n,cN)
         | Sort s1, Sort s2 ->
             (try
@@ -1357,7 +1357,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
 
     (* Process evars *)
     match evars with
-    | (curenv,(evk,_ as ev),rhs)::evars' ->
+    | ((curenv,nb),(evk,_ as ev),rhs)::evars' ->
         if Evd.is_defined evd evk then
           let v = mkEvar ev in
           let (evd,metas',evars'') =
@@ -1376,7 +1376,8 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
                   w_merge_rec evd' metas evars eqns
               else
                 let evd' =
-                  let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
+                  let env' = pop_rel_context nb curenv in
+                  let evd', rhs'' = pose_all_metas_as_evars env' evd rhs' in
                   try solve_simple_evar_eqn eflags curenv evd' ev rhs''
                     with Retyping.RetypeError _ ->
                       error_cannot_unify curenv evd' (mkEvar ev,rhs'')
