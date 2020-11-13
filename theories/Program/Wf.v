@@ -12,8 +12,6 @@
 
 Require Import Coq.Init.Wf.
 Require Import Coq.Program.Utils.
-Require Import ProofIrrelevance.
-Require Import FunctionalExtensionality.
 
 Local Open Scope program_scope.
 
@@ -51,7 +49,7 @@ Section Well_founded.
   Lemma Fix_F_inv : forall (x:A) (r s:Acc R x), Fix_F_sub x r = Fix_F_sub x s.
   Proof.
     intro x; induction (Rwf x); intros.
-    rewrite (proof_irrelevance (Acc R x) r s) ; auto.
+    rewrite <- 2 Fix_F_eq; intros. apply F_ext; intros []; auto.
   Qed.
 
   Lemma Fix_eq : forall x:A, Fix_sub x = F_sub x (fun y:{ y:A | R y x} => Fix_sub (proj1_sig y)).
@@ -226,6 +224,7 @@ Ltac fold_sub f :=
 
 (** This module provides the fixpoint equation provided one assumes
    functional extensionality. *)
+Require Import FunctionalExtensionality.
 
 Module WfExtensionality.
 
