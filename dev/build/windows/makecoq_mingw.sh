@@ -1844,7 +1844,7 @@ function make_addon_vst {
     # log1 coq_set_timeouts_1000
     # The usage of the shell variable ARCH in VST collides with the usage in this shellscript
     logn make env -u ARCH make IGNORECOQVERSION=true $MAKE_OPT
-    logn install env -u ARCH make install
+    logn install env -u ARCH make IGNORECOQVERSION=true install
     build_post
   fi
 }
