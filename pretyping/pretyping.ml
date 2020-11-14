@@ -472,8 +472,19 @@ let pretype_sort ?loc sigma s =
   let sigma, s = interp_sort ?loc sigma s in
   judge_of_sort ?loc sigma s
 
-let new_type_evar env sigma loc =
-  new_type_evar env sigma ~src:(Loc.tag ?loc Evar_kinds.InternalHole)
+let new_typed_evar env sigma ?naming ~src tycon =
+  match tycon with
+  | Some ty ->
+    let sigma, c = new_evar env sigma ~src ?naming ty in
+    sigma, c, ty
+  | None ->
+    let sigma, ty = new_type_evar env sigma ~src in
+    let sigma, c = new_evar env sigma ~src ?naming ty in
+    let evk = fst (destEvar sigma c) in
+    let ido = Evd.evar_ident evk sigma in
+    let src = (fst src,Evar_kinds.EvarType (ido,evk)) in
+    let sigma = update_source sigma (fst (destEvar sigma ty)) src in
+    sigma, c, ty
 
 let mark_obligation_evar sigma k evc =
   match k with
@@ -636,13 +647,9 @@ struct
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
 
   let pretype_patvar self kind ?loc ~program_mode ~poly resolve_tc tycon env sigma =
-    let sigma, ty =
-      match tycon with
-      | Some ty -> sigma, ty
-      | None -> new_type_evar env sigma loc in
     let k = Evar_kinds.MatchingVar kind in
-    let sigma, uj_val = new_evar env sigma ~src:(loc,k) ty in
-    sigma, { uj_val; uj_type = ty }
+    let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) tycon in
+    sigma, { uj_val; uj_type }
 
   let pretype_hole self (k, naming, ext) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -653,19 +660,15 @@ struct
         | IntroIdentifier id -> IntroIdentifier (interp_ltac_id env id)
         | IntroAnonymous -> IntroAnonymous
         | IntroFresh id -> IntroFresh (interp_ltac_id env id) in
-      let sigma, ty =
-        match tycon with
-        | Some ty -> sigma, ty
-        | None -> new_type_evar env sigma loc in
-      let sigma, uj_val = new_evar env sigma ~src:(loc,k) ~naming ty in
+      let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) ~naming tycon in
       let sigma = if program_mode then mark_obligation_evar sigma k uj_val else sigma in
-      sigma, { uj_val; uj_type = ty }
+      sigma, { uj_val; uj_type }
 
     | Some arg ->
       let sigma, ty =
         match tycon with
         | Some ty -> sigma, ty
-        | None -> new_type_evar env sigma loc in
+        | None -> new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole) in
       let c, sigma = GlobEnv.interp_glob_genarg env poly sigma ty arg in
       sigma, { uj_val = c; uj_type = ty }
 
@@ -1144,7 +1147,7 @@ struct
         | None ->
           let sigma, p = match tycon with
             | Some ty -> sigma, ty
-            | None -> new_type_evar env sigma loc
+            | None -> new_type_evar env sigma ~src:(loc,Evar_kinds.CasesType false)
           in
           sigma, it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
       let pred = nf_evar sigma pred in

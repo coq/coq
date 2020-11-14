@@ -40,6 +40,7 @@ type t =
   | ImplicitArg of GlobRef.t * (int * Id.t option)
      * bool (** Force inference *)
   | BinderType of Name.t
+  | EvarType of Id.t option * Evar.t (* type of an optionally named evar *)
   | NamedHole of Id.t (* coming from some ?[id] syntax *)
   | QuestionMark of question_mark
   | CasesType of bool (* true = a subterm of the type *)

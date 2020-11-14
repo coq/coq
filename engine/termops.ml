@@ -123,6 +123,13 @@ let pr_evar_source env sigma = function
       str "subterm of pattern-matching return predicate"
   | Evar_kinds.BinderType (Name id) -> str "type of " ++ Id.print id
   | Evar_kinds.BinderType Anonymous -> str "type of anonymous binder"
+  | Evar_kinds.EvarType (ido,evk) ->
+      let pp = match ido with
+        | Some id -> str "?" ++ Id.print id
+        | None ->
+          try pr_existential_key sigma evk
+          with (* defined *) Not_found -> str "an internal placeholder" in
+     str "type of " ++ pp
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let open Globnames in
       let print_constr = print_kconstr in

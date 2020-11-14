@@ -290,6 +290,10 @@ val restrict : Evar.t-> Filter.t -> ?candidates:econstr list ->
     possibly limiting the instances to a set of candidates (candidates
     are filtered according to the filter) *)
 
+val update_source : evar_map -> Evar.t -> Evar_kinds.t located -> evar_map
+(** To update the source a posteriori, e.g. when an evar type of
+    another evar has to refer to this other evar, with a mutual dependency *)
+
 val get_aliased_evars : evar_map -> Evar.t Evar.Map.t
 (** The map of aliased evars *)
 
