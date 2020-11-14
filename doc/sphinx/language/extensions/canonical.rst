@@ -87,7 +87,8 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       If a same field occurs in several canonical structures, then
       only the structure declared first as canonical is considered.
 
-.. attr:: canonical
+.. attr:: canonical{? = {| yes | no } }
+   :name: canonical
 
    This boolean attribute can decorate a :cmd:`Definition` or
    :cmd:`Let` command.  It is equivalent to having a :cmd:`Canonical
@@ -106,7 +107,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
          #[canonical=no] Prf_equiv : equivalence Carrier Equal
 
-   See :ref:`canonicalstructures` for a more realistic example.
+   See :ref:`hierarchy_of_structures` for a more realistic example.
 
 .. cmd:: Print Canonical Projections {* @reference }
 
@@ -244,6 +245,8 @@ for each component of the pair. The declaration associates to the key ``*``
 (the type constructor of pairs) the canonical comparison
 relation ``pair_eq`` whenever the type constructor ``*`` is applied to two
 types being themselves in the ``EQ`` class.
+
+.. _hierarchy_of_structures:
 
 Hierarchy of structures
 ----------------------------

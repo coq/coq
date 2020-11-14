@@ -1056,8 +1056,8 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    at level :math:`\Type` (without annotations or hiding it behind a
    definition) template polymorphic if possible.
 
-   This can be prevented using the :attr:`universes(template)`
-   attribute with the ``=no`` setting.
+   This can be prevented using the :attr:`universes(template=no) <universes(template)>`
+   attribute.
 
    Template polymorphism and full universe polymorphism (see Chapter
    :ref:`polymorphicuniverses`) are incompatible, so if the latter is
@@ -1075,9 +1075,10 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    the :attr:`universes(template)` attribute: in this case, the
    warning is not emitted.
 
-.. attr:: universes(template)
+.. attr:: universes(template{? = {| yes | no } })
+   :name: universes(template)
 
-   This boolean attribute can be used to explicitly declare an
+   This :term:`boolean attribute` can be used to explicitly declare an
    inductive type as template polymorphic, whether the :flag:`Auto
    Template Polymorphism` flag is on or off.
 
@@ -1095,6 +1096,12 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    When ``universes(template=no)`` is used, it will prevent an
    inductive type to be template polymorphic, even if the :flag:`Auto
    Template Polymorphism` flag is on.
+
+.. attr:: universes(notemplate)
+
+   .. deprecated:: 8.13
+
+      Use :attr:`universes(template=no) <universes(template)>` instead.
 
 In practice, the rule **Ind-Family** is used by Coq only when all the
 inductive types of the inductive definition are declared with an arity
