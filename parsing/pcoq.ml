@@ -364,15 +364,23 @@ let (grammar_stack : (grammar_entry * GramState.t) list ref) = ref []
 type 'a grammar_command = 'a GrammarCommand.tag
 type ('a, 'b) entry_command = ('a * 'b) EntryCommand.tag
 
+(** Create a table of extensible grammars; in practice, Coq defines
+    two of them: the "Notation" table in egramcoq.ml and the
+    "ltac2-notation" table in Ltac2 *)
+
 let create_grammar_command name interp : _ grammar_command =
-  let obj = GrammarCommand.create name in
-  let () = grammar_interp := GrammarInterpMap.add obj interp !grammar_interp in
-  obj
+  let tag = GrammarCommand.create name in
+  let () = grammar_interp := GrammarInterpMap.add tag interp !grammar_interp in
+  tag
+
+(** Create a table of extensible entry collections; in practice, Coq
+    defines two of them: the "constr" and "pattern" collections of
+    custom entries in egramcoq.ml *)
 
 let create_entry_command name (interp : ('a, 'b) entry_extension) : ('a, 'b) entry_command =
-  let obj = EntryCommand.create name in
-  let () = entry_interp := EntryInterpMap.add obj (EntryInterp.Ex interp) !entry_interp in
-  obj
+  let tag = EntryCommand.create name in
+  let () = entry_interp := EntryInterpMap.add tag (EntryInterp.Ex interp) !entry_interp in
+  tag
 
 let iter_extend_sync = function
   | ExtendRule (e, ext) ->
@@ -380,6 +388,8 @@ let iter_extend_sync = function
   | ExtendRuleReinit (e, reinit, ext) ->
     grammar_extend_sync_reinit e reinit ext
 
+(** Extend existing grammars using a "modifier" registered via a tag
+    (e.g. for Notations, Ltac Notations, Ltac2 Notations) *)
 let extend_grammar_command tag g =
   let modify = GrammarInterpMap.find tag !grammar_interp in
   let grammar_state = match !grammar_stack with
@@ -391,6 +401,7 @@ let extend_grammar_command tag g =
   let nb = List.length rules in
   grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
 
+(** A particular case with hard-wired modifier for GRAMMAR EXTEND *)
 let grammar_extend e ext =
   let st = match !grammar_stack with
   | [] -> GramState.empty
@@ -400,6 +411,8 @@ let grammar_extend e ext =
   let () = iter_extend_sync rules in
   grammar_stack := (GramExtByEntryName (1, (e, ext)), st) :: !grammar_stack
 
+(** Add new entries using a "modifier" registered via a tag (e.g. to
+    declare new custom entries) *)
 let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b Entry.t list =
   let EntryInterp.Ex modify = EntryInterpMap.find tag !entry_interp in
   let grammar_state = match !grammar_stack with
@@ -436,14 +449,31 @@ let extend_dyn_grammar (e, _) = match e with
 
 type any_entry = AnyEntry : 'a Entry.t -> any_entry
 
+(**
+Typical structure of the two tables of grammars:
+
+grammar_names (extended with register_grammars_by_name;
+               entries created with GRAMMAR EXTEND, i.e. Pcoq.grammar_extend):
+"tactic" -> [ltac_expr_entry;simple_tactic_entry]
+
+camlp5_entries (extended with create_entry_command;
+                entries created with extend_entry_command):
+"constr" -> ["custom:foo"->custom_constr_foo_entry;"custom:bar"->custom_constr_bar_entry]
+"pattern" -> ["custom:foo"->custom_pattern_foo_entry;"custom:bar"->custom_pattern_bar_entry]
+*)
+
 let grammar_names : any_entry list String.Map.t ref = ref String.Map.empty
 
 let register_grammars_by_name name grams =
   grammar_names := String.Map.add name grams !grammar_names
 
 let find_grammars_by_name name =
+  (* For grammar_name, the name is the name of the map (e.g. "tactic") *)
   try String.Map.find name !grammar_names
   with Not_found ->
+    (* For camlp5_entries, there are typically two name tags (for
+       "constr" and "pattern") and, for each of them, a map from
+       custom name to the unique entry associated to this name *)
     let fold (EntryDataMap.Any (tag, EntryData.Ex map)) accu =
       try AnyEntry (String.Map.find name map) :: accu
       with Not_found -> accu
