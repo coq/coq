@@ -108,6 +108,7 @@ Section Measure_well_founded.
 
 End Measure_well_founded.
 
+#[global]
 Hint Resolve measure_wf : core.
 
 Section Fix_rects.

@@ -83,6 +83,7 @@ Lemma andb_prop (a b:bool) : andb a b = true -> a = true /\ b = true.
 Proof.
   destruct a, b; repeat split; assumption.
 Qed.
+#[global]
 Hint Resolve andb_prop: bool.
 
 Register andb_prop as core.bool.andb_prop.
@@ -92,6 +93,7 @@ Lemma andb_true_intro (b1 b2:bool) :
 Proof.
   destruct b1; destruct b2; simpl; intros [? ?]; assumption.
 Qed.
+#[global]
 Hint Resolve andb_true_intro: bool.
 
 Register andb_true_intro as core.bool.andb_true_intro.
@@ -100,6 +102,7 @@ Register andb_true_intro as core.bool.andb_true_intro.
 
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
 
+#[global]
 Hint Constructors eq_true : eq_true.
 
 Register eq_true as core.eq_true.type.
@@ -142,6 +145,7 @@ Defined.
 Inductive BoolSpec (P Q : Prop) : bool -> Prop :=
   | BoolSpecT : P -> BoolSpec P Q true
   | BoolSpecF : Q -> BoolSpec P Q false.
+#[global]
 Hint Constructors BoolSpec : core.
 
 Register BoolSpec as core.BoolSpec.type.
@@ -243,6 +247,7 @@ Section projections.
 
 End projections.
 
+#[global]
 Hint Resolve pair inl inr: core.
 
 Lemma surjective_pairing (A B:Type) (p:A * B) : p = (fst p, snd p).
@@ -380,6 +385,7 @@ Inductive CompareSpec (Peq Plt Pgt : Prop) : comparison -> Prop :=
  | CompEq : Peq -> CompareSpec Peq Plt Pgt Eq
  | CompLt : Plt -> CompareSpec Peq Plt Pgt Lt
  | CompGt : Pgt -> CompareSpec Peq Plt Pgt Gt.
+#[global]
 Hint Constructors CompareSpec : core.
 
 Register CompareSpec as core.CompareSpec.type.
@@ -395,6 +401,7 @@ Inductive CompareSpecT (Peq Plt Pgt : Prop) : comparison -> Type :=
  | CompEqT : Peq -> CompareSpecT Peq Plt Pgt Eq
  | CompLtT : Plt -> CompareSpecT Peq Plt Pgt Lt
  | CompGtT : Pgt -> CompareSpecT Peq Plt Pgt Gt.
+#[global]
 Hint Constructors CompareSpecT : core.
 
 Register CompareSpecT as core.CompareSpecT.type.
@@ -417,6 +424,7 @@ Definition CompSpec {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Prop :=
 
 Definition CompSpecT {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Type :=
  CompareSpecT (eq x y) (lt x y) (lt y x).
+#[global]
 Hint Unfold CompSpec CompSpecT : core.
 
 Lemma CompSpec2Type : forall A (eq lt:A->A->Prop) x y c,
@@ -435,6 +443,7 @@ Proof. intros. apply CompareSpec2Type; assumption. Defined.
 
 Inductive identity (A:Type) (a:A) : A -> Type :=
   identity_refl : identity a a.
+#[global]
 Hint Resolve identity_refl: core.
 
 Arguments identity_ind [A] a P f y i.

@@ -442,6 +442,7 @@ Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
  Record t_ := Mkt {this :> M.t; is_ok : M.Ok this}.
  Definition t := t_.
  Arguments Mkt this {is_ok}.
+ #[global]
  Hint Resolve is_ok : typeclass_instances.
 
  Definition In (x : elt)(s : t) := M.In x (this s).
@@ -884,9 +885,11 @@ Module MakeListOrdering (O:OrderedType).
         O.lt x y -> lt_list (x :: s) (y :: s')
     | lt_cons_eq : forall x y s s',
         O.eq x y -> lt_list s s' -> lt_list (x :: s) (y :: s').
+ #[global]
  Hint Constructors lt_list : core.
 
  Definition lt := lt_list.
+ #[global]
  Hint Unfold lt : core.
 
  Instance lt_strorder : StrictOrder lt.
@@ -933,6 +936,7 @@ Module MakeListOrdering (O:OrderedType).
   left; MO.order. right; rewrite <- E12; auto.
   left; MO.order. right; rewrite E12; auto.
  Qed.
+ #[global]
  Hint Resolve eq_cons : core.
 
  Lemma cons_CompSpec : forall c x1 x2 l1 l2, O.eq x1 x2 ->
@@ -940,6 +944,7 @@ Module MakeListOrdering (O:OrderedType).
  Proof.
   destruct c; simpl; inversion_clear 2; auto with relations.
  Qed.
+ #[global]
  Hint Resolve cons_CompSpec : core.
 
 End MakeListOrdering.

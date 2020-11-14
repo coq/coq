@@ -206,6 +206,7 @@ Qed.
 (** With the following hint database, we can leverage [auto] to check
     decidability of propositions. *)
 
+#[global]
 Hint Resolve dec_True dec_False dec_or dec_and dec_imp dec_not dec_iff
  : decidable_prop.
 

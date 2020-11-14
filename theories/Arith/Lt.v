@@ -27,6 +27,7 @@ Local Open Scope nat_scope.
 
 Notation lt_irrefl := Nat.lt_irrefl (only parsing). (* ~ x < x *)
 
+#[global]
 Hint Resolve lt_irrefl: arith.
 
 (** * Relationship between [le] and [lt] *)
@@ -50,8 +51,11 @@ Qed.
 
 Register le_lt_n_Sm as num.nat.le_lt_n_Sm.
 
+#[global]
 Hint Immediate lt_le_S: arith.
+#[global]
 Hint Immediate lt_n_Sm_le: arith.
+#[global]
 Hint Immediate le_lt_n_Sm: arith.
 
 Theorem le_not_lt n m : n <= m -> ~ m < n.
@@ -64,6 +68,7 @@ Proof.
  apply Nat.lt_nge.
 Qed.
 
+#[global]
 Hint Immediate le_not_lt lt_not_le: arith.
 
 (** * Asymmetry *)
@@ -85,7 +90,9 @@ Proof.
  intros. now apply Nat.neq_sym, Nat.neq_0_lt_0.
 Qed.
 
+#[global]
 Hint Resolve lt_0_Sn lt_n_0 : arith.
+#[global]
 Hint Immediate neq_0_lt lt_0_neq: arith.
 
 (** * Order and successor *)
@@ -105,7 +112,9 @@ Qed.
 
 Register lt_S_n as num.nat.lt_S_n.
 
+#[global]
 Hint Resolve lt_n_Sn lt_S lt_n_S : arith.
+#[global]
 Hint Immediate lt_S_n : arith.
 
 (** * Predecessor *)
@@ -130,7 +139,9 @@ Proof.
  intros. now apply Nat.lt_pred_l, Nat.neq_0_lt_0.
 Qed.
 
+#[global]
 Hint Immediate lt_pred: arith.
+#[global]
 Hint Resolve lt_pred_n_n: arith.
 
 (** * Transitivity properties *)
@@ -141,6 +152,7 @@ Notation le_lt_trans := Nat.le_lt_trans (only parsing).
 
 Register le_lt_trans as num.nat.le_lt_trans.
 
+#[global]
 Hint Resolve lt_trans lt_le_trans le_lt_trans: arith.
 
 (** * Large = strict or equal *)
@@ -154,6 +166,7 @@ Qed.
 
 Notation lt_le_weak := Nat.lt_le_incl (only parsing).
 
+#[global]
 Hint Immediate lt_le_weak: arith.
 
 (** * Dichotomy *)

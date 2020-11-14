@@ -52,6 +52,7 @@ apply Definition_of_equivalence.
   split; apply H'1 with y; auto 10 with sets.
 - red; intros x y h; elim h; intros H'3 H'4; auto 10 with sets.
 Qed.
+#[global]
 Hint Resolve Equiv_from_preorder : core.
 
 Theorem Equiv_from_order :
@@ -60,6 +61,7 @@ Theorem Equiv_from_order :
 Proof.
 intros U R H'; elim H'; auto 10 with sets.
 Qed.
+#[global]
 Hint Resolve Equiv_from_order : core.
 
 Theorem contains_is_preorder :
@@ -67,6 +69,7 @@ Theorem contains_is_preorder :
 Proof.
 auto 10 with sets.
 Qed.
+#[global]
 Hint Resolve contains_is_preorder : core.
 
 Theorem same_relation_is_equivalence :
@@ -74,6 +77,7 @@ Theorem same_relation_is_equivalence :
 Proof.
 unfold same_relation at 1; auto 10 with sets.
 Qed.
+#[global]
 Hint Resolve same_relation_is_equivalence : core.
 
 Theorem cong_reflexive_same_relation :

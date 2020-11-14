@@ -31,7 +31,9 @@ Inductive even : nat -> Prop :=
 with odd : nat -> Prop :=
     odd_S : forall n, even n -> odd (S n).
 
+#[global]
 Hint Constructors even: arith.
+#[global]
 Hint Constructors odd: arith.
 
 (** * Equivalence with predicates [Nat.Even] and [Nat.odd] *)
@@ -178,6 +180,7 @@ Proof. parity_binop. Qed.
 Lemma odd_mult_inv_r n m : odd (n * m) -> odd m.
 Proof. parity_binop. Qed.
 
+#[global]
 Hint Resolve
  even_even_plus odd_even_plus odd_plus_l odd_plus_r
  even_mult_l even_mult_r even_mult_l even_mult_r odd_mult : arith.

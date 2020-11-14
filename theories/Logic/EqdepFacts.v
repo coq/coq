@@ -65,6 +65,7 @@ Section Dependent_Equality.
 
   Inductive eq_dep (p:U) (x:P p) : forall q:U, P q -> Prop :=
     eq_dep_intro : eq_dep p x p x.
+  #[local]
   Hint Constructors eq_dep: core.
 
   Lemma eq_dep_refl : forall (p:U) (x:P p), eq_dep p x p x.
@@ -75,6 +76,7 @@ Section Dependent_Equality.
   Proof.
     destruct 1; auto.
   Qed.
+  #[local]
   Hint Immediate eq_dep_sym: core.
 
   Lemma eq_dep_trans :
@@ -221,7 +223,9 @@ Unset Implicit Arguments.
 
 (** Exported hints *)
 
+#[global]
 Hint Resolve eq_dep_intro: core.
+#[global]
 Hint Immediate eq_dep_sym: core.
 
 (************************************************************************)

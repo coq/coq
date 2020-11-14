@@ -50,7 +50,11 @@ Definition Strongly_confluent : Prop :=
 
 End Relations_2.
 
+#[global]
 Hint Resolve Rstar_0: sets.
+#[global]
 Hint Resolve Rstar1_0: sets.
+#[global]
 Hint Resolve Rstar1_1: sets.
+#[global]
 Hint Resolve Rplus_0: sets.

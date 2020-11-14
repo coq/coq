@@ -65,8 +65,11 @@ Proof. apply Z.divide_abs_l. Qed.
 Theorem Zdivide_Zabs_inv_l a b : (a | b) -> (Z.abs a | b).
 Proof. apply Z.divide_abs_l. Qed.
 
+#[global]
 Hint Resolve Z.divide_refl Z.divide_1_l Z.divide_0_r: zarith.
+#[global]
 Hint Resolve Z.mul_divide_mono_l Z.mul_divide_mono_r: zarith.
+#[global]
 Hint Resolve Z.divide_add_r Zdivide_opp_r Zdivide_opp_r_rev Zdivide_opp_l
   Zdivide_opp_l_rev Z.divide_sub_r Z.divide_mul_l Z.divide_mul_r
   Z.divide_factor_l Z.divide_factor_r: zarith.
@@ -236,6 +239,7 @@ Proof.
   intros; apply Zis_gcd_opp; apply Zis_gcd_0; auto.
 Qed.
 
+#[global]
 Hint Resolve Zis_gcd_sym Zis_gcd_0 Zis_gcd_minus Zis_gcd_opp: zarith.
 
 Theorem Zis_gcd_unique: forall a b c d : Z,
@@ -646,6 +650,7 @@ Proof.
   - absurd (p | a); intuition.
 Qed.
 
+#[global]
 Hint Resolve prime_rel_prime: zarith.
 
 (** As a consequence, a prime number is relatively prime with smaller numbers *)
@@ -866,6 +871,7 @@ Notation Zgcd_Zabs := Z.gcd_abs_l (only parsing).
 Notation Zgcd_0 := Z.gcd_0_r (only parsing).
 Notation Zgcd_1 := Z.gcd_1_r (only parsing).
 
+#[global]
 Hint Resolve Z.gcd_0_r Z.gcd_1_r : zarith.
 
 Theorem Zgcd_1_rel_prime : forall a b,

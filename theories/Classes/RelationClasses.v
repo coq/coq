@@ -196,19 +196,31 @@ Defined.
 
 (** Hints to drive the typeclass resolution avoiding loops
  due to the use of full unification. *)
+#[global]
 Hint Extern 1 (Reflexive (complement _)) => class_apply @irreflexivity : typeclass_instances.
+#[global]
 Hint Extern 3 (Symmetric (complement _)) => class_apply complement_Symmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Irreflexive (complement _)) => class_apply complement_Irreflexive : typeclass_instances.
 
+#[global]
 Hint Extern 3 (Reflexive (flip _)) => apply flip_Reflexive : typeclass_instances.
+#[global]
 Hint Extern 3 (Irreflexive (flip _)) => class_apply flip_Irreflexive : typeclass_instances.
+#[global]
 Hint Extern 3 (Symmetric (flip _)) => class_apply flip_Symmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Asymmetric (flip _)) => class_apply flip_Asymmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Antisymmetric (flip _)) => class_apply flip_Antisymmetric : typeclass_instances.
+#[global]
 Hint Extern 3 (Transitive (flip _)) => class_apply flip_Transitive : typeclass_instances.
+#[global]
 Hint Extern 3 (StrictOrder (flip _)) => class_apply flip_StrictOrder : typeclass_instances.
+#[global]
 Hint Extern 3 (PreOrder (flip _)) => class_apply flip_PreOrder : typeclass_instances.
 
+#[global]
 Hint Extern 4 (subrelation (flip _) _) => 
   class_apply @subrelation_symmetric : typeclass_instances.
 
@@ -218,6 +230,7 @@ Arguments asymmetry {A} {R} {_} [x] [y] _ _.
 Arguments transitivity {A} {R} {_} [x] [y] [z] _ _.
 Arguments Antisymmetric A eqA {_} _.
 
+#[global]
 Hint Resolve irreflexivity : ord.
 
 Unset Implicit Arguments.
@@ -230,6 +243,7 @@ Ltac solve_relation :=
   | [ H : ?R ?x ?y |- ?R ?y ?x ] => symmetry ; exact H
   end.
 
+#[global]
 Hint Extern 4 => solve_relation : relations.
 
 (** We can already dualize all these properties. *)
@@ -476,6 +490,7 @@ Section Binary.
   Proof. firstorder. Qed.
 End Binary.
 
+#[global]
 Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : typeclass_instances.
 
 (** The partial order defined by subrelation and relation equivalence. *)

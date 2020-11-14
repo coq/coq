@@ -79,7 +79,9 @@ Proof.
  now apply (Z.pow_add_r z (Zpos n) (Zpos m)).
 Qed.
 
+#[global]
 Hint Immediate Zpower_nat_is_exp Zpower_pos_is_exp : zarith.
+#[global]
 Hint Unfold Z.pow_pos Zpower_nat: zarith.
 
 Theorem Zpower_exp x n m :
@@ -226,7 +228,9 @@ Section Powers_of_2.
 
 End Powers_of_2.
 
+#[global]
 Hint Resolve two_p_gt_ZERO: zarith.
+#[global]
 Hint Immediate two_p_pred two_p_S: zarith.
 
 Section power_div_with_rest.

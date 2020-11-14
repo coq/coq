@@ -460,9 +460,11 @@ Qed.
 
 End BasicProperties.
 
+#[global]
 Hint Immediate empty_mem is_empty_equal_empty add_mem_1
    remove_mem_1 singleton_equal_add union_mem inter_mem
    diff_mem equal_sym add_remove remove_add : set.
+#[global]
 Hint Resolve equal_mem_1 subset_mem_1 choose_mem_1
    choose_mem_2 add_mem_2 remove_mem_2 equal_refl equal_equal
    subset_refl subset_equal subset_antisym

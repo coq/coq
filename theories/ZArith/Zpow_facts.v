@@ -57,6 +57,7 @@ Proof. apply Z.pow_gt_1. Qed.
 Theorem Zmult_power p q r : 0 <= r -> (p*q)^r = p^r * q^r.
 Proof. intros. apply Z.pow_mul_l. Qed.
 
+#[global]
 Hint Resolve Z.pow_nonneg Z.pow_pos_nonneg : zarith.
 
 Theorem Zpower_le_monotone3 a b c :

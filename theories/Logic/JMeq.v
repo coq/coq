@@ -31,6 +31,7 @@ Arguments JMeq_refl {A x} , [A] x.
 Register JMeq as core.JMeq.type.
 Register JMeq_refl as core.JMeq.refl.
 
+#[global]
 Hint Resolve JMeq_refl : core.
 
 Definition JMeq_hom {A : Type} (x y : A) := JMeq x y.
@@ -42,6 +43,7 @@ Proof.
 intros; destruct H; trivial.
 Qed.
 
+#[global]
 Hint Immediate JMeq_sym : core.
 
 Register JMeq_sym as core.JMeq.sym.

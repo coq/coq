@@ -40,6 +40,7 @@ Require Import Wf_Z.
 
 (** No subgoal or smaller subgoals                                     *)
 
+#[global]
 Hint Resolve
   (** ** Reversible simplification lemmas (no loss of information)      *)
   (** Should clearly be declared as hints                               *)

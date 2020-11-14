@@ -37,10 +37,12 @@ Lemma Rle_refl : forall r, r <= r.
 Proof.
   intro; right; reflexivity.
 Qed.
+#[global]
 Hint Immediate Rle_refl: rorders.
 
 Lemma Rge_refl : forall r, r <= r.
 Proof. exact Rle_refl. Qed.
+#[global]
 Hint Immediate Rge_refl: rorders.
 
 (** Irreflexivity of the strict order *)
@@ -49,6 +51,7 @@ Lemma Rlt_irrefl : forall r, ~ r < r.
 Proof.
   intros r H; eapply Rlt_asym; eauto.
 Qed.
+#[global]
 Hint Resolve Rlt_irrefl: real.
 
 Lemma Rgt_irrefl : forall r, ~ r > r.
@@ -72,6 +75,7 @@ Proof.
   - apply Rlt_not_eq in H1. eauto.
   - apply Rgt_not_eq in H1. eauto.
 Qed.
+#[global]
 Hint Resolve Rlt_dichotomy_converse: real.
 
 (** Reasoning by case on equality and order *)
@@ -82,6 +86,7 @@ Proof.
   intros; generalize (total_order_T r1 r2) Rlt_dichotomy_converse;
     unfold not; intuition eauto 3.
 Qed.
+#[global]
 Hint Resolve Req_dec: real.
 
 (**********)
@@ -110,6 +115,7 @@ Lemma Rlt_le : forall r1 r2, r1 < r2 -> r1 <= r2.
 Proof.
   intros; red; tauto.
 Qed.
+#[global]
 Hint Resolve Rlt_le: real.
 
 Lemma Rgt_ge : forall r1 r2, r1 > r2 -> r1 >= r2.
@@ -122,14 +128,18 @@ Lemma Rle_ge : forall r1 r2, r1 <= r2 -> r2 >= r1.
 Proof.
   destruct 1; red; auto with real.
 Qed.
+#[global]
 Hint Immediate Rle_ge: real.
+#[global]
 Hint Resolve Rle_ge: rorders.
 
 Lemma Rge_le : forall r1 r2, r1 >= r2 -> r2 <= r1.
 Proof.
   destruct 1; red; auto with real.
 Qed.
+#[global]
 Hint Resolve Rge_le: real.
+#[global]
 Hint Immediate Rge_le: rorders.
 
 (**********)
@@ -137,12 +147,14 @@ Lemma Rlt_gt : forall r1 r2, r1 < r2 -> r2 > r1.
 Proof.
   trivial.
 Qed.
+#[global]
 Hint Resolve Rlt_gt: rorders.
 
 Lemma Rgt_lt : forall r1 r2, r1 > r2 -> r2 < r1.
 Proof.
   trivial.
 Qed.
+#[global]
 Hint Immediate Rgt_lt: rorders.
 
 (**********)
@@ -151,6 +163,7 @@ Lemma Rnot_le_lt : forall r1 r2, ~ r1 <= r2 -> r2 < r1.
 Proof.
   intros r1 r2; generalize (Rtotal_order r1 r2); unfold Rle; tauto.
 Qed.
+#[global]
 Hint Immediate Rnot_le_lt: real.
 
 Lemma Rnot_ge_gt : forall r1 r2, ~ r1 >= r2 -> r2 > r1.
@@ -183,6 +196,7 @@ Proof.
   generalize Rlt_asym Rlt_dichotomy_converse; unfold Rle.
   unfold not; intuition eauto 3.
 Qed.
+#[global]
 Hint Immediate Rlt_not_le: real.
 
 Lemma Rgt_not_le : forall r1 r2, r1 > r2 -> ~ r1 <= r2.
@@ -190,6 +204,7 @@ Proof. exact Rlt_not_le. Qed.
 
 Lemma Rlt_not_ge : forall r1 r2, r1 < r2 -> ~ r1 >= r2.
 Proof. red; intros; eapply Rlt_not_le; eauto with real. Qed.
+#[global]
 Hint Immediate Rlt_not_ge: real.
 
 Lemma Rgt_not_ge : forall r1 r2, r2 > r1 -> ~ r1 >= r2.
@@ -215,24 +230,28 @@ Lemma Req_le : forall r1 r2, r1 = r2 -> r1 <= r2.
 Proof.
   unfold Rle; tauto.
 Qed.
+#[global]
 Hint Immediate Req_le: real.
 
 Lemma Req_ge : forall r1 r2, r1 = r2 -> r1 >= r2.
 Proof.
   unfold Rge; tauto.
 Qed.
+#[global]
 Hint Immediate Req_ge: real.
 
 Lemma Req_le_sym : forall r1 r2, r2 = r1 -> r1 <= r2.
 Proof.
   unfold Rle; auto.
 Qed.
+#[global]
 Hint Immediate Req_le_sym: real.
 
 Lemma Req_ge_sym : forall r1 r2, r2 = r1 -> r1 >= r2.
 Proof.
   unfold Rge; auto.
 Qed.
+#[global]
 Hint Immediate Req_ge_sym: real.
 
 (** *** Asymmetry *)
@@ -248,6 +267,7 @@ Lemma Rle_antisym : forall r1 r2, r1 <= r2 -> r2 <= r1 -> r1 = r2.
 Proof.
   intros r1 r2; generalize (Rlt_asym r1 r2); unfold Rle; intuition.
 Qed.
+#[global]
 Hint Resolve Rle_antisym: real.
 
 Lemma Rge_antisym : forall r1 r2, r1 >= r2 -> r2 >= r1 -> r1 = r2.
@@ -387,12 +407,14 @@ Lemma Rplus_0_r : forall r, r + 0 = r.
 Proof.
   intro; ring.
 Qed.
+#[global]
 Hint Resolve Rplus_0_r: real.
 
 Lemma Rplus_ne : forall r, r + 0 = r /\ 0 + r = r.
 Proof.
   split; ring.
 Qed.
+#[global]
 Hint Resolve Rplus_ne: real.
 
 (**********)
@@ -403,6 +425,7 @@ Lemma Rplus_opp_l : forall r, - r + r = 0.
 Proof.
   intro; ring.
 Qed.
+#[global]
 Hint Resolve Rplus_opp_l: real.
 
 (**********)
@@ -415,6 +438,7 @@ Qed.
 
 Definition f_equal_R := (f_equal (A:=R)).
 
+#[global]
 Hint Resolve f_equal_R : real.
 
 Lemma Rplus_eq_compat_l : forall r r1 r2, r1 = r2 -> r + r1 = r + r2.
@@ -439,6 +463,7 @@ Proof.
   repeat rewrite Rplus_assoc; rewrite <- H; reflexivity.
   ring.
 Qed.
+#[global]
 Hint Resolve Rplus_eq_reg_l: real.
 
 Lemma Rplus_eq_reg_r : forall r r1 r2, r1 + r = r2 + r -> r1 = r2.
@@ -485,18 +510,21 @@ Lemma Rinv_r : forall r, r <> 0 -> r * / r = 1.
 Proof.
   intros; field; trivial.
 Qed.
+#[global]
 Hint Resolve Rinv_r: real.
 
 Lemma Rinv_l_sym : forall r, r <> 0 -> 1 = / r * r.
 Proof.
   intros; field; trivial.
 Qed.
+#[global]
 Hint Resolve Rinv_l_sym: real.
 
 Lemma Rinv_r_sym : forall r, r <> 0 -> 1 = r * / r.
 Proof.
   intros; field; trivial.
 Qed.
+#[global]
 Hint Resolve Rinv_r_sym: real.
 
 (**********)
@@ -504,6 +532,7 @@ Lemma Rmult_0_r : forall r, r * 0 = 0.
 Proof.
   intro; ring.
 Qed.
+#[global]
 Hint Resolve Rmult_0_r: real.
 
 (**********)
@@ -511,6 +540,7 @@ Lemma Rmult_0_l : forall r, 0 * r = 0.
 Proof.
   intro; ring.
 Qed.
+#[global]
 Hint Resolve Rmult_0_l: real.
 
 (**********)
@@ -518,6 +548,7 @@ Lemma Rmult_ne : forall r, r * 1 = r /\ 1 * r = r.
 Proof.
   intro; split; ring.
 Qed.
+#[global]
 Hint Resolve Rmult_ne: real.
 
 (**********)
@@ -525,6 +556,7 @@ Lemma Rmult_1_r : forall r, r * 1 = r.
 Proof.
   intro; ring.
 Qed.
+#[global]
 Hint Resolve Rmult_1_r: real.
 
 (**********)
@@ -572,6 +604,7 @@ Proof.
   intros r1 r2 [H| H]; rewrite H; auto with real.
 Qed.
 
+#[global]
 Hint Resolve Rmult_eq_0_compat: real.
 
 (**********)
@@ -599,6 +632,7 @@ Proof.
   red; intros r1 r2 [H1 H2] H.
   case (Rmult_integral r1 r2); auto with real.
 Qed.
+#[global]
 Hint Resolve Rmult_integral_contrapositive: real.
 
 Lemma Rmult_integral_contrapositive_currified :
@@ -640,6 +674,7 @@ Lemma Ropp_eq_compat : forall r1 r2, r1 = r2 -> - r1 = - r2.
 Proof.
   auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_eq_compat: real.
 
 (**********)
@@ -647,6 +682,7 @@ Lemma Ropp_0 : -0 = 0.
 Proof.
   ring.
 Qed.
+#[global]
 Hint Resolve Ropp_0: real.
 
 (**********)
@@ -654,6 +690,7 @@ Lemma Ropp_eq_0_compat : forall r, r = 0 -> - r = 0.
 Proof.
   intros; rewrite H; auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_eq_0_compat: real.
 
 (**********)
@@ -661,6 +698,7 @@ Lemma Ropp_involutive : forall r, - - r = r.
 Proof.
   intro; ring.
 Qed.
+#[global]
 Hint Resolve Ropp_involutive: real.
 
 (*********)
@@ -670,6 +708,7 @@ Proof.
   apply H.
   transitivity (- - r); auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_neq_0_compat: real.
 
 (**********)
@@ -677,6 +716,7 @@ Lemma Ropp_plus_distr : forall r1 r2, - (r1 + r2) = - r1 + - r2.
 Proof.
   intros; ring.
 Qed.
+#[global]
 Hint Resolve Ropp_plus_distr: real.
 
 (*********************************************************)
@@ -692,6 +732,7 @@ Lemma Ropp_mult_distr_l_reverse : forall r1 r2, - r1 * r2 = - (r1 * r2).
 Proof.
   intros; ring.
 Qed.
+#[global]
 Hint Resolve Ropp_mult_distr_l_reverse: real.
 
 (**********)
@@ -699,6 +740,7 @@ Lemma Rmult_opp_opp : forall r1 r2, - r1 * - r2 = r1 * r2.
 Proof.
   intros; ring.
 Qed.
+#[global]
 Hint Resolve Rmult_opp_opp: real.
 
 Lemma Ropp_mult_distr_r : forall r1 r2, - (r1 * r2) = r1 * - r2.
@@ -719,12 +761,14 @@ Lemma Rminus_0_r : forall r, r - 0 = r.
 Proof.
   intro; ring.
 Qed.
+#[global]
 Hint Resolve Rminus_0_r: real.
 
 Lemma Rminus_0_l : forall r, 0 - r = - r.
 Proof.
   intro; ring.
 Qed.
+#[global]
 Hint Resolve Rminus_0_l: real.
 
 (**********)
@@ -732,6 +776,7 @@ Lemma Ropp_minus_distr : forall r1 r2, - (r1 - r2) = r2 - r1.
 Proof.
   intros; ring.
 Qed.
+#[global]
 Hint Resolve Ropp_minus_distr: real.
 
 Lemma Ropp_minus_distr' : forall r1 r2, - (r2 - r1) = r1 - r2.
@@ -744,6 +789,7 @@ Lemma Rminus_diag_eq : forall r1 r2, r1 = r2 -> r1 - r2 = 0.
 Proof.
   intros; rewrite H; ring.
 Qed.
+#[global]
 Hint Resolve Rminus_diag_eq: real.
 
 Lemma Rminus_eq_0 x : x - x = 0.
@@ -755,6 +801,7 @@ Proof.
   intros r1 r2; unfold Rminus; rewrite Rplus_comm; intro.
   rewrite <- (Ropp_involutive r2); apply (Rplus_opp_r_uniq (- r2) r1 H).
 Qed.
+#[global]
 Hint Immediate Rminus_diag_uniq: real.
 
 Lemma Rminus_diag_uniq_sym : forall r1 r2, r2 - r1 = 0 -> r1 = r2.
@@ -762,12 +809,14 @@ Proof.
   intros; generalize (Rminus_diag_uniq r2 r1 H); clear H; intro H; rewrite H;
     ring.
 Qed.
+#[global]
 Hint Immediate Rminus_diag_uniq_sym: real.
 
 Lemma Rplus_minus : forall r1 r2, r1 + (r2 - r1) = r2.
 Proof.
   intros; ring.
 Qed.
+#[global]
 Hint Resolve Rplus_minus: real.
 
 (**********)
@@ -776,18 +825,21 @@ Proof.
   red; intros r1 r2 H H0.
   apply H; auto with real.
 Qed.
+#[global]
 Hint Resolve Rminus_eq_contra: real.
 
 Lemma Rminus_not_eq : forall r1 r2, r1 - r2 <> 0 -> r1 <> r2.
 Proof.
   red; intros; elim H; apply Rminus_diag_eq; auto.
 Qed.
+#[global]
 Hint Resolve Rminus_not_eq: real.
 
 Lemma Rminus_not_eq_right : forall r1 r2, r2 - r1 <> 0 -> r1 <> r2.
 Proof.
   red; intros; elim H; rewrite H0; ring.
 Qed.
+#[global]
 Hint Resolve Rminus_not_eq_right: real.
 
 (**********)
@@ -809,6 +861,7 @@ Lemma Rinv_1 : / 1 = 1.
 Proof.
   field.
 Qed.
+#[global]
 Hint Resolve Rinv_1: real.
 
 (*********)
@@ -817,6 +870,7 @@ Proof.
   red; intros; apply R1_neq_R0.
   replace 1 with (/ r * r); auto with real.
 Qed.
+#[global]
 Hint Resolve Rinv_neq_0_compat: real.
 
 (*********)
@@ -824,6 +878,7 @@ Lemma Rinv_involutive : forall r, r <> 0 -> / / r = r.
 Proof.
   intros; field; trivial.
 Qed.
+#[global]
 Hint Resolve Rinv_involutive: real.
 
 (*********)
@@ -857,6 +912,7 @@ Proof.
   transitivity (r2 * (r1 * / r1)); auto with real.
   ring.
 Qed.
+#[global]
 Hint Resolve Rinv_r_simpl_l Rinv_r_simpl_r Rinv_r_simpl_m: real.
 
 (*********)
@@ -878,6 +934,7 @@ Qed.
 
 Lemma Rplus_gt_compat_l : forall r r1 r2, r1 > r2 -> r + r1 > r + r2.
 Proof. eauto using Rplus_lt_compat_l with rorders. Qed.
+#[global]
 Hint Resolve Rplus_gt_compat_l: real.
 
 (**********)
@@ -886,6 +943,7 @@ Proof.
   intros.
   rewrite (Rplus_comm r1 r); rewrite (Rplus_comm r2 r); auto with real.
 Qed.
+#[global]
 Hint Resolve Rplus_lt_compat_r: real.
 
 Lemma Rplus_gt_compat_r : forall r r1 r2, r1 > r2 -> r1 + r > r2 + r.
@@ -901,6 +959,7 @@ Qed.
 
 Lemma Rplus_ge_compat_l : forall r r1 r2, r1 >= r2 -> r + r1 >= r + r2.
 Proof. auto using Rplus_le_compat_l with rorders. Qed.
+#[global]
 Hint Resolve Rplus_ge_compat_l: real.
 
 (**********)
@@ -911,6 +970,7 @@ Proof.
   right; rewrite <- H0; auto with real.
 Qed.
 
+#[global]
 Hint Resolve Rplus_le_compat_l Rplus_le_compat_r: real.
 
 Lemma Rplus_ge_compat_r : forall r r1 r2, r1 >= r2 -> r1 + r >= r2 + r.
@@ -922,6 +982,7 @@ Lemma Rplus_lt_compat :
 Proof.
   intros; apply Rlt_trans with (r2 + r3); auto with real.
 Qed.
+#[global]
 Hint Immediate Rplus_lt_compat: real.
 
 Lemma Rplus_le_compat :
@@ -929,6 +990,7 @@ Lemma Rplus_le_compat :
 Proof.
   intros; apply Rle_trans with (r2 + r3); auto with real.
 Qed.
+#[global]
 Hint Immediate Rplus_le_compat: real.
 
 Lemma Rplus_gt_compat :
@@ -952,6 +1014,7 @@ Proof.
   intros; apply Rle_lt_trans with (r2 + r3); auto with real.
 Qed.
 
+#[global]
 Hint Immediate Rplus_lt_le_compat Rplus_le_lt_compat: real.
 
 Lemma Rplus_gt_ge_compat :
@@ -1091,6 +1154,7 @@ Proof.
   apply CReal_opp_gt_lt_contravar. unfold Rgt in H.
   rewrite Rlt_def in H. apply CRealLtEpsilon. exact H.
 Qed.
+#[global]
 Hint Resolve Ropp_gt_lt_contravar : core.
 
 Lemma Ropp_lt_gt_contravar : forall r1 r2, r1 < r2 -> - r1 > - r2.
@@ -1100,6 +1164,7 @@ Proof.
   apply CReal_opp_gt_lt_contravar. rewrite Rlt_def in H.
   apply CRealLtEpsilon. exact H.
 Qed.
+#[global]
 Hint Resolve Ropp_lt_gt_contravar: real.
 
 (**********)
@@ -1107,6 +1172,7 @@ Lemma Ropp_lt_contravar : forall r1 r2, r2 < r1 -> - r1 < - r2.
 Proof.
   auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_lt_contravar: real.
 
 Lemma Ropp_gt_contravar : forall r1 r2, r2 > r1 -> - r1 > - r2.
@@ -1117,12 +1183,14 @@ Lemma Ropp_le_ge_contravar : forall r1 r2, r1 <= r2 -> - r1 >= - r2.
 Proof.
   unfold Rge; intros r1 r2 [H| H]; auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_le_ge_contravar: real.
 
 Lemma Ropp_ge_le_contravar : forall r1 r2, r1 >= r2 -> - r1 <= - r2.
 Proof.
   unfold Rle; intros r1 r2 [H| H]; auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_ge_le_contravar: real.
 
 (**********)
@@ -1130,6 +1198,7 @@ Lemma Ropp_le_contravar : forall r1 r2, r2 <= r1 -> - r1 <= - r2.
 Proof.
   intros r1 r2 H; elim H; auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_le_contravar: real.
 
 Lemma Ropp_ge_contravar : forall r1 r2, r2 >= r1 -> - r1 >= - r2.
@@ -1140,12 +1209,14 @@ Lemma Ropp_0_lt_gt_contravar : forall r, 0 < r -> 0 > - r.
 Proof.
   intros; replace 0 with (-0); auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_0_lt_gt_contravar: real.
 
 Lemma Ropp_0_gt_lt_contravar : forall r, 0 > r -> 0 < - r.
 Proof.
   intros; replace 0 with (-0); auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_0_gt_lt_contravar: real.
 
 (**********)
@@ -1153,12 +1224,14 @@ Lemma Ropp_lt_gt_0_contravar : forall r, r > 0 -> - r < 0.
 Proof.
   intros; rewrite <- Ropp_0; auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_lt_gt_0_contravar: real.
 
 Lemma Ropp_gt_lt_0_contravar : forall r, r < 0 -> - r > 0.
 Proof.
   intros; rewrite <- Ropp_0; auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_gt_lt_0_contravar: real.
 
 (**********)
@@ -1166,12 +1239,14 @@ Lemma Ropp_0_le_ge_contravar : forall r, 0 <= r -> 0 >= - r.
 Proof.
   intros; replace 0 with (-0); auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_0_le_ge_contravar: real.
 
 Lemma Ropp_0_ge_le_contravar : forall r, 0 >= r -> 0 <= - r.
 Proof.
   intros; replace 0 with (-0); auto with real.
 Qed.
+#[global]
 Hint Resolve Ropp_0_ge_le_contravar: real.
 
 (** *** Cancellation *)
@@ -1182,6 +1257,7 @@ Proof.
   rewrite <- (Ropp_involutive x); rewrite <- (Ropp_involutive y);
     auto with real.
 Qed.
+#[global]
 Hint Immediate Ropp_lt_cancel: real.
 
 Lemma Ropp_gt_cancel : forall r1 r2, - r2 > - r1 -> r1 > r2.
@@ -1194,6 +1270,7 @@ Proof.
   intro H1; rewrite <- (Ropp_involutive x); rewrite <- (Ropp_involutive y);
     rewrite H1; auto with real.
 Qed.
+#[global]
 Hint Immediate Ropp_le_cancel: real.
 
 Lemma Ropp_ge_cancel : forall r1 r2, - r2 >= - r1 -> r1 >= r2.
@@ -1211,6 +1288,7 @@ Lemma Rmult_lt_compat_r : forall r r1 r2, 0 < r -> r1 < r2 -> r1 * r < r2 * r.
 Proof.
   intros; rewrite (Rmult_comm r1 r); rewrite (Rmult_comm r2 r); auto with real.
 Qed.
+#[global]
 Hint Resolve Rmult_lt_compat_r : core.
 
 Lemma Rmult_gt_compat_r : forall r r1 r2, r > 0 -> r1 > r2 -> r1 * r > r2 * r.
@@ -1227,6 +1305,7 @@ Proof.
     auto with real.
   right; rewrite <- H; do 2 rewrite Rmult_0_l; reflexivity.
 Qed.
+#[global]
 Hint Resolve Rmult_le_compat_l: real.
 
 Lemma Rmult_le_compat_r :
@@ -1235,6 +1314,7 @@ Proof.
   intros r r1 r2 H; rewrite (Rmult_comm r1 r); rewrite (Rmult_comm r2 r);
     auto with real.
 Qed.
+#[global]
 Hint Resolve Rmult_le_compat_r: real.
 
 Lemma Rmult_ge_compat_l :
@@ -1256,6 +1336,7 @@ Proof.
   apply Rmult_le_compat_l; auto.
   apply Rle_trans with z; auto.
 Qed.
+#[global]
 Hint Resolve Rmult_le_compat: real.
 
 Lemma Rmult_ge_compat :
@@ -1297,6 +1378,7 @@ Proof.
   do 2 rewrite (Ropp_mult_distr_l_reverse (- r)).
   apply Ropp_le_contravar; auto with real.
 Qed.
+#[global]
 Hint Resolve Rmult_le_compat_neg_l: real.
 
 Lemma Rmult_le_ge_compat_neg_l :
@@ -1304,6 +1386,7 @@ Lemma Rmult_le_ge_compat_neg_l :
 Proof.
   intros; apply Rle_ge; auto with real.
 Qed.
+#[global]
 Hint Resolve Rmult_le_ge_compat_neg_l: real.
 
 Lemma Rmult_lt_gt_compat_neg_l :
@@ -1368,6 +1451,7 @@ Proof.
   replace (r2 + (r1 - r2)) with r1 by ring.
   now rewrite Rplus_0_r.
 Qed.
+#[global]
 Hint Resolve Rlt_minus: real.
 
 Lemma Rgt_minus : forall r1 r2, r1 > r2 -> r1 - r2 > 0.
@@ -1436,6 +1520,7 @@ Proof.
   intros; apply not_eq_sym; apply Rlt_not_eq.
   rewrite Rplus_comm; replace 0 with (0 + 0); auto with real.
 Qed.
+#[global]
 Hint Immediate tech_Rplus: real.
 
 (*********************************************************)
@@ -1458,6 +1543,7 @@ Proof.
   replace 0 with (- r * 0); auto with real.
   replace 0 with (0 * r); auto with real.
 Qed.
+#[global]
 Hint Resolve Rle_0_sqr Rlt_0_sqr: real.
 
 (***********)
@@ -1485,6 +1571,7 @@ Proof.
   replace 1 with (Rsqr 1); auto with real.
   unfold Rsqr; auto with real.
 Qed.
+#[global]
 Hint Resolve Rlt_0_1: real.
 
 Lemma Rle_0_1 : 0 <= 1.
@@ -1504,6 +1591,7 @@ Proof.
   replace 1 with (r * / r); auto with real.
   replace 0 with (r * 0); auto with real.
 Qed.
+#[global]
 Hint Resolve Rinv_0_lt_compat: real.
 
 (*********)
@@ -1514,6 +1602,7 @@ Proof.
   replace 1 with (r * / r); auto with real.
   replace 0 with (r * 0); auto with real.
 Qed.
+#[global]
 Hint Resolve Rinv_lt_0_compat: real.
 
 (*********)
@@ -1543,6 +1632,7 @@ Proof.
   apply Rlt_dichotomy_converse; right.
   red; apply Rlt_trans with (r2 := x); auto with real.
 Qed.
+#[global]
 Hint Resolve Rinv_1_lt_contravar: real.
 
 (*********************************************************)
@@ -1556,6 +1646,7 @@ Proof.
   apply Rlt_le_trans with 1; auto with real.
   pattern 1 at 1; replace 1 with (0 + 1); auto with real.
 Qed.
+#[global]
 Hint Resolve Rle_lt_0_plus_1: real.
 
 (**********)
@@ -1564,6 +1655,7 @@ Proof.
   intros.
   pattern r at 1; replace r with (r + 0); auto with real.
 Qed.
+#[global]
 Hint Resolve Rlt_plus_1: real.
 
 (**********)
@@ -1598,6 +1690,7 @@ Proof.
   repeat rewrite S_INR.
   rewrite Hrecn; ring.
 Qed.
+#[global]
 Hint Resolve plus_INR: real.
 
 (**********)
@@ -1608,6 +1701,7 @@ Proof.
   intros; repeat rewrite S_INR; simpl.
   rewrite H0; ring.
 Qed.
+#[global]
 Hint Resolve minus_INR: real.
 
 (*********)
@@ -1618,6 +1712,7 @@ Proof.
   intros; repeat rewrite S_INR; simpl.
   rewrite plus_INR; rewrite Hrecn; ring.
 Qed.
+#[global]
 Hint Resolve mult_INR: real.
 
 Lemma pow_INR (m n: nat) :  INR (m ^ n) = pow (INR m) n.
@@ -1629,6 +1724,7 @@ Proof.
   simple induction 1; intros; auto with real.
   rewrite S_INR; auto with real.
 Qed.
+#[global]
 Hint Resolve lt_0_INR: real.
 
 Lemma lt_INR : forall n m:nat, (n < m)%nat -> INR n < INR m.
@@ -1637,12 +1733,14 @@ Proof.
   rewrite S_INR; auto with real.
   rewrite S_INR; apply Rlt_trans with (INR m0); auto with real.
 Qed.
+#[global]
 Hint Resolve lt_INR: real.
 
 Lemma lt_1_INR : forall n:nat, (1 < n)%nat -> 1 < INR n.
 Proof.
   apply lt_INR.
 Qed.
+#[global]
 Hint Resolve lt_1_INR: real.
 
 (**********)
@@ -1652,6 +1750,7 @@ Proof.
   simpl; auto with real.
   apply Pos2Nat.is_pos.
 Qed.
+#[global]
 Hint Resolve pos_INR_nat_of_P: real.
 
 (**********)
@@ -1661,6 +1760,7 @@ Proof.
   simpl; auto with real.
   auto with arith real.
 Qed.
+#[global]
 Hint Resolve pos_INR: real.
 
 Lemma INR_lt : forall n m:nat, INR n < INR m -> (n < m)%nat.
@@ -1676,6 +1776,7 @@ Proof.
     rewrite 2!S_INR in H.
     apply Rplus_lt_reg_r with (1 := H).
 Qed.
+#[global]
 Hint Resolve INR_lt: real.
 
 (*********)
@@ -1685,6 +1786,7 @@ Proof.
   rewrite S_INR.
   apply Rle_trans with (INR m0); auto with real.
 Qed.
+#[global]
 Hint Resolve le_INR: real.
 
 (**********)
@@ -1694,6 +1796,7 @@ Proof.
   apply H.
   rewrite H1; trivial.
 Qed.
+#[global]
 Hint Immediate INR_not_0: real.
 
 (**********)
@@ -1704,6 +1807,7 @@ Proof.
   intros; rewrite S_INR.
   apply Rgt_not_eq; red; auto with real.
 Qed.
+#[global]
 Hint Resolve not_0_INR: real.
 
 Lemma not_INR : forall n m:nat, n <> m -> INR n <> INR m.
@@ -1714,6 +1818,7 @@ Proof.
   exfalso; auto.
   apply not_eq_sym; apply Rlt_dichotomy_converse; auto with real.
 Qed.
+#[global]
 Hint Resolve not_INR: real.
 
 Lemma INR_eq : forall n m:nat, INR n = INR m -> n = m.
@@ -1730,6 +1835,7 @@ Proof.
   generalize (INR_lt n m H0); intro; auto with arith.
   generalize (INR_eq n m H0); intro; rewrite H1; auto.
 Qed.
+#[global]
 Hint Resolve INR_le: real.
 
 Lemma not_1_INR : forall n:nat, n <> 1%nat -> INR n <> 1.
@@ -1737,6 +1843,7 @@ Proof.
   intros n.
   apply not_INR.
 Qed.
+#[global]
 Hint Resolve not_1_INR: real.
 
 (*********************************************************)
@@ -1967,10 +2074,15 @@ Proof.
 intros; red; intro; elim H; apply eq_IZR; assumption.
 Qed.
 
+#[global]
 Hint Extern 0 (IZR _ <= IZR _) => apply IZR_le, Zle_bool_imp_le, eq_refl : real.
+#[global]
 Hint Extern 0 (IZR _ >= IZR _) => apply Rle_ge, IZR_le, Zle_bool_imp_le, eq_refl : real.
+#[global]
 Hint Extern 0 (IZR _ <  IZR _) => apply IZR_lt, eq_refl : real.
+#[global]
 Hint Extern 0 (IZR _ >  IZR _) => apply IZR_lt, eq_refl : real.
+#[global]
 Hint Extern 0 (IZR _ <> IZR _) => apply IZR_neq, Zeq_bool_neq, eq_refl : real.
 
 Lemma one_IZR_lt1 : forall n:Z, -1 < IZR n < 1 -> n = 0%Z.

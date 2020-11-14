@@ -197,7 +197,9 @@ Proof.
   intros n H q; pattern q; apply lt_wf_ind; auto with arith.
 Qed.
 
+#[global]
 Hint Resolve lt_wf: arith.
+#[global]
 Hint Resolve well_founded_lt_compat: arith.
 
 Section LT_WF_REL.

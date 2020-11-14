@@ -42,6 +42,7 @@ Qed.
 Lemma lt_div2 n : 0 < n -> div2 n < n.
 Proof. apply Nat.lt_div2. Qed.
 
+#[global]
 Hint Resolve lt_div2: arith.
 
 (** Properties related to the parity *)
@@ -73,6 +74,7 @@ Proof.
  symmetry in Ev'. elim (n_Sn _ Ev').
 Qed.
 
+#[global]
 Hint Resolve even_div2 div2_even odd_div2 div2_odd: arith.
 
 Lemma even_odd_div2 n :
@@ -88,6 +90,7 @@ Qed.
 
 Notation double := Nat.double (only parsing).
 
+#[global]
 Hint Unfold double Nat.double: arith.
 
 Lemma double_S n : double (S n) = S (S (double n)).
@@ -100,6 +103,7 @@ Proof.
   apply Nat.add_shuffle1.
 Qed.
 
+#[global]
 Hint Resolve double_S: arith.
 
 Lemma even_odd_double n :
@@ -133,6 +137,7 @@ Proof proj1 (proj2 (even_odd_double n)).
 Lemma double_odd n : n = S (double (div2 n)) -> odd n.
 Proof proj2 (proj2 (even_odd_double n)).
 
+#[global]
 Hint Resolve even_double double_even odd_double double_odd: arith.
 
 (** Application:

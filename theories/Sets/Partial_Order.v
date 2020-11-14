@@ -53,7 +53,9 @@ Section Partial_orders.
 
 End Partial_orders.
 
+#[global]
 Hint Unfold Carrier_of Rel_of Strict_Rel_of: sets.
+#[global]
 Hint Resolve Definition_of_covers: sets.
 
 

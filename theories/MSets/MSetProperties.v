@@ -21,6 +21,7 @@ Require Import DecidableTypeEx OrdersLists MSetFacts MSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+#[global]
 Hint Unfold transpose : core.
 
 (** First, a functor for Weak Sets in functorial version. *)
@@ -268,7 +269,9 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
 
   End BasicProperties.
 
+  #[global]
   Hint Immediate equal_sym add_remove remove_add union_sym inter_sym: set.
+  #[global]
   Hint Resolve equal_refl equal_trans subset_refl subset_equal subset_antisym
     subset_trans subset_empty subset_remove_3 subset_diff subset_add_3
     subset_add_2 in_subset empty_is_empty_1 empty_is_empty_2 add_equal
@@ -735,6 +738,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   Proof.
   intros; rewrite cardinal_Empty; auto.
   Qed.
+  #[global]
   Hint Resolve cardinal_inv_1 : core.
 
   Lemma cardinal_inv_2 :
@@ -774,6 +778,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   exact Equal_cardinal.
   Qed.
 
+  #[global]
   Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal : core.
 
   (** ** Cardinal and set operators *)
@@ -783,6 +788,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   rewrite cardinal_fold; apply fold_1; auto with *.
   Qed.
 
+  #[global]
   Hint Immediate empty_cardinal cardinal_1 : set.
 
   Lemma singleton_cardinal : forall x, cardinal (singleton x) = 1.
@@ -793,6 +799,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   apply cardinal_2 with x; auto with set.
   Qed.
 
+  #[global]
   Hint Resolve singleton_cardinal: set.
 
   Lemma diff_inter_cardinal :
@@ -898,6 +905,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   auto with set.
   Qed.
 
+  #[global]
   Hint Resolve subset_cardinal union_cardinal add_cardinal_1 add_cardinal_2 : core.
 
 End WPropertiesOn.
@@ -922,7 +930,9 @@ Module OrdProperties (M:Sets).
   Import M.E.
   Import M.
 
+  #[global]
   Hint Resolve elements_spec2 : core.
+  #[global]
   Hint Immediate
     min_elt_spec1 min_elt_spec2 min_elt_spec3
     max_elt_spec1 max_elt_spec2 max_elt_spec3 : set.
@@ -961,6 +971,7 @@ Module OrdProperties (M:Sets).
   Proof.
    intros a b H; unfold leb. rewrite H; auto.
   Qed.
+  #[global]
   Hint Resolve gtb_compat leb_compat : core.
 
   Lemma elements_split : forall x s,

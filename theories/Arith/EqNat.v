@@ -27,6 +27,7 @@ Theorem eq_nat_refl n : eq_nat n n.
 Proof.
   induction n; simpl; auto.
 Qed.
+#[global]
 Hint Resolve eq_nat_refl: arith.
 
 (** [eq] restricted to [nat] and [eq_nat] are equivalent *)
@@ -48,6 +49,7 @@ Proof.
  apply eq_nat_is_eq.
 Qed.
 
+#[global]
 Hint Immediate eq_eq_nat eq_nat_eq: arith.
 
 Theorem eq_nat_elim :

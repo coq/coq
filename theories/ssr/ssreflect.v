@@ -543,8 +543,10 @@ Proof. by move=> /(_ P); apply. Qed.
 
 Require Export ssrunder.
 
+#[global]
 Hint Extern 0 (@Under_rel.Over_rel _ _ _ _) =>
   solve [ apply: Under_rel.over_rel_done ] : core.
+#[global]
 Hint Resolve Under_rel.over_rel_done : core.
 
 Register Under_rel.Under_rel as plugins.ssreflect.Under_rel.
