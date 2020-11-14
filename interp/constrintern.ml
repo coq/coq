@@ -1972,9 +1972,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let env = restart_lambda_binders env in
         let idl_temp = Array.map
             (fun (id,recarg,bl,ty,_) ->
-               let recarg = Option.map (function { CAst.v = v } -> match v with
+               let recarg = Option.map (function { CAst.v = v; loc } -> match v with
                  | CStructRec i -> i
-                 | _ -> anomaly Pp.(str "Non-structural recursive argument in non-program fixpoint")) recarg
+                 | _ -> user_err ?loc Pp.(str "Well-founded induction requires Program Fixpoint or Function.")) recarg
                in
                let before, after = split_at_annot bl recarg in
                let (env',rbefore) = List.fold_left intern_local_binder (env,[]) before in
