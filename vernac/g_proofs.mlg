@@ -56,6 +56,8 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "Goal"; c = lconstr ->
         { VernacDefinition (Decls.(NoDischarge, Definition), ((CAst.make ~loc Names.Anonymous), None), ProveBody ([], c)) }
       | IDENT "Proof" -> { VernacProof (None,None) }
+      | IDENT "Proof"; IDENT "using"; l = G_vernac.section_subset_expr ->
+          { VernacProof (None,Some l) }
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> { VernacProofMode mn }
       | IDENT "Proof"; c = lconstr -> { VernacExactProof c }
       | IDENT "Abort" -> { VernacAbort None }

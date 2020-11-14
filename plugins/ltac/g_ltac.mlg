@@ -329,11 +329,11 @@ GRAMMAR EXTEND Gram
   ;
   command:
     [ [ IDENT "Proof"; "with"; ta = Pltac.tactic;
-        l = OPT [ "using"; l = G_vernac.section_subset_expr -> { l } ] ->
+        l = OPT [ IDENT "using"; l = G_vernac.section_subset_expr -> { l } ] ->
           { Vernacexpr.VernacProof (Some (in_tac ta), l) }
-      | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
-        ta = OPT [ "with"; ta = Pltac.tactic -> { in_tac ta } ] ->
-          { Vernacexpr.VernacProof (ta,Some l) } ] ]
+      | IDENT "Proof"; IDENT "using"; l = G_vernac.section_subset_expr;
+        "with"; ta = Pltac.tactic ->
+          { Vernacexpr.VernacProof (Some (in_tac ta),Some l) } ] ]
   ;
   hint:
     [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
