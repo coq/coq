@@ -222,13 +222,6 @@ module Module :
 
 val epsilon_value : ('a -> 'self) -> ('self, _, 'a) Symbol.t -> 'self option
 
-(** {5 Extending the parser without synchronization} *)
-
-val grammar_extend : 'a Entry.t -> 'a extend_statement -> unit
-(** Extend the grammar of Coq, without synchronizing it with the backtracking
-    mechanism. This means that grammar extensions defined this way will survive
-    an undo. *)
-
 (** {5 Extending the parser with summary-synchronized commands} *)
 
 module GramState : Store.S
@@ -259,6 +252,9 @@ val create_grammar_command : string -> 'a grammar_extension -> 'a grammar_comman
 
 val extend_grammar_command : 'a grammar_command -> 'a -> unit
 (** Extend the grammar of Coq with the given data. *)
+
+val grammar_extend : 'a Entry.t -> 'a extend_statement -> unit
+(** A particular case for extending an existing entry *)
 
 (** {6 Extension with parsing entries} *)
 

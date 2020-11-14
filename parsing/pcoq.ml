@@ -98,7 +98,6 @@ module EntryDataMap = EntryCommand.Map(EntryData)
 
 type ext_kind =
   | ByGrammar of extend_rule
-  | ByEXTEND of (unit -> unit) * (unit -> unit)
   | ByEntry : ('a * 'b) EntryCommand.tag * string * 'b Entry.t -> ext_kind
 
 (** The list of extensions *)
@@ -127,12 +126,6 @@ let grammar_delete_reinit e reinit ({ pos; data } as d)=
 
 (** Extension *)
 
-let grammar_extend e ext =
-  let undo () = grammar_delete e ext in
-  let redo () = safe_extend e ext in
-  camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
-  redo ()
-
 let grammar_extend_sync e ext =
   camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
   safe_extend e ext
@@ -158,12 +151,6 @@ let rec remove_grammars n =
            grammar_delete g ext;
            camlp5_state := t;
            remove_grammars (n-1)
-       | ByEXTEND (undo,redo)::t ->
-           undo();
-           camlp5_state := t;
-           remove_grammars n;
-           redo();
-           camlp5_state := ByEXTEND (undo,redo) :: !camlp5_state
        | ByEntry (tag, name, e) :: t ->
            Unsafe.clear_entry e;
            camlp5_state := t;
@@ -370,6 +357,7 @@ let entry_interp = ref EntryInterpMap.empty
 type grammar_entry =
 | GramExt of int * GrammarCommand.t
 | EntryExt : int * ('a * 'b) EntryCommand.tag * 'a -> grammar_entry
+| GramExtByEntryName : int * ('a Entry.t * 'a extend_statement) -> grammar_entry
 
 let (grammar_stack : (grammar_entry * GramState.t) list ref) = ref []
 
@@ -403,6 +391,15 @@ let extend_grammar_command tag g =
   let nb = List.length rules in
   grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
 
+let grammar_extend e ext =
+  let st = match !grammar_stack with
+  | [] -> GramState.empty
+  | (_, st) :: _ -> st
+  in
+  let rules = ExtendRule (e, ext) in
+  let () = iter_extend_sync rules in
+  grammar_stack := (GramExtByEntryName (1, (e, ext)), st) :: !grammar_stack
+
 let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b Entry.t list =
   let EntryInterp.Ex modify = EntryInterpMap.find tag !entry_interp in
   let grammar_state = match !grammar_stack with
@@ -433,6 +430,7 @@ let find_custom_entry tag name =
 let extend_dyn_grammar (e, _) = match e with
 | GramExt (_, (GrammarCommand.Dyn (tag, g))) -> extend_grammar_command tag g
 | EntryExt (_, tag, g) -> ignore (extend_entry_command tag g)
+| GramExtByEntryName (_, (e,ext)) -> grammar_extend e ext
 
 (** Registering extra grammar *)
 
@@ -469,7 +467,7 @@ let factorize_grams l1 l2 =
 
 let rec number_of_entries accu = function
 | [] -> accu
-| ((GramExt (p, _) | EntryExt (p, _, _)), _) :: rem ->
+| ((GramExt (p, _) | EntryExt (p, _, _) | GramExtByEntryName (p, _)), _) :: rem ->
   number_of_entries (p + accu) rem
 
 let unfreeze (grams, lex) =
