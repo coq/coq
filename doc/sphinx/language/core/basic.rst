@@ -369,6 +369,7 @@ this attribute`.
    attributes ::= {* #[ {*, @attribute } ] } {* @legacy_attr }
    attribute ::= @ident {? @attr_value }
    attr_value ::= = @string
+   | = @ident
    | ( {*, @attribute } )
    legacy_attr ::= {| Local | Global }
    | {| Polymorphic | Monomorphic }
