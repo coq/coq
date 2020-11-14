@@ -37,7 +37,7 @@ let user_err ?loc ?info ?hdr strm =
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (UserError (hdr, strm), info)
 
-exception Timeout
+exception Timeout = Control.Timeout
 
 (** Only anomalies should reach the bottom of the handler stack.
     In usual situation, the [handle_stack] is treated as it if was always
@@ -135,7 +135,7 @@ let _ = register_handler begin function
   | UserError(s, pps) ->
     Some (where s ++ pps)
   | _ -> None
-end
+  end
 
 (** Critical exceptions should not be caught and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled
@@ -145,7 +145,7 @@ end
 let noncritical = function
   | Sys.Break | Out_of_memory | Stack_overflow
   | Assert_failure _ | Match_failure _ | Anomaly _
-  | Timeout -> false
+  | Control.Timeout -> false
   | Invalid_argument "equal: functional value" -> false
   | _ -> true
 [@@@ocaml.warning "+52"]
