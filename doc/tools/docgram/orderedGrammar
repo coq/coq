@@ -383,6 +383,7 @@ attribute: [
 
 attr_value: [
 | "=" string
+| "=" ident
 | "(" LIST0 attribute SEP "," ")"
 ]
 
