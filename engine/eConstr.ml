@@ -452,6 +452,9 @@ let eq_universes env sigma cstrs cv_pb refargs l l' =
     let open GlobRef in
     let open UnivProblem in
     match refargs with
+    | Some (ConstRef c, 1) when Environ.is_array_type env c ->
+      cstrs := compare_cumulative_instances cv_pb true [|Univ.Variance.Irrelevant|] l l' !cstrs;
+      true
     | None | Some (ConstRef _, _) ->
       cstrs := enforce_eq_instances_univs true l l' !cstrs; true
     | Some (VarRef _, _) -> assert false (* variables don't have instances *)

@@ -1098,14 +1098,8 @@ module FNativeEntries =
 
     let defined_array = ref false
 
-    let farray = ref dummy
-
     let init_array retro =
-      match retro.Retroknowledge.retro_array with
-      | Some c ->
-        defined_array := true;
-        farray := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c)) }
-      | None -> defined_array := false
+      defined_array := Option.has_some retro.Retroknowledge.retro_array
 
     let init env =
       current_retro := env.retroknowledge;

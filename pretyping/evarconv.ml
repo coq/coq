@@ -567,8 +567,13 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     let compare_heads evd =
       match EConstr.kind evd term, EConstr.kind evd term' with
       | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
-        let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-        check_strict evd u u'
+        if Int.equal (Stack.args_size sk) 1 && Environ.is_array_type env c
+        then
+          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+          compare_cumulative_instances evd [|Univ.Variance.Irrelevant|] u u'
+        else
+          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+          check_strict evd u u'
       | Const _, Const _ -> UnifFailure (evd, NotSameHead)
       | Ind ((mi,i) as ind , u), Ind (ind', u') when Names.Ind.CanOrd.equal ind ind' ->
         if EInstance.is_empty u && EInstance.is_empty u' then Success evd

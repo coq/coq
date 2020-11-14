@@ -568,6 +568,11 @@ let is_primitive env c =
   | Declarations.Primitive _ -> true
   | _ -> false
 
+let is_array_type env c =
+  match env.retroknowledge.Retroknowledge.retro_array with
+  | None -> false
+  | Some c' -> Constant.CanOrd.equal c c'
+
 let polymorphic_constant cst env =
   Declareops.constant_is_polymorphic (lookup_constant cst env)
 
