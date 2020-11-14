@@ -1746,6 +1746,7 @@ simple_tactic: [
 | "debug" "eauto" OPT int_or_var OPT int_or_var OPT auto_using OPT hintbases
 | "info_eauto" OPT int_or_var OPT int_or_var OPT auto_using OPT hintbases
 | "dfs" "eauto" OPT int_or_var OPT auto_using OPT hintbases
+| "bfs" "eauto" OPT int_or_var OPT auto_using OPT hintbases
 | "autounfold" OPT hintbases OPT clause_dft_concl
 | "autounfold_one" OPT hintbases OPT ( "in" ident )
 | "unify" one_term one_term OPT ( "with" ident )
