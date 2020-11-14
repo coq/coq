@@ -1620,12 +1620,15 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
      in
       Success (solve_refl ~can_drop:true f flags env evd
                  (position_problem true pbty) evk1 args1 args2)
-  | Evar ev1, Evar ev2 when app_empty ->
+  | Evar (evk1,_ as ev1), Evar ev2 when app_empty ->
     (* solve_evar_evar handles the cases ev1 and/or ev2 are frozen *)
-      Success (solve_evar_evar ~force:true
+      (try
+        Success (solve_evar_evar ~force:true
                  (evar_define evar_unify flags ~choose:true)
                  evar_unify flags env evd
                  (position_problem true pbty) ev1 ev2)
+      with IllTypedInstance (env,t,u) ->
+            UnifFailure (evd,InstanceNotSameType (evk1,env,t,u)))
   | Evar ev1,_ when is_evar_allowed flags (fst ev1) && Array.length l1 <= Array.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
       (* and otherwise second-order matching *)
