@@ -724,7 +724,11 @@ sort_family: [
 ]
 
 hint_info: [
-| "|" OPT natural OPT one_term
+| "|" OPT natural OPT one_pattern
+]
+
+one_pattern: [
+| one_term
 ]
 
 module_binder: [
@@ -1011,7 +1015,7 @@ command: [
 | "Prenex" "Implicits" LIST1 qualid      (* SSR plugin *)
 | "Print" "Hint" "View" OPT ssrviewpos      (* SSR plugin *)
 | "Hint" "View" OPT ssrviewpos LIST1 ( one_term OPT ( "|" natural ) )      (* SSR plugin *)
-| "Search" OPT LIST1 ( "-" [ string OPT ( "%" ident ) | one_term ] ) OPT ( "in" LIST1 ( OPT "-" qualid ) )      (* SSR plugin *)
+| "Search" OPT LIST1 ( "-" [ string OPT ( "%" ident ) | one_pattern ] ) OPT ( "in" LIST1 ( OPT "-" qualid ) )      (* SSR plugin *)
 | "Typeclasses" "Transparent" LIST1 qualid
 | "Typeclasses" "Opaque" LIST1 qualid
 | "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" [ "bfs" | "dfs" ] ")" ) OPT natural
@@ -1107,9 +1111,9 @@ command: [
 | "Compute" term
 | "Check" term
 | "About" reference OPT univ_name_list
-| "SearchHead" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
-| "SearchPattern" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
-| "SearchRewrite" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchHead" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchPattern" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchRewrite" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "Search" LIST1 ( search_query ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "Ltac2" OPT "mutable" OPT "rec" tac2def_body LIST0 ( "with" tac2def_body )
 | "Ltac2" "Type" OPT "rec" tac2typ_def LIST0 ( "with" tac2typ_def )
@@ -1167,7 +1171,7 @@ search_query: [
 
 search_item: [
 | OPT ( [ "head" | "hyp" | "concl" | "headhyp" | "headconcl" ] ":" ) string OPT ( "%" scope_key )
-| OPT ( [ "head" | "hyp" | "concl" | "headhyp" | "headconcl" ] ":" ) one_term
+| OPT ( [ "head" | "hyp" | "concl" | "headhyp" | "headconcl" ] ":" ) one_pattern
 | "is" ":" logical_kind
 ]
 
@@ -1196,7 +1200,7 @@ hint: [
 | "Mode" qualid LIST1 [ "+" | "!" | "-" ]
 | "Unfold" LIST1 qualid
 | "Constructors" LIST1 qualid
-| "Extern" natural OPT one_term "=>" ltac_expr
+| "Extern" natural OPT one_pattern "=>" ltac_expr
 ]
 
 tacdef_body: [
@@ -2404,9 +2408,9 @@ tac2mode: [
 | "Compute" term
 | "Check" term
 | "About" reference OPT univ_name_list
-| "SearchHead" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
-| "SearchPattern" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
-| "SearchRewrite" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchHead" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchPattern" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchRewrite" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "Search" LIST1 ( search_query ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
 ]
 

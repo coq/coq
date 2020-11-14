@@ -2478,7 +2478,6 @@ SPLICE: [
 | binders
 | casted_constr
 | check_module_types
-| constr_pattern
 | decl_sep
 | function_fix_definition (* loses funind annotation *)
 | glob
@@ -2652,6 +2651,7 @@ RENAME: [
 | ssrfwd ssrdefbody
 | ssrclauses ssr_in
 | ssrcpat ssrblockpat
+| constr_pattern one_pattern
 ]
 
 simple_tactic: [

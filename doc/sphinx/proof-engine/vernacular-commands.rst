@@ -133,7 +133,7 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
    .. prodn::
       search_item ::= {? {| head | hyp | concl | headhyp | headconcl } : } @string {? % @scope_key }
-      | {? {| head | hyp | concl | headhyp | headconcl } : } @one_term
+      | {? {| head | hyp | concl | headhyp | headconcl } : } @one_pattern
       | is : @logical_kind
 
    Searched objects can be filtered by patterns, by the constants they
@@ -141,9 +141,9 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
    names.
    The location of the pattern or constant within a term
 
-   :n:`@one_term`
+   :n:`@one_pattern`
       Search for objects whose type contains a subterm matching the
-      pattern :n:`@one_term`.  Holes of the pattern are indicated by
+      pattern :n:`@one_pattern`.  Holes of the pattern are indicated by
       `_` or :n:`?@ident`.  If the same :n:`?@ident` occurs more than
       once in the pattern, all occurrences in the subterm must be
       identical.  See :ref:`this example <search-pattern>`.
@@ -312,7 +312,7 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
          Search is:Instance [ Reflexive | Symmetric ].
 
-.. cmd:: SearchHead @one_term {? {| inside | outside } {+ @qualid } }
+.. cmd:: SearchHead @one_pattern {? {| inside | outside } {+ @qualid } }
 
    .. deprecated:: 8.12
 
@@ -320,8 +320,8 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
    Displays the name and type of all hypotheses of the
    selected goal (if any) and theorems of the current context that have the
-   form :n:`{? forall {* @binder }, } {* P__i -> } C` where :n:`@one_term`
-   matches a subterm of `C` in head position.  For example, a :n:`@one_term` of `f _ b`
+   form :n:`{? forall {* @binder }, } {* P__i -> } C` where :n:`@one_pattern`
+   matches a subterm of `C` in head position.  For example, a :n:`@one_pattern` of `f _ b`
    matches `f a b`, which is a subterm of `C` in head position when `C` is `f a b c`.
 
    See :cmd:`Search` for an explanation of the `inside`/`outside` clauses.
@@ -337,12 +337,12 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
          SearchHead le.
          SearchHead (@eq bool).
 
-.. cmd:: SearchPattern @one_term {? {| inside | outside } {+ @qualid } }
+.. cmd:: SearchPattern @one_pattern {? {| inside | outside } {+ @qualid } }
 
    Displays the name and type of all hypotheses of the
    selected goal (if any) and theorems of the current context
    ending with :n:`{? forall {* @binder }, } {* P__i -> } C` that match the pattern
-   :n:`@one_term`.
+   :n:`@one_pattern`.
 
    See :cmd:`Search` for an explanation of the `inside`/`outside` clauses.
 
@@ -362,11 +362,11 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
          SearchPattern (?X1 + _ = _ + ?X1).
 
-.. cmd:: SearchRewrite @one_term {? {| inside | outside } {+ @qualid } }
+.. cmd:: SearchRewrite @one_pattern {? {| inside | outside } {+ @qualid } }
 
    Displays the name and type of all hypotheses of the
    selected goal (if any) and theorems of the current context that have the form
-   :n:`{? forall {* @binder }, } {* P__i -> } LHS = RHS` where :n:`@one_term`
+   :n:`{? forall {* @binder }, } {* P__i -> } LHS = RHS` where :n:`@one_pattern`
    matches either `LHS` or `RHS`.
 
    See :cmd:`Search` for an explanation of the `inside`/`outside` clauses.

@@ -336,20 +336,23 @@ Summary of the commands
 
 .. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_def } %} | := @term } }
 
-   .. insertprodn hint_info hint_info
+   .. insertprodn hint_info one_pattern
 
    .. prodn::
-      hint_info ::= %| {? @natural } {? @one_term }
+      hint_info ::= %| {? @natural } {? @one_pattern }
+      one_pattern ::= @one_term
 
    Declares a typeclass instance named
    :token:`ident_decl` of the class :n:`@type` with the specified parameters and with
    fields defined by :token:`field_def`, where each field must be a declared field of
    the class.
 
-   Add one or more :token:`binder`\s to declare a parameterized instance. :token:`hint_info`
-   specifies the hint priority, where 0 is the highest priority as for
+   Adds one or more :token:`binder`\s to declare a parameterized instance. :token:`hint_info`
+   may be used to specify the hint priority, where 0 is the highest priority as for
    :tacn:`auto` hints. If the priority is not specified, the default is the number
-   of non-dependent binders of the instance.
+   of non-dependent binders of the instance.  If :token:`one_pattern` is given, terms
+   matching that pattern will trigger use of the instance.  Otherwise,
+   use is triggered based on the conclusion of the type.
 
    This command supports the :attr:`global` attribute that can be
    used on instances declared in a section so that their
