@@ -323,7 +323,6 @@ at the time of use of the notation.
    scope. Obviously, expressions printed by means of such extra
    printing rules will not be reparsed to the same form.
 
-
 .. note::
 
    When several notations can be used to print a given term, the
@@ -336,6 +335,13 @@ at the time of use of the notation.
      Notation "x < y < z" := (lt x y /\ lt y z) (at level 70, y at next level).
 
      Check (0 < 1 /\ 1 < 2).
+
+   When several notations match the same subterm, or incomparable
+   subterms of the term to print, the notation declared most recently
+   is selected. Moreover, reimporting a library or module declares the
+   notations of this library or module again. If the notation is in a
+   scope (see :ref:`Scopes`), either the scope has to be opened or a
+   delimiter has to exist in the scope for the notation to be usable.
 
 The Infix command
 ~~~~~~~~~~~~~~~~~~
