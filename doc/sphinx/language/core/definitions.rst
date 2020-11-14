@@ -13,15 +13,18 @@ Let-in definitions
 .. prodn::
    term_let ::= let @name {? : @type } := @term in @term
    | let @name {+ @binder } {? : @type } := @term in @term
-   | let ( {*, @name } ) {? {? as @name } return @term100 } := @term in @term
-   | let ' @pattern := @term {? return @term100 } in @term
-   | let ' @pattern in @pattern := @term return @term100 in @term
+   | @destructuring_let
 
-:n:`let @ident := @term in @term’`
-denotes the local binding of :n:`@term` to the variable
-:n:`@ident` in :n:`@term`’. There is a syntactic sugar for let-in
-definition of functions: :n:`let @ident {+ @binder} := @term in @term’`
-stands for :n:`let @ident := fun {+ @binder} => @term in @term’`.
+:n:`let @ident := @term__1 in @term__2` represents the local binding of
+the variable :n:`@ident` to the value :n:`@term__1` in :n:`@term__2`.
+
+:n:`let @ident {+ @binder} := @term__1 in @term__2` is an abbreviation
+for :n:`let @ident := fun {+ @binder} => @term__1 in @term__2`.
+
+.. seealso::
+
+   Extensions of the `let ... in ...` syntax are described in
+   :ref:`irrefutable-patterns`.
 
 .. index::
    single: ... : ... (type cast)
