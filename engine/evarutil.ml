@@ -371,7 +371,8 @@ let push_rel_decl_to_named_context
       let subst = update_var id0 id subst in
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (csubst_subst subst) in
       let nc = replace_var_named_declaration id0 id nc in
-      (push_var id0 subst, Id.Set.add id avoid, push_named_context_val d nc)
+      let avoid = Id.Set.add id (Id.Set.add id0 avoid) in
+      (push_var id0 subst, avoid, push_named_context_val d nc)
   | Some id0 when hypnaming = FailIfConflict ->
        user_err Pp.(Id.print id0 ++ str " is already used.")
   | _ ->
