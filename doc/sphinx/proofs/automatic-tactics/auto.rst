@@ -289,6 +289,13 @@ automatically created.
    + :attr:`global` hints are made available by merely requiring the current
      module.
 
+   .. deprecated:: 8.13
+
+     The default value for hint locality is scheduled to change in a future
+     release. For the time being, adding hints outside of sections without
+     specifying an explicit locality is therefore triggering a deprecation
+     warning. It is recommended to use :attr:`export` whenever possible
+
    The various possible :production:`hint_definition`\s are given below.
 
    .. cmdv:: Hint @hint_definition
