@@ -2409,8 +2409,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   and intern_args env subscopes = function
     | [] -> []
     | a::args ->
-        let (enva,subscopes) = apply_scope_env env subscopes in
-        (intern_no_implicit enva a) :: (intern_args env subscopes args)
+      let (enva,subscopes) = apply_scope_env env subscopes in
+      let a = intern_no_implicit enva a in
+      a :: (intern_args env subscopes args)
 
   in
   intern env c
