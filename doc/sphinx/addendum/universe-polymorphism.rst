@@ -195,7 +195,7 @@ Cumulative, NonCumulative
    This means that two instances of the same inductive type (family)
    are convertible only if all the universes are equal.
 
-   .. exn:: The cumulative and noncumulative attributes can only be used in a polymorphic context.
+   .. exn:: The cumulative attribute can only be used in a polymorphic context.
 
       Using this attribute requires being in a polymorphic context,
       i.e. either having the :flag:`Universe Polymorphism` flag on, or
