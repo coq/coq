@@ -674,7 +674,7 @@ let is_polymorphic_inductive_cumulativity =
 let polymorphic_cumulative =
   let error_poly_context () =
     user_err
-      Pp.(str "The cumulative and noncumulative attributes can only be used in a polymorphic context.");
+      Pp.(str "The cumulative attribute can only be used in a polymorphic context.");
   in
   let open Attributes in
   let open Notations in
