@@ -253,10 +253,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
           (proji, Sort_cs (Sorts.family s)),[]
       | Proj (p, c) ->
         let c2 = GlobRef.ConstRef (Projection.constant p) in
-        let c = Retyping.expand_projection env sigma p c [] in
-        let _, args = destApp sigma c in
-        let sk2 = Stack.append_app args sk2 in
-        lookup_canonical_conversion (proji, Const_cs c2), sk2
+        lookup_canonical_conversion (proji, Const_cs c2), Stack.append_app [|c|] sk2
       | _ ->
         let (c2, _) = try destRef sigma t2 with DestKO -> raise Not_found in
           lookup_canonical_conversion (proji, Const_cs c2),sk2
@@ -273,6 +270,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
     | Some c -> (* A primitive projection applied to c *)
       let ty = Retyping.get_type_of ~lax:true env sigma c in
       let (i,u), ind_args =
+        (* Are we sure that ty is not an evar? *)
         try Inductiveops.find_mrectype env sigma ty
         with _ -> raise Not_found
       in Stack.append_app_list ind_args Stack.empty, c, sk1
