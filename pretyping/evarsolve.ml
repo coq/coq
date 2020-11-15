@@ -1576,7 +1576,7 @@ let rec invert_definition unify flags choose imitate_defs
     match EConstr.kind !evdref t with
     | Rel i when i>k ->
         let open Context.Rel.Declaration in
-        (match Environ.lookup_rel (i-k) env' with
+        (match Environ.lookup_rel i env' with
         | LocalAssum _ -> project_variable (RelAlias (i-k))
         | LocalDef (_,b,_) ->
           try project_variable (RelAlias (i-k))
