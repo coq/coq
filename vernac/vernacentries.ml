@@ -715,16 +715,16 @@ let should_treat_as_uniform () =
   else ComInductive.NonUniformParameters
 
 let vernac_record ~template udecl ~cumulative k ~poly finite records =
-  let map ((coe, id), binders, sort, nameopt, cfs) =
-    let const = match nameopt with
-    | None -> Nameops.add_prefix "Build_" id.v
+  let map ((is_coercion, name), binders, sort, nameopt, cfs) =
+    let idbuild = match nameopt with
+    | None -> Nameops.add_prefix "Build_" name.v
     | Some lid ->
       let () = Dumpglob.dump_definition lid false "constr" in
       lid.v
     in
     let () =
       if Dumpglob.dump () then
-        let () = Dumpglob.dump_definition id false "rec" in
+        let () = Dumpglob.dump_definition name false "rec" in
         let iter (x, _) = match x with
         | Vernacexpr.(AssumExpr ({loc;v=Name id}, _, _) | DefExpr ({loc;v=Name id}, _, _, _)) ->
           Dumpglob.dump_definition (make ?loc id) false "proj"
@@ -732,7 +732,7 @@ let vernac_record ~template udecl ~cumulative k ~poly finite records =
         in
         List.iter iter cfs
     in
-    coe, id, binders, cfs, const, sort
+    Record.Ast.{ name; is_coercion; binders; cfs; idbuild; sort }
   in
   let records = List.map map records in
   ignore(Record.definition_structure ~template udecl k ~cumulative ~poly finite records)
