@@ -123,6 +123,10 @@ Programmable proof search
 
    .. example::
 
+      .. coqtop:: none
+
+         Set Warnings "-deprecated-hint-without-locality".
+
       .. coqtop:: all
 
          Hint Resolve ex_intro : core.
@@ -405,6 +409,10 @@ automatically created.
 
       .. example::
 
+         .. coqtop:: none
+
+            Set Warnings "-deprecated-hint-without-locality".
+
          .. coqtop:: in
 
             Hint Extern 4 (~(_ = _)) => discriminate : core.
@@ -419,7 +427,11 @@ automatically created.
 
       .. example::
 
-         .. coqtop:: reset all
+         .. coqtop:: reset none
+
+            Set Warnings "-deprecated-hint-without-locality".
+
+         .. coqtop:: all
 
             Require Import List.
             Hint Extern 5 ({?X1 = ?X2} + {?X1 <> ?X2}) => generalize  X1, X2; decide equality : eqdec.
