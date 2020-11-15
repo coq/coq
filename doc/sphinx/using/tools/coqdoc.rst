@@ -200,6 +200,14 @@ at the beginning of a line.
           if n <= 1 then 1 else n * fact (n-1)
       >>
 
+Verbatim material on a single line is also possible (assuming that
+``>>`` is not part of the text to be presented as verbatim).
+
+.. example::
+
+  ::
+
+      Here is the corresponding caml expression: << fact (n-1) >>
 
 
 Hyperlinks
