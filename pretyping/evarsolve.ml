@@ -810,7 +810,8 @@ let check_evar_instance unify flags env evd evk1 body =
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
   let ty =
     try Retyping.get_type_of ~lax:true evenv evd body
-    with Retyping.RetypeError _ -> user_err (Pp.(str "Ill-typed evar instance"))
+    with Retyping.RetypeError _ ->
+      let loc, _ = evi.evar_source in user_err ?loc (Pp.(str "Ill-typed evar instance"))
   in
   match unify flags TypeUnification evenv evd Reduction.CUMUL ty evi.evar_concl with
   | Success evd -> evd
