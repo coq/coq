@@ -454,7 +454,7 @@ let ungen_upat lhs (sigma, uc, t) u =
 
 let nb_cs_proj_args pc f u =
   let na k =
-    List.length (snd (lookup_canonical_conversion (GlobRef.ConstRef pc, k))).o_TCOMPS in
+    List.length (snd (lookup_canonical_conversion (Global.env()) (GlobRef.ConstRef pc, k))).o_TCOMPS in
   let nargs_of_proj t = match kind t with
       | App(_,args) -> Array.length args
       | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be

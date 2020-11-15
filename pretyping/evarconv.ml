@@ -244,21 +244,20 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
         Prod (_,a,b) -> (* assert (l2=[]); *)
           let _, a, b = destProd sigma t2 in
           if noccurn sigma 1 b then
-            lookup_canonical_conversion (proji, Prod_cs),
+            lookup_canonical_conversion env (proji, Prod_cs),
             (Stack.append_app [|a;pop b|] Stack.empty)
           else raise Not_found
       | Sort s ->
         let s = ESorts.kind sigma s in
-        lookup_canonical_conversion
+        lookup_canonical_conversion env
           (proji, Sort_cs (Sorts.family s)),[]
       | Proj (p, c) ->
-        let c2 = GlobRef.ConstRef (Projection.constant p) in
-        lookup_canonical_conversion (proji, Const_cs c2), Stack.append_app [|c|] sk2
+        lookup_canonical_conversion env (proji, Proj_cs (Projection.repr p)), Stack.append_app [|c|] sk2
       | _ ->
         let (c2, _) = try destRef sigma t2 with DestKO -> raise Not_found in
-          lookup_canonical_conversion (proji, Const_cs c2),sk2
+          lookup_canonical_conversion env (proji, Const_cs c2),sk2
     with Not_found ->
-      let (c, cs) = lookup_canonical_conversion (proji,Default_cs) in
+      let (c, cs) = lookup_canonical_conversion env (proji,Default_cs) in
         (c,cs),[]
   in
   let t', { o_DEF = c; o_CTX = ctx; o_INJ=n; o_TABS = bs;
