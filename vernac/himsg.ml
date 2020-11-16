@@ -744,8 +744,10 @@ let explain_bad_relevance env =
 let explain_bad_invert env =
   strbrk "Bad case inversion (maybe a bugged tactic)."
 
-let explain_bad_variance env sigma u =
-  str "Incorrect variance for universe " ++ Termops.pr_evd_level sigma u ++ str"."
+let explain_bad_variance env sigma ~lev ~expected ~actual =
+  str "Incorrect variance for universe " ++ Termops.pr_evd_level sigma lev ++
+  str": expected " ++ Univ.Variance.pr expected ++
+  str " but cannot be less restrictive than " ++ Univ.Variance.pr actual ++ str "."
 
 let explain_type_error env sigma err =
   let env = make_all_name_different env sigma in
@@ -791,7 +793,7 @@ let explain_type_error env sigma err =
   | DisallowedSProp -> explain_disallowed_sprop ()
   | BadRelevance -> explain_bad_relevance env
   | BadInvert -> explain_bad_invert env
-  | BadVariance u -> explain_bad_variance env sigma u
+  | BadVariance {lev;expected;actual} -> explain_bad_variance env sigma ~lev ~expected ~actual
 
 let pr_position (cl,pos) =
   let clpos = match cl with

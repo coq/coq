@@ -16,7 +16,10 @@ open Variance
 open Util
 
 exception TrivialVariance
-exception BadVariance of Level.t
+
+(** Not the same as Type_errors.BadVariance because we don't have the env where we raise. *)
+exception BadVariance of Level.t * Variance.t * Variance.t
+(* some ocaml bug is triggered if we make this an inline record *)
 
 module Inf : sig
   type variances
@@ -39,10 +42,18 @@ end = struct
     univs : (mode * inferred) LMap.t;
   }
 
+  let to_variance = function
+    | IrrelevantI -> Irrelevant
+    | CovariantI -> Covariant
+
+  let to_variance_opt o = Option.cata to_variance Invariant o
+
   let infer_level_eq u variances =
     match LMap.find_opt u variances.univs with
     | None -> variances
-    | Some (Check, _) -> raise (BadVariance u)
+    | Some (Check, expected) ->
+      let expected = to_variance expected in
+      raise (BadVariance (u, expected, Invariant))
     | Some (Infer, _) ->
       let univs = LMap.remove u variances.univs in
       if LMap.is_empty univs then raise TrivialVariance;
@@ -54,9 +65,9 @@ end = struct
       LMap.update u (function
           | None -> None
           | Some (_,CovariantI) as x -> x
-          | Some (Infer,IrrelevantI) ->
-            Some (Infer,CovariantI)
-          | Some (Check,IrrelevantI) -> raise (BadVariance u))
+          | Some (Infer,IrrelevantI) -> Some (Infer,CovariantI)
+          | Some (Check,IrrelevantI) ->
+            raise (BadVariance (u, Irrelevant, Covariant)))
         variances.univs
     in
     if univs == variances.univs then variances else {variances with univs}
@@ -74,11 +85,8 @@ end = struct
     {univs; orig_array=us}
 
   let finish variances =
-    Array.map (fun (u,_check) ->
-        match LMap.find_opt u variances.univs with
-        | None -> Invariant
-        | Some (_,CovariantI) -> Covariant
-        | Some (_,IrrelevantI) -> Irrelevant)
+    Array.map
+      (fun (u,_check) -> to_variance_opt (Option.map snd (LMap.find_opt u variances.univs)))
       variances.orig_array
 
 end
@@ -264,4 +272,5 @@ let infer_inductive ~env_params univs entries =
   try infer_inductive_core env_params univs entries
   with
   | TrivialVariance -> Array.make (Array.length univs) Invariant
-  | BadVariance u -> Type_errors.error_bad_variance env_params u
+  | BadVariance (lev, expected, actual) ->
+    Type_errors.error_bad_variance env_params ~lev ~expected ~actual

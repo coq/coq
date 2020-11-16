@@ -69,7 +69,7 @@ type ('constr, 'types) ptype_error =
   | DisallowedSProp
   | BadRelevance
   | BadInvert
-  | BadVariance of Level.t
+  | BadVariance of { lev : Level.t; expected : Variance.t; actual : Variance.t }
 
 type type_error = (constr, types) ptype_error
 
@@ -164,8 +164,8 @@ let error_bad_relevance env =
 let error_bad_invert env =
   raise (TypeError (env, BadInvert))
 
-let error_bad_variance env u =
-  raise (TypeError (env, BadVariance u))
+let error_bad_variance env ~lev ~expected ~actual =
+  raise (TypeError (env, BadVariance {lev;expected;actual}))
 
 let map_pguard_error f = function
 | NotEnoughAbstractionInFixBody -> NotEnoughAbstractionInFixBody
