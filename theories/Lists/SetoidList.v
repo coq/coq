@@ -30,6 +30,7 @@ Inductive InA (x : A) : list A -> Prop :=
   | InA_cons_hd : forall y l, eqA x y -> InA x (y :: l)
   | InA_cons_tl : forall y l, InA x l -> InA x (y :: l).
 
+#[local]
 Hint Constructors InA : core.
 
 (** TODO: it would be nice to have a generic definition instead
@@ -62,6 +63,7 @@ Inductive NoDupA : list A -> Prop :=
   | NoDupA_nil : NoDupA nil
   | NoDupA_cons : forall x l, ~ InA x l -> NoDupA l -> NoDupA (x::l).
 
+#[local]
 Hint Constructors NoDupA : core.
 
 (** An alternative definition of [NoDupA] based on [ForallOrdPairs] *)
@@ -84,6 +86,7 @@ Definition equivlistA l l' := forall x, InA x l <-> InA x l'.
 
 Lemma incl_nil l : inclA nil l.
 Proof. intro. intros. inversion H. Qed.
+#[local]
 Hint Resolve incl_nil : list.
 
 (** lists with same elements modulo [eqA] at the same place *)
@@ -93,6 +96,7 @@ Inductive eqlistA : list A -> list A -> Prop :=
   | eqlistA_cons : forall x x' l l',
       eqA x x' -> eqlistA l l' -> eqlistA (x::l) (x'::l').
 
+#[local]
 Hint Constructors eqlistA : core.
 
 (** We could also have written [eqlistA = Forall2 eqA]. *)
@@ -107,7 +111,9 @@ Definition eqarefl := (@Equivalence_Reflexive _ _ eqA_equiv).
 Definition eqatrans := (@Equivalence_Transitive _ _ eqA_equiv).
 Definition eqasym := (@Equivalence_Symmetric _ _ eqA_equiv).
  
+#[local]
 Hint Resolve eqarefl eqatrans : core.
+#[local]
 Hint Immediate eqasym : core.
 
 Ltac inv := invlist InA; invlist sort; invlist lelistA; invlist NoDupA.
@@ -154,6 +160,7 @@ Lemma InA_eqA : forall l x y, eqA x y -> InA x l -> InA y l.
 Proof.
  intros l x y H H'. rewrite <- H. auto.
 Qed.
+#[local]
 Hint Immediate InA_eqA : core.
 
 Lemma In_InA : forall l x, In x l -> InA x l.
@@ -161,6 +168,7 @@ Proof.
  simple induction l; simpl; intuition.
  subst; auto.
 Qed.
+#[local]
 Hint Resolve In_InA : core.
 
 Lemma InA_split : forall l x, InA x l ->
@@ -786,11 +794,13 @@ Hypothesis ltA_compat : Proper (eqA==>eqA==>iff) ltA.
 
 Let sotrans := (@StrictOrder_Transitive _ _ ltA_strorder).
 
+#[local]
 Hint Resolve sotrans : core.
 
 Notation InfA:=(lelistA ltA).
 Notation SortA:=(sort ltA).
 
+#[local]
 Hint Constructors lelistA sort : core.
 
 Lemma InfA_ltA :
@@ -814,6 +824,7 @@ Lemma InfA_eqA l x y : eqA x y -> InfA y l -> InfA x l.
 Proof using eqA_equiv ltA_compat.
  intros H; now rewrite H.
 Qed.
+#[local]
 Hint Immediate InfA_ltA InfA_eqA : core.
 
 Lemma SortA_InfA_InA :
@@ -1005,6 +1016,7 @@ Qed.
 End Filter.
 End Type_with_equality.
 
+#[global]
 Hint Constructors InA eqlistA NoDupA sort lelistA : core.
 
 Arguments equivlistA_cons_nil {A} eqA {eqA_equiv} x l _.

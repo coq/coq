@@ -53,7 +53,9 @@ Module Type IsEqOrig (Import E:Eq').
   Axiom eq_refl : forall x : t, x==x.
   Axiom eq_sym : forall x y : t, x==y -> y==x.
   Axiom eq_trans : forall x y z : t, x==y -> y==z -> x==z.
+  #[global]
   Hint Immediate eq_sym : core.
+  #[global]
   Hint Resolve eq_refl eq_trans : core.
 End IsEqOrig.
 

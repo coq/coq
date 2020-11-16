@@ -36,4 +36,5 @@ Ltac unconvertible :=
     | |- _ => exact tt
   end.
 
+#[global]
 Hint Extern 0 (@Unconvertible _ _ _) => unconvertible : typeclass_instances.

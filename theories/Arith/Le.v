@@ -32,7 +32,9 @@ Notation le_refl := Nat.le_refl (only parsing).
 Notation le_trans := Nat.le_trans (only parsing).
 Notation le_antisym := Nat.le_antisymm (only parsing).
 
+#[global]
 Hint Resolve le_trans: arith.
+#[global]
 Hint Immediate le_antisym: arith.
 
 (** * Properties of [le] w.r.t 0 *)
@@ -61,8 +63,11 @@ Notation le_Sn_n := Nat.nle_succ_diag_l (only parsing). (* ~ S n <= n *)
 Theorem le_Sn_le : forall n m, S n <= m -> n <= m.
 Proof Nat.lt_le_incl.
 
+#[global]
 Hint Resolve le_0_n le_Sn_0: arith.
+#[global]
 Hint Resolve le_n_S le_n_Sn le_Sn_n : arith.
+#[global]
 Hint Immediate le_n_0_eq le_Sn_le le_S_n : arith.
 
 (** * Properties of [le] w.r.t predecessor *)
@@ -70,6 +75,7 @@ Hint Immediate le_n_0_eq le_Sn_le le_S_n : arith.
 Notation le_pred_n := Nat.le_pred_l (only parsing). (* pred n <= n *)
 Notation le_pred := Nat.pred_le_mono (only parsing). (* n<=m -> pred n <= pred m *)
 
+#[global]
 Hint Resolve le_pred_n: arith.
 
 (** * A different elimination principle for the order on natural numbers *)

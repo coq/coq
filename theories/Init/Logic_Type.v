@@ -72,6 +72,7 @@ Definition identity_rect_r :
  intros A x P H y H0; case identity_sym with (1 := H0); trivial.
 Defined.
 
+#[global]
 Hint Immediate identity_sym not_identity_sym: core.
 
 Notation refl_id := identity_refl (only parsing).

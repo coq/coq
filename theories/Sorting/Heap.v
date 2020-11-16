@@ -36,7 +36,9 @@ Section defs.
   Hypothesis leA_trans : forall x y z:A, leA x y -> leA y z -> leA x z.
   Hypothesis leA_antisym : forall x y:A, leA x y -> leA y x -> eqA x y.
 
+  #[local]
   Hint Resolve leA_refl : core.
+  #[local]
   Hint Immediate eqA_dec leA_dec leA_antisym : core.
 
   Let emptyBag := EmptyBag A.

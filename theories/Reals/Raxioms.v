@@ -119,6 +119,7 @@ Lemma Rplus_comm : forall r1 r2:R, r1 + r2 = r2 + r1.
 Proof.
   intros. apply Rquot1. do 2 rewrite Rrepr_plus. apply CReal_plus_comm.
 Qed.
+#[global]
 Hint Resolve Rplus_comm: real.
 
 (**********)
@@ -127,6 +128,7 @@ Proof.
   intros. apply Rquot1. repeat rewrite Rrepr_plus.
   apply CReal_plus_assoc.
 Qed.
+#[global]
 Hint Resolve Rplus_assoc: real.
 
 (**********)
@@ -135,6 +137,7 @@ Proof.
   intros. apply Rquot1. rewrite Rrepr_plus, Rrepr_opp, Rrepr_0.
   apply CReal_plus_opp_r.
 Qed.
+#[global]
 Hint Resolve Rplus_opp_r: real.
 
 (**********)
@@ -143,6 +146,7 @@ Proof.
   intros. apply Rquot1. rewrite Rrepr_plus, Rrepr_0.
   apply CReal_plus_0_l.
 Qed.
+#[global]
 Hint Resolve Rplus_0_l: real.
 
 (***********************************************************)
@@ -154,6 +158,7 @@ Lemma Rmult_comm : forall r1 r2:R, r1 * r2 = r2 * r1.
 Proof.
   intros. apply Rquot1. do 2 rewrite Rrepr_mult. apply CReal_mult_comm.
 Qed.
+#[global]
 Hint Resolve Rmult_comm: real.
 
 (**********)
@@ -162,6 +167,7 @@ Proof.
   intros. apply Rquot1. repeat rewrite Rrepr_mult.
   apply CReal_mult_assoc.
 Qed.
+#[global]
 Hint Resolve Rmult_assoc: real.
 
 (**********)
@@ -171,6 +177,7 @@ Proof.
   - contradiction.
   - apply Rquot1. rewrite Rrepr_mult, Rquot2, Rrepr_1. apply CReal_inv_l.
 Qed.
+#[global]
 Hint Resolve Rinv_l: real.
 
 (**********)
@@ -179,6 +186,7 @@ Proof.
   intros. apply Rquot1. rewrite Rrepr_mult, Rrepr_1.
   apply CReal_mult_1_l.
 Qed.
+#[global]
 Hint Resolve Rmult_1_l: real.
 
 (**********)
@@ -197,6 +205,7 @@ Proof.
   pose proof (CRealLt_morph 0%CReal 0%CReal (CRealEq_refl _) 1%CReal 0%CReal H).
   apply (CRealLt_irrefl 0%CReal). apply H0. apply CRealLt_0_1.
 Qed.
+#[global]
 Hint Resolve R1_neq_R0: real.
 
 (*********************************************************)
@@ -211,6 +220,7 @@ Proof.
   rewrite Rrepr_mult, Rrepr_plus, Rrepr_plus, Rrepr_mult, Rrepr_mult.
   apply CReal_mult_plus_distr_l.
 Qed.
+#[global]
 Hint Resolve Rmult_plus_distr_l: real.
 
 (*********************************************************)
@@ -256,6 +266,7 @@ Proof.
   rewrite RbaseSymbolsImpl.Rlt_def in H0. apply CRealLtEpsilon. exact H0.
 Qed.
 
+#[global]
 Hint Resolve Rlt_asym Rplus_lt_compat_l Rmult_lt_compat_l: real.
 
 (**********************************************************)

@@ -45,7 +45,9 @@ Section Ensembles_finis.
 
 End Ensembles_finis.
 
+#[global]
 Hint Resolve Empty_is_finite Union_is_finite: sets.
+#[global]
 Hint Resolve card_empty card_add: sets.
 
 Require Import Constructive_sets.

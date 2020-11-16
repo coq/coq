@@ -22,6 +22,7 @@ Module KeyDecidableType(D:DecidableType).
  Definition eqk {elt} : relation (key*elt) := D.eq @@1.
  Definition eqke {elt} : relation (key*elt) := D.eq * Logic.eq.
 
+ #[global]
  Hint Unfold eqk eqke : core.
 
  (** eqk, eqke are equalities *)
@@ -60,6 +61,7 @@ Module KeyDecidableType(D:DecidableType).
  Lemma eqk_1 {elt} k k' (e e':elt) : eqk (k,e) (k',e') -> D.eq k k'.
  Proof. trivial. Qed.
 
+ #[global]
  Hint Resolve eqke_1 eqke_2 eqk_1 : core.
 
  (* Additional facts *)
@@ -69,6 +71,7 @@ Module KeyDecidableType(D:DecidableType).
  Proof.
   induction 1; firstorder.
  Qed.
+ #[global]
  Hint Resolve InA_eqke_eqk : core.
 
  Lemma InA_eqk_eqke {elt} p (m:list (key*elt)) :
@@ -86,6 +89,7 @@ Module KeyDecidableType(D:DecidableType).
  Definition MapsTo {elt} (k:key)(e:elt):= InA eqke (k,e).
  Definition In {elt} k m := exists e:elt, MapsTo k e m.
 
+ #[global]
  Hint Unfold MapsTo In : core.
 
  (* Alternative formulations for [In k l] *)
@@ -167,8 +171,11 @@ Module KeyDecidableType(D:DecidableType).
   eauto with *.
  Qed.
 
+ #[global]
  Hint Extern 2 (eqke ?a ?b) => split : core.
+ #[global]
  Hint Resolve InA_eqke_eqk : core.
+ #[global]
  Hint Resolve In_inv_2 In_inv_3 : core.
 
 End KeyDecidableType.

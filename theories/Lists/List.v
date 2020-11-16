@@ -163,6 +163,7 @@ Section Facts.
   Proof.
      auto using app_assoc.
   Qed.
+  #[local]
   Hint Resolve app_assoc_reverse : core.
   (* end hide *)
 
@@ -385,10 +386,15 @@ Section Facts.
 
 End Facts.
 
+#[global]
 Hint Resolve app_assoc app_assoc_reverse: datatypes.
+#[global]
 Hint Resolve app_comm_cons app_cons_not_nil: datatypes.
+#[global]
 Hint Immediate app_eq_nil: datatypes.
+#[global]
 Hint Resolve app_eq_unit app_inj_tail: datatypes.
+#[global]
 Hint Resolve in_eq in_cons in_inv in_nil in_app_or in_or_app: datatypes.
 
 
@@ -1928,6 +1934,7 @@ Section length_order.
   Qed.
 End length_order.
 
+#[global]
 Hint Resolve lel_refl lel_cons_cons lel_cons lel_nil lel_nil nil_cons:
   datatypes.
 
@@ -1941,6 +1948,7 @@ Section SetIncl.
   Variable A : Type.
 
   Definition incl (l m:list A) := forall a:A, In a l -> In a m.
+  #[local]
   Hint Unfold incl : core.
 
   Lemma incl_nil_l : forall l, incl nil l.
@@ -1959,12 +1967,14 @@ Section SetIncl.
   Proof.
     auto.
   Qed.
+  #[local]
   Hint Resolve incl_refl : core.
 
   Lemma incl_tl : forall (a:A) (l m:list A), incl l m -> incl l (a :: m).
   Proof.
     auto with datatypes.
   Qed.
+  #[local]
   Hint Immediate incl_tl : core.
 
   Lemma incl_tran : forall l m n:list A, incl l m -> incl m n -> incl l n.
@@ -1976,12 +1986,14 @@ Section SetIncl.
   Proof.
     auto with datatypes.
   Qed.
+  #[local]
   Hint Immediate incl_appl : core.
 
   Lemma incl_appr : forall l m n:list A, incl l n -> incl l (m ++ n).
   Proof.
     auto with datatypes.
   Qed.
+  #[local]
   Hint Immediate incl_appr : core.
 
   Lemma incl_cons :
@@ -1997,6 +2009,7 @@ Section SetIncl.
     now_show (In a0 l -> In a0 m).
     auto.
   Qed.
+  #[local]
   Hint Resolve incl_cons : core.
 
   Lemma incl_cons_inv : forall (a:A) (l m:list A),
@@ -2012,6 +2025,7 @@ Section SetIncl.
     now_show (In a n).
     elim (in_app_or _ _ _ H1); auto.
   Qed.
+  #[local]
   Hint Resolve incl_app : core.
 
   Lemma incl_app_app : forall l1 l2 m1 m2:list A,
@@ -2054,6 +2068,7 @@ Proof.
   apply in_map; intuition.
 Qed.
 
+#[global]
 Hint Resolve incl_refl incl_tl incl_tran incl_appl incl_appr incl_cons
   incl_app incl_map: datatypes.
 
@@ -2738,6 +2753,7 @@ Section Exists_Forall.
       | Exists_cons_hd : forall x l, P x -> Exists (x::l)
       | Exists_cons_tl : forall x l, Exists l -> Exists (x::l).
 
+    #[local]
     Hint Constructors Exists : core.
 
     Lemma Exists_exists (l:list A) :
@@ -2815,6 +2831,7 @@ Section Exists_Forall.
       | Forall_nil : Forall nil
       | Forall_cons : forall x l, P x -> Forall l -> Forall (x::l).
 
+    #[local]
     Hint Constructors Forall : core.
 
     Lemma Forall_forall (l:list A):
@@ -2999,7 +3016,9 @@ Section Exists_Forall.
 
 End Exists_Forall.
 
+#[global]
 Hint Constructors Exists : core.
+#[global]
 Hint Constructors Forall : core.
 
 Lemma exists_Forall A B : forall (P : A -> B -> Prop) l,
@@ -3064,6 +3083,7 @@ Section Forall2.
     | Forall2_cons : forall x y l l',
       R x y -> Forall2 l l' -> Forall2 (x::l) (y::l').
 
+  #[local]
   Hint Constructors Forall2 : core.
 
   Theorem Forall2_refl : Forall2 [] [].
@@ -3098,6 +3118,7 @@ Section Forall2.
   Qed.
 End Forall2.
 
+#[global]
 Hint Constructors Forall2 : core.
 
 Section ForallPairs.
@@ -3119,6 +3140,7 @@ Section ForallPairs.
     | FOP_cons : forall a l,
       Forall (R a) l -> ForallOrdPairs l -> ForallOrdPairs (a::l).
 
+  #[local]
   Hint Constructors ForallOrdPairs : core.
 
   Lemma ForallOrdPairs_In : forall l,
@@ -3344,6 +3366,7 @@ Notation rev_acc := rev_append (only parsing).
 Notation rev_acc_rev := rev_append_rev (only parsing).
 Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 
+#[global]
 Hint Resolve app_nil_end : datatypes.
 (* end hide *)
 

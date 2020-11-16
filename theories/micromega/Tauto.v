@@ -1562,6 +1562,7 @@ Section S.
     auto.
   Qed.
 
+  #[local]
   Hint Resolve no_middle_eval_tt : tauto.
 
   Lemma or_clause_correct : forall cl cl' env,  eval_opt_clause env (or_clause cl cl') <-> eval_clause env cl \/ eval_clause env cl'.
@@ -1702,6 +1703,7 @@ Section S.
     intros k; destruct k ; simpl; auto.
   Qed.
 
+  #[local]
   Hint Resolve hold_eTT : tauto.
 
   Lemma hold_eFF : forall k,
@@ -1710,6 +1712,7 @@ Section S.
     intros k; destruct k ; simpl;auto.
   Qed.
 
+  #[local]
   Hint Resolve hold_eFF : tauto.
 
   Lemma hold_eAND : forall k r1 r2,

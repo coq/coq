@@ -46,6 +46,7 @@ Section Approx.
     Defn_of_Approximant : Finite U X -> Included U X A -> Approximant A X.
 End Approx.
 
+#[global]
 Hint Resolve Defn_of_Approximant : core.
 
 Section Infinite_sets.

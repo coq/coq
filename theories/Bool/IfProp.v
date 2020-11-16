@@ -14,6 +14,7 @@ Inductive IfProp (A B:Prop) : bool -> Prop :=
   | Iftrue : A -> IfProp A B true
   | Iffalse : B -> IfProp A B false.
 
+#[global]
 Hint Resolve Iftrue Iffalse: bool.
 
 Lemma Iftrue_inv : forall (A B:Prop) (b:bool), IfProp A B b -> b = true -> A.

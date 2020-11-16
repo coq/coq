@@ -41,6 +41,7 @@ Local Open Scope Int_scope.
 Local Notation int := I.t.
 
 Definition key := X.t.
+#[global]
 Hint Transparent key : core.
 
 (** * Trees *)
@@ -495,7 +496,9 @@ Functional Scheme map2_opt_ind := Induction for map2_opt Sort Prop.
 
 (** * Automation and dedicated tactics. *)
 
+#[global]
 Hint Constructors tree MapsTo In bst : core.
+#[global]
 Hint Unfold lt_tree gt_tree : core.
 
 Tactic Notation "factornode" ident(l) ident(x) ident(d) ident(r) ident(h)
@@ -576,6 +579,7 @@ Lemma MapsTo_In : forall k e m, MapsTo k e m -> In k m.
 Proof.
  induction 1; auto.
 Qed.
+#[local]
 Hint Resolve MapsTo_In : core.
 
 Lemma In_MapsTo : forall k m, In k m -> exists e, MapsTo k e m.
@@ -595,6 +599,7 @@ Lemma MapsTo_1 :
 Proof.
  induction m; simpl; intuition_in; eauto with ordered_type.
 Qed.
+#[local]
 Hint Immediate MapsTo_1 : core.
 
 Lemma In_1 :
@@ -634,6 +639,7 @@ Proof.
  unfold gt_tree in *; intuition_in; order.
 Qed.
 
+#[local]
 Hint Resolve lt_leaf gt_leaf lt_tree_node gt_tree_node : core.
 
 Lemma lt_left : forall x y l r e h,
@@ -660,6 +666,7 @@ Proof.
  intuition_in.
 Qed.
 
+#[local]
 Hint Resolve lt_left lt_right gt_left gt_right : core.
 
 Lemma lt_tree_not_in :
@@ -686,6 +693,7 @@ Proof.
  eauto with ordered_type.
 Qed.
 
+#[local]
 Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans : core.
 
 (** * Empty map *)
@@ -818,6 +826,7 @@ Lemma create_bst :
 Proof.
  unfold create; auto.
 Qed.
+#[local]
 Hint Resolve create_bst : core.
 
 Lemma create_in :
@@ -835,6 +844,7 @@ Proof.
  (apply lt_tree_node || apply gt_tree_node); auto with ordered_type;
  (eapply lt_tree_trans || eapply gt_tree_trans); eauto with ordered_type.
 Qed.
+#[local]
 Hint Resolve bal_bst : core.
 
 Lemma bal_in : forall l x e r y,
@@ -876,6 +886,7 @@ Proof.
  apply MX.eq_lt with x; auto.
  apply MX.lt_eq with x; auto with ordered_type.
 Qed.
+#[local]
 Hint Resolve add_bst : core.
 
 Lemma add_1 : forall m x y e, X.eq x y -> MapsTo y e (add x e m).
@@ -956,6 +967,7 @@ Proof.
  destruct 1.
  apply H2; intuition.
 Qed.
+#[local]
 Hint Resolve remove_min_bst : core.
 
 Lemma remove_min_gt_tree : forall l x e r h,
@@ -975,6 +987,7 @@ Proof.
  assert (X.lt m#1 x) by order.
  decompose [or] H; order.
 Qed.
+#[local]
 Hint Resolve remove_min_gt_tree : core.
 
 Lemma remove_min_find : forall l x e r h y,
@@ -1127,6 +1140,7 @@ Proof.
  intuition; [ apply MX.lt_eq with x | ]; eauto with ordered_type.
  intuition; [ apply MX.eq_lt with x | ]; eauto with ordered_type.
 Qed.
+#[local]
 Hint Resolve join_bst : core.
 
 Lemma join_find : forall l x d r y,
@@ -1263,6 +1277,7 @@ Proof.
  rewrite remove_min_in, e1; simpl; auto with ordered_type.
  change (gt_tree (m2',xd)#2#1 (m2',xd)#1). rewrite <-e1; eauto.
 Qed.
+#[local]
 Hint Resolve concat_bst : core.
 
 Lemma concat_find : forall m1 m2 y, bst m1 -> bst m2 ->
@@ -1351,6 +1366,7 @@ Proof.
  intros; unfold elements; apply elements_aux_sort; auto.
  intros; inversion H0.
 Qed.
+#[local]
 Hint Resolve elements_sort : core.
 
 Lemma elements_nodup : forall s : t elt, bst s -> NoDupA eqk (elements s).
@@ -1620,6 +1636,7 @@ destruct (map_option_2 H) as (d0 & ? & ?).
 destruct (map_option_2 H') as (d0' & ? & ?).
 eapply X.lt_trans with x; eauto using MapsTo_In.
 Qed.
+#[local]
 Hint Resolve map_option_bst : core.
 
 Ltac nonify e :=
@@ -1719,6 +1736,7 @@ apply X.lt_trans with x1.
 destruct (map2_opt_2 H1 H6 Hy); intuition.
 destruct (map2_opt_2 H2 H7 Hy'); intuition.
 Qed.
+#[local]
 Hint Resolve map2_opt_bst : core.
 
 Ltac map2_aux :=
@@ -2075,6 +2093,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   Proof.
    destruct c; simpl; intros; P.MX.elim_comp; auto with ordered_type.
   Qed.
+  #[global]
   Hint Resolve cons_Cmp : core.
 
   Lemma compare_end_Cmp :

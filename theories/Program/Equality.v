@@ -21,6 +21,7 @@ Ltac is_ground_goal :=
 
 (** Try to find a contradiction. *)
 
+#[global]
 Hint Extern 10 => is_ground_goal ; progress exfalso : exfalso.
 
 (** We will use the [block] definition to separate the goal from the 
@@ -308,6 +309,7 @@ Proof. intros. rewrite (UIP_refl A). assumption. Defined.
 (** This hint database and the following tactic can be used with [autounfold] to 
    unfold everything to [eq_rect]s. *)
 
+#[global]
 Hint Unfold solution_left solution_right deletion simplification_heq
   simplification_existT1 simplification_existT2 simplification_K
   eq_rect_r eq_rec eq_ind : dep_elim.

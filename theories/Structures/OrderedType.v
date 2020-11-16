@@ -44,7 +44,9 @@ Module Type MiniOrderedType.
 
   Parameter compare : forall x y : t, Compare lt eq x y.
 
+  #[global]
   Hint Immediate eq_sym : ordered_type.
+  #[global]
   Hint Resolve eq_refl eq_trans lt_not_eq lt_trans : ordered_type.
 
 End MiniOrderedType.
@@ -144,8 +146,11 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Lemma eq_not_gt x y : eq x y -> ~ lt y x. Proof. order. Qed.
   Lemma lt_not_gt x y : lt x y -> ~ lt y x. Proof. order. Qed.
 
+  #[global]
   Hint Resolve gt_not_eq eq_not_lt : ordered_type.
+  #[global]
   Hint Immediate eq_lt lt_eq le_eq eq_le neq_eq eq_neq : ordered_type.
+  #[global]
   Hint Resolve eq_not_gt lt_antirefl lt_not_gt : ordered_type.
 
   Lemma elim_compare_eq :
@@ -248,7 +253,9 @@ Proof. exact (SortA_NoDupA eq_equiv lt_strorder lt_compat). Qed.
 
 End ForNotations.
 
+#[global]
 Hint Resolve ListIn_In Sort_NoDup Inf_lt : ordered_type.
+#[global]
 Hint Immediate In_eq Inf_lt : ordered_type.
 
 End OrderedTypeFacts.
@@ -267,7 +274,9 @@ Module KeyOrderedType(O:OrderedType).
           eq (fst p) (fst p') /\ (snd p) = (snd p').
   Definition ltk (p p':key*elt) := lt (fst p) (fst p').
 
+  #[local]
   Hint Unfold eqk eqke ltk : ordered_type.
+  #[local]
   Hint Extern 2 (eqke ?a ?b) => split : ordered_type.
 
    (* eqke is stricter than eqk *)
@@ -284,6 +293,7 @@ Module KeyOrderedType(O:OrderedType).
 
    Lemma ltk_right_l : forall x k e e', ltk (k,e) x -> ltk (k,e') x.
    Proof. auto. Qed.
+  #[local]
    Hint Immediate ltk_right_r ltk_right_l : ordered_type.
 
   (* eqk, eqke are equalities, ltk is a strict order *)
@@ -320,8 +330,11 @@ Module KeyOrderedType(O:OrderedType).
     exact (lt_not_eq H H1).
   Qed.
 
+  #[local]
   Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl : ordered_type.
+  #[local]
   Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke : ordered_type.
+  #[local]
   Hint Immediate eqk_sym eqke_sym : ordered_type.
 
   Global Instance eqk_equiv : Equivalence eqk.
@@ -360,7 +373,9 @@ Module KeyOrderedType(O:OrderedType).
       intros (k,e) (k',e') (k'',e'').
       unfold ltk, eqk; simpl; eauto with ordered_type.
   Qed.
+  #[local]
   Hint Resolve eqk_not_ltk : ordered_type.
+  #[local]
   Hint Immediate ltk_eqk eqk_ltk : ordered_type.
 
   Lemma InA_eqke_eqk :
@@ -368,6 +383,7 @@ Module KeyOrderedType(O:OrderedType).
   Proof.
     unfold eqke; induction 1; intuition.
   Qed.
+  #[local]
   Hint Resolve InA_eqke_eqk : ordered_type.
 
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
@@ -375,6 +391,7 @@ Module KeyOrderedType(O:OrderedType).
   Notation Sort := (sort ltk).
   Notation Inf := (lelistA ltk).
 
+  #[local]
   Hint Unfold MapsTo In : ordered_type.
 
   (* An alternative formulation for [In k l] is [exists e, InA eqk (k,e) l] *)
@@ -406,7 +423,9 @@ Module KeyOrderedType(O:OrderedType).
   Lemma Inf_lt : forall l x x', ltk x x' -> Inf x' l -> Inf x l.
   Proof. exact (InfA_ltA ltk_strorder). Qed.
 
+  #[local]
   Hint Immediate Inf_eq : ordered_type.
+  #[local]
   Hint Resolve Inf_lt : ordered_type.
 
   Lemma Sort_Inf_In :
@@ -470,18 +489,31 @@ Module KeyOrderedType(O:OrderedType).
 
  End Elt.
 
+ #[global]
  Hint Unfold eqk eqke ltk : ordered_type.
+ #[global]
  Hint Extern 2 (eqke ?a ?b) => split : ordered_type.
+ #[global]
  Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl : ordered_type.
+ #[global]
  Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke : ordered_type.
+ #[global]
  Hint Immediate eqk_sym eqke_sym : ordered_type.
+ #[global]
  Hint Resolve eqk_not_ltk : ordered_type.
+ #[global]
  Hint Immediate ltk_eqk eqk_ltk : ordered_type.
+ #[global]
  Hint Resolve InA_eqke_eqk : ordered_type.
+ #[global]
  Hint Unfold MapsTo In : ordered_type.
+ #[global]
  Hint Immediate Inf_eq : ordered_type.
+ #[global]
  Hint Resolve Inf_lt : ordered_type.
+ #[global]
  Hint Resolve Sort_Inf_NotIn : ordered_type.
+ #[global]
  Hint Resolve In_inv_2 In_inv_3 : ordered_type.
 
 End KeyOrderedType.

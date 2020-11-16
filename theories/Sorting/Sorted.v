@@ -137,7 +137,9 @@ Section defs.
 
 End defs.
 
+#[global]
 Hint Constructors HdRel : core.
+#[global]
 Hint Constructors Sorted : core.
 
 (* begin hide *)

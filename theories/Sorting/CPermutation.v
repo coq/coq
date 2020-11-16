@@ -96,6 +96,7 @@ Qed.
 
 End CPermutation.
 
+#[global]
 Hint Resolve CPermutation_refl : core.
 
 (* These hints do not reduce the size of the problem to solve and they

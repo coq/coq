@@ -132,6 +132,7 @@ Register not_Zne as plugins.omega.not_Zne.
 
 Notation Zeq_le := Z.eq_le_incl (only parsing).
 
+#[global]
 Hint Resolve Z.le_refl: zarith.
 
 (** Antisymmetry *)
@@ -196,6 +197,7 @@ Proof.
   Z.swap_greater. Z.order.
 Qed.
 
+#[global]
 Hint Resolve Z.le_trans: zarith.
 
 (** * Compatibility of order and operations on Z *)
@@ -219,6 +221,7 @@ Proof.
   Z.swap_greater. apply Z.succ_lt_mono.
 Qed.
 
+#[global]
 Hint Resolve Zsucc_le_compat: zarith.
 
 (** Simplification of successor wrt to order *)
@@ -302,7 +305,9 @@ Proof.
   intros. now apply Z.lt_le_incl, Z.le_succ_l.
 Qed.
 
+#[global]
 Hint Resolve Z.le_succ_diag_r: zarith.
+#[global]
 Hint Resolve Z.le_le_succ_r: zarith.
 
 (** Relating order wrt successor and order wrt predecessor *)
@@ -357,6 +362,7 @@ Proof.
   intros n; induction n; simpl; intros. apply Z.le_refl. easy.
 Qed.
 
+#[global]
 Hint Immediate Z.eq_le_incl: zarith.
 
 (** Derived lemma *)

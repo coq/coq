@@ -228,8 +228,11 @@ Section Lexicographic_Exponentiation.
 
 End Lexicographic_Exponentiation.
 
+#[global]
 Hint Unfold transp union: sets.
+#[global]
 Hint Resolve t_step rt_step rt_refl rst_step rst_refl: sets.
+#[global]
 Hint Immediate rst_sym: sets.
 
 (* begin hide *)

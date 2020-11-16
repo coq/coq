@@ -187,7 +187,10 @@ End multiset_defs.
 
 Unset Implicit Arguments.
 
+#[global]
 Hint Unfold meq multiplicity: datatypes.
+#[global]
 Hint Resolve munion_empty_right munion_comm munion_ass meq_left meq_right
   munion_empty_left: datatypes.
+#[global]
 Hint Immediate meq_sym: datatypes.

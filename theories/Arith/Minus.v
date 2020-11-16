@@ -111,13 +111,23 @@ Qed.
 
 (** * Hints *)
 
+#[global]
 Hint Resolve minus_n_O: arith.
+#[global]
 Hint Resolve minus_Sn_m: arith.
+#[global]
 Hint Resolve minus_diag_reverse: arith.
+#[global]
 Hint Resolve minus_plus_simpl_l_reverse: arith.
+#[global]
 Hint Immediate plus_minus: arith.
+#[global]
 Hint Resolve minus_plus: arith.
+#[global]
 Hint Resolve le_plus_minus: arith.
+#[global]
 Hint Resolve le_plus_minus_r: arith.
+#[global]
 Hint Resolve lt_minus: arith.
+#[global]
 Hint Immediate lt_O_minus_lt: arith.

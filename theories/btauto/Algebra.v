@@ -10,6 +10,7 @@ end.
 
 Arguments decide P /H.
 
+#[global]
 Hint Extern 5 => progress bool : core.
 
 Ltac define t x H :=
@@ -147,6 +148,7 @@ Qed.
 
 (** * The core reflexive part. *)
 
+#[local]
 Hint Constructors valid : core.
 
 Fixpoint beq_poly pl pr :=
@@ -315,6 +317,7 @@ Section Validity.
 
 (* Decision procedure of validity *)
 
+#[local]
 Hint Constructors valid linear : core.
 
 Lemma valid_le_compat : forall k l p, valid k p -> (k <= l)%positive -> valid l p.
@@ -414,6 +417,7 @@ intros pl; induction pl; intros pr var; simpl.
     rewrite poly_add_compat, poly_mul_mon_compat, IHpl1, IHpl2; ring.
 Qed.
 
+#[local]
 Hint Extern 5 =>
 match goal with
 | [ |- (Pos.max ?x ?y <= ?z)%positive ] =>
@@ -426,8 +430,10 @@ match goal with
   apply Pos.max_case_strong; intros; lia
 | _ => lia
 end : core.
+#[local]
 Hint Resolve Pos.le_max_r Pos.le_max_l : core.
 
+#[local]
 Hint Constructors valid linear : core.
 
 (* Compatibility of validity w.r.t algebraic operations *)

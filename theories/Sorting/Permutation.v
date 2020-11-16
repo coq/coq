@@ -76,6 +76,7 @@ Qed.
 
 End Permutation.
 
+#[global]
 Hint Resolve Permutation_refl perm_nil perm_skip : core.
 
 (* These hints do not reduce the size of the problem to solve and they

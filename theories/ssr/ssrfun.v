@@ -450,6 +450,7 @@ End ExtensionalEquality.
 Typeclasses Opaque eqfun.
 Typeclasses Opaque eqrel.
 
+#[global]
 Hint Resolve frefl rrefl : core.
 
 Notation "f1 =1 f2" := (eqfun f1 f2) : fun_scope.

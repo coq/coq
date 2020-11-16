@@ -11,6 +11,7 @@
 Require Export QArith.
 Require Export Qreduction.
 
+#[global]
 Hint Resolve Qlt_le_weak : qarith.
 
 Definition Qabs (x:Q) := let (n,d):=x in (Z.abs n#d).

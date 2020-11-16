@@ -38,7 +38,9 @@ Module KeyDecidableType(D:DecidableType).
   Definition eqke (p p':key*elt) :=
           eq (fst p) (fst p') /\ (snd p) = (snd p').
 
+  #[local]
   Hint Unfold eqk eqke : core.
+  #[local]
   Hint Extern 2 (eqke ?a ?b) => split : core.
 
    (* eqke is stricter than eqk *)
@@ -70,7 +72,9 @@ Module KeyDecidableType(D:DecidableType).
     unfold eqke; intuition; [ eauto | congruence ].
   Qed.
 
+  #[local]
   Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl : core.
+  #[local]
   Hint Immediate eqk_sym eqke_sym : core.
 
   Global Instance eqk_equiv : Equivalence eqk.
@@ -84,6 +88,7 @@ Module KeyDecidableType(D:DecidableType).
   Proof.
     unfold eqke; induction 1; intuition. 
   Qed.
+  #[local]
   Hint Resolve InA_eqke_eqk : core.
 
   Lemma InA_eqk : forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
@@ -94,6 +99,7 @@ Module KeyDecidableType(D:DecidableType).
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
   Definition In k m := exists e:elt, MapsTo k e m.
 
+  #[local]
   Hint Unfold MapsTo In : core.
 
   (* An alternative formulation for [In k l] is [exists e, InA eqk (k,e) l] *)
@@ -140,12 +146,19 @@ Module KeyDecidableType(D:DecidableType).
 
  End Elt.
 
+ #[global]
  Hint Unfold eqk eqke : core.
+ #[global]
  Hint Extern 2 (eqke ?a ?b) => split : core.
+ #[global]
  Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl : core.
+ #[global]
  Hint Immediate eqk_sym eqke_sym : core.
+ #[global]
  Hint Resolve InA_eqke_eqk : core.
+ #[global]
  Hint Unfold MapsTo In : core.
+ #[global]
  Hint Resolve In_inv_2 In_inv_3 : core.
 
 End KeyDecidableType.

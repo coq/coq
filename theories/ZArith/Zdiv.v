@@ -75,6 +75,7 @@ Proof.
     + apply Pos2Z.neg_is_nonpos.
 Qed.
 
+#[global]
 Hint Unfold Remainder : core.
 
 (** Now comes the fully general result about Euclidean division. *)
@@ -203,6 +204,7 @@ Proof. intros a. zero_or_not a. apply Z.mod_1_r. Qed.
 Lemma Zdiv_1_r: forall a, a/1 = a.
 Proof. intros a. zero_or_not a. apply Z.div_1_r. Qed.
 
+#[global]
 Hint Resolve Zmod_0_l Zmod_0_r Zdiv_0_l Zdiv_0_r Zdiv_1_r Zmod_1_r
  : zarith.
 

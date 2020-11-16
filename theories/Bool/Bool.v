@@ -44,13 +44,16 @@ Lemma diff_true_false : true <> false.
 Proof.
   discriminate.
 Qed.
+#[global]
 Hint Resolve diff_true_false : bool.
 
 Lemma diff_false_true : false <> true.
 Proof.
   discriminate.
 Qed.
+#[global]
 Hint Resolve diff_false_true : bool.
+#[global]
 Hint Extern 1 (false <> true) => exact diff_false_true : core.
 
 Lemma eq_true_false_abs : forall b:bool, b = true -> b = false -> False.
@@ -87,6 +90,7 @@ Qed.
     | true => b2 = true
     | false => True
   end.
+#[global]
 Hint Unfold le: bool.
 
 Lemma le_implb : forall b1 b2, le b1 b2 <-> implb b1 b2 = true.
@@ -104,6 +108,7 @@ Notation leb_implb := le_implb (only parsing).
     | true => False
     | false => b2 = true
   end.
+#[global]
 Hint Unfold lt: bool.
 
 #[ local ] Definition compare (b1 b2 : bool) :=
@@ -271,6 +276,7 @@ Lemma orb_true_intro :
 Proof.
  intros; apply orb_true_iff; trivial.
 Qed.
+#[global]
 Hint Resolve orb_true_intro: bool.
 
 Lemma orb_false_intro :
@@ -278,6 +284,7 @@ Lemma orb_false_intro :
 Proof.
  intros. subst. reflexivity.
 Qed.
+#[global]
 Hint Resolve orb_false_intro: bool.
 
 Lemma orb_false_elim :
@@ -297,6 +304,7 @@ Lemma orb_true_r : forall b:bool, b || true = true.
 Proof.
   destr_bool.
 Qed.
+#[global]
 Hint Resolve orb_true_r: bool.
 
 Lemma orb_true_l : forall b:bool, true || b = true.
@@ -313,12 +321,14 @@ Lemma orb_false_r : forall b:bool, b || false = b.
 Proof.
   destr_bool.
 Qed.
+#[global]
 Hint Resolve orb_false_r: bool.
 
 Lemma orb_false_l : forall b:bool, false || b = b.
 Proof.
   destr_bool.
 Qed.
+#[global]
 Hint Resolve orb_false_l: bool.
 
 Notation orb_b_false := orb_false_r (only parsing).
@@ -330,6 +340,7 @@ Lemma orb_negb_r : forall b:bool, b || negb b = true.
 Proof.
   destr_bool.
 Qed.
+#[global]
 Hint Resolve orb_negb_r: bool.
 
 Lemma orb_negb_l : forall b:bool, negb b || b = true.
@@ -352,6 +363,7 @@ Lemma orb_assoc : forall b1 b2 b3:bool, b1 || (b2 || b3) = b1 || b2 || b3.
 Proof.
   destr_bool.
 Qed.
+#[global]
 Hint Resolve orb_comm orb_assoc: bool.
 
 (***************************)
@@ -426,6 +438,7 @@ Lemma andb_false_elim :
 Proof.
   intro b1; destruct b1; simpl; auto.
 Defined.
+#[global]
 Hint Resolve andb_false_elim: bool.
 
 (** Complementation *)
@@ -434,6 +447,7 @@ Lemma andb_negb_r : forall b:bool, b && negb b = false.
 Proof.
   destr_bool.
 Qed.
+#[global]
 Hint Resolve andb_negb_r: bool.
 
 Lemma andb_negb_l : forall b:bool, negb b && b = false.
@@ -457,6 +471,7 @@ Proof.
   destr_bool.
 Qed.
 
+#[global]
 Hint Resolve andb_comm andb_assoc: bool.
 
 (*****************************************)
@@ -722,6 +737,7 @@ Qed.
 
 Notation bool_6 := eq_true_not_negb (only parsing). (* Compatibility *)
 
+#[global]
 Hint Resolve eq_true_not_negb : bool.
 
 (* An interesting lemma for auto but too strong to keep compatibility *)
@@ -737,6 +753,7 @@ Lemma absurd_eq_true : forall b, False -> b = true.
 Proof.
   contradiction.
 Qed.
+#[global]
 Hint Resolve absurd_eq_true : core.
 
 (* A specific instance of eq_trans that preserves compatibility with
@@ -746,6 +763,7 @@ Lemma trans_eq_bool : forall x y z:bool, x = y -> y = z -> x = z.
 Proof.
   apply eq_trans.
 Qed.
+#[global]
 Hint Resolve trans_eq_bool : core.
 
 (***************************************)
@@ -754,6 +772,7 @@ Hint Resolve trans_eq_bool : core.
 
 (** [Is_true] and equality *)
 
+#[global]
 Hint Unfold Is_true: bool.
 
 Lemma Is_true_eq_true : forall x:bool, Is_true x -> x = true.
@@ -773,6 +792,7 @@ Qed.
 
 Notation Is_true_eq_true2 := Is_true_eq_right (only parsing).
 
+#[global]
 Hint Immediate Is_true_eq_right Is_true_eq_left: bool.
 
 Lemma eqb_refl : forall x:bool, Is_true (eqb x x).
@@ -806,6 +826,7 @@ Lemma andb_prop_intro :
 Proof.
   destr_bool; tauto.
 Qed.
+#[global]
 Hint Resolve andb_prop_intro: bool.
 
 Notation andb_true_intro2 :=
@@ -817,6 +838,7 @@ Lemma andb_prop_elim :
 Proof.
   destr_bool; auto.
 Qed.
+#[global]
 Hint Resolve andb_prop_elim: bool.
 
 Notation andb_prop2 := andb_prop_elim (only parsing).
@@ -901,6 +923,7 @@ Qed.
 Inductive reflect (P : Prop) : bool -> Set :=
   | ReflectT : P -> reflect P true
   | ReflectF : ~ P -> reflect P false.
+#[global]
 Hint Constructors reflect : bool.
 
 (** Interest: a case on a reflect lemma or hyp performs clever

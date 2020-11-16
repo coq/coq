@@ -35,5 +35,7 @@ Export EqdepTheory.
 
 (** Exported hints *)
 
+#[global]
 Hint Resolve eq_dep_eq: eqdep.
+#[global]
 Hint Resolve inj_pair2 inj_pairT2: eqdep.

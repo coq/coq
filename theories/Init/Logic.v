@@ -41,9 +41,12 @@ Register not as core.not.type.
   variables and constants explicitly. *)
 
 Create HintDb core.
+#[global]
 Hint Variables Opaque : core.
+#[global]
 Hint Constants Opaque : core.
 
+#[global]
 Hint Unfold not: core.
 
   (** [and A B], written [A /\ B], is the conjunction of [A] and [B]
@@ -119,6 +122,7 @@ Theorem iff_sym : forall A B:Prop, (A <-> B) -> (B <-> A).
 
 End Equivalence.
 
+#[global]
 Hint Unfold iff: extcore.
 
 (** Backward direction of the equivalences above does not need assumptions *)
@@ -364,8 +368,11 @@ Notation "x = y" := (eq x y) : type_scope.
 Notation "x <> y  :> T" := (~ x = y :>T) : type_scope.
 Notation "x <> y" := (~ (x = y)) : type_scope.
 
+#[global]
 Hint Resolve I conj or_introl or_intror : core.
+#[global]
 Hint Resolve eq_refl: core.
+#[global]
 Hint Resolve ex_intro ex_intro2: core.
 
 Register eq as core.eq.type.
@@ -733,6 +740,7 @@ Notation sym_equal := eq_sym (only parsing).
 Notation trans_equal := eq_trans (only parsing).
 Notation sym_not_equal := not_eq_sym (only parsing).
 
+#[global]
 Hint Immediate eq_sym not_eq_sym: core.
 
 (** Basic definitions about relations and properties *)
@@ -801,6 +809,7 @@ Qed.
 
 Inductive inhabited (A:Type) : Prop := inhabits : A -> inhabited A.
 
+#[global]
 Hint Resolve inhabits: core.
 
 Lemma exists_inhabited : forall (A:Type) (P:A->Prop),

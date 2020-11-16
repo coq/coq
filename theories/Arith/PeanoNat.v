@@ -765,7 +765,9 @@ Infix "?=" := Nat.compare (at level 70) : nat_scope.
 Infix "/" := Nat.div : nat_scope.
 Infix "mod" := Nat.modulo (at level 40, no associativity) : nat_scope.
 
+#[global]
 Hint Unfold Nat.le : core.
+#[global]
 Hint Unfold Nat.lt : core.
 
 Register Nat.le_trans as num.nat.le_trans.

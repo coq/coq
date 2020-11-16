@@ -2,6 +2,7 @@
 
 Parameter foo : Prop.
 Axiom H : foo -> foo.
+#[global]
 Hint Resolve H : foo.
 Goal foo.
 Typeclasses eauto := debug.

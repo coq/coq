@@ -290,6 +290,7 @@ Proof. intros h; apply Z.lt_gt, Zpower_gt_0; lia. Qed.
 Lemma pow2_nz n : 0 <= n → 2 ^ n ≠ 0.
 Proof. intros h; generalize (pow2_pos _ h); lia. Qed.
 
+#[global]
 Hint Resolve pow2_pos pow2_nz : zarith.
 
 (* =================================================== *)

@@ -797,5 +797,7 @@ Proof.
   apply (h2 h1).
 Defined.
 
+#[global]
 Hint Resolve left right inleft inright: core.
+#[global]
 Hint Resolve exist exist2 existT existT2: core.

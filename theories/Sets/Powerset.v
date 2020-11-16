@@ -38,12 +38,14 @@ Variable U : Type.
 Inductive Power_set (A:Ensemble U) : Ensemble (Ensemble U) :=
     Definition_of_Power_set :
       forall X:Ensemble U, Included U X A -> In (Ensemble U) (Power_set A) X.
+#[local]
 Hint Resolve Definition_of_Power_set : core.
 
 Theorem Empty_set_minimal : forall X:Ensemble U, Included U (Empty_set U) X.
 intro X; red.
 intros x H'; elim H'.
 Qed.
+#[local]
 Hint Resolve Empty_set_minimal : core.
 
 Theorem Power_set_Inhabited :
@@ -51,22 +53,26 @@ Theorem Power_set_Inhabited :
 intro X.
 apply Inhabited_intro with (Empty_set U); auto with sets.
 Qed.
+#[local]
 Hint Resolve Power_set_Inhabited : core.
 
 Theorem Inclusion_is_an_order : Order (Ensemble U) (Included U).
 auto 6 with sets.
 Qed.
+#[local]
 Hint Resolve Inclusion_is_an_order : core.
 
 Theorem Inclusion_is_transitive : Transitive (Ensemble U) (Included U).
 elim Inclusion_is_an_order; auto with sets.
 Qed.
+#[local]
 Hint Resolve Inclusion_is_transitive : core.
 
 Definition Power_set_PO : Ensemble U -> PO (Ensemble U).
 intro A; try assumption.
 apply Definition_of_PO with (Power_set A) (Included U); auto with sets.
 Defined.
+#[local]
 Hint Unfold Power_set_PO : core.
 
 Theorem Strict_Rel_is_Strict_Included :
@@ -74,6 +80,7 @@ Theorem Strict_Rel_is_Strict_Included :
    (Strict_Rel_of (Ensemble U) (Power_set_PO (Full_set U))).
 auto with sets.
 Qed.
+#[local]
 Hint Resolve Strict_Rel_Transitive Strict_Rel_is_Strict_Included : core.
 
 Lemma Strict_inclusion_is_transitive_with_inclusion :
@@ -109,6 +116,7 @@ Theorem Empty_set_is_Bottom :
  forall A:Ensemble U, Bottom (Ensemble U) (Power_set_PO A) (Empty_set U).
 intro A; apply Bottom_definition; simpl; auto with sets.
 Qed.
+#[local]
 Hint Resolve Empty_set_is_Bottom : core.
 
 Theorem Union_minimal :
@@ -117,6 +125,7 @@ Theorem Union_minimal :
 intros a b X H' H'0; red.
 intros x H'1; elim H'1; auto with sets.
 Qed.
+#[local]
 Hint Resolve Union_minimal : core.
 
 Theorem Intersection_maximal :
@@ -144,6 +153,7 @@ Theorem Intersection_decreases_r :
 intros a b; red.
 intros x H'; elim H'; auto with sets.
 Qed.
+#[local]
 Hint Resolve Union_increases_l Union_increases_r Intersection_decreases_l
   Intersection_decreases_r : core.
 
@@ -177,14 +187,25 @@ Qed.
 
 End The_power_set_partial_order.
 
+#[global]
 Hint Resolve Empty_set_minimal: sets.
+#[global]
 Hint Resolve Power_set_Inhabited: sets.
+#[global]
 Hint Resolve Inclusion_is_an_order: sets.
+#[global]
 Hint Resolve Inclusion_is_transitive: sets.
+#[global]
 Hint Resolve Union_minimal: sets.
+#[global]
 Hint Resolve Union_increases_l: sets.
+#[global]
 Hint Resolve Union_increases_r: sets.
+#[global]
 Hint Resolve Intersection_decreases_l: sets.
+#[global]
 Hint Resolve Intersection_decreases_r: sets.
+#[global]
 Hint Resolve Empty_set_is_Bottom: sets.
+#[global]
 Hint Resolve Strict_inclusion_is_transitive: sets.

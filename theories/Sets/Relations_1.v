@@ -61,7 +61,9 @@ Section Relations_1.
        Definition_of_PER : Symmetric -> Transitive -> PER.
 
 End Relations_1.
+#[global]
 Hint Unfold Reflexive Transitive Antisymmetric Symmetric contains
   same_relation: sets.
+#[global]
 Hint Resolve Definition_of_preorder Definition_of_order
   Definition_of_equivalence Definition_of_PER: sets.

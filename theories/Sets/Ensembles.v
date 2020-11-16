@@ -92,8 +92,10 @@ Section Ensembles.
 
 End Ensembles.
 
+#[global]
 Hint Unfold In Included Same_set Strict_Included Add Setminus Subtract: sets.
 
+#[global]
 Hint Resolve Union_introl Union_intror Intersection_intro In_singleton
   Couple_l Couple_r Triple_l Triple_m Triple_r Disjoint_intro
   Extensionality_Ensembles: sets.

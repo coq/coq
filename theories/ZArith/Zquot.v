@@ -57,6 +57,7 @@ Proof. now destruct a. Qed.
 Lemma Zquot_0_l a : 0÷a = 0.
 Proof. now destruct a. Qed.
 
+#[global]
 Hint Resolve Zrem_0_l Zrem_0_r Zquot_0_l Zquot_0_r Z.quot_1_r Z.rem_1_r
  : zarith.
 

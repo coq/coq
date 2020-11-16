@@ -68,10 +68,13 @@ Section Relation_Definition.
 
 End Relation_Definition.
 
+#[global]
 Hint Unfold reflexive transitive antisymmetric symmetric: sets.
 
+#[global]
 Hint Resolve Build_preorder Build_order Build_equivalence Build_PER
   preord_refl preord_trans ord_refl ord_trans ord_antisym equiv_refl
   equiv_trans equiv_sym per_sym per_trans: sets.
 
+#[global]
 Hint Unfold inclusion same_relation commut: sets.

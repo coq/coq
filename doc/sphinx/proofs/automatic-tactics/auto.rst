@@ -123,6 +123,10 @@ Programmable proof search
 
    .. example::
 
+      .. coqtop:: none
+
+         Set Warnings "-deprecated-hint-without-locality".
+
       .. coqtop:: all
 
          Hint Resolve ex_intro : core.
@@ -285,6 +289,13 @@ automatically created.
    + :attr:`global` hints are made available by merely requiring the current
      module.
 
+   .. deprecated:: 8.13
+
+     The default value for hint locality is scheduled to change in a future
+     release. For the time being, adding hints outside of sections without
+     specifying an explicit locality is therefore triggering a deprecation
+     warning. It is recommended to use :attr:`export` whenever possible
+
    The various possible :production:`hint_definition`\s are given below.
 
    .. cmdv:: Hint @hint_definition
@@ -405,6 +416,10 @@ automatically created.
 
       .. example::
 
+         .. coqtop:: none
+
+            Set Warnings "-deprecated-hint-without-locality".
+
          .. coqtop:: in
 
             Hint Extern 4 (~(_ = _)) => discriminate : core.
@@ -419,7 +434,11 @@ automatically created.
 
       .. example::
 
-         .. coqtop:: reset all
+         .. coqtop:: reset none
+
+            Set Warnings "-deprecated-hint-without-locality".
+
+         .. coqtop:: all
 
             Require Import List.
             Hint Extern 5 ({?X1 = ?X2} + {?X1 <> ?X2}) => generalize  X1, X2; decide equality : eqdec.

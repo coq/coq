@@ -95,7 +95,9 @@ Proof.
 symmetry. apply Z.ge_le_iff.
 Qed.
 
+#[global]
 Hint Unfold Qeq Qlt Qle : qarith.
+#[global]
 Hint Extern 5 (?X1 <> ?X2) => intro; discriminate: qarith.
 
 Lemma Qcompare_antisym x y : CompOpp (x ?= y) = (y ?= x).
@@ -127,7 +129,9 @@ apply Z.mul_reg_r with (QDen y); [auto with qarith|].
 now rewrite Z.mul_shuffle0, XY, Z.mul_shuffle0, YZ, Z.mul_shuffle0.
 Qed.
 
+#[global]
 Hint Immediate Qeq_sym : qarith.
+#[global]
 Hint Resolve Qeq_refl Qeq_trans : qarith.
 
 (** In a word, [Qeq] is a setoid equality. *)
@@ -203,6 +207,7 @@ Proof.
   rewrite !Qeq_bool_iff; apply Qeq_trans.
 Qed.
 
+#[global]
 Hint Resolve Qnot_eq_sym : qarith.
 
 (** * Addition, multiplication and opposite *)
@@ -783,6 +788,7 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+#[global]
 Hint Resolve Qle_trans : qarith.
 
 Lemma Qlt_irrefl x : ~x<x.
@@ -863,6 +869,7 @@ Proof.
   unfold Qle, Qlt, Qeq; intros; now apply Z.lt_eq_cases.
 Qed.
 
+#[global]
 Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le
  Qlt_le_weak Qlt_not_eq Qle_antisym Qle_refl: qarith.
 
@@ -904,6 +911,7 @@ Proof.
 Qed.
 
 
+#[global]
 Hint Resolve Qopp_le_compat : qarith.
 
 Lemma Qle_minus_iff : forall p q, p <= q <-> 0 <= q+-p.

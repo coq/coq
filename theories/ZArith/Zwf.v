@@ -57,6 +57,7 @@ Section wf_proof.
 
 End wf_proof.
 
+#[global]
 Hint Resolve Zwf_well_founded: datatypes.
 
 
@@ -87,4 +88,5 @@ Section wf_proof_up.
 
 End wf_proof_up.
 
+#[global]
 Hint Resolve Zwf_up_well_founded: datatypes.
