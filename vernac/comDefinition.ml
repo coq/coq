@@ -111,6 +111,10 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
   evd, (c, tyopt), imps
 
+let definition_using env evd ~body ~types ~using =
+  let terms = Option.List.cons types [body] in
+  Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using
+
 let do_definition ?hook ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl red_option c ctypopt =
   let program_mode = false in
   let env = Global.env() in
@@ -120,11 +124,7 @@ let do_definition ?hook ~name ~scope ~poly ?typing_flags ~kind ?using udecl bl r
   let evd, (body, types), impargs =
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
-  let using = using |> Option.map (fun expr ->
-    let terms = body :: match types with Some x -> [x] | None -> [] in
-    let l = Proof_using.process_expr (Global.env()) evd expr terms in
-    Names.Id.Set.(List.fold_right add l empty))
-  in
+  let using = definition_using env evd ~body ~types ~using in
   let kind = Decls.IsDefinition kind in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ?using () in
   let info = Declare.Info.make ~scope ~kind ?hook ~udecl ~poly ?typing_flags () in
@@ -141,11 +141,7 @@ let do_definition_program ?hook ~pm ~name ~scope ~poly ?typing_flags ~kind ?usin
   let evd, (body, types), impargs =
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
-  let using = using |> Option.map (fun expr ->
-    let terms = body :: match types with Some x -> [x] | None -> [] in
-    let l = Proof_using.process_expr (Global.env()) evd expr terms in
-    Names.Id.Set.(List.fold_right add l empty))
-  in
+  let using = definition_using env evd ~body ~types ~using in
   let term, typ, uctx, obls = Declare.Obls.prepare_obligation ~name ~body ~types evd in
   let pm, _ =
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in

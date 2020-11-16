@@ -79,7 +79,7 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
-    -> ?using:Names.Id.Set.t
+    -> ?using:Proof_using.t
     -> unit
     -> 'constr t
 
@@ -244,7 +244,7 @@ module Proof : sig
 
   (** Sets the section variables assumed by the proof, returns its closure
    * (w.r.t. type dependencies and let-ins covered by it) *)
-  val set_used_variables : t -> Names.Id.t list -> Constr.named_context * t
+  val set_used_variables : t -> using:Proof_using.t -> Constr.named_context * t
 
   (** Gets the set of variables declared to be used by the proof. None means
       no "Proof using" or #[using] was given *)

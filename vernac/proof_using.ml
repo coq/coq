@@ -64,6 +64,12 @@ let process_expr env sigma e ty =
   let s = Id.Set.union v_ty (process_expr env sigma e v_ty) in
   Id.Set.elements s
 
+type t = Names.Id.Set.t
+
+let definition_using env evd ~using ~terms =
+  let l = process_expr env evd using terms in
+  Names.Id.Set.(List.fold_right add l empty)
+
 let name_set id expr = known_names := (id,expr) :: !known_names
 
 let minimize_hyps env ids =
