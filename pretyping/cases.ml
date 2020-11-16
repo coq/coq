@@ -1784,25 +1784,24 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
   !evdref, ans
 
 let build_tycon ?loc env tycon_env s subst tycon extenv sigma t =
-  let sigma, t, tt = match t with
+  let s = mkSort s in
+  match t with
     | None ->
         (* This is the situation we are building a return predicate and
            we are in an impossible branch *)
         let n = Context.Rel.length (rel_context !!env) in
         let n' = Context.Rel.length (rel_context !!tycon_env) in
-        let sigma, (impossible_case_type, u) =
-          Evarutil.new_type_evar (reset_context !!env) ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase)
-            sigma univ_flexible_alg
-        in
-        (sigma, lift (n'-n) impossible_case_type, mkSort u)
+        let src = Loc.tag ?loc Evar_kinds.ImpossibleCase in
+        let sigma, impossible_case_type =
+          Evarutil.new_evar (reset_context !!env) sigma ~src ~typeclass_candidate:false s in
+        (sigma, { uj_val = lift (n'-n) impossible_case_type; uj_type = s })
     | Some t ->
         let sigma, t = abstract_tycon ?loc tycon_env sigma subst tycon extenv t in
         let sigma, tt = Typing.type_of !!extenv sigma t in
-        (sigma, t, tt) in
-  match unify_leq_delay !!env sigma tt (mkSort s) with
-  | exception Evarconv.UnableToUnify _ -> anomaly (Pp.str "Build_tycon: should be a type.");
-  | sigma ->
-    sigma, { uj_val = t; uj_type = tt }
+        match unify_leq_delay !!env sigma tt s with
+        | exception Evarconv.UnableToUnify _ -> anomaly (Pp.str "Build_tycon: should be a type.");
+        | sigma -> (sigma, { uj_val = t; uj_type = tt })
+
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
  * type T, [build_inversion_problem Gamma Sigma (t1..tn) T] builds a return
@@ -1915,9 +1914,24 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
                   it = None } } ] in
   (* [pb] is the auxiliary pattern-matching serving as skeleton for the
       return type of the original problem Xi *)
-  let s' = Retyping.get_sort_of !!env sigma t in
-  let sigma, s = Evd.new_sort_variable univ_flexible sigma in
-  let sigma = Evd.set_leq_sort !!env sigma s' s in
+  let s = Retyping.get_sort_of !!env sigma t in
+  let sigma, s = Sorts.(match s with
+  | SProp | Prop | Set ->
+    (* To anticipate a possible restriction on an elimination from
+       SProp, Prop or (impredicative) Set we preserve the sort of the
+       main branch, knowing that the default impossible case shall
+       always be coercible to one of those *)
+      sigma, s
+  | Type _ ->
+    (* If the sort has algebraic universes, we cannot use this sort a
+       type constraint for the impossible case; especially if the
+       default case is not the canonical one provided in Prop by Coq
+       but one given by the user, which may be in either sort (an
+       example is in Vector.caseS', even if this one can probably be
+       put in Prop too with some care) *)
+    let sigma, s' = Evd.new_sort_variable univ_flexible sigma in
+    let sigma = Evd.set_leq_sort !!env sigma s s' in
+    sigma, s') in
   let pb =
     { env       = pb_env;
       pred      = (*ty *) mkSort s;
@@ -2066,6 +2080,15 @@ let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs ars
         Some (sigma', p, arsign)
   with e when precatchable_exception e -> None
 
+let expected_elimination_sort env tomatchl =
+  List.fold_right (fun (_,tm) s ->
+      match tm with
+      | IsInd (_,IndType(indf,_),_) ->
+        (* Not a degenerated line, see coerce_to_indtype *)
+        let s' = Inductive.elim_sort (Inductive.lookup_mind_specif env (fst (fst (dest_ind_family indf)))) in
+        if Sorts.family_leq s s' then s else s'
+      | NotInd _ -> s) tomatchl Sorts.InType
+
 (* Builds the predicate. If the predicate is dependent, its context is
  * made of 1+nrealargs assumptions for each matched term in an inductive
  * type and 1 assumption for each term not _syntactically_ in an
@@ -2116,8 +2139,12 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
     | Some rtntyp ->
       (* We extract the signature of the arity *)
       let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma) arsign env in
-      let sigma, newt = new_sort_variable univ_flexible sigma in
-      let sigma, predcclj = typing_fun (mk_tycon (mkSort newt)) envar sigma rtntyp in
+      (* We put a type constraint on the predicate so that one
+         branch type-checked first does not lead to a lower type than
+         another branch; we take into account the possible elimination
+         constraints on the predicate *)
+      let sigma, rtnsort = fresh_sort_in_family sigma (expected_elimination_sort !!env tomatchs) in
+      let sigma, predcclj = typing_fun (Some (mkSort rtnsort)) envar sigma rtntyp in
       let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl, building_arsign]
   in
