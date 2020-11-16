@@ -51,8 +51,8 @@ Check fun A (x : prod' bool A) => match x with (@pair' _ 0) _ y 0%bool => 2 | _ 
 Notation c3 x := ((@pair') _ x).
 Check (@pair') _ 0%bool _ 0%bool 0%bool : prod' bool bool. (* @ is blocking implicit and scopes *)
 Check ((@pair') _ 0%bool) _ 0%bool 0%bool : prod' bool bool. (* parentheses and @ are blocking implicit and scopes *)
-Check c3 0 0 0 : prod' nat bool. (* First scope is blocked but not the last two scopes *)
-Check fun A (x :prod' nat A) => match x with c3 0 y 0 => 2 | _ => 1 end.
+Check c3 0 0 0 : prod' bool bool.
+Check fun A (x :prod' bool A) => match x with c3 0 y 0 => 2 | _ => 1 end.
 
 (* 4. Abbreviations do not stop implicit arguments to be inserted and scopes to be used *)
 (* unless an atomic @ is given *)
