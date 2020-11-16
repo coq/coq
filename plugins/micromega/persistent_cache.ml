@@ -125,7 +125,7 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
       let outch = out_channel_of_descr out in
       do_under_lock Write out (fun () ->
           Table.iter
-            (fun k e -> Marshal.to_channel outch (k, e) [Marshal.No_sharing])
+            (fun k e -> Marshal.to_channel outch (k, e) [])
             htbl;
           flush outch);
       {outch; htbl}
@@ -135,7 +135,7 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
     let fd = descr_of_out_channel outch in
     Table.add tbl k e;
     do_under_lock Write fd (fun _ ->
-        Marshal.to_channel outch (k, e) [Marshal.No_sharing];
+        Marshal.to_channel outch (k, e) [];
         flush outch)
 
   let find t k =
