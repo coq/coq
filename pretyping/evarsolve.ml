@@ -227,8 +227,7 @@ let recheck_applications unify flags env evdref t =
             (match unify flags TypeUnification env !evdref Reduction.CUMUL argsty.(i) dom with
              | Success evd -> evdref := evd;
                              aux (succ i) (subst1 args.(i) codom)
-             | UnifFailure (evd, reason) ->
-                Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), dom))
+             | UnifFailure (evd, reason) -> raise (IllTypedInstance (env, ty, argsty.(i))))
          | _ -> raise (IllTypedInstance (env, ty, argsty.(i)))
        else ()
      in aux 0 fty
@@ -936,13 +935,6 @@ let project_with_effects aliases sigma t subst =
   in
   filter_solution (Int.Map.fold is_projectable subst [])
 
-open Context.Named.Declaration
-let rec find_solution_type evarenv = function
-  | (id,ProjectVar)::l -> get_type (lookup_named id evarenv)
-  | [id,ProjectEvar _] -> (* bugged *) get_type (lookup_named id evarenv)
-  | (id,ProjectEvar _)::l -> find_solution_type evarenv l
-  | [] -> assert false
-
 (* In case the solution to a projection problem requires the instantiation of
  * subsidiary evars, [do_projection_effects] performs them; it
  * also try to instantiate the type of those subsidiary evars if their
@@ -1553,10 +1545,10 @@ let rec invert_definition unify flags choose imitate_defs
             raise (NotEnoughInformationToProgress sols);
           (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
-          let ty = find_solution_type (evar_filtered_env env evi) sols in
-          let ty' = instantiate_evar_array evi ty argsv in
+          let t' = of_alias t in
+          let ty = Retyping.get_type_of env !evdref t' in
           let (evd,evar,(evk',argsv' as ev')) =
-            materialize_evar (evar_define unify flags ~choose) env !evdref 0 ev ty' in
+            materialize_evar (evar_define unify flags ~choose) env !evdref 0 ev ty in
           let ts = expansions_of_var evd aliases t in
           let test c = isEvar evd c || List.exists (is_alias evd c) ts in
           let filter = restrict_upon_filter evd evk test argsv' in
@@ -1565,7 +1557,7 @@ let rec invert_definition unify flags choose imitate_defs
           let evd = match candidates with
           | NoUpdate ->
             let evd, ev'' = restrict_applied_evar evd ev' filter NoUpdate in
-            add_conv_oriented_pb ~tail:false (None,env,mkEvar ev'',of_alias t) evd
+            add_conv_oriented_pb ~tail:false (None,env,mkEvar ev'',t') evd
           | UpdateWith _ ->
             restrict_evar evd evk' filter candidates
           in
