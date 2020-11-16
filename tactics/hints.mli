@@ -189,7 +189,7 @@ val searchtable_add : (hint_db_name * hint_db) -> unit
 
 val create_hint_db : bool -> hint_db_name -> TransparentState.t -> bool -> unit
 
-val remove_hints : bool -> hint_db_name list -> GlobRef.t list -> unit
+val remove_hints : locality:Goptions.option_locality -> hint_db_name list -> GlobRef.t list -> unit
 
 val current_db_names : unit -> String.Set.t
 

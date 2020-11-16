@@ -280,9 +280,7 @@ automatically created.
      sections.
 
    + :attr:`export` are visible from other modules when they import the current
-     module. Requiring it is not enough. This attribute is only effective for
-     the :cmd:`Hint Resolve`, :cmd:`Hint Immediate`, :cmd:`Hint Unfold` and
-     :cmd:`Hint Extern` variants of the command.
+     module. Requiring it is not enough.
 
    + :attr:`global` hints are made available by merely requiring the current
      module.

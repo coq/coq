@@ -1314,13 +1314,26 @@ let warn_implicit_core_hint_db =
          (fun () -> strbrk "Adding and removing hints in the core database implicitly is deprecated. "
              ++ strbrk"Please specify a hint database.")
 
-let vernac_remove_hints ~module_local dbnames ids =
+let check_hint_locality = function
+| OptGlobal ->
+  if Global.sections_are_opened () then
+  CErrors.user_err Pp.(str
+    "This command does not support the global attribute in sections.");
+| OptExport ->
+  if Global.sections_are_opened () then
+  CErrors.user_err Pp.(str
+    "This command does not support the export attribute in sections.");
+| OptDefault | OptLocal -> ()
+
+let vernac_remove_hints ~atts dbnames ids =
+  let locality = Attributes.(parse option_locality atts) in
+  let () = check_hint_locality locality in
   let dbnames =
     if List.is_empty dbnames then
       (warn_implicit_core_hint_db (); ["core"])
     else dbnames
   in
-  Hints.remove_hints module_local dbnames (List.map Smartlocate.global_with_alias ids)
+  Hints.remove_hints ~locality dbnames (List.map Smartlocate.global_with_alias ids)
 
 let vernac_hints ~atts dbnames h =
   let dbnames =
@@ -1329,17 +1342,7 @@ let vernac_hints ~atts dbnames h =
     else dbnames
   in
   let locality, poly = Attributes.(parse Notations.(option_locality ++ polymorphic) atts) in
-  let () = match locality with
-  | OptGlobal ->
-    if Global.sections_are_opened () then
-    CErrors.user_err Pp.(str
-      "This command does not support the global attribute in sections.");
-  | OptExport ->
-    if Global.sections_are_opened () then
-    CErrors.user_err Pp.(str
-      "This command does not support the export attribute in sections.");
-  | OptDefault | OptLocal -> ()
-  in
+  let () = check_hint_locality locality in
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
 let vernac_syntactic_definition ~atts lid x only_parsing =
@@ -2184,7 +2187,7 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
         with_module_locality ~atts vernac_create_hintdb dbname b)
   | VernacRemoveHints (dbnames,ids) ->
     VtDefault(fun () ->
-        with_module_locality ~atts vernac_remove_hints dbnames ids)
+        vernac_remove_hints ~atts dbnames ids)
   | VernacHints (dbnames,hints) ->
     VtDefault(fun () ->
         vernac_hints ~atts dbnames hints)
