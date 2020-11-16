@@ -149,6 +149,18 @@ let print_query opts = function
     heap increment and the GC pressure coefficient.
 *)
 
+let set_gc_policy () =
+  Gc.set { (Gc.get ()) with
+           Gc.minor_heap_size = 32*1024*1024 (* 32Mwords x 8 bytes/word = 256Mb *)
+         ; Gc.space_overhead = 120
+         }
+
+let set_gc_best_fit () =
+  Gc.set { (Gc.get ()) with
+           Gc.allocation_policy = 2      (* best-fit *)
+         ; Gc.space_overhead = 200
+         }
+
 let init_gc () =
   try
     (* OCAMLRUNPARAM environment variable is set.
@@ -160,9 +172,8 @@ let init_gc () =
     (* OCAMLRUNPARAM environment variable is not set.
      * In this case, we put in place our preferred configuration.
      *)
-    Gc.set { (Gc.get ()) with
-             Gc.minor_heap_size = 32*1024*1024; (* 32Mwords x 8 bytes/word = 256Mb *)
-             Gc.space_overhead = 120}
+    set_gc_policy ();
+    if Coq_config.caml_version_nums >= [4;10;0] then set_gc_best_fit () else ()
 
 let init_process () =
   (* Coq's init process, phase 1:
