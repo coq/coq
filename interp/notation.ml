@@ -2035,12 +2035,12 @@ type symbol =
   | Break of int
 
 let rec symbol_eq s1 s2 = match s1, s2 with
-| Terminal s1, Terminal s2 -> String.equal s1 s2
-| NonTerminal id1, NonTerminal id2 -> Id.equal id1 id2
-| SProdList (id1, l1), SProdList (id2, l2) ->
-  Id.equal id1 id2 && List.equal symbol_eq l1 l2
-| Break i1, Break i2 -> Int.equal i1 i2
-| _ -> false
+  | Terminal s1, Terminal s2 -> String.equal s1 s2
+  | NonTerminal id1, NonTerminal id2 -> Id.equal id1 id2
+  | SProdList (id1, l1), SProdList (id2, l2) ->
+    Id.equal id1 id2 && List.equal symbol_eq l1 l2
+  | Break i1, Break i2 -> Int.equal i1 i2
+  | _ -> false
 
 let rec string_of_symbol = function
   | NonTerminal _ -> ["_"]
@@ -2202,23 +2202,114 @@ let rec raw_analyze_notation_tokens = function
   | WhiteSpace n :: sl ->
       Break n :: raw_analyze_notation_tokens sl
 
-let decompose_raw_notation ntn = raw_analyze_notation_tokens (split_notation_string ntn)
+let rec raw_analyze_anonymous_notation_tokens = function
+  | []    -> []
+  | String ".." :: sl -> NonTerminal Notation_ops.ldots_var :: raw_analyze_anonymous_notation_tokens sl
+  | String "_" :: sl -> NonTerminal (Id.of_string "dummy") :: raw_analyze_anonymous_notation_tokens sl
+  | String s :: sl ->
+      Terminal (String.drop_simple_quotes s) :: raw_analyze_anonymous_notation_tokens sl
+  | WhiteSpace n :: sl -> raw_analyze_anonymous_notation_tokens sl
 
-let possible_notations ntn =
+(* Interpret notations with a recursive component *)
+
+let out_nt = function NonTerminal x -> x | _ -> assert false
+
+let msg_expected_form_of_recursive_notation =
+  "In the notation, the special symbol \"..\" must occur in\na configuration of the form \"x symbs .. symbs y\"."
+
+let rec find_pattern nt xl = function
+  | Break n as x :: l, Break n' :: l' when Int.equal n n' ->
+      find_pattern nt (x::xl) (l,l')
+  | Terminal s as x :: l, Terminal s' :: l' when String.equal s s' ->
+      find_pattern nt (x::xl) (l,l')
+  | [], NonTerminal x' :: l' ->
+      (out_nt nt,x',List.rev xl),l'
+  | _, Break s :: _ | Break s :: _, _ ->
+      user_err Pp.(str ("A break occurs on one side of \"..\" but not on the other side."))
+  | _, Terminal s :: _ | Terminal s :: _, _ ->
+      user_err ~hdr:"Metasyntax.find_pattern"
+        (str "The token \"" ++ str s ++ str "\" occurs on one side of \"..\" but not on the other side.")
+  | _, [] ->
+      user_err Pp.(str msg_expected_form_of_recursive_notation)
+  | ((SProdList _ | NonTerminal _) :: _), _ | _, (SProdList _ :: _) ->
+      anomaly (Pp.str "Only Terminal or Break expected on left, non-SProdList on right.")
+
+let rec interp_list_parser hd = function
+  | [] -> [], List.rev hd
+  | NonTerminal id :: tl when Id.equal id Notation_ops.ldots_var ->
+      if List.is_empty hd then user_err Pp.(str msg_expected_form_of_recursive_notation);
+      let hd = List.rev hd in
+      let ((x,y,sl),tl') = find_pattern (List.hd hd) [] (List.tl hd,tl) in
+      let xyl,tl'' = interp_list_parser [] tl' in
+      (* We remember each pair of variable denoting a recursive part to *)
+      (* remove the second copy of it afterwards *)
+      (x,y)::xyl, SProdList (x,sl) :: tl''
+  | (Terminal _ | Break _) as s :: tl ->
+      if List.is_empty hd then
+        let yl,tl' = interp_list_parser [] tl in
+        yl, s :: tl'
+      else
+        interp_list_parser (s::hd) tl
+  | NonTerminal _ as x :: tl ->
+      let xyl,tl' = interp_list_parser [x] tl in
+      xyl, List.rev_append hd tl'
+  | SProdList _ :: _ -> anomaly (Pp.str "Unexpected SProdList in interp_list_parser.")
+
+let get_notation_vars l =
+  List.map_filter (function NonTerminal id | SProdList (id,_) -> Some id | _ -> None) l
+
+let decompose_raw_notation ntn =
+  let l = split_notation_string ntn in
+  let l = raw_analyze_notation_tokens l in
+  let recvars,l = interp_list_parser [] l in
+  let vars = get_notation_vars l in
+  recvars, vars, l
+
+let interpret_notation_string ntn =
   (* We collect the possible interpretations of a notation string depending on whether it is
     in "x 'U' y" or "_ U _" format *)
   let toks = split_notation_string ntn in
-  if List.exists (function String "_" -> true | _ -> false) toks then
-    (* Only "_ U _" format *)
-    [ntn]
-  else
-    let _,ntn' = make_notation_key None (raw_analyze_notation_tokens toks) in
-    if String.equal ntn ntn' then (* Only symbols *) [ntn] else [ntn;ntn']
+  let toks =
+    if
+      List.exists (function String "_" -> true | _ -> false) toks ||
+      List.for_all (function String id -> Id.is_valid id | _ -> false) toks
+    then
+      (* Only "_ U _" format *)
+      raw_analyze_anonymous_notation_tokens toks
+    else
+      (* Includes the case of only a subset of tokens or an "x 'U' y"-style format *)
+      raw_analyze_notation_tokens toks
+  in
+  let _,toks = interp_list_parser [] toks in
+  let _,ntn' = make_notation_key None toks in
+  ntn'
+
+(* Tell if a non-recursive notation is an instance of a recursive one *)
+let is_approximation ntn ntn' =
+  let rec aux toks1 toks2 = match (toks1, toks2) with
+    | Terminal s1 :: toks1, Terminal s2 :: toks2 -> String.equal s1 s2 && aux toks1 toks2
+    | NonTerminal _ :: toks1, NonTerminal _ :: toks2 -> aux toks1 toks2
+    | SProdList (_,l1) :: toks1, SProdList (_, l2) :: toks2 -> aux l1 l2 && aux toks1 toks2
+    | NonTerminal _ :: toks1, SProdList (_,l2) :: toks2 -> aux' toks1 l2 l2 toks2 || aux toks1 toks2
+    | [], [] -> true
+    | (Break _ :: _, _) | (_, Break _ :: _) -> assert false
+    | (Terminal _ | NonTerminal _ | SProdList _) :: _, _ -> false
+    | [], _ -> false
+  and aux' toks1 l2 l2full toks2 = match (toks1, l2) with
+    | Terminal s1 :: toks1, Terminal s2 :: l2 when String.equal s1 s2 -> aux' toks1 l2 l2full toks2
+    | NonTerminal _ :: toks1, [] -> aux' toks1 l2full l2full toks2 || aux toks1 toks2
+    | _ -> false
+  in
+  let _,toks = interp_list_parser [] (raw_analyze_anonymous_notation_tokens (split_notation_string ntn)) in
+  let _,toks' = interp_list_parser [] (raw_analyze_anonymous_notation_tokens (split_notation_string ntn')) in
+  aux toks toks'
 
 let browse_notation strict ntn map =
-  let ntns = possible_notations ntn in
-  let find (from,ntn' as fullntn') ntn =
-    if String.contains ntn ' ' then String.equal ntn ntn'
+  let ntn = interpret_notation_string ntn in
+  let find (from,ntn' as fullntn') =
+    if String.contains ntn ' ' then
+      if String.string_contains ~where:ntn' ~what:".." then is_approximation ntn ntn'
+      else String.equal ntn ntn'
     else
       let _,toks = decompose_notation_key fullntn' in
       let get_terminals = function Terminal ntn -> Some ntn | _ -> None in
@@ -2230,7 +2321,7 @@ let browse_notation strict ntn map =
     String.Map.fold
       (fun scope_name sc ->
         NotationMap.fold (fun ntn data l ->
-          if List.exists (find ntn) ntns
+          if find ntn
           then List.map (fun d -> (ntn,scope_name,d)) (extract_notation_data data) @ l
           else l) sc.notations)
       map [] in

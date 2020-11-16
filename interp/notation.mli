@@ -334,8 +334,10 @@ val symbol_eq : symbol -> symbol -> bool
 val make_notation_key : notation_entry -> symbol list -> notation
 val decompose_notation_key : notation -> notation_entry * symbol list
 
-(** Decompose a notation of the form "a 'U' b" *)
-val decompose_raw_notation : string -> symbol list
+(** Decompose a notation of the form "a 'U' b" together with the lists
+    of pairs of recursive variables and the list of all variables
+    binding in the notation *)
+val decompose_raw_notation : string -> (Id.t * Id.t) list * Id.t list * symbol list
 
 (** Prints scopes (expects a pure aconstr printer) *)
 val pr_scope_class : scope_class -> Pp.t
