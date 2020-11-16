@@ -7,3 +7,5 @@ H is already used.
 The command has indeed failed with message:
 H is already used.
 a
+The command has indeed failed with message:
+This variable is used in hypothesis H.

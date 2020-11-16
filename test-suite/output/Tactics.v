@@ -30,3 +30,11 @@ Goal True.
   assert_succeeds should_not_loop.
   assert_succeeds (idtac "a" + idtac "b"). (* should only output "a" *)
 Abort.
+
+Module IntroWildcard.
+
+Theorem foo : { p:nat*nat & p = (0,0) } -> True.
+Fail intros ((n,_),H).
+Abort.
+
+End IntroWildcard.
