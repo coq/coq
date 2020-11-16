@@ -121,6 +121,9 @@ let single_key_parser ~name ~key v prev args =
   assert_once ~name prev;
   v
 
+let pr_possible_values ~values =
+  Pp.(str "{" ++ prlist_with_sep pr_comma str (List.map fst values) ++ str "}")
+
 (** [key_value_attribute ~key ~default ~values] parses a attribute [key=value]
   with possible [key] [value] in [values], [default] is for compatibility for users
   doing [qualif(key)] which is parsed as [qualif(key=default)] *)
@@ -135,13 +138,15 @@ let key_value_attribute ~key ~default ~(values : (string * 'a) list) : 'a option
             | exception Not_found ->
               CErrors.user_err
                 Pp.(str "Invalid value '" ++ str b ++ str "' for key " ++ str key ++ fnl () ++
-                    str "use one of " ++ (pr_sequence str (List.map fst values)))
+                    str "use one of " ++ pr_possible_values ~values)
             | value -> value
           end
         | VernacFlagEmpty ->
           default
         | err ->
-          CErrors.user_err Pp.(str "Invalid syntax " ++ pr_vernac_flag (key, err) ++ str ", try " ++ str key ++ str "=value instead.")
+          CErrors.user_err
+            Pp.(str "Invalid syntax " ++ pr_vernac_flag (key, err) ++ str ", try "
+                ++ str key ++ str "=" ++ pr_possible_values ~values ++ str " instead.")
       end
   in
   attribute_of_list [key, parser]
