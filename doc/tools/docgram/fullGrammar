@@ -1623,6 +1623,7 @@ simple_tactic: [
 | "debug" "eauto" OPT int_or_var OPT int_or_var auto_using hintbases
 | "info_eauto" OPT int_or_var OPT int_or_var auto_using hintbases
 | "dfs" "eauto" OPT int_or_var auto_using hintbases
+| "bfs" "eauto" OPT int_or_var auto_using hintbases
 | "autounfold" hintbases clause_dft_concl
 | "autounfold_one" hintbases "in" hyp
 | "autounfold_one" hintbases
