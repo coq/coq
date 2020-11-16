@@ -391,6 +391,16 @@ Summary of the commands
       equivalent to ``Hint Resolve ident : typeclass_instances``, except it
       registers instances for :cmd:`Print Instances`.
 
+   .. flag:: Instance Generalized Output
+
+      .. deprecated:: 8.13
+
+      Disabled by default, this provides compatibility with Coq
+      version 8.12 and earlier.
+
+      When enabled, the type of the instance is implicitly generalized
+      over unbound and :ref:`generalizable <implicit-generalization>` variables as though surrounded by ``\`{}``.
+
 .. cmd:: Print Instances @reference
 
    Shows the list of instances associated with the typeclass :token:`reference`.

@@ -1,4 +1,4 @@
-(* -*- coding: utf-8; coq-prog-args: ("-coqlib" "../.." "-R" ".." "Coq" "-top" "Coq.Classes.Morphisms") -*- *)
+(* -*- coding: utf-8; coq-prog-args: ("-top" "Coq.Classes.Morphisms") -*- *)
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
 (*  v      *         Copyright INRIA, CNRS and contributors             *)
@@ -309,7 +309,7 @@ Section GenericInstances.
 
   Global Program 
   Instance trans_contra_inv_impl_morphism
-  `(Transitive A R) : Proper (R --> flip impl) (R x) | 3.
+  `(Transitive A R) {x} : Proper (R --> flip impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -319,7 +319,7 @@ Section GenericInstances.
 
   Global Program 
   Instance trans_co_impl_morphism
-    `(Transitive A R) : Proper (R ++> impl) (R x) | 3.
+    `(Transitive A R) {x} : Proper (R ++> impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -329,7 +329,7 @@ Section GenericInstances.
 
   Global Program 
   Instance trans_sym_co_inv_impl_morphism
-    `(PER A R) : Proper (R ++> flip impl) (R x) | 3.
+    `(PER A R) {x} : Proper (R ++> flip impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -338,7 +338,7 @@ Section GenericInstances.
   Qed.
 
   Global Program Instance trans_sym_contra_impl_morphism
-    `(PER A R) : Proper (R --> impl) (R x) | 3.
+    `(PER A R) {x} : Proper (R --> impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -347,7 +347,7 @@ Section GenericInstances.
   Qed.
 
   Global Program Instance per_partial_app_morphism
-  `(PER A R) : Proper (R ==> iff) (R x) | 2.
+  `(PER A R) {x} : Proper (R ==> iff) (R x) | 2.
 
   Next Obligation.
   Proof with auto.
@@ -520,9 +520,9 @@ Ltac partial_application_tactic :=
 
 (** Bootstrap !!! *)
 
-Instance proper_proper : Proper (relation_equivalence ==> eq ==> iff) (@Proper A).
+Instance proper_proper {A} : Proper (relation_equivalence ==> eq ==> iff) (@Proper A).
 Proof.
-  intros A x y H y0 y1 e; destruct e.
+  intros x y H y0 y1 e; destruct e.
   reduce in H.
   split ; red ; intros H0.
   - setoid_rewrite <- H.

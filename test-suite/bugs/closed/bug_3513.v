@@ -13,7 +13,7 @@ Infix "|--"  := lentails (at level 79, no associativity).
 Class ILogic Frm {ILOps: ILogicOps Frm} := { lentailsPre:> PreOrder lentails }.
 Definition lequiv `{ILogic Frm} P Q := P |-- Q /\ Q |-- P.
 Infix "-|-"  := lequiv (at level 85, no associativity).
-Instance lequiv_inverse_lentails `{ILogic Frm} : subrelation lequiv (inverse lentails) := admit.
+Instance lequiv_inverse_lentails `{ILogic Frm} {inverse} : subrelation lequiv (inverse lentails) := admit.
 Record ILFunFrm (T : Type) `{e : Equiv T} `{ILOps : ILogicOps Frm} := mkILFunFrm { ILFunFrm_pred :> T -> Frm }.
 Section ILogic_Fun.
   Context (T: Type) `{TType: type T}.
