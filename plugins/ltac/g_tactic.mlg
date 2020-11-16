@@ -450,6 +450,11 @@ GRAMMAR EXTEND Gram
   ;
   as_or_and_ipat:
     [ [ "as"; ipat = or_and_intropattern_loc -> { Some ipat }
+      | "as"; ipat = equality_intropattern ->
+        { match ipat with
+          | IntroRewrite _ -> user_err Pp.(str "Disjunctive/conjunctive pattern expected.")
+          | IntroInjection _ -> user_err Pp.(strbrk "Found an injection pattern while a disjunctive/conjunctive pattern was expected; use " ++ str "\"injection as pattern\"" ++ strbrk " instead.")
+          | _ -> assert false }
       | -> { None } ] ]
   ;
   eqn_ipat:
