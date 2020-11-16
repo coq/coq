@@ -288,11 +288,17 @@ Name a set of section hypotheses for ``Proof using``
    existential variables remain. To instantiate existential variables
    during proof edition, you should use the tactic :tacn:`instantiate`.
 
+   .. deprecated:: 8.13
+
 .. cmd:: Grab Existential Variables
 
    This command can be run when a proof has no more goal to be solved but
    has remaining uninstantiated existential variables. It takes every
    uninstantiated existential variable and turns it into a goal.
+
+   .. deprecated:: 8.13
+
+      Use :cmd:`Unshelve` instead.
 
 Proof modes
 ```````````
