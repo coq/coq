@@ -36,10 +36,8 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
   module Table = Hashtbl.Make (Key)
 
   exception InvalidTableFormat
-  exception UnboundTable
 
-  type mode = Closed | Open
-  type 'a t = {outch : out_channel; mutable status : mode; htbl : 'a Table.t}
+  type 'a t = {outch : out_channel; htbl : 'a Table.t}
 
   (* XXX: Move to Fun.protect once in Ocaml 4.08 *)
   let fun_protect ~(finally : unit -> unit) work =
@@ -118,7 +116,6 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
       close_in_noerr inch;
       { outch =
           out_channel_of_descr (openfile f [O_WRONLY; O_APPEND; O_CREAT] 0o666)
-      ; status = Open
       ; htbl }
     with InvalidTableFormat ->
       (* The file is corrupted *)
@@ -131,24 +128,20 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
             (fun k e -> Marshal.to_channel outch (k, e) [Marshal.No_sharing])
             htbl;
           flush outch);
-      {outch; status = Open; htbl}
+      {outch; htbl}
 
   let add t k e =
-    let {outch; status; htbl = tbl} = t in
-    if status == Closed then raise UnboundTable
-    else
-      let fd = descr_of_out_channel outch in
-      Table.add tbl k e;
-      do_under_lock Write fd (fun _ ->
-          Marshal.to_channel outch (k, e) [Marshal.No_sharing];
-          flush outch)
+    let {outch; htbl = tbl} = t in
+    let fd = descr_of_out_channel outch in
+    Table.add tbl k e;
+    do_under_lock Write fd (fun _ ->
+        Marshal.to_channel outch (k, e) [Marshal.No_sharing];
+        flush outch)
 
   let find t k =
-    let {outch; status; htbl = tbl} = t in
-    if status == Closed then raise UnboundTable
-    else
-      let res = Table.find tbl k in
-      res
+    let {outch; htbl = tbl} = t in
+    let res = Table.find tbl k in
+    res
 
   let memo cache f =
     let tbl = lazy (try Some (open_in cache) with _ -> None) in
