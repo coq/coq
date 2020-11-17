@@ -42,3 +42,10 @@ type ('a,'b) request = {
   name     : string
 }
 
+(* Asks the document manager is the given state is valid (or belongs to an
+   old version of the document) *)
+val is_valid : doc:int -> t -> bool
+
+(* By default [is_valid] always answers true, but a document manager supporting
+   undo operations like the STM can override this. *)
+val set_is_valid : (doc:int -> t -> bool) -> unit

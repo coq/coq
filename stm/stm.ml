@@ -801,6 +801,9 @@ let state_of_id ~doc id =
     | EmptyState | ParsingState _ -> `Valid None
   with VCS.Expired -> `Expired
 
+let () =
+  Stateid.set_is_valid (fun ~doc id -> state_of_id ~doc id <> `Expired)
+
 (****** A cache: fills in the nodes of the VCS document with their value ******)
 module State : sig
 
