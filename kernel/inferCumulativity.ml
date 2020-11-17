@@ -15,30 +15,82 @@ open Univ
 open Variance
 open Util
 
-type inferred = IrrelevantI | CovariantI
-
-(** Throughout this module we modify a map [variances] from local
-    universes to [inferred]. It starts as a trivial mapping to
-    [Irrelevant] and every time we encounter a local universe we
-    restrict it accordingly.
-    [Invariant] universes are removed from the map.
-*)
 exception TrivialVariance
 
-let maybe_trivial variances =
-  if LMap.is_empty variances then raise TrivialVariance
-  else variances
+(** Not the same as Type_errors.BadVariance because we don't have the env where we raise. *)
+exception BadVariance of Level.t * Variance.t * Variance.t
+(* some ocaml bug is triggered if we make this an inline record *)
 
-let infer_level_eq u variances =
-  maybe_trivial (LMap.remove u variances)
+module Inf : sig
+  type variances
+  val infer_level_eq : Level.t -> variances -> variances
+  val infer_level_leq : Level.t -> variances -> variances
+  val start : (Level.t * Variance.t option) array -> variances
+  val finish : variances -> Variance.t array
+end = struct
+  type inferred = IrrelevantI | CovariantI
+  type mode = Check | Infer
 
-let infer_level_leq u variances =
-  (* can only set Irrelevant -> Covariant so nontrivial *)
-  LMap.update u (function
-      | None -> None
-      | Some CovariantI as x -> x
-      | Some IrrelevantI -> Some CovariantI)
-    variances
+  (**
+     Each local universe is either in the [univs] map or is Invariant.
+
+     If [univs] is empty all universes are Invariant and there is nothing more to do,
+     so we stop by raising [TrivialVariance]. The [soft] check comes before that.
+  *)
+  type variances = {
+    orig_array : (Level.t * Variance.t option) array;
+    univs : (mode * inferred) LMap.t;
+  }
+
+  let to_variance = function
+    | IrrelevantI -> Irrelevant
+    | CovariantI -> Covariant
+
+  let to_variance_opt o = Option.cata to_variance Invariant o
+
+  let infer_level_eq u variances =
+    match LMap.find_opt u variances.univs with
+    | None -> variances
+    | Some (Check, expected) ->
+      let expected = to_variance expected in
+      raise (BadVariance (u, expected, Invariant))
+    | Some (Infer, _) ->
+      let univs = LMap.remove u variances.univs in
+      if LMap.is_empty univs then raise TrivialVariance;
+      {variances with univs}
+
+  let infer_level_leq u variances =
+    (* can only set Irrelevant -> Covariant so no TrivialVariance *)
+    let univs =
+      LMap.update u (function
+          | None -> None
+          | Some (_,CovariantI) as x -> x
+          | Some (Infer,IrrelevantI) -> Some (Infer,CovariantI)
+          | Some (Check,IrrelevantI) ->
+            raise (BadVariance (u, Irrelevant, Covariant)))
+        variances.univs
+    in
+    if univs == variances.univs then variances else {variances with univs}
+
+  let start us =
+    let univs = Array.fold_left (fun univs (u,variance) ->
+        match variance with
+        | None -> LMap.add u (Infer,IrrelevantI) univs
+        | Some Invariant -> univs
+        | Some Covariant -> LMap.add u (Check,CovariantI) univs
+        | Some Irrelevant -> LMap.add u (Check,IrrelevantI) univs)
+        LMap.empty us
+    in
+    if LMap.is_empty univs then raise TrivialVariance;
+    {univs; orig_array=us}
+
+  let finish variances =
+    Array.map
+      (fun (u,_check) -> to_variance_opt (Option.map snd (LMap.find_opt u variances.univs)))
+      variances.orig_array
+
+end
+open Inf
 
 let infer_generic_instance_eq variances u =
   Array.fold_left (fun variances u -> infer_level_eq u variances)
@@ -204,11 +256,7 @@ let infer_arity_constructor is_arity env variances arcn =
 open Entries
 
 let infer_inductive_core env univs entries =
-  if Array.is_empty univs then raise TrivialVariance;
-  let variances =
-    Array.fold_left (fun variances u -> LMap.add u IrrelevantI variances)
-      LMap.empty univs
-  in
+  let variances = Inf.start univs in
   let variances = List.fold_left (fun variances entry ->
       let variances = infer_arity_constructor true
           env variances entry.mind_entry_arity
@@ -218,12 +266,11 @@ let infer_inductive_core env univs entries =
       variances
       entries
   in
-  Array.map (fun u -> match LMap.find u variances with
-      | exception Not_found -> Invariant
-      | IrrelevantI -> Irrelevant
-      | CovariantI -> Covariant)
-    univs
+  Inf.finish variances
 
 let infer_inductive ~env_params univs entries =
   try infer_inductive_core env_params univs entries
-  with TrivialVariance -> Array.make (Array.length univs) Invariant
+  with
+  | TrivialVariance -> Array.make (Array.length univs) Invariant
+  | BadVariance (lev, expected, actual) ->
+    Type_errors.error_bad_variance env_params ~lev ~expected ~actual

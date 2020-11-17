@@ -194,6 +194,12 @@ let lname_of_lident : lident -> lname =
 let name_of_ident_decl : ident_decl -> name_decl =
   on_fst lname_of_lident
 
+let test_variance_ident =
+  let open Pcoq.Lookahead in
+  to_entry "test_variance_ident" begin
+    lk_kws ["=";"+";"*"] >> lk_ident
+  end
+
 }
 
 (* Gallina declarations *)
@@ -283,8 +289,34 @@ GRAMMAR EXTEND Gram
     [ [ l = universe_name; ord = [ "<" -> { Univ.Lt } | "=" -> { Univ.Eq } | "<=" -> { Univ.Le } ];
         r = universe_name -> { (l, ord, r) } ] ]
   ;
-  univ_decl :
+  univ_decl:
     [ [  "@{" ; l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
+         cs = [ "|"; l' = LIST0 univ_constraint SEP ",";
+                ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
+              | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ]
+         ->
+         { let open UState in
+         { univdecl_instance = l;
+           univdecl_extensible_instance = ext;
+           univdecl_constraints = fst cs;
+           univdecl_extensible_constraints = snd cs } }
+    ] ]
+  ;
+  variance:
+    [ [ "+" -> { Univ.Variance.Covariant }
+      | "=" -> { Univ.Variance.Invariant }
+      | "*" -> { Univ.Variance.Irrelevant }
+    ] ]
+  ;
+  variance_identref:
+    [ [ id = identref -> { (id, None) }
+      | test_variance_ident; v = variance; id = identref -> { (id, Some v) }
+        (* We need this test to help the parser avoid the conflict
+           between "+" before ident (covariance) and trailing "+" (extra univs allowed) *)
+    ] ]
+  ;
+  cumul_univ_decl:
+    [ [  "@{" ; l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
          cs = [ "|"; l' = LIST0 univ_constraint SEP ",";
                 ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
               | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ]
@@ -298,6 +330,10 @@ GRAMMAR EXTEND Gram
   ;
   ident_decl:
     [ [ i = identref; l = OPT univ_decl -> { (i, l) }
+  ] ]
+  ;
+  cumul_ident_decl:
+    [ [ i = identref; l = OPT cumul_univ_decl -> { (i, l) }
   ] ]
   ;
   finite_token:
@@ -345,7 +381,7 @@ GRAMMAR EXTEND Gram
       | -> { RecordDecl (None, []) } ] ]
   ;
   inductive_definition:
-    [ [ oc = opt_coercion; id = ident_decl; indpar = binders;
+    [ [ oc = opt_coercion; id = cumul_ident_decl; indpar = binders;
         extrapar = OPT [ "|"; p = binders -> { p } ];
         c = OPT [ ":"; c = lconstr -> { c } ];
         lc=opt_constructors_or_fields; ntn = decl_notations ->

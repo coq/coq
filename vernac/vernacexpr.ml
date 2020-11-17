@@ -189,8 +189,9 @@ type inductive_params_expr = local_binder_expr list * local_binder_expr list opt
 (** If the option is nonempty the "|" marker was used *)
 
 type inductive_expr =
-  ident_decl with_coercion * inductive_params_expr * constr_expr option *
-    constructor_list_or_record_decl_expr
+  cumul_ident_decl with_coercion
+  * inductive_params_expr * constr_expr option
+  * constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
   lident * inductive_params_expr * constr_expr option * constructor_expr list
