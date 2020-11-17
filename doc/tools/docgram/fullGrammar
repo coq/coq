@@ -480,6 +480,7 @@ opt_hintbases: [
 command: [
 | "Goal" lconstr
 | "Proof"
+| "Proof" "using" G_vernac.section_subset_expr
 | "Proof" "Mode" string
 | "Proof" lconstr
 | "Abort"
@@ -604,7 +605,7 @@ command: [
 | "Typeclasses" "Opaque" LIST1 reference
 | "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT natural
 | "Proof" "with" Pltac.tactic OPT [ "using" G_vernac.section_subset_expr ]
-| "Proof" "using" G_vernac.section_subset_expr OPT [ "with" Pltac.tactic ]
+| "Proof" "using" G_vernac.section_subset_expr "with" Pltac.tactic
 | "Tactic" "Notation" OPT ltac_tactic_level LIST1 ltac_production_item ":=" tactic
 | "Print" "Ltac" reference
 | "Locate" "Ltac" reference
@@ -2327,7 +2328,7 @@ conversion: [
 
 occs_nums: [
 | LIST1 nat_or_var
-| "-" nat_or_var LIST0 int_or_var
+| "-" LIST1 nat_or_var
 ]
 
 occs: [
@@ -2537,6 +2538,7 @@ or_and_intropattern_loc: [
 
 as_or_and_ipat: [
 | "as" or_and_intropattern_loc
+| "as" equality_intropattern
 |
 ]
 
