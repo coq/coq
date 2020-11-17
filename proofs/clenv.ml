@@ -221,18 +221,20 @@ let dependent_closure clenv mvs =
 
 let clenv_dependent_gen hyps_only ?(iter=true) clenv =
   let all_undefined = undefined_metas clenv.evd in
-  let deps_in_concl = (mk_freelisted (clenv_type clenv)).freemetas in
-  let deps_in_hyps = dependent_in_type_of_metas clenv all_undefined in
-  let deps_in_concl =
-    if hyps_only && iter then dependent_closure clenv deps_in_concl
-    else deps_in_concl in
-  List.filter
-    (fun mv ->
-      if hyps_only then
-        Metaset.mem mv deps_in_hyps && not (Metaset.mem mv deps_in_concl)
-      else
-        Metaset.mem mv deps_in_hyps || Metaset.mem mv deps_in_concl)
-    all_undefined
+  if List.is_empty all_undefined then []
+  else
+    let deps_in_concl = (mk_freelisted (clenv_type clenv)).freemetas in
+    let deps_in_hyps = dependent_in_type_of_metas clenv all_undefined in
+    let deps_in_concl =
+      if hyps_only && iter then dependent_closure clenv deps_in_concl
+      else deps_in_concl in
+    List.filter
+      (fun mv ->
+        if hyps_only then
+          Metaset.mem mv deps_in_hyps && not (Metaset.mem mv deps_in_concl)
+        else
+          Metaset.mem mv deps_in_hyps || Metaset.mem mv deps_in_concl)
+      all_undefined
 
 let clenv_missing ce = clenv_dependent_gen true ce
 let clenv_dependent ce = clenv_dependent_gen false ce
