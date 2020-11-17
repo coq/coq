@@ -33,11 +33,32 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
 
   type key = Key.t
 
-  module Table = Hashtbl.Make (Key)
+  module Table :
+  sig
+    type t
+    val empty : t
+    val add : int -> int -> t -> t
+    val find : int -> t -> int list
+    val fold : (int -> int -> 'a -> 'a) -> t -> 'a -> 'a
+  end =
+  struct
+    type t = int list Int.Map.t
+    let empty = Int.Map.empty
+    let add h pos tab =
+      try Int.Map.modify h (fun _ l -> pos :: l) tab
+      with Not_found -> Int.Map.add h [pos] tab
 
-  exception InvalidTableFormat
+    let fold f tab accu =
+      let fold h l accu = List.fold_left (fun accu pos -> f h pos accu) accu l in
+      Int.Map.fold fold tab accu
 
-  type 'a t = {outch : out_channel; htbl : 'a Table.t}
+    let find h tab = Int.Map.find h tab
+  end
+  (* A mapping key hash -> file position *)
+
+  exception InvalidTableFormat of Table.t
+
+  type 'a t = {outch : out_channel; mutable htbl : Table.t; file : string }
 
   (* XXX: Move to Fun.protect once in Ocaml 4.08 *)
   let fun_protect ~(finally : unit -> unit) work =
@@ -55,10 +76,19 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
       finally_no_exn ();
       Printexc.raise_with_backtrace work_exn work_bt
 
-  let read_key_elem inch =
-    try Some (Marshal.from_channel inch) with
-    | End_of_file -> None
-    | e when CErrors.noncritical e -> raise InvalidTableFormat
+  let skip_blob ch =
+    let hd = Bytes.create Marshal.header_size in
+    let () = really_input ch hd 0 Marshal.header_size in
+    let len = Marshal.data_size hd 0 in
+    let pos = pos_in ch in
+    seek_in ch (pos + len)
+
+  let read_key_elem inch = match input_binary_int inch with
+  | hash ->
+    let pos = pos_in inch in
+    let () = skip_blob inch in
+    Some (hash, pos)
+  | exception End_of_file -> None
 
   (**
     We used to only lock/unlock regions.
@@ -100,47 +130,80 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
   let do_under_lock kd fd f =
     if lock kd fd then fun_protect f ~finally:(fun () -> unlock fd) else f ()
 
+  let fopen_in = open_in
+
   let open_in f =
     let flags = [O_RDONLY; O_CREAT] in
     let finch = openfile f flags 0o666 in
     let inch = in_channel_of_descr finch in
-    let htbl = Table.create 100 in
-    let rec xload () =
+    let rec xload table =
       match read_key_elem inch with
-      | None -> ()
-      | Some (key, elem) -> Table.add htbl key elem; xload ()
+      | None -> table
+      | Some (hash, pos) -> xload (Table.add hash pos table)
+      | exception e when CErrors.noncritical e -> raise (InvalidTableFormat table)
     in
     try
       (* Locking of the (whole) file while reading *)
-      do_under_lock Read finch xload;
-      close_in_noerr inch;
-      { outch =
-          out_channel_of_descr (openfile f [O_WRONLY; O_APPEND; O_CREAT] 0o666)
-      ; htbl }
-    with InvalidTableFormat ->
+      let htbl = do_under_lock Read finch (fun () -> xload Table.empty) in
+      let () = close_in_noerr inch in
+      let outch = out_channel_of_descr (openfile f [O_WRONLY; O_APPEND; O_CREAT] 0o666) in
+      { outch ; file = f; htbl }
+    with InvalidTableFormat htbl ->
       (* The file is corrupted *)
-      close_in_noerr inch;
+      let fold hash pos accu =
+        let () = seek_in inch pos in
+        match Marshal.from_channel inch with
+        | (k, v) -> (hash, k, v) :: accu
+        | exception e -> accu
+      in
+      (* Try to salvage what we can *)
+      let data = do_under_lock Read finch (fun () -> Table.fold fold htbl []) in
+      let () = close_in_noerr inch in
       let flags = [O_WRONLY; O_TRUNC; O_CREAT] in
       let out = openfile f flags 0o666 in
       let outch = out_channel_of_descr out in
-      do_under_lock Write out (fun () ->
-          Table.iter
-            (fun k e -> Marshal.to_channel outch (k, e) [])
-            htbl;
-          flush outch);
-      {outch; htbl}
+      let fold htbl (h, k, e) =
+        let () = output_binary_int outch h in
+        let pos = pos_out outch in
+        let () = Marshal.to_channel outch (k, e) [] in
+        Table.add h pos htbl
+      in
+      let dump () =
+        let htbl = List.fold_left fold Table.empty data in
+        let () = flush outch in
+        htbl
+      in
+      let htbl = do_under_lock Write out dump in
+      {outch; htbl; file = f}
 
   let add t k e =
-    let {outch; htbl = tbl} = t in
+    let {outch} = t in
     let fd = descr_of_out_channel outch in
-    Table.add tbl k e;
-    do_under_lock Write fd (fun _ ->
-        Marshal.to_channel outch (k, e) [];
-        flush outch)
+    let h = Key.hash k land 0x7FFFFFFF in
+    let dump () =
+      let () = output_binary_int outch h in
+      let pos = pos_out outch in
+      let () = Marshal.to_channel outch (k, e) [] in
+      let () = flush outch in
+      pos
+    in
+    let pos = do_under_lock Write fd dump in
+    t.htbl <- Table.add h pos t.htbl
 
   let find t k =
     let {outch; htbl = tbl} = t in
-    let res = Table.find tbl k in
+    let h = Key.hash k land 0x7FFFFFFF in
+    let lpos = Table.find h tbl in
+    let ch = fopen_in t.file in
+    let find pos =
+      let () = seek_in ch pos in
+      match Marshal.from_channel ch with
+      | (k', v) -> if Key.equal k k' then Some v else None
+      | exception _ -> None
+    in
+    let lookup () = CList.find_map find lpos in
+    let res = do_under_lock Read (descr_of_out_channel outch) lookup in
+    let () = close_in_noerr ch in
     res
 
   let memo cache f =
