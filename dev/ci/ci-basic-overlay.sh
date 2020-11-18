@@ -9,44 +9,44 @@
 ########################################################################
 # MathComp
 ########################################################################
-: "${mathcomp_CI_REF:=master}"
+: "${mathcomp_CI_REF:=bae9cdb2a12083b8170c3999886839cc1495f969}"
 : "${mathcomp_CI_GITURL:=https://github.com/math-comp/math-comp}"
 : "${mathcomp_CI_ARCHIVEURL:=${mathcomp_CI_GITURL}/archive}"
 
-: "${fourcolor_CI_REF:=master}"
+: "${fourcolor_CI_REF:=2d5a4ed79806dadea6ac36824db39cd2ba5313e2}"
 : "${fourcolor_CI_GITURL:=https://github.com/math-comp/fourcolor}"
 : "${fourcolor_CI_ARCHIVEURL:=${fourcolor_CI_GITURL}/archive}"
 
-: "${oddorder_CI_REF:=master}"
+: "${oddorder_CI_REF:=19eb998e2d08c21c6e61806cc7b588238629757e}"
 : "${oddorder_CI_GITURL:=https://github.com/math-comp/odd-order}"
 : "${oddorder_CI_ARCHIVEURL:=${oddorder_CI_GITURL}/archive}"
 
 ########################################################################
 # UniMath
 ########################################################################
-: "${unimath_CI_REF:=master}"
+: "${unimath_CI_REF:=7197152b65e8d5daaf77df679652eec980d67f09}"
 : "${unimath_CI_GITURL:=https://github.com/UniMath/UniMath}"
 : "${unimath_CI_ARCHIVEURL:=${unimath_CI_GITURL}/archive}"
 
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
-: "${unicoq_CI_REF:=master}"
+: "${unicoq_CI_REF:=6ba053aa769326261a7f5245d90a5979972941a3}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
-: "${mtac2_CI_REF:=master}"
+: "${mtac2_CI_REF:=71b4b58abab05395e6054d86f164170ff30ba2c4}"
 : "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2}"
 : "${mtac2_CI_ARCHIVEURL:=${mtac2_CI_GITURL}/archive}"
 
 ########################################################################
 # Mathclasses + Corn
 ########################################################################
-: "${math_classes_CI_REF:=master}"
+: "${math_classes_CI_REF:=ed61829877a6fc8132e01182ac5615908078b8e7}"
 : "${math_classes_CI_GITURL:=https://github.com/coq-community/math-classes}"
 : "${math_classes_CI_ARCHIVEURL:=${math_classes_CI_GITURL}/archive}"
 
-: "${corn_CI_REF:=master}"
+: "${corn_CI_REF:=643fc124e472c9bc4a8324190892cab1555f4577}"
 : "${corn_CI_GITURL:=https://github.com/coq-community/corn}"
 : "${corn_CI_ARCHIVEURL:=${corn_CI_GITURL}/archive}"
 
@@ -62,243 +62,243 @@
 : "${iris_CI_GITURL:=https://gitlab.mpi-sws.org/iris/iris}"
 : "${iris_CI_ARCHIVEURL:=${iris_CI_GITURL}/-/archive}"
 
-: "${autosubst_CI_REF:=coq86-devel}"
+: "${autosubst_CI_REF:=e5bf249d7912a185c7f9f69af1a065daa4284f34}"
 : "${autosubst_CI_GITURL:=https://github.com/RalfJung/autosubst}"
 : "${autosubst_CI_ARCHIVEURL:=${autosubst_CI_GITURL}/archive}"
 
-: "${iris_string_ident_CI_REF:=master}"
+: "${iris_string_ident_CI_REF:=b077370ac854e8af45f8ca5a610ee2fe30e84406}"
 : "${iris_string_ident_CI_GITURL:=https://gitlab.mpi-sws.org/iris/string-ident}"
 : "${iris_string_ident_CI_ARCHIVEURL:=${iris_string_ident_CI_GITURL}/-/archive}"
 
-: "${iris_examples_CI_REF:=master}"
+: "${iris_examples_CI_REF:=72db5f43286f199c380f606b04da1b6f22317869}"
 : "${iris_examples_CI_GITURL:=https://gitlab.mpi-sws.org/iris/examples}"
 : "${iris_examples_CI_ARCHIVEURL:=${iris_examples_CI_GITURL}/-/archive}"
 
 ########################################################################
 # HoTT
 ########################################################################
-: "${hott_CI_REF:=master}"
+: "${hott_CI_REF:=756ff79da22d0804194145db775865c11c14aa48}"
 : "${hott_CI_GITURL:=https://github.com/HoTT/HoTT}"
 : "${hott_CI_ARCHIVEURL:=${hott_CI_GITURL}/archive}"
 
 ########################################################################
 # CoqHammer
 ########################################################################
-: "${coqhammer_CI_REF:=master}"
+: "${coqhammer_CI_REF:=889f3520365e0c54dc2e8fe972afdf030d8b9d14}"
 : "${coqhammer_CI_GITURL:=https://github.com/lukaszcz/coqhammer}"
 : "${coqhammer_CI_ARCHIVEURL:=${coqhammer_CI_GITURL}/archive}"
 
 ########################################################################
 # GeoCoq
 ########################################################################
-: "${geocoq_CI_REF:=master}"
+: "${geocoq_CI_REF:=290642eff83097858f99084da9a149b021887473}"
 : "${geocoq_CI_GITURL:=https://github.com/GeoCoq/GeoCoq}"
 : "${geocoq_CI_ARCHIVEURL:=${geocoq_CI_GITURL}/archive}"
 
 ########################################################################
 # Flocq
 ########################################################################
-: "${flocq_CI_REF:=master}"
+: "${flocq_CI_REF:=8fdb8b1ea5ccbe4c4dcd72c40c209d71cc7c3d09}"
 : "${flocq_CI_GITURL:=https://gitlab.inria.fr/flocq/flocq}"
 : "${flocq_CI_ARCHIVEURL:=${flocq_CI_GITURL}/-/archive}"
 
 ########################################################################
 # coq-performance-tests
 ########################################################################
-: "${coq_performance_tests_CI_REF:=master}"
+: "${coq_performance_tests_CI_REF:=96b6414de9b08d2dd7e3e5ad1f591a94b303b06c}"
 : "${coq_performance_tests_CI_GITURL:=https://github.com/coq-community/coq-performance-tests}"
 : "${coq_performance_tests_CI_ARCHIVEURL:=${coq_performance_tests_CI_GITURL}/archive}"
 
 ########################################################################
 # coq-tools
 ########################################################################
-: "${coq_tools_CI_REF:=master}"
+: "${coq_tools_CI_REF:=762df647adc1696a5fc255ab9e12ddf474245bca}"
 : "${coq_tools_CI_GITURL:=https://github.com/JasonGross/coq-tools}"
 : "${coq_tools_CI_ARCHIVEURL:=${coq_tools_CI_GITURL}/archive}"
 
 ########################################################################
 # Coquelicot
 ########################################################################
-: "${coquelicot_CI_REF:=master}"
+: "${coquelicot_CI_REF:=4b000e5220d7b30ebc323564c10c60f6e2d22733}"
 : "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/coquelicot/coquelicot}"
 : "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
 
 ########################################################################
 # Coq-interval
 ########################################################################
-: "${interval_CI_REF:=master}"
+: "${interval_CI_REF:=b7f6a5fb5904202d7ccaf6de99e948b193224a03}"
 : "${interval_CI_GITURL:=https://gitlab.inria.fr/coqinterval/interval}"
 : "${interval_CI_ARCHIVEURL:=${interval_CI_GITURL}/-/archive}"
 
 ########################################################################
 # Gappa stand alone tool
 ########################################################################
-: "${gappa_tool_CI_REF:=master}"
+: "${gappa_tool_CI_REF:=ba4dbb3ef66bbdd9d1f3d660a293515df0b57b43}"
 : "${gappa_tool_CI_GITURL:=https://gitlab.inria.fr/gappa/gappa}"
 : "${gappa_tool_CI_ARCHIVEURL:=${gappa_tool_CI_GITURL}/-/archive}"
 
 ########################################################################
 # Gappa plugin
 ########################################################################
-: "${gappa_plugin_CI_REF:=master}"
+: "${gappa_plugin_CI_REF:=3a367f9b7f67fb4d23a055a4c196c4b0f204c790}"
 : "${gappa_plugin_CI_GITURL:=https://gitlab.inria.fr/gappa/coq}"
 : "${gappa_plugin_CI_ARCHIVEURL:=${gappa_plugin_CI_GITURL}/-/archive}"
 
 ########################################################################
 # CompCert
 ########################################################################
-: "${compcert_CI_REF:=master}"
+: "${compcert_CI_REF:=e6e036b3f285d2f3ba2a5036a413eb9c7d7534cd}"
 : "${compcert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
 : "${compcert_CI_ARCHIVEURL:=${compcert_CI_GITURL}/archive}"
 
 ########################################################################
 # VST
 ########################################################################
-: "${vst_CI_REF:=master}"
+: "${vst_CI_REF:=ebcd978765a8211d545c8efd2114dec75a991720}"
 : "${vst_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${vst_CI_ARCHIVEURL:=${vst_CI_GITURL}/archive}"
 
 ########################################################################
 # cross-crypto
 ########################################################################
-: "${cross_crypto_CI_REF:=master}"
+: "${cross_crypto_CI_REF:=330aff9e4316b6c20147ad9743af08ae4e7e10f5}"
 : "${cross_crypto_CI_GITURL:=https://github.com/mit-plv/cross-crypto}"
 : "${cross_crypto_CI_ARCHIVEURL:=${cross_crypto_CI_GITURL}/archive}"
 
 ########################################################################
 # rewriter
 ########################################################################
-: "${rewriter_CI_REF:=master}"
+: "${rewriter_CI_REF:=2ef7b66b3b99402c0809b6cb00618fcaad0bf79f}"
 : "${rewriter_CI_GITURL:=https://github.com/mit-plv/rewriter}"
 : "${rewriter_CI_ARCHIVEURL:=${rewriter_CI_GITURL}/archive}"
 
 ########################################################################
 # fiat_parsers
 ########################################################################
-: "${fiat_parsers_CI_REF:=master}"
+: "${fiat_parsers_CI_REF:=ef8381e3f78242b2bd80553b9734f5337ad279da}"
 : "${fiat_parsers_CI_GITURL:=https://github.com/mit-plv/fiat}"
 : "${fiat_parsers_CI_ARCHIVEURL:=${fiat_parsers_CI_GITURL}/archive}"
 
 ########################################################################
 # fiat_crypto
 ########################################################################
-: "${fiat_crypto_CI_REF:=master}"
+: "${fiat_crypto_CI_REF:=5a18e113ddede752163ac6c402e7bbfdee28a8c0}"
 : "${fiat_crypto_CI_GITURL:=https://github.com/mit-plv/fiat-crypto}"
 : "${fiat_crypto_CI_ARCHIVEURL:=${fiat_crypto_CI_GITURL}/archive}"
 
 ########################################################################
 # fiat_crypto_legacy
 ########################################################################
-: "${fiat_crypto_legacy_CI_REF:=sp2019latest}"
+: "${fiat_crypto_legacy_CI_REF:=c5d9f3aaddf05c6ae15385485de594ba18b8cd12}"
 : "${fiat_crypto_legacy_CI_GITURL:=https://github.com/mit-plv/fiat-crypto}"
 : "${fiat_crypto_legacy_CI_ARCHIVEURL:=${fiat_crypto_legacy_CI_GITURL}/archive}"
 
 ########################################################################
 # coq_dpdgraph
 ########################################################################
-: "${coq_dpdgraph_CI_REF:=coq-master}"
+: "${coq_dpdgraph_CI_REF:=f12bf892561ccffe5382d97ae2684a7dae326e64}"
 : "${coq_dpdgraph_CI_GITURL:=https://github.com/Karmaki/coq-dpdgraph}"
 : "${coq_dpdgraph_CI_ARCHIVEURL:=${coq_dpdgraph_CI_GITURL}/archive}"
 
 ########################################################################
 # CoLoR
 ########################################################################
-: "${color_CI_REF:=master}"
+: "${color_CI_REF:=0207202ed802f20a08ef07dea0e0d2b5715cabd1}"
 : "${color_CI_GITURL:=https://github.com/fblanqui/color}"
 : "${color_CI_ARCHIVEURL:=${color_CI_GITURL}/archive}"
 
 ########################################################################
 # TLC
 ########################################################################
-: "${tlc_CI_REF:=master-for-coq-ci}"
+: "${tlc_CI_REF:=f74b0511868483a3b896cfb0fd4eb7a1fb2239c6}"
 : "${tlc_CI_GITURL:=https://github.com/charguer/tlc}"
 : "${tlc_CI_ARCHIVEURL:=${tlc_CI_GITURL}/archive}"
 
 ########################################################################
 # Bignums
 ########################################################################
-: "${bignums_CI_REF:=master}"
+: "${bignums_CI_REF:=aafdd43a288d4b338c33606144acbd762468a0e2}"
 : "${bignums_CI_GITURL:=https://github.com/coq/bignums}"
 : "${bignums_CI_ARCHIVEURL:=${bignums_CI_GITURL}/archive}"
 
 ########################################################################
 # coqprime
 ########################################################################
-: "${coqprime_CI_REF:=master}"
+: "${coqprime_CI_REF:=84e42b453e4e47f0d008d80890d06e234d226993}"
 : "${coqprime_CI_GITURL:=https://github.com/thery/coqprime}"
 : "${coqprime_CI_ARCHIVEURL:=${coqprime_CI_GITURL}/archive}"
 
 ########################################################################
 # bbv
 ########################################################################
-: "${bbv_CI_REF:=master}"
+: "${bbv_CI_REF:=4227af1aec62afd032149f5c063cfa93b0242ca0}"
 : "${bbv_CI_GITURL:=https://github.com/mit-plv/bbv}"
 : "${bbv_CI_ARCHIVEURL:=${bbv_CI_GITURL}/archive}"
 
 ########################################################################
 # bedrock2
 ########################################################################
-: "${bedrock2_CI_REF:=tested}"
+: "${bedrock2_CI_REF:=9ca3d0cfe65a99c706173520de380e4fe5b0566b}"
 : "${bedrock2_CI_GITURL:=https://github.com/mit-plv/bedrock2}"
 : "${bedrock2_CI_ARCHIVEURL:=${bedrock2_CI_GITURL}/archive}"
 
 ########################################################################
 # Equations
 ########################################################################
-: "${equations_CI_REF:=master}"
+: "${equations_CI_REF:=b18e5094f1d81c53811ef3d7752b3081317df617}"
 : "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
 
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-: "${elpi_CI_REF:=coq-master}"
+: "${elpi_CI_REF:=55460c05498f1704fcdffc67648ded6605e4392f}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
-: "${elpi_hb_CI_REF:=coq-master}"
+: "${elpi_hb_CI_REF:=6089de41147dc4909e8c452eb4b8a10885b62cf2}"
 : "${elpi_hb_CI_GITURL:=https://github.com/math-comp/hierarchy-builder}"
 : "${elpi_hb_CI_ARCHIVEURL:=${elpi_hb_CI_GITURL}/archive}"
 
 ########################################################################
 # Engine-Bench
 ########################################################################
-: "${engine_bench_CI_REF:=master}"
+: "${engine_bench_CI_REF:=45f456e4c3b37704c6ff83ef072dc1260fef8f43}"
 : "${engine_bench_CI_GITURL:=https://github.com/mit-plv/engine-bench}"
 : "${engine_bench_CI_ARCHIVEURL:=${engine_bench_CI_GITURL}/archive}"
 
 ########################################################################
 # fcsl-pcm
 ########################################################################
-: "${fcsl_pcm_CI_REF:=master}"
+: "${fcsl_pcm_CI_REF:=041d120f1fcc5797f06928911836c892f99b4a85}"
 : "${fcsl_pcm_CI_GITURL:=https://github.com/imdea-software/fcsl-pcm}"
 : "${fcsl_pcm_CI_ARCHIVEURL:=${fcsl_pcm_CI_GITURL}/archive}"
 
 ########################################################################
 # ext-lib
 ########################################################################
-: "${ext_lib_CI_REF:=master}"
+: "${ext_lib_CI_REF:=159c36111a95e5e587020c9f10b2e2ecd9fa3914}"
 : "${ext_lib_CI_GITURL:=https://github.com/coq-community/coq-ext-lib}"
 : "${ext_lib_CI_ARCHIVEURL:=${ext_lib_CI_GITURL}/archive}"
 
 ########################################################################
 # simple-io
 ########################################################################
-: "${simple_io_CI_REF:=master}"
+: "${simple_io_CI_REF:=770d156e05be73419cdd83d0e29de8d6e1d11f5c}"
 : "${simple_io_CI_GITURL:=https://github.com/Lysxia/coq-simple-io}"
 : "${simple_io_CI_ARCHIVEURL:=${simple_io_CI_GITURL}/archive}"
 
 ########################################################################
 # quickchick
 ########################################################################
-: "${quickchick_CI_REF:=master}"
+: "${quickchick_CI_REF:=63aa0581644e9117a9403de25a66edfc43a53c9a}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
 ########################################################################
 # reduction-effects
 ########################################################################
-: "${reduction_effects_CI_REF:=master}"
+: "${reduction_effects_CI_REF:=7cf41546f2d15ea3a4eeeb68695b288db2d9e09a}"
 : "${reduction_effects_CI_GITURL:=https://github.com/coq-community/reduction-effects}"
 : "${reduction_effects_CI_ARCHIVEURL:=${reduction_effects_CI_GITURL}/archive}"
 
@@ -306,65 +306,65 @@
 # menhirlib
 ########################################################################
 # Note: menhirlib is now in subfolder coq-menhirlib of menhir
-: "${menhirlib_CI_REF:=master}"
+: "${menhirlib_CI_REF:=5f312c7ef8a6c50a2478ccebad67dcc0048c0c92}"
 : "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/menhir}"
 : "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
 
 ########################################################################
 # aac_tactics
 ########################################################################
-: "${aac_tactics_CI_REF:=master}"
+: "${aac_tactics_CI_REF:=0739fe9b002aaec26ca77a2c7ea0e68f3e6b2012}"
 : "${aac_tactics_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
 : "${aac_tactics_CI_ARCHIVEURL:=${aac_tactics_CI_GITURL}/archive}"
 
 ########################################################################
 # paramcoq
 ########################################################################
-: "${paramcoq_CI_REF:=master}"
+: "${paramcoq_CI_REF:=ebda74d5471c287bdd467ec7351596fe155e5065}"
 : "${paramcoq_CI_GITURL:=https://github.com/coq-community/paramcoq}"
 : "${paramcoq_CI_ARCHIVEURL:=${paramcoq_CI_GITURL}/archive}"
 
 ########################################################################
 # relation_algebra
 ########################################################################
-: "${relation_algebra_CI_REF:=master}"
+: "${relation_algebra_CI_REF:=afd9f5d5265e9e23a613d325dfd053f19cf07e91}"
 : "${relation_algebra_CI_GITURL:=https://github.com/damien-pous/relation-algebra}"
 : "${relation_algebra_CI_ARCHIVEURL:=${relation_algebra_CI_GITURL}/archive}"
 
 ########################################################################
 # StructTact + InfSeqExt + Cheerios + Verdi + Verdi Raft
 ########################################################################
-: "${struct_tact_CI_REF:=master}"
+: "${struct_tact_CI_REF:=f8d4f8a0e04df0522a839462e725a48d54145b48}"
 : "${struct_tact_CI_GITURL:=https://github.com/uwplse/StructTact}"
 : "${struct_tact_CI_ARCHIVEURL:=${struct_tact_CI_GITURL}/archive}"
 
-: "${inf_seq_ext_CI_REF:=master}"
+: "${inf_seq_ext_CI_REF:=91b2d9bdc580c7ccb5bf2f50fffb6ebabab2715c}"
 : "${inf_seq_ext_CI_GITURL:=https://github.com/DistributedComponents/InfSeqExt}"
 : "${inf_seq_ext_CI_ARCHIVEURL:=${inf_seq_ext_CI_GITURL}/archive}"
 
-: "${cheerios_CI_REF:=master}"
+: "${cheerios_CI_REF:=9c7f66e57b91f706d70afa8ed99d64ed98ab367d}"
 : "${cheerios_CI_GITURL:=https://github.com/uwplse/cheerios}"
 : "${cheerios_CI_ARCHIVEURL:=${cheerios_CI_GITURL}/archive}"
 
-: "${verdi_CI_REF:=master}"
+: "${verdi_CI_REF:=35508f2af94f9da979ece0cbdfa191019f2c5478}"
 : "${verdi_CI_GITURL:=https://github.com/uwplse/verdi}"
 : "${verdi_CI_ARCHIVEURL:=${verdi_CI_GITURL}/archive}"
 
-: "${verdi_raft_CI_REF:=master}"
+: "${verdi_raft_CI_REF:=f3cedc031580dfd5564408b898f6c21000e82a86}"
 : "${verdi_raft_CI_GITURL:=https://github.com/uwplse/verdi-raft}"
 : "${verdi_raft_CI_ARCHIVEURL:=${verdi_raft_CI_GITURL}/archive}"
 
 ########################################################################
 # stdlib2
 ########################################################################
-: "${stdlib2_CI_REF:=master}"
+: "${stdlib2_CI_REF:=54e057ea7023d058e57169a3bceaab708a5f7d26}"
 : "${stdlib2_CI_GITURL:=https://github.com/coq/stdlib2}"
 : "${stdlib2_CI_ARCHIVEURL:=${stdlib2_CI_GITURL}/archive}"
 
 ########################################################################
 # argosy
 ########################################################################
-: "${argosy_CI_REF:=master}"
+: "${argosy_CI_REF:=63dd6e6d046e3dde072ae1b6862639a8f62b1213}"
 : "${argosy_CI_GITURL:=https://github.com/mit-pdos/argosy}"
 : "${argosy_CI_ARCHIVEURL:=${argosy_CI_GITURL}/archive}"
 
@@ -378,20 +378,20 @@
 ########################################################################
 # metacoq
 ########################################################################
-: "${metacoq_CI_REF:=master}"
+: "${metacoq_CI_REF:=f4fab0b9abb2592ef7886828f375161ee7f0d74c}"
 : "${metacoq_CI_GITURL:=https://github.com/MetaCoq/metacoq}"
 : "${metacoq_CI_ARCHIVEURL:=${metacoq_CI_GITURL}/archive}"
 
 ########################################################################
 # SF suite
 ########################################################################
-: "${sf_CI_REF:=master}"
+: "${sf_CI_REF:=cced6f0df38b97fdd45111681410877fee429c4a}"
 : "${sf_CI_GITURL:=https://github.com/DeepSpec/sf}"
 : "${sf_CI_ARCHIVEURL:=${sf_CI_GITURL}/archive}"
 
 ########################################################################
 # Coqtail
 ########################################################################
-: "${coqtail_CI_REF:=master}"
+: "${coqtail_CI_REF:=5e40da6c7119bfc31b3737d7ced2b8098f56a99f}"
 : "${coqtail_CI_GITURL:=https://github.com/whonore/Coqtail}"
 : "${coqtail_CI_ARCHIVEURL:=${coqtail_CI_GITURL}/archive}"
