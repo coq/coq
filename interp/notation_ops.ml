@@ -275,6 +275,12 @@ type found_variables = {
 let add_id r id = r := { !r with vars = id :: (!r).vars }
 let add_name r = function Anonymous -> () | Name id -> add_id r id
 
+let mkNApp1 (g,a) =
+  match g with
+  (* Ensure flattening of nested applicative nodes *)
+  | NApp (g,args') -> NApp (g,args'@[a])
+  | _ -> NApp (g,[a])
+
 let is_gvar id c = match DAst.get c with
 | GVar id' -> Id.equal id id'
 | _ -> false
@@ -443,7 +449,10 @@ let notation_constr_and_vars_of_glob_constr recvars a =
         aux' c
   and aux' x = DAst.with_val (function
   | GVar id -> if not (Id.equal id ldots_var) then add_id found id; NVar id
-  | GApp (g,args) -> NApp (aux g, List.map aux args)
+  | GApp (g,[]) -> NApp (aux g,[]) (* Encoding @foo *)
+  | GApp (g,args) ->
+     (* Treat applicative notes as binary nodes *)
+     let a,args = List.sep_last args in mkNApp1 (aux (DAst.make (GApp (g, args))), aux a)
   | GLambda (na,bk,ty,c) -> add_name found na; NLambda (na,aux ty,aux c)
   | GProd (na,bk,ty,c) -> add_name found na; NProd (na,aux ty,aux c)
   | GLetIn (na,b,t,c) -> add_name found na; NLetIn (na,aux b,Option.map aux t, aux c)

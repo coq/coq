@@ -410,3 +410,13 @@ Check myfoo0 1 tt. (* was printing [myfoo0 1 HI], but should print [myfoo01 HI] 
 Check myfoo01 tt. (* was printing [myfoo0 1 HI], but should print [myfoo01 HI]  *)
 
 End Issue8126.
+
+Module RecursiveNotationPartialApp.
+
+(* Discussed on Coq Club, 28 July 2020 *)
+Notation "x  ⪯ y  ⪯ ..  ⪯ z  ⪯ t" :=
+  ((fun b A a => a <= b /\ A b) y .. ((fun b A a => a <= b /\ A b) z (fun b => b <= t)) .. x)
+  (at level 70, y at next level, z at next level, t at next level).
+Check 1 ⪯ 2 ⪯ 3 ⪯ 4.
+
+End RecursiveNotationPartialApp.
