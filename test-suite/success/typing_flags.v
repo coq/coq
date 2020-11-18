@@ -26,17 +26,11 @@ Print Assumptions att_T.
 Print Assumptions att_Cor.
 
 (* Interactive + atts *)
-
-(* Coq's handling of environments in tactic mode is too broken for
-   this to work yet, the pretyper doesn't get the right flags *)
-
 #[typing(universes=no)] Definition i_att_T' : Type. Proof. exact (let t := Type in (t : t)). Defined.
 #[typing(universes=no)] Definition d_att_T' : Type. Proof. exact (let t := Type in (t : t)). Qed.
 #[typing(universes=no)] Program Definition pi_att_T' : Type. Proof. exact (let t := Type in (t : t)). Qed.
 
-(* Note: this works a bit by chance, the attribute only affects the
-   kernel call in Defined. Would the tactics perform a check we would
-   fail. *)
+(* Note: be aware of tactics invoking [Global.env()] if this test fails. *)
 #[typing(guarded=no)] Fixpoint i_att_f' (n : nat) : nat.
 Proof. exact (i_att_f' n). Defined.
 

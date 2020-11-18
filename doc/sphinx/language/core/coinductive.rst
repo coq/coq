@@ -27,7 +27,8 @@ More information on co-inductive definitions can be found in
 
    This command supports the :attr:`universes(polymorphic)`,
    :attr:`universes(template)`, :attr:`universes(cumulative)`,
-   :attr:`private(matching)`, and :attr:`using` attributes.
+   :attr:`private(matching)`, :attr:`typing(universes)`,
+   :attr:`typing(positive)`, and :attr:`using` attributes.
 
 .. example::
 
