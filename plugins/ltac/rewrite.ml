@@ -1542,7 +1542,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   (* For compatibility *)
   let beta = Tactics.reduct_in_concl ~check:false (Reductionops.nf_betaiota, DEFAULTcast) in
   let beta_hyp id = Tactics.reduct_in_hyp ~check:false ~reorder:false Reductionops.nf_betaiota (id, InHyp) in
-  let treat sigma res =
+  let treat sigma res state =
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")
     | Some None ->
@@ -1553,7 +1553,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
         let (undef, prf, newt) = res in
         let fold ev _ accu = if Evd.mem sigma ev then accu else ev :: accu in
         let gls = List.rev (Evd.fold_undefined fold undef []) in
-        let gls = List.map Proofview.with_empty_state gls in
+        let gls = List.map (fun gl -> Proofview.goal_with_state gl state) gls in
           match clause, prf with
         | Some id, Some p ->
             let tac = tclTHENLIST [
@@ -1583,6 +1583,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
+    let state = Proofview.Goal.state gl in
     let sigma = Tacmach.New.project gl in
     let ty = match clause with
     | None -> concl
@@ -1602,7 +1603,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
         cl_rewrite_clause_aux ?abs strat env Id.Set.empty sigma ty clause
       in
       let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
-      treat sigma res <*>
+      treat sigma res state <*>
       (* For compatibility *)
       beta <*> Proofview.shelve_unifiable
     with
