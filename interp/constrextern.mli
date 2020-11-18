@@ -23,9 +23,12 @@ open Ltac_pretype
 (** Translation of pattern, cases pattern, glob_constr and term into syntax
    trees for printing *)
 
+type extern_env = Id.Set.t * UnivNames.universe_binders
+val extern_env : env -> Evd.evar_map -> extern_env
+
 val extern_cases_pattern : Id.Set.t -> 'a cases_pattern_g -> cases_pattern_expr
-val extern_glob_constr : Id.Set.t -> 'a glob_constr_g -> constr_expr
-val extern_glob_type : ?impargs:Glob_term.binding_kind list -> Id.Set.t -> 'a glob_constr_g -> constr_expr
+val extern_glob_constr : extern_env -> 'a glob_constr_g -> constr_expr
+val extern_glob_type : ?impargs:Glob_term.binding_kind list -> extern_env -> 'a glob_constr_g -> constr_expr
 val extern_constr_pattern : names_context -> Evd.evar_map ->
   constr_pattern -> constr_expr
 val extern_closed_glob : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name ->
@@ -43,7 +46,7 @@ val extern_constr_in_scope : ?lax:bool -> ?inctx:bool -> scope_name ->
   env -> Evd.evar_map -> constr -> constr_expr
 val extern_reference : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
 val extern_type : ?lax:bool -> ?goal_concl_style:bool -> env -> Evd.evar_map -> ?impargs:Glob_term.binding_kind list -> types -> constr_expr
-val extern_sort : Evd.evar_map -> Sorts.t -> glob_sort
+val extern_sort : Evd.evar_map -> Sorts.t -> sort_expr
 val extern_rel_context : constr option -> env -> Evd.evar_map ->
   rel_context -> local_binder_expr list
 
@@ -96,3 +99,6 @@ val toggle_scope_printing :
 
 val toggle_notation_printing :
   ?scope:Notation_term.scope_name -> notation:Constrexpr.notation -> activate:bool -> unit
+
+(** Probably shouldn't be used *)
+val empty_extern_env : extern_env

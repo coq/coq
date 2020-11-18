@@ -57,17 +57,16 @@ let pr_guarded guard prc c =
   let s = Format.flush_str_formatter () ^ "$" in
   if guard s (skip_wschars s 0) then pr_paren prc c else prc c
 
-let prl_constr_expr =
+let with_global_env_evm f x =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Ppconstr.pr_lconstr_expr env sigma
-let pr_glob_constr c = Printer.pr_glob_constr_env (Global.env ()) c
-let prl_glob_constr c = Printer.pr_lglob_constr_env (Global.env ()) c
+  f env sigma x
+
+let prl_constr_expr = with_global_env_evm Ppconstr.pr_lconstr_expr
+let pr_glob_constr = with_global_env_evm Printer.pr_glob_constr_env
+let prl_glob_constr = with_global_env_evm Printer.pr_lglob_constr_env
 let pr_glob_constr_and_expr = function
-  | _, Some c ->
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    Ppconstr.pr_constr_expr env sigma c
+  | _, Some c -> with_global_env_evm Ppconstr.pr_constr_expr c
   | c, None -> pr_glob_constr c
 let pr_term (k, c) = pr_guarded (guard_term k) pr_glob_constr_and_expr c
 

@@ -341,12 +341,16 @@ let constrain_variables diff uctx =
   in
   { uctx with local = (univs, local); univ_variables = vars }
 
-let qualid_of_level uctx =
+let id_of_level uctx l =
+  try Some (Option.get (LMap.find l (snd uctx.names)).uname)
+  with Not_found | Option.IsNone ->
+    None
+
+let qualid_of_level uctx l =
   let map, map_rev = uctx.names in
-    fun l ->
-      try Some (Libnames.qualid_of_ident (Option.get (LMap.find l map_rev).uname))
-      with Not_found | Option.IsNone ->
-        UnivNames.qualid_of_level l
+  try Some (Libnames.qualid_of_ident (Option.get (LMap.find l map_rev).uname))
+  with Not_found | Option.IsNone ->
+    UnivNames.qualid_of_level map l
 
 let pr_uctx_level uctx l =
   match qualid_of_level uctx l with

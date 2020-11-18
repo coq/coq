@@ -12,15 +12,15 @@ open Names
 open Univ
 
 
-let qualid_of_level l =
+let qualid_of_level ctx l =
   match Level.name l with
   | Some qid  ->
-    (try Some (Nametab.shortest_qualid_of_universe qid)
+    (try Some (Nametab.shortest_qualid_of_universe (Id.Map.domain ctx) qid)
      with Not_found -> None)
   | None -> None
 
-let pr_with_global_universes l =
-  match qualid_of_level l with
+let pr_with_global_universes ctx l =
+  match qualid_of_level ctx l with
   | Some qid  -> Libnames.pr_qualid qid
   | None -> Level.pr l
 

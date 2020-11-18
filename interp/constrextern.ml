@@ -923,21 +923,43 @@ let extern_float f scopes =
 (**********************************************************************)
 (* mapping glob_constr to constr_expr                                    *)
 
-let extern_glob_sort = function
-  (* In case we print a glob_constr w/o having passed through detyping *)
-  | UNamed [(GSProp,0) | (GProp,0) | (GSet,0)] as u -> u
-  | UNamed _ when not !print_universes -> UAnonymous {rigid=true}
-  | UNamed _ | UAnonymous _ as u -> u
+type extern_env = Id.Set.t * UnivNames.universe_binders
+let extern_env env sigma = vars_of_env env, Evd.universe_binders sigma
+let empty_extern_env = Id.Set.empty, Id.Map.empty
 
-let extern_universes = function
-  | Some _ as l when !print_universes -> l
+let extern_glob_sort_name uvars = function
+  | GSProp -> CSProp
+  | GProp -> CProp
+  | GSet -> CSet
+  | GLocalUniv u -> CType (qualid_of_lident u)
+  | GRawUniv u -> CRawType u
+  | GUniv u -> begin match UnivNames.qualid_of_level uvars u with
+      | Some qid -> CType qid
+      | None -> CRawType u
+    end
+
+let extern_glob_sort uvars =
+  map_glob_sort_gen (List.map (on_fst (extern_glob_sort_name uvars)))
+
+(** wrapper to handle print_universes: don't forget small univs *)
+let extern_glob_sort uvars = function
+  (* In case we print a glob_constr w/o having passed through detyping *)
+  | UNamed [(GSProp,0) | (GProp,0) | (GSet,0)] as u -> extern_glob_sort uvars u
+  | UNamed _ when not !print_universes -> UAnonymous {rigid=true}
+  | UNamed _ | UAnonymous _ as u -> extern_glob_sort uvars u
+
+let extern_instance uvars = function
+  | Some l when !print_universes ->
+    Some (List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) l)
   | _ -> None
 
-let extern_ref vars ref us =
+let extern_ref (vars,uvars) ref us =
   extern_global (select_stronger_impargs (implicits_of_global ref))
-    (extern_reference vars ref) (extern_universes us)
+    (extern_reference vars ref) (extern_instance uvars us)
 
 let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
+
+let add_vname (vars,uvars) na = add_vname vars na, uvars
 
 let rec extern inctx ?impargs scopes vars r =
   match remove_one_coercion inctx (flatten_application r) with
@@ -995,7 +1017,7 @@ let rec extern inctx ?impargs scopes vars r =
              (* Otherwise... *)
                extern_applied_ref inctx
                  (select_stronger_impargs (implicits_of_global ref))
-                 (ref,extern_reference ?loc vars ref) (extern_universes us) args)
+                 (ref,extern_reference ?loc (fst vars) ref) (extern_instance (snd vars) us) args)
          | _ ->
              let args = List.map (fun c -> (sub_extern true scopes vars c,None)) args in
              let head = sub_extern false scopes vars f in
@@ -1015,7 +1037,8 @@ let rec extern inctx ?impargs scopes vars r =
   | GCases (sty,rtntypopt,tml,eqns) ->
     let vars' =
       List.fold_right (Name.fold_right Id.Set.add)
-        (cases_predicate_names tml) vars in
+        (cases_predicate_names tml) (fst vars) in
+    let vars' = vars', snd vars in
     let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
     let tml = List.map (fun (tm,(na,x)) ->
                  let na' = match na, DAst.get tm with
@@ -1035,7 +1058,7 @@ let rec extern inctx ?impargs scopes vars r =
                   Option.map (fun {CAst.loc;v=(ind,nal)} ->
                               let args = List.map (fun x -> DAst.make @@ PatVar x) nal in
                               let fullargs = add_cpatt_for_params ind args in
-                              extern_ind_pattern_in_scope scopes vars ind fullargs
+                              extern_ind_pattern_in_scope scopes (fst vars) ind fullargs
                              ) x))
                 tml
     in
@@ -1058,7 +1081,7 @@ let rec extern inctx ?impargs scopes vars r =
         sub_extern inctx scopes vars b1, sub_extern inctx scopes vars b2)
 
   | GRec (fk,idv,blv,tyv,bv) ->
-      let vars' = Array.fold_right Id.Set.add idv vars in
+      let vars' = on_fst (Array.fold_right Id.Set.add idv) vars in
       (match fk with
          | GFix (nv,n) ->
              let listdecl =
@@ -1066,8 +1089,8 @@ let rec extern inctx ?impargs scopes vars r =
                  let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
                  let bl = List.map (extended_glob_local_binder_of_decl ?loc) bl in
                  let (assums,ids,bl) = extern_local_binder scopes vars bl in
-                 let vars0 = List.fold_right (Name.fold_right Id.Set.add) ids vars in
-                 let vars1 = List.fold_right (Name.fold_right Id.Set.add) ids vars' in
+                 let vars0 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars in
+                 let vars1 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars' in
                  let n =
                    match nv.(i) with
                    | None -> None
@@ -1082,14 +1105,14 @@ let rec extern inctx ?impargs scopes vars r =
                Array.mapi (fun i fi ->
                  let bl = List.map (extended_glob_local_binder_of_decl ?loc) blv.(i) in
                  let (_,ids,bl) = extern_local_binder scopes vars bl in
-                 let vars0 = List.fold_right (Name.fold_right Id.Set.add) ids vars in
-                 let vars1 = List.fold_right (Name.fold_right Id.Set.add) ids vars' in
+                 let vars0 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars in
+                 let vars1 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars' in
                  ((CAst.make fi),bl,extern_typ scopes vars0 tyv.(i),
                   sub_extern true scopes vars1 bv.(i))) idv
              in
              CCoFix (CAst.(make ?loc idv.(n)),Array.to_list listdecl))
 
-  | GSort s -> CSort (extern_glob_sort s)
+  | GSort s -> CSort (extern_glob_sort (snd vars) s)
 
   | GHole (e,naming,_) -> CHole (Some e, naming, None) (* TODO: extern tactics. *)
 
@@ -1105,7 +1128,7 @@ let rec extern inctx ?impargs scopes vars r =
   | GFloat f -> extern_float f (snd scopes)
 
   | GArray(u,t,def,ty) ->
-    CArray(extern_universes u,Array.map (extern inctx scopes vars) t, extern inctx scopes vars def, extern_typ scopes vars ty)
+    CArray(extern_instance (snd vars) u,Array.map (extern inctx scopes vars) t, extern inctx scopes vars def, extern_typ scopes vars ty)
 
   in insert_entry_coercion coercion (CAst.make ?loc c)
 
@@ -1127,7 +1150,7 @@ and factorize_prod ?impargs scopes vars na bk t c =
       let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = extern_typ scopes vars b in
-      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
+      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes (fst vars)) disjpat) in
       let binder = CLocalPattern p in
       (match b.v with
       | CProdN (bl,b) -> CProdN (binder::bl,b)
@@ -1168,7 +1191,7 @@ and factorize_lambda inctx scopes vars na bk t c =
       let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = sub_extern inctx scopes vars b in
-      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
+      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes (fst vars)) disjpat) in
       let binder = CLocalPattern p in
       (match b.v with
       | CLambdaN (bl,b) -> CLambdaN (binder::bl,b)
@@ -1196,7 +1219,7 @@ and extern_local_binder scopes vars = function
     match DAst.get b with
     | GLocalDef (na,bk,bd,ty) ->
       let (assums,ids,l) =
-        extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l in
+        extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l in
       (assums,na::ids,
        CLocalDef(CAst.make na, extern false scopes vars bd,
                    Option.map (extern_typ scopes vars) ty) :: l)
@@ -1204,7 +1227,7 @@ and extern_local_binder scopes vars = function
     | GLocalAssum (na,bk,ty) ->
       let implicit_type = is_reserved_type na ty in
       let ty = extern_typ scopes vars ty in
-      (match extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l with
+      (match extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l with
           (assums,ids,CLocalAssum(nal,k,ty')::l)
             when (constr_expr_eq ty ty' || implicit_type && constr_expr_eq ty' hole) &&
               match na with Name id -> not (occur_var_constr_expr id ty')
@@ -1219,7 +1242,7 @@ and extern_local_binder scopes vars = function
     | GLocalPattern ((p,_),_,bk,ty) ->
       let ty =
         if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
-      let p = mkCPatOr (List.map (extern_cases_pattern vars) p) in
+      let p = mkCPatOr (List.map (extern_cases_pattern (fst vars)) p) in
       let (assums,ids,l) = extern_local_binder scopes vars l in
       let p = match ty with
         | None -> p
@@ -1227,7 +1250,7 @@ and extern_local_binder scopes vars = function
       (assums,ids, CLocalPattern p :: l)
 
 and extern_eqn inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
-  let pll = List.map (List.map (extern_cases_pattern_in_scope scopes vars)) pll in
+  let pll = List.map (List.map (extern_cases_pattern_in_scope scopes (fst vars))) pll in
   make ?loc (pll,extern inctx scopes vars c)
 
 and extern_notations inctx scopes vars nargs t =
@@ -1277,6 +1300,7 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
             end
           | AppBoundedNotation _ -> raise No_match in
         (* Try matching ... *)
+        let vars, uvars = vars in
         let terms,termlists,binders,binderlists =
           match_notation_constr ~print_univ:(!print_universes) t ~vars pat in
         (* Try availability of interpretation ... *)
@@ -1300,35 +1324,43 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
                   let l =
                     List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
                       extern (* assuming no overloading: *) true
-                        (subentry,(scopt,scl@scopes')) vars c)
-                      terms in
+                        (subentry,(scopt,scl@scopes')) (vars,uvars) c)
+                      terms
+                  in
                   let ll =
                     List.map (fun ((vars,l),(subentry,(scopt,scl))) ->
-                      List.map (extern true (subentry,(scopt,scl@scopes')) vars) l)
-                      termlists in
+                      List.map (extern true (subentry,(scopt,scl@scopes')) (vars,uvars)) l)
+                      termlists
+                  in
                   let bl =
                     List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
-                      (mkCPatOr (List.map (extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes')) vars) bl)),
-                      Explicit)
-                      binders in
+                        (mkCPatOr (List.map
+                                     (extern_cases_pattern_in_scope
+                                        (subentry,(scopt,scl@scopes')) vars)
+                                     bl)),
+                        Explicit)
+                      binders
+                  in
                   let bll =
                     List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
-                      pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) vars bl))
-                      binderlists in
+                      pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) (vars,uvars) bl))
+                      binderlists
+                  in
                   let c = make_notation loc specific_ntn (l,ll,bl,bll) in
                   let c = insert_entry_coercion coercion (insert_delimiters c key) in
                   let args = fill_arg_scopes args argsscopes allscopes in
-                  let args = extern_args (extern true) vars args in
+                  let args = extern_args (extern true) (vars,uvars) args in
                   CAst.make ?loc @@ extern_applied_notation inctx nallargs argsimpls c args)
           | SynDefRule kn ->
               let l =
                 List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
-                  extern true (subentry,(scopt,scl@snd scopes)) vars c)
-                  terms in
+                  extern true (subentry,(scopt,scl@snd scopes)) (vars,uvars) c)
+                  terms
+              in
               let cf = Nametab.shortest_qualid_of_syndef ?loc vars kn in
               let a = CRef (cf,None) in
               let args = fill_arg_scopes args argsscopes allscopes in
-              let args = extern_args (extern true) vars args in
+              let args = extern_args (extern true) (vars,uvars) args in
               let c = CAst.make ?loc @@ extern_applied_syntactic_definition inctx nallargs argsimpls (a,cf) l args in
               if isCRef_no_univ c.CAst.v && entry_has_global custom then c
              else match availability_of_entry_coercion custom InConstrEntrySomeLevel with
@@ -1348,7 +1380,7 @@ let extern_glob_type ?impargs vars c =
 
 let extern_constr ?lax ?(inctx=false) ?scope env sigma t =
   let r = Detyping.detype Detyping.Later ?lax false Id.Set.empty env sigma t in
-  let vars = vars_of_env env in
+  let vars = extern_env env sigma in
   extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
 
 let extern_constr_in_scope ?lax ?inctx scope env sigma t =
@@ -1364,16 +1396,16 @@ let extern_type ?lax ?(goal_concl_style=false) env sigma ?impargs t =
   (* consideration; see namegen.ml for further details *)
   let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r = Detyping.detype Detyping.Later ?lax goal_concl_style avoid env sigma t in
-  extern_glob_type ?impargs (vars_of_env env) r
+  extern_glob_type ?impargs (extern_env env sigma) r
 
-let extern_sort sigma s = extern_glob_sort (detype_sort sigma s)
+let extern_sort sigma s = extern_glob_sort (Evd.universe_binders sigma) (detype_sort sigma s)
 
 let extern_closed_glob ?lax ?(goal_concl_style=false) ?(inctx=false) ?scope env sigma t =
   let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r =
     Detyping.detype_closed_glob ?lax goal_concl_style avoid env sigma t
   in
-  let vars = vars_of_env env in
+  let vars = extern_env env sigma in
   extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
 
 (******************************************************************)
@@ -1491,10 +1523,13 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
     GArray (None, Array.map glob_of t, glob_of def, glob_of ty)
 
 let extern_constr_pattern env sigma pat =
-  extern true (InConstrEntrySomeLevel,(None,[])) Id.Set.empty (glob_of_pat Id.Set.empty env sigma pat)
+  extern true (InConstrEntrySomeLevel,(None,[]))
+    (* XXX no vars? *)
+    (Id.Set.empty, Evd.universe_binders sigma)
+    (glob_of_pat Id.Set.empty env sigma pat)
 
 let extern_rel_context where env sigma sign =
   let a = detype_rel_context Detyping.Later where Id.Set.empty (names_of_rel_context env,env) sigma sign in
-  let vars = vars_of_env env in
+  let vars = extern_env env sigma in
   let a = List.map (extended_glob_local_binder_of_decl) a in
   pi3 (extern_local_binder (InConstrEntrySomeLevel,(None,[])) vars a)

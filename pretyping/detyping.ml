@@ -648,26 +648,16 @@ let detype_cofix detype flags avoid env sigma n (names,tys,bodies) =
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
 
-(* TODO use some algebraic type with a case for unnamed univs so we
-   can cleanly detype them. NB: this corresponds to a hack in
-   Pretyping.interp_universe_level_name to convert Foo.xx strings into
-   universes. *)
-let hack_qualid_of_univ_level sigma l =
-  match Termops.reference_of_level sigma l with
-  | Some qid -> qid
-  | None ->
-    let path = String.split_on_char '.' (Univ.Level.to_string l) in
-    let path = List.rev_map Id.of_string_soft path in
-    Libnames.qualid_of_dirpath (DirPath.make path)
+let detype_level_name sigma l =
+  if Univ.Level.is_sprop l then GSProp else
+  if Univ.Level.is_prop l then GProp else
+  if Univ.Level.is_set l then GSet else
+    match UState.id_of_level (Evd.evar_universe_context sigma) l with
+    | Some id -> GLocalUniv (CAst.make id)
+    | None -> GUniv l
 
 let detype_universe sigma u =
-  let fn (l, n) =
-    let s =
-      if Univ.Level.is_prop l then GProp else
-      if Univ.Level.is_set l then GSet else
-      GType (hack_qualid_of_univ_level sigma l) in
-    (s, n) in
-  List.map fn (Univ.Universe.repr u)
+  List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u)
 
 let detype_sort sigma = function
   | SProp -> UNamed [GSProp,0]
@@ -684,8 +674,7 @@ type binder_kind = BProd | BLambda | BLetIn
 (* Main detyping function                                             *)
 
 let detype_level sigma l =
-  let l = hack_qualid_of_univ_level sigma l in
-  UNamed (GType l)
+  UNamed (detype_level_name sigma l)
 
 let detype_instance sigma l =
   let l = EInstance.kind sigma l in

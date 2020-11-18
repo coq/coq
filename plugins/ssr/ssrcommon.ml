@@ -895,7 +895,7 @@ open Constrexpr
 open Util
 
 (** Constructors for constr_expr *)
-let mkCProp loc = CAst.make ?loc @@ CSort (UNamed [GProp,0])
+let mkCProp loc = CAst.make ?loc @@ CSort (UNamed [CProp,0])
 let mkCType loc = CAst.make ?loc @@ CSort (UAnonymous {rigid=true})
 let mkCVar ?loc id = CAst.make ?loc @@ CRef (qualid_of_ident ?loc id, None)
 let rec mkCHoles ?loc n =

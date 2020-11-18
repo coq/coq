@@ -13,10 +13,23 @@ open Libnames
 
 (** {6 Concrete syntax for terms } *)
 
-(** [constr_expr] is the abstract syntax tree produced by the parser *)
-type universe_decl_expr = (lident list, Glob_term.glob_constraint list) UState.gen_universe_decl
+(** Universes *)
+type sort_name_expr =
+  | CSProp | CProp | CSet
+  | CType of qualid
+  | CRawType of Univ.Level.t (** Universes like "foo.1" have no qualid form *)
+
+type univ_level_expr  = sort_name_expr Glob_term.glob_sort_gen
+type sort_expr = (sort_name_expr * int) list Glob_term.glob_sort_gen
+
+type instance_expr = univ_level_expr list
+
+(** Constraints don't have anonymous universes *)
+type univ_constraint_expr = sort_name_expr * Univ.constraint_type * sort_name_expr
+
+type universe_decl_expr = (lident list, univ_constraint_expr list) UState.gen_universe_decl
 type cumul_univ_decl_expr =
-  ((lident * Univ.Variance.t option) list, Glob_term.glob_constraint list) UState.gen_universe_decl
+  ((lident * Univ.Variance.t option) list, univ_constraint_expr list) UState.gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
 type cumul_ident_decl = lident * cumul_univ_decl_expr option
@@ -64,8 +77,7 @@ type prim_token =
   | Number of NumTok.Signed.t
   | String of string
 
-type instance_expr = Glob_term.glob_level list
-
+(** [constr_expr] is the abstract syntax tree produced by the parser *)
 type cases_pattern_expr_r =
   | CPatAlias of cases_pattern_expr * lname
   | CPatCstr  of qualid
@@ -114,7 +126,7 @@ and constr_expr_r =
   | CHole   of Evar_kinds.t option * Namegen.intro_pattern_naming_expr * Genarg.raw_generic_argument option
   | CPatVar of Pattern.patvar
   | CEvar   of Glob_term.existential_name CAst.t * (lident * constr_expr) list
-  | CSort   of Glob_term.glob_sort
+  | CSort   of sort_expr
   | CCast   of constr_expr * constr_expr Glob_term.cast_type
   | CNotation of notation_with_optional_scope option * notation * constr_notation_substitution
   | CGeneralization of Glob_term.binding_kind * abstraction_kind option * constr_expr

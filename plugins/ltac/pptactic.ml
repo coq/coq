@@ -1130,12 +1130,12 @@ let pr_goal_selector ~toplevel s =
     let rec prtac n (t:glob_tactic_expr) =
       let pr = {
         pr_tactic = prtac;
-        pr_constr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env));
-        pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env));
-        pr_lconstr = (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env));
-        pr_pattern = (fun env sigma -> pr_pat_and_constr_expr (pr_glob_constr_env env));
+        pr_constr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
+        pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
+        pr_lconstr = (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma));
+        pr_pattern = (fun env sigma -> pr_pat_and_constr_expr (pr_glob_constr_env env sigma));
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
-        pr_lpattern = (fun env sigma -> pr_pat_and_constr_expr (pr_lglob_constr_env env));
+        pr_lpattern = (fun env sigma -> pr_pat_and_constr_expr (pr_lglob_constr_env env sigma));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
         pr_generic = Pputils.pr_glb_generic;
@@ -1166,7 +1166,7 @@ let pr_goal_selector ~toplevel s =
       let pr = {
         pr_tactic = (fun _ _ -> str "<tactic>");
         pr_constr = pr_econstr_env;
-        pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env));
+        pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_lconstr = pr_leconstr_env;
         pr_pattern = pr_constr_pattern_env;
         pr_lpattern = pr_lconstr_pattern_env;
@@ -1189,7 +1189,7 @@ let pr_goal_selector ~toplevel s =
 
   let pr_raw_extend env sigma = pr_raw_extend_rec @@ pr_raw_tactic_level env sigma
 
-  let pr_glob_extend env sigma = pr_glob_extend_rec (pr_glob_tactic_level env)
+  let pr_glob_extend env = pr_glob_extend_rec (pr_glob_tactic_level env)
 
   let pr_alias pr lev key args =
     pr_alias_gen (fun _ arg -> pr arg) lev key args
@@ -1212,8 +1212,8 @@ let declare_extra_genarg_pprule wit
         f env sigma pr_constr_expr pr_lconstr_expr pr_raw_tactic_level x) in
   let g x =
     Genprint.PrinterBasic (fun env sigma ->
-    g env sigma (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env))
-      (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env))
+    g env sigma (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma))
+      (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma))
       (fun env sigma -> pr_glob_tactic_level env) x)
   in
   let h x =
@@ -1242,8 +1242,8 @@ let declare_extra_genarg_pprule_with_level wit
         default_already_surrounded = default_surrounded;
         default_ensure_surrounded = default_non_surrounded;
         printer = (fun env sigma n ->
-          g env sigma (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env))
-            (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env))
+          g env sigma (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma))
+            (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma))
             (fun env sigma -> pr_glob_tactic_level env) n x) }
   in
   let h x =
@@ -1301,10 +1301,10 @@ let register_basic_print0 wit f g h =
   Genprint.register_print0 wit (lift f) (lift g) (lift_top h)
 
 let pr_glob_constr_pptac env sigma c =
-  pr_glob_constr_env env c
+  pr_glob_constr_env env sigma c
 
 let pr_lglob_constr_pptac env sigma c =
-  pr_lglob_constr_env env c
+  pr_lglob_constr_env env sigma c
 
 let pr_raw_intro_pattern =
   lift_env (fun env sigma -> Miscprint.pr_intro_pattern @@ pr_constr_expr env sigma)

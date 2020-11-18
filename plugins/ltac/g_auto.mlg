@@ -63,7 +63,7 @@ let eval_uconstrs ist cs =
 
 let pr_auto_using_raw env sigma _ _ _  = Pptactic.pr_auto_using @@ Ppconstr.pr_constr_expr env sigma
 let pr_auto_using_glob env sigma _ _ _ = Pptactic.pr_auto_using (fun (c,_) ->
-    Printer.pr_glob_constr_env env c)
+    Printer.pr_glob_constr_env env sigma c)
 let pr_auto_using env sigma _ _ _ = Pptactic.pr_auto_using @@
      Printer.pr_closed_glob_env env sigma
 

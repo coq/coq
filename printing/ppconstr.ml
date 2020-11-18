@@ -152,14 +152,15 @@ let tag_var = tag Tag.variable
 
   let pr_sep_com sep f c = pr_with_comments ?loc:(constr_loc c) (sep() ++ f c)
 
-  let pr_glob_sort_name = function
-    | GSProp -> str "SProp"
-    | GProp -> str "Prop"
-    | GSet -> str "Set"
-    | GType qid -> pr_qualid qid
+  let pr_sort_name_expr = function
+    | CSProp -> str "SProp"
+    | CProp -> str "Prop"
+    | CSet -> str "Set"
+    | CType qid -> pr_qualid qid
+    | CRawType s -> Univ.Level.pr s
 
   let pr_univ_expr (u,n) =
-    pr_glob_sort_name u ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
+    pr_sort_name_expr u ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
 
   let pr_univ l =
     match l with
@@ -168,21 +169,22 @@ let tag_var = tag Tag.variable
 
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
-  let pr_glob_sort = let open Glob_term in function
-    | UNamed [GSProp,0] -> tag_type (str "SProp")
-    | UNamed [GProp,0] -> tag_type (str "Prop")
-    | UNamed [GSet,0] -> tag_type (str "Set")
+  let pr_sort_expr = function
+    | UNamed [CSProp,0] -> tag_type (str "SProp")
+    | UNamed [CProp,0] -> tag_type (str "Prop")
+    | UNamed [CSet,0] -> tag_type (str "Set")
     | UAnonymous {rigid=true} -> tag_type (str "Type")
     | UAnonymous {rigid=false} -> tag_type (str "Type") ++ pr_univ_annot (fun _ -> str "_") ()
     | UNamed u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
 
-  let pr_glob_level = let open Glob_term in function
-    | UNamed GSProp -> tag_type (str "SProp")
-    | UNamed GProp -> tag_type (str "Prop")
-    | UNamed GSet -> tag_type (str "Set")
+  let pr_univ_level_expr = function
+    | UNamed CSProp -> tag_type (str "SProp")
+    | UNamed CProp -> tag_type (str "Prop")
+    | UNamed CSet -> tag_type (str "Set")
     | UAnonymous {rigid=true} -> tag_type (str "Type")
     | UAnonymous {rigid=false} -> tag_type (str "_")
-    | UNamed (GType u) -> tag_type (pr_qualid u)
+    | UNamed (CType u) -> tag_type (pr_qualid u)
+    | UNamed (CRawType s) -> tag_type (Univ.Level.pr s)
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
@@ -200,7 +202,7 @@ let tag_var = tag Tag.variable
   let pr_patvar = pr_id
 
   let pr_universe_instance l =
-    pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_glob_level)) l
+    pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_univ_level_expr)) l
 
   let pr_reference qid =
     if qualid_is_ident qid then tag_var (pr_id @@ qualid_basename qid)
@@ -664,7 +666,7 @@ let tag_var = tag Tag.variable
       | CPatVar p ->
         return (str "@?" ++ pr_patvar p, latom)
       | CSort s ->
-        return (pr_glob_sort s, latom)
+        return (pr_sort_expr s, latom)
       | CCast (a,b) ->
         return (
           hv 0 (pr mt (LevelLt lcast) a ++ spc () ++
@@ -717,7 +719,7 @@ let tag_var = tag Tag.variable
   let transf env sigma c =
     if !Flags.beautify_file then
       let r = Constrintern.for_grammar (Constrintern.intern_constr env sigma) c in
-      Constrextern.extern_glob_constr (Termops.vars_of_env env) r
+      Constrextern.(extern_glob_constr (extern_env env sigma)) r
     else c
 
   let pr_expr env sigma prec c =

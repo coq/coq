@@ -130,53 +130,32 @@ let is_strict_universe_declarations =
 
 (** Miscellaneous interpretation functions *)
 
-let interp_known_universe_level_name evd qid =
-  try
-    let open Libnames in
-    if qualid_is_ident qid then Evd.universe_of_name evd @@ qualid_basename qid
-    else raise Not_found
+let universe_level_name evd ({CAst.v=id} as lid) =
+  try evd, Evd.universe_of_name evd id
   with Not_found ->
-    let qid = Nametab.locate_universe qid in
-    Univ.Level.make qid
+    if not (is_strict_universe_declarations ()) then
+      new_univ_level_variable ?loc:lid.CAst.loc ~name:id univ_rigid evd
+    else user_err ?loc:lid.CAst.loc ~hdr:"universe_level_name"
+        (Pp.(str "Undeclared universe: " ++ Id.print id))
 
-let interp_universe_level_name evd qid =
-  try evd, interp_known_universe_level_name evd qid
-  with Not_found ->
-    if Libnames.qualid_is_ident qid then (* Undeclared *)
-      let id = Libnames.qualid_basename qid in
-      if not (is_strict_universe_declarations ()) then
-        new_univ_level_variable ?loc:qid.CAst.loc ~name:id univ_rigid evd
-      else user_err ?loc:qid.CAst.loc ~hdr:"interp_universe_level_name"
-          (Pp.(str "Undeclared universe: " ++ Id.print id))
-    else
-      let dp, i = Libnames.repr_qualid qid in
-      let num =
-        try int_of_string (Id.to_string i)
-        with Failure _ ->
-          user_err ?loc:qid.CAst.loc ~hdr:"interp_universe_level_name"
-            (Pp.(str "Undeclared global universe: " ++ Libnames.pr_qualid qid))
-      in
-      let level = Univ.Level.(make (UGlobal.make dp num)) in
-      let evd =
-        try Evd.add_global_univ evd level
-        with UGraph.AlreadyDeclared -> evd
-      in evd, level
-
-let interp_sort_name sigma = function
+let sort_name sigma = function
   | GSProp -> sigma, Univ.Level.sprop
   | GProp -> sigma, Univ.Level.prop
   | GSet -> sigma, Univ.Level.set
-  | GType l -> interp_universe_level_name sigma l
+  | GUniv u -> sigma, u
+  | GRawUniv u ->
+    (try Evd.add_global_univ sigma u with UGraph.AlreadyDeclared -> sigma), u
+  | GLocalUniv l -> universe_level_name sigma l
 
-let interp_sort_info ?loc evd l =
+let sort_info ?loc evd l =
     List.fold_left (fun (evd, u) (l,n) ->
-      let evd', u' = interp_sort_name evd l in
+      let evd', u' = sort_name evd l in
       let u' = Univ.Universe.make u' in
       let u' = match n with
       | 0 -> u'
       | 1 -> Univ.Universe.super u'
       | n ->
-        user_err ?loc ~hdr:"interp_universe"
+        user_err ?loc ~hdr:"sort_info"
           (Pp.(str "Cannot interpret universe increment +" ++ int n))
       in (evd', Univ.sup u u'))
     (evd, Univ.Universe.type0m) l
@@ -393,24 +372,33 @@ let pretype_id pretype loc env sigma id =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let interp_known_glob_level ?loc evd = function
+let known_universe_level_name evd lid =
+  try Evd.universe_of_name evd lid.CAst.v
+  with Not_found ->
+    let u = Nametab.locate_universe (Libnames.qualid_of_lident lid) in
+    Univ.Level.make u
+
+let known_glob_level evd = function
   | GSProp -> Univ.Level.sprop
   | GProp -> Univ.Level.prop
   | GSet -> Univ.Level.set
-  | GType qid ->
-    try interp_known_universe_level_name evd qid
+  | GUniv u -> u
+  | GRawUniv u -> anomaly Pp.(str "Raw universe in known_glob_level.")
+  | GLocalUniv lid ->
+    try known_universe_level_name evd lid
     with Not_found ->
-      user_err ?loc ~hdr:"interp_known_level_info" (str "Undeclared universe " ++ Libnames.pr_qualid qid)
+      user_err ?loc:lid.CAst.loc ~hdr:"known_level_info"
+        (str "Undeclared universe " ++ Id.print lid.CAst.v)
 
-let interp_glob_level ?loc evd : glob_level -> _ = function
+let glob_level ?loc evd : glob_level -> _ = function
   | UAnonymous {rigid} -> new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd
-  | UNamed s -> interp_sort_name evd s
+  | UNamed s -> sort_name evd s
 
-let interp_instance ?loc evd l =
+let instance ?loc evd l =
   let evd, l' =
     List.fold_left
       (fun (evd, univs) l ->
-         let evd, l = interp_glob_level ?loc evd l in
+         let evd, l = glob_level ?loc evd l in
          (evd, l :: univs)) (evd, [])
       l
   in
@@ -424,7 +412,7 @@ let pretype_global ?loc rigid env evd gr us =
   let evd, instance =
     match us with
     | None -> evd, None
-    | Some l -> interp_instance ?loc evd l
+    | Some l -> instance ?loc evd l
   in
   Evd.fresh_global ?loc ~rigid ?names:instance !!env evd gr
 
@@ -451,11 +439,11 @@ let pretype_ref ?loc sigma env ref us =
     let sigma, ty = type_of !!env sigma c in
     sigma, make_judge c ty
 
-let interp_sort ?loc evd : glob_sort -> _ = function
+let sort ?loc evd : glob_sort -> _ = function
   | UAnonymous {rigid} ->
     let evd, l = new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd in
     evd, Univ.Universe.make l
-  | UNamed l -> interp_sort_info ?loc evd l
+  | UNamed l -> sort_info ?loc evd l
 
 let judge_of_sort ?loc evd s =
   let judge =
@@ -469,7 +457,7 @@ let pretype_sort ?loc sigma s =
   | UNamed [GProp,0] -> sigma, judge_of_prop
   | UNamed [GSet,0] -> sigma, judge_of_set
   | _ ->
-  let sigma, s = interp_sort ?loc sigma s in
+  let sigma, s = sort ?loc sigma s in
   judge_of_sort ?loc sigma s
 
 let new_type_evar env sigma loc =

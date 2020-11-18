@@ -48,8 +48,10 @@ let glob_sort_name_eq g1 g2 = match g1, g2 with
   | GSProp, GSProp
   | GProp, GProp
   | GSet, GSet -> true
-  | GType u1, GType u2 -> Libnames.qualid_eq u1 u2
-  | (GSProp|GProp|GSet|GType _), _ -> false
+  | GUniv u1, GUniv u2 -> Univ.Level.equal u1 u2
+  | GLocalUniv u1, GLocalUniv u2 -> lident_eq u1 u2
+  | GRawUniv u1, GRawUniv u2 -> Univ.Level.equal u1 u2
+  | (GSProp|GProp|GSet|GUniv _|GLocalUniv _|GRawUniv _), _ -> false
 
 exception ComplexSort
 
@@ -59,6 +61,10 @@ let glob_sort_family = let open Sorts in function
   | UNamed [GProp,0] -> InProp
   | UNamed [GSet,0] -> InSet
   | _ -> raise ComplexSort
+
+let map_glob_sort_gen f = function
+  | UNamed l -> UNamed (f l)
+  | UAnonymous _ as x -> x
 
 let glob_sort_gen_eq f u1 u2 =
  match u1, u2 with

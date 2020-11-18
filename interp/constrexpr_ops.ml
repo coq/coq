@@ -18,6 +18,25 @@ open Glob_term
 open Notation
 open Constrexpr
 
+(***********)
+(* Universes *)
+
+let sort_name_expr_eq c1 c2 = match c1, c2 with
+  | CSProp, CSProp
+  | CProp, CProp
+  | CSet, CSet -> true
+  | CType q1, CType q2 -> Libnames.qualid_eq q1 q2
+  | CRawType u1, CRawType u2 -> Univ.Level.equal u1 u2
+  | (CSProp|CProp|CSet|CType _|CRawType _), _ -> false
+
+let univ_level_expr_eq u1 u2 =
+  Glob_ops.glob_sort_gen_eq sort_name_expr_eq u1 u2
+
+let sort_expr_eq u1 u2 =
+  Glob_ops.glob_sort_gen_eq
+    (List.equal (fun (x,m) (y,n) -> sort_name_expr_eq x y && Int.equal m n))
+    u1 u2
+
 (***********************)
 (* For binders parsing *)
 
@@ -59,13 +78,11 @@ let explicitation_eq ex1 ex2 = match ex1, ex2 with
   Id.equal id1 id2
 | _ -> false
 
-let eq_ast f { CAst.v = x } { CAst.v = y } = f x y
-
 let rec cases_pattern_expr_eq p1 p2 =
   if CAst.(p1.v == p2.v) then true
   else match CAst.(p1.v, p2.v) with
   | CPatAlias(a1,i1), CPatAlias(a2,i2) ->
-      eq_ast Name.equal i1 i2 && cases_pattern_expr_eq a1 a2
+      CAst.eq Name.equal i1 i2 && cases_pattern_expr_eq a1 a2
   | CPatCstr(c1,a1,b1), CPatCstr(c2,a2,b2) ->
       qualid_eq c1 c2 &&
       Option.equal (List.equal cases_pattern_expr_eq) a1 a2 &&
@@ -108,10 +125,10 @@ let rec constr_expr_eq e1 e2 =
   else match CAst.(e1.v, e2.v) with
     | CRef (r1,u1), CRef (r2,u2) -> qualid_eq r1 r2 && eq_universes u1 u2
     | CFix(id1,fl1), CFix(id2,fl2) ->
-      eq_ast Id.equal id1 id2 &&
+      lident_eq id1 id2 &&
       List.equal fix_expr_eq fl1 fl2
     | CCoFix(id1,fl1), CCoFix(id2,fl2) ->
-      eq_ast Id.equal id1 id2 &&
+      lident_eq id1 id2 &&
       List.equal cofix_expr_eq fl1 fl2
     | CProdN(bl1,a1), CProdN(bl2,a2) ->
       List.equal local_binder_eq bl1 bl2 &&
@@ -120,7 +137,7 @@ let rec constr_expr_eq e1 e2 =
       List.equal local_binder_eq bl1 bl2 &&
       constr_expr_eq a1 a2
     | CLetIn(na1,a1,t1,b1), CLetIn(na2,a2,t2,b2) ->
-      eq_ast Name.equal na1 na2 &&
+      CAst.eq Name.equal na1 na2 &&
       constr_expr_eq a1 a2 &&
       Option.equal constr_expr_eq t1 t2 &&
       constr_expr_eq b1 b2
@@ -144,14 +161,14 @@ let rec constr_expr_eq e1 e2 =
       List.equal case_expr_eq a1 a2 &&
       List.equal branch_expr_eq brl1 brl2
     | CLetTuple (n1, (m1, e1), t1, b1), CLetTuple (n2, (m2, e2), t2, b2) ->
-      List.equal (eq_ast Name.equal) n1 n2 &&
-      Option.equal (eq_ast Name.equal) m1 m2 &&
+      List.equal (CAst.eq Name.equal) n1 n2 &&
+      Option.equal (CAst.eq Name.equal) m1 m2 &&
       Option.equal constr_expr_eq e1 e2 &&
       constr_expr_eq t1 t2 &&
       constr_expr_eq b1 b2
     | CIf (e1, (n1, r1), t1, f1), CIf (e2, (n2, r2), t2, f2) ->
       constr_expr_eq e1 e2 &&
-      Option.equal (eq_ast Name.equal) n1 n2 &&
+      Option.equal (CAst.eq Name.equal) n1 n2 &&
       Option.equal constr_expr_eq r1 r2 &&
       constr_expr_eq t1 t2 &&
       constr_expr_eq f1 f2
@@ -161,7 +178,7 @@ let rec constr_expr_eq e1 e2 =
     | CEvar (id1, c1), CEvar (id2, c2) ->
       Id.equal id1.CAst.v id2.CAst.v && List.equal instance_eq c1 c2
     | CSort s1, CSort s2 ->
-      Glob_ops.glob_sort_eq s1 s2
+      sort_expr_eq s1 s2
     | CCast(t1,c1), CCast(t2,c2) ->
       constr_expr_eq t1 t2 && cast_expr_eq c1 c2
     | CNotation(inscope1, n1, s1), CNotation(inscope2, n2, s2) ->
@@ -187,12 +204,12 @@ let rec constr_expr_eq e1 e2 =
      | CGeneralization _ | CDelimiters _ | CArray _), _ -> false
 
 and args_eq (a1,e1) (a2,e2) =
-  Option.equal (eq_ast explicitation_eq) e1 e2 &&
+  Option.equal (CAst.eq explicitation_eq) e1 e2 &&
   constr_expr_eq a1 a2
 
 and case_expr_eq (e1, n1, p1) (e2, n2, p2) =
   constr_expr_eq e1 e2 &&
-  Option.equal (eq_ast Name.equal) n1 n2 &&
+  Option.equal (CAst.eq Name.equal) n1 n2 &&
   Option.equal cases_pattern_expr_eq p1 p2
 
 and branch_expr_eq {CAst.v=(p1, e1)} {CAst.v=(p2, e2)} =
@@ -200,35 +217,35 @@ and branch_expr_eq {CAst.v=(p1, e1)} {CAst.v=(p2, e2)} =
   constr_expr_eq e1 e2
 
 and fix_expr_eq (id1,r1,bl1,a1,b1) (id2,r2,bl2,a2,b2) =
-  (eq_ast Id.equal id1 id2) &&
+  (lident_eq id1 id2) &&
   Option.equal recursion_order_expr_eq r1 r2 &&
   List.equal local_binder_eq bl1 bl2 &&
   constr_expr_eq a1 a2 &&
   constr_expr_eq b1 b2
 
 and cofix_expr_eq (id1,bl1,a1,b1) (id2,bl2,a2,b2) =
-  (eq_ast Id.equal id1 id2) &&
+  (lident_eq id1 id2) &&
   List.equal local_binder_eq bl1 bl2 &&
   constr_expr_eq a1 a2 &&
   constr_expr_eq b1 b2
 
 and recursion_order_expr_eq_r r1 r2 = match r1, r2 with
-  | CStructRec i1, CStructRec i2 -> eq_ast Id.equal i1 i2
+  | CStructRec i1, CStructRec i2 -> lident_eq i1 i2
   | CWfRec (i1,e1), CWfRec (i2,e2) ->
     constr_expr_eq e1 e2
   | CMeasureRec (i1, e1, o1), CMeasureRec (i2, e2, o2) ->
-    Option.equal (eq_ast Id.equal) i1 i2 &&
+    Option.equal lident_eq i1 i2 &&
     constr_expr_eq e1 e2 && Option.equal constr_expr_eq o1 o2
   | _ -> false
 
-and recursion_order_expr_eq r1 r2 = eq_ast recursion_order_expr_eq_r r1 r2
+and recursion_order_expr_eq r1 r2 = CAst.eq recursion_order_expr_eq_r r1 r2
 
 and local_binder_eq l1 l2 = match l1, l2 with
   | CLocalDef (n1, e1, t1), CLocalDef (n2, e2, t2) ->
-    eq_ast Name.equal n1 n2 && constr_expr_eq e1 e2 && Option.equal constr_expr_eq t1 t2
+    CAst.eq Name.equal n1 n2 && constr_expr_eq e1 e2 && Option.equal constr_expr_eq t1 t2
   | CLocalAssum (n1, _, e1), CLocalAssum (n2, _, e2) ->
     (* Don't care about the [binder_kind] *)
-    List.equal (eq_ast Name.equal) n1 n2 && constr_expr_eq e1 e2
+    List.equal (CAst.eq Name.equal) n1 n2 && constr_expr_eq e1 e2
   | _ -> false
 
 and constr_notation_substitution_eq (e1, el1, b1, bl1) (e2, el2, b2, bl2) =
