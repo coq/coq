@@ -1479,11 +1479,11 @@ simple_tactic: [
 | "right" "with" bindings
 | "eright" "with" bindings
 | "constructor"
-| "constructor" int_or_var
-| "constructor" int_or_var "with" bindings
+| "constructor" nat_or_var
+| "constructor" nat_or_var "with" bindings
 | "econstructor"
-| "econstructor" int_or_var
-| "econstructor" int_or_var "with" bindings
+| "econstructor" nat_or_var
+| "econstructor" nat_or_var "with" bindings
 | "specialize" constr_with_bindings
 | "specialize" constr_with_bindings "as" simple_intropattern
 | "symmetry"
@@ -1582,9 +1582,9 @@ simple_tactic: [
 | "generalize_eqs_vars" hyp
 | "dependent" "generalize_eqs_vars" hyp
 | "specialize_eqs" hyp
-| "hresolve_core" "(" ident ":=" constr ")" "at" int_or_var "in" constr
+| "hresolve_core" "(" ident ":=" constr ")" "at" nat_or_var "in" constr
 | "hresolve_core" "(" ident ":=" constr ")" "in" constr
-| "hget_evar" int_or_var
+| "hget_evar" nat_or_var
 | "destauto"
 | "destauto" "in" hyp
 | "transparent_abstract" tactic3
@@ -1617,25 +1617,25 @@ simple_tactic: [
 | "trivial" auto_using hintbases
 | "info_trivial" auto_using hintbases
 | "debug" "trivial" auto_using hintbases
-| "auto" OPT int_or_var auto_using hintbases
-| "info_auto" OPT int_or_var auto_using hintbases
-| "debug" "auto" OPT int_or_var auto_using hintbases
-| "eauto" OPT int_or_var OPT int_or_var auto_using hintbases
-| "new" "auto" OPT int_or_var auto_using hintbases
-| "debug" "eauto" OPT int_or_var OPT int_or_var auto_using hintbases
-| "info_eauto" OPT int_or_var OPT int_or_var auto_using hintbases
-| "dfs" "eauto" OPT int_or_var auto_using hintbases
-| "bfs" "eauto" OPT int_or_var auto_using hintbases
+| "auto" OPT nat_or_var auto_using hintbases
+| "info_auto" OPT nat_or_var auto_using hintbases
+| "debug" "auto" OPT nat_or_var auto_using hintbases
+| "eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
+| "new" "auto" OPT nat_or_var auto_using hintbases
+| "debug" "eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
+| "info_eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
+| "dfs" "eauto" OPT nat_or_var auto_using hintbases
+| "bfs" "eauto" OPT nat_or_var auto_using hintbases
 | "autounfold" hintbases clause_dft_concl
 | "autounfold_one" hintbases "in" hyp
 | "autounfold_one" hintbases
 | "unify" constr constr
 | "unify" constr constr "with" preident
 | "convert_concl_no_check" constr
-| "typeclasses" "eauto" "bfs" OPT int_or_var "with" LIST1 preident
-| "typeclasses" "eauto" OPT int_or_var "with" LIST1 preident
-| "typeclasses" "eauto" "bfs" OPT int_or_var
-| "typeclasses" "eauto" OPT int_or_var
+| "typeclasses" "eauto" "bfs" OPT nat_or_var "with" LIST1 preident
+| "typeclasses" "eauto" OPT nat_or_var "with" LIST1 preident
+| "typeclasses" "eauto" "bfs" OPT nat_or_var
+| "typeclasses" "eauto" OPT nat_or_var
 | "head_of_constr" ident constr
 | "not_evar" constr
 | "is_ground" constr
@@ -1734,7 +1734,7 @@ simple_tactic: [
 | "restart_timer" OPT string
 | "finish_timing" OPT string
 | "finish_timing" "(" string ")" OPT string
-| "psatz_Z" int_or_var tactic      (* micromega plugin *)
+| "psatz_Z" nat_or_var tactic      (* micromega plugin *)
 | "psatz_Z" tactic      (* micromega plugin *)
 | "xlia" tactic      (* micromega plugin *)
 | "xnlia" tactic      (* micromega plugin *)
@@ -1745,9 +1745,9 @@ simple_tactic: [
 | "sos_R" tactic      (* micromega plugin *)
 | "lra_Q" tactic      (* micromega plugin *)
 | "lra_R" tactic      (* micromega plugin *)
-| "psatz_R" int_or_var tactic      (* micromega plugin *)
+| "psatz_R" nat_or_var tactic      (* micromega plugin *)
 | "psatz_R" tactic      (* micromega plugin *)
-| "psatz_Q" int_or_var tactic      (* micromega plugin *)
+| "psatz_Q" nat_or_var tactic      (* micromega plugin *)
 | "psatz_Q" tactic      (* micromega plugin *)
 | "zify_iter_specs"      (* micromega plugin *)
 | "zify_op"      (* micromega plugin *)
@@ -2022,8 +2022,8 @@ ltac_expr4: [
 
 ltac_expr3: [
 | "try" ltac_expr3
-| "do" int_or_var ltac_expr3
-| "timeout" int_or_var ltac_expr3
+| "do" nat_or_var ltac_expr3
+| "timeout" nat_or_var ltac_expr3
 | "time" OPT string ltac_expr3
 | "repeat" ltac_expr3
 | "progress" ltac_expr3
@@ -2036,7 +2036,7 @@ ltac_expr3: [
 | ltac_expr2
 | "do" ssrmmod ssrdotac ssrclauses      (* SSR plugin *)
 | "do" ssrortacarg ssrclauses      (* SSR plugin *)
-| "do" int_or_var ssrmmod ssrdotac ssrclauses      (* SSR plugin *)
+| "do" nat_or_var ssrmmod ssrdotac ssrclauses      (* SSR plugin *)
 | "abstract" ssrdgens      (* SSR plugin *)
 ]
 

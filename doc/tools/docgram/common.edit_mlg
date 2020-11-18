@@ -815,7 +815,10 @@ ltac_expr3: [
 | REPLACE "abstract" ltac_expr2 "using" ident
 | WITH "abstract" ltac_expr2 OPT ( "using" ident )
 | l3_tactic
-| EDIT "do" ADD_OPT int_or_var ssrmmod ssrdotac ssrclauses  TAG SSR
+(* | EDIT "do" ADD_OPT nat_or_var ssrmmod ssrdotac ssrclauses  TAG SSR *)
+| DELETE "do" ssrmmod ssrdotac ssrclauses      (* SSR plugin *)
+| DELETE "do" ssrortacarg ssrclauses      (* SSR plugin *)
+| DELETE "do" nat_or_var ssrmmod ssrdotac ssrclauses      (* SSR plugin *)
 | MOVEALLBUT ltac_builtins
 | l3_tactic
 | ltac_expr2
@@ -917,13 +920,13 @@ simple_tactic: [
 | REPLACE "cofix" ident "with" LIST1 cofixdecl
 | WITH "cofix" ident OPT ( "with" LIST1 cofixdecl )
 | DELETE "constructor"
-| DELETE "constructor" int_or_var
-| REPLACE "constructor" int_or_var "with" bindings
-| WITH "constructor" OPT int_or_var OPT ( "with" bindings )
+| DELETE "constructor" nat_or_var
+| REPLACE "constructor" nat_or_var "with" bindings
+| WITH "constructor" OPT nat_or_var OPT ( "with" bindings )
 | DELETE "econstructor"
-| DELETE "econstructor" int_or_var
-| REPLACE "econstructor" int_or_var "with" bindings
-| WITH "econstructor" OPT ( int_or_var OPT ( "with" bindings ) )
+| DELETE "econstructor" nat_or_var
+| REPLACE "econstructor" nat_or_var "with" bindings
+| WITH "econstructor" OPT ( nat_or_var OPT ( "with" bindings ) )
 | DELETE "dependent" "rewrite" orient constr
 | REPLACE "dependent" "rewrite" orient constr "in" hyp
 | WITH "dependent" "rewrite" orient constr OPT ( "in" hyp )
@@ -1042,12 +1045,12 @@ simple_tactic: [
 | DELETE "finish_timing" OPT string
 | REPLACE "finish_timing" "(" string ")" OPT string
 | WITH "finish_timing" OPT ( "(" string ")" ) OPT string
-| REPLACE "hresolve_core" "(" ident ":=" constr ")" "at" int_or_var "in" constr
-| WITH "hresolve_core" "(" ident ":=" constr ")" OPT ( "at" int_or_var ) "in" constr
+| REPLACE "hresolve_core" "(" ident ":=" constr ")" "at" nat_or_var "in" constr
+| WITH "hresolve_core" "(" ident ":=" constr ")" OPT ( "at" nat_or_var ) "in" constr
 | DELETE "hresolve_core" "(" ident ":=" constr ")" "in" constr
-| EDIT "psatz_R" ADD_OPT int_or_var tactic
-| EDIT "psatz_Q" ADD_OPT int_or_var tactic
-| EDIT "psatz_Z" ADD_OPT int_or_var tactic
+| EDIT "psatz_R" ADD_OPT nat_or_var tactic
+| EDIT "psatz_Q" ADD_OPT nat_or_var tactic
+| EDIT "psatz_Z" ADD_OPT nat_or_var tactic
 | REPLACE "subst" LIST1 hyp
 | WITH "subst" LIST0 hyp
 | DELETE "subst"
@@ -1064,11 +1067,11 @@ simple_tactic: [
 | DELETE "transparent_abstract" tactic3
 | REPLACE "transparent_abstract" tactic3 "using" ident
 | WITH "transparent_abstract" ltac_expr3 OPT ( "using" ident )
-| "typeclasses" "eauto" OPT "bfs" OPT int_or_var OPT ( "with" LIST1 preident )
-| DELETE "typeclasses" "eauto" "bfs" OPT int_or_var "with" LIST1 preident
-| DELETE "typeclasses" "eauto" OPT int_or_var "with" LIST1 preident
-| DELETE "typeclasses" "eauto" "bfs" OPT int_or_var
-| DELETE "typeclasses" "eauto" OPT int_or_var
+| "typeclasses" "eauto" OPT "bfs" OPT nat_or_var OPT ( "with" LIST1 preident )
+| DELETE "typeclasses" "eauto" "bfs" OPT nat_or_var "with" LIST1 preident
+| DELETE "typeclasses" "eauto" OPT nat_or_var "with" LIST1 preident
+| DELETE "typeclasses" "eauto" "bfs" OPT nat_or_var
+| DELETE "typeclasses" "eauto" OPT nat_or_var
 (* in Tactic Notation: *)
 | "setoid_replace" constr "with" constr OPT ( "using" "relation" constr ) OPT ( "in" hyp )
        OPT ( "at" LIST1 int_or_var ) OPT ( "by" ltac_expr3 )
@@ -1789,7 +1792,7 @@ tactic_notation_tactics: [
 | "field_simplify_eq" OPT ( "[" LIST1 constr "]" ) OPT ( "in" ident )
 | "intuition" OPT ltac_expr5  (* todo: Not too keen on things like "with_power_flags" in tauto.ml, not easy to follow *)
 | "nsatz" OPT ( "with" "radicalmax" ":=" constr "strategy" ":=" constr "parameters" ":=" constr "variables" ":=" constr )
-| "psatz" constr OPT int_or_var
+| "psatz" constr OPT nat_or_var
 | "ring" OPT ( "[" LIST1 constr "]" )
 | "ring_simplify" OPT ( "[" LIST1 constr "]" ) LIST1 constr OPT ( "in" ident )  (* todo: ident was "hyp", worth keeping? *)
 ]
@@ -2536,7 +2539,6 @@ SPLICE: [
 | by_arg_tac
 | by_tactic
 | quantified_hypothesis
-| nat_or_var
 | in_hyp_list
 | rename
 | export_token
