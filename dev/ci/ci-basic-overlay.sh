@@ -35,7 +35,7 @@
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
-: "${mtac2_CI_REF:=71b4b58abab05395e6054d86f164170ff30ba2c4}"
+: "${mtac2_CI_REF:=6ff46f88479ef4a80dd65202ced7f8ff21a0e60d}"
 : "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2}"
 : "${mtac2_CI_ARCHIVEURL:=${mtac2_CI_GITURL}/archive}"
 
@@ -168,7 +168,7 @@
 ########################################################################
 # rewriter
 ########################################################################
-: "${rewriter_CI_REF:=2ef7b66b3b99402c0809b6cb00618fcaad0bf79f}"
+: "${rewriter_CI_REF:=fe324e8d1f77a9d991dfcdba39456c6923153c52}"
 : "${rewriter_CI_GITURL:=https://github.com/mit-plv/rewriter}"
 : "${rewriter_CI_ARCHIVEURL:=${rewriter_CI_GITURL}/archive}"
 
@@ -245,14 +245,14 @@
 ########################################################################
 # Equations
 ########################################################################
-: "${equations_CI_REF:=b18e5094f1d81c53811ef3d7752b3081317df617}"
+: "${equations_CI_REF:=e9a672d63dabb0075dc31b7d923e849b3ce3ce09}"
 : "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
 
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-: "${elpi_CI_REF:=55460c05498f1704fcdffc67648ded6605e4392f}"
+: "${elpi_CI_REF:=0e35c76ed76f83d96a05e43f58bb6069e6b56f8f}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
@@ -320,7 +320,7 @@
 ########################################################################
 # paramcoq
 ########################################################################
-: "${paramcoq_CI_REF:=ebda74d5471c287bdd467ec7351596fe155e5065}"
+: "${paramcoq_CI_REF:=bdc6b3b68306fd841d1beb83553c507e313c20f4}"
 : "${paramcoq_CI_GITURL:=https://github.com/coq-community/paramcoq}"
 : "${paramcoq_CI_ARCHIVEURL:=${paramcoq_CI_GITURL}/archive}"
 
@@ -378,7 +378,7 @@
 ########################################################################
 # metacoq
 ########################################################################
-: "${metacoq_CI_REF:=f4fab0b9abb2592ef7886828f375161ee7f0d74c}"
+: "${metacoq_CI_REF:=f606bb3c6bf18f8545e0b9db4f4fbe4982ace56f}"
 : "${metacoq_CI_GITURL:=https://github.com/MetaCoq/metacoq}"
 : "${metacoq_CI_ARCHIVEURL:=${metacoq_CI_GITURL}/archive}"
 
