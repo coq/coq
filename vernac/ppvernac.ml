@@ -68,8 +68,16 @@ let pr_univ_name_list = function
   | Some l ->
     str "@{" ++ prlist_with_sep spc pr_lname l ++ str"}"
 
+let pr_variance_lident (lid,v) =
+  let v = Option.cata Univ.Variance.pr (mt()) v in
+  v ++ pr_lident lid
+
 let pr_univdecl_instance l extensible =
   prlist_with_sep spc pr_lident l ++
+  (if extensible then str"+" else mt ())
+
+let pr_cumul_univdecl_instance l extensible =
+  prlist_with_sep spc pr_variance_lident l ++
   (if extensible then str"+" else mt ())
 
 let pr_univdecl_constraints l extensible =
@@ -85,8 +93,19 @@ let pr_universe_decl l =
     str"@{" ++ pr_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
     pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
 
+let pr_cumul_univ_decl l =
+  let open UState in
+  match l with
+  | None -> mt ()
+  | Some l ->
+    str"@{" ++ pr_cumul_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
+    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
+
 let pr_ident_decl (lid, l) =
   pr_lident lid ++ pr_universe_decl l
+
+let pr_cumul_ident_decl (lid, l) =
+  pr_lident lid ++ pr_cumul_univ_decl l
 
 let string_of_fqid fqid =
   String.concat "." (List.map Id.to_string fqid)
@@ -848,7 +867,7 @@ let pr_vernac_expr v =
     let pr_oneind key (((coe,iddecl),(indupar,indpar),s,lc),ntn) =
       hov 0 (
         str key ++ spc() ++
-        (if coe then str"> " else str"") ++ pr_ident_decl iddecl ++
+        (if coe then str"> " else str"") ++ pr_cumul_ident_decl iddecl ++
         pr_and_type_binders_arg indupar ++
         pr_opt (fun p -> str "|" ++ spc() ++ pr_and_type_binders_arg p) indpar ++
         pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s ++

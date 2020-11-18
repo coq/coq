@@ -298,7 +298,9 @@ let explain_exn = function
       | DisallowedSProp -> str"DisallowedSProp"
       | BadRelevance -> str"BadRelevance"
       | BadInvert -> str"BadInvert"
-      | UndeclaredUniverse _ -> str"UndeclaredUniverse"))
+      | UndeclaredUniverse _ -> str"UndeclaredUniverse"
+      | BadVariance _ -> str "BadVariance"
+      ))
 
   | InductiveError e ->
       hov 0 (str "Error related to inductive types")

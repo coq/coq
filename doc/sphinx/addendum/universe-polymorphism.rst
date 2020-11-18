@@ -246,6 +246,7 @@ The following is an example of a record with non-trivial subtyping relation:
 .. coqtop:: all
 
    Polymorphic Cumulative Record packType := {pk : Type}.
+   About packType.
 
 :g:`packType` binds a covariant universe, i.e.
 
@@ -253,6 +254,27 @@ The following is an example of a record with non-trivial subtyping relation:
 
    E[Γ] ⊢ \mathsf{packType}@\{i\} =_{βδιζη}
    \mathsf{packType}@\{j\}~\mbox{ whenever }~i ≤ j
+
+Specifying cumulativity
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The variance of the universe parameters for a cumulative inductive may be specified by the user.
+
+For the following type, universe ``a`` has its variance automatically
+inferred (it is irrelevant), ``b`` is required to be irrelevant,
+``c`` is covariant and ``d`` is invariant. With these annotations
+``c`` and ``d`` have less general variances than would be inferred.
+
+.. coqtop:: all
+
+   Polymorphic Cumulative Inductive Dummy@{a *b +c =d} : Prop := dummy.
+   About Dummy.
+
+Insufficiently restrictive variance annotations lead to errors:
+
+.. coqtop:: all
+
+   Fail Polymorphic Cumulative Record bad@{*a} := {p : Type@{a}}.
 
 An example of a proof using cumulativity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -280,7 +302,7 @@ An example of a proof using cumulativity
    End down.
 
 Cumulativity Weak Constraints
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. flag:: Cumulativity Weak Constraints
 
@@ -383,6 +405,7 @@ Explicit Universes
    | _
    | @qualid
    univ_decl ::= @%{ {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
+   cumul_univ_decl ::= @%{ {* {? {| = | + | * } } @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
    univ_constraint ::= @universe_name {| < | = | <= } @universe_name
 
 The syntax has been extended to allow users to explicitly bind names
