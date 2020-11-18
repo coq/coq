@@ -674,13 +674,19 @@ let is_polymorphic_inductive_cumulativity =
 let polymorphic_cumulative =
   let error_poly_context () =
     user_err
-      Pp.(str "The cumulative and noncumulative attributes can only be used in a polymorphic context.");
+      Pp.(str "The cumulative attribute can only be used in a polymorphic context.");
   in
   let open Attributes in
   let open Notations in
+  (* EJGA: this seems redudant with code in attributes.ml *)
   qualify_attribute "universes"
-    (bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic"
-     ++ bool_attribute ~name:"Cumulativity" ~on:"cumulative" ~off:"noncumulative")
+    (deprecated_bool_attribute
+       ~name:"Polymorphism"
+       ~on:"polymorphic" ~off:"monomorphic"
+     ++
+     deprecated_bool_attribute
+       ~name:"Cumulativity"
+       ~on:"cumulative" ~off:"noncumulative")
   >>= function
   | Some poly, Some cum ->
      (* Case of Polymorphic|Monomorphic Cumulative|NonCumulative Inductive

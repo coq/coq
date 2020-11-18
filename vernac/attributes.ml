@@ -11,12 +11,28 @@
 open CErrors
 
 (** The type of parsing attribute data *)
+type vernac_flag_type =
+  | FlagIdent of string
+  | FlagString of string
+
 type vernac_flags = vernac_flag list
 and vernac_flag = string * vernac_flag_value
 and vernac_flag_value =
   | VernacFlagEmpty
-  | VernacFlagLeaf of string
+  | VernacFlagLeaf of vernac_flag_type
   | VernacFlagList of vernac_flags
+
+let pr_vernac_flag_leaf = function
+  | FlagIdent b -> Pp.str b
+  | FlagString s -> Pp.(quote (str s))
+
+let rec pr_vernac_flag_value = let open Pp in function
+  | VernacFlagEmpty -> mt ()
+  | VernacFlagLeaf l -> str "=" ++ pr_vernac_flag_leaf l
+  | VernacFlagList s -> surround (prlist_with_sep pr_comma pr_vernac_flag s)
+and pr_vernac_flag (s, arguments) =
+  let open Pp in
+  str s ++ (pr_vernac_flag_value arguments)
 
 let warn_unsupported_attributes =
   CWarnings.create ~name:"unsupported-attributes" ~category:"parsing" ~default:CWarnings.AsError
@@ -105,16 +121,82 @@ let single_key_parser ~name ~key v prev args =
   assert_once ~name prev;
   v
 
-let bool_attribute ~name ~on ~off : bool option attribute =
-  attribute_of_list [(on, single_key_parser ~name ~key:on true);
-               (off, single_key_parser ~name ~key:off false)]
+let pr_possible_values ~values =
+  Pp.(str "{" ++ prlist_with_sep pr_comma str (List.map fst values) ++ str "}")
+
+(** [key_value_attribute ~key ~default ~values] parses a attribute [key=value]
+  with possible [key] [value] in [values], [default] is for compatibility for users
+  doing [qualif(key)] which is parsed as [qualif(key=default)] *)
+let key_value_attribute ~key ~default ~(values : (string * 'a) list) : 'a option attribute =
+  let parser = function
+    | Some v ->
+      CErrors.user_err Pp.(str "key '" ++ str key ++ str "' has been already set.")
+    | None ->
+      begin function
+        | VernacFlagLeaf (FlagIdent b) ->
+          begin match CList.assoc_f String.equal b values with
+            | exception Not_found ->
+              CErrors.user_err
+                Pp.(str "Invalid value '" ++ str b ++ str "' for key " ++ str key ++ fnl () ++
+                    str "use one of " ++ pr_possible_values ~values)
+            | value -> value
+          end
+        | VernacFlagEmpty ->
+          default
+        | err ->
+          CErrors.user_err
+            Pp.(str "Invalid syntax " ++ pr_vernac_flag (key, err) ++ str ", try "
+                ++ str key ++ str "=" ++ pr_possible_values ~values ++ str " instead.")
+      end
+  in
+  attribute_of_list [key, parser]
+
+let bool_attribute ~name : bool option attribute =
+  let values = ["yes", true; "no", false] in
+  key_value_attribute ~key:name ~default:true ~values
+
+let legacy_bool_attribute ~name ~on ~off : bool option attribute =
+  attribute_of_list
+    [(on, single_key_parser ~name ~key:on true);
+     (off, single_key_parser ~name ~key:off false)]
+
+(* important note: we use on as the default for the new bool_attribute ! *)
+let deprecated_bool_attribute_warning =
+  CWarnings.create
+    ~name:"deprecated-attribute-syntax"
+    ~category:"parsing"
+    ~default:CWarnings.Enabled
+    (fun name ->
+       Pp.(str "Syntax for switching off boolean attributes has been updated, use " ++ str name ++ str "=no instead."))
+
+let deprecated_bool_attribute ~name ~on ~off : bool option attribute =
+  bool_attribute ~name:on ++ legacy_bool_attribute ~name ~on ~off |> map (function
+      | None, None ->
+        None
+      | None, Some v ->
+        deprecated_bool_attribute_warning name;
+        Some v
+      | Some v, None -> Some v
+      | Some v1, Some v2 ->
+        CErrors.user_err
+          Pp.(str "attribute " ++ str name ++
+              str ": cannot specify legacy and modern syntax at the same time.")
+    )
 
 (* Variant of the [bool] attribute with only two values (bool has three). *)
 let get_bool_value ~key ~default =
   function
   | VernacFlagEmpty -> default
-  | VernacFlagList [ "true", VernacFlagEmpty ] -> true
-  | VernacFlagList [ "false", VernacFlagEmpty ] -> false
+  | VernacFlagList [ "true", VernacFlagEmpty ] ->
+    deprecated_bool_attribute_warning key;
+    true
+  | VernacFlagList [ "false", VernacFlagEmpty ] ->
+    deprecated_bool_attribute_warning key;
+    false
+  | VernacFlagLeaf (FlagIdent "yes") ->
+    true
+  | VernacFlagLeaf (FlagIdent "no") ->
+    false
   | _ -> user_err Pp.(str "Attribute " ++ str key ++ str " only accepts boolean values.")
 
 let enable_attribute ~key ~default : bool attribute =
@@ -161,17 +243,36 @@ let () = let open Goptions in
 let program =
   enable_attribute ~key:"program" ~default:(fun () -> !program_mode)
 
-let locality = bool_attribute ~name:"Locality" ~on:"local" ~off:"global"
-
-let option_locality =
+(* This is a bit complex as the grammar in g_vernac.mlg doesn't
+   distingish between the boolean and ternary case.*)
+let option_locality_parser =
   let name = "Locality" in
   attribute_of_list [
-    ("local", single_key_parser ~name ~key:"local" Goptions.OptLocal);
-    ("global", single_key_parser ~name ~key:"global" Goptions.OptGlobal);
-    ("export", single_key_parser ~name ~key:"export" Goptions.OptExport);
-  ] >>= function
+    ("local", single_key_parser ~name ~key:"local" Goptions.OptLocal)
+  ; ("global", single_key_parser ~name ~key:"global" Goptions.OptGlobal)
+  ; ("export", single_key_parser ~name ~key:"export" Goptions.OptExport)
+  ]
+
+let option_locality =
+  option_locality_parser >>= function
   | None -> return Goptions.OptDefault
   | Some l -> return l
+
+(* locality is supposed to be true when local, false when global *)
+let locality =
+  let locality_to_bool =
+    function
+    | Goptions.OptLocal ->
+      true
+    | Goptions.OptGlobal ->
+      false
+    | Goptions.OptExport ->
+      CErrors.user_err Pp.(str "export attribute not supported here")
+    | Goptions.OptDefault ->
+      CErrors.user_err Pp.(str "default attribute not supported here")
+  in
+  option_locality_parser >>= function l ->
+    return (Option.map locality_to_bool l)
 
 let ukey = "universes"
 
@@ -188,12 +289,17 @@ let is_universe_polymorphism =
   fun () -> !b
 
 let polymorphic_base =
-  bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic" >>= function
+  deprecated_bool_attribute
+    ~name:"Polymorphism"
+    ~on:"polymorphic" ~off:"monomorphic" >>= function
   | Some b -> return b
   | None -> return (is_universe_polymorphism())
 
 let template =
-  qualify_attribute ukey (bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate")
+  qualify_attribute ukey
+    (deprecated_bool_attribute
+       ~name:"Template"
+       ~on:"template" ~off:"notemplate")
 
 let polymorphic =
   qualify_attribute ukey polymorphic_base
@@ -201,12 +307,12 @@ let polymorphic =
 let deprecation_parser : Deprecation.t key_parser = fun orig args ->
   assert_once ~name:"deprecation" orig;
   match args with
-  | VernacFlagList [ "since", VernacFlagLeaf since ; "note", VernacFlagLeaf note ]
-  | VernacFlagList [ "note", VernacFlagLeaf note ; "since", VernacFlagLeaf since ] ->
+  | VernacFlagList [ "since", VernacFlagLeaf (FlagString since) ; "note", VernacFlagLeaf (FlagString note) ]
+  | VernacFlagList [ "note", VernacFlagLeaf (FlagString note) ; "since", VernacFlagLeaf (FlagString since) ] ->
     Deprecation.make ~since ~note ()
-  | VernacFlagList [ "since", VernacFlagLeaf since ] ->
+  | VernacFlagList [ "since", VernacFlagLeaf (FlagString since) ] ->
     Deprecation.make ~since ()
-  | VernacFlagList [ "note", VernacFlagLeaf note ] ->
+  | VernacFlagList [ "note", VernacFlagLeaf (FlagString note) ] ->
     Deprecation.make ~note ()
   |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
 
@@ -218,7 +324,7 @@ let only_polymorphism atts = parse polymorphic atts
 
 
 let vernac_polymorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagEmpty]
-let vernac_monomorphic_flag = ukey, VernacFlagList ["monomorphic", VernacFlagEmpty]
+let vernac_monomorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagLeaf (FlagIdent "no")]
 
 let canonical_field =
   enable_attribute ~key:"canonical" ~default:(fun () -> true)
@@ -228,7 +334,7 @@ let canonical_instance =
 let uses_parser : string key_parser = fun orig args ->
   assert_once ~name:"using" orig;
   match args with
-  | VernacFlagLeaf str -> str
+  | VernacFlagLeaf (FlagString str) -> str
   |  _ -> CErrors.user_err (Pp.str "Ill formed \"using\" attribute")
 
 let using = attribute_of_list ["using",uses_parser]

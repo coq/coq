@@ -99,15 +99,15 @@ coercions.
 
    Enables the program mode, in which 1) typechecking allows subset coercions and
    2) the elaboration of pattern matching of :cmd:`Fixpoint` and
-   :cmd:`Definition` act as if the :attr:`program` attribute had been
+   :cmd:`Definition` acts as if the :attr:`program` attribute has been
    used, generating obligations if there are unresolved holes after
    typechecking.
 
-.. attr:: program
+.. attr:: program{? = {| yes | no } }
    :name: program; Program
 
-   Allows using the Program mode on a specific
-   definition.  An alternative syntax is to use the legacy ``Program``
+   This :term:`boolean attribute` allows using or disabling the Program mode on a specific
+   definition.  An alternative and commonly used syntax is to use the legacy ``Program``
    prefix (cf. :n:`@legacy_attr`) as it is elsewhere in this chapter.
 
 .. _syntactic_control:

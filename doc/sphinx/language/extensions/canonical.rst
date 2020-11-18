@@ -87,29 +87,27 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       If a same field occurs in several canonical structures, then
       only the structure declared first as canonical is considered.
 
-   .. attr:: canonical(false)
+.. attr:: canonical{? = {| yes | no } }
+   :name: canonical
 
-      To prevent a field from being involved in the inference of
-      canonical instances, its declaration can be annotated with the
-      :attr:`canonical(false)` attribute (cf. the syntax of
-      :n:`@record_field`).
+   This boolean attribute can decorate a :cmd:`Definition` or
+   :cmd:`Let` command.  It is equivalent to having a :cmd:`Canonical
+   Structure` declaration just after the command.
 
-      .. example::
+   To prevent a field from being involved in the inference of
+   canonical instances, its declaration can be annotated with
+   ``canonical=no`` (cf. the syntax of :n:`@record_field`).
 
-         For instance, when declaring the :g:`Setoid` structure above, the
-         :g:`Prf_equiv` field declaration could be written as follows.
+   .. example::
 
-         .. coqdoc::
+      For instance, when declaring the :g:`Setoid` structure above, the
+      :g:`Prf_equiv` field declaration could be written as follows.
 
-            #[canonical(false)] Prf_equiv : equivalence Carrier Equal
+      .. coqdoc::
 
-      See :ref:`canonicalstructures` for a more realistic example.
+         #[canonical=no] Prf_equiv : equivalence Carrier Equal
 
-.. attr:: canonical
-
-   This attribute can decorate a :cmd:`Definition` or :cmd:`Let` command.
-   It is equivalent to having a :cmd:`Canonical Structure` declaration just
-   after the command.
+   See :ref:`hierarchy_of_structures` for a more realistic example.
 
 .. cmd:: Print Canonical Projections {* @reference }
 
@@ -248,6 +246,8 @@ for each component of the pair. The declaration associates to the key ``*``
 relation ``pair_eq`` whenever the type constructor ``*`` is applied to two
 types being themselves in the ``EQ`` class.
 
+.. _hierarchy_of_structures:
+
 Hierarchy of structures
 ----------------------------
 
@@ -331,7 +331,7 @@ We need to define a new class that inherits from both ``EQ`` and ``LE``.
                         LE_class : LE.class T;
                         extra : mixin (EQ.Pack T EQ_class) (LE.cmp T LE_class) }.
 
-    Structure type := _Pack { obj : Type; #[canonical(false)] class_of : class obj }.
+    Structure type := _Pack { obj : Type; #[canonical=no] class_of : class obj }.
 
     Arguments Mixin {e le} _.
 
