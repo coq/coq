@@ -692,10 +692,13 @@ let operating_system =
 
 let check_for_zarith () =
   let zarith,_ = tryrun camlexec.find ["query";"zarith"] in
+  let zarith_cmai base = Sys.file_exists (base / "z.cmi") && Sys.file_exists (base / "zarith.cma") in
   let zarith_version, _ = run camlexec.find ["query"; "zarith"; "-format"; "%v"] in
   match zarith with
   | ""  ->
     die "Zarith library not installed, required"
+  | _ when not (zarith_cmai zarith) ->
+    die "Zarith library installed but no development files found (try installing the -dev package)"
   | _   ->
     let zarith_version_int = List.map int_of_string (numeric_prefix_list zarith_version) in
     if zarith_version_int >= [1;10;0] then
