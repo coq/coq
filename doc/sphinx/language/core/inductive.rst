@@ -32,7 +32,8 @@ Inductive types
 
    This command supports the :attr:`universes(polymorphic)`,
    :attr:`universes(template)`, :attr:`universes(cumulative)`,
-   :attr:`typing(positive)`, and :attr:`private(matching)` attributes.
+   :attr:`typing(positive)`, :attr:`typing(universes)`, and
+   :attr:`private(matching)` attributes.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
    The :n:`@ident`\s are simultaneously added to the environment before the types of constructors are checked.
@@ -51,8 +52,8 @@ Inductive types
 
       The types of the constructors have to satisfy a *positivity
       condition* (see Section :ref:`positivity`). This condition
-      ensures the soundness of the inductive definition. The
-      positivity checking can be disabled using the :flag:`Positivity
+      ensures the soundness of the inductive definition.
+      Positivity checking can be disabled using the :flag:`Positivity
       Checking` flag or the :attr:`typing(positive)` attribute (see
       :ref:`controlling-typing-flags`).
 
@@ -392,7 +393,8 @@ constructions.
    consequently :n:`forall {* @binder }, @type` and its value is equivalent
    to :n:`fun {* @binder } => @term`.
 
-   This command accepts the :attr:`program` attribute.
+   This command accepts the :attr:`program`,
+   :attr:`typing(universes)`, and :attr:`typing(guarded)` attributes.
 
    To be accepted, a :cmd:`Fixpoint` definition has to satisfy syntactical
    constraints on a special argument called the decreasing argument. They
