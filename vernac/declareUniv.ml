@@ -109,9 +109,8 @@ let do_universe ~poly l =
 
 let do_constraint ~poly l =
   let open Univ in
-  let u_of_id x =
-    Pretyping.interp_known_glob_level (Evd.from_env (Global.env ())) x
-  in
+  let evd = Evd.from_env (Global.env ()) in
+  let u_of_id x = Constrintern.interp_known_level evd x in
   let constraints = List.fold_left (fun acc (l, d, r) ->
       let lu = u_of_id l and ru = u_of_id r in
       Constraint.add (lu, d, ru) acc)

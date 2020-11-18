@@ -961,7 +961,7 @@ let explain_not_match_error = function
         status (not b) ++ str" declaration was found"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
-      Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes incon
+      Univ.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) incon
   | IncompatiblePolymorphism (env, t1, t2) ->
     str "conversion of polymorphic values generates additional constraints: " ++
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
@@ -1218,7 +1218,7 @@ let error_large_non_prop_inductive_not_in_type () =
   str "Large non-propositional inductive types must be in Type."
 
 let error_inductive_missing_constraints (us,ind_univ) =
-  let pr_u = Univ.Universe.pr_with UnivNames.pr_with_global_universes in
+  let pr_u = Univ.Universe.pr_with UnivNames.(pr_with_global_universes empty_binders) in
   str "Missing universe constraint declared for inductive type:" ++ spc()
   ++ v 0 (prlist_with_sep spc (fun u ->
       hov 0 (pr_u u ++ str " <= " ++ pr_u ind_univ))
@@ -1406,7 +1406,7 @@ let _ = CErrors.register_handler (wrap_unhandled explain_exn_default)
 let rec vernac_interp_error_handler = function
   | Univ.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
-    Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes i ++ str "."
+    Univ.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) i ++ str "."
   | TypeError(ctx,te) ->
     let te = map_ptype_error EConstr.of_constr te in
     explain_type_error ctx Evd.empty te

@@ -339,7 +339,7 @@ type nonrec vernac_expr =
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
-  | VernacConstraint of Glob_term.glob_constraint list
+  | VernacConstraint of univ_constraint_expr list
 
   (* Gallina extensions *)
   | VernacBeginSection of lident

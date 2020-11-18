@@ -195,7 +195,7 @@ let interp_glob ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
   let env = Goal.env goal in
   let sigma = Goal.sigma goal in
   Ssrprinters.ppdebug (lazy
-    Pp.(str"interp-in: " ++ Printer.pr_glob_constr_env env glob));
+    Pp.(str"interp-in: " ++ Printer.pr_glob_constr_env env sigma glob));
   try
     let sigma,term = Tacinterp.interp_open_constr ist env sigma (glob,None) in
     Ssrprinters.ppdebug (lazy
@@ -205,7 +205,7 @@ let interp_glob ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
     (* XXX this is another catch all! *)
     let e, info = Exninfo.capture e in
     Ssrprinters.ppdebug (lazy
-    Pp.(str"interp-err: " ++ Printer.pr_glob_constr_env env glob));
+    Pp.(str"interp-err: " ++ Printer.pr_glob_constr_env env sigma glob));
     tclZERO ~info e
 end
 

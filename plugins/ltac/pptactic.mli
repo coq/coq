@@ -124,7 +124,7 @@ val pr_glb_generic : env -> Evd.evar_map -> glevel generic_argument -> Pp.t
 val pr_raw_extend: env -> Evd.evar_map -> int ->
   ml_tactic_entry -> raw_tactic_arg list -> Pp.t
 
-val pr_glob_extend: env -> Evd.evar_map -> int ->
+val pr_glob_extend: env -> int ->
   ml_tactic_entry -> glob_tactic_arg list -> Pp.t
 
 val pr_extend :

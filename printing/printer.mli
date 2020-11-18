@@ -107,9 +107,9 @@ val pr_closed_glob_env     : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool 
 
 val pr_ljudge_env          : env -> evar_map -> EConstr.unsafe_judgment -> Pp.t * Pp.t
 
-val pr_lglob_constr_env      : env -> 'a glob_constr_g -> Pp.t
+val pr_lglob_constr_env    : env -> evar_map -> 'a glob_constr_g -> Pp.t
 
-val pr_glob_constr_env       : env -> 'a glob_constr_g -> Pp.t
+val pr_glob_constr_env     : env -> evar_map -> 'a glob_constr_g -> Pp.t
 
 val pr_lconstr_pattern_env : env -> evar_map -> constr_pattern -> Pp.t
 

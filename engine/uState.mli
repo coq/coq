@@ -209,4 +209,7 @@ val update_sigma_univs : t -> UGraph.t -> t
 val pr_uctx_level : t -> Univ.Level.t -> Pp.t
 val qualid_of_level : t -> Univ.Level.t -> Libnames.qualid option
 
+(** Only looks in the local names, not in the nametab. *)
+val id_of_level : t -> Univ.Level.t -> Id.t option
+
 val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t

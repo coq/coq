@@ -458,9 +458,11 @@ let rec pattern_to_term_and_type env typ =
    but only the value of the function
 *)
 
+let pr_glob_constr_env env x = pr_glob_constr_env env (Evd.from_env env) x
+
 let rec build_entry_lc env sigma funnames avoid rt :
     glob_constr build_entry_return =
-  observe (str " Entering : " ++ Printer.pr_glob_constr_env env rt);
+  observe (str " Entering : " ++ pr_glob_constr_env env rt);
   let open CAst in
   match DAst.get rt with
   | GRef _ | GVar _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GInt _
@@ -638,9 +640,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
       with Not_found ->
         user_err
           ( str "Cannot find the inductive associated to "
-          ++ Printer.pr_glob_constr_env env b
-          ++ str " in "
-          ++ Printer.pr_glob_constr_env env rt
+          ++ pr_glob_constr_env env b ++ str " in " ++ pr_glob_constr_env env rt
           ++ str ". try again with a cast" )
     in
     let case_pats = build_constructors_of_type (fst ind) [] in
@@ -662,9 +662,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
       with Not_found ->
         user_err
           ( str "Cannot find the inductive associated to "
-          ++ Printer.pr_glob_constr_env env b
-          ++ str " in "
-          ++ Printer.pr_glob_constr_env env rt
+          ++ pr_glob_constr_env env b ++ str " in " ++ pr_glob_constr_env env rt
           ++ str ". try again with a cast" )
     in
     let case_pats = build_constructors_of_type (fst ind) nal_as_glob_constr in
@@ -1321,11 +1319,11 @@ let do_build_inductive evd (funconstants : pconstant list)
             @@ Constrexpr.CLetIn
                  ( CAst.make n
                  , with_full_print
-                     (Constrextern.extern_glob_constr Id.Set.empty)
+                     Constrextern.(extern_glob_constr empty_extern_env)
                      t
                  , Some
                      (with_full_print
-                        (Constrextern.extern_glob_constr Id.Set.empty)
+                        Constrextern.(extern_glob_constr empty_extern_env)
                         typ)
                  , acc )
           | None ->
@@ -1335,7 +1333,7 @@ let do_build_inductive evd (funconstants : pconstant list)
                        ( [CAst.make n]
                        , Constrexpr_ops.default_binder_kind
                        , with_full_print
-                           (Constrextern.extern_glob_constr Id.Set.empty)
+                           Constrextern.(extern_glob_constr empty_extern_env)
                            t ) ]
                  , acc ))
         rel_first_args
@@ -1410,11 +1408,11 @@ let do_build_inductive evd (funconstants : pconstant list)
           @@ Constrexpr.CLetIn
                ( CAst.make n
                , with_full_print
-                   (Constrextern.extern_glob_constr Id.Set.empty)
+                   Constrextern.(extern_glob_constr empty_extern_env)
                    t
                , Some
                    (with_full_print
-                      (Constrextern.extern_glob_constr Id.Set.empty)
+                      Constrextern.(extern_glob_constr empty_extern_env)
                       typ)
                , acc )
         | None ->
@@ -1424,7 +1422,7 @@ let do_build_inductive evd (funconstants : pconstant list)
                      ( [CAst.make n]
                      , Constrexpr_ops.default_binder_kind
                      , with_full_print
-                         (Constrextern.extern_glob_constr Id.Set.empty)
+                         Constrextern.(extern_glob_constr empty_extern_env)
                          t ) ]
                , acc ))
       rel_first_args
@@ -1448,16 +1446,16 @@ let do_build_inductive evd (funconstants : pconstant list)
         | Some typ ->
           Constrexpr.CLocalDef
             ( CAst.make n
-            , Constrextern.extern_glob_constr Id.Set.empty t
+            , Constrextern.(extern_glob_constr empty_extern_env) t
             , Some
                 (with_full_print
-                   (Constrextern.extern_glob_constr Id.Set.empty)
+                   Constrextern.(extern_glob_constr empty_extern_env)
                    typ) )
         | None ->
           Constrexpr.CLocalAssum
             ( [CAst.make n]
             , Constrexpr_ops.default_binder_kind
-            , Constrextern.extern_glob_constr Id.Set.empty t ))
+            , Constrextern.(extern_glob_constr empty_extern_env) t ))
       rels_params
   in
   let ext_rels_constructors =
@@ -1466,7 +1464,7 @@ let do_build_inductive evd (funconstants : pconstant list)
            ( false
            , ( CAst.make id
              , with_full_print
-                 (Constrextern.extern_glob_type Id.Set.empty)
+                 Constrextern.(extern_glob_type empty_extern_env)
                  ((* zeta_normalize *) alpha_rt rel_params_ids t) ) )))
       rel_constructors
   in

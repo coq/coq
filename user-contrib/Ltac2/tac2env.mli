@@ -122,7 +122,7 @@ type ('a, 'b) ml_object = {
   ml_intern : 'r. (raw_tacexpr, glb_tacexpr, 'r) intern_fun -> ('a, 'b or_glb_tacexpr, 'r) intern_fun;
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
-  ml_print : Environ.env -> 'b -> Pp.t;
+  ml_print : Environ.env -> Evd.evar_map -> 'b -> Pp.t;
 }
 
 val define_ml_object : ('a, 'b) Tac2dyn.Arg.tag -> ('a, 'b) ml_object -> unit

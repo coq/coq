@@ -26,7 +26,13 @@ type glob_sort_name =
   | GSProp (** representation of [SProp] literal *)
   | GProp (** representation of [Prop] level *)
   | GSet  (** representation of [Set] level *)
-  | GType of Libnames.qualid (** representation of a [Type] level *)
+  | GUniv of Univ.Level.t
+  | GLocalUniv of lident (** Locally bound universes (may also be nonstrict declaration) *)
+  | GRawUniv of Univ.Level.t
+  (** Hack for funind, DO NOT USE
+
+      Note that producing the similar Constrexpr.CRawType for printing
+      is OK, just don't try to reinterp it. *)
 
 type 'a glob_sort_gen =
   | UAnonymous of { rigid : bool } (** not rigid = unifiable by minimization *)

@@ -274,7 +274,9 @@ let pr_glbexpr_gen lvl c =
     paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)))
   | GTacExt (tag, arg) ->
     let tpe = interp_ml_object tag in
-    hov 0 (tpe.ml_print (Global.env ()) arg) (* FIXME *)
+    let env = Global.env() in
+    let sigma = Evd.from_env env in
+    hov 0 (tpe.ml_print env sigma arg) (* FIXME *)
   | GTacPrm (prm, args) ->
     let args = match args with
     | [] -> mt ()

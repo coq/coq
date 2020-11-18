@@ -206,7 +206,7 @@ val shortest_qualid_of_global : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
 val shortest_qualid_of_syndef : ?loc:Loc.t -> Id.Set.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : ?loc:Loc.t -> ModPath.t -> qualid
 val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
-val shortest_qualid_of_universe : ?loc:Loc.t -> Univ.Level.UGlobal.t -> qualid
+val shortest_qualid_of_universe : ?loc:Loc.t -> Id.Set.t -> Univ.Level.UGlobal.t -> qualid
 
 (** {5 Generic name handling} *)
 

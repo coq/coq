@@ -17,4 +17,4 @@ exception AlreadyDeclared of (string option * Id.t)
 val declare_univ_binders : GlobRef.t -> UnivNames.universe_binders -> unit
 
 val do_universe : poly:bool -> lident list -> unit
-val do_constraint : poly:bool -> Glob_term.glob_constraint list -> unit
+val do_constraint : poly:bool -> Constrexpr.univ_constraint_expr list -> unit
