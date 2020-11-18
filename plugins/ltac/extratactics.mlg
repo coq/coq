@@ -686,7 +686,7 @@ let hResolve_auto id c t =
 }
 
 TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> { hResolve id c occ t }
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" nat_or_var(occ) "in" constr(t) ] -> { hResolve id c occ t }
 | [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> { hResolve_auto id c t }
 END
 
@@ -695,7 +695,7 @@ END
 *)
 
 TACTIC EXTEND hget_evar
-| [ "hget_evar" int_or_var(n) ] -> { Evar_tactics.hget_evar n }
+| [ "hget_evar" nat_or_var(n) ] -> { Evar_tactics.hget_evar n }
 END
 
 (**********************************************************************)

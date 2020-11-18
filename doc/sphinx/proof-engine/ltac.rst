@@ -480,15 +480,15 @@ separately.  They succeed only if there is a success for each goal.  For example
 Do loop
 ~~~~~~~
 
-.. tacn:: do @int_or_var @ltac_expr3
+.. tacn:: do @nat_or_var @ltac_expr3
    :name: do
 
-   The do loop repeats a tactic :token:`int_or_var` times:
+   The do loop repeats a tactic :token:`nat_or_var` times:
 
-   :n:`@ltac_expr` is evaluated to ``v`` which must be a tactic value. This tactic
-   value ``v`` is applied :token:`int_or_var` times. Supposing :token:`int_or_var` > 1, after the
+   :n:`@ltac_expr` is evaluated to ``v``, which must be a tactic value. This tactic
+   value ``v`` is applied :token:`nat_or_var` times. If :token:`nat_or_var` > 1, after the
    first application of ``v``, ``v`` is applied, at least once, to the generated
-   subgoals and so on. It fails if the application of ``v`` fails before :token:`int_or_var`
+   subgoals and so on. It fails if the application of ``v`` fails before :token:`nat_or_var`
    applications have been completed.
 
    :tacn:`do` is an :token:`l3_tactic`.
@@ -973,11 +973,11 @@ Timeout
 We can force a tactic to stop if it has not finished after a certain
 amount of time:
 
-.. tacn:: timeout @int_or_var @ltac_expr3
+.. tacn:: timeout @nat_or_var @ltac_expr3
    :name: timeout
 
    :n:`@ltac_expr3` is evaluated to ``v`` which must be a tactic value. The tactic value
-   ``v`` is applied normally, except that it is interrupted after :n:`@natural` seconds
+   ``v`` is applied normally, except that it is interrupted after :n:`@nat_or_var` seconds
    if it is still running. In this case the outcome is a failure.
 
    :tacn:`timeout` is an :token:`l3_tactic`.

@@ -652,12 +652,17 @@ ref_or_pattern_occ: [
 ]
 
 occs_nums: [
-| LIST1 [ natural | ident ]
-| "-" LIST1 [ natural | ident ]
+| LIST1 nat_or_var
+| "-" LIST1 nat_or_var
 ]
 
 int_or_var: [
 | integer
+| ident
+]
+
+nat_or_var: [
+| natural
 | ident
 ]
 
@@ -1620,8 +1625,8 @@ simple_tactic: [
 | "eleft" OPT ( "with" bindings )
 | "right" OPT ( "with" bindings )
 | "eright" OPT ( "with" bindings )
-| "constructor" OPT int_or_var OPT ( "with" bindings )
-| "econstructor" OPT ( int_or_var OPT ( "with" bindings ) )
+| "constructor" OPT nat_or_var OPT ( "with" bindings )
+| "econstructor" OPT ( nat_or_var OPT ( "with" bindings ) )
 | "specialize" one_term OPT ( "with" bindings ) OPT ( "as" simple_intropattern )
 | "symmetry" OPT ( "in" in_clause )
 | "split" OPT ( "with" bindings )
@@ -1648,8 +1653,8 @@ simple_tactic: [
 | bullet
 | "}"
 | "try" ltac_expr3
-| "do" int_or_var ltac_expr3
-| "timeout" int_or_var ltac_expr3
+| "do" nat_or_var ltac_expr3
+| "timeout" nat_or_var ltac_expr3
 | "time" OPT string ltac_expr3
 | "repeat" ltac_expr3
 | "progress" ltac_expr3
@@ -1658,8 +1663,6 @@ simple_tactic: [
 | "infoH" ltac_expr3
 | "abstract" ltac_expr2 OPT ( "using" ident )
 | "only" selector ":" ltac_expr3
-| "do" "[" ssrortacs "]" OPT ssr_in      (* SSR plugin *)
-| "do" OPT int_or_var ssrmmod [ ltac_expr3 | "[" ssrortacs "]"      (* SSR plugin *) ] OPT ssr_in      (* SSR plugin *)
 | "tryif" ltac_expr "then" ltac_expr "else" ltac_expr2
 | "first" "[" LIST0 ltac_expr SEP "|" "]"
 | "solve" "[" LIST0 ltac_expr SEP "|" "]"
@@ -1718,8 +1721,8 @@ simple_tactic: [
 | "generalize_eqs_vars" ident
 | "dependent" "generalize_eqs_vars" ident
 | "specialize_eqs" ident
-| "hresolve_core" "(" ident ":=" one_term ")" OPT ( "at" int_or_var ) "in" one_term
-| "hget_evar" int_or_var
+| "hresolve_core" "(" ident ":=" one_term ")" OPT ( "at" nat_or_var ) "in" one_term
+| "hget_evar" nat_or_var
 | "destauto" OPT ( "in" ident )
 | "transparent_abstract" ltac_expr3 OPT ( "using" ident )
 | "constr_eq" one_term one_term
@@ -1756,20 +1759,20 @@ simple_tactic: [
 | "trivial" OPT auto_using OPT hintbases
 | "info_trivial" OPT auto_using OPT hintbases
 | "debug" "trivial" OPT auto_using OPT hintbases
-| "auto" OPT int_or_var OPT auto_using OPT hintbases
-| "info_auto" OPT int_or_var OPT auto_using OPT hintbases
-| "debug" "auto" OPT int_or_var OPT auto_using OPT hintbases
-| "eauto" OPT int_or_var OPT int_or_var OPT auto_using OPT hintbases
-| "new" "auto" OPT int_or_var OPT auto_using OPT hintbases
-| "debug" "eauto" OPT int_or_var OPT int_or_var OPT auto_using OPT hintbases
-| "info_eauto" OPT int_or_var OPT int_or_var OPT auto_using OPT hintbases
-| "dfs" "eauto" OPT int_or_var OPT auto_using OPT hintbases
-| "bfs" "eauto" OPT int_or_var OPT auto_using OPT hintbases
+| "auto" OPT nat_or_var OPT auto_using OPT hintbases
+| "info_auto" OPT nat_or_var OPT auto_using OPT hintbases
+| "debug" "auto" OPT nat_or_var OPT auto_using OPT hintbases
+| "eauto" OPT nat_or_var OPT nat_or_var OPT auto_using OPT hintbases
+| "new" "auto" OPT nat_or_var OPT auto_using OPT hintbases
+| "debug" "eauto" OPT nat_or_var OPT nat_or_var OPT auto_using OPT hintbases
+| "info_eauto" OPT nat_or_var OPT nat_or_var OPT auto_using OPT hintbases
+| "dfs" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
+| "bfs" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "autounfold" OPT hintbases OPT clause_dft_concl
 | "autounfold_one" OPT hintbases OPT ( "in" ident )
 | "unify" one_term one_term OPT ( "with" ident )
 | "convert_concl_no_check" one_term
-| "typeclasses" "eauto" OPT "bfs" OPT int_or_var OPT ( "with" LIST1 ident )
+| "typeclasses" "eauto" OPT "bfs" OPT nat_or_var OPT ( "with" LIST1 ident )
 | "head_of_constr" ident one_term
 | "not_evar" one_term
 | "is_ground" one_term
@@ -1859,7 +1862,7 @@ simple_tactic: [
 | "functional" "inversion" [ ident | natural ] OPT qualid      (* funind plugin *)
 | "functional" "induction" term OPT ( "using" one_term OPT ( "with" bindings ) ) OPT ( "as" simple_intropattern )      (* funind plugin *)
 | "soft" "functional" "induction" LIST1 one_term OPT ( "using" one_term OPT ( "with" bindings ) ) OPT ( "as" simple_intropattern )      (* funind plugin *)
-| "psatz_Z" OPT int_or_var ltac_expr
+| "psatz_Z" OPT nat_or_var ltac_expr
 | "xlia" ltac_expr      (* micromega plugin *)
 | "xnlia" ltac_expr      (* micromega plugin *)
 | "xnra" ltac_expr      (* micromega plugin *)
@@ -1869,8 +1872,8 @@ simple_tactic: [
 | "sos_R" ltac_expr      (* micromega plugin *)
 | "lra_Q" ltac_expr      (* micromega plugin *)
 | "lra_R" ltac_expr      (* micromega plugin *)
-| "psatz_R" OPT int_or_var ltac_expr
-| "psatz_Q" OPT int_or_var ltac_expr
+| "psatz_R" OPT nat_or_var ltac_expr
+| "psatz_Q" OPT nat_or_var ltac_expr
 | "zify_iter_specs"      (* micromega plugin *)
 | "zify_op"      (* micromega plugin *)
 | "zify_saturate"      (* micromega plugin *)
@@ -1942,7 +1945,7 @@ simple_tactic: [
 | "field_simplify_eq" OPT ( "[" LIST1 one_term "]" ) OPT ( "in" ident )
 | "intuition" OPT ltac_expr
 | "nsatz" OPT ( "with" "radicalmax" ":=" one_term "strategy" ":=" one_term "parameters" ":=" one_term "variables" ":=" one_term )
-| "psatz" one_term OPT int_or_var
+| "psatz" one_term OPT nat_or_var
 | "ring" OPT ( "[" LIST1 one_term "]" )
 | "ring_simplify" OPT ( "[" LIST1 one_term "]" ) LIST1 one_term OPT ( "in" ident )
 | "match" ltac2_expr5 "with" OPT ltac2_branches "end"

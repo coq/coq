@@ -112,8 +112,8 @@ GRAMMAR EXTEND Gram
           | true  , None -> TacThens (ta0,first) } ]
     | "3" RIGHTA
       [ IDENT "try"; ta = ltac_expr -> { TacTry ta }
-      | IDENT "do"; n = int_or_var; ta = ltac_expr -> { TacDo (n,ta) }
-      | IDENT "timeout"; n = int_or_var; ta = ltac_expr -> { TacTimeout (n,ta) }
+      | IDENT "do"; n = nat_or_var; ta = ltac_expr -> { TacDo (n,ta) }
+      | IDENT "timeout"; n = nat_or_var; ta = ltac_expr -> { TacTimeout (n,ta) }
       | IDENT "time"; s = OPT string; ta = ltac_expr -> { TacTime (s,ta) }
       | IDENT "repeat"; ta = ltac_expr -> { TacRepeat ta }
       | IDENT "progress"; ta = ltac_expr -> { TacProgress ta }

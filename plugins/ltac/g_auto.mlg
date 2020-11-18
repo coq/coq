@@ -96,17 +96,17 @@ TACTIC EXTEND debug_trivial
 END
 
 TACTIC EXTEND auto
-| [ "auto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
+| [ "auto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
     { Auto.h_auto n (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND info_auto
-| [ "info_auto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
+| [ "info_auto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
     { Auto.h_auto ~debug:Info n (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND debug_auto
-| [ "debug" "auto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
+| [ "debug" "auto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
     { Auto.h_auto ~debug:Debug n (eval_uconstrs ist lems) db }
 END
 
@@ -130,15 +130,15 @@ let deprecated_bfs tacname =
 }
 
 TACTIC EXTEND eauto
-| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
+| [ "eauto" nat_or_var_opt(n) nat_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
     {
       ( match n,p with Some _, Some _ -> deprecated_eauto_bfs () | _ -> () );
       Eauto.gen_eauto (Eauto.make_dimension n p) (eval_uconstrs ist lems) db }
 END
 
-TACTIC EXTEND new_eauto
-| [ "new" "auto" int_or_var_opt(n) auto_using(lems)
+TACTIC EXTEND new_eauto (* todo: name doesn't match syntax *)
+| [ "new" "auto" nat_or_var_opt(n) auto_using(lems)
     hintbases(db) ] ->
     { match db with
       | None -> Auto.new_full_auto (make_depth n) (eval_uconstrs ist lems)
@@ -146,7 +146,7 @@ TACTIC EXTEND new_eauto
 END
 
 TACTIC EXTEND debug_eauto
-| [ "debug" "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
+| [ "debug" "eauto" nat_or_var_opt(n) nat_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
     {
       ( match n,p with Some _, Some _ -> (deprecated_bfs "debug eauto") () | _ -> () );
@@ -154,7 +154,7 @@ TACTIC EXTEND debug_eauto
 END
 
 TACTIC EXTEND info_eauto
-| [ "info_eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
+| [ "info_eauto" nat_or_var_opt(n) nat_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
     {
       ( match n,p with Some _, Some _ -> (deprecated_bfs "info_eauto") () | _ -> () );
@@ -162,13 +162,13 @@ TACTIC EXTEND info_eauto
 END
 
 TACTIC EXTEND dfs_eauto
-| [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems)
+| [ "dfs" "eauto" nat_or_var_opt(p) auto_using(lems)
       hintbases(db) ] ->
     { Eauto.gen_eauto (Eauto.make_dimension p None) (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND bfs_eauto
-| [ "bfs" "eauto" int_or_var_opt(p) auto_using(lems)
+| [ "bfs" "eauto" nat_or_var_opt(p) auto_using(lems)
       hintbases(db) ] ->
     { Eauto.gen_eauto (true, Eauto.make_depth p) (eval_uconstrs ist lems) db }
 END

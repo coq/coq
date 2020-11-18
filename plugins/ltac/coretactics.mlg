@@ -122,10 +122,10 @@ END
 
 TACTIC EXTEND constructor
 | [ "constructor" ] -> { Tactics.any_constructor false None }
-| [ "constructor" int_or_var(i) ] -> {
+| [ "constructor" nat_or_var(i) ] -> {
     Tactics.constructor_tac false None i NoBindings
   }
-| [ "constructor" int_or_var(i) "with" bindings(bl) ] -> {
+| [ "constructor" nat_or_var(i) "with" bindings(bl) ] -> {
     let tac bl = Tactics.constructor_tac false None i bl in
     Tacticals.New.tclDELAYEDWITHHOLES false bl tac
   }
@@ -133,10 +133,10 @@ END
 
 TACTIC EXTEND econstructor
 | [ "econstructor" ] -> { Tactics.any_constructor true None }
-| [ "econstructor" int_or_var(i) ] -> {
+| [ "econstructor" nat_or_var(i) ] -> {
     Tactics.constructor_tac true None i NoBindings
   }
-| [ "econstructor" int_or_var(i) "with" bindings(bl) ] -> {
+| [ "econstructor" nat_or_var(i) "with" bindings(bl) ] -> {
     let tac bl = Tactics.constructor_tac true None i bl in
     Tacticals.New.tclDELAYEDWITHHOLES true bl tac
   }
