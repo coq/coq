@@ -216,6 +216,10 @@ GRAMMAR EXTEND Gram
           { VernacStartTheoremProof (thm, (id,(bl,c))::l) }
       | stre = assumption_token; nl = inline; bl = assum_list ->
           { VernacAssumption (stre, nl, bl) }
+      | stre = thm_assumption_token; nl = inline; bl = LIST1 assum_coe ->
+          { VernacAssumption (stre, nl, bl) }
+      | stre = thm_assumption_token; nl = inline; id = ident_decl; oc = of_type; c = lconstr ->
+          { VernacAssumption (stre, nl, [(oc <> NoInstance,([id],c))]) }
       | tk = assumptions_token; nl = inline; bl = assum_list ->
           { let (kwd,stre) = tk in
             test_plural_form loc kwd bl;
@@ -266,10 +270,12 @@ GRAMMAR EXTEND Gram
       | IDENT "Example" -> { (NoDischarge,Example) }
       | IDENT "SubClass" -> { (NoDischarge,SubClass) } ] ]
   ;
-  assumption_token:
+  thm_assumption_token:
     [ [ "Hypothesis" -> { (DoDischarge, Logical) }
-      | "Variable" -> { (DoDischarge, Definitional) }
-      | "Axiom" -> { (NoDischarge, Logical) }
+      | "Axiom" -> { (NoDischarge, Logical) } ] ]
+  ;
+  assumption_token:
+    [ [ "Variable" -> { (DoDischarge, Definitional) }
       | "Parameter" -> { (NoDischarge, Definitional) }
       | IDENT "Conjecture" -> { (NoDischarge, Conjectural) } ] ]
   ;
