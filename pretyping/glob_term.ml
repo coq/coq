@@ -28,15 +28,15 @@ type glob_sort_name =
   | GSet  (** representation of [Set] level *)
   | GType of Libnames.qualid (** representation of a [Type] level *)
 
-type 'a glob_sort_expr =
+type 'a glob_sort_gen =
   | UAnonymous of { rigid : bool } (** not rigid = unifiable by minimization *)
   | UNamed of 'a
 
 (** levels, occurring in universe instances *)
-type glob_level = glob_sort_name glob_sort_expr
+type glob_level = glob_sort_name glob_sort_gen
 
 (** sort expressions *)
-type glob_sort = (glob_sort_name * int) list glob_sort_expr
+type glob_sort = (glob_sort_name * int) list glob_sort_gen
 
 type glob_constraint = glob_sort_name * Univ.constraint_type * glob_sort_name
 
