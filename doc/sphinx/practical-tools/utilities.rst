@@ -133,10 +133,13 @@ The recommended approach is to invoke ``CoqMakefile`` from a standard
               @true
 
 The advantage of a wrapper, compared to directly calling the generated
-``Makefile`` or to including it with an include directive, is that it
+``Makefile``, is that it
 provides a target independent of the version of Coq to regenerate a
 ``Makefile`` specific to the current version of Coq. Additionally, the
 master ``Makefile`` can be extended with targets not specific to Coq.
+Including the generated makefile with an include directive is
+discouraged, since the contents of this file, including variable names and
+status of rules, may change in the future.
 
 An optional file ``CoqMakefile.local`` can be provided by the user in order to
 extend ``CoqMakefile``. In particular one can declare custom actions to be
