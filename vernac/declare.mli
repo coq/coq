@@ -280,9 +280,10 @@ module Proof : sig
 
   (* Internal, don't use *)
   module Proof_info : sig
+    (* Note to developers, when marshalled, this will still lose some
+       fields, such as hooks or proof terminators, as they are still
+       closures. *)
     type t
-    (* Make a dummy value, used in the stm *)
-    val default : unit -> t
   end
   val info : t -> Proof_info.t
 

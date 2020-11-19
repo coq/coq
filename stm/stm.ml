@@ -1470,14 +1470,13 @@ end = struct (* {{{ *)
         (* Unfortunately close_future_proof and friends are not pure so we need
            to set the state manually here *)
           State.unfreeze st;
-          let pobject, _info =
+          let pobject, pinfo =
             PG_compat.close_future_proof ~feedback_id:stop (Future.from_val proof) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           let opaque = Opaque in
           try
             let _pstate =
-              let pinfo = Declare.Proof.Proof_info.default () in
               stm_qed_delay_proof ~st ~id:stop
                 ~proof:pobject ~pinfo ~loc ~control:[] (Proved (opaque,None)) in
             ()
@@ -1621,11 +1620,8 @@ end = struct (* {{{ *)
       else begin
       let opaque = Opaque in
 
-      (* The original terminator, a hook, has not been saved in the .vio*)
-      let proof, _info =
+      let proof, pinfo =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true in
-
-      let pinfo = Declare.Proof.Proof_info.default () in
 
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
