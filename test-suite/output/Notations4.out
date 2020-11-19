@@ -179,3 +179,21 @@ Found an inductive type while a pattern was expected.
      : Prop
 !!!! (nat, id), nat = true /\ id = false
      : Prop
+∀ x : nat, x = 0
+     : Prop
+∀₁ x, x = 0
+     : Prop
+∀₁ x, x = 0
+     : Prop
+∀₂ x y, x + y = 0
+     : Prop
+((1, 2))
+     : nat * nat
+%% [x == 1]
+     : Prop
+%%% [1]
+     : Prop
+[[2]]
+     : nat * nat
+%%%
+     : Type

@@ -16,6 +16,11 @@ open Glob_term
 
 val eq_notation_constr : Id.t list * Id.t list -> notation_constr -> notation_constr -> bool
 
+val strictly_finer_notation_constr : Id.t list * Id.t list -> notation_constr -> notation_constr -> bool
+(** Tell if [t1] is a strict refinement of [t2]
+    (this is a partial order and returning [false] does not mean that
+    [t2] is finer than [t1]) *)
+
 (** Substitution of kernel names in interpretation data                *)
 
 val subst_interpretation :
