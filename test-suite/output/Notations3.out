@@ -249,3 +249,5 @@ myfoo01 tt
      : nat
 myfoo01 tt
      : nat
+1 ⪯ 2 ⪯ 3 ⪯ 4
+     : Prop
