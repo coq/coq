@@ -702,30 +702,31 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
   let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
   let rec cmp_rec pstk1 pstk2 cuniv =
     match (pstk1,pstk2) with
-      | (z1::s1, z2::s2) ->
-          let cu1 = cmp_rec s1 s2 cuniv in
-          (match (z1,z2) with
-            | (Zlapp a1,Zlapp a2) ->
-               Array.fold_right2 f a1 a2 cu1
-            | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
-              if not (Projection.Repr.CanOrd.equal c1 c2) then
-                raise NotConvertible
-              else cu1
-            | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
-                let cu2 = f fx1 fx2 cu1 in
-                cmp_rec a1 a2 cu2
-            | (Zlcase(ci1,l1,p1,br1,e1),Zlcase(ci2,l2,p2,br2,e2)) ->
-                if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then
-                  raise NotConvertible;
-                let cu2 = f (l1, mk_clos e1 p1) (l2, mk_clos e2 p2) cu1 in
-                convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cu2
-            | (Zlprimitive(op1,_,rargs1,kargs1),Zlprimitive(op2,_,rargs2,kargs2)) ->
-              if not (CPrimitives.equal op1 op2) then raise NotConvertible else
-                let cu2 = List.fold_right2 f rargs1 rargs2 cu1 in
-                let fk (_,a1) (_,a2) cu = f a1 a2 cu in
-                List.fold_right2 fk kargs1 kargs2 cu2
-            | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _), _) -> assert false)
-      | _ -> cuniv in
+    | (z1::s1, z2::s2) ->
+      let cuniv = match (z1,z2) with
+        | (Zlapp a1,Zlapp a2) ->
+          Array.fold_right2 f a1 a2 cuniv
+        | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
+          if not (Projection.Repr.CanOrd.equal c1 c2) then
+            raise NotConvertible
+          else cuniv
+        | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
+          let cuniv = f fx1 fx2 cuniv in
+          cmp_rec a1 a2 cuniv
+        | (Zlcase(ci1,l1,p1,br1,e1),Zlcase(ci2,l2,p2,br2,e2)) ->
+          if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then
+            raise NotConvertible;
+          let cuniv = f (l1, mk_clos e1 p1) (l2, mk_clos e2 p2) cuniv in
+          convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cuniv
+        | (Zlprimitive(op1,_,rargs1,kargs1),Zlprimitive(op2,_,rargs2,kargs2)) ->
+          if not (CPrimitives.equal op1 op2) then raise NotConvertible else
+            let cuniv = List.fold_right2 f rargs1 rargs2 cuniv in
+            let fk (_,a1) (_,a2) cu = f a1 a2 cu in
+            List.fold_right2 fk kargs1 kargs2 cuniv
+        | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _), _) -> assert false
+      in
+      cmp_rec s1 s2 cuniv
+    | _ -> cuniv in
   if compare_stack_shape stk1 stk2 then
     cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
   else raise NotConvertible
