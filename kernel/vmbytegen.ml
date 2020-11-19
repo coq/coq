@@ -315,12 +315,10 @@ let pos_evar evk r =
 (* non-terminating instruction (branch, raise, return, appterm)          *)
 (* in front of it.                                                       *)
 
-let discard_dead_code cont = cont
-(*function
-    [] -> []
+let rec discard_dead_code = function
+  | [] -> []
   | (Klabel _ | Krestart ) :: _ as cont -> cont
   | _ :: cont -> discard_dead_code cont
-*)
 
 (* Return a label to the beginning of the given continuation.            *)
 (*   If the sequence starts with a branch, use the target of that branch *)
@@ -581,7 +579,7 @@ let rec compile_lam env cenv lam sz cont =
      let cont_fun =
        ensure_stack_capacity (compile_lam env r_fun body arity) [Kreturn arity]
      in
-     fun_code := [Ksequence(add_grab arity lbl_fun cont_fun,!fun_code)];
+     fun_code := Ksequence (add_grab arity lbl_fun cont_fun) :: !fun_code;
      let fv = fv r_fun in
      compile_fv cenv fv.fv_rev sz (Kclosure(lbl_fun,fv.size) :: cont)
 
@@ -604,7 +602,7 @@ let rec compile_lam env cenv lam sz cont =
         in
         let lbl,fcode = label_code fcode in
         lbl_types.(i) <- lbl;
-        fun_code := [Ksequence(fcode,!fun_code)]
+        fun_code := Ksequence fcode :: !fun_code
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
@@ -617,7 +615,7 @@ let rec compile_lam env cenv lam sz cont =
         let lbl = Label.create () in
         lbl_bodies.(i) <- lbl;
         let fcode =  add_grabrec rec_args.(i) arity lbl cont1 in
-        fun_code := [Ksequence(fcode,!fun_code)]
+        fun_code := Ksequence fcode :: !fun_code
       done;
       let fv = !rfv in
       compile_fv cenv fv.fv_rev sz
@@ -637,7 +635,7 @@ let rec compile_lam env cenv lam sz cont =
         in
         let lbl,fcode = label_code fcode in
         lbl_types.(i) <- lbl;
-        fun_code := [Ksequence(fcode,!fun_code)]
+        fun_code := Ksequence fcode :: !fun_code
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
@@ -652,24 +650,12 @@ let rec compile_lam env cenv lam sz cont =
         in
         let cont = ensure_stack_capacity comp arity in
         lbl_bodies.(i) <- lbl;
-        fun_code := [Ksequence(add_grab (arity+1) lbl cont,!fun_code)];
+        fun_code := Ksequence (add_grab (arity+1) lbl cont) :: !fun_code;
       done;
       let fv = !rfv in
       set_max_stack_size (sz + fv.size + ndef + 2);
       compile_fv cenv fv.fv_rev sz
         (Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
-
-  | Lif(t, bt, bf) ->
-      let branch, cont = make_branch cont in
-      let lbl_true =  Label.create() in
-      let lbl_false = Label.create() in
-      compile_lam env cenv t sz
-        (Kswitch([|lbl_true;lbl_false|],[||]) ::
-         Klabel lbl_false ::
-         compile_lam env cenv bf sz
-           (branch ::
-            Klabel lbl_true ::
-            compile_lam env cenv bt sz cont))
 
   | Lcase(ci,rtbl,t,a,branches) ->
       let ind = ci.ci_ind in
@@ -688,7 +674,7 @@ let rec compile_lam env cenv lam sz cont =
         ensure_stack_capacity (compile_lam env cenv t sz) [Kpop sz; Kstop]
       in
       let lbl_typ,fcode = label_code fcode in
-      fun_code := [Ksequence(fcode,!fun_code)];
+      fun_code := Ksequence fcode :: !fun_code;
       (* Compilation of the branches *)
       let lbl_sw = Label.create () in
       let sz_b,branch,is_tailcall =
@@ -700,6 +686,7 @@ let rec compile_lam env cenv lam sz cont =
         | _ -> assert false
       in
 
+      let cont = discard_dead_code cont in
       let c = ref cont in
       (* Perform the extra match if needed (too many block constructors) *)
       if neblock <> 0 then begin
@@ -770,7 +757,7 @@ let rec compile_lam env cenv lam sz cont =
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
     comp_args (compile_lam env) cenv args sz cont
 
-  | Lprim (Some (kn,u), op, args) when is_caml_prim op ->
+  | Lprim ((kn,u), op, args) when is_caml_prim op ->
     let arity = CPrimitives.arity op in
     let nparams = CPrimitives.nparams op in
     let nargs = arity - nparams in
@@ -788,7 +775,7 @@ let rec compile_lam env cenv lam sz cont =
       if Int.equal nparams 0 then cont
       else comp_args (compile_lam env) cenv (Array.sub args 0 nparams) (sz + nargs) (Kpush::cont)
     in
-    fun_code := [Ksequence(default, !fun_code)];
+    fun_code := Ksequence default :: !fun_code;
     comp_args (compile_lam env) cenv (Array.sub args nparams nargs) sz (Kcamlprim (op, lbl_default) :: cont)
 
   | Lprim (kn, op, args) ->
@@ -878,7 +865,7 @@ let compile ~fail_on_error ?universes:(universes=0) env c =
           ensure_stack_capacity (compile_lam env r_fun body full_arity)
                          [Kreturn full_arity]
         in
-        fun_code := [Ksequence(add_grab full_arity lbl_fun cont_fun,!fun_code)];
+        fun_code := Ksequence (add_grab full_arity lbl_fun cont_fun) :: !fun_code;
         let fv = fv r_fun in
         let init_code =
           ensure_stack_capacity (compile_fv cenv fv.fv_rev 0)
