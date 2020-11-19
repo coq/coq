@@ -122,7 +122,7 @@ LIBCOQRUN:=kernel/byterun/lib$(COQRUN).a
 DLLCOQRUN:=$(dir $(LIBCOQRUN))dll$(COQRUN)$(DLLEXT)
 
 BYTERUN:=$(addprefix kernel/byterun/, \
-  coq_fix_code.o coq_memory.o coq_values.o coq_interp.o )
+  coq_fix_code.o coq_float64.o coq_memory.o coq_values.o coq_interp.o )
 
 # LINK ORDER:
 # respecting this order is useful for developers that want to load or link

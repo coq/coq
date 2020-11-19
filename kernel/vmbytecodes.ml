@@ -56,13 +56,12 @@ type instruction =
   | Kfield of int
   | Ksetfield of int
   | Kstop
-  | Ksequence of bytecodes * bytecodes
+  | Ksequence of bytecodes
   | Kproj of Projection.Repr.t
   | Kensurestackcapacity of int
   | Kbranch of Label.t                  (* jump to label *)
-  | Kprim of CPrimitives.t * pconstant option
+  | Kprim of CPrimitives.t * pconstant
   | Kcamlprim of CPrimitives.t * Label.t
-  | Kareint of int
 
 and bytecodes = instruction list
 
@@ -146,13 +145,11 @@ let rec pp_instr i =
   | Kensurestackcapacity size -> str "growstack " ++ int size
 
   | Kprim (op, id) -> str (CPrimitives.to_string op) ++ str " " ++
-        (match id with Some (id,_u) -> Constant.print id | None -> str "")
+        (Constant.print (fst id))
 
   | Kcamlprim (op, lbl) ->
     str "camlcall " ++ str (CPrimitives.to_string op) ++ spc () ++
     pp_lbl lbl
-
-  | Kareint n -> str "areint " ++ int n
 
 and pp_bytecodes c =
   match c with
@@ -160,7 +157,7 @@ and pp_bytecodes c =
   | Klabel lbl :: c ->
         str "L" ++ int lbl ++ str ":" ++ fnl () ++
         pp_bytecodes c
-  | Ksequence (l1, l2) :: c ->
-      pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
+  | Ksequence l :: c ->
+      pp_bytecodes l ++  pp_bytecodes c
   | i :: c ->
       pp_instr i ++ fnl () ++ pp_bytecodes c

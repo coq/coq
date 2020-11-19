@@ -43,9 +43,7 @@ void init_arity () {
     arity[CONST0]=arity[CONST1]=arity[CONST2]=arity[CONST3]=
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
     arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]=
-    arity[ADDINT63]=arity[SUBINT63]=arity[LTINT63]=arity[LEINT63]=
-    arity[LTFLOAT]=arity[LEFLOAT]=
-    arity[ISINT]=arity[AREINT2]=0;
+    0;
   /* instruction with one operand */
   arity[ACC]=arity[PUSHACC]=arity[POP]=arity[ENVACC]=arity[PUSHENVACC]=
     arity[PUSH_RETADDR]=arity[APPLY]=arity[APPTERM1]=arity[APPTERM2]=
@@ -75,9 +73,10 @@ void init_arity () {
     arity[CHECKNEXTUPFLOAT]=arity[CHECKNEXTDOWNFLOAT]=1;
   /* instruction with two operands */
   arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=
-  arity[ISARRAY_CAML_CALL1]=arity[ISINT_CAML_CALL2]=
-  arity[ISARRAY_INT_CAML_CALL2]=arity[ISARRAY_INT_CAML_CALL3]=
-  arity[PROJ]=2;
+    arity[CHECKCAMLCALL1]=arity[CHECKCAMLCALL2_1]=
+    arity[CHECKCAMLCALL2]=arity[CHECKCAMLCALL3_1]=
+    arity[PROJ]=
+    2;
   /* instruction with four operands */
   arity[MAKESWITCHBLOCK]=4;
   /* instruction with arbitrary operands */

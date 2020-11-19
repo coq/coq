@@ -28,7 +28,6 @@
 #include "coq_fix_code.h"
 #include "coq_memory.h"
 #include "coq_values.h"
-#include "coq_float64.h"
 
 #if OCAML_VERSION < 41000
 extern void caml_minor_collection(void);
@@ -113,7 +112,7 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define Setup_for_gc { sp -= 2; sp[0] = accu; sp[1] = coq_env; coq_sp = sp; }
 #define Restore_after_gc { accu = sp[0]; coq_env = sp[1]; sp += 2; }
 #define Setup_for_caml_call { *--sp = coq_env; coq_sp = sp; }
-#define Restore_after_caml_call { sp = coq_sp; coq_env = *sp++; }
+#define Restore_after_caml_call coq_env = *sp++;
 
 /* Register optimization.
    Some compilers underestimate the use of the local variables representing
@@ -193,7 +192,9 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #endif
 #endif
 
-#define Is_accu(v) (Is_block(v) && Tag_val(v) == Closure_tag && Code_val(v) == accumulate)
+/* We should also check "Code_val(v) == accumulate" to be sure,
+   but Is_accu is only used in places where closures cannot occur. */
+#define Is_accu(v) (Is_block(v) && Tag_val(v) == Closure_tag)
 
 #define CheckPrimArgs(cond, apply_lbl) do{         \
     if (cond) pc++;                                \
@@ -236,6 +237,9 @@ extern intnat volatile caml_signals_are_pending;
 extern intnat volatile caml_pending_signals[];
 extern void caml_process_pending_signals(void);
 #endif
+
+extern double coq_next_up(double);
+extern double coq_next_down(double);
 
 /* The interpreter itself */
 
@@ -1271,11 +1275,8 @@ value coq_interprete
       Instruct(CHECKADDINT63){
         print_instr("CHECKADDINT63");
         CheckInt2();
-      }
-      Instruct(ADDINT63) {
         /* Adds the integer in the accumulator with
            the one ontop of the stack (which is poped)*/
-        print_instr("ADDINT63");
         Uint63_add(accu, *sp++);
         Next;
       }
@@ -1309,9 +1310,6 @@ value coq_interprete
       Instruct (CHECKSUBINT63) {
         print_instr("CHECKSUBINT63");
         CheckInt2();
-      }
-      Instruct (SUBINT63) {
-        print_instr("SUBINT63");
         /* returns the subtraction */
         Uint63_sub(accu, *sp++);
         Next;
@@ -1517,9 +1515,6 @@ value coq_interprete
      Instruct (CHECKLTINT63) {
         print_instr("CHECKLTINT63");
         CheckInt2();
-     }
-     Instruct (LTINT63) {
-       print_instr("LTINT63");
        int b;
        Uint63_lt(b,accu,*sp++);
        accu = b ? coq_true : coq_false;
@@ -1529,9 +1524,6 @@ value coq_interprete
      Instruct (CHECKLEINT63) {
        print_instr("CHECKLEINT63");
        CheckInt2();
-     }
-     Instruct (LEINT63) {
-       print_instr("LEINT63");
        int b;
        Uint63_leq(b,accu,*sp++);
        accu = b ? coq_true : coq_false;
@@ -1570,20 +1562,6 @@ value coq_interprete
         Next;
       }
 
-      Instruct (ISINT){
-        print_instr("ISINT");
-        accu = (Is_uint63(accu)) ? coq_true : coq_false;
-        Next;
-      }
-
-      Instruct (AREINT2){
-        print_instr("AREINT2");
-        accu = (Is_uint63(accu) && Is_uint63(sp[0])) ? coq_true : coq_false;
-        sp++;
-        Next;
-      }
-
-
       Instruct (CHECKOPPFLOAT) {
         print_instr("CHECKOPPFLOAT");
         CheckFloat1();
@@ -1601,27 +1579,21 @@ value coq_interprete
       Instruct (CHECKEQFLOAT) {
         print_instr("CHECKEQFLOAT");
         CheckFloat2();
-        accu = coq_feq(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
+        accu = Double_val(accu) == Double_val(*sp++) ? coq_true : coq_false;
         Next;
       }
 
       Instruct (CHECKLTFLOAT) {
         print_instr("CHECKLTFLOAT");
         CheckFloat2();
-      }
-      Instruct (LTFLOAT) {
-        print_instr("LTFLOAT");
-        accu = coq_flt(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
+        accu = Double_val(accu) < Double_val(*sp++) ? coq_true : coq_false;
         Next;
       }
 
       Instruct (CHECKLEFLOAT) {
         print_instr("CHECKLEFLOAT");
         CheckFloat2();
-      }
-      Instruct (LEFLOAT) {
-        print_instr("LEFLOAT");
-        accu = coq_fle(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
+        accu = Double_val(accu) <= Double_val(*sp++) ? coq_true : coq_false;
         Next;
       }
 
@@ -1674,35 +1646,35 @@ value coq_interprete
       Instruct (CHECKADDFLOAT) {
         print_instr("CHECKADDFLOAT");
         CheckFloat2();
-        Coq_copy_double(coq_fadd(Double_val(accu), Double_val(*sp++)));
+        Coq_copy_double(Double_val(accu) + Double_val(*sp++));
         Next;
       }
 
       Instruct (CHECKSUBFLOAT) {
         print_instr("CHECKSUBFLOAT");
         CheckFloat2();
-        Coq_copy_double(coq_fsub(Double_val(accu), Double_val(*sp++)));
+        Coq_copy_double(Double_val(accu) - Double_val(*sp++));
         Next;
       }
 
       Instruct (CHECKMULFLOAT) {
         print_instr("CHECKMULFLOAT");
         CheckFloat2();
-        Coq_copy_double(coq_fmul(Double_val(accu), Double_val(*sp++)));
+        Coq_copy_double(Double_val(accu) * Double_val(*sp++));
         Next;
       }
 
       Instruct (CHECKDIVFLOAT) {
         print_instr("CHECKDIVFLOAT");
         CheckFloat2();
-        Coq_copy_double(coq_fdiv(Double_val(accu), Double_val(*sp++)));
+        Coq_copy_double(Double_val(accu) / Double_val(*sp++));
         Next;
       }
 
       Instruct (CHECKSQRTFLOAT) {
         print_instr("CHECKSQRTFLOAT");
         CheckFloat1();
-        Coq_copy_double(coq_fsqrt(Double_val(accu)));
+        Coq_copy_double(sqrt(Double_val(accu)));
         Next;
       }
 
@@ -1784,11 +1756,25 @@ value coq_interprete
         Next;
       }
 
+      Instruct (CHECKNEXTUPFLOATINPLACE) {
+        print_instr("CHECKNEXTUPFLOATINPLACE");
+        CheckFloat1();
+        Store_double_val(accu, coq_next_up(Double_val(accu)));
+        Next;
+      }
 
-      Instruct(ISINT_CAML_CALL2) {
+      Instruct (CHECKNEXTDOWNFLOATINPLACE) {
+        print_instr("CHECKNEXTDOWNFLOATINPLACE");
+        CheckFloat1();
+        Store_double_val(accu, coq_next_down(Double_val(accu)));
+        Next;
+      }
+
+      Instruct(CHECKCAMLCALL2_1) {
+        // arity-2 callback, the last argument can be an accumulator
         value arg;
-        print_instr("ISINT_CAML_CALL2");
-        if (Is_uint63(accu)) {
+        print_instr("CHECKCAMLCALL2_1");
+        if (!Is_accu(accu)) {
           pc++;
           print_int(*pc);
           arg = sp[0];
@@ -1801,47 +1787,50 @@ value coq_interprete
         Next;
       }
 
-      Instruct(ISARRAY_CAML_CALL1) {
-        print_instr("ISARRAY_CAML_CALL1");
-              if (Is_coq_array(accu)) {
-                pc++;
-                Setup_for_caml_call;
-                print_int(*pc);
-                accu = caml_callback(Field(coq_global_data, *pc),accu);
-                Restore_after_caml_call;
-                pc++;
-              }
-              else pc += *pc;
-              Next;
+      Instruct(CHECKCAMLCALL1) {
+        // arity-1 callback, no argument can be an accumulator
+        print_instr("CHECKCAMLCALL1");
+        if (!Is_accu(accu)) {
+          pc++;
+          Setup_for_caml_call;
+          print_int(*pc);
+          accu = caml_callback(Field(coq_global_data, *pc), accu);
+          Restore_after_caml_call;
+          pc++;
+        }
+        else pc += *pc;
+        Next;
       }
 
-      Instruct(ISARRAY_INT_CAML_CALL2) {
+      Instruct(CHECKCAMLCALL2) {
+        // arity-2 callback, no argument can be an accumulator
         value arg;
-        print_instr("ISARRAY_INT_CAML_CALL2");
-          if (Is_coq_array(accu) && Is_uint63(sp[0])) {
-            pc++;
-            arg = sp[0];
-            Setup_for_caml_call;
-            print_int(*pc);
-            accu = caml_callback2(Field(coq_global_data, *pc), accu, arg);
-            Restore_after_caml_call;
-            sp += 1;
-            pc++;
-          } else pc += *pc;
-          Next;
+        print_instr("CHECKCAMLCALL2");
+        if (!Is_accu(accu) && !Is_accu(sp[0])) {
+          pc++;
+          arg = sp[0];
+          Setup_for_caml_call;
+          print_int(*pc);
+          accu = caml_callback2(Field(coq_global_data, *pc), accu, arg);
+          Restore_after_caml_call;
+          sp += 1;
+          pc++;
+        } else pc += *pc;
+        Next;
       }
 
-      Instruct(ISARRAY_INT_CAML_CALL3) {
+      Instruct(CHECKCAMLCALL3_1) {
+        // arity-3 callback, the last argument can be an accumulator
         value arg1;
         value arg2;
-        print_instr("ISARRAY_INT_CAML_CALL3");
-        if (Is_coq_array(accu) && Is_uint63(sp[0])) {
+        print_instr("CHECKCAMLCALL3_1");
+        if (!Is_accu(accu) && !Is_accu(sp[0])) {
           pc++;
           arg1 = sp[0];
           arg2 = sp[1];
           Setup_for_caml_call;
           print_int(*pc);
-          accu = caml_callback3(Field(coq_global_data, *pc),accu, arg1, arg2);
+          accu = caml_callback3(Field(coq_global_data, *pc), accu, arg1, arg2);
           Restore_after_caml_call;
           sp += 2;
           pc++;
