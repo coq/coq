@@ -39,8 +39,10 @@ module Hook = struct
   let make_g hook = CEphemeron.create hook
   let make (hook : S.t -> unit) : t = CEphemeron.create (fun x () -> hook x)
 
-  let call_g ?hook x s = Option.cata (fun hook -> CEphemeron.get hook x s) s hook
-  let call ?hook x = Option.iter (fun hook -> CEphemeron.get hook x ()) hook
+  let hcall hook x s = CEphemeron.default hook (fun _ x -> x) x s
+
+  let call_g ?hook x s = Option.cata (fun hook -> hcall hook x s) s hook
+  let call ?hook x = Option.iter (fun hook -> hcall hook x ()) hook
 
 end
 
@@ -1372,9 +1374,6 @@ module Proof_info = struct
     let cinfo : Constr.t CInfo.t = CInfo.make ~name ~impargs ~typ:(EConstr.Unsafe.to_constr typ) () in
     { pinfo with cinfo = cinfo :: pinfo.cinfo }
 
-  (* This is called by the STM, and we have to fixup cinfo later as
-     indeed it will not be correct *)
-  let default () = make ~cinfo:[] ~info:(Info.make ()) ()
 end
 
 type t =
@@ -1961,7 +1960,7 @@ let compute_proof_using_for_admitted proof typ pproofs =
 let finish_admitted ~pm ~pinfo ~uctx ~sec_vars ~univs =
   let cst = MutualEntry.declare_variable ~pinfo ~uctx ~sec_vars ~univs in
   (* If the constant was an obligation we need to update the program map *)
-  match CEphemeron.get pinfo.Proof_info.proof_ending with
+  match CEphemeron.default pinfo.Proof_info.proof_ending Proof_ending.Regular with
   | Proof_ending.End_obligation oinfo ->
     Obls_.obligation_admitted_terminator ~pm oinfo uctx (List.hd cst)
   | _ -> pm
@@ -2109,6 +2108,7 @@ let save_lemma_admitted_delayed ~pm ~proof ~pinfo =
 let save_lemma_proved_delayed ~pm ~proof ~pinfo ~idopt =
   (* vio2vo calls this but with invalid info, we have to workaround
      that to add the name to the info structure *)
+  (* IMPORTANT: after #13425 this may not be needed. *)
   if CList.is_empty pinfo.Proof_info.cinfo then
     let name = get_po_name proof in
     let info = Proof_info.add_first_thm ~pinfo ~name ~typ:EConstr.mkSet ~impargs:[] in
