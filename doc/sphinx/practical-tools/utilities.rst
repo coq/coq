@@ -92,14 +92,54 @@ CoqMakefile
   is a makefile for ``GNU Make`` with targets to build the project
   (e.g. generate .vo or .html files from .v or compile .ml* files)
   and install it in the ``user-contrib`` directory where the Coq
-  library is installed. Run ``make`` with the ``-f CoqMakefile``
-  option to use ``CoqMakefile``.
+  library is installed.
 
 CoqMakefile.conf
   contains make variables assignments that reflect
   the contents of the ``_CoqProject`` file as well as the path relevant to
   Coq.
 
+The recommended approach is to invoke ``CoqMakefile`` from a standard
+``Makefile`` of the following form:
+
+.. example::
+
+  ::
+
+      # KNOWNTARGETS will not be passed along to CoqMakefile
+      KNOWNTARGETS := CoqMakefile extra-stuff extra-stuff2
+      # KNOWNFILES will not get implicit targets from the final rule, and so
+      # depending on them won't invoke the submake
+      # Warning: These files get declared as PHONY, so any targets depending
+      # on them always get rebuilt
+      KNOWNFILES   := Makefile _CoqProject
+
+      .DEFAULT_GOAL := invoke-coqmakefile
+
+      CoqMakefile: Makefile _CoqProject
+              $(COQBIN)coq_makefile -f _CoqProject -o CoqMakefile
+
+      invoke-coqmakefile: CoqMakefile
+              $(MAKE) --no-print-directory -f CoqMakefile $(filter-out $(KNOWNTARGETS),$(MAKECMDGOALS))
+
+      .PHONY: invoke-coqmakefile $(KNOWNFILES)
+
+      ####################################################################
+      ##                      Your targets here                         ##
+      ####################################################################
+
+      # This should be the last rule, to handle any targets not declared above
+      %: invoke-coqmakefile
+              @true
+
+The advantage of a wrapper, compared to directly calling the generated
+``Makefile``, is that it
+provides a target independent of the version of Coq to regenerate a
+``Makefile`` specific to the current version of Coq. Additionally, the
+master ``Makefile`` can be extended with targets not specific to Coq.
+Including the generated makefile with an include directive is
+discouraged, since the contents of this file, including variable names and
+status of rules, may change in the future.
 
 An optional file ``CoqMakefile.local`` can be provided by the user in order to
 extend ``CoqMakefile``. In particular one can declare custom actions to be
@@ -451,50 +491,6 @@ line timing data:
 
     .. note::
       This target requires python to build the table.
-
-
-Reusing/extending the generated Makefile
-++++++++++++++++++++++++++++++++++++++++
-
-Including the generated makefile with an include directive is
-discouraged. The contents of this file, including variable names and
-status of rules shall change in the future. Users are advised to
-include ``Makefile.conf`` or call a target of the generated Makefile as in
-``make -f Makefile target`` from another Makefile.
-
-One way to get access to all targets of the generated ``CoqMakefile`` is to
-have a generic target for invoking unknown targets.
-
-.. example::
-
-  ::
-
-      # KNOWNTARGETS will not be passed along to CoqMakefile
-      KNOWNTARGETS := CoqMakefile extra-stuff extra-stuff2
-      # KNOWNFILES will not get implicit targets from the final rule, and so
-      # depending on them won't invoke the submake
-      # Warning: These files get declared as PHONY, so any targets depending
-      # on them always get rebuilt
-      KNOWNFILES   := Makefile _CoqProject
-
-      .DEFAULT_GOAL := invoke-coqmakefile
-
-      CoqMakefile: Makefile _CoqProject
-              $(COQBIN)coq_makefile -f _CoqProject -o CoqMakefile
-
-      invoke-coqmakefile: CoqMakefile
-              $(MAKE) --no-print-directory -f CoqMakefile $(filter-out $(KNOWNTARGETS),$(MAKECMDGOALS))
-
-      .PHONY: invoke-coqmakefile $(KNOWNFILES)
-
-      ####################################################################
-      ##                      Your targets here                         ##
-      ####################################################################
-
-      # This should be the last rule, to handle any targets not declared above
-      %: invoke-coqmakefile
-              @true
-
 
 
 Building a subset of the targets with ``-j``
