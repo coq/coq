@@ -404,8 +404,7 @@ function build_prep {
 
 # ------------------------------------------------------------------------------
 # Like build_prep, but gets the data from an entry in ci-basic-overlay.sh
-# This assumes the following definitions exist in ci-basic-overlay.sh,
-# or in a file in the user-overlays folder:
+# This assumes the following definitions exist in ci-basic-overlay.sh
 # $1_CI_REF
 # $1_CI_ARCHIVEURL
 # $1_CI_GITURL
@@ -432,7 +431,7 @@ function build_prep_overlay {
 }
 
 # ------------------------------------------------------------------------------
-# Load overlay version variables from ci-basic-overlay.sh and user-overlays/*.sh
+# Load overlay version variables from ci-basic-overlay.sh
 # ------------------------------------------------------------------------------
 
 function load_overlay_data {
@@ -448,9 +447,6 @@ function load_overlay_data {
     export CI_PULL_REQUEST=""
   fi
 
-  for overlay in /build/user-overlays/*.sh; do
-    . "$overlay"
-  done
   . /build/ci-basic-overlay.sh
 }
 
@@ -1441,7 +1437,6 @@ function make_coq {
 
     # Copy these files somewhere the plugin builds can find them
     logn copy-basic-overlays cp dev/ci/ci-basic-overlay.sh /build/
-    logn copy-user-overlays cp -r dev/ci/user-overlays /build/
 
     build_post
   fi
