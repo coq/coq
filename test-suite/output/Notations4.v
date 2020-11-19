@@ -414,3 +414,76 @@ Module P.
   End NotationBinderNotMixedWithTerms.
 
 End P.
+
+Module MorePrecise1.
+
+(* A notation with limited iteration is strictly more precise than a
+   notation with unlimited iteration *)
+
+Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity,
+  format "'[  ' '[  ' ∀  x  ..  y ']' ,  '/' P ']'") : type_scope.
+
+Check forall x, x = 0.
+
+Notation "∀₁ z , P" := (forall z, P)
+  (at level 200, right associativity) : type_scope.
+
+Check forall x, x = 0.
+
+Notation "∀₂ y x , P" := (forall y x, P)
+  (at level 200, right associativity) : type_scope.
+
+Check forall x, x = 0.
+Check forall x y, x + y = 0.
+
+Notation "(( x , y ))" := (x,y) : core_scope.
+
+Check ((1,2)).
+
+End MorePrecise1.
+
+Module MorePrecise2.
+
+(* Case of a bound binder *)
+Notation "%% [ x == y ]" := (forall x, S x = y) (at level 0, x pattern, y at level 60).
+
+(* Case of an internal binder *)
+Notation "%%% [ y ]" := (forall x : nat, x = y) (at level 0).
+
+(* Check that the two previous notations are indeed finer *)
+Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity,
+  format "'[  ' '[  ' ∀  x  ..  y ']' ,  '/' P ']'").
+Notation "∀' x .. y , P" := (forall y, .. (forall x, P) ..)
+  (at level 200, x binder, y binder, right associativity,
+  format "'[  ' '[  ' ∀'  x  ..  y ']' ,  '/' P ']'").
+
+Check %% [x == 1].
+Check %%% [1].
+
+Notation "[[ x ]]" := (pair 1 x).
+
+Notation "( x ; y ; .. ; z )" := (pair .. (pair x y) .. z).
+Notation "[ x ; y ; .. ; z ]" := (pair .. (pair x z) .. y).
+
+(* Check which is finer *)
+Check [[ 2 ]].
+
+End MorePrecise2.
+
+Module MorePrecise3.
+
+(* This is about a binder not bound in a notation being strictly more
+   precise than a binder bound in the notation (since the notation
+   applies - a priori - stricly less often) *)
+
+Notation "%%%" := (forall x, x) (at level 0).
+
+Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity,
+  format "'[  ' '[  ' ∀  x  ..  y ']' ,  '/' P ']'").
+
+Check %%%.
+
+End MorePrecise3.

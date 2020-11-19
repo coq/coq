@@ -24,82 +24,182 @@ open Notation_term
 (**********************************************************************)
 (* Utilities                                                          *)
 
-(* helper for NVar, NVar case in eq_notation_constr *)
-let get_var_ndx id vs = try Some (List.index Id.equal id vs) with Not_found -> None
+let ldots_var = Id.of_string ".."
 
-let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 =
-(vars1 == vars2 && t1 == t2) ||
-match t1, t2 with
-| NRef gr1, NRef gr2 -> GlobRef.equal gr1 gr2
-| NVar id1, NVar id2 -> (
-   match (get_var_ndx id1 vars1,get_var_ndx id2 vars2) with
-   | Some n,Some m -> Int.equal n m
-   | None  ,None   -> Id.equal id1 id2
-   | _             -> false)
-| NApp (t1, a1), NApp (t2, a2) ->
-  (eq_notation_constr vars) t1 t2 && List.equal (eq_notation_constr vars) a1 a2
-| NHole (_, _, _), NHole (_, _, _) -> true (* FIXME? *)
-| NList (i1, j1, t1, u1, b1), NList (i2, j2, t2, u2, b2) ->
-  Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
-  (eq_notation_constr vars) u1 u2 && b1 == b2
-| NLambda (na1, t1, u1), NLambda (na2, t2, u2) ->
-  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
-| NProd (na1, t1, u1), NProd (na2, t2, u2) ->
-  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
-| NBinderList (i1, j1, t1, u1, b1), NBinderList (i2, j2, t2, u2, b2) ->
-  Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
-  (eq_notation_constr vars) u1 u2 && b1 == b2
-| NLetIn (na1, b1, t1, u1), NLetIn (na2, b2, t2, u2) ->
-  Name.equal na1 na2 && eq_notation_constr vars b1 b2 &&
-  Option.equal (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
-| NCases (_, o1, r1, p1), NCases (_, o2, r2, p2) -> (* FIXME? *)
-  let eqpat (p1, t1) (p2, t2) =
-    List.equal cases_pattern_eq p1 p2 &&
-    (eq_notation_constr vars) t1 t2
-  in
-  let eqf (t1, (na1, o1)) (t2, (na2, o2)) =
-    let eq (i1, n1) (i2, n2) = Ind.CanOrd.equal i1 i2 && List.equal Name.equal n1 n2 in
-    (eq_notation_constr vars) t1 t2 && Name.equal na1 na2 && Option.equal eq o1 o2
-  in
-  Option.equal (eq_notation_constr vars) o1 o2 &&
-  List.equal eqf r1 r2 &&
-  List.equal eqpat p1 p2
-| NLetTuple (nas1, (na1, o1), t1, u1), NLetTuple (nas2, (na2, o2), t2, u2) ->
-  List.equal Name.equal nas1 nas2 &&
-  Name.equal na1 na2 &&
-  Option.equal (eq_notation_constr vars) o1 o2 &&
-  (eq_notation_constr vars) t1 t2 &&
-  (eq_notation_constr vars) u1 u2
-| NIf (t1, (na1, o1), u1, r1), NIf (t2, (na2, o2), u2, r2) ->
-  (eq_notation_constr vars) t1 t2 &&
-  Name.equal na1 na2 &&
-  Option.equal (eq_notation_constr vars) o1 o2 &&
-  (eq_notation_constr vars) u1 u2 &&
-  (eq_notation_constr vars) r1 r2
-| NRec (_, ids1, ts1, us1, rs1), NRec (_, ids2, ts2, us2, rs2) -> (* FIXME? *)
-  let eq (na1, o1, t1) (na2, o2, t2) =
-    Name.equal na1 na2 &&
-    Option.equal (eq_notation_constr vars) o1 o2 &&
-    (eq_notation_constr vars) t1 t2
-  in
-  Array.equal Id.equal ids1 ids2 &&
-  Array.equal (List.equal eq) ts1 ts2 &&
-  Array.equal (eq_notation_constr vars) us1 us2 &&
-  Array.equal (eq_notation_constr vars) rs1 rs2
-| NSort s1, NSort s2 ->
-  glob_sort_eq s1 s2
-| NCast (t1, c1), NCast (t2, c2) ->
-  (eq_notation_constr vars) t1 t2 && cast_type_eq (eq_notation_constr vars) c1 c2
-| NInt i1, NInt i2 ->
-   Uint63.equal i1 i2
-| NFloat f1, NFloat f2 ->
-  Float64.equal f1 f2
-| NArray(t1,def1,ty1), NArray(t2,def2,ty2) ->
-  Array.equal (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) def1 def2
-    && eq_notation_constr vars ty1 ty2
-| (NRef _ | NVar _ | NApp _ | NHole _ | NList _ | NLambda _ | NProd _
-  | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
-  | NRec _ | NSort _ | NCast _ | NInt _ | NFloat _ | NArray _), _ -> false
+let rec alpha_var id1 id2 = function
+  | (i1,i2)::_ when Id.equal i1 id1 -> Id.equal i2 id2
+  | (i1,i2)::_ when Id.equal i2 id2 -> Id.equal i1 id1
+  | _::idl -> alpha_var id1 id2 idl
+  | [] -> Id.equal id1 id2
+
+let cast_type_iter2 f t1 t2 = match t1, t2 with
+  | CastConv t1, CastConv t2 -> f t1 t2
+  | CastVM t1, CastVM t2 -> f t1 t2
+  | CastCoerce, CastCoerce -> ()
+  | CastNative t1, CastNative t2 -> f t1 t2
+  | (CastConv _ | CastVM _ | CastCoerce | CastNative _), _ -> raise Exit
+
+(* used to update the notation variable with the local variables used
+   in NList and NBinderList, since the iterator has its own variable *)
+let replace_var i j var = j :: List.remove Id.equal i var
+
+(* When [lt] is [true], tell if [t1] is a strict refinement of [t2]
+   (this is a partial order, so returning [false] does not mean that
+   [t2] is finer than [t1]); when [lt] is false, tell if [t1] is the
+   same pattern as [t2] *)
+
+let compare_notation_constr lt (vars1,vars2) t1 t2 =
+  (* this is used to reason up to order of notation variables *)
+  let alphameta = ref [] in
+  (* this becomes true when at least one subterm is detected as strictly smaller *)
+  let strictly_lt = ref false in
+  (* this is the stack of inner of iter patterns for comparison with a
+     new iteration or the tail of a recursive pattern *)
+  let tail = ref [] in
+  let check_alphameta id1 id2 =
+    try if not (Id.equal (List.assoc id1 !alphameta) id2) then raise Exit
+    with Not_found ->
+      if (List.mem_assoc id1 !alphameta) then raise Exit;
+      alphameta := (id1,id2) :: !alphameta in
+  let check_eq_id (vars1,vars2) renaming id1 id2 =
+    let ismeta1 = List.mem_f Id.equal id1 vars1 in
+    let ismeta2 = List.mem_f Id.equal id2 vars2 in
+    match ismeta1, ismeta2 with
+    | true, true -> check_alphameta id1 id2
+    | false, false -> if not (alpha_var id1 id2 renaming) then raise Exit
+    | false, true ->
+      if not lt then raise Exit
+      else
+        (* a binder which is not bound in the notation can be
+           considered as strictly more precise since it prevents the
+           notation variables in its scope to be bound by this binder;
+           i.e. it is strictly more precise in the sense that it
+           covers strictly less patterns than a notation where the
+           same binder is bound in the notation; this is hawever
+           disputable *)
+        strictly_lt := true
+    | true, false -> if not lt then raise Exit in
+  let check_eq_name vars renaming na1 na2 =
+    match na1, na2 with
+    | Name id1, Name id2 -> check_eq_id vars renaming id1 id2; (id1,id2)::renaming
+    | Anonymous, Anonymous -> renaming
+    | Anonymous, Name _ when lt -> renaming
+    | _ -> raise Exit in
+  let rec aux (vars1,vars2 as vars) renaming t1 t2 = match t1, t2 with
+  | NVar id1, NVar id2 when id1 = ldots_var && id2 = ldots_var -> ()
+  | _, NVar id2 when lt && id2 = ldots_var -> tail := t1 :: !tail
+  | NVar id1, _ when lt && id1 = ldots_var -> tail := t2 :: !tail
+  | NVar id1, NVar id2 -> check_eq_id vars renaming id1 id2
+  | NHole _, NVar id2 when lt && List.mem_f Id.equal id2 vars2 -> ()
+  | NVar id1, NHole (_, _, _) when lt && List.mem_f Id.equal id1 vars1 -> ()
+  | _, NVar id2 when lt && List.mem_f Id.equal id2 vars2 -> strictly_lt := true
+  | NRef gr1, NRef gr2 when GlobRef.equal gr1 gr2 -> ()
+  | NHole (_, _, _), NHole (_, _, _) -> () (* FIXME? *)
+  | _, NHole (_, _, _) when lt -> strictly_lt := true
+  | NList (i1, j1, iter1, tail1, b1), NList (i2, j2, iter2, tail2, b2)
+  | NBinderList (i1, j1, iter1, tail1, b1), NBinderList (i2, j2, iter2, tail2, b2) ->
+    if b1 <> b2 then raise Exit;
+    let vars1 = replace_var i1 j1 vars1 in
+    let vars2 = replace_var i2 j2 vars2 in
+    check_alphameta i1 i2; aux (vars1,vars2) renaming iter1 iter2; aux vars renaming tail1 tail2;
+  | NBinderList (i1, j1, iter1, tail1, b1), NList (i2, j2, iter2, tail2, b2)
+  | NList (i1, j1, iter1, tail1, b1), NBinderList (i2, j2, iter2, tail2, b2) ->
+    (* They may overlap on a unique iteration of them *)
+    let vars1 = replace_var i1 j1 vars1 in
+    let vars2 = replace_var i2 j2 vars2 in
+    aux (vars1,vars2) renaming iter1 iter2;
+    aux vars renaming tail1 tail2
+  | t1, NList (i2, j2, iter2, tail2, b2)
+  | t1, NBinderList (i2, j2, iter2, tail2, b2) when lt ->
+    (* checking if t1 is a finite iteration of the pattern *)
+    let vars2 = replace_var i2 j2 vars2 in
+    aux (vars1,vars2) renaming t1 iter2;
+    let t1 = List.hd !tail in
+    tail := List.tl !tail;
+    (* either matching a new iteration, or matching the tail *)
+    (try aux vars renaming t1 tail2 with Exit -> aux vars renaming t1 t2)
+  | NList (i1, j1, iter1, tail1, b1), t2
+  | NBinderList (i1, j1, iter1, tail1, b1), t2 when lt ->
+    (* we see the NList as a single iteration *)
+    let vars1 = replace_var i1 j1 vars1 in
+    aux (vars1,vars2) renaming iter1 t2;
+    let t2 = match !tail with
+      | t::rest -> tail := rest; t
+      | _ -> (* ".." is in a discarded fine-grained position *) raise Exit in
+    (* it had to be a single iteration of iter1 *)
+    aux vars renaming tail1 t2
+  | NApp (t1, a1), NApp (t2, a2) -> aux vars renaming t1 t2; List.iter2 (aux vars renaming) a1 a2
+  | NLambda (na1, t1, u1), NLambda (na2, t2, u2)
+  | NProd (na1, t1, u1), NProd (na2, t2, u2) ->
+    aux vars renaming t1 t2;
+    let renaming = check_eq_name vars renaming na1 na2 in
+    aux vars renaming u1 u2
+  | NLetIn (na1, b1, t1, u1), NLetIn (na2, b2, t2, u2) ->
+    aux vars renaming b1 b2;
+    Option.iter2 (aux vars renaming) t1 t2;(* TODO : subtyping? *)
+    let renaming = check_eq_name vars renaming na1 na2 in
+    aux vars renaming u1 u2
+  | NCases (_, o1, r1, p1), NCases (_, o2, r2, p2) -> (* FIXME? *)
+    let check_pat (p1, t1) (p2, t2) =
+      if not (List.equal cases_pattern_eq p1 p2) then raise Exit; (* TODO: subtyping and renaming *)
+      aux vars renaming t1 t2
+    in
+    let eqf renaming (t1, (na1, o1)) (t2, (na2, o2)) =
+      aux vars renaming t1 t2;
+      let renaming = check_eq_name vars renaming na1 na2 in
+      let eq renaming (i1, n1) (i2, n2) =
+        if not (Ind.CanOrd.equal i1 i2) then raise Exit;
+        List.fold_left2 (check_eq_name vars) renaming n1 n2 in
+        Option.fold_left2 eq renaming o1 o2 in
+    let renaming = List.fold_left2 eqf renaming r1 r2 in
+    Option.iter2 (aux vars renaming) o1 o2;
+    List.iter2 check_pat p1 p2
+  | NLetTuple (nas1, (na1, o1), t1, u1), NLetTuple (nas2, (na2, o2), t2, u2) ->
+    aux vars renaming t1 t2;
+    let renaming = check_eq_name vars renaming na1 na2 in
+    Option.iter2 (aux vars renaming) o1 o2;
+    let renaming' = List.fold_left2 (check_eq_name vars) renaming nas1 nas2 in
+    aux vars renaming' u1 u2
+  | NIf (t1, (na1, o1), u1, r1), NIf (t2, (na2, o2), u2, r2) ->
+    aux vars renaming t1 t2;
+    aux vars renaming u1 u2;
+    aux vars renaming r1 r2;
+    let renaming = check_eq_name vars renaming na1 na2 in
+    Option.iter2 (aux vars renaming) o1 o2
+  | NRec (_, ids1, ts1, us1, rs1), NRec (_, ids2, ts2, us2, rs2) -> (* FIXME? *)
+    let eq renaming (na1, o1, t1) (na2, o2, t2) =
+      Option.iter2 (aux vars renaming) o1 o2;
+      aux vars renaming t1 t2;
+      check_eq_name vars renaming na1 na2
+    in
+    let renaming = Array.fold_left2 (fun r id1 id2 -> check_eq_id vars r id1 id2; (id1,id2)::r) renaming ids1 ids2 in
+    let renamings = Array.map2 (List.fold_left2 eq renaming) ts1 ts2 in
+    Array.iter3 (aux vars) renamings us1 us2;
+    Array.iter3 (aux vars) (Array.map ((@) renaming) renamings) rs1 rs2
+  | NSort s1, NSort s2 when glob_sort_eq s1 s2 -> ()
+  | NCast (t1, c1), NCast (t2, c2) ->
+    aux vars renaming t1 t2;
+    cast_type_iter2 (aux vars renaming) c1 c2
+  | NInt i1, NInt i2 when Uint63.equal i1 i2 -> ()
+  | NFloat f1, NFloat f2 when Float64.equal f1 f2 -> ()
+  | NArray(t1,def1,ty1), NArray(t2,def2,ty2) ->
+    Array.iter2 (aux vars renaming) t1 t2;
+    aux vars renaming def1 def2;
+    aux vars renaming ty1 ty2
+  | (NRef _ | NVar _ | NApp _ | NHole _ | NList _ | NLambda _ | NProd _
+    | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
+    | NRec _ | NSort _ | NCast _ | NInt _ | NFloat _ | NArray _), _ -> raise Exit in
+  try
+    let _ = aux (vars1,vars2) [] t1 t2 in
+    if not lt then
+      (* Check that order of notation metavariables does not matter *)
+      List.iter2 check_alphameta vars1 vars2;
+    not lt || !strictly_lt
+  with Exit | (* Option.iter2: *) Option.Heterogeneous | Invalid_argument _ -> false
+
+let eq_notation_constr vars t1 t2 = t1 == t2 || compare_notation_constr false vars t1 t2
+
+let strictly_finer_notation_constr vars t1 t2 = compare_notation_constr true vars t1 t2
 
 (**********************************************************************)
 (* Re-interpret a notation as a glob_constr, taking care of binders   *)
@@ -153,8 +253,6 @@ let rec subst_glob_vars l gc = DAst.map (function
   | GHole (x,naming,arg) -> GHole (subst_binder_type_vars l x,naming,arg)
   | _ -> DAst.get (map_glob_constr (subst_glob_vars l) gc) (* assume: id is not binding *)
   ) gc
-
-let ldots_var = Id.of_string ".."
 
 type 'a binder_status_fun = {
   no : 'a -> 'a;
@@ -748,12 +846,6 @@ let is_bindinglist_meta id metas =
   with Not_found -> false
 
 exception No_match
-
-let rec alpha_var id1 id2 = function
-  | (i1,i2)::_ when Id.equal i1 id1 -> Id.equal i2 id2
-  | (i1,i2)::_ when Id.equal i2 id2 -> Id.equal i1 id1
-  | _::idl -> alpha_var id1 id2 idl
-  | [] -> Id.equal id1 id2
 
 let alpha_rename alpmetas v =
   if alpmetas == [] then v

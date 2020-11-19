@@ -56,6 +56,7 @@ sig
     (int -> 'a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
   val map_left : ('a -> 'b) -> 'a array -> 'b array
   val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
+  val iter3 : ('a -> 'b -> 'c -> unit) -> 'a array -> 'b array -> 'c array -> unit
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
@@ -391,6 +392,13 @@ let iter2_i f v1 v2 =
   let len2 = Array.length v2 in
   let () = if not (Int.equal len2 len1) then invalid_arg "Array.iter2" in
   for i = 0 to len1 - 1 do f i (uget v1 i) (uget v2 i) done
+
+let iter3 f v1 v2 v3 =
+  let len1 = Array.length v1 in
+  let len2 = Array.length v2 in
+  let len3 = Array.length v3 in
+  let () = if not (Int.equal len2 len1) || not (Int.equal len1 len3) then invalid_arg "Array.iter3" in
+  for i = 0 to len1 - 1 do f (uget v1 i) (uget v2 i) (uget v3 i) done
 
 let map_right f a =
   let l = length a in
