@@ -147,7 +147,7 @@ Specification language, type inference
   This makes typeclasses with declared modes more robust with respect to the
   order of resolution.
   (`#10858 <https://github.com/coq/coq/pull/10858>`_,
-  fixes `#9058 <https://github.com/coq/coq/issues/9058>_`, by Matthieu Sozeau).
+  fixes `#9058 <https://github.com/coq/coq/issues/9058>`_, by Matthieu Sozeau).
 - **Added:**
   Warn when manual implicit arguments are used in unexpected positions
   of a term (e.g. in `Check id (forall {x}, x)`) or when an implicit
