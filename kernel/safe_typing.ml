@@ -1273,7 +1273,7 @@ let export ?except ~output_native_objects senv dir =
   in
   let ast, symbols =
     if output_native_objects then
-      Nativelibrary.dump_library mp dir senv.env str
+      Nativelibrary.dump_library mp senv.env str
     else [], Nativevalues.empty_symbols
   in
   let lib = {
