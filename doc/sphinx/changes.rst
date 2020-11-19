@@ -533,8 +533,8 @@ Flags, options and attributes
 - **Removed:**
   Unqualified ``polymorphic``, ``monomorphic``, ``template``,
   ``notemplate`` attributes (they were deprecated since Coq 8.10).
-  Use :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
-  :attr:`universes(template)` and :attr:`universes(notemplate)` instead
+  Use :attr:`universes(polymorphic)`, ``universes(monomorphic)``,
+  :attr:`universes(template)` and ``universes(notemplate)`` instead
   (`#11663 <https://github.com/coq/coq/pull/11663>`_, by Théo Zimmermann).
 - **Deprecated:**
   :flag:`Hide Obligations` flag
@@ -545,7 +545,7 @@ Flags, options and attributes
   <https://github.com/coq/coq/pull/11162>`_, by Enrico Tassi).
 - **Added:**
   New attributes supported when defining an inductive type
-  :attr:`universes(cumulative)`, :attr:`universes(noncumulative)` and
+  :attr:`universes(cumulative)`, ``universes(noncumulative)`` and
   :attr:`private(matching)`, which correspond to legacy attributes
   ``Cumulative``, ``NonCumulative``, and the previously undocumented
   ``Private`` (`#11665 <https://github.com/coq/coq/pull/11665>`_, by

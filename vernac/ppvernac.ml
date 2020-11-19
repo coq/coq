@@ -1331,20 +1331,10 @@ let pr_control_flag (p : control_flag) =
 
 let pr_vernac_control flags = Pp.prlist pr_control_flag flags
 
-let rec pr_vernac_flag (k, v) =
-  let k = keyword k in
-  let open Attributes in
-  match v with
-  | VernacFlagEmpty -> k
-  | VernacFlagLeaf v -> k ++ str " = " ++ qs v
-  | VernacFlagList m -> k ++ str "( " ++ pr_vernac_flags m ++ str " )"
-and pr_vernac_flags m =
-  prlist_with_sep (fun () -> str ", ") pr_vernac_flag m
-
 let pr_vernac_attributes =
   function
   | [] -> mt ()
-  | flags ->  str "#[" ++ pr_vernac_flags flags ++ str "]" ++ cut ()
+  | flags ->  str "#[" ++ prlist_with_sep pr_comma Attributes.pr_vernac_flag flags ++ str "]" ++ cut ()
 
 let pr_vernac ({v = {control; attrs; expr}} as v) =
   tag_vernac v

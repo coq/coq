@@ -37,7 +37,7 @@ Module Yes.
 End Yes.
 
 Module No.
-  #[universes(notemplate)]
+  #[universes(template=no)]
   Inductive Box (A:Type) : Type := box : A -> Box A.
 
   About Box.

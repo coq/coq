@@ -369,6 +369,7 @@ this attribute`.
    attributes ::= {* #[ {*, @attribute } ] } {* @legacy_attr }
    attribute ::= @ident {? @attr_value }
    attr_value ::= = @string
+   | = @ident
    | ( {*, @attribute } )
    legacy_attr ::= {| Local | Global }
    | {| Polymorphic | Monomorphic }
@@ -379,21 +380,22 @@ this attribute`.
 The order of top-level attributes doesn't affect their meaning.  ``#[foo,bar]``, ``#[bar,foo]``,
 ``#[foo]#[bar]`` and ``#[bar]#[foo]`` are equivalent.
 
+:gdef:`Boolean attributes <boolean attribute>` take the form :n:`@ident__attr{? = {| yes | no } }`.
+When the :n:`{| yes | no }` value is omitted, the default is :n:`yes`.
+
 The legacy attributes (:n:`@legacy_attr`) provide an older, alternate syntax
 for certain attributes.  They are equivalent to new attributes as follows:
 
-================  ================================
-Legacy attribute  New attribute
-================  ================================
-`Local`           :attr:`local`
-`Global`          :attr:`global`
-`Polymorphic`     :attr:`universes(polymorphic)`
-`Monomorphic`     :attr:`universes(monomorphic)`
-`Cumulative`      :attr:`universes(cumulative)`
-`NonCumulative`   :attr:`universes(noncumulative)`
-`Private`         :attr:`private(matching)`
-`Program`         :attr:`program`
-================  ================================
+=============================  ================================
+Legacy attribute               New attribute
+=============================  ================================
+`Local`                        :attr:`local`
+`Global`                       :attr:`global`
+`Polymorphic`, `Monomorphic`   :attr:`universes(polymorphic)`
+`Cumulative`, `NonCumulative`  :attr:`universes(cumulative)`
+`Private`                      :attr:`private(matching)`
+`Program`                      :attr:`program`
+=============================  ================================
 
 Attributes appear in the HTML documentation in blue or gray boxes
 after the label "Attribute".  In the pdf, they appear after the

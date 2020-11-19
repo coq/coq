@@ -17,10 +17,8 @@ Variants
    this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
-   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
-   :attr:`universes(noncumulative)` and :attr:`private(matching)`
-   attributes.
+   :attr:`universes(template)`, :attr:`universes(cumulative)`, and
+   :attr:`private(matching)` attributes.
 
    .. exn:: The @natural th argument of @ident must be @ident in @type.
       :undocumented:
