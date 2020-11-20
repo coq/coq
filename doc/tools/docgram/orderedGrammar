@@ -653,7 +653,7 @@ ref_or_pattern_occ: [
 
 occs_nums: [
 | LIST1 [ natural | ident ]
-| "-" [ natural | ident ] LIST0 int_or_var
+| "-" LIST1 [ natural | ident ]
 ]
 
 int_or_var: [
@@ -953,6 +953,7 @@ command: [
 | "Extract" "Inductive" qualid "=>" [ ident | string ] "[" LIST0 [ ident | string ] "]" OPT string      (* extraction plugin *)
 | "Show" "Extraction"      (* extraction plugin *)
 | "Proof"
+| "Proof" "using" section_var_expr
 | "Proof" "Mode" string
 | "Proof" term
 | "Abort" OPT [ "All" | ident ]
@@ -1033,7 +1034,7 @@ command: [
 | "Typeclasses" "Opaque" LIST1 qualid
 | "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" [ "bfs" | "dfs" ] ")" ) OPT natural
 | "Proof" "with" ltac_expr OPT [ "using" section_var_expr ]
-| "Proof" "using" section_var_expr OPT [ "with" ltac_expr ]
+| "Proof" "using" section_var_expr "with" ltac_expr
 | "Tactic" "Notation" OPT ( "(" "at" "level" natural ")" ) LIST1 ltac_production_item ":=" ltac_expr
 | "Print" "Rewrite" "HintDb" ident
 | "Print" "Ltac" qualid
@@ -1969,6 +1970,7 @@ or_and_intropattern_loc: [
 
 as_or_and_ipat: [
 | "as" or_and_intropattern_loc
+| "as" equality_intropattern
 ]
 
 eqn_ipat: [

@@ -234,9 +234,7 @@ GRAMMAR EXTEND Gram
   ;
   occs_nums:
     [ [ nl = LIST1 nat_or_var -> { OnlyOccurrences nl }
-      | "-"; n = nat_or_var; nl = LIST0 int_or_var ->
-          (* have used int_or_var instead of nat_or_var for compatibility *)
-         { AllOccurrencesBut (List.map (Locusops.or_var_map abs) (n::nl)) } ] ]
+      | "-"; nl = LIST1 nat_or_var -> { AllOccurrencesBut nl } ] ]
   ;
   occs:
     [ [ "at"; occs = occs_nums -> { occs } | -> { AllOccurrences } ] ]

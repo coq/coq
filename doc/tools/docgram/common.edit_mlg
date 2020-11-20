@@ -1939,11 +1939,6 @@ tac2rec_fields: [
 | LIST1 tac2rec_field SEP ";" OPT ";" TAG Ltac2
 ]
 
-(* todo: weird productions, ints only after an initial "-"??:
-  occs_nums: [
-  | LIST1 [ natural | ident ]
-  | "-" [ natural | ident ] LIST0 int_or_var
-*)
 ltac2_occs_nums: [
 | DELETE LIST1 nat_or_anti      (* Ltac2 plugin *)
 | REPLACE "-" nat_or_anti LIST0 nat_or_anti      (* Ltac2 plugin *)

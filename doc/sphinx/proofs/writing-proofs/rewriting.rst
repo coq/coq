@@ -320,7 +320,7 @@ Performing computations
    ref_or_pattern_occ ::= @reference {? at @occs_nums }
    | @one_term {? at @occs_nums }
    occs_nums ::= {+ {| @natural | @ident } }
-   | - {| @natural | @ident } {* @int_or_var }
+   | - {+ {| @natural | @ident } }
    int_or_var ::= @integer
    | @ident
    unfold_occ ::= @reference {? at @occs_nums }
