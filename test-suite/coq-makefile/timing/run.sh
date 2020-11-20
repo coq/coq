@@ -3,6 +3,9 @@
 #set -x
 set -e
 
+NONATIVECOMP=$(grep "let native_compiler = NativeOff" ../../../config/coq_config.ml)||true
+if [[ ! $NONATIVECOMP ]]; then exit 0 ; fi
+
 . ../template/path-init.sh
 
 # reset MAKEFLAGS so that, e.g., `make -C test-suite -B coq-makefile` doesn't give us issues

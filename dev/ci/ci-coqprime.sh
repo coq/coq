@@ -5,4 +5,5 @@ ci_dir="$(dirname "$0")"
 
 git_download coqprime
 
+export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/coqprime" && make && make install)

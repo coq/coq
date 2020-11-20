@@ -36,7 +36,8 @@ let set_type_in_type () =
 
 type color = [`ON | `AUTO | `EMACS | `OFF]
 
-type native_compiler = NativeOff | NativeOn of { ondemand : bool }
+type native_compiler = Coq_config.native_compiler =
+  NativeOff | NativeOn of { ondemand : bool }
 
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
@@ -96,10 +97,7 @@ type t = {
 
 let default_toplevel = Names.(DirPath.make [Id.of_string "Top"])
 
-let default_native =
-  if Coq_config.native_compiler
-  then NativeOn {ondemand=true}
-  else NativeOff
+let default_native = Coq_config.native_compiler
 
 let default_logic_config = {
   impredicative_set = Declarations.PredicativeSet;
@@ -301,7 +299,7 @@ let get_native_compiler s =
     | ("no" | "off") -> NativeOff
     | _ ->
        error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler") in
-  if not Coq_config.native_compiler && n <> NativeOff then
+  if Coq_config.native_compiler = NativeOff && n <> NativeOff then
     let () = warn_no_native_compiler s in
     NativeOff
   else

@@ -5,6 +5,7 @@ ci_dir="$(dirname "$0")"
 
 git_download compcert
 
+export COQCOPTS='-native-compiler no -w -undeclared-scope -w -omega-is-deprecated'
 ( cd "${CI_BUILD_DIR}/compcert" && \
       ./configure -ignore-coq-version x86_32-linux && \
       make && \

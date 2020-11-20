@@ -225,6 +225,8 @@ let short_date, full_date = get_date ()
 
 type ide = Opt | Byte | No
 
+type nativecompiler = NativeYes | NativeNo | NativeOndemand
+
 type preferences = {
   prefix : string option;
   local : bool;
@@ -252,7 +254,7 @@ type preferences = {
   bin_annot : bool;
   annot : bool;
   bytecodecompiler : bool;
-  nativecompiler : bool;
+  nativecompiler : nativecompiler;
   coqwebsite : string;
   force_caml_version : bool;
   force_findlib_version : bool;
@@ -288,7 +290,8 @@ let default = {
   bin_annot = false;
   annot = false;
   bytecodecompiler = true;
-  nativecompiler = not (os_type_win32 || os_type_cygwin);
+  nativecompiler =
+    if os_type_win32 || os_type_cygwin then NativeNo else NativeOndemand;
   coqwebsite = "http://coq.inria.fr/";
   force_caml_version = false;
   force_findlib_version = false;
@@ -332,6 +335,12 @@ let get_ide = function
   | "no" -> No
   | s -> raise (Arg.Bad ("(opt|byte|no) argument expected instead of "^s))
 
+let get_native = function
+  | "yes" -> NativeYes
+  | "no" -> NativeNo
+  | "ondemand" -> NativeOndemand
+  | s -> raise (Arg.Bad ("(yes|no|ondemand) argument expected instead of "^s))
+
 let arg_bool f = Arg.String (fun s -> prefs := f !prefs (get_bool s))
 
 let arg_string f = Arg.String (fun s -> prefs := f !prefs s)
@@ -345,6 +354,8 @@ let arg_set_option f = Arg.Unit (fun () -> prefs := f !prefs (Some true))
 let arg_clear_option f = Arg.Unit (fun () -> prefs := f !prefs (Some false))
 
 let arg_ide f = Arg.String (fun s -> prefs := f !prefs (Some (get_ide s)))
+
+let arg_native f = Arg.String (fun s -> prefs := f !prefs (get_native s))
 
 let arg_profile = Arg.String (fun s -> prefs := Profiles.get s !prefs)
 
@@ -407,8 +418,11 @@ let args_options = Arg.align [
     " Dumps ml binary annotation files while compiling Coq (e.g. for Merlin)";
   "-bytecode-compiler", arg_bool (fun p bytecodecompiler -> { p with bytecodecompiler }),
     "(yes|no) Enable Coq's bytecode reduction machine (VM)";
-  "-native-compiler", arg_bool (fun p nativecompiler -> { p with nativecompiler }),
-    "(yes|no) Compilation to native code for conversion and normalization";
+  "-native-compiler", arg_native (fun p nativecompiler -> { p with nativecompiler }),
+    "(yes|no|ondemand) Compilation to native code for conversion and normalization
+     yes: -native-compiler option of coqc will default to 'yes', stdlib will be precompiled
+     no: no native compilation available at all
+     ondemand (default): -native-compiler option of coqc will default to 'ondemand', stdlib will not be precompiled";
   "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
     " URL of the coq website";
   "-force-caml-version", arg_set (fun p force_caml_version -> { p with force_caml_version }),
@@ -991,6 +1005,9 @@ let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 
 (** * Summary of the configuration *)
 
+let pr_native = function
+  | NativeYes -> "yes" | NativeNo -> "no" | NativeOndemand -> "ondemand"
+
 let print_summary () =
   let pr s = printf s in
   pr "\n";
@@ -1016,7 +1033,7 @@ let print_summary () =
   pr "  Web browser                 : %s\n" browser;
   pr "  Coq web site                : %s\n" !prefs.coqwebsite;
   pr "  Bytecode VM enabled         : %B\n" !prefs.bytecodecompiler;
-  pr "  Native Compiler enabled     : %B\n\n" !prefs.nativecompiler;
+  pr "  Native Compiler enabled     : %s\n\n" (pr_native !prefs.nativecompiler);
   if !prefs.local then
     pr "  Local build, no installation...\n"
   else
@@ -1095,7 +1112,11 @@ let write_configml f =
   pr_s "wwwstdlib" (!prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/stdlib/");
   pr_s "localwwwrefman"  ("file:/" ^ docdir ^ "/html/refman");
   pr_b "bytecode_compiler" !prefs.bytecodecompiler;
-  pr_b "native_compiler" !prefs.nativecompiler;
+  pr "type native_compiler = NativeOff | NativeOn of { ondemand : bool }\n";
+  pr "let native_compiler = %s\n"
+    (match !prefs.nativecompiler with
+     | NativeYes -> "NativeOn {ondemand=false}" | NativeNo -> "NativeOff"
+     | NativeOndemand -> "NativeOn {ondemand=true}");
 
   let core_src_dirs = [ "config"; "lib"; "clib"; "kernel"; "library";
                         "engine"; "pretyping"; "interp"; "gramlib"; "gramlib/.pack"; "parsing"; "proofs";
@@ -1217,7 +1238,7 @@ let write_makefile f =
   pr "# Option to control compilation and installation of the documentation\n";
   pr "WITHDOC=%s\n\n" (if !prefs.withdoc then "all" else "no");
   pr "# Option to produce precompiled files for native_compute\n";
-  pr "NATIVECOMPUTE=%s\n" (if !prefs.nativecompiler then "-native-compiler yes" else "");
+  pr "NATIVECOMPUTE=%s\n" (if !prefs.nativecompiler = NativeYes then "-native-compiler yes" else "");
   pr "COQWARNERROR=%s\n" (if !prefs.warn_error then "-w +default" else "");
   close_out o;
   Unix.chmod f 0o444
