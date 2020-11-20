@@ -67,6 +67,7 @@ val find_primitive_projection : Constant.t -> Projection.Repr.t option
 (** A cs_pattern characterizes the form of a component of canonical structure *)
 type cs_pattern =
     Const_cs of GlobRef.t
+  | Proj_cs of Projection.Repr.t
   | Prod_cs
   | Sort_cs of Sorts.family
   | Default_cs
@@ -88,7 +89,7 @@ val pr_cs_pattern : cs_pattern -> Pp.t
 
 type cs = GlobRef.t * inductive
 
-val lookup_canonical_conversion : (GlobRef.t * cs_pattern) -> constr * obj_typ
+val lookup_canonical_conversion : Environ.env -> (GlobRef.t * cs_pattern) -> constr * obj_typ
 val register_canonical_structure : warn:bool -> Environ.env -> Evd.evar_map ->
   cs -> unit
 val subst_canonical_structure : Mod_subst.substitution -> cs -> cs

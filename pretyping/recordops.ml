@@ -144,19 +144,21 @@ type obj_typ = {
 
 type cs_pattern =
     Const_cs of GlobRef.t
+  | Proj_cs of Projection.Repr.t
   | Prod_cs
   | Sort_cs of Sorts.family
   | Default_cs
 
-let eq_cs_pattern p1 p2 = match p1, p2 with
-| Const_cs gr1, Const_cs gr2 -> GlobRef.equal gr1 gr2
+let eq_cs_pattern env p1 p2 = match p1, p2 with
+| Const_cs gr1, Const_cs gr2 -> Environ.QGlobRef.equal env gr1 gr2
+| Proj_cs p1, Proj_cs p2 -> Environ.QProjection.Repr.equal env p1 p2
 | Prod_cs, Prod_cs -> true
 | Sort_cs s1, Sort_cs s2 -> Sorts.family_equal s1 s2
 | Default_cs, Default_cs -> true
 | _ -> false
 
-let rec assoc_pat a = function
-  | ((pat, t), e) :: xs -> if eq_cs_pattern pat a then (t, e) else assoc_pat a xs
+let rec assoc_pat env a = function
+  | ((pat, t), e) :: xs -> if eq_cs_pattern env pat a then (t, e) else assoc_pat env a xs
   | [] -> raise Not_found
 
 
@@ -179,10 +181,7 @@ let rec cs_pattern_of_constr env t =
     patt, n, args @ Array.to_list vargs
   | Rel n -> Default_cs, Some n, []
   | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
-  | Proj (p, c) ->
-    let ty = Retyping.get_type_of_constr env c in
-    let _, params = Inductive.find_rectype env ty in
-    Const_cs (GlobRef.ConstRef (Projection.constant p)), None, params @ [c]
+  | Proj (p, c) -> Proj_cs (Projection.repr p), None, [c]
   | Sort s -> Sort_cs (Sorts.family s), None, []
   | _ -> Const_cs (fst @@ destRef t) , None, []
 
@@ -238,6 +237,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
 
 let pr_cs_pattern = function
     Const_cs c -> Nametab.pr_global_env Id.Set.empty c
+  | Proj_cs p -> Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef (Projection.Repr.constant p))
   | Prod_cs -> str "_ -> _"
   | Default_cs -> str "_"
   | Sort_cs s -> Sorts.pr_sort_family s
@@ -253,7 +253,7 @@ let register_canonical_structure ~warn env sigma o =
     compute_canonical_projections env ~warn o |>
     List.iter (fun ((proj, (cs_pat, _ as pat)), s) ->
       let l = try GlobRef.Map.find proj !object_table with Not_found -> [] in
-      match assoc_pat cs_pat l with
+      match assoc_pat env cs_pat l with
       | exception Not_found ->
           object_table := GlobRef.Map.add proj ((pat, s) :: l) !object_table
       | _, cs ->
@@ -320,8 +320,8 @@ let check_and_decompose_canonical_structure env sigma ref =
     error_not_structure ref (str "Got too few arguments to the record or structure constructor.");
   (ref,indsp)
 
-let lookup_canonical_conversion (proj,pat) =
-  assoc_pat pat (GlobRef.Map.find proj !object_table)
+let lookup_canonical_conversion env (proj,pat) =
+  assoc_pat env pat (GlobRef.Map.find proj !object_table)
 
 let decompose_projection sigma c args =
   match EConstr.kind sigma c with
