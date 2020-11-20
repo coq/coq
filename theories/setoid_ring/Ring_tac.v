@@ -41,7 +41,7 @@ Ltac Get_goal := match goal with [|- ?G] => G end.
 Ltac OnEquation req :=
   match goal with
   | |- req ?lhs ?rhs => (fun f => f lhs rhs)
-  | _ => (fun _ => fail "Goal is not an equation (of expected equality)")
+  | _ => (fun _ => fail "Goal is not an equation (of expected equality)" req)
   end.
 
 Ltac OnEquationHyp req h :=
