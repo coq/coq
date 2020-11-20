@@ -31,7 +31,7 @@
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
-: "${unicoq_CI_REF:=6ba053aa769326261a7f5245d90a5979972941a3}"
+: "${unicoq_CI_REF:=3dd7abd589eadb09d8eed8574ca3ec981ee7fb1f}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
@@ -252,7 +252,7 @@
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-: "${elpi_CI_REF:=f83c46ad5570eef88832bf3d527b1336a5e29242}"
+: "${elpi_CI_REF:=25d540733c8bf6142500284327d6e495487de37e}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
