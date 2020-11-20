@@ -22,9 +22,10 @@ Require Import ssreflect ssrfun.
                is_true b == the coercion of b : bool to Prop (:= b = true).
                             This is just input and displayed as `b''.
              reflect P b == the reflection inductive predicate, asserting
-                            that the logical proposition P : prop with the
-                            formula b : bool. Lemmas asserting reflect P b
-                            are often referred to as "views".
+                            that the logical proposition P : Prop holds iff
+                            the formula b : bool is equal to true. Lemmas
+                            asserting reflect P b are often referred to as
+                            "views".
   iffP, appP, sameP, rwP :: lemmas for direct manipulation of reflection
                             views: iffP is used to prove reflection from
                             logical equivalence, appP to compose views, and
@@ -33,7 +34,7 @@ Require Import ssreflect ssrfun.
                    elimT :: coercion reflect >-> Funclass, which allows the
                             direct application of `reflect' views to
                             boolean assertions.
-             decidable P <-> P is effectively decidable (:= {P} + {~ P}.
+             decidable P <-> P is effectively decidable (:= {P} + {~ P}).
     contra, contraL, ... :: contraposition lemmas.
            altP my_viewP :: natural alternative for reflection; given
                             lemma myviewP: reflect my_Prop my_formula,
