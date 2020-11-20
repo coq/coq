@@ -1003,9 +1003,9 @@ end = struct (* {{{ *)
 end (* }}} *)
 
 (* Wrapper for the proof-closing special path for Qed *)
-let stm_qed_delay_proof ?route ~proof ~pinfo ~id ~st ~loc ~control pending : Vernacstate.t =
+let stm_qed_delay_proof ?route ~proof ~id ~st ~loc ~control pending : Vernacstate.t =
   set_id_for_feedback ?route dummy_doc id;
-  Vernacinterp.interp_qed_delayed_proof ~proof ~pinfo ~st ~control (CAst.make ?loc pending)
+  Vernacinterp.interp_qed_delayed_proof ~proof ~st ~control (CAst.make ?loc pending)
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
@@ -1470,7 +1470,7 @@ end = struct (* {{{ *)
         (* Unfortunately close_future_proof and friends are not pure so we need
            to set the state manually here *)
           State.unfreeze st;
-          let pobject, pinfo =
+          let pobject =
             PG_compat.close_future_proof ~feedback_id:stop (Future.from_val proof) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
@@ -1478,7 +1478,7 @@ end = struct (* {{{ *)
           try
             let _pstate =
               stm_qed_delay_proof ~st ~id:stop
-                ~proof:pobject ~pinfo ~loc ~control:[] (Proved (opaque,None)) in
+                ~proof:pobject ~loc ~control:[] (Proved (opaque,None)) in
             ()
           with exn ->
             (* If [stm_qed_delay_proof] fails above we need to use the
@@ -1620,7 +1620,7 @@ end = struct (* {{{ *)
       else begin
       let opaque = Opaque in
 
-      let proof, pinfo =
+      let proof =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true in
 
       (* We jump at the beginning since the kernel handles side effects by also
@@ -1634,7 +1634,7 @@ end = struct (* {{{ *)
        *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
-      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~pinfo ~loc ~control:[] (Proved (opaque,None)));
+      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~loc ~control:[] (Proved (opaque,None)));
       (* Is this name the same than the one in scope? *)
       let name = Declare.Proof.get_po_name proof in
       `OK name
@@ -2215,13 +2215,13 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepDefined ->
                         CErrors.anomaly (Pp.str "Cannot delegate transparent proofs, this is a bug in the STM.")
                     in
-                    let proof, pinfo =
+                    let proof =
                       PG_compat.close_future_proof ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_interp_state ~marshallable:false in
                     let control, pe = extract_pe x in
-                    ignore(stm_qed_delay_proof ~id ~st ~proof ~pinfo ~loc ~control pe);
+                    ignore(stm_qed_delay_proof ~id ~st ~proof ~loc ~control pe);
                     feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
@@ -2260,9 +2260,9 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let st = Vernacstate.freeze_interp_state ~marshallable:false in
                 let _st = match proof with
                   | None ->  stm_vernac_interp id st x
-                  | Some (proof, pinfo) ->
+                  | Some proof ->
                     let control, pe = extract_pe x in
-                    stm_qed_delay_proof ~id ~st ~proof ~pinfo ~loc ~control pe
+                    stm_qed_delay_proof ~id ~st ~proof ~loc ~control pe
                 in
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at ?loc:x.expr.CAst.loc "proof_check_time"
