@@ -5,4 +5,5 @@ ci_dir="$(dirname "$0")"
 
 git_download engine_bench
 
+export COQEXTRAFLAGS='-native-compiler ondemand'
 ( cd "${CI_BUILD_DIR}/engine_bench" && make coq && make coq-perf-Sanity )

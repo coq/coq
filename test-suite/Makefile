@@ -252,7 +252,12 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  (echo "\
+	     bugs/closed/bug_3783.v \
+	     bugs/closed/bug_4157.v \
+	     bugs/closed/bug_5127.v \
+	   " | grep -q "$<") && no_native="-native-compiler no"; \
+	  $(coqc) $$no_native "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

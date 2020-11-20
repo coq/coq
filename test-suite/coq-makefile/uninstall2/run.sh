@@ -19,5 +19,8 @@ make uninstall-doc DSTROOT="$PWD/tmp"
 ) | sort -u > actual
 sort -u > desired <<EOT
 .
+./test
+./test/sub
 EOT
+(coqc -config | grep -q "NATIVE_COMPILER_DEFAULT=yes") || sed -i.bak '/test/d' desired
 exec diff -u desired actual
