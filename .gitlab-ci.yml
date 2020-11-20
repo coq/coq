@@ -78,7 +78,6 @@ before_script:
       - config/Makefile
       - config/coq_config.py
       - config/coq_config.ml
-      - test-suite/misc/universes/all_stdlib.v
       - dmesg.txt
     expire_in: 1 week
   script:
@@ -95,7 +94,6 @@ before_script:
     - echo 'start:coq.build'
     - make -j "$NJOBS" byte
     - make -j "$NJOBS" world $EXTRA_TARGET
-    - make test-suite/misc/universes/all_stdlib.v
     - echo 'end:coq:build'
 
     - echo 'start:coq.install'

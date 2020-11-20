@@ -253,7 +253,6 @@ docclean:
 
 archclean: clean-ide optclean voclean plugin-tutorialclean
 	rm -rf _build _build_boot
-	rm -f $(ALLSTDLIB).*
 
 optclean:
 	rm -f $(COQTOPEXE) $(CHICKEN) $(TOPBINOPT)
