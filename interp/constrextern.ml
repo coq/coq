@@ -85,7 +85,7 @@ let is_reserved_type na t =
   | Name id ->
     try
       let pat = Reserve.find_reserved_type id in
-      let _ = match_notation_constr false t ([],pat) in
+      let _ = match_notation_constr ~print_univ:false t ~vars:Id.Set.empty ([],pat) in
       true
     with Not_found | No_match -> false
 
@@ -1273,7 +1273,7 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
           | AppBoundedNotation _ -> raise No_match in
         (* Try matching ... *)
         let terms,termlists,binders,binderlists =
-          match_notation_constr !print_universes t pat in
+          match_notation_constr ~print_univ:(!print_universes) t ~vars pat in
         (* Try availability of interpretation ... *)
         match keyrule with
           | NotationRule (_,ntn as specific_ntn) ->
@@ -1293,20 +1293,20 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
               | Some (scopt,key) ->
                   let scopes' = Option.List.cons scopt (snd scopes) in
                   let l =
-                    List.map (fun (c,(subentry,(scopt,scl))) ->
+                    List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
                       extern (* assuming no overloading: *) true
                         (subentry,(scopt,scl@scopes')) vars c)
                       terms in
                   let ll =
-                    List.map (fun (c,(subentry,(scopt,scl))) ->
-                      List.map (extern true (subentry,(scopt,scl@scopes')) vars) c)
+                    List.map (fun ((vars,l),(subentry,(scopt,scl))) ->
+                      List.map (extern true (subentry,(scopt,scl@scopes')) vars) l)
                       termlists in
                   let bl =
-                    List.map (fun (bl,(subentry,(scopt,scl))) ->
+                    List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
                       mkCPatOr (List.map (extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes')) vars) bl))
                       binders in
                   let bll =
-                    List.map (fun (bl,(subentry,(scopt,scl))) ->
+                    List.map (fun ((vars,bl),(subentry,(scopt,scl))) ->
                       pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) vars bl))
                       binderlists in
                   let c = make_notation loc specific_ntn (l,ll,bl,bll) in
@@ -1316,7 +1316,7 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
                   CAst.make ?loc @@ extern_applied_notation inctx nallargs argsimpls c args)
           | SynDefRule kn ->
               let l =
-                List.map (fun (c,(subentry,(scopt,scl))) ->
+                List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
                   extern true (subentry,(scopt,scl@snd scopes)) vars c)
                   terms in
               let cf = Nametab.shortest_qualid_of_syndef ?loc vars kn in
