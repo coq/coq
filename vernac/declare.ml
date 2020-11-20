@@ -39,8 +39,10 @@ module Hook = struct
   let make_g hook = CEphemeron.create hook
   let make (hook : S.t -> unit) : t = CEphemeron.create (fun x () -> hook x)
 
-  let call_g ?hook x s = Option.cata (fun hook -> CEphemeron.get hook x s) s hook
-  let call ?hook x = Option.iter (fun hook -> CEphemeron.get hook x ()) hook
+  let hcall hook x s = CEphemeron.default hook (fun _ x -> x) x s
+
+  let call_g ?hook x s = Option.cata (fun hook -> hcall hook x s) s hook
+  let call ?hook x = Option.iter (fun hook -> hcall hook x ()) hook
 
 end
 
@@ -1367,14 +1369,6 @@ module Proof_info = struct
     ; proof_ending = CEphemeron.create proof_ending
     }
 
-  (* This is used due to a deficiency on the API, should fix *)
-  let add_first_thm ~pinfo ~name ~typ ~impargs =
-    let cinfo : Constr.t CInfo.t = CInfo.make ~name ~impargs ~typ:(EConstr.Unsafe.to_constr typ) () in
-    { pinfo with cinfo = cinfo :: pinfo.cinfo }
-
-  (* This is called by the STM, and we have to fixup cinfo later as
-     indeed it will not be correct *)
-  let default () = make ~cinfo:[] ~info:(Info.make ()) ()
 end
 
 type t =
@@ -1388,7 +1382,6 @@ type t =
 
 (*** Proof Global manipulation ***)
 
-let info { pinfo } = pinfo
 let get ps = ps.proof
 let get_name ps = (Proof.data ps.proof).Proof.name
 let get_initial_euctx ps = ps.initial_euctx
@@ -1566,6 +1559,7 @@ type proof_object =
   (* [name] only used in the STM *)
   ; entries : Evd.side_effects proof_entry list
   ; uctx: UState.t
+  ; pinfo : Proof_info.t
   }
 
 let get_po_name { name } = name
@@ -1673,7 +1667,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
     definition_entry_core ~opaque ?using ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
   let entries = CList.map make_entry elist  in
-  { name; entries; uctx }
+  { name; entries; uctx; pinfo }
 
 type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
@@ -1718,7 +1712,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
     |> delayed_definition_entry ~opaque ~feedback_id ~using ~univs ~types
   in
   let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in
-  { name; entries; uctx = initial_euctx }
+  { name; entries; uctx = initial_euctx; pinfo }
 
 let close_future_proof = close_proof_delayed
 
@@ -1961,7 +1955,7 @@ let compute_proof_using_for_admitted proof typ pproofs =
 let finish_admitted ~pm ~pinfo ~uctx ~sec_vars ~univs =
   let cst = MutualEntry.declare_variable ~pinfo ~uctx ~sec_vars ~univs in
   (* If the constant was an obligation we need to update the program map *)
-  match CEphemeron.get pinfo.Proof_info.proof_ending with
+  match CEphemeron.default pinfo.Proof_info.proof_ending Proof_ending.Regular with
   | Proof_ending.End_obligation oinfo ->
     Obls_.obligation_admitted_terminator ~pm oinfo uctx (List.hd cst)
   | _ -> pm
@@ -2083,7 +2077,7 @@ let save ~pm ~proof ~opaque ~idopt =
   let proof_info = process_idopt_for_save ~idopt proof.pinfo in
   finalize_proof ~pm proof_obj proof_info
 
-let save_regular ~proof ~opaque ~idopt =
+let save_regular ~(proof : t) ~opaque ~idopt =
   let open Proof_ending in
   match CEphemeron.default proof.pinfo.Proof_info.proof_ending Regular with
   | Regular ->
@@ -2094,8 +2088,8 @@ let save_regular ~proof ~opaque ~idopt =
 (***********************************************************************)
 (* Special case to close a lemma without forcing a proof               *)
 (***********************************************************************)
-let save_lemma_admitted_delayed ~pm ~proof ~pinfo =
-  let { entries; uctx } = proof in
+let save_lemma_admitted_delayed ~pm ~proof =
+  let { entries; uctx; pinfo } = proof in
   if List.length entries <> 1 then
     CErrors.user_err Pp.(str "Admitted does not support multiple statements");
   let { proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
@@ -2106,16 +2100,10 @@ let save_lemma_admitted_delayed ~pm ~proof ~pinfo =
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
   finish_admitted ~pm ~uctx ~pinfo ~sec_vars ~univs
 
-let save_lemma_proved_delayed ~pm ~proof ~pinfo ~idopt =
-  (* vio2vo calls this but with invalid info, we have to workaround
-     that to add the name to the info structure *)
-  if CList.is_empty pinfo.Proof_info.cinfo then
-    let name = get_po_name proof in
-    let info = Proof_info.add_first_thm ~pinfo ~name ~typ:EConstr.mkSet ~impargs:[] in
-    finalize_proof ~pm proof info
-  else
-    let info = process_idopt_for_save ~idopt pinfo in
-    finalize_proof ~pm proof info
+let save_lemma_proved_delayed ~pm ~proof ~idopt =
+  (* vio2vo used to call this with invalid [pinfo], now it should work fine. *)
+  let pinfo = process_idopt_for_save ~idopt proof.pinfo in
+  finalize_proof ~pm proof pinfo
 
 end (* Proof module *)
 

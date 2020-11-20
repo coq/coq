@@ -278,14 +278,6 @@ module Proof : sig
       environment and empty evar_map. *)
   val get_current_context : t -> Evd.evar_map * Environ.env
 
-  (* Internal, don't use *)
-  module Proof_info : sig
-    type t
-    (* Make a dummy value, used in the stm *)
-    val default : unit -> t
-  end
-  val info : t -> Proof_info.t
-
   (** {2 Proof delay API, warning, internal, not stable *)
 
   (* Intermediate step necessary to delegate the future.
@@ -313,13 +305,11 @@ module Proof : sig
   val save_lemma_admitted_delayed :
        pm:OblState.t
     -> proof:proof_object
-    -> pinfo:Proof_info.t
     -> OblState.t
 
   val save_lemma_proved_delayed
     : pm:OblState.t
     -> proof:proof_object
-    -> pinfo:Proof_info.t
     -> idopt:Names.lident option
     -> OblState.t * GlobRef.t list
 
