@@ -245,7 +245,7 @@
 ########################################################################
 # Equations
 ########################################################################
-: "${equations_CI_REF:=e9a672d63dabb0075dc31b7d923e849b3ce3ce09}"
+: "${equations_CI_REF:=2b341ceb72c6cc98c791db6cf23beb91b27fbc2e}"
 : "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
 
@@ -378,7 +378,7 @@
 ########################################################################
 # metacoq
 ########################################################################
-: "${metacoq_CI_REF:=f606bb3c6bf18f8545e0b9db4f4fbe4982ace56f}"
+: "${metacoq_CI_REF:=1591d9c5d8f62ae4ccc3b030d9c5c1817c76ef91}"
 : "${metacoq_CI_GITURL:=https://github.com/MetaCoq/metacoq}"
 : "${metacoq_CI_ARCHIVEURL:=${metacoq_CI_GITURL}/archive}"
 
