@@ -94,6 +94,9 @@ and cases_pattern_notation_substitution_eq (s1, n1) (s2, n2) =
   List.equal cases_pattern_expr_eq s1 s2 &&
   List.equal (List.equal cases_pattern_expr_eq) n1 n2
 
+let kinded_cases_pattern_expr_eq (p1,bk1) (p2,bk2) =
+  cases_pattern_expr_eq p1 p2 && Glob_ops.binding_kind_eq bk1 bk2
+
 let eq_universes u1 u2 =
   match u1, u2 with
   | None, None -> true
@@ -231,7 +234,7 @@ and local_binder_eq l1 l2 = match l1, l2 with
 and constr_notation_substitution_eq (e1, el1, b1, bl1) (e2, el2, b2, bl2) =
   List.equal constr_expr_eq e1 e2 &&
   List.equal (List.equal constr_expr_eq) el1 el2 &&
-  List.equal cases_pattern_expr_eq b1 b2 &&
+  List.equal kinded_cases_pattern_expr_eq b1 b2 &&
   List.equal (List.equal local_binder_eq) bl1 bl2
 
 and instance_eq (x1,c1) (x2,c2) =
@@ -268,39 +271,37 @@ let is_constructor id =
            (Nametab.locate_extended (qualid_of_ident id)))
   with Not_found -> false
 
-let rec cases_pattern_fold_names f a pt = match CAst.(pt.v) with
+let rec cases_pattern_fold_names f h nacc pt = match CAst.(pt.v) with
   | CPatRecord l ->
-    List.fold_left (fun acc (r, cp) -> cases_pattern_fold_names f acc cp) a l
-  | CPatAlias (pat,{CAst.v=na}) -> Name.fold_right f na (cases_pattern_fold_names f a pat)
+    List.fold_left (fun nacc (r, cp) -> cases_pattern_fold_names f h nacc cp) nacc l
+  | CPatAlias (pat,{CAst.v=na}) -> Name.fold_right (fun na (n,acc) -> (f na n,acc)) na (cases_pattern_fold_names f h nacc pat)
   | CPatOr (patl) ->
-    List.fold_left (cases_pattern_fold_names f) a patl
+    List.fold_left (cases_pattern_fold_names f h) nacc patl
   | CPatCstr (_,patl1,patl2) ->
-    List.fold_left (cases_pattern_fold_names f)
-      (Option.fold_left (List.fold_left (cases_pattern_fold_names f)) a patl1) patl2
+    List.fold_left (cases_pattern_fold_names f h)
+      (Option.fold_left (List.fold_left (cases_pattern_fold_names f h)) nacc patl1) patl2
   | CPatNotation (_,_,(patl,patll),patl') ->
-    List.fold_left (cases_pattern_fold_names f)
-      (List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)) patl'
-  | CPatDelimiters (_,pat) -> cases_pattern_fold_names f a pat
+    List.fold_left (cases_pattern_fold_names f h)
+      (List.fold_left (cases_pattern_fold_names f h) nacc (patl@List.flatten patll)) patl'
+  | CPatDelimiters (_,pat) -> cases_pattern_fold_names f h nacc pat
   | CPatAtom (Some qid)
       when qualid_is_ident qid && not (is_constructor @@ qualid_basename qid) ->
-      f (qualid_basename qid) a
-  | CPatPrim _ | CPatAtom _ -> a
-  | CPatCast ({CAst.loc},_) ->
-    CErrors.user_err ?loc ~hdr:"cases_pattern_fold_names"
-      (Pp.strbrk "Casts are not supported here.")
+      let (n, acc) = nacc in
+      (f (qualid_basename qid) n, acc)
+  | CPatPrim _ | CPatAtom _ -> nacc
+  | CPatCast (p,t) ->
+      let (n, acc) = nacc in
+      cases_pattern_fold_names f h (n, h acc t) p
 
-let ids_of_pattern =
-  cases_pattern_fold_names Id.Set.add Id.Set.empty
-
-let ids_of_pattern_list =
-  List.fold_left
-    (List.fold_left (cases_pattern_fold_names Id.Set.add))
-    Id.Set.empty
+let ids_of_pattern_list p =
+  fst (List.fold_left
+    (List.fold_left (cases_pattern_fold_names Id.Set.add (fun () _ -> ())))
+    (Id.Set.empty,()) p)
 
 let ids_of_cases_tomatch tms =
   List.fold_right
     (fun (_, ona, indnal) l ->
-       Option.fold_right (fun t ids -> cases_pattern_fold_names Id.Set.add ids t)
+       Option.fold_right (fun t ids -> fst (cases_pattern_fold_names Id.Set.add (fun () _ -> ()) (ids,()) t))
          indnal
          (Option.fold_right (CAst.with_val (Name.fold_right Id.Set.add)) ona l))
     tms Id.Set.empty
@@ -312,9 +313,9 @@ let rec fold_local_binders g f n acc b = let open CAst in function
     f n (fold_local_binders g f n' acc b l) t
   | CLocalDef ( { v = na },c,t)::l ->
     Option.fold_left (f n) (f n (fold_local_binders g f (Name.fold_right g na n) acc b l) c) t
-  | CLocalPattern { v = pat,t }::l ->
-    let acc = fold_local_binders g f (cases_pattern_fold_names g n pat) acc b l in
-    Option.fold_left (f n) acc t
+  | CLocalPattern pat :: l ->
+    let n, acc = cases_pattern_fold_names g (f n) (n,acc) pat in
+    fold_local_binders g f n acc b l
   | [] ->
     f n acc b
 
@@ -378,10 +379,42 @@ let names_of_constr_expr c =
 
 let occur_var_constr_expr id c = Id.Set.mem id (free_vars_of_constr_expr c)
 
+let rec fold_map_cases_pattern f h acc (CAst.{v=pt;loc} as p) = match pt with
+  | CPatRecord l ->
+    let acc, l = List.fold_left_map (fun acc (r, cp) -> let acc, cp = fold_map_cases_pattern f h acc cp in acc, (r, cp)) acc l in
+    acc, CAst.make ?loc (CPatRecord l)
+  | CPatAlias (pat,({CAst.v=na} as lna)) ->
+    let acc, p = fold_map_cases_pattern f h acc pat in
+    let acc = Name.fold_right f na acc in
+    acc, CAst.make ?loc (CPatAlias (pat,lna))
+  | CPatOr patl ->
+    let acc, patl = List.fold_left_map (fold_map_cases_pattern f h) acc patl in
+    acc, CAst.make ?loc (CPatOr patl)
+  | CPatCstr (c,patl1,patl2) ->
+    let acc, patl1 = Option.fold_left_map (List.fold_left_map (fold_map_cases_pattern f h)) acc patl1 in
+    let acc, patl2 = List.fold_left_map (fold_map_cases_pattern f h) acc patl2 in
+    acc, CAst.make ?loc (CPatCstr (c,patl1,patl2))
+  | CPatNotation (sc,ntn,(patl,patll),patl') ->
+    let acc, patl = List.fold_left_map (fold_map_cases_pattern f h) acc patl in
+    let acc, patll = List.fold_left_map (List.fold_left_map (fold_map_cases_pattern f h)) acc patll in
+    let acc, patl' = List.fold_left_map (fold_map_cases_pattern f h) acc patl' in
+    acc, CAst.make ?loc (CPatNotation (sc,ntn,(patl,patll),patl'))
+  | CPatDelimiters (d,pat) ->
+    let acc, p = fold_map_cases_pattern f h acc pat in
+    acc, CAst.make ?loc (CPatDelimiters (d,pat))
+  | CPatAtom (Some qid)
+      when qualid_is_ident qid && not (is_constructor @@ qualid_basename qid) ->
+    f (qualid_basename qid) acc, p
+  | CPatPrim _ | CPatAtom _ -> (acc,p)
+  | CPatCast (pat,t) ->
+    let acc, pat = fold_map_cases_pattern f h acc pat in
+    let t = h acc t in
+    acc, CAst.make ?loc (CPatCast (pat,t))
+
 (* Used in correctness and interface *)
 let map_binder g e nal = List.fold_right (CAst.with_val (Name.fold_right g)) nal e
 
-let map_local_binders f g e bl =
+let fold_map_local_binders f g e bl =
   (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
   let open CAst in
   let h (e,bl) = function
@@ -389,9 +422,9 @@ let map_local_binders f g e bl =
       (map_binder g e nal, CLocalAssum(nal,k,f e ty)::bl)
     | CLocalDef( { loc ; v = na } as cna ,c,ty) ->
       (Name.fold_right g na e, CLocalDef(cna,f e c,Option.map (f e) ty)::bl)
-    | CLocalPattern { loc; v = pat,t } ->
-      let ids = ids_of_pattern pat in
-      (Id.Set.fold g ids e, CLocalPattern (make ?loc (pat,Option.map (f e) t))::bl) in
+    | CLocalPattern pat ->
+      let e, pat = fold_map_cases_pattern g f e pat in
+      (e, CLocalPattern pat::bl) in
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
 
@@ -400,16 +433,16 @@ let map_constr_expr_with_binders g f e = CAst.map (function
     | CApp ((p,a),l) ->
       CApp ((p,f e a),List.map (fun (a,i) -> (f e a,i)) l)
     | CProdN (bl,b) ->
-      let (e,bl) = map_local_binders f g e bl in CProdN (bl,f e b)
+      let (e,bl) = fold_map_local_binders f g e bl in CProdN (bl,f e b)
     | CLambdaN (bl,b) ->
-      let (e,bl) = map_local_binders f g e bl in CLambdaN (bl,f e b)
+      let (e,bl) = fold_map_local_binders f g e bl in CLambdaN (bl,f e b)
     | CLetIn (na,a,t,b) ->
       CLetIn (na,f e a,Option.map (f e) t,f (Name.fold_right g (na.CAst.v) e) b)
     | CCast (a,c) -> CCast (f e a, Glob_ops.map_cast_type (f e) c)
     | CNotation (inscope,n,(l,ll,bl,bll)) ->
       (* This is an approximation because we don't know what binds what *)
       CNotation (inscope,n,(List.map (f e) l,List.map (List.map (f e)) ll, bl,
-                    List.map (fun bl -> snd (map_local_binders f g e bl)) bll))
+                    List.map (fun bl -> snd (fold_map_local_binders f g e bl)) bll))
     | CGeneralization (b,a,c) -> CGeneralization (b,a,f e c)
     | CDelimiters (s,a) -> CDelimiters (s,f e a)
     | CHole _ | CEvar _ | CPatVar _ | CSort _
@@ -431,7 +464,7 @@ let map_constr_expr_with_binders g f e = CAst.map (function
       CIf (f e c,(ona,Option.map (f e') po),f e b1,f e b2)
     | CFix (id,dl) ->
       CFix (id,List.map (fun (id,n,bl,t,d) ->
-          let (e',bl') = map_local_binders f g e bl in
+          let (e',bl') = fold_map_local_binders f g e bl in
           let t' = f e' t in
           (* Note: fix names should be inserted before the arguments... *)
           let e'' = List.fold_left (fun e ({ CAst.v = id },_,_,_,_) -> g id e) e' dl in
@@ -439,7 +472,7 @@ let map_constr_expr_with_binders g f e = CAst.map (function
           (id,n,bl',t',d')) dl)
     | CCoFix (id,dl) ->
       CCoFix (id,List.map (fun (id,bl,t,d) ->
-          let (e',bl') = map_local_binders f g e bl in
+          let (e',bl') = fold_map_local_binders f g e bl in
           let t' = f e' t in
           let e'' = List.fold_left (fun e ({ CAst.v = id },_,_,_) -> g id e) e' dl in
           let d' = f e'' d in
@@ -472,7 +505,7 @@ let locs_of_notation ?loc locs ntn =
 let ntn_loc ?loc (args,argslist,binders,binderslist) =
   locs_of_notation ?loc
     (List.map constr_loc (args@List.flatten argslist)@
-     List.map cases_pattern_expr_loc binders@
+     List.map (fun (x,_) -> cases_pattern_expr_loc x) binders@
      List.map local_binders_loc binderslist)
 
 let patntn_loc ?loc (args,argslist) =

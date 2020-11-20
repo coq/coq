@@ -64,7 +64,8 @@ let notation_binder_source_eq s1 s2 = match s1, s2 with
 | NtnParsedAsIdent,  NtnParsedAsIdent -> true
 | NtnParsedAsPattern b1, NtnParsedAsPattern b2 -> b1 = b2
 | NtnBinderParsedAsConstr bk1, NtnBinderParsedAsConstr bk2 -> bk1 = bk2
-| (NtnParsedAsIdent | NtnParsedAsPattern _ | NtnBinderParsedAsConstr _), _ -> false
+| NtnParsedAsBinder,  NtnParsedAsBinder -> true
+| (NtnParsedAsIdent | NtnParsedAsPattern _ | NtnBinderParsedAsConstr _ | NtnParsedAsBinder), _ -> false
 
 let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeConstr, NtnTypeConstr -> true

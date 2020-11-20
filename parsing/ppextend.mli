@@ -28,10 +28,12 @@ val ppcmd_of_cut : ppcut -> Pp.t
 
 (** {6 Printing rules for notations} *)
 
+type pattern_quote_style = QuotedPattern | NotQuotedPattern
+
 (** Declare and look for the printing rule for symbolic notations *)
 type unparsing =
   | UnpMetaVar of entry_relative_level * Extend.side option
-  | UnpBinderMetaVar of entry_relative_level
+  | UnpBinderMetaVar of entry_relative_level * pattern_quote_style
   | UnpListMetaVar of entry_relative_level * unparsing list * Extend.side option
   | UnpBinderListMetaVar of bool * unparsing list
   | UnpTerminal of string
