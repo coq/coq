@@ -67,6 +67,14 @@ let get_type_from_constraints env sigma t =
     | _ -> raise Not_found
   else raise Not_found
 
+let sort_of_arity_with_constraints env sigma t =
+  try Reductionops.sort_of_arity env sigma t
+  with Reduction.NotArity ->
+  try
+    let t = get_type_from_constraints env sigma t in
+    Reductionops.sort_of_arity env sigma t
+  with Not_found | Reduction.NotArity -> retype_error NotAnArity
+
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
@@ -187,9 +195,7 @@ let retype ?(polyprop=true) sigma =
       let mip = lookup_mind_specif env ind in
       let paramtyps = Array.map_to_list (fun arg () ->
           let t = type_of env arg in
-          let s = try Reductionops.sort_of_arity env sigma t
-            with Reduction.NotArity -> retype_error NotAnArity
-          in
+          let s = sort_of_arity_with_constraints env sigma t in
           Sorts.univ_of_sort (ESorts.kind sigma s))
           args
       in
