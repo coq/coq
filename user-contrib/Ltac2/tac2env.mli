@@ -144,6 +144,10 @@ val ltac1_prefix : ModPath.t
 val wit_ltac2 : (Id.t CAst.t list * raw_tacexpr, Id.t list * glb_tacexpr, Util.Empty.t) genarg_type
 (** Ltac2 quotations in Ltac1 code *)
 
+val wit_ltac2_val : (Util.Empty.t, unit, Util.Empty.t) genarg_type
+(** Embedding Ltac2 closures of type [Ltac1.t -> Ltac1.t] inside Ltac1. There is
+    no relevant data because arguments are passed by conventional names. *)
+
 val wit_ltac2_constr : (raw_tacexpr, Id.Set.t * glb_tacexpr, Util.Empty.t) genarg_type
 (** Ltac2 quotations in Gallina terms *)
 

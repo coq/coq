@@ -1369,6 +1369,40 @@ let () =
 let typ_ltac2 : valexpr Geninterp.Val.typ =
   Geninterp.Val.create "ltac2:ltac2_eval"
 
+let cast_typ (type a) (tag : a Geninterp.Val.typ) (v : Geninterp.Val.t) : a =
+  let Geninterp.Val.Dyn (tag', v) = v in
+  match Geninterp.Val.eq tag tag' with
+  | None -> assert false
+  | Some Refl -> v
+
+let () =
+  let open Ltac_plugin in
+  (* This is a hack similar to Tacentries.ml_val_tactic_extend *)
+  let intern_fun _ e = Empty.abort e in
+  let subst_fun s v = v in
+  let () = Genintern.register_intern0 wit_ltac2_val intern_fun in
+  let () = Genintern.register_subst0 wit_ltac2_val subst_fun in
+  (* These are bound names and not relevant *)
+  let tac_id = Id.of_string "F" in
+  let arg_id = Id.of_string "X" in
+  let interp_fun ist () =
+    let tac = cast_typ typ_ltac2 @@ Id.Map.get tac_id ist.Tacinterp.lfun in
+    let arg = Id.Map.get arg_id ist.Tacinterp.lfun in
+    let tac = Tac2ffi.to_closure tac in
+    Tac2ffi.apply tac [of_ltac1 arg] >>= fun ans ->
+    let ans = Tac2ffi.to_ext val_ltac1 ans in
+    Ftactic.return ans
+  in
+  let () = Geninterp.register_interp0 wit_ltac2_val interp_fun in
+  define1 "ltac1_lambda" valexpr begin fun f ->
+    let body = Tacexpr.TacGeneric (Some "ltac2", in_gen (glbwit wit_ltac2_val) ()) in
+    let clos = Tacexpr.TacFun ([Name arg_id], Tacexpr.TacArg (CAst.make body)) in
+    let f = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) f in
+    let lfun = Id.Map.singleton tac_id f in
+    let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun } in
+    Proofview.tclUNIT (of_ltac1 (Tacinterp.Value.of_closure ist clos))
+  end
+
 let ltac2_eval =
   let open Ltac_plugin in
   let ml_name = {
@@ -1380,11 +1414,7 @@ let ltac2_eval =
   | tac :: args ->
     (* By convention the first argument is the tactic being applied, the rest
       being the arguments it should be fed with *)
-    let Geninterp.Val.Dyn (tag, tac) = tac in
-    let tac : valexpr = match Geninterp.Val.eq tag typ_ltac2 with
-    | None -> assert false
-    | Some Refl -> tac
-    in
+    let tac = cast_typ typ_ltac2 tac in
     let tac = Tac2ffi.to_closure tac in
     let args = List.map (fun arg -> Tac2ffi.of_ext val_ltac1 arg) args in
     Proofview.tclIGNORE (Tac2ffi.apply tac args)
