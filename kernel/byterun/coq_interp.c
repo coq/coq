@@ -716,8 +716,8 @@ value coq_interprete
             coq_extra_args = Long_val(sp[2]);
             sp += 3;
           } else {
-            /* The recursif argument is an accumulator */
-            mlsize_t num_args, i;
+            /* The recursive argument is an accumulator */
+            mlsize_t num_args, sz, i;
             value block;
             /* Construction of fixpoint applied to its [rec_pos-1] first arguments */
             Alloc_small(accu, rec_pos + 3, Closure_tag);
@@ -732,11 +732,22 @@ value coq_interprete
             accu = block;
             /* Construction of the accumulator */
             num_args = coq_extra_args - rec_pos;
-            Alloc_small(block, 3 + num_args, Closure_tag);
+            sz = 3 + num_args;
+            if (sz <= Max_young_wosize) {
+              Alloc_small(block, sz, Closure_tag);
+              Field(block, 2) = accu;
+              for (i = 3; i < sz; ++i)
+                Field(block, i) = *sp++;
+            } else {
+              // too large for Alloc_small, so use caml_alloc_shr instead
+              // it never triggers a GC, so no need for Setup_for_gc
+              block = caml_alloc_shr(sz, Closure_tag);
+              caml_initialize(&Field(block, 2), accu);
+              for (i = 3; i < sz; ++i)
+                caml_initialize(&Field(block, i), *sp++);
+            }
             Code_val(block) = accumulate;
             Field(block, 1) = Val_int(2);
-            Field(block, 2) = accu;
-            for (i = 0; i < num_args; i++) Field(block, i + 3) = *sp++;
             accu = block;
             pc = (code_t)(sp[0]);
             coq_env = sp[1];
@@ -1130,13 +1141,25 @@ value coq_interprete
 
       /* Special operations for reduction of open term */
       Instruct(ACCUMULATE) {
-        mlsize_t i, size;
+        mlsize_t i, size, sz;
         print_instr("ACCUMULATE");
         size = Wosize_val(coq_env);
-        Alloc_small(accu, size + coq_extra_args + 1, Closure_tag);
-        for(i = 0; i < size; i++) Field(accu, i) = Field(coq_env, i);
-        for(i = size; i <= coq_extra_args + size; i++)
-          Field(accu, i) = *sp++;
+        sz = size + coq_extra_args + 1;
+        if (sz <= Max_young_wosize) {
+          Alloc_small(accu, sz, Closure_tag);
+          for (i = 0; i < size; ++i)
+            Field(accu, i) = Field(coq_env, i);
+          for (i = size; i < sz; ++i)
+            Field(accu, i) = *sp++;
+        } else {
+          // too large for Alloc_small, so use caml_alloc_shr instead
+          // it never triggers a GC, so no need for Setup_for_gc
+          accu = caml_alloc_shr(sz, Closure_tag);
+          for (i = 0; i < size; ++i)
+            caml_initialize(&Field(accu, i), Field(coq_env, i));
+          for (i = size; i < sz; ++i)
+            caml_initialize(&Field(accu, i), *sp++);
+        }
         pc = (code_t)(sp[0]);
         coq_env = sp[1];
         coq_extra_args = Long_val(sp[2]);
@@ -1240,13 +1263,24 @@ value coq_interprete
 
 
       Instruct(MAKEACCU) {
-        int i;
+        mlsize_t i, sz;
         print_instr("MAKEACCU");
-        Alloc_small(accu, coq_extra_args + 4, Closure_tag);
+        sz = coq_extra_args + 4;
+        if (sz <= Max_young_wosize) {
+          Alloc_small(accu, sz, Closure_tag);
+          Field(accu, 2) = Field(coq_atom_tbl, *pc);
+          for (i = 3; i < sz; ++i)
+            Field(accu, i) = *sp++;
+        } else {
+          // too large for Alloc_small, so use caml_alloc_shr instead
+          // it never triggers a GC, so no need for Setup_for_gc
+          accu = caml_alloc_shr(sz, Closure_tag);
+          caml_initialize(&Field(accu, 2), Field(coq_atom_tbl, *pc));
+          for (i = 3; i < sz; ++i)
+            caml_initialize(&Field(accu, i), *sp++);
+        }
         Code_val(accu) = accumulate;
         Field(accu, 1) = Val_int(2);
-        Field(accu, 2) = Field(coq_atom_tbl, *pc);
-        for (i = 2; i < coq_extra_args + 3; i++) Field(accu, i + 1) = *sp++;
         pc = (code_t)(sp[0]);
         coq_env = sp[1];
         coq_extra_args = Long_val(sp[2]);
