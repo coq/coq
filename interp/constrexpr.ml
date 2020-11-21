@@ -83,6 +83,8 @@ type cases_pattern_expr_r =
   | CPatCast   of cases_pattern_expr * constr_expr
 and cases_pattern_expr = cases_pattern_expr_r CAst.t
 
+and kinded_cases_pattern_expr = cases_pattern_expr * Glob_term.binding_kind
+
 and cases_pattern_notation_substitution =
     cases_pattern_expr list *     (* for constr subterms *)
     cases_pattern_expr list list  (* for recursive notations *)
@@ -145,12 +147,12 @@ and recursion_order_expr = recursion_order_expr_r CAst.t
 and local_binder_expr =
   | CLocalAssum   of lname list * binder_kind * constr_expr
   | CLocalDef     of lname * constr_expr * constr_expr option
-  | CLocalPattern of (cases_pattern_expr * constr_expr option) CAst.t
+  | CLocalPattern of cases_pattern_expr
 
 and constr_notation_substitution =
     constr_expr list *      (* for constr subterms *)
     constr_expr list list * (* for recursive notations *)
-    cases_pattern_expr list *   (* for binders *)
+    kinded_cases_pattern_expr list *   (* for binders *)
     local_binder_expr list list (* for binder lists (recursive notations) *)
 
 type constr_pattern_expr = constr_expr

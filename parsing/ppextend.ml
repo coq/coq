@@ -36,9 +36,11 @@ let ppcmd_of_cut = function
   | PpFnl -> fnl ()
   | PpBrk(n1,n2) -> brk(n1,n2)
 
+type pattern_quote_style = QuotedPattern | NotQuotedPattern
+
 type unparsing =
   | UnpMetaVar of entry_relative_level * Extend.side option
-  | UnpBinderMetaVar of entry_relative_level
+  | UnpBinderMetaVar of entry_relative_level * pattern_quote_style
   | UnpListMetaVar of entry_relative_level * unparsing list * Extend.side option
   | UnpBinderListMetaVar of bool * unparsing list
   | UnpTerminal of string
@@ -50,7 +52,7 @@ type extra_unparsing_rules = (string * string) list
 
 let rec unparsing_eq unp1 unp2 = match (unp1,unp2) with
   | UnpMetaVar (p1,s1), UnpMetaVar (p2,s2) -> entry_relative_level_eq p1 p2 && s1 = s2
-  | UnpBinderMetaVar p1, UnpBinderMetaVar p2 -> entry_relative_level_eq p1 p2
+  | UnpBinderMetaVar (p1,s1), UnpBinderMetaVar (p2,s2) -> entry_relative_level_eq p1 p2 && s1 = s2
   | UnpListMetaVar (p1,l1,s1), UnpListMetaVar (p2,l2,s2) -> entry_relative_level_eq p1 p2 && List.for_all2eq unparsing_eq l1 l2 && s1 = s2
   | UnpBinderListMetaVar (b1,l1), UnpBinderListMetaVar (b2,l2) -> b1 = b2 && List.for_all2eq unparsing_eq l1 l2
   | UnpTerminal s1, UnpTerminal s2 -> String.equal s1 s2
