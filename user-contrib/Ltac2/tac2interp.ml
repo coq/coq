@@ -223,6 +223,8 @@ and eval_pure_args bnd args =
   let map e = eval_pure bnd None e in
   Array.map_of_list map args
 
+let interp_value ist tac =
+  eval_pure ist.env_ist None tac
 
 (** Cross-boundary hacks. *)
 

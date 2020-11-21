@@ -1365,8 +1365,8 @@ let () =
   let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (Some "ltac2", in_gen (rawwit wit_ltac2) v) in
   Ltac_plugin.Tacentries.create_ltac_quotation "ltac2" inject (e, None)
 
-(* Ltac1 runtime representation of Ltac2 closure quotations *)
-let typ_ltac2 : (Id.t list * glb_tacexpr) Geninterp.Val.typ =
+(* Ltac1 runtime representation of Ltac2 closures. *)
+let typ_ltac2 : valexpr Geninterp.Val.typ =
   Geninterp.Val.create "ltac2:ltac2_eval"
 
 let ltac2_eval =
@@ -1381,16 +1381,13 @@ let ltac2_eval =
     (* By convention the first argument is the tactic being applied, the rest
       being the arguments it should be fed with *)
     let Geninterp.Val.Dyn (tag, tac) = tac in
-    let (ids, tac) : Id.t list * glb_tacexpr = match Geninterp.Val.eq tag typ_ltac2 with
+    let tac : valexpr = match Geninterp.Val.eq tag typ_ltac2 with
     | None -> assert false
     | Some Refl -> tac
     in
-    let fold accu id = match Id.Map.find id ist.Geninterp.lfun with
-    | v -> Id.Map.add id (Tac2ffi.of_ext val_ltac1 v) accu
-    | exception Not_found -> assert false
-    in
-    let env_ist = List.fold_left fold Id.Map.empty ids in
-    Proofview.tclIGNORE (Tac2interp.interp { env_ist } tac)
+    let tac = Tac2ffi.to_closure tac in
+    let args = List.map (fun arg -> Tac2ffi.of_ext val_ltac1 arg) args in
+    Proofview.tclIGNORE (Tac2ffi.apply tac args)
   in
   let () = Tacenv.register_ml_tactic ml_name [|eval_fun|] in
   { Tacexpr.mltac_name = ml_name; mltac_index = 0 }
@@ -1398,7 +1395,7 @@ let ltac2_eval =
 let () =
   let open Ltac_plugin in
   let open Tacinterp in
-  let interp ist (ids, tac as self) = match ids with
+  let interp ist (ids, tac) = match ids with
   | [] ->
     (* Evaluate the Ltac2 quotation eagerly *)
     let idtac = Value.of_closure { ist with lfun = Id.Map.empty } (Tacexpr.TacId []) in
@@ -1413,6 +1410,8 @@ let () =
     let mk_arg id = Tacexpr.Reference (Locus.ArgVar (CAst.make id)) in
     let args = List.map mk_arg ids in
     let clos = Tacexpr.TacFun (nas, Tacexpr.TacML (CAst.make (ltac2_eval, mk_arg self_id :: args))) in
+    let self = GTacFun (List.map (fun id -> Name id) ids, tac) in
+    let self = Tac2interp.interp_value { env_ist = Id.Map.empty } self in
     let self = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) self in
     let ist = { ist with lfun = Id.Map.singleton self_id self } in
     Ftactic.return (Value.of_closure ist clos)
