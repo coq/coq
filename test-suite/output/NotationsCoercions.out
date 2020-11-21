@@ -1,0 +1,22 @@
+Let "x" e1 e2
+     : expr
+Let "x" e1 e2
+     : expr
+Let "x" e1 e2 : list string
+     : list string
+b = a
+     : Prop
+foo
+     : (_ BitVec 32)
+#[ r ] 0
+     : nat
+##[ r ]
+     : nat
+##[ r ]
+     : nat
+#[ r ] 0
+     : nat
+##[ r ]
+     : nat
+##[ r ]
+     : nat
