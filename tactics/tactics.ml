@@ -2635,7 +2635,7 @@ let assert_as first hd ipat t =
 (* apply in as *)
 
 let general_apply_in ?(respect_opaque=false) with_delta
-    with_destruct with_evars id lemmas ipat =
+    with_destruct with_evars id lemmas ipat then_tac =
   let tac (naming,lemma) tac id =
     apply_in_delayed_once ~respect_opaque with_delta
       with_destruct with_evars naming id lemma tac in
@@ -2653,7 +2653,8 @@ let general_apply_in ?(respect_opaque=false) with_delta
     List.map (fun lem -> (NamingMustBe (CAst.make id),lem)) first, (naming,last)
   in
   (* We chain apply_in_once, ending with an intro pattern *)
-  List.fold_right tac lemmas_target (tac last_lemma_target ipat_tac) id
+  List.fold_right tac lemmas_target
+    (tac last_lemma_target (fun id -> Tacticals.New.tclTHEN (ipat_tac id) then_tac)) id
   end
 
 (*
@@ -2666,10 +2667,10 @@ let general_apply_in ?(respect_opaque=false) with_delta
 
 let apply_in simple with_evars id lemmas ipat =
   let lemmas = List.map (fun (k,{CAst.loc;v=l}) -> k, CAst.make ?loc (fun _ sigma -> (sigma,l))) lemmas in
-  general_apply_in simple simple with_evars id lemmas ipat
+  general_apply_in simple simple with_evars id lemmas ipat Tacticals.New.tclIDTAC
 
-let apply_delayed_in simple with_evars id lemmas ipat =
-  general_apply_in ~respect_opaque:true simple simple with_evars id lemmas ipat
+let apply_delayed_in simple with_evars id lemmas ipat then_tac =
+  general_apply_in ~respect_opaque:true simple simple with_evars id lemmas ipat then_tac
 
 (*****************************)
 (* Tactics abstracting terms *)
