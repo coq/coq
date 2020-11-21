@@ -79,35 +79,7 @@ Check [1 + 1].
 
 End C.
 
-(* An example of interaction between coercion and notations from
-   Robbert Krebbers. *)
-
-Require Import String.
-
-Module D.
-
-Inductive expr :=
-  | Var : string -> expr
-  | Lam : string -> expr -> expr
-  | App : expr -> expr -> expr.
-
-Notation Let x e1 e2 := (App (Lam x e2) e1).
-
-Parameter e1 e2 : expr.
-
-Check (Let "x" e1 e2).
-
-Coercion App : expr >-> Funclass.
-
-Check (Let "x" e1 e2).
-
-Axiom free_vars :> expr -> list string.
-
-Check (Let "x" e1 e2) : list string.
-
-End D.
-
-(* Fixing bugs reported by G. Gonthier in #9207 *)
+(* Fixing overparenthesizing reported by G. Gonthier in #9207 (PR #9214, in 8.10)*)
 
 Module I.
 
@@ -151,20 +123,6 @@ Record R := { n : nat }.
 Check fun '{|n:=x|} => true.
 
 End EmptyRecordSyntax.
-
-Module L.
-
-(* Testing regression #11053 *)
-
-Section Test.
-Variables (A B : Type) (a : A) (b : B).
-Variable c : A -> B.
-Coercion c : A >-> B.
-Notation COERCION := (c).
-Check b = a.
-End Test.
-
-End L.
 
 Module M.
 
