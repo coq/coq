@@ -128,7 +128,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Basic tactics *)
   | TacIntroPattern (ev,l) -> TacIntroPattern (ev,List.map (subst_intro_pattern subst) l)
   | TacApply (a,ev,cb,cl) ->
-      TacApply (a,ev,List.map (subst_glob_with_bindings_arg subst) cb,cl)
+      TacApply (a,ev,List.map (subst_glob_with_bindings_arg subst) cb,
+                List.map (on_snd (Option.map (subst_intro_pattern subst))) cl)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,subst_glob_with_bindings_arg subst cb,
                Option.map (subst_glob_with_bindings subst) cbo)

@@ -107,7 +107,7 @@ type 'a gen_atomic_tactic_expr =
   (* Basic tactics *)
   | TacIntroPattern of evars_flag * 'dtrm intro_pattern_expr CAst.t list
   | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
-      ('nam * 'dtrm intro_pattern_expr CAst.t option) option
+      ('nam * 'dtrm intro_pattern_expr CAst.t option) list
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
   | TacCase of evars_flag * 'trm with_bindings_arg
   | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
