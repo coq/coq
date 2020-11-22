@@ -29,22 +29,32 @@ let check_for_interrupt () =
   end
 
 (** This function does not work on windows, sigh... *)
+(* This function assumes it is the only function calling [setitimer] *)
 let unix_timeout n f x =
   let open Unix in
   let timeout_handler _ = raise Timeout in
-  let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
-  let _ = setitimer ITIMER_REAL {it_interval = 0.; it_value = n} in
-  let restore_timeout () =
-    let _ = setitimer ITIMER_REAL { it_interval = 0.; it_value = 0. } in
-    Sys.set_signal Sys.sigalrm psh
-  in
-  try
-    let res = f x in
-    restore_timeout ();
-    Some res
-  with Timeout ->
-    restore_timeout ();
-    None
+  let old_timer = getitimer ITIMER_REAL in
+  (* Here we assume that the existing timer will also interrupt us. *)
+  if old_timer.it_value > 0. && old_timer.it_value <= n then Some (f x) else
+    let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
+    let old_timer = setitimer ITIMER_REAL {it_interval = 0.; it_value = n} in
+    let restore_timeout () =
+      let timer_status = getitimer ITIMER_REAL in
+      let old_timer_value = old_timer.it_value -. n +. timer_status.it_value in
+      (* We want to make sure that the parent timer triggers, even if somehow the parent timeout
+         has already passed. This should not happen, but due to timer imprecision it can happen in practice *)
+      let old_timer_value = if old_timer.it_value <= 0. then 0. else
+          (if old_timer_value <= 0. then epsilon_float else old_timer_value) in
+      let _ = setitimer ITIMER_REAL { old_timer with it_value = old_timer_value } in
+      Sys.set_signal Sys.sigalrm psh
+    in
+    try
+      let res = f x in
+      restore_timeout ();
+      Some res
+    with Timeout ->
+      restore_timeout ();
+      None
 
 
 let windows_timeout n f x =
