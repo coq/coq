@@ -257,9 +257,10 @@ let context ~poly l =
   let sigma = Evd.from_env env in
   let sigma, (_, ((_env, ctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
   (* Note, we must use the normalized evar from now on! *)
-  let sigma = Evd.minimize_universes sigma in
   let ce t = Pretyping.check_evars env sigma t in
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) ctx in
+  let sigma, ctx = Evarutil.finalize ~abort_on_undefined_evars:false
+      sigma (fun nf -> List.map (RelDecl.map_constr_het nf) ctx) in
   (* reorder, evar-normalize and add implicit status *)
   let ctx = List.rev_map (fun d ->
       let {binder_name=name}, b, t = RelDecl.to_tuple d in
@@ -267,8 +268,6 @@ let context ~poly l =
         | Anonymous -> user_err Pp.(str "Anonymous variables not allowed in contexts.")
         | Name id -> id
       in
-      let b = Option.map (EConstr.to_constr sigma) b in
-      let t = EConstr.to_constr sigma t in
       let impl = let open Glob_term in
       let search x = match x.CAst.v with
         | Some (Name id',max) when Id.equal name id' ->
