@@ -926,7 +926,7 @@ let _ = CErrors.register_handler begin function
   | _ -> None
 end
 
-let tclTIMEOUT n t =
+let tclTIMEOUTF n t =
   let open Proof in
   (* spiwack: as one of the monad is a continuation passing monad, it
      doesn't force the computation to be threaded inside the underlying
@@ -950,6 +950,8 @@ let tclTIMEOUT n t =
         Proof.update (fun _ -> i) >>
         return res
     | Util.Inr (e, info) -> tclZERO ~info e
+
+let tclTIMEOUT n t = tclTIMEOUTF (float_of_int n) t
 
 let tclTIME s t =
   let pr_time t1 t2 n msg =

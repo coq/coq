@@ -30,11 +30,12 @@ let check_for_interrupt () =
 
 (** This function does not work on windows, sigh... *)
 let unix_timeout n f x =
+  let open Unix in
   let timeout_handler _ = raise Timeout in
   let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
-  let _ = Unix.alarm n in
+  let _ = setitimer ITIMER_REAL {it_interval = 0.; it_value = n} in
   let restore_timeout () =
-    let _ = Unix.alarm 0 in
+    let _ = setitimer ITIMER_REAL { it_interval = 0.; it_value = 0. } in
     Sys.set_signal Sys.sigalrm psh
   in
   try
@@ -52,7 +53,7 @@ let windows_timeout n f x =
   let thread init =
     while not !killed do
       let cur = Unix.gettimeofday () in
-      if float_of_int n <= cur -. init then begin
+      if n <= cur -. init then begin
         interrupt := true;
         exited := true;
         Thread.exit ()
@@ -68,7 +69,7 @@ let windows_timeout n f x =
     let cur = Unix.gettimeofday () in
     (* The thread did not interrupt, but the computation took longer than
        expected. *)
-    let () = if float_of_int n <= cur -. init then begin
+    let () = if n <= cur -. init then begin
       exited := true;
       raise Sys.Break
     end in
@@ -83,7 +84,7 @@ let windows_timeout n f x =
     let () = killed := true in
     Exninfo.iraise e
 
-type timeout = { timeout : 'a 'b. int -> ('a -> 'b) -> 'a -> 'b option }
+type timeout = { timeout : 'a 'b. float -> ('a -> 'b) -> 'a -> 'b option }
 
 let timeout_fun = match Sys.os_type with
 | "Unix" | "Cygwin" -> { timeout = unix_timeout }
