@@ -29,6 +29,7 @@ let quantified_hypothesis =
   Entry.create "quantified_hypothesis"
 let destruction_arg = Entry.create "destruction_arg"
 let int_or_var = Entry.create "int_or_var"
+let nat_or_var = Entry.create "nat_or_var"
 let simple_intropattern =
   Entry.create "simple_intropattern"
 let in_clause = Entry.create "in_clause"
@@ -52,6 +53,7 @@ let () =
   let open Stdarg in
   let open Tacarg in
   register_grammar wit_int_or_var (int_or_var);
+  register_grammar wit_nat_or_var (nat_or_var);
   register_grammar wit_intro_pattern (simple_intropattern); (* To remove at end of deprecation phase *)
 (* register_grammar wit_intropattern (intropattern); *) (* To be added at end of deprecation phase *)
   register_grammar wit_simple_intropattern (simple_intropattern);

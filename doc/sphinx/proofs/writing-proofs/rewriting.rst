@@ -323,9 +323,11 @@ Performing computations
    | delta {? @delta_flag }
    ref_or_pattern_occ ::= @reference {? at @occs_nums }
    | @one_term {? at @occs_nums }
-   occs_nums ::= {+ {| @natural | @ident } }
-   | - {+ {| @natural | @ident } }
+   occs_nums ::= {+ @nat_or_var }
+   | - {+ @nat_or_var }
    int_or_var ::= @integer
+   | @ident
+   nat_or_var ::= @natural
    | @ident
    unfold_occ ::= @reference {? at @occs_nums }
    pattern_occ ::= @one_term {? at @occs_nums }

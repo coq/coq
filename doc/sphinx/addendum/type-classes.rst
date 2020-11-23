@@ -405,7 +405,7 @@ Summary of the commands
    Shows the list of instances associated with the typeclass :token:`reference`.
 
 
-.. tacn:: typeclasses eauto {? bfs } {? @int_or_var } {? with {+ @ident } }
+.. tacn:: typeclasses eauto {? bfs } {? @nat_or_var } {? with {+ @ident } }
 
    This proof search tactic uses the resolution engine that is run
    implicitly during type checking. This tactic uses a different resolution
@@ -445,11 +445,11 @@ Summary of the commands
    + Use the :cmd:`Typeclasses eauto` command to customize the behavior of
      this tactic.
 
-   :n:`@int_or_var`
+   :n:`@nat_or_var`
      Specifies the maximum depth of the search.
 
       .. warning::
-         The semantics for the limit :n:`@int_or_var`
+         The semantics for the limit :n:`@nat_or_var`
          are different than for :tacn:`auto`. By default, if no limit is given, the
          search is unbounded. Unlike :tacn:`auto`, introduction steps count against
          the limit, which might result in larger limits being necessary when

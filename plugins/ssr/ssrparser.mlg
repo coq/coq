@@ -1792,7 +1792,7 @@ GRAMMAR EXTEND Gram
       { ssrdotac_expr ~loc noindex m tac clauses }
     | IDENT "do"; tac = ssrortacarg; clauses = ssrclauses ->
       { ssrdotac_expr ~loc noindex Once tac clauses }
-    | IDENT "do"; n = int_or_var; m = ssrmmod;
+    | IDENT "do"; n = nat_or_var; m = ssrmmod;
                   tac = ssrdotac; clauses = ssrclauses ->
       { ssrdotac_expr ~loc (mk_index ~loc n) m tac clauses }
     ] ];
