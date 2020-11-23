@@ -90,6 +90,7 @@ endif
 COQC     ?= "$(COQBIN)coqc"
 COQTOP   ?= "$(COQBIN)coqtop"
 COQCHK   ?= "$(COQBIN)coqchk"
+COQNATIVE ?= "$(COQBIN)coqnative"
 COQDEP   ?= "$(COQBIN)coqdep"
 COQDOC   ?= "$(COQBIN)coqdoc"
 COQPP    ?= "$(COQBIN)coqpp"
@@ -208,8 +209,33 @@ COQEXTRAFLAGS?=
 COQCHKEXTRAFLAGS?=
 COQDOCEXTRAFLAGS?=
 
+# Find the last argument of the form "-native-compiler FLAG"
+COQUSERNATIVEFLAG:=$(strip \
+$(subst -native-compiler-,,\
+$(lastword \
+$(filter -native-compiler-%,\
+$(subst -native-compiler ,-native-compiler-,\
+$(strip $(COQEXTRAFLAGS)))))))
+
+COQFILTEREDEXTRAFLAGS:=$(strip \
+$(filter-out -native-compiler-%,\
+$(subst -native-compiler ,-native-compiler-,\
+$(strip $(COQEXTRAFLAGS)))))
+
+ifneq (,$(COQUSERNATIVEFLAG))
+  COQNATIVEFLAG="-native-compiler" "$(COQUSERNATIVEFLAG)"
+  COQDONATIVE=$(COQUSERNATIVEFLAG)
+else
+ifeq '$(COQMF_COQ_NATIVE_COMPILER_DEFAULT)' 'yes'
+  COQNATIVEFLAG="-native-compiler" "ondemand"
+  COQDONATIVE="yes"
+else
+  COQNATIVEFLAG=
+endif
+endif
+
 # these flags do NOT contain the libraries, to make them easier to overwrite
-COQFLAGS?=-q $(OTHERFLAGS) $(COQEXTRAFLAGS)
+COQFLAGS?=-q $(OTHERFLAGS) $(COQFILTEREDEXTRAFLAGS) $(COQNATIVEFLAG)
 COQCHKFLAGS?=-silent -o $(COQCHKEXTRAFLAGS)
 COQDOCFLAGS?=-interpolate -utf8 $(COQDOCEXTRAFLAGS)
 
@@ -723,6 +749,10 @@ endif
 $(VOFILES): %.vo: %.v
 	$(SHOW)COQC $<
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+ifeq ($(COQDONATIVE), "yes")
+	$(SHOW)COQNATIVE $@
+	$(HIDE)$(COQNATIVE) $(COQLIBS) $@
+endif
 
 # FIXME ?merge with .vo / .vio ?
 $(GLOBFILES): %.glob: %.v
