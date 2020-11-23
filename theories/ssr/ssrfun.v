@@ -236,19 +236,19 @@ Reserved Notation "'fun' => E" (at level 200, format "'fun' =>  E").
 Reserved Notation "[ 'fun' : T => E ]" (at level 0,
   format "'[hv' [ 'fun' :  T  => '/ '  E ] ']'").
 Reserved Notation "[ 'fun' x => E ]" (at level 0,
-  x ident, format "'[hv' [ 'fun'  x  => '/ '  E ] ']'").
+  x name, format "'[hv' [ 'fun'  x  => '/ '  E ] ']'").
 Reserved Notation "[ 'fun' x : T => E ]" (at level 0,
-  x ident, format "'[hv' [ 'fun'  x  :  T  => '/ '  E ] ']'").
+  x name, format "'[hv' [ 'fun'  x  :  T  => '/ '  E ] ']'").
 Reserved Notation "[ 'fun' x y => E ]" (at level 0,
-  x ident, y ident, format "'[hv' [ 'fun'  x  y  => '/ '  E ] ']'").
+  x name, y name, format "'[hv' [ 'fun'  x  y  => '/ '  E ] ']'").
 Reserved Notation "[ 'fun' x y : T => E ]" (at level 0,
-  x ident, y ident, format "'[hv' [ 'fun'  x  y  :  T  => '/ '  E ] ']'").
+  x name, y name, format "'[hv' [ 'fun'  x  y  :  T  => '/ '  E ] ']'").
 Reserved Notation "[ 'fun' ( x : T ) y => E ]" (at level 0,
-  x ident, y ident, format "'[hv' [ 'fun'  ( x  :  T )  y  => '/ '  E ] ']'").
+  x name, y name, format "'[hv' [ 'fun'  ( x  :  T )  y  => '/ '  E ] ']'").
 Reserved Notation "[ 'fun' x ( y : T ) => E ]" (at level 0,
-  x ident, y ident, format "'[hv' [ 'fun'  x  ( y  :  T )  => '/ '  E ] ']'").
+  x name, y name, format "'[hv' [ 'fun'  x  ( y  :  T )  => '/ '  E ] ']'").
 Reserved Notation "[ 'fun' ( x : T ) ( y : U ) => E ]" (at level 0,
-  x ident, y ident, format "[ 'fun'  ( x  :  T )  ( y  :  U )  =>  E ]" ).
+  x name, y name, format "[ 'fun'  ( x  :  T )  ( y  :  U )  =>  E ]" ).
 
 Reserved Notation "f =1 g" (at level 70, no associativity).
 Reserved Notation "f =1 g :> A" (at level 70, g at next level, A at level 90).
@@ -259,33 +259,33 @@ Reserved Notation "f \; g" (at level 60, right associativity,
   format "f  \; '/ '  g").
 
 Reserved Notation "{ 'morph' f : x / a >-> r }" (at level 0, f at level 99,
-  x ident, format "{ 'morph'  f  :  x  /  a  >->  r }").
+  x name, format "{ 'morph'  f  :  x  /  a  >->  r }").
 Reserved Notation "{ 'morph' f : x / a }" (at level 0, f at level 99,
-  x ident, format "{ 'morph'  f  :  x  /  a }").
+  x name, format "{ 'morph'  f  :  x  /  a }").
 Reserved Notation "{ 'morph' f : x y / a >-> r }" (at level 0, f at level 99,
-  x ident, y ident, format "{ 'morph'  f  :  x  y  /  a  >->  r }").
+  x name, y name, format "{ 'morph'  f  :  x  y  /  a  >->  r }").
 Reserved Notation "{ 'morph' f : x y / a }" (at level 0, f at level 99,
-  x ident, y ident, format "{ 'morph'  f  :  x  y  /  a }").
+  x name, y name, format "{ 'morph'  f  :  x  y  /  a }").
 Reserved Notation "{ 'homo' f : x / a >-> r }" (at level 0, f at level 99,
-  x ident, format "{ 'homo'  f  :  x  /  a  >->  r }").
+  x name, format "{ 'homo'  f  :  x  /  a  >->  r }").
 Reserved Notation "{ 'homo' f : x / a }"  (at level 0, f at level 99,
-  x ident, format "{ 'homo'  f  :  x  /  a }").
+  x name, format "{ 'homo'  f  :  x  /  a }").
 Reserved Notation "{ 'homo' f : x y / a >-> r }" (at level 0, f at level 99,
-  x ident, y ident, format "{ 'homo'  f  :  x  y  /  a  >->  r }").
+  x name, y name, format "{ 'homo'  f  :  x  y  /  a  >->  r }").
 Reserved Notation "{ 'homo' f : x y / a }" (at level 0, f at level 99,
-  x ident, y ident, format "{ 'homo'  f  :  x  y  /  a }").
+  x name, y name, format "{ 'homo'  f  :  x  y  /  a }").
 Reserved Notation "{ 'homo' f : x y /~ a }" (at level 0, f at level 99,
-  x ident, y ident, format "{ 'homo'  f  :  x  y  /~  a }").
+  x name, y name, format "{ 'homo'  f  :  x  y  /~  a }").
 Reserved Notation "{ 'mono' f : x / a >-> r }" (at level 0, f at level 99,
-  x ident, format "{ 'mono'  f  :  x  /  a  >->  r }").
+  x name, format "{ 'mono'  f  :  x  /  a  >->  r }").
 Reserved Notation "{ 'mono' f : x / a }" (at level 0, f at level 99,
-  x ident, format "{ 'mono'  f  :  x  /  a }").
+  x name, format "{ 'mono'  f  :  x  /  a }").
 Reserved Notation "{ 'mono' f : x y / a >-> r }" (at level 0, f at level 99,
-  x ident, y ident, format "{ 'mono'  f  :  x  y  /  a  >->  r }").
+  x name, y name, format "{ 'mono'  f  :  x  y  /  a  >->  r }").
 Reserved Notation "{ 'mono' f : x y / a }" (at level 0, f at level 99,
-  x ident, y ident, format "{ 'mono'  f  :  x  y  /  a }").
+  x name, y name, format "{ 'mono'  f  :  x  y  /  a }").
 Reserved Notation "{ 'mono' f : x y /~ a }" (at level 0, f at level 99,
-  x ident, y ident, format "{ 'mono'  f  :  x  y  /~  a }").
+  x name, y name, format "{ 'mono'  f  :  x  y  /~  a }").
 
 Reserved Notation "@ 'id' T" (at level 10, T at level 8, format "@ 'id'  T").
 Reserved Notation "@ 'sval'" (at level 10, format "@ 'sval'").

@@ -27,6 +27,7 @@ val production_level_eq : production_level -> production_level -> bool
 
 type 'a constr_entry_key_gen =
   | ETIdent
+  | ETName of bool (* Temporary: true = user told "name", false = user wrote "ident" *)
   | ETGlobal
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
@@ -50,6 +51,7 @@ type binder_entry_kind = ETBinderOpen | ETBinderClosed of string Tok.p list
 type binder_target = ForBinder | ForTerm
 
 type constr_prod_entry_key =
+  | ETProdIdent           (* Parsed as an ident *)
   | ETProdName            (* Parsed as a name (ident or _) *)
   | ETProdReference       (* Parsed as a global reference *)
   | ETProdBigint          (* Parsed as an (unbounded) integer *)

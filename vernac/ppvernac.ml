@@ -187,13 +187,16 @@ let level_of_pattern_level = function None -> DefaultLevel | Some n -> NumLevel 
 
 let pr_constr_as_binder_kind = let open Notation_term in function
     | AsIdent -> spc () ++ keyword "as ident"
-    | AsIdentOrPattern -> spc () ++ keyword "as pattern"
+    | AsName -> spc () ++ keyword "as name"
+    | AsNameOrPattern -> spc () ++ keyword "as pattern"
     | AsStrictPattern -> spc () ++ keyword "as strict pattern"
 
 let pr_strict b = if b then str "strict " else mt ()
 
 let pr_set_entry_type pr = function
   | ETIdent -> str"ident"
+  | ETName false -> str"ident" (* temporary *)
+  | ETName true -> str"name"
   | ETGlobal -> str"global"
   | ETPattern (b,n) -> pr_strict b ++ str"pattern" ++ pr_at_level (level_of_pattern_level n)
   | ETConstr (s,bko,lev) -> pr_notation_entry s ++ pr lev ++ pr_opt pr_constr_as_binder_kind bko
@@ -268,9 +271,9 @@ let pr_reference_or_constr pr_c = function
   | HintsConstr c -> pr_c c
 
 let pr_hint_mode = let open Hints in function
-    | ModeInput -> str"+"
-    | ModeNoHeadEvar -> str"!"
-    | ModeOutput -> str"-"
+  | ModeInput -> str"+"
+  | ModeNoHeadEvar -> str"!"
+  | ModeOutput -> str"-"
 
 let pr_hint_info pr_pat { Typeclasses.hint_priority = pri; hint_pattern = pat } =
   pr_opt (fun x -> str"|" ++ int x) pri ++

@@ -309,9 +309,9 @@ Notation "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
   : type_scope.
 
 Notation "'exists2' x , p & q" := (ex2 (fun x => p) (fun x => q))
-  (at level 200, x ident, p at level 200, right associativity) : type_scope.
+  (at level 200, x name, p at level 200, right associativity) : type_scope.
 Notation "'exists2' x : A , p & q" := (ex2 (A:=A) (fun x => p) (fun x => q))
-  (at level 200, x ident, A at level 200, p at level 200, right associativity,
+  (at level 200, x name, A at level 200, p at level 200, right associativity,
     format "'[' 'exists2'  '/  ' x  :  A ,  '/  ' '[' p  &  '/' q ']' ']'")
   : type_scope.
 
@@ -489,18 +489,18 @@ Module EqNotations.
     := (match H as p in (_ = y) return P with
         | eq_refl => H'
         end)
-         (at level 10, H' at level 10, y ident, p ident,
+         (at level 10, H' at level 10, y name, p name,
           format "'[' 'rew'  'dependent'  [ 'fun'  y  p  =>  P ]  '/    ' H  in  '/' H' ']'").
   Notation "'rew' 'dependent' -> [ 'fun' y p => P ] H 'in' H'"
     := (match H as p in (_ = y) return P with
         | eq_refl => H'
         end)
-         (at level 10, H' at level 10, y ident, p ident, only parsing).
+         (at level 10, H' at level 10, y name, p name, only parsing).
   Notation "'rew' 'dependent' <- [ 'fun' y p => P ] H 'in' H'"
     := (match eq_sym H as p in (_ = y) return P with
         | eq_refl => H'
         end)
-         (at level 10, H' at level 10, y ident, p ident,
+         (at level 10, H' at level 10, y name, p name,
           format "'[' 'rew'  'dependent'  <-  [ 'fun'  y  p  =>  P ]  '/    ' H  in  '/' H' ']'").
   Notation "'rew' 'dependent' [ P ] H 'in' H'"
     := (match H as p in (_ = y) return P y p with
