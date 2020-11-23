@@ -80,6 +80,9 @@ in time.
   exists, a branch dedicated to compatibility with the corresponding
   Coq branch). You can use the `dev/tools/pin-ci.sh` script to do this
   semi-automatically.
+  - [ ] Notify upstream authors about the pinning, see
+    `dev/tools/notify-upstream-pins.sh`. As of today there is no automated
+    way to track these issues.
 - [ ] Remove all remaining unmerged feature PRs from the beta milestone.
 - [ ] Start a new project to track PR backporting. The project should
   have a "Request X.X+beta1 inclusion" column for the PRs that were
