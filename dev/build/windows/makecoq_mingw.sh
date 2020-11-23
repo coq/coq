@@ -1800,7 +1800,7 @@ function make_addon_vst {
   if build_prep_overlay vst; then
     installer_addon_section vst "VST" "ATTENTION: SOME INCLUDED COMPCERT PARTS ARE NOT OPEN SOURCE! Verified Software Toolchain for verifying C code" "off"
     # log1 coq_set_timeouts_1000
-    log1 vst_patch_compcert_refs
+    # log1 vst_patch_compcert_refs
     # The usage of the shell variable ARCH in VST collides with the usage in this shellscript
     logn make env -u ARCH make IGNORECOQVERSION=true $MAKE_OPT
     log1 install_addon_vst
