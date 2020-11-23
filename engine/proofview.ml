@@ -937,22 +937,12 @@ let tclTIMEOUT n t =
   Proof.get >>= fun initial ->
   Proof.current >>= fun envvar ->
   Proof.lift begin
-    Logic_monad.NonLogical.catch
-      begin
-        let open Logic_monad.NonLogical in
-        timeout n (Proof.repr (Proof.run t envvar initial)) >>= fun r ->
-        match r with
-        | Logic_monad.Nil e -> return (Util.Inr e)
-        | Logic_monad.Cons (r, _) -> return (Util.Inl r)
-      end
-      begin let open Logic_monad.NonLogical in function (e, info) ->
-        match e with
-        | Logic_monad.Tac_Timeout ->
-          return (Util.Inr (Logic_monad.Tac_Timeout, info))
-        | Logic_monad.TacticFailure e ->
-          return (Util.Inr (e, info))
-        | e -> Logic_monad.NonLogical.raise (e, info)
-      end
+    let open Logic_monad.NonLogical in
+    timeout n (Proof.repr (Proof.run t envvar initial)) >>= fun r ->
+    match r with
+    | None -> return (Util.Inr (Logic_monad.Tac_Timeout, Exninfo.null))
+    | Some (Logic_monad.Nil e) -> return (Util.Inr e)
+    | Some (Logic_monad.Cons (r, _)) -> return (Util.Inl r)
   end >>= function
     | Util.Inl (res,s,m,i) ->
         Proof.set s >>

@@ -1944,7 +1944,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
               try (* First try finding a subterm w/o conversion on open terms *)
                 let flags = set_no_delta_open_flags flags in
                 w_unify_to_subterm env evd ~flags t'
-              with e ->
+              with e when CErrors.noncritical e ->
                 (* If this fails, try with full conversion *)
                 w_unify_to_subterm env evd ~flags t'
             else w_unify_to_subterm env evd ~flags t'
