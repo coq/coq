@@ -2,6 +2,7 @@ Declare Custom Entry expr.
 Declare Custom Entry stmt.
 Notation "x" := x (in custom stmt, x ident).
 Notation "x" := x (in custom expr, x ident).
+Notation "'_'" := _ (in custom expr).
 
 Notation "1" := 1 (in custom expr).
 

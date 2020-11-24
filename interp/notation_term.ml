@@ -67,7 +67,8 @@ type extended_subscopes = Constrexpr.notation_entry_level * subscopes
 
 type constr_as_binder_kind =
   | AsIdent
-  | AsIdentOrPattern
+  | AsName
+  | AsNameOrPattern
   | AsStrictPattern
 
 type notation_binder_source =
@@ -76,6 +77,8 @@ type notation_binder_source =
   | NtnParsedAsPattern of bool
   (* This accepts only ident *)
   | NtnParsedAsIdent
+  (* This accepts only name *)
+  | NtnParsedAsName
   (* This accepts ident, or pattern, or both *)
   | NtnBinderParsedAsConstr of constr_as_binder_kind
   (* This accepts ident, _, and quoted pattern *)

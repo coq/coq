@@ -246,6 +246,7 @@ type _ target =
 type prod_info = production_level * production_position
 
 type (_, _) entry =
+| TTIdent : ('self, lident) entry
 | TTName : ('self, lname) entry
 | TTReference : ('self, qualid) entry
 | TTBigint : ('self, string) entry
@@ -364,6 +365,7 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol =
 | TTPattern p -> MayRecNo (Pcoq.Symbol.nterml Constr.pattern (string_of_int p))
 | TTClosedBinderList [] -> MayRecNo (Pcoq.Symbol.list1 (Pcoq.Symbol.nterm Constr.binder))
 | TTClosedBinderList tkl -> MayRecNo (Pcoq.Symbol.list1sep (Pcoq.Symbol.nterm Constr.binder) (make_sep_rules tkl) false)
+| TTIdent -> MayRecNo (Pcoq.Symbol.nterm Prim.identref)
 | TTName -> MayRecNo (Pcoq.Symbol.nterm Prim.name)
 | TTBinder true -> MayRecNo (Pcoq.Symbol.nterm Constr.one_open_binder)
 | TTBinder false -> MayRecNo (Pcoq.Symbol.nterm Constr.one_closed_binder)
@@ -372,6 +374,7 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol =
 | TTReference -> MayRecNo (Pcoq.Symbol.nterm Constr.global)
 
 let interp_entry forpat e = match e with
+| ETProdIdent -> TTAny TTIdent
 | ETProdName -> TTAny TTName
 | ETProdReference -> TTAny TTReference
 | ETProdBigint -> TTAny TTBigint
@@ -381,6 +384,9 @@ let interp_entry forpat e = match e with
 | ETProdConstrList (s, p, tkl) -> TTAny (TTConstrList (s, p, tkl, forpat))
 | ETProdBinderList ETBinderOpen -> TTAny TTOpenBinderList
 | ETProdBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
+
+let cases_pattern_expr_of_id { CAst.loc; v = id } =
+  CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident ?loc id))
 
 let cases_pattern_expr_of_name { CAst.loc; v = na } = CAst.make ?loc @@ match na with
   | Anonymous -> CPatAtom None
@@ -398,6 +404,11 @@ let push_constr subst v = { subst with constrs = v :: subst.constrs }
 let push_item : type s r. s target -> (s, r) entry -> s env -> r -> s env = fun forpat e subst v ->
 match e with
 | TTConstr _ -> push_constr subst v
+| TTIdent ->
+  begin match forpat with
+  | ForConstr -> { subst with binders = (cases_pattern_expr_of_id v, Glob_term.Explicit) :: subst.binders }
+  | ForPattern -> push_constr subst (cases_pattern_expr_of_id v)
+  end
 | TTName ->
   begin match forpat with
   | ForConstr -> { subst with binders = (cases_pattern_expr_of_name v, Glob_term.Explicit) :: subst.binders }

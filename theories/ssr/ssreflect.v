@@ -110,7 +110,7 @@ Reserved Notation "'if' c 'then' vT 'else' vF" (at level 200,
 Reserved Notation "'if' c 'return' R 'then' vT 'else' vF" (at level 200,
   c, R, vT, vF at level 200).
 Reserved Notation "'if' c 'as' x 'return' R 'then' vT 'else' vF" (at level 200,
-  c, R, vT, vF at level 200, x ident).
+  c, R, vT, vF at level 200, x name).
 
 Reserved Notation "x : T" (at level 100, right associativity,
   format "'[hv' x '/ '  :  T ']'").

@@ -340,11 +340,11 @@ let unparsing_metavar i from typs =
   let x = List.nth typs (i-1) in
   let prec,side = unparsing_precedence_of_entry_type from x in
   match x with
-  | ETConstr _ | ETGlobal | ETBigint ->
+  | ETConstr _ | ETGlobal | ETBigint | ETIdent ->
      UnpMetaVar (prec,side)
-  | ETPattern _ | ETIdent ->
+  | ETPattern _ | ETName _ ->
      UnpBinderMetaVar (prec,NotQuotedPattern)
-  | ETBinder _ ->
+  | ETBinder isopen ->
      UnpBinderMetaVar (prec,QuotedPattern)
 
 (* Heuristics for building default printing rules *)
@@ -631,7 +631,8 @@ let include_possible_similar_trailing_pattern typ etyps sl l =
   try_aux 0 l
 
 let prod_entry_type = function
-  | ETIdent -> ETProdName
+  | ETIdent -> ETProdIdent
+  | ETName _ -> ETProdName
   | ETGlobal -> ETProdReference
   | ETBigint -> ETProdBigint
   | ETBinder o -> ETProdOneBinder o
@@ -891,6 +892,11 @@ let default = {
 
 end
 
+(* To be turned into a fatal warning in 8.14 *)
+let warn_deprecated_ident_entry =
+  CWarnings.create ~name:"deprecated-ident-entry" ~category:"deprecated"
+         (fun () -> strbrk "grammar entry \"ident\" permitted \"_\" in addition to proper identifiers; this use is deprecated and its meaning will change in the future; use \"name\" instead.")
+
 let interp_modifiers modl = let open NotationMods in
   let rec interp subtyps acc = function
     | [] -> subtyps, acc
@@ -952,6 +958,13 @@ let interp_modifiers modl = let open NotationMods in
   let subtyps,mods = interp [] default modl in
   (* interpret item levels wrt to main entry *)
   let extra_etyps = List.map (fun (id,bko,n) -> (id,ETConstr (mods.custom,bko,n))) subtyps in
+  (* Temporary hack: "ETName false" (i.e. "ident" in deprecation phase) means "ETIdent" for custom entries *)
+  let mods =
+    { mods with etyps = List.map (function
+        | (id,ETName false) ->
+           if mods.custom = InConstrEntry then (warn_deprecated_ident_entry (); (id,ETName true))
+           else (id,ETIdent)
+        | x -> x) mods.etyps } in
   { mods with etyps = extra_etyps@mods.etyps }
 
 let check_infix_modifiers modifiers =
@@ -1000,7 +1013,7 @@ let set_entry_type from n etyps (x,typ) =
       | ETConstr (s,bko,n), InternalProd ->
           ETConstr (s,bko,(n,InternalProd))
       | ETPattern (b,n), _ -> ETPattern (b,n)
-      | (ETIdent | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
+      | (ETIdent | ETName _ | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
     with Not_found ->
       ETConstr (from,None,(make_lev n from,typ))
   in (x,typ)
@@ -1023,7 +1036,7 @@ let join_auxiliary_recursive_types recvars etyps =
 let internalization_type_of_entry_type = function
   | ETBinder _ -> NtnInternTypeOnlyBinder
   | ETConstr _ | ETBigint | ETGlobal
-  | ETIdent | ETPattern _ -> NtnInternTypeAny
+  | ETIdent | ETName _ | ETPattern _ -> NtnInternTypeAny
 
 let set_internalization_type typs =
   List.map (fun (_, e) -> internalization_type_of_entry_type e) typs
@@ -1043,6 +1056,7 @@ let make_interpretation_type isrec isonlybinding default_if_binding = function
   | ETConstr (_,None,_) -> NtnTypeConstr
   (* Others *)
   | ETIdent -> NtnTypeBinder NtnParsedAsIdent
+  | ETName _ -> NtnTypeBinder NtnParsedAsName
   | ETPattern (ppstrict,_) -> NtnTypeBinder (NtnParsedAsPattern ppstrict) (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
   | ETBigint | ETGlobal -> NtnTypeConstr
   | ETBinder _ ->
@@ -1063,7 +1077,7 @@ let subentry_of_constr_prod_entry from_level = function
   | _ -> InConstrEntrySomeLevel
 
 let make_interpretation_vars
-  (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsIdent)
+  (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
    recvars level allvars typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
     Option.equal String.equal sc1 sc2 &&
@@ -1159,7 +1173,7 @@ let find_precedence custom lev etyps symbols onlyprint =
           user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.") in
       (try match List.assoc x etyps, custom with
         | ETConstr (s,_,(NumLevel _ | NextLevel)), s' when s = s' -> test ()
-        | (ETIdent | ETBigint | ETGlobal), _ ->
+        | (ETIdent | ETName _ | ETBigint | ETGlobal), _ ->
             begin match lev with
             | None ->
               ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")],0)
@@ -1798,7 +1812,7 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
       interp_notation_constr env nenv c
   in
   let in_pat id = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
-  let interp = make_interpretation_vars ~default_if_binding:AsIdentOrPattern [] 0 acvars (List.map in_pat vars) in
+  let interp = make_interpretation_vars ~default_if_binding:AsNameOrPattern [] 0 acvars (List.map in_pat vars) in
   let vars = List.map (fun x -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = onlyparsing || fst (printability None [] false reversibility pat) in
