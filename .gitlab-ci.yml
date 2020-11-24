@@ -19,7 +19,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2020-10-12-V89"
+  CACHEKEY: "bionic_coq-V2020-11-24-V90"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -784,6 +784,9 @@ library:ci-fiat_crypto_ocaml:
   - library:ci-fiat_crypto
 
 library:ci-flocq:
+  extends: .ci-template-flambda
+
+library:ci-menhir:
   extends: .ci-template-flambda
 
 library:ci-corn:
