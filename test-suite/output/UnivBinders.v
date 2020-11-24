@@ -151,6 +151,16 @@ About axfoo. About axbar. About axfoo'. About axbar'.
 
 Fail Axiom failfoo failbar@{i} : Type.
 
+(* Notation interaction *)
+Module Notas.
+  Unset Universe Polymorphism.
+  Module Import M. Universe i. End M.
+
+  Polymorphic Definition foo@{i} := Type@{M.i} -> Type@{i}.
+  Print foo. (* must not print Type@{i} -> Type@{i} *)
+
+End Notas.
+
 (* Universe binders survive through compilation, sections and modules. *)
 Require TestSuite.bind_univs.
 Print bind_univs.mono.
