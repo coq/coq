@@ -35,7 +35,7 @@
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
-: "${mtac2_CI_REF:=6ff46f88479ef4a80dd65202ced7f8ff21a0e60d}"
+: "${mtac2_CI_REF:=v1.4-coq8.13}"
 : "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2}"
 : "${mtac2_CI_ARCHIVEURL:=${mtac2_CI_GITURL}/archive}"
 
