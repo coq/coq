@@ -277,7 +277,7 @@
 ########################################################################
 # ext-lib
 ########################################################################
-: "${ext_lib_CI_REF:=159c36111a95e5e587020c9f10b2e2ecd9fa3914}"
+: "${ext_lib_CI_REF:=v0.11.3}"
 : "${ext_lib_CI_GITURL:=https://github.com/coq-community/coq-ext-lib}"
 : "${ext_lib_CI_ARCHIVEURL:=${ext_lib_CI_GITURL}/archive}"
 
