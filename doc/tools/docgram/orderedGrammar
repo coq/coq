@@ -1653,7 +1653,7 @@ simple_tactic: [
 | "first" "[" LIST0 ltac_expr SEP "|" "]"
 | "solve" "[" LIST0 ltac_expr SEP "|" "]"
 | "idtac" LIST0 [ ident | string | natural ]
-| [ "fail" | "gfail" ] OPT int_or_var LIST0 [ ident | string | natural ]
+| [ "fail" | "gfail" ] OPT nat_or_var LIST0 [ ident | string | natural ]
 | ltac_expr ssrintros      (* SSR plugin *)
 | "fun" LIST1 name "=>" ltac_expr
 | "eval" red_expr "in" term

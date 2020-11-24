@@ -879,7 +879,7 @@ Print/identity tactic: idtac
 Failing
 ~~~~~~~
 
-.. tacn:: {| fail | gfail } {? @int_or_var } {* {| @ident | @string | @natural } }
+.. tacn:: {| fail | gfail } {? @nat_or_var } {* {| @ident | @string | @natural } }
    :name: fail; gfail
 
    :tacn:`fail` is the always-failing tactic: it does not solve any
@@ -900,7 +900,7 @@ Failing
    tactic into the goals, meaning that if there are no goals when it is
    evaluated, a tactic call like :tacn:`let` :n:`x := H in` :tacn:`fail` `0 x` will succeed.
 
-   :n:`@int_or_var`
+   :n:`@nat_or_var`
       The failure level. If no level is specified, it defaults to 0.
       The level is used by :tacn:`try`, :tacn:`repeat`, :tacn:`match goal` and the branching
       tacticals. If 0, it makes :tacn:`match goal` consider the next clause
