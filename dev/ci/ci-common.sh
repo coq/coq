@@ -19,20 +19,20 @@ then
 elif [ -d "$PWD/_build/install/default/" ];
 then
     # Dune build
-    export OCAMLPATH="$PWD/_build/install/default/lib/:$OCAMLPATH"
+    export OCAMLPATH="$PWD/_build/install/default/lib/:$PWD/_install_ci/lib:$OCAMLPATH"
     export COQBIN="$PWD/_build/install/default/bin"
     export COQLIB="$PWD/_build/install/default/lib/coq"
     CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
     export CI_BRANCH
 else
     # We assume we are in `-profile devel` build, thus `-local` is set
-    export OCAMLPATH="$PWD:$OCAMLPATH"
+    export OCAMLPATH="$PWD:$PWD/_install_ci/lib:$OCAMLPATH"
     export COQBIN="$PWD/bin"
     CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
     export CI_BRANCH
 fi
 
-export PATH="$COQBIN:$PATH"
+export PATH="$COQBIN:$PWD/_install_ci/bin:$PATH"
 
 # Coq's tools need an ending slash :S, we should fix them.
 export COQBIN="$COQBIN/"
@@ -41,6 +41,9 @@ ls -l "$COQBIN"
 
 # Where we download and build external developments
 CI_BUILD_DIR="$PWD/_build_ci"
+
+# Where we install external binaries and ocaml libraries
+CI_INSTALL_DIR="$PWD/_install_ci"
 
 ls -l "$CI_BUILD_DIR" || true
 
