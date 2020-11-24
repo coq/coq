@@ -291,7 +291,7 @@
 ########################################################################
 # quickchick
 ########################################################################
-: "${quickchick_CI_REF:=63aa0581644e9117a9403de25a66edfc43a53c9a}"
+: "${quickchick_CI_REF:=v1.5.0}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
