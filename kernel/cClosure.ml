@@ -263,7 +263,7 @@ let assoc_defined id env = match Environ.lookup_named id env with
  *    before the term is computed.
  *)
 
-(* Norm means the term is fully normalized and cannot create a redex
+(* Ntrl means the term is fully normalized and cannot create a redex
      when substituted
    Cstr means the term is in head normal form and that it can
      create a redex when substituted (i.e. constructor, fix, lambda)
@@ -271,10 +271,10 @@ let assoc_defined id env = match Environ.lookup_named id env with
      create a redex when substituted
    Red is used for terms that might be reduced
 *)
-type red_state = Norm | Cstr | Whnf | Red
+type red_state = Ntrl | Cstr | Whnf | Red
 
 let neutr = function
-  | Whnf|Norm -> Whnf
+  | Whnf|Ntrl -> Whnf
   | Red|Cstr -> Red
 
 type optrel = Unknown | KnownR | KnownI
@@ -293,13 +293,13 @@ module Mark : sig
 
   val neutr : t -> t
 
-  val set_norm : t -> t
+  val set_ntrl : t -> t
 
 end = struct
   type t = int
 
   let[@inline] of_state = function
-    | Norm -> 0b00 | Cstr -> 0b01 | Whnf -> 0b10 | Red -> 0b11
+    | Ntrl -> 0b00 | Cstr -> 0b01 | Whnf -> 0b10 | Red -> 0b11
 
   let[@inline] of_relevance = function
     | Unknown -> 0
@@ -315,15 +315,15 @@ end = struct
     | _ -> assert false
 
   let[@inline] red_state x = match x land 0b1100 with
-    | 0b0000 -> Norm
+    | 0b0000 -> Ntrl
     | 0b0100 -> Cstr
     | 0b1000 -> Whnf
     | 0b1100 -> Red
     | _ -> assert false
 
-  let[@inline] neutr x = x lor 0b1000 (* Whnf|Norm -> Whnf | Red|Cstr -> Red *)
+  let[@inline] neutr x = x lor 0b1000 (* Whnf|Ntrl -> Whnf | Red|Cstr -> Red *)
 
-  let[@inline] set_norm x = x land 0b0011
+  let[@inline] set_ntrl x = x land 0b0011
 end
 let mark = Mark.mark
 
@@ -358,10 +358,10 @@ and fterm =
 and finvert = Univ.Instance.t * fconstr array
 
 let fterm_of v = v.term
-let set_norm v = v.mark <- Mark.set_norm v.mark
-let is_val v = match Mark.red_state v.mark with Norm -> true | Cstr | Whnf | Red -> false
+let set_ntrl v = v.mark <- Mark.set_ntrl v.mark
+let is_val v = match Mark.red_state v.mark with Ntrl -> true | Cstr | Whnf | Red -> false
 
-let mk_atom c = {mark=mark Norm Unknown;term=FAtom c}
+let mk_atom c = {mark=mark Ntrl Unknown;term=FAtom c}
 let mk_red f = {mark=mark Red Unknown;term=f}
 
 (* Could issue a warning if no is still Red, pointing out that we loose
@@ -448,7 +448,7 @@ let rec lft_fconstr n ft =
   let r = Mark.relevance ft.mark in
   match ft.term with
     | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FInt _|FFloat _) -> ft
-    | FRel i -> {mark=mark Norm r;term=FRel(i+n)}
+    | FRel i -> {mark=mark Ntrl r;term=FRel(i+n)}
     | FLambda(k,tys,f,e) -> {mark=mark Cstr r; term=FLambda(k,tys,f,subs_shft(n,e))}
     | FFix(fx,e) ->
       {mark=mark Cstr r; term=FFix(fx,subs_shft(n,e))}
@@ -466,7 +466,7 @@ let lift_fconstr_vect k v =
 let clos_rel e i =
   match expand_rel i e with
     | Inl(n,mt) -> lift_fconstr n mt
-    | Inr(k,None) -> {mark=mark Norm Unknown; term= FRel k}
+    | Inr(k,None) -> {mark=mark Ntrl Unknown; term= FRel k}
     | Inr(k,Some p) ->
         lift_fconstr (k-p) {mark=mark Red Unknown;term=FFlex(RelKey p)}
 
@@ -488,7 +488,7 @@ let compact_stack head stk =
 (* Put an update mark in the stack, only if needed *)
 let zupdate info m s =
   let share = info.i_cache.i_share in
-  if share && begin match Mark.red_state m.mark with Red -> true  | Norm | Whnf | Cstr -> false end
+  if share && begin match Mark.red_state m.mark with Red -> true  | Ntrl | Whnf | Cstr -> false end
   then
     let s' = compact_stack m s in
     let _ = m.term <- FLOCKED in
@@ -514,8 +514,8 @@ let mk_clos e t =
     | Rel i -> clos_rel e i
     | Var x -> {mark = mark Red Unknown; term = FFlex (VarKey x) }
     | Const c -> {mark = mark Red Unknown; term = FFlex (ConstKey c) }
-    | Meta _ | Sort _ ->  {mark = mark Norm KnownR; term = FAtom t }
-    | Ind kn -> {mark = mark Norm KnownR; term = FInd kn }
+    | Meta _ | Sort _ ->  {mark = mark Ntrl KnownR; term = FAtom t }
+    | Ind kn -> {mark = mark Ntrl KnownR; term = FInd kn }
     | Construct kn -> {mark = mark Cstr Unknown; term = FConstruct kn }
     | Int i -> {mark = mark Cstr Unknown; term = FInt i}
     | Float f -> {mark = mark Cstr Unknown; term = FFloat f}
@@ -734,11 +734,11 @@ let strip_update_shift_app_red head stk =
   strip_rec [] head 0 stk
 
 let strip_update_shift_app head stack =
-  assert (match Mark.red_state head.mark with Red -> false | Norm | Cstr | Whnf -> true);
+  assert (match Mark.red_state head.mark with Red -> false | Ntrl | Cstr | Whnf -> true);
   strip_update_shift_app_red head stack
 
 let get_nth_arg head n stk =
-  assert (match Mark.red_state head.mark with Red -> false | Norm | Cstr | Whnf -> true);
+  assert (match Mark.red_state head.mark with Red -> false | Ntrl | Cstr | Whnf -> true);
   let rec strip_rec rstk h n = function
     | Zshift(k) as e :: s ->
         strip_rec (e::rstk) (lift_fconstr k h) n s
@@ -787,7 +787,7 @@ let rec eta_expand_stack = function
         | Zshift _ | Zupdate _ | Zprimitive _ as e) :: s ->
       e :: eta_expand_stack s
   | [] ->
-      [Zshift 1; Zapp [|{mark=mark Norm Unknown; term= FRel 1}|]]
+      [Zshift 1; Zapp [|{mark=mark Ntrl Unknown; term= FRel 1}|]]
 
 (* Get the arguments of a native operator *)
 let rec skip_native_args rargs nargs =
@@ -968,7 +968,7 @@ module FNativeEntries =
       | FArray (_u,t,_ty) -> t
       | _ -> raise Not_found
 
-    let dummy = {mark = mark Norm KnownR; term = FRel 0}
+    let dummy = {mark = mark Ntrl KnownR; term = FRel 0}
 
     let current_retro = ref Retroknowledge.empty
     let defined_int = ref false
@@ -978,7 +978,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_int63 with
       | Some c ->
         defined_int := true;
-        fint := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c)) }
+        fint := { mark = mark Ntrl KnownR; term = FFlex (ConstKey (Univ.in_punivs c)) }
       | None -> defined_int := false
 
     let defined_float = ref false
@@ -988,7 +988,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_float64 with
       | Some c ->
         defined_float := true;
-        ffloat := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c)) }
+        ffloat := { mark = mark Ntrl KnownR; term = FFlex (ConstKey (Univ.in_punivs c)) }
       | None -> defined_float := false
 
     let defined_bool = ref false
@@ -1039,7 +1039,7 @@ module FNativeEntries =
         fLt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cLt) };
         fGt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cGt) };
         let (icmp, _) = cEq in
-        fcmp := { mark = mark Norm KnownR; term = FInd (Univ.in_punivs icmp) }
+        fcmp := { mark = mark Ntrl KnownR; term = FInd (Univ.in_punivs icmp) }
       | None -> defined_cmp := false
 
     let defined_f_cmp = ref false
@@ -1327,19 +1327,19 @@ let rec knr info tab m stk =
             let rargs, a, nargs, stk = get_native_args1 op c stk in
             kni info tab a (Zprimitive(op,c,rargs,nargs)::stk)
           else
-            (* Similarly to fix, partially applied primitives are not Norm! *)
+            (* Similarly to fix, partially applied primitives are not Ntrl! *)
             (m, stk)
-        | Undef _ | OpaqueDef _ -> (set_norm m; (m,stk)))
+        | Undef _ | OpaqueDef _ -> (set_ntrl m; (m,stk)))
   | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->
       (match ref_value_cache info tab (VarKey id) with
         | Def v -> kni info tab v stk
         | Primitive _ -> assert false
-        | OpaqueDef _ | Undef _ -> (set_norm m; (m,stk)))
+        | OpaqueDef _ | Undef _ -> (set_ntrl m; (m,stk)))
   | FFlex(RelKey k) when red_set info.i_flags fDELTA ->
       (match ref_value_cache info tab (RelKey k) with
         | Def v -> kni info tab v stk
         | Primitive _ -> assert false
-        | OpaqueDef _ | Undef _ -> (set_norm m; (m,stk)))
+        | OpaqueDef _ | Undef _ -> (set_ntrl m; (m,stk)))
   | FConstruct((_ind,c),_u) ->
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
@@ -1523,9 +1523,9 @@ let norm_val info tab v =
   with_stats (lazy (kl info tab v))
 
 let whd_stack infos tab m stk = match Mark.red_state m.mark with
-| Whnf | Norm ->
+| Whnf | Ntrl ->
   (** No need to perform [kni] nor to unlock updates because
-      every head subterm of [m] is [Whnf] or [Norm] *)
+      every head subterm of [m] is [Whnf] or [Ntrl] *)
   knh infos m stk
 | Red | Cstr ->
   let k = kni infos tab m stk in
