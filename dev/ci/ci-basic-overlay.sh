@@ -147,7 +147,7 @@
 ########################################################################
 # CompCert
 ########################################################################
-: "${compcert_CI_REF:=e6e036b3f285d2f3ba2a5036a413eb9c7d7534cd}"
+: "${compcert_CI_REF:=v3.8}"
 : "${compcert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
 : "${compcert_CI_ARCHIVEURL:=${compcert_CI_GITURL}/archive}"
 
