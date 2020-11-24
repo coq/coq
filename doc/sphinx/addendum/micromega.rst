@@ -250,11 +250,11 @@ proof by abstracting monomials by variables.
 `psatz`: a proof procedure for non-linear arithmetic
 ----------------------------------------------------
 
-.. tacn:: psatz @one_term {? @int_or_var }
+.. tacn:: psatz @one_term {? @nat_or_var }
    :name: psatz
 
    This tactic explores the *Cone* by increasing degrees – hence the
-   depth parameter *n*. In theory, such a proof search is complete – if the
+   depth parameter :token:`nat_or_var`. In theory, such a proof search is complete – if the
    goal is provable the search eventually stops. Unfortunately, the
    external oracle is using numeric (approximate) optimization techniques
    that might miss a refutation.
