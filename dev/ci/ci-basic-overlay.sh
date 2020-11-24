@@ -98,7 +98,7 @@
 ########################################################################
 # Flocq
 ########################################################################
-: "${flocq_CI_REF:=8fdb8b1ea5ccbe4c4dcd72c40c209d71cc7c3d09}"
+: "${flocq_CI_REF:=flocq-3.3.1}"
 : "${flocq_CI_GITURL:=https://gitlab.inria.fr/flocq/flocq}"
 : "${flocq_CI_ARCHIVEURL:=${flocq_CI_GITURL}/-/archive}"
 
