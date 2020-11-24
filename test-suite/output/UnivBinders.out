@@ -159,6 +159,9 @@ Arguments axbar' _%type_scope
 Expands to: Constant UnivBinders.axbar'
 The command has indeed failed with message:
 When declaring multiple axioms in one command, only the first is allowed a universe binder (which will be shared by the whole block).
+foo@{i} = Type@{M.i} -> Type@{i}
+     : Type@{max(M.i+1,i+1)}
+(* i |=  *)
 bind_univs.mono = 
 Type@{bind_univs.mono.u}
      : Type@{bind_univs.mono.u+1}
