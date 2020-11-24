@@ -34,6 +34,7 @@ CI_TARGETS= \
     ci-fiat_crypto_ocaml \
     ci-fiat_parsers \
     ci-flocq \
+    ci-fourcolor \
     ci-geocoq \
     ci-coqhammer \
     ci-hott \
@@ -44,6 +45,7 @@ CI_TARGETS= \
     ci-menhir \
     ci-metacoq \
     ci-mtac2 \
+    ci-oddorder \
     ci-paramcoq \
     ci-perennial \
     ci-quickchick \
@@ -81,6 +83,8 @@ ci-fiat_crypto: ci-coqprime ci-rewriter
 ci-fiat_crypto_ocaml: ci-fiat_crypto
 
 ci-interval: ci-mathcomp ci-flocq ci-coquelicot ci-bignums
+ci-fourcolor: ci-mathcomp
+ci-oddorder: ci-mathcomp
 
 ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io
