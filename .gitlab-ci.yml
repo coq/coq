@@ -794,6 +794,22 @@ library:ci-flocq:
 library:ci-menhir:
   extends: .ci-template-flambda
 
+library:ci-interval:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-coquelicot
+  - library:ci-flocq
+  - library:ci-mathcomp
+  - plugin:ci-bignums
+  dependencies:
+  - build:edge+flambda
+  - library:ci-coquelicot
+  - library:ci-flocq
+  - library:ci-mathcomp
+  - plugin:ci-bignums
+
 library:ci-corn:
   extends: .ci-template-flambda
   stage: stage-4
