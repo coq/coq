@@ -5,32 +5,32 @@ Set Printing Universes.
 (* Unset Strict Universe Declaration. *)
 
 (* universe binders on inductive types and record projections *)
-Inductive Empty@{u} : Type@{u} := .
+Inductive Empty@{uu} : Type@{uu} := .
 Print Empty.
 
 Set Primitive Projections.
-Record PWrap@{u} (A:Type@{u}) := pwrap { punwrap : A }.
+Record PWrap@{uu} (A:Type@{uu}) := pwrap { punwrap : A }.
 Print PWrap.
 Print punwrap.
 
 Unset Primitive Projections.
-Record RWrap@{u} (A:Type@{u}) := rwrap { runwrap : A }.
+Record RWrap@{uu} (A:Type@{uu}) := rwrap { runwrap : A }.
 Print RWrap.
 Print runwrap.
 
 (* universe binders also go on the constants for operational typeclasses. *)
-Class Wrap@{u} (A:Type@{u}) := wrap : A.
+Class Wrap@{uu} (A:Type@{uu}) := wrap : A.
 Print Wrap.
 Print wrap.
 
 (* Instance in lemma mode used to ignore the binders. *)
-Instance bar@{u} : Wrap@{u} Set. Proof. exact nat. Qed.
+Instance bar@{uu} : Wrap@{uu} Set. Proof. exact nat. Qed.
 Print bar.
 
 Unset Strict Universe Declaration.
 (* The universes in the binder come first, then the extra universes in
    order of appearance. *)
-Definition foo@{u +} := Type -> Type@{v} -> Type@{u}.
+Definition foo@{uu +} := Type -> Type@{v} -> Type@{uu}.
 Print foo.
 
 Check Type@{i} -> Type@{j}.
@@ -40,13 +40,13 @@ Eval cbv in Type@{i} -> Type@{j}.
 Set Strict Universe Declaration.
 
 (* Binders even work with monomorphic definitions! *)
-Monomorphic Definition mono@{u} := Type@{u}.
+Monomorphic Definition mono@{uu} := Type@{uu}.
 Print mono.
 Check mono.
-Check Type@{mono.u}.
+Check Type@{mono.uu}.
 
 Module mono.
-  Fail Monomorphic Universe u.
+  Fail Monomorphic Universe uu.
   Monomorphic Universe MONOU.
 
   Monomorphic Definition monomono := Type@{MONOU}.
@@ -60,28 +60,28 @@ Import mono.
 Check monomono. (* unqualified MONOU *)
 Check mono. (* still qualified mono.u *)
 
-Monomorphic Constraint Set < UnivBinders.mono.u.
+Monomorphic Constraint Set < UnivBinders.mono.uu.
 
 Module mono2.
-  Monomorphic Universe u.
+  Monomorphic Universe uu.
 End mono2.
 
-Fail Monomorphic Definition mono2@{u} := Type@{u}.
+Fail Monomorphic Definition mono2@{uu} := Type@{uu}.
 
 Module SecLet.
   Unset Universe Polymorphism.
   Section foo.
-    (* Fail Let foo@{} := Type@{u}. (* doesn't parse: Let foo@{...} doesn't exist *) *)
+    (* Fail Let foo@{} := Type@{uu}. (* doesn't parse: Let foo@{...} doesn't exist *) *)
     Unset Strict Universe Declaration.
-    Let tt : Type@{u} := Type@{v}. (* names disappear in the ether *)
-    Let ff : Type@{u}. Proof. exact Type@{v}. Qed. (* names disappear into space *)
+    Let tt : Type@{uu} := Type@{v}. (* names disappear in the ether *)
+    Let ff : Type@{uu}. Proof. exact Type@{v}. Qed. (* names disappear into space *)
     Definition bobmorane := tt -> ff.
   End foo.
   Print bobmorane.
 End SecLet.
 
 (* fun x x => foo is nonsense with local binders *)
-Fail Definition fo@{u u} := Type@{u}.
+Fail Definition fo@{uu uu} := Type@{uu}.
 
 (* Using local binders for printing. *)
 Print foo@{E M N}.
@@ -106,14 +106,9 @@ Fail Print Coq.Init.Logic@{E}.
 Monomorphic Universes gU gV. Monomorphic Constraint gU < gV.
 Fail Lemma foo@{u v|u < gU, gV < v, v < u} : nat.
 
-(* Universe binders survive through compilation, sections and modules. *)
-Require TestSuite.bind_univs.
-Print bind_univs.mono.
-Print bind_univs.poly.
-
 Section SomeSec.
-  Universe u.
-  Definition insec@{v} := Type@{u} -> Type@{v}.
+  Universe uu.
+  Definition insec@{v} := Type@{uu} -> Type@{v}.
   Print insec.
 
   Inductive insecind@{k} := inseccstr : Type@{k} -> insecind.
@@ -129,7 +124,7 @@ End SomeSec2.
 Print insec2.
 
 Module SomeMod.
-  Definition inmod@{u} := Type@{u}.
+  Definition inmod@{uu} := Type@{uu}.
   Print inmod.
 End SomeMod.
 Print SomeMod.inmod.
@@ -138,7 +133,7 @@ Print inmod.
 
 Module Type SomeTyp. Definition inmod := Type. End SomeTyp.
 Module SomeFunct (In : SomeTyp).
-  Definition infunct@{u v} := In.inmod@{u} -> Type@{v}.
+  Definition infunct@{uu v} := In.inmod@{uu} -> Type@{v}.
 End SomeFunct.
 Module Applied := SomeFunct(SomeMod).
 Print Applied.infunct.
@@ -147,7 +142,7 @@ Print Applied.infunct.
 
    In polymorphic mode the domain Type gets separate universes for the
    different axioms, but all axioms have to declare all universes. In
-   polymorphic mode they get the same universes, ie the type is only
+   monomorphic mode they get the same universes, ie the type is only
    interpd once. *)
 Axiom axfoo@{i+} axbar : Type -> Type@{i}.
 Monomorphic Axiom axfoo'@{i+} axbar' : Type -> Type@{i}.
@@ -155,3 +150,8 @@ Monomorphic Axiom axfoo'@{i+} axbar' : Type -> Type@{i}.
 About axfoo. About axbar. About axfoo'. About axbar'.
 
 Fail Axiom failfoo failbar@{i} : Type.
+
+(* Universe binders survive through compilation, sections and modules. *)
+Require TestSuite.bind_univs.
+Print bind_univs.mono.
+Print bind_univs.poly.
