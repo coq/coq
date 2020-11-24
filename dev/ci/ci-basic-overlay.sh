@@ -306,7 +306,7 @@
 # menhirlib
 ########################################################################
 # Note: menhirlib is now in subfolder coq-menhirlib of menhir
-: "${menhirlib_CI_REF:=master}"
+: "${menhirlib_CI_REF:=20201122}"
 : "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/menhir}"
 : "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
 
