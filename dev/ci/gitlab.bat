@@ -49,7 +49,6 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=extlib ^
     -addon=quickchick ^
     -addon=coquelicot ^
-    -addon=vst ^
     -addon=aactactics ^
     -addon=flocq ^
     -addon=interval ^
@@ -57,6 +56,7 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=gappa ^
     -addon=elpi ^
     -addon=HB
+REM    -addon=vst ^
 ) ELSE (
   SET "EXTRA_ADDONS= "
 )
