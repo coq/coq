@@ -126,7 +126,7 @@
 ########################################################################
 # Coq-interval
 ########################################################################
-: "${interval_CI_REF:=b7f6a5fb5904202d7ccaf6de99e948b193224a03}"
+: "${interval_CI_REF:=interval-4.1.0}"
 : "${interval_CI_GITURL:=https://gitlab.inria.fr/coqinterval/interval}"
 : "${interval_CI_ARCHIVEURL:=${interval_CI_GITURL}/-/archive}"
 
