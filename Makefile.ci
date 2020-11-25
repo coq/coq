@@ -72,7 +72,7 @@ ci-all: $(CI_TARGETS)
 ci-color: ci-bignums
 
 ci-coqprime: ci-bignums
-
+ci-coquelicot: ci-mathcomp
 ci-math_classes: ci-bignums
 
 ci-corn: ci-math_classes
