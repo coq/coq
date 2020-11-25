@@ -611,13 +611,15 @@ Section S.
         let '(e1 , t1) := (RXCNF (negb polarity) e1) in
         if polarity
         then
-          if is_cnf_ff e1
-          then
-            RXCNF polarity e2
-          else (* compute disjunction *)
-            let '(e2 , t2) := (RXCNF polarity e2) in
-            let (f',t') := ror_cnf_opt e1 e2 in
-            (f', t1 +++ t2 +++ t') (* record the hypothesis *)
+          if is_cnf_tt e1
+          then (e1,t1)
+          else if is_cnf_ff e1
+            then
+              RXCNF polarity e2
+            else (* compute disjunction *)
+              let '(e2 , t2) := (RXCNF polarity e2) in
+              let (f',t') := ror_cnf_opt e1 e2 in
+              (f', t1 +++ t2 +++ t') (* record the hypothesis *)
         else
           let '(e2 , t2) := (RXCNF polarity e2) in
           (and_cnf_opt e1 e2, t1 +++ t2).
@@ -1349,6 +1351,7 @@ Section S.
     reflexivity.
   Qed.
 
+
   Lemma rxcnf_impl_xcnf :
     forall {TX : kind -> Type} {AF:Type} (k: kind) (f1 f2:TFormula TX AF k)
            (IHf1 : forall pol : bool, fst (rxcnf pol f1) = xcnf pol f1)
@@ -1366,9 +1369,15 @@ Section S.
     simpl in *.
     subst.
     destruct pol;auto.
-    generalize (is_cnf_ff_inv (xcnf (negb true) f1)).
+    generalize (is_cnf_tt_inv (xcnf (negb true) f1)).
+    destruct (is_cnf_tt (xcnf (negb true) f1)).
+    + intros.
+      rewrite H by auto.
+      reflexivity.
+    +
+      generalize (is_cnf_ff_inv (xcnf (negb true) f1)).
     destruct (is_cnf_ff (xcnf (negb true) f1)).
-    + intros H.
+    * intros.
       rewrite H by auto.
       unfold or_cnf_opt.
       simpl.
@@ -1377,15 +1386,12 @@ Section S.
       destruct (is_cnf_ff (xcnf true f2)) eqn:EQ1.
       apply is_cnf_ff_inv in EQ1. congruence.
       reflexivity.
-    +
+    *
       rewrite <- ror_opt_cnf_cnf.
       destruct (ror_cnf_opt (xcnf (negb true) f1) (xcnf true f2)).
       intros.
       reflexivity.
   Qed.
-
-
-
 
   Lemma rxcnf_iff_xcnf :
     forall {TX : kind -> Type} {AF:Type} (k: kind) (f1 f2:TFormula TX AF k)

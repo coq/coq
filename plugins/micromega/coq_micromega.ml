@@ -12,7 +12,7 @@
 (*                                                                      *)
 (* ** Toplevel definition of tactics **                                 *)
 (*                                                                      *)
-(* - Modules M, Mc, Env, Cache, CacheZ                                  *)
+(* - Modules Mc, Env, Cache, CacheZ                                  *)
 (*                                                                      *)
 (*  Frédéric Besson (Irisa/Inria) 2006-2019                             *)
 (*                                                                      *)
@@ -197,6 +197,7 @@ let coq_proofTerm = lazy (constr_of_ref "micromega.ZArithProof.type")
 let coq_doneProof = lazy (constr_of_ref "micromega.ZArithProof.DoneProof")
 let coq_ratProof = lazy (constr_of_ref "micromega.ZArithProof.RatProof")
 let coq_cutProof = lazy (constr_of_ref "micromega.ZArithProof.CutProof")
+let coq_splitProof = lazy (constr_of_ref "micromega.ZArithProof.SplitProof")
 let coq_enumProof = lazy (constr_of_ref "micromega.ZArithProof.EnumProof")
 let coq_ExProof = lazy (constr_of_ref "micromega.ZArithProof.ExProof")
 let coq_IsProp = lazy (constr_of_ref "micromega.kind.isProp")
@@ -1341,6 +1342,12 @@ let rec dump_proof_term = function
     EConstr.mkApp
       ( Lazy.force coq_cutProof
       , [|dump_psatz coq_Z dump_z cone; dump_proof_term prf|] )
+  | Micromega.SplitProof (p, prf1, prf2) ->
+    EConstr.mkApp
+      ( Lazy.force coq_splitProof
+      , [| dump_pol (Lazy.force coq_Z) dump_z p
+         ; dump_proof_term prf1
+         ; dump_proof_term prf2 |] )
   | Micromega.EnumProof (c1, c2, prfs) ->
     EConstr.mkApp
       ( Lazy.force coq_enumProof
@@ -1364,6 +1371,7 @@ let rec size_of_pf = function
   | Micromega.DoneProof -> 1
   | Micromega.RatProof (p, a) -> size_of_pf a + size_of_psatz p
   | Micromega.CutProof (p, a) -> size_of_pf a + size_of_psatz p
+  | Micromega.SplitProof (_, p1, p2) -> size_of_pf p1 + size_of_pf p2
   | Micromega.EnumProof (p1, p2, l) ->
     size_of_psatz p1 + size_of_psatz p2
     + List.fold_left (fun acc p -> size_of_pf p + acc) 0 l
@@ -1382,6 +1390,9 @@ let rec pp_proof_term o = function
     Printf.fprintf o "R[%a,%a]" (pp_psatz pp_z) cone pp_proof_term rst
   | Micromega.CutProof (cone, rst) ->
     Printf.fprintf o "C[%a,%a]" (pp_psatz pp_z) cone pp_proof_term rst
+  | Micromega.SplitProof (p, p1, p2) ->
+    Printf.fprintf o "S[%a,%a,%a]" (pp_pol pp_z) p pp_proof_term p1
+      pp_proof_term p2
   | Micromega.EnumProof (c1, c2, rst) ->
     Printf.fprintf o "EP[%a,%a,%a]" (pp_psatz pp_z) c1 (pp_psatz pp_z) c2
       (pp_list "[" "]" pp_proof_term)
@@ -2200,6 +2211,7 @@ let hyps_of_pt pt =
     | Mc.DoneProof -> acc
     | Mc.RatProof (c, pt) -> xhyps (base + 1) pt (xhyps_of_cone base acc c)
     | Mc.CutProof (c, pt) -> xhyps (base + 1) pt (xhyps_of_cone base acc c)
+    | Mc.SplitProof (p, p1, p2) -> xhyps (base + 1) p1 (xhyps (base + 1) p2 acc)
     | Mc.EnumProof (c1, c2, l) ->
       let s = xhyps_of_cone base (xhyps_of_cone base acc c2) c1 in
       List.fold_left (fun s x -> xhyps (base + 1) x s) s l
@@ -2216,6 +2228,8 @@ let compact_pt pt f =
       Mc.RatProof (compact_cone c (translate ofset), compact_pt (ofset + 1) pt)
     | Mc.CutProof (c, pt) ->
       Mc.CutProof (compact_cone c (translate ofset), compact_pt (ofset + 1) pt)
+    | Mc.SplitProof (p, p1, p2) ->
+      Mc.SplitProof (p, compact_pt (ofset + 1) p1, compact_pt (ofset + 1) p2)
     | Mc.EnumProof (c1, c2, l) ->
       Mc.EnumProof
         ( compact_cone c1 (translate ofset)

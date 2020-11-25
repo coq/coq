@@ -56,8 +56,8 @@ val get_cst : t -> Q.t
 (** [decomp_cst v] returns the pair (c,a1.x1+...+an.xn) *)
 val decomp_cst : t -> Q.t * t
 
-(** [decomp_cst v] returns the pair (ai, ai+1.xi+...+an.xn) *)
-val decomp_at : int -> t -> Q.t * t
+(** [decomp_at xi v] returns the pair (ai, ai+1.xi+...+an.xn) *)
+val decomp_at : var -> t -> Q.t * t
 
 val decomp_fst : t -> (var * Q.t) * t
 
