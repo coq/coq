@@ -9,11 +9,11 @@ stages:
   - stage-5 # Only dependencies in stage 1, 2, 3, and 4
   - deploy
 
-# When a job has no dependencies, it goes to stage 1.  Otherwise, we
-# set both "needs" and "dependencies". "needs" is a superset of
-# "dependencies" that should include all the transitive dependencies.
-# "dependencies" only list the previous jobs whose artifact we need to
-# keep.
+# When a job has no dependencies, it goes to stage 1. Otherwise, we
+# set "needs" to contain all transitive dependencies (with "artifacts:
+# false" when we don't want the artifacts). We include the transitive
+# dependencies due to gitlab bugs sometimes starting the job even if a
+# transitive dep failed, see #10699 / 7b59d8c9d9b2104de7162ec0e40f6182a6830046.
 
 # some default values
 variables:
@@ -112,7 +112,6 @@ before_script:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies: []
   script:
     # flambda can be pretty stack hungry, specially with -O3
     # See also https://github.com/ocaml/ocaml/issues/7842#issuecomment-596863244
@@ -141,8 +140,6 @@ before_script:
   interruptible: true
   needs:
     - build:edge+flambda:dune:dev
-  dependencies:
-    - build:edge+flambda:dune:dev
   script:
     - tar xfj _build.tar.bz2
     - set -e
@@ -158,7 +155,7 @@ before_script:
     name: "$CI_JOB_NAME"
     expire_in: 2 months
 
-# every non build job must set dependencies otherwise all build
+# every non build job must set "needs" otherwise all build
 # artifacts are used together and we may get some random Coq. To that
 # purpose, we add a spurious dependency `not-a-real-job` that must be
 # overridden otherwise the CI will fail.
@@ -169,7 +166,7 @@ before_script:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies:
+  needs:
     - not-a-real-job
   script:
     - SPHINXENV='COQBIN="'"$PWD"'/_install_ci/bin/"'
@@ -181,14 +178,14 @@ before_script:
       - _install_ci/share/doc/coq/
     expire_in: 2 months
 
-# set dependencies when using
+# set "needs" when using
 .test-suite-template:
   stage: stage-2
   except:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies:
+  needs:
     - not-a-real-job
   script:
     - cd test-suite
@@ -206,14 +203,14 @@ before_script:
     # Gitlab doesn't support yet "expire_in: never" so we use the instance default
     # expire_in: never
 
-# set dependencies when using
+# set "needs" when using
 .validate-template:
   stage: stage-2
   except:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies:
+  needs:
     - not-a-real-job
   script:
     # exit 0: workaround for https://gitlab.com/gitlab-org/gitlab/issues/202505
@@ -249,14 +246,10 @@ before_script:
     when: always
   needs:
     - build:base
-  dependencies:
-    - build:base
 
 .ci-template-flambda:
   extends: .ci-template
   needs:
-    - build:edge+flambda
-  dependencies:
     - build:edge+flambda
   variables:
     OPAM_SWITCH: "edge"
@@ -271,7 +264,6 @@ before_script:
       - artifacts
     when: always
     expire_in: 1 week
-  dependencies: []
   tags:
     - windows-inria
   before_script: []
@@ -373,7 +365,6 @@ lint:
     variables:
       - $ONLY_WINDOWS == "true"
   script: dev/lint-repository.sh
-  dependencies: []
   variables:
     GIT_DEPTH: "" # we need an unknown amount of history for per-commit linting
     OPAM_SWITCH: "edge"
@@ -386,7 +377,6 @@ pkg:opam:
       - $ONLY_WINDOWS == "true"
   interruptible: true
   # OPAM will build out-of-tree so no point in importing artifacts
-  dependencies: []
   script:
     - set -e
     - opam pin add --kind=path coq.dev .
@@ -410,7 +400,6 @@ pkg:opam:
     GIT_STRATEGY: none
     NIXOS_PUBLIC_KEY: cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
-  dependencies: [] # We don't need to download build artifacts
   before_script: [] # We don't want to use the shared 'before_script'
   script:
     - cat /proc/{cpu,mem}info || true
@@ -454,7 +443,6 @@ pkg:nix:deploy:channel:
       - /^v.*\..*$/
     variables:
       - $CACHIX_DEPLOYMENT_KEY
-  dependencies: []
   needs:
     - pkg:nix:deploy
   script:
@@ -476,8 +464,6 @@ pkg:nix:
 
 doc:refman:
   extends: .doc-template
-  dependencies:
-    - build:base
   needs:
     - build:base
 
@@ -518,10 +504,6 @@ doc:refman:deploy:
   only:
     variables:
       - $DOCUMENTATION_DEPLOY_KEY
-  dependencies:
-    - doc:ml-api:odoc
-    - doc:refman:dune
-    - build:base
   needs:
     - doc:ml-api:odoc
     - doc:refman:dune
@@ -552,15 +534,11 @@ doc:ml-api:odoc:
 
 test-suite:base:
   extends: .test-suite-template
-  dependencies:
-    - build:base
   needs:
     - build:base
 
 test-suite:base+32bit:
   extends: .test-suite-template
-  dependencies:
-    - build:base+32bit
   needs:
     - build:base+32bit
   variables:
@@ -569,8 +547,6 @@ test-suite:base+32bit:
 
 test-suite:edge+flambda:
   extends: .test-suite-template
-  dependencies:
-    - build:edge+flambda
   needs:
     - build:edge+flambda
   variables:
@@ -584,8 +560,6 @@ test-suite:edge:dune:dev:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies:
-    - build:edge+flambda:dune:dev
   needs:
     - build:edge+flambda:dune:dev
   script:
@@ -608,7 +582,6 @@ test-suite:edge:dune:dev:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies: []
   script:
     - opam switch create $OCAMLVER --empty
     - eval $(opam env)
@@ -637,8 +610,6 @@ test-suite:edge:dune:dev:
 
 test-suite:base+async:
   extends: .test-suite-template
-  dependencies:
-    - build:base
   needs:
     - build:base
   variables:
@@ -651,15 +622,11 @@ test-suite:base+async:
 
 validate:base:
   extends: .validate-template
-  dependencies:
-    - build:base
   needs:
     - build:base
 
 validate:base+32bit:
   extends: .validate-template
-  dependencies:
-    - build:base+32bit
   needs:
     - build:base+32bit
   variables:
@@ -668,8 +635,6 @@ validate:base+32bit:
 
 validate:edge+flambda:
   extends: .validate-template
-  dependencies:
-    - build:edge+flambda
   needs:
     - build:edge+flambda
   variables:
@@ -679,8 +644,6 @@ validate:edge+flambda:
 
 validate:quick:
   extends: .validate-template
-  dependencies:
-    - build:quick
   needs:
     - build:quick
   only:
@@ -707,9 +670,6 @@ library:ci-color:
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
-  dependencies:
-  - build:edge+flambda
-  - plugin:ci-bignums
 
 library:ci-compcert:
   stage: stage-3
@@ -731,9 +691,6 @@ library:ci-coqprime:
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
-  dependencies:
-  - build:edge+flambda
-  - plugin:ci-bignums
 
 library:ci-coqtail:
   extends: .ci-template
@@ -742,9 +699,6 @@ library:ci-coquelicot:
   stage: stage-3
   extends: .ci-template-flambda
   needs:
-  - build:edge+flambda
-  - library:ci-mathcomp
-  dependencies:
   - build:edge+flambda
   - library:ci-mathcomp
 
@@ -761,11 +715,6 @@ library:ci-fiat_crypto:
   extends: .ci-template-flambda
   stage: stage-4
   needs:
-  - build:edge+flambda
-  - library:ci-coqprime
-  - plugin:ci-bignums
-  - plugin:ci-rewriter
-  dependencies:
   - build:edge+flambda
   - library:ci-coqprime
   - plugin:ci-bignums
@@ -787,12 +736,6 @@ library:ci-fiat_crypto_ocaml:
   - plugin:ci-bignums
   - plugin:ci-rewriter
   - library:ci-fiat_crypto
-  dependencies:
-  - build:edge+flambda
-  - library:ci-coqprime
-  - plugin:ci-bignums
-  - plugin:ci-rewriter
-  - library:ci-fiat_crypto
 
 library:ci-flocq:
   extends: .ci-template-flambda
@@ -809,12 +752,6 @@ library:ci-interval:
   - library:ci-flocq
   - library:ci-mathcomp
   - plugin:ci-bignums
-  dependencies:
-  - build:edge+flambda
-  - library:ci-coquelicot
-  - library:ci-flocq
-  - library:ci-mathcomp
-  - plugin:ci-bignums
 
 library:ci-oddorder:
   extends: .ci-template-flambda
@@ -822,17 +759,11 @@ library:ci-oddorder:
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
-  dependencies:
-  - build:edge+flambda
-  - library:ci-mathcomp
 
 library:ci-fourcolor:
   extends: .ci-template-flambda
   stage: stage-3
   needs:
-  - build:edge+flambda
-  - library:ci-mathcomp
-  dependencies:
   - build:edge+flambda
   - library:ci-mathcomp
 
@@ -843,17 +774,11 @@ library:ci-corn:
   - build:edge+flambda
   - plugin:ci-bignums
   - library:ci-math_classes
-  dependencies:
-  - build:edge+flambda
-  - library:ci-math_classes
 
 plugin:ci-gappa:
   extends: .ci-template-flambda
   stage: stage-3
   needs:
-  - build:edge+flambda
-  - library:ci-flocq
-  dependencies:
   - build:edge+flambda
   - library:ci-flocq
 
@@ -870,9 +795,6 @@ library:ci-math_classes:
   extends: .ci-template-flambda
   stage: stage-3
   needs:
-  - build:edge+flambda
-  - plugin:ci-bignums
-  dependencies:
   - build:edge+flambda
   - plugin:ci-bignums
 
@@ -898,9 +820,6 @@ library:ci-vst:
   extends: .ci-template-flambda
   stage: stage-3
   needs:
-  - build:edge+flambda
-  - library:ci-flocq
-  dependencies:
   - build:edge+flambda
   - library:ci-flocq
 
@@ -933,9 +852,6 @@ plugin:ci-metacoq:
   needs:
   - build:base
   - plugin:ci-equations
-  dependencies:
-  - build:base
-  - plugin:ci-equations
 
 plugin:ci-mtac2:
   extends: .ci-template
@@ -952,7 +868,6 @@ plugin:plugin-tutorial:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
-  dependencies: []
   script:
     - ./configure -local -warn-error yes
     - make -j "$NJOBS" plugin-tutorial
