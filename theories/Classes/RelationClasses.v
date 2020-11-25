@@ -235,8 +235,6 @@ Hint Resolve irreflexivity : ord.
 
 Unset Implicit Arguments.
 
-(** A HintDb for relations. *)
-
 Ltac solve_relation :=
   match goal with
   | [ |- ?R ?x ?x ] => reflexivity

@@ -236,8 +236,6 @@ Hint Resolve irreflexivity : ord.
 
 Unset Implicit Arguments.
 
-(** A HintDb for crelations. *)
-
 Ltac solve_crelation :=
   match goal with
   | [ |- ?R ?x ?x ] => reflexivity

@@ -69,7 +69,8 @@ Sections create local contexts which can be shared across multiple definitions.
        :undocumented:
 
 .. note::
-   Most commands, like :cmd:`Hint`, :cmd:`Notation`, option management, … which
+   Most commands, such as the :ref:`Hint <creating_hints>` commands,
+   :cmd:`Notation` and option management commands that
    appear inside a section are canceled when the section is closed.
 
 .. cmd:: Let @ident_decl @def_body

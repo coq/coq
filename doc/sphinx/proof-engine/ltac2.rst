@@ -1475,7 +1475,7 @@ Other nonterminals that have syntactic classes are listed here.
 
       * - :n:`clause`
         - :token:`ltac2_clause`
-        - :token:`clause_dft_concl`
+        - :token:`occurrences`
 
       * - :n:`occurrences`
         - :token:`q_occurrences`
