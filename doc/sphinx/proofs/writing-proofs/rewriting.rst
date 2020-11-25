@@ -295,21 +295,21 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
 Performing computations
 ---------------------------
 
-.. insertprodn red_expr pattern_occ
+.. insertprodn red_expr pattern_occs
 
 .. prodn::
    red_expr ::= red
    | hnf
-   | simpl {? @delta_flag } {? @ref_or_pattern_occ }
+   | simpl {? @delta_flag } {? {| @reference_occs | @pattern_occs } }
    | cbv {? @strategy_flag }
    | cbn {? @strategy_flag }
    | lazy {? @strategy_flag }
    | compute {? @delta_flag }
-   | vm_compute {? @ref_or_pattern_occ }
-   | native_compute {? @ref_or_pattern_occ }
-   | unfold {+, @unfold_occ }
+   | vm_compute {? {| @reference_occs | @pattern_occs } }
+   | native_compute {? {| @reference_occs | @pattern_occs } }
+   | unfold {+, @reference_occs }
    | fold {+ @one_term }
-   | pattern {+, @pattern_occ }
+   | pattern {+, @pattern_occs }
    | @ident
    delta_flag ::= {? - } [ {+ @reference } ]
    strategy_flag ::= {+ @red_flag }
@@ -321,16 +321,8 @@ Performing computations
    | cofix
    | zeta
    | delta {? @delta_flag }
-   ref_or_pattern_occ ::= @reference {? at @occs_nums }
-   | @one_term {? at @occs_nums }
-   occs_nums ::= {+ @nat_or_var }
-   | - {+ @nat_or_var }
-   int_or_var ::= @integer
-   | @ident
-   nat_or_var ::= @natural
-   | @ident
-   unfold_occ ::= @reference {? at @occs_nums }
-   pattern_occ ::= @one_term {? at @occs_nums }
+   reference_occs ::= @reference {? at @occs_nums }
+   pattern_occs ::= @one_term {? at @occs_nums }
 
 This set of tactics implements different specialized usages of the
 tactic :tacn:`change`.
@@ -347,17 +339,6 @@ Goal clauses are written after a conversion tactic (tactics :tacn:`set`,
 clauses) and are introduced by the keyword `in`. If no goal clause is
 provided, the default is to perform the conversion only in the
 conclusion.
-
-The syntax and description of the various goal clauses is the
-following:
-
-+ :n:`in {+ @ident} |-`  only in hypotheses :n:`{+ @ident}`
-+ :n:`in {+ @ident} |- *` in hypotheses :n:`{+ @ident}` and in the
-  conclusion
-+ :n:`in * |-` in every hypothesis
-+ :n:`in *` (equivalent to in :n:`* |- *`) everywhere
-+ :n:`in (type of @ident) (value of @ident) ... |-` in type part of
-  :n:`@ident`, in the value part of :n:`@ident`, etc.
 
 For backward compatibility, the notation :n:`in {+ @ident}` performs
 the conversion in hypotheses :n:`{+ @ident}`.

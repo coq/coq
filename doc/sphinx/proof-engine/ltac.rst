@@ -1637,9 +1637,10 @@ Testing boolean expressions: guard
 .. tacn:: guard @int_or_var @comparison @int_or_var
    :name: guard
 
-   .. insertprodn comparison comparison
+   .. insertprodn int_or_var comparison
 
    .. prodn::
+      int_or_var ::= {| @integer | @ident }
       comparison ::= =
       | <
       | <=
@@ -1761,7 +1762,7 @@ Defining |Ltac| symbols
          "Ltac intros := idtac" seems like it redefines/hides an
          existing tactic, but in fact it creates a tactic which can
          only be called by its qualified name.  This is true in
-         general of tactic notations.  The only way to overwrite most
+         general of tactic notations.  The only way to override most
          primitive tactics, and any user-defined tactic notation, is
          with another tactic notation.
 

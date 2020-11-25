@@ -436,7 +436,7 @@ univ_decl: [
 ]
 
 cumul_univ_decl: [
-| "@{" LIST0 ( OPT [ "=" | "+" | "*" ] ident ) OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+| "@{" LIST0 ( OPT [ "+" | "=" | "*" ] ident ) OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
 ]
 
 univ_constraint: [
@@ -509,6 +509,21 @@ binder: [
 | implicit_binders
 | generalizing_binder
 | "(" name ":" type "|" term ")"
+| "'" pattern0
+]
+
+one_open_binder: [
+| name
+| name ":" term
+| one_closed_binder
+]
+
+one_closed_binder: [
+| "(" name ":" term ")"
+| "{" name "}"
+| "{" name ":" term "}"
+| "[" name "]"
+| "[" name ":" term "]"
 | "'" pattern0
 ]
 
@@ -614,16 +629,16 @@ reduce: [
 red_expr: [
 | "red"
 | "hnf"
-| "simpl" OPT delta_flag OPT ref_or_pattern_occ
+| "simpl" OPT delta_flag OPT [ reference_occs | pattern_occs ]
 | "cbv" OPT strategy_flag
 | "cbn" OPT strategy_flag
 | "lazy" OPT strategy_flag
 | "compute" OPT delta_flag
-| "vm_compute" OPT ref_or_pattern_occ
-| "native_compute" OPT ref_or_pattern_occ
-| "unfold" LIST1 unfold_occ SEP ","
+| "vm_compute" OPT [ reference_occs | pattern_occs ]
+| "native_compute" OPT [ reference_occs | pattern_occs ]
+| "unfold" LIST1 reference_occs SEP ","
 | "fold" LIST1 one_term
-| "pattern" LIST1 pattern_occ SEP ","
+| "pattern" LIST1 pattern_occs SEP ","
 | ident
 ]
 
@@ -646,31 +661,11 @@ red_flag: [
 | "delta" OPT delta_flag
 ]
 
-ref_or_pattern_occ: [
-| reference OPT ( "at" occs_nums )
-| one_term OPT ( "at" occs_nums )
-]
-
-occs_nums: [
-| LIST1 nat_or_var
-| "-" LIST1 nat_or_var
-]
-
-int_or_var: [
-| integer
-| ident
-]
-
-nat_or_var: [
-| natural
-| ident
-]
-
-unfold_occ: [
+reference_occs: [
 | reference OPT ( "at" occs_nums )
 ]
 
-pattern_occ: [
+pattern_occs: [
 | one_term OPT ( "at" occs_nums )
 ]
 
@@ -705,7 +700,7 @@ field_def: [
 ]
 
 inductive_definition: [
-| OPT ">" cumul_ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] OPT ( ":=" OPT constructors_or_record ) OPT decl_notations
+| OPT ">" ident OPT cumul_univ_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] OPT ( ":=" OPT constructors_or_record ) OPT decl_notations
 ]
 
 constructors_or_record: [
@@ -715,10 +710,6 @@ constructors_or_record: [
 
 constructor: [
 | ident LIST0 binder OPT of_type
-]
-
-cumul_ident_decl: [
-| ident OPT cumul_univ_decl
 ]
 
 filtered_import: [
@@ -901,9 +892,7 @@ command: [
 | "Print" "Typing" "Flags"
 | "Print" "Tables"
 | "Print" "Options"
-| "Print" "Hint"
-| "Print" "Hint" reference
-| "Print" "Hint" "*"
+| "Print" "Hint" OPT [ "*" | reference ]
 | "Print" "HintDb" ident
 | "Print" "Scopes"
 | "Print" "Scope" scope_name
@@ -958,7 +947,6 @@ command: [
 | "Extract" "Inductive" qualid "=>" [ ident | string ] "[" LIST0 [ ident | string ] "]" OPT string      (* extraction plugin *)
 | "Show" "Extraction"      (* extraction plugin *)
 | "Proof"
-| "Proof" "using" section_var_expr
 | "Proof" "Mode" string
 | "Proof" term
 | "Abort" OPT [ "All" | ident ]
@@ -983,7 +971,6 @@ command: [
 | "Guarded"
 | "Create" "HintDb" ident OPT "discriminated"
 | "Remove" "Hints" LIST1 qualid OPT ( ":" LIST1 ident )
-| "Hint" hint OPT ( ":" LIST1 ident )
 | "Comments" LIST0 [ one_term | string | natural ]
 | "Declare" "Instance" ident_decl LIST0 binder ":" term OPT hint_info
 | "Declare" "Scope" scope_name
@@ -1030,7 +1017,7 @@ command: [
 | "Print" "Rings"      (* ring plugin *)
 | "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* ring plugin *)
 | "Print" "Fields"      (* ring plugin *)
-| "Hint" "Cut" "[" hints_path "]" OPT ( ":" LIST1 ident )
+| "Hint" "Cut" "[" hints_regexp "]" OPT ( ":" LIST1 ident )
 | "Prenex" "Implicits" LIST1 qualid      (* SSR plugin *)
 | "Print" "Hint" "View" OPT ssrviewpos      (* SSR plugin *)
 | "Hint" "View" OPT ssrviewpos LIST1 ( one_term OPT ( "|" natural ) )      (* SSR plugin *)
@@ -1039,7 +1026,7 @@ command: [
 | "Typeclasses" "Opaque" LIST1 qualid
 | "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" [ "bfs" | "dfs" ] ")" ) OPT natural
 | "Proof" "with" ltac_expr OPT [ "using" section_var_expr ]
-| "Proof" "using" section_var_expr "with" ltac_expr
+| "Proof" "using" section_var_expr OPT [ "with" ltac_expr ]
 | "Tactic" "Notation" OPT ( "(" "at" "level" natural ")" ) LIST1 ltac_production_item ":=" ltac_expr
 | "Print" "Rewrite" "HintDb" ident
 | "Print" "Ltac" qualid
@@ -1142,6 +1129,15 @@ command: [
 | "Ltac2" "Notation" [ string | lident ] ":=" ltac2_expr      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr      (* Ltac2 plugin *)
 | "Print" "Ltac2" qualid      (* Ltac2 plugin *)
+| "Hint" "Resolve" LIST1 [ qualid | one_term ] OPT hint_info OPT ( ":" LIST1 ident )
+| "Hint" "Resolve" [ "->" | "<-" ] LIST1 qualid OPT natural OPT ( ":" LIST1 ident )
+| "Hint" "Immediate" LIST1 [ qualid | one_term ] OPT ( ":" LIST1 ident )
+| "Hint" [ "Constants" | "Variables" ] [ "Transparent" | "Opaque" ] OPT ( ":" LIST1 ident )
+| "Hint" [ "Transparent" | "Opaque" ] LIST1 qualid OPT ( ":" LIST1 ident )
+| "Hint" "Mode" qualid LIST1 [ "+" | "!" | "-" ] OPT ( ":" LIST1 ident )
+| "Hint" "Unfold" LIST1 qualid OPT ( ":" LIST1 ident )
+| "Hint" "Constructors" LIST1 qualid OPT ( ":" LIST1 ident )
+| "Hint" "Extern" natural OPT one_pattern "=>" ltac_expr OPT ( ":" LIST1 ident )
 | "Time" sentence
 | "Redirect" string sentence
 | "Timeout" natural sentence
@@ -1205,23 +1201,6 @@ univ_name_list: [
 | "@{" LIST0 name "}"
 ]
 
-hint: [
-| "Resolve" LIST1 [ qualid | one_term ] OPT hint_info
-| "Resolve" "->" LIST1 qualid OPT natural
-| "Resolve" "<-" LIST1 qualid OPT natural
-| "Immediate" LIST1 [ qualid | one_term ]
-| "Variables" "Transparent"
-| "Variables" "Opaque"
-| "Constants" "Transparent"
-| "Constants" "Opaque"
-| "Transparent" LIST1 qualid
-| "Opaque" LIST1 qualid
-| "Mode" qualid LIST1 [ "+" | "!" | "-" ]
-| "Unfold" LIST1 qualid
-| "Constructors" LIST1 qualid
-| "Extern" natural OPT one_pattern "=>" ltac_expr
-]
-
 tacdef_body: [
 | qualid LIST0 name [ ":=" | "::=" ] ltac_expr
 ]
@@ -1275,28 +1254,37 @@ constr_with_bindings_arg: [
 | OPT ">" one_term OPT ( "with" bindings )      (* SSR plugin *)
 ]
 
-clause_dft_concl: [
-| "in" in_clause
-| OPT ( "at" occs_nums )
+occurrences: [
+| "at" occs_nums
+| "in" goal_occurrences
 ]
 
-in_clause: [
-| "*" OPT ( "at" occs_nums )
-| "*" "|-" OPT concl_occ
-| LIST0 hypident_occ SEP "," OPT ( "|-" OPT concl_occ )
+occs_nums: [
+| OPT "-" LIST1 nat_or_var
 ]
 
-hypident_occ: [
+nat_or_var: [
+| [ natural | ident ]
+]
+
+goal_occurrences: [
+| LIST1 hyp_occs SEP "," OPT ( "|-" OPT concl_occs )
+| "*" "|-" OPT concl_occs
+| "|-" OPT concl_occs
+| OPT concl_occs
+]
+
+hyp_occs: [
 | hypident OPT ( "at" occs_nums )
 ]
 
 hypident: [
 | ident
-| "(" "type" "of" ident ")"      (* SSR plugin *)
-| "(" "value" "of" ident ")"      (* SSR plugin *)
+| "(" "type" "of" ident ")"
+| "(" "value" "of" ident ")"
 ]
 
-concl_occ: [
+concl_occs: [
 | "*" OPT ( "at" occs_nums )
 ]
 
@@ -1545,15 +1533,15 @@ number_string_via: [
 | "via" qualid "mapping" "[" LIST1 [ qualid "=>" qualid | "[" qualid "]" "=>" qualid ] SEP "," "]"
 ]
 
-hints_path: [
-| "(" hints_path ")"
-| hints_path "*"
-| "emp"
-| "eps"
-| hints_path "|" hints_path
+hints_regexp: [
 | LIST1 qualid
 | "_"
-| hints_path hints_path
+| hints_regexp "|" hints_regexp
+| hints_regexp hints_regexp
+| hints_regexp "*"
+| "emp"
+| "eps"
+| "(" hints_regexp ")"
 ]
 
 class: [
@@ -1630,7 +1618,7 @@ simple_tactic: [
 | "constructor" OPT nat_or_var OPT ( "with" bindings )
 | "econstructor" OPT ( nat_or_var OPT ( "with" bindings ) )
 | "specialize" one_term OPT ( "with" bindings ) OPT ( "as" simple_intropattern )
-| "symmetry" OPT ( "in" in_clause )
+| "symmetry" OPT ( "in" goal_occurrences )
 | "split" OPT ( "with" bindings )
 | "esplit" OPT ( "with" bindings )
 | "exists" OPT ( LIST1 bindings SEP "," )
@@ -1648,8 +1636,8 @@ simple_tactic: [
 | "clear" "-" LIST1 ident
 | "clearbody" LIST1 ident
 | "generalize" "dependent" one_term
-| "replace" one_term "with" one_term OPT clause_dft_concl OPT ( "by" ltac_expr3 )
-| "replace" OPT [ "->" | "<-" ] one_term OPT clause_dft_concl
+| "replace" one_term "with" one_term OPT occurrences OPT ( "by" ltac_expr3 )
+| "replace" OPT [ "->" | "<-" ] one_term OPT occurrences
 | "setoid_replace" one_term "with" one_term OPT ( "using" "relation" one_term ) OPT ( "in" ident ) OPT ( "at" LIST1 int_or_var ) OPT ( "by" ltac_expr3 )
 | OPT ( [ natural | "[" ident "]" ] ":" ) "{"
 | bullet
@@ -1701,9 +1689,9 @@ simple_tactic: [
 | "decompose" "record" one_term
 | "absurd" one_term
 | "contradiction" OPT ( one_term OPT ( "with" bindings ) )
-| "autorewrite" OPT "*" "with" LIST1 ident OPT clause_dft_concl OPT ( "using" ltac_expr )
-| "rewrite" "*" OPT [ "->" | "<-" ] one_term OPT ( "in" ident ) OPT ( "at" occurrences OPT ( "by" ltac_expr3 ) )
-| "rewrite" "*" OPT [ "->" | "<-" ] one_term "at" occurrences "in" ident OPT ( "by" ltac_expr3 )
+| "autorewrite" OPT "*" "with" LIST1 ident OPT occurrences OPT ( "using" ltac_expr )
+| "rewrite" "*" OPT [ "->" | "<-" ] one_term OPT ( "in" ident ) OPT ( "at" rewrite_occs OPT ( "by" ltac_expr3 ) )
+| "rewrite" "*" OPT [ "->" | "<-" ] one_term "at" rewrite_occs "in" ident OPT ( "by" ltac_expr3 )
 | "refine" one_term
 | "simple" "refine" one_term
 | "notypeclasses" "refine" one_term
@@ -1764,13 +1752,13 @@ simple_tactic: [
 | "auto" OPT nat_or_var OPT auto_using OPT hintbases
 | "info_auto" OPT nat_or_var OPT auto_using OPT hintbases
 | "debug" "auto" OPT nat_or_var OPT auto_using OPT hintbases
-| "eauto" OPT nat_or_var OPT nat_or_var OPT auto_using OPT hintbases
+| "eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "new" "auto" OPT nat_or_var OPT auto_using OPT hintbases
-| "debug" "eauto" OPT nat_or_var OPT nat_or_var OPT auto_using OPT hintbases
-| "info_eauto" OPT nat_or_var OPT nat_or_var OPT auto_using OPT hintbases
+| "debug" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
+| "info_eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "dfs" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "bfs" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
-| "autounfold" OPT hintbases OPT clause_dft_concl
+| "autounfold" OPT hintbases OPT occurrences
 | "autounfold_one" OPT hintbases OPT ( "in" ident )
 | "unify" one_term one_term OPT ( "with" ident )
 | "convert_concl_no_check" one_term
@@ -1784,8 +1772,8 @@ simple_tactic: [
 | "rewrite_strat" rewstrategy OPT ( "in" ident )
 | "rewrite_db" ident OPT ( "in" ident )
 | "substitute" OPT [ "->" | "<-" ] one_term OPT ( "with" bindings )
-| "setoid_rewrite" OPT [ "->" | "<-" ] one_term OPT ( "with" bindings ) OPT ( "at" occurrences ) OPT ( "in" ident )
-| "setoid_rewrite" OPT [ "->" | "<-" ] one_term OPT ( "with" bindings ) "in" ident "at" occurrences
+| "setoid_rewrite" OPT [ "->" | "<-" ] one_term OPT ( "with" bindings ) OPT ( "at" rewrite_occs ) OPT ( "in" ident )
+| "setoid_rewrite" OPT [ "->" | "<-" ] one_term OPT ( "with" bindings ) "in" ident "at" rewrite_occs
 | "setoid_symmetry" OPT ( "in" ident )
 | "setoid_reflexivity"
 | "setoid_transitivity" one_term
@@ -1808,10 +1796,10 @@ simple_tactic: [
 | "pose" one_term OPT as_name
 | "epose" bindings_with_parameters
 | "epose" one_term OPT as_name
-| "set" bindings_with_parameters OPT clause_dft_concl
-| "set" one_term OPT as_name OPT clause_dft_concl
-| "eset" bindings_with_parameters OPT clause_dft_concl
-| "eset" one_term OPT as_name OPT clause_dft_concl
+| "set" bindings_with_parameters OPT occurrences
+| "set" one_term OPT as_name OPT occurrences
+| "eset" bindings_with_parameters OPT occurrences
+| "eset" one_term OPT as_name OPT occurrences
 | "remember" one_term OPT as_name OPT eqn_ipat OPT clause_dft_all
 | "eremember" one_term OPT as_name OPT eqn_ipat OPT clause_dft_all
 | "assert" "(" ident ":=" term ")"
@@ -1829,32 +1817,32 @@ simple_tactic: [
 | "enough" one_term OPT as_ipat OPT ( "by" ltac_expr3 )
 | "eenough" one_term OPT as_ipat OPT ( "by" ltac_expr3 )
 | "generalize" one_term OPT ( LIST1 one_term )
-| "generalize" one_term OPT ( "at" occs_nums ) OPT as_name LIST0 [ "," pattern_occ OPT as_name ]
+| "generalize" one_term OPT ( "at" occs_nums ) OPT as_name LIST0 [ "," pattern_occs OPT as_name ]
 | "induction" induction_clause_list
 | "einduction" induction_clause_list
 | "destruct" induction_clause_list
 | "edestruct" induction_clause_list
-| "rewrite" LIST1 oriented_rewriter SEP "," OPT clause_dft_concl OPT ( "by" ltac_expr3 )
-| "erewrite" LIST1 oriented_rewriter SEP "," OPT clause_dft_concl OPT ( "by" ltac_expr3 )
+| "rewrite" LIST1 oriented_rewriter SEP "," OPT occurrences OPT ( "by" ltac_expr3 )
+| "erewrite" LIST1 oriented_rewriter SEP "," OPT occurrences OPT ( "by" ltac_expr3 )
 | "dependent" [ "simple" "inversion" | "inversion" | "inversion_clear" ] [ ident | natural ] OPT as_or_and_ipat OPT [ "with" one_term ]
 | "simple" "inversion" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
 | "inversion" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
 | "inversion_clear" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
 | "inversion" [ ident | natural ] "using" one_term OPT ( "in" LIST1 ident )
-| "red" OPT clause_dft_concl
-| "hnf" OPT clause_dft_concl
-| "simpl" OPT delta_flag OPT ref_or_pattern_occ OPT clause_dft_concl
-| "cbv" OPT strategy_flag OPT clause_dft_concl
-| "cbn" OPT strategy_flag OPT clause_dft_concl
-| "lazy" OPT strategy_flag OPT clause_dft_concl
-| "compute" OPT delta_flag OPT clause_dft_concl
-| "vm_compute" OPT ref_or_pattern_occ OPT clause_dft_concl
-| "native_compute" OPT ref_or_pattern_occ OPT clause_dft_concl
-| "unfold" LIST1 unfold_occ SEP "," OPT clause_dft_concl
-| "fold" LIST1 one_term OPT clause_dft_concl
-| "pattern" LIST1 pattern_occ SEP "," OPT clause_dft_concl
-| "change" conversion OPT clause_dft_concl
-| "change_no_check" conversion OPT clause_dft_concl
+| "red" OPT occurrences
+| "hnf" OPT occurrences
+| "simpl" OPT delta_flag OPT [ reference_occs | pattern_occs ] OPT occurrences
+| "cbv" OPT strategy_flag OPT occurrences
+| "cbn" OPT strategy_flag OPT occurrences
+| "lazy" OPT strategy_flag OPT occurrences
+| "compute" OPT delta_flag OPT occurrences
+| "vm_compute" OPT [ reference_occs | pattern_occs ] OPT occurrences
+| "native_compute" OPT [ reference_occs | pattern_occs ] OPT occurrences
+| "unfold" LIST1 reference_occs SEP "," OPT occurrences
+| "fold" LIST1 one_term OPT occurrences
+| "pattern" LIST1 pattern_occs SEP "," OPT occurrences
+| "change" conversion OPT occurrences
+| "change_no_check" conversion OPT occurrences
 | "btauto"
 | "rtauto"
 | "congruence" OPT natural OPT ( "with" LIST1 one_term )
@@ -1946,6 +1934,7 @@ simple_tactic: [
 | "field_simplify" OPT ( "[" LIST1 one_term "]" ) LIST1 one_term OPT ( "in" ident )
 | "field_simplify_eq" OPT ( "[" LIST1 one_term "]" ) OPT ( "in" ident )
 | "intuition" OPT ltac_expr
+| "now" ltac_expr
 | "nsatz" OPT ( "with" "radicalmax" ":=" one_term "strategy" ":=" one_term "parameters" ":=" one_term "variables" ":=" one_term )
 | "psatz" one_term OPT nat_or_var
 | "ring" OPT ( "[" LIST1 one_term "]" )
@@ -1998,17 +1987,22 @@ induction_clause_list: [
 | LIST1 induction_clause SEP "," OPT ( "using" one_term OPT ( "with" bindings ) ) OPT opt_clause
 ]
 
+opt_clause: [
+| "in" goal_occurrences
+| "at" occs_nums
+]
+
 induction_clause: [
 | destruction_arg OPT as_or_and_ipat OPT eqn_ipat OPT opt_clause
 ]
 
-opt_clause: [
-| "in" in_clause
-| "at" occs_nums
-]
-
 auto_using: [
 | "using" LIST1 one_term SEP ","
+]
+
+hintbases: [
+| "with" "*"
+| "with" LIST1 ident
 ]
 
 or_and_intropattern: [
@@ -2055,17 +2049,16 @@ bindings: [
 | LIST1 one_term
 ]
 
+int_or_var: [
+| [ integer | ident ]
+]
+
 comparison: [
 | "="
 | "<"
 | "<="
 | ">"
 | ">="
-]
-
-hintbases: [
-| "with" "*"
-| "with" LIST1 ident
 ]
 
 bindings_with_parameters: [
@@ -2436,11 +2429,11 @@ tac2mode: [
 ]
 
 clause_dft_all: [
-| "in" in_clause
+| "in" goal_occurrences
 ]
 
 in_hyp_as: [
-| "in" ident OPT as_ipat
+| "in" LIST1 [ ident OPT as_ipat ] SEP ","
 ]
 
 simple_binder: [
@@ -2470,7 +2463,7 @@ func_scheme_def: [
 | ident ":=" "Induction" "for" qualid "Sort" sort_family      (* funind plugin *)
 ]
 
-occurrences: [
+rewrite_occs: [
 | LIST1 integer
 | ident
 ]

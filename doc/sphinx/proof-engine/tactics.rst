@@ -466,52 +466,82 @@ Examples:
 
 .. _occurrencessets:
 
-Occurrence sets and occurrence clauses
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Occurrence clauses
+~~~~~~~~~~~~~~~~~~
 
-An occurrence clause is a modifier to some tactics that obeys the
-following syntax:
+An :gdef:`occurrence` is a subterm of a goal or hypothesis that
+matches a pattern provided by a tactic.  Occurrence clauses
+select a subset of the ocurrences in a goal and/or in
+one or more of its hypotheses.
 
-  .. prodn::
-     occurrence_clause ::= in @goal_occurrences
-     goal_occurrences ::= {*, @ident {? @at_occurrences } } {? |- {? * {? @at_occurrences } } }
-     | * |- {? * {? @at_occurrences } }
-     | *
-     at_occurrences ::= at @occurrences
-     occurrences ::= {? - } {* @natural }
+   .. insertprodn occurrences concl_occs
 
-The role of an occurrence clause is to select a set of occurrences of a term
-in a goal. In the first case, the :n:`@ident {? at {* num}}` parts indicate
-that occurrences have to be selected in the hypotheses named :token:`ident`.
-If no numbers are given for hypothesis :token:`ident`, then all the
-occurrences of :token:`term` in the hypothesis are selected. If numbers are
-given, they refer to occurrences of :token:`term` when the term is printed
-using the :flag:`Printing All` flag, counting from left to right. In particular,
-occurrences of :token:`term` in implicit arguments
-(see :ref:`ImplicitArguments`) or coercions (see :ref:`Coercions`) are
-counted.
+   .. prodn::
+      occurrences ::= at @occs_nums
+      | in @goal_occurrences
+      occs_nums ::= {? - } {+ @nat_or_var }
+      nat_or_var ::= {| @natural | @ident }
+      goal_occurrences ::= {+, @hyp_occs } {? %|- {? @concl_occs } }
+      | * %|- {? @concl_occs }
+      | %|- {? @concl_occs }
+      | {? @concl_occs }
+      hyp_occs ::= @hypident {? at @occs_nums }
+      hypident ::= @ident
+      | ( type of @ident )
+      | ( value of @ident )
+      concl_occs ::= * {? at @occs_nums }
 
-If a minus sign is given between ``at`` and the list of occurrences, it
-negates the condition so that the clause denotes all the occurrences
-except the ones explicitly mentioned after the minus sign.
+   :n:`@occurrences`
+     The first form of :token:`occurrences` selects occurrences in
+     the conclusion of the goal.  The second form can select occurrences
+     in the goal conclusion and in one or more hypotheses.
 
-As an exception to the left-to-right order, the occurrences in
-the return subexpression of a match are considered *before* the
-occurrences in the matched term.
+   :n:`{? - } {+ @nat_or_var }`
+     Selects the specified occurrences within a single goal or hypothesis.
+     Occurrences are numbered from left to right starting with 1 when the
+     goal is printed with the :flag:`Printing All` flag.  (In particular, occurrences
+     in :ref:`implicit arguments <ImplicitArguments>` and
+     :ref:`coercions <Coercions>` are counted but not shown by default.)
 
-In the second case, the ``*`` on the left of ``|-`` means that all occurrences
-of term are selected in every hypothesis.
+     Specifying `-` includes all occurrences *except* the ones listed.
 
-In the first and second case, if ``*`` is mentioned on the right of ``|-``, the
-occurrences of the conclusion of the goal have to be selected. If some numbers
-are given, then only the occurrences denoted by these numbers are selected. If
-no numbers are given, all occurrences of :token:`term` in the goal are selected.
+   :n:`{*, @hyp_occs } {? %|- {? @concl_occs } }`
+     Selects occurrences in the specified hypotheses and the
+     specified occurrences in the conclusion.
 
-Finally, the last notation is an abbreviation for ``* |- *``. Note also
-that ``|-`` is optional in the first case when no ``*`` is given.
+   :n:`* %|- {? @concl_occs }`
+     Selects all occurrences in all hypotheses and the
+     specified occurrences in the conclusion.
 
-Here are some tactics that understand occurrence clauses: :tacn:`set`,
-:tacn:`remember`, :tacn:`induction`, :tacn:`destruct`.
+   :n:`%|- {? @concl_occs }`
+     Selects the specified occurrences in the conclusion.
+
+   :n:`@goal_occurrences ::= {? @concl_occs }`
+     Selects all occurrences in all hypotheses and in the specified occurrences
+     in the conclusion.
+
+   :n:`@hypident {? at @occs_nums }`
+     Omiting :token:`occs_nums` selects all occurrences within the hypothesis.
+
+   :n:`@hypident ::= @ident`
+     Selects the hypothesis named :token:`ident`.
+
+   :n:`( type of @ident )`
+     Selects the type part of the named hypothesis (e.g. `: nat`).
+
+   :n:`( value of @ident )`
+     Selects the value part of the named hypothesis (e.g. `:= 1`).
+
+   :n:`@concl_occs ::= * {? at @occs_nums }`
+     Selects occurrences in the conclusion.  '*' by itself selects all occurrences.
+     :n:`@occs_nums` selects the specified occurrences.
+
+   Use `in *` to select all occurrences in all hypotheses and the conclusion,
+   which is equivalent to `in * |- *`.  Use `* |-` to select all occurrences
+   in all hypotheses.
+
+Tactics that use occurrence clauses include :tacn:`set`,
+:tacn:`remember`, :tacn:`induction` and :tacn:`destruct`.
 
 
 .. seealso::

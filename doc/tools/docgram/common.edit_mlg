@@ -19,8 +19,22 @@ lglob: [
 ]
 
 hint: [
+| REPLACE "Resolve" "->" LIST1 global OPT natural
+| WITH "Resolve" [ "->" | "<-" ] LIST1 global OPT natural
+| DELETE "Resolve" "<-" LIST1 global OPT natural
+| REPLACE "Variables" "Transparent"
+| WITH [ "Constants" | "Variables" ] [ "Transparent" | "Opaque" ]
+| DELETE "Variables" "Opaque"
+| DELETE "Constants" "Transparent"
+| DELETE "Constants" "Opaque"
+| REPLACE "Transparent" LIST1 global
+| WITH [ "Transparent" | "Opaque" ] LIST1 global
+| DELETE "Opaque" LIST1 global
+
 | REPLACE "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
 | WITH "Extern" natural OPT constr_pattern "=>" tactic
+| INSERTALL "Hint"
+| APPENDALL opt_hintbases
 ]
 
 (* todo: does ARGUMENT EXTEND make the symbol global? It is in both extraargs and extratactics *)
@@ -149,6 +163,7 @@ DELETE: [
 | ensure_fixannot
 | test_array_opening
 | test_array_closing
+| test_variance_ident
 
   (* SSR *)
 | ssr_null_entry
@@ -267,7 +282,7 @@ binder_constr: [
 | REPLACE "if" term200 "is" ssr_dthen ssr_else
 | WITH "if" term200 [ "is" | "isn't" ] ssr_dthen ssr_else  TAG SSR
 | DELETE "if" term200 "isn't" ssr_dthen ssr_else
-| DELETE "if" term200 [ "is" | "isn't" ] ssr_dthen ssr_else  TAG SSR  (* todo: restore for SSR *)
+| DELETE "if" term200 [ "is" | "isn't" ] ssr_dthen ssr_else  TAG SSR  (* todo: restore as "MOVETO term_if" for SSR *)
 | MOVETO term_fix "let" "fix" fix_decl "in" term200
 | MOVETO term_cofix "let" "cofix" cofix_body "in" term200
 | MOVETO term_let "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" term200 "in" term200
@@ -597,6 +612,11 @@ univ_decl: [
 | WITH    "@{" LIST0 identref  OPT "+"  OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
 ]
 
+cumul_univ_decl: [
+| REPLACE "@{" LIST0 variance_identref [ "+" | ]     [ "|" LIST0 univ_constraint SEP "," [ "+" | ] "}" | [ "}" | bar_cbrace ] ]
+| WITH "@{" LIST0 variance_identref    OPT "+"   OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+]
+
 of_type: [
 | DELETENT
 ]
@@ -905,12 +925,13 @@ where: [
 ]
 
 simple_tactic: [
-| DELETE "intros"
-| REPLACE "intros" ne_intropatterns
-| WITH "intros" intropatterns
-| DELETE "eintros"
-| REPLACE "eintros" ne_intropatterns
-| WITH "eintros" intropatterns
+| REPLACE "eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
+| WITH "eauto" OPT nat_or_var auto_using hintbases
+| REPLACE "debug" "eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
+| WITH "debug" "eauto" OPT nat_or_var auto_using hintbases
+| REPLACE "info_eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
+| WITH "info_eauto" OPT nat_or_var auto_using hintbases
+
 | DELETE "autorewrite" "with" LIST1 preident clause
 | DELETE "autorewrite" "with" LIST1 preident clause "using" tactic
 | DELETE "autorewrite" "*" "with" LIST1 preident clause
@@ -966,6 +987,12 @@ simple_tactic: [
 | DELETE "intro" "after" hyp
 | DELETE "intro" "before" hyp
 | "intro" OPT ident OPT where
+| DELETE "intros"
+| REPLACE "intros" ne_intropatterns
+| WITH "intros" intropatterns
+| DELETE "eintros"
+| REPLACE "eintros" ne_intropatterns
+| WITH "eintros" intropatterns
 | DELETE "move" hyp "at" "top"
 | DELETE "move" hyp "at" "bottom"
 | DELETE "move" hyp "after" hyp
@@ -1139,6 +1166,10 @@ printable: [
 | REPLACE [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT ne_string
 | WITH OPT "Sorted" "Universes" OPT printunivs_subgraph OPT ne_string
 | DELETE "Term" smart_global OPT univ_name_list  (* readded in commands *)
+| REPLACE "Hint"
+| WITH "Hint" OPT [ "*" | smart_global ]
+| DELETE "Hint" smart_global
+| DELETE "Hint" "*"
 
 | INSERTALL "Print"
 ]
@@ -1163,6 +1194,8 @@ scheme_kind: [
 command: [
 | REPLACE "Print" printable
 | WITH printable
+| REPLACE "Hint" hint opt_hintbases
+| WITH hint
 | "SubClass" ident_decl def_body
 | REPLACE "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | WITH "Ltac" ltac_tacdef_body LIST0 ( "with" ltac_tacdef_body )
@@ -1242,6 +1275,9 @@ command: [
 | REPLACE "Preterm" "of" ident
 | WITH "Preterm" OPT ( "of" ident )
 | DELETE "Preterm"
+| REPLACE "Proof" "using" section_var_expr "with" Pltac.tactic
+| WITH "Proof" "using" section_subset_expr OPT [ "with" ltac_expr5 ]
+| DELETE "Proof" "using" section_var_expr
 
 (* hide the fact that table names are limited to 2 IDENTs *)
 | REPLACE "Remove" IDENT IDENT LIST1 table_value
@@ -1441,8 +1477,8 @@ type_cstr: [
 ]
 
 inductive_definition: [
-| REPLACE opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
-| WITH    opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" type ]    opt_constructors_or_fields decl_notations
+| REPLACE opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
+| WITH    opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" type ]    opt_constructors_or_fields decl_notations
 ]
 
 (* note that constructor -> identref constructor_type *)
@@ -1578,9 +1614,12 @@ simple_reserv: [
 
 in_clause: [
 | DELETE in_clause'
-| REPLACE LIST0 hypident_occ SEP "," "|-" concl_occ
-| WITH LIST0 hypident_occ SEP "," OPT ( "|-" concl_occ )
-| DELETE LIST0 hypident_occ SEP ","
+| REPLACE LIST1 hypident_occ SEP "," "|-" concl_occ
+| WITH LIST1 hypident_occ SEP "," OPT ( "|-" concl_occ )
+| DELETE LIST1 hypident_occ SEP ","
+| REPLACE "*" occs
+| WITH concl_occ
+(* todo: perhaps concl_occ should be "*" | "at" occs_nums *)
 ]
 
 ltac2_in_clause: [
@@ -1791,6 +1830,7 @@ tactic_notation_tactics: [
 | "field_simplify" OPT ( "[" LIST1 constr "]" ) LIST1 constr OPT ( "in" ident )
 | "field_simplify_eq" OPT ( "[" LIST1 constr "]" ) OPT ( "in" ident )
 | "intuition" OPT ltac_expr5  (* todo: Not too keen on things like "with_power_flags" in tauto.ml, not easy to follow *)
+| "now" ltac_expr5
 | "nsatz" OPT ( "with" "radicalmax" ":=" constr "strategy" ":=" constr "parameters" ":=" constr "variables" ":=" constr )
 | "psatz" constr OPT nat_or_var
 | "ring" OPT ( "[" LIST1 constr "]" )
@@ -1940,6 +1980,18 @@ tac2rec_fields: [
 | DELETE tac2rec_field ";"
 | DELETE tac2rec_field
 | LIST1 tac2rec_field SEP ";" OPT ";" TAG Ltac2
+]
+
+int_or_var: [
+| REPLACE integer
+| WITH [ integer | identref ]
+| DELETE identref
+]
+
+nat_or_var: [
+| REPLACE natural
+| WITH [ natural | identref ]
+| DELETE identref
 ]
 
 ltac2_occs_nums: [
@@ -2387,6 +2439,33 @@ attribute: [
 | DELETE "using" OPT attr_value
 ]
 
+hypident: [
+(* todo: restore for SSR *)
+| DELETE "(" "type" "of" ident ")"      (* SSR plugin *)
+| DELETE "(" "value" "of" ident ")"      (* SSR plugin *)
+]
+
+ref_or_pattern_occ: [
+| DELETE smart_global OPT occs
+| DELETE constr OPT occs
+| unfold_occ
+| pattern_occ
+]
+
+clause_dft_concl: [
+(* omit an OPT since clause_dft_concl is always OPT *)
+| REPLACE OPT occs
+| WITH occs
+]
+
+occs_nums: [
+| EDIT ADD_OPT "-" LIST1 nat_or_var
+]
+
+variance_identref: [
+| EDIT ADD_OPT variance identref
+]
+
 SPLICE: [
 | clause
 | noedit_mode
@@ -2526,6 +2605,7 @@ SPLICE: [
 | eliminator  (* todo: splice or not? *)
 | quoted_attributes  (* todo: splice or not? *)
 | printable
+| hint
 | only_parsing
 | record_fields
 | constructor_type
@@ -2606,7 +2686,16 @@ SPLICE: [
 | syn_level
 | firstorder_rhs
 | firstorder_using
+| hints_path_atom
+| ref_or_pattern_occ
+| cumul_ident_decl
+| variance
+| variance_identref
 ] (* end SPLICE *)
+
+RENAME: [
+| occurrences rewrite_occs
+]
 
 RENAME: [
 | tactic3 ltac_expr3  (* todo: can't figure out how this gets mapped by coqpp *)
@@ -2652,6 +2741,13 @@ RENAME: [
 | ssrclauses ssr_in
 | ssrcpat ssrblockpat
 | constr_pattern one_pattern
+| hints_path hints_regexp
+| clause_dft_concl occurrences
+| in_clause goal_occurrences
+| unfold_occ reference_occs
+| pattern_occ pattern_occs
+| hypident_occ hyp_occs
+| concl_occ concl_occs
 ]
 
 simple_tactic: [

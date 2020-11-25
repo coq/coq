@@ -155,7 +155,8 @@ are now available through the dot notation.
   #. Interactive modules and module types can be nested.
   #. Interactive modules and module types can't be defined inside of :ref:`sections<section-mechanism>`.
      Sections can be defined inside of interactive modules and module types.
-  #. Hints and notations (:cmd:`Hint` and :cmd:`Notation` commands) can also appear inside interactive
+  #. Hints and notations (the :ref:`Hint <creating_hints>` and :cmd:`Notation`
+     commands) can also appear inside interactive
      modules and module types. Note that with module definitions like:
 
      :n:`Module @ident__1 : @module_type := @ident__2.`

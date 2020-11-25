@@ -342,6 +342,21 @@ closed_binder: [
 | [ "of" | "&" ] term99      (* SSR plugin *)
 ]
 
+one_open_binder: [
+| name
+| name ":" lconstr
+| one_closed_binder
+]
+
+one_closed_binder: [
+| "(" name ":" lconstr ")"
+| "{" name "}"
+| "{" name ":" lconstr "}"
+| "[" name "]"
+| "[" name ":" lconstr "]"
+| "'" pattern0
+]
+
 typeclass_constraint: [
 | "!" term200
 | "{" name "}" ":" [ "!" | ] term200
@@ -875,8 +890,27 @@ univ_decl: [
 | "@{" LIST0 identref [ "+" | ] [ "|" LIST0 univ_constraint SEP "," [ "+" | ] "}" | [ "}" | bar_cbrace ] ]
 ]
 
+variance: [
+| "+"
+| "="
+| "*"
+]
+
+variance_identref: [
+| identref
+| test_variance_ident variance identref
+]
+
+cumul_univ_decl: [
+| "@{" LIST0 variance_identref [ "+" | ] [ "|" LIST0 univ_constraint SEP "," [ "+" | ] "}" | [ "}" | bar_cbrace ] ]
+]
+
 ident_decl: [
 | identref OPT univ_decl
+]
+
+cumul_ident_decl: [
+| identref OPT cumul_univ_decl
 ]
 
 finite_token: [
@@ -918,7 +952,7 @@ opt_constructors_or_fields: [
 ]
 
 inductive_definition: [
-| opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
+| opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
 ]
 
 constructors_or_record: [
@@ -1914,8 +1948,9 @@ in_clause: [
 | in_clause'
 | "*" occs
 | "*" "|-" concl_occ
-| LIST0 hypident_occ SEP "," "|-" concl_occ
-| LIST0 hypident_occ SEP ","
+| "|-" concl_occ
+| LIST1 hypident_occ SEP "," "|-" concl_occ
+| LIST1 hypident_occ SEP ","
 ]
 
 test_lpar_id_colon: [
@@ -2493,7 +2528,7 @@ in_hyp_list: [
 ]
 
 in_hyp_as: [
-| "in" id_or_meta as_ipat
+| "in" LIST1 [ id_or_meta as_ipat ] SEP ","
 |
 ]
 
