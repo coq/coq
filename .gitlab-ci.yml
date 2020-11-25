@@ -19,7 +19,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE-$hash
   # The $hash is the first 10 characters of the md5 of the dockerfile
-  CACHEKEY: "bionic_coq-V2020-11-26-db194d584e"
+  CACHEKEY: "bionic_coq-V2020-11-26-50e9456f22"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
