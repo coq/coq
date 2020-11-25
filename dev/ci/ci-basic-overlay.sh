@@ -119,7 +119,7 @@
 ########################################################################
 # Coquelicot
 ########################################################################
-: "${coquelicot_CI_REF:=4b000e5220d7b30ebc323564c10c60f6e2d22733}"
+: "${coquelicot_CI_REF:=coquelicot-3.1.0}"
 : "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/coquelicot/coquelicot}"
 : "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
 
