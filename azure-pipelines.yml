@@ -90,11 +90,11 @@ jobs:
       make -j "$NJOBS"
     displayName: 'Build Coq'
 
-  - script: |
-      eval $(opam env)
-      export OCAMLPATH=$(pwd):"$OCAMLPATH"
-      make -j "$NJOBS" test-suite PRINT_LOGS=1
-    displayName: 'Run Coq Test Suite'
+#  - script: |
+#      eval $(opam env)
+#      export OCAMLPATH=$(pwd):"$OCAMLPATH"
+#      make -j "$NJOBS" test-suite PRINT_LOGS=1
+#    displayName: 'Run Coq Test Suite'
 
   - script: |
       make install
