@@ -47,8 +47,6 @@ let binder_tactic = Entry.create "binder_tactic"
 let tactic = Entry.create "tactic"
 
 (* Main entry for quotations *)
-let tactic_eoi = eoi_entry tactic
-
 let () =
   let open Stdarg in
   let open Tacarg in

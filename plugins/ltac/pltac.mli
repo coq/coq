@@ -40,4 +40,3 @@ val tactic_expr : raw_tactic_expr Entry.t
   [@@deprecated "Deprecated in 8.13; use 'ltac_expr' instead"]
 val binder_tactic : raw_tactic_expr Entry.t
 val tactic : raw_tactic_expr Entry.t
-val tactic_eoi : raw_tactic_expr Entry.t
