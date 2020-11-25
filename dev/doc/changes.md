@@ -37,6 +37,11 @@ Dumpglob:
   plugins to temporarily change/pause the output of Dumpglob, and then
   restore it to the original setting.
 
+Glob_term:
+
+- Removing useless `binding_kind` argument of `GLocalDef` in
+  `extended_glob_local_binder`.
+
 ## Changes between Coq 8.11 and Coq 8.12
 
 ### Code formatting

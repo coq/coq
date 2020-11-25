@@ -560,10 +560,10 @@ let intern_assumption intern ntnvars env nal bk ty =
 
 let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
   | GLocalAssum (na,bk,t) -> (na,bk,None,t)
-  | GLocalDef (na,bk,c,Some t) -> (na,bk,Some c,t)
-  | GLocalDef (na,bk,c,None) ->
+  | GLocalDef (na,c,Some t) -> (na,Explicit,Some c,t)
+  | GLocalDef (na,c,None) ->
       let t = DAst.make ?loc @@ GHole(Evar_kinds.BinderType na,IntroAnonymous,None) in
-      (na,bk,Some c,t)
+      (na,Explicit,Some c,t)
   | GLocalPattern (_,_,_,_) ->
       Loc.raise ?loc (Stream.Error "pattern with quote not allowed here")
   )
@@ -575,7 +575,7 @@ let intern_letin_binder intern ntnvars env (({loc;v=na} as locna),def,ty) =
   let ty = Option.map (intern (set_type_scope (restart_prod_binders env))) ty in
   let impls = impls_term_list 1 term in
   (push_name_env ntnvars impls env locna,
-   (na,Explicit,term,ty))
+   (na,term,ty))
 
 let intern_cases_pattern_as_binder intern test_kind ntnvars env bk (CAst.{v=p;loc} as pv) =
   let p,t = match p with
@@ -606,8 +606,8 @@ let intern_local_binder_aux intern ntnvars (env,bl) = function
       let bl' = List.map (fun {loc;v=(na,c,t)} -> DAst.make ?loc @@ GLocalAssum (na,c,t)) bl' in
       env, bl' @ bl
   | CLocalDef( {loc; v=na} as locna,def,ty) ->
-     let env,(na,bk,def,ty) = intern_letin_binder intern ntnvars env (locna,def,ty) in
-     env, (DAst.make ?loc @@ GLocalDef (na,bk,def,ty)) :: bl
+     let env,(na,def,ty) = intern_letin_binder intern ntnvars env (locna,def,ty) in
+     env, (DAst.make ?loc @@ GLocalDef (na,def,ty)) :: bl
   | CLocalPattern p ->
       let env, ((disjpat,il),id),na,bk,t = intern_cases_pattern_as_binder intern test_kind_tolerant ntnvars env Explicit p in
       (env, (DAst.make ?loc:p.CAst.loc @@ GLocalPattern((disjpat,List.map (fun x -> x.v) il),id,bk,t)) :: bl)
@@ -650,7 +650,7 @@ let rec expand_binders ?loc mk bl c =
   | [] -> c
   | b :: bl ->
      match DAst.get b with
-     | GLocalDef (n, bk, b, oty) ->
+     | GLocalDef (n, b, oty) ->
         expand_binders ?loc mk bl (DAst.make ?loc @@ GLetIn (n, b, oty, c))
      | GLocalAssum (n, bk, t) ->
         expand_binders ?loc mk bl (mk ?loc (n,bk,t) c)
@@ -794,8 +794,8 @@ let terms_of_binders bl =
       let loc = bnd.loc in
       begin match DAst.get bnd with
       | GLocalAssum (Name id,_,_) -> (CAst.make ?loc @@ CRef (qualid_of_ident ?loc id, None)) :: extract_variables l
-      | GLocalDef (Name id,_,_,_) -> extract_variables l
-      | GLocalDef (Anonymous,_,_,_)
+      | GLocalDef (Name id,_,_) -> extract_variables l
+      | GLocalDef (Anonymous,_,_)
       | GLocalAssum (Anonymous,_,_) -> user_err Pp.(str "Cannot turn \"_\" into a term.")
       | GLocalPattern (([u],_),_,_,_) -> term_of_pat u :: extract_variables l
       | GLocalPattern ((_,_),_,_,_) -> error_cannot_coerce_disjunctive_pattern_term ?loc ()
@@ -847,7 +847,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         | AddTermIter nterms::rest,terminator,iter ->
            aux (nterms,None,Some (rest,terminator,iter)) (renaming,env) iter
         | AddLetIn (na,c,t)::rest,terminator,iter ->
-           let env,(na,_,c,t) = intern_letin_binder intern ntnvars (adjust_env env iter) (na,c,t) in
+           let env,(na,c,t) = intern_letin_binder intern ntnvars (adjust_env env iter) (na,c,t) in
            DAst.make ?loc (GLetIn (na,c,t,aux_letin env (rest,terminator,iter))) in
         aux_letin env (Option.get iteropt)
     | NVar id -> subst_var subst' (renaming, env) id

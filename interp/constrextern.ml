@@ -886,9 +886,10 @@ let extern_prim_token_delimiter_if_required n key_n scope_n scopes =
 let extended_glob_local_binder_of_decl loc = function
   | (p,bk,None,t) -> GLocalAssum (p,bk,t)
   | (p,bk,Some x, t) ->
+    assert (bk = Explicit);
     match DAst.get t with
-    | GHole (_, IntroAnonymous, None) -> GLocalDef (p,bk,x,None)
-    | _ -> GLocalDef (p,bk,x,Some t)
+    | GHole (_, IntroAnonymous, None) -> GLocalDef (p,x,None)
+    | _ -> GLocalDef (p,x,Some t)
 
 let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_local_binder_of_decl loc u)
 
@@ -1217,7 +1218,7 @@ and extern_local_binder scopes vars = function
     [] -> ([],[],[])
   | b :: l ->
     match DAst.get b with
-    | GLocalDef (na,bk,bd,ty) ->
+    | GLocalDef (na,bd,ty) ->
       let (assums,ids,l) =
         extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l in
       (assums,na::ids,
