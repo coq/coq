@@ -738,7 +738,14 @@ library:ci-coqtail:
   extends: .ci-template
 
 library:ci-coquelicot:
-  extends: .ci-template
+  stage: stage-3
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+  dependencies:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-cross_crypto:
   extends: .ci-template
@@ -794,7 +801,7 @@ library:ci-menhir:
 
 library:ci-interval:
   extends: .ci-template-flambda
-  stage: stage-3
+  stage: stage-4
   needs:
   - build:edge+flambda
   - library:ci-coquelicot
