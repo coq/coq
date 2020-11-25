@@ -848,6 +848,16 @@ library:ci-corn:
   - build:edge+flambda
   - library:ci-math_classes
 
+plugin:ci-gappa:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-flocq
+  dependencies:
+  - build:edge+flambda
+  - library:ci-flocq
+
 library:ci-geocoq:
   extends: .ci-template-flambda
 
