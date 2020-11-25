@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download interval
 
-( cd "${CI_BUILD_DIR}/interval" && autoconf && ./configure && ./remake "-j${NJOBS}" && ./remake install )
+( cd "${CI_BUILD_DIR}/interval" && ( if [ ! -x ./configure ]; then autoconf && ./configure; fi ) && ./remake "-j${NJOBS}" && ./remake install )
