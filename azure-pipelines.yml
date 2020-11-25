@@ -100,17 +100,17 @@ jobs:
       make install
     displayName: 'Install Coq'
 
-#  - script: |
-#      set -e
-#      eval $(opam env)
-#      export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
-#      ./dev/build/osx/make-macos-dmg.sh
-#      mv _build/*.dmg "$(Build.ArtifactStagingDirectory)/"
-#    displayName: 'Create the dmg bundle'
-#    env:
-#      OUTDIR: '$(Build.BinariesDirectory)'
+  - script: |
+      set -e
+      eval $(opam env)
+      export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
+      ./dev/build/osx/make-macos-dmg.sh
+      mv _build/*.dmg "$(Build.ArtifactStagingDirectory)/"
+    displayName: 'Create the dmg bundle'
+    env:
+      OUTDIR: '$(Build.BinariesDirectory)'
 
-#  - task: PublishBuildArtifacts@1
-#    inputs:
-#      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-#      artifactName: coq-macOS-installer
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: coq-macOS-installer
