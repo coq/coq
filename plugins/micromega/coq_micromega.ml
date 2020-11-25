@@ -2064,7 +2064,11 @@ module MakeCache (T : sig
   val hash_coeff : int -> coeff -> int
   val eq_prover_option : prover_option -> prover_option -> bool
   val eq_coeff : coeff -> coeff -> bool
-end) =
+end) :
+sig
+  type key = T.prover_option * (T.coeff Mc.pol * Mc.op1) list
+  val memo_opt : (unit -> bool) -> string -> (key -> 'a) -> key -> 'a
+end =
 struct
   module E = struct
     type t = T.prover_option * (T.coeff Mc.pol * Mc.op1) list
