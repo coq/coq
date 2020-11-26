@@ -252,11 +252,11 @@
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-: "${elpi_CI_REF:=25d540733c8bf6142500284327d6e495487de37e}"
+: "${elpi_CI_REF:=4246a9f952b7ffb4c1d85d10e799566186e569f7}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
-: "${elpi_hb_CI_REF:=6089de41147dc4909e8c452eb4b8a10885b62cf2}"
+: "${elpi_hb_CI_REF:=dc171e0f322fa1fb699b82a0cc3967904745dcfe}"
 : "${elpi_hb_CI_GITURL:=https://github.com/math-comp/hierarchy-builder}"
 : "${elpi_hb_CI_ARCHIVEURL:=${elpi_hb_CI_GITURL}/archive}"
 
