@@ -171,7 +171,7 @@ loaded by subsequent jobs.
 
 **IMPORTANT**: When updating Coq's CI docker image, you must modify
 the `CACHEKEY` variable in [`.gitlab-ci.yml`](../../.gitlab-ci.yml)
-and [`Dockerfile`](docker/bionic_coq/Dockerfile)
+(see comment near it for details).
 
 The Docker building job reuses the uploaded image if it is available,
 but if you wish to save more time you can skip the job by setting
