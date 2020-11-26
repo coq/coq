@@ -853,8 +853,10 @@ let pr_frame = function
   str "Prim <" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
 | FrExtn (tag, arg) ->
   let obj = Tac2env.interp_ml_object tag in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   str "Extn " ++ str (Tac2dyn.Arg.repr tag) ++ str ":" ++ spc () ++
-    obj.Tac2env.ml_print (Global.env ()) arg
+    obj.Tac2env.ml_print env sigma arg
 
 let () = register_handler begin function
 | Tac2interp.LtacError (kn, args) ->

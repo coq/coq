@@ -150,7 +150,7 @@ let pr_occurrences = pr_occurrences () () ()
 let pr_gen env sigma prc _prlc _prtac x = prc env sigma x
 
 let pr_globc env sigma _prc _prlc _prtac (_,glob) =
-  Printer.pr_glob_constr_env env glob
+  Printer.pr_glob_constr_env env sigma glob
 
 let interp_glob ist gl (t,_) = Tacmach.project gl , (ist,t)
 

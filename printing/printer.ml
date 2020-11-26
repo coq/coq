@@ -97,10 +97,10 @@ let pr_ltype_env ?lax ?goal_concl_style env sigma ?impargs c =
 let pr_ljudge_env env sigma j =
   (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
 
-let pr_lglob_constr_env env c =
-  pr_lconstr_expr env (Evd.from_env env) (extern_glob_constr (Termops.vars_of_env env) c)
-let pr_glob_constr_env env c =
-  pr_constr_expr env (Evd.from_env env) (extern_glob_constr (Termops.vars_of_env env) c)
+let pr_lglob_constr_env env sigma c =
+  pr_lconstr_expr env sigma (extern_glob_constr (extern_env env sigma) c)
+let pr_glob_constr_env env sigma c =
+  pr_constr_expr env sigma (extern_glob_constr (extern_env env sigma) c)
 
 let pr_closed_glob_n_env ?lax ?goal_concl_style ?inctx ?scope env sigma n c =
   pr_constr_expr_n env sigma n (extern_closed_glob ?lax ?goal_concl_style ?inctx ?scope env sigma c)
@@ -115,7 +115,7 @@ let pr_constr_pattern_env env sigma c =
 let pr_cases_pattern t =
   pr_cases_pattern_expr (extern_cases_pattern Names.Id.Set.empty t)
 
-let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
+let pr_sort sigma s = pr_sort_expr (extern_sort sigma s)
 
 let () = Termops.Internal.set_print_constr
   (fun env sigma t -> pr_lconstr_expr env sigma (extern_constr ~lax:true env sigma t))

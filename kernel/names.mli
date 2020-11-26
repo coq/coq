@@ -727,3 +727,5 @@ val eq_egr : evaluable_global_reference ->  evaluable_global_reference -> bool
 type lident = Id.t CAst.t
 type lname = Name.t CAst.t
 type lstring = string CAst.t
+
+val lident_eq : lident -> lident -> bool

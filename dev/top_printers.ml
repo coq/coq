@@ -27,6 +27,11 @@ let _ = Detyping.print_evar_arguments := true
 let _ = Detyping.print_universes := true
 let _ = Goptions.set_bool_option_value ["Printing";"Matching"] false
 
+let with_env_evm f x =
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+  f env sigma x
+
 (* std_ppcmds *)
 let pp   x = Pp.pp_with !Topfmt.std_ft x
 
@@ -75,7 +80,7 @@ let ppeconstr x = pp (pr_econstr x)
 let ppconstr_expr x = let sigma,env = get_current_context () in pp (Ppconstr.pr_constr_expr env sigma x)
 let ppsconstr x = ppconstr (Mod_subst.force_constr x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
-let ppglob_constr = (fun x -> pp(pr_lglob_constr_env (Global.env()) x))
+let ppglob_constr = (fun x -> pp(with_env_evm pr_lglob_constr_env x))
 let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
 let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
@@ -130,7 +135,7 @@ let rec pr_closure {idents=idents;typed=typed;untyped=untyped} =
 and pr_closed_glob_constr_idmap x =
   pridmap (fun _ -> pr_closed_glob_constr) x
 and pr_closed_glob_constr {closure=closure;term=term} =
-  pr_closure closure ++ (pr_lglob_constr_env Global.(env ())) term
+  pr_closure closure ++ with_env_evm pr_lglob_constr_env term
 
 let ppclosure x = pp (pr_closure x)
 let ppclosedglobconstr x = pp (pr_closed_glob_constr x)
@@ -211,7 +216,7 @@ let pproof p = pp(Proof.pr_proof p)
 let ppuni u = pp(Universe.pr u)
 let ppuni_level u = pp (Level.pr u)
 
-let prlev = UnivNames.pr_with_global_universes
+let prlev = UnivNames.pr_with_global_universes Id.Map.empty
 let ppuniverse_set l = pp (LSet.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)

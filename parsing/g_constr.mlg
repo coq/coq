@@ -106,9 +106,9 @@ GRAMMAR EXTEND Gram
     [ [ c = lconstr -> { c } ] ]
   ;
   sort:
-    [ [ "Set"  -> { UNamed [GSet,0] }
-      | "Prop" -> { UNamed [GProp,0] }
-      | "SProp" -> { UNamed [GSProp,0] }
+    [ [ "Set"  -> { UNamed [CSet,0] }
+      | "Prop" -> { UNamed [CProp,0] }
+      | "SProp" -> { UNamed [CSProp,0] }
       | "Type" -> { UAnonymous {rigid=true} }
       | "Type"; "@{"; "_"; "}" -> { UAnonymous {rigid=false} }
       | "Type"; "@{"; u = universe; "}" -> { UNamed u } ] ]
@@ -124,9 +124,9 @@ GRAMMAR EXTEND Gram
       | -> { 0 } ] ]
   ;
   universe_name:
-    [ [ id = global -> { GType id }
-      | "Set"  -> { GSet }
-      | "Prop" -> { GProp } ] ]
+    [ [ id = global -> { CType id }
+      | "Set"  -> { CSet }
+      | "Prop" -> { CProp } ] ]
   ;
   universe_expr:
     [ [ id = universe_name; n = universe_increment -> { (id,n) } ] ]
@@ -282,12 +282,12 @@ GRAMMAR EXTEND Gram
       | -> { None } ] ]
   ;
   universe_level:
-    [ [ "Set" -> { UNamed GSet }
+    [ [ "Set" -> { UNamed CSet }
       (* no parsing SProp as a level *)
-      | "Prop" -> { UNamed GProp }
+      | "Prop" -> { UNamed CProp }
       | "Type" -> { UAnonymous {rigid=true} }
       | "_" -> { UAnonymous {rigid=false} }
-      | id = global -> { UNamed (GType id) } ] ]
+      | id = global -> { UNamed (CType id) } ] ]
   ;
   fix_decls:
     [ [ dcl = fix_decl -> { let (id,_,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }

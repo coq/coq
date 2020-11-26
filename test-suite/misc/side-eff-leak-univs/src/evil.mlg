@@ -7,7 +7,7 @@ open Stdarg
 
 TACTIC EXTEND magic
 | [ "magic" ident(i) ident(j) ] -> {
-  let open Glob_term in
-  DeclareUniv.do_constraint ~poly:false [ GType (Libnames.qualid_of_ident i), Univ.Lt, GType (Libnames.qualid_of_ident j)]; Proofview.tclUNIT()
+  let open Constrexpr in
+  DeclareUniv.do_constraint ~poly:false [ CType (Libnames.qualid_of_ident i), Univ.Lt, CType (Libnames.qualid_of_ident j)]; Proofview.tclUNIT()
 }
 END

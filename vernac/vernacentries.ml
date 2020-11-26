@@ -353,9 +353,9 @@ let universe_subgraph ?loc kept univ =
   let open Univ in
   let sigma = Evd.from_env (Global.env()) in
   let parse q =
-    let q =  Glob_term.(GType q) in
+    let q = Constrexpr.CType q in
     (* this function has a nice error message for not found univs *)
-    Pretyping.interp_known_glob_level ?loc sigma q
+    Constrintern.interp_known_level sigma q
   in
   let kept = List.fold_left (fun kept q -> LSet.add (parse q) kept) LSet.empty kept in
   let csts = UGraph.constraints_for ~kept univ in
@@ -377,7 +377,7 @@ let print_universes ?loc ~sort ~subgraph dst =
     if Global.is_joined_environment () then mt ()
     else str"There may remain asynchronous universe constraints"
   in
-  let prl = UnivNames.pr_with_global_universes in
+  let prl = UnivNames.(pr_with_global_universes empty_binders) in
   begin match dst with
     | None -> UGraph.pr_universes prl univ ++ pr_remaining
     | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
@@ -1829,11 +1829,11 @@ let vernac_print ~pstate =
   | PrintHintDbName s -> Hints.pr_hint_db_by_name env sigma s
   | PrintHintDb -> Hints.pr_searchtable env sigma
   | PrintScopes ->
-    Notation.pr_scopes (Constrextern.without_symbols (pr_glob_constr_env env))
+    Notation.pr_scopes (Constrextern.without_symbols (pr_glob_constr_env env sigma))
   | PrintScope s ->
-    Notation.pr_scope (Constrextern.without_symbols (pr_glob_constr_env env)) s
+    Notation.pr_scope (Constrextern.without_symbols (pr_glob_constr_env env sigma)) s
   | PrintVisibility s ->
-    Notation.pr_visibility (Constrextern.without_symbols (pr_glob_constr_env env)) s
+    Notation.pr_visibility (Constrextern.without_symbols (pr_glob_constr_env env sigma)) s
   | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
     print_about_hyp_globs ~pstate ref_or_by_not udecl glnumopt
   | PrintImplicit qid ->
@@ -1867,9 +1867,9 @@ let vernac_locate ~pstate = let open Constrexpr in function
   | LocateTerm {v=AN qid} -> Prettyp.print_located_term qid
   | LocateAny {v=ByNotation (ntn, sc)} (* TODO : handle Ltac notations *)
   | LocateTerm {v=ByNotation (ntn, sc)} ->
-    let _, env = get_current_or_global_context ~pstate in
+    let sigma, env = get_current_or_global_context ~pstate in
     Notation.locate_notation
-      (Constrextern.without_symbols (pr_glob_constr_env env)) ntn sc
+      (Constrextern.without_symbols (pr_glob_constr_env env sigma)) ntn sc
   | LocateLibrary qid -> print_located_library qid
   | LocateModule qid -> Prettyp.print_located_module qid
   | LocateOther (s, qid) -> Prettyp.print_located_other s qid

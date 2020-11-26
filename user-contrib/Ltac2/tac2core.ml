@@ -1100,7 +1100,7 @@ let interp_constr flags ist c =
 let () =
   let intern = intern_constr in
   let interp ist c = interp_constr constr_flags ist c in
-  let print env c = str "constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
+  let print env sigma c = str "constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
     ml_intern = intern;
@@ -1113,7 +1113,7 @@ let () =
 let () =
   let intern = intern_constr in
   let interp ist c = interp_constr open_constr_no_classes_flags ist c in
-  let print env c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
+  let print env sigma c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
     ml_intern = intern;
@@ -1125,7 +1125,7 @@ let () =
 
 let () =
   let interp _ id = return (Value.of_ident id) in
-  let print _ id = str "ident:(" ++ Id.print id ++ str ")" in
+  let print _ _ id = str "ident:(" ++ Id.print id ++ str ")" in
   let obj = {
     ml_intern = (fun _ _ id -> GlbVal id, gtypref t_ident);
     ml_interp = interp;
@@ -1147,7 +1147,7 @@ let () =
     let sigma = Evd.from_env env in
     Patternops.subst_pattern env sigma subst c
   in
-  let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
+  let print env sigma pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env sigma pat ++ str ")" in
   let interp _ c = return (Value.of_pattern c) in
   let obj = {
     ml_intern = intern;
@@ -1169,7 +1169,7 @@ let () =
     return (Value.of_ext val_preterm c)
   in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
-  let print env c = str "preterm:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
+  let print env sigma c = str "preterm:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let obj = {
     ml_intern = (fun _ _ e -> Empty.abort e);
     ml_interp = interp;
@@ -1193,7 +1193,7 @@ let () =
   in
   let subst s c = Globnames.subst_global_reference s c in
   let interp _ gr = return (Value.of_reference gr) in
-  let print _ = function
+  let print _ _ = function
   | GlobRef.VarRef id -> str "reference:(" ++ str "&" ++ Id.print id ++ str ")"
   | r -> str "reference:(" ++ Printer.pr_global r ++ str ")"
   in
@@ -1241,7 +1241,7 @@ let () =
       return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
   in
   let subst s (ids, tac) = (ids, Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac) in
-  let print env (ids, tac) =
+  let print env sigma (ids, tac) =
     let ids =
       if List.is_empty ids then mt ()
       else pr_sequence Id.print ids ++ spc () ++ str "|-" ++ spc ()
@@ -1290,7 +1290,7 @@ let () =
       return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
   in
   let subst s (ids, tac) = (ids, Genintern.substitute Tacarg.wit_tactic s tac) in
-  let print env (ids, tac) =
+  let print env sigma (ids, tac) =
     let ids =
       if List.is_empty ids then mt ()
       else pr_sequence Id.print ids ++ str " |- "

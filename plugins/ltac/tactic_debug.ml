@@ -16,11 +16,12 @@ open Tacexpr
 let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
 
 let prtac x =
-  Pptactic.pr_glob_tactic (Global.env()) x
+  let env = Global.env () in
+  Pptactic.pr_glob_tactic env x
 let prmatchpatt env sigma hyp =
   Pptactic.pr_match_pattern (Printer.pr_constr_pattern_env env sigma) hyp
 let prmatchrl env sigma rl =
-  Pptactic.pr_match_rule false (Pptactic.pr_glob_tactic (Global.env()))
+  Pptactic.pr_match_rule false prtac
     (fun (_,p) -> Printer.pr_constr_pattern_env env sigma p) rl
 
 (* This module intends to be a beginning of debugger for tactic expressions.
@@ -366,24 +367,22 @@ let explain_ltac_call_trace last trace loc =
     | Tacexpr.LtacNotationCall kn -> quote (Pptactic.pr_alias_key kn)
   | Tacexpr.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
   | Tacexpr.LtacMLCall t ->
-      quote (Pptactic.pr_glob_tactic (Global.env()) t)
+      quote (prtac t)
   | Tacexpr.LtacVarCall (id,t) ->
       quote (Id.print id) ++ strbrk " (bound to " ++
-        Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
+        prtac t ++ str ")"
   | Tacexpr.LtacAtomCall te ->
-      quote (Pptactic.pr_glob_tactic (Global.env())
-              (Tacexpr.TacAtom (CAst.make te)))
+      quote (prtac (Tacexpr.TacAtom (CAst.make te)))
   | Tacexpr.LtacConstrInterp (c, { Ltac_pretype.ltac_constrs = vars }) ->
-      quote (Printer.pr_glob_constr_env (Global.env()) c) ++
+    (* XXX: This hooks into the CErrors's additional error info API so
+       it is tricky to provide the right env for now. *)
+      let env = Global.env() in
+      let sigma = Evd.from_env env in
+      quote (Printer.pr_glob_constr_env env sigma c) ++
         (if not (Id.Map.is_empty vars) then
           strbrk " (with " ++
             prlist_with_sep pr_comma
             (fun (id,c) ->
-              (* XXX: This hooks into the CErrors's additional error
-                 info API so it is tricky to provide the right env for
-                 now. *)
-              let env = Global.env () in
-              let sigma = Evd.from_env env in
               Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders_env env sigma c)
             (List.rev (Id.Map.bindings vars)) ++ str ")"
         else mt())

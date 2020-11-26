@@ -77,6 +77,7 @@ val qualid_of_string : ?loc:Loc.t -> string -> qualid
 val qualid_of_path : ?loc:Loc.t -> full_path -> qualid
 val qualid_of_dirpath : ?loc:Loc.t -> DirPath.t -> qualid
 val qualid_of_ident : ?loc:Loc.t -> Id.t -> qualid
+val qualid_of_lident : lident -> qualid
 
 val qualid_is_ident : qualid -> bool
 val qualid_path : qualid -> DirPath.t

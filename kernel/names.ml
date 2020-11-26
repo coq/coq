@@ -1115,3 +1115,5 @@ let eq_egr e1 e2 = match e1, e2 with
 type lident = Id.t CAst.t
 type lname = Name.t CAst.t
 type lstring = string CAst.t
+
+let lident_eq = CAst.eq Id.equal

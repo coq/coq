@@ -1,61 +1,61 @@
-Inductive Empty@{u} : Type@{u} :=  
-(* u |=  *)
-Record PWrap (A : Type@{u}) : Type@{u} := pwrap { punwrap : A }
-(* u |=  *)
+Inductive Empty@{uu} : Type@{uu} :=  
+(* uu |=  *)
+Record PWrap (A : Type@{uu}) : Type@{uu} := pwrap { punwrap : A }
+(* uu |=  *)
 
 PWrap has primitive projections with eta conversion.
 Arguments PWrap _%type_scope
 Arguments pwrap _%type_scope _
-punwrap@{u} = 
-fun (A : Type@{u}) (p : PWrap@{u} A) => punwrap _ p
-     : forall A : Type@{u}, PWrap@{u} A -> A
-(* u |=  *)
+punwrap@{uu} = 
+fun (A : Type@{uu}) (p : PWrap@{uu} A) => punwrap _ p
+     : forall A : Type@{uu}, PWrap@{uu} A -> A
+(* uu |=  *)
 
 Arguments punwrap _%type_scope _
-Record RWrap (A : Type@{u}) : Type@{u} := rwrap { runwrap : A }
-(* u |=  *)
+Record RWrap (A : Type@{uu}) : Type@{uu} := rwrap { runwrap : A }
+(* uu |=  *)
 
 Arguments RWrap _%type_scope
 Arguments rwrap _%type_scope _
-runwrap@{u} = 
-fun (A : Type@{u}) (r : RWrap@{u} A) => let (runwrap) := r in runwrap
-     : forall A : Type@{u}, RWrap@{u} A -> A
-(* u |=  *)
+runwrap@{uu} = 
+fun (A : Type@{uu}) (r : RWrap@{uu} A) => let (runwrap) := r in runwrap
+     : forall A : Type@{uu}, RWrap@{uu} A -> A
+(* uu |=  *)
 
 Arguments runwrap _%type_scope _
-Wrap@{u} = fun A : Type@{u} => A
-     : Type@{u} -> Type@{u}
-(* u |=  *)
+Wrap@{uu} = fun A : Type@{uu} => A
+     : Type@{uu} -> Type@{uu}
+(* uu |=  *)
 
 Arguments Wrap _%type_scope
-wrap@{u} = 
-fun (A : Type@{u}) (Wrap : Wrap@{u} A) => Wrap
-     : forall A : Type@{u}, Wrap@{u} A -> A
-(* u |=  *)
+wrap@{uu} = 
+fun (A : Type@{uu}) (Wrap : Wrap@{uu} A) => Wrap
+     : forall A : Type@{uu}, Wrap@{uu} A -> A
+(* uu |=  *)
 
 Arguments wrap {A}%type_scope {Wrap}
-bar@{u} = nat
-     : Wrap@{u} Set
-(* u |= Set < u *)
-foo@{u u0 v} = 
-Type@{u0} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,u0+1,v+1)}
-(* u u0 v |=  *)
+bar@{uu} = nat
+     : Wrap@{uu} Set
+(* uu |= Set < uu *)
+foo@{uu u v} = 
+Type@{u} -> Type@{v} -> Type@{uu}
+     : Type@{max(uu+1,u+1,v+1)}
+(* uu u v |=  *)
 Type@{i} -> Type@{j}
      : Type@{max(i+1,j+1)}
 (* {j i} |=  *)
      = Type@{i} -> Type@{j}
      : Type@{max(i+1,j+1)}
 (* {j i} |=  *)
-mono = Type@{mono.u}
-     : Type@{mono.u+1}
-(* {mono.u} |=  *)
+mono = Type@{mono.uu}
+     : Type@{mono.uu+1}
+(* {mono.uu} |=  *)
 mono
-     : Type@{mono.u+1}
-Type@{mono.u}
-     : Type@{mono.u+1}
+     : Type@{mono.uu+1}
+Type@{mono.uu}
+     : Type@{mono.uu+1}
 The command has indeed failed with message:
-Universe u already exists.
+Universe uu already exists.
 monomono
      : Type@{MONOU+1}
 mono.monomono
@@ -63,23 +63,23 @@ mono.monomono
 monomono
      : Type@{MONOU+1}
 mono
-     : Type@{mono.u+1}
+     : Type@{mono.uu+1}
 The command has indeed failed with message:
-Universe u already exists.
+Universe uu already exists.
 bobmorane = 
 let tt := Type@{UnivBinders.32} in
 let ff := Type@{UnivBinders.34} in tt -> ff
      : Type@{max(UnivBinders.31,UnivBinders.33)}
 The command has indeed failed with message:
-Universe u already bound.
+Universe uu already bound.
 foo@{E M N} = 
 Type@{M} -> Type@{N} -> Type@{E}
      : Type@{max(E+1,M+1,N+1)}
 (* E M N |=  *)
-foo@{u u0 v} = 
-Type@{u0} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,u0+1,v+1)}
-(* u u0 v |=  *)
+foo@{uu u v} = 
+Type@{u} -> Type@{v} -> Type@{uu}
+     : Type@{max(uu+1,u+1,v+1)}
+(* uu u v |=  *)
 Inductive Empty@{E} : Type@{E} :=  
 (* E |=  *)
 Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
@@ -103,45 +103,38 @@ The command has indeed failed with message:
 This object does not support universe names.
 The command has indeed failed with message:
 Cannot enforce v < u because u < gU < gV < v
-bind_univs.mono = 
-Type@{bind_univs.mono.u}
-     : Type@{bind_univs.mono.u+1}
-(* {bind_univs.mono.u} |=  *)
-bind_univs.poly@{u} = Type@{u}
-     : Type@{u+1}
-(* u |=  *)
-insec@{v} = Type@{u} -> Type@{v}
-     : Type@{max(u+1,v+1)}
+insec@{v} = Type@{uu} -> Type@{v}
+     : Type@{max(uu+1,v+1)}
 (* v |=  *)
 Inductive insecind@{k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{k}
 (* k |=  *)
 
 Arguments inseccstr _%type_scope
-insec@{u v} = Type@{u} -> Type@{v}
-     : Type@{max(u+1,v+1)}
-(* u v |=  *)
-Inductive insecind@{u k} : Type@{k+1} :=
-    inseccstr : Type@{k} -> insecind@{u k}
-(* u k |=  *)
+insec@{uu v} = Type@{uu} -> Type@{v}
+     : Type@{max(uu+1,v+1)}
+(* uu v |=  *)
+Inductive insecind@{uu k} : Type@{k+1} :=
+    inseccstr : Type@{k} -> insecind@{uu k}
+(* uu k |=  *)
 
 Arguments inseccstr _%type_scope
 insec2@{u} = Prop
      : Type@{Set+1}
 (* u |=  *)
-inmod@{u} = Type@{u}
-     : Type@{u+1}
-(* u |=  *)
-SomeMod.inmod@{u} = Type@{u}
-     : Type@{u+1}
-(* u |=  *)
-inmod@{u} = Type@{u}
-     : Type@{u+1}
-(* u |=  *)
-Applied.infunct@{u v} = 
-inmod@{u} -> Type@{v}
-     : Type@{max(u+1,v+1)}
-(* u v |=  *)
+inmod@{uu} = Type@{uu}
+     : Type@{uu+1}
+(* uu |=  *)
+SomeMod.inmod@{uu} = Type@{uu}
+     : Type@{uu+1}
+(* uu |=  *)
+inmod@{uu} = Type@{uu}
+     : Type@{uu+1}
+(* uu |=  *)
+Applied.infunct@{uu v} = 
+inmod@{uu} -> Type@{v}
+     : Type@{max(uu+1,v+1)}
+(* uu v |=  *)
 axfoo@{i u u0} : Type@{u} -> Type@{i}
 (* i u u0 |=  *)
 
@@ -166,3 +159,13 @@ Arguments axbar' _%type_scope
 Expands to: Constant UnivBinders.axbar'
 The command has indeed failed with message:
 When declaring multiple axioms in one command, only the first is allowed a universe binder (which will be shared by the whole block).
+foo@{i} = Type@{M.i} -> Type@{i}
+     : Type@{max(M.i+1,i+1)}
+(* i |=  *)
+bind_univs.mono = 
+Type@{bind_univs.mono.u}
+     : Type@{bind_univs.mono.u+1}
+(* {bind_univs.mono.u} |=  *)
+bind_univs.poly@{u} = Type@{u}
+     : Type@{u+1}
+(* u |=  *)

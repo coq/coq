@@ -24,3 +24,5 @@ let map_from_loc f l =
 
 let with_val f n = f n.v
 let with_loc_val f n = f ?loc:n.loc n.v
+
+let eq f x y = f x.v y.v
