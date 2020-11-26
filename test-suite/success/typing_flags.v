@@ -2,21 +2,21 @@ From Coq Require Import Program.Tactics.
 
 (* Part using attributes *)
 
-#[typing(guarded=no)] Fixpoint att_f' (n : nat) : nat := att_f' n.
-#[typing(guarded=no)] Program Fixpoint p_att_f' (n : nat) : nat := p_att_f' n.
+#[bypass_check(guard)] Fixpoint att_f' (n : nat) : nat := att_f' n.
+#[bypass_check(guard)] Program Fixpoint p_att_f' (n : nat) : nat := p_att_f' n.
 
-#[typing(universes=no)] Definition att_T := let t := Type in (t : t).
-#[typing(universes=no)] Program Definition p_att_T := let t := Type in (t : t).
+#[bypass_check(universes)] Definition att_T := let t := Type in (t : t).
+#[bypass_check(universes)] Program Definition p_att_T := let t := Type in (t : t).
 
-#[typing(positive=no)]
+#[bypass_check(positivity)]
 Inductive att_Cor :=
 | att_Over : att_Cor
 | att_Next : ((att_Cor -> list nat) -> list nat) -> att_Cor.
 
-Fail #[typing(guarded=yes)] Fixpoint f_att_f' (n : nat) : nat := f_att_f' n.
-Fail #[typing(universes=yes)] Definition f_att_T := let t := Type in (t : t).
+Fail #[bypass_check(guard=no)] Fixpoint f_att_f' (n : nat) : nat := f_att_f' n.
+Fail #[bypass_check(universes=no)] Definition f_att_T := let t := Type in (t : t).
 
-Fail #[typing(positive=yes)]
+Fail #[bypass_check(positivity=no)]
 Inductive f_att_Cor :=
 | f_att_Over : f_att_Cor
 | f_att_Next : ((f_att_Cor -> list nat) -> list nat) -> f_att_Cor.
@@ -26,15 +26,15 @@ Print Assumptions att_T.
 Print Assumptions att_Cor.
 
 (* Interactive + atts *)
-#[typing(universes=no)] Definition i_att_T' : Type. Proof. exact (let t := Type in (t : t)). Defined.
-#[typing(universes=no)] Definition d_att_T' : Type. Proof. exact (let t := Type in (t : t)). Qed.
-#[typing(universes=no)] Program Definition pi_att_T' : Type. Proof. exact (let t := Type in (t : t)). Qed.
+#[bypass_check(universes=yes)] Definition i_att_T' : Type. Proof. exact (let t := Type in (t : t)). Defined.
+#[bypass_check(universes=yes)] Definition d_att_T' : Type. Proof. exact (let t := Type in (t : t)). Qed.
+#[bypass_check(universes=yes)] Program Definition pi_att_T' : Type. Proof. exact (let t := Type in (t : t)). Qed.
 
 (* Note: be aware of tactics invoking [Global.env()] if this test fails. *)
-#[typing(guarded=no)] Fixpoint i_att_f' (n : nat) : nat.
+#[bypass_check(guard=yes)] Fixpoint i_att_f' (n : nat) : nat.
 Proof. exact (i_att_f' n). Defined.
 
-#[typing(guarded=no)] Fixpoint d_att_f' (n : nat) : nat.
+#[bypass_check(guard=yes)] Fixpoint d_att_f' (n : nat) : nat.
 Proof. exact (d_att_f' n). Qed.
 
 (* check regular mode is still safe *)

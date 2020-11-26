@@ -32,7 +32,7 @@ Inductive types
 
    This command supports the :attr:`universes(polymorphic)`,
    :attr:`universes(template)`, :attr:`universes(cumulative)`,
-   :attr:`typing(positive)`, :attr:`typing(universes)`, and
+   :attr:`bypass_check(positivity)`, :attr:`bypass_check(universes)`, and
    :attr:`private(matching)` attributes.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
@@ -54,7 +54,7 @@ Inductive types
       condition* (see Section :ref:`positivity`). This condition
       ensures the soundness of the inductive definition.
       Positivity checking can be disabled using the :flag:`Positivity
-      Checking` flag or the :attr:`typing(positive)` attribute (see
+      Checking` flag or the :attr:`bypass_check(positivity)` attribute (see
       :ref:`controlling-typing-flags`).
 
    .. exn:: The conclusion of @type is not valid; it must be built from @ident.
@@ -394,7 +394,7 @@ constructions.
    to :n:`fun {* @binder } => @term`.
 
    This command accepts the :attr:`program`,
-   :attr:`typing(universes)`, and :attr:`typing(guarded)` attributes.
+   :attr:`bypass_check(universes)`, and :attr:`bypass_check(guard)` attributes.
 
    To be accepted, a :cmd:`Fixpoint` definition has to satisfy syntactical
    constraints on a special argument called the decreasing argument. They
@@ -852,7 +852,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      #[typing(positive=no)] Inductive I : Prop := not_I_I (not_I : I -> False) : I.
+      #[bypass_check(positivity)] Inductive I : Prop := not_I_I (not_I : I -> False) : I.
 
    .. coqtop:: all
 
@@ -886,7 +886,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      #[typing(positive=no)] Inductive Lam := lam (_ : Lam -> Lam).
+      #[bypass_check(positivity)] Inductive Lam := lam (_ : Lam -> Lam).
 
    .. coqtop:: all
 
@@ -915,7 +915,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      #[typing(positive=no)] Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
+      #[bypass_check(positivity)] Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
 
    .. coqtop:: all
 
