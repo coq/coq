@@ -140,7 +140,7 @@
 ########################################################################
 # Gappa plugin
 ########################################################################
-: "${gappa_plugin_CI_REF:=3a367f9b7f67fb4d23a055a4c196c4b0f204c790}"
+: "${gappa_plugin_CI_REF:=gappalib-coq-1.4.5}"
 : "${gappa_plugin_CI_GITURL:=https://gitlab.inria.fr/gappa/coq}"
 : "${gappa_plugin_CI_ARCHIVEURL:=${gappa_plugin_CI_GITURL}/-/archive}"
 
