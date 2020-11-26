@@ -678,13 +678,13 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   end
 
 let replace c1 c2 =
-  replace_using_leibniz onConcl c2 c1 false false None
+  replace_using_leibniz onConcl c1 c2 false false None
 
 let replace_by c1 c2 tac =
-  replace_using_leibniz onConcl c2 c1 false false (Some tac)
+  replace_using_leibniz onConcl c1 c2 false false (Some tac)
 
 let replace_in_clause_maybe_by c1 c2 cl tac_opt =
-  replace_using_leibniz cl c2 c1 false false tac_opt
+  replace_using_leibniz cl c1 c2 false false tac_opt
 
 (* End of Eduardo's code. The rest of this file could be improved
    using the functions match_with_equation, etc that I defined
