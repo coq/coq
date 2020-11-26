@@ -1,8 +1,29 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
 open Util
 open Pp
 open Locus
 open Genredexpr
 open Pputils
+open Names
+open Tacred
+
+let pr_evaluable_reference = function
+  | EvalVarRef id -> Id.print id
+  | EvalConstRef sp -> Printer.pr_global (GlobRef.ConstRef sp)
+
+let pr_evaluable_reference_env env = function
+  | EvalVarRef id -> Id.print id
+  | EvalConstRef sp ->
+    Nametab.pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef sp)
 
 let pr_with_occurrences pr keyword (occs,c) =
   match occs with

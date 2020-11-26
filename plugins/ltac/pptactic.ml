@@ -190,10 +190,6 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_and_short_name pr (c,_) = pr c
 
-  let pr_evaluable_reference = function
-    | Tacred.EvalVarRef id -> pr_id id
-    | Tacred.EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
-
   let pr_quantified_hypothesis = function
     | AnonHyp n -> int n
     | NamedHyp id -> pr_id id
@@ -379,11 +375,6 @@ let string_of_genarg_arg (ArgumentType arg) =
            pr_qualid (Tacenv.shortest_qualid_of_tactic kn)
       with Not_found -> (* local tactic not accessible anymore *)
         str "<" ++ KerName.print kn ++ str ">"
-
-  let pr_evaluable_reference_env env = function
-    | Tacred.EvalVarRef id -> pr_id id
-    | Tacred.EvalConstRef sp ->
-      Nametab.pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef sp)
 
   let pr_as_disjunctive_ipat prc ipatl =
     keyword "as" ++ spc () ++
@@ -1135,7 +1126,7 @@ let pr_goal_selector ~toplevel s =
         pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_lconstr = (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma));
         pr_pattern = (fun env sigma -> pr_pat_and_constr_expr (pr_glob_constr_env env sigma));
-        pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
+        pr_constant = pr_or_var (pr_and_short_name (Ppred.pr_evaluable_reference_env env));
         pr_lpattern = (fun env sigma -> pr_pat_and_constr_expr (pr_lglob_constr_env env sigma));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
@@ -1171,7 +1162,7 @@ let pr_goal_selector ~toplevel s =
         pr_lconstr = pr_leconstr_env;
         pr_pattern = pr_constr_pattern_env;
         pr_lpattern = pr_lconstr_pattern_env;
-        pr_constant = pr_evaluable_reference_env env;
+        pr_constant = Ppred.pr_evaluable_reference_env env;
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
         (* Those are not used by the atomic printer *)
@@ -1270,8 +1261,8 @@ let pr_intro_pattern_env p = Genprint.TopPrinterNeedsContext (fun env sigma ->
   Miscprint.pr_intro_pattern print_constr p)
 
 let pr_red_expr_env r = Genprint.TopPrinterNeedsContext (fun env sigma ->
-  pr_red_expr env sigma ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e),
-                         pr_evaluable_reference_env env, pr_constr_pattern_env) r)
+  Ppred.pr_red_expr_env env sigma ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e),
+                         Ppred.pr_evaluable_reference_env env, pr_constr_pattern_env) Pp.str r)
 
 let pr_bindings_env bl = Genprint.TopPrinterNeedsContext (fun env sigma ->
   let sigma, bl = bl env sigma in

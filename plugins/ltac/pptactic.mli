@@ -106,8 +106,6 @@ val pr_may_eval :
 
 val pr_and_short_name : ('a -> Pp.t) -> 'a Genredexpr.and_short_name -> Pp.t
 
-val pr_evaluable_reference_env : env -> Tacred.evaluable_global_reference -> Pp.t
-
 val pr_quantified_hypothesis : quantified_hypothesis -> Pp.t
 
 val pr_in_clause :

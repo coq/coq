@@ -81,7 +81,7 @@ let pr_raw_strategy env sigma prc prlc _ (s : raw_strategy) =
   Rewrite.pr_strategy (prc env sigma) prr s
 let pr_glob_strategy env sigma prc prlc _ (s : glob_strategy) =
   let prpat env sigma (_,c,_) = prc env sigma c in
-  let prcst = Pputils.pr_or_var Pptactic.(pr_and_short_name (pr_evaluable_reference_env env)) in
+  let prcst = Pputils.pr_or_var Pptactic.(pr_and_short_name (Ppred.pr_evaluable_reference_env env)) in
   let prr = Pptactic.pr_red_expr env sigma (prc, prlc, prcst, prpat) in
   Rewrite.pr_strategy (prc env sigma) prr s
 
