@@ -34,15 +34,18 @@ CI_TARGETS= \
     ci-fiat_crypto_ocaml \
     ci-fiat_parsers \
     ci-flocq \
+    ci-fourcolor \
     ci-geocoq \
     ci-coqhammer \
     ci-hott \
+    ci-interval \
     ci-iris \
     ci-math_classes \
     ci-mathcomp \
     ci-menhir \
     ci-metacoq \
     ci-mtac2 \
+    ci-oddorder \
     ci-paramcoq \
     ci-perennial \
     ci-quickchick \
@@ -69,7 +72,7 @@ ci-all: $(CI_TARGETS)
 ci-color: ci-bignums
 
 ci-coqprime: ci-bignums
-
+ci-coquelicot: ci-mathcomp
 ci-math_classes: ci-bignums
 
 ci-corn: ci-math_classes
@@ -78,6 +81,10 @@ ci-mtac2: ci-unicoq
 
 ci-fiat_crypto: ci-coqprime ci-rewriter
 ci-fiat_crypto_ocaml: ci-fiat_crypto
+
+ci-interval: ci-mathcomp ci-flocq ci-coquelicot ci-bignums
+ci-fourcolor: ci-mathcomp
+ci-oddorder: ci-mathcomp
 
 ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io
