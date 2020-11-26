@@ -740,7 +740,14 @@ library:ci-coqtail:
   extends: .ci-template
 
 library:ci-coquelicot:
-  extends: .ci-template
+  stage: stage-3
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+  dependencies:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-cross_crypto:
   extends: .ci-template
@@ -793,6 +800,42 @@ library:ci-flocq:
 
 library:ci-menhir:
   extends: .ci-template-flambda
+
+library:ci-interval:
+  extends: .ci-template-flambda
+  stage: stage-4
+  needs:
+  - build:edge+flambda
+  - library:ci-coquelicot
+  - library:ci-flocq
+  - library:ci-mathcomp
+  - plugin:ci-bignums
+  dependencies:
+  - build:edge+flambda
+  - library:ci-coquelicot
+  - library:ci-flocq
+  - library:ci-mathcomp
+  - plugin:ci-bignums
+
+library:ci-oddorder:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+  dependencies:
+  - build:edge+flambda
+  - library:ci-mathcomp
+
+library:ci-fourcolor:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+  dependencies:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-corn:
   extends: .ci-template-flambda
