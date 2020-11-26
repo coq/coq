@@ -7,6 +7,6 @@ git_download compcert
 
 export COQCOPTS='-native-compiler no -w -undeclared-scope -w -omega-is-deprecated'
 ( cd "${CI_BUILD_DIR}/compcert" && \
-      ./configure -ignore-coq-version x86_32-linux && \
+      ./configure -ignore-coq-version x86_32-linux -use-external-MenhirLib -use-external-Flocq && \
       make && \
       make check-proof COQCHK='"$(COQBIN)coqchk" -silent -o $(COQINCLUDES)')

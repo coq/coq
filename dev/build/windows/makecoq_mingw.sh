@@ -1749,7 +1749,7 @@ function make_addon_compcert {
   installer_addon_dependency_end
   if build_prep_overlay compcert; then
     installer_addon_section compcert "CompCert" "ATTENTION: THIS IS NOT OPEN SOURCE! CompCert verified C compiler and Clightgen (required for using VST for your own code)" "off"
-    logn configure ./configure -ignore-coq-version -clightgen -prefix "$PREFIXCOQ" -coqdevdir "$PREFIXCOQ/lib/coq/user-contrib/compcert" x86_32-cygwin
+    logn configure ./configure -ignore-coq-version -clightgen -prefix "$PREFIXCOQ" -coqdevdir "$PREFIXCOQ/lib/coq/user-contrib/compcert" x86_32-cygwin -use-external-MenhirLib -use-external-Flocq
     log1 make $MAKE_OPT
     log2 make install
     logn install-license-1 install -D -T  "LICENSE" "$PREFIXCOQ/lib/coq/user-contrib/compcert/LICENSE"
