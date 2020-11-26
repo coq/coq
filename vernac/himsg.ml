@@ -572,6 +572,13 @@ let rec explain_evar_kind env sigma evk ty =
       strbrk "the type of " ++ Id.print id
   | Evar_kinds.BinderType Anonymous ->
       strbrk "the type of this anonymous binder"
+  | Evar_kinds.EvarType (ido,evk) ->
+      let pp = match ido with
+        | Some id -> str "?" ++ Id.print id
+        | None ->
+          try pr_existential_key sigma evk
+          with (* defined *) Not_found -> strbrk "an internal placeholder" in
+      strbrk "the type of " ++ pp
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
       strbrk "the implicit parameter " ++ Id.print id ++ spc () ++ str "of" ++

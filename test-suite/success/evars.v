@@ -426,3 +426,12 @@ Abort.
 (* (reported as bug #7356) *)
 
 Check fun (P : nat -> Prop) (x:nat) (h:P x) => exist _ ?[z] (h : P ?z).
+
+(* A printing check in passing *)
+
+Axiom abs : forall T, T.
+Fail Type let x := _ in
+     ltac:(
+       let t := type of x in
+       unify x (abs t);
+     exact 0).
