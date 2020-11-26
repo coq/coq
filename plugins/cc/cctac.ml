@@ -443,7 +443,7 @@ let cc_tactic depth additionnal_terms =
       let pr_missing (c, missing) =
         let c = Detyping.detype Detyping.Now ~lax:true false Id.Set.empty env sigma c in
         let holes = List.init missing (fun _ -> hole) in
-        Printer.pr_glob_constr_env env (DAst.make @@ GApp (c, holes))
+        Printer.pr_glob_constr_env env sigma (DAst.make @@ GApp (c, holes))
       in
             let msg = Pp.(str "Goal is solvable by congruence but some arguments are missing."
                     ++ fnl () ++

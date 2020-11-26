@@ -129,8 +129,6 @@ type option_setting =
 
 (** Identifier and optional list of bound universes and constraints. *)
 
-type sort_expr = Sorts.family
-
 type definition_expr =
   | ProveBody of local_binder_expr list * constr_expr
   | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
@@ -210,8 +208,8 @@ type proof_end =
   | Proved of opacity_flag * lident option
 
 type scheme =
-  | InductionScheme of bool * qualid or_by_notation * sort_expr
-  | CaseScheme of bool * qualid or_by_notation * sort_expr
+  | InductionScheme of bool * qualid or_by_notation * Sorts.family
+  | CaseScheme of bool * qualid or_by_notation * Sorts.family
   | EqualityScheme of qualid or_by_notation
 
 type section_subset_expr =
@@ -341,7 +339,7 @@ type nonrec vernac_expr =
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
-  | VernacConstraint of Glob_term.glob_constraint list
+  | VernacConstraint of univ_constraint_expr list
 
   (* Gallina extensions *)
   | VernacBeginSection of lident

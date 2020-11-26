@@ -88,7 +88,8 @@ val intern_gen : typing_constraint -> env -> evar_map ->
 val intern_pattern : env -> cases_pattern_expr ->
   lident list * (Id.t Id.Map.t * cases_pattern) list
 
-val intern_context : env -> internalization_env -> local_binder_expr list -> internalization_env * glob_decl list
+val intern_context : env -> bound_univs:UnivNames.universe_binders ->
+  internalization_env -> local_binder_expr list -> internalization_env * glob_decl list
 
 (** {6 Composing internalization with type inference (pretyping) } *)
 
@@ -197,6 +198,8 @@ val get_asymmetric_patterns : unit -> bool
 val check_duplicate : ?loc:Loc.t -> (qualid * constr_expr) list -> unit
 (** Check that a list of record field definitions doesn't contain
     duplicates. *)
+
+val interp_known_level : Evd.evar_map -> sort_name_expr -> Univ.Level.t
 
 (** Local universe and constraint declarations. *)
 val interp_univ_decl : Environ.env -> universe_decl_expr ->

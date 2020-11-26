@@ -562,9 +562,9 @@ let shortest_qualid_of_modtype ?loc kn =
   let sp = MPmap.find kn !the_modtyperevtab in
     MPTab.shortest_qualid ?loc Id.Set.empty sp !the_modtypetab
 
-let shortest_qualid_of_universe ?loc kn =
+let shortest_qualid_of_universe ?loc ctx kn =
   let sp = UnivIdMap.find kn !the_univrevtab in
-    UnivTab.shortest_qualid ?loc Id.Set.empty sp !the_univtab
+    UnivTab.shortest_qualid ?loc ctx sp !the_univtab
 
 let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)

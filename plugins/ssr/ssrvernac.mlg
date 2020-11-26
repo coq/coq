@@ -203,8 +203,8 @@ let pr_raw_ssrhintref env sigma prc _ _ = let open CAst in function
 let pr_rawhintref env sigma c =
   match DAst.get c with
   | GApp (f, args) when isRHoles args ->
-    pr_glob_constr_env env f ++ str "|" ++ int (List.length args)
-  | _ -> pr_glob_constr_env env c
+    pr_glob_constr_env env sigma f ++ str "|" ++ int (List.length args)
+  | _ -> pr_glob_constr_env env sigma c
 
 let pr_glob_ssrhintref env sigma _ _ _ (c, _) = pr_rawhintref env sigma c
 

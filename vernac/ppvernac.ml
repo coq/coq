@@ -60,8 +60,8 @@ let pr_red_expr =
     keyword
 
 let pr_uconstraint (l, d, r) =
-  pr_glob_sort_name l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
-  pr_glob_sort_name r
+  pr_sort_name_expr l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
+  pr_sort_name_expr r
 
 let pr_univ_name_list = function
   | None -> mt ()

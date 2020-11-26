@@ -254,9 +254,12 @@ let contract_curly_brackets_pat ntn (l,ll) =
   (* side effect; don't inline *)
   (InConstrEntry,!ntn'),(l,ll)
 
+type local_univs = { bound : Univ.Level.t Id.Map.t; unb_univs : bool }
+
 type intern_env = {
-  ids: Names.Id.Set.t;
+  ids: Id.Set.t;
   unb: bool;
+  local_univs: local_univs;
   tmp_scope: Notation_term.tmp_scope_name option;
   scopes: Notation_term.scope_name list;
   impls: internalization_env;
@@ -1160,6 +1163,32 @@ let glob_sort_of_level (level: glob_level) : glob_sort =
   | UAnonymous {rigid} -> UAnonymous {rigid}
   | UNamed id -> UNamed [id,0]
 
+let intern_sort_name ~local_univs = function
+  | CSProp -> GSProp
+  | CProp -> GProp
+  | CSet -> GSet
+  | CRawType u -> GRawUniv u
+  | CType qid ->
+    let is_id = qualid_is_ident qid in
+    let local = if not is_id then None
+      else Id.Map.find_opt (qualid_basename qid) local_univs.bound
+    in
+    match local with
+    | Some u -> GUniv u
+    | None ->
+      try GUniv (Univ.Level.make (Nametab.locate_universe qid))
+      with Not_found ->
+        if is_id && local_univs.unb_univs
+        then GLocalUniv (CAst.make ?loc:qid.loc (qualid_basename qid))
+        else
+          CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid qid ++ str".")
+
+let intern_sort ~local_univs s =
+  map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) s
+
+let intern_instance ~local_univs us =
+  Option.map (List.map (map_glob_sort_gen (intern_sort_name ~local_univs))) us
+
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
   let loc = qid.loc in
@@ -1225,6 +1254,7 @@ let check_applied_projection isproj realref qid =
 
 let intern_applied_reference ~isproj intern env namedctx (_, ntnvars as lvar) us args qid =
   let loc = qid.CAst.loc in
+  let us = intern_instance ~local_univs:env.local_univs us in
   if qualid_is_ident qid then
       try
         let res = intern_var env lvar namedctx loc (qualid_basename qid) us in
@@ -1256,7 +1286,8 @@ let intern_applied_reference ~isproj intern env namedctx (_, ntnvars as lvar) us
 let interp_reference vars r =
   let (r,_,_),_ =
     intern_applied_reference ~isproj:None (fun _ -> error_not_enough_arguments ?loc:None)
-      {ids = Id.Set.empty; unb = false ;
+      {ids = Id.Set.empty; unb = false;
+       local_univs = { bound=Id.Map.empty; unb_univs = false };(* <- doesn't matter here *)
        tmp_scope = None; scopes = []; impls = empty_internalization_env;
        binder_block_names = None}
       Environ.empty_named_context_val
@@ -2269,12 +2300,12 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     (* end *)
     | CSort s ->
         DAst.make ?loc @@
-        GSort s
+        GSort (intern_sort ~local_univs:env.local_univs s)
     | CCast (c1, c2) ->
         DAst.make ?loc @@
         GCast (intern env c1, map_cast_type (intern_type (slide_binders env)) c2)
     | CArray(u,t,def,ty) ->
-      DAst.make ?loc @@ GArray(u, Array.map (intern env) t, intern env def, intern env ty)
+      DAst.make ?loc @@ GArray(intern_instance ~local_univs:env.local_univs u, Array.map (intern env) t, intern env def, intern env ty)
     )
   and intern_type env = intern (set_type_scope env)
 
@@ -2446,6 +2477,8 @@ let extract_ids env =
     (Termops.ids_of_rel_context (Environ.rel_context env))
     Id.Set.empty
 
+let bound_univs sigma = Evd.universe_binders sigma
+
 let scope_of_type_kind env sigma = function
   | IsType -> Notation.current_type_scope_name ()
   | OfType typ -> compute_type_scope env sigma typ
@@ -2468,8 +2501,9 @@ let intern_gen kind env sigma
   let tmp_scope = scope_of_type_kind env sigma kind in
   let k = allowed_binder_kind_of_type_kind kind in
   internalize env {ids = extract_ids env; unb = false;
-                         tmp_scope = tmp_scope; scopes = [];
-                         impls; binder_block_names = Some (k,Id.Map.domain impls)}
+                   local_univs = { bound = bound_univs sigma; unb_univs = true };
+                   tmp_scope = tmp_scope; scopes = [];
+                   impls; binder_block_names = Some (k,Id.Map.domain impls)}
     pattern_mode (ltacvars, Id.Map.empty) c
 
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
@@ -2558,7 +2592,9 @@ let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
   let impls = empty_internalization_env in
   let k = allowed_binder_kind_of_type_kind kind in
   internalize env
-    {ids; unb = false; tmp_scope; scopes = []; impls;
+    {ids; unb = false;
+     local_univs = { bound = bound_univs sigma; unb_univs = true };
+     tmp_scope; scopes = []; impls;
      binder_block_names = Some (k,Id.Set.empty)}
     pattern_mode (ltacvars, vl) c
 
@@ -2568,8 +2604,11 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let vl = Id.Map.map (fun typ -> (ref false, ref None, typ)) nenv.ninterp_var_type in
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
   let c = internalize env
-    {ids; unb = false; tmp_scope = None; scopes = []; impls; binder_block_names = None}
-    false (empty_ltac_sign, vl) a in
+      {ids; unb = false;
+       local_univs = { bound = Id.Map.empty; unb_univs = false };
+       tmp_scope = None; scopes = []; impls; binder_block_names = None}
+      false (empty_ltac_sign, vl) a
+  in
   (* Splits variables into those that are binding, bound, or both *)
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a, reversible = notation_constr_of_glob_constr nenv c in
@@ -2596,7 +2635,7 @@ let interp_binder_evars env sigma na t =
 let my_intern_constr env lvar acc c =
   internalize env acc false lvar c
 
-let intern_context env impl_env binders =
+let intern_context env ~bound_univs impl_env binders =
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let ids =
     (* We assume all ids around are parts of the prefix of the current
@@ -2607,6 +2646,7 @@ let intern_context env impl_env binders =
                let (env, bl) = intern_local_binder_aux (my_intern_constr env lvar) Id.Map.empty (lenv, bl) b in
                (env, bl))
             ({ids; unb = false;
+              local_univs = { bound = bound_univs; unb_univs = true };
               tmp_scope = None; scopes = []; impls = impl_env;
               binder_block_names = Some (Some AbsPi,ids)}, []) binders in
   (lenv.impls, List.map glob_local_binder_of_extended bl)
@@ -2643,17 +2683,21 @@ let interp_glob_context_evars ?(program_mode=false) env sigma bl =
   sigma, ((env, par), List.rev impls)
 
 let interp_context_evars ?program_mode ?(impl_env=empty_internalization_env) env sigma params =
-  let int_env,bl = intern_context env impl_env params in
+  let int_env,bl = intern_context env ~bound_univs:(bound_univs sigma) impl_env params in
   let sigma, x = interp_glob_context_evars ?program_mode env sigma bl in
   sigma, (int_env, x)
 
 
 (** Local universe and constraint declarations. *)
 
+let interp_known_level evd u =
+  let u = intern_sort_name ~local_univs:{bound = bound_univs evd; unb_univs=false} u in
+  Pretyping.known_glob_level evd u
+
 let interp_univ_constraints env evd cstrs =
   let interp (evd,cstrs) (u, d, u') =
-    let ul = Pretyping.interp_known_glob_level evd u in
-    let u'l = Pretyping.interp_known_glob_level evd u' in
+    let ul = interp_known_level evd u in
+    let u'l = interp_known_level evd u' in
     let cstr = (ul,d,u'l) in
     let cstrs' = Univ.Constraint.add cstr cstrs in
     try let evd = Evd.add_constraints evd (Univ.Constraint.singleton cstr) in

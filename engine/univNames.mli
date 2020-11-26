@@ -10,9 +10,6 @@
 
 open Univ
 
-val pr_with_global_universes : Level.t -> Pp.t
-val qualid_of_level : Level.t -> Libnames.qualid option
-
 (** Local universe name <-> level mapping *)
 
 type universe_binders = Univ.Level.t Names.Id.Map.t
@@ -20,3 +17,6 @@ type universe_binders = Univ.Level.t Names.Id.Map.t
 val empty_binders : universe_binders
 
 type univ_name_list = Names.lname list
+
+val pr_with_global_universes : universe_binders -> Level.t -> Pp.t
+val qualid_of_level : universe_binders -> Level.t -> Libnames.qualid option

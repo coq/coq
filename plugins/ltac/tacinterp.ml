@@ -773,7 +773,7 @@ let interp_may_eval f ist env sigma = function
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
        Proofview.NonLogical.run (debugging_exception_step ist false (fst reraise) (fun () ->
-         str"interpretation of term " ++ pr_glob_constr_env env (fst c)));
+         str"interpretation of term " ++ pr_glob_constr_env env sigma (fst c)));
        Exninfo.iraise reraise
 
 (* Interprets a constr expression possibly to first evaluate *)

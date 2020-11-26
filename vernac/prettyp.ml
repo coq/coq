@@ -206,7 +206,7 @@ let print_if_is_coercion ref =
 
 let pr_template_variables = function
   | [] -> mt ()
-  | vars -> str "on " ++ prlist_with_sep spc UnivNames.pr_with_global_universes vars
+  | vars -> str "on " ++ prlist_with_sep spc UnivNames.(pr_with_global_universes empty_binders) vars
 
 let print_polymorphism ref =
   let poly = Global.is_polymorphic ref in
@@ -668,7 +668,7 @@ let gallina_print_syntactic_def env kn =
         spc () ++ str ":=") ++
      spc () ++
      Constrextern.without_specific_symbols
-       [Notation.SynDefRule kn] (pr_glob_constr_env env) c)
+       [Notation.SynDefRule kn] (pr_glob_constr_env env (Evd.from_env env)) c)
 
 module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> Pp.t option end)
 

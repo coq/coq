@@ -84,7 +84,7 @@ let interp_congrarg_at ist gl n rf ty m =
     if i + n > m then None else
     try
       let rt = mkRApp congrn (args1 @  mkRApp rf (mkRHoles i) :: args2) in
-      ppdebug(lazy Pp.(str"rt=" ++ Printer.pr_glob_constr_env (pf_env gl) rt));
+      ppdebug(lazy Pp.(str"rt=" ++ Printer.pr_glob_constr_env (pf_env gl) (project gl) rt));
       Some (interp_refine ist gl rt)
     with _ -> loop (i + 1) in
   loop 0
