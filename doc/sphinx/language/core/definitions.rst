@@ -91,7 +91,7 @@ Section :ref:`typing-rules`.
 
    These commands also support the :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
-   :attr:`typing(universes)`, :attr:`typing(guarded)`, and
+   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, and
    :attr:`using` attributes.
 
    If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof editing mode.
@@ -163,8 +163,8 @@ Chapter :ref:`Tactics`. The basic assertion command is:
    correct at some time of the interactive development of a proof, use the
    command :cmd:`Guarded`.
 
-   This command accepts the :attr:`typing(universes)`,
-   :attr:`typing(guarded)`, and :attr:`using` attributes.
+   This command accepts the :attr:`bypass_check(universes)`,
+   :attr:`bypass_check(guard)`, and :attr:`using` attributes.
 
    .. exn:: The term @term has type @type which should be Set, Prop or Type.
       :undocumented:
