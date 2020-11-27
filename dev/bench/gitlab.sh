@@ -54,8 +54,8 @@ check_variable "CI_JOB_URL"
 : "${num_of_iterations:=1}"
 : "${coq_opam_packages:=coq-performance-tests-lite coq-engine-bench-lite coq-hott coq-bignums coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-sf-plf coq-coquelicot coq-lambda-rust coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast}"
 
-new_coq_commit=$(git rev-parse HEAD^2)
-old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
+new_coq_commit=$(git rev-parse 2ac7dfc4df92436c684d87d6df9f305f9d2d5a72)
+old_coq_commit=$(git rev-parse f1238742f931269167e7c2704b53bb285d05f39d)
 
 if echo "$num_of_iterations" | grep '^[1-9][0-9]*$' 2> /dev/null > /dev/null; then
     :
