@@ -65,6 +65,11 @@ let fresh_constructor_instance env c =
   let u, ctx = fresh_global_instance env (GlobRef.ConstructRef c) in
   (c, u), ctx
 
+let fresh_array_instance env =
+  let auctx = CPrimitives.typ_univs CPrimitives.PT_array in
+  let u, ctx = fresh_instance_from auctx None in
+  u, ctx
+
 let fresh_global_instance ?loc ?names env gr =
   let u, ctx = fresh_global_instance ?loc ?names env gr in
   mkRef (gr, u), ctx

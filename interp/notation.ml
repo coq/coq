@@ -640,7 +640,7 @@ let constr_of_globref allow_constant env sigma = function
   | GlobRef.IndRef c ->
      let sigma,c = Evd.fresh_inductive_instance env sigma c in
      sigma,mkIndU c
-  | GlobRef.ConstRef c when allow_constant ->
+  | GlobRef.ConstRef c when allow_constant || Environ.is_primitive_type env c ->
      let sigma,c = Evd.fresh_constant_instance env sigma c in
      sigma,mkConstU c
   | _ -> raise NotAValidPrimToken
@@ -692,6 +692,13 @@ let rec constr_of_glob allow_constant to_post post env sigma g = match DAst.get 
          sigma,mkApp (c, Array.of_list cl)
       end
   | Glob_term.GInt i -> sigma, mkInt i
+  | Glob_term.GFloat f -> sigma, mkFloat f
+  | Glob_term.GArray (_,t,def,ty) ->
+      let sigma, u' = Evd.fresh_array_instance env sigma in
+      let sigma, def' = constr_of_glob allow_constant to_post post env sigma def in
+      let sigma, t' = Array.fold_left_map (constr_of_glob allow_constant to_post post env) sigma t in
+      let sigma, ty' = constr_of_glob allow_constant to_post post env sigma ty in
+       sigma, mkArray (u',t',def',ty')
   | Glob_term.GSort gs ->
       let sigma,c = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family gs) in
       sigma,mkSort c
@@ -712,6 +719,12 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | Ind (ind, _) -> DAst.make ?loc (Glob_term.GRef (GlobRef.IndRef ind, None))
   | Var id -> DAst.make ?loc (Glob_term.GRef (GlobRef.VarRef id, None))
   | Int i -> DAst.make ?loc (Glob_term.GInt i)
+  | Float f -> DAst.make ?loc (Glob_term.GFloat f)
+  | Array (u,t,def,ty) ->
+      let def' = glob_of_constr token_kind ?loc env sigma def
+      and t' = Array.map (glob_of_constr token_kind ?loc env sigma) t
+      and ty' = glob_of_constr token_kind ?loc env sigma ty in
+      DAst.make ?loc (Glob_term.GArray (None,t',def',ty'))
   | Sort Sorts.SProp -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed [Glob_term.GSProp, 0]))
   | Sort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed [Glob_term.GProp, 0]))
   | Sort Sorts.Set -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed [Glob_term.GSet, 0]))

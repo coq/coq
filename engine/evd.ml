@@ -983,6 +983,9 @@ let fresh_inductive_instance ?loc ?(rigid=univ_flexible) env evd i =
 let fresh_constructor_instance ?loc ?(rigid=univ_flexible) env evd c =
   with_context_set ?loc rigid evd (UnivGen.fresh_constructor_instance env c)
 
+let fresh_array_instance ?loc ?(rigid=univ_flexible) env evd =
+  with_context_set ?loc rigid evd (UnivGen.fresh_array_instance env)
+
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
   with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
 

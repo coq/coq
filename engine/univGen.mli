@@ -42,6 +42,8 @@ val fresh_inductive_instance : env -> inductive ->
   pinductive in_universe_context_set
 val fresh_constructor_instance : env -> constructor ->
   pconstructor in_universe_context_set
+val fresh_array_instance : env ->
+  Instance.t in_universe_context_set
 
 val fresh_global_instance : ?loc:Loc.t -> ?names:Univ.Instance.t -> env -> GlobRef.t ->
   constr in_universe_context_set
