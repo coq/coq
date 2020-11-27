@@ -335,7 +335,7 @@ let rename_hyp repl =
       let subst c = Vars.replace_vars subst c in
       let map decl =
         decl |> NamedDecl.map_id (fun id -> try List.assoc_f Id.equal id repl with Not_found -> id)
-             |> NamedDecl.map_constr subst
+             |> NamedDecl.Smart.map_constr subst
       in
       let nhyps = List.map map hyps in
       let nconcl = subst concl in
@@ -3106,11 +3106,11 @@ let specialize (c,lbind) ipat =
            (* thie arg was solved, we update thing accordingly *)
            (* we replace in lprod the arg by rel 1 *)
            let substlp' = (* rel 1 must be lifted along the context *)
-             map_rel_context_lift (fun i x -> map_constr (replace_term sigma (mkRel i) t) x)
+             map_rel_context_lift (fun i x -> Smart.map_constr (replace_term sigma (mkRel i) t) x)
                env 1 lp' in
            (* Then we lift every rel above the just removed arg *)
            let updatedlp' =
-             map_rel_context_lift (fun i x -> map_constr (liftn (-1) i) x) env 1 substlp' in
+             map_rel_context_lift (fun i x -> Smart.map_constr (liftn (-1) i) x) env 1 substlp' in
            (* We replace also the term in the conclusion, its rel index is the
               length of the list lprd (remaining products before concl) *)
            let concl'' = replace_term sigma (mkRel (List.length lprd)) t concl in

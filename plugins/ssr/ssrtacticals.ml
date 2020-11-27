@@ -113,7 +113,7 @@ let endclausestac id_map clseq gl_id cl0 =
   | _ -> EConstr.map (project gl) unmark c in
   let utac hyp =
     Proofview.V82.of_tactic
-     (Tactics.convert_hyp ~check:false ~reorder:false (NamedDecl.map_constr unmark hyp)) in
+     (Tactics.convert_hyp ~check:false ~reorder:false (NamedDecl.Smart.map_constr unmark hyp)) in
   let utacs = List.map utac (pf_hyps gl) in
   let ugtac gl' =
     Proofview.V82.of_tactic

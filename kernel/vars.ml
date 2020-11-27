@@ -152,9 +152,9 @@ let substnl laml n c = substn_many (make_subst laml) n c
 let substl laml c = substn_many (make_subst laml) 0 c
 let subst1 lam c = substn_many [|make_substituend lam|] 0 c
 
-let substnl_decl laml k r = RelDecl.map_constr (fun c -> substnl laml k c) r
-let substl_decl laml r = RelDecl.map_constr (fun c -> substnl laml 0 c) r
-let subst1_decl lam r = RelDecl.map_constr (fun c -> subst1 lam c) r
+let substnl_decl laml k r = RelDecl.Smart.map_constr (fun c -> substnl laml k c) r
+let substl_decl laml r = RelDecl.Smart.map_constr (fun c -> substnl laml 0 c) r
+let subst1_decl lam r = RelDecl.Smart.map_constr (fun c -> subst1 lam c) r
 
 (* Build a substitution from an instance, inserting missing let-ins *)
 
@@ -274,7 +274,7 @@ let subst_univs_level_constr subst c =
       if !changed then c' else c
 
 let subst_univs_level_context s =
-  Context.Rel.map (subst_univs_level_constr s)
+  Context.Rel.Smart.map (subst_univs_level_constr s)
 
 let subst_instance_constr subst c =
   if Univ.Instance.is_empty subst then c
@@ -332,7 +332,7 @@ let univ_instantiate_constr u c =
 
 let subst_instance_context s ctx =
   if Univ.Instance.is_empty s then ctx
-  else Context.Rel.map (fun x -> subst_instance_constr s x) ctx
+  else Context.Rel.Smart.map (fun x -> subst_instance_constr s x) ctx
 
 let universes_of_constr c =
   let open Univ in

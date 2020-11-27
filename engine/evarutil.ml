@@ -81,10 +81,10 @@ let nf_evars_universes evm =
     (Evd.universe_subst evm)
 
 let nf_named_context_evar sigma ctx =
-  Context.Named.map (nf_evar0 sigma) ctx
+  Context.Named.Smart.map (nf_evar0 sigma) ctx
 
 let nf_rel_context_evar sigma ctx =
-  Context.Rel.map (nf_evar sigma) ctx
+  Context.Rel.Smart.map (nf_evar sigma) ctx
 
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
@@ -328,7 +328,7 @@ let push_rel_decl_to_named_context
   let open EConstr in
   let open Vars in
   let map_decl f d =
-    NamedDecl.map_constr f d
+    NamedDecl.Smart.map_constr f d
   in
   let rec replace_var_named_declaration id0 id nc = match match_named_context_val nc with
   | None -> empty_named_context_val
@@ -608,7 +608,7 @@ let clear_hyps_in_evi_main env sigma hyps terms ids =
   let nhyps =
     let check_context decl =
       let err = OccurHypInSimpleClause (Some (NamedDecl.get_id decl)) in
-      NamedDecl.map_constr (check_and_clear_in_constr env evdref err ids global) decl
+      NamedDecl.Smart.map_constr (check_and_clear_in_constr env evdref err ids global) decl
     in
     let check_value vk = match force_lazy_val vk with
     | None -> vk

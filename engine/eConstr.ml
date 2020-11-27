@@ -741,7 +741,7 @@ let lookup_named_val n e = cast_named_decl (sym unsafe_eq) (lookup_named_ctxt n 
 let map_rel_context_in_env f env sign =
   let rec aux env acc = function
     | d::sign ->
-        aux (push_rel d env) (Context.Rel.Declaration.map_constr (f env) d :: acc) sign
+        aux (push_rel d env) (Context.Rel.Declaration.Smart.map_constr (f env) d :: acc) sign
     | [] ->
         acc
   in

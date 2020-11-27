@@ -253,7 +253,7 @@ let map_evar_body f = function
 let map_evar_info f evi =
   {evi with
     evar_body = map_evar_body f evi.evar_body;
-    evar_hyps = map_named_val (fun d -> NamedDecl.map_constr f d) evi.evar_hyps;
+    evar_hyps = map_named_val (fun d -> NamedDecl.Smart.map_constr f d) evi.evar_hyps;
     evar_concl = f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
@@ -1534,7 +1534,7 @@ module MiniEConstr = struct
   let unsafe_to_named_decl d = d
   let of_rel_decl d = d
   let unsafe_to_rel_decl d = d
-  let to_rel_decl sigma d = Context.Rel.Declaration.map_constr (to_constr sigma) d
+  let to_rel_decl sigma d = Context.Rel.Declaration.Smart.map_constr (to_constr sigma) d
 
   let unsafe_to_case_invert x = x
   let of_case_invert x = x

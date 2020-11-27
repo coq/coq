@@ -88,7 +88,7 @@ let is_opaque cb = match cb.const_body with
 (** {7 Constant substitutions } *)
 
 let subst_rel_declaration sub =
-  RelDecl.map_constr (subst_mps sub)
+  RelDecl.Smart.map_constr (subst_mps sub)
 
 let subst_rel_context sub = List.Smart.map (subst_rel_declaration sub)
 
@@ -240,7 +240,7 @@ let subst_mind_packet sub mbp =
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_consnrealargs = mbp.mind_consnrealargs;
     mind_typename = mbp.mind_typename;
-    mind_nf_lc = Array.Smart.map (fun (ctx, c) -> Context.Rel.map (subst_mps sub) ctx, subst_mps sub c) mbp.mind_nf_lc;
+    mind_nf_lc = Array.Smart.map (fun (ctx, c) -> Context.Rel.Smart.map (subst_mps sub) ctx, subst_mps sub c) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
     mind_arity = subst_ind_arity sub mbp.mind_arity;
     mind_user_lc = Array.Smart.map (subst_mps sub) mbp.mind_user_lc;
@@ -273,7 +273,7 @@ let subst_mind_body sub mib =
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
-      Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;
+      Context.Rel.Smart.map (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.Smart.map (subst_mind_packet sub) mib.mind_packets ;
     mind_universes = mib.mind_universes;
     mind_template = mib.mind_template;
@@ -339,7 +339,7 @@ let hcons_ind_arity =
 
 let hcons_mind_packet oib =
   let user = Array.Smart.map Constr.hcons oib.mind_user_lc in
-  let map (ctx, c) = Context.Rel.map Constr.hcons ctx, Constr.hcons c in
+  let map (ctx, c) = Context.Rel.Smart.map Constr.hcons ctx, Constr.hcons c in
   let nf = Array.Smart.map map oib.mind_nf_lc in
   { oib with
     mind_typename = Names.Id.hcons oib.mind_typename;

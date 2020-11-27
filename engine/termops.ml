@@ -1302,7 +1302,7 @@ let assums_of_rel_context sign =
 let map_rel_context_in_env f env sign =
   let rec aux env acc = function
     | d::sign ->
-        aux (push_rel d env) (RelDecl.map_constr (f env) d :: acc) sign
+        aux (push_rel d env) (RelDecl.Smart.map_constr (f env) d :: acc) sign
     | [] ->
         acc
   in
@@ -1310,7 +1310,7 @@ let map_rel_context_in_env f env sign =
 
 let map_rel_context_with_binders f sign =
   let rec aux k = function
-    | d::sign -> RelDecl.map_constr (f k) d :: aux (k-1) sign
+    | d::sign -> RelDecl.Smart.map_constr (f k) d :: aux (k-1) sign
     | [] -> []
   in
   aux (Context.Rel.length sign) sign

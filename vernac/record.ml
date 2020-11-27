@@ -705,8 +705,8 @@ let declare_class def ~cumulative ~ubind ~univs ~variances id idbuild paramimpls
       let usubst, auctx = Univ.abstract_universes nas univs in
       let usubst = Univ.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
-      let fields = Context.Rel.map map fields in
-      let params = Context.Rel.map map params in
+      let fields = Context.Rel.Smart.map map fields in
+      let params = Context.Rel.Smart.map map params in
       auctx, params, fields
     | Monomorphic_entry _ ->
       Univ.AUContext.empty, params, fields

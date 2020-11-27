@@ -146,15 +146,6 @@ struct
           if ty == ty' then decl else LocalDef (na, v, ty')
 
     (** Map all terms in a given declaration. *)
-    let map_constr f = function
-      | LocalAssum (na, ty) as decl ->
-          let ty' = f ty in
-          if ty == ty' then decl else LocalAssum (na, ty')
-      | LocalDef (na, v, ty) as decl ->
-          let v' = f v in
-          let ty' = f ty in
-          if v == v' && ty == ty' then decl else LocalDef (na, v', ty')
-
     let map_constr_het f = function
       | LocalAssum (na, ty) ->
           let ty' = f ty in
@@ -182,6 +173,20 @@ struct
     let drop_body = function
       | LocalAssum _ as d -> d
       | LocalDef (na, _v, ty) -> LocalAssum (na, ty)
+
+    module Smart =
+    struct
+      let map_constr f = function
+        | LocalAssum (na, ty) as decl ->
+            let ty' = f ty in
+            if ty == ty' then decl else LocalAssum (na, ty')
+        | LocalDef (na, v, ty) as decl ->
+            let v' = f v in
+            let ty' = f ty in
+            if v == v' && ty == ty' then decl else LocalDef (na, v', ty')
+    end
+
+    let map_constr = Smart.map_constr
 
   end
 
@@ -220,9 +225,6 @@ struct
   (** Check whether given two rel-contexts are equal. *)
   let equal eq l = List.equal (fun c -> Declaration.equal eq c) l
 
-  (** Map all terms in a given rel-context. *)
-  let map f = List.Smart.map (Declaration.map_constr f)
-
   (** Perform a given action on every declaration in a given rel-context. *)
   let iter f = List.iter (Declaration.iter_constr f)
 
@@ -258,6 +260,14 @@ struct
 
   (** [extended_vect n Γ] does the same, returning instead an array. *)
   let to_extended_vect mk n hyps = Array.of_list (to_extended_list mk n hyps)
+
+  module Smart =
+  struct
+    (** Map all terms in a given rel-context. *)
+    let map f = List.Smart.map (Declaration.Smart.map_constr f)
+  end
+
+  let map = Smart.map
 end
 
 (** This module represents contexts that can capture non-anonymous variables.
@@ -356,15 +366,6 @@ struct
           if ty == ty' then decl else LocalDef (id, v, ty')
 
     (** Map all terms in a given declaration. *)
-    let map_constr f = function
-      | LocalAssum (id, ty) as decl ->
-          let ty' = f ty in
-          if ty == ty' then decl else LocalAssum (id, ty')
-      | LocalDef (id, v, ty) as decl ->
-          let v' = f v in
-          let ty' = f ty in
-          if v == v' && ty == ty' then decl else LocalDef (id, v', ty')
-
     let map_constr_het f = function
       | LocalAssum (id, ty) ->
           let ty' = f ty in
@@ -410,6 +411,20 @@ struct
           Rel.Declaration.LocalAssum (name id, t)
       | LocalDef (id,v,t) ->
           Rel.Declaration.LocalDef (name id,v,t)
+
+    module Smart =
+    struct
+      let map_constr f = function
+        | LocalAssum (id, ty) as decl ->
+            let ty' = f ty in
+            if ty == ty' then decl else LocalAssum (id, ty')
+        | LocalDef (id, v, ty) as decl ->
+            let v' = f v in
+            let ty' = f ty in
+            if v == v' && ty == ty' then decl else LocalDef (id, v', ty')
+    end
+
+    let map_constr = Smart.map_constr
   end
 
   (** Named-context is represented as a list of declarations.
@@ -435,9 +450,6 @@ struct
 
   (** Check whether given two named-contexts are equal. *)
   let equal eq l = List.equal (fun c -> Declaration.equal eq c) l
-
-  (** Map all terms in a given named-context. *)
-  let map f = List.Smart.map (Declaration.map_constr f)
 
   (** Perform a given action on every declaration in a given named-context. *)
   let iter f = List.iter (Declaration.iter_constr f)
@@ -466,6 +478,15 @@ struct
       | _ -> None
     in
     List.map_filter filter l
+
+  module Smart =
+  struct
+    (** Map all terms in a given named-context. *)
+    let map f = List.Smart.map (Declaration.Smart.map_constr f)
+  end
+
+  let map = Smart.map
+
 end
 
 module Compacted =
@@ -475,15 +496,6 @@ module Compacted =
         type ('constr, 'types) pt =
           | LocalAssum of Id.t binder_annot list * 'types
           | LocalDef of Id.t binder_annot list * 'constr * 'types
-
-        let map_constr f = function
-          | LocalAssum (ids, ty) as decl ->
-             let ty' = f ty in
-             if ty == ty' then decl else LocalAssum (ids, ty')
-          | LocalDef (ids, c, ty) as decl ->
-             let ty' = f ty in
-             let c' = f c in
-             if c == c' && ty == ty' then decl else LocalDef (ids,c',ty')
 
         let of_named_decl = function
           | Named.Declaration.LocalAssum (id,t) ->
@@ -496,6 +508,21 @@ module Compacted =
              List.map (fun id -> Named.Declaration.LocalAssum (id,t)) ids
           | LocalDef (ids, v, t) ->
              List.map (fun id -> Named.Declaration.LocalDef (id,v,t)) ids
+
+        module Smart =
+        struct
+        let map_constr f = function
+          | LocalAssum (ids, ty) as decl ->
+             let ty' = f ty in
+             if ty == ty' then decl else LocalAssum (ids, ty')
+          | LocalDef (ids, c, ty) as decl ->
+             let ty' = f ty in
+             let c' = f c in
+             if c == c' && ty == ty' then decl else LocalDef (ids,c',ty')
+        end
+
+        let map_constr = Smart.map_constr
+
       end
 
     type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list

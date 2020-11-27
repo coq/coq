@@ -100,10 +100,8 @@ sig
     (** Map the type of the name bound by a given declaration. *)
     val map_type : ('t -> 't) -> ('c, 't) pt -> ('c, 't) pt
 
-    (** Map all terms in a given declaration. *)
-    val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
-
-    (** Map all terms, with an heterogeneous function. *)
+    (** Map all terms, with an heterogeneous function.
+        If domain and codomain are the same, use [Smart.map_constr]. *)
     val map_constr_het : ('a -> 'b) -> ('a, 'a) pt -> ('b, 'b) pt
 
     (** Perform a given action on all terms in a given declaration. *)
@@ -116,6 +114,16 @@ sig
 
     (** Turn [LocalDef] into [LocalAssum], identity otherwise. *)
     val drop_body : ('c, 't) pt -> ('c, 't) pt
+
+    module Smart :
+    sig
+      (** Map all terms in a given declaration. *)
+      val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+    end
+
+    (** Map all terms in a given declaration. *)
+    val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+    [@@ocaml.deprecated "Use Smart.map_constr"]
   end
 
   (** Rel-context is represented as a list of declarations.
@@ -141,9 +149,6 @@ sig
   (** Return a declaration designated by a given de Bruijn index.
       @raise Not_found if the designated de Bruijn index outside the range. *)
   val lookup : int -> ('c, 't) pt -> ('c, 't) Declaration.pt
-
-  (** Map all terms in a given rel-context. *)
-  val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
 
   (** Perform a given action on every declaration in a given rel-context. *)
   val iter : ('c -> unit) -> ('c, 'c) pt -> unit
@@ -171,6 +176,16 @@ sig
 
   (** [extended_vect n Γ] does the same, returning instead an array. *)
   val to_extended_vect : (int -> 'r) -> int -> ('c, 't) pt -> 'r array
+
+  module Smart :
+  sig
+    (** Map all terms in a given rel-context. *)
+    val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+  end
+
+  (** Map all terms in a given rel-context. *)
+  val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+  [@@ocaml.deprecated "Use Smart.map"]
 end
 
 (** This module represents contexts that can capture non-anonymous variables.
@@ -228,10 +243,8 @@ sig
     (** Map the type of the name bound by a given declaration. *)
     val map_type : ('t -> 't) -> ('c, 't) pt -> ('c, 't) pt
 
-    (** Map all terms in a given declaration. *)
-    val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
-
-    (** Map all terms, with an heterogeneous function. *)
+    (** Map all terms, with an heterogeneous function.
+        If domain and codomain are the same, use [Smart.map_constr]. *)
     val map_constr_het : ('a -> 'b) -> ('a, 'a) pt -> ('b, 'b) pt
 
     (** Perform a given action on all terms in a given declaration. *)
@@ -253,6 +266,16 @@ sig
     (** Convert [Named.Declaration.t] value to the corresponding [Rel.Declaration.t] value. *)
     (* TODO: Move this function to [Rel.Declaration] module and rename it to [of_named]. *)
     val to_rel_decl : ('c, 't) pt -> ('c, 't) Rel.Declaration.pt
+
+    module Smart :
+    sig
+      (** Map all terms in a given declaration. *)
+      val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+    end
+
+    (** Map all terms in a given declaration. *)
+    val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+    [@@ocaml.deprecated "Use Smart.map_constr"]
   end
 
   (** Named-context is represented as a list of declarations.
@@ -276,9 +299,6 @@ sig
   (** Check whether given two named-contexts are equal. *)
   val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
 
-  (** Map all terms in a given named-context. *)
-  val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
-
   (** Perform a given action on every declaration in a given named-context. *)
   val iter : ('c -> unit) -> ('c, 'c) pt -> unit
 
@@ -301,6 +321,16 @@ sig
       definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
       gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
   val to_instance : (Id.t -> 'r) -> ('c, 't) pt -> 'r list
+
+  module Smart :
+  sig
+    (** Map all terms in a given named-context. *)
+    val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+  end
+
+  (** Map all terms in a given named-context. *)
+  val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+  [@@ocaml.deprecated "Use Smart.map"]
 end
 
 module Compacted :
@@ -311,12 +341,21 @@ sig
       | LocalAssum of Id.t binder_annot list * 'types
       | LocalDef of Id.t binder_annot list * 'constr * 'types
 
-    val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
     val of_named_decl : ('c, 't) Named.Declaration.pt -> ('c, 't) pt
     val to_named_context : ('c, 't) pt -> ('c, 't) Named.pt
+
+    module Smart :
+    sig
+      (** Map all terms in a given declaration. *)
+      val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+    end
+
+    val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+    [@@ocaml.deprecated "Use Smart.map_constr"]
   end
 
   type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
 
   val fold : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
+
 end

@@ -107,7 +107,7 @@ let telescope env sigma l =
   telescope sigma l
 
 let nf_evar_context sigma ctx =
-  List.map (map_constr (fun c -> Evarutil.nf_evar sigma c)) ctx
+  List.map (Smart.map_constr (fun c -> Evarutil.nf_evar sigma c)) ctx
 
 let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?using r measure notation =
   let open EConstr in

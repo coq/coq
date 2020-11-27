@@ -223,7 +223,7 @@ let cook_constr { Opaqueproof.modlist ; abstract } (c, priv) =
     usubst, Opaqueproof.PrivatePolymorphic (univs, ctx)
   in
   let expmod = expmod_constr_subst cache modlist usubst in
-  let hyps = Context.Named.map expmod abstract in
+  let hyps = Context.Named.Smart.map expmod abstract in
   let hyps = abstract_context hyps in
   let c = abstract_as_body (expmod c) hyps in
   (c, priv)
@@ -238,7 +238,7 @@ let cook_constant { from = cb; info } =
   let abstract, usubst, abs_ctx = abstract in
   let usubst, univs = lift_univs usubst abs_ctx cb.const_universes in
   let expmod = expmod_constr_subst cache modlist usubst in
-  let hyps0 = Context.Named.map expmod abstract in
+  let hyps0 = Context.Named.Smart.map expmod abstract in
   let hyps = abstract_context hyps0 in
   let map c = abstract_as_body (expmod c) hyps in
   let body = match cb.const_body with
@@ -312,7 +312,7 @@ let cook_one_ind ~ntypes
       TemplateArity {template_level}
   in
   let mind_arity_ctxt =
-    let ctx = Context.Rel.map expmod mip.mind_arity_ctxt in
+    let ctx = Context.Rel.Smart.map expmod mip.mind_arity_ctxt in
     abstract_rel_ctx hyps ctx
   in
   let mind_user_lc =
@@ -348,12 +348,12 @@ let cook_inductive { Opaqueproof.modlist; abstract } mib =
   let subst, mind_universes = lift_univs subst abs_uctx mib.mind_universes in
   let cache = RefTable.create 13 in
   let expmod = expmod_constr_subst cache modlist subst in
-  let section_decls = Context.Named.map expmod section_decls in
+  let section_decls = Context.Named.Smart.map expmod section_decls in
   let removed_vars = Context.Named.to_vars section_decls in
   let section_decls, _ as hyps = abstract_context section_decls in
   let nnewparams = Context.Rel.nhyps section_decls in
   let mind_params_ctxt =
-    let ctx = Context.Rel.map expmod mib.mind_params_ctxt in
+    let ctx = Context.Rel.Smart.map expmod mib.mind_params_ctxt in
     abstract_rel_ctx hyps ctx
   in
   let ntypes = mib.mind_ntypes in

@@ -151,7 +151,7 @@ let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
-  let do_subst_ctx = List.Smart.map (RelDecl.map_constr do_subst) in
+  let do_subst_ctx = List.Smart.map (RelDecl.Smart.map_constr do_subst) in
   let do_subst_meth m =
     let c = Option.Smart.map do_subst_con m.meth_const in
     if c == m.meth_const then m
@@ -176,14 +176,14 @@ let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
     ( fun decl (ctx', subst) ->
-        let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
+        let decl' = decl |> NamedDecl.Smart.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
         (decl' :: ctx', NamedDecl.get_id decl :: subst)
     ) ctx ([], []) in
   let discharge_rel_context (subst, usubst) n rel =
-    let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
+    let rel = Context.Rel.Smart.map (Cooking.expmod_constr repl) rel in
     let fold decl (ctx, k) =
       let map c = subst_univs_level_constr usubst (substn_vars k subst c) in
-      RelDecl.map_constr map decl :: ctx, succ k
+      RelDecl.Smart.map_constr map decl :: ctx, succ k
     in
     let ctx, _ = List.fold_right fold rel ([], n) in
     ctx

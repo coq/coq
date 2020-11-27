@@ -650,7 +650,7 @@ let solve_pattern_eqn env sigma l c =
       (* Rem: if [a] links to a let-in, do as if it were an assumption *)
       | RelAlias n ->
           let open Context.Rel.Declaration in
-          let d = map_constr (lift n) (lookup_rel n env) in
+          let d = Smart.map_constr (lift n) (lookup_rel n env) in
           mkLambda_or_LetIn d c'
       | VarAlias id ->
           let d = lookup_named id env in mkNamedLambda_or_LetIn d c'

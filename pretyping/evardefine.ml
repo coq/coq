@@ -28,12 +28,12 @@ module RelDecl = Context.Rel.Declaration
 let env_nf_evar sigma env =
   let nf_evar c = nf_evar sigma c in
   process_rel_context
-    (fun d e -> push_rel (RelDecl.map_constr nf_evar d) e) env
+    (fun d e -> push_rel (RelDecl.Smart.map_constr nf_evar d) e) env
 
 let env_nf_betaiotaevar sigma env =
   process_rel_context
     (fun d env ->
-      push_rel (RelDecl.map_constr (fun c -> Reductionops.nf_betaiota env sigma c) d) env) env
+      push_rel (RelDecl.Smart.map_constr (fun c -> Reductionops.nf_betaiota env sigma c) d) env) env
 
 (****************************************)
 (* Operations on value/type constraints *)

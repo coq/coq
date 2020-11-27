@@ -676,7 +676,7 @@ let relocate_index_tomatch sigma n1 n2 =
       NonDepAlias :: genrec depth rest
   | Abstract (i,d) :: rest ->
       let i = relocate_rel n1 n2 depth i in
-      Abstract (i, RelDecl.map_constr (fun c -> relocate_index sigma n1 n2 depth c) d)
+      Abstract (i, RelDecl.Smart.map_constr (fun c -> relocate_index sigma n1 n2 depth c) d)
       :: genrec (depth+1) rest in
   genrec 0
 
@@ -709,7 +709,7 @@ let replace_tomatch sigma n c =
   | NonDepAlias  :: rest ->
       NonDepAlias :: replrec depth rest
   | Abstract (i,d) :: rest ->
-      Abstract (i, RelDecl.map_constr (fun t -> replace_term sigma n c depth t) d)
+      Abstract (i, RelDecl.Smart.map_constr (fun t -> replace_term sigma n c depth t) d)
       :: replrec (depth+1) rest in
   replrec 0
 
@@ -734,7 +734,7 @@ let rec liftn_tomatch_stack n depth = function
       NonDepAlias :: liftn_tomatch_stack n depth rest
   | Abstract (i,d)::rest ->
       let i = if i<depth then i else i+n in
-      Abstract (i, RelDecl.map_constr (liftn n depth) d)
+      Abstract (i, RelDecl.Smart.map_constr (liftn n depth) d)
       ::(liftn_tomatch_stack n (depth+1) rest)
 
 let lift_tomatch_stack n = liftn_tomatch_stack n 1
@@ -1205,7 +1205,7 @@ let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
-      let d = map_constr (fun c -> nf_evar evd c) d in
+      let d = Smart.map_constr (fun c -> nf_evar evd c) d in
       let is_d = match d with LocalAssum _ -> false | LocalDef _ -> true in
       if is_d || List.exists (fun c -> dependent_decl evd (lift k c) d) tocheck
                  && Array.exists (is_dependent_branch evd k) brs then
@@ -1276,7 +1276,7 @@ let rec generalize_problem names sigma pb = function
   | [] -> pb, []
   | i::l ->
       let pb',deps = generalize_problem names sigma pb l in
-      let d = map_constr (lift i) (lookup_rel i !!(pb.env)) in
+      let d = Smart.map_constr (lift i) (lookup_rel i !!(pb.env)) in
       begin match d with
       | LocalDef ({binder_name=Anonymous},_,_) -> pb', deps
       | _ ->
@@ -1327,7 +1327,7 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
   (* We adjust the terms to match in the context they will be once the *)
   (* context [x1:T1,..,xn:Tn] will have been pushed on the current env *)
   let typs' =
-    List.map_i (fun i d -> (mkRel i, map_constr (lift i) d)) 1 typs in
+    List.map_i (fun i d -> (mkRel i, Smart.map_constr (lift i) d)) 1 typs in
 
   let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
   let typs,extenv = push_rel_context ~hypnaming sigma typs pb.env in
@@ -1861,7 +1861,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
   let n = List.length sign in
 
   let decls =
-    List.map_i (fun i d -> (mkRel i, map_constr (lift i) d)) 1 sign in
+    List.map_i (fun i d -> (mkRel i, Smart.map_constr (lift i) d)) 1 sign in
 
   let _,pb_env = push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma sign env in
   let decls =
