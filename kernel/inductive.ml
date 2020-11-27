@@ -330,33 +330,42 @@ let check_allowed_sort ksort specif =
     let s = inductive_sort_family (snd specif) in
     raise (LocalArity (Some(elim_sort specif, ksort,s,error_elim_explain ksort s)))
 
-let is_correct_arity env c pj ind specif params =
+let check_correct_arity env c pj ind specif params =
   let arsign,_ = get_instantiated_arity ind specif params in
-  let rec srec env pt ar =
+  let rec srec env ar pt =
     let pt' = whd_all env pt in
-    match kind pt', ar with
-      | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
-          let () =
-            try conv env a1 a1'
-            with NotConvertible -> raise (LocalArity None) in
-          srec (push_rel (LocalAssum (na1,a1)) env) t ar'
-      (* The last Prod domain is the type of the scrutinee *)
-      | Prod (na1,a1,a2), [] -> (* whnf of t was not needed here! *)
-         let env' = push_rel (LocalAssum (na1,a1)) env in
-         let ksort = match kind (whd_all env' a2) with
-         | Sort s -> Sorts.family s
-         | _ -> raise (LocalArity None) in
-         let dep_ind = build_dependent_inductive ind specif params in
-         let _ =
-           try conv env a1 dep_ind
-           with NotConvertible -> raise (LocalArity None) in
-           check_allowed_sort ksort specif
-      | _, (LocalDef _ as d)::ar' ->
-          srec (push_rel d env) (lift 1 pt') ar'
-      | _ ->
-          raise (LocalArity None)
+    match ar, kind pt' with
+    | (LocalAssum (_,a1))::ar', Prod (na1,a1',t) ->
+      let () =
+        try conv_leq env a1 a1'
+        with NotConvertible -> raise (LocalArity None) in
+      srec (push_rel (LocalAssum (na1,a1)) env) ar' t
+    (* The last Prod domain is the type of the scrutinee *)
+    | [], Prod (na1,a1',a2) ->
+      let env' = push_rel (LocalAssum (na1,a1')) env in
+      let ksort = match kind (whd_all env' a2) with
+      | Sort s -> Sorts.family s
+      | _ -> raise (LocalArity None)
+      in
+      let dep_ind = build_dependent_inductive ind specif params in
+      let () =
+        (* This ensures that the type of the scrutinee is <= the
+           inductive type declared in the predicate. *)
+        try conv_leq env dep_ind a1'
+        with NotConvertible -> raise (LocalArity None)
+      in
+      let () = check_allowed_sort ksort specif in
+      (* We return the "higher" inductive universe instance from the predicate,
+         the branches must be typeable using these universes.
+         The find_rectype call cannot fail due to the cumulativity check above. *)
+      let (pind, _args) = find_rectype env a1' in
+      pind
+    | (LocalDef _ as d)::ar', _ ->
+      srec (push_rel d env) ar' (lift 1 pt')
+    | _ ->
+      raise (LocalArity None)
   in
-  try srec env pj.uj_type (List.rev arsign)
+  try srec env (List.rev arsign) pj.uj_type
   with LocalArity kinds ->
     error_elim_arity env ind c pj kinds
 
@@ -387,16 +396,15 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
 let build_case_type env n p c realargs =
   whd_betaiota env (Term.lambda_appvect_assum (n+1) p (Array.of_list (realargs@[c])))
 
-let type_case_branches env (pind,largs) pj c =
-  let specif = lookup_mind_specif env (fst pind) in
+let type_case_branches env ((ind, _ as pind),largs) pj c =
+  let specif = lookup_mind_specif env ind in
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
-  let () = is_correct_arity env c pj pind specif params in
+  let pind = check_correct_arity env c pj pind specif params in
   let lc = build_branches_type pind specif params p in
   let ty = build_case_type env (snd specif).mind_nrealdecls p c realargs in
   (lc, ty)
-
 
 (************************************************************************)
 (* Checking the case annotation is relevant *)
