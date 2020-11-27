@@ -631,7 +631,7 @@ type uniform_inductive_flag =
   | UniformParameters
   | NonUniformParameters
 
-let do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uniform finite =
+let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
   let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
   let indl = match params with
@@ -640,9 +640,11 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uni
       | UniformParameters -> (params, [], indl)
       | NonUniformParameters -> ([], params, indl)
   in
-  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
+  let env = Global.env () in
+  let env = Environ.update_typing_flags ?typing_flags env in
+  let mie,pl,impls = interp_mutual_inductive_gen env ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (DeclareInd.declare_mutual_inductive_with_eliminations mie pl impls);
+  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags mie pl impls);
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
   (* Declare the coercions *)

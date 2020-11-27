@@ -15,6 +15,7 @@ val do_fixpoint :
      pm:Declare.OblState.t
   -> scope:Locality.locality
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> ?using:Vernacexpr.section_subset_expr
   -> fixpoint_expr list
   -> Declare.OblState.t

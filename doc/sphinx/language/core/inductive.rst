@@ -31,7 +31,8 @@ Inductive types
    proposition).
 
    This command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(template)`, :attr:`universes(cumulative)`, and
+   :attr:`universes(template)`, :attr:`universes(cumulative)`,
+   :attr:`bypass_check(positivity)`, :attr:`bypass_check(universes)`, and
    :attr:`private(matching)` attributes.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
@@ -49,10 +50,12 @@ Inductive types
 
    .. exn:: Non strictly positive occurrence of @ident in @type.
 
-      The types of the constructors have to satisfy a *positivity condition*
-      (see Section :ref:`positivity`). This condition ensures the soundness of
-      the inductive definition. The positivity checking can be disabled using
-      the :flag:`Positivity Checking` flag (see :ref:`controlling-typing-flags`).
+      The types of the constructors have to satisfy a *positivity
+      condition* (see Section :ref:`positivity`). This condition
+      ensures the soundness of the inductive definition.
+      Positivity checking can be disabled using the :flag:`Positivity
+      Checking` flag or the :attr:`bypass_check(positivity)` attribute (see
+      :ref:`controlling-typing-flags`).
 
    .. exn:: The conclusion of @type is not valid; it must be built from @ident.
 
@@ -390,7 +393,8 @@ constructions.
    consequently :n:`forall {* @binder }, @type` and its value is equivalent
    to :n:`fun {* @binder } => @term`.
 
-   This command accepts the :attr:`program` attribute.
+   This command accepts the :attr:`program`,
+   :attr:`bypass_check(universes)`, and :attr:`bypass_check(guard)` attributes.
 
    To be accepted, a :cmd:`Fixpoint` definition has to satisfy syntactical
    constraints on a special argument called the decreasing argument. They
@@ -848,9 +852,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      Unset Positivity Checking.
-      Inductive I : Prop := not_I_I (not_I : I -> False) : I.
-      Set Positivity Checking.
+      #[bypass_check(positivity)] Inductive I : Prop := not_I_I (not_I : I -> False) : I.
 
    .. coqtop:: all
 
@@ -884,9 +886,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      Unset Positivity Checking.
-      Inductive Lam := lam (_ : Lam -> Lam).
-      Set Positivity Checking.
+      #[bypass_check(positivity)] Inductive Lam := lam (_ : Lam -> Lam).
 
    .. coqtop:: all
 
@@ -915,9 +915,7 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: none
 
-      Unset Positivity Checking.
-      Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
-      Set Positivity Checking.
+      #[bypass_check(positivity)] Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
 
    .. coqtop:: all
 

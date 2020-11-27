@@ -109,6 +109,7 @@ module Info : sig
     (** locality  *)
     -> ?hook : Hook.t
     (** Callback to be executed after saving the constant *)
+    -> ?typing_flags:Declarations.typing_flags
     -> unit
     -> t
 
@@ -387,6 +388,7 @@ val declare_constant
   :  ?local:Locality.import_status
   -> name:Id.t
   -> kind:Decls.logical_kind
+  -> ?typing_flags:Declarations.typing_flags
   -> Evd.side_effects constant_entry
   -> Constant.t
 

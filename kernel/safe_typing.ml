@@ -247,6 +247,15 @@ let set_native_compiler b senv =
 
 let set_allow_sprop b senv = { senv with env = Environ.set_allow_sprop b senv.env }
 
+(* Temporary sets custom typing flags *)
+let with_typing_flags ?typing_flags senv ~f =
+  match typing_flags with
+  | None -> f senv
+  | Some typing_flags ->
+    let orig_typing_flags = Environ.typing_flags senv.env in
+    let res, senv = f (set_typing_flags typing_flags senv) in
+    res, set_typing_flags orig_typing_flags senv
+
 (** Check that the engagement [c] expected by a library matches
     the current (initial) one *)
 let check_engagement env expected_impredicative_set =
@@ -928,6 +937,9 @@ let add_constant l decl senv =
   in
   kn, senv
 
+let add_constant ?typing_flags l decl senv =
+  with_typing_flags ?typing_flags senv ~f:(add_constant l decl)
+
 let add_private_constant l decl senv : (Constant.t * private_constants) * safe_environment =
   let kn = Constant.make2 senv.modpath l in
     let cb =
@@ -982,6 +994,9 @@ let add_mind l mie senv =
   in
   let mib = Indtypes.check_inductive senv.env ~sec_univs kn mie in
   kn, add_checked_mind kn mib senv
+
+let add_mind ?typing_flags l mie senv =
+  with_typing_flags ?typing_flags senv ~f:(add_mind l mie)
 
 (** Insertion of module types *)
 

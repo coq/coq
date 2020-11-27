@@ -57,16 +57,17 @@ module DefAttributes = struct
     program : bool;
     deprecated : Deprecation.t option;
     canonical_instance : bool;
+    typing_flags : Declarations.typing_flags option;
     using : Vernacexpr.section_subset_expr option;
   }
 
   let parse f =
     let open Attributes in
-    let ((((locality, deprecated), polymorphic), program), canonical_instance), using =
-      parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance ++ using) f
+    let (((((locality, deprecated), polymorphic), program), canonical_instance), typing_flags), using =
+      parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance ++ typing_flags ++ using) f
     in
     let using = Option.map Proof_using.using_from_string using in
-    { polymorphic; program; locality; deprecated; canonical_instance; using }
+    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using }
 end
 
 let module_locality = Attributes.Notations.(locality >>= fun l -> return (make_module_locality l))
@@ -512,6 +513,7 @@ let vernac_set_used_variables ~pstate e : Declare.Proof.t =
     l;
   let _, pstate = Declare.Proof.set_used_variables pstate l in
   pstate
+
 let vernac_set_used_variables_opt ?using pstate =
   match using with
   | None -> pstate
@@ -546,28 +548,29 @@ let post_check_evd ~udecl ~poly evd =
   else (* We fix the variables to ensure they won't be lowered to Set *)
     Evd.fix_undefined_variables evd
 
-let start_lemma_com ~program_mode ~poly ~scope ~kind ?using ?hook thms =
+let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ?using ?hook thms =
   let env0 = Global.env () in
+  let env0 = Environ.update_typing_flags ?typing_flags env0 in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let decl = fst (List.hd thms) in
   let evd, udecl = Constrintern.interp_univ_decl_opt env0 (snd decl) in
   let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
-  let pstate =
+  let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl ?typing_flags () in
+  begin
     match mut_analysis with
     | RecLemmas.NonMutual thm ->
       let thm = Declare.CInfo.to_constr evd thm in
       let evd = post_check_evd ~udecl ~poly evd in
-      let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl () in
       Declare.Proof.start_with_initialization ~info ~cinfo:thm evd
     | RecLemmas.Mutual { mutual_info; cinfo ; possible_guards } ->
       let cinfo = List.map (Declare.CInfo.to_constr evd) cinfo in
       let evd = post_check_evd ~udecl ~poly evd in
-      let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl () in
       Declare.Proof.start_mutual_with_initialization ~info ~cinfo evd ~mutual_info (Some possible_guards)
-  in
-  vernac_set_used_variables_opt ?using pstate
+  end
+  (* XXX: This should be handled in start_with_initialization, see duplicate using in declare.ml *)
+  |> vernac_set_used_variables_opt ?using
 
 let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in function
 | Coercion ->
@@ -606,14 +609,16 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind in
   let program_mode = atts.program in
   let poly = atts.polymorphic in
+  let typing_flags = atts.typing_flags in
   let name = vernac_definition_name lid local in
-  start_lemma_com ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?using:atts.using ?hook [(name, pl), (bl, t)]
+  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?using:atts.using ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind in
   let program_mode = atts.program in
+  let typing_flags = atts.typing_flags in
   let name = vernac_definition_name lid scope in
   let red_option = match red_option with
     | None -> None
@@ -624,11 +629,11 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
   if program_mode then
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ~pm ~name:name.v
-      ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook
+      ~poly:atts.polymorphic ?typing_flags ~scope ~kind pl bl red_option c typ_opt ?hook
   else
     let () =
       ComDefinition.do_definition ~name:name.v
-        ~poly:atts.polymorphic ~scope ~kind ?using:atts.using pl bl red_option c typ_opt ?hook in
+        ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using pl bl red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)
@@ -637,7 +642,11 @@ let vernac_start_proof ~atts kind l =
   let scope = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  start_lemma_com ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Decls.IsProof kind) ?using:atts.using l
+  start_lemma_com
+    ~typing_flags:atts.typing_flags
+    ~program_mode:atts.program
+    ~poly:atts.polymorphic
+    ~scope ~kind:(Decls.IsProof kind) ?using:atts.using l
 
 let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->
@@ -720,7 +729,7 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
-let vernac_record ~template udecl ~cumulative k ~poly finite records =
+let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags finite records =
   let map ((is_coercion, name), binders, sort, nameopt, cfs) =
     let idbuild = match nameopt with
     | None -> Nameops.add_prefix "Build_" name.v
@@ -741,7 +750,13 @@ let vernac_record ~template udecl ~cumulative k ~poly finite records =
     Record.Ast.{ name; is_coercion; binders; cfs; idbuild; sort }
   in
   let records = List.map map records in
-  ignore(Record.definition_structure ~template udecl k ~cumulative ~poly finite records)
+  match typing_flags with
+  | Some _ ->
+    CErrors.user_err (Pp.str "typing flags are not yet supported for records")
+  | None ->
+    let _ : _ list =
+      Record.definition_structure ~template udecl k ~cumulative ~poly finite records in
+    ()
 
 let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
   match indl with
@@ -773,8 +788,8 @@ let private_ind =
   | None -> return false
 
 let vernac_inductive ~atts kind indl =
-  let (template, (poly, cumulative)), private_ind = Attributes.(
-      parse Notations.(template ++ polymorphic_cumulative ++ private_ind) atts) in
+  let ((template, (poly, cumulative)), private_ind), typing_flags = Attributes.(
+      parse Notations.(template ++ polymorphic_cumulative ++ private_ind ++ typing_flags) atts) in
   let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
   if Dumpglob.dump () then
@@ -811,7 +826,7 @@ let vernac_inductive ~atts kind indl =
     let coe' = if coe then BackInstance else NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
-    vernac_record ~template udecl ~cumulative (Class true) ~poly finite [id, bl, c, None, [f]]
+    vernac_record ~template udecl ~cumulative (Class true) ~poly ?typing_flags finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (* Mutual record case *)
     let () = match kind with
@@ -836,7 +851,7 @@ let vernac_inductive ~atts kind indl =
     in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record ~template udecl ~cumulative kind ~poly finite recordl
+    vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags finite recordl
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let () = match kind with
@@ -860,7 +875,7 @@ let vernac_inductive ~atts kind indl =
     in
     let indl = List.map unpack indl in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uniform finite
+    ComInductive.do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 
@@ -874,17 +889,19 @@ let vernac_fixpoint_interactive ~atts discharge l =
   let scope = vernac_fixpoint_common ~atts discharge l in
   if atts.program then
     CErrors.user_err Pp.(str"Program Fixpoint requires a body");
-  vernac_set_used_variables_opt ?using:atts.using
-    (ComFixpoint.do_fixpoint_interactive ~scope ~poly:atts.polymorphic l)
+  let typing_flags = atts.typing_flags in
+  ComFixpoint.do_fixpoint_interactive ~scope ~poly:atts.polymorphic ?typing_flags l
+  |> vernac_set_used_variables_opt ?using:atts.using
 
 let vernac_fixpoint ~atts ~pm discharge l =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts discharge l in
+  let typing_flags = atts.typing_flags in
   if atts.program then
     (* XXX: Switch to the attribute system and match on ~atts *)
-    ComProgramFixpoint.do_fixpoint ~pm ~scope ~poly:atts.polymorphic ?using:atts.using l
+    ComProgramFixpoint.do_fixpoint ~pm ~scope ~poly:atts.polymorphic ?typing_flags ?using:atts.using l
   else
-    let () = ComFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic ?using:atts.using l in
+    let () = ComFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic ?typing_flags ?using:atts.using l in
     pm
 
 let vernac_cofixpoint_common ~atts discharge l =
