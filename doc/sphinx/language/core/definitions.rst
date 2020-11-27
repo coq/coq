@@ -173,7 +173,8 @@ Chapter :ref:`Tactics`. The basic assertion command is:
       The name you provided is already defined. You have then to choose
       another name.
 
-   .. exn:: Nested proofs are not allowed unless you turn the Nested Proofs Allowed flag on.
+   .. exn:: Nested proofs are discouraged and not allowed by default. This error probably means that you forgot to close the last "Proof." with "Qed." or "Defined.". \
+            If you really intended to use nested proofs, you can do so by turning the "Nested Proofs Allowed" flag on.
 
       You are asserting a new statement while already being in proof editing mode.
       This feature, called nested proofs, is disabled by default.
