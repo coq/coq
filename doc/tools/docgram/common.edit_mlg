@@ -960,7 +960,9 @@ simple_tactic: [
 | WITH "cbn" strategy_flag simple_occurrences
 | REPLACE "fold" LIST1 constr clause_dft_concl
 | WITH "fold" LIST1 constr simple_occurrences
-
+| DELETE "clear" LIST0 hyp
+| REPLACE "clear" "-" LIST1 hyp
+| WITH "clear" OPT ( OPT "-" LIST1 hyp )
 | DELETE "cofix" ident
 | REPLACE "cofix" ident "with" LIST1 cofixdecl
 | WITH "cofix" ident OPT ( "with" LIST1 cofixdecl )
@@ -1021,7 +1023,7 @@ simple_tactic: [
 | DELETE "move" hyp "at" "bottom"
 | DELETE "move" hyp "after" hyp
 | DELETE "move" hyp "before" hyp
-| "move" ident OPT where
+| "move" ident where
 | DELETE "replace" "->" uconstr clause
 | DELETE "replace" "<-" uconstr clause
 | DELETE "replace" uconstr clause
@@ -2733,7 +2735,9 @@ SPLICE: [
 | variance
 | variance_identref
 | rewriter
-| conversion
+| clause_dft_all
+| or_and_intropattern_loc
+| eqn_ipat
 ] (* end SPLICE *)
 
 RENAME: [

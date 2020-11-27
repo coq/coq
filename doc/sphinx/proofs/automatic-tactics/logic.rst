@@ -153,7 +153,6 @@ Solvers for logic and equality
    equalities in the context. Otherwise it tries to infer a discriminable equality
    from those in the context. Alternatively, congruence tries to prove that a
    hypothesis is equal to the goal or to the negation of another hypothesis.
-   Written by Pierre Corbineau.
 
    :tacn:`congruence` is also able to take advantage of hypotheses stating
    quantified equalities, but you have to provide a bound for the number of extra

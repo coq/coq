@@ -1612,14 +1612,13 @@ simple_tactic: [
 | "eexists" OPT ( LIST1 bindings SEP "," )
 | "intros" "until" [ ident | natural ]
 | "intro" OPT ident OPT where
-| "move" ident OPT where
+| "move" ident where
 | "rename" LIST1 ( ident "into" ident ) SEP ","
 | "revert" LIST1 ident
 | "simple" "induction" [ ident | natural ]
 | "simple" "destruct" [ ident | natural ]
 | "admit"
-| "clear" LIST0 ident
-| "clear" "-" LIST1 ident
+| "clear" OPT ( OPT "-" LIST1 ident )
 | "clearbody" LIST1 ident
 | "generalize" "dependent" one_term
 | "replace" one_term "with" one_term OPT occurrences OPT ( "by" ltac_expr3 )
@@ -1787,8 +1786,8 @@ simple_tactic: [
 | "set" one_term OPT as_name OPT occurrences
 | "eset" bindings_with_parameters OPT occurrences
 | "eset" one_term OPT as_name OPT occurrences
-| "remember" one_term OPT as_name OPT eqn_ipat OPT clause_dft_all
-| "eremember" one_term OPT as_name OPT eqn_ipat OPT clause_dft_all
+| "remember" one_term OPT as_name OPT ( "eqn" ":" naming_intropattern ) OPT ( "in" goal_occurrences )
+| "eremember" one_term OPT as_name OPT ( "eqn" ":" naming_intropattern ) OPT ( "in" goal_occurrences )
 | "assert" "(" ident ":=" term ")"
 | "eassert" "(" ident ":=" term ")"
 | "assert" "(" ident ":" term ")" OPT ( "by" ltac_expr3 )
@@ -1944,13 +1943,8 @@ hloc: [
 | "in" "(" "value" "of" ident ")"
 ]
 
-or_and_intropattern_loc: [
-| or_and_intropattern
-| ident
-]
-
 as_or_and_ipat: [
-| "as" or_and_intropattern_loc
+| "as" [ or_and_intropattern | ident ]
 | "as" equality_intropattern
 ]
 
@@ -1972,12 +1966,21 @@ one_term_with_bindings: [
 | OPT ">" one_term OPT ( "with" bindings )
 ]
 
+conversion: [
+| one_term OPT ( OPT ( "at" occs_nums ) "with" one_term )
+]
+
 induction_clause_list: [
 | LIST1 induction_clause SEP "," OPT ( "using" one_term OPT ( "with" bindings ) ) OPT opt_clause
 ]
 
 induction_clause: [
-| destruction_arg OPT as_or_and_ipat OPT eqn_ipat OPT opt_clause
+| destruction_arg OPT as_or_and_ipat OPT ( "eqn" ":" naming_intropattern ) OPT opt_clause
+]
+
+destruction_arg: [
+| natural
+| constr_with_bindings_arg
 ]
 
 opt_clause: [
@@ -2413,14 +2416,6 @@ tac2mode: [
 | "SearchPattern" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "SearchRewrite" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "Search" LIST1 ( search_query ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
-]
-
-clause_dft_all: [
-| "in" goal_occurrences
-]
-
-eqn_ipat: [
-| "eqn" ":" naming_intropattern
 ]
 
 in_hyp_as: [
