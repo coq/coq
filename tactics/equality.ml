@@ -1714,13 +1714,6 @@ user = raise user error specific to rewrite
 
 let regular_subst_tactic = ref true
 
-let () =
-  declare_bool_option
-    { optdepr  = true;
-      optkey   = ["Regular";"Subst";"Tactic"];
-      optread  = (fun () -> !regular_subst_tactic);
-      optwrite = (:=) regular_subst_tactic }
-
 let restrict_to_eq_and_identity eq = (* compatibility *)
   if not (Constr.isRefX (lib_ref "core.eq.type") eq) &&
     not (Constr.isRefX (lib_ref "core.identity.type") eq)
