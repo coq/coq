@@ -1955,7 +1955,13 @@ function make_addon_gappa {
   if build_prep_overlay gappa_plugin ; then
     installer_addon_section gappa "Gappa plugin" "Coq plugin for the Gappa tool" ""
     log1 autoreconf
+
+    # coqc - config prints broken paths
+    OLD_OCAMLFIND="$OCAMLFIND"
+    export OCAMLFIND=ocamlfind
     logn configure ./configure
+    export OCAMLFIND="$OLD_OCAMLFIND"
+
     logn remake ./remake
     logn install ./remake install
     build_post
