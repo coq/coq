@@ -727,6 +727,32 @@ module New = struct
       let (loc,_) = evi.Evd.evar_source in
       Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
 
+  let tclMAPDELAYEDWITHHOLES accept_unresolved_holes l tac =
+    let rec aux = function
+      | [] -> tclUNIT ()
+      | x :: l ->
+        Proofview.Goal.enter begin fun gl ->
+          let env = Proofview.Goal.env gl in
+          let sigma_initial = Proofview.Goal.sigma gl in
+          let (sigma, x) = x env sigma_initial in
+          Proofview.Unsafe.tclEVARS sigma <*> tac x >>= fun () -> aux l >>= fun () ->
+          if accept_unresolved_holes then
+            tclUNIT ()
+          else
+            tclEVARMAP >>= fun sigma_final ->
+            try
+              let () = check_evars env sigma_final sigma sigma_initial in
+              tclUNIT ()
+            with e when CErrors.noncritical e ->
+              let e, info = Exninfo.capture e in
+              tclZERO ~info e
+          end in
+    aux l
+
+  (* The following is basically
+    tclMAPDELAYEDWITHHOLES accept_unresolved_holes [fun _ _ -> (sigma,())] (fun () -> tac)
+    but with value not necessarily in unit *)
+
   let tclWITHHOLES accept_unresolved_holes tac sigma =
     tclEVARMAP >>= fun sigma_initial ->
       if sigma == sigma_initial then tac
