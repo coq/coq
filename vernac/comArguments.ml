@@ -223,10 +223,10 @@ let vernac_arguments ~section_local reference args more_implicits flags =
     | _ -> true in
 
   if implicits_specified && clear_implicits_flag then
-    CErrors.user_err Pp.(str "The \"clear implicits\" flag is incompatible with implicit annotations");
+    CErrors.user_err Pp.(str "The \"clear implicits\" flag must be omitted if implicit annotations are given.");
 
   if implicits_specified && default_implicits_flag then
-    CErrors.user_err Pp.(str "The \"default implicits\" flag is incompatible with implicit annotations");
+    CErrors.user_err Pp.(str "The \"default implicits\" flag is incompatible with implicit annotations.");
 
   let rargs =
     Util.List.map_filter (function (n, true) -> Some n | _ -> None)

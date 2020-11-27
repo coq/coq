@@ -89,11 +89,25 @@ Setting properties of a function's arguments
          The construct :n:`@name {? % @scope }` declares :n:`@name` as non-implicit if `clear implicits` is specified or at least one other name is declared implicit in the same list of :n:`@name`\s.
          :token:`scope` can be either a scope name or its delimiting key.  See :ref:`binding_to_scope`.
 
+         .. exn:: To rename arguments the 'rename' flag must be specified.
+            :undocumented:
+
+         .. exn:: Flag 'rename' expected to rename @name into @name.
+            :undocumented:
+
       `clear implicits`
          makes all implicit arguments into explicit arguments
+
+         .. exn:: The 'clear implicits' flag must be omitted if implicit annotations are given.
+            :undocumented:
+
       `default implicits`
          automatically determine the implicit arguments of the object.
          See :ref:`auto_decl_implicit_args`.
+
+         .. exn:: The 'default implicits' flag is incompatible with implicit annotations.
+            :undocumented:
+
       `rename`
          rename implicit arguments for the object.  See the example :ref:`here <renaming_implicit_arguments>`.
       `assert`
