@@ -123,9 +123,8 @@ in time.
   - We generally do not update the magic numbers at this point.
   - Set `is_a_released_version` to `true` in `configure.ml`.
 - [ ] Put the `VX.X+beta1` tag using `git tag -s`.
-- [ ] Check using `git push --tags --dry-run` that you are not
-  pushing anything else than the new tag. If needed, remove spurious
-  tags with `git tag -d`. When this is OK, proceed with `git push --tags`.
+- [ ] Push the new tag with `git push upstream VX.X+beta1 --dry-run`
+  (remove the `--dry-run` and redo if all looks OK).
 - [ ] Set `is_a_released_version` to `false` in `configure.ml`
   (if you forget about it, you'll be reminded whenever you try to
   backport a PR with a changelog entry).
@@ -161,9 +160,8 @@ in time.
   [#7271](https://github.com/coq/coq/pull/7271/files)).
   - Set `is_a_released_version` to `true` in `configure.ml`.
 - [ ] Put the `VX.X.0` tag.
-- [ ] Check using `git push --tags --dry-run` that you are not
-  pushing anything else than the new tag. If needed, remove spurious
-  tags with `git tag -d`. When this is OK, proceed with `git push --tags`.
+- [ ] Push the new tag with `git push upstream VX.X.0 --dry-run`
+  (remove the `--dry-run` and redo if all looks OK).
 - [ ] Set `is_a_released_version` to `false` in `configure.ml`
   (if you forget about it, you'll be reminded whenever you try to
   backport a PR with a changelog entry).
