@@ -1153,8 +1153,12 @@ function make_lablgtk {
   make_gtk_sourceview3
   make_ocaml_cairo2
 
-  if build_prep https://github.com/garrigue/lablgtk/archive  3.0.beta5  tar.gz 1 lablgtk-3.0.beta5 ; then
+  if build_prep https://github.com/garrigue/lablgtk/archive  3.1.1  tar.gz 1 lablgtk-3.1.1 ; then
     make_arch_pkg_config
+
+    # We should downlaod the artefact, not the tag, since the gfat has no
+    # version number. We remedy
+    echo "(version 3.1.1)" >> dune-project
 
     # lablgtk3 includes more packages that are not relevant for Coq,
     # such as gtkspell
