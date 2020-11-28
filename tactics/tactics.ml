@@ -85,24 +85,6 @@ let () =
       optread  = (fun () -> !universal_lemma_under_conjunctions) ;
       optwrite = (fun b -> universal_lemma_under_conjunctions := b) }
 
-(* The following boolean governs what "intros []" do on examples such
-   as "forall x:nat*nat, x=x"; if true, it behaves as "intros [? ?]";
-   if false, it behaves as "intro H; case H; clear H" for fresh H.
-   Kept as false for compatibility.
- *)
-
-let bracketing_last_or_and_intro_pattern = ref true
-
-let use_bracketing_last_or_and_intro_pattern () =
-  !bracketing_last_or_and_intro_pattern
-
-let () =
-  declare_bool_option
-    { optdepr  = true;
-      optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
-      optread  = (fun () -> !bracketing_last_or_and_intro_pattern);
-      optwrite = (fun b -> bracketing_last_or_and_intro_pattern := b) }
-
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -1083,10 +1065,10 @@ let intros_using_then l tac = intros_using_then_helper tac [] l
 
 let intros = Tacticals.New.tclREPEAT intro
 
-let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
+let intro_forthcoming_then_gen name_flag move_flag dep_flag bound n tac =
   let rec aux n ids =
     (* Note: we always use the bound when there is one for "*" and "**" *)
-    if (match bound with None -> true | Some (_,p) -> n < p) then
+    if (match bound with None -> true | Some p -> n < p) then
     Proofview.tclORELSE
       begin
       intro_then_gen name_flag move_flag false dep_flag
@@ -2306,7 +2288,7 @@ let (forward_general_rewrite_clause, general_rewrite_clause) = Hook.make ()
 let (forward_subst_one, subst_one) = Hook.make ()
 
 let error_unexpected_extra_pattern loc bound pat =
-  let _,nb = Option.get bound in
+  let nb = Option.get bound in
   let s1,s2,s3 = match pat with
   | IntroNaming (IntroIdentifier _) ->
       "name", (String.plural nb " introduction pattern"), "no"
@@ -2339,14 +2321,14 @@ let intro_decomp_eq ?loc l thin tac id =
   match my_find_eq_data_decompose env sigma t with
   | Some (eq,u,eq_args) ->
     !intro_decomp_eq_function
-      (fun n -> tac ((CAst.make id)::thin) (Some (true,n)) l)
+      (fun n -> tac ((CAst.make id)::thin) (Some n) l)
       (eq,t,eq_args) (c, t)
   | None ->
     let info = Exninfo.reify () in
     Tacticals.New.tclZEROMSG ~info (str "Not a primitive equality here.")
   end
 
-let intro_or_and_pattern ?loc with_evars bracketed ll thin tac id =
+let intro_or_and_pattern ?loc with_evars ll thin tac id =
   Proofview.Goal.enter begin fun gl ->
   let c = mkVar id in
   let env = Proofview.Goal.env gl in
@@ -2360,7 +2342,7 @@ let intro_or_and_pattern ?loc with_evars bracketed ll thin tac id =
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Tacticals.New.tclTHENLASTn
        (Tacticals.New.tclTHEN (simplest_ecase c) (clear [id]))
-       (Array.map2 (fun n l -> tac thin (Some (bracketed,n)) l)
+       (Array.map2 (fun n l -> tac thin (Some n) l)
           nv_with_let ll))
   end
 
@@ -2476,11 +2458,11 @@ let make_tmp_naming avoid l = function
 
 let fit_bound n = function
   | None -> true
-  | Some (use_bound,n') -> not use_bound || n = n'
+  | Some n' -> n = n'
 
 let exceed_bound n = function
   | None -> false
-  | Some (use_bound,n') -> use_bound && n >= n'
+  | Some n' -> n >= n'
 
   (* We delay thinning until the completion of the whole intros tactic
      to ensure that dependent hypotheses are cleared in the right
@@ -2501,56 +2483,55 @@ let exceed_bound n = function
      [patl]: introduction patterns to interpret
   *)
 
-let rec intro_patterns_core with_evars b avoid ids thin destopt bound n tac =
+let rec intro_patterns_core with_evars avoid ids thin destopt bound n tac =
   function
   | [] when fit_bound n bound ->
       tac ids thin
   | [] ->
       (* Behave as IntroAnonymous *)
-      intro_patterns_core with_evars b avoid ids thin destopt bound n tac
+      intro_patterns_core with_evars avoid ids thin destopt bound n tac
         [CAst.make @@ IntroNaming IntroAnonymous]
   | {CAst.loc;v=pat} :: l ->
   if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
   match pat with
   | IntroForthcoming onlydeps ->
       intro_forthcoming_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
-          destopt onlydeps n bound
-        (fun ids -> intro_patterns_core with_evars b avoid ids thin destopt bound
+          destopt onlydeps bound n
+        (fun ids -> intro_patterns_core with_evars avoid ids thin destopt bound
           (n+List.length ids) tac l)
   | IntroAction pat ->
       intro_then_gen (make_tmp_naming avoid l pat)
         destopt true false
-        (intro_pattern_action ?loc with_evars (b || not (List.is_empty l)) false
-          pat thin destopt
-          (fun thin bound' -> intro_patterns_core with_evars b avoid ids thin destopt bound' 0
+        (intro_pattern_action ?loc with_evars false pat thin destopt
+          (fun thin bound' -> intro_patterns_core with_evars avoid ids thin destopt bound' 0
             (fun ids thin ->
-              intro_patterns_core with_evars b avoid ids thin destopt bound (n+1) tac l)))
+              intro_patterns_core with_evars avoid ids thin destopt bound (n+1) tac l)))
   | IntroNaming pat ->
-      intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound (n+1) tac l
+      intro_pattern_naming loc with_evars avoid ids pat thin destopt bound (n+1) tac l
 
   (* Pi-introduction rule, used backwards *)
-and intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound n tac l =
+and intro_pattern_naming loc with_evars avoid ids pat thin destopt bound n tac l =
   match pat with
   | IntroIdentifier id ->
       check_thin_clash_then id thin avoid (fun thin ->
         intro_then_gen (NamingMustBe CAst.(make ?loc id)) destopt true false
-          (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l))
+          (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l))
   | IntroAnonymous ->
       intro_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
         destopt true false
-        (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
+        (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l)
   | IntroFresh id ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
       intro_then_gen (NamingBasedOn (id, Id.Set.union avoid (explicit_intro_names l)))
         destopt true false
-        (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
+        (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l)
 
-and intro_pattern_action ?loc with_evars b style pat thin destopt tac id =
+and intro_pattern_action ?loc with_evars style pat thin destopt tac id =
   match pat with
   | IntroWildcard ->
       tac (CAst.(make ?loc id)::thin) None []
   | IntroOrAndPattern ll ->
-      intro_or_and_pattern ?loc with_evars b ll thin tac id
+      intro_or_and_pattern ?loc with_evars ll thin tac id
   | IntroInjection l' ->
       intro_decomp_eq ?loc l' thin tac id
   | IntroRewrite l2r ->
@@ -2575,28 +2556,26 @@ and prepare_intros ?loc with_evars dft destopt = function
   | IntroAction ipat ->
       prepare_naming ?loc dft,
       (let tac thin bound =
-        intro_patterns_core with_evars true Id.Set.empty [] thin destopt bound 0
+        intro_patterns_core with_evars Id.Set.empty [] thin destopt bound 0
           (fun _ l -> clear_wildcards l) in
       fun id ->
-        intro_pattern_action ?loc with_evars true true ipat [] destopt tac id)
+        intro_pattern_action ?loc with_evars true ipat [] destopt tac id)
   | IntroForthcoming _ -> user_err ?loc
       (str "Introduction pattern for one hypothesis expected.")
 
-let intro_patterns_head_core with_evars b destopt bound pat =
+let intro_patterns_head_core with_evars destopt bound pat =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     check_name_unicity env [] [] pat;
-    intro_patterns_core with_evars b Id.Set.empty [] [] destopt
+    intro_patterns_core with_evars Id.Set.empty [] [] destopt
       bound 0 (fun _ l -> clear_wildcards l) pat
   end
 
 let intro_patterns_bound_to with_evars n destopt =
-  intro_patterns_head_core with_evars true destopt
-    (Some (true,n))
+  intro_patterns_head_core with_evars destopt (Some n)
 
 let intro_patterns_to with_evars destopt =
-  intro_patterns_head_core with_evars (use_bracketing_last_or_and_intro_pattern ())
-    destopt None
+  intro_patterns_head_core with_evars destopt None
 
 let intro_pattern_to with_evars destopt pat =
   intro_patterns_to with_evars destopt [CAst.make pat]
@@ -3271,7 +3250,7 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
     (intros_move newlstatus)
 
 let dest_intro_patterns with_evars avoid thin dest pat tac =
-  intro_patterns_core with_evars true avoid [] thin dest None 0 tac pat
+  intro_patterns_core with_evars avoid [] thin dest None 0 tac pat
 
 let safe_dest_intro_patterns with_evars avoid thin dest pat tac =
   Proofview.tclORELSE

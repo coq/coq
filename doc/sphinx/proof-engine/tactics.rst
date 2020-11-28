@@ -264,17 +264,6 @@ These patterns can be used when the hypothesis is an equality:
   :n:`@simple_intropattern_closed`.
   :ref:`Example <intropattern_injection_ex>`
 
-.. flag:: Bracketing Last Introduction Pattern
-
-   For :n:`intros @intropattern_list`, controls how to handle a
-   conjunctive pattern that doesn't give enough simple patterns to match
-   all the arguments in the constructor.  If set (the default), Coq generates
-   additional names to match the number of arguments.
-   Unsetting the flag will put the additional hypotheses in the goal instead, behavior that is more
-   similar to |SSR|'s intro patterns.
-
-   .. deprecated:: 8.10
-
 .. _intropattern_cons_note:
 
 .. note::
