@@ -448,6 +448,58 @@ let compare_cumulative_instances evd variances u u' =
     Success evd
   | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
 
+let compare_heads env evd ~nargs term term' =
+    let check_strict evd u u' =
+      let cstrs = Univ.enforce_eq_instances u u' Univ.Constraint.empty in
+      try Success (Evd.add_constraints evd cstrs)
+      with Univ.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
+    in
+      match EConstr.kind evd term, EConstr.kind evd term' with
+      | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
+        if Int.equal nargs 1 && Environ.is_array_type env c
+        then
+          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+          compare_cumulative_instances evd [|Univ.Variance.Irrelevant|] u u'
+        else
+          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+          check_strict evd u u'
+      | Const _, Const _ -> UnifFailure (evd, NotSameHead)
+      | Ind ((mi,i) as ind , u), Ind (ind', u') when Names.Ind.CanOrd.equal ind ind' ->
+        if EInstance.is_empty u && EInstance.is_empty u' then Success evd
+        else
+          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+          let mind = Environ.lookup_mind mi env in
+          let open Declarations in
+          begin match mind.mind_variance with
+            | None -> check_strict evd u u'
+            | Some variances ->
+              let needed = Reduction.inductive_cumulativity_arguments (mind,i) in
+              if not (Int.equal nargs needed)
+              then check_strict evd u u'
+              else
+                compare_cumulative_instances evd variances u u'
+          end
+      | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
+      | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
+        when Names.Construct.CanOrd.equal cons cons' ->
+        if EInstance.is_empty u && EInstance.is_empty u' then Success evd
+        else
+          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
+          let mind = Environ.lookup_mind mi env in
+          let open Declarations in
+          begin match mind.mind_variance with
+            | None -> check_strict evd u u'
+            | Some variances ->
+              let needed = Reduction.constructor_cumulativity_arguments (mind,ind,ctor) in
+              if not (Int.equal nargs needed)
+              then check_strict evd u u'
+              else
+                Success (compare_constructor_instances evd u u')
+          end
+      | Construct _, Construct _ -> UnifFailure (evd, NotSameHead)
+      | _, _ -> anomaly (Pp.str "")
+
+
 let conv_fun f flags on_types =
   let typefn env evd pbty term1 term2 =
     let flags = { (default_flags env) with
@@ -556,65 +608,14 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     else evar_eqappr_x flags env' evd CONV out2 out1
   in
   let rigids env evd sk term sk' term' =
-    let check_strict evd u u' =
-      let cstrs = Univ.enforce_eq_instances u u' Univ.Constraint.empty in
-      try Success (Evd.add_constraints evd cstrs)
-      with Univ.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
-    in
-    let compare_heads evd =
-      match EConstr.kind evd term, EConstr.kind evd term' with
-      | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
-        if Int.equal (Stack.args_size sk) 1 && Environ.is_array_type env c
-        then
-          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-          compare_cumulative_instances evd [|Univ.Variance.Irrelevant|] u u'
-        else
-          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-          check_strict evd u u'
-      | Const _, Const _ -> UnifFailure (evd, NotSameHead)
-      | Ind ((mi,i) as ind , u), Ind (ind', u') when Names.Ind.CanOrd.equal ind ind' ->
-        if EInstance.is_empty u && EInstance.is_empty u' then Success evd
-        else
-          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-          let mind = Environ.lookup_mind mi env in
-          let open Declarations in
-          begin match mind.mind_variance with
-            | None -> check_strict evd u u'
-            | Some variances ->
-              let nparamsaplied = Stack.args_size sk in
-              let nparamsaplied' = Stack.args_size sk' in
-              let needed = Reduction.inductive_cumulativity_arguments (mind,i) in
-              if not (Int.equal nparamsaplied needed && Int.equal nparamsaplied' needed)
-              then check_strict evd u u'
-              else
-                compare_cumulative_instances evd variances u u'
-          end
-      | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
-      | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
-        when Names.Construct.CanOrd.equal cons cons' ->
-        if EInstance.is_empty u && EInstance.is_empty u' then Success evd
-        else
-          let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-          let mind = Environ.lookup_mind mi env in
-          let open Declarations in
-          begin match mind.mind_variance with
-            | None -> check_strict evd u u'
-            | Some variances ->
-              let nparamsaplied = Stack.args_size sk in
-              let nparamsaplied' = Stack.args_size sk' in
-              let needed = Reduction.constructor_cumulativity_arguments (mind,ind,ctor) in
-              if not (Int.equal nparamsaplied needed && Int.equal nparamsaplied' needed)
-              then check_strict evd u u'
-              else
-                Success (compare_constructor_instances evd u u')
-          end
-      | Construct _, Construct _ -> UnifFailure (evd, NotSameHead)
-      | _, _ -> anomaly (Pp.str "")
-    in
-    ise_and evd [(fun i ->
-                try compare_heads i
-                with Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
-                 (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk sk')]
+    let nargs = Stack.args_size sk in
+    let nargs' = Stack.args_size sk' in
+    if not (Int.equal nargs nargs') then UnifFailure (evd, NotSameArgSize)
+    else
+      ise_and evd [(fun i ->
+          try compare_heads env i ~nargs term term'
+          with Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
+         (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk sk')]
   in
   let consume on_left (_, skF as apprF) (_,skM as apprM) i =
     if not (Stack.is_empty skF && Stack.is_empty skM) then
