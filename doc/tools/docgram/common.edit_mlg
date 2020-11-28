@@ -961,8 +961,9 @@ simple_tactic: [
 | REPLACE "fold" LIST1 constr clause_dft_concl
 | WITH "fold" LIST1 constr simple_occurrences
 | DELETE "clear" LIST0 hyp
+| DELETE "clear" natural
 | REPLACE "clear" "-" LIST1 hyp
-| WITH "clear" OPT ( OPT "-" LIST1 hyp )
+| WITH "clear" [ OPT ( OPT "-" LIST1 hyp ) | natural ]
 | DELETE "cofix" ident
 | REPLACE "cofix" ident "with" LIST1 cofixdecl
 | WITH "cofix" ident OPT ( "with" LIST1 cofixdecl )
@@ -977,6 +978,11 @@ simple_tactic: [
 | DELETE "dependent" "rewrite" orient constr
 | REPLACE "dependent" "rewrite" orient constr "in" hyp
 | WITH "dependent" "rewrite" orient constr OPT ( "in" hyp )
+| DELETE "dependent" [ "simple" "inversion" | "inversion" | "inversion_clear" ] quantified_hypothesis as_or_and_ipat OPT [ "with" constr ]
+| "dependent" "simple" "inversion" quantified_hypothesis as_or_and_ipat OPT [ "with" constr ]
+| "dependent" "inversion" quantified_hypothesis as_or_and_ipat OPT [ "with" constr ]
+| "dependent" "inversion_clear" quantified_hypothesis as_or_and_ipat OPT [ "with" constr ]
+
 | "firstorder" OPT tactic firstorder_rhs
 | DELETE "firstorder" OPT tactic firstorder_using
 | DELETE "firstorder" OPT tactic "with" LIST1 preident
@@ -1002,6 +1008,9 @@ simple_tactic: [
 | REPLACE "einjection" destruction_arg "as" LIST0 simple_intropattern
 | WITH "einjection" OPT destruction_arg OPT ( "as" LIST0 simple_intropattern )
 | EDIT "simple" "injection" ADD_OPT destruction_arg
+| REPLACE "instantiate" "(" ident ":=" lglob ")"
+| WITH "instantiate" OPT ( "(" ident ":=" lglob ")" )
+| DELETE "instantiate"
 | DELETE "intro"  (* todo: change the mlg to simplify! *)
 | DELETE "intro" ident
 | DELETE "intro" ident "at" "top"

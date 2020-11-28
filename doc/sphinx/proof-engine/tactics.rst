@@ -803,11 +803,8 @@ Applying theorems
       tactics that backtrack often. Moreover, it does not traverse tuples as :tacn:`apply`
       does.
 
-   .. tacv:: {? simple} apply {+, @term {? with @bindings}}
-             {? simple} eapply {+, @term {? with @bindings}}
-      :name: simple apply XXXX; simple eapply
-
-      This summarizes the different syntaxes for :tacn:`apply` and :tacn:`eapply`.
+   .. tacn:: simple eapply {+, @constr_with_bindings_arg } {? @in_hyp_as }
+      :undocumented:
 
    .. tacn:: lapply @one_term
 
@@ -1112,7 +1109,7 @@ Managing the local context
 
       This is equivalent to the composed tactic :n:`intro @ident; ... ; intro @ident`.
 
-   .. tacv:: intros until @ident
+   .. tacn:: intros until {| @ident | @natural }
 
       This repeats intro until it meets a premise of the goal having the
       form :n:`(@ident : @type)` and discharges the variable
@@ -1172,7 +1169,7 @@ Managing the local context
    Works just like :tacn:`intros` except that it creates existential variables
    for any unresolved variables rather than failing.
 
-.. tacn:: clear {? {? - } {+ @ident } }
+.. tacn:: clear {| {? {? - } {+ @ident } } | @natural }
 
    Erases hypotheses from the context of the current goal, provided that they are
    not referenced directly or indirectly from the remaining hypotheses or the goal.
@@ -1263,7 +1260,8 @@ Managing the local context
 
    Perhaps confusingly, "after" and "before" are interpeted with respect to the direction
    in which the hypotheses are moved rather than in the order of the resulting
-   list of hypotheses.  If :n:`ident__from` is before :n:`ident` in the context, these notions are the
+   list of hypotheses.  If :n:`ident__from` is before :n:`ident` in the context, these
+   notions are the
    same: for hypotheses `A B C`, `move A after B` gives `B A C`, whereas if :n:`@ident__from`
    is after :n:`@ident` in the context, they are the opposite: `move C after A` gives
    `C B A` because the direction of movement is reversed.
@@ -1311,6 +1309,8 @@ Managing the local context
       :undocumented:
 
 .. tacn:: set @bindings_with_parameters {? @occurrences }
+          set @one_term {? @as_name } {? @occurrences }
+   :name: set; _
 
    .. insertprodn bindings_with_parameters simple_binder
 
@@ -1431,7 +1431,7 @@ Managing the local context
 
       This decomposes sum types (like :g:`or`).
 
-   .. tacv:: decompose record @term
+   .. tacn:: decompose record @one_term
 
       This decomposes record types (inductive types with one constructor,
       like :g:`and` and :g:`exists` and those defined with the :cmd:`Record`
@@ -1555,8 +1555,8 @@ Controlling the proof flow
    :n:`as @simple_intropattern` clause generates more than one subgoal, :token:`tactic` is
    applied to all of them.
 
-.. tacv:: eenough @type {? as @simple_intropattern } {? by @tactic }
-          eenough (@ident : @type) {? by @tactic }
+.. tacn:: eenough ( @ident : @term ) {? by @ltac_expr3 }
+          eenough @one_term {? @as_ipat } {? by @ltac_expr3 }
    :name: eenough; _
 
    While the different variants of :tacn:`enough` expect that no existential
@@ -1646,14 +1646,23 @@ Controlling the proof flow
    This generalizes term but also *all* hypotheses that depend on :n:`@term`. It
    clears the generalized hypotheses.
 
+.. tacn:: dependent generalize_eqs @ident
+   :undocumented:
+
+.. tacn:: dependent generalize_eqs_vars @ident
+   :undocumented:
+
+
 .. tacn:: evar ( @ident : @term )
+          evar @one_term
+   :name: evar; _
 
    The :n:`evar` tactic creates a new local definition named :n:`@ident` with type
    :n:`@term` in the context. The body of this binding is a fresh existential
    variable.
 
-.. tacn:: instantiate ( @ident := @term )
-          instantiate ( @integer := @term ) {? @hloc }
+.. tacn:: instantiate ( @integer := @term ) {? @hloc }
+          instantiate {? ( @ident := @term ) }
    :name: instantiate; _
 
    .. insertprodn hloc hloc
@@ -2083,6 +2092,9 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    not occur in the goal, then :n:`elim t` is equivalent to
    :n:`elimtype I; 2:exact t.`
 
+.. tacn:: casetype @one_term
+   :undocumented:
+
 .. tacn:: simple induction {| @ident | @natural }
 
    This tactic behaves like :n:`intros until @ident; elim @ident` when
@@ -2351,6 +2363,9 @@ and an explanation of the underlying technique.
       behavior for objects that are proofs of a statement in :g:`Prop`. This flag
       controls this behavior.
 
+.. tacn:: simple injection {? @destruction_arg }
+   :undocumented:
+
 .. tacn:: inversion {| @ident | @natural } using @one_term {? in {+ @ident } }
           inversion {| @ident | @natural } {? @as_or_and_ipat } {? in {+ @ident } }
    :name: inversion; _
@@ -2466,7 +2481,7 @@ and an explanation of the underlying technique.
 
 .. todo PR: expand "dependent" tactic in editing
 
-.. tacv:: dependent inversion @ident
+.. tacn:: dependent inversion {| @ident | @natural } {? @as_or_and_ipat } {? with @one_term }
 
    That must be used when :n:`@ident` appears in the current goal. It acts like
    ``inversion`` and then substitutes :n:`@ident` for the corresponding
@@ -2477,7 +2492,7 @@ and an explanation of the underlying technique.
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion @ident`.
 
-.. tacv:: dependent inversion_clear @ident
+.. tacn:: dependent inversion_clear {| @ident | @natural } {? @as_or_and_ipat } {? with @one_term }
 
    Like ``dependent inversion``, except that :n:`@ident` is cleared from the
    local context.
@@ -2520,6 +2535,9 @@ and an explanation of the underlying technique.
 
    This allows naming the hypotheses introduced in the context by
    ``simple inversion``.
+
+.. tacn:: dependent simple inversion {| @ident | @natural } {? @as_or_and_ipat } {? with @one_term }
+   :undocumented:
 
 .. tacv:: inversion @ident using @ident
    :name: inversion ... using ...
@@ -2771,6 +2789,9 @@ succeeds, and results in an error otherwise.
 .. exn:: Not equal (due to universes).
    :undocumented:
 
+.. tacn:: constr_eq_nounivs @one_term @one_term
+   :undocumented:
+
 .. tacn:: unify @one_term @one_term {? with @ident }
 
    This tactic checks whether its arguments are unifiable, potentially
@@ -2786,17 +2807,23 @@ succeeds, and results in an error otherwise.
 
 .. tacn:: is_evar @one_term
 
-   This tactic checks whether its argument is a current existential
-   variable. Existential variables are uninstantiated variables generated
-   by :tacn:`eapply` and some other tactics.
+   Checks whether the argument is a current existential
+   variable.  If it is not, the tactic fails.  Existential variables
+   are uninstantiated variables generated
+   by :tacn:`eapply` and other tactics.
 
 .. exn:: Not an evar.
    :undocumented:
 
+.. tacn:: not_evar @one_term
+   :undocumented:
+
 .. tacn:: has_evar @one_term
 
-   This tactic checks whether its argument has an existential variable as
-   a subterm. Unlike context patterns combined with ``is_evar``, this tactic
+   .. todo PR: can it be the name of a hypothesis?  Same Q for is_evar, above.
+
+   Checks whether the argument has an existential variable as
+   a subterm.  If it is not, the tactic fails.  Unlike context patterns combined with ``is_evar``, this tactic
    scans all subterms, including those under binders.
 
 .. exn:: No evars.
@@ -2804,11 +2831,39 @@ succeeds, and results in an error otherwise.
 
 .. tacn:: is_var @one_term
 
-   This tactic checks whether its argument is a variable or hypothesis in
-   the current local context.
+   Checks whether :n:`@one_term` is a variable or hypothesis in
+   the current goal context or in the opened sections.  If it is not, the tactic fails.
 
 .. exn:: Not a variable or hypothesis.
    :undocumented:
+
+.. todo PR: could use some help with the following
+
+.. tacn:: is_cofix @one_term
+   :undocumented:
+
+.. tacn:: is_const @one_term
+   :undocumented:
+
+.. tacn:: is_constructor @one_term
+   :undocumented:
+
+.. tacn:: head_of_constr @ident @one_term
+   :undocumented:
+
+.. tacn:: is_fix @one_term
+   :undocumented:
+
+.. tacn:: is_ground @one_term
+   :undocumented:
+
+.. tacn:: is_ind @one_term
+   :undocumented:
+
+.. tacn:: is_proj @one_term
+   :undocumented:
+
+.. _equality:
 
 Equality
 --------

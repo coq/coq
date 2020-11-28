@@ -78,6 +78,9 @@ Programmable proof search
       Behaves like :tacn:`auto` but shows the tactics it tries to solve the goal,
       including failing paths.
 
+.. tacn:: new auto {? @nat_or_var } {? @auto_using } {? @hintbases }
+   :undocumented:
+
 .. tacn:: trivial {? @auto_using } {? @hintbases }
           debug trivial {? @auto_using } {? @hintbases }
           info_trivial {? @auto_using } {? @hintbases }
@@ -139,6 +142,9 @@ Programmable proof search
       Like :tacn:`eauto`, but uses a
       `breadth-first search <https://en.wikipedia.org/wiki/Breadth-first_search>`_.
 
+   .. tacn:: dfs eauto {? @nat_or_var } {? @auto_using } {? @hintbases }
+      :undocumented:
+
 .. tacn:: autounfold {? @hintbases } {? @simple_occurrences }
 
    Unfolds constants that were declared through a :cmd:`Hint Unfold`
@@ -146,6 +152,9 @@ Programmable proof search
 
    :n:`@simple_occurrences`
      Performs the unfolding in the specified occurrences.
+
+.. tacn:: autounfold_one {? @hintbases } {? in @ident }
+   :undocumented:
 
 .. tacn:: autorewrite {? * } with {+ @ident } {? @occurrences } {? using @ltac_expr }
 

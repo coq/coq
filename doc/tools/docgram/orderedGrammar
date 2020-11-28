@@ -1618,7 +1618,7 @@ simple_tactic: [
 | "simple" "induction" [ ident | natural ]
 | "simple" "destruct" [ ident | natural ]
 | "admit"
-| "clear" OPT ( OPT "-" LIST1 ident )
+| "clear" [ OPT ( OPT "-" LIST1 ident ) | natural ]
 | "clearbody" LIST1 ident
 | "generalize" "dependent" one_term
 | "replace" one_term "with" one_term OPT occurrences OPT ( "by" ltac_expr3 )
@@ -1688,9 +1688,8 @@ simple_tactic: [
 | "simple" "subst"
 | "evar" "(" ident ":" term ")"
 | "evar" one_term
-| "instantiate" "(" ident ":=" term ")"
+| "instantiate" OPT ( "(" ident ":=" term ")" )
 | "instantiate" "(" integer ":=" term ")" OPT hloc
-| "instantiate"
 | "stepl" one_term OPT ( "by" ltac_expr )
 | "stepr" one_term OPT ( "by" ltac_expr )
 | "generalize_eqs" ident
@@ -1810,7 +1809,6 @@ simple_tactic: [
 | "edestruct" induction_clause_list
 | "rewrite" LIST1 oriented_rewriter SEP "," OPT occurrences OPT ( "by" ltac_expr3 )
 | "erewrite" LIST1 oriented_rewriter SEP "," OPT occurrences OPT ( "by" ltac_expr3 )
-| "dependent" [ "simple" "inversion" | "inversion" | "inversion_clear" ] [ ident | natural ] OPT as_or_and_ipat OPT [ "with" one_term ]
 | "simple" "inversion" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
 | "inversion" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
 | "inversion_clear" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
@@ -1863,7 +1861,6 @@ simple_tactic: [
 | "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
 | "field_lookup" ltac_expr "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
 | "by" ssrhintarg      (* SSR plugin *)
-| "clear" natural      (* SSR plugin *)
 | "move" OPT ( OPT ssrarg [ "->" | "<-" ] )      (* SSR plugin *)
 | "move" ssrarg OPT ssr_in      (* SSR plugin *)
 | "case" OPT ( ssrarg OPT ssr_in )      (* SSR plugin *)
@@ -1895,6 +1892,9 @@ simple_tactic: [
 | ltac_expr ";" "last" ssrseqarg      (* SSR plugin *)
 | match_key OPT "reverse" "goal" "with" OPT "|" LIST1 ( goal_pattern "=>" ltac_expr ) SEP "|" "end"
 | match_key ltac_expr "with" OPT "|" LIST1 ( match_pattern "=>" ltac_expr ) SEP "|" "end"
+| "dependent" "simple" "inversion" [ ident | natural ] OPT as_or_and_ipat OPT [ "with" one_term ]
+| "dependent" "inversion" [ ident | natural ] OPT as_or_and_ipat OPT [ "with" one_term ]
+| "dependent" "inversion_clear" [ ident | natural ] OPT as_or_and_ipat OPT [ "with" one_term ]
 | "classical_left"
 | "classical_right"
 | "contradict" ident
