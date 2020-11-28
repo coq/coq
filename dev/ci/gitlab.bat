@@ -39,6 +39,10 @@ SET PATH=%PATH%;C:\Program Files\7-Zip\;C:\Program Files\Microsoft SDKs\Windows\
 
 IF "%WINDOWS%" == "enabled_all_addons" (
   SET EXTRA_ADDONS=^
+    -addon=gappa_tool ^
+    -addon=gappa ^
+    -addon=elpi ^
+    -addon=HB ^
     -addon=bignums ^
     -addon=equations ^
     -addon=mtac2 ^
@@ -51,11 +55,7 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=coquelicot ^
     -addon=aactactics ^
     -addon=flocq ^
-    -addon=interval ^
-    -addon=gappa_tool ^
-    -addon=gappa ^
-    -addon=elpi ^
-    -addon=HB
+    -addon=interval
 REM    -addon=vst ^
 ) ELSE (
   SET "EXTRA_ADDONS= "
