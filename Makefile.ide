@@ -298,7 +298,7 @@ $(COQIDEAPP):$(COQIDEAPP)/Contents/Resources
 ###########################################################################
 
 # This is either x86_64-w64-mingw32 or i686-w64-mingw32
-TARGET_ARCH=$(shell $CC -dumpmachine)
+TARGET_ARCH=$(shell `ocamlc -config | grep ^c_compiler: | cut -d : -f 2` -dumpmachine)
 
 %.o: %.rc
 	$(SHOW)'WINDRES    $<'
