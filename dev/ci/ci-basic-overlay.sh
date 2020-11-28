@@ -133,7 +133,7 @@
 ########################################################################
 # Gappa stand alone tool
 ########################################################################
-: "${gappa_tool_CI_REF:=ba4dbb3ef66bbdd9d1f3d660a293515df0b57b43}"
+: "${gappa_tool_CI_REF:=3935dfe7975579bb27b78bed548c72b89d39a637}"
 : "${gappa_tool_CI_GITURL:=https://gitlab.inria.fr/gappa/gappa}"
 : "${gappa_tool_CI_ARCHIVEURL:=${gappa_tool_CI_GITURL}/-/archive}"
 
