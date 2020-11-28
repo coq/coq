@@ -1299,7 +1299,7 @@ let do_replace id = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
+let clenv_refine_in ?err with_evars targetid replace sigma0 clenv tac =
   let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
   let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd in
   let clenv = Clenv.update_clenv_evd clenv evd in
@@ -1310,11 +1310,10 @@ let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
   let new_hyp_prf = clenv_value clenv in
   let exact_tac = Logic.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
-  let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARS (clear_metas evd))
     (Tacticals.New.tclTHENLAST
-      (assert_after_then_gen ?err with_clear naming new_hyp_typ tac) exact_tac)
+      (assert_after_then_gen ?err replace naming new_hyp_typ tac) exact_tac)
 
 (********************************************)
 (*       Elimination tactics                *)
@@ -1365,7 +1364,7 @@ let elimination_in_clause_scheme env sigma with_evars ~flags
   if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
     user_err ~hdr:"general_rewrite_in"
       (str "Nothing to rewrite in " ++ Id.print id ++ str".");
-  clenv_refine_in with_evars id id sigma elimclause''
+  clenv_refine_in with_evars id true sigma elimclause''
     (fun id -> Proofview.tclUNIT ())
 
 (*
@@ -1814,6 +1813,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
   let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
   let targetid = find_name true (LocalAssum (make_annot Anonymous Sorts.Relevant,t')) naming gl in
+  let replace = Id.equal id targetid in
   let rec aux ?err idstoclear with_destruct c =
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1826,7 +1826,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
       let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
-      clenv_refine_in ?err with_evars targetid id sigma clause
+      clenv_refine_in ?err with_evars targetid replace sigma clause
         (fun id ->
           replace_error_option err (
             apply_clear_request clear_flag false c <*>
@@ -2484,20 +2484,15 @@ and intro_pattern_action ?loc with_evars pat thin destopt tac id =
       rewrite_hyp_then with_evars thin l2r id (fun thin -> tac thin None [])
   | IntroApplyOn ({CAst.loc=loc';v=f},{CAst.loc;v=pat}) ->
       let naming = NamingMustBe (CAst.make ?loc id) in
-      let _,tac_ipat =
-        prepare_intros ?loc with_evars (IntroIdentifier id) destopt pat in
-      let f env sigma = let (sigma, c) = f env sigma in (sigma,(c, NoBindings))
-      in
+      let tac_ipat = prepare_action ?loc with_evars destopt pat in
+      let f env sigma = let (sigma, c) = f env sigma in (sigma,(c, NoBindings)) in
       apply_in_delayed_once true true with_evars naming id (None,CAst.make ?loc:loc' f)
         (fun id -> Tacticals.New.tclTHENLIST [tac_ipat id; tac thin None []])
 
-and prepare_intros ?loc with_evars dft destopt = function
+and prepare_action ?loc with_evars destopt = function
   | IntroNaming ipat ->
-      prepare_naming ?loc ipat,
       (fun _ -> Proofview.tclUNIT ())
   | IntroAction ipat ->
-      (* Special case for apply in which clears iff it is a replacement *)
-      (match dft with IntroIdentifier _ -> prepare_naming ?loc dft | _ -> make_naming_action Id.Set.empty [] ipat),
       (let tac thin bound =
         intro_patterns_core with_evars Id.Set.empty [] thin destopt bound 0
           (fun _ l -> clear_wildcards l) in
@@ -2534,9 +2529,19 @@ let intros_patterns with_evars = function
 (*   Forward reasoning    *)
 (**************************)
 
-let prepare_intros_opt with_evars dft destopt = function
-  | None -> prepare_naming dft, (fun _id -> Proofview.tclUNIT ())
-  | Some {CAst.loc;v=ipat} -> prepare_intros ?loc with_evars dft destopt ipat
+let prepare_intros_opt with_evars dft destopt ipat =
+  let naming, loc, ipat = match ipat with
+  | None ->
+    let pat = IntroNaming dft in make_naming_pattern Id.Set.empty [] pat, None, pat
+  | Some {CAst.loc;v=(IntroNaming pat as ipat)} ->
+    (* "apply ... in H as id" needs to use id and H is kept iff id<>H *)
+    prepare_naming ?loc pat, loc, ipat
+  | Some {CAst.loc;v=(IntroAction pat as ipat)} ->
+    (* "apply ... in H as pat" reuses H so that old H is always cleared *)
+    (match dft with IntroIdentifier _ -> prepare_naming ?loc dft | _ -> make_naming_action Id.Set.empty [] pat),
+    loc, ipat
+  | Some {CAst.loc;v=(IntroForthcoming _)} -> assert false in
+  naming, prepare_action ?loc with_evars destopt ipat
 
 let ipat_of_name = function
   | Anonymous -> None
@@ -3051,8 +3056,7 @@ let specialize (c,lbind) ipat =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
     | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
       (* Like assert (id:=id args) but with the concept of specialization *)
-      let naming,tac =
-        prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
+      let naming,tac = prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
       let repl = do_replace (Some id) naming in
       Tacticals.New.tclTHENFIRST
         (assert_before_then_gen repl naming typ tac)
@@ -3065,10 +3069,10 @@ let specialize (c,lbind) ipat =
         (* TODO: add intro to be more homogeneous. It will break
            scripts but will be easy to fix *)
          (Tacticals.New.tclTHENLAST (cut typ) (exact_no_check term))
-      | Some {CAst.loc;v=ipat} ->
+      | Some _ as ipat ->
         (* Like pose proof with extra support for "with" bindings *)
         (* even though the "with" bindings forces full application *)
-        let naming,tac = prepare_intros ?loc false IntroAnonymous MoveLast ipat in
+        let naming, tac = prepare_intros_opt false IntroAnonymous MoveLast ipat in
         Tacticals.New.tclTHENFIRST
           (assert_before_then_gen false naming typ tac)
           (exact_no_check term)
