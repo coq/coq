@@ -1,5 +1,4 @@
-# CACHEKEY: "bionic_coq-V2020-11-26-V92"
-# ^^ Update when modifying this file.
+# Update CACHEKEY in the .gitlab-ci.yml when modifying this file.
 
 FROM ubuntu:bionic
 LABEL maintainer="e@x80.org"

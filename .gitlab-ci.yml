@@ -17,9 +17,9 @@ stages:
 
 # some default values
 variables:
-  # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
-  # for reference]
-  CACHEKEY: "bionic_coq-V2020-11-26-V92"
+  # Format: $IMAGE-V$DATE-$hash
+  # The $hash is the first 10 characters of the md5 of the dockerfile
+  CACHEKEY: "bionic_coq-V2020-11-26-db194d584e"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -59,6 +59,7 @@ before_script:
   - eval $(opam env)
   - opam list
   - opam config list
+  - dev/tools/check-cachekey.sh
 
 ################ GITLAB CACHING ######################
 # - use artifacts between jobs                       #
