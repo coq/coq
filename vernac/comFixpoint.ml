@@ -158,10 +158,9 @@ type ('constr, 'types) recursive_preentry =
 let fix_proto sigma =
   Evarutil.new_global sigma (Coqlib.lib_ref "program.tactic.fix_proto")
 
-let interp_recursive ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen list) =
+let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen list) =
   let open Context.Named.Declaration in
   let open EConstr in
-  let env = Global.env() in
   let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v) fixl in
 
   (* Interp arities allowing for unresolved types *)
@@ -241,11 +240,13 @@ let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
   Evd.evar_universe_context evd, (fixnames,fixrs,fixdefs,fixtypes)
 
 (* XXX: Unify with interp_recursive  *)
-let interp_fixpoint ?(check_recursivity=true) ~cofix l :
+let interp_fixpoint ?(check_recursivity=true) ?typing_flags ~cofix l :
   ( (Constr.t, Constr.types) recursive_preentry *
     UState.universe_decl * UState.t *
     (EConstr.rel_context * Impargs.manual_implicits * int option) list) =
-  let (env,_,pl,evd),fix,info = interp_recursive ~program_mode:false ~cofix l in
+  let env = Global.env () in
+  let env = Environ.update_typing_flags ?typing_flags env in
+  let (env,_,pl,evd),fix,info = interp_recursive env ~program_mode:false ~cofix l in
   if check_recursivity then check_recursive true env evd fix;
   let evd = Pretyping.(solve_remaining_evars all_no_fail_flags env evd) in
   let uctx,fix = ground_fixpoint env evd fix in
@@ -271,12 +272,12 @@ let build_recthms ~indexes ?using fixnames fixtypes fiximps =
   in
   fix_kind, cofix, thms
 
-let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
+let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ?typing_flags ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
   let fix_kind, cofix, thms = build_recthms ~indexes fixnames fixtypes fiximps in
   let indexes = Option.default [] indexes in
   let init_terms = Some fixdefs in
   let evd = Evd.from_ctx ctx in
-  let info = Declare.Info.make ~poly ~scope ~kind:(Decls.IsDefinition fix_kind) ~udecl () in
+  let info = Declare.Info.make ~poly ~scope ~kind:(Decls.IsDefinition fix_kind) ~udecl ?typing_flags () in
   let lemma =
     Declare.Proof.start_mutual_with_initialization ~info
       evd ~mutual_info:(cofix,indexes,init_terms) ~cinfo:thms None in
@@ -284,13 +285,13 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   lemma
 
-let declare_fixpoint_generic ?indexes ~scope ~poly ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
+let declare_fixpoint_generic ?indexes ~scope ~poly ?typing_flags ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
   (* We shortcut the proof process *)
   let fix_kind, cofix, fixitems = build_recthms ~indexes ?using fixnames fixtypes fiximps in
   let fixdefs = List.map Option.get fixdefs in
   let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
   let fix_kind = Decls.IsDefinition fix_kind in
-  let info = Declare.Info.make ~scope ~kind:fix_kind ~poly ~udecl () in
+  let info = Declare.Info.make ~scope ~kind:fix_kind ~poly ~udecl ?typing_flags () in
   let cinfo = fixitems in
   let _ : GlobRef.t list =
     Declare.declare_mutually_recursive ~cinfo ~info ~opaque:false ~uctx
@@ -322,22 +323,22 @@ let adjust_rec_order ~structonly binders rec_order =
   in
   Option.map (extract_decreasing_argument ~structonly) rec_order
 
-let do_fixpoint_common (fixl : Vernacexpr.fixpoint_expr list) =
+let do_fixpoint_common ?typing_flags (fixl : Vernacexpr.fixpoint_expr list) =
   let fixl = List.map (fun fix ->
       Vernacexpr.{ fix
                    with rec_order = adjust_rec_order ~structonly:true fix.binders fix.rec_order }) fixl in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
-  let (_, _, _, info as fix) = interp_fixpoint ~cofix:false fixl in
+  let (_, _, _, info as fix) = interp_fixpoint ~cofix:false ?typing_flags fixl in
   fixl, ntns, fix, List.map compute_possible_guardness_evidences info
 
-let do_fixpoint_interactive ~scope ~poly l : Declare.Proof.t =
-  let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
-  let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes ~scope ~poly fix ntns in
+let do_fixpoint_interactive ~scope ~poly ?typing_flags l : Declare.Proof.t =
+  let fixl, ntns, fix, possible_indexes = do_fixpoint_common ?typing_flags l in
+  let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes ~scope ~poly ?typing_flags fix ntns in
   lemma
 
-let do_fixpoint ~scope ~poly ?using l =
-  let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
-  declare_fixpoint_generic ~indexes:possible_indexes ~scope ~poly ?using fix ntns
+let do_fixpoint ~scope ~poly ?typing_flags ?using l =
+  let fixl, ntns, fix, possible_indexes = do_fixpoint_common ?typing_flags l in
+  declare_fixpoint_generic ~indexes:possible_indexes ~scope ~poly ?typing_flags ?using fix ntns
 
 let do_cofixpoint_common (fixl : Vernacexpr.cofixpoint_expr list) =
   let fixl = List.map (fun fix -> {fix with Vernacexpr.rec_order = None}) fixl in

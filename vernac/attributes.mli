@@ -59,6 +59,9 @@ val canonical_field : bool attribute
 val canonical_instance : bool attribute
 val using : string option attribute
 
+(** Enable/Disable universe checking *)
+val typing_flags : Declarations.typing_flags option attribute
+
 val program_mode_option_name : string list
 (** For internal use when messing with the global option. *)
 

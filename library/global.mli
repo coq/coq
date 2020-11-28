@@ -52,10 +52,12 @@ val export_private_constants :
   Safe_typing.exported_private_constant list
 
 val add_constant :
+  ?typing_flags:Declarations.typing_flags ->
   Id.t -> Safe_typing.global_declaration -> Constant.t
 val add_private_constant :
   Id.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
 val add_mind :
+  ?typing_flags:Declarations.typing_flags ->
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 
 (** Extra universe constraints *)

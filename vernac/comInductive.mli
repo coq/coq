@@ -26,6 +26,7 @@ val do_mutual_inductive
   -> (one_inductive_expr * decl_notation list) list
   -> cumulative:bool
   -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
   -> private_ind:bool
   -> uniform:uniform_inductive_flag
   -> Declarations.recursivity_kind

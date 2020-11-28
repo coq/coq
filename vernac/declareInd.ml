@@ -104,7 +104,7 @@ let is_unsafe_typing_flags () =
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
 (* for initial declaration *)
-let declare_mind mie =
+let declare_mind ?typing_flags mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> CErrors.anomaly (Pp.str "cannot declare an empty list of inductives.") in
@@ -113,7 +113,7 @@ let declare_mind mie =
   List.iter (fun (typ, cons) ->
       Declare.check_exists typ;
       List.iter Declare.check_exists cons) names;
-  let _kn' = Global.add_mind id mie in
+  let _kn' = Global.add_mind ?typing_flags id mie in
   let (sp,kn as oname) = Lib.add_leaf id (inInductive { ind_names = names }) in
   if is_unsafe_typing_flags() then feedback_axiom ();
   let mind = Global.mind_of_delta_kn kn in
@@ -154,7 +154,7 @@ type one_inductive_impls =
   Impargs.manual_implicits (* for inds *) *
   Impargs.manual_implicits list (* for constrs *)
 
-let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie pl impls =
+let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags mie pl impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
@@ -166,7 +166,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie p
     | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_, kn), prim = declare_mind mie in
+  let (_, kn), prim = declare_mind ?typing_flags mie in
   let mind = Global.mind_of_delta_kn kn in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
   DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) pl;
