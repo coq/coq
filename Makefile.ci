@@ -35,6 +35,7 @@ CI_TARGETS= \
     ci-fiat_parsers \
     ci-flocq \
     ci-fourcolor \
+    ci-gappa \
     ci-geocoq \
     ci-coqhammer \
     ci-hott \
@@ -94,6 +95,7 @@ ci-metacoq: ci-equations
 ci-vst: ci-flocq
 
 ci-compcert: ci-menhir ci-flocq
+ci-gappa: ci-flocq
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
