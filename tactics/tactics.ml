@@ -2346,7 +2346,7 @@ let intro_or_and_pattern ?loc with_evars ll thin tac id =
           nv_with_let ll))
   end
 
-let rewrite_hyp_then assert_style with_evars thin l2r id tac =
+let rewrite_hyp_then with_evars thin l2r id tac =
   let rew_on l2r =
     Hook.get forward_general_rewrite_clause l2r with_evars (mkVar id,NoBindings) in
   let subst_on l2r x rhs =
@@ -2502,7 +2502,7 @@ let rec intro_patterns_core with_evars avoid ids thin destopt bound n tac =
   | IntroAction pat ->
       intro_then_gen (make_tmp_naming avoid l pat)
         destopt true false
-        (intro_pattern_action ?loc with_evars false pat thin destopt
+        (intro_pattern_action ?loc with_evars pat thin destopt
           (fun thin bound' -> intro_patterns_core with_evars avoid ids thin destopt bound' 0
             (fun ids thin ->
               intro_patterns_core with_evars avoid ids thin destopt bound (n+1) tac l)))
@@ -2526,7 +2526,7 @@ and intro_pattern_naming loc with_evars avoid ids pat thin destopt bound n tac l
         destopt true false
         (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l)
 
-and intro_pattern_action ?loc with_evars style pat thin destopt tac id =
+and intro_pattern_action ?loc with_evars pat thin destopt tac id =
   match pat with
   | IntroWildcard ->
       tac (CAst.(make ?loc id)::thin) None []
@@ -2535,7 +2535,7 @@ and intro_pattern_action ?loc with_evars style pat thin destopt tac id =
   | IntroInjection l' ->
       intro_decomp_eq ?loc l' thin tac id
   | IntroRewrite l2r ->
-      rewrite_hyp_then style with_evars thin l2r id (fun thin -> tac thin None [])
+      rewrite_hyp_then with_evars thin l2r id (fun thin -> tac thin None [])
   | IntroApplyOn ({CAst.loc=loc';v=f},{CAst.loc;v=pat}) ->
       let naming,tac_ipat =
         prepare_intros ?loc with_evars (IntroIdentifier id) destopt pat in
@@ -2559,7 +2559,7 @@ and prepare_intros ?loc with_evars dft destopt = function
         intro_patterns_core with_evars Id.Set.empty [] thin destopt bound 0
           (fun _ l -> clear_wildcards l) in
       fun id ->
-        intro_pattern_action ?loc with_evars true ipat [] destopt tac id)
+        intro_pattern_action ?loc with_evars ipat [] destopt tac id)
   | IntroForthcoming _ -> user_err ?loc
       (str "Introduction pattern for one hypothesis expected.")
 
