@@ -52,7 +52,7 @@ module Make (E : EqType) =
     mutable rover : int;               (* for internal bookkeeping *)
   }
 
-  let get_index t h = (h land max_int) mod (Array.length t.table)
+  let get_index t h = (h land max_int) mod (Array.length t)
 
   let limit = 7
   let over_limit = 2
@@ -135,7 +135,7 @@ module Make (E : EqType) =
       let add_weak ob oh oi =
         let setter nb ni _ = Weak.blit ob oi nb ni 1 in
         let h = oh.(oi) in
-        add_aux newt setter None h (get_index newt h);
+        add_aux newt setter None h (get_index newt.table h);
       in
       iter_weak add_weak t;
       t.table <- newt.table;
@@ -178,24 +178,28 @@ module Make (E : EqType) =
     in
     loop 0
 
-  let find_or h t d ifnotfound =
-    let index = get_index t h in
-    let bucket = t.table.(index) in
+  let repr h d t =
+    let table = t.table in
+    let index = get_index table h in
+    let bucket = table.(index) in
     let hashes = t.hashes.(index) in
     let sz = Weak.length bucket in
-    let rec loop i =
-      if i >= sz then ifnotfound index
-      else if Int.equal h hashes.(i) then begin
+    let pos = ref 0 in
+    let ans = ref None in
+    while !pos < sz && !ans == None do
+      let i = !pos in
+      if Int.equal h hashes.(i) then begin
         match Weak.get bucket i with
-        | Some v when E.eq v d -> v
-        | _ -> loop (i + 1)
-      end else loop (i + 1)
-    in
-    loop 0
-
-  let repr h d t =
-    let ifnotfound index = add_aux t Weak.set (Some d) h index; d in
-    find_or h t d ifnotfound
+        | Some v as res when E.eq v d -> ans := res
+        | _ -> incr pos
+      end else incr pos
+    done;
+    if !pos >= sz then
+      let () = add_aux t Weak.set (Some d) h index in
+      d
+    else match !ans with
+    | None -> assert false
+    | Some v -> v
 
   let stats t =
     let fold accu bucket = max (count_bucket 0 bucket 0) accu in
