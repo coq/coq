@@ -38,3 +38,10 @@ Fail intros ((n,_),H).
 Abort.
 
 End IntroWildcard.
+
+Module ApplyIn.
+
+Ltac test a b c d e := apply a, b in c as [], d, e as ->.
+Print test.
+
+End ApplyIn.
