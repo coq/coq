@@ -1318,6 +1318,7 @@ let () =
   let pr_unit _ = str "()" in
   let open Genprint in
   register_basic_print0 wit_int_or_var (pr_or_var int) (pr_or_var int) int;
+  register_basic_print0 wit_nat_or_var (pr_or_var int) (pr_or_var int) int;
   register_basic_print0 wit_ref
     pr_qualid (pr_or_var (pr_located pr_global)) pr_global;
   register_basic_print0 wit_smart_global
