@@ -1401,11 +1401,11 @@ function make_coq {
   then
     if [ "$INSTALLMODE" == "relocatable" ]; then
       # HACK: for relocatable builds, first configure with ./, then build but before install reconfigure with the real target path
-      logn configure ./configure -with-doc no -prefix ./ -libdir ./lib/coq -mandir ./man
+      logn configure ./configure -with-doc no -prefix ./ -libdir ./lib/coq -mandir ./man -coqide opt
     elif [ "$INSTALLMODE" == "absolute" ]; then
-      logn configure ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib/coq" -mandir "$PREFIXCOQ/man"
+      logn configure ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib/coq" -mandir "$PREFIXCOQ/man" -coqide opt
     else
-      logn configure ./configure -with-doc no -prefix "$PREFIXCOQ"
+      logn configure ./configure -with-doc no -prefix "$PREFIXCOQ" -coqide opt
     fi
 
     # 8.4x doesn't support parallel make
