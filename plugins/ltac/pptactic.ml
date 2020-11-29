@@ -458,7 +458,8 @@ let string_of_genarg_arg (ArgumentType arg) =
     | l -> pr_in (spc () ++ prlist_with_sep spc pr_id l)
 
   let pr_in_hyp_as prc pr_id = function
-    | (id,ipat) -> pr_in (spc () ++ pr_id id) ++ pr_as_ipat prc ipat
+    | [] -> mt ()
+    | l -> pr_in (spc () ++ prlist_with_sep pr_comma (fun (id,ipat) -> pr_id id ++ pr_as_ipat prc ipat) l)
 
   let pr_in_clause pr_id = function
     | { onhyps=None; concl_occs=NoOccurrences } ->
@@ -755,7 +756,7 @@ let pr_goal_selector ~toplevel s =
             (if a then mt() else primitive "simple ") ++
               primitive (with_evars ev "apply") ++ spc () ++
               prlist_with_sep pr_comma pr_with_bindings_arg cb ++
-              prlist_with_sep spc (pr_in_hyp_as (pr.pr_dconstr env sigma) pr.pr_name) inhyp
+              pr_non_empty_arg (pr_in_hyp_as (pr.pr_dconstr env sigma) pr.pr_name) inhyp
           )
         | TacElim (ev,cb,cbo) ->
           hov 1 (
