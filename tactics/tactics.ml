@@ -2365,19 +2365,6 @@ let rec check_name_unicity env ok seen = let open CAst in function
 
 let wild_id = Id.of_string "_tmp"
 
-let rec list_mem_assoc_right id = function
-  | [] -> false
-  | {CAst.v=id'}::l -> Id.equal id id' || list_mem_assoc_right id l
-
-let check_thin_clash_then id thin avoid tac =
-  if list_mem_assoc_right id thin then
-    let newid = next_ident_away (add_suffix id "'") avoid in
-    let thin =
-      List.map CAst.(map (fun id' -> if Id.equal id id' then newid else id')) thin in
-    Tacticals.New.tclTHEN (rename_hyp [id,newid]) (tac thin)
-  else
-    tac thin
-
 let make_naming ?loc avoid l = function
   | IntroIdentifier id -> NamingMustBe (CAst.make ?loc id)
   | IntroAnonymous -> NamingAvoid (Id.Set.union avoid (explicit_intro_names l))
@@ -2386,10 +2373,8 @@ let make_naming ?loc avoid l = function
 let rec make_naming_action avoid l = function
   (* In theory, we could use a tmp id like "wild_id" for all actions
      but we prefer to avoid it to avoid this kind of "ugly" names *)
-  (* Alternatively, we could have called check_thin_clash_then on
-     IntroAnonymous, but at the cost of a "renaming"; Note that in the
-     case of IntroFresh, we should use check_thin_clash_then anyway to
-     prevent the case of an IntroFresh precisely using the wild_id *)
+  (* TODO: avoid wild_id to interfere with IntroFresh precisely using
+     the wild_id *)
   | IntroWildcard -> NamingBasedOn (wild_id, Id.Set.union avoid (explicit_intro_names l))
   | IntroApplyOn (_,{CAst.v=pat;loc}) -> make_naming_pattern avoid ?loc l pat
   | (IntroOrAndPattern _ | IntroInjection _ | IntroRewrite _) as pat ->
@@ -2439,38 +2424,21 @@ let rec intro_patterns_core with_evars avoid ids thin destopt bound n tac =
         [CAst.make @@ IntroNaming IntroAnonymous]
   | {CAst.loc;v=pat} :: l ->
   if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
+  let naming = make_naming_pattern avoid l pat in
   match pat with
   | IntroForthcoming onlydeps ->
-      intro_forthcoming_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
-          destopt onlydeps bound n
+      intro_forthcoming_then_gen naming destopt onlydeps bound n
         (fun ids -> intro_patterns_core with_evars avoid ids thin destopt bound
           (n+List.length ids) tac l)
   | IntroAction pat ->
-      intro_then_gen (make_naming_action avoid l pat)
-        destopt true false
+      intro_then_gen naming destopt true false
         (intro_pattern_action ?loc with_evars pat thin destopt
           (fun thin bound' -> intro_patterns_core with_evars avoid ids thin destopt bound' 0
             (fun ids thin ->
               intro_patterns_core with_evars avoid ids thin destopt bound (n+1) tac l)))
   | IntroNaming pat ->
-      intro_pattern_naming loc with_evars avoid ids pat thin destopt bound (n+1) tac l
-
-  (* Pi-introduction rule, used backwards *)
-and intro_pattern_naming loc with_evars avoid ids pat thin destopt bound n tac l =
-  match pat with
-  | IntroIdentifier id ->
-      check_thin_clash_then id thin avoid (fun thin ->
-        intro_then_gen (NamingMustBe CAst.(make ?loc id)) destopt true false
-          (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l))
-  | IntroAnonymous ->
-      intro_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
-        destopt true false
-        (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l)
-  | IntroFresh id ->
-      (* todo: avoid thinned names to interfere with generation of fresh name *)
-      intro_then_gen (NamingBasedOn (id, Id.Set.union avoid (explicit_intro_names l)))
-        destopt true false
-        (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l)
+      intro_then_gen naming destopt true false
+        (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound (n+1) tac l)
 
 and intro_pattern_action ?loc with_evars pat thin destopt tac id =
   match pat with
