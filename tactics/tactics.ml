@@ -2324,21 +2324,31 @@ let rewrite_hyp_then with_evars thin l2r id tac =
     tclEVARSTHEN sigma (Tacticals.New.tclTHENFIRST eqtac (tac thin))
   end
 
-let rec explicit_intro_names = let open CAst in function
-| {v=IntroForthcoming _} :: l -> explicit_intro_names l
-| {v=IntroNaming (IntroIdentifier id)} :: l -> Id.Set.add id (explicit_intro_names l)
+let rec collect_intro_names = let open CAst in function
+| {v=IntroForthcoming _} :: l -> collect_intro_names l
+| {v=IntroNaming (IntroIdentifier id)} :: l ->
+  let ids1, ids2 = collect_intro_names l in Id.Set.add id ids1, ids2
 | {v=IntroAction (IntroOrAndPattern l)} :: l' ->
     let ll = match l with IntroAndPattern l -> [l] | IntroOrPattern ll -> ll in
-    let fold accu l = Id.Set.union accu (explicit_intro_names (l@l')) in
-    List.fold_left fold Id.Set.empty ll
+    let fold (ids1',ids2') l =
+      let ids1, ids2 = collect_intro_names (l@l') in
+      Id.Set.union ids1 ids1', Id.Set.union ids2 ids2' in
+    List.fold_left fold (Id.Set.empty,Id.Set.empty) ll
 | {v=IntroAction (IntroInjection l)} :: l' ->
-    explicit_intro_names (l@l')
+    collect_intro_names (l@l')
 | {v=IntroAction (IntroApplyOn (c,pat))} :: l' ->
-    explicit_intro_names (pat::l')
-| {v=(IntroNaming (IntroAnonymous | IntroFresh _)
+    collect_intro_names (pat::l')
+| {v=IntroNaming (IntroFresh id)} :: l ->
+    let ids1, ids2 = collect_intro_names l in ids1, Id.Set.add id ids2
+| {v=(IntroNaming IntroAnonymous
      | IntroAction (IntroWildcard | IntroRewrite _))} :: l ->
-     explicit_intro_names l
-| [] -> Id.Set.empty
+     collect_intro_names l
+| [] -> Id.Set.empty, Id.Set.empty
+
+let explicit_intro_names l = fst (collect_intro_names l)
+
+let explicit_all_intro_names l =
+  let ids1,ids2 = collect_intro_names l in Id.Set.union ids1 ids2
 
 let rec check_name_unicity env ok seen = let open CAst in function
 | {v=IntroForthcoming _} :: l -> check_name_unicity env ok seen l
@@ -2363,7 +2373,12 @@ let rec check_name_unicity env ok seen = let open CAst in function
      check_name_unicity env ok seen l
 | [] -> ()
 
-let wild_id = Id.of_string "_tmp"
+let fresh_wild ids =
+  let rec aux s =
+    if Id.Set.exists (fun id -> String.is_prefix s (Id.to_string id)) ids
+    then aux (s ^ "'")
+    else Id.of_string s in
+  aux "_H"
 
 let make_naming ?loc avoid l = function
   | IntroIdentifier id -> NamingMustBe (CAst.make ?loc id)
@@ -2373,9 +2388,8 @@ let make_naming ?loc avoid l = function
 let rec make_naming_action avoid l = function
   (* In theory, we could use a tmp id like "wild_id" for all actions
      but we prefer to avoid it to avoid this kind of "ugly" names *)
-  (* TODO: avoid wild_id to interfere with IntroFresh precisely using
-     the wild_id *)
-  | IntroWildcard -> NamingBasedOn (wild_id, Id.Set.union avoid (explicit_intro_names l))
+  | IntroWildcard ->
+    NamingBasedOn (fresh_wild (Id.Set.union avoid (explicit_all_intro_names l)), Id.Set.empty)
   | IntroApplyOn (_,{CAst.v=pat;loc}) -> make_naming_pattern avoid ?loc l pat
   | (IntroOrAndPattern _ | IntroInjection _ | IntroRewrite _) as pat ->
     NamingAvoid(Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
