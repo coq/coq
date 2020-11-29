@@ -1156,7 +1156,7 @@ function make_lablgtk {
   if build_prep https://github.com/garrigue/lablgtk/archive  3.1.1  tar.gz 1 lablgtk-3.1.1 ; then
     make_arch_pkg_config
 
-    # We should downlaod the artefact, not the tag, since the gfat has no
+    # We should download the artifact, not the tag, since the tag has no
     # version number. We remedy
     echo "(version 3.1.1)" >> dune-project
 
