@@ -1,0 +1,11 @@
+if [ "$CI_PULL_REQUEST" = "13415" ] || [ "$CI_BRANCH" = "intern-univs" ]; then
+
+    overlay argosy https://github.com/herbelin/argosy master+adapt-coq-pr13521-edestruct-clear-variables-like-destruct
+    overlay cross-crypto https://github.com/herbelin/cross-crypto master+adapt-coq-pr13521-edestruct-clear-variables-like-destruct
+    overlay stdpp https://github.com/herbelin/stdpp master+adapt-coq-pr13521-edestruct-clear-variables-like-destruct
+    overlay sf https://github.com/herbelin/sf master+adapt-coq-pr13521-edestruct-clear-variables-like-destruct
+    overlay fiat-parsers https://github.com/herbelin/fiat-parsers master+adapt-coq-pr13521-edestruct-clear-variables-like-destruct
+    overlay metacoq https://github.com/herbelin/metacoq master+adapt-coq-pr13521-edestruct-clear-variables-like-destruct
+    overlay quickchick https://github.com/herbelin/QuickChick master+adapt-coq-pr13521-edestruct-clear-variables-like-destruct
+
+fi
