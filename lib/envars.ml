@@ -12,7 +12,37 @@ open Util
 
 (** {1 Helper functions} *)
 
-let getenv_else s dft = try Sys.getenv s with Not_found -> dft ()
+let parse_env_line l =
+  try Scanf.sscanf l "%[^=]=%S" (fun name value -> Some(name,value))
+  with _ -> None
+
+let with_ic file f =
+  let ic = open_in file in
+  try
+    let rc = f ic in
+    close_in ic;
+    rc
+  with e -> close_in ic; raise e
+
+let getenv_from_file name =
+  let base = Filename.dirname Sys.executable_name in
+  try
+    with_ic (base ^ "/coq_environment.txt") (fun ic ->
+      let rec find () =
+        let l = input_line ic in
+        match parse_env_line l with
+        | Some(n,v) when n = name -> v
+        | _ -> find ()
+      in
+        find ())
+  with
+  | Sys_error s -> raise Not_found
+  | End_of_file -> raise Not_found
+
+let system_getenv name =
+  try Sys.getenv name with Not_found -> getenv_from_file name
+
+let getenv_else s dft = try system_getenv s with Not_found -> dft ()
 
 let safe_getenv warning n =
   getenv_else n (fun () ->
