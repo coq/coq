@@ -19,7 +19,72 @@ open Vmopcodes
 open Mod_subst
 open CPrimitives
 
-type emitcodes = String.t
+module Emitcodes :
+sig
+  type t
+  val make : String.t -> t
+  val repr : t -> Bytes.t
+end =
+struct
+
+type t = String.t
+
+(** Stupid RLE encoding replacing sequences of n '\000' by "\000[n-1]" *)
+let rle_encode s =
+  let len = String.length s in
+  let buf = Buffer.create len in
+  let rec encode i =
+    if i < len then match s.[i] with
+    | '\000' -> encode0 (i + 1) 0
+    | c ->
+      let () = Buffer.add_char buf c in
+      encode (i + 1)
+    else ()
+  and encode0 i n =
+    if i < len && Char.equal s.[i] '\000' then
+      let n =
+        if Int.equal n 0xFF then
+          (* Character overflow *)
+          let () = Buffer.add_char buf '\000' in
+          let () = Buffer.add_char buf (Char.chr 0xFF) in
+          0
+        else n + 1
+      in
+      encode0 (i + 1) n
+    else
+      let () = Buffer.add_char buf '\000' in
+      let () = Buffer.add_char buf (Char.chr n) in
+      encode i
+  in
+  let () = encode 0 in
+  CString.hcons (Buffer.contents buf)
+
+let rle_decode s =
+  let len = String.length s in
+  let buf = Buffer.create len in
+  let rec iter i =
+    if i < len then match s.[i] with
+    | '\000' ->
+      let () = assert (i + 1 < len) in
+      let n = Char.code s.[i + 1] in
+      for _ = 0 to n do
+        Buffer.add_char buf '\000'
+      done;
+      iter (i + 2)
+    | c ->
+      let () = Buffer.add_char buf c in
+      iter (i + 1)
+  in
+  let () = iter 0 in
+  Buffer.to_bytes buf
+
+let make s = rle_encode s
+
+let repr s = rle_decode s
+
+end
+
+type emitcodes = Emitcodes.t
 
 external tcode_of_code : Bytes.t -> Vmvalues.tcode = "coq_tcode_of_code"
 
@@ -82,7 +147,7 @@ let patch_int buff reloc =
   (* copy code *before* patching because of nested evaluations:
      the code we are patching might be called (and thus "concurrently" patched)
      and results in wrong results. Side-effects... *)
-  let buff = Bytes.of_string buff in
+  let buff = Emitcodes.repr buff in
   let iter (reloc, npos) = Array.iter (fun pos -> patch1 buff pos reloc) npos in
   let () = CArray.iter iter reloc in
   buff
@@ -484,7 +549,7 @@ let to_memory (init_code, fun_code, fv) =
   emit env fun_code [];
   (** Later uses of this string are all purely functional *)
   let code = Bytes.sub_string env.out_buffer 0 env.out_position in
-  let code = CString.hcons code in
+  let code = Emitcodes.make code in
   let fold reloc npos accu = (reloc, Array.of_list npos) :: accu in
   let reloc = RelocTable.fold fold env.reloc_info [] in
   let reloc = { reloc_infos = CArray.of_list reloc } in
