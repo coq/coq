@@ -4645,8 +4645,7 @@ let induction_gen clear_flag isrec with_evars elim
   let t = typ_of env evd c in
   let is_arg_pure_hyp =
     isVar evd c && not (mem_named_context_val (destVar evd c) (Global.named_context_val ()))
-    && lbind == NoBindings && not with_evars && Option.is_empty eqname
-    && clear_flag == None
+    && lbind == NoBindings && Option.is_empty eqname && clear_flag == None
     && has_generic_occurrences_but_goal cls (destVar evd c) env evd ccl in
   let enough_applied = check_enough_applied env evd elim t in
   if is_arg_pure_hyp && enough_applied then
@@ -4695,8 +4694,7 @@ let induction_gen_l isrec with_evars elim names lc =
       | c::l' ->
           Proofview.tclEVARMAP >>= fun sigma ->
           match EConstr.kind sigma c with
-            | Var id when not (mem_named_context_val id (Global.named_context_val ()))
-                && not with_evars ->
+            | Var id when not (mem_named_context_val id (Global.named_context_val ())) ->
                 let () = newlc:= id::!newlc in
                 atomize_list l'
 
