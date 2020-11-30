@@ -120,6 +120,7 @@ end
 (** Parse a string *)
 
 val parse_string : 'a Entry.t -> ?loc:Loc.t -> string -> 'a
+val eoi_entry : 'a Entry.t -> 'a Entry.t
 
 type gram_universe [@@deprecated "Deprecated in 8.13"]
 [@@@ocaml.warning "-3"]
@@ -180,6 +181,7 @@ module Prim :
 module Constr :
   sig
     val constr : constr_expr Entry.t
+    val constr_eoi : constr_expr Entry.t
     val lconstr : constr_expr Entry.t
     val binder_constr : constr_expr Entry.t
     val term : constr_expr Entry.t
