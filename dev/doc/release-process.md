@@ -63,13 +63,9 @@ in time.
   the update to the Credits chapter of the reference manual.
   See also [#7058](https://github.com/coq/coq/issues/7058).
 
-  The command that was used in the previous versions to get the list
-  of contributors for this version is `git shortlog -s -n
-  VX.X+alpha..master | cut -f2 | sort -k 2`. Note that the ordering is
-  approximative as it will misplace people with middle names. It is
-  also probably not correctly handling `Co-authored-by` info that we
-  have been using more lately, so should probably be updated to
-  account for this.
+  The `dev/tools/list-contributors.sh` script computes the number and
+  list of contributors between Coq revisions. Typically used with
+  `VX.X+alpha..master` to check the contributors of version `VX.X`.
 
 ## On the date of the feature freeze ##
 
