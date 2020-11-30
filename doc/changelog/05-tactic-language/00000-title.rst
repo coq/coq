@@ -1,3 +1,4 @@
 
-**Tactic language**
+Tactic language
+^^^^^^^^^^^^^^^
 
