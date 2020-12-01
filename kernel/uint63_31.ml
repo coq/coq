@@ -52,12 +52,27 @@ let lt x y =
 let le x y =
   Int64.compare x y <= 0
 
+    (* signed comparison *)
+(* We shift the arguments by 1 to the left so that the top-most bit is interpreted as a sign *)
+(* The zero at the end doesn't change the order (it is stable by multiplication by 2) *)
+let lts x y =
+  Int64.(compare (shift_left x 1) (shift_left y 1)) < 0
+
+let les x y =
+  Int64.(compare (shift_left x 1) (shift_left y 1)) <= 0
+
     (* logical shift *)
 let l_sl x y =
   if le 0L y && lt y 63L then mask63 (Int64.shift_left x (Int64.to_int y)) else 0L
 
 let l_sr x y =
   if le 0L y && lt y 63L then Int64.shift_right x (Int64.to_int y) else 0L
+
+    (* arithmetic shift (for sint63) *)
+let a_sr x y =
+  if les 0L y && lts y 63L then
+    mask63 (Int64.shift_right (Int64.shift_left x 1) ((Int64.to_int y) + 1))
+  else 0L
 
 let l_and x y = Int64.logand x y
 let l_or x y = Int64.logor x y
@@ -85,6 +100,15 @@ let rem x y =
   if y = 0L then 0L else Int64.rem x y
 
 let diveucl x y = (div x y, rem x y)
+
+    (* signed division *)
+let divs x y =
+  if y = 0L then 0L else mask63 Int64.(div (shift_left x 1) (shift_left y 1))
+
+    (* signed modulo *)
+let rems x y =
+  if y = 0L then 0L else
+    Int64.shift_right_logical (Int64.(rem (shift_left x 1) (shift_left y 1))) 1
 
 let addmuldiv p x y =
   l_or (l_sl x p) (l_sr y Int64.(sub (of_int uint_size) p))
@@ -138,6 +162,8 @@ let mulc x y =
 let equal (x : t) y = x = y
 
 let compare x y = Int64.compare x y
+
+let compares x y = Int64.(compare (shift_left x 1) (shift_left y 1))
 
 (* Number of leading zeroes *)
 let head0 x =
@@ -198,22 +224,30 @@ let () =
   Callback.register "uint63 addcarry" addcarry;
   Callback.register "uint63 addmuldiv" addmuldiv;
   Callback.register "uint63 div" div;
+  Callback.register "uint63 divs" divs;
   Callback.register "uint63 div21_ml" div21;
   Callback.register "uint63 eq" equal;
   Callback.register "uint63 eq0" (equal Int64.zero);
+  Callback.register "uint63 eqm1" (equal (sub zero one));
   Callback.register "uint63 head0" head0;
   Callback.register "uint63 land" l_and;
   Callback.register "uint63 leq" le;
+  Callback.register "uint63 les" les;
   Callback.register "uint63 lor" l_or;
   Callback.register "uint63 lsl" l_sl;
   Callback.register "uint63 lsr" l_sr;
+  Callback.register "uint63 asr" a_sr;
   Callback.register "uint63 lt" lt;
+  Callback.register "uint63 lts" lts;
   Callback.register "uint63 lxor" l_xor;
   Callback.register "uint63 mod" rem;
+  Callback.register "uint63 mods" rems;
   Callback.register "uint63 mul" mul;
   Callback.register "uint63 mulc_ml" mulc;
+  Callback.register "uint63 zero" zero;
   Callback.register "uint63 one" one;
   Callback.register "uint63 sub" sub;
+  Callback.register "uint63 neg" (sub zero);
   Callback.register "uint63 subcarry" subcarry;
   Callback.register "uint63 tail0" tail0;
   Callback.register "uint63 of_float" of_float;

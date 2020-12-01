@@ -8,15 +8,20 @@ Primitive Integers
 
 The language of terms features 63-bit machine integers as values. The type of
 such a value is *axiomatized*; it is declared through the following sentence
-(excerpt from the :g:`Int63` module):
+(excerpt from the :g:`PrimInt63` module):
 
 .. coqdoc::
 
    Primitive int := #int63_type.
 
-This type is equipped with a few operators, that must be similarly declared.
-For instance, equality of two primitive integers can be decided using the :g:`Int63.eqb` function,
-declared and specified as follows:
+This type can be understood as representing either unsigned or signed integers,
+depending on which module is imported or, more generally, which scope is open.
+:g:`Int63` and :g:`int63_scope` refer to the unsigned version, while :g:`Sint63`
+and :g:`sint63_scope` refer to the signed one.
+
+The :g:`PrimInt63` module declares the available operators for this type.
+For instance, equality of two unsigned primitive integers can be determined using
+the :g:`Int63.eqb` function, declared and specified as follows:
 
 .. coqdoc::
 
@@ -25,7 +30,9 @@ declared and specified as follows:
 
    Axiom eqb_correct : forall i j, (i == j)%int63 = true -> i = j.
 
-The complete set of such operators can be obtained looking at the :g:`Int63` module.
+The complete set of such operators can be found in the :g:`PrimInt63` module.
+The specifications and notations are in the :g:`Int63` and :g:`Sint63`
+modules.
 
 These primitive declarations are regular axioms. As such, they must be trusted and are listed by the
 :g:`Print Assumptions` command, as in the following example.

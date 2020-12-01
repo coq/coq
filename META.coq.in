@@ -500,21 +500,6 @@ package "plugins" (
     plugin(native)  = "r_syntax_plugin.cmxs"
   )
 
-  package "int63syntax" (
-
-    description = "Coq int63syntax plugin"
-    version     = "8.14"
-
-    requires    = ""
-    directory   = "syntax"
-
-    archive(byte)    = "int63_syntax_plugin.cmo"
-    archive(native)  = "int63_syntax_plugin.cmx"
-
-    plugin(byte)    = "int63_syntax_plugin.cmo"
-    plugin(native)  = "int63_syntax_plugin.cmxs"
-  )
-
   package "string_notation" (
 
     description = "Coq string_notation plugin"

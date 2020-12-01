@@ -205,6 +205,7 @@ Qed.
 Corollary to_Z_bounded : forall x, (0 <= φ  x  < wB)%Z.
 Proof. apply to_Z_rec_bounded. Qed.
 
+
 (* =================================================== *)
 Local Open Scope Z_scope.
 (* General arithmetic results *)
@@ -1903,6 +1904,22 @@ Qed.
 
 Lemma lxor0_r i : i lxor 0 = i.
 Proof. rewrite lxorC; exact (lxor0 i). Qed.
+
+Lemma opp_to_Z_opp (x : int) :
+    φ x mod wB <> 0 ->
+  (- φ (- x)) mod wB = (φ x) mod wB.
+Proof.
+  intros neqx0.
+  rewrite opp_spec.
+  rewrite (Z_mod_nz_opp_full (φ x%int63)) by assumption.
+  rewrite (Z.mod_small (φ x%int63)) by apply to_Z_bounded.
+  rewrite <- Z.add_opp_l.
+  rewrite Z.opp_add_distr, Z.opp_involutive.
+  replace (- wB) with (-1 * wB) by easy.
+  rewrite Z_mod_plus by easy.
+  now rewrite Z.mod_small by apply to_Z_bounded.
+Qed.
+
 
 Module Export Int63Notations.
   Local Open Scope int63_scope.

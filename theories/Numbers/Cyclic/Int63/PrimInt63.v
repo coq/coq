@@ -17,11 +17,21 @@ Register comparison as kernel.ind_cmp.
 
 Primitive int := #int63_type.
 Register int as num.int63.type.
+Variant pos_neg_int63 := Pos (d:int) | Neg (d:int).
+Register pos_neg_int63 as num.int63.pos_neg_int63.
 Declare Scope int63_scope.
 Definition id_int : int -> int := fun x => x.
-Declare ML Module "int63_syntax_plugin".
+Record int_wrapper := wrap_int {int_wrap : int}.
+Register wrap_int as num.int63.wrap_int.
+Definition printer (x : int_wrapper) : pos_neg_int63 := Pos (int_wrap x).
+Definition parser (x : pos_neg_int63) : option int :=
+  match x with
+  | Pos p => Some p
+  | Neg _ => None
+  end.
+Number Notation int parser printer : int63_scope.
 
-Module Export Int63NotationsInternalA.
+Module Import Int63NotationsInternalA.
 Delimit Scope int63_scope with int63.
 Bind Scope int63_scope with int.
 End Int63NotationsInternalA.
@@ -37,6 +47,9 @@ Primitive lor := #int63_lor.
 
 Primitive lxor := #int63_lxor.
 
+
+Primitive asr := #int63_asr.
+
 (* Arithmetic modulo operations *)
 Primitive add := #int63_add.
 
@@ -50,12 +63,20 @@ Primitive div := #int63_div.
 
 Primitive mod := #int63_mod.
 
+Primitive divs := #int63_divs.
+
+Primitive mods := #int63_mods.
+
 (* Comparisons *)
 Primitive eqb := #int63_eq.
 
 Primitive ltb := #int63_lt.
 
 Primitive leb := #int63_le.
+
+Primitive ltsb := #int63_lts.
+
+Primitive lesb := #int63_les.
 
 (** Exact arithmetic operations *)
 
@@ -76,7 +97,13 @@ Primitive addmuldiv := #int63_addmuldiv.
 (** Comparison *)
 Primitive compare := #int63_compare.
 
+Primitive compares := #int63_compares.
+
 (** Exotic operations *)
 
 Primitive head0 := #int63_head0.
 Primitive tail0 := #int63_tail0.
+
+Module Export PrimInt63Notations.
+  Export Int63NotationsInternalA.
+End PrimInt63Notations.

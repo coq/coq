@@ -16,8 +16,11 @@ type t =
   | Int63mul
   | Int63div
   | Int63mod
+  | Int63divs
+  | Int63mods
   | Int63lsr
   | Int63lsl
+  | Int63asr
   | Int63land
   | Int63lor
   | Int63lxor
@@ -32,7 +35,10 @@ type t =
   | Int63eq
   | Int63lt
   | Int63le
+  | Int63lts
+  | Int63les
   | Int63compare
+  | Int63compares
   | Float64opp
   | Float64abs
   | Float64eq

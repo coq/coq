@@ -548,11 +548,14 @@ type number_ty =
     hexadecimal : Names.inductive;
     number : Names.inductive }
 
+type pos_neg_int63_ty =
+  { pos_neg_int63_ty : Names.inductive }
+
 type target_kind =
   | Int of int_ty (* Coq.Init.Number.int + uint *)
   | UInt of int_ty (* Coq.Init.Number.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
-  | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
+  | Int63 of pos_neg_int63_ty (* Coq.Numbers.Cyclic.Int63.PrimInt63.pos_neg_int63 *)
   | Number of number_ty (* Coq.Init.Number.number + uint + int *)
   | DecimalInt of int_ty (* Coq.Init.Decimal.int + uint (deprecated) *)
   | DecimalUInt of int_ty (* Coq.Init.Decimal.uint (deprecated) *)
@@ -1038,17 +1041,36 @@ let error_negative ?loc =
 let error_overflow ?loc n =
   CErrors.user_err ?loc ~hdr:"interp_int63" Pp.(str "overflow in int63 literal: " ++ str (Z.to_string n))
 
-let interp_int63 ?loc n =
+let error_underflow ?loc n =
+  CErrors.user_err ?loc ~hdr:"interp_int63" Pp.(str "underflow in int63 literal: " ++ str (Z.to_string n))
+
+let coqpos_neg_int63_of_bigint ?loc ind (sign,n) =
+  let uint = int63_of_pos_bigint ?loc n in
+  let pos_neg = match sign with SPlus -> 1 | SMinus -> 2 in
+  mkApp (mkConstruct (ind, pos_neg), [|uint|])
+
+let interp_int63 ?loc ind n =
+  let sign = if Z.(compare n zero >= 0) then SPlus else SMinus in
+  let n = Z.abs n in
   if Z.(leq zero n)
   then
     if Z.(lt n (pow z_two 63))
-    then int63_of_pos_bigint ?loc n
-    else error_overflow ?loc n
+    then coqpos_neg_int63_of_bigint ?loc ind (sign,n)
+    else match sign with SPlus -> error_overflow ?loc n | SMinus -> error_underflow ?loc n
   else error_negative ?loc
 
 let bigint_of_int63 c =
   match Constr.kind c with
   | Int i -> Z.of_int64 (Uint63.to_int64 i)
+  | _ -> raise NotAValidPrimToken
+
+let bigint_of_coqpos_neg_int63 c =
+  match Constr.kind c with
+  | App (c,[|c'|]) ->
+     (match Constr.kind c with
+      | Construct ((_,1), _) (* Pos *) -> bigint_of_int63 c'
+      | Construct ((_,2), _) (* Neg *) -> Z.neg (bigint_of_int63 c')
+      | _ -> raise NotAValidPrimToken)
   | _ -> raise NotAValidPrimToken
 
 let interp o ?loc n =
@@ -1070,9 +1092,9 @@ let interp o ?loc n =
         with NonDecimal -> no_such_prim_token "number" ?loc o.ty_name)
     | Z z_pos_ty, Some n ->
        z_of_bigint z_pos_ty (NumTok.SignedNat.to_bigint n)
-    | Int63, Some n ->
-       interp_int63 ?loc (NumTok.SignedNat.to_bigint n)
-    | (Int _ | UInt _ | DecimalInt _ | DecimalUInt _ | Z _ | Int63), _ ->
+    | Int63 pos_neg_int63_ty, Some n ->
+       interp_int63 ?loc pos_neg_int63_ty.pos_neg_int63_ty (NumTok.SignedNat.to_bigint n)
+    | (Int _ | UInt _ | DecimalInt _ | DecimalUInt _ | Z _ | Int63 _), _ ->
        no_such_prim_token "number" ?loc o.ty_name
     | Number number_ty, _ -> coqnumber_of_rawnum number_ty n
     | Decimal number_ty, _ ->
@@ -1100,7 +1122,7 @@ let uninterp o n =
       | (Int _, c) -> NumTok.Signed.of_int (rawnum_of_coqint c)
       | (UInt _, c) -> NumTok.Signed.of_nat (rawnum_of_coquint c)
       | (Z _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_z c)
-      | (Int63, c) -> NumTok.Signed.of_bigint CDec (bigint_of_int63 c)
+      | (Int63 _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_coqpos_neg_int63 c)
       | (Number _, c) -> rawnum_of_coqnumber c
       | (DecimalInt _, c) -> NumTok.Signed.of_int (decimal_rawnum_of_coqint c)
       | (DecimalUInt _, c) -> NumTok.Signed.of_nat (decimal_rawnum_of_coquint c)

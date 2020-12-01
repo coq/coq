@@ -223,10 +223,16 @@ struct
       let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.div i1 i2)
     | Int63mod ->
       let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.rem i1 i2)
+    | Int63divs ->
+      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.divs i1 i2)
+    | Int63mods ->
+      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.rems i1 i2)
     | Int63lsr ->
       let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.l_sr i1 i2)
     | Int63lsl ->
       let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.l_sl i1 i2)
+    | Int63asr ->
+      let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.a_sr i1 i2)
     | Int63land ->
       let i1, i2 = get_int2 evd args in E.mkInt env (Uint63.l_and i1 i2)
     | Int63lor ->
@@ -276,9 +282,22 @@ struct
     | Int63le ->
       let i1, i2 = get_int2 evd args in
       E.mkBool env (Uint63.le i1 i2)
+    | Int63lts ->
+      let i1, i2 = get_int2 evd args in
+      E.mkBool env (Uint63.lts i1 i2)
+    | Int63les ->
+      let i1, i2 = get_int2 evd args in
+      E.mkBool env (Uint63.les i1 i2)
     | Int63compare ->
       let i1, i2 = get_int2 evd args in
       begin match Uint63.compare i1 i2 with
+        | x when x < 0 ->  E.mkLt env
+        | 0 -> E.mkEq env
+        | _ -> E.mkGt env
+      end
+    | Int63compares ->
+      let i1, i2 = get_int2 evd args in
+      begin match Uint63.compares i1 i2 with
         | x when x < 0 ->  E.mkLt env
         | 0 -> E.mkEq env
         | _ -> E.mkGt env

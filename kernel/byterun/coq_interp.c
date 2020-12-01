@@ -1426,6 +1426,41 @@ value coq_interprete
         Next;
       }
 
+      Instruct(CHECKDIVSINT63) {
+        print_instr("CHEKDIVSINT63");
+        CheckInt2();
+        int b;
+        Uint63_eq0(b, *sp);
+        if (b) {
+          accu = *sp++;
+        }
+        else {
+          Uint63_eqm1(b, *sp);
+          if (b) {
+            Uint63_neg(accu);
+            sp++;
+          }
+          else {
+            Uint63_divs(accu, *sp++);
+          }
+        }
+        Next;
+      }
+
+      Instruct(CHECKMODSINT63) {
+        print_instr("CHEKMODSINT63");
+        CheckInt2();
+        int b;
+        Uint63_eq0(b, *sp);
+        if (b) {
+          accu = *sp++;
+        }
+        else {
+          Uint63_mods(accu,*sp++);
+        }
+        Next;
+      }
+
       Instruct (CHECKDIV21INT63) {
         print_instr("DIV21INT63");
         CheckInt3();
@@ -1473,6 +1508,13 @@ value coq_interprete
         Next;
       }
 
+      Instruct(CHECKASRINT63) {
+        print_instr("CHECKASRINT63");
+        CheckInt2();
+        Uint63_asr(accu,*sp++);
+        Next;
+      }
+
       Instruct (CHECKADDMULDIVINT63) {
         print_instr("CHECKADDMULDIVINT63");
         CheckInt3();
@@ -1508,6 +1550,24 @@ value coq_interprete
        Next;
      }
 
+     Instruct (CHECKLTSINT63) {
+       print_instr("CHECKLTSINT63");
+       CheckInt2();
+       int b;
+       Uint63_lts(b,accu,*sp++);
+       accu = b ? coq_true : coq_false;
+       Next;
+     }
+
+     Instruct (CHECKLESINT63) {
+       print_instr("CHECKLESINT63");
+       CheckInt2();
+       int b;
+       Uint63_les(b,accu,*sp++);
+       accu = b ? coq_true : coq_false;
+       Next;
+     }
+
      Instruct (CHECKCOMPAREINT63) {
         /* returns Eq if equal, Lt if accu is less than *sp, Gt otherwise */
         /* assumes Inductive _ : _ := Eq | Lt | Gt */
@@ -1525,6 +1585,24 @@ value coq_interprete
         }
         Next;
       }
+
+     Instruct (CHECKCOMPARESINT63) {
+       /* returns Eq if equal, Lt if accu is less than *sp, Gt otherwise */
+       /* assumes Inductive _ : _ := Eq | Lt | Gt */
+       print_instr("CHECKCOMPARESINT63");
+       CheckInt2();
+       int b;
+       Uint63_eq(b, accu, *sp);
+       if (b) {
+         accu = coq_Eq;
+         sp++;
+       }
+       else {
+         Uint63_lts(b, accu, *sp++);
+         accu = b ? coq_Lt : coq_Gt;
+       }
+       Next;
+     }
 
       Instruct (CHECKHEAD0INT63) {
         print_instr("CHECKHEAD0INT63");

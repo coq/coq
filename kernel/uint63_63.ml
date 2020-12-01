@@ -53,6 +53,10 @@ let l_sl x y =
 let l_sr x y =
   if 0 <= y && y < 63 then x lsr y else 0
 
+    (* arithmetic shift (for sint63) *)
+let a_sr x y =
+  if 0 <= y && y < 63 then x asr y else 0
+
 let l_and x y = x land y
 [@@ocaml.inline always]
 
@@ -84,6 +88,14 @@ let rem (x : int) (y : int) =
 
 let diveucl x y = (div x y, rem x y)
 
+    (* signed division *)
+let divs (x : int) (y : int) =
+  if y = 0 then 0 else x / y
+
+    (* modulo *)
+let rems (x : int) (y : int) =
+  if y = 0 then 0 else x mod y
+
 let addmuldiv p x y =
   l_or (l_sl x p) (l_sr y (uint_size - p))
 
@@ -94,6 +106,15 @@ let lt (x : int) (y : int) =
 
 let le (x : int) (y : int) =
   (x lxor 0x4000000000000000) <= (y lxor 0x4000000000000000)
+[@@ocaml.inline always]
+
+    (* signed comparison *)
+let lts (x : int) (y : int) =
+  x < y
+[@@ocaml.inline always]
+
+let les (x : int) (y : int) =
+  x <= y
 [@@ocaml.inline always]
 
 let to_int_min n m =
@@ -175,9 +196,10 @@ let equal (x : int) (y : int) = x = y
 let compare (x:int) (y:int) =
   let x = x lxor 0x4000000000000000 in
   let y = y lxor 0x4000000000000000 in
-  if x > y then 1
-  else if y > x then -1
-  else 0
+  Int.compare x y
+
+let compares (x : int) (y : int) =
+  Int.compare x y
 
     (* head tail *)
 

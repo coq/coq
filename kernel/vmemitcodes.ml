@@ -226,8 +226,11 @@ let check_prim_op = function
   | Int63mul       -> opCHECKMULINT63
   | Int63div       -> opCHECKDIVINT63
   | Int63mod       -> opCHECKMODINT63
+  | Int63divs      -> opCHECKDIVSINT63
+  | Int63mods      -> opCHECKMODSINT63
   | Int63lsr       -> opCHECKLSRINT63
   | Int63lsl       -> opCHECKLSLINT63
+  | Int63asr       -> opCHECKASRINT63
   | Int63land      -> opCHECKLANDINT63
   | Int63lor       -> opCHECKLORINT63
   | Int63lxor      -> opCHECKLXORINT63
@@ -242,7 +245,10 @@ let check_prim_op = function
   | Int63eq        -> opCHECKEQINT63
   | Int63lt        -> opCHECKLTINT63
   | Int63le        -> opCHECKLEINT63
+  | Int63lts       -> opCHECKLTSINT63
+  | Int63les       -> opCHECKLESINT63
   | Int63compare   -> opCHECKCOMPAREINT63
+  | Int63compares  -> opCHECKCOMPARESINT63
   | Float64opp     -> opCHECKOPPFLOAT
   | Float64abs     -> opCHECKABSFLOAT
   | Float64eq      -> opCHECKEQFLOAT
