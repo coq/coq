@@ -292,15 +292,21 @@ Notations
   by Hugo Herbelin).
 - **Deprecated**
   ``Numeral.v`` is deprecated, please use ``Number.v`` instead.
+  (`#12218 <https://github.com/coq/coq/pull/12218>`_,
+  by Pierre Roux).
 - **Changed**
   Rational and real constants are parsed differently.
   The exponent is now encoded separately from the fractional part
   using ``Z.pow_pos``. This way, parsing large exponents can no longer
   blow up and constants are printed in a form closer to the one in which they
   were parsed (i.e., ``102e-2`` is reprinted as such and not ``1.02``).
+  (`#12218 <https://github.com/coq/coq/pull/12218>`_,
+  by Pierre Roux).
 - **Removed**
   OCaml parser and printer for real constants have been removed.
   Real constants are now handled with proven Coq code.
+  (`#12218 <https://github.com/coq/coq/pull/12218>`_,
+  by Pierre Roux).
 - **Added:**
   :ref:`Number Notation <number-notations>` and :ref:`String Notation
   <string-notations>` commands now
@@ -543,8 +549,8 @@ Commands and options
   by Pierre-Marie Pédrot).
 - **Changed:**
   The :attr:`export` locality can now be used for all Hint commands,
-  including :tacn:`Hint Cut`, :tacn:`Hint Mode`, :tacn:`Hint Transparent` / `Opaque` and
-  :tacn:`Remove Hints`
+  including :cmd:`Hint Cut`, :cmd:`Hint Mode`, :cmd:`Hint Transparent` / `Opaque` and
+  :cmd:`Remove Hints`
   (`#13388 <https://github.com/coq/coq/pull/13388>`_,
   by Pierre-Marie Pédrot).
 
