@@ -72,12 +72,12 @@ let l_xor x y = Int64.logxor x y
     (* addition of int63 *)
 let add x y = mask63 (Int64.add x y)
 
-let addcarry x y = add (add x y) Int64.one
+let addcarry x y = mask63 Int64.(add (add x y) one)
 
     (* subtraction *)
 let sub x y = mask63 (Int64.sub x y)
 
-let subcarry x y = sub (sub x y) Int64.one
+let subcarry x y = mask63 Int64.(sub (sub x y) one)
 
     (* multiplication *)
 let mul x y = mask63 (Int64.mul x y)
