@@ -83,7 +83,7 @@ Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin,
 Vincent Laporte, Assia Mahboubi, Kenji Maillard, Guillaume Melquiond,
 Pierre-Marie Pédrot, Clément Pit-Claudel, Kazuhiko Sakaguchi, Vincent
 Semeria, Michael Soegtrop, Arnaud Spiwack, Matthieu Sozeau, Enrico
-Tassi, Laurent Théry, Anton Trunov, Li-yao Xia, Théo Zimmermann
+Tassi, Laurent Théry, Anton Trunov, Li-yao Xia and Théo Zimmermann
 
 The 52 contributors to this version are Reynald Affeldt, Tanaka Akira, Frédéric
 Besson, Lasse Blaauwbroek, Clément Blaudeau, Martin Bodin, Ali Caglayan, Tej Chajed,
@@ -535,8 +535,8 @@ Commands and options
   `-native-compiler` option of the configure script is added as an on demand
   value, which becomes the default, thus preserving the previous default
   behavior.
-  The stdlib is still precompiled when configuring with `-native-compiler`
-  yes. It is not precompiled otherwise.
+  The stdlib is still precompiled when configuring with `-native-compiler
+  yes`. It is not precompiled otherwise.
   This an implementation of point 2 of
   `CEP #48 <https://github.com/coq/ceps/pull/48>`_
   (`#13352 <https://github.com/coq/coq/pull/13352>`_,
