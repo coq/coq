@@ -331,6 +331,9 @@ let check_allowed_sort ksort specif =
     raise (LocalArity (Some(elim_sort specif, ksort,s,error_elim_explain ksort s)))
 
 let check_correct_arity env c pj ind specif params =
+  (* We use l2r:true for compat with old versions which used CONV
+     instead of CUMUL called with arguments flipped. It is relevant
+     for performance eg in bedrock / Kami. *)
   let arsign,_ = get_instantiated_arity ind specif params in
   let rec srec env ar pt =
     let pt' = whd_all env pt in
