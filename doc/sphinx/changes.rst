@@ -35,7 +35,7 @@ The main changes include:
     multiple distinct patterns.
   - New warning for `Hint` commands outside sections without a locality
     attribute, whose goal is to eventually remove the fragile default
-    behavior of having hints be imported when using `Require` only.
+    behavior of importing hints only when using `Require`.
     The recommended fix is to declare hints as `export`, instead of
     the current default `global`, meaning that they are imported
     through `Require Import` only, not `Require`.
