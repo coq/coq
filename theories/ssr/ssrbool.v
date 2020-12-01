@@ -1944,7 +1944,121 @@ Proof.
 by move=> subD [g' fK g'K]; exists g' => x; move/subD; [apply: fK | apply: g'K].
 Qed.
 
+Lemma in_on1P : {in D1, {on D2, allQ1 f}} <->
+                {in [pred x in D1 | f x \in D2], allQ1 f}.
+Proof.
+split => allf x; have := allf x; rewrite inE => Q1f; first by case/andP.
+by move=> ? ?; apply: Q1f; apply/andP.
+Qed.
+
+Lemma in_on1lP : {in D1, {on D2, allQ1l f & h}} <->
+                {in [pred x in D1 | f x \in D2], allQ1l f h}.
+Proof.
+split => allf x; have := allf x; rewrite inE => Q1f; first by case/andP.
+by move=> ? ?; apply: Q1f; apply/andP.
+Qed.
+
+Lemma in_on2P : {in D1 &, {on D2 &, allQ2 f}} <->
+                {in [pred x in D1 | f x \in D2] &, allQ2 f}.
+Proof.
+split => allf x y; have := allf x y; rewrite !inE => Q2f.
+  by move=> /andP[? ?] /andP[? ?]; apply: Q2f.
+by move=> ? ? ? ?; apply: Q2f; apply/andP.
+Qed.
+
+Lemma on1W_in : {in D1, allQ1 f} -> {in D1, {on D2, allQ1 f}}.
+Proof. by move=> D1f ? /D1f. Qed.
+
+Lemma on1lW_in : {in D1, allQ1l f h} -> {in D1, {on D2, allQ1l f & h}}.
+Proof. by move=> D1f ? /D1f. Qed.
+
+Lemma on2W_in : {in D1 &, allQ2 f} -> {in D1 &, {on D2 &, allQ2 f}}.
+Proof. by move=> D1f ? ? ? ? ? ?; apply: D1f. Qed.
+
+Lemma in_on1W : allQ1 f -> {in D1, {on D2, allQ1 f}}.
+Proof. by move=> allf ? ? ?; apply: allf. Qed.
+
+Lemma in_on1lW : allQ1l f h -> {in D1, {on D2, allQ1l f & h}}.
+Proof. by move=> allf ? ? ?; apply: allf. Qed.
+
+Lemma in_on2W : allQ2 f -> {in D1 &, {on D2 &, allQ2 f}}.
+Proof. by move=> allf ? ? ? ? ? ?; apply: allf. Qed.
+
+Lemma on1S : (forall x, f x \in D2) -> {on D2, allQ1 f} -> allQ1 f.
+Proof. by move=> ? fD1 ?; apply: fD1. Qed.
+
+Lemma on1lS : (forall x, f x \in D2) -> {on D2, allQ1l f & h} -> allQ1l f h.
+Proof. by move=> ? fD1 ?; apply: fD1. Qed.
+
+Lemma on2S : (forall x, f x \in D2) -> {on D2 &, allQ2 f} -> allQ2 f.
+Proof. by move=> ? fD1 ? ?; apply: fD1. Qed.
+
+Lemma on1S_in : {homo f : x / x \in D1 >-> x \in D2} ->
+  {in D1, {on D2, allQ1 f}} -> {in D1, allQ1 f}.
+Proof. by move=> fD fD1 ? ?; apply/fD1/fD. Qed.
+
+Lemma on1lS_in : {homo f : x / x \in D1 >-> x \in D2} ->
+  {in D1, {on D2, allQ1l f & h}} -> {in D1, allQ1l f h}.
+Proof. by move=> fD fD1 ? ?; apply/fD1/fD. Qed.
+
+Lemma on2S_in : {homo f : x / x \in D1 >-> x \in D2} ->
+  {in D1 &, {on D2 &, allQ2 f}} -> {in D1 &, allQ2 f}.
+Proof. by move=> fD fD1 ? ? ? ?; apply: fD1 => //; apply: fD. Qed.
+
+Lemma in_on1S : (forall x, f x \in D2) -> {in T1, {on D2, allQ1 f}} -> allQ1 f.
+Proof. by move=> fD2 fD1 ?; apply: fD1. Qed.
+
+Lemma in_on1lS : (forall x, f x \in D2) ->
+  {in T1, {on D2, allQ1l f & h}} -> allQ1l f h.
+Proof. by move=> fD2 fD1 ?; apply: fD1. Qed.
+
+Lemma in_on2S : (forall x, f x \in D2) ->
+  {in T1 &, {on D2 &, allQ2 f}} -> allQ2 f.
+Proof. by move=> fD2 fD1 ? ?; apply: fD1. Qed.
+
 End LocalGlobal.
+Arguments in_on1P  {T1 T2 D1 D2 f Q1}.
+Arguments in_on1lP {T1 T2 T3 D1 D2 f h Q1l}.
+Arguments in_on2P  {T1 T2 D1 D2 f Q2}.
+Arguments on1W_in  {T1 T2 D1} D2 {f Q1}.
+Arguments on1lW_in {T1 T2 T3 D1} D2 {f h Q1l}.
+Arguments on2W_in  {T1 T2 D1} D2 {f Q2}.
+Arguments in_on1W  {T1 T2} D1 D2 {f Q1}.
+Arguments in_on1lW {T1 T2 T3} D1 D2 {f h Q1l}.
+Arguments in_on2W  {T1 T2} D1 D2 {f Q2}.
+Arguments on1S     {T1 T2} D2 {f Q1}.
+Arguments on1lS    {T1 T2 T3} D2 {f h Q1l}.
+Arguments on2S     {T1 T2} D2 {f Q2}.
+Arguments on1S_in  {T1 T2 D1} D2 {f Q1}.
+Arguments on1lS_in {T1 T2 T3 D1} D2 {f h Q1l}.
+Arguments on2S_in  {T1 T2 D1} D2 {f Q2}.
+Arguments in_on1S  {T1 T2} D2 {f Q1}.
+Arguments in_on1lS {T1 T2 T3} D2 {f h Q1l}.
+Arguments in_on2S  {T1 T2} D2 {f Q2}.
+
+Section in_sig.
+
+Variables T1 T2 T3 : Type.
+Variables (D1 : {pred T1}) (D2 : {pred T2})  (D3 : {pred T3}).
+Variable P1 : T1 -> Prop.
+Variable P2 : T1 -> T2 -> Prop.
+Variable P3 : T1 -> T2 -> T3 -> Prop.
+
+Lemma in1_sig : {in D1, {all1 P1}} -> forall x : sig D1, P1 (sval x).
+Proof. by move=> DP [x Dx]; have := DP _ Dx. Qed.
+
+Lemma in2_sig : {in D1 & D2, {all2 P2}} ->
+  forall (x : sig D1) (y : sig D2), P2 (sval x) (sval y).
+Proof. by move=> DP [x Dx] [y Dy]; have := DP _ _ Dx Dy. Qed.
+
+Lemma in3_sig : {in D1 & D2 & D3, {all3 P3}} ->
+  forall (x : sig D1) (y : sig D2) (z : sig D3), P3 (sval x) (sval y) (sval z).
+Proof. by move=> DP [x Dx] [y Dy] [z Dz]; have := DP _ _ _ Dx Dy Dz. Qed.
+
+End in_sig.
+Arguments in1_sig {T1 D1 P1}.
+Arguments in2_sig {T1 T2 D1 D2 P2}.
+Arguments in3_sig {T1 T2 T3 D1 D2 D3 P3}.
 
 Lemma sub_in2 T d d' (P : T -> T -> Prop) :
   sub_mem d d' -> forall Ph : ph {all2 P}, prop_in2 d' Ph -> prop_in2 d Ph.
