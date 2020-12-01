@@ -15,15 +15,15 @@ End A.
 
 Goal (forall x, S (S (S x)) = x) -> exists x, S x = 0.
 eexists.
-rewrite H.
+erewrite H.
 Show.
 Undo 2.
 eexists ?[x].
-rewrite H.
+erewrite H.
 Show.
 Undo 2.
 eexists ?[y].
-rewrite H.
+erewrite H.
 Show.
 reflexivity.
 Qed.

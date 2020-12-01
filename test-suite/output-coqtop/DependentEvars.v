@@ -19,6 +19,6 @@ Section eex.
   Lemma p14 : P4.
   Proof.
     eapply strange_imp_trans.
-          apply modpon.
+          eapply modpon.
   Abort.
 End eex.

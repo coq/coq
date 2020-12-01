@@ -178,9 +178,9 @@ Proof.
     reflexivity.
     rewrite app_assoc.
     etransitivity.
-      apply Permutation_app_tail.
+      eapply Permutation_app_tail.
       etransitivity.
-        apply Permutation_app_comm.
+        eapply Permutation_app_comm.
       apply Permuted_merge.
     apply IHstack.
     reflexivity.
@@ -223,7 +223,7 @@ Proof.
     change (a::l) with ([a]++l).
     rewrite app_assoc.
     etransitivity.
-      apply Permutation_app_tail.
+      eapply Permutation_app_tail.
     etransitivity.
     apply Permutation_app_comm.
     apply Permuted_merge_list_to_stack.

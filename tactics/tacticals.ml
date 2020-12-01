@@ -711,6 +711,9 @@ module New = struct
           None in
     let rest =
       Evd.fold_undefined (fun evk evi acc ->
+        match snd evi.evar_source with
+        | Evar_kinds.GoalEvar -> acc
+        | _ ->
         match is_undefined_up_to_restriction sigma evk with
         | Some (evk',evi) ->
            (* If [evk'] descends from [evk] which descends itself from
@@ -719,7 +722,7 @@ module New = struct
            if Evar.Set.mem evk (Lazy.force reachable) then acc
            else (evk',evi)::acc
         | _ -> acc)
-        extsigma []
+        sigma []
     in
     match rest with
     | [] -> ()

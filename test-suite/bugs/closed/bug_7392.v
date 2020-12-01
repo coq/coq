@@ -5,6 +5,6 @@ Proof.
 intros H0 H1.
 eapply H0.
 clear H1.
-apply ER.
+eapply ER.
 simpl.
 Abort.
