@@ -25,8 +25,8 @@ The main changes include:
     (deactivated by default). This models definitional uniqueness of
     identity proofs for this type. It is deactivated by default as
     it results in non-termination in combination with impredicativity.
-    Use of this flag is also shown by :cmd:`Print Assumptions`.
-  - Cumulative record and inductives type declarations can now
+    Use of this flag is also printed by :cmd:`Print Assumptions`.
+  - Cumulative record and inductive type declarations can now
     :ref:`specify<813VarianceDecl>` the  variance of their universes.
   - Various bugfixes and uniformization of behavior with respect to the use of
     implicit arguments and the handling of existential variables in
@@ -50,6 +50,8 @@ The main changes include:
     now supporting reasoning on boolean operators such as `Z.leb` and supporting
     primitive integers :g:`Int63`.
   - Typing flags can now be specified :ref:`per-constant / inductive <813TypingFlags>`.
+  - Improvements to the reference manual including updated syntax descriptions that
+    match Coq's grammar in several chapters.
 
 See the `Changes in 8.13`_ section and following sections for the
 detailed list of changes, including potentially breaking changes marked
@@ -93,7 +95,7 @@ Thomas Letan, Yishuai Li, Xia Li-yao, James Lottes, Jean-Christophe Léchenet,
 Kenji Maillard, Erik Martin-Dorel, Yusuke Matsushita, Guillaume Melquiond,
 Carl Patenaude-Poulin, Clément Pit-Claudel, Pierre-Marie Pédrot, Pierre Roux,
 Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop, Matthieu Sozeau,
-Enrico Tassi, Anton Trunov, Edward Wang, Li-yao Xia, Beta Ziliani, Théo Zimmermann.
+Enrico Tassi, Anton Trunov, Edward Wang, Li-yao Xia, Beta Ziliani and Théo Zimmermann.
 
 The Coq community at large helped improve the design of this new version via
 the GitHub issue and pull request system, the Coq development mailing list
@@ -102,7 +104,7 @@ coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
 
 Version 8.13's development spanned 5 months from the release of
 Coq 8.12.0. Enrico Tassi and Maxime Dénès are the release managers of Coq 8.13.
-This release is the result of 400 PRs merged, closing ~100 issues.
+This release is the result of 400 merged PRs, closing ~100 issues.
 
 | Nantes, November 2020,
 | Matthieu Sozeau for the Coq development team
