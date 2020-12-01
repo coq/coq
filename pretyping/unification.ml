@@ -1277,21 +1277,25 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
  * close it off.  But this might not always work,
  * since other metavars might also need to be resolved. *)
 
-let applyHead env evd n c  =
-  let rec apprec n c cty evd =
-    if Int.equal n 0 then
-      (evd, c)
-    else
+let applyHead env evd c cl =
+  let rec apprec c cl cty evd =
+    match cl with
+    | [] -> (evd, c)
+    | a::cl ->
       match EConstr.kind evd (whd_all env evd cty) with
-      | Prod (_,c1,c2) ->
-        let (evd,evar) =
-          Evarutil.new_evar env evd ~src:(Loc.tag Evar_kinds.GoalEvar) c1
-        in
-        apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd
+      | Prod ({binder_name},c1,c2) ->
+        let src =
+          match EConstr.kind evd a with
+          | Meta mv -> Evd.evar_source_of_meta mv evd
+          | _ ->
+            (* Does not matter, the evar will be later instantiated by [a] *)
+            Loc.tag Evar_kinds.InternalHole in
+        let (evd,evar) = Evarutil.new_evar env evd ~src c1 in
+        apprec (mkApp(c,[|evar|])) cl (subst1 evar c2) evd
       | _ -> user_err Pp.(str "Apply_Head_Then")
   in
   let evd, t = Typing.type_of env evd c in
-  apprec n c t evd
+  apprec c (Array.to_list cl) t evd
 
 let is_mimick_head sigma ts f =
   match EConstr.kind sigma f with
@@ -1379,7 +1383,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
                 error_occur_check curenv evd evk rhs';
               if is_mimick_head evd flags.modulo_delta f then
                 let evd' =
-                  mimick_undefined_evar evd flags f (Array.length cl) evk in
+                  mimick_undefined_evar evd flags f cl evk in
                   w_merge_rec evd' metas evars eqns
               else
                 let evd' =
@@ -1449,10 +1453,10 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
                | ((mv,status,c),e)::_ -> raise e)
         in process_eqns [] eqns
 
-  and mimick_undefined_evar evd flags hdc nargs sp =
+  and mimick_undefined_evar evd flags hdc args sp =
     let ev = Evd.find_undefined evd sp in
     let sp_env = reset_with_named_context (evar_filtered_hyps ev) env in
-    let (evd', c) = applyHead sp_env evd nargs hdc in
+    let (evd', c) = applyHead sp_env evd hdc args in
     let (evd'',mc,ec) =
       unify_0 sp_env evd' CUMUL flags
         (get_type_of sp_env evd' c) ev.evar_concl in
