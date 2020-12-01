@@ -588,6 +588,8 @@ As an exception, if the right-hand side is just of the form
 :n:`@@qualid`, this conventionally stops the inheritance of implicit
 arguments (but not of notation scopes).
 
+.. _notations-and-binders:
+
 Notations and binders
 ~~~~~~~~~~~~~~~~~~~~~
 
