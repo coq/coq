@@ -132,7 +132,6 @@ Specification language, type inference
   Attributes :attr:`program` and :attr:`canonical` are also affected,
   with the syntax :n:`@ident__attr(false)` being deprecated in favor of
   :n:`@ident__attr=no`.
-
   (`#13312 <https://github.com/coq/coq/pull/13312>`_,
   by Emilio Jesus Gallego Arias).
 - **Fixed:**
@@ -146,7 +145,8 @@ Specification language, type inference
   fixes `#11816 <https://github.com/coq/coq/issues/11816>`_,
   by Hugo Herbelin).
 - **Fixed:**
-  issue when two expressions involving different projections and one is
+  
+  Issue when two expressions involving different projections and one is
   primitive need to be unified
   (`#13386 <https://github.com/coq/coq/pull/13386>`_,
   fixes `#9971 <https://github.com/coq/coq/issues/9971>`_,
@@ -189,7 +189,7 @@ Notations
   Rational and real constants are parsed differently.
   The exponent is now encoded separately from the fractional part
   using ``Z.pow_pos``. This way, parsing large exponents can no longer
-  blow up and constants are printed in a form closer to the one they
+  blow up and constants are printed in a form closer to the one in which they
   were parsed (i.e., ``102e-2`` is reprinted as such and not ``1.02``).
 - **Removed**
   OCaml parser and printer for real constants have been removed.
@@ -231,7 +231,7 @@ Notations
   and `#10803 <https://github.com/coq/coq/issues/10803>`_,
   by Hugo Herbelin).
 - **Fixed:**
-  Capture of the name of global references by
+  Capture the names of global references by
   binders in the presence of notations for binders
   (`#12965 <https://github.com/coq/coq/pull/12965>`_,
   fixes `#9569 <https://github.com/coq/coq/issues/9569>`_,
@@ -241,10 +241,10 @@ Notations
   (`#12979 <https://github.com/coq/coq/pull/12979>`_,
   by Pierre Roux).
 - **Changed:**
-  Redeclaring a notation reactivates also its printing rule; in
+  Redeclaring a notation also reactivates its printing rule; in
   particular a second :cmd:`Import` of the same module reactivates the
   printing rules declared in this module. In theory, this leads to
-  changes of behavior for printing. However, this is mitigated in
+  changes in behavior for printing. However, this is mitigated in
   general by the adoption in `#12986
   <https://github.com/coq/coq/pull/12986>`_ of a priority given to
   notations which match a larger part of the term to print
@@ -266,7 +266,7 @@ Notations
   The :n:`@binder` entry of :cmd:`Notation` can now be used in
   notations expecting a single (non-recursive) binder
   (`#13265 <https://github.com/coq/coq/pull/13265>`_,
-  by Hugo Herbelin, see section :n:`notations-and-binders` of the
+  by Hugo Herbelin, see section :ref:`notations-and-binders` of the
   reference manual).
 - **Fixed:** Notations understand universe names without getting
   confused by different imported modules between declaration and use
@@ -282,7 +282,7 @@ Tactics
   (As `lia` gets more powerful, this may break proof scripts relying on `lia` failure.)
   (`#11906 <https://github.com/coq/coq/pull/11906>`_,  by Frédéric Besson).
 - **Added:**
-  `apply in` supports several hypotheses
+  :tacn`apply … in` supports several hypotheses
   (`#12246 <https://github.com/coq/coq/pull/12246>`_,
   by Hugo Herbelin; grants
   `#9816 <https://github.com/coq/coq/pull/9816>`_).
@@ -290,10 +290,10 @@ Tactics
   The deprecated and undocumented "prolog" tactic was removed
   (`#12399 <https://github.com/coq/coq/pull/12399>`_,
   by Pierre-Marie Pédrot).
-- **Removed:** Removed info tactic that was deprecated in 8.5.
+- **Removed:** Removed `info` tactic that was deprecated in 8.5.
   (`#12423 <https://github.com/coq/coq/pull/12423>`_, by Jim Fehrle).
 - **Added:**
-  Thhe :tacn:`zify` tactic can now be extended by redefining the `zify_pre_hook`
+  The :tacn:`zify` tactic can now be extended by redefining the `zify_pre_hook`
   tactic. (`#12552 <https://github.com/coq/coq/pull/12552>`_,
   by Kazuhiko Sakaguchi).
 - **Added:**
@@ -307,7 +307,7 @@ Tactics
   by Hugo Herbelin).
 - **Fixed:**
   Avoiding exposing an internal name of the form :n:`_tmp` when applying the
-  :n:`_` introduction pattern would break a dependency
+  :n:`_` introduction pattern which would break a dependency
   (`#13337 <https://github.com/coq/coq/pull/13337>`_,
   fixes `#13336 <https://github.com/coq/coq/issues/13336>`_,
   by Hugo Herbelin).
@@ -324,7 +324,7 @@ Tactics
   (`#13381 <https://github.com/coq/coq/pull/13381>`_,
   by Jim Fehrle).
 - **Removed:**
-  :n:`at @occs_nums` clauses in tactics such as tacn:`unfold`
+  :n:`at @occs_nums` clauses in tactics such as :tacn:`unfold`
   no longer allow negative values.  A "-" before the
   list (for set complement) is still supported.  Ex: "at -1 -2"
   is no longer supported but "at -1 2" is.
@@ -342,7 +342,7 @@ Tactic language
 ^^^^^^^^^^^^^^^
 
 - **Fixed:**
-  printing of the quotation qualifiers when printing :g:`Ltac` functions
+  Printing of the quotation qualifiers when printing :g:`Ltac` functions
   (`#13028 <https://github.com/coq/coq/pull/13028>`_,
   fixes `#9716 <https://github.com/coq/coq/issues/9716>`_
   and `#13004 <https://github.com/coq/coq/issues/13004>`_,
@@ -385,7 +385,7 @@ Commands and options
   policy, which should provide some performance benefits. Coq's policy
   is optimized for speed, but could increase memory consumption in
   some cases. You are welcome to tune it using the ``OCAMLRUNPARAM``
-  variable and report back setting so we could optimize more.
+  variable and report back on good settings so we can improve the defaults.
   (`#13040 <https://github.com/coq/coq/pull/13040>`_,
   fixes `#11277 <https://github.com/coq/coq/issues/11277>`_,
   by Emilio Jesus Gallego Arias).
@@ -419,12 +419,12 @@ Commands and options
   fixes `#13344 <https://github.com/coq/coq/issues/13344>`_,
   by Hugo Herbelin).
 - **Changed:**
-  Option -native-compiler of the configure script now impacts the
-  default value of the option -native-compiler of coqc. The
-  -native-compiler option of the configure script is added an ondemand
+  Option `-native-compiler` of the configure script now impacts the
+  default value of the `-native-compiler` option of coqc. The
+  `-native-compiler` option of the configure script is added as an on demand
   value, which becomes the default, thus preserving the previous default
   behavior.
-  The stdlib is still precompiled when configuring with -native-compiler
+  The stdlib is still precompiled when configuring with `-native-compiler`
   yes. It is not precompiled otherwise.
   This an implementation of point 2 of
   `CEP #48 <https://github.com/coq/ceps/pull/48>`_
@@ -440,8 +440,8 @@ Commands and options
   by Pierre-Marie Pédrot).
 - **Changed:**
   The :attr:`export` locality can now be used for all Hint commands,
-  including Hint Cut, Hint Mode, Hint Transparent / Opaque and
-  Remove Hints
+  including :tacn:`Hint Cut`, :tacn:`Hint Mode`, :tacn:`Hint Transparent` / `Opaque` and
+  :tacn:`Remove Hints`
   (`#13388 <https://github.com/coq/coq/pull/13388>`_,
   by Pierre-Marie Pédrot).
 
@@ -449,7 +449,7 @@ Tools
 ^^^^^
 
 - **Changed:**
-  Adding the possibility in coq_makefile to directly set the installation folders,
+  Added the ability for coq_makefile to directly set the installation folders,
   through the :n:`COQLIBINSTALL` and :n:`COQDOCINSTALL` variables.
   See :ref:`coqmakefilelocal`.
   (`#12389 <https://github.com/coq/coq/pull/12389>`_, by Martin Bodin, review of Enrico Tassi).
@@ -545,7 +545,7 @@ Infrastructure and dependencies
   Coq's core system now uses the `zarith <https://github.com/ocaml/Zarith>`_
   library, based on GNU's gmp instead of ``num`` which is
   deprecated upstream. The custom ``bigint`` module is
-  not longer provided; note that the ``micromega`` still uses
+  not longer provided; note that ``micromega`` still uses
   ``num``
   (`#11742 <https://github.com/coq/coq/pull/11742>`_,
   by Emilio Jesus Gallego Arias and Vicent Laporte).
