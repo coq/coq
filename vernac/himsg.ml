@@ -1371,10 +1371,10 @@ let explain_pattern_matching_error env sigma = function
       explain_bad_pattern env sigma c t
   | BadConstructor (c,ind) ->
       explain_bad_constructor env c ind
-  | WrongNumargConstructor (c,expanded,n,n1,n2) ->
-      explain_wrong_numarg_constructor env c expanded n n1 n2
-  | WrongNumargInductive (c,expanded,n,n1,n2) ->
-      explain_wrong_numarg_inductive env c expanded n n1 n2
+  | WrongNumargConstructor {cstr; expanded; nargs; expected_nassums; expected_ndecls} ->
+      explain_wrong_numarg_constructor env cstr expanded nargs expected_nassums expected_ndecls
+  | WrongNumargInductive {ind; expanded; nargs; expected_nassums; expected_ndecls} ->
+      explain_wrong_numarg_inductive env ind expanded nargs expected_nassums expected_ndecls
   | UnusedClause tms ->
       explain_unused_clause env tms
   | NonExhaustive tms ->

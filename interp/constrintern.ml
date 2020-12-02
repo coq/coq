@@ -1426,8 +1426,8 @@ let check_has_letin ?loc g expanded nargs nimps tags =
   else if nargs = expected_ndecls then true else
     let env = Global.env() in
     match g with
-    | GlobRef.ConstructRef cstr -> error_wrong_numarg_constructor ?loc env cstr expanded nargs expected_nassums expected_ndecls
-    | GlobRef.IndRef ind -> error_wrong_numarg_inductive ?loc env ind expanded nargs expected_nassums expected_ndecls
+    | GlobRef.ConstructRef cstr -> error_wrong_numarg_constructor ?loc env ~cstr ~expanded ~nargs ~expected_nassums ~expected_ndecls
+    | GlobRef.IndRef ind -> error_wrong_numarg_inductive ?loc env ~ind ~expanded ~nargs ~expected_nassums ~expected_ndecls
     | _ -> assert false
 
 (** Do not raise NotEnoughArguments thanks to preconditions*)
