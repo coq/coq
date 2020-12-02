@@ -157,23 +157,8 @@ let of_binders names =
   in
   { empty with names = (names, rev_map) }
 
-let invent_name (named,cnt) u =
-  let rec aux i =
-    let na = Id.of_string ("u"^(string_of_int i)) in
-    if Id.Map.mem na named then aux (i+1)
-    else Id.Map.add na u named, i+1
-  in
-  aux cnt
-
 let universe_binders uctx =
-  let named, rev = uctx.names in
-  let named, _ = LSet.fold (fun u named ->
-      match LMap.find u rev with
-      | exception Not_found -> (* not sure if possible *) invent_name named u
-      | { uname = None } -> invent_name named u
-      | { uname = Some _ } -> named)
-      (ContextSet.levels uctx.local) (named, 0)
-  in
+  let named, _ = uctx.names in
   named
 
 let instantiate_variable l b v =

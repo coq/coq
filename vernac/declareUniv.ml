@@ -9,6 +9,8 @@
 (************************************************************************)
 
 open Names
+open Declarations
+open Univ
 
 (* object_kind , id *)
 exception AlreadyDeclared of (string option * Id.t)
@@ -72,23 +74,51 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
       subst_function = (fun (subst, a) -> (* Actually the name is generated once and for all. *) a);
       classify_function = (fun a -> Substitute a) }
 
+let invent_name (named,cnt) u =
+  let rec aux i =
+    let na = Id.of_string ("u"^(string_of_int i)) in
+    if Id.Map.mem na named then aux (i+1)
+    else na, (Id.Map.add na u named, i+1)
+  in
+  aux cnt
+
+let label_and_univs_of = let open GlobRef in function
+    | ConstRef c ->
+      let l = Label.to_id @@ Constant.label c in
+      let univs = (Global.lookup_constant c).const_universes in
+      l, univs
+    | IndRef (c,_) ->
+      let l = Label.to_id @@ MutInd.label c in
+      let univs = (Global.lookup_mind c).mind_universes in
+      l, univs
+    | VarRef id ->
+      CErrors.anomaly ~label:"declare_univ_binders"
+        Pp.(str "declare_univ_binders on variable " ++ Id.print id ++ str".")
+    | ConstructRef _ ->
+      CErrors.anomaly ~label:"declare_univ_binders"
+        Pp.(str "declare_univ_binders on a constructor reference")
+
 let declare_univ_binders gr pl =
-  if Global.is_polymorphic gr then
-    ()
-  else
-    let l = let open GlobRef in match gr with
-      | ConstRef c -> Label.to_id @@ Constant.label c
-      | IndRef (c, _) -> Label.to_id @@ MutInd.label c
-      | VarRef id ->
-        CErrors.anomaly ~label:"declare_univ_binders" Pp.(str "declare_univ_binders on variable " ++ Id.print id ++ str".")
-      | ConstructRef _ ->
-        CErrors.anomaly ~label:"declare_univ_binders"
-          Pp.(str "declare_univ_binders on a constructor reference")
+  let l, univs = label_and_univs_of gr in
+  match univs with
+  | Polymorphic _ -> ()
+  | Monomorphic (levels,_) ->
+    (* First the explicitly named universes *)
+    let named, univs = Id.Map.fold (fun id univ (named,univs) ->
+        let univs = match Univ.Level.name univ with
+          | None -> assert false (* having Prop/Set/Var as binders is nonsense *)
+          | Some univ -> (id,univ)::univs
+        in
+        let named = LSet.add univ named in
+        named, univs)
+        pl (LSet.empty,[])
     in
-    let univs = Id.Map.fold (fun id univ univs ->
-        match Univ.Level.name univ with
-        | None -> assert false (* having Prop/Set/Var as binders is nonsense *)
-        | Some univ -> (id,univ)::univs) pl []
+    (* then invent names for the rest *)
+    let _, univs = LSet.fold (fun univ (aux,univs) ->
+        let id, aux = invent_name aux univ in
+        let univ = Option.get (Level.name univ) in
+        aux, (id,univ) :: univs)
+        (LSet.diff levels named) ((pl,0),univs)
     in
     Lib.add_anonymous_leaf (input_univ_names (QualifiedUniv l, univs))
 

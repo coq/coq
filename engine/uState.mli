@@ -79,7 +79,7 @@ val univ_entry : poly:bool -> t -> Entries.universes_entry
 (** Pick from {!context} or {!context_set} based on [poly]. *)
 
 val universe_binders : t -> UnivNames.universe_binders
-(** Return names of universes, inventing names if needed *)
+(** Return local names of universes. *)
 
 (** {5 Constraints handling} *)
 
