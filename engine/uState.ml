@@ -113,19 +113,18 @@ let constraints uctx = snd uctx.local
 let context uctx = ContextSet.to_context uctx.local
 
 let compute_instance_binders inst ubinders =
-  let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
   let map lvl =
-    try Name (LMap.find lvl revmap)
-    with Not_found -> Anonymous
+    try Name (Option.get (LMap.find lvl ubinders).uname)
+    with Option.IsNone | Not_found -> Anonymous
   in
   Array.map map (Instance.to_array inst)
 
 let univ_entry ~poly uctx =
   let open Entries in
   if poly then
-    let (binders, _) = uctx.names in
+    let (_, rbinders) = uctx.names in
     let uctx = context uctx in
-    let nas = compute_instance_binders (UContext.instance uctx) binders in
+    let nas = compute_instance_binders (UContext.instance uctx) rbinders in
     Polymorphic_entry (nas, uctx)
   else Monomorphic_entry (context_set uctx)
 
@@ -447,9 +446,9 @@ let check_univ_decl ~poly uctx decl =
   let names = decl.univdecl_instance in
   let extensible = decl.univdecl_extensible_instance in
   if poly then
-    let (binders, _) = uctx.names in
+    let (_, rbinders) = uctx.names in
     let uctx = universe_context ~names ~extensible uctx in
-    let nas = compute_instance_binders (UContext.instance uctx) binders in
+    let nas = compute_instance_binders (UContext.instance uctx) rbinders in
     Entries.Polymorphic_entry (nas, uctx)
   else
     let () = check_universe_context_set ~names ~extensible uctx in
