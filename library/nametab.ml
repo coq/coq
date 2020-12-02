@@ -98,6 +98,7 @@ module type NAMETREE = sig
   val find : user_name -> t -> elt
   val exists : user_name -> t -> bool
   val user_name : qualid -> t -> user_name
+  val shortest_qualid_gen : ?loc:Loc.t -> (Id.t -> bool) -> user_name -> t -> qualid
   val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> user_name -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
 
@@ -252,9 +253,9 @@ let exists uname tab =
   with
       Not_found -> false
 
-let shortest_qualid ?loc ctx uname tab =
+let shortest_qualid_gen ?loc hidden uname tab =
   let id,dir = U.repr uname in
-  let hidden = Id.Set.mem id ctx in
+  let hidden = hidden id in
   let rec find_uname pos dir tree =
     let is_empty = match pos with [] -> true | _ -> false in
     match tree.path with
@@ -268,6 +269,9 @@ let shortest_qualid ?loc ctx uname tab =
   let ptab = Id.Map.find id tab in
   let found_dir = find_uname [] dir ptab in
     make_qualid ?loc (DirPath.make found_dir) id
+
+let shortest_qualid ?loc ctx uname tab =
+  shortest_qualid_gen ?loc (fun id -> Id.Set.mem id ctx) uname tab
 
 let push_node node l =
   match node with
@@ -564,7 +568,7 @@ let shortest_qualid_of_modtype ?loc kn =
 
 let shortest_qualid_of_universe ?loc ctx kn =
   let sp = UnivIdMap.find kn !the_univrevtab in
-    UnivTab.shortest_qualid ?loc ctx sp !the_univtab
+    UnivTab.shortest_qualid_gen ?loc (fun id -> Id.Map.mem id ctx) sp !the_univtab
 
 let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)
