@@ -111,8 +111,8 @@ This release is the result of 400 merged PRs, closing ~100 issues.
 |
 
 
-Changes in 8.13
-~~~~~~~~~~~~~~~
+Changes in 8.13+beta1
+~~~~~~~~~~~~~~~~~~~~~
 
 .. contents::
    :local:
@@ -212,7 +212,7 @@ Specification language, type inference
   (`#13188 <https://github.com/coq/coq/pull/13188>`_, fixes `#6042
   <https://github.com/coq/coq/issues/6042>`_, by Gaëtan Gilbert).
 - **Fixed:**
-  Allow use of type classes inference for the return predicate of a :n:`match`
+  Allow use of typeclass inference for the return predicate of a :n:`match`
   (was deactivated in versions 8.10 to 8.12, `#13217 <https://github.com/coq/coq/pull/13217>`_,
   fixes `#13216 <https://github.com/coq/coq/issues/13216>`_,
   by Hugo Herbelin).
@@ -252,7 +252,6 @@ Specification language, type inference
   fixes `#11816 <https://github.com/coq/coq/issues/11816>`_,
   by Hugo Herbelin).
 - **Fixed:**
-
   Issue when two expressions involving different projections and one is
   primitive need to be unified
   (`#13386 <https://github.com/coq/coq/pull/13386>`_,
@@ -319,8 +318,8 @@ Notations
   reference manual).
 - **Changed:**
   Scope information is propagated in indirect applications to a
-  reference prefixed with :g:`@@`; this covers for instance the case
-  :g:`r.(@@p) t` where scope information from :g:`p` is now taken into
+  reference prefixed with :g:`@`; this covers for instance the case
+  :g:`r.(@p) t` where scope information from :g:`p` is now taken into
   account for interpreting :g:`t` (`#12685
   <https://github.com/coq/coq/pull/12685>`_, by Hugo Herbelin).
 - **Added:**
@@ -352,7 +351,7 @@ Notations
   fixes `#9569 <https://github.com/coq/coq/issues/9569>`_,
   by Hugo Herbelin).
 - **Deprecated:**
-  :n:`Numeral Notation`, please use :ref:`Number Notation <number-notations>` instead.
+  `Numeral Notation`, please use :cmd:`Number Notation` instead
   (`#12979 <https://github.com/coq/coq/pull/12979>`_,
   by Pierre Roux).
 - **Changed:**
@@ -397,15 +396,15 @@ Tactics
   (As `lia` gets more powerful, this may break proof scripts relying on `lia` failure.)
   (`#11906 <https://github.com/coq/coq/pull/11906>`_,  by Frédéric Besson).
 - **Added:**
-  :tacn`apply … in` supports several hypotheses
+  :tacn:`apply … in` supports several hypotheses
   (`#12246 <https://github.com/coq/coq/pull/12246>`_,
   by Hugo Herbelin; grants
   `#9816 <https://github.com/coq/coq/pull/9816>`_).
 - **Removed:**
-  The deprecated and undocumented "prolog" tactic was removed
+  The deprecated and undocumented `prolog` tactic was removed
   (`#12399 <https://github.com/coq/coq/pull/12399>`_,
   by Pierre-Marie Pédrot).
-- **Removed:** Removed `info` tactic that was deprecated in 8.5.
+- **Removed:** `info` tactic that was deprecated in 8.5.
   (`#12423 <https://github.com/coq/coq/pull/12423>`_, by Jim Fehrle).
 - **Added:**
   The :tacn:`zify` tactic can now be extended by redefining the `zify_pre_hook`
@@ -421,7 +420,7 @@ Tactics
   fixes `#13235 <https://github.com/coq/coq/issues/13235>`_,
   by Hugo Herbelin).
 - **Fixed:**
-  Avoiding exposing an internal name of the form :n:`_tmp` when applying the
+  Avoid exposing an internal name of the form :n:`_tmp` when applying the
   :n:`_` introduction pattern which would break a dependency
   (`#13337 <https://github.com/coq/coq/pull/13337>`_,
   fixes `#13336 <https://github.com/coq/coq/issues/13336>`_,
@@ -476,7 +475,8 @@ SSReflect
   (`#13317 <https://github.com/coq/coq/pull/13317>`_,
   by Cyril Cohen).
 - **Fixed:**
-  Working around a bug of interaction between + and /(ltac:(...)) cf #13458
+  Working around a bug of interaction between + and /(ltac:(...)) cf
+  `#13458 <https://github.com/coq/coq/issues/13458>`_
   (`#13459 <https://github.com/coq/coq/pull/13459>`_,
   by Cyril Cohen).
 
