@@ -15,6 +15,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         perl libgmp-dev libgmp-dev:i386 \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev \
+        # Dependencies of Gappa
+        libboost1.65-all-dev libmpfr-dev autoconf-archive bison flex \
         # Dependencies of stdlib and sphinx doc
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
         python3-pip python3-setuptools python3-pexpect python3-bs4 fonts-freefont-otf \
