@@ -17,55 +17,25 @@ Require Import Zpow_facts.
 Require Import Zgcd_alt.
 Require ZArith.
 Import Znumtheory.
-
-Register bool as kernel.ind_bool.
-Register prod as kernel.ind_pair.
-Register carry as kernel.ind_carry.
-Register comparison as kernel.ind_cmp.
+Require Export PrimInt63.
 
 Definition size := 63%nat.
 
-Primitive int := #int63_type.
-Register int as num.int63.type.
-Declare Scope int63_scope.
-Definition id_int : int -> int := fun x => x.
-Declare ML Module "int63_syntax_plugin".
-
-Module Import Int63NotationsInternalA.
-Delimit Scope int63_scope with int63.
-Bind Scope int63_scope with int.
-End Int63NotationsInternalA.
-
-(* Logical operations *)
-Primitive lsl := #int63_lsl.
-
-Primitive lsr := #int63_lsr.
-
-Primitive land := #int63_land.
-
-Primitive lor := #int63_lor.
-
-Primitive lxor := #int63_lxor.
-
-(* Arithmetic modulo operations *)
-Primitive add := #int63_add.
-
-Primitive sub := #int63_sub.
-
-Primitive mul := #int63_mul.
-
-Primitive mulc := #int63_mulc.
-
-Primitive div := #int63_div.
-
-Primitive mod := #int63_mod.
-
-(* Comparisons *)
-Primitive eqb := #int63_eq.
-
-Primitive ltb := #int63_lt.
-
-Primitive leb := #int63_le.
+Notation int := int (only parsing).
+Notation lsl := lsl (only parsing).
+Notation lsr := lsr (only parsing).
+Notation land := land (only parsing).
+Notation lor := lor (only parsing).
+Notation lxor := lxor (only parsing).
+Notation add := add (only parsing).
+Notation sub := sub (only parsing).
+Notation mul := mul (only parsing).
+Notation mulc := mulc (only parsing).
+Notation div := div (only parsing).
+Notation mod := mod (only parsing).
+Notation eqb := eqb (only parsing).
+Notation ltb := ltb (only parsing).
+Notation leb := leb (only parsing).
 
 Local Open Scope int63_scope.
 
@@ -139,34 +109,29 @@ Register Inline subcarry.
 Definition addc_def x y :=
   let r := x + y in
   if r <? x then C1 r else C0 r.
-(* the same but direct implementation for efficiency *)
-Primitive addc := #int63_addc.
+Notation addc := addc (only parsing).
 
 Definition addcarryc_def x y :=
   let r := addcarry x y in
   if r <=? x then C1 r else C0 r.
-(* the same but direct implementation for efficiency *)
-Primitive addcarryc := #int63_addcarryc.
+Notation addcarryc := addcarryc (only parsing).
 
 Definition subc_def x y :=
   if y <=? x then C0 (x - y) else C1 (x - y).
-(* the same but direct implementation for efficiency *)
-Primitive subc := #int63_subc.
+Notation subc := subc (only parsing).
 
 Definition subcarryc_def x y :=
   if y <? x then C0 (x - y - 1) else C1 (x - y - 1).
-(* the same but direct implementation for efficiency *)
-Primitive subcarryc := #int63_subcarryc.
+Notation subcarryc := subcarryc (only parsing).
 
 Definition diveucl_def x y := (x/y, x mod y).
-(* the same but direct implementation for efficiency *)
-Primitive diveucl := #int63_diveucl.
+Notation diveucl := diveucl (only parsing).
 
-Primitive diveucl_21 := #int63_div21.
+Notation diveucl_21 := diveucl_21 (only parsing).
 
 Definition addmuldiv_def p x y :=
   (x << p) lor (y >> (digits - p)).
-Primitive addmuldiv := #int63_addmuldiv.
+Notation addmuldiv := addmuldiv (only parsing).
 
 Module Import Int63NotationsInternalC.
 Notation "- x" := (opp x) : int63_scope.
@@ -188,7 +153,7 @@ Definition compare_def x y :=
   if x <? y then Lt
   else if (x =? y) then Eq else Gt.
 
-Primitive compare := #int63_compare.
+Notation compare := compare (only parsing).
 
 Import Bool ZArith.
 (** Translation to Z *)
@@ -371,8 +336,8 @@ Axiom leb_spec : forall x y, (x <=? y)%int63 = true <-> φ x <= φ y.
 (** Exotic operations *)
 
 (** I should add the definition (like for compare) *)
-Primitive head0 := #int63_head0.
-Primitive tail0 := #int63_tail0.
+Notation head0 := head0 (only parsing).
+Notation tail0 := tail0 (only parsing).
 
 (** Axioms on operations which are just short cut *)
 
@@ -1950,7 +1915,6 @@ Module Export Int63Notations.
    Notation "m <= n" := (m <=? n) : int63_scope.
   #[deprecated(since="8.13",note="use infix ≤? instead")]
    Notation "m ≤ n" := (m <=? n) (at level 70, no associativity) : int63_scope.
-  Export Int63NotationsInternalA.
   Export Int63NotationsInternalB.
   Export Int63NotationsInternalC.
   Export Int63NotationsInternalD.
