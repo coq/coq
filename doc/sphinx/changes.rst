@@ -21,11 +21,7 @@ The main changes include:
   - :ref:`Introduction <813PrimArrays>` of :ref:`primitive persistent arrays<primitive-arrays>`
     in the core language, implemented using imperative persistent arrays.
   - Introduction of :ref:`definitional proof irrelevance <813UIP>` for the equality type
-    defined in the SProp sort, using the :flag:`Definitional UIP` flag,
-    (deactivated by default). This models definitional uniqueness of
-    identity proofs for this type. It is deactivated by default as
-    it can lead to non-termination in combination with impredicativity.
-    Use of this flag is also printed by :cmd:`Print Assumptions`.
+    defined in the SProp sort.
   - Cumulative record and inductive type declarations can now
     :ref:`specify <813VarianceDecl>` the variance of their universes.
   - Various bugfixes and uniformization of behavior with respect to the use of
@@ -124,7 +120,11 @@ Kernel
   .. _813UIP:
 
 - **Added:**
-  Definitional UIP, only when :flag:`Definitional UIP` is enabled. See
+  Definitional UIP, only when :flag:`Definitional UIP` is enabled.
+  This models definitional uniqueness of identity proofs for the equality
+  type in SProp. It is deactivated by default as it can lead to
+  non-termination in combination with impredicativity.
+  Use of this flag is also printed by :cmd:`Print Assumptions`. See
   documentation of the flag for details.
   (`#10390 <https://github.com/coq/coq/pull/10390>`_,
   by Gaëtan Gilbert).
@@ -223,6 +223,16 @@ Specification language, type inference
   interactive mode.
   (`#13183 <https://github.com/coq/coq/pull/13183>`_,
   by Enrico Tassi).
+
+  .. _813TypingFlags:
+
+- **Added:**
+  Typing flags can now be specified per-constant / inductive, this
+  allows to fine-grain specify them from plugins or attributes. See
+  :ref:`controlling-typing-flags` for details on attribute syntax.
+  (`#12586 <https://github.com/coq/coq/pull/12586>`_,
+  by Emilio Jesus Gallego Arias).
+
 - **Added:**
   Inference of return predicate of a :g:`match` by inversion takes
   sort elimination constraints into account
@@ -493,15 +503,6 @@ Commands and options
 ^^^^^^^^^^^^^^^^^^^^
 
 - **Changed:**
-  When compiled with OCaml >= 4.10.0, Coq will use the new best-fit GC
-  policy, which should provide some performance benefits. Coq's policy
-  is optimized for speed, but could increase memory consumption in
-  some cases. You are welcome to tune it using the ``OCAMLRUNPARAM``
-  variable and report back on good settings so we can improve the defaults.
-  (`#13040 <https://github.com/coq/coq/pull/13040>`_,
-  fixes `#11277 <https://github.com/coq/coq/issues/11277>`_,
-  by Emilio Jesus Gallego Arias).
-- **Changed:**
   Drop prefixes from grammar non-terminal names,
   e.g. "constr:global" -> "global", "Prim.name" -> "name".
   Visible in the output of :cmd:`Print Grammar` and :cmd:`Print Custom Grammar`.
@@ -512,24 +513,6 @@ Commands and options
   evars are not abstracted implicitly anymore and instead
   raise an error
   (`#13139 <https://github.com/coq/coq/pull/13139>`_,
-  by Pierre-Marie Pédrot).
-- **Changed:**
-  Option `-native-compiler` of the configure script now impacts the
-  default value of the `-native-compiler` option of coqc. The
-  `-native-compiler` option of the configure script is added as an on demand
-  value, which becomes the default, thus preserving the previous default
-  behavior.
-  The stdlib is still precompiled when configuring with `-native-compiler
-  yes`. It is not precompiled otherwise.
-  This an implementation of point 2 of
-  `CEP #48 <https://github.com/coq/ceps/pull/48>`_
-  (`#13352 <https://github.com/coq/coq/pull/13352>`_,
-  by Pierre Roux).
-- **Changed:**
-  The :attr:`export` locality can now be used for all Hint commands,
-  including :cmd:`Hint Cut`, :cmd:`Hint Mode`, :cmd:`Hint Transparent` / `Opaque` and
-  :cmd:`Remove Hints`
-  (`#13388 <https://github.com/coq/coq/pull/13388>`_,
   by Pierre-Marie Pédrot).
 - **Removed:**
   In the :cmd:`Extraction Language` command, remove `Ocaml` as a valid value.
@@ -551,7 +534,14 @@ Commands and options
   (`#12516 <https://github.com/coq/coq/pull/12516>`_,
   by Maxime Dénès).
 - **Added:**
-  Added support for automatic insertion of coercions in :cmd:`Search`
+  The :attr:`export` locality can now be used for all Hint commands,
+  including :cmd:`Hint Cut`, :cmd:`Hint Mode`, :cmd:`Hint Transparent` /
+  :cmd:`Opaque <Hint Opaque>` and
+  :cmd:`Remove Hints`
+  (`#13388 <https://github.com/coq/coq/pull/13388>`_,
+  by Pierre-Marie Pédrot).
+- **Added:**
+  Support for automatic insertion of coercions in :cmd:`Search`
   patterns. Additionally, head patterns are now automatically
   interpreted as types
   (`#13255 <https://github.com/coq/coq/pull/13255>`_,
@@ -572,14 +562,22 @@ Tools
 ^^^^^
 
 - **Changed:**
+  Option `-native-compiler` of the configure script now impacts the
+  default value of the `-native-compiler` option of coqc. The
+  `-native-compiler` option of the configure script supports a new `ondemand`
+  value, which becomes the default, thus preserving the previous default
+  behavior.
+  The stdlib is still precompiled when configuring with `-native-compiler
+  yes`. It is not precompiled otherwise.
+  This an implementation of point 2 of
+  `CEP #48 <https://github.com/coq/ceps/pull/48>`_
+  (`#13352 <https://github.com/coq/coq/pull/13352>`_,
+  by Pierre Roux).
+- **Changed:**
   Added the ability for coq_makefile to directly set the installation folders,
-  through the :n:`COQLIBINSTALL` and :n:`COQDOCINSTALL` variables.
+  through the `COQLIBINSTALL` and `COQDOCINSTALL` variables.
   See :ref:`coqmakefilelocal`.
   (`#12389 <https://github.com/coq/coq/pull/12389>`_, by Martin Bodin, review of Enrico Tassi).
-- **Changed:**
-  ``dev/tools/make-changelog.sh`` now asks for a list of bugs fixed by the PR
-  (`#12410 <https://github.com/coq/coq/pull/12410>`_, fixes `#12386
-  <https://github.com/coq/coq/issues/12386>`_, by Jason Gross).
 - **Removed:** The option ``-I`` of coqchk was removed (it was
   deprecated in Coq 8.8) (`#12613
   <https://github.com/coq/coq/pull/12613>`_, by Gaëtan Gilbert).
@@ -627,8 +625,8 @@ Standard library
   get the ``PrimFloat`` notations without unqualifying the various primitives
   (`#12556 <https://github.com/coq/coq/pull/12556>`_, fixes `#12454
   <https://github.com/coq/coq/issues/12454>`_, by Jason Gross).
-- **Changed:**
-  Change the sort of cyclic numbers from Type to Set. For backward compatibility, a dynamic sort was defined in the 3 packages bignums, coqprime and color.
+- **Changed:** the sort of cyclic numbers from Type to Set.
+  For backward compatibility, a dynamic sort was defined in the 3 packages bignums, coqprime and color.
   See for example commit 6f62bda in bignums.
   (`#12801 <https://github.com/coq/coq/pull/12801>`_,
   by Vincent Semeria).
@@ -665,29 +663,23 @@ Infrastructure and dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **Changed:**
-  Coq's core system now uses the `zarith <https://github.com/ocaml/Zarith>`_
+  When compiled with OCaml >= 4.10.0, Coq will use the new best-fit GC
+  policy, which should provide some performance benefits. Coq's policy
+  is optimized for speed, but could increase memory consumption in
+  some cases. You are welcome to tune it using the ``OCAMLRUNPARAM``
+  variable and report back on good settings so we can improve the defaults.
+  (`#13040 <https://github.com/coq/coq/pull/13040>`_,
+  fixes `#11277 <https://github.com/coq/coq/issues/11277>`_,
+  by Emilio Jesus Gallego Arias).
+- **Changed:**
+  Coq now uses the `zarith <https://github.com/ocaml/Zarith>`_
   library, based on GNU's gmp instead of ``num`` which is
   deprecated upstream. The custom ``bigint`` module is
-  not longer provided; note that ``micromega`` still uses
-  ``num``
+  no longer provided.
   (`#11742 <https://github.com/coq/coq/pull/11742>`_,
-  by Emilio Jesus Gallego Arias and Vicent Laporte).
-- **Removed:**
-  The `num` library is not linked to Coq anymore
-  (`#13007 <https://github.com/coq/coq/pull/13007>`_,
-  by Emilio Jesus Gallego Arias).
-
-Miscellaneous
-^^^^^^^^^^^^^
-
-  .. _813TypingFlags:
-
-- **Added:**
-  Typing flags can now be specified per-constant / inductive, this
-  allows to fine-grain specify them from plugins or attributes. See
-  :ref:`controlling-typing-flags` for details on attribute syntax.
-  (`#12586 <https://github.com/coq/coq/pull/12586>`_,
-  by Emilio Jesus Gallego Arias).
+  `#13007 <https://github.com/coq/coq/pull/13007>`_,
+  by Emilio Jesus Gallego Arias and Vicent Laporte, with help from
+  Frédéric Besson).
 
 Version 8.12
 ------------
