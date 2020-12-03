@@ -280,6 +280,14 @@ let convert_constructors ctor nargs u1 u2 (s, check) =
   convert_constructors_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
     ctor nargs u1 u2 s, check
 
+let same_key k1 k2 =
+  k1 == k2
+  || match k1, k2 with
+  | ConstKey (cst, _), ConstKey (cst', _) -> Constant.CanOrd.equal cst cst'
+  | VarKey id, VarKey id' -> Id.equal id id'
+  | RelKey n, RelKey n' -> Int.equal n n'
+  | _ -> false
+
 let conv_table_key infos ~nargs k1 k2 cuniv =
   if k1 == k2 then cuniv else
   match k1, k2 with
@@ -423,12 +431,15 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         match r1, r2 with
         | None, None -> raise NotConvertible
         | Some t1, Some t2 ->
-          (* else the oracle tells which constant is to be expanded *)
-          let oracle = CClosure.oracle_of_infos infos.cnv_inf in
-          if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
-            eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
+          if same_key fl1 fl2
+          then eqappr cv_pb l2r infos (lft1, t1) (lft2, t2) cuniv
           else
-            eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
+            (* else the oracle tells which constant is to be expanded *)
+            let oracle = CClosure.oracle_of_infos infos.cnv_inf in
+            if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
+              eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
+            else
+              eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
         | Some (t1, v1), None ->
           let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos.cnv_inf)) in
           let t1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab t1 v1 in
