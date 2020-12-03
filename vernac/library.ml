@@ -230,6 +230,7 @@ type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t * bool
 type seg_proofs = Opaqueproof.opaque_proofterm array
+type ('document,'counters) seg_tasks = (int option,'document) Stateid.request list * 'counters
 
 let mk_library sd md digests univs =
   {
@@ -400,7 +401,7 @@ let load_library_todo f =
   let (s0 : seg_sum), _ = ObjFile.marshal_in_segment ch ~segment:"summary" in
   let (s1 : seg_lib), _ = ObjFile.marshal_in_segment ch ~segment:"library" in
   let (s2 : seg_univ option), _ = ObjFile.marshal_in_segment ch ~segment:"universes" in
-  let tasks, _ = ObjFile.marshal_in_segment ch ~segment:"tasks" in
+  let (tasks : ('a,'b) seg_tasks option), _ = ObjFile.marshal_in_segment ch ~segment:"tasks" in
   let (s4 : seg_proofs), _ = ObjFile.marshal_in_segment ch ~segment:"opaques" in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:s0.md_ocaml ~file:f;
@@ -442,7 +443,7 @@ let save_library_base f sum lib univs tasks proofs =
     ObjFile.marshal_out_segment ch ~segment:"summary" (sum    : seg_sum);
     ObjFile.marshal_out_segment ch ~segment:"library" (lib    : seg_lib);
     ObjFile.marshal_out_segment ch ~segment:"universes" (univs  : seg_univ option);
-    ObjFile.marshal_out_segment ch ~segment:"tasks" (tasks  : 'tasks option);
+    ObjFile.marshal_out_segment ch ~segment:"tasks" (tasks  : ('a,'b) seg_tasks option);
     ObjFile.marshal_out_segment ch ~segment:"opaques" (proofs : seg_proofs);
     ObjFile.close_out ch
   with reraise ->
@@ -452,10 +453,15 @@ let save_library_base f sum lib univs tasks proofs =
     Sys.remove f;
     Exninfo.iraise reraise
 
+type ('document,'id) task = {
+  task : ('id,'document) Stateid.request;
+  drop_pterm : bool;
+}
+
 type ('document,'counters) todo_proofs =
  | ProofsTodoNone (* for .vo *)
  | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
- | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list * 'counters (* for .vio *)
+ | ProofsTodoSome of Future.UUIDSet.t * ('document,Future.UUID.t) task list * 'counters (* for .vio *)
 
 let save_library_to todo_proofs ~output_native_objects dir f otab =
   assert(
@@ -479,9 +485,12 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
       None, Some (Univ.ContextSet.empty,false)
     | ProofsTodoSome (_except, tasks, rcbackup) ->
       let tasks =
-        List.map Stateid.(fun (r,b) ->
-            try { r with uuid = Future.UUIDMap.find r.uuid f2t_map }, b
-            with Not_found -> assert b; { r with uuid = -1 }, b)
+        List.map Stateid.(fun { task = r; drop_pterm = b } ->
+            try
+              let bucket = Future.UUIDMap.find r.uuid f2t_map in
+              assert (not b);
+              { r with uuid = Some bucket }
+            with Not_found -> assert b; { r with uuid = None })
           tasks in
       Some (tasks,rcbackup),
       Some (Univ.ContextSet.empty,false)

@@ -172,12 +172,12 @@ val snapshot_vio : create_vos:bool -> doc:doc -> output_native_objects:bool -> D
 val reset_task_queue : unit -> unit
 
 (* A .vio contains tasks to be completed *)
-type tasks
-val check_task : string -> tasks -> int -> bool
-val info_tasks : tasks -> (string * Loc.t option * Loc.t option * Names.Constant.t * float * int) list
+type vcs
+val check_task : string -> (vcs,RemoteCounter.remote_counters_status) Library.seg_tasks -> int -> bool
+val info_tasks : (vcs,RemoteCounter.remote_counters_status) Library.seg_tasks -> (string * Loc.t option * Loc.t option * Names.Constant.t * float * int) list
 val finish_tasks : string ->
   Library.seg_univ -> Library.seg_proofs ->
-    tasks -> Library.seg_univ * Library.seg_proofs
+    (vcs,RemoteCounter.remote_counters_status) Library.seg_tasks -> Library.seg_univ * Library.seg_proofs
 
 (* Id of the tip of the current branch *)
 val get_current_state : doc:doc -> Stateid.t

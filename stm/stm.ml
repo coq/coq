@@ -1585,14 +1585,14 @@ and Slaves : sig
   (* initialize the whole machinery (optional) *)
   val init : CoqworkmgrApi.priority -> unit
 
-  type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
-  val dump_snapshot : unit -> Future.UUID.t tasks
-  val check_task : string -> int tasks -> int -> bool
-  val info_tasks : 'a tasks -> (string * Loc.t option * Loc.t option * Names.Constant.t * float * int) list
+  type 'a tasks = ('a,VCS.vcs) Stateid.request list
+  val dump_snapshot : unit -> (VCS.vcs,Future.UUID.t) Library.task list
+  val check_task : string -> int option tasks -> int -> bool
+  val info_tasks : int option tasks -> (string * Loc.t option * Loc.t option * Names.Constant.t * float * int) list
   val finish_task :
     string ->
     Library.seg_univ -> Library.seg_proofs ->
-    int tasks -> int -> Library.seg_univ
+    int option tasks -> int -> Library.seg_univ
 
   val cancel_worker : WorkerPool.worker_id -> unit
 
@@ -1611,10 +1611,10 @@ end = struct (* {{{ *)
     else
       queue := Some (TaskQueue.create 0 priority)
 
-  let check_task_aux extra name l i =
-    let { Stateid.stop; document; loc_end; name = r_name }, drop = List.nth l i in
+  let check_task_aux name l i =
+    let { Stateid.stop; document; loc_end; name = r_name; uuid } = List.nth l i in
     Flags.if_verbose msg_info
-      Pp.(str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
+      Pp.(str(Printf.sprintf "Checking task %d (%s%d) of %s" i r_name (Option.default (-1) uuid) name));
     VCS.restore document;
     let start =
       let rec aux cur =
@@ -1623,10 +1623,12 @@ end = struct (* {{{ *)
       aux stop in
     try
       Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:false stop;
-      if drop then
+      match uuid with
+      | None ->
         let _proof = PG_compat.return_partial_proof () in
         `OK_ADMITTED
-      else begin
+      | Some bucket ->
+      begin
       let opaque = Opaque in
 
       let proof =
@@ -1646,7 +1648,7 @@ end = struct (* {{{ *)
       ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~loc:loc_end ~control:[] (Proved (opaque,None)));
       (* Is this name the same than the one in scope? *)
       let name = Declare.Proof.get_po_name proof in
-      `OK name
+      `OK (name,bucket)
       end
     with e ->
       let (e, info) = Exninfo.capture e in
@@ -1674,18 +1676,14 @@ end = struct (* {{{ *)
     with e ->
       msg_warning Pp.(str"unable to print error message: " ++
                       str (Printexc.to_string e)));
-      if drop then `ERROR_ADMITTED else `ERROR
+      if uuid = None then `ERROR_ADMITTED else `ERROR
 
   let finish_task name (cst,_) p l i =
-    let { Stateid.uuid = bucket }, drop = List.nth l i in
-    let bucket_name =
-      if bucket < 0 then (assert drop; ", no bucket")
-      else Printf.sprintf ", bucket %d" bucket in
-    match check_task_aux bucket_name name l i with
+    match check_task_aux name l i with
     | `ERROR -> exit 1
     | `ERROR_ADMITTED -> cst, false
     | `OK_ADMITTED -> cst, false
-    | `OK name ->
+    | `OK (name,bucket) ->
         let con = Nametab.locate_constant (Libnames.qualid_of_ident name) in
         let c = Global.lookup_constant con in
         let o = match c.Declarations.const_body with
@@ -1711,12 +1709,12 @@ end = struct (* {{{ *)
         Univ.ContextSet.union cst uc, false
 
   let check_task name l i =
-    match check_task_aux "" name l i with
+    match check_task_aux name l i with
     | `OK _ | `OK_ADMITTED -> true
     | `ERROR | `ERROR_ADMITTED -> false
 
   let info_tasks l =
-    CList.map_i (fun i ({ Stateid.loc_begin; loc_end; name; kernel_name }, _) ->
+    CList.map_i (fun i { Stateid.loc_begin; loc_end; name; kernel_name } ->
       let time1 =
         try float_of_string (Aux_file.get ?loc:loc_end !hints "proof_build_time")
         with Not_found -> 0.0 in
@@ -1785,15 +1783,14 @@ end = struct (* {{{ *)
 
   let cancel_worker n = TaskQueue.cancel_worker (Option.get !queue) n
 
-  (* For external users this name is nicer than request *)
-  type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
+  type 'a tasks = ('a, VCS.vcs) Stateid.request list
   let dump_snapshot () =
     let tasks = TaskQueue.snapshot (Option.get !queue) in
     let reqs =
       CList.map_filter
         ProofTask.(fun x ->
              match request_of_task Fresh x with
-             | Some (ReqBuildProof (r, b, _)) -> Some(r, b)
+             | Some (ReqBuildProof (r, b, _)) -> Some { Library.task = r; drop_pterm = b }
              | _ -> None)
         tasks in
     stm_prerr_endline (fun () -> Printf.sprintf "dumping %d tasks\n" (List.length reqs));
@@ -2553,7 +2550,7 @@ let join ~doc =
 
 let dump_snapshot () = Slaves.dump_snapshot (), RemoteCounter.snapshot ()
 
-type tasks = int Slaves.tasks * RemoteCounter.remote_counters_status
+type vcs = VCS.vcs
 let check_task name (tasks,rcbackup) i =
   RemoteCounter.restore rcbackup;
   let vcs = VCS.backup () in
@@ -2620,7 +2617,7 @@ let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
   (* LATER: when create_vos is true, it could be more efficient to not allocate the futures; but for now it seems useful for synchronization of the workers,
   below, [snapshot] gets computed even if [create_vos] is true. *)
   let (tasks,counters) = dump_snapshot() in
-  let except = List.fold_left (fun e (r,_) ->
+  let except = List.fold_left (fun e { Library.task = r } ->
      Future.UUIDSet.add r.Stateid.uuid e) Future.UUIDSet.empty tasks in
   let todo_proofs =
     if create_vos

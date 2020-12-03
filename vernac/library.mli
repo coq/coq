@@ -35,25 +35,35 @@ type seg_lib
 type seg_univ = (* all_cst, finished? *)
   Univ.ContextSet.t * bool
 type seg_proofs = Opaqueproof.opaque_proofterm array
+type ('document,'counters) seg_tasks = (int option,'document) Stateid.request list * 'counters
 
 (** End the compilation of a library and save it to a ".vo" file,
     a ".vio" file, or a ".vos" file, depending on the todo_proofs
     argument.
     [output_native_objects]: when producing vo objects, also compile the native-code version. *)
 
+type ('document,'id) task = {
+  task : ('id,'document) Stateid.request;
+  drop_pterm : bool;
+}
+
 type ('document,'counters) todo_proofs =
  | ProofsTodoNone (* for .vo *)
  | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
- | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list * 'counters (* for .vio *)
+ | ProofsTodoSome of Future.UUIDSet.t * ('document,Future.UUID.t) task list * 'counters (* for .vio *)
+
 
 val save_library_to :
   ('document,'counters) todo_proofs ->
   output_native_objects:bool ->
   DirPath.t -> string -> Opaqueproof.opaquetab -> unit
 
+(* Upon saving the task id (UUID.t) is mapped to an integer which is its
+   position in the proof table segment. If the proof term has to be dropped,
+   then it is None *)
 val load_library_todo
   :  CUnix.physical_path
-  -> seg_sum * seg_lib * seg_univ * 'tasks * seg_proofs
+  -> seg_sum * seg_lib * seg_univ * ('document,'counters) seg_tasks * seg_proofs
 
 val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs -> unit
 
