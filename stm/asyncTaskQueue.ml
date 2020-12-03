@@ -125,7 +125,7 @@ module Make(T : Task) () = struct
                  "-async-proofs-worker-priority";
                  CoqworkmgrApi.(string_of_priority priority)]
         (* Options to discard: 0 arguments *)
-        | "-emacs"::tl ->
+        | ("-emacs" | "--xml_format=Ppcmds" | "-batch") :: tl  ->
           set_slave_opt tl
         (* Options to discard: 1 argument *)
         | ( "-async-proofs" | "-vio2vo" | "-o"
