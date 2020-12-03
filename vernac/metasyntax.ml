@@ -1822,9 +1822,9 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
 (* Declaration of custom entry                                        *)
 
 let warn_custom_entry =
-  CWarnings.create ~name:"custom-entry-overriden" ~category:"parsing"
+  CWarnings.create ~name:"custom-entry-overridden" ~category:"parsing"
          (fun s ->
-          strbrk "Custom entry " ++ str s ++ strbrk " has been overriden.")
+          strbrk "Custom entry " ++ str s ++ strbrk " has been overridden.")
 
 let load_custom_entry _ _ = ()
 
