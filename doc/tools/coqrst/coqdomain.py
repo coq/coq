@@ -99,6 +99,11 @@ def make_math_node(latex, docname, nowrap):
     node['number'] = None
     return node
 
+# To support any character in tacn, ... names.
+# see https://github.com/coq/coq/pull/13564
+def make_id(tag):
+    return tag.replace(" ", "-")
+
 class CoqObject(ObjectDescription):
     """A generic Coq object for Sphinx; all Coq objects are subclasses of this.
 
@@ -200,7 +205,7 @@ class CoqObject(ObjectDescription):
         names_in_subdomain[name] = (self.env.docname, self.objtype, target_id)
 
     def _target_id(self, name):
-        return make_target(self.objtype, nodes.make_id(name))
+        return make_target(self.objtype, make_id(name))
 
     def _add_target(self, signode, name):
         """Register a link target ‘name’, pointing to signode."""
@@ -210,6 +215,16 @@ class CoqObject(ObjectDescription):
             signode['names'].append(name)
             signode['first'] = (not self.names)
             self._record_name(name, targetid, signode)
+        else:
+            # todo: make the following a real error or warning
+            # todo: then maybe the above "if" is not needed
+            names_in_subdomain = self.subdomain_data()
+            if name in names_in_subdomain:
+                try:
+                    print("Duplicate", self.subdomain, "name: ", name)
+                except UnicodeEncodeError: # in CI
+                    print("*** UnicodeEncodeError")
+            # self._warn_if_duplicate_name(names_in_subdomain, name, signode)
         return targetid
 
     def _add_index_entry(self, name, target):
@@ -322,7 +337,7 @@ class VernacObject(NotationObject):
     annotation = "Command"
 
     def _name_from_signature(self, signature):
-        m = re.match(r"[a-zA-Z ]+", signature)
+        m = re.match(r"[a-zA-Z0-9_ ]+", signature)
         return m.group(0).strip() if m else None
 
 class VernacVariantObject(VernacObject):
@@ -505,7 +520,7 @@ class ProductionObject(CoqObject):
         pass
 
     def _target_id(self, name):
-        return 'grammar-token-{}'.format(nodes.make_id(name[1]))
+        return make_id('grammar-token-{}'.format(name[1]))
 
     def _record_name(self, name, targetid, signode):
         env = self.state.document.settings.env
@@ -533,7 +548,7 @@ class ProductionObject(CoqObject):
             row = nodes.container(classes=['prodn-row'])
             entry = nodes.container(classes=['prodn-cell-nonterminal'])
             if lhs != "":
-                target_name = 'grammar-token-' + nodes.make_id(lhs)
+                target_name = make_id('grammar-token-' + lhs)
                 target = nodes.target('', '', ids=[target_name], names=[target_name])
                 # putting prodn-target on the target node won't appear in the tex file
                 inline = nodes.inline(classes=['prodn-target'])
@@ -862,7 +877,7 @@ class InferenceDirective(Directive):
         docname = self.state.document.settings.env.docname
         math_node = make_math_node(latex, docname, nowrap=False)
 
-        tid = nodes.make_id(title)
+        tid = make_id(title)
         target = nodes.target('', '', ids=['inference-' + tid])
         self.state.document.note_explicit_target(target)
 
@@ -1182,7 +1197,7 @@ def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, conte
     """
     #pylint: disable=dangerous-default-value, unused-argument
     env = inliner.document.settings.env
-    targetid = nodes.make_id('grammar-token-{}'.format(text))
+    targetid = make_id('grammar-token-{}'.format(text))
     target = nodes.target('', '', ids=[targetid])
     inliner.document.note_explicit_target(target)
     code = nodes.literal(rawtext, text, role=typ.lower())
@@ -1221,7 +1236,7 @@ def GlossaryDefRole(typ, rawtext, text, lineno, inliner, options={}, content=[])
         msg = MSG.format(term, env.doc2path(std[key][0]))
         inliner.document.reporter.warning(msg, line=lineno)
 
-    targetid = nodes.make_id('term-{}'.format(term))
+    targetid = make_id('term-{}'.format(term))
     std[key] = (env.docname, targetid)
     target = nodes.target('', '', ids=[targetid], names=[term])
     inliner.document.note_explicit_target(target)
