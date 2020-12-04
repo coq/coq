@@ -5,7 +5,10 @@
 (formatting
  (enabled_for ocaml))
 
-(generate_opam_files true)
+; Pending on dune 2.8 as to avoid bug with dune subst
+; see https://github.com/ocaml/dune/pull/3879 and
+; https://github.com/ocaml/dune/pull/3879
+; (generate_opam_files true)
 
 (license LGPL-2.1-only)
 (maintainers "The Coq development team <coqdev@inria.fr>")
