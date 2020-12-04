@@ -8,13 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let rec parse = function
-  | "--xml_format=Ppcmds" :: rest -> parse rest
-  | x :: rest -> x :: parse rest
-  | [] -> []
-
 let worker_parse_extra ~opts extra_args =
-  (), parse extra_args
+  (), extra_args
 
 let worker_init init () ~opts =
   Flags.quiet := true;
