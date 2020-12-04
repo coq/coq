@@ -161,6 +161,16 @@ Module Notas.
 
 End Notas.
 
+Module NoAutoNames.
+  Monomorphic Universe u0.
+
+  (* The anonymous universe doesn't get a name (names are only
+     invented at the end of a definition/inductive) so no need to
+     qualify u0. *)
+  Check (Type@{u0} -> Type).
+
+End NoAutoNames.
+
 (* Universe binders survive through compilation, sections and modules. *)
 Require TestSuite.bind_univs.
 Print bind_univs.mono.
