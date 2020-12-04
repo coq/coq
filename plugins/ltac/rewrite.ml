@@ -855,26 +855,20 @@ let coerce env cstr res =
   let res = { res with rew_evars = evars } in
     apply_constraint env res.rew_car rel prf cstr res
 
-let apply_rule unify loccs : int pure_strategy =
-  let (nowhere_except_in,occs) = convert_occs loccs in
-  let is_occ occ =
-    if nowhere_except_in
-    then List.mem occ occs
-    else not (List.mem occ occs)
-  in
-  { strategy = fun { state = occ ; env ;
+let apply_rule unify : occurrences_count pure_strategy =
+  { strategy = fun { state = occs ; env ;
                      term1 = t ; ty1 = ty ; cstr ; evars } ->
       let unif = if isEvar (goalevars evars) t then None else unify env evars t in
         match unif with
-        | None -> (occ, Fail)
+        | None -> (occs, Fail)
         | Some rew ->
-          let occ = succ occ in
-            if not (is_occ occ) then (occ, Fail)
-            else if Termops.eq_constr (fst rew.rew_evars) t rew.rew_to then (occ, Identity)
+          let b, occs = update_occurrence_counter occs in
+            if not b then (occs, Fail)
+            else if Termops.eq_constr (fst rew.rew_evars) t rew.rew_to then (occs, Identity)
             else
               let res = { rew with rew_car = ty } in
               let res = Success (coerce env cstr res) in
-              (occ, res)
+              (occs, res)
     }
 
 let apply_lemma l2r flags oc by loccs : strategy = { strategy =
@@ -890,9 +884,10 @@ let apply_lemma l2r flags oc by loccs : strategy = { strategy =
       | None -> None
       | Some rew -> Some rew
     in
-    let _, res = (apply_rule unify loccs).strategy { input with
-                                                     state = 0 ;
+    let loccs, res = (apply_rule unify).strategy { input with
+                                                     state = initialize_occurrence_counter loccs ;
                                                      evars } in
+    check_used_occurrences loccs;
     (), res
                                                    }
 
@@ -1423,12 +1418,13 @@ let rewrite_with l2r flags c occs : strategy = { strategy =
       let (sigma, rew) = refresh_hypinfo env sigma c in
       unify_eqn rew l2r flags env (sigma, cstrs) None t
     in
-    let app = apply_rule unify occs in
+    let app = apply_rule unify in
     let strat =
       Strategies.fix (fun aux ->
         Strategies.choice app (subterm true default_flags aux))
     in
-    let _, res = strat.strategy { input with state = 0 } in
+    let occs, res = strat.strategy { input with state = initialize_occurrence_counter occs } in
+    check_used_occurrences occs;
     ((), res)
                                                }
 
@@ -2076,11 +2072,12 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
   Proofview.Goal.enter begin fun gl ->
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
   let unify env evars t = unify_abs res l2r sort env evars t in
-  let app = apply_rule unify occs in
+  let app = apply_rule unify in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
   let strat = { strategy = fun ({ state = () } as input) ->
-    let _, res = substrat.strategy { input with state = 0 } in
+    let occs, res = substrat.strategy { input with state = initialize_occurrence_counter occs } in
+    check_used_occurrences occs;
     (), res
               }
   in
