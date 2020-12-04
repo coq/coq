@@ -79,7 +79,7 @@ Setting properties of a function's arguments
 
       `!`
          the function will be unfolded only if all the arguments marked with `!`
-         evaulate to constructors.  See :ref:`Args_effect_on_unfolding`.
+         evaluate to constructors.  See :ref:`Args_effect_on_unfolding`.
 
       :n:`@name {? % @scope }`
          a *formal parameter* of the function :n:`@reference` (i.e.
