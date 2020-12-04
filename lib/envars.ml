@@ -145,7 +145,7 @@ let coqpath =
 
 (** {2 Caml paths} *)
 
-let ocamlfind () = Coq_config.ocamlfind
+let ocamlfind () = getenv_else "OCAMLFIND" (fun () -> Coq_config.ocamlfind)
 
 (** {1 XDG utilities} *)
 
