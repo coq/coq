@@ -117,15 +117,14 @@ in time.
   Coq has been tagged.
 - [ ] Have some people test the recently auto-generated Windows and MacOS
   packages.
-- [ ] In a PR:
+- [ ] In a PR against `vX.X` (for testing):
   - Change the version name from alpha to beta1 (see
   [#7009](https://github.com/coq/coq/pull/7009/files)).
   - We generally do not update the magic numbers at this point.
   - Set `is_a_released_version` to `true` in `configure.ml`.
 - [ ] Put the `VX.X+beta1` tag using `git tag -s`.
-- [ ] Check using `git push --tags --dry-run` that you are not
-  pushing anything else than the new tag. If needed, remove spurious
-  tags with `git tag -d`. When this is OK, proceed with `git push --tags`.
+- [ ] Push the new tag with `git push upstream VX.X+beta1 --dry-run`
+  (remove the `--dry-run` and redo if all looks OK).
 - [ ] Set `is_a_released_version` to `false` in `configure.ml`
   (if you forget about it, you'll be reminded whenever you try to
   backport a PR with a changelog entry).
@@ -156,14 +155,13 @@ in time.
 ## At the final release time ##
 
 - [ ] Prepare the release notes (see above)
-- [ ] In a PR:
+- [ ] In a PR against `vX.X` (for testing):
   - Change the version name from X.X.0 and the magic numbers (see
   [#7271](https://github.com/coq/coq/pull/7271/files)).
   - Set `is_a_released_version` to `true` in `configure.ml`.
 - [ ] Put the `VX.X.0` tag.
-- [ ] Check using `git push --tags --dry-run` that you are not
-  pushing anything else than the new tag. If needed, remove spurious
-  tags with `git tag -d`. When this is OK, proceed with `git push --tags`.
+- [ ] Push the new tag with `git push upstream VX.X.0 --dry-run`
+  (remove the `--dry-run` and redo if all looks OK).
 - [ ] Set `is_a_released_version` to `false` in `configure.ml`
   (if you forget about it, you'll be reminded whenever you try to
   backport a PR with a changelog entry).
