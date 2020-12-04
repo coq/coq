@@ -1,3 +1,4 @@
 
-**Commands and options**
+Commands and options
+^^^^^^^^^^^^^^^^^^^^
 
