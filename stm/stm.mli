@@ -174,7 +174,7 @@ val reset_task_queue : unit -> unit
 (* A .vio contains tasks to be completed *)
 type vcs
 val check_task : string -> (vcs,RemoteCounter.remote_counters_status) Library.seg_tasks -> int -> bool
-val info_tasks : (vcs,RemoteCounter.remote_counters_status) Library.seg_tasks -> (string * Loc.t option * Loc.t option * Names.Constant.t * float * int) list
+val info_tasks : (vcs,RemoteCounter.remote_counters_status) Library.seg_tasks -> (string * Loc.t option * Loc.t option * string * float * int) list
 val finish_tasks : string ->
   Library.seg_univ -> Library.seg_proofs ->
     (vcs,RemoteCounter.remote_counters_status) Library.seg_tasks -> Library.seg_univ * Library.seg_proofs

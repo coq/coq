@@ -44,6 +44,6 @@ type ('a,'b) request = {
   loc_end : Loc.t option;
   uuid     : 'a;
   name     : string;
-  kernel_name : Names.Constant.t;
+  kernel_name : string;
 }
 

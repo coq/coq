@@ -1413,7 +1413,7 @@ end = struct (* {{{ *)
           loc_end = t_loc_end;
           uuid = t_uuid;
           name = t_name;
-          kernel_name = t_kernel_name;
+          kernel_name = Constant.to_string t_kernel_name;
         }, t_drop, t_states))
         with VCS.Expired -> None
 
@@ -1588,7 +1588,7 @@ and Slaves : sig
   type 'a tasks = ('a,VCS.vcs) Stateid.request list
   val dump_snapshot : unit -> (VCS.vcs,Future.UUID.t) Library.task list
   val check_task : string -> int option tasks -> int -> bool
-  val info_tasks : int option tasks -> (string * Loc.t option * Loc.t option * Names.Constant.t * float * int) list
+  val info_tasks : int option tasks -> (string * Loc.t option * Loc.t option * string * float * int) list
   val finish_task :
     string ->
     Library.seg_univ -> Library.seg_proofs ->
