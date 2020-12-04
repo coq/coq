@@ -920,3 +920,6 @@ plugin:ci-smtcoq:
 
 plugin:ci-stalmarck:
   extends: .ci-template
+
+plugin:ci-tactician:
+  extends: .ci-template-flambda
