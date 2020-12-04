@@ -395,3 +395,10 @@
 : "${coqtail_CI_REF:=master}"
 : "${coqtail_CI_GITURL:=https://github.com/whonore/Coqtail}"
 : "${coqtail_CI_ARCHIVEURL:=${coqtail_CI_GITURL}/archive}"
+
+########################################################################
+# Tactician
+########################################################################
+: "${tactician_CI_REF:=coqdev}"
+: "${tactician_CI_GITURL:=https://github.com/coq-tactician/coq-tactician}"
+: "${tactician_CI_ARCHIVEURL:=${coqtail_CI_GITURL}/archive}"

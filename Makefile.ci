@@ -55,6 +55,7 @@ CI_TARGETS= \
     ci-sf \
     ci-simple_io \
     ci-stdlib2 \
+    ci-tactician \
     ci-tlc \
     ci-unimath \
     ci-unicoq \

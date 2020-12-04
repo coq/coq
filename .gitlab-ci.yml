@@ -958,3 +958,6 @@ plugin:ci-relation_algebra:
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
+
+plugin:ci-tactician:
+  extends: .ci-template
