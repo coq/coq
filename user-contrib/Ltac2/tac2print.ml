@@ -466,7 +466,7 @@ end
 let () = register_init "pattern" begin fun env sigma c ->
   let c = to_pattern c in
   let c = try Printer.pr_lconstr_pattern_env env sigma c with _ -> str "..." in
-  str "pattern:(" ++ c ++ str ")"
+  str "pat:(" ++ c ++ str ")"
 end
 
 let () = register_init "message" begin fun _ _ pp ->

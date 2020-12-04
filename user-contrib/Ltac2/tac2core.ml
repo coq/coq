@@ -1147,7 +1147,7 @@ let () =
     let sigma = Evd.from_env env in
     Patternops.subst_pattern env sigma subst c
   in
-  let print env sigma pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env sigma pat ++ str ")" in
+  let print env sigma pat = str "pat:(" ++ Printer.pr_lconstr_pattern_env env sigma pat ++ str ")" in
   let interp _ c = return (Value.of_pattern c) in
   let obj = {
     ml_intern = intern;
