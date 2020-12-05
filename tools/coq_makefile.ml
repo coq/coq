@@ -216,7 +216,7 @@ let generate_conf_coq_config oc =
   section oc "Coq configuration.";
   let src_dirs = Coq_config.all_src_dirs in
   Envars.print_config ~prefix_var_name:"COQMF_" oc src_dirs;
-  fprintf oc "COQMF_WINDRIVE=%s\n" (windrive Coq_config.coqlib)
+  fprintf oc "COQMF_WINDRIVE=%s\n" (windrive (Envars.coqlib()))
 ;;
 
 let generate_conf_files oc
