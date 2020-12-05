@@ -45,6 +45,12 @@
 *.v.html
 *.stamp
 *.native
+
+# For now, we do not store opam files in the repo anymore, to
+# discourage people to install from the git repo instead of using the
+# core-dev repo
+*.opam
+
 revision
 TAGS
 .DS_Store

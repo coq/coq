@@ -379,8 +379,11 @@ pkg:opam:
   # OPAM will build out-of-tree so no point in importing artifacts
   script:
     - set -e
-    - opam pin add --kind=path coq.dev .
+    - dune build coq.opam
+    - opam pin add --kind=path coq.dev
+    - dune build coqide-server.opam
     - opam pin add --kind=path coqide-server.dev .
+    - dune build coqide.opam
     - opam pin add --kind=path coqide.dev .
     - set +e
   variables:
