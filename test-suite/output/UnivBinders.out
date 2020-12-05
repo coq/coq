@@ -162,6 +162,9 @@ When declaring multiple axioms in one command, only the first is allowed a unive
 foo@{i} = Type@{M.i} -> Type@{i}
      : Type@{max(M.i+1,i+1)}
 (* i |=  *)
+Type@{u0} -> Type@{UnivBinders.64}
+     : Type@{max(u0+1,UnivBinders.64+1)}
+(* {UnivBinders.64} |=  *)
 bind_univs.mono = 
 Type@{bind_univs.mono.u}
      : Type@{bind_univs.mono.u+1}

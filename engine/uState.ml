@@ -113,19 +113,18 @@ let constraints uctx = snd uctx.local
 let context uctx = ContextSet.to_context uctx.local
 
 let compute_instance_binders inst ubinders =
-  let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
   let map lvl =
-    try Name (LMap.find lvl revmap)
-    with Not_found -> Anonymous
+    try Name (Option.get (LMap.find lvl ubinders).uname)
+    with Option.IsNone | Not_found -> Anonymous
   in
   Array.map map (Instance.to_array inst)
 
 let univ_entry ~poly uctx =
   let open Entries in
   if poly then
-    let (binders, _) = uctx.names in
+    let (_, rbinders) = uctx.names in
     let uctx = context uctx in
-    let nas = compute_instance_binders (UContext.instance uctx) binders in
+    let nas = compute_instance_binders (UContext.instance uctx) rbinders in
     Polymorphic_entry (nas, uctx)
   else Monomorphic_entry (context_set uctx)
 
@@ -158,23 +157,8 @@ let of_binders names =
   in
   { empty with names = (names, rev_map) }
 
-let invent_name (named,cnt) u =
-  let rec aux i =
-    let na = Id.of_string ("u"^(string_of_int i)) in
-    if Id.Map.mem na named then aux (i+1)
-    else Id.Map.add na u named, i+1
-  in
-  aux cnt
-
 let universe_binders uctx =
-  let named, rev = uctx.names in
-  let named, _ = LSet.fold (fun u named ->
-      match LMap.find u rev with
-      | exception Not_found -> (* not sure if possible *) invent_name named u
-      | { uname = None } -> invent_name named u
-      | { uname = Some _ } -> named)
-      (ContextSet.levels uctx.local) (named, 0)
-  in
+  let named, _ = uctx.names in
   named
 
 let instantiate_variable l b v =
@@ -447,9 +431,9 @@ let check_univ_decl ~poly uctx decl =
   let names = decl.univdecl_instance in
   let extensible = decl.univdecl_extensible_instance in
   if poly then
-    let (binders, _) = uctx.names in
+    let (_, rbinders) = uctx.names in
     let uctx = universe_context ~names ~extensible uctx in
-    let nas = compute_instance_binders (UContext.instance uctx) binders in
+    let nas = compute_instance_binders (UContext.instance uctx) rbinders in
     Entries.Polymorphic_entry (nas, uctx)
   else
     let () = check_universe_context_set ~names ~extensible uctx in

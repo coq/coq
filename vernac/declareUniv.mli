@@ -10,11 +10,16 @@
 
 open Names
 
-(* object_kind , id *)
+(** Also used by [Declare] for constants, [DeclareInd] for inductives, etc.
+    Containts [object_kind , id]. *)
 exception AlreadyDeclared of (string option * Id.t)
 
-(** Global universe contexts, names and constraints *)
+(** Internally used to declare names of universes from monomorphic
+   constants/inductives. Noop on polymorphic references. *)
 val declare_univ_binders : GlobRef.t -> UnivNames.universe_binders -> unit
 
+(** Command [Universes]. *)
 val do_universe : poly:bool -> lident list -> unit
+
+(** Command [Constraint]. *)
 val do_constraint : poly:bool -> Constrexpr.univ_constraint_expr list -> unit
