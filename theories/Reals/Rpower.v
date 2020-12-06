@@ -128,19 +128,37 @@ Proof.
   elim (Rlt_irrefl _ (Rlt_trans _ _ _ H H2)).
 Qed.
 
-Lemma exp_ineq1 : forall x:R, 0 < x -> 1 + x < exp x.
+Lemma exp_ineq1 : forall x : R, x <> 0 -> 1 + x < exp x.
 Proof.
-  intros; apply Rplus_lt_reg_l with (- exp 0); rewrite <- (Rplus_comm (exp x));
-    assert (H0 := MVT_cor1 exp 0 x derivable_exp H); elim H0;
-      intros; elim H1; intros; unfold Rminus in H2; rewrite H2;
-        rewrite Ropp_0; rewrite Rplus_0_r;
-          replace (derive_pt exp x0 (derivable_exp x0)) with (exp x0).
-  rewrite exp_0; rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
-    pattern x at 1; rewrite <- Rmult_1_r; rewrite (Rmult_comm (exp x0));
-      apply Rmult_lt_compat_l.
-  apply H.
-  rewrite <- exp_0; apply exp_increasing; elim H3; intros; assumption.
-  symmetry ; apply derive_pt_eq_0; apply derivable_pt_lim_exp.
+  assert (Hd : forall c : R,
+             derivable_pt_lim (fun x : R => exp x - (x + 1)) c (exp c - 1)).
+  intros.
+  apply derivable_pt_lim_minus; [apply derivable_pt_lim_exp | ].
+  replace (1) with (1 + 0) at 1 by lra.
+  apply derivable_pt_lim_plus;
+    [apply derivable_pt_lim_id | apply derivable_pt_lim_const].
+  intros x xdz; destruct (Rtotal_order x 0)  as [xlz|[xez|xgz]].
+  - destruct (MVT_cor2 _ _ x 0 xlz (fun c _ => Hd c)) as [c [HH1 HH2]].
+    rewrite exp_0 in HH1.
+    assert (H1 : 0 < x * exp c - x); [| lra].
+    assert (H2 : x * exp 0  < x * exp c); [| rewrite exp_0 in H2; lra].
+    apply Rmult_lt_gt_compat_neg_l; auto.
+    now apply exp_increasing.
+  - now case xdz.
+  - destruct (MVT_cor2 _ _ 0 x xgz (fun c _ => Hd c)) as [c [HH1 HH2]].
+    rewrite exp_0 in HH1.
+    assert (H1 : 0 < x * exp c - x); [| lra].
+    assert (H2 : x * exp 0  < x * exp c); [| rewrite exp_0 in H2; lra].
+    apply Rmult_lt_compat_l; auto.
+    now apply exp_increasing.
+Qed.
+
+Lemma exp_ineq1_le (x : R) : 1 + x <= exp x.
+Proof.
+  destruct (Req_EM_T x 0) as [xeq|?].
+  - rewrite xeq, exp_0; lra.
+  - left.
+    now apply exp_ineq1.
 Qed.
 
 Lemma ln_exists1 : forall y:R, 1 <= y -> { z:R | y = exp z }.
@@ -159,7 +177,7 @@ Proof.
   unfold f; apply Rplus_le_reg_l with y; left;
     apply Rlt_trans with (1 + y).
   rewrite <- (Rplus_comm y); apply Rplus_lt_compat_l; apply Rlt_0_1.
-  replace (y + (exp y - y)) with (exp y); [ apply (exp_ineq1 y H0) | ring ].
+  replace (y + (exp y - y)) with (exp y); [ apply (exp_ineq1 y); lra | ring ].
   unfold f; change (continuity (exp - fct_cte y));
     apply continuity_minus;
       [ apply derivable_continuous; apply derivable_exp
