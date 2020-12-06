@@ -427,6 +427,7 @@ and extract_really_ind env kn mib =
     (* Everything concerning parameters. *)
     (* We do that first, since they are common to all the [mib]. *)
     let mip0 = mib.mind_packets.(0) in
+    let ndecls = List.length mib.mind_params_ctxt in
     let npar = mib.mind_nparams in
     let epar = push_rel_context mib.mind_params_ctxt env in
     let sg = Evd.from_env env in
@@ -462,17 +463,17 @@ and extract_really_ind env kn mib =
       if not p.ip_logical then
         let types = arities_of_constructors env ((kn,i),u) in
         for j = 0 to Array.length types - 1 do
-          let t = snd (decompose_prod_n npar types.(j)) in
+          let t = snd (decompose_prod_n_assum ndecls types.(j)) in
           let prods,head = dest_prod epar t in
           let nprods = List.length prods in
           let args = match Constr.kind head with
             | App (f,args) -> args (* [Constr.kind f = Ind ip] *)
             | _ -> [||]
           in
-          let dbmap = parse_ind_args p.ip_sign args (nprods + npar) in
-          let db = db_from_ind dbmap npar in
+          let dbmap = parse_ind_args p.ip_sign args (nprods + ndecls) in
+          let db = db_from_ind dbmap ndecls in
           p.ip_types.(j) <-
-            extract_type_cons epar sg db dbmap (EConstr.of_constr t) (npar+1)
+            extract_type_cons epar sg db dbmap (EConstr.of_constr t) (ndecls+1)
         done
     done;
     (* Third pass: we determine special cases. *)
