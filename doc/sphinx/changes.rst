@@ -153,6 +153,14 @@ Kernel
   <https://github.com/coq/coq/pull/12525>`_ and `#12647
   <https://github.com/coq/coq/pull/12647>`_, by Hugo Herbelin).
 
+- **Fixed:**
+  Fix an incompleteness in the typechecking of `match` for
+  cumulative inductive types. This could result in breaking subject
+  reduction.
+  (`#13501 <https://github.com/coq/coq/pull/13501>`_,
+  fixes `#13495 <https://github.com/coq/coq/issues/13495>`_,
+  by Matthieu Sozeau).
+
 Specification language, type inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
