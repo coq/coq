@@ -62,6 +62,7 @@ jobs:
 
   - script: |
       set -e
+      export export HOMEBREW_NO_INSTALL_CLEANUP=1
       brew install gnu-time opam gtksourceview3 adwaita-icon-theme
       pip3 install macpack
     displayName: 'Install system dependencies'
