@@ -27,8 +27,14 @@ depends: [
   "conf-findutils" {build}
 ]
 
+depopts: [
+  "coq-native"
+]
+
 build: [
-  [ "./configure" "-prefix" prefix "-coqide" "no" ]
+  [ "./configure" "-prefix" prefix "-coqide" "no"
+    "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
+  ]
   [make "-j%{jobs}%"]
   [make "-j%{jobs}%" "byte"]
 ]
