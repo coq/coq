@@ -309,7 +309,7 @@ at the time of use of the notation.
    a notation should only be used for printing.
 
    If a notation to be used both for parsing and printing is
-   overriden, both the parsing and printing are invalided, even if the
+   overridden, both the parsing and printing are invalided, even if the
    overriding rule is only parsing.
 
    If a given notation string occurs only in ``only printing`` rules,
