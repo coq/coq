@@ -79,7 +79,7 @@ type 'a tree =
 | Leaf of mon * 'a or_var
 | Node of mon * 'a or_var * 'a tree * 'a tree * mon
 
-type 'a subs = Nil of mon | Cons of int * 'a tree * 'a subs
+type 'a subs = Nil of mon * int | Cons of int * 'a tree * 'a subs
 
 let eval = function
 | Leaf (w, _) -> w
@@ -101,7 +101,10 @@ let rec tree_get h w t i = match t with
     else tree_get h (mul w (eval t1)) t2 (i - h - 1)
 
 let rec get w l i = match l with
-| Nil w' -> mul w w', Inr i
+| Nil (w', n) ->
+  let w = mul w w' in
+  if i < n then w, Inl (Var (i + 1))
+  else n + w, Inr (i - n) (* FIXME: double check *)
 | Cons (h, t, rem) ->
   if i < h then tree_get h w t i else get (mul (eval t) w) rem (i - h)
 
@@ -112,10 +115,8 @@ let tree_write w = function
 | Node (w', x, t1, t2, wt) -> Node (mul w w', x, t1, t2, wt)
 
 let write w l = match l with
-| Nil w' -> Nil (mul w w')
+| Nil (w', n) -> Nil (mul w w', n)
 | Cons (h, t, rem) -> Cons (h, tree_write w t, rem)
-
-let empty = Nil one
 
 let cons x l = match l with
 | Cons (h1, t1, Cons (h2, t2, rem)) ->
@@ -131,7 +132,7 @@ let expand_rel n s =
   | Inr i -> Inr (k + i + 1, Some (i + 1))
 
 let is_subs_id = function
-| Nil w -> Int.equal w 0
+| Nil (w, _) -> Int.equal w 0
 | Cons (_, _, _) -> false
 
 let subs_cons v s = cons (Arg v) s
@@ -142,16 +143,18 @@ let rec push_vars i s =
 
 let subs_liftn n s =
   if Int.equal n 0 then s
-  else
+  else match s with
+  | Nil (0, m) -> Nil (0, m + n) (* Preserve identity substitutions *)
+  | Nil _ | Cons _ ->
     let s = write n s in
     push_vars n s
 
-let subs_lift s =
+let subs_lift s = match s with
+| Nil (0, m) -> Nil (0, m + 1) (* Preserve identity substitutions *)
+| Nil _ | Cons _ ->
   cons (Var 1) (write 1 s)
 
-let subs_id n =
-  if Int.equal n 0 then empty
-  else push_vars n empty
+let subs_id n = Nil (0, n)
 
 let subs_shft (n, s) = write n s
 
@@ -179,10 +182,17 @@ let rec tree_map mk e = function
   let t2, e = tree_map mk e t2 in
   Node (w + n, x, t1, t2, mul (eval t1) (eval t2)), e
 
+let rec lift_id e n = match e with
+| ELID -> Nil (0, n)
+| ELSHFT (e, k) -> write k (lift_id e n)
+| ELLFT (k, e) ->
+  if k <= n then subs_liftn k (lift_id e (n - k))
+  else assert false
+
 let rec lift_subst mk e s = match s with
-| Nil w ->
-  let (n, _) = pop w 0 e in
-  Nil (w + n)
+| Nil (w, m) ->
+  let (n, e) = pop w 0 e in
+  write (w + n) (lift_id e m)
 | Cons (h, t, rem) ->
   let t, e = tree_map mk e t in
   let rem = lift_subst mk e rem in
