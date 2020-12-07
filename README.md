@@ -1,7 +1,7 @@
 # Coq
 
-[![GitLab][gitlab-badge]][gitlab-link]
-[![Azure Pipelines][azure-badge]][azure-link]
+[![GitLab CI][gitlab-badge]][gitlab-link]
+[![GitHub CI][action-badge]][action-link]
 [![Zulip][zulip-badge]][zulip-link]
 [![Discourse][discourse-badge]][discourse-link]
 [![DOI][doi-badge]][doi-link]
@@ -9,8 +9,8 @@
 [gitlab-badge]: https://gitlab.com/coq/coq/badges/master/pipeline.svg
 [gitlab-link]: https://gitlab.com/coq/coq/commits/master
 
-[azure-badge]: https://dev.azure.com/coq/coq/_apis/build/status/coq.coq?branchName=master
-[azure-link]: https://dev.azure.com/coq/coq/_build/latest?definitionId=1?branchName=master
+[action-badge]: https://github.com/coq/coq/workflows/GitHub%20CI/badge.svg?branch=master
+[action-link]: https://github.com/coq/coq/actions?query=workflow:"GitHub%20CI"
 
 [discourse-badge]: https://img.shields.io/badge/Discourse-forum-informational.svg
 [discourse-link]: https://coq.discourse.group/
