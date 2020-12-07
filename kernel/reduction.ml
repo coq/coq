@@ -255,7 +255,7 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
     else
       cmp_cumul cv_pb variances u1 u2 s
 
-let convert_inductives cv_pb ind nargs u1 u2 (s, check) =
+let convert_inductives cv_pb ind ~nargs u1 u2 (s, check) =
   convert_inductives_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
     cv_pb ind nargs u1 u2 s, check
 
@@ -585,7 +585,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
           let nargs = same_args_size v1 v2 in
-          match convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv with
+          match convert_inductives cv_pb (mind, snd ind1) ~nargs u1 u2 cuniv with
           | cuniv -> convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
           | exception MustExpand ->
             let env = info_env infos.cnv_inf in

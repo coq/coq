@@ -330,48 +330,90 @@ let check_allowed_sort ksort specif =
     let s = inductive_sort_family (snd specif) in
     raise (LocalArity (Some(elim_sort specif, ksort,s,error_elim_explain ksort s)))
 
-let check_correct_arity env c pj ind specif params =
-  (* We use l2r:true for compat with old versions which used CONV
-     instead of CUMUL called with arguments flipped. It is relevant
-     for performance eg in bedrock / Kami. *)
-  let arsign,_ = get_instantiated_arity ind specif params in
-  let rec srec env ar pt =
-    let pt' = whd_all env pt in
-    match ar, kind pt' with
-    | (LocalAssum (_,a1))::ar', Prod (na1,a1',t) ->
-      let () =
-        try conv_leq ~l2r:true env a1 a1'
-        with NotConvertible -> raise (LocalArity None) in
-      srec (push_rel (LocalAssum (na1,a1)) env) ar' t
-    (* The last Prod domain is the type of the scrutinee *)
-    | [], Prod (na1,a1',a2) ->
-      let env' = push_rel (LocalAssum (na1,a1')) env in
-      let ksort = match kind (whd_all env' a2) with
-      | Sort s -> Sorts.family s
-      | _ -> raise (LocalArity None)
-      in
-      let dep_ind = build_dependent_inductive ind specif params in
-      let () =
-        (* This ensures that the type of the scrutinee is <= the
-           inductive type declared in the predicate. *)
-        try conv_leq ~l2r:true env dep_ind a1'
-        with NotConvertible -> raise (LocalArity None)
-      in
-      let () = check_allowed_sort ksort specif in
-      (* We return the "higher" inductive universe instance from the predicate,
-         the branches must be typeable using these universes.
-         The find_rectype call cannot fail due to the cumulativity check above. *)
-      let (pind, _args) = find_rectype env a1' in
-      pind
-    | (LocalDef _ as d)::ar', _ ->
-      srec (push_rel d env) ar' (lift 1 pt')
-    | _ ->
-      raise (LocalArity None)
-  in
-  try srec env (List.rev arsign) pj.uj_type
-  with LocalArity kinds ->
-    error_elim_arity env ind c pj kinds
+let lift_context_tele n ctx =
+  let lift_decl (k, acc) d = (succ k, (Context.Rel.Declaration.map_constr (liftn n k) d) :: acc) in
+  let _, lctx = Context.Rel.fold_inside lift_decl ~init:(1, []) ctx in
+  List.rev lctx
 
+let check_correct_arity_params env ind cj pj specif params =
+  (** dest_prod does whd_all so no let-ins appear in pctx *)
+  let pctx, ps = dest_prod env pj.uj_type in
+  (** Check right away that the elimination sort of the predicate is allowed *)
+  let error () = error_elim_arity env ind cj.uj_val pj None in
+  let ksort = match kind ps with
+  | Sort s -> Sorts.family s
+  | _ -> error ()
+  in
+  let () =
+    try check_allowed_sort ksort specif
+    with LocalArity kinds ->
+      error_elim_arity env ind cj.uj_val pj kinds
+  in
+  let na, indty, idecls =
+    match pctx with
+    | LocalAssum (na, indty) :: idecls -> na, indty, idecls
+    | _ -> (* Not enough binders in the predicate *)
+      error ()
+  in
+  let (pind, pargs) =
+    try find_rectype (push_rel_context idecls env) indty
+    with Not_found -> error ()
+  in
+  let arsign,_ = get_instantiated_arity pind specif params in
+  let rec srec env par iar =
+    (* par = actual predicate arity, with assumptions only
+       iar = expected instanciated arity, can contain let-bindings *)
+    match par, iar with
+    (* The last assumption is the type of the scrutinee *)
+    | [LocalAssum (_, indtype)], [] ->
+      let dep_ind = build_dependent_inductive pind specif params in
+      (* This ensures that the inductive type declared in the predicate
+        has the expected shape: i.e. it is applied to params and
+        abstracted indices. *)
+      begin
+        try conv env indtype dep_ind
+        with NotConvertible -> error ()
+      end
+    | (LocalAssum (_,a1)::par'), (LocalAssum (_,a1') as d::iar') ->
+      let () =
+        try conv env a1 a1'
+        with NotConvertible -> error () in
+      srec (push_rel d env) par' iar'
+    | par', (LocalDef _ as d)::iar' ->
+      srec (push_rel d env) (lift_context_tele 1 par') iar'
+    | LocalDef _ :: _, _ -> assert false (* No let-ins here *)
+    | LocalAssum _ :: _, _ (* Ill formed: too many or too little binders *)
+    | _, LocalAssum _ :: _
+    | [], [] -> error ()
+  in
+  let () = srec env (List.rev (LocalAssum (na, Term.applist (mkIndU pind, pargs)) :: idecls))
+    (List.rev arsign) in
+  pind
+
+let is_cumulative env spec ~nargs cu pu =
+  try
+    ignore (convert_inductives CUMUL spec ~nargs cu pu
+          (Environ.universes env, checked_universes)); true
+  with NotConvertible -> false
+
+let check_correct_arity env cj pj (cind, cu as ind) specif params =
+  (* Check that the predicate is correct w.r.t params,
+    meaning that the case can be applied to any value in
+    [tInd pind params indices]. *)
+  let (pind, pu as pindu) =
+    check_correct_arity_params env ind cj pj specif params
+  in
+  (* Now check that the discriminee's inductive type is smaller than the
+     type expected by the predicate. For that we just need to compare the
+     universes for cumulativity. *)
+  let spec = (fst specif, snd pind) in
+  let nargs = inductive_cumulativity_arguments spec in
+  if not (Ind.CanOrd.equal pind cind &&
+    is_cumulative env spec ~nargs cu pu) then
+    let _cjind, cjargs = decompose_appvect cj.uj_type in
+    let expected = Constr.mkApp (Constr.mkIndU (pind, pu), cjargs) in
+    raise (TypeError(env,ActualType(cj,expected)))
+  else pindu
 
 (************************************************************************)
 (* Type of case branches *)
@@ -399,14 +441,14 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
 let build_case_type env n p c realargs =
   whd_betaiota env (Term.lambda_appvect_assum (n+1) p (Array.of_list (realargs@[c])))
 
-let type_case_branches env ((ind, _ as pind),largs) pj c =
+let type_case_branches env ((ind, _ as pind),largs) pj cj =
   let specif = lookup_mind_specif env ind in
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
-  let pind = check_correct_arity env c pj pind specif params in
+  let pind = check_correct_arity env cj pj pind specif params in
   let lc = build_branches_type pind specif params p in
-  let ty = build_case_type env (snd specif).mind_nrealdecls p c realargs in
+  let ty = build_case_type env (snd specif).mind_nrealdecls p cj.uj_val realargs in
   (lc, ty)
 
 (************************************************************************)

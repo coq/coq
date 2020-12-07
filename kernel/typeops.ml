@@ -403,7 +403,7 @@ let type_of_case env ci p pt iv c ct _lf lft =
     then error_bad_invert env
   in
   let (bty,rslty) =
-    type_case_branches env indspec (make_judge p pt) c in
+    type_case_branches env indspec (make_judge p pt) (make_judge c ct) in
   let () = check_branch_types env pind c ct lft bty in
   ci, rslty
 

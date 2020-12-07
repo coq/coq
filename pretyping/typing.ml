@@ -125,34 +125,82 @@ let max_sort l =
   if List.mem_f Sorts.family_equal InType l then InType else
   if List.mem_f Sorts.family_equal InSet l then InSet else InProp
 
-let is_correct_arity env sigma c pj ind specif params =
-  let arsign = make_arity_signature env sigma true (make_ind_family (ind,params)) in
+let lift_assums_tele n ctx =
+  let lift_decl (k, acc) (na, t)  = (succ k, (na, EConstr.Vars.liftn n k t) :: acc) in
+  let _, lctx = List.fold_left lift_decl (1, []) ctx in
+  List.rev lctx
+
+(* Check that the predicate is well-formed with respect to the inductive type declaration and
+  actual parameters of the discriminees' type. *)
+let check_correct_arity_params env sigma cj pj ind specif params =
   let allowed_sorts = sorts_below (elim_sort specif) in
-  let error () = Pretype_errors.error_elim_arity env sigma ind c pj None in
-  let rec srec env sigma pt ar =
-    let pt' = whd_all env sigma pt in
-    match EConstr.kind sigma pt', ar with
-    | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
+  let error () = Pretype_errors.error_elim_arity env sigma ind cj.uj_val pj None in
+  (* splay_prod does whd_all so no let-ins appear in pctx *)
+  let pctx, ps = splay_prod env sigma pj.uj_type in
+  let na, indty, idecls =
+    match pctx with
+    | (na, indty) :: idecls -> na, indty, idecls
+    | _ -> (* Not enough binders in the predicate *)
+      error ()
+  in
+  let (pind, pargs) =
+    try
+      let idecls = List.map (fun (n, a) -> LocalAssum (n, a)) idecls in
+      find_mrectype (push_rel_context idecls env) sigma indty
+    with Not_found -> error ()
+  in
+  let pindu = EConstr.EInstance.kind sigma (snd pind) in
+  let arsign = make_arity_signature env sigma true (make_ind_family ((fst pind, pindu),params)) in
+  let rec srec env sigma par ar =
+    match par, ar with
+    | (na1,a1) :: par', (LocalAssum (_,a1'))::ar' ->
       begin match Evarconv.unify_leq_delay env sigma a1 a1' with
         | exception Evarconv.UnableToUnify _ -> error ()
         | sigma ->
-          srec (push_rel (LocalAssum (na1,a1)) env) sigma t ar'
+          srec (push_rel (LocalAssum (na1,a1)) env) sigma par' ar'
       end
-    | Sort s, [] ->
-        let s = ESorts.kind sigma s in
-        if not (List.mem_f Sorts.family_equal (Sorts.family s) allowed_sorts)
-        then error ()
-        else sigma, s
-    | Evar (ev,_), [] ->
-        let sigma, s = Evd.fresh_sort_in_family sigma (max_sort allowed_sorts) in
-        let sigma = Evd.define ev (mkSort s) sigma in
-        sigma, s
     | _, (LocalDef _ as d)::ar' ->
-        srec (push_rel d env) sigma (lift 1 pt') ar'
+      srec (push_rel d env) sigma (lift_assums_tele 1 par) ar'
+    | [], [] ->
+      begin
+        match EConstr.kind sigma ps with
+        | Sort s ->
+          let s = ESorts.kind sigma s in
+          let sf = Sorts.family s in
+          if not (List.mem_f Sorts.family_equal sf allowed_sorts)
+          then
+             let inds = inductive_sort_family (snd specif) in
+              Pretype_errors.error_elim_arity env sigma ind cj.uj_val pj
+              (Some(elim_sort specif, sf, inds, Type_errors.error_elim_explain sf inds))
+          else sigma, s
+        | Evar (ev,_) ->
+          let sigma, s = Evd.fresh_sort_in_family sigma (max_sort allowed_sorts) in
+          let sigma = Evd.define ev (mkSort s) sigma in
+          sigma, s
+        | _ -> error ()
+      end
     | _ ->
-        error ()
+      error ()
   in
-  srec env sigma pj.uj_type (List.rev arsign)
+  let sigma, s =
+    srec env sigma
+      (List.rev ((na, EConstr.applist (mkIndU pind, pargs)) :: idecls))
+      (List.rev arsign)
+  in sigma, pind, s
+
+let check_correct_arity env sigma cj pj cind specif params =
+  let sigma, pind, s = check_correct_arity_params env sigma cj pj cind specif params in
+  (* Now check that the discriminee's inductive type is smaller than the
+     type expected by the predicate. For that we just need to compare the
+     universes for cumulativity. *)
+  let spec = (fst specif, (snd (fst pind))) in
+  let nargs = Reduction.inductive_cumulativity_arguments spec in
+  match Evarconv.compare_heads env sigma ~nargs (EConstr.of_constr (Constr.mkIndU cind)) (EConstr.mkIndU pind) with
+  | Evarsolve.Success sigma -> sigma, pind, s
+  | Evarsolve.UnifFailure (sigma, e) ->
+    let _cjind, cjargs = EConstr.decompose_app sigma cj.uj_type in
+    let expected = EConstr.applist (EConstr.mkIndU pind, cjargs) in
+    error_actual_type env sigma cj expected e
 
 let lambda_applist_assum sigma n c l =
   let rec app n subst t l =
@@ -165,17 +213,20 @@ let lambda_applist_assum sigma n c l =
     | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
   app n [] c l
 
-let type_case_branches env sigma (ind,largs) pj c =
+let ind_of_eind sigma (ind, u) =
+  (ind, EConstr.EInstance.kind sigma u)
+
+let type_case_branches env sigma (ind,largs) pj cj =
   let specif = lookup_mind_specif env (fst ind) in
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
   let params = List.map EConstr.Unsafe.to_constr params in
-  let sigma, ps = is_correct_arity env sigma c pj ind specif params in
-  let lc = build_branches_type ind specif params (EConstr.to_constr ~abort_on_undefined_evars:false sigma p) in
+  let sigma, pind, ps = check_correct_arity env sigma cj pj ind specif params in
+  let lc = build_branches_type (ind_of_eind sigma pind) specif params (EConstr.to_constr ~abort_on_undefined_evars:false sigma p) in
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
-  let ty = whd_betaiota env sigma (lambda_applist_assum sigma (n+1) p (realargs@[c])) in
+  let ty = whd_betaiota env sigma (lambda_applist_assum sigma (n+1) p (realargs@[cj.uj_val])) in
   sigma, (lc, ty, Sorts.relevance_of_sort ps)
 
 let judge_of_case env sigma ci pj iv cj lfj =
@@ -183,7 +234,7 @@ let judge_of_case env sigma ci pj iv cj lfj =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj in
   let indspec = ((ind, EInstance.kind sigma u), spec) in
-  let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec pj cj.uj_val in
+  let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec pj cj in
   let () = check_case_info env (fst indspec) rci ci in
   let sigma = check_branch_types env sigma (fst indspec) cj (lfj,bty) in
   let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true) != should_invert_case env ci
