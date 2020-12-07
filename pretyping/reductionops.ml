@@ -1259,7 +1259,7 @@ let plain_instance sigma s c =
 
 let instance env sigma s c =
   (* if s = [] then c else *)
-  strong whd_betaiota env sigma (plain_instance sigma s c)
+  clos_norm_flags CClosure.betaiota env sigma (plain_instance sigma s c)
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
