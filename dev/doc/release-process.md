@@ -147,8 +147,6 @@ in time.
     to `@maximedenes`. A detailed step-by-step guide can be found [on the wiki](https://github.com/coq/coq/wiki/SigningReleases).
 - [ ] Prepare a page of news on the website with the link to the GitHub release
   (see [coq/www#63](https://github.com/coq/www/pull/63)).
-- [ ] Upload the new version of the reference manual to the website.
-  *TODO: setup some continuous deployment for this.*
 - [ ] Merge the website update, publish the release
   and send announcement e-mails.
 - [ ] Close the milestone
