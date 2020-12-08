@@ -450,10 +450,14 @@ let cc_tactic depth additionnal_terms =
                       str "  Try " ++
                       hov 8
                         begin
-                          str "\"congruence with (" ++ prlist_with_sep (fun () -> str ")" ++ spc () ++ str "(")
-                            pr_missing terms_to_complete ++ str ")\","
+                          str "\"congruence with (" ++
+                          prlist_with_sep
+                            (fun () -> str ")" ++ spc () ++ str "(")
+                            pr_missing terms_to_complete ++
+                          str ")\","
                         end ++
-                      str "  replacing metavariables by arbitrary terms.") in
+                      fnl() ++ str "  replacing metavariables by arbitrary terms")
+        in
         Tacticals.New.tclFAIL 0 msg
       | Contradiction dis ->
         let env = Proofview.Goal.env gl in
@@ -471,13 +475,9 @@ let cc_tactic depth additionnal_terms =
           convert_to_hyp_tac ida ta idb tb p
   end
 
-let cc_fail =
-  Tacticals.New.tclZEROMSG (Pp.str "congruence failed.")
 
 let congruence_tac depth l =
-  Tacticals.New.tclORELSE
-    (Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT introf) (cc_tactic depth l))
-    cc_fail
+  Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT introf) (cc_tactic depth l)
 
 (* Beware: reflexivity = constructor 1 = apply refl_equal
    might be slow now, let's rather do something equivalent
