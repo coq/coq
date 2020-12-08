@@ -143,8 +143,7 @@ in time.
     should be sent as a link to the binary (via [filesender](https://filesender.renater.fr) for example)
     together with its SHA256 hash in a signed e-mail to `dsi.securite` @ `inria.fr`
     putting `@maximedenes` in carbon copy.
-  + The MacOS packages should be signed by our own certificate, by sending them
-    to `@maximedenes`. A detailed step-by-step guide can be found [on the wiki](https://github.com/coq/coq/wiki/SigningReleases).
+  + The MacOS packages should be signed with our own certificate. A detailed step-by-step guide can be found [on the wiki](https://github.com/coq/coq/wiki/SigningReleases).
 - [ ] Prepare a page of news on the website with the link to the GitHub release
   (see [coq/www#63](https://github.com/coq/www/pull/63)).
 - [ ] Merge the website update, publish the release
