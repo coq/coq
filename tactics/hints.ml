@@ -177,6 +177,8 @@ type 'a hints_transparency_target =
 
 type import_level = HintLax | HintWarn | HintStrict
 
+let hint_as_term h = (h.hint_uctx, h.hint_term)
+
 let warn_hint_to_string = function
 | HintLax -> "Lax"
 | HintWarn -> "Warn"
