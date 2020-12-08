@@ -26,7 +26,8 @@ depends: [
   "zarith" {>= "1.10"}
 ]
 build: [
-  ["dune" "subst"] {pinned}
+# Disabled until Dune 2.8 is available
+# ["dune" "subst"] {pinned}
   [
     "dune"
     "build"
