@@ -63,11 +63,27 @@ let rec is_lift_id = function
 (* Variant of skewed lists enriched w.r.t. a monoid. See the Range module.
 
   In addition to the indexed data, every node contains a monoid element, in our
-  case, integers. It corresponds to the number of partial lifts to apply when
-  reaching this subtree. The total lift is obtained by summing all the partial
-  lifts encountered in the tree traversal. For efficiency, we also cache the
-  sum of partial lifts of the whole subtree as the last argument of the [Node]
-  constructor. *)
+  case, integers. It corresponds to the number of partial shifts to apply when
+  reaching this subtree. The total shift is obtained by summing all the partial
+  shifts encountered in the tree traversal. For efficiency, we also cache the
+  sum of partial shifts of the whole subtree as the last argument of the [Node]
+  constructor.
+
+  A more intuitive but inefficient representation of this data structure would
+  be a list of terms interspeded with shifts, as in
+
+  type 'a subst = NIL | CONS of 'a or_var * 'a subst | SHIFT of 'a subst
+
+  On this inefficient representation, the typing rules would be:
+
+  · ⊢ NIL : ·
+  Γ ⊢ σ : Δ and Γ ⊢ t : A{σ} implies Γ ⊢ CONS (t, σ) : Δ, A
+  Γ ⊢ σ : Δ implies Γ, A ⊢ SHIFT σ : Δ
+
+  The efficient representation is isomorphic to this naive variant, except that
+  shifts are grouped together, and we use skewed lists instead of lists.
+
+*)
 
 type mon = int
 let mul n m = n + m
@@ -78,9 +94,36 @@ type 'a or_var = Arg of 'a | Var of int
 type 'a tree =
 | Leaf of mon * 'a or_var
 | Node of mon * 'a or_var * 'a tree * 'a tree * mon
+(*
+  Invariants:
+  - All trees are complete.
+  - Define get_shift inductively as [get_shift (Leaf (w, _)) := w] and
+    [get_shift (Node (w, _, t1, t2, _)) := w + t1 + t2] then for every tree
+    of the form Node (_, _, t1, t2, sub), we must have
+    sub = get_shift t1 + get_shift t2.
+
+  In the naive semantics:
+
+  Leaf (w, x) := SHIFT^w (CONS (x, NIL))
+  Node (w, x, t1, t2, _) := SHIFT^w (CONS (x, t1 @ t2))
+
+*)
 
 type 'a subs = Nil of mon * int | Cons of int * 'a tree * 'a subs
+(*
+  In the naive semantics mentioned above, we have the following.
 
+  Nil (w, n) stands for SHIFT^w (ID n) where ID n is a compact form of identity
+  substitution, defined inductively as
+
+  ID 0 := NIL
+  ID (S n) := CONS (Var 1, SHIFT (ID n))
+
+  Cons (h, t, s) stands for (t @ s) and h is the total number of values in the
+  tree t. In particular, it is always of the form 2^n - 1 for some n.
+*)
+
+(* Returns the number of shifts contained in the whole tree. *)
 let eval = function
 | Leaf (w, _) -> w
 | Node (w1, _, _, _, w2) -> mul w1 w2
@@ -158,6 +201,11 @@ let subs_id n = Nil (0, n)
 
 let subs_shft (n, s) = write n s
 
+(* pop is the n-ary tailrec variant of a function whose typing rules would be
+   given as follows. Assume Γ ⊢ e : Δ, A, then
+   - Γ := Ξ, A, Ω for some Ξ and Ω with |Ω| := fst (pop e)
+   - Ξ ⊢ snd (pop e) : Δ
+*)
 let rec pop n i e =
   if Int.equal n 0 then i, e
   else match e with
