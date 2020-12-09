@@ -7,7 +7,7 @@ Check forall m n, mult' m n = Nat.mul (Nat.mul 2 m) n.
 End A.
 
 Module B.
-(* Test that an overriden scoped notation is deactivated *)
+(* Test that an overridden scoped notation is deactivated *)
 Infix "*" := mult' : nat_scope.
 Check forall m n, mult' m n = Nat.mul (Nat.mul 2 m) n.
 End B.
