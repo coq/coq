@@ -21,14 +21,11 @@ and the branch name), then a `.sh` extension (`[0-9]{5}-[a-zA-Z0-9-_]+.sh`).
 Example: `13128-SkySkimmer-noinstance.sh` containing
 
 ```
-if [ "$CI_PULL_REQUEST" = "13128" ] || [ "$CI_BRANCH" = "noinstance" ]; then
-
-    overlay elpi https://github.com/SkySkimmer/coq-elpi noinstance
-
-fi
+overlay elpi https://github.com/SkySkimmer/coq-elpi noinstance 13128
 ```
 
-(`CI_PULL_REQUEST` and `CI_BRANCH` are set in [`ci-common.sh`](../ci-common.sh))
+See [`ci-common.sh`](../ci-common.sh) for the detailed documentation of
+the `overlay` function.
 
 ### Branching conventions
 
