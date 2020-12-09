@@ -136,7 +136,7 @@ let infer_declaration env (dcl : constant_entry) =
       | Monomorphic_entry uctx -> push_context_set ~strict:true uctx env
       | Polymorphic_entry (_, uctx) -> push_context ~strict:false uctx env
     in
-    let j = Typeops.infer env t in
+    let j = Typeops.infer ~expand_let:false env t in
     let usubst, univs = Declareops.abstract_universes uctx in
     let r = Typeops.assumption_of_judgment env j in
     let t = Vars.subst_univs_level_constr usubst j.uj_val in
@@ -166,7 +166,8 @@ let infer_declaration env (dcl : constant_entry) =
         let sbst = make_instance_subst sbst in
         env, sbst, Polymorphic auctx
       in
-      let j = Typeops.infer env body in
+      let expand_let = Option.is_empty typ in
+      let j = Typeops.infer ~expand_let env body in
       let typ = match typ with
         | None ->
           Vars.subst_univs_level_constr usubst j.uj_type
@@ -302,7 +303,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let uctx = ContextSet.union uctx uctx' in
   let env = push_context_set uctx env in
   let body,env,ectx = skip_trusted_seff valid_signatures body env in
-  let j = Typeops.infer env body in
+  let j = Typeops.infer ~expand_let:false env body in
   let j = unzip ectx j in
   let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
   let c = j.uj_val in
@@ -317,7 +318,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
       on the rest of the graph (up to transitivity). *)
   let env = push_subgraph ctx env in
   let private_univs = on_snd (subst_univs_level_constraints usubst) ctx in
-  let j = Typeops.infer env body in
+  let j = Typeops.infer ~expand_let:false env body in
   let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
   let () = check_section_variables env declared tj.utj_val body in
   let def = Vars.subst_univs_level_constr usubst j.uj_val in
@@ -335,7 +336,7 @@ let translate_opaque env _kn ce =
   build_constant_declaration env def, ctx
 
 let translate_local_assum env t =
-  let j = Typeops.infer env t in
+  let j = Typeops.infer ~expand_let:false env t in
   let t = Typeops.assumption_of_judgment env j in
     j.uj_val, t
 

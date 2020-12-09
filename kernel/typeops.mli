@@ -23,7 +23,7 @@ open Environ
     When typechecking a term it may be updated to fix relevance marks.
    Do not discard the result. *)
 
-val infer      : env -> constr       -> unsafe_judgment
+val infer      : ?expand_let:bool -> env -> constr       -> unsafe_judgment
 val infer_type : env -> types        -> unsafe_type_judgment
 
 val check_context :

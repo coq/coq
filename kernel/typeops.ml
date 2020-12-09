@@ -464,6 +464,8 @@ let check_binder_annot s x =
   then x
   else (warn_bad_relevance x; {x with binder_relevance = r'})
 
+let expand_let_flag = ref true
+
 (* The typing machine. *)
     (* ATTENTION : faudra faire le typage du contexte des Const,
     Ind et Constructsi un jour cela devient des constructions
@@ -532,7 +534,8 @@ let rec execute env cstr =
       let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
         else mkLetIn(name',c1',c2',c3')
       in
-      cstr, subst1 c1 c3t
+      let ty = if !expand_let_flag then subst1 c1 c3t else mkLetIn (name', c1', c2', c3t) in
+      cstr, ty
 
     | Cast (c,k,t) ->
       let c', ct = execute env c in
@@ -635,16 +638,21 @@ let check_wellformed_universes env c =
   with UGraph.UndeclaredLevel u ->
     error_undeclared_universe env u
 
-let infer env constr =
+let infer expand_let env constr =
   let () = check_wellformed_universes env constr in
-  let constr, t = execute env constr in
+  let constr, t =
+    if not expand_let then Flags.without_option expand_let_flag (fun c -> execute env c) constr
+    else execute env constr
+  in
   make_judge constr t
 
 let infer =
   if Flags.profile then
     let infer_key = CProfile.declare_profile "Fast_infer" in
-      CProfile.profile2 infer_key (fun b c -> infer b c)
-  else (fun b c -> infer b c)
+      CProfile.profile2 infer_key (fun e b c -> infer e b c)
+  else (fun e b c -> infer e b c)
+
+let infer ?(expand_let=true) env constr = infer expand_let env constr
 
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
   infer_assumption env c t
@@ -655,7 +663,7 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let constr, t = execute env constr in
+  let constr, t = Flags.without_option expand_let_flag (fun c -> execute env c) constr in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}
 
