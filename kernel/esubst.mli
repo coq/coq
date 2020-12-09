@@ -11,28 +11,38 @@
 (** Explicit substitutions *)
 
 (** {6 Explicit substitutions } *)
-(** Explicit substitutions of type ['a].
-    - ESID(n)             = %n END   bounded identity
-    - CONS([|t1..tn|],S)  = (S.t1...tn)    parallel substitution
-        (beware of the order: indice 1 is substituted by tn)
-    - SHIFT(n,S)          = (^n o S) terms in S are relocated with n vars
-    - LIFT(n,S)           = (%n S) stands for ((^n o S).n...1)
-         (corresponds to S crossing n binders) *)
-type 'a subs = private
-  | ESID of int
-  | CONS of 'a array * 'a subs
-  | SHIFT of int * 'a subs
-  | LIFT of int * 'a subs
+(** Explicit substitutions for some type of terms ['a].
+
+    Assuming terms enjoy a notion of typability Γ ⊢ t : A, where Γ is a
+    telescope and A a type, substitutions can be typed as Γ ⊢ σ : Δ, where
+    as a first approximation σ is a list of terms u₁; ...; uₙ s.t.
+    Δ := (x₁ : A₁), ..., (xₙ : Aₙ) and Γ ⊢ uᵢ : Aᵢ{u₁...uᵢ₋₁} for all 1 ≤ i ≤ n.
+
+    Substitutions can be applied to terms as follows, and furthermore
+    if Γ ⊢ σ : Δ and Δ ⊢ t : A, then Γ ⊢ t{σ} : A{σ}.
+
+    We make the typing rules explicit below, but we omit the explicit De Bruijn
+    fidgetting and leave relocations implicit in terms and types.
+
+*)
+type 'a subs
 
 (** Derived constructors granting basic invariants *)
-val subs_id : int -> 'a subs
-val subs_cons: 'a array * 'a subs -> 'a subs
-val subs_shft: int * 'a subs -> 'a subs
-val subs_lift: 'a subs -> 'a subs
-val subs_liftn: int -> 'a subs -> 'a subs
 
-(** [subs_shift_cons(k,s,[|t1..tn|])] builds (^k s).t1..tn *)
-val subs_shift_cons: int * 'a subs * 'a array -> 'a subs
+(** Assuming |Γ| = n, Γ ⊢ subs_id n : Γ *)
+val subs_id : int -> 'a subs
+
+(** Assuming Γ ⊢ σ : Δ and Γ ⊢ t : A{σ}, then Γ ⊢ subs_cons t σ : Δ, A *)
+val subs_cons: 'a -> 'a subs -> 'a subs
+
+(** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ subs_shft (n, σ) : Δ *)
+val subs_shft: int * 'a subs -> 'a subs
+
+(** Unary variant of {!subst_liftn}. *)
+val subs_lift: 'a subs -> 'a subs
+
+(** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ subs_liftn n σ : Δ, Ξ *)
+val subs_liftn: int -> 'a subs -> 'a subs
 
 (** [expand_rel k subs] expands de Bruijn [k] in the explicit substitution
     [subs]. The result is either (Inl(lams,v)) when the variable is
@@ -51,7 +61,6 @@ val is_subs_id: 'a subs -> bool
     mk_clos is used when a closure has to be created, i.e. when
     s1 is applied on an element of s2.
 *)
-val comp : ('a subs * 'a -> 'a) -> 'a subs -> 'a subs -> 'a subs
 
 (** {6 Compact representation } *)
 (** Compact representation of explicit relocations
@@ -60,6 +69,10 @@ val comp : ('a subs * 'a -> 'a) -> 'a subs -> 'a subs -> 'a subs
 
     Invariant ensured by the private flag: no lift contains two consecutive
     [ELSHFT] nor two consecutive [ELLFT].
+
+    Relocations are a particular kind of substitutions that only contain
+    variables. In particular, [el_*] enjoys the same typing rules as the
+    equivalent substitution function [subs_*].
 *)
 type lift = private
   | ELID
@@ -77,5 +90,7 @@ val is_lift_id : lift -> bool
     substitution equivalent to applying el then s. Argument
     mk_clos is used when a closure has to be created, i.e. when
     el is applied on an element of s.
+
+    That is, if Γ ⊢ e : Δ and Δ ⊢ σ : Ξ, then Γ ⊢ lift_subst mk e σ : Ξ.
 *)
 val lift_subst : (lift -> 'a -> 'b) -> lift -> 'a subs -> 'b subs
