@@ -396,7 +396,7 @@
 ########################################################################
 # metacoq
 ########################################################################
-: "${metacoq_CI_REF:=coq-8.12}"
+: "${metacoq_CI_REF:=v1.0-beta1-8.12}"
 : "${metacoq_CI_GITURL:=https://github.com/MetaCoq/metacoq}"
 : "${metacoq_CI_ARCHIVEURL:=${metacoq_CI_GITURL}/archive}"
 
