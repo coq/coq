@@ -55,6 +55,11 @@ overlay()
     local ov_url=$2
     local ov_ref=$3
 
+    if ! is_in_projects "$1"; then
+      echo "Error: $1 is not a known project which can be overlayed"
+      exit 1
+    fi
+
     overlays[${project}_URL]=$ov_url
     overlays[${project}_REF]=$ov_ref
 }
