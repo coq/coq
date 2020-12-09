@@ -85,15 +85,15 @@ let rec is_lift_id = function
 
 *)
 
-type mon = int
-let mul n m = n + m
-let one = 0
+type shf = int
+let cmp n m = n + m
+let idn = 0
 
 type 'a or_var = Arg of 'a | Var of int
 
 type 'a tree =
-| Leaf of mon * 'a or_var
-| Node of mon * 'a or_var * 'a tree * 'a tree * mon
+| Leaf of shf * 'a or_var
+| Node of shf * 'a or_var * 'a tree * 'a tree * shf
 (*
   Invariants:
   - All trees are complete.
@@ -109,7 +109,7 @@ type 'a tree =
 
 *)
 
-type 'a subs = Nil of mon * int | Cons of int * 'a tree * 'a subs
+type 'a subs = Nil of shf * int | Cons of int * 'a tree * 'a subs
 (*
   In the naive semantics mentioned above, we have the following.
 
@@ -126,39 +126,39 @@ type 'a subs = Nil of mon * int | Cons of int * 'a tree * 'a subs
 (* Returns the number of shifts contained in the whole tree. *)
 let eval = function
 | Leaf (w, _) -> w
-| Node (w1, _, _, _, w2) -> mul w1 w2
+| Node (w1, _, _, _, w2) -> cmp w1 w2
 
-let leaf x = Leaf (one, x)
-let node x t1 t2 = Node (one, x, t1, t2, mul (eval t1) (eval t2))
+let leaf x = Leaf (idn, x)
+let node x t1 t2 = Node (idn, x, t1, t2, cmp (eval t1) (eval t2))
 
 let rec tree_get h w t i = match t with
 | Leaf (w', x) ->
-  let w = mul w w' in
+  let w = cmp w w' in
   if i = 0 then w, Inl x else assert false
 | Node (w', x, t1, t2, _) ->
-  let w = mul w w' in
+  let w = cmp w w' in
   if i = 0 then w, Inl x
   else
     let h = h / 2 in
     if i <= h then tree_get h w t1 (i - 1)
-    else tree_get h (mul w (eval t1)) t2 (i - h - 1)
+    else tree_get h (cmp w (eval t1)) t2 (i - h - 1)
 
 let rec get w l i = match l with
 | Nil (w', n) ->
-  let w = mul w w' in
+  let w = cmp w w' in
   if i < n then w, Inl (Var (i + 1))
   else n + w, Inr (i - n) (* FIXME: double check *)
 | Cons (h, t, rem) ->
-  if i < h then tree_get h w t i else get (mul (eval t) w) rem (i - h)
+  if i < h then tree_get h w t i else get (cmp (eval t) w) rem (i - h)
 
-let get l i = get one l i
+let get l i = get idn l i
 
 let tree_write w = function
-| Leaf (w', x) -> Leaf (mul w w', x)
-| Node (w', x, t1, t2, wt) -> Node (mul w w', x, t1, t2, wt)
+| Leaf (w', x) -> Leaf (cmp w w', x)
+| Node (w', x, t1, t2, wt) -> Node (cmp w w', x, t1, t2, wt)
 
 let write w l = match l with
-| Nil (w', n) -> Nil (mul w w', n)
+| Nil (w', n) -> Nil (cmp w w', n)
 | Cons (h, t, rem) -> Cons (h, tree_write w t, rem)
 
 let cons x l = match l with
@@ -228,7 +228,7 @@ let rec tree_map mk e = function
   let x = apply mk e x in
   let t1, e = tree_map mk e t1 in
   let t2, e = tree_map mk e t2 in
-  Node (w + n, x, t1, t2, mul (eval t1) (eval t2)), e
+  Node (w + n, x, t1, t2, cmp (eval t1) (eval t2)), e
 
 let rec lift_id e n = match e with
 | ELID -> Nil (0, n)
