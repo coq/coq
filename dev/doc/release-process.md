@@ -147,7 +147,9 @@ in time.
 - [ ] Prepare a page of news on the website with the link to the GitHub release
   (see [coq/www#63](https://github.com/coq/www/pull/63)).
 - [ ] Merge the website update, publish the release
-  and send announcement e-mails.
+  and send announcement e-mails, typically on
+  the `coq-club@inria.fr` mailing list and the discourse forum
+    ([posting by mail](https://github.com/coq/coq/wiki/Discourse))
 - [ ] Close the milestone
 
 ## At the final release time ##
