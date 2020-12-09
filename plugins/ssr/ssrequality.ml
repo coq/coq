@@ -261,9 +261,6 @@ let same_proj sigma t1 t2 =
 
 let all_ok _ _ = true
 
-let fake_pmatcher_end () =
-  EConstr.mkProp, L2R, (Evd.empty, UState.empty, EConstr.mkProp)
-
 let classify_pattern p = match p with
 | None -> None
 | Some p -> redex_of_pattern p
@@ -291,8 +288,8 @@ let unfoldintac occ rdx t (kt,_) =
       with NoMatch when easy -> c
       | NoMatch | NoProgress -> errorstrm Pp.(str"No occurrence of "
         ++ pr_econstr_pat env sigma0 t ++ spc() ++ str "in " ++ Printer.pr_econstr_env env sigma c)),
-    (fun () -> try end_T () with
-      | NoMatch when easy -> fake_pmatcher_end ()
+    (fun () -> try ignore @@ end_T () with
+      | NoMatch when easy -> ()
       | NoMatch -> anomaly "unfoldintac")
   | Some _ ->
     (fun env (c as orig_c) _ h ->
@@ -317,11 +314,11 @@ let unfoldintac occ rdx t (kt,_) =
         try body env t (fs (unify_HO env sigma c t) t)
         with _ -> errorstrm Pp.(str "The term " ++
           pr_econstr_env env sigma c ++spc()++ str "does not unify with " ++ pr_econstr_pat env sigma t)),
-    fake_pmatcher_end in
+    ignore in
   let concl =
     try beta env0 (eval_pattern env0 sigma0 concl0 rdx occ unfold)
     with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
-  let _ = conclude () in
+  let () = conclude () in
   convert_concl ~check:true concl
   end
 
@@ -340,7 +337,7 @@ let foldtac occ rdx ft =
     let find_T, end_T =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[ut]) in
     (fun env c _ h -> try find_T env c h ~k:(fun env t _ _ -> t) with NoMatch ->c),
-    (fun () -> try end_T () with NoMatch -> fake_pmatcher_end ())
+    (fun () -> try ignore @@ end_T () with NoMatch -> ())
   | Some _ ->
     (fun env c _ h ->
        try
@@ -348,9 +345,9 @@ let foldtac occ rdx ft =
          Reductionops.nf_evar sigma t
     with _ -> errorstrm Pp.(str "fold pattern " ++ pr_econstr_pat env sigma t ++ spc ()
       ++ str "does not match redex " ++ pr_econstr_pat env sigma c)),
-    fake_pmatcher_end in
+    ignore in
   let concl = eval_pattern env0 sigma0 concl0 rdx occ fold in
-  let _ = conclude () in
+  let () = conclude () in
   convert_concl ~check:true concl
   end
 
