@@ -1,0 +1,91 @@
+name: GitHub CI
+
+on: [push, pull_request]
+
+jobs:
+  Windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Cygwin
+        uses: egor-tensin/setup-cygwin@v1
+        with:
+          packages: rsync patch diffutils make unzip m4 findutils time wget curl git mingw64-x86_64-binutils mingw64-x86_64-gcc-core mingw64-x86_64-gcc-g++ mingw64-x86_64-pkg-config mingw64-x86_64-windows_default_manifest mingw64-x86_64-headers mingw64-x86_64-runtime mingw64-x86_64-pthreads mingw64-x86_64-zlib mingw64-x86_64-gmp python3
+
+      - name: Create home dir
+        run: |
+          C:\tools\cygwin\bin\bash.exe --login -c 'env'
+
+      - name: Install opam
+        run: |
+          C:\tools\cygwin\bin\bash.exe dev\ci\azure-opam.sh
+
+      - name: Build Coq
+        run: |
+          C:\tools\cygwin\bin\bash.exe dev\ci\azure-build.sh
+
+  macOS:
+    runs-on: macOS-10.15
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install system dependencies
+        run: |
+          brew install gnu-time opam gtksourceview3 adwaita-icon-theme
+          pip3 install macpack
+
+      - name: Install OCaml dependencies
+        run: |
+          export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
+          opam init -a -j "$NJOBS" --compiler=ocaml-base-compiler.$COMPILER
+          opam switch set ocaml-base-compiler.$COMPILER
+          eval $(opam env)
+          opam update
+          opam install -j "$NJOBS" ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 zarith.1.10
+          opam list
+        env:
+          COMPILER: "4.11.1"
+          FINDLIB_VER: ".1.8.1"
+          OPAMYES: "true"
+          MACOSX_DEPLOYMENT_TARGET: "10.11"
+          NJOBS: "2"
+
+      - name: Build Coq
+        run: |
+          eval $(opam env)
+          ./configure -prefix "$(pwd)/_install_ci" -warn-error yes -native-compiler no -coqide opt
+          make -j "$NJOBS" byte
+          make -j "$NJOBS"
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "10.11"
+          NJOBS: "2"
+
+      - name: Run Coq Test Suite
+        run: |
+          eval $(opam env)
+          export OCAMLPATH=$(pwd):"$OCAMLPATH"
+          make -j "$NJOBS" test-suite PRINT_LOGS=1
+        env:
+          NJOBS: "2"
+
+      - name: Install Coq
+        run: |
+          make install
+
+      - name: Create the dmg bundle
+        run: |
+          eval $(opam env)
+          export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
+          export OUTDIR="$(pwd)/_install_ci"
+          ./dev/build/osx/make-macos-dmg.sh
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "10.11"
+          NJOBS: "2"
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: coq-macOS-installer
+          path: _build/*.dmg
