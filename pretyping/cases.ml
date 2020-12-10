@@ -46,8 +46,10 @@ module NamedDecl = Context.Named.Declaration
 type pattern_matching_error =
   | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
-  | WrongNumargConstructor of constructor * int
-  | WrongNumargInductive of inductive * int
+  | WrongNumargConstructor of
+      {cstr:constructor; expanded:bool; nargs:int; expected_nassums:int; expected_ndecls:int}
+  | WrongNumargInductive of
+      {ind:inductive; expanded:bool; nargs:int; expected_nassums:int; expected_ndecls:int}
   | UnusedClause of cases_pattern list
   | NonExhaustive of cases_pattern list
   | CannotInferPredicate of (constr * types) array
@@ -65,11 +67,13 @@ let error_bad_constructor ?loc env cstr ind =
   raise_pattern_matching_error ?loc
     (env, Evd.empty, BadConstructor (cstr,ind))
 
-let error_wrong_numarg_constructor ?loc env c n =
-  raise_pattern_matching_error ?loc (env, Evd.empty, WrongNumargConstructor(c,n))
+let error_wrong_numarg_constructor ?loc env ~cstr ~expanded ~nargs ~expected_nassums ~expected_ndecls =
+  raise_pattern_matching_error ?loc (env, Evd.empty,
+    WrongNumargConstructor {cstr; expanded; nargs; expected_nassums; expected_ndecls})
 
-let error_wrong_numarg_inductive ?loc env c n =
-  raise_pattern_matching_error ?loc (env, Evd.empty, WrongNumargInductive(c,n))
+let error_wrong_numarg_inductive ?loc env ~ind ~expanded ~nargs ~expected_nassums ~expected_ndecls =
+  raise_pattern_matching_error ?loc (env, Evd.empty,
+    WrongNumargInductive {ind; expanded; nargs; expected_nassums; expected_ndecls})
 
 let list_try_compile f l =
   let rec aux errors = function
@@ -519,13 +523,18 @@ let check_and_adjust_constructor env ind cstrs pat = match DAst.get pat with
         (* Check the constructor has the right number of args *)
         let ci = cstrs.(i-1) in
         let nb_args_constr = ci.cs_nargs in
-        if Int.equal (List.length args) nb_args_constr then pat
+        let nargs = List.length args in
+        if Int.equal nargs nb_args_constr then pat
         else
           try
             let args' = adjust_local_defs ?loc (args, List.rev ci.cs_args)
             in DAst.make ?loc @@ PatCstr (cstr, args', alias)
           with NotAdjustable ->
-            error_wrong_numarg_constructor ?loc env cstr nb_args_constr
+            let nlet = List.count (function LocalDef _ -> true | _ -> false) ci.cs_args in
+            (* In practice, this is already checked at interning *)
+            error_wrong_numarg_constructor ?loc env ~cstr
+              (* as if not expanded: *) ~expanded:false ~nargs ~expected_nassums:nb_args_constr
+              ~expected_ndecls:(nb_args_constr + nlet)
       else
         (* Try to insert a coercion *)
         try

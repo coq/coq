@@ -245,6 +245,14 @@ let inductive_alldecls env (ind,u) =
 let inductive_alldecls_env env (ind,u) = inductive_alldecls env (ind,u)
 [@@ocaml.deprecated "Alias for Inductiveops.inductive_alldecls"]
 
+let inductive_alltags env ind =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  Context.Rel.to_tags mip.mind_arity_ctxt
+
+let constructor_alltags env (ind,j) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  Context.Rel.to_tags (fst mip.mind_nf_lc.(j-1))
+
 let constructor_has_local_defs env (indsp,j) =
   let (mib,mip) = Inductive.lookup_mind_specif env indsp in
   let l1 = mip.mind_consnrealdecls.(j-1) + Context.Rel.length (mib.mind_params_ctxt) in

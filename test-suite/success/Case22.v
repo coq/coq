@@ -89,3 +89,16 @@ Check fun x:Ind bool nat =>
   match x in Ind _ X Y Z return Z with
   | y => (true,0)
   end.
+
+(* A check that multi-implicit arguments work *)
+
+Check fun x : {True}+{False} => match x with left _ _ => 0 | right _ _ => 1 end.
+Check fun x : {True}+{False} => match x with left _ => 0 | right _ => 1 end.
+
+(* Check that Asymmetric Patterns does not apply to the in clause *)
+
+Inductive expr {A} : A -> Type := intro : forall {n:nat} (a:A), n=n -> expr a.
+Check fun (x:expr true) => match x in expr n return n=n with intro _ _ => eq_refl end.
+Set Asymmetric Patterns.
+Check fun (x:expr true) => match x in expr n return n=n with intro _ a _ => eq_refl a end.
+Unset Asymmetric Patterns.

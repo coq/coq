@@ -11,4 +11,4 @@ This record defines several times the field foo.
 The command has indeed failed with message:
 This record defines several times the field unit.
 The command has indeed failed with message:
-unit: Not a projection of inductive t.
+unit: Not a projection.

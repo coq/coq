@@ -35,4 +35,4 @@ acceptable and seems an unlikely mistake. *)
 
 Fail Check {| foo := tt;
               unit := tt |}.
-(* unit: Not a projection of inductive t. *)
+(* unit: Not a projection. *)

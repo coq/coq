@@ -74,7 +74,9 @@ fun '{{n, m, p}} => n + m + p
 fun '(D n m p q) => n + m + p + q
      : J -> nat
 The command has indeed failed with message:
-The constructor D (in type J) expects 3 arguments.
+Once notations are expanded, the resulting constructor D (in type J) is
+expected to be applied to no arguments while it is actually applied to
+1 argument.
 lem1 = 
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
@@ -181,3 +183,51 @@ end
 File "stdin", line 253, characters 4-5:
 Warning: Unused variable B catches more than one case.
 [unused-pattern-matching-variable,pattern-matching]
+The command has indeed failed with message:
+Application of arguments to a recursive notation not supported in patterns.
+The command has indeed failed with message:
+The constructor cons (in type list) is expected to be applied to 2 arguments
+while it is actually applied to 3 arguments.
+The command has indeed failed with message:
+The constructor cons (in type list) is expected to be applied to 2 arguments
+while it is actually applied to 1 argument.
+The command has indeed failed with message:
+The constructor D' (in type J') is expected to be applied to 4 arguments (or
+6 arguments when including variables for local definitions) while it is
+actually applied to 5 arguments.
+fun x : J' bool (true, true) =>
+match x with
+| D' _ _ _ m _ e => existT (fun x0 : nat => x0 = x0) m e
+end
+     : J' bool (true, true) -> {x0 : nat & x0 = x0}
+fun x : J' bool (true, true) =>
+match x with
+| @D' _ _ _ _ n _ p _ => n + p
+end
+     : J' bool (true, true) -> nat
+The command has indeed failed with message:
+Application of arguments to a recursive notation not supported in patterns.
+The command has indeed failed with message:
+The constructor cons (in type list) is expected to be applied to 2 arguments
+while it is actually applied to 3 arguments.
+The command has indeed failed with message:
+The constructor cons (in type list) is expected to be applied to 2 arguments
+while it is actually applied to 1 argument.
+The command has indeed failed with message:
+The constructor D' (in type J') is expected to be applied to 3 arguments (or
+4 arguments when including variables for local definitions) while it is
+actually applied to 2 arguments.
+The command has indeed failed with message:
+The constructor D' (in type J') is expected to be applied to 3 arguments (or
+4 arguments when including variables for local definitions) while it is
+actually applied to 5 arguments.
+fun x : J' bool (true, true) =>
+match x with
+| @D' _ _ _ _ _ m _ e => existT (fun x0 : nat => x0 = x0) m e
+end
+     : J' bool (true, true) -> {x0 : nat & x0 = x0}
+fun x : J' bool (true, true) =>
+match x with
+| @D' _ _ _ _ n _ p _ => (n, p)
+end
+     : J' bool (true, true) -> nat * nat

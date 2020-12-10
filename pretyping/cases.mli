@@ -23,17 +23,21 @@ open Evardefine
 type pattern_matching_error =
   | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
-  | WrongNumargConstructor of constructor * int
-  | WrongNumargInductive of inductive * int
+  | WrongNumargConstructor of
+      {cstr:constructor; expanded:bool; nargs:int; expected_nassums:int; expected_ndecls:int}
+  | WrongNumargInductive of
+      {ind:inductive; expanded:bool; nargs:int; expected_nassums:int; expected_ndecls:int}
   | UnusedClause of cases_pattern list
   | NonExhaustive of cases_pattern list
   | CannotInferPredicate of (constr * types) array
 
 exception PatternMatchingError of env * evar_map * pattern_matching_error
 
-val error_wrong_numarg_constructor : ?loc:Loc.t -> env -> constructor -> int -> 'a
+val error_wrong_numarg_constructor :
+  ?loc:Loc.t -> env -> cstr:constructor -> expanded:bool -> nargs:int -> expected_nassums:int -> expected_ndecls:int -> 'a
 
-val error_wrong_numarg_inductive   : ?loc:Loc.t -> env -> inductive -> int -> 'a
+val error_wrong_numarg_inductive :
+  ?loc:Loc.t -> env -> ind:inductive -> expanded:bool -> nargs:int -> expected_nassums:int -> expected_ndecls:int -> 'a
 
 val irrefutable : env -> cases_pattern -> bool
 
