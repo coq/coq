@@ -959,17 +959,18 @@ let reduce redexp cl =
   | Red _ | Hnf | CbvVm _ | CbvNative _ -> StableHypConv
   | ExtraRedExpr _ -> StableHypConv (* Should we be that lenient ?*)
   in
+  let redexp = Redexpr.eval_red_expr env redexp in
   begin match cl.concl_occs with
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->
     let redexp = bind_red_expr_occurrences occs nbcl redexp in
-    let redfun = Redexpr.reduction_of_red_expr env redexp in
+    let redfun = Redexpr.reduction_of_red_expr_val redexp in
     e_change_in_concl ~check (revert_cast redfun)
   end
   <*>
   let f (id, occs, where) =
     let redexp = bind_red_expr_occurrences occs nbcl redexp in
-    let (redfun, _) = Redexpr.reduction_of_red_expr env redexp in
+    let (redfun, _) = Redexpr.reduction_of_red_expr_val redexp in
     let redfun _ env sigma c = redfun env sigma c in
     let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
     (id, redfun)
