@@ -78,7 +78,7 @@ project stdpp "https://gitlab.mpi-sws.org/iris/stdpp" ""
 
 project iris "https://gitlab.mpi-sws.org/iris/iris" ""
 
-project autosubst "https://github.com/RalfJung/autosubst" "coq86-devel"
+project autosubst "https://github.com/coq-community/autosubst" "master"
 
 project iris_string_ident "https://gitlab.mpi-sws.org/iris/string-ident" "master"
 
