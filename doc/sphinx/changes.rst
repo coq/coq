@@ -2017,6 +2017,25 @@ Changes in 8.12.1
   fixes `#12332 <https://github.com/coq/coq/issues/12332>`_,
   by Théo Zimmermann and Jim Fehrle).
 
+Changes in 8.12.2
+~~~~~~~~~~~~~~~~~
+
+**Notations**
+
+- **Fixed:**
+  8.12 regression causing notations mentioning a coercion to be ignored
+  (`#13436 <https://github.com/coq/coq/pull/13436>`_,
+  fixes `#13432 <https://github.com/coq/coq/issues/13432>`_,
+  by Hugo Herbelin).
+
+**Tactics**
+
+- **Fixed:**
+  8.12 regression: incomplete inference of implicit arguments in :tacn:`exists`
+  (`#13468 <https://github.com/coq/coq/pull/13468>`_,
+  fixes `#13456 <https://github.com/coq/coq/issues/13456>`_,
+  by Hugo Herbelin).
+
 Version 8.11
 ------------
 
