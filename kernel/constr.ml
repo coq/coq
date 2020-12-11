@@ -83,15 +83,15 @@ type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
-type ('constr, 'univs) pcase_invert =
+type 'constr pcase_invert =
   | NoInvert
-  | CaseInvert of { univs : 'univs; args : 'constr array }
+  | CaseInvert of { indices : 'constr array }
 
 type 'constr pcase_branch = Name.t Context.binder_annot array * 'constr
 type 'types pcase_return = Name.t Context.binder_annot array * 'types
 
 type ('constr, 'types, 'univs) pcase =
-  case_info * 'univs * 'constr array * 'types pcase_return * ('constr, 'univs) pcase_invert * 'constr * 'constr pcase_branch array
+  case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
 
 (* [Var] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
@@ -109,7 +109,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Const     of (Constant.t * 'univs)
   | Ind       of (inductive * 'univs)
   | Construct of (constructor * 'univs)
-  | Case      of case_info * 'univs * 'constr array * 'types pcase_return * ('constr, 'univs) pcase_invert * 'constr * 'constr pcase_branch array
+  | Case      of case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of Projection.t * 'constr
@@ -125,7 +125,7 @@ type existential = existential_key * constr list
 
 type types = constr
 
-type case_invert = (constr, Instance.t) pcase_invert
+type case_invert = constr pcase_invert
 type case_return = types pcase_return
 type case_branch = constr pcase_branch
 type case = (constr, types, Instance.t) pcase
@@ -481,8 +481,8 @@ let decompose_appvect c =
 
 let fold_invert f acc = function
   | NoInvert -> acc
-  | CaseInvert {univs=_;args} ->
-    Array.fold_left f acc args
+  | CaseInvert {indices} ->
+    Array.fold_left f acc indices
 
 let fold f acc c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -509,8 +509,8 @@ let fold f acc c = match kind c with
 
 let iter_invert f = function
   | NoInvert -> ()
-  | CaseInvert {univs=_; args;} ->
-    Array.iter f args
+  | CaseInvert {indices;} ->
+    Array.iter f indices
 
 let iter f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -624,10 +624,10 @@ let map_return_predicate_with_binders g f l p =
 
 let map_invert f = function
   | NoInvert -> NoInvert
-  | CaseInvert {univs;args;} as orig ->
-    let args' = Array.Smart.map f args in
-    if args == args' then orig
-    else CaseInvert {univs;args=args';}
+  | CaseInvert {indices;} as orig ->
+    let indices' = Array.Smart.map f indices in
+    if indices == indices' then orig
+    else CaseInvert {indices=indices';}
 
 let map f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -695,10 +695,10 @@ let map f c = match kind c with
 
 let fold_map_invert f acc = function
   | NoInvert -> acc, NoInvert
-  | CaseInvert {univs;args;} as orig ->
-    let acc, args' = Array.fold_left_map f acc args in
-    if args==args' then acc, orig
-    else acc, CaseInvert {univs;args=args';}
+  | CaseInvert {indices;} as orig ->
+    let acc, indices' = Array.fold_left_map f acc indices in
+    if indices==indices' then acc, orig
+    else acc, CaseInvert {indices=indices';}
 
 let fold_map_under_context f accu d =
   let (nas, p) = d in
@@ -881,13 +881,12 @@ type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
    optimisation that physically equal arrays are equals (hence the
    calls to {!Array.equal_norefl}). *)
 
-let eq_invert eq leq_universes iv1 iv2 =
+let eq_invert eq iv1 iv2 =
   match iv1, iv2 with
   | NoInvert, NoInvert -> true
   | NoInvert, CaseInvert _ | CaseInvert _, NoInvert -> false
-  | CaseInvert {univs;args}, CaseInvert iv2 ->
-    leq_universes univs iv2.univs
-    && Array.equal eq args iv2.args
+  | CaseInvert {indices}, CaseInvert iv2 ->
+    Array.equal eq indices iv2.indices
 
 let eq_under_context eq (_nas1, p1) (_nas2, p2) =
   eq p1 p2
@@ -921,7 +920,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
     (** FIXME: what are we doing with u1 = u2 ? *)
     Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind && leq_universes (Some (GlobRef.IndRef ci1.ci_ind, 0)) u1 u2 &&
     Array.equal (eq 0) pms1 pms2 && eq_under_context (eq 0) p1 p2 &&
-    eq_invert (eq 0) (leq_universes None) iv1 iv2 &&
+    eq_invert (eq 0) iv1 iv2 &&
     eq 0 c1 c2 && Array.equal (eq_under_context (eq 0)) bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
     Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
@@ -1060,8 +1059,7 @@ let compare_invert f iv1 iv2 =
   | NoInvert, CaseInvert _ -> -1
   | CaseInvert _, NoInvert -> 1
   | CaseInvert iv1, CaseInvert iv2 ->
-    (* univs ignored deliberately *)
-    Array.compare f iv1.args iv2.args
+    Array.compare f iv1.indices iv2.indices
 
 let constr_ord_int f t1 t2 =
   let (=?) f g i1 i2 j1 j2=
@@ -1190,9 +1188,8 @@ let invert_eqeq iv1 iv2 =
   match iv1, iv2 with
   | NoInvert, NoInvert -> true
   | NoInvert, CaseInvert _ | CaseInvert _, NoInvert -> false
-  | CaseInvert iv1, CaseInvert iv2 ->
-    iv1.univs == iv2.univs
-    && iv1.args == iv2.args
+  | CaseInvert {indices=i1}, CaseInvert {indices=i2} ->
+    i1 == i2
 
 let hasheq_ctx (nas1, c1) (nas2, c2) =
   array_eqeq nas1 nas2 && c1 == c2
@@ -1368,10 +1365,9 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 
   and sh_invert = function
     | NoInvert -> NoInvert, 0
-    | CaseInvert {univs;args;} ->
-      let univs, hu = sh_instance univs in
-      let args, ha = hash_term_array args in
-      CaseInvert {univs;args;}, combinesmall 1 (combine hu ha)
+    | CaseInvert {indices;} ->
+      let indices, ha = hash_term_array indices in
+      CaseInvert {indices;}, combinesmall 1 ha
 
   and sh_rec t =
     let (y, h) = hash_term t in
@@ -1451,8 +1447,8 @@ let rec hash t =
 
 and hash_invert = function
   | NoInvert -> 0
-  | CaseInvert {univs;args;} ->
-    combinesmall 1 (combine (Instance.hash univs) (hash_term_array args))
+  | CaseInvert {indices;} ->
+    combinesmall 1 (hash_term_array indices)
 
 and hash_term_array t =
   Array.fold_left (fun acc t -> combine acc (hash t)) 0 t
@@ -1617,6 +1613,6 @@ let rec debug_print c =
 
 and debug_invert = let open Pp in function
   | NoInvert -> mt()
-  | CaseInvert {univs;args;} ->
-    spc() ++ str"Invert {univs=" ++ Instance.pr Level.pr univs ++
-    str "; args=" ++ prlist_with_sep spc debug_print (Array.to_list args) ++ str "} "
+  | CaseInvert {indices;} ->
+    spc() ++ str"Invert {indices=" ++
+    prlist_with_sep spc debug_print (Array.to_list indices) ++ str "} "

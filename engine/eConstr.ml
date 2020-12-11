@@ -37,7 +37,7 @@ type constr = t
 type existential = t pexistential
 type case_return = t pcase_return
 type case_branch = t pcase_branch
-type case_invert = (t, EInstance.t) pcase_invert
+type case_invert = t pcase_invert
 type case = (t, t, EInstance.t) pcase
 type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
@@ -636,11 +636,7 @@ let universes_of_constr sigma c =
     | Array (u,_,_,_) ->
       let s = LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s in
       fold sigma aux s c
-    | Case (_,u,_,_,CaseInvert {univs;args=_},_,_) ->
-      let s = LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s in
-      let s = LSet.fold LSet.add (Instance.levels (EInstance.kind sigma univs)) s in
-      fold sigma aux s c
-    | Case (_, u, _, _, NoInvert, _, _) ->
+    | Case (_,u,_,_,_,_,_) ->
       let s = LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s in
       fold sigma aux s c
     | _ -> fold sigma aux s c

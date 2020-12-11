@@ -357,7 +357,7 @@ and fterm =
   | FCLOS of constr * fconstr subs
   | FLOCKED
 
-and finvert = Univ.Instance.t * fconstr array
+and finvert = fconstr array
 
 let fterm_of v = v.term
 let set_ntrl v = v.mark <- Mark.set_ntrl v.mark
@@ -582,8 +582,8 @@ let rec to_constr lfts v =
     | FConstruct op -> mkConstructU op
     | FCaseT (ci, u, pms, p, c, ve, env) ->
       to_constr_case lfts ci u pms p NoInvert c ve env
-    | FCaseInvert (ci, u, pms, p, (univs, args), c, ve, env) ->
-      let iv = CaseInvert {univs;args=Array.map (to_constr lfts) args} in
+    | FCaseInvert (ci, u, pms, p, indices, c, ve, env) ->
+      let iv = CaseInvert {indices=Array.map (to_constr lfts) indices} in
       to_constr_case lfts ci u pms p iv c ve env
     | FFix ((op,(lna,tys,bds)) as fx, e) ->
       if is_subs_id e && is_lift_id lfts then
@@ -1370,8 +1370,8 @@ and knht info e t stk =
         knht info e a (append_stack (mk_clos_vect e b) stk)
     | Case(ci,u,pms,p,NoInvert,t,br) ->
         knht info e t (ZcaseT(ci, u, pms, p, br, e)::stk)
-    | Case(ci,u,pms,p,CaseInvert{univs;args},t,br) ->
-      let term = FCaseInvert (ci, u, pms, p, (univs,Array.map (mk_clos e) args), mk_clos e t, br, e) in
+    | Case(ci,u,pms,p,CaseInvert{indices},t,br) ->
+      let term = FCaseInvert (ci, u, pms, p, (Array.map (mk_clos e) indices), mk_clos e t, br, e) in
       { mark = mark Red Unknown; term }, stk
     | Fix fx -> knh info { mark = mark Cstr Unknown; term = FFix (fx, e) } stk
     | Cast(a,_,_) -> knht info e a stk
@@ -1478,8 +1478,9 @@ let rec knr info tab m stk =
            kni info tab a (Zprimitive(op,c,rargs,nargs)::s)
              end
      | (_, _, s) -> (m, s))
-  | FCaseInvert (ci, _u, _pms, _p,iv,_c,v,env) when red_set info.i_flags fMATCH ->
-    begin match case_inversion info tab ci iv v with
+  | FCaseInvert (ci, u, pms, _p,iv,_c,v,env) when red_set info.i_flags fMATCH ->
+    let pms = mk_clos_vect env pms in
+    begin match case_inversion info tab ci u pms iv v with
       | Some c -> knit info tab env c stk
       | None -> (m, stk)
     end
@@ -1496,18 +1497,17 @@ and knit info tab e t stk =
   let (ht,s) = knht info e t stk in
   knr info tab ht s
 
-and case_inversion info tab ci (univs,args) v =
+and case_inversion info tab ci u params indices v =
   let open Declarations in
   (* No binders / lets at all in the unique branch *)
   let v = match v with
   | [| [||], v |] -> v
   | _ -> assert false
   in
-  if Array.is_empty args then Some v
+  if Array.is_empty indices then Some v
   else
     let env = info_env info in
     let ind = ci.ci_ind in
-    let params, indices = Array.chop ci.ci_npar args in
     let psubst = subs_consn params 0 ci.ci_npar (subs_id 0) in
     let mib = Environ.lookup_mind (fst ind) env in
     let mip = mib.mind_packets.(snd ind) in
@@ -1516,7 +1516,7 @@ and case_inversion info tab ci (univs,args) v =
     let _ind, expect_args = destApp expect in
     let check_index i index =
       let expected = expect_args.(ci.ci_npar + i) in
-      let expected = Vars.subst_instance_constr univs expected in
+      let expected = Vars.subst_instance_constr u expected in
       let expected = mk_clos psubst expected in
       !conv {info with i_flags=all} tab expected index
     in

@@ -160,7 +160,7 @@ and v_prec = Tuple ("prec_declaration",
                     [|Array (v_binder_annot v_name); Array v_constr; Array v_constr|])
 and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
-and v_case_invert = Sum ("case_inversion", 1, [|[|v_instance;Array v_constr|]|])
+and v_case_invert = Sum ("case_inversion", 1, [|[|Array v_constr|]|])
 
 and v_case_branch = Tuple ("case_branch", [|Array (v_binder_annot v_name); v_constr|])
 

@@ -489,13 +489,14 @@ let it_destRLambda_or_LetIn_names l c =
               | _ -> DAst.make @@ GApp (c,[a]))
   in aux l [] c
 
-let detype_case computable detype detype_eqns testdep avoid ci p iv c bl =
+let detype_case computable detype detype_eqns testdep avoid ci univs params p iv c bl =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
   let tomatch = match iv with
     | NoInvert -> tomatch
-    | CaseInvert {univs;args} ->
-      let t = mkApp (mkIndU (ci.ci_ind,univs), args) in
+    | CaseInvert {indices} ->
+      (* XXX use holes instead of params? *)
+      let t = mkApp (mkIndU (ci.ci_ind,univs), Array.append params indices) in
       DAst.make @@ GCast (tomatch, CastConv (detype t))
   in
   let alias, aliastyp, pred=
@@ -785,7 +786,7 @@ and detype_r d flags avoid env sigma t =
         detype_case comp (detype d flags avoid env sigma)
           (detype_eqns d flags avoid env sigma ci comp)
           (is_nondep_branch sigma) avoid
-          ci p iv c bl
+          ci u pms p iv c bl
     | Fix (nvn,recdef) -> detype_fix (detype d) flags avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix (detype d) flags avoid env sigma n recdef
     | Int i -> GInt i

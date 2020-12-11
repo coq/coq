@@ -49,11 +49,11 @@ type case_info =
     ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
 
-type ('constr, 'univs) pcase_invert =
+type 'constr pcase_invert =
   | NoInvert
   (** Normal reduction: match when the scrutinee is a constructor. *)
 
-  | CaseInvert of { univs : 'univs; args : 'constr array; }
+  | CaseInvert of { indices : 'constr array; }
   (** Reduce when the indices match those of the unique constructor.
       (SProp to non SProp only) *)
 
@@ -168,9 +168,9 @@ type 'types pcase_return = Name.t Context.binder_annot array * 'types
 (** Names of the branches *)
 
 type ('constr, 'types, 'univs) pcase =
-  case_info * 'univs * 'constr array * 'types pcase_return * ('constr, 'univs) pcase_invert * 'constr * 'constr pcase_branch array
+  case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
 
-type case_invert = (constr, Univ.Instance.t) pcase_invert
+type case_invert = constr pcase_invert
 type case_return = types pcase_return
 type case_branch = constr pcase_branch
 type case = (constr, types, Univ.Instance.t) pcase
@@ -259,7 +259,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
 
   | Ind       of (inductive * 'univs)                 (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Construct of (constructor * 'univs)              (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
-  | Case      of case_info * 'univs * 'constr array * 'types pcase_return * ('constr,'univs) pcase_invert * 'constr * 'constr pcase_branch array
+  | Case      of case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of Projection.t * 'constr
@@ -487,7 +487,7 @@ val map_return_predicate_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -
 
 val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
 
-val fold_invert : ('a -> 'b -> 'a) -> 'a -> ('b, 'c) pcase_invert -> 'a
+val fold_invert : ('a -> 'b -> 'a) -> 'a -> 'b pcase_invert -> 'a
 
 (** [map f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -495,14 +495,14 @@ val fold_invert : ('a -> 'b -> 'a) -> 'a -> ('b, 'c) pcase_invert -> 'a
 
 val map : (constr -> constr) -> constr -> constr
 
-val map_invert : ('a -> 'a) -> ('a, 'b) pcase_invert -> ('a, 'b) pcase_invert
+val map_invert : ('a -> 'a) -> 'a pcase_invert -> 'a pcase_invert
 
 (** Like {!map}, but also has an additional accumulator. *)
 
 val fold_map : ('a -> constr -> 'a * constr) -> 'a -> constr -> 'a * constr
 
 val fold_map_invert : ('a -> 'b -> 'a * 'b) ->
-  'a -> ('b, 'c) pcase_invert -> 'a * ('b, 'c) pcase_invert
+  'a -> 'b pcase_invert -> 'a * 'b pcase_invert
 
 (** [map_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -519,7 +519,7 @@ val map_with_binders :
 
 val iter : (constr -> unit) -> constr -> unit
 
-val iter_invert : ('a -> unit) -> ('a, 'b) pcase_invert -> unit
+val iter_invert : ('a -> unit) -> 'a pcase_invert -> unit
 
 (** [iter_with_binders g f n c] iters [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -597,8 +597,8 @@ val compare_head_gen_leq : Univ.Instance.t instance_compare_fn ->
   constr constr_compare_fn ->
   constr constr_compare_fn
 
-val eq_invert : ('a -> 'a -> bool) -> ('b -> 'b -> bool)
-  -> ('a, 'b) pcase_invert -> ('a, 'b) pcase_invert -> bool
+val eq_invert : ('a -> 'a -> bool)
+  -> 'a pcase_invert -> 'a pcase_invert -> bool
 
 (** {6 Hashconsing} *)
 

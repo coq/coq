@@ -554,12 +554,14 @@ let rec execute env cstr =
         let c', ct = execute env c in
         let iv' = match iv with
           | NoInvert -> NoInvert
-          | CaseInvert {univs;args} ->
-            let ct' = mkApp (mkIndU (ci.ci_ind,univs), args) in
+          | CaseInvert {indices} ->
+            let args = Array.append pms indices in
+            let ct' = mkApp (mkIndU (ci.ci_ind,u), args) in
             let (ct', _) : constr * Sorts.t = execute_is_type env ct' in
             let () = conv_leq false env ct ct' in
             let _, args' = decompose_appvect ct' in
-            if args == args' then iv else CaseInvert {univs;args=args'}
+            if args == args' then iv
+            else CaseInvert {indices=Array.sub args' (Array.length pms) (Array.length indices)}
         in
         let p', pt = execute env p in
         let lf', lft = execute_array env lf in

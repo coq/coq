@@ -105,7 +105,7 @@ sig
     | Cst_proj of Projection.t
 
   type 'a case_stk =
-    case_info * EInstance.t * 'a array * 'a pcase_return * ('a, EInstance.t) pcase_invert * 'a pcase_branch array
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
   type 'a member =
   | App of 'a app_node
   | Case of 'a case_stk * Cst_stack.t
@@ -159,7 +159,7 @@ struct
     | Cst_proj of Projection.t
 
   type 'a case_stk =
-    case_info * EInstance.t * 'a array * 'a pcase_return * ('a, EInstance.t) pcase_invert * 'a pcase_branch array
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
   type 'a member =
   | App of 'a app_node
   | Case of 'a case_stk * Cst_stack.t

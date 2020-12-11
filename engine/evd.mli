@@ -772,8 +772,8 @@ module MiniEConstr : sig
     (Constr.t, Constr.types) Context.Named.Declaration.pt
   val unsafe_to_rel_decl : (t, t) Context.Rel.Declaration.pt ->
     (Constr.t, Constr.types) Context.Rel.Declaration.pt
-  val of_case_invert : (constr,Univ.Instance.t) pcase_invert -> (econstr,EInstance.t) pcase_invert
-  val unsafe_to_case_invert : (econstr,EInstance.t) pcase_invert -> (constr,Univ.Instance.t) pcase_invert
+  val of_case_invert : constr pcase_invert -> econstr pcase_invert
+  val unsafe_to_case_invert : econstr pcase_invert -> constr pcase_invert
   val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt ->
     (t, t) Context.Rel.Declaration.pt
   val to_rel_decl : evar_map -> (t, t) Context.Rel.Declaration.pt ->

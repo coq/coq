@@ -391,8 +391,9 @@ let rec execute env sigma cstr =
         let sigma, lfj = execute_array env sigma lf in
         let sigma = match iv with
           | NoInvert -> sigma
-          | CaseInvert {univs;args} ->
-            let t = mkApp (mkIndU (ci.ci_ind,univs), args) in
+          | CaseInvert {indices} ->
+            let args = Array.append pms indices in
+            let t = mkApp (mkIndU (ci.ci_ind,u), args) in
             let sigma, tj = execute env sigma t in
             let sigma, tj = type_judgment env sigma tj in
             let sigma = check_actual_type env sigma cj tj.utj_val in

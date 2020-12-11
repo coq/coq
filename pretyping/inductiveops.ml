@@ -344,11 +344,7 @@ let get_projections = Environ.get_projections
 
 let make_case_invert env (IndType (((ind,u),params),indices)) ci =
   if Typeops.should_invert_case env ci
-  then
-    let univs = EConstr.EInstance.make u in
-    let params = Array.map_of_list EConstr.of_constr params in
-    let args = Array.append params (Array.of_list indices) in
-    CaseInvert {univs;args}
+  then CaseInvert {indices=Array.of_list indices}
   else NoInvert
 
 let make_case_or_project env sigma indt ci pred c branches =

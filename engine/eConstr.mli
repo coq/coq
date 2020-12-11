@@ -60,7 +60,7 @@ sig
   val is_empty : t -> bool
 end
 
-type case_invert = (t, EInstance.t) pcase_invert
+type case_invert = t pcase_invert
 type case = (t, t, EInstance.t) pcase
 
 type 'a puniverses = 'a * EInstance.t

@@ -320,13 +320,13 @@ and nf_atom_type env sigma atom =
   | Acase(ans,accu,p,bs) ->
       let a,ta = nf_accu_type env sigma accu in
       let ((mind,_),u as ind),allargs = find_rectype_a env ta in
-      let iv = if Typeops.should_invert_case env ans.asw_ci then
-          CaseInvert {univs=u; args=allargs}
-        else NoInvert
-      in
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
       let nparams = mib.mind_nparams in
       let params,realargs = Array.chop nparams allargs in
+      let iv = if Typeops.should_invert_case env ans.asw_ci then
+          CaseInvert {indices=realargs}
+        else NoInvert
+      in
       let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT =
         hnf_prod_applist_assum env nparamdecls

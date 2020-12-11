@@ -109,15 +109,14 @@ let to_rec_declaration (nas, cs) =
 
 let of_case_invert = let open Constr in function
   | NoInvert -> ValInt 0
-  | CaseInvert {univs;args} ->
-    v_blk 0 [|of_instance univs; of_array of_constr args|]
+  | CaseInvert {indices} ->
+    v_blk 0 [|of_array of_constr indices|]
 
 let to_case_invert = let open Constr in function
   | ValInt 0 -> NoInvert
-  | ValBlk (0, [|univs;args|]) ->
-    let univs = to_instance univs in
-    let args = to_array to_constr args in
-    CaseInvert {univs;args}
+  | ValBlk (0, [|indices|]) ->
+    let indices = to_array to_constr indices in
+    CaseInvert {indices}
   | _ -> CErrors.anomaly Pp.(str "unexpected value shape")
 
 let of_result f = function

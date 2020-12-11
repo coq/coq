@@ -88,13 +88,6 @@ let expmod_constr cache modlist c =
           let u = Instance.append u' u in
           let pms = Array.append prefix pms in
           let ci = { ci with ci_npar = ci.ci_npar + Array.length prefix } in
-          let iv = match iv with
-            | NoInvert -> NoInvert
-            | CaseInvert {univs; args;} ->
-              let univs = Instance.append u' univs in
-              let args = Array.append prefix args in
-              CaseInvert {univs; args;}
-          in
           Constr.map substrec (mkCase (ci,u,pms,p,iv,t,br))
         | exception Not_found ->
           Constr.map substrec c

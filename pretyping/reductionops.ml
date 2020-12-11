@@ -178,7 +178,7 @@ sig
   val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
   type 'a case_stk =
-    case_info * EInstance.t * 'a array * 'a pcase_return * ('a, EInstance.t) pcase_invert * 'a pcase_branch array
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
 
   type 'a member =
   | App of 'a app_node
@@ -234,7 +234,7 @@ struct
 
 
   type 'a case_stk =
-    case_info * EInstance.t * 'a array * 'a pcase_return * ('a, EInstance.t) pcase_invert * 'a pcase_branch array
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
 
   type 'a member =
   | App of 'a app_node
