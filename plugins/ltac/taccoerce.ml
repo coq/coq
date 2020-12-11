@@ -429,7 +429,15 @@ let pr_value env v =
   | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
      pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
 
-let error_ltac_variable ?loc id env v s =
-   CErrors.user_err ?loc  (str "Ltac variable " ++ Id.print id ++
+exception CoercionError of Id.t * (Environ.env * Evd.evar_map) option * Val.t * string
+
+let () = CErrors.register_handler begin function
+| CoercionError (id, env, v, s) ->
+  Some (str "Ltac variable " ++ Id.print id ++
    strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
    strbrk "which cannot be coerced to " ++ str s ++ str".")
+| _ -> None
+end
+
+let error_ltac_variable ?loc id env v s =
+  Loc.raise ?loc (CoercionError (id, env, v, s))
