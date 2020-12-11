@@ -51,10 +51,14 @@ let update_clenv_evd clenv evd =
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
-let clenv_term clenv c = meta_instance clenv.env (create_meta_instance_subst clenv.evd) c
-let clenv_meta_type clenv mv = Typing.meta_type clenv.env clenv.evd mv
-let clenv_value clenv = meta_instance clenv.env (create_meta_instance_subst clenv.evd) clenv.templval
-let clenv_type clenv = meta_instance clenv.env (create_meta_instance_subst clenv.evd) clenv.templtyp
+let clenv_term clenv c = meta_instance clenv.env clenv.cache c
+let clenv_meta_type clenv mv =
+  let ty =
+    try Evd.meta_ftype clenv.evd mv
+    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
+  meta_instance clenv.env clenv.cache ty
+let clenv_value clenv = meta_instance clenv.env clenv.cache clenv.templval
+let clenv_type clenv = meta_instance clenv.env clenv.cache clenv.templtyp
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
@@ -213,19 +217,19 @@ let clenv_assign mv rhs clenv =
    In any case, we respect the order given in A.
 *)
 
-let clenv_metas_in_type_of_meta env evd mv =
-  (mk_freelisted (meta_instance env (create_meta_instance_subst evd) (meta_ftype evd mv))).freemetas
+let clenv_metas_in_type_of_meta clenv mv =
+  (mk_freelisted (meta_instance clenv.env clenv.cache (meta_ftype clenv.evd mv))).freemetas
 
 let dependent_in_type_of_metas clenv mvs =
   List.fold_right
-    (fun mv -> Metaset.union (clenv_metas_in_type_of_meta clenv.env clenv.evd mv))
+    (fun mv -> Metaset.union (clenv_metas_in_type_of_meta clenv mv))
     mvs Metaset.empty
 
 let dependent_closure clenv mvs =
   let rec aux mvs acc =
     Metaset.fold
       (fun mv deps ->
-        let metas_of_meta_type = clenv_metas_in_type_of_meta clenv.env clenv.evd mv in
+        let metas_of_meta_type = clenv_metas_in_type_of_meta clenv mv in
         aux metas_of_meta_type (Metaset.union deps metas_of_meta_type))
       mvs acc in
   aux mvs mvs
