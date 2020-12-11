@@ -287,8 +287,8 @@ create_opam() {
     /usr/bin/time -o "$log_dir/coq.$RUNNER.1.time" --format="%U %M %F" \
                   perf stat -e instructions:u,cycles:u -o "$log_dir/coq.$RUNNER.1.perf" \
                   opam pin add -y -b -j "$number_of_processors" --kind=path coq.dev . \
-                  3>$log_dir/coq.$RUNNER.opam_install.1.stdout 1>&3 \
-                  4>$log_dir/coq.$RUNNER.opam_install.1.stderr 2>&4 || \
+                  3>$log_dir/coq.$RUNNER.opam_install.1.stdout.log 1>&3 \
+                  4>$log_dir/coq.$RUNNER.opam_install.1.stderr.log 2>&4 || \
         _RES=$?
     if [ $_RES = 0 ]; then
         echo "Coq ($RUNNER) installed successfully"
@@ -363,8 +363,8 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         opam config set-global jobs $number_of_processors
 
         opam install $coq_opam_package -v -b -j$number_of_processors --deps-only -y \
-             3>$log_dir/$coq_opam_package.$RUNNER.opam_install.deps_only.stdout 1>&3 \
-             4>$log_dir/$coq_opam_package.$RUNNER.opam_install.deps_only.stderr 2>&4 || continue 2
+             3>$log_dir/$coq_opam_package.$RUNNER.opam_install.deps_only.stdout.log 1>&3 \
+             4>$log_dir/$coq_opam_package.$RUNNER.opam_install.deps_only.stderr.log 2>&4 || continue 2
 
         opam config set-global jobs 1
 
@@ -375,8 +375,8 @@ for coq_opam_package in $sorted_coq_opam_packages; do
             /usr/bin/time -o "$log_dir/$coq_opam_package.$RUNNER.$iteration.time" --format="%U %M %F" \
                  perf stat -e instructions:u,cycles:u -o "$log_dir/$coq_opam_package.$RUNNER.$iteration.perf" \
                     opam install -v -b -j1 $coq_opam_package \
-                     3>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stdout 1>&3 \
-                     4>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stderr 2>&4 || \
+                     3>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stdout.log 1>&3 \
+                     4>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stderr.log 2>&4 || \
                 _RES=$?
             if [ $_RES = 0 ];
             then
