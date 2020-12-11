@@ -782,13 +782,7 @@ end
 let z_two = Z.of_int 2
 
 (** Conversion from bigint to int63 *)
-let rec int63_of_pos_bigint i =
-  if Z.(equal i zero) then Uint63.of_int 0
-  else
-    let quo, remi = Z.div_rem i z_two in
-    if Z.(equal remi one) then Uint63.add (Uint63.of_int 1)
-      (Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo))
-    else Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo)
+let int63_of_pos_bigint i = Uint63.of_int64 (Z.to_int64 i)
 
 module Numbers = struct
 (** * Number notation *)
@@ -1041,7 +1035,7 @@ let interp_int63 ?loc n =
 
 let bigint_of_int63 c =
   match Constr.kind c with
-  | Int i -> Z.of_string (Uint63.to_string i)
+  | Int i -> Z.of_int64 (Uint63.to_int64 i)
   | _ -> raise NotAValidPrimToken
 
 let interp o ?loc n =
