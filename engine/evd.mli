@@ -698,6 +698,8 @@ val fresh_inductive_instance : ?loc:Loc.t -> ?rigid:rigid
   -> env -> evar_map -> inductive -> evar_map * pinductive
 val fresh_constructor_instance : ?loc:Loc.t -> ?rigid:rigid
   -> env -> evar_map -> constructor -> evar_map * pconstructor
+val fresh_array_instance : ?loc:Loc.t -> ?rigid:rigid
+  -> env -> evar_map  -> evar_map * Univ.Instance.t
 
 val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env ->
   evar_map -> GlobRef.t -> evar_map * econstr

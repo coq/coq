@@ -571,10 +571,25 @@ let is_primitive env c =
   | Declarations.Primitive _ -> true
   | _ -> false
 
+let is_int63_type env c =
+  match env.retroknowledge.Retroknowledge.retro_int63 with
+  | None -> false
+  | Some c' -> Constant.CanOrd.equal c c'
+
+let is_float64_type env c =
+  match env.retroknowledge.Retroknowledge.retro_float64 with
+  | None -> false
+  | Some c' -> Constant.CanOrd.equal c c'
+
 let is_array_type env c =
   match env.retroknowledge.Retroknowledge.retro_array with
   | None -> false
   | Some c' -> Constant.CanOrd.equal c c'
+
+let is_primitive_type env c =
+  (* dummy match to force an update if we add a primitive type, seperated clauses to satisfy ocaml 4.05 *)
+  let _ = function CPrimitives.(PTE(PT_int63)) -> () | CPrimitives.(PTE(PT_float64)) -> () | CPrimitives.(PTE(PT_array)) -> () in
+  is_int63_type env c || is_float64_type env c || is_array_type env c
 
 let polymorphic_constant cst env =
   Declareops.constant_is_polymorphic (lookup_constant cst env)

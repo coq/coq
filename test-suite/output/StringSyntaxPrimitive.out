@@ -1,0 +1,20 @@
+"abc"
+     : intList
+"abc"
+     : intList
+mk_intList [97%int63; 98%int63; 99%int63]
+     : intList
+"abc"
+     : intArray
+"abc"
+     : intArray
+     = "abc"
+     : nestArray
+"abc"
+     : nestArray
+"100"
+     : floatList
+"100"
+     : floatList
+mk_floatList [1%float; 0%float; 0%float]
+     : floatList

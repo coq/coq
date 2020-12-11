@@ -1740,7 +1740,8 @@ Number notations
 
          Note that only fully-reduced ground terms (terms containing only
          function application, constructors, inductive type families,
-         sorts, and primitive integers) will be considered for printing.
+         sorts, primitive integers, primitive floats, primitive arrays and type
+         constants for primitive types) will be considered for printing.
 
       .. _number-string-via:
 
@@ -1904,7 +1905,8 @@ String notations
 
          Note that only fully-reduced ground terms (terms containing only
          function application, constructors, inductive type families,
-         sorts, and primitive integers) will be considered for printing.
+         sorts, primitive integers, primitive floats, primitive arrays and type
+         constants for primitive types) will be considered for printing.
 
       :n:`via @qualid__ind mapping [ {+, @qualid__constant => @qualid__constructor } ]`
          works as for :ref:`number notations above <number-string-via>`.
