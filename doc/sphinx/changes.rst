@@ -370,7 +370,8 @@ Notations
   by Pierre Roux, review by Jason Gross and Jim Fehrle for the
   reference manual).
 - **Added:**
-  Added support for encoding notations of the form :g:`x ⪯ y ⪯ .. ⪯ z ⪯ t`
+  Added support for encoding notations of the form :g:`x ⪯ y ⪯ .. ⪯ z ⪯ t`.
+  This feature is considered experimental.
   (`#12765 <https://github.com/coq/coq/pull/12765>`_,
   by Hugo Herbelin).
 - **Added:**
