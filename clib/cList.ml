@@ -23,6 +23,7 @@ sig
   val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val prefix_of : 'a eq -> 'a list -> 'a list -> bool
+  val same_length : 'a list -> 'b list -> bool
   val interval : int -> int -> int list
   val make : int -> 'a -> 'a list
   val addn : int -> 'a -> 'a list -> 'a list
@@ -153,6 +154,11 @@ external cast : 'a cell -> 'a list = "%identity"
 (** Extensions and redefinitions of OCaml Stdlib *)
 
 (** {6 Equality, testing} *)
+
+let rec same_length l1 l2 = match l1, l2 with
+| [], [] -> true
+| _ :: l1, _ :: l2 -> same_length l1 l2
+| ([], _ :: _) | (_ :: _, []) -> false
 
 let rec compare cmp l1 l2 =
   if l1 == l2 then 0 else

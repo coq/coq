@@ -909,10 +909,11 @@ let tclPROGRESS t =
   in
   let test =
     quick_test ||
+    (CList.same_length initial.comb final.comb &&
     Util.List.for_all2eq begin fun i f ->
       Progress.goal_equal ~evd:initial.solution
         ~extended_evd:final.solution (drop_state i) (drop_state f)
-    end initial.comb final.comb
+    end initial.comb final.comb)
   in
   if not test then
     tclUNIT res
