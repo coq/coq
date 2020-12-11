@@ -23,9 +23,10 @@ let one = Int64.one
 
     (* conversion from an int *)
 let mask63 i = Int64.logand i maxuint63
-let of_int i = Int64.of_int i
+let of_int i = mask63 (Int64.of_int i)
 let to_int2 i = (Int64.to_int (Int64.shift_right_logical i 31), Int64.to_int i)
-let of_int64 i = i
+let of_int64 = mask63
+let to_int64 i = i
 
 let to_int_min n m =
   if Int64.(compare n (of_int m)) < 0 then Int64.to_int n else m
@@ -40,13 +41,6 @@ let hash i =
 
     (* conversion of an uint63 to a string *)
 let to_string i = Int64.to_string i
-
-let of_string s =
-  let i64 = Int64.of_string s in
-  if Int64.compare Int64.zero i64 <= 0
-      && Int64.compare i64 maxuint63 <= 0
-  then i64
-  else raise (Failure "Int63.of_string")
 
 (* Compiles an unsigned int to OCaml code *)
 let compile i = Printf.sprintf "Uint63.of_int64 (%LiL)" i
@@ -72,12 +66,12 @@ let l_xor x y = Int64.logxor x y
     (* addition of int63 *)
 let add x y = mask63 (Int64.add x y)
 
-let addcarry x y = add (add x y) Int64.one
+let addcarry x y = mask63 Int64.(add (add x y) one)
 
     (* subtraction *)
 let sub x y = mask63 (Int64.sub x y)
 
-let subcarry x y = sub (sub x y) Int64.one
+let subcarry x y = mask63 Int64.(sub (sub x y) one)
 
     (* multiplication *)
 let mul x y = mask63 (Int64.mul x y)

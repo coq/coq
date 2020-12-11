@@ -25,7 +25,8 @@ let of_int i = i
 
 let to_int2 i = (0,i)
 
-let of_int64 _i = assert false
+let of_int64 = Int64.to_int
+let to_int64 = to_uint64
 
 let of_float = int_of_float
 
@@ -38,13 +39,6 @@ let hash i = i
 
     (* conversion of an uint63 to a string *)
 let to_string i = Int64.to_string (to_uint64 i)
-
-let of_string s =
-  let i64 = Int64.of_string s in
-  if Int64.compare Int64.zero i64 <= 0
-      && Int64.compare i64 maxuint63 <= 0
-  then Int64.to_int i64
-  else raise (Failure "Int64.of_string")
 
 (* Compiles an unsigned int to OCaml code *)
 let compile i = Printf.sprintf "Uint63.of_int (%i)" i

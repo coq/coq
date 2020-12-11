@@ -17,6 +17,7 @@ val maxuint31 : t
 val of_int : int -> t
 val to_int2 : t -> int * int (* msb, lsb *)
 val of_int64 : Int64.t -> t
+val to_int64 : t -> Int64.t
 (*
 val of_uint : int -> t
  *)
@@ -32,7 +33,6 @@ val hash : t -> int
 
      (* conversion to a string *)
 val to_string : t -> string
-val of_string : string -> t
 
 val compile : t -> string
 

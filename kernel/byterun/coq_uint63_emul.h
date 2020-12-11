@@ -20,7 +20,7 @@
 
 # define DECLARE_NULLOP(name) \
 value uint63_##name() { \
-  static value* cb = 0; \
+  static value const *cb = 0; \
   CAMLparam0(); \
   if (!cb) cb = caml_named_value("uint63 " #name); \
   CAMLreturn(*cb); \
@@ -28,7 +28,7 @@ value uint63_##name() { \
 
 # define DECLARE_UNOP(name) \
 value uint63_##name##_ml(value x) { \
-  static value* cb = 0; \
+  static value const *cb = 0; \
   CAMLparam1(x); \
   if (!cb) cb = caml_named_value("uint63 " #name); \
   CAMLreturn(caml_callback(*cb, x)); \
@@ -53,7 +53,7 @@ value uint63_##name##_ml(value x) { \
 
 # define DECLARE_BINOP(name) \
 value uint63_##name##_ml(value x, value y) { \
-  static value* cb = 0; \
+  static value const *cb = 0; \
   CAMLparam2(x, y); \
   if (!cb) cb = caml_named_value("uint63 " #name); \
   CAMLreturn(caml_callback2(*cb, x, y)); \
@@ -79,7 +79,7 @@ value uint63_##name##_ml(value x, value y) { \
 
 # define DECLARE_TEROP(name) \
 value uint63_##name##_ml(value x, value y, value z) { \
-  static value* cb = 0; \
+  static value const *cb = 0; \
   CAMLparam3(x, y, z); \
   if (!cb) cb = caml_named_value("uint63 " #name); \
   CAMLreturn(caml_callback3(*cb, x, y, z)); \
