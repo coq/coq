@@ -1014,10 +1014,11 @@ let deps_of_constraints cstrs evm p =
     cstrs
 
 let evar_dependencies pred evm p =
+  let cache = Evarutil.create_undefined_evars_cache () in
   Evd.fold_undefined
     (fun ev evi _ ->
       if Evd.is_typeclass_evar evm ev && pred evm ev evi then
-        let evars = Evar.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
+        let evars = Evar.Set.add ev (Evarutil.filtered_undefined_evars_of_evar_info ~cache evm evi)
         in Intpart.union_set evars p
       else ())
     evm ()
