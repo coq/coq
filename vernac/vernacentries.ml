@@ -437,6 +437,7 @@ let dump_global r =
     let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob ?loc:r.loc gr
   with e when CErrors.noncritical e -> ()
+
 (**********)
 (* Syntax *)
 

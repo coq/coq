@@ -2668,7 +2668,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
       | VtQuery ->
           let id = VCS.new_node ~id:newtip proof_mode () in
           let queue =
-            if VCS.is_vio_doc () &&
+            if (VCS.is_vio_doc () || !Flags.load_vos_libraries) &&
                VCS.((get_branch head).kind = `Master) &&
                may_pierce_opaque x.expr.CAst.v.expr
             then `SkipQueue
