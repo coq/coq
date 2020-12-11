@@ -22,7 +22,7 @@ open Tactypes
 
 (** {6 The Type of Constructions clausale environments.} *)
 
-type clausenv = {
+type clausenv = private {
   env      : env; (** the typing context *)
   evd      : evar_map; (** the mapping from metavar and evar numbers to their
                            types and values *)
@@ -30,6 +30,8 @@ type clausenv = {
                                     out *)
   templtyp : constr freelisted (** its type *)}
 
+val mk_clausenv : env -> evar_map -> constr freelisted -> types freelisted -> clausenv
+val update_clenv_evd : clausenv -> evar_map -> clausenv
 
 (** subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr

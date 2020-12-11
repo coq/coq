@@ -39,6 +39,13 @@ type clausenv = {
   templval : constr freelisted;
   templtyp : constr freelisted }
 
+let mk_clausenv env evd templval templtyp = {
+  env; evd; templval; templtyp;
+}
+
+let update_clenv_evd clenv evd =
+  mk_clausenv clenv.env evd clenv.templval clenv.templtyp
+
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
