@@ -863,7 +863,7 @@ let rec push_context_binders vars = function
     let vars = match DAst.get b with
     | GLocalAssum (na,_,_) -> Termops.add_vname vars na
     | GLocalPattern ((disjpat,ids),p,bk,t) -> List.fold_right Id.Set.add ids vars
-    | GLocalDef (na,_,_,_) -> Termops.add_vname vars na in
+    | GLocalDef (na,_,_) -> Termops.add_vname vars na in
     push_context_binders vars bl
 
 let is_term_meta id metas =
@@ -1014,9 +1014,9 @@ let unify_binder_upto alp b b' =
   | GLocalAssum (na,bk,t), GLocalAssum (na',bk',t') ->
      let alp, na = unify_name_upto alp na na' in
      alp, DAst.make ?loc @@ GLocalAssum (na, unify_binding_kind bk bk', unify_term alp t t')
-  | GLocalDef (na,bk,c,t), GLocalDef (na',bk',c',t') ->
+  | GLocalDef (na,c,t), GLocalDef (na',c',t') ->
      let alp, na = unify_name_upto alp na na' in
-     alp, DAst.make ?loc @@ GLocalDef (na, unify_binding_kind bk bk', unify_term alp c c', unify_opt_term alp t t')
+     alp, DAst.make ?loc @@ GLocalDef (na, unify_term alp c c', unify_opt_term alp t t')
   | GLocalPattern ((disjpat,ids),id,bk,t), GLocalPattern ((disjpat',_),_,bk',t') when List.length disjpat = List.length disjpat' ->
      let alp, p = List.fold_left2_map unify_pat_upto alp disjpat disjpat' in
      alp, DAst.make ?loc @@ GLocalPattern ((p,ids), id, unify_binding_kind bk bk', unify_term alp t t')
@@ -1061,7 +1061,7 @@ let rec unify_terms_binders alp cl bl' =
   | [], [] -> []
   | c :: cl, b' :: bl' ->
      begin match DAst.get b' with
-     | GLocalDef ( _, _, _, t) -> unify_terms_binders alp cl bl'
+     | GLocalDef (_, _, t) -> unify_terms_binders alp cl bl'
      | _ -> unify_term_binder alp c b' :: unify_terms_binders alp cl bl'
      end
   | _ -> raise No_match
@@ -1249,7 +1249,7 @@ let match_binderlist match_fun alp metas sigma rest x y iter termin revert =
     with No_match ->
     match DAst.get rest with
     | GLetIn (na,c,t,rest') when glue_inner_letin_with_decls ->
-       let b = DAst.make ?loc:rest.CAst.loc @@ GLocalDef (na,Explicit (*?*), c,t) in
+       let b = DAst.make ?loc:rest.CAst.loc @@ GLocalDef (na,c,t) in
        (* collect let-in *)
        (try aux true sigma (b::bl) rest'
         with OnlyTrailingLetIns

@@ -137,7 +137,7 @@ type cases_pattern_disjunction = [ `any ] cases_pattern_disjunction_g
 
 type 'a extended_glob_local_binder_r =
   | GLocalAssum   of Name.t * binding_kind * 'a glob_constr_g
-  | GLocalDef     of Name.t * binding_kind * 'a glob_constr_g * 'a glob_constr_g option
+  | GLocalDef     of Name.t * 'a glob_constr_g * 'a glob_constr_g option
   | GLocalPattern of ('a cases_pattern_disjunction_g * Id.t list) * Id.t * binding_kind * 'a glob_constr_g
 and 'a extended_glob_local_binder_g = ('a extended_glob_local_binder_r, 'a) DAst.t
 
