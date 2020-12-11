@@ -37,10 +37,12 @@ type clausenv = {
   env      : env;
   evd      : evar_map;
   templval : constr freelisted;
-  templtyp : constr freelisted }
+  templtyp : constr freelisted;
+  cache : Reductionops.meta_instance_subst;
+}
 
 let mk_clausenv env evd templval templtyp = {
-  env; evd; templval; templtyp;
+  env; evd; templval; templtyp; cache = create_meta_instance_subst evd;
 }
 
 let update_clenv_evd clenv evd =
@@ -74,7 +76,8 @@ let clenv_push_prod cl =
         { templval = mk_freelisted def;
           templtyp = mk_freelisted concl;
           evd = e';
-          env = cl.env }
+          env = cl.env;
+          cache = create_meta_instance_subst e' }
     | _ -> raise NotExtensibleClause
   in clrec typ
 
@@ -116,7 +119,8 @@ let mk_clenv_from_env env sigma n (c,cty) =
   { templval = mk_freelisted (applist (c,args));
     templtyp = mk_freelisted concl;
     evd = evd;
-    env = env }
+    env = env;
+    cache = create_meta_instance_subst evd }
 
 let mk_clenv_from_n gls n (c,cty) =
   let env = Proofview.Goal.env gls in
@@ -165,7 +169,7 @@ let clenv_assign mv rhs clenv =
         clenv
     else
       let st = (Conv,TypeNotProcessed) in
-      {clenv with evd = meta_assign mv (rhs_fls.rebus,st) clenv.evd}
+      update_clenv_evd clenv (meta_assign mv (rhs_fls.rebus,st) clenv.evd)
   with Not_found ->
     user_err Pp.(str "clenv_assign: undefined meta")
 
@@ -304,11 +308,10 @@ let meta_reducible_instance env evd b =
   else irec b.rebus
 
 let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
-  { clenv with
-      evd = w_unify ~flags clenv.env clenv.evd cv_pb t1 t2 }
+  update_clenv_evd clenv (w_unify ~flags clenv.env clenv.evd cv_pb t1 t2)
 
 let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
-  { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }
+  update_clenv_evd clenv (w_unify_meta_types ~flags:flags clenv.env clenv.evd)
 
 let clenv_unique_resolver_gen ?(flags=default_unify_flags ()) clenv concl =
   if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (whd_nored clenv.env clenv.evd clenv.templtyp.rebus))) then
@@ -421,11 +424,13 @@ let fchain_flags () =
 
 let clenv_fchain ?with_univs ?(flags=fchain_flags ()) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
+  let evd = meta_merge ?with_univs nextclenv.evd clenv.evd in
   let clenv' =
     { templval = clenv.templval;
       templtyp = clenv.templtyp;
-      evd = meta_merge ?with_univs nextclenv.evd clenv.evd;
-      env = nextclenv.env } in
+      evd;
+      env = nextclenv.env;
+      cache = create_meta_instance_subst evd } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
     clenv_unify ~flags CUMUL
@@ -545,7 +550,7 @@ let clenv_assign_binding clenv k c =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let c_typ = nf_betaiota clenv.env clenv.evd (clenv_get_type_of clenv c) in
   let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
-  { clenv' with evd = meta_assign k (c,(Conv,status)) clenv'.evd }
+  update_clenv_evd clenv' (meta_assign k (c,(Conv,status)) clenv'.evd)
 
 let clenv_match_args bl clenv =
   if List.is_empty bl then
@@ -647,7 +652,7 @@ let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
       Typeclasses.make_unresolvables (fun x -> true) evd'
     else clenv.evd
   in
-  let clenv = { clenv with evd = evd' } in
+  let clenv = update_clenv_evd clenv evd' in
   Proofview.tclTHEN
     (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
     (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))

@@ -28,7 +28,9 @@ type clausenv = private {
                            types and values *)
   templval : constr freelisted; (** the template which we are trying to fill
                                     out *)
-  templtyp : constr freelisted (** its type *)}
+  templtyp : constr freelisted; (** its type *)
+  cache : Reductionops.meta_instance_subst; (* Reductionops.create_meta_instance_subst evd) *)
+}
 
 val mk_clausenv : env -> evar_map -> constr freelisted -> types freelisted -> clausenv
 val update_clenv_evd : clausenv -> evar_map -> clausenv
