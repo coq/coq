@@ -220,7 +220,7 @@ html_context = {
         ("dev", "https://coq.github.io/doc/master/refman/"),
         ("stable", "https://coq.inria.fr/distrib/current/refman/"),
         ("v8.13", "https://coq.github.io/doc/v8.13/refman/"),
-        ("8.12", "https://coq.inria.fr/distrib/V8.12.1/refman/"),
+        ("8.12", "https://coq.inria.fr/distrib/V8.12.2/refman/"),
         ("8.11", "https://coq.inria.fr/distrib/V8.11.2/refman/"),
         ("8.10", "https://coq.inria.fr/distrib/V8.10.2/refman/"),
         ("8.9", "https://coq.inria.fr/distrib/V8.9.1/refman/"),
