@@ -21,11 +21,12 @@ Hexadecimal.hexadecimal_beq:
 Nat.ltb: nat -> nat -> bool
 Nat.leb: nat -> nat -> bool
 Number.number_beq: Number.number -> Number.number -> bool
-Number.int_beq: Number.int -> Number.int -> bool
-Hexadecimal.int_beq: Hexadecimal.int -> Hexadecimal.int -> bool
+Number.signed_int_beq: Number.signed_int -> Number.signed_int -> bool
+Hexadecimal.signed_int_beq:
+  Hexadecimal.signed_int -> Hexadecimal.signed_int -> bool
 Hexadecimal.uint_beq: Hexadecimal.uint -> Hexadecimal.uint -> bool
 Decimal.decimal_beq: Decimal.decimal -> Decimal.decimal -> bool
-Decimal.int_beq: Decimal.int -> Decimal.int -> bool
+Decimal.signed_int_beq: Decimal.signed_int -> Decimal.signed_int -> bool
 Decimal.uint_beq: Decimal.uint -> Decimal.uint -> bool
 mult_n_O: forall n : nat, 0 = n * 0
 plus_O_n: forall n : nat, 0 + n = n
