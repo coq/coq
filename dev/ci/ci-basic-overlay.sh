@@ -252,7 +252,7 @@
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-: "${elpi_CI_REF:=4246a9f952b7ffb4c1d85d10e799566186e569f7}"
+: "${elpi_CI_REF:=v1.8.1}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
