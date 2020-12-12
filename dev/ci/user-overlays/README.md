@@ -5,27 +5,29 @@ have prepared a branch with the fix, you can add an "overlay" to your pull
 request to test it with the adapted version of the external project.
 
 An overlay is a file which defines where to look for the patched
-version so that testing is possible. This is done by calling the
-`overlay` command for each project with the project name (as used in
-the variables in [`ci-basic-overlay.sh`](../ci-basic-overlay.sh)), the
-location of your fork and the branch containing the patch on your
-fork.
-
-Moreover, the file contains very simple logic to test the pull request number
-or branch name and apply it only in this case.
-
+version so that testing is possible.
 The name of your overlay file should start with a five-digit pull request
 number, followed by a dash, anything (for instance your GitHub nickname
 and the branch name), then a `.sh` extension (`[0-9]{5}-[a-zA-Z0-9-_]+.sh`).
 
-Example: `13128-SkySkimmer-noinstance.sh` containing
+This file must contain one or more invocation of the `overlay` function:
+```
+overlay <project> <giturl> <ref> <prnumber> [<prbranch>]
+```
+Each call creates an overlay for `project` using a given `giturl` and
+`ref` which is active for `prnumber` or `prbranch` (`prbranch` defaults
+to `ref`).
 
+Example of an overlay for the project `elpi` that uses the branch `noinstance`
+from the fork of `SkySkimmer` and is active for pull request `13128`
 ```
 overlay elpi https://github.com/SkySkimmer/coq-elpi noinstance 13128
 ```
 
-See [`ci-common.sh`](../ci-common.sh) for the detailed documentation of
-the `overlay` function.
+Such a file can be created automatically using the scripts
+[`create_overlays.sh`]()../../dev/tools/create_overlays.sh).
+See also the list of projects for which one can write an overlay in
+the file [`ci-basic-overlay.sh`](../ci-basic-overlay.sh).
 
 ### Branching conventions
 
