@@ -21,14 +21,14 @@ open Locus
 type red_expr =
   (constr, evaluable_global_reference, constr_pattern) red_expr_gen
 
-type red_expr_val =
-  (constr, evaluable_global_reference, constr_pattern, CClosure.RedFlags.reds) red_expr_gen0
+type red_expr_val
 
 val out_with_occurrences : 'a with_occurrences -> occurrences * 'a
 
 val eval_red_expr : Environ.env -> red_expr -> red_expr_val
 
-val reduction_of_red_expr_val : red_expr_val -> e_reduction_function * cast_kind
+val reduction_of_red_expr_val : ?occs:(Locus.occurrences_expr * int) ->
+  red_expr_val -> e_reduction_function * cast_kind
 
 (** Composition of {!reduction_of_red_expr_val} with {!eval_red_expr} *)
 val reduction_of_red_expr :

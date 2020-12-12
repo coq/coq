@@ -268,6 +268,74 @@ let reduction_of_red_expr_val = function
 let reduction_of_red_expr env r =
   reduction_of_red_expr_val (eval_red_expr env r)
 
+(* Possibly equip a reduction with the occurrences mentioned in an
+   occurrence clause *)
+
+let error_illegal_clause () =
+  CErrors.user_err Pp.(str "\"at\" clause not supported in presence of an occurrence clause.")
+
+let error_illegal_non_atomic_clause () =
+  CErrors.user_err Pp.(str "\"at\" clause not supported in presence of a non atomic \"in\" clause.")
+
+let error_occurrences_not_unsupported () =
+  CErrors.user_err Pp.(str "Occurrences not supported for this reduction tactic.")
+
+let bind_red_expr_occurrences occs nbcl redexp =
+  let open Locus in
+  let has_at_clause = function
+    | Unfold l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
+    | Pattern l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
+    | Simpl (_,Some (occl,_)) -> occl != AllOccurrences
+    | _ -> false in
+  if occs == AllOccurrences then
+    if nbcl > 1 && has_at_clause redexp then
+      error_illegal_non_atomic_clause ()
+    else
+      redexp
+  else
+    match redexp with
+    | Unfold (_::_::_) ->
+        error_illegal_clause ()
+    | Unfold [(occl,c)] ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          Unfold [(occs,c)]
+    | Pattern (_::_::_) ->
+        error_illegal_clause ()
+    | Pattern [(occl,c)] ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          Pattern [(occs,c)]
+    | Simpl (f,Some (occl,c)) ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          Simpl (f,Some (occs,c))
+    | CbvVm (Some (occl,c)) ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          CbvVm (Some (occs,c))
+    | CbvNative (Some (occl,c)) ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          CbvNative (Some (occs,c))
+    | Red _ | Hnf | Cbv _ | Lazy _ | Cbn _
+    | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None ->
+        error_occurrences_not_unsupported ()
+    | Unfold [] | Pattern [] ->
+        assert false
+
+let reduction_of_red_expr_val ?occs r =
+  let r = match occs with
+  | None -> r
+  | Some (occs, nbcl) -> bind_red_expr_occurrences occs nbcl r
+  in
+  reduction_of_red_expr_val r
+
 let subst_mps subst c =
   EConstr.of_constr (Mod_subst.subst_mps subst (EConstr.Unsafe.to_constr c))
 
