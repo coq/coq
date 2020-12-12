@@ -14,24 +14,6 @@ REASON="bundled in the Windows installer"
 git show master:dev/ci/ci-basic-overlay.sh > /tmp/master-ci-basic-overlay.sh
 git show v${VERSION}:dev/ci/ci-basic-overlay.sh > /tmp/branch-ci-basic-overlay.sh
 
-# caveats:
-# - dev/ci/gitlab.bat has \r (windows)
-# - aactactics, gappa, HB, extlib have different names in ci
-# - menhir is not pinned but figures as an addon
-# - unicoq is not an addon
-WINDOWS_ADDONS=$(grep addon= dev/ci/gitlab.bat \
-  | cut -d = -f 2 \
-  | cut -d ' ' -f 1 \
-  | tr -d '\r' \
-  | sed -e 's/^aactactics$/aac_tactics/' \
-        -e 's/^gappa$/gappa_plugin/' \
-        -e 's/^HB$/elpi_hb/' \
-        -e 's/^extlib$/ext_lib/' \
-        \
-        -e '/^menhir$/d' \
-  ) \
-WINDOWS_ADDONS="$WINDOWS_ADDONS unicoq"
-
 # reads a variable value from a ci-basic-overlay.sh file
 function read_from() {
   ( . $1; varname="$2"; echo ${!varname} )
@@ -99,7 +81,10 @@ $CC
   esac
 }
 
-for addon in $WINDOWS_ADDONS; do
+# TODO: filter w.r.t. what is in the platform
+PROJECTS=`read_from /tmp/branch-ci-basic-overlay.sh "projects[@]"`
+
+for addon in $PROJECTS; do
     URL=`read_from /tmp/master-ci-basic-overlay.sh "${addon}_CI_GITURL"`
     REF=`read_from /tmp/master-ci-basic-overlay.sh "${addon}_CI_REF"`
     PIN=`read_from /tmp/branch-ci-basic-overlay.sh "${addon}_CI_REF"`

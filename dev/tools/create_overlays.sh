@@ -42,7 +42,7 @@ OVERLAY_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 OVERLAY_FILE=$(mktemp overlay-XXXX)
 
 # Create the overlay file
-printf 'if [ "$CI_PULL_REQUEST" = "%s" ] || [ "$CI_BRANCH" = "%s" ]; then\n\n' "$PR_NUMBER" "$OVERLAY_BRANCH" > "$OVERLAY_FILE"
+> "$OVERLAY_FILE"
 
 # We first try to build the contribs
 while test $# -gt 0
@@ -66,12 +66,11 @@ do
     make ci-$_CONTRIB_NAME || true
     setup_contrib_git $_CONTRIB_DIR $_CONTRIB_GITPUSHURL
 
-    echo "    overlay ${_CONTRIB_NAME} $_CONTRIB_GITURL $OVERLAY_BRANCH" >> $OVERLAY_FILE
+    echo "overlay ${_CONTRIB_NAME} $_CONTRIB_GITURL $OVERLAY_BRANCH $PR_NUMBER" >> $OVERLAY_FILE
     echo "" >> $OVERLAY_FILE
     shift
 done
 
-# End the file; copy to overlays folder.
-echo "fi" >> $OVERLAY_FILE
+# Copy to overlays folder.
 PR_NUMBER=$(printf '%05d' "$PR_NUMBER")
 mv $OVERLAY_FILE dev/ci/user-overlays/$PR_NUMBER-$DEVELOPER_NAME-${OVERLAY_BRANCH///}.sh

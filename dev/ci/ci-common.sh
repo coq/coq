@@ -49,20 +49,34 @@ ls -l "$CI_BUILD_DIR" || true
 
 declare -A overlays
 
-overlay()
+# overlay <project> <giturl> <ref> <prnumber> [<prbranch>]
+#   creates an overlay for project using a given url and branch which is
+#   active for prnumber or prbranch. prbranch defaults to ref.
+function overlay()
 {
     local project=$1
     local ov_url=$2
     local ov_ref=$3
+    local ov_prnumber=$4
+    local ov_prbranch=$5
+    : "${ov_prbranch:=$ov_ref}"
 
-    overlays[${project}_URL]=$ov_url
-    overlays[${project}_REF]=$ov_ref
+    if [ "$CI_PULL_REQUEST" = "$ov_prnumber" ] || [ "$CI_BRANCH" = "$ov_prbranch" ]; then
+      if ! is_in_projects "$project"; then
+        echo "Error: $1 is not a known project which can be overlayed"
+        exit 1
+      fi
+
+      overlays[${project}_URL]=$ov_url
+      overlays[${project}_REF]=$ov_ref
+    fi
 }
 
 set +x
 for overlay in "${ci_dir}"/user-overlays/*.sh; do
     # shellcheck source=/dev/null
-    . "${overlay}"
+    # the directoy can be empty
+    if [ -e "${overlay}" ]; then . "${overlay}"; fi
 done
 
 # shellcheck source=ci-basic-overlay.sh
