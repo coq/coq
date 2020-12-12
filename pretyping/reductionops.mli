@@ -106,8 +106,6 @@ end
 
 (************************************************************************)
 
-type state = constr * constr Stack.t
-
 type reduction_function = env -> evar_map -> constr -> constr
 
 type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
@@ -115,23 +113,12 @@ type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
 type stack_reduction_function =
     env -> evar_map -> constr -> constr * constr list
 
-type state_reduction_function =
-    env -> evar_map -> state -> state
-
-val pr_state : env -> evar_map -> state -> Pp.t
-
 (** {6 Reduction Function Operators } *)
 
 val strong_with_flags :
   (CClosure.RedFlags.reds -> reduction_function) ->
   (CClosure.RedFlags.reds -> reduction_function)
 val strong : reduction_function -> reduction_function
-
-val whd_state_gen :
-  CClosure.RedFlags.reds -> Environ.env -> Evd.evar_map -> state -> state
-
-val iterate_whd_gen : CClosure.RedFlags.reds ->
-  Environ.env -> Evd.evar_map -> constr -> constr
 
 (** {6 Generic Optimized Reduction Function using Closures } *)
 
@@ -166,24 +153,13 @@ val whd_all_stack : stack_reduction_function
 val whd_allnolet_stack : stack_reduction_function
 val whd_betalet_stack : stack_reduction_function
 
-val whd_nored_state : state_reduction_function
-val whd_beta_state : state_reduction_function
-val whd_betaiota_state : state_reduction_function
-val whd_betaiotazeta_state : state_reduction_function
-val whd_all_state : state_reduction_function
-val whd_allnolet_state : state_reduction_function
-val whd_betalet_state : state_reduction_function
-
 (** {6 Head normal forms } *)
 
 val whd_delta_stack :  stack_reduction_function
-val whd_delta_state :  state_reduction_function
 val whd_delta :  reduction_function
 val whd_betadeltazeta_stack :  stack_reduction_function
-val whd_betadeltazeta_state :  state_reduction_function
 val whd_betadeltazeta :  reduction_function
 val whd_zeta_stack : stack_reduction_function
-val whd_zeta_state : state_reduction_function
 val whd_zeta : reduction_function
 
 val shrink_eta : Environ.env -> constr -> constr
@@ -269,8 +245,17 @@ val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TransparentState.t ->
 
 (** {6 Heuristic for Conversion with Evar } *)
 
+type state = constr * constr Stack.t
+
+type state_reduction_function =
+    env -> evar_map -> state -> state
+
+val pr_state : env -> evar_map -> state -> Pp.t
+
+val whd_nored_state : state_reduction_function
+
 val whd_betaiota_deltazeta_for_iota_state :
-  TransparentState.t -> Environ.env -> Evd.evar_map -> state -> state
+  TransparentState.t -> state_reduction_function
 
 (** {6 Meta-related reduction functions } *)
 val meta_instance : env -> evar_map -> constr freelisted -> constr
