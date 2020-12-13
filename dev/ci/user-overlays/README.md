@@ -25,7 +25,7 @@ overlay elpi https://github.com/SkySkimmer/coq-elpi noinstance 13128
 ```
 
 Such a file can be created automatically using the scripts
-[`create_overlays.sh`]()../../dev/tools/create_overlays.sh).
+[`create_overlays.sh`](../../dev/tools/create_overlays.sh).
 See also the list of projects for which one can write an overlay in
 the file [`ci-basic-overlay.sh`](../ci-basic-overlay.sh).
 
