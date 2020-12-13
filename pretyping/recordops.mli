@@ -94,7 +94,7 @@ val register_canonical_structure : warn:bool -> Environ.env -> Evd.evar_map ->
   cs -> unit
 val subst_canonical_structure : Mod_subst.substitution -> cs -> cs
 val is_open_canonical_projection :
-  Environ.env -> Evd.evar_map -> Reductionops.state -> bool
+  Environ.env -> Evd.evar_map -> EConstr.t -> bool
 val canonical_projections : unit ->
   ((GlobRef.t * cs_pattern) * obj_typ) list
 

@@ -323,23 +323,32 @@ let check_and_decompose_canonical_structure env sigma ref =
 let lookup_canonical_conversion env (proj,pat) =
   assoc_pat env pat (GlobRef.Map.find proj !object_table)
 
-let decompose_projection sigma c args =
+let rec get_nth n = function
+| [] -> raise Not_found
+| arg :: args ->
+  let len = Array.length arg in
+  if n < len then arg.(n)
+  else get_nth (n - len) args
+
+let rec decompose_projection sigma c args =
   match EConstr.kind sigma c with
+  | Meta mv -> decompose_projection sigma (Evd.meta_value sigma mv) args
+  | Cast (c, _, _) -> decompose_projection sigma c args
+  | App (c, arg) -> decompose_projection sigma c (arg :: args)
   | Const (c, u) ->
      let n = find_projection_nparams (GlobRef.ConstRef c) in
      (* Check if there is some canonical projection attached to this structure *)
      let _ = GlobRef.Map.find (GlobRef.ConstRef c) !object_table in
-     let arg = Stack.nth args n in
-     arg
+     get_nth n args
   | Proj (p, c) ->
      let _ = GlobRef.Map.find (GlobRef.ConstRef (Projection.constant p)) !object_table in
      c
   | _ -> raise Not_found
 
-let is_open_canonical_projection env sigma (c,args) =
+let is_open_canonical_projection env sigma c =
   let open EConstr in
   try
-    let arg = decompose_projection sigma c args in
+    let arg = decompose_projection sigma c [] in
     try
       let arg = whd_all env sigma arg in
       let hd = match EConstr.kind sigma arg with App (hd, _) -> hd | _ -> arg in
