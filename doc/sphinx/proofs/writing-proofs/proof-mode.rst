@@ -379,14 +379,11 @@ Navigation in the proof tree
 
 .. _curly-braces:
 
-.. index:: {
-           }
 
-.. todo: :name: "{"; "}" doesn't work, nor does :name: left curly bracket; right curly bracket,
-   hence the verbose names
+.. tacn:: %}
+   :name: }
 
-.. tacn:: {? {| @natural | [ @ident ] } : } %{
-         %}
+   xyz
 
    .. todo
       See https://github.com/coq/coq/issues/12004 and
@@ -477,7 +474,7 @@ Navigation in the proof tree
       Brackets are used to focus on a single goal given either by its position
       or by its name if it has one.
 
-  .. seealso:: The error messages for bullets below.
+   .. seealso:: The error messages for bullets below.
 
 .. _bullets:
 
