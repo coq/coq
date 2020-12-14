@@ -217,7 +217,7 @@
 ########################################################################
 # Bignums
 ########################################################################
-: "${bignums_CI_REF:=V8.13+beta1}"
+: "${bignums_CI_REF:=V8.13.0}"
 : "${bignums_CI_GITURL:=https://github.com/coq/bignums}"
 : "${bignums_CI_ARCHIVEURL:=${bignums_CI_GITURL}/archive}"
 
