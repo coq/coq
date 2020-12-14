@@ -47,8 +47,17 @@ let add_instance_hint inst path ~locality info =
           (Hints.HintsResolveEntry
              [info, false, Hints.PathHints path, inst])) ()
 
+type instance_obj = {
+  inst_class : GlobRef.t;
+  inst_info: hint_info;
+  (* Sections where the instance should be redeclared,
+     None for discard, Some 0 for none. *)
+  inst_global: int option;
+  inst_impl: GlobRef.t;
+}
+
 let is_local_for_hint i =
-  match i.is_global with
+  match i.inst_global with
   | None -> true  (* i.e. either no Global keyword not in section, or in section *)
   | Some n -> n <> 0 (* i.e. in a section, declare the hint as local
                         since discharge is managed by rebuild_instance which calls again
@@ -57,44 +66,33 @@ let is_local_for_hint i =
 
 let add_instance_base inst =
   let locality = if is_local_for_hint inst then Goptions.OptLocal else Goptions.OptGlobal in
-  add_instance_hint (Hints.hint_globref inst.is_impl) [inst.is_impl] ~locality
-    inst.is_info
-
-let mk_instance cl info glob impl =
-  let global =
-    if glob then Some (Lib.sections_depth ())
-    else None
-  in
-  if match global with Some n -> n>0 && isVarRef impl | _ -> false then
-    CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.");
-  { is_class = cl.cl_impl;
-    is_info = info ;
-    is_global = global ;
-    is_impl = impl }
+  add_instance_hint (Hints.hint_globref inst.inst_impl) [inst.inst_impl] ~locality
+    inst.inst_info
 
 (*
  * instances persistent object
  *)
 let cache_instance (_, i) =
+  let i = { is_class = i.inst_class; is_info = i.inst_info; is_impl = i.inst_impl } in
   load_instance i
 
 let subst_instance (subst, inst) =
   { inst with
-      is_class = fst (subst_global subst inst.is_class);
-      is_impl = fst (subst_global subst inst.is_impl) }
+      inst_class = fst (subst_global subst inst.inst_class);
+      inst_impl = fst (subst_global subst inst.inst_impl) }
 
 let discharge_instance (_, inst) =
-  match inst.is_global with
+  match inst.inst_global with
   | None -> None
   | Some n ->
-    assert (not (isVarRef inst.is_impl));
+    assert (not (isVarRef inst.inst_impl));
     Some
     { inst with
-      is_global = Some (pred n);
-      is_class = inst.is_class;
-      is_impl = inst.is_impl }
+      inst_global = Some (pred n);
+      inst_class = inst.inst_class;
+      inst_impl = inst.inst_impl }
 
-let is_local i = (i.is_global == None)
+let is_local i = Option.is_empty i.inst_global
 
 let rebuild_instance inst =
   add_instance_base inst;
@@ -104,7 +102,7 @@ let classify_instance inst =
   if is_local inst then Dispose
   else Substitute inst
 
-let instance_input : instance -> obj =
+let instance_input : instance_obj -> obj =
   declare_object
     { (default_object "type classes instances state") with
       cache_function = cache_instance;
@@ -115,7 +113,19 @@ let instance_input : instance -> obj =
       rebuild_function = rebuild_instance;
       subst_function = subst_instance }
 
-let add_instance i =
+let add_instance cl info glob impl =
+  let global =
+    if glob then Some (Lib.sections_depth ())
+    else None
+  in
+  if match global with Some n -> n>0 && isVarRef impl | _ -> false then
+    CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.");
+  let i = {
+    inst_class = cl.cl_impl;
+    inst_info = info ;
+    inst_global = global ;
+    inst_impl = impl;
+  } in
   Lib.add_anonymous_leaf (instance_input i);
   add_instance_base i
 
@@ -138,7 +148,7 @@ let declare_instance ?(warn = false) env sigma info local glob =
   match class_of_constr env sigma (EConstr.of_constr ty) with
   | Some (rels, ((tc,_), args) as _cl) ->
     assert (not (isVarRef glob) || local);
-    add_instance (mk_instance tc info (not local) glob)
+    add_instance tc info (not local) glob
   | None -> if warn then warning_not_a_class (glob, ty)
 
 (*
@@ -263,7 +273,7 @@ let existing_instance glob g info =
   let instance, _ = Typeops.type_of_global_in_context env c in
   let _, r = Term.decompose_prod_assum instance in
     match class_of_constr env sigma (EConstr.of_constr r) with
-      | Some (_, ((tc,u), _)) -> add_instance (mk_instance tc info glob c)
+      | Some (_, ((tc,u), _)) -> add_instance tc info glob c
       | None -> user_err ?loc:g.CAst.loc
                          ~hdr:"declare_instance"
                          (Pp.str "Constant does not build instances of a declared type class.")

@@ -74,8 +74,7 @@ val declare_new_instance
   -> unit
 
 (** {6 Low level interface used by Add Morphism, do not use } *)
-val mk_instance : typeclass -> hint_info -> bool -> GlobRef.t -> instance
-val add_instance : instance -> unit
+val add_instance : typeclass -> hint_info -> bool -> GlobRef.t -> unit
 
 val add_class : env -> Evd.evar_map -> typeclass -> unit
 

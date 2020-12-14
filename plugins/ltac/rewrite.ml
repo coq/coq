@@ -1944,8 +1944,7 @@ let add_morphism_as_parameter atts m n : unit =
   let cst = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
   let cst = GlobRef.ConstRef cst in
   Classes.add_instance
-    (Classes.mk_instance
-       (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global cst);
+    (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global cst;
   declare_projection n instance_id cst
 
 let add_morphism_interactive atts m n : Declare.Proof.t =
@@ -1959,9 +1958,8 @@ let add_morphism_interactive atts m n : Declare.Proof.t =
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
   let hook { Declare.Hook.S.dref; _ } = dref |> function
     | GlobRef.ConstRef cst ->
-      Classes.add_instance (Classes.mk_instance
-                      (PropGlobal.proper_class env evd) Hints.empty_hint_info
-                      atts.global (GlobRef.ConstRef cst));
+      Classes.add_instance (PropGlobal.proper_class env evd) Hints.empty_hint_info
+        atts.global (GlobRef.ConstRef cst);
       declare_projection n instance_id (GlobRef.ConstRef cst)
     | _ -> assert false
   in
