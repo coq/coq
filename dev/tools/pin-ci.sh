@@ -38,9 +38,7 @@ process_development() {
 # Execute the script to set the overlay variables
 . $OVERLAYS
 
-# Find all variables declared in the base overlay of the form *_CI_GITURL
-for REPO_VAR in $(compgen -A variable | grep _CI_GITURL)
+for project in ${projects[*]}
 do
-  DEV=${REPO_VAR%_CI_GITURL}
-  process_development $DEV
+  process_development $project
 done
