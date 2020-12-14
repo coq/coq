@@ -930,14 +930,6 @@ let stack_red_of_state_red f =
   let f env sigma x = EConstr.decompose_app sigma (Stack.zip sigma (f env sigma (x, Stack.empty))) in
   f
 
-(* Drops the Cst_stack *)
-let iterate_whd_gen flags env sigma s =
-  let rec aux t =
-  let (hd,sk) = whd_state_gen flags env sigma (t,Stack.empty) in
-  let whd_sk = Stack.map aux sk in
-  Stack.zip sigma (hd,whd_sk)
-  in aux s
-
 let red_of_state_red f env sigma x =
   Stack.zip sigma (f env sigma (x,Stack.empty))
 

@@ -1070,10 +1070,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   and canonical_projections (curenv, _ as curenvnb) pb opt cM cN (sigma,_,_ as substn) =
     let f1 () =
       if isApp_or_Proj sigma cM then
-        let f1l1 = whd_nored_state curenv sigma (cM,Stack.empty) in
-          if is_open_canonical_projection curenv sigma f1l1 then
-            let f2l2 = whd_nored_state curenv sigma (cN,Stack.empty) in
-              solve_canonical_projection curenvnb pb opt cM f1l1 cN f2l2 substn
+          if is_open_canonical_projection curenv sigma cM then
+            solve_canonical_projection curenvnb pb opt cM cN substn
           else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
@@ -1086,14 +1084,14 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       else
         try f1 () with e when precatchable_exception e ->
           if isApp_or_Proj sigma cN then
-            let f2l2 = whd_nored_state curenv sigma (cN, Stack.empty) in
-              if is_open_canonical_projection curenv sigma f2l2 then
-                let f1l1 = whd_nored_state curenv sigma (cM, Stack.empty) in
-                  solve_canonical_projection curenvnb pb opt cN f2l2 cM f1l1 substn
+              if is_open_canonical_projection curenv sigma cN then
+                solve_canonical_projection curenvnb pb opt cN cM substn
               else error_cannot_unify (fst curenvnb) sigma (cM,cN)
           else error_cannot_unify (fst curenvnb) sigma (cM,cN)
 
-  and solve_canonical_projection curenvnb pb opt cM f1l1 cN f2l2 (sigma,ms,es) =
+  and solve_canonical_projection curenvnb pb opt cM cN (sigma,ms,es) =
+    let f1l1 = whd_nored_state (fst curenvnb) sigma (cM,Stack.empty) in
+    let f2l2 = whd_nored_state (fst curenvnb) sigma (cN,Stack.empty) in
     let (ctx,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
       try Evarconv.check_conv_record (fst curenvnb) sigma f1l1 f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
