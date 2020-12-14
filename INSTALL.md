@@ -99,3 +99,13 @@ dependencies...) as Coq.  Distribution of pre-compiled plugins and
 Coq version compiled with the same OCaml toolchain.  An OCaml setup
 mismatch is the most probable cause for an `Error while loading ...:
 implementation mismatch on ...`.
+
+coq_environment.txt
+-------------------
+Coq binaries which honor environment variables, such as `COQLIB`, can
+be seeded values for these variables by placing a text file named
+`coq_environment.txt` next to them. The file can contain assignments
+like `COQLIB="some path"`, that is a variable name followed by `=` and
+a string that follows OCaml's escaping conventions. This feature can be
+used by installers of binary package to make Coq aware of its installation
+path.
