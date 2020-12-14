@@ -17,6 +17,8 @@ function is_in_projects {
 # project <name> <giturl> <ref> [<archiveurl>]
 #   [<archiveurl>] defaults to <giturl>/archive on github.com
 #   and <giturl>/-/archive on gitlab
+#   If the project is packaged under opam with name coq-foo-bar then <name>
+#   should be foo_bar
 function project {
 
   local var_ref=${1}_CI_REF
