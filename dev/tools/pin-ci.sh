@@ -38,7 +38,7 @@ process_development() {
 # Execute the script to set the overlay variables
 . $OVERLAYS
 
-for project in ${projects[*]}
+for project in ${projects[@]}
 do
   process_development $project
 done
