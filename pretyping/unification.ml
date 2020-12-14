@@ -1740,9 +1740,12 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
         let newdecl = replace_term_occ_decl_modulo env sigma (AtOccs occ) test mkvarid d in
         (push_named_context_val newdecl sign, newdecl :: depdecls) in
   try
-    let sign,depdecls =
+    let sign, depdecls = match occs.onhyps with
+    | Some [] -> Environ.named_context_val env, []
+    | _ ->
       fold_named_context compute_dependency env
-        ~init:(empty_named_context_val,[]) in
+        ~init:(empty_named_context_val, [])
+    in
     let ccl = match occurrences_of_goal occs with
       | NoOccurrences -> concl
       | occ ->
