@@ -448,7 +448,7 @@ type 'r gen_eval = Loc.t -> 'r env -> 'r
 let outer_eval n a b c =
 let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env -> a = function
 | TyStop ->
-  Stats.parser_action "NOTATION" n "??" 999;
+  Stats.parser_action "NOTATION" n "??" 999 0;
   fun f env loc -> f loc env
 | TyNext (rem, TyTerm _) ->
   fun f env _ -> ty_eval rem f env

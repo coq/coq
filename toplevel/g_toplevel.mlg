@@ -25,8 +25,7 @@ type vernac_toplevel =
 module Toplevel_ : sig
   val vernac_toplevel : vernac_toplevel option Entry.t
 end = struct
-  let gec_vernac s = Entry.create ("toplevel:" ^ s)
-  let vernac_toplevel = gec_vernac "vernac_toplevel"
+  let vernac_toplevel = Entry.create "vernac_toplevel"
 end
 
 open Toplevel_
@@ -44,6 +43,12 @@ let test_show_goal =
 GRAMMAR EXTEND Gram
   GLOBAL: vernac_toplevel;
   vernac_toplevel: FIRST
+    [ [ rv = vernac_toplevel2 -> { Stats.check_stack "vernac_toplevel"; rv }
+      ]
+    ]
+  ;
+
+  vernac_toplevel2:
     [ [ IDENT "Drop"; "." -> { Some VernacDrop }
       | IDENT "Quit"; "." -> { Some VernacQuit }
       | IDENT "BackTo"; n = natural; "." ->

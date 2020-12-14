@@ -220,8 +220,8 @@ function
 
 let format_inf vars body prod_id =
   let loc = body.loc.loc_start in
-  sprintf "~inf:(Some (\"%s\", %d, \"%s\", %d))" prod_id (List.length vars) loc.pos_fname loc.pos_lnum
-
+  sprintf "~inf:(Some (\"%s\", %d, \"%s\", %d, %d))" prod_id (List.length vars)
+      loc.pos_fname loc.pos_lnum (loc.pos_cnum - loc.pos_bol + 1)
 
 let rec print_prod prod_id n fmt p =
   let (vars, tkns) = List.split p.gprod_symbs in
@@ -643,7 +643,7 @@ let () =
   let ast = parse_file file in
   let chan = open_out output in
   let fmt = formatter_of_out_channel chan in
-  let iter ast = Format.fprintf fmt "@[%a@]%!"pr_ast ast in
+  let iter ast = Format.fprintf fmt "@[%a@]%!" pr_ast ast in
   let () = List.iter iter ast in
   let () = close_out chan in
   exit 0

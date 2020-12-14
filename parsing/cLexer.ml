@@ -790,6 +790,8 @@ let rec next_token ~diff_mode loc s =
 let next_token ~diff_mode loc s =
   let (t,loc as r) = next_token ~diff_mode loc s in
   Stats.got_loc loc (Tok.extract_string true t);
+  (* Debug: uncomment this for tracing tokens seen by coq...
+  Printf.eprintf "(line %i, %i-%i)[%s]\n%!" (Ploc.line_nb loc) (Ploc.first_pos loc) (Ploc.last_pos loc) (Tok.to_string t);*)
   r
 
 (* Location table system for creating tables associating a token count

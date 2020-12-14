@@ -34,7 +34,7 @@ module type S = sig
     val print : Format.formatter -> 'a t -> unit
   end
 
-  type prod_inf = (string * int * string * int) option
+  type prod_inf = (string * int * string * int * int) option
 
   module rec Symbol : sig
 
@@ -139,7 +139,7 @@ type ('a, 'b, 'c, 'd) ty_and_rec3 =
 | NoRec3 : (norec, norec, norec, norec) ty_and_rec3
 | MayRec3 : ('a, 'b, 'c, mayrec) ty_and_rec3
 
-type prod_inf = (string * int * string * int) option
+type prod_inf = (string * int * string * int * int) option
 
 type 'a ty_entry = {
   ename : string;
@@ -1167,11 +1167,10 @@ let of_sym : type s r a. (s, r, a) ty_symbol -> string = function
 
 let parser_action oact inf =
   let len = List.length oact in
-  if len = 0 then begin
-    let (prod_id, ntoks, fname, lnum) = Option.default ("??", 0, "??", 0) inf in
-    if !Stats.print then Printf.printf "LocAct %s %d %s %d\n%!" prod_id ntoks fname lnum;
-    if prod_id <> "??" then Stats.parser_action prod_id ntoks fname lnum;
-  end else if !Stats.print then
+  let (prod_id, ntoks, fname, lnum, char) = Option.default ("??", 0, "??", 0, 0) inf in
+  if lnum <> 0 && (len = 0 || prod_id = "query_command-8") then
+    Stats.parser_action prod_id ntoks fname lnum char
+  else if !Stats.print then
     (* duplicate action, don't reduce *)
     Printf.eprintf "oact len = %d\n%!" len
 
@@ -1525,8 +1524,9 @@ let continue_parser_of_entry entry =
     Dlevels elev ->
       let p = continue_parser_of_levels entry 0 elev in
       (fun levn bp a (strm__ : _ Stream.t) ->
-         (* todo: save/restore state? *)
-         try p levn bp a strm__ with Stream.Failure -> backup __LINE__ entry; a)
+         let pstack = Stats.get_stack () in
+         try p levn bp a strm__ with Stream.Failure -> backup __LINE__ entry;
+           Stats.set_stack pstack; a)
   | Dparser p -> fun levn bp a (strm__ : _ Stream.t) -> raise Stream.Failure
 
 let empty_entry ename levn strm =
@@ -1655,7 +1655,8 @@ module Entry = struct
       edesc = Dlevels []}
   let create = make
   let parse (e : 'a t) p : 'a =
-    (incr Stats.cnt);
+    Stats.set_ename e.ename;
+    incr Stats.cnt;
     let print = !Stats.cnt > 1 && !Stats.print in
     if print then
       Printf.printf ">>> Entry.parse of %s %d\n%!" e.ename !Stats.cnt;
@@ -1663,12 +1664,12 @@ module Entry = struct
     let x = Parsable.parse_parsable e p in
     if print then
       Printf.printf "<<< Exit Entry.parse of %s %d\n%!" e.ename !Stats.cnt;
-    (decr Stats.cnt);
+    decr Stats.cnt;
     x
     with _ as ex ->
       if print then
         Printf.printf "<<< Exception Entry.parse of %s %d\n%!" e.ename !Stats.cnt;
-      (decr Stats.cnt);
+      decr Stats.cnt;
       reraise ex
 
   let parse_token_stream (e : 'a t) ts : 'a =

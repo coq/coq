@@ -174,7 +174,7 @@ let add_tactic_entry (kn, ml, tg) state =
         TacGeneric (None, arg)
     in
     let l = List.map map l in
-    Stats.parser_action (Names.KerName.to_string kn) (List.length tg.tacgram_prods) "???" 0;
+    Stats.parser_action (Names.KerName.to_string kn) (List.length tg.tacgram_prods) "???" 0 0;
     (TacAlias (CAst.make ~loc (kn,l)):raw_tactic_expr)
   in
   let () =
@@ -420,7 +420,7 @@ let create_ltac_quotation name cast (e, l) =
         (Symbol.token (CLexer.terminal ")")))
   in
   let action _ v _ _ _ loc =
-    Stats.parser_action (name ^ "-quotation") 5 __FILE__ __LINE__;
+    Stats.parser_action (name ^ "-quotation") 5 __FILE__ __LINE__ 0;
     cast (Some loc, v) in
   let gram = (level, assoc, [Pcoq.Production.make rule action]) in
   Pcoq.grammar_extend Pltac.tactic_value {pos=None; data=[gram]}

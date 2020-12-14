@@ -266,7 +266,7 @@ let negate_parser f tok x =
 
 let lookahead s p =
   Pcoq.Entry.of_parser s (fun x strm -> let x = p x strm in
-  Stats.lookahead s  __FILE__ __LINE__; x)
+  Stats.lookahead s  __FILE__ __LINE__ 0; x)
 
 let test_not_ssrslashnum =
   lookahead
@@ -461,7 +461,7 @@ END
 (* Old kinds of terms *)
 
 let input_ssrtermkind _ strm =
-  Stats.lookahead "ssrtermkind" __FILE__ __LINE__;
+  Stats.lookahead "ssrtermkind" __FILE__ __LINE__ 0;
   match Util.stream_nth 0 strm with
   | Tok.KEYWORD "(" -> InParens
   | Tok.KEYWORD "@" -> WithAt
@@ -472,7 +472,7 @@ let ssrtermkind = Pcoq.Entry.of_parser "ssrtermkind" input_ssrtermkind
 (* New kinds of terms *)
 
 let input_term_annotation _ strm =
-  Stats.lookahead "term_annotation" __FILE__ __LINE__;
+  Stats.lookahead "term_annotation" __FILE__ __LINE__ 0;
   match Stream.npeek 2 strm with
   | Tok.KEYWORD "(" :: Tok.KEYWORD "(" :: _ -> `DoubleParens
   | Tok.KEYWORD "(" :: _ -> `Parens

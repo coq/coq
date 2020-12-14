@@ -35,7 +35,7 @@ struct
 
   let to_entry s (lk : t) =
     let run tok strm = match lk tok 0 strm with None -> err () | Some _ ->
-        Stats.lookahead s __FILE__ __LINE__ in
+        Stats.lookahead s __FILE__ __LINE__ 0 in
     Entry.of_parser s run
 
   let (>>) (lk1 : t) lk2 tok n strm = match lk1 tok n strm with
@@ -194,7 +194,11 @@ let eoi_entry en =
 
 let parse_string f ?loc x =
   let strm = Stream.of_string x in
-  Entry.parse f (Parsable.make ?loc strm)
+  incr Stats.cnt;
+  let x = Entry.parse f (Parsable.make ?loc strm) in
+  decr Stats.cnt;
+  x
+
 
 (* universes not used by Coq build but still used by some plugins *)
 type gram_universe = string

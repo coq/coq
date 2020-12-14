@@ -42,8 +42,8 @@ module Vernac_ =
     let gallina_ext = Entry.create "gallina_ext"
     let command = Entry.create "command"
     let syntax = Entry.create "syntax_command"
-    let vernac_control = Entry.create "Vernac.vernac_control"
-    let fix_definition = Entry.create "Vernac.fix_definition"
+    let vernac_control = Entry.create "vernac_control"
+    let fix_definition = Entry.create "fix_definition"
     let rec_definition = fix_definition
     let red_expr = Entry.create "red_expr"
     let hint_info = Entry.create "hint_info"
@@ -52,7 +52,10 @@ module Vernac_ =
     let noedit_mode = Entry.create "noedit_command"
 
     let () =
-      let act_vernac v loc = Stats.check_stack (); Some v in
+      let act_vernac v loc =
+        Stats.parser_action "vernac" 1 __FILE__ __LINE__ 0;
+        Stats.check_stack "vernac";
+        Some v in
       let act_eoi _ loc = None in
       let rule = [
         Pcoq.(Production.make (Rule.next Rule.stop (Symbol.token Tok.PEOI)) act_eoi);

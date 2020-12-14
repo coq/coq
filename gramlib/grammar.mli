@@ -44,7 +44,7 @@ module type S = sig
     val print : Format.formatter -> 'a t -> unit
   end
 
-  type prod_inf = (string * int * string * int) option
+  type prod_inf = (string * int * string * int * int) option
 
   module rec Symbol : sig
 

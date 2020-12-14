@@ -67,7 +67,7 @@ END
 {
 
 let input_ssrtermkind _ strm =
-  Stats.lookahead "ssrtermkind" __FILE__ __LINE__;
+  Stats.lookahead "ssrtermkind" __FILE__ __LINE__ 0;
   match Util.stream_nth 0 strm with
   | Tok.KEYWORD "(" -> InParens
   | Tok.KEYWORD "@" -> WithAt

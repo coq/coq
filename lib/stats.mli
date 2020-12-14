@@ -2,9 +2,9 @@
 open Loc
 [@@@ocaml.warning "+33"]
 
-val parser_action : string -> int -> string -> int -> unit
+val parser_action : string -> int -> string -> int -> int -> unit
 
-val lookahead : string -> string -> int -> unit
+val lookahead : string -> string -> int -> int -> unit
 
 (*
 type list_type =
@@ -22,18 +22,25 @@ val got_token : string -> unit
 
 val got_loc : Loc.t -> string -> unit
 
-val check_stack : unit -> unit
+val check_stack : string -> unit
 
 type ptree =
-[ `Token of string
-| `Prod of string * ptree list
+[ `Token of string * Loc.t option
+(* `Prod: printed prodn name, (file, line, char in line) of prodn definition *)
+| `Prod of string * (string * int * int) * ptree list
 ]
 
 val get_stack : unit -> ptree list
 
 val set_stack : ptree list -> unit
 
-val print : bool ref
+val set_ename : string -> unit
+
+val start_Parse_cmd : unit -> bool
+
+val end_Parse_cmd : bool -> unit
+
+val print : bool ref  (* todo: remove *)
 
 val enable : bool ref
 
