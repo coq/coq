@@ -616,69 +616,9 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where env sigma dec
       in
       (sigma, LocalDef (id,b',ty'))
 
-(* Possibly equip a reduction with the occurrences mentioned in an
-   occurrence clause *)
-
-let error_illegal_clause () =
-  error "\"at\" clause not supported in presence of an occurrence clause."
-
-let error_illegal_non_atomic_clause () =
-  error "\"at\" clause not supported in presence of a non atomic \"in\" clause."
-
-let error_occurrences_not_unsupported () =
-  error "Occurrences not supported for this reduction tactic."
-
 let bind_change_occurrences occs = function
   | None -> None
   | Some c -> Some (Redexpr.out_with_occurrences (occs,c))
-
-let bind_red_expr_occurrences occs nbcl redexp =
-  let has_at_clause = function
-    | Unfold l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
-    | Pattern l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
-    | Simpl (_,Some (occl,_)) -> occl != AllOccurrences
-    | _ -> false in
-  if occs == AllOccurrences then
-    if nbcl > 1 && has_at_clause redexp then
-      error_illegal_non_atomic_clause ()
-    else
-      redexp
-  else
-    match redexp with
-    | Unfold (_::_::_) ->
-        error_illegal_clause ()
-    | Unfold [(occl,c)] ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          Unfold [(occs,c)]
-    | Pattern (_::_::_) ->
-        error_illegal_clause ()
-    | Pattern [(occl,c)] ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          Pattern [(occs,c)]
-    | Simpl (f,Some (occl,c)) ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          Simpl (f,Some (occs,c))
-    | CbvVm (Some (occl,c)) ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          CbvVm (Some (occs,c))
-    | CbvNative (Some (occl,c)) ->
-        if occl != AllOccurrences then
-          error_illegal_clause ()
-        else
-          CbvNative (Some (occs,c))
-    | Red _ | Hnf | Cbv _ | Lazy _ | Cbn _
-    | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None ->
-        error_occurrences_not_unsupported ()
-    | Unfold [] | Pattern [] ->
-        assert false
 
 (* The following two tactics apply an arbitrary
    reduction function either to the conclusion or to a
@@ -941,17 +881,16 @@ let reduce redexp cl =
   | Red _ | Hnf | CbvVm _ | CbvNative _ -> StableHypConv
   | ExtraRedExpr _ -> StableHypConv (* Should we be that lenient ?*)
   in
+  let redexp = Redexpr.eval_red_expr env redexp in
   begin match cl.concl_occs with
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->
-    let redexp = bind_red_expr_occurrences occs nbcl redexp in
-    let redfun = Redexpr.reduction_of_red_expr env redexp in
+    let redfun = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
     e_change_in_concl ~check (revert_cast redfun)
   end
   <*>
   let f (id, occs, where) =
-    let redexp = bind_red_expr_occurrences occs nbcl redexp in
-    let (redfun, _) = Redexpr.reduction_of_red_expr env redexp in
+    let (redfun, _) = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
     let redfun _ env sigma c = redfun env sigma c in
     let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
     (id, redfun)

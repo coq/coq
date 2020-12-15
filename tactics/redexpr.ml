@@ -129,6 +129,9 @@ let set_strategy local str =
 type red_expr =
     (constr, evaluable_global_reference, constr_pattern) red_expr_gen
 
+type red_expr_val =
+  (constr, evaluable_global_reference, constr_pattern, CClosure.RedFlags.reds) red_expr_gen0
+
 let make_flag_constant = function
   | EvalVarRef id -> fVAR id
   | EvalConstRef sp -> fCONST sp
@@ -221,38 +224,117 @@ let warn_simpl_unfolding_modifiers =
          (fun () ->
           Pp.strbrk "The legacy simpl ignores constant unfolding modifiers.")
 
-let reduction_of_red_expr env =
-  let make_flag = make_flag env in
-  let rec reduction_of_red_expr = function
+let rec eval_red_expr env = function
+| Simpl (f, o) ->
+  let () =
+    if not (simplIsCbn () || List.is_empty f.rConst) then
+      warn_simpl_unfolding_modifiers () in
+  let f = if simplIsCbn () then make_flag env f else CClosure.all (* dummy *) in
+  Simpl (f, o)
+| Cbv f -> Cbv (make_flag env f)
+| Cbn f -> Cbn (make_flag env f)
+| Lazy f -> Lazy (make_flag env f)
+| ExtraRedExpr s ->
+  begin match String.Map.find s !red_expr_tab with
+  | e -> eval_red_expr env e
+  | exception Not_found -> ExtraRedExpr s (* delay to runtime interpretation *)
+  end
+| (Red _ | Hnf | Unfold _ | Fold _ | Pattern _ | CbvVm _ | CbvNative _) as e -> e
+
+let reduction_of_red_expr_val = function
   | Red internal ->
       if internal then (e_red try_red_product,DEFAULTcast)
       else (e_red red_product,DEFAULTcast)
   | Hnf -> (e_red hnf_constr,DEFAULTcast)
   | Simpl (f,o) ->
-     let whd_am = if simplIsCbn () then whd_cbn (make_flag f) else whd_simpl in
-     let am = if simplIsCbn () then strong_cbn (make_flag f) else simpl in
-     let () =
-       if not (simplIsCbn () || List.is_empty f.rConst) then
-         warn_simpl_unfolding_modifiers () in
+     let whd_am = if simplIsCbn () then whd_cbn f else whd_simpl in
+     let am = if simplIsCbn () then strong_cbn f else simpl in
      (contextualize (if head_style then whd_am else am) am o,DEFAULTcast)
-  | Cbv f -> (e_red (cbv_norm_flags (make_flag f)),DEFAULTcast)
+  | Cbv f -> (e_red (cbv_norm_flags f),DEFAULTcast)
   | Cbn f ->
-     (e_red (strong_cbn (make_flag f)), DEFAULTcast)
-  | Lazy f -> (e_red (clos_norm_flags (make_flag f)),DEFAULTcast)
+     (e_red (strong_cbn f), DEFAULTcast)
+  | Lazy f -> (e_red (clos_norm_flags f),DEFAULTcast)
   | Unfold ubinds -> (e_red (unfoldn (List.map out_with_occurrences ubinds)),DEFAULTcast)
   | Fold cl -> (e_red (fold_commands cl),DEFAULTcast)
   | Pattern lp -> (pattern_occs (List.map out_with_occurrences lp),DEFAULTcast)
   | ExtraRedExpr s ->
       (try (e_red (String.Map.find s !reduction_tab),DEFAULTcast)
       with Not_found ->
-        (try reduction_of_red_expr (String.Map.find s !red_expr_tab)
-         with Not_found ->
            user_err ~hdr:"Redexpr.reduction_of_red_expr"
-             (str "unknown user-defined reduction \"" ++ str s ++ str "\"")))
+             (str "unknown user-defined reduction \"" ++ str s ++ str "\""))
   | CbvVm o -> (contextualize cbv_vm cbv_vm o, VMcast)
   | CbvNative o -> (contextualize cbv_native cbv_native o, NATIVEcast)
+
+let reduction_of_red_expr env r =
+  reduction_of_red_expr_val (eval_red_expr env r)
+
+(* Possibly equip a reduction with the occurrences mentioned in an
+   occurrence clause *)
+
+let error_illegal_clause () =
+  CErrors.user_err Pp.(str "\"at\" clause not supported in presence of an occurrence clause.")
+
+let error_illegal_non_atomic_clause () =
+  CErrors.user_err Pp.(str "\"at\" clause not supported in presence of a non atomic \"in\" clause.")
+
+let error_occurrences_not_unsupported () =
+  CErrors.user_err Pp.(str "Occurrences not supported for this reduction tactic.")
+
+let bind_red_expr_occurrences occs nbcl redexp =
+  let open Locus in
+  let has_at_clause = function
+    | Unfold l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
+    | Pattern l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
+    | Simpl (_,Some (occl,_)) -> occl != AllOccurrences
+    | _ -> false in
+  if occs == AllOccurrences then
+    if nbcl > 1 && has_at_clause redexp then
+      error_illegal_non_atomic_clause ()
+    else
+      redexp
+  else
+    match redexp with
+    | Unfold (_::_::_) ->
+        error_illegal_clause ()
+    | Unfold [(occl,c)] ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          Unfold [(occs,c)]
+    | Pattern (_::_::_) ->
+        error_illegal_clause ()
+    | Pattern [(occl,c)] ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          Pattern [(occs,c)]
+    | Simpl (f,Some (occl,c)) ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          Simpl (f,Some (occs,c))
+    | CbvVm (Some (occl,c)) ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          CbvVm (Some (occs,c))
+    | CbvNative (Some (occl,c)) ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          CbvNative (Some (occs,c))
+    | Red _ | Hnf | Cbv _ | Lazy _ | Cbn _
+    | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None ->
+        error_occurrences_not_unsupported ()
+    | Unfold [] | Pattern [] ->
+        assert false
+
+let reduction_of_red_expr_val ?occs r =
+  let r = match occs with
+  | None -> r
+  | Some (occs, nbcl) -> bind_red_expr_occurrences occs nbcl r
   in
-    reduction_of_red_expr
+  reduction_of_red_expr_val r
 
 let subst_mps subst c =
   EConstr.of_constr (Mod_subst.subst_mps subst (EConstr.Unsafe.to_constr c))
