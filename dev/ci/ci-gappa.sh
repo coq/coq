@@ -7,6 +7,6 @@ git_download gappa_tool
 
 ( cd "${CI_BUILD_DIR}/gappa_tool" && ( if [ ! -x ./configure ]; then autoreconf && touch stamp-config_h.in && ./configure --prefix=${CI_INSTALL_DIR}; fi ) && ./remake "-j${NJOBS}" && ./remake install )
 
-git_download gappa_plugin
+git_download gappa
 
-( cd "${CI_BUILD_DIR}/gappa_plugin" && ( if [ ! -x ./configure ]; then autoconf && ./configure; fi ) && ./remake "-j${NJOBS}" && ./remake install )
+( cd "${CI_BUILD_DIR}/gappa" && ( if [ ! -x ./configure ]; then autoconf && ./configure; fi ) && ./remake "-j${NJOBS}" && ./remake install )

@@ -132,7 +132,7 @@ project gappa_tool "https://gitlab.inria.fr/gappa/gappa" "master"
 ########################################################################
 # Gappa plugin
 ########################################################################
-project gappa_plugin "https://gitlab.inria.fr/gappa/coq" "master"
+project gappa "https://gitlab.inria.fr/gappa/coq" "master"
 
 ########################################################################
 # CompCert
@@ -214,7 +214,7 @@ project equations "https://github.com/mattam82/Coq-Equations" "master"
 ########################################################################
 project elpi "https://github.com/LPCIC/coq-elpi" "coq-master"
 
-project elpi_hb "https://github.com/math-comp/hierarchy-builder" "coq-master"
+project hierarchy_builder "https://github.com/math-comp/hierarchy-builder" "coq-master"
 
 ########################################################################
 # Engine-Bench

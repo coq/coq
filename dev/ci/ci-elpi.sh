@@ -7,6 +7,6 @@ git_download elpi
 
 ( cd "${CI_BUILD_DIR}/elpi" && make && make install )
 
-git_download elpi_hb
+git_download hierarchy_builder
 
-( cd "${CI_BUILD_DIR}/elpi_hb" && make && make install )
+( cd "${CI_BUILD_DIR}/hierarchy_builder" && make && make install )
