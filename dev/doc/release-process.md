@@ -171,7 +171,19 @@ Repeat the generic process documented above for all releases.
 Ping `@Zimmi48` to:
 
 - [ ] Switch the default version of the reference manual on the website.
-- [ ] Publish a new version on Zenodo.
+
+  This is done by logging into the server (`vps697916.ovh.net`),
+  editing two `ProxyPass` lines (one for the refman and one for the
+  stdlib doc) with `sudo vim /etc/apache2/sites-available/000-coq.inria.fr.conf`,
+  then running `sudo systemctl reload apache2`.
+
+  *TODO:* automate this or make it doable through the `www` git
+  repository. See [coq/www#111](https://github.com/coq/www/issues/111)
+  and [coq/www#131](https://github.com/coq/www/issues/131).
+
+- [ ] Publish a new version on Zenodo (only once per major version).
+
+  *TODO:* automate this with coqbot.
 
 ## At the patch-level release time ##
 
