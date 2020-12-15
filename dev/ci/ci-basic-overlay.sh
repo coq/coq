@@ -8,7 +8,7 @@ declare -a projects # the list of project repos that can be be overlayed
 # checks if the given argument is a known project
 function is_in_projects {
     local rc=1
-    for x in ${!projects[@]}; do
+    for x in ${projects[@]}; do
       if [ "$1" = "$x" ]; then rc=0; fi;
     done
     return rc
