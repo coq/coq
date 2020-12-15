@@ -528,10 +528,9 @@ let sub_match ?(closed=true) env sigma pat c =
     let sub = subargs env types @ subargs env' bodies in
     try_aux sub next_mk_ctx next
   | Proj (p,c') ->
-    begin try
-      let term = Retyping.expand_projection env sigma p c' [] in
-      aux env term mk_ctx next
-    with Retyping.RetypeError _ -> next ()
+    begin match Retyping.expand_projection env sigma p c' [] with
+    | term -> aux env term mk_ctx next
+    | exception Retyping.RetypeError _ -> next ()
     end
   | Array(u, t, def, ty) ->
     let next_mk_ctx = function
