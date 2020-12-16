@@ -73,14 +73,14 @@ function overlay()
 }
 
 set +x
+# shellcheck source=ci-basic-overlay.sh
+. "${ci_dir}/ci-basic-overlay.sh"
+
 for overlay in "${ci_dir}"/user-overlays/*.sh; do
     # shellcheck source=/dev/null
     # the directoy can be empty
     if [ -e "${overlay}" ]; then . "${overlay}"; fi
 done
-
-# shellcheck source=ci-basic-overlay.sh
-. "${ci_dir}/ci-basic-overlay.sh"
 set -x
 
 # [git_download project] will download [project] and unpack it
