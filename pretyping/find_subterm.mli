@@ -65,6 +65,3 @@ val subst_closed_term_occ : env -> evar_map -> occurrences or_like_first ->
 val subst_closed_term_occ_decl : env -> evar_map ->
   (occurrences * hyp_location_flag) or_like_first ->
   constr -> named_declaration -> named_declaration * evar_map
-
-(** Miscellaneous *)
-val error_invalid_occurrence : int list -> 'a

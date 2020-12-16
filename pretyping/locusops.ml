@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Util
 open Locus
 
 (** Utilities on or_var *)
@@ -27,12 +28,43 @@ let occurrences_map f = function
     if l' = [] then AllOccurrences else AllOccurrencesBut l'
   | (NoOccurrences|AllOccurrences|AtLeastOneOccurrence) as o -> o
 
-let convert_occs = function
-  | AtLeastOneOccurrence -> (false,[])
-  | AllOccurrences -> (false,[])
-  | AllOccurrencesBut l -> (false,l)
-  | NoOccurrences -> (true,[])
-  | OnlyOccurrences l -> (true,l)
+type occurrences_count = {current: int; remaining: int list; where: (bool * int)}
+
+let error_invalid_occurrence l =
+  CErrors.user_err Pp.(str ("Invalid occurrence " ^ String.plural (List.length l) "number" ^": ")
+  ++ prlist_with_sep spc int l ++ str ".")
+
+let initialize_occurrence_counter occs =
+  let (nowhere_except_in,occs) =
+    match occs with
+    | AtLeastOneOccurrence -> (false,[])
+    | AllOccurrences -> (false,[])
+    | AllOccurrencesBut l -> (false,List.sort_uniquize Int.compare l)
+    | NoOccurrences -> (true,[])
+    | OnlyOccurrences l -> (true,List.sort_uniquize Int.compare l) in
+  let max =
+    match occs with
+    | n::_ when n <= 0 -> error_invalid_occurrence [n]
+    | [] -> 0
+    | _ -> Util.List.last occs in
+  {current = 0; remaining = occs; where = (nowhere_except_in,max)}
+
+let update_occurrence_counter {current; remaining; where = (nowhere_except_in,_ as where)} =
+  let current = succ current in
+  match remaining with
+  | occ::remaining when Int.equal current occ -> (nowhere_except_in,{current;remaining;where})
+  | _ -> (not nowhere_except_in,{current;remaining;where})
+
+let check_used_occurrences {remaining} =
+  if not (Util.List.is_empty remaining) then error_invalid_occurrence remaining
+
+let occurrences_done {current; where = (nowhere_except_in,max)} =
+  nowhere_except_in && current > max
+
+let current_occurrence {current} = current
+
+let more_specific_occurrences {current; where = (_,max)} =
+  current <= max
 
 let is_selected occ = function
   | AtLeastOneOccurrence -> true

@@ -608,7 +608,7 @@ END
 {
 
 let subst_var_with_hole occ tid t =
-  let occref = if occ > 0 then ref occ else Find_subterm.error_invalid_occurrence [occ] in
+  let occref = if occ > 0 then ref occ else Locusops.error_invalid_occurrence [occ] in
   let locref = ref 0 in
   let rec substrec x = match DAst.get x with
     | GVar id ->
@@ -628,7 +628,7 @@ let subst_var_with_hole occ tid t =
     | _ -> map_glob_constr_left_to_right substrec x in
   let t' = substrec t
   in
-  if !occref > 0 then Find_subterm.error_invalid_occurrence [occ] else t'
+  if !occref > 0 then Locusops.error_invalid_occurrence [occ] else t'
 
 let subst_hole_with_term occ tc t =
   let locref = ref 0 in

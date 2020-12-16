@@ -1046,28 +1046,23 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
   | _ -> map_constr_with_binders_left_to_right sigma g f acc c
 
 let e_contextually byhead (occs,c) f = begin fun env sigma t ->
-  let (nowhere_except_in,locs) = Locusops.convert_occs occs in
-  let maxocc = List.fold_right max locs 0 in
-  let pos = ref 1 in
+  let count = ref (Locusops.initialize_occurrence_counter occs) in
   (* FIXME: we do suspicious things with this evarmap *)
   let evd = ref sigma in
   let rec traverse nested (env,c as envc) t =
-    if nowhere_except_in && (!pos > maxocc) then (* Shortcut *) t
+    if Locusops.occurrences_done !count then (* Shortcut *) t
     else
     try
       let subst =
         if byhead then matches_head env sigma c t
         else Constr_matching.matches env sigma c t in
-      let ok =
-        if nowhere_except_in then Int.List.mem !pos locs
-        else not (Int.List.mem !pos locs) in
-      incr pos;
+      let ok, count' = Locusops.update_occurrence_counter !count in count := count';
       if ok then begin
         if Option.has_some nested then
-          user_err  (str "The subterm at occurrence " ++ int (Option.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (!pos-1) ++ str ".");
+          user_err  (str "The subterm at occurrence " ++ int (Option.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (Locusops.current_occurrence !count) ++ str ".");
         (* Skip inner occurrences for stable counting of occurrences *)
-        if locs != [] then
-          ignore (traverse_below (Some (!pos-1)) envc t);
+        if Locusops.more_specific_occurrences !count then
+          ignore (traverse_below (Some (Locusops.current_occurrence !count)) envc t);
         let (evm, t) = (f subst) env !evd t in
         (evd := evm; t)
       end
@@ -1087,7 +1082,7 @@ let e_contextually byhead (occs,c) f = begin fun env sigma t ->
           (traverse nested) envc sigma t
   in
   let t' = traverse None (env,c) t in
-  if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;
+  Locusops.check_used_occurrences !count;
   (!evd, t')
   end
 
@@ -1105,28 +1100,25 @@ let match_constr_evaluable_ref sigma c evref =
   | Var id, EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
   | _, _ -> None
 
-let substlin env sigma evalref n (nowhere_except_in,locs) c =
-  let maxocc = List.fold_right max locs 0 in
-  let pos = ref n in
-  assert (List.for_all (fun x -> x >= 0) locs);
+let substlin env sigma evalref occs c =
+  let count = ref (Locusops.initialize_occurrence_counter occs) in
   let value u = value_of_evaluable_ref env evalref u in
   let rec substrec () c =
-    if nowhere_except_in && !pos > maxocc then c
+    if Locusops.occurrences_done !count then c
     else
       match match_constr_evaluable_ref sigma c evalref with
       | Some u ->
-        let ok =
-          if nowhere_except_in then Int.List.mem !pos locs
-          else not (Int.List.mem !pos locs) in
-          incr pos;
-          if ok then value u else c
+        let ok, count' = Locusops.update_occurrence_counter !count in
+        count := count';
+        if ok then value u else c
       | None ->
         map_constr_with_binders_left_to_right sigma
           (fun _ () -> ())
           substrec () c
   in
   let t' = substrec () c in
-  (!pos, t')
+  Locusops.check_used_occurrences !count;
+  (Locusops.current_occurrence !count, t')
 
 let string_of_evaluable_ref env = function
   | EvalVarRef id -> Id.to_string id
@@ -1154,23 +1146,14 @@ let unfold env sigma name c =
  * at the occurrences of occ_list. If occ_list is empty, unfold all occurrences.
  * Performs a betaiota reduction after unfolding. *)
 let unfoldoccs env sigma (occs,name) c =
-  let unfo nowhere_except_in locs =
-    let (nbocc,uc) = substlin env sigma name 1 (nowhere_except_in,locs) c in
-    if Int.equal nbocc 1 then
-      user_err Pp.(str ((string_of_evaluable_ref env name)^" does not occur."));
-    let rest = List.filter (fun o -> o >= nbocc) locs in
-    let () = match rest with
-    | [] -> ()
-    | _ -> error_invalid_occurrence rest
-    in
-    nf_betaiotazeta env sigma uc
-  in
   match occs with
-    | NoOccurrences -> c
-    | AllOccurrences -> unfold env sigma name c
-    | OnlyOccurrences l -> unfo true l
-    | AllOccurrencesBut l -> unfo false l
-    | AtLeastOneOccurrence -> unfo false []
+  | NoOccurrences -> c
+  | AllOccurrences -> unfold env sigma name c
+  | OnlyOccurrences _ | AllOccurrencesBut _ | AtLeastOneOccurrence ->
+    let (occ,uc) = substlin env sigma name occs c in
+    if Int.equal occ 0 then
+      user_err Pp.(str ((string_of_evaluable_ref env name)^" does not occur."));
+    nf_betaiotazeta env sigma uc
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c =
