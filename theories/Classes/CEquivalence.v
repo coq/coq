@@ -64,8 +64,8 @@ Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv.
          now transitivity y.
   Qed.
 
-Arguments equiv_symmetric {A R} sa x y.
-Arguments equiv_transitive {A R} sa x y z.
+Arguments equiv_symmetric {A R} sa x y : rename.
+Arguments equiv_transitive {A R} sa x y z : rename.
 
 (** Use the [substitute] command which substitutes an equivalence in every hypothesis. *)
 
