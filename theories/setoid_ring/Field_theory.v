@@ -397,7 +397,7 @@ Qed.
 Theorem cross_product_eq a b c d :
   ~ b == 0 -> ~ d == 0 -> a * d == c * b -> a / b == c / d.
 Proof.
-intros.
+intros H H0 H1.
 transitivity (a / b * (d / d)).
 - now rewrite rdiv_r_r, rmul_1_r.
 - now rewrite rdiv4, H1, (rmul_comm b d), <- rdiv4, rdiv_r_r.
@@ -418,23 +418,23 @@ Qed.
 
 Lemma pow_pos_0 p : pow_pos rmul 0 p == 0.
 Proof.
-induction p;simpl;trivial; now rewrite !IHp.
+induction p as [p IHp|p IHp|];simpl;trivial; now rewrite !IHp.
 Qed.
 
 Lemma pow_pos_1 p : pow_pos rmul 1 p == 1.
 Proof.
-induction p;simpl;trivial; ring [IHp].
+induction p as [p IHp|p IHp|];simpl;trivial; ring [IHp].
 Qed.
 
 Lemma pow_pos_cst c p : pow_pos rmul [c] p == [pow_pos cmul c p].
 Proof.
-induction p;simpl;trivial; now rewrite !(morph_mul CRmorph), !IHp.
+induction p as [p IHp|p IHp|];simpl;trivial; now rewrite !(morph_mul CRmorph), !IHp.
 Qed.
 
 Lemma pow_pos_mul_l x y p :
  pow_pos rmul (x * y) p == pow_pos rmul x p * pow_pos rmul y p.
 Proof.
-induction p;simpl;trivial; ring [IHp].
+induction p as [p IHp|p IHp|];simpl;trivial; ring [IHp].
 Qed.
 
 Lemma pow_pos_add_r x p1 p2 :
@@ -446,7 +446,7 @@ Qed.
 Lemma pow_pos_mul_r x p1 p2 :
   pow_pos rmul x (p1*p2) == pow_pos rmul (pow_pos rmul x p1) p2.
 Proof.
-induction p1;simpl;intros; rewrite ?pow_pos_mul_l, ?pow_pos_add_r;
+induction p1 as [p1 IHp1|p1 IHp1|];simpl;intros; rewrite ?pow_pos_mul_l, ?pow_pos_add_r;
  simpl; trivial; ring [IHp1].
 Qed.
 
@@ -459,8 +459,8 @@ Qed.
 Lemma pow_pos_div a b p : ~ b == 0 ->
  pow_pos rmul (a / b) p == pow_pos rmul a p / pow_pos rmul b p.
 Proof.
- intros.
- induction p; simpl; trivial.
+ intros H.
+ induction p as [p IHp|p IHp|]; simpl; trivial.
  - rewrite IHp.
    assert (nz := pow_pos_nz p H).
    rewrite !rdiv4; trivial.
@@ -578,14 +578,15 @@ Qed.
 Theorem PExpr_eq_semi_ok e e' :
  PExpr_eq e e' = true ->  (e === e')%poly.
 Proof.
-revert e'; induction e; destruct e'; simpl; try discriminate.
+revert e'; induction e as [| |?|?|? IHe1 ? IHe2|? IHe1 ? IHe2|? IHe1 ? IHe2|? IHe|? IHe ?];
+ intro e'; destruct e'; simpl; try discriminate.
 - intros H l. now apply (morph_eq CRmorph).
 - case Pos.eqb_spec; intros; now subst.
 - intros H; destruct (if_true _ _ H). now rewrite IHe1, IHe2.
 - intros H; destruct (if_true _ _ H). now rewrite IHe1, IHe2.
 - intros H; destruct (if_true _ _ H). now rewrite IHe1, IHe2.
 - intros H. now rewrite IHe.
-- intros H. destruct (if_true _ _ H).
+- intros H. destruct (if_true _ _ H) as [H0 H1].
   apply N.eqb_eq in H0. now rewrite IHe, H0.
 Qed.
 
@@ -667,7 +668,7 @@ Proof.
  - case Pos.eqb_spec; [intro; subst | intros _].
    + simpl. now rewrite rpow_pow.
    + destruct e;simpl;trivial.
-     repeat case ceqb_spec; intros; rewrite ?rpow_pow, ?H; simpl.
+     repeat case ceqb_spec; intros H **; rewrite ?rpow_pow, ?H; simpl.
      * now rewrite phi_1, pow_pos_1.
      * now rewrite phi_0, pow_pos_0.
      * now rewrite pow_pos_cst.
@@ -686,7 +687,8 @@ Infix "**" := NPEmul (at level 40, left associativity).
 Theorem NPEmul_ok e1 e2 : (e1 ** e2 === e1 * e2)%poly.
 Proof.
 intros l.
-revert e2; induction e1;destruct e2; simpl;try reflexivity;
+revert e2; induction e1 as [| |?|?|? IHe1 ? IHe2|? IHe1 ? IHe2|? IHe1 ? IHe2|? IHe1|? IHe1 n];
+ intro e2; destruct e2; simpl;try reflexivity;
  repeat (case ceqb_spec; intro H; try rewrite H; clear H);
  simpl; try reflexivity; try ring [phi_0 phi_1].
  apply (morph_mul CRmorph).
@@ -801,7 +803,7 @@ Qed.
 Theorem PCond_app l l1 l2 :
  PCond l (l1 ++ l2) <-> PCond l l1 /\ PCond l l2.
 Proof.
-induction l1.
+induction l1 as [|a l1 IHl1].
 - simpl. split; [split|destruct 1]; trivial.
 - simpl app. rewrite !PCond_cons, IHl1. symmetry; apply and_assoc.
 Qed.
@@ -813,7 +815,7 @@ Definition absurd_PCond := cons 0%poly nil.
 Lemma absurd_PCond_bottom : forall l, ~ PCond l absurd_PCond.
 Proof.
 unfold absurd_PCond; simpl.
-red; intros.
+red; intros ? H.
 apply H.
 apply phi_0.
 Qed.
@@ -901,7 +903,7 @@ Theorem isIn_ok e1 p1 e2 p2 :
 Proof.
 Opaque NPEpow.
 revert p1 p2.
-induction e2; intros p1 p2;
+induction e2 as [| |?|?|? IHe1 ? IHe2|? IHe1 ? IHe2|? IHe2_1 ? IHe2_2|? IHe|? IHe2 n]; intros p1 p2;
  try refine (default_isIn_ok e1 _ p1 p2); simpl isIn.
 - specialize (IHe2_1 p1 p2).
   destruct isIn as [([|p],e)|].
@@ -936,7 +938,7 @@ induction e2; intros p1 p2;
     destruct IHe2_2 as (IH,GT). split; trivial.
     set (d := ZtoN (Z.pos p1 - NtoZ n)) in *; clearbody d.
     npe_simpl. rewrite IH. npe_ring.
-- destruct n; trivial.
+- destruct n as [|p]; trivial.
   specialize (IHe2 p1 (p * p2)%positive).
   destruct isIn as [(n,e)|]; trivial.
   destruct IHe2 as (IH,GT). split; trivial.
@@ -983,7 +985,7 @@ Lemma split_aux_ok1 e1 p e2 :
   /\ e2 === right res * common res)%poly.
 Proof.
  Opaque NPEpow NPEmul.
- intros. unfold res;clear res; generalize (isIn_ok e1 p e2 xH).
+ intros res. unfold res;clear res; generalize (isIn_ok e1 p e2 xH).
  destruct (isIn e1 p e2 1) as [([|p'],e')|]; simpl.
  - intros (H1,H2); split; npe_simpl.
    + now rewrite PE_1_l.
@@ -1000,7 +1002,8 @@ Theorem split_aux_ok: forall e1 p e2,
   (e1 ^ Npos p === left (split_aux e1 p e2) * common (split_aux e1 p e2)
   /\ e2 === right (split_aux e1 p e2) * common (split_aux e1 p e2))%poly.
 Proof.
-induction e1;intros k e2; try refine (split_aux_ok1 _ k e2);simpl.
+intro e1;induction e1 as [| |?|?|? IHe1_1 ? IHe1_2|? IHe1_1 ? IHe1_2|e1_1 IHe1_1 ? IHe1_2|? IHe1|? IHe1 n];
+ intros k e2; try refine (split_aux_ok1 _ k e2);simpl.
 destruct (IHe1_1 k e2) as (H1,H2).
 destruct (IHe1_2 k (right (split_aux e1_1 k e2))) as (H3,H4).
 clear IHe1_1 IHe1_2.
@@ -1101,7 +1104,8 @@ Eval compute
 Theorem Pcond_Fnorm l e :
  PCond l (condition (Fnorm e)) ->  ~ (denum (Fnorm e))@l == 0.
 Proof.
-induction e; simpl condition; rewrite ?PCond_cons, ?PCond_app;
+induction e as [| |?|?|? IHe1 ? IHe2|? IHe1 ? IHe2|? IHe1 ? IHe2|? IHe|? IHe|? IHe1 ? IHe2|? IHe n];
+ simpl condition; rewrite ?PCond_cons, ?PCond_app;
  simpl denum; intros (Hc1,Hc2) || intros Hc; rewrite ?NPEmul_ok.
 - simpl. rewrite phi_1; exact rI_neq_rO.
 - simpl. rewrite phi_1; exact rI_neq_rO.
@@ -1141,7 +1145,8 @@ Theorem Fnorm_FEeval_PEeval l fe:
  PCond l (condition (Fnorm fe)) ->
  FEeval l fe == (num (Fnorm fe)) @ l / (denum (Fnorm fe)) @ l.
 Proof.
-induction fe; simpl condition; rewrite ?PCond_cons, ?PCond_app; simpl;
+induction fe as [| |?|?|fe1 IHfe1 fe2 IHfe2|fe1 IHfe1 fe2 IHfe2|fe1 IHfe1 fe2 IHfe2|fe IHfe|fe IHfe|fe1 IHfe1 fe2 IHfe2|fe IHfe n];
+ simpl condition; rewrite ?PCond_cons, ?PCond_app; simpl;
  intros (Hc1,Hc2) || intros Hc;
  try (specialize (IHfe1 Hc1);apply Pcond_Fnorm in Hc1);
  try (specialize (IHfe2 Hc2);apply Pcond_Fnorm in Hc2);
@@ -1260,7 +1265,7 @@ Proof.
   destruct (Nnorm _ _ _) as [c | | ] eqn: HN;
   try ( apply rdiv_ext;
         eapply ring_rw_correct; eauto).
-  destruct (ceqb_spec c cI).
+  destruct (ceqb_spec c cI) as [H0|].
     set (nnum := NPphi_dev _ _).
     apply eq_trans with (nnum / NPphi_dev l (Pc c)).
       apply rdiv_ext;
@@ -1285,7 +1290,7 @@ Proof.
   destruct (Nnorm _ _ _) as [c | | ] eqn: HN;
   try ( apply rdiv_ext;
         eapply ring_rw_pow_correct; eauto).
-  destruct (ceqb_spec c cI).
+  destruct (ceqb_spec c cI) as [H0|].
     set (nnum := NPphi_pow _ _).
     apply eq_trans with (nnum / NPphi_pow l (Pc c)).
       apply rdiv_ext;
@@ -1415,7 +1420,8 @@ Theorem Field_simplify_eq_pow_in_correct :
  NPphi_pow l np1 ==
  NPphi_pow l np2.
 Proof.
- intros. subst nfe1 nfe2 lmp np1 np2.
+ intros n l lpe fe1 fe2 ? lmp ? nfe1 ? nfe2 ? den ? np1 ? np2 ? ? ?.
+ subst nfe1 nfe2 lmp np1 np2.
  rewrite !(Pphi_pow_ok Rsth Reqe ARth CRmorph pow_th get_sign_spec).
  repeat (rewrite <- (norm_subst_ok Rsth Reqe ARth CRmorph pow_th);trivial).
  simpl. apply Field_simplify_aux_ok; trivial.
@@ -1434,7 +1440,8 @@ forall n l lpe fe1 fe2,
  PCond l (condition nfe1 ++ condition nfe2) ->
  NPphi_dev l np1 == NPphi_dev l np2.
 Proof.
- intros. subst nfe1 nfe2 lmp np1 np2.
+ intros n l lpe fe1 fe2 ? lmp ? nfe1 ? nfe2 ? den ? np1 ? np2 ? ? ?.
+ subst nfe1 nfe2 lmp np1 np2.
  rewrite !(Pphi_dev_ok Rsth Reqe ARth CRmorph  get_sign_spec).
  repeat (rewrite <- (norm_subst_ok Rsth Reqe ARth CRmorph pow_th);trivial).
  apply Field_simplify_aux_ok; trivial.
@@ -1458,7 +1465,7 @@ Lemma fcons_ok : forall l l1,
   (forall lock, lock = PCond l -> lock (Fapp l1 nil)) -> PCond l l1.
 Proof.
 intros l l1 h1; assert (H := h1 (PCond l) (refl_equal _));clear h1.
-induction l1; simpl; intros.
+induction l1 as [|a l1 IHl1]; simpl; intros.
  trivial.
  elim PCond_fcons_inv with (1 := H); intros.
  destruct l1; trivial. split; trivial. apply IHl1; trivial.
@@ -1480,7 +1487,7 @@ Fixpoint Fcons (e:PExpr C) (l:list (PExpr C)) {struct l} : list (PExpr C) :=
 Theorem PFcons_fcons_inv:
  forall l a l1, PCond l (Fcons a l1) ->  ~ a @ l == 0 /\ PCond l l1.
 Proof.
-induction l1 as [|e l1]; simpl Fcons.
+intros l a l1; induction l1 as [|e l1 IHl1]; simpl Fcons.
 - simpl; now split.
 - case PExpr_eq_spec; intros H; rewrite !PCond_cons; intros (H1,H2);
    repeat split; trivial.
@@ -1501,7 +1508,7 @@ Fixpoint Fcons0 (e:PExpr C) (l:list (PExpr C)) {struct l} : list (PExpr C) :=
 Theorem PFcons0_fcons_inv:
  forall l a l1, PCond l (Fcons0 a l1) ->  ~ a @ l == 0 /\ PCond l l1.
 Proof.
-induction l1 as [|e l1]; simpl Fcons0.
+intros l a l1; induction l1 as [|e l1 IHl1]; simpl Fcons0.
 - simpl; now split.
 - generalize (ring_correct O l nil a e). lazy zeta; simpl Peq.
   case Peq; intros H; rewrite !PCond_cons; intros (H1,H2);
@@ -1529,7 +1536,7 @@ intros l a; elim a; try (intros; apply PFcons0_fcons_inv; trivial; fail).
   destruct (H0 _ H3) as (H4,H5). split; trivial.
   simpl.
   apply field_is_integral_domain; trivial.
-- intros. destruct (H _ H0). split; trivial.
+- intros ? H ? ? H0. destruct (H _ H0). split; trivial.
   apply PEpow_nz; trivial.
 Qed.
 
@@ -1580,7 +1587,7 @@ intros l a; elim a; try (intros; apply PFcons0_fcons_inv; trivial; fail).
     split; trivial.
     apply ropp_neq_0; trivial.
     rewrite (morph_opp CRmorph), phi_0, phi_1 in H0. trivial.
-- intros. destruct (H _ H0);split;trivial. apply PEpow_nz; trivial.
+- intros ? H ? ? H0. destruct (H _ H0);split;trivial. apply PEpow_nz; trivial.
 Qed.
 
 Definition Fcons2 e l := Fcons1 (PEsimp e) l.
@@ -1674,7 +1681,7 @@ Hypothesis gen_phiPOS_not_0 : forall p, ~ gen_phiPOS1 rI radd rmul p == 0.
 Lemma add_inj_r p x y :
    gen_phiPOS1 rI radd rmul p + x == gen_phiPOS1 rI radd rmul p + y -> x==y.
 Proof.
-elim p using Pos.peano_ind; simpl; intros.
+elim p using Pos.peano_ind; simpl; [intros H|intros ? H ?].
  apply S_inj; trivial.
  apply H.
    apply S_inj.
@@ -1710,8 +1717,8 @@ Lemma gen_phiN_inj x y :
   gen_phiN rO rI radd rmul x == gen_phiN rO rI radd rmul y ->
   x = y.
 Proof.
-destruct x; destruct y; simpl; intros; trivial.
- elim gen_phiPOS_not_0 with p.
+destruct x as [|p]; destruct y as [|p']; simpl; intros H; trivial.
+ elim gen_phiPOS_not_0 with p'.
    symmetry .
    rewrite (same_gen Rsth Reqe ARth); trivial.
  elim gen_phiPOS_not_0 with p.
@@ -1770,14 +1777,14 @@ Lemma gen_phiZ_inj x y :
   gen_phiZ rO rI radd rmul ropp x == gen_phiZ rO rI radd rmul ropp y ->
   x = y.
 Proof.
-destruct x; destruct y; simpl; intros.
+destruct x as [|p|p]; destruct y as [|p'|p']; simpl; intros H.
  trivial.
- elim gen_phiPOS_not_0 with p.
+ elim gen_phiPOS_not_0 with p'.
    rewrite (same_gen Rsth Reqe ARth).
    symmetry ; trivial.
- elim gen_phiPOS_not_0 with p.
+ elim gen_phiPOS_not_0 with p'.
    rewrite (same_gen Rsth Reqe ARth).
-   rewrite <- (Ropp_opp Rsth Reqe Rth (gen_phiPOS 1 radd rmul p)).
+   rewrite <- (Ropp_opp Rsth Reqe Rth (gen_phiPOS 1 radd rmul p')).
    rewrite <- H.
    apply (ARopp_zero Rsth Reqe ARth).
  elim gen_phiPOS_not_0 with p.
@@ -1790,12 +1797,12 @@ destruct x; destruct y; simpl; intros.
    rewrite <- (Ropp_opp Rsth Reqe Rth (gen_phiPOS 1 radd rmul p)).
    rewrite H.
    apply (ARopp_zero Rsth Reqe ARth).
- elim gen_phiPOS_discr_sgn with p0 p.
+ elim gen_phiPOS_discr_sgn with p' p.
    symmetry ; trivial.
- replace p0 with p; trivial.
+ replace p' with p; trivial.
    apply gen_phiPOS_inject.
    rewrite <- (Ropp_opp Rsth Reqe Rth (gen_phiPOS 1 radd rmul p)).
-   rewrite <- (Ropp_opp Rsth Reqe Rth (gen_phiPOS 1 radd rmul p0)).
+   rewrite <- (Ropp_opp Rsth Reqe Rth (gen_phiPOS 1 radd rmul p')).
    rewrite H; trivial.
    reflexivity.
 Qed.
