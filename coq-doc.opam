@@ -17,6 +17,7 @@ doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
   "dune" {build & >= "2.5.0"}
+  "conf-python-3" {build}
   "coq" {build & = version}
 ]
 build: [
