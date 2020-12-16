@@ -129,19 +129,19 @@ Qed.
 
 Add Morphism Qplus' with signature (Qeq ==> Qeq ==> Qeq) as Qplus'_comp.
 Proof.
-  intros; unfold Qplus'.
+  intros ? ? H ? ? H0; unfold Qplus'.
   rewrite H, H0; auto with qarith.
 Qed.
 
 Add Morphism Qmult' with signature (Qeq ==> Qeq ==> Qeq) as Qmult'_comp.
 Proof.
-  intros; unfold Qmult'.
+  intros ? ? H ? ? H0; unfold Qmult'.
   rewrite H, H0; auto with qarith.
 Qed.
 
 Add Morphism Qminus' with signature (Qeq ==> Qeq ==> Qeq) as Qminus'_comp.
 Proof.
-  intros; unfold Qminus'.
+  intros ? ? H ? ? H0; unfold Qminus'.
   rewrite H, H0; auto with qarith.
 Qed.
 
