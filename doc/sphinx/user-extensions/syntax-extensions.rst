@@ -857,7 +857,8 @@ example showing a notation for a chain of equalities. It relies on an
 artificial expansion of the intended denotation so as to expose a
 ``φ(x, .. φ(y,t) ..)`` structure, with the drawback that if ever the
 beta-redexes are contracted, the notations stops to be used for
-printing.
+printing. Support for notations defined in this way should be considered
+experimental.
 
 .. coqtop:: in
 
