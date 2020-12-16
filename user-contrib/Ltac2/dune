@@ -2,6 +2,7 @@
  (name Ltac2)
  (package coq)
  (synopsis "Ltac2 tactic language")
+ (flags -q)
  (libraries coq.plugins.ltac2))
 
 (library
