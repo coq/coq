@@ -1,7 +1,7 @@
 (library
  (name cc_plugin)
- (public_name coq.plugins.cc)
+ (public_name coq-base.plugins.cc)
  (synopsis "Coq's congruence closure plugin")
- (libraries coq.plugins.ltac))
+ (libraries coq-base.plugins.ltac))
 
 (coq.pp (modules g_congruence))

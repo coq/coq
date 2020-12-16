@@ -20,12 +20,13 @@ homepage: "https://coq.inria.fr/"
 doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
-  "coq-base" {= version}
+  "ocaml" {>= "4.05.0"}
   "dune" {>= "2.5.0"}
+  "ocamlfind" {>= "1.8.1"}
+  "zarith" {>= "1.10"}
 ]
 build: [
-# Disabled until Dune 2.8 is available
-# ["dune" "subst"] {pinned}
+  ["dune" "subst"] {pinned}
   [
     "dune"
     "build"
@@ -39,3 +40,6 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/coq/coq.git"
+build-env: [
+  [ COQ_CONFIGURE_PREFIX = "%{prefix}" ]
+]

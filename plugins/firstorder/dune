@@ -1,7 +1,7 @@
 (library
  (name ground_plugin)
- (public_name coq.plugins.firstorder)
+ (public_name coq-base.plugins.firstorder)
  (synopsis "Coq's first order logic solver plugin")
- (libraries coq.plugins.ltac))
+ (libraries coq-base.plugins.ltac))
 
 (coq.pp (modules g_ground))

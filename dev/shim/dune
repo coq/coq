@@ -26,7 +26,7 @@
  (targets coqbyte-prelude)
  (deps
   %{bin:coqtop.byte}
-  %{lib:coq.kernel:../../stublibs/dllbyterun_stubs.so}
+  %{lib:coq-base.kernel:../../stublibs/dllbyterun_stubs.so}
   %{project_root}/theories/Init/Prelude.vo)
  (action
   (with-stdout-to %{targets}

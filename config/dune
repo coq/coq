@@ -1,7 +1,7 @@
 (library
  (name config)
  (synopsis "Coq Configuration Variables")
- (public_name coq.config)
+ (public_name coq-base.config)
  (modules :standard \ list_plugins)
  (wrapped false))
 

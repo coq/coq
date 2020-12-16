@@ -1,7 +1,7 @@
 (library
  (name vernac)
  (synopsis "Coq's Vernacular Language")
- (public_name coq.vernac)
+ (public_name coq-base.vernac)
  (wrapped false)
  (libraries tactics parsing))
 

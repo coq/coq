@@ -20,7 +20,7 @@ doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
   "dune" {>= "2.5.0"}
-  "coq" {= version}
+  "coq-base" {= version}
 ]
 build: [
 # Disabled until Dune 2.8 is available

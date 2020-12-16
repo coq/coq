@@ -1,22 +1,22 @@
 (library
  (name number_string_notation_plugin)
- (public_name coq.plugins.number_string_notation)
+ (public_name coq-base.plugins.number_string_notation)
  (synopsis "Coq number and string notation plugin")
  (modules g_number_string string_notation number)
- (libraries coq.vernac))
+ (libraries coq-base.vernac))
 
 (library
  (name int63_syntax_plugin)
- (public_name coq.plugins.int63_syntax)
+ (public_name coq-base.plugins.int63_syntax)
  (synopsis "Coq syntax plugin: int63")
  (modules int63_syntax)
- (libraries coq.vernac))
+ (libraries coq-base.vernac))
 
 (library
  (name float_syntax_plugin)
- (public_name coq.plugins.float_syntax)
+ (public_name coq-base.plugins.float_syntax)
  (synopsis "Coq syntax plugin: float")
  (modules float_syntax)
- (libraries coq.vernac))
+ (libraries coq-base.vernac))
 
 (coq.pp (modules g_number_string))

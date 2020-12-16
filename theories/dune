@@ -8,30 +8,30 @@
  ; (per_file
  ;  (Init/*.v -> -boot))
  (libraries
-   coq.plugins.ltac
-   coq.plugins.tauto
+   coq-base.plugins.ltac
+   coq-base.plugins.tauto
 
-   coq.plugins.cc
-   coq.plugins.firstorder
+   coq-base.plugins.cc
+   coq-base.plugins.firstorder
 
-   coq.plugins.number_string_notation
-   coq.plugins.int63_syntax
-   coq.plugins.float_syntax
+   coq-base.plugins.number_string_notation
+   coq-base.plugins.int63_syntax
+   coq-base.plugins.float_syntax
 
-   coq.plugins.btauto
-   coq.plugins.rtauto
+   coq-base.plugins.btauto
+   coq-base.plugins.rtauto
 
-   coq.plugins.ring
-   coq.plugins.nsatz
-   coq.plugins.omega
+   coq-base.plugins.ring
+   coq-base.plugins.nsatz
+   coq-base.plugins.omega
 
-   coq.plugins.zify
-   coq.plugins.micromega
+   coq-base.plugins.zify
+   coq-base.plugins.micromega
 
-   coq.plugins.funind
+   coq-base.plugins.funind
 
-   coq.plugins.ssreflect
-   coq.plugins.ssrsearch
-   coq.plugins.derive))
+   coq-base.plugins.ssreflect
+   coq-base.plugins.ssrsearch
+   coq-base.plugins.derive))
 
 (include_subdirs qualified)

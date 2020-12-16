@@ -35,6 +35,7 @@
    ; For the changelog test
    ../config/coq_config.py
    (source_tree doc/changelog)
+   (package coq-base)
    (package coq)
    ; For fake_ide
    (package coqide-server)

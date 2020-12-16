@@ -1,6 +1,6 @@
 (install
  (section lib)
- (package coq)
+ (package coq-base)
  (files
   (CoqMakefile.in as tools/CoqMakefile.in)
   (TimeFileMaker.py as tools/TimeFileMaker.py)
@@ -11,30 +11,30 @@
 (executable
  (name coq_makefile)
  (public_name coq_makefile)
- (package coq)
+ (package coq-base)
  (modules coq_makefile)
- (libraries coq.lib))
+ (libraries coq-base.lib))
 
 (executable
  (name coqworkmgr)
  (public_name coqworkmgr)
- (package coq)
+ (package coq-base)
  (modules coqworkmgr)
- (libraries coq.stm))
+ (libraries coq-base.stm))
 
 (executable
  (name coqdep)
  (public_name coqdep)
- (package coq)
+ (package coq-base)
  (modules coqdep_lexer coqdep_common coqdep)
- (libraries coq.lib))
+ (libraries coq-base.lib))
 
 ; Bare-bones mllib/mlpack parser
 (executable
  (name ocamllibdep)
  (public_name ocamllibdep)
  (modules ocamllibdep)
- (package coq)
+ (package coq-base)
  (libraries unix))
 
 (ocamllex coqdep_lexer ocamllibdep)
@@ -42,7 +42,7 @@
 (executable
  (name coqwc)
  (public_name coqwc)
- (package coq)
+ (package coq-base)
  (modules coqwc)
  (libraries))
 
@@ -51,6 +51,6 @@
 (executables
  (names coq_tex)
  (public_names coq-tex)
- (package coq)
+ (package coq-base)
  (modules coq_tex)
  (libraries str))

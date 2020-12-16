@@ -1,6 +1,6 @@
 (library
  (name interp)
  (synopsis "Coq's Syntactic Interpretation for AST [notations, implicits]")
- (public_name coq.interp)
+ (public_name coq-base.interp)
  (wrapped false)
  (libraries zarith pretyping))

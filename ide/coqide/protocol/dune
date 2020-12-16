@@ -2,6 +2,6 @@
  (name protocol)
  (public_name coqide-server.protocol)
  (wrapped false)
- (libraries coq.lib))
+ (libraries coq-base.lib))
 
 (ocamllex xml_lexer)
