@@ -557,6 +557,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
       | SelectId id -> Proofview.tclFOCUSID ~nosuchgoal id tac
       | SelectAll -> tac
     in
+    let tac = Proofview.tclONCE tac in
     let tac =
       if use_unification_heuristics () then
         Proofview.tclTHEN tac Refine.solve_constraints
