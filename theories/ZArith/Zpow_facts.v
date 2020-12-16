@@ -83,10 +83,10 @@ Proof. intros. apply Z.lt_le_incl. now apply Z.pow_gt_lin_r. Qed.
 Lemma Zpower2_Psize n p :
   Zpos p < 2^(Z.of_nat n) <-> (Pos.size_nat p <= n)%nat.
 Proof.
-  revert p; induction n.
-  destruct p; now split.
+  revert p; induction n as [|n IHn].
+  intros p; destruct p; now split.
   assert (Hn := Nat2Z.is_nonneg n).
-  destruct p; simpl Pos.size_nat.
+  intros p; destruct p as [p|p|]; simpl Pos.size_nat.
   - specialize IHn with p.
     rewrite Nat2Z.inj_succ, Z.pow_succ_r; lia.
   - specialize IHn with p.
@@ -138,7 +138,7 @@ Definition Zpow_mod a m n :=
 Theorem Zpow_mod_pos_correct a m n :
  n <> 0 -> Zpow_mod_pos a m n = (Z.pow_pos a m) mod n.
 Proof.
-  intros Hn. induction m.
+  intros Hn. induction m as [m IHm|m IHm|].
   - rewrite Pos.xI_succ_xO at 2. rewrite <- Pos.add_1_r, <- Pos.add_diag.
     rewrite 2 Zpower_pos_is_exp, Zpower_pos_1_r.
     rewrite Z.mul_mod, (Z.mul_mod (Z.pow_pos a m)) by trivial.
@@ -193,7 +193,7 @@ Proof.
     assert (p<=1) by (apply Z.divide_pos_le; auto with zarith).
     lia.
   - intros n Hn Rec.
-    rewrite Z.pow_succ_r by trivial. intros.
+    rewrite Z.pow_succ_r by trivial. intros H.
     assert (2<=p) by (apply prime_ge_2; auto).
     assert (2<=q) by (apply prime_ge_2; auto).
     destruct prime_mult with (2 := H); auto.
@@ -229,7 +229,7 @@ Proof.
   (* x = 1 *)
   exists 0; rewrite Z.pow_0_r; auto.
   (* x = 0 *)
-  exists n; destruct H; rewrite Z.mul_0_r in H; auto.
+  exists n; destruct H as [? H]; rewrite Z.mul_0_r in H; auto.
 Qed.
 
 (** * Z.square: a direct definition of [z^2] *)
