@@ -19,26 +19,26 @@ Definition zerob (n:nat) : bool :=
     | S _ => false
   end.
 
-Lemma zerob_true_intro : forall n:nat, n = 0 -> zerob n = true.
+Lemma zerob_true_intro (n : nat) : n = 0 -> zerob n = true.
 Proof.
   destruct n; [ trivial with bool | inversion 1 ].
 Qed.
 #[global]
 Hint Resolve zerob_true_intro: bool.
 
-Lemma zerob_true_elim : forall n:nat, zerob n = true -> n = 0.
+Lemma zerob_true_elim (n : nat) : zerob n = true -> n = 0.
 Proof.
   destruct n; [ trivial with bool | inversion 1 ].
 Qed.
 
-Lemma zerob_false_intro : forall n:nat, n <> 0 -> zerob n = false.
+Lemma zerob_false_intro (n : nat) : n <> 0 -> zerob n = false.
 Proof.
   destruct n; [ destruct 1; auto with bool | trivial with bool ].
 Qed.
 #[global]
 Hint Resolve zerob_false_intro: bool.
 
-Lemma zerob_false_elim : forall n:nat, zerob n = false -> n <> 0.
+Lemma zerob_false_elim (n : nat) : zerob n = false -> n <> 0.
 Proof.
   destruct n; [ inversion 1 | auto with bool ].
 Qed.
