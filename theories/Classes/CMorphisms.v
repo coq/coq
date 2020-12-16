@@ -567,9 +567,7 @@ Section Normalize.
 
   Lemma proper_normalizes_proper `(Normalizes R0 R1, Proper A R1 m) : Proper R0 m.
   Proof.
-    red in H, H0. red in H.
-    apply (snd (H _ _)). 
-    assumption.
+    apply (_ : Normalizes R0 R1). assumption.
   Qed.
 
   Lemma flip_atom R : Normalizes R (flip (flip R)).

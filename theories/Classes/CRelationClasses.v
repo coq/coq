@@ -352,14 +352,12 @@ Section Binary.
   Global Instance partial_order_antisym `(PartialOrder eqA R) : Antisymmetric eqA R.
   Proof with auto.
     reduce_goal.
-    apply H. firstorder.
+    firstorder.
   Qed.
 
   Lemma PartialOrder_inverse `(PartialOrder eqA R) : PartialOrder eqA (flip R).
   Proof.
-    unfold flip; constructor; unfold flip.
-    - intros X. apply H. apply symmetry. apply X.
-    - unfold relation_conjunction. intros [H1 H2]. apply H. constructor; assumption.
+    firstorder.
   Qed.
 End Binary.
 
