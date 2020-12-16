@@ -522,7 +522,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
      use the name of the constant the (co)fixpoint comes from instead of
      the (co)fixpoint definition in recursive calls.
 
-   The :tacn:`cbn` tactic is claimed to be a more principled, faster and more
+   The :tacn:`cbn` tactic was intended to be a more principled, faster and more
    predictable replacement for :tacn:`simpl`.
 
    The :tacn:`cbn` tactic accepts the same flags as :tacn:`cbv` and
