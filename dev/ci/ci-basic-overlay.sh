@@ -256,7 +256,7 @@
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
-: "${elpi_hb_CI_REF:=dc171e0f322fa1fb699b82a0cc3967904745dcfe}"
+: "${elpi_hb_CI_REF:=v1.0.0}"
 : "${elpi_hb_CI_GITURL:=https://github.com/math-comp/hierarchy-builder}"
 : "${elpi_hb_CI_ARCHIVEURL:=${elpi_hb_CI_GITURL}/archive}"
 
