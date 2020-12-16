@@ -52,7 +52,7 @@ class CoqTop:
         self.coqtop_bin = coqtop_bin or os.path.join(os.getenv('COQBIN', ""), "coqtop")
         if not pexpect.utils.which(self.coqtop_bin):
             raise ValueError("coqtop binary not found: '{}'".format(self.coqtop_bin))
-        self.args = (args or []) + ["-color", "on"] * color
+        self.args = (args or []) + ["-q"] + ["-color", "on"] * color
         self.coqtop = None
 
     def __enter__(self):
