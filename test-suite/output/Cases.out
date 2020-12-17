@@ -89,7 +89,7 @@ Arguments lem2 _%bool_scope
 lem3 = 
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
-1 subgoal
+1 goal
   
   x : nat
   n, n0 := match x + 0 with
@@ -109,7 +109,7 @@ fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
             end : x = x
   ============================
   x + 0 = 0
-1 subgoal
+1 goal
   
   p : nat
   a,

@@ -1,4 +1,4 @@
-1 subgoal
+1 goal
   
   hP1 : True
   a : nat   b : list nat   h : forall x : nat, {y : nat | y > x}

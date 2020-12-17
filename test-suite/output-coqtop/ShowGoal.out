@@ -1,52 +1,52 @@
 
-Coq < 1 subgoal
+Coq < 1 goal
   
   ============================
   forall i : nat, exists j k : nat, i = j /\ j = k /\ i = k
 
 x < 
-x < 1 focused subgoal
+x < 1 focused goal
 (shelved: 1)
   
   i : nat
   ============================
   exists k : nat, i = ?j /\ ?j = k /\ i = k
 
-x < 1 focused subgoal
+x < 1 focused goal
 (shelved: 2)
   
   i : nat
   ============================
   i = ?j /\ ?j = ?k /\ i = ?k
 
-x < 2 focused subgoals
+x < 2 focused goals
 (shelved: 2)
   
   i : nat
   ============================
   i = ?j
 
-subgoal 2 is:
+goal 2 is:
  ?j = ?k /\ i = ?k
 
-x < 1 focused subgoal
+x < 1 focused goal
 (shelved: 1)
   
   i : nat
   ============================
   i = ?k /\ i = ?k
 
-x < 2 focused subgoals
+x < 2 focused goals
 (shelved: 1)
   
   i : nat
   ============================
   i = ?k
 
-subgoal 2 is:
+goal 2 is:
  i = ?k
 
-x < 1 subgoal
+x < 1 goal
   
   i : nat
   ============================

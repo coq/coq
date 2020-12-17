@@ -420,7 +420,7 @@ let cc_tactic depth additionnal_terms =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     Coqlib.(check_required_library logic_module_name);
-    let _ = debug (fun () -> Pp.str "Reading subgoal ...") in
+    let _ = debug (fun () -> Pp.str "Reading goal ...") in
     let state = make_prb gl depth additionnal_terms in
     let _ = debug (fun () -> Pp.str "Problem built, solving ...") in
     let sol = execute true state in

@@ -238,7 +238,7 @@ Notation "'exists' ! x .. y , p" :=
   (default interpretation)
 Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope
   (default interpretation)
-1 subgoal
+1 goal
   
   ============================
   ##@%
