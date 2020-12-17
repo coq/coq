@@ -117,3 +117,14 @@ ORIGFOLDER= ocaml-4.07.1.orig
 +
  extern intnat caml_stat_minor_collections;
  extern intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
+--- a/configure
++++ b/configure
+@@ -474,7 +474,7 @@ case "$ccfamily" in
+ -fno-builtin-memcmp";
+     internal_cflags="$gcc_warnings";;
+   gcc-*)
+-    common_cflags="-O2 -fno-strict-aliasing -fwrapv";
++    common_cflags="-O2 -fno-strict-aliasing -fwrapv -fcommon";
+     internal_cflags="$gcc_warnings";;
+   *)
+     common_cflags="-O";;
