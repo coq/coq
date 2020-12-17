@@ -949,7 +949,7 @@ function make_arch_pkg_config {
 ##### OCAML #####
 
 function make_ocaml {
-  if build_prep https://github.com/ocaml/ocaml/archive 4.08.1 tar.gz 1 ocaml-4.08.1 ; then
+  if build_prep https://github.com/ocaml/ocaml/archive 4.10.2 tar.gz 1 ocaml-4.10.2 ; then
     # see https://github.com/ocaml/ocaml/blob/4.08/README.win32.adoc
 
     # get flexdll sources into folder ./flexdll
@@ -1047,8 +1047,7 @@ function make_ocamlbuild {
 function make_findlib {
   make_ocaml
   make_ocamlbuild
-  # Note: latest is 1.8.1 but http://projects.camlcity.org/projects/dl/findlib-1.8.1/doc/README says this is for OCaml 4.09
-  if build_prep https://opam.ocaml.org/1.2.2/archives ocamlfind.1.8.0+opam tar.gz 1 ; then
+  if build_prep http://download.camlcity.org/download/ findlib-1.8.1 tar.gz 1; then
     logn configure ./configure -bindir "$PREFIXOCAML\\bin" -sitelib "$PREFIXOCAML\\libocaml\\site-lib" -config "$PREFIXOCAML\\etc\\findlib.conf"
     # Note: findlib doesn't support -j 8, so don't pass MAKE_OPT
     log2 make all
@@ -1153,7 +1152,7 @@ function make_lablgtk {
   make_gtk_sourceview3
   make_ocaml_cairo2
 
-  if build_prep https://github.com/garrigue/lablgtk/archive  3.0.beta5  tar.gz 1 lablgtk-3.0.beta5 ; then
+  if build_prep https://github.com/garrigue/lablgtk/archive 3.1.1 tar.gz 1 lablgtk-3.1.1 ; then
     make_arch_pkg_config
 
     # lablgtk3 includes more packages that are not relevant for Coq,
