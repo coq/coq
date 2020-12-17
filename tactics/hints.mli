@@ -71,8 +71,6 @@ end
 
 (** The head may not be bound. *)
 
-type hint_entry
-
 type hint_mode =
   | ModeInput (* No evars *)
   | ModeNoHeadEvar (* No evar at the head *)
@@ -141,8 +139,6 @@ module Hint_db :
     val map_auto : env -> evar_map -> secvars:Id.Pred.t ->
        (GlobRef.t * constr array) -> constr -> t -> FullHint.t list
 
-    val add_one : env -> evar_map -> hint_entry -> t -> t
-    val add_list : env -> evar_map -> hint_entry list -> t -> t
     val remove_one : Environ.env -> GlobRef.t -> t -> t
     val remove_list : Environ.env -> GlobRef.t list -> t -> t
     val iter : (GlobRef.t option ->
@@ -211,16 +207,16 @@ val hint_constr : constr * Univ.ContextSet.t option -> hint_term
    - (3) used as an EApply, if its HNF starts with a product, and
          has missing arguments. *)
 
-val make_resolves :
-  env -> evar_map -> hint_info -> GlobRef.t -> hint_entry list
+val push_resolves :
+  env -> evar_map -> hint_info -> GlobRef.t -> Hint_db.t -> Hint_db.t
 
-(** [make_resolve_hyp hname htyp].
+(** [push_resolve_hyp hname htyp db].
    used to add an hypothesis to the local hint database;
    Never raises a user exception;
-   If the hyp cannot be used as a Hint, the empty list is returned. *)
+   If the hyp cannot be used as a Hint, it is not added. *)
 
-val make_resolve_hyp :
-  env -> evar_map -> named_declaration -> hint_entry list
+val push_resolve_hyp :
+  env -> evar_map -> named_declaration -> Hint_db.t -> Hint_db.t
 
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;
