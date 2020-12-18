@@ -1301,20 +1301,18 @@ let do_replace id = function
 
 let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
   let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
-  let clenv =
-      { clenv with evd = Typeclasses.resolve_typeclasses
-          ~fail:(not with_evars) clenv.env clenv.evd }
-  in
+  let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd in
+  let clenv = Clenv.update_clenv_evd clenv evd in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
-  if not with_evars && occur_meta clenv.evd new_hyp_typ then
+  if not with_evars && occur_meta evd new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
   let exact_tac = Logic.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
-    (Proofview.Unsafe.tclEVARS (clear_metas clenv.evd))
+    (Proofview.Unsafe.tclEVARS (clear_metas evd))
     (Tacticals.New.tclTHENLAST
       (assert_after_then_gen ?err with_clear naming new_hyp_typ tac) exact_tac)
 

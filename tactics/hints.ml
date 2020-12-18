@@ -340,10 +340,8 @@ let instantiate_hint env sigma p =
   let mk_clenv (c, cty, ctx) =
     let sigma = merge_context_set_opt sigma ctx in
     let cl = mk_clenv_from_env env sigma None (c,cty) in
-    let cl = {cl with templval =
-          { cl.templval with rebus = strip_params env sigma cl.templval.rebus };
-        env = empty_env}
-    in
+    let templval = { cl.templval with rebus = strip_params env sigma cl.templval.rebus } in
+    let cl = mk_clausenv empty_env cl.evd templval cl.templtyp in
     { hint_term = c; hint_type = cty; hint_uctx = ctx; hint_clnv = cl; }
   in
   let code = match p.code.obj with
@@ -1649,14 +1647,17 @@ let connect_hint_clenv h gl =
     let emap c = Vars.subst_univs_level_constr subst c in
     let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
     (* Only metas are mentioning the old universes. *)
-    {
-      templval = Evd.map_fl emap clenv.templval;
-      templtyp = Evd.map_fl emap clenv.templtyp;
-      evd = Evd.map_metas emap evd;
-      env = Proofview.Goal.env gl;
-    }
+    Clenv.mk_clausenv
+      (Proofview.Goal.env gl)
+      (Evd.map_metas emap evd)
+      (Evd.map_fl emap clenv.templval)
+      (Evd.map_fl emap clenv.templtyp)
   | None ->
-    { clenv with evd = evd ; env = Proofview.Goal.env gl }
+    Clenv.mk_clausenv
+      (Proofview.Goal.env gl)
+      evd
+      clenv.templval
+      clenv.templtyp
 
 let fresh_hint env sigma h =
   let { hint_term = c; hint_uctx = ctx } = h in

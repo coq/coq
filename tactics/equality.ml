@@ -154,7 +154,8 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
   let try_occ (evd', c') =
-    Clenv.clenv_pose_dependent_evars ~with_evars:true {eqclause with evd = evd'}
+    let clenv = Clenv.update_clenv_evd eqclause evd' in
+    Clenv.clenv_pose_dependent_evars ~with_evars:true clenv
   in
   let flags = make_flags frzevars (Tacmach.New.project gl) rewrite_unif_flags eqclause in
   let occs =
