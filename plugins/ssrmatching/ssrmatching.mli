@@ -22,14 +22,8 @@ open Genintern
 
 (** The type of context patterns, the patterns of the [set] tactic and
     [:] tactical. These are patterns that identify a precise subterm. *)
-type cpattern
+type cpattern = char * Genintern.glob_constr_and_expr * Geninterp.interp_sign option
 val pr_cpattern : cpattern -> Pp.t
-
-(** The type of rewrite patterns, the patterns of the [rewrite] tactic.
-    These patterns also include patterns that identify all the subterms
-    of a context (i.e. "in" prefix) *)
-type rpattern
-val pr_rpattern : rpattern -> Pp.t
 
 (** Pattern interpretation and matching *)
 
@@ -47,6 +41,12 @@ type ('ident, 'term) ssrpattern =
 
 type pattern = evar_map * (constr, constr) ssrpattern
 val pp_pattern : env -> pattern -> Pp.t
+
+(** The type of rewrite patterns, the patterns of the [rewrite] tactic.
+    These patterns also include patterns that identify all the subterms
+    of a context (i.e. "in" prefix) *)
+type rpattern = (cpattern, cpattern) ssrpattern
+val pr_rpattern : rpattern -> Pp.t
 
 (** Extracts the redex and applies to it the substitution part of the pattern.
   @raise Anomaly if called on [In_T] or [In_X_In_T] *)
