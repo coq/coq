@@ -36,7 +36,7 @@ type argument = Genarg.ArgT.any Extend.user_symbol
 
 val add_tactic_notation :
   locality_flag -> int -> ?deprecation:Deprecation.t -> raw_argument
-  grammar_tactic_prod_item_expr list -> raw_tactic_expr -> unit
+  grammar_tactic_prod_item_expr list -> raw_tactic_expr -> Names.KerName.t
 (** [add_tactic_notation local level prods expr] adds a tactic notation in the
     environment at level [level] with locality [local] made of the grammar
     productions [prods] and returning the body [expr] *)

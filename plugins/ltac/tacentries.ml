@@ -314,14 +314,16 @@ let add_glob_tactic_notation local ~level ?deprecation prods forml ids tac =
     tacgram_prods = prods;
   } in
   let open Tacenv in
+  let key = make_fresh_key prods in
   let tacobj = {
-    tacobj_key = make_fresh_key prods;
+    tacobj_key = key;
     tacobj_local = local;
     tacobj_tacgram = parule;
     tacobj_body = { alias_args = ids; alias_body = tac; alias_deprecation = deprecation };
     tacobj_forml = forml;
   } in
-  Lib.add_anonymous_leaf (inTacticGrammar tacobj)
+  Lib.add_anonymous_leaf (inTacticGrammar tacobj);
+  key
 
 let add_tactic_notation local n ?deprecation prods e =
   let ids = List.map_filter cons_production_parameter prods in
@@ -379,7 +381,7 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
     let map id = Reference (Locus.ArgVar (CAst.make id)) in
     let tac = TacML (CAst.make (entry, List.map map ids)) in
-    add_glob_tactic_notation false ~level ?deprecation prods true ids tac
+    ignore (add_glob_tactic_notation false ~level ?deprecation prods true ids tac)
   in
   List.iteri iter (List.rev prods);
   (* We call [extend_atomic_tactic] only for "basic tactics" (the ones

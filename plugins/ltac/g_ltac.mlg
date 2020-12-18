@@ -460,7 +460,7 @@ VERNAC COMMAND EXTEND VernacTacticNotation
   { VtSideff ([], VtNow) } ->
   {
     let n = Option.default 0 n in
-    Tacentries.add_tactic_notation (Locality.make_module_locality locality) n ?deprecation r e;
+    ignore (Tacentries.add_tactic_notation (Locality.make_module_locality locality) n ?deprecation r e)
   }
 END
 
