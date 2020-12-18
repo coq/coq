@@ -550,7 +550,6 @@ struct
   let existential = BoolOpt ["Printing"; "Existential"; "Instances"]
   let universes = BoolOpt ["Printing"; "Universes"]
   let unfocused = BoolOpt ["Printing"; "Unfocused"]
-  let goal_names = BoolOpt ["Printing"; "Goal"; "Names"]
   let diff = StringOpt ["Diffs"]
 
   type 'a descr = { opts : 'a t list; init : 'a; label : string }
@@ -569,8 +568,7 @@ struct
     { opts = [universes]; init = false; label = "Display _universe levels" };
     { opts = [all_basic;existential;universes]; init = false;
       label = "Display all _low-level contents" };
-    { opts = [unfocused]; init = false; label = "Display _unfocused goals" };
-    { opts = [goal_names]; init = false; label = "Display _goal names" }
+    { opts = [unfocused]; init = false; label = "Display _unfocused goals" }
   ]
 
   let diff_item = { opts = [diff]; init = "off"; label = "Display _proof diffs" }

@@ -85,7 +85,6 @@ let init () =
 \n    <menuitem action='Display universe levels' />\
 \n    <menuitem action='Display all low-level contents' />\
 \n    <menuitem action='Display unfocused goals' />\
-\n    <menuitem action='Display goal names' />\
 \n    <separator/>\
 \n    <menuitem action='Unset diff' />\
 \n    <menuitem action='Set diff' />\
