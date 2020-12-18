@@ -175,7 +175,21 @@ let rec remove_grammars n =
            camlp5_entries := EntryDataMap.add tag (EntryData.Ex entries) !camlp5_entries;
            remove_grammars (n - 1)
 
-(* Parse a string, does NOT check if the entire string was read *)
+let make_rule r = [None, None, r]
+
+(** An entry that checks we reached the end of the input. *)
+
+(* used by the Tactician plugin *)
+let eoi_entry en =
+  let e = Entry.make ((Entry.name en) ^ "_eoi") in
+  let symbs = Rule.next (Rule.next Rule.stop (Symbol.nterm en)) (Symbol.token Tok.PEOI) in
+  let act = fun _ x loc -> x in
+  let ext = { pos = None; data = make_rule [Production.make symbs act] } in
+  safe_extend e ext;
+  e
+
+(* Parse a string, does NOT check if the entire string was read
+   (use eoi_entry) *)
 
 let parse_string f ?loc x =
   let strm = Stream.of_string x in
@@ -289,6 +303,7 @@ module Constr =
     let constr = Entry.create "constr"
     let term = Entry.create "term"
     let operconstr = term
+    let constr_eoi = eoi_entry constr
     let lconstr = Entry.create "lconstr"
     let binder_constr = Entry.create "binder_constr"
     let ident = Entry.create "ident"
