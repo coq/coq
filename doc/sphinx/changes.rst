@@ -603,10 +603,6 @@ CoqIDE
   See :ref:`showing_proof_diffs`.
   (`#12874 <https://github.com/coq/coq/pull/12874>`_,
   by Jim Fehrle and Enrico Tassi)
-- **Added:**
-  Support for flag :flag:`Printing Goal Names` in View menu
-  (`#13145 <https://github.com/coq/coq/pull/13145>`_,
-  by Hugo Herbelin).
 
 Standard library
 ^^^^^^^^^^^^^^^^
