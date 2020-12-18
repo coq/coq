@@ -195,7 +195,7 @@ let concl_next_tac =
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
   let min_env = Environ.reset_context env in
-  let id = if Printer.print_goal_names () then Names.Id.to_string (Termops.evar_suggested_name g sigma) else "" in
+  let id = if Printer.print_goal_names () then Names.Id.to_string (Termops.evar_suggested_name g sigma) else Goal.uid g in
   let ccl =
     pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
   in
