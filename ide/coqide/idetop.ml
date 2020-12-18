@@ -172,7 +172,7 @@ let concl_next_tac =
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
   let min_env = Environ.reset_context env in
-  let id = if Printer.print_goal_names () then Names.Id.to_string (Termops.evar_suggested_name g sigma) else Goal.uid g in
+  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name g sigma)) else None in
   let ccl =
     pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
   in
@@ -183,10 +183,11 @@ let process_goal sigma g =
   let (_env, hyps) =
     Context.Compacted.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
-  { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id }
+  { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = Goal.uid g; Interface.goal_name = name }
 
 let process_goal_diffs diff_goal_map oldp nsigma ng =
   let open Evd in
+  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name ng nsigma)) else None in
   let og_s = match oldp with
     | Some oldp ->
       let Proof.{ sigma=osigma } = Proof.data oldp in
@@ -195,7 +196,7 @@ let process_goal_diffs diff_goal_map oldp nsigma ng =
     | None -> None
   in
   let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
-  { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp; Interface.goal_id = Goal.uid ng }
+  { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp; Interface.goal_id = Goal.uid ng; Interface.goal_name = name }
 
 let export_pre_goals Proof.{ sigma; goals; stack } process =
   let process = List.map (process sigma) in
