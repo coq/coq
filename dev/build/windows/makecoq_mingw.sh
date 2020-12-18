@@ -1435,12 +1435,12 @@ function make_coq {
     # make clean
 
     # Copy these files somewhere the plugin builds can find them
-    logn copy-basic-overlays cp dev/ci/ci-basic-overlay.sh /build/
+    #logn copy-basic-overlays cp dev/ci/ci-basic-overlay.sh /build/
 
     build_post
   fi
 
-  load_overlay_data
+  #load_overlay_data
 }
 
 ##### GNU Make for MinGW #####
