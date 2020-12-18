@@ -713,15 +713,15 @@ let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
   let args = Stack.tail ci.ci_npar args in
   let args = Option.get (Stack.list_of_app_stack args) in
   let br = lf.(i - 1) in
-  let subst =
-    if Int.equal ci.ci_cstr_nargs.(i - 1) ci.ci_cstr_ndecls.(i - 1) then
-      (* No let-bindings *)
-      List.rev args
-    else
-      let ctx = expand_branch env sigma u pms (ind, i) br in
-      subst_of_rel_context_instance ctx args
-  in
-  Vars.substl subst (snd br)
+  if Int.equal ci.ci_cstr_nargs.(i - 1) ci.ci_cstr_ndecls.(i - 1) then
+    (* No let-bindings *)
+    let subst = List.rev args in
+    Vars.substl subst (snd br)
+  else
+    (* For backwards compat with unification, we do not reduce the let-bindings
+       upfront. *)
+    let ctx = expand_branch env sigma u pms (ind, i) br in
+    applist (it_mkLambda_or_LetIn (snd br) ctx, args)
 
 let rec whd_state_gen flags env sigma =
   let open Context.Named.Declaration in
