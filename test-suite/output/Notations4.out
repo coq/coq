@@ -215,3 +215,7 @@ Some MyNone+
      : option (option ?A)
 where
 ?A : [ |- Type]
+0+
+     : option ?A
+where
+?A : [ |- Type]

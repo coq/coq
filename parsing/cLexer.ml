@@ -737,9 +737,11 @@ let rec next_token ~diff_mode loc s =
         IDENT id, set_loc_pos loc bp ep end
   | Some ('0'..'9') ->
       let n = NumTok.Unsigned.parse s in
-      let ep = Stream.count s in
       comment_stop bp;
-      (NUMBER n, set_loc_pos loc bp ep)
+      begin try find_keyword loc (NumTok.Unsigned.sprint n) bp s
+      with Not_found ->
+        let ep = Stream.count s in
+        NUMBER n, set_loc_pos loc bp ep end
   | Some '\"' ->
       Stream.junk s;
       let (loc, len) =

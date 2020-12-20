@@ -483,3 +483,10 @@ Check MyNone+.
 Check Some MyNone+.
 
 End LeadingIdent.
+
+Module SymbolsStartingWithNumbers.
+
+Notation "0+" := None.
+Check 0+.
+
+End SymbolsStartingWithNumbers.
