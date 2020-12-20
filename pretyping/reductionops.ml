@@ -194,6 +194,7 @@ sig
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
   val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
+  val decomp_rev : 'a t -> ('a * 'a t) option
   val compare_shape : 'a t -> 'a t -> bool
   val map : ('a -> 'a) -> 'a t -> 'a t
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
@@ -214,13 +215,13 @@ end =
 struct
   open EConstr
   type 'a app_node = int * 'a array * int
-  (* first releavnt position, arguments, last relevant position *)
+  (* first relevant position, arguments, last relevant position *)
 
   (*
-     Invariant that this module must ensure :
-     (behare of direct access to app_node by the rest of Reductionops)
+     Invariant that this module must ensure:
+     (beware of direct access to app_node by the rest of Reductionops)
      - in app_node (i,_,j) i <= j
-     - There is no array realocation (outside of debug printing)
+     - There is no array reallocation (outside of debug printing)
    *)
 
   let pr_app_node pr (i,a,j) =
@@ -267,12 +268,10 @@ struct
     let le = Array.length v in
     if Int.equal le 0 then s else App (0,v,pred le) :: s
 
-  let decomp_node (i,l,j) sk =
-    if i < j then (l.(i), App (succ i,l,j) :: sk)
-    else (l.(i), sk)
-
-  let decomp = function
-    | App node::s -> Some (decomp_node node s)
+  let decomp_rev = function
+    | App (i,l,j) :: sk ->
+      if i < j then Some (l.(j), App (i,l,pred j) :: sk)
+      else Some (l.(j), sk)
     | _ -> None
 
   let decomp_node_last (i,l,j) sk =
@@ -293,7 +292,7 @@ struct
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
       | (Primitive(_,_,a1,_)::s1, Primitive(_,_,a2,_)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
-      | ((Case _|Proj _|Fix _|Primitive _) :: _ | []) ,_ -> false in
+      | ((Case _ | Proj _ | Fix _ | Primitive _) :: _ | []) ,_ -> false in
     compare_rec 0 stk1 stk2
 
   exception IncompatibleFold2
@@ -334,28 +333,34 @@ struct
     append_app a s
 
   let rec args_size = function
-    | App (i,_,j)::s -> j + 1 - i + args_size s
-    | (Case _|Fix _|Proj _|Primitive _)::_ | [] -> 0
+    | App (i,_,j) :: s -> j + 1 - i + args_size s
+    | (Case _ | Fix _ | Proj _ | Primitive _) :: _ | [] -> 0
 
   let strip_app s =
     let rec aux out = function
       | ( App _ as e) :: s -> aux (e :: out) s
       | s -> List.rev out,s
     in aux [] s
+
   let strip_n_app n s =
     let rec aux n out = function
       | App (i,a,j) as e :: s ->
-         let nb = j  - i + 1 in
+         let nb = j - i + 1 in
          if n >= nb then
-           aux (n - nb) (e::out) s
+           aux (n - nb) (e :: out) s
          else
-           let p = i+n in
+           let p = i + n in
            Some (CList.rev
               (if Int.equal n 0 then out else App (i,a,p-1) :: out),
             a.(p),
-            if j > p then App(succ p,a,j)::s else s)
+            if j > p then App (succ p,a,j) :: s else s)
       | s -> None
     in aux n [] s
+
+  let decomp s =
+    match strip_n_app 0 s with
+    | Some (_,a,s) -> Some (a,s)
+    | None -> None
 
   let not_purely_applicative args =
     List.exists (function (Fix _ | Case _ | Proj _ ) -> true
@@ -369,12 +374,11 @@ struct
         (Array.fold_right (fun x y -> x::y) a' args', s')
       | s -> ([],s) in
     let (out,s') = aux s in
-    let init = match s' with [] -> true | _ -> false in
-    Option.init init out
+    match s' with [] -> Some out | _ -> None
 
   let assign s p c =
     match strip_n_app p s with
-    | Some (pre,_,sk) -> pre @ (App (0,[|c|],0)::sk)
+    | Some (pre,_,sk) -> pre @ (App (0,[|c|],0) :: sk)
     | None -> assert false
 
   let tail n0 s0 =
@@ -382,12 +386,12 @@ struct
       if Int.equal n 0 then s else
         match s with
       | App (i,a,j) :: s ->
-         let nb = j  - i + 1 in
+         let nb = j - i + 1 in
          if n >= nb then
            aux (n - nb) s
          else
            let p = i+n in
-           if j >= p then App(p,a,j)::s else s
+           if j >= p then App (p,a,j) :: s else s
         | _ -> raise (Invalid_argument "Reductionops.Stack.tail")
     in aux n0 s0
 

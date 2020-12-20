@@ -1585,7 +1585,16 @@ let rec invert_definition unify flags choose imitate_defs
         imitate envk (subst1 b c)
     | Evar (evk',args' as ev') ->
         if Evar.equal evk evk' then raise (OccurCheckIn (evd,rhs));
-        (* Evar/Evar problem (but left evar is virtual) *)
+        (* At this point, we imitated a context say, C[ ], and virtually
+           instantiated ?evk@{x₁..xn} with C[?evk''@{x₁..xn,y₁..yk}]
+           for y₁..yk the spine of variables of C[ ], now facing the
+           equation env, y₁...yk |- ?evk'@{args'} =?= ?evk''@{args,y1:=y1..yk:=yk} *)
+        (* Assume evk' is defined in context x₁'..xk'.
+           As a first step, we try to find a restriction ?evk'''@{xᵢ₁'..xᵢⱼ} of
+           ?evk' and an instance args''' in the environment of ?evk such that
+           env, y₁..yk |- args'''[args] = args' and thus such that
+           env, y₁..yk |- ?evk'''@{args'''[args]} = ?evk''@{args,y1:=y1..yk:=yk} *)
+        (* Note that we don't need to declare ?evk'' yet: it may remain virtual *)
         let aliases = lift_aliases k aliases in
         (try
           let ev = (evk,List.map (lift k) argsv) in
@@ -1597,14 +1606,14 @@ let rec invert_definition unify flags choose imitate_defs
         | CannotProject (evd,ev') ->
           if not !progress then
             raise (NotEnoughInformationEvarEvar t);
-          (* Make the virtual left evar real *)
+          (* We could not invert args' in terms of args, so we now make ?evk'' real *)
           let ty = get_type_of env' evd t in
           let (evd,evar'',ev'') =
              materialize_evar (evar_define unify flags ~choose) env' evd k ev ty in
           (* materialize_evar may instantiate ev' by another evar; adjust it *)
           let (evk',args' as ev') = normalize_evar evd ev' in
           let evd =
-             (* Try to project (a restriction of) the left evar ... *)
+             (* Try now to invert args in terms of args' *)
             try
               let evd,body = project_evar_on_evar false unify flags env' evd aliases 0 None ev'' ev' in
               let evd = Evd.define evk' body evd in

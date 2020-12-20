@@ -136,6 +136,24 @@ val solve_evar_evar : ?force:bool ->
   (** The two evars are expected to be in inferably convertible types;
       if not, an exception IllTypedInstance is raised *)
 
+(* [solve_simple_eqn unifier flags env evd (direction,?ev[inst],t)]
+   makes progresses on problems of the form [?ev[inst] := t] (or
+   [?ev[inst] :<= t], or [?ev[inst] :>= t]). It uses imitation and a
+   limited form of projection. At the time of writing this comment,
+   only rels/vars (possibly indirectly via a chain of evars) and
+   constructors are used for projection. For instance
+   [?e[x,S 0] := x + S 0] will be solved by imitating [+] and
+   projecting [x] and [S 0] (so that [?e[a,b]:=a+b]) but in
+   [?e[0+0] := 0+0], the possible imitation will not be seen.
+
+   [choose] tells to make an irreversible choice when two valid
+   projections are competing. It is to be used when no more reversible
+   progress can be done. It is [false] by default.
+
+   [imitate_defs] tells to expand local definitions if they cannot be
+   projected. It is [true] by default.
+*)
+
 val solve_simple_eqn : unifier -> unify_flags -> ?choose:bool -> ?imitate_defs:bool -> env ->  evar_map ->
   bool option * existential * constr -> unification_result
 

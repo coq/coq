@@ -69,10 +69,9 @@ module Stack : sig
 
   val empty : 'a t
   val is_empty : 'a t -> bool
-  val append_app : 'a array -> 'a t -> 'a t
-  val decomp : 'a t -> ('a * 'a t) option
 
   val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
+  [@@ocaml.deprecated "Use decomp_rev"]
 
   val compare_shape : 'a t -> 'a t -> bool
 
@@ -84,23 +83,51 @@ module Stack : sig
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
     constr t -> constr t -> 'a
   val map : ('a -> 'a) -> 'a t -> 'a t
+
+  (** [append_app args sk] pushes array of arguments [args] on [sk] *)
+  val append_app : 'a array -> 'a t -> 'a t
+
+  (** [append_app_list args sk] pushes list of arguments [args] on [sk] *)
   val append_app_list : 'a list -> 'a t -> 'a t
 
-  (** if [strip_app s] = [(a,b)], then [s = a @ b] and [b] does not
-      start by App *)
+  (** if [strip_app sk] = [(sk1,sk2)], then [sk = sk1 @ sk2] with
+      [sk1] purely applicative and [sk2] does not start with an argument *)
   val strip_app : 'a t -> 'a t * 'a t
 
-  (** @return (the nth first elements, the (n+1)th element, the remaining stack)  *)
+  (** @return (the nth first elements, the (n+1)th element, the remaining stack)
+      if there enough of those *)
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
 
+  (** [decomp sk] extracts the first argument of [sk] is there is some *)
+  val decomp : 'a t -> ('a * 'a t) option
+
+  (** [decomp sk] extracts the first argument of reversed stack [sk] is there is some *)
+  val decomp_rev : 'a t -> ('a * 'a t) option
+
+  (** [not_purely_applicative sk] *)
   val not_purely_applicative : 'a t -> bool
+
+  (** [list_of_app_stack sk] either returns [Some sk] turned into a list of
+      arguments if [sk] is purely applicative and [None] otherwise *)
   val list_of_app_stack : constr t -> constr list option
 
+  (** [assign sk n a] changes the [n]th argument of [sk] with [a], counting from 0
+      @raise an anomaly if there is less that [n] arguments available *)
   val assign : 'a t -> int -> 'a -> 'a t
+
+  (** [args_size sk] returns the number of arguments available at the
+      head of [sk] *)
   val args_size : 'a t -> int
+
+  (** [tail n sk] drops the [n] first arguments of [sk]
+      @raise [Invalid_argument] if there are not enough arguments *)
   val tail : int -> 'a t -> 'a t
+
+  (** [nth sk n] returns the [n]-th argument of [sk], counting from 0
+      @raise [Not_found] if there is no [n]th argument *)
   val nth : 'a t -> int -> 'a
 
+  (** [zip sigma t sk] *)
   val zip : evar_map -> constr * constr t -> constr
 end
 
