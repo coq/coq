@@ -1,12 +1,16 @@
-File "./output/NotationSyntax.v", line 2, characters 19-29:
-Warning: Notations for numbers are primitive; skipping this modifier.
-[primitive-token-modifier,parsing]
 The command has indeed failed with message:
 "only parsing" is given more than once.
 The command has indeed failed with message:
 A notation cannot be both "only printing" and "only parsing".
 The command has indeed failed with message:
 "only printing" is given more than once.
-File "./output/NotationSyntax.v", line 6, characters 33-43:
+File "./output/NotationSyntax.v", line 5, characters 33-43:
 Warning: The format modifier is irrelevant for only-parsing rules.
 [irrelevant-format-only-parsing,parsing]
+File "./output/NotationSyntax.v", line 8, characters 20-30:
+Warning: Notations for numbers are primitive; skipping this modifier.
+[primitive-token-modifier,parsing]
+1%nat
+     : nat
+The command has indeed failed with message:
+Notations for numbers are primitive and need not be reserved.
