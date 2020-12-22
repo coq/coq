@@ -24,7 +24,10 @@ type ssrtermkind = | InParens | WithAt | NoFlag | Cpattern
 
 (** The type of context patterns, the patterns of the [set] tactic and
     [:] tactical. These are patterns that identify a precise subterm. *)
-type cpattern = ssrtermkind * Genintern.glob_constr_and_expr * Geninterp.interp_sign option
+type cpattern =
+  { kind : ssrtermkind
+  ; pattern : Genintern.glob_constr_and_expr
+  ; interpretation : Geninterp.interp_sign option }
 val pr_cpattern : cpattern -> Pp.t
 
 (** Pattern interpretation and matching *)
@@ -194,9 +197,6 @@ val mk_tpattern_matcher :
 val pf_fill_occ_term : goal sigma -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
 val fill_occ_term : Environ.env -> Evd.evar_map -> EConstr.t -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
-
-(* It may be handy to inject a simple term into the first form of cpattern *)
-val cpattern_of_term : ssrtermkind * glob_constr_and_expr -> Geninterp.interp_sign -> cpattern
 
 (** Helpers to make stateful closures. Example: a [find_P] function may be
     called many times, but the pattern instantiation phase is performed only the

@@ -123,7 +123,7 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:
  let vtac gv i gl' = refine_interp_apply_view i ist gl' gv in
  let ggenl, tclGENTAC =
    if gviews <> [] && ggenl <> [] then
-     let ggenl= List.map (fun (x,g) -> x, cpattern_of_term g ist) (List.hd ggenl) in
+     let ggenl= List.map (fun (x,(k,p)) -> x, {kind=k; pattern=p; interpretation= Some ist}) (List.hd ggenl) in
      [], Tacticals.tclTHEN (Proofview.V82.of_tactic (genstac (ggenl,[])))
    else ggenl, Tacticals.tclTHEN Tacticals.tclIDTAC in
  tclGENTAC (fun gl ->
