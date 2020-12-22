@@ -90,7 +90,7 @@ let extend_vernac_command_grammar s nt gl =
   vernac_exts := (s,gl) :: !vernac_exts;
   let mkact loc l =
     let (name, index) = s in
-    Stats.parser_action (name ^ "-" ^ (string_of_int index)) (List.length gl)  "???" 0;
+    Stats.parser_action (name ^ "-" ^ (string_of_int index)) (List.length gl)  "???" 0 0 (lazy "");
     VernacExtend (s, l) in
   let rules = [make_rule mkact gl] in
   grammar_extend nt { pos=None; data=[None, None, rules]}

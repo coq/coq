@@ -99,17 +99,17 @@ let check_stack ntname =
   end
 
 (* callback for parser actions in GRAMMAR EXTEND *)
-let parser_action prod_id n file lnum char =  (*todo: is line num for now*)
+let parser_action prod_id n file lnum char prodn =
   if !enable && !cnt = 1 then begin
     let prod_id = if prod_id = "" then "*" else prod_id in
     if !print then
-      printf "Reduce %s %d %s %d\n" prod_id n file char;
+      printf "Reduce %d %s %d %d\n  %s -> %s\n" n file lnum char prod_id (Lazy.force prodn);
     let pfx = if n = 0 then [] else popN n in
     stack := `Prod (prod_id, (file, lnum, char), pfx) :: !stack;
     if !print then print_stack ();
   end
 
-let lookahead prod_id file line char = parser_action prod_id 0 file line char
+let lookahead prod_id file line char = parser_action prod_id 0 file line char (lazy "")
 
 let got_list ltype len sym =
   if !enable && !cnt = 1 then begin
@@ -165,7 +165,7 @@ let start_Parse_cmd () =
   if not en then begin
     enable := true;
     got_token "Parse";
-    parser_action "*" 1 "??" 0 0
+    parser_action "*" 1 "??" 0 0 (lazy "")
   end;
   en
 

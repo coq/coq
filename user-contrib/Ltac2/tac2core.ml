@@ -1639,7 +1639,7 @@ type _ converter =
 
 let rec apply : type a. int -> a converter -> raw_tacexpr list -> a =
   fun len -> function
-| CvNil -> fun accu loc -> Stats.parser_action "Ltac2-tactic-*" len "??" 0 0; Tac2quote.of_tuple ~loc accu
+| CvNil -> fun accu loc -> Stats.parser_action "Ltac2-tactic-*" len "??" 0 0 (lazy ""); Tac2quote.of_tuple ~loc accu
 | CvCns (c, None) -> fun accu x -> apply len c accu  (* todo: understand this *)
 | CvCns (c, Some f) -> fun accu x -> apply len c (f x :: accu)
 

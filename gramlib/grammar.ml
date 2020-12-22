@@ -180,7 +180,7 @@ and ('self, _, _, 'r) ty_rule =
 
 and ('self, 'trec, 'a) ty_tree =
 | Node : ('trn, 'trs, 'trb, 'tr) ty_and_rec3 * ('self, 'trn, 'trs, 'trb, 'b, 'a) ty_node -> ('self, 'tr, 'a) ty_tree
-| LocAct : 'k * 'k list * prod_inf -> ('self, norec, 'k) ty_tree
+| LocAct : 'k * 'k list * (prod_inf * string Lazy.t) -> ('self, norec, 'k) ty_tree
 | DeadEnd : ('self, norec, 'k) ty_tree
 
 and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
@@ -346,7 +346,106 @@ let and_and_tree (type s tr' trt tr trn trs trb f) (ar : (tr', trt, tr) ty_and_r
   | MayRec2, _, MayRec -> MayRec2 | MayRec2, _, NoRec -> MayRec2
   | NoRec2, NoRec3, NoRec -> NoRec2
 
+type 's ex_symbols =
+| ExS : ('s, 'tr, 'p) ty_symbols -> 's ex_symbols
+
+let rec flatten_tree : type s tr a. (s, tr, a) ty_tree -> s ex_symbols list =
+  function
+    DeadEnd -> []
+  | LocAct _ -> [ExS TNil]
+  | Node (_, {node = n; brother = b; son = s}) ->
+      List.map (fun (ExS l) -> ExS (TCns (MayRec2, n, l))) (flatten_tree s) @ flatten_tree b
+
+let utf8_print = ref true
+
+let utf8_string_escaped s =
+  let b = Buffer.create (String.length s) in
+  let rec loop i =
+    if i = String.length s then Buffer.contents b
+    else
+      begin
+        begin match s.[i] with
+          '"' -> Buffer.add_string b "\\\""
+        | '\\' -> Buffer.add_string b "\\\\"
+        | '\n' -> Buffer.add_string b "\\n"
+        | '\t' -> Buffer.add_string b "\\t"
+        | '\r' -> Buffer.add_string b "\\r"
+        | '\b' -> Buffer.add_string b "\\b"
+        | c -> Buffer.add_char b c
+        end;
+        loop (i + 1)
+      end
+  in
+  loop 0
+
+let string_escaped s =
+  if !utf8_print then utf8_string_escaped s else String.escaped s
+
+let print_str ppf s = fprintf ppf "\"%s\"" (string_escaped s)
+
+let rec print_symbol : type s tr r. formatter -> (s, tr, r) ty_symbol -> unit =
+  fun ppf ->
+  function
+  | Slist0 s -> fprintf ppf "LIST0 %a" print_symbol1 s
+  | Slist0sep (s, t, osep) ->
+      fprintf ppf "LIST0 %a SEP %a%s" print_symbol1 s print_symbol1 t
+        (if osep then " OPT_SEP" else "")  (* todo: not used, is always false *)
+  | Slist1 s -> fprintf ppf "LIST1 %a" print_symbol1 s
+  | Slist1sep (s, t, osep) ->
+      fprintf ppf "LIST1 %a SEP %a%s" print_symbol1 s print_symbol1 t
+        (if osep then " OPT_SEP" else "")
+  | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
+  | Stoken p ->
+     begin match L.tok_pattern_strings p with
+     | "", Some s -> print_str ppf s
+     | con, Some prm -> fprintf ppf "%s@ %a" con print_str prm
+     | con, None -> fprintf ppf "%s" con end
+  | Snterml (e, l) ->
+      fprintf ppf "%s%s@ LEVEL@ %a" e.ename ""
+        print_str l
+  | s -> print_symbol1 ppf s
+and print_symbol1 : type s tr r. formatter -> (s, tr, r) ty_symbol -> unit =
+  fun ppf ->
+  function
+  | Snterm e -> fprintf ppf "%s%s" e.ename ""
+  | Sself -> pp_print_string ppf "SELF"
+  | Snext -> pp_print_string ppf "NEXT"
+  | Stoken p ->
+     begin match L.tok_pattern_strings p with
+     | "", Some s -> print_str ppf s
+     | con, None -> pp_print_string ppf con
+     | con, Some prm -> fprintf ppf "(%s@ %a)" con print_str prm end
+  | Stree t -> print_level ppf pp_print_space (flatten_tree t)
+  | s ->
+      fprintf ppf "(%a)" print_symbol s
+and print_rule : type s tr p. formatter -> (s, tr, p) ty_symbols -> unit =
+  fun ppf symbols ->
+  fprintf ppf "@[<hov 0>";
+  let rec fold : type s tr p. _ -> (s, tr, p) ty_symbols -> unit =
+    fun sep symbols ->
+    match symbols with
+    | TNil -> ()
+    | TCns (_, symbol, symbols) ->
+      fprintf ppf "%t%a" sep print_symbol symbol;
+      fold (fun ppf -> fprintf ppf ";@ ") symbols
+  in
+  let () = fold (fun ppf -> ()) symbols in
+  fprintf ppf "@]"
+and print_level : type s. _ -> _ -> s ex_symbols list -> _ =
+  fun ppf pp_print_space rules ->
+  fprintf ppf "@[<hov 0>[ ";
+  let () =
+    Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf "%a| " pp_print_space ())
+      (fun ppf (ExS rule) -> print_rule ppf rule)
+      ppf rules
+  in
+  fprintf ppf " ]@]"
+
 let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and_ex) (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) (inf : prod_inf) : (s, tr, a) ty_tree =
+  (* todo: any issue using stdbuf? *)
+  let prodn = lazy (print_rule str_formatter gsymbols;
+      Format.flush_str_formatter ()) in
+(*  Printf.printf "\nENTRY: %s\n%s\n" entry_name (Lazy.force prodn);*)
   let rec insert : type trs trt tr p f k. (trs, trt, tr) ty_and_ex -> (s, trs, p) ty_symbols -> (p, k, f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree  =
     fun ar symbols pf tree action ->
     match symbols, pf with
@@ -359,7 +458,7 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
         match ar, tree with
         | NR10, Node (_, n) -> Node (MayRec3, node n)
         | NR11, Node (NoRec3, n) -> Node (NoRec3, node n)
-        | NR11, LocAct (old_action, action_list, inf) ->
+        | NR11, LocAct (old_action, action_list, (inf, prodn)) ->
           (* What to do about this warning? For now it is disabled *)
           if false then
             begin
@@ -369,8 +468,8 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
                 "some rule has been masked" in
               Feedback.msg_warning (Pp.str msg)
             end;
-          LocAct (action, old_action :: action_list, inf)
-        | NR11, DeadEnd -> LocAct (action, [], inf)
+          LocAct (action, old_action :: action_list, (inf, prodn))
+        | NR11, DeadEnd -> LocAct (action, [], (inf, prodn))
   and insert_in_tree : type trs trs' trs'' trt tr a p f k. (trs'', trt, tr) ty_and_ex -> (trs, trs', trs'') ty_and_rec -> (s, trs, a) ty_symbol -> (s, trs', p) ty_symbols -> (p, k, a -> f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree =
     fun ar ars s sl pf tree action ->
     let ar : (trs'', trt, tr) ty_and_rec = match ar with NR11 -> NoRec2
@@ -686,9 +785,6 @@ let logically_eq_symbols entry =
         [t] = remaining tree
      [None] if failure *)
 
-type 's ex_symbols =
-| ExS : ('s, 'tr, 'p) ty_symbols -> 's ex_symbols
-
 let delete_rule_in_tree entry =
   let rec delete_in_tree :
     type s tr tr' p r. (s, tr, p) ty_symbols -> (s, tr', r) ty_tree -> (s ex_symbols option * (s, r) ty_mayrec_tree) option =
@@ -817,98 +913,6 @@ let delete_rule_in_level_list (type s tr p) (entry : s ty_entry) (symbols : (s, 
       delete_rule_in_suffix entry symbols' levs
     end
   | _ -> delete_rule_in_prefix entry symbols levs
-
-let rec flatten_tree : type s tr a. (s, tr, a) ty_tree -> s ex_symbols list =
-  function
-    DeadEnd -> []
-  | LocAct _ -> [ExS TNil]
-  | Node (_, {node = n; brother = b; son = s}) ->
-      List.map (fun (ExS l) -> ExS (TCns (MayRec2, n, l))) (flatten_tree s) @ flatten_tree b
-
-let utf8_print = ref true
-
-let utf8_string_escaped s =
-  let b = Buffer.create (String.length s) in
-  let rec loop i =
-    if i = String.length s then Buffer.contents b
-    else
-      begin
-        begin match s.[i] with
-          '"' -> Buffer.add_string b "\\\""
-        | '\\' -> Buffer.add_string b "\\\\"
-        | '\n' -> Buffer.add_string b "\\n"
-        | '\t' -> Buffer.add_string b "\\t"
-        | '\r' -> Buffer.add_string b "\\r"
-        | '\b' -> Buffer.add_string b "\\b"
-        | c -> Buffer.add_char b c
-        end;
-        loop (i + 1)
-      end
-  in
-  loop 0
-
-let string_escaped s =
-  if !utf8_print then utf8_string_escaped s else String.escaped s
-
-let print_str ppf s = fprintf ppf "\"%s\"" (string_escaped s)
-
-let rec print_symbol : type s tr r. formatter -> (s, tr, r) ty_symbol -> unit =
-  fun ppf ->
-  function
-  | Slist0 s -> fprintf ppf "LIST0 %a" print_symbol1 s
-  | Slist0sep (s, t, osep) ->
-      fprintf ppf "LIST0 %a SEP %a%s" print_symbol1 s print_symbol1 t
-        (if osep then " OPT_SEP" else "")
-  | Slist1 s -> fprintf ppf "LIST1 %a" print_symbol1 s
-  | Slist1sep (s, t, osep) ->
-      fprintf ppf "LIST1 %a SEP %a%s" print_symbol1 s print_symbol1 t
-        (if osep then " OPT_SEP" else "")
-  | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
-  | Stoken p ->
-     begin match L.tok_pattern_strings p with
-     | "", Some s -> print_str ppf s
-     | con, Some prm -> fprintf ppf "%s@ %a" con print_str prm
-     | con, None -> fprintf ppf "%s" con end
-  | Snterml (e, l) ->
-      fprintf ppf "%s%s@ LEVEL@ %a" e.ename ""
-        print_str l
-  | s -> print_symbol1 ppf s
-and print_symbol1 : type s tr r. formatter -> (s, tr, r) ty_symbol -> unit =
-  fun ppf ->
-  function
-  | Snterm e -> fprintf ppf "%s%s" e.ename ""
-  | Sself -> pp_print_string ppf "SELF"
-  | Snext -> pp_print_string ppf "NEXT"
-  | Stoken p ->
-     begin match L.tok_pattern_strings p with
-     | "", Some s -> print_str ppf s
-     | con, None -> pp_print_string ppf con
-     | con, Some prm -> fprintf ppf "(%s@ %a)" con print_str prm end
-  | Stree t -> print_level ppf pp_print_space (flatten_tree t)
-  | s ->
-      fprintf ppf "(%a)" print_symbol s
-and print_rule : type s tr p. formatter -> (s, tr, p) ty_symbols -> unit =
-  fun ppf symbols ->
-  fprintf ppf "@[<hov 0>";
-  let rec fold : type s tr p. _ -> (s, tr, p) ty_symbols -> unit =
-    fun sep symbols ->
-    match symbols with
-    | TNil -> ()
-    | TCns (_, symbol, symbols) ->
-      fprintf ppf "%t%a" sep print_symbol symbol;
-      fold (fun ppf -> fprintf ppf ";@ ") symbols
-  in
-  let () = fold (fun ppf -> ()) symbols in
-  fprintf ppf "@]"
-and print_level : type s. _ -> _ -> s ex_symbols list -> _ =
-  fun ppf pp_print_space rules ->
-  fprintf ppf "@[<hov 0>[ ";
-  let () =
-    Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf "%a| " pp_print_space ())
-      (fun ppf (ExS rule) -> print_rule ppf rule)
-      ppf rules
-  in
-  fprintf ppf " ]@]"
 
 let print_levels ppf elev =
   Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf "@,| ")
@@ -1167,9 +1171,10 @@ let of_sym : type s r a. (s, r, a) ty_symbol -> string = function
 
 let parser_action oact inf =
   let len = List.length oact in
+  let (inf, prodn) = inf in
   let (prod_id, ntoks, fname, lnum, char) = Option.default ("??", 0, "??", 0, 0) inf in
   if lnum <> 0 && (len = 0 || prod_id = "query_command-8") then
-    Stats.parser_action prod_id ntoks fname lnum char
+    Stats.parser_action prod_id ntoks fname lnum char prodn
   else if !Stats.print then
     (* duplicate action, don't reduce *)
     Printf.eprintf "oact len = %d\n%!" len

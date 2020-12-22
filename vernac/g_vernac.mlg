@@ -879,6 +879,7 @@ GRAMMAR EXTEND Gram
 
   command:
     [ [ IDENT "Comments"; l = LIST0 comment -> { VernacComments l }
+      | IDENT "PEntry" -> { Pcoq.Entry.print Format.std_formatter vernac_control; VernacComments [] }
 
       (* Hack! Should be in grammar_ext, but camlp5 factorizes badly *)
       | IDENT "Declare"; IDENT "Instance"; id = ident_decl; bl = binders; ":";

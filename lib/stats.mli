@@ -2,7 +2,7 @@
 open Loc
 [@@@ocaml.warning "+33"]
 
-val parser_action : string -> int -> string -> int -> int -> unit
+val parser_action : string -> int -> string -> int -> int -> string Lazy.t -> unit
 
 val lookahead : string -> string -> int -> int -> unit
 

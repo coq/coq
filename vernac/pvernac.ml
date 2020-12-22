@@ -53,7 +53,7 @@ module Vernac_ =
 
     let () =
       let act_vernac v loc =
-        Stats.parser_action "vernac" 1 __FILE__ __LINE__ 0;
+        Stats.parser_action "vernac" 1 __FILE__ __LINE__ 0 (lazy "vernac_control");
         Stats.check_stack "vernac";
         Some v in
       let act_eoi _ loc = None in

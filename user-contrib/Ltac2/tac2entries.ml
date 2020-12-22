@@ -617,7 +617,7 @@ type krule =
 
 let rec get_rule len (tok : scope_rule token list) : krule = match tok with
 | [] -> KRule (Pcoq.Rule.stop, fun k loc ->
-    Stats.parser_action "Ltac2-tactic" len "??" 0 0; k loc [])
+    Stats.parser_action "Ltac2-tactic" len "??" 0 0 (lazy ""); k loc [])
 | TacNonTerm (na, ScopeRule (scope, inj)) :: tok ->
   let KRule (rule, act) = get_rule len tok in
   let rule = Pcoq.Rule.next rule scope in
