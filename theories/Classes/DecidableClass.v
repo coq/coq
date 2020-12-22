@@ -17,6 +17,23 @@ Class Decidable (P : Prop) := {
   Decidable_spec : Decidable_witness = true <-> P
 }.
 
+Class HasDecide (P : Prop) :=
+  decide : bool.
+
+Class HasDecideSpec P `{HasDecide P} :=
+  decide_spec : decide = true <-> P.
+
+Instance Decidable__HasDecideSpec P `{HasDecideSpec P} : Decidable P := {
+  Decidable_witness := decide;
+  Decidable_spec    := decide_spec
+}.
+
+Instance HasDecide__Decidable     P `{Decidable P} : HasDecide     P :=
+  Decidable_witness.
+
+Instance HasDecideSpec__Decidable P `{Decidable P} : HasDecideSpec P :=
+  Decidable_spec.
+
 (** Alternative ways of specifying the reflection property. *)
 
 Lemma Decidable_sound : forall P (H : Decidable P),
@@ -45,8 +62,6 @@ Qed.
 
 (** The generic function that should be used to program, together with some
   useful tactics. *)
-
-Definition decide P {H : Decidable P} := Decidable_witness (Decidable:=H).
 
 Ltac _decide_ P H :=
   let b := fresh "b" in
