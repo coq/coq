@@ -19,15 +19,7 @@ open Ssrmatching_plugin
 open Ssrmatching
 
 open Ssrast
-open Ssrprinters
 open Ssrcommon
-
-let char_to_kind = function
-  | '(' -> xInParens
-  | '@' -> xWithAt
-  | ' ' -> xNoFlag
-  | 'x' -> xCpattern
-  | _ -> assert false
 
 (** Backward chaining tactics: apply, exact, congr. *)
 
@@ -35,14 +27,13 @@ let char_to_kind = function
 
 let interp_agen ist gl ((goclr, _), (k, gc as c)) (clr, rcs) =
 (* ppdebug(lazy(str"sigma@interp_agen=" ++ pr_evar_map None (project gl))); *)
-  let k = char_to_kind k in
   let rc = pf_intern_term ist gl c in
   let rcs' = rc :: rcs in
   match goclr with
   | None -> clr, rcs'
   | Some ghyps ->
     let clr' = snd (interp_hyps ist gl ghyps) @ clr in
-    if k <> xNoFlag then clr', rcs' else
+    if k <> NoFlag then clr', rcs' else
     let loc = rc.CAst.loc in
     match DAst.get rc with
     | GVar id when not_section_id id -> SsrHyp (Loc.tag ?loc id) :: clr', rcs'

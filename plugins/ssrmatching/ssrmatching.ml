@@ -37,6 +37,8 @@ open Evar_kinds
 open Constrexpr
 open Constrexpr_ops
 
+type ssrtermkind = | InParens | WithAt | NoFlag | Cpattern
+
 let errorstrm = CErrors.user_err ~hdr:"ssrmatching"
 let loc_error loc msg = CErrors.user_err ?loc ~hdr:msg (str msg)
 let ppnl = Feedback.msg_info
@@ -78,10 +80,10 @@ let skip_wschars s =
   let rec loop i = match s.[i] with '\n'..' ' -> loop (i + 1) | _ -> i in loop
 (* We also guard characters that might interfere with the ssreflect   *)
 (* tactic syntax.                                                     *)
-let guard_term ch1 s i = match s.[i] with
+let guard_term kind s i = match s.[i] with
   | '(' -> false
   | '{' | '/' | '=' -> true
-  | _ -> ch1 = '('
+  | _ -> kind = InParens
 (* The call 'guard s i' should return true if the contents of s *)
 (* starting at i need bracketing to avoid ambiguities.          *)
 let pr_guarded guard prc c =
@@ -173,7 +175,7 @@ let loc_ofCG = function
  | (_, (_, Some s), _) -> Constrexpr_ops.constr_loc s
 
 let mk_term k c ist = k, (mkRHole, Some c), ist
-let mk_lterm = mk_term ' '
+let mk_lterm = mk_term NoFlag
 
 let nf_evar sigma c =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr c))
@@ -863,7 +865,7 @@ let glob_cpattern gs p =
   match p with
   | _, (_, None), _ as x -> x
   | k, (v, Some t), _ as orig ->
-     if k = 'x' then glob_ssrterm gs ('(', (v, Some t), None) else
+     if k = Cpattern then glob_ssrterm gs (InParens, (v, Some t), None) else
      match t.CAst.v with
      | CNotation(_,(InConstrEntry,"( _ in _ )"), ([t1; t2], [], [], [])) ->
          (try match glob t1, glob t2 with
@@ -916,7 +918,7 @@ let interp_rpattern s = function
 
 let interp_rpattern0 ist gl t = Tacmach.project gl, interp_rpattern ist t
 
-type cpattern = char * Genintern.glob_constr_and_expr * Geninterp.interp_sign option
+type cpattern = ssrtermkind * Genintern.glob_constr_and_expr * Geninterp.interp_sign option
 let tag_of_cpattern = pi1
 let loc_of_cpattern = loc_ofCG
 let cpattern_of_term (c, t) ist = c, t, Some ist
@@ -978,13 +980,13 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
   let xInT x y = X_In_T(x,y) and inXInT x y = In_X_In_T(x,y) in
   let inT x = In_T x and eInXInT e x t = E_In_X_In_T(e,x,t) in
   let eAsXInT e x t = E_As_X_In_T(e,x,t) in
-  let mkG ?(k=' ') x ist = k,(x,None), ist in
+  let mkG ?(k=NoFlag) x ist = k, (x,None), ist in
   let ist_of (_,_,ist) = ist in
   let decode (_,_,ist as t) ?reccall f g =
     try match DAst.get (pf_intern_term env sigma0 t) with
     | GCast(t,CastConv c) when isGHole t && isGLambda c->
       let (x, c) = destGLambda c in
-      f x (' ',(c,None),ist)
+      f x (NoFlag,(c,None),ist)
     | GVar id
       when Option.has_some ist && let ist = Option.get ist in
            Id.Map.mem id ist.lfun &&
@@ -1255,7 +1257,7 @@ let pf_fill_occ_term gl occ t =
   cl, t
 
 let cpattern_of_id id =
-  ' ', (DAst.make @@ GRef (GlobRef.VarRef  id, None), None), Some Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })
+  NoFlag, (DAst.make @@ GRef (GlobRef.VarRef  id, None), None), Some Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })
 
 let is_wildcard ((_, (l, r), _) : cpattern) : bool = match DAst.get l, r with
   | _, Some { CAst.v = CHole _ } | GHole _, None -> true

@@ -290,7 +290,7 @@ let interp_hyps ist gl ghyps =
 
 (* Old terms *)
 let mk_term k c = k, (mkRHole, Some c)
-let mk_lterm c = mk_term xNoFlag c
+let mk_lterm c = mk_term NoFlag c
 
 (* New terms *)
 
@@ -318,9 +318,9 @@ let interp_ast_closure_term (ist : Geninterp.interp_sign) (gl : 'goal Evd.sigma)
 
 let ssrterm_of_ast_closure_term { body; annotation } =
   let c = match annotation with
-    | `Parens -> xInParens
-    | `At -> xWithAt
-    | _ -> xNoFlag in
+    | `Parens -> InParens
+    | `At -> WithAt
+    | _ -> NoFlag in
   mk_term c body
 
 let ssrdgens_of_parsed_dgens = function
@@ -926,7 +926,7 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
        CProdN (abs, force_type t)
      | CLetIn (n, v, oty, t) -> incr n_binders; CLetIn (n, v, oty, force_type t)
      | _ -> (mkCCast ty (mkCType None)).v)) ty in
-     mk_term ' ' (force_type ty) in
+     mk_term NoFlag (force_type ty) in
    let strip_cast (sigma, t) =
      let open EConstr in
      let rec aux t = match kind_of_type sigma t with
@@ -1099,7 +1099,7 @@ let hyp_of_var sigma v = SsrHyp (Loc.tag @@ EConstr.destVar sigma v)
 
 let interp_clr sigma = function
 | Some clr, (k, c)
-  when (k = xNoFlag  || k = xWithAt) && is_pf_var sigma c ->
+  when (k = NoFlag  || k = WithAt) && is_pf_var sigma c ->
    hyp_of_var sigma c :: clr
 | Some clr, _ -> clr
 | None, _ -> []
@@ -1167,7 +1167,7 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
   let cl = EConstr.of_constr cl in
   let clr = interp_clr sigma (oclr, (tag_of_cpattern t, c)) in
   if not(occur_existential sigma c) then
-    if tag_of_cpattern t = xWithAt then
+    if tag_of_cpattern t = WithAt then
       if not (EConstr.isVar sigma c) then
         errorstrm (str "@ can be used with variables only")
       else match Tacmach.pf_get_hyp gl (EConstr.destVar sigma c) with

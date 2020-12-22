@@ -20,9 +20,11 @@ open Genintern
 
 (** Pattern parsing *)
 
+type ssrtermkind = | InParens | WithAt | NoFlag | Cpattern
+
 (** The type of context patterns, the patterns of the [set] tactic and
     [:] tactical. These are patterns that identify a precise subterm. *)
-type cpattern = char * Genintern.glob_constr_and_expr * Geninterp.interp_sign option
+type cpattern = ssrtermkind * Genintern.glob_constr_and_expr * Geninterp.interp_sign option
 val pr_cpattern : cpattern -> Pp.t
 
 (** Pattern interpretation and matching *)
@@ -194,7 +196,7 @@ val pf_fill_occ_term : goal sigma -> occ -> evar_map * EConstr.t -> EConstr.t * 
 val fill_occ_term : Environ.env -> Evd.evar_map -> EConstr.t -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
 (* It may be handy to inject a simple term into the first form of cpattern *)
-val cpattern_of_term : char * glob_constr_and_expr -> Geninterp.interp_sign -> cpattern
+val cpattern_of_term : ssrtermkind * glob_constr_and_expr -> Geninterp.interp_sign -> cpattern
 
 (** Helpers to make stateful closures. Example: a [find_P] function may be
     called many times, but the pattern instantiation phase is performed only the
@@ -219,7 +221,7 @@ val pf_unify_HO : goal sigma -> EConstr.constr -> EConstr.constr -> goal sigma
 
 (** Some more low level functions needed to implement the full SSR language
     on top of the former APIs *)
-val tag_of_cpattern : cpattern -> char
+val tag_of_cpattern : cpattern -> ssrtermkind
 val loc_of_cpattern : cpattern -> Loc.t option
 val id_of_pattern : pattern -> Names.Id.t option
 val is_wildcard : cpattern -> bool
@@ -245,7 +247,7 @@ sig
   val pr_rpattern : rpattern -> Pp.t
   val mk_rpattern : (cpattern, cpattern) ssrpattern -> rpattern
   val mk_lterm : Constrexpr.constr_expr -> Geninterp.interp_sign option -> cpattern
-  val mk_term : char -> Constrexpr.constr_expr -> Geninterp.interp_sign option -> cpattern
+  val mk_term : ssrtermkind -> Constrexpr.constr_expr -> Geninterp.interp_sign option -> cpattern
 
   val glob_cpattern : Genintern.glob_sign -> cpattern -> cpattern
   val subst_ssrterm : Mod_subst.substitution -> cpattern -> cpattern

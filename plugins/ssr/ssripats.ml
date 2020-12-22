@@ -741,7 +741,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
      [A.. -> Ind] and opens new goals for [A..] as well as for the branches
      of [Ind], see the [~to_ind] argument *)
   if not(Termops.occur_existential sigma c) then
-    if Ssrmatching.tag_of_cpattern t = Ssrprinters.xWithAt then
+    if Ssrmatching.tag_of_cpattern t = Ssrmatching.WithAt then
       if not (EConstr.isVar sigma c) then
         Ssrcommon.errorstrm Pp.(str "@ can be used with variables only")
       else match Context.Named.lookup (EConstr.destVar sigma c) hyps with

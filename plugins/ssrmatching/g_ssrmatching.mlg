@@ -67,9 +67,9 @@ END
 {
 
 let input_ssrtermkind _ strm = match Util.stream_nth 0 strm with
-  | Tok.KEYWORD "(" -> '('
-  | Tok.KEYWORD "@" -> '@'
-  | _ -> ' '
+  | Tok.KEYWORD "(" -> InParens
+  | Tok.KEYWORD "@" -> WithAt
+  | _ -> NoFlag
 let ssrtermkind = Pcoq.Entry.of_parser "ssrtermkind" input_ssrtermkind
 
 }
@@ -78,8 +78,8 @@ GRAMMAR EXTEND Gram
   GLOBAL: cpattern;
   cpattern: [[ k = ssrtermkind; c = constr -> {
     let pattern = mk_term k c None in
-    if loc_of_cpattern pattern <> Some loc && k = '('
-    then mk_term 'x' c None
+    if loc_of_cpattern pattern <> Some loc && k = InParens
+    then mk_term Cpattern c None
     else pattern } ]];
 END
 
@@ -97,8 +97,8 @@ GRAMMAR EXTEND Gram
   GLOBAL: lcpattern;
   lcpattern: [[ k = ssrtermkind; c = lconstr -> {
     let pattern = mk_term k c None in
-    if loc_of_cpattern pattern <> Some loc && k = '('
-    then mk_term 'x' c None
+    if loc_of_cpattern pattern <> Some loc && k = InParens
+    then mk_term Cpattern c None
     else pattern } ]];
 END
 

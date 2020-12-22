@@ -28,16 +28,6 @@ let pp_concat hd ?(sep=str", ") = function [] -> hd | x :: xs ->
 let pp_term gl t =
   let t = Reductionops.nf_evar (project gl) t in pr_econstr_env (pf_env gl) (project gl) t
 
-(* FIXME *)
-(* terms are pre constr, the kind is parsing/printing flag to distinguish
- * between x, @x and (x). It affects automatic clear and let-in preservation.
- * Cpattern is a temporary flag that becomes InParens ASAP. *)
-(* type ssrtermkind = InParens | WithAt | NoFlag | Cpattern *)
-let xInParens = '('
-let xWithAt = '@'
-let xNoFlag = ' '
-let xCpattern = 'x'
-
 (* Term printing utilities functions for deciding bracketing.  *)
 let pr_paren prx x = hov 1 (str "(" ++ prx x ++ str ")")
 (* String lexing utilities *)
@@ -45,10 +35,10 @@ let skip_wschars s =
   let rec loop i = match s.[i] with '\n'..' ' -> loop (i + 1) | _ -> i in loop
 (* We also guard characters that might interfere with the ssreflect   *)
 (* tactic syntax.                                                     *)
-let guard_term ch1 s i = match s.[i] with
+let guard_term kind s i = match s.[i] with
   | '(' -> false
   | '{' | '/' | '=' -> true
-  | _ -> ch1 = xInParens
+  | _ -> kind = Ssrmatching_plugin.Ssrmatching.InParens
 
 (* We also guard characters that might interfere with the ssreflect   *)
 (* tactic syntax.                                                     *)

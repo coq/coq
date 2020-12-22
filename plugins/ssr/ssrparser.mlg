@@ -38,6 +38,8 @@ open Constrexpr_ops
 open Proofview
 open Proofview.Notations
 
+open Ssrmatching_plugin.Ssrmatching
+
 open Ssrprinters
 open Ssrcommon
 open Ssrtacticals
@@ -455,9 +457,9 @@ END
 (* Old kinds of terms *)
 
 let input_ssrtermkind _ strm = match Util.stream_nth 0 strm with
-  | Tok.KEYWORD "(" -> xInParens
-  | Tok.KEYWORD "@" -> xWithAt
-  | _ -> xNoFlag
+  | Tok.KEYWORD "(" -> InParens
+  | Tok.KEYWORD "@" -> WithAt
+  | _ -> NoFlag
 
 let ssrtermkind = Pcoq.Entry.of_parser "ssrtermkind" input_ssrtermkind
 
@@ -554,9 +556,9 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrbwdview;
   ssrbwdview: [
-    [  test_not_ssrslashnum; "/"; c = Pcoq.Constr.constr -> { [mk_term xNoFlag c] }
+    [  test_not_ssrslashnum; "/"; c = Pcoq.Constr.constr -> { [mk_term NoFlag c] }
     |  test_not_ssrslashnum; "/"; c = Pcoq.Constr.constr; w = ssrbwdview -> {
-                    (mk_term xNoFlag c) :: w } ]];
+                    (mk_term NoFlag c) :: w } ]];
 END
 
 (* New Views *)
@@ -2201,10 +2203,10 @@ let pr_ssrcongrarg _ _ _ ((n, f), dgens) =
 
 ARGUMENT EXTEND ssrcongrarg TYPED AS ((int * ssrterm) * ssrdgens)
   PRINTED BY { pr_ssrcongrarg }
-| [ natural(n) constr(c) ssrdgens(dgens) ] -> { (n, mk_term xNoFlag c), dgens }
-| [ natural(n) constr(c) ] -> { (n, mk_term xNoFlag c),([[]],[]) }
-| [ constr(c) ssrdgens(dgens) ] -> { (0, mk_term xNoFlag c), dgens }
-| [ constr(c) ] -> { (0, mk_term xNoFlag c), ([[]],[]) }
+| [ natural(n) constr(c) ssrdgens(dgens) ] -> { (n, mk_term NoFlag c), dgens }
+| [ natural(n) constr(c) ] -> { (n, mk_term NoFlag c),([[]],[]) }
+| [ constr(c) ssrdgens(dgens) ] -> { (0, mk_term NoFlag c), dgens }
+| [ constr(c) ] -> { (0, mk_term NoFlag c), ([[]],[]) }
 END
 
 
@@ -2260,7 +2262,7 @@ let pr_rule = function
 
 let pr_ssrrule _ _ _ = pr_rule
 
-let noruleterm loc = mk_term xNoFlag (mkCProp loc)
+let noruleterm loc = mk_term NoFlag (mkCProp loc)
 
 }
 

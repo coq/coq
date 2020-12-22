@@ -46,7 +46,11 @@ type ssrclear = ssrhyps
 type ssrdocc = ssrclear option * ssrocc
 
 (* OLD ssr terms *)
-type ssrtermkind = char (* FIXME, make algebraic *)
+(* terms are pre constr, the kind is a parsing/printing flag to distinguish
+ * between x, @x and (x). It affects automatic clear and let-in preservation. *)
+(* FIXME *)
+(* Cpattern is a temporary flag that becomes InParens ASAP. *)
+type ssrtermkind = Ssrmatching_plugin.Ssrmatching.ssrtermkind
 type ssrterm = ssrtermkind * Genintern.glob_constr_and_expr
 
 (* NEW ssr term *)
