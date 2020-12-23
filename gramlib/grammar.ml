@@ -1660,8 +1660,8 @@ module Entry = struct
       edesc = Dlevels []}
   let create = make
   let parse (e : 'a t) p : 'a =
-    Stats.set_ename e.ename;
     incr Stats.cnt;
+    Stats.set_ename e.ename;
     let print = !Stats.cnt > 1 && !Stats.print in
     if print then
       Printf.printf ">>> Entry.parse of %s %d\n%!" e.ename !Stats.cnt;

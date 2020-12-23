@@ -48,13 +48,13 @@ module Vernac_ =
     let red_expr = Entry.create "red_expr"
     let hint_info = Entry.create "hint_info"
     (* Main vernac entry *)
-    let main_entry = Entry.create "vernac"
+    let main_entry = Entry.create "main_entry"
     let noedit_mode = Entry.create "noedit_command"
 
     let () =
       let act_vernac v loc =
-        Stats.parser_action "vernac" 1 __FILE__ __LINE__ 0 (lazy "vernac_control");
-        Stats.check_stack "vernac";
+        Stats.parser_action "main_entry" 1 __FILE__ __LINE__ 0  (lazy "vernac_control");
+        Stats.check_stack "main_entry";
         Some v in
       let act_eoi _ loc = None in
       let rule = [

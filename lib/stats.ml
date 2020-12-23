@@ -86,7 +86,11 @@ let popN n0 =
 
 let ename = ref ""
 
-let set_ename name = ename := name
+let set_ename name =
+  if !enable && !cnt = 1 then begin
+    if !print then Printf.printf "set ename to %s\n" name;
+    ename := name
+  end
 
 let check_stack ntname =
   if !enable && !cnt = 1 && ntname = !ename then begin
