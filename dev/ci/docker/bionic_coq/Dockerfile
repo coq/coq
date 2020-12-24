@@ -71,3 +71,6 @@ RUN opam switch create "${COMPILER_EDGE}+flambda" && eval $(opam env) && \
     opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM $CI_OPAM
 
 RUN opam clean -a -c
+
+# set the locale for the benefit of Python
+ENV LANG C.UTF-8
