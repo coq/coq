@@ -26,6 +26,9 @@ let load_rcfile ~rcfile ~state =
       | None ->
         try
           let warn x = Feedback.msg_warning (Pp.str x) in
+          let localrc = Envars.configdir () / rcdefaultname in
+          let state = if CUnix.file_readable_p localrc then
+            Vernac.load_vernac ~echo:false ~interactive:false ~check:true ~state localrc else state in
           let inferedrc = List.find CUnix.file_readable_p [
             Envars.xdg_config_home warn / rcdefaultname^"."^Coq_config.version;
             Envars.xdg_config_home warn / rcdefaultname;
