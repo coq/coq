@@ -358,7 +358,6 @@ val intros_transitivity         : constr option -> unit Proofview.tactic
 
 (** {6 Cut tactics. } *)
 
-val assert_before_replacing: Id.t -> types -> unit Proofview.tactic
 val assert_after_replacing : Id.t -> types -> unit Proofview.tactic
 val assert_before : Name.t -> types -> unit Proofview.tactic
 val assert_after  : Name.t -> types -> unit Proofview.tactic

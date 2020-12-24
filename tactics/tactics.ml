@@ -626,7 +626,6 @@ let assert_before_gen b naming t =
   assert_before_then_gen b naming t (fun _ -> Proofview.tclUNIT ())
 
 let assert_before na = assert_before_gen false (naming_of_name na)
-let assert_before_replacing id = assert_before_gen true (NamingMustBe (CAst.make id))
 
 let replace_error_option err tac =
   match err with
