@@ -186,56 +186,60 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
   let open EConstr in
   let push prefix sign = List.fold_right push_named_context_val prefix sign in
   let push_rev prefix sign = List.fold_left (fun accu d -> push_named_context_val d accu) sign prefix in
-  let rec moverec_toleft ans first middle = function
+  let rec moverec_toleft ans first middle midvars = function
     | [] -> push middle @@ push first ans
     | d :: _ as right when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
       push_rev right @@ push middle @@ push first ans
     | d :: right ->
         let hyp = NamedDecl.get_id d in
-        let (first',middle') =
-          if List.exists (fun d2 -> occur_var_in_decl env sigma (NamedDecl.get_id d2) d) middle then
+        let (first', middle', midvars') =
+          if occur_vars_in_decl env sigma midvars d then
             if not (move_location_eq hto (MoveAfter hyp)) then
-              (first, d::middle)
+              (first, d :: middle, Id.Set.add hyp midvars)
             else
               user_err ~hdr:"move_hyp" (str "Cannot move " ++ Id.print (NamedDecl.get_id declfrom) ++
                 pr_move_location Id.print hto ++
                 str ": it occurs in the type of "
                 ++ Id.print hyp ++ str ".")
           else
-            (d::first, middle)
+            (d::first, middle, midvars)
         in
         if move_location_eq hto (MoveAfter hyp) then
           push_rev right @@ push middle' @@ push first' ans
         else
-          moverec_toleft ans first' middle' right
+          moverec_toleft ans first' middle' midvars' right
   in
-  let rec moverec_toright first middle right = match EConstr.match_named_context_val right with
+  let rec moverec_toright first middle depvars right = match EConstr.match_named_context_val right with
     | None -> push_rev first @@ push_rev middle right
     | Some (d, _, _) when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
         push_rev first @@ push_rev middle @@ right
     | Some (d, _, right) ->
         let hyp = NamedDecl.get_id d in
-        let (first',middle') =
-          if List.exists (fun d2 -> occur_var_in_decl env sigma hyp d2) middle then
+        let (first', middle', depvars') =
+          if Id.Set.mem hyp depvars then
             if not (move_location_eq hto (MoveAfter hyp)) then
-              (first, d::middle)
+              let vars = global_vars_set_of_decl env sigma d in
+              let depvars = Id.Set.union vars depvars in
+              (first, d::middle, depvars)
             else
               user_err ~hdr:"move_hyp" (str "Cannot move " ++ Id.print (NamedDecl.get_id declfrom) ++
                 pr_move_location Id.print hto ++
                 str ": it depends on "
                 ++ Id.print hyp ++ str ".")
           else
-            (d::first, middle)
+            (d::first, middle, depvars)
         in
         if move_location_eq hto (MoveAfter hyp) then
           push_rev first' @@ push_rev middle' @@ right
         else
-          moverec_toright first' middle' right
+          moverec_toright first' middle' depvars' right
   in
   if toleft then
-    moverec_toleft right [] [declfrom] left
+    let id = NamedDecl.get_id declfrom in
+    moverec_toleft right [] [declfrom] (Id.Set.singleton id) left
   else
-    let right = moverec_toright [] [declfrom] right in
+    let depvars = global_vars_set_of_decl env sigma declfrom in
+    let right = moverec_toright [] [declfrom] depvars right in
     push_rev left @@ right
 
 let move_hyp_in_named_context env sigma hfrom hto sign =

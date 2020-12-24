@@ -839,6 +839,16 @@ let occur_var env sigma id c =
   in
   try occur_rec c; false with Occur -> true
 
+let occur_vars env sigma ids c =
+  let rec occur_rec c =
+    match EConstr.destRef sigma c with
+    | gr, _ ->
+      let vars = vars_of_global env gr in
+      if not (Id.Set.is_empty (Id.Set.inter ids vars)) then raise Occur
+    | exception DestKO -> EConstr.iter sigma occur_rec c
+  in
+  try occur_rec c; false with Occur -> true
+
 exception OccurInGlobal of GlobRef.t
 
 let occur_var_indirectly env sigma id c =
@@ -852,6 +862,9 @@ let occur_var_indirectly env sigma id c =
 
 let occur_var_in_decl env sigma hyp decl =
   NamedDecl.exists (occur_var env sigma hyp) decl
+
+let occur_vars_in_decl env sigma hyps decl =
+  NamedDecl.exists (occur_vars env sigma hyps) decl
 
 let local_occur_var sigma id c =
   let rec occur c = match EConstr.kind sigma c with
