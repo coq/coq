@@ -184,11 +184,12 @@ let split_sign env sigma hfrom l =
 
 let move_hyp env sigma toleft (left,declfrom,right) hto =
   let open EConstr in
+  let push prefix sign = List.fold_right push_named_context_val prefix sign in
   let push_rev prefix sign = List.fold_left (fun accu d -> push_named_context_val d accu) sign prefix in
-  let rec moverec_toleft first middle = function
-    | [] -> List.rev first @ List.rev middle
+  let rec moverec_toleft ans first middle = function
+    | [] -> push middle @@ push first ans
     | d :: _ as right when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
-        List.rev first @ List.rev middle @ right
+      push_rev right @@ push middle @@ push first ans
     | d :: right ->
         let hyp = NamedDecl.get_id d in
         let (first',middle') =
@@ -204,9 +205,9 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
             (d::first, middle)
         in
         if move_location_eq hto (MoveAfter hyp) then
-          List.rev first' @ List.rev middle' @ right
+          push_rev right @@ push middle' @@ push first' ans
         else
-          moverec_toleft first' middle' right
+          moverec_toleft ans first' middle' right
   in
   let rec moverec_toright first middle right = match EConstr.match_named_context_val right with
     | None -> push_rev first @@ push_rev middle right
@@ -232,8 +233,7 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
           moverec_toright first' middle' right
   in
   if toleft then
-    List.fold_left (fun sign d -> push_named_context_val d sign)
-      right (moverec_toleft [] [declfrom] left)
+    moverec_toleft right [] [declfrom] left
   else
     let right = moverec_toright [] [declfrom] right in
     push_rev left @@ right
