@@ -46,7 +46,7 @@ Qed.
 (** The generic function that should be used to program, together with some
   useful tactics. *)
 
-Definition decide P {H : Decidable P} := Decidable_witness (Decidable:=H).
+Definition decide P {H : Decidable P} := @Decidable_witness _ H.
 
 Ltac _decide_ P H :=
   let b := fresh "b" in

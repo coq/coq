@@ -39,8 +39,8 @@ Definition JMeq_hom {A : Type} (x y : A) := JMeq x y.
 Register JMeq_hom as core.JMeq.hom.
 
 Lemma JMeq_sym : forall (A B:Type) (x:A) (y:B), JMeq x y -> JMeq y x.
-Proof. 
-intros; destruct H; trivial.
+Proof.
+intros A B x y H; destruct H; trivial.
 Qed.
 
 #[global]
@@ -150,7 +150,7 @@ Lemma JMeq_eq_dep :
   forall U (P:U->Type) p q (x:P p) (y:P q), 
   p = q -> JMeq x y -> eq_dep U P p x q y.
 Proof.
-intros.
+intros U P p q x y H H0.
 destruct H.
 apply JMeq_eq in H0 as ->.
 reflexivity.

@@ -1371,13 +1371,13 @@ Section S.
     destruct pol;auto.
     generalize (is_cnf_tt_inv (xcnf (negb true) f1)).
     destruct (is_cnf_tt (xcnf (negb true) f1)).
-    + intros.
+    + intros H.
       rewrite H by auto.
       reflexivity.
     +
       generalize (is_cnf_ff_inv (xcnf (negb true) f1)).
     destruct (is_cnf_ff (xcnf (negb true) f1)).
-    * intros.
+    * intros H.
       rewrite H by auto.
       unfold or_cnf_opt.
       simpl.

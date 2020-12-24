@@ -637,13 +637,13 @@ Qed.
 
 Lemma Qmult_1_l : forall n, 1*n == n.
 Proof.
-  intro; red; simpl; destruct (Qnum n); auto.
+  intro n; red; simpl; destruct (Qnum n); auto.
 Qed.
 
 Theorem Qmult_1_r : forall n, n*1==n.
 Proof.
-  intro; red; simpl.
-  rewrite Z.mul_1_r with (n := Qnum n).
+  intro n; red; simpl.
+  rewrite (Z.mul_1_r (Qnum n)).
   rewrite Pos.mul_comm; simpl; trivial.
 Qed.
 
@@ -709,7 +709,7 @@ Qed.
 Theorem Qmult_inv_r : forall x, ~ x == 0 -> x*(/x) == 1.
 Proof.
   intros (x1, x2); unfold Qeq, Qdiv, Qmult; case x1; simpl;
-    intros; simpl_mult; try ring.
+    intros H **; simpl_mult; try ring.
   elim H; auto.
 Qed.
 
@@ -722,7 +722,7 @@ Qed.
 
 Theorem Qdiv_mult_l : forall x y, ~ y == 0 -> (x*y)/y == x.
 Proof.
-  intros; unfold Qdiv.
+  intros x y H; unfold Qdiv.
   rewrite <- (Qmult_assoc x y (Qinv y)).
   rewrite (Qmult_inv_r y H).
   apply Qmult_1_r.
@@ -730,7 +730,7 @@ Qed.
 
 Theorem Qmult_div_r : forall x y, ~ y == 0 -> y*(x/y) == x.
 Proof.
-  intros; unfold Qdiv.
+  intros x y ?; unfold Qdiv.
   rewrite (Qmult_assoc y x (Qinv y)).
   rewrite (Qmult_comm y x).
   fold (Qdiv (Qmult x y) y).
@@ -845,7 +845,7 @@ Qed.
 
 Lemma Qlt_trans : forall x y z, x<y -> y<z -> x<z.
 Proof.
-  intros.
+  intros x y z ? ?.
   apply Qle_lt_trans with y; auto.
   apply Qlt_le_weak; auto.
 Qed.
@@ -877,19 +877,19 @@ Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le
 
 Lemma Q_dec : forall x y, {x<y} + {y<x} + {x==y}.
 Proof.
-  unfold Qlt, Qle, Qeq; intros.
+  unfold Qlt, Qle, Qeq; intros x y.
   exact (Z_dec' (Qnum x * QDen y) (Qnum y * QDen x)).
 Defined.
 
 Lemma Qlt_le_dec : forall x y, {x<y} + {y<=x}.
 Proof.
-  unfold Qlt, Qle; intros.
+  unfold Qlt, Qle; intros x y.
   exact (Z_lt_le_dec (Qnum x * QDen y) (Qnum y * QDen x)).
 Defined.
 
 Lemma Qarchimedean : forall q : Q, { p : positive | q < Z.pos p # 1 }.
 Proof.
-  intros. destruct q as [a b]. destruct a.
+  intros q. destruct q as [a b]. destruct a as [|p|p].
   - exists xH. reflexivity.
   - exists (p+1)%positive. apply (Z.lt_le_trans _ (Z.pos (p+1))).
     simpl. rewrite Pos.mul_1_r.
@@ -1169,12 +1169,12 @@ Qed.
 Lemma Qinv_lt_contravar : forall a b : Q,
     0 < a -> 0 < b -> (a < b <-> /b < /a).
 Proof.
-  intros. split.
-  - intro. rewrite <- Qmult_1_l. apply Qlt_shift_div_r. apply H0.
+  intros a b H H0. split.
+  - intro H1. rewrite <- Qmult_1_l. apply Qlt_shift_div_r. apply H0.
     rewrite <- (Qmult_inv_r a). rewrite Qmult_comm.
     apply Qmult_lt_l. apply Qinv_lt_0_compat.  apply H.
     apply H1. intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
-  - intro. rewrite <- (Qinv_involutive b). rewrite <- (Qmult_1_l (// b)).
+  - intro H1. rewrite <- (Qinv_involutive b). rewrite <- (Qmult_1_l (// b)).
     apply Qlt_shift_div_l. apply Qinv_lt_0_compat. apply H0.
     rewrite <- (Qmult_inv_r a). apply Qmult_lt_l. apply H.
     apply H1. intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
@@ -1190,7 +1190,7 @@ Instance Qpower_positive_comp : Proper (Qeq==>eq==>Qeq) Qpower_positive.
 Proof.
 intros x x' Hx y y' Hy. rewrite <-Hy; clear y' Hy.
 unfold Qpower_positive.
-induction y; simpl;
+induction y as [y IHy|y IHy|]; simpl;
 try rewrite IHy;
 try rewrite Hx;
 reflexivity.

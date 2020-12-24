@@ -29,13 +29,13 @@ case diff_true_false; trivial with bool.
 Qed.
 
 Lemma IfProp_true : forall A B:Prop, IfProp A B true -> A.
-intros.
+intros A B H.
 inversion H.
 assumption.
 Qed.
 
 Lemma IfProp_false : forall A B:Prop, IfProp A B false -> B.
-intros.
+intros A B H.
 inversion H.
 assumption.
 Qed.
@@ -45,7 +45,7 @@ destruct 1; auto with bool.
 Qed.
 
 Lemma IfProp_sum : forall (A B:Prop) (b:bool), IfProp A B b -> {A} + {B}.
-destruct b; intro H.
+intros A B b; destruct b; intro H.
 - left; inversion H; auto with bool.
 - right; inversion H; auto with bool.
 Qed.

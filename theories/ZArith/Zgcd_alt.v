@@ -58,9 +58,9 @@ Open Scope Z_scope.
  Lemma Zgcdn_pos : forall n a b,
    0 <= Zgcdn n a b.
  Proof.
-   induction n.
+   intros n; induction n.
    simpl; auto with zarith.
-   destruct a; simpl; intros; auto with zarith; auto.
+   intros a; destruct a; simpl; intros; auto with zarith; auto.
  Qed.
 
  Lemma Zgcd_alt_pos : forall a b, 0 <= Zgcd_alt a b.
@@ -75,9 +75,9 @@ Open Scope Z_scope.
  Lemma Zgcdn_linear_bound : forall n a b,
    Z.abs a < Z.of_nat n -> Zis_gcd a b (Zgcdn n a b).
  Proof.
-   induction n.
+   intros n; induction n as [|n IHn].
    intros; lia.
-   destruct a; intros; simpl;
+   intros a; destruct a as [|p|p]; intros b H; simpl;
      [ generalize (Zis_gcd_0_abs b); intuition | | ];
    unfold Z.modulo;
    generalize (Z_div_mod b (Zpos p) (eq_refl Gt));
@@ -106,7 +106,7 @@ Open Scope Z_scope.
  Lemma fibonacci_pos : forall n, 0 <= fibonacci n.
  Proof.
    enough (forall N n, (n<N)%nat -> 0<=fibonacci n) by eauto.
-   induction N. intros; lia.
+   intros N; induction N as [|N IHN]. intros; lia.
    intros [ | [ | n ] ]. 1-2: simpl; lia.
    intros.
    change (0 <= fibonacci (S n) + fibonacci n).
@@ -116,11 +116,11 @@ Open Scope Z_scope.
  Lemma fibonacci_incr :
    forall n m, (n<=m)%nat -> fibonacci n <= fibonacci m.
  Proof.
-   induction 1.
+   induction 1 as [|m H IH].
    auto with zarith.
    apply Z.le_trans with (fibonacci m); auto.
    clear.
-   destruct m.
+   destruct m as [|m].
    simpl; auto with zarith.
    change (fibonacci (S m) <= fibonacci (S m)+fibonacci m).
    generalize (fibonacci_pos m); lia.
@@ -137,10 +137,10 @@ Open Scope Z_scope.
    fibonacci (S n) <= a /\
    fibonacci (S (S n)) <= b.
  Proof.
-   induction n.
+   intros n; induction n as [|n IHn].
    intros [|a|a]; intros; simpl; lia.
    intros [|a|a] b (Ha,Ha'); [simpl; lia | | easy ].
-   remember (S n) as m.
+   remember (S n) as m eqn:Heqm.
    rewrite Heqm at 2. simpl Zgcdn.
    unfold Z.modulo; generalize (Z_div_mod b (Zpos a) eq_refl).
    destruct (Z.div_eucl b (Zpos a)) as (q,r).
@@ -171,19 +171,19 @@ Open Scope Z_scope.
    0 < a < b -> a < fibonacci (S n) ->
    Zis_gcd a b (Zgcdn n a b).
  Proof.
-   destruct a. 1,3 : intros; lia.
+   intros n a; destruct a as [|p|p]. 1,3 : intros; lia.
    cut (forall k n b,
      k = (S (Pos.to_nat p) - n)%nat ->
      0 < Zpos p < b -> Zpos p < fibonacci (S n) ->
      Zis_gcd (Zpos p) b (Zgcdn n (Zpos p) b)).
    destruct 2; eauto.
-   clear n; induction k.
+   clear n; intros k; induction k as [|k IHk].
    intros.
    apply Zgcdn_linear_bound.
    lia.
-   intros.
-   generalize (Zgcdn_worst_is_fibonacci n (Zpos p) b H0); intros.
-   assert (Zis_gcd (Zpos p) b (Zgcdn (S n) (Zpos p) b)).
+   intros n b H H0 H1.
+   generalize (Zgcdn_worst_is_fibonacci n (Zpos p) b H0); intros H2.
+   assert (Zis_gcd (Zpos p) b (Zgcdn (S n) (Zpos p) b)) as H3.
    apply IHk; auto.
    lia.
    replace (fibonacci (S (S n))) with (fibonacci (S n)+fibonacci n) by auto.
@@ -197,13 +197,13 @@ Open Scope Z_scope.
  Lemma Zgcd_bound_fibonacci :
    forall a, 0 < a -> a < fibonacci (Zgcd_bound a).
  Proof.
-   destruct a; [lia| | intro H; discriminate].
+   intros a; destruct a as [|p|p]; [lia| | intro H; discriminate].
    intros _.
-   induction p; [ | | compute; auto ];
+   induction p as [p IHp|p IHp|]; [ | | compute; auto ];
     simpl Zgcd_bound in *;
     rewrite plus_comm; simpl plus;
     set (n:= (Pos.size_nat p+Pos.size_nat p)%nat) in *; simpl;
-    assert (n <> O) by (unfold n; destruct p; simpl; auto).
+    assert (n <> O) as H by (unfold n; destruct p; simpl; auto).
 
    destruct n as [ |m]; [elim H; auto| ].
    generalize (fibonacci_pos m); rewrite Pos2Z.inj_xI; lia.
@@ -229,11 +229,11 @@ Open Scope Z_scope.
  Lemma Zgcdn_is_gcd_pos n a b : (Zgcd_bound (Zpos a) <= n)%nat ->
    Zis_gcd (Zpos a) b (Zgcdn n (Zpos a) b).
  Proof.
-  intros.
+  intros H.
   generalize (Zgcd_bound_fibonacci (Zpos a)).
   simpl Zgcd_bound in *.
-  remember (Pos.size_nat a+Pos.size_nat a)%nat as m.
-  assert (1 < m)%nat.
+  remember (Pos.size_nat a+Pos.size_nat a)%nat as m eqn:Heqm.
+  assert (1 < m)%nat as H0.
   { rewrite Heqm; destruct a; simpl; rewrite 1?plus_comm;
     auto with arith. }
   destruct m as [ |m]; [inversion H0; auto| ].

@@ -226,7 +226,7 @@ Proof.
   apply Z.lt_le_trans with (1:= H5); auto with zarith.
   apply Zpower_le_monotone; auto with zarith.
   rewrite Zplus_mod; auto with zarith.
-  rewrite -> Zmod_small with (a := t); auto with zarith.
+  rewrite -> (Zmod_small t); auto with zarith.
   apply Zmod_small; auto with zarith.
   split; auto with zarith.
   assert (0 <= 2 ^a * r); auto with zarith.
@@ -489,15 +489,15 @@ Definition cast i j :=
 
 Lemma cast_refl : forall i, cast i i = Some (fun P H => H).
 Proof.
- unfold cast;intros.
+ unfold cast;intros i.
  generalize (eqb_correct i i).
- rewrite eqb_refl;intros.
+ rewrite eqb_refl;intros e.
  rewrite (Eqdep_dec.eq_proofs_unicity eq_dec (e (eq_refl true)) (eq_refl i));trivial.
 Qed.
 
 Lemma cast_diff : forall i j, i =? j = false -> cast i j = None.
 Proof.
- intros;unfold cast;intros; generalize (eqb_correct i j).
+ intros i j H;unfold cast;intros; generalize (eqb_correct i j).
  rewrite H;trivial.
 Qed.
 
@@ -509,15 +509,15 @@ Definition eqo i j :=
 
 Lemma eqo_refl : forall i, eqo i i = Some (eq_refl i).
 Proof.
- unfold eqo;intros.
+ unfold eqo;intros i.
  generalize (eqb_correct i i).
- rewrite eqb_refl;intros.
+ rewrite eqb_refl;intros e.
  rewrite (Eqdep_dec.eq_proofs_unicity eq_dec (e (eq_refl true)) (eq_refl i));trivial.
 Qed.
 
 Lemma eqo_diff : forall i j, i =? j = false -> eqo i j = None.
 Proof.
- unfold eqo;intros; generalize (eqb_correct i j).
+ unfold eqo;intros i j H; generalize (eqb_correct i j).
  rewrite H;trivial.
 Qed.
 
@@ -651,7 +651,7 @@ Proof.
  apply Zgcdn_is_gcd.
  unfold Zgcd_bound.
  generalize (to_Z_bounded b).
- destruct φ b.
+ destruct φ b as [|p|p].
  unfold size; auto with zarith.
  intros (_,H).
  cut (Psize p <= size)%nat; [ lia | rewrite <- Zpower2_Psize; auto].
@@ -727,7 +727,7 @@ Proof.
      replace ((φ m + φ n) mod wB)%Z with ((((φ m + φ n) - wB) + wB) mod wB)%Z.
      rewrite -> Zplus_mod, Z_mod_same_full, Zplus_0_r, !Zmod_small; auto with zarith.
      rewrite !Zmod_small; auto with zarith.
-     apply f_equal2 with (f := Zmod); auto with zarith.
+     apply (f_equal2 Zmod); auto with zarith.
    case_eq (n <=? m + n)%int63; auto.
    rewrite leb_spec, H1; auto with zarith.
  assert (H1: (φ (m + n)  = φ m + φ n)%Z).
@@ -805,7 +805,7 @@ Lemma lsl_add_distr x y n: (x + y) << n = ((x << n) + (y << n))%int63.
 Proof.
  apply to_Z_inj; rewrite -> !lsl_spec, !add_spec, Zmult_mod_idemp_l.
  rewrite -> !lsl_spec, <-Zplus_mod.
- apply f_equal2 with (f := Zmod); auto with zarith.
+ apply (f_equal2 Zmod); auto with zarith.
 Qed.
 
 Lemma lsr_M_r x i (H: (digits <=? i = true)%int63) : x >> i = 0%int63.
@@ -973,14 +973,14 @@ Proof.
  case H2; intros _ H3; case (Zle_or_lt φ i φ j); intros F2.
    2: generalize (H3 F2); discriminate.
  clear H2 H3.
- apply f_equal with (f := negb).
- apply f_equal with (f := is_zero).
+ apply (f_equal negb).
+ apply (f_equal is_zero).
  apply to_Z_inj.
  rewrite -> !lsl_spec, !lsr_spec, !lsl_spec.
  pattern wB at 2 3; replace wB with (2^(1+ φ (digits - 1))); auto.
  rewrite -> Zpower_exp, Z.pow_1_r; auto with zarith.
  rewrite !Zmult_mod_distr_r.
- apply f_equal2 with (f := Zmult); auto.
+ apply (f_equal2 Zmult); auto.
  replace wB with (2^ d); auto with zarith.
  replace d with ((d - φ i) + φ i)%Z by ring.
  case (to_Z_bounded i); intros  H1i H2i.
@@ -1078,8 +1078,8 @@ Proof.
  2: generalize (Hn 0%int63); do 2 case bit; auto; intros [ ]; auto.
  rewrite lsl_add_distr.
  rewrite (bit_split x) at 1; rewrite (bit_split y) at 1.
- rewrite <-!add_assoc; apply f_equal2 with (f := add); auto.
- rewrite add_comm, <-!add_assoc; apply f_equal2 with (f := add); auto.
+ rewrite <-!add_assoc; apply (f_equal2 add); auto.
+ rewrite add_comm, <-!add_assoc; apply (f_equal2 add); auto.
  rewrite add_comm; auto.
  intros Heq.
  generalize (add_le_r x y); rewrite Heq, lor_le; intro Hb.
@@ -1360,7 +1360,7 @@ Lemma sqrt2_step_def rec ih il j:
     else j
    else j.
 Proof.
- unfold sqrt2_step; case diveucl_21; intros;simpl.
+ unfold sqrt2_step; case diveucl_21; intros i j';simpl.
  case (j +c i);trivial.
 Qed.
 
@@ -1390,7 +1390,7 @@ Proof.
  assert (W1:= to_Z_bounded a1).
  assert (W2:= to_Z_bounded a2).
  assert (Wb:= to_Z_bounded b).
- assert (φ b>0) by (auto with zarith).
+ assert (φ b>0) as H by (auto with zarith).
  generalize (Z_div_mod (φ a1*wB+φ a2) φ b H).
  revert W.
  destruct (diveucl_21 a1 a2 b); destruct (Z.div_eucl (φ a1*wB+φ a2) φ b).
