@@ -170,9 +170,9 @@ let move_location_eq m1 m2 = match m1, m2 with
 | _ -> false
 
 let split_sign env sigma hfrom hto l =
-  let rec splitrec left toleft = function
-    | [] -> error_no_such_hypothesis env sigma hfrom
-    | d :: right ->
+  let rec splitrec left toleft sign = match EConstr.match_named_context_val sign with
+    | None -> error_no_such_hypothesis env sigma hfrom
+    | Some (d, _, right) ->
         let hyp = NamedDecl.get_id d in
         if Id.equal hyp hfrom then
           (left,right,d, toleft || move_location_eq hto MoveLast)
@@ -225,11 +225,10 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
   in
   let open EConstr in
   if toleft then
-    let right =
-      List.fold_right push_named_context_val right empty_named_context_val in
     List.fold_left (fun sign d -> push_named_context_val d sign)
       right (moverec [] [declfrom] left)
   else
+    let right = named_context_of_val right in
     let right =
       List.fold_right push_named_context_val
         (moverec [] [declfrom] right) empty_named_context_val in
@@ -237,14 +236,12 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
       right left
 
 let move_hyp_in_named_context env sigma hfrom hto sign =
-  let open EConstr in
   let (left,right,declfrom,toleft) =
-    split_sign env sigma hfrom hto (named_context_of_val sign) in
+    split_sign env sigma hfrom hto sign in
   move_hyp env sigma toleft (left,declfrom,right) hto
 
 let insert_decl_in_named_context env sigma decl hto sign =
-  let open EConstr in
-  move_hyp env sigma false ([],decl,named_context_of_val sign) hto
+  move_hyp env sigma false ([],decl,sign) hto
 
 (**********************************************************************)
 
