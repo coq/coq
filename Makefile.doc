@@ -101,7 +101,7 @@ full-stdlib: \
   doc/stdlib/html/index.html doc/stdlib/FullLibrary.ps doc/stdlib/FullLibrary.pdf
 
 sphinx-clean:
-	rm -rf $(SPHINXBUILDDIR)
+	rm -rf $(SPHINXBUILDDIR) doc/sphinx/index.rst doc/sphinx/zebibliography.rst
 
 .PHONY: plugin-tutorial
 plugin-tutorial: states tools
