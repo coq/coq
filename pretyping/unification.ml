@@ -1779,6 +1779,7 @@ let keyed_unify env evd kop =
 let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   let bestexn = ref None in
   let kop = Keys.constr_key (fun c -> EConstr.kind evd c) op in
+  let opgnd = if occur_meta_or_undefined_evar evd op then NotGround else Ground in
   let rec matchrec cl =
     let cl = strip_outer_cast evd cl in
     (try
@@ -1788,7 +1789,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
            let f1, l1 = decompose_app_vect evd op in
            let f2, l2 = decompose_app_vect evd cl in
            w_typed_unify_array env evd flags f1 l1 f2 l2,cl
-         else w_typed_unify env evd CONV flags (op, Unknown) (cl, Unknown),cl
+         else w_typed_unify env evd CONV flags (op, opgnd) (cl, Unknown),cl
        with ex when Pretype_errors.unsatisfiable_exception ex ->
             bestexn := Some ex; user_err Pp.(str "Unsat"))
        else user_err Pp.(str "Bound 1")
@@ -1883,11 +1884,12 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
       else bind (f a.(i)) (ffail (i+1))
     in ffail 0
   in
+  let opgnd = if occur_meta_or_undefined_evar evd op then NotGround else Ground in
   let rec matchrec cl =
     let cl = strip_outer_cast evd cl in
       (bind
           (if closed0 evd cl
-          then return (fun () -> w_typed_unify env evd CONV flags (op, Unknown) (cl, Unknown),cl)
+          then return (fun () -> w_typed_unify env evd CONV flags (op, opgnd) (cl, Unknown),cl)
             else fail "Bound 1")
           (match EConstr.kind evd cl with
             | App (f,args) ->
