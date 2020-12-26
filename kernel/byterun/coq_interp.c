@@ -551,7 +551,7 @@ value coq_interprete
       CHECK_STACK(0);
       /* We also check for signals */
 #if OCAML_VERSION >= 41000
-      {
+      if (caml_something_to_do) {
         value res = caml_process_pending_actions_exn();
         if (Is_exception_result(res)) {
           /* If there is an asynchronous exception, we reset the vm */
