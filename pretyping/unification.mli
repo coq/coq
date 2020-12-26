@@ -116,13 +116,3 @@ val unify_0 :            Environ.env ->
            types ->
            types ->
            subst0
-
-val unify_0_with_initial_metas :
-           subst0 ->
-           bool ->
-           Environ.env ->
-           Evd.conv_pb ->
-           core_unify_flags ->
-           types ->
-           types ->
-           subst0

@@ -698,6 +698,16 @@ let careful_infer_conv ~pb ~ts env sigma m n =
       (fun sigma -> infer_conv ~pb ~ts env sigma m n)
   else infer_conv ~pb ~ts env sigma m n
 
+type maybe_ground = Ground | NotGround | Unknown
+
+let error_cannot_unify_local env sigma (m, n, p) =
+  error_cannot_unify_local env sigma (fst m, fst n, p)
+
+let fast_occur_meta_or_undefined_evar sigma (c, gnd) = match gnd with
+| Unknown -> occur_meta_or_undefined_evar sigma c
+| Ground -> false
+| NotGround -> true
+
 let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb opt ((sigma,metasubst,evarsubst) as substn : subst0) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
@@ -795,7 +805,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
                  else Evd.set_eq_sort curenv sigma s1 s2
                in (sigma', metasubst, evarsubst)
              with e when CErrors.noncritical e ->
-               error_cannot_unify curenv sigma (m,n))
+               error_cannot_unify curenv sigma (fst m,fst n))
 
         | Lambda (na,t1,c1), Lambda (__,t2,c2) ->
             unirec_rec (push (na,t1) curenvnb) CONV {opt with at_top = true}
@@ -965,7 +975,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
               modulo_delta = TransparentState.full;
               modulo_eta = true;
               modulo_betaiota = true }
-            ty1 ty2
+            (ty1, Unknown) (ty2, Unknown)
       with RetypeError _ -> substn
 
   and unify_not_same_head curenvnb pb opt (sigma, metas, evars as substn : subst0) cM cN =
@@ -1133,10 +1143,12 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   try
   let res =
     if subterm_restriction opt flags ||
-      occur_meta_or_undefined_evar sigma m || occur_meta_or_undefined_evar sigma n
+      fast_occur_meta_or_undefined_evar sigma m || fast_occur_meta_or_undefined_evar sigma n
     then
       None
     else
+      let (m, _) = m in
+      let (n, _) = n in
       let ans = match flags.modulo_conv_on_closed_terms with
         | Some convflags -> careful_infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
         | _ -> constr_cmp cv_pb env sigma flags m n in
@@ -1152,7 +1164,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   in
     let a = match res with
     | Some sigma -> sigma, ms, es
-    | None -> unirec_rec (env,0) cv_pb opt subst m n in
+    | None -> unirec_rec (env,0) cv_pb opt subst (fst m) (fst n) in
     if debug_unification () then Feedback.msg_debug (str "Leaving unification with success");
     a
   with e ->
@@ -1160,7 +1172,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     if debug_unification () then Feedback.msg_debug (str "Leaving unification with failure");
     Exninfo.iraise e
 
-let unify_0 env sigma = unify_0_with_initial_metas (sigma,[],[]) true env
+let unify_0 env sigma pb flags c1 c2 =
+  unify_0_with_initial_metas (sigma,[],[]) true env pb flags (c1, Unknown) (c2, Unknown)
 
 let left = true
 let right = false
@@ -1494,13 +1507,13 @@ let check_types env flags (sigma,_,_ as subst) m n =
   if isEvar_or_Meta sigma (head_app env sigma m) then
     unify_0_with_initial_metas subst true env CUMUL
       flags
-      (get_type_of env sigma n)
-      (get_type_of env sigma m)
+      (get_type_of env sigma n, Unknown)
+      (get_type_of env sigma m, Unknown)
   else if isEvar_or_Meta sigma (head_app env sigma n) then
     unify_0_with_initial_metas subst true env CUMUL
       flags
-      (get_type_of env sigma m)
-      (get_type_of env sigma n)
+      (get_type_of env sigma m, Unknown)
+      (get_type_of env sigma n, Unknown)
   else subst
 
 let try_resolve_typeclasses env evd flag m n =
@@ -1511,7 +1524,7 @@ let try_resolve_typeclasses env evd flag m n =
 
 let w_unify_core_0 env evd with_types cv_pb flags m n =
   let (mc1,evd') = retract_coercible_metas evd in
-  let (sigma,ms,es) = check_types env (set_flags_for_type flags.core_unify_flags) (evd',mc1,[]) m n in
+  let (sigma,ms,es) = check_types env (set_flags_for_type flags.core_unify_flags) (evd',mc1,[]) (fst m) (fst n) in
   let subst2 =
      unify_0_with_initial_metas (sigma,ms,es) false env cv_pb
        flags.core_unify_flags m n
@@ -1524,7 +1537,7 @@ let w_typed_unify env evd = w_unify_core_0 env evd true
 let w_typed_unify_array env evd flags f1 l1 f2 l2 =
   let f1,l1,f2,l2 = adjust_app_array_size f1 l1 f2 l2 in
   let (mc1,evd') = retract_coercible_metas evd in
-  let fold_subst subst m n = unify_0_with_initial_metas subst true env CONV flags.core_unify_flags  m n in
+  let fold_subst subst m n = unify_0_with_initial_metas subst true env CONV flags.core_unify_flags (m, Unknown) (n, Unknown) in
   let subst = fold_subst (evd', [], []) f1 f2 in
   let subst = Array.fold_left2 fold_subst subst l1 l2 in
   let evd = w_merge env true flags.merge_unify_flags subst in
@@ -1611,6 +1624,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
         restrict_conv_on_strict_subterms = true } }
     else default_matching_flags pending in
   let n = Array.length (snd (decompose_app_vect sigma c)) in
+  let cgnd = if occur_meta_or_undefined_evar sigma c then NotGround else Ground in
   let matching_fun _ t =
     try
       let t',l2 =
@@ -1624,7 +1638,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
           else
             applist (t,l1), l2
         else t, [] in
-      let sigma = w_typed_unify env sigma Reduction.CONV flags c t' in
+      let sigma = w_typed_unify env sigma Reduction.CONV flags (c, cgnd) (t', Unknown) in
       let ty = Retyping.get_type_of env sigma t in
       if not (is_correct_type ty) then raise (NotUnifiable None);
       Some(sigma, t, l2)
@@ -1774,7 +1788,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
            let f1, l1 = decompose_app_vect evd op in
            let f2, l2 = decompose_app_vect evd cl in
            w_typed_unify_array env evd flags f1 l1 f2 l2,cl
-         else w_typed_unify env evd CONV flags op cl,cl
+         else w_typed_unify env evd CONV flags (op, Unknown) (cl, Unknown),cl
        with ex when Pretype_errors.unsatisfiable_exception ex ->
             bestexn := Some ex; user_err Pp.(str "Unsat"))
        else user_err Pp.(str "Bound 1")
@@ -1873,7 +1887,7 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
     let cl = strip_outer_cast evd cl in
       (bind
           (if closed0 evd cl
-          then return (fun () -> w_typed_unify env evd CONV flags op cl,cl)
+          then return (fun () -> w_typed_unify env evd CONV flags (op, Unknown) (cl, Unknown),cl)
             else fail "Bound 1")
           (match EConstr.kind evd cl with
             | App (f,args) ->
@@ -2052,7 +2066,7 @@ let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
                       raise ex)
 
       (* General case: try first order *)
-      | _ -> w_typed_unify env evd cv_pb flags ty1 ty2
+      | _ -> w_typed_unify env evd cv_pb flags (ty1, Unknown) (ty2, Unknown)
 
 (* Profiling *)
 
