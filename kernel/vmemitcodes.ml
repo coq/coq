@@ -135,6 +135,16 @@ let out env opcode =
 
 let is_immed i = Uint63.le (Uint63.of_int i) Uint63.maxuint31
 
+(* Detect whether the current value of the accu register is no longer
+   needed (i.e., the register is written before being read). If so, the
+   register can be used freely; no need to save and restore it. *)
+let is_accu_dead = function
+  | [] -> false
+  | c :: _ ->
+      match c with
+      | Kacc _ | Kenvacc _ | Kconst _ | Koffsetclosure _ | Kgetglobal _ -> true
+      | _ -> false
+
 let out_int env n =
   out_word env n (n asr 8) (n asr 16) (n asr 24)
 
@@ -399,6 +409,9 @@ let rec emit env insns remaining = match insns with
   | Kpush :: Kconst const :: c ->
       out env opPUSHGETGLOBAL; slot_for_const env const;
       emit env c remaining
+  | Kpushfields 1 :: c when is_accu_dead c ->
+      out env opGETFIELD0;
+      emit env (Kpush :: c) remaining
   | Kpop n :: Kjump :: c ->
       out env opRETURN; out_int env n; emit env c remaining
   | Ksequence c1 :: c ->
