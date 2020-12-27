@@ -338,10 +338,6 @@ value coq_interprete
         print_instr("PUSH");
         *--sp = accu; Next;
       }
-      Instruct(PUSHACC0) {
-        print_instr("PUSHACC0");
-        *--sp = accu; Next;
-      }
       Instruct(PUSHACC1){
         print_instr("PUSHACC1");
         *--sp = accu; accu = sp[1]; Next;

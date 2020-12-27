@@ -31,7 +31,8 @@ int arity[STOP+1];
 void init_arity () {
   /* instruction with zero operand */
   arity[ACC0]=arity[ACC1]=arity[ACC2]=arity[ACC3]=arity[ACC4]=arity[ACC5]=
-    arity[ACC6]=arity[ACC7]=arity[PUSH]=arity[PUSHACC0]=arity[PUSHACC1]=
+    arity[ACC6]=arity[ACC7]=
+    arity[PUSH]=arity[PUSHACC1]=
     arity[PUSHACC2]=arity[PUSHACC3]=arity[PUSHACC4]=arity[PUSHACC5]=
     arity[PUSHACC6]=arity[PUSHACC7]=
     arity[ENVACC0]=arity[ENVACC1]=arity[ENVACC2]=arity[ENVACC3]=

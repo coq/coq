@@ -28,7 +28,6 @@ let opcodes =
     "ACC7";
     "ACC";
     "PUSH";
-    "PUSHACC0";
     "PUSHACC1";
     "PUSHACC2";
     "PUSHACC3";
