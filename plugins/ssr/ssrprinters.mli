@@ -24,11 +24,6 @@ val pp_concat :
   Pp.t ->
   ?sep:Pp.t -> Pp.t list -> Pp.t
 
-val xInParens : ssrtermkind
-val xWithAt : ssrtermkind
-val xNoFlag : ssrtermkind
-val xCpattern : ssrtermkind
-
 val pr_clear : (unit -> Pp.t) -> ssrclear -> Pp.t
 val pr_clear_ne : ssrclear -> Pp.t
 val pr_dir : ssrdir -> Pp.t

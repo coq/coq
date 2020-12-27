@@ -20,16 +20,15 @@ open Genintern
 
 (** Pattern parsing *)
 
+type ssrtermkind = | InParens | WithAt | NoFlag | Cpattern
+
 (** The type of context patterns, the patterns of the [set] tactic and
     [:] tactical. These are patterns that identify a precise subterm. *)
-type cpattern
+type cpattern =
+  { kind : ssrtermkind
+  ; pattern : Genintern.glob_constr_and_expr
+  ; interpretation : Geninterp.interp_sign option }
 val pr_cpattern : cpattern -> Pp.t
-
-(** The type of rewrite patterns, the patterns of the [rewrite] tactic.
-    These patterns also include patterns that identify all the subterms
-    of a context (i.e. "in" prefix) *)
-type rpattern
-val pr_rpattern : rpattern -> Pp.t
 
 (** Pattern interpretation and matching *)
 
@@ -47,6 +46,12 @@ type ('ident, 'term) ssrpattern =
 
 type pattern = evar_map * (constr, constr) ssrpattern
 val pp_pattern : env -> pattern -> Pp.t
+
+(** The type of rewrite patterns, the patterns of the [rewrite] tactic.
+    These patterns also include patterns that identify all the subterms
+    of a context (i.e. "in" prefix) *)
+type rpattern = (cpattern, cpattern) ssrpattern
+val pr_rpattern : rpattern -> Pp.t
 
 (** Extracts the redex and applies to it the substitution part of the pattern.
   @raise Anomaly if called on [In_T] or [In_X_In_T] *)
@@ -193,9 +198,6 @@ val pf_fill_occ_term : goal sigma -> occ -> evar_map * EConstr.t -> EConstr.t * 
 
 val fill_occ_term : Environ.env -> Evd.evar_map -> EConstr.t -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
-(* It may be handy to inject a simple term into the first form of cpattern *)
-val cpattern_of_term : char * glob_constr_and_expr -> Geninterp.interp_sign -> cpattern
-
 (** Helpers to make stateful closures. Example: a [find_P] function may be
     called many times, but the pattern instantiation phase is performed only the
     first time. The corresponding [conclude] has to return the instantiated
@@ -219,7 +221,7 @@ val pf_unify_HO : goal sigma -> EConstr.constr -> EConstr.constr -> goal sigma
 
 (** Some more low level functions needed to implement the full SSR language
     on top of the former APIs *)
-val tag_of_cpattern : cpattern -> char
+val tag_of_cpattern : cpattern -> ssrtermkind
 val loc_of_cpattern : cpattern -> Loc.t option
 val id_of_pattern : pattern -> Names.Id.t option
 val is_wildcard : cpattern -> bool
@@ -245,7 +247,7 @@ sig
   val pr_rpattern : rpattern -> Pp.t
   val mk_rpattern : (cpattern, cpattern) ssrpattern -> rpattern
   val mk_lterm : Constrexpr.constr_expr -> Geninterp.interp_sign option -> cpattern
-  val mk_term : char -> Constrexpr.constr_expr -> Geninterp.interp_sign option -> cpattern
+  val mk_term : ssrtermkind -> Constrexpr.constr_expr -> Geninterp.interp_sign option -> cpattern
 
   val glob_cpattern : Genintern.glob_sign -> cpattern -> cpattern
   val subst_ssrterm : Mod_subst.substitution -> cpattern -> cpattern

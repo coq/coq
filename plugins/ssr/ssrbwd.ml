@@ -19,15 +19,7 @@ open Ssrmatching_plugin
 open Ssrmatching
 
 open Ssrast
-open Ssrprinters
 open Ssrcommon
-
-let char_to_kind = function
-  | '(' -> xInParens
-  | '@' -> xWithAt
-  | ' ' -> xNoFlag
-  | 'x' -> xCpattern
-  | _ -> assert false
 
 (** Backward chaining tactics: apply, exact, congr. *)
 
@@ -35,14 +27,13 @@ let char_to_kind = function
 
 let interp_agen ist gl ((goclr, _), (k, gc as c)) (clr, rcs) =
 (* ppdebug(lazy(str"sigma@interp_agen=" ++ pr_evar_map None (project gl))); *)
-  let k = char_to_kind k in
   let rc = pf_intern_term ist gl c in
   let rcs' = rc :: rcs in
   match goclr with
   | None -> clr, rcs'
   | Some ghyps ->
     let clr' = snd (interp_hyps ist gl ghyps) @ clr in
-    if k <> xNoFlag then clr', rcs' else
+    if k <> NoFlag then clr', rcs' else
     let loc = rc.CAst.loc in
     match DAst.get rc with
     | GVar id when not_section_id id -> SsrHyp (Loc.tag ?loc id) :: clr', rcs'
@@ -132,7 +123,7 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist = Proofview.V82.tactic ~nf_evars:
  let vtac gv i gl' = refine_interp_apply_view i ist gl' gv in
  let ggenl, tclGENTAC =
    if gviews <> [] && ggenl <> [] then
-     let ggenl= List.map (fun (x,g) -> x, cpattern_of_term g ist) (List.hd ggenl) in
+     let ggenl= List.map (fun (x,(k,p)) -> x, {kind=k; pattern=p; interpretation= Some ist}) (List.hd ggenl) in
      [], Tacticals.tclTHEN (Proofview.V82.of_tactic (genstac (ggenl,[])))
    else ggenl, Tacticals.tclTHEN Tacticals.tclIDTAC in
  tclGENTAC (fun gl ->

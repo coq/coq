@@ -143,8 +143,8 @@ let havetac ist
     let gl, _ = pf_e_type_of gl idty in
     pf_unify_HO gl args_id.(2) abstract_key in
  Tacticals.tclTHENFIRST (Proofview.V82.of_tactic itac_mkabs) (fun gl ->
-  let mkt t = mk_term xNoFlag t in
-  let mkl t = (xNoFlag, (t, None)) in
+  let mkt t = mk_term NoFlag t in
+  let mkl t = (NoFlag, (t, None)) in
   let interp gl rtc t = pf_abs_ssrterm ~resolve_typeclasses:rtc ist gl t in
   let interp_ty gl rtc t =
     let a,b,_,u = pf_interp_ty ~resolve_typeclasses:rtc (pf_env gl) (project gl) ist t in a,b,u in
