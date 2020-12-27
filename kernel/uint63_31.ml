@@ -206,9 +206,7 @@ let () =
   Callback.register "uint63 leq" le;
   Callback.register "uint63 lor" l_or;
   Callback.register "uint63 lsl" l_sl;
-  Callback.register "uint63 lsl1" (fun x -> l_sl x Int64.one);
   Callback.register "uint63 lsr" l_sr;
-  Callback.register "uint63 lsr1" (fun x -> l_sr x Int64.one);
   Callback.register "uint63 lt" lt;
   Callback.register "uint63 lxor" l_xor;
   Callback.register "uint63 mod" rem;

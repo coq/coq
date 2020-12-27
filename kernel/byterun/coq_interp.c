@@ -1497,34 +1497,6 @@ value coq_interprete
         Next;
       }
 
-      Instruct(CHECKLSLINT63CONST1) {
-        print_instr("CHECKLSLINT63CONST1");
-        if (Is_uint63(accu)) {
-          pc++;
-          Uint63_lsl1(accu);
-          Next;
-        } else {
-          *--sp = uint63_one();
-          *--sp = accu;
-          accu = Field(coq_global_data, *pc++);
-          goto apply2;
-        }
-      }
-
-      Instruct(CHECKLSRINT63CONST1) {
-        print_instr("CHECKLSRINT63CONST1");
-        if (Is_uint63(accu)) {
-          pc++;
-          Uint63_lsr1(accu);
-          Next;
-        } else {
-          *--sp = uint63_one();
-          *--sp = accu;
-          accu = Field(coq_global_data, *pc++);
-          goto apply2;
-        }
-      }
-
       Instruct (CHECKADDMULDIVINT63) {
         print_instr("CHECKADDMULDIVINT63");
         CheckInt3();
