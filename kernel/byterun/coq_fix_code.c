@@ -40,7 +40,7 @@ void init_arity () {
     arity[APPLY1]=arity[APPLY2]=arity[APPLY3]=arity[APPLY4]=arity[RESTART]=
     arity[OFFSETCLOSURE0]=arity[OFFSETCLOSURE1]=
     arity[PUSHOFFSETCLOSURE0]=arity[PUSHOFFSETCLOSURE1]=
-    arity[GETFIELD0]=arity[GETFIELD1]=arity[SETFIELD0]=arity[SETFIELD1]=
+    arity[GETFIELD0]=arity[GETFIELD1]=
     arity[CONST0]=arity[CONST1]=arity[CONST2]=arity[CONST3]=
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
     arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]=

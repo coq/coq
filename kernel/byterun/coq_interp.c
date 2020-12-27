@@ -1011,20 +1011,6 @@ value coq_interprete
         Next;
       }
 
-      Instruct(SETFIELD0){
-        print_instr("SETFIELD0");
-        caml_modify(&Field(accu, 0),*sp);
-        sp++;
-        Next;
-      }
-
-      Instruct(SETFIELD1){
-        print_instr("SETFIELD1");
-        caml_modify(&Field(accu, 1),*sp);
-        sp++;
-        Next;
-      }
-
       Instruct(SETFIELD){
         print_instr("SETFIELD");
         caml_modify(&Field(accu, *pc),*sp);
