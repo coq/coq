@@ -1270,16 +1270,6 @@ value coq_interprete
         Next;
       }
 
-      Instruct(MAKEPROD) {
-        print_instr("MAKEPROD");
-        *--sp=accu;
-        Alloc_small(accu,2,0);
-        Field(accu, 0) = sp[0];
-        Field(accu, 1) = sp[1];
-        sp += 2;
-        Next;
-      }
-
       Instruct(BRANCH) {
         /* unconditional branching */
         print_instr("BRANCH");

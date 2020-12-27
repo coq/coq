@@ -337,8 +337,6 @@ let emit_instr env = function
       if Int.equal n 0 then invalid_arg "emit_instr : block size = 0"
       else if n < 4 then (out env(opMAKEBLOCK1 + n - 1); out_int env t)
       else (out env opMAKEBLOCK; out_int env n; out_int env t)
-  | Kmakeprod ->
-      out env opMAKEPROD
   | Kmakeswitchblock(typlbl,swlbl,annot,sz) ->
       out env opMAKESWITCHBLOCK;
       out_label env typlbl; out_label env swlbl;

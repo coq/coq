@@ -43,7 +43,7 @@ void init_arity () {
     arity[GETFIELD0]=arity[GETFIELD1]=
     arity[CONST0]=arity[CONST1]=arity[CONST2]=arity[CONST3]=
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
-    arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]=
+    arity[ACCUMULATE]=arity[STOP]=
     0;
   /* instruction with one operand */
   arity[ACC]=arity[PUSHACC]=arity[POP]=arity[ENVACC]=arity[PUSHENVACC]=

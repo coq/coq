@@ -98,7 +98,6 @@ let opcodes =
     "ACCUMULATE";
     "MAKESWITCHBLOCK";
     "MAKEACCU";
-    "MAKEPROD";
     "BRANCH";
     "CHECKADDINT63";
     "CHECKADDCINT63";
