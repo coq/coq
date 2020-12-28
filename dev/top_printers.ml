@@ -85,6 +85,15 @@ let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
 let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
+let ppfsubst s =
+  let (s, k) = Esubst.Internal.repr s in
+  let sep () = str ";" ++ spc () in
+  let pr = function
+  | Esubst.Internal.REL n -> str "<#" ++ int n ++ str ">"
+  | Esubst.Internal.VAL (k, x) -> pr_constr (Vars.lift k (CClosure.term_of_fconstr x))
+  in
+  pp @@ str "[" ++ prlist_with_sep sep pr s ++ str "| " ++ int k ++ str "]"
+
 let ppnumtokunsigned n = pp (NumTok.Unsigned.print n)
 let ppnumtokunsignednat n = pp (NumTok.UnsignedNat.print n)
 
