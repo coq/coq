@@ -69,6 +69,16 @@ Or if you want to use less disk space:
     apt install texlive-latex-extra texlive-fonts-recommended texlive-xetex \
                 latexmk fonts-freefont-otf
 
+### Setting the locale for Python
+
+Make sure that the locale is configured on your platform so that Python encodes
+printed messages with utf-8 rather than generating runtime exceptions
+for non-ascii characters.  The `.UTF-8` in `export LANG=C.UTF-8` sets UTF-8 encoding.
+The `C` can be replaced with any supported language code.  You can set the default
+for a Docker build with `ENV LANG C.UTF-8`.  (Python may look at other
+environment variables to determine the locale; see the
+[Python documentation](https://docs.python.org/3/library/locale.html#locale.getdefaultlocale)).
+
 Compilation
 -----------
 

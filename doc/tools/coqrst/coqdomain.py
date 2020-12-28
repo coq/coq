@@ -220,10 +220,7 @@ class CoqObject(ObjectDescription):
             # todo: then maybe the above "if" is not needed
             names_in_subdomain = self.subdomain_data()
             if name in names_in_subdomain:
-                try:
-                    print("Duplicate", self.subdomain, "name: ", name)
-                except UnicodeEncodeError: # in CI
-                    print("*** UnicodeEncodeError")
+                print("Duplicate", self.subdomain, "name: ", name)
             # self._warn_if_duplicate_name(names_in_subdomain, name, signode)
         return targetid
 
