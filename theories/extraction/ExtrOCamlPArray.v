@@ -14,8 +14,6 @@ From Coq Require PArray Extraction.
 
 (** Primitive types and operators. *)
 Extract Constant PArray.array "'a" => "'a Parray.t".
-Extraction Inline PArray.array.
-(* Otherwise, the name conflicts with the primitive OCaml type [array] *)
 
 Extract Constant PArray.make => "Parray.make".
 Extract Constant PArray.get => "Parray.get".
