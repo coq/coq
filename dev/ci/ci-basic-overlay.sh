@@ -63,7 +63,7 @@
 : "${iris_CI_ARCHIVEURL:=${iris_CI_GITURL}/-/archive}"
 
 : "${autosubst_CI_REF:=e5bf249d7912a185c7f9f69af1a065daa4284f34}"
-: "${autosubst_CI_GITURL:=https://github.com/RalfJung/autosubst}"
+: "${autosubst_CI_GITURL:=https://github.com/coq-community/autosubst}"
 : "${autosubst_CI_ARCHIVEURL:=${autosubst_CI_GITURL}/archive}"
 
 : "${iris_string_ident_CI_REF:=b077370ac854e8af45f8ca5a610ee2fe30e84406}"
