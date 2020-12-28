@@ -219,6 +219,71 @@ and ``coqtop``, unless stated otherwise:
 :-batch: Exit just after argument parsing. Available for ``coqtop`` only.
 :-verbose: Output the content of the input file as it is compiled.
   This option is available for ``coqc`` only.
+:-native-compiler (yes|no|ondemand): Enable the :tacn:`native_compute`
+  reduction machine and precompilation to ``.cmxs`` files for future use
+  by :tacn:`native_compute`.
+  Setting ``yes`` enables :tacn:`native_compute`; it also causes Coq
+  to precompile the native code for future use; all dependencies need
+  to have been precompiled beforehand. Setting ``no`` disables
+  :tacn:`native_compute` which defaults back to :tacn:`vm_compute`; no files are precompiled.
+  Setting ``ondemand`` enables :tacn:`native_compute`
+  but disables precompilation; all missing dependencies will be recompiled
+  every time :tacn:`native_compute` is called.
+
+  .. _native-compiler-options:
+
+  .. versionchanged:: 8.13
+
+     The default value is set at configure time,
+     ``-config`` can be used to retrieve it.
+     All this can be summarized in the following table:
+
+  .. list-table::
+     :header-rows: 1
+
+     * - ``configure``
+       - ``coqc``
+       - ``native_compute``
+       - outcome
+       - requirements
+     * - yes
+       - yes (default)
+       - native_compute
+       - ``.cmxs``
+       - ``.cmxs`` of deps
+     * - yes
+       - no
+       - vm_compute
+       - none
+       - none
+     * - yes
+       - ondemand
+       - native_compute
+       - none
+       - none
+     * - no
+       - yes, no, ondemand
+       - vm_compute
+       - none
+       - none
+     * - ondemand
+       - yes
+       - native_compute
+       - ``.cmxs``
+       - ``.cmxs`` of deps
+     * - ondemand
+       - no
+       - vm_compute
+       - none
+       - none
+     * - ondemand
+       - ondemand (default)
+       - native_compute
+       - none
+       - none
+
+:-native-output-dir: Set the directory in which to put the aforementioned
+  ``.cmxs`` for :tacn:`native_compute`. Defaults to ``.coq-native``.
 :-vos: Indicate Coq to skip the processing of opaque proofs
   (i.e., proofs ending with :cmd:`Qed` or :cmd:`Admitted`), output a ``.vos`` files
   instead of a ``.vo`` file, and to load ``.vos`` files instead of ``.vo`` files
