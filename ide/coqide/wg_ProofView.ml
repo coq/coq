@@ -70,7 +70,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
       in
       let goal_str ?(shownum=false) index total id =
         let annot =
-          if CString.is_empty id then if shownum then Printf.sprintf "(%d/%d)" index total else ""
+          if Option.has_some (int_of_string_opt id) (* some uid *) then if shownum then Printf.sprintf "(%d/%d)" index total else ""
           else Printf.sprintf "(?%s)" id in
         Printf.sprintf "______________________________________%s\n" annot
       in
@@ -180,7 +180,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       let total = List.length bg in
       let goal_str index id =
         let annot =
-          if CString.is_empty id then Printf.sprintf "(%d/%d)" index total
+          if Option.has_some (int_of_string_opt id) (* some uid *) then Printf.sprintf "(%d/%d)" index total
           else Printf.sprintf "(?%s)" id in
         Printf.sprintf
                "______________________________________%s\n" annot
