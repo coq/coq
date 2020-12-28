@@ -46,14 +46,21 @@ let pp_letin pat def body =
 
 let keywords =
   List.fold_right (fun s -> Id.Set.add (Id.of_string s))
-  [ "and"; "as"; "assert"; "begin"; "class"; "constraint"; "do";
+  [ (* parsing/lexer.mll *)
+    "and"; "as"; "assert"; "begin"; "class"; "constraint"; "do";
     "done"; "downto"; "else"; "end"; "exception"; "external"; "false";
     "for"; "fun"; "function"; "functor"; "if"; "in"; "include";
     "inherit"; "initializer"; "lazy"; "let"; "match"; "method";
-    "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
+    "module"; "mutable"; "new"; "nonrec"; "object"; "of"; "open"; "or";
     "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
-    "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
-    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "_" ; "__" ]
+    "try"; "type"; "val"; "virtual"; "when"; "while"; "with";
+    "lor"; "lxor"; "mod"; "land"; "lsl"; "lsr"; "asr";
+    (* typing/predef.ml *)
+    "int"; "char"; "bytes"; "float"; "bool"; "unit"; "exn"; "array";
+    "list"; "option"; "nativeint"; "int32"; "int64"; "lazy_t"; "string";
+    "extension_constructor"; "floatarray";
+    (* miscellaneous *)
+    "_"; "__"; ]
   Id.Set.empty
 
 (* Note: do not shorten [str "foo" ++ fnl ()] into [str "foo\n"],
