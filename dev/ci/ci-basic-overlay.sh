@@ -9,15 +9,15 @@
 ########################################################################
 # MathComp
 ########################################################################
-: "${mathcomp_CI_REF:=bae9cdb2a12083b8170c3999886839cc1495f969}"
+: "${mathcomp_CI_REF:=mathcomp-1.12.0}"
 : "${mathcomp_CI_GITURL:=https://github.com/math-comp/math-comp}"
 : "${mathcomp_CI_ARCHIVEURL:=${mathcomp_CI_GITURL}/archive}"
 
-: "${fourcolor_CI_REF:=2d5a4ed79806dadea6ac36824db39cd2ba5313e2}"
+: "${fourcolor_CI_REF:=v1.2.3}"
 : "${fourcolor_CI_GITURL:=https://github.com/math-comp/fourcolor}"
 : "${fourcolor_CI_ARCHIVEURL:=${fourcolor_CI_GITURL}/archive}"
 
-: "${oddorder_CI_REF:=19eb998e2d08c21c6e61806cc7b588238629757e}"
+: "${oddorder_CI_REF:=mathcomp-odd-order.1.12.0}"
 : "${oddorder_CI_GITURL:=https://github.com/math-comp/odd-order}"
 : "${oddorder_CI_ARCHIVEURL:=${oddorder_CI_GITURL}/archive}"
 
@@ -320,7 +320,7 @@
 ########################################################################
 # paramcoq
 ########################################################################
-: "${paramcoq_CI_REF:=57e92e282735c4f9a9776e11196ea33205964afa}"
+: "${paramcoq_CI_REF:=v1.1.2+coq8.13}"
 : "${paramcoq_CI_GITURL:=https://github.com/coq-community/paramcoq}"
 : "${paramcoq_CI_ARCHIVEURL:=${paramcoq_CI_GITURL}/archive}"
 
