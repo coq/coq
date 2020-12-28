@@ -783,7 +783,7 @@ module Html = struct
            printf "  <td class=\"infrule\">%s</td>\n" (replace_spaces line)) in
     let end_assumption () =
           (printf "  <td></td>\n";
-           printf "</td>\n") in
+           printf "</tr>\n") in
     let rec print_assumptions hyps =
           match hyps with
           | []                 -> start_assumption "&nbsp;&nbsp;"
