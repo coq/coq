@@ -38,8 +38,6 @@ Extract Inductive PrimFloat.float_comparison =>
 (** Primitive types and operators. *)
 
 Extract Constant PrimFloat.float => "Float64.t".
-Extraction Inline PrimFloat.float.
-(* Otherwise, the name conflicts with the primitive OCaml type [float] *)
 
 Extract Constant PrimFloat.classify => "Float64.classify".
 Extract Constant PrimFloat.abs => "Float64.abs".

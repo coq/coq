@@ -21,8 +21,6 @@ Extract Inductive DoubleType.carry => "Uint63.carry" [ "Uint63.C0" "Uint63.C1" ]
 
 (** Primitive types and operators. *)
 Extract Constant Int63.int => "Uint63.t".
-Extraction Inline Int63.int.
-(* Otherwise, the name conflicts with the primitive OCaml type [int] *)
 
 Extract Constant Int63.lsl => "Uint63.l_sl".
 Extract Constant Int63.lsr => "Uint63.l_sr".
