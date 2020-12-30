@@ -276,6 +276,7 @@ let coerce_to_closed_constr env v =
   c
 
 let coerce_to_evaluable_ref env sigma v =
+  let open Tacred in
   let fail () = raise (CannotCoerceTo "an evaluable reference") in
   let ev =
   match is_intro_pattern v with

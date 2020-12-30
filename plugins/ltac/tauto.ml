@@ -189,6 +189,7 @@ let flatten_contravariant_disj _ ist =
   | _ -> fail
 
 let evalglobref_of_globref =
+  let open Tacred in
   function
   | GlobRef.VarRef v -> EvalVarRef v
   | GlobRef.ConstRef c -> EvalConstRef c

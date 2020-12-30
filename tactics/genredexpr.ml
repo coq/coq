@@ -76,7 +76,7 @@ type 'a and_short_name = 'a * Names.lident option
 
 let wit_red_expr :
   ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
-   (Genintern.glob_constr_and_expr,Names.evaluable_global_reference and_short_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
-   (EConstr.t,Names.evaluable_global_reference,Pattern.constr_pattern) red_expr_gen)
+   (Genintern.glob_constr_and_expr,Tacred.evaluable_global_reference and_short_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
+   (EConstr.t,Tacred.evaluable_global_reference,Pattern.constr_pattern) red_expr_gen)
     Genarg.genarg_type =
   make0 "redexpr"

@@ -76,6 +76,7 @@ let warn_deprecated_hint_constr =
  *)
 let soft_evaluable =
   let open GlobRef in
+  let open Tacred in
   function
   | ConstRef c -> EvalConstRef c
   | VarRef id -> EvalVarRef id

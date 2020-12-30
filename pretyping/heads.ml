@@ -32,31 +32,29 @@ type head_approximation =
 | FlexibleHead of int * int * int * bool (* [true] if a surrounding case *)
 | NotImmediatelyComputableHead
 
-(* FIXME: maybe change interface here *)
-let rec compute_head env = function
-  | EvalConstRef cst ->
-    let body = Environ.constant_opt_value_in env (cst,Univ.Instance.empty) in
-    (match body with
-     | None -> RigidHead (RigidParameter cst)
-     | Some c -> kind_of_head env c)
-  | EvalVarRef id ->
-    (match lookup_named id env with
-     | LocalDef (_,c,_) -> kind_of_head env c
-     | _ -> RigidHead RigidOther)
+let rec compute_head_const env cst =
+  let body = Environ.constant_opt_value_in env (cst,Univ.Instance.empty) in
+  match body with
+  | None -> RigidHead (RigidParameter cst)
+  | Some c -> kind_of_head env c
+
+and compute_head_var env id = match lookup_named id env with
+| LocalDef (_,c,_) -> kind_of_head env c
+| _ -> RigidHead RigidOther
 
 and kind_of_head env t =
   let rec aux k l t b = match kind (Reduction.whd_betaiotazeta env t) with
   | Rel n when n > k -> NotImmediatelyComputableHead
   | Rel n -> FlexibleHead (k,k+1-n,List.length l,b)
   | Var id ->
-      (try on_subterm k l b (compute_head env (EvalVarRef id))
+      (try on_subterm k l b (compute_head_var env id)
        with Not_found ->
         (* a goal variable *)
         match lookup_named id env with
         | LocalDef (_,c,_) -> aux k l c b
         | LocalAssum _ -> NotImmediatelyComputableHead)
   | Const (cst,_) ->
-      (try on_subterm k l b (compute_head env (EvalConstRef cst))
+      (try on_subterm k l b (compute_head_const env cst)
        with Not_found ->
          CErrors.anomaly
            Pp.(str "constant not found in kind_of_head: " ++

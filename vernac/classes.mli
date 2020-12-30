@@ -81,7 +81,7 @@ val add_class : env -> Evd.evar_map -> typeclass -> unit
 
 (** Setting opacity *)
 
-val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> unit
+val set_typeclass_transparency : Tacred.evaluable_global_reference -> bool -> bool -> unit
 
 (** For generation on names based on classes only *)
 

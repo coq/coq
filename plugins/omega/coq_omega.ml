@@ -354,8 +354,9 @@ let coq_True = gen_constant "core.True.type"
 let evaluable_ref_of_constr s c =
   let env = Global.env () in
   let evd = Evd.from_env env in
+  let open Tacred in
   match EConstr.kind evd (Lazy.force c) with
-  | Const (kn,u) when Tacred.is_evaluable env (EvalConstRef kn) ->
+  | Const (kn,u) when is_evaluable env (EvalConstRef kn) ->
       EvalConstRef kn
   | _ -> anomaly ~label:"Coq_omega" (Pp.str (s^" is not an evaluable constant."))
 

@@ -146,14 +146,6 @@ val subst_proj : substitution -> Projection.t -> Projection.t
 
 val subst_retro_action : substitution -> Retroknowledge.action -> Retroknowledge.action
 
-(** Here the semantics is completely unclear.
-   What does "Hint Unfold t" means when "t" is a parameter?
-   Does the user mean "Unfold X.t" or does she mean "Unfold y"
-   where X.t is later on instantiated with y? I choose the first
-   interpretation (i.e. an evaluable reference is never expanded). *)
-val subst_evaluable_reference :
-  substitution -> evaluable_global_reference -> evaluable_global_reference
-
 (** [replace_mp_in_con mp mp' con] replaces [mp] with [mp'] in [con] *)
 val replace_mp_in_kn : ModPath.t -> ModPath.t -> KerName.t -> KerName.t
 

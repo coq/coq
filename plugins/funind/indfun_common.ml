@@ -418,6 +418,7 @@ let make_eq () =
   with _ -> assert false
 
 let evaluable_of_global_reference r =
+  let open Tacred in
   (* Tacred.evaluable_of_global_reference (Global.env ()) *)
   match r with
   | GlobRef.ConstRef sp -> EvalConstRef sp

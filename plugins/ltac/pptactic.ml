@@ -191,8 +191,8 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_and_short_name pr (c,_) = pr c
 
   let pr_evaluable_reference = function
-    | EvalVarRef id -> pr_id id
-    | EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
+    | Tacred.EvalVarRef id -> pr_id id
+    | Tacred.EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
 
   let pr_quantified_hypothesis = function
     | AnonHyp n -> int n
@@ -381,8 +381,8 @@ let string_of_genarg_arg (ArgumentType arg) =
         str "<" ++ KerName.print kn ++ str ">"
 
   let pr_evaluable_reference_env env = function
-    | EvalVarRef id -> pr_id id
-    | EvalConstRef sp ->
+    | Tacred.EvalVarRef id -> pr_id id
+    | Tacred.EvalConstRef sp ->
       Nametab.pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef sp)
 
   let pr_as_disjunctive_ipat prc ipatl =

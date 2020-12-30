@@ -340,15 +340,6 @@ let subst_retro_action subst action =
     let c' = subst_constant subst c in
     if c == c' then action else Register_type(prim, c')
 
-(* Here the semantics is completely unclear.
-   What does "Hint Unfold t" means when "t" is a parameter?
-   Does the user mean "Unfold X.t" or does she mean "Unfold y"
-   where X.t is later on instantiated with y? I choose the first
-   interpretation (i.e. an evaluable reference is never expanded). *)
-let subst_evaluable_reference subst = function
-  | EvalVarRef id -> EvalVarRef id
-  | EvalConstRef kn -> EvalConstRef (subst_constant subst kn)
-
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind c with

@@ -89,7 +89,7 @@ let subst_global_reference subst =
   Locusops.or_var_map (subst_located (subst_global_reference subst))
 
 let subst_evaluable subst =
-  let subst_eval_ref = subst_evaluable_reference subst in
+  let subst_eval_ref = Tacred.subst_evaluable_reference subst in
     Locusops.or_var_map (subst_and_short_name subst_eval_ref)
 
 let subst_constr_with_occurrences subst (l,c) = (l,subst_glob_constr subst c)
