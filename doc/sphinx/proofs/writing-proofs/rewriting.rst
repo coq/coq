@@ -442,7 +442,10 @@ the conversion in hypotheses :n:`{+ @ident}`.
    in :cite:`FullReduction`. If Coq is running in native code, it can be
    typically two to five times faster than :tacn:`vm_compute`. Note however that the
    compilation cost is higher, so it is worth using only for intensive
-   computations.
+   computations. Depending on the configuration, this tactic can either default to
+   :tacn:`vm_compute`, recompile dependencies or fail due to some missing
+   precompiled dependencies,
+   see :ref:`the native-compiler option <native-compiler-options>` for details.
 
    .. flag:: NativeCompute Timing
 
