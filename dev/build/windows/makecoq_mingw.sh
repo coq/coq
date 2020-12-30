@@ -143,6 +143,9 @@ CYGWIN_REPO_FOLDER=${CYGWIN_REPO_FOLDER//\//%2f}
 cp "$CYGWIN_LOCAL_CACHE_WFMT/$CYGWIN_REPO_FOLDER/$CYGWINARCH/setup.ini" $TARBALLS
 cp /etc/setup/installed.db $TARBALLS
 
+# Gtksourceview3 needs python but Cygwin now only installs python2
+ln -s -f /usr/bin/python2 /usr/bin/python
+
 ###################### LOGGING #####################
 
 # The folder which receives log files
