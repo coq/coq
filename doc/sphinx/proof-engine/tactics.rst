@@ -1641,17 +1641,21 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
 
 .. tacv:: instantiate (@natural := @term)
 
-   This variant allows to refer to an existential variable which was not named
-   by the user. The :n:`@natural` argument is the position of the existential variable
-   from right to left in the goal. Because this variant is not robust to slight
-   changes in the goal, its use is strongly discouraged.
+   This variant selects an existential variable by its position.  The
+   :n:`@natural` argument is the position of the existential variable
+   *from right to left* in the conclusion of the goal.  (Use one of
+   the variants below to select an existential variable in a
+   hypothesis.)  Counting starts at 1 and multiple occurrences of the
+   same existential variable are counted multiple times.  Because this
+   variant is not robust to slight changes in the goal, its use is
+   strongly discouraged.
 
 .. tacv:: instantiate ( @natural := @term ) in @ident
           instantiate ( @natural := @term ) in ( value of @ident )
           instantiate ( @natural := @term ) in ( type of @ident )
 
    These allow to refer respectively to existential variables occurring in a
-   hypothesis or in the body or the type of a local definition.
+   hypothesis or in the body or the type of a local definition (named :n:`@ident`).
 
 .. tacv:: instantiate
 
