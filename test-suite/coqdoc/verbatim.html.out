@@ -90,7 +90,7 @@ verbatim
 <tr class="infruleassumption">
   <td class="infrule">Γ ⊢ A ∨ B</td>
   <td></td>
-</td>
+</tr>
 </table></center>
 <div class="paragraph"> </div>
 
