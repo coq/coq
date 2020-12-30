@@ -280,6 +280,9 @@ Rewriting with definitional equality
      whose value which will substituted for `x` in :n:`@one_term__to`, such as in
      `change (f ?x ?y) with (g (x, y))` or `change (fun x => ?f x) with f`.
 
+     The `at ... with ...` form is deprecated in 8.14; use `with ... at ...` instead.
+     For `at ... with ... in H |-`, use `with ... in H at ... |-`.
+
    :n:`@occurrences`
      If `with` is not specified, :n:`@occurrences` must only specify
      entire hypotheses and/or the goal; it must not include any

@@ -14,8 +14,8 @@ Abort.
 (* Check the combination of at, with and in (see bug #2146) *)
 
 Goal 3=3 -> 3=3. intro H.
-change 3 at 2 with (1+2).
-change 3 at 2 with (1+2) in H |-.
+change 3 with (1+2) at 2.
+change 3 with (1+2) in H at 2 |-.
 change 3 with (1+2) in H at 1 |- * at 1.
 (* Now check that there are no more 3's *)
 change 3 with (1+2) in * || reflexivity.
