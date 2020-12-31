@@ -182,6 +182,7 @@ val whd_betalet_stack : stack_reduction_function
 
 (** {6 Head normal forms } *)
 
+val whd_const : Constant.t -> reduction_function
 val whd_delta_stack :  stack_reduction_function
 val whd_delta :  reduction_function
 val whd_betadeltazeta_stack :  stack_reduction_function

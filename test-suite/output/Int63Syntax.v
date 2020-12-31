@@ -40,3 +40,18 @@ Open Scope int63_scope.
 Check (2+2).
 Eval vm_compute in 2+2.
 Eval vm_compute in 65675757 * 565675998.
+
+Eval simpl in 2+2.
+Eval hnf in 2+2.
+Eval cbn in 2+2.
+Eval hnf in PrimInt63.add.
+
+Eval simpl in (2 * 3) + (2 * 3).
+Eval hnf in (2 * 3) + (2 * 3).
+Eval cbn in (2 * 3) + (2 * 3).
+
+Section TestNoSimpl.
+Variable x : int.
+Eval simpl in 1 + 2 + x.
+Eval hnf in 1 + 2 + x.
+End TestNoSimpl.
