@@ -101,7 +101,7 @@ project geocoq "https://github.com/GeoCoq/GeoCoq" "master"
 ########################################################################
 # Flocq
 ########################################################################
-project flocq "https://gitlab.inria.fr/flocq/flocq" "master"
+project flocq "https://gitlab.inria.fr/flocq/flocq" "flocq-3"
 
 ########################################################################
 # coq-performance-tests
