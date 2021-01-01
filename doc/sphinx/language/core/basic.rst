@@ -64,7 +64,7 @@ appending the level to the nonterminal name (as in :n:`@term100` or
    populated by notations or plugins.
 
    Furthermore, some parsing rules are only activated in certain
-   contexts (:ref:`interactive proof mode <proofhandling>`,
+   contexts (:ref:`proof mode <proofhandling>`,
    :ref:`custom entries <custom-entries>`...).
 
 .. warning::
@@ -332,9 +332,9 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
 
    tactic
 
-     Tactics specify how to transform the current proof state as a
+     A :production:`tactic` specifies how to transform the current proof state as a
      step in creating a proof.  They are syntactically valid only when
-     Coq is in proof mode, such as after a :cmd:`Theorem` command
+     Coq is in :term:`proof mode`, such as after a :cmd:`Theorem` command
      and before any subsequent proof-terminating command such as
      :cmd:`Qed`.  See :ref:`proofhandling` for more on proof mode.
 
@@ -450,7 +450,6 @@ they appear after a boldface label.  They are listed in the
 :ref:`options_index`.
 
 .. cmd:: Set @setting_name {? {| @integer | @string } }
-   :name: Set
 
    If :n:`@setting_name` is a flag, no value may be provided; the flag
    is set to on.
@@ -471,7 +470,6 @@ they appear after a boldface label.  They are listed in the
       Coq versions.
 
 .. cmd:: Unset @setting_name
-   :name: Unset
 
    If :n:`@setting_name` is a flag, it is set to off.  If :n:`@setting_name` is an option, it is
    set to its default value.

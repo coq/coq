@@ -3,35 +3,46 @@
 Tactics
 ========
 
-A deduction rule is a link between some (unique) formula, that we call
-the *conclusion* and (several) formulas that we call the *premises*. A
-deduction rule can be read in two ways. The first one says: “if I know
-this and this then I can deduce this”. For instance, if I have a proof
-of A and a proof of B then I have a proof of A ∧ B. This is forward
-reasoning from premises to conclusion. The other way says: “to prove
-this I have to prove this and this”. For instance, to prove A ∧ B, I
-have to prove A and I have to prove B. This is backward reasoning from
-conclusion to premises. We say that the conclusion is the *goal* to
-prove and premises are the *subgoals*. The tactics implement *backward
-reasoning*. When applied to a goal, a tactic replaces this goal with
-the subgoals it generates. We say that a tactic reduces a goal to its
-subgoal(s).
+Tactics specify how to transform the :term:`proof state` of an
+incomplete proof to eventually generate a complete proof.
 
-Each (sub)goal is denoted with a number. The current goal is numbered
-1. By default, a tactic is applied to the current goal, but one can
-address a particular goal in the list by writing n:tactic which means
-“apply tactic tactic to goal number n”. We can show the list of
-subgoals by typing Show (see Section :ref:`requestinginformation`).
+Proofs can be developed in two basic ways: In :gdef:`forward reasoning`,
+the proof begins by proving simple statements that are then combined to prove the
+theorem statement as the last step of the proof. With forward reasoning,
+for example,
+the proof of `A /\\ B` would begin with proofs of `A` and `B`, which are
+then used to prove `A /\\ B`.  Forward reasoning is probably the most common
+approach in human-generated proofs.
 
-Since not every rule applies to a given statement, not every tactic can
-be used to reduce a given goal. In other words, before applying a tactic
-to a given goal, the system checks that some *preconditions* are
-satisfied. If it is not the case, the tactic raises an error message.
+In :gdef:`backward reasoning`, the proof begins with the theorem statement
+as the goal, which is then gradually transformed until every subgoal generated
+along the way has been proven.  In this case, the proof of `A /\\ B` begins
+with that formula as the goal.  This can be transformed into two subgoals,
+`A` and `B`, followed by the proofs of `A` and `B`.  Coq and its tactics
+use backward reasoning.
 
-Tactics are built from atomic tactics and tactic expressions (which
-extends the folklore notion of tactical) to combine those atomic
-tactics. This chapter is devoted to atomic tactics. The tactic
-language will be described in Chapter :ref:`ltac`.
+A tactic may fully prove a goal, in which case the goal is removed
+from the proof state.
+More commonly, a tactic replaces a goal with one or more :term:`subgoals <subgoal>`.
+(We say that a tactic reduces a goal to its subgoals.)
+
+Most tactics require specific elements or preconditions to reduce a goal;
+they display error messages if they can't be applied to the goal.
+A few tactics, such as :tacn:`auto`, don't fail even if the proof state
+is unchanged.
+
+Goals are identified by number. The current goal is number
+1. Tactics are applied to the current goal by default.  (The
+default can be changed with the :opt:`Default Goal Selector`
+option.)  They can
+be applied to another goal or to multiple goals with a
+:ref:`goal selector <goal-selectors>` such as :n:`2: @tactic`.
+
+This chapter describes many of the most common built-in tactics.
+Built-in tactics can be combined to form tactic expressions, which are
+described in the :ref:`Ltac` chapter.  Since tactic expressions can
+be used anywhere that a built-in tactic can be used, "tactic" may
+refer to both built-in tactics and tactic expressions.
 
 Common elements of tactics
 --------------------------
@@ -529,8 +540,21 @@ one or more of its hypotheses.
    which is equivalent to `in * |- *`.  Use `* |-` to select all occurrences
    in all hypotheses.
 
-Tactics that use occurrence clauses include :tacn:`set`,
-:tacn:`remember`, :tacn:`induction` and :tacn:`destruct`.
+   Tactics that select a specific hypothesis H to apply to other hypotheses,
+   such as :tacn:`rewrite` `H in * |-`, won't apply H to itself.
+
+   If multiple
+   occurrences are given, such as in :tacn:`rewrite` `H at 1 2 3`, the tactic
+   must match at least one occurrence in order to succeed.  The tactic will fail
+   if no occurrences match.  Occurrence numbers that are out of range (e.g.
+   `at 1 3` when there are only 2 occurrences in the hypothesis or conclusion)
+   are ignored.
+
+   .. todo: remove last sentence above and add "Invalid occurrence number @natural" exn for 8.14
+      per #13568.
+
+   Tactics that use occurrence clauses include :tacn:`set`,
+   :tacn:`remember`, :tacn:`induction` and :tacn:`destruct`.
 
 
 .. seealso::
@@ -1983,7 +2007,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    This is a more basic induction tactic. Again, the type of the argument
    :n:`@term` must be an inductive type. Then, according to the type of the
    goal, the tactic ``elim`` chooses the appropriate destructor and applies it
-   as the tactic :tacn:`apply` would do. For instance, if the proof context
+   as the tactic :tacn:`apply` would do. For instance, if the local context
    contains :g:`n:nat` and the current goal is :g:`T` of type :g:`Prop`, then
    :n:`elim n` is equivalent to :n:`apply nat_ind with (n:=n)`. The tactic
    ``elim`` does not modify the context of the goal, neither introduces the
@@ -2655,7 +2679,7 @@ and an explanation of the underlying technique.
    Like in a fix expression, the induction hypotheses have to be used on
    structurally smaller arguments. The verification that inductive proof
    arguments are correct is done only at the time of registering the
-   lemma in the environment. To know if the use of induction hypotheses
+   lemma in the global environment. To know if the use of induction hypotheses
    is correct at some time of the interactive development of a proof, use
    the command ``Guarded`` (see Section :ref:`requestinginformation`).
 
@@ -2675,7 +2699,7 @@ and an explanation of the underlying technique.
    name given to the coinduction hypothesis. Like in a cofix expression,
    the use of induction hypotheses have to guarded by a constructor. The
    verification that the use of co-inductive hypotheses is correct is
-   done only at the time of registering the lemma in the environment. To
+   done only at the time of registering the lemma in the global environment. To
    know if the use of coinduction hypotheses is correct at some time of
    the interactive development of a proof, use the command ``Guarded``
    (see Section :ref:`requestinginformation`).
@@ -2756,13 +2780,10 @@ succeeds, and results in an error otherwise.
    :name: is_var
 
    This tactic checks whether its argument is a variable or hypothesis in
-   the current goal context or in the opened sections.
+   the current local context.
 
 .. exn:: Not a variable or hypothesis.
    :undocumented:
-
-
-.. _equality:
 
 Equality
 --------
@@ -2958,59 +2979,7 @@ references to automatically generated names.
 Performance-oriented tactic variants
 ------------------------------------
 
-.. tacn:: change_no_check @term
-   :name: change_no_check
-
-   For advanced usage. Similar to :tacn:`change` :n:`@term`, but as an optimization,
-   it skips checking that :n:`@term` is convertible to the goal.
-
-   Recall that the Coq kernel typechecks proofs again when they are concluded to
-   ensure safety. Hence, using :tacn:`change` checks convertibility twice
-   overall, while :tacn:`change_no_check` can produce ill-typed terms,
-   but checks convertibility only once.
-   Hence, :tacn:`change_no_check` can be useful to speed up certain proof
-   scripts, especially if one knows by construction that the argument is
-   indeed convertible to the goal.
-
-   In the following example, :tacn:`change_no_check` replaces :g:`False` by
-   :g:`True`, but :cmd:`Qed` then rejects the proof, ensuring consistency.
-
-   .. example::
-
-      .. coqtop:: all abort
-
-         Goal False.
-           change_no_check True.
-           exact I.
-         Fail Qed.
-
-   :tacn:`change_no_check` supports all of :tacn:`change`'s variants.
-
-   .. tacv:: change_no_check @term with @term’
-      :undocumented:
-
-   .. tacv:: change_no_check @term at {+ @natural} with @term’
-      :undocumented:
-
-   .. tacv:: change_no_check @term {? {? at {+ @natural}} with @term} in @ident
-
-      .. example::
-
-         .. coqtop:: all abort
-
-            Goal True -> False.
-              intro H.
-              change_no_check False in H.
-              exact H.
-            Fail Qed.
-
-   .. tacv:: convert_concl_no_check @term
-      :name: convert_concl_no_check
-
-      .. deprecated:: 8.11
-
-      Deprecated old name for :tacn:`change_no_check`. Does not support any of its
-      variants.
+.. todo: move the following adjacent to the `exact` tactic in the rewriting chapter?
 
 .. tacn:: exact_no_check @term
    :name: exact_no_check

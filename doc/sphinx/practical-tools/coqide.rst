@@ -7,7 +7,7 @@ Coq Integrated Development Environment
 
 The Coq Integrated Development Environment is a graphical tool, to be
 used as a user-friendly replacement to `coqtop`. Its main purpose is to
-allow the user to navigate forward and backward into a Coq vernacular
+allow the user to navigate forward and backward into a Coq
 file, executing corresponding commands or undoing them respectively.
 
 CoqIDE is run by typing the command `coqide` on the command line.
@@ -100,10 +100,10 @@ processed color, though their preceding proofs have the processed color.
 Notice that for all these buttons, except for the "gears" button, their operations
 are also available in the menu, where their keyboard shortcuts are given.
 
-Vernacular commands, templates
------------------------------------
+Commands and templates
+----------------------
 
-The Templates menu allows using shortcuts to insert vernacular
+The Templates menu allows using shortcuts to insert
 commands. This is a nice way to proceed if you are not sure of the
 syntax of the command you want.
 
@@ -116,7 +116,7 @@ Queries
 .. image:: ../_static/coqide-queries.png
    :alt: CoqIDE queries
 
-We call *query* any vernacular command that does not change the current state,
+We call *query* any command that does not change the current state,
 such as ``Check``, ``Search``, etc. To run such commands interactively, without
 writing them in scripts, CoqIDE offers a *query pane*. The query pane can be
 displayed on demand by using the ``View`` menu, or using the shortcut ``F1``.

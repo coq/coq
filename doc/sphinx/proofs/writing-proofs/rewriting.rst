@@ -1,102 +1,123 @@
-=================================
-Term rewriting and simplification
-=================================
+=========================
+Reasoning with equalities
+=========================
+
+There are multiple notions of :gdef:`equality` in Coq:
+
+- :gdef:`Leibniz equality` is the standard
+  way to define equality in Coq and the Calculus of Inductive Constructions,
+  which is in terms of a binary relation, i.e. a binary function that returns
+  a `Prop`.  The standard library
+  defines `eq` similar to this:
+
+   .. coqdoc::
+
+      Inductive eq {A : Type} (x : A) : A -> Prop := eq_refl : eq x x.
+
+  The notation `x = y` represents the term `eq x y`.  The notation `x = y :> A`
+  gives the type of x and y explicitly.
+
+- :gdef:`Setoid equality <setoid equality>` defines equality in terms of an equivalence
+  relation.  A :gdef:`setoid` is a set that is equipped with an equivalence relation
+  (see https://en.wikipedia.org/wiki/Setoid).  These are needed to form a :gdef:`quotient set`
+  or :gdef:`quotient`
+  (see https://en.wikipedia.org/wiki/Equivalence_Class).  In Coq, users generally work
+  with setoids rather than constructing quotients, for which there is no specific support.
+
+- :gdef:`Definitional equality <definitional equality>` is equality based on the
+  :ref:`conversion rules <Conversion-rules>`, which Coq can determine automatically.
+  When two terms are definitionally equal, Coq knows it can
+  replace one with the other, such as with :tacn:`change` `X with Y`, among many
+  other advantages.  ":term:`Convertible <convertible>`" is another way of saying that
+  two terms are definitionally equal.
 
 .. _rewritingexpressions:
 
-Rewriting expressions
----------------------
+Rewriting with Leibniz and setoid equality
+------------------------------------------
 
-These tactics use the equality :g:`eq:forall A:Type, A->A->Prop` defined in
-file ``Logic.v`` (see :ref:`coq-library-logic`). The notation for :g:`eq T t u` is
-simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
+.. tacn:: rewrite {+, @oriented_rewriter } {? @occurrences } {? by @ltac_expr3 }
 
-.. tacn:: rewrite @term
-   :name: rewrite
+   .. insertprodn oriented_rewriter one_term_with_bindings
 
-   This tactic applies to any goal. The type of :token:`term` must have the form
+   .. prodn::
+      oriented_rewriter ::= {? {| -> | <- } } {? @natural } {? {| ? | ! } } @one_term_with_bindings
+      one_term_with_bindings ::= {? > } @one_term {? with @bindings }
 
-   ``forall (x``:sub:`1` ``:A``:sub:`1` ``) ... (x``:sub:`n` ``:A``:sub:`n` ``), eq term``:sub:`1` ``term``:sub:`2` ``.``
+   Rewrites terms based on equalities.  The type of :n:`@one_term` must have the form:
 
-   where :g:`eq` is the Leibniz equality or a registered setoid equality.
+      :n:`{? forall {+ (x__i: A__i) } , } EQ @term__1 @term__2`
 
-   Then :n:`rewrite @term` finds the first subterm matching `term`\ :sub:`1` in the goal,
-   resulting in instances `term`:sub:`1`' and `term`:sub:`2`' and then
-   replaces every occurrence of `term`:subscript:`1`' by `term`:subscript:`2`'.
-   Hence, some of the variables :g:`x`\ :sub:`i` are solved by unification,
-   and some of the types :g:`A`\ :sub:`1`:g:`, ..., A`\ :sub:`n` become new
-   subgoals.
+   where :g:`EQ` is the Leibniz equality `eq` or a registered setoid equality.
+   Note that :n:`eq @term__1 @term__2` is typically written with the infix notation
+   :n:`@term__1 = @term__2`.  You must `Require Setoid` to use the tactic
+   with a setoid equality or with :ref:`setoid rewriting <generalizedrewriting>`.
+   In the general form, any :n:`@binder` may be used, not just :n:`(x__i: A__i)`.
 
-   .. exn:: The @term provided does not end with an equation.
-      :undocumented:
+   .. todo doublecheck the @binder comment is correct.
 
-   .. exn:: Tactic generated a subgoal identical to the original goal. This happens if @term does not occur in the goal.
-      :undocumented:
+   :n:`rewrite @one_term` finds subterms matching :n:`@term__1` in the goal,
+   and replaces them with :n:`@term__2` (or the reverse if `<-` is given).
+   Some of the variables :g:`x`\ :sub:`i` are solved by unification,
+   and some of the types :n:`A__1, ..., A__n` may become new
+   subgoals.  :tacn:`rewrite` won't find occurrences inside `forall` that refer
+   to variables bound by the `forall`; use :tacn:`setoid_rewrite`
+   if you want to find such occurrences.
 
-   .. tacv:: rewrite -> @term
-
-      Is equivalent to :n:`rewrite @term`
-
-   .. tacv:: rewrite <- @term
-
-      Uses the equality :n:`@term`:sub:`1` :n:`= @term` :sub:`2` from right to left
-
-   .. tacv:: rewrite @term in @goal_occurrences
-
-      Analogous to :n:`rewrite @term` but rewriting is done following
-      the clause :token:`goal_occurrences`. For instance:
-
-      + :n:`rewrite H in H'` will rewrite `H` in the hypothesis
-        ``H'`` instead of the current goal.
-      + :n:`rewrite H in H' at 1, H'' at - 2 |- *` means
-        :n:`rewrite H; rewrite H in H' at 1; rewrite H in H'' at - 2.`
-        In particular a failure will happen if any of these three simpler tactics
-        fails.
-      + :n:`rewrite H in * |-` will do :n:`rewrite H in H'` for all hypotheses
-        :g:`H'` different from :g:`H`.
-        A success will happen as soon as at least one of these simpler tactics succeeds.
-      + :n:`rewrite H in *` is a combination of :n:`rewrite H` and :n:`rewrite H in * |-`
-        that succeeds if at least one of these two tactics succeeds.
-
-      Orientation :g:`->` or :g:`<-` can be inserted before the :token:`term` to rewrite.
-
-   .. tacv:: rewrite @term at @occurrences
-
-      Rewrite only the given :token:`occurrences` of :token:`term`. Occurrences are
-      specified from left to right as for pattern (:tacn:`pattern`). The rewrite is
-      always performed using setoid rewriting, even for Leibniz’s equality, so one
-      has to ``Import Setoid`` to use this variant.
-
-   .. tacv:: rewrite @term by @tactic
-
-      Use tactic to completely solve the side-conditions arising from the
-      :tacn:`rewrite`.
-
-   .. tacv:: rewrite {+, @orientation @term} {? in @ident }
-
-      Is equivalent to the `n` successive tactics :n:`{+; rewrite @term}`, each one
-      working on the first subgoal generated by the previous one. An :production:`orientation`
-      ``->`` or ``<-`` can be inserted before each :token:`term` to rewrite.  One
-      unique clause can be added at the end after the keyword in; it will then
-      affect all rewrite operations.
-
-   In all forms of rewrite described above, a :token:`term` to rewrite can be
-   immediately prefixed by one of the following modifiers:
-
-   + `?` : the tactic :n:`rewrite ?@term` performs the rewrite of :token:`term` as many
-     times as possible (perhaps zero time). This form never fails.
-   + :n:`@natural?` : works similarly, except that it will do at most :token:`natural` rewrites.
-   + `!` : works as `?`, except that at least one rewrite should succeed, otherwise
+   :n:`{+, @oriented_rewriter }`
+     The :n:`@oriented_rewriter`\s are applied sequentially
+     to the first goal generated by the previous :n:`@oriented_rewriter`.  If any of them fail,
      the tactic fails.
-   + :n:`@natural!` (or simply :n:`@natural`) : precisely :token:`natural` rewrites of :token:`term` will be done,
-     leading to failure if these :token:`natural` rewrites are not possible.
 
-   .. tacv:: erewrite @term
-      :name: erewrite
+   :n:`{? {| -> | <- } }`
+     For `->` (the default), :n:`@term__1` is rewritten
+     into :n:`@term__2`.  For `<-`, :n:`@term__2` is rewritten into :n:`@term__1`.
 
-      This tactic works as :n:`rewrite @term` but turning
-      unresolved bindings into existential variables, if any, instead of
-      failing. It has the same variants as :tacn:`rewrite` has.
+   :n:`{? @natural } {? {| ? | ! } }`
+     :n:`@natural` is the number of rewrites to perform.  If `?` is given, :n:`@natural`
+     is the maximum number of rewrites to perform; otherwise :n:`@natural` is the exact number
+     of rewrites to perform.
+
+     `?` (without :n:`@natural`) performs the rewrite as many times as possible
+     (possibly zero times).
+     This form never fails.  `!` (without :n:`@natural`) performs the rewrite as many
+     times as possible
+     and at least once.  The tactic fails if the requested number of rewrites can't
+     be performed.  :n:`@natural !` is equivalent to :n:`@natural`.
+
+   :n:`@occurrences`
+     If :n:`@occurrences` specifies multiple occurrences, the tactic succeeds if
+     any of them can be rewritten.  If not specified, only the first occurrence
+     in the conclusion is replaced.
+
+     If :n:`at @occs_nums` is specified, rewriting is always done with
+     :ref:`setoid rewriting <generalizedrewriting>`, even for Leibniz’s equality.
+
+   :n:`by @ltac_expr3`
+     If specified, is used to resolve all side conditions generated by the tactic.
+
+   .. exn:: Tactic failure: Setoid library not loaded.
+      :undocumented:
+
+      .. todo You can use Typeclasses Debug to tell whether rewrite used
+         setoid rewriting.  Example here: https://github.com/coq/coq/pull/13470#discussion_r539230973
+
+   .. exn:: Cannot find a relation to rewrite.
+      :undocumented:
+
+   .. exn:: Tactic generated a subgoal identical to the original goal.
+      :undocumented:
+
+   .. exn:: Found no subterm matching @term in @ident.
+            Found no subterm matching @term in the current goal.
+
+      This happens if :n:`@term` does not occur in, respectively, the named hypothesis or the goal.
+
+   .. tacn:: erewrite {+, @oriented_rewriter } {? @occurrences } {? by @ltac_expr3 }
+
+      Works like :tacn:`rewrite`, but turns
+      unresolved bindings, if any, into existential variables instead of
+      failing. It has the same parameters as :tacn:`rewrite`.
 
    .. flag:: Keyed Unification
 
@@ -105,197 +126,221 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
       the same key as the left- or right-hand side of the lemma given to rewrite, and the arguments
       are then unified up to full reduction.
 
-.. tacn:: replace @term with @term’
-   :name: replace
+.. tacn:: rewrite * {? {| -> | <- } } @one_term {? in @ident } {? at @rewrite_occs } {? by @ltac_expr3 }
+          rewrite * {? {| -> | <- } } @one_term at @rewrite_occs in @ident {? by @ltac_expr3 }
+   :name: rewrite *; _
+   :undocumented:
 
-   This tactic applies to any goal. It replaces all free occurrences of :n:`@term`
-   in the current goal with :n:`@term’` and generates an equality :n:`@term = @term’`
-   as a subgoal. This equality is automatically solved if it occurs among
-   the assumptions, or if its symmetric form occurs. It is equivalent to
-   :n:`cut @term = @term’; [intro H`:sub:`n` :n:`; rewrite <- H`:sub:`n` :n:`; clear H`:sub:`n`:n:`|| assumption || symmetry; try assumption]`.
+.. tacn:: rewrite_db @ident {? in @ident }
+   :undocumented:
+
+.. tacn:: replace @one_term__from with @one_term__to {? @occurrences } {? by @ltac_expr3 }
+          replace {? {| -> | <- } } @one_term__from {? @occurrences }
+   :name: replace; _
+
+   The first form replaces all free occurrences of :n:`@one_term__from`
+   in the current goal with :n:`@one_term__to` and generates an equality
+   :n:`@one_term__to = @one_term__from`
+   as a subgoal. (Note the generated equality is reversed with respect
+   to the order of the two terms in the tactic syntax; see
+   issue `#13480 <https://github.com/coq/coq/issues/13480>`_.)
+   This equality is automatically solved if it occurs among
+   the hypotheses, or if its symmetric form occurs.
+
+   The second form, with `->` or no arrow, replaces :n:`@one_term__from`
+   with :n:`@term__to` using
+   the first hypothesis whose type has the form :n:`@one_term__from = @term__to`.
+   If `<-` is given, the tactic uses the first hypothesis with the reverse form,
+   i.e. :n:`@term__to = @one_term__from`.
+
+   :n:`@occurrences`
+     The `type of` and `value of` forms are not supported.
+     Note you must `Require Setoid` to use the `at` clause in :n:`@occurrences`.
+
+   :n:`by @ltac_expr3`
+     Applies the :n:`@ltac_expr3` to solve the generated equality.
 
    .. exn:: Terms do not have convertible types.
       :undocumented:
 
-   .. tacv:: replace @term with @term’ by @tactic
+   .. tacn:: cutrewrite {? {| -> | <- } } @one_term {? in @ident }
 
-      This acts as :n:`replace @term with @term’` but applies :token:`tactic` to solve the generated
-      subgoal :n:`@term = @term’`.
-
-   .. tacv:: replace @term
-
-      Replaces :n:`@term` with :n:`@term’` using the first assumption whose type has
-      the form :n:`@term = @term’` or :n:`@term’ = @term`.
-
-   .. tacv:: replace -> @term
-
-      Replaces :n:`@term` with :n:`@term’` using the first assumption whose type has
-      the form :n:`@term = @term’`
-
-   .. tacv:: replace <- @term
-
-      Replaces :n:`@term` with :n:`@term’` using the first assumption whose type has
-      the form :n:`@term’ = @term`
-
-   .. tacv:: replace @term {? with @term} in @goal_occurrences {? by @tactic}
-             replace -> @term in @goal_occurrences
-             replace <- @term in @goal_occurrences
-
-      Acts as before but the replacements take place in the specified clauses
-      (:token:`goal_occurrences`) (see :ref:`performingcomputations`) and not
-      only in the conclusion of the goal. The clause argument must not contain
-      any ``type of`` nor ``value of``.
-
-   .. tacv:: cutrewrite {? {| <- | -> } } (@term__1 = @term__2) {? in @ident }
-      :name: cutrewrite
+      Where :n:`@one_term` is an equality.
 
       .. deprecated:: 8.5
 
          Use :tacn:`replace` instead.
 
-.. tacn:: subst @ident
-   :name: subst
+.. tacn:: substitute {? {| -> | <- } } @one_term {? with @bindings }
+   :undocumented:
 
-   This tactic applies to a goal that has :n:`@ident` in its context and (at
-   least) one hypothesis, say :g:`H`, of type :n:`@ident = t` or :n:`t = @ident`
-   with :n:`@ident` not occurring in :g:`t`. Then it replaces :n:`@ident` by
-   :g:`t` everywhere in the goal (in the hypotheses and in the conclusion) and
-   clears :n:`@ident` and :g:`H` from the context.
+.. tacn:: subst {* @ident }
 
-   If :n:`@ident` is a local definition of the form :n:`@ident := t`, it is also
+   For each :n:`@ident`, in order, for which there is a hypothesis in the form
+   :n:`@ident = @term` or :n:`@term = @ident`, replaces :n:`@ident` with :n:`@term`
+   everywhere in the hypotheses and the conclusion and clears :n:`@ident` and the hypothesis
+   from the context.  If there are multiple hypotheses that match the :n:`@ident`,
+   the first one is used.  If no :n:`@ident` is given, replacement is done for all
+   hypotheses in the appropriate form in top to bottom order.
+
+   If :n:`@ident` is a local definition of the form :n:`@ident := @term`, it is also
    unfolded and cleared.
 
-   If :n:`@ident` is a section variable it is expected to have no
-   indirect occurrences in the goal, i.e. that no global declarations
-   implicitly depending on the section variable must be present in the
+   If :n:`@ident` is a section variable it must have no
+   indirect occurrences in the goal, i.e. no global declarations
+   implicitly depending on the section variable may be present in the
    goal.
 
    .. note::
-      + When several hypotheses have the form :n:`@ident = t` or :n:`t = @ident`, the
-        first one is used.
-
-      + If :g:`H` is itself dependent in the goal, it is replaced by the proof of
-        reflexivity of equality.
-
-   .. tacv:: subst {+ @ident}
-
-      This is equivalent to :n:`subst @ident`:sub:`1`:n:`; ...; subst @ident`:sub:`n`.
-
-   .. tacv:: subst
-
-      This applies :tacn:`subst` repeatedly from top to bottom to all hypotheses of the
-      context for which an equality of the form :n:`@ident = t` or :n:`t = @ident`
-      or :n:`@ident := t` exists, with :n:`@ident` not occurring in
-      ``t`` and :n:`@ident` not a section variable with indirect
-      dependencies in the goal.
+      If the hypothesis is itself dependent in the goal, it is replaced by the proof of
+      reflexivity of equality.
 
    .. flag:: Regular Subst Tactic
 
       This flag controls the behavior of :tacn:`subst`. When it is
       activated (it is by default), :tacn:`subst` also deals with the following corner cases:
 
-      + A context with ordered hypotheses :n:`@ident`:sub:`1` :n:`= @ident`:sub:`2`
-        and :n:`@ident`:sub:`1` :n:`= t`, or :n:`t′ = @ident`:sub:`1`` with `t′` not
-        a variable, and no other hypotheses of the form :n:`@ident`:sub:`2` :n:`= u`
-        or :n:`u = @ident`:sub:`2`; without the flag, a second call to
-        subst would be necessary to replace :n:`@ident`:sub:`2` by `t` or
+      + A context with ordered hypotheses :n:`@ident__1 = @ident__2`
+        and :n:`@ident__1 = t`, or :n:`t′ = @ident__1` with `t′` not
+        a variable, and no other hypotheses of the form :n:`@ident__2 = u`
+        or :n:`u = @ident__2`; without the flag, a second call to
+        subst would be necessary to replace :n:`@ident__2` by `t` or
         `t′` respectively.
       + The presence of a recursive equation which without the flag would
         be a cause of failure of :tacn:`subst`.
-      + A context with cyclic dependencies as with hypotheses :n:`@ident`:sub:`1` :n:`= f @ident`:sub:`2`
-        and :n:`@ident`:sub:`2` :n:`= g @ident`:sub:`1` which without the
+      + A context with cyclic dependencies as with hypotheses :n:`@ident__1 = f @ident__2`
+        and :n:`@ident__2 = g @ident__1` which without the
         flag would be a cause of failure of :tacn:`subst`.
 
-      Additionally, it prevents a local definition such as :n:`@ident := t` to be
+      Additionally, it prevents a local definition such as :n:`@ident := t` from being
       unfolded which otherwise it would exceptionally unfold in configurations
       containing hypotheses of the form :n:`@ident = u`, or :n:`u′ = @ident`
       with `u′` not a variable. Finally, it preserves the initial order of
       hypotheses, which without the flag it may break.
-      default.
 
-   .. exn:: Cannot find any non-recursive equality over :n:`@ident`.
+   .. exn:: Cannot find any non-recursive equality over @ident.
       :undocumented:
 
-   .. exn:: Section variable :n:`@ident` occurs implicitly in global declaration :n:`@qualid` present in hypothesis :n:`@ident`.
-            Section variable :n:`@ident` occurs implicitly in global declaration :n:`@qualid` present in the conclusion.
+   .. exn:: Section variable @ident occurs implicitly in global declaration @qualid present in hypothesis @ident.
+            Section variable @ident occurs implicitly in global declaration @qualid present in the conclusion.
 
       Raised when the variable is a section variable with indirect
       dependencies in the goal.
+      If :n:`@ident` is a section variable, it must not have any
+      indirect occurrences in the goal, i.e. no global declarations
+      implicitly depending on the section variable may be present in the
+      goal.
 
+.. tacn:: simple subst
+   :undocumented:
 
-.. tacn:: stepl @term
-   :name: stepl
+.. tacn:: stepl @one_term {? by @ltac_expr }
 
-   This tactic is for chaining rewriting steps. It assumes a goal of the
-   form :n:`R @term @term` where ``R`` is a binary relation and relies on a
+   For chaining rewriting steps. It assumes a goal in the
+   form :n:`R @term__1 @term__2` where ``R`` is a binary relation and relies on a
    database of lemmas of the form :g:`forall x y z, R x y -> eq x z -> R z y`
-   where `eq` is typically a setoid equality. The application of :n:`stepl @term`
-   then replaces the goal by :n:`R @term @term` and adds a new goal stating
-   :n:`eq @term @term`.
+   where `eq` is typically a setoid equality. The application of :n:`stepl @one_term`
+   then replaces the goal by :n:`R @one_term @term__2` and adds a new goal stating
+   :n:`eq @one_term @term__1`.
 
-   .. cmd:: Declare Left Step @term
+   If :n:`@ltac_expr` is specified, it is applied to the side condition.
 
-      Adds :n:`@term` to the database used by :tacn:`stepl`.
+   .. cmd:: Declare Left Step @one_term
+
+      Adds :n:`@one_term` to the database used by :tacn:`stepl`.
 
    This tactic is especially useful for parametric setoids which are not accepted
    as regular setoids for :tacn:`rewrite` and :tacn:`setoid_replace` (see
    :ref:`Generalizedrewriting`).
 
-   .. tacv:: stepl @term by @tactic
+   .. tacn:: stepr @one_term {? by @ltac_expr }
 
-      This applies :n:`stepl @term` then applies :token:`tactic` to the second goal.
-
-   .. tacv:: stepr @term by @tactic
-      :name: stepr
-
-      This behaves as :tacn:`stepl` but on the right-hand-side of the binary
-      relation. Lemmas are expected to be of the form
+      This behaves like :tacn:`stepl` but on the right hand side of the binary
+      relation. Lemmas are expected to be in the form
       :g:`forall x y z, R x y -> eq y z -> R x z`.
 
-   .. cmd:: Declare Right Step @term
+   .. cmd:: Declare Right Step @one_term
 
        Adds :n:`@term` to the database used by :tacn:`stepr`.
 
+Rewriting with definitional equality
+------------------------------------
 
-.. tacn:: change @term
-   :name: change
+.. tacn:: change {? @one_term__from {? at @occs_nums } with } @one_term__to {? @occurrences }
 
-   This tactic applies to any goal. It implements the rule ``Conv`` given in
-   :ref:`subtyping-rules`. :g:`change U` replaces the current goal `T`
-   with `U` providing that `U` is well-formed and that `T` and `U` are
-   convertible.
+   Replaces terms with other :term:`convertible` terms.
+   If :n:`@one_term__from` is not specified, then :n:`@one_term__from` replaces the conclusion and/or
+   the specified hypotheses.  If :n:`@one_term__from` is specified, the tactic replaces occurrences
+   of :n:`@one_term__to` within the conclusion and/or the specified hypotheses.
+
+   :n:`{? @one_term__from {? at @occs_nums } with }`
+     Replaces the occurrences of :n:`@one_term__from` specified by :n:`@occs_nums`
+     with :n:`@one_term__to`, provided that the two :n:`@one_term`\s are
+     convertible.  :n:`@one_term__from` may contain pattern variables such as `?x`,
+     whose value which will substituted for `x` in :n:`@one_term__to`, such as in
+     `change (f ?x ?y) with (g (x, y))` or `change (fun x => ?f x) with f`.
+
+   :n:`@occurrences`
+     If `with` is not specified, :n:`@occurrences` must only specify
+     entire hypotheses and/or the goal; it must not include any
+     :n:`at @occs_nums` clauses.
 
    .. exn:: Not convertible.
       :undocumented:
 
-   .. tacv:: change @term with @term’
+   .. exn:: Found an "at" clause without "with" clause
+      :undocumented:
 
-      This replaces the occurrences of :n:`@term` by :n:`@term’` in the current goal.
-      The term :n:`@term` and :n:`@term’` must be convertible.
+   .. tacn:: now_show @one_term
 
-   .. tacv:: change @term at {+ @natural} with @term’
-
-      This replaces the occurrences numbered :n:`{+ @natural}` of :n:`@term` by :n:`@term’`
-      in the current goal. The terms :n:`@term` and :n:`@term’` must be convertible.
-
-      .. exn:: Too few occurrences.
-         :undocumented:
-
-   .. tacv:: change @term {? {? at {+ @natural}} with @term} in @goal_occurrences
-
-      In the presence of :n:`with`, this applies :tacn:`change` to the
-      occurrences specified by :n:`@goal_occurrences`. In the
-      absence of :n:`with`, :n:`@goal_occurrences` is expected to
-      only list hypotheses (and optionally the conclusion) without
-      specifying occurrences (i.e. no :n:`at` clause).
-
-   .. tacv:: now_show @term
-
-      This is a synonym of :n:`change @term`. It can be used to
+      A synonym for :n:`change @one_term`. It can be used to
       make some proof steps explicit when refactoring a proof script
       to make it readable.
 
    .. seealso:: :ref:`Performing computations <performingcomputations>`
+
+.. tacn:: change_no_check {? @one_term__from {? at @occs_nums } with } @one_term__to {? @occurrences }
+
+   For advanced usage. Similar to :tacn:`change`, but as an optimization,
+   it skips checking that :n:`@one_term__to` is convertible with the goal or
+   :n:`@one_term__from`.
+
+   Recall that the Coq kernel typechecks proofs again when they are concluded to
+   ensure correctness. Hence, using :tacn:`change` checks convertibility twice
+   overall, while :tacn:`change_no_check` can produce ill-typed terms,
+   but checks convertibility only once.
+   Hence, :tacn:`change_no_check` can be useful to speed up certain proof
+   scripts, especially if one knows by construction that the argument is
+   indeed convertible to the goal.
+
+   In the following example, :tacn:`change_no_check` replaces :g:`False` with
+   :g:`True`, but :cmd:`Qed` then rejects the proof, ensuring consistency.
+
+   .. example::
+
+      .. coqtop:: all abort fail
+
+         Goal False.
+           change_no_check True.
+           exact I.
+         Qed.
+
+   .. example::
+
+      .. coqtop:: all abort fail
+
+         Goal True -> False.
+           intro H.
+           change_no_check False in H.
+           exact H.
+         Qed.
+
+   .. tacn:: convert_concl_no_check @one_term
+
+      .. deprecated:: 8.11
+
+      Deprecated old name for :tacn:`change_no_check`. Does not support any of its
+      variants.
 
 .. _performingcomputations:
 

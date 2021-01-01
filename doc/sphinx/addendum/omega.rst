@@ -28,7 +28,6 @@ Description of ``omega``
 ------------------------
 
 .. tacn:: omega
-   :name: omega
 
    .. deprecated:: 8.12
 

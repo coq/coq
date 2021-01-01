@@ -954,7 +954,7 @@ Parsing and grammar extension
   for Time and to write grammar rules abbreviating several commands) (+)
 
 - The default parser for actions in the grammar rules (and for
-  patterns in the pretty-printing rules) is now the one associated to
+  patterns in the pretty-printing rules) is now the one associated with
   the grammar (i.e. vernac, tactic or constr); no need then for
   quotations as in <:vernac:<...>>; to return an "ast", the grammar
   must be explicitly typed with tag ": ast" or ": ast list", or if a
@@ -1346,12 +1346,12 @@ Language
   instead to simulate the old behaviour of Local (the section part of
   the name is not kept though)
 
-ML tactic and vernacular commands
+ML tactics and commands
 
 - "Grammar tactic" and "Grammar vernac" of type "ast" are no longer
   supported (only "Grammar tactic simple_tactic" of type "tactic"
   remains available).
-- Concrete syntax for ML written vernacular commands and tactics is
+- Concrete syntax for ML written commands and tactics is
   now declared at ML level using camlp4 macros TACTIC EXTEND et VERNAC
   COMMAND EXTEND.
 - "Check n c" now "n:Check c", "Eval n ..." now "n:Eval ..."

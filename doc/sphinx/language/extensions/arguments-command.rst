@@ -4,7 +4,6 @@ Setting properties of a function's arguments
 ++++++++++++++++++++++++++++++++++++++++++++
 
 .. cmd:: Arguments @reference {* @arg_specs } {* , {* @implicits_alt } } {? : {+, @args_modifier } }
-   :name: Arguments
 
    .. insertprodn argument_spec args_modifier
 

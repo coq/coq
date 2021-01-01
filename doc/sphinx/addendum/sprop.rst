@@ -19,7 +19,6 @@ Use of |SProp| may be disabled by passing ``-disallow-sprop`` to the
 Coq program or by turning the :flag:`Allow StrictProp` flag off.
 
 .. flag:: Allow StrictProp
-   :name: Allow StrictProp
 
    Enables or disables the use of |SProp|.  It is enabled by default.
    The command-line flag ``-disallow-sprop`` disables |SProp| at
@@ -283,7 +282,6 @@ This means that some errors will be delayed until ``Qed``:
    Abort.
 
 .. flag:: Elaboration StrictProp Cumulativity
-   :name: Elaboration StrictProp Cumulativity
 
    Unset this flag (it is on by default) to be strict with regard to
    :math:`\SProp` cumulativity during elaboration.
@@ -320,7 +318,6 @@ so correctly converts ``x`` and ``y``.
   it to find when your tactics are producing incorrect marks.
 
 .. flag:: Cumulative StrictProp
-   :name: Cumulative StrictProp
 
    Set this flag (it is off by default) to make the kernel accept
    cumulativity between |SProp| and other universes. This makes

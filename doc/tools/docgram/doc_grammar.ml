@@ -1726,8 +1726,6 @@ let process_rst g file args seen tac_prods cmd_prods =
 
   let cmd_exclude_files = [
     "doc/sphinx/proof-engine/ssreflect-proof-language.rst";
-    "doc/sphinx/proofs/writing-proofs/rewriting.rst";
-    "doc/sphinx/proofs/writing-proofs/proof-mode.rst";
     "doc/sphinx/proof-engine/tactics.rst";
   ]
   in

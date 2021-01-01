@@ -421,7 +421,7 @@ Error messages:
 
 .. exn:: Ring operation should be declared as a morphism.
 
-  A setoid associated to the carrier of the ring structure has been found, 
+  A setoid associated with the carrier of the ring structure has been found,
   but the ring operation should be declared as morphism. See :ref:`tactics-enabled-on-user-provided-relations`.
 
 How does it work?

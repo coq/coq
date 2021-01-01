@@ -36,7 +36,7 @@ Inductive types
    :attr:`private(matching)` attributes.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
-   The :n:`@ident`\s are simultaneously added to the environment before the types of constructors are checked.
+   The :n:`@ident`\s are simultaneously added to the global environment before the types of constructors are checked.
    Each :n:`@ident` can be used independently thereafter.
    See :ref:`mutually_inductive_types`.
 
@@ -86,7 +86,7 @@ A simple inductive type belongs to a universe that is a simple :n:`@sort`.
 
    The type nat is defined as the least :g:`Set` containing :g:`O` and closed by
    the :g:`S` constructor. The names :g:`nat`, :g:`O` and :g:`S` are added to the
-   environment.
+   global environment.
 
    This definition generates four elimination principles:
    :g:`nat_rect`, :g:`nat_ind`, :g:`nat_rec` and :g:`nat_sind`. The type of :g:`nat_ind` is:
@@ -413,7 +413,7 @@ constructions.
    It is especially useful when defining functions over mutually defined
    inductive types.  Example: :ref:`Mutual Fixpoints<example_mutual_fixpoints>`.
 
-   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof editing mode.
+   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
@@ -636,7 +636,7 @@ contains an inductive definition.
 
 .. example::
 
-   Provided that our environment :math:`E` contains inductive definitions we showed before,
+   Provided that our global environment :math:`E` contains inductive definitions we showed before,
    these two inference rules above enable us to conclude that:
 
    .. math::

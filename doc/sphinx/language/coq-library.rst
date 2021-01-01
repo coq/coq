@@ -902,7 +902,6 @@ In addition to the powerful ``ring``, ``field`` and ``lra``
 tactics (see Chapter :ref:`tactics`), there are also:
 
 .. tacn:: discrR
-  :name: discrR
 
   Proves that two real integer constants are different.
 
@@ -916,7 +915,6 @@ tactics (see Chapter :ref:`tactics`), there are also:
     discrR.
 
 .. tacn:: split_Rabs
-  :name: split_Rabs
 
   Allows unfolding the ``Rabs`` constant and splits corresponding conjunctions.
 
@@ -930,7 +928,6 @@ tactics (see Chapter :ref:`tactics`), there are also:
     intro; split_Rabs.
 
 .. tacn:: split_Rmult
-  :name: split_Rmult
 
   Splits a condition that a product is non null into subgoals
   corresponding to the condition on each operand of the product.

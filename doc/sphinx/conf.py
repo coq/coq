@@ -183,11 +183,8 @@ todo_include_todos = False
 nitpicky = True
 
 nitpick_ignore = [ ('token', token) for token in [
-    'tactic',
     'induction_clause',
-    'conversion',
     'where',
-    'oriented_rewriter',
     'bindings_with_parameters',
     'destruction_arg'
 ]]
