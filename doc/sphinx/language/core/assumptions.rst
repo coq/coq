@@ -115,10 +115,10 @@ Section :ref:`explicit-applications`).
 Assumptions
 -----------
 
-Assumptions extend the environment with axioms, parameters, hypotheses
+Assumptions extend the global environment with axioms, parameters, hypotheses
 or variables. An assumption binds an :n:`@ident` to a :n:`@type`. It is accepted
-by Coq if and only if this :n:`@type` is a correct type in the environment
-preexisting the declaration and if :n:`@ident` was not previously defined in
+by Coq only if :n:`@type` is a correct type in the global environment
+before the declaration and if :n:`@ident` was not previously defined in
 the same module. This :n:`@type` is considered to be the type (or
 specification, or statement) assumed by :n:`@ident` and we say that :n:`@ident`
 has type :n:`@type`.
@@ -141,7 +141,7 @@ has type :n:`@type`.
       of_type ::= {| : | :> } @type
 
    These commands bind one or more :n:`@ident`\(s) to specified :n:`@type`\(s) as their specifications in
-   the global context. The fact asserted by :n:`@type` (or, equivalently, the existence
+   the global environment. The fact asserted by :n:`@type` (or, equivalently, the existence
    of an object of this type) is accepted as a postulate.  They accept the :attr:`program` attribute.
 
    :cmd:`Axiom`, :cmd:`Conjecture`, :cmd:`Parameter` and their plural forms

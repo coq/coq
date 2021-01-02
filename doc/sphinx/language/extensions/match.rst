@@ -252,7 +252,6 @@ If an inductive type has just one constructor, pattern matching can be
 written using the first destructuring let syntax.
 
 .. table:: Printing Let @qualid
-   :name: Printing Let
 
    Specifies a set of qualids for which pattern matching is displayed using a let expression.
    Note that this only applies to pattern matching instances entered with :g:`match`.
@@ -269,7 +268,6 @@ can be written using ``if`` … ``then`` … ``else`` ….  This table controls
 which types are written this way:
 
 .. table:: Printing If @qualid
-   :name: Printing If
 
    Specifies a set of qualids for which pattern matching is displayed using
    ``if`` … ``then`` … ``else`` ….  Use the :cmd:`Add` and :cmd:`Remove`
@@ -720,7 +718,7 @@ Recall that a list of patterns is also a pattern. So, when we
 destructure several terms at the same time and the branches have
 different types we need to provide the elimination predicate for this
 multiple pattern. It is done using the same scheme: each term may be
-associated to an ``as`` clause and an ``in`` clause in order to introduce
+associated with an ``as`` clause and an ``in`` clause in order to introduce
 a dependent product.
 
 For example, an equivalent definition for :g:`concat` (even though the

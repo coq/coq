@@ -45,9 +45,9 @@ This manual is organized in three main parts, plus an appendix:
   translated down to the language of the kernel by means of an
   "elaboration process".
 
-- **The second part presents the interactive proof mode**, the central
+- **The second part presents proof mode**, the central
   feature of Coq.  :ref:`writing-proofs` introduces this interactive
-  proof mode and the available proof languages.
+  mode and the available proof languages.
   :ref:`automatic-tactics` presents some more advanced tactics, while
   :ref:`writing-tactics` is about the languages that allow a user to
   combine tactics together and develop new ones.

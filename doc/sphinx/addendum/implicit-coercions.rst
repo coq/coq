@@ -202,7 +202,6 @@ Use :n:`:>` instead of :n:`:` before the
       :undocumented:
 
    .. cmd:: SubClass @ident_decl @def_body
-      :name: SubClass
 
       If :n:`@type` is a class :n:`@ident'` applied to some arguments then
       :n:`@ident` is defined and an identity coercion of name
@@ -243,7 +242,6 @@ Activating the Printing of Coercions
    By default, coercions are not printed.
 
 .. table:: Printing Coercion @qualid
-   :name: Printing Coercion
 
    Specifies a set of qualids for which coercions are always displayed.  Use the
    :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.

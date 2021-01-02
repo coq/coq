@@ -119,13 +119,11 @@ The following settings let you control the display format for types:
 You can override the display format for specified types by adding entries to these tables:
 
 .. table:: Printing Record @qualid
-   :name: Printing Record
 
    Specifies a set of qualids which are displayed as records.  Use the
    :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 .. table:: Printing Constructor @qualid
-   :name: Printing Constructor
 
    Specifies a set of qualids which are displayed as constructors.  Use the
    :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
@@ -208,7 +206,7 @@ other arguments are the parameters of the inductive type.
   This message is followed by an explanation of this impossibility.
   There may be three reasons:
 
-  #. The name :token:`ident` already exists in the environment (see :cmd:`Axiom`).
+  #. The name :token:`ident` already exists in the global environment (see :cmd:`Axiom`).
   #. The body of :token:`ident` uses an incorrect elimination for
      :token:`ident` (see :cmd:`Fixpoint` and :ref:`Destructors`).
   #. The type of the projections :token:`ident` depends on previous

@@ -173,7 +173,6 @@ Type declarations
 One can define new types with the following commands.
 
 .. cmd:: Ltac2 Type {? rec } @tac2typ_def {* with @tac2typ_def }
-   :name: Ltac2 Type
 
    .. insertprodn tac2typ_def tac2rec_field
 
@@ -301,7 +300,6 @@ Ltac2 Definitions
 ~~~~~~~~~~~~~~~~~
 
 .. cmd:: Ltac2 {? mutable } {? rec } @tac2def_body {* with @tac2def_body }
-   :name: Ltac2
 
    .. insertprodn tac2def_body tac2def_body
 
@@ -322,7 +320,6 @@ Ltac2 Definitions
    If ``mutable`` is set, the definition can be redefined at a later stage (see below).
 
 .. cmd:: Ltac2 Set @qualid {? as @ident } := @ltac2_expr
-   :name: Ltac2 Set
 
    This command redefines a previous ``mutable`` definition.
    Mutable definitions act like dynamic binding, i.e. at runtime, the last defined
@@ -598,7 +595,7 @@ modes, the *strict* and the *non-strict* mode.
   hypotheses. If this doesn't hold, internalization will fail. To work around
   this error, one has to specifically use the ``&`` notation.
 - In non-strict mode, any simple identifier appearing in a term quotation which
-  is not bound in the global context is turned into a dynamic reference to a
+  is not bound in the global environment is turned into a dynamic reference to a
   hypothesis. That is to say, internalization will succeed, but the evaluation
   of the term at runtime will fail if there is no such variable in the dynamic
   context.
@@ -982,7 +979,7 @@ Match over goals
       gmatch_hyp_pattern ::= @name : @ltac2_match_pattern
 
    Matches over goals, similar to Ltac1 :tacn:`match goal`.
-   Use this form to match hypotheses and/or goals in the proof context.  These patterns have zero or
+   Use this form to match hypotheses and/or goals in the local context.  These patterns have zero or
    more subpatterns to match hypotheses followed by a subpattern to match the conclusion.  Except for the
    differences noted below, this works the same as the corresponding :n:`@ltac2_match_key @ltac2_expr` construct
    (see :tacn:`match!`).  Each current goal is processed independently.
@@ -1164,7 +1161,6 @@ Notations
 ---------
 
 .. cmd:: Ltac2 Notation {+ @ltac2_scope } {? : @natural } := @ltac2_expr
-   :name: Ltac2 Notation
 
    .. todo seems like name maybe should use lident rather than ident, considering:
 
@@ -1487,7 +1483,7 @@ Other nonterminals that have syntactic classes are listed here.
 
       * - :n:`conversion`
         - :token:`ltac2_conversion`
-        - :token:`conversion`
+        -
 
       * - :n:`rewriting`
         - :token:`ltac2_oriented_rewriter`
@@ -1679,7 +1675,6 @@ Evaluation
 Ltac2 features a toplevel loop that can be used to evaluate expressions.
 
 .. cmd:: Ltac2 Eval @ltac2_expr
-   :name: Ltac2 Eval
 
    This command evaluates the term in the current proof if there is one, or in the
    global environment otherwise, and displays the resulting value to the user
@@ -1877,9 +1872,9 @@ In Ltac expressions
 
 .. exn:: Unbound {| value | constructor } X
 
-   * if `X` is meant to be a term from the current stactic environment, replace
+   * if `X` is meant to be a term from the current static environment, replace
      the problematic use by `'X`.
-   * if `X` is meant to be a hypothesis from the goal context, replace the
+   * if `X` is meant to be a hypothesis from the local context, replace the
      problematic use by `&X`.
 
 In quotations
@@ -1889,7 +1884,7 @@ In quotations
 
    * if `X` is meant to be a tactic expression bound by a Ltac2 let or function,
      replace the problematic use by `$X`.
-   * if `X` is meant to be a hypothesis from the goal context, replace the
+   * if `X` is meant to be a hypothesis from the local context, replace the
      problematic use by `&X`.
 
 Exception catching

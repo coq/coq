@@ -116,8 +116,8 @@ compatible with the rest of Coq, up to a few discrepancies:
 
 
 + New keywords (``is``) might clash with variable, constant, tactic or
-  tactical names, or with quasi-keywords in tactic or vernacular
-  notations.
+  tactical names, or with quasi-keywords in tactic or
+  notation commands.
 + New tactic(al)s names (:tacn:`last`, :tacn:`done`, :tacn:`have`, :tacn:`suffices`,
   :tacn:`suff`, :tacn:`without loss`, :tacn:`wlog`, :tacn:`congr`, :tacn:`unlock`)
   might clash with user tactic names.
@@ -799,8 +799,9 @@ An *occurrence switch* can be:
         set x := {+1 3}(f 2).
 
   Notice that some occurrences of a given term may be
-  hidden to the user, for example because of a notation. The vernacular
-  ``Set Printing All`` command displays all these hidden occurrences and
+  hidden to the user, for example because of a notation. Setting the
+  :flag:`Printing All` flag causes these hidden occurrences to
+  be shown when the term is displayed.  This setting
   should be used to find the correct coding of the occurrences to be
   selected [#1]_.
 
@@ -1023,7 +1024,7 @@ conversely in between deductive steps.
 
 In |SSR| these moves are performed by two *tacticals* ``=>`` and
 ``:``, so that the bookkeeping required by a deductive step can be
-directly associated to that step, and that tactics in an |SSR|
+directly associated with that step, and that tactics in an |SSR|
 script correspond to actual logical steps in the proof rather than
 merely shuffle facts. Still, some isolated bookkeeping is unavoidable,
 such as naming variables and assumptions at the beginning of a
@@ -1189,7 +1190,7 @@ The move tactic.
 ````````````````
 
 .. tacn:: move
-   :name: move
+   :name: move (ssreflect)
 
    This tactic, in its defective form, behaves like the :tacn:`hnf` tactic.
 
@@ -5502,7 +5503,7 @@ equivalences are indeed taken into account, otherwise only single
      string that contains symbols or is followed by a scope key, is
      interpreted as the constant whose notation involves that string (e.g.,
      :g:`+` for :g:`addn`), if this is unambiguous; otherwise the diagnostic
-     includes the output of the :cmd:`Locate` vernacular command.
+     includes the output of the :cmd:`Locate` command.
    + whose statement, including assumptions and types, contains a subterm
      matching the next patterns. If a pattern is prefixed by ``-``, the test is
      reversed;

@@ -66,7 +66,7 @@ would be a solution of the inference problem.
 **Contextual Implicit Arguments**
 
 An implicit argument can be *contextual* or not. An implicit argument
-is said *contextual* if it can be inferred only from the knowledge of
+is said to be *contextual* if it can be inferred only from the knowledge of
 the type of the context of the current expression. For instance, the
 only argument of::
 
@@ -384,7 +384,7 @@ Displaying implicit arguments when pretty-printing
 
 .. flag:: Printing Implicit
 
-   By default, the basic pretty-printing rules hide the inferrable implicit
+   By default, the basic pretty-printing rules hide the inferable implicit
    arguments of an application. Turn this flag on to force printing all
    implicit arguments.
 
@@ -506,7 +506,7 @@ or :g:`m` to the type :g:`nat` of natural numbers).
 .. flag:: Printing Use Implicit Types
 
   By default, the type of bound variables is not printed when
-  the variable name is associated to an implicit type which matches the
+  the variable name is associated with an implicit type which matches the
   actual type of the variable. This feature can be deactivated by
   turning this flag off.
 

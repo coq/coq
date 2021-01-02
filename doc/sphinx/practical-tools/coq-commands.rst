@@ -43,7 +43,7 @@ Batch compilation (coqc)
 ------------------------
 
 The ``coqc`` command takes a name *file* as argument. Then it looks for a
-vernacular file named *file*.v, and tries to compile it into a
+file named *file*.v, and tries to compile it into a
 *file*.vo file (See :ref:`compiled-files`).
 
 .. caution::
@@ -499,7 +499,7 @@ wrong. In the current version, it does not modify the compiled libraries to mark
 them as successfully checked.
 
 Note that non-logical information is not checked. By logical
-information, we mean the type and optional body associated to names.
+information, we mean the type and optional body associated with names.
 It excludes for instance anything related to the concrete syntax of
 objects (customized syntax rules, association between short and long
 names), implicit arguments, etc.

@@ -160,7 +160,7 @@ Sections and contexts
 ---------------------
 
 To ease developments parameterized by many instances, one can use the
-:cmd:`Context` command to introduce these parameters into section contexts,
+:cmd:`Context` command to introduce the parameters into the :term:`local context`,
 it works similarly to the command :cmd:`Variable`, except it accepts any
 binding context as an argument, so variables can be implicit, and
 :ref:`implicit-generalization` can be used.
@@ -422,7 +422,7 @@ Summary of the commands
      resolution with the local hypotheses use full conversion during
      unification.
 
-   + The mode hints (see :cmd:`Hint Mode`) associated to a class are
+   + The mode hints (see :cmd:`Hint Mode`) associated with a class are
      taken into account by :tacn:`typeclasses eauto`. When a goal
      does not match any of the declared modes for its head (if any),
      instead of failing like :tacn:`eauto`, the goal is suspended and
@@ -470,7 +470,6 @@ Summary of the commands
         refinement engine will be able to backtrack.
 
 .. tacn:: autoapply @one_term with @ident
-   :name: autoapply
 
    The tactic ``autoapply`` applies :token:`one_term` using the transparency information
    of the hint database :token:`ident`, and does *no* typeclass resolution. This can
@@ -590,7 +589,6 @@ Settings
    :cmd:`Typeclasses eauto` is another way to set this flag.
 
 .. opt:: Typeclasses Depth @natural
-   :name: Typeclasses Depth
 
    Sets the maximum proof search depth.  The default is unbounded.
    :cmd:`Typeclasses eauto` is another way to set this option.
@@ -602,7 +600,6 @@ Settings
    is another way to set this flag.
 
 .. opt:: Typeclasses Debug Verbosity @natural
-   :name: Typeclasses Debug Verbosity
 
    Determines how much information is shown for typeclass resolution steps during search.
    1 is the default level.  2 shows additional information such as tried tactics and shelving
@@ -613,7 +610,6 @@ Typeclasses eauto
 ~~~~~~~~~~~~~~~~~
 
 .. cmd:: Typeclasses eauto := {? debug } {? ( {| bfs | dfs } ) } {? @natural }
-   :name: Typeclasses eauto
 
    Allows more global customization of the :tacn:`typeclasses eauto` tactic.
    The options are:
