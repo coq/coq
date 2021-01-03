@@ -194,11 +194,7 @@ let eoi_entry en =
 
 let parse_string f ?loc x =
   let strm = Stream.of_string x in
-  incr Stats.cnt;
-  let x = Entry.parse f (Parsable.make ?loc strm) in
-  decr Stats.cnt;
-  x
-
+  Entry.parse f (Parsable.make ?loc strm)
 
 (* universes not used by Coq build but still used by some plugins *)
 type gram_universe = string

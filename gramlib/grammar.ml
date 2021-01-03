@@ -27,7 +27,7 @@ module type S = sig
     type 'a t
     val make : string -> 'a t
     val create : string -> 'a t
-    val parse : 'a t -> Parsable.t -> 'a
+    val parse : ?ptree: bool -> 'a t -> Parsable.t -> 'a
     val name : 'a t -> string
     val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
     val parse_token_stream : 'a t -> te Stream.t -> 'a
@@ -1659,9 +1659,11 @@ module Entry = struct
         (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
       edesc = Dlevels []}
   let create = make
-  let parse (e : 'a t) p : 'a =
-    incr Stats.cnt;
-    Stats.set_ename e.ename;
+  let parse ?(ptree=false) (e : 'a t) p : 'a =
+    if ptree then begin
+      incr Stats.cnt;
+      Stats.set_ename e.ename
+    end;
     let print = !Stats.cnt > 1 && !Stats.print in
     if print then
       Printf.printf ">>> Entry.parse of %s %d\n%!" e.ename !Stats.cnt;
@@ -1669,12 +1671,12 @@ module Entry = struct
     let x = Parsable.parse_parsable e p in
     if print then
       Printf.printf "<<< Exit Entry.parse of %s %d\n%!" e.ename !Stats.cnt;
-    decr Stats.cnt;
+    if ptree then decr Stats.cnt;
     x
     with _ as ex ->
       if print then
         Printf.printf "<<< Exception Entry.parse of %s %d\n%!" e.ename !Stats.cnt;
-      decr Stats.cnt;
+      if ptree then decr Stats.cnt;
       reraise ex
 
   let parse_token_stream (e : 'a t) ts : 'a =

@@ -56,7 +56,10 @@ module Vernac_ =
         Stats.parser_action "main_entry" 1 __FILE__ __LINE__ 0  (lazy "vernac_control");
         Stats.check_stack "main_entry";
         Some v in
-      let act_eoi _ loc = None in
+      let act_eoi _ loc =
+        Stats.parser_action "main_entry" 1 __FILE__ __LINE__ 0  (lazy "PEOI");
+        Stats.check_stack "main_entry";
+        None in
       let rule = [
         Pcoq.(Production.make (Rule.next Rule.stop (Symbol.token Tok.PEOI)) act_eoi);
         Pcoq.(Production.make (Rule.next Rule.stop (Symbol.nterm vernac_control)) act_vernac);

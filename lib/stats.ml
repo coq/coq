@@ -140,10 +140,8 @@ let got_token tok =
         printf "Read \"%s\" (line %i, %i-%i)\n%!" tok (loc.line_nb) (loc.bp-loc.bol_pos) (loc.ep-loc.bol_pos)
       | None ->
         printf "Token [%s]\n" tok);
-    if String.length tok > 0 then begin  (* think this is EOI *)
-      stack := `Token (tok, !tok_loc) :: !stack;
-      if !print then print_stack ()
-    end
+    stack := `Token (tok, !tok_loc) :: !stack;
+    if !print then print_stack ()
   end
 
 let got_loc loc t =

@@ -37,7 +37,7 @@ module type S = sig
     type 'a t
     val make : string -> 'a t
     val create : string -> 'a t (* compat *)
-    val parse : 'a t -> Parsable.t -> 'a
+    val parse : ?ptree:bool -> 'a t -> Parsable.t -> 'a
     val name : 'a t -> string
     val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
     val parse_token_stream : 'a t -> te Stream.t -> 'a
