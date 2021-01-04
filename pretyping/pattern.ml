@@ -18,7 +18,6 @@ type patvar = Id.t
 type case_info_pattern =
     { cip_style : Constr.case_style;
       cip_ind : inductive option;
-      cip_ind_tags : bool list option; (** indicates LetIn/Lambda in arity *)
       cip_extensible : bool (** does this match end with _ => _ ? *) }
 
 type constr_pattern =
@@ -35,8 +34,8 @@ type constr_pattern =
   | PSort of Sorts.family
   | PMeta of patvar option
   | PIf of constr_pattern * constr_pattern * constr_pattern
-  | PCase of case_info_pattern * constr_pattern * constr_pattern *
-      (int * bool list * constr_pattern) list (** index of constructor, nb of args *)
+  | PCase of case_info_pattern * (Name.t array * constr_pattern) option * constr_pattern *
+      (int * Name.t array * constr_pattern) list (** index of constructor, nb of args *)
   | PFix of (int array * int) * (Name.t array * constr_pattern array * constr_pattern array)
   | PCoFix of int * (Name.t array * constr_pattern array * constr_pattern array)
   | PInt of Uint63.t

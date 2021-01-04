@@ -370,7 +370,7 @@ let matches_core env sigma allow_bound_rels
             raise PatternMatchingFailure
 
       | PCase (ci1, p1, a1, br1), Case (ci2, u2, pms2, p2, iv, a2, br2) ->
-          let (ci2, p2, _, a2, br2) = EConstr.expand_case env sigma (ci2, u2, pms2, p2, iv, a2, br2) in
+          let (_, _, _, p2, _, _, br2) = EConstr.annotate_case env sigma (ci2, u2, pms2, p2, iv, a2, br2) in
           let n2 = Array.length br2 in
           let () = match ci1.cip_ind with
           | None -> ()
@@ -383,14 +383,29 @@ let matches_core env sigma allow_bound_rels
             if not ci1.cip_extensible && not (Int.equal (List.length br1) n2)
             then raise PatternMatchingFailure
           in
+          let sorec_under_ctx subst (n, c1) (decls, c2) =
+            let env = push_rel_context decls env in
+            let n = Array.rev_to_list n in
+            let fold na1 d (ctx, subst) =
+              let na2 = Context.Rel.Declaration.get_annot d in
+              let t = Context.Rel.Declaration.get_type d in
+              (push_binder na1 na2 t ctx, add_binders na1 na2 binding_vars subst)
+            in
+            let ctx, subst = List.fold_right2 fold n decls (ctx, subst) in
+            sorec ctx env subst c1 c2
+          in
           let chk_branch subst (j,n,c) =
             (* (ind,j+1) is normally known to be a correct constructor
                and br2 a correct match over the same inductive *)
             assert (j < n2);
-            sorec ctx env subst c br2.(j)
+            sorec_under_ctx subst (n, c) br2.(j)
           in
-          let chk_head = sorec ctx env (sorec ctx env subst a1 a2) p1 p2 in
-          List.fold_left chk_branch chk_head br1
+          let subst = sorec ctx env subst a1 a2 in
+          let subst = match p1 with
+          | None -> subst
+          | Some p1 -> sorec_under_ctx subst p1 p2
+          in
+          List.fold_left chk_branch subst br1
 
       |	PFix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(lna2,tl2,bl2))
            when Array.equal Int.equal ln1 ln2 && i1 = i2 ->
