@@ -245,3 +245,38 @@ let rec lift_subst mk e s = match s with
   let t, e = tree_map mk e t in
   let rem = lift_subst mk e rem in
   Cons (h, t, rem)
+
+module Internal =
+struct
+
+type 'a or_rel = REL of int | VAL of int * 'a
+
+let to_rel shift = function
+| Var i -> REL (i + shift)
+| Arg v -> VAL (shift, v)
+
+let rec get_tree_subst shift accu = function
+| Leaf (w, x) ->
+  to_rel (shift + w) x :: accu
+| Node (w, x, l, r, _) ->
+  let accu = get_tree_subst (shift + w + eval l) accu r in
+  let accu = get_tree_subst (shift + w) accu l in
+  to_rel (shift + w) x :: accu
+
+let rec get_subst shift accu = function
+| Nil (w, n) ->
+  List.init n (fun i -> REL (w + i + shift + 1))
+| Cons (_, t, s) ->
+  let accu = get_subst (shift + eval t) accu s in
+  get_tree_subst shift accu t
+
+let rec get_shift accu = function
+| Nil (w, n) -> accu + w + n
+| Cons (_, t, s) -> get_shift (eval t + accu) s
+
+let repr (s : 'a subs) =
+  let shift = get_shift 0 s in
+  let subs = get_subst 0 [] s in
+  subs, shift
+
+end

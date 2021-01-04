@@ -54,4 +54,6 @@
 
 #install_printer  (* fconstr *) ppfconstr;;
 
+#install_printer  (* fsubst *) ppfsubst;;
+
 #install_printer (* Future.computation *) ppfuture;;

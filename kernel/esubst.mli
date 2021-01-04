@@ -94,3 +94,15 @@ val is_lift_id : lift -> bool
     That is, if Γ ⊢ e : Δ and Δ ⊢ σ : Ξ, then Γ ⊢ lift_subst mk e σ : Ξ.
 *)
 val lift_subst : (lift -> 'a -> 'b) -> lift -> 'a subs -> 'b subs
+
+(** Debugging utilities *)
+module Internal :
+sig
+type 'a or_rel = REL of int | VAL of int * 'a
+
+(** High-level representation of a substitution. The first component is a list
+    that associates a value to an index, and the second component is the
+    relocation shift that must be applied to any variable pointing outside of
+    the substitution. *)
+val repr : 'a subs -> 'a or_rel list * int
+end
