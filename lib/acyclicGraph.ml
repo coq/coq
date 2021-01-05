@@ -814,40 +814,14 @@ module Make (Point:Point) = struct
     in
     normalize g
 
-  (** Pretty-printing *)
+  type node = Alias of Point.t | Node of bool Point.Map.t
+  type repr = node Point.Map.t
 
-  let pr_pmap sep pr map =
-    let cmp (u,_) (v,_) = Point.compare u v in
-    Pp.prlist_with_sep sep pr (List.sort cmp (PMap.bindings map))
-
-  let pr_arc prl = let open Pp in
-    function
-    | _, Canonical {canon=u; ltle; _} ->
-      if PMap.is_empty ltle then mt ()
-      else
-        prl u ++ str " " ++
-        v 0
-          (pr_pmap spc (fun (v, strict) ->
-               (if strict then str "< " else str "<= ") ++ prl v)
-              ltle) ++
-        fnl ()
-    | u, Equiv v ->
-      prl u  ++ str " = " ++ prl v ++ fnl ()
-
-  let pr prl g =
-    pr_pmap Pp.mt (pr_arc prl) g.entries
-
-  (* Dumping constraints to a file *)
-
-  let dump output g =
-    let dump_arc u = function
-      | Canonical {canon=u; ltle; _} ->
-        PMap.iter (fun v strict ->
-            let typ = if strict then Lt else Le in
-            output typ u v) ltle;
-      | Equiv v ->
-        output Eq u v
+  let repr g =
+    let map n = match n with
+    | Canonical n -> Node n.ltle
+    | Equiv u -> Alias u
     in
-    PMap.iter dump_arc g.entries
+    Point.Map.map map g.entries
 
 end

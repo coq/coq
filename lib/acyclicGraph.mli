@@ -65,6 +65,14 @@ module Make (Point:Point) : sig
 
   val choose : (Point.t -> bool) -> t -> Point.t -> Point.t option
 
+  (** {5 High-level representation} *)
+
+  type node =
+  | Alias of Point.t
+  | Node of bool Point.Map.t (** Nodes v s.t. u < v (true) or u <= v (false) *)
+  type repr = node Point.Map.t
+  val repr : t -> repr
+
   val sort : (int -> Point.t) -> Point.t list -> t -> t
   (** [sort mk first g] builds a totally ordered graph. The output
      graph should imply the input graph (and the implication will be
@@ -76,7 +84,4 @@ module Make (Point:Point) : sig
      Note: the result is unspecified if the input graph already
      contains [mk n] nodes. *)
 
-  val pr : (Point.t -> Pp.t) -> t -> Pp.t
-
-  val dump : (constraint_type -> Point.t -> Point.t -> unit) -> t -> unit
 end
