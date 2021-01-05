@@ -309,6 +309,17 @@ let print_registered () =
   in
   hov 0 (prlist_with_sep fnl pr_lib_ref @@ Coqlib.get_lib_refs ())
 
+let dump_universes output g =
+  let open Univ in
+  let dump_arc u = function
+    | UGraph.Node ltle ->
+      Univ.LMap.iter (fun v strict ->
+          let typ = if strict then Lt else Le in
+          output typ u v) ltle;
+    | UGraph.Alias v ->
+      output Eq u v
+  in
+  Univ.LMap.iter dump_arc g
 
 let dump_universes_gen prl g s =
   let output = open_out s in
@@ -342,7 +353,7 @@ let dump_universes_gen prl g s =
   in
   let output_constraint k l r = output_constraint k (prl l) (prl r) in
   try
-    UGraph.dump_universes output_constraint g;
+    dump_universes output_constraint g;
     close ();
     str "Universes written to file \"" ++ str s ++ str "\"."
   with reraise ->
@@ -367,13 +378,66 @@ let universe_subgraph ?loc kept univ =
   let univ = LSet.fold add kept UGraph.initial_universes in
   UGraph.merge_constraints csts univ
 
+let sort_universes g =
+  let open Univ in
+  let rec normalize u = match LMap.find u g with
+  | UGraph.Alias u -> normalize u
+  | UGraph.Node _ -> u
+  in
+  let get_next u = match LMap.find u g with
+  | UGraph.Alias u -> assert false (* nodes are normalized *)
+  | UGraph.Node ltle -> ltle
+  in
+  (* Compute the longest chain of Lt constraints from Set to any universe *)
+  let rec traverse accu todo = match todo with
+  | [] -> accu
+  | (u, n) :: todo ->
+    let () = assert (Level.equal (normalize u) u) in
+    let n = match LMap.find u accu with
+    | m -> if m < n then Some n else None
+    | exception Not_found -> Some n
+    in
+    match n with
+    | None -> traverse accu todo
+    | Some n ->
+      let accu = LMap.add u n accu in
+      let next = get_next u in
+      let fold v lt todo =
+        let v = normalize v in
+        if lt then (v, n + 1) :: todo else (v, n) :: todo
+      in
+      let todo = LMap.fold fold next todo in
+      traverse accu todo
+  in
+  (* Only contains normalized nodes *)
+  let levels = traverse LMap.empty [normalize Level.set, 0] in
+  let max_level = LMap.fold (fun _ n accu -> max n accu) levels 0 in
+  let dummy_mp = Names.DirPath.make [Names.Id.of_string "Type"] in
+  let ulevels = Array.init max_level (fun i -> Level.(make (UGlobal.make dummy_mp i))) in
+  let ulevels = Array.cons Level.set ulevels in
+  (* Add the normal universes *)
+  let fold (cur, ans) u =
+    let ans = LMap.add cur (UGraph.Node (LMap.singleton u true)) ans in
+    (u, ans)
+  in
+  let _, ans = Array.fold_left fold (Level.prop, LMap.empty) ulevels in
+  (* Add alias pointers *)
+  let fold u _ ans =
+    if Level.is_small u then ans
+    else
+      let n = LMap.find (normalize u) levels in
+      LMap.add u (UGraph.Alias ulevels.(n)) ans
+  in
+  LMap.fold fold g ans
+
 let print_universes ?loc ~sort ~subgraph dst =
   let univ = Global.universes () in
   let univ = match subgraph with
     | None -> univ
     | Some g -> universe_subgraph ?loc g univ
   in
-  let univ = if sort then UGraph.sort_universes univ else univ in
+  let univ = UGraph.repr univ in
+  let univ = if sort then sort_universes univ else univ in
   let pr_remaining =
     if Global.is_joined_environment () then mt ()
     else str"There may remain asynchronous universe constraints"

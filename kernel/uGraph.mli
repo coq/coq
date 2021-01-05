@@ -77,14 +77,8 @@ exception UndeclaredLevel of Univ.Level.t
 
 val check_declared_universes : t -> Univ.LSet.t -> unit
 
-(** {6 Pretty-printing of universes. } *)
-
-val pr_universes : (Level.t -> Pp.t) -> t -> Pp.t
-
 (** The empty graph of universes *)
 val empty_universes : t
-
-val sort_universes : t -> t
 
 (** [constraints_of_universes g] returns [csts] and [partition] where
    [csts] are the non-Eq constraints and [partition] is the partition
@@ -108,10 +102,17 @@ val check_subtype : lbound:Bound.t -> AUContext.t check_function
 (** [check_subtype univ ctx1 ctx2] checks whether [ctx2] is an instance of
     [ctx1]. *)
 
-(** {6 Dumping to a file } *)
+(** {6 Dumping} *)
 
-val dump_universes :
-  (constraint_type -> Level.t -> Level.t -> unit) -> t -> unit
+type node =
+| Alias of Level.t
+| Node of bool LMap.t (** Nodes v s.t. u < v (true) or u <= v (false) *)
+
+val repr : t -> node LMap.t
+
+(** {6 Pretty-printing of universes. } *)
+
+val pr_universes : (Level.t -> Pp.t) -> node LMap.t -> Pp.t
 
 (** {6 Debugging} *)
 val check_universes_invariants : t -> unit

@@ -73,15 +73,4 @@ module Make (Point:Point) : sig
   type repr = node Point.Map.t
   val repr : t -> repr
 
-  val sort : (int -> Point.t) -> Point.t list -> t -> t
-  (** [sort mk first g] builds a totally ordered graph. The output
-     graph should imply the input graph (and the implication will be
-     strict most of the time), but is not necessarily minimal. The
-     lowest points in the result are identified with [first].
-     Moreover, it adds levels [Type.n] to identify the points (not in
-     [first]) at level n. An artificial constraint (last first < mk
-     (length first)) is added to ensure that they are not merged.
-     Note: the result is unspecified if the input graph already
-     contains [mk n] nodes. *)
-
 end

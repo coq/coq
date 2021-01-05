@@ -222,19 +222,6 @@ let choose p g u = if Level.is_sprop u
   then if p u then Some u else None
   else G.choose p g.graph u
 
-(* Dumping constraints to a file *)
-
-let dump_universes output g =
-  let dump_arc u = function
-    | G.Node ltle ->
-      LMap.iter (fun v strict ->
-          let typ = if strict then Lt else Le in
-          output typ u v) ltle;
-    | G.Alias v ->
-      output Eq u v
-  in
-  LMap.iter dump_arc (G.repr g.graph)
-
 let check_universes_invariants g = G.check_invariants ~required_canonical:Level.is_small g.graph
 
 (** Pretty-printing *)
@@ -257,11 +244,13 @@ let pr_arc prl = let open Pp in
   | u, G.Alias v ->
     prl u  ++ str " = " ++ prl v ++ fnl ()
 
-let pr_universes prl g = pr_pmap Pp.mt (pr_arc prl) (G.repr g.graph)
+type node = G.node =
+| Alias of Level.t
+| Node of bool LMap.t
 
-let dummy_mp = Names.DirPath.make [Names.Id.of_string "Type"]
-let make_dummy i = Level.(make (UGlobal.make dummy_mp i))
-let sort_universes g = g_map (G.sort make_dummy [Level.prop;Level.set]) g
+let repr g = G.repr g.graph
+
+let pr_universes prl g = pr_pmap Pp.mt (pr_arc prl) g
 
 (** Profiling *)
 

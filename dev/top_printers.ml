@@ -240,7 +240,7 @@ let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
 let ppuniverse_context_future c =
   let ctx = Future.force c in
     ppuniverse_context ctx
-let ppuniverses u = pp (UGraph.pr_universes Level.pr u)
+let ppuniverses u = pp (UGraph.pr_universes Level.pr (UGraph.repr u))
 let ppnamedcontextval e =
   let env = Global.env () in
   let sigma = Evd.from_env env in
