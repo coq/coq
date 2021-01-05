@@ -930,7 +930,8 @@ let is_prop env sigma term =
   Sorts.is_prop sort
 
 type formula_op =
-  { op_and : EConstr.t
+  { op_impl : EConstr.t option (* only for booleans *)
+  ; op_and : EConstr.t
   ; op_or : EConstr.t
   ; op_iff : EConstr.t
   ; op_not : EConstr.t
@@ -939,7 +940,8 @@ type formula_op =
 
 let prop_op =
   lazy
-    { op_and = Lazy.force coq_and
+    { op_impl = None (* implication is Prod *)
+    ; op_and = Lazy.force coq_and
     ; op_or = Lazy.force coq_or
     ; op_iff = Lazy.force coq_iff
     ; op_not = Lazy.force coq_not
@@ -948,12 +950,16 @@ let prop_op =
 
 let bool_op =
   lazy
-    { op_and = Lazy.force coq_andb
+    { op_impl = Some (Lazy.force coq_implb)
+    ; op_and = Lazy.force coq_andb
     ; op_or = Lazy.force coq_orb
     ; op_iff = Lazy.force coq_eqb
     ; op_not = Lazy.force coq_negb
     ; op_tt = Lazy.force coq_true
     ; op_ff = Lazy.force coq_false }
+
+let is_implb sigma l o =
+  match o with None -> false | Some c -> EConstr.eq_constr sigma l c
 
 let parse_formula (genv, sigma) parse_atom env tg term =
   let parse_atom b env tg t =
@@ -970,6 +976,10 @@ let parse_formula (genv, sigma) parse_atom env tg term =
     match EConstr.kind sigma term with
     | App (l, rst) -> (
       match rst with
+      | [|a; b|] when is_implb sigma l op.op_impl ->
+        let f, env, tg = xparse_formula op k env tg a in
+        let g, env, tg = xparse_formula op k env tg b in
+        (mkformula_binary k (mkIMPL k) term f g, env, tg)
       | [|a; b|] when EConstr.eq_constr sigma l op.op_and ->
         let f, env, tg = xparse_formula op k env tg a in
         let g, env, tg = xparse_formula op k env tg b in
@@ -2075,12 +2085,11 @@ module MakeCache (T : sig
   val hash_coeff : int -> coeff -> int
   val eq_prover_option : prover_option -> prover_option -> bool
   val eq_coeff : coeff -> coeff -> bool
-end) :
-sig
+end) : sig
   type key = T.prover_option * (T.coeff Mc.pol * Mc.op1) list
+
   val memo_opt : (unit -> bool) -> string -> (key -> 'a) -> key -> 'a
-end =
-struct
+end = struct
   module E = struct
     type t = T.prover_option * (T.coeff Mc.pol * Mc.op1) list
 
