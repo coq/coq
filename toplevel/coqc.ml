@@ -41,9 +41,9 @@ coqc specific options:\
 \n"
 }
 
-let coqc_main copts ~opts =
+let coqc_main (copts,stm_opts) ~opts =
   Topfmt.(in_phase ~phase:CompilationPhase)
-    Ccompile.compile_files opts copts;
+    Ccompile.compile_files (opts,stm_opts) copts;
 
   (* Careful this will modify the load-path and state so after this
      point some stuff may not be safe anymore. *)
@@ -73,8 +73,11 @@ let coqc_run copts ~opts () =
     let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
     exit exit_code
 
-let custom_coqc = Coqtop.{
-  parse_extra = (fun ~opts extras -> Coqcargs.parse extras, []);
+let custom_coqc : (Coqcargs.t * Stm.AsyncOpts.stm_opt, 'b) Coqtop.custom_toplevel
+ = Coqtop.{
+  parse_extra = (fun ~opts extras ->
+    let stm_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
+    (Coqcargs.parse extras, stm_opts), []);
   help = coqc_specific_usage;
   init = coqc_init;
   run = coqc_run;

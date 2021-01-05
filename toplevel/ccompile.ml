@@ -24,7 +24,7 @@ let fatal_error msg =
 let load_init_file opts ~state =
   if opts.pre.load_rcfile then
     Topfmt.(in_phase ~phase:LoadingRcFile) (fun () ->
-        Coqinit.load_rcfile ~rcfile:opts.config.rcfile ~state) ()
+        Coqrc.load_rcfile ~rcfile:opts.config.rcfile ~state) ()
   else begin
     Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
     state
@@ -93,7 +93,7 @@ let create_empty_file filename =
   close_out f
 
 (* Compile a vernac file *)
-let compile opts copts ~echo ~f_in ~f_out =
+let compile opts stm_options copts ~echo ~f_in ~f_out =
   let open Vernac.State in
   let check_pending_proofs () =
     let pfs = Vernacstate.Declare.get_all_proof_names () [@ocaml.warning "-3"] in
@@ -106,7 +106,6 @@ let compile opts copts ~echo ~f_in ~f_out =
   in
   let ml_load_path, vo_load_path = build_load_path opts in
   let injections = injection_commands opts in
-  let stm_options = opts.config.stm_flags in
   let output_native_objects = match opts.config.native_compiler with
     | NativeOff -> false | NativeOn {ondemand} -> not ondemand
   in
@@ -209,22 +208,22 @@ let compile opts copts ~echo ~f_in ~f_out =
       dump_empty_vos();
       create_empty_file (long_f_dot_out ^ "k")
 
-let compile opts copts ~echo ~f_in ~f_out =
+let compile opts stm_opts copts ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
-  compile opts copts ~echo ~f_in ~f_out;
+  compile opts stm_opts copts ~echo ~f_in ~f_out;
   CoqworkmgrApi.giveback 1
 
-let compile_file opts copts (f_in, echo) =
+let compile_file opts stm_opts copts (f_in, echo) =
   let f_out = copts.compilation_output_name in
   if !Flags.beautify then
     Flags.with_option Flags.beautify_file
-      (fun f_in -> compile opts copts ~echo ~f_in ~f_out) f_in
+      (fun f_in -> compile opts stm_opts copts ~echo ~f_in ~f_out) f_in
   else
-    compile opts copts ~echo ~f_in ~f_out
+    compile opts stm_opts copts ~echo ~f_in ~f_out
 
-let compile_files opts copts =
+let compile_files (opts, stm_opts) copts =
   let compile_list = copts.compile_list in
-  List.iter (compile_file opts copts) compile_list
+  List.iter (compile_file opts stm_opts copts) compile_list
 
 (******************************************************************************)
 (* VIO Dispatching                                                            *)

@@ -198,11 +198,7 @@ let init_parse parse_extra help init_opts =
 
 (** Coq's init process, phase 2: Basic Coq environment, plugins. *)
 let init_execution opts custom_init =
-  (* If we have been spawned by the Spawn module, this has to be done
-   * early since the master waits us to connect back *)
-  Spawned.init_channels ();
   if opts.post.memory_stat then at_exit print_memory_stat;
-  CoqworkmgrApi.(init opts.config.stm_flags.Stm.AsyncOpts.async_proofs_worker_priority);
   Mltop.init_known_plugins ();
   (* Configuration *)
   Global.set_engagement opts.config.logic.impredicative_set;
@@ -241,10 +237,11 @@ let init_toplevel custom =
   | Queries q -> List.iter (print_query opts) q; exit 0
   | Run ->
     let () = init_coqlib opts in
+    Stm.init_process (snd customopts);
     let customstate = init_execution opts (custom.init customopts) in
     opts, customopts, customstate
 
-let init_document opts =
+let init_document opts stm_options =
   (* Coq init process, phase 3: Stm initialization, backtracking state.
 
      It is essential that the module system is in a consistent
@@ -255,7 +252,6 @@ let init_document opts =
   Flags.load_vos_libraries := true;
   let ml_load_path, vo_load_path = build_load_path opts in
   let injections = injection_commands opts in
-  let stm_options = opts.config.stm_flags in
   let open Vernac.State in
   let doc, sid =
     Stm.(new_doc
@@ -281,16 +277,16 @@ let start_coq custom =
 
 type run_mode = Interactive | Batch
 
-let init_toploop opts =
-  let state = init_document opts in
+let init_toploop opts stm_opts =
+  let state = init_document opts stm_opts in
   let state = Ccompile.load_init_vernaculars opts ~state in
   state
 
-let coqtop_init run_mode ~opts =
+let coqtop_init (run_mode,stm_opts) ~opts =
   if run_mode = Batch then Flags.quiet := true;
   init_color opts.config;
   Flags.if_verbose print_header ();
-  init_toploop opts
+  init_toploop opts stm_opts
 
 let coqtop_parse_extra ~opts extras =
   let rec parse_extra run_mode = function
@@ -299,9 +295,10 @@ let coqtop_parse_extra ~opts extras =
     let run_mode, rest = parse_extra run_mode rest in run_mode, x :: rest
   | [] -> run_mode, [] in
   let run_mode, extras = parse_extra Interactive extras in
-  run_mode, extras
+  let stm_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
+  (run_mode, stm_opts), extras
 
-let coqtop_run run_mode ~opts state =
+let coqtop_run (run_mode,_) ~opts state =
   match run_mode with
   | Interactive -> Coqloop.loop ~opts ~state;
   | Batch -> exit 0

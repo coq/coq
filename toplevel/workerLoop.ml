@@ -9,9 +9,10 @@
 (************************************************************************)
 
 let worker_parse_extra ~opts extra_args =
-  (), extra_args
+  let stm_opts, extra_args = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extra_args in
+  ((),stm_opts), extra_args
 
-let worker_init init () ~opts =
+let worker_init init ((),_) ~opts =
   Flags.quiet := true;
   init ();
   Coqtop.init_toploop opts
@@ -30,6 +31,6 @@ let start ~init ~loop name =
     help = worker_specific_usage name;
     opts = Coqargs.default;
     init = worker_init init;
-    run = (fun () ~opts:_ _state (* why is state not used *) -> loop ());
+    run = (fun ((),_) ~opts:_ _state (* why is state not used *) -> loop ());
   } in
   start_coq custom

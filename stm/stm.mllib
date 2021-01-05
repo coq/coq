@@ -7,5 +7,6 @@ CoqworkmgrApi
 AsyncTaskQueue
 Partac
 Stm
+Stmargs
 ProofBlockDelimiter
 Vio_checking

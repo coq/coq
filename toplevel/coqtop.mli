@@ -28,7 +28,7 @@ type ('a,'b) custom_toplevel =
    load the files given on the command line, load the resource file,
    produce the output state if any, and finally will launch
    [custom.run]. *)
-val start_coq : ('a,'b) custom_toplevel -> unit
+val start_coq : ('a * Stm.AsyncOpts.stm_opt,'b) custom_toplevel -> unit
 
 (** Initializer color for output *)
 
@@ -36,10 +36,10 @@ val init_color : Coqargs.coqargs_config -> unit
 
 (** Prepare state for interactive loop *)
 
-val init_toploop : Coqargs.t -> Vernac.State.t
+val init_toploop : Coqargs.t -> Stm.AsyncOpts.stm_opt -> Vernac.State.t
 
 (** The specific characterization of the coqtop_toplevel *)
 
 type run_mode = Interactive | Batch
 
-val coqtop_toplevel : (run_mode,Vernac.State.t) custom_toplevel
+val coqtop_toplevel : (run_mode * Stm.AsyncOpts.stm_opt,Vernac.State.t) custom_toplevel

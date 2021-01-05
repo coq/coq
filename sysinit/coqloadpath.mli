@@ -8,12 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** [load_init_vernaculars opts ~state] Load vernaculars from
-   the init (rc) file *)
-val load_init_vernaculars : Coqargs.t -> state:Vernac.State.t-> Vernac.State.t
-
-(** [compile_files opts] compile files specified in [opts] *)
-val compile_files : Coqargs.t * Stm.AsyncOpts.stm_opt -> Coqcargs.t -> unit
-
-(** [do_vio opts] process [.vio] files in [opts] *)
-val do_vio : Coqargs.t -> Coqcargs.t -> unit
+(** Standard LoadPath for Coq user libraries; in particular it
+   includes (in-order) Coq's standard library, Coq's [user-contrib]
+   folder, and directories specified in [COQPATH] and [XDG_DIRS] *)
+val init_load_path
+  : coqlib:CUnix.physical_path
+  -> CUnix.physical_path list * Loadpath.vo_path list

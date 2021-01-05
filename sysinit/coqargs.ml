@@ -24,13 +24,14 @@ let error_missing_arg s =
 (******************************************************************************)
 (* Imperative effects! This must be fixed at some point.                      *)
 (******************************************************************************)
-let set_worker_id opt s =
-  assert (s <> "master");
-  Flags.async_proofs_worker_id := s
 
 let set_type_in_type () =
   let typing_flags = Environ.typing_flags (Global.env ()) in
   Global.set_typing_flags { typing_flags with Declarations.check_universes = false }
+
+let set_debug () =
+  let () = Exninfo.record_backtrace true in
+  Flags.debug := true
 
 (******************************************************************************)
 
@@ -39,10 +40,21 @@ type color = [`ON | `AUTO | `EMACS | `OFF]
 type native_compiler = Coq_config.native_compiler =
   NativeOff | NativeOn of { ondemand : bool }
 
+type interactive_top = TopLogical of Names.DirPath.t | TopPhysical of string
+
+type option_command =
+  | OptionSet of string option
+  | OptionUnset
+  | OptionAppend of string
+
+type injection_command =
+  | OptionInjection of (Goptions.option_name * option_command)
+  | RequireInjection of (string * string option * bool option)
+
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
-  toplevel_name     : Stm.interactive_top;
+  toplevel_name     : interactive_top;
 }
 
 type coqargs_config = {
@@ -54,7 +66,6 @@ type coqargs_config = {
   native_compiler : native_compiler;
   native_output_dir : CUnix.physical_path;
   native_include_dirs : CUnix.physical_path list;
-  stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   time        : bool;
   print_emacs : bool;
@@ -69,7 +80,7 @@ type coqargs_pre = {
   vo_includes : Loadpath.vo_path list;
 
   load_vernacular_list : (string * bool) list;
-  injections  : Stm.injection_command list;
+  injections  : injection_command list;
 
   inputstate  : string option;
 }
@@ -102,7 +113,7 @@ let default_native = Coq_config.native_compiler
 let default_logic_config = {
   impredicative_set = Declarations.PredicativeSet;
   indices_matter = false;
-  toplevel_name = Stm.TopLogical default_toplevel;
+  toplevel_name = TopLogical default_toplevel;
 }
 
 let default_config = {
@@ -114,7 +125,6 @@ let default_config = {
   native_compiler = default_native;
   native_output_dir = ".coq-native";
   native_include_dirs = [];
-  stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
   time         = false;
   print_emacs  = false;
@@ -160,13 +170,13 @@ let add_vo_include opts unix_path coq_path implicit =
         unix_path; coq_path; has_ml = false; implicit; recursive = true } :: opts.pre.vo_includes }}
 
 let add_vo_require opts d p export =
-  { opts with pre = { opts.pre with injections = Stm.RequireInjection (d, p, export) :: opts.pre.injections }}
+  { opts with pre = { opts.pre with injections = RequireInjection (d, p, export) :: opts.pre.injections }}
 
 let add_load_vernacular opts verb s =
     { opts with pre = { opts.pre with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.pre.load_vernacular_list }}
 
 let add_set_option opts opt_name value =
-  { opts with pre = { opts.pre with injections = Stm.OptionInjection (opt_name, value) :: opts.pre.injections }}
+  { opts with pre = { opts.pre with injections = OptionInjection (opt_name, value) :: opts.pre.injections }}
 
 (** Options for proof general *)
 let set_emacs opts =
@@ -204,52 +214,24 @@ let set_inputstate opts s =
 (******************************************************************************)
 (* Parsing helpers                                                            *)
 (******************************************************************************)
-let get_bool opt = function
+let get_bool ~opt = function
   | "yes" | "on" -> true
   | "no" | "off" -> false
   | _ ->
     error_wrong_arg ("Error: yes/no expected after option "^opt)
 
-let get_int opt n =
+let get_int ~opt n =
   try int_of_string n
   with Failure _ ->
     error_wrong_arg ("Error: integer expected after option "^opt)
+let get_int_opt ~opt n =
+  if n = "" then None
+  else Some (get_int ~opt n)
 
-let get_float opt n =
+let get_float ~opt n =
   try float_of_string n
   with Failure _ ->
     error_wrong_arg ("Error: float expected after option "^opt)
-
-let get_host_port opt s =
-  match String.split_on_char ':' s with
-  | [host; portr; portw] ->
-    Some (Spawned.Socket(host, int_of_string portr, int_of_string portw))
-  | ["stdfds"] -> Some Spawned.AnonPipe
-  | _ ->
-    error_wrong_arg ("Error: host:portr:portw or stdfds expected after option "^opt)
-
-let get_error_resilience opt = function
-  | "on" | "all" | "yes" -> `All
-  | "off" | "no" -> `None
-  | s -> `Only (String.split_on_char ',' s)
-
-let get_priority opt s =
-  try CoqworkmgrApi.priority_of_string s
-  with Invalid_argument _ ->
-    error_wrong_arg ("Error: low/high expected after "^opt)
-
-let get_async_proofs_mode opt = let open Stm.AsyncOpts in function
-  | "no" | "off" -> APoff
-  | "yes" | "on" -> APon
-  | "lazy" -> APonLazy
-  | _ ->
-    error_wrong_arg ("Error: on/off/lazy expected after "^opt)
-
-let get_cache opt = function
-  | "force" -> Some Stm.AsyncOpts.Force
-  | _ ->
-    error_wrong_arg ("Error: force expected after "^opt)
-
 
 let get_native_name s =
   (* We ignore even critical errors because this mode has to be super silent *)
@@ -259,6 +241,21 @@ let get_native_name s =
                 ; Library.native_name_from_filename s
                 ])
   with _ -> ""
+
+let interp_set_option opt v old =
+  let open Goptions in
+  let opt = String.concat " " opt in
+  match old with
+  | BoolValue _ -> BoolValue (get_bool ~opt v)
+  | IntValue _ -> IntValue (get_int_opt ~opt v)
+  | StringValue _ -> StringValue v
+  | StringOptValue _ -> StringOptValue (Some v)
+
+let set_option = let open Goptions in function
+  | opt, OptionUnset -> unset_option_value_gen ~locality:OptLocal opt
+  | opt, OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
+  | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
+  | opt, OptionAppend v -> set_string_option_append_value_gen ~locality:OptLocal opt v
 
 let get_compat_file = function
   | "8.14" -> "Coq.Compat.Coq814"
@@ -351,55 +348,6 @@ let parse_args ~help ~init arglist : t * string list =
       { oval with config = { oval.config with coqlib = Some (next ())
       }}
 
-    |"-async-proofs" ->
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_mode = get_async_proofs_mode opt (next())
-      }}}
-    |"-async-proofs-j" ->
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_n_workers = (get_int opt (next ()))
-      }}}
-    |"-async-proofs-cache" ->
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_cache = get_cache opt (next ())
-      }}}
-
-    |"-async-proofs-tac-j" ->
-      let j = get_int opt (next ()) in
-      if j <= 0 then begin
-        error_wrong_arg ("Error: -async-proofs-tac-j only accepts values greater than or equal to 1")
-      end;
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_n_tacworkers = j
-      }}}
-
-    |"-async-proofs-worker-priority" ->
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_worker_priority = get_priority opt (next ())
-      }}}
-
-    |"-async-proofs-private-flags" ->
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_private_flags = Some (next ());
-      }}}
-
-    |"-async-proofs-tactic-error-resilience" ->
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_tac_error_resilience = get_error_resilience opt (next ())
-      }}}
-
-    |"-async-proofs-command-error-resilience" ->
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_cmd_error_resilience = get_bool opt (next ())
-      }}}
-
-    |"-async-proofs-delegation-threshold" ->
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_delegation_threshold = get_float opt (next ())
-      }}}
-
-    |"-worker-id" -> set_worker_id opt (next ()); oval
-
     |"-compat" ->
       add_vo_require oval (get_compat_file (next ())) None (Some false)
 
@@ -431,7 +379,7 @@ let parse_args ~help ~init arglist : t * string list =
 
     |"-profile-ltac-cutoff" ->
       Flags.profile_ltac := true;
-      Flags.profile_ltac_cutoff := get_float opt (next ());
+      Flags.profile_ltac_cutoff := get_float ~opt (next ());
       oval
 
     |"-rfrom" ->
@@ -451,24 +399,18 @@ let parse_args ~help ~init arglist : t * string list =
       let topname = Libnames.dirpath_of_string (next ()) in
       if Names.DirPath.is_empty topname then
         CErrors.user_err Pp.(str "Need a non empty toplevel module name");
-      { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = Stm.TopLogical topname }}}
+      { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = TopLogical topname }}}
 
     |"-topfile" ->
-      { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = Stm.TopPhysical (next()) }}}
-
-    |"-main-channel" ->
-      Spawned.main_channel := get_host_port opt (next()); oval
-
-    |"-control-channel" ->
-      Spawned.control_channel := get_host_port opt (next()); oval
+      { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = TopPhysical (next()) }}}
 
     |"-w" | "-W" ->
       let w = next () in
-      if w = "none" then add_set_option oval ["Warnings"] (Stm.OptionSet(Some w))
-      else add_set_option oval ["Warnings"] (Stm.OptionAppend w)
+      if w = "none" then add_set_option oval ["Warnings"] (OptionSet(Some w))
+      else add_set_option oval ["Warnings"] (OptionAppend w)
 
     |"-bytecode-compiler" ->
-      { oval with config = { oval.config with enable_VM = get_bool opt (next ()) }}
+      { oval with config = { oval.config with enable_VM = get_bool ~opt (next ()) }}
 
     |"-native-compiler" ->
       let native_compiler = get_native_compiler (next ()) in
@@ -476,10 +418,10 @@ let parse_args ~help ~init arglist : t * string list =
 
     | "-set" ->
       let opt, v = parse_option_set @@ next() in
-      add_set_option oval opt (Stm.OptionSet v)
+      add_set_option oval opt (OptionSet v)
 
     | "-unset" ->
-      add_set_option oval (to_opt_key @@ next ()) Stm.OptionUnset
+      add_set_option oval (to_opt_key @@ next ()) OptionUnset
 
     |"-native-output-dir" ->
       let native_output_dir = next () in
@@ -490,32 +432,25 @@ let parse_args ~help ~init arglist : t * string list =
       { oval with config = {oval.config with native_include_dirs = include_dir :: oval.config.native_include_dirs } }
 
     (* Options with zero arg *)
-    |"-async-queries-always-delegate"
-    |"-async-proofs-always-delegate"
-    |"-async-proofs-never-reopen-branch" ->
-      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
-        Stm.AsyncOpts.async_proofs_never_reopen_branch = true
-      }}}
     |"-test-mode" -> Vernacinterp.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
     |"-bt" -> Exninfo.record_backtrace true; oval
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> set_query oval PrintConfig
-    |"-debug" -> Coqinit.set_debug (); oval
-    |"-xml-debug" -> Flags.xml_debug := true; Coqinit.set_debug (); oval
+    |"-debug" -> set_debug (); oval
+    |"-xml-debug" -> Flags.xml_debug := true; set_debug (); oval
     |"-diffs" ->
-      add_set_option oval Proof_diffs.opt_name @@ Stm.OptionSet (Some (next ()))
-    |"-stm-debug" -> Stm.stm_debug := true; oval
+      add_set_option oval Proof_diffs.opt_name @@ OptionSet (Some (next ()))
     |"-emacs" -> set_emacs oval
     |"-impredicative-set" ->
       set_logic (fun o -> { o with impredicative_set = Declarations.ImpredicativeSet }) oval
     |"-allow-sprop" ->
-      add_set_option oval Vernacentries.allow_sprop_opt_name (Stm.OptionSet None)
+      add_set_option oval Vernacentries.allow_sprop_opt_name (OptionSet None)
     |"-disallow-sprop" ->
-      add_set_option oval Vernacentries.allow_sprop_opt_name Stm.OptionUnset
+      add_set_option oval Vernacentries.allow_sprop_opt_name OptionUnset
     |"-sprop-cumulative" ->
       warn_deprecated_sprop_cumul();
-      add_set_option oval Vernacentries.cumul_sprop_opt_name (Stm.OptionSet None)
+      add_set_option oval Vernacentries.cumul_sprop_opt_name (OptionSet None)
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { oval.post with memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}
@@ -568,13 +503,13 @@ let parse_args ~help ~init args =
 let prelude_data = "Prelude", Some "Coq", Some false
 
 let injection_commands opts =
-  if opts.pre.load_init then Stm.RequireInjection prelude_data :: opts.pre.injections else opts.pre.injections
+  if opts.pre.load_init then RequireInjection prelude_data :: opts.pre.injections else opts.pre.injections
 
 let build_load_path opts =
   let ml_path, vo_path =
     if opts.pre.boot then [],[]
     else
       let coqlib = Envars.coqlib () in
-      Coqinit.libs_init_load_path ~coqlib in
+      Coqloadpath.init_load_path ~coqlib in
   ml_path @ opts.pre.ml_includes ,
   vo_path @ opts.pre.vo_includes
