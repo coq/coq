@@ -490,3 +490,6 @@ epub_exclude_files = ['search.html']
 
 # navtree options
 navtree_shift = True
+
+# since sphinxcontrib-bibtex version 2 we need this
+bibtex_bibfiles = [ "biblio.bib" ]
