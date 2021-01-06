@@ -25,10 +25,6 @@ let error_missing_arg s =
 (* Imperative effects! This must be fixed at some point.                      *)
 (******************************************************************************)
 
-let set_type_in_type () =
-  let typing_flags = Environ.typing_flags (Global.env ()) in
-  Global.set_typing_flags { typing_flags with Declarations.check_universes = false }
-
 let set_debug () =
   let () = Exninfo.record_backtrace true in
   Flags.debug := true
@@ -52,6 +48,7 @@ type injection_command =
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
+  type_in_type      : bool;
   toplevel_name     : top;
 }
 
@@ -109,6 +106,7 @@ let default_native = Coq_config.native_compiler
 let default_logic_config = {
   impredicative_set = Declarations.PredicativeSet;
   indices_matter = false;
+  type_in_type = false;
   toplevel_name = TopLogical default_toplevel;
 }
 
@@ -435,7 +433,7 @@ let parse_args ~usage ~init arglist : t * string list =
       Flags.make_warn false;
       oval
     |"-time" -> { oval with config = { oval.config with time = true }}
-    |"-type-in-type" -> set_type_in_type (); oval
+    |"-type-in-type" -> set_logic (fun o -> { o with type_in_type = true }) oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
     |"-where" -> set_query oval PrintWhere
     |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval (PrintHelp usage)
