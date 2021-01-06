@@ -1040,7 +1040,10 @@ let hnf_constr env sigma c = whd_simpl_orelse_delta_but_fix env sigma (c, [])
 let whd_simpl env sigma c =
   applist (whd_simpl_stack env sigma (c, []))
 
-let simpl env sigma c = strong whd_simpl env sigma c
+let simpl env sigma c =
+  let rec strongrec env t =
+    map_constr_with_full_binders env sigma push_rel strongrec env (whd_simpl env sigma t) in
+  strongrec env c
 
 (* Reduction at specific subterms *)
 

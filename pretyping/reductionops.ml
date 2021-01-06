@@ -468,11 +468,6 @@ let safe_meta_value sigma ev =
   try Some (Evd.meta_value sigma ev)
   with Not_found -> None
 
-let strong whdfun env sigma t =
-  let rec strongrec env t =
-    map_constr_with_full_binders env sigma push_rel strongrec env (whdfun env sigma t) in
-  strongrec env t
-
 (*************************************)
 (*** Reduction using bindingss ***)
 (*************************************)
@@ -1269,7 +1264,9 @@ let plain_instance sigma s c = match s with
 
 let instance env sigma s c =
   (* if s = [] then c else *)
-  strong whd_betaiota env sigma (plain_instance sigma s c)
+  let rec strongrec env t =
+    map_constr_with_full_binders env sigma push_rel strongrec env (whd_betaiota env sigma t) in
+  strongrec env (plain_instance sigma s c)
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
