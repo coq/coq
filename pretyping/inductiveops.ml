@@ -344,11 +344,7 @@ let get_projections = Environ.get_projections
 
 let make_case_invert env (IndType (((ind,u),params),indices)) ci =
   if Typeops.should_invert_case env ci
-  then
-    let univs = EConstr.EInstance.make u in
-    let params = Array.map_of_list EConstr.of_constr params in
-    let args = Array.append params (Array.of_list indices) in
-    CaseInvert {univs;args}
+  then CaseInvert {indices=Array.of_list indices}
   else NoInvert
 
 let make_case_or_project env sigma indt ci pred c branches =
@@ -356,8 +352,7 @@ let make_case_or_project env sigma indt ci pred c branches =
   let IndType (((ind,_),_),_) = indt in
   let projs = get_projections env ind in
   match projs with
-  | None ->
-    mkCase (ci, pred, make_case_invert env indt ci, c, branches)
+  | None -> (mkCase (EConstr.contract_case env sigma (ci, pred, make_case_invert env indt ci, c, branches)))
   | Some ps ->
      assert(Array.length branches == 1);
      let na, ty, t = destLambda sigma pred in
@@ -749,6 +744,6 @@ let control_only_guard env sigma c =
   in
   let rec iter env c =
     check_fix_cofix env c;
-    EConstr.iter_with_full_binders sigma EConstr.push_rel iter env c
+    EConstr.iter_with_full_binders env sigma EConstr.push_rel iter env c
   in
   iter env c

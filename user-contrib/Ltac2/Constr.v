@@ -24,7 +24,7 @@ Ltac2 Type case.
 
 Ltac2 Type case_invert := [
 | NoInvert
-| CaseInvert (instance,constr array)
+| CaseInvert (constr array)
 ].
 
 Ltac2 Type kind := [

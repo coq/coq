@@ -296,8 +296,8 @@ let compute_consteval_direct env sigma ref =
       | Fix fix when not onlyproj ->
           (try check_fix_reversibility sigma labs l fix
           with Elimconst -> NotAnElimination)
-      | Case (_,_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases n
-      | Case (_,_,_,d,_) -> srec env n labs true d
+      | Case (_,_,_,_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases n
+      | Case (_,_,_,_,_,d,_) -> srec env n labs true d
       | Proj (p, d) when isRel sigma d -> EliminationProj n
       | _ -> NotAnElimination
   in
@@ -478,29 +478,36 @@ let contract_cofix_use_function env sigma f
     sigma (nf_beta env sigma bodies.(bodynum))
 
 type 'a miota_args = {
-  mP      : constr;     (** the result type *)
+  mU      : EInstance.t; (* Universe instance of the return clause *)
+  mParams : constr array; (* Parameters of the inductive *)
+  mP      : case_return;     (* the result type *)
   mconstr : constr;     (** the constructor *)
   mci     : case_info;  (** special info to re-build pattern *)
   mcargs  : 'a list;    (** the constructor's arguments *)
-  mlf     : 'a array }  (** the branch code vector *)
+  mlf     : 'a pcase_branch array }  (** the branch code vector *)
 
-let reduce_mind_case sigma mia =
+let reduce_mind_case env sigma mia =
   match EConstr.kind sigma mia.mconstr with
-    | Construct ((ind_sp,i),u) ->
-(*      let ncargs = (fst mia.mci).(i-1) in*)
+    | Construct ((_, i as cstr), u) ->
         let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
-        applist (mia.mlf.(i-1),real_cargs)
+        let br = mia.mlf.(i - 1) in
+        let ctx = EConstr.expand_branch env sigma mia.mU mia.mParams cstr br in
+        let br = it_mkLambda_or_LetIn (snd br) ctx in
+        applist (br, real_cargs)
     | CoFix cofix ->
         let cofix_def = contract_cofix sigma cofix in
         (* XXX Is NoInvert OK here? *)
-        mkCase (mia.mci, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
+        mkCase (mia.mci, mia.mU, mia.mParams, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
 let reduce_mind_case_use_function func env sigma mia =
   match EConstr.kind sigma mia.mconstr with
-    | Construct ((ind_sp,i),u) ->
+    | Construct ((_, i as cstr),u) ->
         let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
-        applist (mia.mlf.(i-1), real_cargs)
+        let br = mia.mlf.(i - 1) in
+        let ctx = EConstr.expand_branch env sigma mia.mU mia.mParams cstr br in
+        let br = it_mkLambda_or_LetIn (snd br) ctx in
+        applist (br, real_cargs)
     | CoFix (bodynum,(names,_,_) as cofix) ->
         let build_cofix_name =
           if isConst sigma func then
@@ -526,8 +533,7 @@ let reduce_mind_case_use_function func env sigma mia =
             fun _ -> None in
         let cofix_def =
           contract_cofix_use_function env sigma build_cofix_name cofix in
-        (* Is NoInvert OK here? *)
-        mkCase (mia.mci, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
+        mkCase (mia.mci, mia.mU, mia.mParams, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
 
@@ -728,9 +734,9 @@ and whd_simpl_stack env sigma =
       | LetIn (n,b,t,c) -> redrec (Vars.substl [b] c, stack)
       | App (f,cl) -> assert false (* see push_app above *)
       | Cast (c,_,_) -> redrec (c, stack)
-      | Case (ci,p,iv,c,lf) ->
+      | Case (ci,u,pms,p,iv,c,lf) ->
           (try
-            redrec (special_red_case env sigma (ci,p,iv,c,lf), stack)
+            redrec (special_red_case env sigma (ci,u,pms,p,iv,c,lf), stack)
           with
               Redelimination -> s')
       | Fix fix ->
@@ -842,15 +848,15 @@ and reduce_proj env sigma c =
           let proj_narg = Projection.npars proj + Projection.arg proj in
           List.nth cargs proj_narg
         | _ -> raise Redelimination)
-    | Case (n,p,iv,c,brs) ->
+    | Case (n,u,pms,p,iv,c,brs) ->
       let c' = redrec c in
-      let p = (n,p,iv,c',brs) in
+      let p = (n,u,pms,p,iv,c',brs) in
         (try special_red_case env sigma p
          with Redelimination -> mkCase p)
     | _ -> raise Redelimination
   in redrec c
 
-and special_red_case env sigma (ci, p, iv, c, lf) =
+and special_red_case env sigma (ci, u, pms, p, iv, c, lf) =
   let rec redrec s =
     let (constr, cargs) = whd_simpl_stack env sigma s in
     match match_eval_ref env sigma constr cargs with
@@ -860,14 +866,14 @@ and special_red_case env sigma (ci, p, iv, c, lf) =
       | Some gvalue ->
         if reducible_mind_case sigma gvalue then
           reduce_mind_case_use_function constr env sigma
-          {mP=p; mconstr=gvalue; mcargs=cargs;
+          {mP=p; mU = u; mParams = pms; mconstr=gvalue; mcargs=cargs;
            mci=ci; mlf=lf}
         else
           redrec (gvalue, cargs))
     | None ->
       if reducible_mind_case sigma constr then
-        reduce_mind_case sigma
-          {mP=p; mconstr=constr; mcargs=cargs;
+        reduce_mind_case env sigma
+          {mP=p; mU = u; mParams = pms; mconstr=constr; mcargs=cargs;
           mci=ci; mlf=lf}
       else
         raise Redelimination
@@ -915,7 +921,7 @@ let try_red_product env sigma c =
           let open Context.Rel.Declaration in
           mkProd (x, a, redrec (push_rel (LocalAssum (x, a)) env) b)
       | LetIn (x,a,b,t) -> redrec env (Vars.subst1 a t)
-      | Case (ci,p,iv,d,lf) -> simpfun (mkCase (ci,p,iv,redrec env d,lf))
+      | Case (ci,u,pms,p,iv,d,lf) -> simpfun (mkCase (ci,u,pms,p,iv,redrec env d,lf))
       | Proj (p, c) ->
         let c' =
           match EConstr.kind sigma c with
@@ -1062,7 +1068,7 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
       (* Still the same projection, we ignore the change in parameters *)
       mkProj (p, a')
     else mkApp (app', [| a' |])
-  | _ -> map_constr_with_binders_left_to_right sigma g f acc c
+  | _ -> map_constr_with_binders_left_to_right env sigma g f acc c
 
 let e_contextually byhead (occs,c) f = begin fun env sigma t ->
   let count = ref (Locusops.initialize_occurrence_counter occs) in
@@ -1131,7 +1137,7 @@ let substlin env sigma evalref occs c =
         count := count';
         if ok then value u else c
       | None ->
-        map_constr_with_binders_left_to_right sigma
+        map_constr_with_binders_left_to_right env sigma
           (fun _ () -> ())
           substrec () c
   in
@@ -1295,9 +1301,9 @@ let one_step_reduce env sigma c =
       | App (f,cl) -> redrec (f, (Array.to_list cl)@stack)
       | LetIn (_,f,_,cl) -> (Vars.subst1 f cl,stack)
       | Cast (c,_,_) -> redrec (c,stack)
-      | Case (ci,p,iv,c,lf) ->
+      | Case (ci,u,pms,p,iv,c,lf) ->
           (try
-             (special_red_case env sigma (ci,p,iv,c,lf), stack)
+             (special_red_case env sigma (ci,u,pms,p,iv,c,lf), stack)
            with Redelimination -> raise NotStepReducible)
       | Fix fix ->
           (try match reduce_fix env sigma fix stack with

@@ -548,22 +548,26 @@ let rec execute env cstr =
     | Construct c ->
       cstr, type_of_constructor env c
 
-    | Case (ci,p,iv,c,lf) ->
+    | Case (ci, u, pms, p, iv, c, lf) ->
+        (** FIXME: change type_of_case to handle the compact form *)
+        let (ci, p, iv, c, lf) = expand_case env (ci, u, pms, p, iv, c, lf) in
         let c', ct = execute env c in
         let iv' = match iv with
           | NoInvert -> NoInvert
-          | CaseInvert {univs;args} ->
-            let ct' = mkApp (mkIndU (ci.ci_ind,univs), args) in
+          | CaseInvert {indices} ->
+            let args = Array.append pms indices in
+            let ct' = mkApp (mkIndU (ci.ci_ind,u), args) in
             let (ct', _) : constr * Sorts.t = execute_is_type env ct' in
             let () = conv_leq false env ct ct' in
             let _, args' = decompose_appvect ct' in
-            if args == args' then iv else CaseInvert {univs;args=args'}
+            if args == args' then iv
+            else CaseInvert {indices=Array.sub args' (Array.length pms) (Array.length indices)}
         in
         let p', pt = execute env p in
         let lf', lft = execute_array env lf in
         let ci', t = type_of_case env ci p' pt iv' c' ct lf' lft in
         let cstr = if ci == ci' && c == c' && p == p' && iv == iv' && lf == lf' then cstr
-          else mkCase(ci',p',iv',c',lf')
+          else mkCase (Inductive.contract_case env (ci',p',iv',c',lf'))
         in
         cstr, t
 
@@ -719,11 +723,6 @@ let judge_of_inductive env indu =
 
 let judge_of_constructor env cu =
   make_judge (mkConstructU cu) (type_of_constructor env cu)
-
-let judge_of_case env ci pj iv cj lfj =
-  let lf, lft = dest_judgev lfj in
-  let ci, t = type_of_case env ci pj.uj_val pj.uj_type iv cj.uj_val cj.uj_type lf lft in
-  make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, iv, cj.uj_val, lft)) t
 
 (* Building type of primitive operators and type *)
 

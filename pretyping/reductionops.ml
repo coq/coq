@@ -177,9 +177,12 @@ sig
   type 'a app_node
   val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
+
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array
+  | Case of 'a case_stk
   | Proj of Projection.t
   | Fix of ('a, 'a) pfixpoint * 'a t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
@@ -230,9 +233,12 @@ struct
                      )
 
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
+
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array
+  | Case of 'a case_stk
   | Proj of Projection.t
   | Fix of ('a, 'a) pfixpoint * 'a t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
@@ -245,9 +251,9 @@ struct
     let pr_c x = hov 1 (pr_c x) in
     match member with
     | App app -> str "ZApp" ++ pr_app_node pr_c app
-    | Case (_,_,_,br) ->
+    | Case (_,_,_,_,_,br) ->
        str "ZCase(" ++
-         prvect_with_sep (pr_bar) pr_c br
+         prvect_with_sep (pr_bar) (fun (_, c) -> pr_c c) br
        ++ str ")"
     | Proj p  ->
       str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
@@ -284,7 +290,7 @@ struct
         ([],[]) -> Int.equal bal 0
       | (App (i,_,j)::s1, _) -> compare_rec (bal + j + 1 - i) s1 stk2
       | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
-      | (Case(c1,_,_,_)::s1, Case(c2,_,_,_)::s2) ->
+      | (Case _ :: s1, Case _::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
       | (Proj (p)::s1, Proj(p2)::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
@@ -304,8 +310,9 @@ struct
         let t1,l1 = decomp_node_last n1 q1 in
         let t2,l2 = decomp_node_last n2 q2 in
         aux (f o t1 t2) l1 l2
-      | Case (_,t1,_,a1) :: q1, Case (_,t2,_,a2) :: q2 ->
-        aux (Array.fold_left2 f (f o t1 t2) a1 a2) q1 q2
+      | Case ((_,_,pms1,(_, t1),_,a1)) :: q1, Case ((_,_,pms2, (_, t2),_,a2)) :: q2 ->
+        let f' o (_, t1) (_, t2) = f o t1 t2 in
+        aux (Array.fold_left2 f' (f (Array.fold_left2 f o pms1 pms2) t1 t2) a1 a2) q1 q2
       | Proj (p1) :: q1, Proj (p2) :: q2 ->
         aux o q1 q2
       | Fix ((_,(_,a1,b1)),s1) :: q1, Fix ((_,(_,a2,b2)),s2) :: q2 ->
@@ -320,8 +327,8 @@ struct
                                | App (i,a,j) ->
                                   let le = j - i + 1 in
                                   App (0,Array.map f (Array.sub a i le), le-1)
-                               | Case (info,ty,iv,br) ->
-                                 Case (info, f ty, map_invert f iv, Array.map f br)
+                               | Case (info,u,pms,ty,iv,br) ->
+                                  Case (info, u, Array.map f pms, on_snd f ty, iv, Array.map (on_snd f) br)
                                | Fix ((r,(na,ty,bo)),arg) ->
                                   Fix ((r,(na,Array.map f ty, Array.map f bo)),map f arg)
                                | Primitive (p,c,args,kargs) ->
@@ -408,7 +415,7 @@ struct
                 then a
                 else Array.sub a i (j - i + 1) in
        zip (mkApp (f, a'), s)
-    | f, (Case (ci,rt,iv,br)::s) -> zip (mkCase (ci,rt,iv,f,br), s)
+    | f, (Case (ci,u,pms,rt,iv,br)::s) -> zip (mkCase (ci,u,pms,rt,iv,f,br), s)
   | f, (Fix (fix,st)::s) -> zip
     (mkFix fix, st @ (append_app [|f|] s))
   | f, (Proj (p)::s) -> zip (mkProj (p,f),s)
@@ -469,13 +476,13 @@ let strong_with_flags whdfun flags env sigma t =
       | d -> d in
     push_rel d env in
   let rec strongrec env t =
-    map_constr_with_full_binders sigma
+    map_constr_with_full_binders env sigma
       push_rel_check_zeta strongrec env (whdfun flags env sigma t) in
   strongrec env t
 
 let strong whdfun env sigma t =
   let rec strongrec env t =
-    map_constr_with_full_binders sigma push_rel strongrec env (whdfun env sigma t) in
+    map_constr_with_full_binders env sigma push_rel strongrec env (whdfun env sigma t) in
   strongrec env t
 
 (*************************************)
@@ -702,6 +709,20 @@ let debug_RAKAM =
     ~key:["Debug";"RAKAM"]
     ~value:false
 
+let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
+  let args = Stack.tail ci.ci_npar args in
+  let args = Option.get (Stack.list_of_app_stack args) in
+  let br = lf.(i - 1) in
+  if Int.equal ci.ci_cstr_nargs.(i - 1) ci.ci_cstr_ndecls.(i - 1) then
+    (* No let-bindings *)
+    let subst = List.rev args in
+    Vars.substl subst (snd br)
+  else
+    (* For backwards compat with unification, we do not reduce the let-bindings
+       upfront. *)
+    let ctx = expand_branch env sigma u pms (ind, i) br in
+    applist (it_mkLambda_or_LetIn (snd br) ctx, args)
+
 let rec whd_state_gen flags env sigma =
   let open Context.Named.Declaration in
   let rec whrec (x, stack) : state =
@@ -785,8 +806,8 @@ let rec whd_state_gen flags env sigma =
         | _ -> fold ())
       | _ -> fold ())
 
-    | Case (ci,p,iv,d,lf) ->
-      whrec (d, Stack.Case (ci,p,iv,lf) :: stack)
+    | Case (ci,u,pms,p,iv,d,lf) ->
+      whrec (d, Stack.Case (ci,u,pms,p,iv,lf) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -794,13 +815,14 @@ let rec whd_state_gen flags env sigma =
       |Some (bef,arg,s') ->
         whrec (arg, Stack.Fix(f,bef)::s'))
 
-    | Construct ((ind,c),u) ->
+    | Construct (cstr ,u) ->
       let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, _, lf)::s') when use_match ->
-          whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
+        |args, (Stack.Case case::s') when use_match ->
+          let r = apply_branch env sigma cstr args case in
+          whrec (r, s')
         |args, (Stack.Proj (p)::s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s')::s'') when use_fix ->
@@ -850,7 +872,7 @@ let rec whd_state_gen flags env sigma =
   whrec
 
 (** reduction machine without global env and refold machinery *)
-let local_whd_state_gen flags _env sigma =
+let local_whd_state_gen flags env sigma =
   let rec whrec (x, stack) =
     let c0 = EConstr.kind sigma x in
     let s = (EConstr.of_kind c0, stack) in
@@ -882,8 +904,8 @@ let local_whd_state_gen flags _env sigma =
     | Proj (p,c) when CClosure.RedFlags.red_projection flags p ->
       (whrec (c, Stack.Proj (p) :: stack))
 
-    | Case (ci,p,iv,d,lf) ->
-      whrec (d, Stack.Case (ci,p,iv,lf) :: stack)
+    | Case (ci,u,pms,p,iv,d,lf) ->
+      whrec (d, Stack.Case (ci,u,pms,p,iv,lf) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -896,13 +918,14 @@ let local_whd_state_gen flags _env sigma =
         Some c -> whrec (c,stack)
       | None -> s)
 
-    | Construct ((ind,c),u) ->
+    | Construct (cstr, u) ->
       let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, _, lf)::s') when use_match ->
-          whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
+        |args, (Stack.Case case :: s') when use_match ->
+          let r = apply_branch env sigma cstr args case in
+          whrec (r, s')
         |args, (Stack.Proj (p) :: s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s')::s'') when use_fix ->

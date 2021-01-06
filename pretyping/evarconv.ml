@@ -206,7 +206,7 @@ let occur_rigidly flags env evd (evk,_) t =
       if rigid_normal_occ b' || rigid_normal_occ t' then Rigid true
       else Reducible
     | Rel _ | Var _ -> Reducible
-    | Case (_,_,_,c,_) ->
+    | Case (_,_,_,_,_,c,_) ->
       (match aux c with
       | Rigid b -> Rigid b
       | _ -> Reducible)
@@ -381,7 +381,10 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
       else None, x in
     match revsk1, revsk2 with
     | [], [] -> None, Success i
-    | Stack.Case (_,t1,_,c1)::q1, Stack.Case (_,t2,_,c2)::q2 ->
+    | Stack.Case (ci1,u1,pms1,t1,iv1,c1)::q1, Stack.Case (ci2,u2,pms2,t2,iv2,c2)::q2 ->
+      let dummy = mkProp in
+      let (_, t1, _, _, c1) = EConstr.expand_case env evd (ci1,u1,pms1,t1,iv1,dummy,c1) in
+      let (_, t2, _, _, c2) = EConstr.expand_case env evd (ci2,u2,pms2,t2,iv2,dummy,c2) in
       begin
         match ise_and i [
           (fun i -> f env i CONV t1 t2);
@@ -418,7 +421,10 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
   let rec ise_rev_stack2 i revsk1 revsk2 =
     match revsk1, revsk2 with
     | [], [] -> Success i
-    | Stack.Case (_,t1,_,c1)::q1, Stack.Case (_,t2,_,c2)::q2 ->
+    | Stack.Case (ci1,u1,pms1,t1,iv1,c1)::q1, Stack.Case (ci2,u2,pms2,t2,iv2,c2)::q2 ->
+      let dummy = mkProp in
+      let (_, t1, _, _, c1) = EConstr.expand_case env evd (ci1,u1,pms1,t1,iv1,dummy,c1) in
+      let (_, t2, _, _, c2) = EConstr.expand_case env evd (ci2,u2,pms2,t2,iv2,dummy,c2) in
       ise_and i [
       (fun i -> ise_rev_stack2 i q1 q2);
       (fun i -> ise_array2 i (fun ii -> f env ii CONV) c1 c2);
@@ -1278,7 +1284,7 @@ let apply_on_subterm env evd fixed f test c t =
     if occur_evars !evdref !fixedref t then
       match EConstr.kind !evdref t with
       | Evar (ev, args) when Evar.Set.mem ev !fixedref -> t
-      | _ -> map_constr_with_binders_left_to_right !evdref
+      | _ -> map_constr_with_binders_left_to_right env !evdref
               (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
               applyrec acc t
     else
@@ -1293,7 +1299,7 @@ let apply_on_subterm env evd fixed f test c t =
                 evdref := evd'; t')
      else (
        if debug_ho_unification () then Feedback.msg_debug (Pp.str "failed");
-       map_constr_with_binders_left_to_right !evdref
+       map_constr_with_binders_left_to_right env !evdref
         (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
         applyrec acc t))
   in
@@ -1383,7 +1389,7 @@ let thin_evars env sigma sign c =
        if not (Id.Set.mem id ctx) then raise (TypingFailed !sigma)
        else t
     | _ ->
-       map_constr_with_binders_left_to_right !sigma
+       map_constr_with_binders_left_to_right env !sigma
         (fun d (env,acc) -> (push_rel d env, acc+1))
         applyrec (env,acc) t
   in

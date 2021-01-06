@@ -213,7 +213,7 @@ val make_case_or_project :
   (* pred *) EConstr.constr -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
 
 val make_case_invert : env -> inductive_type -> case_info
-  -> (EConstr.constr,EConstr.EInstance.t) case_invert
+  -> EConstr.case_invert
 
 (*i Compatibility
 val make_default_case_info : env -> case_style -> inductive -> case_info

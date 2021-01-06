@@ -972,7 +972,7 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
                     ( UnivGen.constr_of_monomorphic_global
                     @@ Coqlib.lib_ref "core.False.type" )) ->
           tauto
-        | Case (_, _, _, v, _) ->
+        | Case (_, _, _, _, _, v, _) ->
           tclTHENLIST [simplest_case v; intros_with_rewrite ()]
         | LetIn _ ->
           tclTHENLIST
@@ -1005,7 +1005,7 @@ let rec reflexivity_with_destruct_cases () =
               (snd (destApp (Proofview.Goal.sigma g) (Proofview.Goal.concl g))).(
               2)
           with
-          | Case (_, _, _, v, _) ->
+          | Case (_, _, _, _, _, v, _) ->
             tclTHENLIST
               [ simplest_case v
               ; intros

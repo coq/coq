@@ -492,7 +492,7 @@ let maybe_unify_params_in env_ar_par sigma ~ninds ~nparams ~binders:k c =
           end)
         sigma args
     | _ -> Termops.fold_constr_with_full_binders
-             sigma
+             env sigma
              (fun d (env,k) -> EConstr.push_rel d env, k+1)
              aux envk sigma c
   in

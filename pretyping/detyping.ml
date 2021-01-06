@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module CVars = Vars
+
 open Pp
 open CErrors
 open Util
@@ -32,6 +34,78 @@ type detyping_flags = {
   flg_lax : bool;
   flg_isgoal : bool;
 }
+
+(** Reimplementation of kernel case expansion functions in more lenient way *)
+module RobustExpand :
+sig
+val return_clause : Environ.env -> Evd.evar_map -> Ind.t ->
+  EInstance.t -> EConstr.t array -> EConstr.case_return -> rel_context * EConstr.t
+val branch : Environ.env -> Evd.evar_map -> Construct.t ->
+  EInstance.t -> EConstr.t array -> EConstr.case_branch -> rel_context * EConstr.t
+end =
+struct
+open CVars
+open Declarations
+open Univ
+open Constr
+
+let instantiate_context u subst nas ctx =
+  let rec instantiate i ctx = match ctx with
+  | [] -> []
+  | LocalAssum (_, ty) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let ty = substnl subst i (subst_instance_constr u ty) in
+    LocalAssum (nas.(i), ty) :: ctx
+  | LocalDef (_, ty, bdy) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let ty = substnl subst i (subst_instance_constr u ty) in
+    let bdy = substnl subst i (subst_instance_constr u bdy) in
+    LocalDef (nas.(i), ty, bdy) :: ctx
+  in
+  let () = if not (Int.equal (Array.length nas) (List.length ctx)) then raise Exit in
+  instantiate (Array.length nas - 1) ctx
+
+let return_clause env sigma ind u params (nas, p) =
+  try
+    let u = EConstr.Unsafe.to_instance u in
+    let params = EConstr.Unsafe.to_constr_array params in
+    let () = if not @@ Environ.mem_mind (fst ind) env then raise Exit in
+    let mib = Environ.lookup_mind (fst ind) env in
+    let mip = mib.mind_packets.(snd ind) in
+    let paramdecl = subst_instance_context u mib.mind_params_ctxt in
+    let paramsubst = subst_of_rel_context_instance paramdecl (Array.to_list params) in
+    let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+    let self =
+      let args = Context.Rel.to_extended_vect mkRel 0 mip.mind_arity_ctxt in
+      let inst = Instance.of_array (Array.init (Instance.length u) Level.var) in
+      mkApp (mkIndU (ind, inst), args)
+    in
+    let realdecls = LocalAssum (Context.anonR, self) :: realdecls in
+    let realdecls = instantiate_context u paramsubst nas realdecls in
+    List.map EConstr.of_rel_decl realdecls, p
+  with e when CErrors.noncritical e ->
+    let dummy na = LocalAssum (na, EConstr.mkProp) in
+    List.rev (Array.map_to_list dummy nas), p
+
+let branch env sigma (ind, i) u params (nas, br) =
+  try
+    let u = EConstr.Unsafe.to_instance u in
+    let params = EConstr.Unsafe.to_constr_array params in
+    let () = if not @@ Environ.mem_mind (fst ind) env then raise Exit in
+    let mib = Environ.lookup_mind (fst ind) env in
+    let mip = mib.mind_packets.(snd ind) in
+    let paramdecl = subst_instance_context u mib.mind_params_ctxt in
+    let paramsubst = subst_of_rel_context_instance paramdecl (Array.to_list params) in
+    let subst = paramsubst @ Inductive.ind_subst (fst ind) mib u in
+    let (ctx, _) = mip.mind_nf_lc.(i - 1) in
+    let ctx, _ = List.chop mip.mind_consnrealdecls.(i - 1) ctx in
+    let ctx = instantiate_context u subst nas ctx in
+    List.map EConstr.of_rel_decl ctx, br
+  with e when CErrors.noncritical e ->
+    let dummy na = LocalAssum (na, EConstr.mkProp) in
+    List.rev (Array.map_to_list dummy nas), br
+
+end
 
 module Avoid :
 sig
@@ -241,16 +315,9 @@ let print_primproj_params =
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
 
-let computable sigma p k =
+let computable sigma (nas, ccl) =
     (* We first remove as many lambda as the arity, then we look
-       if it remains a lambda for a dependent elimination. This function
-       works for normal eta-expanded term. For non eta-expanded or
-       non-normal terms, it may affirm the pred is synthetisable
-       because of an undetected ultimate dependent variable in the second
-       clause, or else, it may affirm the pred non synthetisable
-       because of a non normal term in the fourth clause.
-       A solution could be to store, in the MutCase, the eta-expanded
-       normal form of pred to decide if it depends on its variables
+       if it remains a lambda for a dependent elimination.
 
        Lorsque le prédicat est dépendant de manière certaine, on
        ne déclare pas le prédicat synthétisable (même si la
@@ -258,10 +325,7 @@ let computable sigma p k =
        sinon on perd la réciprocité de la synthèse (qui, lui,
        engendrera un prédicat non dépendant) *)
 
-  let sign,ccl = decompose_lam_assum sigma p in
-  Int.equal (Context.Rel.length sign) (k + 1)
-  &&
-  noccur_between sigma 1 (k+1) ccl
+  noccur_between sigma 1 (Array.length nas) ccl
 
 let lookup_name_as_displayed env sigma t s =
   let rec lookup avoid n c = match EConstr.kind sigma c with
@@ -393,30 +457,27 @@ let update_name sigma na ((_,(e,_)),c) =
   | _ ->
       na
 
-let get_domain env sigma c =
-  let (_,t,_) = EConstr.destProd sigma (Reductionops.whd_all env sigma (Retyping.get_type_of env sigma c)) in
-  t
-
-let rec decomp_branch tags nal flags (avoid,env as e) sigma c =
-  match tags with
-  | [] -> (List.rev nal,(e,c))
-  | b::tags ->
+let decomp_branch flags e sigma (ctx, c) =
+  let n = List.length ctx in
+  let rec aux i nal (avoid, env as e) c =
+    if Int.equal i 0 then (List.rev nal,(e,c))
+    else
       let decl, c, let_in =
-        match EConstr.kind sigma (strip_outer_cast sigma c), b with
-        | Lambda (na,t,c),false -> LocalAssum (na,t), c, true
-        | LetIn (na,b,t,c),true -> LocalDef (na,b,t), c, false
-        | _, false ->
-          let na = make_annot (Name default_dependent_ident) Sorts.Relevant (* dummy *) in
-          LocalAssum (na, get_domain (snd env) sigma c), applist (lift 1 c, [mkRel 1]), false
-        | _, true ->
-          let na = make_annot Anonymous Sorts.Relevant (* dummy *) in
-          LocalDef (na, mkProp (* dummy *), type1), lift 1 c, false
+        match EConstr.kind sigma c with
+        | Lambda (na,t,c) -> LocalAssum (na,t), c, true
+        | LetIn (na,b,t,c) -> LocalDef (na,b,t), c, false
+        | _ -> assert false
     in
     let na',avoid' = compute_name sigma ~let_in ~pattern:true flags avoid env (get_name decl) c in
-    decomp_branch tags (na'::nal) flags
-      (avoid', add_name (set_name na' decl) env) sigma c
+    aux (i - 1) (na'::nal) (avoid', add_name (set_name na' decl) env) c
+  in
+  aux n [] e (EConstr.it_mkLambda_or_LetIn c ctx)
 
-let rec build_tree na isgoal e sigma ci cl =
+let rec build_tree na isgoal e sigma (ci, u, pms, cl) =
+  let map i br =
+    RobustExpand.branch (snd (snd e)) sigma (ci.ci_ind, i + 1) u pms br
+  in
+  let cl = Array.mapi map cl in
   let mkpat n rhs pl =
     let na = update_name sigma na rhs in
     na, DAst.make @@ PatCstr((ci.ci_ind,n+1),pl,na) in
@@ -429,12 +490,12 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | [] -> [Id.Set.empty,[],rhs]
   | na::nal ->
     match EConstr.kind sigma c with
-    | Case (ci,p,iv,c,cl) when
+    | Case (ci,u,pms,p,iv,c,cl) when
         eq_constr sigma c (mkRel (List.index Name.equal na (fst (snd e))))
         && not (Int.equal (Array.length cl) 0)
         && (* don't contract if p dependent *)
-        computable sigma p (List.length ci.ci_pp_info.ind_tags) (* FIXME: can do better *) ->
-        let clauses = build_tree na isgoal e sigma ci cl in
+        computable sigma p (* FIXME: can do better *) ->
+        let clauses = build_tree na isgoal e sigma (ci, u, pms, cl) in
         List.flatten
           (List.map (fun (ids,pat,rhs) ->
               let lines = align_tree nal isgoal rhs sigma in
@@ -447,7 +508,7 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
         List.map (fun (ids,hd,rest) -> Nameops.Name.fold_right Id.Set.add na ids,pat::hd,rest) mat
 
 and contract_branch isgoal e sigma (cdn,mkpat,rhs) =
-  let nal,rhs = decomp_branch cdn [] isgoal e sigma rhs in
+  let nal,rhs = decomp_branch isgoal e sigma rhs in
   let mat = align_tree nal isgoal rhs sigma in
   List.map (fun (ids,hd,rhs) ->
       let na, pat = mkpat rhs hd in
@@ -457,15 +518,10 @@ and contract_branch isgoal e sigma (cdn,mkpat,rhs) =
 (* Transform internal representation of pattern-matching into list of *)
 (* clauses                                                            *)
 
-let is_nondep_branch sigma c l =
-  try
-    (* FIXME: do better using tags from l *)
-    let sign,ccl = decompose_lam_n_decls sigma (List.length l) c in
-    noccur_between sigma 1 (Context.Rel.length sign) ccl
-  with e when CErrors.noncritical e -> (* Not eta-expanded or not reduced *)
-    false
+let is_nondep_branch sigma (nas, ccl) =
+  noccur_between sigma 1 (Array.length nas) ccl
 
-let extract_nondep_branches test c b l =
+let extract_nondep_branches b l =
   let rec strip l r =
     match DAst.get r, l with
       | r', [] -> r
@@ -473,7 +529,7 @@ let extract_nondep_branches test c b l =
       | GLetIn (_,_,_,t), true::l -> strip l t
       (* FIXME: do we need adjustment? *)
       | _,_ -> assert false in
-  if test c l then Some (strip l b) else None
+  strip l b
 
 let it_destRLambda_or_LetIn_names l c =
   let rec aux l nal c =
@@ -498,13 +554,14 @@ let it_destRLambda_or_LetIn_names l c =
               | _ -> DAst.make @@ GApp (c,[a]))
   in aux l [] c
 
-let detype_case computable detype detype_eqns testdep avoid ci p iv c bl =
+let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params, p, iv, c, bl) =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
   let tomatch = match iv with
     | NoInvert -> tomatch
-    | CaseInvert {univs;args} ->
-      let t = mkApp (mkIndU (ci.ci_ind,univs), args) in
+    | CaseInvert {indices} ->
+      (* XXX use holes instead of params? *)
+      let t = mkApp (mkIndU (ci.ci_ind,univs), Array.append params indices) in
       DAst.make @@ GCast (tomatch, CastConv (detype t))
   in
   let alias, aliastyp, pred=
@@ -512,6 +569,8 @@ let detype_case computable detype detype_eqns testdep avoid ci p iv c bl =
     then
       Anonymous, None, None
     else
+      let (ctx, p) = RobustExpand.return_clause (snd env) sigma ci.ci_ind univs params p in
+      let p = EConstr.it_mkLambda_or_LetIn p ctx in
       let p = detype p in
       let nl,typ = it_destRLambda_or_LetIn_names ci.ci_pp_info.ind_tags p in
       let n,typ = match DAst.get typ with
@@ -540,21 +599,29 @@ let detype_case computable detype detype_eqns testdep avoid ci p iv c bl =
   let constagsl = ci.ci_pp_info.cstr_tags in
   match tag, aliastyp with
   | LetStyle, None ->
+      let map i br =
+        let (ctx, body) = RobustExpand.branch (snd env) sigma (ci.ci_ind, i + 1) univs params br in
+        EConstr.it_mkLambda_or_LetIn body ctx
+      in
+      let bl = Array.mapi map bl in
       let bl' = Array.map detype bl in
       let (nal,d) = it_destRLambda_or_LetIn_names constagsl.(0) bl'.(0) in
       GLetTuple (nal,(alias,pred),tomatch,d)
   | IfStyle, None ->
-      let bl' = Array.map detype bl in
-      let nondepbrs =
-        Array.map3 (extract_nondep_branches testdep) bl bl' constagsl in
-      if Array.for_all ((!=) None) nondepbrs then
-        GIf (tomatch,(alias,pred),
-             Option.get nondepbrs.(0),Option.get nondepbrs.(1))
+      if Array.for_all (fun br -> is_nondep_branch sigma br) bl then
+        let map i br =
+          let ctx, body = RobustExpand.branch (snd env) sigma (ci.ci_ind, i + 1) univs params br in
+          EConstr.it_mkLambda_or_LetIn body ctx
+        in
+        let bl = Array.mapi map bl in
+        let bl' = Array.map detype bl in
+        let nondepbrs = Array.map2 extract_nondep_branches bl' constagsl in
+        GIf (tomatch,(alias,pred), nondepbrs.(0), nondepbrs.(1))
       else
-        let eqnl = detype_eqns constructs constagsl bl in
+        let eqnl = detype_eqns constructs constagsl (ci, univs, params, bl) in
         GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
-      let eqnl = detype_eqns constructs constagsl bl in
+      let eqnl = detype_eqns constructs constagsl (ci, univs, params, bl) in
       GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 let rec share_names detype flags n l avoid env sigma c t =
@@ -788,12 +855,12 @@ and detype_r d flags avoid env sigma t =
         GRef (GlobRef.IndRef ind_sp, detype_instance sigma u)
     | Construct (cstr_sp,u) ->
         GRef (GlobRef.ConstructRef cstr_sp, detype_instance sigma u)
-    | Case (ci,p,iv,c,bl) ->
-        let comp = computable sigma p (List.length (ci.ci_pp_info.ind_tags)) in
+    | Case (ci,u,pms,p,iv,c,bl) ->
+        let comp = computable sigma p in
+        let case = (ci, u, pms, p, iv, c, bl) in
         detype_case comp (detype d flags avoid env sigma)
-          (detype_eqns d flags avoid env sigma ci comp)
-          (is_nondep_branch sigma) avoid
-          ci p iv c bl
+          (detype_eqns d flags avoid env sigma comp)
+          avoid env sigma case
     | Fix (nvn,recdef) -> detype_fix (detype d) flags avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix (detype d) flags avoid env sigma n recdef
     | Int i -> GInt i
@@ -805,18 +872,21 @@ and detype_r d flags avoid env sigma t =
       let u = detype_instance sigma u in
       GArray(u, t, def, ty)
 
-and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
+and detype_eqns d flags avoid env sigma computable constructs consnargsl bl =
   try
     if !Flags.raw_print || not (reverse_matching ()) then raise Exit;
-    let mat = build_tree Anonymous flags (avoid,env) sigma ci bl in
+    let mat = build_tree Anonymous flags (avoid,env) sigma bl in
     List.map (fun (ids,pat,((avoid,env),c)) ->
         CAst.make (Id.Set.elements ids,[pat],detype d flags avoid env sigma c))
       mat
   with e when CErrors.noncritical e ->
+    let (ci, u, pms, bl) = bl in
     Array.to_list
-      (Array.map3 (detype_eqn d flags avoid env sigma) constructs consnargsl bl)
+      (Array.map3 (detype_eqn d flags avoid env sigma u pms) constructs consnargsl bl)
 
-and detype_eqn d flags avoid env sigma constr construct_nargs branch =
+and detype_eqn d flags avoid env sigma u pms constr construct_nargs br =
+  let ctx, body = RobustExpand.branch (snd env) sigma constr u pms br in
+  let branch = EConstr.it_mkLambda_or_LetIn body ctx in
   let make_pat decl avoid env b ids =
     if force_wildcard () && noccurn sigma 1 b then
       DAst.make @@ PatVar Anonymous,avoid,(add_name (set_name Anonymous decl) env),ids
@@ -824,39 +894,24 @@ and detype_eqn d flags avoid env sigma constr construct_nargs branch =
       let na,avoid' = compute_name sigma ~let_in:false ~pattern:true flags avoid env (get_name decl) b in
       DAst.make (PatVar na),avoid',(add_name (set_name na decl) env),add_vname ids na
   in
-  let rec buildrec ids patlist avoid env l b =
-    match EConstr.kind sigma b, l with
-      | _, [] -> CAst.make @@
+  let rec buildrec ids patlist avoid env n b =
+    if Int.equal n 0 then
+      CAst.make @@
         (Id.Set.elements ids,
          [DAst.make @@ PatCstr(constr, List.rev patlist,Anonymous)],
          detype d flags avoid env sigma b)
-      | Lambda (x,t,b), false::l ->
+    else match EConstr.kind sigma b with
+      | Lambda (x,t,b) ->
             let pat,new_avoid,new_env,new_ids = make_pat (LocalAssum (x,t)) avoid env b ids in
-            buildrec new_ids (pat::patlist) new_avoid new_env l b
+            buildrec new_ids (pat::patlist) new_avoid new_env (pred n) b
 
-      | LetIn (x,b,t,b'), true::l ->
+      | LetIn (x,b,t,b') ->
             let pat,new_avoid,new_env,new_ids = make_pat (LocalDef (x,b,t)) avoid env b' ids in
-            buildrec new_ids (pat::patlist) new_avoid new_env l b'
+            buildrec new_ids (pat::patlist) new_avoid new_env (pred n) b'
 
-      | Cast (c,_,_), l ->    (* Oui, il y a parfois des cast *)
-            buildrec ids patlist avoid env l c
-
-      | _, true::l ->
-            let pat = DAst.make @@ PatVar Anonymous in
-            buildrec ids (pat::patlist) avoid env l b
-
-      | _, false::l ->
-            (* eta-expansion : n'arrivera plus lorsque tous les
-               termes seront construits à partir de la syntaxe Cases *)
-            (* nommage de la nouvelle variable *)
-            let new_b = applist (lift 1 b, [mkRel 1]) in
-            let typ = get_domain (snd env) sigma b in
-            let pat,new_avoid,new_env,new_ids =
-              make_pat (LocalAssum (make_annot Anonymous Sorts.Relevant (* dummy *),typ)) avoid env new_b ids in
-            buildrec new_ids (pat::patlist) new_avoid new_env l new_b
-
+      | _ -> assert false
   in
-  buildrec Id.Set.empty [] avoid env construct_nargs branch
+  buildrec Id.Set.empty [] avoid env (List.length ctx) branch
 
 and detype_binder d flags bk avoid env sigma decl c =
   let na = get_name decl in

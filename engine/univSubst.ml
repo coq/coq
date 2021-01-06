@@ -68,6 +68,10 @@ let subst_univs_fn_constr f c =
       let u' = fi u in
         if u' == u then t
         else (changed := true; mkConstructU (c, u'))
+    | Case (ci, u, pms, p, iv, c, br) ->
+      let u' = fi u in
+      if u' == u then map aux t
+      else (changed := true; map aux (mkCase (ci, u', pms, p, iv, c, br)))
     | _ -> map aux t
   in
   let c' = aux c in
@@ -147,10 +151,10 @@ let nf_evars_and_universes_opt_subst f subst =
     | Sort (Type u) ->
       let u' = Univ.subst_univs_universe subst u in
       if u' == u then c else mkSort (sort_of_univ u')
-    | Case (ci,p,CaseInvert {univs;args},t,br) ->
-      let univs' = Instance.subst_fn lsubst univs in
-      if univs' == univs then Constr.map aux c
-      else Constr.map aux (mkCase (ci,p,CaseInvert {univs=univs';args},t,br))
+    | Case (ci,u,pms,p,iv,t,br) ->
+      let u' = Instance.subst_fn lsubst u in
+      if u' == u then Constr.map aux c
+      else Constr.map aux (mkCase (ci,u',pms,p,iv,t,br))
     | Array (u,elems,def,ty) ->
       let u' = Univ.Instance.subst_fn lsubst u in
       let elems' = CArray.Smart.map aux elems in

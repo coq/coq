@@ -76,8 +76,7 @@ type cbv_value =
 and cbv_stack =
   | TOP
   | APP of cbv_value array * cbv_stack
-  | CASE of constr * constr array * (constr,Univ.Instance.t) case_invert
-            * case_info * cbv_value subs * cbv_stack
+  | CASE of Univ.Instance.t * constr array * case_return * case_branch array * Constr.case_invert * case_info * cbv_value subs * cbv_stack
   | PROJ of Projection.t * cbv_stack
 
 (* les vars pourraient etre des constr,
@@ -143,7 +142,7 @@ let rec stack_concat stk1 stk2 =
   match stk1 with
       TOP -> stk2
     | APP(v,stk1') -> APP(v,stack_concat stk1' stk2)
-    | CASE(c,b,iv,i,s,stk1') -> CASE(c,b,iv,i,s,stack_concat stk1' stk2)
+    | CASE(u,pms,c,b,iv,i,s,stk1') -> CASE(u,pms,c,b,iv,i,s,stack_concat stk1' stk2)
     | PROJ (p,stk1') -> PROJ (p,stack_concat stk1' stk2)
 
 (* merge stacks when there is no shifts in between *)
@@ -357,9 +356,9 @@ let rec reify_stack t = function
   | TOP -> t
   | APP (args,st) ->
       reify_stack (mkApp(t,Array.map reify_value args)) st
-  | CASE (ty,br,iv,ci,env,st) ->
+  | CASE (u,pms,ty,br,iv,ci,env,st) ->
       reify_stack
-        (mkCase (ci, ty, iv, t, br))
+        (mkCase (ci, u, pms, ty, iv, t,br))
         st
   | PROJ (p, st) ->
        reify_stack (mkProj (p, t)) st
@@ -410,6 +409,29 @@ let rec subs_consn v i n s =
   if Int.equal i n then s
   else subs_consn v (i + 1) n (subs_cons v.(i) s)
 
+(* TODO: share the common parts with EConstr *)
+let expand_branch env u pms (ind, i) br =
+  let open Declarations in
+  let nas, _br = br.(i - 1) in
+  let (mib, mip) = Inductive.lookup_mind_specif env ind in
+  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl (Array.to_list pms) in
+  let subst = paramsubst @ Inductive.ind_subst (fst ind) mib u in
+  let (ctx, _) = mip.mind_nf_lc.(i - 1) in
+  let (ctx, _) = List.chop mip.mind_consnrealdecls.(i - 1) ctx in
+  Inductive.instantiate_context u subst nas ctx
+
+let cbv_subst_of_rel_context_instance mkclos sign args env =
+  let rec aux subst sign l =
+    let open Context.Rel.Declaration in
+    match sign, l with
+    | LocalAssum _ :: sign', a::args' -> aux (subs_cons a subst) sign' args'
+    | LocalDef (_,c,_)::sign', args' ->
+        aux (subs_cons (mkclos subst c) subst) sign' args'
+    | [], [] -> subst
+    | _ -> CErrors.anomaly (Pp.str "Instance and signature do not match.")
+  in aux env (List.rev sign) (Array.to_list args)
+
 (* The main recursive functions
  *
  * Go under applications and cases/projections (pushed in the stack),
@@ -429,7 +451,7 @@ let rec norm_head info env t stack =
                         they could be computed when getting out of the stack *)
       let nargs = Array.map (cbv_stack_term info TOP env) args in
       norm_head info env head (stack_app nargs stack)
-  | Case (ci,p,iv,c,v) -> norm_head info env c (CASE(p,v,iv,ci,env,stack))
+  | Case (ci,u,pms,p,iv,c,v) -> norm_head info env c (CASE(u,pms,p,v,iv,ci,env,stack))
   | Cast (ct,_,_) -> norm_head info env ct stack
 
   | Proj (p, c) ->
@@ -557,16 +579,33 @@ and cbv_stack_value info env = function
         cbv_stack_term info stk envf redfix
 
     (* constructor in a Case -> IOTA *)
-    | (CONSTR(((sp,n),u),[||]), APP(args,CASE(_,br,iv,ci,env,stk)))
+    | (CONSTR(((sp,n),_),[||]), APP(args,CASE(u,pms,_p,br,iv,ci,env,stk)))
             when red_set info.reds fMATCH ->
+        let nargs = Array.length args - ci.ci_npar in
         let cargs =
-          Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
-        cbv_stack_term info (stack_app cargs stk) env br.(n-1)
+          Array.sub args ci.ci_npar nargs in
+        let env =
+          if (Int.equal ci.ci_cstr_ndecls.(n - 1) ci.ci_cstr_nargs.(n - 1)) then (* no lets *)
+            subs_consn cargs 0 nargs env
+          else
+            let mkclos env c = cbv_stack_term info TOP env c in
+            let ctx = expand_branch info.env u pms (sp, n) br in
+            cbv_subst_of_rel_context_instance mkclos ctx cargs env
+        in
+        cbv_stack_term info stk env (snd br.(n-1))
 
     (* constructor of arity 0 in a Case -> IOTA *)
-    | (CONSTR(((_,n),u),[||]), CASE(_,br,_,_,env,stk))
+    | (CONSTR(((sp, n), _),[||]), CASE(u,pms,_,br,_,ci,env,stk))
             when red_set info.reds fMATCH ->
-                    cbv_stack_term info stk env br.(n-1)
+        let env =
+          if (Int.equal ci.ci_cstr_ndecls.(n - 1) ci.ci_cstr_nargs.(n - 1)) then (* no lets *)
+            env
+          else
+            let mkclos env c = cbv_stack_term info TOP env c in
+            let ctx = expand_branch info.env u pms (sp, n) br in
+            cbv_subst_of_rel_context_instance mkclos ctx [||] env
+        in
+        cbv_stack_term info stk env (snd br.(n-1))
 
     (* constructor in a Projection -> IOTA *)
     | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,stk)))
@@ -640,10 +679,31 @@ let rec apply_stack info t = function
   | TOP -> t
   | APP (args,st) ->
       apply_stack info (mkApp(t,Array.map (cbv_norm_value info) args)) st
-  | CASE (ty,br,iv,ci,env,st) ->
+  | CASE (u,pms,ty,br,iv,ci,env,st) ->
+    (* FIXME: Prevent this expansion by caching whether an inductive contains let-bindings *)
+    let (_, ty, _, _, br) = Inductive.expand_case info.env (ci, u, pms, ty, iv, mkProp, br) in
+    let ty =
+      let (_, mip) = Inductive.lookup_mind_specif info.env ci.ci_ind in
+      Term.decompose_lam_n_decls (mip.Declarations.mind_nrealdecls + 1) ty
+    in
+    let mk_br c n = Term.decompose_lam_n_decls n c in
+    let br = Array.map2 mk_br br ci.ci_cstr_ndecls in
+    let map_ctx (nas, c) =
+      let open Context.Rel.Declaration in
+      let fold decl e = match decl with
+      | LocalAssum _ -> subs_lift e
+      | LocalDef (_, b, _) ->
+        let b = cbv_stack_term info TOP e b in
+        (* The let-binding persists, so we have to shift *)
+        subs_shft (1, subs_cons b e)
+      in
+      let env = List.fold_right fold nas env in
+      let nas = Array.of_list (List.rev_map get_annot nas) in
+      (nas, cbv_norm_term info env c)
+    in
       apply_stack info
-        (mkCase (ci, cbv_norm_term info env ty, iv, t,
-                    Array.map (cbv_norm_term info env) br))
+        (mkCase (ci, u, Array.map (cbv_norm_term info env) pms, map_ctx ty, iv, t,
+                    Array.map map_ctx br))
         st
   | PROJ (p, st) ->
        apply_stack info (mkProj (p, t)) st

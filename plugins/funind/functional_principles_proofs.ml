@@ -598,12 +598,12 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
         let sigma = Proofview.Goal.sigma g in
         (*      observe (str "proving on " ++ Printer.pr_lconstr_env (pf_env g) term);*)
         match EConstr.kind sigma dyn_infos.info with
-        | Case (ci, ct, iv, t, cb) ->
+        | Case (ci, u, pms, ct, iv, t, cb) ->
           let do_finalize_t dyn_info' =
             Proofview.Goal.enter (fun g ->
                 let t = dyn_info'.info in
                 let dyn_infos =
-                  {dyn_info' with info = mkCase (ci, ct, iv, t, cb)}
+                  {dyn_info' with info = mkCase (ci, u, pms, ct, iv, t, cb)}
                 in
                 let g_nb_prod =
                   nb_prod (Proofview.Goal.sigma g) (Proofview.Goal.concl g)

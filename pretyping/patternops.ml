@@ -202,7 +202,8 @@ let pattern_of_constr env sigma t =
       | Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar ido) -> assert false
       | _ ->
         PMeta None)
-    | Case (ci,p,_,a,br) ->
+    | Case (ci, u, pms, p, iv, a, br) ->
+        let (ci, p, iv, a, br) = Inductive.expand_case env (ci, u, pms, p, iv, a, br) in
         let cip =
           { cip_style = ci.ci_pp_info.style;
             cip_ind = Some ci.ci_ind;
@@ -213,7 +214,7 @@ let pattern_of_constr env sigma t =
           (i, ci.ci_pp_info.cstr_tags.(i), pattern_of_constr env c)
         in
         PCase (cip, pattern_of_constr env p, pattern_of_constr env a,
-               Array.to_list (Array.mapi branch_of_constr br))
+                Array.to_list (Array.mapi branch_of_constr br))
     | Fix (lni,(lna,tl,bl)) ->
        let push env na2 c2 = push_rel (LocalAssum (na2,c2)) env in
        let env' = Array.fold_left2 push env lna tl in

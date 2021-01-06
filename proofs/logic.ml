@@ -265,15 +265,12 @@ let collect_meta_variables c =
   let rec collrec deep acc c = match kind c with
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
-    | Case(ci,p,iv,c,br) ->
-      (* Hack assuming only two situations: the legacy one that branches,
-         if with Metas, are Meta, and the new one with eta-let-expanded
-         branches *)
-      let br = Array.map2 (fun n b -> try snd (Term.decompose_lam_n_decls n b) with UserError _ -> b) ci.ci_cstr_ndecls br in
-      let acc = Constr.fold (collrec deep) acc p in
+    | Case(ci,u,pms,p,iv,c,br) ->
+      let acc = Array.fold_left (collrec deep) acc pms in
+      let acc = Constr.fold (collrec deep) acc (snd p) in
       let acc = Constr.fold_invert (collrec deep) acc iv in
       let acc = Constr.fold (collrec deep) acc c in
-      Array.fold_left (collrec deep) acc br
+      Array.fold_left (fun accu (_, br) -> collrec deep accu br) acc br
     | App _ -> Constr.fold (collrec deep) acc c
     | Proj (_, c) -> collrec deep acc c
     | _ -> Constr.fold (collrec true) acc c
@@ -369,15 +366,16 @@ let rec mk_refgoals ~check env sigma goalacc conclty trm =
         let ty = EConstr.Unsafe.to_constr ty in
           (acc',ty,sigma,c)
 
-      | Case (ci,p,iv,c,lf) ->
+      | Case (ci, u, pms, p, iv, c, lf) ->
         (* XXX Is ignoring iv OK? *)
+        let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
         let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals ~check env sigma goalacc p c in
         let sigma = check_conv_leq_goal ~check env sigma trm conclty' conclty in
         let (acc'',sigma,rbranches) = treat_case ~check env sigma ci lbrty lf acc' in
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (ci,p',iv,c',lf')
+          else mkCase (Inductive.contract_case env (ci,p',iv,c',lf'))
         in
         (acc'',conclty',sigma, ans)
 
@@ -418,14 +416,15 @@ and mk_hdgoals ~check env sigma goalacc trm =
         let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
-    | Case (ci,p,iv,c,lf) ->
+    | Case (ci, u, pms, p, iv, c, lf) ->
         (* XXX is ignoring iv OK? *)
+        let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
         let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals ~check env sigma goalacc p c in
         let (acc'',sigma,rbranches) = treat_case ~check env sigma ci lbrty lf acc' in
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (ci,p',iv,c',lf')
+          else mkCase (Inductive.contract_case env (ci,p',iv,c',lf'))
         in
         (acc'',conclty',sigma, ans)
 
@@ -479,13 +478,7 @@ and treat_case ~check env sigma ci lbrty lf acc' =
   | App (f,cl) -> (f, cl)
   | _ -> (c,[||]) in
   Array.fold_left3
-    (fun (lacc,sigma,bacc) ty fi l ->
-        if isMeta (strip_outer_cast fi) then
-          (* Support for non-eta-let-expanded Meta as found in *)
-          (* destruct/case with an non eta-let expanded elimination scheme *)
-          let (r,_,s,fi') = mk_refgoals ~check env sigma lacc ty fi in
-          r,s,(fi'::bacc)
-        else
+    (fun (lacc,sigma,bacc) ty fi n ->
         (* Deal with a branch in expanded form of the form
            Case(ci,p,c,[|eta-let-exp(Meta);...;eta-let-exp(Meta)|]) as
            if it were not so, so as to preserve compatibility with when
@@ -494,7 +487,6 @@ and treat_case ~check env sigma ci lbrty lf acc' =
            CAUTION: it does not deal with the general case of eta-zeta
            reduced branches having a form different from Meta, as it
            would be theoretically the case with third-party code *)
-        let n = List.length l in
         let ctx, body = Term.decompose_lam_n_decls n fi in
         let head, args = decompose_app_vect body in
         (* Strip cast because clenv_cast_meta adds a cast when the branch is
@@ -503,8 +495,7 @@ and treat_case ~check env sigma ci lbrty lf acc' =
         let head = strip_outer_cast head in
         if isMeta head then begin
           assert (args = Context.Rel.to_extended_vect mkRel 0 ctx);
-          let head' = lift (-n) head in
-          let (r,_,s,head'') = mk_refgoals ~check env sigma lacc ty head' in
+          let (r,_,s,head'') = mk_refgoals ~check env sigma lacc ty head in
           let fi' = it_mkLambda_or_LetIn (mkApp (head'',args)) ctx in
           (r,s,fi'::bacc)
         end
@@ -513,7 +504,7 @@ and treat_case ~check env sigma ci lbrty lf acc' =
           let sigma, t'ty = goal_type_of ~check env sigma fi in
           let sigma = check_conv_leq_goal ~check env sigma fi t'ty ty in
           (lacc,sigma,fi::bacc))
-    (acc',sigma,[]) lbrty lf ci.ci_pp_info.cstr_tags
+    (acc',sigma,[]) lbrty lf ci.ci_cstr_ndecls
 
 let convert_hyp ~check ~reorder env sigma d =
   let id = NamedDecl.get_id d in

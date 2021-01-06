@@ -104,9 +104,11 @@ sig
     | Cst_const of pconstant
     | Cst_proj of Projection.t
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array * Cst_stack.t
+  | Case of 'a case_stk * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
@@ -121,7 +123,7 @@ sig
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
   val equal : ('a -> 'a -> bool) -> (('a, 'a) pfixpoint -> ('a, 'a) pfixpoint -> bool)
-    -> 'a t -> 'a t -> bool
+    -> ('a case_stk -> 'a case_stk -> bool) -> 'a t -> 'a t -> bool
   val strip_app : 'a t -> 'a t * 'a t
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
   val will_expose_iota : 'a t -> bool
@@ -156,9 +158,11 @@ struct
     | Cst_const of pconstant
     | Cst_proj of Projection.t
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_invert * 'a pcase_branch array
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array * Cst_stack.t
+  | Case of 'a case_stk * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
@@ -172,9 +176,9 @@ struct
     let pr_c x = hov 1 (pr_c x) in
     match member with
     | App app -> str "ZApp" ++ pr_app_node pr_c app
-    | Case (_,_,_,br,cst) ->
+    | Case ((_,_,_,_,_,br),cst) ->
        str "ZCase(" ++
-         prvect_with_sep (pr_bar) pr_c br
+         prvect_with_sep (pr_bar) (fun (_, b) -> pr_c b) br
        ++ str ")"
     | Proj (p,cst) ->
       str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
@@ -221,7 +225,7 @@ struct
     if i < j then (l.(j), App (i,l,pred j) :: sk)
     else (l.(j), sk)
 
-  let equal f f_fix sk1 sk2 =
+  let equal f f_fix f_case sk1 sk2 =
     let equal_cst_member x y =
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
@@ -236,8 +240,8 @@ struct
         let t1,s1' = decomp_node_last a1 s1 in
         let t2,s2' = decomp_node_last a2 s2 in
         (f t1 t2) && (equal_rec s1' s2')
-      | Case (_,t1,_,a1,_) :: s1, Case (_,t2,_,a2,_) :: s2 ->
-        f t1 t2 && CArray.equal (fun x y -> f x y) a1 a2 && equal_rec s1 s2
+      | Case ((ci1,pms1,p1,t1,iv1,a1),_) :: s1, Case ((ci2,pms2,p2,iv2,t2,a2),_) :: s2 ->
+        f_case (ci1,pms1,p1,t1,iv1,a1) (ci2,pms2,p2,iv2,t2,a2) && equal_rec s1 s2
       | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
         Projection.Repr.CanOrd.equal (Projection.repr p) (Projection.repr p2)
         && equal_rec s1 s2
@@ -284,7 +288,7 @@ struct
 
   let will_expose_iota args =
     List.exists
-      (function (Fix (_,_,l) | Case (_,_,_,_,l) |
+      (function (Fix (_,_,l) | Case (_,l) |
                  Proj (_,l) | Cst (_,_,_,_,l)) when Cst_stack.is_empty l -> true | _ -> false)
       args
 
@@ -346,9 +350,9 @@ struct
                 then a
                 else Array.sub a i (j - i + 1) in
        zip (mkApp (f, a'), s)
-    | f, (Case (ci,rt,iv,br,cst_l)::s) when refold ->
-      zip (best_state sigma (mkCase (ci,rt,iv,f,br), s) cst_l)
-    | f, (Case (ci,rt,iv,br,_)::s) -> zip (mkCase (ci,rt,iv,f,br), s)
+    | f, (Case ((ci,u,pms,rt,iv,br),cst_l)::s) when refold ->
+      zip (best_state sigma (mkCase (ci,u,pms,rt,iv,f,br), s) cst_l)
+    | f, (Case ((ci,u,pms,rt,iv,br),_)::s) -> zip (mkCase (ci,u,pms,rt,iv,f,br), s)
     | f, (Fix (fix,st,cst_l)::s) when refold ->
       zip (best_state sigma (mkFix fix, st @ (append_app [|f|] s)) cst_l)
   | f, (Fix (fix,st,_)::s) -> zip
@@ -533,7 +537,26 @@ let debug_RAKAM = Reductionops.debug_RAKAM
 let equal_stacks sigma (x, l) (y, l') =
   let f_equal x y = eq_constr sigma x y in
   let eq_fix a b = f_equal (mkFix a) (mkFix b) in
-  Stack.equal f_equal eq_fix l l' && f_equal x y
+  let eq_case (ci1, u1, pms1, p1, _, br1) (ci2, u2, pms2, p2, _, br2) =
+    Array.equal f_equal pms1 pms2 &&
+    f_equal (snd p1) (snd p2) &&
+    Array.equal (fun (_, c1) (_, c2) -> f_equal c1 c2) br1 br2
+  in
+  Stack.equal f_equal eq_fix eq_case l l' && f_equal x y
+
+let apply_branch env sigma (ind, i) args (ci, u, pms, iv, r, lf) =
+  let args = Stack.tail ci.ci_npar args in
+  let args = Option.get (Stack.list_of_app_stack args) in
+  let br = lf.(i - 1) in
+  let subst =
+    if Int.equal ci.ci_cstr_nargs.(i - 1) ci.ci_cstr_ndecls.(i - 1) then
+      (* No let-bindings *)
+      List.rev args
+    else
+      let ctx = expand_branch env sigma u pms (ind, i) br in
+      subst_of_rel_context_instance ctx args
+  in
+  Vars.substl subst (snd br)
 
 let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let open Context.Named.Declaration in
@@ -699,8 +722,8 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
         | _ -> fold ())
       | _ -> fold ())
 
-    | Case (ci,p,iv,d,lf) ->
-      whrec Cst_stack.empty (d, Stack.Case (ci,p,iv,lf,cst_l) :: stack)
+    | Case (ci,u,pms,p,iv,d,lf) ->
+      whrec Cst_stack.empty (d, Stack.Case ((ci,u,pms,p,iv,lf),cst_l) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -708,13 +731,14 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       |Some (bef,arg,s') ->
         whrec Cst_stack.empty (arg, Stack.Fix(f,bef,cst_l)::s'))
 
-    | Construct ((ind,c),u) ->
+    | Construct (cstr ,u) ->
       let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, _, lf,_)::s') when use_match ->
-          whrec Cst_stack.empty (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
+        |args, (Stack.Case(case,_)::s') when use_match ->
+          let r = apply_branch env sigma cstr args case in
+          whrec Cst_stack.empty (r, s')
         |args, (Stack.Proj (p,_)::s') when use_match ->
           whrec Cst_stack.empty (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s',cst_l)::s'') when use_fix ->
