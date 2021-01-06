@@ -42,7 +42,8 @@ val init_toploop : Coqargs.t -> Stm.AsyncOpts.stm_opt -> Coqargs.injection_comma
 
 (** The specific characterization of the coqtop_toplevel *)
 
-type run_mode = Interactive | Batch | Query_PrintTags
+type query = PrintTags | PrintModUid of string list
+type run_mode = Interactive | Batch | Query of query
 
 type toplevel_options = {
   run_mode : run_mode;

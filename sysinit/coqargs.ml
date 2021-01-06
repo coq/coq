@@ -220,15 +220,6 @@ let get_float ~opt n =
   with Failure _ ->
     error_wrong_arg ("Error: float expected after option "^opt)
 
-let get_native_name s =
-  (* We ignore even critical errors because this mode has to be super silent *)
-  try
-    Filename.(List.fold_left concat (dirname s)
-                [ !Nativelib.output_dir
-                ; Library.native_name_from_filename s
-                ])
-  with _ -> ""
-
 let interp_set_option opt v old =
   let open Goptions in
   let opt = String.concat " " opt in
@@ -360,9 +351,6 @@ let parse_args ~usage ~init arglist : t * string list =
       Goptions.set_bool_option_value ["Mangle"; "Names"] true;
       Goptions.set_string_option_value ["Mangle"; "Names"; "Prefix"] (next ());
       oval
-
-    |"-print-mod-uid" ->
-      let s = String.concat " " (List.map get_native_name rem) in print_endline s; exit 0
 
     |"-profile-ltac-cutoff" ->
       Flags.profile_ltac := true;

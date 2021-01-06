@@ -143,7 +143,8 @@ let print_style_tags opts =
   let () = List.iter iter tags in
   flush_all ()
 
-type run_mode = Interactive | Batch | Query_PrintTags
+type query = PrintTags | PrintModUid of string list
+type run_mode = Interactive | Batch | Query of query
 
 type toplevel_options = {
   run_mode : run_mode;
@@ -197,7 +198,8 @@ let parse_extra_colors extras =
 let coqtop_parse_extra extras =
   let rec parse_extra run_mode  = function
   | "-batch" :: rest -> parse_extra Batch  rest
-  | x :: rest ->
+  | "-print-mod-uid" :: rest -> Query (PrintModUid rest), []
+  |   x :: rest ->
     let run_mode, rest = parse_extra run_mode rest in run_mode, x :: rest
   | [] -> run_mode, [] in
   let run_mode, extras = parse_extra Interactive extras in
@@ -205,10 +207,23 @@ let coqtop_parse_extra extras =
   let async_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
   ({ run_mode; color_mode}, async_opts), extras
 
+let get_native_name s =
+  (* We ignore even critical errors because this mode has to be super silent *)
+  try
+    Filename.(List.fold_left concat (dirname s)
+                [ !Nativelib.output_dir
+                ; Library.native_name_from_filename s
+                ])
+  with _ -> ""
+
 let coqtop_run ({ run_mode; color_mode },_) ~opts state =
   match run_mode with
   | Interactive -> Coqloop.loop ~opts ~state;
-  | Query_PrintTags -> print_style_tags color_mode; exit 0
+  | Query PrintTags -> print_style_tags color_mode; exit 0
+  | Query (PrintModUid sl) ->
+      let s = String.concat " " (List.map get_native_name sl) in
+      print_endline s;
+      exit 0
   | Batch -> exit 0
 
 let coqtop_specific_usage = Usage.{
