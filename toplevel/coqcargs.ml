@@ -25,6 +25,8 @@ type t =
 
   ; outputstate : string option
   ; glob_out    : Dumpglob.glob_output
+
+  ; output_context : bool
   }
 
 let default =
@@ -42,6 +44,8 @@ let default =
 
   ; outputstate = None
   ; glob_out = Dumpglob.MultFiles
+
+  ; output_context = false
   }
 
 let depr opt =
@@ -162,6 +166,10 @@ let parse arglist : t =
           depr opt;
           let _ = next () in
           oval
+
+        (* Non deprecated options *)
+        | "-output-context" ->
+          { oval with output_context = true }
         (* Verbose == echo mode *)
         | "-verbose" ->
           echo := true;

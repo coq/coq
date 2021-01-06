@@ -74,7 +74,6 @@ type coqargs_main =
 
 type coqargs_post = {
   memory_stat : bool;
-  output_context : bool;
 }
 
 type t = {

@@ -56,7 +56,7 @@ let coqc_main ((copts,_),stm_opts) injections ~opts =
 
   flush_all();
 
-  if opts.Coqargs.post.Coqargs.output_context then begin
+  if copts.Coqcargs.output_context then begin
     let sigma, env = let e = Global.env () in Evd.from_env e, e in
     Feedback.msg_notice Pp.(Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
   end;
@@ -79,7 +79,8 @@ let custom_coqc : ((Coqcargs.t * Coqtop.color) * Stm.AsyncOpts.stm_opt, 'b) Coqt
   parse_extra = (fun extras ->
     let color_mode, extras = Coqtop.parse_extra_colors extras in
     let stm_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
-    ((Coqcargs.parse extras, color_mode), stm_opts), []);
+    let coqc_opts = Coqcargs.parse extras in
+    ((coqc_opts, color_mode), stm_opts), []);
   usage = coqc_specific_usage;
   init_extra = coqc_init;
   run = coqc_run;

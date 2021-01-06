@@ -39,6 +39,8 @@ type t =
 
   ; outputstate : string option
   ; glob_out    : Dumpglob.glob_output
+
+  ; output_context : bool
   }
 
 val default : t

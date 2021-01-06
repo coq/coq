@@ -93,7 +93,6 @@ type coqargs_main =
 
 type coqargs_post = {
   memory_stat : bool;
-  output_context : bool;
 }
 
 type t = {
@@ -143,7 +142,6 @@ let default_queries = []
 
 let default_post = {
   memory_stat  = false;
-  output_context = false;
 }
 
 let default = {
@@ -440,10 +438,9 @@ let parse_args ~usage ~init arglist : t * string list =
       warn_deprecated_sprop_cumul();
       add_set_option oval Vernacentries.cumul_sprop_opt_name (OptionSet None)
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
-    |"-m"|"--memory" -> { oval with post = { oval.post with memory_stat = true }}
+    |"-m"|"--memory" -> { oval with post = { memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}
     |"-boot" -> { oval with pre = { oval.pre with boot = true }}
-    |"-output-context" -> { oval with post = { oval.post with output_context = true }}
     |"-profile-ltac" -> Flags.profile_ltac := true; oval
     |"-q" -> { oval with pre = { oval.pre with load_rcfile = false; }}
     |"-quiet"|"-silent" ->
