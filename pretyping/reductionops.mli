@@ -145,9 +145,6 @@ type stack_reduction_function =
 
 (** {6 Reduction Function Operators } *)
 
-val strong_with_flags :
-  (CClosure.RedFlags.reds -> reduction_function) ->
-  (CClosure.RedFlags.reds -> reduction_function)
 val strong : reduction_function -> reduction_function
 
 (** {6 Generic Optimized Reduction Function using Closures } *)
