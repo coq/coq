@@ -348,9 +348,8 @@ let parse_args ~usage ~init arglist : t * string list =
       add_load_vernacular oval true (next ())
 
     |"-mangle-names" ->
-      Goptions.set_bool_option_value ["Mangle"; "Names"] true;
-      Goptions.set_string_option_value ["Mangle"; "Names"; "Prefix"] (next ());
-      oval
+      let oval = add_set_option oval ["Mangle"; "Names"] (OptionSet None) in
+      add_set_option oval ["Mangle"; "Names"; "Prefix"] (OptionSet(Some(next ())))
 
     |"-profile-ltac-cutoff" ->
       Flags.profile_ltac := true;
