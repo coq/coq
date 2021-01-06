@@ -352,10 +352,9 @@ let matches_core env sigma allow_bound_rels
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci, u2, pms2, p2, iv, a2, ([|b2;b2'|] as br2)) ->
-          let (ci2, p2, _, a2, br2) = EConstr.expand_case env sigma (ci, u2, pms2, p2, iv, a2, br2) in
-          let b2, b2' = match br2 with [|b2; b2'|] -> b2, b2' | _ -> assert false in
-          let ctx_b2,b2 = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(0) b2 in
-          let ctx_b2',b2' = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(1) b2' in
+          let (_, _, _, p2, _, _, br2) = EConstr.annotate_case env sigma (ci, u2, pms2, p2, iv, a2, br2) in
+          let ctx_b2,b2 = br2.(0) in
+          let ctx_b2',b2' = br2.(1) in
           let n = Context.Rel.length ctx_b2 in
           let n' = Context.Rel.length ctx_b2' in
           if Vars.noccur_between sigma 1 n b2 && Vars.noccur_between sigma 1 n' b2' then
