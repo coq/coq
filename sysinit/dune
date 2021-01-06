@@ -4,5 +4,4 @@
  (synopsis "Coq's initialization")
  (wrapped false)
  (libraries coq.vernac)
- (modules coqloadpath coqargs usage)
  )

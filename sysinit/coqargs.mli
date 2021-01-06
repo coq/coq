@@ -8,14 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type color = [`ON | `AUTO | `EMACS | `OFF]
-
 val default_toplevel : Names.DirPath.t
 
 type native_compiler = Coq_config.native_compiler =
   NativeOff | NativeOn of { ondemand : bool }
 
-type interactive_top = TopLogical of Names.DirPath.t | TopPhysical of string
+type top = TopLogical of Names.DirPath.t | TopPhysical of string
 
 type option_command =
   | OptionSet of string option
@@ -35,14 +33,13 @@ type injection_command =
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
-  toplevel_name     : interactive_top;
+  toplevel_name     : top;
 }
 
 type coqargs_config = {
   logic       : coqargs_logic_config;
   rcfile      : string option;
   coqlib      : string option;
-  color       : color;
   enable_VM   : bool;
   native_compiler : native_compiler;
   native_output_dir : CUnix.physical_path;
@@ -67,7 +64,7 @@ type coqargs_pre = {
 }
 
 type coqargs_query =
-  | PrintTags | PrintWhere | PrintConfig
+  | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
   | PrintHelp of Usage.specific_usage
 
@@ -90,10 +87,12 @@ type t = {
 (* Default options *)
 val default : t
 
-val parse_args : help:Usage.specific_usage -> init:t -> string list -> t * string list
+val parse_args : usage:Usage.specific_usage -> init:t -> string list -> t * string list
 
 val injection_commands : t -> injection_command list
 val build_load_path : t -> CUnix.physical_path list * Loadpath.vo_path list
+
+val dirpath_of_top : top -> Names.DirPath.t
 
 (* Common utilities *)
 

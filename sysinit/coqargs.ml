@@ -35,12 +35,10 @@ let set_debug () =
 
 (******************************************************************************)
 
-type color = [`ON | `AUTO | `EMACS | `OFF]
-
 type native_compiler = Coq_config.native_compiler =
   NativeOff | NativeOn of { ondemand : bool }
 
-type interactive_top = TopLogical of Names.DirPath.t | TopPhysical of string
+type top = TopLogical of Names.DirPath.t | TopPhysical of string
 
 type option_command =
   | OptionSet of string option
@@ -54,14 +52,13 @@ type injection_command =
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
-  toplevel_name     : interactive_top;
+  toplevel_name     : top;
 }
 
 type coqargs_config = {
   logic       : coqargs_logic_config;
   rcfile      : string option;
   coqlib      : string option;
-  color       : color;
   enable_VM   : bool;
   native_compiler : native_compiler;
   native_output_dir : CUnix.physical_path;
@@ -86,7 +83,7 @@ type coqargs_pre = {
 }
 
 type coqargs_query =
-  | PrintTags | PrintWhere | PrintConfig
+  | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
   | PrintHelp of Usage.specific_usage
 
@@ -120,7 +117,6 @@ let default_config = {
   logic        = default_logic_config;
   rcfile       = None;
   coqlib       = None;
-  color        = `AUTO;
   enable_VM    = true;
   native_compiler = default_native;
   native_output_dir = ".coq-native";
@@ -181,17 +177,10 @@ let add_set_option opts opt_name value =
 (** Options for proof general *)
 let set_emacs opts =
   Goptions.set_bool_option_value Printer.print_goal_tag_opt_name true;
-  { opts with config = { opts.config with color = `EMACS; print_emacs = true }}
+  { opts with config = { opts.config with print_emacs = true }}
 
 let set_logic f oval =
   { oval with config = { oval.config with logic = f oval.config.logic }}
-
-let set_color opts = function
-  | "yes" | "on" -> { opts with config = { opts.config with color = `ON }}
-  | "no" | "off" -> { opts with config = { opts.config with color = `OFF }}
-  | "auto" -> { opts with config = { opts.config with color = `AUTO }}
-  | _ ->
-    error_wrong_arg ("Error: on/off/auto expected after option color")
 
 let set_query opts q =
   { opts with main = match opts.main with
@@ -306,7 +295,7 @@ let get_native_compiler s =
 (* Main parsing routine *)
 (*s Parsing of the command line *)
 
-let parse_args ~help ~init arglist : t * string list =
+let parse_args ~usage ~init arglist : t * string list =
   let args = ref arglist in
   let extras = ref [] in
   let rec parse oval = match !args with
@@ -435,7 +424,6 @@ let parse_args ~help ~init arglist : t * string list =
     |"-test-mode" -> Vernacinterp.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
     |"-bt" -> Exninfo.record_backtrace true; oval
-    |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> set_query oval PrintConfig
     |"-debug" -> set_debug (); oval
     |"-xml-debug" -> Flags.xml_debug := true; set_debug (); oval
@@ -462,12 +450,11 @@ let parse_args ~help ~init arglist : t * string list =
       Flags.quiet := true;
       Flags.make_warn false;
       oval
-    |"-list-tags" -> set_query oval PrintTags
     |"-time" -> { oval with config = { oval.config with time = true }}
     |"-type-in-type" -> set_type_in_type (); oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
     |"-where" -> set_query oval PrintWhere
-    |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval (PrintHelp help)
+    |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval (PrintHelp usage)
     |"-v"|"--version" -> set_query oval PrintVersion
     |"-print-version"|"--print-version" -> set_query oval PrintMachineReadableVersion
 
@@ -483,8 +470,8 @@ let parse_args ~help ~init arglist : t * string list =
   with any -> fatal_error any
 
 (* We need to reverse a few lists *)
-let parse_args ~help ~init args =
-  let opts, extra = parse_args ~help ~init args in
+let parse_args ~usage ~init args =
+  let opts, extra = parse_args ~usage ~init args in
   let opts =
     { opts with
       pre = { opts.pre with
@@ -513,3 +500,19 @@ let build_load_path opts =
       Coqloadpath.init_load_path ~coqlib in
   ml_path @ opts.pre.ml_includes ,
   vo_path @ opts.pre.vo_includes
+
+let dirpath_of_file f =
+  let ldir0 =
+    try
+      let lp = Loadpath.find_load_path (Filename.dirname f) in
+      Loadpath.logical lp
+    with Not_found -> Libnames.default_root_prefix
+  in
+  let f = try Filename.chop_extension (Filename.basename f) with Invalid_argument _ -> f in
+  let id = Names.Id.of_string f in
+  let ldir = Libnames.add_dirpath_suffix ldir0 id in
+  ldir
+
+let dirpath_of_top = function
+  | TopPhysical f -> dirpath_of_file f
+  | TopLogical dp -> dp

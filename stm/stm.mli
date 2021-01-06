@@ -48,7 +48,7 @@ end
 type stm_doc_type =
   | VoDoc       of string       (* file path *)
   | VioDoc      of string       (* file path *)
-  | Interactive of Coqargs.interactive_top    (* module path *)
+  | Interactive of Coqargs.top    (* module path *)
 
 (** STM initialization options: *)
 type stm_init_options =
@@ -56,13 +56,6 @@ type stm_init_options =
   (** The STM does set some internal flags differently depending on
      the specified [doc_type]. This distinction should disappear at
      some some point. *)
-
-  ; ml_load_path : CUnix.physical_path list
-  (** OCaml load paths for the document. *)
-
-  ; vo_load_path   : Loadpath.vo_path list
-  (** [vo] load paths for the document. Usually extracted from -R
-     options / _CoqProject *)
 
   ; injections : Coqargs.injection_command list
   (** Injects Require and Set/Unset commands before the initial

@@ -13,10 +13,11 @@ let outputstate opts =
     let fname = CUnix.make_suffix ostate_file ".coq" in
     Vernacstate.System.dump fname) opts.Coqcargs.outputstate
 
-let coqc_init _copts ~opts =
+let coqc_init ((_,color_mode),_) injections ~opts =
   Flags.quiet := true;
   System.trust_file_cache := true;
-  Coqtop.init_color opts.Coqargs.config
+  Coqtop.init_color (if opts.Coqargs.config.Coqargs.print_emacs then `EMACS else color_mode);
+  injections
 
 let coqc_specific_usage = Usage.{
   executable_name = "coqc";
@@ -41,14 +42,14 @@ coqc specific options:\
 \n"
 }
 
-let coqc_main (copts,stm_opts) ~opts =
+let coqc_main ((copts,_),stm_opts) injections ~opts =
   Topfmt.(in_phase ~phase:CompilationPhase)
-    Ccompile.compile_files (opts,stm_opts) copts;
+    Ccompile.compile_files (opts,stm_opts) copts injections;
 
   (* Careful this will modify the load-path and state so after this
      point some stuff may not be safe anymore. *)
   Topfmt.(in_phase ~phase:CompilationPhase)
-    Ccompile.do_vio opts copts;
+    Ccompile.do_vio opts copts injections;
 
   (* Allow the user to output an arbitrary state *)
   outputstate copts;
@@ -61,10 +62,10 @@ let coqc_main (copts,stm_opts) ~opts =
   end;
   CProfile.print_profile ()
 
-let coqc_run copts ~opts () =
+let coqc_run copts ~opts injections =
   let _feeder = Feedback.add_feeder Coqloop.coqloop_feed in
   try
-    coqc_main ~opts copts;
+    coqc_main ~opts copts injections;
     exit 0
   with exn ->
     flush_all();
@@ -73,15 +74,16 @@ let coqc_run copts ~opts () =
     let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
     exit exit_code
 
-let custom_coqc : (Coqcargs.t * Stm.AsyncOpts.stm_opt, 'b) Coqtop.custom_toplevel
+let custom_coqc : ((Coqcargs.t * Coqtop.color) * Stm.AsyncOpts.stm_opt, 'b) Coqtop.custom_toplevel
  = Coqtop.{
-  parse_extra = (fun ~opts extras ->
+  parse_extra = (fun extras ->
+    let color_mode, extras = Coqtop.parse_extra_colors extras in
     let stm_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
-    (Coqcargs.parse extras, stm_opts), []);
-  help = coqc_specific_usage;
-  init = coqc_init;
+    ((Coqcargs.parse extras, color_mode), stm_opts), []);
+  usage = coqc_specific_usage;
+  init_extra = coqc_init;
   run = coqc_run;
-  opts = Coqargs.default;
+  initial_args = Coqargs.default;
 }
 
 let main () =

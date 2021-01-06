@@ -228,6 +228,7 @@
 
 /toplevel/   @coq/toplevel-maintainers
 /topbin/     @coq/toplevel-maintainers
+/sysinit/    @coq/toplevel-maintainers
 
 ########## Vernacular ##########
 

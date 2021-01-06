@@ -301,7 +301,7 @@ end (* }}} *)
 type stm_doc_type =
   | VoDoc       of string
   | VioDoc      of string
-  | Interactive of Coqargs.interactive_top
+  | Interactive of Coqargs.top
 
 (* Dummy until we land the functional interp patch + fixed start_library *)
 type doc = int
@@ -2312,13 +2312,6 @@ type stm_init_options =
      the specified [doc_type]. This distinction should disappear at
      some some point. *)
 
-  ; ml_load_path : CUnix.physical_path list
-  (** OCaml load paths for the document. *)
-
-  ; vo_load_path   : Loadpath.vo_path list
-  (** [vo] load paths for the document. Usually extracted from -R
-     options / _CoqProject *)
-
   ; injections : Coqargs.injection_command list
   (** Injects Require and Set/Unset commands before the initial
      state is ready *)
@@ -2345,29 +2338,8 @@ let init_core () =
   if !Flags.async_proofs_worker_id = "master" then Partac.enable_par ~nworkers:!cur_opt.async_proofs_n_tacworkers;
   State.register_root_state ()
 
-let dirpath_of_file f =
-  let ldir0 =
-    try
-      let lp = Loadpath.find_load_path (Filename.dirname f) in
-      Loadpath.logical lp
-    with Not_found -> Libnames.default_root_prefix
-  in
-  let f = try Filename.chop_extension (Filename.basename f) with Invalid_argument _ -> f in
-  let id = Id.of_string f in
-  let ldir = Libnames.add_dirpath_suffix ldir0 id in
-  ldir
 
-let new_doc { doc_type ; ml_load_path; vo_load_path; injections; stm_options } =
-
-  let require_file (dir, from, exp) =
-    let mp = Libnames.qualid_of_string dir in
-    let mfrom = Option.map Libnames.qualid_of_string from in
-    Flags.silently (Vernacentries.vernac_require mfrom exp) [mp] in
-
-  let handle_injection = function
-    | Coqargs.RequireInjection r -> require_file r
-    (* | LoadInjection l -> *)
-    | Coqargs.OptionInjection o -> Coqargs.set_option o in
+let new_doc { doc_type ; injections; stm_options } =
 
   (* Set the options from the new documents *)
   AsyncOpts.cur_opt := stm_options;
@@ -2377,37 +2349,27 @@ let new_doc { doc_type ; ml_load_path; vo_load_path; injections; stm_options } =
 
   let doc = VCS.init doc_type Stateid.initial (Vernacstate.Parser.init ()) in
 
-  (* Set load path; important, this has to happen before we declare
-     the library below as [Declaremods/Library] will infer the module
-     name by looking at the load path! *)
-  List.iter Mltop.add_ml_dir ml_load_path;
-  List.iter Loadpath.add_vo_path vo_load_path;
-
   Safe_typing.allow_delayed_constants := !cur_opt.async_proofs_mode <> APoff;
 
-  begin match doc_type with
-    | Interactive ln ->
-      let dp = match ln with
-        | Coqargs.TopLogical dp -> dp
-        | Coqargs.TopPhysical f -> dirpath_of_file f
-      in
-      Declaremods.start_library dp
+  let top =
+    match doc_type with
+    | Interactive top -> Coqargs.dirpath_of_top top
 
     | VoDoc f ->
-      let ldir = dirpath_of_file f in
-      let () = Flags.verbosely Declaremods.start_library ldir in
+      let ldir = Coqargs.(dirpath_of_top (TopPhysical f)) in
       VCS.set_ldir ldir;
-      set_compilation_hints f
+      set_compilation_hints f;
+      ldir
 
     | VioDoc f ->
-      let ldir = dirpath_of_file f in
-      let () = Flags.verbosely Declaremods.start_library ldir in
+      let ldir = Coqargs.(dirpath_of_top (TopPhysical f)) in
       VCS.set_ldir ldir;
-      set_compilation_hints f
-  end;
+      set_compilation_hints f;
+      ldir
+    in
 
-  (* Import initial libraries. *)
-  List.iter handle_injection injections;
+  (* Start this library and import initial libraries. *)
+  Coqinit.start_library ~top injections;
 
   (* We record the state at this point! *)
   State.define ~doc ~cache:true ~redefine:true (fun () -> ()) Stateid.initial;
