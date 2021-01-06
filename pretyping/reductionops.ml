@@ -1264,9 +1264,9 @@ let plain_instance sigma s c = match s with
 
 let instance env sigma s c =
   (* if s = [] then c else *)
-  let rec strongrec env t =
-    map_constr_with_full_binders env sigma push_rel strongrec env (whd_betaiota env sigma t) in
-  strongrec env (plain_instance sigma s c)
+  (* No need to compute contexts under binders as whd_betaiota is local *)
+  let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota env sigma t) in
+  strongrec (plain_instance sigma s c)
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
