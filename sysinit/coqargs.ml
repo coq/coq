@@ -172,7 +172,7 @@ let add_set_option opts opt_name value =
 
 (** Options for proof general *)
 let set_emacs opts =
-  Goptions.set_bool_option_value Printer.print_goal_tag_opt_name true;
+  let opts = add_set_option opts Printer.print_goal_tag_opt_name (OptionSet None) in
   { opts with config = { opts.config with print_emacs = true }}
 
 let set_logic f oval =
