@@ -222,15 +222,35 @@ let choose p g u = if Level.is_sprop u
   then if p u then Some u else None
   else G.choose p g.graph u
 
-let dump_universes f g = G.dump f g.graph
-
 let check_universes_invariants g = G.check_invariants ~required_canonical:Level.is_small g.graph
 
-let pr_universes prl g = G.pr prl g.graph
+(** Pretty-printing *)
 
-let dummy_mp = Names.DirPath.make [Names.Id.of_string "Type"]
-let make_dummy i = Level.(make (UGlobal.make dummy_mp i))
-let sort_universes g = g_map (G.sort make_dummy [Level.prop;Level.set]) g
+let pr_pmap sep pr map =
+  let cmp (u,_) (v,_) = Level.compare u v in
+  Pp.prlist_with_sep sep pr (List.sort cmp (LMap.bindings map))
+
+let pr_arc prl = let open Pp in
+  function
+  | u, G.Node ltle ->
+    if LMap.is_empty ltle then mt ()
+    else
+      prl u ++ str " " ++
+      v 0
+        (pr_pmap spc (fun (v, strict) ->
+              (if strict then str "< " else str "<= ") ++ prl v)
+            ltle) ++
+      fnl ()
+  | u, G.Alias v ->
+    prl u  ++ str " = " ++ prl v ++ fnl ()
+
+type node = G.node =
+| Alias of Level.t
+| Node of bool LMap.t
+
+let repr g = G.repr g.graph
+
+let pr_universes prl g = pr_pmap Pp.mt (pr_arc prl) g
 
 (** Profiling *)
 

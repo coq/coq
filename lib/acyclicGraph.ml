@@ -76,8 +76,6 @@ module Make (Point:Point) = struct
       mutable status: status
     }
 
-  let big_rank = 1000000
-
   (* A Point.t is either an alias for another one, or a canonical one,
      for which we know the points that are above *)
 
@@ -157,30 +155,6 @@ module Make (Point:Point) = struct
     let g = change_node g { u with ilvl = g.index } in
     assert (g.index > min_int);
     { g with index = g.index - 1 }
-
-  (* [safe_repr] is like [repr] but if the graph doesn't contain the
-     searched point, we add it. *)
-  let safe_repr g u =
-    let rec safe_repr_rec entries u =
-      match PMap.find u entries with
-      | Equiv v -> safe_repr_rec entries v
-      | Canonical arc -> arc
-    in
-    try g, safe_repr_rec g.entries u
-    with Not_found ->
-      let can =
-        { canon = u;
-          ltle = PMap.empty; gtge = PSet.empty;
-          rank = 0;
-          klvl = 0; ilvl = 0;
-          status = NoMark }
-      in
-      let g = { g with
-                entries = PMap.add u (Canonical can) g.entries;
-                n_nodes = g.n_nodes + 1 }
-      in
-      let g = use_index g u in
-      g, repr g u
 
   (* Returns 1 if u is higher than v in topological order.
              -1        lower
@@ -676,29 +650,6 @@ module Make (Point:Point) = struct
 
   (* Normalization *)
 
-  (** [normalize g] returns a graph where all edges point
-      directly to the canonical representent of their target. The output
-      graph should be equivalent to the input graph from a logical point
-      of view, but optimized. We maintain the invariant that the key of
-      a [Canonical] element is its own name, by keeping [Equiv] edges. *)
-  let normalize g =
-    let g =
-      { g with
-        entries = PMap.map (fun entry ->
-            match entry with
-            | Equiv u -> Equiv ((repr g u).canon)
-            | Canonical ucan -> Canonical { ucan with rank = 1 })
-            g.entries }
-    in
-    PMap.fold (fun _ u g ->
-        match u with
-        | Equiv _u -> g
-        | Canonical u ->
-          let _, u, g = get_ltle g u in
-          let _, _, g = get_gtge g u in
-          g)
-      g.entries g
-
   let constraints_of g =
     let module UF = Unionfind.Make (PSet) (PMap) in
     let uf = UF.create () in
@@ -769,85 +720,14 @@ module Make (Point:Point) = struct
         ) g.entries; None
       with Found v -> Some v
 
-  let sort make_dummy first g =
-    let cans =
-      PMap.fold (fun _ u l ->
-          match u with
-          | Equiv _ -> l
-          | Canonical can -> can :: l
-        ) g.entries []
-    in
-    let cans = List.sort topo_compare cans in
-    let lowest =
-      PMap.mapi (fun u _ -> if CList.mem_f Point.equal u first then 0 else 2)
-        (PMap.filter
-           (fun _ u -> match u with Equiv _ -> false | Canonical _ -> true)
-           g.entries)
-    in
-    let lowest =
-      List.fold_left (fun lowest can ->
-          let lvl = PMap.find can.canon lowest in
-          PMap.fold (fun u' strict lowest ->
-              let cost = if strict then 1 else 0 in
-              let u' = (repr g u').canon in
-              PMap.modify u' (fun _ lvl0 -> max lvl0 (lvl+cost)) lowest)
-            can.ltle lowest)
-        lowest cans
-    in
-    let max_lvl = PMap.fold (fun _ a b -> max a b) lowest 0 in
-    let types = Array.init (max_lvl + 1) (fun i ->
-        match List.nth_opt first i with
-        | Some u -> u
-        | None -> make_dummy (i-2))
-    in
-    let g = Array.fold_left (fun g u ->
-        let g, u = safe_repr g u in
-        change_node g { u with rank = big_rank }) g types
-    in
-    let g = if max_lvl > List.length first && not (CList.is_empty first) then
-        enforce_lt (CList.last first) types.(List.length first) g
-      else g
-    in
-    let g =
-      PMap.fold (fun u lvl g -> enforce_eq u (types.(lvl)) g)
-        lowest g
-    in
-    normalize g
+  type node = Alias of Point.t | Node of bool Point.Map.t
+  type repr = node Point.Map.t
 
-  (** Pretty-printing *)
-
-  let pr_pmap sep pr map =
-    let cmp (u,_) (v,_) = Point.compare u v in
-    Pp.prlist_with_sep sep pr (List.sort cmp (PMap.bindings map))
-
-  let pr_arc prl = let open Pp in
-    function
-    | _, Canonical {canon=u; ltle; _} ->
-      if PMap.is_empty ltle then mt ()
-      else
-        prl u ++ str " " ++
-        v 0
-          (pr_pmap spc (fun (v, strict) ->
-               (if strict then str "< " else str "<= ") ++ prl v)
-              ltle) ++
-        fnl ()
-    | u, Equiv v ->
-      prl u  ++ str " = " ++ prl v ++ fnl ()
-
-  let pr prl g =
-    pr_pmap Pp.mt (pr_arc prl) g.entries
-
-  (* Dumping constraints to a file *)
-
-  let dump output g =
-    let dump_arc u = function
-      | Canonical {canon=u; ltle; _} ->
-        PMap.iter (fun v strict ->
-            let typ = if strict then Lt else Le in
-            output typ u v) ltle;
-      | Equiv v ->
-        output Eq u v
+  let repr g =
+    let map n = match n with
+    | Canonical n -> Node n.ltle
+    | Equiv u -> Alias u
     in
-    PMap.iter dump_arc g.entries
+    Point.Map.map map g.entries
 
 end
