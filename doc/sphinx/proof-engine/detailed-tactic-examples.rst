@@ -339,7 +339,7 @@ the optional tactic of the ``Hint Rewrite`` command.
 
    .. coqtop:: in
 
-      Hint Rewrite Ack0 Ack1 Ack2 : base0.
+      Global Hint Rewrite Ack0 Ack1 Ack2 : base0.
 
    .. coqtop:: all
 
@@ -367,7 +367,7 @@ the optional tactic of the ``Hint Rewrite`` command.
 
    .. coqtop:: in
 
-      Hint Rewrite g0 g1 g2 using lia : base1.
+      Global Hint Rewrite g0 g1 g2 using lia : base1.
 
    .. coqtop:: in
 

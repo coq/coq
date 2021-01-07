@@ -3327,7 +3327,7 @@ Ltac invlist f :=
 (** * Exporting hints and tactics *)
 
 
-Hint Rewrite
+Global Hint Rewrite
   rev_involutive (* rev (rev l) = l *)
   rev_unit (* rev (l ++ a :: nil) = a :: rev l *)
   map_nth (* nth n (map f l) (f d) = f (nth n l d) *)

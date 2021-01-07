@@ -1187,6 +1187,28 @@ let create_hint_db l n st b =
   let hint = make_hint ~local:l n (CreateDB (b, st)) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
+let warn_deprecated_hint_without_locality =
+  CWarnings.create ~name:"deprecated-hint-without-locality" ~category:"deprecated"
+    (fun () -> strbrk "The default value for hint locality is currently \
+    \"local\" in a section and \"global\" otherwise, but is scheduled to change \
+    in a future release. For the time being, adding hints outside of sections \
+    without specifying an explicit locality is therefore deprecated. It is \
+    recommended to use \"export\" whenever possible.")
+
+let check_hint_locality = let open Goptions in function
+| OptGlobal ->
+  if Global.sections_are_opened () then
+  CErrors.user_err Pp.(str
+    "This command does not support the global attribute in sections.");
+| OptExport ->
+  if Global.sections_are_opened () then
+  CErrors.user_err Pp.(str
+    "This command does not support the export attribute in sections.");
+| OptDefault ->
+  if not @@ Global.sections_are_opened () then
+    warn_deprecated_hint_without_locality ()
+| OptLocal -> ()
+
 let interp_locality = function
 | Goptions.OptDefault | Goptions.OptGlobal -> false, true
 | Goptions.OptExport -> false, false

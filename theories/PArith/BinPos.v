@@ -876,7 +876,7 @@ Lemma compare_xO_xI p q :
  (p~0 ?= q~1) = switch_Eq Lt (p ?= q).
 Proof. exact (compare_cont_spec p q Lt). Qed.
 
-Hint Rewrite compare_xO_xO compare_xI_xI compare_xI_xO compare_xO_xI : compare.
+Global Hint Rewrite compare_xO_xO compare_xI_xI compare_xI_xO compare_xO_xI : compare.
 
 Ltac simpl_compare := autorewrite with compare.
 Ltac simpl_compare_in H := autorewrite with compare in H.

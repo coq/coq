@@ -26,7 +26,7 @@ Include BoolEqualityFacts A.
 
 Ltac order_nz := try apply pow_nonzero; order'.
 Ltac order_pos' := try apply abs_nonneg; order_pos.
-Hint Rewrite div_0_l mod_0_l div_1_r mod_1_r : nz.
+Global Hint Rewrite div_0_l mod_0_l div_1_r mod_1_r : nz.
 
 (** Some properties of power and division *)
 
@@ -566,7 +566,7 @@ Tactic Notation "bitwise" "as" simple_intropattern(m) simple_intropattern(Hm)
 
 Ltac bitwise := bitwise as ?m ?Hm.
 
-Hint Rewrite lxor_spec lor_spec land_spec ldiff_spec bits_0 : bitwise.
+Global Hint Rewrite lxor_spec lor_spec land_spec ldiff_spec bits_0 : bitwise.
 
 (** The streams of bits that correspond to a numbers are
   exactly the ones which are stationary after some point. *)

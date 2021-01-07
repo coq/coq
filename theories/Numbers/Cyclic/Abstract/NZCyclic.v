@@ -51,7 +51,7 @@ Local Infix "+" := add.
 Local Infix "-" := sub.
 Local Infix "*" := mul.
 
-Hint Rewrite ZnZ.spec_0 ZnZ.spec_1 ZnZ.spec_succ ZnZ.spec_pred
+Global Hint Rewrite ZnZ.spec_0 ZnZ.spec_1 ZnZ.spec_succ ZnZ.spec_pred
  ZnZ.spec_add ZnZ.spec_mul ZnZ.spec_sub : cyclic.
 Ltac zify :=
  unfold eq, zero, one, two, succ, pred, add, sub, mul in *;

@@ -23,7 +23,7 @@ Module Type NBitsProp
 Include BoolEqualityFacts A.
 
 Ltac order_nz := try apply pow_nonzero; order'.
-Hint Rewrite div_0_l mod_0_l div_1_r mod_1_r : nz.
+Global Hint Rewrite div_0_l mod_0_l div_1_r mod_1_r : nz.
 
 (** Some properties of power and division *)
 
@@ -368,7 +368,7 @@ Proof.
  split. apply bits_inj. intros EQ; now rewrite EQ.
 Qed.
 
-Hint Rewrite lxor_spec lor_spec land_spec ldiff_spec bits_0 : bitwise.
+Global Hint Rewrite lxor_spec lor_spec land_spec ldiff_spec bits_0 : bitwise.
 
 Tactic Notation "bitwise" "as" simple_intropattern(m)
   := apply bits_inj; intros m; autorewrite with bitwise.
