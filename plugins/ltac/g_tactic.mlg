@@ -182,6 +182,11 @@ let merge_occurrences loc cl = function
     in
     (Some p, ans)
 
+let deprecated_conversion_at_with =
+  CWarnings.create
+    ~name:"conversion_at_with" ~category:"deprecated"
+    (fun () -> Pp.str "The syntax [at ... with ...] is deprecated. Use [with ... at ...] instead.")
+
 (* Auxiliary grammar rules *)
 
 open Pvernac.Vernac_
@@ -230,7 +235,8 @@ GRAMMAR EXTEND Gram
     [ [ c = constr -> { (None, c) }
       | c1 = constr; "with"; c2 = constr -> { (Some (AllOccurrences,c1),c2) }
       | c1 = constr; "at"; occs = occs_nums; "with"; c2 = constr ->
-          { (Some (occs,c1), c2) } ] ]
+          { deprecated_conversion_at_with ();  (* 8.14 *)
+          (Some (occs,c1), c2) } ] ]
   ;
   occs_nums:
     [ [ nl = LIST1 nat_or_var -> { OnlyOccurrences nl }

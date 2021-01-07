@@ -216,7 +216,7 @@ Proof.
   - trivial.
   - change (N.pos (Pos.succ p)) with (N.succ (N.pos p)).
     rewrite N.mul_succ_r.
-    change 10 at 2 with (Nat.iter 10%nat N.succ 0).
+    change 10 with (Nat.iter 10%nat N.succ 0) at 2.
     rewrite ?nat_iter_S, nat_iter_0.
     rewrite !N.add_succ_r, N.add_0_r, !to_lu_succ, IHp.
     destruct (to_lu (N.pos p)); simpl; auto.
