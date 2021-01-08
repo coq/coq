@@ -68,10 +68,11 @@ Ltac pi := repeat f_equal ; apply proof_irrelevance.
 
 Lemma subset_eq : forall A (P : A -> Prop) (n m : sig P), n = m <-> `n = `m.
 Proof.
+  intros A P n m.
   destruct n as (x,p).
   destruct m as (x',p').
   simpl.
-  split ; intros ; subst.
+  split ; intros H ; subst.
 
   - inversion H.
     reflexivity.
@@ -92,7 +93,7 @@ Lemma match_eq_rewrite : forall (A B : Type) (x : A) (fn : {y : A | y = x} -> B)
   (y : {y:A | y = x}),
   match_eq A B x fn = fn y.
 Proof.
-  intros.
+  intros A B x fn y.
   unfold match_eq.
   f_equal.
   destruct y.
