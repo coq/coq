@@ -65,7 +65,7 @@ Module MOT_to_OT (Import O : MiniOrderedType) <: OrderedType.
 
   Definition eq_dec : forall x y : t, {eq x y} + {~ eq x y}.
   Proof with auto with ordered_type.
-   intros; elim (compare x y); intro H; [ right | left | right ]...
+   intros x y; elim (compare x y); intro H; [ right | left | right ]...
    assert (~ eq y x)...
   Defined.
 
@@ -83,7 +83,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma lt_antirefl : forall x, ~ lt x x.
   Proof.
-   intros; intro; absurd (eq x x); auto with ordered_type.
+   intros x; intro; absurd (eq x x); auto with ordered_type.
   Qed.
 
   Instance lt_strorder : StrictOrder lt.
@@ -91,14 +91,14 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma lt_eq : forall x y z, lt x y -> eq y z -> lt x z.
   Proof with auto with ordered_type.
-   intros; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
+   intros x y z H ?; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
    elim (lt_not_eq H); apply eq_trans with z...
    elim (lt_not_eq (lt_trans Hlt H))...
   Qed.
 
   Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.
   Proof with auto with ordered_type.
-   intros; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
+   intros x y z H H0; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
    elim (lt_not_eq H0); apply eq_trans with x...
    elim (lt_not_eq (lt_trans H0 Hlt))...
   Qed.
@@ -111,7 +111,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Qed.
 
   Lemma lt_total : forall x y, lt x y \/ eq x y \/ lt y x.
-  Proof. intros; destruct (compare x y); auto. Qed.
+  Proof. intros x y; destruct (compare x y); auto. Qed.
 
   Module TO.
    Definition t := t.
@@ -157,7 +157,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
    forall x y : t,
    eq x y -> exists H : eq x y, compare x y = EQ H.
   Proof.
-   intros; case (compare x y); intros H'; try (exfalso; order).
+   intros x y H; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
   Qed.
 
@@ -165,7 +165,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
    forall x y : t,
    lt x y -> exists H : lt x y, compare x y = LT H.
   Proof.
-   intros; case (compare x y); intros H'; try (exfalso; order).
+   intros x y H; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
   Qed.
 
@@ -173,7 +173,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
    forall x y : t,
    lt y x -> exists H : lt y x, compare x y = GT H.
   Proof.
-   intros; case (compare x y); intros H'; try (exfalso; order).
+   intros x y H; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
   Qed.
 
@@ -203,7 +203,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma lt_dec : forall x y : t, {lt x y} + {~ lt x y}.
   Proof.
-   intros; elim (compare x y); [ left | right | right ]; auto with ordered_type.
+   intros x y; elim (compare x y); [ left | right | right ]; auto with ordered_type.
   Defined.
 
   Definition eqb x y : bool := if eq_dec x y then true else false.
@@ -211,7 +211,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Lemma eqb_alt :
     forall x y, eqb x y = match compare x y with EQ _ => true | _ => false end.
   Proof.
-  unfold eqb; intros; destruct (eq_dec x y); elim_comp; auto.
+  unfold eqb; intros x y; destruct (eq_dec x y); elim_comp; auto.
   Qed.
 
 (* Specialization of results about lists modulo. *)
@@ -327,7 +327,7 @@ Module KeyOrderedType(O:OrderedType).
   Lemma ltk_not_eqke : forall e e', ltk e e' -> ~eqke e e'.
   Proof.
     unfold eqke, ltk; intuition; simpl in *; subst.
-    exact (lt_not_eq H H1).
+    match goal with H : lt _ _, H1 : eq _ _ |- _ => exact (lt_not_eq H H1) end.
   Qed.
 
   #[local]
@@ -398,18 +398,18 @@ Module KeyOrderedType(O:OrderedType).
 
   Lemma In_alt : forall k l, In k l <-> exists e, InA eqk (k,e) l.
   Proof with auto with ordered_type.
-  firstorder.
-    exists x...
-  induction H.
-    destruct y.
-    exists e...
-  destruct IHInA as [e H0].
+  intros k l; split; intros [y H].
+    exists y...
+  induction H as [a l eq|a l H IH].
+    destruct a as [k' y'].
+    exists y'...
+  destruct IH as [e H0].
   exists e...
   Qed.
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
   Proof.
-  intros; unfold MapsTo in *; apply InA_eqA with (x,e); eauto with *.
+  intros l x y e **; unfold MapsTo in *; apply InA_eqA with (x,e); eauto with *.
   Qed.
 
   Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
@@ -437,7 +437,7 @@ Module KeyOrderedType(O:OrderedType).
   Lemma Sort_Inf_NotIn :
       forall l k e, Sort l -> Inf (k,e) l ->  ~In k l.
   Proof.
-    intros; red; intros.
+    intros l k e H H0; red; intros H1.
     destruct H1 as [e' H2].
     elim (@ltk_not_eqk (k,e) (k,e')).
     eapply Sort_Inf_In; eauto with ordered_type.
@@ -457,34 +457,34 @@ Module KeyOrderedType(O:OrderedType).
   Lemma Sort_In_cons_2 : forall l e e', Sort (e::l) -> InA eqk e' (e::l) ->
       ltk e e' \/ eqk e e'.
   Proof.
-    inversion_clear 2; auto with ordered_type.
+    intros l; inversion_clear 2; auto with ordered_type.
     left; apply Sort_In_cons_1 with l; auto.
   Qed.
 
   Lemma Sort_In_cons_3 :
     forall x l k e, Sort ((k,e)::l) -> In x l -> ~eq x k.
   Proof.
-    inversion_clear 1; red; intros.
+    inversion_clear 1 as [|? ? H0 H1]; red; intros H H2.
     destruct (Sort_Inf_NotIn H0 H1 (In_eq H2 H)).
   Qed.
 
   Lemma In_inv : forall k k' e l, In k ((k',e) :: l) -> eq k k' \/ In k l.
   Proof.
-    inversion 1.
-    inversion_clear H0; eauto with ordered_type.
+    inversion 1 as [? H0].
+    inversion_clear H0 as [? ? H1|]; eauto with ordered_type.
     destruct H1; simpl in *; intuition.
   Qed.
 
   Lemma In_inv_2 : forall k k' e e' l,
       InA eqk (k, e) ((k', e') :: l) -> ~ eq k k' -> InA eqk (k, e) l.
   Proof.
-   inversion_clear 1; compute in H0; intuition.
+   inversion_clear 1 as [? ? H0|? ? H0]; compute in H0; intuition.
   Qed.
 
   Lemma In_inv_3 : forall x x' l,
       InA eqke x (x' :: l) -> ~ eqk x x' -> InA eqke x l.
   Proof.
-   inversion_clear 1; compute in H0; intuition.
+   inversion_clear 1 as [? ? H0|? ? H0]; compute in H0; intuition.
   Qed.
 
  End Elt.
