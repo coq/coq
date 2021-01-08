@@ -509,10 +509,16 @@ one or more of its hypotheses.
 
    :n:`{? - } {+ @nat_or_var }`
      Selects the specified occurrences within a single goal or hypothesis.
-     Occurrences are numbered from left to right starting with 1 when the
-     goal is printed with the :flag:`Printing All` flag.  (In particular, occurrences
-     in :ref:`implicit arguments <ImplicitArguments>` and
-     :ref:`coercions <Coercions>` are counted but not shown by default.)
+     Occurrences are numbered starting with 1 following a depth-first traversal
+     of the term's expression, including occurrences in
+     :ref:`implicit arguments <ImplicitArguments>`
+     and :ref:`coercions <Coercions>` that are not displayed by default.
+     (Set the :flag:`Printing All` flag to show those in the printed term.)
+
+     For example, when matching the pattern `_ + _` in the term `(a + b) + c`,
+     occurrence 1 is `(...) + c` and
+     occurrence 2 is `(a + b)`.  When matching that pattern with term `a + (b + c)`,
+     occurrence 1 is `a + (...)` and occurrence 2 is `b + c`.
 
      Specifying `-` includes all occurrences *except* the ones listed.
 
