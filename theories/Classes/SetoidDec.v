@@ -96,7 +96,7 @@ Program Instance unit_eqdec : EqDec (eq_setoid unit) :=
 
   Next Obligation.
   Proof.
-    destruct x ; destruct y.
+    do 2 match goal with x : () |- _ => destruct x end.
     reflexivity.
   Qed.
 
