@@ -150,6 +150,10 @@ val interp_constr_pattern :
 (** Raise Not_found if syndef not bound to a name and error if unexisting ref *)
 val intern_reference : qualid -> GlobRef.t
 
+(** For syntactic definitions: check if abbreviation to a name
+    and avoid early insertion of maximal implicit arguments *)
+val try_interp_name_alias : 'a list * constr_expr -> notation_constr
+
 (** Expands abbreviations (syndef); raise an error if not existing *)
 val interp_reference : ltac_sign -> qualid -> glob_constr
 

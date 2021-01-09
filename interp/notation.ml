@@ -400,12 +400,12 @@ let cases_pattern_key c = match DAst.get c with
   | _ -> Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
-  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), AppBoundedNotation (List.length args)
-  | NList (_,_,NApp (NRef ref,args),_,_)
-  | NBinderList (_,_,NApp (NRef ref,args),_,_) ->
+  | NApp (NRef (ref,_),args) -> RefKey(canonical_gr ref), AppBoundedNotation (List.length args)
+  | NList (_,_,NApp (NRef (ref,_),args),_,_)
+  | NBinderList (_,_,NApp (NRef (ref,_),args),_,_) ->
       RefKey (canonical_gr ref), AppBoundedNotation (List.length args)
-  | NRef ref -> RefKey(canonical_gr ref), NotAppNotation
-  | NApp (NList (_,_,NApp (NRef ref,args),_,_), args') ->
+  | NRef (ref,_) -> RefKey(canonical_gr ref), NotAppNotation
+  | NApp (NList (_,_,NApp (NRef (ref,_),args),_,_), args') ->
       RefKey (canonical_gr ref), AppBoundedNotation (List.length args + List.length args')
   | NApp (NList (_,_,NApp (_,args),_,_), args') ->
       Oth, AppBoundedNotation (List.length args + List.length args')
@@ -2353,8 +2353,8 @@ let browse_notation strict ntn map =
 
 let global_reference_of_notation ~head test (ntn,sc,(on_parsing,on_printing,{not_interp = (_,c)})) =
   match c with
-  | NRef ref when test ref -> Some (on_parsing,on_printing,ntn,sc,ref)
-  | NApp (NRef ref, l) when head || List.for_all isNVar_or_NHole l && test ref ->
+  | NRef (ref,_) when test ref -> Some (on_parsing,on_printing,ntn,sc,ref)
+  | NApp (NRef (ref,_), l) when head || List.for_all isNVar_or_NHole l && test ref ->
       Some (on_parsing,on_printing,ntn,sc,ref)
   | _ -> None
 

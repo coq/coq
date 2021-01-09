@@ -1793,15 +1793,9 @@ let remove_delimiters local scope =
 let add_class_scope local scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeClasses cl))
 
-(* Check if abbreviation to a name and avoid early insertion of
-   maximal implicit arguments *)
-let try_interp_name_alias = function
-  | [], { CAst.v = CRef (ref,_) } -> intern_reference ref
-  | _ -> raise Not_found
-
 let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing } =
   let acvars,pat,reversibility =
-    try Id.Map.empty, NRef (try_interp_name_alias (vars,c)), APrioriReversible
+    try Id.Map.empty, try_interp_name_alias (vars,c), APrioriReversible
     with Not_found ->
       let fold accu id = Id.Map.add id NtnInternTypeAny accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in

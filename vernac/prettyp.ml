@@ -947,7 +947,7 @@ let print_about_any ?loc env sigma k udecl =
   [hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Syntactic kn ->
     let () = match Syntax_def.search_syntactic_definition kn with
-    | [],Notation_term.NRef ref -> Dumpglob.add_glob ?loc ref
+    | [],Notation_term.NRef (ref,_) -> Dumpglob.add_glob ?loc ref
     | _ -> () in
       v 0 (
       print_syntactic_def env kn ++ fnl () ++

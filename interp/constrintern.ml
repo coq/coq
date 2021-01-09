@@ -244,6 +244,8 @@ let contract_curly_brackets_pat ntn (l,ll) =
 
 type local_univs = { bound : Univ.Level.t Id.Map.t; unb_univs : bool }
 
+let empty_local_univs = { bound = Id.Map.empty; unb_univs = false }
+
 type intern_env = {
   ids: Id.Set.t;
   unb: bool;
@@ -1202,6 +1204,11 @@ let intern_sort ~local_univs s =
 let intern_instance ~local_univs us =
   Option.map (List.map (map_glob_sort_gen (intern_sort_name ~local_univs))) us
 
+let try_interp_name_alias = function
+  | [], { CAst.v = CRef (ref,u) } ->
+     NRef (intern_reference ref,intern_instance ~local_univs:empty_local_univs u)
+  | _ -> raise Not_found
+
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
   let loc = qid.loc in
@@ -1251,16 +1258,16 @@ let intern_qualid_for_pattern test_global intern_not qid pats =
   | SynDef kn ->
     let filter (vars,a) =
       match a with
-      | NRef g ->
+      | NRef (g,_) ->
         (* Convention: do not deactivate implicit arguments and scopes for further arguments *)
         test_global g;
         let () = assert (List.is_empty vars) in
         Some (g, Some [], pats)
-      | NApp (NRef g,[]) -> (* special case: Syndef for @Cstr deactivates implicit arguments *)
+      | NApp (NRef (g,_),[]) -> (* special case: Syndef for @Cstr deactivates implicit arguments *)
         test_global g;
         let () = assert (List.is_empty vars) in
         Some (g, None, pats)
-      | NApp (NRef g,args) ->
+      | NApp (NRef (g,_),args) ->
         (* Convention: do not deactivate implicit arguments and scopes for further arguments *)
         test_global g;
         let nvars = List.length vars in
@@ -1330,7 +1337,7 @@ let interp_reference vars r =
   let r,_ =
     intern_applied_reference ~isproj:None (fun _ -> error_not_enough_arguments ?loc:None)
       {ids = Id.Set.empty; unb = false;
-       local_univs = { bound=Id.Map.empty; unb_univs = false };(* <- doesn't matter here *)
+       local_univs = empty_local_univs;(* <- doesn't matter here *)
        tmp_scope = None; scopes = []; impls = empty_internalization_env;
        binder_block_names = None}
       Environ.empty_named_context_val
@@ -1784,10 +1791,10 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
           if Id.equal id ldots_var then DAst.make ?loc @@ RCPatAtom (Some ((make ?loc id),scopes)) else
             anomaly (str "Unbound pattern notation variable: " ++ Id.print id ++ str ".")
       end
-    | NRef g ->
+    | NRef (g,_) ->
       ensure_kind test_kind ?loc g;
       DAst.make ?loc @@ RCPatCstr (g, in_patargs ?loc scopes g true false [] args)
-    | NApp (NRef g,ntnpl) ->
+    | NApp (NRef (g,_),ntnpl) ->
       ensure_kind test_kind ?loc g;
       let ntnpl = List.map (in_not test_kind_inner loc scopes fullsubst []) ntnpl in
       let no_impl =
@@ -2554,7 +2561,7 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
   let c = internalize env
       {ids; unb = false;
-       local_univs = { bound = Id.Map.empty; unb_univs = false };
+       local_univs = empty_local_univs;
        tmp_scope = None; scopes = []; impls; binder_block_names = None}
       false (empty_ltac_sign, vl) a
   in

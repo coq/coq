@@ -40,7 +40,7 @@ let load_syntax_constant i ((sp,kn),(_local,syndef)) =
   Nametab.push_syndef (Nametab.Until i) sp kn
 
 let is_alias_of_already_visible_name sp = function
-  | _,NRef ref ->
+  | _,NRef (ref,_) ->
       let (dir,id) = repr_qualid (Nametab.shortest_qualid_of_global Id.Set.empty ref) in
       DirPath.is_empty dir && Id.equal id (basename sp)
   | _ ->

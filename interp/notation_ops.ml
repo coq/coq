@@ -43,6 +43,28 @@ let cast_type_iter2 f t1 t2 = match t1, t2 with
    in NList and NBinderList, since the iterator has its own variable *)
 let replace_var i j var = j :: List.remove Id.equal i var
 
+(* compare_glob_universe_instances true strictly_lt us1 us2 computes us1 <= us2,
+   compare_glob_universe_instances false strictly_lt us1 us2 computes us1 = us2.
+   strictly_lt will be set to true if any part is strictly less. *)
+let compare_glob_universe_instances lt strictly_lt us1 us2 =
+  match us1, us2 with
+  | None, None -> true
+  | Some _, None -> strictly_lt := true; lt
+  | None, Some _ -> false
+  | Some l1, Some l2 ->
+     CList.for_all2eq (fun u1 u2 ->
+         match u1, u2 with
+         | UAnonymous {rigid=true}, UAnonymous {rigid=true} -> true
+         | UAnonymous {rigid=false}, UAnonymous {rigid=false} -> true
+         | UAnonymous _, UAnonymous _ -> false
+         | UNamed _, UAnonymous _ -> strictly_lt := true; lt
+         | UAnonymous _, UNamed _ -> false
+         | UNamed _, UNamed _ -> glob_level_eq u1 u2) l1 l2
+
+(* Compute us1 <= us2, as a boolean *)
+let compare_glob_universe_instances_le us1 us2 =
+  compare_glob_universe_instances true (ref false) us1 us2
+
 (* When [lt] is [true], tell if [t1] is a strict refinement of [t2]
    (this is a partial order, so returning [false] does not mean that
    [t2] is finer than [t1]); when [lt] is false, tell if [t1] is the
@@ -93,7 +115,7 @@ let compare_notation_constr lt (vars1,vars2) t1 t2 =
   | NHole _, NVar id2 when lt && List.mem_f Id.equal id2 vars2 -> ()
   | NVar id1, NHole (_, _, _) when lt && List.mem_f Id.equal id1 vars1 -> ()
   | _, NVar id2 when lt && List.mem_f Id.equal id2 vars2 -> strictly_lt := true
-  | NRef gr1, NRef gr2 when GlobRef.equal gr1 gr2 -> ()
+  | NRef (gr1,u1), NRef (gr2,u2) when GlobRef.equal gr1 gr2 && compare_glob_universe_instances lt strictly_lt u1 u2 -> ()
   | NHole (_, _, _), NHole (_, _, _) -> () (* FIXME? *)
   | _, NHole (_, _, _) when lt -> strictly_lt := true
   | NList (i1, j1, iter1, tail1, b1), NList (i2, j2, iter2, tail2, b2)
@@ -377,7 +399,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
   | NCast (c,k) -> GCast (f e c,map_cast_type (f (h.slide e)) k)
   | NSort x -> GSort x
   | NHole (x, naming, arg)  -> GHole (x, naming, arg)
-  | NRef x -> GRef (x,None)
+  | NRef (x,u) -> GRef (x,u)
   | NInt i -> GInt i
   | NFloat f -> GFloat f
   | NArray (t,def,ty) -> GArray(None, Array.map (f e) t, f e def, f e ty)
@@ -612,7 +634,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   | GHole (w,naming,arg) ->
      if arg != None then has_ltac := true;
      NHole (w, naming, arg)
-  | GRef (r,_) -> NRef r
+  | GRef (r,u) -> NRef (r,u)
   | GArray (_u,t,def,ty) -> NArray (Array.map aux t, aux def, aux ty)
   | GEvar _ | GPatVar _ ->
       user_err Pp.(str "Existential variables not allowed in notations.")
@@ -706,10 +728,10 @@ let rec subst_pat subst pat =
 
 let rec subst_notation_constr subst bound raw =
   match raw with
-  | NRef ref ->
+  | NRef (ref,u) ->
       let ref',t = subst_global subst ref in
       if ref' == ref then raw else (match t with
-          | None -> NRef ref'
+          | None -> NRef (ref',u)
           | Some t ->
             fst (notation_constr_of_constr bound t.Univ.univ_abstracted_value))
 
@@ -1344,7 +1366,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   (* Matching compositionally *)
   | GVar id1, NVar id2 when alpha_var id1 id2 (fst (snd alp)) -> sigma
-  | GRef (r1,_), NRef r2 when (GlobRef.equal r1 r2) -> sigma
+  | GRef (r1,u1), NRef (r2,u2) when (GlobRef.equal r1 r2) && compare_glob_universe_instances_le u1 u2 -> sigma
   | GApp (f1,l1), NApp (f2,l2) ->
       let n1 = List.length l1 and n2 = List.length l2 in
       let f1,l1,f2,l2 =
@@ -1570,10 +1592,10 @@ let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
  match DAst.get a1, a2 with
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 a1),(false,0,[])
   | PatVar Anonymous, NHole _ -> sigma,(false,0,[])
-  | PatCstr ((ind,_ as r1),largs,Anonymous), NRef (GlobRef.ConstructRef r2) when Construct.CanOrd.equal r1 r2 ->
+  | PatCstr ((ind,_ as r1),largs,Anonymous), NRef (GlobRef.ConstructRef r2,None) when Construct.CanOrd.equal r1 r2 ->
       let l = try add_patterns_for_params_remove_local_defs (Global.env ()) r1 largs with Not_found -> raise No_match in
       sigma,(false,0,l)
-  | PatCstr ((ind,_ as r1),args1,Anonymous), NApp (NRef (GlobRef.ConstructRef r2),l2)
+  | PatCstr ((ind,_ as r1),args1,Anonymous), NApp (NRef (GlobRef.ConstructRef r2,None),l2)
       when Construct.CanOrd.equal r1 r2 ->
       let l1 = try add_patterns_for_params_remove_local_defs (Global.env()) r1 args1 with Not_found -> raise No_match in
       let le2 = List.length l2 in
@@ -1597,9 +1619,9 @@ and match_cases_pattern_no_more_args metas sigma a1 a2 =
 
 let match_ind_pattern metas sigma ind pats a2 =
   match a2 with
-  | NRef (GlobRef.IndRef r2) when Ind.CanOrd.equal ind r2 ->
+  | NRef (GlobRef.IndRef r2,None) when Ind.CanOrd.equal ind r2 ->
       sigma,(false,0,pats)
-  | NApp (NRef (GlobRef.IndRef r2),l2)
+  | NApp (NRef (GlobRef.IndRef r2,None),l2)
       when Ind.CanOrd.equal ind r2 ->
       let le2 = List.length l2 in
       if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length pats

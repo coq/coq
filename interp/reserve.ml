@@ -71,10 +71,10 @@ let reserve_table = Summary.ref Id.Map.empty ~name:"reserved-type"
 let reserve_revtable = Summary.ref KeyMap.empty ~name:"reserved-type-rev"
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
-  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
-  | NList (_,_,NApp (NRef ref,args),_,_)
-  | NBinderList (_,_,NApp (NRef ref,args),_,_) -> RefKey (canonical_gr ref), Some (List.length args)
-  | NRef ref -> RefKey(canonical_gr ref), None
+  | NApp (NRef (ref,_),args) -> RefKey(canonical_gr ref), Some (List.length args)
+  | NList (_,_,NApp (NRef (ref,_),args),_,_)
+  | NBinderList (_,_,NApp (NRef (ref,_),args),_,_) -> RefKey (canonical_gr ref), Some (List.length args)
+  | NRef (ref,_) -> RefKey(canonical_gr ref), None
   | _ -> Oth, None
 
 let cache_reserved_type (_,(id,t)) =
