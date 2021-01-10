@@ -2095,7 +2095,7 @@ ltac_expr1: [
 | "first" "[" LIST0 ltac_expr5 SEP "|" "]"
 | "solve" "[" LIST0 ltac_expr5 SEP "|" "]"
 | "idtac" LIST0 message_token
-| failkw [ int_or_var | ] LIST0 message_token
+| failkw [ nat_or_var | ] LIST0 message_token
 | simple_tactic
 | tactic_value
 | reference LIST0 tactic_arg

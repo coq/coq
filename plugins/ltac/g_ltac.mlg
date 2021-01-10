@@ -147,7 +147,7 @@ GRAMMAR EXTEND Gram
       | IDENT "solve" ; "["; l = LIST0 ltac_expr SEP "|"; "]" ->
           { TacSolve l }
       | IDENT "idtac"; l = LIST0 message_token -> { TacId l }
-      | g=failkw; n = [ n = int_or_var -> { n } | -> { fail_default_value } ];
+      | g=failkw; n = [ n = nat_or_var -> { n } | -> { fail_default_value } ];
           l = LIST0 message_token -> { TacFail (g,n,l) }
       | st = simple_tactic -> { st }
       | a = tactic_value -> { TacArg(CAst.make ~loc a) }
