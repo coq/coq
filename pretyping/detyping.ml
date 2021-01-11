@@ -677,9 +677,11 @@ let detype_level sigma l =
   UNamed (detype_level_name sigma l)
 
 let detype_instance sigma l =
-  let l = EInstance.kind sigma l in
-  if Univ.Instance.is_empty l then None
-  else Some (List.map (detype_level sigma) (Array.to_list (Univ.Instance.to_array l)))
+  if not !print_universes then None
+  else
+    let l = EInstance.kind sigma l in
+    if Univ.Instance.is_empty l then None
+    else Some (List.map (detype_level sigma) (Array.to_list (Univ.Instance.to_array l)))
 
 let delay (type a) (d : a delay) (f : a delay -> _ -> _ -> _ -> _ -> _ -> a glob_constr_r) flags env avoid sigma t : a glob_constr_g =
   match d with
