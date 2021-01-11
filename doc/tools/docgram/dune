@@ -21,7 +21,6 @@
    (glob_files %{project_root}/plugins/ltac/*.mlg)
    (glob_files %{project_root}/plugins/micromega/*.mlg)
    (glob_files %{project_root}/plugins/nsatz/*.mlg)
-   (glob_files %{project_root}/plugins/omega/*.mlg)
    (glob_files %{project_root}/plugins/ring/*.mlg)
    (glob_files %{project_root}/plugins/rtauto/*.mlg)
    (glob_files %{project_root}/plugins/ssr/*.mlg)

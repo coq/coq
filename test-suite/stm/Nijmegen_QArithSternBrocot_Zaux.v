@@ -19,6 +19,7 @@
 
 Require Export ZArith.
 Require Export ZArithRing.
+Require Import Lia.
 
 Tactic Notation "ElimCompare" constr(c) constr(d) := elim_compare c d.
 
@@ -140,35 +141,35 @@ Qed.
 Lemma lt_minus_neq : forall m n : nat, m < n -> n - m <> 0.
 Proof.
  intros.
- omega.
+ lia.
 Qed.
 
 Lemma lt_minus_eq_0 : forall m n : nat, m < n -> m - n = 0.
 Proof.
  intros.
- omega.
+ lia.
 Qed.
 
 Lemma le_plus_Sn_1_SSn : forall n : nat, S n + 1 <= S (S n).
 Proof.
  intros.
- omega.
+ lia.
 Qed.
 
 Lemma le_plus_O_l : forall p q : nat, p + q <= 0 -> p = 0.
 Proof.
- intros; omega.
+ intros; lia.
 Qed.
 
 Lemma le_plus_O_r : forall p q : nat, p + q <= 0 -> q = 0.
 Proof.
- intros; omega.
+ intros; lia.
 Qed.
 
 Lemma minus_pred : forall m n : nat, 0 < n -> pred m - pred n = m - n.
 Proof.
  intros.
- omega.
+ lia.
 Qed.
 
 
@@ -573,7 +574,7 @@ Qed.
 
 
 
-Hint Resolve Zmult_pos_pos Zmult_neg_neg Zmult_neg_pos Zmult_pos_neg: zarith.
+Local Hint Resolve Zmult_pos_pos Zmult_neg_neg Zmult_neg_pos Zmult_pos_neg: zarith.
 
 
 Lemma Zle_reg_mult_l :
@@ -1158,7 +1159,7 @@ Proof.
  intros [| p| p]; intros; [ Falsum | constructor | constructor ].
 Qed.
 
-Hint Resolve square_pos: zarith.
+Local Hint Resolve square_pos: zarith.
 
 (*###########################################################################*)
 (** Properties of positive numbers, mapping between Z and nat                *)
@@ -1414,13 +1415,13 @@ Qed.
 Lemma lt_inj : forall m n : nat, (m < n)%Z -> m < n.
 Proof.
  intros.
- omega.
+ lia.
 Qed.
 
 Lemma le_inj : forall m n : nat, (m <= n)%Z -> m <= n.
 Proof.
  intros.
- omega.
+ lia.
 Qed.
 
 
@@ -1501,7 +1502,7 @@ Proof.
   [ replace (Z.abs_nat x) with (Z.abs_nat (x - 1 + 1));
      [ idtac | apply f_equal with Z; auto with zarith ];
      rewrite absolu_plus;
-     [ unfold Z.abs_nat at 2, nat_of_P, Pos.iter_op in |- *; omega
+     [ unfold Z.abs_nat at 2, nat_of_P, Pos.iter_op in |- *; lia
      | auto with zarith
      | intro; discriminate ]
   | rewrite <- H1; reflexivity ].
@@ -1985,7 +1986,7 @@ Proof.
  intros [| p| p] Hp; trivial.
 Qed.
 
-Hint Resolve Zsgn_1 Zsgn_2 Zsgn_3 Zsgn_4 Zsgn_5 Zsgn_6 Zsgn_7 Zsgn_7' Zsgn_8
+Local Hint Resolve Zsgn_1 Zsgn_2 Zsgn_3 Zsgn_4 Zsgn_5 Zsgn_6 Zsgn_7 Zsgn_7' Zsgn_8
   Zsgn_9 Zsgn_10 Zsgn_11 Zsgn_12 Zsgn_13 Zsgn_14 Zsgn_15 Zsgn_16 Zsgn_17
   Zsgn_18 Zsgn_19 Zsgn_20 Zsgn_21 Zsgn_22 Zsgn_23 Zsgn_24 Zsgn_25 Zsgn_26
   Zsgn_27: zarith.
@@ -2388,7 +2389,7 @@ Proof.
  intros [|z|z]; simpl; auto with zarith; apply Zle_neg_pos.
 Qed.
 
-Hint Resolve Zabs_1 Zabs_2 Zabs_3 Zabs_4 Zabs_5 Zabs_6 Zabs_7 Zabs_8 Zabs_9
+Local Hint Resolve Zabs_1 Zabs_2 Zabs_3 Zabs_4 Zabs_5 Zabs_6 Zabs_7 Zabs_8 Zabs_9
   Zabs_10 Zabs_11 Zabs_12 Zabs_min Zabs_neg Zabs_mult Zabs_plus Zle_Zabs: zarith.
 
 
@@ -2949,7 +2950,7 @@ Proof.
  ring.
 Qed.
 
-Hint Resolve ZmaxSS Zle_max_r Zle_max_l Zmax_n_n: zarith.
+Local Hint Resolve ZmaxSS Zle_max_r Zle_max_l Zmax_n_n: zarith.
 
 (*###########################################################################*)
 (** Properties of Arity                                                      *)
@@ -3020,7 +3021,7 @@ Proof.
  Flip.
 Qed.
 
-Hint Resolve Z_div_mod_eq_2 Z_div_le Z_div_nonneg Z_div_neg: zarith.
+Local Hint Resolve Z_div_mod_eq_2 Z_div_le Z_div_nonneg Z_div_neg: zarith.
 
 (*###########################################################################*)
 (** Properties of Zpower                                                       *)
@@ -3038,4 +3039,4 @@ Proof.
   ring.
 Qed.
 
-Hint Resolve Zpower_1 Zpower_2: zarith.
+Local Hint Resolve Zpower_1 Zpower_2: zarith.

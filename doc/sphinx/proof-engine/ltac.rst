@@ -1666,7 +1666,7 @@ Proving a subgoal as a separate lemma: abstract
    is chosen to get a fresh name.  If the proof is closed with :cmd:`Qed`, the auxiliary lemma
    is inlined in the final proof term.
 
-   This is useful with tactics such as :tacn:`omega` or
+   This is useful with tactics such as
    :tacn:`discriminate` that generate huge proof terms with many intermediate
    goals.  It can significantly reduce peak memory use.  In most cases it doesn't
    have a significant impact on run time.  One case in which it can reduce run time
@@ -2317,11 +2317,10 @@ performance issue.
 
 .. coqtop:: reset in
 
-   Set Warnings "-omega-is-deprecated".
-   Require Import Coq.omega.Omega.
+   Require Import Lia.
 
    Ltac mytauto := tauto.
-   Ltac tac := intros; repeat split; omega || mytauto.
+   Ltac tac := intros; repeat split; lia || mytauto.
 
    Notation max x y := (x + (y - x)) (only parsing).
 
@@ -2340,7 +2339,7 @@ performance issue.
    Set Ltac Profiling.
    tac.
    Show Ltac Profile.
-   Show Ltac Profile "omega".
+   Show Ltac Profile "lia".
 
 .. coqtop:: in
 

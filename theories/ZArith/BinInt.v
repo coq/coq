@@ -1775,8 +1775,6 @@ weak_Zmult_plus_distr_r (now Z.mul_add_distr_pos)
 
 Definition Zne (x y:Z) := x <> y. (* TODO : to remove someday ? *)
 
-Register Zne as plugins.omega.Zne.
-
 Ltac elim_compare com1 com2 :=
   case (Dcompare (com1 ?= com2)%Z);
     [ idtac | let x := fresh "H" in

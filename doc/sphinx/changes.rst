@@ -778,10 +778,8 @@ The main changes include:
   of chapters along with updated syntax descriptions that match Coq's grammar
   in most but not all chapters.
 
-Additionally, the :tacn:`omega` tactic is deprecated in this version of Coq,
-and we recommend users to switch to :tacn:`lia` in new proof scripts (see
-also the warning message in the :ref:`corresponding chapter
-<omega_chapter>`).
+Additionally, the `omega` tactic is deprecated in this version of Coq,
+and we recommend users to switch to :tacn:`lia` in new proof scripts.
 
 See the `Changes in 8.12+beta1`_ section and following sections for the
 detailed list of changes, including potentially breaking changes marked
@@ -1046,7 +1044,7 @@ Tactics
   <https://github.com/coq/coq/pull/10760>`_, by Jason Gross).
 - **Changed:**
   The :g:`auto with zarith` tactic and variations (including
-  :tacn:`intuition`) may now call :tacn:`lia` instead of :tacn:`omega`
+  :tacn:`intuition`) may now call :tacn:`lia` instead of `omega`
   (when the `Omega` module is loaded); more goals may be automatically
   solved, fewer section variables will be captured spuriously
   (`#11018 <https://github.com/coq/coq/pull/11018>`_,
@@ -1142,7 +1140,7 @@ Tactics
   (`#11883 <https://github.com/coq/coq/pull/11883>`_,
   by Attila Gáspár).
 - **Deprecated:**
-  The :tacn:`omega` tactic is deprecated;
+  The `omega` tactic is deprecated;
   use :tacn:`lia` from the :ref:`Micromega <micromega>` plugin instead
   (`#11976 <https://github.com/coq/coq/pull/11976>`_,
   by Vincent Laporte).
@@ -2129,11 +2127,9 @@ The main changes brought by Coq version 8.11 are:
 - :ref:`Revision<811Reals>` of the :g:`Coq.Reals` library, its axiomatisation and
   instances of the constructive and classical real numbers.
 
-Additionally, while the :tacn:`omega` tactic is not yet deprecated in
+Additionally, while the `omega` tactic is not yet deprecated in
 this version of Coq, it should soon be the case and we already
-recommend users to switch to :tacn:`lia` in new proof scripts (see
-also the warning message in the :ref:`corresponding chapter
-<omega_chapter>`).
+recommend users to switch to :tacn:`lia` in new proof scripts.
 
 The ``dev/doc/critical-bugs`` file documents the known critical bugs
 of Coq and affected releases. See the `Changes in 8.11+beta1`_

@@ -1,4 +1,4 @@
-Require Import ZArith Omega.
+Require Import ZArith Lia.
 
 (* Submitted by Yegor Bryukhov (BZ#922) *)
 
@@ -23,6 +23,6 @@ forall v1 v2 v3 v4 v5 : Z,
 ((7 * v1) + (1 * v3)) + ((2 * v3) + (1 * v3)) >= ((6 * v5) + (4)) + ((1) + (9))
 -> False.
 intros.
-omega.
+lia.
 Qed.
 

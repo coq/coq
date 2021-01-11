@@ -177,7 +177,6 @@ let concl_next_tac =
     "symmetry"
   ] @ [
     "assumption";
-    "omega";
     "ring";
     "auto";
     "eauto";

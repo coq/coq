@@ -32,4 +32,4 @@ Require Import ZArith.
 
 Search Z.mul Z.add "distr".
 Search "+"%Z "*"%Z "distr" -positive -Prop.
-Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
+Search (?x * _ + ?x * _)%Z outside Lia.

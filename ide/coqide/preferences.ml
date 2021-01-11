@@ -304,7 +304,7 @@ let encoding =
   new preference ~name:["encoding"] ~init ~repr
 
 let automatic_tactics =
-  let init = ["trivial"; "tauto"; "auto"; "omega"; "auto with *"; "intuition" ] in
+  let init = ["trivial"; "tauto"; "auto"; "auto with *"; "intuition" ] in
   new preference ~name:["automatic_tactics"] ~init ~repr:Repr.(string_list)
 
 let cmd_print =
