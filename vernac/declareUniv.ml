@@ -74,6 +74,10 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
       subst_function = (fun (subst, a) -> (* Actually the name is generated once and for all. *) a);
       classify_function = (fun a -> Substitute a) }
 
+let input_univ_names (src, l) =
+  if CList.is_empty l then ()
+  else Lib.add_anonymous_leaf (input_univ_names (src, l))
+
 let invent_name (named,cnt) u =
   let rec aux i =
     let na = Id.of_string ("u"^(string_of_int i)) in
@@ -120,7 +124,7 @@ let declare_univ_binders gr pl =
         aux, (id,univ) :: univs)
         (LSet.diff levels named) ((pl,0),univs)
     in
-    Lib.add_anonymous_leaf (input_univ_names (QualifiedUniv l, univs))
+    input_univ_names (QualifiedUniv l, univs)
 
 let do_universe ~poly l =
   let in_section = Global.sections_are_opened () in
@@ -134,7 +138,7 @@ let do_universe ~poly l =
       Univ.LSet.empty l, Univ.Constraint.empty
   in
   let src = if poly then BoundUniv else UnqualifiedUniv in
-  let () = Lib.add_anonymous_leaf (input_univ_names (src, l)) in
+  let () = input_univ_names (src, l) in
   DeclareUctx.declare_universe_context ~poly ctx
 
 let do_constraint ~poly l =
