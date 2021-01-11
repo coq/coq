@@ -384,13 +384,21 @@ let matches_core env sigma allow_bound_rels
           in
           let sorec_under_ctx subst (n, c1) (decls, c2) =
             let env = push_rel_context decls env in
-            let n = Array.rev_to_list n in
-            let fold na1 d (ctx, subst) =
+            let rec fold (ctx, subst) nas decls = match nas, decls with
+            | [], _ ->
+              (* Historical corner case: less bound variables are allowed in
+                destructuring let-bindings. See #13735. *)
+                (ctx, subst)
+            | na1 :: nas, d :: decls ->
               let na2 = Context.Rel.Declaration.get_annot d in
               let t = Context.Rel.Declaration.get_type d in
-              (push_binder na1 na2 t ctx, add_binders na1 na2 binding_vars subst)
+              let ctx = push_binder na1 na2 t ctx in
+              let subst = add_binders na1 na2 binding_vars subst in
+              fold (ctx, subst) nas decls
+            | _, [] ->
+              assert false
             in
-            let ctx, subst = List.fold_right2 fold n decls (ctx, subst) in
+            let ctx, subst = fold (ctx, subst) (Array.to_list n) (List.rev decls) in
             sorec ctx env subst c1 c2
           in
           let chk_branch subst (j,n,c) =
