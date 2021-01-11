@@ -120,7 +120,8 @@ let declare_univ_binders gr pl =
         aux, (id,univ) :: univs)
         (LSet.diff levels named) ((pl,0),univs)
     in
-    Lib.add_anonymous_leaf (input_univ_names (QualifiedUniv l, univs))
+    if univs != [] then
+      Lib.add_anonymous_leaf (input_univ_names (QualifiedUniv l, univs))
 
 let do_universe ~poly l =
   let in_section = Global.sections_are_opened () in
