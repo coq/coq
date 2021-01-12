@@ -3370,7 +3370,7 @@ G_LTAC2_tactic_atom: [
 | "constr" ":" "(" Constr.lconstr ")"      (* Ltac2 plugin *)
 | "open_constr" ":" "(" Constr.lconstr ")"      (* Ltac2 plugin *)
 | "ident" ":" "(" lident ")"      (* Ltac2 plugin *)
-| "pattern" ":" "(" Constr.cpattern ")"      (* Ltac2 plugin *)
+| "pat" ":" "(" Constr.cpattern ")"      (* Ltac2 plugin *)
 | "reference" ":" "(" globref ")"      (* Ltac2 plugin *)
 | "ltac1" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
 | "ltac1val" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)

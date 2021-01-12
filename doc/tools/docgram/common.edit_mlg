@@ -2065,7 +2065,7 @@ ltac2_tactic_atom: [
 | MOVETO ltac2_quotations "constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "open_constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "ident" ":" "(" lident ")"      (* Ltac2 plugin *)
-| MOVETO ltac2_quotations "pattern" ":" "(" cpattern ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "pat" ":" "(" cpattern ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "reference" ":" "(" globref ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "ltac1" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "ltac1val" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
