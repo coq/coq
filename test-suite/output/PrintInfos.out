@@ -4,14 +4,14 @@ existT is template universe polymorphic on sigT.u0 sigT.u1
 Arguments existT [A]%type_scope _%function_scope _ _
 Expands to: Constructor Coq.Init.Specif.existT
 Inductive sigT (A : Type) (P : A -> Type) : Type :=
-    existT : forall x : A, P x -> {x : A & P x}
+    existT : forall x : A, P x -> {x : A & P x}.
 
 Arguments sigT [A]%type_scope _%type_scope
 Arguments existT [A]%type_scope _%function_scope _ _
 existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 Argument A is implicit
-Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
 Arguments eq {A}%type_scope _ _
 Arguments eq_refl {A}%type_scope {x}, [_] _
@@ -50,7 +50,7 @@ Arguments plus_n_O _%nat_scope
 plus_n_O is opaque
 Expands to: Constant Coq.Init.Peano.plus_n_O
 Inductive le (n : nat) : nat -> Prop :=
-    le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m
+    le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m.
 
 Arguments le (_ _)%nat_scope
 Arguments le_n _%nat_scope
@@ -60,7 +60,7 @@ comparison : Set
 comparison is not universe polymorphic
 Expands to: Inductive Coq.Init.Datatypes.comparison
 Inductive comparison : Set :=
-    Eq : comparison | Lt : comparison | Gt : comparison
+    Eq : comparison | Lt : comparison | Gt : comparison.
 bar : foo
 
 bar is not universe polymorphic
@@ -78,7 +78,7 @@ Arguments bar {x}
 Module Coq.Init.Peano
 Notation sym_eq := eq_sym
 Expands to: Notation Coq.Init.Logic.sym_eq
-Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
 Arguments eq {A}%type_scope _ _
 Arguments eq_refl {A}%type_scope {x}, {_} _
