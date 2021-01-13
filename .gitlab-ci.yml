@@ -256,23 +256,18 @@ before_script:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
-.windows-template:
+.platform-template:
   stage: stage-1
   interruptible: true
+  variables:
+    PLATFORM: "https://github.com/coq/platform/archive/master.zip"
   artifacts:
-    name: "%CI_JOB_NAME%"
+    name: "$CI_JOB_NAME"
     paths:
       - artifacts
     when: always
     expire_in: 1 week
-  tags:
-    - windows-inria
-  before_script: []
-  script:
-    - call dev/ci/gitlab.bat
-  only:
-    variables:
-      - $WINDOWS =~ /enabled/
+  before_script: [] # We don't want to use the shared 'before_script'
 
 .deploy-template:
   stage: deploy
@@ -349,16 +344,13 @@ build:quick:
     when: always
 
 windows64:
-  extends: .windows-template
+  extends: .platform-template
   variables:
     ARCH: "64"
-
-windows32:
-  extends: .windows-template
-  variables:
-    ARCH: "32"
-  except:
-    - /^pr-.*$/
+  script:
+    - call dev/ci/platform-windows.bat
+  tags:
+    - windows-inria
 
 lint:
   stage: stage-1
