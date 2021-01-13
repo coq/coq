@@ -80,21 +80,21 @@ open Goptions
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true;
       optkey   = ["Omega";"System"];
       optread  = read display_system_flag;
       optwrite = write display_system_flag }
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true;
       optkey   = ["Omega";"Action"];
       optread  = read display_action_flag;
       optwrite = write display_action_flag }
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true;
       optkey   = ["Omega";"OldStyle"];
       optread  = read old_style_flag;
       optwrite = write old_style_flag }
@@ -108,7 +108,7 @@ let () =
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true;
       optkey   = ["Omega";"UseLocalDefs"];
       optread  = read letin_flag;
       optwrite = write letin_flag }

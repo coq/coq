@@ -24,6 +24,6 @@ open Ltac_plugin
 
 }
 
-TACTIC EXTEND omega
+TACTIC EXTEND omega DEPRECATED { Deprecation.make ~since:"8.12" ~note:"Use lia instead." () }
 |  [ "omega" ] -> { Coq_omega.omega_solver }
 END

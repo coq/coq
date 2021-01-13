@@ -116,6 +116,7 @@ loaded by
 
 .. coqtop:: in
 
+   Set Warnings "-deprecated-omega-plugin".
    Require Import Omega.
 
 .. example::

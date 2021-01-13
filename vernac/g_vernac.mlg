@@ -535,6 +535,16 @@ let warn_deprecated_as_ident_kind =
   CWarnings.create ~name:"deprecated-as-ident-kind" ~category:"deprecated"
          (fun () -> strbrk "grammar kind \"as ident\" no longer accepts \"_\"; use \"as name\" instead to accept \"_\", too, or silence the warning if you actually intended to accept only identifiers.")
 
+let warn_omega_plugin_deprecated = CWarnings.create ~name:"deprecated-omega-plugin" ~category:"deprecated"
+  (fun () -> Pp.str "The Omega plugin is deprecated.  Please use Lia instead.")
+
+let check_for_omega qids =
+  List.iter (fun qid ->
+      let s = Libnames.string_of_qualid qid in
+      if s = "Omega" || s = "Coq.omega.Omega" then
+        warn_omega_plugin_deprecated ()
+    ) qids
+
 }
 
 (* Modules and Sections *)
@@ -566,7 +576,7 @@ GRAMMAR EXTEND Gram
 
       (* Requiring an already compiled module *)
       | IDENT "Require"; export = export_token; qidl = LIST1 global ->
-          { VernacRequire (None, export, qidl) }
+          { check_for_omega qidl; VernacRequire (None, export, qidl) }
       | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
         ; qidl = LIST1 global ->
         { VernacRequire (Some ns, export, qidl) }

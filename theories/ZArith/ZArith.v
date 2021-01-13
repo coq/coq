@@ -18,6 +18,7 @@ Require Export Zpow_def.
 
 (** Extra modules using [Omega] or [Ring]. *)
 
+Set Warnings "-deprecated-omega-plugin".
 Require Export Omega.
 Require Export Zcomplements.
 Require Export Zpower.
