@@ -233,7 +233,6 @@ install-ide-info:
 .PHONY: $(COQIDEAPP)/Contents
 
 $(COQIDEAPP)/Contents:
-	rm -rdf $@
 	$(MKDIR) $@
 	sed -e "s/VERSION/$(VERSION4MACOS)/g" ide/coqide/MacOS/Info.plist.template > $@/Info.plist
 	$(MKDIR) "$@/MacOS"
@@ -282,6 +281,10 @@ $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
 $(COQIDEAPP)/Contents/Resources/lib: $(COQIDEAPP)/Contents/Resources/immodules $(COQIDEAPP)/Contents/Resources/loaders $(COQIDEAPP)/Contents $(COQIDEINAPP)
 	$(MKDIR) $@
 	macpack -d ../Resources/lib $(COQIDEINAPP)
+	for i in $@/../bin/*; \
+	do \
+	  macpack -d ../lib $$i; \
+	done
 	for i in $@/../loaders/*.so $@/../immodules/*.{dylib,so}; \
 	do \
 	  macpack -d ../lib $$i; \
