@@ -56,13 +56,7 @@ Module DefaultProp.
 End DefaultProp.
 
 Module ExplicitTemplate.
-  #[universes(template)]
-  Inductive identity@{i} (A : Type@{i}) (a : A) : A -> Type@{i} := id_refl : identity A a a.
-
-  (* Weird interaction of template polymorphism and inductive types
-     which naturally fall in Prop: this one is template polymorphic but not on i:
-     it just lives in any universe *)
-  Check (identity Type nat nat : Prop).
+  Fail Inductive identity@{i} (A : Type@{i}) (a : A) : A -> Type@{i} := id_refl : identity A a a.
 End ExplicitTemplate.
 
 Polymorphic Definition f@{i} : Type@{i} := nat.

@@ -53,7 +53,7 @@ Module mono.
   Monomorphic Definition monomono := Type@{MONOU}.
   Check monomono.
 
-  Monomorphic Inductive monoind@{i} : Type@{i} := .
+  Monomorphic Inductive monoind : Type := .
   Monomorphic Record monorecord@{i} : Type@{i} := mkmonorecord {}.
 End mono.
 Check mono.monomono. (* qualified MONOU *)

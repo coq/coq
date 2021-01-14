@@ -133,7 +133,7 @@ intro n; induction n as [ | n IHn ].
   Check IHn.
 Abort.
 
-Inductive I := C : I -> I -> I.
+Inductive I : Set := C : I -> I -> I.
 
 Lemma a : forall n : I, n = n.
 Proof.
