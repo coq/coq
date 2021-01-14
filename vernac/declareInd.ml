@@ -181,6 +181,8 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
         constrimpls)
     impls;
   Flags.if_verbose Feedback.msg_info (minductive_message names);
+  if mie.mind_entry_template then
+    List.iteri (fun i _ -> Equality.set_keep_equality (mind, i) true) mie.mind_entry_inds;
   if mie.mind_entry_private == None
   then Indschemes.declare_default_schemes mind;
   mind
