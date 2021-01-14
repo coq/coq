@@ -74,7 +74,7 @@ module NonLogical : sig
 
   (** [try ... with ...] but restricted to {!Exception}. *)
   val catch : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t
-  val timeout : int -> 'a t -> 'a option t
+  val timeout : float -> 'a t -> 'a option t
 
   (** Construct a monadified side-effect. Exceptions raised by the argument are
       wrapped with {!Exception}. *)

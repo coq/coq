@@ -82,7 +82,7 @@ let vernac_timeout ?timeout (f : 'a -> 'b) (x : 'a) : 'b =
   match !default_timeout, timeout with
   | _, Some n
   | Some n, None ->
-    (match Control.timeout n f x with
+    (match Control.timeout (float_of_int n) f x with
     | None -> Exninfo.iraise (Exninfo.capture CErrors.Timeout)
     | Some x -> x)
   | None, None ->
