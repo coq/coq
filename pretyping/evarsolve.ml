@@ -336,14 +336,21 @@ let eq_alias a b = match a, b with
 | VarAlias id1, VarAlias id2 -> Id.equal id1 id2
 | _ -> false
 
-type 'a aliasing = 'a option * alias list
+(* A chain of let-in ended either by a declared variable or a non-variable term *)
+(* e.g. [x:=t;y:=x;z:=y] binds [z] to [NonVarAliasChain ([y;x],t)] *)
+(* and. [a:T;x:=a;y:=x;z:=y] binds [z] to [VarAliasChain ([y;x],a)] *)
+type 'a alias_chain =
+  | VarAliasChain of alias list * alias
+  | NonVarAliasChain of alias list * 'a
 
-let empty_aliasing = None, []
-let make_aliasing c = Some c, []
+let init_var_alias_chain x = VarAliasChain ([], x)
+let init_term_alias_chain c = NonVarAliasChain ([], c)
 
-let push_alias (alias, l) a =
-  (* [a] is expected to be more recent than the variables in [l] *)
-  (alias, a :: l)
+let push_alias aliases_chain a =
+  (* most recent variables come first *)
+  match aliases_chain with
+  | VarAliasChain (l, last) -> VarAliasChain (a :: l, last)
+  | NonVarAliasChain (l, last) -> NonVarAliasChain (a :: l, last)
 
 module Alias =
 struct
@@ -366,20 +373,22 @@ let repr sigma alias = match EConstr.kind sigma alias.data with
 
 end
 
-let lift_aliasing n (alias, l) =
+let lift_alias_chain n alias_chain =
   let map a = match a with
   | VarAlias _ -> a
   | RelAlias m -> RelAlias (m + n)
   in
-  (Option.map (fun c -> Alias.lift n c) alias, List.map map l)
+  match alias_chain with
+  | VarAliasChain (l, alias) -> VarAliasChain (List.map map l, map alias)
+  | NonVarAliasChain (l, alias) -> NonVarAliasChain (List.map map l, Alias.lift n alias)
 
-let cast_aliasing (alias, l) = match alias with
-| None -> (None, l)
-| Some c -> (Some (Alias.make c), l)
+let cast_alias_chain = function
+  | VarAliasChain (l, v) -> VarAliasChain (l, v)
+  | NonVarAliasChain (l, c) -> NonVarAliasChain (l, Alias.make c)
 
 type aliases = {
-  rel_aliases : Alias.t aliasing Int.Map.t;
-  var_aliases : EConstr.t aliasing Id.Map.t;
+  rel_aliases : Alias.t alias_chain Int.Map.t;
+  var_aliases : EConstr.t alias_chain Id.Map.t;
   (** Only contains [VarAlias] *)
 }
 
@@ -394,13 +403,14 @@ let compute_var_aliases sign sigma =
     let id = get_id decl in
     match decl with
     | LocalDef (_,t,_) ->
-        (match EConstr.kind sigma t with
+      let aliases_of_id =
+        match EConstr.kind sigma t with
         | Var id' ->
-            let aliases_of_id =
-              try Id.Map.find id' aliases with Not_found -> empty_aliasing in
-            Id.Map.add id (push_alias aliases_of_id (VarAlias id')) aliases
+          (try push_alias (Id.Map.find id' aliases) (VarAlias id')
+          with Not_found -> init_var_alias_chain (VarAlias id'))
         | _ ->
-            Id.Map.add id (make_aliasing t) aliases)
+          init_term_alias_chain t in
+      Id.Map.add id aliases_of_id aliases
     | LocalAssum _ -> aliases)
     sign Id.Map.empty
 
@@ -411,18 +421,20 @@ let compute_rel_aliases var_aliases rels sigma =
           (n-1,
            match decl with
            | LocalDef (_,t,u) ->
-              (match EConstr.kind sigma t with
+             let aliases_of_n =
+               match EConstr.kind sigma t with
                | Var id' ->
-                  let aliases_of_n =
-                    try Id.Map.find id' var_aliases with Not_found -> empty_aliasing in
-                  Int.Map.add n (push_alias (cast_aliasing aliases_of_n) (VarAlias id')) aliases
+                   (let alias = VarAlias id' in
+                    try push_alias (cast_alias_chain (Id.Map.find id' var_aliases)) alias
+                    with Not_found -> init_var_alias_chain alias)
                | Rel p ->
-                  let aliases_of_n =
-                    try Int.Map.find (p+n) aliases with Not_found -> empty_aliasing in
-                  Int.Map.add n (push_alias aliases_of_n (RelAlias (p+n))) aliases
+                   (let alias = RelAlias (p+n) in
+                    try push_alias (Int.Map.find (p+n) aliases) alias
+                    with Not_found -> init_var_alias_chain alias)
                | _ ->
-                let alias = Alias.lift n (Alias.make @@ mkCast(t,DEFAULTcast, u)) in
-                  Int.Map.add n (make_aliasing alias) aliases)
+                  init_term_alias_chain (Alias.lift n (Alias.make @@ mkCast(t,DEFAULTcast, u)))
+             in
+             Int.Map.add n aliases_of_n aliases
            | LocalAssum _ -> aliases)
          )
          rels
@@ -437,20 +449,25 @@ let make_alias_map env sigma =
 let lift_aliases n aliases =
   if Int.equal n 0 then aliases else
   let rel_aliases =
-   Int.Map.fold (fun p l -> Int.Map.add (p+n) (lift_aliasing n l))
+   Int.Map.fold (fun p l -> Int.Map.add (p+n) (lift_alias_chain n l))
      aliases.rel_aliases Int.Map.empty
   in
   { aliases with rel_aliases }
 
 let get_alias_chain_of sigma aliases x = match x with
-  | RelAlias n -> (try Int.Map.find n aliases.rel_aliases with Not_found -> empty_aliasing)
-  | VarAlias id -> (try cast_aliasing (Id.Map.find id aliases.var_aliases) with Not_found -> empty_aliasing)
+  | RelAlias n -> (try Some (Int.Map.find n aliases.rel_aliases) with Not_found -> None)
+  | VarAlias id -> (try Some (cast_alias_chain (Id.Map.find id aliases.var_aliases)) with Not_found -> None)
 
+(* Expand an alias as much as possible while remaining a variable *)
+(* i.e. returns either a declared variable [y], or the last expansion
+   of [x] defined to be [c] and [c] is not a variable *)
 let normalize_alias sigma aliases x =
   match get_alias_chain_of sigma aliases x with
-  | _, []  -> x
-  | _, l -> List.last l
+  | None | Some (NonVarAliasChain ([], _)) -> x
+  | Some (NonVarAliasChain (l, _)) -> List.last l
+  | Some (VarAliasChain (_, a)) -> a
 
+(* Idem, specifically for named variables *)
 let normalize_alias_var sigma var_aliases id =
   let aliases = { var_aliases; rel_aliases = Int.Map.empty } in
   match normalize_alias sigma aliases (VarAlias id) with
@@ -459,41 +476,45 @@ let normalize_alias_var sigma var_aliases id =
 
 let extend_alias sigma decl { var_aliases; rel_aliases } =
   let rel_aliases =
-    Int.Map.fold (fun n l -> Int.Map.add (n+1) (lift_aliasing 1 l))
+    Int.Map.fold (fun n l -> Int.Map.add (n+1) (lift_alias_chain 1 l))
       rel_aliases Int.Map.empty in
   let rel_aliases =
     match decl with
     | LocalDef(_,t,_) ->
-        (match EConstr.kind sigma t with
+        let aliases_of_binder =
+        match EConstr.kind sigma t with
         | Var id' ->
-            let aliases_of_binder =
-              try Id.Map.find id' var_aliases with Not_found -> empty_aliasing in
-            Int.Map.add 1 (push_alias (cast_aliasing aliases_of_binder) (VarAlias id')) rel_aliases
+            let alias = VarAlias id' in
+            (try push_alias (cast_alias_chain (Id.Map.find id' var_aliases)) alias
+            with Not_found -> init_var_alias_chain alias)
         | Rel p ->
-            let aliases_of_binder =
-              try Int.Map.find (p+1) rel_aliases with Not_found -> empty_aliasing in
-            Int.Map.add 1 (push_alias aliases_of_binder (RelAlias (p+1))) rel_aliases
+            let alias = RelAlias (p+1) in
+            (try push_alias (Int.Map.find (p+1) rel_aliases) alias
+            with Not_found -> init_var_alias_chain alias)
         | _ ->
-          let alias = Alias.lift 1 (Alias.make t) in
-            Int.Map.add 1 (make_aliasing alias) rel_aliases)
+           init_term_alias_chain (Alias.lift 1 (Alias.make t))
+             in
+             Int.Map.add 1 aliases_of_binder rel_aliases
     | LocalAssum _ -> rel_aliases in
   { var_aliases; rel_aliases }
 
 let expand_alias_once sigma aliases x =
   match get_alias_chain_of sigma aliases x with
-  | None, []  -> None
-  | Some a, [] -> Some a
-  | _, a :: l -> Some (Alias.make (of_alias a))
+  | None -> None
+  | Some (VarAliasChain (x :: _, _) | NonVarAliasChain (x :: _, _) | VarAliasChain ([], x)) -> Some (Alias.make (of_alias x))
+  | Some (NonVarAliasChain ([], a)) -> Some a
 
 let expansions_of_var sigma aliases x =
-  let (_, l) = get_alias_chain_of sigma aliases x in
-  x :: List.rev l
+  match get_alias_chain_of sigma aliases x with
+  | None -> [x]
+  | Some (VarAliasChain (l, y)) -> x :: l @ [y]
+  | Some (NonVarAliasChain (l, _)) -> x :: l
 
 let expansion_of_var sigma aliases x =
   match get_alias_chain_of sigma aliases x with
-  | None, [] -> (false, Some x, [])
-  | Some a, l -> (true, Alias.repr sigma a, l)
-  | None, l -> let a, l = List.sep_last l in (true, Some a, l)
+  | None -> (false, Some x, [])
+  | Some (VarAliasChain (l, x)) -> (true, Some x, l)
+  | Some (NonVarAliasChain (l, a)) -> (true, Alias.repr sigma a, l)
 
 let rec expand_vars_in_term_using env sigma aliases t = match EConstr.kind sigma t with
   | Rel n -> of_alias (normalize_alias sigma aliases (RelAlias n))
@@ -505,8 +526,8 @@ let rec expand_vars_in_term_using env sigma aliases t = match EConstr.kind sigma
 let expand_vars_in_term env sigma = expand_vars_in_term_using env sigma (make_alias_map env sigma)
 
 let free_vars_and_rels_up_alias_expansion env sigma aliases c =
-  let acc1 = ref Int.Set.empty and acc2 = ref Id.Set.empty in
-  let acc3 = ref Int.Set.empty and acc4 = ref Id.Set.empty in
+  let fv_rels = ref Int.Set.empty and fv_ids = ref Id.Set.empty in
+  let let_rels = ref Int.Set.empty and let_ids = ref Id.Set.empty in
   let cache_rel = ref Int.Set.empty and cache_var = ref Id.Set.empty in
   let is_in_cache depth = function
     | RelAlias n -> Int.Set.mem (n-depth) !cache_rel
@@ -529,22 +550,22 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
       let expanded, c', l = expansion_of_var sigma aliases ck in
       (if expanded then (* expansion, hence a let-in *)
         List.iter (function
-        | VarAlias id -> acc4 := Id.Set.add id !acc4
-        | RelAlias n -> if n >= depth+1 then acc3 := Int.Set.add (n-depth) !acc3)
+        | VarAlias id -> let_ids := Id.Set.add id !let_ids
+        | RelAlias n -> if n >= depth+1 then let_rels := Int.Set.add (n-depth) !let_rels)
        (ck :: l));
       match c' with
-        | Some (VarAlias id) -> acc2 := Id.Set.add id !acc2
-        | Some (RelAlias n) -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
+        | Some (VarAlias id) -> fv_ids := Id.Set.add id !fv_ids
+        | Some (RelAlias n) -> if n >= depth+1 then fv_rels := Int.Set.add (n-depth) !fv_rels
         | None -> frec (aliases,depth) c end
     | Const _ | Ind _ | Construct _ ->
-        acc2 := Id.Set.union (vars_of_global env (fst @@ EConstr.destRef sigma c)) !acc2
+        fv_ids := Id.Set.union (vars_of_global env (fst @@ EConstr.destRef sigma c)) !fv_ids
     | _ ->
         iter_with_full_binders env sigma
           (fun d (aliases,depth) -> (extend_alias sigma d aliases,depth+1))
           frec (aliases,depth) c
   in
   frec (aliases,0) c;
-  (!acc1,!acc2,!acc3,!acc4)
+  (!fv_rels,!fv_ids,!let_rels,!let_ids)
 
 (********************************)
 (* Managing pattern-unification *)
@@ -552,9 +573,10 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
 
 let expand_and_check_vars sigma aliases l =
   let map a = match get_alias_chain_of sigma aliases a with
-  | None, [] -> Some a
-  | None, l -> Some (List.last l)
-  | Some _, _ -> None
+  | None -> Some a
+  | Some (VarAliasChain (_, a)) -> Some a
+  | Some (NonVarAliasChain ([], c)) -> None
+  | Some (NonVarAliasChain (l, c)) -> Some (List.last l)
   in
   Option.List.map map l
 
