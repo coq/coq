@@ -55,8 +55,6 @@
   else \
     accu = uint63_zero; \
   }while(0)
-#define Uint63_lsl1(x) (accu = (value)((((uint64_t)(x)-1) << 1) +1))
-#define Uint63_lsr1(x) (accu = (value)(((uint64_t)(x) >> 1) |1))
 
 /* addmuldiv(p,x,y) = x * 2^p + y / 2 ^ (63 - p) */
 /* (modulo 2^63) for p <= 63 */

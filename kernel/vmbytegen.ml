@@ -569,7 +569,7 @@ let rec compile_lam env cenv lam sz cont =
 
   | Lprod (dom,codom) ->
      let cont1 =
-       Kpush :: compile_lam env cenv dom (sz+1) (Kmakeprod :: cont) in
+       Kpush :: compile_lam env cenv dom (sz+1) (Kmakeblock (2,0) :: cont) in
      compile_lam env cenv codom sz cont1
 
   | Llam (ids,body) ->

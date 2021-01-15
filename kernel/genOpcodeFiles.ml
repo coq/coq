@@ -28,7 +28,6 @@ let opcodes =
     "ACC7";
     "ACC";
     "PUSH";
-    "PUSHACC0";
     "PUSHACC1";
     "PUSHACC2";
     "PUSHACC3";
@@ -83,8 +82,6 @@ let opcodes =
     "GETFIELD0";
     "GETFIELD1";
     "GETFIELD";
-    "SETFIELD0";
-    "SETFIELD1";
     "SETFIELD";
     "PROJ";
     "ENSURESTACKCAPACITY";
@@ -101,7 +98,6 @@ let opcodes =
     "ACCUMULATE";
     "MAKESWITCHBLOCK";
     "MAKEACCU";
-    "MAKEPROD";
     "BRANCH";
     "CHECKADDINT63";
     "CHECKADDCINT63";
@@ -121,8 +117,6 @@ let opcodes =
     "CHECKLSLINT63";
     "CHECKLSRINT63";
     "CHECKADDMULDIVINT63";
-    "CHECKLSLINT63CONST1";
-    "CHECKLSRINT63CONST1";
     "CHECKEQINT63";
     "CHECKLTINT63";
     "CHECKLEINT63";

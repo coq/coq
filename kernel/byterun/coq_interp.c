@@ -338,10 +338,6 @@ value coq_interprete
         print_instr("PUSH");
         *--sp = accu; Next;
       }
-      Instruct(PUSHACC0) {
-        print_instr("PUSHACC0");
-        *--sp = accu; Next;
-      }
       Instruct(PUSHACC1){
         print_instr("PUSHACC1");
         *--sp = accu; accu = sp[1]; Next;
@@ -1015,20 +1011,6 @@ value coq_interprete
         Next;
       }
 
-      Instruct(SETFIELD0){
-        print_instr("SETFIELD0");
-        caml_modify(&Field(accu, 0),*sp);
-        sp++;
-        Next;
-      }
-
-      Instruct(SETFIELD1){
-        print_instr("SETFIELD1");
-        caml_modify(&Field(accu, 1),*sp);
-        sp++;
-        Next;
-      }
-
       Instruct(SETFIELD){
         print_instr("SETFIELD");
         caml_modify(&Field(accu, *pc),*sp);
@@ -1288,16 +1270,6 @@ value coq_interprete
         Next;
       }
 
-      Instruct(MAKEPROD) {
-        print_instr("MAKEPROD");
-        *--sp=accu;
-        Alloc_small(accu,2,0);
-        Field(accu, 0) = sp[0];
-        Field(accu, 1) = sp[1];
-        sp += 2;
-        Next;
-      }
-
       Instruct(BRANCH) {
         /* unconditional branching */
         print_instr("BRANCH");
@@ -1499,34 +1471,6 @@ value coq_interprete
         CheckInt2();
         Uint63_lsr(accu,*sp++);
         Next;
-      }
-
-      Instruct(CHECKLSLINT63CONST1) {
-        print_instr("CHECKLSLINT63CONST1");
-        if (Is_uint63(accu)) {
-          pc++;
-          Uint63_lsl1(accu);
-          Next;
-        } else {
-          *--sp = uint63_one();
-          *--sp = accu;
-          accu = Field(coq_global_data, *pc++);
-          goto apply2;
-        }
-      }
-
-      Instruct(CHECKLSRINT63CONST1) {
-        print_instr("CHECKLSRINT63CONST1");
-        if (Is_uint63(accu)) {
-          pc++;
-          Uint63_lsr1(accu);
-          Next;
-        } else {
-          *--sp = uint63_one();
-          *--sp = accu;
-          accu = Field(coq_global_data, *pc++);
-          goto apply2;
-        }
       }
 
       Instruct (CHECKADDMULDIVINT63) {

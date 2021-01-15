@@ -135,6 +135,16 @@ let out env opcode =
 
 let is_immed i = Uint63.le (Uint63.of_int i) Uint63.maxuint31
 
+(* Detect whether the current value of the accu register is no longer
+   needed (i.e., the register is written before being read). If so, the
+   register can be used freely; no need to save and restore it. *)
+let is_accu_dead = function
+  | [] -> false
+  | c :: _ ->
+      match c with
+      | Kacc _ | Kenvacc _ | Kconst _ | Koffsetclosure _ | Kgetglobal _ -> true
+      | _ -> false
+
 let out_int env n =
   out_word env n (n asr 8) (n asr 16) (n asr 24)
 
@@ -327,8 +337,6 @@ let emit_instr env = function
       if Int.equal n 0 then invalid_arg "emit_instr : block size = 0"
       else if n < 4 then (out env(opMAKEBLOCK1 + n - 1); out_int env t)
       else (out env opMAKEBLOCK; out_int env n; out_int env t)
-  | Kmakeprod ->
-      out env opMAKEPROD
   | Kmakeswitchblock(typlbl,swlbl,annot,sz) ->
       out env opMAKESWITCHBLOCK;
       out_label env typlbl; out_label env swlbl;
@@ -349,8 +357,7 @@ let emit_instr env = function
       if n <= 1 then out env (opGETFIELD0+n)
       else (out env opGETFIELD;out_int env n)
   | Ksetfield n ->
-      if n <= 1 then out env (opSETFIELD0+n)
-      else (out env opSETFIELD;out_int env n)
+      out env opSETFIELD; out_int env n
   | Ksequence _ -> invalid_arg "Vmemitcodes.emit_instr"
   | Kproj p -> out env opPROJ; out_int env (Projection.Repr.arg p); slot_for_proj_name env p
   | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
@@ -375,7 +382,9 @@ let rec emit env insns remaining = match insns with
      | (first::rest) -> emit env first rest)
   (* Peephole optimizations *)
   | Kpush :: Kacc n :: c ->
-      if n < 8 then out env(opPUSHACC0 + n) else (out env opPUSHACC; out_int env n);
+      if n = 0 then out env opPUSH
+      else if n < 8 then out env (opPUSHACC1 + n - 1)
+      else (out env opPUSHACC; out_int env n);
       emit env c remaining
   | Kpush :: Kenvacc n :: c ->
       if n >= 0 && n <= 3
@@ -397,6 +406,9 @@ let rec emit env insns remaining = match insns with
   | Kpush :: Kconst const :: c ->
       out env opPUSHGETGLOBAL; slot_for_const env const;
       emit env c remaining
+  | Kpushfields 1 :: c when is_accu_dead c ->
+      out env opGETFIELD0;
+      emit env (Kpush :: c) remaining
   | Kpop n :: Kjump :: c ->
       out env opRETURN; out_int env n; emit env c remaining
   | Ksequence c1 :: c ->

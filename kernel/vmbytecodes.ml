@@ -49,7 +49,6 @@ type instruction =
   | Kgetglobal of Constant.t
   | Kconst of structured_constant
   | Kmakeblock of int * tag
-  | Kmakeprod
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
   | Kswitch of Label.t array * Label.t array
   | Kpushfields of int
@@ -123,7 +122,6 @@ let rec pp_instr i =
       str "const " ++ pp_struct_const sc
   | Kmakeblock(n, m) ->
       str "makeblock " ++ int n ++ str ", " ++ int m
-  | Kmakeprod -> str "makeprod"
   | Kmakeswitchblock(lblt,lbls,_,sz) ->
       str "makeswitchblock " ++ pp_lbl lblt ++ str ", " ++
         pp_lbl lbls ++ str ", " ++ int sz
