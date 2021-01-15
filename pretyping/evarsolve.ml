@@ -340,7 +340,10 @@ type 'a aliasing = 'a option * alias list
 
 let empty_aliasing = None, []
 let make_aliasing c = Some c, []
-let push_alias (alias, l) a = (alias, a :: l)
+
+let push_alias (alias, l) a =
+  (* [a] is expected to be more recent than the variables in [l] *)
+  (alias, a :: l)
 
 module Alias =
 struct
@@ -386,6 +389,7 @@ type aliases = {
 
 let compute_var_aliases sign sigma =
   let open Context.Named.Declaration in
+  (* push from oldest to more recent variables *)
   List.fold_right (fun decl aliases ->
     let id = get_id decl in
     match decl with
@@ -401,6 +405,7 @@ let compute_var_aliases sign sigma =
     sign Id.Map.empty
 
 let compute_rel_aliases var_aliases rels sigma =
+  (* push from oldest to more recent variables *)
   snd (List.fold_right
          (fun decl (n,aliases) ->
           (n-1,
@@ -444,7 +449,7 @@ let get_alias_chain_of sigma aliases x = match x with
 let normalize_alias sigma aliases x =
   match get_alias_chain_of sigma aliases x with
   | _, []  -> x
-  | _, a :: _ -> a
+  | _, l -> List.last l
 
 let normalize_alias_var sigma var_aliases id =
   let aliases = { var_aliases; rel_aliases = Int.Map.empty } in
@@ -478,7 +483,7 @@ let expand_alias_once sigma aliases x =
   match get_alias_chain_of sigma aliases x with
   | None, []  -> None
   | Some a, [] -> Some a
-  | _, l -> Some (Alias.make (of_alias (List.last l)))
+  | _, a :: l -> Some (Alias.make (of_alias a))
 
 let expansions_of_var sigma aliases x =
   let (_, l) = get_alias_chain_of sigma aliases x in
@@ -486,9 +491,9 @@ let expansions_of_var sigma aliases x =
 
 let expansion_of_var sigma aliases x =
   match get_alias_chain_of sigma aliases x with
-  | None, [] -> (false, Some x)
-  | Some a, _ -> (true, Alias.repr sigma a)
-  | None, a :: _ -> (true, Some a)
+  | None, [] -> (false, Some x, [])
+  | Some a, l -> (true, Alias.repr sigma a, l)
+  | None, l -> let a, l = List.sep_last l in (true, Some a, l)
 
 let rec expand_vars_in_term_using env sigma aliases t = match EConstr.kind sigma t with
   | Rel n -> of_alias (normalize_alias sigma aliases (RelAlias n))
@@ -521,11 +526,12 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
       in
       if is_in_cache depth ck then () else begin
       put_in_cache depth ck;
-      let expanded, c' = expansion_of_var sigma aliases ck in
+      let expanded, c', l = expansion_of_var sigma aliases ck in
       (if expanded then (* expansion, hence a let-in *)
-        match ck with
+        List.iter (function
         | VarAlias id -> acc4 := Id.Set.add id !acc4
-        | RelAlias n -> if n >= depth+1 then acc3 := Int.Set.add (n-depth) !acc3);
+        | RelAlias n -> if n >= depth+1 then acc3 := Int.Set.add (n-depth) !acc3)
+       (ck :: l));
       match c' with
         | Some (VarAlias id) -> acc2 := Id.Set.add id !acc2
         | Some (RelAlias n) -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
@@ -547,7 +553,7 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
 let expand_and_check_vars sigma aliases l =
   let map a = match get_alias_chain_of sigma aliases a with
   | None, [] -> Some a
-  | None, a :: _ -> Some a
+  | None, l -> Some (List.last l)
   | Some _, _ -> None
   in
   Option.List.map map l
@@ -1255,7 +1261,7 @@ let rec is_constrainable_in top env evd k (ev,(fv_rels,fv_ids) as g) t =
 let has_constrainable_free_vars env evd aliases force k ev (fv_rels,fv_ids,let_rels,let_ids) t =
   match to_alias evd t with
   | Some t ->
-    let expanded, _ = expansion_of_var evd aliases t in
+    let expanded, _, _ = expansion_of_var evd aliases t in
     if expanded then
     (* t is a local definition, we keep it only if appears in the list *)
     (* of let-in variables effectively occurring on the right-hand side, *)
