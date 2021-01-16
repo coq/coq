@@ -65,6 +65,7 @@ let create_buffer () =
 let create_script coqtop source_buffer =
   let script = Wg_ScriptView.script_view coqtop ~source_buffer
     ~show_line_numbers:true ~wrap_mode:`NONE ()
+    (* todo: line numbers don't appear *)
   in
   let _ = script#misc#set_name "ScriptWindow"
   in
@@ -490,6 +491,7 @@ let build_layout (sn:session) =
       if message_frame#all_children = [] then message_frame#misc#hide ();
       w#misc#set_size_request  ~width:500 ~height:400 ());
     detachable#connect#attached ~callback:(fun _ ->
+      w#misc#set_size_request  ~width:1 ~height:1 (); (* force resize *)
       ignore(message_frame#insert_page ~pos
         ~tab_label:label#coerce detachable#coerce);
       message_frame#misc#show ();

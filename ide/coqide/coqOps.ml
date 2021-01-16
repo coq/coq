@@ -138,6 +138,8 @@ object
   method go_to_insert : unit task
   method go_to_mark : GText.mark -> unit task
   method process_next_phrase : unit task
+  method process_db_cmd : string ->
+    next:(Interface.db_cmd_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
   method raw_coq_query :
@@ -216,6 +218,10 @@ object (self)
 
 end
 
+type queue_msg =
+  | MsgFeedback of Feedback.feedback
+  | MsgDebug of string * Pp.t
+
 class coqops
   (_script:Wg_ScriptView.script_view)
   (_pv:Wg_ProofView.proof_view)
@@ -240,11 +246,14 @@ object(self)
   val mutable processed = 0
   val mutable slaves_status = CString.Map.empty
 
-  val feedbacks : feedback Queue.t = Queue.create ()
+  val feedbacks : queue_msg Queue.t = Queue.create ()
   val feedback_timer = Ideutils.mktimer ()
 
   initializer
-    Coq.set_feedback_handler _ct self#enqueue_feedback;
+    Coq.set_feedback_handler _ct
+        (fun msg -> self#enqueue_feedback (MsgFeedback msg));
+    Coq.set_debug_prompt_handler _ct
+        (fun ~tag msg -> self#enqueue_feedback (MsgDebug (tag, msg)));
     script#misc#set_has_tooltip true;
     ignore(script#misc#connect#query_tooltip ~callback:self#tooltip_callback);
     feedback_timer.Ideutils.run ~ms:300 ~callback:self#process_feedback;
@@ -426,10 +435,23 @@ object(self)
     (* Minilib.log ("Feedback received: " ^ Xml_printer.to_string_fmt Xmlprotocol.(of_feedback Ppcmds msg)); *)
     Queue.add msg feedbacks
 
+  method private debug_prompt ~tag msg =
+    match tag with
+    | "prompt" ->
+      messages#default_route#debug_prompt msg
+    | _ ->
+      messages#default_route#push Debug msg
+
+  (* todo: is it necessary to have a queue and to call this routine on a timer? *)
   method private process_feedback () =
     let rec eat_feedback n =
+      (* todo: why not just check if feedbacks is empty? *)
       if n = 0 then true else
       let msg = Queue.pop feedbacks in
+      match msg with
+      | MsgFeedback msg2 -> pr_feedback n msg2
+      | MsgDebug (tag, msg2) -> self#debug_prompt ~tag msg2; eat_feedback (n-1)
+    and pr_feedback n msg =
       let id = msg.span_id in
       let sentence =
         let finder _ state_id s =
@@ -507,12 +529,12 @@ object(self)
             try
               match id, Doc.tip document with
               | id1, id2 when Stateid.newer_than id2 id1 -> ()
-              | _ -> Queue.add msg feedbacks
-            with Doc.Empty | Invalid_argument _ -> Queue.add msg feedbacks
+              | _ -> Queue.add (MsgFeedback msg) feedbacks
+            with Doc.Empty | Invalid_argument _ -> Queue.add (MsgFeedback msg) feedbacks
       end;
-        eat_feedback (n-1)
+      eat_feedback (n-1)
     in
-      eat_feedback (Queue.length feedbacks)
+    eat_feedback (Queue.length feedbacks)
 
   method private commit_queue_transaction sentence =
     (* A queued command has been successfully done, we push it to [cmd_stack].
@@ -704,6 +726,10 @@ object(self)
   method process_next_phrase =
     let until n _ _ = n >= 1 in
     self#process_until ~move_insert:true until true
+
+  method process_db_cmd cmd ~next : unit Coq.task =
+    let db_cmd = Coq.db_cmd cmd in
+    Coq.bind db_cmd next
 
   method private process_until_iter iter =
     let until _ start stop =

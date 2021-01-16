@@ -765,6 +765,15 @@ let show_proof_diff where sn =
 
 let show_proof_diffs _ = cb_on_current_term (show_proof_diff `INSERT) ()
 
+let db_cmd cmd sn =  (* todo: still good? *)
+  Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_cmd cmd
+    ~next:(function | _ -> Coq.return ()))
+  ignore
+
+let send_db_cmd cmd = cb_on_current_term (db_cmd cmd) ()
+
+let _ = Wg_MessageView.forward_send_db_cmd := send_db_cmd
+
 let about _ =
   let dialog = GWindow.about_dialog () in
   let _ = dialog#connect#response ~callback:(fun _ -> dialog#destroy ()) in

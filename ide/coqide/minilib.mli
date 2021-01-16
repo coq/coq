@@ -17,6 +17,7 @@ type level = [
   | `DEBUG
   | `INFO
   | `NOTICE
+  | `PROMPT
   | `WARNING
   | `ERROR
   | `FATAL ]
