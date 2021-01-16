@@ -1068,8 +1068,7 @@ let toggle_breakpoint_i sn =
   | None -> ()
 
 let all_sessions_ready _ =
-  List.fold_left (fun rdy sn -> rdy && Coq.is_ready_or_stopped_in_debugger sn.coqtop)
-      true notebook#pages
+  List.fold_left (fun rdy sn -> rdy && Coq.is_ready sn.coqtop) true notebook#pages
 
 let toggle_breakpoint _ =
   if all_sessions_ready () then

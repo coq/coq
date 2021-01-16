@@ -324,7 +324,7 @@ object(self)
 
   method scroll_to_start_of_input () =
     let start = buffer#get_iter_at_mark (`NAME "start_of_input") in
-    ignore (script#scroll_to_iter start)
+    ignore (script#scroll_to_iter ~use_align:true ~yalign:0. start)
 
   method set_forward_clear_db_highlight f =
     forward_clear_db_highlight <- f
