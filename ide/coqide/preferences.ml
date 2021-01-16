@@ -501,6 +501,7 @@ let () =
     ("message.debug", make_tag ());
     ("message.error", make_tag ());
     ("message.warning", make_tag ());
+    ("message.prompt", make_tag ~fg:"green" ());
     ("module.definition", make_tag ~fg:"orange red" ~bold:true ());
     ("module.keyword", make_tag ());
     ("tactic.keyword", make_tag ());

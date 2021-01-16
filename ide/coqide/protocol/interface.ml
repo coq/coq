@@ -132,17 +132,13 @@ type ('a, 'b) union = ('a, 'b) Util.union
 (* Request/Reply message protocol between Coq and CoqIde *)
 
 (**  [add ((s,eid),(sid,v))] adds the phrase [s] with edit id [eid]
-     on top of the current edit position (that is asserted to be [sid])
-     verbosely if [v] is true.  The response [(id,(rc,s)] is the new state
+     on top of the current edit position (that is asserted to be [sid]).
+     [v] set to true indicates "verbose".  The response [(id,rc)] is the new state
      [id] assigned to the phrase. [rc] is [Inl] if the new
      state id is the tip of the edit point, or [Inr tip] if the new phrase
-     closes a focus and [tip] is the new edit tip
-
-     [s] used to contain Coq's console output and has been deprecated
-     in favor of sending feedback, it will be removed in a future
-     version of the protocol.  *)
+     closes a focus and [tip] is the new edit tip *)
 type add_sty = (string * edit_id) * (state_id * verbose)
-type add_rty = state_id * ((unit, state_id) union * string)
+type add_rty = state_id * (unit, state_id) union
 
 (** [edit_at id] declares the user wants to edit just after [id].
     The response is [Inl] if the document has been rewound to that point,
@@ -190,6 +186,10 @@ type search_rty = string coq_object list
 (** Diffs between the proof term at a given stateid and the previous one *)
 type proof_diff_sty = string * Stateid.t
 type proof_diff_rty = Pp.t
+
+(** A debugger command *)
+type db_cmd_sty = string
+type db_cmd_rty = unit
 
 (** Retrieve the list of options of the current toplevel *)
 type get_options_sty = unit
@@ -257,6 +257,7 @@ type handler = {
   print_ast   : print_ast_sty   -> print_ast_rty;
   annotate    : annotate_sty    -> annotate_rty;
   proof_diff  : proof_diff_sty  -> proof_diff_rty;
+  db_cmd      : db_cmd_sty      -> db_cmd_rty;
   handle_exn  : handle_exn_sty  -> handle_exn_rty;
   init        : init_sty        -> init_rty;
   quit        : quit_sty        -> quit_rty;

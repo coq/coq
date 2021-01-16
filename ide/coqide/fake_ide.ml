@@ -30,9 +30,12 @@ let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   Xml_printer.print coqtop.xml_printer xml_query;
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
-    if Xmlprotocol.is_feedback xml then
+    match Xmlprotocol.msg_kind xml with
+    | Xmlprotocol.Feedback
+    | Xmlprotocol.LtacDebugInfo ->
       loop ()
-    else Xmlprotocol.to_answer call xml
+    | Xmlprotocol.Other ->
+      Xmlprotocol.to_answer call xml
   in
   let res = loop () in
   if print then prerr_endline (Xmlprotocol.pr_full_value call res);
@@ -188,9 +191,9 @@ module GUILogic = struct
 
   let after_add = function
     | Interface.Fail (_,_,s) -> print_error s; exit 1
-    | Interface.Good (id, (Util.Inl (), _)) ->
+    | Interface.Good (id, Util.Inl ()) ->
         Document.assign_tip_id doc id
-    | Interface.Good (id, (Util.Inr tip, _)) ->
+    | Interface.Good (id, Util.Inr tip) ->
         Document.assign_tip_id doc id;
         Document.unfocus doc;
         ignore(Document.cut_at doc tip);

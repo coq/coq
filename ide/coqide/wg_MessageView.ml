@@ -38,9 +38,20 @@ class type message_view =
     method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
 
+    (** Callback for the Ltac debugger *)
+    method debug_prompt : Pp.t -> unit
+
     method has_selection : bool
     method get_selected_text : string
   end
+
+let forward_send_db_cmd = ref ((fun x -> failwith "forward_send_db_cmd")
+    : string -> unit)
+
+(* The buffer can contain prompt or feedback messages *)
+type message_entry_kind =
+  | Fb of Feedback.level * Pp.t
+  | Prompt of Pp.t
 
 let message_view () : message_view =
   let buffer = GSourceView3.source_buffer
@@ -49,12 +60,13 @@ let message_view () : message_view =
     ?style_scheme:(style_manager#style_scheme source_style#get) ()
   in
   let mark = buffer#create_mark ~left_gravity:false buffer#start_iter in
+  let _ = buffer#create_mark ~name:"end_of_output" buffer#end_iter in
   let box = GPack.vbox () in
   let scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(box#pack ~expand:true) () in
   let view = GSourceView3.source_view
     ~source_buffer:buffer ~packing:scroll#add
-    ~editable:false ~cursor_visible:false ~wrap_mode:`WORD ()
+    ~editable:false ~cursor_visible:false ~wrap_mode:`CHAR ()
   in
   let () = Gtk_parsing.fix_double_click view in
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
@@ -69,7 +81,7 @@ let message_view () : message_view =
   stick text_font view cb;
 
   (* Inserts at point, advances the mark *)
-  let insert_msg (level, msg) =
+  let insert_fb_msg (level, msg) =
     let tags = match level with
       | Feedback.Error   -> [Tags.Message.error]
       | Feedback.Warning -> [Tags.Message.warning]
@@ -78,15 +90,82 @@ let message_view () : message_view =
     let mark = `MARK mark in
     let width = Ideutils.textview_width view in
     Ideutils.insert_xml ~mark buffer ~tags (Richpp.richpp_of_pp width msg);
-    buffer#insert ~iter:(buffer#get_iter_at_mark mark) "\n"
+    buffer#insert ~iter:(buffer#get_iter_at_mark mark) "\n";
+    buffer#move_mark (`NAME "end_of_output") ~where:buffer#end_iter;
   in
+
+  (* Insert a prompt and make the buffer editable. *)
+  let insert_ltac_debug_prompt msg =
+    let tags = [] in
+    let mark = `MARK mark in
+    let width = Ideutils.textview_width view in
+    Ideutils.insert_xml ~mark buffer ~tags (Richpp.richpp_of_pp width msg);
+    buffer#move_mark (`NAME "end_of_output") ~where:buffer#end_iter;
+    view#set_editable true;
+    view#set_cursor_visible true;
+    view#scroll_to_mark (`NAME "end_of_output"); (* scroll to end *)
+    buffer#move_mark `INSERT ~where:buffer#end_iter;
+    let ins = buffer#get_iter_at_mark `INSERT in
+    buffer#select_range ins ins;  (* avoid highlighting *)
+  in
+
+  let insert_msg = function
+    | Fb (lvl,msg) -> insert_fb_msg (lvl,msg)
+    | Prompt msg -> insert_ltac_debug_prompt msg
+
+  in
+  let msgs : message_entry_kind list ref = ref [] in
+  let (return, _) = GtkData.AccelGroup.parse "Return" in
+  let backspace = 65288 (*GtkData.AccelGroup.parse "Backspace"*) in
+  let (delete, _) = GtkData.AccelGroup.parse "Delete" in
+
+  (* Keypress handler *)
+  let keypress_cb ev =
+    let ev_key = GdkEvent.Key.keyval ev in
+    let ins = buffer#get_iter_at_mark `INSERT in
+    let eoo = buffer#get_iter_at_mark (`NAME "end_of_output") in
+    let delta = ins#offset - eoo#offset in
+    if not view#editable then
+      false
+    else if ev_key = delete && delta < 0 then
+      true (* ignore DELETE before end of output *)
+    else if ev_key = backspace && delta <= 0 then
+      true (* ignore BACKSPACE before eoo *)
+    else begin
+      if delta < 0 then
+        buffer#move_mark `INSERT ~where:buffer#end_iter;
+      if (ev_key >= Char.code ' ' && ev_key <= Char.code '~') then begin
+        buffer#insert (String.make 1 (Char.chr ev_key));
+        view#scroll_to_mark `INSERT; (* scroll to insertion point *)
+        let ins = buffer#get_iter_at_mark `INSERT in
+        buffer#select_range ins ins;  (* avoid highlighting *)
+        true (* consume the event *)
+      end else if ev_key = return then begin
+        let ins = buffer#get_iter_at_mark `INSERT in
+        let cmd = buffer#get_text ~start:eoo ~stop:ins () in
+        msgs := Fb (Feedback.Notice, Pp.str cmd) :: !msgs;
+        buffer#insert "\n";
+        buffer#move_mark `INSERT ~where:buffer#end_iter;
+        view#scroll_to_mark `INSERT; (* scroll to insertion point *)
+        let ins = buffer#get_iter_at_mark `INSERT in
+        buffer#select_range ins ins;  (* avoid highlighting *)
+        buffer#move_mark (`NAME "end_of_output") ~where:buffer#end_iter;
+        view#set_editable false;
+        view#set_cursor_visible false;
+
+        !forward_send_db_cmd cmd;
+        true
+      end else
+        false
+      end
+  in
+  let _ = view#event#connect#key_press ~callback:keypress_cb in
 
   let mv = object (self)
     inherit GObj.widget box#as_widget
 
     (* List of displayed messages *)
     val mutable last_width = -1
-    val mutable msgs = []
 
     val push = new GUtil.signal ()
 
@@ -108,16 +187,20 @@ let message_view () : message_view =
         last_width <- width;
         buffer#set_text "";
         buffer#move_mark (`MARK mark) ~where:buffer#start_iter;
-        List.(iter insert_msg (rev msgs))
+        List.(iter insert_msg (rev !msgs))
       end
 
     method clear =
-      msgs <- []; self#refresh true
+      msgs := []; self#refresh true
 
     method push level msg =
-      msgs <- (level, msg) :: msgs;
-      insert_msg (level, msg);
+      msgs := Fb (level, msg) :: !msgs;
+      insert_fb_msg (level, msg);
       push#call (level, msg)
+
+    method debug_prompt msg =
+      msgs := Prompt msg :: !msgs;
+      insert_ltac_debug_prompt msg
 
     method add msg = self#push Feedback.Notice msg
 

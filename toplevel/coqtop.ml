@@ -131,6 +131,25 @@ let print_style_tags opts =
   let () = List.iter iter tags in
   flush_all ()
 
+let ltac_debug_answer = let open DebugHook.Answer in function
+    | Prompt prompt ->
+      (* No newline *)
+      Format.fprintf !Topfmt.err_ft "@[%a@]%!" Pp.pp_with prompt
+    | Goal g ->
+      Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with (str "Goal:" ++ fnl () ++ g)
+    | Output o ->
+      Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with o
+
+let ltac_debug_parse () =
+  let open DebugHook in
+  let act =
+    try Action.parse (read_line ())
+    with End_of_file -> Ok Action.Exit
+  in
+  match act with
+  | Ok act -> act
+  | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed
+
 type query = PrintTags | PrintModUid of string list
 type run_mode = Interactive | Batch | Query of query
 
@@ -165,6 +184,10 @@ let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =
   if run_mode != Interactive then Flags.quiet := true;
   init_color (if opts.config.print_emacs then `EMACS else color_mode);
   Flags.if_verbose print_header ();
+  DebugHook.Intf.(set
+    { read_cmd = ltac_debug_parse
+    ; submit_answer = ltac_debug_answer
+    });
   init_toploop opts async_opts injections
 
 let set_color = function
