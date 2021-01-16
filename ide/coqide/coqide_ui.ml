@@ -91,6 +91,11 @@ let init () =
 \n    <menuitem action='Set diff' />\
 \n    <menuitem action='Set removed diff' />\
 \n    <menuitem action='Show Proof Diffs' />\
+\n    <menuitem action='Toggle breakpoint' />\
+\n    <menuitem action='Continue' />\
+\n    <menuitem action='Step in' />\
+\n    <menuitem action='Step out' />\
+\n    <menuitem action='Break' />\
 \n  </menu>\
 \n  <menu action='Navigation'>\
 \n    <menuitem action='Forward' />\
@@ -145,6 +150,7 @@ let init () =
 \n    <menuitem action='Browse Coq Library' />\
 \n    <menuitem action='Help for keyword' />\
 \n    <menuitem action='Help for μPG mode' />\
+\n    <menuitem action='Memory usage' />\
 \n    <separator />\
 \n    <menuitem name='Abt' action='About Coq' />\
 \n  </menu>\

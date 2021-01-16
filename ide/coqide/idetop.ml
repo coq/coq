@@ -29,7 +29,9 @@ let catch_break = ref false
 
 let init_signal_handler () =
   let f _ = if !catch_break then raise Sys.Break else Control.interrupt := true in
-  Sys.set_signal Sys.sigint (Sys.Signal_handle f)
+  Sys.set_signal Sys.sigint (Sys.Signal_handle f);
+  Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
+    (fun _ -> Control.break := true))
 
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
@@ -76,9 +78,11 @@ let ide_doc = ref None
 let get_doc () = Option.get !ide_doc
 let set_doc doc = ide_doc := Some doc
 
-let add ((s,eid),(sid,verbose)) =
+let add (((s,eid),(sid,verbose)),off) =
   let doc = get_doc () in
-  let pa = Pcoq.Parsable.make (Stream.of_string s) in
+  let open Loc in
+  let loc = { (initial ToplevelInput) with bp = off } in
+  let pa = Pcoq.Parsable.make ~loc (Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
   | None -> assert false (* s may not be empty *)
   | Some ast ->
@@ -87,7 +91,7 @@ let add ((s,eid),(sid,verbose)) =
     let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
     ide_cmd_warns ~id:newid ast;
     (* All output is sent through the feedback mechanism rather than stdout/stderr *)
-    newid, (rc, "")
+    newid, rc
 
 let edit_at id =
   let doc = get_doc () in
@@ -360,10 +364,10 @@ let proof_diff (diff_opt, sid) =
       let old = Stm.get_prev_proof ~doc sid in
       Proof_diffs.diff_proofs ~diff_opt ?old proof
 
-let debug_cmd = ref ""
+let debug_cmd = ref DebugHook.Action.Ignore
 
 let db_cmd cmd =
-  debug_cmd := cmd
+  debug_cmd := DebugHook.Action.Command cmd
 
 let db_loc () =
   let open Loc in
@@ -373,8 +377,7 @@ let db_loc () =
     Some ("ToplevelInput", [bp; ep])
   | Some {fname=InFile {dirpath=None; file}; bp; ep} ->
     Some (file, [bp; ep])  (* for Load command *)
-  | Some {fname=InFile {dirpath=Some dirpath}; bp; ep} ->
-    (* todo: check what's in Loc.t on Windows *)
+  | Some {fname=InFile {dirpath=(Some dirpath)}; bp; ep} ->
     let open Names in
     let dirpath = DirPath.of_string dirpath in
     let pfx = DirPath.make (List.tl (DirPath.repr dirpath)) in
@@ -401,7 +404,16 @@ let db_loc () =
       Feedback.msg_warning msg;
       Some (f, [bp; ep]) (* be arbitrary unless we can tell which file was loaded *)
     end
-  | _ -> None
+  | _ -> None (* nothing to highlight, e.g. not in a .v file *)
+
+let db_continue opt =
+  let open DebugHook.Action in
+  debug_cmd := match opt with
+  | Interface.StepIn -> StepIn
+  | Interface.StepOver -> StepOver
+  | Interface.StepOut -> StepOut
+  | Interface.Continue -> Continue
+  | Interface.Interrupt -> Interrupt
 
 let db_upd_bpts updates =
   let open DebugHook in
@@ -507,7 +519,10 @@ let eval_call c =
     Interface.status = interruptible status;
     Interface.search = interruptible search;
     Interface.proof_diff = interruptible proof_diff;
-    Interface.db_cmd = interruptible db_cmd;   (* todo: interruptible or not? *)
+    Interface.db_cmd = db_cmd;
+    Interface.db_loc = db_loc;
+    Interface.db_upd_bpts = db_upd_bpts;
+    Interface.db_continue = db_continue;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible idetop_make_cases;
@@ -615,18 +630,23 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
   (* XXX: no need to have a ref here *)
   let ltac_debug_parse () =
     let raw_cmd =
+      debug_cmd := DebugHook.Action.Ignore;
       process_xml_msg xml_ic xml_oc out_ch;
       !debug_cmd
     in
     let open DebugHook in
-    match Action.parse raw_cmd with
-    | Ok act -> act
-    | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed
+    match raw_cmd with
+    | Action.Command cmd ->
+      (match Action.parse cmd with
+      | Ok act -> act
+      | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed)
+    | act -> act
   in
 
   DebugHook.Intf.(set
       { read_cmd = ltac_debug_parse
       ; submit_answer = ltac_debug_answer
+      ; isTerminal = false;
       });
 
   while not !quit do

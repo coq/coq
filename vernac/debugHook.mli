@@ -12,15 +12,18 @@
    with their provided interface. *)
 module Action : sig
   type t =
-    | Step
-    (** Step one tactic *)
+    | StepIn
+    | StepOver
+    | StepOut
+    | Continue
     | Skip
-    (** Skip one tactic *)
-    | Exit
+    | Interrupt
     | Help
     | RunCnt of int
     | RunBreakpoint of string
+    | Command of string
     | Failed
+    | Ignore (* do nothing, read another command *)
 
   (* XXX: Should be moved to the clients *)
   val parse : string -> (t, string) result
@@ -39,6 +42,8 @@ module Intf : sig
     (** request a debugger command from the client *)
     ; submit_answer : Answer.t -> unit
     (** receive a debugger answer from Ltac *)
+    ; isTerminal : bool
+    (** whether the debugger is running as a terminal (non-visual) *)
     }
 
   val set : t -> unit

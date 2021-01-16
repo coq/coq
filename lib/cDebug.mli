@@ -35,6 +35,8 @@ val create_full : name:string -> unit -> flag * t
 
 val get_flag : flag -> bool
 
+val set_flag : flag -> bool -> unit
+
 (** [get_flags] and [set_flags] use the user syntax: a comma separated
     list of activated "component" and "-component"s. [get_flags] starts
     with "all" or "-all" and lists all components after it (even if redundant). *)

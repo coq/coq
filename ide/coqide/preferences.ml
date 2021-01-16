@@ -419,16 +419,6 @@ let attach_bg (pref : string preference) (tag : GText.tag) =
 
 let attach_fg (pref : string preference) (tag : GText.tag) =
   attach_tag pref tag (fun c -> `FOREGROUND c)
-
-let processing_color =
-  new preference ~name:["processing_color"] ~init:"light blue" ~repr:Repr.(string)
-
-let incompletely_processed_color =
-  new preference ~name:["incompletely_processed_color"] ~init:"light sky blue" ~repr:Repr.(string)
-
-let _ = attach_bg processing_color Tags.Script.to_process
-let _ = attach_bg incompletely_processed_color Tags.Script.incomplete
-
 let tags = ref Util.String.Map.empty
 
 let list_tags () = !tags
@@ -523,6 +513,29 @@ let processed_color =
 
 let _ = attach_bg processed_color Tags.Script.processed
 let _ = attach_bg processed_color Tags.Proof.highlight
+
+let processing_color =
+  new preference ~name:["processing_color"] ~init:"light blue" ~repr:Repr.(string)
+
+let incompletely_processed_color =
+  new preference ~name:["incompletely_processed_color"] ~init:"light sky blue" ~repr:Repr.(string)
+
+let _ = attach_bg processing_color Tags.Script.to_process
+let _ = attach_bg incompletely_processed_color Tags.Script.incomplete
+
+let breakpoint_color =
+  new preference ~name:["breakpoint_color"] ~init:"#db5860" ~repr:Repr.(string)
+let white = (* worth showing on preferences menu?? *)
+  new preference ~name:["white"] ~init:"white" ~repr:Repr.(string)
+
+let _ = attach_bg breakpoint_color Tags.Script.breakpoint
+let _ = attach_fg white Tags.Script.breakpoint
+
+let db_stopping_point_color =
+  new preference ~name:["db_stopping_point_color"] ~init:"#2154a6" ~repr:Repr.(string)
+
+let _ = attach_bg db_stopping_point_color Tags.Script.debugging
+let _ = attach_fg white Tags.Script.debugging
 
 let error_color =
   new preference ~name:["error_color"] ~init:"#FFCCCC" ~repr:Repr.(string)
@@ -785,6 +798,8 @@ let configure ?(apply=(fun () -> ())) parent =
       ("Background color of processed text", processed_color);
       ("Background color of text being processed", processing_color);
       ("Background color of incompletely processed Qed", incompletely_processed_color);
+      ("Background color of breakpoints", breakpoint_color);
+      ("Background color of debugger stopping point", db_stopping_point_color);
       ("Background color of errors", error_color);
       ("Foreground color of errors", error_fg_color);
     ] in

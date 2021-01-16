@@ -31,6 +31,9 @@ Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/de
   - [PrintAst](#command-printast)
   - [Annotate](#command-annotate)
   - [Db_cmd](#command-db_cmd)
+  - [Db_loc](#command-db_loc)
+  - [Db_upd_bpts](#command-db_upd_bpts)
+  - [Db_continue](#command-db_continue)
 * [Feedback messages](#feedback)
   - [Added Axiom](#feedback-addedaxiom)
   - [Processing](#feedback-processing)
@@ -640,8 +643,101 @@ take `<call val="Annotate"><string>Theorem plus_0_r : forall n : nat, n + 0 = n.
 #### *Returns*
 *
 
-`<call val="Db_cmd"><string>h</string></call>` passes the command "h" to the debugger.
-It returns unit.
+`<call val="Db_cmd"><string>h</string></call>` directs Coq to process the debugger command "h".
+It returns unit.  This call is processed only when the debugger is stopped and has just
+sent a `prompt` message.
+
+
+
+-------------------------------
+
+
+
+### <a name="command-db_loc">**Db_loc()**</a>
+Returns the location where the debugger has stopped, consisting of the absolute filename
+of the .v file (or "ToplevelInput") and the beginning and ending offset therein.
+```html
+<call val="Db_loc"><unit/></call>
+```
+#### *Returns*
+
+
+```html
+<value val="good">
+  <pair>
+    <string>ToplevelInput</string>
+    <list>
+      <int>22</int>
+      <int>31</int>
+    </list>
+  </pair>
+</value>
+```
+
+
+
+-------------------------------
+
+
+
+### <a name="command-db_upd_bpts">**Db_upd_bpts(...)**</a>
+The call passes a list of breakpoints to set or clear.  The string is the
+absolute pathname of the .v file (or "ToplevelInput"), the int is the offset within the file
+and the boolean is true to set a breakpoint and false to clear it.  Breakpoints can
+be updated when Coq is not busy or when Coq is stopped in the debugger.  If this
+message is sent in other states, it will be received and processed when Coq is no longer busy
+or execution stops in the debugger.
+
+```html
+<call val="Db_upd_bpts">
+  <list>
+    <pair>
+      <pair>
+        <string>/home/proj/coq/ide/coqide/debug.v</string>
+        <int>22</int>
+      </pair>
+      <bool val="true"/>
+    </pair>
+  </list>
+</call>
+```
+#### *Returns*
+* Unit.
+
+
+
+-------------------------------
+
+
+
+
+### <a name="command-db_continue">**Db_continue()**</a>
+
+Tells Coq to continue processing the proof when it is stopped in the debugger.
+The integer indicates when the debugger should stop again:
+
+```
+0: StepIn - step one tactic.  If it is an Ltac tactic, stop at the first tactic within it
+1: StepOver - step over one tactic.  if it is an Ltac tactic, don't stop within it
+2: StepOut - stop on the first tactic after exiting the current Ltac tactic
+3: Continue - continue running until the next breakpoint or the debugger exits
+4: Interrupt - generate a User interrupt (for use when stopped in the debugger; otherwise
+     interrupt is sent as a signal)
+```
+
+If the debugger encounters a breakpoint during a StepOver or a StepOut, it will
+stop at the breakpoint.
+
+```html
+<call val="Db_continue">
+  <int>1</int>
+</call>
+```
+
+#### *Returns*
+* Unit.
+
+
 
 -------------------------------
 

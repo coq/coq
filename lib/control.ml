@@ -12,6 +12,9 @@
 
 let interrupt = ref false
 
+let break = ref false
+(* causes the Ltac debugger to stop at the next step *)
+
 let steps = ref 0
 
 let enable_thread_delay = ref false

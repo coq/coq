@@ -24,7 +24,6 @@ class type message_view =
     method add : Pp.t -> unit
     method add_string : string -> unit
     method set : Pp.t -> unit
-    method refresh : bool -> unit
     method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
 
@@ -33,8 +32,12 @@ class type message_view =
 
     method has_selection : bool
     method get_selected_text : string
+    method editable2 : bool
+    method set_editable2 : bool -> unit
+    method set_forward_send_db_cmd : (string -> unit) -> unit
+    method set_forward_send_db_loc : (unit -> unit) -> unit
   end
 
 val message_view : unit -> message_view
 
-val forward_send_db_cmd : (string -> unit) ref
+val forward_keystroke : (int -> bool) ref
