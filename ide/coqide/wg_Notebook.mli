@@ -22,6 +22,7 @@ object
   method pages : 'a list
   method remove_page : int -> unit
   method current_term : 'a
+  method goto_term : 'a -> unit
 end
 
 val create :

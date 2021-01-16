@@ -39,6 +39,9 @@ val print_ast   : print_ast_sty   -> print_ast_rty call
 val annotate    : annotate_sty    -> annotate_rty call
 val proof_diff  : proof_diff_sty  -> proof_diff_rty call
 val db_cmd      : db_cmd_sty      -> db_cmd_rty call
+val db_loc      : db_loc_sty      -> db_loc_rty call
+val db_upd_bpts : db_upd_bpts_sty -> db_upd_bpts_rty call
+val db_continue : db_continue_sty -> db_continue_rty call
 
 val abstract_eval_call : handler -> 'a call -> 'a value
 

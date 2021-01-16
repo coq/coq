@@ -12,15 +12,18 @@
    with their provided interface. *)
 module Action = struct
   type t =
-    | Step
-    (** Step one tactic *)
+    | StepIn
+    | StepOver
+    | StepOut
+    | Continue
     | Skip
-    (** Skip one tactic *)
-    | Exit
+    | Interrupt
     | Help
     | RunCnt of int
     | RunBreakpoint of string
+    | Command of string
     | Failed
+    | Ignore (* do nothing, read another command *)
 
   (* XXX: Could we move this to the CString utility library? *)
   let possibly_unquote s =
@@ -49,9 +52,9 @@ module Action = struct
   (* XXX: Should be moved to the clients *)
   let parse inst : (t, string) result =
     match inst with
-    | ""  -> Ok Step
+    | ""  -> Ok StepIn
     | "s" -> Ok Skip
-    | "x" -> Ok Exit
+    | "x" -> Ok Interrupt
     | "h"| "?" -> Ok Help
     | _ -> parse_complex inst
 end
@@ -70,6 +73,8 @@ module Intf = struct
     (** request a debugger command from the client *)
     ; submit_answer : Answer.t -> unit
     (** receive a debugger answer from Ltac *)
+    ; isTerminal : bool
+    (** whether the debugger is running as a terminal (non-visual) *)
     }
 
   let ltac_debug_ref : t option ref = ref None

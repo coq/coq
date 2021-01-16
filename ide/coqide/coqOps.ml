@@ -140,6 +140,12 @@ object
   method process_next_phrase : unit task
   method process_db_cmd : string ->
     next:(Interface.db_cmd_rty Interface.value -> unit task) -> unit task
+  method process_db_loc :
+    next:(Interface.db_loc_rty Interface.value -> unit task) -> unit task
+  method process_db_upd_bpts : ((string * int) * bool) list ->
+    next:(Interface.db_upd_bpts_rty Interface.value -> unit task) -> unit task
+  method process_db_continue : db_continue_opt ->
+    next:(Interface.db_continue_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
   method raw_coq_query :
@@ -158,6 +164,10 @@ object
   method handle_failure : handle_exn_rty -> unit task
 
   method destroy : unit -> unit
+  method scroll_to_start_of_input : unit -> unit
+  method set_forward_clear_db_highlight : (unit -> unit) -> unit
+  method set_forward_set_goals_of_dbg_session : (Pp.t -> unit) -> unit
+  method set_debug_goal : Pp.t -> unit
 end
 
 let flags_to_color f =
@@ -249,6 +259,11 @@ object(self)
   val feedbacks : queue_msg Queue.t = Queue.create ()
   val feedback_timer = Ideutils.mktimer ()
 
+  val mutable forward_clear_db_highlight = ((fun x -> failwith "forward_clear_db_highlight")
+                  : unit -> unit)
+
+  val mutable forward_set_goals_of_dbg_session = ((fun x -> failwith "forward_set_goals_of_dbg_session")
+                  : Pp.t -> unit)
   initializer
     Coq.set_feedback_handler _ct
         (fun msg -> self#enqueue_feedback (MsgFeedback msg));
@@ -306,6 +321,16 @@ object(self)
 
   method destroy () =
     feedback_timer.Ideutils.kill ()
+
+  method scroll_to_start_of_input () =
+    let start = buffer#get_iter_at_mark (`NAME "start_of_input") in
+    ignore (script#scroll_to_iter ~use_align:true ~yalign:0. start)
+
+  method set_forward_clear_db_highlight f =
+    forward_clear_db_highlight <- f
+
+  method set_forward_set_goals_of_dbg_session f =
+    forward_set_goals_of_dbg_session <- f
 
   method private print_stack =
     Minilib.log "document:";
@@ -439,18 +464,27 @@ object(self)
     match tag with
     | "prompt" ->
       messages#default_route#debug_prompt msg
+    | "goal" ->
+      forward_set_goals_of_dbg_session msg
     | _ ->
       messages#default_route#push Debug msg
 
+  method set_debug_goal msg =
+    proof#set_debug_goal msg
+
   (* todo: is it necessary to have a queue and to call this routine on a timer? *)
   method private process_feedback () =
+    try
     let rec eat_feedback n =
       (* todo: why not just check if feedbacks is empty? *)
       if n = 0 then true else
       let msg = Queue.pop feedbacks in
       match msg with
       | MsgFeedback msg2 -> pr_feedback n msg2
-      | MsgDebug (tag, msg2) -> self#debug_prompt ~tag msg2; eat_feedback (n-1)
+      | MsgDebug (tag, msg2) ->
+        if tag = "prompt" then
+          Coq.set_stopped_in_debugger _ct true;
+        self#debug_prompt ~tag msg2; eat_feedback (n-1)
     and pr_feedback n msg =
       let id = msg.span_id in
       let sentence =
@@ -475,7 +509,8 @@ object(self)
       | Processed, Some (id,sentence) ->
           log ?id "Processed" ;
           remove_flag sentence `PROCESSING;
-          self#mark_as_needed sentence
+          self#mark_as_needed sentence;
+          forward_clear_db_highlight ()
       | ProcessingIn _,  Some (id,sentence) ->
           log ?id "ProcessingIn";
           add_flag sentence `PROCESSING;
@@ -535,6 +570,10 @@ object(self)
       eat_feedback (n-1)
     in
     eat_feedback (Queue.length feedbacks)
+    with e -> (Printf.printf "Exception: %s\n%!" (Printexc.to_string e);
+        Printexc.print_backtrace stdout;
+        flush stdout;
+        raise e)
 
   method private commit_queue_transaction sentence =
     (* A queued command has been successfully done, we push it to [cmd_stack].
@@ -585,6 +624,7 @@ object(self)
   method private fill_command_queue until queue =
     let topstack =
       if Doc.focused document then fst (Doc.context document) else [] in
+    self#scroll_to_start_of_input ();
     let rec loop n iter =
       match Sentence.find buffer iter with
       | None -> ()
@@ -660,20 +700,19 @@ object(self)
         | `Sentence ({ edit_id } as sentence), [] ->
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
-            let _, _, phrase = self#get_sentence sentence in
-            let coq_query = Coq.add ((phrase,edit_id),(tip,verbose)) in
+            let start, _, phrase = self#get_sentence sentence in
+            let offset = start#offset in
+            let coq_query = Coq.add (((phrase,edit_id),(tip,verbose)),offset) in
             let handle_answer = function
-              | Good (id, (Util.Inl (* NewTip *) (), msg)) ->
+              | Good (id, Util.Inl (* NewTip *) ()) ->
                   Doc.assign_tip_id document id;
-                  logger Feedback.Notice (Pp.str msg);
                   self#commit_queue_transaction sentence;
                   loop id []
-              | Good (id, (Util.Inr (* Unfocus *) tip, msg)) ->
+              | Good (id, Util.Inr (* Unfocus *) tip) ->
                   Doc.assign_tip_id document id;
                   let topstack, _ = Doc.context document in
                   self#exit_focus;
                   self#cleanup (Doc.cut_at document tip);
-                  logger Feedback.Notice (Pp.str msg);
                   self#mark_as_needed sentence;
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
@@ -730,6 +769,18 @@ object(self)
   method process_db_cmd cmd ~next : unit Coq.task =
     let db_cmd = Coq.db_cmd cmd in
     Coq.bind db_cmd next
+
+  method process_db_loc ~next : unit Coq.task =
+    let db_loc = Coq.db_loc () in
+    Coq.bind db_loc next
+
+  method process_db_upd_bpts updates ~next : unit Coq.task =
+    let db_upd_bpts = Coq.db_upd_bpts updates in
+    Coq.bind db_upd_bpts next
+
+  method process_db_continue opt ~next : unit Coq.task =
+    let db_continue = Coq.db_continue opt in
+    Coq.bind db_continue next
 
   method private process_until_iter iter =
     let until _ start stop =
@@ -839,9 +890,12 @@ object(self)
     Coq.bind (Coq.return ()) (fun () ->
     messages#default_route#clear;
     let point = self#get_insert in
-    if point#compare self#get_start_of_input >= 0
-    then self#process_until_iter point
-    else self#backtrack_to_iter ~move_insert:false point)
+    if point#compare self#get_start_of_input >= 0 then
+      self#process_until_iter point
+    else begin
+      self#scroll_to_start_of_input ();
+      self#backtrack_to_iter ~move_insert:false point
+    end)
 
   method go_to_mark m =
     Coq.bind (Coq.return ()) (fun () ->

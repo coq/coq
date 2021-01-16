@@ -299,6 +299,13 @@ object (self)
   method set_auto_complete flag =
     provider#set_active flag
 
+  (* workaround: GtkSourceView ignores view#editable *)
+  val mutable editable2 = true
+
+  method set_editable2 v = editable2 <- v
+
+  method editable2 = editable2
+
   method recenter_insert =
     self#scroll_to_mark
       ~use_align:false ~yalign:0.75 ~within_margin:0.25 `INSERT
@@ -449,6 +456,22 @@ object (self)
 
   method proposal : string option = None (* FIXME *)
 
+  method clear_debugging_highlight bp ep =
+    let start = self#buffer#get_iter (`OFFSET bp) in
+    let stop = self#buffer#get_iter (`OFFSET ep) in
+    self#buffer#remove_tag Tags.Script.debugging ~start ~stop;
+
+  method set_debugging_highlight bp ep =
+    let start = self#buffer#get_iter (`OFFSET bp) in
+    let stop = self#buffer#get_iter (`OFFSET ep) in
+    self#buffer#apply_tag Tags.Script.debugging ~start ~stop;
+    let _ = self#buffer#create_mark ~name:"scroll_to" start in
+    (* todo: review uses of scroll_to_iter.
+      See https://valadoc.org/gtk+-3.0/Gtk.TextView.scroll_to_iter.html *)
+    ignore @@ Glib.Idle.add (fun _ ->
+      (* xalign is documented incorrectly in the GTK3 manual *)
+      self#scroll_to_mark ~use_align:true ~xalign:1.0 ~yalign:0.5 (`NAME "scroll_to"); false);
+
   method undo = undo_manager#undo
   method redo = undo_manager#redo
   method clear_undo = undo_manager#clear_undo
@@ -534,6 +557,20 @@ object (self)
     let () = self#completion#set_accelerators 0 in
     let () = self#completion#set_show_headers false in
     let _ = self#completion#add_provider (provider :> GSourceView3.source_completion_provider) in
+
+    (* todo: gray out cut, paste, undo, replace, [un]comment, Templates in the
+      menu when script is not editable *)
+    let nonmod_keys = List.map (fun k -> let (key, _) = GtkData.AccelGroup.parse k in key)
+      [ "Left"; "Right"; "Up"; "Down"; "Home"; "End" ] in
+
+    (* keypress_cb and buttonpress_cb are a workaround to allow making the script panel not editable *)
+    let keypress_cb ev =
+      let ev_key = GdkEvent.Key.keyval ev in
+      not (editable2 || List.mem ev_key nonmod_keys) in
+    let _ = view#event#connect#key_press ~callback:keypress_cb in
+
+    let buttonpress_cb ev = not (editable2 || GdkEvent.Button.button ev = 1) in
+    let _ = view#event#connect#button_press ~callback:buttonpress_cb in
 
     ()
 

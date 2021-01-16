@@ -20,6 +20,8 @@ object
   method clear_undo : unit -> unit
   method auto_complete : bool
   method set_auto_complete : bool -> unit
+  method set_editable2 : bool -> unit
+  method editable2 : bool
   method right_margin_position : int
   method set_right_margin_position : int -> unit
   method show_right_margin : bool
@@ -29,6 +31,8 @@ object
   method apply_unicode_binding : unit -> unit
   method recenter_insert : unit
   method proposal : string option
+  method set_debugging_highlight : int -> int -> unit
+  method clear_debugging_highlight : int -> int -> unit
 end
 
 val script_view : Coq.coqtop ->

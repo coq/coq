@@ -24,10 +24,6 @@ val read_coqide_args : string list -> string list
 (** Prepare the widgets, load the given files in tabs *)
 val main : string list -> GWindow.window
 
-(** Function to save anything and kill all coqtops
-    @return [false] if you're allowed to quit. *)
-val forbid_quit : unit -> bool
-
 (** Terminate coqide after closing all coqtops and waiting
     for their death *)
 val close_and_quit : unit -> unit

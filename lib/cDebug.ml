@@ -50,6 +50,8 @@ let create ~name () =
 
 let get_flag flag = !flag
 
+let set_flag flag v = flag := v
+
 let warn_unknown_debug = CWarnings.create ~name:"unknown-debug-flag" ~category:"option"
     Pp.(fun name -> str "There is no debug flag \"" ++ str name ++ str "\".")
 

@@ -20,6 +20,7 @@ let coqc_init ((_,color_mode),_) injections ~opts =
   DebugHook.Intf.(set
     { read_cmd = Coqtop.ltac_debug_parse
     ; submit_answer = Coqtop.ltac_debug_answer
+    ; isTerminal = true
     });
   injections
 

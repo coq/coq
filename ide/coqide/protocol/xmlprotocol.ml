@@ -11,9 +11,8 @@
 (** Protocol version of this file. This is the date of the last modification. *)
 let protocol_version = "20210506"
 
-(** WARNING: TO BE UPDATED WHEN MODIFIED! *)
-
 (** See xml-protocol.md for a description of the protocol. *)
+(** UPDATE xml-protocol.md WHEN YOU UPDATE THE PROTOCOL *)
 
 type msg_format = Richpp of int | Ppcmds
 let msg_format = ref (Richpp 72)
@@ -155,6 +154,25 @@ let of_pp (pp : Pp.t) =
   | Richpp margin -> of_richpp (Richpp.richpp_of_pp margin pp)
   | Ppcmds        -> of_pp pp
 
+let of_dbcontinue_opt opt =
+  let code = match opt with
+  | StepIn -> 0
+  | StepOver -> 1
+  | StepOut -> 2
+  | Continue -> 3
+  | Interrupt -> 4
+  in
+  of_int code
+
+let to_dbcontinue_opt opt =
+  match to_int opt with
+  | 0 -> StepIn
+  | 1 -> StepOver
+  | 2 -> StepOut
+  | 3 -> Continue
+  | 4 -> Interrupt
+  | _ -> failwith "to_dbcontinue_opt"
+
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
 | Fail (id,loc, msg) ->
@@ -282,6 +300,7 @@ module ReifType : sig
   val route_id_t     : route_id val_t
   val search_cst_t   : search_constraint val_t
   val pp_t           : Pp.t val_t
+  val db_cont_opt_t  : db_continue_opt val_t
 
   val of_value_type : 'a val_t -> 'a -> xml
   val to_value_type : 'a val_t -> xml -> 'a
@@ -319,6 +338,7 @@ end = struct
     | Route_id : route_id val_t
     | Search_cst : search_constraint val_t
     | Pp : Pp.t val_t
+    | DbContinueOpt : db_continue_opt val_t
 
   type value_type = Value_type : 'a val_t -> value_type
 
@@ -346,6 +366,7 @@ end = struct
   let route_id_t     = Route_id
   let search_cst_t   = Search_cst
   let pp_t           = Pp
+  let db_cont_opt_t  = DbContinueOpt
 
   let of_value_type (ty : 'a val_t) : 'a -> xml =
     let rec convert : type a. a val_t -> a -> xml = function
@@ -369,6 +390,7 @@ end = struct
       | Route_id      -> of_routeid
       | Search_cst    -> of_search_cst
       | Pp            -> of_pp
+      | DbContinueOpt -> of_dbcontinue_opt
     in
       convert ty
 
@@ -394,6 +416,7 @@ end = struct
       | Route_id      -> to_routeid
       | Search_cst    -> to_search_cst
       | Pp            -> to_pp
+      | DbContinueOpt -> to_dbcontinue_opt
     in
       convert ty
 
@@ -443,6 +466,12 @@ end = struct
   let pr_pair pr1 pr2 (a,b) = "("^pr1 a^","^pr2 b^")"
   let pr_union pr1 pr2 = function Inl x -> "Inl "^pr1 x | Inr x -> "Inr "^pr2 x
   let pr_state_id = Stateid.to_string
+  let pr_db_continue_opt = function
+    | StepIn -> "StepIn"
+    | StepOver -> "StepOver"
+    | StepOut -> "StepOut"
+    | Continue -> "Continue"
+    | Interrupt -> "Interrupt"
 
   let pr_search_cst = function
     | Name_Pattern s -> "Name_Pattern " ^ s
@@ -474,6 +503,7 @@ end = struct
   | State_id      -> pr_state_id
   | Route_id      -> pr_int
   | Pp            -> pr_pp
+  | DbContinueOpt -> pr_db_continue_opt
 
   (* This is to break if a rename/refactoring makes the strings below outdated *)
   type 'a exists = bool
@@ -501,6 +531,7 @@ end = struct
   | State_id      -> assert(true : Stateid.t exists); "Stateid.t"
   | Route_id      -> assert(true : route_id exists); "route_id"
   | Pp            -> assert(true : Pp.t exists); "Pp.t"
+  | DbContinueOpt -> assert(true : db_continue_opt exists); "Interface.dbcontinue_opt"
 
   let print_type = function Value_type ty -> print_val_t ty
 
@@ -532,7 +563,7 @@ open ReifType
 
 (** Types reification, checked with explicit casts *)
 let add_sty_t : add_sty val_t =
-  pair_t (pair_t string_t int_t) (pair_t state_id_t bool_t)
+  pair_t (pair_t (pair_t string_t int_t) (pair_t state_id_t bool_t)) int_t
 let edit_at_sty_t : edit_at_sty val_t = state_id_t
 let query_sty_t : query_sty val_t = pair_t route_id_t (pair_t string_t state_id_t)
 let goals_sty_t : goals_sty val_t = unit_t
@@ -554,9 +585,13 @@ let print_ast_sty_t : print_ast_sty val_t = state_id_t
 let annotate_sty_t : annotate_sty val_t = string_t
 let proof_diff_sty_t : proof_diff_sty val_t = pair_t string_t state_id_t
 let db_cmd_sty_t : db_cmd_sty val_t = string_t
+let db_loc_sty_t : db_loc_sty val_t = unit_t
+let db_upd_bpts_sty_t : db_upd_bpts_sty val_t =
+  list_t (pair_t (pair_t string_t int_t) bool_t)
+let db_continue_sty_t : db_continue_sty val_t = db_cont_opt_t
 
 let add_rty_t : add_rty val_t =
-  pair_t state_id_t (pair_t (union_t unit_t state_id_t) string_t)
+  pair_t state_id_t (union_t unit_t state_id_t)
 let edit_at_rty_t : edit_at_rty val_t =
   union_t unit_t (pair_t state_id_t (pair_t state_id_t state_id_t))
 let query_rty_t : query_rty val_t = unit_t
@@ -581,6 +616,9 @@ let print_ast_rty_t : print_ast_rty val_t = xml_t
 let annotate_rty_t : annotate_rty val_t = xml_t
 let proof_diff_rty_t : proof_diff_rty val_t = pp_t
 let db_cmd_rty_t : db_cmd_rty val_t = unit_t
+let db_loc_rty_t : db_loc_rty val_t = option_t (pair_t string_t (list_t int_t))
+let db_upd_bpts_rty_t : db_upd_bpts_rty val_t = unit_t
+let db_continue_rty_t : db_continue_rty val_t = unit_t
 
 let ($) x = erase x
 let calls = [|
@@ -605,6 +643,9 @@ let calls = [|
   "Annotate",   ($)annotate_sty_t,    ($)annotate_rty_t;
   "PDiff",      ($)proof_diff_sty_t,  ($)proof_diff_rty_t;
   "Db_cmd",     ($)db_cmd_sty_t,      ($)db_cmd_rty_t;
+  "Db_loc",     ($)db_loc_sty_t,      ($)db_loc_rty_t;
+  "Db_upd_bpts",($)db_upd_bpts_sty_t, ($)db_upd_bpts_rty_t;
+  "Db_continue",($)db_continue_sty_t, ($)db_continue_rty_t;
 |]
 
 type 'a call =
@@ -631,6 +672,9 @@ type 'a call =
   | Annotate   : annotate_sty -> annotate_rty call
   | PDiff      : proof_diff_sty -> proof_diff_rty call
   | Db_cmd     : db_cmd_sty -> db_cmd_rty call
+  | Db_loc     : db_loc_sty -> db_loc_rty call
+  | Db_upd_bpts: db_upd_bpts_sty -> db_upd_bpts_rty call
+  | Db_continue: db_continue_sty -> db_continue_rty call
 
 (* the order of the entries must match the order in "calls" above *)
 let id_of_call : type a. a call -> int = function
@@ -655,6 +699,9 @@ let id_of_call : type a. a call -> int = function
   | Annotate _   -> 18
   | PDiff _      -> 19
   | Db_cmd _     -> 20
+  | Db_loc _     -> 21
+  | Db_upd_bpts _-> 22
+  | Db_continue _-> 23
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -681,6 +728,9 @@ let print_ast x   : print_ast_rty call   = PrintAst x
 let annotate x    : annotate_rty call    = Annotate x
 let proof_diff x  : proof_diff_rty call  = PDiff x
 let db_cmd x      : db_cmd_rty call      = Db_cmd x
+let db_loc x      : db_loc_rty call      = Db_loc x
+let db_upd_bpts x : db_upd_bpts_rty call = Db_upd_bpts x
+let db_continue x : db_continue_rty call = Db_continue x
 
 let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
   let mkGood : type a. a -> a value = fun x -> Good x in
@@ -707,6 +757,9 @@ let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
     | Annotate x   -> mkGood (handler.annotate x)
     | PDiff x      -> mkGood (handler.proof_diff x)
     | Db_cmd x     -> mkGood (handler.db_cmd x)
+    | Db_loc x     -> mkGood (handler.db_loc x)
+    | Db_upd_bpts x-> mkGood (handler.db_upd_bpts x)
+    | Db_continue x-> mkGood (handler.db_continue x)
   with any ->
     let any = Exninfo.capture any in
     Fail (handler.handle_exn any)
@@ -734,6 +787,9 @@ let of_answer : type a. a call -> a value -> xml = function
   | Annotate _   -> of_value (of_value_type annotate_rty_t   )
   | PDiff _      -> of_value (of_value_type proof_diff_rty_t )
   | Db_cmd _     -> of_value (of_value_type db_cmd_rty_t     )
+  | Db_loc _     -> of_value (of_value_type db_loc_rty_t     )
+  | Db_upd_bpts _-> of_value (of_value_type db_upd_bpts_rty_t)
+  | Db_continue _-> of_value (of_value_type db_continue_rty_t)
 
 let of_answer msg_fmt =
   msg_format := msg_fmt; of_answer
@@ -760,6 +816,9 @@ let to_answer : type a. a call -> xml -> a value = function
   | Annotate _   -> to_value (to_value_type annotate_rty_t   )
   | PDiff _      -> to_value (to_value_type proof_diff_rty_t )
   | Db_cmd _     -> to_value (to_value_type db_cmd_rty_t     )
+  | Db_loc _     -> to_value (to_value_type db_loc_rty_t     )
+  | Db_upd_bpts _-> to_value (to_value_type db_upd_bpts_rty_t)
+  | Db_continue _-> to_value (to_value_type db_continue_rty_t)
 
 let of_call : type a. a call -> xml = fun q ->
   let mkCall x = constructor "call" (str_of_call q) [x] in
@@ -785,6 +844,9 @@ let of_call : type a. a call -> xml = fun q ->
   | Annotate x   -> mkCall (of_value_type annotate_sty_t    x)
   | PDiff x      -> mkCall (of_value_type proof_diff_sty_t  x)
   | Db_cmd x     -> mkCall (of_value_type db_cmd_sty_t      x)
+  | Db_loc x     -> mkCall (of_value_type db_loc_sty_t      x)
+  | Db_upd_bpts x-> mkCall (of_value_type db_upd_bpts_sty_t x)
+  | Db_continue x-> mkCall (of_value_type db_continue_sty_t x)
 
 let to_call : xml -> unknown_call =
   do_match "call" (fun s a ->
@@ -811,6 +873,9 @@ let to_call : xml -> unknown_call =
     | "Annotate"   -> Unknown (Annotate   (mkCallArg annotate_sty_t    a))
     | "PDiff"      -> Unknown (PDiff      (mkCallArg proof_diff_sty_t  a))
     | "Db_cmd"     -> Unknown (Db_cmd     (mkCallArg db_cmd_sty_t      a))
+    | "Db_loc"     -> Unknown (Db_loc     (mkCallArg db_loc_sty_t      a))
+    | "Db_upd_bpts"-> Unknown (Db_upd_bpts(mkCallArg db_upd_bpts_sty_t a))
+    | "Db_continue"-> Unknown (Db_continue(mkCallArg db_continue_sty_t a))
     | x -> raise (Marshal_error("call",PCData x)))
 
 (** Debug printing *)
@@ -844,6 +909,9 @@ let pr_full_value : type a. a call -> a value -> string = fun call value -> matc
   | Annotate _   -> pr_value_gen (print annotate_rty_t   ) value
   | PDiff _      -> pr_value_gen (print proof_diff_rty_t ) value
   | Db_cmd _     -> pr_value_gen (print db_cmd_rty_t     ) value
+  | Db_loc _     -> pr_value_gen (print db_loc_rty_t     ) value
+  | Db_upd_bpts _-> pr_value_gen (print db_upd_bpts_rty_t) value
+  | Db_continue _-> pr_value_gen (print db_continue_rty_t) value
 let pr_call : type a. a call -> string = fun call ->
   let return what x = str_of_call call ^ " " ^ print what x in
   match call with
@@ -868,6 +936,9 @@ let pr_call : type a. a call -> string = fun call ->
     | Annotate x   -> return annotate_sty_t x
     | PDiff x      -> return proof_diff_sty_t x
     | Db_cmd x     -> return db_cmd_sty_t x
+    | Db_loc x     -> return db_loc_sty_t x
+    | Db_upd_bpts x-> return db_upd_bpts_sty_t x
+    | Db_continue x-> return db_continue_sty_t x
 
 let document to_string_fmt =
   Printf.printf "=== Available calls ===\n\n";

@@ -115,10 +115,19 @@ let combine_appl appl1 appl2 =
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
 let to_tacvalue v = out_gen (topwit wit_tacvalue) v
 
+(* Debug reference *)
+let debug = ref DebugOff
+
+(* Sets the debugger on or off *)
+let set_debug pos = debug := pos
+
+(* Gives the state of debug *)
+let get_debug () = !debug
+
 let log_trace = ref false
 
 let is_traced () =
-  !log_trace || !Flags.profile_ltac
+  !log_trace || !debug <> DebugOff || !Flags.profile_ltac
 
 (** More naming applications *)
 let name_vfun appl vle =
@@ -332,16 +341,9 @@ let flush_ist_evars sigma ist =
 let is_variable env id =
   Id.List.mem id (ids_of_named_context (Environ.named_context env))
 
-(* Debug reference *)
-let debug = ref DebugOff
-
-(* Sets the debugger mode *)
-let set_debug pos = debug := pos
-
-(* Gives the state of debug *)
-let get_debug () = !debug
-
-let debugging_step ist pp = match curr_debug ist with
+(* todo in review: these messages should go through Tactic_debug.defer_output *)
+let debugging_step ist pp = (*Tactic_debug.defer_output (fun () ->*)
+  match curr_debug ist with
   | DebugOn lev ->
       safe_msgnl (str "Level " ++ int lev ++ str": " ++ pp () ++ fnl())
   | _ -> Proofview.NonLogical.return ()
@@ -1115,7 +1117,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
           let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
           value_interp ist >>= fun v -> return (name_vfun appl v)
         in
-        Tactic_debug.debug_prompt lev tac eval
+        Tactic_debug.debug_prompt lev tac eval (TacStore.get ist.extra f_trace)
   | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
 
 
@@ -1241,6 +1243,9 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
 
   | TacML (opn,l) ->
       let trace = push_trace (Loc.tag ?loc @@ LtacMLCall tac) ist in
+      (* todo: maybe should pass "if get_debug () then trace else []" for efficiency?
+               the original code had 4 calls to "TacStore.set ist.extra f_trace";
+               2 to "trace" and 2 to "[]" *)
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       let tac = Tacenv.interp_ml_tactic opn in
       let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
@@ -1354,7 +1359,7 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
               let ist =
                 { lfun = newlfun
                 ; poly
-                ; extra = TacStore.set ist.extra f_trace []
+                ; extra = TacStore.set ist.extra f_trace trace
                 } in
               Profile_ltac.do_profile "interp_app" trace ~count_call:false
                 (catch_error_tac_loc loc false trace (val_interp (ensure_loc loc ist) body)) >>= fun v ->
@@ -1403,7 +1408,7 @@ and tactic_of_value ist vle =
       let ist = {
         lfun = lfun;
         poly;
-        extra = TacStore.set ist.extra f_trace []; } in
+        extra = TacStore.set ist.extra f_trace trace; } in
       let tac = name_if_glob appl (eval_tactic_ist ist t) in
       Profile_ltac.do_profile "tactic_of_value" trace (catch_error_tac_loc loc false trace tac)
   | VFun (appl,_,loc,vmap,vars,_) ->
@@ -1972,11 +1977,11 @@ let default_ist () =
 
 let eval_tactic t =
   Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
-  Proofview.tclLIFT db_initialize <*>
+  Proofview.tclLIFT (db_initialize true) <*>
   eval_tactic_ist (default_ist ()) t
 
 let eval_tactic_ist ist t =
-  Proofview.tclLIFT db_initialize <*>
+  Proofview.tclLIFT (db_initialize false) <*>
   eval_tactic_ist ist t
 
 (** FFI *)

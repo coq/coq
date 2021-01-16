@@ -30,10 +30,11 @@ type debug_info =
 
 (** Prints the state and waits *)
 val debug_prompt :
-  int -> glob_tactic_expr -> (debug_info -> 'a Proofview.tactic) -> 'a Proofview.tactic
+  int -> glob_tactic_expr -> (debug_info -> 'a Proofview.tactic) ->
+  Tacexpr.ltac_trace option -> 'a Proofview.tactic
 
 (** Initializes debugger *)
-val db_initialize : unit Proofview.NonLogical.t
+val db_initialize : bool -> unit Proofview.NonLogical.t
 
 (** Prints a constr *)
 val db_constr : debug_info -> env -> evar_map -> constr -> unit Proofview.NonLogical.t
@@ -80,3 +81,6 @@ val db_breakpoint : debug_info ->
 
 val extract_ltac_trace :
   ?loc:Loc.t -> Tacexpr.ltac_trace -> Pp.t Loc.located
+
+(** Prints a message only if debugger stops at the next step *)
+val defer_output : (unit -> Pp.t) -> unit Proofview.NonLogical.t

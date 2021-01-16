@@ -144,7 +144,7 @@ let ltac_debug_parse () =
   let open DebugHook in
   let act =
     try Action.parse (read_line ())
-    with End_of_file -> Ok Action.Exit
+    with End_of_file -> Ok Action.Interrupt
   in
   match act with
   | Ok act -> act
@@ -187,6 +187,7 @@ let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =
   DebugHook.Intf.(set
     { read_cmd = ltac_debug_parse
     ; submit_answer = ltac_debug_answer
+    ; isTerminal = true
     });
   init_toploop opts async_opts injections
 

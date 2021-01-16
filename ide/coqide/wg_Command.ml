@@ -129,7 +129,7 @@ object(self)
         coqops#raw_coq_query ~route_id ~next phrase
       in
       result#set (Pp.str ("Result for command " ^ phrase ^ ":\n"));
-      Coq.try_grab coqtop process ignore
+      ignore @@ Coq.try_grab coqtop process ignore
     in
     ignore (combo#entry#connect#activate ~callback);
     ignore (ok_b#connect#clicked ~callback);
