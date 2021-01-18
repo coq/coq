@@ -114,6 +114,7 @@ GRAMMAR EXTEND Gram
   ;
   attribute:
     [ [ k = ident ; v = attr_value -> { Names.Id.to_string k, v }
+      | "if" ; v = attr_value -> { "if", v }
       (* Required because "ident" is declared a keyword when loading Ltac. *)
       | IDENT "using" ; v = attr_value -> { "using", v } ]
     ]

@@ -382,3 +382,27 @@ let typing_flags_parser : Declarations.typing_flags key_parser = fun orig args -
 
 let typing_flags =
   attribute_of_list ["bypass_check", typing_flags_parser]
+
+type boolean_condition =
+  | Var of { name : string; value : string option }
+  | Not of boolean_condition
+  | And of boolean_condition * boolean_condition
+  | Or of boolean_condition * boolean_condition
+
+let rec condition_parser : boolean_condition key_parser = fun o args ->
+  match args with
+  | VernacFlagList [k_v] -> condition_leaf_parser o k_v
+  | att ->
+    CErrors.user_err Pp.(str "Ill-formed “boolean_condition” attribute: " ++ pr_vernac_flag_value att)
+and condition_leaf_parser = fun o k_v ->
+  match k_v with
+  | "and", VernacFlagList[a;b] -> And(condition_leaf_parser o a,condition_leaf_parser o b)
+  | "or", VernacFlagList[a;b] -> Or(condition_leaf_parser o a,condition_leaf_parser o b)
+  | "not", VernacFlagList[a] -> Not(condition_leaf_parser o a)
+  | name, VernacFlagEmpty -> Var{ name; value = None }
+  | name, VernacFlagLeaf (FlagString vval) -> Var { name; value = Some vval }
+  | op, _ ->
+    CErrors.user_err Pp.(str "Ill-formed “boolean_condition” operator: " ++ str op)
+
+let if_condition =
+  attribute_of_list ["if", condition_parser]

@@ -2082,9 +2082,21 @@ let vernac_check_guard ~pstate =
       (str ("Condition violated: ") ++s)
   in message
 
+let rec holds = let open Attributes in function
+  | Var { name; value = None } -> Option.has_some @@ Sys.getenv_opt name
+  | Var { name; value = Some v } -> Sys.getenv_opt name = Some v
+  | Or(a,b) -> holds a || holds b
+  | And(a,b) -> holds a && holds b
+  | Not a -> not (holds a)
+
 (* We interpret vernacular commands to a DSL that specifies their
    allowed actions on proof states *)
-let translate_vernac ~atts v = let open Vernacextend in match v with
+let translate_vernac ~atts v =
+ let open Vernacextend in 
+ match Attributes.(parse_with_extra if_condition atts) with
+ | atts, Some c when not (holds c) -> VtDefault(fun () -> ())
+ | atts, _ ->
+  match v with
   | VernacAbortAll
   | VernacRestart
   | VernacUndo _

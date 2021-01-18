@@ -137,3 +137,11 @@ val vernac_monomorphic_flag : vernac_flag
 (** For internal use. *)
 val universe_polymorphism_option_name : string list
 val is_universe_polymorphism : unit -> bool
+
+type boolean_condition =
+  | Var of { name : string; value : string option }
+  | Not of boolean_condition
+  | And of boolean_condition * boolean_condition
+  | Or of boolean_condition * boolean_condition
+
+val if_condition : boolean_condition option attribute
