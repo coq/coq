@@ -1160,18 +1160,3 @@ let rec subst_glob_constr env subst = DAst.map (function
           GArray(u,t',def',ty')
 
   )
-
-(* Utilities to transform kernel cases to simple pattern-matching problem *)
-
-let simple_cases_matrix_of_branches ind brs =
-  List.map (fun (i,n,b) ->
-      let nal,c = it_destRLambda_or_LetIn_names n b in
-      let mkPatVar na = DAst.make @@ PatVar na in
-      let p = DAst.make @@ PatCstr ((ind,i+1),List.map mkPatVar nal,Anonymous) in
-      let ids = List.map_filter Nameops.Name.to_option nal in
-      CAst.make @@ (ids,[p],c))
-    brs
-
-let return_type_of_predicate ind nrealargs_tags pred =
-  let nal,p = it_destRLambda_or_LetIn_names (nrealargs_tags@[false]) pred in
-  (List.hd nal, Some (CAst.make (ind, List.tl nal))), Some p

@@ -1463,23 +1463,33 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PIf (c,b1,b2) ->
       GIf (glob_of_pat avoid env sigma c, (Anonymous,None),
            glob_of_pat avoid env sigma b1, glob_of_pat avoid env sigma b2)
-  | PCase ({cip_style=Constr.LetStyle; cip_ind_tags=None},PMeta None,tm,[(0,n,b)]) ->
-      let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat avoid env sigma b) in
+  | PCase ({cip_style=Constr.LetStyle},None,tm,[(0,n,b)]) ->
+      let n, b = glob_of_pat_under_context avoid env sigma (n, b) in
+      let nal = Array.to_list n in
       GLetTuple (nal,(Anonymous,None),glob_of_pat avoid env sigma tm,b)
   | PCase (info,p,tm,bl) ->
       let mat = match bl, info.cip_ind with
         | [], _ -> []
         | _, Some ind ->
-          let bl' = List.map (fun (i,n,c) -> (i,n,glob_of_pat avoid env sigma c)) bl in
-          simple_cases_matrix_of_branches ind bl'
+          let map (i, n, c) =
+            let n, c = glob_of_pat_under_context avoid env sigma (n, c) in
+            let nal = Array.to_list n in
+            let mkPatVar na = DAst.make @@ PatVar na in
+            let p = DAst.make @@ PatCstr ((ind,i+1),List.map mkPatVar nal,Anonymous) in
+            let ids = List.map_filter Nameops.Name.to_option nal in
+            CAst.make @@ (ids,[p],c)
+          in
+          List.map map bl
         | _, None -> anomaly (Pp.str "PCase with some branches but unknown inductive.")
       in
       let mat = if info.cip_extensible then mat @ [any_any_branch] else mat
       in
-      let indnames,rtn = match p, info.cip_ind, info.cip_ind_tags with
-        | PMeta None, _, _ -> (Anonymous,None),None
-        | _, Some ind, Some nargs ->
-          return_type_of_predicate ind nargs (glob_of_pat avoid env sigma p)
+      let indnames,rtn = match p, info.cip_ind with
+        | None, _ -> (Anonymous,None),None
+        | Some p, Some ind ->
+          let nas, p = glob_of_pat_under_context avoid env sigma p in
+          let nas = Array.rev_to_list nas in
+          ((List.hd nas, Some (CAst.make (ind, List.tl nas))), Some p)
         | _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive.")
       in
       GCases (Constr.RegularStyle,rtn,[glob_of_pat avoid env sigma tm,indnames],mat)
@@ -1522,6 +1532,18 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PArray(t,def,ty) ->
     let glob_of = glob_of_pat avoid env sigma in
     GArray (None, Array.map glob_of t, glob_of def, glob_of ty)
+
+and glob_of_pat_under_context avoid env sigma (nas, pat) =
+  let fold (avoid, env, nas, epat) na =
+    let na, avoid = compute_displayed_name_in_pattern sigma avoid na epat in
+    let env = Termops.add_name na env in
+    let epat = match epat with PLambda (_, _, p) -> p | _ -> assert false in
+    (avoid, env, na :: nas, epat)
+  in
+  let epat = Array.fold_right (fun na p -> PLambda (na, PMeta None, p)) nas pat in
+  let (avoid', env', nas, _) = Array.fold_left fold (avoid, env, [], epat) nas in
+  let pat = glob_of_pat avoid' env' sigma pat in
+  (Array.rev_of_list nas, pat)
 
 let extern_constr_pattern env sigma pat =
   extern true (InConstrEntrySomeLevel,(None,[]))
