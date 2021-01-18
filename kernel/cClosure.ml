@@ -247,10 +247,6 @@ module KeyTable = Hashtbl.Make(IdKeyHash)
 
 open Context.Named.Declaration
 
-let assoc_defined id env = match Environ.lookup_named id env with
-| LocalDef (_, c, _) -> c
-| LocalAssum _ -> raise Not_found
-
 (**********************************************************************)
 (* Lazy reduction: the one used in kernel operations                  *)
 
@@ -539,34 +535,40 @@ let mk_clos_vect env v = match v with
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
 
+let undef = Undef None
+let def r v =
+  let v = inject v in
+  let mark = mark (Mark.red_state v.mark) (opt_of_rel r) in
+  if mark != v.mark then v.mark <- mark;
+  Def v
+
 let ref_value_cache ({ i_cache = cache; _ }) tab ref =
   try
     KeyTable.find tab ref
   with Not_found ->
-    let v =
-      try
-        let body =
-          match ref with
-          | RelKey n ->
-            let open! Context.Rel.Declaration in
-            let i = n - 1 in
-            let (d, _) =
-              try Range.get cache.i_env.env_rel_context.env_rel_map i
-              with Invalid_argument _ -> raise Not_found
-            in
-            begin match d with
-              | LocalAssum _ -> raise Not_found
-              | LocalDef (_, t, _) -> lift n t
-            end
-          | VarKey id -> assoc_defined id cache.i_env
-          | ConstKey cst -> constant_value_in cache.i_env cst
-        in
-        Def (inject body)
-      with
-      | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
-      | Not_found (* List.assoc *)
-      | NotEvaluableConst _ (* Const *)
-        -> Undef None
+    let v = match ref with
+      | RelKey n ->
+        let open! Context.Rel.Declaration in
+        begin match Range.get cache.i_env.env_rel_context.env_rel_map (n-1) with
+          | LocalAssum _, _ -> undef
+          | LocalDef (na, t, _), _ -> def na.binder_relevance (lift n t)
+          | exception Invalid_argument _ -> undef
+        end
+      | VarKey id ->
+        begin match Environ.lookup_named id cache.i_env with
+          | LocalDef (na, t, _) -> def na.binder_relevance t
+          | LocalAssum _ -> undef
+          | exception Not_found -> undef
+        end
+      | ConstKey (c,u) ->
+        let cb = Environ.lookup_constant c cache.i_env in
+        begin match cb.const_body with
+          | Def b ->
+            let b = subst_instance_constr u (Mod_subst.force_constr b) in
+            def cb.const_relevance b
+          | OpaqueDef _ | Undef _ -> undef
+          | Primitive _ as x -> x
+        end
     in
     KeyTable.add tab ref v; v
 
