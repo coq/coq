@@ -525,7 +525,7 @@ end = struct
       let principal =
         if principal then
           match fgl.principal with
-          | Some _ -> CErrors.user_err Pp.(str "Only one main subgoal per instantiation.")
+          | Some _ -> CErrors.user_err Pp.(str "Only one main goal per instantiation.")
           | None -> Some evk
         else fgl.principal
       in

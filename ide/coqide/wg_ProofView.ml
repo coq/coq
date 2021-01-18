@@ -66,7 +66,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
       in
       let goals_cnt = List.length rem_goals + 1 in
       let head_str = Printf.sprintf
-        "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "s" else "")
+        "%d goal%s\n" goals_cnt (if 1 < goals_cnt then "s" else "")
       in
       let goal_str ?(shownum=false) index total id =
         let annot =
@@ -148,10 +148,10 @@ let display mode (view : #GText.view_skel) goals hints evars =
     let evars = match evars with None -> [] | Some evs -> evs in
     begin match (bg, shelved_goals,given_up_goals, evars) with
     | [], [], [], [] ->
-      view#buffer#insert "No more subgoals."
+      view#buffer#insert "No more goals."
     | [], [], [], _ :: _ ->
       (* A proof has been finished, but not concluded *)
-      view#buffer#insert "No more subgoals, but there are non-instantiated existential variables:\n\n";
+      view#buffer#insert "No more goals, but there are non-instantiated existential variables:\n\n";
       let iter evar =
         let msg = Printf.sprintf "%s\n" evar.Interface.evar_info in
         view#buffer#insert msg
@@ -160,7 +160,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       view#buffer#insert "\nYou can use Grab Existential Variables."
     | [], [], _, _ ->
       (* The proof is finished, with the exception of given up goals. *)
-      view#buffer#insert "No more subgoals, but there are some goals you gave up:\n\n";
+      view#buffer#insert "No more goals, but there are some goals you gave up:\n\n";
       let iter goal =
         insert_xml view#buffer (Richpp.richpp_of_pp width goal.Interface.goal_ccl);
         view#buffer#insert "\n"

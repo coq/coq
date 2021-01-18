@@ -125,7 +125,7 @@ end = struct (* {{{ *)
                       str" existentials remain unsolved: " ++ prlist (Termops.pr_existential_key sigma) (Evar.Set.elements evars))
        )
     with e when CErrors.noncritical e ->
-      RespError (CErrors.print e ++ spc() ++ str "(for subgoal "++int r_goalno ++ str ")")
+      RespError (CErrors.print e ++ spc() ++ str "(for goal "++int r_goalno ++ str ")")
 
   let name_of_task { t_name } = t_name
   let name_of_request { r_name } = r_name
@@ -163,7 +163,7 @@ let enable_par ~nworkers = ComTactic.set_par_implementation
     let open TacTask in
     let results = (Proof.data p).Proof.goals |> CList.map_i (fun i g ->
       let g_solution, t_assign =
-      Future.create_delegate ~name:(Printf.sprintf "subgoal %d" i)
+      Future.create_delegate ~name:(Printf.sprintf "goal %d" i)
           (fun x -> x) in
       TaskQueue.enqueue_task queue
       ~cancel_switch:(ref false)

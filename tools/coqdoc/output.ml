@@ -48,7 +48,7 @@ let is_keyword =
       "Delimit"; "Bind"; "Open"; "Scope"; "Inline";
       "Implicit Arguments"; "Add"; "Strict";
       "Typeclasses"; "Instance"; "Global Instance"; "Class"; "Instantiation";
-      "subgoal"; "subgoals"; "vm_compute";
+      "goal"; "goals"; "vm_compute";
       "Opaque"; "Transparent"; "Time";
       "Extraction"; "Extract";
       "Variant";

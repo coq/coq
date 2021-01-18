@@ -1,4 +1,4 @@
-1 subgoal
+1 goal
   
   y, z : nat
   Hy : y = 0
@@ -11,7 +11,7 @@
   H4 : z = 4
   ============================
   True
-1 subgoal
+1 goal
   
   x, z : nat
   Hx : x = 0
@@ -24,7 +24,7 @@
   H4 : z = 4
   ============================
   True
-1 subgoal
+1 goal
   
   x, y : nat
   Hx : x = 0
@@ -37,7 +37,7 @@
   H4 : 0 = 4
   ============================
   True
-1 subgoal
+1 goal
   
   H1 : 0 = 1
   HA : True
@@ -47,7 +47,7 @@
   H4 : 0 = 4
   ============================
   True
-1 subgoal
+1 goal
   
   y, z : nat
   Hy : y = 0
@@ -60,7 +60,7 @@
   H2 : 0 = 2
   ============================
   True
-1 subgoal
+1 goal
   
   x, z : nat
   Hx : x = 0
@@ -73,7 +73,7 @@
   H3 : 0 = 3
   ============================
   True
-1 subgoal
+1 goal
   
   x, y : nat
   Hx : x = 0
@@ -86,7 +86,7 @@
   H4 : 0 = 4
   ============================
   True
-1 subgoal
+1 goal
   
   HA, HB : True
   H4 : 0 = 4
