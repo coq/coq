@@ -2378,7 +2378,7 @@ ltac2_quotations: [
 | "ident" ":" "(" lident ")"
 | "constr" ":" "(" term ")"
 | "open_constr" ":" "(" term ")"
-| "pattern" ":" "(" cpattern ")"
+| "pat" ":" "(" cpattern ")"
 | "reference" ":" "(" [ "&" ident | qualid ] ")"
 | "ltac1" ":" "(" ltac1_expr_in_env ")"
 | "ltac1val" ":" "(" ltac1_expr_in_env ")"

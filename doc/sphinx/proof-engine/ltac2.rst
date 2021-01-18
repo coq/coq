@@ -554,7 +554,7 @@ Built-in quotations
    ltac2_quotations ::= ident : ( @lident )
    | constr : ( @term )
    | open_constr : ( @term )
-   | pattern : ( @cpattern )
+   | pat : ( @cpattern )
    | reference : ( {| & @ident | @qualid } )
    | ltac1 : ( @ltac1_expr_in_env )
    | ltac1val : ( @ltac1_expr_in_env )
@@ -568,7 +568,7 @@ The current implementation recognizes the following built-in quotations:
   (type ``Init.constr``).
 - ``open_constr``, which parses Coq terms and produces a term potentially with
   holes at runtime (type ``Init.constr`` as well).
-- ``pattern``, which parses Coq patterns and produces a pattern used for term
+- ``pat``, which parses Coq patterns and produces a pattern used for term
   matching (type ``Init.pattern``).
 - ``reference``  Qualified names
   are globalized at internalization into the corresponding global reference,
