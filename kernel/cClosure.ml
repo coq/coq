@@ -1171,16 +1171,6 @@ module FNativeEntries =
         fNInf := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNInf) };
         fNaN := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNaN) };
       | None -> defined_f_class := false
-    let defined_refl = ref false
-
-    let frefl = ref dummy
-
-    let init_refl retro =
-      match retro.Retroknowledge.retro_refl with
-      | Some crefl ->
-        defined_refl := true;
-        frefl := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs crefl) }
-      | None -> defined_refl := false
 
     let defined_array = ref false
 
@@ -1197,7 +1187,6 @@ module FNativeEntries =
       init_cmp !current_retro;
       init_f_cmp !current_retro;
       init_f_class !current_retro;
-      init_refl !current_retro;
       init_array !current_retro
 
     let check_env env =

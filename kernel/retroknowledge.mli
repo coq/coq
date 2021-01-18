@@ -29,7 +29,6 @@ type retroknowledge = {
                     (* PNormal, NNormal, PSubn, NSubn,
                        PZero, NZero, PInf, NInf,
                        NaN *)
-    retro_refl : constructor option
 }
 
 val empty : retroknowledge
