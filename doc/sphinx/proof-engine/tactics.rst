@@ -77,7 +77,7 @@ specified, the default selector is used.
 .. todo: fully describe selectors.  At the moment, ltac has a fairly complete description
 
 .. todo: mention selectors can be applied to some commands, such as
-   Check, Search, SearchHead, SearchPattern, SearchRewrite.
+   Check, Search, SearchPattern, SearchRewrite.
 
 .. opt:: Default Goal Selector "@toplevel_selector"
    :name: Default Goal Selector
