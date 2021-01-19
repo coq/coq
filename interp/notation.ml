@@ -1357,6 +1357,7 @@ let find_with_delimiters = function
       match (String.Map.find scope !scope_map).delimiters with
         | Some key -> Some (Some scope, Some key)
         | None -> None
+        | exception Not_found -> None
 
 let rec find_without_delimiters find (ntn_scope,ntn) = function
   | OpenScopeItem scope :: scopes ->

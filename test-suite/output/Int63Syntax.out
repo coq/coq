@@ -56,3 +56,21 @@ t = 2%i63
      : int
      = 37151199385380486
      : int
+     = 4
+     : int
+     = 4
+     : int
+     = 4
+     : int
+     = add
+     : int -> int -> int
+     = 12
+     : int
+     = 12
+     : int
+     = 12
+     : int
+     = 3 + x
+     : int
+     = 1 + 2 + x
+     : int

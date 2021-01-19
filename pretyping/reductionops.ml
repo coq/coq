@@ -978,6 +978,9 @@ let whd_betalet = red_of_state_red whd_betalet_state
 
 (* 2. Delta Reduction Functions *)
 
+let whd_const_state c e = raw_whd_state_gen CClosure.RedFlags.(mkflags [fCONST c]) e
+let whd_const c = red_of_state_red (whd_const_state c)
+
 let whd_delta_state e = raw_whd_state_gen CClosure.delta e
 let whd_delta_stack = stack_red_of_state_red whd_delta_state
 let whd_delta = red_of_state_red whd_delta_state

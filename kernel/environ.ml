@@ -571,6 +571,12 @@ let is_primitive env c =
   | Declarations.Primitive _ -> true
   | _ -> false
 
+let get_primitive env c =
+  let cb = lookup_constant c env in
+  match cb.Declarations.const_body with
+  | Declarations.Primitive p -> Some p
+  | _ -> None
+
 let is_int63_type env c =
   match env.retroknowledge.Retroknowledge.retro_int63 with
   | None -> false

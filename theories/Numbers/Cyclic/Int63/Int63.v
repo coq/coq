@@ -954,6 +954,7 @@ Proof.
    intros _ HH; generalize (HH H1); discriminate.
  clear H.
  generalize (ltb_spec j i); case Int63.ltb; intros H2; unfold bit; simpl.
+   change 62%int63 with (digits - 1)%int63.
    assert (F2: (φ j < φ i)%Z) by (case H2; auto); clear H2.
    replace (is_zero (((x << i) >> j) << (digits - 1))) with true; auto.
    case (to_Z_bounded j); intros  H1j H2j.

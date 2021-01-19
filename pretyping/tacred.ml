@@ -68,8 +68,7 @@ let error_not_evaluable r =
      spc () ++ str "to an evaluable reference.")
 
 let is_evaluable_const env cst =
-  is_transparent env (ConstKey cst) &&
-    (evaluable_constant cst env || is_primitive env cst)
+  is_transparent env (ConstKey cst) && evaluable_constant cst env
 
 let is_evaluable_var env id =
   is_transparent env (VarKey id) && evaluable_named id env
@@ -162,6 +161,10 @@ let reference_value env sigma c u =
   match reference_opt_value env sigma c u with
     | None -> raise NotEvaluable
     | Some d -> d
+
+let is_primitive_val sigma c = match EConstr.kind sigma c with
+  | Int _ | Float _ | Array _ -> true
+  | _ -> false
 
 (************************************************************************)
 (* Reduction of constants hiding a fixpoint (e.g. for "simpl" tactic).  *)
@@ -714,7 +717,8 @@ and reduce_params env sigma stack l =
         let arg = List.nth stack i in
         let rarg = whd_construct_stack env sigma arg in
           match EConstr.kind sigma (fst rarg) with
-          | Construct _ -> List.assign stack i (applist rarg)
+          | Construct _ | Int _ | Float _ | Array _ ->
+             List.assign stack i (applist rarg)
           | _ -> raise Redelimination)
       stack l
 
@@ -769,6 +773,16 @@ and whd_simpl_stack env sigma =
                             | NotReducible -> s')
                  else s'
                with Redelimination -> s')
+
+      | Const (cst, _) when is_primitive env cst ->
+         (try
+            let args =
+              List.map_filter_i (fun i a ->
+                  match a with CPrimitives.Kwhnf -> Some i | _ -> None)
+                (CPrimitives.kind (Option.get (get_primitive env cst))) in
+            let stack = reduce_params env sigma stack args in
+            whd_const cst env sigma (applist (x, stack)), []
+          with Redelimination -> s')
 
       | _ ->
         match match_eval_ref env sigma x stack with
@@ -880,11 +894,11 @@ and special_red_case env sigma (ci, u, pms, p, iv, c, lf) =
   in
   redrec (push_app sigma (c, []))
 
-(* reduce until finding an applied constructor or fail *)
+(* reduce until finding an applied constructor (or primitive value) or fail *)
 
 and whd_construct_stack env sigma s =
   let (constr, cargs as s') = whd_simpl_stack env sigma (s, []) in
-  if reducible_mind_case sigma constr then s'
+  if reducible_mind_case sigma constr || is_primitive_val sigma constr then s'
   else match match_eval_ref env sigma constr cargs with
   | Some (ref, u) ->
     (match reference_opt_value env sigma ref u with
