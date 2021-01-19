@@ -25,7 +25,6 @@
    (glob_files %{project_root}/plugins/rtauto/*.mlg)
    (glob_files %{project_root}/plugins/ssr/*.mlg)
    (glob_files %{project_root}/plugins/ssrmatching/*.mlg)
-   (glob_files %{project_root}/plugins/ssrsearch/*.mlg)
    (glob_files %{project_root}/plugins/syntax/*.mlg)
    (glob_files %{project_root}/user-contrib/Ltac2/*.mlg)
    ; Sphinx files

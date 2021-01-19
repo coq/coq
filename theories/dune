@@ -28,7 +28,6 @@
    coq-core.plugins.funind
 
    coq-core.plugins.ssreflect
-   coq-core.plugins.ssrsearch
    coq-core.plugins.derive))
 
 (include_subdirs qualified)
