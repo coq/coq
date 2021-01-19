@@ -273,11 +273,14 @@ Creating Hints
      :cmd:`Import` or :cmd:`Require` the current module.
 
    + :attr:`export` hints are visible from other modules when they :cmd:`Import` the current
-     module, but not when they only :cmd:`Require` it. This attribute is supported by
-     all `Hint` commands except for :cmd:`Hint Rewrite`.
+     module, but not when they only :cmd:`Require` it.
 
    + :attr:`global` hints are visible from other modules when they :cmd:`Import` or
      :cmd:`Require` the current module.
+
+   .. versionadded:: 8.14
+
+      The :cmd:`Hint Rewrite` now supports locality attributes like other `Hint` commands.
 
    .. deprecated:: 8.13
 

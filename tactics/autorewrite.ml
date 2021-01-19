@@ -206,9 +206,15 @@ let subst_hintrewrite (subst,(rbase,list as node)) =
       (rbase,list')
 
 (* Declaration of the Hint Rewrite library object *)
-let inHintRewrite : string * HintDN.t -> Libobject.obj =
+let inGlobalHintRewrite : string * HintDN.t -> Libobject.obj =
   let open Libobject in
-  declare_object @@ superglobal_object_nodischarge "HINT_REWRITE"
+  declare_object @@ superglobal_object_nodischarge "HINT_REWRITE_GLOBAL"
+    ~cache:cache_hintrewrite
+    ~subst:(Some subst_hintrewrite)
+
+let inExportHintRewrite : string * HintDN.t -> Libobject.obj =
+  let open Libobject in
+  declare_object @@ global_object_nodischarge "HINT_REWRITE_EXPORT"
     ~cache:cache_hintrewrite
     ~subst:(Some subst_hintrewrite)
 
@@ -250,7 +256,8 @@ let find_applied_relation ?loc env sigma c left2right =
                        spc () ++ str"of this term does not end with an applied relation.")
 
 (* To add rewriting rules to a base *)
-let add_rew_rules base lrul =
+let add_rew_rules ~locality base lrul =
+  let () = Hints.check_hint_locality locality in
   let counter = ref 0 in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -267,5 +274,9 @@ let add_rew_rules base lrul =
                     rew_tac = Option.map intern t}
         in incr counter;
           HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
-  in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))
-
+  in
+  let open Goptions in
+  match locality with
+  | OptLocal -> cache_hintrewrite ((),(base,lrul))
+  | OptDefault | OptGlobal -> Lib.add_anonymous_leaf (inGlobalHintRewrite (base,lrul))
+  | OptExport -> Lib.add_anonymous_leaf (inExportHintRewrite (base,lrul))

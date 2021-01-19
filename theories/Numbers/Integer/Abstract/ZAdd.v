@@ -18,7 +18,7 @@ Include ZBaseProp Z.
 (** Theorems that are either not valid on N or have different proofs
     on N and Z *)
 
-Hint Rewrite opp_0 : nz.
+Global Hint Rewrite opp_0 : nz.
 
 Theorem add_pred_l n m : P n + m == P (n + m).
 Proof.

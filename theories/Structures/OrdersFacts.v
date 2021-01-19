@@ -53,7 +53,7 @@ Module Type CompareFacts (Import O:DecStrOrder').
  rewrite compare_gt_iff; intuition.
  Qed.
 
- Hint Rewrite compare_eq_iff compare_lt_iff compare_gt_iff : order.
+ Global Hint Rewrite compare_eq_iff compare_lt_iff compare_gt_iff : order.
 
  Instance compare_compat : Proper (eq==>eq==>Logic.eq) compare.
  Proof.

@@ -40,8 +40,8 @@ Proof.
   reflexivity.
 Qed.
 
-Hint Rewrite @compose_id_left @compose_id_right : core.
-Hint Rewrite <- @compose_assoc : core.
+Global Hint Rewrite @compose_id_left @compose_id_right : core.
+Global Hint Rewrite <- @compose_assoc : core.
 
 (** [flip] is involutive. *)
 

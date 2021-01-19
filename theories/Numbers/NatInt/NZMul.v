@@ -28,7 +28,7 @@ Proof.
     now rewrite add_cancel_r.
 Qed.
 
-Hint Rewrite mul_0_r mul_succ_r : nz.
+Global Hint Rewrite mul_0_r mul_succ_r : nz.
 
 Theorem mul_comm : forall n m, n * m == m * n.
 Proof.
@@ -69,7 +69,7 @@ Proof.
 intro n. now nzsimpl'.
 Qed.
 
-Hint Rewrite mul_1_l mul_1_r : nz.
+Global Hint Rewrite mul_1_l mul_1_r : nz.
 
 Theorem mul_shuffle0 : forall n m p, n*m*p == n*p*m.
 Proof.

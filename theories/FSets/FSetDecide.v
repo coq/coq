@@ -489,7 +489,7 @@ the above form:
         variables.  We are going to use them with [autorewrite].
         *)
 
-    Hint Rewrite
+    Global Hint Rewrite
       F.empty_iff F.singleton_iff F.add_iff F.remove_iff
       F.union_iff F.inter_iff F.diff_iff
     : set_simpl.
@@ -499,7 +499,7 @@ the above form:
      now split.
     Qed.
 
-    Hint Rewrite eq_refl_iff : set_eq_simpl.
+    Global Hint Rewrite eq_refl_iff : set_eq_simpl.
 
     (** ** Decidability of FSet Propositions *)
 

@@ -182,6 +182,8 @@ val searchtable_map : hint_db_name -> hint_db
 
 val searchtable_add : (hint_db_name * hint_db) -> unit
 
+val check_hint_locality : Goptions.option_locality -> unit
+
 (** [create_hint_db local name st use_dn].
    [st] is a transparency state for unification using this db
    [use_dn] switches the use of the discrimination net for all hints
