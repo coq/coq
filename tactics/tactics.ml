@@ -156,9 +156,6 @@ let convert_hyp ~check ~reorder d =
     end
   end
 
-let convert_concl_no_check = convert_concl ~check:false
-let convert_hyp_no_check = convert_hyp ~check:false ~reorder:false
-
 let convert_gen pb x y =
   Proofview.Goal.enter begin fun gl ->
     match Tacmach.New.pf_apply (Reductionops.infer_conv ~pb) gl x y with

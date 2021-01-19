@@ -338,13 +338,6 @@ Rewriting with definitional equality
            exact H.
          Qed.
 
-   .. tacn:: convert_concl_no_check @one_term
-
-      .. deprecated:: 8.11
-
-      Deprecated old name for :tacn:`change_no_check`. Does not support any of its
-      variants.
-
 .. _performingcomputations:
 
 Performing computations
