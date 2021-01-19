@@ -320,14 +320,6 @@ optional tactic is replaced by the default one if not specified.
    (the default), or if the system should infer which obligations can be
    declared opaque.
 
-.. flag:: Hide Obligations
-
-   .. deprecated:: 8.12
-
-   Controls whether obligations appearing in the
-   term should be hidden as implicit arguments of the special
-   constant ``Program.Tactics.obligation``.
-
 The module :g:`Coq.Program.Tactics` defines the default tactic for solving
 obligations called :g:`program_simpl`. Importing :g:`Coq.Program.Program` also
 adds some useful notations, as documented in the file itself.

@@ -889,13 +889,6 @@ let add_hint local prg cst =
   let locality = if local then Goptions.OptLocal else Goptions.OptExport in
   Hints.add_hints ~locality [Id.to_string prg.prg_cinfo.CInfo.name] (unfold_entry cst)
 
-(* true = hide obligations *)
-let get_hide_obligations =
-  Goptions.declare_bool_option_and_ref
-    ~depr:true
-    ~key:["Hide"; "Obligations"]
-    ~value:false
-
 let declare_obligation prg obl ~uctx ~types ~body =
   let poly = prg.prg_info.Info.poly in
   let univs = UState.univ_entry ~poly uctx in
@@ -1046,51 +1039,10 @@ let obligation_substitution expand prg =
   let ints = intset_to (pred (Array.length obls)) in
   obl_substitution expand obls ints
 
-let hide_obligation () =
-  Coqlib.check_required_library ["Coq"; "Program"; "Tactics"];
-  UnivGen.constr_of_monomorphic_global
-    (Coqlib.lib_ref "program.tactics.obligation")
-
-(* XXX: Is this the right place? *)
-let rec prod_app t n =
-  match
-    Constr.kind
-      (EConstr.Unsafe.to_constr
-         (Termops.strip_outer_cast Evd.empty (EConstr.of_constr t)))
-    (* FIXME *)
-  with
-  | Prod (_, _, b) -> Vars.subst1 n b
-  | LetIn (_, b, t, b') -> prod_app (Vars.subst1 b b') n
-  | _ ->
-    CErrors.user_err ~hdr:"prod_app"
-      Pp.(str "Needed a product, but didn't find one" ++ fnl ())
-
-(* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)
-let prod_applist t nL = List.fold_left prod_app t nL
-
-let replace_appvars subst =
-  let rec aux c =
-    let f, l = decompose_app c in
-    if isVar f then
-      try
-        let c' = List.map (Constr.map aux) l in
-        let t, b = Id.List.assoc (destVar f) subst in
-        mkApp
-          ( delayed_force hide_obligation
-          , [|prod_applist t c'; Term.applistc b c'|] )
-      with Not_found -> Constr.map aux c
-    else Constr.map aux c
-  in
-  Constr.map aux
-
 let subst_prog subst prg =
-  if get_hide_obligations () then
-    ( replace_appvars subst prg.prg_body
-    , replace_appvars subst (* Termops.refresh_universes *) prg.prg_cinfo.CInfo.typ )
-  else
-    let subst' = List.map (fun (n, (_, b)) -> (n, b)) subst in
-    ( Vars.replace_vars subst' prg.prg_body
-    , Vars.replace_vars subst' (* Termops.refresh_universes *) prg.prg_cinfo.CInfo.typ )
+  let subst' = List.map (fun (n, (_, b)) -> (n, b)) subst in
+  ( Vars.replace_vars subst' prg.prg_body
+  , Vars.replace_vars subst' (* Termops.refresh_universes *) prg.prg_cinfo.CInfo.typ )
 
 let declare_definition ~pm prg =
   let varsubst = obligation_substitution true prg in
