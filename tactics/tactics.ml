@@ -1299,7 +1299,7 @@ let do_replace id = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
+let clenv_refine_in ?err with_evars targetid replace sigma0 clenv tac =
   let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
   let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd in
   let clenv = Clenv.update_clenv_evd clenv evd in
@@ -1310,11 +1310,10 @@ let clenv_refine_in ?err with_evars targetid id sigma0 clenv tac =
   let new_hyp_prf = clenv_value clenv in
   let exact_tac = Logic.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
-  let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARS (clear_metas evd))
     (Tacticals.New.tclTHENLAST
-      (assert_after_then_gen ?err with_clear naming new_hyp_typ tac) exact_tac)
+      (assert_after_then_gen ?err replace naming new_hyp_typ tac) exact_tac)
 
 (********************************************)
 (*       Elimination tactics                *)
@@ -1365,7 +1364,7 @@ let elimination_in_clause_scheme env sigma with_evars ~flags
   if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
     user_err ~hdr:"general_rewrite_in"
       (str "Nothing to rewrite in " ++ Id.print id ++ str".");
-  clenv_refine_in with_evars id id sigma elimclause''
+  clenv_refine_in with_evars id true sigma elimclause''
     (fun id -> Proofview.tclUNIT ())
 
 (*
@@ -1814,6 +1813,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
   let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
   let targetid = find_name true (LocalAssum (make_annot Anonymous Sorts.Relevant,t')) naming gl in
+  let replace = Id.equal id targetid in
   let rec aux ?err idstoclear with_destruct c =
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1826,7 +1826,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
       let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
-      clenv_refine_in ?err with_evars targetid id sigma clause
+      clenv_refine_in ?err with_evars targetid replace sigma clause
         (fun id ->
           replace_error_option err (
             apply_clear_request clear_flag false c <*>
@@ -2324,26 +2324,31 @@ let rewrite_hyp_then with_evars thin l2r id tac =
     tclEVARSTHEN sigma (Tacticals.New.tclTHENFIRST eqtac (tac thin))
   end
 
-let prepare_naming ?loc = function
-  | IntroIdentifier id -> NamingMustBe (CAst.make ?loc id)
-  | IntroAnonymous -> NamingAvoid Id.Set.empty
-  | IntroFresh id -> NamingBasedOn (id, Id.Set.empty)
-
-let rec explicit_intro_names = let open CAst in function
-| {v=IntroForthcoming _} :: l -> explicit_intro_names l
-| {v=IntroNaming (IntroIdentifier id)} :: l -> Id.Set.add id (explicit_intro_names l)
+let rec collect_intro_names = let open CAst in function
+| {v=IntroForthcoming _} :: l -> collect_intro_names l
+| {v=IntroNaming (IntroIdentifier id)} :: l ->
+  let ids1, ids2 = collect_intro_names l in Id.Set.add id ids1, ids2
 | {v=IntroAction (IntroOrAndPattern l)} :: l' ->
     let ll = match l with IntroAndPattern l -> [l] | IntroOrPattern ll -> ll in
-    let fold accu l = Id.Set.union accu (explicit_intro_names (l@l')) in
-    List.fold_left fold Id.Set.empty ll
+    let fold (ids1',ids2') l =
+      let ids1, ids2 = collect_intro_names (l@l') in
+      Id.Set.union ids1 ids1', Id.Set.union ids2 ids2' in
+    List.fold_left fold (Id.Set.empty,Id.Set.empty) ll
 | {v=IntroAction (IntroInjection l)} :: l' ->
-    explicit_intro_names (l@l')
+    collect_intro_names (l@l')
 | {v=IntroAction (IntroApplyOn (c,pat))} :: l' ->
-    explicit_intro_names (pat::l')
-| {v=(IntroNaming (IntroAnonymous | IntroFresh _)
+    collect_intro_names (pat::l')
+| {v=IntroNaming (IntroFresh id)} :: l ->
+    let ids1, ids2 = collect_intro_names l in ids1, Id.Set.add id ids2
+| {v=(IntroNaming IntroAnonymous
      | IntroAction (IntroWildcard | IntroRewrite _))} :: l ->
-     explicit_intro_names l
-| [] -> Id.Set.empty
+     collect_intro_names l
+| [] -> Id.Set.empty, Id.Set.empty
+
+let explicit_intro_names l = fst (collect_intro_names l)
+
+let explicit_all_intro_names l =
+  let ids1,ids2 = collect_intro_names l in Id.Set.union ids1 ids2
 
 let rec check_name_unicity env ok seen = let open CAst in function
 | {v=IntroForthcoming _} :: l -> check_name_unicity env ok seen l
@@ -2368,30 +2373,33 @@ let rec check_name_unicity env ok seen = let open CAst in function
      check_name_unicity env ok seen l
 | [] -> ()
 
-let wild_id = Id.of_string "_tmp"
+let fresh_wild ids =
+  let rec aux s =
+    if Id.Set.exists (fun id -> String.is_prefix s (Id.to_string id)) ids
+    then aux (s ^ "'")
+    else Id.of_string s in
+  aux "_H"
 
-let rec list_mem_assoc_right id = function
-  | [] -> false
-  | {CAst.v=id'}::l -> Id.equal id id' || list_mem_assoc_right id l
+let make_naming ?loc avoid l = function
+  | IntroIdentifier id -> NamingMustBe (CAst.make ?loc id)
+  | IntroAnonymous -> NamingAvoid (Id.Set.union avoid (explicit_intro_names l))
+  | IntroFresh id -> NamingBasedOn (id, Id.Set.union avoid (explicit_intro_names l))
 
-let check_thin_clash_then id thin avoid tac =
-  if list_mem_assoc_right id thin then
-    let newid = next_ident_away (add_suffix id "'") avoid in
-    let thin =
-      List.map CAst.(map (fun id' -> if Id.equal id id' then newid else id')) thin in
-    Tacticals.New.tclTHEN (rename_hyp [id,newid]) (tac thin)
-  else
-    tac thin
-
-let make_tmp_naming avoid l = function
+let rec make_naming_action avoid l = function
   (* In theory, we could use a tmp id like "wild_id" for all actions
      but we prefer to avoid it to avoid this kind of "ugly" names *)
-  (* Alternatively, we could have called check_thin_clash_then on
-     IntroAnonymous, but at the cost of a "renaming"; Note that in the
-     case of IntroFresh, we should use check_thin_clash_then anyway to
-     prevent the case of an IntroFresh precisely using the wild_id *)
-  | IntroWildcard -> NamingBasedOn (wild_id, Id.Set.union avoid (explicit_intro_names l))
-  | pat -> NamingAvoid(Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
+  | IntroWildcard ->
+    NamingBasedOn (fresh_wild (Id.Set.union avoid (explicit_all_intro_names l)), Id.Set.empty)
+  | IntroApplyOn (_,{CAst.v=pat;loc}) -> make_naming_pattern avoid ?loc l pat
+  | (IntroOrAndPattern _ | IntroInjection _ | IntroRewrite _) as pat ->
+    NamingAvoid(Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
+
+and make_naming_pattern ?loc avoid l = function
+  | IntroNaming pat -> make_naming ?loc avoid l pat
+  | IntroAction pat -> make_naming_action avoid l pat
+  | IntroForthcoming _ -> NamingAvoid (Id.Set.union avoid (explicit_intro_names l))
+
+let prepare_naming ?loc pat = make_naming ?loc Id.Set.empty [] pat
 
 let fit_bound n = function
   | None -> true
@@ -2430,38 +2438,21 @@ let rec intro_patterns_core with_evars avoid ids thin destopt bound n tac =
         [CAst.make @@ IntroNaming IntroAnonymous]
   | {CAst.loc;v=pat} :: l ->
   if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
+  let naming = make_naming_pattern avoid l pat in
   match pat with
   | IntroForthcoming onlydeps ->
-      intro_forthcoming_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
-          destopt onlydeps bound n
+      intro_forthcoming_then_gen naming destopt onlydeps bound n
         (fun ids -> intro_patterns_core with_evars avoid ids thin destopt bound
           (n+List.length ids) tac l)
   | IntroAction pat ->
-      intro_then_gen (make_tmp_naming avoid l pat)
-        destopt true false
+      intro_then_gen naming destopt true false
         (intro_pattern_action ?loc with_evars pat thin destopt
           (fun thin bound' -> intro_patterns_core with_evars avoid ids thin destopt bound' 0
             (fun ids thin ->
               intro_patterns_core with_evars avoid ids thin destopt bound (n+1) tac l)))
   | IntroNaming pat ->
-      intro_pattern_naming loc with_evars avoid ids pat thin destopt bound (n+1) tac l
-
-  (* Pi-introduction rule, used backwards *)
-and intro_pattern_naming loc with_evars avoid ids pat thin destopt bound n tac l =
-  match pat with
-  | IntroIdentifier id ->
-      check_thin_clash_then id thin avoid (fun thin ->
-        intro_then_gen (NamingMustBe CAst.(make ?loc id)) destopt true false
-          (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l))
-  | IntroAnonymous ->
-      intro_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
-        destopt true false
-        (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l)
-  | IntroFresh id ->
-      (* todo: avoid thinned names to interfere with generation of fresh name *)
-      intro_then_gen (NamingBasedOn (id, Id.Set.union avoid (explicit_intro_names l)))
-        destopt true false
-        (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound n tac l)
+      intro_then_gen naming destopt true false
+        (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound (n+1) tac l)
 
 and intro_pattern_action ?loc with_evars pat thin destopt tac id =
   match pat with
@@ -2474,24 +2465,16 @@ and intro_pattern_action ?loc with_evars pat thin destopt tac id =
   | IntroRewrite l2r ->
       rewrite_hyp_then with_evars thin l2r id (fun thin -> tac thin None [])
   | IntroApplyOn ({CAst.loc=loc';v=f},{CAst.loc;v=pat}) ->
-      let naming,tac_ipat =
-        prepare_intros ?loc with_evars (IntroIdentifier id) destopt pat in
-      let doclear =
-        if naming = NamingMustBe (CAst.make ?loc id) then
-          Proofview.tclUNIT () (* apply_in_once do a replacement *)
-        else
-          clear [id] in
-      let f env sigma = let (sigma, c) = f env sigma in (sigma,(c, NoBindings))
-      in
+      let naming = NamingMustBe (CAst.make ?loc id) in
+      let tac_ipat = prepare_action ?loc with_evars destopt pat in
+      let f env sigma = let (sigma, c) = f env sigma in (sigma,(c, NoBindings)) in
       apply_in_delayed_once true true with_evars naming id (None,CAst.make ?loc:loc' f)
-        (fun id -> Tacticals.New.tclTHENLIST [doclear; tac_ipat id; tac thin None []])
+        (fun id -> Tacticals.New.tclTHENLIST [tac_ipat id; tac thin None []])
 
-and prepare_intros ?loc with_evars dft destopt = function
+and prepare_action ?loc with_evars destopt = function
   | IntroNaming ipat ->
-      prepare_naming ?loc ipat,
-      (fun id -> move_hyp id destopt)
+      (fun _ -> Proofview.tclUNIT ())
   | IntroAction ipat ->
-      prepare_naming ?loc dft,
       (let tac thin bound =
         intro_patterns_core with_evars Id.Set.empty [] thin destopt bound 0
           (fun _ l -> clear_wildcards l) in
@@ -2528,9 +2511,19 @@ let intros_patterns with_evars = function
 (*   Forward reasoning    *)
 (**************************)
 
-let prepare_intros_opt with_evars dft destopt = function
-  | None -> prepare_naming dft, (fun _id -> Proofview.tclUNIT ())
-  | Some {CAst.loc;v=ipat} -> prepare_intros ?loc with_evars dft destopt ipat
+let prepare_intros_opt with_evars dft destopt ipat =
+  let naming, loc, ipat = match ipat with
+  | None ->
+    let pat = IntroNaming dft in make_naming_pattern Id.Set.empty [] pat, None, pat
+  | Some {CAst.loc;v=(IntroNaming pat as ipat)} ->
+    (* "apply ... in H as id" needs to use id and H is kept iff id<>H *)
+    prepare_naming ?loc pat, loc, ipat
+  | Some {CAst.loc;v=(IntroAction pat as ipat)} ->
+    (* "apply ... in H as pat" reuses H so that old H is always cleared *)
+    (match dft with IntroIdentifier _ -> prepare_naming ?loc dft | _ -> make_naming_action Id.Set.empty [] pat),
+    loc, ipat
+  | Some {CAst.loc;v=(IntroForthcoming _)} -> assert false in
+  naming, prepare_action ?loc with_evars destopt ipat
 
 let ipat_of_name = function
   | Anonymous -> None
@@ -3045,8 +3038,7 @@ let specialize (c,lbind) ipat =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
     | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
       (* Like assert (id:=id args) but with the concept of specialization *)
-      let naming,tac =
-        prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
+      let naming,tac = prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
       let repl = do_replace (Some id) naming in
       Tacticals.New.tclTHENFIRST
         (assert_before_then_gen repl naming typ tac)
@@ -3059,10 +3051,10 @@ let specialize (c,lbind) ipat =
         (* TODO: add intro to be more homogeneous. It will break
            scripts but will be easy to fix *)
          (Tacticals.New.tclTHENLAST (cut typ) (exact_no_check term))
-      | Some {CAst.loc;v=ipat} ->
+      | Some _ as ipat ->
         (* Like pose proof with extra support for "with" bindings *)
         (* even though the "with" bindings forces full application *)
-        let naming,tac = prepare_intros ?loc false IntroAnonymous MoveLast ipat in
+        let naming, tac = prepare_intros_opt false IntroAnonymous MoveLast ipat in
         Tacticals.New.tclTHENFIRST
           (assert_before_then_gen false naming typ tac)
           (exact_no_check term)

@@ -27,3 +27,7 @@ Fail match goal with |- (?f ?a) => idtac end. (* should be beta-iota reduced *)
 2:match goal with _: (?f ?a) |- _ => idtac end. (* should not be beta-iota reduced *)
 Abort.
 
+Goal nat.
+assert nat as J%S by exact 0.
+exact J.
+Qed.

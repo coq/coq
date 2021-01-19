@@ -152,3 +152,15 @@ Definition d := ltac:(intro x; exact (x*x)).
 Definition d' : nat -> _ := ltac:(intros;exact 0).
 
 End Evar.
+
+Module Wildcard.
+
+(* We check that the wildcard internal name does not interfere with
+   user fresh names (currently the prefix is "_H") *)
+
+Goal nat -> bool -> nat -> bool.
+intros _ ?_H ?_H.
+exact _H.
+Qed.
+
+End Wildcard.
