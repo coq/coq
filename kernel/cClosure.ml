@@ -241,6 +241,17 @@ module KeyTable = Hashtbl.Make(IdKeyHash)
 
 open Context.Named.Declaration
 
+exception Irrelevant
+
+type mode = Conversion | Reduction
+(* In conversion mode we can introduce FIrrelevant terms.
+   Invariants of the conversion mode:
+   - the only irrelevant terms as returned by [knr] are either [FIrrelevant],
+     [FLambda], [FFlex] or [FRel].
+   - the stack never contains irrelevant-producing nodes i.e. [Zproj], [ZFix]
+     and [ZcaseT] are all relevant
+*)
+
 (**********************************************************************)
 (* Lazy reduction: the one used in kernel operations                  *)
 
@@ -345,6 +356,7 @@ and fterm =
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
+  | FIrrelevant
   | FLOCKED
 
 and finvert = fconstr array
@@ -372,6 +384,7 @@ type infos_cache = {
   i_sigma : existential -> constr option;
   i_share : bool;
   i_univs : UGraph.t;
+  i_mode : mode;
 }
 
 type clos_infos = {
@@ -439,8 +452,8 @@ let rec stack_args_size = function
 let rec lft_fconstr n ft =
   let r = Mark.relevance ft.mark in
   match ft.term with
-    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FInt _|FFloat _) -> ft
-    | FRel i -> {mark=mark Ntrl r;term=FRel(i+n)}
+    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FInt _|FFloat _|FIrrelevant) -> ft
+    | FRel i -> {mark=ft.mark;term=FRel(i+n)}
     | FLambda(k,tys,f,e) -> {mark=mark Cstr r; term=FLambda(k,tys,f,subs_shft(n,e))}
     | FFix(fx,e) ->
       {mark=mark Cstr r; term=FFix(fx,subs_shft(n,e))}
@@ -516,6 +529,8 @@ let mk_clos e t =
 
 let inject c = mk_clos (subs_id 0) c
 
+let mk_irrelevant = { mark = mark Cstr KnownI; term = FIrrelevant }
+
 (************************************************************************)
 
 (** Hand-unrolling of the map function to bypass the call to the generic array
@@ -529,11 +544,31 @@ let mk_clos_vect env v = match v with
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
 
-let assoc_defined id env = match Environ.lookup_named id env with
-| LocalDef (_, c, _) -> c
-| LocalAssum _ -> raise Not_found
+let is_irrelevant mode r = match mode, r with
+| Conversion, Sorts.Irrelevant -> true
+| (Conversion | Reduction), (Sorts.Relevant | Sorts.Irrelevant) -> false
 
-let ref_value_cache env flags tab ref =
+let shortcut_irrelevant mode r =
+  if is_irrelevant mode r then raise Irrelevant
+
+let assoc_defined mode id env = match Environ.lookup_named id env with
+| LocalDef (na, c, _) ->
+  let () = shortcut_irrelevant mode (binder_relevance na) in
+  c
+| LocalAssum (na, _) ->
+  let () = shortcut_irrelevant mode (binder_relevance na) in
+  raise Not_found
+
+let constant_value_in mode env (kn, u) =
+  let cb = lookup_constant kn env in
+  let () = shortcut_irrelevant mode (cb.const_relevance) in
+  match cb.const_body with
+    | Def b -> subst_instance_constr u b
+    | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
+    | Undef _ -> raise (NotEvaluableConst NoBody)
+    | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
+
+let ref_value_cache env flags mode tab ref =
   try
     KeyTable.find tab ref
   with Not_found ->
@@ -548,19 +583,22 @@ let ref_value_cache env flags tab ref =
               try Range.get env.env_rel_context.env_rel_map i
               with Invalid_argument _ -> raise Not_found
             in
+            (* First check for irrelevance *)
+            let () = shortcut_irrelevant mode (get_relevance d) in
             begin match d with
               | LocalAssum _ -> raise Not_found
               | LocalDef (_, t, _) -> lift n t
             end
           | VarKey id ->
-            if TransparentState.is_transparent_variable flags id then assoc_defined id env
+            if TransparentState.is_transparent_variable flags id then assoc_defined mode id env
             else raise Not_found
           | ConstKey cst ->
-            if TransparentState.is_transparent_constant flags (fst cst) then constant_value_in env cst
+            if TransparentState.is_transparent_constant flags (fst cst) then constant_value_in mode env cst
             else raise Not_found
         in
         Def (inject body)
       with
+      | Irrelevant -> Def mk_irrelevant
       | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
       | Not_found (* List.assoc *)
       | NotEvaluableConst _ (* Const *)
@@ -648,7 +686,7 @@ let rec to_constr lfts v =
       else
         let subs = comp_subs lfts env in
         subst_constr subs t
-    | FLOCKED -> assert false (*mkVar(Id.of_string"_LOCK_")*)
+    | FLOCKED | FIrrelevant -> assert false (*mkVar(Id.of_string"_LOCK_")*)
 
 and to_constr_case lfts ci u pms p iv c ve env =
   if is_subs_id env && is_lift_id lfts then
@@ -795,12 +833,16 @@ let rec get_args n tys f e = function
       (Inr {mark=mark Cstr Unknown;term=FLambda(n,tys,f,e)}, stk)
 
 (* Eta expansion: add a reference to implicit surrounding lambda at end of stack *)
-let rec eta_expand_stack = function
+let rec eta_expand_stack na = function
   | (Zapp _ | Zfix _ | ZcaseT _ | Zproj _
         | Zshift _ | Zupdate _ | Zprimitive _ as e) :: s ->
-      e :: eta_expand_stack s
+      e :: eta_expand_stack na s
   | [] ->
-      [Zshift 1; Zapp [|{mark=mark Ntrl Unknown; term= FRel 1}|]]
+    let arg = match na.binder_relevance with
+    | Sorts.Relevant -> {mark = mark Ntrl KnownR; term = FRel 1}
+    | Sorts.Irrelevant -> mk_irrelevant
+    in
+    [Zshift 1; Zapp [|arg|]]
 
 (* Get the arguments of a native operator *)
 let rec skip_native_args rargs nargs =
@@ -1319,6 +1361,38 @@ module FNativeEntries =
 
 module FredNative = RedNative(FNativeEntries)
 
+let rec skip_irrelevant_stack stk = match stk with
+| [] -> []
+| (Zshift _ | Zapp _) :: s -> skip_irrelevant_stack s
+| (Zfix _ | Zproj _) :: s ->
+  (* Typing rules ensure that fix / proj over SProp is irrelevant *)
+  skip_irrelevant_stack s
+| ZcaseT (ci, _, _, _, _, _) :: s ->
+  begin match ci.ci_relevance with
+  | Sorts.Irrelevant -> skip_irrelevant_stack s
+  | Sorts.Relevant -> stk
+  end
+| Zprimitive _ :: _ -> assert false (* no irrelevant primitives so far *)
+| Zupdate m :: s ->
+  (** The stack contains [Zupdate] marks only if in sharing mode *)
+  let _ = update ~share:true m mk_irrelevant.mark mk_irrelevant.term in
+  skip_irrelevant_stack s
+
+let is_irrelevant_constructor infos ((mi,i),_) = match infos.i_cache.i_mode with
+| Conversion ->
+  let decl = lookup_mind mi infos.i_cache.i_env in
+  let packet = decl.mind_packets.(i) in
+  packet.mind_relevance == Sorts.Irrelevant
+| Reduction -> false
+
+(* FIXME: cache relevance in projection like Fix / Case nodes *)
+let is_irrelevant_projection infos p = match infos.i_cache.i_mode with
+| Conversion ->
+  let mind = Projection.mind p in
+  let mib = lookup_mind mind infos.i_cache.i_env in
+  Declareops.relevance_of_projection_repr mib (Projection.repr p) == Sorts.Irrelevant
+| Reduction -> false
+
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an
    atom or a subterm that may produce a redex (abstraction,
@@ -1330,18 +1404,28 @@ let rec knh info m stk =
     | FCLOS(t,e) -> knht info e t (zupdate info m stk)
     | FLOCKED -> assert false
     | FApp(a,b) -> knh info a (append_stack b (zupdate info m stk))
-    | FCaseT(ci,u,pms,p,t,br,e) -> knh info t (ZcaseT(ci,u,pms,p,br,e)::zupdate info m stk)
-    | FFix(((ri,n),_),_) ->
+    | FCaseT(ci,u,pms,p,t,br,e) ->
+      if is_irrelevant info.i_cache.i_mode ci.ci_relevance then
+        (mk_irrelevant, skip_irrelevant_stack stk)
+      else
+        knh info t (ZcaseT(ci,u,pms,p,br,e)::zupdate info m stk)
+    | FFix (((ri, n), (lna, _, _)), _) ->
+      if is_irrelevant info.i_cache.i_mode (lna.(n)).binder_relevance then
+        (mk_irrelevant, skip_irrelevant_stack stk)
+      else
         (match get_nth_arg m ri.(n) stk with
              (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
     | FProj (p,c) ->
+      if is_irrelevant_projection info p then
+        (mk_irrelevant, skip_irrelevant_stack stk)
+      else
       (match unfold_projection info p with
        | None -> (m, stk)
        | Some s -> knh info c (s :: zupdate info m stk))
 
 (* cases where knh stops *)
-    | (FFlex _|FLetIn _|FConstruct _|FEvar _|FCaseInvert _|
+    | (FFlex _|FLetIn _|FConstruct _|FEvar _|FCaseInvert _|FIrrelevant|
        FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _|FInt _|FFloat _|FArray _) ->
         (m, stk)
 
@@ -1351,11 +1435,21 @@ and knht info e t stk =
     | App(a,b) ->
         knht info e a (append_stack (mk_clos_vect e b) stk)
     | Case(ci,u,pms,p,NoInvert,t,br) ->
+      if is_irrelevant info.i_cache.i_mode ci.ci_relevance then
+        (mk_irrelevant, skip_irrelevant_stack stk)
+      else
         knht info e t (ZcaseT(ci, u, pms, p, br, e)::stk)
     | Case(ci,u,pms,p,CaseInvert{indices},t,br) ->
-      let term = FCaseInvert (ci, u, pms, p, (Array.map (mk_clos e) indices), mk_clos e t, br, e) in
-      { mark = mark Red Unknown; term }, stk
-    | Fix fx -> knh info { mark = mark Cstr Unknown; term = FFix (fx, e) } stk
+      if is_irrelevant info.i_cache.i_mode ci.ci_relevance then
+        (mk_irrelevant, skip_irrelevant_stack stk)
+      else
+        let term = FCaseInvert (ci, u, pms, p, (Array.map (mk_clos e) indices), mk_clos e t, br, e) in
+        { mark = mark Red Unknown; term }, stk
+    | Fix (((_, n), (lna, _, _)) as fx) ->
+      if is_irrelevant info.i_cache.i_mode (lna.(n)).binder_relevance then
+        (mk_irrelevant, skip_irrelevant_stack stk)
+      else
+        knh info { mark = mark Cstr Unknown; term = FFix (fx, e) } stk
     | Cast(a,_,_) -> knht info e a stk
     | Rel n -> knh info (clos_rel e n) stk
     | Proj (p, c) -> knh info { mark = mark Red Unknown; term = FProj (p, mk_clos e c) } stk
@@ -1388,7 +1482,7 @@ let rec knr info tab m stk =
           Inl e', s -> knit info tab e' f s
         | Inr lam, s -> (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
-      (match ref_value_cache info.i_cache.i_env (RedFlags.red_transparent info.i_flags) tab fl with
+      (match ref_value_cache info.i_cache.i_env (RedFlags.red_transparent info.i_flags) info.i_cache.i_mode tab fl with
         | Def v -> kni info tab v stk
         | Primitive op ->
           if check_native_args op stk then
@@ -1417,17 +1511,26 @@ let rec knr info tab m stk =
             let rargs = drop_parameters depth (Projection.Repr.npars p) args in
             let rarg = project_nth_arg (Projection.Repr.arg p) rargs in
             kni info tab rarg s
-        | (_,args,s) -> (m,args@s))
-     else (m,stk)
-  | FCoFix _ when red_set info.i_flags fCOFIX ->
+        | (_,args,s) ->
+          if is_irrelevant_constructor info c then (mk_irrelevant, skip_irrelevant_stack stk) else (m,args@s))
+     else if is_irrelevant_constructor info c then
+      (mk_irrelevant, skip_irrelevant_stack stk)
+     else
+      (m, stk)
+  | FCoFix ((i, (lna, _, _)), _) ->
+    if is_irrelevant info.i_cache.i_mode (lna.(i)).binder_relevance then
+      (mk_irrelevant, skip_irrelevant_stack stk)
+    else if red_set info.i_flags fCOFIX then
       (match strip_update_shift_app m stk with
         | (_, args, (((ZcaseT _|Zproj _)::_) as stk')) ->
             let (fxe,fxbd) = contract_fix_vect m.term in
             knit info tab fxe fxbd (args@stk')
         | (_,args, ((Zapp _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _) :: _ | [] as s)) -> (m,args@s))
+    else (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info tab (subs_cons v e) bd stk
   | FEvar(ev,env) ->
+    (* FIXME: handle relevance *)
       (match info.i_cache.i_sigma ev with
           Some c -> knit info tab env c stk
         | None -> (m,stk))
@@ -1457,10 +1560,17 @@ let rec knr info tab m stk =
       | Some c -> knit info tab env c stk
       | None -> (m, stk)
     end
-  | FLOCKED | FRel _ | FAtom _ | FFlex (RelKey _ | ConstKey _ | VarKey _) | FInd _ | FApp _ | FProj _
-    | FFix _ | FCoFix _ | FCaseT _ | FCaseInvert _ | FLambda _ | FProd _ | FLetIn _ | FLIFT _
-    | FCLOS _ -> (m, stk)
-
+  | FIrrelevant ->
+    let stk = skip_irrelevant_stack stk in
+    (m, stk)
+  | FProd _ | FAtom _ | FInd _ (* relevant statically *)
+  | FCaseInvert _ | FProj _ | FFix _ (* relevant because of knh(t) *)
+  | FLambda _ | FFlex _ | FRel _ (* irrelevance handled by conversion *)
+  | FLetIn _ (* only happens in reduction mode *) ->
+    (m, stk)
+  | FLOCKED | FCLOS _ | FApp _ | FCaseT _ | FLIFT _ ->
+    (* ruled out by knh(t) *)
+    assert false
 
 (* Computes the weak head normal form of a term *)
 and kni info tab m stk =
@@ -1558,6 +1668,7 @@ and norm_head info tab m =
       | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FConstruct _
       | FApp _ | FCaseT _ | FCaseInvert _ | FLIFT _ | FCLOS _ | FInt _
       | FFloat _ | FArray _ -> term_of_fconstr m
+      | FIrrelevant -> assert false (* only introduced when converting *)
 
 and zip_term info tab m stk = match stk with
 | [] -> m
@@ -1613,6 +1724,18 @@ let whd_stack infos tab m stk = match Mark.red_state m.mark with
   in
   k
 
+let create_conv_infos ?univs ?(evars=fun _ -> None) flgs env =
+  let univs = Option.default (universes env) univs in
+  let share = (Environ.typing_flags env).Declarations.share_reduction in
+  let cache = {
+    i_env = env;
+    i_sigma = evars;
+    i_share = share;
+    i_univs = univs;
+    i_mode = Conversion;
+  } in
+  { i_flags = flgs; i_relevances = Range.empty; i_cache = cache }
+
 let create_clos_infos ?univs ?(evars=fun _ -> None) flgs env =
   let univs = Option.default (universes env) univs in
   let share = (Environ.typing_flags env).Declarations.share_reduction in
@@ -1621,6 +1744,7 @@ let create_clos_infos ?univs ?(evars=fun _ -> None) flgs env =
     i_sigma = evars;
     i_share = share;
     i_univs = univs;
+    i_mode = Reduction;
   } in
   { i_flags = flgs; i_relevances = Range.empty; i_cache = cache }
 
@@ -1631,7 +1755,7 @@ let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
-let unfold_reference = ref_value_cache
+let unfold_reference env st tab key = ref_value_cache env st Conversion tab key
 
 let relevance_of f = Mark.relevance f.mark
 let set_relevance r f = f.mark <- Mark.mark (Mark.red_state f.mark) (opt_of_rel r)

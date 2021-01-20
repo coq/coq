@@ -74,6 +74,7 @@ let rec relevance_of_fterm env extra lft f =
       | FCLOS (c, e) -> relevance_of_term_extra env extra lft e c
 
       | FEvar (_, _) -> Sorts.Relevant (* let's assume evars are relevant for now *)
+      | FIrrelevant -> Sorts.Irrelevant
       | FLOCKED -> assert false
     in
     CClosure.set_relevance r f;

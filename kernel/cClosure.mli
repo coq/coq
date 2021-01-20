@@ -118,6 +118,7 @@ type fterm =
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
+  | FIrrelevant
   | FLOCKED
 
 (***********************************************************************
@@ -145,7 +146,8 @@ val get_native_args1 : CPrimitives.t -> pconstant -> stack ->
   fconstr list * fconstr * fconstr next_native_args * stack
 
 val stack_args_size : stack -> int
-val eta_expand_stack : stack -> stack
+val eta_expand_stack : Name.t Context.binder_annot -> stack -> stack
+val skip_irrelevant_stack : stack -> stack
 
 val inductive_subst : Declarations.mutual_inductive_body
   -> Univ.Instance.t
@@ -177,6 +179,8 @@ val set_relevance : Sorts.relevance -> fconstr -> unit
 (** Global and local constant cache *)
 type clos_infos
 type clos_tab
+val create_conv_infos :
+  ?univs:UGraph.t -> ?evars:(existential->constr option) -> reds -> env -> clos_infos
 val create_clos_infos :
   ?univs:UGraph.t -> ?evars:(existential->constr option) -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
