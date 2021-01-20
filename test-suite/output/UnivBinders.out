@@ -1,6 +1,7 @@
-Inductive Empty@{uu} : Type@{uu} :=  
+Inductive Empty@{uu} : Type@{uu} :=  .
 (* uu |=  *)
-Record PWrap (A : Type@{uu}) : Type@{uu} := pwrap { punwrap : A }
+Record PWrap (A : Type@{uu}) : Type@{uu} := pwrap
+  { punwrap : A }.
 (* uu |=  *)
 
 PWrap has primitive projections with eta conversion.
@@ -12,7 +13,8 @@ fun (A : Type@{uu}) (p : PWrap@{uu} A) => punwrap _ p
 (* uu |=  *)
 
 Arguments punwrap _%type_scope _
-Record RWrap (A : Type@{uu}) : Type@{uu} := rwrap { runwrap : A }
+Record RWrap (A : Type@{uu}) : Type@{uu} := rwrap
+  { runwrap : A }.
 (* uu |=  *)
 
 Arguments RWrap _%type_scope
@@ -80,9 +82,9 @@ foo@{uu u v} =
 Type@{u} -> Type@{v} -> Type@{uu}
      : Type@{max(uu+1,u+1,v+1)}
 (* uu u v |=  *)
-Inductive Empty@{E} : Type@{E} :=  
+Inductive Empty@{E} : Type@{E} :=  .
 (* E |=  *)
-Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
+Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }.
 (* E |=  *)
 
 PWrap has primitive projections with eta conversion.
@@ -107,7 +109,7 @@ insec@{v} = Type@{uu} -> Type@{v}
      : Type@{max(uu+1,v+1)}
 (* v |=  *)
 Inductive insecind@{k} : Type@{k+1} :=
-    inseccstr : Type@{k} -> insecind@{k}
+    inseccstr : Type@{k} -> insecind@{k}.
 (* k |=  *)
 
 Arguments inseccstr _%type_scope
@@ -115,7 +117,7 @@ insec@{uu v} = Type@{uu} -> Type@{v}
      : Type@{max(uu+1,v+1)}
 (* uu v |=  *)
 Inductive insecind@{uu k} : Type@{k+1} :=
-    inseccstr : Type@{k} -> insecind@{uu k}
+    inseccstr : Type@{k} -> insecind@{uu k}.
 (* uu k |=  *)
 
 Arguments inseccstr _%type_scope

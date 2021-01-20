@@ -124,7 +124,7 @@ let print_mutual_inductive env mind mib udecl =
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   hov 0 (def keyword ++ spc () ++
          prlist_with_sep (fun () -> fnl () ++ str"  with ")
-           (print_one_inductive env sigma mib) inds ++
+           (print_one_inductive env sigma mib) inds ++ str "." ++
          Printer.pr_universes sigma ?variance:mib.mind_variance mib.mind_universes)
 
 let get_fields =
@@ -173,7 +173,7 @@ let print_record env mind mib udecl =
       prlist_with_sep (fun () -> str ";" ++ brk(2,0))
         (fun (id,b,c) ->
           Id.print id ++ str (if b then " : " else " := ") ++
-          Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }" ++
+          Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }." ++
     Printer.pr_universes sigma ?variance:mib.mind_variance mib.mind_universes
   )
 
