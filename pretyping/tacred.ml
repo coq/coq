@@ -470,7 +470,8 @@ let contract_fix_use_function env sigma f
   let nbodies = Array.length recindices in
   let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
   let lbodies = List.init nbodies make_Fi in
-  substl_checking_arity env (List.rev lbodies) sigma (nf_beta env sigma bodies.(bodynum))
+  let c = substl_checking_arity env (List.rev lbodies) sigma (nf_beta env sigma bodies.(bodynum)) in
+  nf_beta env sigma c
 
 let contract_cofix_use_function env sigma f
   (bodynum,(_names,_,bodies as typedbodies)) =
@@ -686,7 +687,7 @@ let rec red_elim_const env sigma ref u largs =
         let f = ([|Some (minfxargs,ref)|],infos), u, largs in
         (match reduce_fix_use_function env sigma f (destFix sigma d) lrest with
            | NotReducible -> raise Redelimination
-           | Reduced (c,rest) -> (nf_beta env sigma c, rest), nocase)
+           | Reduced (c,rest) -> (c, rest), nocase)
     | EliminationMutualFix (min,refgoal,refinfos) when nargs >= min ->
         let rec descend (ref,u) args =
           let c = reference_value env sigma ref u in
@@ -700,7 +701,7 @@ let rec red_elim_const env sigma ref u largs =
         let f = refinfos, u, midargs in
         (match reduce_fix_use_function env sigma f (destFix sigma d) lrest with
            | NotReducible -> raise Redelimination
-           | Reduced (c,rest) -> (nf_beta env sigma c, rest), nocase)
+           | Reduced (c,rest) -> (c, rest), nocase)
     | NotAnElimination when unfold_nonelim ->
          let c = reference_value env sigma ref u in
            (whd_betaiotazeta env sigma (applist (c, largs)), []), nocase
