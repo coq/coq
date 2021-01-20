@@ -43,8 +43,8 @@ check_variable "CI_JOB_URL"
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_switch:=ocaml-base-compiler.4.07.1}"
-: "${old_ocaml_switch:=ocaml-base-compiler.4.07.1}"
+: "${new_ocaml_switch:=ocaml-base-compiler.4.10.2}"
+: "${old_ocaml_switch:=ocaml-base-compiler.4.10.2}"
 : "${new_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${old_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
@@ -248,6 +248,12 @@ create_opam() {
     local COQ_HASH="$3"
     local OPAM_COQ_DIR="$4"
 
+    if [ $RUNNER = "NEW" ]; then
+        /opt/sethugepage "never"
+    else
+        /opt/sethugepage "always"
+    fi
+
     export OPAMROOT="$OPAM_DIR"
 
     opam init --disable-sandboxing -qn -j$number_of_processors --bare
@@ -344,9 +350,11 @@ for coq_opam_package in $sorted_coq_opam_packages; do
 
         # perform measurements for the NEW/OLD commit (provided by the user)
         if [ $RUNNER = "NEW" ]; then
+            /opt/sethugepage "never"
             export OPAMROOT="$new_opam_root"
             echo "Testing NEW commit: $(date)"
         else
+            /opt/sethugepage "always"
             export OPAMROOT="$old_opam_root"
             echo "Testing OLD commit: $(date)"
         fi
