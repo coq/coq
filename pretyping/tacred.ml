@@ -467,6 +467,29 @@ type fix_reduction_result = NotReducible | Reduced of (constr * constr list)
 
 let contract_fix_use_function env sigma f
   ((recindices,bodynum),(_names,_types,bodies as typedbodies)) =
+  let (names, (nbfix, lv, n)), u, largs = f in
+  let lu = List.firstn n largs in
+  let p = List.length lv in
+  let lyi = List.map fst lv in
+  let la =
+    List.map_i (fun q aq ->
+      (* k from the comment is q+1 *)
+      try mkRel (p+1-(List.index Int.equal (n-q) lyi))
+      with Not_found -> Vars.lift p aq)
+      0 lu
+  in
+  let f i = match names.(i) with
+  | None -> None
+  | Some (minargs,ref) ->
+      let body = applist (mkEvalRef ref u, la) in
+      let g =
+        List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
+          let subst = List.map (Vars.lift (-q)) (List.firstn (n-ij) la) in
+          let tij' = Vars.substl (List.rev subst) tij in
+          let x = make_annot x Sorts.Relevant in  (* TODO relevance *)
+          mkLambda (x,tij',c)) 1 body (List.rev lv)
+      in Some (minargs,g)
+  in
   let nbodies = Array.length recindices in
   let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
   let lbodies = List.init nbodies make_Fi in
@@ -474,7 +497,29 @@ let contract_fix_use_function env sigma f
   nf_beta env sigma c
 
 let contract_cofix_use_function env sigma f
-  (bodynum,(_names,_,bodies as typedbodies)) =
+  (bodynum,(names,_,bodies as typedbodies)) args =
+  let f =
+    if isConst sigma f then
+      let minargs = List.length args in
+      fun i ->
+        if Int.equal i bodynum then Some (minargs, f)
+        else match names.(i).binder_name with
+          | Anonymous -> None
+          | Name id ->
+              (* In case of a call to another component of a block of
+                  mutual inductive, try to reuse the global name if
+                  the block was indeed initially built as a global
+                  definition *)
+              let (kn, u) = destConst sigma f in
+              let kn = Constant.change_label kn (Label.of_id id) in
+              let cst = (kn, EInstance.kind sigma u) in
+              try match constant_opt_value_in env cst with
+                | None -> None
+                    (* TODO: check kn is correct *)
+                | Some _ -> Some (minargs,mkConstU (kn, u))
+              with Not_found -> None
+    else
+      fun _ -> None in
   let nbodies = Array.length bodies in
   let make_Fi j = (mkCoFix(j,typedbodies), f j) in
   let subbodies = List.init nbodies make_Fi in
@@ -504,7 +549,7 @@ let reduce_mind_case env sigma mia =
         mkCase (mia.mci, mia.mU, mia.mParams, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
-let reduce_mind_case_use_function func env sigma mia =
+let reduce_mind_case_use_function f env sigma mia =
   match EConstr.kind sigma mia.mconstr with
     | Construct ((_, i as cstr),u) ->
         let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
@@ -513,30 +558,8 @@ let reduce_mind_case_use_function func env sigma mia =
         let br = it_mkLambda_or_LetIn (snd br) ctx in
         applist (br, real_cargs)
     | CoFix (bodynum,(names,_,_) as cofix) ->
-        let build_cofix_name =
-          if isConst sigma func then
-            let minargs = List.length mia.mcargs in
-            fun i ->
-              if Int.equal i bodynum then Some (minargs,func)
-              else match names.(i).binder_name with
-                | Anonymous -> None
-                | Name id ->
-                    (* In case of a call to another component of a block of
-                       mutual inductive, try to reuse the global name if
-                       the block was indeed initially built as a global
-                       definition *)
-                    let (kn, u) = destConst sigma func in
-                    let kn = Constant.change_label kn (Label.of_id id) in
-                    let cst = (kn, EInstance.kind sigma u) in
-                    try match constant_opt_value_in env cst with
-                      | None -> None
-                          (* TODO: check kn is correct *)
-                      | Some _ -> Some (minargs,mkConstU (kn, u))
-                    with Not_found -> None
-          else
-            fun _ -> None in
         let cofix_def =
-          contract_cofix_use_function env sigma build_cofix_name cofix in
+          contract_cofix_use_function env sigma f cofix mia.mcargs in
         mkCase (mia.mci, mia.mU, mia.mParams, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
@@ -826,29 +849,6 @@ and reduce_fix_use_function env sigma f fix stack =
         let stack' = List.assign stack recargnum (applist recarg') in
         (match EConstr.kind sigma recarg'hd with
            | Construct _ ->
-              let (names, (nbfix, lv, n)), u, largs = f in
-              let lu = List.firstn n largs in
-              let p = List.length lv in
-              let lyi = List.map fst lv in
-              let la =
-                List.map_i (fun q aq ->
-                  (* k from the comment is q+1 *)
-                  try mkRel (p+1-(List.index Int.equal (n-q) lyi))
-                  with Not_found -> Vars.lift p aq)
-                  0 lu
-              in
-              let f i = match names.(i) with
-              | None -> None
-              | Some (minargs,ref) ->
-                  let body = applist (mkEvalRef ref u, la) in
-                  let g =
-                    List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
-                      let subst = List.map (Vars.lift (-q)) (List.firstn (n-ij) la) in
-                      let tij' = Vars.substl (List.rev subst) tij in
-                      let x = make_annot x Sorts.Relevant in  (* TODO relevance *)
-                      mkLambda (x,tij',c)) 1 body (List.rev lv)
-                  in Some (minargs,g)
-              in
                Reduced (contract_fix_use_function env sigma f fix,stack')
            | _ -> NotReducible)
 
