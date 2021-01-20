@@ -890,10 +890,8 @@ the conversion in hypotheses :n:`{+ @ident}`.
 Conversion tactics applied to hypotheses
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. tacn:: @tactic in {+, @ident}
-
-   Applies :token:`tactic` (any of the conversion tactics listed in this
-   section) to the hypotheses :n:`{+ @ident}`.
+   The form :n:`@tactic in {+, @ident }` applies :token:`tactic` (any of the
+   conversion tactics listed in this section) to the hypotheses :n:`{+ @ident}`.
 
    If :token:`ident` is a local definition, then :token:`ident` can be replaced by
    :n:`type of @ident` to address not the body but the type of the local
