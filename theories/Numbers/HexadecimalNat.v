@@ -230,7 +230,7 @@ Proof.
   simpl_of_lu;
   rewrite ?Nat.add_succ_l, Nat.add_0_l, ?to_lu_succ, to_of_lu_sixteenfold
    by assumption;
-  unfold lnorm; simpl; now destruct nztail.
+  unfold lnorm; cbn; now destruct nztail.
 Qed.
 
 (** Second bijection result *)
