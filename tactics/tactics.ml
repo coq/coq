@@ -1244,8 +1244,6 @@ let force_destruction_arg with_evars env sigma c =
 (* tactic "cut" (actually modus ponens) *)
 (****************************************)
 
-let normalize_cut = false
-
 let cut c =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1260,8 +1258,6 @@ let cut c =
     | sigma, s ->
       let r = Sorts.relevance_of_sort s in
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
-      (* Backward compat: normalize [c]. *)
-      let c = if normalize_cut then strong whd_betaiota env sigma c else c in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine ~typecheck:false begin fun h ->
             let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c r (Vars.lift 1 concl)) in

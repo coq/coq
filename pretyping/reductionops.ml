@@ -468,23 +468,6 @@ let safe_meta_value sigma ev =
   try Some (Evd.meta_value sigma ev)
   with Not_found -> None
 
-let strong_with_flags whdfun flags env sigma t =
-  let push_rel_check_zeta d env =
-    let open CClosure.RedFlags in
-    let d = match d with
-      | LocalDef (na,c,t) when not (red_set flags fZETA) -> LocalAssum (na,t)
-      | d -> d in
-    push_rel d env in
-  let rec strongrec env t =
-    map_constr_with_full_binders env sigma
-      push_rel_check_zeta strongrec env (whdfun flags env sigma t) in
-  strongrec env t
-
-let strong whdfun env sigma t =
-  let rec strongrec env t =
-    map_constr_with_full_binders env sigma push_rel strongrec env (whdfun env sigma t) in
-  strongrec env t
-
 (*************************************)
 (*** Reduction using bindingss ***)
 (*************************************)
@@ -1284,7 +1267,9 @@ let plain_instance sigma s c = match s with
 
 let instance env sigma s c =
   (* if s = [] then c else *)
-  strong whd_betaiota env sigma (plain_instance sigma s c)
+  (* No need to compute contexts under binders as whd_betaiota is local *)
+  let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota env sigma t) in
+  strongrec (plain_instance sigma s c)
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]

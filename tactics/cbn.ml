@@ -820,3 +820,15 @@ let whd_cbn flags env sigma t =
     (whd_state_gen ~refold:true ~tactic_mode:true flags env sigma (t, Stack.empty))
   in
   Stack.zip ~refold:true sigma state
+
+let norm_cbn flags env sigma t =
+  let push_rel_check_zeta d env =
+    let open CClosure.RedFlags in
+    let d = match d with
+      | LocalDef (na,c,t) when not (red_set flags fZETA) -> LocalAssum (na,t)
+      | d -> d in
+    push_rel d env in
+  let rec strongrec env t =
+    map_constr_with_full_binders env sigma
+      push_rel_check_zeta strongrec env (whd_cbn flags env sigma t) in
+  strongrec env t

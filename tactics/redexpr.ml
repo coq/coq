@@ -46,9 +46,6 @@ let cbv_native env sigma c =
 
 let whd_cbn = Cbn.whd_cbn
 
-let strong_cbn flags =
-  strong_with_flags whd_cbn flags
-
 let simplIsCbn =
   Goptions.declare_bool_option_and_ref ~depr:false ~key:["SimplIsCbn"] ~value:false
 
@@ -248,11 +245,11 @@ let reduction_of_red_expr_val = function
   | Hnf -> (e_red hnf_constr,DEFAULTcast)
   | Simpl (f,o) ->
      let whd_am = if simplIsCbn () then whd_cbn f else whd_simpl in
-     let am = if simplIsCbn () then strong_cbn f else simpl in
+     let am = if simplIsCbn () then Cbn.norm_cbn f else simpl in
      (contextualize (if head_style then whd_am else am) am o,DEFAULTcast)
   | Cbv f -> (e_red (cbv_norm_flags f),DEFAULTcast)
   | Cbn f ->
-     (e_red (strong_cbn f), DEFAULTcast)
+     (e_red (Cbn.norm_cbn f), DEFAULTcast)
   | Lazy f -> (e_red (clos_norm_flags f),DEFAULTcast)
   | Unfold ubinds -> (e_red (unfoldn (List.map out_with_occurrences ubinds)),DEFAULTcast)
   | Fold cl -> (e_red (fold_commands cl),DEFAULTcast)
