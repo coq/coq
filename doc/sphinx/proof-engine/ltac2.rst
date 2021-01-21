@@ -66,7 +66,6 @@ Current limitations include:
   - An easy way to get the number of constructors of an inductive type.
     Currently only way to do this is to destruct a variable of the inductive type
     and count the number of goals that result.
-- The :attr:`deprecated` attribute is not supported for Ltac2 definitions.
 
 - Error messages may be cryptic.
 
@@ -229,6 +228,8 @@ One can define new types with the following commands.
    defined in Coq and give their type information.  They can also declare
    data structures from OCaml.  This command has no use for the end user.
 
+   This command supports the :attr:`deprecated` attribute.
+
 APIs
 ~~~~
 
@@ -318,6 +319,8 @@ Ltac2 Definitions
    If ``rec`` is set, the tactic is expanded into a recursive binding.
 
    If ``mutable`` is set, the definition can be redefined at a later stage (see below).
+
+   This command supports the :attr:`deprecated` attribute.
 
 .. cmd:: Ltac2 Set @qualid {? as @ident } := @ltac2_expr
 
@@ -1246,6 +1249,8 @@ Notations
       so that you may have to resort to thunking to ensure that side-effects are
       performed at the right time.
 
+   This command supports the :attr:`deprecated` attribute.
+
 Abbreviations
 ~~~~~~~~~~~~~
 
@@ -1275,6 +1280,8 @@ Abbreviations
 
    Note that abbreviations are not type checked at all, and may result in typing
    errors after expansion.
+
+   This command supports the :attr:`deprecated` attribute.
 
 .. _defining_tactics:
 
