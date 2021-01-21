@@ -315,68 +315,6 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    prints the list of types that supported by :tacn:`zify` i.e.,
    :g:`Z`, :g:`nat`, :g:`positive` and :g:`N`.
 
-.. cmd:: Show Zify Spec
-
-   .. deprecated:: 8.13
-       Use :cmd:`Show Zify` ``UnOpSpec`` or :cmd:`Show Zify` ``BinOpSpec`` instead.
-
-.. cmd:: Add InjTyp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``InjTyp`` instead.
-
-.. cmd:: Add BinOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``BinOp`` instead.
-
-.. cmd:: Add BinOpSpec @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``BinOpSpec`` instead.
-
-.. cmd:: Add UnOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``UnOp`` instead.
-
-.. cmd:: Add UnOpSpec @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``UnOpSpec`` instead.
-
-.. cmd:: Add CstOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``CstOp`` instead.
-
-.. cmd:: Add BinRel @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``BinRel`` instead.
-
-.. cmd:: Add PropOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``PropOp`` instead.
-
-.. cmd:: Add PropBinOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``PropBinOp`` instead.
-
-.. cmd:: Add PropUOp @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``PropUOp`` instead.
-
-.. cmd:: Add Saturate @one_term
-
-   .. deprecated:: 8.13
-       Use :cmd:`Add Zify` ``Saturate`` instead.
-
-
-
 
 .. [#csdp] Sources and binaries can be found at https://projects.coin-or.org/Csdp
 .. [#fnpsatz] Variants deal with equalities and strict inequalities.
