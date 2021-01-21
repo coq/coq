@@ -18,6 +18,7 @@ type global_data = {
   gdata_expr : glb_tacexpr;
   gdata_type : type_scheme;
   gdata_mutable : bool;
+  gdata_deprecation : Deprecation.t option;
 }
 
 type constructor_data = {
@@ -35,12 +36,17 @@ type projection_data = {
   pdata_indx : int;
 }
 
+type alias_data = {
+  alias_body : raw_tacexpr;
+  alias_depr : Deprecation.t option;
+}
+
 type ltac_state = {
   ltac_tactics : global_data KNmap.t;
   ltac_constructors : constructor_data KNmap.t;
   ltac_projections : projection_data KNmap.t;
   ltac_types : glb_quant_typedef KNmap.t;
-  ltac_aliases : raw_tacexpr KNmap.t;
+  ltac_aliases : alias_data KNmap.t;
 }
 
 let empty_state = {
@@ -79,9 +85,10 @@ let define_type kn e =
 
 let interp_type kn = KNmap.find kn ltac_state.contents.ltac_types
 
-let define_alias kn tac =
+let define_alias ?deprecation kn tac =
   let state = !ltac_state in
-  ltac_state := { state with ltac_aliases = KNmap.add kn tac state.ltac_aliases }
+  let data = { alias_body = tac; alias_depr = deprecation } in
+  ltac_state := { state with ltac_aliases = KNmap.add kn data state.ltac_aliases }
 
 let interp_alias kn = KNmap.find kn ltac_state.contents.ltac_aliases
 

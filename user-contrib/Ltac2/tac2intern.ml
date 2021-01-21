@@ -655,6 +655,35 @@ let is_alias env qid = match get_variable env qid with
 | ArgArg (TacAlias _) -> true
 | ArgVar _ | (ArgArg (TacConstant _)) -> false
 
+let is_user_name qid = match qid with
+| AbsKn _ -> false
+| RelId _ -> true
+
+let deprecated_ltac2_alias =
+  Deprecation.create_warning
+    ~object_name:"Ltac2 alias"
+    ~warning_name:"deprecated-ltac2-alias"
+    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac (TacAlias kn)))
+
+let deprecated_ltac2_def =
+  Deprecation.create_warning
+    ~object_name:"Ltac2 definition"
+    ~warning_name:"deprecated-ltac2-definition"
+    (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn)))
+
+let check_deprecated_ltac2 ?loc qid def =
+  if is_user_name qid then match def with
+  | TacAlias kn ->
+    begin match (Tac2env.interp_alias kn).alias_depr with
+    | None -> ()
+    | Some depr -> deprecated_ltac2_alias ?loc (kn, depr)
+    end
+  | TacConstant kn ->
+    begin match (Tac2env.interp_global kn).gdata_deprecation with
+    | None -> ()
+    | Some depr -> deprecated_ltac2_def ?loc (kn, depr)
+    end
+
 let rec intern_rec env {loc;v=e} = match e with
 | CTacAtm atm -> intern_atm env atm
 | CTacRef qid ->
@@ -663,11 +692,12 @@ let rec intern_rec env {loc;v=e} = match e with
     let sch = Id.Map.find id env.env_var in
     (GTacVar id, fresh_mix_type_scheme env sch)
   | ArgArg (TacConstant kn) ->
-    let { Tac2env.gdata_type = sch } =
+    let { Tac2env.gdata_type = sch; gdata_deprecation = depr } =
       try Tac2env.interp_global kn
       with Not_found ->
         CErrors.anomaly (str "Missing hardwired primitive " ++ KerName.print kn)
     in
+    let () = check_deprecated_ltac2 ?loc qid (TacConstant kn) in
     (GTacRef kn, fresh_type_scheme env sch)
   | ArgArg (TacAlias kn) ->
     let e =
@@ -675,7 +705,8 @@ let rec intern_rec env {loc;v=e} = match e with
       with Not_found ->
         CErrors.anomaly (str "Missing hardwired alias " ++ KerName.print kn)
     in
-    intern_rec env e
+    let () = check_deprecated_ltac2 ?loc qid (TacAlias kn) in
+    intern_rec env e.alias_body
   end
 | CTacCst qid ->
   let kn = get_constructor env qid in
@@ -695,12 +726,13 @@ let rec intern_rec env {loc;v=e} = match e with
 | CTacApp ({loc;v=CTacCst qid}, args) ->
   let kn = get_constructor env qid in
   intern_constructor env loc kn args
-| CTacApp ({v=CTacRef qid}, args) when is_alias env qid ->
+| CTacApp ({v=CTacRef qid; loc=aloc}, args) when is_alias env qid ->
   let kn = match get_variable env qid with
   | ArgArg (TacAlias kn) -> kn
   | ArgVar _ | (ArgArg (TacConstant _)) -> assert false
   in
   let e = Tac2env.interp_alias kn in
+  let () = check_deprecated_ltac2 ?loc:aloc qid (TacAlias kn) in
   let map arg =
     (* Thunk alias arguments *)
     let loc = arg.loc in
@@ -709,7 +741,7 @@ let rec intern_rec env {loc;v=e} = match e with
     CAst.make ?loc @@ CTacFun ([var], arg)
   in
   let args = List.map map args in
-  intern_rec env (CAst.make ?loc @@ CTacApp (e, args))
+  intern_rec env (CAst.make ?loc @@ CTacApp (e.alias_body, args))
 | CTacApp (f, args) ->
   let loc = f.loc in
   let (f, ft) = intern_rec env f in
@@ -1243,7 +1275,9 @@ let rec globalize ids ({loc;v=er} as e) = match er with
   let mem id = Id.Set.mem id ids in
   begin match get_variable0 mem ref with
   | ArgVar _ -> e
-  | ArgArg kn -> CAst.make ?loc @@ CTacRef (AbsKn kn)
+  | ArgArg kn ->
+    let () = check_deprecated_ltac2 ?loc ref kn in
+    CAst.make ?loc @@ CTacRef (AbsKn kn)
   end
 | CTacCst qid ->
   let knc = get_constructor () qid in
