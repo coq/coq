@@ -144,6 +144,7 @@ in time.
     together with its SHA256 hash in a signed e-mail to `dsi.securite` @ `inria.fr`
     putting `@maximedenes` in carbon copy.
   + The MacOS packages should be signed with our own certificate. A detailed step-by-step guide can be found [on the wiki](https://github.com/coq/coq/wiki/SigningReleases).
+- [ ] Upload the PDF version of the reference manual to the GitHub release. (*TODO:* automate this.)
 - [ ] Prepare a page of news on the website with the link to the GitHub release
   (see [coq/www#63](https://github.com/coq/www/pull/63)).
 - [ ] Merge the website update, publish the release
