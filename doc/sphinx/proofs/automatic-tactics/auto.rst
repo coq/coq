@@ -282,9 +282,9 @@ Creating Hints
    .. deprecated:: 8.13
 
      The default value for hint locality will change in a future
-     release. For the time being, adding hints outside of sections without
-     specifying an explicit locality will trigger a deprecation
-     warning. We recommend you use :attr:`export` whenever possible.
+     release. Hints added outside of sections without an explicit
+     locality are now deprecated. We recommend using :attr:`export`
+     where possible.
 
    The `Hint` commands are:
 
