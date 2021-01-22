@@ -173,3 +173,9 @@ let create ~name ~category ?(default=Enabled) pp =
     | Disabled -> ()
     | AsError -> CErrors.user_err ?loc (pp x)
     | Enabled -> Feedback.msg_warning ?loc (pp x)
+
+(* Remark: [warn] does not need to start with a comma, but if present
+   it won't hurt (",," is normalized into ","). *)
+let with_warn warn (f:'b -> 'a) x =
+  let s = get_flags () in
+  Util.try_finally (fun x -> set_flags (s^","^warn);f x) x set_flags s

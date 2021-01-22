@@ -195,16 +195,29 @@ let is_interactive recsl =
 
 }
 
+(* For usability we temporarily switch off some flags during the call
+   to Function. However this is not satisfactory:
+
+ 1- Function should not warn "non-recursive" and call the Definition
+    mechanism instead of Fixpoint when needed
+
+ 2- Only for automatically generated names should
+    unused-pattern-matching-variable be ignored. *)
+
 VERNAC COMMAND EXTEND Function STATE CUSTOM
 | ["Function" ne_function_fix_definition_list_sep(recsl,"with")]
     => { classify_funind recsl }
     -> {
-         if is_interactive recsl then
-           Vernacextend.VtOpenProof (fun () ->
-             Gen_principle.do_generate_principle_interactive (List.map snd recsl))
-         else
-           Vernacextend.VtDefault (fun () ->
-             Gen_principle.do_generate_principle (List.map snd recsl)) }
+    let warn = "-unused-pattern-matching-variable,-matching-variable,-non-recursive" in
+    if is_interactive recsl then
+      Vernacextend.VtOpenProof (fun () ->
+          CWarnings.with_warn warn
+            Gen_principle.do_generate_principle_interactive (List.map snd recsl))
+    else
+      Vernacextend.VtDefault (fun () ->
+          CWarnings.with_warn warn
+            Gen_principle.do_generate_principle (List.map snd recsl))
+  }
 END
 
 {
