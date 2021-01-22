@@ -46,10 +46,12 @@ let with_frame frame tac =
 
 type environment = Tac2env.environment = {
   env_ist : valexpr Id.Map.t;
+  env_mut : valexpr KNmap.t ref;
 }
 
-let empty_environment = {
+let empty_environment () = {
   env_ist = Id.Map.empty;
+  env_mut = ref KNmap.empty;
 }
 
 type closure = {
@@ -65,18 +67,11 @@ type closure = {
 
 let push_name ist id v = match id with
 | Anonymous -> ist
-| Name id -> { env_ist = Id.Map.add id v ist.env_ist }
+| Name id -> { env_ist = Id.Map.add id v ist.env_ist; env_mut = ist.env_mut }
 
 let get_var ist id =
   try Id.Map.find id ist.env_ist with Not_found ->
     anomaly (str "Unbound variable " ++ Id.print id)
-
-let get_ref ist kn =
-  try
-    let data = Tac2env.interp_global kn in
-    data.Tac2env.gdata_expr
-  with Not_found ->
-    anomaly (str "Unbound reference" ++ KerName.print kn)
 
 let return = Proofview.tclUNIT
 
@@ -84,12 +79,10 @@ let rec interp (ist : environment) = function
 | GTacAtm (AtmInt n) -> return (Tac2ffi.of_int n)
 | GTacAtm (AtmStr s) -> return (Tac2ffi.of_string (Bytes.of_string s))
 | GTacVar id -> return (get_var ist id)
-| GTacRef kn ->
-  let data = get_ref ist kn in
-  return (eval_pure Id.Map.empty (Some kn) data)
+| GTacRef kn -> return (eval_pure_ref ist kn)
 | GTacFun (ids, e) ->
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-  let f = interp_app cls in
+  let f = interp_app ist.env_mut cls in
   return (Tac2ffi.of_closure f)
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
@@ -106,16 +99,16 @@ let rec interp (ist : environment) = function
   let map (na, e) = match e with
   | GTacFun (ids, e) ->
     let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-    let f = Tac2ffi.of_closure (interp_app cls) in
+    let f = Tac2ffi.of_closure (interp_app ist.env_mut cls) in
     na, cls, f
   | _ -> anomaly (str "Ill-formed recursive function")
   in
   let fixs = List.map map el in
   let fold accu (na, _, cls) = match na with
   | Anonymous -> accu
-  | Name id -> { env_ist = Id.Map.add id cls accu.env_ist }
+  | Name id -> Id.Map.add id cls accu
   in
-  let ist = List.fold_left fold ist fixs in
+  let ist = { env_ist = List.fold_left fold ist.env_ist fixs; env_mut = ist.env_mut } in
   (* Hack to make a cycle imperatively in the environment *)
   let iter (_, e, _) = e.clos_env <- ist.env_ist in
   let () = List.iter iter fixs in
@@ -144,14 +137,14 @@ let rec interp (ist : environment) = function
   let tpe = Tac2env.interp_ml_object tag in
   with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
 
-and interp_app f =
+and interp_app mut f =
   let ans = fun args ->
     let { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } = f in
     let frame = match kn with
     | None -> FrAnon e
     | Some kn -> FrLtac kn
     in
-    let ist = { env_ist = ist } in
+    let ist = { env_ist = ist; env_mut = mut } in
     let ist = List.fold_left2 push_name ist ids args in
     with_frame frame (interp ist e)
   in
@@ -187,22 +180,17 @@ and interp_set ist e p r =
   let () = Valexpr.set_field e p r in
   return (Valexpr.make_int 0)
 
-and eval_pure bnd kn = function
-| GTacVar id -> Id.Map.get id bnd
+and eval_pure ist kn = function
+| GTacVar id -> Id.Map.get id ist.env_ist
 | GTacAtm (AtmInt n) -> Valexpr.make_int n
-| GTacRef kn ->
-  let { Tac2env.gdata_expr = e } =
-    try Tac2env.interp_global kn
-    with Not_found -> assert false
-  in
-  eval_pure bnd (Some kn) e
+| GTacRef kn -> eval_pure_ref ist kn
 | GTacFun (na, e) ->
-  let cls = { clos_ref = kn; clos_env = bnd; clos_var = na; clos_exp = e } in
-  let f = interp_app cls in
+  let cls = { clos_ref = kn; clos_env = ist.env_ist; clos_var = na; clos_exp = e } in
+  let f = interp_app ist.env_mut cls in
   Tac2ffi.of_closure f
 | GTacCst (_, n, []) -> Valexpr.make_int n
-| GTacCst (_, n, el) -> Valexpr.make_block n (eval_pure_args bnd el)
-| GTacOpn (kn, el) -> Tac2ffi.of_open (kn, eval_pure_args bnd el)
+| GTacCst (_, n, el) -> Valexpr.make_block n (eval_pure_args ist el)
+| GTacOpn (kn, el) -> Tac2ffi.of_open (kn, eval_pure_args ist el)
 | GTacLet (isrec, vals, body) ->
   let () = assert (not isrec) in
   let fold accu (na, e) = match na with
@@ -210,21 +198,32 @@ and eval_pure bnd kn = function
     (* No need to evaluate, we know this is a value *)
     accu
   | Name id ->
-    let v = eval_pure bnd None e in
+    let v = eval_pure ist None e in
     Id.Map.add id v accu
   in
-  let bnd = List.fold_left fold bnd vals in
-  eval_pure bnd kn body
+  let bnd = List.fold_left fold ist.env_ist vals in
+  let ist = { env_ist = bnd; env_mut = ist.env_mut } in
+  eval_pure ist kn body
 | GTacAtm (AtmStr _) | GTacSet _
 | GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ | GTacWth _ ->
   anomaly (Pp.str "Term is not a syntactical value")
 
-and eval_pure_args bnd args =
-  let map e = eval_pure bnd None e in
+and eval_pure_ref ist kn =
+  try
+    let data = Tac2env.interp_global kn in
+    if data.Tac2env.gdata_mutable then match KNmap.find kn ist.env_mut.contents with
+    | v -> v
+    | exception Not_found -> eval_pure ist (Some kn) data.Tac2env.gdata_expr
+    else eval_pure ist (Some kn) data.Tac2env.gdata_expr
+  with Not_found ->
+    anomaly (str "Unbound reference" ++ KerName.print kn)
+
+and eval_pure_args ist args =
+  let map e = eval_pure ist None e in
   Array.map_of_list map args
 
 let interp_value ist tac =
-  eval_pure ist.env_ist None tac
+  eval_pure ist None tac
 
 (** Cross-boundary hacks. *)
 
@@ -240,7 +239,7 @@ match Val.eq tag val_env with
 
 let get_env ist =
   try extract_env (Id.Map.find env_ref ist)
-  with Not_found -> empty_environment
+  with Not_found -> empty_environment ()
 
 let set_env env ist =
   Id.Map.add env_ref (Val.Dyn (val_env, env)) ist

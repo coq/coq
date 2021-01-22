@@ -14,14 +14,12 @@ open Tac2ffi
 
 type environment = Tac2env.environment
 
-val empty_environment : environment
+val empty_environment : unit -> environment
 
 val interp : environment -> glb_tacexpr -> valexpr Proofview.tactic
 
 val interp_value : environment -> glb_tacexpr -> valexpr
 (** Same as [interp] but assumes that the argument is a syntactic value. *)
-
-(* val interp_app : closure -> ml_tactic *)
 
 (** {5 Cross-boundary encodings} *)
 

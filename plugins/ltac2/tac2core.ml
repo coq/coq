@@ -1363,14 +1363,14 @@ let () =
     let ty = List.fold_left fold (gtypref t_unit) ids in
     GlbVal (ids, tac), ty
   in
-  let interp _ (ids, tac) =
+  let interp env (ids, tac) =
     let clos args =
       let add lfun id v =
         let v = Tac2ffi.to_ext val_ltac1 v in
         Id.Map.add id v lfun
       in
       let lfun = List.fold_left2 add Id.Map.empty ids args in
-      let ist = { env_ist = Id.Map.empty } in
+      let ist = { env_ist = Id.Map.empty; env_mut = env.env_mut } in
       let lfun = Tac2interp.set_env ist lfun in
       let ist = Ltac_plugin.Tacinterp.default_ist () in
       let ist = { ist with Geninterp.lfun = lfun } in
@@ -1415,14 +1415,14 @@ let () =
     let ty = List.fold_left fold (gtypref t_ltac1) ids in
     GlbVal (ids, tac), ty
   in
-  let interp _ (ids, tac) =
+  let interp env (ids, tac) =
     let clos args =
       let add lfun id v =
         let v = Tac2ffi.to_ext val_ltac1 v in
         Id.Map.add id v lfun
       in
       let lfun = List.fold_left2 add Id.Map.empty ids args in
-      let ist = { env_ist = Id.Map.empty } in
+      let ist = { env_ist = Id.Map.empty; env_mut = env.env_mut } in
       let lfun = Tac2interp.set_env ist lfun in
       let ist = Ltac_plugin.Tacinterp.default_ist () in
       let ist = { ist with Geninterp.lfun = lfun } in
@@ -1586,7 +1586,8 @@ let () =
     (* Evaluate the Ltac2 quotation eagerly *)
     let idtac = Value.of_closure { ist with lfun = Id.Map.empty }
         (CAst.make (Tacexpr.TacId [])) in
-    let ist = { env_ist = Id.Map.empty } in
+    let ist = Tac2interp.get_env ist.Tacinterp.lfun in
+    let ist = { env_ist = Id.Map.empty; env_mut = ist.env_mut } in
     Tac2interp.interp ist tac >>= fun _ ->
     Ftactic.return idtac
   | _ :: _ ->
@@ -1599,7 +1600,11 @@ let () =
     let clos = CAst.make (Tacexpr.TacFun
         (nas, CAst.make (Tacexpr.TacML (ltac2_eval, mk_arg self_id :: args)))) in
     let self = GTacFun (List.map (fun id -> Name id) ids, tac) in
-    let self = Tac2interp.interp_value { env_ist = Id.Map.empty } self in
+    let self =
+      let ist = Tac2interp.get_env ist.Tacinterp.lfun in
+      let ist = { env_ist = Id.Map.empty; env_mut = ist.env_mut } in
+      Tac2interp.interp_value ist self
+    in
     let self = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) self in
     let ist = { ist with lfun = Id.Map.singleton self_id self } in
     Ftactic.return (Value.of_closure ist clos)

@@ -121,6 +121,7 @@ type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr
 
 type environment = {
   env_ist : valexpr Id.Map.t;
+  env_mut : valexpr KNmap.t ref;
 }
 
 type ('a, 'b) ml_object = {
