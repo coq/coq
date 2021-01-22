@@ -249,7 +249,7 @@ create_opam() {
     local OPAM_COQ_DIR="$4"
 
     if [ $RUNNER = "NEW" ]; then
-        /opt/sethugepage "never"
+        /opt/sethugepage "madvise"
     else
         /opt/sethugepage "always"
     fi
@@ -350,7 +350,7 @@ for coq_opam_package in $sorted_coq_opam_packages; do
 
         # perform measurements for the NEW/OLD commit (provided by the user)
         if [ $RUNNER = "NEW" ]; then
-            /opt/sethugepage "never"
+            /opt/sethugepage "madvise"
             export OPAMROOT="$new_opam_root"
             echo "Testing NEW commit: $(date)"
         else
