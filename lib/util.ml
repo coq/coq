@@ -135,6 +135,13 @@ type 'a delayed = unit -> 'a
 
 let delayed_force f = f ()
 
+(* finalize - Credit X.Leroy, D.Remy. *)
+let try_finally f x finally y =
+  let res = try f x with exn -> finally y; raise exn in
+  finally y;
+  res
+
+
 (* Misc *)
 
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
