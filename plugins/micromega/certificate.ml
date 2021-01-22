@@ -28,7 +28,7 @@ open Q.Notations
 open Mutils
 
 let use_simplex =
-  Goptions.declare_bool_option_and_ref ~depr:false ~key:["Simplex"] ~value:true
+  Goptions.declare_bool_option_and_ref ~depr:true ~key:["Simplex"] ~value:true
 
 (* If set to some [file], arithmetic goals are dumped in [file].v *)
 

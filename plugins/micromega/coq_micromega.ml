@@ -38,14 +38,14 @@ let max_depth = max_int
 
 (* Search limit for provers over Q R *)
 let lra_proof_depth =
-  declare_int_option_and_ref ~depr:false ~key:["Lra"; "Depth"] ~value:max_depth
+  declare_int_option_and_ref ~depr:true ~key:["Lra"; "Depth"] ~value:max_depth
 
 (* Search limit for provers over Z *)
 let lia_enum =
-  declare_bool_option_and_ref ~depr:false ~key:["Lia"; "Enum"] ~value:true
+  declare_bool_option_and_ref ~depr:true ~key:["Lia"; "Enum"] ~value:true
 
 let lia_proof_depth =
-  declare_int_option_and_ref ~depr:false ~key:["Lia"; "Depth"] ~value:max_depth
+  declare_int_option_and_ref ~depr:true ~key:["Lia"; "Depth"] ~value:max_depth
 
 let get_lia_option () =
   (Certificate.use_simplex (), lia_enum (), lia_proof_depth ())
