@@ -11,7 +11,6 @@
 {
 
 open Pp
-open Constr
 open Stdarg
 open Pcoq.Prim
 open Pcoq.Constr
@@ -195,20 +194,6 @@ TACTIC EXTEND unify
     | Some t ->
       let state = Hints.Hint_db.transparent_state t in
       Tactics.unify ~state x y
-  }
-END
-
-{
-let deprecated_convert_concl_no_check =
-  CWarnings.create
-    ~name:"convert_concl_no_check" ~category:"deprecated"
-    (fun () -> Pp.str "The syntax [convert_concl_no_check] is deprecated. Use [change_no_check] instead.")
-}
-
-TACTIC EXTEND convert_concl_no_check
-| ["convert_concl_no_check" constr(x) ] -> {
-    deprecated_convert_concl_no_check ();
-    Tactics.convert_concl ~check:false x DEFAULTcast
   }
 END
 

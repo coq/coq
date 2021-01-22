@@ -3191,7 +3191,7 @@ Other changes in 8.10+beta1
     by Maxime Dénès, review by Pierre-Marie Pédrot).
 
   - New variant :tacn:`change_no_check` of :tacn:`change`, usable as a
-    documented replacement of :tacn:`convert_concl_no_check`
+    documented replacement of `convert_concl_no_check`
     (`#10012 <https://github.com/coq/coq/pull/10012>`_,
     `#10017 <https://github.com/coq/coq/pull/10017>`_,
     `#10053 <https://github.com/coq/coq/pull/10053>`_, and
