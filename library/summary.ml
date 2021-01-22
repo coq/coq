@@ -131,28 +131,27 @@ let ref ?freeze ~name x = fst @@ ref_tag ?freeze ~name x
 
 module Local = struct
 
-type 'a local_ref = ('a CEphemeron.key * 'a Dyn.tag) ref
+type 'a local_ref = 'a CEphemeron.key ref * 'a CEphemeron.key Dyn.tag
 
-let set r v = r := (CEphemeron.create v, snd !r)
+let set (r, tag) v = r := CEphemeron.create v
 
-let get r =
-  let key, name = !r in
-  try CEphemeron.get key
+let get (key, name) =
+  try CEphemeron.get !key
   with CEphemeron.InvalidKey ->
     let { init_function } = DynMap.find name !sum_map in
     init_function ();
-    CEphemeron.get (fst !r)
+    CEphemeron.get !key
 
-let ref ?(freeze=fun x -> x) ~name init =
+let ref (type a) ~name (init : a) : a local_ref =
   let () = check_name (mangle name) in
-  let tag : 'a Dyn.tag = Dyn.create (mangle name) in
-  let r = pervasives_ref (CEphemeron.create init, tag) in
+  let tag : a CEphemeron.key Dyn.tag = Dyn.create (mangle name) in
+  let r = pervasives_ref (CEphemeron.create init) in
   let () = sum_map := DynMap.add tag
-    { freeze_function = (fun ~marshallable -> freeze (get r));
-      unfreeze_function = (set r);
-      init_function = (fun () -> set r init) } !sum_map
+    { freeze_function = (fun ~marshallable -> !r);
+      unfreeze_function = (fun v -> r := v);
+      init_function = (fun () -> r := CEphemeron.create init) } !sum_map
   in
-  r
+  (r, tag)
 
 let (!) = get
 let (:=) = set
