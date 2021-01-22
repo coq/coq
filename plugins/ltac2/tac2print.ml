@@ -272,6 +272,13 @@ let pr_glbexpr_gen lvl c =
     in
     let c = pr_constructor kn in
     paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)))
+  | GTacMut (gr, e) ->
+    let qid = shortest_qualid_of_ltac (TacConstant gr) in
+    let paren = match lvl with
+    | E0 | E1 | E2 | E3 | E4 -> paren
+    | E5 -> fun x -> x
+    in
+    paren (hov 0 (str "Set" ++ spc () ++ Libnames.pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr E5 e))
   | GTacExt (tag, arg) ->
     let tpe = interp_ml_object tag in
     let env = Global.env() in

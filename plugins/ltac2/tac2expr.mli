@@ -110,6 +110,7 @@ type raw_tacexpr_r =
 | CTacRec of raw_recexpr
 | CTacPrj of raw_tacexpr * ltac_projection or_relid
 | CTacSet of raw_tacexpr * ltac_projection or_relid * raw_tacexpr
+| CTacMut of tacref or_relid * raw_tacexpr
 | CTacExt : ('a, _) Tac2dyn.Arg.tag * 'a -> raw_tacexpr_r
 
 and raw_tacexpr = raw_tacexpr_r CAst.t
@@ -140,6 +141,7 @@ type glb_tacexpr =
 | GTacSet of type_constant * glb_tacexpr * int * glb_tacexpr
 | GTacOpn of ltac_constructor * glb_tacexpr list
 | GTacWth of glb_tacexpr open_match
+| GTacMut of ltac_constant * glb_tacexpr
 | GTacExt : (_, 'a) Tac2dyn.Arg.tag * 'a -> glb_tacexpr
 | GTacPrm of ml_tactic_name * glb_tacexpr list
 

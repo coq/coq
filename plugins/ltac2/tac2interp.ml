@@ -133,6 +133,10 @@ let rec interp (ist : environment) = function
 | GTacPrm (ml, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   with_frame (FrPrim ml) (Tac2ffi.apply (Tac2env.interp_primitive ml) el)
+| GTacMut (kn, e) ->
+  interp ist e >>= fun v ->
+  let () = ist.env_mut := KNmap.add kn v ist.env_mut.contents in
+  return (Valexpr.make_int 0)
 | GTacExt (tag, e) ->
   let tpe = Tac2env.interp_ml_object tag in
   with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
@@ -204,7 +208,7 @@ and eval_pure ist kn = function
   let bnd = List.fold_left fold ist.env_ist vals in
   let ist = { env_ist = bnd; env_mut = ist.env_mut } in
   eval_pure ist kn body
-| GTacAtm (AtmStr _) | GTacSet _
+| GTacAtm (AtmStr _) | GTacSet _ | GTacMut _
 | GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ | GTacWth _ ->
   anomaly (Pp.str "Term is not a syntactical value")
 
