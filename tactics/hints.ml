@@ -1449,9 +1449,9 @@ let make_db_list dbnames =
   in
   List.map lookup dbnames
 
-let push_resolves env sigma info hint db =
+let push_resolves env sigma hint db =
   let name = PathHints [hint] in
-  let entries = make_resolves env sigma (true, false) info ~check:false ~name (IsGlobRef hint) in
+  let entries = make_resolves env sigma (true, false) empty_hint_info ~check:false ~name (IsGlobRef hint) in
   Hint_db.add_list env sigma entries db
 
 let push_resolve_hyp env sigma decl db =

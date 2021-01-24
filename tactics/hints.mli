@@ -208,7 +208,7 @@ val hint_constr : constr * Univ.ContextSet.t option -> hint_term
          has missing arguments. *)
 
 val push_resolves :
-  env -> evar_map -> hint_info -> GlobRef.t -> Hint_db.t -> Hint_db.t
+  env -> evar_map -> GlobRef.t -> Hint_db.t -> Hint_db.t
 
 (** [push_resolve_hyp hname htyp db].
    used to add an hypothesis to the local hint database;
