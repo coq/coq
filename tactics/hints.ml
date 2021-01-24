@@ -902,8 +902,8 @@ let make_resolves env sigma (eapply, hnf) info ~check ?name cr =
   ents
 
 (* used to add an hypothesis to the local hint database *)
-let make_resolve_hyp env sigma decl =
-  let hname = NamedDecl.get_id decl in
+let make_resolve_hyp env sigma hname =
+  let decl = EConstr.lookup_named hname env in
   let c = mkVar hname in
   try
     [make_apply_entry env sigma true empty_hint_info
@@ -1432,7 +1432,7 @@ let make_local_hint_db env sigma ts eapply lems =
     | None -> Hint_db.transparent_state (searchtable_map "core")
     | Some ts -> ts
   in
-  let hintlist = List.map_append (make_resolve_hyp env sigma) sign in
+  let hintlist = List.map_append (fun decl -> make_resolve_hyp env sigma (Named.Declaration.get_id decl)) sign in
   Hint_db.empty ts false
   |> Hint_db.add_list env sigma hintlist
   |> Hint_db.add_list env sigma (constructor_hints env sigma eapply lems)

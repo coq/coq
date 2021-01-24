@@ -27,6 +27,8 @@ open Locusops
 open Hints
 open Proofview.Notations
 
+module NamedDecl = Context.Named.Declaration
+
 let eauto_unif_flags = auto_flags_of_state TransparentState.full
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
@@ -91,7 +93,7 @@ let e_exact flags h =
 
 let rec e_trivial_fail_db db_list local_db =
   let next = Proofview.Goal.enter begin fun gl ->
-    let d = Tacmach.New.pf_last_hyp gl in
+    let d = NamedDecl.get_id @@ Tacmach.New.pf_last_hyp gl in
     let local_db = push_resolve_hyp (Tacmach.New.pf_env gl) (Tacmach.New.project gl) d local_db in
     e_trivial_fail_db db_list local_db
   end in
@@ -237,7 +239,7 @@ module SearchProblem = struct
       in
       let intro_tac =
         let mkdb db gl =
-          push_resolve_hyp (pf_env gl) (project gl) (pf_last_hyp gl) db
+          push_resolve_hyp (pf_env gl) (project gl) (NamedDecl.get_id (pf_last_hyp gl)) db
         in
         let l = filter_tactics mkdb s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
         List.map

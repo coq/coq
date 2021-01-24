@@ -216,7 +216,7 @@ val push_resolves :
    If the hyp cannot be used as a Hint, it is not added. *)
 
 val push_resolve_hyp :
-  env -> evar_map -> named_declaration -> Hint_db.t -> Hint_db.t
+  env -> evar_map -> Id.t -> Hint_db.t -> Hint_db.t
 
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;

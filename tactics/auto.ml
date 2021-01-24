@@ -289,9 +289,8 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
       ( Proofview.Goal.enter begin fun gl ->
           let sigma = Tacmach.New.project gl in
           let env = Proofview.Goal.env gl in
-          let nf c = Evarutil.nf_evar sigma c in
           let decl = Tacmach.New.pf_last_hyp gl in
-          let hyp = Context.Named.Declaration.map_constr nf decl in
+          let hyp = Context.Named.Declaration.get_id decl in
           let local_db = push_resolve_hyp env sigma hyp local_db in
           trivial_fail_db dbg mod_delta db_list local_db
       end)
@@ -441,18 +440,17 @@ let possible_resolve env sigma dbg mod_delta db_list local_db secvars cl =
         (my_find_search mod_delta env sigma db_list local_db secvars head cl)
   with Not_found -> []
 
-let extend_local_db decl db gl =
-  let env = Tacmach.New.pf_env gl in
-  let sigma = Tacmach.New.project gl in
-  push_resolve_hyp env sigma decl db
-
 (* Introduce an hypothesis, then call the continuation tactic [kont]
    with the hint db extended with the so-obtained hypothesis *)
 
 let intro_register dbg kont db =
   Tacticals.New.tclTHEN (dbg_intro dbg)
     (Proofview.Goal.enter begin fun gl ->
-      let extend_local_db decl db = extend_local_db decl db gl in
+      let extend_local_db decl db =
+        let env = Tacmach.New.pf_env gl in
+        let sigma = Tacmach.New.project gl in
+        push_resolve_hyp env sigma (Context.Named.Declaration.get_id decl) db
+      in
       Tacticals.New.onLastDecl (fun decl -> kont (extend_local_db decl db))
     end)
 
