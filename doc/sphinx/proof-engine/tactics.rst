@@ -2073,19 +2073,6 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    is the name given by :n:`intros until @natural` to the :n:`@natural`-th non-dependent
    premise of the goal.
 
-.. tacn:: double induction @ident @ident
-   :name: double induction
-
-   This tactic is deprecated and should be replaced by
-   :n:`induction @ident; induction @ident` (or
-   :n:`induction @ident ; destruct @ident` depending on the exact needs).
-
-.. tacv:: double induction @natural__1 @natural__2
-
-   This tactic is deprecated and should be replaced by
-   :n:`induction num1; induction num3` where :n:`num3` is the result
-   of :n:`num2 - num1`
-
 .. tacn:: dependent induction @ident
    :name: dependent induction
 

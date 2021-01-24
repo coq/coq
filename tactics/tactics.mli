@@ -77,11 +77,6 @@ val auto_intros_tac : Names.Name.t list -> unit Proofview.tactic
 
 val intros               : unit Proofview.tactic
 
-(** [depth_of_quantified_hypothesis b h g] returns the index of [h] in
-   the conclusion of goal [g], up to head-reduction if [b] is [true] *)
-val depth_of_quantified_hypothesis :
-  bool -> quantified_hypothesis -> Proofview.Goal.t -> int
-
 val intros_until         : quantified_hypothesis -> unit Proofview.tactic
 
 val intros_clearing      : bool list -> unit Proofview.tactic

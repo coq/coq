@@ -21,4 +21,3 @@ val case_tac : bool -> or_and_intro_pattern option ->
 val h_decompose       : inductive list -> constr -> unit Proofview.tactic
 val h_decompose_or    : constr -> unit Proofview.tactic
 val h_decompose_and   : constr -> unit Proofview.tactic
-val h_double_induction : quantified_hypothesis -> quantified_hypothesis-> unit Proofview.tactic

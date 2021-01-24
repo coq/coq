@@ -19,7 +19,6 @@ open Tacmach.New
 open Tacticals.New
 open Clenv
 open Tactics
-open Proofview.Notations
 
 type branch_args = {
   branchnum  : int;         (* the branch number *)
@@ -27,8 +26,6 @@ type branch_args = {
   branchsign : bool list;   (* the signature of the branch.
                                true=assumption, false=let-in *)
   branchnames : Tactypes.intro_patterns}
-
-module NamedDecl = Context.Named.Declaration
 
 type elim_kind = Case of bool | Elim
 
@@ -217,52 +214,3 @@ let h_decompose l c = decompose_these c l
 let h_decompose_or = decompose_or
 
 let h_decompose_and = decompose_and
-
-(* The tactic Double performs a double induction *)
-
-let induction_trailer abs_i abs_j bargs =
-  tclTHEN
-    (tclDO (abs_j - abs_i) intro)
-    (onLastHypId
-       (fun id ->
-          Proofview.Goal.enter begin fun gl ->
-          let idty = pf_get_type_of gl (mkVar id) in
-          let fvty = global_vars (pf_env gl) (project gl) idty in
-          let possible_bring_hyps =
-            (List.tl (nLastDecls gl (abs_j - abs_i))) @ bargs
-          in
-          let (hyps,_) =
-            List.fold_left
-              (fun (bring_ids,leave_ids) d ->
-                 let cid = NamedDecl.get_id d in
-                 if not (List.mem cid leave_ids)
-                 then (d::bring_ids,leave_ids)
-                 else (bring_ids,cid::leave_ids))
-              ([],fvty) possible_bring_hyps
-          in
-          let ids = List.rev (ids_of_named_context hyps) in
-          (tclTHENLIST
-            [revert ids; elimination_then (fun _ -> tclIDTAC) id])
-          end
-          ))
-
-let double_ind h1 h2 =
-  Proofview.Goal.enter begin fun gl ->
-  let abs_i = depth_of_quantified_hypothesis true h1 gl in
-  let abs_j = depth_of_quantified_hypothesis true h2 gl in
-  let abs =
-    if abs_i < abs_j then Proofview.tclUNIT (abs_i,abs_j) else
-    if abs_i > abs_j then  Proofview.tclUNIT (abs_j,abs_i) else
-      let info = Exninfo.reify () in
-      tclZEROMSG ~info (Pp.str "Both hypotheses are the same.") in
-  abs >>= fun (abs_i,abs_j) ->
-  (tclTHEN (tclDO abs_i intro)
-     (onLastHypId
-        (fun id ->
-           elimination_then
-             (introElimAssumsThen (induction_trailer abs_i abs_j)) id)))
-  end
-
-let h_double_induction = double_ind
-
-
