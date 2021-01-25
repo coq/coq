@@ -340,8 +340,8 @@ module Latex = struct
           printf "\\coqref{"; label_ident id;
           printf "}{\\coqdoc%s{%s}}" (type_name typ) s
       | External m when !externals ->
-          printf "\\coqexternalref{"; label_ident fid;
-          printf "}{%s}{\\coqdoc%s{%s}}" (escaped m) (type_name typ) s
+          printf "\\coqexternalref{%s}{%s}" (escaped m) (sanitize_name fid);
+          printf "{\\coqdoc%s{%s}}" (type_name typ) s;
       | External _ | Unknown ->
           printf "\\coqdoc%s{%s}" (type_name typ) s
 
