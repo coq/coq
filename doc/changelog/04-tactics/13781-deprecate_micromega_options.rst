@@ -1,3 +1,3 @@
 - **Deprecated:**
-  The micromega option :flag:`Simplex` is deprecated. It is already set by default and will be removed.
+  The micromega option :flag:`Simplex`, which is currently set by default
   (`#13781 <https://github.com/coq/coq/pull/13781>`_, by Frédéric Besson).
