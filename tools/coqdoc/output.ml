@@ -333,6 +333,19 @@ module Latex = struct
       let space = 0.5 *. (float n) in
       printf "\\coqdocindent{%2.2fem}\n" space
 
+  let sanitize_name s =
+    let rec loop esc i =
+      if i < 0 then if esc then escaped s else s
+      else match s.[i] with
+      | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' -> loop esc (i-1)
+      | '<' | '>' | '&' | '\'' | '\"' -> loop true (i-1)
+      | '-' | ':' -> loop esc (i-1) (* should be safe in HTML5 attribute name syntax *)
+      | _ ->
+        (* This name contains complex characters:
+           this is probably a notation string, we simply hash it. *)
+        Digest.to_hex (Digest.string s)
+    in loop false (String.length s - 1)
+
   let ident_ref m fid typ s =
     let id = if fid <> "" then (m ^ "." ^ fid) else m in
     match find_module m with
