@@ -48,7 +48,7 @@ let interp_typed_vernac c ~pm ~stack =
     vernac_require_open_lemma ~stack
       (Vernacstate.LemmaStack.with_top ~f:(fun pstate -> f ~pstate));
     stack, pm
-  | VtReadProgram f -> f ~pm; stack, pm
+  | VtReadProgram f -> f ~stack ~pm; stack, pm
   | VtModifyProgram f ->
     let pm = f ~pm in stack, pm
   | VtDeclareProgram f ->
