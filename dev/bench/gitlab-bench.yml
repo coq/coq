@@ -4,9 +4,7 @@ bench:
   when: manual
   before_script:
     - printenv -0 | sort -z | tr '\0' '\n'
-  script:
-    - . ~/.opam/opam-init/init.sh
-    - ./dev/bench/gitlab.sh
+  script: dev/bench/gitlab.sh
   tags:
     - timing
   variables:
