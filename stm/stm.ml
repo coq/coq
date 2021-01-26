@@ -2305,7 +2305,10 @@ end (* }}} *)
 
 (** STM initialization options: *)
 
-type option_command = OptionSet of string option | OptionUnset
+type option_command =
+  | OptionSet of string option
+  | OptionAppend of string
+  | OptionUnset
 
 type injection_command =
   | OptionInjection of (Goptions.option_name * option_command)
@@ -2404,7 +2407,8 @@ let new_doc { doc_type ; ml_load_path; vo_load_path; injections; stm_options } =
   let set_option = let open Goptions in function
       | opt, OptionUnset -> unset_option_value_gen ~locality:OptLocal opt
       | opt, OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
-      | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v in
+      | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
+      | opt, OptionAppend v -> set_string_option_append_value_gen ~locality:OptLocal opt v in
 
   let handle_injection = function
     | RequireInjection r -> require_file r
