@@ -1230,7 +1230,7 @@ Flags, options and attributes
   :attr:`universes(template)` and ``universes(notemplate)`` instead
   (`#11663 <https://github.com/coq/coq/pull/11663>`_, by Théo Zimmermann).
 - **Deprecated:**
-  :flag:`Hide Obligations` flag
+  `Hide Obligations` flag
   (`#11828 <https://github.com/coq/coq/pull/11828>`_,
   by Emilio Jesus Gallego Arias).
 - **Added:** Handle the :attr:`local` attribute in :cmd:`Canonical
