@@ -1,7 +1,5 @@
 Vernac
-Usage
-Coqinit
-Coqargs
+Coqrc
 Coqcargs
 G_toplevel
 Coqloop

@@ -42,32 +42,13 @@ module AsyncOpts : sig
 
 end
 
-type interactive_top = TopLogical of DirPath.t | TopPhysical of string
-
 (** The STM document type [stm_doc_type] determines some properties
    such as what uncompleted proofs are allowed and what gets recorded
    to aux files. *)
 type stm_doc_type =
   | VoDoc       of string       (* file path *)
   | VioDoc      of string       (* file path *)
-  | Interactive of interactive_top    (* module path *)
-
-type option_command =
-  | OptionSet of string option
-  | OptionAppend of string
-  | OptionUnset
-
-type injection_command =
-  | OptionInjection of (Goptions.option_name * option_command)
-  (** Set flags or options before the initial state is ready. *)
-  | RequireInjection of (string * string option * bool option)
-  (** Require libraries before the initial state is
-     ready. Parameters follow [Library], that is to say,
-     [lib,prefix,import_export] means require library [lib] from
-     optional [prefix] and [import_export] if [Some false/Some true]
-     is used.  *)
-  (* -load-vernac-source interleaving is not supported yet *)
-  (* | LoadInjection of (string * bool) *)
+  | Interactive of Coqargs.top    (* module path *)
 
 (** STM initialization options: *)
 type stm_init_options =
@@ -76,14 +57,7 @@ type stm_init_options =
      the specified [doc_type]. This distinction should disappear at
      some some point. *)
 
-  ; ml_load_path : CUnix.physical_path list
-  (** OCaml load paths for the document. *)
-
-  ; vo_load_path   : Loadpath.vo_path list
-  (** [vo] load paths for the document. Usually extracted from -R
-     options / _CoqProject *)
-
-  ; injections : injection_command list
+  ; injections : Coqargs.injection_command list
   (** Injects Require and Set/Unset commands before the initial
      state is ready *)
 
@@ -94,8 +68,10 @@ type stm_init_options =
 (** The type of a STM document *)
 type doc
 
-(** [init_core] performs some low-level initialization; should go away
-   in future releases. *)
+(** [init_process] performs some low-level initialization, call early *)
+val init_process : AsyncOpts.stm_opt -> unit
+
+(** [init_core] snapshorts the initial system state *)
 val init_core : unit -> unit
 
 (** [new_doc opt] Creates a new document with options [opt] *)

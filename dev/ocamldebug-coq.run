@@ -19,7 +19,7 @@ exec $OCAMLDEBUG \
     -I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar -I $COQTOP/clib \
     -I $COQTOP/gramlib/.pack \
     -I $COQTOP/lib -I $COQTOP/kernel -I $COQTOP/kernel/byterun \
-    -I $COQTOP/library -I $COQTOP/engine \
+    -I $COQTOP/library -I $COQTOP/engine -I $COQTOP/sysinit \
     -I $COQTOP/pretyping -I $COQTOP/parsing -I $COQTOP/vernac \
     -I $COQTOP/interp -I $COQTOP/proofs -I $COQTOP/tactics -I $COQTOP/stm \
     -I $COQTOP/toplevel -I $COQTOP/dev -I $COQTOP/config -I $COQTOP/ltac \

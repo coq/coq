@@ -134,7 +134,6 @@ open ComDefinition
 open Indschemes
 open Ind_tables
 open Auto_ind_decl
-open Coqinit
 open Coqtop
 open Himsg
 open Metasyntax

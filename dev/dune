@@ -34,6 +34,7 @@
     %{lib:coq.tactics:tactics.cma}
     %{lib:coq.vernac:vernac.cma}
     %{lib:coq.stm:stm.cma}
+    %{lib:coq.sysinit:sysinit.cma}
     %{lib:coq.toplevel:toplevel.cma}
     %{lib:coq.plugins.ltac:ltac_plugin.cma}
     %{lib:coq.top_printers:top_printers.cmi}

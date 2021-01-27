@@ -513,9 +513,11 @@ let msg_format = ref (fun () ->
 
 (* The loop ignores the command line arguments as the current model delegates
    its handing to the toplevel container. *)
-let loop run_mode ~opts:_ state =
+let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
   match run_mode with
   | Coqtop.Batch -> exit 0
+  | Coqtop.(Query PrintTags) -> Coqtop.print_style_tags color_mode; exit 0
+  | Coqtop.(Query _) -> Printf.eprintf "Unknown query"; exit 1
   | Coqtop.Interactive ->
   let open Vernac.State in
   set_doc state.doc;
@@ -580,32 +582,28 @@ coqidetop specific options:\n\
 \n  --help-XML-protocol    print documentation of the Coq XML protocol\n"
 }
 
-let islave_parse ~opts extra_args =
+let islave_parse extra_args =
   let open Coqtop in
-  let run_mode, extra_args = coqtop_toplevel.parse_extra ~opts extra_args in
+  let ({ run_mode; color_mode }, stm_opts), extra_args = coqtop_toplevel.parse_extra extra_args in
   let extra_args = parse extra_args in
   (* One of the role of coqidetop is to find the name of buffers to open *)
   (* in the command line; Coqide is waiting these names on stdout *)
   (* (see filter_coq_opts in coq.ml), so we send them now *)
   print_string (String.concat "\n" extra_args);
-  run_mode, []
+  ( { Coqtop.run_mode; color_mode }, stm_opts), []
 
-let islave_init run_mode ~opts =
+let islave_init ( { Coqtop.run_mode; color_mode }, stm_opts) injections ~opts =
   if run_mode = Coqtop.Batch then Flags.quiet := true;
-  Coqtop.init_toploop opts
+  Coqtop.init_toploop opts stm_opts injections
 
-let islave_default_opts =
-  Coqargs.{ default with
-    config = { default.config with
-      stm_flags = { default.config.stm_flags with
-         Stm.AsyncOpts.async_proofs_worker_priority = CoqworkmgrApi.High }}}
+let islave_default_opts = Coqargs.default
 
 let () =
   let open Coqtop in
   let custom = {
       parse_extra = islave_parse ;
-      help = coqidetop_specific_usage;
-      init = islave_init;
+      usage = coqidetop_specific_usage;
+      init_extra = islave_init;
       run = loop;
-      opts = islave_default_opts } in
+      initial_args = islave_default_opts } in
   start_coq custom

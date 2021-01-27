@@ -91,10 +91,11 @@ interp: interp/interp.cma
 parsing: parsing/parsing.cma
 pretyping: pretyping/pretyping.cma
 stm: stm/stm.cma
+sysinit: sysinit/sysinit.cma
 toplevel: toplevel/toplevel.cma
 
 .PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
-.PHONY: engine stm toplevel
+.PHONY: engine stm sysinit toplevel
 
 ######################
 ### 3) theories files

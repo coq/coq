@@ -3,10 +3,10 @@ Dag
 Vcs
 TQueue
 WorkerPool
-Vernac_classifier
 CoqworkmgrApi
 AsyncTaskQueue
 Partac
 Stm
+Stmargs
 ProofBlockDelimiter
 Vio_checking

@@ -207,14 +207,27 @@ package "vernac" (
 
 package "stm" (
 
-  description = "Coq State Transactional Machine"
+  description = "Coq State Transaction Machine"
   version     = "8.14"
 
-  requires    = "coq.vernac"
+  requires    = "coq.sysinit"
   directory   = "stm"
 
   archive(byte)    = "stm.cma"
   archive(native)  = "stm.cmxa"
+
+)
+
+package "sysinit" (
+
+  description = "Coq initialization"
+  version     = "8.14"
+
+  requires    = "coq.vernac"
+  directory   = "sysinit"
+
+  archive(byte)    = "sysinit.cma"
+  archive(native)  = "sysinit.cmxa"
 
 )
 

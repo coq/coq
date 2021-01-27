@@ -1,0 +1,7 @@
+(library
+ (name sysinit)
+ (public_name coq.sysinit)
+ (synopsis "Coq's initialization")
+ (wrapped false)
+ (libraries coq.vernac)
+ )

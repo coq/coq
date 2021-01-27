@@ -3,4 +3,4 @@
  (synopsis "Coq's Document Manager and Proof Checking Scheduler")
  (public_name coq.stm)
  (wrapped false)
- (libraries vernac))
+ (libraries sysinit))

@@ -436,11 +436,7 @@ let finish_timing ~prefix name =
 (* ******************** *)
 
 let print_results_filter ~cutoff ~filter =
-  (* The STM doesn't provide yet a proper document query and traversal
-     API, thus we need to re-check if some states are current anymore
-     (due to backtracking) using the `state_of_id` API. *)
-  let valid (did,id) _ = Stm.(state_of_id ~doc:(get_doc did) id) <> `Expired in
-  data := SM.filter valid !data;
+  data := SM.filter (fun (doc,id) _ -> Stateid.is_valid ~doc id) !data;
   let results =
     SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in
   let results = merge_roots results Local.(CList.last !stack) in
