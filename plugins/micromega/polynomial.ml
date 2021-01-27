@@ -36,29 +36,145 @@ module Monomial : sig
   val is_var : t -> bool
   val get_var : t -> var option
   val prod : t -> t -> t
-  val exp : t -> int -> t
-  val div : t -> t -> t * int
+  val factor : t -> var -> t option
   val compare : t -> t -> int
   val pp : out_channel -> t -> unit
   val fold : (var -> int -> 'a -> 'a) -> t -> 'a -> 'a
   val sqrt : t -> t option
   val variables : t -> ISet.t
   val degree : t -> int
-end = struct
-  (* A monomial is represented by a multiset of variables  *)
-  module Map = Map.Make (Int)
-  open Map
+end =
+struct
+  type t = int array
+  (* Compact representation [| d; e₀; v₀; ...; eₙ; vₙ |] where
+    d = Σi v_i is the multi-degree
+    e_i gives the variable number as a diff, i.e. the variable at position i
+        is Σi e_i, and e_i ≠ 0 for all i > 0
+    v_i is the degree of e_i, must be ≠ 0
+  *)
 
-  type t = int Map.t
+  let const = [|0|]
 
-  let degree m = Map.fold (fun _ i d -> i + d) m 0
+  let is_const (m : t) = match m with [|_|] -> true | _ -> false
 
-  let is_singleton m =
-    try
-      let k, v = choose m in
-      let l, e, r = split k m in
-      if is_empty l && is_empty r then Some (k, v) else None
-    with Not_found -> None
+  let var x = [|1; x; 1|]
+
+  let is_var (m : t) = Int.equal m.(0) 1
+
+  let get_var (m : t) = match m with
+  | [|1; x; _|] -> Some x
+  | _ -> None
+
+  let prod (m1 : t) (m2 : t) =
+    let len1 = Array.length m1 in
+    let len2 = Array.length m2 in
+    (* Compute the number of variables in the monomial *)
+    let rec nvars accu cur1 cur2 i1 i2 =
+      if Int.equal i1 len1 && Int.equal i2 len2 then accu
+      else if Int.equal i1 len1 then accu + (len2 - i2)
+      else if Int.equal i2 len2 then accu + (len1 - i1)
+      else
+        let ncur1 = cur1 + m1.(i1) in
+        let ncur2 = cur2 + m2.(i2) in
+        if ncur1 < ncur2 then nvars (accu + 2) ncur1 cur2 (i1 + 2) i2
+        else if ncur1 > ncur2 then nvars (accu + 2) cur1 ncur2 i1 (i2 + 2)
+        else nvars (accu + 2) ncur1 ncur2 (i1 + 2) (i2 + 2)
+    in
+    let n = nvars 1 0 0 1 1 in
+    let m = Array.make n 0 in
+    let () = m.(0) <- m1.(0) + m2.(0) in
+    (* Set the variable exponents *)
+    let rec set cur cur1 cur2 i i1 i2 =
+      if Int.equal i1 len1 && Int.equal i2 len2 then ()
+      else if Int.equal i1 len1 then
+        let ncur2 = cur2 + m2.(i2) in
+        let () = m.(i) <- ncur2 - cur in
+        let () = m.(i + 1) <- m2.(i2 + 1) in
+        set ncur2 cur1 ncur2 (i + 2) i1 (i2 + 2)
+      else if Int.equal i2 len2 then
+        let ncur1 = cur1 + m1.(i1) in
+        let () = m.(i) <- ncur1 - cur in
+        let () = m.(i + 1) <- m1.(i1 + 1) in
+        set ncur1 ncur1 cur2 (i + 2) (i1 + 2) i2
+      else
+        let ncur1 = cur1 + m1.(i1) in
+        let ncur2 = cur2 + m2.(i2) in
+        if ncur1 < ncur2 then
+          let () = m.(i) <- ncur1 - cur in
+          let () = m.(i + 1) <- m1.(i1 + 1) in
+          set ncur1 ncur1 cur2 (i + 2) (i1 + 2) i2
+        else if ncur1 > ncur2 then
+          let () = m.(i) <- ncur2 - cur in
+          let () = m.(i + 1) <- m2.(i2 + 1) in
+          set ncur2 cur1 ncur2 (i + 2) i1 (i2 + 2)
+        else
+          let () = m.(i) <- ncur1 - cur in
+          let () = m.(i + 1) <- m1.(i1 + 1) + m2.(i2 + 1) in
+          set ncur1 ncur1 ncur2 (i + 2) (i1 + 2) (i2 + 2)
+    in
+    let () = set 0 0 0 1 1 1 in
+    m
+
+  (*  [factor m x] returns [None] if [x] does not appear in [m], and decreases
+      its exponent by one otherwise *)
+  let factor (m : t) (x : var) =
+    let len = Array.length m in
+    let rec factor cur i =
+      if Int.equal i len then None
+      else
+        let ncur = cur + m.(i) in
+        let k = m.(i + 1) in
+        if ncur < x then factor ncur (i + 2)
+        else if x < ncur then None
+        else if Int.equal k 1 then
+          (* Need to squeeze out the binding for x *)
+          let ans = Array.make (len - 2) 0 in
+          let () = ans.(0) <- m.(0) - 1 in
+          let () = Array.blit m 1 ans 1 (i - 1) in
+          let () = Array.blit m (i + 2) ans i (len - i - 2) in
+          (* Correct the diff *)
+          let () = if not (Int.equal len (i + 2)) then ans.(i) <- ans.(i) + m.(i) in
+          Some ans
+        else
+          let ans = Array.copy m in
+          let () = ans.(0) <- ans.(0) - 1 in
+          let () = ans.(i + 1) <- ans.(i + 1) - 1 in
+          Some ans
+    in
+    factor 0 1
+
+  let compare (m1 : t) (m2 : t) = CArray.compare Int.compare m1 m2
+
+  let sqrt (m : t) = match m with
+  | [|_|] -> Some const
+  | _ ->
+    let m = Array.copy m in
+    let len = Array.length m in
+    let () = m.(0) <- m.(0) / 2 in
+    let rec set i =
+      if Int.equal i len then ()
+      else
+        let v = m.(i + 1) in
+        let () = if v mod 2 = 0 then m.(i + 1) <- v / 2 else raise Exit in
+        set (i + 2)
+    in
+    try let () = set 1 in Some m with Exit -> None
+
+  let degree (m : t) = m.(0)
+
+  let fold f (m : t) accu =
+    let len = Array.length m in
+    let rec fold accu cur i =
+      if Int.equal i len then accu
+      else
+        let cur = cur + m.(i) in
+        let accu = f cur m.(i + 1) accu in
+        fold accu cur (i + 2)
+    in
+    fold accu 0 1
+
+  let variables (m : t) =
+    fold (fun x _ accu -> ISet.add x accu) m ISet.empty
 
   let pp o m =
     let pp_elt o (k, v) =
@@ -70,75 +186,8 @@ end = struct
       | [e] -> pp_elt o e
       | e :: l -> Printf.fprintf o "%a*%a" pp_elt e pp_list l
     in
-    pp_list o (Map.bindings m)
+    pp_list o (List.rev @@ fold (fun x v accu -> (x, v) :: accu) m [])
 
-  (* The monomial that corresponds to a constant *)
-  let const = Map.empty
-  let sum_degree m = Map.fold (fun _ n s -> s + n) m 0
-
-  (* Total ordering of monomials *)
-  let compare : t -> t -> int =
-   fun m1 m2 ->
-    let s1 = sum_degree m1 and s2 = sum_degree m2 in
-    if Int.equal s1 s2 then Map.compare Int.compare m1 m2 else Int.compare s1 s2
-
-  let is_const = Map.is_empty
-
-  (* The monomial 'x' *)
-  let var x = Map.add x 1 Map.empty
-
-  let is_var m =
-    match is_singleton m with None -> false | Some (_, i) -> i = 1
-
-  let get_var m =
-    match is_singleton m with
-    | None -> None
-    | Some (k, i) -> if i = 1 then Some k else None
-
-  let sqrt m =
-    if is_const m then None
-    else
-      try
-        Some
-          (Map.fold
-             (fun v i acc ->
-               let i' = i / 2 in
-               if i mod 2 = 0 then add v i' acc else raise Not_found)
-             m const)
-      with Not_found -> None
-
-  (* Get the degre of a variable in a monomial *)
-  let find x m = try find x m with Not_found -> 0
-
-  (* Product of monomials *)
-  let prod m1 m2 = Map.fold (fun k d m -> add k (find k m + d) m) m1 m2
-
-  let exp m n =
-    let rec exp acc n = if n = 0 then acc else exp (prod acc m) (n - 1) in
-    exp const n
-
-  (*  [div m1 m2 = mr,n] such that mr * (m2)^n = m1 *)
-  let div m1 m2 =
-    let n =
-      fold
-        (fun x i n ->
-          let i' = find x m1 in
-          let nx = i' / i in
-          min n nx)
-        m2 max_int
-    in
-    let mr =
-      fold
-        (fun x i' m ->
-          let i = find x m2 in
-          let ir = i' - (i * n) in
-          if ir = 0 then m else add x ir m)
-        m1 empty
-    in
-    (mr, n)
-
-  let variables m = fold (fun v i acc -> ISet.add v acc) m ISet.empty
-  let fold = fold
 end
 
 module MonMap = struct
@@ -230,13 +279,11 @@ end = struct
   let fold = P.fold
 
   let factorise x p =
-    let x = Monomial.var x in
     P.fold
       (fun m v (px, cx) ->
-        let m1, i = Monomial.div m x in
-        if i = 0 then (px, add m v cx)
-        else
-          let mx = Monomial.prod m1 (Monomial.exp x (i - 1)) in
+        match Monomial.factor m x with
+        | None -> (px, add m v cx)
+        | Some mx ->
           (add mx v px, cx))
       p
       (constant Q.zero, constant Q.zero)
