@@ -464,12 +464,8 @@ let parse_args ~help ~init arglist : t * string list =
 
     |"-w" | "-W" ->
       let w = next () in
-      if w = "none" then
-        (CWarnings.set_flags w; oval)
-      else
-        let w = CWarnings.get_flags () ^ "," ^ w in
-        CWarnings.set_flags (CWarnings.normalize_flags_string w);
-        oval
+      if w = "none" then add_set_option oval ["Warnings"] (Stm.OptionSet(Some w))
+      else add_set_option oval ["Warnings"] (Stm.OptionAppend w)
 
     |"-bytecode-compiler" ->
       { oval with config = { oval.config with enable_VM = get_bool opt (next ()) }}

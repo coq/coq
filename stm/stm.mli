@@ -52,7 +52,10 @@ type stm_doc_type =
   | VioDoc      of string       (* file path *)
   | Interactive of interactive_top    (* module path *)
 
-type option_command = OptionSet of string option | OptionUnset
+type option_command =
+  | OptionSet of string option
+  | OptionAppend of string
+  | OptionUnset
 
 type injection_command =
   | OptionInjection of (Goptions.option_name * option_command)
