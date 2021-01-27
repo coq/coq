@@ -107,6 +107,50 @@ let set_module m sub = current_module := (m,sub);
 let item_level = ref 0
 let in_doc = ref false
 
+let (%) f g x = f (g x)
+
+let string_flatmapi f =
+  let b = Buffer.create 16 in
+  fun s ->
+    Buffer.clear b;
+    String.iteri (fun i c -> Buffer.add_string b (f i c)) s;
+    Buffer.contents b
+
+let string_flatmap f = string_flatmapi (fun _ -> f)
+
+let html_escape = string_flatmap (function
+  | '<' -> "&lt;"
+  | '>' -> "&gt;"
+  | '&' -> "&amp;"
+  | '\"' -> "&quot;"
+  | c -> String.make 1 c
+  )
+
+let uri_escape = string_flatmap (function
+  | '>' | '<' | '#' | '&' as c -> sprintf "%%%X" (int_of_char c)
+  | ' ' -> "_"
+  | c -> String.make 1 c
+  )
+
+(* A 'fragment' is the part in the uri path that comes after the '#'. *)
+
+let allowed_fragment_char = function
+  | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' | '<' | '>' | '&'
+    | '\'' | '"' | '-' | ':' -> true
+  | _ -> false
+
+let uri_fragment_escape s =
+  let string_contains f s =
+     let rec find i = i < String.length s && (f s.[i] || find (i+1))
+     in find 0 in
+
+  if string_contains (not % allowed_fragment_char) s
+  then Digest.to_hex (Digest.string s)
+  else string_flatmap (function
+    | '>' | '<' | '#' | '&' as c -> sprintf "%%%X" (int_of_char c)
+    | c -> String.make 1 c
+    ) s
+
 (*s Customized and predefined pretty-print *)
 
 let initialize_texmacs () =
@@ -251,14 +295,12 @@ module Latex = struct
     | _ ->
         output_char c
 
-  let label_char c = match c with
-    | '_' -> output_char ' '
+  let label_ident = string_flatmap (function
+    | '_' -> " "
     | '\\' | '$' | '#' | '%' | '&' | '{' | '}'
-    | '^' | '~' -> printf "x%X" (Char.code c)
-    | _ -> if c >= '\x80' then printf "x%X" (Char.code c) else output_char c
-
-  let label_ident s =
-    for i = 0 to String.length s - 1 do label_char s.[i] done
+    | '^' | '~' as c -> sprintf "x%X" (Char.code c)
+    | c -> if c >= '\x80' then sprintf "x%X" (Char.code c) else String.make 1 c
+    )
 
   let latex_char = output_char
   let latex_string = output_string
@@ -268,41 +310,27 @@ module Latex = struct
 
   (*s Latex char escaping *)
 
-  let escaped =
-    let buff = Buffer.create 5 in
-    fun s ->
-      Buffer.clear buff;
-      for i = 0 to String.length s - 1 do
-        match s.[i] with
-        | '\\' ->
-            Buffer.add_string buff "\\symbol{92}"
-        | '$' | '#' | '%' | '&' | '{' | '}' | '_' as c ->
-            Buffer.add_char buff '\\'; Buffer.add_char buff c
-        | '^' | '~' as c ->
-            Buffer.add_char buff '\\'; Buffer.add_char buff c;
-            Buffer.add_string buff "{}"
-        | '\'' ->
-            if i < String.length s - 1 && s.[i+1] = '\'' then begin
-              Buffer.add_char buff '\''; Buffer.add_char buff '{';
-              Buffer.add_char buff '}'
-            end else
-              Buffer.add_char buff '\''
-        | c ->
-            Buffer.add_char buff c
-      done;
-      Buffer.contents buff
+  let latex_escape s =
+    let n = String.length s in
+    let next_char i = if i+1<n then Some (s.[i+1]) else None in
+    string_flatmapi (fun i c ->
+      match c with
+        | '\\' ->  "\\symbol{92}"
+        | '$' | '#' | '%' | '&' | '{' | '}' | '_' as c -> sprintf "\\%c" c
+        | '^' | '~' as c -> sprintf "\\%c{}" c
+        | '\'' -> if next_char i = Some '\'' then "'{}" else "'"
+        | c -> String.make 1 c
+        ) s
 
   (*s Latex reference and symbol translation *)
 
   let start_module () =
     let ln = !lib_name in
-      if not !short then begin
-        printf "\\coqlibrary{";
-        label_ident (get_module false);
-        printf "}{";
-        if ln <> "" then printf "%s " ln;
-        printf "}{%s}\n\n" (escaped (get_module true))
-    end
+    if not !short then
+      printf "\\coqlibrary{%s}{%s}{%s}\n\n"
+        (label_ident (get_module false))
+        (if ln <> "" then ln ^ " " else "")
+        (latex_escape (get_module true))
 
   let start_latex_math () = output_char '$'
 
@@ -337,23 +365,24 @@ module Latex = struct
     let id = if fid <> "" then (m ^ "." ^ fid) else m in
     match find_module m with
       | Local ->
-          printf "\\coqref{"; label_ident id;
-          printf "}{\\coqdoc%s{%s}}" (type_name typ) s
+          printf "\\coqref{%s}{\\coqdoc%s{%s}}"
+            (label_ident id) (type_name typ) s
       | External m when !externals ->
-          printf "\\coqexternalref{"; label_ident fid;
-          printf "}{%s}{\\coqdoc%s{%s}}" (escaped m) (type_name typ) s
+          printf "\\coqexternalref{%s}{%s}{\\coqdoc%s{%s}}"
+              (latex_escape m)
+              (latex_escape (uri_fragment_escape fid))
+              (type_name typ) s
       | External _ | Unknown ->
           printf "\\coqdoc%s{%s}" (type_name typ) s
 
   let defref m id ty s =
     if ty <> Notation then
-      (printf "\\coqdef{"; label_ident (m ^ "." ^ id);
-       printf "}{%s}{\\coqdoc%s{%s}}" s (type_name ty) s)
+      printf "\\coqdef{%s}{%s}{\\coqdoc%s{%s}}"
+         (label_ident (m ^ "." ^ id)) s (type_name ty) s
     else
       (* Glob file still not able to say the exact extent of the definition *)
       (* so we currently renounce to highlight the notation location *)
-      (printf "\\coqdef{"; label_ident (m ^ "." ^ id);
-       printf "}{%s}{%s}" s s)
+      printf "\\coqdef{%s}{%s}{%s}" (label_ident (m ^ "." ^ id)) s s
 
   let reference s = function
     | Def (fullid,typ) ->
@@ -367,7 +396,7 @@ module Latex = struct
        virtually, a user-level translation from "=_h" to "\ensuremath{=_{h}}" *)
 
   let output_sublexer_string doescape issymbchar tag s =
-    let s = if doescape then escaped s else s in
+    let s = if doescape then latex_escape s else s in
     match tag with
     | Some ref -> reference s ref
     | None -> if issymbchar then output_string s else printf "\\coqdocvar{%s}" s
@@ -402,7 +431,7 @@ module Latex = struct
   (*s Interpreting ident with fallback on sublexer if unknown ident *)
 
   let translate s =
-    match Tokens.translate s with Some s -> s | None -> escaped s
+    match Tokens.translate s with Some s -> s | None -> latex_escape s
 
   let keyword s loc =
     printf "\\coqdockw{%s}" (translate s)
@@ -588,33 +617,6 @@ module Html = struct
     | '&' -> printf "&amp;"
     | c -> output_char c
 
-  let escaped =
-    let buff = Buffer.create 5 in
-    fun s ->
-      Buffer.clear buff;
-      for i = 0 to String.length s - 1 do
-        match s.[i] with
-        | '<' -> Buffer.add_string buff "&lt;"
-        | '>' -> Buffer.add_string buff "&gt;"
-        | '&' -> Buffer.add_string buff "&amp;"
-        | '\"' -> Buffer.add_string buff "&quot;"
-        | c -> Buffer.add_char buff c
-      done;
-      Buffer.contents buff
-
-  let sanitize_name s =
-    let rec loop esc i =
-      if i < 0 then if esc then escaped s else s
-      else match s.[i] with
-      | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' -> loop esc (i-1)
-      | '<' | '>' | '&' | '\'' | '\"' -> loop true (i-1)
-      | '-' | ':' -> loop esc (i-1) (* should be safe in HTML5 attribute name syntax *)
-      | _ ->
-        (* This name contains complex characters:
-           this is probably a notation string, we simply hash it. *)
-        Digest.to_hex (Digest.string s)
-    in loop false (String.length s - 1)
-
   let latex_char _ = ()
   let latex_string _ = ()
 
@@ -644,10 +646,10 @@ module Html = struct
   let ident_ref m fid typ s =
     match find_module m with
     | Local ->
-        printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
+        printf "<a class=\"idref\" href=\"%s.html#%s\">" m (uri_fragment_escape fid);
         printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
     | External m when !externals ->
-        printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
+        printf "<a class=\"idref\" href=\"%s.html#%s\">" m (uri_fragment_escape fid);
         printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
     | External _ | Unknown ->
         printf "<span class=\"id\" title=\"%s\">%s</span>" typ s
@@ -655,14 +657,14 @@ module Html = struct
   let reference s r =
     match r with
     | Def (fullid,ty) ->
-        let s' = sanitize_name fullid in
+        let s' = uri_fragment_escape fullid in
         printf "<a id=\"%s\" class=\"idref\" href=\"#%s\">" s' s';
         printf "<span class=\"id\" title=\"%s\">%s</span></a>" (type_name ty) s
     | Ref (m,fullid,ty) ->
         ident_ref m fullid (type_name ty) s
 
   let output_sublexer_string doescape issymbchar tag s =
-    let s = if doescape then escaped s else s in
+    let s = if doescape then html_escape s else s in
     match tag with
     | Some ref -> reference s ref
     | None ->
@@ -684,7 +686,7 @@ module Html = struct
     Tokens.outfun := output_sublexer_string
 
   let translate s =
-    match Tokens.translate s with Some s -> s | None -> escaped s
+    match Tokens.translate s with Some s -> s | None -> html_escape s
 
   let keyword s loc =
     printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
@@ -830,8 +832,8 @@ module Html = struct
       printf "<a id=\"%s_%c\"></a><h2>%s %s</h2>\n" idx c (display_letter c) cat;
       List.iter
         (fun (id,(text,link,t)) ->
-           let id' = escaped (prepare_entry id t) in
-           printf "<a href=\"%s\">%s</a> %s<br/>\n" link id' text) l;
+           let id' = html_escape (prepare_entry id t) in
+           printf "<a href=\"%s\">%s</a> %s<br/>\n" (uri_escape link) id' text) l;
       printf "<br/><br/>"
     end
 
@@ -850,7 +852,7 @@ module Html = struct
                "[library]", m ^ ".html", t
         else
          sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
-        sprintf "%s.html#%s" m (sanitize_name s), t)
+        sprintf "%s.html#%s" m (uri_fragment_escape s), t)
 
   let format_bytype_index = function
     | Library, idx ->
@@ -859,7 +861,7 @@ module Html = struct
         Index.map
           (fun s m ->
              let text = sprintf "[in <a href=\"%s.html\">%s</a>]" m m in
-               (text, sprintf "%s.html#%s" m (sanitize_name s), t)) idx
+               (text, sprintf "%s.html#%s" m (uri_fragment_escape s), t)) idx
 
   (* Impression de la table d'index *)
   let print_index_table_item i =
