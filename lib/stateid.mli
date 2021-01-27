@@ -42,7 +42,7 @@ type ('a,'b) request = {
   name     : string
 }
 
-(* Asks the document manager is the given state is valid (or belongs to an
+(* Asks the document manager if the given state is valid (or belongs to an
    old version of the document) *)
 val is_valid : doc:int -> t -> bool
 
