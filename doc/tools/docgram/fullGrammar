@@ -687,17 +687,6 @@ command: [
 | "Add" "Zify" "BinOpSpec" constr      (* micromega plugin *)
 | "Add" "Zify" "UnOpSpec" constr      (* micromega plugin *)
 | "Add" "Zify" "Saturate" constr      (* micromega plugin *)
-| "Add" "InjTyp" constr      (* micromega plugin *)
-| "Add" "BinOp" constr      (* micromega plugin *)
-| "Add" "UnOp" constr      (* micromega plugin *)
-| "Add" "CstOp" constr      (* micromega plugin *)
-| "Add" "BinRel" constr      (* micromega plugin *)
-| "Add" "PropOp" constr      (* micromega plugin *)
-| "Add" "PropBinOp" constr      (* micromega plugin *)
-| "Add" "PropUOp" constr      (* micromega plugin *)
-| "Add" "BinOpSpec" constr      (* micromega plugin *)
-| "Add" "UnOpSpec" constr      (* micromega plugin *)
-| "Add" "Saturate" constr      (* micromega plugin *)
 | "Show" "Zify" "InjTyp"      (* micromega plugin *)
 | "Show" "Zify" "BinOp"      (* micromega plugin *)
 | "Show" "Zify" "UnOp"      (* micromega plugin *)
@@ -705,7 +694,6 @@ command: [
 | "Show" "Zify" "BinRel"      (* micromega plugin *)
 | "Show" "Zify" "UnOpSpec"      (* micromega plugin *)
 | "Show" "Zify" "BinOpSpec"      (* micromega plugin *)
-| "Show" "Zify" "Spec"      (* micromega plugin *)
 | "Add" "Ring" ident ":" constr OPT ring_mods      (* ring plugin *)
 | "Print" "Rings"      (* ring plugin *)
 | "Add" "Field" ident ":" constr OPT field_mods      (* ring plugin *)
@@ -1258,7 +1246,6 @@ query_command: [
 | "Compute" lconstr "."
 | "Check" lconstr "."
 | "About" smart_global OPT univ_name_list "."
-| "SearchHead" constr_pattern in_or_out_modules "."
 | "SearchPattern" constr_pattern in_or_out_modules "."
 | "SearchRewrite" constr_pattern in_or_out_modules "."
 | "Search" search_query search_queries "."
@@ -1551,7 +1538,6 @@ simple_tactic: [
 | "revert" LIST1 hyp
 | "simple" "induction" quantified_hypothesis
 | "simple" "destruct" quantified_hypothesis
-| "double" "induction" quantified_hypothesis quantified_hypothesis
 | "admit"
 | "fix" ident natural
 | "cofix" ident
@@ -1669,7 +1655,6 @@ simple_tactic: [
 | "autounfold_one" hintbases
 | "unify" constr constr
 | "unify" constr constr "with" preident
-| "convert_concl_no_check" constr
 | "typeclasses" "eauto" "bfs" OPT nat_or_var "with" LIST1 preident
 | "typeclasses" "eauto" OPT nat_or_var "with" LIST1 preident
 | "typeclasses" "eauto" "bfs" OPT nat_or_var

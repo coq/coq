@@ -493,7 +493,7 @@ term_forall_or_fun: [
 ]
 
 open_binders: [
-| LIST1 name ":" term
+| LIST1 name ":" type
 | LIST1 binder
 ]
 
@@ -1001,18 +1001,6 @@ command: [
 | "Reset" "Ltac" "Profile"
 | "Show" "Ltac" "Profile" OPT [ "CutOff" integer | string ]
 | "Show" "Lia" "Profile"      (* micromega plugin *)
-| "Add" "InjTyp" one_term      (* micromega plugin *)
-| "Add" "BinOp" one_term      (* micromega plugin *)
-| "Add" "UnOp" one_term      (* micromega plugin *)
-| "Add" "CstOp" one_term      (* micromega plugin *)
-| "Add" "BinRel" one_term      (* micromega plugin *)
-| "Add" "PropOp" one_term      (* micromega plugin *)
-| "Add" "PropBinOp" one_term      (* micromega plugin *)
-| "Add" "PropUOp" one_term      (* micromega plugin *)
-| "Add" "BinOpSpec" one_term      (* micromega plugin *)
-| "Add" "UnOpSpec" one_term      (* micromega plugin *)
-| "Add" "Saturate" one_term      (* micromega plugin *)
-| "Show" "Zify" "Spec"      (* micromega plugin *)
 | "Add" "Ring" ident ":" one_term OPT ( "(" LIST1 ring_mod SEP "," ")" )      (* ring plugin *)
 | "Print" "Rings"      (* ring plugin *)
 | "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* ring plugin *)
@@ -1117,7 +1105,6 @@ command: [
 | "Compute" term
 | "Check" term
 | "About" reference OPT univ_name_list
-| "SearchHead" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "SearchPattern" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "SearchRewrite" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "Search" LIST1 ( search_query ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
@@ -1626,7 +1613,6 @@ simple_tactic: [
 | "revert" LIST1 ident
 | "simple" "induction" [ ident | natural ]
 | "simple" "destruct" [ ident | natural ]
-| "double" "induction" [ ident | natural ] [ ident | natural ]
 | "admit"
 | "clear" LIST0 ident
 | "clear" "-" LIST1 ident
@@ -1758,7 +1744,6 @@ simple_tactic: [
 | "autounfold" OPT hintbases OPT occurrences
 | "autounfold_one" OPT hintbases OPT ( "in" ident )
 | "unify" one_term one_term OPT ( "with" ident )
-| "convert_concl_no_check" one_term
 | "typeclasses" "eauto" OPT "bfs" OPT nat_or_var OPT ( "with" LIST1 ident )
 | "head_of_constr" ident one_term
 | "not_evar" one_term
@@ -2420,7 +2405,6 @@ tac2mode: [
 | "Compute" term
 | "Check" term
 | "About" reference OPT univ_name_list
-| "SearchHead" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "SearchPattern" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "SearchRewrite" one_pattern OPT ( [ "inside" | "outside" ] LIST1 qualid )
 | "Search" LIST1 ( search_query ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
