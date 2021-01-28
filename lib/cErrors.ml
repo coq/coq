@@ -30,6 +30,7 @@ let anomaly ?loc ?info ?label pp =
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (Anomaly (label, pp), info)
 
+(* TODO remove the option *)
 exception UserError of string option * Pp.t (* User errors *)
 
 let user_err ?loc ?info ?hdr strm =
@@ -46,7 +47,7 @@ exception Timeout = Control.Timeout
 let where = function
 | None -> mt ()
 | Some s ->
-  if !Flags.debug then str "in " ++ str s ++ str ":" ++ spc () else mt ()
+  str "in " ++ str s ++ str ":" ++ spc ()
 
 let raw_anomaly e = match e with
   | Anomaly (s, pps) ->
@@ -133,7 +134,7 @@ let print_no_report e = iprint_no_report (e, Exninfo.info e)
 
 let _ = register_handler begin function
   | UserError(s, pps) ->
-    Some (where s ++ pps)
+    Some pps
   | _ -> None
   end
 
