@@ -1301,7 +1301,7 @@ Commands
   Declaration of arbitrary terms as hints. Global references are now
   preferred (`#7791 <https://github.com/coq/coq/pull/7791>`_, by
   Pierre-Marie Pédrot).
-- **Deprecated:** :cmd:`SearchHead` in favor of the new `headconcl:`
+- **Deprecated:** `SearchHead` in favor of the new `headconcl:`
   clause of :cmd:`Search` (part of `#8855
   <https://github.com/coq/coq/pull/8855>`_, by Théo Zimmermann).
 - **Added:**

@@ -75,7 +75,6 @@ type search_request =
 type searchable =
   | SearchPattern of constr_pattern_expr
   | SearchRewrite of constr_pattern_expr
-  | SearchHead of constr_pattern_expr
   | Search of (bool * search_request) list
 
 type locatable =

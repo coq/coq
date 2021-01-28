@@ -312,31 +312,6 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
          Search is:Instance [ Reflexive | Symmetric ].
 
-.. cmd:: SearchHead @one_pattern {? {| inside | outside } {+ @qualid } }
-
-   .. deprecated:: 8.12
-
-      Use the `headconcl:` clause of :cmd:`Search` instead.
-
-   Displays the name and type of all hypotheses of the
-   selected goal (if any) and theorems of the current context that have the
-   form :n:`{? forall {* @binder }, } {* P__i -> } C` where :n:`@one_pattern`
-   matches a subterm of `C` in head position.  For example, a :n:`@one_pattern` of `f _ b`
-   matches `f a b`, which is a subterm of `C` in head position when `C` is `f a b c`.
-
-   See :cmd:`Search` for an explanation of the `inside`/`outside` clauses.
-
-   .. example:: :cmd:`SearchHead` examples
-
-      .. coqtop:: none reset
-
-         Add Search Blacklist "internal_".
-
-      .. coqtop:: all warn
-
-         SearchHead le.
-         SearchHead (@eq bool).
-
 .. cmd:: SearchPattern @one_pattern {? {| inside | outside } {+ @qualid } }
 
    Displays the name and type of all hypotheses of the
@@ -384,7 +359,7 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 .. table:: Search Blacklist @string
 
    Specifies a set of strings used to exclude lemmas from the results of :cmd:`Search`,
-   :cmd:`SearchHead`, :cmd:`SearchPattern` and :cmd:`SearchRewrite` queries.  A lemma whose
+   :cmd:`SearchPattern` and :cmd:`SearchRewrite` queries.  A lemma whose
    fully-qualified name contains any of the strings will be excluded from the
    search results.  The default blacklisted substrings are ``_subterm``, ``_subproof`` and
    ``Private_``.
@@ -395,7 +370,7 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 .. flag:: Search Output Name Only
 
    This flag restricts the output of search commands to identifier names;
-   turning it on causes invocations of :cmd:`Search`, :cmd:`SearchHead`,
+   turning it on causes invocations of :cmd:`Search`,
    :cmd:`SearchPattern`, :cmd:`SearchRewrite` etc. to omit types from their
    output, printing only identifiers.
 

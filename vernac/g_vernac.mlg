@@ -965,8 +965,6 @@ GRAMMAR EXTEND Gram
       (* Searching the environment *)
       | IDENT "About"; qid = smart_global; l = OPT univ_name_list; "." ->
          { fun g -> VernacPrint (PrintAbout (qid,l,g)) }
-      | IDENT "SearchHead"; c = constr_pattern; l = in_or_out_modules; "." ->
-          { fun g -> VernacSearch (SearchHead c,g, l) }
       | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules; "." ->
           { fun g -> VernacSearch (SearchPattern c,g, l) }
       | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules; "." ->

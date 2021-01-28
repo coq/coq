@@ -242,7 +242,6 @@ let pr_search a gopt b pr_p =
   pr_opt (fun g -> Goal_select.pr_goal_selector g ++ str ":"++ spc()) gopt
   ++
   match a with
-  | SearchHead c -> keyword "SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchPattern c -> keyword "SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchRewrite c -> keyword "SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | Search sl ->

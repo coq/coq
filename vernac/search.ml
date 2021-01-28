@@ -185,14 +185,6 @@ let rec pattern_filter pat ref env sigma typ =
   | LetIn (_, _, _, typ) -> pattern_filter pat ref env sigma typ
   | _ -> false
 
-let rec head_filter pat ref env sigma typ =
-  let typ = Termops.strip_outer_cast sigma typ in
-  if Constr_matching.is_matching_head env sigma pat typ then true
-  else match EConstr.kind sigma typ with
-  | Prod (_, _, typ)
-  | LetIn (_, _, _, typ) -> head_filter pat ref env sigma typ
-  | _ -> false
-
 let full_name_of_reference ref =
   let (dir,id) = repr_path (Nametab.path_of_global ref) in
   DirPath.to_string dir ^ "." ^ Id.to_string id
@@ -265,19 +257,6 @@ let search_rewrite env sigma pat mods pr_search =
     module_filter mods ref kind env sigma typ &&
     (pattern_filter pat1 ref env sigma (EConstr.of_constr typ) ||
        pattern_filter pat2 ref env sigma (EConstr.of_constr typ)) &&
-    blacklist_filter ref kind env sigma typ
-  in
-  let iter ref kind env typ =
-    if filter ref kind env typ then pr_search ref kind env typ
-  in
-  generic_search env iter
-
-(** Search *)
-
-let search_by_head env sigma pat mods pr_search =
-  let filter ref kind env typ =
-    module_filter mods ref kind env sigma typ &&
-    head_filter pat ref env sigma (EConstr.of_constr typ) &&
     blacklist_filter ref kind env sigma typ
   in
   let iter ref kind env typ =
