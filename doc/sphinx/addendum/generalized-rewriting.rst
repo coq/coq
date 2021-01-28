@@ -726,6 +726,30 @@ declare your constant as rigid for proof search using the command
 Strategies for rewriting
 ------------------------
 
+Usage
+~~~~~
+
+.. tacn:: rewrite_strat @rewstrategy {? in @ident }
+   :name: rewrite_strat
+
+   Rewrite using :n:`@rewstrategy` in the conclusion or in the hypothesis :n:`@ident`.
+
+   .. exn:: Nothing to rewrite.
+
+      The strategy didn't find any matches.
+
+   .. exn:: No progress made.
+
+      If the strategy succeeded but made no progress.
+
+   .. exn:: Unable to satisfy the rewriting constraints.
+
+      If the strategy succeeded and made progress but the
+      corresponding rewriting constraints are not satisfied.
+
+   :tacn:`setoid_rewrite` :n:`@one_term` is basically equivalent to
+   :n:`rewrite_strat outermost @one_term`.
+
 Definitions
 ~~~~~~~~~~~
 
@@ -773,7 +797,7 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
    failure
 
 :n:`id`
-  identity
+   identity
 
 :n:`refl`
    reflexivity
@@ -803,10 +827,16 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
    all subterms
 
 :n:`innermost @rewstrategy`
-   innermost first
+   Innermost first.
+   When there are multiple nested matches in a subterm, the innermost subterm
+   is rewritten.  For :ref:`example <rewrite_strat_innermost_outermost>`,
+   rewriting :n:`(a + b) + c` with Nat.add_comm gives :n:`(b + a) + c`.
 
 :n:`outermost @rewstrategy`
-   outermost first
+   Outermost first.
+   When there are multiple nested matches in a subterm, the outermost subterm
+   is rewritten.  For :ref:`example <rewrite_strat_innermost_outermost>`,
+   rewriting :n:`(a + b) + c` with Nat.add_comm gives :n:`c + (a + b)`.
 
 :n:`bottomup @rewstrategy`
    bottom-up
@@ -833,8 +863,8 @@ are applied using the tactic :n:`rewrite_strat @rewstrategy`.
    to be documented
 
 
-A few of these are defined in terms of the others using a
-primitive fixpoint operator:
+Conceptually, a few of these are defined in terms of the others using a
+primitive fixpoint operator `fix`, which the tactic doesn't currently support:
 
 - :n:`try @rewstrategy := choice @rewstrategy id`
 - :n:`any @rewstrategy := fix @ident. try (@rewstrategy ; @ident)`
@@ -876,30 +906,30 @@ if it reduces the subterm under consideration. The ``fold`` strategy takes
 a :token:`term` and tries to *unify* it to the current subterm, converting it to :token:`term`
 on success. It is stronger than the tactic ``fold``.
 
+.. _rewrite_strat_innermost_outermost:
 
-Usage
-~~~~~
+.. example:: :n:`innermost` and :n:`outermost`
 
+   The type of `Nat.add_comm` is `forall n m : nat, n + m = m + n`.
 
-.. tacn:: rewrite_strat @rewstrategy {? in @ident }
-   :name: rewrite_strat
+   .. coqtop:: all
 
-   Rewrite using the strategy s in hypothesis ident or the conclusion.
+      Require Import Coq.Arith.Arith.
+      Set Printing Parentheses.
+      Goal forall a b c: nat, a + b + c = 0.
+      rewrite_strat innermost Nat.add_comm.
 
-   .. exn:: Nothing to rewrite.
+   .. coqtop:: none
 
-      If the strategy failed.
+      Abort.
+      Goal forall a b c: nat, a + b + c = 0.
 
-   .. exn:: No progress made.
+   Using :n:`outermost` instead gives this result:
 
-      If the strategy succeeded but made no progress.
+   .. coqtop:: all
 
-   .. exn:: Unable to satisfy the rewriting constraints.
+      rewrite_strat outermost Nat.add_comm.
 
-      If the strategy succeeded and made progress but the
-      corresponding rewriting constraints are not satisfied.
+   .. coqtop:: none
 
-
-   The ``setoid_rewrite c`` tactic is basically equivalent to
-   ``rewrite_strat (outermost c)``.
-
+      Abort.
