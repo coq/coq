@@ -447,7 +447,7 @@ binder: [
 
 open_binders: [
 | REPLACE name LIST0 name ":" lconstr
-| WITH LIST1 name ":" lconstr
+| WITH LIST1 name ":" type
 (* @Zimmi48: Special token .. is for use in the Notation command. (see bug_3304.v) *)
 | DELETE name ".." name
 | REPLACE name LIST0 name binders
@@ -1510,8 +1510,6 @@ query_command: [
 | WITH "Check" lconstr
 | REPLACE "About" smart_global OPT univ_name_list "."
 | WITH "About" smart_global OPT univ_name_list
-| REPLACE "SearchHead" constr_pattern in_or_out_modules "."
-| WITH "SearchHead" constr_pattern in_or_out_modules
 | REPLACE "SearchPattern" constr_pattern in_or_out_modules "."
 | WITH "SearchPattern" constr_pattern in_or_out_modules
 | REPLACE "SearchRewrite" constr_pattern in_or_out_modules "."

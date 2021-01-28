@@ -9,7 +9,7 @@ Binders
 .. insertprodn open_binders binder
 
 .. prodn::
-   open_binders ::= {+ @name } : @term
+   open_binders ::= {+ @name } : @type
    | {+ @binder }
    name ::= _
    | @ident
