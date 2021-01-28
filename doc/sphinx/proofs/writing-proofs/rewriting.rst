@@ -109,7 +109,7 @@ Rewriting with Leibniz and setoid equality
 
       For each selected hypothesis and/or the conclusion,
       :tacn:`rewrite` finds the first matching subterm in
-      depth-first search order. Only subterms identical to the
+      depth-first search order. Only subterms identical to
       that first matched subterm are rewritten.  If the `at` clause is specified,
       only these subterms are considered when counting occurrences.
       To select a different set of matching subterms, you can
