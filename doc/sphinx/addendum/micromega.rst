@@ -31,9 +31,11 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
 
 .. flag:: Simplex
 
+   .. deprecated:: 8.14
+
    This flag (set by default) instructs the decision procedures to
-   use the Simplex method for solving linear goals. If it is not set,
-   the decision procedures are using Fourier elimination.
+   use the Simplex method for solving linear goals instead of the
+   deprecated Fourier elimination.
 
 .. opt:: Dump Arith
 
