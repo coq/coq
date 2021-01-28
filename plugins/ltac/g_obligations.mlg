@@ -151,13 +151,13 @@ VERNAC COMMAND EXTEND Show_Solver CLASSIFIED AS QUERY
 END
 
 VERNAC COMMAND EXTEND Show_Obligations CLASSIFIED AS QUERY STATE read_program
-| [ "Obligations" "of" ident(name) ] -> { show_obligations (Some name) }
-| [ "Obligations" ] -> { show_obligations None }
+| [ "Obligations" "of" ident(name) ] -> { fun ~stack:_ -> show_obligations (Some name) }
+| [ "Obligations" ] -> { fun ~stack:_ -> show_obligations None }
 END
 
 VERNAC COMMAND EXTEND Show_Preterm CLASSIFIED AS QUERY STATE read_program
-| [ "Preterm" "of" ident(name) ] -> { fun ~pm -> Feedback.msg_notice (show_term ~pm (Some name)) }
-| [ "Preterm" ] -> { fun ~pm -> Feedback.msg_notice (show_term ~pm None) }
+| [ "Preterm" "of" ident(name) ] -> { fun ~stack:_ ~pm -> Feedback.msg_notice (show_term ~pm (Some name)) }
+| [ "Preterm" ] -> { fun ~stack:_ ~pm -> Feedback.msg_notice (show_term ~pm None) }
 END
 
 {

@@ -1215,9 +1215,11 @@ let msg_of_subsection ss id =
   in
   Pp.str kind ++ spc () ++ Id.print id
 
-let vernac_end_segment ~pm ({v=id} as lid) =
+let vernac_end_segment ~pm ~stack ({v=id} as lid) =
   let ss = Lib.find_opening_node id in
   let what_for = msg_of_subsection ss lid.v in
+  if Option.has_some stack then
+    CErrors.user_err (Pp.str "Command not supported (Open proofs remain)");
   Declare.Obls.check_solved_obligations ~pm ~what_for;
   match ss with
   | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
@@ -2173,9 +2175,9 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
     VtNoProof(fun () ->
         vernac_begin_section ~poly:(only_polymorphism atts) lid)
   | VernacEndSegment lid ->
-    VtReadProgram(fun ~pm ->
+    VtReadProgram(fun ~stack ~pm ->
         unsupported_attributes atts;
-        vernac_end_segment ~pm lid)
+        vernac_end_segment ~pm ~stack lid)
   | VernacNameSectionHypSet (lid, set) ->
     VtDefault(fun () ->
         unsupported_attributes atts;
