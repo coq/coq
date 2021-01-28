@@ -64,7 +64,7 @@ Rewriting with Leibniz and setoid equality
    Some of the variables :g:`x`\ :sub:`i` are solved by unification,
    and some of the types :n:`A__1, ..., A__n` may become new
    subgoals.  :tacn:`rewrite` won't find occurrences inside `forall` that refer
-   to variables bound by the `forall`; use the much more advanced :tacn:`setoid_rewrite`
+   to variables bound by the `forall`; use the more advanced :tacn:`setoid_rewrite`
    if you want to find such occurrences.
 
    :n:`{+, @oriented_rewriter }`
@@ -110,14 +110,14 @@ Rewriting with Leibniz and setoid equality
       For each selected hypothesis and/or the conclusion,
       :tacn:`rewrite` finds the first matching subterm in
       depth-first search order. Only subterms identical to the
-      matched one are rewritten.  If the `at` clause is specified,
+      that first matched subterm are rewritten.  If the `at` clause is specified,
       only these subterms are considered when counting occurrences.
       To select a different set of matching subterms, you can
       specify how some or all of the free variables are bound by
       using a `with` clause (see :n:`@one_term_with_bindings`).
 
       For instance, if we want to rewrite the right-hand side in the
-      following goal, it will not work like this:
+      following goal, this will not work:
 
       .. coqtop:: none
 
@@ -138,9 +138,9 @@ Rewriting with Leibniz and setoid equality
 
          rewrite Nat.add_comm with (m := x).
 
-      Note that the much more advanced :tacn:`setoid_rewrite` tactic
+      Note that the more advanced :tacn:`setoid_rewrite` tactic
       behaves differently, and thus the number of occurrences
-      available to rewrite may differ if using one or the other.
+      available to rewrite may differ between the two tactics.
 
    .. exn:: Tactic failure: Setoid library not loaded.
       :undocumented:
