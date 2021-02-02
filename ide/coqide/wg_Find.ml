@@ -221,15 +221,12 @@ class finder name (view : GText.view) =
       (* Keypress interaction *)
       let dispatch_key_cb esc_cb ret_cb shift_ret_cb ev =
         let ev_key = GdkEvent.Key.keyval ev in
-        let ev_state = GdkEvent.Key.state ev in
-        let ev_modifiers = Gdk.Convert.modifier ev_state in
-        let (return, _) = GtkData.AccelGroup.parse "Return" in
-        let (esc, _) = GtkData.AccelGroup.parse "Escape" in
-        if ev_key = return then
+        let ev_modifiers = GdkEvent.Key.state ev in
+        if ev_key = GdkKeysyms._Return then
           (if List.mem `SHIFT ev_modifiers then
             shift_ret_cb ()
           else ret_cb (); true)
-        else if ev_key = esc then (esc_cb (); true)
+        else if ev_key = GdkKeysyms._Escape then (esc_cb (); true)
         else false
       in
       let find_cb = dispatch_key_cb self#hide self#find_forward self#find_backward in
