@@ -828,7 +828,7 @@ plugin:ci-coq_dpdgraph:
   extends: .ci-template
 
 plugin:ci-coqhammer:
-  extends: .ci-template
+  extends: .ci-template-flambda
 
 plugin:ci-elpi:
   extends: .ci-template
