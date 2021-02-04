@@ -65,7 +65,7 @@ in time.
 
   The `dev/tools/list-contributors.sh` script computes the number and
   list of contributors between Coq revisions. Typically used with
-  `VX.X+alpha..master` to check the contributors of version `VX.X`.
+  `VX.X+alpha..vX.X` to check the contributors of version `VX.X`.
 
 ## On the date of the feature freeze ##
 
