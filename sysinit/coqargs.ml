@@ -184,10 +184,6 @@ let set_query opts q =
   | Queries queries -> Queries (queries@[q])
   }
 
-let warn_deprecated_sprop_cumul =
-  CWarnings.create ~name:"deprecated-spropcumul" ~category:"deprecated"
-         (fun () -> Pp.strbrk "Use the \"Cumulative StrictProp\" flag instead.")
-
 let warn_deprecated_inputstate =
   CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
          (fun () -> Pp.strbrk "The inputstate option is deprecated and discouraged.")
@@ -419,9 +415,6 @@ let parse_args ~usage ~init arglist : t * string list =
       add_set_option oval Vernacentries.allow_sprop_opt_name (OptionSet None)
     |"-disallow-sprop" ->
       add_set_option oval Vernacentries.allow_sprop_opt_name OptionUnset
-    |"-sprop-cumulative" ->
-      warn_deprecated_sprop_cumul();
-      add_set_option oval Vernacentries.cumul_sprop_opt_name (OptionSet None)
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}
