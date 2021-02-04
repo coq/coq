@@ -35,14 +35,6 @@ let print_header () =
 
 
 (******************************************************************************)
-(* Input/Output State                                                         *)
-(******************************************************************************)
-let inputstate opts =
-  Option.iter (fun istate_file ->
-    let fname = Loadpath.locate_file (CUnix.make_suffix istate_file ".coq") in
-    Vernacstate.System.load fname) opts.inputstate
-
-(******************************************************************************)
 (* Fatal Errors                                                               *)
 (******************************************************************************)
 
@@ -70,8 +62,6 @@ let init_toplevel { parse_extra; init_extra; usage; initial_args } =
   let opts, customopts = Coqinit.parse_arguments ~parse_extra ~usage ~initial_args () in
   Stm.init_process (snd customopts);
   let injections = Coqinit.init_runtime opts in
-  (* Allow the user to load an arbitrary state here *)
-  inputstate opts.pre;
   (* This state will be shared by all the documents *)
   Stm.init_core ();
   let customstate = init_extra ~opts customopts injections in

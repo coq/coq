@@ -75,8 +75,6 @@ type coqargs_pre = {
 
   load_vernacular_list : (string * bool) list;
   injections  : injection_command list;
-
-  inputstate  : string option;
 }
 
 type coqargs_query =
@@ -133,7 +131,6 @@ let default_pre = {
   vo_includes  = [];
   load_vernacular_list = [];
   injections   = [];
-  inputstate   = None;
 }
 
 let default_queries = []
@@ -183,14 +180,6 @@ let set_query opts q =
   | Run -> Queries (default_queries@[q])
   | Queries queries -> Queries (queries@[q])
   }
-
-let warn_deprecated_inputstate =
-  CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
-         (fun () -> Pp.strbrk "The inputstate option is deprecated and discouraged.")
-
-let set_inputstate opts s =
-  warn_deprecated_inputstate ();
-  { opts with pre = { opts.pre with inputstate = Some s }}
 
 (******************************************************************************)
 (* Parsing helpers                                                            *)
@@ -328,9 +317,6 @@ let parse_args ~usage ~init arglist : t * string list =
 
     |"-init-file" ->
       { oval with config = { oval.config with rcfile = Some (next ()); }}
-
-    |"-inputstate"|"-is" ->
-      set_inputstate oval (next ())
 
     |"-load-vernac-object" ->
       add_vo_require oval (next ()) None None
