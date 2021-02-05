@@ -880,7 +880,7 @@ started, unless option ``-top`` or ``-notop`` is set (see :ref:`command-line-opt
 .. _qualified-names:
 
 Qualified identifiers
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 .. insertprodn qualid field_ident
 
