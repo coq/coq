@@ -1083,57 +1083,6 @@ described first.
    .. seealso:: :ref:`performingcomputations`
 
 
-.. _controlling-locality-of-commands:
-
-Controlling the locality of commands
------------------------------------------
-
-.. attr:: global
-          local
-
-   Some commands support a :attr:`local` or :attr:`global` attribute
-   to control the scope of their effect.  There is also a legacy (and
-   much more commonly used) syntax using the ``Local`` or ``Global``
-   prefixes (see :n:`@legacy_attr`).  There are four kinds of
-   commands:
-
-   + Commands whose default is to extend their effect both outside the
-     section and the module or library file they occur in.  For these
-     commands, the :attr:`local` attribute limits the effect of the command to the
-     current section or module it occurs in.  As an example, the :cmd:`Coercion`
-     and :cmd:`Strategy` commands belong to this category.
-   + Commands whose default behavior is to stop their effect at the end
-     of the section they occur in but to extend their effect outside the module or
-     library file they occur in. For these commands, the :attr:`local` attribute limits the
-     effect of the command to the current module if the command does not occur in a
-     section and the :attr:`global` attribute extends the effect outside the current
-     sections and current module if the command occurs in a section. As an example,
-     the :cmd:`Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
-     to this category. Notice that a subclass of these commands do not support
-     extension of their scope outside sections at all and the :attr:`global` attribute is not
-     applicable to them.
-   + Commands whose default behavior is to stop their effect at the end
-     of the section or module they occur in.  For these commands, the :attr:`global`
-     attribute extends their effect outside the sections and modules they
-     occur in.  The :cmd:`Transparent` and :cmd:`Opaque` commands
-     belong to this category.
-   + Commands whose default behavior is to extend their effect outside
-     sections but not outside modules when they occur in a section and to
-     extend their effect outside the module or library file they occur in
-     when no section contains them. For these commands, the :attr:`local` attribute
-     limits the effect to the current section or module while the :attr:`global`
-     attribute extends the effect outside the module even when the command
-     occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
-     category.
-
-.. attr:: export
-
-   Some commands support an :attr:`export` attribute.  The effect of
-   the attribute is to make the effect of the command available when
-   the module containing it is imported.  It is supported in
-   particular by the :ref:`Hint <creating_hints>`, :cmd:`Set` and :cmd:`Unset`
-   commands.
-
 .. _controlling-typing-flags:
 
 Controlling Typing Flags

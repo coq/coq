@@ -1010,3 +1010,73 @@ subdirectories of path). See the command :cmd:`Declare ML Module` in
 
 See :ref:`command-line-options` for a more general view over the Coq command
 line options.
+
+.. _controlling-locality-of-commands:
+
+Controlling the scope of commands with locality attributes
+----------------------------------------------------------
+
+Many commands have effects that apply only within a specific scope,
+typically the section or the module in which the command was
+called. Locality :term:`attributes <attribute>` can alter the scope of
+the effect. Below, we give the semantics of each locality attribute
+while noting a few exceptional commands for which :attr:`local` and
+:attr:`global` attributes are interpreted differently.
+
+.. attr:: local
+
+   The :attr:`local` attribute limits the effect of the command to the
+   current scope (section or module).
+
+   The ``Local`` prefix is an alternative syntax for the :attr:`local`
+   attribute (see :n:`@legacy_attr`).
+
+   .. note::
+
+      - For some commands, this is the only locality supported within
+        sections (e.g., for :cmd:`Notation`, :cmd:`Ltac` and
+        :ref:`Hint <creating_hints>` commands).
+
+      - For some commands, this is the default locality within
+        sections even though other locality attributes are supported
+        as well (e.g., for the :cmd:`Arguments` command).
+
+   .. warning::
+
+      **Exception:** when :attr:`local` is applied to
+      :cmd:`Definition`, :cmd:`Theorem` or their variants, its
+      semantics are different: it makes the defined objects available
+      only through their fully-qualified names rather than their
+      unqualified names after an :cmd:`Import`.
+
+.. attr:: export
+
+   The :attr:`export` attribute makes the effect of the command
+   persist when the section is closed and applies the effect when the
+   module containing the command is imported.
+
+   Commands supporting this attribute include :cmd:`Set`, :cmd:`Unset`
+   and the :ref:`Hint <creating_hints>` commands, although the latter
+   don't support it within sections.
+
+.. attr:: global
+
+   The :attr:`global` attribute makes the effect of the command
+   persist even when the current section or module is closed.  Loading
+   the file containing the command (possibly transitively) applies the
+   effect of the command.
+
+   The ``Global`` prefix is an alternative syntax for the
+   :attr:`global` attribute (see :n:`@legacy_attr`).
+
+   .. warning::
+
+      **Exception:** for a few commands (like :cmd:`Notation` and
+      :cmd:`Ltac`), this attribute behaves like :attr:`export`.
+
+   .. warning::
+
+      We strongly discourage using the :attr:`global` locality
+      attribute because the transitive nature of file loading gives
+      the user little control. We recommend using the :attr:`export`
+      locality attribute where it is supported.
