@@ -734,6 +734,15 @@ Applying theorems
       are referred by names and non-dependent products by increasing numbers (see
       :ref:`bindings`).
 
+      .. flag:: Apply With Renaming
+
+         When on, this flag causes the names in the :n:`@term`'s type to be renamed for uniqueness.
+         By default no renaming is done.
+
+         .. deprecated:: 8.14
+
+            This flag is provided for compatibility with versions previous to 8.15.
+
    .. tacv:: apply {+, @term}
 
       This is a shortcut for :n:`apply @term__1; [.. | ... ; [ .. | apply @term__n] ... ]`,

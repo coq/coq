@@ -58,13 +58,12 @@ apply n_Sn in H.
 assumption.
 Qed.
 
-(* Check naming in with bindings; printing used to be inconsistent before *)
-(* revision 9450 *)
+(* Check naming in with bindings: do not rename *)
 
 Notation S':=S (only parsing).
 Goal (forall S, S = S' S) -> (forall S, S = S' S).
 intros.
-apply H with (S0 := S).
+apply H with (S := S).
 Qed.
 
 (* Check inference of implicit arguments in bindings *)
@@ -449,7 +448,7 @@ intros n H H'.
 apply H with (n:=n).
 Undo.
 (* H' is displayed as (forall n0, n=n0) *)
-apply H' with (n0:=0).
+apply H' with (n:=0).
 Qed.
 
 (* Check that evars originally present in goal do not prevent apply in to work*)

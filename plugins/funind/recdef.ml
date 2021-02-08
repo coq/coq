@@ -104,9 +104,13 @@ let next_ident_away_in_goal ids avoid =
   next_ident_away_in_goal ids (Id.Set.of_list avoid)
 
 let compute_renamed_type gls id =
-  rename_bound_vars_as_displayed (Proofview.Goal.sigma gls)
-    (*no avoid*) Id.Set.empty (*no rels*) []
-    (Tacmach.New.pf_get_hyp_typ id gls)
+  let t = Tacmach.New.pf_get_hyp_typ id gls in
+  if Clenv.rename_with () then
+    rename_bound_vars_as_displayed (Proofview.Goal.sigma gls)
+      (*no avoid*) Id.Set.empty (*no rels*) []
+      t
+  else
+    t
 
 let h'_id = Id.of_string "h'"
 let teq_id = Id.of_string "teq"
