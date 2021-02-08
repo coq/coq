@@ -393,6 +393,10 @@ module WithProof : sig
 
   val subst : t list -> t list
 
+  (** [subst_constant b sys] performs the equivalent of the 'subst' tactic of Coq
+      only if there is an equation a.x = c for a,c a constant and a divides c if b= true*)
+  val subst_constant : bool -> t list -> t list
+
   (** [subst1 sys] performs a single substitution *)
   val subst1 : t list -> t list
 

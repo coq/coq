@@ -223,6 +223,28 @@ let find_point l =
 let optimise v l =
   if use_simplex () then Simplex.optimise v l else Mfourier.Fourier.optimise v l
 
+let output_cstr_sys o sys =
+  List.iter
+    (fun (c, wp) ->
+      Printf.fprintf o "%a by %a\n" output_cstr c ProofFormat.output_prf_rule wp)
+    sys
+
+let output_sys o sys =
+  List.iter (fun s -> Printf.fprintf o "%a\n" WithProof.output s) sys
+
+let tr_sys str f sys =
+  let sys' = f sys in
+  if debug then
+    Printf.fprintf stdout "[%s\n%a=>\n%a]\n" str output_sys sys output_sys sys';
+  sys'
+
+let tr_cstr_sys str f sys =
+  let sys' = f sys in
+  if debug then
+    Printf.fprintf stdout "[%s\n%a=>\n%a]\n" str output_cstr_sys sys
+      output_cstr_sys sys';
+  sys'
+
 let dual_raw_certificate l =
   if debug then begin
     Printf.printf "dual_raw_certificate\n";
@@ -375,25 +397,7 @@ let elim_simple_linear_equality sys0 =
   in
   iterate_until_stable elim sys0
 
-let output_sys o sys =
-  List.iter (fun s -> Printf.fprintf o "%a\n" WithProof.output s) sys
-
-let subst sys =
-  let sys' = WithProof.subst sys in
-  if debug then
-    Printf.fprintf stdout "[subst:\n%a\n==>\n%a\n]" output_sys sys output_sys
-      sys';
-  sys'
-
-let tr_sys str f sys =
-  let sys' = f sys in
-  if debug then (
-    Printf.fprintf stdout "[%s\n" str;
-    List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys;
-    Printf.fprintf stdout "\n => \n";
-    List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys';
-    Printf.fprintf stdout "]\n" );
-  sys'
+let subst sys = tr_sys "subst" WithProof.subst sys
 
 (** [saturate_linear_equality sys] generate new constraints
     obtained by eliminating linear equalities by pivoting.
@@ -489,11 +493,9 @@ let nlinear_preprocess (sys : WithProof.t list) =
       ISet.fold (fun i acc -> square_of_var i :: acc) collect_vars sys
     in
     let sys = sys @ all_pairs WithProof.product sys in
-    if debug then begin
-      Printf.fprintf stdout "Preprocessed\n";
-      List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys
-    end;
     List.map (WithProof.annot "P") sys
+
+let nlinear_preprocess = tr_sys "nlinear_preprocess" nlinear_preprocess
 
 let nlinear_prover prfdepth sys =
   let sys = develop_constraints prfdepth q_spec sys in
@@ -698,6 +700,15 @@ let pivot v (c1, p1) (c2, p2) =
     Some (xpivot cv1 cv2)
   else None
 
+let pivot v c1 c2 =
+  let res = pivot v c1 c2 in
+  ( match res with
+  | None -> ()
+  | Some (c, _) ->
+    if Vect.get v c.coeffs =/ Q.zero then ()
+    else Printf.printf "pivot error %a\n" output_cstr c );
+  res
+
 (* op2 could be Eq ... this might happen *)
 
 let simpl_sys sys =
@@ -762,6 +773,8 @@ let reduce_coprime psys =
     in
     Some (pivot_sys v (cstr, prf) ((c1, p1) :: sys))
 
+(*let pivot_sys v pc sys = tr_cstr_sys "pivot_sys" (pivot_sys v pc) sys*)
+
 (** If there is an equation [eq] of the form 1.x + e = c, do a pivot over x with equation [eq] *)
 let reduce_unary psys =
   let is_unary_equation (cstr, prf) =
@@ -819,6 +832,8 @@ let reduction_equations psys =
     (app_funs
        [reduce_unary; reduce_coprime; reduce_var_change (*; reduce_pivot*)])
     psys
+
+let reduction_equations = tr_cstr_sys "reduction_equations" reduction_equations
 
 (** [get_bound sys] returns upon success an interval (lb,e,ub) with proofs *)
 let get_bound sys =
@@ -890,11 +905,6 @@ let check_sys sys =
     sys
 
 open ProofFormat
-
-let output_cstr_sys sys =
-  (pp_list ";" (fun o (c, wp) ->
-       Printf.fprintf o "%a by %a" output_cstr c ProofFormat.output_prf_rule wp))
-    sys
 
 let xlia (can_enum : bool) reduction_equations sys =
   let rec enum_proof (id : int) (sys : prf_sys) =
@@ -1170,7 +1180,9 @@ let nlia enum prfdepth sys =
       No: if a wrong equation is chosen, the proof may fail.
       It would only be safe if the variable is linear...
      *)
-    let sys1 = elim_simple_linear_equality sys in
+    let sys1 =
+      elim_simple_linear_equality (WithProof.subst_constant true sys)
+    in
     let sys2 = saturate_by_linear_equalities sys1 in
     let sys3 = nlinear_preprocess (sys1 @ sys2) in
     let sys4 = make_cstr_system (*sys2@*) sys3 in
