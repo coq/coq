@@ -64,7 +64,7 @@ let print_parentheses = Notation_ops.print_parentheses
 (* This forces printing universe names of Type{.} *)
 let print_universes = Detyping.print_universes
 
-(* This suppresses printing of primitive tokens (e.g. numeral) and notations *)
+(* This suppresses printing of notations *)
 let print_no_symbol = ref false
 
 (* This tells to skip types if a variable has this type by default *)
@@ -73,6 +73,9 @@ let print_use_implicit_types =
     ~depr:false
     ~key:["Printing";"Use";"Implicit";"Types"]
     ~value:true
+
+(* Print primitive tokens, like strings *)
+let print_raw_literal = ref false
 
 (**********************************************************************)
 
@@ -434,7 +437,7 @@ let extern_record_pattern cstrsp args =
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
   try
-    if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
+    if !Flags.in_debugger || !Flags.raw_print || !print_raw_literal then raise No_match;
     let (na,p,key) = uninterp_prim_token_cases_pattern pat scopes in
     match availability_of_entry_coercion custom InConstrEntrySomeLevel with
       | None -> raise No_match
@@ -853,6 +856,7 @@ let same_binder_type ty nal c =
 (* one with no delimiter if possible)                                 *)
 
 let extern_possible_prim_token (custom,scopes) r =
+   if !print_raw_literal then raise No_match;
    let (n,key) = uninterp_prim_token r scopes in
    match availability_of_entry_coercion custom InConstrEntrySomeLevel with
    | None -> raise No_match
@@ -1261,11 +1265,12 @@ and extern_eqn inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
   make ?loc (pll,extern inctx scopes vars c)
 
 and extern_notations inctx scopes vars nargs t =
-  if !Flags.raw_print || !print_no_symbol then raise No_match;
+  if !Flags.raw_print then raise No_match;
   try extern_possible_prim_token scopes t
   with No_match ->
-  let t = flatten_application t in
-  extern_notation inctx scopes vars t (filter_enough_applied nargs (uninterp_notations t))
+    if !print_no_symbol then raise No_match;
+    let t = flatten_application t in
+    extern_notation inctx scopes vars t (filter_enough_applied nargs (uninterp_notations t))
 
 and extern_notation inctx (custom,scopes as allscopes) vars t rules =
   match rules with

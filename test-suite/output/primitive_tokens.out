@@ -1,0 +1,29 @@
+"foo"
+     : string
+1234
+     : nat
+String (Ascii.Ascii false true true false false true true false)
+  (String (Ascii.Ascii true true true true false true true false)
+     (String (Ascii.Ascii true true true true false true true false)
+        EmptyString))
+     : string
+S
+  (S
+     (S
+        (S
+           (S
+              (S
+                 (S
+                    (S
+                       (S
+                          (S
+                             (S
+                                (S
+                                   (S
+                                      (S
+                                         (S
+                                            (S
+                                               (S
+                                                 (S
+                                                 (S (S (S (S (S (S ...)))))))))))))))))))))))
+     : nat

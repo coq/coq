@@ -1568,6 +1568,13 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
+      optkey   = ["Printing";"Raw";"Literals"];
+      optread  = (fun () -> !Constrextern.print_raw_literal);
+      optwrite = (fun b ->  Constrextern.print_raw_literal := b) }
+
+let () =
+  declare_bool_option
+    { optdepr  = false;
       optkey   = ["Printing";"All"];
       optread  = (fun () -> !Flags.raw_print);
       optwrite = (fun b -> Flags.raw_print := b) }
