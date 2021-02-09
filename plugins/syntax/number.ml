@@ -131,13 +131,6 @@ let type_error_of g ty =
      str " to Number.int or (option Number.int)." ++ fnl () ++
      str "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or Number.number could be used (you may need to require BinNums or Number or PrimInt63 first).")
 
-let warn_deprecated_decimal =
-  CWarnings.create ~name:"decimal-numeral-notation" ~category:"deprecated"
-    (fun () ->
-      strbrk "Deprecated Number Notation for Decimal.uint, \
-              Decimal.int or Decimal.decimal. Use Number.uint, \
-              Number.int or Number.number respectively.")
-
 let error_params ind =
   CErrors.user_err
     (str "Wrong number of parameters for inductive" ++ spc ()
@@ -456,12 +449,6 @@ let vernac_number_notation local ty f g opts scope =
     | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma f (arrow cuint (opt cty)) -> UInt int_ty, Option
     | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum cty) -> Number num_ty, Direct
     | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum (opt cty)) -> Number num_ty, Option
-    | Some (int_ty, _, _, cint, _, _, _, _) when has_type env sigma f (arrow cint cty) -> DecimalInt int_ty, Direct
-    | Some (int_ty, _, _, cint, _, _, _, _) when has_type env sigma f (arrow cint (opt cty)) -> DecimalInt int_ty, Option
-    | Some (int_ty, _, _, _, cuint, _, _, _) when has_type env sigma f (arrow cuint cty) -> DecimalUInt int_ty, Direct
-    | Some (int_ty, _, _, _, cuint, _, _, _) when has_type env sigma f (arrow cuint (opt cty)) -> DecimalUInt int_ty, Option
-    | Some (_, _, _, _, _, num_ty, _, cdec) when has_type env sigma f (arrow cdec cty) -> Decimal num_ty, Direct
-    | Some (_, _, _, _, _, num_ty, _, cdec) when has_type env sigma f (arrow cdec (opt cty)) -> Decimal num_ty, Option
     | _ ->
     match z_pos_ty with
     | Some (z_pos_ty, cZ) when has_type env sigma f (arrow cZ cty) -> Z z_pos_ty, Direct
@@ -484,12 +471,6 @@ let vernac_number_notation local ty f g opts scope =
     | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma g (arrow cty (opt cuint)) -> UInt int_ty, Option
     | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty cnum) -> Number num_ty, Direct
     | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty (opt cnum)) -> Number num_ty, Option
-    | Some (int_ty, _, _, cint, _, _, _, _) when has_type env sigma g (arrow cty cint) -> DecimalInt int_ty, Direct
-    | Some (int_ty, _, _, cint, _, _, _, _) when has_type env sigma g (arrow cty (opt cint)) -> DecimalInt int_ty, Option
-    | Some (int_ty, _, _, _, cuint, _, _, _) when has_type env sigma g (arrow cty cuint) -> DecimalUInt int_ty, Direct
-    | Some (int_ty, _, _, _, cuint, _, _, _) when has_type env sigma g (arrow cty (opt cuint)) -> DecimalUInt int_ty, Option
-    | Some (_, _, _, _, _, num_ty, _, cdec) when has_type env sigma g (arrow cty cdec) -> Decimal num_ty, Direct
-    | Some (_, _, _, _, _, num_ty, _, cdec) when has_type env sigma g (arrow cty (opt cdec)) -> Decimal num_ty, Option
     | _ ->
     match z_pos_ty with
     | Some (z_pos_ty, cZ) when has_type env sigma g (arrow cty cZ) -> Z z_pos_ty, Direct
@@ -500,11 +481,6 @@ let vernac_number_notation local ty f g opts scope =
     | Some (pos_neg_int63_ty, cint63) when has_type env sigma g (arrow cty (opt cint63)) -> Int63 pos_neg_int63_ty, Option
     | _ -> type_error_of g ty
   in
-  (match to_kind, of_kind with
-   | ((DecimalInt _ | DecimalUInt _ | Decimal _), _), _
-   | _, ((DecimalInt _ | DecimalUInt _ | Decimal _), _) ->
-      warn_deprecated_decimal ()
-   | _ -> ());
   let to_post, pt_required, pt_refs = match tyc_params with
     | TargetPrim path -> [||], path, [Coqlib.lib_ref "num.int63.wrap_int"]
     | TargetInd (tyc, params) ->

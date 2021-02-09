@@ -1726,12 +1726,6 @@ Number notations
             * :n:`@qualid__type -> Number.number`
             * :n:`@qualid__type -> option Number.number`
 
-         .. deprecated:: 8.12
-            Number notations on :g:`Decimal.uint`, :g:`Decimal.int` and
-            :g:`Decimal.decimal` are replaced respectively by number
-            notations on :g:`Number.uint`, :g:`Number.int` and
-            :g:`Number.number`.
-
          When parsing, the application of the parsing function
          :n:`@qualid__parse` to the number will be fully reduced, and universes
          of the resulting term will be refreshed.
