@@ -6,7 +6,7 @@
      : nat * nat * (nat * nat)
 (0, 2, (2, 2))
      : nat * nat * (nat * nat)
-pair (pair O (S (S O))) (pair (S (S O)) O)
+pair (pair 0 2) (pair 2 0)
      : prod (prod nat nat) (prod nat nat)
 << 0, 2, 4 >>
      : nat * nat * nat * (nat * (nat * nat))
@@ -16,8 +16,7 @@ pair (pair O (S (S O))) (pair (S (S O)) O)
      : nat * nat * nat * (nat * (nat * nat))
 (0, 2, 4, (0, (2, 4)))
      : nat * nat * nat * (nat * (nat * nat))
-pair (pair (pair O (S (S O))) (S (S (S (S O)))))
-  (pair (S (S (S (S O)))) (pair (S (S O)) O))
+pair (pair (pair 0 2) 4) (pair 4 (pair 2 0))
      : prod (prod (prod nat nat) nat) (prod nat (prod nat nat))
 ETA x y : nat, Nat.add
      : nat -> nat -> nat
@@ -174,9 +173,8 @@ forall_non_null x y z t : nat , x = y /\ z = t
      : nat * (nat * nat) * (nat * nat * nat) * (nat * (nat * nat)) *
        (nat * nat * nat)
 pair
-  (pair
-     (pair (pair (S (S O)) (pair (S O) O)) (pair (pair O (S (S O))) (S O)))
-     (pair (S O) (pair (S (S O)) O))) (pair (pair O (S O)) (S (S O)))
+  (pair (pair (pair 2 (pair 1 0)) (pair (pair 0 2) 1)) (pair 1 (pair 2 0)))
+  (pair (pair 0 1) 2)
      : prod
          (prod (prod (prod nat (prod nat nat)) (prod (prod nat nat) nat))
             (prod nat (prod nat nat))) (prod (prod nat nat) nat)
