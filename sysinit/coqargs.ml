@@ -75,8 +75,6 @@ type coqargs_pre = {
 
   load_vernacular_list : (string * bool) list;
   injections  : injection_command list;
-
-  inputstate  : string option;
 }
 
 type coqargs_query =
@@ -133,7 +131,6 @@ let default_pre = {
   vo_includes  = [];
   load_vernacular_list = [];
   injections   = [];
-  inputstate   = None;
 }
 
 let default_queries = []
@@ -183,18 +180,6 @@ let set_query opts q =
   | Run -> Queries (default_queries@[q])
   | Queries queries -> Queries (queries@[q])
   }
-
-let warn_deprecated_sprop_cumul =
-  CWarnings.create ~name:"deprecated-spropcumul" ~category:"deprecated"
-         (fun () -> Pp.strbrk "Use the \"Cumulative StrictProp\" flag instead.")
-
-let warn_deprecated_inputstate =
-  CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
-         (fun () -> Pp.strbrk "The inputstate option is deprecated and discouraged.")
-
-let set_inputstate opts s =
-  warn_deprecated_inputstate ();
-  { opts with pre = { opts.pre with inputstate = Some s }}
 
 (******************************************************************************)
 (* Parsing helpers                                                            *)
@@ -333,9 +318,6 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-init-file" ->
       { oval with config = { oval.config with rcfile = Some (next ()); }}
 
-    |"-inputstate"|"-is" ->
-      set_inputstate oval (next ())
-
     |"-load-vernac-object" ->
       add_vo_require oval (next ()) None None
 
@@ -419,9 +401,6 @@ let parse_args ~usage ~init arglist : t * string list =
       add_set_option oval Vernacentries.allow_sprop_opt_name (OptionSet None)
     |"-disallow-sprop" ->
       add_set_option oval Vernacentries.allow_sprop_opt_name OptionUnset
-    |"-sprop-cumulative" ->
-      warn_deprecated_sprop_cumul();
-      add_set_option oval Vernacentries.cumul_sprop_opt_name (OptionSet None)
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}

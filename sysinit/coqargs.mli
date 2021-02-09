@@ -60,8 +60,6 @@ type coqargs_pre = {
 
   load_vernacular_list : (string * bool) list;
   injections  : injection_command list;
-
-  inputstate  : string option;
 }
 
 type coqargs_query =
