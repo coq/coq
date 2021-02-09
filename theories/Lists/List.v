@@ -698,7 +698,7 @@ Section Elts.
 
   Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
 
-  Definition In_inv (x x0 : A) (xs : list A) (H : In x (x0 :: xs)) : {x0 = x} + {In x xs} :=
+  Definition In_inv (a b : A) (l : list A) (H : In a (b :: l)) : {b = a} + {In a xs} :=
     match eq_dec x0 x with
       | left H0 => left H0
       | right H0 =>
