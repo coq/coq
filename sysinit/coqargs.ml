@@ -44,6 +44,7 @@ type option_command =
 type injection_command =
   | OptionInjection of (Goptions.option_name * option_command)
   | RequireInjection of (string * string option * bool option)
+  | WarnNoNative of string
 
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
@@ -240,12 +241,6 @@ let parse_option_set opt =
     let v = String.sub opt (eqi+1) (len - eqi - 1) in
     to_opt_key (String.sub opt 0 eqi), Some v
 
-let warn_no_native_compiler =
-  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
-    Pp.(fun s -> strbrk "Native compiler is disabled," ++
-                   strbrk " -native-compiler " ++ strbrk s ++
-                   strbrk " option ignored.")
-
 let get_native_compiler s =
   (* We use two boolean flags because the four states make sense, even if
   only three are accessible to the user at the moment. The selection of the
@@ -259,10 +254,8 @@ let get_native_compiler s =
     | _ ->
        error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler") in
   if Coq_config.native_compiler = NativeOff && n <> NativeOff then
-    let () = warn_no_native_compiler s in
-    NativeOff
-  else
-    n
+    NativeOff, Some (WarnNoNative s)
+  else n, None
 
 (* Main parsing routine *)
 (*s Parsing of the command line *)
@@ -367,8 +360,9 @@ let parse_args ~usage ~init arglist : t * string list =
       { oval with config = { oval.config with enable_VM = get_bool ~opt (next ()) }}
 
     |"-native-compiler" ->
-      let native_compiler = get_native_compiler (next ()) in
-      { oval with config = { oval.config with native_compiler }}
+      let native_compiler, warn = get_native_compiler (next ()) in
+      { oval with config = { oval.config with native_compiler };
+                  pre = { oval.pre with injections = Option.List.cons warn oval.pre.injections }}
 
     | "-set" ->
       let opt, v = parse_option_set @@ next() in

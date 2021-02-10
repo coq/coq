@@ -28,7 +28,12 @@ type injection_command =
      ready. Parameters follow [Library], that is to say,
      [lib,prefix,import_export] means require library [lib] from
      optional [prefix] and [import_export] if [Some false/Some true]
-     is used.  *)
+      is used.  *)
+  | WarnNoNative of string
+  (** Used so that "-w -native-compiler-disabled -native-compiler yes"
+     does not cause a warning. The native option must be processed
+     before injections (because it affects require), so the
+     instruction to emit a message is separated. *)
 
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;

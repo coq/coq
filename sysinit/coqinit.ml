@@ -126,10 +126,16 @@ let require_file (dir, from, exp) =
   let mfrom = Option.map Libnames.qualid_of_string from in
   Flags.silently (Vernacentries.vernac_require mfrom exp) [mp]
 
-let handle_injection = function
-  | Coqargs.RequireInjection r -> require_file r
-  (* | LoadInjection l -> *)
-  | Coqargs.OptionInjection o -> Coqargs.set_option o
+let warn_no_native_compiler =
+  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
+    Pp.(fun s -> strbrk "Native compiler is disabled," ++
+                   strbrk " -native-compiler " ++ strbrk s ++
+                   strbrk " option ignored.")
+
+let handle_injection = let open Coqargs in function
+  | RequireInjection r -> require_file r
+  | OptionInjection o -> set_option o
+  | WarnNoNative s -> warn_no_native_compiler s
 
 let start_library ~top injections =
   Flags.verbosely Declaremods.start_library top;
