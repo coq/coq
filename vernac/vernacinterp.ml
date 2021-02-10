@@ -151,7 +151,7 @@ let interp_control_flag ~time_header (f : control_flag) ~st
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let rec interp_expr ~atts ~st c =
+let rec interp_expr ?loc ~atts ~st c =
   let stack = st.Vernacstate.lemmas in
   let program = st.Vernacstate.program in
   vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
@@ -174,7 +174,7 @@ let rec interp_expr ~atts ~st c =
     Attributes.unsupported_attributes atts;
     vernac_load ~verbosely fname
   | v ->
-    let fv = Vernacentries.translate_vernac ~atts v in
+    let fv = Vernacentries.translate_vernac ?loc ~atts v in
     interp_typed_vernac ~pm:program ~stack fv
 
 and vernac_load ~verbosely fname =
@@ -206,13 +206,13 @@ and vernac_load ~verbosely fname =
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   stack, pm
 
-and interp_control ~st ({ CAst.v = cmd } as vernac) =
+and interp_control ~st ({ CAst.v = cmd; loc } as vernac) =
   let time_header = mk_time_header vernac in
   List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
     cmd.control
     (fun ~st ->
        let before_univs = Global.universes () in
-       let pstack, pm = interp_expr ~atts:cmd.attrs ~st cmd.expr in
+       let pstack, pm = interp_expr ?loc ~atts:cmd.attrs ~st cmd.expr in
        let after_univs = Global.universes () in
        if before_univs == after_univs then pstack, pm
        else

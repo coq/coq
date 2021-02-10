@@ -2064,7 +2064,7 @@ let vernac_check_guard ~pstate =
 
 (* We interpret vernacular commands to a DSL that specifies their
    allowed actions on proof states *)
-let translate_vernac ~atts v = let open Vernacextend in match v with
+let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacAbortAll
   | VernacRestart
   | VernacUndo _
@@ -2389,4 +2389,4 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
 
   (* Extensions *)
   | VernacExtend (opn,args) ->
-    Vernacextend.type_vernac ~atts opn args
+    Vernacextend.type_vernac ?loc ~atts opn args

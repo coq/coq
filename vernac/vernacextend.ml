@@ -64,7 +64,7 @@ type typed_vernac =
   | VtDeclareProgram of (pm:Declare.OblState.t -> Declare.Proof.t)
   | VtOpenProofProgram of (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t)
 
-type vernac_command = atts:Attributes.vernac_flags -> typed_vernac
+type vernac_command = ?loc:Loc.t -> atts:Attributes.vernac_flags -> typed_vernac
 
 type plugin_args = Genarg.raw_generic_argument list
 
@@ -94,7 +94,7 @@ let warn_deprecated_command =
 
 (* Interpretation of a vernac command *)
 
-let type_vernac opn converted_args ~atts =
+let type_vernac opn converted_args ?loc ~atts =
   let depr, callback = vinterp_map opn in
   let () = if depr then
       let rules = Egramml.get_extend_vernac_rule opn in
@@ -106,7 +106,7 @@ let type_vernac opn converted_args ~atts =
       warn_deprecated_command pr;
   in
   let hunk = callback converted_args in
-  hunk ~atts
+  hunk ?loc ~atts
 
 (** VERNAC EXTEND registering *)
 

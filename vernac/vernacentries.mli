@@ -10,7 +10,8 @@
 
 (** Vernac Translation into the Vernac DSL *)
 val translate_vernac
-  : atts:Attributes.vernac_flags
+  : ?loc:Loc.t
+  -> atts:Attributes.vernac_flags
   -> Vernacexpr.vernac_expr
   -> Vernacextend.typed_vernac
 
