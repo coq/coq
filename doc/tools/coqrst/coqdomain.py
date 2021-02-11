@@ -938,10 +938,11 @@ class CoqtopBlocksTransform(Transform):
 
     @staticmethod
     def split_lines(source):
-        r"""Split Coq input in chunks
+        r"""Split Coq input into chunks, which may include single- or
+        multi-line comments.  Nested comments are not supported.
 
         A chunk is a minimal sequence of consecutive lines of the input that
-        ends with a '.'
+        ends with a '.' or '*)'
 
         >>> split_lines('A.\nB.''')
         ['A.', 'B.']
@@ -962,8 +963,14 @@ class CoqtopBlocksTransform(Transform):
 
         >>> split_lines('SearchHead le.\nSearchHead (@eq bool).')
         ['SearchHead le.', 'SearchHead (@eq bool).']
+
+        >>> split_lines("(* *) x. (* *)\ny.\n")
+        ['(* *) x. (* *)', 'y.']
+
+        >>> split_lines("(* *) x (* \n *)\ny.\n")
+        ['(* *) x (* \n *)', 'y.']
         """
-        return re.split(r"(?<=(?<!\.)\.)\n", source.strip())
+        return re.split(r"(?:(?<=(?<!\.)\.)|(?<=\*\)))\n", source.strip())
 
     @staticmethod
     def parse_options(node):
@@ -1039,7 +1046,11 @@ class CoqtopBlocksTransform(Transform):
         if options['warn']:
             repl.sendone('Set Warnings "default".')
         for sentence in self.split_lines(node.rawsource):
-            pairs.append((sentence, repl.sendone(sentence)))
+            comment = re.compile(r"\s*\(\*.*?\*\)\s*", re.DOTALL)
+            wo_comments = re.sub(comment, "", sentence)
+            has_tac = wo_comments != "" and not wo_comments.isspace()
+            output = repl.sendone(sentence) if has_tac else ""
+            pairs.append((sentence, output))
         if options['abort']:
             repl.sendone('Abort All.')
         if options['fail']:
@@ -1052,9 +1063,10 @@ class CoqtopBlocksTransform(Transform):
             # Use Coqdoc to highlight input
             in_chunks = highlight_using_coqdoc(sentence)
             dli += nodes.term(sentence, '', *in_chunks, classes=self.block_classes(options['input']))
-            # Parse ANSI sequences to highlight output
-            out_chunks = AnsiColorsParser().colorize_str(output)
-            dli += nodes.definition(output, *out_chunks, classes=self.block_classes(options['output'], output))
+            if output:
+                # Parse ANSI sequences to highlight output
+                out_chunks = AnsiColorsParser().colorize_str(output)
+                dli += nodes.definition(output, *out_chunks, classes=self.block_classes(options['output'], output))
         node.clear()
         node.rawsource = self.make_rawsource(pairs, options['input'], options['output'])
         node['classes'].extend(self.block_classes(options['input'] or options['output']))
