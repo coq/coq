@@ -75,6 +75,7 @@ development of interactive proofs."))
  (license "OPL-1.0")
  (depends
   (dune (and :build (>= 2.5.0)))
+  (conf-python-3 :build)
   (coq (and :build (= :version))))
  (synopsis "The Coq Proof Assistant --- Reference Manual")
  (description "Coq is a formal proof management system. It provides
