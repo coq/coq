@@ -523,31 +523,20 @@ they appear after a boldface label.  They are listed in the
 Locality attributes supported by :cmd:`Set` and :cmd:`Unset`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :cmd:`Set` and :cmd:`Unset` commands support the :attr:`local`,
-:attr:`global` and :attr:`export` locality attributes:
+The :cmd:`Set` and :cmd:`Unset` commands support the mutually
+exclusive :attr:`local`, :attr:`export` and :attr:`global` locality
+attributes (or the ``Local``, ``Export`` or ``Global`` prefixes).
 
-* no attribute: the original setting is *not* restored at the end of
-  the current module or section.
-* :attr:`local` (or alternatively, the ``Local`` prefix): the setting
-  is applied within the current module or section.  The original value
-  of the setting is restored at the end of the current module or
-  section.
-* :attr:`export` (or alternatively, the ``Export`` prefix): similar to
-  :attr:`local`, the original value of the setting is restored at the
-  end of the current module or section.  In addition, if the value is
-  set in a module, then :cmd:`Import`\-ing the module sets the option
-  or flag.
-* :attr:`global` (or alternatively, the ``Global`` prefix): the
-  original setting is *not* restored at the end of the current module
-  or section.  In addition, if the value is set in a file, then
-  :cmd:`Require`\-ing the file sets the option.
+If no attribute is specified, the original value of the flag or option
+is restored at the end of the current module but it is *not* restored
+at the end of the current section.
 
 Newly opened modules and sections inherit the current settings.
 
 .. note::
 
-   We discourage using the :attr:`global` attribute with the :cmd:`Set` and
-   :cmd:`Unset` commands.  If your goal is to define
+   We discourage using the :attr:`global` locality attribute with the
+   :cmd:`Set` and :cmd:`Unset` commands.  If your goal is to define
    project-wide settings, you should rather use the command-line
    arguments ``-set`` and ``-unset`` for setting flags and options
    (see :ref:`command-line-options`).
