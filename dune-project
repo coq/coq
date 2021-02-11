@@ -27,7 +27,8 @@
   (ocaml (>= 4.05.0))
   (dune  (>= 2.5.0))
   (ocamlfind (>= 1.8.1))
-  (zarith (>= 1.10)))
+  (zarith (>= 1.10))
+  (ounit2 :with-test))
  (synopsis "The Coq Proof Assistant")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
