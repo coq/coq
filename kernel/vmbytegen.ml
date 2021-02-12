@@ -840,21 +840,21 @@ let dump_bytecodes init code fvs =
      prlist_with_sep (fun () -> str "; ") pp_fv_elem fvs ++
      fnl ())
 
-let compile ~fail_on_error ?universes:(universes=0) env c =
+let compile ~fail_on_error ?universes:(universes=0) env sigma c =
   init_fun_code ();
   Label.reset_label_counter ();
   let cont = [Kstop] in
   try
     let cenv, init_code =
       if Int.equal universes 0 then
-        let lam = lambda_of_constr ~optimize:true env c in
+        let lam = lambda_of_constr ~optimize:true env sigma c in
         let cenv = empty_comp_env () in
         cenv, ensure_stack_capacity (compile_lam env cenv lam 0) cont
       else
         (* We are going to generate a lambda, but merge the universe closure
          * with the function closure if it exists.
          *)
-        let lam = lambda_of_constr ~optimize:true env c in
+        let lam = lambda_of_constr ~optimize:true env sigma c in
         let params, body = decompose_Llam lam in
         let arity = Array.length params in
         let cenv = empty_comp_env () in
@@ -896,7 +896,8 @@ let compile_constant_body ~fail_on_error env univs = function
             let con= Constant.make1 (Constant.canonical kn') in
               Some (BCalias (get_alias env con))
         | _ ->
-            let res = compile ~fail_on_error ~universes:instance_size env body in
+            let sigma _ = assert false in
+            let res = compile ~fail_on_error ~universes:instance_size env sigma body in
               Option.map (fun x -> BCdefined (to_memory x)) res
 
 (* Shortcut of the previous function used during module strengthening *)

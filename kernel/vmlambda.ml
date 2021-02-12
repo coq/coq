@@ -591,12 +591,14 @@ struct
 
   type t = {
     global_env : env;
+    evar_body : existential -> constr option;
     name_rel : Name.t Vect.t;
     construct_tbl : (constructor, constructor_info) Hashtbl.t;
   }
 
-  let make env = {
+  let make env sigma = {
     global_env = env;
+    evar_body = sigma;
     name_rel = Vect.make 16 Anonymous;
     construct_tbl = Hashtbl.create 111
   }
@@ -633,9 +635,13 @@ open Renv
 let rec lambda_of_constr env c =
   match Constr.kind c with
   | Meta _ -> raise (Invalid_argument "Vmbytegen.lambda_of_constr: Meta")
-  | Evar (evk, args) ->
-    let args = Array.map_of_list (fun c -> lambda_of_constr env c) args in
-    Levar (evk, args)
+  | Evar (evk, args as ev) ->
+      begin match env.evar_body ev with
+      | None ->
+          let args = Array.map_of_list (fun c -> lambda_of_constr env c) args in
+          Levar (evk, args)
+      | Some t -> lambda_of_constr env t
+      end
 
   | Cast (c, _, _) -> lambda_of_constr env c
 
@@ -774,8 +780,8 @@ let optimize_lambda lam =
   let lam = simplify subst_id lam in
   remove_let subst_id lam
 
-let lambda_of_constr ~optimize genv c =
-  let env = Renv.make genv in
+let lambda_of_constr ~optimize genv sigma c =
+  let env = Renv.make genv sigma in
   let ids = List.rev_map Context.Rel.Declaration.get_annot (rel_context genv) in
   Renv.push_rels env (Array.of_list ids);
   let lam = lambda_of_constr env c in

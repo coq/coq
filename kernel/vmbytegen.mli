@@ -15,8 +15,10 @@ open Declarations
 open Environ
 
 (** Should only be used for monomorphic terms *)
-val compile : fail_on_error:bool ->
-              ?universes:int -> env -> constr -> (bytecodes * bytecodes * fv) option
+val compile :
+  fail_on_error:bool -> ?universes:int ->
+  env -> (existential -> constr option) -> constr ->
+  (bytecodes * bytecodes * fv) option
 (** init, fun, fv *)
 
 val compile_constant_body : fail_on_error:bool ->
