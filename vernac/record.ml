@@ -511,6 +511,32 @@ let inStruc : Recordops.struc_typ -> Libobject.obj =
 let declare_structure_entry o =
   Lib.add_anonymous_leaf (inStruc o)
 
+(** In the type of every projection, the record is bound to a variable named
+  using the first character of the record type. We rename it to avoid
+  collisions with names already used in the field types.
+*)
+
+(** Get all names bound at the head of [t]. *)
+let rec add_bound_names_constr (names : Id.Set.t) (t : constr) : Id.Set.t =
+  match destProd t with
+  | (b, _, t) ->
+    let names =
+      match b.binder_name with
+      | Name.Anonymous -> names
+      | Name.Name n -> Id.Set.add n names
+    in add_bound_names_constr names t
+  | exception DestKO -> names
+
+(** Get all names bound in any record field. *)
+let bound_names_rdata { DataR.fields; _ } : Id.Set.t =
+  let add_names names field = add_bound_names_constr names (RelDecl.get_type field) in
+  List.fold_left add_names Id.Set.empty fields
+
+(** Pick a variable name for a record, avoiding names bound in its fields. *)
+let data_name { Data.id; Data.rdata; _ } =
+  let name = Id.of_string (Unicode.lowercase_first_char (Id.to_string id)) in
+  Namegen.next_ident_away name (bound_names_rdata rdata)
+
 (** Main record declaration part:
 
    The entry point is [definition_structure], which will match on the
@@ -537,11 +563,7 @@ let declare_structure ~cumulative finite ~ubind ~univs ~variances paramimpls par
   in
   let binder_name =
     match name with
-    | None ->
-      let map { Data.id; _ } =
-        Id.of_string (Unicode.lowercase_first_char (Id.to_string id))
-      in
-      Array.map_of_list map record_data
+    | None -> Array.map_of_list data_name record_data
     | Some n -> n
   in
   let ntypes = List.length record_data in
