@@ -86,9 +86,11 @@ let obsolete s =
     is not (unless both standard and error outputs are redirected, of
     course). *)
 
+let avail_version = Option.default "n/a"
+
 let banner () =
   eprintf "This is coqdoc version %s, compiled on %s\n"
-    Coq_config.version Coq_config.compile_date;
+    Coq_config.version (avail_version Coq_config.compile_date);
   flush stderr
 
 let target_full_name f =

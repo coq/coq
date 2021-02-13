@@ -8,10 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+let avail_version = Option.default "n/a"
+
 let version () =
   Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
-    Coq_config.version Coq_config.date;
-  Printf.printf "compiled on %s with OCaml %s\n" Coq_config.compile_date Coq_config.caml_version
+    Coq_config.version (avail_version Coq_config.date);
+  Printf.printf "compiled on %s with OCaml %s\n"
+    (avail_version Coq_config.compile_date) Coq_config.caml_version
 
 let machine_readable_version () =
   Printf.printf "%s %s\n"

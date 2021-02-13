@@ -394,11 +394,13 @@ let set_options options =
   in
   List.iter iter options
 
+let avail_version = Option.default "n/a"
+
 let about () = {
   Interface.coqtop_version = Coq_config.version;
   Interface.protocol_version = Xmlprotocol.protocol_version;
-  Interface.release_date = Coq_config.date;
-  Interface.compile_date = Coq_config.compile_date;
+  Interface.release_date = avail_version Coq_config.date;
+  Interface.compile_date = avail_version Coq_config.compile_date;
 }
 
 let handle_exn (e, info) =

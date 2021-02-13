@@ -48,17 +48,19 @@ let path_of_string s =
 
 let ( / ) = Filename.concat
 
+(* Duplicated with coqtop.ml *)
 let get_version_date () =
   try
     let ch = open_in (Envars.coqlib () / "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
     let () = close_in ch in
-    (ver,rev)
+    (ver,Some rev)
   with _ -> (Coq_config.version,Coq_config.date)
 
 let print_header () =
   let (ver,rev) = (get_version_date ()) in
+  let rev = Option.default "n/a" rev in
   Printf.printf "Welcome to Chicken %s (%s)\n" ver rev;
   flush stdout
 
@@ -169,10 +171,13 @@ let compile_files senv =
     ~admit:(List.rev !admit_list)
     ~check:(List.rev !compile_list)
 
+(* duplicated with usage.ml *)
+let avail_version = Option.default "n/a"
+
 let version () =
   Printf.printf "The Coq Proof Checker, version %s (%s)\n"
-    Coq_config.version Coq_config.date;
-  Printf.printf "compiled on %s\n" Coq_config.compile_date;
+    Coq_config.version (avail_version Coq_config.date);
+  Printf.printf "compiled on %s\n" (avail_version Coq_config.compile_date);
   exit 0
 
 (* print the usage of coqtop (or coqc) on channel co *)

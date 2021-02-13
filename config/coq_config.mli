@@ -33,8 +33,8 @@ val arch_is_win32 : bool
 val version : string    (* version number of Coq *)
 val caml_version : string    (* OCaml version used to compile Coq *)
 val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
-val date : string       (* release date *)
-val compile_date : string (* compile date *)
+val date : string option         (* release date / None when in dev mode as to improve binary caching *)
+val compile_date : string option (* compile date / None when in dev mode as to improve binary caching *)
 val vo_version : int32
 val state_magic_number : int
 

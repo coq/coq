@@ -16,9 +16,10 @@ let ideslave_coqtop_flags = ref None
 (** * Version and date *)
 
 let get_version_date () =
+  let coq_date = Option.default "n/a" Coq_config.date in
   let date =
-    if Glib.Utf8.validate Coq_config.date
-    then Coq_config.date
+    if Glib.Utf8.validate coq_date
+    then coq_date
     else "<date not printable>" in
   try
     (* the following makes sense only when running with local layout *)

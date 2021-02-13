@@ -24,12 +24,13 @@ let get_version_date () =
     let ver = input_line ch in
     let rev = input_line ch in
     let () = close_in ch in
-    (ver,rev)
+    (ver,Some rev)
   with e when CErrors.noncritical e ->
     (Coq_config.version,Coq_config.date)
 
 let print_header () =
   let (ver,rev) = get_version_date () in
+  let rev = Option.default "n/a" rev in
   Feedback.msg_info (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   flush_all ()
 

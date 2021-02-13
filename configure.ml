@@ -259,6 +259,7 @@ type preferences = {
   force_caml_version : bool;
   force_findlib_version : bool;
   warn_error : bool;
+  embed_date : bool;
 }
 
 module Profiles = struct
@@ -296,6 +297,7 @@ let default = {
   force_caml_version = false;
   force_findlib_version = false;
   warn_error = false;
+  embed_date = true;
 }
 
 let devel state = { state with
@@ -303,8 +305,9 @@ let devel state = { state with
   bin_annot = true;
   annot = true;
   warn_error = true;
+  embed_date = false;
 }
-let devel_doc = "-local -annot -bin-annot -warn-error yes"
+let devel_doc = "-local -annot -bin-annot -warn-error yes -embed-date no"
 
 let get = function
   | "devel" -> devel
@@ -434,7 +437,10 @@ let args_options = Arg.align [
   "-camldir", Arg.String (fun _ -> ()),
     "<dir> Specifies path to 'ocaml' for running configure script";
   "-profile", arg_profile,
-    Profiles.doc
+    Profiles.doc;
+  "-embed-date", arg_bool (fun p embed_date -> { p with embed_date}),
+    "(yes|no) embeds the configure date into the coqc binary (default yes)"
+
 ]
 
 let parse_args () =
@@ -1073,6 +1079,7 @@ let write_configml f =
   let o = open_out f in
   let pr s = fprintf o s in
   let pr_s = pr "let %s = %S\n" in
+  let pr_o n x = let s = match x with None -> "None" | Some s -> "(Some " ^ "\"" ^ s ^ "\")" in pr "let %s = %s\n" n s in
   let pr_b = pr "let %s = %B\n" in
   let pr_i = pr "let %s = %d\n" in
   let pr_i32 = pr "let %s = %dl\n" in
@@ -1096,8 +1103,8 @@ let write_configml f =
   pr_s "version" coq_version;
   pr_s "caml_version" caml_version;
   pr_li "caml_version_nums" caml_version_nums;
-  pr_s "date" short_date;
-  pr_s "compile_date" full_date;
+  pr_o "date" (if !prefs.embed_date then Some short_date else None);
+  pr_o "compile_date" (if !prefs.embed_date then Some full_date else None);
   pr_s "arch" arch;
   pr_b "arch_is_win32" arch_is_win32;
   pr_s "exec_extension" exe;
