@@ -149,13 +149,13 @@ test-suite: dunestrap
 	dune runtest --no-buffer $(DUNEOPT)
 
 refman-html: dunestrap
-	dune build --no-buffer @refman-html
+	dune build --no-buffer $(DUNEOPT) @refman-html
 
 refman-pdf: dunestrap
-	dune build --no-buffer @refman-pdf
+	dune build --no-buffer $(DUNEOPT) @refman-pdf
 
 stdlib-html: dunestrap
-	dune build @stdlib-html
+	dune build $(DUNEOPT) @stdlib-html
 
 apidoc:
 	dune build $(DUNEOPT) @doc

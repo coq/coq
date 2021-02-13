@@ -139,7 +139,11 @@ before_script:
   script:
     - ulimit -s 16384
     - tar xfj _build.tar.bz2
-    - make -f Makefile.dune "$DUNE_TARGET"
+    - set -e
+    - echo 'start:coq.test'
+    - make -f Makefile.dune DUNEOPT="--profile=release" "$DUNE_TARGET"
+    - echo 'end:coq.test'
+    - set +e
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
@@ -512,7 +516,7 @@ test-suite:edge:dev:
     - build:edge+flambda:dev
   script:
     - tar xfj _build.tar.bz2
-    - make -f Makefile.dune test-suite
+    - make -f Makefile.dune DUNEOPT="--profile=release" test-suite
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
