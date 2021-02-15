@@ -207,9 +207,14 @@ let coqtop_parse_extra extras =
   let async_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
   ({ run_mode; color_mode}, async_opts), extras
 
+let fix_windows_dirsep s =
+  if Sys.win32 then Str.(global_replace (regexp "\\(.\\)\\") "\\1/" s)
+  else s
+
 let get_native_name s =
   (* We ignore even critical errors because this mode has to be super silent *)
   try
+    fix_windows_dirsep @@
     Filename.(List.fold_left concat (dirname s)
                 [ !Nativelib.output_dir
                 ; Library.native_name_from_filename s
