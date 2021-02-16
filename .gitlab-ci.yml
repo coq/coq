@@ -351,6 +351,9 @@ windows64:
     - call dev/ci/platform-windows.bat
   tags:
     - windows-inria
+  only:
+    variables:
+      - $WINDOWS =~ /enabled/
 
 lint:
   stage: stage-1
