@@ -18,19 +18,17 @@ let () = at_exit flush_all
 
 let ( / ) = Filename.concat
 
-let get_version_date () =
+let get_version () =
   try
     let ch = open_in (Envars.coqlib () / "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
     let () = close_in ch in
-    (ver,rev)
-  with e when CErrors.noncritical e ->
-    (Coq_config.version,Coq_config.date)
+    Printf.sprintf "%s (%s)" ver rev
+  with _ -> Coq_config.version
 
 let print_header () =
-  let (ver,rev) = get_version_date () in
-  Feedback.msg_info (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
+  Feedback.msg_info (str "Welcome to Coq " ++ str (get_version ()));
   flush_all ()
 
 

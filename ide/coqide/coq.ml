@@ -13,13 +13,9 @@ open Preferences
 
 let ideslave_coqtop_flags = ref None
 
-(** * Version and date *)
+(** * Version *)
 
-let get_version_date () =
-  let date =
-    if Glib.Utf8.validate Coq_config.date
-    then Coq_config.date
-    else "<date not printable>" in
+let get_version () =
   try
     (* the following makes sense only when running with local layout *)
     let coqroot = Filename.concat
@@ -29,21 +25,20 @@ let get_version_date () =
     let ch = open_in (Filename.concat coqroot "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
-    (ver,rev)
-  with _ -> (Coq_config.version,date)
+    close_in ch;
+    Printf.sprintf "%s (%s)" ver rev
+  with _ -> Coq_config.version
 
 let short_version () =
-  let (ver,date) = get_version_date () in
-  Printf.sprintf "The Coq Proof Assistant, version %s (%s)\n" ver date
+  Printf.sprintf "The Coq Proof Assistant, version %s\n" (get_version ())
 
 let version () =
-  let (ver,date) = get_version_date () in
     Printf.sprintf
-      "The Coq Proof Assistant, version %s (%s)\
+      "The Coq Proof Assistant, version %s\
        \nArchitecture %s running %s operating system\
        \nGtk version is %s\
        \nThis is %s \n"
-      ver date
+      (get_version ())
       Coq_config.arch Sys.os_type
       (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
       (Filename.basename Sys.executable_name)
