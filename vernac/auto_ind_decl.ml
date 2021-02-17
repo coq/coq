@@ -349,14 +349,25 @@ let build_beq_scheme mode kn =
             (ff ())
             (constrsj.(j).cs_args))
       in
+      let pred = EConstr.of_constr (do_predicate rel_list nb_cstr_args) in
+      let case =
+        simple_make_case_or_project env (Evd.from_env env)
+          ci pred NoInvert (EConstr.mkVar (Id.of_string "Y"))
+          (EConstr.of_constr_array ar2)
+      in
       List.fold_left (fun a decl -> mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
-        (mkCase (Inductive.contract_case env (ci,do_predicate rel_list nb_cstr_args,
-                                              NoInvert, mkVar (Id.of_string "Y") ,ar2)))
+        (EConstr.Unsafe.to_constr case)
         (constrsi.(i).cs_args))
+    in
+    let pred = EConstr.of_constr (do_predicate rel_list 0) in
+    let case =
+      simple_make_case_or_project env (Evd.from_env env)
+        ci pred NoInvert (EConstr.mkVar (Id.of_string "X"))
+        (EConstr.of_constr_array ar)
     in
     mkNamedLambda (make_annot (Id.of_string "X") Sorts.Relevant) (mkFullInd ind (nb_ind-1+1))  (
         mkNamedLambda (make_annot (Id.of_string "Y") Sorts.Relevant) (mkFullInd ind (nb_ind-1+2))  (
-            mkCase (Inductive.contract_case env (ci, do_predicate rel_list 0,NoInvert,mkVar (Id.of_string "X"),ar))))
+            (EConstr.Unsafe.to_constr case)))
   in (* build_beq_scheme *)
 
   let names = Array.make nb_ind (make_annot Anonymous Sorts.Relevant) and

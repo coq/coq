@@ -212,6 +212,12 @@ val make_case_or_project :
   env -> evar_map -> inductive_type -> case_info ->
   (* pred *) EConstr.constr -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
 
+(** Sometimes [make_case_or_project] is nicer to call with a pre-built
+   [case_invert] than [inductive_type]. *)
+val simple_make_case_or_project :
+  env -> evar_map -> case_info ->
+  (* pred *) EConstr.constr -> EConstr.case_invert -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
+
 val make_case_invert : env -> inductive_type -> case_info
   -> EConstr.case_invert
 

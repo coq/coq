@@ -365,6 +365,8 @@ val to_rel_decl : Evd.evar_map -> (t, types) Context.Rel.Declaration.pt -> (Cons
 
 val of_case_invert : Constr.case_invert -> case_invert
 
+val of_constr_array : Constr.t array -> t array
+
 (** {5 Unsafe operations} *)
 
 module Unsafe :
