@@ -100,9 +100,6 @@ value init_coq_vm(value unit) /* ML */
     fprintf(stderr,"already open \n");fflush(stderr);}
   else {
     drawinstr=0;
-#ifdef THREADED_CODE
-    init_arity();
-#endif /* THREADED_CODE */
     /* Allocate the table of global and the stack */
     init_coq_stack();
     /* Initialing the interpreter */

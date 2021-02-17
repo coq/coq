@@ -178,7 +178,7 @@ let pp_coq_jumptbl_h fmt =
 
 let pp_coq_arity_h fmt =
   pp_header false fmt;
-  Format.fprintf fmt "static signed char arity2[] = {@.";
+  Format.fprintf fmt "static signed char arity[] = {@.";
   Array.iter (fun (_, arity) ->
       Format.fprintf fmt "  %d,@." arity
     ) opcodes;
