@@ -108,9 +108,7 @@ value coq_tcode_of_code (value code) {
     opcode_t instr;
     COPY32(&instr,p);
     p++;
-    if (instr < 0 || instr > STOP){
-      instr = STOP;
-    };
+    if (instr < 0 || instr > STOP) abort();
     *q++ = VALINSTR(instr);
     if (instr == SWITCH) {
       uint32_t i, sizes, const_size, block_size;
@@ -127,8 +125,9 @@ value coq_tcode_of_code (value code) {
       q++;
       for(i=1; i<n; i++) { COPY32(q,p); p++; q++; };
     } else {
-      uint32_t i, ar;
+      int i, ar;
       ar = arity[instr];
+      if (ar < 0) abort();
       for(i=0; i<ar; i++) { COPY32(q,p); p++; q++; };
     }
   }
