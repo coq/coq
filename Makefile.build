@@ -367,6 +367,10 @@ kernel/byterun/coq_jumptbl.h: kernel/genOpcodeFiles.exe
 	$(SHOW)'WRITE $@'
 	$(HIDE)$< jump > $@
 
+kernel/byterun/coq_arity.h: kernel/genOpcodeFiles.exe
+	$(SHOW)'WRITE $@'
+	$(HIDE)$< arity > $@
+
 kernel/vmopcodes.ml: kernel/genOpcodeFiles.exe
 	$(SHOW)'WRITE $@'
 	$(HIDE)$< copml > $@

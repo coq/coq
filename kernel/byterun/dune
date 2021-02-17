@@ -14,3 +14,7 @@
 (rule
  (targets coq_jumptbl.h)
  (action (with-stdout-to %{targets} (run ../genOpcodeFiles.exe jump))))
+
+(rule
+ (targets coq_arity.h)
+ (action (with-stdout-to %{targets} (run ../genOpcodeFiles.exe arity))))

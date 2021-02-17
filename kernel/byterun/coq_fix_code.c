@@ -21,6 +21,7 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include "coq_instruct.h"
+#include "coq_arity.h"
 #include "coq_fix_code.h"
 
 #ifdef THREADED_CODE
@@ -82,7 +83,9 @@ void init_arity () {
   /* instruction with four operands */
   arity[MAKESWITCHBLOCK]=4;
   /* instruction with arbitrary operands */
-  arity[CLOSUREREC]=arity[CLOSURECOFIX]=arity[SWITCH]=0;
+  arity[CLOSUREREC]=arity[CLOSURECOFIX]=arity[SWITCH]=-1;
+  for (int i = 0; i <= STOP; ++i)
+    if (arity[i] != arity2[i]) { printf("bad: %d\n", i); abort(); }
 }
 
 #endif /*  THREADED_CODE */
