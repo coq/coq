@@ -27,7 +27,7 @@ type compilation_mode = BuildVo | BuildVio | Vio2Vo | BuildVos | BuildVok
 type t =
   { compilation_mode : compilation_mode
 
-  ; compile_list: (string * bool) list  (* bool is verbosity  *)
+  ; compile_file: (string * bool) option  (* bool is verbosity  *)
   ; compilation_output_name : string option
 
   ; vio_checking : bool

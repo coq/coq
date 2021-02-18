@@ -216,9 +216,8 @@ let compile_file opts stm_opts copts injections (f_in, echo) =
   else
     compile opts stm_opts copts injections ~echo ~f_in ~f_out
 
-let compile_files (opts, stm_opts) copts injections =
-  let compile_list = copts.compile_list in
-  List.iter (compile_file opts stm_opts copts injections) compile_list
+let compile_file opts stm_opts copts injections =
+  Option.iter (compile_file opts stm_opts copts injections) copts.compile_file
 
 (******************************************************************************)
 (* VIO Dispatching                                                            *)

@@ -1,1 +1,1 @@
-(* -*- coq-prog-args: ("bugs/closed/PLACEHOLDER.v") -*- *)
+(* Placeholder file for directory / file test *)
