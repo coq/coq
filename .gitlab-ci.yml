@@ -267,7 +267,7 @@ before_script:
   stage: stage-1
   interruptible: true
   variables:
-    PLATFORM: "https://github.com/coq/platform/archive/master.zip"
+    PLATFORM: "https://github.com/coq/platform/archive/v8.13.zip"
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
