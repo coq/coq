@@ -233,17 +233,12 @@ Qed.
 
 (** *** Conversion from CReal to DReal *)
 
-Definition DRealAbstr : CReal -> DReal.
+Lemma DRealAbstr_aux :
+  forall x H,
+  isLowerCut (fun q : Q =>
+    if sig_forall_dec (fun n : nat => seq x (- Z.of_nat n) <= q + 2 ^ (- Z.of_nat n)) (H q)
+    then true else false).
 Proof.
-  intro x.
-  assert (forall (q : Q) (n : nat),
-   {(fun n0 : nat => (seq x (-Z.of_nat n0) <= q + (2^-Z.of_nat n0))%Q) n} +
-   {~ (fun n0 : nat => (seq x (-Z.of_nat n0) <= q + (2^-Z.of_nat n0))%Q) n}).
-  { intros. destruct (Qlt_le_dec (q + (2^-Z.of_nat n)) (seq x (-Z.of_nat n))).
-    right. apply (Qlt_not_le _ _ q0). left. exact q0. }
-
-  exists (fun q:Q => if sig_forall_dec (fun n:nat => Qle (seq x (-Z.of_nat n)) (q + (2^-Z.of_nat n))) (H q)
-             then true else false).
   repeat split.
   - intros.
     destruct (sig_forall_dec (fun n : nat => (seq x (-Z.of_nat n) <= q + (2^-Z.of_nat n))%Q)
@@ -303,6 +298,20 @@ Proof.
       apply (Qmult_le_l _ _ 2) in q0. field_simplify in q0.
       apply (Qplus_le_l _ _ (-seq x (-Z.of_nat n))) in q0. ring_simplify in q0.
       contradiction. reflexivity.
+Qed.
+
+Definition DRealAbstr : CReal -> DReal.
+Proof.
+  intro x.
+  assert (forall (q : Q) (n : nat),
+   {(fun n0 : nat => (seq x (-Z.of_nat n0) <= q + (2^-Z.of_nat n0))%Q) n} +
+   {~ (fun n0 : nat => (seq x (-Z.of_nat n0) <= q + (2^-Z.of_nat n0))%Q) n}).
+  { intros. destruct (Qlt_le_dec (q + (2^-Z.of_nat n)) (seq x (-Z.of_nat n))).
+    right. apply (Qlt_not_le _ _ q0). left. exact q0. }
+
+  exists (fun q:Q => if sig_forall_dec (fun n:nat => Qle (seq x (-Z.of_nat n)) (q + (2^-Z.of_nat n))) (H q)
+             then true else false).
+  apply DRealAbstr_aux.
 Defined.
 
 (** *** Conversion from DReal to CReal *)
