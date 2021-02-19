@@ -41,9 +41,8 @@ Proof.
   red; intro; rewrite H0 in H; elim (lt_irrefl _ H).
 Qed.
 
-Lemma exist_exp0 : { l:R | exp_in 0 l }.
+Lemma exist_exp0 : exp_in 0 1.
 Proof.
-  exists 1.
   unfold exp_in; unfold infinite_sum; intros.
   exists 0%nat.
   intros; replace (sum_f_R0 (fun i:nat => / INR (fact i) * 0 ^ i) n) with 1.
@@ -56,7 +55,7 @@ Proof.
   simpl.
   ring.
   unfold ge; apply le_O_n.
-Defined.
+Qed.
 
 (* Value of [exp 0] *)
 Lemma exp_0 : exp 0 = 1.
@@ -66,7 +65,7 @@ Proof.
   unfold exp_in; intros; eapply uniqueness_sum.
   apply H0.
   apply H.
-  exact (proj2_sig exist_exp0).
+  exact exist_exp0.
   exact (proj2_sig (exist_exp 0)).
 Qed.
 
@@ -384,9 +383,8 @@ Proof.
   intros; ring.
 Qed.
 
-Lemma exist_cos0 : { l:R | cos_in 0 l }.
+Lemma exist_cos0 : cos_in 0 1.
 Proof.
-  exists 1.
   unfold cos_in; unfold infinite_sum; intros; exists 0%nat.
   intros.
   unfold R_dist.
@@ -400,7 +398,7 @@ Proof.
   rewrite Rplus_0_r.
   apply Hrecn; unfold ge; apply le_O_n.
   simpl; ring.
-Defined.
+Qed.
 
 (* Value of [cos 0] *)
 Lemma cos_0 : cos 0 = 1.
@@ -410,7 +408,7 @@ Proof.
   unfold cos_in; intros; eapply uniqueness_sum.
   apply H0.
   apply H.
-  exact (proj2_sig exist_cos0).
+  exact exist_cos0.
   assert (H := proj2_sig (exist_cos (Rsqr 0))); unfold cos;
     pattern 0 at 1; replace 0 with (Rsqr 0); [ exact H | apply Rsqr_0 ].
 Qed.
