@@ -285,14 +285,14 @@ Lemma CRlt_trans : forall {R : ConstructiveReals} (x y z : CRcarrier R),
 Proof.
   intros. apply (CRlt_le_trans _ y _ H).
   apply CRlt_asym. exact H0.
-Defined.
+Qed.
 
 Lemma CRlt_trans_flip : forall {R : ConstructiveReals} (x y z : CRcarrier R),
     y < z -> x < y -> x < z.
 Proof.
   intros. apply (CRlt_le_trans _ y). exact H0.
   apply CRlt_asym. exact H.
-Defined.
+Qed.
 
 Lemma CReq_refl : forall {R : ConstructiveReals} (x : CRcarrier R),
     x == x.

@@ -75,7 +75,7 @@ Proof.
     rewrite inject_Q_plus, (opp_inject_Q 2).
     ring_simplify. exact H.
     rewrite Qinv_plus_distr. reflexivity.
-Defined.
+Qed.
 
 (* ToDo: Move to ConstructiveCauchyAbs.v *)
 Lemma Qabs_Rabs : forall q : Q,
@@ -688,7 +688,7 @@ Proof.
   exact (a i j H0 H1).
   exists l. intros p. destruct (cv p).
   exists x. exact c.
-Defined.
+Qed.
 
 (* ToDO: Belongs into sumbool.v *)
 Section connectives.

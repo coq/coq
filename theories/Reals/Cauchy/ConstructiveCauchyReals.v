@@ -320,7 +320,6 @@ Proof.
   - contradiction.
   - exact Hxltz.
 Qed.
-(* Todo: this was Defined. Why *)
 
 Lemma CReal_lt_le_trans : forall x y z : CReal,
     x < y -> y <= z -> x < z.
@@ -330,7 +329,6 @@ Proof.
   - exact Hxltz.
   - contradiction.
 Qed.
-(* Todo: this was Defined. Why *)
 
 Lemma CReal_le_trans : forall x y z : CReal,
     x <= y -> y <= z -> x <= z.
@@ -347,7 +345,6 @@ Proof.
   apply (CReal_lt_le_trans _ y _ Hxlty).
   apply CRealLt_asym; exact Hyltz.
 Qed.
-(* Todo: this was Defined. Why *)
 
 Lemma CRealEq_trans : forall x y z : CReal,
     CRealEq x y -> CRealEq y z -> CRealEq x z.
