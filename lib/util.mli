@@ -112,6 +112,15 @@ type 'a delayed = unit -> 'a
 
 val delayed_force : 'a delayed -> 'a
 
+(** [try_finally f x g y] applies the main code [f] to [x] and
+   returns the result after having applied the finalization
+   code [g] to [y]. If the main code raises the exception
+   [exn], the finalization code is executed and [exn] is raised.
+   If the finalization code itself fails, the exception
+   returned is always the one from the finalization code.
+   Credit X.Leroy, D.Remy. *)
+val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
+
 (** {6 Enriched exceptions} *)
 
 type iexn = Exninfo.iexn
