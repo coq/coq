@@ -16,8 +16,6 @@
 
 /META.coq.in       @coq/legacy-build-maintainers
 
-/dev/build/windows @coq/windows-build-maintainers
-
 ########## CI infrastructure ##########
 
 /dev/ci/             @coq/ci-maintainers
