@@ -1405,6 +1405,9 @@ let read_coqide_args argv =
     |"-coqtop-flags" :: flags :: args->
       Coq.ideslave_coqtop_flags := Some flags;
       filter_coqtop coqtop project_files bindings_files out args
+    | ("-v" | "--version") :: _ ->
+      Printf.printf "CoqIDE, version %s\n" Coq_config.version;
+      exit 0
     |arg::args when out = [] && CString.is_prefix "-psn_" arg ->
       (* argument added by MacOS during .app launch *)
       filter_coqtop coqtop project_files bindings_files out args
