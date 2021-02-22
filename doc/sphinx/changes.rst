@@ -713,6 +713,14 @@ Kernel
   (`#13867 <https://github.com/coq/coq/pull/13867>`_,
   by Guillaume Melquiond).
 
+CoqIDE
+^^^^^^
+
+- **Added:**
+  Option ``-v`` and ``--version`` to CoqIDE
+  (`#13870 <https://github.com/coq/coq/pull/13870>`_,
+  by Guillaume Melquiond).
+
 
 Version 8.12
 ------------
