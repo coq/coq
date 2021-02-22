@@ -75,7 +75,7 @@ Proof.
     rewrite inject_Q_plus, (opp_inject_Q 2).
     ring_simplify. exact H.
     rewrite Qinv_plus_distr. reflexivity.
-Defined.
+Qed.
 
 (* ToDo: Move to ConstructiveCauchyAbs.v *)
 Lemma Qabs_Rabs : forall q : Q,
@@ -688,21 +688,7 @@ Proof.
   exact (a i j H0 H1).
   exists l. intros p. destruct (cv p).
   exists x. exact c.
-Defined.
-
-(* ToDO: Belongs into sumbool.v *)
-Section connectives.
-
-  Variables A B : Prop.
-
-  Hypothesis H1 : {A} + {~A}.
-  Hypothesis H2 : {B} + {~B}.
-
-  Definition sumbool_or_not_or : {A \/ B} + {~(A \/ B)}.
-    case H1; case H2; tauto.
-  Defined.
-
-End connectives.
+Qed.
 
 Lemma Qnot_le_iff_lt: forall x y : Q,
   ~ (x <= y)%Q <-> (y < x)%Q.
@@ -740,13 +726,11 @@ Proof.
       clear maj. right. exists n.
       apply H0.
   - clear H0 H. intro n.
-    apply sumbool_or_not_or.
-    + destruct (Qlt_le_dec (2 * 2 ^ n)%Q (seq b n - seq a n)%Q).
-      * left; assumption.
-      * right; apply Qle_not_lt; assumption.
-    + destruct (Qlt_le_dec (2 * 2 ^ n)%Q (seq d n - seq c n)%Q).
-      * left; assumption.
-      * right; apply Qle_not_lt; assumption.
+    destruct (Qlt_le_dec (2 * 2 ^ n)%Q (seq b n - seq a n)%Q) as [H1|H1].
+    + now left; left.
+    + destruct (Qlt_le_dec (2 * 2 ^ n)%Q (seq d n - seq c n)%Q) as [H2|H2].
+      * now left; right.
+      * now right; intros [H3|H3]; apply Qle_not_lt with (2 := H3).
 Qed.
 
 Definition CRealConstructive : ConstructiveReals

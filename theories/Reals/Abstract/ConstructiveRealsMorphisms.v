@@ -232,7 +232,7 @@ Proof.
   apply CRplus_lt_compat_l.
   apply (CRle_lt_trans _ (CR_of_Q R 0)). apply CRle_refl.
   apply CR_of_Q_lt. exact H.
-Defined.
+Qed.
 
 Lemma CRplus_neg_rat_lt : forall {R : ConstructiveReals} (x : CRcarrier R) (q : Q),
     Qlt q 0 -> CRlt R (CRplus R x (CR_of_Q R q)) x.

@@ -170,7 +170,7 @@ Proof.
   reg.
   exists H5; symmetry ; reg; rewrite <- H3; rewrite <- H4; reflexivity.
   assumption.
-Defined.
+Qed.
 
 (**********)
 Lemma antiderivative_P1 :

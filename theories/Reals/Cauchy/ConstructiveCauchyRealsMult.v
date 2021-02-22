@@ -733,13 +733,11 @@ Definition CReal_inv_pos (x : CReal) (Hxpos : 0 < x) : CReal :=
   bound := CReal_inv_pos_bound x Hxpos
 |}.
 
-(* ToDo: make this more obviously computing *)
-
 Definition CReal_neg_lt_pos : forall x : CReal, x < 0 -> 0 < -x.
 Proof.
   intros x [n nmaj]. exists n.
-  apply (Qlt_le_trans _ _ _ nmaj). destruct x. simpl.
-  unfold Qminus. rewrite Qplus_0_l, Qplus_0_r. apply Qle_refl.
+  simpl in *. unfold CReal_opp_seq, Qminus.
+  abstract now rewrite Qplus_0_r, <- (Qplus_0_l (- seq x n)).
 Defined.
 
 Definition CReal_inv (x : CReal) (xnz : x # 0) : CReal
