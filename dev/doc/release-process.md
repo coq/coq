@@ -153,11 +153,10 @@
 - [ ] Publish a release on GitHub with the PDF version of the
   reference manual attached.
 
-## Once the final release is published ##
+## For each non-preview release ##
 
-Ping `@Zimmi48` to:
-
-- [ ] Switch the default version of the reference manual on the website.
+- [ ] Ping `@Zimmi48` to switch the default version of the reference
+  manual on the website.
 
   This is done by logging into the server (`vps697916.ovh.net`),
   editing two `ProxyPass` lines (one for the refman and one for the
@@ -168,7 +167,9 @@ Ping `@Zimmi48` to:
   repository. See [coq/www#111](https://github.com/coq/www/issues/111)
   and [coq/www#131](https://github.com/coq/www/issues/131).
 
-- [ ] Publish a new version on Zenodo (only once per major version).
+## Only for the final release of each major version ##
+
+- [ ] Ping `@Zimmi48` to publish a new version on Zenodo.
 
   *TODO:* automate this with coqbot.
 
