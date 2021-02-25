@@ -274,7 +274,7 @@ depclean:
 	find . $(FIND_SKIP_DIRS) '(' -name '*.d' ')' -exec rm -f {} +
 
 cacheclean:
-	find theories test-suite -name '.*.aux' -exec rm -f {} +
+	find theories user-contrib test-suite -name '.*.aux' -exec rm -f {} +
 
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-coq config/Info-*.plist
@@ -282,12 +282,12 @@ cleanconfig:
 distclean: clean cleanconfig cacheclean timingclean
 
 voclean:
-	find theories plugins test-suite \( -name '*.vo' -o -name '*.vio' -o -name '*.vos' -o -name '*.vok' -o -name '*.glob' -o -name "*.cmxs" \
+	find theories plugins user-contrib test-suite \( -name '*.vo' -o -name '*.vio' -o -name '*.vos' -o -name '*.vok' -o -name '*.glob' -o -name "*.cmxs" \
 	-o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -exec rm -f {} +
-	find theories plugins test-suite -name .coq-native -empty -exec rm -rf {} +
+	find theories plugins user-contrib test-suite -name .coq-native -empty -exec rm -rf {} +
 
 timingclean:
-	find theories plugins test-suite \( -name '*.v.timing' -o -name '*.v.before-timing' \
+	find theories plugins user-contrib test-suite \( -name '*.v.timing' -o -name '*.v.before-timing' \
 	  -o -name "*.v.after-timing" -o -name "*.v.timing.diff" -o -name "time-of-build.log" \
 	  -o -name "time-of-build-before.log" -o -name "time-of-build-after.log" \
 	  -o -name "time-of-build-pretty.log" -o -name "time-of-build-both.log" \) -exec rm -f {} +
