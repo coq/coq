@@ -563,19 +563,19 @@ let program_inference_hook env sigma ev =
     user_err Pp.(str "The statement obligations could not be resolved \
                       automatically, write a statement definition first.")
 
-let vernac_set_used_variables ~pstate e : Declare.Proof.t =
+let vernac_set_used_variables ~pstate using : Declare.Proof.t =
   let env = Global.env () in
   let sigma, _ = Declare.Proof.get_current_context pstate in
   let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
-  let tys = List.map snd (initial_goals (Declare.Proof.get pstate)) in
-  let l = Proof_using.process_expr env sigma e tys in
+  let terms = List.map snd (initial_goals (Declare.Proof.get pstate)) in
+  let using = Proof_using.definition_using env sigma ~using ~terms in
   let vars = Environ.named_context env in
-  List.iter (fun id ->
-    if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
-      user_err ~hdr:"vernac_set_used_variables"
-        (str "Unknown variable: " ++ Id.print id))
-    l;
-  let _, pstate = Declare.Proof.set_used_variables pstate l in
+  Names.Id.Set.iter (fun id ->
+      if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
+        user_err ~hdr:"vernac_set_used_variables"
+          (str "Unknown variable: " ++ Id.print id))
+    using;
+  let _, pstate = Declare.Proof.set_used_variables pstate ~using in
   pstate
 
 let vernac_set_used_variables_opt ?using pstate =

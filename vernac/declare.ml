@@ -57,7 +57,7 @@ module CInfo = struct
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
-    ; using : Names.Id.Set.t option
+    ; using : Proof_using.t option
     (** Explicit declaration of section variables used by the constant *)
     }
 
@@ -1478,11 +1478,10 @@ let start_mutual_with_initialization ~info ~cinfo ~mutual_info sigma snl =
 let get_used_variables pf = pf.using
 let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
 
-let set_used_variables ps l =
+let set_used_variables ps ~using =
   let open Context.Named.Declaration in
   let env = Global.env () in
-  let ids = List.fold_right Id.Set.add l Id.Set.empty in
-  let ctx = Environ.keep_hyps env ids in
+  let ctx = Environ.keep_hyps env using in
   let ctx_set =
     List.fold_right Id.Set.add (List.map NamedDecl.get_id ctx) Id.Set.empty in
   let vars_of = Environ.global_vars_set in
