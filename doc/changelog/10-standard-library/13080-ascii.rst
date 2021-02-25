@@ -1,0 +1,4 @@
+- **Added:**
+  ``leb`` and ``ltb`` functions for ``ascii``
+  (`#13080 <https://github.com/coq/coq/pull/13080>`_,
+  by Yishuai Li).
