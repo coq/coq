@@ -196,31 +196,6 @@ let which prog =
 let program_in_path prog =
   try let _ = which prog in true with Not_found -> false
 
-let build_date =
-  try
-    float_of_string (Sys.getenv "SOURCE_DATE_EPOCH")
-  with
-    Not_found -> Unix.time ()
-
-(** * Date *)
-
-(** The short one is displayed when starting coqtop,
-    The long one is used as compile date *)
-
-let months =
- [| "January";"February";"March";"April";"May";"June";
-    "July";"August";"September";"October";"November";"December" |]
-
-let get_date () =
-  let now = Unix.gmtime build_date in
-  let year = 1900+now.Unix.tm_year in
-  let month = months.(now.Unix.tm_mon) in
-  sprintf "%s %d" month year,
-  sprintf "%s %d %d %d:%02d:%02d" (String.sub month 0 3) now.Unix.tm_mday year
-    now.Unix.tm_hour now.Unix.tm_min now.Unix.tm_sec
-
-let short_date, full_date = get_date ()
-
 (** * Command-line parsing *)
 
 type ide = Opt | Byte | No
@@ -1096,8 +1071,6 @@ let write_configml f =
   pr_s "version" coq_version;
   pr_s "caml_version" caml_version;
   pr_li "caml_version_nums" caml_version_nums;
-  pr_s "date" short_date;
-  pr_s "compile_date" full_date;
   pr_s "arch" arch;
   pr_b "arch_is_win32" arch_is_win32;
   pr_s "exec_extension" exe;

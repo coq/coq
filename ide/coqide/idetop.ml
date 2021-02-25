@@ -397,8 +397,8 @@ let set_options options =
 let about () = {
   Interface.coqtop_version = Coq_config.version;
   Interface.protocol_version = Xmlprotocol.protocol_version;
-  Interface.release_date = Coq_config.date;
-  Interface.compile_date = Coq_config.compile_date;
+  Interface.release_date = "n/a";
+  Interface.compile_date = "n/a";
 }
 
 let handle_exn (e, info) =
