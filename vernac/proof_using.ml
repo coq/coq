@@ -91,13 +91,14 @@ let remove_ids_and_lets env s ids =
 let record_proof_using expr =
   Aux_file.record_in_aux "suggest_proof_using" expr
 
+let debug_proof_using = CDebug.create ~name:"proof-using" ()
+
 (* Variables in [skip] come from after the definition, so don't count
    for "All". Used in the variable case since the env contains the
    variable itself. *)
 let suggest_common env ppid used ids_typ skip =
   let module S = Id.Set in
   let open Pp in
-  let print x = Feedback.msg_debug x in
   let pr_set parens s =
     let wrap ppcmds =
       if parens && S.cardinal s > 1 then str "(" ++ ppcmds ++ str ")"
@@ -111,13 +112,13 @@ let suggest_common env ppid used ids_typ skip =
   in
   let all = S.diff all skip in
   let fwd_typ = close_fwd env (Evd.from_env env) ids_typ in
-  if !Flags.debug then begin
-    print (str "All "        ++ pr_set false all);
-    print (str "Type "       ++ pr_set false ids_typ);
-    print (str "needed "     ++ pr_set false needed);
-    print (str "all_needed " ++ pr_set false all_needed);
-    print (str "Type* "      ++ pr_set false fwd_typ);
-  end;
+  let () = debug_proof_using (fun () ->
+      str "All "        ++ pr_set false all ++ fnl() ++
+      str "Type "       ++ pr_set false ids_typ ++ fnl() ++
+      str "needed "     ++ pr_set false needed ++ fnl() ++
+      str "all_needed " ++ pr_set false all_needed ++ fnl() ++
+      str "Type* "      ++ pr_set false fwd_typ)
+  in
   let valid_exprs = ref [] in
   let valid e = valid_exprs := e :: !valid_exprs in
   if S.is_empty needed then valid (str "Type");

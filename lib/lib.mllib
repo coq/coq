@@ -10,6 +10,7 @@ Loc
 Feedback
 CErrors
 CWarnings
+CDebug
 
 AcyclicGraph
 Rtree

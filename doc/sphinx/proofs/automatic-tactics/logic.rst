@@ -194,9 +194,7 @@ Solvers for logic and equality
       additional arguments can be given to congruence by filling in the holes in the
       terms given in the error message, using the `with` clause.
 
-   .. flag:: Congruence Verbose
-
-      Makes :tacn:`congruence` print debug information.
+   :opt:`Debug` ``"congruence"`` makes :tacn:`congruence` print debug information.
 
 .. tacn:: btauto
 

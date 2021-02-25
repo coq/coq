@@ -1645,6 +1645,13 @@ let () =
       optwrite = CWarnings.set_flags }
 
 let () =
+  declare_string_option
+    { optdepr  = false;
+      optkey   = ["Debug"];
+      optread  = CDebug.get_flags;
+      optwrite = CDebug.set_flags }
+
+let () =
   declare_bool_option
     { optdepr  = false;
       optkey   = ["Guard"; "Checking"];
@@ -1710,9 +1717,9 @@ let vernac_set_append_option ~locality key s =
 
 let vernac_set_option ~locality table v = match v with
 | OptionSetString s ->
-  (* We make a special case for warnings because appending is their
-  natural semantics *)
-  if CString.List.equal table ["Warnings"] then
+  (* We make a special case for warnings and debug flags because appending is
+  their natural semantics *)
+  if CString.List.equal table ["Warnings"] || CString.List.equal table ["Debug"] then
     vernac_set_append_option ~locality table s
   else
     let (last, prefix) = List.sep_last table in

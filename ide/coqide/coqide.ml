@@ -1374,8 +1374,7 @@ let main files =
 let read_coqide_args argv =
   let set_debug () =
     Minilib.debug := true;
-    Flags.debug := true;
-    Exninfo.record_backtrace true
+    CDebug.set_debug_all true
   in
   let rec filter_coqtop coqtop project_files bindings_files out = function
     |"-unicode-bindings" :: sfilenames :: args ->

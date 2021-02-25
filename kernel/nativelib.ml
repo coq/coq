@@ -38,7 +38,7 @@ let ( / ) = Filename.concat
 let my_temp_dir = lazy (CUnix.mktemp_dir "Coq_native" "")
 
 let () = at_exit (fun () ->
-    if not !Flags.debug && Lazy.is_val my_temp_dir then
+    if not (keep_debug_files ()) && Lazy.is_val my_temp_dir then
       try
         let d = Lazy.force my_temp_dir in
         Array.iter (fun f -> Sys.remove (Filename.concat d f)) (Sys.readdir d);
@@ -129,7 +129,7 @@ let call_compiler ?profile:(profile=false) ml_filename =
        ::"-w"::"a"
        ::include_dirs) @
       ["-impl"; ml_filename] in
-  if !Flags.debug then Feedback.msg_debug (Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
+  debug_native_compiler (fun () -> Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
   try
     let res = CUnix.sys_command (Envars.ocamlfind ()) args in
     match res with
@@ -142,7 +142,7 @@ let call_compiler ?profile:(profile=false) ml_filename =
 let compile fn code ~profile:profile =
   write_ml_code fn code;
   let r = call_compiler ~profile fn in
-  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
+  if (not (keep_debug_files ())) && Sys.file_exists fn then Sys.remove fn;
   r
 
 type native_library = Nativecode.global list * Nativevalues.symbols
@@ -160,7 +160,7 @@ let compile_library (code, symb) fn =
   let fn = dirname / basename in
   write_ml_code fn ~header code;
   let _ = call_compiler fn in
-  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn
+  if (not (keep_debug_files ())) && Sys.file_exists fn then Sys.remove fn
 
 (* call_linker links dynamically the code for constants in environment or a  *)
 (* conversion test. *)
@@ -171,7 +171,7 @@ let call_linker ?(fatal=true) ~prefix f upds =
     begin
       let msg = "Cannot find native compiler file " ^ f in
       if fatal then CErrors.user_err Pp.(str msg)
-      else if !Flags.debug then Feedback.msg_debug (Pp.str msg)
+      else debug_native_compiler (fun () -> Pp.str msg)
     end
   else
   (try
@@ -180,7 +180,7 @@ let call_linker ?(fatal=true) ~prefix f upds =
    with Dynlink.Error _ as exn ->
      let exn = Exninfo.capture exn in
      if fatal then Exninfo.iraise exn
-     else if !Flags.debug then Feedback.msg_debug CErrors.(iprint exn));
+     else debug_native_compiler (fun () -> CErrors.(iprint exn)));
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library ~prefix ~dirname ~basename =

@@ -149,7 +149,7 @@ let remove_load_path dir =
   load_paths := List.filter2 (fun p d -> p <> dir) physical logical
 
 let add_load_path (phys_path,coq_path) =
-  if !Flags.debug then
+  if CDebug.(get_flag misc) then
     Feedback.msg_notice (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
            str phys_path);
   let phys_path = CUnix.canonical_path_name phys_path in

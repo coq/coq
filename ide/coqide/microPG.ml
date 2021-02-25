@@ -15,7 +15,7 @@ open GdkKeysyms
 open Printf
 
 let eprintf x =
-  if !Flags.debug then Printf.eprintf x else Printf.ifprintf stderr x
+  if CDebug.(get_flag misc) then Printf.eprintf x else Printf.ifprintf stderr x
 
 type gui = {
   notebook : session Wg_Notebook.typed_notebook;

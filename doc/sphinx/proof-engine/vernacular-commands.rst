@@ -865,6 +865,14 @@ Controlling display
    interpreted from left to right, so in case of an overlap, the flags on the
    right have higher priority, meaning that `A,-A` is equivalent to `-A`.
 
+.. opt:: Debug "{+, {? - } @ident }"
+
+   Configures the display of debug messages. Each :n:`@ident` enables debug messages
+   for that component, while  :n:`-@ident` disables messages for the component.
+   ``all`` activates or deactivates all other components.  ``backtrace`` controls printing of
+   error backtraces.
+
+   :cmd:`Test` `Debug` displays the list of components and their enabled/disabled state.
 .. opt:: Printing Width @natural
 
    This command sets which left-aligned part of the width of the screen is used

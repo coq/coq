@@ -675,10 +675,10 @@ Applying theorems
       :tacn:`notypeclasses refine`: it performs type checking without resolution of
       typeclasses, does not perform beta reductions or shelve the subgoals.
 
-   .. flag:: Debug Unification
-
-      Enables printing traces of unification steps used during
-      elaboration/typechecking and the :tacn:`refine` tactic.
+   :opt:`Debug` ``"unification"`` enables printing traces of
+   unification steps used during elaboration/typechecking and the
+   :tacn:`refine` tactic. ``"ho-unification"`` prints information
+   about higher order heuristics.
 
 .. tacn:: apply @term
    :name: apply
@@ -1040,10 +1040,9 @@ Applying theorems
       when the instantiation of a variable cannot be found
       (cf. :tacn:`eapply` and :tacn:`apply`).
 
-.. flag:: Debug Tactic Unification
-
-   Enables printing traces of unification steps in tactic unification.
-   Tactic unification is used in tactics such as :tacn:`apply` and :tacn:`rewrite`.
+:opt:`Debug` ``"tactic-unification"`` enables printing traces of
+unification steps in tactic unification. Tactic unification is used in
+tactics such as :tacn:`apply` and :tacn:`rewrite`.
 
 .. _managingthelocalcontext:
 

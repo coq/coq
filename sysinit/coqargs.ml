@@ -22,14 +22,6 @@ let error_missing_arg s =
   exit 1
 
 (******************************************************************************)
-(* Imperative effects! This must be fixed at some point.                      *)
-(******************************************************************************)
-
-let set_debug () =
-  let () = Exninfo.record_backtrace true in
-  Flags.debug := true
-
-(******************************************************************************)
 
 type native_compiler = Coq_config.native_compiler =
   NativeOff | NativeOn of { ondemand : bool }
@@ -167,6 +159,9 @@ let add_load_vernacular opts verb s =
 
 let add_set_option opts opt_name value =
   { opts with pre = { opts.pre with injections = OptionInjection (opt_name, value) :: opts.pre.injections }}
+
+let add_set_debug opts flags =
+  add_set_option opts ["Debug"] (OptionAppend flags)
 
 (** Options for proof general *)
 let set_emacs opts =
@@ -382,10 +377,15 @@ let parse_args ~usage ~init arglist : t * string list =
     (* Options with zero arg *)
     |"-test-mode" -> Vernacinterp.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
-    |"-bt" -> Exninfo.record_backtrace true; oval
+    |"-bt" -> add_set_debug oval "backtrace"
     |"-config"|"--config" -> set_query oval PrintConfig
-    |"-debug" -> set_debug (); oval
-    |"-xml-debug" -> Flags.xml_debug := true; set_debug (); oval
+
+    |"-debug" -> add_set_debug oval "all"
+    |"-d" | "-D" -> add_set_debug oval (next())
+
+    (* -xml-debug implies -debug. TODO don't be imperative here. *)
+    |"-xml-debug" -> Flags.xml_debug := true; add_set_debug oval "all"
+
     |"-diffs" ->
       add_set_option oval Proof_diffs.opt_name @@ OptionSet (Some (next ()))
     |"-emacs" -> set_emacs oval

@@ -1,0 +1,44 @@
+File "stdin", line 1, characters 0-16:
+Warning: There is no debug flag "cbn". [unknown-debug-flag,option]
+Debug: [RAKAM] <<forall A : Type, A -> A -> Prop|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<forall A : Type, A -> A -> Prop|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<?A -> ?A -> Prop|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<?A -> ?A -> Prop|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> nat|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> Prop|>>
+Debug: [RAKAM] <><><><><>
+Debug: [RAKAM] <<nat -> Prop|>>
+Debug: [RAKAM] <><><><><>
+2 + 3 = 0
+     : Prop

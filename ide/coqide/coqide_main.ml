@@ -35,7 +35,7 @@ let catch_gtk_messages () =
         let () = GToolbox.message_box ~title:"Error" (header ^ msg) in
         Coqide.crash_save 1
       |`ERROR ->
-        if !Flags.debug then GToolbox.message_box ~title:"Error" (header ^ msg)
+        if CDebug.(get_flag misc) then GToolbox.message_box ~title:"Error" (header ^ msg)
         else Printf.eprintf "%s\n" (header ^ msg)
       |`DEBUG -> Minilib.log msg
       |level when Sys.os_type = "Win32" -> Minilib.log ~level msg

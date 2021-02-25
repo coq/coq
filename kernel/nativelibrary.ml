@@ -28,35 +28,35 @@ and translate_field prefix mp env acc (l,x) =
   match x with
   | SFBconst cb ->
      let con = Constant.make2 mp l in
-     (if !Flags.debug then
+     (debug_native_compiler (fun () ->
         let msg = Printf.sprintf "Compiling constant %s..." (Constant.to_string con) in
-        Feedback.msg_debug (Pp.str msg));
+        Pp.str msg));
      compile_constant_field env prefix con acc cb
   | SFBmind mb ->
-     (if !Flags.debug then
+     (debug_native_compiler (fun () ->
         let id = mb.mind_packets.(0).mind_typename in
         let msg = Printf.sprintf "Compiling inductive %s..." (Id.to_string id) in
-        Feedback.msg_debug (Pp.str msg));
+        Pp.str msg));
      compile_mind_field mp l acc mb
   | SFBmodule md ->
      let mp = md.mod_mp in
-     (if !Flags.debug then
+     (debug_native_compiler (fun () ->
         let msg =
           Printf.sprintf "Compiling module %s..." (ModPath.to_string mp)
         in
-        Feedback.msg_debug (Pp.str msg));
+        Pp.str msg));
      translate_mod prefix mp env md.mod_type acc
   | SFBmodtype mdtyp ->
      let mp = mdtyp.mod_mp in
-     (if !Flags.debug then
+     (debug_native_compiler (fun () ->
         let msg =
           Printf.sprintf "Compiling module type %s..." (ModPath.to_string mp)
         in
-        Feedback.msg_debug (Pp.str msg));
+        Pp.str msg));
      translate_mod prefix mp env mdtyp.mod_type acc
 
 let dump_library mp dp env mod_expr =
-  if !Flags.debug then Feedback.msg_debug (Pp.str "Compiling library...");
+  debug_native_compiler (fun () -> Pp.str "Compiling library...");
   match mod_expr with
   | NoFunctor struc ->
       let env = add_structure mp struc empty_delta_resolver env in
