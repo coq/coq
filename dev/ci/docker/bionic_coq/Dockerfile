@@ -42,9 +42,9 @@ ENV NJOBS="2" \
 ENV COMPILER="4.05.0"
 
 # Common OPAM packages
-ENV BASE_OPAM="zarith.1.10 ocamlfind.1.8.1 ounit2.2.2.3 odoc.1.5.1" \
+ENV BASE_OPAM="zarith.1.10 ocamlfind.1.8.1 ounit2.2.2.3 odoc.1.5.2" \
     CI_OPAM="ocamlgraph.1.8.8" \
-    BASE_ONLY_OPAM="elpi.1.13.1"
+    BASE_ONLY_OPAM="dune.2.7.1 elpi.1.13.1"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
 ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.0"
@@ -61,13 +61,13 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
         i386 env CC='gcc -m32' opam install zarith.1.10 && \
         opam install $BASE_OPAM
 
-# EDGE switch
-ENV COMPILER_EDGE="4.11.1" \
-    BASE_OPAM_EDGE="dune.2.5.1 dune-release.1.3.3"
+# EDGE switch, dune 2.8 is required for OCaml 4.12
+ENV COMPILER_EDGE="4.12.0" \
+    BASE_OPAM_EDGE="dune.2.8.5 dune-release.1.4.0"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
-RUN opam switch create "${COMPILER_EDGE}+flambda" && eval $(opam env) && \
+RUN opam switch create 4.12.0+flambda --packages="ocaml-variants.${COMPILER_EDGE}+options,ocaml-option-flambda" && eval $(opam env) && \
     opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM $CI_OPAM
 
 RUN opam clean -a -c

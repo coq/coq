@@ -48,7 +48,7 @@ jobs:
           opam install -j "$NJOBS" ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 zarith.1.10 dune.2.8.5
           opam list
         env:
-          COMPILER: "4.11.1"
+          COMPILER: "4.12.0"
           FINDLIB_VER: ".1.8.1"
           OPAMYES: "true"
           MACOSX_DEPLOYMENT_TARGET: "10.11"
