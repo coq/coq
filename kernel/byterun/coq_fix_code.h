@@ -18,7 +18,6 @@ void * coq_stat_alloc (asize_t sz);
 #ifdef THREADED_CODE
 extern char ** coq_instr_table;
 extern char * coq_instr_base;
-void init_arity();
 #define VALINSTR(instr) ((opcode_t)(coq_instr_table[instr] - coq_instr_base))
 #else
 #define VALINSTR(instr) instr

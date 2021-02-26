@@ -152,6 +152,7 @@ plugins/ssr/ssrvernac.ml
 
 kernel/byterun/coq_instruct.h
 kernel/byterun/coq_jumptbl.h
+kernel/byterun/coq_arity.h
 kernel/genOpcodeFiles.exe
 kernel/vmopcodes.ml
 kernel/uint63.ml
