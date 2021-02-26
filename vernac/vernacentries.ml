@@ -2401,4 +2401,4 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
 
   (* Extensions *)
   | VernacExtend (opn,args) ->
-    Vernacextend.type_vernac ?loc ~atts opn args
+    Vernacextend.type_vernac ?loc ~atts opn args ()

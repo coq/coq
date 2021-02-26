@@ -25,9 +25,12 @@ end
  * as to be cleared (see the to_clear argument to the continuation)
  *
  * returns true if the last view was a tactic *)
-val tclIPAT_VIEWS : views:ast_closure_term list -> ?clear_if_id:bool ->
-    conclusion:(to_clear:Names.Id.t list -> unit Proofview.tactic) ->
-  bool Proofview.tactic
+val tclIPAT_VIEWS
+  :  views:ast_closure_term list
+  -> ?clear_if_id:bool
+  -> conclusion:(to_clear:Names.Id.t list -> unit Proofview.tactic)
+  -> unit
+  -> bool Proofview.tactic
 
 (* Apply views to a given subject (as if was the top of the stack), then
    call conclusion on the obtained term (something like [v2 (v1 subject)]).

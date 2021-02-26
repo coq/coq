@@ -199,7 +199,7 @@ let toggle_scope_printing ~scope ~activate =
   else
     deactivate_scope scope
 
-let toggle_notation_printing ?scope ~notation ~activate =
+let toggle_notation_printing ?scope ~notation ~activate () =
   let inscope = match scope with
   | None -> LastLonelyNotation
   | Some sc -> NotationInScope sc in

@@ -1563,11 +1563,16 @@ end (* }}} *)
 and Slaves : sig
 
   (* (eventually) remote calls *)
-  val build_proof :
-    doc:doc ->
-    ?loc:Loc.t -> drop_pt:bool ->
-    exn_info:(Stateid.t * Stateid.t) -> block_start:Stateid.t -> block_stop:Stateid.t ->
-      name:string -> future_proof * AsyncTaskQueue.cancel_switch
+  val build_proof
+    : doc:doc
+    -> ?loc:Loc.t
+    -> drop_pt:bool
+    -> exn_info:(Stateid.t * Stateid.t)
+    -> block_start:Stateid.t
+    -> block_stop:Stateid.t
+    -> name:string
+    -> unit
+    -> future_proof * AsyncTaskQueue.cancel_switch
 
   (* blocking function that waits for the task queue to be empty *)
   val wait_all_done : unit -> unit
@@ -1732,7 +1737,7 @@ end = struct (* {{{ *)
        BuildProof { t_states = s2 } -> overlap_rel s1 s2
      | _ -> 0)
 
-  let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
+  let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname () =
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
@@ -2191,7 +2196,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                         ^"the proof's statement to avoid that."));
                     let fp, cancel =
                       Slaves.build_proof ~doc
-                        ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name in
+                        ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name () in
                     Future.replace (Option.get ofp) fp;
                     qed.fproof <- Some (Some fp, cancel);
                     (* We don't generate a new state, but we still need
@@ -2203,7 +2208,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     let fp, cancel =
                       if delegate then
                         Slaves.build_proof ~doc
-                          ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name
+                          ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name ()
                       else
                         ProofTask.build_proof_here ~doc ?loc
                           ~drop_pt exn_info block_stop, ref false

@@ -82,7 +82,7 @@ type typed_vernac =
   | VtDeclareProgram of (pm:Declare.OblState.t -> Declare.Proof.t)
   | VtOpenProofProgram of (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t)
 
-type vernac_command = ?loc:Loc.t -> atts:Attributes.vernac_flags -> typed_vernac
+type vernac_command = ?loc:Loc.t -> atts:Attributes.vernac_flags -> unit -> typed_vernac
 
 type plugin_args = Genarg.raw_generic_argument list
 
