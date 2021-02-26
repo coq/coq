@@ -347,37 +347,50 @@ let make_case_invert env (IndType (((ind,u),params),indices)) ci =
   then CaseInvert {indices=Array.of_list indices}
   else NoInvert
 
+let make_project env sigma ind pred c branches ps =
+  let open EConstr in
+  assert(Array.length branches == 1);
+  let na, ty, t = destLambda sigma pred in
+  let () =
+    let mib, _ = Inductive.lookup_mind_specif env ind in
+    if (* dependent *) not (Vars.noccurn sigma 1 t) &&
+         not (has_dependent_elim mib) then
+      user_err ~hdr:"make_case_or_project"
+        Pp.(str"Dependent case analysis not allowed" ++
+              str" on inductive type " ++ Termops.Internal.print_constr_env env sigma (mkInd ind))
+  in
+  let branch = branches.(0) in
+  let ctx, br = decompose_lam_n_assum sigma (Array.length ps) branch in
+  let n, len, ctx =
+    List.fold_right
+      (fun decl (i, j, ctx) ->
+        match decl with
+        | LocalAssum (na, ty) ->
+           let t = mkProj (Projection.make ps.(i) true, mkRel j) in
+           (i + 1, j + 1, LocalDef (na, t, Vars.liftn 1 j ty) :: ctx)
+        | LocalDef (na, b, ty) ->
+           (i, j + 1, LocalDef (na, Vars.liftn 1 j b, Vars.liftn 1 j ty) :: ctx))
+      ctx (0, 1, [])
+  in
+  mkLetIn (na, c, ty, it_mkLambda_or_LetIn (Vars.liftn 1 (Array.length ps + 1) br) ctx)
+
+let simple_make_case_or_project env sigma ci pred invert c branches =
+  let open EConstr in
+  let ind = ci.ci_ind in
+  let projs = get_projections env ind in
+  match projs with
+  | None -> mkCase (EConstr.contract_case env sigma (ci, pred, invert, c, branches))
+  | Some ps -> make_project env sigma ind pred c branches ps
+
 let make_case_or_project env sigma indt ci pred c branches =
   let open EConstr in
   let IndType (((ind,_),_),_) = indt in
   let projs = get_projections env ind in
   match projs with
-  | None -> (mkCase (EConstr.contract_case env sigma (ci, pred, make_case_invert env indt ci, c, branches)))
-  | Some ps ->
-     assert(Array.length branches == 1);
-     let na, ty, t = destLambda sigma pred in
-     let () =
-       let mib, _ = Inductive.lookup_mind_specif env ind in
-       if (* dependent *) not (Vars.noccurn sigma 1 t) &&
-          not (has_dependent_elim mib) then
-       user_err ~hdr:"make_case_or_project"
-                    Pp.(str"Dependent case analysis not allowed" ++
-                     str" on inductive type " ++ Termops.Internal.print_constr_env env sigma (mkInd ind))
-     in
-     let branch = branches.(0) in
-     let ctx, br = decompose_lam_n_assum sigma (Array.length ps) branch in
-     let n, len, ctx =
-       List.fold_right
-         (fun decl (i, j, ctx) ->
-          match decl with
-          | LocalAssum (na, ty) ->
-             let t = mkProj (Projection.make ps.(i) true, mkRel j) in
-             (i + 1, j + 1, LocalDef (na, t, Vars.liftn 1 j ty) :: ctx)
-          | LocalDef (na, b, ty) ->
-             (i, j + 1, LocalDef (na, Vars.liftn 1 j b, Vars.liftn 1 j ty) :: ctx))
-         ctx (0, 1, [])
-     in
-     mkLetIn (na, c, ty, it_mkLambda_or_LetIn (Vars.liftn 1 (Array.length ps + 1) br) ctx)
+  | None ->
+     let invert = make_case_invert env indt ci in
+     mkCase (EConstr.contract_case env sigma (ci, pred, invert, c, branches))
+  | Some ps -> make_project env sigma ind pred c branches ps
 
 (* substitution in a signature *)
 
