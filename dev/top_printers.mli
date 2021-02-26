@@ -165,6 +165,7 @@ val ppobj : Libobject.obj -> unit
 (* Some super raw printers *)
 val cast_kind_display : Constr.cast_kind -> string
 val constr_display : Constr.constr -> unit
+val econstr_display : EConstr.constr -> unit
 val print_pure_constr : Constr.types -> unit
 val print_pure_econstr : EConstr.types -> unit
 
