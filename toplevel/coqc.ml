@@ -44,7 +44,7 @@ coqc specific options:\
 
 let coqc_main ((copts,_),stm_opts) injections ~opts =
   Topfmt.(in_phase ~phase:CompilationPhase)
-    Ccompile.compile_files (opts,stm_opts) copts injections;
+    Ccompile.compile_file opts stm_opts copts injections;
 
   (* Careful this will modify the load-path and state so after this
      point some stuff may not be safe anymore. *)

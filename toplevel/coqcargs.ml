@@ -13,7 +13,7 @@ type compilation_mode = BuildVo | BuildVio | Vio2Vo | BuildVos | BuildVok
 type t =
   { compilation_mode : compilation_mode
 
-  ; compile_list: (string * bool) list  (* bool is verbosity  *)
+  ; compile_file: (string * bool) option  (* bool is verbosity  *)
   ; compilation_output_name : string option
 
   ; vio_checking : bool
@@ -32,7 +32,7 @@ type t =
 let default =
   { compilation_mode = BuildVo
 
-  ; compile_list = []
+  ; compile_file = None
   ; compilation_output_name = None
 
   ; vio_checking = false
@@ -62,17 +62,13 @@ let error_missing_arg s =
   prerr_endline "See -help for the syntax of supported options";
   exit 1
 
-let check_compilation_output_name_consistency args =
-  match args.compilation_output_name, args.compile_list with
-  | Some _, _::_::_ ->
-    prerr_endline ("Error: option -o is not valid when more than one");
-    prerr_endline ("file have to be compiled")
-  | _ -> ()
+let arg_error msg = CErrors.user_err msg
 
 let is_dash_argument s = String.length s > 0 && s.[0] = '-'
 
 let add_compile ?echo copts s =
-  if is_dash_argument s then (prerr_endline ("Unknown option " ^ s); exit 1);
+  if is_dash_argument s then
+    arg_error Pp.(str "Unknown option " ++ str s);
   (* make the file name explicit; needed not to break up Coq loadpath stuff. *)
   let echo = Option.default copts.echo echo in
   let s =
@@ -81,7 +77,14 @@ let add_compile ?echo copts s =
     then concat current_dir_name s
     else s
   in
-  { copts with compile_list = (s,echo) :: copts.compile_list }
+  { copts with compile_file = Some (s,echo) }
+
+let add_compile ?echo copts v_file =
+  match copts.compile_file with
+  | Some _ ->
+    arg_error Pp.(str "More than one file to compile: " ++ str v_file)
+  | None ->
+    add_compile ?echo copts v_file
 
 let add_vio_task opts f =
   { opts with vio_tasks = f :: opts.vio_tasks }
@@ -230,14 +233,12 @@ let parse arglist : t =
   try
     let opts, extra = parse default in
     let args = List.fold_left add_compile opts extra in
-    check_compilation_output_name_consistency args;
     args
   with any -> fatal_error any
 
 let parse args =
   let opts = parse args in
   { opts with
-    compile_list = List.rev opts.compile_list
-  ; vio_tasks = List.rev opts.vio_tasks
+    vio_tasks = List.rev opts.vio_tasks
   ; vio_files = List.rev opts.vio_files
   }
