@@ -8,6 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* Note: don't forget to update v_primitive in checker/values.ml if the *)
+(* number of primitives is changed. *)
+
 open Univ
 
 type t =
@@ -18,8 +21,11 @@ type t =
   | Int63mul
   | Int63div
   | Int63mod
+  | Int63divs
+  | Int63mods
   | Int63lsr
   | Int63lsl
+  | Int63asr
   | Int63land
   | Int63lor
   | Int63lxor
@@ -34,7 +40,10 @@ type t =
   | Int63eq
   | Int63lt
   | Int63le
+  | Int63lts
+  | Int63les
   | Int63compare
+  | Int63compares
   | Float64opp
   | Float64abs
   | Float64eq
@@ -68,8 +77,11 @@ let parse = function
   | "int63_mul" -> Int63mul
   | "int63_div" -> Int63div
   | "int63_mod" -> Int63mod
+  | "int63_divs" -> Int63divs
+  | "int63_mods" -> Int63mods
   | "int63_lsr" -> Int63lsr
   | "int63_lsl" -> Int63lsl
+  | "int63_asr" -> Int63asr
   | "int63_land" -> Int63land
   | "int63_lor" -> Int63lor
   | "int63_lxor" -> Int63lxor
@@ -84,7 +96,10 @@ let parse = function
   | "int63_eq" -> Int63eq
   | "int63_lt" -> Int63lt
   | "int63_le" -> Int63le
+  | "int63_lts" -> Int63lts
+  | "int63_les" -> Int63les
   | "int63_compare" -> Int63compare
+  | "int63_compares" -> Int63compares
   | "float64_opp" -> Float64opp
   | "float64_abs" -> Float64abs
   | "float64_eq" -> Float64eq
@@ -163,6 +178,12 @@ let hash = function
   | Arrayset -> 46
   | Arraycopy -> 47
   | Arraylength -> 48
+  | Int63lts -> 49
+  | Int63les -> 50
+  | Int63divs -> 51
+  | Int63mods -> 52
+  | Int63asr -> 53
+  | Int63compares -> 54
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -173,8 +194,11 @@ let to_string = function
   | Int63mul -> "mul"
   | Int63div -> "div"
   | Int63mod -> "rem"
+  | Int63divs -> "divs"
+  | Int63mods -> "rems"
   | Int63lsr -> "l_sr"
   | Int63lsl -> "l_sl"
+  | Int63asr -> "a_sr"
   | Int63land -> "l_and"
   | Int63lor -> "l_or"
   | Int63lxor -> "l_xor"
@@ -189,7 +213,10 @@ let to_string = function
   | Int63eq -> "eq"
   | Int63lt -> "lt"
   | Int63le -> "le"
+  | Int63lts -> "lts"
+  | Int63les -> "les"
   | Int63compare -> "compare"
+  | Int63compares -> "compares"
   | Float64opp -> "fopp"
   | Float64abs -> "fabs"
   | Float64eq -> "feq"
@@ -271,14 +298,15 @@ let types =
   | Int63head0 | Int63tail0 -> [int_ty; int_ty]
   | Int63add | Int63sub | Int63mul
   | Int63div | Int63mod
-  | Int63lsr | Int63lsl
+  | Int63divs | Int63mods
+  | Int63lsr | Int63lsl | Int63asr
   | Int63land | Int63lor | Int63lxor -> [int_ty; int_ty; int_ty]
   | Int63addc | Int63subc | Int63addCarryC | Int63subCarryC ->
      [int_ty; int_ty; PITT_ind (PIT_carry, int_ty)]
   | Int63mulc | Int63diveucl ->
      [int_ty; int_ty; PITT_ind (PIT_pair, (int_ty, int_ty))]
-  | Int63eq | Int63lt | Int63le -> [int_ty; int_ty; PITT_ind (PIT_bool, ())]
-  | Int63compare -> [int_ty; int_ty; PITT_ind (PIT_cmp, ())]
+  | Int63eq | Int63lt | Int63le | Int63lts | Int63les -> [int_ty; int_ty; PITT_ind (PIT_bool, ())]
+  | Int63compare | Int63compares -> [int_ty; int_ty; PITT_ind (PIT_cmp, ())]
   | Int63div21 ->
      [int_ty; int_ty; int_ty; PITT_ind (PIT_pair, (int_ty, int_ty))]
   | Int63addMulDiv -> [int_ty; int_ty; int_ty; int_ty]
@@ -314,8 +342,11 @@ let params = function
   | Int63mul
   | Int63div
   | Int63mod
+  | Int63divs
+  | Int63mods
   | Int63lsr
   | Int63lsl
+  | Int63asr
   | Int63land
   | Int63lor
   | Int63lxor
@@ -330,7 +361,10 @@ let params = function
   | Int63eq
   | Int63lt
   | Int63le
+  | Int63lts
+  | Int63les
   | Int63compare
+  | Int63compares
   | Float64opp
   | Float64abs
   | Float64eq
@@ -367,8 +401,11 @@ let univs = function
   | Int63mul
   | Int63div
   | Int63mod
+  | Int63divs
+  | Int63mods
   | Int63lsr
   | Int63lsl
+  | Int63asr
   | Int63land
   | Int63lor
   | Int63lxor
@@ -383,7 +420,10 @@ let univs = function
   | Int63eq
   | Int63lt
   | Int63le
+  | Int63lts
+  | Int63les
   | Int63compare
+  | Int63compares
   | Float64opp
   | Float64abs
   | Float64eq

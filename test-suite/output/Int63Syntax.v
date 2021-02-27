@@ -20,6 +20,11 @@ Fail Check 0x.
 Check (PrimInt63.add 2 2).
 Fail Check -1.
 Fail Check 9223372036854775808.
+
+Set Printing All.
+Check 1%int63.
+Unset Printing All.
+
 Open Scope nat_scope.
 Check 2. (* : nat *)
 Check 2%int63.

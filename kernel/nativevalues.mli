@@ -158,9 +158,12 @@ val sub : t -> t -> t -> t
 val mul : t -> t -> t -> t
 val div : t -> t -> t -> t
 val rem : t -> t -> t -> t
+val divs : t -> t -> t -> t
+val rems : t -> t -> t -> t
 
 val l_sr  : t -> t -> t -> t
 val l_sl  : t -> t -> t -> t
+val a_sr  : t -> t -> t -> t
 val l_and : t -> t -> t -> t
 val l_xor : t -> t -> t -> t
 val l_or  : t -> t -> t -> t
@@ -179,7 +182,10 @@ val addMulDiv : t -> t -> t -> t -> t
 val eq      : t -> t -> t -> t
 val lt      : t -> t -> t -> t
 val le      : t -> t -> t -> t
+val lts     : t -> t -> t -> t
+val les     : t -> t -> t -> t
 val compare : t -> t -> t -> t
+val compares : t -> t -> t -> t
 
 val print : t -> t
 
@@ -205,10 +211,19 @@ val no_check_div : t -> t -> t
 val no_check_rem : t -> t -> t
 [@@ocaml.inline always]
 
+val no_check_divs : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_rems : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_l_sr  : t -> t -> t
 [@@ocaml.inline always]
 
 val no_check_l_sl  : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_a_sr  : t -> t -> t
 [@@ocaml.inline always]
 
 val no_check_l_and : t -> t -> t
@@ -253,7 +268,15 @@ val no_check_lt      : t -> t -> t
 val no_check_le      : t -> t -> t
 [@@ocaml.inline always]
 
+val no_check_lts     : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_les     : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_compare : t -> t -> t
+
+val no_check_compares : t -> t -> t
 
 (** Support for machine floating point values *)
 

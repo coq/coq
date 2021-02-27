@@ -137,11 +137,14 @@ type number_ty =
     hexadecimal : Names.inductive;
     number : Names.inductive }
 
+type pos_neg_int63_ty =
+  { pos_neg_int63_ty : Names.inductive }
+
 type target_kind =
   | Int of int_ty (* Coq.Init.Number.int + uint *)
   | UInt of int_ty (* Coq.Init.Number.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
-  | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
+  | Int63 of pos_neg_int63_ty (* Coq.Numbers.Cyclic.Int63.PrimInt63.pos_neg_int63 *)
   | Number of number_ty (* Coq.Init.Number.number + uint + int *)
   | DecimalInt of int_ty (* Coq.Init.Decimal.int + uint (deprecated) *)
   | DecimalUInt of int_ty (* Coq.Init.Decimal.uint (deprecated) *)

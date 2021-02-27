@@ -1741,6 +1741,12 @@ Number notations
          sorts, primitive integers, primitive floats, primitive arrays and type
          constants for primitive types) will be considered for printing.
 
+         .. note::
+            For example, :n:`@qualid__type` can be :n:`PrimInt63.int`,
+            in which case :n:`@qualid__print` takes :n:`PrimInt63.int_wrapper` as input
+            instead of :n:`PrimInt63.int`. See below for an
+            :ref:`example <example-number-notation-primitive-int>`.
+
       .. _number-string-via:
 
       :n:`via @qualid__ind mapping [ {+, @qualid__constant => @qualid__constructor } ]`
@@ -2065,6 +2071,23 @@ The following errors apply to both string and number notations:
    .. coqtop:: all fail
 
       Check 3.
+
+.. _example-number-notation-primitive-int:
+
+.. example:: Number Notation for primitive integers
+
+   This shows the use of the primitive
+   integers :n:`PrimInt63.int` as :n:`@qualid__type`. It is the way
+   parsing and printing of primitive integers are actually implemented
+   in `PrimInt63.v`.
+
+   .. coqtop:: in reset
+
+      Require Import Int63.
+      Definition parser (x : pos_neg_int63) : option int :=
+        match x with Pos p => Some p | Neg _ => None end.
+      Definition printer (x : int_wrapper) : pos_neg_int63 := Pos (int_wrap x).
+      Number Notation int parser printer : int63_scope.
 
 .. _example-number-notation-non-inductive:
 

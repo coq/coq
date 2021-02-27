@@ -10,7 +10,7 @@
 
 (** Extraction to OCaml of native 63-bit machine integers. *)
 
-From Coq Require Int63 Extraction.
+From Coq Require Int63 Sint63 Extraction.
 
 (** Basic data types used by some primitive operators. *)
 
@@ -26,6 +26,7 @@ Extraction Inline Int63.int.
 
 Extract Constant Int63.lsl => "Uint63.l_sl".
 Extract Constant Int63.lsr => "Uint63.l_sr".
+Extract Constant Sint63.asr => "Uint63.a_sr".
 Extract Constant Int63.land => "Uint63.l_and".
 Extract Constant Int63.lor => "Uint63.l_or".
 Extract Constant Int63.lxor => "Uint63.l_xor".
@@ -36,10 +37,15 @@ Extract Constant Int63.mul => "Uint63.mul".
 Extract Constant Int63.mulc => "Uint63.mulc".
 Extract Constant Int63.div => "Uint63.div".
 Extract Constant Int63.mod => "Uint63.rem".
+Extract Constant Sint63.div => "Uint63.divs".
+Extract Constant Sint63.rem => "Uint63.rems".
+
 
 Extract Constant Int63.eqb => "Uint63.equal".
 Extract Constant Int63.ltb => "Uint63.lt".
 Extract Constant Int63.leb => "Uint63.le".
+Extract Constant Sint63.ltb => "Uint63.lts".
+Extract Constant Sint63.leb => "Uint63.les".
 
 Extract Constant Int63.addc => "Uint63.addc".
 Extract Constant Int63.addcarryc => "Uint63.addcarryc".
@@ -51,6 +57,7 @@ Extract Constant Int63.diveucl_21 => "Uint63.div21".
 Extract Constant Int63.addmuldiv => "Uint63.addmuldiv".
 
 Extract Constant Int63.compare => "Uint63.compare".
+Extract Constant Sint63.compare => "Uint63.compares".
 
 Extract Constant Int63.head0 => "Uint63.head0".
 Extract Constant Int63.tail0 => "Uint63.tail0".

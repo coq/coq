@@ -328,7 +328,10 @@ Module Test17.
   Delimit Scope test17_scope with test17.
   Local Set Primitive Projections.
   Record myint63 := of_int { to_int : int }.
-  Number Notation myint63 of_int to_int : test17_scope.
+  Definition parse x :=
+    match x with Pos x => Some (of_int x) | Neg _ => None end.
+  Definition print x := Pos (to_int x).
+  Number Notation myint63 parse print : test17_scope.
   Check let v := 0%test17 in v : myint63.
 End Test17.
 

@@ -260,28 +260,28 @@ The command has indeed failed with message:
 add is not a constructor of an inductive type.
 The command has indeed failed with message:
 Missing mapping for constructor Iempty.
-File "stdin", line 574, characters 56-61:
+File "stdin", line 577, characters 56-61:
 Warning: Type of I'sum seems incompatible with the type of sum.
 Expected type is: (I' -> I' -> I') instead of (I -> I' -> I').
 This might yield ill typed terms when using the notation.
 [via-type-mismatch,numbers]
-File "stdin", line 579, characters 32-33:
+File "stdin", line 582, characters 32-33:
 Warning: I was already mapped to Set, mapping it also to
 nat might yield ill typed terms when using the notation.
 [via-type-remapping,numbers]
-File "stdin", line 579, characters 37-42:
+File "stdin", line 582, characters 37-42:
 Warning: Type of Iunit seems incompatible with the type of O.
 Expected type is: I instead of I.
 This might yield ill typed terms when using the notation.
 [via-type-mismatch,numbers]
 The command has indeed failed with message:
 'via' and 'abstract' cannot be used together.
-File "stdin", line 659, characters 21-23:
+File "stdin", line 662, characters 21-23:
 Warning: Type of I1 seems incompatible with the type of Fin.F1.
 Expected type is: (nat -> I) instead of I.
 This might yield ill typed terms when using the notation.
 [via-type-mismatch,numbers]
-File "stdin", line 659, characters 35-37:
+File "stdin", line 662, characters 35-37:
 Warning: Type of IS seems incompatible with the type of Fin.FS.
 Expected type is: (nat -> I -> I) instead of (I -> I).
 This might yield ill typed terms when using the notation.

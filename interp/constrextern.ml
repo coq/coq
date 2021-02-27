@@ -969,7 +969,13 @@ let rec extern inctx ?impargs scopes vars r =
      with No_match -> extern inctx scopes vars r')
   | None ->
 
-  try extern_notations inctx scopes vars None r
+  let r' = match DAst.get r with
+    | GInt i when Coqlib.has_ref "num.int63.wrap_int" ->
+       let wrap = Coqlib.lib_ref "num.int63.wrap_int" in
+       DAst.make (GApp (DAst.make (GRef (wrap, None)), [r]))
+    | _ -> r in
+
+  try extern_notations inctx scopes vars None r'
   with No_match ->
 
   let loc = r.CAst.loc in
@@ -1123,7 +1129,7 @@ let rec extern inctx ?impargs scopes vars r =
 
   | GInt i ->
      extern_prim_token_delimiter_if_required
-       (Number (NumTok.Signed.of_int_string (Uint63.to_string i)))
+       (Number NumTok.(Signed.of_bigint CHex (Z.of_int64 (Uint63.to_int64 i))))
        "int63" "int63_scope" (snd scopes)
 
   | GFloat f -> extern_float f (snd scopes)

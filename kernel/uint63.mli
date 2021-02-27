@@ -48,6 +48,7 @@ val l_xor   : t -> t -> t
 val l_or    : t -> t -> t
 
       (* Arithmetic operations *)
+val a_sr    : t -> t -> t
 val add     : t -> t -> t
 val sub     : t -> t -> t
 val mul     : t -> t -> t
@@ -55,6 +56,10 @@ val div     : t -> t -> t
 val rem     : t -> t -> t
 
 val diveucl : t -> t -> t * t
+
+      (* Signed arithmetic opeartions *)
+val divs     : t -> t -> t
+val rems     : t -> t -> t
 
       (* Specific arithmetic operations *)
 val mulc    : t -> t -> t * t
@@ -70,6 +75,11 @@ val lt      : t -> t -> bool
 val equal      : t -> t -> bool
 val le      : t -> t -> bool
 val compare : t -> t -> int
+
+      (* signed comparision *)
+val lts      : t -> t -> bool
+val les      : t -> t -> bool
+val compares : t -> t -> int
 
       (* head and tail *)
 val head0   : t -> t

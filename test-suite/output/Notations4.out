@@ -77,18 +77,18 @@ fun x : nat => [x]
      : nat -> nat
 ∀ x : nat, x = x
      : Prop
-File "stdin", line 184, characters 0-160:
+File "stdin", line 187, characters 0-160:
 Warning: Notation "∀ _ .. _ , _" was already defined with a different format
 in scope type_scope. [notation-incompatible-format,parsing]
 ∀x : nat,x = x
      : Prop
-File "stdin", line 197, characters 0-60:
+File "stdin", line 200, characters 0-60:
 Warning: Notation "_ %%% _" was already defined with a different format.
 [notation-incompatible-format,parsing]
-File "stdin", line 201, characters 0-64:
+File "stdin", line 204, characters 0-64:
 Warning: Notation "_ %%% _" was already defined with a different format.
 [notation-incompatible-format,parsing]
-File "stdin", line 206, characters 0-62:
+File "stdin", line 209, characters 0-62:
 Warning: Lonely notation "_ %%%% _" was already defined with a different
 format. [notation-incompatible-format,parsing]
 3  %%  4
@@ -97,10 +97,10 @@ format. [notation-incompatible-format,parsing]
      : nat
 3   %%   4
      : nat
-File "stdin", line 234, characters 0-61:
+File "stdin", line 237, characters 0-61:
 Warning: The format modifier is irrelevant for only parsing rules.
 [irrelevant-format-only-parsing,parsing]
-File "stdin", line 238, characters 0-63:
+File "stdin", line 241, characters 0-63:
 Warning: The only parsing modifier has no effect in Reserved Notation.
 [irrelevant-reserved-notation-only-parsing,parsing]
 fun x : nat => U (S x)
@@ -111,7 +111,7 @@ fun x : nat => V x
      : forall x : nat, nat * (?T -> ?T)
 where
 ?T : [x : nat  x0 : ?T |- Type] (x0 cannot be used)
-File "stdin", line 255, characters 0-30:
+File "stdin", line 258, characters 0-30:
 Warning: Notation "_ :=: _" was already used. [notation-overridden,parsing]
 0 :=: 0
      : Prop
