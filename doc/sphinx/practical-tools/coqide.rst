@@ -248,7 +248,7 @@ right arrow, or ``\>=`` for a greater than or equal sign.
 
 A larger number of latex tokens are supported by default. The full list
 is available here:
-https://github.com/coq/coq/blob/master/ide/default_bindings_src.ml
+https://github.com/coq/coq/blob/master/ide/coqide/default_bindings_src.ml
 
 Custom bindings may be added, as explained further on.
 
