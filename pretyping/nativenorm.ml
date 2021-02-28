@@ -502,15 +502,9 @@ let stop_profiler m_pid =
   | _ -> ()
 
 let native_norm env sigma c ty =
+  Nativelib.link_libraries ();
   let c = EConstr.Unsafe.to_constr c in
   let ty = EConstr.Unsafe.to_constr ty in
-  if not (Flags.get_native_compiler ()) then
-    user_err Pp.(str "Native_compute reduction has been disabled.")
-  else
-  (*
-  Format.eprintf "Numbers of free variables (named): %i\n" (List.length vl1);
-  Format.eprintf "Numbers of free variables (rel): %i\n" (List.length vl2);
-  *)
     let profile = get_profiling_enabled () in
     let print_timing = get_timing_enabled () in
     let ml_filename, prefix = Nativelib.get_ml_filename () in
@@ -526,16 +520,21 @@ let native_norm env sigma c ty =
     if print_timing then Feedback.msg_info (Pp.str time_info);
     let profiler_pid = if profile then start_profiler () else None in
     let t0 = Unix.gettimeofday () in
-    Nativelib.call_linker ~fatal:true ~prefix fn (Some upd);
+    let (rt1, _) = Nativelib.execute_library ~prefix fn upd in
     let t1 = Unix.gettimeofday () in
     if profile then stop_profiler profiler_pid;
     let time_info = Format.sprintf "native_compute: Evaluation done in %.5f" (t1 -. t0) in
     if print_timing then Feedback.msg_info (Pp.str time_info);
-    let res = nf_val env sigma !Nativelib.rt1 ty in
+    let res = nf_val env sigma rt1 ty in
     let t2 = Unix.gettimeofday () in
     let time_info = Format.sprintf "native_compute: Reification done in %.5f" (t2 -. t1) in
     if print_timing then Feedback.msg_info (Pp.str time_info);
     EConstr.of_constr res
+
+let native_norm env sigma c ty =
+  if not (Flags.get_native_compiler ()) then
+    user_err Pp.(str "Native_compute reduction has been disabled.");
+  native_norm env sigma c ty
 
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t

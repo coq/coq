@@ -63,6 +63,8 @@ val empty_updates : code_location_updates
 
 val register_native_file : string -> unit
 
+val is_loaded_native_file : string -> bool
+
 val compile_constant_field : env -> string -> Constant.t ->
   global list -> 'a constant_body -> global list
 
