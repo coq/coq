@@ -581,9 +581,6 @@ the conversion in hypotheses :n:`{+ @ident}`.
    definition (say :g:`t`) and then reduces
    :g:`(t t`:sub:`1` :g:`... t`:sub:`n` :g:`)` according to :math:`\beta`:math:`\iota`:math:`\zeta`-reduction rules.
 
-.. exn:: Not reducible.
-   :undocumented:
-
 .. exn:: No head constant to reduce.
    :undocumented:
 
