@@ -1,0 +1,15 @@
+# Local parameters for Coq's stdlib
+
+# %.vo: %.v $(PRELUDE_DEP)
+# 	$(SHOW)COQC $<
+# 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+
+PRELUDE_VO:=$(addprefix Init/, $(addsuffix .vo, Hexadecimal Number Notations Nat Byte Prelude Wf Peano Logic Logic_Type Tauto Decimal Numeral Datatypes Specif Ltac Tactics))
+
+COQMF_BOOT:=-boot
+
+COQCORELIB:=$(shell pwd)/..
+
+$(PRELUDE_VO): %.vo: %.v
+	$(SHOW)COQC $<
+	$(HIDE)$(TIMER) $(COQC) -noinit $(COQSRCLIBS) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)

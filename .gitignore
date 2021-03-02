@@ -144,3 +144,6 @@ bin
 
 # To remove when Dune 2.8 is the minimum version
 .merlin
+
+theories/Makefile.coq
+theories/Makefile.coq.conf

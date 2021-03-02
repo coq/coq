@@ -720,9 +720,9 @@ else
 TIMING_EXTRA =
 endif
 
-$(VOFILES): %.vo: %.v
+$(filter-out $(PRELUDE_VO),$(VOFILES)): %.vo: %.v
 	$(SHOW)COQC $<
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+	$(HIDE)$(TIMER) $(COQC) $(COQSRCLIBS) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 
 # FIXME ?merge with .vo / .vio ?
 $(GLOBFILES): %.glob: %.v
@@ -808,7 +808,7 @@ VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLI
 
 $(VDFILE): @PROJECT_FILE@ $(VFILES)
 	$(SHOW)'COQDEP VFILES'
-	$(HIDE)$(COQDEP) -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
+	$(HIDE)$(COQDEP) $(COQMF_BOOT) $(COQSRCLIBS) -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 
 # Misc ########################################################################
 
