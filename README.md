@@ -65,7 +65,7 @@ environment for semi-interactive development of machine-checked proofs.
 [coqorg-badge]: https://images.microbadger.com/badges/version/coqorg/coq.svg
 [coqorg-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "coqorg/coq:latest"
 
-Users should refer to the https://coq.inria.fr/download page.
+Please see https://coq.inria.fr/download.
 Information on how to build and install from sources can be found in
 [`INSTALL.md`](INSTALL.md).
 
