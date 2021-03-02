@@ -65,12 +65,9 @@ environment for semi-interactive development of machine-checked proofs.
 [coqorg-badge]: https://images.microbadger.com/badges/version/coqorg/coq.svg
 [coqorg-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "coqorg/coq:latest"
 
-Download the pre-built packages of the [latest release][] for Windows and macOS;
-read the [help page][opam-using] on how to install Coq with OPAM;
-or refer to the [`INSTALL.md`](INSTALL.md) file for the procedure to install from source.
-
-[latest release]: https://github.com/coq/coq/releases/latest
-[opam-using]: https://coq.inria.fr/opam/www/using.html
+Please see https://coq.inria.fr/download.
+Information on how to build and install from sources can be found in
+[`INSTALL.md`](INSTALL.md).
 
 ## Documentation
 
