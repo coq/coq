@@ -16,22 +16,22 @@ such a value is *axiomatized*; it is declared through the following sentence
 
 This type can be understood as representing either unsigned or signed integers,
 depending on which module is imported or, more generally, which scope is open.
-:g:`Int63` and :g:`int63_scope` refer to the unsigned version, while :g:`Sint63`
+:g:`Uint63` and :g:`uint63_scope` refer to the unsigned version, while :g:`Sint63`
 and :g:`sint63_scope` refer to the signed one.
 
 The :g:`PrimInt63` module declares the available operators for this type.
 For instance, equality of two unsigned primitive integers can be determined using
-the :g:`Int63.eqb` function, declared and specified as follows:
+the :g:`Uint63.eqb` function, declared and specified as follows:
 
 .. coqdoc::
 
    Primitive eqb := #int63_eq.
-   Notation "m '==' n" := (eqb m n) (at level 70, no associativity) : int63_scope.
+   Notation "m '==' n" := (eqb m n) (at level 70, no associativity) : uint63_scope.
 
-   Axiom eqb_correct : forall i j, (i == j)%int63 = true -> i = j.
+   Axiom eqb_correct : forall i j, (i == j)%uint63 = true -> i = j.
 
 The complete set of such operators can be found in the :g:`PrimInt63` module.
-The specifications and notations are in the :g:`Int63` and :g:`Sint63`
+The specifications and notations are in the :g:`Uint63` and :g:`Sint63`
 modules.
 
 These primitive declarations are regular axioms. As such, they must be trusted and are listed by the
@@ -39,8 +39,8 @@ These primitive declarations are regular axioms. As such, they must be trusted a
 
 .. coqtop:: in reset
 
-   From Coq Require Import Int63.
-   Lemma one_minus_one_is_zero : (1 - 1 = 0)%int63.
+   From Coq Require Import Uint63.
+   Lemma one_minus_one_is_zero : (1 - 1 = 0)%uint63.
    Proof. apply eqb_correct; vm_compute; reflexivity. Qed.
 
 .. coqtop:: all
@@ -58,7 +58,7 @@ extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
 can be taken from the kernel of Coq.
 
-Literal values (at type :g:`Int63.int`) are extracted to literal OCaml values
+Literal values (at type :g:`Uint63.int`) are extracted to literal OCaml values
 wrapped into the :g:`Uint63.of_int` (resp. :g:`Uint63.of_int64`) constructor on
 64-bit (resp. 32-bit) platforms. Currently, this cannot be customized (see the
 function :g:`Uint63.compile` from the kernel).

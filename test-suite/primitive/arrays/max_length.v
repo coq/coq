@@ -1,6 +1,6 @@
-From Coq Require Import Int63 PArray.
+From Coq Require Import Uint63 PArray.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Definition max_length := 4194303.
 

@@ -2,7 +2,7 @@ Require Import PrimInt63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Check (eq_refl : subcarryc 3 1 = C0 1).
 Check (eq_refl (C0 1) <: subcarryc 3 1 = C0 1).

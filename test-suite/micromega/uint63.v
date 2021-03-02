@@ -1,10 +1,13 @@
 Require Import ZArith  Lia.
-Require Import Int63.
-Require ZifyInt63.
+Require Import Uint63.
+Require ZifyUint63.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Goal forall (x:int), 0 <=? x = true.
+Proof. lia. Qed.
+
+Goal forall (x : int), x <=? max_int = true.
 Proof. lia. Qed.
 
 Goal max_int = 9223372036854775807.

@@ -94,10 +94,10 @@ Check r 2 3.
 
 End I.
 
-Require Import Coq.Numbers.Cyclic.Int63.Int63.
+Require Import Coq.Numbers.Cyclic.Int63.Uint63.
 Module NumberNotations.
   Module Test17.
-    (** Test int63 *)
+    (** Test uint63 *)
     Declare Scope test17_scope.
     Delimit Scope test17_scope with test17.
     Local Set Primitive Projections.

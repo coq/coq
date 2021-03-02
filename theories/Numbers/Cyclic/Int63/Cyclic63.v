@@ -8,19 +8,19 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * Int63 numbers defines indeed a cyclic structure : Z/(2^31)Z *)
+(** * Uint63 numbers defines indeed a cyclic structure : Z/(2^63)Z *)
 
 (**
 Author: Arnaud Spiwack (+ Pierre Letouzey)
 *)
 Require Import CyclicAxioms.
 Require Export ZArith.
-Require Export Int63.
+Require Export Uint63.
 Import Zpow_facts.
 Import Utf8.
 Import Lia.
 
-Local Open Scope int63_scope.
+Local Open Scope uint63_scope.
 (** {2 Operators } **)
 
 Definition Pdigits := Eval compute in P_of_succ_nat (size - 1).
@@ -45,7 +45,7 @@ Definition mulc_WW x y :=
     if is_zero l then W0
     else WW h l
   else WW h l.
-Notation "n '*c' m" := (mulc_WW n m) (at level 40, no associativity) : int63_scope.
+Notation "n '*c' m" := (mulc_WW n m) (at level 40, no associativity) : uint63_scope.
 
 Definition pos_mod p x :=
   if p <=? digits then
@@ -61,51 +61,51 @@ Import ZnZ.
 Instance int_ops : ZnZ.Ops int :=
 {|
  digits      := Pdigits; (* number of digits *)
- zdigits     := Int63.digits; (* number of digits *)
- to_Z        := Int63.to_Z; (* conversion to Z *)
+ zdigits     := Uint63.digits; (* number of digits *)
+ to_Z        := Uint63.to_Z; (* conversion to Z *)
  of_pos      := positive_to_int; (* positive -> N*int63 :  p => N,i
                                       where p = N*2^31+phi i *)
- head0       := Int63.head0;  (* number of head 0 *)
- tail0       := Int63.tail0;  (* number of tail 0 *)
+ head0       := Uint63.head0;  (* number of head 0 *)
+ tail0       := Uint63.tail0;  (* number of tail 0 *)
  zero        := 0;
  one         := 1;
- minus_one   := Int63.max_int;
- compare     := Int63.compare;
- eq0         := Int63.is_zero;
- opp_c       := Int63.oppc;
- opp         := Int63.opp;
- opp_carry   := Int63.oppcarry;
- succ_c      := Int63.succc;
- add_c       := Int63.addc;
- add_carry_c := Int63.addcarryc;
- succ        := Int63.succ;
- add         := Int63.add;
- add_carry   := Int63.addcarry;
- pred_c      := Int63.predc;
- sub_c       := Int63.subc;
- sub_carry_c := Int63.subcarryc;
- pred        := Int63.pred;
- sub         := Int63.sub;
- sub_carry   := Int63.subcarry;
+ minus_one   := Uint63.max_int;
+ compare     := Uint63.compare;
+ eq0         := Uint63.is_zero;
+ opp_c       := Uint63.oppc;
+ opp         := Uint63.opp;
+ opp_carry   := Uint63.oppcarry;
+ succ_c      := Uint63.succc;
+ add_c       := Uint63.addc;
+ add_carry_c := Uint63.addcarryc;
+ succ        := Uint63.succ;
+ add         := Uint63.add;
+ add_carry   := Uint63.addcarry;
+ pred_c      := Uint63.predc;
+ sub_c       := Uint63.subc;
+ sub_carry_c := Uint63.subcarryc;
+ pred        := Uint63.pred;
+ sub         := Uint63.sub;
+ sub_carry   := Uint63.subcarry;
  mul_c       := mulc_WW;
- mul         := Int63.mul;
+ mul         := Uint63.mul;
  square_c    := fun x => mulc_WW x x;
  div21       := diveucl_21;
  div_gt      := diveucl; (* this is supposed to be the special case of
                          division a/b where a > b *)
  div         := diveucl;
- modulo_gt   := Int63.mod;
- modulo      := Int63.mod;
- gcd_gt      := Int63.gcd;
- gcd         := Int63.gcd;
- add_mul_div := Int63.addmuldiv;
+ modulo_gt   := Uint63.mod;
+ modulo      := Uint63.mod;
+ gcd_gt      := Uint63.gcd;
+ gcd         := Uint63.gcd;
+ add_mul_div := Uint63.addmuldiv;
  pos_mod     := pos_mod_int;
- is_even     := Int63.is_even;
- sqrt2       := Int63.sqrt2;
- sqrt        := Int63.sqrt;
- ZnZ.lor     := Int63.lor;
- ZnZ.land    := Int63.land;
- ZnZ.lxor    := Int63.lxor
+ is_even     := Uint63.is_even;
+ sqrt2       := Uint63.sqrt2;
+ sqrt        := Uint63.sqrt;
+ ZnZ.lor     := Uint63.lor;
+ ZnZ.land    := Uint63.land;
+ ZnZ.lxor    := Uint63.lxor
 |}.
 
 Local Open Scope Z_scope.
@@ -248,14 +248,14 @@ Qed.
 Lemma pos_mod_spec w p : φ(pos_mod p w) = φ(w) mod (2 ^ φ(p)).
 Proof.
   simpl. unfold pos_mod_int.
-  assert (W:=to_Z_bounded p);assert (W':=to_Z_bounded Int63.digits);assert (W'' := to_Z_bounded w).
+  assert (W:=to_Z_bounded p);assert (W':=to_Z_bounded Uint63.digits);assert (W'' := to_Z_bounded w).
   case lebP; intros hle.
   2: {
     symmetry; apply Zmod_small.
-    assert (2 ^ φ Int63.digits < 2 ^ φ p); [ apply Zpower_lt_monotone; auto with zarith | ].
-    change wB with (2 ^ φ Int63.digits) in *; auto with zarith. }
-  rewrite <- (shift_unshift_mod_3 φ Int63.digits φ p φ w) by auto with zarith.
-  replace (φ Int63.digits - φ p) with (φ (Int63.digits - p)) by (rewrite sub_spec, Zmod_small; auto with zarith).
+    assert (2 ^ φ Uint63.digits < 2 ^ φ p); [ apply Zpower_lt_monotone; auto with zarith | ].
+    change wB with (2 ^ φ Uint63.digits) in *; auto with zarith. }
+  rewrite <- (shift_unshift_mod_3 φ Uint63.digits φ p φ w) by auto with zarith.
+  replace (φ Uint63.digits - φ p) with (φ (Uint63.digits - p)) by (rewrite sub_spec, Zmod_small; auto with zarith).
   rewrite lsr_spec, lsl_spec; reflexivity.
 Qed.
 
@@ -310,8 +310,20 @@ Global Instance int_specs : ZnZ.Specs int_ops := {
 
 
 
-Module Int63Cyclic <: CyclicType.
+Module Uint63Cyclic <: CyclicType.
   Definition t := int.
   Definition ops := int_ops.
   Definition specs := int_specs.
+End Uint63Cyclic.
+
+Module Int63Cyclic <: CyclicType.
+  #[deprecated(since="8.14",note="Use Uint63Cyclic.t instead.")]
+  Definition t := int.
+  #[deprecated(since="8.14",note="Use Uint63Cyclic.ops instead.")]
+  Definition ops := int_ops.
+  #[deprecated(since="8.14",note="Use Uint63Cyclic.specs instead.")]
+  Definition specs := int_specs.
 End Int63Cyclic.
+
+#[deprecated(since="8.14",note="Use the uint63_scope instead.")]
+Notation "n '*c' m" := (mulc_WW n m) (at level 40, no associativity) : int63_scope.

@@ -88,7 +88,7 @@ let classify x =
   | FP_nan -> NaN
 [@@ocaml.inline always]
 
-let of_int63 x = Uint63.to_float x
+let of_uint63 x = Uint63.to_float x
 [@@ocaml.inline always]
 
 let prec = 53

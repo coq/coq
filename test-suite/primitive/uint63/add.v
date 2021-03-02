@@ -1,8 +1,8 @@
-Require Import Int63.
+Require Import Uint63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Check (eq_refl : 2 + 3 = 5).
 Check (eq_refl 5 <: 2 + 3 = 5).

@@ -19,7 +19,7 @@ Primitive int := #int63_type.
 Register int as num.int63.type.
 Variant pos_neg_int63 := Pos (d:int) | Neg (d:int).
 Register pos_neg_int63 as num.int63.pos_neg_int63.
-Declare Scope int63_scope.
+Declare Scope uint63_scope.
 Definition id_int : int -> int := fun x => x.
 Record int_wrapper := wrap_int {int_wrap : int}.
 Register wrap_int as num.int63.wrap_int.
@@ -29,12 +29,20 @@ Definition parser (x : pos_neg_int63) : option int :=
   | Pos p => Some p
   | Neg _ => None
   end.
-Number Notation int parser printer : int63_scope.
 
+
+Declare Scope int63_scope.
 Module Import Int63NotationsInternalA.
 Delimit Scope int63_scope with int63.
-Bind Scope int63_scope with int.
 End Int63NotationsInternalA.
+Number Notation int parser printer : int63_scope.
+
+Module Import Uint63NotationsInternalA.
+Delimit Scope uint63_scope with uint63.
+Bind Scope uint63_scope with int.
+End Uint63NotationsInternalA.
+Number Notation int parser printer : uint63_scope.
+
 
 (* Logical operations *)
 Primitive lsl := #int63_lsl.
@@ -106,4 +114,5 @@ Primitive tail0 := #int63_tail0.
 
 Module Export PrimInt63Notations.
   Export Int63NotationsInternalA.
+  Export Uint63NotationsInternalA.
 End PrimInt63Notations.

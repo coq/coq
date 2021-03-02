@@ -1151,6 +1151,11 @@ Qed.
 
 Include ZExtraProp.
 
+Theorem mod_bound_pos_le a b : 0 <= a -> 0 < b -> 0 <= a mod b <= a.
+Proof.
+  now intros; split; [apply Z.mod_bound_pos | apply Z.mod_le].
+Qed.
+
 (** In generic statements, the predicates [lt] and [le] have been
   favored, whereas [gt] and [ge] don't even exist in the abstract
   layers. The use of [gt] and [ge] is hence not recommended. We provide

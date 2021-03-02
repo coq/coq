@@ -2091,11 +2091,11 @@ The following errors apply to both string and number notations:
 
    .. coqtop:: in reset
 
-      Require Import Int63.
+      Require Import PrimInt63.
       Definition parser (x : pos_neg_int63) : option int :=
         match x with Pos p => Some p | Neg _ => None end.
       Definition printer (x : int_wrapper) : pos_neg_int63 := Pos (int_wrap x).
-      Number Notation int parser printer : int63_scope.
+      Number Notation int parser printer : uint63_scope.
 
 .. _example-number-notation-non-inductive:
 

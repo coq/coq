@@ -2,7 +2,7 @@ Require Import PrimInt63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Check (eq_refl : diveucl 6 3 = (2,0)).
 Check (eq_refl (2,0) <: diveucl 6 3 = (2,0)).

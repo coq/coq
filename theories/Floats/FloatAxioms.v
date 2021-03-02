@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ZArith Int63 SpecFloat PrimFloat FloatOps.
+Require Import ZArith Uint63 SpecFloat PrimFloat FloatOps.
 
 (** * Properties of the primitive operators for the Binary64 format *)
 
@@ -58,7 +58,7 @@ Axiom sub_spec : forall x y, Prim2SF (x - y)%float = SF64sub (Prim2SF x) (Prim2S
 Axiom div_spec : forall x y, Prim2SF (x / y)%float = SF64div (Prim2SF x) (Prim2SF y).
 Axiom sqrt_spec : forall x, Prim2SF (sqrt x) = SF64sqrt (Prim2SF x).
 
-Axiom of_int63_spec : forall n, Prim2SF (of_int63 n) = binary_normalize prec emax (to_Z n) 0%Z false.
+Axiom of_uint63_spec : forall n, Prim2SF (of_uint63 n) = binary_normalize prec emax (to_Z n) 0%Z false.
 Axiom normfr_mantissa_spec : forall f, to_Z (normfr_mantissa f) = Z.of_N (SFnormfr_mantissa prec (Prim2SF f)).
 
 Axiom frshiftexp_spec : forall f, let (m,e) := frshiftexp f in (Prim2SF m, ((to_Z e) - shift)%Z) = SFfrexp prec emax (Prim2SF f).
@@ -66,3 +66,6 @@ Axiom ldshiftexp_spec : forall f e, Prim2SF (ldshiftexp f e) = SFldexp prec emax
 
 Axiom next_up_spec : forall x, Prim2SF (next_up x) = SF64succ (Prim2SF x).
 Axiom next_down_spec : forall x, Prim2SF (next_down x) = SF64pred (Prim2SF x).
+
+#[deprecated(since="8.14",note="Use of_uint63_spec instead.")]
+Notation of_int63_spec := of_uint63_spec (only parsing).

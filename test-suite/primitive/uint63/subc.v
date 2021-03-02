@@ -1,8 +1,8 @@
-Require Import Int63.
+Require Import Uint63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Check (eq_refl : 3 -c 2 = C0 1).
 Check (eq_refl (C0 1) <: 3 -c 2 = C0 1).

@@ -1,4 +1,4 @@
-Require Import ZArith Int63 Floats.
+Require Import ZArith Uint63 Floats.
 
 Check (eq_refl : ldexp one 9223372036854773807%Z = infinity).
 Check (eq_refl infinity <: ldexp one 9223372036854773807%Z = infinity).

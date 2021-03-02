@@ -1,8 +1,8 @@
-Require Import Int63.
+Require Import Uint63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Check (eq_refl : 3 << 61 = 6917529027641081856).
 Check (eq_refl 6917529027641081856 <: 3 << 61 = 6917529027641081856).

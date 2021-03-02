@@ -1,6 +1,6 @@
-From Coq Require Import Int63 PArray.
+From Coq Require Import Uint63 PArray.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Definition t : array nat := [| 1; 3; 2 | 4 |]%nat.
 Definition foo1 := (eq_refl : PArray.length t = 3).

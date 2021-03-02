@@ -1,8 +1,8 @@
-Require Import Int63.
+Require Import Uint63.
 
 Set Implicit Arguments.
 
-Open Scope int63_scope.
+Open Scope uint63_scope.
 
 Check (eq_refl : 0 lxor 0 = 0).
 Check (eq_refl 0 <: 0 lxor 0 = 0).

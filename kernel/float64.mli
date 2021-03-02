@@ -72,7 +72,7 @@ val div : t -> t -> t
 val sqrt : t -> t
 
 (** Link with integers *)
-val of_int63 : Uint63.t -> t
+val of_uint63 : Uint63.t -> t
 [@@ocaml.inline always]
 
 val normfr_mantissa : t -> Uint63.t

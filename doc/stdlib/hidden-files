@@ -52,6 +52,7 @@ theories/micromega/ZMicromega.v
 theories/micromega/ZifyInst.v
 theories/micromega/ZifyBool.v
 theories/micromega/ZifyInt63.v
+theories/micromega/ZifyUint63.v
 theories/micromega/ZifySint63.v
 theories/micromega/ZifyNat.v
 theories/micromega/ZifyN.v

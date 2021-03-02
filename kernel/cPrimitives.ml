@@ -56,7 +56,7 @@ type t =
   | Float64mul
   | Float64div
   | Float64sqrt
-  | Float64ofInt63
+  | Float64ofUint63
   | Float64normfr_mantissa
   | Float64frshiftexp
   | Float64ldshiftexp
@@ -112,7 +112,7 @@ let parse = function
   | "float64_mul" -> Float64mul
   | "float64_div" -> Float64div
   | "float64_sqrt" -> Float64sqrt
-  | "float64_of_int63" -> Float64ofInt63
+  | "float64_of_uint63" -> Float64ofUint63
   | "float64_normfr_mantissa" -> Float64normfr_mantissa
   | "float64_frshiftexp" -> Float64frshiftexp
   | "float64_ldshiftexp" -> Float64ldshiftexp
@@ -163,7 +163,7 @@ let hash = function
   | Float64mul -> 31
   | Float64div -> 32
   | Float64sqrt -> 33
-  | Float64ofInt63 -> 34
+  | Float64ofUint63 -> 34
   | Float64normfr_mantissa -> 35
   | Float64frshiftexp -> 36
   | Float64ldshiftexp -> 37
@@ -229,7 +229,7 @@ let to_string = function
   | Float64mul -> "fmul"
   | Float64div -> "fdiv"
   | Float64sqrt -> "fsqrt"
-  | Float64ofInt63 -> "float_of_int"
+  | Float64ofUint63 -> "float_of_int"
   | Float64normfr_mantissa -> "normfr_mantissa"
   | Float64frshiftexp -> "frshiftexp"
   | Float64ldshiftexp -> "ldshiftexp"
@@ -318,7 +318,7 @@ let types =
   | Float64opp | Float64abs | Float64sqrt
   | Float64next_up | Float64next_down ->
       [float_ty], float_ty
-  | Float64ofInt63 ->
+  | Float64ofUint63 ->
       [int_ty], float_ty
   | Float64normfr_mantissa ->
       [float_ty], int_ty
@@ -396,7 +396,7 @@ let params = function
   | Float64mul
   | Float64div
   | Float64sqrt
-  | Float64ofInt63
+  | Float64ofUint63
   | Float64normfr_mantissa
   | Float64frshiftexp
   | Float64ldshiftexp
@@ -455,7 +455,7 @@ let univs = function
   | Float64mul
   | Float64div
   | Float64sqrt
-  | Float64ofInt63
+  | Float64ofUint63
   | Float64normfr_mantissa
   | Float64frshiftexp
   | Float64ldshiftexp

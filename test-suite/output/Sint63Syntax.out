@@ -40,9 +40,9 @@ The command has indeed failed with message:
 Cannot interpret this number as a value of type int
 The command has indeed failed with message:
 Cannot interpret this number as a value of type int
-0x1%int63
+0x1%uint63
      : int
-0x7fffffffffffffff%int63
+0x7fffffffffffffff%uint63
      : int
 2
      : nat

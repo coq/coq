@@ -1134,7 +1134,7 @@ let rec extern inctx ?impargs scopes vars r =
   | GInt i ->
      extern_prim_token_delimiter_if_required
        (Number NumTok.(Signed.of_bigint CHex (Z.of_int64 (Uint63.to_int64 i))))
-       "int63" "int63_scope" (snd scopes)
+       "uint63" "uint63_scope" (snd scopes)
 
   | GFloat f -> extern_float f (snd scopes)
 

@@ -74,9 +74,9 @@ End PrimFloatNotationsInternalB.
 
 (** ** Conversions *)
 
-(** [of_int63]: convert a primitive integer into a float value.
+(** [of_uint63]: convert a primitive unsigned integer into a float value.
     The value is rounded if need be. *)
-Primitive of_int63 := #float64_of_int63.
+Primitive of_uint63 := #float64_of_uint63.
 
 (** Specification of [normfr_mantissa]:
 - If the input is a float value with an absolute value inside $[0.5, 1.)$#[0.5, 1.)#;
@@ -104,19 +104,19 @@ Primitive next_up := #float64_next_up.
 Primitive next_down := #float64_next_down.
 
 (** ** Special values (needed for pretty-printing) *)
-Definition infinity := Eval compute in div (of_int63 1) (of_int63 0).
+Definition infinity := Eval compute in div (of_uint63 1) (of_uint63 0).
 Definition neg_infinity := Eval compute in opp infinity.
-Definition nan := Eval compute in div (of_int63 0) (of_int63 0).
+Definition nan := Eval compute in div (of_uint63 0) (of_uint63 0).
 
 Register infinity as num.float.infinity.
 Register neg_infinity as num.float.neg_infinity.
 Register nan as num.float.nan.
 
 (** ** Other special values *)
-Definition one := Eval compute in (of_int63 1).
-Definition zero := Eval compute in (of_int63 0).
+Definition one := Eval compute in (of_uint63 1).
+Definition zero := Eval compute in (of_uint63 0).
 Definition neg_zero := Eval compute in (-zero)%float.
-Definition two := Eval compute in (of_int63 2).
+Definition two := Eval compute in (of_uint63 2).
 
 (** ** Predicates and helper functions *)
 Definition is_nan f := negb (f =? f)%float.
@@ -143,3 +143,6 @@ Module Export PrimFloatNotations.
   Export PrimFloatNotationsInternalA.
   Export PrimFloatNotationsInternalB.
 End PrimFloatNotations.
+
+#[deprecated(since="8.14",note="Use of_uint63 instead.")]
+Notation of_int63 := of_uint63 (only parsing).

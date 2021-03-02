@@ -2,7 +2,7 @@
      : intList
 "abc"
      : intList
-mk_intList [97%int63; 98%int63; 99%int63]
+mk_intList [97%uint63; 98%uint63; 99%uint63]
      : intList
 "abc"
      : intArray
