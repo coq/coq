@@ -1203,9 +1203,7 @@ let unfoldn loccname env sigma c =
 
 (* Re-folding constants tactics: refold com in term c *)
 let fold_one_com com env sigma c =
-  let rcom =
-    try red_product env sigma com
-    with Redelimination -> user_err Pp.(str "Not reducible.") in
+  let rcom = red_product env sigma com in
   (* Reason first on the beta-iota-zeta normal form of the constant as
      unfold produces it, so that the "unfold f; fold f" configuration works
      to refold fix expressions *)
