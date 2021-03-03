@@ -1,15 +1,15 @@
 (library
  (name number_string_notation_plugin)
- (public_name coq.plugins.number_string_notation)
+ (public_name coq-core.plugins.number_string_notation)
  (synopsis "Coq number and string notation plugin")
  (modules g_number_string string_notation number)
- (libraries coq.vernac))
+ (libraries coq-core.vernac))
 
 (library
  (name float_syntax_plugin)
- (public_name coq.plugins.float_syntax)
+ (public_name coq-core.plugins.float_syntax)
  (synopsis "Coq syntax plugin: float")
  (modules float_syntax)
- (libraries coq.vernac))
+ (libraries coq-core.vernac))
 
 (coq.pp (modules g_number_string))

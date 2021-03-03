@@ -17,12 +17,12 @@ homepage: "https://coq.inria.fr/"
 doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
-  "dune" {>= "2.5.0"}
+  "dune" {>= "2.5"}
   "coqide-server" {= version}
 ]
 build: [
-# Disabled until Dune 2.8 is available
-# ["dune" "subst"] {pinned}
+  # Requires dune 2.8 due to https://github.com/ocaml/dune/issues/3219
+  # ["dune" "subst"] {pinned}
   [
     "dune"
     "build"

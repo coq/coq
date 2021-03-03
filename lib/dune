@@ -1,7 +1,7 @@
 (library
  (name lib)
  (synopsis "Coq's Utility Library [coq-specific]")
- (public_name coq.lib)
+ (public_name coq-core.lib)
  (wrapped false)
  (modules_without_implementation xml_datatype)
- (libraries coq.clib coq.config))
+ (libraries coq-core.clib coq-core.config))

@@ -20,7 +20,7 @@
 
 (install
  (section lib)
- (package coq)
+ (package coq-core)
  (files revision))
 
 (rule

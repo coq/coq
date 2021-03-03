@@ -162,8 +162,9 @@ install-latex:
 	$(INSTALLLIB) tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)
 #	-$(UPDATETEX)
 
-install-meta: META.coq
-	$(INSTALLLIB) META.coq $(FULLCOQLIB)/META
+install-meta: META.coq-core
+	$(INSTALLLIB) META.coq-core $(FULLCOQLIB)/META
+	cd $(FULLCOQLIB)/.. && rm -f coq-core && ln -s coq coq-core
 
 # For emacs:
 # Local Variables:

@@ -375,7 +375,8 @@ pkg:opam:
   # OPAM will build out-of-tree so no point in importing artifacts
   script:
     - set -e
-    - opam pin add --kind=path coq.dev .
+    - opam pin add --kind=path coq-core.dev .
+    - opam pin add --kind=path coq-stdlib.dev .
     - opam pin add --kind=path coqide-server.dev .
     - opam pin add --kind=path coqide.dev .
     - set +e

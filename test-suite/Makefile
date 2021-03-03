@@ -46,7 +46,11 @@ BIN := $(ROOT)/bin/
 
 COQLIB?=
 ifeq ($(COQLIB),)
+ ifeq ($(LOCAL),true)
   COQLIB := $(shell ocaml ocaml_pwd.ml ..)
+ else
+  COQLIB := $(shell ocaml ocaml_pwd.ml $(COQLIBINSTALL))
+ endif
 endif
 endif # exists ../_build
 export COQLIB
@@ -320,7 +324,7 @@ unit-tests: $(UNIT_LOGFILES)
 # Build executable, run it to generate log file
 unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coq.toplevel,ounit2 \
+	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coq-core.toplevel,ounit2 \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)./$<.test
 

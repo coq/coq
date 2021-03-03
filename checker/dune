@@ -7,13 +7,14 @@
  (synopsis "Coq's Standalone Proof Checker")
  (modules :standard \ coqchk votour)
  (wrapped true)
- (libraries coq.kernel))
+ (libraries coq-core.kernel))
 
 (executable
  (name coqchk)
  (public_name coqchk)
  (modes exe byte)
- (package coq)
+ ; Move to coq-checker?
+ (package coq-core)
  (modules coqchk)
  (flags :standard -open Coq_checklib)
  (libraries coq_checklib))
@@ -21,7 +22,7 @@
 (executable
  (name votour)
  (public_name votour)
- (package coq)
+ (package coq-core)
  (modules votour)
  (flags :standard -open Coq_checklib)
  (libraries coq_checklib))

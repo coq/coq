@@ -1,7 +1,7 @@
 (library
  (name byterun)
  (synopsis "Coq's Kernel Abstract Reduction Machine [C implementation]")
- (public_name coq.vm)
+ (public_name coq-core.vm)
  (foreign_stubs
   (language c)
   (names coq_fix_code coq_float64 coq_memory coq_values coq_interp)

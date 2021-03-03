@@ -97,8 +97,16 @@ let coqdep () =
   if not !option_boot then begin
     Envars.set_coqlib ~fail:(fun msg -> raise (CoqlibError msg));
     let coqlib = Envars.coqlib () in
+    let coq_plugins_dir = CPath.choose_existing
+      [ CPath.make [ coqlib; "plugins" ]
+      ; CPath.make [ coqlib; ".."; "coq-core"; "plugins" ]
+      ] |> function
+    | None ->
+      CErrors.user_err (Pp.str "coqdep: cannot find plugins directory\n");
+    | Some f -> (f :> string)
+    in
     add_rec_dir_import add_coqlib_known (coqlib//"theories") ["Coq"];
-    add_rec_dir_import add_coqlib_known (coqlib//"plugins") ["Coq"];
+    add_rec_dir_import add_coqlib_known (coq_plugins_dir) ["Coq"];
     let user = coqlib//"user-contrib" in
     if Sys.file_exists user then add_rec_dir_no_import add_coqlib_known user [];
     List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s [])

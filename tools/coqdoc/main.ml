@@ -471,9 +471,17 @@ let index_module = function
   | Latex_file _ -> ()
 
 let copy_style_file file =
-  let src =
-    List.fold_left
-      Filename.concat !Cdglobals.coqlib_path ["tools";"coqdoc";file] in
+  (* We give preference to coqlib in case it is overriden *)
+  let src_dir = CPath.choose_existing
+      [ CPath.make [ !Cdglobals.coqlib_path; "tools"; "coqdoc" ]
+      ; CPath.make [ !Cdglobals.coqlib_path; ".."; "coq-core"; "tools"; "coqdoc" ]
+      ] |> function
+    | None ->
+      eprintf "coqdoc: cannot find coqdoc style files\n";
+      exit 1
+    | Some f -> f
+  in
+  let src = (CPath.relative src_dir file :> string) in
   let dst = coqdoc_out file in
   if Sys.file_exists src then copy src dst
   else eprintf "Warning: file %s does not exist\n" src

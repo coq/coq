@@ -1,6 +1,6 @@
 (coq.theory
  (name Coq)
- (package coq)
+ (package coq-stdlib)
  (synopsis "Coq's Standard Library")
  (flags -q)
  ; (mode native)
@@ -8,29 +8,29 @@
  ; (per_file
  ;  (Init/*.v -> -boot))
  (libraries
-   coq.plugins.ltac
-   coq.plugins.tauto
+   coq-core.plugins.ltac
+   coq-core.plugins.tauto
 
-   coq.plugins.cc
-   coq.plugins.firstorder
+   coq-core.plugins.cc
+   coq-core.plugins.firstorder
 
-   coq.plugins.number_string_notation
-   coq.plugins.float_syntax
+   coq-core.plugins.number_string_notation
+   coq-core.plugins.float_syntax
 
-   coq.plugins.btauto
-   coq.plugins.rtauto
+   coq-core.plugins.btauto
+   coq-core.plugins.rtauto
 
-   coq.plugins.ring
-   coq.plugins.nsatz
-   coq.plugins.omega
+   coq-core.plugins.ring
+   coq-core.plugins.nsatz
+   coq-core.plugins.omega
 
-   coq.plugins.zify
-   coq.plugins.micromega
+   coq-core.plugins.zify
+   coq-core.plugins.micromega
 
-   coq.plugins.funind
+   coq-core.plugins.funind
 
-   coq.plugins.ssreflect
-   coq.plugins.ssrsearch
-   coq.plugins.derive))
+   coq-core.plugins.ssreflect
+   coq-core.plugins.ssrsearch
+   coq-core.plugins.derive))
 
 (include_subdirs qualified)

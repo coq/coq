@@ -98,7 +98,7 @@ stdenv.mkDerivation rec {
 
   createFindlibDestdir = !shell;
 
-  postInstall = "ln -s $out/lib/coq $OCAMLFIND_DESTDIR/coq";
+  postInstall = "ln -s $out/lib/coq-core $OCAMLFIND_DESTDIR/coq-core";
 
   inherit doInstallCheck;
 
