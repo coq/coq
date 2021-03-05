@@ -66,14 +66,37 @@ let is_convertible env evd t1 t2 = Reductionops.(is_conv env evd t1 t2)
 let get_type_of env evd e =
   Tacred.cbv_beta env evd (Retyping.get_type_of env evd e)
 
+(* arguments are dealt with in a second step *)
+
 let rec find_option pred l =
   match l with
   | [] -> raise Not_found
   | e :: l -> ( match pred e with Some r -> r | None -> find_option pred l )
 
-(** [HConstr] is a map indexed by EConstr.t.
-    It should only be used using closed terms.
- *)
+module ConstrMap = struct
+  open Names.GlobRef
+
+  type 'a t = 'a list Map.t
+
+  let add evd h e m =
+    let r = fst (EConstr.destRef evd h) in
+    Map.update r (function None -> Some [e] | Some l -> Some (e :: l)) m
+
+  let empty = Map.empty
+
+  let find evd h m =
+    match Map.find (fst (EConstr.destRef evd h)) m with
+    | e :: _ -> e
+    | [] -> assert false
+
+  let find_all evd h m = Map.find (fst (EConstr.destRef evd h)) m
+
+  let fold f m acc =
+    Map.fold
+      (fun k l acc -> List.fold_left (fun acc e -> f k e acc) acc l)
+      m acc
+end
+
 module HConstr = struct
   module M = Map.Make (struct
     type t = EConstr.t
@@ -81,20 +104,11 @@ module HConstr = struct
     let compare c c' = Constr.compare (unsafe_to_constr c) (unsafe_to_constr c')
   end)
 
-  type 'a t = 'a list M.t
+  type 'a t = 'a M.t
 
-  let lfind h m = try M.find h m with Not_found -> []
-
-  let add h e m =
-    let l = lfind h m in
-    M.add h (e :: l) m
-
+  let add h e m = M.add h e m
   let empty = M.empty
-  let find h m = match lfind h m with e :: _ -> e | [] -> raise Not_found
-  let find_all = lfind
-
-  let fold f m acc =
-    M.fold (fun k l acc -> List.fold_left (fun acc e -> f k e acc) acc l) m acc
+  let find = M.find
 end
 
 (** [get_projections_from_constant (evd,c) ]
@@ -331,7 +345,7 @@ module type Elt = sig
   (** name *)
   val name : string
 
-  val table : (term_kind * decl_kind) HConstr.t ref
+  val table : (term_kind * decl_kind) ConstrMap.t ref
   val cast : elt decl -> decl_kind
   val dest : decl_kind -> elt decl option
 
@@ -346,12 +360,12 @@ module type Elt = sig
   (*  val arity : int*)
 end
 
-let table = Summary.ref ~name:"zify_table" HConstr.empty
-let saturate = Summary.ref ~name:"zify_saturate" HConstr.empty
-let specs = Summary.ref ~name:"zify_specs" HConstr.empty
-let table_cache = ref HConstr.empty
-let saturate_cache = ref HConstr.empty
-let specs_cache = ref HConstr.empty
+let table = Summary.ref ~name:"zify_table" ConstrMap.empty
+let saturate = Summary.ref ~name:"zify_saturate" ConstrMap.empty
+let specs = Summary.ref ~name:"zify_specs" ConstrMap.empty
+let table_cache = ref ConstrMap.empty
+let saturate_cache = ref ConstrMap.empty
+let specs_cache = ref ConstrMap.empty
 
 (** Each type-class gives rise to a different table.
     They only differ on how projections are extracted.  *)
@@ -589,8 +603,8 @@ module MakeTable (E : Elt) = struct
   let register_hint evd t elt =
     match EConstr.kind evd t with
     | App (c, _) ->
-      E.table := HConstr.add c (Application t, E.cast elt) !E.table
-    | _ -> E.table := HConstr.add t (OtherTerm t, E.cast elt) !E.table
+      E.table := ConstrMap.add evd c (Application t, E.cast elt) !E.table
+    | _ -> E.table := ConstrMap.add evd t (OtherTerm t, E.cast elt) !E.table
 
   let register_constr env evd c =
     let c = EConstr.of_constr c in
@@ -637,7 +651,7 @@ module MakeTable (E : Elt) = struct
   let pp_keys () =
     let env = Global.env () in
     let evd = Evd.from_env env in
-    HConstr.fold
+    ConstrMap.fold
       (fun _ (k, d) acc ->
         match E.dest d with
         | None -> acc
@@ -947,9 +961,11 @@ let app_binop evd src binop arg1 prf1 arg2 prf2 =
 type typed_constr = {constr : EConstr.t; typ : EConstr.t; inj : EInjT.t}
 
 let get_injection env evd t =
-  match snd (HConstr.find t !table_cache) with
-  | InjTyp i -> i
-  | _ -> raise Not_found
+  try
+    match snd (ConstrMap.find evd t !table_cache) with
+    | InjTyp i -> i
+    | _ -> raise Not_found
+  with DestKO -> raise Not_found
 
 (* [arrow] is the term (fun (x:Prop) (y : Prop) => x -> y) *)
 let arrow =
@@ -1087,7 +1103,7 @@ let declared_term env evd hd args =
       | PropUnOp _ -> decomp t 1
       | _ -> None )
   in
-  find_option match_operator (HConstr.find_all hd !table)
+  find_option match_operator (ConstrMap.find_all evd hd !table)
 
 let rec trans_expr env evd e =
   let inj = e.inj in
@@ -1099,7 +1115,7 @@ let rec trans_expr env evd e =
       let k, t =
         find_option
           (match_operator env evd c a)
-          (HConstr.find_all c !table_cache)
+          (ConstrMap.find_all evd c !table_cache)
       in
       let n = Array.length a in
       match k with
@@ -1243,7 +1259,7 @@ let rec trans_prop env evd e =
       let k, t =
         find_option
           (match_operator env evd c a)
-          (HConstr.find_all c !table_cache)
+          (ConstrMap.find_all evd c !table_cache)
       in
       let n = Array.length a in
       match k with
@@ -1262,7 +1278,7 @@ let rec trans_prop env evd e =
         in
         trans_binrel evd e rop a.(n - 2) a1 a.(n - 1) a2
       | _ -> IProof
-    with Not_found -> IProof )
+    with Not_found | DestKO -> IProof )
 
 let trans_check_prop env evd t =
   if is_prop env evd t then Some (trans_prop env evd t) else None
@@ -1359,7 +1375,7 @@ let do_let tac (h : Constr.named_declaration) =
              find_option
                (match_operator env evd eq
                   [|EConstr.of_constr ty; EConstr.mkVar x; EConstr.of_constr t|])
-               (HConstr.find_all eq !table_cache));
+               (ConstrMap.find_all evd eq !table_cache));
           tac x (EConstr.of_constr t) (EConstr.of_constr ty)
         with Not_found -> Tacticals.New.tclIDTAC)
 
@@ -1453,12 +1469,12 @@ let rec spec_of_term env evd (senv : spec_env) t =
     try (EConstr.mkVar (HConstr.find t' senv'.map), senv')
     with Not_found -> (
       try
-        match snd (HConstr.find c !specs_cache) with
+        match snd (ConstrMap.find evd c !specs_cache) with
         | UnOpSpec s | BinOpSpec s ->
           let thm = EConstr.mkApp (s.deriv.ESpecT.spec, a') in
           register_constr senv' t' thm
         | _ -> (get_name t' senv', senv')
-      with Not_found -> (t', senv') )
+      with Not_found | DestKO -> (t', senv') )
 
 let interp_pscript s =
   match s with
@@ -1533,7 +1549,8 @@ let get_all_sat env evd c =
   List.fold_left
     (fun acc e -> match e with _, Saturate s -> s :: acc | _ -> acc)
     []
-    (HConstr.find_all c !saturate_cache)
+    ( try ConstrMap.find_all evd c !saturate_cache
+      with DestKO | Not_found -> [] )
 
 let saturate =
   Proofview.Goal.enter (fun gl ->
