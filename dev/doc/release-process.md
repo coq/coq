@@ -114,6 +114,11 @@
   list of contributors between Coq revisions. Typically used with
   `VX.X+alpha..vX.X` to check the contributors of version `VX.X`.
 
+  Note that this script relies on `.mailmap` to merge multiple
+  identities.  If you notice anything incorrect while using it, use
+  the opportunity to fix the `.mailmap` file.  Same thing if you want
+  to have the full name of a contributor shown instead of a pseudonym.
+
 ## For each release (preview, final, patch-level) ##
 
 - [ ] Ensure that there exists a milestone for the following version.
