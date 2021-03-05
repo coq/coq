@@ -33,7 +33,7 @@
 }:
 
 with pkgs;
-with stdenv.lib;
+with pkgs.lib;
 
 stdenv.mkDerivation rec {
 
