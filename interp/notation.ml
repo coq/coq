@@ -557,9 +557,6 @@ type target_kind =
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
   | Int63 of pos_neg_int63_ty (* Coq.Numbers.Cyclic.Int63.PrimInt63.pos_neg_int63 *)
   | Number of number_ty (* Coq.Init.Number.number + uint + int *)
-  | DecimalInt of int_ty (* Coq.Init.Decimal.int + uint (deprecated) *)
-  | DecimalUInt of int_ty (* Coq.Init.Decimal.uint (deprecated) *)
-  | Decimal of number_ty (* Coq.Init.Decimal.Decimal + uint + int (deprecated) *)
 
 type string_target_kind =
   | ListByte
@@ -872,29 +869,15 @@ let mkDecHex ind c n = match c with
   | CDec -> mkApp (mkConstruct (ind, 1), [|n|])  (* (UInt|Int|)Decimal *)
   | CHex -> mkApp (mkConstruct (ind, 2), [|n|])  (* (UInt|Int|)Hexadecimal *)
 
-exception NonDecimal
-
-let decimal_coqnumber_of_rawnum inds n =
-  if NumTok.Signed.classify n <> CDec then raise NonDecimal;
-  coqnumber_of_rawnum inds CDec n
-
 let coqnumber_of_rawnum inds n =
   let c = NumTok.Signed.classify n in
   let n = coqnumber_of_rawnum inds c n in
   mkDecHex inds.number c n
 
-let decimal_coquint_of_rawnum inds n =
-  if NumTok.UnsignedNat.classify n <> CDec then raise NonDecimal;
-  coquint_of_rawnum inds CDec (Some n)
-
 let coquint_of_rawnum inds n =
   let c = NumTok.UnsignedNat.classify n in
   let n = coquint_of_rawnum inds c (Some n) in
   mkDecHex inds.uint c n
-
-let decimal_coqint_of_rawnum inds n =
-  if NumTok.SignedNat.classify n <> CDec then raise NonDecimal;
-  coqint_of_rawnum inds CDec n
 
 let coqint_of_rawnum inds n =
   let c = NumTok.SignedNat.classify n in
@@ -950,22 +933,13 @@ let destDecHex c = match Constr.kind c with
       | _ -> raise NotAValidPrimToken)
   | _ -> raise NotAValidPrimToken
 
-let decimal_rawnum_of_coqnumber c =
-  rawnum_of_coqnumber CDec c
-
 let rawnum_of_coqnumber c =
   let cl, c = destDecHex c in
   rawnum_of_coqnumber cl c
 
-let decimal_rawnum_of_coquint c =
-  rawnum_of_coquint CDec c
-
 let rawnum_of_coquint c =
   let cl, c = destDecHex c in
   rawnum_of_coquint cl c
-
-let decimal_rawnum_of_coqint c =
-  rawnum_of_coqint CDec c
 
 let rawnum_of_coqint c =
   let cl, c = destDecHex c in
@@ -1084,22 +1058,13 @@ let interp o ?loc n =
        coqint_of_rawnum int_ty n
     | UInt int_ty, Some (SPlus, n) ->
        coquint_of_rawnum int_ty n
-    | DecimalInt int_ty, Some n ->
-       (try decimal_coqint_of_rawnum int_ty n
-        with NonDecimal -> no_such_prim_token "number" ?loc o.ty_name)
-    | DecimalUInt int_ty, Some (SPlus, n) ->
-       (try decimal_coquint_of_rawnum int_ty n
-        with NonDecimal -> no_such_prim_token "number" ?loc o.ty_name)
     | Z z_pos_ty, Some n ->
        z_of_bigint z_pos_ty (NumTok.SignedNat.to_bigint n)
     | Int63 pos_neg_int63_ty, Some n ->
        interp_int63 ?loc pos_neg_int63_ty.pos_neg_int63_ty (NumTok.SignedNat.to_bigint n)
-    | (Int _ | UInt _ | DecimalInt _ | DecimalUInt _ | Z _ | Int63 _), _ ->
+    | (Int _ | UInt _ | Z _ | Int63 _), _ ->
        no_such_prim_token "number" ?loc o.ty_name
     | Number number_ty, _ -> coqnumber_of_rawnum number_ty n
-    | Decimal number_ty, _ ->
-       (try decimal_coqnumber_of_rawnum number_ty n
-        with NonDecimal -> no_such_prim_token "number" ?loc o.ty_name)
   in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -1124,9 +1089,6 @@ let uninterp o n =
       | (Z _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_z c)
       | (Int63 _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_coqpos_neg_int63 c)
       | (Number _, c) -> rawnum_of_coqnumber c
-      | (DecimalInt _, c) -> NumTok.Signed.of_int (decimal_rawnum_of_coqint c)
-      | (DecimalUInt _, c) -> NumTok.Signed.of_nat (decimal_rawnum_of_coquint c)
-      | (Decimal _, c) -> decimal_rawnum_of_coqnumber c
     end o n
 end
 
