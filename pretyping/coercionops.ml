@@ -156,8 +156,6 @@ let cl_fun_index = fst(class_info CL_FUN)
 
 let cl_sort_index = fst(class_info CL_SORT)
 
-(* coercion_info : coe_typ -> coe_info_typ *)
-
 let coercion_info coe = CoeTypMap.find coe !coercion_tab
 
 let coercion_exists coe = CoeTypMap.mem coe !coercion_tab
