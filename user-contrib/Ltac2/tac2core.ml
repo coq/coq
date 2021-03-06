@@ -44,6 +44,9 @@ let open_constr_no_classes_flags =
 module Value = Tac2ffi
 open Value
 
+let val_format = Tac2print.val_format
+let format = repr_ext val_format
+
 let core_prefix path n = KerName.make path (Label.of_id (Id.of_string_soft n))
 
 let std_core n = core_prefix Tac2env.std_prefix n
@@ -248,6 +251,79 @@ end
 
 let () = define2 "message_concat" pp pp begin fun m1 m2 ->
   return (Value.of_pp (Pp.app m1 m2))
+end
+
+let () = define0 "format_stop" begin
+  return (Value.of_ext val_format [])
+end
+
+let () = define1 "format_string" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtString :: s))
+end
+
+let () = define1 "format_int" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtInt :: s))
+end
+
+let () = define1 "format_constr" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtConstr :: s))
+end
+
+let () = define1 "format_ident" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtIdent :: s))
+end
+
+let () = define2 "format_literal" string format begin fun lit s ->
+  return (Value.of_ext val_format (Tac2print.FmtLiteral (Bytes.to_string lit) :: s))
+end
+
+let () = define1 "format_alpha" format begin fun s ->
+  return (Value.of_ext val_format (Tac2print.FmtAlpha :: s))
+end
+
+let () = define2 "format_kfprintf" closure format begin fun k fmt ->
+  let open Tac2print in
+  let fold accu = function
+  | FmtLiteral _ -> accu
+  | FmtString | FmtInt | FmtConstr | FmtIdent -> 1 + accu
+  | FmtAlpha -> 2 + accu
+  in
+  let pop1 l = match l with [] -> assert false | x :: l -> (x, l) in
+  let pop2 l = match l with [] | [_] -> assert false | x :: y :: l -> (x, y, l) in
+  let arity = List.fold_left fold 0 fmt in
+  let rec eval accu args fmt = match fmt with
+  | [] -> apply k [of_pp accu]
+  | tag :: fmt ->
+    match tag with
+    | FmtLiteral s ->
+      eval (Pp.app accu (Pp.str s)) args fmt
+    | FmtString ->
+      let (s, args) = pop1 args in
+      let pp = Pp.str (Bytes.to_string (to_string s)) in
+      eval (Pp.app accu pp) args fmt
+    | FmtInt ->
+      let (i, args) = pop1 args in
+      let pp = Pp.int (to_int i) in
+      eval (Pp.app accu pp) args fmt
+    | FmtConstr ->
+      let (c, args) = pop1 args in
+      let c = to_constr c in
+      pf_apply begin fun env sigma ->
+        let pp = Printer.pr_econstr_env env sigma c in
+        eval (Pp.app accu pp) args fmt
+      end
+    | FmtIdent ->
+      let (i, args) = pop1 args in
+      let pp = Id.print (to_ident i) in
+      eval (Pp.app accu pp) args fmt
+    | FmtAlpha ->
+      let (f, x, args) = pop2 args in
+      Tac2ffi.apply (to_closure f) [of_unit (); x] >>= fun pp ->
+      eval (Pp.app accu (to_pp pp)) args fmt
+  in
+  let eval v = eval (Pp.mt ()) v fmt in
+  if Int.equal arity 0 then eval []
+  else return (Tac2ffi.of_closure (Tac2ffi.abstract arity eval))
 end
 
 (** Array *)
@@ -1629,6 +1705,7 @@ let () = add_expr_scope "pose" q_pose Tac2quote.of_pose
 let () = add_expr_scope "assert" q_assert Tac2quote.of_assertion
 let () = add_expr_scope "constr_matching" q_constr_matching Tac2quote.of_constr_matching
 let () = add_expr_scope "goal_matching" q_goal_matching Tac2quote.of_goal_matching
+let () = add_expr_scope "format" Pcoq.Prim.lstring Tac2quote.of_format
 
 let () = add_generic_scope "open_constr" Pcoq.Constr.constr Tac2quote.wit_open_constr
 let () = add_generic_scope "pattern" Pcoq.Constr.constr Tac2quote.wit_pattern
