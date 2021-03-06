@@ -251,10 +251,10 @@ end) = struct
 
   (** Folding/unfolding of the tactic constants. *)
 
-  let unfold_impl sigma t =
+  let unfold_impl n sigma t =
     match EConstr.kind sigma t with
     | App (arrow, [| a; b |])(*  when eq_constr arrow (Lazy.force impl) *) ->
-      mkProd (make_annot Anonymous Sorts.Relevant, a, lift 1 b)
+      mkProd (make_annot n Sorts.Relevant, a, lift 1 b)
     | _ -> assert false
 
   let unfold_all sigma t =
@@ -273,16 +273,16 @@ end) = struct
       | _ -> assert false)
     | _ -> assert false
 
-  let arrow_morphism env evd ta tb a b =
+  let arrow_morphism env evd n ta tb a b =
     let ap = is_Prop (goalevars evd) ta and bp = is_Prop (goalevars evd) tb in
-      if ap && bp then app_poly env evd impl [| a; b |], unfold_impl
+      if ap && bp then app_poly env evd impl [| a; b |], unfold_impl n
       else if ap then (* Domain in Prop, CoDomain in Type *)
-        (app_poly env evd arrow [| a; b |]), unfold_impl
+        (app_poly env evd arrow [| a; b |]), unfold_impl n
         (* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
-        (app_poly env evd coq_all [| a; mkLambda (make_annot Anonymous Sorts.Relevant, a, lift 1 b) |]), unfold_forall
+        (app_poly env evd coq_all [| a; mkLambda (make_annot n Sorts.Relevant, a, lift 1 b) |]), unfold_forall
       else (* None in Prop, use arrow *)
-        (app_poly env evd arrow [| a; b |]), unfold_impl
+        (app_poly env evd arrow [| a; b |]), unfold_impl n
 
   let rec decomp_pointwise sigma n c =
     if Int.equal n 0 then c
@@ -1079,7 +1079,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
           let arr = if prop then PropGlobal.arrow_morphism
             else TypeGlobal.arrow_morphism
           in
-          let (evars', mor), unfold = arr env evars tx tb x b in
+          let (evars', mor), unfold = arr env evars n.binder_name tx tb x b in
           let state, res = aux { state ; env ; unfresh ;
                                  term1 = mor ; ty1 = ty ;
                                  cstr = (prop,cstr) ; evars = evars' } in
