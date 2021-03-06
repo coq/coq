@@ -2796,18 +2796,24 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let open Context.Rel.Declaration in
   let decls,cl = decompose_prod_n_assum sigma i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
-  let cache = ref Int.Map.empty in
-  let eq sigma (k, c) t =
-    let c =
-      try Int.Map.find k !cache
-      with Not_found ->
-        let c = EConstr.Vars.lift k c in
-        let () = cache := Int.Map.add k c !cache in
-        c
+  let newdecls,_ =
+    let c = Termops.collapse_appl sigma c in
+    let arity = Array.length (snd (Termops.decompose_app_vect sigma c)) in
+    let cache = ref Int.Map.empty in
+    let eq sigma k t =
+      let c =
+        try Int.Map.find k !cache
+        with Not_found ->
+          let c = EConstr.Vars.lift k c in
+          let () = cache := Int.Map.add k c !cache in
+          c
+      in
+      (* We use a nounivs equality because generalize morally takes a pattern as
+         argument, so we have to ignore freshly generated sorts. *)
+      EConstr.eq_constr_nounivs sigma c t
     in
-    EConstr.eq_constr_nounivs sigma c t
+    decompose_prod_n_assum sigma i (replace_term_gen sigma eq arity (mkRel 1) dummy_prod)
   in
-  let newdecls,_ = decompose_prod_n_assum sigma i (subst_term_gen sigma eq c dummy_prod) in
   let cl',sigma' = subst_closed_term_occ env sigma (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
   let na = generalized_name env sigma c t ids cl' na in
   let r = Retyping.relevance_of_type env sigma t in
