@@ -842,9 +842,9 @@ let install = [
   "COQLIBINSTALL", "the Coq library", !prefs.libdir,
     Relative "lib", Relative "lib/coq", Relative "";
   "CONFIGDIR", "the Coqide configuration files", !prefs.configdir,
-    Relative "config", Absolute "/etc/xdg/coq", Relative "ide/coqide";
+    Relative "config", Absolute "/etc/coq", Relative "etc";
   "DATADIR", "the Coqide data files", !prefs.datadir,
-    Relative "share", Relative "share/coq", Relative "ide/coqide";
+    Relative "share", Relative "share/coq", Relative "share";
   "MANDIR", "the Coq man pages", !prefs.mandir,
     Relative "man", Relative "share/man", Relative "man";
   "DOCDIR", "the Coq documentation", !prefs.docdir,
