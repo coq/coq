@@ -34,6 +34,31 @@ type cl_info_typ = {
   cl_param : int
 }
 
+let cl_typ_ord t1 t2 = match t1, t2 with
+  | CL_SECVAR v1, CL_SECVAR v2 -> Id.compare v1 v2
+  | CL_CONST c1, CL_CONST c2 -> Constant.CanOrd.compare c1 c2
+  | CL_PROJ c1, CL_PROJ c2 -> Projection.Repr.CanOrd.compare c1 c2
+  | CL_IND i1, CL_IND i2 -> Ind.CanOrd.compare i1 i2
+  | _ -> pervasives_compare t1 t2 (** OK *)
+
+let cl_typ_eq t1 t2 = Int.equal (cl_typ_ord t1 t2) 0
+
+module ClTyp = struct
+  type t = cl_typ
+  let compare = cl_typ_ord
+end
+
+module ClPairOrd =
+struct
+  type t = cl_typ * cl_typ
+  let compare (i1, j1) (i2, j2) =
+    let c = cl_typ_ord i1 i2 in
+    if Int.equal c 0 then cl_typ_ord j1 j2 else c
+end
+
+module ClTypMap = Map.Make(ClTyp)
+module ClPairMap = Map.Make(ClPairOrd)
+
 type coe_typ = GlobRef.t
 
 module CoeTypMap = GlobRef.Map_env
@@ -53,79 +78,17 @@ let coe_info_typ_equal c1 c2 =
     c1.coe_is_projection == c2.coe_is_projection &&
     Int.equal c1.coe_param c2.coe_param
 
-let cl_typ_ord t1 t2 = match t1, t2 with
-  | CL_SECVAR v1, CL_SECVAR v2 -> Id.compare v1 v2
-  | CL_CONST c1, CL_CONST c2 -> Constant.CanOrd.compare c1 c2
-  | CL_PROJ c1, CL_PROJ c2 -> Projection.Repr.CanOrd.compare c1 c2
-  | CL_IND i1, CL_IND i2 -> Ind.CanOrd.compare i1 i2
-  | _ -> pervasives_compare t1 t2 (** OK *)
-
-module ClTyp = struct
-  type t = cl_typ
-  let compare = cl_typ_ord
-end
-
-module ClTypMap = Map.Make(ClTyp)
-
-let cl_typ_eq t1 t2 = Int.equal (cl_typ_ord t1 t2) 0
-
 type inheritance_path = coe_info_typ list
 
-(* table des classes, des coercions et graphe d'heritage *)
-
-module Bijint :
-sig
-  module Index :
-  sig
-    type t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val print : t -> Pp.t
-  end
-  type 'a t
-  val empty : 'a t
-  val mem : cl_typ -> 'a t -> bool
-  val map : Index.t -> 'a t -> cl_typ * 'a
-  val revmap : cl_typ -> 'a t -> Index.t * 'a
-  val add : cl_typ -> 'a -> 'a t -> 'a t
-  val dom : 'a t -> cl_typ list
-end
-=
-struct
-
-  module Index = struct include Int let print = Pp.int end
-
-  type 'a t = { v : (cl_typ * 'a) Int.Map.t; s : int; inv : int ClTypMap.t }
-  let empty = { v = Int.Map.empty; s = 0; inv = ClTypMap.empty }
-  let mem y b = ClTypMap.mem y b.inv
-  let map x b = Int.Map.find x b.v
-  let revmap y b = let n = ClTypMap.find y b.inv in (n, snd (Int.Map.find n b.v))
-  let add x y b =
-    { v = Int.Map.add b.s (x,y) b.v; s = b.s+1; inv = ClTypMap.add x b.s b.inv }
-  let dom b = List.rev (ClTypMap.fold (fun x _ acc -> x::acc) b.inv [])
-end
-
-type cl_index = Bijint.Index.t
-
 let init_class_tab =
-  let open Bijint in
+  let open ClTypMap in
   add CL_FUN { cl_param = 0 } (add CL_SORT { cl_param = 0 } empty)
 
 let class_tab =
-  Summary.ref ~name:"class_tab" (init_class_tab : cl_info_typ Bijint.t)
+  Summary.ref ~name:"class_tab" (init_class_tab : cl_info_typ ClTypMap.t)
 
 let coercion_tab =
   Summary.ref ~name:"coercion_tab" (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
-
-module ClPairOrd =
-struct
-  type t = cl_index * cl_index
-  let compare (i1, j1) (i2, j2) =
-    let c = Bijint.Index.compare i1 i2 in
-    if Int.equal c 0 then Bijint.Index.compare j1 j2 else c
-end
-
-module ClPairMap = Map.Make(ClPairOrd)
 
 let inheritance_graph =
   Summary.ref ~name:"inheritance_graph" (ClPairMap.empty : inheritance_path ClPairMap.t)
@@ -133,8 +96,8 @@ let inheritance_graph =
 (* ajout de nouveaux "objets" *)
 
 let add_new_class cl s =
-  if not (Bijint.mem cl !class_tab) then
-    class_tab := Bijint.add cl s !class_tab
+  if not (ClTypMap.mem cl !class_tab) then
+    class_tab := ClTypMap.add cl s !class_tab
 
 let add_new_coercion coe s =
   coercion_tab := CoeTypMap.add coe s !coercion_tab
@@ -144,17 +107,9 @@ let add_new_path x y =
 
 (* class_info : cl_typ -> int * cl_info_typ *)
 
-let class_info cl = Bijint.revmap cl !class_tab
+let class_info cl = ClTypMap.find cl !class_tab
 
-let class_exists cl = Bijint.mem cl !class_tab
-
-(* class_info_from_index : int -> cl_typ * cl_info_typ *)
-
-let class_info_from_index i = Bijint.map i !class_tab
-
-let cl_fun_index = fst(class_info CL_FUN)
-
-let cl_sort_index = fst(class_info CL_SORT)
+let class_exists cl = ClTypMap.mem cl !class_tab
 
 let coercion_info coe = CoeTypMap.find coe !coercion_tab
 
@@ -200,20 +155,18 @@ let subst_coe_typ subst t = subst_global_reference subst t
 (* class_of : Term.constr -> int *)
 
 let class_of env sigma t =
-  let (t, n1, i, u, args) =
+  let (t, n1, cl, u, args) =
     try
       let (cl, u, args) = find_class_type env sigma t in
-      let (i, { cl_param = n1 } ) = class_info cl in
-      (t, n1, i, u, args)
+      let { cl_param = n1 } = class_info cl in
+      (t, n1, cl, u, args)
     with Not_found ->
       let t = Tacred.hnf_constr env sigma t in
       let (cl, u, args) = find_class_type env sigma t in
-      let (i, { cl_param = n1 } ) = class_info cl in
-      (t, n1, i, u, args)
+      let { cl_param = n1 } = class_info cl in
+      (t, n1, cl, u, args)
   in
-  if Int.equal (List.length args) n1 then t, i else raise Not_found
-
-let inductive_class_of ind = fst (class_info (CL_IND ind))
+  if Int.equal (List.length args) n1 then t, cl else raise Not_found
 
 let class_args_of env sigma c = pi3 (find_class_type env sigma c)
 
@@ -238,26 +191,26 @@ let lookup_path_between_class (s,t) =
   ClPairMap.find (s,t) !inheritance_graph
 
 let lookup_path_to_fun_from_class s =
-  lookup_path_between_class (s,cl_fun_index)
+  lookup_path_between_class (s, CL_FUN)
 
 let lookup_path_to_sort_from_class s =
-  lookup_path_between_class (s,cl_sort_index)
+  lookup_path_between_class (s, CL_SORT)
 
 (* advanced path lookup *)
 
 let apply_on_class_of env sigma t cont =
   try
     let (cl,u,args) = find_class_type env sigma t in
-    let (i, { cl_param = n1 } ) = class_info cl in
+    let { cl_param = n1 } = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
-    t, cont i
+    t, cont cl
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
     let t = Tacred.hnf_constr env sigma t in
     let (cl, u, args) = find_class_type env sigma t in
-    let (i, { cl_param = n1 } ) = class_info cl in
+    let { cl_param = n1 } = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
-    t, cont i
+    t, cont cl
 
 let lookup_path_between env sigma (s,t) =
   let (s,(t,p)) =
@@ -287,25 +240,25 @@ let get_coercion_constructor env coe =
   | _ -> raise Not_found
 
 let lookup_pattern_path_between env (s,t) =
-  let i = inductive_class_of s in
-  let j = inductive_class_of t in
-  List.map (get_coercion_constructor env) (ClPairMap.find (i,j) !inheritance_graph)
+  List.map (get_coercion_constructor env)
+    (ClPairMap.find (CL_IND s, CL_IND t) !inheritance_graph)
 
 (* rajouter une coercion dans le graphe *)
 
-let path_printer : ((cl_index * cl_index) * inheritance_path -> Pp.t) ref =
+let path_printer : ((cl_typ * cl_typ) * inheritance_path -> Pp.t) ref =
   ref (fun _ -> str "<a class path>")
 
 let install_path_printer f = path_printer := f
 
 let print_path x = !path_printer x
 
-let path_comparator : (Environ.env -> Evd.evar_map -> cl_index -> inheritance_path -> inheritance_path -> bool) ref =
+let path_comparator :
+  (Environ.env -> Evd.evar_map -> cl_typ -> inheritance_path -> inheritance_path -> bool) ref =
   ref (fun _ _ _ _ _ -> false)
 
 let install_path_comparator f = path_comparator := f
 
-let compare_path p q = !path_comparator p q
+let compare_path env sigma cl p q = !path_comparator env sigma cl p q
 
 let warn_ambiguous_path =
   CWarnings.create ~name:"ambiguous-paths" ~category:"typechecker"
@@ -316,29 +269,29 @@ let warn_ambiguous_path =
          else
            str" is ambiguous with existing " ++ print_path (c, q) ++ str".") l)
 
-(* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
+(* add_coercion_in_graph : coe_index * cl_typ * cl_typ -> unit
                          coercion,source,target *)
 
-let different_class_params env i =
-  let ci = class_info_from_index i in
-    if (snd ci).cl_param > 0 then true
-    else
-      match fst ci with
-      | CL_IND i -> Environ.is_polymorphic env (GlobRef.IndRef i)
-      | CL_CONST c -> Environ.is_polymorphic env (GlobRef.ConstRef c)
-      | _ -> false
+let different_class_params env ci =
+  if (class_info ci).cl_param > 0 then true
+  else
+    match ci with
+    | CL_IND i -> Environ.is_polymorphic env (GlobRef.IndRef i)
+    | CL_CONST c -> Environ.is_polymorphic env (GlobRef.ConstRef c)
+    | _ -> false
 
 let add_coercion_in_graph env sigma (ic,source,target) =
   let old_inheritance_graph = !inheritance_graph in
-  let ambig_paths =
-    (ref [] : ((cl_index * cl_index) * inheritance_path * inheritance_path) list ref) in
+  let ambig_paths :
+    ((cl_typ * cl_typ) * inheritance_path * inheritance_path) list ref =
+    ref [] in
   let try_add_new_path (i,j as ij) p =
     (* If p is a cycle, we check whether p is definitionally an identity
        function or not. If it is not, we report p as an ambiguous inheritance
        path. *)
-    if Bijint.Index.equal i j && not (compare_path env sigma i p []) then
+    if cl_typ_eq i j && not (compare_path env sigma i p []) then
       ambig_paths := (ij,p,[])::!ambig_paths;
-    if not (Bijint.Index.equal i j) || different_class_params env i then
+    if not (cl_typ_eq i j) || different_class_params env i then
       match lookup_path_between_class ij with
       | q ->
         (* p has the same source and target classes as an existing path q. We
@@ -362,16 +315,16 @@ let add_coercion_in_graph env sigma (ic,source,target) =
   if try_add_new_path (source,target) [ic] then begin
     ClPairMap.iter
       (fun (s,t) p ->
-         if not (Bijint.Index.equal s t) then begin
-           if Bijint.Index.equal t source then begin
+         if not (cl_typ_eq s t) then begin
+           if cl_typ_eq t source then begin
              try_add_new_path1 (s,target) (p@[ic]);
              ClPairMap.iter
                (fun (u,v) q ->
-                  if not (Bijint.Index.equal u v) && Bijint.Index.equal u target then
+                  if not (cl_typ_eq u v) && cl_typ_eq u target then
                     try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;
-           if Bijint.Index.equal s target then try_add_new_path1 (source,t) (ic::p)
+           if cl_typ_eq s target then try_add_new_path1 (source,t) (ic::p)
          end)
       old_inheritance_graph
   end;
@@ -424,8 +377,6 @@ let add_class env sigma cl =
 let declare_coercion env sigma c =
   let () = add_class env sigma c.coercion_source in
   let () = add_class env sigma c.coercion_target in
-  let is, _ = class_info c.coercion_source in
-  let it, _ = class_info c.coercion_target in
   let xf =
     { coe_value = c.coercion_type;
       coe_local = c.coercion_local;
@@ -434,12 +385,11 @@ let declare_coercion env sigma c =
       coe_param = c.coercion_params;
     } in
   let () = add_new_coercion c.coercion_type xf in
-  add_coercion_in_graph env sigma (xf,is,it)
+  add_coercion_in_graph env sigma (xf, c.coercion_source, c.coercion_target)
 
 (* For printing purpose *)
-let pr_cl_index = Bijint.Index.print
-
-let classes () = Bijint.dom !class_tab
+let classes () =
+  List.rev (ClTypMap.fold (fun x _ acc -> x :: acc) !class_tab [])
 let coercions () =
   List.rev (CoeTypMap.fold (fun _ y acc -> y::acc) !coercion_tab [])
 

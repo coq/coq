@@ -976,15 +976,11 @@ open Coercionops
 
 let print_coercion_value v = Printer.pr_global v.coe_value
 
-let print_class i =
-  let cl,_ = class_info_from_index i in
-  pr_class cl
-
 let print_path ((i,j),p) =
   hov 2 (
     str"[" ++ hov 0 (prlist_with_sep pr_semicolon print_coercion_value p) ++
     str"] : ") ++
-  print_class i ++ str" >-> " ++ print_class j
+  pr_class i ++ str" >-> " ++ pr_class j
 
 let _ = Coercionops.install_path_printer print_path
 
@@ -997,25 +993,16 @@ let print_classes () =
 let print_coercions () =
   pr_sequence print_coercion_value (coercions())
 
-let index_of_class cl =
-  try
-    fst (class_info cl)
-  with Not_found ->
-    user_err ~hdr:"index_of_class"
-      (pr_class cl ++ spc() ++ str "not a defined class.")
-
 let print_path_between cls clt =
-  let i = index_of_class cls in
-  let j = index_of_class clt in
   let p =
     try
-      lookup_path_between_class (i,j)
+      lookup_path_between_class (cls, clt)
     with Not_found ->
       user_err ~hdr:"index_cl_of_id"
         (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt
          ++ str ".")
   in
-  print_path ((i,j),p)
+  print_path ((cls, clt), p)
 
 let print_canonical_projections env sigma grefs =
   let match_proj_gref ((x,y),c) gr =

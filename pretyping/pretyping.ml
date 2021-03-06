@@ -1398,7 +1398,7 @@ let understand_ltac flags env sigma lvar kind c =
   let (sigma, c, _) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
 
-let path_convertible env sigma i p q =
+let path_convertible env sigma cl p q =
   let open Coercionops in
   let mkGRef ref          = DAst.make @@ Glob_term.GRef(ref,None) in
   let mkGVar id           = DAst.make @@ Glob_term.GVar(id) in
@@ -1423,7 +1423,7 @@ let path_convertible env sigma i p q =
           p'
     | [] ->
       (* identity function for the class [i]. *)
-      let cl,params = class_info_from_index i in
+      let params = (class_info cl).cl_param in
       let clty =
         match cl with
         | CL_SORT -> mkGSort (Glob_term.UAnonymous {rigid=false})
@@ -1434,8 +1434,7 @@ let path_convertible env sigma i p q =
         | CL_PROJ p -> mkGRef (GlobRef.ConstRef (Projection.Repr.constant p))
       in
       let names =
-        List.init params.cl_param
-          (fun n -> Id.of_string ("x" ^ string_of_int n))
+        List.init params (fun n -> Id.of_string ("x" ^ string_of_int n))
       in
       List.fold_right
         (fun id t -> mkGLambda (Name id, mkGHole (), t)) names @@
