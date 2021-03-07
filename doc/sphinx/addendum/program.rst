@@ -135,17 +135,6 @@ use the :g:`dec` combinator to get the correct hypotheses as in:
 The :g:`let` tupling construct :g:`let (x1, ..., xn) := t in b` does not
 produce an equality, contrary to the let pattern construct
 :g:`let '(x1,..., xn) := t in b`.
-Also, :g:`term :>` explicitly asks the system to
-coerce term to its support type. It can be useful in notations, for
-example:
-
-.. coqtop:: all
-
-   Notation " x `= y " := (@eq _ (x :>) (y :>)) (only parsing).
-
-This notation denotes equality on subset types using equality on their
-support types, avoiding uses of proof-irrelevance that would come up
-when reasoning with equality on the subset types themselves.
 
 The next two commands are similar to their standard counterparts
 :cmd:`Definition` and :cmd:`Fixpoint`

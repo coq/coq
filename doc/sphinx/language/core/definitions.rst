@@ -42,7 +42,6 @@ Type cast
    term_cast ::= @term10 : @type
    | @term10 <: @type
    | @term10 <<: @type
-   | @term10 :>
 
 The expression :n:`@term10 : @type` is a type cast expression. It enforces
 the type of :n:`@term10` to be :n:`@type`.
@@ -52,9 +51,6 @@ to type check that :n:`@term10` has type :n:`@type` (see :tacn:`vm_compute`).
 
 :n:`@term10 <<: @type` specifies that compilation to OCaml will be used
 to type check that :n:`@term10` has type :n:`@type` (see :tacn:`native_compute`).
-
-:n:`@term10 :>` casts to the support type in Program mode.
-See :ref:`syntactic_control`.
 
 .. _gallina-definitions:
 

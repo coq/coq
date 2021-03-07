@@ -553,7 +553,6 @@ term_cast: [
 | term10 ":" type
 | term10 "<:" type
 | term10 "<<:" type
-| term10 ":>"
 ]
 
 term_match: [

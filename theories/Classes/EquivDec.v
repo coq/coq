@@ -43,7 +43,7 @@ Class EqDec A R {equiv : Equivalence R} :=
    take precedence of [==] defined in the type scope, hence we can have both
    at the same time. *)
 
-Notation " x == y " := (equiv_dec (x :>) (y :>)) (no associativity, at level 70) : equiv_scope.
+Notation " x == y " := (equiv_dec x y) (no associativity, at level 70) : equiv_scope.
 
 Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
   match x with

@@ -42,7 +42,7 @@ Class EqDec `(S : Setoid A) :=
    take precedence of [==] defined in the type scope, hence we can have both
    at the same time. *)
 
-Notation " x == y " := (equiv_dec (x :>) (y :>)) (no associativity, at level 70).
+Notation " x == y " := (equiv_dec x y) (no associativity, at level 70).
 
 Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
   match x with

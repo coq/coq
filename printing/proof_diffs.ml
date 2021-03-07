@@ -529,7 +529,6 @@ let match_goals ot nt =
       | CastVM a, CastVM a2
       | CastNative a, CastNative a2 ->
         constr_expr ogname a a2
-      | CastCoerce, CastCoerce -> ()
       | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (4)"))
     | CNotation (_,ntn,args), CNotation (_,ntn2,args2) ->
       constr_notation_substitution ogname args args2

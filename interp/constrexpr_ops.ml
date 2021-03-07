@@ -261,11 +261,9 @@ and cast_expr_eq c1 c2 = match c1, c2 with
 | CastConv t1, CastConv t2
 | CastVM t1, CastVM t2
 | CastNative t1, CastNative t2 -> constr_expr_eq t1 t2
-| CastCoerce, CastCoerce -> true
 | CastConv _, _
 | CastVM _, _
-| CastNative _, _
-| CastCoerce, _ -> false
+| CastNative _, _ -> false
 
 let constr_loc c = CAst.(c.loc)
 let cases_pattern_expr_loc cp = CAst.(cp.loc)
@@ -343,7 +341,6 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
     | CLetIn (na,a,t,b) ->
       f (Name.fold_right g (na.CAst.v) n) (Option.fold_left (f n) (f n acc a) t) b
     | CCast (a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
-    | CCast (a,CastCoerce) -> f n acc a
     | CNotation (_,_,(l,ll,bl,bll)) ->
       (* The following is an approximation: we don't know exactly if
          an ident is binding nor to which subterms bindings apply *)
