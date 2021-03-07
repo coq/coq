@@ -283,25 +283,27 @@ create_opam() {
 
     echo "$1_coq_commit_long = $COQ_HASH_LONG"
 
-    _RES=0
-    /usr/bin/time -o "$log_dir/coq.$RUNNER.1.time" --format="%U %M %F" \
-                  perf stat -e instructions:u,cycles:u -o "$log_dir/coq.$RUNNER.1.perf" \
-                  opam pin add -y -b -j "$number_of_processors" --kind=path coq.dev . \
-                  3>$log_dir/coq.$RUNNER.opam_install.1.stdout.log 1>&3 \
-                  4>$log_dir/coq.$RUNNER.opam_install.1.stderr.log 2>&4 || \
-        _RES=$?
-    if [ $_RES = 0 ]; then
-        echo "Coq ($RUNNER) installed successfully"
-    else
-        echo "ERROR: \"opam install coq.$coq_opam_version\" has failed (for the $RUNNER commit = $COQ_HASH_LONG)."
-        exit 1
-    fi
+    for package in coq-core coq-stdlib coq; do
+        _RES=0
+        /usr/bin/time -o "$log_dir/$package.$RUNNER.1.time" --format="%U %M %F" \
+                      perf stat -e instructions:u,cycles:u -o "$log_dir/$package.$RUNNER.1.perf" \
+                      opam pin add -y -b -j "$number_of_processors" --kind=path $package.dev . \
+                      3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
+                      4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
+            _RES=$?
+        if [ $_RES = 0 ]; then
+            echo "$package ($RUNNER) installed successfully"
+        else
+            echo "ERROR: \"opam install $package.$coq_opam_version\" has failed (for the $RUNNER commit = $COQ_HASH_LONG)."
+            exit 1
+        fi
 
-    # we don't multi compile coq for now (TODO some other time)
-    # the render needs all the files so copy them around
-    for it in $(seq 2 $num_of_iterations); do
-        cp "$log_dir/coq.$RUNNER.1.time" "$log_dir/coq.$RUNNER.$it.time"
-        cp "$log_dir/coq.$RUNNER.1.perf" "$log_dir/coq.$RUNNER.$it.perf"
+        # we don't multi compile coq for now (TODO some other time)
+        # the render needs all the files so copy them around
+        for it in $(seq 2 $num_of_iterations); do
+            cp "$log_dir/$package.$RUNNER.1.time" "$log_dir/$package.$RUNNER.$it.time"
+            cp "$log_dir/$package.$RUNNER.1.perf" "$log_dir/$package.$RUNNER.$it.perf"
+        done
     done
 
 }
@@ -327,7 +329,7 @@ fi
 export TIMING=1
 
 # The following variable will be set in the following cycle:
-installable_coq_opam_packages=coq
+installable_coq_opam_packages="coq-core coq-stdlib coq"
 
 for coq_opam_package in $sorted_coq_opam_packages; do
 
