@@ -2747,6 +2747,7 @@ SPLICE: [
 | clause_dft_all
 | or_and_intropattern_loc
 | eqn_ipat
+| conversion
 ] (* end SPLICE *)
 
 RENAME: [

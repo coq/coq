@@ -1232,11 +1232,6 @@ lident: [
 | ident      (* Ltac2 plugin *)
 ]
 
-destruction_arg: [
-| natural
-| one_term_with_bindings
-]
-
 occurrences: [
 | "at" occs_nums
 | "in" goal_occurrences
@@ -1966,10 +1961,6 @@ one_term_with_bindings: [
 | OPT ">" one_term OPT ( "with" bindings )
 ]
 
-conversion: [
-| one_term OPT ( OPT ( "at" occs_nums ) "with" one_term )
-]
-
 induction_clause_list: [
 | LIST1 induction_clause SEP "," OPT ( "using" one_term OPT ( "with" bindings ) ) OPT opt_clause
 ]
@@ -1980,7 +1971,7 @@ induction_clause: [
 
 destruction_arg: [
 | natural
-| constr_with_bindings_arg
+| one_term_with_bindings
 ]
 
 opt_clause: [
