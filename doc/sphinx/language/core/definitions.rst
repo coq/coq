@@ -31,43 +31,48 @@ for :n:`let @ident := fun {+ @binder} => @term__1 in @term__2`.
    single: ... <: ...
    single: ... <<: ...
 
+.. _type-cast:
+
 Type cast
 ---------
 
 .. insertprodn term_cast term_cast
 
 .. prodn::
-   term_cast ::= @term10 <: @type
+   term_cast ::= @term10 : @type
+   | @term10 <: @type
    | @term10 <<: @type
-   | @term10 : @type
    | @term10 :>
 
 The expression :n:`@term10 : @type` is a type cast expression. It enforces
 the type of :n:`@term10` to be :n:`@type`.
 
-:n:`@term10 <: @type` locally sets up the virtual machine for checking that
-:n:`@term10` has type :n:`@type`.
+:n:`@term10 <: @type` specifies that the virtual machine will be used
+to type check that :n:`@term10` has type :n:`@type` (see :tacn:`vm_compute`).
 
-:n:`@term10 <<: @type` uses native compilation for checking that :n:`@term10`
-has type :n:`@type`.
+:n:`@term10 <<: @type` specifies that compilation to OCaml will be used
+to type check that :n:`@term10` has type :n:`@type` (see :tacn:`native_compute`).
+
+:n:`@term10 :>` casts to the support type in Program mode.
+See :ref:`syntactic_control`.
 
 .. _gallina-definitions:
 
 Top-level definitions
 ---------------------
 
-Definitions extend the global environment with associations of names to terms.
+Definitions extend the global environment by associating names to terms.
 A definition can be seen as a way to give a meaning to a name or as a
 way to abbreviate a term. In any case, the name can later be replaced at
 any time by its definition.
 
 The operation of unfolding a name into its definition is called
-:math:`\delta`-conversion (see Section :ref:`delta-reduction`). A
-definition is accepted by the system if and only if the defined term is
+:term:`delta-reduction`.
+A definition is accepted by the system if and only if the defined term is
 well-typed in the current context of the definition and if the name is
 not already used. The name defined by the definition is called a
-*constant* and the term it refers to is its *body*. A definition has a
-type which is the type of its body.
+:gdef:`constant` and the term it refers to is its :gdef:`body`. A definition has
+a type, which is the type of its :term:`body`.
 
 A formal presentation of constants and environments is given in
 Section :ref:`typing-rules`.
@@ -96,7 +101,7 @@ Section :ref:`typing-rules`.
 
    If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
-   In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
+   In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
 
    The form :n:`Definition @ident : @type := @term` checks that the type of :n:`@term`
@@ -151,7 +156,7 @@ The basic assertion command is:
    over a mutually inductive assumption, or that assert mutually dependent
    statements in some mutual co-inductive type. It is equivalent to
    :cmd:`Fixpoint` or :cmd:`CoFixpoint` but using tactics to build the proof of
-   the statements (or the body of the specification, depending on the point of
+   the statements (or the :term:`body` of the specification, depending on the point of
    view). The inductive or co-inductive types on which the induction or
    coinduction has to be done is assumed to be non ambiguous and is guessed by
    the system.
@@ -202,10 +207,10 @@ the proof and adds it to the global environment.
       statements still to be proved. Nonetheless, this practice is discouraged
       and may stop working in future versions.
 
-   #. Proofs ended by :cmd:`Qed` are declared opaque. Their content cannot be
-      unfolded (see :ref:`performingcomputations`), thus
-      realizing some form of *proof-irrelevance*. To be able to unfold a
-      proof, the proof should be ended by :cmd:`Defined`.
+   #. Proofs ended by :cmd:`Qed` are declared :term:`opaque`. Their content cannot be
+      unfolded (see :ref:`applyingconversionrules`), thus
+      realizing some form of *proof-irrelevance*.
+      Proofs that end with :cmd:`Defined` can be unfolded.
 
    #. :cmd:`Proof` is recommended but can currently be omitted. On the opposite
       side, :cmd:`Qed` (or :cmd:`Defined`) is mandatory to validate a proof.

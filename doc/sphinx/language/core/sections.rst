@@ -55,7 +55,7 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    :name: Let; Let Fixpoint; Let CoFixpoint
 
    These are similar to :cmd:`Definition`, :cmd:`Fixpoint` and :cmd:`CoFixpoint`, except that
-   the declared constant is local to the current section.
+   the declared :term:`constant` is local to the current section.
    When the section is closed, all persistent
    definitions and theorems within it that depend on the constant
    will be wrapped with a :n:`@term_let` with the same declaration.

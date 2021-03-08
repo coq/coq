@@ -155,7 +155,7 @@ When the proof is completed, you can exit proof mode with commands such as
    Passes a completed :term:`proof term` to Coq's kernel
    to check that the proof term is :term:`well-typed` and
    to verify that its type matches the theorem statement.  If it's verified, the
-   proof term is added to the global environment as an opaque constant
+   proof term is added to the global environment as an :term:`opaque` constant
    using the declared name from the original goal.
 
    It's very rare for a proof term to fail verification.  Generally this
@@ -190,9 +190,10 @@ When the proof is completed, you can exit proof mode with commands such as
 
 .. cmd:: Defined {? @ident }
 
-   Similar to :cmd:`Qed` and :cmd:`Save`, except the proof is made *transparent*, which means
+   Similar to :cmd:`Qed` and :cmd:`Save`, except the proof is made
+   :term:`transparent`, which means
    that its content can be explicitly used for type checking and that it can be
-   unfolded in conversion tactics (see :ref:`performingcomputations`,
+   unfolded in conversion tactics (see :ref:`applyingconversionrules`,
    :cmd:`Opaque`, :cmd:`Transparent`).  If :token:`ident` is specified,
    the proof is defined with the given name, which overrides any name
    provided by the :cmd:`Theorem` command or its variants.
@@ -845,7 +846,7 @@ Requesting information
 .. cmd:: Show Existentials
 
    Displays all open goals / existential variables in the current proof
-   along with the type and the context of each variable.
+   along with the context and type of each variable.
 
 .. cmd:: Show Match @qualid
 

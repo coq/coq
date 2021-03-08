@@ -17,7 +17,7 @@ and :math:`id` an identifier, then :math:`p′.id` is an access path.
 
 
 **Structure element.** A structure element is denoted by :math:`e` and
-is either a definition of a constant, an assumption, a definition of
+is either a definition of a :term:`constant`, an assumption, a definition of
 an inductive, a definition of a module, an alias of a module or a module
 type abbreviation.
 
@@ -134,7 +134,7 @@ is also used to terminate :ref:`Sections<section-mechanism>`.
 :n:`End @ident` closes the interactive module or module type :token:`ident`.
 If the module type was given, the command verifies that the content of the module
 matches the module type.  If the module is not a
-functor, its components (constants, inductive types, submodules etc.)
+functor, its components (:term:`constants <constant>`, inductive types, submodules etc.)
 are now available through the dot notation.
 
 .. exn:: No such label @ident.
@@ -170,7 +170,7 @@ are now available through the dot notation.
      hints and the like valid for :n:`@ident__1` are the ones defined in :n:`@module_type`
      rather then those defined in :n:`@ident__2` (or the module body).
   #. Within an interactive module type definition, the :cmd:`Parameter` command declares a
-     constant instead of definining a new axiom (which it does when not in a module type definition).
+     :term:`constant` instead of definining a new axiom (which it does when not in a module type definition).
   #. Assumptions such as :cmd:`Axiom` that include the :n:`Inline` clause will be automatically
      expanded when the functor is applied, except when the function application is prefixed by ``!``.
 
@@ -250,14 +250,14 @@ are now available through the dot notation.
    make only those names available with short names, not other names
    defined in the module nor will it activate other features.
 
-   The names to import may be constants, inductive types and
+   The names to import may be :term:`constants <constant>`, inductive types and
    constructors, and notation aliases (for instance, Ltac definitions
    cannot be selectively imported). If they are from an inner module
    to the one being imported, they must be prefixed by the inner path.
 
    The name of an inductive type may also be followed by ``(..)`` to
    import it, its constructors and its eliminators if they exist. For
-   this purpose "eliminator" means a constant in the same module whose
+   this purpose "eliminator" means a :term:`constant` in the same module whose
    name is the inductive type's name suffixed by one of ``_sind``,
    ``_ind``, ``_rec`` or ``_rect``.
 
@@ -332,7 +332,7 @@ Examples
        Defined.
        End M.
 
-Inside a module one can define constants, prove theorems and do anything
+Inside a module one can define :term:`constants <constant>`, prove theorems and do anything
 else that can be done in the toplevel. Components of a closed
 module can be accessed using the dot notation:
 
@@ -455,9 +455,9 @@ Typing Modules
 
 In order to introduce the typing system we first slightly extend the syntactic
 class of terms and environments given in section :ref:`The-terms`. The
-environments, apart from definitions of constants and inductive types now also
-hold any other structure elements. Terms, apart from variables, constants and
-complex terms, include also access paths.
+environments, apart from definitions of :term:`constants <constant>` and inductive types now also
+hold any other structure elements. Terms, apart from variables, :term:`constants <constant>` and
+complex terms, also include access paths.
 
 We also need additional typing judgments:
 

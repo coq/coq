@@ -47,7 +47,7 @@ Rewriting with Leibniz and setoid equality
    Replaces subterms with other subterms that have been proven to be equal.
    The type of :n:`@one_term` must have the form:
 
-      :n:`{? forall {+ (x__i: A__i) } , } EQ @term__1 @term__2`
+      :n:`{? forall @open_binders , } EQ @term__1 @term__2`
 
    .. todo :term:`Leibniz equality` does not work with Sphinx 2.3.1. It does with Sphinx 3.0.3.
 
@@ -55,14 +55,11 @@ Rewriting with Leibniz and setoid equality
    Note that :n:`eq @term__1 @term__2` is typically written with the infix notation
    :n:`@term__1 = @term__2`.  You must `Require Setoid` to use the tactic
    with a setoid equality or with :ref:`setoid rewriting <generalizedrewriting>`.
-   In the general form, any :n:`@binder` may be used, not just :n:`(x__i: A__i)`.
-
-   .. todo doublecheck the @binder comment is correct.
 
    :n:`rewrite @one_term` finds subterms matching :n:`@term__1` in the goal,
    and replaces them with :n:`@term__2` (or the reverse if `<-` is given).
    Some of the variables :g:`x`\ :sub:`i` are solved by unification,
-   and some of the types :n:`A__1, ..., A__n` may become new
+   and some of the types :n:`A__1, …, A__n` may become new
    subgoals.  :tacn:`rewrite` won't find occurrences inside `forall` that refer
    to variables bound by the `forall`; use the more advanced :tacn:`setoid_rewrite`
    if you want to find such occurrences.
@@ -315,7 +312,7 @@ Rewriting with definitional equality
 .. tacn:: change {? @one_term__from {? at @occs_nums } with } @one_term__to {? @occurrences }
 
    Replaces terms with other :term:`convertible` terms.
-   If :n:`@one_term__from` is not specified, then :n:`@one_term__from` replaces the conclusion and/or
+   If :n:`@one_term__from` is not specified, then :n:`@one_term__to` replaces the conclusion and/or
    the specified hypotheses.  If :n:`@one_term__from` is specified, the tactic replaces occurrences
    of :n:`@one_term__to` within the conclusion and/or the specified hypotheses.
 
@@ -326,8 +323,8 @@ Rewriting with definitional equality
      whose value which will substituted for `x` in :n:`@one_term__to`, such as in
      `change (f ?x ?y) with (g (x, y))` or `change (fun x => ?f x) with f`.
 
-     The `at ... with ...` form is deprecated in 8.14; use `with ... at ...` instead.
-     For `at ... with ... in H |-`, use `with ... in H at ... |-`.
+     The `at … with …` form is deprecated in 8.14; use `with … at …` instead.
+     For `at … with … in H |-`, use `with … in H at … |-`.
 
    :n:`@occurrences`
      If `with` is not specified, :n:`@occurrences` must only specify
@@ -346,7 +343,7 @@ Rewriting with definitional equality
       make some proof steps explicit when refactoring a proof script
       to make it readable.
 
-   .. seealso:: :ref:`Performing computations <performingcomputations>`
+   .. seealso:: :ref:`applyingconversionrules`
 
 .. tacn:: change_no_check {? @one_term__from {? at @occs_nums } with } @one_term__to {? @occurrences }
 
@@ -384,152 +381,392 @@ Rewriting with definitional equality
            exact H.
          Qed.
 
-.. _performingcomputations:
+.. _applyingconversionrules:
 
-Performing computations
----------------------------
+Applying conversion rules
+-------------------------
 
-.. insertprodn red_expr pattern_occs
+These tactics apply reductions and expansions, replacing :term:`convertible` subterms
+with others that are equal by definition in |CiC|.
+They implement different specialized uses of the
+:tacn:`change` tactic.  Other ways to apply these reductions are through
+the :cmd:`Eval` command, the `Eval` clause in the :cmd:`Definition`/:cmd:`Example`
+command and the :tacn:`eval` tactic.
 
-.. prodn::
-   red_expr ::= red
-   | hnf
-   | simpl {? @delta_flag } {? {| @reference_occs | @pattern_occs } }
-   | cbv {? @strategy_flag }
-   | cbn {? @strategy_flag }
-   | lazy {? @strategy_flag }
-   | compute {? @delta_flag }
-   | vm_compute {? {| @reference_occs | @pattern_occs } }
-   | native_compute {? {| @reference_occs | @pattern_occs } }
-   | unfold {+, @reference_occs }
-   | fold {+ @one_term }
-   | pattern {+, @pattern_occs }
-   | @ident
-   delta_flag ::= {? - } [ {+ @reference } ]
-   strategy_flag ::= {+ @red_flag }
-   | @delta_flag
-   red_flag ::= beta
-   | iota
-   | match
-   | fix
-   | cofix
-   | zeta
-   | delta {? @delta_flag }
-   reference_occs ::= @reference {? at @occs_nums }
-   pattern_occs ::= @one_term {? at @occs_nums }
+Tactics described in this section include:
 
-This set of tactics implements different specialized usages of the
-tactic :tacn:`change`.
+- :tacn:`lazy` and :tacn:`cbv`, which allow precise selection of which reduction
+  rules to apply
+- :tacn:`simpl` and :tacn:`cbn`, which are "clever" tactics meant to give the most
+  readable result
+- :tacn:`hnf` and :tacn:`red`, which apply reduction rules only to the head of the
+  term
+- :tacn:`vm_compute` and :tacn:`native_compute`, which are performance-oriented.
 
-All conversion tactics (including :tacn:`change`) can be parameterized by the
-parts of the goal where the conversion can occur. This is done using
-*goal clauses* which consists in a list of hypotheses and, optionally,
-of a reference to the conclusion of the goal. For defined hypothesis
-it is possible to specify if the conversion should occur on the type
-part, the body part or both (default).
+Conversion tactics, with two exceptions, only change the types and contexts
+of existential variables
+and leave the proof term unchanged.  (The :tacn:`vm_compute` and :tacn:`native_compute`
+tactics change existential variables in a way similar to other conversions while
+also adding a single explicit cast to the proof term to tell the kernel
+which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
-Goal clauses are written after a conversion tactic (tactics :tacn:`set`,
-:tacn:`rewrite`, :tacn:`replace` and :tacn:`autorewrite` also use goal
-clauses) and are introduced by the keyword `in`. If no goal clause is
-provided, the default is to perform the conversion only in the
-conclusion.
+   .. coqtop:: all
 
-For backward compatibility, the notation :n:`in {+ @ident}` performs
-the conversion in hypotheses :n:`{+ @ident}`.
+      Goal 3 + 4 = 7.
+      Show Proof.
+      Show Existentials.
+      cbv.
+      Show Proof.
+      Show Existentials.
 
-.. tacn:: cbv {? @strategy_flag }
-          lazy {? @strategy_flag }
-   :name: cbv; lazy
+   .. coqtop:: none
 
-   These parameterized reduction tactics apply to any goal and perform
-   the normalization of the goal according to the specified flags. In
-   correspondence with the kinds of reduction considered in Coq namely
-   :math:`\beta` (reduction of functional application), :math:`\delta`
-   (unfolding of transparent constants, see :ref:`vernac-controlling-the-reduction-strategies`),
-   :math:`\iota` (reduction of
-   pattern matching over a constructed term, and unfolding of :g:`fix` and
-   :g:`cofix` expressions) and :math:`\zeta` (contraction of local definitions), the
-   flags are either ``beta``, ``delta``, ``match``, ``fix``, ``cofix``,
-   ``iota`` or ``zeta``. The ``iota`` flag is a shorthand for ``match``, ``fix``
-   and ``cofix``. The ``delta`` flag itself can be refined into
-   :n:`delta [ {+ @qualid} ]` or :n:`delta - [ {+ @qualid} ]`, restricting in the first
-   case the constants to unfold to the constants listed, and restricting in the
-   second case the constant to unfold to all but the ones explicitly mentioned.
-   Notice that the ``delta`` flag does not apply to variables bound by a let-in
-   construction inside the :n:`@term` itself (use here the ``zeta`` flag). In
-   any cases, opaque constants are not unfolded (see :ref:`vernac-controlling-the-reduction-strategies`).
+      Abort.
 
-   Normalization according to the flags is done by first evaluating the
-   head of the expression into a *weak-head* normal form, i.e. until the
-   evaluation is blocked by a variable (or an opaque constant, or an
-   axiom), as e.g. in :g:`x u1 ... un` , or :g:`match x with ... end`, or
-   :g:`(fix f x {struct x} := ...) x`, or is a constructed form (a
-   :math:`\lambda`-expression, a constructor, a cofixpoint, an inductive type, a
-   product type, a sort), or is a redex that the flags prevent to reduce. Once a
+.. tacn:: lazy {? @reductions } @simple_occurrences
+          cbv {? @reductions } @simple_occurrences
+
+   .. insertprodn reductions delta_reductions
+
+   .. prodn::
+      reductions ::= {+ @reduction }
+      | @delta_reductions
+      reduction ::= beta
+      | delta {? @delta_reductions }
+      | match
+      | fix
+      | cofix
+      | iota
+      | zeta
+      delta_reductions ::= {? - } [ {+ @reference } ]
+
+   Normalize the goal as specified by :n:`@reductions`.  If no reductions are
+   specified by name, all reductions are applied.  If any reductions are specified by name,
+   then only the named reductions are applied.  The reductions include:
+
+   `beta`
+     :term:`beta-reduction` of functional application
+
+   :n:`delta {? @delta_reductions }`
+     :term:`delta-reduction`: unfolding of transparent constants, see :ref:`controlling-the-reduction-strategies`.
+     The form in :n:`@reductions` without the keyword `delta` includes `beta`,
+     `iota` and `zeta` reductions in addition to `delta` using the given :n:`@delta_reductions`.
+
+     :n:`{? - } [ {+ @reference } ]`
+       without the `-`, limits delta unfolding to the listed constants.  If the
+       `-` is present,
+       unfolding is applied to all constants that are not listed.
+       Notice that the ``delta`` doesn't apply to variables bound by a let-in
+       construction inside the term itself (use ``zeta`` to inline these).
+       Opaque constants are never unfolded except by :tacn:`vm_compute` and
+       :tacn:`native_compute`
+       (see `#4476 <https://github.com/coq/coq/issues/4476>`_ and
+       :ref:`controlling-the-reduction-strategies`).
+
+   `iota`
+     :term:`iota-reduction` of pattern matching (`match`) over a constructed term and reduction
+     of :g:`fix` and :g:`cofix` expressions.  Shorthand for `match fix cofix`.
+
+   `zeta`
+      :term:`zeta-reduction`: reduction of :ref:`let-in definitions <let-in>`
+
+   Normalization is done by first evaluating the
+   head of the expression into :gdef:`weak-head normal form`, i.e. until the
+   evaluation is blocked by a variable, an opaque constant, an
+   axiom, such as in :n:`x u__1 … u__n`, :g:`match x with … end`,
+   :g:`(fix f x {struct x} := …) x`, a constructed form (a
+   :math:`\lambda`-expression, constructor, cofixpoint, inductive type,
+   product type or sort) or a redex for which flags prevent reduction of the redex. Once a
    weak-head normal form is obtained, subterms are recursively reduced using the
    same strategy.
 
-   Reduction to weak-head normal form can be done using two strategies:
-   *lazy* (``lazy`` tactic), or *call-by-value* (``cbv`` tactic). The lazy
-   strategy is a call-by-need strategy, with sharing of reductions: the
+   There are two strategies for reduction to weak-head normal form:
+   *lazy* (the :tacn:`lazy` tactic), or *call-by-value* (the :tacn:`cbv` tactic).
+   The lazy strategy is a
+   `call by need <https://en.wikipedia.org/wiki/Evaluation_strategy#Call_by_need>`_
+   strategy, with sharing of reductions: the
    arguments of a function call are weakly evaluated only when necessary,
    and if an argument is used several times then it is weakly computed
    only once. This reduction is efficient for reducing expressions with
    dead code. For instance, the proofs of a proposition :g:`exists x. P(x)`
-   reduce to a pair of a witness :g:`t`, and a proof that :g:`t` satisfies the
+   reduce to a pair of a witness :g:`t` and a proof that :g:`t` satisfies the
    predicate :g:`P`. Most of the time, :g:`t` may be computed without computing
    the proof of :g:`P(t)`, thanks to the lazy strategy.
 
    The call-by-value strategy is the one used in ML languages: the
    arguments of a function call are systematically weakly evaluated
-   first. Despite the lazy strategy always performs fewer reductions than
+   first. The lazy strategy is similar to how Haskell reduces terms.
+   Although the lazy strategy always does fewer reductions than
    the call-by-value strategy, the latter is generally more efficient for
    evaluating purely computational expressions (i.e. with little dead code).
 
-.. tacv:: compute
-          cbv
-   :name: compute; _
+   .. tacn:: compute {? @delta_reductions } @simple_occurrences
 
-   These are synonyms for ``cbv beta delta iota zeta``.
+      A variant form of :tacn:`cbv`.
 
-.. tacv:: lazy
+   :opt:`Debug` ``"Cbv"`` makes :tacn:`cbv` (and its derivative :tacn:`compute`) print
+   information about the constants it encounters and the unfolding decisions it
+   makes.
 
-   This is a synonym for ``lazy beta delta iota zeta``.
+.. tacn:: simpl {? @delta_reductions } {? {| @reference_occs | @pattern_occs } } @simple_occurrences
 
-.. tacv:: compute [ {+ @qualid} ]
-          cbv [ {+ @qualid} ]
+   .. insertprodn reference_occs pattern_occs
 
-   These are synonyms of :n:`cbv beta delta {+ @qualid} iota zeta`.
+   .. prodn::
+      reference_occs ::= @reference {? at @occs_nums }
+      pattern_occs ::= @one_term {? at @occs_nums }
 
-.. tacv:: compute - [ {+ @qualid} ]
-          cbv - [ {+ @qualid} ]
+   Reduces a term to
+   something still readable instead of fully normalizing it. It performs
+   a sort of strong normalization with two key differences:
 
-   These are synonyms of :n:`cbv beta delta -{+ @qualid} iota zeta`.
+   + It unfolds constants only if they lead to an ι-reduction,
+     i.e. reducing a match or unfolding a fixpoint.
+   + When reducing a constant unfolding to (co)fixpoints, the tactic
+     uses the name of the constant the (co)fixpoint comes from instead of
+     the (co)fixpoint definition in recursive calls.
 
-.. tacv:: lazy [ {+ @qualid} ]
-          lazy - [ {+ @qualid} ]
+   :n:`@simple_occurrences`
+     Permits selecting whether to reduce the conclusion and/or one or more
+     hypotheses.  While the `at` option of :n:`@occurrences` is not allowed here,
+     :n:`@reference_occs` and :n:`@pattern_occs` have a somewhat less
+     flexible `at` option for selecting specific occurrences.
 
-   These are respectively synonyms of :n:`lazy beta delta {+ @qualid} iota zeta`
-   and :n:`lazy beta delta -{+ @qualid} iota zeta`.
+   :tacn:`simpl` can unfold transparent constants whose name can be reused in
+   recursive calls as well as those designated by :cmd:`Arguments` :n:`@reference … /`
+   commands. For instance, a constant :g:`plus' := plus` may be unfolded and
+   reused in recursive calls, but a constant such as :g:`succ := plus (S O)` is
+   not unfolded unless it was specifically designated in an :cmd:`Arguments`
+   command such as :n:`Arguments succ /.`.
 
-.. tacv:: vm_compute
-   :name: vm_compute
+   :n:`{| @reference_occs | @pattern_occs }` can limit the application of :tacn:`simpl`
+   to:
 
-   This tactic evaluates the goal using the optimized call-by-value evaluation
+   - applicative subterms whose :term:`head` is the
+     constant :n:`@qualid` or is the constant used
+     in the notation :n:`@string` (see :n:`@reference`)
+   - subterms matching a pattern :n:`@one_term`
+
+.. tacn:: cbn {? @reductions } @simple_occurrences
+
+   :tacn:`cbn` was intended to be a more principled, faster and more
+   predictable replacement for :tacn:`simpl`.
+
+   The main difference between :tacn:`cbn` and :tacn:`simpl` is that
+   :tacn:`cbn` may unfold constants even when they cannot be reused in recursive calls:
+   in the previous example, :g:`succ t` is reduced to :g:`S t`.
+
+   :opt:`Debug` ``"RAKAM"`` makes :tacn:`cbn` print various debugging information.
+   ``RAKAM`` is the Refolding Algebraic Krivine Abstract Machine.
+
+.. tacn:: hnf @simple_occurrences
+
+   Replaces the current goal with its
+   weak-head normal form according to the βδιζ-reduction rules, i.e. it
+   reduces the :term:`head` of the goal until it becomes a product or an
+   irreducible term. All inner βι-redexes are also reduced.  While :tacn:`hnf`
+   behaves similarly to :tacn:`simpl` and :tacn:`cbn`, unlike them, it does not
+   recurse into subterms.
+   The behavior of :tacn:`hnf` can be tuned using the :cmd:`Arguments` command.
+
+   Example: The term :g:`fun n : nat => S n + S n` is not reduced by :n:`hnf`.
+
+   .. note::
+      The δ rule only applies to transparent constants
+      (see :ref:`controlling-the-reduction-strategies` on transparency and opacity).
+
+.. tacn:: red @simple_occurrences
+
+   βιζ-reduces the constant at the head of `T` (which may be called
+   the :gdef:`head constant`; :gdef:`head` means the beginning
+   of the term), if possible,
+   in the selected hypotheses and/or the goal, which must have the form:
+
+     :n:`{? forall @open_binders,} T`
+
+   (where `T` does not begin with a `forall`) to :n:`c t__1 … t__n`
+   where :g:`c` is a constant.
+   If :g:`c` is transparent then it replaces :g:`c` with its
+   definition and reduces again until no further reduction is possible.
+
+   .. exn:: No head constant to reduce.
+      :undocumented:
+
+.. tacn:: unfold {+, @reference_occs } {? @occurrences }
+
+   Applies :term:`delta-reduction` to
+   the constants specified by each :n:`@reference_occs`.
+   The selected hypotheses and/or goals are then reduced to βιζ-normal form.
+   Use the general reduction tactics if you want to only apply the
+   δ rule, for example :tacn:`cbv` :n:`delta [ @reference ]`.
+
+   :n:`@reference_occs`
+     If :n:`@reference` is a :n:`@qualid`, it must be a defined transparent
+     constant or local definition (see :ref:`gallina-definitions` and
+     :ref:`controlling-the-reduction-strategies`).
+
+     If :n:`@reference` is a :n:`@string {? @scope_key}`, the :n:`@string` is
+     the discriminating
+     symbol of a notation (e.g. "+") or an expression defining a notation (e.g. `"_ +
+     _"`) and the notation is an application whose head symbol
+     is an unfoldable constant, then the tactic unfolds it.
+
+   :n:`@occurrences`
+     If :n:`@occurrences` is specified,
+     the specified occurrences will be replaced in the selected hypotheses and/or goal.
+     Otherwise every occurrence of the constants in the goal is replaced.
+     If multiple :n:`@reference_occs` are given, any `at` clauses must be
+     in the :n:`@reference_occs` rather than in :n:`@occurrences`.
+
+   .. exn:: Cannot turn {| inductive | constructor } into an evaluable reference.
+
+      Occurs when trying to unfold something that is
+      defined as an inductive type (or constructor) and not as a
+      definition.
+
+      .. example::
+
+         .. coqtop:: abort all fail
+
+            Goal 0 <= 1.
+            unfold le.
+
+   .. exn:: @ident is opaque.
+
+      Raised if you are trying to unfold a definition
+      that has been marked opaque.
+
+      .. example::
+
+         .. coqtop:: abort all fail
+
+            Opaque Nat.add.
+            Goal 1 + 0 = 1.
+            unfold Nat.add.
+
+      .. exn:: Bad occurrence number of @qualid.
+         :undocumented:
+
+      .. exn:: @qualid does not occur.
+         :undocumented:
+
+.. tacn:: fold {+ @one_term } @simple_occurrences
+
+   First, this tactic reduces each :n:`@one_term` using the :tacn:`red` tactic.
+   Then, every occurrence of the resulting terms in the selected hypotheses and/or
+   goal will be replaced by its associated :n:`@one_term`. This tactic is particularly
+   useful for
+   reversing undesired unfoldings, which may make the goal very hard to read.
+   The undesired unfoldings may be due to the limited capabilities of
+   other reduction tactics.
+   On the other hand, when an unfolded function applied to its argument has been
+   reduced, the :tacn:`fold` tactic doesn't do anything.
+
+   :tacn:`fold` :n:`@one_term__1 @one_term__2` is equivalent to
+   :n:`fold @one_term__1; fold @one_term__2`.
+
+   .. example:: :tacn:`fold` doesn't always undo :tacn:`unfold`
+
+      .. coqtop:: all
+
+         Goal ~0=0.
+         unfold not.
+
+      This :tacn:`fold` doesn't undo the preceeding :tacn:`unfold` (it makes no change):
+
+      .. coqtop:: all
+
+         fold not.
+
+      However, this :tacn:`pattern` followed by :tacn:`fold` does:
+
+      .. coqtop:: all abort
+
+         pattern (0 = 0).
+         fold not.
+
+   .. example:: Use :tacn:`fold` to reverse unfolding of `fold_right`
+
+      .. coqtop:: none
+
+         Require Import Coq.Lists.List.
+         Local Open Scope list_scope.
+
+      .. coqtop:: all abort
+
+         Goal forall x xs, fold_right and True (x::xs).
+         red.
+         fold (fold_right and True).
+
+.. tacn:: pattern {+, @pattern_occs } {? @occurrences }
+
+   Performs beta-expansion (the inverse of :term:`beta-reduction`) for the
+   selected hypotheses and/or goals.
+   The :n:`@one_term`\s in :n:`@pattern_occs` must be free subterms in the selected items.
+   The expansion is done for each selected item :g:`T`
+   for a set of :n:`@one_term`\s in the :n:`@pattern_occs` by:
+
+   + replacing all selected occurrences of the :n:`@one_term`\s in :g:`T` with fresh variables
+   + abstracting these variables
+   + applying the abstracted goal to the :n:`@one_term`\s
+
+   For instance, if the current goal :g:`T` is expressible as :n:`φ(t__1 … t__n)`
+   where the notation captures all the instances of the :n:`t__i` in φ, then :tacn:`pattern`
+   :n:`t__1, …, t__n` generates the equivalent goal
+   :n:`(fun (x__1:A__1 … (x__n:A__n) => φ(x__1 … x__n)) t__1 … t__n`.
+   If :n:`t__i` occurs in one of the generated types :n:`A__j`
+   (for `j > i`),
+   occurrences will also be considered and possibly abstracted.
+
+   This tactic can be used, for instance, when the tactic :tacn:`apply` fails
+   on matching or to better control the behavior of :tacn:`rewrite`.
+
+Fast reduction tactics: vm_compute and native_compute
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:tacn:`vm_compute` is a brute-force but efficient tactic that
+first normalizes the terms before comparing them. It is based on a
+bytecode representation of terms similar to the bytecode
+representation used in the ZINC virtual machine :cite:`Leroy90`. It is
+especially useful for intensive computation of algebraic values, such
+as numbers, and for reflection-based tactics.
+
+:tacn:`native_compute` is based on on converting the Coq code to OCaml.
+
+Note that both these tactics ignore :cmd:`Opaque` markings
+(see issue `#4776 <https://github.com/coq/coq/issues/4776>`_), nor do they
+apply unfolding strategies such as from :cmd:`Strategy`.
+
+:tacn:`native_compute` is typically two to five
+times faster than :tacn:`vm_compute` at applying conversion rules
+when Coq is running native code, but :tacn:`native_compute` requires
+considerably more overhead.  We recommend using :tacn:`native_compute`
+when all of the following are true (otherwise use :tacn:`vm_compute`):
+
+- the running time in :tacn:`vm_compute` at least 5-10 seconds
+- the size of the input term is small (e.g. hand-generated code rather than
+  automatically-generated code that may have nested destructs on inductives
+  with dozens or hundreds of constructors)
+- the output is small (e.g. you're returning a boolean, a natural number or
+  an integer rather than a large abstract syntax tree)
+
+These tactics change existential variables in a way similar to other conversions
+while also adding a single explicit cast (see :ref:`type-cast`) to the proof term
+to tell the kernel which reduction engine to use.
+
+.. tacn:: vm_compute {? {| @reference_occs | @pattern_occs } } {? @occurrences }
+
+   Evaluates the goal using the optimized call-by-value evaluation
    bytecode-based virtual machine described in :cite:`CompiledStrongReduction`.
    This algorithm is dramatically more efficient than the algorithm used for the
-   :tacn:`cbv` tactic, but it cannot be fine-tuned. It is especially interesting for
+   :tacn:`cbv` tactic, but it cannot be fine-tuned. It is especially useful for
    full evaluation of algebraic objects. This includes the case of
    reflection-based tactics.
 
-.. tacv:: native_compute
-   :name: native_compute
+.. tacn:: native_compute {? {| @reference_occs | @pattern_occs } } {? @occurrences }
 
-   This tactic evaluates the goal by compilation to OCaml as described
-   in :cite:`FullReduction`. If Coq is running in native code, it can be
-   typically two to five times faster than :tacn:`vm_compute`. Note however that the
-   compilation cost is higher, so it is worth using only for intensive
-   computations. Depending on the configuration, this tactic can either default to
+   Evaluates the goal by compilation to OCaml as described
+   in :cite:`FullReduction`. Depending on the configuration, this tactic can either default to
    :tacn:`vm_compute`, recompile dependencies or fail due to some missing
    precompiled dependencies,
    see :ref:`the native-compiler option <native-compiler-options>` for details.
@@ -548,7 +785,6 @@ the conversion in hypotheses :n:`{+ @ident}`.
       it possible to profile :tacn:`native_compute` evaluations.
 
    .. opt:: NativeCompute Profile Filename @string
-      :name: NativeCompute Profile Filename
 
       This option specifies the profile output; the default is
       ``native_compute_profile.data``. The actual filename used
@@ -559,258 +795,180 @@ the conversion in hypotheses :n:`{+ @ident}`.
       on the profile file to see the results. Consult the ``perf`` documentation
       for more details.
 
-   :opt:`Debug` ``"Cbv"`` makes :tacn:`cbv` (and its derivative :tacn:`compute`) print
-   information about the constants it encounters and the unfolding decisions it
-   makes.
+Computing in a term: eval and Eval
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. tacn:: red
-   :name: red
+Evaluation of a term can be performed with:
 
-   This tactic applies to a goal that has the form::
+.. tacn:: eval @red_expr in @term
 
-     forall (x:T1) ... (xk:Tk), T
 
-   with :g:`T` :math:`\beta`:math:`\iota`:math:`\zeta`-reducing to :g:`c t`:sub:`1` :g:`... t`:sub:`n` and :g:`c` a
-   constant. If :g:`c` is transparent then it replaces :g:`c` with its
-   definition (say :g:`t`) and then reduces
-   :g:`(t t`:sub:`1` :g:`... t`:sub:`n` :g:`)` according to :math:`\beta`:math:`\iota`:math:`\zeta`-reduction rules.
+   .. insertprodn red_expr red_expr
 
-.. exn:: No head constant to reduce.
-   :undocumented:
+   .. prodn::
+      red_expr ::= lazy {? @reductions }
+      | cbv {? @reductions }
+      | compute {? @delta_reductions }
+      | vm_compute {? {| @reference_occs | @pattern_occs } }
+      | native_compute {? {| @reference_occs | @pattern_occs } }
+      | red
+      | hnf
+      | simpl {? @delta_reductions } {? {| @reference_occs | @pattern_occs } }
+      | cbn {? @reductions }
+      | unfold {+, @reference_occs }
+      | fold {+ @one_term }
+      | pattern {+, @pattern_occs }
+      | @ident
 
-.. tacn:: hnf
-   :name: hnf
+   :tacn:`eval` is a :token:`value_tactic`.  It returns the result of
+   applying the conversion rules specified by :n:`@red_expr`.  It does not
+   change the proof state.
 
-   This tactic applies to any goal. It replaces the current goal with its
-   head normal form according to the :math:`\beta`:math:`\delta`:math:`\iota`:math:`\zeta`-reduction rules, i.e. it
-   reduces the head of the goal until it becomes a product or an
-   irreducible term. All inner :math:`\beta`:math:`\iota`-redexes are also reduced.
-   The behavior of both :tacn:`hnf` can be tuned using the :cmd:`Arguments` command.
+   The :n:`@red_expr` alternatives that begin with a keyword correspond to the
+   tactic with the same name, though in several cases with simpler syntax
+   than the tactic.  :n:`@ident` is a named reduction expression created
+   with :cmd:`Declare Reduction`.
 
-   Example: The term :g:`fun n : nat => S n + S n` is not reduced by :n:`hnf`.
+   .. seealso:: Section :ref:`applyingconversionrules`.
 
-.. note::
- The :math:`\delta` rule only applies to transparent constants (see :ref:`vernac-controlling-the-reduction-strategies`
- on transparency and opacity).
+.. cmd:: Eval @red_expr in @term
 
-.. tacn:: cbn
-          simpl
-   :name: cbn; simpl
+   Performs the specified reduction on :n:`@term` and displays
+   the resulting term with its type. If a proof is open, :n:`@term`
+   may reference hypotheses of the selected goal.  :cmd:`Eval` is
+   a :token:`query_command`, so it may be prefixed with a goal selector.
 
-   These tactics apply to any goal. They try to reduce a term to
-   something still readable instead of fully normalizing it. They perform
-   a sort of strong normalization with two key differences:
+   .. cmd:: Compute @term
 
-   + They unfold a constant if and only if it leads to a :math:`\iota`-reduction,
-     i.e. reducing a match or unfolding a fixpoint.
-   + While reducing a constant unfolding to (co)fixpoints, the tactics
-     use the name of the constant the (co)fixpoint comes from instead of
-     the (co)fixpoint definition in recursive calls.
+      Evaluates :n:`@term` using the bytecode-based virtual machine.
+      It is a shortcut for :cmd:`Eval` :n:`vm_compute in @term`.
+      :cmd:`Compute` is a :token:`query_command`, so it may be prefixed
+      with a goal selector.
 
-   The :tacn:`cbn` tactic was intended to be a more principled, faster and more
-   predictable replacement for :tacn:`simpl`.
+.. cmd:: Declare Reduction @ident := @red_expr
 
-   The :tacn:`cbn` tactic accepts the same flags as :tacn:`cbv` and
-   :tacn:`lazy`. The behavior of both :tacn:`simpl` and :tacn:`cbn`
-   can be tuned using the :cmd:`Arguments` command.
+   Declares a short name for the reduction expression :n:`@red_expr`, for
+   instance ``lazy beta delta [foo bar]``. This short name can then be used
+   in :n:`Eval @ident in` or ``eval`` constructs. This command
+   accepts the :attr:`local` attribute, which indicates that the reduction
+   will be discarded at the end of the
+   file or module. The name is not qualified. In
+   particular declaring the same name in several modules or in several
+   functor applications will be rejected if these declarations are not
+   local. The name :n:`@ident` cannot be used directly as an Ltac tactic, but
+   nothing prevents the user from also performing a
+   :n:`Ltac @ident := @red_expr`.
 
-   .. todo add "See <subsection about controlling the behavior of reduction strategies>"
-      to TBA section
+.. _controlling-the-reduction-strategies:
 
-   Notice that only transparent constants whose name can be reused in the
-   recursive calls are possibly unfolded by :tacn:`simpl`. For instance a
-   constant defined by :g:`plus' := plus` is possibly unfolded and reused in
-   the recursive calls, but a constant such as :g:`succ := plus (S O)` is
-   never unfolded. This is the main difference between :tacn:`simpl` and :tacn:`cbn`.
-   The tactic :tacn:`cbn` reduces whenever it will be able to reuse it or not:
-   :g:`succ t` is reduced to :g:`S t`.
+Controlling reduction strategies and the conversion algorithm
+-------------------------------------------------------------
 
-.. tacv:: cbn [ {+ @qualid} ]
-          cbn - [ {+ @qualid} ]
+The commands to fine-tune the reduction strategies and the lazy conversion
+algorithm are described in this section.  Also see :ref:`Args_effect_on_unfolding`,
+which supports additional fine-tuning.
 
-   These are respectively synonyms of :n:`cbn beta delta [ {+ @qualid} ] iota zeta`
-   and :n:`cbn beta delta - [ {+ @qualid} ] iota zeta` (see :tacn:`cbn`).
+.. cmd:: Opaque {+ @reference }
 
-.. tacv:: simpl @pattern
+   Marks the specified constants as :term:`opaque` so tactics won't :term:`unfold` them
+   with :term:`delta-reduction`.
+   "Constants" are items defined by commands such as :cmd:`Definition`,
+   :cmd:`Let` (with an explicit body), :cmd:`Fixpoint`, :cmd:`CoFixpoint`
+   and :cmd:`Function`.
 
-   This applies :tacn:`simpl` only to the subterms matching
-   :n:`@pattern` in the current goal.
+   This command accepts the :attr:`global` attribute.  By default, the scope
+   of :cmd:`Opaque` is limited to the current section or module.
 
-.. tacv:: simpl @pattern at {+ @natural}
+   :cmd:`Opaque` also affects Coq's conversion algorithm, causing
+   it to delay unfolding the specified constants as much as possible when it
+   has to check that two distinct applied constants are convertible.
+   See Section :ref:`conversion-rules`.
 
-   This applies :tacn:`simpl` only to the :n:`{+ @natural}` occurrences of the subterms
-   matching :n:`@pattern` in the current goal.
+.. cmd:: Transparent {+ @reference }
 
-   .. exn:: Too few occurrences.
+   The opposite of :cmd:`Opaque`, it marks the specified constants
+   as :term:`transparent`
+   so that tactics may unfold them.  See :cmd:`Opaque` above.
+
+   This command accepts the :attr:`global` attribute.  By default, the scope
+   of :cmd:`Transparent` is limited to the current section or module.
+
+   Note that constants defined by proofs ending with :cmd:`Qed` are
+   irreversibly opaque; :cmd:`Transparent` will not make them transparent.
+   This is consistent
+   with the usual mathematical practice of *proof irrelevance*: what
+   matters in a mathematical development is the sequence of lemma
+   statements, not their actual proofs. This distinguishes lemmas from
+   the usual defined constants, whose actual values are of course
+   relevant in general.
+
+   .. exn:: The reference @qualid was not found in the current environment.
+
+      There is no constant named :n:`@qualid` in the environment.
+
+.. seealso:: :ref:`applyingconversionrules`, :cmd:`Qed` and :cmd:`Defined`
+
+.. _vernac-strategy:
+
+.. cmd:: Strategy {+ @strategy_level [ {+ @reference } ] }
+
+   .. insertprodn strategy_level strategy_level
+
+   .. prodn::
+      strategy_level ::= opaque
+      | @integer
+      | expand
+      | transparent
+
+   Generalizes the behavior of the :cmd:`Opaque` and :cmd:`Transparent`
+   commands. It is used to fine-tune the strategy for unfolding
+   constants, both at the tactic level and at the kernel level. This
+   command associates a :n:`@strategy_level` with the qualified names in the :n:`@reference`
+   sequence. Whenever two
+   expressions with two distinct head constants are compared (for
+   example, typechecking `f x` where `f : A -> B` and `x : C` will result in
+   converting `A` and `C`), the one
+   with lower level is expanded first. In case of a tie, the second one
+   (appearing in the cast type) is expanded.
+
+   This command accepts the :attr:`local` attribute, which limits its effect
+   to the current section or module, in which case the section and module
+   behavior is the same as :cmd:`Opaque` and :cmd:`Transparent` (without :attr:`global`).
+
+   Levels can be one of the following (higher to lower):
+
+    + ``opaque`` : level of opaque constants. They cannot be expanded by
+      tactics (behaves like +∞, see next item).
+    + :n:`@integer` : levels indexed by an integer. Level 0 corresponds to the
+      default behavior, which corresponds to transparent constants. This
+      level can also be referred to as ``transparent``. Negative levels
+      correspond to constants to be expanded before normal transparent
+      constants, while positive levels correspond to constants to be
+      expanded after normal transparent constants.
+    + ``expand`` : level of constants that should be expanded first (behaves
+      like −∞)
+    + ``transparent`` : Equivalent to level 0
+
+.. cmd:: Print Strategy @reference
+
+   This command prints the strategy currently associated with :n:`@reference`. It
+   fails if :n:`@reference` is not an unfoldable reference, that is, neither a
+   variable nor a constant.
+
+   .. exn:: The reference is not unfoldable.
       :undocumented:
 
-.. tacv:: simpl @qualid
-          simpl @string
+.. cmd:: Print Strategies
 
-   This applies :tacn:`simpl` only to the applicative subterms whose head occurrence
-   is the unfoldable constant :n:`@qualid` (the constant can be referred to by
-   its notation using :n:`@string` if such a notation exists).
-
-.. tacv:: simpl @qualid at {+ @natural}
-          simpl @string at {+ @natural}
-
-   This applies :tacn:`simpl` only to the :n:`{+ @natural}` applicative subterms whose
-   head occurrence is :n:`@qualid` (or :n:`@string`).
-
-:opt:`Debug` ``"RAKAM"`` makes :tacn:`cbn` print various debugging information.
-``RAKAM`` is the Refolding Algebraic Krivine Abstract Machine.
-
-.. tacn:: unfold @qualid
-   :name: unfold
-
-   This tactic applies to any goal. The argument qualid must denote a
-   defined transparent constant or local definition (see
-   :ref:`gallina-definitions` and
-   :ref:`vernac-controlling-the-reduction-strategies`). The tactic
-   :tacn:`unfold` applies the :math:`\delta` rule to each occurrence
-   of the constant to which :n:`@qualid` refers in the current goal
-   and then replaces it with its :math:`\beta\iota\zeta`-normal form.
-   Use the general reduction tactics if you want to avoid this final
-   reduction, for instance :n:`cbv delta [@qualid]`.
-
-   .. exn:: Cannot coerce @qualid to an evaluable reference.
-
-      This error is frequent when trying to unfold something that has
-      defined as an inductive type (or constructor) and not as a
-      definition.
-
-      .. example::
-
-         .. coqtop:: abort all fail
-
-            Goal 0 <= 1.
-            unfold le.
-
-      This error can also be raised if you are trying to unfold
-      something that has been marked as opaque.
-
-      .. example::
-
-         .. coqtop:: abort all fail
-
-            Opaque Nat.add.
-            Goal 1 + 0 = 1.
-            unfold Nat.add.
-
-   .. tacv:: unfold @qualid in @goal_occurrences
-
-      Replaces :n:`@qualid` in hypothesis (or hypotheses) designated
-      by :token:`goal_occurrences` with its definition and replaces
-      the hypothesis with its :math:`\beta`:math:`\iota` normal form.
-
-   .. tacv:: unfold {+, @qualid}
-
-      Replaces :n:`{+, @qualid}` with their definitions and replaces
-      the current goal with its :math:`\beta`:math:`\iota` normal
-      form.
-
-   .. tacv:: unfold {+, @qualid at @occurrences }
-
-      The list :token:`occurrences` specify the occurrences of
-      :n:`@qualid` to be unfolded. Occurrences are located from left
-      to right.
-
-      .. exn:: Bad occurrence number of @qualid.
-         :undocumented:
-
-      .. exn:: @qualid does not occur.
-         :undocumented:
-
-   .. tacv:: unfold @string
-
-      If :n:`@string` denotes the discriminating symbol of a notation
-      (e.g. "+") or an expression defining a notation (e.g. `"_ +
-      _"`), and this notation denotes an application whose head symbol
-      is an unfoldable constant, then the tactic unfolds it.
-
-   .. tacv:: unfold @string%@ident
-
-      This is variant of :n:`unfold @string` where :n:`@string` gets
-      its interpretation from the scope bound to the delimiting key
-      :token:`ident` instead of its default interpretation (see
-      :ref:`Localinterpretationrulesfornotations`).
-
-   .. tacv:: unfold {+, {| @qualid | @string{? %@ident } } {? at @occurrences } } {? in @goal_occurrences }
-
-      This is the most general form.
-
-.. tacn:: fold @term
-   :name: fold
-
-   This tactic applies to any goal. The term :n:`@term` is reduced using the
-   :tacn:`red` tactic. Every occurrence of the resulting :n:`@term` in the goal is
-   then replaced by :n:`@term`. This tactic is particularly useful when a fixpoint
-   definition has been wrongfully unfolded, making the goal very hard to read.
-   On the other hand, when an unfolded function applied to its argument has been
-   reduced, the :tacn:`fold` tactic won't do anything.
-
-   .. example::
-
-      .. coqtop:: all abort
-
-         Goal ~0=0.
-         unfold not.
-         Fail progress fold not.
-         pattern (0 = 0).
-         fold not.
-
-   .. tacv:: fold {+ @term}
-
-      Equivalent to :n:`fold @term ; ... ; fold @term`.
-
-.. tacn:: pattern @term
-   :name: pattern
-
-   This command applies to any goal. The argument :n:`@term` must be a free
-   subterm of the current goal. The command pattern performs :math:`\beta`-expansion
-   (the inverse of :math:`\beta`-reduction) of the current goal (say :g:`T`) by
-
-   + replacing all occurrences of :n:`@term` in :g:`T` with a fresh variable
-   + abstracting this variable
-   + applying the abstracted goal to :n:`@term`
-
-   For instance, if the current goal :g:`T` is expressible as
-   :math:`\varphi`:g:`(t)` where the notation captures all the instances of :g:`t`
-   in :math:`\varphi`:g:`(t)`, then :n:`pattern t` transforms it into
-   :g:`(fun x:A =>` :math:`\varphi`:g:`(x)) t`. This tactic can be used, for
-   instance, when the tactic ``apply`` fails on matching.
-
-.. tacv:: pattern @term at {+ @natural}
-
-   Only the occurrences :n:`{+ @natural}` of :n:`@term` are considered for
-   :math:`\beta`-expansion. Occurrences are located from left to right.
-
-.. tacv:: pattern @term at - {+ @natural}
-
-   All occurrences except the occurrences of indexes :n:`{+ @natural }`
-   of :n:`@term` are considered for :math:`\beta`-expansion. Occurrences are located from
-   left to right.
-
-.. tacv:: pattern {+, @term}
-
-   Starting from a goal :math:`\varphi`:g:`(t`:sub:`1` :g:`... t`:sub:`m`:g:`)`,
-   the tactic :n:`pattern t`:sub:`1`:n:`, ..., t`:sub:`m` generates the
-   equivalent goal
-   :g:`(fun (x`:sub:`1`:g:`:A`:sub:`1`:g:`) ... (x`:sub:`m` :g:`:A`:sub:`m` :g:`) =>`:math:`\varphi`:g:`(x`:sub:`1` :g:`... x`:sub:`m` :g:`)) t`:sub:`1` :g:`... t`:sub:`m`.
-   If :g:`t`:sub:`i` occurs in one of the generated types :g:`A`:sub:`j` these
-   occurrences will also be considered and possibly abstracted.
-
-.. tacv:: pattern {+, @term at {+ @natural}}
-
-   This behaves as above but processing only the occurrences :n:`{+ @natural}` of
-   :n:`@term` starting from :n:`@term`.
-
-.. tacv:: pattern {+, @term {? at {? -} {+, @natural}}}
-
-   This is the most general syntax that combines the different variants.
+   Print all the currently non-transparent strategies.
 
 .. tacn:: with_strategy @strategy_level_or_var [ {+ @reference } ] @ltac_expr3
-   :name: with_strategy
+
+   .. insertprodn strategy_level_or_var strategy_level_or_var
+
+   .. prodn::
+      strategy_level_or_var ::= @strategy_level
+      | @ident
 
    Executes :token:`ltac_expr3`, applying the alternate unfolding
    behavior that the :cmd:`Strategy` command controls, but only for
@@ -918,15 +1076,3 @@ the conversion in hypotheses :n:`{+ @ident}`.
       tactics to persist information about conversion hints in the
       proof term. See `#12200
       <https://github.com/coq/coq/issues/12200>`_ for more details.
-
-Conversion tactics applied to hypotheses
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-   The form :n:`@tactic in {+, @ident }` applies :token:`tactic` (any of the
-   conversion tactics listed in this section) to the hypotheses :n:`{+ @ident}`.
-
-   If :token:`ident` is a local definition, then :token:`ident` can be replaced by
-   :n:`type of @ident` to address not the body but the type of the local
-   definition.
-
-   Example: :n:`unfold not in (type of H1) (type of H3)`.

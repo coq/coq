@@ -699,7 +699,7 @@ other. If a signature mentions a relation ``R`` on the left of an
 arrow ``==>``, then the signature also applies for any relation ``S`` that is
 smaller than ``R``, and the inverse applies on the right of an arrow. One
 can then declare only a few morphisms instances that generate the
-complete set of signatures for a particular constant. By default, the
+complete set of signatures for a particular :term:`constant`. By default, the
 only declared subrelation is ``iff``, which is a subrelation of ``impl`` and
 ``inverse impl`` (the dual of implication). That’s why we can declare only
 two morphisms for conjunction: ``Proper (impl ==> impl ==> impl) and`` and
@@ -714,8 +714,8 @@ example of a mostly user-space extension of the algorithm.
 Constant unfolding
 ~~~~~~~~~~~~~~~~~~
 
-The resolution tactic is based on typeclasses and hence regards user-
-defined constants as transparent by default. This may slow down the
+The resolution tactic is based on typeclasses and hence regards user-defined
+:term:`constants <constant>` as transparent by default. This may slow down the
 resolution due to a lot of unifications (all the declared ``Proper``
 instances are tried at each node of the search tree). To speed it up,
 declare your constant as rigid for proof search using the command
@@ -901,7 +901,7 @@ Hint databases created for :tacn:`autorewrite` can also be used
 by :tacn:`rewrite_strat` using the ``hints`` strategy that applies any of the
 lemmas at the current subterm. The ``terms`` strategy takes the lemma
 names directly as arguments. The ``eval`` strategy expects a reduction
-expression (see :ref:`performingcomputations`) and succeeds
+expression (see :ref:`applyingconversionrules`) and succeeds
 if it reduces the subterm under consideration. The ``fold`` strategy takes
 a :token:`term` and tries to *unify* it to the current subterm, converting it to :token:`term`
 on success. It is stronger than the tactic ``fold``.

@@ -1,8 +1,9 @@
 Typing rules
 ====================================
 
-The underlying formal language of Coq is a *Calculus of Inductive
-Constructions* (|Cic|) whose inference rules are presented in this
+The underlying formal language of Coq is a
+:gdef:`Calculus of Inductive Constructions` (|Cic|) whose inference rules
+are presented in this
 chapter. The history of this formalism as well as pointers to related
 work are provided in a separate chapter; see *Credits*.
 
@@ -146,7 +147,7 @@ In the global environment,
 :math:`(c:T)`, indicating that :math:`c` is of the type :math:`T`. *Definitions*
 are written as :math:`c:=t:T`, indicating that :math:`c` has the value :math:`t`
 and type :math:`T`. We shall call
-such names *constants*. For the rest of the chapter, the :math:`E;~c:T` denotes
+such names :term:`constants <constant>`. For the rest of the chapter, the :math:`E;~c:T` denotes
 the global environment :math:`E` enriched with the assumption :math:`c:T`.
 Similarly, :math:`E;~c:=t:T` denotes the global environment :math:`E` enriched with the
 definition :math:`(c:=t:T)`.

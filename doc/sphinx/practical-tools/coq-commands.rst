@@ -499,7 +499,7 @@ wrong. In the current version, it does not modify the compiled libraries to mark
 them as successfully checked.
 
 Note that non-logical information is not checked. By logical
-information, we mean the type and optional body associated with names.
+information, we mean the type and optional :term:`body` associated with names.
 It excludes for instance anything related to the concrete syntax of
 objects (customized syntax rules, association between short and long
 names), implicit arguments, etc.
@@ -521,7 +521,7 @@ relative paths in object files ``-Q`` and ``-R`` have exactly the same meaning.
 :-admit *module*: Do not check *module* and any of its dependencies,
   unless explicitly required.
 :-o: At exit, print a summary about the context. List the names of all
-  assumptions and variables (constants without body).
+  assumptions and variables (constants without a :term:`body`).
 :-silent: Do not write progress information to the standard output.
 
 Environment variable ``$COQLIB`` can be set to override the location of

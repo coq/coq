@@ -15,12 +15,12 @@ it provides the following command:
    standing for the existential variables but they are shelved, as
    described in :tacn:`shelve`).
 
-   When the proof ends two constants are defined:
+   When the proof ends two :term:`constants <constant>` are defined:
 
    + The first one is named :n:`@ident__1` and is defined as the proof of the
      shelved goal (which is also the value of :g:`?x`). It is always
      transparent.
-   + The second one is named :n:`@ident__2`. It has type :n:`@type`, and its body is
+   + The second one is named :n:`@ident__2`. It has type :n:`@type`, and its :term:`body` is
      the proof of the initially visible goal. It is opaque if the proof
      ends with :cmd:`Qed`, and transparent if the proof ends with :cmd:`Defined`.
 

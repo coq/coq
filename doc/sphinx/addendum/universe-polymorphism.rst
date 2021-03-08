@@ -24,7 +24,7 @@ and *monomorphic* definitions is given by the identity function:
 
    Definition identity {A : Type} (a : A) := a.
 
-By default, constant declarations are monomorphic, hence the identity
+By default, :term:`constant` declarations are monomorphic, hence the identity
 function declares a global universe (say ``Top.1``) for its domain.
 Subsequently, if we try to self-apply the identity, we will get an
 error:
@@ -150,7 +150,7 @@ Polymorphic, Monomorphic
    attribute is used to override the default.
 
 Many other commands can be used to declare universe polymorphic or
-monomorphic constants depending on whether the :flag:`Universe
+monomorphic :term:`constants <constant>` depending on whether the :flag:`Universe
 Polymorphism` flag is on or the :attr:`universes(polymorphic)`
 attribute is used:
 
@@ -341,13 +341,13 @@ Conversion and unification
 The semantics of conversion and unification have to be modified a
 little to account for the new universe instance arguments to
 polymorphic references. The semantics respect the fact that
-definitions are transparent, so indistinguishable from their bodies
+definitions are transparent, so indistinguishable from their :term:`bodies <body>`
 during conversion.
 
 This is accomplished by changing one rule of unification, the first-
 order approximation rule, which applies when two applicative terms
 with the same head are compared. It tries to short-cut unfolding by
-comparing the arguments directly. In case the constant is universe
+comparing the arguments directly. In case the :term:`constant` is universe
 polymorphic, we allow this rule to fire only when unifying the
 universes results in instantiating a so-called flexible universe
 variables (not given by the user). Similarly for conversion, if such
@@ -362,7 +362,7 @@ Minimization
 
 Universe polymorphism with cumulativity tends to generate many useless
 inclusion constraints in general. Typically at each application of a
-polymorphic constant :g:`f`, if an argument has expected type :g:`Type@{i}`
+polymorphic :term:`constant` :g:`f`, if an argument has expected type :g:`Type@{i}`
 and is given a term of type :g:`Type@{j}`, a :math:`j ≤ i` constraint will be
 generated. It is however often the case that an equation :math:`j = i` would
 be more appropriate, when :g:`f`\'s universes are fresh for example.
@@ -550,7 +550,7 @@ underscore or by omitting the annotation to a polymorphic definition.
 .. flag:: Private Polymorphic Universes
 
    This flag, on by default, removes universes which appear only in
-   the body of an opaque polymorphic definition from the definition's
+   the :term:`body` of an opaque polymorphic definition from the definition's
    universe arguments. As such, no value needs to be provided for
    these universes when instantiating the definition. Universe
    constraints are automatically adjusted.
@@ -563,18 +563,18 @@ underscore or by omitting the annotation to a polymorphic definition.
       Proof. exact Type. Qed.
       Print foo.
 
-   The universe :g:`Top.xxx` for the :g:`Type` in the body cannot be accessed, we
+   The universe :g:`Top.xxx` for the :g:`Type` in the :term:`body` cannot be accessed, we
    only care that one exists for any instantiation of the universes
    appearing in the type of :g:`foo`. This is guaranteed when the
    transitive constraint ``Set <= Top.xxx < i`` is verified. Then when
-   using the constant we don't need to put a value for the inner
+   using the :term:`constant` we don't need to put a value for the inner
    universe:
 
    .. coqtop:: all
 
       Check foo@{_}.
 
-   and when not looking at the body we don't mention the private
+   and when not looking at the :term:`body` we don't mention the private
    universe:
 
    .. coqtop:: all
@@ -643,11 +643,11 @@ sections, except in the following ways:
   (in the above example the anonymous :g:`Type` constrains polymorphic
   universe :g:`i` to be strictly smaller.)
 
-- no monomorphic constant or inductive may be declared if polymorphic
+- no monomorphic :term:`constant` or inductive may be declared if polymorphic
   universes or universe constraints are present.
 
 These restrictions are required in order to produce a sensible result
-when closing the section (the requirement on constants and inductives
+when closing the section (the requirement on :term:`constants <constant>` and inductive types
 is stricter than the one on constraints, because constants and
 inductives are abstracted by *all* the section's polymorphic universes
 and constraints).

@@ -62,8 +62,8 @@ SPLICE: [
 ]
 
 RENAME: [
-| G_LTAC2_delta_flag ltac2_delta_flag
-| G_LTAC2_strategy_flag ltac2_strategy_flag
+| G_LTAC2_delta_flag ltac2_delta_reductions
+| G_LTAC2_strategy_flag ltac2_reductions
 | G_LTAC2_binder ltac2_binder
 | G_LTAC2_branches ltac2_branches
 | G_LTAC2_let_clause ltac2_let_clause
@@ -640,7 +640,7 @@ delta_flag: [
 | OPTINREF
 ]
 
-ltac2_delta_flag: [
+ltac2_delta_reductions: [
 | EDIT ADD_OPT "-" "[" refglobals "]"      (* Ltac2 plugin *)
 ]
 
@@ -924,6 +924,10 @@ where: [
 | "before" ident
 ]
 
+simple_occurrences: [
+(* placeholder (yuck) *)
+]
+
 simple_tactic: [
 | REPLACE "eauto" OPT nat_or_var OPT nat_or_var auto_using hintbases
 | WITH "eauto" OPT nat_or_var auto_using hintbases
@@ -937,6 +941,26 @@ simple_tactic: [
 | DELETE "autorewrite" "*" "with" LIST1 preident clause
 | REPLACE "autorewrite" "*" "with" LIST1 preident clause "using" tactic
 | WITH "autorewrite" OPT "*" "with" LIST1 preident clause OPT ( "using" tactic )
+| REPLACE "autounfold" hintbases clause_dft_concl
+| WITH "autounfold" hintbases OPT simple_occurrences
+| REPLACE "red" clause_dft_concl
+| WITH "red" simple_occurrences
+| REPLACE "simpl" OPT delta_flag OPT ref_or_pattern_occ clause_dft_concl
+| WITH "simpl" OPT delta_flag OPT ref_or_pattern_occ simple_occurrences
+| REPLACE "hnf" clause_dft_concl
+| WITH "hnf" simple_occurrences
+| REPLACE "cbv" strategy_flag clause_dft_concl
+| WITH "cbv" strategy_flag simple_occurrences
+| PRINT
+| REPLACE "compute" OPT delta_flag clause_dft_concl
+| WITH "compute" OPT delta_flag simple_occurrences
+| REPLACE "lazy" strategy_flag clause_dft_concl
+| WITH "lazy" strategy_flag simple_occurrences
+| REPLACE "cbn" strategy_flag clause_dft_concl
+| WITH "cbn" strategy_flag simple_occurrences
+| REPLACE "fold" LIST1 constr clause_dft_concl
+| WITH "fold" LIST1 constr simple_occurrences
+
 | DELETE "cofix" ident
 | REPLACE "cofix" ident "with" LIST1 cofixdecl
 | WITH "cofix" ident OPT ( "with" LIST1 cofixdecl )
@@ -2460,6 +2484,10 @@ clause_dft_concl: [
 | WITH occs
 ]
 
+simple_occurrences: [
+| clause_dft_concl   (* semantically restricted: no "at" clause *)
+]
+
 occs_nums: [
 | EDIT ADD_OPT "-" LIST1 nat_or_var
 ]
@@ -2471,10 +2499,8 @@ variance_identref: [
 conversion: [
 | DELETE constr
 | DELETE constr "with" constr
-| PRINT
 | REPLACE constr "at" occs_nums "with" constr
 | WITH OPT ( constr OPT ( "at" occs_nums ) "with" ) constr
-| PRINT
 ]
 
 SPLICE: [
@@ -2762,6 +2788,10 @@ RENAME: [
 | hypident_occ hyp_occs
 | concl_occ concl_occs
 | constr_with_bindings_arg one_term_with_bindings
+| red_flag reduction
+| strategy_flag reductions
+| delta_flag delta_reductions
+| q_strategy_flag q_reductions
 ]
 
 simple_tactic: [
@@ -2806,7 +2836,7 @@ NOTINRSTS: [
 | q_destruction_arg
 | q_with_bindings
 | q_bindings
-| q_strategy_flag
+| q_reductions
 | q_reference
 | q_clause
 | q_occurrences

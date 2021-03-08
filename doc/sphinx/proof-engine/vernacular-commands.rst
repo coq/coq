@@ -65,6 +65,9 @@ If no selector is provided,
 the command applies to the current goal.  If no proof is open, then the command only applies
 to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
+:cmd:`Eval` and :cmd:`Compute` are also :token:`query_command`\s, which are
+described elsewhere
+
 .. cmd:: About @reference {? @univ_name_list }
 
    Displays information about the :n:`@reference` object, which,
@@ -79,22 +82,6 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
    Displays the type of :n:`@term`. When called in proof mode, the
    term is checked in the local context of the selected goal.
-
-.. cmd:: Eval @red_expr in @term
-
-   Performs the specified reduction on :n:`@term` and displays
-   the resulting term with its type. If a proof is open, :n:`@term`
-   may reference hypotheses of the selected goal.
-
-   .. seealso:: Section :ref:`performingcomputations`.
-
-
-.. cmd:: Compute @term
-
-   Evaluates :n:`@term` using the bytecode-based virtual machine.
-   It is a shortcut for :cmd:`Eval` :n:`vm_compute in @term`.
-
-   .. seealso:: Section :ref:`performingcomputations`.
 
 .. cmd:: Search {+ @search_query } {? {| inside | outside } {+ @qualid } }
 
@@ -935,136 +922,6 @@ Printing constructions in full
       the goal unreadable.
 
       .. see a contrived example here: https://github.com/coq/coq/pull/11718#discussion_r415481854
-
-.. _vernac-controlling-the-reduction-strategies:
-
-Controlling the reduction strategies and the conversion algorithm
-----------------------------------------------------------------------
-
-
-Coq provides reduction strategies that the tactics can invoke and two
-different algorithms to check the convertibility of types. The first
-conversion algorithm lazily compares applicative terms while the other
-is a brute-force but efficient algorithm that first normalizes the
-terms before comparing them. The second algorithm is based on a
-bytecode representation of terms similar to the bytecode
-representation used in the ZINC virtual machine :cite:`Leroy90`. It is
-especially useful for intensive computation of algebraic values, such
-as numbers, and for reflection-based tactics. The commands to fine-
-tune the reduction strategies and the lazy conversion algorithm are
-described first.
-
-.. cmd:: Opaque {+ @reference }
-
-   This command accepts the :attr:`global` attribute.  By default, the scope
-   of :cmd:`Opaque` is limited to the current section or module.
-
-   This command has an effect on unfoldable constants, i.e. on constants
-   defined by :cmd:`Definition` or :cmd:`Let` (with an explicit body), or by a command
-   associated with a definition such as :cmd:`Fixpoint`, etc,
-   or by a proof ended by :cmd:`Defined`. The command tells not to unfold the
-   constants in the :n:`@reference` sequence in tactics using δ-conversion (unfolding
-   a constant is replacing it by its definition).
-
-   :cmd:`Opaque` has also an effect on the conversion algorithm of Coq, telling
-   it to delay the unfolding of a constant as much as possible when Coq
-   has to check the conversion (see Section :ref:`conversion-rules`) of two distinct
-   applied constants.
-
-.. cmd:: Transparent {+ @reference }
-
-   This command accepts the :attr:`global` attribute.  By default, the scope
-   of :cmd:`Transparent` is limited to the current section or module.
-
-   This command is the converse of :cmd:`Opaque` and it applies on unfoldable
-   constants to restore their unfoldability after an Opaque command.
-
-   Note in particular that constants defined by a proof ended by Qed are
-   not unfoldable and Transparent has no effect on them. This is to keep
-   with the usual mathematical practice of *proof irrelevance*: what
-   matters in a mathematical development is the sequence of lemma
-   statements, not their actual proofs. This distinguishes lemmas from
-   the usual defined constants, whose actual values are of course
-   relevant in general.
-
-   .. exn:: The reference @qualid was not found in the current environment.
-
-      There is no constant named :n:`@qualid` in the environment.
-
-.. seealso:: :ref:`performingcomputations` and :ref:`proof-editing-mode`
-
-.. _vernac-strategy:
-
-.. cmd:: Strategy {+ @strategy_level [ {+ @reference } ] }
-
-   .. insertprodn strategy_level strategy_level_or_var
-
-   .. prodn::
-      strategy_level ::= opaque
-      | @integer
-      | expand
-      | transparent
-      strategy_level_or_var ::= @strategy_level
-      | @ident
-
-   This command accepts the :attr:`local` attribute, which limits its effect
-   to the current section or module, in which case the section and module
-   behavior is the same as :cmd:`Opaque` and :cmd:`Transparent` (without :attr:`global`).
-
-   This command generalizes the behavior of the :cmd:`Opaque` and :cmd:`Transparent`
-   commands. It is used to fine-tune the strategy for unfolding
-   constants, both at the tactic level and at the kernel level. This
-   command associates a :n:`@strategy_level` with the qualified names in the :n:`@reference`
-   sequence. Whenever two
-   expressions with two distinct head constants are compared (for
-   instance, this comparison can be triggered by a type cast), the one
-   with lower level is expanded first. In case of a tie, the second one
-   (appearing in the cast type) is expanded.
-
-   Levels can be one of the following (higher to lower):
-
-    + ``opaque`` : level of opaque constants. They cannot be expanded by
-      tactics (behaves like +∞, see next item).
-    + :n:`@integer` : levels indexed by an integer. Level 0 corresponds to the
-      default behavior, which corresponds to transparent constants. This
-      level can also be referred to as ``transparent``. Negative levels
-      correspond to constants to be expanded before normal transparent
-      constants, while positive levels correspond to constants to be
-      expanded after normal transparent constants.
-    + ``expand`` : level of constants that should be expanded first (behaves
-      like −∞)
-    + ``transparent`` : Equivalent to level 0
-
-.. cmd:: Print Strategy @reference
-
-   This command prints the strategy currently associated with :n:`@reference`. It
-   fails if :n:`@reference` is not an unfoldable reference, that is, neither a
-   variable nor a constant.
-
-   .. exn:: The reference is not unfoldable.
-      :undocumented:
-
-.. cmd:: Print Strategies
-
-   Print all the currently non-transparent strategies.
-
-
-.. cmd:: Declare Reduction @ident := @red_expr
-
-   Declares a short name for the reduction expression :n:`@red_expr`, for
-   instance ``lazy beta delta [foo bar]``. This short name can then be used
-   in :n:`Eval @ident in` or ``eval`` constructs. This command
-   accepts the :attr:`local` attribute, which indicates that the reduction
-   will be discarded at the end of the
-   file or module. The name is not qualified. In
-   particular declaring the same name in several modules or in several
-   functor applications will be rejected if these declarations are not
-   local. The name :n:`@ident` cannot be used directly as an Ltac tactic, but
-   nothing prevents the user from also performing a
-   :n:`Ltac @ident := @red_expr`.
-
-   .. seealso:: :ref:`performingcomputations`
-
 
 .. _controlling-typing-flags:
 

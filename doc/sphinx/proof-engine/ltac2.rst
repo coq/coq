@@ -1299,7 +1299,7 @@ Two examples of syntax differences:
   to add the necessary notation.
 - The built-in `simpl` tactic in Ltac1 supports the use of scope keys in delta flags, e.g. :n:`simpl ["+"%nat]`
   which is not accepted by Ltac2.  This is because Ltac2 uses a different
-  definition for :token:`delta_flag`; compare it to :token:`ltac2_delta_flag`.  This also affects
+  definition for :token:`delta_reductions`; compare it to :token:`ltac2_delta_reductions`.  This also affects
   :tacn:`compute`.
 
 Ltac1 tactics are not automatically available in Ltac2.  (Note that some of the tactics described
@@ -1461,9 +1461,9 @@ Other nonterminals that have syntactic classes are listed here.
         - :token:`ltac2_bindings`
         - :token:`bindings`
 
-      * - :n:`strategy`
-        - :token:`ltac2_strategy_flag`
-        - :token:`strategy_flag`
+      * - :n:`reductions`
+        - :token:`ltac2_reductions`
+        - :token:`reductions`
 
       * - :n:`reference`
         - :token:`refglobal`
@@ -1571,19 +1571,19 @@ Here is the syntax for the :n:`q_*` nonterminals:
    | @natural
    | @lident
 
-.. insertprodn ltac2_strategy_flag ltac2_delta_flag
+.. insertprodn ltac2_reductions ltac2_delta_reductions
 
 .. prodn::
-   ltac2_strategy_flag ::= {+ @ltac2_red_flag }
-   | {? @ltac2_delta_flag }
+   ltac2_reductions ::= {+ @ltac2_red_flag }
+   | {? @ltac2_delta_reductions }
    ltac2_red_flag ::= beta
    | iota
    | match
    | fix
    | cofix
    | zeta
-   | delta {? @ltac2_delta_flag }
-   ltac2_delta_flag ::= {? - } [ {+ @refglobal } ]
+   | delta {? @ltac2_delta_reductions }
+   ltac2_delta_reductions ::= {? - } [ {+ @refglobal } ]
 
 .. insertprodn refglobal refglobal
 

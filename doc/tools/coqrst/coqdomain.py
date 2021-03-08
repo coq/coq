@@ -1171,9 +1171,12 @@ class StdGlossaryIndex(Index):
     name, localname, shortname = "glossindex", "Glossary", "terms"
 
     def generate(self, docnames=None):
-        content = defaultdict(list)
+        def ci_sort(entry):
+            ((type, itemname), (docname, anchor)) = entry
+            return itemname.lower()
 
-        for ((type, itemname), (docname, anchor)) in self.domain.data['objects'].items():
+        content = defaultdict(list)
+        for ((type, itemname), (docname, anchor)) in sorted(self.domain.data['objects'].items(), key=ci_sort):
             if type == 'term':
                 entries = content[itemname[0].lower()]
                 entries.append([itemname, 0, docname, anchor, '', '', ''])

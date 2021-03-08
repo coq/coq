@@ -337,7 +337,7 @@ NOTINRSTS: [
 | q_destruction_arg
 | q_with_bindings
 | q_bindings
-| q_strategy_flag
+| q_reductions
 | q_reference
 | q_clause
 | q_occurrences
@@ -550,9 +550,9 @@ term_generalizing: [
 ]
 
 term_cast: [
+| term10 ":" type
 | term10 "<:" type
 | term10 "<<:" type
-| term10 ":" type
 | term10 ":>"
 ]
 
@@ -627,38 +627,38 @@ reduce: [
 ]
 
 red_expr: [
-| "red"
-| "hnf"
-| "simpl" OPT delta_flag OPT [ reference_occs | pattern_occs ]
-| "cbv" OPT strategy_flag
-| "cbn" OPT strategy_flag
-| "lazy" OPT strategy_flag
-| "compute" OPT delta_flag
+| "lazy" OPT reductions
+| "cbv" OPT reductions
+| "compute" OPT delta_reductions
 | "vm_compute" OPT [ reference_occs | pattern_occs ]
 | "native_compute" OPT [ reference_occs | pattern_occs ]
+| "red"
+| "hnf"
+| "simpl" OPT delta_reductions OPT [ reference_occs | pattern_occs ]
+| "cbn" OPT reductions
 | "unfold" LIST1 reference_occs SEP ","
 | "fold" LIST1 one_term
 | "pattern" LIST1 pattern_occs SEP ","
 | ident
 ]
 
-delta_flag: [
-| OPT "-" "[" LIST1 reference "]"
+reductions: [
+| LIST1 reduction
+| delta_reductions
 ]
 
-strategy_flag: [
-| LIST1 red_flag
-| delta_flag
-]
-
-red_flag: [
+reduction: [
 | "beta"
-| "iota"
+| "delta" OPT delta_reductions
 | "match"
 | "fix"
 | "cofix"
+| "iota"
 | "zeta"
-| "delta" OPT delta_flag
+]
+
+delta_reductions: [
+| OPT "-" "[" LIST1 reference "]"
 ]
 
 reference_occs: [
@@ -1242,6 +1242,10 @@ occurrences: [
 | "in" goal_occurrences
 ]
 
+simple_occurrences: [
+| occurrences
+]
+
 occs_nums: [
 | OPT "-" LIST1 nat_or_var
 ]
@@ -1741,7 +1745,7 @@ simple_tactic: [
 | "info_eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "dfs" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "bfs" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
-| "autounfold" OPT hintbases OPT occurrences
+| "autounfold" OPT hintbases OPT simple_occurrences
 | "autounfold_one" OPT hintbases OPT ( "in" ident )
 | "unify" one_term one_term OPT ( "with" ident )
 | "typeclasses" "eauto" OPT "bfs" OPT nat_or_var OPT ( "with" LIST1 ident )
@@ -1811,17 +1815,17 @@ simple_tactic: [
 | "inversion" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
 | "inversion_clear" [ ident | natural ] OPT as_or_and_ipat OPT ( "in" LIST1 ident )
 | "inversion" [ ident | natural ] "using" one_term OPT ( "in" LIST1 ident )
-| "red" OPT occurrences
-| "hnf" OPT occurrences
-| "simpl" OPT delta_flag OPT [ reference_occs | pattern_occs ] OPT occurrences
-| "cbv" OPT strategy_flag OPT occurrences
-| "cbn" OPT strategy_flag OPT occurrences
-| "lazy" OPT strategy_flag OPT occurrences
-| "compute" OPT delta_flag OPT occurrences
+| "red" simple_occurrences
+| "hnf" simple_occurrences
+| "simpl" OPT delta_reductions OPT [ reference_occs | pattern_occs ] simple_occurrences
+| "cbv" OPT reductions simple_occurrences
+| "cbn" OPT reductions simple_occurrences
+| "lazy" OPT reductions simple_occurrences
+| "compute" OPT delta_reductions simple_occurrences
 | "vm_compute" OPT [ reference_occs | pattern_occs ] OPT occurrences
 | "native_compute" OPT [ reference_occs | pattern_occs ] OPT occurrences
 | "unfold" LIST1 reference_occs SEP "," OPT occurrences
-| "fold" LIST1 one_term OPT occurrences
+| "fold" LIST1 one_term simple_occurrences
 | "pattern" LIST1 pattern_occs SEP "," OPT occurrences
 | "change" OPT ( one_term OPT ( "at" occs_nums ) "with" ) one_term OPT occurrences
 | "change_no_check" OPT ( one_term OPT ( "at" occs_nums ) "with" ) one_term OPT occurrences
@@ -2139,13 +2143,13 @@ ltac2_goal_tactics: [
 | LIST0 ( OPT ltac2_expr ) SEP "|"      (* Ltac2 plugin *)
 ]
 
-q_strategy_flag: [
-| ltac2_strategy_flag      (* Ltac2 plugin *)
+q_reductions: [
+| ltac2_reductions      (* Ltac2 plugin *)
 ]
 
-ltac2_strategy_flag: [
+ltac2_reductions: [
 | LIST1 ltac2_red_flag      (* Ltac2 plugin *)
-| OPT ltac2_delta_flag      (* Ltac2 plugin *)
+| OPT ltac2_delta_reductions      (* Ltac2 plugin *)
 ]
 
 ltac2_red_flag: [
@@ -2155,10 +2159,10 @@ ltac2_red_flag: [
 | "fix"      (* Ltac2 plugin *)
 | "cofix"      (* Ltac2 plugin *)
 | "zeta"      (* Ltac2 plugin *)
-| "delta" OPT ltac2_delta_flag      (* Ltac2 plugin *)
+| "delta" OPT ltac2_delta_reductions      (* Ltac2 plugin *)
 ]
 
-ltac2_delta_flag: [
+ltac2_delta_reductions: [
 | OPT "-" "[" LIST1 refglobal "]"
 ]
 

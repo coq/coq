@@ -34,7 +34,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    The first form of this command declares an existing :n:`@reference` as a
    canonical instance of a structure (a record).
 
-   The second form defines a new constant as if the :cmd:`Definition` command
+   The second form defines a new :term:`constant` as if the :cmd:`Definition` command
    had been used, then declares it as a canonical instance as if the first
    form had been used on the defined object.
 
@@ -113,7 +113,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
    This displays the list of global names that are components of some
    canonical structure. For each of them, the canonical structure of
-   which it is a projection is indicated. If constants are given as
+   which it is a projection is indicated. If :term:`constants <constant>` are given as
    its arguments, only the unification rules that involve or are
    synthesized from simultaneously all given constants will be shown.
 

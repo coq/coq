@@ -207,7 +207,7 @@ other arguments are the parameters of the inductive type.
   There may be three reasons:
 
   #. The name :token:`ident` already exists in the global environment (see :cmd:`Axiom`).
-  #. The body of :token:`ident` uses an incorrect elimination for
+  #. The :term:`body` of :token:`ident` uses an incorrect elimination for
      :token:`ident` (see :cmd:`Fixpoint` and :ref:`Destructors`).
   #. The type of the projections :token:`ident` depends on previous
      projections which themselves could not be defined.
@@ -278,7 +278,7 @@ There are currently two ways to introduce primitive records types:
    `r` ``= Build_``\ `R` ``(``\ `r`\ ``.(``\ |p_1|\ ``) …`` `r`\ ``.(``\ |p_n|\ ``))``.
    Eta-conversion allows to define dependent elimination for these types as well.
 #. Through the ``Inductive`` and ``CoInductive`` commands, when
-   the body of the definition is a record declaration of the form
+   the :term:`body` of the definition is a record declaration of the form
    ``Build_``\ `R` ``{`` |p_1| ``:`` |t_1|\ ``; … ;`` |p_n| ``:`` |t_n| ``}``.
    In this case the types can be recursive and eta-conversion is disallowed. These kind of record types
    differ from their traditional versions in the sense that dependent
@@ -290,11 +290,11 @@ Reduction
 
 The basic reduction rule of a primitive projection is
 |p_i| ``(Build_``\ `R` |t_1| … |t_n|\ ``)`` :math:`{\rightarrow_{\iota}}` |t_i|.
-However, to take the :math:`{\delta}` flag into
+However, to take the δ flag into
 account, projections can be in two states: folded or unfolded. An
 unfolded primitive projection application obeys the rule above, while
 the folded version delta-reduces to the unfolded version. This allows to
-precisely mimic the usual unfolding rules of constants. Projections
+precisely mimic the usual unfolding rules of :term:`constants <constant>`. Projections
 obey the usual ``simpl`` flags of the ``Arguments`` command in particular.
 There is currently no way to input unfolded primitive projections at the
 user-level, and there is no way to display unfolded projections differently
@@ -305,8 +305,8 @@ Compatibility Projections and :g:`match`
 ++++++++++++++++++++++++++++++++++++++++
 
 To ease compatibility with ordinary record types, each primitive
-projection is also defined as a ordinary constant taking parameters and
-an object of the record type as arguments, and whose body is an
+projection is also defined as an ordinary :term:`constant` taking parameters and
+an object of the record type as arguments, and whose :term:`body` is an
 application of the unfolded primitive projection of the same name. These
 constants are used when elaborating partial applications of the
 projection. One can distinguish them from applications of the primitive

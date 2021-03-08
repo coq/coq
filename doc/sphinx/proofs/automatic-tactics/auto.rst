@@ -139,14 +139,13 @@ Programmable proof search
       Like :tacn:`eauto`, but uses a
       `breadth-first search <https://en.wikipedia.org/wiki/Breadth-first_search>`_.
 
-.. tacn:: autounfold {? @hintbases } {? @occurrences }
+.. tacn:: autounfold {? @hintbases } {? @simple_occurrences }
 
    Unfolds constants that were declared through a :cmd:`Hint Unfold`
    in the given databases.
 
-   :n:`@occurrences`
-     Performs the unfolding in the specified occurrences.  The :n:`at @occs_nums`
-     clause of :n:`@occurrences` is not supported.
+   :n:`@simple_occurrences`
+     Performs the unfolding in the specified occurrences.
 
 .. tacn:: autorewrite {? * } with {+ @ident } {? @occurrences } {? using @ltac_expr }
 
@@ -375,6 +374,9 @@ Creating Hints
       during unification of the goal with any lemma in the database and inside the
       discrimination network to relax or constrain it in the case of discriminated
       databases.
+
+      .. exn:: Cannot coerce @qualid to an evaluable reference.
+         :undocumented:
 
    .. cmd:: Hint {| Constants | Variables } {| Transparent | Opaque } {? : {+ @ident } }
       :name: Hint Constants; Hint Variables
