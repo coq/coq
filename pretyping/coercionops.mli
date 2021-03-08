@@ -44,6 +44,8 @@ type coe_info_typ = {
   coe_local : bool;
   coe_is_identity : bool;
   coe_is_projection : Projection.Repr.t option;
+  coe_source : cl_typ;
+  coe_target : cl_typ;
   coe_param : int;
 }
 
@@ -66,20 +68,9 @@ val class_of : env -> evar_map -> types -> types * cl_typ
 
 val class_args_of : env -> evar_map -> types -> constr list
 
-(** {6 [declare_coercion] adds a coercion in the graph of coercion paths } *)
-type coercion = {
-  coercion_type   : coe_typ;
-  coercion_local  : bool;
-  coercion_is_id  : bool;
-  coercion_is_proj  : Projection.Repr.t option;
-  coercion_source : cl_typ;
-  coercion_target : cl_typ;
-  coercion_params : int;
-}
+val subst_coercion : substitution -> coe_info_typ -> coe_info_typ
 
-val subst_coercion : substitution -> coercion -> coercion
-
-val declare_coercion : env -> evar_map -> coercion -> unit
+val declare_coercion : env -> evar_map -> coe_info_typ -> unit
 
 (** {6 Access to coercions infos } *)
 val coercion_exists : coe_typ -> bool

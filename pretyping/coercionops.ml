@@ -68,6 +68,8 @@ type coe_info_typ = {
   coe_local : bool;
   coe_is_identity : bool;
   coe_is_projection : Projection.Repr.t option;
+  coe_source : cl_typ;
+  coe_target : cl_typ;
   coe_param : int;
 }
 
@@ -280,7 +282,7 @@ let different_class_params env ci =
     | CL_CONST c -> Environ.is_polymorphic env (GlobRef.ConstRef c)
     | _ -> false
 
-let add_coercion_in_graph env sigma (ic,source,target) =
+let add_coercion_in_graph env sigma ic =
   let old_inheritance_graph = !inheritance_graph in
   let ambig_paths :
     ((cl_typ * cl_typ) * inheritance_path * inheritance_path) list ref =
@@ -312,45 +314,36 @@ let add_coercion_in_graph env sigma (ic,source,target) =
   let try_add_new_path1 ij p =
     let _ = try_add_new_path ij p in ()
   in
-  if try_add_new_path (source,target) [ic] then begin
+  if try_add_new_path (ic.coe_source, ic.coe_target) [ic] then begin
     ClPairMap.iter
       (fun (s,t) p ->
          if not (cl_typ_eq s t) then begin
-           if cl_typ_eq t source then begin
-             try_add_new_path1 (s,target) (p@[ic]);
+           if cl_typ_eq t ic.coe_source then begin
+             try_add_new_path1 (s, ic.coe_target) (p@[ic]);
              ClPairMap.iter
                (fun (u,v) q ->
-                  if not (cl_typ_eq u v) && cl_typ_eq u target then
+                  if not (cl_typ_eq u v) && cl_typ_eq u ic.coe_target then
                     try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;
-           if cl_typ_eq s target then try_add_new_path1 (source,t) (ic::p)
+           if cl_typ_eq s ic.coe_target then
+             try_add_new_path1 (ic.coe_source, t) (ic::p)
          end)
       old_inheritance_graph
   end;
   match !ambig_paths with [] -> () | _ -> warn_ambiguous_path !ambig_paths
 
-type coercion = {
-  coercion_type   : coe_typ;
-  coercion_local  : bool;
-  coercion_is_id  : bool;
-  coercion_is_proj  : Projection.Repr.t option;
-  coercion_source : cl_typ;
-  coercion_target : cl_typ;
-  coercion_params : int;
-}
-
 let subst_coercion subst c =
   let env = Global.env () in
-  let coe = subst_coe_typ subst c.coercion_type in
-  let cls = subst_cl_typ env subst c.coercion_source in
-  let clt = subst_cl_typ env subst c.coercion_target in
-  let clp = Option.Smart.map (subst_proj_repr subst) c.coercion_is_proj in
-  if c.coercion_type == coe && c.coercion_source == cls &&
-     c.coercion_target == clt && c.coercion_is_proj == clp
+  let coe = subst_coe_typ subst c.coe_value in
+  let cls = subst_cl_typ env subst c.coe_source in
+  let clt = subst_cl_typ env subst c.coe_target in
+  let clp = Option.Smart.map (subst_proj_repr subst) c.coe_is_projection in
+  if c.coe_value == coe && c.coe_source == cls && c.coe_target == clt &&
+     c.coe_is_projection == clp
   then c
-  else { c with coercion_type = coe; coercion_source = cls;
-                coercion_target = clt; coercion_is_proj = clp; }
+  else { c with coe_value = coe; coe_source = cls; coe_target = clt;
+                coe_is_projection = clp; }
 
 (* Computation of the class arity *)
 
@@ -375,17 +368,10 @@ let add_class env sigma cl =
   add_new_class cl { cl_param = class_params env sigma cl }
 
 let declare_coercion env sigma c =
-  let () = add_class env sigma c.coercion_source in
-  let () = add_class env sigma c.coercion_target in
-  let xf =
-    { coe_value = c.coercion_type;
-      coe_local = c.coercion_local;
-      coe_is_identity = c.coercion_is_id;
-      coe_is_projection = c.coercion_is_proj;
-      coe_param = c.coercion_params;
-    } in
-  let () = add_new_coercion c.coercion_type xf in
-  add_coercion_in_graph env sigma (xf, c.coercion_source, c.coercion_target)
+  let () = add_class env sigma c.coe_source in
+  let () = add_class env sigma c.coe_target in
+  let () = add_new_coercion c.coe_value c in
+  add_coercion_in_graph env sigma c
 
 (* For printing purpose *)
 let classes () =
