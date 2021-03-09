@@ -22,6 +22,7 @@ Require Ltac2.Fresh.
 Require Ltac2.Pattern.
 Require Ltac2.Std.
 Require Ltac2.Env.
+Require Ltac2.Ind.
 Require Ltac2.Printf.
 Require Ltac2.Ltac1.
 Require Export Ltac2.Notations.

@@ -1075,6 +1075,46 @@ let () = define1 "env_instantiate" reference begin fun r ->
   return (Value.of_constr c)
 end
 
+(** Ind *)
+
+let () = define2 "ind_equal" (repr_ext val_inductive) (repr_ext val_inductive) begin fun ind1 ind2 ->
+  return (Value.of_bool (Ind.UserOrd.equal ind1 ind2))
+end
+
+let () = define1 "ind_data" (repr_ext val_inductive) begin fun ind ->
+  Proofview.tclENV >>= fun env ->
+  if Environ.mem_mind (fst ind) env then
+    let mib = Environ.lookup_mind (fst ind) env in
+    return (Value.of_ext val_ind_data (ind, mib))
+  else
+    throw err_notfound
+end
+
+let () = define1 "ind_ntypes" (repr_ext val_ind_data) begin fun (ind, mib) ->
+  return (Value.of_int (Array.length mib.Declarations.mind_packets))
+end
+
+let () = define1 "ind_nconstructors" (repr_ext val_ind_data) begin fun ((_, n), mib) ->
+  let open Declarations in
+  return (Value.of_int (Array.length mib.mind_packets.(n).mind_consnames))
+end
+
+let () = define2 "ind_get_type" (repr_ext val_ind_data) int begin fun (ind, mib) n ->
+  if 0 <= n && n < Array.length mib.Declarations.mind_packets then
+    return (Value.of_ext val_inductive (fst ind, n))
+  else throw err_notfound
+end
+
+let () = define2 "ind_get_constructor" (repr_ext val_ind_data) int begin fun ((mind, n), mib) i ->
+  let open Declarations in
+  let ncons = Array.length mib.mind_packets.(n).mind_consnames in
+  if 0 <= i && i < ncons then
+    (* WARNING: In the ML API constructors are indexed from 1 for historical
+       reasons, but Ltac2 uses 0-indexing instead. *)
+    return (Value.of_ext val_constructor ((mind, n), i + 1))
+  else throw err_notfound
+end
+
 (** Ltac1 in Ltac2 *)
 
 let ltac1 = Tac2ffi.repr_ext Value.val_ltac1
