@@ -2274,7 +2274,7 @@ ltac2_entry: [
 ]
 
 tac2def_body: [
-| [ "_" | ident ] LIST0 tac2pat0 ":=" ltac2_expr      (* Ltac2 plugin *)
+| [ "_" | ident ] LIST0 tac2pat0 OPT ( ":" ltac2_type ) ":=" ltac2_expr      (* Ltac2 plugin *)
 ]
 
 tac2typ_def: [
@@ -2315,13 +2315,13 @@ ltac2_expr: [
 ]
 
 ltac2_expr5: [
-| "fun" LIST1 tac2pat0 "=>" ltac2_expr      (* Ltac2 plugin *)
+| "fun" LIST1 tac2pat0 OPT ( ":" ltac2_type ) "=>" ltac2_expr      (* Ltac2 plugin *)
 | "let" OPT "rec" ltac2_let_clause LIST0 ( "with" ltac2_let_clause ) "in" ltac2_expr      (* Ltac2 plugin *)
 | ltac2_expr3      (* Ltac2 plugin *)
 ]
 
 ltac2_let_clause: [
-| LIST1 tac2pat0 ":=" ltac2_expr      (* Ltac2 plugin *)
+| LIST1 tac2pat0 OPT ( ":" ltac2_type ) ":=" ltac2_expr      (* Ltac2 plugin *)
 ]
 
 ltac2_expr3: [
