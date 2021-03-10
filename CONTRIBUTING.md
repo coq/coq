@@ -643,7 +643,7 @@ reviewers, with specific requests.
 - [needs: benchmarking][needs-benchmarking] and [needs: testing][needs-testing]
   indicate the PR needs testing beyond what the test suite can handle.
   For example, performance benchmarking is currently performed with a different
-  infrastructure ([documented in the wiki][jenkins-doc]). Unless some followup
+  infrastructure ([documented in the wiki][Benchmarking]). Unless some followup
   is specifically requested, you aren't expected to do this additional testing.
 
 More generally, such labels should come with a description that should
@@ -1007,7 +1007,7 @@ to prepare overlays, and propose a simplified and documented
 procedure.
 
 We also have a benchmarking infrastructure, which is documented [on
-the wiki][jenkins-doc].
+the wiki][Benchmarking].
 
 ##### Restarting failed jobs #####
 
@@ -1225,6 +1225,7 @@ can be found [on the wiki][wiki-CUDW].
 
 [add-contributor]: https://github.com/orgs/coq/teams/contributors/members?add=true
 [api-doc]: https://coq.github.io/doc/master/api/
+[Benchmarking]: https://github.com/coq/coq/wiki/Benchmarking
 [CEP]: https://github.com/coq/ceps
 [check-owners]: dev/tools/check-owners-pr.sh
 [CI-README-developers]: dev/ci/README-developers.md
@@ -1272,7 +1273,6 @@ can be found [on the wiki][wiki-CUDW].
 [GitLab-coq]: https://gitlab.com/coq
 [GitLab-doc]: https://docs.gitlab.com/
 [JasonGross-coq-tools]: https://github.com/JasonGross/coq-tools
-[jenkins-doc]: https://github.com/coq/coq/wiki/Jenkins-(automated-benchmarking)
 [kind-documentation]: https://github.com/coq/coq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22
 [master-doc]: https://coq.github.io/doc/master/refman/
 [merge-pr]: dev/tools/merge-pr.sh
