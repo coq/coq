@@ -52,10 +52,10 @@ check_variable "CI_JOB_URL"
 : "${new_coq_opam_archive_git_branch:=master}"
 : "${old_coq_opam_archive_git_branch:=master}"
 : "${num_of_iterations:=1}"
-: "${coq_opam_packages:=coq-performance-tests-lite coq-engine-bench-lite coq-hott coq-bignums coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-coquelicot coq-lambda-rust coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst}"
+: "${coq_opam_packages:=coq-hott coq-bignums coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq coq-compcert coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto coq-unimath coq-coquelicot coq-lambda-rust coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst coq-performance-tests-lite coq-engine-bench-lite}"
 
-new_coq_commit=$(git rev-parse HEAD^2)
-old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
+if ! [[ $new_coq_commit ]]; then new_coq_commit=$(git rev-parse HEAD^2); fi
+if ! [[ $old_coq_commit ]]; then old_coq_commit=$(git merge-base HEAD^1 "$new_coq_commit"); fi
 
 if echo "$num_of_iterations" | grep '^[1-9][0-9]*$' 2> /dev/null > /dev/null; then
     :
@@ -342,7 +342,7 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         opam show $coq_opam_package >/dev/null || continue 2
     fi
 
-    for RUNNER in NEW OLD; do
+    for RUNNER in OLD NEW; do
 
         # perform measurements for the NEW/OLD commit (provided by the user)
         if [ $RUNNER = "NEW" ]; then

@@ -7,6 +7,7 @@ bench:
   script: dev/bench/gitlab.sh
   tags:
     - timing
+  needs: []
   variables:
     GIT_DEPTH: ""
   artifacts:
