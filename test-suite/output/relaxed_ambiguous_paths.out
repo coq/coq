@@ -3,32 +3,32 @@ Warning:
 New coercion path [ac; cd] : A >-> D is ambiguous with existing 
 [ab; bd] : A >-> D. [ambiguous-paths,typechecker]
 [ab] : A >-> B
-[ab; bd] : A >-> D
 [ac] : A >-> C
+[ab; bd] : A >-> D
 [bd] : B >-> D
 [cd] : C >-> D
 File "stdin", line 26, characters 0-28:
 Warning:
 New coercion path [ab; bc] : A >-> C is ambiguous with existing 
 [ac] : A >-> C. [ambiguous-paths,typechecker]
+[ab] : A >-> B
 [ac] : A >-> C
 [ac; cd] : A >-> D
-[ab] : A >-> B
-[cd] : C >-> D
 [bc] : B >-> C
 [bc; cd] : B >-> D
+[cd] : C >-> D
 [B_A] : B >-> A
 [C_A] : C >-> A
-[D_B] : D >-> B
 [D_A] : D >-> A
+[D_B] : D >-> B
 [D_C] : D >-> C
 [A'_A] : A' >-> A
-[B_A'] : B >-> A'
 [B_A'; A'_A] : B >-> A
-[C_A'] : C >-> A'
+[B_A'] : B >-> A'
 [C_A'; A'_A] : C >-> A
-[D_B; B_A'] : D >-> A'
+[C_A'] : C >-> A'
 [D_A] : D >-> A
+[D_B; B_A'] : D >-> A'
 [D_B] : D >-> B
 [D_C] : D >-> C
 File "stdin", line 121, characters 0-86:
@@ -36,12 +36,12 @@ Warning:
 New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing 
 [D_B; B_A'] : D >-> A'. [ambiguous-paths,typechecker]
 [A'_A] : A' >-> A
-[B_A'] : B >-> A'
 [B_A'; A'_A] : B >-> A
-[C_A'] : C >-> A'
+[B_A'] : B >-> A'
 [C_A'; A'_A] : C >-> A
-[D_B; B_A'] : D >-> A'
+[C_A'] : C >-> A'
 [D_A] : D >-> A
+[D_B; B_A'] : D >-> A'
 [D_B] : D >-> B
 [D_C] : D >-> C
 File "stdin", line 130, characters 0-47:

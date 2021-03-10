@@ -52,7 +52,6 @@ let ppmind kn = pp(MutInd.debug_print kn)
 let ppind (kn,i) = pp(MutInd.debug_print kn ++ str"," ++int i)
 let ppsp sp = pp(pr_path sp)
 let ppqualid qid = pp(pr_qualid qid)
-let ppclindex cl = pp(Coercionops.pr_cl_index cl)
 let ppscheme k = pp (Ind_tables.pr_scheme_kind k)
 
 let prrecarg = Declareops.pp_recarg
