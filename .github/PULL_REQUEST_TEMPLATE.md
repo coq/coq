@@ -17,3 +17,5 @@ Fixes / closes #????
 <!-- (Otherwise, remove these lines.) -->
 - [ ] Corresponding documentation was added / updated (including any warning and error messages added / removed / modified).
 - [ ] Entry added in the changelog (see https://github.com/coq/coq/tree/master/doc/changelog#unreleased-changelog for details).
+- [ ] Overlay pull requests (if this breaks 3rd party developments in CI, see
+https://github.com/coq/coq/blob/master/dev/ci/user-overlays/README.md for details)
