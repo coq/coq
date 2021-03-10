@@ -30,10 +30,6 @@ type cl_typ =
   | CL_IND of inductive
   | CL_PROJ of Projection.Repr.t
 
-type cl_info_typ = {
-  cl_param : int
-}
-
 let cl_typ_ord t1 t2 = match t1, t2 with
   | CL_SECVAR v1, CL_SECVAR v2 -> Id.compare v1 v2
   | CL_CONST c1, CL_CONST c2 -> Constant.CanOrd.compare c1 c2
@@ -56,8 +52,16 @@ struct
     if Int.equal c 0 then cl_typ_ord j1 j2 else c
 end
 
+module ClTypSet = Set.Make(ClTyp)
 module ClTypMap = Map.Make(ClTyp)
 module ClPairMap = Map.Make(ClPairOrd)
+
+type cl_info_typ = {
+  cl_param : int;
+  cl_reachable_from : ClTypSet.t;
+  cl_reachable_to : ClTypSet.t;
+  cl_repr : cl_typ;
+}
 
 type coe_typ = GlobRef.t
 
@@ -73,18 +77,18 @@ type coe_info_typ = {
   coe_param : int;
 }
 
-let coe_info_typ_equal c1 c2 =
-  GlobRef.equal c1.coe_value c2.coe_value &&
-    c1.coe_local == c2.coe_local &&
-    c1.coe_is_identity == c2.coe_is_identity &&
-    c1.coe_is_projection == c2.coe_is_projection &&
-    Int.equal c1.coe_param c2.coe_param
-
 type inheritance_path = coe_info_typ list
 
 let init_class_tab =
   let open ClTypMap in
-  add CL_FUN { cl_param = 0 } (add CL_SORT { cl_param = 0 } empty)
+  let cl_info params cl =
+    let cl_singleton = ClTypSet.singleton cl in
+    { cl_param = params;
+      cl_reachable_from = cl_singleton;
+      cl_reachable_to = cl_singleton;
+      cl_repr = cl }
+  in
+  add CL_FUN (cl_info 0 CL_FUN) (add CL_SORT (cl_info 0 CL_SORT) empty)
 
 let class_tab =
   Summary.ref ~name:"class_tab" (init_class_tab : cl_info_typ ClTypMap.t)
@@ -98,8 +102,7 @@ let inheritance_graph =
 (* ajout de nouveaux "objets" *)
 
 let add_new_class cl s =
-  if not (ClTypMap.mem cl !class_tab) then
-    class_tab := ClTypMap.add cl s !class_tab
+  class_tab := ClTypMap.add cl s !class_tab
 
 let add_new_coercion coe s =
   coercion_tab := CoeTypMap.add coe s !coercion_tab
@@ -283,54 +286,80 @@ let different_class_params env ci =
     | _ -> false
 
 let add_coercion_in_graph env sigma ic =
+  let source = ic.coe_source in
+  let target = ic.coe_target in
+  let source_info = class_info source in
+  let target_info = class_info target in
   let old_inheritance_graph = !inheritance_graph in
   let ambig_paths :
     ((cl_typ * cl_typ) * inheritance_path * inheritance_path) list ref =
     ref [] in
+  let check_coherence (i, j as ij) p q =
+    let i_info = class_info i in
+    let j_info = class_info j in
+    let between_ij = ClTypSet.inter i_info.cl_reachable_from j_info.cl_reachable_to in
+    if cl_typ_eq i_info.cl_repr i &&
+       cl_typ_eq j_info.cl_repr j &&
+       ClTypSet.is_empty
+         (ClTypSet.diff (ClTypSet.inter between_ij source_info.cl_reachable_to)
+            i_info.cl_reachable_to) &&
+       ClTypSet.is_empty
+         (ClTypSet.diff
+            (ClTypSet.inter between_ij target_info.cl_reachable_from)
+            j_info.cl_reachable_from) &&
+       not (compare_path env sigma i p q)
+    then
+      ambig_paths := (ij, p, q) :: !ambig_paths
+  in
   let try_add_new_path (i,j as ij) p =
-    (* If p is a cycle, we check whether p is definitionally an identity
-       function or not. If it is not, we report p as an ambiguous inheritance
-       path. *)
-    if cl_typ_eq i j && not (compare_path env sigma i p []) then
-      ambig_paths := (ij,p,[])::!ambig_paths;
+    if cl_typ_eq i j then check_coherence ij p [];
     if not (cl_typ_eq i j) || different_class_params env i then
       match lookup_path_between_class ij with
-      | q ->
-        (* p has the same source and target classes as an existing path q. We
-           report them as ambiguous inheritance paths if
-           1. p and q have no common element, and
-           2. p and q are not convertible.
-           If 1 does not hold, say p = p1 @ [c] @ p2 and q = q1 @ [c] @ q2,
-           convertibility of p1 and q1, also, p2 and q2 should be checked; thus,
-           checking the ambiguity of p and q is redundant with them. *)
-        if not (List.exists (fun c -> List.exists (coe_info_typ_equal c) q) p ||
-                compare_path env sigma i p q) then
-          ambig_paths := (ij,p,q)::!ambig_paths;
-        false
-      | exception Not_found -> (add_new_path ij p; true)
+      | q -> (if not (cl_typ_eq i j) then check_coherence ij p q); false
+      | exception Not_found -> add_new_path ij p; true
     else
       false
   in
   let try_add_new_path1 ij p =
     let _ = try_add_new_path ij p in ()
   in
-  if try_add_new_path (ic.coe_source, ic.coe_target) [ic] then begin
+  if try_add_new_path (source, target) [ic] then begin
     ClPairMap.iter
       (fun (s,t) p ->
          if not (cl_typ_eq s t) then begin
-           if cl_typ_eq t ic.coe_source then begin
-             try_add_new_path1 (s, ic.coe_target) (p@[ic]);
+           if cl_typ_eq t source then begin
+             try_add_new_path1 (s, target) (p@[ic]);
              ClPairMap.iter
                (fun (u,v) q ->
-                  if not (cl_typ_eq u v) && cl_typ_eq u ic.coe_target then
+                  if not (cl_typ_eq u v) && cl_typ_eq u target then
                     try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;
-           if cl_typ_eq s ic.coe_target then
-             try_add_new_path1 (ic.coe_source, t) (ic::p)
+           if cl_typ_eq s target then try_add_new_path1 (source, t) (ic::p)
          end)
       old_inheritance_graph
   end;
+  class_tab := ClTypMap.mapi (fun k k_info ->
+      let reachable_k_source = ClTypSet.mem k source_info.cl_reachable_to in
+      let reachable_target_k = ClTypSet.mem k target_info.cl_reachable_from in
+      { k_info with
+        cl_reachable_from =
+          if reachable_k_source then
+            ClTypSet.union
+              k_info.cl_reachable_from target_info.cl_reachable_from
+          else
+            k_info.cl_reachable_from;
+        cl_reachable_to =
+          if reachable_target_k then
+            ClTypSet.union k_info.cl_reachable_to source_info.cl_reachable_to
+          else
+            k_info.cl_reachable_to;
+        cl_repr =
+          if reachable_k_source && reachable_target_k then
+            target_info.cl_repr
+          else
+            k_info.cl_repr
+      }) !class_tab;
   match !ambig_paths with [] -> () | _ -> warn_ambiguous_path !ambig_paths
 
 let subst_coercion subst c =
@@ -365,7 +394,13 @@ let class_params env sigma = function
 (* add_class : cl_typ -> locality_flag option -> bool -> unit *)
 
 let add_class env sigma cl =
-  add_new_class cl { cl_param = class_params env sigma cl }
+  if not (class_exists cl) then
+    let cl_singleton = ClTypSet.singleton cl in
+    add_new_class cl {
+      cl_param = class_params env sigma cl;
+      cl_reachable_from = cl_singleton;
+      cl_reachable_to = cl_singleton;
+      cl_repr = cl }
 
 let declare_coercion env sigma c =
   let () = add_class env sigma c.coe_source in
