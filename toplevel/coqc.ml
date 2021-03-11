@@ -34,6 +34,8 @@ coqc specific options:\
 \n  -vok                   process the file by loading .vos instead of .vo files for\
 \n                         dependencies, and produce an empty .vok file on success\
 \n  -vio                   process statements and suspend opaque proofs, and produce a .vio file\
+\n  -noglob                do not dump globalizations\
+\n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
 \n\
 \nUndocumented:\
 \n  -quick                 (deprecated) alias for -vio\
