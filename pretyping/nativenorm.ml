@@ -135,8 +135,9 @@ let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
 
 
 let construct_of_constr const env sigma tag typ =
-  let t, l = app_type env typ in
-  match EConstr.kind_upto sigma t with
+  let typ = Reductionops.clos_whd_flags CClosure.all env sigma (EConstr.of_constr typ) in
+  let t, l = decompose_appvect (EConstr.Unsafe.to_constr typ) in
+  match Constr.kind t with
   | Ind (ind,u) ->
       construct_of_constr_notnative const env tag ind u l
   | _ ->

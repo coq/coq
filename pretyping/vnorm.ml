@@ -78,8 +78,9 @@ let type_constructor mind mib u (ctx, typ) params =
 
 
 
-let construct_of_constr const env tag typ =
-  let (t, allargs) = decompose_appvect (whd_all env typ) in
+let construct_of_constr const env sigma tag typ =
+  let typ = Reductionops.clos_whd_flags CClosure.all env sigma (EConstr.of_constr typ) in
+  let t, allargs = decompose_appvect (EConstr.Unsafe.to_constr typ) in
   match Constr.kind t with
   | Ind ((mind,_ as ind), u as indu) ->
     let mib,mip = lookup_mind_specif env ind in
@@ -92,8 +93,8 @@ let construct_of_constr const env tag typ =
      assert (Constr.equal t (Typeops.type_of_int env));
       (mkInt (Uint63.of_int tag), t)
 
-let construct_of_constr_const env tag typ =
-  fst (construct_of_constr true env tag typ)
+let construct_of_constr_const env sigma tag typ =
+  fst (construct_of_constr true env sigma tag typ)
 
 let construct_of_constr_block = construct_of_constr false
 
@@ -156,7 +157,7 @@ and nf_whd env sigma whd typ =
       let _, args = nf_args env sigma vargs t in
       mkApp(cfd,args)
   | Vconstr_const n ->
-    construct_of_constr_const env n typ
+    construct_of_constr_const env sigma n typ
   | Vconstr_block b ->
       let tag = btag b in
       let (tag,ofs) =
@@ -165,7 +166,7 @@ and nf_whd env sigma whd typ =
           | Vconstr_const tag -> (tag+Obj.last_non_constant_constructor_tag, 1)
           | _ -> assert false
         else (tag, 0) in
-      let capp,ctyp = construct_of_constr_block env tag typ in
+      let capp,ctyp = construct_of_constr_block env sigma tag typ in
       let args = nf_bargs env sigma b ofs ctyp in
       mkApp(capp,args)
   | Vint64 i -> i |> Uint63.of_int64 |> mkInt
@@ -414,9 +415,9 @@ let cbv_vm env sigma c t  =
   if Termops.occur_meta sigma c then
     CErrors.user_err Pp.(str "vm_compute does not support metas.");
   (* This evar-normalizes terms beforehand *)
-  let c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
-  let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
-  let v = Vmsymtable.val_of_constr env c in
+  let c = EConstr.Unsafe.to_constr c in
+  let t = EConstr.Unsafe.to_constr t in
+  let v = Vmsymtable.val_of_constr env (Evd.existential_opt_value0 sigma) c in
   EConstr.of_constr (nf_val env sigma v t)
 
 let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
