@@ -706,7 +706,11 @@ library:ci-engine_bench:
   extends: .ci-template
 
 library:ci-fcsl_pcm:
-  extends: .ci-template
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-fiat_crypto:
   extends: .ci-template-flambda
@@ -781,6 +785,10 @@ plugin:ci-gappa:
 
 library:ci-geocoq:
   extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 library:ci-hott:
   extends: .ci-template
@@ -878,6 +886,10 @@ plugin:plugin-tutorial:
 
 plugin:ci-quickchick:
   extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
 
 plugin:ci-reduction_effects:
   extends: .ci-template
