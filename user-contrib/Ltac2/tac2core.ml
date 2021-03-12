@@ -1409,13 +1409,14 @@ let () =
     let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
     let c = Id.Map.find id ist.env_ist in
     let c = Value.to_constr c in
-    let sigma, concl = match tycon with
-    | Some ty -> sigma, ty
-    | None -> GlobEnv.new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole)
-    in
-    let sigma = Typing.check (GlobEnv.renamed_env env) sigma c concl in
-    let j = { Environ.uj_val = c; Environ.uj_type = concl } in
-    (j, sigma)
+    let t = Retyping.get_type_of (GlobEnv.renamed_env env) sigma c in
+    match tycon with
+    | None ->
+      { Environ.uj_val = c; Environ.uj_type = t }, sigma
+    | Some ty ->
+      let sigma = Evarconv.unify_leq_delay (GlobEnv.renamed_env env) sigma t ty in
+      let j = { Environ.uj_val = c; Environ.uj_type = ty } in
+      j, sigma
   in
   GlobEnv.register_constr_interp0 wit_ltac2_quotation interp
 
