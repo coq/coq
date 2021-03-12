@@ -9,11 +9,12 @@ Ltac2 Eval
   end in
   let data := Ind.data nat in
   (* Check that there is only one inductive in the block *)
-  let ntypes := Ind.ntypes data in
+  let ntypes := Ind.nblocks data in
   let () := if Int.equal ntypes 1 then () else Control.throw Not_found in
-  let nat' := Ind.get_type data 0 in
+  let nat' := Ind.repr (Ind.get_block data 0) in
   (* Check it corresponds *)
   let () := if Ind.equal nat nat' then () else Control.throw Not_found in
+  let () := if Int.equal (Ind.index nat) 0 then () else Control.throw Not_found in
   (* Check the number of constructors *)
   let nconstr := Ind.nconstructors data in
   let () := if Int.equal nconstr 2 then () else Control.throw Not_found in

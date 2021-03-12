@@ -1090,7 +1090,15 @@ let () = define1 "ind_data" (repr_ext val_inductive) begin fun ind ->
     throw err_notfound
 end
 
-let () = define1 "ind_ntypes" (repr_ext val_ind_data) begin fun (ind, mib) ->
+let () = define1 "ind_repr" (repr_ext val_ind_data) begin fun (ind, _) ->
+  return (Value.of_ext val_inductive ind)
+end
+
+let () = define1 "ind_index" (repr_ext val_inductive) begin fun (ind, n) ->
+  return (Value.of_int n)
+end
+
+let () = define1 "ind_nblocks" (repr_ext val_ind_data) begin fun (ind, mib) ->
   return (Value.of_int (Array.length mib.Declarations.mind_packets))
 end
 
@@ -1099,9 +1107,9 @@ let () = define1 "ind_nconstructors" (repr_ext val_ind_data) begin fun ((_, n), 
   return (Value.of_int (Array.length mib.mind_packets.(n).mind_consnames))
 end
 
-let () = define2 "ind_get_type" (repr_ext val_ind_data) int begin fun (ind, mib) n ->
+let () = define2 "ind_get_block" (repr_ext val_ind_data) int begin fun (ind, mib) n ->
   if 0 <= n && n < Array.length mib.Declarations.mind_packets then
-    return (Value.of_ext val_inductive (fst ind, n))
+    return (Value.of_ext val_ind_data ((fst ind, n), mib))
   else throw err_notfound
 end
 
