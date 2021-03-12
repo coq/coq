@@ -532,12 +532,12 @@ class ProductionObject(CoqObject):
         self.signatures = []
         indexnode = super().run()[0]  # makes calls to handle_signature
 
-        table = nodes.container(classes=['prodn-table'])
-        tgroup = nodes.container(classes=['prodn-column-group'])
+        table = nodes.inline(classes=['prodn-table'])
+        tgroup = nodes.inline(classes=['prodn-column-group'])
         for _ in range(4):
-            tgroup += nodes.container(classes=['prodn-column'])
+            tgroup += nodes.inline(classes=['prodn-column'])
         table += tgroup
-        tbody = nodes.container(classes=['prodn-row-group'])
+        tbody = nodes.inline(classes=['prodn-row-group'])
         table += tbody
 
         # create rows
@@ -545,8 +545,8 @@ class ProductionObject(CoqObject):
             lhs, op, rhs, tag = signature
             position = self.state_machine.get_source_and_line(self.lineno)
 
-            row = nodes.container(classes=['prodn-row'])
-            entry = nodes.container(classes=['prodn-cell-nonterminal'])
+            row = nodes.inline(classes=['prodn-row'])
+            entry = nodes.inline(classes=['prodn-cell-nonterminal'])
             if lhs != "":
                 target_name = make_id('grammar-token-' + lhs)
                 target = nodes.target('', '', ids=[target_name], names=[target_name])
@@ -556,19 +556,19 @@ class ProductionObject(CoqObject):
                 entry += inline
                 entry += notation_to_sphinx('@'+lhs, *position)
             else:
-                entry += nodes.Text('')
+                entry += nodes.literal('', '')
             row += entry
 
-            entry = nodes.container(classes=['prodn-cell-op'])
-            entry += nodes.Text(op)
+            entry = nodes.inline(classes=['prodn-cell-op'])
+            entry += nodes.literal(op, op)
             row += entry
 
-            entry = nodes.container(classes=['prodn-cell-production'])
+            entry = nodes.inline(classes=['prodn-cell-production'])
             entry += notation_to_sphinx(rhs, *position)
             row += entry
 
-            entry = nodes.container(classes=['prodn-cell-tag'])
-            entry += nodes.Text(tag)
+            entry = nodes.inline(classes=['prodn-cell-tag'])
+            entry += nodes.literal(tag, tag)
             row += entry
 
             tbody += row
