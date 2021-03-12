@@ -979,69 +979,52 @@ let collapse_appl sigma c = match EConstr.kind sigma c with
 
 (* First utilities for avoiding telescope computation for subst_term *)
 
-let prefix_application sigma eq_fun (k,c) t =
+let prefix_application sigma eq_fun k l1 t =
   let open EConstr in
-  let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
-  match EConstr.kind sigma c', EConstr.kind sigma t' with
-    | App (f1,cl1), App (f2,cl2) ->
-        let l1 = Array.length cl1
-        and l2 = Array.length cl2 in
+  let t' = collapse_appl sigma t in
+  if 0 < l1 then match EConstr.kind sigma t' with
+    | App (f2,cl2) ->
+        let l2 = Array.length cl2 in
         if l1 <= l2
-           && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
-          Some (mkApp (mkRel k, Array.sub cl2 l1 (l2 - l1)))
+           && eq_fun sigma k (mkApp (f2, Array.sub cl2 0 l1)) then
+          Some (Array.sub cl2 l1 (l2 - l1))
         else
           None
     | _ -> None
+  else None
 
-let my_prefix_application sigma eq_fun (k,c) by_c t =
-  let open EConstr in
-  let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
-  match EConstr.kind sigma c', EConstr.kind sigma t' with
-    | App (f1,cl1), App (f2,cl2) ->
-        let l1 = Array.length cl1
-        and l2 = Array.length cl2 in
-        if l1 <= l2
-           && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
-          Some (mkApp ((Vars.lift k by_c), Array.sub cl2 l1 (l2 - l1)))
-        else
-          None
-    | _ -> None
-
-(* Recognizing occurrences of a given subterm in a term: [subst_term c t]
-   substitutes [(Rel 1)] for all occurrences of term [c] in a term [t];
-   works if [c] has rels *)
-
-let subst_term_gen sigma eq_fun c t =
-  let open EConstr in
-  let open Vars in
-  let rec substrec (k,c as kc) t =
-    match prefix_application sigma eq_fun kc t with
-      | Some x -> x
-      | None ->
-    if eq_fun sigma c t then mkRel k
-    else
-      EConstr.map_with_binders sigma (fun (k,c) -> (k+1,lift 1 c)) substrec kc t
+let eq_upto_lift cache c sigma k t =
+  let c =
+    try Int.Map.find k !cache
+    with Not_found ->
+      let c = EConstr.Vars.lift k c in
+      let () = cache := Int.Map.add k c !cache in
+      c
   in
-  substrec (1,c) t
-
-let subst_term sigma c t = subst_term_gen sigma EConstr.eq_constr c t
+  EConstr.eq_constr sigma c t
 
 (* Recognizing occurrences of a given subterm in a term :
    [replace_term c1 c2 t] substitutes [c2] for all occurrences of
    term [c1] in a term [t]; works if [c1] and [c2] have rels *)
 
-let replace_term_gen sigma eq_fun c by_c in_t =
-  let rec substrec (k,c as kc) t =
-    match my_prefix_application sigma eq_fun kc by_c t with
-      | Some x -> x
+let replace_term_gen sigma eq_fun ar by_c in_t =
+  let rec substrec k t =
+    match prefix_application sigma eq_fun k ar t with
+      | Some args -> EConstr.mkApp (EConstr.Vars.lift k by_c, args)
       | None ->
-    (if eq_fun sigma c t then (EConstr.Vars.lift k by_c) else
-      EConstr.map_with_binders sigma (fun (k,c) -> (k+1,EConstr.Vars.lift 1 c))
-        substrec kc t)
+    (if eq_fun sigma k t then (EConstr.Vars.lift k by_c) else
+      EConstr.map_with_binders sigma succ substrec k t)
   in
-  substrec (0,c) in_t
+  substrec 0 in_t
 
-let replace_term sigma c byc t = replace_term_gen sigma EConstr.eq_constr c byc t
+let replace_term sigma c byc t =
+  let cache = ref Int.Map.empty in
+  let c = collapse_appl sigma c in
+  let ar = Array.length (snd (decompose_app_vect sigma c)) in
+  let eq sigma k t = eq_upto_lift cache c sigma k t in
+  replace_term_gen sigma eq ar byc t
+
+let subst_term sigma c t = replace_term sigma c (EConstr.mkRel 1) t
 
 let vars_of_env env =
   let s = Environ.ids_of_named_context_val (Environ.named_context_val env) in

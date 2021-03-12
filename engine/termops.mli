@@ -122,16 +122,12 @@ val pop : constr -> constr
 (** Substitution of an arbitrary large term. Uses equality modulo
    reduction of let *)
 
-(** [subst_term_gen eq d c] replaces [d] by [Rel 1] in [c] using [eq]
-   as equality *)
-val subst_term_gen : Evd.evar_map ->
-  (Evd.evar_map -> constr -> constr -> bool) -> constr -> constr -> constr
-
-(** [replace_term_gen eq d e c] replaces [d] by [e] in [c] using [eq]
-   as equality *)
+(** [replace_term_gen eq arity e c] replaces matching subterms according to
+    [eq] by [e] in [c]. If [arity] is non-zero applications of larger length
+    are handled atomically. *)
 val replace_term_gen :
-  Evd.evar_map -> (Evd.evar_map -> constr -> constr -> bool) ->
-    constr -> constr -> constr -> constr
+  Evd.evar_map -> (Evd.evar_map -> int -> constr -> bool) ->
+    int -> constr -> constr -> constr
 
 (** [subst_term d c] replaces [d] by [Rel 1] in [c] *)
 val subst_term : Evd.evar_map -> constr -> constr -> constr
