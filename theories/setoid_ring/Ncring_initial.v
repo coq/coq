@@ -113,7 +113,6 @@ Ltac rsimpl := simpl.
    gen_phiPOS1 (x + y) == (gen_phiPOS1 x) + (gen_phiPOS1 y).
  Proof.
   induction x;destruct y;simpl;norm.
-  rewrite Pos.add_carry_spec.
   rewrite ARgen_phiPOS_Psucc.
   rewrite IHx;norm.
   add_push (gen_phiPOS1 y);add_push 1;reflexivity.

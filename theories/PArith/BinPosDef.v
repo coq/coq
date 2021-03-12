@@ -54,7 +54,7 @@ Fixpoint succ x :=
 
 Fixpoint add x y :=
   match x, y with
-    | p~1, q~1 => (add_carry p q)~0
+    | p~1, q~1 => (succ (add p q))~0
     | p~1, q~0 => (add p q)~1
     | p~1, 1 => (succ p)~0
     | p~0, q~1 => (add p q)~1
@@ -63,20 +63,9 @@ Fixpoint add x y :=
     | 1, q~1 => (succ q)~0
     | 1, q~0 => q~1
     | 1, 1 => 1~0
-  end
-
-with add_carry x y :=
-  match x, y with
-    | p~1, q~1 => (add_carry p q)~1
-    | p~1, q~0 => (add_carry p q)~0
-    | p~1, 1 => (succ p)~1
-    | p~0, q~1 => (add_carry p q)~0
-    | p~0, q~0 => (add p q)~1
-    | p~0, 1 => (succ p)~0
-    | 1, q~1 => (succ q)~1
-    | 1, q~0 => (succ q)~0
-    | 1, 1 => 1~1
   end.
+
+Definition add_carry x y := succ (add x y).
 
 Infix "+" := add : positive_scope.
 

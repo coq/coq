@@ -177,7 +177,7 @@ Qed.
 
 Theorem add_carry_spec p q : add_carry p q = succ (p + q).
 Proof.
-  revert q. induction p; intro q; destruct q; simpl; now f_equal.
+  reflexivity.
 Qed.
 
 (** ** Commutativity *)
@@ -185,7 +185,7 @@ Qed.
 Theorem add_comm p q : p + q = q + p.
 Proof.
   revert q. induction p; intro q; destruct q; simpl; f_equal; trivial.
-  rewrite 2 add_carry_spec; now f_equal.
+  now f_equal.
 Qed.
 
 (** ** Permutation of [add] and [succ] *)
@@ -223,7 +223,7 @@ Proof.
   revert p q. induction r.
   intros [p|p| ] [q|q| ] H; simpl; destr_eq H; f_equal;
    auto using add_carry_add; contradict H;
-   rewrite add_carry_spec, <- add_succ_r; auto using add_no_neutral.
+   rewrite <- add_succ_r; auto using add_no_neutral.
   intros [p|p| ] [q|q| ] H; simpl; destr_eq H; f_equal; auto;
     contradict H; auto using add_no_neutral.
   intros p q H. apply succ_inj. now rewrite <- 2 add_1_r.
@@ -689,8 +689,8 @@ Proof.
  destruct (IHp q) as [|r|r]; subst; try constructor.
   now apply SubIsNeg with 1.
   destruct r; simpl; try constructor; simpl.
-   now rewrite add_carry_spec, <- add_succ_r.
-   now rewrite add_carry_spec, <- add_succ_r, succ_pred_double.
+   now rewrite <- add_succ_r.
+   now rewrite <- add_succ_r, succ_pred_double.
    now rewrite add_1_r.
   now apply SubIsNeg with r~1.
  (* p~0 q~0 *)
@@ -1666,7 +1666,7 @@ destruct (sub_mask_pos' _ _ LT) as (y & -> & H). constructor.
 rewrite Hfg, <- H. now rewrite square_xI, add_assoc. clear Hfg.
 rewrite <- lt_succ_r in Hr. change (r < s~1) in Hr.
 rewrite <- lt_succ_r, (add_lt_mono_l (s~0~1)), H. simpl.
-rewrite add_carry_spec, add_diag. simpl.
+rewrite add_diag. simpl.
 destruct Hf,Hg; subst; red; simpl_compare; now rewrite Hr.
 (* - GT *)
 constructor. now rewrite Hfg, square_xO. apply lt_succ_r, GT.

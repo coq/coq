@@ -138,7 +138,6 @@ Section ZMORPHISM.
  Proof.
   intros x;induction x as [x IHx|x IHx|];
    intros y;destruct y as [y|y|];simpl;norm.
-  rewrite Pos.add_carry_spec.
   rewrite ARgen_phiPOS_Psucc.
   rewrite IHx;norm.
   add_push (gen_phiPOS1 y);add_push 1;rrefl.
