@@ -51,6 +51,8 @@ let make ~hypnaming env sigma lvar =
   }
 
 let env env = env.static_env
+let renamed_env env = env.renamed_env
+let lfun env = env.lvar.ltac_genargs
 
 let vars_of_env env =
   Id.Set.union (Id.Map.domain env.lvar.ltac_genargs) (vars_of_env env.static_env)
@@ -183,10 +185,13 @@ let interp_ltac_variable ?loc typing_fun env sigma id : Evd.evar_map * unsafe_ju
 
 let interp_ltac_id env id = ltac_interp_id env.lvar id
 
+type 'a obj_interp_fun =
+  ?loc:Loc.t -> poly:bool -> t -> Evd.evar_map -> Evardefine.type_constraint ->
+  'a -> unsafe_judgment * Evd.evar_map
+
 module ConstrInterpObj =
 struct
-  type ('r, 'g, 't) obj =
-    unbound_ltac_var_map -> bool -> env -> Evd.evar_map -> types -> 'g -> constr * Evd.evar_map
+  type ('r, 'g, 't) obj = 'g obj_interp_fun
   let name = "constr_interp"
   let default _ = None
 end
@@ -195,8 +200,8 @@ module ConstrInterp = Genarg.Register(ConstrInterpObj)
 
 let register_constr_interp0 = ConstrInterp.register0
 
-let interp_glob_genarg env poly sigma ty arg =
+let interp_glob_genarg ?loc ~poly env sigma ty arg =
   let open Genarg in
   let GenArg (Glbwit tag, arg) = arg in
   let interp = ConstrInterp.obj tag in
-  interp env.lvar.ltac_genargs poly env.renamed_env sigma ty arg
+  interp ?loc ~poly env sigma ty arg
