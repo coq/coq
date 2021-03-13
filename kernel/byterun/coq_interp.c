@@ -230,6 +230,12 @@ if (sp - num_args < coq_stack_threshold) {                                     \
     *sp = swap_accu_sp_tmp__;                   \
   }while(0)
 
+/* Turn a code pointer into a stack value usable as a return address, and conversely.
+   The least significant bit is set to 1 so that the GC does not mistake return
+   addresses for heap pointers. */
+#define StoreRA(p) ((value)(p) + 1)
+#define LoadRA(p) ((code_t)((value)(p) - 1))
+
 #if OCAML_VERSION < 41000
 /* For signal handling, we hijack some code from the caml runtime */
 
@@ -445,7 +451,7 @@ value coq_interprete
       Instruct(PUSH_RETADDR) {
         print_instr("PUSH_RETADDR");
         sp -= 3;
-        sp[0] = (value) (pc + *pc);
+        sp[0] = StoreRA(pc + *pc);
         sp[1] = coq_env;
         sp[2] = Val_long(coq_extra_args);
         coq_extra_args = 0;
@@ -466,7 +472,7 @@ value coq_interprete
         arg1 = sp[0];
         sp -= 3;
         sp[0] = arg1;
-        sp[1] = (value)pc;
+        sp[1] = StoreRA(pc);
         sp[2] = coq_env;
         sp[3] = Val_long(coq_extra_args);
         print_instr("call stack=");
@@ -489,7 +495,7 @@ value coq_interprete
         sp -= 3;
         sp[0] = arg1;
         sp[1] = arg2;
-        sp[2] = (value)pc;
+        sp[2] = StoreRA(pc);
         sp[3] = coq_env;
         sp[4] = Val_long(coq_extra_args);
         pc = Code_val(accu);
@@ -511,7 +517,7 @@ value coq_interprete
         sp[0] = arg1;
         sp[1] = arg2;
         sp[2] = arg3;
-        sp[3] = (value)pc;
+        sp[3] = StoreRA(pc);
         sp[4] = coq_env;
         sp[5] = Val_long(coq_extra_args);
         pc = Code_val(accu);
@@ -531,7 +537,7 @@ value coq_interprete
         sp[1] = arg2;
         sp[2] = arg3;
         sp[3] = arg4;
-        sp[4] = (value)pc;
+        sp[4] = StoreRA(pc);
         sp[5] = coq_env;
         sp[6] = Val_long(coq_extra_args);
         pc = Code_val(accu);
@@ -647,7 +653,7 @@ value coq_interprete
           coq_env = accu;
         } else {
           print_instr("extra args = 0");
-          pc = (code_t)(sp[0]);
+          pc = LoadRA(sp[0]);
           coq_env = sp[1];
           coq_extra_args = Long_val(sp[2]);
           sp += 3;
@@ -682,7 +688,7 @@ value coq_interprete
           for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
           Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
           sp += num_args;
-          pc = (code_t)(sp[0]);
+          pc = LoadRA(sp[0]);
           coq_env = sp[1];
           coq_extra_args = Long_val(sp[2]);
           sp += 3;
@@ -707,7 +713,7 @@ value coq_interprete
             Field(accu, 2) = coq_env;
             for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
             sp += num_args;
-            pc = (code_t)(sp[0]);
+            pc = LoadRA(sp[0]);
             coq_env = sp[1];
             coq_extra_args = Long_val(sp[2]);
             sp += 3;
@@ -745,7 +751,7 @@ value coq_interprete
             Code_val(block) = accumulate;
             Field(block, 1) = Val_int(2);
             accu = block;
-            pc = (code_t)(sp[0]);
+            pc = LoadRA(sp[0]);
             coq_env = sp[1];
             coq_extra_args = Long_val(sp[2]);
             sp += 3;
@@ -1031,7 +1037,7 @@ value coq_interprete
               mlsize_t i, nargs;
               sp -= 2;
               // Push the current instruction as the return address
-              sp[0] = (value)(pc - 1);
+              sp[0] = StoreRA(pc - 1);
               sp[1] = coq_env;
               coq_env = Field(accu, 0); // Pointer to suspension
               accu = sp[2]; // Save accumulator to accu register
@@ -1142,7 +1148,7 @@ value coq_interprete
           for (i = size; i < sz; ++i)
             caml_initialize(&Field(accu, i), *sp++);
         }
-        pc = (code_t)(sp[0]);
+        pc = LoadRA(sp[0]);
         coq_env = sp[1];
         coq_extra_args = Long_val(sp[2]);
         sp += 3;
@@ -1160,7 +1166,7 @@ value coq_interprete
             sp-=2;
             pc++;
             // Push the return address
-            sp[0] = (value) (pc + *pc);
+            sp[0] = StoreRA(pc + *pc);
             sp[1] = coq_env;
             coq_env = Field(accu,0); // Pointer to suspension
             accu = sp[2]; // Save accumulator to accu register
@@ -1263,7 +1269,7 @@ value coq_interprete
         }
         Code_val(accu) = accumulate;
         Field(accu, 1) = Val_int(2);
-        pc = (code_t)(sp[0]);
+        pc = LoadRA(sp[0]);
         coq_env = sp[1];
         coq_extra_args = Long_val(sp[2]);
         sp += 3;
@@ -1916,7 +1922,7 @@ value coq_push_ra(value code) {
   code_t tcode = Code_val(code);
   print_instr("push_ra");
   coq_sp -= 3;
-  coq_sp[0] = (value) tcode;
+  coq_sp[0] = StoreRA(tcode);
   coq_sp[1] = Val_unit;
   coq_sp[2] = Val_long(0);
   return Val_unit;
