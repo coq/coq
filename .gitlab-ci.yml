@@ -820,6 +820,13 @@ library:ci-vst:
   - build:edge+flambda
   - library:ci-flocq
 
+library:ci-deriving:
+  extends: .ci-template-flambda
+  stage: stage-3
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+
 # Plugins are by definition the projects that depend on Coq's ML API
 
 plugin:ci-aac_tactics:
