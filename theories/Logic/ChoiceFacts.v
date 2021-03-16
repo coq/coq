@@ -676,7 +676,7 @@ Qed.
 
     We show instead that functional relation reification and the
     functional form of the axiom of choice are equivalent on decidable
-    relation with [nat] as codomain
+    relations with [nat] as codomain.
 *)
 
 Require Import Wf_nat.
