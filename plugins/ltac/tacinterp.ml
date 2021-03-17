@@ -2148,7 +2148,8 @@ let interp_redexp env sigma r =
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
 let _ =
-  let eval lfun poly env sigma ty tac =
+  let eval ?loc ~poly env sigma tycon tac =
+    let lfun = GlobEnv.lfun env in
     let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
     let ist = { lfun; poly; extra; } in
     let tac = eval_tactic_ist ist tac in
@@ -2156,8 +2157,13 @@ let _ =
        poly seems like enough to get reasonable behavior in practice
      *)
     let name = Id.of_string "ltac_gen" in
-    let (c, sigma) = Proof.refine_by_tactic ~name ~poly env sigma ty tac in
-    (EConstr.of_constr c, sigma)
+    let sigma, ty = match tycon with
+    | Some ty -> sigma, ty
+    | None -> GlobEnv.new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole)
+    in
+    let (c, sigma) = Proof.refine_by_tactic ~name ~poly (GlobEnv.renamed_env env) sigma ty tac in
+    let j = { Environ.uj_val = EConstr.of_constr c; uj_type = ty } in
+    (j, sigma)
   in
   GlobEnv.register_constr_interp0 wit_tactic eval
 

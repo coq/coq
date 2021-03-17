@@ -15,11 +15,18 @@ open EConstr
 open Ltac_pretype
 open Evarutil
 
+(** Type of environment extended with naming and ltac interpretation data *)
+
+type t
+
 (** To embed constr in glob_constr *)
 
+type 'a obj_interp_fun =
+  ?loc:Loc.t -> poly:bool -> t -> Evd.evar_map -> Evardefine.type_constraint ->
+  'a -> unsafe_judgment * Evd.evar_map
+
 val register_constr_interp0 :
-  ('r, 'g, 't) Genarg.genarg_type ->
-    (unbound_ltac_var_map -> bool -> env -> evar_map -> types -> 'g -> constr * evar_map) -> unit
+  ('r, 'g, 't) Genarg.genarg_type -> 'g obj_interp_fun -> unit
 
 (** {6 Pretyping name management} *)
 
@@ -32,10 +39,6 @@ val register_constr_interp0 :
       variables used to build purely-named evar contexts
 *)
 
-(** Type of environment extended with naming and ltac interpretation data *)
-
-type t
-
 (** Build a pretyping environment from an ltac environment *)
 
 val make : hypnaming:naming_mode -> env -> evar_map -> ltac_var_map -> t
@@ -43,6 +46,8 @@ val make : hypnaming:naming_mode -> env -> evar_map -> ltac_var_map -> t
 (** Export the underlying environment *)
 
 val env : t -> env
+val renamed_env : t -> env
+val lfun : t -> unbound_ltac_var_map
 
 val vars_of_env : t -> Id.Set.t
 
@@ -85,5 +90,5 @@ val interp_ltac_id : t -> Id.t -> Id.t
 (** Interpreting a generic argument, typically a "ltac:(...)", taking
     into account the possible renaming *)
 
-val interp_glob_genarg : t -> bool -> evar_map -> constr ->
-  Genarg.glob_generic_argument -> constr * evar_map
+val interp_glob_genarg : ?loc:Loc.t -> poly:bool -> t -> evar_map -> Evardefine.type_constraint ->
+  Genarg.glob_generic_argument -> unsafe_judgment * evar_map

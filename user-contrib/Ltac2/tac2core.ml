@@ -1436,24 +1436,35 @@ let () =
 (** Ltac2 in terms *)
 
 let () =
-  let interp ist poly env sigma concl (ids, tac) =
+  let interp ?loc ~poly env sigma tycon (ids, tac) =
     (* Syntax prevents bound notation variables in constr quotations *)
     let () = assert (Id.Set.is_empty ids) in
-    let ist = Tac2interp.get_env ist in
+    let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
     let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
     let name, poly = Id.of_string "ltac2", poly in
-    let c, sigma = Proof.refine_by_tactic ~name ~poly env sigma concl tac in
-    (EConstr.of_constr c, sigma)
+    let sigma, concl = match tycon with
+    | Some ty -> sigma, ty
+    | None -> GlobEnv.new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole)
+    in
+    let c, sigma = Proof.refine_by_tactic ~name ~poly (GlobEnv.renamed_env env) sigma concl tac in
+    let j = { Environ.uj_val = EConstr.of_constr c; Environ.uj_type = concl } in
+    (j, sigma)
   in
   GlobEnv.register_constr_interp0 wit_ltac2_constr interp
 
 let () =
-  let interp ist poly env sigma concl id =
-    let ist = Tac2interp.get_env ist in
+  let interp ?loc ~poly env sigma tycon id =
+    let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
     let c = Id.Map.find id ist.env_ist in
     let c = Value.to_constr c in
-    let sigma = Typing.check env sigma c concl in
-    (c, sigma)
+    let t = Retyping.get_type_of (GlobEnv.renamed_env env) sigma c in
+    match tycon with
+    | None ->
+      { Environ.uj_val = c; Environ.uj_type = t }, sigma
+    | Some ty ->
+      let sigma = Evarconv.unify_leq_delay (GlobEnv.renamed_env env) sigma t ty in
+      let j = { Environ.uj_val = c; Environ.uj_type = ty } in
+      j, sigma
   in
   GlobEnv.register_constr_interp0 wit_ltac2_quotation interp
 

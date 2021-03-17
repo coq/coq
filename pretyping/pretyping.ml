@@ -653,12 +653,8 @@ struct
       sigma, { uj_val; uj_type }
 
     | Some arg ->
-      let sigma, ty =
-        match tycon with
-        | Some ty -> sigma, ty
-        | None -> new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole) in
-      let c, sigma = GlobEnv.interp_glob_genarg env poly sigma ty arg in
-      sigma, { uj_val = c; uj_type = ty }
+      let j, sigma = GlobEnv.interp_glob_genarg ?loc ~poly env sigma tycon arg in
+      sigma, j
 
   let pretype_rec self (fixkind, names, bl, lar, vdef) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
