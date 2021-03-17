@@ -72,9 +72,15 @@ let get_backtrace e = get e backtrace_info
 
 let iraise (e,i) =
   let () = Mutex.lock lock in
-  let id = Thread.id (Thread.self ()) in
-  let () = current := (id, (e,i)) :: remove_assoc id !current in
-  let () = Mutex.unlock lock in
+  let () =
+  try
+    let id = Thread.id (Thread.self ()) in
+    let () = current := (id, (e,i)) :: remove_assoc id !current in
+    Mutex.unlock lock
+  with e -> (* Asynchronous exception *)
+    let () = Mutex.unlock lock in
+    raise e
+  in
   match get i backtrace_info with
   | None ->
     raise e
@@ -83,10 +89,17 @@ let iraise (e,i) =
 
 let find_and_remove () =
   let () = Mutex.lock lock in
-  let id = Thread.id (Thread.self ()) in
-  let (v, l) = find_and_remove_assoc id !current in
-  let () = current := l in
-  let () = Mutex.unlock lock in
+  let v =
+    try
+      let id = Thread.id (Thread.self ()) in
+      let (v, l) = find_and_remove_assoc id !current in
+      let () = current := l in
+      let () = Mutex.unlock lock in
+      v
+    with e -> (* Asynchronous exception *)
+      let () = Mutex.unlock lock in
+      raise e
+  in
   v
 
 let info e =
