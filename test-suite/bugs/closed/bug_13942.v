@@ -1,6 +1,6 @@
 Module Backtrack.
   Class A (T : Type).
-  (* Global Hint Mode A + : typeclass_instances. *)
+  (*Global Hint Mode A + : typeclass_instances.*)
   Class B (T T' : Type) := b : T'.
   Global Hint Mode B - + : typeclass_instances.
 
@@ -13,6 +13,8 @@ Module Backtrack.
   Definition foo {T'} {T} {a : A T'} {b : B T' T} : T := b.
 
   Definition test := (foo : nat).
+  Global Hint Mode A + : typeclass_instances.
+  Definition test' := (foo : nat).
 
 End Backtrack.
 
@@ -59,7 +61,7 @@ Module Minimized.
       and we can't backtrack once an instance has been found respecting the mode.
       Morally this says that i and i' are overlapping instances.
     *)
-  Fail Definition test := (fi fu).
+  Definition test' := (fi fu).
   End OrderTwo.
   End Foo.
 End Minimized.
@@ -94,7 +96,7 @@ Module Minimized'.
   Fail Definition test := (fi fu).
 
   (** Here we get the precise missing Insert instance when A is chosen: *)
-  Fail Definition test : A := (fi fu).
+  Fail Definition test' : A := (fi fu).
 
   (** Of course the unambiguous querry works *)
   Definition test : B := (fi fu).
@@ -114,7 +116,7 @@ Module Minimized'.
   Definition test' : B := (fi fu).
 
   (** Here we get the precise missing instance when A is chosen: *)
-  Fail Definition test : A := (fi fu).
+  Fail Definition test'' : A := (fi fu).
 
   End OrderTwo.
 

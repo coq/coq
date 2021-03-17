@@ -63,11 +63,11 @@ let get_typeclasses_dependency_order =
     ~key:["Typeclasses";"Dependency";"Order"]
     ~value:false
 
-let get_typeclasses_global_mode_failures =
+(* let get_typeclasses_global_mode_failures =
   Goptions.declare_bool_option_and_ref
     ~depr:false
     ~key:["Typeclasses";"Global"; "Mode";"Failures"]
-    ~value:true
+    ~value:true *)
 
 let iterative_deepening_opt_name = ["Typeclasses";"Iterative";"Deepening"]
 let get_typeclasses_iterative_deepening =
@@ -1003,19 +1003,17 @@ module Search = struct
     | None -> evd
     | Some evd' -> evd'
 
-  let typeclasses_eauto env evd ?depth unique st hints p =
-    evars_eauto env evd depth true
-      ~global_mode_failures:(get_typeclasses_global_mode_failures ())
-      unique false st hints p
+  let typeclasses_eauto env evd ?depth unique ~global_mode_failures st hints p =
+    evars_eauto env evd depth true ~global_mode_failures unique false st hints p
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
 
-  let typeclasses_resolve env evd debug depth unique p =
+  let typeclasses_resolve env evd debug depth unique ~global_mode_failures p =
     let db = searchtable_map typeclasses_db in
     let st = Hint_db.transparent_state db in
     let modes = Hint_db.modes db in
-    typeclasses_eauto env evd ?depth unique (modes,st) [db] p
+    typeclasses_eauto env evd ?depth ~global_mode_failures unique (modes,st) [db] p
 end
 
 let typeclasses_eauto ?(only_classes=false) ?(st=TransparentState.full)
@@ -1117,8 +1115,6 @@ let has_undefined p oevd evd =
   let check ev evi = p oevd ev in
   Evar.Map.exists check (Evd.undefined_map evd)
 
-exception Unresolved of evar_map
-
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
 let resolve_all_evars debug depth unique env p oevd do_split fail =
@@ -1131,15 +1127,22 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
         (try
-          let evd' = Search.typeclasses_resolve env evd debug depth unique p in
-          if has_undefined p oevd evd' then raise (Unresolved evd');
+          let evd' = Search.typeclasses_resolve env evd debug depth
+            ~global_mode_failures:false unique p in
+          if has_undefined p oevd evd' then raise Not_found;
           docomp evd' comps
-        with Not_found -> raise (Unresolved evd))
-      with Unresolved evd ->
+        with Not_found -> raise Not_found)
+      with Not_found ->
         if fail && (not do_split || is_mandatory (p evd) comp evd)
         then (* Unable to satisfy the constraints. *)
+          let evd' =
+            try
+              Search.typeclasses_resolve env evd debug depth
+                ~global_mode_failures:true unique p
+            with Not_found -> evd
+          in
           let comp = if do_split then Some comp else None in
-          error_unresolvable env comp evd
+          error_unresolvable env comp evd'
         else (* Best effort: do nothing on this component *)
           docomp evd comps
   in docomp oevd split
