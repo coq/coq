@@ -106,8 +106,12 @@ val glob_hints_path_atom :
 val glob_hints_path :
   Libnames.qualid hints_path_gen -> GlobRef.t hints_path_gen
 
+type mode_match =
+  | NoMode
+  | WithMode of hint_mode array
+
 type 'a with_mode =
-  | ModeMatch of 'a
+  | ModeMatch of mode_match * 'a
   | ModeMismatch
 
 module Hint_db :

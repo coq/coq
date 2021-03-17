@@ -52,6 +52,20 @@ module Search : sig
     (** Should we force a unique solution *)
     -> only_classes:bool
     (** Should non-class goals be shelved and resolved at the end *)
+    -> global_mode_failures:bool
+    (** If true, we interepret modes as specifying a deterministic relation
+        on instances: if a constraint matches the mode declaration for its class
+        then failure of resolution for that constraint results in global failure.
+        This means that we don't backtrack on previous constraints too, ensuring
+        less ambiguous results on success.
+        We rely on this invariant to keep goals that cannot be resolved when they should have
+        unique solutions as declared by the modes of the associated class, and
+        pursue the proof-search on other goals.
+        This provides a kind of "best-effort" proof search
+        that tries to solve as many of the goals as possible.
+        This is safe when instances are (collectivelly) non-overlapping w.r.t.
+        the mode declaration of their classes:
+        the solutions found with or without this option on will be the same. *)
     -> ?strategy:search_strategy
     (** Is a traversing-strategy specified? *)
     -> depth:Int.t option

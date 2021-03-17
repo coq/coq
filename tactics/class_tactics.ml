@@ -63,6 +63,12 @@ let get_typeclasses_dependency_order =
     ~key:["Typeclasses";"Dependency";"Order"]
     ~value:false
 
+let get_typeclasses_global_mode_failures =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Typeclasses";"Global"; "Mode";"Failures"]
+    ~value:true
+
 let iterative_deepening_opt_name = ["Typeclasses";"Iterative";"Deepening"]
 let get_typeclasses_iterative_deepening =
   Goptions.declare_bool_option_and_ref
@@ -258,7 +264,7 @@ let shelve_dependencies gls =
 
 let hintmap_of env sigma hdc secvars concl =
   match hdc with
-  | None -> fun db -> ModeMatch (Hint_db.map_none ~secvars db)
+  | None -> fun db -> ModeMatch (NoMode, Hint_db.map_none ~secvars db)
   | Some hdc ->
      fun db ->
        if Hint_db.use_dn db then (* Using dnet *)
@@ -374,37 +380,38 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
   in
   let hint_of_db = hintmap_of env sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with
-      | ModeMatch l -> Some (db, l)
+      | ModeMatch (m, l) -> Some (db, m, l)
       | ModeMismatch -> None)
       (local_db :: db_list)
   in
   (* In case there is a mode mismatch in all the databases we get stuck.
      Otherwise we consider the hints that match.
      Recall the local database uses the union of all the modes in the other databases. *)
-  if List.is_empty hintl then ModeMismatch
+  if List.is_empty hintl then None
   else
+    (*FIXME we should keep the modes separate *)
     let hintl =
-      CList.map_append
-        (fun (db, tacs) ->
+      CList.map
+        (fun (db, m, tacs) ->
           let flags = auto_unif_flags ~allowed_evars (Hint_db.transparent_state db) in
-          List.map (fun x -> (flags, x)) tacs)
+          m, List.map (fun x -> tac_of_hint (flags, x)) tacs)
         hintl
     in
-    ModeMatch (List.map tac_of_hint hintl)
+    Some hintl
 
 and e_trivial_resolve db_list local_db secvars only_classes env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
     (match e_my_find_search db_list local_db secvars hd true only_classes env sigma concl with
-    | ModeMatch l -> l
-    | ModeMismatch -> [])
+    | Some l -> List.map_append snd l
+    | None -> [])
   with Not_found -> []
 
 let e_possible_resolve db_list local_db secvars only_classes env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
     e_my_find_search db_list local_db secvars hd false only_classes env sigma concl
-  with Not_found -> ModeMatch []
+  with Not_found -> Some []
 
 let cut_of_hints h =
   List.fold_left (fun cut db -> PathOr (Hint_db.cut db, cut)) PathEmpty h
@@ -513,7 +520,9 @@ module Search = struct
       search_dep : bool;
       search_only_classes : bool;
       search_cut : hints_path;
-      search_hints : hint_db; }
+      search_hints : hint_db;
+      search_global_mode_failures : bool;
+      }
 
   (** Local hints *)
   let autogoal_cache = Summary.ref ~name:"autogoal_cache"
@@ -538,18 +547,20 @@ module Search = struct
       in
       autogoal_cache := (cwd, only_classes, sign, modes, hints); hints
 
-  let make_autogoal mst only_classes dep cut i g =
+  let make_autogoal mst only_classes dep cut global_mode_failures i g =
     let hints = make_autogoal_hints only_classes mst g in
     { search_hints = hints;
       search_depth = [i]; last_tac = lazy (str"none");
       search_dep = dep;
       search_only_classes = only_classes;
-      search_cut = cut }
+      search_cut = cut;
+      search_global_mode_failures = global_mode_failures }
 
   (** In the proof engine failures are represented as exceptions *)
   exception ReachedLimitEx
   exception NoApplicableEx
   exception StuckClass
+  exception FailedModes
 
   (** ReachedLimitEx has priority over NoApplicableEx to handle
       iterative deepening: it should fail when no hints are applicable,
@@ -568,6 +579,9 @@ module Search = struct
     if unique || is_Prop env evd concl then
       occur_existential evd concl
     else true
+
+  let all_mode_match l =
+    List.for_all (fun m -> m != NoMode) l
 
   (** The general hint application tactic.
       tac1 + tac2 .... The choice of OR or ORELSE is determined
@@ -590,14 +604,16 @@ module Search = struct
     let secvars = compute_secvars gl in
     match e_possible_resolve hints info.search_hints secvars
             info.search_only_classes env sigma concl with
-    | ModeMismatch ->
+    | None ->
       Proofview.tclZERO StuckClass
-    | ModeMatch poss ->
+    | Some poss ->
     (* If no goal depends on the solution of this one or the
        instances are irrelevant/assumed to be unique, then
        we don't need to backtrack, as long as no evar appears in the goal
        This is an overapproximation. Evars could appear in this goal only
        and not any other *)
+    let modes, poss = List.split poss in
+    let poss = List.flatten poss in
     let ortac = if backtrack then Proofview.tclOR else Proofview.tclORELSE in
     let idx = ref 1 in
     let foundone = ref false in
@@ -621,6 +637,7 @@ module Search = struct
               Printer.pr_econstr_env env evd y
             | ReachedLimitEx -> str "Proof-search reached its limit."
             | NoApplicableEx -> str "Proof-search failed."
+            | StuckClass | FailedModes -> str "Proof-search got stuck."
             | e -> CErrors.iprint ie
           in
           Feedback.msg_debug (header ++ str " failed with: " ++ msg)
@@ -649,7 +666,8 @@ module Search = struct
             search_dep = dep';
             search_only_classes = info.search_only_classes;
             search_hints = hints';
-            search_cut = derivs }
+            search_cut = derivs;
+            search_global_mode_failures = info.search_global_mode_failures }
         in kont info' end
       in
       let rec result (shelf, ()) i k =
@@ -718,7 +736,7 @@ module Search = struct
              (fun e' ->
                 (pr_error e'; aux (merge_exceptions e e') tl))
     and aux e = function
-      | x :: xs -> onetac e x xs
+      | tac :: tacs -> onetac e tac tacs
       | [] ->
          if !foundone == false && !typeclasses_debug > 0 then
            Feedback.msg_debug
@@ -729,6 +747,15 @@ module Search = struct
          match e with
          | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
          | (StuckClass,ie) -> Proofview.tclZERO ~info:ie StuckClass
+         | (NoApplicableEx,ie) ->
+            (* If the constraint abides by the (non-trivial) modes but no
+               solution could be found, we consider it stuck, and let
+               proof search proceed on the rest of the
+               constraints, thus giving a more precise error message. *)
+            if all_mode_match modes &&
+              info.search_global_mode_failures then
+              Proofview.tclZERO ~info:ie FailedModes
+            else Proofview.tclZERO ~info:ie NoApplicableEx
          | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableEx
     in
     if backtrack then aux (NoApplicableEx,Exninfo.null) poss
@@ -775,30 +802,31 @@ module Search = struct
                       (fun e' -> let (e, info) = merge_exceptions e e' in
                               Proofview.tclZERO ~info e))
 
-  let search_tac_gl mst only_classes dep hints depth i sigma gls gl :
+  let search_tac_gl mst only_classes dep hints global_mode_failures depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
     let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
-    let info = make_autogoal mst only_classes dep (cut_of_hints hints) i gl in
+    let info = make_autogoal mst only_classes dep (cut_of_hints hints)
+      global_mode_failures i gl in
     search_tac hints depth 1 info
 
-  let search_tac mst only_classes dep hints depth =
+  let search_tac mst only_classes global_mode_failures dep hints depth =
     let open Proofview in
     let tac sigma gls i =
       Goal.enter
         begin fun gl ->
-          search_tac_gl mst only_classes dep hints depth (succ i) sigma gls gl end
+          search_tac_gl mst only_classes dep hints global_mode_failures depth (succ i) sigma gls gl end
     in
     let tac_or_stuck sigma gls i =
       Proofview.tclOR
        (tac sigma gls i)
-       (function (StuckClass, _) ->
+       (function ((StuckClass | FailedModes), _) ->
           if !typeclasses_debug > 1 then
             Feedback.msg_debug
               Pp.(str "Proof search got stuck on a constraint, postponing it.");
            Proofview.tclUNIT ()
         | (e, ie) -> Proofview.tclZERO ~info:ie e)
-     in
+    in
       Proofview.Unsafe.tclGETGOALS >>= fun gls ->
       let gls = CList.map Proofview.drop_state gls in
       Proofview.tclEVARMAP >>= fun sigma ->
@@ -827,10 +855,12 @@ module Search = struct
     in aux 1
 
   let eauto_tac_stuck mst ?(unique=false)
-                ~only_classes ?strategy ~depth ~dep hints =
+                ~only_classes
+                ~global_mode_failures
+                ?strategy ~depth ~dep hints =
     let open Proofview in
     let tac =
-      let search = search_tac mst only_classes dep hints in
+      let search = search_tac mst only_classes global_mode_failures dep hints in
       let dfs =
         match strategy with
         | None -> not (get_typeclasses_iterative_deepening ())
@@ -907,8 +937,9 @@ module Search = struct
       let gls = CList.map Proofview.drop_state gls in
       fixpoint 1 (Evar.Set.of_list gls)
 
-  let eauto_tac mst ?unique ~only_classes ?strategy ~depth ~dep hints =
-    Hints.wrap_hint_warning @@ eauto_tac_stuck mst ?unique ~only_classes ?strategy ~depth ~dep hints
+  let eauto_tac mst ?unique ~only_classes ~global_mode_failures ?strategy ~depth ~dep hints =
+    Hints.wrap_hint_warning @@ eauto_tac_stuck mst ?unique ~only_classes
+      ~global_mode_failures ?strategy ~depth ~dep hints
 
   let run_on_evars env evm p tac =
     match evars_to_goals p evm with
@@ -963,15 +994,19 @@ module Search = struct
         else raise Not_found
        with Logic_monad.TacticFailure _ -> raise Not_found
 
-  let evars_eauto env evd depth only_classes unique dep mst hints p =
-    let eauto_tac = eauto_tac_stuck mst ~unique ~only_classes ~depth ~dep:(unique || dep) hints in
+  let evars_eauto env evd depth only_classes ~global_mode_failures unique dep mst hints p =
+    let eauto_tac = eauto_tac_stuck mst ~unique ~only_classes
+      ~global_mode_failures
+      ~depth ~dep:(unique || dep) hints in
     let res = run_on_evars env evd p eauto_tac in
     match res with
     | None -> evd
     | Some evd' -> evd'
 
   let typeclasses_eauto env evd ?depth unique st hints p =
-    evars_eauto env evd depth true unique false st hints p
+    evars_eauto env evd depth true
+      ~global_mode_failures:(get_typeclasses_global_mode_failures ())
+      unique false st hints p
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
@@ -995,7 +1030,8 @@ let typeclasses_eauto ?(only_classes=false) ?(st=TransparentState.full)
   let modes = List.fold_left (GlobRef.Map.union (fun _ m1 m2 -> Some (m1@m2))) GlobRef.Map.empty modes in
   let depth = match depth with None -> get_typeclasses_depth () | Some l -> Some l in
   Proofview.tclIGNORE
-    (Search.eauto_tac (modes,st) ~only_classes ?strategy ~depth ~dep:true dbs)
+    (Search.eauto_tac (modes,st) ~only_classes ?strategy
+      ~global_mode_failures:false ~depth ~dep:true dbs)
     (* Stuck goals can remain here, we could shelve them, but this way
        the user can use `solve [typeclasses eauto]` to  check there are
        no stuck goals remaining, or use [typeclasses eauto; shelve] himself. *)
@@ -1081,7 +1117,7 @@ let has_undefined p oevd evd =
   let check ev evi = p oevd ev in
   Evar.Map.exists check (Evd.undefined_map evd)
 
-exception Unresolved
+exception Unresolved of evar_map
 
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
@@ -1094,10 +1130,12 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
     | comp :: comps ->
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
-        let evd' = Search.typeclasses_resolve env evd debug depth unique p in
-         if has_undefined p oevd evd' then raise Unresolved;
-         docomp evd' comps
-      with Unresolved | Not_found ->
+        (try
+          let evd' = Search.typeclasses_resolve env evd debug depth unique p in
+          if has_undefined p oevd evd' then raise (Unresolved evd');
+          docomp evd' comps
+        with Not_found -> raise (Unresolved evd))
+      with Unresolved evd ->
         if fail && (not do_split || is_mandatory (p evd) comp evd)
         then (* Unable to satisfy the constraints. *)
           let comp = if do_split then Some comp else None in
@@ -1147,7 +1185,9 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
   let gls' =
       try
         Proofview.V82.of_tactic
-        (Search.eauto_tac (modes,st) ~only_classes:true ~depth [hints] ~dep:true) gls
+        (Search.eauto_tac (modes,st) ~only_classes:true
+          ~global_mode_failures:false
+          ~depth [hints] ~dep:true) gls
       with Tacticals.FailError _ -> raise Not_found
   in
   let evd = sig_sig gls' in
