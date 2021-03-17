@@ -400,7 +400,7 @@ Summary of the commands
    Shows the list of instances associated with the typeclass :token:`reference`.
 
 
-.. tacn:: typeclasses eauto {? {| bfs | dfs } } {? @nat_or_var } {? with {+ @ident } }
+.. tacn:: typeclasses eauto {? {| bfs | dfs | best_effort } } {? @nat_or_var } {? with {+ @ident } }
 
    This proof search tactic uses the resolution engine that is run
    implicitly during type checking. This tactic uses a different resolution
@@ -444,11 +444,30 @@ Summary of the commands
    + Use the :cmd:`Typeclasses eauto` command to customize the behavior of
      this tactic.
 
-   :n:`{| bfs | dfs }`
+   :n:`{| bfs | dfs}`
      Specifies whether to use breadth-first search or depth-first search.
      The default is depth-first search, which can be changed with the
      :flag:`Typeclasses Iterative Deepening` flag.
 
+   .. _TypeclassesEautoBestEffort:
+
+   :n:`best_effort`
+     If the `best_effort` option is given and resolution fails, `typeclasses eauto`
+     returns the first partial solution in which all remaining subgoals fall into one
+     of these categories:
+
+     - Stuck goals: the head of the goal has at least one associated declared mode
+       and the constraint does not match any mode declared for its head. These goals
+       are shelved.
+
+     - Mode failures: the head of the constraint has at least one matching declared mode,
+       but the constraint couldn't be solved. These goals are left as subgoals of
+       :n:`typeclasses eauto best_effort`.
+
+     During type inference, typeclass resolution always uses the `best_effort` option:
+     in case of failure, it constructs a partial solution for the goals and gives
+     a more informative error message. It can be used the same way in interactive proofs
+     to check which instances/hints are missing for a typeclass resolution to succeed.
 
    :n:`@nat_or_var`
      Specifies the maximum depth of the search.

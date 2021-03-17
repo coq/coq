@@ -136,6 +136,19 @@ Module Leivantex2PR339.
   Qed.
 End Leivantex2PR339.
 
+Module HintMode_NonStuck_Failure_Refine_DoNotShelve.
+
+Class test (x : nat) := testv : True.
+Local Hint Mode test ! : typeclass_instances.
+Record foo := { n : nat ; t : test n ; h : t = t }.
+Goal True.
+  (* This tests that non-stuck classes whose resolution fails
+     are left as proper subgoals and not shelved if failure is allowed.
+  *)
+  simple refine (let name := (_ : test 5) in _); [|].
+Abort.
+End HintMode_NonStuck_Failure_Refine_DoNotShelve.
+
 Module bt.
 Require Import Equivalence.
 
@@ -289,7 +302,6 @@ Module IterativeDeepening.
   
   Goal C -> A.
     intros.
-    Set Typeclasses Debug.
     Fail Timeout 1 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
     Fail typeclasses eauto 1.

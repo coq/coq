@@ -1650,9 +1650,11 @@ simple_tactic: [
 | "unify" constr constr "with" preident
 | "typeclasses" "eauto" "dfs" OPT nat_or_var "with" LIST1 preident
 | "typeclasses" "eauto" "bfs" OPT nat_or_var "with" LIST1 preident
+| "typeclasses" "eauto" "best_effort" OPT nat_or_var "with" LIST1 preident
 | "typeclasses" "eauto" OPT nat_or_var "with" LIST1 preident
 | "typeclasses" "eauto" "bfs" OPT nat_or_var
 | "typeclasses" "eauto" "dfs" OPT nat_or_var
+| "typeclasses" "eauto" "best_effort" OPT nat_or_var
 | "typeclasses" "eauto" OPT nat_or_var
 | "head_of_constr" ident constr
 | "not_evar" constr
