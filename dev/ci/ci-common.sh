@@ -143,33 +143,3 @@ make()
         command make --output-sync "$@"
     fi
 }
-
-# this installs just the ssreflect library of math-comp
-install_ssreflect()
-{
-  echo 'Installing ssreflect'
-
-  git_download mathcomp
-
-  ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp/ssreflect" && \
-    make && \
-    make install )
-
-}
-
-# this installs just the ssreflect + algebra library of math-comp
-install_ssralg()
-{
-  echo 'Installing ssralg'
-
-  git_download mathcomp
-
-  ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp" && \
-    make -C ssreflect && \
-    make -C ssreflect install && \
-    make -C fingroup && \
-    make -C fingroup install && \
-    make -C algebra && \
-    make -C algebra install )
-
-}
