@@ -1,19 +1,27 @@
+(* Set Typeclasses Debug Verbosity 2. *)
 Module Backtrack.
   Class A (T : Type).
-  (*Global Hint Mode A + : typeclass_instances.*)
+  (* Global Hint Mode A + : typeclass_instances. *)
   Class B (T T' : Type) := b : T'.
-  Global Hint Mode B - + : typeclass_instances.
+  (* Global Hint Mode B - + : typeclass_instances. *)
 
   Instance anat : A nat := {}.
   Instance abool : A bool := {}.
   Instance bnatnat : B nat nat := { b := 0 }.
 
-  Set Typeclasses Debug Verbosity 2.
-
   Definition foo {T'} {T} {a : A T'} {b : B T' T} : T := b.
 
+  (* This relies on backtracking: we first solve
+      A ? with abool (most recent decl), the find out that B bool _
+      is not solvable and backtrack, find anat and finally solve B.
+  *)
   Definition test := (foo : nat).
+
+  (* This forces a different resolution path, where A ? is stuck at first,
+    then we solve B's constraint, and we come back to A nat which is solvable.
+  *)
   Global Hint Mode A + : typeclass_instances.
+
   Definition test' := (foo : nat).
 
 End Backtrack.
@@ -35,7 +43,6 @@ Module Minimized.
   Axiom fi : forall {A} {hi : Insert K A (M A)}, A -> A.
   Axiom fu : forall {A} {hu : Union (M A)}, A.
 
-  Set Typeclasses Debug Verbosity 2.
   Section OrderOne.
   Context {i : Union (M A)}.
   Context {i' : Union (M B)}.
@@ -47,20 +54,18 @@ Module Minimized.
   Definition test := (fi fu).
   End OrderOne.
 
-  (* If we switch the order of the instances then respecting modes
-     is "dangerous" as it commits to a solution: once i is chosen
-     we can't backtrack on i'. *)
+  (* We check here that typeclass resolution backtracks correctly when reporting
+     errors and does not follow modes too eagerly. *)
   Section OrderTwo.
   Context {i' : Union (M B)}.
   Context {fi' : Insert K B (M B)}.
   Context {i : Union (M A)}.
 
-  Set Typeclasses Debug Verbosity 2.
-
-  (** Here this fails because i / M A is chosen which has no insert instance,
-      and we can't backtrack once an instance has been found respecting the mode.
-      Morally this says that i and i' are overlapping instances.
-    *)
+  (** Here we get two constraints, first is [Insert K ?A (M ?A)], second is [Union (M ?A)].
+      The first is stuck so we proceed on the second one, which has two solutions.
+      The i / M A is chosen first, but it has no insert instance,
+      so we backtrack on this first solution to find i', even if i respected the mode
+      of Union (just !). *)
   Definition test' := (fi fu).
   End OrderTwo.
   End Foo.
@@ -84,7 +89,6 @@ Module Minimized'.
   Axiom fu' : forall {A} {hu : Union (M A)}, A -> A.
   Axiom fi' : forall {A} {hi : Insert K A (M A)}, A.
 
-  Set Typeclasses Debug Verbosity 2.
   Section OrderOne.
   Context {i : Union (M A)}.
   Context {i' : Union (M B)}.
@@ -96,6 +100,7 @@ Module Minimized'.
   Fail Definition test := (fi fu).
 
   (** Here we get the precise missing Insert instance when A is chosen: *)
+
   Fail Definition test' : A := (fi fu).
 
   (** Of course the unambiguous querry works *)
@@ -107,8 +112,6 @@ Module Minimized'.
   Context {i' : Union (M B)}.
   Context {fi' : Insert K B (M B)}.
   Context {i : Union (M A)}.
-
-  Set Typeclasses Debug Verbosity 2.
 
   (** Here this fails because this is entirely ambiguous: it cannot decide
       even on the A type. *)
@@ -130,8 +133,6 @@ Module Minimized'.
   Context {ib : Insert K B (M B)}.
   Context {i : Choose false -> Union (M A)}.
 
-  Set Typeclasses Debug Verbosity 2.
-
   (** Here this fails because this is entirely ambiguous: it cannot decide
       even on the A type. *)
   Fail Type (fi fu).
@@ -143,9 +144,9 @@ Module Minimized'.
 
   Context {ct : Choose false}.
   (** Here we can find ifalse to get Union (M B), after backtracking
-      on the failing application of itrue
+      on the failing application of itrue (which last declared instance)
   *)
-  Check (fi fu : B).
+  Type (fi fu : B).
 
   End OrderThree.
   End Foo.
