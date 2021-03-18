@@ -816,7 +816,18 @@ let perform_eval ~pstate e =
   | Goal_select.SelectList l -> Proofview.tclFOCUSLIST l v
   | Goal_select.SelectId id -> Proofview.tclFOCUSID id v
   | Goal_select.SelectAll -> v
-  | Goal_select.SelectAlreadyFocused -> assert false (* TODO **)
+  | Goal_select.SelectAlreadyFocused ->
+    let open Proofview.Notations in
+    Proofview.numgoals >>= fun n ->
+    if Int.equal n 1 then v
+    else
+      let e = CErrors.UserError
+          (None,
+            Pp.(str "Expected a single focused goal but " ++
+                int n ++ str " goals are focused."))
+      in
+      let info = Exninfo.reify () in
+      Proofview.tclZERO ~info e
   in
   let (proof, _, ans) = Proof.run_tactic (Global.env ()) v proof in
   let { Proof.sigma } = Proof.data proof in
