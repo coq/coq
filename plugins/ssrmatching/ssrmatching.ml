@@ -22,7 +22,6 @@ open Vars
 open Libnames
 open Tactics
 open Termops
-open Recordops
 open Tacmach
 open Glob_term
 open Util
@@ -333,7 +332,8 @@ type tpattern = {
 let all_ok _ _ = true
 
 let proj_nparams c =
-  try 1 + Recordops.find_projection_nparams (GlobRef.ConstRef c) with _ -> 0
+  try 1 + Structures.Structure.projection_nparams c
+  with Not_found -> 0
 
 let isRigid c = match kind c with
   | Prod _ | Sort _ | Lambda _ | Case _ | Fix _ | CoFix _ -> true
@@ -429,9 +429,13 @@ let ungen_upat lhs (sigma, uc, t) u =
   | _ -> KpatRigid in
   sigma, uc, {u with up_k = k; up_FO = lhs; up_f = f; up_a = a; up_t = t}
 
-let nb_cs_proj_args pc f u =
+let nb_cs_proj_args ise pc f u =
+  let open Structures in
+  let open ValuePattern in
   let na k =
-    List.length (snd (lookup_canonical_conversion (Global.env()) (GlobRef.ConstRef pc, k))).o_TCOMPS in
+    let open CanonicalSolution in
+    let _, { cvalue_arguments } = find (Global.env()) ise (GlobRef.ConstRef pc, k) in
+    List.length cvalue_arguments in
   let nargs_of_proj t = match kind t with
       | App(_,args) -> Array.length args
       | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be
@@ -441,7 +445,7 @@ let nb_cs_proj_args pc f u =
   | Prod _ -> na Prod_cs
   | Sort s -> na (Sort_cs (Sorts.family s))
   | Const (c',_) when Constant.CanOrd.equal c' pc -> nargs_of_proj u.up_f
-  | Proj (c',_) when Constant.CanOrd.equal (Projection.constant c') pc -> nargs_of_proj u.up_f
+  | Proj (c',_) when Constant.CanOrd.equal (Names.Projection.constant c') pc -> nargs_of_proj u.up_f
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef f))
   | _ -> -1
   with Not_found -> -1
@@ -467,7 +471,7 @@ let splay_app ise =
   | Cast _ | Evar _ -> loop c [| |]
   | _ -> c, [| |]
 
-let filter_upat i0 f n u fpats =
+let filter_upat ise i0 f n u fpats =
   let na = Array.length u.up_a in
   if n < na then fpats else
   let np = match u.up_k with
@@ -479,7 +483,7 @@ let filter_upat i0 f n u fpats =
   | KpatRigid when isRigid f -> na
   | KpatFlex -> na
   | KpatProj pc ->
-    let np = na + nb_cs_proj_args pc f u in if n < np then -1 else np
+    let np = na + nb_cs_proj_args ise pc f u in if n < np then -1 else np
   | _ -> -1 in
   if np < na then fpats else
   let () = if !i0 < np then i0 := n in (u, np) :: fpats
@@ -568,7 +572,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
  let failed_because_of_TC = ref false in
  let rec aux upats env sigma0 ise c =
   let f, a = splay_app ise c in let i0 = ref (-1) in
-  let fpats = List.fold_right (filter_upat i0 f (Array.length a)) upats [] in
+  let fpats = List.fold_right (filter_upat ise i0 f (Array.length a)) upats [] in
   while !i0 >= 0 do
     let i = !i0 in i0 := -1;
     let one_match (u, np) =

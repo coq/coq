@@ -76,7 +76,7 @@ let objInductive : inductive_obj Libobject.Dyn.tag =
 
 let inInductive v = Libobject.Dyn.Easy.inj v objInductive
 
-let cache_prim (_,(p,c)) = Recordops.register_primitive_projection p c
+let cache_prim (_,(p,c)) = Structures.PrimitiveProjections.register p c
 
 let load_prim _ p = cache_prim p
 

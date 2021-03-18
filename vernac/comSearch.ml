@@ -41,8 +41,8 @@ let kind_searcher = Decls.(function
     Inr (fun gr -> List.exists (fun c -> GlobRef.equal c.Coercionops.coe_value gr &&
                                       (k' <> SubClass && k' <> IdentityCoercion || c.Coercionops.coe_is_identity)) coercions)
   | IsDefinition CanonicalStructure ->
-    let canonproj = Recordops.canonical_projections () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.equal (snd c).Recordops.o_ORIGIN gr) canonproj)
+    let canonproj = Structures.CSTable.entries () in
+    Inr (fun gr -> List.exists (fun c -> GlobRef.equal c.Structures.CSTable.solution gr) canonproj)
   | IsDefinition Scheme ->
     let schemes = DeclareScheme.all_schemes () in
     Inr (fun gr -> Indset.exists (fun c -> GlobRef.equal (GlobRef.IndRef c) gr) schemes)

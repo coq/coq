@@ -68,7 +68,7 @@ open Constr_matching
 open Glob_term
 open Glob_ops
 open Coercion
-open Recordops
+open Structures
 open Detyping
 open Reductionops
 open Evarconv

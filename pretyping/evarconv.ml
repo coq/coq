@@ -19,7 +19,7 @@ open Context
 open Vars
 open Reduction
 open Reductionops
-open Recordops
+open Structures
 open Evarutil
 open Evardefine
 open Evarsolve
@@ -230,33 +230,30 @@ let occur_rigidly flags env evd (evk,_) t =
    projection would have been reduced) *)
 
 let check_conv_record env sigma (t1,sk1) (t2,sk2) =
+  let open ValuePattern in
   let (proji, u), arg = Termops.global_app_of_constr sigma t1 in
-  let canon_s,sk2_effective =
+  let (sigma, solution), sk2_effective =
     try
       match EConstr.kind sigma t2 with
         Prod (_,a,b) -> (* assert (l2=[]); *)
           let _, a, b = destProd sigma t2 in
           if noccurn sigma 1 b then
-            lookup_canonical_conversion env (proji, Prod_cs),
+            CanonicalSolution.find env sigma (proji, Prod_cs),
             (Stack.append_app [|a;pop b|] Stack.empty)
           else raise Not_found
       | Sort s ->
         let s = ESorts.kind sigma s in
-        lookup_canonical_conversion env
+        CanonicalSolution.find env sigma
           (proji, Sort_cs (Sorts.family s)),[]
       | Proj (p, c) ->
-        lookup_canonical_conversion env (proji, Proj_cs (Projection.repr p)), Stack.append_app [|c|] sk2
+        CanonicalSolution.find env sigma(proji, Proj_cs (Names.Projection.repr p)), Stack.append_app [|c|] sk2
       | _ ->
         let (c2, _) = try destRef sigma t2 with DestKO -> raise Not_found in
-          lookup_canonical_conversion env (proji, Const_cs c2),sk2
+          CanonicalSolution.find env sigma (proji, Const_cs c2),sk2
     with Not_found ->
-      let (c, cs) = lookup_canonical_conversion env (proji,Default_cs) in
-        (c,cs),[]
+      CanonicalSolution.find env sigma (proji,Default_cs), []
   in
-  let t', { o_DEF = c; o_CTX = ctx; o_INJ=n; o_TABS = bs;
-        o_TPARAMS = params; o_NPARAMS = nparams; o_TCOMPS = us } = canon_s in
-  let us = List.map EConstr.of_constr us in
-  let params = List.map EConstr.of_constr params in
+  let open CanonicalSolution in
   let params1, c1, extra_args1 =
     match arg with
     | Some c -> (* A primitive projection applied to c *)
@@ -267,28 +264,19 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
         with _ -> raise Not_found
       in Stack.append_app_list ind_args Stack.empty, c, sk1
     | None ->
-      match Stack.strip_n_app nparams sk1 with
+      match Stack.strip_n_app solution.nparams sk1 with
       | Some (params1, c1, extra_args1) -> params1, c1, extra_args1
       | _ -> raise Not_found in
   let us2,extra_args2 =
-    let l_us = List.length us in
+    let l_us = List.length solution.cvalue_arguments in
       if Int.equal l_us 0 then Stack.empty,sk2_effective
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
       | None -> raise Not_found
       | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
-  let u, ctx' = UnivGen.fresh_instance_from ctx None in
-  let subst = Univ.make_inverse_instance_subst u in
-  let c = EConstr.of_constr c in
-  let c' = subst_univs_level_constr subst c in
-  let t' = EConstr.of_constr t' in
-  let t' = subst_univs_level_constr subst t' in
-  let bs' = List.map (EConstr.of_constr %> subst_univs_level_constr subst) bs in
-  let params = List.map (fun c -> subst_univs_level_constr subst c) params in
-  let us = List.map (fun c -> subst_univs_level_constr subst c) us in
-  let h, _ = decompose_app_vect sigma t' in
-    ctx',(h, t2),c',bs',(Stack.append_app_list params Stack.empty,params1),
-    (Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
-    (n, Stack.zip sigma (t2,sk2))
+  let h, _ = decompose_app_vect sigma solution.body in
+    sigma,(h, t2),solution.constant,solution.abstractions_ty,(Stack.append_app_list solution.params Stack.empty,params1),
+    (Stack.append_app_list solution.cvalue_arguments Stack.empty,us2),(extra_args1,extra_args2),c1,
+    (solution.cvalue_abstraction, Stack.zip sigma (t2,sk2))
 
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
  * possibly applied to arguments. *)
@@ -926,7 +914,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         and f2 i =
           (try
              if not flags.with_cs then raise Not_found
-             else conv_record flags env i
+             else conv_record flags env
                (try check_conv_record env i appr1 appr2
                 with Not_found -> check_conv_record env i appr2 appr1)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
@@ -989,7 +977,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         let f3 i =
           (try
              if not flags.with_cs then raise Not_found
-             else conv_record flags env i (check_conv_record env i appr1 appr2)
+             else conv_record flags env (check_conv_record env i appr1 appr2)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
         and f4 i =
           evar_eqappr_x flags env i pbty
@@ -1003,7 +991,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         let f3 i =
           (try
              if not flags.with_cs then raise Not_found
-             else conv_record flags env i (check_conv_record env i appr2 appr1)
+             else conv_record flags env (check_conv_record env i appr2 appr1)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
         and f4 i =
           evar_eqappr_x flags env i pbty appr1
@@ -1113,7 +1101,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         | LetIn _, _ -> assert false
       end
 
-and conv_record flags env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c1,(n,t2)) =
+and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c1,(n,t2)) =
   (* Tries to unify the states
 
         (proji params1 c1 | sk1)   =   (proji params2 (c (?xs:bs)) | sk2)
@@ -1137,7 +1125,6 @@ and conv_record flags env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk
 
      had to be initially resolved
   *)
-  let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
   if Reductionops.Stack.compare_shape sk1 sk2 then
     let (evd',ks,_,test) =
       List.fold_left

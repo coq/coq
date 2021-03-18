@@ -27,6 +27,7 @@ open Glob_term
 open Glob_ops
 open Pattern
 open Detyping
+open Structures
 
 module NamedDecl = Context.Named.Declaration
 (*i*)
@@ -232,7 +233,7 @@ let get_record_print =
 
 let is_record indsp =
   try
-    let _ = Recordops.lookup_structure indsp in
+    let _ = Structure.find indsp in
     true
   with Not_found -> false
 
@@ -407,7 +408,7 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
 let extern_record_pattern cstrsp args =
   try
     if !Flags.raw_print then raise Exit;
-    let projs = Recordops.lookup_projections (fst cstrsp) in
+    let projs = Structure.find_projections (fst cstrsp) in
     if PrintingRecord.active (fst cstrsp) then
       ()
     else if PrintingConstructor.active (fst cstrsp) then
@@ -614,9 +615,12 @@ let is_gvar id c = match DAst.get c with
 let is_projection nargs r =
   if not !Flags.in_debugger && not !Flags.raw_print && !print_projections then
     try
-      let n = Recordops.find_projection_nparams r + 1 in
-      if n <= nargs then Some n
-      else None
+      match r with
+      | GlobRef.ConstRef c ->
+        let n = Structure.projection_nparams c + 1 in
+        if n <= nargs then Some n
+        else None
+      | _ -> None
     with Not_found -> None
   else None
 
@@ -689,33 +693,29 @@ let extern_record ref args =
   try
     if !Flags.raw_print then raise Exit;
     let cstrsp = match ref with GlobRef.ConstructRef c -> c | _ -> raise Not_found in
-    let struc = Recordops.lookup_structure (fst cstrsp) in
+    let struc = Structure.find (fst cstrsp) in
     if PrintingRecord.active (fst cstrsp) then
       ()
     else if PrintingConstructor.active (fst cstrsp) then
       raise Exit
     else if not (get_record_print ()) then
       raise Exit;
-    let projs = struc.Recordops.s_PROJ in
-    let locals = struc.Recordops.s_PROJKIND in
+    let projs = struc.Structure.projections in
     let rec cut args n =
       if Int.equal n 0 then args
       else
         match args with
         | [] -> raise No_match
         | _ :: t -> cut t (n - 1) in
-    let args = cut args struc.Recordops.s_EXPECTEDPARAM in
-    let rec ip projs locs args acc =
+    let args = cut args struc.Structure.nparams in
+    let rec ip projs args acc =
       match projs with
       | [] -> acc
-      | None :: q -> raise No_match
-      | Some c :: q ->
-         match locs with
-         | [] -> anomaly (Pp.str "projections corruption [Constrextern.extern].")
-         | { Recordops.pk_true_proj = false } :: locs' ->
+      | { Structure.proj_body = None } :: _ -> raise No_match
+      | { Structure.proj_body = Some c; proj_true = false } :: q ->
             (* we don't want to print locals *)
-            ip q locs' args acc
-         | { Recordops.pk_true_proj = true } :: locs' ->
+            ip q args acc
+      | { Structure.proj_body = Some c; proj_true = true } :: q ->
             match args with
             | [] -> raise No_match
             (* we give up since the constructor is not complete *)
@@ -723,9 +723,9 @@ let extern_record ref args =
                let arg = Lazy.force arg in
                let loc = arg.CAst.loc in
                let ref = extern_reference ?loc Id.Set.empty (GlobRef.ConstRef c) in
-               ip q locs' tail ((ref, arg) :: acc)
+               ip q tail ((ref, arg) :: acc)
     in
-    Some (List.rev (ip projs locals args []))
+    Some (List.rev (ip projs args []))
   with
     | Not_found | No_match | Exit -> None
 

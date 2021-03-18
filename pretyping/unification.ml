@@ -22,13 +22,13 @@ open Namegen
 open Evd
 open Reduction
 open Reductionops
+open Structures
 open Evarutil
 open Evardefine
 open Evarsolve
 open Pretype_errors
 open Retyping
 open Coercion
-open Recordops
 open Locus
 open Locusops
 open Find_subterm
@@ -509,13 +509,13 @@ let key_of env sigma b flags f =
   match EConstr.kind sigma f with
   | Const (cst, u) when is_transparent env (ConstKey cst) &&
       (TransparentState.is_transparent_constant flags.modulo_delta cst
-       || Recordops.is_primitive_projection cst) ->
+       || PrimitiveProjections.mem cst) ->
       let u = EInstance.kind sigma u in
       Some (IsKey (ConstKey (cst, u)))
   | Var id when is_transparent env (VarKey id) &&
       TransparentState.is_transparent_variable flags.modulo_delta id ->
     Some (IsKey (VarKey id))
-  | Proj (p, c) when Projection.unfolded p
+  | Proj (p, c) when Names.Projection.unfolded p
     || (is_transparent env (ConstKey (Projection.constant p)) &&
        (TransparentState.is_transparent_constant flags.modulo_delta (Projection.constant p))) ->
     Some (IsProj (p, c))
@@ -1077,7 +1077,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   and canonical_projections (curenv, _ as curenvnb) pb opt cM cN (sigma,_,_ as substn) =
     let f1 () =
       if isApp_or_Proj sigma cM then
-          if is_open_canonical_projection curenv sigma cM then
+          if CanonicalSolution.is_open_canonical_projection curenv sigma cM then
             solve_canonical_projection curenvnb pb opt cM cN substn
           else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -1091,7 +1091,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       else
         try f1 () with e when precatchable_exception e ->
           if isApp_or_Proj sigma cN then
-              if is_open_canonical_projection curenv sigma cN then
+              if CanonicalSolution.is_open_canonical_projection curenv sigma cN then
                 solve_canonical_projection curenvnb pb opt cN cM substn
               else error_cannot_unify (fst curenvnb) sigma (cM,cN)
           else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -1099,12 +1099,11 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   and solve_canonical_projection curenvnb pb opt cM cN (sigma,ms,es) =
     let f1l1 = whd_nored_state (fst curenvnb) sigma (cM,Stack.empty) in
     let f2l2 = whd_nored_state (fst curenvnb) sigma (cN,Stack.empty) in
-    let (ctx,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
+    let (sigma,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
       try Evarconv.check_conv_record (fst curenvnb) sigma f1l1 f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
     if Reductionops.Stack.compare_shape ts ts1 then
-      let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
       let (evd,ks,_) =
         List.fold_left
           (fun (evd,ks,m) b ->

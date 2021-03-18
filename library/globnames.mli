@@ -34,7 +34,6 @@ val destConstructRef : GlobRef.t -> constructor
 val is_global : GlobRef.t -> constr -> bool
 [@@ocaml.deprecated "Use [Constr.isRefX] instead."]
 
-val subst_constructor : substitution -> constructor -> constructor
 val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr Univ.univ_abstracted option
 val subst_global_reference : substitution -> GlobRef.t -> GlobRef.t
 
