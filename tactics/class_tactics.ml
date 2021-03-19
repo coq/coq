@@ -1351,9 +1351,9 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
   let st = Hint_db.transparent_state hints in
   let modes = Hint_db.modes hints in
   let depth = get_typeclasses_depth () in
-  let tac = Search.eauto_tac (modes,st)
+  let tac = Tacticals.tclCOMPLETE (Search.eauto_tac (modes,st)
       ~only_classes:true ~best_effort:false
-      ~depth [hints] ~dep:true
+      ~depth [hints] ~dep:true)
   in
   let entry, pv = Proofview.init sigma [env, concl] in
   let pv =

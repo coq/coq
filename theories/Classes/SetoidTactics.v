@@ -29,7 +29,9 @@ Unset Strict Implicit.
 (** Default relation on a given support. Can be used by tactics
    to find a sensible default relation on any carrier. Users can
    declare an [Instance def : DefaultRelation A RA] anywhere to
-   declare default relations. *)
+   declare a default relation. This is used by setoid_replace to infer
+   the relation to use on a given type, in a given context.
+   *)
 
 Class DefaultRelation A (R : relation A).
 
