@@ -2130,7 +2130,7 @@ let compile_deps env sigma prefix init t =
   in
   aux env 0 init t
 
-let compile_constant_field env _prefix con acc cb =
+let compile_constant_field env con acc cb =
     let gl = compile_constant env empty_evars con cb in
     gl@acc
 

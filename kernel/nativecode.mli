@@ -65,7 +65,7 @@ val register_native_file : string -> unit
 
 val is_loaded_native_file : string -> bool
 
-val compile_constant_field : env -> string -> Constant.t ->
+val compile_constant_field : env -> Constant.t ->
   global list -> 'a constant_body -> global list
 
 val compile_mind_field : ModPath.t -> Label.t ->
