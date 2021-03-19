@@ -290,11 +290,10 @@ let error_expect_binder_notation_type ?loc id =
    (Id.print id ++
     str " is expected to occur in binding position in the right-hand side.")
 
-let set_var_scope ?loc id istermvar (tmp_scope,subscopes as scopes) ntnvars =
+let set_notation_var_scope ?loc id (tmp_scope,subscopes as scopes) ntnvars =
   try
-    let used_as_binder,idscopes,typ = Id.Map.find id ntnvars in
-    if istermvar then begin
-      (* scopes have no effect on the interpretation of identifiers *)
+    let _,idscopes,typ = Id.Map.find id ntnvars in
+       (* scopes have no effect on the interpretation of identifiers *)
       (match !idscopes with
       | None -> idscopes := Some scopes
       | Some (tmp_scope', subscopes') ->
@@ -304,9 +303,14 @@ let set_var_scope ?loc id istermvar (tmp_scope,subscopes as scopes) ntnvars =
       (match typ with
       | Notation_term.NtnInternTypeOnlyBinder -> error_expect_binder_notation_type ?loc id
       | Notation_term.NtnInternTypeAny -> ())
-      end
-    else
-      used_as_binder := true
+ with Not_found ->
+    (* Not in a notation *)
+    ()
+
+let set_var_is_binder ?loc id ntnvars =
+  try
+    let used_as_binder,_,_ = Id.Map.find id ntnvars in
+    used_as_binder := true
   with Not_found ->
     (* Not in a notation *)
     ()
@@ -484,7 +488,7 @@ let push_name_env ntnvars implargs env =
   | { loc; v = Name id } ->
       if Id.Map.is_empty ntnvars && Id.equal id ldots_var
         then error_ldots_var ?loc;
-      set_var_scope ?loc id false (env.tmp_scope,env.scopes) ntnvars;
+      set_var_is_binder ?loc id ntnvars;
       let uid = var_uid id in
       Dumpglob.dump_binding ?loc uid;
       pure_push_name_env (id,(Variable,implargs,[],uid)) env
@@ -1064,7 +1068,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
   (* Is [id] a notation variable *)
   if Id.Map.mem id ntnvars then
     begin
-      if not (Id.Map.mem id env.impls) then set_var_scope ?loc id true (env.tmp_scope,env.scopes) ntnvars;
+      if not (Id.Map.mem id env.impls) then set_notation_var_scope ?loc id (env.tmp_scope,env.scopes) ntnvars;
       gvar (loc,id) us
     end
   else
@@ -1843,7 +1847,7 @@ let rec intern_pat genv ntnvars aliases pat =
       intern_cstr_with_all_args loc c true [] pl
     | RCPatAtom (Some ({loc;v=id},scopes)) ->
       let aliases = merge_aliases aliases (make ?loc @@ Name id) in
-      set_var_scope ?loc id false scopes ntnvars;
+      set_var_is_binder ?loc id ntnvars;
       (aliases.alias_ids,[aliases.alias_map, DAst.make ?loc @@ PatVar (alias_of aliases)]) (* TO CHECK: aura-t-on id? *)
     | RCPatAtom None ->
       let { alias_ids = ids; alias_map = asubst; } = aliases in
