@@ -269,16 +269,14 @@ let build_constant_declaration env result =
         in
         Environ.really_needed env (Id.Set.union ids_typ ids_def), def
     | Some declared ->
-      let needed = Environ.really_needed env declared in
-      (* Transitive closure ensured by the upper layers *)
-      let () = assert (Id.Set.equal needed declared) in
-        (* We use the declared set and chain a check of correctness *)
-        declared,
-        match def with
-        | Undef _ | Primitive _ | OpaqueDef _ as x -> x (* nothing to check *)
-        | Def cs as x ->
-          let () = check_section_variables env declared typ (Mod_subst.force_constr cs) in
-          x
+      let declared = Environ.really_needed env declared in
+      (* We use the declared set and chain a check of correctness *)
+      declared,
+      match def with
+      | Undef _ | Primitive _ | OpaqueDef _ as x -> x (* nothing to check *)
+      | Def cs as x ->
+        let () = check_section_variables env declared typ (Mod_subst.force_constr cs) in
+        x
   in
   let univs = result.cook_universes in
   let hyps = List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) hyps) (Environ.named_context env) in
