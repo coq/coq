@@ -114,10 +114,6 @@ type import_filter_expr =
   | ImportAll
   | ImportNames of one_import_filter_name list
 
-type onlyparsing_flag = { onlyparsing : bool }
- (* Some v = Parse only;  None = Print also.
-    If v<>Current, it contains the name of the coq version
-    which this notation is trying to be compatible with *)
 type locality_flag  = bool (* true = Local *)
 
 type option_setting =
@@ -135,6 +131,7 @@ type definition_expr =
 
 type syntax_modifier =
   | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level
+  | SetItemScope of string list * scope_name
   | SetLevel of int
   | SetCustomEntry of string * int option
   | SetAssoc of Gramlib.Gramext.g_assoc
@@ -411,8 +408,7 @@ type nonrec vernac_expr =
   | VernacRemoveHints of string list * qualid list
   | VernacHints of string list * hints_expr
   | VernacSyntacticDefinition of
-      lident * (Id.t list * constr_expr) *
-      onlyparsing_flag
+      lident * (Id.t list * constr_expr) * syntax_modifier list
   | VernacArguments of
       qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *

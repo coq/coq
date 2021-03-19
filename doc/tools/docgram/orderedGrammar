@@ -1096,7 +1096,7 @@ command: [
 | "Undelimit" "Scope" scope_name
 | "Bind" "Scope" scope_name "with" LIST1 class
 | "Infix" string ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" ) OPT [ ":" scope_name ]
-| "Notation" ident LIST0 ident ":=" one_term OPT ( "(" "only" "parsing" ")" )
+| "Notation" ident LIST0 ident ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | "Notation" string ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" ) OPT [ ":" scope_name ]
 | "Format" "Notation" string string string
 | "Reserved" "Infix" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
@@ -1540,7 +1540,7 @@ class: [
 syntax_modifier: [
 | "at" "level" natural
 | "in" "custom" ident OPT ( "at" "level" natural )
-| LIST1 ident SEP "," "at" level
+| LIST1 ident SEP "," [ "at" level | "in" "scope" ident ]
 | ident "at" level OPT binder_interp
 | ident explicit_subentry
 | ident binder_interp

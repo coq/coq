@@ -52,7 +52,6 @@ let of_type = Entry.create "of_type"
 let section_subset_expr = Entry.create "section_subset_expr"
 let scope_delimiter = Entry.create "scope_delimiter"
 let syntax_modifiers = Entry.create "syntax_modifiers"
-let only_parsing = Entry.create "only_parsing"
 
 let make_bullet s =
   let open Proof_bullet in
@@ -1160,7 +1159,7 @@ GRAMMAR EXTEND Gram
 (* Grammar extensions *)
 
 GRAMMAR EXTEND Gram
-  GLOBAL: syntax only_parsing syntax_modifiers;
+  GLOBAL: syntax syntax_modifiers;
 
   syntax:
    [ [ IDENT "Open"; IDENT "Scope"; sc = IDENT ->
@@ -1181,10 +1180,9 @@ GRAMMAR EXTEND Gram
          modl = syntax_modifiers;
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
          { VernacInfix ((op,modl),p,sc) }
-     | IDENT "Notation"; id = identref;
-         idl = LIST0 ident; ":="; c = constr; b = only_parsing ->
-           { VernacSyntacticDefinition
-             (id,(idl,c),{ onlyparsing = b }) }
+     | IDENT "Notation"; id = identref; idl = LIST0 ident;
+         ":="; c = constr; modl = syntax_modifiers ->
+           { VernacSyntacticDefinition (id,(idl,c), modl) }
      | IDENT "Notation"; s = lstring; ":=";
          c = constr;
          modl = syntax_modifiers;
@@ -1207,10 +1205,6 @@ GRAMMAR EXTEND Gram
         to factorize with other "Print"-based or "Declare"-based vernac entries *)
   ] ]
   ;
-  only_parsing:
-    [ [ "("; IDENT "only"; IDENT "parsing"; ")" -> { true }
-      | -> { false } ] ]
-  ;
   level:
     [ [ IDENT "level"; n = natural -> { NumLevel n }
       | IDENT "next"; IDENT "level" -> { NextLevel } ] ]
@@ -1230,10 +1224,12 @@ GRAMMAR EXTEND Gram
           { begin match s1, s2 with
           | { CAst.v = k }, Some s -> SetFormat(k,s)
           | s, None -> SetFormat ("text",s) end }
-      | x = IDENT; ","; l = LIST1 [id = IDENT -> { id } ] SEP ","; "at";
-        lev = level -> { SetItemLevel (x::l,None,lev) }
+      | x = IDENT; ","; l = LIST1 IDENT SEP ","; v =
+          [ "at"; lev = level -> { fun x l -> SetItemLevel (x::l,None,lev) }
+          | "in"; IDENT "scope"; k = IDENT -> { fun x l -> SetItemScope(x::l,k) } ] -> { v x l }
       | x = IDENT; "at"; lev = level; b = OPT binder_interp ->
         { SetItemLevel ([x],b,lev) }
+      | x = IDENT; "in"; IDENT "scope"; k = IDENT -> { SetItemScope([x],k) }
       | x = IDENT; b = binder_interp -> { SetItemLevel ([x],Some b,DefaultLevel) }
       | x = IDENT; typ = explicit_subentry -> { SetEntryType (x,typ) }
     ] ]

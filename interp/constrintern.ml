@@ -273,17 +273,27 @@ let make_current_scope tmp scopes = match tmp, scopes with
   | Some tmp_scope, scopes -> tmp_scope :: scopes
   | None, scopes -> scopes
 
-let pr_scope_stack = function
-  | [] -> str "the empty scope stack"
-  | [a] -> str "scope " ++ str a
-  | l -> str "scope stack " ++
+let pr_scope_stack begin_of_sentence l =
+  let bstr x =
+    if begin_of_sentence then str (CString.capitalize_ascii x) else str x in
+  match l with
+  | [] -> bstr "the empty scope stack"
+  | [a] -> bstr "scope " ++ str a
+  | l -> bstr "scope stack " ++
       str "[" ++ prlist_with_sep pr_comma str l ++ str "]"
 
-let error_inconsistent_scope ?loc id scopes1 scopes2 =
-  user_err ?loc ~hdr:"set_var_scope"
-   (Id.print id ++ str " is here used in " ++
-    pr_scope_stack scopes2 ++ strbrk " while it was elsewhere used in " ++
-    pr_scope_stack scopes1)
+let warn_inconsistent_scope =
+  CWarnings.create ~name:"inconsistent-scopes" ~category:"syntax"
+    (fun (id,scopes1,scopes2) ->
+      (str "Argument " ++ Id.print id ++
+       strbrk " was previously inferred to be in " ++
+       pr_scope_stack false scopes1 ++
+       strbrk " but is here used in " ++
+       pr_scope_stack false scopes2 ++
+       strbrk ". " ++
+       pr_scope_stack true scopes1 ++
+       strbrk " will be used at parsing time unless you override it by" ++
+       strbrk " annotating the argument with an explicit scope of choice."))
 
 let error_expect_binder_notation_type ?loc id =
   user_err ?loc
@@ -293,16 +303,16 @@ let error_expect_binder_notation_type ?loc id =
 let set_notation_var_scope ?loc id (tmp_scope,subscopes as scopes) ntnvars =
   try
     let _,idscopes,typ = Id.Map.find id ntnvars in
-       (* scopes have no effect on the interpretation of identifiers *)
-      (match !idscopes with
+    match typ with
+    | Notation_term.NtnInternTypeOnlyBinder -> error_expect_binder_notation_type ?loc id
+    | Notation_term.NtnInternTypeAny principal ->
+      match !idscopes with
       | None -> idscopes := Some scopes
       | Some (tmp_scope', subscopes') ->
         let s' = make_current_scope tmp_scope' subscopes' in
         let s = make_current_scope tmp_scope subscopes in
-        if not (List.equal String.equal s' s) then error_inconsistent_scope ?loc id s' s);
-      (match typ with
-      | Notation_term.NtnInternTypeOnlyBinder -> error_expect_binder_notation_type ?loc id
-      | Notation_term.NtnInternTypeAny -> ())
+        if Option.is_empty principal && not (List.equal String.equal s' s) then
+          warn_inconsistent_scope ?loc (id,s',s)
  with Not_found ->
     (* Not in a notation *)
     ()
@@ -1124,6 +1134,15 @@ let dump_extended_global loc = function
 
 let intern_extended_global_of_qualid qid =
   let r = Nametab.locate_extended qid in dump_extended_global qid.CAst.loc r; r
+
+let intern_reference qid =
+  let r =
+    try intern_extended_global_of_qualid qid
+    with Not_found as exn ->
+      let _, info = Exninfo.capture exn in
+      Nametab.error_global_not_found ~info qid
+  in
+  Smartlocate.global_of_extended_global r
 
 let intern_sort_name ~local_univs = function
   | CSProp -> GSProp
@@ -2565,7 +2584,11 @@ let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let ids = extract_ids env in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
-  let vl = Id.Map.map (fun typ -> (ref false, ref None, typ)) nenv.ninterp_var_type in
+  let vl = Id.Map.map (function
+    | (NtnInternTypeAny None | NtnInternTypeOnlyBinder) as typ -> (ref false, ref None, typ)
+    | NtnInternTypeAny (Some scope) as typ ->
+        (ref false, ref (Some (Some scope,[])), typ)
+    ) nenv.ninterp_var_type in
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
   let c = internalize env
       {ids; unb = false;

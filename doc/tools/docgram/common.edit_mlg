@@ -1410,8 +1410,9 @@ syntax_modifier: [
 | DELETE "in" "custom" IDENT
 | REPLACE "in" "custom" IDENT; "at" "level" natural
 | WITH "in" "custom" IDENT OPT ( "at" "level" natural )
-| REPLACE IDENT; "," LIST1 IDENT SEP "," "at" level
-| WITH LIST1 IDENT SEP "," "at" level
+| DELETE IDENT; "in" "scope" IDENT
+| REPLACE IDENT; "," LIST1 IDENT SEP "," [ "at" level | "in" "scope" IDENT ]
+| WITH LIST1 IDENT SEP "," [ "at" level | "in" "scope" IDENT ]
 ]
 
 explicit_subentry: [
@@ -2643,7 +2644,6 @@ SPLICE: [
 | quoted_attributes  (* todo: splice or not? *)
 | printable
 | hint
-| only_parsing
 | record_fields
 | constructor_type
 | record_binder

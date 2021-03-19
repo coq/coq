@@ -1401,16 +1401,11 @@ syntax: [
 | "Undelimit" "Scope" IDENT
 | "Bind" "Scope" IDENT; "with" LIST1 class_rawexpr
 | "Infix" ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
-| "Notation" identref LIST0 ident ":=" constr only_parsing
+| "Notation" identref LIST0 ident ":=" constr syntax_modifiers
 | "Notation" lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 | "Format" "Notation" STRING STRING STRING
 | "Reserved" "Infix" ne_lstring syntax_modifiers
 | "Reserved" "Notation" ne_lstring syntax_modifiers
-]
-
-only_parsing: [
-| "(" "only" "parsing" ")"
-|
 ]
 
 level: [
@@ -1428,8 +1423,9 @@ syntax_modifier: [
 | "only" "printing"
 | "only" "parsing"
 | "format" STRING OPT STRING
-| IDENT; "," LIST1 IDENT SEP "," "at" level
+| IDENT; "," LIST1 IDENT SEP "," [ "at" level | "in" "scope" IDENT ]
 | IDENT; "at" level OPT binder_interp
+| IDENT; "in" "scope" IDENT
 | IDENT binder_interp
 | IDENT explicit_subentry
 ]
