@@ -93,7 +93,7 @@ Module KeyDecidableType(D:DecidableType).
 
   Lemma InA_eqk : forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
   Proof.
-   intros; apply InA_eqA with p; auto using eqk_equiv.
+   intros p q m **; apply InA_eqA with p; auto using eqk_equiv.
   Qed.
 
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
@@ -106,18 +106,18 @@ Module KeyDecidableType(D:DecidableType).
 
   Lemma In_alt : forall k l, In k l <-> exists e, InA eqk (k,e) l.
   Proof.
-  firstorder.
-  exists x; auto.
-  induction H.
-  destruct y.
-  exists e; auto.
-  destruct IHInA as [e H0].
+  intros k l; split; intros [y H].
+  exists y; auto.
+  induction H as [a l eq|a l H IH].
+  destruct a as [k' y'].
+  exists y'; auto.
+  destruct IH as [e H0].
   exists e; auto.
   Qed.
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
   Proof.
-    intros; unfold MapsTo in *; apply InA_eqA with (x,e); auto using eqke_equiv.
+    intros l x y e **; unfold MapsTo in *; apply InA_eqA with (x,e); auto using eqke_equiv.
   Qed.
 
   Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
@@ -127,21 +127,21 @@ Module KeyDecidableType(D:DecidableType).
 
   Lemma In_inv : forall k k' e l, In k ((k',e) :: l) -> eq k k' \/ In k l.
   Proof.
-    inversion 1.
-    inversion_clear H0; eauto.
+    inversion 1 as [? H0].
+    inversion_clear H0 as [? ? H1|]; eauto.
     destruct H1; simpl in *; intuition.
   Qed.
 
   Lemma In_inv_2 : forall k k' e e' l,
       InA eqk (k, e) ((k', e') :: l) -> ~ eq k k' -> InA eqk (k, e) l.
   Proof.
-   inversion_clear 1; compute in H0; intuition.
+   inversion_clear 1 as [? ? H0|? ? H0]; compute in H0; intuition.
   Qed.
 
   Lemma In_inv_3 : forall x x' l,
       InA eqke x (x' :: l) -> ~ eqk x x' -> InA eqke x l.
   Proof.
-   inversion_clear 1; compute in H0; intuition.
+   inversion_clear 1 as [? ? H0|? ? H0]; compute in H0; intuition.
   Qed.
 
  End Elt.

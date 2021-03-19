@@ -87,7 +87,7 @@ Program Instance unit_eqdec : EqDec unit eq := fun x y => in_left.
 
   Next Obligation.
   Proof.
-    destruct x ; destruct y.
+    do 2 match goal with [ x : () |- _ ] => destruct x end.
     reflexivity.
   Qed.
 
@@ -142,7 +142,10 @@ Program Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=
       | _, _ => in_right
     end }.
 
-  Next Obligation. destruct y ; unfold not in *; eauto. Defined.
+  Next Obligation.
+    match goal with y : list _ |- _ => destruct y end ;
+    unfold not in *; eauto.
+  Defined.
 
   Solve Obligations with unfold equiv, complement in * ; 
     program_simpl ; intuition (discriminate || eauto).
