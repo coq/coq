@@ -930,8 +930,8 @@ let do_replace (evd : Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num
           (* let res = Constrintern.construct_reference (pf_hyps g) equation_lemma_id in *)
           let evd', res =
             Evd.fresh_global (Global.env ()) !evd
-              (Constrintern.locate_reference
-                 (qualid_of_ident equation_lemma_id))
+              (Option.get (Constrintern.locate_reference
+                 (qualid_of_ident equation_lemma_id)))
           in
           evd := evd';
           let sigma, _ =

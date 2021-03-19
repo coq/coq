@@ -1121,23 +1121,54 @@ let dump_extended_global loc = function
 let intern_extended_global_of_qualid qid =
   let r = Nametab.locate_extended qid in dump_extended_global qid.CAst.loc r; r
 
-let intern_reference qid =
-  let r =
-    try intern_extended_global_of_qualid qid
-    with Not_found as exn ->
-      let _, info = Exninfo.capture exn in
-      Nametab.error_global_not_found ~info qid
-  in
-  Smartlocate.global_of_extended_global r
+let intern_sort_name ~local_univs = function
+  | CSProp -> GSProp
+  | CProp -> GProp
+  | CSet -> GSet
+  | CRawType u -> GRawUniv u
+  | CType qid ->
+    let is_id = qualid_is_ident qid in
+    let local = if not is_id then None
+      else Id.Map.find_opt (qualid_basename qid) local_univs.bound
+    in
+    match local with
+    | Some u -> GUniv u
+    | None ->
+      try GUniv (Univ.Level.make (Nametab.locate_universe qid))
+      with Not_found ->
+        if is_id && local_univs.unb_univs
+        then GLocalUniv (CAst.make ?loc:qid.loc (qualid_basename qid))
+        else
+          CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid qid ++ str".")
+
+let intern_sort ~local_univs s =
+  map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) s
+
+let intern_instance ~local_univs us =
+  Option.map (List.map (map_glob_sort_gen (intern_sort_name ~local_univs))) us
+
+let intern_name_alias = function
+  | { CAst.v = CRef(qid,u) } ->
+      let r =
+        try Some (intern_extended_global_of_qualid qid)
+        with Not_found -> None
+      in
+      Option.bind r Smartlocate.global_of_extended_global |>
+      Option.map (fun r -> r, intern_instance ~local_univs:empty_local_univs u)
+  | _ -> None
 
 let intern_projection qid =
-  try
-    match Smartlocate.global_of_extended_global (intern_extended_global_of_qualid qid) with
-    | GlobRef.ConstRef c as gr ->
-        (gr, Structure.find_from_projection c)
-    | _ -> raise Not_found
-  with Not_found ->
-    Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
+  match
+    Smartlocate.global_of_extended_global (intern_extended_global_of_qualid qid) |>
+    Option.map (function
+     | GlobRef.ConstRef c as x -> x, Structure.find_from_projection c
+     | _ -> raise Not_found)
+  with
+  | exception Not_found ->
+     Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
+  | None ->
+     Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
+  | Some x -> x
 
 (**********************************************************************)
 (* Interpreting references                                            *)
@@ -1181,37 +1212,6 @@ let glob_sort_of_level (level: glob_level) : glob_sort =
   match level with
   | UAnonymous {rigid} -> UAnonymous {rigid}
   | UNamed id -> UNamed [id,0]
-
-let intern_sort_name ~local_univs = function
-  | CSProp -> GSProp
-  | CProp -> GProp
-  | CSet -> GSet
-  | CRawType u -> GRawUniv u
-  | CType qid ->
-    let is_id = qualid_is_ident qid in
-    let local = if not is_id then None
-      else Id.Map.find_opt (qualid_basename qid) local_univs.bound
-    in
-    match local with
-    | Some u -> GUniv u
-    | None ->
-      try GUniv (Univ.Level.make (Nametab.locate_universe qid))
-      with Not_found ->
-        if is_id && local_univs.unb_univs
-        then GLocalUniv (CAst.make ?loc:qid.loc (qualid_basename qid))
-        else
-          CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid qid ++ str".")
-
-let intern_sort ~local_univs s =
-  map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) s
-
-let intern_instance ~local_univs us =
-  Option.map (List.map (map_glob_sort_gen (intern_sort_name ~local_univs))) us
-
-let try_interp_name_alias = function
-  | [], { CAst.v = CRef (ref,u) } ->
-     NRef (intern_reference ref,intern_instance ~local_univs:empty_local_univs u)
-  | _ -> raise Not_found
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =

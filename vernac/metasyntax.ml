@@ -1795,8 +1795,10 @@ let add_class_scope local scope cl =
 
 let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing } =
   let acvars,pat,reversibility =
-    try Id.Map.empty, try_interp_name_alias (vars,c), APrioriReversible
-    with Not_found ->
+    match vars, intern_name_alias c with
+    | [], Some(r,u) ->
+      Id.Map.empty, NRef(r, u), APrioriReversible
+    | _ ->
       let fold accu id = Id.Map.add id NtnInternTypeAny accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in
       let nenv = {

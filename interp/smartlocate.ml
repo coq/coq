@@ -33,7 +33,7 @@ let global_of_extended_global_head = function
         | _ -> raise Not_found in
       head_of syn_def
 
-let global_of_extended_global = function
+let global_of_extended_global_exn = function
   | TrueGlobal ref -> ref
   | SynDef kn ->
   match search_syntactic_definition kn with
@@ -45,10 +45,14 @@ let locate_global_with_alias ?(head=false) qid =
   let ref = Nametab.locate_extended qid in
   try
     if head then global_of_extended_global_head ref
-    else global_of_extended_global ref
+    else global_of_extended_global_exn ref
   with Not_found ->
     user_err ?loc:qid.CAst.loc (pr_qualid qid ++
       str " is bound to a notation that does not denote a reference.")
+
+let global_of_extended_global x =
+  try Some (global_of_extended_global_exn x)
+  with Not_found -> None
 
 let global_constant_with_alias qid  =
   try match locate_global_with_alias qid with

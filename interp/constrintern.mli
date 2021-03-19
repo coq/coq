@@ -147,12 +147,9 @@ val interp_constr_pattern :
   env -> evar_map -> ?expected_type:typing_constraint ->
     constr_pattern_expr -> constr_pattern
 
-(** Raise Not_found if syndef not bound to a name and error if unexisting ref *)
-val intern_reference : qualid -> GlobRef.t
-
-(** For syntactic definitions: check if abbreviation to a name
-    and avoid early insertion of maximal implicit arguments *)
-val try_interp_name_alias : 'a list * constr_expr -> notation_constr
+(** Returns None if not a reference or a syndef not bound to a name *)
+val intern_name_alias :
+  constr_expr -> (GlobRef.t * Glob_term.glob_level list option) option
 
 (** Expands abbreviations (syndef); raise an error if not existing *)
 val interp_reference : ltac_sign -> qualid -> glob_constr
@@ -174,7 +171,7 @@ val interp_context_evars :
 (** Locating references of constructions, possibly via a syntactic definition
    (these functions do not modify the glob file) *)
 
-val locate_reference :  Libnames.qualid -> GlobRef.t
+val locate_reference :  Libnames.qualid -> GlobRef.t option
 val is_global : Id.t -> bool
 
 (** Interprets a term as the left-hand side of a notation. The returned map is
