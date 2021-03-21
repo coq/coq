@@ -26,7 +26,7 @@ type 'annotation located = {
     that represents (located) annotations of this string.
     The [get_annotations] function is used to convert tags into the desired
     annotation. [width] sets the printing width of the formatter. *)
-val rich_pp : int -> Pp.t -> Pp.pp_tag located Xml_datatype.gxml
+val rich_pp : width:int -> ?depth:int -> Pp.t -> Pp.pp_tag located Xml_datatype.gxml
 
 (** [annotations_positions ssdoc] returns a list associating each
     annotations with its position in the string from which [ssdoc] is
@@ -49,5 +49,5 @@ type richpp = Xml_datatype.xml
 
 (** Type of text with style annotations *)
 
-val richpp_of_pp : int -> Pp.t -> richpp
+val richpp_of_pp : width:int -> ?depth:int -> Pp.t -> richpp
 (** Extract style information from formatted text *)

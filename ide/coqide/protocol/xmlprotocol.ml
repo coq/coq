@@ -15,8 +15,8 @@ let protocol_version = "20210506"
 
 (** See xml-protocol.md for a description of the protocol. *)
 
-type msg_format = Richpp of int | Ppcmds
-let msg_format = ref (Richpp 72)
+type msg_format = Richpp of { width : int; depth : int } | Ppcmds
+let msg_format = ref (Richpp { width = 72; depth = max_int })
 
 (** * Interface of calls to Coq by CoqIDE *)
 
@@ -152,7 +152,8 @@ let of_richpp x = Element ("richpp", [], [x])
 (* Run-time Selectable *)
 let of_pp (pp : Pp.t) =
   match !msg_format with
-  | Richpp margin -> of_richpp (Richpp.richpp_of_pp margin pp)
+  | Richpp { width; depth } ->
+    of_richpp (Richpp.richpp_of_pp ~width ~depth pp)
   | Ppcmds        -> of_pp pp
 
 let of_value f = function

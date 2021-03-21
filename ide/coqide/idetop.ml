@@ -113,10 +113,10 @@ let annotate phrase =
   let doc = get_doc () in
   let pa = Pcoq.Parsable.make (Stream.of_string phrase) in
   match Stm.parse_sentence ~doc (Stm.get_current_state ~doc) ~entry:Pvernac.main_entry pa with
-  | None -> Richpp.richpp_of_pp 78 (Pp.mt ())
+  | None -> Richpp.richpp_of_pp ~width:78 (Pp.mt ())
   | Some ast ->
     (* XXX: Width should be a parameter of annotate... *)
-    Richpp.richpp_of_pp 78 (Ppvernac.pr_vernac ast)
+    Richpp.richpp_of_pp ~width:78 (Ppvernac.pr_vernac ast)
 
 (** Goal display *)
 
@@ -495,8 +495,8 @@ let slave_feeder fmt xml_oc msg =
     trying to answer malformed requests. *)
 
 let msg_format = ref (fun () ->
-    let margin = Option.default 72 (Topfmt.get_margin ()) in
-    Xmlprotocol.Richpp margin
+    let width = Option.default 72 (Topfmt.get_margin ()) in
+    Xmlprotocol.Richpp { width; depth = max_int }
   )
 
 (* The loop ignores the command line arguments as the current model delegates
