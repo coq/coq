@@ -2,9 +2,9 @@ Miscprint
 Goal
 Evar_refiner
 Refine
+Goal_select
 Proof
 Logic
-Goal_select
 Proof_bullet
 Tacmach
 Clenv

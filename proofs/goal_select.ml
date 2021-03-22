@@ -57,3 +57,22 @@ let get_default_goal_selector =
     ~value:(SelectNth 1)
     parse_goal_selector
     (fun v -> Pp.string_of_ppcmds @@ pr_goal_selector v)
+
+(* Select a subset of the goals *)
+let tclSELECT ?nosuchgoal g tac = match g with
+  | SelectNth i -> Proofview.tclFOCUS ?nosuchgoal i i tac
+  | SelectList l -> Proofview.tclFOCUSLIST ?nosuchgoal l tac
+  | SelectId id -> Proofview.tclFOCUSID ?nosuchgoal id tac
+  | SelectAll -> tac
+  | SelectAlreadyFocused ->
+    let open Proofview.Notations in
+    Proofview.numgoals >>= fun n ->
+    if n == 1 then tac
+    else
+      let e = CErrors.UserError
+          (None,
+           Pp.(str "Expected a single focused goal but " ++
+               int n ++ str " goals are focused."))
+      in
+      let info = Exninfo.reify () in
+      Proofview.tclZERO ~info e
