@@ -86,6 +86,10 @@ Definition equivlistA l l' := forall x, InA x l <-> InA x l'.
 
 Lemma incl_nil l : inclA nil l.
 Proof. intros a H. inversion H. Qed.
+
+#[local]
+Create HintDb list.
+
 #[local]
 Hint Resolve incl_nil : list.
 

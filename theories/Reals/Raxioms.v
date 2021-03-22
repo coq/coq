@@ -113,6 +113,7 @@ Qed.
 
 Close Scope CReal_scope.
 
+Create HintDb real.
 
 (**********)
 Lemma Rplus_comm : forall r1 r2:R, r1 + r2 = r2 + r1.

@@ -83,6 +83,9 @@ Lemma andb_prop (a b:bool) : andb a b = true -> a = true /\ b = true.
 Proof.
   destruct a, b; repeat split; assumption.
 Qed.
+
+Create HintDb bool.
+
 #[global]
 Hint Resolve andb_prop: bool.
 
@@ -101,6 +104,8 @@ Register andb_true_intro as core.bool.andb_true_intro.
 (** Interpretation of booleans as propositions *)
 
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
+
+Create HintDb eq_true.
 
 #[global]
 Hint Constructors eq_true : eq_true.
@@ -480,3 +485,5 @@ Notation prodT_uncurry := prod_uncurry (only parsing).
 Notation prodT_curry := prod_curry (only parsing).
 
 (* end hide *)
+
+Create HintDb datatypes.

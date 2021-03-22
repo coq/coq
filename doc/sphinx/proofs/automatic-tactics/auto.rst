@@ -421,6 +421,7 @@ Creating Hints
          .. coqtop:: reset none
 
             Set Warnings "-deprecated-hint-without-locality".
+            Create HintDb eqdec.
 
          .. coqtop:: all
 

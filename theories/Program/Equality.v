@@ -21,6 +21,8 @@ Ltac is_ground_goal :=
 
 (** Try to find a contradiction. *)
 
+Create HintDb exfalso.
+
 #[global]
 Hint Extern 10 => is_ground_goal ; progress exfalso : exfalso.
 
@@ -308,6 +310,8 @@ Proof. intros. rewrite (UIP_refl A). assumption. Defined.
 
 (** This hint database and the following tactic can be used with [autounfold] to 
    unfold everything to [eq_rect]s. *)
+
+Create HintDb dep_elim.
 
 #[global]
 Hint Unfold solution_left solution_right deletion simplification_heq

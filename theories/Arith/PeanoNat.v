@@ -795,3 +795,5 @@ Section TestOrder.
  Nat.order.
  Qed.
 End TestOrder.
+
+Create HintDb arith.

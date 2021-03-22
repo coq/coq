@@ -119,6 +119,8 @@ Proof.
 symmetry. apply Z.ge_le_iff.
 Qed.
 
+Create HintDb qarith.
+
 #[global]
 Hint Unfold Qeq Qlt Qle : qarith.
 #[global]

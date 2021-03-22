@@ -2,6 +2,7 @@
 
 Parameter foo : Prop.
 Axiom H : foo -> foo.
+Create HintDb foo.
 #[global]
 Hint Resolve H : foo.
 Goal foo.

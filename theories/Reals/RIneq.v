@@ -31,6 +31,8 @@ Implicit Type r : R.
 (** ** Relation between orders and equality              *)
 (*********************************************************)
 
+Create HintDb rorders.
+
 (** Reflexivity of the large order *)
 
 Lemma Rle_refl : forall r, r <= r.

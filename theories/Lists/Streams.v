@@ -54,6 +54,10 @@ Lemma tl_nth_tl :
 Proof.
   simple induction n; simpl; auto.
 Qed.
+
+#[local]
+Create HintDb datatypes.
+
 #[local]
 Hint Resolve tl_nth_tl: datatypes.
 

@@ -92,6 +92,8 @@ Section Ensembles.
 
 End Ensembles.
 
+Create HintDb sets.
+
 #[global]
 Hint Unfold In Included Same_set Strict_Included Add Setminus Subtract: sets.
 

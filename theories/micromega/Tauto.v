@@ -1569,6 +1569,9 @@ Section S.
   Qed.
 
   #[local]
+  Create HintDb tauto.
+
+  #[local]
   Hint Resolve no_middle_eval_tt : tauto.
 
   Lemma or_clause_correct : forall cl cl' env,  eval_opt_clause env (or_clause cl cl') <-> eval_clause env cl \/ eval_clause env cl'.

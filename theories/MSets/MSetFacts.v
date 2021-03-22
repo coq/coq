@@ -139,6 +139,8 @@ Notation choose_1 := choose_spec1 (only parsing).
 Notation choose_2 := choose_spec2 (only parsing).
 Notation elements_3w := elements_spec2w (only parsing).
 
+Create HintDb set.
+
 #[global]
 Hint Resolve mem_1 equal_1 subset_1 empty_1
     is_empty_1 choose_1 choose_2 add_1 add_2 remove_1

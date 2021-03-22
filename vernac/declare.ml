@@ -886,8 +886,15 @@ let shrink_body c ty =
 let unfold_entry cst = Hints.HintsUnfoldEntry [Tacred.EvalConstRef cst]
 
 let add_hint local prg cst =
+  let dbname = Id.to_string prg.prg_cinfo.CInfo.name in
+  (* Declare the database if not there yet *)
+  let () =
+    try ignore (Hints.searchtable_map dbname)
+    with Not_found ->
+      Hints.create_hint_db local dbname TransparentState.empty false
+  in
   let locality = if local then Goptions.OptLocal else Goptions.OptExport in
-  Hints.add_hints ~locality [Id.to_string prg.prg_cinfo.CInfo.name] (unfold_entry cst)
+  Hints.add_hints ~locality [dbname] (unfold_entry cst)
 
 let declare_obligation prg obl ~uctx ~types ~body =
   let poly = prg.prg_info.Info.poly in

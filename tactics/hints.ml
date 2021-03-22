@@ -975,12 +975,10 @@ let make_trivial env sigma ?(name=PathAny) r =
 (*               declaration of the AUTOHINT library object               *)
 (**************************************************************************)
 
-(* If the database does not exist, it is created *)
-(* TODO: should a warning be printed in this case ?? *)
-
+(* The database must exist prior to the call. *)
 let get_db dbname =
   try searchtable_map dbname
-  with Not_found -> Hint_db.empty ~name:dbname TransparentState.empty false
+  with Not_found -> assert false
 
 let add_hint dbname hintlist =
   let check (_, h) =
@@ -1243,8 +1241,23 @@ let interp_locality = function
 | Goptions.OptExport -> Export
 | Goptions.OptLocal -> Local
 
+let warn_undeclared_hint_db =
+  CWarnings.create ~name:"undeclared-hint-db" ~category:"deprecated"
+    (fun (db, local) ->
+    let cmd = if local then str "\"#[local] Create HintDb " else str "\"Create HintDb " in
+    strbrk "Declaring a hint database implicitly is deprecated; use in advance an explicit "
+    ++ cmd ++ str db ++ str ".\".")
+
+let implicit_hint_db ?loc name = match searchtable_map name with
+| _ -> ()
+| exception Not_found ->
+  let local = Global.sections_are_opened () in
+  let () = warn_undeclared_hint_db ?loc (name, local) in
+  create_hint_db false name TransparentState.empty false
+
 let remove_hints ~locality dbnames grs =
   let local = interp_locality locality in
+  let () = List.iter implicit_hint_db dbnames in
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
       (fun dbname ->
@@ -1390,6 +1403,7 @@ let prepare_hint check env init (sigma,c) =
 
 let add_hints ~locality dbnames h =
   let local = interp_locality locality in
+  let () = List.iter implicit_hint_db dbnames in
   if String.List.mem "nocore" dbnames then
     user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");
   assert (not (List.is_empty dbnames));

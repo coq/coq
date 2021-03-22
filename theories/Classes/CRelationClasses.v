@@ -244,6 +244,8 @@ Ltac solve_crelation :=
   | [ H : ?R ?x ?y |- ?R ?y ?x ] => symmetry ; exact H
   end.
 
+Create HintDb crelations.
+
 #[global]
 Hint Extern 4 => solve_crelation : crelations.
 

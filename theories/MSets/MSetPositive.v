@@ -523,6 +523,9 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma ct_xgg: forall x, ct x Gt Gt.
   Proof. destruct x; constructor. Qed.
 
+  #[local]
+  Create HintDb ct.
+
   Local Hint Constructors ct: ct.
   Local Hint Resolve ct_cxe ct_xce ct_lxl ct_xll ct_gxg ct_xgg: ct.
   Ltac ct := trivial with ct.

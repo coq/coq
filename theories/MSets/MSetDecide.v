@@ -463,6 +463,8 @@ the above form:
     | Equal_MSet_Prop : forall s1 s2,
         MSet_Prop (Equal s1 s2).
 
+    Create HintDb MSet_Prop.
+
     (** Here is the tactic that will throw away hypotheses that
         are not useful (for the intended scope of the [fsetdec]
         tactic). *)
@@ -516,6 +518,8 @@ the above form:
     Proof.
       red; intros x y; destruct (E.eq_dec x y); auto.
     Qed.
+
+    Create HintDb MSet_decidability.
 
     (** The hint database [MSet_decidability] will be given to
         the [push_neg] tactic from the module [Negation]. *)

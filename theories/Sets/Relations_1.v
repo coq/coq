@@ -61,6 +61,9 @@ Section Relations_1.
        Definition_of_PER : Symmetric -> Transitive -> PER.
 
 End Relations_1.
+
+Create HintDb sets.
+
 #[global]
 Hint Unfold Reflexive Transitive Antisymmetric Symmetric contains
   same_relation: sets.

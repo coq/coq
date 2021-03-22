@@ -23,6 +23,8 @@
 
 Require Export EqdepFacts.
 
+Create HintDb eqdep.
+
 Module Eq_rect_eq.
 
 Axiom eq_rect_eq :

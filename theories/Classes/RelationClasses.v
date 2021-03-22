@@ -243,6 +243,8 @@ Ltac solve_relation :=
   | [ H : ?R ?x ?y |- ?R ?y ?x ] => symmetry ; exact H
   end.
 
+Create HintDb relations.
+
 #[global]
 Hint Extern 4 => solve_relation : relations.
 

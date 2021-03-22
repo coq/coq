@@ -21,6 +21,8 @@ Require Import DecidableTypeEx FSetFacts FSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Create HintDb fset.
+
 #[global]
 Hint Unfold transpose compat_op Proper respectful : fset.
 #[global]

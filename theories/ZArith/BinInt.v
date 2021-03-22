@@ -1754,6 +1754,8 @@ Proof. congruence. Qed.
 Lemma Zpos_eq_iff : forall p q, p = q <-> Z.pos p = Z.pos q.
 Proof (fun p q => iff_sym (Pos2Z.inj_iff p q)).
 
+Create HintDb zarith.
+
 #[global]
 Hint Immediate Zsucc_pred: zarith.
 

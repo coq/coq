@@ -32,12 +32,12 @@ Require Export Bool OrderedType DecidableType.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Create HintDb set.
+
 (** * Non-dependent signatures
 
     The following signatures presents sets as purely informative
     programs together with axioms *)
-
-
 
 (** ** Functorial signature for weak sets
 
