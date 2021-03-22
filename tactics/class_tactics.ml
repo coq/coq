@@ -599,7 +599,7 @@ module Search = struct
     | _ -> None
     end
 
-  let search_fixpoint keep_stuck_failures tacs =
+  let search_fixpoint ~keep_stuck_failures ~allow_out_of_order tacs =
     let open Pp in
     let open Proofview in
     let open Proofview.Notations in
@@ -607,7 +607,7 @@ module Search = struct
       let next (glid, tac as gtac) tacs stuck =
         if !typeclasses_debug > 1 then Feedback.msg_debug (str "considering goal " ++ int glid);
         let rec kont = function
-          | Fail ((Suspend | StuckGoal), info) ->
+          | Fail ((Suspend | StuckGoal), info) when allow_out_of_order ->
             if !typeclasses_debug > 1 then
               Feedback.msg_debug (str "Goal " ++ int glid ++ str" is stuck, trying other tactics ");
             cycle 1 (* Puts the first goal last *) <*>
@@ -768,7 +768,7 @@ module Search = struct
                              (mt()) k)));
         let res =
           if j = 0 then tclUNIT ()
-          else search_fixpoint false
+          else search_fixpoint ~keep_stuck_failures:false ~allow_out_of_order:false
                  (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j'))))
         in
         let finish nestedshelf sigma =
@@ -905,7 +905,7 @@ module Search = struct
       let gls = CList.map Proofview.drop_state gls in
       Proofview.tclEVARMAP >>= fun sigma ->
       let j = List.length gls in
-      search_fixpoint keep_stuck_failures (List.init j (fun i -> tac sigma gls i))
+      search_fixpoint ~keep_stuck_failures ~allow_out_of_order:true (List.init j (fun i -> tac sigma gls i))
 
   let fix_iterative t =
     let rec aux depth =
@@ -1194,8 +1194,10 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
               raise (Unresolved evd')
               end
             else docomp evd' comps
-          | None -> raise (Unresolved evd)
-        with Not_found -> raise (Unresolved evd))
+          | None -> docomp evd comps (* No typeclass evars left in this component *)
+        with Not_found ->
+          (* Typeclass resolution failed *)
+          raise (Unresolved evd))
       with Unresolved evd' ->
         if fail && (not do_split || is_mandatory (p evd') comp evd')
         then (* Unable to satisfy the constraints. *)
