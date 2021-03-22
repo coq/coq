@@ -78,9 +78,8 @@ module ConstrMap = struct
 
   type 'a t = 'a list Map.t
 
-  let add evd h e m =
-    let r = fst (EConstr.destRef evd h) in
-    Map.update r (function None -> Some [e] | Some l -> Some (e :: l)) m
+  let add gr e m =
+    Map.update gr (function None -> Some [e] | Some l -> Some (e :: l)) m
 
   let empty = Map.empty
 
@@ -603,8 +602,11 @@ module MakeTable (E : Elt) = struct
   let register_hint evd t elt =
     match EConstr.kind evd t with
     | App (c, _) ->
-      E.table := ConstrMap.add evd c (Application t, E.cast elt) !E.table
-    | _ -> E.table := ConstrMap.add evd t (OtherTerm t, E.cast elt) !E.table
+      let gr = fst (EConstr.destRef evd c) in
+      E.table := ConstrMap.add gr (Application t, E.cast elt) !E.table
+    | _ ->
+      let gr = fst (EConstr.destRef evd t) in
+      E.table := ConstrMap.add gr (OtherTerm t, E.cast elt) !E.table
 
   let register_constr env evd c =
     let c = EConstr.of_constr c in
