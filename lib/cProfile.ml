@@ -285,7 +285,7 @@ let format_profile (table, outside, total) =
   Printf.printf
     "%-23s  %9s %9s %10s %10s %10s\n"
     "Function name" "Own time" "Tot. time" "Own alloc" "Tot. alloc" "Calls ";
-  let l = List.sort (fun (_,{tottime=p}) (_,{tottime=p'}) -> p' - p) table in
+  let l = List.sort (fun p p' -> (snd p').tottime - (snd p).tottime) table in
   List.iter (fun (name,e) ->
     Printf.printf
       "%-23s %9.2f %9.2f %10.0f %10.0f %6d %6d\n"
