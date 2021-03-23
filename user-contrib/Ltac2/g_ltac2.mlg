@@ -915,8 +915,8 @@ let classify_ltac2 = function
 }
 
 VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
-| #[ local = locality ] [ "Ltac2" ltac2_entry(e) ] => { classify_ltac2 e } -> {
-  Tac2entries.register_struct ?local e
+| #[ deprecation = deprecation; local = locality ] [ "Ltac2" ltac2_entry(e) ] => { classify_ltac2 e } -> {
+  Tac2entries.register_struct ?deprecation ?local e
   }
 | ![proof_opt_query] [ "Ltac2" "Eval" ltac2_expr(e) ] => { Vernacextend.classify_as_sideeff } -> {
   fun ~pstate -> Tac2entries.perform_eval ~pstate e

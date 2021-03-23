@@ -23,6 +23,7 @@ type global_data = {
   gdata_expr : glb_tacexpr;
   gdata_type : type_scheme;
   gdata_mutable : bool;
+  gdata_deprecation : Deprecation.t option;
 }
 
 val define_global : ltac_constant -> global_data -> unit
@@ -72,8 +73,13 @@ val interp_projection : ltac_projection -> projection_data
 
 (** {5 Toplevel definition of aliases} *)
 
-val define_alias : ltac_constant -> raw_tacexpr -> unit
-val interp_alias : ltac_constant -> raw_tacexpr
+type alias_data = {
+  alias_body : raw_tacexpr;
+  alias_depr : Deprecation.t option;
+}
+
+val define_alias : ?deprecation:Deprecation.t -> ltac_constant -> raw_tacexpr -> unit
+val interp_alias : ltac_constant -> alias_data
 
 (** {5 Name management} *)
 

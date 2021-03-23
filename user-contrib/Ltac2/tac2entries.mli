@@ -14,22 +14,19 @@ open Tac2expr
 
 (** {5 Toplevel definitions} *)
 
-val register_ltac : ?local:bool -> ?mut:bool -> rec_flag ->
+val register_ltac : ?deprecation:Deprecation.t -> ?local:bool -> ?mut:bool -> rec_flag ->
   (Names.lname * raw_tacexpr) list -> unit
 
 val register_type : ?local:bool -> rec_flag ->
   (qualid * redef_flag * raw_quant_typedef) list -> unit
 
-val register_primitive : ?local:bool ->
+val register_primitive : ?deprecation:Deprecation.t -> ?local:bool ->
   Names.lident -> raw_typexpr -> ml_tactic_name -> unit
 
-val register_struct
-  :  ?local:bool
-  -> strexpr
-  -> unit
+val register_struct : ?deprecation:Deprecation.t -> ?local:bool -> strexpr -> unit
 
-val register_notation : ?local:bool -> sexpr list -> int option ->
-  raw_tacexpr -> unit
+val register_notation : ?deprecation:Deprecation.t -> ?local:bool -> sexpr list ->
+  int option -> raw_tacexpr -> unit
 
 val perform_eval : pstate:Declare.Proof.t option -> raw_tacexpr -> unit
 
