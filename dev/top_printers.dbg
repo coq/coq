@@ -12,7 +12,6 @@ install_printer Top_printers.ppmind
 install_printer Top_printers.ppind
 install_printer Top_printers.ppsp
 install_printer Top_printers.ppqualid
-install_printer Top_printers.ppclindex
 install_printer Top_printers.ppscheme
 install_printer Top_printers.ppwf_paths
 install_printer Top_printers.ppevar

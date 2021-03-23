@@ -26,4 +26,4 @@ esac
 
 emacs="${INSIDE_EMACS:+-emacs}"
 
-ocamldebug $emacs $(ocamlfind query -recursive -i-format coq.top_printers) -I +threads -I dev $exe "$@"
+ocamldebug $emacs $(ocamlfind query -recursive -i-format coq-core.top_printers) -I +threads -I dev $exe "$@"
