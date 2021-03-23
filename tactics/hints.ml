@@ -1037,7 +1037,10 @@ type db_obj = {
 }
 
 let cache_db (_, {db_name=name; db_use_dn=b; db_ts=ts}) =
-  searchtable_add (name, Hint_db.empty ~name ts b)
+  match searchtable_map name with
+  | _ -> ()
+  | exception Not_found ->
+    searchtable_add (name, Hint_db.empty ~name ts b)
 
 let load_db _ x = cache_db x
 
