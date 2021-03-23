@@ -3254,6 +3254,7 @@ ltac2_expr5: [
 | "let" rec_flag LIST1 G_LTAC2_let_clause SEP "with" "in" ltac2_expr6      (* ltac2 plugin *)
 | "match" ltac2_expr5 "with" G_LTAC2_branches "end"      (* ltac2 plugin *)
 | "if" ltac2_expr5 "then" ltac2_expr5 "else" ltac2_expr5      (* ltac2 plugin *)
+| "Set" Prim.qualid ":=" ltac2_expr4      (* ltac2 plugin *)
 | ltac2_expr4      (* ltac2 plugin *)
 ]
 

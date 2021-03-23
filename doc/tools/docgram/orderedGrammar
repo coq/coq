@@ -2294,6 +2294,7 @@ ltac2_expr: [
 ltac2_expr5: [
 | "fun" LIST1 tac2pat0 OPT ( ":" ltac2_type ) "=>" ltac2_expr      (* ltac2 plugin *)
 | "let" OPT "rec" ltac2_let_clause LIST0 ( "with" ltac2_let_clause ) "in" ltac2_expr      (* Ltac2 plugin *)
+| "Set" qualid ":=" ltac2_expr3      (* ltac2 plugin *)
 | ltac2_expr3      (* ltac2 plugin *)
 ]
 

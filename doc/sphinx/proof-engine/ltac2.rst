@@ -266,6 +266,7 @@ There is dedicated syntax for list and array literals.
    | @ltac2_expr5
    ltac2_expr5 ::= fun {+ @tac2pat0 } {? : @ltac2_type } => @ltac2_expr
    | let {? rec } @ltac2_let_clause {* with @ltac2_let_clause } in @ltac2_expr
+   | "Set" @qualid := @ltac2_expr3
    | @ltac2_expr3
    ltac2_let_clause ::= {+ @tac2pat0 } {? : @ltac2_type } := @ltac2_expr
    ltac2_expr3 ::= {+, @ltac2_expr2 }
@@ -355,6 +356,14 @@ Ltac2 Definitions
       the `f` in the body is resolved dynamically. This is witnessed by
       the second re-definition.
 
+.. tacn:: Set @qualid := @ltac2_expr
+
+   Redefines a previous ``mutable`` definition at runtime. Unlike its command
+   equivalent above, it allows replacing a definition from inside a tactic.
+   The redefinition takes effect when the expression is evaluated. This
+   construct has type :n:`unit`.  Currently only monomorphic definitions can be
+   replaced at runtime. It does not feature the :n:`as` clause of the command,
+   since the same effect can be obtained using a simple let-binding.
 
 Reduction
 ~~~~~~~~~
