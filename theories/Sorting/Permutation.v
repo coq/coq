@@ -535,6 +535,32 @@ Proof.
       now apply Permutation_cons_inv with x.
 Qed.
 
+Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
+
+Lemma Permutation_count_occ l1 l2 :
+  Permutation l1 l2 <-> forall x, count_occ eq_dec l1 x = count_occ eq_dec l2 x.
+Proof.
+  split.
+  - induction 1 as [ | y l1 l2 HP IHP | y z l | l1 l2 l3 HP1 IHP1 HP2 IHP2 ];
+      cbn; intros a; auto.
+    + now rewrite IHP.
+    + destruct (eq_dec y a); destruct (eq_dec z a); auto.
+    + now rewrite IHP1, IHP2.
+  - revert l2; induction l1 as [|y l1 IHl1]; cbn; intros l2 Hocc.
+    + replace l2 with (@nil A); auto.
+      symmetry; apply (count_occ_inv_nil eq_dec); intuition.
+    + assert (exists l2' l2'', l2 = l2' ++ y :: l2'') as [l2' [l2'' ->]].
+      { specialize (Hocc y).
+        destruct (eq_dec y y); intuition.
+        apply in_split, (count_occ_In eq_dec).
+        rewrite <- Hocc; apply Nat.lt_0_succ. }
+      apply Permutation_cons_app, IHl1.
+      intros z; specialize (Hocc z); destruct (eq_dec y z) as [Heq | Hneq].
+      * rewrite (count_occ_elt_eq _ _ _ Heq) in Hocc.
+        now injection Hocc.
+      * now rewrite (count_occ_elt_neq _ _ _ Hneq) in Hocc.
+   Qed.
+
 End Permutation_properties.
 
 Section Permutation_map.

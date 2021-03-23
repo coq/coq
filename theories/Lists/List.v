@@ -877,6 +877,36 @@ Section Elts.
     intros H. simpl. now destruct (eq_dec x y).
   Qed.
 
+  Lemma count_occ_app l1 l2 x :
+    count_occ (l1 ++ l2) x = count_occ l1 x + count_occ l2 x.
+  Proof.
+    induction l1 as [ | h l1 IHl1]; cbn; auto.
+    now destruct (eq_dec h x); [ rewrite IHl1 | ].
+  Qed.
+
+  Lemma count_occ_elt_eq l1 l2 x y : x = y ->
+    count_occ (l1 ++ x :: l2) y = S (count_occ (l1 ++ l2) y).
+  Proof.
+    intros ->.
+    rewrite ? count_occ_app; cbn.
+    destruct (eq_dec y y) as [Heq | Hneq];
+      [ apply Nat.add_succ_r | now contradiction Hneq ].
+  Qed.
+
+  Lemma count_occ_elt_neq l1 l2 x y : x <> y ->
+    count_occ (l1 ++ x :: l2) y = count_occ (l1 ++ l2) y.
+  Proof.
+    intros Hxy.
+    rewrite ? count_occ_app; cbn.
+    now destruct (eq_dec x y) as [Heq | Hneq]; [ contradiction Hxy | ].
+  Qed.
+
+  Lemma count_occ_bound x l : count_occ l x <= length l.
+  Proof.
+    induction l as [|h l]; cbn; auto.
+    destruct (eq_dec h x); [ apply (proj1 (Nat.succ_le_mono _ _)) | ]; intuition.
+  Qed.
+
 End Elts.
 
 (*******************************)
@@ -3240,6 +3270,54 @@ Section Repeat.
     induction l as [|a l IHl]; simpl; intros HF; auto.
     inversion_clear HF as [ | ? ? ? HF']; subst.
     now rewrite (IHl HF') at 1.
+  Qed.
+
+  Hypothesis decA : forall x y : A, {x = y}+{x <> y}.
+
+  Lemma count_occ_repeat_eq x y n : x = y -> count_occ decA (repeat y n) x = n.
+  Proof.
+    intros ->.
+    induction n; cbn; auto.
+    destruct (decA y y); auto.
+    exfalso; intuition.
+  Qed.
+
+  Lemma count_occ_repeat_neq x y n : x <> y -> count_occ decA (repeat y n) x = 0.
+  Proof.
+    intros Hneq.
+    induction n; cbn; auto.
+    destruct (decA y x); auto.
+    exfalso; intuition.
+  Qed.
+
+  Lemma count_occ_unique x l : count_occ decA l x = length l -> l = repeat x (length l).
+  Proof.
+    induction l as [|h l]; cbn; intros Hocc; auto.
+    destruct (decA h x).
+    - f_equal; intuition.
+    - assert (Hb := count_occ_bound decA x l).
+      rewrite Hocc in Hb.
+      exfalso; apply (Nat.nle_succ_diag_l _ Hb).
+  Qed.
+
+  Lemma count_occ_repeat_excl x l :
+    (forall y, y <> x -> count_occ decA l y = 0) -> l = repeat x (length l).
+  Proof.
+    intros Hocc.
+    apply Forall_eq_repeat, Forall_forall; intros z Hin.
+    destruct (decA z x) as [Heq|Hneq]; auto.
+    apply Hocc, count_occ_not_In in Hneq; intuition.
+  Qed.
+
+  Lemma count_occ_sgt l x : l = x :: nil <->
+    count_occ decA l x = 1 /\ forall y, y <> x -> count_occ decA l y = 0.
+  Proof.
+    split.
+    - intros ->; cbn; split; intros; destruct decA; subst; intuition.
+    - intros [Heq Hneq].
+      apply count_occ_repeat_excl in Hneq.
+      rewrite Hneq, count_occ_repeat_eq in Heq; trivial.
+      now rewrite Heq in Hneq.
   Qed.
 
 End Repeat.
