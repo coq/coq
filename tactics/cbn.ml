@@ -453,7 +453,7 @@ let magically_constant_of_fixbody env sigma reference bd = function
           | None -> bd
         end
 
-let contract_cofix ~env sigma ?reference (bodynum,(names,types,bodies as typedbodies)) =
+let contract_cofix env sigma ?reference (bodynum,(names,types,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
@@ -469,7 +469,7 @@ let contract_cofix ~env sigma ?reference (bodynum,(names,types,bodies as typedbo
 (** Similar to the "fix" case below *)
 let reduce_and_refold_cofix recfun env sigma cst_l cofix sk =
   let raw_answer =
-    contract_cofix ~env sigma ?reference:(Cst_stack.reference sigma cst_l) cofix in
+    contract_cofix env sigma ?reference:(Cst_stack.reference sigma cst_l) cofix in
   apply_subst
     (fun sigma x (t,sk') ->
       let t' = Cst_stack.best_replace sigma (mkCoFix cofix) cst_l t in
@@ -479,7 +479,7 @@ let reduce_and_refold_cofix recfun env sigma cst_l cofix sk =
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
-let contract_fix ~env sigma ?reference ((recindices,bodynum),(names,types,bodies as typedbodies)) =
+let contract_fix env sigma ?reference ((recindices,bodynum),(names,types,bodies as typedbodies)) =
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
@@ -498,7 +498,7 @@ let contract_fix ~env sigma ?reference ((recindices,bodynum),(names,types,bodies
     context" in contract_fix *)
 let reduce_and_refold_fix recfun env sigma cst_l fix sk =
   let raw_answer =
-    contract_fix ~env sigma ?reference:(Cst_stack.reference sigma cst_l) fix in
+    contract_fix env sigma ?reference:(Cst_stack.reference sigma cst_l) fix in
   apply_subst
     (fun sigma x (t,sk') ->
       let t' = Cst_stack.best_replace sigma (mkFix fix) cst_l t in
