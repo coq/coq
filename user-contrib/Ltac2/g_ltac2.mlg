@@ -99,6 +99,15 @@ let pattern_of_qualid qid =
     else
       CErrors.user_err ?loc:qid.CAst.loc (Pp.str "Syntax error")
 
+let opt_fun ?loc args ty e =
+  let e = match ty with
+  | None -> e
+  | Some ty -> CAst.make ?loc:e.CAst.loc (CTacCnv (e, ty))
+  in
+  match args with
+  | [] -> e
+  | _ :: _ -> CAst.make ?loc (CTacFun (args, e))
+
 }
 
 GRAMMAR EXTEND Gram
@@ -138,8 +147,8 @@ GRAMMAR EXTEND Gram
     [ "6" RIGHTA
         [ e1 = SELF; ";"; e2 = SELF -> { CAst.make ~loc @@ CTacSeq (e1, e2) } ]
     | "5"
-      [ "fun"; it = LIST1 input_fun ; "=>"; body = ltac2_expr LEVEL "6" ->
-        { CAst.make ~loc @@ CTacFun (it, body) }
+      [ "fun"; it = LIST1 input_fun; ty = type_cast; "=>"; body = ltac2_expr LEVEL "6" ->
+        { opt_fun ~loc it ty body }
       | "let"; isrec = rec_flag;
           lc = LIST1 let_clause SEP "with"; "in";
           e = ltac2_expr LEVEL "6" ->
@@ -236,22 +245,24 @@ GRAMMAR EXTEND Gram
       | tac = ltac2_expr -> { [], tac }
     ] ]
   ;
+  type_cast:
+    [ [ -> { None }
+      | ":"; ty = ltac2_type -> { Some ty }
+    ] ]
+  ;
   let_clause:
-    [ [ binder = let_binder; ":="; te = ltac2_expr ->
+    [ [ binder = let_binder; ty = type_cast; ":="; te = ltac2_expr ->
       { let (pat, fn) = binder in
-        let te = match fn with
-        | None -> te
-        | Some args -> CAst.make ~loc @@ CTacFun (args, te)
-        in
+        let te = opt_fun ~loc fn ty te in
         (pat, te) }
     ] ]
   ;
   let_binder:
     [ [ pats = LIST1 input_fun ->
       { match pats with
-        | [{CAst.v=CPatVar _} as pat] -> (pat, None)
-        | ({CAst.v=CPatVar (Name id)} as pat) :: args -> (pat, Some args)
-        | [pat] -> (pat, None)
+        | [{CAst.v=CPatVar _} as pat] -> (pat, [])
+        | ({CAst.v=CPatVar (Name id)} as pat) :: args -> (pat, args)
+        | [pat] -> (pat, [])
         | _ -> CErrors.user_err ~loc (str "Invalid pattern") }
     ] ]
   ;
@@ -287,9 +298,8 @@ GRAMMAR EXTEND Gram
     [ [ b = tac2pat LEVEL "0" -> { b } ] ]
   ;
   tac2def_body:
-    [ [ name = binder; it = LIST0 input_fun; ":="; e = ltac2_expr ->
-      { let e = if List.is_empty it then e else CAst.make ~loc @@ CTacFun (it, e) in
-        (name, e) }
+    [ [ name = binder; it = LIST0 input_fun; ty = type_cast; ":="; e = ltac2_expr ->
+      { (name, opt_fun ~loc it ty e) }
     ] ]
   ;
   tac2def_val:

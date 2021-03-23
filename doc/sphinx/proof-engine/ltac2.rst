@@ -263,10 +263,10 @@ There is dedicated syntax for list and array literals.
 .. prodn::
    ltac2_expr ::= @ltac2_expr5 ; @ltac2_expr
    | @ltac2_expr5
-   ltac2_expr5 ::= fun {+ @tac2pat0 } => @ltac2_expr
+   ltac2_expr5 ::= fun {+ @tac2pat0 } {? : @ltac2_type } => @ltac2_expr
    | let {? rec } @ltac2_let_clause {* with @ltac2_let_clause } in @ltac2_expr
    | @ltac2_expr3
-   ltac2_let_clause ::= {+ @tac2pat0 } := @ltac2_expr
+   ltac2_let_clause ::= {+ @tac2pat0 } {? : @ltac2_type } := @ltac2_expr
    ltac2_expr3 ::= {+, @ltac2_expr2 }
    ltac2_expr2 ::= @ltac2_expr1 :: @ltac2_expr2
    | @ltac2_expr1
@@ -304,7 +304,7 @@ Ltac2 Definitions
    .. insertprodn tac2def_body tac2def_body
 
    .. prodn::
-      tac2def_body ::= {| _ | @ident } {* @tac2pat0 } := @ltac2_expr
+      tac2def_body ::= {| _ | @ident } {* @tac2pat0 } {? : @ltac2_type } := @ltac2_expr
 
    This command defines a new global Ltac2 value.  If one or more :token:`tac2pat0`
    are specified, the new value is a function.  This is a shortcut for one of the

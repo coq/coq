@@ -2730,6 +2730,7 @@ SPLICE: [
 | variance_identref
 | rewriter
 | conversion
+| type_cast
 ] (* end SPLICE *)
 
 RENAME: [
