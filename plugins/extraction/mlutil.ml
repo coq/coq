@@ -217,13 +217,13 @@ module Mlenv = struct
 
   (* Adding a type with no [Tvar], hence no generalization needed. *)
 
-  let push_type {env=e;free=f} t =
-    { env = (0,t) :: e; free = find_free f t}
+  let push_type mle t =
+    { env = (0,t) :: mle.env; free = find_free mle.free t}
 
   (* Adding a type with no [Tvar] nor [Tmeta]. *)
 
-  let push_std_type {env=e;free=f} t =
-    { env = (0,t) :: e; free = f}
+  let push_std_type mle t =
+    { env = (0,t) :: mle.env; free = mle.free}
 
 end
 

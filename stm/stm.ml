@@ -2565,8 +2565,8 @@ let get_allow_nested_proofs =
     ~value:false
 
 (** [process_transaction] adds a node in the document *)
-let process_transaction ~doc ?(newtip=Stateid.fresh ())
-  ({ verbose; expr } as x) c =
+let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
+  let { verbose; expr } = x in
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
   try
