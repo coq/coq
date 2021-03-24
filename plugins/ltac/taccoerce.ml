@@ -91,6 +91,13 @@ let to_int v =
     Some (out_gen (topwit wit_int) v)
   else None
 
+let of_ident id = in_gen (topwit wit_ident) id
+
+let to_ident v =
+  if has_type v (topwit wit_ident) then
+    Some (out_gen (topwit wit_ident) v)
+  else None
+
 let to_list v = prj Val.typ_list v
 
 let to_option v = prj Val.typ_opt v
