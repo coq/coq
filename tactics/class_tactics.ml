@@ -630,8 +630,8 @@ module Search = struct
         let rec kont = function
           | Fail ((NonStuckFailure | StuckGoal as exn), info) when allow_out_of_order ->
             let () = if !typeclasses_debug > 1 then
-              Feedback.msg_debug (str "Goal " ++ int glid ++ str" is stuck or failed without being stuck,
-                trying other tactics.")
+              Feedback.msg_debug
+              (str "Goal " ++ int glid ++ str" is stuck or failed without being stuck, trying other tactics.")
             in
             let status =
               match exn with
@@ -1105,6 +1105,7 @@ module Search = struct
     | None -> None (* This happens only because there's no evar having p *)
     | Some (goals, nongoals) ->
       run_on_goals env evm p tac goals nongoals
+
   let evars_eauto env evd depth only_classes ~best_effort unique dep mst hints p =
     let eauto_tac = eauto_tac_stuck mst ~unique ~only_classes
       ~best_effort
@@ -1224,6 +1225,7 @@ let select_and_update_evars p oevd in_comp evd ev =
 let has_undefined p oevd evd =
   let check ev evi = p oevd ev in
   Evar.Map.exists check (Evd.undefined_map evd)
+
 let find_undefined p oevd evd =
   let check ev evi = p oevd ev in
   Evar.Map.domain (Evar.Map.filter check (Evd.undefined_map evd))
@@ -1258,16 +1260,15 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
         (try
-          let res = Search.typeclasses_resolve env evd debug depth
-            ~best_effort:true unique p in
+          let res = Search.typeclasses_resolve env evd debug depth ~best_effort:true unique p in
           match res with
           | Some (finished, evd') ->
-            if has_undefined p oevd evd' then
+            assert (not finished == has_undefined p oevd evd');
+            if not finished then
               begin
-              if finished then
-                if !typeclasses_debug > 1 then
-                  Feedback.msg_debug (str"Proof is finished but there remain undefined evars: " ++
-                    prlist_with_sep spc (pr_ev evd') (Evar.Set.elements (find_undefined p oevd evd')));
+              if !typeclasses_debug > 1 then
+                Feedback.msg_debug (str"Proof is finished but there remain undefined evars: " ++
+                  prlist_with_sep spc (pr_ev evd') (Evar.Set.elements (find_undefined p oevd evd')));
               raise (Unresolved evd')
               end
             else docomp evd' comps
