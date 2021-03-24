@@ -79,8 +79,6 @@ project iris "https://gitlab.mpi-sws.org/iris/iris" ""
 
 project autosubst "https://github.com/coq-community/autosubst" "master"
 
-project iris_string_ident "https://gitlab.mpi-sws.org/iris/string-ident" "master"
-
 project iris_examples "https://gitlab.mpi-sws.org/iris/examples" "master"
 
 ########################################################################
