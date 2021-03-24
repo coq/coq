@@ -538,25 +538,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
       let info = Exninfo.reify () in
       Proofview.tclZERO ~info (SuggestNoSuchGoals (1,pr))
     in
-    let tac = let open Goal_select in match gi with
-      | SelectAlreadyFocused ->
-        let open Proofview.Notations in
-        Proofview.numgoals >>= fun n ->
-        if n == 1 then tac
-        else
-          let e = CErrors.UserError
-              (None,
-               Pp.(str "Expected a single focused goal but " ++
-                   int n ++ str " goals are focused."))
-          in
-          let info = Exninfo.reify () in
-          Proofview.tclZERO ~info e
-
-      | SelectNth i -> Proofview.tclFOCUS ~nosuchgoal i i tac
-      | SelectList l -> Proofview.tclFOCUSLIST ~nosuchgoal l tac
-      | SelectId id -> Proofview.tclFOCUSID ~nosuchgoal id tac
-      | SelectAll -> tac
-    in
+    let tac = Goal_select.tclSELECT ~nosuchgoal gi tac in
     let tac =
       if use_unification_heuristics () then
         Proofview.tclTHEN tac Refine.solve_constraints

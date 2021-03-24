@@ -24,3 +24,5 @@ type t =
 
 val pr_goal_selector : t -> Pp.t
 val get_default_goal_selector : unit -> t
+
+val tclSELECT : ?nosuchgoal:'a Proofview.tactic -> t -> 'a Proofview.tactic -> 'a Proofview.tactic

@@ -683,15 +683,6 @@ module New = struct
   let tclPROGRESS t =
     Proofview.tclINDEPENDENT (Proofview.tclPROGRESS t)
 
-  (* Select a subset of the goals *)
-  let tclSELECT = let open Goal_select in function
-    | SelectNth i -> Proofview.tclFOCUS i i
-    | SelectList l -> Proofview.tclFOCUSLIST l
-    | SelectId id -> Proofview.tclFOCUSID id
-    | SelectAll -> anomaly ~label:"tclSELECT" Pp.(str "SelectAll not allowed here")
-    | SelectAlreadyFocused ->
-      anomaly ~label:"tclSELECT" Pp.(str "SelectAlreadyFocused not allowed here")
-
   (* Check that holes in arguments have been resolved *)
 
   let check_evars env sigma extsigma origsigma =
@@ -904,5 +895,7 @@ module New = struct
       let sigma = Proofview.Goal.sigma gl in
       let (sigma, t) = Typing.type_of ?refresh env sigma c in
       Proofview.Unsafe.tclEVARS sigma <*> tac sigma t)
+
+  let tclSELECT = Goal_select.tclSELECT
 
 end
