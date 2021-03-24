@@ -5,7 +5,6 @@ ci_dir="$(dirname "$0")"
 
 # Setup iris_examples and separate dependencies first
 git_download autosubst
-git_download iris_string_ident
 git_download iris_examples
 
 # Extract required version of Iris (avoiding "+" which does not work on MacOS :( *)
@@ -30,9 +29,6 @@ git_download stdpp
 
 # Build autosubst
 ( cd "${CI_BUILD_DIR}/autosubst" && make && make install )
-
-# Build iris-string-ident
-( cd "${CI_BUILD_DIR}/iris_string_ident" && make && make install )
 
 # Build Iris examples
 ( cd "${CI_BUILD_DIR}/iris_examples" && make && make install )
