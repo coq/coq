@@ -26,12 +26,10 @@ Ltac2 rec nat_eq n m :=
   | S n => match m with | O => false | S m => nat_eq n m end
   end.
 
-Ltac2 Type exn ::= [ Assertion_failed ].
-
 Ltac2 assert_eq n m :=
   match nat_eq n m with
   | true => ()
-  | false => Control.throw Assertion_failed end.
+  | false => Control.throw Assertion_failure end.
 
 Ltac2 mutable x := O.
 Ltac2 y := x.

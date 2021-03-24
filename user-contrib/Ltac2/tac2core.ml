@@ -755,6 +755,12 @@ let () = define1 "constr_binder_type" (repr_ext val_binder) begin fun (bnd, ty) 
   return (of_constr ty)
 end
 
+let () = define1 "constr_has_evar" constr begin fun c ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let b = Evarutil.has_undefined_evars sigma c in
+  Proofview.tclUNIT (Value.of_bool b)
+end
+
 (** Patterns *)
 
 let empty_context = EConstr.mkMeta Constr_matching.special_meta

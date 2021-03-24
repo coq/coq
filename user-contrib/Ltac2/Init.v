@@ -80,3 +80,6 @@ Ltac2 Type exn ::= [ Invalid_argument (message option) ].
 
 Ltac2 Type exn ::= [ Tactic_failure (message option) ].
 (** Generic error for tactic failure. *)
+
+Ltac2 Type exn ::= [ Assertion_failure ].
+(** Used to indicate that an Ltac2 function ran into a situation that should never occcur. *)
