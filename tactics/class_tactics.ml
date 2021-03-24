@@ -109,7 +109,10 @@ let set_typeclasses_strategy = function
 let pr_ev evs ev =
   Printer.pr_econstr_env (Goal.V82.env evs ev) evs (Goal.V82.concl evs ev)
 
-(** Typeclasses instance search tactic / eauto *)
+let pr_ev_with_id evs ev =
+  Evar.print ev ++ str " : " ++ pr_ev evs ev
+
+  (** Typeclasses instance search tactic / eauto *)
 
 open Auto
 open Unification
@@ -509,7 +512,7 @@ module Search = struct
       search_only_classes : bool;
       search_cut : hints_path;
       search_hints : hint_db;
-      search_keep_stuck_failures : bool;
+      search_best_effort : bool;
       }
 
   (** Local hints *)
@@ -535,14 +538,14 @@ module Search = struct
       in
       autogoal_cache := (cwd, only_classes, sign, modes, hints); hints
 
-  let make_autogoal mst only_classes dep cut keep_stuck_failures i g =
+  let make_autogoal mst only_classes dep cut best_effort i g =
     let hints = make_autogoal_hints only_classes mst g in
     { search_hints = hints;
       search_depth = [i]; last_tac = lazy (str"none");
       search_dep = dep;
       search_only_classes = only_classes;
       search_cut = cut;
-      search_keep_stuck_failures = keep_stuck_failures }
+      search_best_effort = best_effort }
 
   (** In the proof engine failures are represented as exceptions *)
   exception ReachedLimit
@@ -570,13 +573,7 @@ module Search = struct
   let all_mode_match l =
     List.for_all (fun m -> m != NoMode) l
 
-  (** Apply tac1 then tac2.
-    For each success of tac1 try tac2.
-    If tac2 raises Suspend, try the next success of tac1 until depleted.
-    If tac1 finally fails, returns the result of the first tac1 success, if any.
-  *)
-
-  exception Suspend
+  exception NonStuckFailure
   (* exception Backtrack *)
 
   let pr_goals s =
@@ -586,7 +583,7 @@ module Search = struct
       Unsafe.tclGETGOALS >>= fun gls ->
       let gls = CList.map Proofview.drop_state gls in
       let j = List.length gls in
-      let pr_goal gl = pr_ev sigma gl in
+      let pr_goal gl = pr_ev_with_id sigma gl in
       Feedback.msg_debug
         (s ++ int j ++ str" goals:" ++ spc () ++
             prlist_with_sep Pp.fnl pr_goal gls);
@@ -594,27 +591,60 @@ module Search = struct
     else tclUNIT ()
 
   let _ = CErrors.register_handler begin function
-    | Suspend -> Some (str "Suspend")
+    | NonStuckFailure -> Some (str "NonStuckFailure")
     | NoApplicableHint -> Some (str "NoApplicableHint")
     | _ -> None
     end
 
-  let search_fixpoint ~keep_stuck_failures ~allow_out_of_order tacs =
+  (**
+    For each success of tac1 try tac2.
+    If tac2 raises NonStuckFailure, try the next success of tac1 until depleted.
+    If tac1 finally fails, returns the result of the first tac1 success, if any.
+  *)
+
+  type goal_status =
+    | IsInitial
+    | IsStuckGoal
+    | IsNonStuckFailure
+
+  let pr_goal_status = function
+    | IsInitial -> str "initial"
+    | IsStuckGoal -> str "stuck"
+    | IsNonStuckFailure -> str "stuck failure"
+
+
+  let pr_search_goal sigma (glid, ev, status, _) =
+    str"Goal " ++ int glid ++ str" evar: " ++ Evar.print ev ++ str " status: " ++ pr_goal_status status
+
+  let pr_search_goals sigma =
+    prlist_with_sep fnl (pr_search_goal sigma)
+
+  let search_fixpoint ~best_effort ~allow_out_of_order tacs =
     let open Pp in
     let open Proofview in
     let open Proofview.Notations in
     let rec fixpoint progress tacs stuck fk =
-      let next (glid, tac as gtac) tacs stuck =
-        if !typeclasses_debug > 1 then Feedback.msg_debug (str "considering goal " ++ int glid);
+      let next (glid, ev, status, tac) tacs stuck =
+        if !typeclasses_debug > 1 then Feedback.msg_debug (str "considering goal " ++ int glid ++
+            str" of status " ++ pr_goal_status status);
         let rec kont = function
-          | Fail ((Suspend | StuckGoal), info) when allow_out_of_order ->
-            if !typeclasses_debug > 1 then
-              Feedback.msg_debug (str "Goal " ++ int glid ++ str" is stuck, trying other tactics ");
+          | Fail ((NonStuckFailure | StuckGoal as exn), info) when allow_out_of_order ->
+            let () = if !typeclasses_debug > 1 then
+              Feedback.msg_debug (str "Goal " ++ int glid ++ str" is stuck or failed without being stuck,
+                trying other tactics.")
+            in
+            let status =
+              match exn with
+              | NonStuckFailure -> IsNonStuckFailure
+              | StuckGoal -> IsStuckGoal
+              | _ -> assert false
+            in
             cycle 1 (* Puts the first goal last *) <*>
-            fixpoint progress tacs (gtac :: stuck) fk (* Launches the search on the rest of the goals *)
+            fixpoint progress tacs ((glid, ev, status, tac) :: stuck) fk (* Launches the search on the rest of the goals *)
           | Fail (e, info) ->
             if !typeclasses_debug > 1 then
-              Feedback.msg_debug (str "Goal " ++ int glid ++ str" is unsolvable, return exception: " ++ CErrors.iprint (e, info));
+              Feedback.msg_debug (str "Goal " ++ int glid ++ str" has no more solutions, returning exception: "
+                ++ CErrors.iprint (e, info));
             fk (e, info)
           | Next (res, fk') ->
             if !typeclasses_debug > 1 then
@@ -626,11 +656,17 @@ module Search = struct
             fixpoint true tacs stuck (fun e -> tclCASE (fk' e) >>= kont)
         in tclCASE tac >>= kont
       in
+      tclEVARMAP >>= fun sigma ->
       if !typeclasses_debug > 1 then
+        (let stuck, failed = List.partition (fun (_, _, status, _) -> status = IsStuckGoal) stuck in
         Feedback.msg_debug (str"Calling fixpoint on : " ++
         int (List.length tacs) ++ str" initial goals" ++
-        str" and " ++ int (List.length stuck) ++ str" stuck goals" ++
-        str" with " ++ str(if progress then "" else "no ") ++ str"progress made in this run.");
+        str", " ++ int (List.length stuck) ++ str" stuck goals" ++
+        str" and " ++ int (List.length failed) ++ str" non-stuck failures kept" ++
+        str" with " ++ str(if progress then "" else "no ") ++ str"progress made in this run." ++ fnl () ++
+        str "Stuck: " ++ pr_search_goals sigma stuck ++ fnl () ++
+        str "Failed: " ++ pr_search_goals sigma failed ++ fnl () ++
+        str "Initial: " ++ pr_search_goals sigma tacs));
       tclCHECKINTERRUPT <*>
       match tacs with
       | tac :: tacs -> next tac tacs stuck
@@ -640,29 +676,48 @@ module Search = struct
             (* We found a solution! Great, but in case it's not good for the rest of the proof search,
                we might have other solutions available through fk. *)
             tclOR (tclUNIT ()) fk
-        | tacs ->
-          if progress then fixpoint false tacs [] fk
+        | stuck ->
+          if progress then fixpoint false stuck [] fk
           else (* No progress can be made on the stuck goals arising from this resolution,
             try a different solution on the non-stuck goals, if any. *)
           begin
-            tclORELSE (fk (Suspend, Exninfo.null))
+            tclORELSE (fk (NoApplicableHint, Exninfo.null))
               (fun (e, info) ->
                 (if !typeclasses_debug > 1 then
-                  Feedback.msg_debug (str "Stuck goals left, no progress, calling continuation failed"));
+                  Feedback.msg_debug (int (List.length stuck) ++ str " remaining goals left, no progress, calling continuation failed"));
                   (* We keep the stuck goals to display to the user *)
-                if keep_stuck_failures then
-                  pr_goals (str "keep_stuck_failures is on and remaining goals are: ") <*>
-                  tclUNIT ()
+                if best_effort then
+                  let stuckgls, failedgls = List.partition (fun (_, _, status, _) ->
+                      match status with
+                      | IsStuckGoal -> true
+                      | IsNonStuckFailure -> false
+                      (* There should remain no initial goals at this point *)
+                      | IsInitial -> assert false)
+                      stuck
+                  in
+                  pr_goals (str "best_effort is on and remaining goals are: ") <*>
+                  (* We shelve the stuck goals but we keep the non-stuck failures in the goal list.
+                     This is for compat with Coq 8.12 but might not be the wisest choice in the long run.
+                  *)
+                  let to_shelve = List.map (fun (glid, ev, _, _) -> ev) stuckgls in
+                  if !typeclasses_debug > 1 then
+                    Feedback.msg_debug (str "Shelving subgoals: " ++
+                      prlist_with_sep spc Evar.print to_shelve);
+                  Unsafe.tclNEWSHELVED to_shelve
                 else tclZERO ~info e)
           end
     in
-    (* We wrap all goals with their associated tactic.
-      It might happen that an initial goal is solved during the resolution of another goal,
-      hence the `tclUNIT` in case there is no goal for the tactic to apply anymore. *)
-    let tacs = List.mapi (fun i tac -> (succ i, tclFOCUS ~nosuchgoal:(tclUNIT ()) 1 1 tac)) tacs in
     (if !typeclasses_debug > 1 then
       pr_goals (str"Launching resolution fixpoint on ")
     else tclUNIT ()) <*>
+    Unsafe.tclGETGOALS >>= fun gls ->
+    (* We wrap all goals with their associated tactic.
+      It might happen that an initial goal is solved during the resolution of another goal,
+      hence the `tclUNIT` in case there is no goal for the tactic to apply anymore. *)
+    let tacs = List.map2_i
+      (fun i gls tac -> (succ i, Proofview.drop_state gls, IsInitial, tclFOCUS ~nosuchgoal:(tclUNIT ()) 1 1 tac))
+      0 gls tacs
+    in
     fixpoint false tacs [] (fun (e, info) -> tclZERO ~info e) <*>
     pr_goals (str "Result goals after fixpoint: ")
 
@@ -721,7 +776,7 @@ module Search = struct
               Printer.pr_econstr_env env evd y
             | ReachedLimit -> str "Proof-search reached its limit."
             | NoApplicableHint -> str "Proof-search failed."
-            | StuckGoal | Suspend -> str "Proof-search got stuck."
+            | StuckGoal | NonStuckFailure -> str "Proof-search got stuck."
             | e -> CErrors.iprint ie
           in
           Feedback.msg_debug (header ++ str " failed with: " ++ msg)
@@ -751,7 +806,7 @@ module Search = struct
             search_only_classes = info.search_only_classes;
             search_hints = hints';
             search_cut = derivs;
-            search_keep_stuck_failures = info.search_keep_stuck_failures }
+            search_best_effort = info.search_best_effort }
         in kont info' end
       in
       let rec result (shelf, ()) i k =
@@ -768,7 +823,7 @@ module Search = struct
                              (mt()) k)));
         let res =
           if j = 0 then tclUNIT ()
-          else search_fixpoint ~keep_stuck_failures:false ~allow_out_of_order:false
+          else search_fixpoint ~best_effort:false ~allow_out_of_order:false
                  (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j'))))
         in
         let finish nestedshelf sigma =
@@ -833,12 +888,12 @@ module Search = struct
          | (StuckGoal,ie) -> Proofview.tclZERO ~info:ie StuckGoal
          | (NoApplicableHint,ie) ->
             (* If the constraint abides by the (non-trivial) modes but no
-               solution could be found, we consider it stuck, and let
+               solution could be found, we consider it a failed goal, and let
                proof search proceed on the rest of the
                constraints, thus giving a more precise error message. *)
             if all_mode_match modes &&
-              info.search_keep_stuck_failures then
-              Proofview.tclZERO ~info:ie Suspend
+              info.search_best_effort then
+              Proofview.tclZERO ~info:ie NonStuckFailure
             else Proofview.tclZERO ~info:ie NoApplicableHint
          | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableHint
     in
@@ -886,26 +941,26 @@ module Search = struct
                       (fun e' -> let (e, info) = merge_exceptions e e' in
                               Proofview.tclZERO ~info e))
 
-  let search_tac_gl mst only_classes dep hints keep_stuck_failures depth i sigma gls gl :
+  let search_tac_gl mst only_classes dep hints best_effort depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
     let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
     let info = make_autogoal mst only_classes dep (cut_of_hints hints)
-      keep_stuck_failures i gl in
+      best_effort i gl in
     search_tac hints depth 1 info
 
-  let search_tac mst only_classes keep_stuck_failures dep hints depth =
+  let search_tac mst only_classes best_effort dep hints depth =
     let open Proofview in
     let tac sigma gls i =
       Goal.enter
         begin fun gl ->
-          search_tac_gl mst only_classes dep hints keep_stuck_failures depth (succ i) sigma gls gl end
+          search_tac_gl mst only_classes dep hints best_effort depth (succ i) sigma gls gl end
     in
       Proofview.Unsafe.tclGETGOALS >>= fun gls ->
       let gls = CList.map Proofview.drop_state gls in
       Proofview.tclEVARMAP >>= fun sigma ->
       let j = List.length gls in
-      search_fixpoint ~keep_stuck_failures ~allow_out_of_order:true (List.init j (fun i -> tac sigma gls i))
+      search_fixpoint ~best_effort ~allow_out_of_order:true (List.init j (fun i -> tac sigma gls i))
 
   let fix_iterative t =
     let rec aux depth =
@@ -930,11 +985,11 @@ module Search = struct
 
   let eauto_tac_stuck mst ?(unique=false)
                 ~only_classes
-                ~keep_stuck_failures
+                ~best_effort
                 ?strategy ~depth ~dep hints =
     let open Proofview in
     let tac =
-      let search = search_tac mst only_classes keep_stuck_failures dep hints in
+      let search = search_tac mst only_classes best_effort dep hints in
       let dfs =
         match strategy with
         | None -> not (get_typeclasses_iterative_deepening ())
@@ -978,10 +1033,10 @@ module Search = struct
                                             | Some i -> str ", with depth limit " ++ int i));
     tac <*> pr_goals (str "after eauto_tac_stuck: ")
 
-  let eauto_tac mst ?unique ~only_classes ~keep_stuck_failures ?strategy ~depth ~dep hints =
+  let eauto_tac mst ?unique ~only_classes ~best_effort ?strategy ~depth ~dep hints =
     Hints.wrap_hint_warning @@
       (eauto_tac_stuck mst ?unique ~only_classes
-          ~keep_stuck_failures ?strategy ~depth ~dep hints)
+          ~best_effort ?strategy ~depth ~dep hints)
 
   let run_on_goals env evm p tac goals nongoals =
     let goalsl =
@@ -989,11 +1044,8 @@ module Search = struct
         top_sort evm goals
       else Evar.Set.elements goals
     in
-    let goalsl = List.map Proofview_monad.with_empty_state goalsl in
-    let tac =
-      Proofview.Unsafe.tclNEWGOALS goalsl <*>
-      tac <*> Proofview.Unsafe.tclGETGOALS >>=
-      fun stuck -> Proofview.shelve_goals (List.map Proofview_monad.drop_state stuck) in
+    let goalsl = List.map Proofview.with_empty_state goalsl in
+    let tac = Proofview.Unsafe.tclNEWGOALS goalsl <*> tac in
     let evm = Evd.set_typeclass_evars evm Evar.Set.empty in
     let evm = Evd.push_future_goals evm in
     let _, pv = Proofview.init evm [] in
@@ -1026,17 +1078,26 @@ module Search = struct
           if not okev then
             Feedback.msg_debug
               (str "leaking evar " ++ int (Evar.repr ev) ++
-                  spc () ++ pr_ev evm' ev);
+                  spc () ++ pr_ev_with_id evm' ev);
           acc && okev) evm' true);
     let _, evm' = Evd.pop_future_goals evm' in
+    if !typeclasses_debug > 1 then
+      (Feedback.msg_debug (str"Finished resolution with " ++ str(if finished then "a complete" else "an incomplete") ++
+        str" solution.");
+      Feedback.msg_debug (str"Old typeclass evars not concerned by this resolution = " ++
+        hov 0 (prlist_with_sep spc (pr_ev_with_id evm') (Evar.Set.elements (Evd.get_typeclass_evars evm'))));
+      Feedback.msg_debug (str"Shelf = " ++
+        hov 0 (prlist_with_sep spc (pr_ev_with_id evm') (Evar.Set.elements (Evd.get_typeclass_evars evm')))));
     let nongoals' =
       Evar.Set.fold (fun ev acc -> match Evarutil.advance evm' ev with
           | Some ev' -> Evar.Set.add ev acc
           | None -> acc) (Evar.Set.union goals nongoals) (Evd.get_typeclass_evars evm')
     in
-    (* let evm' = { evm' with metas = evm.metas } *)
     let evm' = evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm in
     let evm' = Evd.set_typeclass_evars evm' nongoals' in
+      if !typeclasses_debug > 1 then
+        Feedback.msg_debug (str"New typeclass evars are: " ++
+          hov 0 (prlist_with_sep spc (pr_ev_with_id evm') (Evar.Set.elements nongoals')));
       Some (finished, evm')
 
   let run_on_evars env evm p tac =
@@ -1044,27 +1105,27 @@ module Search = struct
     | None -> None (* This happens only because there's no evar having p *)
     | Some (goals, nongoals) ->
       run_on_goals env evm p tac goals nongoals
-  let evars_eauto env evd depth only_classes ~keep_stuck_failures unique dep mst hints p =
+  let evars_eauto env evd depth only_classes ~best_effort unique dep mst hints p =
     let eauto_tac = eauto_tac_stuck mst ~unique ~only_classes
-      ~keep_stuck_failures
+      ~best_effort
       ~depth ~dep:(unique || dep) hints in
     run_on_evars env evd p eauto_tac
 
-  let typeclasses_eauto env evd ?depth unique ~keep_stuck_failures st hints p =
-    evars_eauto env evd depth true ~keep_stuck_failures unique false st hints p
+  let typeclasses_eauto env evd ?depth unique ~best_effort st hints p =
+    evars_eauto env evd depth true ~best_effort unique false st hints p
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
 
-  let typeclasses_resolve env evd debug depth unique ~keep_stuck_failures p =
+  let typeclasses_resolve env evd debug depth unique ~best_effort p =
     let db = searchtable_map typeclasses_db in
     let st = Hint_db.transparent_state db in
     let modes = Hint_db.modes db in
-    typeclasses_eauto env evd ?depth ~keep_stuck_failures unique (modes,st) [db] p
+    typeclasses_eauto env evd ?depth ~best_effort unique (modes,st) [db] p
 end
 
 let typeclasses_eauto ?(only_classes=false)
-  ?(keep_stuck_failures=false)
+  ?(best_effort=false)
   ?(st=TransparentState.full)
                       ?strategy ~depth dbs =
   let dbs = List.map_filter
@@ -1078,7 +1139,7 @@ let typeclasses_eauto ?(only_classes=false)
   let depth = match depth with None -> get_typeclasses_depth () | Some l -> Some l in
   Proofview.tclIGNORE
     (Search.eauto_tac (modes,st) ~only_classes ?strategy
-      ~keep_stuck_failures ~depth ~dep:true dbs)
+      ~best_effort ~depth ~dep:true dbs)
     (* Stuck goals can remain here, we could shelve them, but this way
        the user can use `solve [typeclasses eauto]` to  check there are
        no stuck goals remaining, or use [typeclasses eauto; shelve] himself. *)
@@ -1172,17 +1233,33 @@ exception Unresolved of evar_map
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
 let resolve_all_evars debug depth unique env p oevd do_split fail =
+  let () =
+    if !typeclasses_debug > 0 then
+      Feedback.msg_debug (str"Calling typeclass resolution with flags: "++
+        str"depth = " ++ (match depth with None -> str "∞" | Some d -> int d) ++ str"," ++
+        str"unique = " ++ bool unique ++ str"," ++
+        str"do_split = " ++ bool do_split ++ str"," ++
+        str"fail = " ++ bool fail);
+    if !typeclasses_debug > 2 then
+      Feedback.msg_debug (str"Initial evar map: " ++
+        Termops.pr_evar_map ~with_univs:!Detyping.print_universes None env oevd);
+
+  in
   let tcs = Evd.get_typeclass_evars oevd in
   let split = if do_split then split_evars p oevd else [tcs] in
   let in_comp comp ev = if do_split then Evar.Set.mem ev comp else true in
   let rec docomp evd = function
-    | [] -> evd
+    | [] ->
+      if !typeclasses_debug > 2 then
+        Feedback.msg_debug (str"Final evar map: " ++
+          Termops.pr_evar_map ~with_univs:!Detyping.print_universes None env evd);
+      evd
     | comp :: comps ->
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
         (try
           let res = Search.typeclasses_resolve env evd debug depth
-            ~keep_stuck_failures:true unique p in
+            ~best_effort:true unique p in
           match res with
           | Some (finished, evd') ->
             if has_undefined p oevd evd' then
@@ -1249,7 +1326,7 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
       try
         Proofview.V82.of_tactic
         (Search.eauto_tac (modes,st) ~only_classes:true
-          ~keep_stuck_failures:false
+          ~best_effort:false
           ~depth [hints] ~dep:true) gls
       with Tacticals.FailError _ -> raise Not_found
   in

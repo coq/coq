@@ -89,13 +89,13 @@ TACTIC EXTEND typeclasses_eauto
  | [ "typeclasses" "eauto" "bfs" nat_or_var_opt(d) "with" ne_preident_list(l) ] ->
     { typeclasses_eauto ~depth:d ~strategy:Bfs l }
  | [ "typeclasses" "eauto" "best_effort" nat_or_var_opt(d) "with" ne_preident_list(l) ] ->
-    { typeclasses_eauto ~depth:d ~keep_stuck_failures:true l }
+    { typeclasses_eauto ~depth:d ~best_effort:true l }
  | [ "typeclasses" "eauto" nat_or_var_opt(d) "with" ne_preident_list(l) ] ->
     { typeclasses_eauto ~depth:d l }
  | [ "typeclasses" "eauto" "bfs" nat_or_var_opt(d) ] -> {
      typeclasses_eauto ~depth:d ~strategy:Bfs ~only_classes:true [Class_tactics.typeclasses_db] }
  | [ "typeclasses" "eauto" "best_effort" nat_or_var_opt(d) ] -> {
-      typeclasses_eauto ~depth:d ~only_classes:true ~keep_stuck_failures:true [Class_tactics.typeclasses_db] }
+      typeclasses_eauto ~depth:d ~only_classes:true ~best_effort:true [Class_tactics.typeclasses_db] }
  | [ "typeclasses" "eauto" nat_or_var_opt(d) ] -> {
      typeclasses_eauto ~depth:d ~only_classes:true [Class_tactics.typeclasses_db] }
 END

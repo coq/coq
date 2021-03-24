@@ -26,13 +26,16 @@ val set_typeclasses_strategy : search_strategy -> unit
 val typeclasses_eauto :
   ?only_classes:bool
   (** Should non-class goals be shelved and resolved at the end. Default: false *)
-  -> ?keep_stuck_failures:bool
-  (** Default: false. All stuck goals to remain in the result. We explore the
+  -> ?best_effort:bool
+  (** Default: false. Allow some unresolved goals to remain in the result. We explore the
     whole search space to find a complete solution but if that fails,
-    we return the first solution (if any) with only stuck constraints:
-    the remaining constraints eithre do not validate the modes declared
-    for their heads in the database, or they do but have no solution.
-    This is useful to debug eauto calls. *)
+    we return the first solution (if any) with only two kind of constraints:
+    - Stuck constraints which do not validate the modes declared
+      for their heads in the database are shelved.
+    - Constraints which validate a mode declaration for their class but have no solution
+      are left as subgoals.
+      This is useful to debug eauto calls and in typeclass resolution to give more informative
+      error messages. *)
   -> ?st:TransparentState.t
   (** Default: full. The transparent_state used when working with local hypotheses  *)
   -> ?strategy:search_strategy
@@ -60,17 +63,17 @@ module Search : sig
     (** Should we force a unique solution *)
     -> only_classes:bool
     (** Should non-class goals be shelved and resolved at the end *)
-    -> keep_stuck_failures:bool
-    (** If true, when considering a proof search problem with stuck goals
-        (at the toplevel of the proof search only), we perform proof search
-        on the rest of the goals and report these stuck goals
-        (if they remaing unsolved) at the end.
-        Stuck goals are constraints that do not match the mode declared
+    -> best_effort:bool
+    (** If true, when considering a proof search problem where some
+        constraints obey mode declarations, we allow in some situations
+        to perform proof search on the rest of the goals and report these
+        remaining goals (if they remaing unsolved) at the end.
+        The remaining goals are constraints that either do not match the mode declared
         for their head (i.e. a class), so we cannot even try to solve them,
         or that match it but have no solution (for a single run of the resolution).
-        This is an approximation: there might in general be other, different runs
-        of resolution fail too and generate different instantiations of the stuck goals.
-        However it is still sound: providing instances for the reported stuck constraints
+        This is an approximation: there might in general be other runs
+        of resolution that fail too and generate different instantiations of these goals.
+        However it is still sound: providing instances for the reported constraints
         would provide a solution to the whole proof search problem. *)
     -> ?strategy:search_strategy
     (** Is a traversing-strategy specified? *)
