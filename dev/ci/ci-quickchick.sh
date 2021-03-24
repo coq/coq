@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download quickchick
 
-( cd "${CI_BUILD_DIR}/quickchick" && make && make install)
+( cd "${CI_BUILD_DIR}/quickchick" && make && make install-plugin)
