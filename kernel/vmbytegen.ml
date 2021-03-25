@@ -461,7 +461,7 @@ let comp_app comp_fun comp_arg cenv f args sz cont =
   | None ->
       if nargs <= 4 then
         comp_args comp_arg cenv args sz
-          (Kpush :: (comp_fun cenv f (sz+nargs) (Kapply nargs :: cont)))
+          (Kpush :: (comp_fun cenv f (sz+nargs) (Kshort_apply nargs :: cont)))
       else
         let lbl,cont1 = label_code cont in
         Kpush_retaddr lbl ::
@@ -765,7 +765,7 @@ let rec compile_lam env cenv lam sz cont =
     let (jump, cont) = make_branch cont in
     let lbl_default = Label.create () in
     let default =
-      let cont = [Kgetglobal kn; Kapply (arity + Univ.Instance.length u); jump] in
+      let cont = [Kgetglobal kn; Kshort_apply (arity + Univ.Instance.length u); jump] in
       let cont =
         if Univ.Instance.is_empty u then cont
         else comp_args compile_universe cenv (Univ.Instance.to_array u) (sz + arity) (Kpush::cont)
