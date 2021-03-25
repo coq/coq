@@ -35,6 +35,7 @@ type instruction =
   | Kpush
   | Kpop of int
   | Kpush_retaddr of Label.t
+  | Kshort_apply of int
   | Kapply of int
   | Kappterm of int * int
   | Kreturn of int
@@ -94,6 +95,7 @@ let rec pp_instr i =
   | Kpush -> str "push"
   | Kpop n -> str "pop " ++ int n
   | Kpush_retaddr lbl -> str "push_retaddr " ++ pp_lbl lbl
+  | Kshort_apply n -> str "short_apply " ++ int n
   | Kapply n -> str "apply " ++ int n
   | Kappterm(n, m) ->
       str "appterm " ++ int n ++ str ", " ++ int m
