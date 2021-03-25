@@ -31,20 +31,6 @@ val subst_cl_typ : env -> substitution -> cl_typ -> cl_typ
 (** Comparison of [cl_typ] *)
 val cl_typ_ord : cl_typ -> cl_typ -> int
 
-module ClTypSet : Set.S with type elt = cl_typ
-
-(** This is the type of infos for declared classes *)
-type cl_info_typ = {
-  (* The number of parameters of the coercion class. *)
-  cl_param : int;
-  (* The sets of coercion classes respectively reachable from and to the
-     coercion class. *)
-  cl_reachable_from : ClTypSet.t;
-  cl_reachable_to : ClTypSet.t;
-  (* The representative class of the strongly connected component. *)
-  cl_repr : cl_typ;
-}
-
 (** This is the type of coercion kinds *)
 type coe_typ = GlobRef.t
 
@@ -67,7 +53,7 @@ type inheritance_path = coe_info_typ list
 val class_exists : cl_typ -> bool
 
 (** @raise Not_found if this type is not a class *)
-val class_info : cl_typ -> cl_info_typ
+val class_nparams : cl_typ -> int
 
 (** [find_class_type env sigma c] returns the head reference of [c],
     its universe instance and its arguments *)

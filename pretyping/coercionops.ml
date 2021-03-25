@@ -57,9 +57,13 @@ module ClTypMap = Map.Make(ClTyp)
 module ClPairMap = Map.Make(ClPairOrd)
 
 type cl_info_typ = {
+  (* The number of parameters of the coercion class. *)
   cl_param : int;
+  (* The sets of coercion classes respectively reachable from and to the
+     coercion class. *)
   cl_reachable_from : ClTypSet.t;
   cl_reachable_to : ClTypSet.t;
+  (* The representative class of the strongly connected component. *)
   cl_repr : cl_typ;
 }
 
@@ -113,6 +117,8 @@ let add_new_path x y =
 (* class_info : cl_typ -> int * cl_info_typ *)
 
 let class_info cl = ClTypMap.find cl !class_tab
+
+let class_nparams cl = (class_info cl).cl_param
 
 let class_exists cl = ClTypMap.mem cl !class_tab
 
