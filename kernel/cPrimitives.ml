@@ -295,38 +295,57 @@ let types =
         PITT_param 1))
   in
   function
-  | Int63head0 | Int63tail0 -> [int_ty; int_ty]
+  | Int63head0 | Int63tail0 ->
+      [int_ty], int_ty
   | Int63add | Int63sub | Int63mul
   | Int63div | Int63mod
   | Int63divs | Int63mods
   | Int63lsr | Int63lsl | Int63asr
-  | Int63land | Int63lor | Int63lxor -> [int_ty; int_ty; int_ty]
+  | Int63land | Int63lor | Int63lxor ->
+      [int_ty; int_ty], int_ty
   | Int63addc | Int63subc | Int63addCarryC | Int63subCarryC ->
-     [int_ty; int_ty; PITT_ind (PIT_carry, int_ty)]
+      [int_ty; int_ty], PITT_ind (PIT_carry, int_ty)
   | Int63mulc | Int63diveucl ->
-     [int_ty; int_ty; PITT_ind (PIT_pair, (int_ty, int_ty))]
-  | Int63eq | Int63lt | Int63le | Int63lts | Int63les -> [int_ty; int_ty; PITT_ind (PIT_bool, ())]
-  | Int63compare | Int63compares -> [int_ty; int_ty; PITT_ind (PIT_cmp, ())]
+      [int_ty; int_ty], PITT_ind (PIT_pair, (int_ty, int_ty))
+  | Int63eq | Int63lt | Int63le | Int63lts | Int63les ->
+      [int_ty; int_ty], PITT_ind (PIT_bool, ())
+  | Int63compare | Int63compares ->
+      [int_ty; int_ty], PITT_ind (PIT_cmp, ())
   | Int63div21 ->
-     [int_ty; int_ty; int_ty; PITT_ind (PIT_pair, (int_ty, int_ty))]
-  | Int63addMulDiv -> [int_ty; int_ty; int_ty; int_ty]
+      [int_ty; int_ty; int_ty], PITT_ind (PIT_pair, (int_ty, int_ty))
+  | Int63addMulDiv ->
+      [int_ty; int_ty; int_ty], int_ty
   | Float64opp | Float64abs | Float64sqrt
-  | Float64next_up | Float64next_down -> [float_ty; float_ty]
-  | Float64ofInt63 -> [int_ty; float_ty]
-  | Float64normfr_mantissa -> [float_ty; int_ty]
-  | Float64frshiftexp -> [float_ty; PITT_ind (PIT_pair, (float_ty, int_ty))]
-  | Float64eq | Float64lt | Float64le -> [float_ty; float_ty; PITT_ind (PIT_bool, ())]
-  | Float64compare -> [float_ty; float_ty; PITT_ind (PIT_f_cmp, ())]
-  | Float64classify -> [float_ty; PITT_ind (PIT_f_class, ())]
-  | Float64add | Float64sub | Float64mul
-  | Float64div -> [float_ty; float_ty; float_ty]
-  | Float64ldshiftexp -> [float_ty; int_ty; float_ty]
-  | Arraymake -> [int_ty; PITT_param 1; array_ty]
-  | Arrayget -> [array_ty; int_ty; PITT_param 1]
-  | Arraydefault -> [array_ty; PITT_param 1]
-  | Arrayset -> [array_ty; int_ty; PITT_param 1; array_ty]
-  | Arraycopy -> [array_ty; array_ty]
-  | Arraylength -> [array_ty; int_ty]
+  | Float64next_up | Float64next_down ->
+      [float_ty], float_ty
+  | Float64ofInt63 ->
+      [int_ty], float_ty
+  | Float64normfr_mantissa ->
+      [float_ty], int_ty
+  | Float64frshiftexp ->
+      [float_ty], PITT_ind (PIT_pair, (float_ty, int_ty))
+  | Float64eq | Float64lt | Float64le ->
+      [float_ty; float_ty], PITT_ind (PIT_bool, ())
+  | Float64compare ->
+      [float_ty; float_ty], PITT_ind (PIT_f_cmp, ())
+  | Float64classify ->
+      [float_ty], PITT_ind (PIT_f_class, ())
+  | Float64add | Float64sub | Float64mul | Float64div ->
+      [float_ty; float_ty], float_ty
+  | Float64ldshiftexp ->
+      [float_ty; int_ty], float_ty
+  | Arraymake ->
+      [int_ty; PITT_param 1], array_ty
+  | Arrayget ->
+      [array_ty; int_ty], PITT_param 1
+  | Arraydefault ->
+      [array_ty], PITT_param 1
+  | Arrayset ->
+      [array_ty; int_ty; PITT_param 1], array_ty
+  | Arraycopy ->
+      [array_ty], array_ty
+  | Arraylength ->
+      [array_ty], int_ty
 
 let one_param =
   (* currently if there's a parameter it's always this *)
@@ -460,14 +479,17 @@ type args_red = arg_kind list
 (* Invariant only argument of type int63, float or an inductive can
    have kind Kwhnf *)
 
-let arity t = let sign = types t in nparams t + List.length sign - 1
+let arity t =
+  nparams t + List.length (fst (types t))
 
 let kind t =
   let rec params n = if n <= 0 then [] else Kparam :: params (n - 1) in
   let args = function PITT_type _ | PITT_ind _ -> Kwhnf | PITT_param _ -> Karg in
-  params (nparams t) @ List.map args (CList.drop_last (types t))
+  params (nparams t) @ List.map args (fst (types t))
 
-let types t = params t, types t
+let types t =
+  let args_ty, ret_ty = types t in
+  params t, args_ty, ret_ty
 
 (** Special Entries for Register **)
 

@@ -140,8 +140,8 @@ val parse_op_or_type : ?loc:Loc.t -> string -> op_or_type
 
 val univs : t -> Univ.AUContext.t
 
-val types : t -> Constr.rel_context * ind_or_type list
-(** Parameters * Reduction relevant arguments and output type
+val types : t -> Constr.rel_context * ind_or_type list * ind_or_type
+(** Parameters * Reduction relevant arguments * output type
 
   XXX we could reify universes in ind_or_type (currently polymorphic types
   like array are assumed to use universe 0). *)
