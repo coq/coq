@@ -150,8 +150,8 @@ let rec pp_instr i =
         (Constant.print (fst id))
 
   | Kcamlprim (op, lbl) ->
-    str "camlcall " ++ str (CPrimitives.to_string op) ++ spc () ++
-    pp_lbl lbl
+    str "camlcall " ++ str (CPrimitives.to_string op) ++ str ", branch " ++
+    pp_lbl lbl ++ str " on accu"
 
 and pp_bytecodes c =
   match c with
