@@ -494,10 +494,6 @@ let makeblock tag nparams arity args =
   else Lmakeblock(tag, args)
 
 let makearray args def =
-  try
-    let p = Array.map get_value args in
-    Lval (val_of_parray @@ Parray.unsafe_of_array p (get_value def))
-  with Not_found ->
     let ar = Lmakeblock(0, args) in (* build the ocaml array *)
     let kind = Lmakeblock(0, [|ar; def|]) in (* Parray.Array *)
     Lmakeblock(0,[|kind|]) (* the reference *)
