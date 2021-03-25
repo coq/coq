@@ -757,26 +757,25 @@ let rec compile_lam env cenv lam sz cont =
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
     comp_args (compile_lam env) cenv args sz cont
 
-  | Lprim ((kn,u), op, args) when is_caml_prim op ->
+  | Lprim (kn, op, args) when is_caml_prim op ->
     let arity = CPrimitives.arity op in
     let nparams = CPrimitives.nparams op in
     let nargs = arity - nparams in
-    assert (arity = Array.length args && arity + Univ.Instance.length u <= 4);
+    assert (arity = Array.length args && arity <= 4 && nargs >= 1);
     let (jump, cont) = make_branch cont in
     let lbl_default = Label.create () in
     let default =
-      let cont = [Kgetglobal kn; Kshort_apply (arity + Univ.Instance.length u); jump] in
+      let cont = [Kshort_apply arity; jump] in
+      let cont = Kpush :: compile_get_global cenv kn (sz + arity) cont in
       let cont =
-        if Univ.Instance.is_empty u then cont
-        else comp_args compile_universe cenv (Univ.Instance.to_array u) (sz + arity) (Kpush::cont)
-      in
-      Klabel lbl_default ::
-      Kpush ::
-      if Int.equal nparams 0 then cont
-      else comp_args (compile_lam env) cenv (Array.sub args 0 nparams) (sz + nargs) (Kpush::cont)
-    in
+        if Int.equal nparams 0 then cont
+        else
+          let params = Array.sub args 0 nparams in
+          Kpush :: comp_args (compile_lam env) cenv params (sz + nargs) cont in
+      Klabel lbl_default :: cont in
     fun_code := Ksequence default :: !fun_code;
-    comp_args (compile_lam env) cenv (Array.sub args nparams nargs) sz (Kcamlprim (op, lbl_default) :: cont)
+    let cont = Kcamlprim (op, lbl_default) :: cont in
+    comp_args (compile_lam env) cenv (Array.sub args nparams nargs) sz cont
 
   | Lprim (kn, op, args) ->
     comp_args (compile_lam env) cenv args sz (Kprim(op, kn)::cont)
