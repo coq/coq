@@ -381,9 +381,9 @@ let register_typedef ?(local = false) isrec types =
   in
   let () =
     let check_existing_type ({v=id},_) =
-      let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
-      try let _ = Tac2env.locate_type qid in
-        user_err (str "Multiple definition of the type name " ++ pr_qualid qid)
+      let (_, kn) = Lib.make_foname id in
+      try let _ = Tac2env.interp_type kn in
+        user_err (str "Multiple definition of the type name " ++ Id.print id)
       with Not_found -> ()
     in
     List.iter check_existing_type types
@@ -417,9 +417,10 @@ let register_typedef ?(local = false) isrec types =
       in
       let () =
         let check_existing_ctor (id, _) =
-          let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
-          if Tac2env.mem_constructor qid
-          then user_err (str "Constructor already defined in this module " ++ pr_qualid qid)
+          let (_, kn) = Lib.make_foname id in
+          try let _ = Tac2env.interp_constructor kn in
+            user_err (str "Constructor already defined in this module " ++ Id.print id)
+          with Not_found -> ()
         in
         List.iter check_existing_ctor cs
       in
@@ -512,9 +513,10 @@ let register_open ?(local = false) qid (params, def) =
           user_err (str "Multiple definitions of the constructor " ++ Id.print id)
       in
       let check_existing_ctor (id, _) =
-        let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
-        if Tac2env.mem_constructor qid
-        then user_err (str "Constructor already defined in this module " ++ pr_qualid qid)
+          let (_, kn) = Lib.make_foname id in
+          try let _ = Tac2env.interp_constructor kn in
+            user_err (str "Constructor already defined in this module " ++ Id.print id)
+          with Not_found -> ()
       in
       let () = List.iter check_existing_ctor def in
       ()
