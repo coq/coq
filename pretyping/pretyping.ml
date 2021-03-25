@@ -1419,7 +1419,7 @@ let path_convertible env sigma cl p q =
           p'
     | [] ->
       (* identity function for the class [i]. *)
-      let params = (class_info cl).cl_param in
+      let params = class_nparams cl in
       let clty =
         match cl with
         | CL_SORT -> mkGSort (Glob_term.UAnonymous {rigid=false})

@@ -1,13 +1,24 @@
-File "stdin", line 10, characters 0-28:
+File "stdin", line 13, characters 0-29:
 Warning:
-New coercion path [ac; cd] : A >-> D is ambiguous with existing 
-[ab; bd] : A >-> D. [ambiguous-paths,typechecker]
-[ab] : A >-> B
-[ac] : A >-> C
-[ab; bd] : A >-> D
-[bd] : B >-> D
-[cd] : C >-> D
-File "stdin", line 26, characters 0-28:
+New coercion path [g1; f2] : A >-> B' is ambiguous with existing 
+[f1; g2] : A >-> B'. [ambiguous-paths,typechecker]
+File "stdin", line 14, characters 0-29:
+Warning:
+New coercion path [h1; f3] : B >-> C' is ambiguous with existing 
+[f2; h2] : B >-> C'. [ambiguous-paths,typechecker]
+[f1] : A >-> A'
+[g1] : A >-> B
+[f1; g2] : A >-> B'
+[g1; h1] : A >-> C
+[f1; g2; h2] : A >-> C'
+[g2] : A' >-> B'
+[g2; h2] : A' >-> C'
+[f2] : B >-> B'
+[h1] : B >-> C
+[f2; h2] : B >-> C'
+[h2] : B' >-> C'
+[f3] : C >-> C'
+File "stdin", line 33, characters 0-28:
 Warning:
 New coercion path [ab; bc] : A >-> C is ambiguous with existing 
 [ac] : A >-> C. [ambiguous-paths,typechecker]
@@ -17,6 +28,19 @@ New coercion path [ab; bc] : A >-> C is ambiguous with existing
 [bc] : B >-> C
 [bc; cd] : B >-> D
 [cd] : C >-> D
+File "stdin", line 50, characters 0-28:
+Warning:
+New coercion path [ab; bc] : A >-> C is ambiguous with existing 
+[ac] : A >-> C. [ambiguous-paths,typechecker]
+File "stdin", line 51, characters 0-28:
+Warning:
+New coercion path [ba; ab] : B >-> B is not definitionally an identity function.
+New coercion path [ab; ba] : A >-> A is not definitionally an identity function.
+[ambiguous-paths,typechecker]
+[ab] : A >-> B
+[ac] : A >-> C
+[ba] : B >-> A
+[bc] : B >-> C
 [B_A] : B >-> A
 [C_A] : C >-> A
 [D_A] : D >-> A
@@ -31,7 +55,7 @@ New coercion path [ab; bc] : A >-> C is ambiguous with existing
 [D_B; B_A'] : D >-> A'
 [D_B] : D >-> B
 [D_C] : D >-> C
-File "stdin", line 121, characters 0-86:
+File "stdin", line 147, characters 0-86:
 Warning:
 New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing 
 [D_B; B_A'] : D >-> A'. [ambiguous-paths,typechecker]
@@ -44,15 +68,15 @@ New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing
 [D_B; B_A'] : D >-> A'
 [D_B] : D >-> B
 [D_C] : D >-> C
-File "stdin", line 130, characters 0-47:
+File "stdin", line 156, characters 0-47:
 Warning:
 New coercion path [unwrap_nat; wrap_nat] : NAT >-> NAT is not definitionally an identity function.
 [ambiguous-paths,typechecker]
-File "stdin", line 131, characters 0-64:
+File "stdin", line 157, characters 0-64:
 Warning:
 New coercion path [unwrap_list; wrap_list] : LIST >-> LIST is not definitionally an identity function.
 [ambiguous-paths,typechecker]
-File "stdin", line 132, characters 0-51:
+File "stdin", line 158, characters 0-51:
 Warning:
 New coercion path [unwrap_Type; wrap_Type] : TYPE >-> TYPE is not definitionally an identity function.
 [ambiguous-paths,typechecker]

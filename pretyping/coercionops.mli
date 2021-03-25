@@ -31,10 +31,6 @@ val subst_cl_typ : env -> substitution -> cl_typ -> cl_typ
 (** Comparison of [cl_typ] *)
 val cl_typ_ord : cl_typ -> cl_typ -> int
 
-(** This is the type of infos for declared classes *)
-type cl_info_typ = {
-  cl_param : int }
-
 (** This is the type of coercion kinds *)
 type coe_typ = GlobRef.t
 
@@ -57,7 +53,7 @@ type inheritance_path = coe_info_typ list
 val class_exists : cl_typ -> bool
 
 (** @raise Not_found if this type is not a class *)
-val class_info : cl_typ -> cl_info_typ
+val class_nparams : cl_typ -> int
 
 (** [find_class_type env sigma c] returns the head reference of [c],
     its universe instance and its arguments *)
