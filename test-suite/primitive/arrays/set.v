@@ -20,3 +20,50 @@ Definition x3 := Eval compute in t.[1].
 Definition foo9 := (eq_refl : x3 = 3).
 Definition x4 := Eval cbn in t.[1].
 Definition foo10 := (eq_refl : x4 = 3).
+
+Ltac check_const_eq name constr :=
+  let v := (eval cbv delta [name] in name) in
+  tryif constr_eq v constr
+  then idtac
+  else fail 0 "Not syntactically equal:" name ":=" v "<>" constr.
+
+Notation check_const_eq name constr := (ltac:(check_const_eq name constr; exact constr)) (only parsing).
+
+(* Stuck primitive *)
+Definition lazy_stuck_set := Eval lazy in (fun A (t : array A) v => t.[1 <- v]).
+Definition vm_stuck_set := Eval vm_compute in (fun A (t : array A) v => t.[1 <- v]).
+Definition native_stuck_set := Eval native_compute in (fun A (t : array A) v => t.[1 <- v]).
+Definition compute_stuck_set := Eval compute in (fun A (t : array A) v => t.[1 <- v]).
+Definition cbn_stuck_set := Eval cbn in (fun A (t : array A) v => t.[1 <- v]).
+
+Check check_const_eq lazy_stuck_set (fun A (t : array A) v => t.[1 <- v]).
+Check check_const_eq vm_stuck_set (fun A (t : array A) v => t.[1 <- v]).
+Check check_const_eq native_stuck_set (fun A (t : array A) v => t.[1 <- v]).
+Check check_const_eq compute_stuck_set (fun A (t : array A) v => t.[1 <- v]).
+Check check_const_eq cbn_stuck_set (fun A (t : array A) v => t.[1 <- v]).
+
+(* Not stuck primitive, but with an accumulator as last argument *)
+Definition lazy_accu_set := Eval lazy in (fun v => t.[1 <- v]).
+Definition vm_accu_set := Eval vm_compute in (fun v => t.[1 <- v]).
+Definition native_accu_set := Eval native_compute in (fun v => t.[1 <- v]).
+Definition compute_accu_set := Eval compute in (fun v => t.[1 <- v]).
+Definition cbn_accu_set := Eval cbn in (fun v => t.[1 <- v]).
+
+Check check_const_eq lazy_accu_set (fun v => [| 1; v; 2 | 4 |]).
+Check check_const_eq vm_accu_set (fun v => [| 1; v; 2 | 4 |]).
+Check check_const_eq native_accu_set (fun v => [| 1; v; 2 | 4 |]).
+Check check_const_eq compute_accu_set (fun v => [| 1; v; 2 | 4 |]).
+Check check_const_eq cbn_accu_set (fun v => [| 1; v; 2 | 4 |]).
+
+(* Under-application *)
+Definition lazy_set := Eval lazy in @PArray.set.
+Definition vm_set := Eval vm_compute in @PArray.set.
+Definition native_set := Eval native_compute in @PArray.set.
+Definition compute_set := Eval compute in @PArray.set.
+Definition cbn_set := Eval cbn in @PArray.set.
+
+Check check_const_eq lazy_set (@PArray.set).
+Check check_const_eq vm_set (fun A (t : array A) i v => t.[i <- v]).
+Check check_const_eq native_set (fun A (t : array A) i v => t.[i <- v]).
+Check check_const_eq compute_set (@PArray.set).
+Check check_const_eq cbn_set (@PArray.set).
