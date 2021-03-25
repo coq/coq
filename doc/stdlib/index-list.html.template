@@ -135,6 +135,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Arith/Bool_nat.v
     theories/Arith/Factorial.v
     theories/Arith/Wf_nat.v
+    theories/Arith/Cantor.v
   </dd>
 
   <dt> <b>PArith</b>:
