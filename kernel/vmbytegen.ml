@@ -761,7 +761,7 @@ let rec compile_lam env cenv lam sz cont =
     let arity = CPrimitives.arity op in
     let nparams = CPrimitives.nparams op in
     let nargs = arity - nparams in
-    assert (arity = Array.length args && arity <= 4);
+    assert (arity = Array.length args && arity + Univ.Instance.length u <= 4);
     let (jump, cont) = make_branch cont in
     let lbl_default = Label.create () in
     let default =
