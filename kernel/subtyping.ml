@@ -226,6 +226,7 @@ let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
     check_conv err cst poly (infer_conv_leq ?l2r:None ?evars:None ?ts:None) env t1 t2
   in
   match info1 with
+    | IndType _ | IndConstr _ -> error DefinitionFieldExpected
     | Constant cb1 ->
       let () = assert (List.is_empty cb1.const_hyps && List.is_empty cb2.const_hyps) in
       let cb1 = Declareops.subst_const_body subst1 cb1 in
@@ -254,18 +255,7 @@ let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
               let c1 = Mod_subst.force_constr lc1 in
               let c2 = Mod_subst.force_constr lc2 in
               check_conv NotConvertibleBodyField cst poly (infer_conv ?l2r:None ?evars:None ?ts:None) env c1 c2))
-   | IndType ((_kn,_i),_mind1) ->
-       CErrors.user_err Pp.(str @@
-       "The kernel does not recognize yet that a parameter can be " ^
-       "instantiated by an inductive type. Hint: you can rename the " ^
-       "inductive type and give a definition to map the old name to the new " ^
-       "name.")
-   | IndConstr (((_kn,_i),_j),_mind1) ->
-      CErrors.user_err Pp.(str @@
-       "The kernel does not recognize yet that a parameter can be " ^
-       "instantiated by a constructor. Hint: you can rename the " ^
-       "constructor and give a definition to map the old name to the new " ^
-       "name.")
+
 
 let rec check_modules cst env msb1 msb2 subst1 subst2 =
   let mty1 = module_type_of_module msb1 in

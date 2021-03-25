@@ -924,7 +924,9 @@ let explain_not_match_error = function
   | InductiveFieldExpected _ ->
     strbrk "an inductive definition is expected"
   | DefinitionFieldExpected ->
-    strbrk "a definition is expected"
+    strbrk "a definition is expected. Hint: you can rename the \
+            inductive or constructor and add a definition mapping the \
+            old name to the new name"
   | ModuleFieldExpected ->
     strbrk "a module is expected"
   | ModuleTypeFieldExpected ->
