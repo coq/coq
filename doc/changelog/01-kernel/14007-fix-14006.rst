@@ -1,0 +1,7 @@
+- **Fixed:**
+  Never store persistent arrays as VM / native structured values.
+  This could be used to make vo marshalling crash, and probably
+  breaking some other invariants of the kernel
+  (`#14007 <https://github.com/coq/coq/pull/14007>`_,
+  fixes `#14006 <https://github.com/coq/coq/issues/14006>`_,
+  by Pierre-Marie Pédrot).
