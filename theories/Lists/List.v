@@ -1168,10 +1168,18 @@ Section Map.
     intro l; induction l; simpl map; intros d n; destruct n; firstorder.
   Qed.
 
+  Lemma nth_error_map : forall n l,
+    nth_error (map l) n = option_map f (nth_error l n).
+  Proof.
+    intro n. induction n as [|n IHn]; intro l.
+    - now destruct l.
+    - destruct l as [|? l]; [reflexivity|exact (IHn l)].
+  Qed.
+
   Lemma map_nth_error : forall n l d,
     nth_error l n = Some d -> nth_error (map l) n = Some (f d).
   Proof.
-    intro n; induction n; intros [ | ] ? Heq; simpl in *; inversion Heq; auto.
+    intros n l d H. now rewrite nth_error_map, H.
   Qed.
 
   Lemma map_app : forall l l',
@@ -3051,6 +3059,53 @@ Hint Constructors Exists : core.
 #[global]
 Hint Constructors Forall : core.
 
+Lemma Exists_map A B (f : A -> B) P l :
+  Exists P (map f l) <-> Exists (fun x => P (f x)) l.
+Proof.
+  induction l as [|a l IHl].
+  - cbn. now rewrite Exists_nil.
+  - cbn. now rewrite ?Exists_cons, IHl.
+Qed.
+
+Lemma Exists_concat A P (ls : list (list A)) :
+  Exists P (concat ls) <-> Exists (Exists P) ls.
+Proof.
+  induction ls as [|l ls IHls].
+  - cbn. now rewrite Exists_nil.
+  - cbn. now rewrite Exists_app, Exists_cons, IHls.
+Qed.
+
+Lemma Exists_flat_map A B P ls (f : A -> list B) :
+  Exists P (flat_map f ls) <-> Exists (fun d => Exists P (f d)) ls.
+Proof.
+  now rewrite flat_map_concat_map, Exists_concat, Exists_map.
+Qed.
+
+Lemma Forall_map A B (f : A -> B) P l :
+  Forall P (map f l) <-> Forall (fun x => P (f x)) l.
+Proof.
+  induction l as [|a l IHl].
+  - constructor; intros; now constructor.
+  - constructor; intro H;
+      (constructor; [exact (Forall_inv H) | apply IHl; exact (Forall_inv_tail H)]).
+Qed.
+
+Lemma Forall_concat A P (ls : list (list A)) :
+  Forall P (concat ls) <-> Forall (Forall P) ls.
+Proof.
+  induction ls as [|l ls IHls].
+  - constructor; intros; now constructor.
+  - cbn. rewrite Forall_app. constructor; intro H.
+    + constructor; [exact (proj1 H) | apply IHls; exact (proj2 H)].
+    + constructor; [exact (Forall_inv H) | apply IHls; exact (Forall_inv_tail H)].
+Qed.
+
+Lemma Forall_flat_map A B P ls (f : A -> list B) :
+  Forall P (flat_map f ls) <-> Forall (fun d => Forall P (f d)) ls.
+Proof.
+  now rewrite flat_map_concat_map, Forall_concat, Forall_map.
+Qed.
+
 Lemma exists_Forall A B : forall (P : A -> B -> Prop) l,
   (exists k, Forall (P k) l) -> Forall (fun x => exists k, P k x) l.
 Proof.
@@ -3318,6 +3373,22 @@ Section Repeat.
       apply count_occ_repeat_excl in Hneq.
       rewrite Hneq, count_occ_repeat_eq in Heq; trivial.
       now rewrite Heq in Hneq.
+  Qed.
+
+  Lemma nth_repeat a m n :
+    nth n (repeat a m) a = a.
+  Proof.
+    revert n. induction m as [|m IHm].
+    - now intros [|n].
+    - intros [|n]; [reflexivity|exact (IHm n)].
+  Qed.
+
+  Lemma nth_error_repeat a m n :
+    n < m -> nth_error (repeat a m) n = Some a.
+  Proof.
+    intro Hnm. rewrite (nth_error_nth' _ a).
+    - now rewrite nth_repeat.
+    - now rewrite repeat_length.
   Qed.
 
 End Repeat.
