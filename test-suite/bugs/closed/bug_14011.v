@@ -1,5 +1,14 @@
 (** Test that Ltac2 Array.init doesn't compute the first argument twice, and has the correct asymptotics when nested *)
 Require Import Ltac2.Ltac2.
+
+(** Non-performance-based test *)
+Ltac2 foo () :=
+  let x := { contents := 0 } in
+  let _ := Array.init 1 (fun _ => x.(contents) := Int.add 1 (x.(contents))) in
+  Control.assert_true (Int.equal 1 (x.(contents))).
+
+Ltac2 Eval foo ().
+
 Ltac2 Type rec singleton := [ Single (int) | Arr (singleton array) ].
 Ltac2 rec init_rec (n : int) :=
   match Int.equal n 0 with
