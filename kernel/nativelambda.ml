@@ -381,10 +381,7 @@ let makeblock env ind tag nparams arity args =
     Lmakeblock(prefix, ind, tag, args)
 
 let makearray args def =
-  try
-    let p = Array.map get_value args in
-    Lval (Nativevalues.parray_of_array p (get_value def))
-  with Not_found -> Lparray (args, def)
+  Lparray (args, def)
 
 (* Translation of constants *)
 
