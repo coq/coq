@@ -13,11 +13,10 @@ open Names
 open Constr
 open Univ
 
-type univ_unique_id = int
 (* Generator of levels *)
-let new_univ_id, set_remote_new_univ_id =
-  RemoteCounter.new_counter ~name:"Universes" 0 ~incr:((+) 1)
-    ~build:(fun n -> n)
+let new_univ_id =
+  let cnt = ref 0 in
+  fun () -> incr cnt; !cnt
 
 let new_univ_global () =
   let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in

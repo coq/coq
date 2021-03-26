@@ -56,11 +56,7 @@ module Make(T : Task) () = struct
   type response =
     | Response of T.response
     | RespFeedback of Feedback.feedback
-    | RespGetCounterNewUnivLevel
   type request = Request of T.request
-
-  type more_data =
-    | MoreDataUnivLevel of UnivGen.univ_unique_id list
 
   let slave_respond (Request r) =
     let res = T.perform r in
@@ -93,16 +89,6 @@ module Make(T : Task) () = struct
     try (CThread.thread_friendly_input_value ic : response)
     with Failure s | Invalid_argument s | Sys_error s ->
       marshal_err ("unmarshal_response: "^s)
-
-  let marshal_more_data oc (res : more_data) =
-    try marshal_to_channel oc res
-    with Failure s | Invalid_argument s | Sys_error s ->
-      marshal_err ("marshal_more_data: "^s)
-
-  let unmarshal_more_data ic =
-    try (CThread.thread_friendly_input_value ic : more_data)
-    with Failure s | Invalid_argument s | Sys_error s ->
-      marshal_err ("unmarshal_more_data: "^s)
 
   let report_status ?(id = !Flags.async_proofs_worker_id) s =
     let open Feedback in
@@ -198,8 +184,6 @@ module Make(T : Task) () = struct
         | Unix.WEXITED i -> Printf.sprintf "exit(%d)" i
         | Unix.WSIGNALED sno -> Printf.sprintf "signalled(%d)" sno
         | Unix.WSTOPPED sno -> Printf.sprintf "stopped(%d)" sno) in
-    let more_univs n =
-      CList.init n (fun _ -> UnivGen.new_univ_id ()) in
 
     let rec kill_if () =
       if not (Worker.is_alive proc) then ()
@@ -231,9 +215,6 @@ module Make(T : Task) () = struct
         marshal_request oc (Request req);
         let rec continue () =
           match unmarshal_response ic with
-          | RespGetCounterNewUnivLevel ->
-              marshal_more_data oc (MoreDataUnivLevel (more_univs 10));
-              continue ()
           | RespFeedback fbk -> T.forward_feedback fbk; continue ()
           | Response resp ->
               match T.use_response !worker_age task resp with
@@ -315,13 +296,6 @@ module Make(T : Task) () = struct
     let ic, oc = Spawned.get_channels () in
     slave_oc := Some oc; slave_ic := Some ic
 
-  let bufferize f =
-    let l = ref [] in
-    fun () ->
-      match !l with
-      | [] -> let data = f () in l := List.tl data; List.hd data
-      | x::tl -> l := tl; x
-
   let slave_handshake () =
     Pool.worker_handshake (Option.get !slave_ic) (Option.get !slave_oc)
 
@@ -339,11 +313,6 @@ module Make(T : Task) () = struct
           Marshal.to_channel oc (RespFeedback (debug_with_pid fb)) []; flush oc) ()
     in
     ignore (Feedback.add_feeder (fun x -> slave_feeder (Option.get !slave_oc) x));
-    (* We ask master to allocate universe identifiers *)
-    UnivGen.set_remote_new_univ_id (bufferize @@ Control.protect_sigalrm (fun () ->
-      marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
-      match unmarshal_more_data (Option.get !slave_ic) with
-      | MoreDataUnivLevel l -> l));
     let working = ref false in
     slave_handshake ();
     while true do
