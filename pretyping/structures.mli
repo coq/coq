@@ -101,7 +101,6 @@ end
     corresponding to val is [val cvalue_arguments].
     It is possible that val is one of the [abs] abstractions, eg [Default_cs],
     and in that case [cvalue_abstraction = Some i] *)
-
 module CanonicalSolution : sig
 
 type t = {
