@@ -1065,9 +1065,13 @@ let pr_vernac_expr v =
       ++ keyword "ML Path"
       ++ qs s
     )
-  | VernacDeclareMLModule (l) ->
+  | VernacDeclareMLModule { loader; modules } ->
     return (
-      hov 2 (keyword "Declare ML Module" ++ spc() ++ prlist_with_sep sep qs l)
+      let require_type = function
+        | CoqLoader -> keyword "Declare ML Module"
+        | Findlib -> keyword "Require ML Module"
+      in
+      hov 2 (require_type loader ++ spc() ++ prlist_with_sep sep qs modules)
     )
   | VernacChdir s ->
     return (keyword "Cd" ++ pr_opt qs s)

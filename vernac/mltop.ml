@@ -377,3 +377,50 @@ let print_gc () =
     str "stack_size: " ++ int stat.Gc.stack_size
   in
   hv 0 msg
+
+(* TODO, what should we do here? *)
+type fl_module_object = {
+  mlocal : Vernacexpr.locality_flag;
+  mnames : (string * ml_module_digest) list
+}
+
+let cache_fl_objects (_,{mnames=mnames}) =
+  let iter (obj, _) = trigger_ml_object true true true obj in
+  List.iter iter mnames
+
+let load_fl_objects _ (_,{mnames=mnames}) =
+  let iter (obj, _) = trigger_ml_object true false true obj in
+  List.iter iter mnames
+
+let classify_fl_objects ({mlocal=mlocal} as o) =
+  if mlocal then Libobject.Dispose else Libobject.Substitute o
+
+let inFLModule : fl_module_object -> Libobject.obj =
+  let open Libobject in
+  declare_object
+    {(default_object "FL-MODULE") with
+      cache_function = cache_fl_objects;
+      load_function = load_fl_objects;
+      subst_function = (fun (_,o) -> o);
+      classify_function = classify_fl_objects }
+
+(* To get the location of a plugin we do
+   ocamlfind query -predicates native -format '%+(plugin)' coq.plugins.ltac
+
+In code this is:
+
+let pkg = "coq.plugins.ltac" in
+let d = Find.package_director pkg in
+let archs = Findlib.package_property ["native"] pkg "plugin" in
+let paths = Findlib.resolve_path ~base:d archs in
+...
+
+TODO: not clear if archs can return multiple objects so we'd need to
+   call `Fl_split.in_words`
+ *)
+let load_plugins ~local fl_names =
+  Fl_dynload.load_packages fl_names;
+  (* XXX: Fix with above info. *)
+  let l = List.map mod_of_name fl_names in
+  let l = List.map add_module_digest l in
+  Lib.add_anonymous_leaf ~cache_first:false (inFLModule {mlocal=local; mnames=l})

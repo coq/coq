@@ -62,10 +62,21 @@ val declare_cache_obj : (unit -> unit) -> string -> unit
 
 (** {5 Declaring modules} *)
 
+(** [declare_ml_modules mods] Load dynamically modules [mods] calling
+   low-level [Dynlink] API, cmxs/cma files are searched in the path
+   specified with add_ml_dir . [mods] are a string such that
+   [mod.cmxs] is the expected object file. Note this is a simple
+   wrapper over [Dynlink] thus no dependency or double-loading are, in
+   principle handled. *)
 val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
+
+(** [load_plugins fl_name] load dynamically a plugin with findlib name
+   [fl_name] using [Fl_dynload]. Findlib will handle locating, and
+   loading the dependencies for the plugin, so the plugin should
+   install a META file and be in scope. *)
+val load_plugins : local:Vernacexpr.locality_flag -> string list -> unit
 
 (** {5 Utilities} *)
 
-val print_ml_path : unit -> Pp.t
-val print_ml_modules : unit -> Pp.t
-val print_gc : unit -> Pp.t
+val print_ml_path : unit -> Pp.t val print_ml_modules : unit -> Pp.t
+   val print_gc : unit -> Pp.t

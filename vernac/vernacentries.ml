@@ -1433,9 +1433,13 @@ let vernac_remove_loadpath path =
 let vernac_add_ml_path path =
   Mltop.add_ml_dir (expand path)
 
-let vernac_declare_ml_module ~local l =
+let vernac_declare_ml_module ~local loader modules =
   let local = Option.default false local in
-  Mltop.declare_ml_modules local (List.map expand l)
+  match loader with
+  | CoqLoader ->
+    Mltop.declare_ml_modules local (List.map expand modules)
+  | Findlib ->
+    Mltop.load_plugins ~local modules
 
 let vernac_chdir = function
   | None -> Feedback.msg_notice (str (Sys.getcwd()))
@@ -2321,8 +2325,9 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_add_ml_path s)
-  | VernacDeclareMLModule l ->
-    vtdefault(fun () -> with_locality ~atts vernac_declare_ml_module l)
+  | VernacDeclareMLModule { loader; modules } ->
+    vtdefault(fun () ->
+        with_locality ~atts vernac_declare_ml_module loader modules )
   | VernacChdir s ->
     vtdefault(fun () -> unsupported_attributes atts; vernac_chdir s)
 
