@@ -157,6 +157,18 @@ let error_cannot_parse s (i,j) =
   Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
   exit 1
 
+let error_cannot_stat s unix_error =
+  (* Print an arbitrary line number, such that the message matches
+     common error message pattern. *)
+  Printf.eprintf "File \"%s\", line 1: %s\n" s (error_message unix_error);
+  exit 1
+
+let error_cannot_open s msg =
+  (* Print an arbitrary line number, such that the message matches
+     common error message pattern. *)
+  Printf.eprintf "File \"%s\", line 1: %s\n" s msg;
+  exit 1
+
 let warning_module_notfound f s =
   coqdep_warning "in file %s, library %s is required and has not been found in the loadpath!"
     f (String.concat "." s)
@@ -368,7 +380,7 @@ let rec find_dependencies basename =
     | Syntax_error (i,j) ->
         close_in chan;
         error_cannot_parse f (i,j)
-  with Sys_error _ -> [] (* TODO: report an error? *)
+  with Sys_error msg -> error_cannot_open (basename ^ ".v") msg
 
 
 let write_vos = ref false
@@ -472,7 +484,12 @@ let rec treat_file old_dirname old_name =
       | (Some d1,d2) -> Some (d1//d2)
   in
   let complete_name = file_name name dirname in
-  match try (stat complete_name).st_kind with _ -> S_BLK with
+  let stat_res =
+    try stat complete_name
+    with Unix_error(error, _, _) -> error_cannot_stat complete_name error
+  in
+  match stat_res.st_kind
+  with
     | S_DIR ->
         (if name.[0] <> '.' then
            let newdirname =

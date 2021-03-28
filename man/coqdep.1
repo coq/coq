@@ -70,6 +70,21 @@ Output dependencies for .vos files (this is not the default as it breaks dune's 
 .B \-boot
 For coq developers, prints dependencies over coq library files
 (omitted by default).
+.TP
+.B \-noinit
+Currently no effect.
+
+
+.SH EXIT STATUS
+.IP "1"
+A file given on the command line cannot be found or some file
+cannot be opened.
+.IP "0"
+In all other cases. In particular, when a dependency cannot be
+found or an invalid option is encountered,
+.B coqdep
+prints a warning and exits with status
+.B 0\fR.
 
 
 .SH SEE ALSO
