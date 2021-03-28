@@ -1,7 +1,7 @@
 .TH COQ 1
 
 .SH NAME
-coqdep \- Compute inter-module dependencies for Coq and Caml programs
+coqdep \- Compute inter-module dependencies for Coq programs
 
 .SH SYNOPSIS
 .B coqdep
@@ -23,7 +23,7 @@ coqdep \- Compute inter-module dependencies for Coq and Caml programs
 .SH DESCRIPTION
 
 .B coqdep
-compute inter-module dependencies for Coq and Caml programs,
+compute inter-module dependencies for Coq programs,
 and prints the dependencies on the standard output in a format
 readable by make.
 When a directory is given as argument, it is recursively looked at.
@@ -40,11 +40,6 @@ commands. Dependencies relative to modules from the Coq library are not
 printed except if
 .BR \-boot \&
 is given.
-
-Dependencies of Caml modules are computed by looking at
-.IR open \&
-directives and the dot notation
-.IR module.value \&.
 
 .SH OPTIONS
 
