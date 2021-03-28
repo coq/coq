@@ -8,17 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Extraction of [positive], [N] and [Z] into Ocaml's [big_int] *)
+(** Extraction of [positive], [N], and [Z], into Zarith's [Z.t] *)
 
 Require Coq.extraction.Extraction.
 
 Require Import ZArith NArith.
 Require Import ExtrOcamlBasic.
 
-(** NB: The extracted code should be linked with [nums.cm(x)a]
-    from ocaml's stdlib and with the wrapper [big.ml] that
-    simplifies the use of [Big_int] (it can be found in the sources
-    of Coq). *)
+(** NB: The extracted code should be linked with [zarith.cm(x)a] and with
+    the [big.ml] wrapper. The latter can be found in the sources of Coq. *)
 
 (** Disclaimer: trying to obtain efficient certified programs
     by extracting [Z] into [big_int] isn't necessarily a good idea.
