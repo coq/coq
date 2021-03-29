@@ -39,6 +39,8 @@ sig
   val to_uconstr : t -> Ltac_pretype.closed_glob_constr option
   val of_int : int -> t
   val to_int : t -> int option
+  val of_ident : Id.t -> t
+  val to_ident : t -> Id.t option
   val to_list : t -> t list option
   val to_option : t -> t option option
   val to_pair : t -> (t * t) option

@@ -40,5 +40,8 @@ Ltac2 @ external apply : t -> t list -> (t -> unit) -> unit := "ltac2" "ltac1_ap
 Ltac2 @ external of_constr : constr -> t := "ltac2" "ltac1_of_constr".
 Ltac2 @ external to_constr : t -> constr option := "ltac2" "ltac1_to_constr".
 
+Ltac2 @ external of_ident : ident -> t := "ltac2" "ltac1_of_ident".
+Ltac2 @ external to_ident : t -> ident option := "ltac2" "ltac1_to_ident".
+
 Ltac2 @ external of_list : t list -> t := "ltac2" "ltac1_of_list".
 Ltac2 @ external to_list : t -> t list option := "ltac2" "ltac1_to_list".

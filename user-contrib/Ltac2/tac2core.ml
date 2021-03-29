@@ -1186,6 +1186,16 @@ let () = define1 "ltac1_to_constr" ltac1 begin fun v ->
   return (Value.of_option Value.of_constr (Tacinterp.Value.to_constr v))
 end
 
+let () = define1 "ltac1_of_ident" ident begin fun c ->
+  let open Ltac_plugin in
+  return (Value.of_ext val_ltac1 (Taccoerce.Value.of_ident c))
+end
+
+let () = define1 "ltac1_to_ident" ltac1 begin fun v ->
+  let open Ltac_plugin in
+  return (Value.of_option Value.of_ident (Taccoerce.Value.to_ident v))
+end
+
 let () = define1 "ltac1_of_list" (list ltac1) begin fun l ->
   let open Geninterp.Val in
   return (Value.of_ext val_ltac1 (inject (Base typ_list) l))
