@@ -82,13 +82,13 @@ Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop, Arnaud Spiwack,
 Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov, Li-yao Xia
 and Théo Zimmermann.
 
-The 52 contributors to this version are Reynald Affeldt, Tanaka Akira, Frédéric
+The 51 contributors to this version are Reynald Affeldt, Tanaka Akira, Frédéric
 Besson, Lasse Blaauwbroek, Clément Blaudeau, Martin Bodin, Ali Caglayan, Tej Chajed,
 Cyril Cohen, Julien Coolen, Matthew Dempsky, Maxime Dénès, Andres Erbsen,
 Jim Fehrle, Emilio Jesús Gallego Arias, Paolo G. Giarrusso, Attila Gáspár, Gaëtan Gilbert,
 Jason Gross, Benjamin Grégoire, Hugo Herbelin, Wolf Honore, Jasper Hugunin, Ignat Insarov,
 Ralf Jung, Fabian Kunze, Vincent Laporte, Olivier Laurent, Larry D. Lee Jr,
-Thomas Letan, Yishuai Li, Xia Li-yao, James Lottes, Jean-Christophe Léchenet,
+Thomas Letan, Yishuai Li, James Lottes, Jean-Christophe Léchenet,
 Kenji Maillard, Erik Martin-Dorel, Yusuke Matsushita, Guillaume Melquiond,
 Carl Patenaude-Poulin, Clément Pit-Claudel, Pierre-Marie Pédrot, Pierre Roux,
 Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop, Matthieu Sozeau,
