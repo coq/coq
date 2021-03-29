@@ -467,7 +467,9 @@ let polymorphic ((n, t) : type_scheme) : mix_type_scheme =
 
 let warn_not_unit =
   CWarnings.create ~name:"not-unit" ~category:"ltac"
-    (fun () -> strbrk "The following expression should have type unit.")
+    (fun (env, t) ->
+      strbrk "The following expression should have type unit but has type " ++
+      pr_glbtype env t ++ str ".")
 
 let warn_redundant_clause =
   CWarnings.create ~name:"redundant-clause" ~category:"ltac"
@@ -480,7 +482,7 @@ let check_elt_unit loc env t =
   | GTypRef (Tuple 0, []) -> true
   | GTypRef _ -> false
   in
-  if not maybe_unit then warn_not_unit ?loc ()
+  if not maybe_unit then warn_not_unit ?loc (env, t)
 
 let check_elt_empty loc env t = match kind env t with
 | GTypVar _ ->
@@ -504,7 +506,7 @@ let check_unit ?loc t =
   | GTypRef (Tuple 0, []) -> true
   | GTypRef _ -> false
   in
-  if not maybe_unit then warn_not_unit ?loc ()
+  if not maybe_unit then warn_not_unit ?loc (env, t)
 
 let check_redundant_clause = function
 | [] -> ()
