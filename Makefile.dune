@@ -18,7 +18,7 @@ help:
 	@echo "  - world:  build all public binaries and libraries"
 	@echo "  - watch:  build all public binaries and libraries [continuous build]"
 	@echo "  - check:  build all ML files as fast as possible"
-	@echo "  - test-suite: run Coq's test suite"
+	@echo "  - test-suite: run Coq's test suite [env NJOBS=N to set job parallelism]"
 	@echo ""
 	@echo "  Note: running ./configure is not recommended,"
 	@echo "        see dev/doc/build-system.dune.md for more info"
