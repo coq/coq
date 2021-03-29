@@ -25,6 +25,8 @@ let coqc_specific_usage = Usage.{
 coqc specific options:\
 \n  -o f.vo                use f.vo as the output file name\
 \n  -verbose               compile and output the input file\
+\n  -noglob                do not dump globalizations\
+\n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
 \n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
 \n                         into fi.vo\
 \n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
