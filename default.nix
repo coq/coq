@@ -90,6 +90,8 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
+  makefile = "Makefile.make";
+
   buildFlags = [ "world" "byte" ] ++ optional buildDoc "doc-html";
 
   installTargets =

@@ -32,7 +32,7 @@
 
 
 ## Documentation of ML interfaces using `odoc` ( `_build/default/_doc`)
-`make -f Makefile.dune apidoc` in coq root directory.
+`make apidoc` in coq root directory.
 
 ## Other development tools (`dev/tools`)
 

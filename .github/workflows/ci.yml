@@ -84,8 +84,8 @@ jobs:
         run: |
           eval $(opam env)
           ./configure -prefix "$(pwd)/_install_ci" -warn-error yes -native-compiler no -coqide opt
-          make -j "$NJOBS" byte
-          make -j "$NJOBS"
+          make -f Makefile.make -j "$NJOBS" byte
+          make -f Makefile.make -j "$NJOBS"
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.11"
           NJOBS: "2"
@@ -93,12 +93,12 @@ jobs:
       - name: Install Coq
         run: |
           eval $(opam env)
-          make install install-byte
+          make -f Makefile.make install install-byte
 
       - name: Run Coq Test Suite
         run: |
           eval $(opam env)
           export OCAMLPATH="$(pwd)/_install_ci/lib":"$OCAMLPATH"
-          make -j "$NJOBS" test-suite PRINT_LOGS=1
+          make -f Makefile.make -j "$NJOBS" test-suite PRINT_LOGS=1
         env:
           NJOBS: "2"

@@ -2,8 +2,8 @@ Quick Installation Procedure using Make.
 ----------------------------------------
 
     $ ./configure
-    $ make world
-    $ make install (you may need superuser rights)
+    $ make -f Makefile.make world
+    $ make -f Makefile.make install (you may need superuser rights)
 
 Detailed Installation Procedure.
 --------------------------------

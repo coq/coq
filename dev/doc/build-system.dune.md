@@ -20,14 +20,14 @@ need an explicit `-f Makefile.make` if you want to use one of the
 legacy targets.
 
 It is strongly recommended that you use the helper targets available
-in `Makefile.dune`, `make -f Makefile.dune` will display help. Note
-that dune will call configure for you if needed, so no need to call
-`./configure` in the regular development workflow.
+in `Makefile.dune`, `make` will display help. Note that dune will call
+configure for you if needed, so no need to call `./configure` in the
+regular development workflow.
 
 4 common operations targets are:
 
-- `make -f Makefile.dune check` : build all ml targets as fast as possible
-- `make -f Makefile.dune world` : build a complete Coq distribution
+- `make check` : build all ml targets as fast as possible
+- `make world` : build a complete Coq distribution
 - `dune exec -- dev/shim/coqtop-prelude` : build and launch coqtop + prelude [equivalent to `make states`].
 - `dune build $target`: where `$target` can refer to the build
   directory or the source directory [but will be placed under

@@ -84,7 +84,7 @@ before_script:
     - set -e
 
     - echo 'start:coq.clean'
-    - make clean # ensure that `make clean` works on a fresh clone
+    - make -f Makefile.make clean # ensure that `make clean` works on a fresh clone
     - echo 'end:coq.clean'
 
     - echo 'start:coq.config'
@@ -92,11 +92,11 @@ before_script:
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
-    - make -j "$NJOBS" world $EXTRA_TARGET
+    - make -f Makefile.make -j "$NJOBS" world $EXTRA_TARGET
     - echo 'end:coq:build'
 
     - echo 'start:coq.install'
-    - make install $EXTRA_INSTALL
+    - make -f Makefile.make install $EXTRA_INSTALL
     - echo 'end:coq.install'
 
     - set +e
@@ -114,7 +114,7 @@ before_script:
     # and https://github.com/coq/coq/pull/11916#issuecomment-609977375
     - ulimit -s 16384
     - set -e
-    - make -f Makefile.dune world
+    - make world
     - set +e
     - tar cfj _build.tar.bz2 _build
   variables:
@@ -140,7 +140,7 @@ before_script:
     - tar xfj _build.tar.bz2
     - set -e
     - echo 'start:coq.test'
-    - make -f Makefile.dune "$DUNE_TARGET"
+    - make "$DUNE_TARGET"
     - echo 'end:coq.test'
     - set +e
   variables:
@@ -166,8 +166,8 @@ before_script:
     - not-a-real-job
   script:
     - SPHINXENV='COQBIN="'"$PWD"'/_install_ci/bin/"'
-    - make -j "$NJOBS" SPHINXENV="$SPHINXENV" SPHINX_DEPS= refman
-    - make install-doc-sphinx
+    - make -f Makefile.make -j "$NJOBS" SPHINXENV="$SPHINXENV" SPHINX_DEPS= refman
+    - make -f Makefile.make install-doc-sphinx
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -523,7 +523,7 @@ test-suite:edge:dune:dev:
     - build:edge+flambda:dune:dev
   script:
     - tar xfj _build.tar.bz2
-    - make -f Makefile.dune test-suite
+    - make test-suite
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
@@ -550,7 +550,7 @@ test-suite:edge:dune:dev:
     - opam install dune zarith
     - eval $(opam env)
     - export COQ_UNIT_TEST=noop
-    - make -f Makefile.dune test-suite
+    - make test-suite
   variables:
     OPAM_SWITCH: base
   artifacts:
@@ -840,7 +840,7 @@ plugin:plugin-tutorial:
   interruptible: true
   script:
     - ./configure -profile devel -warn-error yes
-    - make -j "$NJOBS" plugin-tutorial
+    - make -f Makefile.make -j "$NJOBS" plugin-tutorial
 
 plugin:ci-quickchick:
   extends: .ci-template-flambda
