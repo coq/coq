@@ -1,0 +1,6 @@
+- **Fixed:**
+  Properly expand projection parameters in hint discrimination
+  nets. (`#14033 <https://github.com/coq/coq/pull/14033>`_,
+  fixes `#9000 <https://github.com/coq/coq/issues/9000>`_,
+  `#14009 <https://github.com/coq/coq/issues/14009>`_,
+  by Pierre-Marie Pédrot).

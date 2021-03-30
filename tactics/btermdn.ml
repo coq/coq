@@ -32,18 +32,25 @@ let compare_term_label t1 t2 = match t1, t2 with
 
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
 
-let decomp_pat =
+let decomp_pat p =
   let rec decrec acc = function
     | PApp (f,args) -> decrec (Array.to_list args @ acc) f
-    | PProj (p, c) -> (PRef (GlobRef.ConstRef (Projection.constant p)), c :: acc)
+    | PProj (p, c) ->
+      let hole = PMeta None in
+      let params = List.make (Projection.npars p) hole in
+      (PRef (GlobRef.ConstRef (Projection.constant p)), params @ c :: acc)
     | c -> (c,acc)
   in
-  decrec []
+  decrec [] p
 
 let decomp sigma t =
   let rec decrec acc c = match EConstr.kind sigma c with
     | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
-    | Proj (p, c) -> (mkConst (Projection.constant p), c :: acc)
+    | Proj (p, c) ->
+      (* Hack: fake evar to generate [Everything] in the functions below *)
+      let hole = mkEvar (Evar.unsafe_of_int (-1), []) in
+      let params = List.make (Projection.npars p) hole in
+      (mkConst (Projection.constant p), params @ c :: acc)
     | Cast (c1,_,_) -> decrec acc c1
     | _ -> (c,acc)
   in
