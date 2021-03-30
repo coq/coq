@@ -22,7 +22,6 @@ open Reductionops
 open Inductive
 open Termops
 open Inductiveops
-open Recordops
 open Namegen
 open Miniml
 open Table
@@ -531,7 +530,7 @@ and extract_really_ind env kn mib =
           let n = nb_default_params env sg (EConstr.of_constr ty) in
           let check_proj kn = if Cset.mem kn !projs then add_projection n kn ip
           in
-          List.iter (Option.iter check_proj) (lookup_projections ip)
+          List.iter (Option.iter check_proj) (Structures.Structure.find_projections ip)
         with Not_found -> ()
         end;
         Record field_glob
@@ -1129,7 +1128,7 @@ let extract_constant env kn cb =
         (match cb.const_body with
           | Primitive _ | Undef _ -> warn_info (); mk_typ_ax ()
           | Def c ->
-             (match Recordops.find_primitive_projection kn with
+             (match Structures.PrimitiveProjections.find_opt kn with
               | None -> mk_typ (get_body c)
               | Some p ->
                 let body = fake_match_projection env p in
@@ -1142,7 +1141,7 @@ let extract_constant env kn cb =
         (match cb.const_body with
           | Primitive _ | Undef _ -> warn_info (); mk_ax ()
           | Def c ->
-             (match Recordops.find_primitive_projection kn with
+             (match Structures.PrimitiveProjections.find_opt kn with
               | None -> mk_def (get_body c)
               | Some p ->
                 let body = fake_match_projection env p in

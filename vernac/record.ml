@@ -22,6 +22,7 @@ open Type_errors
 open Constrexpr
 open Constrexpr_ops
 open Context.Rel.Declaration
+open Structures
 
 module RelDecl = Context.Rel.Declaration
 
@@ -348,7 +349,7 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
    this could be refactored as noted above by moving to the
    higher-level declare constant API *)
 let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramdecls
-    paramargs decl impls fid subst sp_projs nfi ti i indsp mib lifted_fields x rp =
+    paramargs decl impls fid subst nfi ti i indsp mib lifted_fields x rp =
   let ccl = subst_projection fid subst ti in
   let body, p_opt = match decl with
     | LocalDef (_,ci,_) -> subst_projection fid subst ci, None
@@ -396,32 +397,33 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
     ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~source:cl
   end;
   let i = if is_local_assum decl then i+1 else i in
-  (Some kn::sp_projs, i, Projection term::subst)
+  (Some kn, i, Projection term::subst)
 
 (** [build_proj] will build a projection for each field, or skip if
    the field is anonymous, i.e. [_ : t] *)
 let build_proj env mib indsp primitive x rp lifted_fields ~poly paramdecls paramargs ~uinstance ~kind ~univs
-    (nfi,i,kinds,sp_projs,subst) flags decl impls =
+    (nfi,i,kinds,subst) flags decl impls =
   let fi = RelDecl.get_name decl in
   let ti = RelDecl.get_type decl in
-  let (sp_projs,i,subst) =
+  let (sp_proj,i,subst) =
     match fi with
     | Anonymous ->
-      (None::sp_projs,i,NoProjection fi::subst)
+      (None,i,NoProjection fi::subst)
     | Name fid ->
       try build_named_proj
             ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramdecls paramargs decl impls fid
-            subst sp_projs nfi ti i indsp mib lifted_fields x rp
+            subst nfi ti i indsp mib lifted_fields x rp
       with NotDefinable why as exn ->
         let _, info = Exninfo.capture exn in
         warning_or_error ~info flags.pf_subclass indsp why;
-        (None::sp_projs,i,NoProjection fi::subst)
+        (None,i,NoProjection fi::subst)
   in
   (nfi - 1, i,
-   { Recordops.pk_name = fi
-   ; pk_true_proj = is_local_assum decl
-   ; pk_canonical = flags.pf_canonical } :: kinds
-  , sp_projs, subst)
+   { Structure.proj_name = fi
+   ; proj_true = is_local_assum decl
+   ; proj_canonical = flags.pf_canonical
+   ; proj_body = sp_proj } :: kinds
+  , subst)
 
 (** [declare_projections] prepares the common context for all record
    projections and then calls [build_proj] for each one. *)
@@ -445,11 +447,12 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) binder_name
     | PrimRecord _ -> true
     | FakeRecord | NotRecord -> false
   in
-  let (_,_,kinds,sp_projs,_) =
+  let (_,_,canonical_projections,_) =
     List.fold_left3
       (build_proj env mib indsp primitive x rp lifted_fields ~poly paramdecls paramargs ~uinstance ~kind ~univs)
-      (List.length fields,0,[],[],[]) flags (List.rev fields) (List.rev fieldimpls)
-  in (kinds,sp_projs)
+      (List.length fields,0,[],[]) flags (List.rev fields) (List.rev fieldimpls)
+  in
+    List.rev canonical_projections
 
 open Typeclasses
 
@@ -485,20 +488,17 @@ let check_template ~template ~poly ~univs ~params { Data.id; rdata = { DataR.min
     (* auto detect template *)
     ComInductive.should_auto_template id (template && template_candidate ())
 
-let load_structure i (_, structure) =
-  Recordops.register_structure structure
+let load_structure i (_, structure) = Structure.register structure
 
-let cache_structure o =
-  load_structure 1 o
+let cache_structure o = load_structure 1 o
 
-let subst_structure (subst, obj) =
-  Recordops.subst_structure subst obj
+let subst_structure (subst, obj) = Structure.subst subst obj
 
 let discharge_structure (_, x) = Some x
 
-let rebuild_structure s = Recordops.rebuild_structure (Global.env()) s
+let rebuild_structure s = Structure.rebuild (Global.env()) s
 
-let inStruc : Recordops.struc_typ -> Libobject.obj =
+let inStruc : Structure.t -> Libobject.obj =
   let open Libobject in
   declare_object {(default_object "STRUCTURE") with
     cache_function = cache_structure;
@@ -601,17 +601,10 @@ let declare_structure ~cumulative finite ~ubind ~univs ~variances paramimpls par
   let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
-    let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers implfs fields in
+    let projections = declare_projections rsp ctx ~kind binder_name.(i) coers implfs fields in
     let build = GlobRef.ConstructRef cstr in
     let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly in
-    let npars = Inductiveops.inductive_nparams (Global.env()) rsp in
-    let struc = {
-      Recordops.s_CONST = cstr;
-      s_PROJ = List.rev sp_projs;
-      s_PROJKIND = List.rev kinds;
-      s_EXPECTEDPARAM = npars;
-    }
-    in
+    let struc = Structure.make (Global.env ()) rsp projections in
     let () = declare_structure_entry struc in
     rsp
   in
@@ -674,7 +667,7 @@ let build_record_constant ~rdata ~ubind ~univs ~variances ~cumulative ~template
       meth_info = b;
       meth_const = y;
     } in
-    let l = List.map3 map (List.rev fields) coers (Recordops.lookup_projections ind) in
+    let l = List.map3 map (List.rev fields) coers (Structure.find_projections ind) in
     GlobRef.IndRef ind, l
   in
   List.map map inds

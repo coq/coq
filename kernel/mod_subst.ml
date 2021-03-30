@@ -291,6 +291,11 @@ let subst_ind sub (ind,i as indi) =
   let ind' = subst_mind sub ind in
     if ind' == ind then indi else ind',i
 
+let subst_constructor subst (ind,j as ref) =
+  let ind' = subst_ind subst ind in
+  if ind==ind' then ref
+  else (ind',j)
+
 let subst_pind sub (ind,u) =
   (subst_ind sub ind, u)
 

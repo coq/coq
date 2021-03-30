@@ -90,7 +90,7 @@ let uniform_cond sigma ctx lt =
 
 let class_of_global = function
   | GlobRef.ConstRef sp ->
-    (match Recordops.find_primitive_projection sp with
+    (match Structures.PrimitiveProjections.find_opt sp with
      | Some p -> CL_PROJ p | None -> CL_CONST sp)
   | GlobRef.IndRef sp -> CL_IND sp
   | GlobRef.VarRef id -> CL_SECVAR id
@@ -141,8 +141,8 @@ let get_target env t ind =
     CL_FUN
   else
     match pi1 (find_class_type env Evd.empty (EConstr.of_constr t)) with
-    | CL_CONST p when Recordops.is_primitive_projection p ->
-      CL_PROJ (Option.get @@ Recordops.find_primitive_projection p)
+    | CL_CONST p when Structures.PrimitiveProjections.mem p ->
+      CL_PROJ (Option.get @@ Structures.PrimitiveProjections.find_opt p)
     | x -> x
 
 let strength_of_cl = function
@@ -265,7 +265,7 @@ let inCoercion : coe_info_typ -> obj =
 let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps =
   let isproj =
     match coef with
-    | GlobRef.ConstRef c -> Recordops.find_primitive_projection c
+    | GlobRef.ConstRef c -> Structures.PrimitiveProjections.find_opt c
     | _ -> None
   in
   let c = {

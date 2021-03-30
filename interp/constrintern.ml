@@ -24,6 +24,7 @@ open Glob_term
 open Glob_ops
 open Patternops
 open Pretyping
+open Structures
 open Cases
 open Constrexpr
 open Constrexpr_ops
@@ -33,6 +34,7 @@ open Notation
 open Inductiveops
 open Context.Rel.Declaration
 open NumTok
+
 
 (** constr_expr -> glob_constr translation:
     - it adds holes for implicit arguments
@@ -100,7 +102,7 @@ type internalization_error =
   | NonLinearPattern of Id.t
   | BadPatternsNumber of int * int
   | NotAProjection of qualid
-  | ProjectionsOfDifferentRecords of Recordops.struc_typ * Recordops.struc_typ
+  | ProjectionsOfDifferentRecords of Structure.t * Structure.t
 
 exception InternalizationError of internalization_error
 
@@ -126,8 +128,8 @@ let explain_bad_patterns_number n1 n2 =
   str "Expecting " ++ int n1 ++ str (String.plural n1 " pattern") ++
   str " but found " ++ int n2
 
-let inductive_of_record record =
-  let inductive = GlobRef.IndRef (inductive_of_constructor record.Recordops.s_CONST) in
+let inductive_of_record s =
+  let inductive = GlobRef.IndRef (s.Structure.name) in
   Nametab.shortest_qualid_of_global Id.Set.empty inductive
 
 let explain_field_not_a_projection field_id =
@@ -1130,8 +1132,10 @@ let intern_reference qid =
 
 let intern_projection qid =
   try
-    let gr = Smartlocate.global_of_extended_global (intern_extended_global_of_qualid qid) in
-    (gr, Recordops.find_projection gr)
+    match Smartlocate.global_of_extended_global (intern_extended_global_of_qualid qid) with
+    | GlobRef.ConstRef c as gr ->
+        (gr, Structure.find_from_projection c)
+    | _ -> raise Not_found
   with Not_found ->
     Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
 
@@ -1296,8 +1300,8 @@ let check_applied_projection isproj realref qid =
     let is_prim = match realref with
       | None | Some (IndRef _ | ConstructRef _ | VarRef _) -> false
       | Some (ConstRef c) ->
-        if Recordops.is_primitive_projection c then true
-        else if Recordops.is_projection c then false
+        if PrimitiveProjections.mem c then true
+        else if Structure.is_projection c then false
         else error_nonprojection_syntax ?loc:qid.loc qid
         (* TODO check projargs, note we will need implicit argument info *)
     in
@@ -1498,18 +1502,18 @@ let sort_fields ~complete loc fields completer =
     | (first_field_ref, _):: _ ->
         let (first_field_glob_ref, record) = intern_projection first_field_ref in
         (* the number of parameters *)
-        let nparams = record.Recordops.s_EXPECTEDPARAM in
+        let nparams = record.Structure.nparams in
         (* the reference constructor of the record *)
-        let base_constructor = GlobRef.ConstructRef record.Recordops.s_CONST in
+        let base_constructor = GlobRef.ConstructRef (record.Structure.name,1) in
         let () = check_duplicate ?loc fields in
-        let build_proj idx proj kind =
-          if proj = None && complete then
+        let build_proj idx proj =
+          if proj.Structure.proj_body = None && complete then
             (* we don't want anonymous fields *)
             user_err ?loc (str "This record contains anonymous fields.")
           else
-            (idx, proj, kind.Recordops.pk_true_proj) in
+            (idx, proj.Structure.proj_body, proj.Structure.proj_true) in
         let proj_list =
-          List.map2_i build_proj 1 record.Recordops.s_PROJ record.Recordops.s_PROJKIND in
+          List.map_i build_proj 1 record.Structure.projections in
         (* now we want to have all fields assignments indexed by their place in
            the constructor *)
         let rec index_fields fields remaining_projs acc =
@@ -1538,7 +1542,7 @@ let sort_fields ~complete loc fields completer =
                      (* For terms, we keep only regular fields *)
                      None
                    else
-                     Some (idx, completer idx field_ref record.Recordops.s_CONST) in
+                     Some (idx, completer idx field_ref (record.Structure.name,1)) in
                  List.map_filter complete_field remaining_projs in
                List.rev_append remaining_fields acc
         in

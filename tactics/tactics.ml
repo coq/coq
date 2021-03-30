@@ -1555,7 +1555,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       | Some proj ->
           let args = Context.Rel.to_extended_vect mkRel 0 sign in
           let proj =
-            match Recordops.find_primitive_projection proj with
+            match Structures.PrimitiveProjections.find_opt proj with
             | Some proj ->
               mkProj (Projection.make proj false, mkApp (c, args))
             | None ->
@@ -1585,7 +1585,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
         let params = List.map EConstr.of_constr params in
         let cstr = (get_constructors env indf).(0) in
         let elim =
-          try DefinedRecord (Recordops.lookup_projections ind)
+          try DefinedRecord (Structures.Structure.find_projections ind)
           with Not_found ->
             let u = EInstance.kind sigma u in
             let (_, elim) = build_case_analysis_scheme env sigma (ind,u) false sort in

@@ -127,6 +127,9 @@ val subst_mind :
 val subst_ind :
   substitution -> inductive -> inductive
 
+val subst_constructor :
+  substitution -> constructor -> constructor
+
 val subst_pind : substitution -> pinductive -> pinductive
 
 val subst_kn :

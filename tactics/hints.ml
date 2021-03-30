@@ -320,7 +320,7 @@ let strip_params env sigma c =
   | App (f, args) ->
     (match EConstr.kind sigma f with
     | Const (cst,_) ->
-      (match Recordops.find_primitive_projection cst with
+      (match Structures.PrimitiveProjections.find_opt cst with
        | Some p ->
          let p = Projection.make p false in
          let npars = Projection.npars p in

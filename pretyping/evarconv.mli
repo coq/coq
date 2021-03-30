@@ -78,7 +78,7 @@ val check_problems_are_solved : env -> evar_map -> unit
 
 val check_conv_record : env -> evar_map ->
   state -> state ->
-  Univ.ContextSet.t * (constr * constr)
+  evar_map * (constr * constr)
   * constr * constr list * (constr Stack.t * constr Stack.t) *
     (constr Stack.t * constr Stack.t) *
     (constr Stack.t * constr Stack.t) * constr *

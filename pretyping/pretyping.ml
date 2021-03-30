@@ -35,6 +35,7 @@ open Environ
 open EConstr
 open Vars
 open Reductionops
+open Structures
 open Type_errors
 open Typing
 open Evarutil
@@ -801,8 +802,8 @@ struct
     in
     let app_f =
       match EConstr.kind sigma fj.uj_val with
-      | Const (p, u) when Recordops.is_primitive_projection p ->
-        let p = Option.get @@ Recordops.find_primitive_projection p in
+      | Const (p, u) when PrimitiveProjections.mem p ->
+        let p = Option.get @@ PrimitiveProjections.find_opt p in
         let p = Projection.make p false in
         let npars = Projection.npars p in
         fun n ->

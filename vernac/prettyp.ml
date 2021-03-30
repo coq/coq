@@ -24,7 +24,6 @@ open Impargs
 open Libobject
 open Libnames
 open Globnames
-open Recordops
 open Printer
 open Printmod
 open Context.Rel.Declaration
@@ -1005,22 +1004,24 @@ let print_path_between cls clt =
   print_path ((cls, clt), p)
 
 let print_canonical_projections env sigma grefs =
-  let match_proj_gref ((x,y),c) gr =
-    GlobRef.equal x gr ||
-    begin match y with
-      | Const_cs y -> GlobRef.equal y gr
+  let open Structures in
+  let match_proj_gref { CSTable.projection; value; solution } gr =
+    GlobRef.equal projection gr ||
+    begin match value with
+      | ValuePattern.Const_cs y -> GlobRef.equal y gr
       | _ -> false
     end ||
-    GlobRef.equal c.o_ORIGIN gr
+    GlobRef.equal solution gr
   in
   let projs =
     List.filter (fun p -> List.for_all (match_proj_gref p) grefs)
-      (canonical_projections ())
+      (CSTable.entries ())
   in
   prlist_with_sep fnl
-    (fun ((r1,r2),o) -> pr_cs_pattern r2 ++
+    (fun { CSTable.projection; value; solution } ->
+    ValuePattern.print value ++
     str " <- " ++
-    pr_global r1 ++ str " ( " ++ pr_lconstr_env env sigma o.o_DEF ++ str " )")
+    pr_global projection ++ str " ( " ++ pr_global solution ++ str " )")
     projs
 
 (*************************************************************************)

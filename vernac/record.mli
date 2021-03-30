@@ -11,6 +11,7 @@
 open Names
 open Vernacexpr
 open Constrexpr
+open Structures
 
 module Ast : sig
   type t =
@@ -51,8 +52,8 @@ module Internal : sig
     -> projection_flags list
     -> Impargs.manual_implicits list
     -> Constr.rel_context
-    -> Recordops.proj_kind list * Names.Constant.t option list
+    -> Structure.projection list
 
-  val declare_structure_entry : Recordops.struc_typ -> unit
+  val declare_structure_entry : Structure.t -> unit
 
 end
