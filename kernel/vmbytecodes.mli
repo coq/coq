@@ -30,6 +30,7 @@ type instruction =
   | Kpush                               (** sp = accu :: sp *)
   | Kpop of int                         (** sp = skipn n sp *)
   | Kpush_retaddr of Label.t            (** sp = pc :: coq_env :: coq_extra_args :: sp ; coq_extra_args = 0 *)
+  | Kshort_apply of int                 (** number of arguments (arguments on top of stack) *)
   | Kapply of int                       (** number of arguments (arguments on top of stack) *)
   | Kappterm of int * int               (** number of arguments, slot size *)
   | Kreturn of int                      (** slot size *)

@@ -994,9 +994,8 @@ let extract_prim ml_of l =
   let decl = ref [] in
   let cond = ref [] in
   let type_args p =
-    let rec aux = function [] | [_] -> [] | h :: t -> h :: aux t in
-    let params, sign = CPrimitives.types p in
-    List.length params, Array.of_list (aux sign) in
+    let params, args_ty, _ = CPrimitives.types p in
+    List.length params, Array.of_list args_ty in
   let rec aux l =
     match l with
     | Lprim(prefix,kn,p,args) ->

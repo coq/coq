@@ -300,8 +300,11 @@ let emit_instr env = function
       out env opPOP; out_int env n
   | Kpush_retaddr lbl ->
       out env opPUSH_RETADDR; out_label env lbl
+  | Kshort_apply n ->
+      assert (1 <= n && n <= 4);
+      out env(opAPPLY1 + n - 1)
   | Kapply n ->
-      if n <= 4 then out env(opAPPLY1 + n - 1) else (out env opAPPLY; out_int env n)
+      out env opAPPLY; out_int env n
   | Kappterm(n, sz) ->
       if n < 4 then (out env(opAPPTERM1 + n - 1); out_int env sz)
                else (out env opAPPTERM; out_int env n; out_int env sz)
