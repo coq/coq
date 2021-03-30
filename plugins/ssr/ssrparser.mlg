@@ -46,6 +46,7 @@ open Ssrtacticals
 open Ssrbwd
 open Ssrequality
 open Ssripats
+open Libobject
 
 (** Ssreflect load check. *)
 
@@ -79,8 +80,39 @@ let ssrtac_entry name = {
   mltac_index = 0;
 }
 
-let register_ssrtac name f =
-  Tacenv.register_ml_tactic (ssrtac_name name) [|f|]
+let cache_tactic_notation (_, (key, body, parule)) =
+  Tacenv.register_alias key body;
+  Pptactic.declare_notation_tactic_pprule key parule
+
+type tactic_grammar_obj = KerName.t * Tacenv.alias_tactic * Pptactic.pp_tactic
+
+let inSsrGrammar : tactic_grammar_obj -> obj =
+  declare_object {(default_object "SsrGrammar") with
+                  load_function = (fun _ -> cache_tactic_notation);
+                  cache_function = cache_tactic_notation;
+                  classify_function = (fun x -> Keep x)}
+
+let path = MPfile (DirPath.make @@ List.map Id.of_string ["ssreflect"; "ssr"; "Coq"])
+
+let register_ssrtac name f prods =
+  let open Pptactic in
+  Tacenv.register_ml_tactic (ssrtac_name name) [|f|];
+  let map id = Reference (Locus.ArgVar (CAst.make id)) in
+  let get_id = function
+    | TacTerm s -> None
+    | TacNonTerm (_, (_, ido)) -> ido in
+  let ids = List.map_filter get_id prods in
+  let tac = TacML (CAst.make (ssrtac_entry name, List.map map ids)) in
+  let key = KerName.make path (Label.make ("ssrparser_" ^ name)) in
+  let body = Tacenv.{ alias_args = ids; alias_body = tac; alias_deprecation = None } in
+  let parule = {
+    pptac_level = 0;
+    pptac_prods = prods
+  } in
+  let obj () =
+    Lib.add_anonymous_leaf (inSsrGrammar (key, body, parule)) in
+  Mltop.declare_cache_obj obj __coq_plugin_name;
+  key
 
 let cast_arg wit v = Taccoerce.Value.cast (Genarg.topwit wit) v
 
@@ -933,7 +965,7 @@ END
 {
 
 let pr_intros sep intrs =
-  if intrs = [] then mt() else sep () ++ str "=>" ++ pr_ipats intrs
+  if intrs = [] then mt() else sep () ++ str "=>" ++ sep () ++ pr_ipats intrs
 let pr_ssrintros _ _ _ = pr_intros mt
 
 }
@@ -962,15 +994,6 @@ ARGUMENT EXTEND ssrintrosarg TYPED AS (tactic * ssrintros)
 END
 
 {
-
-let () = register_ssrtac "tclintros" begin fun args ist -> match args with
-| [arg] ->
-  let arg = cast_arg wit_ssrintrosarg arg in
-  let tac, intros = arg in
-  ssrevaltac ist tac <*> tclIPATssr intros
-| _ -> assert false
-end
-
 
 (** Defined identifier *)
 let pr_ssrfwdid id = pr_spc () ++ pr_id id
@@ -1672,20 +1695,28 @@ let _ = add_internal_name (is_tagged perm_tag)
 
 {
 
-type ssrargfmt = ArgSsr of string | ArgSep of string
+  let ssrtac_expr ?loc key args =
+    TacAlias (CAst.make ?loc (key, (List.map (fun x -> Tacexpr.TacGeneric (None, x)) args)))
 
-let set_pr_ssrtac name prec afmt = (* FIXME *) () (*
-  let fmt = List.map (function
-    | ArgSep s -> Egramml.GramTerminal s
-    | ArgSsr s -> Egramml.GramTerminal s
-    | ArgCoq at -> Egramml.GramTerminal "COQ_ARG") afmt in
-  let tacname = ssrtac_name name in () *)
+let mk_non_term wit id =
+  let open Pptactic in
+  TacNonTerm (None, (Extend.Uentry (Genarg.ArgT.Any (Genarg.get_arg_tag wit)), Some id))
 
-let ssrtac_expr ?loc name args = TacML (CAst.make ?loc (ssrtac_entry name, args))
+let tclintroskey =
+  let prods =
+    [ mk_non_term wit_ssrintrosarg (Names.Id.of_string "arg") ] in
+  let tac = begin fun args ist -> match args with
+    | [arg] ->
+      let arg = cast_arg wit_ssrintrosarg arg in
+      let tac, intros = arg in
+      ssrevaltac ist tac <*> tclIPATssr intros
+    | _ -> assert false
+  end in
+  register_ssrtac "tclintros" tac prods
 
 let tclintros_expr ?loc tac ipats =
-  let args = [Tacexpr.TacGeneric (None, in_gen (rawwit wit_ssrintrosarg) (tac, ipats))] in
-  ssrtac_expr ?loc "tclintros" args
+  let args = [in_gen (rawwit wit_ssrintrosarg) (tac, ipats)] in
+  ssrtac_expr ?loc tclintroskey args
 
 }
 
@@ -1768,18 +1799,20 @@ END
 
 {
 
-let () = register_ssrtac "tcldo" begin fun args ist -> match args with
-| [arg] ->
-  let arg = cast_arg wit_ssrdoarg arg in
-  ssrdotac ist arg
-| _ -> assert false
-end
-
-let _ = set_pr_ssrtac "tcldo" 3 [ArgSep "do "; ArgSsr "doarg"]
+let tcldokey =
+  let open Pptactic in
+  let prods = [ TacTerm "do"; mk_non_term wit_ssrdoarg (Names.Id.of_string "arg") ] in
+  let tac = begin fun args ist -> match args with
+    | [arg] ->
+      let arg = cast_arg wit_ssrdoarg arg in
+      ssrdotac ist arg
+    | _ -> assert false
+  end in
+  register_ssrtac "tcldo" tac prods
 
 let ssrdotac_expr ?loc n m tac clauses =
   let arg = ((n, m), tac), clauses in
-  ssrtac_expr ?loc "tcldo" [Tacexpr.TacGeneric (None, in_gen (rawwit wit_ssrdoarg) arg)]
+  ssrtac_expr ?loc tcldokey [in_gen (rawwit wit_ssrdoarg) arg]
 
 }
 
@@ -1815,22 +1848,26 @@ END
 
 {
 
-let () = register_ssrtac "tclseq" begin fun args ist -> match args with
-| [tac; dir; arg] ->
-  let tac = cast_arg wit_ssrtclarg tac in
-  let dir = cast_arg wit_ssrseqdir dir in
-  let arg = cast_arg wit_ssrseqarg arg in
-  tclSEQAT ist tac dir arg
-| _ -> assert false
-end
-
-let _ = set_pr_ssrtac "tclseq" 5 [ArgSsr "tclarg"; ArgSsr "seqdir"; ArgSsr "seqarg"]
+let tclseqkey =
+  let prods =
+    [ mk_non_term wit_ssrtclarg (Names.Id.of_string "tac")
+    ; mk_non_term wit_ssrseqdir (Names.Id.of_string "dir")
+    ; mk_non_term wit_ssrseqarg (Names.Id.of_string "arg") ] in
+  let tac =  begin fun args ist -> match args with
+    | [tac; dir; arg] ->
+      let tac = cast_arg wit_ssrtclarg tac in
+      let dir = cast_arg wit_ssrseqdir dir in
+      let arg = cast_arg wit_ssrseqarg arg in
+      tclSEQAT ist tac dir arg
+    | _ -> assert false
+  end in
+  register_ssrtac "tclseq" tac prods
 
 let tclseq_expr ?loc tac dir arg =
   let arg1 = in_gen (rawwit wit_ssrtclarg) tac in
   let arg2 = in_gen (rawwit wit_ssrseqdir) dir in
   let arg3 = in_gen (rawwit wit_ssrseqarg) (check_seqtacarg dir arg) in
-  ssrtac_expr ?loc "tclseq" (List.map (fun x -> Tacexpr.TacGeneric (None, x)) [arg1; arg2; arg3])
+  ssrtac_expr ?loc tclseqkey [arg1; arg2; arg3]
 
 }
 
@@ -2453,8 +2490,9 @@ GRAMMAR EXTEND Gram
   GLOBAL: ltac_expr;
   ltac_expr: LEVEL "3"
     [ RIGHTA [ IDENT "abstract"; gens = ssrdgens ->
-               { ssrtac_expr ~loc "abstract"
-                [Tacexpr.TacGeneric (None, Genarg.in_gen (Genarg.rawwit wit_ssrdgens) gens)] } ]];
+               { TacML (CAst.make ~loc (
+                     ssrtac_entry "abstract", [Tacexpr.TacGeneric (None, Genarg.in_gen (Genarg.rawwit wit_ssrdgens) gens)]))
+                 } ]];
 END
 TACTIC EXTEND ssrabstract
 | [ "abstract" ssrdgens(gens) ] -> {
