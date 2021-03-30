@@ -83,12 +83,6 @@ let subst_univs_constr subst c =
     let f = Univ.make_subst subst in
       subst_univs_fn_constr f c
 
-let subst_univs_constr =
-  if Flags.profile then
-    let subst_univs_constr_key = CProfile.declare_profile "subst_univs_constr" in
-      CProfile.profile2 subst_univs_constr_key subst_univs_constr
-  else subst_univs_constr
-
 let normalize_univ_variable ~find =
   let rec aux cur =
     let b = find cur in

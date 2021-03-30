@@ -500,12 +500,6 @@ let delta_auto debug mod_delta n lems dbnames =
     (search d n mod_delta db_list hints)
   end
 
-let delta_auto =
-  if Flags.profile then
-    let key = CProfile.declare_profile "delta_auto" in
-      CProfile.profile5 key delta_auto
-  else delta_auto
-
 let auto ?(debug=Off) n = delta_auto debug false n
 
 let new_auto ?(debug=Off) n = delta_auto debug true n

@@ -249,17 +249,6 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
     | Construct (cstr, u) -> sigma, EConstr.of_constr (type_of_constructor env (cstr, EInstance.kind sigma u))
     | _ -> assert false
 
-(* Profiling *)
-(* let get_type_of polyprop lax env sigma c = *)
-(*   let f,_,_,_ = retype ~polyprop sigma in *)
-(*     if lax then f env c else anomaly_on_error (f env) c  *)
-
-(* let get_type_of_key = CProfile.declare_profile "get_type_of" *)
-(* let get_type_of = CProfile.profile5 get_type_of_key get_type_of *)
-
-(* let get_type_of ?(polyprop=true) ?(lax=false) env sigma c = *)
-(*   get_type_of polyprop lax env sigma c *)
-
 let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
   let f,_,_ = retype ~polyprop sigma in
     if lax then f env c else anomaly_on_error (f env) c

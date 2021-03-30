@@ -242,10 +242,6 @@ let get_solve_all_instances, solve_all_instances_hook = Hook.make ()
 let solve_all_instances env evd filter unique split fail =
   Hook.get get_solve_all_instances env evd filter unique split fail
 
-(** Profiling resolution of typeclasses *)
-(* let solve_classeskey = CProfile.declare_profile "solve_typeclasses" *)
-(* let solve_problem = CProfile.profile5 solve_classeskey solve_problem *)
-
 let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
     ?(split=true) ?(fail=true) env evd =
   if not (has_typeclasses filter evd) then evd

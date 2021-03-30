@@ -373,11 +373,6 @@ end) = struct
 
 end
 
-(* let my_type_of env evars c = Typing.e_type_of env evars c *)
-(* let mytypeofkey = CProfile.declare_profile "my_type_of";; *)
-(* let my_type_of = CProfile.profile3 mytypeofkey my_type_of *)
-
-
 let type_app_poly env env evd f args =
   let evars, c = app_poly_nocheck env evd f args in
   let evd', t = Typing.type_of env (goalevars evars) c in
@@ -2065,9 +2060,6 @@ let get_hyp gl (c,l) clause l2r =
   unification_rewrite l2r hi.c1 hi.c2 sigma hi.prf hi.car hi.rel but env
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
-
-(* let rewriteclaustac_key = CProfile.declare_profile "cl_rewrite_clause_tac";; *)
-(* let cl_rewrite_clause_tac = CProfile.profile5 rewriteclaustac_key cl_rewrite_clause_tac *)
 
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals =

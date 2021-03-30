@@ -406,6 +406,3 @@ let normalize_context_set ~lbound g ctx us algs weak =
   in
   let us = normalize_opt_subst us in
     (us, algs), (ctx', Constraint.union noneqs eqs)
-
-(* let normalize_conkey = CProfile.declare_profile "normalize_context_set" *)
-(* let normalize_context_set a b c = CProfile.profile3 normalize_conkey normalize_context_set a b c *)

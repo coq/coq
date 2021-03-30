@@ -296,9 +296,6 @@ let add_constraints uctx cstrs =
     universes = UGraph.merge_constraints cstrs' uctx.universes;
     weak_constraints = weak; }
 
-(* let addconstrkey = CProfile.declare_profile "add_constraints_context";; *)
-(* let add_constraints_context = CProfile.profile2 addconstrkey add_constraints_context;; *)
-
 let add_universe_constraints uctx cstrs =
   let univs, local = uctx.local in
   let vars, weak, local' = process_universe_constraints uctx cstrs in

@@ -1886,12 +1886,6 @@ let cut_and_apply c =
 (*               Exact tactics                                      *)
 (********************************************************************)
 
-(* let convert_leqkey = CProfile.declare_profile "convert_leq";; *)
-(* let convert_leq = CProfile.profile3 convert_leqkey convert_leq *)
-
-(* let refine_no_checkkey = CProfile.declare_profile "refine_no_check";; *)
-(* let refine_no_check = CProfile.profile2 refine_no_checkkey refine_no_check *)
-
 let exact_no_check c =
   Refine.refine ~typecheck:false (fun h -> (h,c))
 
