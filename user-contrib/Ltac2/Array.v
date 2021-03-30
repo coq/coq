@@ -70,7 +70,7 @@ Ltac2 init (l : int) (f : int->'a) :=
   | true => empty ()
   | false =>
       let arr:=make l (f 0) in
-      init_aux arr 0 (length arr) f;
+      init_aux arr 1 (Int.sub l 1) f;
       arr
   end.
 
