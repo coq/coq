@@ -12,6 +12,12 @@ Open Scope Z_scope.
 Require Import ZMicromega.
 Require Import VarMap.
 
+Lemma power_pos : forall x y, 0 <= x \/ False -> x^ y >= 0.
+Proof.
+  intros.
+  lia.
+Qed.
+
 Lemma not_so_easy : forall x n : Z,
   2*x + 1 <= 2 *n -> x <= n-1.
 Proof.

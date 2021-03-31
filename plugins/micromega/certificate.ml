@@ -449,6 +449,8 @@ let bound_monomials (sys : WithProof.t list) =
   in
   List.map snd (List.filter has_mon bounds) @ snd l
 
+let bound_monomials = tr_sys "bound_monomials" bound_monomials
+
 let develop_constraints prfdepth n_spec sys =
   LinPoly.MonT.clear ();
   max_nb_cstr := compute_max_nb_cstr sys prfdepth;
@@ -1181,10 +1183,12 @@ let nlia enum prfdepth sys =
       It would only be safe if the variable is linear...
      *)
     let sys1 =
-      elim_simple_linear_equality (WithProof.subst_constant true sys)
+      normalise
+        (elim_simple_linear_equality (WithProof.subst_constant true sys))
     in
+    let bnd1 = bound_monomials sys1 in
     let sys2 = saturate_by_linear_equalities sys1 in
-    let sys3 = nlinear_preprocess (sys1 @ sys2) in
+    let sys3 = nlinear_preprocess (rev_concat [bnd1; sys1; sys2]) in
     let sys4 = make_cstr_system (*sys2@*) sys3 in
     (* [reduction_equations] is too brutal - there should be some non-linear reasoning  *)
     xlia (List.map fst sys) enum reduction_equations sys4

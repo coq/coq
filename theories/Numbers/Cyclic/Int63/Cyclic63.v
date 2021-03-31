@@ -218,7 +218,6 @@ Lemma div_lt : forall p x y, 0 <= x < y -> x / 2^p < y.
   apply Zdiv_lt_upper_bound;auto with zarith.
   apply Z.lt_le_trans with y;auto with zarith.
   rewrite <- (Zmult_1_r y);apply Zmult_le_compat;auto with zarith.
-  assert (0 < 2^p);auto with zarith.
   replace (2^p) with 0.
   destruct x;change (0<y);auto with zarith.
   destruct p;trivial;discriminate.

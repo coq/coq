@@ -7,10 +7,16 @@
 (************************************************************************)
 
 Require Import ZArith.
-Require Import Psatz.
 Open Scope Z_scope.
-Require Import ZMicromega.
+Require Import ZMicromega Lia.
 Require Import VarMap.
+Unset Nia Cache.
+
+Goal forall (x y: Z), 0 < (1+y^2)^(x^2).
+Proof. nia. Qed.
+
+Goal forall (x y: Z), 0 <= (y^2)^x.
+Proof. nia. Qed.
 
 (* false in Q : x=1/2 and n=1 *)
 
@@ -347,8 +353,8 @@ Lemma hol_light17 : forall x y,
    -> x * y * (x + y) <= x ^ 2 + y ^ 2.
 Proof.
   intros.
-  Fail nia.
-Abort.
+  nia.
+Qed.
 
 
 Lemma hol_light18 : forall x y,
@@ -506,4 +512,25 @@ Goal
 Proof.
   intros.
   lia.
+Qed.
+
+Lemma mult : forall x x0 x1 x2 n n0 n1 n2,
+    0 <= x -> 0 <= x0 -> 0 <= x1 -> 0 <= x2 ->
+    0 <= n -> 0 <= n0 -> 0 <= n1 -> 0 <= n2 ->
+    (n1 * x <= n2 * x1) ->
+    (n * x0 <= n0 * x2) ->
+  (n1 * n * (x * x0) > n2 * n0 * (x1 * x2)) -> False.
+Proof.
+  intros.
+  nia.
+Qed.
+
+
+Lemma mult_nat : forall x x0 x1 x2 n n0 n1 n2,
+    (n1 * x <= n2 * x1)%nat ->
+    (n * x0 <= n0 * x2)%nat ->
+  (n1 * n * (x * x0) > n2 * n0 * (x1 * x2))%nat -> False.
+Proof.
+  intros.
+  nia.
 Qed.

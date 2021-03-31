@@ -1428,7 +1428,7 @@ Proof.
  assert (Hp3: (0 < Φ (WW ih il))).
  {simpl zn2z_to_Z;apply Z.lt_le_trans with (φ ih * wB)%Z; auto with zarith.
   apply Zmult_lt_0_compat; auto with zarith.
-  refine (Z.lt_le_trans _ _ _ _ Hih); auto with zarith. }
+ }
  cbv zeta.
  case_eq (ih <? j)%int63;intros Heq.
  rewrite -> ltb_spec in Heq.
@@ -1465,7 +1465,6 @@ Proof.
  apply Hrec; rewrite H; clear u H.
  assert (Hf1: 0 <= Φ (WW ih il) / φ j) by (apply Z_div_pos; auto with zarith).
  case (Zle_lt_or_eq 1 (φ j)); auto with zarith; intros Hf2.
- 2: contradict Heq0; apply Zle_not_lt; rewrite <- Hf2, Zdiv_1_r; auto with zarith.
  split.
  replace (φ j + Φ (WW ih il) / φ j)%Z with
         (1 * 2 + ((φ j - 2) + Φ (WW ih il) / φ j)) by lia.
