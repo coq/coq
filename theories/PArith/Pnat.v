@@ -201,6 +201,14 @@ Proof.
   simpl. f_equal. apply IHp.
 Qed.
 
+Theorem inj_pow p q : to_nat (p ^ q) = to_nat p ^ to_nat q.
+Proof.
+ induction q as [|q IHq] using peano_ind.
+ - now rewrite Pos.pow_1_r, inj_1, Nat.pow_1_r.
+ - unfold Pos.pow. rewrite inj_succ, iter_succ, inj_mul. fold (Pos.pow p q).
+   now rewrite IHq.
+Qed.
+
 End Pos2Nat.
 
 Module Nat2Pos.
@@ -236,6 +244,9 @@ Qed.
 
 (** Usual operations are morphisms with respect to [Pos.of_nat]
     for non-zero numbers. *)
+
+Lemma inj_0 : Pos.of_nat 0 = 1%positive.
+Proof. reflexivity. Qed.
 
 Lemma inj_succ (n:nat) : n<>0 -> Pos.of_nat (S n) = Pos.succ (Pos.of_nat n).
 Proof.
@@ -299,6 +310,15 @@ Proof.
  case Nat.compare_spec; intros H; f_equal;
   apply Nat.max_l || apply Nat.max_r.
  rewrite H; auto. now apply Nat.lt_le_incl. now apply Nat.lt_le_incl.
+Qed.
+
+Theorem inj_pow (n m : nat) : m <> 0 ->
+ Pos.of_nat (n^m) = (Pos.of_nat n ^ Pos.of_nat m)%positive.
+Proof.
+ intros Hm. apply Pos2Nat.inj. rewrite Pos2Nat.inj_pow.
+ destruct n.
+ - now rewrite Nat.pow_0_l, inj_0, Pos2Nat.inj_1, Nat.pow_1_l.
+ - now rewrite !id; [..|apply Nat.pow_nonzero].
 Qed.
 
 End Nat2Pos.

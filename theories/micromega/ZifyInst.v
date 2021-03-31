@@ -202,9 +202,6 @@ Instance Op_pos_succ : UnOp Pos.succ :=
   { TUOp := fun x => x + 1; TUOpInj := Pos2Z.inj_succ  }.
 Add Zify UnOp Op_pos_succ.
 
-
-
-
 #[global]
 Instance Op_pos_pred_double : UnOp Pos.pred_double :=
 { TUOp := fun x => 2 * x - 1; TUOpInj := ltac:(refl) }.

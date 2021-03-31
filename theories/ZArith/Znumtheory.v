@@ -315,8 +315,7 @@ Section extended_euclid_algorithm.
     replace (u3 - q * x) with (u3 mod x).
     apply Z_mod_lt.
     apply Z.lt_gt, Z.le_neq; auto.
-    assert (xpos : x > 0) by (apply Z.lt_gt, Z.le_neq; auto).
-    generalize (Z_div_mod_eq u3 x xpos).
+    generalize (Z_div_mod_eq_full u3 x).
     unfold q.
     intro eq; pattern u3 at 2; rewrite eq; ring.
     apply (H (u3 - q * x) Hq (proj1 Hq) v1 v2 x (u1 - q * v1) (u2 - q * v2)).
@@ -547,15 +546,14 @@ Proof.
   apply bezout_rel_prime.
   apply Bezout_intro with q1  (r1 + q1 * (p / q)).
   rewrite <- H2.
-  pattern p at 3; rewrite (Z_div_mod_eq p q); try ring.
-  now apply Z.lt_gt.
+  pattern p at 3; rewrite (Z_div_mod_eq_full p q); ring.
 Qed.
 
 Theorem rel_prime_mod_rev: forall p q, 0 < q ->
  rel_prime (p mod q) q -> rel_prime p q.
 Proof.
   intros p q H H0.
-  rewrite (Z_div_mod_eq p q) by now apply Z.lt_gt. red.
+  rewrite (Z_div_mod_eq_full p q). red.
   apply Zis_gcd_sym; apply Zis_gcd_for_euclid2; auto.
 Qed.
 

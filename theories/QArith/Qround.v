@@ -86,7 +86,7 @@ replace (n*1)%Z with n by ring.
 ring_simplify.
 replace (n / Zpos d * Zpos d + Zpos d)%Z with
   ((Zpos d * (n / Zpos d) + n mod Zpos  d) + Zpos  d - n mod Zpos d)%Z by ring.
-rewrite <- Z_div_mod_eq; auto with*.
+rewrite <- Z_div_mod_eq_full.
 rewrite <- Z.lt_add_lt_sub_r.
 destruct (Z_mod_lt n (Zpos d)); auto with *.
 Qed.

@@ -1378,14 +1378,14 @@ Section Int31_Specs.
  assert (forall z, (z / wB) mod wB * wB + z mod wB = z mod wB ^ 2).
   intros.
   assert ((z/wB) mod wB = z/wB - (z/wB/wB)*wB).
-   rewrite (Z_div_mod_eq (z/wB) wB wB_pos) at 2; ring.
+   rewrite (Z_div_mod_eq_full (z/wB) wB) at 2; ring.
   assert (z mod wB = z - (z/wB)*wB).
-   rewrite (Z_div_mod_eq z wB wB_pos) at 2; ring.
+   rewrite (Z_div_mod_eq_full z wB) at 2; ring.
   rewrite H.
   rewrite H0 at 1.
   ring_simplify.
   rewrite Zdiv_Zdiv; auto with zarith.
-  rewrite (Z_div_mod_eq z (wB*wB)) at 2; auto with zarith.
+  rewrite (Z_div_mod_eq_full z (wB*wB)) at 2.
   change (wB*wB) with (wB^2); ring.
 
  unfold phi_inv2.
@@ -1948,7 +1948,7 @@ Section Int31_Specs.
  intros Hi Hj.
  assert (Hij: 0 <= i/j) by (apply Z_div_pos; auto with zarith).
  apply Z.lt_le_trans with (2 := sqrt_main_trick _ _ (Z.lt_le_incl _ _ Hj) Hij).
- pattern i at 1; rewrite (Z_div_mod_eq i j); case (Z_mod_lt i j); auto with zarith.
+ pattern i at 1; rewrite (Z_div_mod_eq_full i j); case (Z_mod_lt i j); auto with zarith.
  Qed.
 
  Lemma sqrt_init i: 1 < i -> i < (i/2 + 1) ^ 2.

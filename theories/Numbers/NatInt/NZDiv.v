@@ -414,24 +414,6 @@ Proof.
  intros a b c ? ? ?. rewrite !(mul_comm c); apply div_mul_cancel_r; auto.
 Qed.
 
-Lemma mul_mod_distr_l: forall a b c, 0<=a -> 0<b -> 0<c ->
-  (c*a) mod (c*b) == c * (a mod b).
-Proof.
- intros a b c ? ? ?.
- rewrite <- (add_cancel_l _ _ ((c*b)* ((c*a)/(c*b)))).
- rewrite <- div_mod.
- - rewrite div_mul_cancel_l; auto.
-   rewrite <- mul_assoc, <- mul_add_distr_l, mul_cancel_l by order.
-   apply div_mod; order.
- - rewrite <- neq_mul_0; intuition; order.
-Qed.
-
-Lemma mul_mod_distr_r: forall a b c, 0<=a -> 0<b -> 0<c ->
-  (a*c) mod (b*c) == (a mod b) * c.
-Proof.
- intros a b c ? ? ?. rewrite !(mul_comm _ c); now rewrite mul_mod_distr_l.
-Qed.
-
 (** Operations modulo. *)
 
 Theorem mod_mod: forall a n, 0<=a -> 0<n ->
@@ -522,6 +504,35 @@ Proof.
  rewrite add_assoc, add_shuffle0, <- mul_assoc, <- mul_add_distr_l.
  rewrite <- div_mod by order.
  apply div_mod; order.
+Qed.
+
+Lemma add_mul_mod_distr_l: forall a b c d, 0<=a -> 0<b -> 0<=d<c ->
+ (c*a+d) mod (c*b) == c*(a mod b)+d.
+Proof.
+ intros a b c d ? ? [? ?].
+ assert (0 <= a*c) by (apply mul_nonneg_nonneg; order).
+ assert (0 <= a*c+d) by (apply add_nonneg_nonneg; order).
+ rewrite (mul_comm c a), mod_mul_r, add_mod, mod_mul, div_add_l; [|order ..].
+ now rewrite ? add_0_l, div_small, add_0_r, ? (mod_small d c), (add_comm d).
+Qed.
+
+Lemma add_mul_mod_distr_r: forall a b c d, 0<=a -> 0<b -> 0<=d<c ->
+ (a*c+d) mod (b*c) == (a mod b)*c+d.
+Proof.
+ intros a b c d ? ? ?. now rewrite !(mul_comm _ c), add_mul_mod_distr_l.
+Qed.
+
+Lemma mul_mod_distr_l: forall a b c, 0<=a -> 0<b -> 0<c ->
+  (c*a) mod (c*b) == c * (a mod b).
+Proof.
+ intros a b c ? ? ?. pose proof (E := add_mul_mod_distr_l a b c 0).
+ rewrite ? add_0_r in E. now apply E.
+Qed.
+
+Lemma mul_mod_distr_r: forall a b c, 0<=a -> 0<b -> 0<c ->
+  (a*c) mod (b*c) == (a mod b) * c.
+Proof.
+ intros a b c ? ? ?. now rewrite !(mul_comm _ c), mul_mod_distr_l.
 Qed.
 
 (** A last inequality: *)
