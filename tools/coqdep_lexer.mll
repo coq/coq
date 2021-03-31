@@ -17,7 +17,7 @@
 
   type coq_token =
     | Require of qualid option * qualid list
-    | Declare of string list
+    | Declare of { findlib : bool; libraries: string list }
     | Load of string
     | AddLoadPath of string
     | AddRecLoadPath of string * qualid
@@ -69,9 +69,11 @@ rule coq_action = parse
   | "Require" space+
       { require_modifiers None lexbuf }
   | "Local" space+ "Declare" space+ "ML" space+ "Module" space+
-      { modules [] lexbuf }
+      { modules [] false lexbuf }
   | "Declare" space+ "ML" space+ "Module" space+
-      { modules [] lexbuf }
+      { modules [] false lexbuf }
+  | "Require" space+ "Findlib" space+ "Module" space+
+      { modules [] true lexbuf }
   | "Load" space+
       { load_file lexbuf }
   | "Add" space+ "LoadPath" space+
@@ -241,16 +243,16 @@ and coq_qual_id_list module_names = parse
       { backtrack lexbuf;
         List.rev module_names }
 
-and modules mllist = parse
+and modules mllist findlib = parse
   | space+
-      { modules mllist lexbuf }
+      { modules mllist findlib lexbuf }
   | "(*"
-      { comment lexbuf; modules mllist lexbuf }
+      { comment lexbuf; modules mllist findlib lexbuf }
   | '"' [^'"']* '"'
       { let lex = (Lexing.lexeme lexbuf) in
 	let str = String.sub lex 1 (String.length lex - 2) in
-        modules (str :: mllist) lexbuf}
+        modules (str :: mllist) findlib lexbuf}
   | eof
       { syntax_error lexbuf }
   | _
-      { Declare (List.rev mllist) }
+      { Declare { findlib; libraries = List.rev mllist } }

@@ -344,7 +344,7 @@ let rec find_dependencies basename =
                   if verbose && not (is_in_coqlib ?from str) then
                   warning_module_notfound from f str
               end) strl
-        | Declare sl ->
+        | Declare { findlib = false; libraries = sl } ->
             let declare suff dir s =
               let base = escape (file_name s dir) in
               match !option_dynlink with
@@ -369,6 +369,11 @@ let rec find_dependencies basename =
                 end
                 in
               List.iter decl sl
+        | Declare { findlib = true; libraries = sl } ->
+          (* XXX TODO: Call to finlib to locate the file, think a bit
+             about the interaction with current dune build mode tho,
+             it is not clear that dune will setup findlib properly ! *)
+          ()
         | Load str ->
             let str = Filename.basename str in
             if should_visit_v_and_mark None [str] then begin

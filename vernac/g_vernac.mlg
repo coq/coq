@@ -900,7 +900,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 ne_string ->
           { VernacDeclareMLModule { loader = CoqLoader ; modules = l } }
 
-      | IDENT "Require"; IDENT "ML"; IDENT "Module"; l = LIST1 ne_string ->
+      | IDENT "Declare"; IDENT "Findlib"; IDENT "Module"; l = LIST1 ne_string ->
           { VernacDeclareMLModule { loader = Findlib ; modules = l } }
 
       | IDENT "Locate"; l = locatable -> { VernacLocate l }

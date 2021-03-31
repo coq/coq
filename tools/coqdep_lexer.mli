@@ -12,7 +12,7 @@ type qualid = string list
 
 type coq_token =
   | Require of qualid option * qualid list
-  | Declare of string list
+  | Declare of { findlib : bool; libraries: string list }
   | Load of string
   | AddLoadPath of string
   | AddRecLoadPath of string * qualid
