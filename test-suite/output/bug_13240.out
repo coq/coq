@@ -1,0 +1,3 @@
+Ltac t1 a b := a ; last  b
+Ltac t2 := do !idtac
+Ltac t3 := idtac => True
