@@ -5,6 +5,13 @@
   (coqdoc.css as tools/coqdoc/coqdoc.css)
   (coqdoc.sty as tools/coqdoc/coqdoc.sty)))
 
+; File needs to be here too.
+(install
+ (section share)
+ (package coq-core)
+ (files
+  (coqdoc.sty as texmf/tex/latex/misc/coqdoc.sty)))
+
 (executable
  (name main)
  (public_name coqdoc)
