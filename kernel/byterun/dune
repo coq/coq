@@ -1,5 +1,5 @@
 (library
- (name byterun)
+ (name coqrun)
  (synopsis "Coq's Kernel Abstract Reduction Machine [C implementation]")
  (public_name coq-core.vm)
  (foreign_stubs
