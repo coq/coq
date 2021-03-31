@@ -335,7 +335,7 @@ Definition length {A : Type} : list A -> nat :=
 
 (** Concatenation of two lists *)
 
-Definition app (A : Type) : list A -> list A -> list A :=
+Definition app {A : Type} : list A -> list A -> list A :=
   fix app l m :=
   match l with
    | nil => m
