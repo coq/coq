@@ -741,7 +741,7 @@ Kernel
   by Pierre-Marie Pédrot).
 
 Tactic language
-^^^^^^^
+^^^^^^^^^^^^^^^^
 
 - **Fixed:**
   Ltac2 ``Array.init`` no longer incurs exponential overhead when used
