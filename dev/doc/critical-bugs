@@ -344,6 +344,16 @@ Conversion machines
         noticeable if activated by chance, since it usually breaks
         control-flow integrity
 
+  component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+  summary: arbitrary code execution on irreducible PArray.set
+  introduced: 8.13
+  impacted released versions: 8.13.0, 8.13.1
+  impacted coqchk versions: none (no virtual machine in coqchk)
+  fixed in: 8.13.2
+  found by: Melquiond
+  GH issue number: #13998
+  risk: none, unless using primitive array operations; systematic otherwise
+
 Side-effects
 
   component: side-effects

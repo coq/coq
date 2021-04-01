@@ -786,15 +786,16 @@ let type_of_prim env u t =
     | PITT_type (ty,t) -> tr_prim_type (tr_type n) ty t
     | PITT_param i -> Constr.mkRel (n+i)
   in
-  let rec nary_op n = function
-    | [] -> assert false
-    | [ret_ty] -> tr_type n ret_ty
+  let rec nary_op n ret_ty = function
+    | [] -> tr_type n ret_ty
     | arg_ty :: r ->
-      Constr.mkProd(Context.nameR (Id.of_string "x"), tr_type n arg_ty, nary_op (n+1) r)
+        Constr.mkProd (Context.nameR (Id.of_string "x"),
+                       tr_type n arg_ty, nary_op (n + 1) ret_ty r)
   in
-  let params, sign = types t in
+  let params, args_ty, ret_ty = types t in
   assert (AUContext.size (univs t) = Instance.length u);
-  Vars.subst_instance_constr u (Term.it_mkProd_or_LetIn (nary_op 0 sign) params)
+  Vars.subst_instance_constr u
+    (Term.it_mkProd_or_LetIn (nary_op 0 ret_ty args_ty) params)
 
 let type_of_prim_or_type env u = let open CPrimitives in
   function
