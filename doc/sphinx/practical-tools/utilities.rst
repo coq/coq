@@ -515,6 +515,11 @@ To build, say, two targets foo.vo and bar.vo in parallel one can use
   + ``-extra-phony`` and ``-extra`` are deprecated. To provide additional target
     (``.PHONY`` or not) please use ``CoqMakefile.local``.
 
+.. note::
+
+  Due to limitations with the compilation chain, makefiles generated
+  by ``coq_makefile`` won't correctly compile OCaml plugins with OCaml
+  < 4.07.0 when using more than one job (``-j N`` for ``N > 1``).
 
 Precompiling for ``native_compute``
 +++++++++++++++++++++++++++++++++++
