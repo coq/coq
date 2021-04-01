@@ -721,6 +721,33 @@ CoqIDE
   (`#13870 <https://github.com/coq/coq/pull/13870>`_,
   by Guillaume Melquiond).
 
+Changes in 8.13.2
+~~~~~~~~~~~~~~~~~
+
+Kernel
+^^^^^^
+
+- **Fixed:**
+  Crash when using :tacn:`vm_compute` on an irreducible ``PArray.set``
+  (`#14005 <https://github.com/coq/coq/pull/14005>`_,
+  fixes `#13998 <https://github.com/coq/coq/issues/13998>`_,
+  by Guillaume Melquiond).
+- **Fixed:**
+  Never store persistent arrays as VM / native structured values.
+  This could be used to make vo marshalling crash, and probably
+  breaking some other invariants of the kernel
+  (`#14007 <https://github.com/coq/coq/pull/14007>`_,
+  fixes `#14006 <https://github.com/coq/coq/issues/14006>`_,
+  by Pierre-Marie Pédrot).
+
+Tactic language
+^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  Ltac2 ``Array.init`` no longer incurs exponential overhead when used
+  recursively (`#14012 <https://github.com/coq/coq/pull/14012>`_, fixes `#14011
+  <https://github.com/coq/coq/issues/14011>`_, by Jason Gross).
+
 
 Version 8.12
 ------------
