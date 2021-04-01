@@ -38,20 +38,22 @@ struct
   open Names
 
   module UGlobal = struct
-    type t = DirPath.t * int
+    type t = DirPath.t * string * int
 
-    let make dp i = (DirPath.hcons dp,i)
+    let make dp s i = (DirPath.hcons dp,s,i)
 
     let repr x : t = x
 
-    let equal (d, i) (d', i') = DirPath.equal d d' && Int.equal i i'
+    let equal (d, s, i) (d', s', i') = Int.equal i i' && DirPath.equal d d' && String.equal s s'
 
-    let hash (d,i) = Hashset.Combine.combine i (DirPath.hash d)
+    let hash (d,s,i) = Hashset.Combine.combine3 i (String.hash s) (DirPath.hash d)
 
-    let compare (d, i) (d', i') =
-      let c = Int.compare i i' in
-      if Int.equal c 0 then DirPath.compare d d'
-      else c
+    let compare (d, s, i) (d', s', i') =
+      if i < i' then -1
+      else if i' < i then 1
+      else let c = DirPath.compare d d' in
+        if not (Int.equal c 0) then c
+        else String.compare s s'
   end
 
   type t =
@@ -84,10 +86,7 @@ struct
     | Set, Set -> 0
     | Set, _ -> -1
     | _, Set -> 1
-    | Level (dp1, i1), Level (dp2, i2) ->
-      if i1 < i2 then -1
-      else if i1 > i2 then 1
-      else DirPath.compare dp1 dp2
+    | Level l1, Level l2 -> UGlobal.compare l1 l2
     | Level _, _ -> -1
     | _, Level _ -> 1
     | Var n, Var m -> Int.compare n m
@@ -98,8 +97,8 @@ struct
       | SProp, SProp -> true
       | Prop, Prop -> true
       | Set, Set -> true
-      | Level (n,d), Level (n',d') ->
-        n == n' && d == d'
+      | Level (d,s,n), Level (d',s',n') ->
+        n == n' && s==s' && d == d'
       | Var n, Var n' -> n == n'
       | _ -> false
 
@@ -107,9 +106,10 @@ struct
     | SProp as x -> x
     | Prop as x -> x
     | Set as x -> x
-    | Level (d,n) as x ->
+    | Level (d,s,n) as x ->
+      let s' = CString.hcons s in
       let d' = Names.DirPath.hcons d in
-        if d' == d then x else Level (d',n)
+        if s' == s && d' == d then x else Level (d',s',n)
     | Var _n as x -> x
 
   open Hashset.Combine
@@ -119,7 +119,7 @@ struct
     | Prop -> combinesmall 1 1
     | Set -> combinesmall 1 2
     | Var n -> combinesmall 2 n
-    | Level (d, n) -> combinesmall 3 (combine n (Names.DirPath.hash d))
+    | Level l -> combinesmall 3 (UGlobal.hash l)
 
 end
 
@@ -200,7 +200,10 @@ module Level = struct
     | SProp -> "SProp"
     | Prop -> "Prop"
     | Set -> "Set"
-    | Level (d,n) -> Names.DirPath.to_string d^"."^string_of_int n
+    | Level (d,s,n) ->
+      Names.DirPath.to_string d ^
+      (if CString.is_empty s then "" else "." ^ s) ^
+      "." ^ string_of_int n
     | Var n -> "Var(" ^ string_of_int n ^ ")"
 
   let pr u = str (to_string u)
@@ -218,7 +221,7 @@ module Level = struct
 
   let name u =
     match data u with
-    | Level (d, n) -> Some (d, n)
+    | Level l -> Some l
     | _ -> None
 end
 

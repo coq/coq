@@ -413,7 +413,7 @@ let sort_universes g =
   let levels = traverse LMap.empty [normalize Level.set, 0] in
   let max_level = LMap.fold (fun _ n accu -> max n accu) levels 0 in
   let dummy_mp = Names.DirPath.make [Names.Id.of_string "Type"] in
-  let ulevels = Array.init max_level (fun i -> Level.(make (UGlobal.make dummy_mp i))) in
+  let ulevels = Array.init max_level (fun i -> Level.(make (UGlobal.make dummy_mp "" i))) in
   let ulevels = Array.cons Level.set ulevels in
   (* Add the normal universes *)
   let fold (cur, ans) u =

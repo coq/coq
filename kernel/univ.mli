@@ -15,8 +15,8 @@ sig
   module UGlobal : sig
     type t
 
-    val make : Names.DirPath.t -> int -> t
-    val repr : t -> Names.DirPath.t * int
+    val make : Names.DirPath.t -> string -> int -> t
+    val repr : t -> Names.DirPath.t * string * int
     val equal : t -> t -> bool
     val hash : t -> int
     val compare : t -> t -> int

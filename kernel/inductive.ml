@@ -717,7 +717,7 @@ let rec ienv_decompose_prod (env,_ as ienv) n c =
      ienv_decompose_prod ienv' (n-1) b
      | _ -> assert false
 
-let dummy_univ = Level.(make (UGlobal.make (DirPath.make [Id.of_string "implicit"]) 0))
+let dummy_univ = Level.(make (UGlobal.make (DirPath.make [Id.of_string "implicit"]) "" 0))
 let dummy_implicit_sort = mkType (Universe.make dummy_univ)
 let lambda_implicit_lift n a =
   let anon = Context.make_annot Anonymous Sorts.Relevant in
