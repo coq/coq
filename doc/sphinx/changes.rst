@@ -740,7 +740,7 @@ Kernel
   fixes `#14006 <https://github.com/coq/coq/issues/14006>`_,
   by Pierre-Marie Pédrot).
 
-Tactics
+Tactic language
 ^^^^^^^
 
 - **Fixed:**
