@@ -72,12 +72,7 @@ let worker_handshake slave_ic slave_oc =
     exit 1
 
 let locking { lock; pool = p } f =
-  try
-    Mutex.lock lock;
-    let x = f p in
-    Mutex.unlock lock;
-    x
-  with e -> Mutex.unlock lock; raise e
+  CThread.with_lock lock ~scope:(fun () -> f p)
 
 let rec create_worker extra pool priority id =
   let cancel = ref false in
