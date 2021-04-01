@@ -21,8 +21,8 @@
     %{lib:coq-core.clib:clib.cma}
     %{lib:coq-core.lib:lib.cma}
     %{lib:coq-core.kernel:kernel.cma}
-    %{lib:coq-core.vm:byterun.cma}
-    %{lib:coq-core.vm:../../stublibs/dllbyterun_stubs.so}
+    %{lib:coq-core.vm:coqrun.cma}
+    %{lib:coq-core.vm:../../stublibs/dllcoqrun_stubs.so}
     %{lib:coq-core.library:library.cma}
     %{lib:coq-core.engine:engine.cma}
     %{lib:coq-core.pretyping:pretyping.cma}

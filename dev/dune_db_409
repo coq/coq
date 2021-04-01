@@ -5,7 +5,7 @@ load_printer config.cma
 load_printer clib.cma
 load_printer lib.cma
 load_printer gramlib.cma
-load_printer byterun.cma
+load_printer coqrun.cma
 load_printer kernel.cma
 load_printer library.cma
 load_printer engine.cma
