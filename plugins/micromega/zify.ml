@@ -23,6 +23,19 @@ let zify str =
     (UnivGen.constr_of_monomorphic_global
        (Coqlib.lib_ref ("ZifyClasses." ^ str)))
 
+(** classes *)
+let coq_InjTyp = lazy (Coqlib.lib_ref "ZifyClasses.InjTyp")
+
+let coq_BinOp = lazy (Coqlib.lib_ref "ZifyClasses.BinOp")
+let coq_UnOp = lazy (Coqlib.lib_ref "ZifyClasses.UnOp")
+let coq_CstOp = lazy (Coqlib.lib_ref "ZifyClasses.CstOp")
+let coq_BinRel = lazy (Coqlib.lib_ref "ZifyClasses.BinRel")
+let coq_PropBinOp = lazy (Coqlib.lib_ref "ZifyClasses.PropBinOp")
+let coq_PropUOp = lazy (Coqlib.lib_ref "ZifyClasses.PropUOp")
+let coq_BinOpSpec = lazy (Coqlib.lib_ref "ZifyClasses.BinOpSpec")
+let coq_UnOpSpec = lazy (Coqlib.lib_ref "ZifyClasses.UnOpSpec")
+let coq_Saturate = lazy (Coqlib.lib_ref "ZifyClasses.Saturate")
+
 (* morphism like lemma *)
 
 let mkapp2 = lazy (zify "mkapp2")
@@ -46,7 +59,6 @@ let op_iff_morph = lazy (zify "iff_morph")
 let op_not = lazy (zify "not")
 let op_not_morph = lazy (zify "not_morph")
 let op_True = lazy (zify "True")
-let whd = Reductionops.clos_whd_flags CClosure.all
 
 (** [unsafe_to_constr c] returns a [Constr.t] without considering an evar_map.
     This is useful for calling Constr.hash *)
@@ -59,6 +71,7 @@ let gl_pr_constr e =
   let evd = Evd.from_env genv in
   pr_constr genv evd e
 
+let whd = Reductionops.clos_whd_flags CClosure.all
 let is_convertible env evd t1 t2 = Reductionops.(is_conv env evd t1 t2)
 
 (** [get_type_of] performs beta reduction ;
@@ -344,6 +357,7 @@ module type Elt = sig
   (** name *)
   val name : string
 
+  val gref : GlobRef.t Lazy.t
   val table : (term_kind * decl_kind) ConstrMap.t ref
   val cast : elt decl -> decl_kind
   val dest : decl_kind -> elt decl option
@@ -375,6 +389,7 @@ module EInj = struct
   type elt = EInjT.t
 
   let name = "EInj"
+  let gref = coq_InjTyp
   let table = table
   let cast x = InjTyp x
   let dest = function InjTyp x -> Some x | _ -> None
@@ -432,6 +447,7 @@ module EBinOp = struct
   open EBinOpT
 
   let name = "BinOp"
+  let gref = coq_BinOp
   let table = table
 
   let mk_elt evd i a =
@@ -473,6 +489,7 @@ module ECstOp = struct
   open ECstOpT
 
   let name = "CstOp"
+  let gref = coq_CstOp
   let table = table
   let cast x = CstOp x
   let dest = function CstOp x -> Some x | _ -> None
@@ -499,6 +516,7 @@ module EUnOp = struct
   open EUnOpT
 
   let name = "UnOp"
+  let gref = coq_UnOp
   let table = table
   let cast x = UnOp x
   let dest = function UnOp x -> Some x | _ -> None
@@ -531,6 +549,7 @@ module EBinRel = struct
   open EBinRelT
 
   let name = "BinRel"
+  let gref = coq_BinRel
   let table = table
   let cast x = BinRel x
   let dest = function BinRel x -> Some x | _ -> None
@@ -557,6 +576,7 @@ module EPropBinOp = struct
   open EPropBinOpT
 
   let name = "PropBinOp"
+  let gref = coq_PropBinOp
   let table = table
   let cast x = PropOp x
   let dest = function PropOp x -> Some x | _ -> None
@@ -569,7 +589,8 @@ module EPropUnOp = struct
 
   open EPropUnOpT
 
-  let name = "PropUnOp"
+  let name = "PropUOp"
+  let gref = coq_PropUOp
   let table = table
   let cast x = PropUnOp x
   let dest = function PropUnOp x -> Some x | _ -> None
@@ -580,7 +601,7 @@ end
 let constr_of_term_kind = function Application c -> c | OtherTerm c -> c
 
 module type S = sig
-  val register : Constrexpr.constr_expr -> unit
+  val register : Libnames.qualid -> unit
   val print : unit -> unit
 end
 
@@ -612,7 +633,7 @@ module MakeTable (E : Elt) = struct
     let c = EConstr.of_constr c in
     let t = get_type_of env evd c in
     match EConstr.kind evd t with
-    | App (intyp, args) ->
+    | App (intyp, args) when EConstr.isRefX evd (Lazy.force E.gref) intyp ->
       let styp = args.(E.get_key) in
       let elt = {decl = c; deriv = make_elt (evd, c)} in
       register_hint evd styp elt
@@ -621,10 +642,11 @@ module MakeTable (E : Elt) = struct
       raise
         (CErrors.user_err
            Pp.(
-             str ": Cannot register term "
-             ++ pr_constr env evd c ++ str ". It has type "
-             ++ pr_constr env evd t
-             ++ str " which should be of the form  [F X1 .. Xn]"))
+             str "Cannot register " ++ pr_constr env evd c
+             ++ str ". It has type " ++ pr_constr env evd t
+             ++ str " instead of type "
+             ++ Printer.pr_global (Lazy.force E.gref)
+             ++ str " X1 ... Xn"))
 
   let register_obj : Constr.constr -> Libobject.obj =
     let cache_constr (_, c) =
@@ -638,17 +660,19 @@ module MakeTable (E : Elt) = struct
          ("register-zify-" ^ E.name)
          ~cache:cache_constr ~subst:(Some subst_constr)
 
-  (** [register c] is called from the VERNACULAR ADD [name] constr(t).
+  (** [register c] is called from the VERNACULAR ADD [name] reference(t).
        The term [c] is interpreted and
        registered as a [superglobal_object_nodischarge].
        TODO: pre-compute [get_type_of] - [cache_constr] is using another environment.
      *)
   let register c =
-    let env = Global.env () in
-    let evd = Evd.from_env env in
-    let evd, c = Constrintern.interp_open_constr env evd c in
-    let _ = Lib.add_anonymous_leaf (register_obj (EConstr.to_constr evd c)) in
-    ()
+    try
+      let c = UnivGen.constr_of_monomorphic_global (Nametab.locate c) in
+      let _ = Lib.add_anonymous_leaf (register_obj c) in
+      ()
+    with Not_found ->
+      raise
+        (CErrors.user_err Pp.(Libnames.pr_qualid c ++ str " does not exist."))
 
   let pp_keys () =
     let env = Global.env () in
@@ -672,6 +696,7 @@ module ESat = struct
   open ESatT
 
   let name = "Saturate"
+  let gref = coq_Saturate
   let table = saturate
   let cast x = Saturate x
   let dest = function Saturate x -> Some x | _ -> None
@@ -685,6 +710,7 @@ module EUnopSpec = struct
   type elt = ESpecT.t
 
   let name = "UnopSpec"
+  let gref = coq_UnOpSpec
   let table = specs
   let cast x = UnOpSpec x
   let dest = function UnOpSpec x -> Some x | _ -> None
@@ -698,6 +724,7 @@ module EBinOpSpec = struct
   type elt = ESpecT.t
 
   let name = "BinOpSpec"
+  let gref = coq_BinOpSpec
   let table = specs
   let cast x = BinOpSpec x
   let dest = function BinOpSpec x -> Some x | _ -> None

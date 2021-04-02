@@ -250,8 +250,18 @@ Register rew_iff     as ZifyClasses.rew_iff.
 Register source_prop as ZifyClasses.source_prop.
 Register injprop_ok  as ZifyClasses.injprop_ok.
 Register iff         as ZifyClasses.iff.
+
+Register InjTyp      as ZifyClasses.InjTyp.
+Register BinOp       as ZifyClasses.BinOp.
+Register UnOp        as ZifyClasses.UnOp.
+Register CstOp       as ZifyClasses.CstOp.
+Register BinRel      as ZifyClasses.BinRel.
+Register PropOp   as ZifyClasses.PropOp.
+Register PropUOp     as ZifyClasses.PropUOp.
 Register BinOpSpec   as ZifyClasses.BinOpSpec.
 Register UnOpSpec    as ZifyClasses.UnOpSpec.
+Register Saturate    as ZifyClasses.Saturate.
+
 
 (** Propositional logic *)
 Register and as ZifyClasses.and.

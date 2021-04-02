@@ -7,10 +7,9 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-open Constrexpr
 
 module type S = sig
-  val register : constr_expr -> unit
+  val register : Libnames.qualid -> unit
   val print : unit -> unit
 end
 
