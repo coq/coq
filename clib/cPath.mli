@@ -21,11 +21,3 @@ val make : string list -> t
 
 (** [relative path string] build a path relative to an existing one *)
 val relative : t -> string -> t
-
-(** [choose_existing paths] will return [Some f] for the first file
-   [f] in [paths] that exists, [None] otherwise. *)
-val choose_existing : t list -> t option
-
-(* We should gradually add some more functions to handle common dirs
-   here such the theories directories or share files. Abstracting it
-   here does allow to use system-specific functionalities *)

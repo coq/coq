@@ -452,7 +452,8 @@ let build_load_path opts =
     if opts.pre.boot then [],[]
     else
       let coqlib = Envars.coqlib () in
-      Coqloadpath.init_load_path ~coqlib in
+      let coqcorelib = Envars.coqcorelib () in
+      Coqloadpath.init_load_path ~coqlib ~coqcorelib in
   ml_path @ opts.pre.ml_includes ,
   vo_path @ opts.pre.vo_includes
 

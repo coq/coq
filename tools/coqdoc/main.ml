@@ -469,21 +469,17 @@ let index_module = function
 
 let copy_style_file file =
   (* We give preference to coqlib in case it is overriden *)
-  let src_dir = CPath.choose_existing
-      [ CPath.make [ !Cdglobals.coqlib_path; "tools"; "coqdoc" ]
-      ; CPath.make [ !Cdglobals.coqlib_path; ".."; "coq-core"; "tools"; "coqdoc" ]
-      ] |> function
-    | None ->
+  let sty_dir = CPath.make [ !Cdglobals.coqcorelib_path; "tools"; "coqdoc" ] in
+  let sty_file = (CPath.relative sty_dir file :> string) in
+  if not (Sys.file_exists sty_file) then
+    begin
       eprintf
         "coqdoc: cannot find coqdoc style files in coqlib: %s / %s\n"
         !Cdglobals.coqlib_path file;
       exit 1
-    | Some f -> f
-  in
-  let src = (CPath.relative src_dir file :> string) in
+    end;
   let dst = coqdoc_out file in
-  if Sys.file_exists src then copy src dst
-  else eprintf "Warning: file %s does not exist\n" src
+  copy sty_file dst
 
 let produce_document l =
   if !target_language=HTML then copy_style_file "coqdoc.css";

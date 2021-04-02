@@ -20,8 +20,3 @@ type t = string
 let make = List.fold_left Filename.concat ""
 
 let relative = Filename.concat
-
-let rec choose_existing = function
-  | [] -> None
-  | f :: fs ->
-    if Sys.file_exists f then Some f else choose_existing fs

@@ -31,6 +31,7 @@ val title : string ref
 val externals : bool ref
 val coqlib : string ref
 val coqlib_path : string ref
+val coqcorelib_path : string ref
 val raw_comments : bool ref
 val parse_comments : bool ref
 val plain_comments : bool ref

@@ -13,4 +13,5 @@
    folder, and directories specified in [COQPATH] and [XDG_DIRS] *)
 val init_load_path
   : coqlib:CUnix.physical_path
+  -> coqcorelib:CUnix.physical_path
   -> CUnix.physical_path list * Loadpath.vo_path list

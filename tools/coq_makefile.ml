@@ -123,19 +123,13 @@ let read_whole_file s =
 let quote s = if String.contains s ' ' || CString.is_empty s then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file dep_file args project =
-  let coqlib = Envars.coqlib () in
-  let makefile_template =
-    CPath.choose_existing
-      [ CPath.make [ coqlib; "tools"; "CoqMakefile.in" ]
-      ; CPath.make [ coqlib; ".."; "coq-core"; "tools"; "CoqMakefile.in" ]
-      ]
-  in
-  let makefile_template = match makefile_template with
-    | None ->
+  let coqcorelib = Envars.coqlib () in
+  let makefile_template = (CPath.make [ coqcorelib; "tools"; "CoqMakefile.in" ] :> string) in
+  if not (Sys.file_exists makefile_template) then
+    begin
       Format.eprintf "Error: cannot find CoqMakefile.in";
       exit 1
-    | Some v -> (v :> string)
-  in
+    end;
   let s = read_whole_file makefile_template in
   let s = List.fold_left
     (* We use global_substitute to avoid running into backslash issues due to \1 etc. *)

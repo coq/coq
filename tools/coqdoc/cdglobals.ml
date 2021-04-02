@@ -109,6 +109,10 @@ let title = ref ""
 let externals = ref true
 let coqlib = ref Coq_config.wwwstdlib
 let coqlib_path = ref (guess_coqlib ())
+let coqcorelib_path =
+  let coqlib = guess_coqlib () in
+  let coqcorelib = Filename.concat coqlib "../coq-core" in
+  ref coqcorelib
 let raw_comments = ref false
 let parse_comments = ref false
 let plain_comments = ref false
