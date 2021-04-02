@@ -321,18 +321,21 @@ let attach_modifiers (pref : string preference) prefix =
   in
   pref#connect#changed ~callback:cb
 
-let select_arch m m_osx =
-  if Coq_config.arch = "Darwin" then m_osx else m
-
 let modifier_for_navigation =
   new preference ~name:["modifier_for_navigation"]
-    ~init:(select_arch "<Control>" "<Control><Primary>") ~repr:Repr.(string)
+    (* Note: on Darwin, this will give "<Control><Meta>", i.e. Ctrl and Command; on other
+    architectures, "<Primary>" binds to "<Control>" so it will give "<Control>" alone *)
+    ~init:"<Control><Primary>" ~repr:Repr.(string)
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
+let select_arch m m_osx =
+  if Coq_config.arch = "Darwin" then m_osx else m
+
 let modifier_for_display =
   new preference ~name:["modifier_for_display"]
+   (* Note: <Primary> (i.e. <Meta>, i.e. "Command") on Darwin, i.e. MacOS X, but <Alt> elsewhere *)
     ~init:(select_arch "<Alt><Shift>" "<Primary><Shift>")~repr:Repr.(string)
 
 let modifier_for_queries =
@@ -348,7 +351,9 @@ let attach_modifiers_callback () =
   ()
 
 let modifiers_valid =
-  new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
+  new preference ~name:["modifiers_valid"]
+   (* Note: <Primary> is providing <Meta> (i.e. "Command") for Darwin, i.e. MacOS X *)
+    ~init:"<Alt><Control><Shift><Primary>" ~repr:Repr.(string)
 
 let browser_cmd_fmt =
  try
