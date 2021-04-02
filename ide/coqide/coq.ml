@@ -538,7 +538,7 @@ struct
 
   let implicit = BoolOpt ["Printing"; "Implicit"]
   let coercions = BoolOpt ["Printing"; "Coercions"]
-  let raw_matching = BoolOpt ["Printing"; "Matching"]
+  let nested_matching = BoolOpt ["Printing"; "Matching"]
   let notations = BoolOpt ["Printing"; "Notations"]
   let parentheses = BoolOpt ["Printing"; "Parentheses"]
   let all_basic = BoolOpt ["Printing"; "All"]
@@ -553,8 +553,8 @@ struct
   let bool_items = [
     { opts = [implicit]; init = false; label = "Display _implicit arguments" };
     { opts = [coercions]; init = false; label = "Display _coercions" };
-    { opts = [raw_matching]; init = true;
-      label = "Display raw _matching expressions" };
+    { opts = [nested_matching]; init = true;
+      label = "Display nested _matching expressions" };
     { opts = [notations]; init = true; label = "Display _notations" };
     { opts = [parentheses]; init = false; label = "Display _parentheses" };
     { opts = [all_basic]; init = false;
