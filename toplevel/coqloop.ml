@@ -494,13 +494,10 @@ let drop_args = ref None
 
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
-let init_ocaml_path ~coqlib =
-  let coqlib : string =
-    if Sys.file_exists (CPath.make [coqlib; "plugins"] :> string)
-    then coqlib
-    else (CPath.make [ coqlib ; ".."; "coq-core" ] :> string)
-  in
-  let add_subdir dl = Mltop.add_ml_dir (Filename.concat coqlib dl) in
+let init_ocaml_path () =
+  let env = Boot.Env.init () in
+  let corelib = Boot.Env.corelib env |> Boot.Path.to_string in
+  let add_subdir dl = Mltop.add_ml_dir (Filename.concat corelib dl) in
   List.iter add_subdir ("dev" :: Coq_config.all_src_dirs)
 
 let loop ~opts ~state =
@@ -515,8 +512,7 @@ let loop ~opts ~state =
   (* Call the main loop *)
   let _ : Vernac.State.t = vernac_loop ~state in
   (* Initialise and launch the Ocaml toplevel *)
-  let coqlib = Envars.coqlib () in
-  init_ocaml_path ~coqlib;
+  init_ocaml_path ();
   Mltop.ocaml_toploop();
   (* We delete the feeder after the OCaml toploop has ended so users
      of Drop can see the feedback. *)

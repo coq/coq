@@ -126,11 +126,17 @@ let makefile_quote s =
 let quote s = if String.contains s ' ' || CString.is_empty s then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file local_late_file dep_file args project =
-  let coqcorelib = Envars.coqcorelib () in
-  let makefile_template = Filename.concat coqcorelib "tools/CoqMakefile.in" in
-  if not (Sys.file_exists makefile_template) then
-    (Format.eprintf "Error: cannot find CoqMakefile.in in %s" makefile_template;
-     exit 1);
+  let env = Boot.Env.init () in
+  (* XX coq makefile should ship files on its own dir *)
+  let cmf_dir = Boot.Env.tool env "" in
+  let makefile_template = Boot.Path.relative cmf_dir "CoqMakefile.in" in
+  if not (Boot.Path.exists makefile_template) then
+    begin
+      let makefile_template = Boot.Path.to_string makefile_template in
+      Format.eprintf "Error: cannot find %s" makefile_template;
+      exit 1
+    end;
+  let makefile_template = Boot.Path.to_string makefile_template in
   let s = read_whole_file makefile_template in
   let s = List.fold_left
     (* We use global_substitute to avoid running into backslash issues due to \1 etc. *)
@@ -144,7 +150,6 @@ let generate_makefile oc conf_file local_file local_late_file dep_file args proj
       "@COQ_MAKEFILE_INVOCATION@",String.concat " " (List.map quote args);
     ] in
   output_string oc s
-;;
 
 let section oc s =
   let pad = String.make (76 - String.length s) ' ' in
@@ -189,7 +194,10 @@ let windrive s =
 let generate_conf_coq_config oc =
   section oc "Coq configuration.";
   Envars.print_config ~prefix_var_name:"COQMF_" oc;
-  fprintf oc "COQMF_WINDRIVE=%s\n" (windrive (Envars.coqlib()))
+  let env = Boot.Env.init () in
+  let coqlib = Boot.Env.(coqlib env |> Path.to_string) in
+  (* XXX: FIXME, why does this variable needs the root lib *)
+  fprintf oc "COQMF_WINDRIVE=%s\n" (windrive coqlib)
 ;;
 
 let generate_conf_files oc
@@ -395,8 +403,6 @@ let _ =
   check_overlapping_include project;
 
   check_native_compiler project.native_compiler;
-
-  Envars.set_coqlib ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
 
   let ocm = Option.cata open_out stdout project.makefile in
   generate_makefile ocm conf_file local_file local_late_file dep_file (prog :: args) project;

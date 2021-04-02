@@ -2137,8 +2137,10 @@ let really_call_csdpcert :
  fun provername poly ->
   Lazy.force require_csdp;
   let cmdname =
-    List.fold_left Filename.concat (Envars.coqlib ())
-      ["plugins"; "micromega"; "csdpcert" ^ Coq_config.exec_extension]
+    let env = Boot.Env.init () in
+    let plugin_dir = Boot.Env.plugins env |> Boot.Path.to_string in
+    List.fold_left Filename.concat plugin_dir
+      ["micromega"; "csdpcert" ^ Coq_config.exec_extension]
   in
   let cmdname = if Sys.file_exists cmdname then cmdname else "csdpcert" in
   match (command cmdname [|cmdname|] (provername, poly) : csdp_certificate) with

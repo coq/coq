@@ -11,15 +11,6 @@
 (** The basic parts of coqdep are in [Coqdep_common]. *)
 module CD = Coqdep_common
 
-let (//) = Filename.concat
-
-(* Exception to be raised by Envars *)
-exception CoqlibError of string
-
-let _ = CErrors.register_handler (function
-    | CoqlibError msg -> Some (Pp.str msg)
-    | _ -> None)
-
 let coqdep () =
   Coqdep_common.init ();
   (* XXX: All the code below is just setting loadpaths, refactor to
@@ -29,15 +20,14 @@ let coqdep () =
    with Not_found -> CD.add_norec_dir_import CD.add_known "." []);
   (* We don't setup any loadpath if the -boot is passed *)
   if not !CD.option_boot then begin
-    Envars.set_coqlib ~fail:(fun msg -> raise (CoqlibError msg));
-    let coqlib = Envars.coqlib () in
-    let coq_plugins_dir = Filename.concat (Envars.coqcorelib ()) "plugins" in
-    if not (Sys.file_exists coq_plugins_dir) then
-      CErrors.user_err Pp.(str "coqdep: cannot find plugins directory for coqlib: " ++ str coqlib ++ fnl ());
-    CD.add_rec_dir_import CD.add_coqlib_known (coqlib//"theories") ["Coq"];
-    CD.add_rec_dir_import CD.add_coqlib_known (coq_plugins_dir) ["Coq"];
-    let user = coqlib//"user-contrib" in
-    if Sys.file_exists user then CD.add_rec_dir_no_import CD.add_coqlib_known user [];
+    let env = Boot.Env.init () in
+    let stdlib = Boot.Env.(stdlib env |> Path.to_string) in
+    let plugins = Boot.Env.(plugins env |> Path.to_string) in
+    let user_contrib = Boot.Env.(user_contrib env |> Path.to_string) in
+    CD.add_rec_dir_import CD.add_coqlib_known stdlib ["Coq"];
+    CD.add_rec_dir_import CD.add_coqlib_known plugins ["Coq"];
+    if Sys.file_exists user_contrib
+    then CD.add_rec_dir_no_import CD.add_coqlib_known user_contrib [];
     List.iter (fun s -> CD.add_rec_dir_no_import CD.add_coqlib_known s [])
       (Envars.xdg_dirs ~warn:(fun x -> CD.coqdep_warning "%s" x));
     List.iter (fun s -> CD.add_rec_dir_no_import CD.add_coqlib_known s []) Envars.coqpath;

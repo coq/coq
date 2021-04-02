@@ -62,25 +62,6 @@ let normalize_filename f =
   let dirname = Filename.dirname f in
   normalize_path dirname, basename
 
-(** Add a local installation suffix (unless the suffix is itself
-    absolute in which case the prefix does not matter) *)
-let use_suffix prefix suffix =
-  if String.length suffix > 0 && suffix.[0] = '/' then suffix else prefix / suffix
-
-(** A weaker analog of the function in Envars *)
-
-let getenv_else s dft = try Sys.getenv s with Not_found -> dft ()
-
-let guess_coqlib () =
-  getenv_else "COQLIB" (fun () ->
-  let file = "theories/Init/Prelude.vo" in
-  let coqbin = normalize_path (Filename.dirname Sys.executable_name) in
-  let prefix = Filename.dirname coqbin in
-  let coqlib = use_suffix prefix Coq_config.coqlibsuffix in
-  if Sys.file_exists (coqlib / file) then coqlib else
-  if Sys.file_exists (Coq_config.coqlib / file)
-  then Coq_config.coqlib else prefix)
-
 let header_trailer = ref true
 let header_file = ref ""
 let header_file_spec = ref false
@@ -97,8 +78,7 @@ let toc = ref false
 let page_title = ref ""
 let title = ref ""
 let externals = ref true
-let coqlib = ref Coq_config.wwwstdlib
-let coqlib_path = ref (guess_coqlib ())
+let coqlib_url = ref Coq_config.wwwstdlib
 let raw_comments = ref false
 let parse_comments = ref false
 let plain_comments = ref false

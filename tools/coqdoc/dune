@@ -16,6 +16,6 @@
  (name main)
  (public_name coqdoc)
  (package coq-core)
- (libraries str coq-core.config coq-core.clib))
+ (libraries str coq-core.boot coq-core.config coq-core.clib))
 
 (ocamllex cpretty)

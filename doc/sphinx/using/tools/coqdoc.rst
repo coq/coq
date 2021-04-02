@@ -227,7 +227,7 @@ by default).
 
 Identifiers from the Coq standard library are linked to the Coq website
 `<http://coq.inria.fr/library/>`_. This behavior can be changed
-using command line options ``--no-externals`` and ``--coqlib``; see below.
+using command line options ``--no-externals`` and ``--coqlib_url``; see below.
 
 
 .. _coqdoc-hide-show:
@@ -370,7 +370,7 @@ Command line options
   :--no-externals: Do not insert links to the Coq standard library.
   :--external url coqdir: Use given URL for linking references whose
     name starts with prefix ``coqdir``.
-  :--coqlib url: Set base URL for the Coq standard library (default is
+  :--coqlib_url url: Set base URL for the Coq standard library (default is
     `<http://coq.inria.fr/library/>`_). This is equivalent to ``--external url
     Coq``.
   :-R dir coqdir: Recursively map physical directory dir to Coq logical

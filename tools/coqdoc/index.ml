@@ -113,7 +113,7 @@ let find_external_library logicalpath =
         else aux rest
   in aux !external_libraries
 
-let init_coqlib_library () = add_external_library "Coq" !coqlib
+let init_coqlib_library () = add_external_library "Coq" !coqlib_url
 
 let find_module m =
   if Hashtbl.mem local_modules m then

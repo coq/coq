@@ -440,8 +440,8 @@ let build_load_path opts =
   let ml_path, vo_path =
     if opts.pre.boot then [],[]
     else
-      let coqlib = Envars.coqlib () in
-      Coqloadpath.init_load_path ~coqlib in
+      let coqenv = Boot.Env.init () in
+      Coqloadpath.init_load_path ~coqenv in
   ml_path @ opts.pre.ml_includes ,
   vo_path @ opts.pre.vo_includes
 

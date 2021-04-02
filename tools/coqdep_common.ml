@@ -600,7 +600,7 @@ let rec parse = function
   | "-R" :: ([] | [_]) -> usage ()
   | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
   | "-exclude-dir" :: [] -> usage ()
-  | "-coqlib" :: r :: ll -> Envars.set_user_coqlib r; parse ll
+  | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse ll
   | "-coqlib" :: [] -> usage ()
   | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
   | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll

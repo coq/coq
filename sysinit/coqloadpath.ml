@@ -11,8 +11,6 @@
 open Util
 open Pp
 
-let ( / ) s1 s2 = Filename.concat s1 s2
-
 (* Recursively puts `.v` files in the LoadPath *)
 let build_stdlib_vo_path ~unix_path ~coq_path =
   let open Loadpath in
@@ -35,27 +33,18 @@ let build_userlib_path ~unix_path =
   else [], []
 
 (* LoadPath for Coq user libraries *)
-let init_load_path ~coqlib =
+let init_load_path ~coqenv =
 
   let open Loadpath in
-  let user_contrib = coqlib/"user-contrib" in
+  let user_contrib = Boot.Env.user_contrib coqenv |> Boot.Path.to_string in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
   let coqpath = Envars.coqpath in
   let coq_path = Names.DirPath.make [Libnames.coq_root] in
 
   (* ML includes *)
-  let unix_path =
-    (* Usually lib/coq-stdlib/../plugins ; this kind of hacks with the
-       ML path should go away once we use ocamlfind to load plugins *)
-    CPath.choose_existing
-      [ CPath.make [ coqlib ; "plugins" ]
-      ; CPath.make [ coqlib ; ".."; "coq-core"; "plugins" ]
-      ] |> function
-    | None ->
-      CErrors.user_err (Pp.str "Cannot find plugins directory")
-    | Some f -> (f :> string)
-  in
+  let unix_path = Boot.Env.plugins coqenv |> Boot.Path.to_string in
   let plugins_dirs = System.all_subdirs ~unix_path |> List.map fst in
+  let stdlib = Boot.Env.stdlib coqenv |> Boot.Path.to_string in
   let contrib_ml, contrib_vo = build_userlib_path ~unix_path:user_contrib in
 
   let misc_ml, misc_vo =
@@ -72,7 +61,7 @@ let init_load_path ~coqlib =
       } ] @
 
     (* then standard library *)
-    [build_stdlib_vo_path ~unix_path:(coqlib/"theories") ~coq_path] @
+    [build_stdlib_vo_path ~unix_path:stdlib ~coq_path] @
 
     (* then user-contrib *)
     contrib_vo @

@@ -20,7 +20,6 @@ val open_out_file : string -> unit
 val close_out_file : unit -> unit
 val normalize_path : string -> string
 val normalize_filename : string -> string * string
-val guess_coqlib : unit -> string
 val header_trailer : bool ref
 val header_file : string ref
 val header_file_spec : bool ref
@@ -37,8 +36,7 @@ val toc : bool ref
 val page_title : string ref
 val title : string ref
 val externals : bool ref
-val coqlib : string ref
-val coqlib_path : string ref
+val coqlib_url : string ref
 val raw_comments : bool ref
 val parse_comments : bool ref
 val plain_comments : bool ref

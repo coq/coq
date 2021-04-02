@@ -3,4 +3,4 @@
  (public_name coq-core.sysinit)
  (synopsis "Coq's initialization")
  (wrapped false)
- (libraries coq-core.vernac))
+ (libraries coq-core.boot coq-core.vernac))

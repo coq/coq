@@ -48,9 +48,11 @@ let load_files filenames =
   let add f =
     selected_filenames := f::!selected_filenames in
   let warn_default_not_found () =
+    let env = Boot.Env.init () in
+    let coqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
     Ideutils.warning (Printf.sprintf
       "Warning: the file 'ide/default.bindings' was not found in %s."
-      (Envars.coqlib())) in
+      coqlib) in
   let warn_local_not_found () =
     Ideutils.warning (Printf.sprintf
       "Warning: the local configuration file 'coqide.bindings' was not found.") in

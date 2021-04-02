@@ -16,11 +16,11 @@ open Coqargs
 
 let () = at_exit flush_all
 
-let ( / ) = Filename.concat
-
 let get_version () =
   try
-    let ch = open_in (Envars.coqlib () / "revision") in
+    let env = Boot.Env.init () in
+    let revision = Boot.Env.revision env |> Boot.Path.to_string in
+    let ch = open_in revision in
     let ver = input_line ch in
     let rev = input_line ch in
     let () = close_in ch in

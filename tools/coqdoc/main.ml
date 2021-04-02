@@ -47,10 +47,10 @@ let usage () =
   prerr_endline "  --verbose            verbose mode";
   prerr_endline "  --no-externals       no links to Coq standard library";
   prerr_endline "  --external <url> <d> set URL for external library d";
-  prerr_endline "  --coqlib <url>       set URL for Coq standard library";
+  prerr_endline "  --coqlib_url <url>   set URL for Coq standard library";
   prerr_endline ("                       (default is " ^ Coq_config.wwwstdlib ^ ")");
   prerr_endline "  --boot               run in boot mode (no-op)";
-  prerr_endline "  --coqlib_path <dir>  set the path where Coq files are installed";
+  prerr_endline "  --coqlib <dir>       set the path where Coq files are installed";
   prerr_endline "  -R <dir> <coqdir>    map physical dir to Coq dir";
   prerr_endline "  -Q <dir> <coqdir>    map physical dir to Coq dir";
   prerr_endline "  --latin1             set ISO-8859-1 mode";
@@ -292,16 +292,16 @@ let parse () =
         Cdglobals.externals := false; parse_rec rem
     | ("--external" | "-external") :: u :: logicalpath :: rem ->
         Index.add_external_library logicalpath u; parse_rec rem
-    | ("--coqlib" | "-coqlib") :: u :: rem ->
-        Cdglobals.coqlib := u; parse_rec rem
-    | ("--coqlib" | "-coqlib") :: [] ->
+    | ("--coqlib_url" | "-coqlib_url") :: u :: rem ->
+        Cdglobals.coqlib_url := u; parse_rec rem
+    | ("--coqlib_url" | "-coqlib_url") :: [] ->
         usage ()
     | ("--boot" | "-boot") :: rem ->
         (* XXX: This is useless it seems *)
         parse_rec rem
-    | ("--coqlib_path" | "-coqlib_path") :: d :: rem ->
-        Cdglobals.coqlib_path := d; parse_rec rem
-    | ("--coqlib_path" | "-coqlib_path") :: [] ->
+    | ("--coqlib" | "-coqlib") :: d :: rem ->
+        Boot.Env.set_coqlib d; parse_rec rem
+    | ("--coqlib" | "-coqlib") :: [] ->
         usage ()
     | f :: rem ->
         add_file (what_file f); parse_rec rem
@@ -379,23 +379,22 @@ let index_module = function
     Index.add_module m
   | Latex_file _ -> ()
 
+module E = Boot.Env
+
 let copy_style_file file =
   (* We give preference to coqlib in case it is overriden *)
-  let src_dir = CPath.choose_existing
-      [ CPath.make [ !Cdglobals.coqlib_path; "tools"; "coqdoc" ]
-      ; CPath.make [ !Cdglobals.coqlib_path; ".."; "coq-core"; "tools"; "coqdoc" ]
-      ] |> function
-    | None ->
-      eprintf
-        "coqdoc: cannot find coqdoc style files in coqlib: %s / %s\n"
-        !Cdglobals.coqlib_path file;
+  let env = E.init () in
+  let coqdoc = E.tool env "coqdoc" in
+  let sty_file = E.Path.relative coqdoc file in
+  if not (E.Path.exists sty_file) then
+    begin
+      let sty_file = E.Path.to_string sty_file in
+      eprintf "coqdoc: cannot find coqdoc style file: %s\n" sty_file;
       exit 1
-    | Some f -> f
-  in
-  let src = (CPath.relative src_dir file :> string) in
+    end;
+  let sty_file_s = E.Path.to_string sty_file in
   let dst = coqdoc_out file in
-  if Sys.file_exists src then FileUtil.copy src dst
-  else eprintf "Warning: file %s does not exist\n" src
+  FileUtil.copy sty_file_s dst
 
 let produce_document l =
   if !target_language=HTML then copy_style_file "coqdoc.css";
