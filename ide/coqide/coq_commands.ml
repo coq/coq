@@ -151,6 +151,7 @@ let commands = [
    "Unset Silent.";
    "Unset Undo";];
   ["Variable";
+   "Variant";
    "Variables";];
   ["Write State";];
 ]
