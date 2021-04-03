@@ -90,8 +90,6 @@ module type S = sig
 
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
 
-  val mk_rule : 'a pattern list -> string Rules.t
-
   (* Used in custom entries, should tweak? *)
   val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
 
@@ -1843,15 +1841,5 @@ and generalize_tree : type a tr s .
 let generalize_symbol s =
   try Some (generalize_symbol s)
   with SelfSymbol -> None
-
-let rec mk_rule tok =
-  match tok with
-  | [] ->
-    let stop_e = Rule.stop in
-    TRules (stop_e, fun _ -> (* dropped anyway: *) "")
-  | tkn :: rem ->
-    let TRules (r, f) = mk_rule rem in
-    let r = Rule.next_norec r (Symbol.token tkn) in
-    TRules (r, fun _ -> f)
 
 end

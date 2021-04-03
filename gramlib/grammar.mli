@@ -102,8 +102,6 @@ module type S = sig
 
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
 
-  val mk_rule : 'a pattern list -> string Rules.t
-
   (* Used in custom entries, should tweak? *)
   val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
 
