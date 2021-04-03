@@ -798,14 +798,6 @@ let next_token ~diff_mode loc s =
 
 (** {6 The lexer of Coq} *)
 
-(** Note: removing a token.
-   We do nothing because [remove_token] is called only when removing a grammar
-   rule with [Grammar.delete_rule]. The latter command is called only when
-   unfreezing the state of the grammar entries (see GRAMMAR summary, file
-   env/metasyntax.ml). Therefore, instead of removing tokens one by one,
-   we unfreeze the state of the lexer. This restores the behaviour of the
-   lexer. B.B. *)
-
 let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
   let cur_loc = ref loc in
   LStream.from ~loc
@@ -824,7 +816,12 @@ module MakeLexer (Diff : sig val mode : bool end) = struct
     | PKEYWORD s -> add_keyword ~quotation:NoQuotation s
     | PQUOTATION s -> add_keyword ~quotation:Quotation s
     | _ -> ()
-  let tok_removing = (fun _ -> ())
+  let tok_removing : type c. c pattern -> unit = function
+    (* Normally useless because backtracking relies on state freezing *)
+    (* Nevertheless consistent with tok_using *)
+    | PKEYWORD s -> remove_keyword s
+    | PQUOTATION s -> remove_keyword s
+    | _ -> ()
   let tok_match = Tok.match_pattern
   let tok_text = Tok.token_text
 
