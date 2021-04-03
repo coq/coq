@@ -806,26 +806,6 @@ let next_token ~diff_mode loc s =
    we unfreeze the state of the lexer. This restores the behaviour of the
    lexer. B.B. *)
 
-(** Names of tokens, for this lexer, used in Grammar error messages *)
-
-let token_text : type c. c Tok.p -> string = function
-  | PKEYWORD t -> "'" ^ t ^ "'"
-  | PIDENT None -> "identifier"
-  | PIDENT (Some t) -> "'" ^ t ^ "'"
-  | PNUMBER None -> "number"
-  | PNUMBER (Some n) -> "'" ^ NumTok.Unsigned.sprint n ^ "'"
-  | PSTRING None -> "string"
-  | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
-  | PLEFTQMARK -> "LEFTQMARK"
-  | PEOI -> "end of input"
-  | PPATTERNIDENT None -> "PATTERNIDENT"
-  | PPATTERNIDENT (Some s) -> "PATTERNIDENT \"" ^ s ^ "\""
-  | PFIELD None -> "FIELD"
-  | PFIELD (Some s) -> "FIELD \"" ^ s ^ "\""
-  | PBULLET None -> "BULLET"
-  | PBULLET (Some s) -> "BULLET \"" ^ s ^ "\""
-  | PQUOTATION lbl -> "QUOTATION \"" ^ lbl ^ "\""
-
 let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
   let cur_loc = ref loc in
   LStream.from ~loc
@@ -846,7 +826,7 @@ module MakeLexer (Diff : sig val mode : bool end) = struct
     | _ -> ()
   let tok_removing = (fun _ -> ())
   let tok_match = Tok.match_pattern
-  let tok_text = token_text
+  let tok_text = Tok.token_text
 
   (* The state of the lexer visible from outside *)
   module State = struct

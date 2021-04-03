@@ -81,6 +81,24 @@ let equal t1 t2 = match t1, t2 with
 | QUOTATION(s1,t1), QUOTATION(s2,t2) -> string_equal s1 s2 && string_equal t1 t2
 | _ -> false
 
+let token_text : type c. c p -> string = function
+  | PKEYWORD t -> "'" ^ t ^ "'"
+  | PIDENT None -> "identifier"
+  | PIDENT (Some t) -> "'" ^ t ^ "'"
+  | PNUMBER None -> "number"
+  | PNUMBER (Some n) -> "'" ^ NumTok.Unsigned.sprint n ^ "'"
+  | PSTRING None -> "string"
+  | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
+  | PLEFTQMARK -> "LEFTQMARK"
+  | PEOI -> "end of input"
+  | PPATTERNIDENT None -> "PATTERNIDENT"
+  | PPATTERNIDENT (Some s) -> "PATTERNIDENT \"" ^ s ^ "\""
+  | PFIELD None -> "FIELD"
+  | PFIELD (Some s) -> "FIELD \"" ^ s ^ "\""
+  | PBULLET None -> "BULLET"
+  | PBULLET (Some s) -> "BULLET \"" ^ s ^ "\""
+  | PQUOTATION lbl -> "QUOTATION \"" ^ lbl ^ "\""
+
 let extract_string diff_mode = function
   | KEYWORD s -> s
   | IDENT s -> s

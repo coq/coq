@@ -42,6 +42,10 @@ val equal : t -> t -> bool
 (* pass true for diff_mode *)
 val extract_string : bool -> t -> string
 
+(** Names of tokens, used in Grammar error messages *)
+
+val token_text : 'c p -> string
+
 (** Utility function for the test returned by a QUOTATION token:
     It returns the delimiter parenthesis, if any, and the text
     without delimiters. Eg `{{{ text }}}` -> Some '{', ` text ` *)
