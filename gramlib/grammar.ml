@@ -1184,7 +1184,7 @@ let call_and_push ps al strm =
   let a = ps strm in
   let al = if !item_skipped then al else a :: al in item_skipped := false; al
 
-let token_ematch gram tok =
+let token_ematch tok =
   let tematch = L.tok_match tok in
   fun tok -> tematch tok
 
@@ -1282,7 +1282,7 @@ and parser_of_token_list : type s tr lt r f.
   fun entry son p1 rev_tokl last_tok ->
   let n = tok_list_length rev_tokl + 1 in
   let plast : r parser_t =
-    let tematch = token_ematch egram last_tok in
+    let tematch = token_ematch last_tok in
     let ps strm =
       match peek_nth n strm with
         Some tok ->
@@ -1301,7 +1301,7 @@ and parser_of_token_list : type s tr lt r f.
     fun n tokl plast -> match tokl with
     | TokNil -> plast
     | TokCns (tok, tokl) ->
-       let tematch = token_ematch egram tok in
+       let tematch = token_ematch tok in
        let ps strm =
          match peek_nth n strm with
            Some tok -> tematch tok
