@@ -54,9 +54,11 @@ let equal_p (type a b) (t1 : a p) (t2 : b p) : (a, b) Util.eq option =
   let streq s1 s2 = match s1, s2 with None, None -> true
     | Some s1, Some s2 -> string_equal s1 s2 | _ -> false in
   match t1, t2 with
-  | PKEYWORD s1, PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
-  | PPATTERNIDENT s1, PPATTERNIDENT s2 when streq s1 s2 -> Some Util.Refl
   | PIDENT s1, PIDENT s2 when streq s1 s2 -> Some Util.Refl
+  | PKEYWORD s1, PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
+  | PIDENT (Some s1), PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
+  | PKEYWORD s1, PIDENT (Some s2) when string_equal s1 s2 -> Some Util.Refl
+  | PPATTERNIDENT s1, PPATTERNIDENT s2 when streq s1 s2 -> Some Util.Refl
   | PFIELD s1, PFIELD s2 when streq s1 s2 -> Some Util.Refl
   | PNUMBER None, PNUMBER None -> Some Util.Refl
   | PNUMBER (Some n1), PNUMBER (Some n2) when NumTok.Unsigned.equal n1 n2 -> Some Util.Refl
