@@ -44,11 +44,11 @@ module type S = sig
     val nterml : 'a Entry.t -> string -> ('self, norec, 'a) t
     val list0 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
     val list0sep :
-      ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+      ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
       ('self, 'trec, 'a list) t
     val list1 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
     val list1sep :
-      ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+      ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
       ('self, 'trec, 'a list) t
     val opt : ('self, 'trec, 'a) t -> ('self, 'trec, 'a option) t
     val self : ('self, mayrec, 'self) t
@@ -167,9 +167,9 @@ and ('self, 'trec, 'a) ty_symbol =
 | Stoken : 'c pattern -> ('self, norec, 'c) ty_symbol
 | Stokens : ty_pattern list -> ('self, norec, unit) ty_symbol
 | Slist1 : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a list) ty_symbol
-| Slist1sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, _) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
+| Slist1sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, unit) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
 | Slist0 : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a list) ty_symbol
-| Slist0sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, _) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
+| Slist0sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, unit) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
 | Sopt : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a option) ty_symbol
 | Sself : ('self, mayrec, 'self) ty_symbol
 | Snext : ('self, mayrec, 'self) ty_symbol
@@ -1698,11 +1698,11 @@ module rec Symbol : sig
   val nterml : 'a Entry.t -> string -> ('self, norec, 'a) t
   val list0 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
   val list0sep :
-    ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+    ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
     ('self, 'trec, 'a list) t
   val list1 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
   val list1sep :
-    ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+    ('self, 'trec, 'a) t -> ('self, norec, unit) t -> bool ->
     ('self, 'trec, 'a list) t
   val opt : ('self, 'trec, 'a) t -> ('self, 'trec, 'a option) t
   val self : ('self, mayrec, 'self) t
