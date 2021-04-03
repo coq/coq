@@ -85,12 +85,12 @@ module ReductionBehaviour = struct
     | (UnfoldWhen {recargs = r1; nargs = n1}),
       (UnfoldWhen {recargs = r2; nargs = n2}) ->
        List.length r1 = List.length r2 &&
-         List.for_all2 (fun k1 k2 -> Int.equal k1 k2) r1 r2 &&
+         List.for_all2 Int.equal r1 r2 &&
            Option.equal Int.equal n1 n2
     | UnfoldWhenNoMatch {recargs = r1; nargs = n1},
       UnfoldWhenNoMatch {recargs = r2; nargs = n2} ->
        List.length r1 = List.length r2 &&
-         List.for_all2 (fun k1 k2 -> Int.equal k1 k2) r1 r2 &&
+         List.for_all2 Int.equal r1 r2 &&
            Option.equal Int.equal n1 n2
     | _, _ -> false
 
@@ -112,14 +112,9 @@ module ReductionBehaviour = struct
                    GlobRef.Set.t * t GlobRef.Map.t) ~name:"reductionbehaviour"
 
   let load _ (_,(r, b)) =
-    table := ((match b with
-                NeverUnfold ->
-                GlobRef.Set.add r (fst !table)
-                | _ -> GlobRef.Set.remove r (fst !table)),
-                       (match b with
-                         NeverUnfold ->
-                         GlobRef.Map.remove r (snd !table)
-                        |_ -> GlobRef.Map.add r b (snd !table)))
+    table := (match b with
+                | NeverUnfold -> GlobRef.Set.add r (fst !table), GlobRef.Map.remove r (snd !table)
+                | _ -> GlobRef.Set.remove r (fst !table), GlobRef.Map.add r b (snd !table))
 
   let cache o = load 1 o
 
@@ -967,6 +962,8 @@ let whd_all = red_of_state_red whd_all_state
 let whd_allnolet_state = raw_whd_state_gen CClosure.allnolet
 let whd_allnolet_stack = stack_red_of_state_red whd_allnolet_state
 let whd_allnolet = red_of_state_red whd_allnolet_state
+
+let whd_stack_gen reds = stack_red_of_state_red (whd_state_gen reds)
 
 let is_head_evar env sigma c =
   let head, _ = whd_all_state env sigma (c,Stack.empty) in

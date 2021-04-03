@@ -287,8 +287,7 @@ let invert_name labs l {binder_name=na0} env sigma ref na =
 
 let compute_consteval_direct allowed_reds env sigma ref =
   let rec srec env n labs onlyproj c =
-    let c',l = stack_red_of_state_red
-                 (whd_state_gen allowed_reds) env sigma c in
+    let c',l = whd_stack_gen allowed_reds env sigma c in
     match EConstr.kind sigma c' with
       | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
           let open Context.Rel.Declaration in
@@ -662,10 +661,9 @@ let make_simpl_reds () =
     (red_add
        (GlobRef.Set.fold
           (fun x r ->
-            red_sub r
               (match x with
-                 Names.GlobRef.ConstRef xx ->  fCONST xx
-               | _ -> assert false))
+                 Names.GlobRef.ConstRef xx ->  red_sub r (fCONST xx)
+               | _ -> r))
           (ReductionBehaviour.all_tagged ReductionBehaviour.NeverUnfold)
           (red_add no_red fDELTA))
        fZETA)

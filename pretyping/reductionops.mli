@@ -171,6 +171,8 @@ val whd_zeta : reduction_function
 
 val shrink_eta : evar_map -> constr -> constr
 
+val whd_stack_gen : CClosure.RedFlags.reds -> stack_reduction_function
+
 (** Various reduction functions *)
 
 val beta_applist : evar_map -> constr * constr list -> constr
@@ -260,9 +262,6 @@ type state = constr * Stack.t
 type state_reduction_function =
     env -> evar_map -> state -> state
 
-val stack_red_of_state_red :
-  state_reduction_function -> stack_reduction_function
-
 val pr_state : env -> evar_map -> state -> Pp.t
 
 val whd_nored_state : state_reduction_function
@@ -271,7 +270,6 @@ val whd_betaiota_deltazeta_for_iota_state :
   TransparentState.t -> state_reduction_function
 
 val is_head_evar : env -> evar_map -> constr -> bool
-val whd_state_gen : CClosure.RedFlags.reds -> state_reduction_function
 
 (** {6 Meta-related reduction functions } *)
 type meta_instance_subst
