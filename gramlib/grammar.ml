@@ -21,8 +21,6 @@ module type S = sig
     val comments : t -> ((int * int) * string) list
   end
 
-  val tokens : string -> (string option * int) list
-
   module Entry : sig
     type 'a t
     val make : string -> 'a t
@@ -122,13 +120,6 @@ type grammar =
 
 let egram =
   { gtokens = Hashtbl.create 301 }
-
-let tokens con =
-  let list = ref [] in
-  Hashtbl.iter
-    (fun (p_con, p_prm) c -> if p_con = con then list := (p_prm, !c) :: !list)
-    egram.gtokens;
-  !list
 
 (** Used to propagate possible presence of SELF/NEXT in a rule (binary and) *)
 type ('a, 'b, 'c) ty_and_rec =
